@@ -280,3 +280,56 @@
 .mc-end {
   height: 0;
 }
+
+/* ── 리치 메시지: 사진 버블 ── */
+.mc-bubble--img {
+  padding: 4px;
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  max-width: 100%;
+  --press: 0.98;
+}
+.mc-msg--mine .mc-bubble--img {
+  background: #ffe3ef;
+}
+.mc-bubble--img img {
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  max-height: 260px;
+  object-fit: cover;
+  border-radius: 13px;
+}
+
+/* ── 리치 메시지: 위치 카드 ── */
+.mc-bubble--loc {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  min-width: 180px;
+  --press: 0.98;
+}
+.mc-loc-ic {
+  font-size: 22px;
+  line-height: 1;
+  flex: none;
+}
+.mc-loc-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.mc-loc-title {
+  font-size: 12px;
+  font-weight: 800;
+  opacity: 0.75;
+}
+.mc-loc-addr {
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.35;
+  word-break: keep-all;
+}

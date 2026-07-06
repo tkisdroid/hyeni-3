@@ -7,8 +7,18 @@ import { useAuth } from "@/auth/AuthContext";
 import { useActiveChild } from "@/app/activeChild";
 import { useMyFamily } from "@/queries/useFamily";
 import { useMemoThread, useSendMemo, useMarkRead } from "@/queries/useMemo";
-import { mapRepliesToThread } from "@/transform/memoView";
+import { useChildLocations } from "@/queries/useLocation";
+import {
+  mapRepliesToThread,
+  encodeImageContent,
+  encodeLocationContent,
+  type ThreadMsg,
+} from "@/transform/memoView";
 import { todayDateKey } from "@/transform/dateKey";
+import { apiUploadChildPhoto, childPhotoProxyUrl } from "@/lib/api/client";
+import { resizeImageFileSafe, dataUrlToBlob } from "@/lib/imageResize";
+import { loadKakaoMaps } from "@/lib/kakaoMap";
+import { openExternal } from "@/lib/native/browser";
 import "./MemoChat.css";
 
 /** photo_url(원격 http)은 그대로, 로컬 캐릭터 키는 asset()으로 해석. */
@@ -22,7 +32,7 @@ const QUICK_REPLIES = ["지금 어디야?", "숙제는 했어?", "몇 시에 끝
 export function MemoChat() {
   const navigate = useNavigate();
   const { show } = useToast();
-  const { userId, role } = useAuth();
+  const { userId, role, familyId } = useAuth();
   const { data: family } = useMyFamily();
   const { activeChild } = useActiveChild();
 
@@ -143,6 +153,122 @@ export function MemoChat() {
     );
   };
 
+  // ── 사진 전송: 파일 선택 → 리사이즈 → R2 업로드(가족 격리 버킷) → [[img:]] 메시지 ──
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [sharing, setSharing] = useState<"" | "image" | "location">("");
+  const onPickImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // 같은 파일 재선택 허용
+    if (!file || !familyId || sharing) return;
+    setSharing("image");
+    try {
+      const dataUrl = await resizeImageFileSafe(file, { maxEdge: 1280, quality: 0.8 });
+      if (!dataUrl) {
+        show("사진을 불러오지 못했어요", "⚠️");
+        return;
+      }
+      const path = `${familyId}/memo-${Date.now()}-${Math.floor(Math.random() * 1e6)}.jpg`;
+      await apiUploadChildPhoto(path, dataUrlToBlob(dataUrl), "image/jpeg");
+      sendMemo.mutate(
+        { content: encodeImageContent(path), childId: scopeChild?.id ?? null },
+        { onError: () => show("사진 전송에 실패했어요", "⚠️") },
+      );
+    } catch (error) {
+      console.error("사진 전송 실패:", error);
+      show("사진 전송에 실패했어요", "⚠️");
+    } finally {
+      setSharing("");
+    }
+  };
+
+  // ── 위치 공유: 기기 GPS(우선) → 서버에 기록된 내 최신 위치(아이 세션 폴백) → 역지오코딩 ──
+  const { data: sharedLocations } = useChildLocations();
+  const getCurrentPosition = () =>
+    new Promise<{ lat: number; lng: number } | null>((resolve) => {
+      if (!navigator.geolocation) {
+        resolve(null);
+        return;
+      }
+      let done = false;
+      const timer = window.setTimeout(() => {
+        if (!done) {
+          done = true;
+          resolve(null);
+        }
+      }, 5000);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (done) return;
+          done = true;
+          window.clearTimeout(timer);
+          resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        },
+        () => {
+          if (done) return;
+          done = true;
+          window.clearTimeout(timer);
+          resolve(null);
+        },
+        { enableHighAccuracy: false, timeout: 4500, maximumAge: 60_000 },
+      );
+    });
+  const reverseAddress = async (lat: number, lng: number): Promise<string> => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const maps: any = await loadKakaoMaps();
+      if (!maps?.services) return "";
+      return await new Promise<string>((resolve) => {
+        const geocoder = new maps.services.Geocoder();
+        geocoder.coord2Address(
+          lng,
+          lat,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (results: any[], status: string) => {
+            if (status !== "OK" || !results[0]) {
+              resolve("");
+              return;
+            }
+            resolve(
+              results[0].road_address?.address_name || results[0].address?.address_name || "",
+            );
+          },
+        );
+      });
+    } catch {
+      return "";
+    }
+  };
+  const shareLocation = async () => {
+    if (sharing || sendMemo.isPending) return;
+    setSharing("location");
+    try {
+      // GPS 실패 시(권한 없음 등) 서버에 기록된 내 최신 위치로 폴백(아이 세션은 백그라운드 추적 중).
+      let point = await getCurrentPosition();
+      if (!point) {
+        const mine = (sharedLocations ?? []).find((l) => l.user_id === userId) ?? null;
+        if (mine) point = { lat: mine.lat, lng: mine.lng };
+      }
+      if (!point) {
+        show(role === "child" ? "지금 위치를 못 찾았어. 잠시 후 다시 해줘" : "현재 위치를 확인하지 못했어요", "📍");
+        return;
+      }
+      const address = await reverseAddress(point.lat, point.lng);
+      sendMemo.mutate(
+        { content: encodeLocationContent(point.lat, point.lng, address || "내 위치"), childId: scopeChild?.id ?? null },
+        { onError: () => show("위치 전송에 실패했어요", "⚠️") },
+      );
+    } finally {
+      setSharing("");
+    }
+  };
+
+  // 위치 버블 탭 → 카카오맵에서 그 지점 열기.
+  const openLocation = (m: ThreadMsg) => {
+    if (!m.location) return;
+    const name = encodeURIComponent(m.location.address || "공유한 위치");
+    void openExternal(`https://map.kakao.com/link/map/${name},${m.location.lat},${m.location.lng}`);
+  };
+
   const hasMessages = messages.length > 0;
   const showEmpty = !thread.isLoading && !thread.isError && !hasMessages;
   // 실시간 프레즌스 데이터가 없으므로 "온라인" 대신 최근 대화 시각으로 정직하게 표기.
@@ -212,7 +338,32 @@ export function MemoChat() {
               )}
               <div className="mc-bubble-wrap">
                 {m.showMeta && senderDiffers && <div className="mc-sender">{sender.name}</div>}
-                <div className="mc-bubble">{m.text}</div>
+                {m.kind === "image" && m.imagePath ? (
+                  <button
+                    type="button"
+                    className="mc-bubble mc-bubble--img hy-press"
+                    onClick={() => {
+                      const u = childPhotoProxyUrl(m.imagePath);
+                      if (u) void openExternal(u);
+                    }}
+                  >
+                    <img src={childPhotoProxyUrl(m.imagePath) ?? undefined} alt="공유한 사진" />
+                  </button>
+                ) : m.kind === "location" && m.location ? (
+                  <button
+                    type="button"
+                    className={`mc-bubble mc-bubble--${m.mine ? "mine" : "peer"} mc-bubble--loc hy-press`}
+                    onClick={() => openLocation(m)}
+                  >
+                    <span className="mc-loc-ic">📍</span>
+                    <span className="mc-loc-main">
+                      <span className="mc-loc-title">위치 공유</span>
+                      <span className="mc-loc-addr">{m.location.address || "지도에서 보기"}</span>
+                    </span>
+                  </button>
+                ) : (
+                  <div className={`mc-bubble mc-bubble--${m.mine ? "mine" : "peer"}`}>{m.text}</div>
+                )}
                 <div className="mc-time">{m.time}</div>
                 {m.mine && readByPeer.has(m.id) && <div className="mc-read">읽음</div>}
               </div>
@@ -241,15 +392,18 @@ export function MemoChat() {
             type="button"
             className="mc-attach hy-press"
             aria-label="사진 보내기"
-            onClick={() => show("사진 공유는 준비 중이에요. 곧 제공될 예정이에요", "🖼️")}
+            onClick={() => fileRef.current?.click()}
+            disabled={sharing !== ""}
           >
             <ImageIcon size={19} strokeWidth={2} />
           </button>
+          <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => void onPickImage(e)} />
           <button
             type="button"
             className="mc-attach hy-press"
             aria-label="위치 보내기"
-            onClick={() => show("위치 공유는 실시간 위치 전송 연동 후 제공돼요", "📍")}
+            onClick={() => void shareLocation()}
+            disabled={sharing !== ""}
           >
             <MapPin size={19} strokeWidth={2} />
           </button>

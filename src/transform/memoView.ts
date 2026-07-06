@@ -12,6 +12,44 @@ export interface ThreadMsg {
   senderUserId: string | null; // 발신자 auth user_id — 그룹 대화에서 실제 보낸 사람(아이1/아이2/부모) 표시용
   text: string;
   time: string; // "오전/오후 h:mm"
+  /** 리치 메시지 종류 — content 의 [[img:]]·[[loc:]] 마커에서 파생(기본 text). */
+  kind: "text" | "image" | "location";
+  /** kind=image: R2 키(child-photos 버킷). 표시 시 childPhotoProxyUrl 로 조립. */
+  imagePath?: string;
+  /** kind=location: 좌표 + 주소 라벨. */
+  location?: { lat: number; lng: number; address: string };
+}
+
+// 리치 메시지 마커(content TEXT 재사용 — 서버 스키마 무변경):
+//   사진  [[img:{familyId}/memo-....jpg]]
+//   위치  [[loc:{lat},{lng}|{주소}]]
+const IMG_RE = /^\[\[img:([^\]]+)\]\]$/;
+const LOC_RE = /^\[\[loc:(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)\|([^\]]*)\]\]$/;
+
+/** content → 리치 메시지 필드. 마커가 아니면 text 그대로. */
+export function parseRichContent(content: string): Pick<ThreadMsg, "kind" | "text" | "imagePath" | "location"> {
+  const raw = (content ?? "").trim();
+  const img = raw.match(IMG_RE);
+  if (img) return { kind: "image", text: "📷 사진", imagePath: img[1] };
+  const loc = raw.match(LOC_RE);
+  if (loc) {
+    const lat = Number(loc[1]);
+    const lng = Number(loc[2]);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      return { kind: "location", text: loc[3] || "공유한 위치", location: { lat, lng, address: loc[3] || "" } };
+    }
+  }
+  return { kind: "text", text: raw };
+}
+
+/** 위치 공유 content 인코딩. */
+export function encodeLocationContent(lat: number, lng: number, address: string): string {
+  return `[[loc:${lat},${lng}|${address.replace(/[\[\]|]/g, " ").trim()}]]`;
+}
+
+/** 사진 공유 content 인코딩(R2 키). */
+export function encodeImageContent(path: string): string {
+  return `[[img:${path}]]`;
 }
 
 /** UTC ISO created_at → "오전/오후 h:mm"(로컬 시각). 무효 시 빈 문자열. */
@@ -43,13 +81,14 @@ export function mapRepliesToThread(
 ): ThreadMsg[] {
   return [...replies].sort(compareReplies).map((r) => {
     const mine = !!currentUserId && r.user_id === currentUserId;
+    const rich = parseRichContent(r.content ?? "");
     return {
       id: r.id,
       mine,
       showMeta: !mine,
       senderUserId: r.user_id ?? null,
-      text: r.content ?? "",
       time: formatMemoClock(r.created_at),
+      ...rich,
     };
   });
 }
