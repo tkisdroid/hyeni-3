@@ -14,11 +14,13 @@ interface LatLng {
   lng: number;
 }
 
-/** 반경 범위(m) — 지오펜스 판정에 쓰는 안전 반경. */
-const RADIUS_MIN = 50;
+/** 반경 범위(m) — 지오펜스 판정에 쓰는 안전 반경.
+ * 위험구역은 최소한의 지역만 지정하는 것이 원칙(TK) — 20m 까지 축소 가능.
+ * 단 GPS 오차(약 10~20m)로 아주 작은 반경은 진입 감지가 덜 민감할 수 있다(폼에 안내). */
+const RADIUS_MIN = 20;
 const RADIUS_MAX = 1000;
-const RADIUS_STEP = 50;
-const RADIUS_DEFAULT = 300;
+const RADIUS_STEP = 10;
+const RADIUS_DEFAULT = 50;
 
 /** P-17 위험구역 추가·편집. 지도 핀으로 중심 선택 + 반경 슬라이더 + 진입/이탈 알림 토글. */
 export function DangerZoneForm() {
@@ -209,6 +211,9 @@ export function DangerZoneForm() {
             value={radius}
             onChange={(e) => setRadius(Number(e.target.value))}
           />
+          {radius < 50 && (
+            <p className="dzf-hint">반경이 아주 작으면 GPS 오차로 감지가 조금 늦을 수 있어요</p>
+          )}
         </div>
 
         {/* 진입/이탈 알림 */}

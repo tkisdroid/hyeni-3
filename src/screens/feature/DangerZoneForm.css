@@ -204,3 +204,11 @@
 .dzf-save:disabled {
   opacity: 0.6;
 }
+
+/* 작은 반경 안내 */
+.dzf-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-faint);
+}
