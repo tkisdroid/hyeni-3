@@ -7,6 +7,7 @@
  *       그 위를 queries/* (TanStack Query) 훅이 감싼다.
  */
 import { API_BASE } from "@/config/env";
+import { adoptNativeLocationSessionTokens, syncNativeLocationToken } from "@/lib/native/location";
 import { ApiError } from "./errors";
 import {
   getApiAccessToken,
@@ -56,6 +57,7 @@ function refreshAccess(): Promise<RefreshResult> {
 
 // refresh token 으로 access 회전. 성공 시 새 토큰/사용자 적용 후 영속화.
 async function doRefreshAccess(): Promise<RefreshResult> {
+  await adoptNativeLocationSessionTokens();
   const refreshToken = getApiRefreshToken();
   if (!refreshToken) return "rejected"; // 회전 불가 → 세션 무효
   try {
@@ -72,6 +74,7 @@ async function doRefreshAccess(): Promise<RefreshResult> {
     const nextUser = data.session?.user ?? data.user ?? userFromAccessToken(nextAccess);
     setApiUser(nextUser);
     notifyTokens();
+    void syncNativeLocationToken();
     return "ok";
   } catch {
     return "error"; // 네트워크 오류 — 일시적, 세션 유지
@@ -146,6 +149,13 @@ function encodeChildPhotoKey(path: string): string {
     .join("/");
 }
 
+function encodeStorageKey(path: string): string {
+  return String(path || "")
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/");
+}
+
 /**
  * 자녀 사진 업로드 — 바이너리 본문 + Bearer. apiRequest 는 JSON 전용이라 별도 fetch.
  * 성공 시 서버가 { path } 반환(R2 동일 키 put = upsert).
@@ -187,4 +197,45 @@ export function childPhotoProxyUrl(path: string | null | undefined): string | nu
   const accessToken = getApiAccessToken();
   const q = accessToken ? `?token=${encodeURIComponent(accessToken)}` : "";
   return API_BASE + "/api/storage/child-photos/" + encodeChildPhotoKey(path) + q;
+}
+
+function teacherNoticeRelativeKey(path: string): string {
+  return String(path || "").replace(/^teacher-notices\//, "");
+}
+
+/** 선생님 알림장 파일 업로드 — teacher-notices/{userId}/... R2 키로 저장. */
+export async function apiUploadTeacherNoticeFile(
+  relativePath: string,
+  fileOrBlob: Blob,
+  contentType?: string,
+): Promise<{ path: string }> {
+  const accessToken = getApiAccessToken();
+  const url = API_BASE + "/api/storage/teacher-notices/" + encodeStorageKey(teacherNoticeRelativeKey(relativePath));
+  const res = await fetch(url, {
+    method: "PUT",
+    headers: {
+      ...(contentType ? { "Content-Type": contentType } : {}),
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: fileOrBlob,
+  });
+  if (!res.ok) {
+    let detail: string | null = null;
+    try {
+      const body = (await res.clone().json()) as { error?: string; message?: string };
+      detail = body?.error || body?.message || null;
+    } catch {
+      /* non-json body */
+    }
+    throw new ApiError(detail || `Upload ${res.status}`, res.status);
+  }
+  return (await res.json()) as { path: string };
+}
+
+/** 선생님 알림장 첨부 조회용 proxy URL. */
+export function teacherNoticeFileProxyUrl(path: string | null | undefined): string | null {
+  if (!path) return null;
+  const accessToken = getApiAccessToken();
+  const q = accessToken ? `?token=${encodeURIComponent(accessToken)}` : "";
+  return API_BASE + "/api/storage/teacher-notices/" + encodeStorageKey(teacherNoticeRelativeKey(path)) + q;
 }

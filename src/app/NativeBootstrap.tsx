@@ -8,16 +8,18 @@ import { useAuth } from "@/auth/AuthContext";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { initOAuthDeepLink } from "@/lib/native/oauthDeepLink";
 import { initPush, disposePush } from "@/lib/native/push";
-import { startLocationTracking, stopLocationTracking } from "@/lib/native/location";
+import { adoptNativeLocationSessionTokens, startLocationTracking, stopLocationTracking } from "@/lib/native/location";
 import { collectDeviceHealth, attachBatteryChange } from "@/lib/native/deviceStatus";
 import { detectDeviceLabel } from "@/lib/native/deviceName";
 import { reportDeviceStatus, reportDeviceLabel } from "@/lib/api/endpoints/family";
+import { fetchLocationPreferences } from "@/lib/api/endpoints/location";
 
 // 아이 기기 상태 리포트 주기(ms). 부모 '안전 지표'가 이 주기로 갱신된다.
 const DEVICE_REPORT_INTERVAL_MS = 120_000;
+const LOCATION_PREF_SYNC_INTERVAL_MS = 60_000;
 
 export function NativeBootstrap() {
-  const { status, userId, familyId, role } = useAuth();
+  const { status, userId, familyId, role, syncFromSession } = useAuth();
 
   // OAuth 딥링크(hyenicalendar://auth-callback) 리스너 — 1회 등록. 성공 시 role 홈 이동은 내장.
   useEffect(() => {
@@ -27,17 +29,68 @@ export function NativeBootstrap() {
     });
   }, []);
 
-  // 인증 확정 → FCM 푸시 등록 + (아이 세션) 백그라운드 위치 추적. 로그아웃 → 정리.
+  // 인증 확정 → FCM 푸시 등록. 로그아웃 → 정리.
   useEffect(() => {
     if (!isNativePlatform()) return;
     if (status === "authenticated" && familyId && userId) {
       void initPush({ userId, familyId, role: role ?? undefined });
-      if (role === "child") void startLocationTracking({ familyId, userId });
     } else {
-      void disposePush();
-      void stopLocationTracking();
+      void (async () => {
+        if (await adoptNativeLocationSessionTokens()) {
+          syncFromSession();
+          return;
+        }
+        await disposePush();
+        await stopLocationTracking();
+      })();
     }
-  }, [status, userId, familyId, role]);
+  }, [status, userId, familyId, role, syncFromSession]);
+
+  // 아이 네이티브 위치 서비스 — 부모가 저장한 가족 위치 주기 설정을 읽어 반영한다.
+  useEffect(() => {
+    if (!isNativePlatform()) return;
+    if (status !== "authenticated" || role !== "child" || !familyId || !userId) {
+      void (async () => {
+        if (await adoptNativeLocationSessionTokens()) {
+          syncFromSession();
+          return;
+        }
+        await stopLocationTracking();
+      })();
+      return;
+    }
+
+    let cancelled = false;
+    const syncPrefsAndService = () => {
+      void (async () => {
+        try {
+          const prefs = await fetchLocationPreferences(familyId);
+          if (cancelled) return;
+          if (!prefs.background_enabled) {
+            await stopLocationTracking();
+            return;
+          }
+          await startLocationTracking({
+            familyId,
+            userId,
+            intervalMode: prefs.interval_mode,
+          });
+        } catch (error) {
+          console.error("위치 전송 설정 동기화 실패:", error);
+          if (!cancelled) {
+            await startLocationTracking({ familyId, userId, intervalMode: "balanced" });
+          }
+        }
+      })();
+    };
+
+    syncPrefsAndService();
+    const timer = window.setInterval(syncPrefsAndService, LOCATION_PREF_SYNC_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [status, role, familyId, userId, syncFromSession]);
 
   // 아이 기기 상태(배터리·충전·네트워크) 리포트 → 부모 '안전 지표' 실데이터원.
   // 웹(PWA) 자녀 전용: Web API(getBattery/onLine/connection)로 배터리·네트워크만 리포트.

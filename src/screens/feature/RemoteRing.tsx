@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft, Bell } from "lucide-react";
 import { asset } from "@/lib/assets";
+import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { useActiveChild } from "@/app/activeChild";
 import { useMyFamily } from "@/queries/useFamily";
@@ -17,10 +18,11 @@ import "./RemoteRing.css";
 /** 선택 가능한 벨소리 지속(초). 아이 기기 알람을 이 시간 뒤 자동 정지한다. */
 const DURATIONS = [15, 30, 60] as const;
 
-/** 대상 아이 캐릭터 폴백(사진 없을 때). familyView 와 동일 순환. */
-const CHILD_ANIMALS = ["animal/rabbit.webp", "animal/bear.webp", "animal/cat.webp", "animal/dog.webp"];
-
 const pad2 = (n: number): string => String(n).padStart(2, "0");
+
+function avatarSrc(path: string): string {
+  return path.startsWith("http") ? path : asset(path);
+}
 
 /** ISO 시각 → 상대시간 라벨(방금/N분/N시간/N일 전). */
 function relativeTime(iso: string | null | undefined): string {
@@ -115,9 +117,7 @@ export function RemoteRing() {
   const quotaAllowed = quota ? quota.allowed : true;
   const tierLabel = quota?.tier === "premium" ? "프리미엄" : "무료";
   const childName = targetChild?.name || "우리 아이";
-  const targetIndex = targetChild ? Math.max(0, children.indexOf(targetChild)) : 0;
-  const childAvatar =
-    targetChild?.photo_url || asset(CHILD_ANIMALS[targetIndex % CHILD_ANIMALS.length]);
+  const childAvatar = avatarSrc(childAvatarPath(targetChild?.photo_url));
 
   // 울리는 대상 이름(외부 발사 대비 active.target_user_id 우선).
   const activeTarget = active?.target_user_id ?? null;

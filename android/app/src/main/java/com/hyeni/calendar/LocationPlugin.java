@@ -38,6 +38,8 @@ import com.google.firebase.messaging.FirebaseMessaging;
 public class LocationPlugin extends Plugin {
 
     private static final String TAG = "LocationPlugin";
+    private static final String PREFS_NAME = "hyeni_location_prefs";
+    private static final String DEVICE_INSTALL_ID = "deviceInstallId";
 
     @PluginMethod
     public void startService(PluginCall call) {
@@ -47,6 +49,7 @@ public class LocationPlugin extends Plugin {
         String supabaseKey = call.getString("supabaseKey");
         String accessToken = call.getString("accessToken", "");
         String role = call.getString("role", "child");
+        String intervalMode = call.getString("intervalMode", "balanced");
 
         if (userId == null || familyId == null) {
             call.reject("userId and familyId are required");
@@ -59,6 +62,7 @@ public class LocationPlugin extends Plugin {
         getContext().getSharedPreferences("hyeni_location_prefs", android.content.Context.MODE_PRIVATE)
             .edit()
             .putString("role", role)
+            .putString("locationIntervalMode", normalizeIntervalMode(intervalMode))
             .remove("kakaoRestKey")
             .apply();
 
@@ -81,7 +85,7 @@ public class LocationPlugin extends Plugin {
         }
         requestActivityRecognitionIfNeeded();
 
-        launchService(userId, familyId, supabaseUrl, supabaseKey, accessToken);
+        launchService(userId, familyId, supabaseUrl, supabaseKey, accessToken, intervalMode);
         call.resolve(new JSObject().put("status", "started"));
     }
 
@@ -93,6 +97,7 @@ public class LocationPlugin extends Plugin {
         String supabaseKey = call.getString("supabaseKey");
         String accessToken = call.getString("accessToken", "");
         String role = call.getString("role", "child");
+        String intervalMode = call.getString("intervalMode", "balanced");
 
         if (userId == null || familyId == null) {
             call.reject("userId and familyId are required");
@@ -108,10 +113,11 @@ public class LocationPlugin extends Plugin {
         getContext().getSharedPreferences("hyeni_location_prefs", android.content.Context.MODE_PRIVATE)
             .edit()
             .putString("role", role)
+            .putString("locationIntervalMode", normalizeIntervalMode(intervalMode))
             .remove("kakaoRestKey")
             .apply();
 
-        launchRefresh(userId, familyId, supabaseUrl, supabaseKey, accessToken);
+        launchRefresh(userId, familyId, supabaseUrl, supabaseKey, accessToken, intervalMode);
         call.resolve(new JSObject().put("status", "refresh_requested"));
     }
 
@@ -124,6 +130,7 @@ public class LocationPlugin extends Plugin {
             String supabaseUrl = call.getString("supabaseUrl");
             String supabaseKey = call.getString("supabaseKey");
             String accessToken = call.getString("accessToken", "");
+            String intervalMode = call.getString("intervalMode", "balanced");
 
             // Also request background location (Android 10+)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -132,7 +139,7 @@ public class LocationPlugin extends Plugin {
             }
             requestActivityRecognitionIfNeeded();
 
-            launchService(userId, familyId, supabaseUrl, supabaseKey, accessToken);
+            launchService(userId, familyId, supabaseUrl, supabaseKey, accessToken, intervalMode);
             call.resolve(new JSObject().put("status", "started"));
         } else {
             call.reject("Location permission denied");
@@ -155,7 +162,14 @@ public class LocationPlugin extends Plugin {
         }
     }
 
-    private void launchService(String userId, String familyId, String supabaseUrl, String supabaseKey, String accessToken) {
+    private String normalizeIntervalMode(String mode) {
+        if ("live".equals(mode) || "saver".equals(mode) || "balanced".equals(mode)) {
+            return mode;
+        }
+        return "balanced";
+    }
+
+    private void launchService(String userId, String familyId, String supabaseUrl, String supabaseKey, String accessToken, String intervalMode) {
         String role = getContext().getSharedPreferences("hyeni_location_prefs", android.content.Context.MODE_PRIVATE)
             .getString("role", "child");
         Intent intent = new Intent(getContext(), LocationService.class);
@@ -165,6 +179,7 @@ public class LocationPlugin extends Plugin {
         intent.putExtra("supabaseKey", supabaseKey);
         intent.putExtra("accessToken", accessToken);
         intent.putExtra("role", role);
+        intent.putExtra("intervalMode", normalizeIntervalMode(intervalMode));
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             getContext().startForegroundService(intent);
@@ -174,7 +189,7 @@ public class LocationPlugin extends Plugin {
         Log.i(TAG, "Location service launched");
     }
 
-    private void launchRefresh(String userId, String familyId, String supabaseUrl, String supabaseKey, String accessToken) {
+    private void launchRefresh(String userId, String familyId, String supabaseUrl, String supabaseKey, String accessToken, String intervalMode) {
         String role = getContext().getSharedPreferences("hyeni_location_prefs", android.content.Context.MODE_PRIVATE)
             .getString("role", "child");
         Intent intent = new Intent(getContext(), LocationService.class);
@@ -185,6 +200,7 @@ public class LocationPlugin extends Plugin {
         intent.putExtra("supabaseKey", supabaseKey);
         intent.putExtra("accessToken", accessToken);
         intent.putExtra("role", role);
+        intent.putExtra("intervalMode", normalizeIntervalMode(intervalMode));
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             getContext().startForegroundService(intent);
@@ -254,6 +270,14 @@ public class LocationPlugin extends Plugin {
 
     @PluginMethod
     public void stopService(PluginCall call) {
+        boolean clearSession = Boolean.TRUE.equals(call.getBoolean("clearSession"));
+        if (clearSession) {
+            getContext().getSharedPreferences("hyeni_location_prefs", android.content.Context.MODE_PRIVATE)
+                .edit()
+                .remove("accessToken")
+                .remove("refreshToken")
+                .apply();
+        }
         Intent intent = new Intent(getContext(), LocationService.class);
         intent.setAction("STOP");
         getContext().startService(intent);
@@ -289,10 +313,11 @@ public class LocationPlugin extends Plugin {
     @PluginMethod
     public void getSessionTokens(PluginCall call) {
         android.content.SharedPreferences prefs = getContext()
-            .getSharedPreferences("hyeni_location_prefs", android.content.Context.MODE_PRIVATE);
+            .getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE);
         JSObject result = new JSObject();
         result.put("accessToken", prefs.getString("accessToken", ""));
         result.put("refreshToken", prefs.getString("refreshToken", ""));
+        result.put("serviceEnabled", prefs.getBoolean("serviceEnabled", false));
         call.resolve(result);
     }
 
@@ -361,15 +386,24 @@ public class LocationPlugin extends Plugin {
     @PluginMethod
     public void getPushContext(PluginCall call) {
         android.content.SharedPreferences prefs = getContext()
-            .getSharedPreferences("hyeni_location_prefs", android.content.Context.MODE_PRIVATE);
+            .getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE);
         JSObject result = new JSObject();
         result.put("userId", prefs.getString("userId", ""));
         result.put("familyId", prefs.getString("familyId", ""));
         result.put("role", prefs.getString("role", ""));
+        result.put("deviceInstallId", getOrCreateDeviceInstallId(prefs));
         result.put("hasAccessToken", !prefs.getString("accessToken", "").isEmpty());
         result.put("hasRefreshToken", !prefs.getString("refreshToken", "").isEmpty());
         result.put("hasFcmToken", !prefs.getString("fcmToken", "").isEmpty());
         call.resolve(result);
+    }
+
+    private String getOrCreateDeviceInstallId(android.content.SharedPreferences prefs) {
+        String existing = prefs.getString(DEVICE_INSTALL_ID, "");
+        if (existing != null && !existing.trim().isEmpty()) return existing.trim();
+        String next = java.util.UUID.randomUUID().toString();
+        prefs.edit().putString(DEVICE_INSTALL_ID, next).apply();
+        return next;
     }
 
     @PluginMethod

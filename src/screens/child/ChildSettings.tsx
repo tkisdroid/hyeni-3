@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, MapPin, Bell, HelpCircle } from "lucide-react";
+import { ChevronLeft, MapPin, Bell, HelpCircle, X } from "lucide-react";
 import { asset } from "@/lib/assets";
+import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily, useSendChildSettingRequest } from "@/queries/useFamily";
@@ -30,6 +31,10 @@ function connectionLabel(parents: { gender?: string | null }[]): { emoji: string
   return { emoji: "🔗", text: "아직 연결 대기 중이야" };
 }
 
+function avatarSrc(path: string): string {
+  return path.startsWith("http") ? path : asset(path);
+}
+
 // 부모에게 부탁할 수 있는 잠금 메뉴(요청형).
 const REQUEST_ITEMS: Array<{ menu: SettingRequestMenu; emoji: string; title: string; sub: string }> = [
   { menu: "sound", emoji: "🔔", title: "소리·진동 바꾸기", sub: "부모님이 정하는 항목이야" },
@@ -50,6 +55,7 @@ export function ChildSettings() {
 
   const [notifOn, setNotifOn] = useState(true);
   const [requested, setRequested] = useState<Record<string, boolean>>({});
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const me = useMemo(() => {
     const children = (family?.members ?? []).filter((m) => m.role === "child");
@@ -94,7 +100,7 @@ export function ChildSettings() {
         <div className="ks-hero">
           <span className="ks-hero__avatar">
             <img
-              src={me?.photo_url && me.photo_url.startsWith("http") ? me.photo_url : asset("animal/rabbit.webp")}
+              src={avatarSrc(childAvatarPath(me?.photo_url))}
               alt=""
             />
           </span>
@@ -166,17 +172,54 @@ export function ChildSettings() {
           ))}
         </section>
 
-        {/* 도움말(준비 중, 정직 표기) */}
-        <div className="ks-row ks-row--muted">
+        {/* 도움말 */}
+        <button type="button" className="ks-row hy-press" onClick={() => setHelpOpen(true)}>
           <span className="ks-row__icon">
             <HelpCircle size={18} strokeWidth={2.2} />
           </span>
           <span className="ks-row__main">
             <span className="ks-row__title">도움말</span>
-            <span className="ks-row__sub">준비 중이야</span>
+            <span className="ks-row__sub">위치·알림·부탁하기를 알려줄게</span>
           </span>
-        </div>
+        </button>
       </div>
+
+      {helpOpen && (
+        <div className="ks-modal" role="dialog" aria-modal="true" aria-label="도움말">
+          <button type="button" className="ks-modal__scrim" aria-label="닫기" onClick={() => setHelpOpen(false)} />
+          <div className="ks-modal__card">
+            <div className="ks-modal__head">
+              <span className="ks-modal__title">도움말</span>
+              <button type="button" className="ks-modal__x hy-press" aria-label="닫기" onClick={() => setHelpOpen(false)}>
+                <X size={19} strokeWidth={2.4} />
+              </button>
+            </div>
+            <div className="ks-help-list">
+              <div className="ks-help-item">
+                <span className="ks-help-item__emoji">📍</span>
+                <span>
+                  <b>위치 알려주기</b>
+                  <small>부모님이 네가 안전한지 확인하려고 켜 둔 거야.</small>
+                </span>
+              </div>
+              <div className="ks-help-item">
+                <span className="ks-help-item__emoji">🔔</span>
+                <span>
+                  <b>알림</b>
+                  <small>이 기기에서만 켜고 끌 수 있어. 중요한 안전 알림은 부모님에게 계속 가.</small>
+                </span>
+              </div>
+              <div className="ks-help-item">
+                <span className="ks-help-item__emoji">💌</span>
+                <span>
+                  <b>부모님한테 부탁하기</b>
+                  <small>캐릭터나 소리를 바꾸고 싶을 때 부모님에게 요청을 보낼 수 있어.</small>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

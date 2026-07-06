@@ -2,14 +2,17 @@ import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Pencil, Smartphone, Trash2, AlertTriangle } from "lucide-react";
 import { asset } from "@/lib/assets";
+import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { useActiveChild } from "@/app/activeChild";
 import { useMyFamily, useUnpairChild } from "@/queries/useFamily";
 import { useEvents } from "@/queries/useSchedule";
 import { useChildLocations, useSavedPlaces } from "@/queries/useLocation";
+import { useLocationLabels } from "@/queries/useLocationLabels";
 import { mapFamilyToView } from "@/transform/familyView";
 import { todayDateKey, parseAppDateKey } from "@/transform/dateKey";
-import { formatFreshness, placeLabel } from "@/transform/locationView";
+import { filterEventsForChild } from "@/transform/eventScope";
+import { formatFreshness } from "@/transform/locationView";
 import "./ChildDetail.css";
 
 // 자녀 사진은 proxy URL(http…), 기본 아바타는 asset 경로.
@@ -47,44 +50,40 @@ export function ChildDetail() {
   const locationsQuery = useChildLocations();
   const placesQuery = useSavedPlaces();
   const unpair = useUnpairChild();
-  const { setActiveChildId } = useActiveChild();
+  const { activeChild, setActiveChildId } = useActiveChild();
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const members = useMemo(() => familyQuery.data?.members ?? [], [familyQuery.data]);
 
-  // 대상 아이(멤버 id 일치, 없으면 첫 아이). 순수 뷰모델로 아바타/배경 파생.
+  // 대상 아이: 명시 childId 우선, 없으면 전역 활성 아이. 잘못된 childId 를 첫째로 바꾸지 않는다.
   const rawChild = useMemo(() => {
     const children = members.filter((m) => m.role === "child");
-    return children.find((m) => m.id === childId) ?? children[0] ?? null;
-  }, [members, childId]);
+    if (childId) return children.find((m) => m.id === childId) ?? null;
+    return activeChild && children.some((m) => m.id === activeChild.id) ? activeChild : null;
+  }, [members, childId, activeChild]);
 
   const childView = useMemo(() => {
     const view = mapFamilyToView(members, null);
     return view.children.find((c) => c.id === rawChild?.id) ?? null;
   }, [members, rawChild]);
 
-  // 오늘/다가오는 일정 — 이 아이 배정(events_children) + 가족 공유(배정 없음)만 집계.
+  // 오늘/다가오는 일정 — 이 아이 배정(events_children) + 가족 공유(is_family_event)만 집계.
   // (가족 전체를 세면 두 아이 상세가 항상 같은 수 — 아이별 구분 원칙 위반.)
   const events = eventsQuery.data;
-  const isForThisChild = useMemo(() => {
-    const childId = rawChild?.id ?? null;
-    return (e: { events_children?: Array<{ child_id?: string }> }) => {
-      if (!childId) return true;
-      const ec = e.events_children ?? [];
-      return ec.length === 0 || ec.some((c) => c.child_id === childId);
-    };
-  }, [rawChild]);
+  const childEvents = useMemo(() => {
+    return filterEventsForChild(events ?? [], rawChild?.id);
+  }, [events, rawChild?.id]);
   const todayCount = useMemo(() => {
     const key = todayDateKey(now);
-    return (events ?? []).filter((e) => e.date_key === key && isForThisChild(e)).length;
-  }, [events, now, isForThisChild]);
+    return childEvents.filter((e) => e.date_key === key).length;
+  }, [childEvents, now]);
   const upcomingCount = useMemo(() => {
     const todayMid = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    return (events ?? []).filter((e) => {
+    return childEvents.filter((e) => {
       const d = parseAppDateKey(e.date_key);
-      return d != null && d.getTime() > todayMid && isForThisChild(e);
+      return d != null && d.getTime() > todayMid;
     }).length;
-  }, [events, now, isForThisChild]);
+  }, [childEvents, now]);
 
   // 안전 상태 — 실 위치 신선도 + 저장장소 근접.
   const loc = useMemo(() => {
@@ -94,7 +93,8 @@ export function ChildDetail() {
   }, [locationsQuery.data, rawChild]);
   const places = placesQuery.data;
   const fresh = loc ? formatFreshness(loc.updated_at, now) : null;
-  const placeName = loc && places ? placeLabel(loc, places) : null;
+  const locationLabel = useLocationLabels(loc ? [loc] : [], places);
+  const placeName = loc ? locationLabel(loc) : null;
 
   const safety = useMemo<{ label: string; tone: SafetyTone }>(() => {
     if (!rawChild?.user_id) return { label: "연결 대기 중", tone: "muted" };
@@ -132,7 +132,7 @@ export function ChildDetail() {
   }
 
   const name = childView?.name || rawChild.name || "아이";
-  const avatar = childView?.avatar || "animal/rabbit.webp";
+  const avatar = childView?.avatar || childAvatarPath(rawChild.photo_url);
   const soft = childView?.soft || "var(--hy-accent-soft)";
   const ordinal = rawChild.child_order ? ORDINAL[rawChild.child_order] ?? null : null;
   const deviceLabel = rawChild.device_label?.trim() || null;

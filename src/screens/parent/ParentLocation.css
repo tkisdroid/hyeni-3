@@ -638,6 +638,20 @@
   max-height: 42vh;
   display: flex;
   flex-direction: column;
+  transition: transform 0.22s ease, max-height 0.22s ease;
+  will-change: transform;
+}
+.pl-stays--collapsed {
+  transform: translateY(calc(100% - 72px));
+  max-height: 42vh;
+}
+.pl-stays__grip {
+  padding: 0 0 4px;
+  cursor: grab;
+  touch-action: none;
+}
+.pl-stays__grip:active {
+  cursor: grabbing;
 }
 .pl-stays__head {
   display: flex;

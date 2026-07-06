@@ -10,6 +10,13 @@ export interface ChildLocation {
   updated_at: string; // "YYYY-MM-DD HH:MM:SS.mmm+00"
 }
 
+export interface ReverseGeocodeResult {
+  ok: boolean;
+  label: string;
+  address: string;
+  buildingName: string | null;
+}
+
 export interface LocationHistoryPoint {
   user_id: string;
   lat: number;
@@ -25,7 +32,17 @@ export interface DangerZone {
   lng: number;
   radius_m: number;
   zone_type: string; // "custom" 등
+  alert_on_entry?: boolean;
+  alert_on_exit?: boolean;
   created_at?: string;
+}
+
+function toFlag(value: unknown, fallback: boolean): boolean {
+  if (value == null) return fallback;
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
+  if (typeof value === "string") return value !== "0" && value.toLowerCase() !== "false";
+  return fallback;
 }
 
 export interface SavedPlaceLocation {
@@ -45,9 +62,51 @@ export interface SavedPlace {
   public_place_id?: string | null;
 }
 
+export type LocationIntervalMode = "live" | "balanced" | "saver";
+
+export interface LocationPreferences {
+  family_id: string;
+  background_enabled: boolean;
+  interval_mode: LocationIntervalMode;
+  battery_saver_exception: boolean;
+  updated_by: string | null;
+  updated_at: string | null;
+}
+
+export interface LocationPreferencesInput {
+  background_enabled: boolean;
+  interval_mode: LocationIntervalMode;
+  battery_saver_exception: boolean;
+}
+
 /** 자녀 현재 위치 목록. */
 export function fetchChildLocations(familyId: string): Promise<ChildLocation[]> {
   return apiGet<ChildLocation[]>(`/api/location/children?family_id=${encodeURIComponent(familyId)}`);
+}
+
+/** 가족 위치 전송 설정(부모 저장, 아이 기기 반영). */
+export function fetchLocationPreferences(familyId: string): Promise<LocationPreferences> {
+  return apiGet<LocationPreferences>(`/api/location-prefs?family_id=${encodeURIComponent(familyId)}`);
+}
+
+export function saveLocationPreferences(
+  familyId: string,
+  prefs: LocationPreferencesInput,
+): Promise<LocationPreferences> {
+  return apiPost<LocationPreferences>("/api/location-prefs", {
+    family_id: familyId,
+    background_enabled: prefs.background_enabled,
+    interval_mode: prefs.interval_mode,
+    battery_saver_exception: prefs.battery_saver_exception,
+  });
+}
+
+/** 좌표 → 사용자 표시용 건물명/주소. */
+export function reverseGeocodeLocation(point: { lat: number; lng: number }): Promise<ReverseGeocodeResult> {
+  return apiPost<ReverseGeocodeResult>("/api/kakao/reverse-geocode", {
+    lat: point.lat,
+    lng: point.lng,
+  });
 }
 
 /** 위치 이력(기간). */
@@ -63,7 +122,15 @@ export function fetchLocationHistory(
 
 // ── 위험구역 ──
 export function fetchDangerZones(familyId: string): Promise<DangerZone[]> {
-  return apiGet<DangerZone[]>(`/api/danger-zones?family_id=${encodeURIComponent(familyId)}`);
+  return apiGet<Array<DangerZone & { alert_on_entry?: unknown; alert_on_exit?: unknown }>>(
+    `/api/danger-zones?family_id=${encodeURIComponent(familyId)}`,
+  ).then((rows) =>
+    (rows ?? []).map((z) => ({
+      ...z,
+      alert_on_entry: toFlag(z.alert_on_entry, true),
+      alert_on_exit: toFlag(z.alert_on_exit, false),
+    })),
+  );
 }
 
 export type DangerZoneInput = {
@@ -72,6 +139,8 @@ export type DangerZoneInput = {
   lng: number;
   radius_m: number;
   zone_type?: string;
+  alert_on_entry?: boolean;
+  alert_on_exit?: boolean;
 };
 
 export function createDangerZone(familyId: string, zone: DangerZoneInput): Promise<DangerZone> {

@@ -4,6 +4,8 @@
   min-height: 100%;
   display: flex;
   flex-direction: column;
+  --mc-tabbar-clearance: calc(96px + env(safe-area-inset-bottom, 0px));
+  --mc-bottom-clearance: calc(220px + env(safe-area-inset-bottom, 0px));
 }
 
 /* ── 헤더 (sticky) ──────────────────────────────────────────────────────── */
@@ -76,7 +78,7 @@
 /* ── 스레드 ─────────────────────────────────────────────────────────────── */
 .mc-thread {
   flex: 1;
-  padding: 8px 18px 20px;
+  padding: 8px 18px 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -200,7 +202,7 @@
 .mc-composer {
   position: sticky;
   /* 탭바(≈90px+safe-area) 위에 올라오도록 safe-area 포함. z-index는 탭바(45) 위. */
-  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  bottom: var(--mc-tabbar-clearance);
   z-index: 46;
   padding: 8px 16px 12px;
   background: linear-gradient(180deg, rgba(251, 247, 244, 0), rgba(251, 247, 244, 0.96) 30%);
@@ -278,7 +280,8 @@
   cursor: progress;
 }
 .mc-end {
-  height: 0;
+  flex: none;
+  height: var(--mc-bottom-clearance);
 }
 
 /* ── 리치 메시지: 사진 버블 ── */

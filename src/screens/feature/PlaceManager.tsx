@@ -3,6 +3,8 @@ import { ChevronLeft, Plus, Trash2 } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useSavedPlaces, useDangerZones, useDeleteDangerZone, useDeleteSavedPlace } from "@/queries/useLocation";
+import { useEntitlement } from "@/queries/useEntitlement";
+import { placeLimitFor, TIERS } from "@/transform/tierPolicy";
 import "./PlaceManager.css";
 
 const SOFTS = ["#E7F8F0", "#F1ECFF", "#FFF3D6", "#E6F2FB"];
@@ -14,6 +16,19 @@ export function PlaceManager() {
   const { data: zones, isLoading: zonesLoading } = useDangerZones();
   const deleteZone = useDeleteDangerZone();
   const deletePlace = useDeleteSavedPlace();
+  const { tier } = useEntitlement();
+
+  const handleAddPlace = () => {
+    if (tier !== TIERS.UNKNOWN) {
+      const limit = placeLimitFor(tier);
+      const count = places?.length ?? 0;
+      if (count >= limit) {
+        show(`현재 플랜에서는 장소 ${limit}개까지 저장할 수 있어요`, "👑");
+        return;
+      }
+    }
+    navigate("/place-form");
+  };
 
   const handleDeleteZone = (id: string, name: string) => {
     deleteZone.mutate(id, {
@@ -36,7 +51,7 @@ export function PlaceManager() {
           <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
         </button>
         <span className="pm-title">장소 관리</span>
-        <button type="button" className="pm-add hy-press" aria-label="장소 추가" onClick={() => navigate("/place-form")}>
+        <button type="button" className="pm-add hy-press" aria-label="장소 추가" onClick={handleAddPlace}>
           <Plus size={20} strokeWidth={2.6} color="#fff" />
         </button>
       </div>

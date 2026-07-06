@@ -178,7 +178,66 @@
   background: rgba(32, 26, 29, 0.08);
   margin-top: 4px;
 }
+.pc-swipe {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 18px;
+}
+.pc-swipe__actions {
+  position: absolute;
+  inset-block: 0;
+  z-index: 0;
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.16s ease;
+}
+.pc-swipe__actions--left {
+  left: 0;
+  justify-content: flex-start;
+}
+.pc-swipe__actions--right {
+  right: 0;
+  justify-content: flex-end;
+}
+.pc-swipe--edit .pc-swipe__actions--left,
+.pc-swipe--delete .pc-swipe__actions--right {
+  opacity: 1;
+}
+.pc-swipe__action {
+  min-width: 74px;
+  padding: 0 12px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 900;
+  --press: 0.96;
+}
+.pc-swipe__action--edit {
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+}
+.pc-swipe__action--delete {
+  background: #e5484d;
+  color: #fff;
+}
+.pc-swipe__action--cancel {
+  background: #f2eef0;
+  color: var(--fg-tertiary);
+}
+.pc-swipe__action:disabled {
+  opacity: 0.55;
+}
 .pc-event__card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
   flex: 1;
   min-width: 0;
   text-align: left;
@@ -191,6 +250,14 @@
   gap: 12px;
   margin-bottom: 2px;
   --press: 0.985;
+  transition: transform 0.18s ease;
+  touch-action: pan-y;
+}
+.pc-swipe--edit .pc-event__card {
+  transform: translateX(88px);
+}
+.pc-swipe--delete .pc-event__card {
+  transform: translateX(-88px);
 }
 .pc-event__icon {
   width: 44px;
@@ -218,7 +285,7 @@
   font-weight: 700;
   color: var(--fg-faint);
 }
-/* 다자녀: 배정 아이 이름 배지(배정 없는 가족 공유는 배지 없음) */
+/* 다자녀: 배정 아이 이름 배지(배정 누락은 배정 필요로 표시) */
 .pc-event__child {
   padding: 1px 7px;
   border-radius: 999px;
@@ -226,6 +293,10 @@
   color: var(--hy-accent-text);
   font-size: 10px;
   font-weight: 800;
+}
+.pc-event__child--warn {
+  background: var(--cream-soft);
+  color: #9A6D0E;
 }
 .pc-event__title {
   display: block;
@@ -284,6 +355,8 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+  box-sizing: border-box;
+  padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
 }
 .pc-scrim {
   position: absolute;
@@ -296,7 +369,7 @@
   z-index: 1;
   background: var(--bg-card);
   border-radius: 26px 26px 0 0;
-  padding: 6px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+  padding: 6px 18px 18px;
   box-shadow: 0 -8px 34px rgba(32, 26, 29, 0.18);
   animation: hy-sheetup 0.32s cubic-bezier(0.2, 0, 0.2, 1) forwards;
   display: flex;
@@ -346,6 +419,10 @@
   font-size: 12.5px;
   font-weight: 600;
   color: var(--fg-muted);
+}
+.pc-sheet__sub--warn {
+  color: #9A6D0E;
+  font-weight: 800;
 }
 .pc-sheet__tag {
   flex: none;

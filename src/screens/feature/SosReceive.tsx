@@ -6,7 +6,8 @@ import { useMyFamily } from "@/queries/useFamily";
 import { useReceivedSos } from "@/queries/useSos";
 import { useMarkAlertRead } from "@/queries/useNotifications";
 import { useChildLocations, useSavedPlaces } from "@/queries/useLocation";
-import { placeLabel, parseServerTimestamp } from "@/transform/locationView";
+import { useLocationLabels } from "@/queries/useLocationLabels";
+import { parseServerTimestamp } from "@/transform/locationView";
 import { placePhoneCall } from "@/lib/native/phone";
 import "./SosReceive.css";
 
@@ -62,7 +63,8 @@ export function SosReceive() {
   const childLoc = latest?.child_user_id
     ? (locations ?? []).find((l) => l.user_id === latest.child_user_id) ?? null
     : null;
-  const place = childLoc && places ? placeLabel(childLoc, places) : null;
+  const locationLabel = useLocationLabels(childLoc ? [childLoc] : [], places);
+  const place = childLoc ? locationLabel(childLoc) : null;
   const locUpdated = relativeFrom(parseServerTimestamp(childLoc?.updated_at));
 
   const callChild = () => {

@@ -73,6 +73,7 @@ import { SosReceive } from "@/screens/feature/SosReceive";
 import { AppUpdate } from "@/screens/feature/AppUpdate";
 import { PermDenied } from "@/screens/feature/PermDenied";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
+import { StickerCelebrationHost } from "@/components/ui/StickerCelebration";
 
 const router = createHashRouter([
   { index: true, element: <Navigate to="/parent/home" replace /> },
@@ -181,19 +182,40 @@ function RealtimeBridge() {
   return null;
 }
 
-// 부팅 스플래시 게이트 — 앱 시작 시 브랜드 스플래시(로딩 점 포함)를 잠깐 보여주고
-// 페이드아웃 후 제거. 첫 화면 데이터는 그 사이 뒤에서 로드된다(표시 전용, 라우팅 무관).
+// 부팅 스플래시 게이트 — 콜드스타트(새 프로세스)에서만 브랜드 스플래시를 잠깐 보여주고
+// 페이드아웃 후 제거. 같은 세션의 새로고침/재마운트에는 다시 띄우지 않는다
+// (스플래시가 매번 떠서 "로딩 화면"처럼 보이던 문제 — TK 제보 2026-07-06).
+// 데이터 로딩 표시는 각 화면의 소형 로더(components/ui/Loading)가 담당한다.
 const SPLASH_SHOW_MS = 1600;
 const SPLASH_FADE_MS = 300;
+const SPLASH_SEEN_KEY = "hy_splash_seen";
+
+function splashAlreadySeen(): boolean {
+  try {
+    return sessionStorage.getItem(SPLASH_SEEN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 function BootSplash() {
-  const [phase, setPhase] = useState<"show" | "exit" | "done">("show");
+  const [phase, setPhase] = useState<"show" | "exit" | "done">(() =>
+    splashAlreadySeen() ? "done" : "show",
+  );
   useEffect(() => {
+    if (phase === "done") return;
+    try {
+      sessionStorage.setItem(SPLASH_SEEN_KEY, "1");
+    } catch {
+      // sessionStorage 불가 환경이면 매번 표시(무해)
+    }
     const t1 = window.setTimeout(() => setPhase("exit"), SPLASH_SHOW_MS);
     const t2 = window.setTimeout(() => setPhase("done"), SPLASH_SHOW_MS + SPLASH_FADE_MS);
     return () => {
       window.clearTimeout(t1);
       window.clearTimeout(t2);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   if (phase === "done") return null;
   return <Splash exiting={phase === "exit"} />;
@@ -210,6 +232,7 @@ export function App() {
             <ToastProvider>
               <OfflineBanner />
               <BootSplash />
+              <StickerCelebrationHost />
               <RouterProvider router={router} />
             </ToastProvider>
           </AccentProvider>

@@ -1,0 +1,163 @@
+.sticker-celebration {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, var(--cream-soft), var(--rose-300) 45%, var(--blue-soft));
+  color: var(--fg-secondary);
+  animation: sc-fade 4.2s ease forwards;
+}
+
+.sticker-celebration__flash {
+  position: absolute;
+  inset: -20%;
+  background:
+    repeating-conic-gradient(
+      from 12deg,
+      color-mix(in srgb, var(--bg-card) 44%, transparent) 0deg 10deg,
+      transparent 10deg 22deg
+    );
+  animation: sc-spin 5s linear infinite;
+}
+
+.sticker-celebration__main {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(86vw, 360px);
+  padding: 30px 20px 34px;
+  border: 3px solid color-mix(in srgb, var(--bg-card) 76%, transparent);
+  border-radius: 28px;
+  background: color-mix(in srgb, var(--bg-card) 88%, transparent);
+  box-shadow: var(--shadow-floating);
+  animation: sc-main 0.62s cubic-bezier(0.18, 1.4, 0.34, 1) both;
+}
+
+.sticker-celebration__eyebrow {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--rose-text);
+}
+
+.sticker-celebration__sticker {
+  width: min(58vw, 230px);
+  aspect-ratio: 1;
+  object-fit: contain;
+  margin: 12px 0 8px;
+  filter: drop-shadow(0 20px 22px color-mix(in srgb, var(--rose-text) 25%, transparent));
+  animation: sc-sticker 1.18s cubic-bezier(0.14, 1.56, 0.42, 1) both;
+}
+
+.sticker-celebration__title {
+  max-width: 100%;
+  font-size: clamp(31px, 9vw, 48px);
+  font-weight: 950;
+  line-height: 1.02;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.sticker-celebration__sub {
+  margin-top: 10px;
+  font-size: 15px;
+  font-weight: 850;
+  color: var(--fg-tertiary);
+}
+
+.sticker-celebration__confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sticker-celebration__confetti span {
+  --x: calc((var(--i) * 37 % 100) * 1vw);
+  --delay: calc((var(--i) % 8) * -0.11s);
+  position: absolute;
+  left: var(--x);
+  top: -16px;
+  width: 10px;
+  height: 20px;
+  border-radius: 3px;
+  background: var(--hy-accent);
+  transform: rotate(calc(var(--i) * 17deg));
+  animation: sc-confetti 2.4s var(--delay) linear infinite;
+}
+
+.sticker-celebration__confetti span:nth-child(4n+1) {
+  background: var(--gold-400);
+}
+
+.sticker-celebration__confetti span:nth-child(4n+2) {
+  background: var(--rose-400);
+}
+
+.sticker-celebration__confetti span:nth-child(4n+3) {
+  background: var(--mint-400);
+}
+
+.sticker-celebration__stars span {
+  position: absolute;
+  z-index: 3;
+  font-size: 54px;
+  color: var(--bg-card);
+  text-shadow: 0 8px 20px color-mix(in srgb, var(--rose-text) 28%, transparent);
+  animation: sc-star 1.3s ease-in-out infinite;
+}
+
+.sticker-celebration__stars span:nth-child(1) {
+  left: 12%;
+  top: 18%;
+}
+
+.sticker-celebration__stars span:nth-child(2) {
+  right: 13%;
+  top: 24%;
+  animation-delay: -0.24s;
+}
+
+.sticker-celebration__stars span:nth-child(3) {
+  right: 18%;
+  bottom: 18%;
+  animation-delay: -0.48s;
+}
+
+@keyframes sc-fade {
+  0% { opacity: 0; }
+  8% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes sc-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes sc-main {
+  from { transform: translateY(36px) scale(0.72) rotate(-4deg); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@keyframes sc-sticker {
+  0% { transform: scale(0.3) rotate(-18deg); opacity: 0; }
+  48% { transform: scale(1.18) rotate(8deg); opacity: 1; }
+  72% { transform: scale(0.96) rotate(-3deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+
+@keyframes sc-confetti {
+  from { transform: translate3d(0, -20px, 0) rotate(0deg); }
+  to { transform: translate3d(calc(((var(--i) % 5) - 2) * 18px), 112vh, 0) rotate(560deg); }
+}
+
+@keyframes sc-star {
+  0%, 100% { transform: scale(0.82) rotate(-6deg); opacity: 0.78; }
+  50% { transform: scale(1.18) rotate(7deg); opacity: 1; }
+}

@@ -89,7 +89,7 @@ export function Supplies() {
     const label = draft.trim();
     if (!label || upsert.isPending) return;
     if (!targetChildId) {
-      show(isChild ? "아직 준비가 안 됐어" : "가족에 등록된 아이가 없어요", "🎒");
+      show(isChild ? "내 정보를 아직 찾지 못했어" : "가족에 등록된 아이가 없어요", "🎒");
       return;
     }
     upsert.mutate(

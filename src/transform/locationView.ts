@@ -60,9 +60,15 @@ export function nearestPlace(loc: ChildLocation, places: SavedPlace[]): NearestP
   return best;
 }
 
-/** 자녀 위치 → 현위치 라벨: 200m 이내 저장장소명, 아니면 "이동 중". */
+/** 주소 조회가 아직 끝나지 않았을 때의 사용자용 fallback. 좌표는 기본 UI에 노출하지 않는다. */
+export function coordinateLabel(loc: ChildLocation): string {
+  void loc;
+  return "주소 확인 중";
+}
+
+/** 자녀 위치 → 현위치 라벨: 200m 이내 저장장소명, 아니면 주소 조회 대기. */
 export function placeLabel(loc: ChildLocation, places: SavedPlace[]): string {
   const near = nearestPlace(loc, places);
   if (near && near.distanceM <= 200) return near.place.name;
-  return "이동 중";
+  return coordinateLabel(loc);
 }

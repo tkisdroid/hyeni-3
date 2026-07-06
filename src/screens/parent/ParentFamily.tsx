@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useMyFamily } from "@/queries/useFamily";
+import { useChildLocations, useSavedPlaces } from "@/queries/useLocation";
+import { useLocationLabels } from "@/queries/useLocationLabels";
 import { useAuth } from "@/auth/AuthContext";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { mapFamilyToView } from "@/transform/familyView";
@@ -22,21 +24,42 @@ export function ParentFamily() {
   const { show } = useToast();
   const { userId } = useAuth();
   const { data: family, isLoading, isError, error } = useMyFamily();
+  const { data: locations } = useChildLocations();
+  const { data: places } = useSavedPlaces();
+  const locationLabel = useLocationLabels(locations, places);
   const { tier } = useEntitlement();
 
   const view = useMemo(
     () => mapFamilyToView(family?.members ?? [], userId),
     [family, userId],
   );
+  const childPlaceByUserId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const loc of locations ?? []) {
+      map.set(loc.user_id, locationLabel(loc));
+    }
+    return map;
+  }, [locations, locationLabel]);
 
   // 아이 추가 게이트: 티어 확정(unknown 아님) + 상한 도달 시에만 잠금(R9 — 미확정이면 잠그지 않음).
   const addLocked = tier !== TIERS.UNKNOWN && !canAddChild(tier, view.children.length);
+  const addLockMessage =
+    tier === TIERS.PREMIUM && addLocked
+      ? "프리미엄은 아이 2명까지 연결할 수 있어요"
+      : lockMessageFor(FEATURES.MULTI_CHILD);
 
   // 연결 코드 + QR 딥링크(아이 재연결·선생님 학생추가 시 이 코드로 다시 연결).
   const pairCode = family?.pairCode ?? "";
   const pairLink = useMemo(() => (pairCode ? buildPairLink(pairCode) : ""), [pairCode]);
 
-  const invite = () => navigate("/child-invite");
+  const invite = () => {
+    if (addLocked) {
+      show(addLockMessage, "🔒");
+      navigate("/subscription");
+      return;
+    }
+    navigate("/child-invite");
+  };
   const copyCode = () => {
     if (!pairCode) return;
     const clip = navigator.clipboard;
@@ -125,7 +148,7 @@ export function ParentFamily() {
                         )}
                         <span className="pf-chip pf-chip--place">
                           <span className="pf-chip__dot" />
-                          {c.place ?? "위치 연동 예정"}
+                          {(c.userId ? childPlaceByUserId.get(c.userId) : null) ?? c.place ?? "위치 연동 예정"}
                         </span>
                       </span>
                     </span>
@@ -146,7 +169,7 @@ export function ParentFamily() {
                     <Lock size={17} strokeWidth={2.4} color="var(--gold-600)" />
                     <span className="pf-add__lock">
                       <span className="pf-add__lock-title">
-                        {lockMessageFor(FEATURES.MULTI_CHILD)}
+                        {addLockMessage}
                       </span>
                       <span className="pf-add__lock-sub">프리미엄으로 전환하기</span>
                     </span>

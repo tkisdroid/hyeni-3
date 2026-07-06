@@ -304,9 +304,15 @@ public class AmbientListenService extends Service {
 
                 byte[] pcmBytes = pcm.toByteArray();
                 if (pcmBytes.length > 0) {
+                    int peak16 = peakPcm16(pcmBytes);
+                    if (peak16 <= 0) {
+                        Log.w(TAG, "AudioRecord produced all-zero PCM chunk seq=" + sequenceNumber
+                            + " requestId=" + requestId);
+                        continue;
+                    }
                     int seq = sequenceNumber++;
                     byte[] wav = buildWavChunk(pcmBytes, SAMPLE_RATE, 1);
-                    dispatchAudioChunk(seq, wav, CHUNK_MS);
+                    dispatchAudioChunk(seq, wav, CHUNK_MS, peak16);
                 }
             }
         } catch (SecurityException error) {
@@ -369,6 +375,18 @@ public class AmbientListenService extends Service {
         return out.toByteArray();
     }
 
+    private int peakPcm16(byte[] pcmBytes) {
+        int peak = 0;
+        for (int i = 0; i + 1 < pcmBytes.length; i += 2) {
+            int lo = pcmBytes[i] & 0xff;
+            int hi = pcmBytes[i + 1];
+            int sample = (short) ((hi << 8) | lo);
+            int abs = sample == Short.MIN_VALUE ? 32768 : Math.abs(sample);
+            if (abs > peak) peak = abs;
+        }
+        return peak;
+    }
+
     private void writeAscii(ByteArrayOutputStream out, String value) {
         for (int i = 0; i < value.length(); i++) {
             out.write(value.charAt(i));
@@ -387,13 +405,13 @@ public class AmbientListenService extends Service {
         out.write((value >> 8) & 0xff);
     }
 
-    private void dispatchAudioChunk(int seq, byte[] wav, int durationMs) {
+    private void dispatchAudioChunk(int seq, byte[] wav, int durationMs, int peak16) {
         ExecutorService executor = uploadExecutor;
         if (executor == null || executor.isShutdown()) return;
-        executor.execute(() -> postAudioChunk(seq, wav, durationMs));
+        executor.execute(() -> postAudioChunk(seq, wav, durationMs, peak16));
     }
 
-    private void postAudioChunk(int seq, byte[] wav, int durationMs) {
+    private void postAudioChunk(int seq, byte[] wav, int durationMs, int peak16) {
         try {
             String base64 = Base64.encodeToString(wav, Base64.NO_WRAP);
             JSONObject payload = new JSONObject()
@@ -401,6 +419,7 @@ public class AmbientListenService extends Service {
                 .put("mimeType", "audio/wav")
                 .put("durationMs", durationMs)
                 .put("sequenceNumber", seq)
+                .put("peak16", peak16)
                 .put("source", "native-audiorecord")
                 .put("childUserId", childUserId)
                 .put("initiatorUserId", initiatorUserId)
@@ -528,6 +547,7 @@ public class AmbientListenService extends Service {
             .setContentTitle("\uC8FC\uBCC0 \uC18C\uB9AC \uC5F0\uACB0 \uC911")
             .setContentText("\uBD80\uBAA8\uB2D8\uACFC \uC5F0\uACB0\uB41C \uC8FC\uBCC0 \uC18C\uB9AC \uB4E3\uAE30 \uC138\uC158\uC774 \uC2E4\uD589 \uC911\uC785\uB2C8\uB2E4")
             .setSmallIcon(R.drawable.ic_hyeni_notification)
+            .setLargeIcon(NotificationHelper.largeIcon(this))
             .setColor(ContextCompat.getColor(this, R.color.notification_accent))
             .setOngoing(true)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)

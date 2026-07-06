@@ -53,6 +53,7 @@ import okhttp3.Response;
 final class DeviceStatusReporter {
     private static final String TAG = "DeviceStatusReporter";
     private static final String PREFS_NAME = "hyeni_location_prefs";
+    private static final String DEVICE_INSTALL_ID = "deviceInstallId";
     // 채널 ID 단일 소스 = NotificationHelper.CHANNEL_REMOTE_LISTEN.
     // 기존 "hyeni_remote_listen_v2" 는 실제 게시 채널(v5_silent_cover)과 불일치해
     // device_health 의 remoteListenChannel* 값이 항상 엉뚱한 채널을 조회하던 버그였다.
@@ -200,6 +201,7 @@ final class DeviceStatusReporter {
         int remoteListenChannelImportance = getChannelImportance(nm, REMOTE_LISTEN_CHANNEL_ID);
         boolean remoteListenChannelBlocked = remoteListenChannelImportance == NotificationManager.IMPORTANCE_NONE;
         boolean locationServiceRunning = prefs.getBoolean("serviceEnabled", false);
+        String deviceInstallId = getOrCreateDeviceInstallId(prefs);
         String ringerMode = describeRingerMode(audio);
         String dndMode = describeDndMode(nm);
         boolean dndAccess = Build.VERSION.SDK_INT < Build.VERSION_CODES.M
@@ -210,6 +212,7 @@ final class DeviceStatusReporter {
         JSONObject payload = new JSONObject()
             .put("family_id", familyId)
             .put("user_id", userId)
+            .put("deviceInstallId", deviceInstallId)
             .put("updatedAt", formatIsoUtc(now))
             .put("batteryLevel", battery.level != null ? battery.level : JSONObject.NULL)
             .put("isCharging", battery.charging != null ? battery.charging : JSONObject.NULL)
@@ -277,6 +280,14 @@ final class DeviceStatusReporter {
         return payload;
     }
 
+    private static String getOrCreateDeviceInstallId(SharedPreferences prefs) {
+        String existing = prefs.getString(DEVICE_INSTALL_ID, "");
+        if (existing != null && !existing.trim().isEmpty()) return existing.trim();
+        String next = java.util.UUID.randomUUID().toString();
+        prefs.edit().putString(DEVICE_INSTALL_ID, next).apply();
+        return next;
+    }
+
     private static DeviceBattery readBattery(Context context) {
         Intent batteryStatus = context.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
         if (batteryStatus == null) return new DeviceBattery(null, null);
@@ -336,14 +347,20 @@ final class DeviceStatusReporter {
                 if (stat == null || isBlank(stat.getPackageName())) continue;
                 long usageMs = stat.getTotalTimeInForeground();
                 if (usageMs <= 0L) continue;
+                long lastTimeUsed = stat.getLastTimeUsed();
                 rows.add(new AppUsageRow(
                     stat.getPackageName(),
                     resolveAppLabel(context, stat.getPackageName()),
-                    usageMs
+                    usageMs,
+                    lastTimeUsed
                 ));
                 totalMs += usageMs;
             }
-            Collections.sort(rows, (left, right) -> Long.compare(right.usageMs, left.usageMs));
+            Collections.sort(rows, (left, right) -> {
+                int byUsage = Long.compare(right.usageMs, left.usageMs);
+                if (byUsage != 0) return byUsage;
+                return Long.compare(right.lastTimeUsed, left.lastTimeUsed);
+            });
             int limit = Math.min(5, rows.size());
             for (int i = 0; i < limit; i++) {
                 AppUsageRow row = rows.get(i);
@@ -352,6 +369,7 @@ final class DeviceStatusReporter {
                     .put("name", row.label)
                     .put("packageName", row.packageName)
                     .put("usageMs", row.usageMs)
+                    .put("lastTimeUsed", row.lastTimeUsed)
                     .put("percent", Math.max(0, Math.min(100, percent))));
             }
         } catch (Exception error) {
@@ -627,11 +645,13 @@ final class DeviceStatusReporter {
         final String packageName;
         final String label;
         final long usageMs;
+        final long lastTimeUsed;
 
-        AppUsageRow(String packageName, String label, long usageMs) {
+        AppUsageRow(String packageName, String label, long usageMs, long lastTimeUsed) {
             this.packageName = packageName;
             this.label = isBlank(label) ? packageName : label;
             this.usageMs = usageMs;
+            this.lastTimeUsed = lastTimeUsed;
         }
     }
 

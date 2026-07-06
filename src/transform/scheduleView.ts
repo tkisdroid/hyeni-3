@@ -4,6 +4,8 @@
  * time("HH:MM") → 한국어 라벨, 진행 상태 태그 계산.
  */
 import type { CalendarEvent } from "@/lib/api/endpoints/schedule";
+import type { SavedPlace } from "@/lib/api/endpoints/location";
+import { resolveEventPlaceLabel } from "./eventPlaceLabel";
 import { parseAppDateKey } from "./dateKey";
 
 interface CategoryStyle {
@@ -40,7 +42,10 @@ function timeToMinutes(time: string | null | undefined): number | null {
   return h * 60 + m;
 }
 
-export type ScheduleTagKind = "예정" | "진행 중" | "다녀옴";
+export type ScheduleTagKind = "예정" | "진행 중" | "다녀옴" | "확인 필요";
+
+/** 시간상 지나간 일정 태그 집합 — "다음 일정" 탐색 등에서 제외할 때 사용. */
+export const PAST_TAGS: ReadonlySet<ScheduleTagKind> = new Set(["다녀옴", "확인 필요"]);
 
 interface TagStyle {
   tag: ScheduleTagKind;
@@ -52,22 +57,34 @@ const TAG_STYLES: Record<ScheduleTagKind, TagStyle> = {
   예정: { tag: "예정", tagText: "var(--hy-accent-text)", tagBg: "var(--hy-accent-soft)" },
   "진행 중": { tag: "진행 중", tagText: "#087653", tagBg: "#E7F8F0" },
   다녀옴: { tag: "다녀옴", tagText: "#8B7E84", tagBg: "#F2EEF0" },
+  // 시간은 지났지만 위치 이력으로 방문이 확인되지 않음(앰버=주의 신호색).
+  "확인 필요": { tag: "확인 필요", tagText: "#9A6A00", tagBg: "#FFF3D6" },
 };
 
-// 이벤트 날짜/시간 vs now → 진행 상태.
-function computeTag(event: CalendarEvent, now: Date): TagStyle {
+/** 이벤트별 방문 판정(transform/visitVerify) — "다녀옴"을 위치로 확정/보류할 때 주입. */
+export type VisitMap = ReadonlyMap<string, "visited" | "unverified">;
+
+// 이벤트 날짜/시간 vs now → 진행 상태. visitMap 이 있으면 시간상 "다녀옴"을
+// 위치 검증 결과로 확정(visited=다녀옴 / unverified=확인 필요). 장소가 아예 없어
+// 맵에 없는 일정만 기존 시간 기반 "다녀옴"을 유지한다.
+function computeTag(event: CalendarEvent, now: Date, visitMap?: VisitMap): TagStyle {
+  const donePast = () => {
+    const verdict = visitMap?.get(event.id);
+    if (verdict === "unverified") return TAG_STYLES["확인 필요"];
+    return TAG_STYLES.다녀옴;
+  };
   const date = parseAppDateKey(event.date_key);
   if (!date) return TAG_STYLES.예정;
   const startMin = timeToMinutes(event.time);
   const endMin = timeToMinutes(event.end_time) ?? (startMin != null ? startMin + 60 : null);
   const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const evMidnight = date.getTime();
-  if (evMidnight < todayMidnight) return TAG_STYLES.다녀옴;
+  if (evMidnight < todayMidnight) return donePast();
   if (evMidnight > todayMidnight) return TAG_STYLES.예정;
   // 오늘
   if (startMin == null) return TAG_STYLES.예정;
   const nowMin = now.getHours() * 60 + now.getMinutes();
-  if (endMin != null && nowMin >= endMin) return TAG_STYLES.다녀옴;
+  if (endMin != null && nowMin >= endMin) return donePast();
   if (nowMin >= startMin) return TAG_STYLES["진행 중"];
   return TAG_STYLES.예정;
 }
@@ -85,9 +102,14 @@ export interface CalEventView {
   tagBg: string;
 }
 
-export function eventToView(event: CalendarEvent, now: Date): CalEventView {
+export function eventToView(
+  event: CalendarEvent,
+  now: Date,
+  visitMap?: VisitMap,
+  places?: readonly SavedPlace[],
+): CalEventView {
   const style = styleFor(event.category);
-  const tag = computeTag(event, now);
+  const tag = computeTag(event, now, visitMap);
   return {
     id: event.id,
     color: style.color,
@@ -95,7 +117,7 @@ export function eventToView(event: CalendarEvent, now: Date): CalEventView {
     emoji: event.emoji || style.emoji,
     time: formatTimeLabel(event.time),
     title: event.title || "일정",
-    place: event.location?.address ?? "",
+    place: resolveEventPlaceLabel(event.location, places),
     tag: tag.tag,
     tagText: tag.tagText,
     tagBg: tag.tagBg,
@@ -103,7 +125,12 @@ export function eventToView(event: CalendarEvent, now: Date): CalEventView {
 }
 
 /** 이벤트 배열 → date_key 별 뷰 목록(각 날짜 내부는 시간순). */
-export function groupEventsByDateKey(events: CalendarEvent[], now: Date): Record<string, CalEventView[]> {
+export function groupEventsByDateKey(
+  events: CalendarEvent[],
+  now: Date,
+  visitMap?: VisitMap,
+  places?: readonly SavedPlace[],
+): Record<string, CalEventView[]> {
   const byKey: Record<string, CalendarEvent[]> = {};
   for (const ev of events) {
     if (!ev?.date_key) continue;
@@ -114,7 +141,7 @@ export function groupEventsByDateKey(events: CalendarEvent[], now: Date): Record
     out[key] = list
       .slice()
       .sort((a, b) => (timeToMinutes(a.time) ?? 1e9) - (timeToMinutes(b.time) ?? 1e9))
-      .map((ev) => eventToView(ev, now));
+      .map((ev) => eventToView(ev, now, visitMap, places));
   }
   return out;
 }

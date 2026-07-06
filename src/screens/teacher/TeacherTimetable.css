@@ -219,6 +219,28 @@
   font-size: 15px;
   flex: none;
 }
+.tt-note > span:not(.tt-note__ico) {
+  flex: 1;
+  min-width: 0;
+}
+.tt-copy {
+  flex: none;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: #fff;
+  color: #23a876;
+  font-size: 11.5px;
+  font-weight: 800;
+  white-space: nowrap;
+  --press: 0.94;
+}
+.tt-copy:disabled {
+  opacity: 0.6;
+}
 
 /* ── 로딩 / 빈 상태 ─────────────────────────────────────────────────────── */
 .tt-empty {

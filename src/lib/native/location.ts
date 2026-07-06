@@ -14,7 +14,17 @@
  * 쓴다(레거시). 실제로는 supabaseUrl = Worker base, supabaseKey = "" 로 넘긴다.
  */
 import { getNativePlugin, isNativePlatform } from "./plugins";
-import { getApiAccessToken, getApiRefreshToken, getNativeBackendUrl } from "@/lib/api/session";
+import {
+  getApiAccessToken,
+  getApiRefreshToken,
+  getNativeBackendUrl,
+  notifyTokens,
+  setApiTokens,
+  setApiUser,
+  userFromAccessToken,
+} from "@/lib/api/session";
+import type { LocationIntervalMode } from "@/lib/api/endpoints/location";
+import { shouldAdoptNativeSessionTokens } from "@/transform/nativeTokenSync";
 
 const PLUGIN_NAME = "BackgroundLocation";
 
@@ -30,14 +40,16 @@ interface StartServiceOptions {
   accessToken: string;
   refreshToken: string;
   role: LocationRole;
+  intervalMode: LocationIntervalMode;
 }
 
 /** BackgroundLocation 커스텀 플러그인(사용 메서드만). */
 interface BackgroundLocationPlugin {
   startService(options: StartServiceOptions): Promise<{ status?: string }>;
   requestCurrentLocation(options: StartServiceOptions): Promise<{ status?: string }>;
-  stopService(): Promise<{ status?: string }>;
+  stopService(options?: { clearSession?: boolean }): Promise<{ status?: string }>;
   updateToken(options: { accessToken: string; refreshToken?: string }): Promise<{ status?: string }>;
+  getSessionTokens?(): Promise<{ accessToken?: string; refreshToken?: string; serviceEnabled?: boolean }>;
 }
 
 /** startLocationTracking/requestImmediateLocation 호출 시 넘기는 최소 컨텍스트. */
@@ -46,6 +58,8 @@ export interface LocationTrackingContext {
   userId: string;
   /** 기본 "child"(아이 기기 추적). */
   role?: LocationRole;
+  /** 부모가 설정한 위치 전송 주기. 기본 balanced. */
+  intervalMode?: LocationIntervalMode;
 }
 
 // 세션(session.ts)에서 base·토큰을 읽어 네이티브 파라미터로 조립. 항상 새 객체(불변).
@@ -59,6 +73,7 @@ function buildServiceOptions(ctx: LocationTrackingContext): StartServiceOptions 
     accessToken: getApiAccessToken() ?? "",
     refreshToken: getApiRefreshToken() ?? "",
     role: ctx.role ?? "child",
+    intervalMode: ctx.intervalMode ?? "balanced",
   };
 }
 
@@ -84,11 +99,11 @@ export async function startLocationTracking(ctx: LocationTrackingContext): Promi
  * 백그라운드 위치 서비스 중지(로그아웃·역할 전환 시 호출).
  * 웹/iOS 에선 no-op.
  */
-export async function stopLocationTracking(): Promise<boolean> {
+export async function stopLocationTracking(options: { clearSession?: boolean } = {}): Promise<boolean> {
   const plugin = getNativePlugin<BackgroundLocationPlugin>(PLUGIN_NAME);
   if (!plugin) return false;
   try {
-    await plugin.stopService();
+    await plugin.stopService({ clearSession: options.clearSession === true });
     return true;
   } catch (error) {
     console.error("[location] 백그라운드 위치 서비스 중지 실패:", error);
@@ -130,6 +145,44 @@ export async function syncNativeLocationToken(): Promise<void> {
     });
   } catch (error) {
     console.error("[location] 네이티브 토큰 동기화 실패:", error);
+  }
+}
+
+/**
+ * 백그라운드 위치 서비스가 WebView 없이 refresh token 을 회전한 경우, WebView localStorage 의
+ * refresh token 이 낡아져 다음 API 401 때 로그아웃될 수 있다. refresh 직전 네이티브가 가진
+ * 최신 토큰을 보수적으로 채택해 저장소 불일치를 복구한다.
+ */
+export async function adoptNativeLocationSessionTokens(): Promise<boolean> {
+  const plugin = getNativePlugin<BackgroundLocationPlugin>(PLUGIN_NAME);
+  if (!plugin || typeof plugin.getSessionTokens !== "function") return false;
+  try {
+    const native = await plugin.getSessionTokens();
+    const nativeAccess = native?.accessToken?.trim() ?? "";
+    const nativeRefresh = native?.refreshToken?.trim() ?? "";
+    const nativeServiceEnabled = native?.serviceEnabled === true;
+    const currentAccess = getApiAccessToken();
+    const currentRefresh = getApiRefreshToken();
+    if (
+      !shouldAdoptNativeSessionTokens({
+        currentAccessToken: currentAccess,
+        currentRefreshToken: currentRefresh,
+        nativeAccessToken: nativeAccess,
+        nativeRefreshToken: nativeRefresh,
+        nativeServiceEnabled,
+      })
+    ) {
+      return false;
+    }
+    const nativeUser = userFromAccessToken(nativeAccess);
+    if (!nativeUser) return false;
+    setApiTokens({ access: nativeAccess, refresh: nativeRefresh });
+    setApiUser(nativeUser);
+    notifyTokens();
+    return true;
+  } catch (error) {
+    console.error("[location] 네이티브 세션 토큰 채택 실패:", error);
+    return false;
   }
 }
 

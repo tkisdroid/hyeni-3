@@ -1,26 +1,41 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronLeft, Map } from "lucide-react";
+import { ChevronLeft, Map as MapIcon } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { useActiveChild } from "@/app/activeChild";
 import { MapPickerSheet } from "@/components/MapPickerSheet";
 import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "@/queries/useFamily";
 import { useSavedPlaces } from "@/queries/useLocation";
-import { useSaveEventWithChildren } from "@/queries/useSchedule";
+import { useEvents, useSaveEventsWithChildrenBatch } from "@/queries/useSchedule";
+import { useEntitlement } from "@/queries/useEntitlement";
 import {
   notifOverrideToReminderMinutes,
   reminderMinutesToNotifOverride,
   type CalendarEvent,
 } from "@/lib/api/endpoints/schedule";
+import { ApiError } from "@/lib/api/errors";
 import {
-  addDaysToDateKey,
   dateInputValueToDateKey,
   dateKeyToDateInputValue,
-  dateToDateKey,
   parseAppDateKey,
   todayDateKey,
 } from "@/transform/dateKey";
+import {
+  buildEventLocation,
+  buildOccurrenceDateKeys,
+  WEEKDAY_OPTIONS,
+  type RepeatMode,
+  type WeekdayIndex,
+} from "@/transform/eventRecurrence";
+import { searchSavedPlacesForSchedule } from "@/transform/eventPlaceSearch";
+import { resolveInitialAssignedChildIds } from "@/transform/eventAssignment";
+import {
+  findFutureSeriesEvents,
+  resolveSeriesEditTargets,
+  type SeriesEditScope,
+} from "@/transform/eventSeries";
+import { scheduleLimitFor, TIERS } from "@/transform/tierPolicy";
 import "./EventForm.css";
 
 type Mode = "create" | "edit";
@@ -41,8 +56,7 @@ const CATEGORIES = [
   { id: "other", label: "기타", emoji: "🌟", color: "#7C5CE1", soft: "#F1ECFF" },
 ] as const;
 
-type Repeat = "없음" | "매일" | "매주" | "매월";
-const REPEATS: Repeat[] = ["없음", "매일", "매주", "매월"];
+const REPEATS: RepeatMode[] = ["없음", "매일", "매주", "매월", "요일"];
 
 const PREALARMS: Array<{ label: string; minutes: number | null }> = [
   { label: "없음", minutes: null },
@@ -54,26 +68,24 @@ const PREALARMS: Array<{ label: string; minutes: number | null }> = [
 const IDLE_BG = "#F3EEF1";
 const IDLE_COLOR = "#8B7E84";
 
-/** 아이 member id 초기 선택 집합(edit 모드의 기존 events_children.child_id). */
-function initialChildIds(event?: CalendarEvent): Set<string> {
+function initialChildIdList(event?: CalendarEvent): string[] {
   const ids = (event?.events_children ?? [])
     .map((c) => c.child_id)
     .filter((id): id is string => typeof id === "string" && id.length > 0);
-  return new Set(ids);
+  return ids;
 }
 
-/** 반복 설정 → 발생일 date_key 목록(생성 전용, 서버는 반복 컬럼이 없어 행 단위로 확장). */
-function buildOccurrenceDateKeys(baseDateKey: string, repeat: Repeat): string[] {
-  if (repeat === "매일") return Array.from({ length: 14 }, (_, i) => addDaysToDateKey(baseDateKey, i));
-  if (repeat === "매주") return Array.from({ length: 8 }, (_, i) => addDaysToDateKey(baseDateKey, i * 7));
-  if (repeat === "매월") {
-    const base = parseAppDateKey(baseDateKey);
-    if (!base) return [baseDateKey];
-    return Array.from({ length: 6 }, (_, i) =>
-      dateToDateKey(new Date(base.getFullYear(), base.getMonth() + i, base.getDate())),
-    );
-  }
-  return [baseDateKey];
+function uniqueEventsById(events: CalendarEvent[]): CalendarEvent[] {
+  const map = new Map<string, CalendarEvent>();
+  for (const event of events) map.set(event.id, event);
+  return [...map.values()];
+}
+
+function weekdayFromDateInput(value: string): WeekdayIndex | null {
+  const dateKey = dateInputValueToDateKey(value);
+  const date = dateKey ? parseAppDateKey(dateKey) : null;
+  if (!date) return null;
+  return date.getDay() as WeekdayIndex;
 }
 
 export function EventForm() {
@@ -94,23 +106,45 @@ export function EventForm() {
   const savedPlacesQuery = useSavedPlaces();
   const savedPlaces = savedPlacesQuery.data ?? [];
 
-  const saveEvent = useSaveEventWithChildren();
+  const eventsQuery = useEvents();
+  const { tier } = useEntitlement();
+  const saveEvents = useSaveEventsWithChildrenBatch();
   const [busy, setBusy] = useState(false);
+  const [seriesScopePrompt, setSeriesScopePrompt] = useState<{ futureCount: number } | null>(null);
+  const { activeChild } = useActiveChild();
+  const editingNeedsAssignment =
+    mode === "edit" && !!editing && editing.is_family_event !== true && initialChildIdList(editing).length === 0;
+  const initialAssignedChildIds = useMemo(
+    () =>
+      resolveInitialAssignedChildIds({
+        existingChildIds: initialChildIdList(editing ?? undefined),
+        needsAssignment: editingNeedsAssignment,
+        activeChildId: activeChild?.id ?? null,
+        members: children,
+      }),
+    [activeChild?.id, children, editing, editingNeedsAssignment],
+  );
 
   // ── 폼 상태(초기값은 edit 이면 기존 일정, create 면 전달된 dateKey/오늘) ──
   const [title, setTitle] = useState(() => editing?.title ?? "");
   const [selectedChildIds, setSelectedChildIds] = useState<Set<string>>(() =>
-    initialChildIds(editing ?? undefined),
+    new Set(initialAssignedChildIds),
   );
   // 새 일정 기본 배정 = 전역 활성 아이(가족 로드 후 1회만; 사용자가 건드리면 존중).
-  // 빈 선택은 "가족 공유(모든 아이 표시)"라 의도치 않은 전체 노출을 막는다.
-  const { activeChild } = useActiveChild();
+  // 빈 선택은 "가족 공유(모든 아이 표시)"로 저장되므로 기본값을 활성 아이로 둔다.
   const childDefaultDone = useRef(false);
+  const editDefaultDone = useRef(false);
   useEffect(() => {
     if (childDefaultDone.current || mode !== "create" || !activeChild) return;
     childDefaultDone.current = true;
     setSelectedChildIds((prev) => (prev.size > 0 ? prev : new Set([activeChild.id])));
   }, [mode, activeChild]);
+  useEffect(() => {
+    if (editDefaultDone.current || mode !== "edit" || !editingNeedsAssignment) return;
+    if (initialAssignedChildIds.length === 0) return;
+    editDefaultDone.current = true;
+    setSelectedChildIds((prev) => (prev.size > 0 ? prev : new Set(initialAssignedChildIds)));
+  }, [editingNeedsAssignment, initialAssignedChildIds, mode]);
   const [dateValue, setDateValue] = useState(() => {
     if (editing) return dateKeyToDateInputValue(editing.date_key);
     const key = nav?.dateKey ?? todayDateKey();
@@ -125,12 +159,36 @@ export function EventForm() {
       ? { lat: editing.location.lat, lng: editing.location.lng }
       : null,
   );
+  const [placeSuggestionsOpen, setPlaceSuggestionsOpen] = useState(false);
   const [showMapPicker, setShowMapPicker] = useState(false);
-  const [repeat, setRepeat] = useState<Repeat>("없음");
+  const [repeat, setRepeat] = useState<RepeatMode>("없음");
+  const [repeatWeekdays, setRepeatWeekdays] = useState<Set<WeekdayIndex>>(() => new Set());
   const [prealarm, setPrealarm] = useState<number | null>(() =>
     notifOverrideToReminderMinutes(editing?.notif_override),
   );
   const [memo, setMemo] = useState(() => editing?.memo ?? "");
+
+  const placeSuggestions = useMemo(
+    () => searchSavedPlacesForSchedule(savedPlaces, place),
+    [savedPlaces, place],
+  );
+  const showPlaceSuggestions = placeSuggestionsOpen && placeSuggestions.length > 0;
+
+  const selectSavedPlace = (p: (typeof savedPlaces)[number]) => {
+    const coord =
+      Number.isFinite(p.location?.lat) && Number.isFinite(p.location?.lng)
+        ? { lat: p.location.lat, lng: p.location.lng }
+        : null;
+    setPlace(p.name);
+    setPlaceCoord(coord);
+    setPlaceSuggestionsOpen(false);
+  };
+
+  const handlePlaceChange = (nextPlace: string) => {
+    setPlace(nextPlace);
+    setPlaceSuggestionsOpen(true);
+    setPlaceCoord(null);
+  };
 
   const toggleChild = (id: string) =>
     setSelectedChildIds((prev) => {
@@ -140,7 +198,25 @@ export function EventForm() {
       return next;
     });
 
-  const handleSave = async () => {
+  const handleRepeatSelect = (nextRepeat: RepeatMode) => {
+    setRepeat(nextRepeat);
+    if (nextRepeat !== "요일") return;
+    setRepeatWeekdays((prev) => {
+      if (prev.size > 0) return prev;
+      const weekday = weekdayFromDateInput(dateValue);
+      return weekday === null ? prev : new Set([weekday]);
+    });
+  };
+
+  const toggleRepeatWeekday = (weekday: WeekdayIndex) =>
+    setRepeatWeekdays((prev) => {
+      const next = new Set(prev);
+      if (next.has(weekday)) next.delete(weekday);
+      else next.add(weekday);
+      return next;
+    });
+
+  const handleSave = async (scope?: SeriesEditScope) => {
     if (busy) return;
     const trimmedTitle = title.trim();
     if (!trimmedTitle) {
@@ -160,47 +236,88 @@ export function EventForm() {
       show("가족 정보를 불러오지 못했어요", "⚠️");
       return;
     }
+    const repeatWeekdayList = Array.from(repeatWeekdays);
+    if (mode === "create" && repeat === "요일" && repeatWeekdayList.length === 0) {
+      show("반복할 요일을 선택해 주세요", "📅");
+      return;
+    }
 
     const catStyle = CATEGORIES.find((c) => c.id === category);
     const childIds = Array.from(selectedChildIds);
+    if (editingNeedsAssignment && childIds.length === 0) {
+      show("배정할 아이를 선택해 주세요", "🧒");
+      return;
+    }
+    const familyAll = !editingNeedsAssignment && childIds.length === 0;
     const baseFields = {
       title: trimmedTitle,
       time: timeValue,
       category,
       emoji: catStyle?.emoji ?? "🌟",
       memo: memo.trim(),
-      location: place.trim()
-        ? { address: place.trim(), ...(placeCoord ? { lat: placeCoord.lat, lng: placeCoord.lng } : {}) }
-        : null,
+      location: buildEventLocation(place, placeCoord),
       notif_override: reminderMinutesToNotifOverride(prealarm),
-      is_family_event: category === "family",
+      is_family_event: familyAll,
     };
 
+    const keys = mode === "create" ? buildOccurrenceDateKeys(dateKey, repeat, repeatWeekdayList) : [];
+    if (mode === "create" && tier !== TIERS.UNKNOWN) {
+      const limit = scheduleLimitFor(tier);
+      const currentCount = eventsQuery.data?.length ?? 0;
+      if (currentCount + keys.length > limit) {
+        show(`현재 플랜에서는 일정 ${limit}개까지 저장할 수 있어요`, "👑");
+        return;
+      }
+    }
+
+    if (mode === "edit" && editing && !scope) {
+      const sourceEvents = uniqueEventsById([...(eventsQuery.data ?? []), editing]);
+      const futureTargets = findFutureSeriesEvents(sourceEvents, editing);
+      if (futureTargets.length > 1) {
+        setSeriesScopePrompt({ futureCount: futureTargets.length - 1 });
+        return;
+      }
+    }
+
+    setSeriesScopePrompt(null);
     setBusy(true);
     try {
       if (mode === "edit" && editing) {
-        await saveEvent.mutateAsync({
-          event: { id: editing.id, family_id: familyId, date_key: dateKey, ...baseFields },
-          childIds,
-          familyAll: false,
-          expectedUpdatedAt: editing.updated_at ?? null,
-        });
-        show("일정을 수정했어요", "🗓️");
+        const sourceEvents = uniqueEventsById([...(eventsQuery.data ?? []), editing]);
+        const targets = resolveSeriesEditTargets(sourceEvents, editing, scope ?? "single");
+        await saveEvents.mutateAsync(
+          targets.map((target) => ({
+            event: {
+              id: target.id,
+              family_id: familyId,
+              date_key: target.id === editing.id ? dateKey : target.date_key,
+              ...baseFields,
+            },
+            childIds,
+            familyAll,
+            expectedUpdatedAt: target.updated_at ?? null,
+          })),
+        );
+        show(
+          targets.length > 1
+            ? `이 일정과 이후 반복 일정 ${targets.length - 1}개를 수정했어요`
+            : "일정을 수정했어요",
+          "🗓️",
+        );
       } else {
-        const keys = buildOccurrenceDateKeys(dateKey, repeat);
-        for (const dk of keys) {
-          await saveEvent.mutateAsync({
+        await saveEvents.mutateAsync(
+          keys.map((dk) => ({
             event: { id: crypto.randomUUID(), family_id: familyId, date_key: dk, ...baseFields },
             childIds,
-            familyAll: false,
+            familyAll,
             expectedUpdatedAt: null,
-          });
-        }
+          })),
+        );
         show(keys.length > 1 ? `${keys.length}개 일정을 저장했어요` : "일정을 저장했어요", "🗓️");
       }
       navigate(-1);
-    } catch {
-      show("일정 저장에 실패했어요. 다시 시도해 주세요", "⚠️");
+    } catch (e) {
+      show(e instanceof ApiError ? e.message : "일정 저장에 실패했어요. 다시 시도해 주세요", "⚠️");
     } finally {
       setBusy(false);
     }
@@ -265,7 +382,9 @@ export function EventForm() {
             </div>
           )}
           <div className="ef-note">
-            {selectedChildIds.size === 0
+            {editingNeedsAssignment
+              ? "이 일정은 배정이 빠져 있어요. 아이를 선택해야 저장돼요"
+              : selectedChildIds.size === 0
               ? "아무도 선택하지 않으면 가족 공유 일정으로 모든 아이에게 보여요"
               : "여러 아이를 함께 배정할 수 있어요"}
           </div>
@@ -342,14 +461,10 @@ export function EventForm() {
                       if (active) {
                         setPlace("");
                         setPlaceCoord(null);
+                        setPlaceSuggestionsOpen(false);
                         return;
                       }
-                      setPlace(p.name);
-                      setPlaceCoord(
-                        typeof p.location?.lat === "number" && typeof p.location?.lng === "number"
-                          ? { lat: p.location.lat, lng: p.location.lng }
-                          : null,
-                      );
+                      selectSavedPlace(p);
                     }}
                   >
                     {label}
@@ -358,23 +473,52 @@ export function EventForm() {
               })}
             </div>
           )}
-          <div className="ef-row">
-            <input
-              className="ef-input"
-              value={place}
-              onChange={(e) => {
-                setPlace(e.target.value);
-                if (!e.target.value.trim()) setPlaceCoord(null); // 비우면 좌표도 해제
-              }}
-              placeholder="예) 선부동 뮤직스쿨"
-            />
+          <div className="ef-row ef-place-row">
+            <div className="ef-place-field">
+              <input
+                className="ef-input"
+                value={place}
+                onFocus={() => setPlaceSuggestionsOpen(true)}
+                onBlur={() => window.setTimeout(() => setPlaceSuggestionsOpen(false), 120)}
+                onChange={(e) => handlePlaceChange(e.target.value)}
+                placeholder="예) 피아노 학원"
+                aria-autocomplete="list"
+                aria-expanded={showPlaceSuggestions}
+              />
+              {showPlaceSuggestions && (
+                <div
+                  className="ef-place-suggestions"
+                  role="listbox"
+                  aria-label="저장된 장소 검색 결과"
+                >
+                  {placeSuggestions.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className="ef-place-option hy-press"
+                      role="option"
+                      aria-selected={place.trim() === p.name}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => selectSavedPlace(p)}
+                    >
+                      <span className="ef-place-option-name">
+                        {p.is_home ? "🏠" : "📍"} {p.name}
+                      </span>
+                      {p.location.address && (
+                        <span className="ef-place-option-address">{p.location.address}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <button
               type="button"
               className="ef-mapbtn hy-press"
               aria-label="지도에서 장소 지정"
               onClick={() => setShowMapPicker(true)}
             >
-              <Map size={17} strokeWidth={2.2} />
+              <MapIcon size={17} strokeWidth={2.2} />
               지도
             </button>
           </div>
@@ -404,20 +548,40 @@ export function EventForm() {
                           }
                         : { background: IDLE_BG, color: IDLE_COLOR, border: "1.5px solid transparent" }
                     }
-                    onClick={() => setRepeat(r)}
+                    onClick={() => handleRepeatSelect(r)}
                   >
-                    {r}
+                    {r === "요일" ? "요일 선택" : r}
                   </button>
                 );
               })}
             </div>
+            {repeat === "요일" && (
+              <div className="ef-weekdays" role="group" aria-label="반복 요일">
+                {WEEKDAY_OPTIONS.map((day) => {
+                  const active = repeatWeekdays.has(day.value);
+                  return (
+                    <button
+                      key={day.value}
+                      type="button"
+                      className={`ef-weekday hy-press${active ? " is-active" : ""}`}
+                      aria-pressed={active}
+                      onClick={() => toggleRepeatWeekday(day.value)}
+                    >
+                      {day.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             {repeat !== "없음" && (
               <div className="ef-note">
                 {repeat === "매일"
                   ? "오늘부터 14일간"
                   : repeat === "매주"
                     ? "이 요일로 8주간"
-                    : "이 날짜로 6개월간"}{" "}
+                    : repeat === "요일"
+                      ? "선택한 요일로 8주간"
+                      : "이 날짜로 6개월간"}{" "}
                 일정이 만들어져요
               </div>
             )}
@@ -471,8 +635,8 @@ export function EventForm() {
         </div>
 
         {/* 저장 */}
-        <button type="button" className="ef-save hy-press" onClick={handleSave} disabled={busy}>
-          {busy ? "저장 중…" : mode === "edit" ? "수정 저장" : "일정 저장"}
+        <button type="button" className="ef-save hy-press" onClick={() => void handleSave()} disabled={busy}>
+          {busy ? "저장 중…" : editingNeedsAssignment ? "배정 저장" : mode === "edit" ? "수정 저장" : "일정 저장"}
         </button>
       </div>
 
@@ -488,6 +652,51 @@ export function EventForm() {
             setShowMapPicker(false);
           }}
         />
+      )}
+
+      {seriesScopePrompt && (
+        <div className="ef-scope-backdrop" role="presentation">
+          <section
+            className="ef-scope-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ef-scope-title"
+          >
+            <div id="ef-scope-title" className="ef-scope-title">
+              반복 일정 수정
+            </div>
+            <p className="ef-scope-desc">
+              같은 반복으로 이어지는 이후 일정 {seriesScopePrompt.futureCount}개가 있어요. 수정 범위를
+              선택해 주세요.
+            </p>
+            <div className="ef-scope-actions">
+              <button
+                type="button"
+                className="ef-scope-primary hy-press"
+                onClick={() => void handleSave("single")}
+                disabled={busy}
+              >
+                이 일정만 수정
+              </button>
+              <button
+                type="button"
+                className="ef-scope-secondary hy-press"
+                onClick={() => void handleSave("future")}
+                disabled={busy}
+              >
+                이후 반복 일정도 수정
+              </button>
+              <button
+                type="button"
+                className="ef-scope-cancel hy-press"
+                onClick={() => setSeriesScopePrompt(null)}
+                disabled={busy}
+              >
+                취소
+              </button>
+            </div>
+          </section>
+        </div>
       )}
     </div>
   );

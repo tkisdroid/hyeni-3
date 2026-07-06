@@ -5,7 +5,10 @@ import { useToast } from "@/app/toast";
 import { KakaoMap } from "@/components/KakaoMap";
 import { loadKakaoMaps } from "@/lib/kakaoMap";
 import { hasKakaoKey } from "@/config/env";
-import { useCreateSavedPlace } from "@/queries/useLocation";
+import { useCreateSavedPlace, useSavedPlaces } from "@/queries/useLocation";
+import { useEntitlement } from "@/queries/useEntitlement";
+import { placeLimitFor, TIERS } from "@/transform/tierPolicy";
+import { ApiError } from "@/lib/api/errors";
 import "./PlaceForm.css";
 
 /** 장소 종류 — 선택 시 신호색으로 채워진다(집=민트/학원=라벤더/자주=파랑). 위험 구역은 저장장소 API에 카테고리가 없어 별도 화면(위험구역 추가)에서 등록한다. */
@@ -29,6 +32,8 @@ export function PlaceForm() {
   const navigate = useNavigate();
   const { show } = useToast();
   const createPlace = useCreateSavedPlace();
+  const placesQuery = useSavedPlaces();
+  const { tier } = useEntitlement();
 
   const [placeName, setPlaceName] = useState("");
   const [address, setAddress] = useState("");
@@ -177,6 +182,14 @@ export function PlaceForm() {
       show("장소 이름을 입력해 주세요", "✏️");
       return;
     }
+    if (tier !== TIERS.UNKNOWN) {
+      const limit = placeLimitFor(tier);
+      const count = placesQuery.data?.length ?? 0;
+      if (count >= limit) {
+        show(`현재 플랜에서는 장소 ${limit}개까지 저장할 수 있어요`, "👑");
+        return;
+      }
+    }
     createPlace.mutate(
       {
         name,
@@ -192,7 +205,7 @@ export function PlaceForm() {
           show(`‘${name}’ 장소를 저장했어요`, "📍");
           navigate(-1);
         },
-        onError: () => show("장소 저장에 실패했어요", "⚠️"),
+        onError: (e) => show(e instanceof ApiError ? e.message : "장소 저장에 실패했어요", "⚠️"),
       },
     );
   };

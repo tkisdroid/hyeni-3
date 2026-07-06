@@ -116,6 +116,7 @@ public class ForceRingService extends Service {
 
         Notification notif = new NotificationCompat.Builder(this, NotificationHelper.FORCE_RING_CHANNEL_ID)
                 .setSmallIcon(iconRes)
+                .setLargeIcon(NotificationHelper.largeIcon(this))
                 .setColor(ContextCompat.getColor(this, R.color.notification_accent))
                 .setContentTitle(contentTitle)
                 .setContentText(message != null ? message : "")

@@ -5,11 +5,14 @@ import { asset } from "@/lib/assets";
 import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "@/queries/useFamily";
 import { useEvents, useDailySupplies } from "@/queries/useSchedule";
+import { useSavedPlaces } from "@/queries/useLocation";
 import { useAiMessages, useAiFriendPublicSettings, useSendChildChat } from "@/queries/useAi";
 import { messagesToBubbles, type ChatBubble } from "@/transform/aiView";
-import { groupEventsByDateKey } from "@/transform/scheduleView";
+import { groupEventsByDateKey, PAST_TAGS } from "@/transform/scheduleView";
 import { todayDateKey } from "@/transform/dateKey";
+import { filterEventsForChild } from "@/transform/eventScope";
 import { isApiError } from "@/lib/api/errors";
+import { resolveAiFriendDisplayName } from "@/transform/aiFriendName";
 import {
   AI_FRIEND_PERSONAS,
   DEFAULT_CHARACTER,
@@ -62,22 +65,30 @@ export function AiFriendChat() {
     return candidates.find((c) => c && AI_FRIEND_PERSONAS.some((p) => p.emoji === c)) ?? DEFAULT_CHARACTER;
   }, [navState.characterEmoji, familyId, userId, familyEmoji]);
   const persona = personaFor(character);
-  const friendName = navState.friendName || publicSettings?.ai_friend_name || persona.name;
+  const childName =
+    userId ? family?.members.find((m) => m.role === "child" && m.user_id === userId)?.name ?? "" : "";
+  const friendName = resolveAiFriendDisplayName({
+    savedName: navState.friendName || publicSettings?.ai_friend_name,
+    childName,
+    fallbackName: persona.name,
+  });
   const animalSrc = asset(`animal/${persona.animal}.webp`);
 
   // 오늘 일정·준비물(내 것) — AI 가 먼저 물어보는 선제 인사와 제안칩의 컨텍스트(로컬 생성 · 크레딧 0).
   const { data: events } = useEvents();
+  const { data: places } = useSavedPlaces();
   const now = useMemo(() => new Date(), []);
   const todayKey = useMemo(() => todayDateKey(now), [now]);
   const suppliesQuery = useDailySupplies(todayKey);
   const myMemberId = family?.members.find((m) => m.role === "child" && m.user_id === userId)?.id ?? null;
   const nextEvent = useMemo(() => {
-    const list = groupEventsByDateKey(events ?? [], now)[todayKey] ?? [];
-    return list.find((e) => e.tag !== "다녀옴") ?? null;
-  }, [events, now, todayKey]);
+    const list =
+      groupEventsByDateKey(filterEventsForChild(events ?? [], myMemberId), now, undefined, places)[todayKey] ?? [];
+    return list.find((e) => !PAST_TAGS.has(e.tag)) ?? null;
+  }, [events, myMemberId, now, todayKey, places]);
   const pendingSupply = useMemo(() => {
     const all = suppliesQuery.data ?? [];
-    const mine = myMemberId ? all.filter((s) => s.child_user_id === myMemberId) : all;
+    const mine = myMemberId ? all.filter((s) => s.child_user_id === myMemberId) : [];
     return mine.find((s) => !s.done) ?? null;
   }, [suppliesQuery.data, myMemberId]);
 

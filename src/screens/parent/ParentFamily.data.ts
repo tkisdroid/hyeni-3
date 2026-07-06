@@ -15,7 +15,7 @@ export type Child = {
   id: string;
   name: string;
   info: string;
-  avatar: string; // asset path (animal/*.webp)
+  avatar: string; // asset path
   soft: string; // 아바타 타일 배경
   battery: number;
   batBg: string; // 배터리 칩 배경(신호색)
@@ -33,7 +33,7 @@ export const children: Child[] = [
     id: "ch1",
     name: "지우",
     info: "3학년 · 햇살초등학교",
-    avatar: "animal/rabbit.webp",
+    avatar: "mascot/wave.webp",
     soft: "#FDE7F1",
     battery: 82,
     batBg: "#E7F8F0",

@@ -7,6 +7,7 @@
  * 읽고(GET) → 항목 수정 → 다시 씀(PUT)"의 read-modify-write 로 실제 서버에 반영된다.
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 import { qk } from "./keys";
 import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "./useFamily";
@@ -24,11 +25,42 @@ import {
   encodeSupplyItems,
   parseSupplyRowId,
   newSupplyItemId,
+  type CalendarEvent,
   type NewEventRow,
   type SaveEventInput,
   type DailySupply,
   type SupplyItem,
 } from "@/lib/api/endpoints/schedule";
+
+function upsertCachedEvents(qc: QueryClient, familyId: string | null | undefined, saved: CalendarEvent[]) {
+  const valid = saved.filter((event) => event?.id);
+  if (valid.length === 0) return;
+  qc.setQueryData<CalendarEvent[]>(qk.events(familyId ?? ""), (prev) => {
+    if (!prev) return valid;
+    const byId = new Map(prev.map((event) => [event.id, event]));
+    for (const event of valid) byId.set(event.id, event);
+    return [...byId.values()];
+  });
+}
+
+function removeCachedEvent(qc: QueryClient, familyId: string | null | undefined, eventId: string) {
+  qc.setQueryData<CalendarEvent[]>(qk.events(familyId ?? ""), (prev) =>
+    prev ? prev.filter((event) => event.id !== eventId) : prev,
+  );
+}
+
+async function saveEventsWithChildren(inputs: SaveEventInput[]): Promise<CalendarEvent[]> {
+  if (inputs.length === 0) return [];
+  const results = await Promise.allSettled(inputs.map((input) => saveEventWithChildren(input)));
+  const saved: CalendarEvent[] = [];
+  for (const result of results) {
+    if (result.status === "rejected") {
+      throw result.reason instanceof Error ? result.reason : new Error("일정 저장에 실패했어요");
+    }
+    saved.push(result.value);
+  }
+  return saved;
+}
 
 /** 가족 일정 목록. */
 export function useEvents() {
@@ -57,7 +89,7 @@ export function useCreateEvent() {
   return useMutation({
     mutationFn: (row: Omit<NewEventRow, "family_id">) =>
       createEventSimple({ ...row, id: row.id ?? crypto.randomUUID(), family_id: familyId as string }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.events(familyId ?? "") }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: qk.events(familyId ?? "") }),
   });
 }
 
@@ -68,7 +100,7 @@ export function useUpdateEvent() {
   return useMutation({
     mutationFn: (input: { id: string; fields: Partial<NewEventRow> }) =>
       updateEvent(input.id, input.fields),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.events(familyId ?? "") }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: qk.events(familyId ?? "") }),
   });
 }
 
@@ -78,7 +110,10 @@ export function useDeleteEvent() {
   const { familyId } = useAuth();
   return useMutation({
     mutationFn: (id: string) => deleteEvent(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.events(familyId ?? "") }),
+    onSuccess: (_res, id) => {
+      removeCachedEvent(qc, familyId, id);
+      void qc.invalidateQueries({ queryKey: qk.events(familyId ?? "") });
+    },
   });
 }
 
@@ -88,7 +123,23 @@ export function useSaveEventWithChildren() {
   const { familyId } = useAuth();
   return useMutation({
     mutationFn: (input: SaveEventInput) => saveEventWithChildren(input),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.events(familyId ?? "") }),
+    onSuccess: (saved) => {
+      upsertCachedEvents(qc, familyId, [saved]);
+      void qc.invalidateQueries({ queryKey: qk.events(familyId ?? "") });
+    },
+  });
+}
+
+/** 반복/AI 일정처럼 여러 행을 저장할 때: 요청은 병렬, 캐시 갱신·재조회는 1회만. */
+export function useSaveEventsWithChildrenBatch() {
+  const qc = useQueryClient();
+  const { familyId } = useAuth();
+  return useMutation({
+    mutationFn: (inputs: SaveEventInput[]) => saveEventsWithChildren(inputs),
+    onSuccess: (saved) => {
+      upsertCachedEvents(qc, familyId, saved);
+      void qc.invalidateQueries({ queryKey: qk.events(familyId ?? "") });
+    },
   });
 }
 

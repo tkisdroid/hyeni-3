@@ -153,16 +153,22 @@
   font-weight: 700;
 }
 
-/* ── 첨부(준비 중) ──────────────────────────────────────────────────────── */
+/* ── 첨부 ──────────────────────────────────────────────────────── */
 .tn-attach {
+  width: 100%;
+  text-align: left;
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
   border-radius: 16px;
   border: 1.5px dashed var(--line-strong);
-  background: rgba(255, 255, 255, 0.5);
-  opacity: 0.75;
+  background: rgba(255, 255, 255, 0.76);
+  box-sizing: border-box;
+  --press: 0.98;
+}
+.tn-attach:disabled {
+  opacity: 0.55;
 }
 .tn-attach__icon {
   width: 38px;
@@ -199,6 +205,42 @@
   color: var(--fg-muted);
   font-size: 10.5px;
   font-weight: 800;
+}
+.tn-attach-list {
+  margin-top: 9px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tn-file-chip {
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 8px 7px 10px;
+  border-radius: 999px;
+  background: var(--lav-soft);
+  color: var(--lav-text);
+  font-size: 12px;
+  font-weight: 800;
+}
+.tn-file-chip__name {
+  min-width: 0;
+  max-width: 210px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tn-file-chip__x {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(124, 92, 225, 0.16);
+  color: var(--lav-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  --press: 0.85;
 }
 
 /* ── 캘린더 반영 토글 ───────────────────────────────────────────────────── */

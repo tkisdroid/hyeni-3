@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
-import { useParentAlerts, useMarkAlertRead } from "@/queries/useNotifications";
+import { Loading } from "@/components/ui/Loading";
+import { useParentAlerts, useMarkAlertRead, useMarkAllAlertsRead } from "@/queries/useNotifications";
 import { mapAlertsToGroups, type AlertItemView } from "@/transform/notificationsView";
 import type { ParentAlert } from "@/lib/api/endpoints/notifications";
 import "./Notifications.css";
@@ -71,6 +72,7 @@ export function Notifications() {
   const { show } = useToast();
   const { data: alerts, isLoading, isError, refetch } = useParentAlerts();
   const markRead = useMarkAlertRead();
+  const markAll = useMarkAllAlertsRead();
 
   const list = useMemo(() => alerts ?? [], [alerts]);
   // 알림이 바뀔 때만 now 재계산(상대시간/그룹 안정화).
@@ -98,19 +100,18 @@ export function Notifications() {
   );
   const groups = useMemo(() => mapAlertsToGroups(filteredList, now), [filteredList, now]);
 
-  /** "모두 읽음" — 읽지 않은 알림만 각각 읽음 처리(사용자 버튼 액션).
-   *  모든 요청 완료까지 기다려 정확히 안내한다(완료 전 성공 토스트·부분실패 은폐 방지). */
-  const markAllRead = async () => {
+  /** "모두 읽음" — 서버 1요청(read-all) + 낙관적 업데이트(훅)라 목록이 즉시 지워진다.
+   *  실패하면 훅이 캐시를 원복하고 여기서 정직하게 안내한다. */
+  const markAllRead = () => {
     const unread = list.filter((a) => !a.read);
     if (unread.length === 0) {
       show("읽지 않은 알림이 없어요", "🔔");
       return;
     }
-    const results = await Promise.allSettled(unread.map((a) => markRead.mutateAsync(a.id)));
-    const failed = results.filter((r) => r.status === "rejected").length;
-    if (failed === 0) show("모든 알림을 읽음 처리했어요", "✅");
-    else if (failed < unread.length) show(`일부만 읽음 처리했어요 · ${failed}개 실패`, "⚠️");
-    else show("읽음 처리에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️");
+    markAll.mutate(undefined, {
+      onSuccess: () => show("모든 알림을 읽음 처리했어요", "✅"),
+      onError: () => show("읽음 처리에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️"),
+    });
   };
 
   /** 알림 탭 → 읽음 처리(사용자 액션) 후 유형별 화면 이동. 애매하면 토스트.
@@ -146,7 +147,12 @@ export function Notifications() {
           <ChevronLeft size={22} strokeWidth={2.2} />
         </button>
         <span className="nc-title">알림</span>
-        <button type="button" className="nc-markread hy-press" onClick={() => void markAllRead()}>
+        <button
+          type="button"
+          className="nc-markread hy-press"
+          onClick={markAllRead}
+          disabled={markAll.isPending}
+        >
           모두 읽음
         </button>
       </header>
@@ -170,7 +176,7 @@ export function Notifications() {
       <div className="hy-content nc-list">
         {isLoading && (
           <div className="nc-state">
-            <span className="nc-state__text">알림을 불러오는 중…</span>
+            <Loading label="알림을 불러오는 중" />
           </div>
         )}
 

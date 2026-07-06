@@ -2,22 +2,29 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bell, Settings, ChevronRight, Clock, Zap, Wifi, Check, MapPin, Smartphone } from "lucide-react";
 import { asset } from "@/lib/assets";
+import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
+import { Loading } from "@/components/ui/Loading";
 import { TopBar } from "@/components/ui/TopBar";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { shortcuts } from "@/data/mock";
 import { useEvents, useDailySupplies, useUpsertDailySupply } from "@/queries/useSchedule";
-import type { DailySupply } from "@/lib/api/endpoints/schedule";
+import type { CalendarEvent, DailySupply } from "@/lib/api/endpoints/schedule";
 import { useParentAlerts } from "@/queries/useNotifications";
 import { countUnread } from "@/transform/notificationsView";
 import { useMyFamily } from "@/queries/useFamily";
 import { useActiveChild } from "@/app/activeChild";
 import { useAuth } from "@/auth/AuthContext";
 import { requestDeviceStatus } from "@/lib/api/endpoints/remote";
+import { loadKakaoMaps } from "@/lib/kakaoMap";
 import { useChildLocations, useSavedPlaces } from "@/queries/useLocation";
-import { groupEventsByDateKey } from "@/transform/scheduleView";
+import { useLocationLabels } from "@/queries/useLocationLabels";
+import type { ChildLocation } from "@/lib/api/endpoints/location";
+import { groupEventsByDateKey, PAST_TAGS, type CalEventView } from "@/transform/scheduleView";
+import { useVisitVerify } from "@/queries/useVisitVerify";
 import { todayDateKey } from "@/transform/dateKey";
-import { formatFreshness, placeLabel } from "@/transform/locationView";
+import { filterEventsForChild } from "@/transform/eventScope";
+import { formatFreshness } from "@/transform/locationView";
 import { deviceStatusView } from "@/transform/familyView";
 import "./ParentHome.css";
 
@@ -27,10 +34,71 @@ function avatarSrc(path: string): string {
   return path.startsWith("http") ? path : asset(path);
 }
 
+const SCHEDULE_PLACE_RADIUS_M = 150;
+
+type ChildScheduleEvent = {
+  raw: CalendarEvent;
+  view: CalEventView;
+};
+
+function eventLocationPoint(event: CalendarEvent): { lat: number; lng: number } | null {
+  const lat = event.location?.lat;
+  const lng = event.location?.lng;
+  if (typeof lat !== "number" || typeof lng !== "number") return null;
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return { lat, lng };
+}
+
+function eventTitleForPlace(event: CalendarEvent, view: CalEventView): string {
+  const title = (event.title || view.title || "").trim();
+  if (title) return title;
+  return (event.location?.address || "일정 장소").trim();
+}
+
+function distanceM(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const r = 6371000;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * r * Math.asin(Math.sqrt(a));
+}
+
+function schedulePlaceLabel(loc: ChildLocation, events: ChildScheduleEvent[]): string | null {
+  const hits = events
+    .map(({ raw, view }) => {
+      const point = eventLocationPoint(raw);
+      if (!point) return null;
+      return {
+        raw,
+        view,
+        distance: distanceM(loc.lat, loc.lng, point.lat, point.lng),
+      };
+    })
+    .filter((hit): hit is { raw: CalendarEvent; view: CalEventView; distance: number } =>
+      hit !== null && hit.distance <= SCHEDULE_PLACE_RADIUS_M,
+    )
+    .sort((a, b) => {
+      const priority = (tag: CalEventView["tag"]) => {
+        if (tag === "진행 중") return 0;
+        if (tag === "예정") return 1;
+        return 2;
+      };
+      const pa = priority(a.view.tag);
+      const pb = priority(b.view.tag);
+      return pa - pb || a.distance - b.distance;
+    });
+  const hit = hits[0];
+  if (!hit) return null;
+  return `${eventTitleForPlace(hit.raw, hit.view)} 근처`;
+}
+
 const shortcutRoutes: Record<string, string> = {
   "AI 일정": "/ai-schedule",
-  "위치추적": "/parent/location",
-  "친구놀이": "/friend-play",
+  "위치추적": "/parent/location?view=history",
+  "친구놀이": "/playdate-accept",
   "장소관리": "/place-manager",
   "주변소리": "/remote-audio",
   "스티커": "/sticker-send",
@@ -43,7 +111,11 @@ export function ParentHome() {
   const { show } = useToast();
 
   // ── 실 데이터: 오늘 일정 + 아이 현황(가족·위치) ──
-  const now = useMemo(() => new Date(), []);
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
   const todayKey = useMemo(() => todayDateKey(now), [now]);
 
   const eventsQuery = useEvents();
@@ -64,6 +136,12 @@ export function ParentHome() {
     void requestDeviceStatus(familyId);
   }, [familyId]);
   const places = placesQuery.data;
+  const locationLabel = useLocationLabels(locations, places);
+
+  // 홈 바로가기에서 위치추적을 누를 때 지도 SDK 다운로드 대기 시간을 줄인다.
+  useEffect(() => {
+    void loadKakaoMaps().catch(() => undefined);
+  }, []);
 
   // 알림 벨 빨간 점 + 바로가기 배지 — 실제 미읽음 알림 개수 기반(하드코딩 항상-3 제거).
   const alertsQuery = useParentAlerts();
@@ -125,54 +203,56 @@ export function ParentHome() {
     }
   };
 
-  // 오늘 일정 — 활성 아이 배정(events_children.child_id) + 가족 공유(배정 없음)만.
+  // 지난 일정 "다녀옴" 위치 검증 — 활성 아이 이력으로 방문 확인(미확인=확인 필요).
+  const visitMap = useVisitVerify(todayKey, events, activeChild?.user_id ?? null);
+
+  // 오늘 일정 — 활성 아이 배정(events_children.child_id) + 가족 공유(is_family_event)만.
   // 형제에게만 배정된 일정은 활성 아이 화면에서 제외(아이별 구분 — TK 결정).
   const todayEvents = useMemo(() => {
-    const byKey = groupEventsByDateKey(events ?? [], now);
+    const byKey = groupEventsByDateKey(events ?? [], now, visitMap, places);
     const all = byKey[todayDateKey(now)] ?? [];
-    if (!activeChild) return all;
+    if (!activeChild) return [];
     const allowedIds = new Set(
-      (events ?? [])
-        .filter((e) => {
-          if (e.date_key !== todayKey) return false;
-          const ec = e.events_children ?? [];
-          return ec.length === 0 || ec.some((c) => c.child_id === activeChild.id);
-        })
-        .map((e) => e.id),
+      filterEventsForChild(
+        (events ?? []).filter((e) => e.date_key === todayKey),
+        activeChild.id,
+      ).map((e) => e.id),
     );
     return all.filter((v) => allowedIds.has(v.id));
-  }, [events, now, todayKey, activeChild]);
+  }, [events, now, todayKey, activeChild, visitMap, places]);
 
   const childName = activeChild?.name || "아이"; // 히어로·꾹 라벨 = 활성 아이
 
   // 아이별 현황 카드 — 등록된 모든 아이를 각각 위치·기기·다음 일정과 함께 표시(다자녀 = 둘 다).
   // 위치는 각 아이 user_id 로 매칭(폴백 없음 → 없으면 정직하게 "위치 정보 없음"). 다음 일정은
-  // events_children(child_id=member.id) 배정 또는 가족 공유(배정 없음) 중 가장 이른 미완료 일정.
+  // events_children(child_id=member.id) 배정 또는 가족 공유(is_family_event) 중 가장 이른 미완료 일정.
   const childCards = useMemo(() => {
     const kids = (family?.members ?? []).filter((m) => m.role === "child");
     const rawToday = (events ?? []).filter((e) => e.date_key === todayKey);
     // 카드별 다음 일정은 활성 아이 필터와 무관하게 "그 카드 아이" 기준으로 계산.
-    const allViews = groupEventsByDateKey(events ?? [], now)[todayKey] ?? [];
+    const allViews = groupEventsByDateKey(events ?? [], now, undefined, places)[todayKey] ?? [];
     return kids.map((kid) => {
       const kidLoc = kid.user_id
         ? (locations ?? []).find((l) => l.user_id === kid.user_id) ?? null
         : null;
-      const ids = new Set(
-        rawToday
-          .filter((e) => {
-            const ec = e.events_children ?? [];
-            return ec.length === 0 || ec.some((c) => c.child_id === kid.id);
-          })
-          .map((e) => e.id),
-      );
-      const next = allViews.find((v) => ids.has(v.id) && v.tag !== "다녀옴") ?? null;
+      const kidRaw = filterEventsForChild(rawToday, kid.id);
+      const rawById = new Map(kidRaw.map((e) => [e.id, e]));
+      const kidEvents = allViews
+        .map((view) => {
+          const raw = rawById.get(view.id);
+          return raw ? { raw, view } : null;
+        })
+        .filter((row): row is ChildScheduleEvent => row !== null);
+      const next = kidEvents.find(({ view }) => !PAST_TAGS.has(view.tag))?.view ?? null;
+      const eventPlace = kidLoc ? schedulePlaceLabel(kidLoc, kidEvents) : null;
       return {
         id: kid.id,
         name: kid.name || "아이",
-        avatar: kid.photo_url || "animal/rabbit.webp",
+        avatar: childAvatarPath(kid.photo_url),
         device: kid.device_label?.trim() || null,
-        place: kidLoc && places ? placeLabel(kidLoc, places) : "위치 확인 중",
+        place: kidLoc ? eventPlace ?? locationLabel(kidLoc) : "위치 확인 중",
         fresh: kidLoc ? formatFreshness(kidLoc.updated_at, now).label : "위치 정보 없음",
+        scheduleLabel: next?.tag === "진행 중" ? "진행 중" : "다음 일정",
         next,
       };
     });
@@ -281,8 +361,8 @@ export function ParentHome() {
           />
           <div className="hy-card ph-sched">
             {eventsQuery.isLoading ? (
-              <div className="ph-sched-row" style={{ color: "var(--fg-muted)", fontSize: 14, fontWeight: 600, justifyContent: "center" }}>
-                일정을 불러오는 중…
+              <div className="ph-sched-row" style={{ justifyContent: "center" }}>
+                <Loading label="일정을 불러오는 중" />
               </div>
             ) : todayEvents.length === 0 ? (
               <div className="ph-sched-row" style={{ color: "var(--fg-muted)", fontSize: 14, fontWeight: 600, justifyContent: "center" }}>
@@ -405,7 +485,7 @@ export function ParentHome() {
                     </div>
                     <div className="ph-child__foot">
                       <span className="ph-child__next">
-                        다음 일정 ·{" "}
+                        {c.scheduleLabel} ·{" "}
                         <b>
                           {eventsQuery.isLoading
                             ? "확인 중"
@@ -480,17 +560,53 @@ export function ParentHome() {
             </div>
 
             <div className="ph-safety__divider">
-              <div className="ph-recent-head">
-                <b>최근 사용한 앱</b>
-                <span>{deviceStatus.recentAppLabel ? "실시간" : "—"}</span>
+              <div className="ph-app-summary">
+                <div className="ph-app-summary__item">
+                  <span className="ph-app-summary__k">최근 실행</span>
+                  <span className="ph-app-summary__v">
+                    {deviceStatus.recentAppLabel ?? "—"}
+                  </span>
+                </div>
+                <div className="ph-app-summary__item">
+                  <span className="ph-app-summary__k">가장 많이 사용</span>
+                  {deviceStatus.mostUsedApp ? (
+                    <span className="ph-app-summary__v">
+                      {deviceStatus.mostUsedApp.name}
+                      <span className="ph-app-summary__time">{deviceStatus.mostUsedApp.timeLabel}</span>
+                    </span>
+                  ) : (
+                    <span className="ph-app-summary__v">—</span>
+                  )}
+                </div>
               </div>
-              <div className="ph-recent-empty">
-                {deviceStatus.recentAppLabel
-                  ? deviceStatus.recentAppLabel
-                  : deviceStatus.hasData
+              <div className="ph-recent-head">
+                <b>오늘 많이 쓴 앱</b>
+                <span>{deviceStatus.topApps.length > 0 ? "사용시간" : "—"}</span>
+              </div>
+              {deviceStatus.topApps.length > 0 ? (
+                <div className="ph-recent-list">
+                  {deviceStatus.topApps.map((app, index) => (
+                    <div key={app.id} className="ph-recent-row">
+                      <span className="ph-recent-row__icon" aria-hidden="true">
+                        {index + 1}
+                      </span>
+                      <span className="ph-recent-row__main">
+                        <span className="ph-recent-row__name">{app.name}</span>
+                        {app.isLatest && (
+                          <span className="ph-recent-row__badge">최근 실행</span>
+                        )}
+                      </span>
+                      <span className="ph-recent-row__time">{app.timeLabel}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="ph-recent-empty">
+                  {deviceStatus.hasData
                     ? "아이 기기 설정 > 사용정보 접근 허용을 켜면 표시돼요"
                     : "아이 기기가 연동되면 표시돼요"}
-              </div>
+                </div>
+              )}
             </div>
 
             <div className="ph-safety__refresh">
@@ -536,9 +652,9 @@ export function ParentHome() {
             {suppliesQuery.isLoading ? (
               <div
                 className="ph-prep-row"
-                style={{ color: "var(--fg-muted)", fontSize: 14, fontWeight: 600, justifyContent: "center" }}
+                style={{ justifyContent: "center" }}
               >
-                불러오는 중…
+                <Loading label="준비물을 불러오는 중" />
               </div>
             ) : prep.length === 0 ? (
               <div
@@ -616,6 +732,7 @@ export function ParentHome() {
                   key={s.id}
                   type="button"
                   className="ph-shortcut hy-press"
+                  onPointerDown={s.label === "위치추적" ? () => void loadKakaoMaps().catch(() => undefined) : undefined}
                   onClick={() => navigate(shortcutRoutes[s.label])}
                 >
                   <span

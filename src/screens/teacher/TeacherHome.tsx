@@ -128,7 +128,7 @@ export function TeacherHome() {
   };
 
   const loading = meQ.isLoading || classesQ.isLoading;
-  // 반이 없으면(비선생님·미배포·반 미생성) '준비 중' 빈 상태. 진짜 오류(미배포 아님)는 재시도 안내.
+  // 반이 없으면 반 생성 CTA를 보여준다. 진짜 오류(미배포 아님)는 재시도 안내.
   const genuineError = classesQ.isError && !isMissingFunction(classesQ.error);
   const notReady = !loading && !classId;
 
@@ -159,7 +159,7 @@ export function TeacherHome() {
           <div className="th-empty">
             <span className="th-empty__emoji">🧑‍🏫</span>
             <span className="th-empty__title">
-              {genuineError ? "잠시 후 다시 시도해 주세요" : "선생님 모드 준비 중"}
+              {genuineError ? "잠시 후 다시 시도해 주세요" : "연결된 반이 없어요"}
             </span>
             <span className="th-empty__sub">
               {genuineError

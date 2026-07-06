@@ -2,20 +2,29 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronRight, MapPin, Check, X, Pencil, Trash2 } from "lucide-react";
 import { asset } from "@/lib/assets";
+import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
+import { Loading } from "@/components/ui/Loading";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import type { PrepKind } from "./ChildHome.data";
 import { useMyFamily } from "@/queries/useFamily";
 import { placePhoneCall } from "@/lib/native/phone";
 import { useEvents, useDailySupplies, useUpsertDailySupply, useDeleteDailySupply } from "@/queries/useSchedule";
+import { useSavedPlaces } from "@/queries/useLocation";
 import type { DailySupply } from "@/lib/api/endpoints/schedule";
 import { useStickerSummary } from "@/queries/useStickers";
 import { useMemoThread } from "@/queries/useMemo";
 import { useAiFriendPublicSettings } from "@/queries/useAi";
 import { useAuth } from "@/auth/AuthContext";
-import { groupEventsByDateKey } from "@/transform/scheduleView";
+import { groupEventsByDateKey, PAST_TAGS } from "@/transform/scheduleView";
 import { todayDateKey } from "@/transform/dateKey";
+import { filterEventsForChild } from "@/transform/eventScope";
+import { DEFAULT_AI_FRIEND_NAME, resolveAiFriendDisplayName } from "@/transform/aiFriendName";
 import "./ChildHome.css";
+
+function avatarSrc(path: string): string {
+  return path.startsWith("http") ? path : asset(path);
+}
 
 export function ChildHome() {
   const navigate = useNavigate();
@@ -29,14 +38,13 @@ export function ChildHome() {
   const now = useMemo(() => new Date(), []);
   const { data: family } = useMyFamily();
   const { data: events } = useEvents();
+  const { data: places } = useSavedPlaces();
   const { data: stickerSummary } = useStickerSummary();
   const { userId } = useAuth();
 
   // 본인(아이) 멤버 — 이름 + 히어로 사진(있으면 사진, 없으면 캐릭터 폴백).
   const myMember =
-    family?.members.find((m) => m.role === "child" && m.user_id === userId) ??
-    family?.members.find((m) => m.role === "child") ??
-    null;
+    family?.members.find((m) => m.role === "child" && m.user_id === userId) ?? null;
 
   // 준비물·숙제: 오늘 date_key 의 daily-supplies 실데이터 + 체크/추가(서버 업서트).
   // 서버 응답은 모든 아이가 섞여 있으므로 본인(myMember.id = child_user_id)만 필터.
@@ -44,7 +52,7 @@ export function ChildHome() {
   const suppliesQuery = useDailySupplies(todayKey);
   const supplies = useMemo(() => {
     const all = suppliesQuery.data ?? [];
-    return myMember ? all.filter((s) => s.child_user_id === myMember.id) : all;
+    return myMember ? all.filter((s) => s.child_user_id === myMember.id) : [];
   }, [suppliesQuery.data, myMember]);
   const upsert = useUpsertDailySupply();
   const remove = useDeleteDailySupply();
@@ -53,11 +61,14 @@ export function ChildHome() {
   const [editId, setEditId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
   const realChildName = myMember?.name || "친구";
-  const myPhotoSrc =
-    myMember?.photo_url && myMember.photo_url.startsWith("http") ? myMember.photo_url : null;
-  // AI 친구 이름(실 설정). 미설정이면 기본 "혜니".
+  const myPhotoSrc = childAvatarPath(myMember?.photo_url);
+  // AI 친구 이름(실 설정). 과거 아이 이름으로 시드된 값은 미설정으로 보고 기본 통통이로 표시.
   const aiFriendPublic = useAiFriendPublicSettings(userId);
-  const aiFriendName = aiFriendPublic.data?.ai_friend_name?.trim() || "혜니";
+  const aiFriendName = resolveAiFriendDisplayName({
+    savedName: aiFriendPublic.data?.ai_friend_name,
+    childName: realChildName,
+    fallbackName: DEFAULT_AI_FRIEND_NAME,
+  });
   // 부모님께 전화: 성별로 엄마/아빠 번호를 찾아 발신. 번호 없으면 안내만(반말 톤).
   const callParent = (gender: "mom" | "dad", label: string) => {
     const number = (family?.members ?? []).find(
@@ -75,14 +86,18 @@ export function ChildHome() {
     () => (stickerSummary ?? []).find((r) => r.user_id === userId)?.total_count ?? 0,
     [stickerSummary, userId],
   );
-  const todayEvents = useMemo(
-    () => groupEventsByDateKey(events ?? [], now)[todayDateKey(now)] ?? [],
-    [events, now],
+  const myEvents = useMemo(
+    () => filterEventsForChild(events ?? [], myMember?.id),
+    [events, myMember?.id],
   );
-  const nextEvent = todayEvents.find((e) => e.tag !== "다녀옴") ?? null;
+  const todayEvents = useMemo(
+    () => groupEventsByDateKey(myEvents, now, undefined, places)[todayKey] ?? [],
+    [myEvents, now, todayKey, places],
+  );
+  const nextEvent = todayEvents.find((e) => !PAST_TAGS.has(e.tag)) ?? null;
   // AI 히어로 말풍선용 — 아직 다녀오지 않은(남은) 오늘 일정 개수.
   const remainingCount = useMemo(
-    () => todayEvents.filter((e) => e.tag !== "다녀옴").length,
+    () => todayEvents.filter((e) => !PAST_TAGS.has(e.tag)).length,
     [todayEvents],
   );
   // 오늘 내 스레드의 부모님 최신 메시지 — 도착하면 티커 맨 앞에 내용 그대로 노출(WS 실시간 갱신).
@@ -182,8 +197,12 @@ export function ChildHome() {
   const submitAdd = () => {
     const label = draft.trim();
     if (!label || !addKind || upsert.isPending) return;
+    if (!myMember) {
+      show("내 정보를 아직 못 찾았어. 잠시 후 다시 해볼래?", "⚠️");
+      return;
+    }
     upsert.mutate(
-      { date_key: todayKey, label, done: false, kind: addKind, child_user_id: userId },
+      { date_key: todayKey, label, done: false, kind: addKind, child_user_id: myMember.id },
       {
         onSuccess: () => {
           setDraft("");
@@ -239,17 +258,13 @@ export function ChildHome() {
       </header>
 
       <div className="ch-content">
-        {/* 히어로 — 본인 사진(캐릭터 없음) + AI 친구 대화 */}
+        {/* 히어로 — 본인 사진 또는 기본 혜니 캐릭터 + AI 친구 대화 */}
         <div className="ch-ai">
           <div className="ch-ai__spark">✨</div>
           <div className="ch-ai__spark2">💛</div>
           <div className="ch-ai__row">
             <div className="ch-ai__photo">
-              {myPhotoSrc ? (
-                <img src={myPhotoSrc} alt={realChildName} />
-              ) : (
-                <span className="ch-ai__photo-initial">{realChildName.slice(0, 1)}</span>
-              )}
+              <img src={avatarSrc(myPhotoSrc)} alt={realChildName} />
             </div>
             <div className="ch-ai__col">
               <div className="ch-ai__hello">안녕, {realChildName}! 🌈</div>
@@ -463,8 +478,8 @@ export function ChildHome() {
           />
           <div className="ch-prep-card">
             {suppliesQuery.isLoading ? (
-              <div className="ch-prep-row" style={{ color: "var(--fg-muted)", fontWeight: 600 }}>
-                불러오는 중…
+              <div className="ch-prep-row" style={{ justifyContent: "center" }}>
+                <Loading label="챙길 걸 불러오는 중" />
               </div>
             ) : supplies.length === 0 ? (
               <div className="ch-prep-row" style={{ color: "var(--fg-muted)", fontWeight: 600 }}>

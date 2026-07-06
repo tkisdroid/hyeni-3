@@ -8,9 +8,11 @@ import { useAuth } from "@/auth/AuthContext";
 import {
   fetchParentAlerts,
   markAlertRead,
+  markAllAlertsRead,
   fetchNotifSettings,
   saveNotifSettings,
   type NotifSettings,
+  type ParentAlert,
 } from "@/lib/api/endpoints/notifications";
 
 /** 가족 부모 알림 목록(최신순). limit 기본 50. */
@@ -30,6 +32,30 @@ export function useMarkAlertRead() {
   return useMutation({
     mutationFn: (alertId: string) => markAlertRead(alertId),
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.parentAlerts(familyId ?? "") }),
+  });
+}
+
+/**
+ * "모두 읽음" — 서버 1요청(read-all) + 낙관적 업데이트로 UI 즉시 반영.
+ * onMutate 에서 캐시의 read 를 전부 true 로 바꿔 목록·배지가 바로 지워지고,
+ * 실패 시 스냅샷으로 원복한다(정직: 실패를 숨기지 않음). 완료 후 서버 기준 재검증.
+ */
+export function useMarkAllAlertsRead() {
+  const qc = useQueryClient();
+  const { familyId } = useAuth();
+  const key = qk.parentAlerts(familyId ?? "");
+  return useMutation<{ ok: boolean; updated: number }, Error, void, { prev?: ParentAlert[] }>({
+    mutationFn: () => markAllAlertsRead(familyId as string),
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: key });
+      const prev = qc.getQueryData<ParentAlert[]>(key);
+      if (prev) qc.setQueryData<ParentAlert[]>(key, prev.map((a) => (a.read ? a : { ...a, read: true })));
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(key, ctx.prev);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: key }),
   });
 }
 

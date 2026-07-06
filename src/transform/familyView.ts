@@ -4,6 +4,11 @@
  * 배터리는 아이 기기 자기-리포트(device_health)에서 반영(미리포트면 null).
  */
 import type { DeviceHealth, FamilyMember } from "@/lib/api/endpoints/family";
+import { childAvatarPath } from "@/lib/avatar";
+import {
+  buildDeviceAppUsageView,
+  type DeviceAppUsageItemView,
+} from "./deviceAppUsageView";
 import { formatFreshness } from "./locationView";
 
 export interface ParentView {
@@ -28,7 +33,6 @@ export interface ChildView {
   userId: string | null;
 }
 
-const CHILD_ANIMALS = ["animal/rabbit.webp", "animal/bear.webp", "animal/cat.webp", "animal/dog.webp"];
 const CHILD_SOFTS = ["#FDE7F1", "#E6F2FB", "#E7F8F0", "#FDF0DA"];
 
 function parentRoleLabel(gender: string | null | undefined): string {
@@ -67,7 +71,7 @@ export function mapFamilyToView(members: FamilyMember[], currentUserId: string |
     id: m.id,
     name: m.name || "아이",
     info: "",
-    avatar: m.photo_url || CHILD_ANIMALS[i % CHILD_ANIMALS.length],
+    avatar: childAvatarPath(m.photo_url),
     soft: CHILD_SOFTS[i % CHILD_SOFTS.length],
     battery: m.device_health?.batteryLevel ?? null, // 아이 기기 리포트 반영(미리포트=null)
     place: null,
@@ -91,9 +95,14 @@ export interface DeviceStatusView {
   networkLabel: string; // "Wi-Fi"/"4G"/"연결됨" | "오프라인" | "—"
   screenTimeLabel: string; // 네이티브 deviceScreenOnMs → "N시간 M분"; 웹은 "—"
   recentAppLabel: string | null; // 네이티브 recentApp(최근 사용앱). 없거나 권한없으면 null
+  mostUsedApp: DeviceRecentAppView | null;
+  topApps: DeviceRecentAppView[];
+  recentApps: DeviceRecentAppView[];
   freshnessLabel: string; // "방금 업데이트" | "N분 전" | "아이 기기 연동 대기 중"
   safetyLabel: string; // "양호" | "주의 필요" | "확인 중"
 }
+
+export type DeviceRecentAppView = DeviceAppUsageItemView;
 
 // 오늘 화면 사용시간(ms) → "N시간 M분" / "N분". 없거나 0이면 null.
 function screenTimeLabelFrom(ms: number | null | undefined): string | null {
@@ -136,6 +145,9 @@ export function deviceStatusView(
       networkLabel: "—",
       screenTimeLabel: "—",
       recentAppLabel: null,
+      mostUsedApp: null,
+      topApps: [],
+      recentApps: [],
       freshnessLabel: "아이 기기 연동 대기 중",
       safetyLabel: "확인 중",
     };
@@ -144,7 +156,7 @@ export function deviceStatusView(
   // 네이티브(LocationService) 리포트는 connectionType, 웹 리포트는 networkType 을 준다.
   const netType = health.connectionType ?? health.networkType;
   const screen = screenTimeLabelFrom(health.deviceScreenOnMs);
-  const recent = typeof health.recentApp === "string" ? health.recentApp.trim() : "";
+  const appUsage = buildDeviceAppUsageView(health);
   return {
     hasData: true,
     batteryLevel: level,
@@ -152,7 +164,10 @@ export function deviceStatusView(
     chargingLabel: health.isCharging == null ? "—" : health.isCharging ? "충전 중" : "충전 안 함",
     networkLabel: health.networkConnected ? networkTypeLabel(netType) : "오프라인",
     screenTimeLabel: screen ?? "—",
-    recentAppLabel: recent || null,
+    recentAppLabel: appUsage.recentAppLabel,
+    mostUsedApp: appUsage.mostUsedApp,
+    topApps: appUsage.topApps,
+    recentApps: appUsage.topApps,
     freshnessLabel: health.lastReportedAt ? formatFreshness(health.lastReportedAt, now).label : "방금 업데이트",
     safetyLabel: level != null && level <= LOW_BATTERY_THRESHOLD ? "주의 필요" : "양호",
   };

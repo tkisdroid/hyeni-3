@@ -10,6 +10,7 @@ import type { FamilyMember } from "@/lib/api/endpoints/family";
 import {
   getMyAccount,
   setChildTheme,
+  changePassword,
   buildFamilyDataExport,
   type AccountInfo,
 } from "@/lib/api/endpoints/account";
@@ -46,7 +47,7 @@ export interface UseAccountResult {
 export function useAccount(): UseAccountResult {
   const { familyId, userId, status, user } = useAuth();
   const query = useQuery({
-    queryKey: ["account", familyId ?? "me"],
+    queryKey: qk.account(familyId),
     queryFn: getMyAccount,
     enabled: status === "authenticated",
   });
@@ -76,7 +77,7 @@ export function useSetChildTheme() {
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: qk.family(familyId) });
-      void qc.invalidateQueries({ queryKey: ["account", familyId ?? "me"] });
+      void qc.invalidateQueries({ queryKey: qk.account(familyId) });
     },
   });
 }
@@ -89,6 +90,14 @@ export function useDeleteAccount() {
   const { deleteAccount } = useAuth();
   return useMutation({
     mutationFn: () => deleteAccount(),
+  });
+}
+
+/** 현재 비밀번호 확인 후 새 비밀번호 저장. */
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: (input: { currentPassword: string; newPassword: string }) =>
+      changePassword(input),
   });
 }
 

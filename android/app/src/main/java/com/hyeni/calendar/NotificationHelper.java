@@ -166,6 +166,14 @@ public final class NotificationHelper {
         return 20_000 + Math.floorMod(stableId.hashCode(), 1_000_000_000);
     }
 
+    public static Bitmap largeIcon(Context context) {
+        Bitmap icon = BitmapFactory.decodeResource(context.getResources(), R.drawable.hyeni_notification_large);
+        if (icon != null) {
+            return icon;
+        }
+        return BitmapFactory.decodeResource(context.getResources(), R.mipmap.ic_launcher_foreground);
+    }
+
     public static void showNotification(
             Context context,
             String title,
@@ -203,7 +211,7 @@ public final class NotificationHelper {
         boolean kkuk = "kkuk".equals(channel);
         boolean silent = "silent".equals(channel);
         boolean childMessage = "child_message".equals(channel);
-        Bitmap largeIcon = BitmapFactory.decodeResource(context.getResources(), R.mipmap.ic_launcher_foreground);
+        Bitmap largeIcon = largeIcon(context);
 
         if (wakeScreen) {
             PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);

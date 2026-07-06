@@ -1,19 +1,39 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft, X, Paperclip } from "lucide-react";
 import { useToast } from "@/app/toast";
+import { useAuth } from "@/auth/AuthContext";
 import { useTeacherClasses, useRoster, usePublishNotice } from "@/queries/useTeacher";
 import { isMissingFunction } from "@/lib/api/errors";
+import { apiUploadTeacherNoticeFile } from "@/lib/api/client";
 import { isoDateKey } from "@/transform/teacherView";
 import { dateInputValueToDateKey } from "@/transform/dateKey";
+import type { TeacherNoticeAttachment } from "@/lib/api/endpoints/teacher";
 import "./TeacherNotice.css";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
+const MAX_ATTACHMENTS = 5;
+const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
+
+interface AttachmentDraft {
+  id: string;
+  file: File;
+  name: string;
+  size: number;
+  contentType: string;
+}
+
+function safeFileName(name: string): string {
+  const cleaned = name.replace(/[^\w.\-가-힣]/g, "_").replace(/_+/g, "_");
+  return cleaned || "attachment";
+}
 
 export function TeacherNotice() {
   const navigate = useNavigate();
   const location = useLocation();
   const { show } = useToast();
+  const { userId } = useAuth();
+  const fileRef = useRef<HTMLInputElement | null>(null);
 
   const classesQ = useTeacherClasses();
   const firstClass = classesQ.data?.[0] ?? null;
@@ -45,6 +65,8 @@ export function TeacherNotice() {
   const [supplyInput, setSupplyInput] = useState("");
   const [reflect, setReflect] = useState(true);
   const [reflectDate, setReflectDate] = useState(prefillDate);
+  const [attachments, setAttachments] = useState<AttachmentDraft[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   const loading = classesQ.isLoading;
   const genuineError = classesQ.isError && !isMissingFunction(classesQ.error);
@@ -63,9 +85,56 @@ export function TeacherNotice() {
   const removeSupply = (item: string) =>
     setSupplies((list) => list.filter((s) => s !== item));
 
-  const canSend = !!classId && title.trim().length > 0 && !publish.isPending;
+  const canSend = !!classId && title.trim().length > 0 && !publish.isPending && !uploading;
 
-  const handleSend = () => {
+  const addAttachments = (files: FileList | null) => {
+    if (!files?.length) return;
+    const next: AttachmentDraft[] = [];
+    for (const file of Array.from(files)) {
+      if (attachments.length + next.length >= MAX_ATTACHMENTS) {
+        show(`첨부는 ${MAX_ATTACHMENTS}개까지 가능해요`, "📎");
+        break;
+      }
+      const contentType = file.type || "application/octet-stream";
+      const supported = contentType.startsWith("image/") || contentType === "application/pdf";
+      if (!supported) {
+        show("사진 또는 PDF만 첨부할 수 있어요", "📎");
+        continue;
+      }
+      if (file.size > MAX_ATTACHMENT_BYTES) {
+        show("첨부 파일은 8MB 이하만 가능해요", "📎");
+        continue;
+      }
+      next.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        file,
+        name: file.name || "첨부파일",
+        size: file.size,
+        contentType,
+      });
+    }
+    if (next.length) setAttachments((list) => [...list, ...next]);
+  };
+
+  const uploadAttachments = async (): Promise<TeacherNoticeAttachment[]> => {
+    if (!attachments.length) return [];
+    if (!userId) throw new Error("선생님 계정 정보를 확인하지 못했어요");
+    const stamp = Date.now();
+    return Promise.all(
+      attachments.map(async (a, index) => {
+        const path = `${userId}/notice-${stamp}-${index}-${safeFileName(a.name)}`;
+        const uploaded = await apiUploadTeacherNoticeFile(path, a.file, a.contentType);
+        return {
+          name: a.name,
+          path: uploaded.path,
+          contentType: a.contentType,
+          size: a.size,
+        };
+      }),
+    );
+  };
+
+  const handleSend = async () => {
     if (!classId) {
       show("연결된 반이 없어 알림장을 보낼 수 없어요", "🧑‍🏫");
       return;
@@ -88,8 +157,26 @@ export function TeacherNotice() {
       ? [{ dateKey: reflectKey, title: trimmedTitle, time: "", category: "school" }]
       : [];
 
+    let uploadedAttachments: TeacherNoticeAttachment[] = [];
+    setUploading(true);
+    try {
+      uploadedAttachments = await uploadAttachments();
+    } catch (err) {
+      setUploading(false);
+      show(err instanceof Error ? err.message : "첨부 파일 업로드에 실패했어요", "⚠️");
+      return;
+    }
+    setUploading(false);
+
     publish.mutate(
-      { classId, title: trimmedTitle, body: composedBody, sourceType: "text", events },
+      {
+        classId,
+        title: trimmedTitle,
+        body: composedBody,
+        sourceType: uploadedAttachments.length ? "photo" : "text",
+        events,
+        attachments: uploadedAttachments,
+      },
       {
         onSuccess: (res) => {
           const reached = res.recipients;
@@ -200,19 +287,53 @@ export function TeacherNotice() {
               </div>
             </div>
 
-            {/* 첨부 — R2 업로드는 준비 중(Wave 2). 정직하게 비활성 안내. */}
+            {/* 첨부 — R2 업로드 후 알림장 metadata 로 저장. */}
             <div>
               <div className="tn-label">첨부</div>
-              <div className="tn-attach" aria-disabled="true">
+              <button
+                type="button"
+                className="tn-attach hy-press"
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading || publish.isPending || attachments.length >= MAX_ATTACHMENTS}
+              >
                 <span className="tn-attach__icon">
                   <Paperclip size={18} strokeWidth={2} color="#8B7E84" />
                 </span>
                 <span className="tn-attach__main">
                   <span className="tn-attach__title">파일 첨부</span>
-                  <span className="tn-attach__sub">가정통신문 사진·PDF 첨부는 준비 중이에요</span>
+                  <span className="tn-attach__sub">사진·PDF를 {MAX_ATTACHMENTS}개까지 보낼 수 있어요</span>
                 </span>
-                <span className="tn-attach__badge">준비 중</span>
-              </div>
+                <span className="tn-attach__badge">{attachments.length}개</span>
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*,application/pdf"
+                multiple
+                hidden
+                onChange={(e) => {
+                  addAttachments(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+              {attachments.length > 0 && (
+                <div className="tn-attach-list">
+                  {attachments.map((a) => (
+                    <span key={a.id} className="tn-file-chip">
+                      <Paperclip size={13} strokeWidth={2.2} />
+                      <span className="tn-file-chip__name">{a.name}</span>
+                      <button
+                        type="button"
+                        className="tn-file-chip__x hy-press"
+                        aria-label={`${a.name} 첨부 삭제`}
+                        onClick={() => setAttachments((list) => list.filter((item) => item.id !== a.id))}
+                      >
+                        <X size={13} strokeWidth={2.6} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* 학부모 캘린더에 반영 — ON 이면 선택 날짜에 알림장 일정을 함께 등록(실동작). */}
@@ -246,10 +367,12 @@ export function TeacherNotice() {
             <button
               type="button"
               className="tn-send hy-press"
-              onClick={handleSend}
+              onClick={() => void handleSend()}
               disabled={!canSend}
             >
-              {publish.isPending
+              {uploading
+                ? "첨부 올리는 중…"
+                : publish.isPending
                 ? "보내는 중…"
                 : recipientCount > 0
                   ? `${recipientCount}명에게 발송`

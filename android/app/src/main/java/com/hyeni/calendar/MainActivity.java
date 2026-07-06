@@ -36,8 +36,12 @@ public class MainActivity extends BridgeActivity {
         BLOCKED
     }
 
-    static boolean isAppForegroundForMicrophone() {
+    static boolean isAppForeground() {
         return appForegroundForMicrophone;
+    }
+
+    static boolean isAppForegroundForMicrophone() {
+        return isAppForeground();
     }
 
     @Override
@@ -271,17 +275,28 @@ public class MainActivity extends BridgeActivity {
         }, delayMs);
     }
 
-    // AI 선제 대화 알림 탭 → AI 채팅 화면 직행. WebView 부팅 타이밍이 가변적이라
-    // remote-listen 플래그 주입과 동일하게 지연 재주입한다(App.jsx 가 30초간 폴링 소비).
+    // AI 선제 대화/스티커 알림 탭 → 관련 아이 화면 직행. WebView 부팅 타이밍이
+    // 가변적이라 remote-listen 플래그 주입과 동일하게 지연 재주입한다.
     private void handleRouteLaunch(Intent intent) {
-        if (intent == null || !"ai-chat".equals(intent.getStringExtra("route"))) {
+        if (intent == null) {
             return;
         }
-        Log.i("MainActivity", "AI chat route launch - will inject JS flag");
-        injectOpenAiChatFlag(1000);
-        injectOpenAiChatFlag(3000);
-        injectOpenAiChatFlag(6000);
-        injectOpenAiChatFlag(10000);
+        String route = intent.getStringExtra("route");
+        if ("ai-chat".equals(route)) {
+            Log.i("MainActivity", "AI chat route launch - will inject JS flag");
+            injectOpenAiChatFlag(1000);
+            injectOpenAiChatFlag(3000);
+            injectOpenAiChatFlag(6000);
+            injectOpenAiChatFlag(10000);
+            return;
+        }
+        if ("child-sticker".equals(route)) {
+            Log.i("MainActivity", "Sticker route launch - will open sticker book");
+            injectHashRoute("#/child/sticker", 1000);
+            injectHashRoute("#/child/sticker", 3000);
+            injectHashRoute("#/child/sticker", 6000);
+            injectHashRoute("#/child/sticker", 10000);
+        }
     }
 
     private void injectOpenAiChatFlag(long delayMs) {
@@ -289,6 +304,20 @@ public class MainActivity extends BridgeActivity {
             return;
         }
         final String js = "window.__OPEN_AI_CHAT_REQUESTED = true;";
+        getBridge().getWebView().postDelayed(() -> {
+            if (getBridge() == null || getBridge().getWebView() == null) {
+                return;
+            }
+            getBridge().getWebView().evaluateJavascript(js, null);
+        }, delayMs);
+    }
+
+    private void injectHashRoute(String hashRoute, long delayMs) {
+        if (getBridge() == null || getBridge().getWebView() == null) {
+            return;
+        }
+        String escapedRoute = hashRoute.replace("\\", "\\\\").replace("'", "\\'");
+        final String js = "window.location.hash='" + escapedRoute + "';";
         getBridge().getWebView().postDelayed(() -> {
             if (getBridge() == null || getBridge().getWebView() == null) {
                 return;

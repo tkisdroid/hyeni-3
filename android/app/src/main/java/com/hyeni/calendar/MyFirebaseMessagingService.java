@@ -278,6 +278,11 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             data.get("idempotency_key"),
             type + ":" + title + ":" + body
         );
+        if ("sticker".equals(type) && MainActivity.isAppForeground()) {
+            Log.i(TAG, "Sticker FCM suppressed while app is foreground");
+            PolledNotificationStore.markAck(this, stableId);
+            return;
+        }
 
         showNotification(title, body, type, isEmergency, stableId);
     }
@@ -314,11 +319,13 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         boolean isKkuk = "kkuk".equals(type);
         // 꾹은 긴급 등급 — 전체화면(fullScreenIntent)으로 띄운다.
         boolean fullScreen = isEmergency || isKkuk;
-        // AI 친구 메시지는 child_message 채널(IMPORTANCE_HIGH)로 heads-up 팝업 보장.
-        boolean isChildMessage = "ai_proactive".equals(type);
+        // AI 친구 메시지와 부모 칭찬 스티커는 child_message 채널(IMPORTANCE_HIGH)로
+        // heads-up 팝업 보장.
+        boolean isSticker = "sticker".equals(type);
+        boolean isChildMessage = "ai_proactive".equals(type) || isSticker;
         String channel = isEmergency ? "emergency" : (isKkuk ? "kkuk" : (isChildMessage ? "child_message" : "schedule"));
-        // AI 선제 대화 알림은 탭하면 AI 채팅 화면으로 직행해야 대화가 이어진다.
-        String route = "ai_proactive".equals(type) ? "ai-chat" : null;
+        // AI 선제 대화/스티커 알림은 탭하면 관련 아이 화면으로 직행한다.
+        String route = "ai_proactive".equals(type) ? "ai-chat" : (isSticker ? "child-sticker" : null);
         NotificationHelper.showNotification(
             this, title, body,
             channel, fullScreen, fullScreen, currentNotifId, route
@@ -488,6 +495,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         // Android 12+ setSilent(true) + 채널 자체 sound=null 로 이중 보장.
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.drawable.ic_hyeni_notification)
+            .setLargeIcon(NotificationHelper.largeIcon(this))
             .setColor(ContextCompat.getColor(this, R.color.notification_accent))
             .setContentTitle("주변 소리 연결 요청")
             .setContentText("탭해서 아이 기기에서 연결을 시작하세요.")
@@ -550,6 +558,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         Notification notif = new NotificationCompat.Builder(this, NotificationHelper.FORCE_RING_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_hyeni_notification)
+                .setLargeIcon(NotificationHelper.largeIcon(this))
                 .setColor(ContextCompat.getColor(this, R.color.notification_accent))
                 .setContentTitle(title)
                 .setContentText(body)
@@ -632,8 +641,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         options.setPendingIntentCreatorBackgroundActivityStartMode(
             ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
         );
-        // 폴더블 접힘: 내부 화면이 꺼져 있으면 켜진 커버 디스플레이로 띄운다.
-        options.setLaunchDisplayId(RemoteListenActivity.activeLaunchDisplayId(this));
+        RemoteListenActivity.applyRemoteListenLaunchDisplay(this, options);
         return options.toBundle();
     }
 
@@ -646,8 +654,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         options.setPendingIntentBackgroundActivityStartMode(
             ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
         );
-        // 폴더블 접힘: 내부 화면이 꺼져 있으면 켜진 커버 디스플레이로 띄운다.
-        options.setLaunchDisplayId(RemoteListenActivity.activeLaunchDisplayId(this));
+        RemoteListenActivity.applyRemoteListenLaunchDisplay(this, options);
         return options.toBundle();
     }
 

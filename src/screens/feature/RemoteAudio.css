@@ -107,6 +107,10 @@
   gap: 8px;
   --press: 0.98;
 }
+.ra-start:disabled {
+  opacity: 0.72;
+  box-shadow: none;
+}
 
 /* 웹(PWA/아이폰) 안내 — 네이티브 전용 기능이라 시작 버튼 대신 표시 */
 .ra-webnote {
@@ -206,6 +210,21 @@
   transform-origin: bottom;
   animation: hy-wave 1s ease-in-out infinite;
 }
+.ra-listen[data-receiving="false"] .ra-pulse-ring1,
+.ra-listen[data-receiving="false"] .ra-pulse-ring2 {
+  animation-duration: 3.4s;
+  background: rgba(167, 139, 250, 0.18);
+}
+.ra-listen[data-receiving="false"] .ra-pulse-core {
+  background: radial-gradient(circle at 50% 40%, #b79dfb, #8b6bec);
+  box-shadow: 0 20px 40px -10px rgba(124, 92, 225, 0.48);
+}
+.ra-listen[data-receiving="false"] .ra-bar {
+  height: 34%;
+  opacity: 0.42;
+  animation-play-state: paused;
+  background: linear-gradient(180deg, #d9c9ff, #8b6bec);
+}
 
 .ra-timer {
   display: inline-flex;
@@ -230,6 +249,13 @@
   border-radius: 50%;
   background: #ff5a74;
   animation: hy-soft 1.2s ease-in-out infinite;
+}
+.ra-listen[data-receiving="false"] .ra-live {
+  background: rgba(167, 139, 250, 0.22);
+  color: #d9c9ff;
+}
+.ra-listen[data-receiving="false"] .ra-live-dot {
+  background: #b79dfb;
 }
 .ra-time {
   font-size: 30px;

@@ -6,9 +6,11 @@ import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useParseSchedule } from "@/queries/useAi";
-import { useSaveEventWithChildren } from "@/queries/useSchedule";
+import { useEvents, useSaveEventsWithChildrenBatch } from "@/queries/useSchedule";
+import { useEntitlement } from "@/queries/useEntitlement";
 import { useActiveChild } from "@/app/activeChild";
 import { dateToDateKey } from "@/transform/dateKey";
+import { scheduleLimitFor, TIERS } from "@/transform/tierPolicy";
 import { ApiError } from "@/lib/api/errors";
 import { captureSpeech, isSpeechCaptureSupported } from "@/lib/native/speech";
 import type { ParsedScheduleEvent } from "@/lib/api/endpoints/ai";
@@ -70,8 +72,10 @@ export function AiSchedule() {
   const { show } = useToast();
   const { status, familyId } = useAuth();
   const parseM = useParseSchedule();
-  const createM = useSaveEventWithChildren();
+  const createM = useSaveEventsWithChildrenBatch();
   const { activeChild } = useActiveChild();
+  const existingEvents = useEvents();
+  const { tier } = useEntitlement();
 
   const [tab, setTab] = useState<TabKey>("voice");
   const [text, setText] = useState("");
@@ -203,29 +207,43 @@ export function AiSchedule() {
       show("로그인이 필요해요", "🔒");
       return;
     }
-    try {
-      for (const ev of parsed) {
-        const dateKey = dateToDateKey(
-          new Date(ev.year ?? cd.year, ev.month ?? cd.month, ev.day ?? cd.day),
-        );
-        const category = ev.category || "other";
-        // AI 일정은 활성 아이에게 배정(가족 전체 노출 방지 — "AI가 아이 일정으로 정리" UI 와 일치).
-        await createM.mutateAsync({
-          event: {
-            id: crypto.randomUUID(),
-            family_id: familyId,
-            date_key: dateKey,
-            title: ev.title,
-            time: ev.time && ev.time !== "null" ? ev.time : null,
-            category,
-            emoji: CAT_EMOJI[category] || CAT_EMOJI.other,
-            memo: ev.memo && ev.memo !== "null" ? ev.memo : "",
-          },
-          childIds: activeChild ? [activeChild.id] : [],
-          familyAll: false,
-          expectedUpdatedAt: null,
-        });
+    if (!activeChild) {
+      show("일정을 넣을 아이를 먼저 선택해 주세요", "⚠️");
+      return;
+    }
+    if (tier !== TIERS.UNKNOWN) {
+      const limit = scheduleLimitFor(tier);
+      const currentCount = existingEvents.data?.length ?? 0;
+      if (currentCount + parsed.length > limit) {
+        show(`현재 플랜에서는 일정 ${limit}개까지 저장할 수 있어요`, "👑");
+        return;
       }
+    }
+    try {
+      await createM.mutateAsync(
+        parsed.map((ev) => {
+          const dateKey = dateToDateKey(
+            new Date(ev.year ?? cd.year, ev.month ?? cd.month, ev.day ?? cd.day),
+          );
+          const category = ev.category || "other";
+          // AI 일정은 활성 아이에게 배정(가족 전체 노출 방지 — "AI가 아이 일정으로 정리" UI 와 일치).
+          return {
+            event: {
+              id: crypto.randomUUID(),
+              family_id: familyId,
+              date_key: dateKey,
+              title: ev.title,
+              time: ev.time && ev.time !== "null" ? ev.time : null,
+              category,
+              emoji: CAT_EMOJI[category] || CAT_EMOJI.other,
+              memo: ev.memo && ev.memo !== "null" ? ev.memo : "",
+            },
+            childIds: [activeChild.id],
+            familyAll: false,
+            expectedUpdatedAt: null,
+          };
+        }),
+      );
       show(
         parsed.length > 1
           ? `${parsed.length}건의 일정을 캘린더에 추가했어요`

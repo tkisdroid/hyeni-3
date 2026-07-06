@@ -136,6 +136,29 @@
   opacity: 0.5;
 }
 
+.ef-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(34px, 1fr));
+  gap: 6px;
+  margin-top: 10px;
+}
+.ef-weekday {
+  min-width: 0;
+  height: 38px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1.5px solid var(--line-soft);
+  color: var(--fg-secondary);
+  font-size: 13px;
+  font-weight: 900;
+  --press: 0.95;
+}
+.ef-weekday.is-active {
+  background: var(--hy-accent-soft);
+  border-color: var(--hy-accent);
+  color: var(--hy-accent-text);
+}
+
 /* ── 보조 안내 ──────────────────────────────────────────────────────────── */
 .ef-note {
   margin-top: 8px;
@@ -168,7 +191,134 @@
   opacity: 0.7;
 }
 
+/* 반복 일정 수정 범위 확인 */
+.ef-scope-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  background: rgba(32, 26, 29, 0.34);
+}
+.ef-scope-sheet {
+  width: min(100%, 420px);
+  border-radius: 22px;
+  background: var(--bg-card);
+  box-shadow: 0 22px 48px rgba(32, 26, 29, 0.18);
+  padding: 22px 18px 16px;
+  box-sizing: border-box;
+  animation: hy-sheet-up 0.18s ease-out both;
+}
+@keyframes hy-sheet-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.ef-scope-title {
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--fg-primary);
+}
+.ef-scope-desc {
+  margin: 8px 0 16px;
+  color: var(--fg-secondary);
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.ef-scope-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ef-scope-primary,
+.ef-scope-secondary,
+.ef-scope-cancel {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 15px;
+  font-size: 14px;
+  font-weight: 900;
+  --press: 0.98;
+}
+.ef-scope-primary {
+  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  color: var(--bg-card);
+}
+.ef-scope-secondary {
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+}
+.ef-scope-cancel {
+  background: var(--bg-press);
+  color: var(--fg-tertiary);
+}
+
 /* 지도에서 장소 지정 버튼(장소 입력 우측) */
+.ef-place-row {
+  align-items: stretch;
+}
+.ef-place-field {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.ef-place-suggestions {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border: 1.5px solid var(--line-soft);
+  border-radius: 16px;
+  background: var(--bg-card);
+  box-shadow: 0 14px 30px rgba(32, 26, 29, 0.12);
+}
+.ef-place-option {
+  width: 100%;
+  min-height: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--fg-primary);
+  text-align: left;
+  --press: 0.98;
+}
+.ef-place-option:active,
+.ef-place-option:hover {
+  background: var(--hy-accent-soft);
+}
+.ef-place-option-name {
+  font-size: 13.5px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+.ef-place-option-address {
+  width: 100%;
+  overflow: hidden;
+  color: var(--fg-tertiary);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .ef-mapbtn {
   flex: none;
   display: inline-flex;

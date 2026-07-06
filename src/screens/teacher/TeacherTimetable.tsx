@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, MapPin } from "lucide-react";
+import { Plus, MapPin, Copy } from "lucide-react";
 import { useToast } from "@/app/toast";
-import { useTeacherClasses, useRoster, useClassSchedule } from "@/queries/useTeacher";
+import { useTeacherClasses, useRoster, useClassSchedule, useCopyClassWeekSchedule } from "@/queries/useTeacher";
 import { isMissingFunction } from "@/lib/api/errors";
 import { dateToDateKey } from "@/transform/dateKey";
 import { isoDateKey } from "@/transform/teacherView";
@@ -57,6 +57,7 @@ export function TeacherTimetable() {
 
   const rosterQ = useRoster(classId);
   const studentCount = rosterQ.data?.length ?? 0;
+  const copyWeek = useCopyClassWeekSchedule();
 
   // 이번 주(월~일) 날짜 스트립 + 오늘 키. 마운트 시 고정(쿼리키 churn 방지).
   const { weekDays, todayKey } = useMemo(() => {
@@ -84,6 +85,7 @@ export function TeacherTimetable() {
 
   const scheduleQ = useClassSchedule(classId, selectedKey);
   const rows = useMemo(() => sortByTime(scheduleQ.data ?? []), [scheduleQ.data]);
+  const weekStartKey = useMemo(() => dateToDateKey(weekDays[0]), [weekDays]);
 
   const loading = classesQ.isLoading;
   const genuineError = classesQ.isError && !isMissingFunction(classesQ.error);
@@ -97,6 +99,26 @@ export function TeacherTimetable() {
       return;
     }
     navigate("/teacher/notice", { state: { dateInput: isoDateKey(selectedDate) } });
+  };
+
+  const copyCurrentWeek = () => {
+    if (!classId || copyWeek.isPending) return;
+    copyWeek.mutate(
+      { classId, weekStartDateKey: weekStartKey },
+      {
+        onSuccess: (res) => {
+          if (res.copied > 0) {
+            const skipped = res.skipped > 0 ? ` · 중복 ${res.skipped}건 제외` : "";
+            show(`다음 주로 ${res.copied}건 복사했어요${skipped}`, "🗓️");
+          } else if (res.sourceCount > 0) {
+            show("이미 다음 주에 같은 일정이 있어요", "🗓️");
+          } else {
+            show("복사할 반 일정이 없어요", "🗓️");
+          }
+        },
+        onError: (err) => show(err instanceof Error ? err.message : "주간 복사에 실패했어요", "⚠️"),
+      },
+    );
   };
 
   return (
@@ -208,13 +230,22 @@ export function TeacherTimetable() {
               )}
             </div>
 
-            {/* 정직 안내: 반 일정은 알림장(부모 캘린더 반영)으로 추가한다. 주 복사는 미제공. */}
+            {/* 반 일정은 알림장으로 추가하고, 현재 주간은 서버에서 다음 주로 복사한다. */}
             <div className="tt-note">
               <span className="tt-note__ico">🗓️</span>
               <span>
                 반 일정은 아이별 캘린더에서 모여요. 새 일정은 <b>‘일정 추가’(알림장)</b>로 보내면
-                학부모 캘린더에 함께 반영돼요. 주간 통째 복사는 아직 준비 중이에요.
+                학부모 캘린더에 함께 반영돼요.
               </span>
+              <button
+                type="button"
+                className="tt-copy hy-press"
+                onClick={copyCurrentWeek}
+                disabled={copyWeek.isPending}
+              >
+                <Copy size={14} strokeWidth={2.4} />
+                {copyWeek.isPending ? "복사 중" : "다음 주로 복사"}
+              </button>
             </div>
           </>
         )}

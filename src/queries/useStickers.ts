@@ -27,7 +27,7 @@ export function useStickerSummary() {
 /** 받은 칭찬 스티커 목록. userId 미지정 시 현재 로그인 사용자(아이 본인). */
 export function useReceivedStickers(userId?: string | null) {
   const { familyId, userId: myId, status } = useAuth();
-  const targetUserId = userId ?? myId;
+  const targetUserId = userId === undefined ? myId : userId;
   return useQuery({
     queryKey: qk.receivedStickers(familyId ?? "", targetUserId ?? ""),
     queryFn: () => fetchReceivedStickers(familyId as string, targetUserId as string),

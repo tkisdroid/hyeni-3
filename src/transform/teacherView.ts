@@ -8,6 +8,7 @@ import type {
   AttendanceRow,
   AttendanceStatus,
 } from "@/lib/api/endpoints/teacher";
+import { DEFAULT_CHILD_AVATAR } from "@/lib/avatar";
 
 /**
  * 출석용 ISO date_key("YYYY-MM-DD").
@@ -72,15 +73,7 @@ export function scopeLabel(scope: string | null | undefined): string {
 
 /* ── 학생 카드 뷰모델 ─────────────────────────────────────────────────────── */
 
-// 아바타/배경은 명단 순서로 순환(familyView 와 동일 방식 — 명단 API 는 사진 미제공).
-const STUDENT_ANIMALS = [
-  "animal/bear.webp",
-  "animal/rabbit.webp",
-  "animal/fox.webp",
-  "animal/panda.webp",
-  "animal/cat.webp",
-  "animal/dog.webp",
-];
+// 명단 API 는 사진 미제공이라 기본 혜니 캐릭터를 사용한다.
 const STUDENT_SOFTS = ["#E6F2FB", "#FDE7F1", "#FFEEE3", "#E7F8F0", "#F1ECFF", "#FFF3D6"];
 
 export interface StudentView {
@@ -109,7 +102,7 @@ export function mapRosterToStudents(
       name: r.name,
       subtitle: scopeLabel(r.permissionScope),
       emoji: r.emoji,
-      avatar: STUDENT_ANIMALS[i % STUDENT_ANIMALS.length],
+      avatar: DEFAULT_CHILD_AVATAR,
       soft: STUDENT_SOFTS[i % STUDENT_SOFTS.length],
       attend: attendBadge(status),
       status,

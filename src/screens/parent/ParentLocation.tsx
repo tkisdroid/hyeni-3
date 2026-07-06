@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Lock, Crown } from "lucide-react";
 import { asset } from "@/lib/assets";
+import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
+import { useAuth } from "@/auth/AuthContext";
 import { useActiveChild } from "@/app/activeChild";
 import { KakaoMap, type MapZone, type MapPlace, type MapStay } from "@/components/KakaoMap";
 import {
@@ -11,8 +14,10 @@ import {
   useSavedPlaces,
   useLocationHistory,
 } from "@/queries/useLocation";
+import { useEvents } from "@/queries/useSchedule";
+import { useLocationLabels } from "@/queries/useLocationLabels";
 import { useEntitlement } from "@/queries/useEntitlement";
-import { formatFreshness, placeLabel, parseServerTimestamp, distanceMeters } from "@/transform/locationView";
+import { formatFreshness, parseServerTimestamp, distanceMeters } from "@/transform/locationView";
 import {
   toTimedPoints,
   detectStayPoints,
@@ -22,8 +27,12 @@ import {
   type StayPoint,
 } from "@/transform/stayPoints";
 import { TIERS, locationModeFor } from "@/transform/tierPolicy";
+import { parseAppDateKey, todayDateKey } from "@/transform/dateKey";
+import { filterEventsForChild } from "@/transform/eventScope";
 import { placePhoneCall } from "@/lib/native/phone";
+import { requestLocationRefresh } from "@/lib/api/endpoints/remote";
 import type { LocationHistoryPoint } from "@/lib/api/endpoints/location";
+import type { CalendarEvent } from "@/lib/api/endpoints/schedule";
 import "./ParentLocation.css";
 
 function avatarSrc(path: string): string {
@@ -31,6 +40,63 @@ function avatarSrc(path: string): string {
 }
 
 const TRAIL_JITTER_M = 8; // hyeni-1 LOCATION_TRAIL_JITTER_M — 정지 중 GPS 지터(≈8m)를 한 점으로 압축.
+const SCHEDULE_STAY_RADIUS_M = 220;
+const MIN_SCHEDULE_STAY_OVERLAP_MS = 10 * 60 * 1000;
+
+function timeToMinutes(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const match = /^(\d{1,2}):(\d{2})$/.exec(value.trim());
+  if (!match) return null;
+  const h = Number(match[1]);
+  const m = Number(match[2]);
+  if (!Number.isInteger(h) || !Number.isInteger(m) || h < 0 || h > 23 || m < 0 || m > 59) {
+    return null;
+  }
+  return h * 60 + m;
+}
+
+function eventPoint(event: CalendarEvent): { lat: number; lng: number } | null {
+  const lat = event.location?.lat;
+  const lng = event.location?.lng;
+  if (typeof lat !== "number" || typeof lng !== "number") return null;
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return { lat, lng };
+}
+
+function eventWindowMs(event: CalendarEvent): { startMs: number; endMs: number } | null {
+  const date = parseAppDateKey(event.date_key);
+  const startMin = timeToMinutes(event.time);
+  if (!date || startMin == null) return null;
+  const endMinRaw = timeToMinutes(event.end_time);
+  const endMin = endMinRaw == null ? startMin + 60 : endMinRaw;
+  const base = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  const startMs = base + startMin * 60_000;
+  const endMs = base + (endMin <= startMin ? endMin + 24 * 60 : endMin) * 60_000;
+  return { startMs, endMs };
+}
+
+function eventLabel(event: CalendarEvent): string {
+  return (event.title || event.location?.address || "일정 장소").trim();
+}
+
+function scheduleStayLabel(stay: StayPoint, events: CalendarEvent[]): string | null {
+  const candidates = events
+    .map((event) => {
+      const point = eventPoint(event);
+      if (!point) return null;
+      const distance = distanceMeters(stay.lat, stay.lng, point.lat, point.lng);
+      if (distance > SCHEDULE_STAY_RADIUS_M) return null;
+      const window = eventWindowMs(event);
+      if (!window) return null;
+      const overlapMs =
+        Math.min(stay.departureMs, window.endMs) - Math.max(stay.arrivalMs, window.startMs);
+      if (overlapMs < MIN_SCHEDULE_STAY_OVERLAP_MS) return null;
+      return { event, distance, overlapMs };
+    })
+    .filter((row): row is { event: CalendarEvent; distance: number; overlapMs: number } => row !== null)
+    .sort((a, b) => b.overlapMs - a.overlapMs || a.distance - b.distance);
+  return candidates[0] ? eventLabel(candidates[0].event) : null;
+}
 
 /**
  * 하루 위치 이력 → 이동 경로 폴리라인 좌표.
@@ -58,9 +124,11 @@ function buildTrailPolyline(
 export function ParentLocation() {
   const navigate = useNavigate();
   const { show } = useToast();
+  const { familyId } = useAuth();
   const { data: locations, refetch, isFetching, isError } = useChildLocations();
   const { data: zones } = useDangerZones();
   const { data: places } = useSavedPlaces();
+  const { data: events } = useEvents();
   const { tier } = useEntitlement();
 
   // 티어 위치 모드: 무료=잠금 / 리뷰=지연 / 프리미엄=실시간. unknown(미확정)은 잠그지 않는다(R9).
@@ -72,12 +140,15 @@ export function ParentLocation() {
   const premiumOpen = !tierKnown || mode === "realtime";
 
   const now = useMemo(() => new Date(), [locations]);
+  const todayKey = useMemo(() => todayDateKey(now), [now]);
 
   // 대상 아이 = 전역 활성 아이(스위치는 부모 홈에서만 — 이 화면엔 전환 UI 없음).
   // 예외: 알림/SOS/도착에서 `?child=<user_id>` 로 진입하면 그 아이를 우선(위급 아이 — 안전 규칙).
   const { activeChild, childMembers } = useActiveChild();
   const [searchParams] = useSearchParams();
   const childParam = searchParams.get("child");
+  const requestedView: "live" | "history" =
+    searchParams.get("view") === "history" ? "history" : "live";
   const selected = useMemo(() => {
     if (childParam) {
       const target = childMembers.find((m) => m.user_id === childParam);
@@ -86,14 +157,15 @@ export function ParentLocation() {
     return activeChild;
   }, [childParam, childMembers, activeChild]);
 
-  const childAvatar = selected?.photo_url || "animal/rabbit.webp";
+  const childAvatar = childAvatarPath(selected?.photo_url);
   const childName = selected?.name || "아이";
   const loc = selected?.user_id
     ? locations?.find((l) => l.user_id === selected.user_id) ?? null
     : null;
 
   const fresh = loc ? formatFreshness(loc.updated_at, now) : null;
-  const curPlace = loc && places ? placeLabel(loc, places) : "위치 확인 중";
+  const locationLabel = useLocationLabels(loc ? [loc] : [], places);
+  const curPlace = loc ? locationLabel(loc) : "위치 확인 중";
 
   // 리뷰(지연) 티어 배지용 지연 분(마지막 픽스 기준). 타임스탬프 미상이면 null.
   const delayMin = useMemo(() => {
@@ -104,7 +176,10 @@ export function ParentLocation() {
   }, [loc, now]);
 
   // ── 보기 모드: 실시간 위치 ↔ 오늘 이동경로(프리미엄) ──────────────────────
-  const [view, setView] = useState<"live" | "history">("live");
+  const [view, setView] = useState<"live" | "history">(requestedView);
+  useEffect(() => {
+    setView(requestedView);
+  }, [requestedView]);
   // 무료(잠금)에서는 항상 실시간 화면(잠금 오버레이). 토글은 잠금이 아닐 때만 노출.
   const activeView: "live" | "history" = isLocked ? "live" : view;
 
@@ -137,12 +212,31 @@ export function ParentLocation() {
     () => detectStayPoints(toTimedPoints(history, selected?.user_id ?? null)),
     [history, selected?.user_id],
   );
+  const selectedTodayEvents = useMemo(
+    () =>
+      filterEventsForChild(
+        (events ?? []).filter((event) => event.date_key === todayKey),
+        selected?.id ?? null,
+      ),
+    [events, todayKey, selected?.id],
+  );
+  const stayLabels = useMemo(
+    () => stayPoints.map((s) => scheduleStayLabel(s, selectedTodayEvents) ?? stayPlaceLabel(s, places)),
+    [stayPoints, selectedTodayEvents, places],
+  );
   // 목록에서 선택한 스테이포인트(지도 포커스 + 강조).
   const [selectedStayIdx, setSelectedStayIdx] = useState<number | null>(null);
+  const [staysCollapsed, setStaysCollapsed] = useState(false);
+  const staysDragStart = useRef<number | null>(null);
+  const staysDragged = useRef(false);
   // 아이 전환(전역 스위치·?child=) 시 선택 초기화 — 다른 아이의 스테이가 강조 잔존하지 않게.
   useEffect(() => {
     setSelectedStayIdx(null);
+    setStaysCollapsed(false);
   }, [selected?.id]);
+  useEffect(() => {
+    setStaysCollapsed(false);
+  }, [activeView, stayPoints.length]);
   const activeStayIdx =
     selectedStayIdx != null && selectedStayIdx < stayPoints.length ? selectedStayIdx : null;
   // 지도용 스테이 마커(순번·체류시간·장소명·강조).
@@ -153,14 +247,36 @@ export function ParentLocation() {
         lng: s.lng,
         order: i + 1,
         dwellLabel: formatDwell(s.dwellMs),
-        placeName: stayPlaceLabel(s, places),
+        placeName: stayLabels[i] ?? null,
         active: i === activeStayIdx,
       })),
-    [stayPoints, places, activeStayIdx],
+    [stayPoints, stayLabels, activeStayIdx],
   );
   // 목록 항목 선택 시 지도 중심을 그 스테이포인트로.
   const stayCenter =
     activeStayIdx != null ? { lat: stayPoints[activeStayIdx].lat, lng: stayPoints[activeStayIdx].lng } : null;
+
+  const onStaysGripDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    staysDragStart.current = e.clientY;
+    staysDragged.current = false;
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onStaysGripMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (staysDragStart.current == null) return;
+    const dy = e.clientY - staysDragStart.current;
+    if (dy > 46) {
+      setStaysCollapsed(true);
+      staysDragged.current = true;
+      staysDragStart.current = e.clientY;
+    } else if (dy < -46) {
+      setStaysCollapsed(false);
+      staysDragged.current = true;
+      staysDragStart.current = e.clientY;
+    }
+  };
+  const onStaysGripUp = () => {
+    staysDragStart.current = null;
+  };
 
   const histLocked = activeView === "history" && !premiumOpen;
   const histLoading = activeView === "history" && premiumOpen && historyFetching && trail.length === 0;
@@ -187,6 +303,14 @@ export function ParentLocation() {
   // 새로고침 — 실제 리페치 결과에 따라 정직하게 안내(거짓 성공 금지).
   const refresh = async () => {
     if (isFetching) return;
+    if (familyId && selected?.user_id) {
+      const requested = await requestLocationRefresh(familyId, selected.user_id);
+      if (!requested.ok) {
+        show("아이 기기에 위치 요청을 보내지 못했어요", "⚠️");
+      } else {
+        await new Promise((resolve) => window.setTimeout(resolve, 1800));
+      }
+    }
     const result = await refetch();
     show(
       result.isError ? "위치 갱신에 실패했어요" : "실시간 위치를 새로고침했어요",
@@ -331,7 +455,7 @@ export function ParentLocation() {
         <div className="pl-chips">
           <div className="pl-chip pl-chip--active" aria-label={`현재 ${selected.name || "아이"} 위치 보기`}>
             <span className="pl-chip__avatar">
-              <img src={avatarSrc(selected.photo_url || "animal/rabbit.webp")} alt="" />
+              <img src={avatarSrc(childAvatarPath(selected.photo_url))} alt="" />
             </span>
             <span className="pl-chip__name">{selected.name || "아이"}</span>
             <span className="pl-chip__dot" />
@@ -341,15 +465,39 @@ export function ParentLocation() {
 
       {/* 하단 — 오늘 경로(스테이포인트 목록) */}
       {activeView === "history" && premiumOpen && stayPoints.length > 0 && (
-        <div className="pl-sheet pl-stays">
-          <div className="pl-sheet__handle" />
+        <div className={`pl-sheet pl-stays${staysCollapsed ? " pl-stays--collapsed" : ""}`}>
+          <div
+            className="pl-stays__grip"
+            role="button"
+            tabIndex={0}
+            aria-label={staysCollapsed ? "오늘 머문 곳 펼치기" : "오늘 머문 곳 접기"}
+            onPointerDown={onStaysGripDown}
+            onPointerMove={onStaysGripMove}
+            onPointerUp={onStaysGripUp}
+            onPointerCancel={onStaysGripUp}
+            onClick={() => {
+              if (staysDragged.current) {
+                staysDragged.current = false;
+                return;
+              }
+              setStaysCollapsed((v) => !v);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setStaysCollapsed((v) => !v);
+              }
+            }}
+          >
+            <div className="pl-sheet__handle" />
+          </div>
           <div className="pl-stays__head">
             <span className="pl-stays__title">오늘 머문 곳</span>
             <span className="pl-stays__count">{stayPoints.length}곳</span>
           </div>
           <div className="pl-stays__list">
             {stayPoints.map((s, i) => {
-              const place = stayPlaceLabel(s, places);
+              const place = stayLabels[i];
               const on = i === activeStayIdx;
               return (
                 <button
@@ -401,7 +549,14 @@ export function ParentLocation() {
           <button
             type="button"
             className="pl-status hy-press"
-            onClick={() => navigate("/location-status")}
+            onClick={() =>
+              navigate(
+                selected?.user_id
+                  ? `/location-status?child=${encodeURIComponent(selected.user_id)}`
+                  : "/location-status",
+                { state: { childUserId: selected?.user_id ?? null, childId: selected?.id ?? null } },
+              )
+            }
           >
             <span className="pl-status__dot" />
             {isError ? "위치 갱신에 실패했어요 · 상태 확인" : "위치 정보가 없어요 · 상태 확인"}

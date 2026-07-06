@@ -1,6 +1,7 @@
 package com.hyeni.calendar;
 
 import android.Manifest;
+import android.app.ActivityOptions;
 import android.app.KeyguardManager;
 import android.app.NotificationManager;
 import android.content.Context;
@@ -290,21 +291,24 @@ public class RemoteListenActivity extends AppCompatActivity {
         return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
-    /**
-     * 폴더블 대응: 내부(default) 디스플레이가 꺼져 있으면(접힌 상태) 켜져 있는
-     * 커버/외부 디스플레이 id 를 돌려준다. 그래야 RemoteListenActivity 가 커버
-     * 화면에 실제로 떠서 마이크 FGS 의 foreground 컨텍스트를 만들 수 있다.
-     * 그 외에는 DEFAULT_DISPLAY 를 반환(펼친 상태 = 기존 동작 유지).
-     */
-    public static int activeLaunchDisplayId(Context ctx) {
+    /** 폴더블 대응: 켜진 커버/외부 디스플레이가 있으면 launch display 로 지정한다. */
+    public static void applyRemoteListenLaunchDisplay(Context ctx, ActivityOptions options) {
+        if (options == null) return;
+        int displayId = activeLaunchDisplayId(ctx);
+        // default display(0)를 명시하면 접힌 razr 에서 "Cannot launch ... on default display"로
+        // 실패할 수 있다. 기본 화면이면 시스템 선택에 맡기고, 커버 화면이 켜진 경우만 지정한다.
+        if (displayId != Display.DEFAULT_DISPLAY) {
+            options.setLaunchDisplayId(displayId);
+        }
+        Log.i(TAG, "Remote listen launch displayId=" + displayId + " states=" + displayStates(ctx));
+    }
+
+    private static int activeLaunchDisplayId(Context ctx) {
         try {
             DisplayManager dm = (DisplayManager) ctx.getSystemService(Context.DISPLAY_SERVICE);
             if (dm == null) return Display.DEFAULT_DISPLAY;
-            Display def = dm.getDisplay(Display.DEFAULT_DISPLAY);
-            if (def != null && def.getState() == Display.STATE_ON) {
-                return Display.DEFAULT_DISPLAY;
-            }
-            // 내부 화면이 꺼져 있으면(접힘) 켜져 있는 다른 디스플레이(커버)를 찾는다.
+            // 내부 화면이 접힌 상태에서는 커버 디스플레이가 non-default 로 켜진다.
+            // 그때만 명시 지정하고, 기본 화면은 ActivityTaskManager 의 라우팅에 맡긴다.
             for (Display d : dm.getDisplays()) {
                 if (d.getDisplayId() != Display.DEFAULT_DISPLAY && d.getState() == Display.STATE_ON) {
                     return d.getDisplayId();
@@ -313,6 +317,21 @@ public class RemoteListenActivity extends AppCompatActivity {
             return Display.DEFAULT_DISPLAY;
         } catch (Exception error) {
             return Display.DEFAULT_DISPLAY;
+        }
+    }
+
+    private static String displayStates(Context ctx) {
+        try {
+            DisplayManager dm = (DisplayManager) ctx.getSystemService(Context.DISPLAY_SERVICE);
+            if (dm == null) return "displayManager=null";
+            StringBuilder sb = new StringBuilder();
+            for (Display d : dm.getDisplays()) {
+                if (sb.length() > 0) sb.append(',');
+                sb.append(d.getDisplayId()).append(':').append(d.getState());
+            }
+            return sb.toString();
+        } catch (Exception error) {
+            return "displayStatesError";
         }
     }
 }

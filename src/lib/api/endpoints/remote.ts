@@ -143,6 +143,34 @@ export async function requestDeviceStatus(
   }
 }
 
+/** 아이 기기에 즉시 위치 갱신을 요청(request_location). 실패는 호출부가 안내할 수 있게 결과로 반환한다. */
+export async function requestLocationRefresh(
+  familyId: string,
+  targetChildUserId?: string | null,
+): Promise<{ ok: boolean; status?: number; error?: string }> {
+  if (!familyId) return { ok: false, error: "familyId required" };
+  const requestId = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const body: Record<string, unknown> = {
+    action: "request_location",
+    familyId,
+    title: "",
+    message: "",
+    targetRole: "child",
+    requestId,
+    requestedAt: new Date().toISOString(),
+  };
+  if (targetChildUserId) body.targetUserId = targetChildUserId;
+  try {
+    await apiPost("/api/push-notify", body);
+    return { ok: true };
+  } catch (e) {
+    const status = e instanceof ApiError ? e.status : undefined;
+    return { ok: false, status, error: e instanceof Error ? e.message : "request_location_failed" };
+  }
+}
+
 /** GET /api/force-ring/active — 조회 실패는 null 로 떨궈 패널 부팅을 막지 않는다. */
 export async function fetchActiveForceRing(familyId: string): Promise<ForceRingActive | null> {
   if (!familyId) return null;
@@ -192,6 +220,9 @@ export interface RemoteListenCommandResult {
   ok: boolean;
   status?: number;
   error?: string;
+  fcmSent?: number;
+  total?: number;
+  key?: string | null;
 }
 
 export interface RequestRemoteListenInput {
@@ -218,8 +249,11 @@ export async function requestRemoteListen(
   if (input.durationSec != null) body.durationSec = input.durationSec;
   if (input.requestId) body.requestId = input.requestId;
   try {
-    await apiPost("/api/push-notify", body);
-    return { ok: true };
+    const res = await apiPost<Pick<RemoteListenCommandResult, "fcmSent" | "total" | "key">>(
+      "/api/push-notify",
+      body,
+    );
+    return { ok: true, ...res };
   } catch (e) {
     const status = e instanceof ApiError ? e.status : undefined;
     return { ok: false, status, error: e instanceof Error ? e.message : "remote_listen_failed" };

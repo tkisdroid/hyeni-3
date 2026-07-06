@@ -140,7 +140,7 @@ export function TeacherStudents() {
           <div className="ts-empty">
             <span className="ts-empty__emoji">🧑‍🏫</span>
             <span className="ts-empty__title">
-              {genuineError ? "잠시 후 다시 시도해 주세요" : "선생님 모드 준비 중"}
+              {genuineError ? "잠시 후 다시 시도해 주세요" : "연결된 반이 없어요"}
             </span>
             <span className="ts-empty__sub">
               {genuineError

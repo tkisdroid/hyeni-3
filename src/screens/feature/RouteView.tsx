@@ -2,10 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, MapPin, RotateCw, Home } from "lucide-react";
 import { useToast } from "@/app/toast";
+import { childAvatarPath } from "@/lib/avatar";
 import { KakaoMap, type MapPlace } from "@/components/KakaoMap";
 import { useAuth } from "@/auth/AuthContext";
+import { useActiveChild } from "@/app/activeChild";
 import { useMyFamily } from "@/queries/useFamily";
 import { useChildLocations, useSavedPlaces } from "@/queries/useLocation";
+import { useLocationLabels } from "@/queries/useLocationLabels";
 import { useEvents } from "@/queries/useSchedule";
 import { useWalkingRoute } from "@/queries/useRoute";
 import { loadKakaoMaps } from "@/lib/kakaoMap";
@@ -13,8 +16,8 @@ import { openExternal } from "@/lib/native/browser";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { straightDistanceM, type RoutePoint } from "@/lib/api/endpoints/route";
 import type { CalendarEvent } from "@/lib/api/endpoints/schedule";
-import { placeLabel } from "@/transform/locationView";
 import { parseAppDateKey } from "@/transform/dateKey";
+import { filterEventsForChild } from "@/transform/eventScope";
 import "./RouteView.css";
 
 // 도보 4km/h ≈ 67m/분 — 실 도보 경로의 '거리'만으로 소요시간을 보정할 때 쓴다
@@ -86,6 +89,7 @@ export function RouteView() {
   const navigate = useNavigate();
   const { show } = useToast();
   const { userId } = useAuth();
+  const { activeChild } = useActiveChild();
   const { data: family } = useMyFamily();
   const { data: locations } = useChildLocations();
   const { data: places } = useSavedPlaces();
@@ -93,12 +97,14 @@ export function RouteView() {
 
   const nowMs = useMemo(() => Date.now(), [events]);
 
-  // 출발 = 본인(아이 세션) 현재 위치. 본인 미매칭 시 첫 자녀(부모가 열람하는 경우).
-  const childMember =
-    family?.members.find((m) => m.role === "child" && m.user_id === userId) ??
-    family?.members.find((m) => m.role === "child") ??
-    null;
-  const childAvatar = childMember?.photo_url || "animal/rabbit.webp";
+  // 출발 = 아이 세션이면 본인, 부모 세션이면 전역 활성 아이. 첫째 폴백은 쓰지 않는다.
+  const ownChild = family?.members.find((m) => m.role === "child" && m.user_id === userId) ?? null;
+  const activeChildMember =
+    activeChild && family?.members.some((m) => m.role === "child" && m.id === activeChild.id)
+      ? activeChild
+      : null;
+  const childMember = ownChild ?? activeChildMember;
+  const childAvatar = childAvatarPath(childMember?.photo_url);
   const childName = childMember?.name || "아이";
   const loc = locations?.find((l) => l.user_id === childMember?.user_id) ?? null;
   const origin = useMemo<RoutePoint | null>(
@@ -109,7 +115,11 @@ export function RouteView() {
 
   // 도착 = 다음 일정 장소. 좌표가 없으면 ①저장장소 이름 매칭 ②Kakao 키워드/주소 검색으로 해석.
   // undefined = 해석 중(로딩), null = 안내할 곳 없음(정직한 빈 상태 — 직선 폴백 금지).
-  const nextEvent = useMemo(() => pickNextEventWithPlace(events, nowMs), [events, nowMs]);
+  const childEvents = useMemo(
+    () => filterEventsForChild(events ?? [], childMember?.id),
+    [events, childMember?.id],
+  );
+  const nextEvent = useMemo(() => pickNextEventWithPlace(childEvents, nowMs), [childEvents, nowMs]);
   const [destination, setDestination] = useState<DestPick | null | undefined>(undefined);
   useEffect(() => {
     if (!events) return; // 일정 로딩 중
@@ -228,7 +238,8 @@ export function RouteView() {
     [destination],
   );
 
-  const curPlace = loc && places ? placeLabel(loc, places) : "현재 위치";
+  const locationLabel = useLocationLabels(loc ? [loc] : [], places);
+  const curPlace = loc ? locationLabel(loc) : "현재 위치";
   const title = destination ? `${destination.name} 길찾기` : "길찾기";
   const canStart = !!origin && !!destination;
 

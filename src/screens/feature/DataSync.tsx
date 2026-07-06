@@ -4,6 +4,7 @@ import { ChevronLeft, RefreshCw, Download, Trash2, Users } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/app/toast";
 import { useAccount, useExportFamilyData } from "@/queries/useAccount";
+import { useMyFamily } from "@/queries/useFamily";
 import { serializeDataExport } from "@/lib/api/endpoints/account";
 import "./DataSync.css";
 
@@ -21,11 +22,17 @@ export function DataSync() {
   const { show } = useToast();
   const qc = useQueryClient();
   const { account } = useAccount();
+  const { data: family, isLoading: familyLoading } = useMyFamily();
   const exportData = useExportFamilyData();
 
   const [syncedAt, setSyncedAt] = useState<string>(nowLabel());
 
-  const memberCount = account?.members.length ?? 0;
+  const members = family?.members ?? [];
+  const parentCount = members.filter((m) => m.role === "parent").length;
+  const childCount = members.filter((m) => m.role === "child").length;
+  const memberCount = parentCount + childCount;
+  const countReady = !!family;
+  const formatCount = (count: number) => (countReady ? `${count}명` : familyLoading ? "불러오는 중" : "0명");
 
   // 지금 동기화 — 전 쿼리 무효화(서버 최신값 재요청). 실제 리페치 트리거.
   const resync = () => {
@@ -100,7 +107,15 @@ export function DataSync() {
               <span className="ds-sync__k">
                 <Users size={14} strokeWidth={2.3} /> 가족 구성원
               </span>
-              <span className="ds-sync__v">{memberCount}명</span>
+              <span className="ds-sync__v">{formatCount(memberCount)}</span>
+            </div>
+            <div className="ds-sync__row">
+              <span className="ds-sync__k">부모</span>
+              <span className="ds-sync__v">{formatCount(parentCount)}</span>
+            </div>
+            <div className="ds-sync__row">
+              <span className="ds-sync__k">관리 중인 아이</span>
+              <span className="ds-sync__v">{formatCount(childCount)}</span>
             </div>
             <div className="ds-sync__row">
               <span className="ds-sync__k">마지막 동기화</span>

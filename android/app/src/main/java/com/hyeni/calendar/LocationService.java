@@ -88,13 +88,16 @@ public class LocationService extends Service {
     public static final String ACTION_HEARTBEAT_FIX = "HEARTBEAT_FIX";
     private static final int NOTIFICATION_ID = 9001;
     private static final int ALERT_NOTIFICATION_BASE = 10000;
-    private static final long NOTIF_POLL_INTERVAL_MS = 15_000;
-    private static final long EVENT_CHECK_INTERVAL_MS = 30_000; // check events every 30s
-    // 일정 목록은 자주 안 바뀌므로 get_today_events 네트워크 fetch 와 30초 시각 평가를 분리한다.
-    // events 는 이 주기로만 네트워크로 갱신해 캐시하고, 30초 tick 은 캐시로 로컬 평가만 수행 →
+    // Pending 알림 폴링은 FCM 누락 대비 fallback 이다. 15초 폴링은 하루 수천 번
+    // 라디오를 깨워 배터리 소모가 컸으므로, 즉시성은 FCM 에 맡기고 fallback 만 유지한다.
+    private static final long NOTIF_POLL_INTERVAL_MS = 60_000;
+    private static final long EVENT_CHECK_INTERVAL_MS = 60_000; // 서버 cron 보조용 로컬 평가
+    // 일정 목록은 자주 안 바뀌므로 get_today_events 네트워크 fetch 와 60초 시각 평가를 분리한다.
+    // events 는 이 주기로만 네트워크로 갱신해 캐시하고, 60초 tick 은 캐시로 로컬 평가만 수행 →
     // 라디오 깨움을 ~2880회/일에서 ~720회/일로 낮춘다. (tickPlaceGeofence 의 refresh/eval 분리 패턴.)
     private static final long EVENT_REFRESH_INTERVAL_MS = 2 * 60_000L;
     private static final String PREFS_NAME = "hyeni_location_prefs";
+    private static final String PREF_LOCATION_INTERVAL_MODE = "locationIntervalMode";
     private static final String POLLED_DEDUPE_PREFS = "hyeni_polled_notification_ack";
     private static final long POLLED_DEDUPE_WINDOW_MS = 12 * 60 * 60 * 1000L;
     // NTV-H4: persisted mirror of shownEventNotifs (arrival / miss alert dedup).
@@ -102,10 +105,11 @@ public class LocationService extends Service {
     private static final long SHOWN_NOTIFS_TTL_MS = 24 * 60 * 60 * 1000L;
 
     // Location tracking constants
-    private static final long LOCATION_INTERVAL_MOVING_MS = 3_000;
-    // Phase C: stationary 모드도 30s 로 더 짧게. 정지 → 이동 전환 직후 GPS 점프 거리를 줄임.
-    private static final long LOCATION_INTERVAL_STATIONARY_MS = 30_000;
-    private static final long LOCATION_MIN_INTERVAL_STATIONARY_MS = 15_000;
+    private static final long LOCATION_INTERVAL_MOVING_MS = 15_000;
+    // 정지 중에는 위치 신선도보다 배터리 보호가 우선이다. 출발 감지는
+    // significant-motion/activity transition 이 즉시 moving 모드로 올린다.
+    private static final long LOCATION_INTERVAL_STATIONARY_MS = 120_000;
+    private static final long LOCATION_MIN_INTERVAL_STATIONARY_MS = 60_000;
     private static final float STATIONARY_THRESHOLD_M = 30f;  // 30m 이내 이동 = 정지로 간주
     // Phase C: 1분 → 3분. 짧은 정지(예: 횡단보도 대기)가 BALANCED_POWER 모드 진입 안 시키도록.
     private static final long STATIONARY_WINDOW_MS = 180_000;
@@ -114,13 +118,13 @@ public class LocationService extends Service {
     // Phase C: 100m -> 50m. -> 150m (NTV-H8: 실내에서도 끊김없는 추적을 위해 완화)
     private static final float MAX_ACCURACY_M = 150f;
 
-    private static final long MAX_UPLOAD_AGE_MS = 15_000L;
-    private static final long LOCATION_FIX_WATCHDOG_INTERVAL_MS = 60_000L;
-    private static final long LOCATION_FIX_STALE_MS = 45_000L;
-    // 위치는 안전 핵심 기능이다. 현재위치 업로드 기준(2m)과 맞춰 이동 경로 원본을
-    // 최대한 촘촘히 남긴다. 정지 중에도 30초마다 heartbeat성 history 점을 남긴다.
+    private static final long MAX_UPLOAD_AGE_MS = 60_000L;
+    private static final long LOCATION_FIX_WATCHDOG_INTERVAL_MS = 120_000L;
+    private static final long LOCATION_FIX_STALE_MS = 180_000L;
+    // 위치는 안전 핵심 기능이다. 이동 중에는 촘촘히 남기되, 정지 중 history heartbeat 는
+    // 배터리 보호를 위해 2분 단위로 제한한다.
     private static final float MIN_HISTORY_DISTANCE_M = 2f;
-    private static final long MAX_HISTORY_AGE_MS = 30_000L;
+    private static final long MAX_HISTORY_AGE_MS = 120_000L;
     // 도로매칭(Kakao) 실패 시: 직전→실측 간 거리가 이 값 이하인 조밀 캡처는 직선이
     // 충분히 정확하므로 실측(is_estimated=false)으로 기록한다. 초과(듬성한 갭)일 때만
     // 직선 보간 '채움점'을 추정으로 표기. trailMath LOCATION_TRAIL_DASHED_GAP_M=150 정렬.
@@ -129,7 +133,7 @@ public class LocationService extends Service {
     private static final long LOCATION_BUFFER_MAX_AGE_MS = 48L * 60L * 60L * 1000L;
     // 오프라인 버퍼 줄 수 상한 — age prune 의 보조 안전장치. 플러시가 계속 실패해도
     // 버퍼가 발산하지 않게 가장 오래된 초과분을 버린다. 활발한 48시간 이동 기록
-    // (3초 샘플 기준 48시간 약 5.8만 점)의 여유 — 정상 데이터는 잘리지 않고
+    // (15초 샘플 기준 48시간 약 1.2만 점)의 여유 — 정상 데이터는 잘리지 않고
     // 비정상 장기 누적만 차단한다.
     private static final int LOCATION_BUFFER_MAX_LINES = 100000;
     // 한 번의 upload 요청에 보낼 최대 행 수. 서버 RPC 1요청에 수천 행을 보내면
@@ -138,6 +142,13 @@ public class LocationService extends Service {
     private static final int LOW_BATTERY_THRESHOLD_PERCENT = 5;
     private static final long LOW_BATTERY_CHECK_INTERVAL_MS = 60_000L;
     private static final long LOW_BATTERY_SAVE_INTERVAL_MS = 5 * 60_000L;
+    private volatile String locationIntervalMode = "balanced";
+    private volatile long activeMovingIntervalMs = LOCATION_INTERVAL_MOVING_MS;
+    private volatile long activeStationaryIntervalMs = LOCATION_INTERVAL_STATIONARY_MS;
+    private volatile long activeStationaryMinIntervalMs = LOCATION_MIN_INTERVAL_STATIONARY_MS;
+    private volatile long activeMaxUploadAgeMs = MAX_UPLOAD_AGE_MS;
+    private volatile long activeLocationFixStaleMs = LOCATION_FIX_STALE_MS;
+    private volatile long activeMaxHistoryAgeMs = MAX_HISTORY_AGE_MS;
 
     // 스코프드 WakeLock: 영구 6h wakelock 을 제거(idle 시 Doze 절전 허용 = 배터리 절감)하고,
     // 네트워크 업로드/알림 작업과 fix 획득 동안에만 CPU 를 깨워둔다. timeout 은 정상 경로에서
@@ -163,7 +174,7 @@ public class LocationService extends Service {
     // Track which event notifications we already showed (to avoid duplicates)
     private final Set<String> shownEventNotifs = ConcurrentHashMap.newKeySet();
 
-    // get_today_events 네트워크 결과 캐시(EVENT_REFRESH_INTERVAL_MS throttle). 30초 시각 평가는
+    // get_today_events 네트워크 결과 캐시(EVENT_REFRESH_INTERVAL_MS throttle). 60초 시각 평가는
     // 이 캐시로 수행하고, 캐시가 신선하면 RPC 호출(라디오 깨움)을 건너뛴다. 자정(dateKey 변경) 시 강제 갱신.
     private volatile String cachedEventsJson = null;
     private volatile String cachedEventsDateKey = "";
@@ -271,6 +282,7 @@ public class LocationService extends Service {
                 String intentRefresh = intent.getStringExtra("refreshToken");
                 if (intentRefresh != null && !intentRefresh.isEmpty()) refreshToken = intentRefresh;
                 String role = intent.getStringExtra("role");
+                String intervalMode = intent.getStringExtra("intervalMode");
 
                 // Walking-route lookups go through the kakao-proxy Edge
                 // Function, so kakaoRestKey is no longer ingested. Strip any
@@ -285,6 +297,7 @@ public class LocationService extends Service {
                     .remove("kakaoRestKey");
                 if (refreshToken != null && !refreshToken.isEmpty()) editor.putString("refreshToken", refreshToken);
                 if (role != null) editor.putString("role", role);
+                if (intervalMode != null) editor.putString(PREF_LOCATION_INTERVAL_MODE, normalizeLocationIntervalMode(intervalMode));
                 editor.apply();
             }
 
@@ -313,6 +326,8 @@ public class LocationService extends Service {
                 prefs.edit().remove("kakaoRestKey").apply();
             }
         }
+
+        applyLocationIntervalMode(prefs.getString(PREF_LOCATION_INTERVAL_MODE, "balanced"), true);
 
         if (userId == null || familyId == null || supabaseUrl == null) {
             Log.w(TAG, "Missing config, stopping service");
@@ -380,7 +395,7 @@ public class LocationService extends Service {
 
     // ── 스코프드 WakeLock (영구 6h wakelock 대체) ────────────────────────────────
     // 네트워크 업로드/알림 스레드가 도는 동안에만 CPU 를 깨우고 finally 에서 즉시 release →
-    // idle(정지 측위 30s 갭)에는 CPU 가 Doze 절전에 들 수 있어 배터리를 아낀다. Doze 구간의
+    // idle(정지 측위 120s 갭)에는 CPU 가 Doze 절전에 들 수 있어 배터리를 아낀다. Doze 구간의
     // 측위/안전 복원력은 wakelock 이 아니라 AlarmManager heartbeat(5분)+WorkManager keepalive 가
     // 떠받친다(PARTIAL_WAKE_LOCK 은 CPU 만 켤 뿐 Doze 의 alarm/네트워크 제약은 못 피하므로 idle
     // wakelock 은 순수 낭비였다).
@@ -558,12 +573,12 @@ public class LocationService extends Service {
     }
 
     // ── Phase C: 네이티브 즉시 등록장소 geofence ────────────────────────────────
-    // 자녀 기기가 GPS fix 마다(15s 평가, 클라 App.jsx 인터벌 미러) 등록장소 출입을
+    // 자녀 기기가 절전형 주기로 등록장소 출입을
     // 즉시 평가 → place_arrived/place_left 부모 알림. 서버 cron(*/2분)과 같은 10분
     // 버킷 멱등키(GeofenceIdempotency)로 dedup. 결정 로직은 GeofenceStateMachine
     // (클라/서버 parity, JVM 단위테스트). 앱 백그라운드/킬 시 WebView geofence 가
     // 멈춰도 foreground service 의 이 평가는 계속 동작한다.
-    private static final long PLACE_EVAL_INTERVAL_MS = 15_000L;
+    private static final long PLACE_EVAL_INTERVAL_MS = 60_000L;
     private static final long PLACE_REFRESH_INTERVAL_MS = 5 * 60_000L;
     // 이전 방문 상태로 다음날 출발 알림을 만들지 않게 6시간 뒤 persisted 상태를 만료한다.
     private static final long PLACE_STATE_TTL_MS = 6L * 60 * 60_000L;
@@ -700,8 +715,8 @@ public class LocationService extends Service {
             final String alertType = arrived ? "place_arrived" : "place_left";
             final String title = arrived ? ("✅ " + place + " 도착") : ("🚶 " + place + " 출발");
             final String msg = arrived
-                ? (childDisplayName() + "가 " + place + "에 도착했어요. " + place + " 반경 안에 1분 이상 머무른 뒤 확인했어요.")
-                : (childDisplayName() + "가 " + place + "에서 출발했어요. 3분 이상 장소 밖에 있어 이동 중으로 확인했어요.");
+                ? (childDisplayName() + "가 " + place + "에 도착했어요.")
+                : (childDisplayName() + "가 " + place + "에서 출발했어요.");
             final String fPlaceKey = placeKey;
             final String fPlaceName = place;
             final GeofenceStateMachine.GeofenceState fNext = res.nextState;
@@ -881,6 +896,23 @@ public class LocationService extends Service {
     private final Object refreshLock = new Object();
     private volatile long lastNetworkRefreshAtMs = 0L;
 
+    private void stopForInvalidSession(String reason) {
+        Log.w(TAG, "Stopping location service due to invalid session: " + reason);
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            .edit()
+            .putBoolean("serviceEnabled", false)
+            .remove("accessToken")
+            .remove("refreshToken")
+            .apply();
+        Runnable stop = () -> {
+            stopAll();
+            stopForeground(true);
+            stopSelf();
+        };
+        if (handler != null) handler.post(stop);
+        else stop.run();
+    }
+
     // D1 access token(1h)이 백그라운드에서 만료되면 WebView 가 정지되어 아무도 갱신하지 못해
     // 위치 업로드가 401 로 멈춘다(자녀 위치 동결의 근본 원인). 저장된 refresh token(30일)으로
     // Worker 의 POST /auth/refresh 를 직접 호출해 새 access/refresh 를 받아 영속화한다.
@@ -906,7 +938,11 @@ public class LocationService extends Service {
                 && !accessToken.equals(failedToken)) {
                 return accessToken;
             }
-            if (isBlank(refreshToken) || isBlank(supabaseUrl)) return null;
+            if (isBlank(refreshToken)) {
+                stopForInvalidSession("missing_refresh_token");
+                return null;
+            }
+            if (isBlank(supabaseUrl)) return null;
             try {
                 String url = supabaseUrl.replaceAll("/+$", "") + "/auth/refresh";
                 JSONObject reqBody = new JSONObject();
@@ -930,6 +966,9 @@ public class LocationService extends Service {
                         if (afterRefresh != null && !afterRefresh.isEmpty()) refreshToken = afterRefresh;
                         Log.i(TAG, "Adopted WebView-refreshed token from prefs after refresh race");
                         return afterAccess;
+                    }
+                    if (code == 401 || code == 403) {
+                        stopForInvalidSession("refresh_http_" + code);
                     }
                     return null;
                 }
@@ -1023,22 +1062,86 @@ public class LocationService extends Service {
         }
     }
 
+    private String normalizeLocationIntervalMode(@Nullable String mode) {
+        if ("live".equals(mode) || "saver".equals(mode) || "balanced".equals(mode)) {
+            return mode;
+        }
+        return "balanced";
+    }
+
+    private void applyLocationIntervalMode(@Nullable String rawMode, boolean restartIfRunning) {
+        String mode = normalizeLocationIntervalMode(rawMode);
+        long moving;
+        long stationary;
+        long stationaryMin;
+        long maxUploadAge;
+        long fixStale;
+        long maxHistoryAge;
+        switch (mode) {
+            case "live":
+                moving = 8_000L;
+                stationary = 45_000L;
+                stationaryMin = 20_000L;
+                maxUploadAge = 30_000L;
+                fixStale = 120_000L;
+                maxHistoryAge = 45_000L;
+                break;
+            case "saver":
+                moving = 60_000L;
+                stationary = 180_000L;
+                stationaryMin = 60_000L;
+                maxUploadAge = 180_000L;
+                fixStale = 300_000L;
+                maxHistoryAge = 180_000L;
+                break;
+            case "balanced":
+            default:
+                moving = LOCATION_INTERVAL_MOVING_MS;
+                stationary = LOCATION_INTERVAL_STATIONARY_MS;
+                stationaryMin = LOCATION_MIN_INTERVAL_STATIONARY_MS;
+                maxUploadAge = MAX_UPLOAD_AGE_MS;
+                fixStale = LOCATION_FIX_STALE_MS;
+                maxHistoryAge = MAX_HISTORY_AGE_MS;
+                break;
+        }
+
+        boolean changed = !mode.equals(locationIntervalMode)
+            || moving != activeMovingIntervalMs
+            || stationary != activeStationaryIntervalMs
+            || stationaryMin != activeStationaryMinIntervalMs;
+        locationIntervalMode = mode;
+        activeMovingIntervalMs = moving;
+        activeStationaryIntervalMs = stationary;
+        activeStationaryMinIntervalMs = stationaryMin;
+        activeMaxUploadAgeMs = maxUploadAge;
+        activeLocationFixStaleMs = fixStale;
+        activeMaxHistoryAgeMs = maxHistoryAge;
+
+        if (changed) {
+            Log.i(TAG, "Location interval mode applied: " + mode
+                + " (moving=" + (moving / 1000) + "s, stationary=" + (stationary / 1000) + "s)");
+            if (restartIfRunning && locationCallback != null) {
+                restartLocationWithMode(isStationary);
+            }
+        }
+    }
+
     private void restartLocationWithMode(boolean lowPower) {
         if (locationCallback == null) return;
 
         fusedClient.removeLocationUpdates(locationCallback);
 
         // 측위 정확도(HIGH_ACCURACY)는 정지·이동 모두 유지해 실내/음영에서도 추적이
-        // 끊기지 않게 한다. 다만 '움직임이 없을 때'는 3초 측위를 멈추고 간격을 늘려
-        // (stationary 30s) 데이터·배터리를 아낀다. 미세 이동/위치 변화가 있으면
-        // FusedLocation 이 minInterval(15s)까지 더 자주 보고하고, 출발(큰 움직임)은
-        // armSignificantMotion() 의 하드웨어 모션 트리거가 즉시 잡아 moving(3s)으로
+        // 끊기지 않게 한다. 다만 '움직임이 없을 때'는 촘촘한 측위를 멈추고 간격을 늘려
+        // 데이터·배터리를 아낀다. 미세 이동/위치 변화가 있으면 FusedLocation 이
+        // minInterval 까지 더 자주 보고하고, 출발(큰 움직임)은 armSignificantMotion()
+        // 의 하드웨어 모션 트리거가 즉시 moving 으로
         // 되돌린다. 센서가 없는 기기는 다음 위치 샘플(STATIONARY_THRESHOLD_M 초과)로 폴백.
         int priority = Priority.PRIORITY_HIGH_ACCURACY;
-        long interval = lowPower ? LOCATION_INTERVAL_STATIONARY_MS : LOCATION_INTERVAL_MOVING_MS;
+        long interval = lowPower ? activeStationaryIntervalMs : activeMovingIntervalMs;
         long minInterval = lowPower
-            ? LOCATION_MIN_INTERVAL_STATIONARY_MS
-            : LOCATION_INTERVAL_MOVING_MS / 2;
+            ? activeStationaryMinIntervalMs
+            : Math.max(1_000L, activeMovingIntervalMs / 2);
 
         LocationRequest request = new LocationRequest.Builder(priority, interval)
             .setMinUpdateIntervalMillis(minInterval)
@@ -1238,8 +1341,8 @@ public class LocationService extends Service {
         if (locationCallback != null) return;
 
         LocationRequest request = new LocationRequest.Builder(
-                Priority.PRIORITY_HIGH_ACCURACY, LOCATION_INTERVAL_MOVING_MS)
-            .setMinUpdateIntervalMillis(LOCATION_INTERVAL_MOVING_MS / 2)
+                Priority.PRIORITY_HIGH_ACCURACY, activeMovingIntervalMs)
+            .setMinUpdateIntervalMillis(Math.max(1_000L, activeMovingIntervalMs / 2))
             .setMinUpdateDistanceMeters(MIN_UPDATE_DISTANCE_M)
             .setWaitForAccurateLocation(false)
             .build();
@@ -1262,7 +1365,7 @@ public class LocationService extends Service {
             // idempotent(significantMotionArmed 면 no-op)라 중복 호출 안전.
             armSignificantMotion();
             Log.i(TAG, "Location tracking started (HIGH_ACCURACY, "
-                + (LOCATION_INTERVAL_MOVING_MS / 1000) + "s interval, "
+                + (activeMovingIntervalMs / 1000) + "s interval, mode=" + locationIntervalMode + ", "
                 + (int) MIN_UPDATE_DISTANCE_M + "m min distance)");
         } catch (SecurityException e) {
             Log.e(TAG, "Location permission not granted", e);
@@ -1279,7 +1382,7 @@ public class LocationService extends Service {
                 long ageMs = lastLocationAcceptedAtMs > 0L
                     ? now - lastLocationAcceptedAtMs
                     : Long.MAX_VALUE;
-                if (ageMs >= LOCATION_FIX_STALE_MS) {
+                if (ageMs >= activeLocationFixStaleMs) {
                     Log.w(TAG, "Location fix watchdog requesting immediate fix; lastAcceptedAge="
                         + (ageMs == Long.MAX_VALUE ? "never" : (ageMs / 1000) + "s"));
                     requestImmediateLocationFix();
@@ -1296,7 +1399,7 @@ public class LocationService extends Service {
             acquireFixWakeLock();
             final CancellationTokenSource cts = new CancellationTokenSource();
             // NTV-H8: GPS(High Accuracy)가 12초 내에 안 잡히면 Balanced(WiFi/Cell)로 선회하여
-            // 실내에서도 응답을 보장함. 부모 앱의 polling(30초) 내에 응답하기 위함.
+            // 실내에서도 응답을 보장함. 부모의 즉시 새로고침 응답성을 유지하기 위함.
             final Runnable timeoutTask = () -> {
                 if (!cts.getToken().isCancellationRequested()) {
                     Log.w(TAG, "High-accuracy fix timed out (12s), falling back to balanced power");
@@ -1490,7 +1593,7 @@ public class LocationService extends Service {
         if (!forceUpload && !Double.isNaN(lastUploadedLat)) {
             float distFromLast = distanceBetween(lat, lng, lastUploadedLat, lastUploadedLng);
             long ageMs = now - lastUploadedAtMs;
-            if (distFromLast < MIN_UPLOAD_DISTANCE_M && ageMs < MAX_UPLOAD_AGE_MS) {
+            if (distFromLast < MIN_UPLOAD_DISTANCE_M && ageMs < activeMaxUploadAgeMs) {
                 Log.d(TAG, "Skipping upload: moved "
                     + String.format("%.1f", distFromLast) + "m, age="
                     + (ageMs / 1000) + "s");
@@ -1609,7 +1712,7 @@ public class LocationService extends Service {
                         flushLocationBuffer();
                     }
                     // 온라인/오프라인 어느 경로든 기준점을 갱신 — 오프라인 중에도
-                    // 2m/30초 간격 밀도가 유지되어 경로 누락을 최소화한다.
+                    // 2m/전원정책 간격 밀도가 유지되어 경로 누락을 최소화한다.
                     lastHistoryLat = lat;
                     lastHistoryLng = lng;
                     lastHistoryAtMs = capturedAtMs;
@@ -1631,7 +1734,7 @@ public class LocationService extends Service {
         if (Double.isNaN(lastHistoryLat)) return true;
         float distFromLastHistory = distanceBetween(lat, lng, lastHistoryLat, lastHistoryLng);
         long ageMs = capturedAtMs - lastHistoryAtMs;
-        return distFromLastHistory >= MIN_HISTORY_DISTANCE_M || ageMs >= MAX_HISTORY_AGE_MS;
+        return distFromLastHistory >= MIN_HISTORY_DISTANCE_M || ageMs >= activeMaxHistoryAgeMs;
     }
 
     private boolean uploadLocationHistory(double lat, double lng, long capturedAtMs, String bearerToken) {
@@ -1655,7 +1758,7 @@ public class LocationService extends Service {
         // 도로매칭(Kakao kakao-proxy) 네트워크 호출은 갭이 큰(>150m) 구간에서만 의미가 있다.
         // 현재 도보 도로매칭은 affiliate 권한(403)으로 실패 중이라 매칭 결과가 비어, 조밀 구간
         // (<=150m)은 아래 else 가 조밀 raw GPS 직선으로 기록한다 → 갭 게이트 적용 시 <=150m 에서
-        // 무손실(어차피 매칭 결과가 없음). 매 3초 fix 마다 반복되던 Kakao 라운드트립(라디오 깨움)만 제거.
+        // 무손실(어차피 매칭 결과가 없음). fix 마다 반복되던 Kakao 라운드트립(라디오 깨움)만 제거.
         // ⚠ 도로매칭이 복구되면 이 게이트가 <=150m 곡선을 직선화하므로 재검토 필요(>150m 는 영향 없음).
         if (hasPrevious
                 && distanceBetween(lastHistoryLat, lastHistoryLng, lat, lng) > ESTIMATED_FILL_MIN_GAP_M) {
@@ -2260,6 +2363,7 @@ public class LocationService extends Service {
         // fullScreenIntent 는 그대로 유지 (잠금화면 RemoteListenActivity launch 위해).
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, REMOTE_LISTEN_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_hyeni_notification)
+            .setLargeIcon(NotificationHelper.largeIcon(this))
             .setColor(ContextCompat.getColor(this, R.color.notification_accent))
             .setContentTitle("주변 소리 연결 요청")
             .setContentText("탭해서 아이 기기에서 연결을 시작하세요.")
@@ -2304,8 +2408,7 @@ public class LocationService extends Service {
         options.setPendingIntentCreatorBackgroundActivityStartMode(
             ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
         );
-        // 폴더블 접힘: 내부 화면이 꺼져 있으면 켜진 커버 디스플레이로 띄운다.
-        options.setLaunchDisplayId(RemoteListenActivity.activeLaunchDisplayId(this));
+        RemoteListenActivity.applyRemoteListenLaunchDisplay(this, options);
         return options.toBundle();
     }
 
@@ -2318,8 +2421,7 @@ public class LocationService extends Service {
         options.setPendingIntentBackgroundActivityStartMode(
             ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
         );
-        // 폴더블 접힘: 내부 화면이 꺼져 있으면 켜진 커버 디스플레이로 띄운다.
-        options.setLaunchDisplayId(RemoteListenActivity.activeLaunchDisplayId(this));
+        RemoteListenActivity.applyRemoteListenLaunchDisplay(this, options);
         return options.toBundle();
     }
 
@@ -2489,7 +2591,7 @@ public class LocationService extends Service {
 
                 // 일정 목록은 자주 바뀌지 않으므로 네트워크 fetch 와 시각 평가를 분리한다.
                 // get_today_events 는 EVENT_REFRESH_INTERVAL_MS(2분)마다만 네트워크로 갱신해 캐시하고,
-                // 30초 tick 은 캐시된 events 에 대해 로컬 시각/거리 비교만 수행한다.
+                // 60초 tick 은 캐시된 events 에 대해 로컬 시각/거리 비교만 수행한다.
                 // 리마인더 적시성(fireLocalEventReminders ±1분 밴드 + dateKey dedup)과 자동무음
                 // (SILENT_WINDOW 10분 창)이 2분 캐시 지연을 흡수하므로 알림은 누락되지 않는다.
                 // 자정 경과(dateKey 변경) 시에는 새 날짜 일정을 즉시 강제 갱신한다.
@@ -2870,6 +2972,7 @@ public class LocationService extends Service {
                     .setContentTitle("혜니캘린더 🔇")
                     .setContentText("📍 " + eventTitle + " 도착 — 자동 무음 중")
                     .setSmallIcon(R.drawable.ic_hyeni_notification)
+                    .setLargeIcon(NotificationHelper.largeIcon(this))
                     .setColor(ContextCompat.getColor(this, R.color.notification_accent))
                     .setOngoing(true)
                     .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -2948,8 +3051,8 @@ public class LocationService extends Service {
         // (MyFirebaseMessagingService.showNotification: fullScreen = emergency || isKkuk)와 동일.
         boolean fullScreen = emergency || isKkuk;
         int notificationId = NotificationHelper.stableRequestCode(stableId);
-        // AI 선제 대화 알림은 탭하면 AI 채팅 화면으로 직행해야 대화가 이어진다.
-        String route = "ai_proactive".equals(type) ? "ai-chat" : null;
+        // AI 선제 대화/스티커 알림은 탭하면 관련 아이 화면으로 직행한다.
+        String route = "ai_proactive".equals(type) ? "ai-chat" : ("sticker".equals(type) ? "child-sticker" : null);
         NotificationHelper.showNotification(
             this,
             title,
@@ -3026,6 +3129,7 @@ public class LocationService extends Service {
             .setContentTitle("혜니캘린더")
             .setContentText(statusText)
             .setSmallIcon(R.drawable.ic_hyeni_notification)
+            .setLargeIcon(NotificationHelper.largeIcon(this))
             .setColor(ContextCompat.getColor(this, R.color.notification_accent))
             .setOngoing(true)
             .setContentIntent(pendingIntent)

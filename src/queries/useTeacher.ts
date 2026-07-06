@@ -15,11 +15,13 @@ import {
   fetchClassSchedule,
   publishNotice,
   setAttendance,
+  copyClassWeekSchedule,
   requestPairing,
   ensureTeacherProfile,
   createClass,
   type PublishNoticeInput,
   type SetAttendanceInput,
+  type CopyClassWeekScheduleResult,
   type RequestPairingInput,
 } from "@/lib/api/endpoints/teacher";
 
@@ -95,6 +97,16 @@ export function useSetAttendance() {
   return useMutation({
     mutationFn: (input: SetAttendanceInput) => setAttendance(input),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["teacher", "attendance"] }),
+  });
+}
+
+/** 반 시간표 주간 복사 → 해당 반 schedule 쿼리 전체 무효화. */
+export function useCopyClassWeekSchedule() {
+  const qc = useQueryClient();
+  return useMutation<CopyClassWeekScheduleResult, unknown, { classId: string; weekStartDateKey: string }>({
+    mutationFn: (input) => copyClassWeekSchedule(input.classId, input.weekStartDateKey),
+    onSuccess: (_data, input) =>
+      qc.invalidateQueries({ queryKey: ["teacher", "schedule", input.classId] }),
   });
 }
 

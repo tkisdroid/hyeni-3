@@ -99,7 +99,7 @@ async function requestNotificationPermission(): Promise<boolean> {
  * 네이티브 push context 주입. FCM 수신부가 대상 사용자/가족을 식별하는 데 쓴다.
  * 실패해도 토큰 등록은 별개로 진행되므로 예외를 삼킨다.
  *
- * ★ 콜드스타트 레이스 방어: 로그인 직후 플러그인이 아직 준비 전이면 setPushContext 가 유실돼
+ * ★ 콜드스타트 레이스 방어: 로그인 직후 플러그인이 아직 초기화 전이면 setPushContext 가 유실돼
  *   원격청취/force_ring FCM 이 "push context missing" 으로 skip 된다. 플러그인이 준비될 때까지
  *   짧게 재시도해, SharedPreferences 에 context 가 확실히 저장되도록 한다.
  */

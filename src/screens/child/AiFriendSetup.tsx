@@ -4,7 +4,9 @@ import { ChevronLeft } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
+import { useMyFamily } from "@/queries/useFamily";
 import { useAiFriendPublicSettings, useSetAiFriendName } from "@/queries/useAi";
+import { resolveAiFriendDisplayName } from "@/transform/aiFriendName";
 import "./AiFriendSetup.css";
 
 /**
@@ -82,6 +84,7 @@ export function AiFriendSetup() {
 
   // 아이 모드: 로그인 사용자 = 아이. childUserId = userId.
   const { familyId, userId } = useAuth();
+  const { data: family } = useMyFamily();
   const { data: publicSettings } = useAiFriendPublicSettings(userId);
   const setNameMutation = useSetAiFriendName();
 
@@ -93,7 +96,12 @@ export function AiFriendSetup() {
 
   const persona = personaFor(selected);
   const serverName = publicSettings?.ai_friend_name || "";
-  const effectiveName = customName != null ? customName : serverName || persona.name;
+  const childName =
+    userId ? family?.members.find((m) => m.role === "child" && m.user_id === userId)?.name ?? "" : "";
+  const effectiveName =
+    customName != null
+      ? customName
+      : resolveAiFriendDisplayName({ savedName: serverName, childName, fallbackName: persona.name });
 
   // 저장된 캐릭터가 뒤늦게 로드되면(로컬 우선) 초기 선택을 한 번 맞춘다.
   useEffect(() => {

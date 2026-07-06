@@ -160,7 +160,7 @@
   align-items: center;
   gap: 14px;
 }
-/* 히어로 = 본인 사진(캐릭터 없음) */
+/* 히어로 = 본인 사진 또는 기본 혜니 캐릭터 */
 .ch-ai__photo {
   position: relative;
   width: 96px;
@@ -180,12 +180,6 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-/* 사진 미등록 시 이름 이니셜 */
-.ch-ai__photo-initial {
-  font-size: 42px;
-  font-weight: 900;
-  color: #8b6bec;
 }
 .ch-ai__hello {
   font-size: 21px;

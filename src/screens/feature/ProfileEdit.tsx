@@ -230,7 +230,7 @@ export function ProfileEdit() {
               </button>
               <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickFile} />
               <div className="pe-photo-name">{name.trim() || member.name || "아이"}</div>
-              <p className="pe-hint">{processing ? "사진 준비 중…" : "얼굴이 잘 보이는 사진이 좋아요."}</p>
+              <p className="pe-hint">{processing ? "사진 처리 중…" : "얼굴이 잘 보이는 사진이 좋아요."}</p>
             </div>
 
             {/* 이름 */}

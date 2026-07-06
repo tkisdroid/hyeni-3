@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { asset } from "@/lib/assets";
+import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { useMyFamily } from "@/queries/useFamily";
 import { useActiveChild } from "@/app/activeChild";
@@ -124,7 +125,7 @@ export function StickerSend() {
                 onClick={() => setSelectedUserId(c.user_id)}
               >
                 <span className="ss-child__avatar">
-                  <img src={avatarSrc(c.photo_url || "animal/rabbit.webp")} alt="" />
+                  <img src={avatarSrc(childAvatarPath(c.photo_url))} alt="" />
                 </span>
                 <span className="ss-child__name">{c.name || "아이"}</span>
               </button>

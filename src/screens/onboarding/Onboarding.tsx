@@ -3,9 +3,13 @@ import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { asset } from "@/lib/assets";
+import { DEFAULT_CHILD_AVATAR } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
-import { useAuth } from "@/auth/AuthContext";
+import { deriveAuthState, useAuth } from "@/auth/AuthContext";
 import { homePathForRole } from "@/auth/guards";
+import { adoptNativeLocationSessionTokens } from "@/lib/native/location";
+import { readChildDeviceIdentityHint } from "@/lib/native/deviceIdentity";
+import { ROLE_ICON_ASSETS } from "@/transform/roleIconAssets";
 import {
   signInWithLoginId,
   anonymousLogin,
@@ -23,6 +27,7 @@ import {
   joinFamilyAsParent,
   getMyFamily,
   parentNameFromUser,
+  type JoinFamilyOptions,
 } from "@/lib/api/endpoints/family";
 import { normalizePairCodeInput } from "@/transform/pairCode";
 import { readPairParam, clearPairParam } from "@/transform/pairLink";
@@ -51,6 +56,8 @@ export function Onboarding() {
   const [role, setRole] = useState<"parent" | "child" | "teacher">("parent");
   const [pairMode, setPairMode] = useState<"child" | "parent">("child");
   const [busy, setBusy] = useState(false);
+  const [childStarting, setChildStarting] = useState(false);
+  const [childJoinHint, setChildJoinHint] = useState<JoinFamilyOptions | null>(null);
   // 전화 OTP 가입 시 입력한 이름 — 가입 직후 세션 user_metadata 가 비어 parentNameFromUser 가
   // "부모"로 깨지므로, 이 이름을 setupFamily(새 가족)의 parentName 으로 우선 사용한다.
   const [signupName, setSignupName] = useState<string | null>(null);
@@ -104,15 +111,25 @@ export function Onboarding() {
     clearPairParam();
     setPairPrefill(code);
     setBusy(true);
-    anonymousLogin()
-      .then(() => {
+    setChildStarting(true);
+    readChildDeviceIdentityHint()
+      .then(async (hint) => {
+        setChildJoinHint(hint);
+        if (await adoptNativeLocationSessionTokens()) {
+          syncFromSession();
+          if (routeAfterChildSession()) return;
+        }
+        await anonymousLogin();
         syncFromSession();
         setRole("child");
         setPairMode("child");
         setStep("pairing");
       })
       .catch((e) => show(errMsg(e), "⚠️"))
-      .finally(() => setBusy(false));
+      .finally(() => {
+        setBusy(false);
+        setChildStarting(false);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -134,19 +151,42 @@ export function Onboarding() {
     setStep("connect");
   };
 
+  const routeAfterChildSession = () => {
+    const state = deriveAuthState();
+    if (state.role === "child" && state.familyId) {
+      navigate("/child/home");
+      return true;
+    }
+    if (state.role === "parent" || state.role === "teacher") {
+      navigate(homePathForRole(state.role));
+      return true;
+    }
+    setRole("child");
+    setPairMode("child");
+    setStep("pairing");
+    return true;
+  };
+
   const startChildMode = async () => {
-    if (busy) return;
+    if (busy || childStarting) return;
     setBusy(true);
+    setChildStarting(true);
     try {
+      const hint = await readChildDeviceIdentityHint();
+      setChildJoinHint(hint);
+      if (await adoptNativeLocationSessionTokens()) {
+        syncFromSession();
+        routeAfterChildSession();
+        return;
+      }
       await anonymousLogin();
       syncFromSession();
-      setRole("child");
-      setPairMode("child");
-      setStep("pairing");
+      routeAfterChildSession();
     } catch (e) {
       show(errMsg(e), "⚠️");
     } finally {
       setBusy(false);
+      setChildStarting(false);
     }
   };
 
@@ -155,6 +195,7 @@ export function Onboarding() {
       {step === "role" && (
         <RoleStep
           busy={busy}
+          childStarting={childStarting}
           onParent={() => {
             setRole("parent");
             setStep("login");
@@ -220,6 +261,7 @@ export function Onboarding() {
           mode={pairMode}
           busy={busy}
           initialCode={pairPrefill}
+          childJoinHint={childJoinHint}
           onBack={() => setStep(role === "child" ? "role" : "connect")}
           onDone={() => setStep("perms")}
           onPaired={syncFromSession}
@@ -281,11 +323,13 @@ function GoogleIcon() {
 
 function RoleStep({
   busy,
+  childStarting,
   onParent,
   onChild,
   onTeacher,
 }: {
   busy: boolean;
+  childStarting: boolean;
   onParent: () => void;
   onChild: () => void;
   onTeacher: () => void;
@@ -304,7 +348,7 @@ function RoleStep({
       <div className="ob-role-list">
         <button type="button" className="ob-role-card ob-role-card--parent hy-press" onClick={onParent} disabled={busy}>
           <span className="ob-role-ic" style={{ background: "#E6F2FB" }}>
-            <img src={asset("family/mom.webp")} alt="" style={{ width: 48, height: 48, objectFit: "contain" }} />
+            <img src={asset(ROLE_ICON_ASSETS.parent)} alt="" style={{ width: 48, height: 48, objectFit: "contain" }} />
           </span>
           <span className="ob-role-main">
             <span className="ob-role-name">학부모</span>
@@ -315,18 +359,20 @@ function RoleStep({
 
         <button type="button" className="ob-role-card ob-role-card--child hy-press" onClick={onChild} disabled={busy}>
           <span className="ob-role-ic" style={{ background: "#fff" }}>
-            <img src={asset("animal/rabbit.webp")} alt="" style={{ width: 46, height: 46, objectFit: "contain" }} />
+            <img src={asset(ROLE_ICON_ASSETS.child)} alt="" style={{ width: 46, height: 46, objectFit: "contain" }} />
           </span>
           <span className="ob-role-main">
             <span className="ob-role-name" style={{ color: "#7C4B8E" }}>아이</span>
-            <span className="ob-role-desc" style={{ color: "#A67FB0" }}>부모님 코드로 시작</span>
+            <span className="ob-role-desc" style={{ color: "#A67FB0" }}>
+              {childStarting ? "준비 중…" : "부모님 코드로 시작"}
+            </span>
           </span>
           <ChevronRight size={22} strokeWidth={2.4} color="#C6A9CF" />
         </button>
 
         <button type="button" className="ob-role-card ob-role-card--teacher hy-press" onClick={onTeacher} disabled={busy}>
           <span className="ob-role-ic" style={{ background: "#fff" }}>
-            <img src={asset("cat/study.webp")} alt="" style={{ width: 44, height: 44, objectFit: "contain" }} />
+            <img src={asset(ROLE_ICON_ASSETS.teacher)} alt="" style={{ width: 44, height: 44, objectFit: "contain" }} />
           </span>
           <span className="ob-role-main">
             <span className="ob-role-name" style={{ color: "#0F7A57" }}>선생님</span>
@@ -702,7 +748,7 @@ function ConnectStep({
         </button>
 
         <button type="button" className="ob-connect-card ob-connect-card--child hy-press" onClick={onChildDevice} disabled={busy}>
-          <img className="ob-connect-ic" src={asset("animal/rabbit.webp")} alt="" />
+          <img className="ob-connect-ic" src={asset(DEFAULT_CHILD_AVATAR)} alt="" />
           <span className="ob-connect-main">
             <span className="ob-connect-name" style={{ color: "#6D4E9C" }}>아이 기기인가요?</span>
             <span className="ob-connect-desc" style={{ color: "#9B7FB8" }}>QR 스캔 또는 코드 입력</span>
@@ -720,6 +766,7 @@ function PairingStep({
   mode,
   busy,
   initialCode,
+  childJoinHint,
   onBack,
   onDone,
   onPaired,
@@ -729,6 +776,7 @@ function PairingStep({
   mode: "child" | "parent";
   busy: boolean;
   initialCode?: string | null;
+  childJoinHint?: JoinFamilyOptions | null;
   onBack: () => void;
   onDone: () => void;
   onPaired: () => void;
@@ -754,7 +802,8 @@ function PairingStep({
     setBusy(true);
     try {
       if (mode === "child") {
-        await joinFamily(code);
+        const nextHint = await readChildDeviceIdentityHint();
+        await joinFamily(code, childJoinHint ?? nextHint);
       } else {
         await joinFamilyAsParent(code);
       }

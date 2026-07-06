@@ -15,7 +15,7 @@
 import { getNativePlugin, isNativePlatform } from "./plugins";
 import { apiPost } from "@/lib/api/client";
 
-const PACKAGE_NAME = "com.hyeni.calendar";
+export const GOOGLE_PLAY_PACKAGE_NAME = "com.hyeni.calendar";
 const PLUGIN_NAME = "GooglePlayBilling";
 const VERIFY_PATH = "/api/billing/google-play-verify";
 
@@ -151,7 +151,7 @@ function normalizePurchase(purchase: RawPurchase | undefined): NormalizedPurchas
   return {
     purchaseToken: purchase?.purchaseToken || "",
     orderId: purchase?.orderId || null,
-    packageName: purchase?.packageName || PACKAGE_NAME,
+    packageName: purchase?.packageName || GOOGLE_PLAY_PACKAGE_NAME,
     products,
     purchaseState: purchase?.purchaseState || "",
     acknowledged: !!purchase?.acknowledged,
@@ -215,7 +215,7 @@ export async function launchSubscriptionPurchase({
 
   const verification = await verifyPurchase({
     familyId,
-    packageName: PACKAGE_NAME,
+    packageName: GOOGLE_PLAY_PACKAGE_NAME,
     productType: "subscription",
     productId: SUBSCRIPTION_PRODUCT_ID,
     basePlanId,
@@ -297,7 +297,7 @@ export async function launchCreditPurchase({
     familyId,
     childUserId,
     parentId,
-    packageName: PACKAGE_NAME,
+    packageName: GOOGLE_PLAY_PACKAGE_NAME,
     productType: "inapp",
     productId,
     creditAmount: amount,

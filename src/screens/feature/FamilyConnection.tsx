@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, UserPlus, Link2Off, Wifi } from "lucide-react";
 import { asset } from "@/lib/assets";
+import { DEFAULT_CHILD_AVATAR } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { useMyFamily, useUnpairChild } from "@/queries/useFamily";
 import { useChildLocations } from "@/queries/useLocation";
@@ -57,7 +58,7 @@ export function FamilyConnection() {
 
   const avatarFor = (memberId: string): { avatar: string; soft: string } => {
     const c = view.children.find((v) => v.id === memberId);
-    return { avatar: c?.avatar ?? "animal/rabbit.webp", soft: c?.soft ?? "var(--hy-accent-soft)" };
+    return { avatar: c?.avatar ?? DEFAULT_CHILD_AVATAR, soft: c?.soft ?? "var(--hy-accent-soft)" };
   };
 
   const statusFor = (userId: string | null): { label: string; tone: "safe" | "warn" | "muted" } => {

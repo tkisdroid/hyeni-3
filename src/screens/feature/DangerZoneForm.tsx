@@ -5,7 +5,10 @@ import { useToast } from "@/app/toast";
 import { KakaoMap } from "@/components/KakaoMap";
 import { loadKakaoMaps } from "@/lib/kakaoMap";
 import { hasKakaoKey } from "@/config/env";
-import { useCreateDangerZone, useUpdateDangerZone } from "@/queries/useLocation";
+import { useCreateDangerZone, useDangerZones, useUpdateDangerZone } from "@/queries/useLocation";
+import { useEntitlement } from "@/queries/useEntitlement";
+import { TIERS } from "@/transform/tierPolicy";
+import { ApiError } from "@/lib/api/errors";
 import type { DangerZone } from "@/lib/api/endpoints/location";
 import "./DangerZoneForm.css";
 
@@ -31,6 +34,8 @@ export function DangerZoneForm() {
 
   const createZone = useCreateDangerZone();
   const updateZone = useUpdateDangerZone();
+  const zonesQuery = useDangerZones();
+  const { tier } = useEntitlement();
 
   const [name, setName] = useState(editing?.name ?? "");
   const [address, setAddress] = useState("");
@@ -41,9 +46,8 @@ export function DangerZoneForm() {
   const [center, setCenter] = useState<LatLng | null>(
     editing ? { lat: editing.lat, lng: editing.lng } : null,
   );
-  // 알림 토글 — UI 상태(서버 저장은 준비 중, 아래 안내 참고).
-  const [entryAlert, setEntryAlert] = useState(true);
-  const [exitAlert, setExitAlert] = useState(false);
+  const [entryAlert, setEntryAlert] = useState(editing?.alert_on_entry ?? true);
+  const [exitAlert, setExitAlert] = useState(editing?.alert_on_exit ?? false);
 
   // Kakao Geocoder(주소↔좌표) — 키 미설정이면 로드 실패해도 화면은 동작.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -121,19 +125,25 @@ export function DangerZoneForm() {
       show("구역 이름을 입력해 주세요", "✏️");
       return;
     }
+    if (!editing && tier !== TIERS.UNKNOWN && tier !== TIERS.PREMIUM && (zonesQuery.data?.length ?? 0) >= 1) {
+      show("위험구역을 여러 개 쓰려면 프리미엄이 필요해요", "👑");
+      return;
+    }
     const payload = {
       name: trimmed,
       lat: picked.lat,
       lng: picked.lng,
       radius_m: radius,
       zone_type: editing?.zone_type ?? "custom",
+      alert_on_entry: entryAlert,
+      alert_on_exit: exitAlert,
     };
     const handlers = {
       onSuccess: () => {
         show(editing ? "위험구역을 수정했어요" : "위험구역을 추가했어요", "🛡️");
         navigate(-1);
       },
-      onError: () => show("저장에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️"),
+      onError: (e: Error) => show(e instanceof ApiError ? e.message : "저장에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️"),
     };
     if (editing?.id) {
       updateZone.mutate({ id: editing.id, zone: payload }, handlers);
@@ -245,7 +255,7 @@ export function DangerZoneForm() {
             </button>
           </div>
           <div className="dzf-toggle-note">
-            진입·이탈 알림 세부 설정 저장은 준비 중이에요. 저장한 구역은 접근 시 자동으로 알려드려요.
+            저장한 설정대로 아이가 위험구역에 들어가거나 벗어날 때 부모님께 알려드려요.
           </div>
         </div>
 

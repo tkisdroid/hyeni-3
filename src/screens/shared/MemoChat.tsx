@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Send, Image as ImageIcon, MapPin } from "lucide-react";
 import { asset } from "@/lib/assets";
+import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useActiveChild } from "@/app/activeChild";
@@ -58,10 +59,10 @@ export function MemoChat() {
     const map = new Map<string, { name: string; avatar: string; role: string }>();
     for (const m of family?.members ?? []) {
       if (!m.user_id) continue;
-      const fallback = m.role === "parent" ? "family/mom.webp" : "animal/rabbit.webp";
+      const fallback = m.role === "parent" ? "family/mom.webp" : childAvatarPath(m.photo_url);
       map.set(m.user_id, {
         name: m.name || (m.role === "parent" ? "보호자" : "아이"),
-        avatar: avatarSrc(m.photo_url || fallback),
+        avatar: avatarSrc(m.role === "parent" ? (m.photo_url || fallback) : fallback),
         role: m.role,
       });
     }
@@ -82,7 +83,7 @@ export function MemoChat() {
     return {
       userId: scopeChild?.user_id ?? null,
       name: scopeChild?.name || "우리 아이",
-      avatar: avatarSrc(scopeChild?.photo_url || "animal/rabbit.webp"),
+      avatar: avatarSrc(childAvatarPath(scopeChild?.photo_url)),
     };
   }, [family, role, scopeChild]);
 
@@ -115,6 +116,22 @@ export function MemoChat() {
     const weekday = new Date().toLocaleDateString("ko-KR", { weekday: "long" });
     return `오늘 · ${weekday}`;
   }, []);
+  const lastMessageId = messages[messages.length - 1]?.id ?? "";
+
+  const scrollThreadToBottom = (behavior: ScrollBehavior) => {
+    const anchor = endRef.current;
+    if (!anchor) return;
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const scrollHost = anchor.closest(".hy-screen") as HTMLElement | null;
+        if (scrollHost) {
+          scrollHost.scrollTo({ top: scrollHost.scrollHeight, behavior });
+          return;
+        }
+        anchor.scrollIntoView({ behavior, block: "end" });
+      });
+    });
+  };
 
   // 상대 메시지 열람 → 읽음 처리(read-receipt). 이미 읽음/처리한 id 는 건너뛰고,
   // 서버가 read_by 갱신 후 재요청되면 조건에서 걸러져 자기종료(무한 루프 없음).
@@ -132,9 +149,9 @@ export function MemoChat() {
   }, [replies, userId]);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: mounted.current ? "smooth" : "auto", block: "end" });
+    scrollThreadToBottom(mounted.current ? "smooth" : "auto");
     mounted.current = true;
-  }, [messages]);
+  }, [lastMessageId, messages.length]);
 
   const handleSend = () => {
     const text = draft.trim();
@@ -370,6 +387,7 @@ export function MemoChat() {
             </div>
           );
         })}
+        <div ref={endRef} className="mc-end" aria-hidden="true" />
       </div>
 
       {/* 하단 입력 (composer) */}
@@ -387,7 +405,7 @@ export function MemoChat() {
           ))}
         </div>
         <div className="mc-inputbar">
-          {/* 사진·위치 공유: 실전송(R2 업로드·실시간 위치)은 후속 슬라이스. 무엇이 준비 중인지 명시. */}
+          {/* 사진·위치 공유: R2 업로드와 위치 공유를 사용자 액션에서만 실행한다. */}
           <button
             type="button"
             className="mc-attach hy-press"
@@ -428,8 +446,6 @@ export function MemoChat() {
           </button>
         </div>
       </div>
-
-      <div ref={endRef} className="mc-end" />
     </div>
   );
 }

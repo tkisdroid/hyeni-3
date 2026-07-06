@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft } from "lucide-react";
@@ -95,6 +95,45 @@ export function AiCredit() {
   const billingAvailable = isBillingAvailable();
 
   const [busyPack, setBusyPack] = useState<string | null>(null);
+  const lowCreditKey = useMemo(
+    () => (childUserId ? `hyeni-low-credit-alert:${childUserId}` : ""),
+    [childUserId],
+  );
+  const [lowCreditAlert, setLowCreditAlert] = useState(false);
+
+  useEffect(() => {
+    if (!lowCreditKey) {
+      setLowCreditAlert(false);
+      return;
+    }
+    try {
+      setLowCreditAlert(window.localStorage.getItem(lowCreditKey) === "1");
+    } catch {
+      setLowCreditAlert(false);
+    }
+  }, [lowCreditKey]);
+
+  useEffect(() => {
+    if (!lowCreditKey) return;
+    try {
+      window.localStorage.setItem(lowCreditKey, lowCreditAlert ? "1" : "0");
+    } catch {
+      /* localStorage 불가 환경에서는 화면 상태만 유지 */
+    }
+  }, [lowCreditKey, lowCreditAlert]);
+
+  useEffect(() => {
+    if (!lowCreditAlert || heroAmount == null || heroAmount > 3 || !childUserId) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const seenKey = `hyeni-low-credit-alert-seen:${childUserId}:${today}`;
+    try {
+      if (window.localStorage.getItem(seenKey) === "1") return;
+      window.localStorage.setItem(seenKey, "1");
+    } catch {
+      /* 알림 중복 방지만 실패해도 토스트는 정상 표시 */
+    }
+    show(`${childName} 크레딧이 ${heroAmount}회 남았어요`, "💜");
+  }, [childName, childUserId, heroAmount, lowCreditAlert, show]);
 
   // 결제 CTA — 네이티브(Android)면 Google Play Billing(인앱)으로 실제 결제.
   // 웹(PWA)에서는 버튼이 disabled 라 여기까지 오지 않는다(방어적으로 가드 유지).
@@ -244,22 +283,30 @@ export function AiCredit() {
           </div>
         )}
 
-        {/* 자동 충전 — 설정 저장 API 미연동 → 켜짐 오인 방지 위해 off 고정·비활성('곧 제공') */}
+        {/* 잔액 부족 알림 — 자동 결제는 하지 않고, 보호자 확인 후 직접 충전하도록 안내한다. */}
         <div className="ac-auto">
-          <span className="ac-auto__icon">🔄</span>
+          <span className="ac-auto__icon">🔔</span>
           <span className="ac-auto__main">
-            <span className="ac-auto__title">자동 충전</span>
-            <span className="ac-auto__sub">잔액이 부족하면 자동으로 충전해요 · 곧 제공</span>
+            <span className="ac-auto__title">잔액 부족 알림</span>
+            <span className="ac-auto__sub">
+              {lowCreditAlert ? "3회 이하가 되면 이 화면에서 알려드려요" : "크레딧이 부족할 때 확인할 수 있어요"}
+            </span>
           </span>
           <button
             type="button"
             className="ac-toggle"
-            aria-label="자동 충전 (준비 중)"
-            aria-pressed={false}
-            disabled
-            style={{ background: "#E4DEE2", opacity: 0.55, cursor: "default" }}
+            aria-label="잔액 부족 알림"
+            aria-pressed={lowCreditAlert}
+            onClick={() => {
+              setLowCreditAlert((v) => {
+                show(!v ? "잔액 부족 알림을 켰어요" : "잔액 부족 알림을 껐어요", "🔔");
+                return !v;
+              });
+            }}
+            disabled={!childUserId}
+            style={{ background: lowCreditAlert ? "var(--hy-accent)" : "#E4DEE2" }}
           >
-            <span className="ac-toggle__knob" style={{ left: 2 }} />
+            <span className="ac-toggle__knob" style={{ left: lowCreditAlert ? 22 : 2 }} />
           </button>
         </div>
 

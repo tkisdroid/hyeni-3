@@ -9,6 +9,7 @@ export const qk = {
 
   // 가족·멤버
   family: (familyId?: string | null) => ["family", familyId ?? "me"] as const,
+  account: (familyId?: string | null) => ["account", familyId ?? "me"] as const,
 
   // 일정
   events: (familyId: string) => ["events", familyId] as const,
@@ -19,6 +20,7 @@ export const qk = {
 
   // 위치·안전
   childLocations: (familyId: string) => ["location", "children", familyId] as const,
+  reverseGeocode: (coord: string) => ["location", "reverseGeocode", coord] as const,
   locationHistory: (familyId: string, start: string, end: string) =>
     ["location", "history", familyId, start, end] as const,
   locationIncidents: (familyId: string) => ["location", "incidents", familyId] as const,

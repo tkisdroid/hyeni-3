@@ -12,19 +12,31 @@ import { normalizePhoneForStorage } from "@/transform/phone";
  * 아이 기기가 스스로 리포트하고(PATCH /member/device) 부모는 /mine 응답에서 파싱된 객체로 읽는다.
  * - batteryLevel/isCharging: navigator.getBattery() 미지원 브라우저에선 null.
  * - networkConnected/networkType: navigator.onLine / connection.effectiveType.
- * - 화면시간·앱 사용시간은 네이티브 UsageStats 가 필요 → 이 부분집합에는 없음(부모 화면 "—").
+ * - 화면시간·앱 사용시간은 네이티브 UsageStats 권한이 있을 때만 채워진다.
  */
+export interface DeviceAppUsage {
+  name?: string | null;
+  packageName?: string | null;
+  usageMs?: number | null;
+  percent?: number | null;
+  lastTimeUsed?: number | null;
+}
+
 export interface DeviceHealth {
   batteryLevel: number | null;
   isCharging: boolean | null;
   networkConnected: boolean;
   networkType: string | null;
+  /** 앱 설치 단위 식별자. 아이 재연결 시 기존 family_members 행 재사용 힌트로만 쓴다. */
+  deviceInstallId?: string | null;
   /** 마지막 리포트 시각(ISO). 웹 리포트에만 확실히 존재. */
   lastReportedAt?: string;
   /** 네이티브(LocationService) 리치 리포트에만: 연결타입·오늘 화면사용(ms)·최근 사용앱. */
   connectionType?: string | null;
   deviceScreenOnMs?: number | null;
   recentApp?: string | null;
+  usagePermission?: "granted" | "requires_permission" | "unavailable" | string | null;
+  appUsage?: DeviceAppUsage[] | null;
 }
 
 export interface FamilyMember {
@@ -176,11 +188,38 @@ export async function setupFamily(input: SetupFamilyInput): Promise<{ id: string
   });
 }
 
+export interface JoinFamilyOptions {
+  childName?: string;
+  deviceLabel?: string | null;
+  deviceInstallId?: string | null;
+  previousUserId?: string | null;
+  previousFamilyId?: string | null;
+}
+
+function cleanOptional(value: string | null | undefined): string | undefined {
+  const v = value?.trim();
+  return v ? v : undefined;
+}
+
 /** 아이가 KID 페어링 코드로 가족 합류. 익명→child 세션 재발급. family_id 반환. */
-export async function joinFamily(pairCode: string, childName?: string): Promise<string | null> {
+export async function joinFamily(pairCode: string, options?: string | JoinFamilyOptions): Promise<string | null> {
   const code = String(pairCode || "").toUpperCase().trim();
   if (!code) throw new Error("연결 코드를 입력해주세요");
-  const data = await apiPost<SessionResponse>("/api/family/join", { pairCode: code, name: childName || "아이" });
+  const opts: JoinFamilyOptions =
+    typeof options === "string" ? { childName: options } : options ?? {};
+  const payload: Record<string, unknown> = {
+    pairCode: code,
+    name: cleanOptional(opts.childName) ?? "아이",
+  };
+  const deviceLabel = cleanOptional(opts.deviceLabel);
+  const deviceInstallId = cleanOptional(opts.deviceInstallId);
+  const previousUserId = cleanOptional(opts.previousUserId);
+  const previousFamilyId = cleanOptional(opts.previousFamilyId);
+  if (deviceLabel) payload.device_label = deviceLabel;
+  if (deviceInstallId) payload.device_install_id = deviceInstallId;
+  if (previousUserId) payload.previous_user_id = previousUserId;
+  if (previousFamilyId) payload.previous_family_id = previousFamilyId;
+  const data = await apiPost<SessionResponse>("/api/family/join", payload);
   adoptSession(data);
   return data.family_id ?? null;
 }

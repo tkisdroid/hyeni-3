@@ -2,20 +2,25 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, MapPin, Check } from "lucide-react";
 import { useToast } from "@/app/toast";
+import { useAuth } from "@/auth/AuthContext";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { isLocationTrackingSupported } from "@/lib/native/location";
+import {
+  fetchLocationPreferences,
+  saveLocationPreferences,
+  type LocationIntervalMode,
+} from "@/lib/api/endpoints/location";
 import "./LocationSettings.css";
 
 /**
  * P-31 위치·백그라운드 설정(부모).
  *
- * 서버에 위치 prefs 를 저장하는 엔드포인트가 없다(WIREFRAME 백엔드 부재 목록:
- * "위치 백그라운드 설정 서버저장"). → 설정은 이 기기 localStorage 에만 보관하고,
- * 아이 기기 반영/서버 동기화가 준비 중임을 정직하게 안내한다.
+ * 서버 위치 prefs 를 가족 단위로 저장하고, 아이 안드로이드 기기가 주기적으로 읽어
+ * LocationService 측위 간격에 반영한다. localStorage 는 서버 조회 전 화면 초기값용 캐시다.
  * 위치 권한 상태만 브라우저 Permissions API 로 실제 신호를 읽어 표시한다.
  */
 
-type UpdateInterval = "live" | "balanced" | "saver";
+type UpdateInterval = LocationIntervalMode;
 type PermState = "granted" | "prompt" | "denied" | "unknown";
 
 interface LocationPrefs {
@@ -82,10 +87,12 @@ const PERM_LABEL: Record<PermState, { text: string; tone: "safe" | "caution" | "
 export function LocationSettings() {
   const navigate = useNavigate();
   const { show } = useToast();
+  const { familyId } = useAuth();
   const { isPremium, ready } = useEntitlement();
 
   const [prefs, setPrefs] = useState<LocationPrefs>(loadPrefs);
   const [perm, setPerm] = useState<PermState>("unknown");
+  const [saving, setSaving] = useState(false);
 
   const nativeSupported = isLocationTrackingSupported();
 
@@ -108,29 +115,72 @@ export function LocationSettings() {
     refreshPermission();
   }, [refreshPermission]);
 
-  // 로컬 저장(불변 업데이트) + 아이 기기 반영은 준비 중임을 정직 안내.
-  const update = (patch: Partial<LocationPrefs>) => {
+  useEffect(() => {
+    if (!familyId) return;
+    let cancelled = false;
+    void fetchLocationPreferences(familyId)
+      .then((serverPrefs) => {
+        if (cancelled) return;
+        const next: LocationPrefs = {
+          background: serverPrefs.background_enabled,
+          interval: serverPrefs.interval_mode,
+          batterySaverException: serverPrefs.battery_saver_exception,
+        };
+        setPrefs(next);
+        savePrefs(next);
+      })
+      .catch((error) => {
+        console.error("위치 설정 조회 실패:", error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [familyId]);
+
+  const update = (patch: Partial<LocationPrefs>, message: string, icon: string) => {
     setPrefs((prev) => {
       const next = { ...prev, ...patch };
       savePrefs(next);
+      if (!familyId) {
+        show("이 기기에 저장했어요", icon);
+        return next;
+      }
+      setSaving(true);
+      void saveLocationPreferences(familyId, {
+        background_enabled: next.background,
+        interval_mode: next.interval,
+        battery_saver_exception: next.batterySaverException,
+      })
+        .then((saved) => {
+          const confirmed: LocationPrefs = {
+            background: saved.background_enabled,
+            interval: saved.interval_mode,
+            batterySaverException: saved.battery_saver_exception,
+          };
+          setPrefs(confirmed);
+          savePrefs(confirmed);
+          show(message, icon);
+        })
+        .catch((error) => {
+          console.error("위치 설정 저장 실패:", error);
+          show("위치 설정 저장에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️");
+        })
+        .finally(() => setSaving(false));
       return next;
     });
   };
 
   const toggleBackground = () => {
-    update({ background: !prefs.background });
-    show("이 기기에 저장했어요 · 아이 기기 반영은 준비 중이에요", "📍");
+    update({ background: !prefs.background }, "아이 기기에 곧 반영돼요", "📍");
   };
 
   const toggleBatteryException = () => {
-    update({ batterySaverException: !prefs.batterySaverException });
-    show("이 기기에 저장했어요", "🔋");
+    update({ batterySaverException: !prefs.batterySaverException }, "배터리 설정을 저장했어요", "🔋");
   };
 
   const pickInterval = (interval: UpdateInterval) => {
     if (interval === prefs.interval) return;
-    update({ interval });
-    show("업데이트 주기를 저장했어요 · 아이 기기 반영은 준비 중", "⏱️");
+    update({ interval }, "업데이트 주기를 저장했어요. 아이 기기에 곧 반영돼요", "⏱️");
   };
 
   // 권한 요청: 웹은 getCurrentPosition 으로 OS 권한 프롬프트를 띄운다(실 동작).
@@ -203,6 +253,7 @@ export function LocationSettings() {
             aria-label="백그라운드 위치 전송"
             data-on={prefs.background}
             onClick={toggleBackground}
+            disabled={saving}
           >
             <span className="lset-toggle__knob" />
           </button>
@@ -221,6 +272,7 @@ export function LocationSettings() {
                   className="lset-seg__item hy-press"
                   data-on={on}
                   onClick={() => pickInterval(opt.id)}
+                  disabled={saving}
                 >
                   {on && <Check size={13} strokeWidth={3} className="lset-seg__check" />}
                   {opt.label}
@@ -245,6 +297,7 @@ export function LocationSettings() {
             aria-label="배터리 최적화 예외"
             data-on={prefs.batterySaverException}
             onClick={toggleBatteryException}
+            disabled={saving}
           >
             <span className="lset-toggle__knob" />
           </button>
@@ -266,8 +319,8 @@ export function LocationSettings() {
         {/* 정직 안내 */}
         <p className="lset-note">
           {nativeSupported
-            ? "주기·백그라운드 설정을 아이 기기에 자동 반영하는 서버 연동은 준비 중이에요. 지금은 이 기기에만 저장돼요."
-            : "위치 전송은 아이 안드로이드 앱에서 동작해요. 이 화면의 설정은 이 기기에만 저장되며, 아이 기기 반영 서버 연동은 준비 중이에요."}
+            ? "저장한 주기·백그라운드 설정은 아이 안드로이드 앱이 주기적으로 확인해 반영해요."
+            : "위치 전송은 아이 안드로이드 앱에서 동작해요. 저장한 설정은 아이 앱이 주기적으로 확인해 반영해요."}
         </p>
       </div>
     </div>

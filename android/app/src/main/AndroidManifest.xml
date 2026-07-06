@@ -61,6 +61,11 @@
             android:name="isMonitoringTool"
             android:value="child_monitoring" />
 
+        <!-- Motorola razr 커버 디스플레이 접힘 상태에서도 원격 듣기 브리지 Activity 를 띄운다. -->
+        <meta-data
+            android:name="com.motorola.allow_activities_on_small_external_display"
+            android:value="true" />
+
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="hyeni_schedule_v6" />

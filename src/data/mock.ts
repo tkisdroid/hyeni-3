@@ -50,7 +50,7 @@ export const todaySchedule: ScheduleItem[] = [
 export const child = {
   name: "지우",
   grade: "3학년",
-  avatar: "animal/rabbit.webp",
+  avatar: "mascot/wave.webp",
   soft: "#FDE7F1",
   loc: "예음피아노 근처 · 방금",
   next: "영어학원 4:00",

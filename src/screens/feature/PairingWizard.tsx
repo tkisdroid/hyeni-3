@@ -5,7 +5,7 @@ import { ChevronLeft, Camera } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { useMyFamily, useRegeneratePairCode, useCreateChildren } from "@/queries/useFamily";
 import { useEntitlement } from "@/queries/useEntitlement";
-import { tierFrom, maxChildrenFor } from "@/transform/tierPolicy";
+import { FEATURES, TIERS, tierFrom, maxChildrenFor, lockMessageFor } from "@/transform/tierPolicy";
 import { resizeImageFileSafe } from "@/lib/imageResize";
 import "./PairingWizard.css";
 
@@ -44,6 +44,16 @@ export function PairingWizard() {
   const { ready, isPremium } = useEntitlement();
   const tier = tierFrom({ ready, isPremium });
   const maxChildren = maxChildrenFor(tier);
+  const existingChildCount = useMemo(
+    () => (family?.members ?? []).filter((m) => m.role === "child").length,
+    [family],
+  );
+  const remainingSlots = ready ? Math.max(0, maxChildren - existingChildCount) : maxChildren;
+  const noSlots = ready && remainingSlots <= 0;
+  const childLimitMessage =
+    tier === TIERS.PREMIUM
+      ? "프리미엄은 아이 2명까지 연결할 수 있어요"
+      : lockMessageFor(FEATURES.MULTI_CHILD);
 
   const [step, setStep] = useState<Step>(1);
   const [count, setCount] = useState(1);
@@ -51,15 +61,16 @@ export function PairingWizard() {
   const [processingIndex, setProcessingIndex] = useState<number | null>(null);
   const fileRefs = useRef<Array<HTMLInputElement | null>>([]);
 
-  // 티어 상한이 낮아지면(엔타이틀먼트 로드 후) 선택 수를 상한으로 클램프.
+  // 티어/기존 아이 수가 바뀌면 선택 수를 남은 슬롯으로 클램프.
   useEffect(() => {
-    setCount((c) => Math.min(c, maxChildren));
-    setChildren((list) => (list.length > maxChildren ? list.slice(0, maxChildren) : list));
-  }, [maxChildren]);
+    const safeMax = Math.max(1, remainingSlots || 1);
+    setCount((c) => Math.min(c, safeMax));
+    setChildren((list) => (list.length > safeMax ? list.slice(0, safeMax) : list));
+  }, [remainingSlots]);
 
   const selectCount = (n: number) => {
-    if (n > maxChildren) {
-      show("두 번째 아이는 프리미엄에서 연결할 수 있어요", "⭐");
+    if (ready && (noSlots || n > remainingSlots)) {
+      show(childLimitMessage, "🔒");
       return;
     }
     setCount(n);
@@ -94,7 +105,14 @@ export function PairingWizard() {
   };
 
   const next = () => {
-    if (step === 1) setStep(2);
+    if (step === 1) {
+      if (noSlots) {
+        show(childLimitMessage, "🔒");
+        navigate("/subscription");
+        return;
+      }
+      setStep(2);
+    }
     else if (step === 2 && allNamed) setStep(3);
   };
 
@@ -111,13 +129,17 @@ export function PairingWizard() {
 
   const makeCode = () => {
     if (busy) return;
+    if (ready && existingChildCount + children.length > maxChildren) {
+      show(childLimitMessage, "🔒");
+      navigate("/subscription");
+      return;
+    }
     // 주 보호자면 아이 placeholder(사진·이름)를 서버에 먼저 생성한 뒤 코드를 발급한다.
     const canCreate = !!family?.isPrimaryParent && !!family.familyId;
     if (!canCreate) {
       issueCode();
       return;
     }
-    const existingChildCount = (family?.members ?? []).filter((m) => m.role === "child").length;
     createChildren.mutate(
       {
         parentName: family?.myName || family?.parentName || "부모",
@@ -161,7 +183,7 @@ export function PairingWizard() {
             <div className="pw-lead">몇 명을 연결할까요?</div>
             <div className="pw-count-grid">
               {COUNTS.map((n) => {
-                const locked = n > maxChildren;
+                const locked = ready && (noSlots || n > remainingSlots);
                 return (
                   <button
                     key={n}
@@ -177,7 +199,9 @@ export function PairingWizard() {
               })}
             </div>
             <p className="pw-note">
-              아이 1명은 무료예요. 두 번째 아이는 프리미엄(아이별 월 2,900원)에서 연결할 수 있어요.
+              {noSlots
+                ? childLimitMessage
+                : "아이 1명은 무료예요. 두 번째 아이는 프리미엄(아이별 월 2,900원)에서 연결할 수 있어요."}
             </p>
           </>
         )}

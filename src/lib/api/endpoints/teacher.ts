@@ -4,7 +4,7 @@
  *
  * ⚠️ 출석 date_key 는 표준 "YYYY-MM-DD"(events 도메인의 0-index 월 규칙과 다름).
  * 읽기 계열은 미배포/미존재(404·501)면 isMissingFunction 으로 판별해 빈값 폴백한다
- * (선생님 Worker 함수가 아직 배포 전일 수 있음 — 화면은 "준비 중" 빈 상태로 안내).
+ * (선생님 Worker 함수가 아직 배포 전일 수 있음 — 화면은 빈 상태로 안내).
  */
 import { apiGet, apiPost } from "../client";
 import { isMissingFunction } from "../errors";
@@ -42,6 +42,13 @@ export interface ClassScheduleRow {
   endTime: string | null;
   category: string | null;
   location: string | null;
+}
+
+export interface TeacherNoticeAttachment {
+  name: string;
+  path: string;
+  contentType: string;
+  size: number;
 }
 
 /** 출석 상태 계약(teacher_attendance_logs.attendance_status). */
@@ -281,6 +288,7 @@ export interface PublishNoticeInput {
   body?: string;
   sourceType?: string;
   events?: unknown[];
+  attachments?: TeacherNoticeAttachment[];
 }
 
 export interface PublishNoticeResult {
@@ -300,6 +308,7 @@ export async function publishNotice(
     body: input.body ?? "",
     source_type: input.sourceType ?? "text",
     events: input.events ?? [],
+    attachments: input.attachments ?? [],
   });
   return data ?? { noticeId: null, recipients: 0, eventsCreated: 0 };
 }
@@ -310,6 +319,12 @@ export interface SetAttendanceInput {
   scheduleId?: string | null;
   status: AttendanceStatus;
   note?: string | null;
+}
+
+export interface CopyClassWeekScheduleResult {
+  copied: number;
+  skipped: number;
+  sourceCount: number;
 }
 
 /** 한 아이의 참석 상태 기록(참석·결석·하교·확인필요). { logId } 반환. */
@@ -326,6 +341,20 @@ export async function setAttendance(
     note: trimOrNull(input.note),
   });
   return { logId: data ?? null };
+}
+
+/** 선택 주간(월~일)의 반 일정을 다음 주로 복사. 중복 일정은 서버가 건너뛴다. */
+export async function copyClassWeekSchedule(
+  classId: string,
+  weekStartDateKey: string,
+): Promise<CopyClassWeekScheduleResult> {
+  if (!classId) throw new Error("반 정보가 없어 시간표를 복사할 수 없어요.");
+  if (!weekStartDateKey) throw new Error("복사할 주간 날짜가 없어요.");
+  const data = await apiPost<CopyClassWeekScheduleResult | null>(
+    `/api/teacher/classes/${encodeURIComponent(classId)}/schedule/copy-week`,
+    { week_start_date_key: weekStartDateKey },
+  );
+  return data ?? { copied: 0, skipped: 0, sourceCount: 0 };
 }
 
 export interface RequestPairingInput {

@@ -112,7 +112,7 @@ export function QrScanner({
       }
 
       try {
-        setLoadingLabel("QR 스캔 준비 중…");
+        setLoadingLabel("QR 스캔 시작 중…");
         detectorRef.current = new Detector({ formats: ["qr_code"] });
         setLoadingLabel("카메라 여는 중…");
         const stream = await navigator.mediaDevices.getUserMedia({

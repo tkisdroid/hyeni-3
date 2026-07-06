@@ -16,7 +16,7 @@ function keysForMessage(msg: FamilyMessage, familyId: string): (readonly unknown
   switch (msg.table) {
     case "family_members":
     case "families":
-      return [qk.family(familyId)];
+      return [qk.family(familyId), qk.account(familyId)];
     case "events":
     case "events_children":
       return [qk.events(familyId)];
@@ -28,6 +28,10 @@ function keysForMessage(msg: FamilyMessage, familyId: string): (readonly unknown
       return [["memoReplies", familyId]];
     case "child_locations":
       return [qk.childLocations(familyId)];
+    case "saved_places":
+      return [qk.savedPlaces(familyId)];
+    case "danger_zones":
+      return [qk.dangerZones(familyId)];
     case "parent_alerts":
       return [qk.parentAlerts(familyId)];
     case "family_subscriptions":
@@ -42,6 +46,23 @@ function keysForMessage(msg: FamilyMessage, familyId: string): (readonly unknown
 
 // 부모 앱을 즉시 가로채야 하는 최우선 안전 알림 유형.
 const URGENT_ALERT_TYPES = new Set(["sos", "emergency"]);
+
+function maybeCelebrateSticker(msg: FamilyMessage, role: string | null, userId: string | null): void {
+  if (role !== "child" || !userId) return;
+  if (msg.kind !== "pg" || msg.table !== "stickers" || msg.eventType !== "INSERT") return;
+  const row = msg.new as { id?: string; user_id?: string; sticker_type?: string; emoji?: string; title?: string } | null | undefined;
+  if (!row || row.user_id !== userId || row.sticker_type !== "praise") return;
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent("hy:sticker-celebration", {
+      detail: {
+        id: row.id,
+        emoji: row.emoji,
+        title: row.title,
+      },
+    }),
+  );
+}
 
 /**
  * 부모에게 도착한 긴급 알림(SOS/emergency)이면 SOS 수신 화면으로 자동 전환한다.
@@ -60,7 +81,7 @@ function maybeInterruptForUrgentAlert(msg: FamilyMessage, role: string | null): 
 
 export function useFamilyRealtime(): void {
   const qc = useQueryClient();
-  const { familyId, status, role } = useAuth();
+  const { familyId, status, role, userId } = useAuth();
 
   useEffect(() => {
     if (status !== "authenticated" || !familyId) return;
@@ -72,8 +93,9 @@ export function useFamilyRealtime(): void {
           qc.invalidateQueries({ queryKey: key });
         }
         maybeInterruptForUrgentAlert(msg, role);
+        maybeCelebrateSticker(msg, role, userId);
       },
     );
     return () => socket.close();
-  }, [familyId, status, role, qc]);
+  }, [familyId, status, role, userId, qc]);
 }

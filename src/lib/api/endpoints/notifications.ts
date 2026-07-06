@@ -39,6 +39,16 @@ export function markAlertRead(alertId: string): Promise<unknown> {
   return apiPost(`/api/parent-alerts/${encodeURIComponent(alertId)}/read`, {});
 }
 
+/**
+ * 가족의 내 미읽음 알림 전부 읽음 처리 — 서버 단일 UPDATE(1 요청).
+ * 알림당 개별 POST(N회 왕복)로 느리던 "모두 읽음"의 서버측 대체.
+ */
+export function markAllAlertsRead(familyId: string): Promise<{ ok: boolean; updated: number }> {
+  return apiPost<{ ok: boolean; updated: number }>("/api/parent-alerts/read-all", {
+    family_id: familyId,
+  });
+}
+
 /* ── 알림 설정(notif-settings) ──────────────────────────────────────────────
  * per-user 알림 환경설정(user_id PK). 서버(GET /api/notif-settings)는 boolean·int[]
  * 형태의 snake_case row 또는 null(첫 실행)을 반환한다. 여기서 camelCase 로 정리해

@@ -10,6 +10,7 @@
  */
 import { API_BASE } from "@/config/env";
 import { apiGet, apiPost } from "../client";
+import { ApiError } from "../errors";
 import type { FamilyMember } from "./family";
 import { fetchEvents, fetchAcademies, type CalendarEvent, type Academy } from "./schedule";
 import { fetchSavedPlaces, fetchDangerZones, type SavedPlace, type DangerZone } from "./location";
@@ -73,6 +74,38 @@ export async function setChildTheme(
     new_name: trimmedName,
     color_hex: colorHex.toUpperCase(),
   });
+}
+
+function passwordErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) return "비밀번호 변경에 실패했어요";
+  switch (error.message) {
+    case "weak_password":
+      return "새 비밀번호는 6자 이상이어야 해요";
+    case "same_password":
+      return "새 비밀번호가 현재 비밀번호와 같아요";
+    case "password_account_required":
+      return "비밀번호가 있는 계정에서만 변경할 수 있어요";
+    case "current_password_mismatch":
+      return "현재 비밀번호가 맞지 않아요";
+    default:
+      return error.message || "비밀번호 변경에 실패했어요";
+  }
+}
+
+/** 현재 비밀번호 확인 후 새 비밀번호 저장. */
+export async function changePassword(input: {
+  currentPassword: string;
+  newPassword: string;
+}): Promise<void> {
+  const currentPassword = input.currentPassword;
+  const newPassword = input.newPassword;
+  if (!currentPassword) throw new Error("현재 비밀번호를 입력해 주세요");
+  if (newPassword.length < 6) throw new Error("새 비밀번호는 6자 이상이어야 해요");
+  try {
+    await apiPost("/auth/change-password", { currentPassword, newPassword });
+  } catch (error) {
+    throw new Error(passwordErrorMessage(error));
+  }
 }
 
 // ── legal(약관 / 개인정보) — Worker 루트 공개 HTML ─────────────────────────

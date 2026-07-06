@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, LogOut, ShieldAlert } from "lucide-react";
+import { ChevronLeft, LogOut, ShieldAlert, KeyRound } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { qk } from "@/queries/keys";
-import { useAccount, useDeleteAccount } from "@/queries/useAccount";
+import { useAccount, useChangePassword, useDeleteAccount } from "@/queries/useAccount";
 import { useUpdateProfile } from "@/queries/useFamily";
 import "./ParentAccount.css";
 
@@ -19,11 +19,16 @@ export function ParentAccount() {
   const { account, me, providerLabel, isLoading } = useAccount();
   const updateProfile = useUpdateProfile();
   const deleteAccount = useDeleteAccount();
+  const changePassword = useChangePassword();
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [seeded, setSeeded] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
 
   // me 가 도착하면 편집 폼을 1회 seed(이후 사용자가 입력 중이면 덮어쓰지 않음).
   useEffect(() => {
@@ -55,7 +60,7 @@ export function ParentAccount() {
       {
         onSuccess: () => {
           void qc.invalidateQueries({ queryKey: qk.family(familyId) });
-          void qc.invalidateQueries({ queryKey: ["account", familyId ?? "me"] });
+          void qc.invalidateQueries({ queryKey: qk.account(familyId) });
           show("프로필을 저장했어요", "✅");
         },
         onError: (e) => {
@@ -89,6 +94,39 @@ export function ParentAccount() {
         show("계정 삭제에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️");
       },
     });
+  };
+
+  const closePassword = (force = false) => {
+    if (!force && changePassword.isPending) return;
+    setPasswordOpen(false);
+    setCurrentPassword("");
+    setNewPassword("");
+    setNewPasswordConfirm("");
+  };
+
+  const handlePasswordChange = () => {
+    if (!currentPassword) {
+      show("현재 비밀번호를 입력해 주세요", "🔐");
+      return;
+    }
+    if (newPassword.length < 6) {
+      show("새 비밀번호는 6자 이상이어야 해요", "🔐");
+      return;
+    }
+    if (newPassword !== newPasswordConfirm) {
+      show("새 비밀번호 확인이 일치하지 않아요", "🔐");
+      return;
+    }
+    changePassword.mutate(
+      { currentPassword, newPassword },
+      {
+        onSuccess: () => {
+          show("비밀번호를 변경했어요", "✅");
+          closePassword(true);
+        },
+        onError: (e) => show(e instanceof Error ? e.message : "비밀번호 변경에 실패했어요", "⚠️"),
+      },
+    );
   };
 
   const isPrimary = account?.isPrimaryParent === true;
@@ -167,13 +205,17 @@ export function ParentAccount() {
               <span className="pa-row__v">{providerLabel}</span>
             </div>
             <div className="pa-divider" />
-            <div className="pa-row pa-row--muted">
+            <button
+              type="button"
+              className="pa-row pa-row-btn hy-press"
+              onClick={() => setPasswordOpen(true)}
+            >
               <span className="pa-row__k">비밀번호 변경</span>
-              <span className="pa-row__hint">준비 중이에요</span>
-            </div>
+              <span className="pa-row__hint">변경</span>
+            </button>
           </div>
           <div className="pa-note">
-            연동된 소셜 계정은 해당 서비스에서 관리돼요. 추가 계정 연동은 준비 중이에요.
+            연동된 소셜 계정은 해당 서비스에서 관리돼요.
           </div>
         </div>
 
@@ -234,6 +276,71 @@ export function ParentAccount() {
                 disabled={deleteAccount.isPending}
               >
                 {deleteAccount.isPending ? "삭제 중…" : "탈퇴하기"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 비밀번호 변경 모달 */}
+      {passwordOpen && (
+        <div className="pa-modal" role="dialog" aria-modal="true">
+          <button
+            type="button"
+            className="pa-modal__scrim"
+            aria-label="닫기"
+            onClick={() => closePassword()}
+          />
+          <div className="pa-modal__card">
+            <div className="pa-modal__emoji">
+              <KeyRound size={34} strokeWidth={2.2} />
+            </div>
+            <div className="pa-modal__title">비밀번호 변경</div>
+            <div className="pa-modal__fields">
+              <input
+                className="pa-modal__input"
+                type="password"
+                autoComplete="current-password"
+                placeholder="현재 비밀번호"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+              />
+              <input
+                className="pa-modal__input"
+                type="password"
+                autoComplete="new-password"
+                placeholder="새 비밀번호 (6자 이상)"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+              <input
+                className="pa-modal__input"
+                type="password"
+                autoComplete="new-password"
+                placeholder="새 비밀번호 확인"
+                value={newPasswordConfirm}
+                onChange={(e) => setNewPasswordConfirm(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handlePasswordChange();
+                }}
+              />
+            </div>
+            <div className="pa-modal__btns">
+              <button
+                type="button"
+                className="pa-modal__btn pa-modal__btn--ghost hy-press"
+                onClick={() => closePassword()}
+                disabled={changePassword.isPending}
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                className="pa-modal__btn pa-modal__btn--primary hy-press"
+                onClick={handlePasswordChange}
+                disabled={changePassword.isPending}
+              >
+                {changePassword.isPending ? "변경 중…" : "변경하기"}
               </button>
             </div>
           </div>

@@ -12,7 +12,10 @@ import {
   launchSubscriptionPurchase,
   ANNUAL_BASE_PLAN_ID,
   MONTHLY_BASE_PLAN_ID,
+  GOOGLE_PLAY_PACKAGE_NAME,
+  SUBSCRIPTION_PRODUCT_ID,
 } from "@/lib/native/billing";
+import { openExternal } from "@/lib/native/browser";
 import {
   TIERS,
   FEATURES,
@@ -108,7 +111,17 @@ export function Subscription() {
       setBusy(false);
     }
   };
-  const manage = () => show("구독 관리는 곧 제공돼요", "👑");
+  const manage = async () => {
+    try {
+      const url =
+        `https://play.google.com/store/account/subscriptions?sku=${encodeURIComponent(SUBSCRIPTION_PRODUCT_ID)}` +
+        `&package=${encodeURIComponent(GOOGLE_PLAY_PACKAGE_NAME)}`;
+      await openExternal(url);
+    } catch (error) {
+      console.error("구독 관리 열기 실패:", error);
+      show("구독 관리 화면을 열지 못했어요", "⚠️");
+    }
+  };
 
   // ready && isPremium 일 때만 활성 배너 노출. 조회 실패/미확정(ready=false)에서는
   // 무료로 강등하지 않고 기본 페이월(중립)만 보여준다(R9).
@@ -271,7 +284,7 @@ export function Subscription() {
 
         {/* CTA — 구독 중이면 관리, 아니면 결제 시작(둘 다 토스트: 결제는 4단계 defer) */}
         {premiumActive ? (
-          <button type="button" className="sub-cta hy-press" onClick={manage}>
+          <button type="button" className="sub-cta hy-press" onClick={() => void manage()}>
             <img src={asset("ui/crown.webp")} alt="" />
             구독 관리
           </button>

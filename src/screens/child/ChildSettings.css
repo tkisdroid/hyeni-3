@@ -204,3 +204,101 @@
 .ks-row:disabled {
   opacity: 0.6;
 }
+
+/* ── 도움말 시트 ───────────────────────────────────────────────────────── */
+.ks-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.ks-modal__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(32, 26, 29, 0.36);
+  border: none;
+}
+.ks-modal__card {
+  position: relative;
+  width: 100%;
+  max-width: 430px;
+  margin: 0 14px calc(14px + env(safe-area-inset-bottom, 0px));
+  border-radius: 26px;
+  background: #fff;
+  box-shadow: 0 24px 60px -18px rgba(32, 26, 29, 0.42);
+  padding: 18px;
+  animation: hy-slide-up 0.22s ease forwards;
+}
+.ks-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ks-modal__title {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--fg-primary);
+}
+.ks-modal__x {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #f6f0f3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  --press: 0.92;
+}
+.ks-help-list {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ks-help-item {
+  display: flex;
+  gap: 12px;
+  padding: 13px;
+  border-radius: 18px;
+  background: #fbf7f8;
+}
+.ks-help-item__emoji {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--hy-accent-soft);
+}
+.ks-help-item b,
+.ks-help-item small {
+  display: block;
+}
+.ks-help-item b {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--fg-primary);
+}
+.ks-help-item small {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.5;
+  color: var(--fg-tertiary);
+}
+
+@keyframes hy-slide-up {
+  from {
+    transform: translateY(18px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}

@@ -10,6 +10,7 @@
  * 이 수집에는 포함되지 않는다.
  */
 import type { DeviceHealth } from "@/lib/api/endpoints/family";
+import { getOrCreateDeviceInstallId } from "@/lib/native/deviceIdentity";
 
 // navigator.getBattery() 가 반환하는 BatteryManager 의 사용 부분만(표준 타입 미제공 대비).
 interface BatteryLike {
@@ -63,6 +64,7 @@ export async function collectDeviceHealth(now: number): Promise<DeviceHealth> {
     isCharging,
     networkConnected,
     networkType,
+    deviceInstallId: getOrCreateDeviceInstallId(),
     lastReportedAt: new Date(now).toISOString(),
   };
 }

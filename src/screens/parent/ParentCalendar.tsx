@@ -4,10 +4,14 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Plus, Clock, MapPin, Bell, Pencil, Trash2 } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
+import { Loading } from "@/components/ui/Loading";
 import { useEvents, useDeleteEvent } from "@/queries/useSchedule";
 import { useMyFamily } from "@/queries/useFamily";
+import { useSavedPlaces } from "@/queries/useLocation";
 import { eventToView, formatTimeLabel, groupEventsByDateKey } from "@/transform/scheduleView";
+import { useVisitVerify } from "@/queries/useVisitVerify";
 import { ymdToDateKey } from "@/transform/dateKey";
+import { eventChildMemberIds, eventScopeLabel } from "@/transform/eventScope";
 import { notifOverrideToReminderMinutes, type CalendarEvent } from "@/lib/api/endpoints/schedule";
 
 /** 사전알림(분) → 사람이 읽는 라벨. */
@@ -18,6 +22,7 @@ import "./ParentCalendar.css";
 
 type ViewMonth = { year: number; month: number };
 type SelDate = { year: number; month: number; day: number };
+type SwipeSide = "edit" | "delete";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
 
@@ -59,8 +64,23 @@ export function ParentCalendar() {
 
   const { data: events, isLoading, isError } = useEvents();
   const { data: family } = useMyFamily();
+  const { data: savedPlaces } = useSavedPlaces();
   const deleteEvent = useDeleteEvent();
-  const byKey = useMemo(() => groupEventsByDateKey(events ?? [], now), [events, now]);
+  // 선택 날짜의 지난 일정 "다녀옴"을 위치 이력로 검증(미확인=확인 필요).
+  // 캘린더는 여러 아이 일정이 섞이므로 이벤트 배정 아이의 user_id 로 정확히 대조한다.
+  const selectedKey = ymdToDateKey(selected.year, selected.month, selected.day);
+  const childUserByMemberId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const member of family?.members ?? []) {
+      if (member.role === "child" && member.user_id) map.set(member.id, member.user_id);
+    }
+    return map;
+  }, [family]);
+  const visitMap = useVisitVerify(selectedKey, events, childUserByMemberId);
+  const byKey = useMemo(
+    () => groupEventsByDateKey(events ?? [], now, visitMap, savedPlaces),
+    [events, now, visitMap, savedPlaces],
+  );
   const rawById = useMemo(() => {
     const map = new Map<string, CalendarEvent>();
     for (const e of events ?? []) map.set(e.id, e);
@@ -74,6 +94,10 @@ export function ParentCalendar() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [dragY, setDragY] = useState(0);
   const dragStart = useRef<number | null>(null);
+  const [openSwipe, setOpenSwipe] = useState<{ id: string; side: SwipeSide } | null>(null);
+  const [confirmSwipeDeleteId, setConfirmSwipeDeleteId] = useState<string | null>(null);
+  const swipeStart = useRef<{ id: string; x: number; y: number } | null>(null);
+  const suppressCardClick = useRef(false);
 
   const openSheet = (id: string) => {
     const raw = rawById.get(id);
@@ -106,7 +130,7 @@ export function ParentCalendar() {
     dragStart.current = null;
   };
 
-  const sheetView = sheetEvent ? eventToView(sheetEvent, now) : null;
+  const sheetView = sheetEvent ? eventToView(sheetEvent, now, visitMap, savedPlaces) : null;
   const sheetTimeLabel = useMemo(() => {
     if (!sheetEvent) return "";
     const start = formatTimeLabel(sheetEvent.time);
@@ -114,34 +138,70 @@ export function ParentCalendar() {
   }, [sheetEvent]);
   const sheetChildLabel = useMemo(() => {
     if (!sheetEvent) return "";
-    const ids = (sheetEvent.events_children ?? [])
-      .map((c) => c.child_id)
-      .filter((id): id is string => typeof id === "string" && id.length > 0);
-    const names = ids
+    const names = eventChildMemberIds(sheetEvent)
       .map((id) => family?.members.find((m) => m.id === id)?.name)
       .filter((n): n is string => !!n);
     if (names.length) return names.join(" · ");
-    if (sheetEvent.is_family_event) return "가족 일정";
-    return "";
+    return eventScopeLabel(sheetEvent);
   }, [sheetEvent, family]);
+  const sheetNeedsAssignment = sheetEvent ? eventScopeLabel(sheetEvent) === "배정 필요" : false;
   const sheetReminder = useMemo(() => {
     if (!sheetEvent) return null;
     return notifOverrideToReminderMinutes(sheetEvent.notif_override);
   }, [sheetEvent]);
 
+  const editEvent = (event: CalendarEvent) => {
+    setOpenSwipe(null);
+    setConfirmSwipeDeleteId(null);
+    navigate("/event-form", { state: { mode: "edit", event } });
+  };
   const handleEdit = () => {
     if (!sheetEvent) return;
-    navigate("/event-form", { state: { mode: "edit", event: sheetEvent } });
+    editEvent(sheetEvent);
   };
-  const handleDelete = () => {
-    if (!sheetEvent || deleteEvent.isPending) return;
-    deleteEvent.mutate(sheetEvent.id, {
+  const deleteEventById = (id: string, closeAfter = false) => {
+    if (deleteEvent.isPending) return;
+    deleteEvent.mutate(id, {
       onSuccess: () => {
         show("일정을 삭제했어요", "🗑️");
-        closeSheet();
+        setOpenSwipe(null);
+        setConfirmSwipeDeleteId(null);
+        if (closeAfter) closeSheet();
       },
       onError: () => show("삭제에 실패했어요. 다시 시도해 주세요", "⚠️"),
     });
+  };
+  const handleDelete = () => {
+    if (!sheetEvent) return;
+    deleteEventById(sheetEvent.id, true);
+  };
+
+  const onCardPointerDown = (id: string, e: ReactPointerEvent<HTMLButtonElement>) => {
+    swipeStart.current = { id, x: e.clientX, y: e.clientY };
+    suppressCardClick.current = false;
+  };
+  const onCardPointerUp = (id: string, e: ReactPointerEvent<HTMLButtonElement>) => {
+    const start = swipeStart.current;
+    swipeStart.current = null;
+    if (!start || start.id !== id) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+    suppressCardClick.current = true;
+    setConfirmSwipeDeleteId(null);
+    setOpenSwipe({ id, side: dx > 0 ? "edit" : "delete" });
+  };
+  const onCardClick = (id: string) => {
+    if (suppressCardClick.current) {
+      suppressCardClick.current = false;
+      return;
+    }
+    if (openSwipe?.id === id) {
+      setOpenSwipe(null);
+      setConfirmSwipeDeleteId(null);
+      return;
+    }
+    openSheet(id);
   };
 
   const isCurrentMonth = view.year === TODAY.year && view.month === TODAY.month;
@@ -150,17 +210,22 @@ export function ParentCalendar() {
     selected.year === TODAY.year && selected.month === TODAY.month && selected.day === TODAY.day;
   const selEvents = byKey[ymdToDateKey(selected.year, selected.month, selected.day)] ?? [];
 
-  // 이벤트별 배정 아이 이름(다자녀 리스트 구분 배지). 배정 없으면 가족 공유 → 배지 없음.
+  // 이벤트별 배정 아이 이름(다자녀 리스트 구분 배지). 배정 누락은 숨기지 않고 표시.
   // 아이가 2명 이상일 때만 노출(1명이면 소음).
   const multiChild = (family?.members ?? []).filter((m) => m.role === "child").length > 1;
   const childLabelById = useMemo(() => {
     const map = new Map<string, string>();
-    if (!multiChild) return map;
     for (const e of events ?? []) {
-      const names = (e.events_children ?? [])
-        .map((c) => family?.members.find((m) => m.id === c.child_id)?.name)
+      const names = eventChildMemberIds(e)
+        .map((id) => family?.members.find((m) => m.id === id)?.name)
         .filter((n): n is string => !!n);
-      if (names.length) map.set(e.id, names.join("·"));
+      if (names.length) {
+        if (multiChild) map.set(e.id, names.join("·"));
+      }
+      else {
+        const label = eventScopeLabel(e);
+        if (label) map.set(e.id, label);
+      }
     }
     return map;
   }, [events, family, multiChild]);
@@ -270,7 +335,7 @@ export function ParentCalendar() {
         {/* 선택일 일정 */}
         {isLoading ? (
           <div className="pc-empty">
-            <div className="pc-empty__title">일정을 불러오는 중…</div>
+            <Loading label="일정을 불러오는 중" />
           </div>
         ) : isError ? (
           <div className="pc-empty">
@@ -278,36 +343,93 @@ export function ParentCalendar() {
           </div>
         ) : selEvents.length > 0 ? (
           <div className="pc-events">
-            {selEvents.map((e) => (
-              <div key={e.id} className="pc-event">
-                <div className="pc-event__rail">
-                  <span className="pc-event__node" style={{ background: e.color, boxShadow: `0 0 0 4px ${e.soft}` }} />
-                  <span className="pc-event__line" />
-                </div>
-                <button
-                  type="button"
-                  className="pc-event__card hy-press"
-                  onClick={() => openSheet(e.id)}
-                >
-                  <span className="pc-event__icon" style={{ background: e.soft, fontSize: 22, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    {e.emoji}
-                  </span>
-                  <span className="pc-event__body">
-                    <span className="pc-event__time">
-                      {e.time}
-                      {childLabelById.get(e.id) && (
-                        <span className="pc-event__child">{childLabelById.get(e.id)}</span>
+            {selEvents.map((e) => {
+              const childLabel = childLabelById.get(e.id);
+              const childWarn = childLabel === "배정 필요";
+              const raw = rawById.get(e.id);
+              const swipeSide = openSwipe?.id === e.id ? openSwipe.side : null;
+              const confirmSwipeDelete = confirmSwipeDeleteId === e.id;
+              return (
+                <div key={e.id} className="pc-event">
+                  <div className="pc-event__rail">
+                    <span className="pc-event__node" style={{ background: e.color, boxShadow: `0 0 0 4px ${e.soft}` }} />
+                    <span className="pc-event__line" />
+                  </div>
+                  <div className={`pc-swipe${swipeSide ? ` pc-swipe--${swipeSide}` : ""}`}>
+                    <div className="pc-swipe__actions pc-swipe__actions--left" aria-hidden={swipeSide !== "edit"}>
+                      <button
+                        type="button"
+                        className="pc-swipe__action pc-swipe__action--edit hy-press"
+                        onClick={() => raw && editEvent(raw)}
+                        disabled={!raw}
+                      >
+                        <Pencil size={16} strokeWidth={2.2} />
+                        수정
+                      </button>
+                    </div>
+                    <div className="pc-swipe__actions pc-swipe__actions--right" aria-hidden={swipeSide !== "delete"}>
+                      {confirmSwipeDelete ? (
+                        <>
+                          <button
+                            type="button"
+                            className="pc-swipe__action pc-swipe__action--cancel hy-press"
+                            onClick={() => setConfirmSwipeDeleteId(null)}
+                          >
+                            취소
+                          </button>
+                          <button
+                            type="button"
+                            className="pc-swipe__action pc-swipe__action--delete hy-press"
+                            onClick={() => deleteEventById(e.id)}
+                            disabled={deleteEvent.isPending}
+                          >
+                            {deleteEvent.isPending ? "삭제 중" : "삭제"}
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          className="pc-swipe__action pc-swipe__action--delete hy-press"
+                          onClick={() => setConfirmSwipeDeleteId(e.id)}
+                        >
+                          <Trash2 size={16} strokeWidth={2.2} />
+                          삭제
+                        </button>
                       )}
-                    </span>
-                    <span className="pc-event__title">{e.title}</span>
-                    {e.place && <span className="pc-event__place">{e.place}</span>}
-                  </span>
-                  <span className="pc-event__tag" style={{ color: e.tagText, background: e.tagBg }}>
-                    {e.tag}
-                  </span>
-                </button>
-              </div>
-            ))}
+                    </div>
+                    <button
+                      type="button"
+                      className="pc-event__card hy-press"
+                      onPointerDown={(ev) => onCardPointerDown(e.id, ev)}
+                      onPointerUp={(ev) => onCardPointerUp(e.id, ev)}
+                      onPointerCancel={() => {
+                        swipeStart.current = null;
+                      }}
+                      onClick={() => onCardClick(e.id)}
+                    >
+                      <span className="pc-event__icon" style={{ background: e.soft, fontSize: 22, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {e.emoji}
+                      </span>
+                      <span className="pc-event__body">
+                        <span className="pc-event__time">
+                          {e.time}
+                          {childLabel && (
+                            <span className={`pc-event__child${childWarn ? " pc-event__child--warn" : ""}`}>
+                              {childLabel}
+                            </span>
+                          )}
+                        </span>
+                        <span className="pc-event__title">{e.title}</span>
+                        {e.place && <span className="pc-event__place">{e.place}</span>}
+                      </span>
+                      <span className="pc-event__tag" style={{ color: e.tagText, background: e.tagBg }}>
+                        {e.tag}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="pc-empty">
@@ -342,7 +464,11 @@ export function ParentCalendar() {
               </span>
               <div className="pc-sheet__headtext">
                 <div className="pc-sheet__title">{sheetView.title}</div>
-                {sheetChildLabel && <div className="pc-sheet__sub">{sheetChildLabel}</div>}
+                {sheetChildLabel && (
+                  <div className={`pc-sheet__sub${sheetNeedsAssignment ? " pc-sheet__sub--warn" : ""}`}>
+                    {sheetChildLabel}
+                  </div>
+                )}
               </div>
               <span
                 className="pc-sheet__tag"
@@ -415,7 +541,7 @@ export function ParentCalendar() {
                   className="pc-btn pc-btn--primary hy-press"
                   onClick={handleEdit}
                 >
-                  <Pencil size={16} strokeWidth={2.2} /> 수정
+                  <Pencil size={16} strokeWidth={2.2} /> {sheetNeedsAssignment ? "배정하기" : "수정"}
                 </button>
               </div>
             )}
