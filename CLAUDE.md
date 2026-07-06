@@ -137,6 +137,8 @@ hyeni-3/
   - **②긴급 SOS 전체화면**: ★치명 갭 수정 — `POST /api/parent-alerts`가 DB+WS만 하고 **FCM 미발송**(앱 꺼진 부모에게 SOS 유실!). `URGENT_PUSH_TYPES(sos/emergency/sos_followup)` insert 시 `sendFcmToFamily(type:'sos', route:/sos-receive)` waitUntil 연쇄 추가(부모만 수신). rpc 경로는 네이티브 자체발송 있어 제외(중복 방지). 실기기: **A17 화면 OFF → SOS → 자동 화면 ON + SOS 수신 전면화면**(위치·전화·주변소리·안전확인). 포그라운드 WS 오버레이(#/sos-receive 자동전환)도 별도 검증. USE_FULL_SCREEN_INTENT appop allow.
   - **③미등록 장소 도착(Family Link식)**: `lib/arrivalDetect.ts` 신규 — `upsert_child_location`(rest-shim-rpc) waitUntil 훅. 앵커 150m·**5분 체류**·등록장소 150m 내 skip(네이티브 지오펜스 담당)·동일장소 2h 쿨다운. 장소명=Kakao coord2address 역지오코딩(일반 REST 키 동작). `child_arrival_state` 테이블(ALTER 완료). 실기기: 부모 FCM "📍 혜니 도착 — '경기도 성남시 분당구 무지개로 144' 근처에 도착해 5분째 머물고 있어요". 등록 장소(집 도착)는 네이티브 지오펜스로 기동작 확인. 한글 조사(이/가) 받침 처리.
   - 검증 방법 메모: 도착 감지 트리거는 `child_arrival_state.anchor_since` 6분 백데이트+동일좌표 upsert 1회(curl, 아이 토큰·apikey:worker). CDP fetch 는 CORS 로 /rest/v1 불가 — 호스트 curl 사용.
+  - **대화 위치 공유·사진 전송(TK 제보 → 실구현)**: MemoChat 컴포저 버튼 실배선 — 위치=GPS(5s)→내 서버위치 폴백→역지오코딩→`[[loc:lat,lng|주소]]`(탭=카카오맵), 사진=리사이즈→**기존 child-photos R2 재사용**(`{familyId}/memo-*.jpg`, 가족 격리·서버 무변경)→`[[img:key]]`(표시=childPhotoProxyUrl ?token=). memoView 리치 파싱(kind). 실기기 E2E: 위치 버블("동탄대로 683")·R2 업로드·이미지 로드(320x240).
+  - **기기 구성(2026-07-06 오전, TK 지시)**: **razr=혜니(실사용! 학교 — 절대 무접촉)**, A17=아이 테스트 계정 "테스티"(3fd1f52c), S25=부모. razr 현역 uid=666fcc04(아침 재연결분 — uid 종속 시드는 이 값 기준, ai_parent_settings 재시드됨). ⚠️ 부모 FCM 토큰 정리로 **S25 앱 1회 실행해야 부모 푸시 재개**. ⚠️ CDP 함정: awaitPromise 긴 evaluate 가 A17 에서 hang — 클릭/조회는 짧은 동기 evaluate 로 분할, canvas.toBlob 대신 toDataURL.
 
 ### 전체 라우트 맵 (전부 도달 가능)
 ```
