@@ -199,6 +199,13 @@ hyeni-3/
   - **대화 위치 공유·사진 전송(TK 제보 → 실구현)**: MemoChat 컴포저 버튼 실배선 — 위치=GPS(5s)→내 서버위치 폴백→역지오코딩→`[[loc:lat,lng|주소]]`(탭=카카오맵), 사진=리사이즈→**기존 child-photos R2 재사용**(`{familyId}/memo-*.jpg`, 가족 격리·서버 무변경)→`[[img:key]]`(표시=childPhotoProxyUrl ?token=). memoView 리치 파싱(kind). 실기기 E2E: 위치 버블("동탄대로 683")·R2 업로드·이미지 로드(320x240).
   - **기기 구성(2026-07-06 오전, TK 지시)**: **razr=혜니(실사용! 학교 — 절대 무접촉)**, A17=아이 테스트 계정 "테스티"(3fd1f52c), S25=부모. razr 현역 uid=666fcc04(아침 재연결분 — uid 종속 시드는 이 값 기준, ai_parent_settings 재시드됨). ⚠️ 부모 FCM 토큰 정리로 **S25 앱 1회 실행해야 부모 푸시 재개**. ⚠️ CDP 함정: awaitPromise 긴 evaluate 가 A17 에서 hang — 클릭/조회는 짧은 동기 evaluate 로 분할, canvas.toBlob 대신 toDataURL.
 
+- ✅ **11단계: 장소 지도 UX + 미도착 알림 실사고 수정(2026-07-06 낮)**
+  - **①장소 등록(PlaceForm) 지도 3종(TK 제보)**: 진입 시 현재 위치 기본 중심(geolocation 4s, 검색/선택 우선) · 하단 핸들 드래그로 지도 확대(160~520px, KakaoMap ResizeObserver relayout+중심유지) · **우측 하단 현재 위치 버튼**(뷰 이동 전용). KakaoMap `recenterKey` prop 신설 — lastCenterRef 가 같은 좌표 재설정을 무시하므로 키 증가로 강제 재이동. S25 실기기: 서울 검색 이동→버튼 탭→실위치(동탄) 복귀 확인.
+  - **★②"11시 생존수영 미도착 알림 미수신" 실사고 규명(이중 원인)**:
+    - **주원인**: 이벤트가 `events_children` 링크 0건+`is_family_event=0`(6/19 구앱 등록 레거시) → cron 소유권 게이트(`eventBelongsToActiveChild`)에서 리마인더·미도착 전부 상단 skip(parent_alerts·push_sent 기록 0건으로 확진). **클라(hyeni-3)는 "배정 없음=가족 공유"로 표시하는데 서버는 대상 없음으로 침묵** — 표시 계약과 알림 계약 불일치. 수정: `worker/lib/notificationRouting.ts selectEventTargetChildren` 링크 0건=활성 자녀 전원(가족 공유). 옛 자녀 링크"만" 있는 고아 이벤트 차단은 유지. **Red→Green**: 동일 조건 테스트 이벤트로 cron 발사→parent_alerts 기록+S25 FCM "🚨 미도착 긴급 알림" 실수신→테스트 데이터 4테이블 전량 정리.
+    - **부수 원인(운영 실수, 정직 고지)**: 어제 A17 아이 전환 작업 중 부모 fcm_tokens 전부 삭제→S25 재등록 11:58 KST — 미도착 판정 시각(11:00~11:05)에 부모 토큰 0개. 설령 게이트를 통과했어도 FCM 미수신이었음. 현재 복구됨. 교훈: **실사용 가족의 FCM 토큰 일괄 삭제 금지**(만료는 서버가 자체 정리).
+  - 미도착 파이프: 이벤트 좌표 필수(`location.lat/lng`)·윈도우=시작~+5분(cron 매분)·반경 50m·부모에게만 FCM(severity=emergency 전체화면). `not_arrived`는 인앱 SOS 화면 전환(URGENT_ALERT_TYPES) 대상 아님 — 오전환 없음.
+
 ### 전체 라우트 맵 (전부 도달 가능)
 ```
 부모 탭(ParentShell)   /parent/home calendar location memo settings
