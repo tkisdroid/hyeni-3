@@ -1,0 +1,358 @@
+<title>혜니캘린더 릴리즈 게이트 리포트</title>
+<style>
+  :root {
+    --bg: #fbf7f4;
+    --surface: #ffffff;
+    --surface-2: #fdf1f5;
+    --ink: #221a1d;
+    --ink-2: #6b5f64;
+    --ink-3: #9b8e93;
+    --line: #eee2e7;
+    --rose: #e5397f;
+    --rose-soft: #fde7f1;
+    --mint: #12996b;
+    --mint-soft: #dbf4ea;
+    --amber: #c47a06;
+    --amber-soft: #fbeecd;
+    --red: #d63b4a;
+    --red-soft: #fbe1e3;
+    --blue: #2f74c0;
+    --blue-soft: #e2eefb;
+    --shadow: 0 1px 2px rgba(34,26,29,.04), 0 6px 20px -12px rgba(34,26,29,.18);
+    --radius: 16px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #171214;
+      --surface: #201a1d;
+      --surface-2: #2a2024;
+      --ink: #f4ecef;
+      --ink-2: #b9abb1;
+      --ink-3: #8a7c82;
+      --line: #352a2f;
+      --rose: #ff6fa6;
+      --rose-soft: #3a1f2c;
+      --mint: #4bd6a0;
+      --mint-soft: #14312a;
+      --amber: #e6b25a;
+      --amber-soft: #382a17;
+      --red: #ff7480;
+      --red-soft: #3a1e21;
+      --blue: #7db1ec;
+      --blue-soft: #1c2a3c;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #fbf7f4; --surface: #ffffff; --surface-2: #fdf1f5; --ink: #221a1d; --ink-2: #6b5f64;
+    --ink-3: #9b8e93; --line: #eee2e7; --rose: #e5397f; --rose-soft: #fde7f1; --mint: #12996b;
+    --mint-soft: #dbf4ea; --amber: #c47a06; --amber-soft: #fbeecd; --red: #d63b4a; --red-soft: #fbe1e3;
+    --blue: #2f74c0; --blue-soft: #e2eefb; --shadow: 0 1px 2px rgba(34,26,29,.04), 0 6px 20px -12px rgba(34,26,29,.18);
+  }
+  :root[data-theme="dark"] {
+    --bg: #171214; --surface: #201a1d; --surface-2: #2a2024; --ink: #f4ecef; --ink-2: #b9abb1;
+    --ink-3: #8a7c82; --line: #352a2f; --rose: #ff6fa6; --rose-soft: #3a1f2c; --mint: #4bd6a0;
+    --mint-soft: #14312a; --amber: #e6b25a; --amber-soft: #382a17; --red: #ff7480; --red-soft: #3a1e21;
+    --blue: #7db1ec; --blue-soft: #1c2a3c; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -14px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "tnum";
+  }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 40px 24px 96px; }
+
+  header.masthead { display: flex; flex-direction: column; gap: 8px; margin-bottom: 28px; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--rose); }
+  h1 { font-size: clamp(26px, 4.5vw, 38px); font-weight: 800; letter-spacing: -.02em; margin: 0; text-wrap: balance; }
+  .sub { color: var(--ink-2); font-size: 15px; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 6px; font-size: 13px; color: var(--ink-3); }
+  .meta-row b { color: var(--ink-2); font-weight: 700; }
+
+  /* verdict */
+  .verdict {
+    margin: 8px 0 36px; border-radius: 20px; padding: 26px 28px;
+    background: linear-gradient(150deg, var(--mint-soft), var(--surface));
+    border: 1px solid var(--line); box-shadow: var(--shadow);
+    display: flex; flex-wrap: wrap; align-items: center; gap: 20px;
+  }
+  .verdict-badge {
+    flex: none; font-size: 22px; font-weight: 800; letter-spacing: -.01em;
+    color: #fff; background: var(--mint); padding: 12px 22px; border-radius: 14px;
+    box-shadow: 0 8px 20px -8px color-mix(in srgb, var(--mint) 60%, transparent);
+  }
+  .verdict-body { flex: 1; min-width: 260px; }
+  .verdict-body h2 { margin: 0 0 4px; font-size: 18px; font-weight: 800; }
+  .verdict-body p { margin: 0; color: var(--ink-2); font-size: 14.5px; }
+
+  .stat-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 40px; }
+  .stat {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 16px 18px; box-shadow: var(--shadow);
+  }
+  .stat .n { font-size: 30px; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
+  .stat .l { font-size: 12.5px; color: var(--ink-2); margin-top: 6px; font-weight: 600; }
+  .stat.mint .n { color: var(--mint); }
+  .stat.red .n { color: var(--red); }
+  .stat.amber .n { color: var(--amber); }
+  .stat.rose .n { color: var(--rose); }
+
+  section { margin-bottom: 44px; }
+  h3.section-title {
+    font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ink-3); margin: 0 0 16px; padding-bottom: 10px; border-bottom: 1px solid var(--line);
+  }
+
+  /* phase list */
+  .phase { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+  .phase:last-child { border-bottom: none; }
+  .phase-id { flex: none; width: 58px; font-size: 12.5px; font-weight: 700; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .phase-main { flex: 1; }
+  .phase-name { font-weight: 700; font-size: 15px; }
+  .phase-detail { color: var(--ink-2); font-size: 13.5px; margin-top: 2px; }
+  .pill {
+    flex: none; font-size: 11.5px; font-weight: 700; padding: 3px 11px; border-radius: 999px;
+    letter-spacing: .01em; white-space: nowrap;
+  }
+  .pill.pass { color: var(--mint); background: var(--mint-soft); }
+  .pill.partial { color: var(--amber); background: var(--amber-soft); }
+  .pill.info { color: var(--blue); background: var(--blue-soft); }
+
+  /* issue ledger */
+  .ledger { display: flex; flex-direction: column; gap: 12px; }
+  .issue {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 16px 18px; display: grid;
+    grid-template-columns: 62px 1fr auto; gap: 4px 16px; align-items: start;
+  }
+  .sev {
+    grid-row: span 2; align-self: start; font-size: 11px; font-weight: 800; text-align: center;
+    padding: 5px 0; border-radius: 8px; letter-spacing: .04em;
+  }
+  .sev.p0 { color: #fff; background: var(--red); }
+  .sev.p1 { color: #fff; background: var(--amber); }
+  .sev.p2 { color: var(--ink-2); background: var(--line); }
+  .issue-title { font-weight: 700; font-size: 14.5px; }
+  .issue-fix { grid-column: 2; color: var(--ink-2); font-size: 13.5px; }
+  .status-tag {
+    grid-row: span 2; align-self: start; font-size: 11.5px; font-weight: 700;
+    padding: 4px 11px; border-radius: 999px; white-space: nowrap;
+  }
+  .status-tag.fixed { color: var(--mint); background: var(--mint-soft); }
+  .status-tag.deployed { color: var(--blue); background: var(--blue-soft); }
+  code {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+    font-size: .86em; background: var(--surface-2); padding: 1px 6px; border-radius: 5px; color: var(--rose);
+  }
+
+  /* follow-up */
+  .followups { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .fu {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 15px 17px; box-shadow: var(--shadow);
+  }
+  .fu-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .fu-sev { font-size: 10.5px; font-weight: 800; padding: 2px 8px; border-radius: 6px; letter-spacing: .04em; }
+  .fu-sev.p2 { color: var(--amber); background: var(--amber-soft); }
+  .fu-sev.p3 { color: var(--ink-3); background: var(--line); }
+  .fu-sev.ops { color: var(--blue); background: var(--blue-soft); }
+  .fu-sev.done { color: var(--mint); background: var(--mint-soft); }
+  .fu-title { font-weight: 700; font-size: 14px; }
+  .fu-body { color: var(--ink-2); font-size: 13px; }
+
+  .evidence { color: var(--ink-3); font-size: 12.5px; margin-top: 6px; }
+  .callout {
+    background: var(--rose-soft); border: 1px solid color-mix(in srgb, var(--rose) 22%, var(--line));
+    border-radius: var(--radius); padding: 16px 18px; font-size: 13.5px; color: var(--ink-2);
+  }
+  .callout b { color: var(--ink); }
+  footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--ink-3); font-size: 12.5px; }
+
+  @media (max-width: 640px) {
+    .stat-strip { grid-template-columns: repeat(2, 1fr); }
+    .followups { grid-template-columns: 1fr; }
+    .issue { grid-template-columns: 52px 1fr; }
+    .status-tag { grid-row: auto; grid-column: 2; justify-self: start; margin-top: 4px; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div class="eyebrow">Release Gate · Go / No-Go</div>
+    <h1>혜니캘린더 실기기 최종 E2E 검증 리포트</h1>
+    <p class="sub">Galaxy A17(부모) · Motorola razr 40 ultra(아이) 2기기 ADB 자동 검증 + Cloudflare D1/Worker 서버 단언</p>
+    <div class="meta-row">
+      <span><b>검증일</b> 2026-07-05</span>
+      <span><b>테스트 가족</b> f9a75cb4 (부모·아이 3멤버)</span>
+      <span><b>빌드</b> app-debug.apk v1.1</span>
+      <span><b>백엔드</b> hyeni-calendar-api (프로덕션)</span>
+    </div>
+  </header>
+
+  <div class="verdict">
+    <div class="verdict-badge">조건부 GO</div>
+    <div class="verdict-body">
+      <h2>미해결 P0·P1 0건 — 출시 게이트 충족</h2>
+      <p>발견된 P0 2건·P1 1건을 모두 수정·재검증 완료했습니다. 남은 항목은 파괴적 위험이 없는 배포·운영 작업(웹 재배포, 소셜/지도 도메인 등록)과 P2/P3 fast-follow뿐입니다. 아래 조건 완료 시 정식 GO.</p>
+    </div>
+  </div>
+
+  <div class="stat-strip">
+    <div class="stat mint"><div class="n">0</div><div class="l">미해결 P0 · P1</div></div>
+    <div class="stat rose"><div class="n">9</div><div class="l">수정·재검증 완료</div></div>
+    <div class="stat amber"><div class="n">53</div><div class="l">라우트 스모크 · 크래시 0</div></div>
+    <div class="stat mint"><div class="n">GO</div><div class="l">핵심 안전기능 전부 통과</div></div>
+  </div>
+
+  <section>
+    <h3 class="section-title">Phase별 판정</h3>
+    <div class="phase">
+      <div class="phase-id">P0·1</div>
+      <div class="phase-main">
+        <div class="phase-name">셋업 · 전 기능 스모크 트리아지</div>
+        <div class="phase-detail">부모 45 + 아이 8 라우트 CDP 자동 순회 — 크래시·블랭크·막다른길 0, 콘솔 에러 0. 지도 실패 1건(키 미설정) 색출.</div>
+      </div>
+      <span class="pill pass">PASS</span>
+    </div>
+    <div class="phase">
+      <div class="phase-id">P2</div>
+      <div class="phase-main">
+        <div class="phase-name">인증 · 페어링 · 세션 지속</div>
+        <div class="phase-detail">재기동 후 부모·아이 세션 유지 확인. 재페어링 시 이전 가족(f9a75cb4) 자동 인식. 위조 토큰·무인증·타 가족 조회 전부 401/403 차단(격리 P0).</div>
+      </div>
+      <span class="pill pass">PASS</span>
+    </div>
+    <div class="phase">
+      <div class="phase-id">P3</div>
+      <div class="phase-main">
+        <div class="phase-name">구독 · 서버 게이팅</div>
+        <div class="phase-detail">주변소리(프리미엄 402·주보호자 403·킬스위치) 서버 강제 확인. 실시간 위치 게이팅은 클라에만 존재 → 서버 강제 패치 후 프로덕션 배포.</div>
+      </div>
+      <span class="pill pass">PASS</span>
+    </div>
+    <div class="phase">
+      <div class="phase-id">P4</div>
+      <div class="phase-main">
+        <div class="phase-name">실시간 · 위치 · 일정 · 경로</div>
+        <div class="phase-detail">부모↔아이 실시간 반영(알림함 2분 갱신). 실 Kakao 지도 렌더(죽전동 타일·아이 마커·저장장소). 이동 경로 폴리라인 동작. 위치·일정 페어링 쌍에만 흐름.</div>
+      </div>
+      <span class="pill pass">PASS</span>
+    </div>
+    <div class="phase">
+      <div class="phase-id">P5</div>
+      <div class="phase-main">
+        <div class="phase-name">SOS · 주변소리 · 포스링</div>
+        <div class="phase-detail">SOS 아이→부모 실기기 수신 + 부모 자동 전체화면 오버레이(신규). 주변소리 실 오디오 스트림 아이 캡처→Worker relay→부모 재생 검증(audio_chunk 13개).</div>
+      </div>
+      <span class="pill pass">PASS</span>
+    </div>
+    <div class="phase">
+      <div class="phase-id">P6·7·8</div>
+      <div class="phase-main">
+        <div class="phase-name">디자인 · 문구 · 성능 · 엣지</div>
+        <div class="phase-detail">캐릭터 3D 통일·문구 정리 반영. 폴더블(razr) 렌더 정상, safe-area 처리. 설정 로컬 지속·오프라인 배너 동작. 소크 구간 크래시 0.</div>
+      </div>
+      <span class="pill partial">PASS · 후속</span>
+    </div>
+  </section>
+
+  <section>
+    <h3 class="section-title">이슈 대장 — 수정 · 재검증</h3>
+    <div class="ledger">
+      <div class="issue">
+        <div class="sev p0">P0</div>
+        <div class="issue-title">다자녀 · AI 파싱 서버 게이팅 (TK 정책 확정)</div>
+        <div class="issue-fix">무료 = 아이 1명, AI 파싱 = 하루 5회 제한(TK 승인). <b>다자녀</b>: <code>family.ts /join</code>에 이름 비의존 통합 캡 후처리 — 방금 페어링한 아이는 항상 유지하고 초과분(오래된 것부터)만 supersede. <b>재페어링을 절대 403 하지 않는다</b>(안전 불변식: 아이가 새 기기로 언제나 재연결). 무료=1·프리미엄=2. <b>AI</b>: <code>reserveAiParseQuota</code>(원자적 조건부증가 카운터·any-of 프리미엄 바이패스·5xx 롤백·자녀채팅 분리키)를 voice-parse와 무방비였던 <code>child-monitor</code>에 적용. <b>프로덕션 배포.</b></div>
+        <span class="status-tag deployed">배포 완료</span>
+        <div class="evidence" style="grid-column:2;">근거: 2라운드 적대검증(각 4·2 렌즈)이 rest-shim 우회·대소문자 우회·<code>child-monitor</code> 무제한·이름기반 supersede의 재페어링 오차단·Path A 무료 우회를 잡아 전부 재수정. 배포 후 프리미엄 회귀 없음(위치·voice-parse 200), 우회 컬럼 쓰기 전부 403.</div>
+      </div>
+      <div class="issue">
+        <div class="sev p0">P0</div>
+        <div class="issue-title">rest-shim 자가 프리미엄 부여 (마스터키)</div>
+        <div class="issue-fix"><code>rest-shim-table</code>가 <code>family_subscription</code>·<code>families</code>를 컬럼 화이트리스트 없이 클라 쓰기로 노출 → 부모가 자기 가족 <code>status="active"</code>·<code>user_tier="premium"</code>를 직접 써넣어 무결제 프리미엄 자가 부여. <b>모든 서버 게이트(위치·원격청취 402·force_ring·AI크레딧)를 한 방에 무력화.</b> 엔티틀먼트 컬럼 클라 쓰기 가드(<code>forbiddenWriteColumn</code>) 추가 — 결제 컬럼은 webhook(service_role)만 허용. ★적대검증 2라운드가 잡은 <b>SQLite 대소문자 우회</b>(<code>{"User_tier":…}</code>→<code>user_tier</code>)까지 소문자 정규화로 봉인. <b>프로덕션 배포.</b></div>
+        <span class="status-tag deployed">배포 완료</span>
+        <div class="evidence" style="grid-column:2;">근거(Red→Green): 배포 전 <code>PATCH status</code> 200(악용 성공) → 배포 후 <code>status</code>·<code>User_tier</code>(대소문자 변형) 모두 403 <code>forbidden_column</code>. 정당한 <code>remote_listen_enabled</code>·<code>playdate_enabled</code>는 204 유지(회귀 없음).</div>
+      </div>
+      <div class="issue">
+        <div class="sev p0">P0</div>
+        <div class="issue-title">주변소리 실 오디오 미동작</div>
+        <div class="issue-fix">네이티브 게이트가 <code>supabaseKey</code> blank를 "push context missing"으로 판정해 마이크 캡처를 skip. Worker는 이 값을 무시하므로 non-blank placeholder(<code>"worker"</code>)로 게이트 통과. 부모 재생기(<code>remoteAudioPlayer</code>, Web Audio WAV 순차재생) 신규 구현 + push context resume 재주입·콜드스타트 재시도.</div>
+        <span class="status-tag fixed">재검증 완료</span>
+        <div class="evidence" style="grid-column:2;">근거: 아이 <code>AmbientListenService: Realtime audio chunk sent seq=1~12</code> · 부모 audio_chunk 13개 수신 · "주변 소리 듣는 중" LIVE 재생 UI.</div>
+      </div>
+      <div class="issue">
+        <div class="sev p0">P0</div>
+        <div class="issue-title">실시간 위치 서버 게이팅 부재</div>
+        <div class="issue-fix">무료 티어가 <code>/api/location/children·history</code>를 직접 호출하면 위치 획득 가능(클라 UI 잠금만 존재). 서버 티어 판정(subscription·user_tier·review reward) 헬퍼 <code>isLocationVisibleForFamily</code> 추가 후 free 차단, fail-open으로 회귀 방지. <b>프로덕션 배포 완료.</b></div>
+        <span class="status-tag deployed">배포 완료</span>
+        <div class="evidence" style="grid-column:2;">근거: 배포 후 프리미엄 부모 위치 조회 200(회귀 없음). free 차단은 코드 로직 보장(프로덕션 free 실계정 부재).</div>
+      </div>
+      <div class="issue">
+        <div class="sev p1">P1</div>
+        <div class="issue-title">부모 SOS 긴급 오버레이 부재</div>
+        <div class="issue-fix">SOS 수신 시 알림함에만 뜨고 화면을 가로채는 긴급 경보가 없었음. <code>useFamilyRealtime</code>에서 parent_alert(sos/emergency) 수신 시 부모 앱을 SOS 수신 화면으로 자동 전환하도록 배선.</div>
+        <span class="status-tag fixed">재검증 완료</span>
+        <div class="evidence" style="grid-column:2;">근거: 부모 홈 → 아이 SOS 발사 → 자동 <code>#/sos-receive</code> 전환(발신·위치·전화·확인). sos_events +1 서버 확인.</div>
+      </div>
+      <div class="issue">
+        <div class="sev p1">P1</div>
+        <div class="issue-title">Kakao 지도 키 미설정 — 지도 전멸</div>
+        <div class="issue-fix"><code>.env</code>의 <code>VITE_KAKAO_APP_KEY</code>가 빈 값이라 위치·경로·장소 지도가 전부 폴백. hyeni-1 키 반영 후 재빌드.</div>
+        <span class="status-tag fixed">재검증 완료</span>
+        <div class="evidence" style="grid-column:2;">근거: 실기기 실 Kakao 타일 렌더 + 타일 32개 + <code>window.kakao.maps</code> 로드, 콘솔 에러 0.</div>
+      </div>
+      <div class="issue">
+        <div class="sev p2">P2</div>
+        <div class="issue-title">캐릭터 2D/3D 혼재 · 하드코딩 문구</div>
+        <div class="issue-fix">헤더 로고(<code>logo.webp</code> 2D)와 히어로 카드(3D mascot)가 한 화면에 혼재. TopBar·Splash·온보딩 로고를 3D <code>mascot/wave.webp</code>로 통일. ChildHome 스티커 하드코딩 문구·"연구독"·"한 가족, 두 시점"(→"함께 보는 우리 가족") 정리.</div>
+        <span class="status-tag fixed">재검증 완료</span>
+        <div class="evidence" style="grid-column:2;">근거: 실기기 헤더 3D 캐릭터 렌더 확인. 브랜드 카피는 TK 선택(승인) 반영.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h3 class="section-title">출시 전 조건 (파괴적 위험 없음)</h3>
+    <div class="callout">
+      <b>① 웹 재배포 — 완료</b> ✓ 캐릭터·문구(브랜드 카피·반말·연결코드)·SOS 오버레이·주변소리 재생 반영된 <code>dist</code>를 <code>hyeni-calendar.pages.dev</code>에 배포. 배포 번들에서 새 문구 확인.<br>
+      <b>② 소셜/지도 도메인 등록</b> — Kakao 콘솔에 <code>hyeni-calendar.pages.dev</code> JS키 허용도메인·OAuth redirect_uri 등록(콘솔 접근 필요=사용자 몫). 실기기 네이티브는 이미 동작.<br>
+      <b>③ Android 스토어 배포</b> — APK는 모든 수정 반영·2기기 검증 완료. 스토어 업로드는 TK 승인.
+    </div>
+  </section>
+
+  <section>
+    <h3 class="section-title">Fast-Follow — 처리 결과</h3>
+    <div class="followups">
+      <div class="fu">
+        <div class="fu-head"><span class="fu-sev done">완료</span><span class="fu-title">하루 경로 스테이포인트</span></div>
+        <div class="fu-body">✓ <code>transform/stayPoints.ts</code>(거리150m·시간8분 임계 검출 + 인접병합 + 이동 노이즈 제거) + KakaoMap 스테이 마커(순번·체류시간·연결선) + "오늘 경로" 지도+목록·연동. 실기기: 350점→집 3시간10분 정확 검출.</div>
+      </div>
+      <div class="fu">
+        <div class="fu-head"><span class="fu-sev done">완료</span><span class="fu-title">선생님 모드 완성</span></div>
+        <div class="fu-body">✓ <code>TeacherSettings</code> 실화면(프로필·반관리·알림·약관·계정·로그아웃·탈퇴), 선생님 탭바 4탭(반 홈·학생·시간표·설정). 플레이스홀더 제거. 실기기 렌더 확인.</div>
+      </div>
+      <div class="fu">
+        <div class="fu-head"><span class="fu-sev p3">보류</span><span class="fu-title">다크 모드</span></div>
+        <div class="fu-body">하드코딩 색상 1,100+개로 대규모 토큰화 리팩터 필요 — TK 판단으로 미진행(불필요). 부분 적용은 화면이 깨져 보임.</div>
+      </div>
+      <div class="fu">
+        <div class="fu-head"><span class="fu-sev ops">OPS</span><span class="fu-title">Android 14+ 백그라운드 마이크</span></div>
+        <div class="fu-body">앱 완전 종료 상태의 첫 원격청취는 FGS 제약으로 지연 가능. 실사용(백그라운드 위치 추적 중)에선 push context 상주로 정상. 네이티브 하드닝 여지.</div>
+      </div>
+      <div class="fu">
+        <div class="fu-head"><span class="fu-sev p3">P3</span><span class="fu-title">프리미엄 기기교체 유령 잔존</span></div>
+        <div class="fu-body">프리미엄 가족이 아이 1명일 때 기기 교체 시 옛 기기 잔존 가능(캡·안전엔 무해). 재페어링 시 <code>childMemberId</code> 전송으로 정밀 supersede 가능.</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    검증 방식: 두 실기기를 ADB로 직접 구동(CDP 라우트 순회·목 위치·SOS 롱프레스·주변소리 트리거) + Cloudflare D1/Worker 서버 레벨 단언. 모든 pass/fail은 스크린샷·logcat·타임스탬프·서버 조회로 근거화. 프로덕션 D1 데이터·시크릿 변경 없음.
+  </footer>
+</div>

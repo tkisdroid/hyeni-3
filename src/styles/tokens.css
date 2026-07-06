@@ -1,0 +1,153 @@
+/* ============================================================================
+   혜니캘린더 — Design Tokens (v1.0)
+   원본: design-system/tokens/tokens.css. 모든 값 리터럴 → 어떤 플랫폼에도 1:1.
+   ==========================================================================*/
+
+:root {
+  /* ── Brand · Rose (primary / 부모·정체성) ── */
+  --rose-50: #FFF0F5;
+  --rose-soft: #FDE7F1;
+  --rose-200: #FFD0DD;
+  --rose-300: #FF9EC4;
+  --rose-400: #F779A8;
+  --rose-500: #F76BA6;
+  --rose-600: #F0518F;
+  --rose-text: #B0477A;
+
+  /* ── Brand · Mint (안전·성공·위치양호) ── */
+  --mint-soft: #E7F8F0;
+  --mint-line: #BCEBD8;
+  --mint-400: #46D19B;
+  --mint-500: #31C48D;
+  --mint-600: #23A876;
+  --mint-text: #087653;
+
+  /* ── Brand · Lavender (AI·프리미엄) ── */
+  --lav-soft: #F1ECFF;
+  --lav-soft2: #EFE8FF;
+  --lav-line: #DDD1FF;
+  --lav-300: #B79DFB;
+  --lav-400: #A78BFA;
+  --lav-500: #8B6BEC;
+  --lav-600: #7C5CE1;
+  --lav-text: #6D4E9C;
+
+  /* ── Brand · Cream/Yellow (보상·스티커·왕관) ── */
+  --cream-soft: #FFF3D6;
+  --gold-400: #FFD76A;
+  --gold-600: #E08A1E;
+  --gold-text: #8A6A1E;
+
+  /* ── Info · Blue (기기·네트워크) ── */
+  --blue-soft: #E6F2FB;
+  --blue-500: #2E86C1;
+  --blue-text: #2E6DA4;
+
+  /* ── Status · Danger (SOS·위험구역) ── */
+  --danger-soft: #FFECEE;
+  --danger-500: #E5484D;
+  --danger-strong: #F04770;
+  --danger-text: #B91C1C;
+
+  /* ── Neutrals · warm ── */
+  --ink: #201A1D;
+  --ink-2: #2A2327;
+  --fg-primary: #201A1D;
+  --fg-secondary: #4A4145;
+  --fg-body: #3A3236;
+  --fg-tertiary: #6D6469;
+  --fg-muted: #8B7E84;
+  --fg-faint: #A99FA4;
+  --fg-disabled: #C9BFC4;
+
+  /* ── Lines ── */
+  --line-hair: rgba(32, 26, 29, 0.06);
+  --line-soft: rgba(32, 26, 29, 0.1);
+  --line-strong: rgba(32, 26, 29, 0.16);
+  --line-card: rgba(32, 26, 29, 0.05);
+
+  /* ── Surfaces ── */
+  --bg-app: #FBF7F4;
+  --bg-page: #F7F4F3;
+  --bg-body: #EFE7EE;
+  --bg-card: #FFFFFF;
+  --bg-press: #FBF3F6;
+
+  /* ── Typography ── */
+  --font-sans: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont,
+    "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-heavy: 800;
+  --weight-black: 900;
+
+  --text-display: 44px;
+  --text-title-xl: 26px;
+  --text-title: 25px;
+  --text-section: 17px;
+  --text-body-lg: 16px;
+  --text-body: 15px;
+  --text-body-sm: 14px;
+  --text-label: 12.5px;
+  --text-caption: 12px;
+  --text-micro: 11px;
+  --text-tiny: 10.5px;
+
+  --leading-tight: 1.28;
+  --leading-normal: 1.5;
+  --tracking-tight: -0.02em;
+
+  /* ── Radius ── */
+  --radius-xs: 8px;
+  --radius-sm: 10px;
+  --radius-md: 13px;
+  --radius-lg: 15px;
+  --radius-xl: 18px;
+  --radius-2xl: 20px;
+  --radius-card: 24px;
+  --radius-hero: 26px;
+  --radius-3xl: 30px;
+  --radius-pill: 999px;
+
+  /* ── Spacing ── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-section: 18px;
+
+  /* ── Elevation ── */
+  --shadow-soft: 0 4px 12px rgba(32, 26, 29, 0.06);
+  --shadow-card: 0 14px 34px -18px rgba(32, 26, 29, 0.22), 0 2px 6px rgba(32, 26, 29, 0.04);
+  --shadow-floating: 0 12px 30px rgba(32, 26, 29, 0.1), 0 2px 6px rgba(32, 26, 29, 0.05);
+  --shadow-rose: 0 22px 42px -16px rgba(240, 81, 143, 0.55);
+  --shadow-rose-btn: 0 12px 24px -8px rgba(240, 81, 143, 0.5);
+  --shadow-mint: 0 12px 24px -10px rgba(35, 168, 118, 0.55);
+  --shadow-lavender: 0 16px 32px -12px rgba(124, 92, 225, 0.6);
+
+  /* ── Motion ── */
+  --duration-fast: 0.12s;
+  --duration-base: 0.16s;
+  --duration-screen: 0.4s;
+  --easing-standard: cubic-bezier(0.2, 0, 0.2, 1);
+  --easing-cheer: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --press-scale: 0.96;
+
+  /* ── Accent (아이가 고른 테마색 · 기본 rose) ── */
+  --hy-accent: #F76BA6;
+  --hy-accent-light: #FF9EC4;
+  --hy-accent-deep: #F0518F;
+  --hy-accent-soft: #FDE7F1;
+  --hy-accent-text: #B0477A;
+}
+
+/* 아이 테마색 스위칭 — 앱 루트에 data-accent 부여 */
+[data-accent="rose"]     { --hy-accent: #F76BA6; --hy-accent-light: #FF9EC4; --hy-accent-deep: #F0518F; --hy-accent-soft: #FDE7F1; --hy-accent-text: #B0477A; }
+[data-accent="peach"]    { --hy-accent: #FF9E7A; --hy-accent-light: #FFC7A6; --hy-accent-deep: #F26B3F; --hy-accent-soft: #FFEEE3; --hy-accent-text: #C25A2E; }
+[data-accent="lavender"] { --hy-accent: #A78BFA; --hy-accent-light: #C4B0FF; --hy-accent-deep: #7C5CE1; --hy-accent-soft: #EFE8FF; --hy-accent-text: #6D4E9C; }
+[data-accent="mint"]     { --hy-accent: #31C48D; --hy-accent-light: #6FE0B4; --hy-accent-deep: #1E9E6E; --hy-accent-soft: #E7F8F0; --hy-accent-text: #0C7A54; }
+[data-accent="sky"]      { --hy-accent: #4FB2E8; --hy-accent-light: #8FD4F5; --hy-accent-deep: #2E86C1; --hy-accent-soft: #E6F4FC; --hy-accent-text: #1F6FA5; }
+[data-accent="lemon"]    { --hy-accent: #F5C542; --hy-accent-light: #FFDE7A; --hy-accent-deep: #E0A11E; --hy-accent-soft: #FFF6DC; --hy-accent-text: #9A6D0E; }

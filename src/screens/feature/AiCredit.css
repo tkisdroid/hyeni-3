@@ -1,0 +1,305 @@
+/* AI 크레딧 — 화면 전용 스타일 (원본 dc.html 1412–1459행 값 1:1) */
+
+.ac-screen {
+  min-height: 848px;
+  background: radial-gradient(120% 44% at 50% 0%, #efe8ff 0%, rgba(239, 232, 255, 0) 55%),
+    linear-gradient(180deg, #fdf4f1, #f7f4f3);
+  animation: hy-fadein 0.35s ease forwards;
+}
+
+/* ── 상세 헤더(sticky) ──────────────────────────────────────────────────── */
+.ac-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: 56px 18px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(253, 244, 241, 0.9) 60%, rgba(253, 244, 241, 0));
+  backdrop-filter: blur(8px);
+}
+.ac-back {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+.ac-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+
+/* ── 스크롤 콘텐츠(간격 시안 18px) ──────────────────────────────────────── */
+.ac-content {
+  gap: 18px;
+}
+
+/* ── 잔액 히어로 ────────────────────────────────────────────────────────── */
+.ac-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 26px;
+  padding: 22px;
+  background: linear-gradient(140deg, #b79dfb 0%, #8b6bec 100%);
+  box-shadow: 0 22px 44px -18px rgba(124, 92, 225, 0.6);
+}
+.ac-hero__sheen {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(80% 120% at 85% 6%, rgba(255, 255, 255, 0.28), transparent 58%);
+}
+.ac-hero__mascot {
+  position: absolute;
+  right: -6px;
+  bottom: -14px;
+  width: 110px;
+  height: 120px;
+  animation: hy-float 5s ease-in-out infinite;
+}
+.ac-hero__mascot img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 18px rgba(80, 50, 150, 0.4));
+}
+.ac-hero__label {
+  position: relative;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+}
+.ac-hero__amount {
+  position: relative;
+  margin-top: 6px;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.ac-hero__num {
+  font-size: 44px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.ac-hero__unit {
+  font-size: 18px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.92);
+}
+.ac-hero__badge {
+  position: relative;
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* ── 안내 문구 ──────────────────────────────────────────────────────────── */
+.ac-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 0 2px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #8b7e84;
+  line-height: 1.5;
+}
+.ac-note__emoji {
+  font-size: 15px;
+}
+
+/* ── 충전팩 ─────────────────────────────────────────────────────────────── */
+.ac-packs__label {
+  font-size: 13px;
+  font-weight: 800;
+  color: #8b7e84;
+  margin-bottom: 12px;
+  padding: 0 2px;
+}
+.ac-packs__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ac-pack {
+  position: relative;
+  background: #fff;
+  border-radius: 20px;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  box-shadow: 0 10px 26px -16px rgba(32, 26, 29, 0.16);
+}
+.ac-pack__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: #f1ecff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.ac-pack__icon img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+.ac-pack__main {
+  flex: 1;
+  min-width: 0;
+}
+.ac-pack__amt-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.ac-pack__amt {
+  font-size: 17px;
+  font-weight: 900;
+  color: #201a1d;
+  letter-spacing: -0.01em;
+}
+.ac-pack__tag {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #6d4e9c;
+  background: #efe8ff;
+}
+.ac-pack__per {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #a99fa4;
+}
+.ac-buy {
+  flex: none;
+  padding: 12px 16px;
+  border-radius: 13px;
+  background: linear-gradient(120deg, #b79dfb, #8b6bec);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  box-shadow: 0 12px 24px -10px rgba(124, 92, 225, 0.6);
+  --press: 0.94;
+}
+/* 비활성(웹 결제 불가·결제 중) — 그림자 제거 + 흐리게. 톤/클래스 유지, 상태만 표현. */
+.ac-buy:disabled {
+  opacity: 0.55;
+  box-shadow: none;
+  cursor: default;
+}
+
+/* ── 자동 충전 ──────────────────────────────────────────────────────────── */
+.ac-auto {
+  background: #fff;
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 10px 26px -16px rgba(32, 26, 29, 0.14);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ac-auto__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: #e7f8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  font-size: 20px;
+}
+.ac-auto__main {
+  flex: 1;
+  min-width: 0;
+}
+.ac-auto__title {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #201a1d;
+}
+.ac-auto__sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #a99fa4;
+}
+.ac-toggle {
+  flex: none;
+  width: 48px;
+  height: 28px;
+  border-radius: 999px;
+  position: relative;
+  transition: background 0.2s ease;
+}
+.ac-toggle__knob {
+  position: absolute;
+  top: 2px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.18);
+  transition: left 0.2s ease;
+}
+
+/* ── 하단 안내 ──────────────────────────────────────────────────────────── */
+.ac-footer {
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #b7adb2;
+  line-height: 1.5;
+}
+
+/* 하루 대화 한도 스테퍼 */
+.ac-limit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.ac-limit__btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+  font-size: 17px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  --press: 0.92;
+}
+.ac-limit__num {
+  min-width: 26px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--fg-primary);
+  font-variant-numeric: tabular-nums;
+}

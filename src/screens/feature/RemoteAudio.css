@@ -1,0 +1,292 @@
+/* 주변소리 — 화면 전용 스타일 (원본 dc.html 1162–1208행 값 1:1) */
+
+.ra-root {
+  position: absolute;
+  inset: 0;
+}
+
+/* ── 대기 화면 ──────────────────────────────────────────────────────────── */
+.ra-idle {
+  min-height: 100%;
+  padding: 56px 26px 120px;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(120% 46% at 50% 0%, #efe8ff 0%, rgba(239, 232, 255, 0) 55%),
+    linear-gradient(180deg, #fdf4f1, #f7f4f3);
+  animation: hy-fadein 0.35s ease forwards;
+}
+
+.ra-back {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  --press: 0.9;
+}
+
+.ra-idle-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.ra-halo {
+  position: relative;
+  width: 168px;
+  height: 168px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+.ra-halo-ring1 {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(167, 139, 250, 0.14);
+}
+.ra-halo-ring2 {
+  position: absolute;
+  inset: 20px;
+  border-radius: 50%;
+  background: rgba(167, 139, 250, 0.16);
+}
+.ra-halo-img {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  animation: hy-bob 3s ease-in-out infinite;
+}
+
+.ra-title {
+  font-size: 23px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--fg-primary);
+}
+.ra-sub {
+  margin-top: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #8b7e84;
+  line-height: 1.5;
+}
+.ra-note {
+  margin-top: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 15px;
+  border-radius: 999px;
+  background: rgba(167, 139, 250, 0.12);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #6d4e9c;
+}
+
+.ra-start {
+  width: 100%;
+  height: 58px;
+  border-radius: 18px;
+  background: linear-gradient(120deg, #b79dfb, #8b6bec);
+  box-shadow: 0 16px 32px -12px rgba(124, 92, 225, 0.6);
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  --press: 0.98;
+}
+
+/* 웹(PWA/아이폰) 안내 — 네이티브 전용 기능이라 시작 버튼 대신 표시 */
+.ra-webnote {
+  width: 100%;
+  min-height: 58px;
+  border-radius: 18px;
+  background: rgba(167, 139, 250, 0.1);
+  border: 1.5px dashed rgba(167, 139, 250, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 14px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #6d4e9c;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* ── 듣는 중 오버레이 ───────────────────────────────────────────────────── */
+.ra-listen {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 72px 30px calc(40px + env(safe-area-inset-bottom, 0px));
+  background: radial-gradient(circle at 50% 34%, #2a2140, #14100f);
+  animation: hy-fadein 0.25s ease forwards;
+}
+
+.ra-listen-head {
+  text-align: center;
+}
+.ra-listen-eyebrow {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.5);
+}
+.ra-listen-title {
+  margin-top: 6px;
+  font-size: 22px;
+  font-weight: 900;
+  color: #fff;
+}
+
+.ra-pulse {
+  position: relative;
+  margin: 40px 0;
+  width: 200px;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ra-pulse-ring1 {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(226, 48, 80, 0.18);
+  animation: hy-ring 2.4s ease-out infinite;
+}
+.ra-pulse-ring2 {
+  position: absolute;
+  inset: 20px;
+  border-radius: 50%;
+  background: rgba(226, 48, 80, 0.24);
+  animation: hy-ring 2.4s ease-out 1.2s infinite;
+}
+.ra-pulse-core {
+  position: relative;
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, #ff6b84, #e23050);
+  box-shadow: 0 20px 40px -10px rgba(226, 48, 80, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ra-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 44px;
+  margin-bottom: 18px;
+}
+.ra-bar {
+  width: 4px;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ff8fa3, #e23050);
+  transform-origin: bottom;
+  animation: hy-wave 1s ease-in-out infinite;
+}
+
+.ra-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.ra-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(226, 48, 80, 0.25);
+  font-size: 11px;
+  font-weight: 800;
+  color: #ff9dad;
+}
+.ra-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ff5a74;
+  animation: hy-soft 1.2s ease-in-out infinite;
+}
+.ra-time {
+  font-size: 30px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.ra-controls {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+.ra-ctrl-mute {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  --press: 0.92;
+}
+.ra-ctrl-mute[data-muted="true"] {
+  background: rgba(255, 255, 255, 0.26);
+}
+.ra-ctrl-stop {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 14px 30px -8px rgba(255, 255, 255, 0.4);
+  --press: 0.92;
+}
+.ra-stop-square {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: #e23050;
+}
+.ra-ctrl-call {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: rgba(49, 196, 141, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  --press: 0.92;
+}
+
+.ra-listen-foot {
+  margin-top: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+}

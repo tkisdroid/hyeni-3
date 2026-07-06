@@ -1,0 +1,224 @@
+import { useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { ChevronLeft } from "lucide-react";
+import { asset } from "@/lib/assets";
+import { useToast } from "@/app/toast";
+import { useActiveChild } from "@/app/activeChild";
+import { useMyFamily } from "@/queries/useFamily";
+import { useEvents } from "@/queries/useSchedule";
+import { useDaySummary, useGenerateDaySummary } from "@/queries/useAi";
+import type { DaySummarySignals, DaySummaryResult } from "@/lib/api/endpoints/ai";
+import { formatTimeLabel } from "@/transform/scheduleView";
+import { todayDateKey, dateKeyToDateInputValue, parseAppDateKey } from "@/transform/dateKey";
+import "./DaySummary.css";
+
+type RowTone = "info" | "safe" | "caution";
+interface SummaryRow {
+  key: string;
+  icon: string;
+  text: string;
+  sub?: string;
+  tone: RowTone;
+}
+
+// 서버 신호(extractDaySummarySignals) → 요약 근거 행. 일정·체류·대화·안전을 종합한다.
+function buildRows(signals: DaySummarySignals | null): SummaryRow[] {
+  if (!signals) return [];
+  const rows: SummaryRow[] = [];
+  (signals.events ?? []).slice(0, 4).forEach((e, i) => {
+    rows.push({
+      key: `ev-${i}`,
+      icon: "🗓",
+      text: e.title,
+      sub: e.time ? formatTimeLabel(e.time) : undefined,
+      tone: "info",
+    });
+  });
+  (signals.dwellPlaces ?? []).slice(0, 3).forEach((p, i) => {
+    rows.push({ key: `dw-${i}`, icon: "📍", text: p.title, sub: p.durationLabel || undefined, tone: "info" });
+  });
+  if ((signals.chatCount ?? 0) > 0) {
+    rows.push({ key: "chat", icon: "💬", text: `AI 친구와 ${signals.chatCount}번 이야기했어요`, tone: "info" });
+  }
+  const alertTotal =
+    (signals.notArrived ?? 0) + (signals.dangerZone ?? 0) + (signals.sos ?? 0) + (signals.playdate ?? 0);
+  if (alertTotal > 0) {
+    const highlights = signals.alertHighlights ?? [];
+    if (highlights.length > 0) {
+      highlights.slice(0, 3).forEach((h, i) => rows.push({ key: `al-${i}`, icon: "⚠️", text: h, tone: "caution" }));
+    } else {
+      rows.push({ key: "al", icon: "⚠️", text: `안전 알림 ${alertTotal}건`, tone: "caution" });
+    }
+  } else {
+    rows.push({ key: "safe", icon: "🛡️", text: "안전 알림 없이 잘 보냈어요", tone: "safe" });
+  }
+  return rows;
+}
+
+// 위험·SOS·미도착이 있으면 "주의" 하루로 헤로 톤을 바꾼다.
+function isCautionDay(signals: DaySummarySignals | null): boolean {
+  if (!signals) return false;
+  return (signals.dangerZone ?? 0) + (signals.sos ?? 0) + (signals.notArrived ?? 0) > 0;
+}
+
+export function DaySummary() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { show } = useToast();
+
+  const state = (location.state ?? {}) as { childUserId?: string; childName?: string; dateKey?: string };
+
+  // 크레딧·요약은 자녀별. state(딥링크) > 전역 활성 아이. state uid 가 현재 가족에 없으면
+  // stale uid 로 생성하지 않도록 활성 아이로 폴백(첫 아이 하드코딩 제거 — AI 생성 오귀속 방지).
+  const { data: family } = useMyFamily();
+  const { activeChild: globalActive } = useActiveChild();
+  const children = (family?.members ?? []).filter((m) => m.role === "child");
+  const targetChild =
+    (state.childUserId ? children.find((m) => m.user_id === state.childUserId) : undefined) ??
+    globalActive ??
+    null;
+  const childUserId = targetChild?.user_id ?? null;
+  const childName = targetChild?.name ?? state.childName ?? "우리 아이";
+
+  // 앱 date_key(0-index 월) → ISO "YYYY-MM-DD"(서버 계약). 기본 = 오늘.
+  const appDateKey = state.dateKey ?? todayDateKey();
+  const isoDateKey = dateKeyToDateInputValue(appDateKey);
+  const dateLabel = useMemo(() => {
+    const d = parseAppDateKey(appDateKey);
+    return d ? `${d.getMonth() + 1}월 ${d.getDate()}일` : "";
+  }, [appDateKey]);
+
+  // 생성 품질 향상용 clientSignals(그날 일정). 없으면 서버가 알림·대화만으로 요약.
+  const { data: events } = useEvents();
+  const clientSignals = useMemo(() => {
+    const dayEvents = (events ?? [])
+      .filter((e) => e.date_key === appDateKey)
+      .map((e) => ({ title: e.title || "일정", time: e.time || "" }))
+      .slice(0, 8);
+    return dayEvents.length > 0 ? { events: dayEvents } : undefined;
+  }, [events, appDateKey]);
+
+  const { data: cached, isLoading } = useDaySummary(childUserId, isoDateKey);
+  const generate = useGenerateDaySummary();
+  const [generated, setGenerated] = useState<DaySummaryResult | null>(null);
+
+  const summary = generated?.summary ?? cached?.summary ?? "";
+  const signals = generated?.signals ?? cached?.signals ?? null;
+  const premiumLocked = generated ? !generated.premium : false;
+  const isEmpty = generated ? generated.empty : false;
+  const hasSummary = !!summary && !premiumLocked && !isEmpty;
+
+  const rows = useMemo(() => buildRows(signals), [signals]);
+  const caution = isCautionDay(signals);
+
+  const onGenerate = () => {
+    if (!childUserId || !isoDateKey || generate.isPending) return;
+    generate.mutate(
+      { childUserId, isoDateKey, clientSignals },
+      {
+        onSuccess: (res) => {
+          setGenerated(res);
+          if (!res.premium) show("프리미엄에서 하루 요약을 볼 수 있어요", "💜");
+        },
+        onError: () => show("요약을 만들지 못했어요. 잠시 후 다시 시도해 주세요", "💜"),
+      },
+    );
+  };
+
+  return (
+    <div className="ds-screen">
+      <div className="ds-header">
+        <button type="button" className="ds-back hy-press" aria-label="뒤로" onClick={() => navigate(-1)}>
+          <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
+        </button>
+        <span className="ds-title">{childName}의 하루</span>
+      </div>
+
+      <div className="hy-content ds-content">
+        {!childUserId ? (
+          <div className="ds-panel">
+            <div className="ds-panel__art">
+              <img src={asset("mascot/diary.webp")} alt="" />
+            </div>
+            <div className="ds-panel__title">연결된 아이가 없어요</div>
+            <div className="ds-panel__desc">아이를 연결하면 AI 하루 요약을 볼 수 있어요.</div>
+          </div>
+        ) : premiumLocked ? (
+          <div className="ds-panel">
+            <div className="ds-panel__art">
+              <img src={asset("mascot/diary.webp")} alt="" />
+            </div>
+            <div className="ds-panel__title">프리미엄 기능이에요</div>
+            <div className="ds-panel__desc">
+              구독하시면 매일 AI가 정리한 {childName}의 하루 요약을 받아보실 수 있어요.
+            </div>
+            <button type="button" className="ds-panel__cta hy-press" onClick={() => navigate("/subscription")}>
+              프리미엄 보기
+            </button>
+          </div>
+        ) : hasSummary ? (
+          <>
+            <div className={`ds-hero${caution ? " ds-hero--caution" : ""}`}>
+              <img className="ds-hero__mascot" src={asset("mascot/diary.webp")} alt="" />
+              <div className="ds-hero__status">
+                {caution ? "오늘은 살펴볼 일이 있었어요" : "안전하게 잘 보냈어요"}
+              </div>
+              <div className="ds-hero__date">{dateLabel} · AI 요약</div>
+            </div>
+
+            {rows.length > 0 && (
+              <div className="ds-rows">
+                {rows.map((r) => (
+                  <div key={r.key} className={`ds-row ds-row--${r.tone}`}>
+                    <span className="ds-row__icon">{r.icon}</span>
+                    <div className="ds-row__body">
+                      <div className="ds-row__text">{r.text}</div>
+                      {r.sub && <div className="ds-row__sub">{r.sub}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="ds-quote">“{summary}”</div>
+            <div className="ds-foot">
+              AI가 하루 데이터를 종합해 만들었어요 · 안전한 요약을 위해 대화는 주제만 반영돼요
+            </div>
+          </>
+        ) : isEmpty ? (
+          <div className="ds-panel">
+            <div className="ds-panel__art">
+              <img src={asset("mascot/diary.webp")} alt="" />
+            </div>
+            <div className="ds-panel__title">특별한 기록이 없어요</div>
+            <div className="ds-panel__desc">
+              {dateLabel}은(는) 조용히 지나갔어요. 일정이나 활동이 쌓이면 요약이 만들어져요.
+            </div>
+          </div>
+        ) : isLoading ? (
+          <div className="ds-loading">하루 요약을 불러오는 중이에요…</div>
+        ) : (
+          <div className="ds-panel">
+            <div className="ds-panel__art">
+              <img src={asset("mascot/diary.webp")} alt="" />
+            </div>
+            <div className="ds-panel__title">
+              {dateLabel} · {childName}의 하루
+            </div>
+            <div className="ds-panel__desc">
+              AI가 일정·위치·리워드·안전 이벤트를 종합해 하루 요약을 만들어 드려요. 프리미엄 기능이에요.
+            </div>
+            <button
+              type="button"
+              className="ds-panel__cta hy-press"
+              onClick={onGenerate}
+              disabled={generate.isPending}
+            >
+              {generate.isPending ? "요약 만드는 중…" : "AI 하루 요약 만들기"}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

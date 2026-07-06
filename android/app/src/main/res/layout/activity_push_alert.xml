@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 전체화면 알림 (PushAlertActivity)
+     공통 카드 anatomy: 아이콘 헤더 배지 + 제목 + 본문 + CTA pill (주/보조).
+     channel extra("emergency"/"kkuk"/그 외) 에 따라 액티비티가 아이콘과
+     배지 배경을 코드에서 교체한다.
+     색/배경은 전부 colors.xml/values-night 토큰 참조 (하드코딩 0). -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/alertRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/alert_bg_scrim"
+    android:clickable="true"
+    android:focusable="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_margin="24dp"
+        android:background="@drawable/alert_card_surface"
+        android:elevation="16dp"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingLeft="24dp"
+        android:paddingRight="24dp"
+        android:paddingTop="28dp"
+        android:paddingBottom="24dp">
+
+        <!-- 아이콘 헤더 배지 (원형). 배경/이모지는 channel 에 따라 코드에서 교체 -->
+        <FrameLayout
+            android:id="@+id/alertIconBadge"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:background="@drawable/alert_icon_badge_normal">
+
+            <TextView
+                android:id="@+id/alertIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="🔔"
+                android:textSize="36sp" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/alertTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:gravity="center"
+            android:textColor="@color/alert_title"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/alertBody"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="center"
+            android:lineSpacingExtra="5dp"
+            android:textColor="@color/alert_body"
+            android:textSize="18sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/closeButton"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:background="@drawable/alert_btn_secondary"
+                android:fontFamily="sans-serif-medium"
+                android:gravity="center"
+                android:text="닫기"
+                android:textColor="@color/btn_secondary_text"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/openAppButton"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:background="@drawable/alert_btn_primary"
+                android:fontFamily="sans-serif-medium"
+                android:gravity="center"
+                android:text="앱 열기"
+                android:textColor="@color/btn_primary_text"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</FrameLayout>

@@ -1,0 +1,24 @@
+/* C-13 오프라인 지속 배너 */
+.ofb-root {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 85;
+  width: 100%;
+  max-width: 448px;
+  box-sizing: border-box;
+  padding: calc(env(safe-area-inset-top, 0px) + 8px) 16px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #4a4145;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  animation: hy-fadein 0.25s ease forwards;
+}
+.ofb-text {
+  letter-spacing: -0.01em;
+}

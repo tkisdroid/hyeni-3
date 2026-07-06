@@ -1,0 +1,206 @@
+/* 아이 설정 · 연결 상태(K-10) — 화면 전용. 프리픽스 .ks-* (아이 모드) */
+
+.ks-root {
+  min-height: 100%;
+  background: radial-gradient(120% 42% at 50% 0%, var(--hy-accent-soft) 0%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(180deg, #fdf4f1, var(--bg-page));
+  animation: hy-fadein 0.35s ease forwards;
+}
+
+/* ── 헤더(sticky) ───────────────────────────────────────────────────────── */
+.ks-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 16px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(253, 244, 241, 0.9) 60%, rgba(253, 244, 241, 0));
+  backdrop-filter: blur(8px);
+}
+.ks-back {
+  --press: 0.9;
+}
+.ks-title {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--fg-primary);
+}
+
+/* ── 콘텐츠 ─────────────────────────────────────────────────────────────── */
+.ks-content {
+  padding: 6px 20px calc(env(safe-area-inset-bottom, 0px) + 40px);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ── 히어로 ─────────────────────────────────────────────────────────────── */
+.ks-hero {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: linear-gradient(135deg, var(--hy-accent-soft), #fff);
+  border: 1px solid var(--hy-accent-line, rgba(0, 0, 0, 0.05));
+  border-radius: 26px;
+  padding: 18px;
+  box-shadow: var(--shadow-card);
+}
+.ks-hero__avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 24px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  box-shadow: 0 10px 22px -12px rgba(32, 26, 29, 0.28);
+}
+.ks-hero__avatar img {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+}
+.ks-hero__main {
+  flex: 1;
+  min-width: 0;
+}
+.ks-hero__name {
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--fg-primary);
+}
+.ks-hero__age {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--fg-faint);
+}
+.ks-hero__chip {
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--mint-soft);
+  color: var(--mint-text);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* ── 섹션 ───────────────────────────────────────────────────────────────── */
+.ks-sec {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ks-label {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--fg-secondary);
+  padding: 0 2px;
+}
+
+/* ── 리스트 행 ──────────────────────────────────────────────────────────── */
+.ks-row {
+  text-align: left;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 14px 16px;
+  box-shadow: 0 10px 26px -18px rgba(32, 26, 29, 0.2);
+  border: 1px solid var(--line-card);
+  --press: 0.98;
+}
+.ks-row--locked {
+  background: linear-gradient(135deg, var(--mint-soft), #fff);
+  border-color: var(--mint-line);
+}
+.ks-row--muted {
+  opacity: 0.66;
+}
+.ks-row__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 15px;
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 21px;
+  flex: none;
+}
+.ks-row__main {
+  flex: 1;
+  min-width: 0;
+}
+.ks-row__title {
+  display: block;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.ks-row__sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-faint);
+}
+
+/* ── 상태/토글/부탁 칩 ──────────────────────────────────────────────────── */
+.ks-onchip {
+  flex: none;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--mint-500);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 800;
+}
+.ks-ask {
+  flex: none;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+  font-size: 13px;
+  font-weight: 900;
+}
+.ks-toggle {
+  flex: none;
+  width: 48px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--line-strong, rgba(32, 26, 29, 0.16));
+  position: relative;
+  transition: background 0.16s ease;
+}
+.ks-toggle.on {
+  background: var(--hy-accent);
+}
+.ks-toggle__knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(32, 26, 29, 0.3);
+  transition: transform 0.16s ease;
+}
+.ks-toggle.on .ks-toggle__knob {
+  transform: translateX(20px);
+}
+
+.ks-row:disabled {
+  opacity: 0.6;
+}

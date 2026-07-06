@@ -1,0 +1,377 @@
+/* 선생님 반 홈 — 화면 전용 스타일 (원본 dc.html 1607–1640행 값 1:1) */
+
+/* ── 상단 헤더 (민트 틴트) ──────────────────────────────────────────────── */
+.th-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 20px 12px;
+  background: linear-gradient(180deg, rgba(240, 250, 245, 0.92) 60%, rgba(240, 250, 245, 0));
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.th-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.th-brand__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: #e7f8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.th-brand__icon img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+.th-brand__title {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--fg-primary);
+}
+.th-settings {
+  --press: 0.92;
+}
+
+/* ── 콘텐츠 컬럼 (디자인 gap 20px) ──────────────────────────────────────── */
+.th-content {
+  gap: 20px;
+}
+
+/* ── 반 요약 히어로 ─────────────────────────────────────────────────────── */
+.th-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 26px;
+  padding: 20px;
+  background: linear-gradient(135deg, #5fd6a6 0%, #23a876 100%);
+  box-shadow: 0 22px 42px -16px rgba(35, 168, 118, 0.5);
+}
+.th-hero__sheen {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(80% 120% at 85% 8%, rgba(255, 255, 255, 0.28), transparent 60%);
+}
+.th-hero__school {
+  position: relative;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.92);
+}
+.th-hero__name {
+  position: relative;
+  margin-top: 6px;
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+.th-hero__attend {
+  position: relative;
+  margin-top: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #fff;
+}
+
+/* ── 오늘 알림장 보내기 ─────────────────────────────────────────────────── */
+.th-note {
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+  border-radius: 22px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f1ecff, #e6f2fb);
+  box-shadow: 0 14px 30px -16px rgba(124, 92, 225, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+}
+.th-note__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  box-shadow: 0 6px 14px rgba(124, 92, 225, 0.14);
+}
+.th-note__icon img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+.th-note__main {
+  flex: 1;
+  min-width: 0;
+}
+.th-note__title {
+  display: block;
+  font-size: 15.5px;
+  font-weight: 800;
+  color: #43356b;
+}
+.th-note__sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8b7e84;
+}
+
+/* ── 출석 현황 ──────────────────────────────────────────────────────────── */
+.th-viewall {
+  color: #23a876;
+}
+.th-students {
+  padding: 8px;
+}
+.th-student {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+}
+.th-student__avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.th-student__avatar img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+.th-student__main {
+  flex: 1;
+  min-width: 0;
+}
+.th-student__name {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #201a1d;
+}
+.th-student__parent {
+  display: block;
+  margin-top: 1px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #a99fa4;
+}
+.th-student__tag {
+  flex: none;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* ── 하단 2열 바로가기 ──────────────────────────────────────────────────── */
+.th-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.th-tile {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--line-card);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  --press: 0.97;
+}
+.th-tile__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.th-tile__icon img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+.th-tile__label {
+  font-size: 14px;
+  font-weight: 800;
+  color: #201a1d;
+}
+
+/* ── 로딩 / 준비 중 빈 상태 (백엔드 연동) ───────────────────────────────────── */
+.th-empty {
+  margin-top: 8px;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--line-card);
+  padding: 34px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+.th-empty--soft {
+  padding: 22px;
+  color: #8b7e84;
+  font-size: 13px;
+  font-weight: 600;
+}
+.th-empty__emoji {
+  font-size: 34px;
+}
+.th-empty__title {
+  font-size: 15.5px;
+  font-weight: 800;
+  color: #201a1d;
+}
+.th-empty__sub {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #8b7e84;
+  line-height: 1.5;
+}
+.th-student--empty {
+  justify-content: center;
+  color: #a99fa4;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 18px 12px;
+}
+.th-empty__cta {
+  margin-top: 6px;
+  padding: 12px 26px;
+  border-radius: 14px;
+  background: linear-gradient(120deg, #5fd6a6, #23a876);
+  box-shadow: 0 14px 28px -14px rgba(35, 168, 118, 0.6);
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #fff;
+  --press: 0.97;
+}
+
+/* ── 학생 초대 시트 (바텀 시트) ─────────────────────────────────────────── */
+.th-sheet-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(24, 18, 22, 0.42);
+  backdrop-filter: blur(3px);
+  animation: hy-fadein 0.2s ease forwards;
+}
+.th-sheet {
+  width: 100%;
+  background: #fff;
+  border-radius: 26px 26px 0 0;
+  padding: 20px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -18px 40px rgba(20, 10, 15, 0.22);
+  animation: hy-rise 0.34s var(--easing-standard) forwards;
+}
+.th-sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.th-sheet__title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--fg-primary);
+}
+.th-sheet__x {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--bg-page);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+.th-sheet__desc {
+  margin: 0 0 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  line-height: 1.5;
+}
+.th-sheet__label {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--fg-tertiary);
+  margin: 0 0 7px 2px;
+}
+.th-sheet__input {
+  width: 100%;
+  height: 52px;
+  border: 1.5px solid var(--line-soft);
+  background: #fff;
+  border-radius: 14px;
+  padding: 0 16px;
+  margin-bottom: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--fg-primary);
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.th-sheet__input::placeholder {
+  color: var(--fg-faint);
+  font-weight: 600;
+}
+.th-sheet__input:focus {
+  border-color: var(--mint-500);
+  box-shadow: 0 0 0 3px var(--mint-soft);
+}
+.th-sheet__send {
+  width: 100%;
+  height: 54px;
+  border-radius: 16px;
+  margin-top: 2px;
+  background: linear-gradient(120deg, #5fd6a6, #23a876);
+  box-shadow: 0 14px 30px -14px rgba(35, 168, 118, 0.6);
+  font-size: 15.5px;
+  font-weight: 800;
+  color: #fff;
+  --press: 0.98;
+}
+.th-sheet__send:disabled {
+  opacity: 0.55;
+  box-shadow: none;
+}

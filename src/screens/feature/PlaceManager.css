@@ -1,0 +1,269 @@
+/* 장소 관리 — 화면 전용 스타일 (원본 dc.html 1210–1250행 값 1:1) */
+
+.pm-screen {
+  min-height: 848px;
+  animation: hy-fadein 0.35s ease forwards;
+}
+
+/* ── 상세 헤더(sticky) ──────────────────────────────────────────────────── */
+.pm-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: 56px 18px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(251, 247, 244, 0.94);
+  backdrop-filter: blur(10px);
+}
+.pm-back {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+.pm-title {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.pm-add {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  box-shadow: 0 8px 18px -6px rgba(240, 81, 143, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+
+/* ── 스크롤 콘텐츠(간격은 시안 22px) ────────────────────────────────────── */
+.pm-content {
+  gap: 22px;
+}
+
+/* ── 히어로 배너 ────────────────────────────────────────────────────────── */
+.pm-hero {
+  position: relative;
+  height: 140px;
+  border-radius: 22px;
+  overflow: hidden;
+  background: linear-gradient(160deg, #eaf2e6, #ede9f1);
+  box-shadow: 0 10px 26px rgba(32, 26, 29, 0.06);
+}
+.pm-hero__blob {
+  position: absolute;
+  border-radius: 24px;
+}
+.pm-hero__blob--a {
+  top: -10px;
+  left: -10px;
+  width: 90px;
+  height: 80px;
+  background: #dcebcf;
+  opacity: 0.8;
+}
+.pm-hero__blob--b {
+  bottom: -14px;
+  right: 20px;
+  width: 100px;
+  height: 90px;
+  background: #d6e8da;
+  opacity: 0.7;
+}
+.pm-hero__streak {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 52%;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.6);
+  transform: rotate(-6deg);
+}
+.pm-hero__pin {
+  position: absolute;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+}
+
+/* ── 섹션 라벨 ──────────────────────────────────────────────────────────── */
+.pm-label {
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 11px;
+}
+.pm-label--saved {
+  color: #8b7e84;
+}
+.pm-label--danger {
+  color: #c0334c;
+}
+
+/* 위험 구역 섹션 헤더(라벨 + 추가 버튼) */
+.pm-danger-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 11px;
+}
+.pm-danger-head .pm-label {
+  margin-bottom: 0;
+}
+.pm-zone-add {
+  padding: 6px 13px;
+  border-radius: 999px;
+  background: #ffecee;
+  color: #c0334c;
+  font-size: 12px;
+  font-weight: 800;
+  flex: none;
+  --press: 0.94;
+}
+
+/* ── 리스트 ─────────────────────────────────────────────────────────────── */
+.pm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── 저장한 장소 카드 ───────────────────────────────────────────────────── */
+.pm-item {
+  background: #fff;
+  border-radius: 20px;
+  padding: 13px 14px;
+  box-shadow: 0 8px 22px rgba(32, 26, 29, 0.045);
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+.pm-item__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.pm-item__icon img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+}
+.pm-item__main {
+  flex: 1;
+  min-width: 0;
+}
+.pm-item__name {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.pm-item__addr {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #a99fa4;
+}
+.pm-item__edit {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #f7f3f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+.pm-item__del {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: #f4eff2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+.pm-item__del:disabled {
+  opacity: 0.5;
+}
+
+/* ── 위험 구역 카드 ─────────────────────────────────────────────────────── */
+.pm-danger {
+  background: #fff;
+  border: 1.5px solid rgba(232, 69, 92, 0.2);
+  border-radius: 20px;
+  padding: 13px 14px;
+  box-shadow: 0 8px 22px rgba(232, 69, 92, 0.06);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pm-danger__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  text-align: left;
+  --press: 0.98;
+}
+.pm-danger__del {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: #ffecee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+.pm-danger__del:disabled {
+  opacity: 0.5;
+}
+.pm-danger__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  background: #ffecee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.pm-danger__icon img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+}
+.pm-danger__main {
+  flex: 1;
+  min-width: 0;
+}
+.pm-danger__name {
+  font-size: 15px;
+  font-weight: 800;
+  color: #c0334c;
+}
+.pm-danger__addr {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #d2889a;
+}

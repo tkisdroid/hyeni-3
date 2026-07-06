@@ -1,0 +1,272 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { ChevronLeft } from "lucide-react";
+import { asset } from "@/lib/assets";
+import { useToast } from "@/app/toast";
+import { useAuth } from "@/auth/AuthContext";
+import { useActiveChild } from "@/app/activeChild";
+import { useAiCredits, useAiFriendSettings, useSaveAiFriendSettings } from "@/queries/useAi";
+import { qk } from "@/queries/keys";
+import { isBillingAvailable, launchCreditPurchase } from "@/lib/native/billing";
+import { creditHeroAmount } from "@/transform/aiView";
+import "./AiCredit.css";
+
+type CreditPack = {
+  id: string;
+  /**
+   * 백엔드(및 Google Play 인앱 상품)가 실제로 지급하는 개수(30/80/200).
+   * 화면 표기·토스트·결제 모두 이 값을 단일 기준으로 사용한다(표기≠지급 불일치 방지).
+   * 이전엔 디자인 팩(30/100/300)을 별도 amt 로 표기해 실지급수(80/200)와 어긋났었다.
+   */
+  backendAmount: number;
+  tag?: string;
+  per: string;
+  price: string;
+  ring: string;
+};
+
+const CREDIT_PACKS: CreditPack[] = [
+  {
+    id: "p30",
+    backendAmount: 30,
+    per: "가볍게 시작하기 좋아요",
+    price: "₩3,000",
+    ring: "1px solid rgba(32,26,29,.06)",
+  },
+  {
+    id: "p80",
+    backendAmount: 80,
+    tag: "인기",
+    per: "한 달 넉넉하게 써요",
+    price: "₩9,000",
+    ring: "2px solid #B79DFB",
+  },
+  {
+    id: "p200",
+    backendAmount: 200,
+    tag: "최대 혜택",
+    per: "가장 넉넉한 크레딧",
+    price: "₩24,000",
+    ring: "1px solid rgba(32,26,29,.06)",
+  },
+];
+
+export function AiCredit() {
+  const navigate = useNavigate();
+  const { show } = useToast();
+  const { userId, familyId } = useAuth();
+  const qc = useQueryClient();
+
+  // 크레딧은 자녀별 — 전역 활성 아이(홈 스위치) 기준. 스위치 전환 시 대상 아이도 함께 바뀐다.
+  const { activeChild } = useActiveChild();
+  const childUserId = activeChild?.user_id ?? null;
+  const childName = activeChild?.name || "우리 아이";
+
+  const { data: creditStatus } = useAiCredits(childUserId);
+  const heroAmount = creditStatus ? creditHeroAmount(creditStatus) : null;
+
+  // AI 대화 켜기/하루 한도(부모 설정, ai_parent_settings) — 이 설정이 없으면 아이 채팅이 403.
+  const { data: friendSettings } = useAiFriendSettings(childUserId);
+  const saveSettings = useSaveAiFriendSettings();
+  const aiEnabled = friendSettings?.ai_enabled ?? false;
+  const dailyLimit = friendSettings?.daily_limit ?? 5;
+  const toggleAiEnabled = () => {
+    if (!childUserId || saveSettings.isPending) return;
+    saveSettings.mutate(
+      { childUserId, patch: { ai_enabled: !aiEnabled } },
+      {
+        onSuccess: () => show(!aiEnabled ? "AI 친구를 켰어요" : "AI 친구를 껐어요", "🤖"),
+        onError: () => show("설정 저장에 실패했어요", "⚠️"),
+      },
+    );
+  };
+  const changeDailyLimit = (delta: number) => {
+    if (!childUserId || saveSettings.isPending) return;
+    const next = Math.min(100, Math.max(1, dailyLimit + delta));
+    if (next === dailyLimit) return;
+    saveSettings.mutate(
+      { childUserId, patch: { daily_limit: next } },
+      { onError: () => show("설정 저장에 실패했어요", "⚠️") },
+    );
+  };
+
+  // 결제 가능 여부(네이티브 Android 만 true). 웹(PWA)에서는 결제 버튼을 비활성화한다.
+  const billingAvailable = isBillingAvailable();
+
+  const [busyPack, setBusyPack] = useState<string | null>(null);
+
+  // 결제 CTA — 네이티브(Android)면 Google Play Billing(인앱)으로 실제 결제.
+  // 웹(PWA)에서는 버튼이 disabled 라 여기까지 오지 않는다(방어적으로 가드 유지).
+  // 자동 실행 금지: 팩 버튼 onClick 에서만 호출된다. 잔액 정본은 서버.
+  const buy = async (p: CreditPack) => {
+    if (!billingAvailable) {
+      show(`${p.backendAmount}회 충전은 안드로이드 앱에서 가능해요`, "🤖");
+      return;
+    }
+    if (!familyId || !childUserId) {
+      show("충전할 아이를 먼저 연결해 주세요", "💜");
+      return;
+    }
+    if (busyPack) return;
+    setBusyPack(p.id);
+    try {
+      await launchCreditPurchase({
+        familyId,
+        childUserId,
+        parentId: userId,
+        amount: p.backendAmount,
+      });
+      // 충전 성공 → 크레딧 캐시 무효화로 잔액 히어로를 갱신한다.
+      await qc.invalidateQueries({ queryKey: qk.aiCredits(familyId) });
+      show(`${p.backendAmount}회를 충전했어요`, "💜");
+    } catch (error) {
+      show(error instanceof Error ? error.message : "충전에 실패했어요", "💜");
+    } finally {
+      setBusyPack(null);
+    }
+  };
+
+  return (
+    <div className="ac-screen">
+      {/* sticky 헤더 */}
+      <div className="ac-header">
+        <button
+          type="button"
+          className="ac-back hy-press"
+          aria-label="뒤로"
+          onClick={() => navigate(-1)}
+        >
+          <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
+        </button>
+        <span className="ac-title">AI 크레딧</span>
+      </div>
+
+      <div className="hy-content ac-content">
+        {/* 잔액 히어로 */}
+        <div className="ac-hero">
+          <span className="ac-hero__sheen" />
+          <span className="ac-hero__mascot">
+            <img src={asset("mascot/wave.webp")} alt="" />
+          </span>
+          <div className="ac-hero__label">{childName}의 남은 크레딧</div>
+          <div className="ac-hero__amount">
+            <span className="ac-hero__num">{heroAmount != null ? heroAmount : "—"}</span>
+            <span className="ac-hero__unit">회</span>
+          </div>
+          <div className="ac-hero__badge">✨ 혜니와 대화할 수 있어요</div>
+        </div>
+
+        {/* 안내 */}
+        <div className="ac-note">
+          <span className="ac-note__emoji">💬</span>
+          AI 친구 혜니와 한 번 대화할 때마다 크레딧 1회가 사용돼요. 부모님이 충전해 주세요.
+        </div>
+
+        {/* 충전팩 */}
+        <div>
+          <div className="ac-packs__label">크레딧 충전</div>
+          <div className="ac-packs__list">
+            {CREDIT_PACKS.map((p) => (
+              <div key={p.id} className="ac-pack" style={{ border: p.ring }}>
+                <span className="ac-pack__icon">
+                  <img src={asset("mascot/wave.webp")} alt="" />
+                </span>
+                <span className="ac-pack__main">
+                  <span className="ac-pack__amt-row">
+                    <span className="ac-pack__amt">{p.backendAmount}회</span>
+                    {p.tag && <span className="ac-pack__tag">{p.tag}</span>}
+                  </span>
+                  <span className="ac-pack__per">{p.per}</span>
+                </span>
+                <button
+                  type="button"
+                  className="ac-buy hy-press"
+                  onClick={() => buy(p)}
+                  disabled={!billingAvailable || busyPack !== null}
+                >
+                  {!billingAvailable ? "앱에서 결제" : busyPack === p.id ? "결제 중…" : p.price}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* AI 친구 켜기 + 하루 대화 한도(부모 설정 — 꺼져 있으면 아이가 대화 불가) */}
+        <div className="ac-auto">
+          <span className="ac-auto__icon">🤖</span>
+          <span className="ac-auto__main">
+            <span className="ac-auto__title">AI 친구 대화 허용</span>
+            <span className="ac-auto__sub">
+              {aiEnabled ? `켜짐 · 하루 ${dailyLimit}회까지` : "꺼짐 · 아이가 AI 친구와 대화할 수 없어요"}
+            </span>
+          </span>
+          <button
+            type="button"
+            className="ac-toggle"
+            aria-label="AI 친구 대화 허용"
+            aria-pressed={aiEnabled}
+            onClick={toggleAiEnabled}
+            disabled={saveSettings.isPending || !childUserId}
+            style={{ background: aiEnabled ? "var(--hy-accent)" : "#E4DEE2" }}
+          >
+            <span className="ac-toggle__knob" style={{ left: aiEnabled ? 22 : 2 }} />
+          </button>
+        </div>
+        {aiEnabled && (
+          <div className="ac-auto" style={{ marginTop: -4 }}>
+            <span className="ac-auto__icon">🔢</span>
+            <span className="ac-auto__main">
+              <span className="ac-auto__title">하루 대화 한도</span>
+              <span className="ac-auto__sub">무료 포함분 기준 · 초과분은 크레딧 사용</span>
+            </span>
+            <span className="ac-limit">
+              <button
+                type="button"
+                className="ac-limit__btn hy-press"
+                aria-label="한도 줄이기"
+                onClick={() => changeDailyLimit(-5)}
+                disabled={saveSettings.isPending}
+              >
+                −
+              </button>
+              <span className="ac-limit__num">{dailyLimit}</span>
+              <button
+                type="button"
+                className="ac-limit__btn hy-press"
+                aria-label="한도 늘리기"
+                onClick={() => changeDailyLimit(5)}
+                disabled={saveSettings.isPending}
+              >
+                +
+              </button>
+            </span>
+          </div>
+        )}
+
+        {/* 자동 충전 — 설정 저장 API 미연동 → 켜짐 오인 방지 위해 off 고정·비활성('곧 제공') */}
+        <div className="ac-auto">
+          <span className="ac-auto__icon">🔄</span>
+          <span className="ac-auto__main">
+            <span className="ac-auto__title">자동 충전</span>
+            <span className="ac-auto__sub">잔액이 부족하면 자동으로 충전해요 · 곧 제공</span>
+          </span>
+          <button
+            type="button"
+            className="ac-toggle"
+            aria-label="자동 충전 (준비 중)"
+            aria-pressed={false}
+            disabled
+            style={{ background: "#E4DEE2", opacity: 0.55, cursor: "default" }}
+          >
+            <span className="ac-toggle__knob" style={{ left: 2 }} />
+          </button>
+        </div>
+
+        <div className="ac-footer">
+          사용하지 않은 크레딧은 차감되지 않아요 · 안전한 대화를 위해 대화 내용은 요약만 보관돼요
+        </div>
+      </div>
+    </div>
+  );
+}

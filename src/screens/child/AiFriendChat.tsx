@@ -1,0 +1,259 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { ChevronLeft, Send, Settings } from "lucide-react";
+import { asset } from "@/lib/assets";
+import { useAuth } from "@/auth/AuthContext";
+import { useMyFamily } from "@/queries/useFamily";
+import { useEvents, useDailySupplies } from "@/queries/useSchedule";
+import { useAiMessages, useAiFriendPublicSettings, useSendChildChat } from "@/queries/useAi";
+import { messagesToBubbles, type ChatBubble } from "@/transform/aiView";
+import { groupEventsByDateKey } from "@/transform/scheduleView";
+import { todayDateKey } from "@/transform/dateKey";
+import { isApiError } from "@/lib/api/errors";
+import {
+  AI_FRIEND_PERSONAS,
+  DEFAULT_CHARACTER,
+  personaFor,
+  readSelectedCharacter,
+} from "./AiFriendSetup";
+import "./AiFriendChat.css";
+
+const BASE_SUGGESTIONS = ["오늘 뭐 하고 놀까?", "심심해 😪", "재밌는 얘기 해줘"];
+
+// 전송 실패 코드(Worker 가 비-2xx { error } 로 응답 → ApiError.message)를 아이 톤(반말) 안내로.
+function friendlyError(err: unknown): string {
+  const code = isApiError(err) ? err.message : "";
+  switch (code) {
+    case "daily_limit_reached":
+      return "오늘 이야기는 다 했어! 내일 또 만나자 💜";
+    case "feature_disabled":
+      return "나 지금 잠깐 쉬는 중이야. 부모님께 켜달라고 부탁해줘 🙏";
+    case "not_child":
+    case "no_family":
+      return "지금은 이야기할 수 없어. 부모님께 알려줘!";
+    case "message_too_long":
+      return "조금만 짧게 다시 말해줄래? 😊";
+    default:
+      return "잠깐 연결이 안 됐어. 다시 말해줄래? 💜";
+  }
+}
+
+export function AiFriendChat() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // 아이 모드에서는 로그인 사용자 = 아이. childUserId = userId.
+  const { familyId, userId } = useAuth();
+  const { data: family } = useMyFamily();
+  const { data: publicSettings } = useAiFriendPublicSettings(userId);
+
+  // 설정 화면에서 넘어온 선택(state) 우선 → 로컬 저장 → 가족 멤버 emoji → 기본.
+  const navState = (location.state ?? {}) as { characterEmoji?: string; friendName?: string };
+  const familyEmoji = userId
+    ? family?.members.find((m) => m.user_id === userId)?.emoji ?? undefined
+    : undefined;
+  const character = useMemo(() => {
+    const candidates = [
+      navState.characterEmoji,
+      readSelectedCharacter(familyId, userId),
+      familyEmoji,
+      DEFAULT_CHARACTER,
+    ];
+    return candidates.find((c) => c && AI_FRIEND_PERSONAS.some((p) => p.emoji === c)) ?? DEFAULT_CHARACTER;
+  }, [navState.characterEmoji, familyId, userId, familyEmoji]);
+  const persona = personaFor(character);
+  const friendName = navState.friendName || publicSettings?.ai_friend_name || persona.name;
+  const animalSrc = asset(`animal/${persona.animal}.webp`);
+
+  // 오늘 일정·준비물(내 것) — AI 가 먼저 물어보는 선제 인사와 제안칩의 컨텍스트(로컬 생성 · 크레딧 0).
+  const { data: events } = useEvents();
+  const now = useMemo(() => new Date(), []);
+  const todayKey = useMemo(() => todayDateKey(now), [now]);
+  const suppliesQuery = useDailySupplies(todayKey);
+  const myMemberId = family?.members.find((m) => m.role === "child" && m.user_id === userId)?.id ?? null;
+  const nextEvent = useMemo(() => {
+    const list = groupEventsByDateKey(events ?? [], now)[todayKey] ?? [];
+    return list.find((e) => e.tag !== "다녀옴") ?? null;
+  }, [events, now, todayKey]);
+  const pendingSupply = useMemo(() => {
+    const all = suppliesQuery.data ?? [];
+    const mine = myMemberId ? all.filter((s) => s.child_user_id === myMemberId) : all;
+    return mine.find((s) => !s.done) ?? null;
+  }, [suppliesQuery.data, myMemberId]);
+
+  // 선제 인사 — 준비물/일정이 있으면 AI 가 먼저 물어본다(서버 프롬프트도 같은 컨텍스트 인지).
+  const greeting: ChatBubble = useMemo(() => {
+    let text = persona.greeting;
+    if (pendingSupply) {
+      text = `${persona.greeting.split("!")[0]}! 오늘 「${pendingSupply.label}」 아직 안 챙겼지? 같이 확인해볼까? 😊`;
+    } else if (nextEvent) {
+      text = `${persona.greeting.split("!")[0]}! 오늘 ${nextEvent.time ? `${nextEvent.time} ` : ""}${nextEvent.title} 있네! 준비는 다 됐어?`;
+    }
+    return { id: "greeting", role: "ai", text };
+  }, [persona.greeting, pendingSupply, nextEvent]);
+
+  // 제안칩 — 오늘 컨텍스트가 있으면 관련 질문을 앞세운다.
+  const suggestions = useMemo(() => {
+    const out: string[] = [];
+    if (nextEvent) out.push("오늘 일정 알려줘");
+    if (pendingSupply) out.push("준비물 뭐 챙겨야 해?");
+    out.push(...BASE_SUGGESTIONS);
+    return out.slice(0, 4);
+  }, [nextEvent, pendingSupply]);
+
+  const { data: messagesData } = useAiMessages(userId);
+  const sendChat = useSendChildChat();
+  // 남은 대화 횟수(서버 응답 메타) — 전송 후 갱신해 헤더에 표시.
+  const [remaining, setRemaining] = useState<number | null>(null);
+
+  const [messages, setMessages] = useState<ChatBubble[]>([]);
+  const [seeded, setSeeded] = useState(false);
+  const [input, setInput] = useState("");
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // 서버 기록이 도착하면 1회 시드(자동 전송 아님 — 표시만). 비어 있으면 인사 말풍선을 남긴다.
+  useEffect(() => {
+    if (seeded || !messagesData) return;
+    const bubbles = messagesToBubbles(messagesData);
+    setMessages(bubbles.length > 0 ? bubbles : [greeting]);
+    setSeeded(true);
+    // greeting 은 persona 파생(렌더마다 새 참조) — 의존성에 넣으면 시드 재실행되므로 제외.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messagesData, seeded]);
+
+  // 로딩 전에는 인사 말풍선만 보여 화면이 비지 않게 한다.
+  const shown = messages.length > 0 ? messages : [greeting];
+
+  useEffect(() => {
+    const host = rootRef.current?.parentElement;
+    if (host) host.scrollTo({ top: host.scrollHeight, behavior: "smooth" });
+    // sendChat.isPending 이 바뀔 때(타이핑 인디케이터 등장/퇴장)도 맨 아래로 스크롤한다.
+  }, [shown.length, sendChat.isPending]);
+
+  // 전송 = 사용자 액션(버튼·칩·Enter)에서만. 자동 실행 금지. 크레딧 소모 주의.
+  const send = (raw: string) => {
+    const text = raw.trim();
+    if (!text || sendChat.isPending) return;
+    // 사용자가 대화를 시작하면 로컬 상태가 정본 — 뒤늦게 도착한 서버 기록이 덮어쓰지 않게 시드 잠금.
+    if (!seeded) setSeeded(true);
+    const base = `${Date.now()}`;
+    setMessages((prev) => [
+      ...(prev.length > 0 ? prev : [greeting]),
+      { id: `${base}-me`, role: "me", text },
+    ]);
+    sendChat.mutate(
+      { message: text, characterEmoji: character },
+      {
+        onSuccess: (res) => {
+          if (typeof res.remaining === "number") setRemaining(res.remaining);
+          setMessages((prev) => [
+            ...prev,
+            { id: `${base}-ai`, role: "ai", text: res.reply || "그렇구나! 더 얘기해줄래? 😊" },
+          ]);
+        },
+        onError: (err) => {
+          setMessages((prev) => [...prev, { id: `${base}-ai`, role: "ai", text: friendlyError(err) }]);
+        },
+      },
+    );
+  };
+
+  const handleSend = () => {
+    send(input);
+    setInput("");
+  };
+
+  return (
+    <div ref={rootRef} className="afc">
+      <header className="afc-header">
+        <button
+          type="button"
+          className="afc-back hy-press"
+          aria-label="뒤로"
+          onClick={() => navigate(-1)}
+        >
+          <ChevronLeft size={22} strokeWidth={2.2} color="#6D4E9C" />
+        </button>
+        <div className="afc-avatar">
+          <img src={animalSrc} alt="" />
+          <span className="afc-online" />
+        </div>
+        <div className="afc-head-main">
+          <div className="afc-head-name">{friendName}</div>
+          <div className="afc-head-status">
+            {remaining != null ? `오늘 ${remaining}번 더 얘기할 수 있어` : "언제나 네 편이야 💜"}
+          </div>
+        </div>
+        <button
+          type="button"
+          className="afc-setup hy-press"
+          aria-label="AI 친구 바꾸기"
+          onClick={() => navigate("/child/ai-friend-setup")}
+        >
+          <Settings size={19} strokeWidth={2.2} color="#6D4E9C" />
+        </button>
+      </header>
+
+      <div className="afc-msgs">
+        {shown.map((m) => (
+          <div key={m.id} className={`afc-row afc-row--${m.role}`}>
+            {m.role === "ai" && (
+              <div className="afc-mini">
+                <img src={animalSrc} alt="" />
+              </div>
+            )}
+            <div className={`afc-bubble afc-bubble--${m.role}`}>{m.text}</div>
+          </div>
+        ))}
+        {/* AI 친구 응답 대기 중 — 타이핑 인디케이터(전송 진행 중임을 정직하게 표시). */}
+        {sendChat.isPending && (
+          <div className="afc-row afc-row--ai">
+            <div className="afc-mini">
+              <img src={animalSrc} alt="" />
+            </div>
+            <div className="afc-bubble afc-bubble--ai">{friendName}가 입력 중…</div>
+          </div>
+        )}
+      </div>
+
+      <div className="afc-input-wrap">
+        <div className="afc-suggest">
+          {suggestions.map((q) => (
+            <button
+              key={q}
+              type="button"
+              className="afc-chip hy-press"
+              onClick={() => send(q)}
+              disabled={sendChat.isPending}
+            >
+              {q}
+            </button>
+          ))}
+        </div>
+        <div className="afc-bar">
+          <input
+            className="afc-field"
+            value={input}
+            placeholder={`${friendName}에게 말해봐...`}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+          />
+          <button
+            type="button"
+            className="afc-send hy-press"
+            aria-label="보내기"
+            onClick={handleSend}
+            disabled={sendChat.isPending}
+          >
+            <Send size={20} strokeWidth={2.2} color="#fff" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

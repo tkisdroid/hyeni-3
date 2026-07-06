@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>혜니캘린더 · 디자인 시스템 / Design System</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
+<link rel="stylesheet" href="tokens/tokens.css">
+<style>
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg-body); color: var(--fg-primary);
+    font-family: var(--font-sans); font-weight: 500; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--rose-text); }
+  code { font-family: ui-monospace, SFMono-Regular, monospace; font-size: .86em; background: rgba(32,26,29,.06); padding: 2px 6px; border-radius: 6px; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px 120px; }
+
+  /* header */
+  header.hero { background: linear-gradient(135deg, #FF9EC4 0%, #F76BA6 52%, #F0518F 100%); color: #fff; padding: 72px 24px 64px; position: relative; overflow: hidden; }
+  header.hero .inner { max-width: 1080px; margin: 0 auto; position: relative; z-index: 1; }
+  header.hero .glow { position: absolute; inset: 0; background: radial-gradient(60% 120% at 82% 0%, rgba(255,255,255,.32), transparent 60%); }
+  .eyebrow { display: inline-flex; align-items: center; gap: 7px; padding: 6px 13px; border-radius: 999px; background: rgba(255,255,255,.22); backdrop-filter: blur(4px); font-size: 12px; font-weight: 700; }
+  header.hero h1 { font-size: 44px; font-weight: 900; letter-spacing: -.03em; margin: 16px 0 8px; text-shadow: 0 2px 14px rgba(180,40,90,.3); }
+  header.hero p { font-size: 16px; font-weight: 600; max-width: 620px; margin: 0; color: rgba(255,255,255,.94); }
+  header.hero .meta { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 8px; }
+  header.hero .meta span { font-size: 12px; font-weight: 700; background: rgba(255,255,255,.18); padding: 6px 12px; border-radius: 999px; }
+
+  /* nav */
+  nav.toc { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg-body) 88%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line-hair); }
+  nav.toc .row { max-width: 1080px; margin: 0 auto; padding: 12px 24px; display: flex; gap: 6px; flex-wrap: wrap; }
+  nav.toc a { font-size: 12.5px; font-weight: 700; color: var(--fg-tertiary); text-decoration: none; padding: 6px 11px; border-radius: 999px; }
+  nav.toc a:hover { background: var(--rose-soft); color: var(--rose-text); }
+
+  section { padding-top: 56px; }
+  h2.sec { font-size: 25px; font-weight: 900; letter-spacing: -.02em; margin: 0 0 4px; }
+  .sec-sub { font-size: 14px; font-weight: 600; color: var(--fg-muted); margin: 0 0 24px; }
+  h3.sub { font-size: 13px; font-weight: 800; letter-spacing: .02em; color: var(--fg-muted); text-transform: uppercase; margin: 28px 0 12px; }
+
+  .card { background: var(--bg-card); border-radius: var(--radius-card); border: 1px solid var(--line-hair); box-shadow: var(--shadow-card); }
+  .grid { display: grid; gap: 14px; }
+
+  /* swatches */
+  .swgrid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .sw { border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-soft); background: var(--bg-card); }
+  .sw .chip { height: 74px; display: flex; align-items: flex-end; padding: 10px; }
+  .sw .info { padding: 10px 12px; }
+  .sw .nm { font-size: 12.5px; font-weight: 800; }
+  .sw .hex { font-size: 11.5px; font-weight: 700; color: var(--fg-faint); font-variant-numeric: tabular-nums; }
+  .sw .role { font-size: 10.5px; font-weight: 700; color: var(--fg-faint); margin-top: 2px; }
+
+  /* type */
+  .typerow { display: flex; align-items: baseline; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line-hair); }
+  .typerow .lbl { width: 130px; flex: none; font-size: 11.5px; font-weight: 700; color: var(--fg-faint); }
+  .typerow .spec { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--fg-faint); white-space: nowrap; }
+
+  /* scale rows */
+  .scalerow { display: flex; align-items: center; gap: 14px; padding: 9px 0; }
+  .scalerow .bar { background: var(--rose-400); height: 22px; border-radius: 6px; }
+  .scalerow .nm { width: 130px; font-size: 12.5px; font-weight: 700; }
+  .scalerow .val { font-size: 12px; font-weight: 700; color: var(--fg-faint); font-variant-numeric: tabular-nums; }
+
+  .demo { padding: 22px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+
+  /* buttons */
+  .btn { border: none; font-family: inherit; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: transform .12s var(--easing-standard); }
+  .btn:active { transform: scale(.96); }
+  .btn-rose { height: 52px; padding: 0 22px; border-radius: var(--radius-xl); background: linear-gradient(120deg, var(--rose-300), var(--rose-600)); color: #fff; font-size: 16px; font-weight: 800; box-shadow: var(--shadow-rose-btn); }
+  .btn-mint { height: 50px; padding: 0 20px; border-radius: var(--radius-lg); background: linear-gradient(120deg, var(--mint-400), var(--mint-600)); color: #fff; font-size: 15px; font-weight: 800; box-shadow: var(--shadow-mint); }
+  .btn-ai { height: 52px; padding: 0 22px; border-radius: var(--radius-xl); background: linear-gradient(120deg, var(--lav-300), var(--lav-500)); color: #fff; font-size: 15px; font-weight: 800; box-shadow: var(--shadow-lavender); }
+  .btn-sec { height: 48px; padding: 0 20px; border-radius: var(--radius-lg); background: var(--bg-card); border: 1.5px solid var(--line-strong); color: var(--fg-secondary); font-size: 14.5px; font-weight: 800; }
+  .btn-tint { height: 38px; padding: 0 15px; border-radius: 999px; background: var(--rose-soft); color: var(--rose-text); font-size: 12.5px; font-weight: 800; }
+
+  /* chips */
+  .tag { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 999px; font-size: 11.5px; font-weight: 800; }
+  .tag-safe { background: var(--mint-soft); color: var(--mint-text); }
+  .tag-soon { background: var(--rose-soft); color: var(--rose-text); }
+  .tag-ai { background: var(--lav-soft); color: var(--lav-text); }
+  .tag-gold { background: var(--cream-soft); color: var(--gold-text); }
+  .tag-danger { background: var(--danger-soft); color: var(--danger-text); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--mint-500); }
+
+  /* section header pattern */
+  .secheader { display: flex; align-items: center; gap: 10px; }
+  .secheader .tile { width: 30px; height: 30px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .secheader .t { font-size: 17px; font-weight: 800; letter-spacing: -.02em; }
+  .secheader .more { margin-left: auto; font-size: 12.5px; font-weight: 700; color: var(--rose-text); }
+
+  /* list row */
+  .lrow { display: flex; align-items: center; gap: 13px; padding: 12px; border-radius: var(--radius-xl); }
+  .lrow:active { background: var(--bg-press); }
+  .lrow .ic { width: 48px; height: 48px; border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; font-size: 24px; flex: none; }
+  .lrow .tt { font-size: 15px; font-weight: 800; }
+  .lrow .st { font-size: 12px; font-weight: 600; color: var(--fg-faint); margin-top: 3px; }
+
+  /* avatar */
+  .av { position: relative; width: 60px; height: 60px; border-radius: 19px; background: var(--rose-soft); display: flex; align-items: center; justify-content: center; font-size: 30px; }
+  .av .live { position: absolute; bottom: -1px; right: -1px; width: 15px; height: 15px; border-radius: 50%; background: var(--mint-500); border: 2.5px solid #fff; }
+
+  /* switch + segmented */
+  .sw-toggle { width: 48px; height: 28px; border-radius: 999px; background: var(--mint-500); position: relative; }
+  .sw-toggle i { position: absolute; top: 2px; left: 22px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: var(--shadow-soft); }
+  .seg { display: inline-flex; gap: 4px; padding: 5px; border-radius: var(--radius-lg); background: rgba(124,92,225,.08); }
+  .seg button { border: none; font-family: inherit; cursor: pointer; padding: 9px 14px; border-radius: var(--radius-md); font-size: 13px; font-weight: 800; color: var(--fg-muted); background: transparent; }
+  .seg button.on { background: #fff; color: var(--lav-text); box-shadow: var(--shadow-soft); }
+
+  .feelgrid { grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); }
+  .feel { padding: 16px; }
+  .feel .k { font-size: 14px; font-weight: 800; }
+  .feel .v { font-size: 12.5px; font-weight: 600; color: var(--fg-muted); margin-top: 4px; }
+  footer { margin-top: 72px; padding-top: 28px; border-top: 1px solid var(--line-hair); font-size: 12.5px; color: var(--fg-faint); font-weight: 600; }
+  footer a { font-weight: 700; }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="glow"></div>
+  <div class="inner">
+    <span class="eyebrow">✨ Design System · v1.0</span>
+    <h1>혜니캘린더</h1>
+    <p>부모와 아이가 한 앱에서 쓰는 가족 안전·일정 서비스의 디자인 언어. 따뜻한 로즈 팔레트 · Pretendard · 3D 캐릭터. / The warm, kid-safe design language behind Hyeni Calendar.</p>
+    <div class="meta"><span>Pretendard Variable</span><span>Warm-rose · pastel</span><span>React Native ready</span><span>One card language</span></div>
+  </div>
+</header>
+
+<nav class="toc"><div class="row">
+  <a href="#color">색 Color</a>
+  <a href="#type">타이포 Type</a>
+  <a href="#radius">라운드 Radius</a>
+  <a href="#space">간격 Spacing</a>
+  <a href="#elevation">그림자 Elevation</a>
+  <a href="#buttons">버튼 Buttons</a>
+  <a href="#cards">카드 Cards</a>
+  <a href="#chips">칩 Chips</a>
+  <a href="#patterns">패턴 Patterns</a>
+  <a href="#controls">컨트롤 Controls</a>
+  <a href="#feel">느낌 Feel</a>
+</div></nav>
+
+<div class="wrap">
+
+  <section id="color">
+    <h2 class="sec">색 / Color</h2>
+    <p class="sec-sub">4색 브랜드 + 중립. 색마다 역할이 고정입니다. / Four brand hues + neutrals, each with a fixed role.</p>
+
+    <h3 class="sub">Rose — 브랜드 · 부모·아이</h3>
+    <div class="grid swgrid">
+      <div class="sw"><div class="chip" style="background:var(--rose-soft)"></div><div class="info"><div class="nm">rose.soft</div><div class="hex">#FDE7F1</div><div class="role">tint 배경</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--rose-400)"></div><div class="info"><div class="nm">rose.base</div><div class="hex">#F779A8</div><div class="role">브랜드</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--rose-600)"></div><div class="info"><div class="nm">rose.deep</div><div class="hex">#F0518F</div><div class="role">CTA</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--rose-text)"></div><div class="info"><div class="nm">rose.text</div><div class="hex">#B0477A</div><div class="role">on-tint</div></div></div>
+    </div>
+
+    <h3 class="sub">Mint — 안전 · 선생님</h3>
+    <div class="grid swgrid">
+      <div class="sw"><div class="chip" style="background:var(--mint-soft)"></div><div class="info"><div class="nm">mint.soft</div><div class="hex">#E7F8F0</div><div class="role">tint</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--mint-500)"></div><div class="info"><div class="nm">mint.base</div><div class="hex">#31C48D</div><div class="role">안전/성공</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--mint-600)"></div><div class="info"><div class="nm">mint.deep</div><div class="hex">#23A876</div><div class="role">CTA</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--mint-text)"></div><div class="info"><div class="nm">mint.text</div><div class="hex">#087653</div><div class="role">on-tint</div></div></div>
+    </div>
+
+    <h3 class="sub">Lavender — AI · 프리미엄</h3>
+    <div class="grid swgrid">
+      <div class="sw"><div class="chip" style="background:var(--lav-soft)"></div><div class="info"><div class="nm">lav.soft</div><div class="hex">#F1ECFF</div><div class="role">tint</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--lav-400)"></div><div class="info"><div class="nm">lav.base</div><div class="hex">#A78BFA</div><div class="role">AI</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--lav-600)"></div><div class="info"><div class="nm">lav.deep</div><div class="hex">#7C5CE1</div><div class="role">CTA</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--lav-text)"></div><div class="info"><div class="nm">lav.text</div><div class="hex">#6D4E9C</div><div class="role">on-tint</div></div></div>
+    </div>
+
+    <h3 class="sub">Gold · Danger · 중립 / Neutrals</h3>
+    <div class="grid swgrid">
+      <div class="sw"><div class="chip" style="background:var(--gold-400)"></div><div class="info"><div class="nm">gold.base</div><div class="hex">#FFD76A</div><div class="role">보상</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--danger-500)"></div><div class="info"><div class="nm">danger.base</div><div class="hex">#E5484D</div><div class="role">SOS/위험</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--ink)"></div><div class="info"><div class="nm">fg.primary</div><div class="hex">#201A1D</div><div class="role">제목</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--fg-faint)"></div><div class="info"><div class="nm">fg.faint</div><div class="hex">#A99FA4</div><div class="role">메타</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--bg-app); border-bottom:1px solid var(--line-hair)"></div><div class="info"><div class="nm">bg.app</div><div class="hex">#FBF7F4</div><div class="role">배경</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--bg-card); border-bottom:1px solid var(--line-hair)"></div><div class="info"><div class="nm">bg.card</div><div class="hex">#FFFFFF</div><div class="role">카드</div></div></div>
+    </div>
+  </section>
+
+  <section id="type">
+    <h2 class="sec">타이포그래피 / Typography</h2>
+    <p class="sec-sub">Pretendard Variable. 제목은 무겁게(800–900), 본문은 700, 메타는 600. / Heavy headings, bold body.</p>
+    <div class="card" style="padding: 8px 22px;">
+      <div class="typerow"><span class="lbl">display</span><span style="font-size:44px;font-weight:900;letter-spacing:-.03em">82%</span><span class="spec">44 · 900</span></div>
+      <div class="typerow"><span class="lbl">title-xl / 홈 히어로</span><span style="font-size:26px;font-weight:800;letter-spacing:-.02em">지우의 오늘</span><span class="spec">26 · 800</span></div>
+      <div class="typerow"><span class="lbl">title / 화면 제목</span><span style="font-size:25px;font-weight:900;letter-spacing:-.02em">우리 가족</span><span class="spec">25 · 900</span></div>
+      <div class="typerow"><span class="lbl">section / 섹션</span><span style="font-size:17px;font-weight:800;letter-spacing:-.02em">오늘의 일정</span><span class="spec">17 · 800</span></div>
+      <div class="typerow"><span class="lbl">body / 본문</span><span style="font-size:15px;font-weight:700">영어학원 14:00</span><span class="spec">15 · 700</span></div>
+      <div class="typerow"><span class="lbl">body-sm</span><span style="font-size:14px;font-weight:600">자유롭게 알려주세요</span><span class="spec">14 · 600</span></div>
+      <div class="typerow"><span class="lbl">caption / 메타</span><span style="font-size:12px;font-weight:600;color:var(--fg-faint)">지우 · 방금 전</span><span class="spec">12 · 600</span></div>
+      <div class="typerow"><span class="lbl">micro / 뱃지</span><span style="font-size:11px;font-weight:700;color:var(--rose-text)">실시간</span><span class="spec">11 · 700</span></div>
+    </div>
+  </section>
+
+  <section id="radius">
+    <h2 class="sec">라운드 / Radius</h2>
+    <p class="sec-sub">카드는 <code>24</code> 하나로 통일. 버튼 15–18, 알약 999. / One card radius, everywhere.</p>
+    <div class="card demo" style="align-items:flex-end">
+      <div style="text-align:center"><div style="width:74px;height:74px;background:var(--rose-soft);border-radius:8px"></div><div class="val" style="margin-top:8px">xs · 8</div></div>
+      <div style="text-align:center"><div style="width:74px;height:74px;background:var(--rose-soft);border-radius:15px"></div><div class="val" style="margin-top:8px">lg · 15</div></div>
+      <div style="text-align:center"><div style="width:74px;height:74px;background:var(--rose-soft);border-radius:18px"></div><div class="val" style="margin-top:8px">xl · 18</div></div>
+      <div style="text-align:center"><div style="width:74px;height:74px;background:var(--rose-400);border-radius:24px"></div><div class="val" style="margin-top:8px">card · 24 ★</div></div>
+      <div style="text-align:center"><div style="width:74px;height:74px;background:var(--rose-soft);border-radius:30px"></div><div class="val" style="margin-top:8px">3xl · 30</div></div>
+      <div style="text-align:center"><div style="width:74px;height:74px;background:var(--rose-soft);border-radius:999px"></div><div class="val" style="margin-top:8px">pill · 999</div></div>
+    </div>
+  </section>
+
+  <section id="space">
+    <h2 class="sec">간격 / Spacing</h2>
+    <p class="sec-sub">4pt 기반, 넉넉하게. 페이지 좌우 여백 20, 섹션 간격 18–24. / 4pt-based, roomy.</p>
+    <div class="card" style="padding: 14px 22px;">
+      <div class="scalerow"><span class="nm">space-1</span><span class="bar" style="width:4px"></span><span class="val">4</span></div>
+      <div class="scalerow"><span class="nm">space-2</span><span class="bar" style="width:8px"></span><span class="val">8</span></div>
+      <div class="scalerow"><span class="nm">space-3</span><span class="bar" style="width:12px"></span><span class="val">12</span></div>
+      <div class="scalerow"><span class="nm">space-4</span><span class="bar" style="width:16px"></span><span class="val">16</span></div>
+      <div class="scalerow"><span class="nm">space-5 · page</span><span class="bar" style="width:20px"></span><span class="val">20</span></div>
+      <div class="scalerow"><span class="nm">space-6 · section</span><span class="bar" style="width:24px"></span><span class="val">24</span></div>
+    </div>
+  </section>
+
+  <section id="elevation">
+    <h2 class="sec">그림자 / Elevation</h2>
+    <p class="sec-sub">중립 카드 그림자 + 브랜드 컬러 그림자(히어로·CTA). / Neutral card shadow + colored hero/CTA shadows.</p>
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">
+      <div style="text-align:center"><div style="height:88px;background:var(--bg-card);border-radius:20px;box-shadow:var(--shadow-soft)"></div><div class="val" style="margin-top:10px">soft</div></div>
+      <div style="text-align:center"><div style="height:88px;background:var(--bg-card);border-radius:20px;box-shadow:var(--shadow-card)"></div><div class="val" style="margin-top:10px">card ★</div></div>
+      <div style="text-align:center"><div style="height:88px;background:var(--rose-500);border-radius:20px;box-shadow:var(--shadow-rose)"></div><div class="val" style="margin-top:10px">rose</div></div>
+      <div style="text-align:center"><div style="height:88px;background:var(--mint-500);border-radius:20px;box-shadow:var(--shadow-mint)"></div><div class="val" style="margin-top:10px">mint</div></div>
+      <div style="text-align:center"><div style="height:88px;background:var(--lav-500);border-radius:20px;box-shadow:var(--shadow-lavender)"></div><div class="val" style="margin-top:10px">lavender</div></div>
+    </div>
+  </section>
+
+  <section id="buttons">
+    <h2 class="sec">버튼 / Buttons</h2>
+    <p class="sec-sub">역할색 그라데이션 primary + 보조 + 틴트. 눌림 scale .96. / Gradient primaries by role, press scale .96.</p>
+    <div class="card demo">
+      <button class="btn btn-rose">이대로 추가하기</button>
+      <button class="btn btn-mint">태권도 길찾기</button>
+      <button class="btn btn-ai">혜니랑 이야기하기</button>
+      <button class="btn btn-sec">보조 버튼</button>
+      <button class="btn btn-tint">지금 갱신</button>
+    </div>
+  </section>
+
+  <section id="cards">
+    <h2 class="sec">카드 / Cards</h2>
+    <p class="sec-sub">모든 카드는 같은 언어: radius 24 · hairline border · card shadow. / One card language.</p>
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">
+      <div class="card" style="padding:18px">
+        <div class="secheader" style="margin-bottom:14px"><span class="tile" style="background:var(--rose-soft)">🗓️</span><span class="t">오늘의 일정</span></div>
+        <div class="lrow" style="padding:8px 0"><span class="ic" style="background:var(--lav-soft)">🏫</span><span style="flex:1"><span class="tt" style="display:block">영어학원</span><span class="st">14:00 · 헤든타워</span></span><span class="tag tag-safe">도착</span></div>
+      </div>
+      <div style="border-radius:26px;padding:20px;background:linear-gradient(135deg,#FF9EC4,#F0518F);box-shadow:var(--shadow-rose);color:#fff">
+        <span style="font-size:12px;font-weight:700;background:rgba(255,255,255,.24);padding:5px 11px;border-radius:999px">수요일 · 11월 19일</span>
+        <div style="font-size:26px;font-weight:800;letter-spacing:-.02em;margin-top:12px;line-height:1.28">지우의 오늘,<br>일정 <span style="color:#FFF0BE">3개</span></div>
+        <div style="margin-top:11px;font-size:13px;font-weight:700">● 실시간 추적 중</div>
+      </div>
+      <div class="card" style="padding:18px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div><div style="font-size:11px;font-weight:700;color:var(--fg-faint)">배터리</div><div style="font-size:17px;font-weight:800">82%</div></div>
+          <div><div style="font-size:11px;font-weight:700;color:var(--fg-faint)">화면시간</div><div style="font-size:15px;font-weight:800">1시간 20분</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="chips">
+    <h2 class="sec">칩 / Chips & Tags</h2>
+    <p class="sec-sub">상태색은 언제나 색 + 텍스트 병행(색맹 대응). / Status = color + label, always.</p>
+    <div class="card demo">
+      <span class="tag tag-safe"><span class="dot"></span>실시간</span>
+      <span class="tag tag-safe">🏫 오늘 참석</span>
+      <span class="tag tag-soon">45분 뒤</span>
+      <span class="tag tag-ai">숙제</span>
+      <span class="tag tag-gold">최고예요</span>
+      <span class="tag tag-danger">위험구역</span>
+    </div>
+  </section>
+
+  <section id="patterns">
+    <h2 class="sec">패턴 / Patterns</h2>
+    <p class="sec-sub">섹션 헤더 · 리스트 행 · 아바타는 앱 전체에서 한 형태만. / One shape each, everywhere.</p>
+    <h3 class="sub">섹션 헤더 / Section header</h3>
+    <div class="card" style="padding:16px 18px">
+      <div class="secheader"><span class="tile" style="background:var(--mint-soft)">📍</span><span class="t">아이 현황</span><span class="tag tag-safe" style="margin-left:auto"><span class="dot"></span>실시간</span></div>
+    </div>
+    <h3 class="sub">리스트 행 / List row · 아바타 / Avatar</h3>
+    <div class="card" style="padding:10px 12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div class="lrow" style="flex:1;min-width:240px"><span class="ic" style="background:var(--mint-soft)">🥋</span><span style="flex:1"><span class="tt" style="display:block">태권도</span><span class="st">16:00 · 청담사범</span></span><span class="tag tag-soon">45분 뒤</span></div>
+      <div class="av">🐰<span class="live"></span></div>
+    </div>
+  </section>
+
+  <section id="controls">
+    <h2 class="sec">컨트롤 / Controls</h2>
+    <p class="sec-sub">세그먼트(입력 방식·트윅) · 스위치 · 하트 "꾹". / Segmented, switch, the "kkuk" heart.</p>
+    <div class="card demo">
+      <div class="seg"><button class="on">🎤 음성</button><button>⌨️ 텍스트</button><button>🖼️ 알림장</button></div>
+      <div class="sw-toggle"><i></i></div>
+      <div style="position:relative;width:52px;height:52px;display:flex;align-items:center;justify-content:center">
+        <svg width="50" height="50" viewBox="0 0 24 24" style="position:absolute;filter:drop-shadow(0 5px 12px rgba(240,81,143,.5))"><defs><linearGradient id="h" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF9EC4"/><stop offset="1" stop-color="#F0518F"/></linearGradient></defs><path fill="url(#h)" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        <span style="position:relative;font-size:12px;font-weight:900;color:#fff;margin-top:-2px">꾹</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="feel">
+    <h2 class="sec">느낌 모드 / Feel modes</h2>
+    <p class="sec-sub">제품 레벨 테마 플래그. 개별 픽셀 조정이 아니라 앱 전체 인상을 바꿉니다. / Product-level theme flags that reshape the whole app.</p>
+    <div class="grid feelgrid">
+      <div class="card feel"><div class="k">깊이감 / Depth</div><div class="v"><code>soft</code> 3D 그림자 ↔ <code>flat</code> 그림자 제거</div></div>
+      <div class="card feel"><div class="k">색감 / Vibe</div><div class="v"><code>pastel</code> · <code>base</code> · <code>pop</code> — 채도로 무드 전환</div></div>
+      <div class="card feel"><div class="k">모션 / Motion</div><div class="v"><code>lively</code> ↔ <code>calm</code> — 애니메이션 on/off (접근성)</div></div>
+    </div>
+  </section>
+
+  <footer>
+    혜니캘린더 Design System v1.0 · 토큰 <a href="tokens/tokens.css">tokens.css</a> / <a href="tokens/tokens.json">.json</a> / <a href="tokens/theme.ts">theme.ts</a> ·
+    <a href="brand/BRAND.md">브랜드</a> · <a href="spec/INFORMATION-ARCHITECTURE.md">정보구조</a> · <a href="spec/COMPONENTS.md">컴포넌트</a><br>
+    이 페이지는 <code>tokens/tokens.css</code>를 직접 불러 렌더링합니다 — 토큰을 바꾸면 이 가이드도 함께 바뀝니다. / This guide renders straight from the tokens.
+  </footer>
+</div>
+</body>
+</html>

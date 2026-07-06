@@ -1,0 +1,360 @@
+/* 설정 — 화면 전용 스타일 (원본 dc.html 1079–1133행 값 1:1) */
+
+/* ── 상단 sticky 헤더(뒤로가기 + 타이틀) ────────────────────────────────── */
+.ps-head {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(251, 247, 244, 0.94);
+  backdrop-filter: blur(10px);
+}
+.ps-back {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+.ps-head-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--fg-primary);
+}
+
+/* ── 스크롤 콘텐츠 컬럼 ─────────────────────────────────────────────────── */
+.ps-content {
+  padding: 4px 20px calc(120px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* ── 프로필 카드 ────────────────────────────────────────────────────────── */
+.ps-profile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 22px;
+  background: linear-gradient(120deg, #e6f2fb, #f1ecff);
+  box-shadow: 0 10px 26px -12px rgba(46, 134, 193, 0.25);
+}
+.ps-profile__avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 17px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.ps-profile__avatar img {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+}
+.ps-profile__info {
+  flex: 1;
+  min-width: 0;
+}
+.ps-profile__name {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--fg-primary);
+}
+.ps-profile__meta {
+  margin-top: 2px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #6d6d8a;
+}
+.ps-profile__edit {
+  flex: none;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #5a6b8c;
+  --press: 0.94;
+}
+
+/* ── 그룹(라벨 + 흰 카드 리스트) ────────────────────────────────────────── */
+.ps-group__label {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #8b7e84;
+  margin-bottom: 11px;
+}
+.ps-list {
+  background: #fff;
+  border-radius: 20px;
+  padding: 6px;
+  box-shadow: 0 10px 26px rgba(32, 26, 29, 0.05);
+}
+
+/* ── 알림 토글 행 ───────────────────────────────────────────────────────── */
+.ps-notif {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  background: transparent;
+}
+.ps-notif__icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  flex: none;
+}
+.ps-notif__main {
+  flex: 1;
+  min-width: 0;
+}
+.ps-notif__label {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--fg-primary);
+}
+.ps-notif__sub {
+  margin-top: 1px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #a99fa4;
+}
+
+/* iOS 스타일 토글 스위치 */
+.ps-switch {
+  position: relative;
+  width: 46px;
+  height: 27px;
+  border-radius: 999px;
+  background: #e5e0e3;
+  flex: none;
+  transition: background 0.2s ease;
+}
+.ps-switch[data-on="true"] {
+  background: var(--hy-accent);
+}
+.ps-switch__knob {
+  position: absolute;
+  top: 2px;
+  left: 0;
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.18);
+  transform: translateX(2px);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.ps-switch[data-on="true"] .ps-switch__knob {
+  transform: translateX(21px);
+}
+
+/* ── 가족·안전 기능 행 ──────────────────────────────────────────────────── */
+.ps-feature {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  background: transparent;
+  --press: 0.99;
+}
+.ps-feature__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #f7f3f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.ps-feature__icon img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+.ps-feature__label {
+  flex: 1;
+  min-width: 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--fg-primary);
+}
+.ps-feature__chev {
+  flex: none;
+}
+
+/* ── 계정 행(이모지 칩 + 라벨) ──────────────────────────────────────────── */
+.ps-account {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: transparent;
+  --press: 0.99;
+}
+.ps-account__chip {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex: none;
+}
+.ps-account__label {
+  flex: 1;
+  min-width: 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--fg-primary);
+}
+.ps-account__badge {
+  flex: none;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 800;
+  background: #f1ecf5;
+  color: #8b7e84;
+}
+.ps-account__badge[data-premium="true"] {
+  background: #fff3d6;
+  color: #a9812f;
+}
+
+/* ── 설정 네비 행(이모지 칩 + 라벨 + 셰브론) ────────────────────────────── */
+.ps-nav {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: transparent;
+  --press: 0.99;
+}
+.ps-nav__chip {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex: none;
+}
+.ps-nav__label {
+  flex: 1;
+  min-width: 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--fg-primary);
+}
+.ps-nav__chev {
+  flex: none;
+}
+
+/* ── 버전 푸터 ──────────────────────────────────────────────────────────── */
+.ps-version {
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #c4babf;
+}
+
+/* ── 탈퇴 확인 모달 ───────────────────────────────────────────────────────── */
+.ps-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.ps-modal__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(32, 26, 29, 0.42);
+  backdrop-filter: blur(2px);
+  border: none;
+}
+.ps-modal__card {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  background: #fff;
+  border-radius: 24px;
+  padding: 26px 22px 20px;
+  text-align: center;
+  box-shadow: 0 24px 60px -16px rgba(32, 26, 29, 0.4);
+  animation: hy-pop 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.ps-modal__emoji {
+  font-size: 34px;
+}
+.ps-modal__title {
+  margin-top: 10px;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.ps-modal__body {
+  margin: 8px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.55;
+  color: var(--fg-tertiary);
+}
+.ps-modal__btns {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+.ps-modal__btn {
+  flex: 1;
+  height: 48px;
+  border-radius: 14px;
+  font-size: 14.5px;
+  font-weight: 800;
+  --press: 0.96;
+}
+.ps-modal__btn--ghost {
+  background: #f3edf0;
+  color: var(--fg-secondary);
+}
+.ps-modal__btn--danger {
+  background: var(--danger-500);
+  color: #fff;
+}
+.ps-modal__btn:disabled {
+  opacity: 0.6;
+}

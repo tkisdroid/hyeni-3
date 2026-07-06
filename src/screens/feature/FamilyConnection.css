@@ -1,0 +1,329 @@
+/* 연결 상태 · 해제(P-06) — 화면 전용 스타일. 프리픽스 .fc-* */
+
+.fc-root {
+  min-height: 100%;
+  background: radial-gradient(120% 40% at 50% 0%, #e7f8f0 0%, rgba(231, 248, 240, 0) 55%),
+    linear-gradient(180deg, #fdf4f1, var(--bg-page));
+  animation: hy-fadein 0.35s ease forwards;
+}
+
+/* ── 헤더(sticky) ───────────────────────────────────────────────────────── */
+.fc-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 16px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(253, 244, 241, 0.9) 60%, rgba(253, 244, 241, 0));
+  backdrop-filter: blur(8px);
+}
+.fc-back {
+  --press: 0.9;
+}
+.fc-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+
+/* ── 콘텐츠 ─────────────────────────────────────────────────────────────── */
+.fc-content {
+  padding: 6px 20px calc(env(safe-area-inset-bottom, 0px) + 40px);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ── 히어로 ─────────────────────────────────────────────────────────────── */
+.fc-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #fff, #f7f4f3);
+  border: 1px solid var(--line-card);
+  box-shadow: var(--shadow-card);
+}
+.fc-hero--ok {
+  background: linear-gradient(135deg, var(--mint-soft), #fff);
+  border-color: var(--mint-line);
+}
+.fc-hero__img {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  flex: none;
+}
+.fc-hero__main {
+  flex: 1;
+  min-width: 0;
+}
+.fc-hero__title {
+  font-size: 16.5px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  color: var(--fg-primary);
+}
+.fc-hero__sub {
+  margin-top: 3px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--fg-muted);
+}
+
+/* ── 섹션 ───────────────────────────────────────────────────────────────── */
+.fc-sec {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.fc-label {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--fg-tertiary);
+  padding: 0 2px;
+}
+
+/* ── 기기/보호자 행 ─────────────────────────────────────────────────────── */
+.fc-device {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  background: #fff;
+  border-radius: 18px;
+  padding: 13px 15px;
+  box-shadow: 0 10px 26px -18px rgba(32, 26, 29, 0.2);
+  border: 1px solid var(--line-card);
+}
+.fc-device--pending {
+  opacity: 0.82;
+}
+.fc-device__avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.fc-device__avatar--muted {
+  filter: grayscale(0.4);
+  background: var(--bg-body);
+}
+.fc-device__avatar img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+.fc-device__main {
+  flex: 1;
+  min-width: 0;
+}
+.fc-device__name {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.fc-device__sub {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-faint);
+}
+
+/* ── 상태 칩 ────────────────────────────────────────────────────────────── */
+.fc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+  flex: none;
+}
+.fc-chip__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.fc-chip--safe {
+  background: var(--mint-soft);
+  color: var(--mint-text);
+}
+.fc-chip--warn {
+  background: var(--cream-soft);
+  color: var(--gold-text);
+}
+.fc-chip--muted {
+  background: var(--bg-body);
+  color: var(--fg-muted);
+}
+
+/* ── 공동 보호자 초대 카드 ──────────────────────────────────────────────── */
+.fc-invite {
+  text-align: left;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  background: #fff;
+  border-radius: 18px;
+  padding: 14px 15px;
+  box-shadow: 0 10px 26px -18px rgba(32, 26, 29, 0.2);
+  border: 1px solid var(--line-card);
+  --press: 0.98;
+}
+.fc-invite__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--cream-soft);
+  color: var(--gold-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.fc-invite__main {
+  flex: 1;
+  min-width: 0;
+}
+.fc-invite__title {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.fc-invite__sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-faint);
+}
+
+/* ── 보조 버튼 ──────────────────────────────────────────────────────────── */
+.fc-ghost {
+  align-self: flex-start;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--mint-soft);
+  color: var(--mint-text);
+  font-size: 13px;
+  font-weight: 800;
+  --press: 0.96;
+}
+
+/* ── 연결 해제 버튼 ─────────────────────────────────────────────────────── */
+.fc-unpair {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 50px;
+  border-radius: 16px;
+  background: var(--danger-soft);
+  color: var(--danger-text);
+  border: 1px solid rgba(229, 72, 77, 0.18);
+  font-size: 14.5px;
+  font-weight: 800;
+  --press: 0.97;
+}
+.fc-note {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  line-height: 1.5;
+  padding: 4px 2px;
+}
+
+/* ── 로딩/에러 상태 ─────────────────────────────────────────────────────── */
+.fc-state {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--fg-muted);
+  font-size: 14.5px;
+  font-weight: 700;
+}
+.fc-state--error {
+  color: var(--danger-text);
+}
+
+/* ── 확인 모달 ──────────────────────────────────────────────────────────── */
+.fc-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.fc-modal__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(32, 26, 29, 0.44);
+  backdrop-filter: blur(2px);
+  border: none;
+  animation: hy-fadein 0.2s ease forwards;
+}
+.fc-modal__card {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  background: #fff;
+  border-radius: 22px;
+  padding: 22px 20px 16px;
+  box-shadow: 0 24px 60px -20px rgba(32, 26, 29, 0.5);
+  animation: hy-rise 0.24s ease forwards;
+}
+.fc-modal__title {
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--fg-primary);
+  text-align: center;
+}
+.fc-modal__body {
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  line-height: 1.55;
+  text-align: center;
+}
+.fc-modal__actions {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.fc-modal__btn {
+  height: 50px;
+  border-radius: 15px;
+  font-size: 14.5px;
+  font-weight: 800;
+  --press: 0.97;
+}
+.fc-modal__btn--ghost {
+  background: var(--bg-body);
+  color: var(--fg-body);
+}
+.fc-modal__btn--danger {
+  background: linear-gradient(120deg, var(--danger-strong), var(--danger-500));
+  color: #fff;
+}
+.fc-modal__btn:disabled {
+  opacity: 0.6;
+}

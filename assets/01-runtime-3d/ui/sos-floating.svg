@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="SOS">
+  <defs>
+    <radialGradient id="badge" cx="34%" cy="28%" r="76%">
+      <stop offset="0" stop-color="#ffaaa4"/>
+      <stop offset="0.45" stop-color="#ff4f5e"/>
+      <stop offset="1" stop-color="#d9143b"/>
+    </radialGradient>
+    <radialGradient id="badgeGlow" cx="36%" cy="28%" r="70%">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.72"/>
+      <stop offset="0.24" stop-color="#ffffff" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="shieldFill" x1="242" x2="754" y1="180" y2="710" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.45" stop-color="#fff4f8"/>
+      <stop offset="1" stop-color="#ffd1df"/>
+    </linearGradient>
+    <linearGradient id="heartFill" x1="354" x2="684" y1="274" y2="570" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff9da2"/>
+      <stop offset="0.42" stop-color="#ff4055"/>
+      <stop offset="1" stop-color="#eb1b45"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="22" stdDeviation="28" flood-color="#b40d2b" flood-opacity="0.28"/>
+      <feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#7d0a20" flood-opacity="0.18"/>
+    </filter>
+    <filter id="smallShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#9b0b28" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#softShadow)">
+    <circle cx="512" cy="512" r="405" fill="url(#badge)"/>
+    <circle cx="512" cy="512" r="385" fill="none" stroke="#ffbcc6" stroke-width="14" opacity="0.72"/>
+    <circle cx="512" cy="512" r="338" fill="url(#badgeGlow)"/>
+
+    <path
+      d="M512 151c53 0 96 50 160 67 62 17 117 15 142 57 28 47 12 135-7 201-36 129-122 216-295 270-173-54-259-141-295-270-19-66-35-154-7-201 25-42 80-40 142-57 64-17 107-67 160-67Z"
+      fill="url(#shieldFill)"
+      stroke="#ffffff"
+      stroke-width="25"
+    />
+    <path
+      d="M512 194c46 0 84 43 139 58 53 14 101 14 122 49 23 40 10 115-7 172-31 109-103 183-254 231-151-48-223-122-254-231-17-57-30-132-7-172 21-35 69-35 122-49 55-15 93-58 139-58Z"
+      fill="none"
+      stroke="#ff7390"
+      stroke-width="12"
+      opacity="0.62"
+    />
+
+    <path
+      d="M512 333c35-58 124-71 172-18 54 59 38 153-21 216-41 44-98 82-151 111-53-29-110-67-151-111-59-63-75-157-21-216 48-53 137-40 172 18Z"
+      fill="url(#heartFill)"
+      stroke="#d9173c"
+      stroke-width="12"
+      filter="url(#smallShadow)"
+    />
+    <path
+      d="M509 378c0-21 18-38 40-38 23 0 40 17 40 38v51h51c22 0 40 18 40 40 0 23-18 41-40 41h-51v51c0 22-17 40-40 40-22 0-40-18-40-40v-51h-51c-22 0-40-18-40-41 0-22 18-40 40-40h51v-51Z"
+      fill="#fff8fb"
+      filter="url(#smallShadow)"
+    />
+
+    <g fill="#fff8fb" filter="url(#smallShadow)">
+      <path d="M350 664c-17-16-39-22-61-22-36 0-62 19-62 48 0 31 27 42 59 52 22 7 35 12 35 24 0 11-12 19-31 19-24 0-44-10-61-27l-27 39c22 23 51 34 87 34 42 0 70-21 70-55 0-32-25-44-59-54-24-7-36-12-36-23 0-10 10-17 27-17 19 0 35 7 49 20l10-38Z"/>
+      <path d="M512 642c-55 0-92 39-92 94 0 56 37 95 92 95s92-39 92-95c0-55-37-94-92-94Zm0 46c25 0 40 19 40 48 0 30-15 49-40 49s-40-19-40-49c0-29 15-48 40-48Z"/>
+      <path d="M776 664c-17-16-39-22-61-22-36 0-62 19-62 48 0 31 27 42 59 52 22 7 35 12 35 24 0 11-12 19-31 19-24 0-44-10-61-27l-27 39c22 23 51 34 87 34 42 0 70-21 70-55 0-32-25-44-59-54-24-7-36-12-36-23 0-10 10-17 27-17 19 0 35 7 49 20l10-38Z"/>
+    </g>
+
+    <g fill="#ffccd4" opacity="0.96" filter="url(#smallShadow)">
+      <rect x="143" y="638" width="64" height="22" rx="11" transform="rotate(28 175 649)"/>
+      <rect x="136" y="696" width="70" height="22" rx="11"/>
+      <rect x="162" y="750" width="58" height="22" rx="11" transform="rotate(-22 191 761)"/>
+      <rect x="817" y="638" width="64" height="22" rx="11" transform="rotate(-28 849 649)"/>
+      <rect x="818" y="696" width="70" height="22" rx="11"/>
+      <rect x="804" y="750" width="58" height="22" rx="11" transform="rotate(22 833 761)"/>
+    </g>
+  </g>
+</svg>

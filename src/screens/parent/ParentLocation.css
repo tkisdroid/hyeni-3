@@ -1,0 +1,724 @@
+/* 부모 위치 — 화면 전용 스타일 (원본 dc.html 748–815행 값 1:1) */
+
+/* ── 루트 / 스타일 지도 ─────────────────────────────────────────────────── */
+.pl-root {
+  position: absolute;
+  inset: 0;
+  animation: hy-fadein 0.4s ease forwards;
+}
+.pl-map {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, #eaf2e6 0%, #f1eee7 55%, #ede9f1 100%);
+  overflow: hidden;
+}
+
+/* 유기적 지형 블롭 */
+.pl-blob-1 {
+  position: absolute;
+  top: 60px;
+  left: -30px;
+  width: 190px;
+  height: 150px;
+  border-radius: 40px;
+  background: #dcebcf;
+  opacity: 0.85;
+}
+.pl-blob-2 {
+  position: absolute;
+  top: 320px;
+  right: -40px;
+  width: 200px;
+  height: 180px;
+  border-radius: 46px;
+  background: #d6e8da;
+  opacity: 0.7;
+}
+.pl-blob-3 {
+  position: absolute;
+  bottom: 120px;
+  left: 20px;
+  width: 130px;
+  height: 120px;
+  border-radius: 34px;
+  background: #e8e2d2;
+  opacity: 0.7;
+}
+
+/* 도로 */
+.pl-road-1 {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 46%;
+  width: 26px;
+  background: rgba(255, 255, 255, 0.6);
+  transform: rotate(9deg);
+}
+.pl-road-2 {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 44%;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.55);
+  transform: rotate(-5deg);
+}
+.pl-road-3 {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 20%;
+  width: 12px;
+  background: rgba(255, 255, 255, 0.4);
+  transform: rotate(12deg);
+}
+
+/* ── 안전구역 라벨 ──────────────────────────────────────────────────────── */
+.pl-safe-label {
+  position: absolute;
+  top: 232px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(32, 26, 29, 0.12);
+  font-size: 12px;
+  font-weight: 800;
+  color: #087653;
+  white-space: nowrap;
+}
+.pl-safe-label__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #31c48d;
+}
+
+/* ── 아이 마커 (안전 링 + 핀) ──────────────────────────────────────────── */
+.pl-child-ring {
+  position: absolute;
+  top: 268px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 150px;
+  height: 150px;
+  margin-left: -75px;
+  margin-top: -46px;
+  pointer-events: none;
+}
+.pl-child-ring__static {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(49, 196, 141, 0.18);
+  border: 1.5px solid rgba(49, 196, 141, 0.4);
+}
+.pl-child-ring__pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(49, 196, 141, 0.25);
+  animation: hy-ring 2.4s ease-out infinite;
+}
+.pl-child-pin {
+  position: absolute;
+  top: 268px;
+  left: 50%;
+  transform: translate(-50%, -100%);
+  width: 60px;
+  height: 68px;
+}
+.pl-child-pin__inner {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  border-radius: 50% 50% 50% 8px;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, #ff9ec4, #f0518f);
+  box-shadow: 0 10px 22px -6px rgba(240, 81, 143, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pl-child-pin__inner img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  transform: rotate(-45deg);
+}
+
+/* ── 부모 점 ────────────────────────────────────────────────────────────── */
+.pl-parent {
+  position: absolute;
+  top: 470px;
+  left: 38%;
+  width: 20px;
+  height: 20px;
+}
+.pl-parent__pulse {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: rgba(46, 134, 193, 0.2);
+  animation: hy-ring 2.8s ease-out 0.6s infinite;
+}
+.pl-parent__core {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #2e86c1;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 10px rgba(46, 134, 193, 0.4);
+}
+
+/* ── 위험구역 ───────────────────────────────────────────────────────────── */
+.pl-danger {
+  position: absolute;
+  top: 508px;
+  left: 18px;
+  width: 116px;
+  height: 92px;
+  border-radius: 50%;
+  border: 2px dashed rgba(232, 69, 92, 0.6);
+  background: rgba(232, 69, 92, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pl-danger__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 4px 10px rgba(32, 26, 29, 0.1);
+  font-size: 11px;
+  font-weight: 800;
+  color: #c0334c;
+}
+
+/* ── 상단 오버레이 ──────────────────────────────────────────────────────── */
+.pl-top {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  left: 16px;
+  right: 16px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.pl-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 6px 16px rgba(32, 26, 29, 0.1);
+  font-size: 13px;
+  font-weight: 800;
+  color: #087653;
+}
+.pl-live__dot {
+  position: relative;
+  width: 8px;
+  height: 8px;
+}
+.pl-live__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #31c48d;
+  animation: hy-ring 1.8s ease-out infinite;
+}
+.pl-live__core {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #31c48d;
+}
+.pl-refresh {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 6px 16px rgba(32, 26, 29, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+}
+.pl-refresh:active {
+  transform: rotate(180deg) scale(0.9);
+}
+
+/* ── 아이 칩(다자녀 전환) ───────────────────────────────────────────────── */
+.pl-chips {
+  position: absolute;
+  top: 108px;
+  left: 16px;
+  right: 16px;
+  z-index: 20;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px 7px 7px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(32, 26, 29, 0.1);
+  border: 2px solid transparent;
+  --press: 0.96;
+}
+.pl-chip--active {
+  border-color: #31c48d;
+}
+.pl-chip__avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fde7f1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pl-chip__avatar img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+.pl-chip__name {
+  font-size: 13px;
+  font-weight: 800;
+  color: #b0477a;
+}
+.pl-chip__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #31c48d;
+}
+
+/* ── 하단 상세 카드 ─────────────────────────────────────────────────────── */
+.pl-sheet {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  z-index: 46;
+  background: #fff;
+  border-radius: 26px;
+  padding: 16px 16px 14px;
+  box-shadow: 0 -6px 30px rgba(32, 26, 29, 0.14);
+  animation: hy-sheetup 0.4s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+}
+.pl-sheet__handle {
+  width: 38px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(32, 26, 29, 0.12);
+  margin: 0 auto 12px;
+}
+.pl-sheet__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.pl-sheet__avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  background: #fde7f1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.pl-sheet__avatar img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+.pl-sheet__info {
+  flex: 1;
+}
+.pl-sheet__name {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.pl-sheet__zone {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #087653;
+}
+.pl-sheet__zone-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #31c48d;
+}
+.pl-sheet__dur {
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: #e7f8f0;
+  font-size: 12px;
+  font-weight: 800;
+  color: #087653;
+}
+
+/* 타임라인 */
+.pl-timeline {
+  display: flex;
+  gap: 6px;
+  margin: 14px 0;
+}
+.pl-tl-cell {
+  flex: 1;
+  text-align: center;
+  padding: 10px 4px;
+  border-radius: 14px;
+}
+.pl-tl-cell img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  margin: 0 auto;
+}
+.pl-tl-cell__t {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.pl-tl-cell__label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #a99fa4;
+}
+
+/* 갱신 실패 / 위치 없음 안내 → 상태 화면 */
+.pl-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 12px 0 2px;
+  padding: 10px 13px;
+  border-radius: 13px;
+  background: #fdf0da;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #925c12;
+  --press: 0.98;
+}
+.pl-status__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #e08a1e;
+  flex: none;
+}
+
+/* 액션 */
+.pl-actions {
+  display: flex;
+  gap: 9px;
+  margin-top: 12px;
+}
+.pl-route-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 15px;
+  background: #e6f2fb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  line-height: 1;
+  flex: none;
+  transition: transform 0.14s ease;
+}
+.pl-route-btn:active {
+  transform: scale(0.94);
+}
+.pl-memo-btn {
+  flex: 1;
+  height: 50px;
+  border-radius: 15px;
+  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  box-shadow: 0 10px 22px -8px rgba(240, 81, 143, 0.6);
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  transition: transform 0.14s ease;
+}
+.pl-memo-btn:active {
+  transform: scale(0.97);
+}
+.pl-listen-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 15px;
+  background: #f1ecff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.14s ease;
+}
+.pl-listen-btn:active {
+  transform: scale(0.94);
+}
+.pl-listen-btn img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+.pl-call-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 15px;
+  background: #e7f8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.14s ease;
+}
+.pl-call-btn:active {
+  transform: scale(0.94);
+}
+
+/* ── 티어 잠금 오버레이(무료) ───────────────────────────────────────────── */
+.pl-lock {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 30px calc(300px + env(safe-area-inset-bottom, 0px));
+  text-align: center;
+  background: rgba(247, 244, 243, 0.66);
+  backdrop-filter: blur(16px);
+}
+.pl-lock__ring {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  background: var(--cream-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 28px -12px rgba(224, 138, 30, 0.5);
+}
+.pl-lock__title {
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  color: var(--fg-primary);
+}
+.pl-lock__sub {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.55;
+  color: var(--fg-tertiary);
+}
+.pl-lock__cta {
+  margin-top: 4px;
+  height: 52px;
+  padding: 0 26px;
+  border-radius: 16px;
+  background: linear-gradient(120deg, #ffb443, #f0518f);
+  box-shadow: 0 14px 30px -12px rgba(240, 81, 143, 0.6);
+  font-size: 15.5px;
+  font-weight: 800;
+  color: #fff;
+  --press: 0.97;
+}
+
+/* ── 지연 배지(리뷰 티어) ───────────────────────────────────────────────── */
+.pl-sheet__zone--locked {
+  color: var(--mint-text);
+}
+.pl-delay-badge {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--cream-soft);
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--gold-text);
+}
+
+/* ── 프리미엄 유도 행(리뷰 티어) ────────────────────────────────────────── */
+.pl-upsell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  margin: 12px 0 2px;
+  padding: 11px 13px;
+  border-radius: 13px;
+  background: linear-gradient(120deg, #fff3d6, #ffe4ef);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--gold-text);
+  --press: 0.98;
+}
+
+/* ── 보기 토글(실시간 ↔ 오늘 경로) ─────────────────────────────────────── */
+.pl-viewtog {
+  display: inline-flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 6px 16px rgba(32, 26, 29, 0.1);
+}
+.pl-viewtog__btn {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #6d6469;
+  --press: 0.96;
+}
+.pl-viewtog__btn--on {
+  background: #087653;
+  color: #fff;
+  box-shadow: 0 4px 12px -2px rgba(8, 118, 83, 0.5);
+}
+
+/* ── 오늘경로 상태 메시지(로딩·실패·빈) ────────────────────────────────── */
+.pl-histmsg {
+  position: absolute;
+  top: 46%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 22;
+  padding: 12px 20px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 26px rgba(32, 26, 29, 0.14);
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #6d6469;
+  white-space: nowrap;
+}
+
+/* ── 오늘 경로 — 스테이포인트(머문 곳) 목록 ─────────────────────────────── */
+.pl-stays {
+  padding-bottom: 8px;
+  max-height: 42vh;
+  display: flex;
+  flex-direction: column;
+}
+.pl-stays__head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 4px 10px;
+}
+.pl-stays__title {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--fg-primary);
+}
+.pl-stays__count {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #8B6CE0;
+}
+.pl-stays__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  padding: 2px;
+}
+.pl-stay {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  border-radius: 16px;
+  background: #F7F4FC;
+  text-align: left;
+  --press: 0.98;
+  transition: background 0.15s ease;
+}
+.pl-stay--on {
+  background: #EDE6FB;
+  outline: 2px solid #A78BFA;
+}
+.pl-stay__num {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #A78BFA;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pl-stay--on .pl-stay__num {
+  background: #7C3AED;
+}
+.pl-stay__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pl-stay__place {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--fg-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pl-stay__time {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+.pl-stay__dwell {
+  flex: none;
+  font-size: 13px;
+  font-weight: 800;
+  color: #7C3AED;
+  font-variant-numeric: tabular-nums;
+}

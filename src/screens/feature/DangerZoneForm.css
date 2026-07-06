@@ -1,0 +1,206 @@
+/* 위험구역 추가·편집(P-17) — 화면 전용 스타일. 레드 신호색 강조. */
+
+.dzf-screen {
+  min-height: 100%;
+  background: linear-gradient(180deg, #fdf1f2, #f7f4f3);
+  animation: hy-fadein 0.35s ease forwards;
+}
+
+/* ── 헤더(sticky · 뒤로가기) ─────────────────────────────────────────────── */
+.dzf-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(253, 241, 242, 0.9) 60%, rgba(253, 241, 242, 0));
+  backdrop-filter: blur(8px);
+}
+.dzf-back {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+.dzf-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--fg-primary);
+}
+
+/* ── 본문 ───────────────────────────────────────────────────────────────── */
+.dzf-body {
+  padding: 6px 20px calc(40px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ── 지도 미리보기 ──────────────────────────────────────────────────────── */
+.dzf-map {
+  position: relative;
+  height: 160px;
+  border-radius: 22px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #eaf6ee 0%, #e6f2fb 60%, #fce6f1 100%);
+  box-shadow: 0 14px 34px -18px rgba(32, 26, 29, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dzf-map__canvas {
+  position: absolute;
+  inset: 0;
+}
+.dzf-map__hint {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--fg-tertiary);
+  font-size: 11.5px;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.12);
+  pointer-events: none;
+}
+
+/* ── 필드 라벨 · 입력 ───────────────────────────────────────────────────── */
+.dzf-label {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--fg-tertiary);
+  margin-bottom: 8px;
+  padding: 0 2px;
+}
+.dzf-input {
+  width: 100%;
+  height: 54px;
+  border: 1.5px solid var(--line-soft);
+  background: #fff;
+  border-radius: 15px;
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--fg-primary);
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.dzf-input::placeholder {
+  color: var(--fg-faint);
+  font-weight: 600;
+}
+.dzf-input:focus {
+  border-color: #e5484d;
+  box-shadow: 0 0 0 3px rgba(229, 72, 77, 0.14);
+}
+
+/* ── 안전 반경 슬라이더 ─────────────────────────────────────────────────── */
+.dzf-radius-head {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 0 2px;
+}
+.dzf-radius-label {
+  flex: 1;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--fg-tertiary);
+}
+.dzf-radius-value {
+  font-size: 14px;
+  font-weight: 800;
+  color: #c0334c;
+  font-variant-numeric: tabular-nums;
+}
+.dzf-range {
+  width: 100%;
+  accent-color: #e5484d;
+}
+
+/* ── 진입/이탈 알림 토글 ────────────────────────────────────────────────── */
+.dzf-toggles {
+  background: #fff;
+  border-radius: 18px;
+  padding: 6px 16px 14px;
+  box-shadow: 0 8px 22px rgba(32, 26, 29, 0.045);
+}
+.dzf-toggle-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.dzf-toggle-row:last-of-type {
+  border-bottom: none;
+}
+.dzf-toggle-label {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.dzf-toggle {
+  width: 46px;
+  height: 28px;
+  border-radius: 999px;
+  background: #e2dce0;
+  position: relative;
+  flex: none;
+  transition: background 0.18s ease;
+}
+.dzf-toggle[data-on="true"] {
+  background: #31c48d;
+}
+.dzf-toggle__knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(32, 26, 29, 0.22);
+  transition: transform 0.18s ease;
+}
+.dzf-toggle[data-on="true"] .dzf-toggle__knob {
+  transform: translateX(18px);
+}
+.dzf-toggle-note {
+  margin-top: 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--fg-tertiary);
+}
+
+/* ── 저장 버튼(레드 그라디언트) ─────────────────────────────────────────── */
+.dzf-save {
+  width: 100%;
+  height: 56px;
+  border-radius: 18px;
+  background: linear-gradient(120deg, #f0656a, #d63a3f);
+  box-shadow: 0 16px 32px -12px rgba(214, 58, 63, 0.55);
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  --press: 0.98;
+}
+.dzf-save:disabled {
+  opacity: 0.6;
+}

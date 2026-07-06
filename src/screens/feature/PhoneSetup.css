@@ -1,0 +1,151 @@
+/* 전화번호 설정 — 화면 전용 스타일 (원본 dc.html 1519–1540행 값 1:1) */
+
+.psu-screen {
+  min-height: 848px;
+  background: linear-gradient(180deg, #fdf4f1, #f7f4f3);
+  animation: hy-fadein 0.35s ease forwards;
+}
+
+/* ── 상세 헤더(sticky) ──────────────────────────────────────────────────── */
+.psu-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: 56px 18px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(253, 244, 241, 0.9) 60%, rgba(253, 244, 241, 0));
+  backdrop-filter: blur(8px);
+}
+.psu-back {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+.psu-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+
+/* ── 스크롤 콘텐츠 ──────────────────────────────────────────────────────── */
+.psu-content {
+  padding: 6px 20px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ── 인트로(아이콘 + 문구) ──────────────────────────────────────────────── */
+.psu-intro {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 4px 2px;
+}
+.psu-intro__img {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  flex: none;
+}
+.psu-intro__title {
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #201a1d;
+}
+.psu-intro__sub {
+  margin-top: 3px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #8b7e84;
+}
+
+/* ── 입력 카드 ──────────────────────────────────────────────────────────── */
+.psu-card {
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 14px 34px -18px rgba(32, 26, 29, 0.22), 0 2px 6px rgba(32, 26, 29, 0.04);
+  border: 1px solid rgba(32, 26, 29, 0.05);
+  padding: 8px;
+}
+.psu-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+}
+.psu-row__avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.psu-row__avatar img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+.psu-row__role {
+  flex: none;
+  width: 42px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #201a1d;
+}
+.psu-row__input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  border: none;
+  background: #fbf3f6;
+  border-radius: 12px;
+  padding: 0 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #201a1d;
+  font-family: inherit;
+  outline: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 안내 문구 ──────────────────────────────────────────────────────────── */
+.psu-note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 0 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #8b7e84;
+  line-height: 1.5;
+}
+.psu-note__lock {
+  font-size: 15px;
+  flex: none;
+}
+
+/* ── 저장 버튼 ──────────────────────────────────────────────────────────── */
+.psu-save {
+  width: 100%;
+  height: 56px;
+  border-radius: 18px;
+  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  box-shadow: 0 16px 32px -12px rgba(240, 81, 143, 0.6);
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  --press: 0.98;
+}

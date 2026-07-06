@@ -1,0 +1,184 @@
+/* 데이터 · 동기화(P-32) — 화면 전용 스타일. prefix: ds- */
+
+.ds-root {
+  min-height: 100%;
+}
+
+.ds-head {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(251, 247, 244, 0.94);
+  backdrop-filter: blur(10px);
+}
+.ds-back {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+.ds-head-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--fg-primary);
+}
+
+.ds-content {
+  padding: 4px 20px calc(120px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── 동기화 상태 카드 ─────────────────────────────────────────────────────── */
+.ds-sync {
+  background: linear-gradient(135deg, #e7f8f0, #e6f2fb);
+  border-radius: 22px;
+  padding: 18px;
+  box-shadow: 0 12px 28px -14px rgba(46, 134, 193, 0.28);
+}
+.ds-sync__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ds-sync__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--mint-500, #31c48d);
+  box-shadow: 0 0 0 4px rgba(49, 196, 141, 0.18);
+}
+.ds-sync__state {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0e6f64;
+}
+.ds-sync__rows {
+  margin-top: 14px;
+  background: rgba(255, 255, 255, 0.66);
+  border-radius: 14px;
+  padding: 4px 14px;
+}
+.ds-sync__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+}
+.ds-sync__row + .ds-sync__row {
+  border-top: 1px solid rgba(32, 26, 29, 0.06);
+}
+.ds-sync__k {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fg-secondary);
+}
+.ds-sync__v {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--fg-primary);
+  font-variant-numeric: tabular-nums;
+}
+.ds-sync__btn {
+  margin-top: 14px;
+  width: 100%;
+  height: 46px;
+  border-radius: 14px;
+  background: #fff;
+  color: #0e6f64;
+  font-size: 14px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 8px 18px -10px rgba(14, 111, 100, 0.4);
+  --press: 0.97;
+}
+
+/* ── 기능 카드(내보내기 / 캐시) ───────────────────────────────────────────── */
+.ds-card {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 10px 26px rgba(32, 26, 29, 0.05);
+}
+.ds-card__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.ds-card__icon--blue {
+  background: #e6f2fb;
+  color: #2e6da4;
+}
+.ds-card__icon--rose {
+  background: var(--danger-soft);
+  color: var(--danger-text);
+}
+.ds-card__main {
+  flex: 1;
+  min-width: 0;
+}
+.ds-card__title {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.ds-card__desc {
+  margin-top: 3px;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--fg-muted);
+}
+.ds-card__cta {
+  flex: none;
+  align-self: stretch;
+  min-width: 68px;
+  padding: 0 14px;
+  border-radius: 13px;
+  background: var(--hy-accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  --press: 0.95;
+}
+.ds-card__cta--ghost {
+  background: #f3edf0;
+  color: var(--fg-secondary);
+}
+.ds-card__cta:disabled {
+  background: #e5e0e3;
+  color: #b3aaae;
+}
+.ds-note {
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #a99fa4;
+  padding: 0 4px;
+  margin-top: -4px;
+}

@@ -1,0 +1,117 @@
+/* QR 카메라 스캐너 오버레이 — 카메라 시인성을 위해 다크 톤 고정(의도적) */
+
+.qrs-root {
+  position: fixed;
+  inset: 0;
+  z-index: 650;
+  background: rgba(15, 23, 42, 0.94);
+  display: flex;
+  flex-direction: column;
+}
+.qrs-top {
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 20px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.qrs-close {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 9px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  --press: 0.95;
+}
+.qrs-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+}
+.qrs-body {
+  flex: 1;
+  padding: 16px 20px calc(env(safe-area-inset-bottom, 0px) + 28px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+}
+.qrs-cam {
+  width: 100%;
+  max-width: 360px;
+  aspect-ratio: 3 / 4;
+  border-radius: 28px;
+  overflow: hidden;
+  background: #0f172a;
+  position: relative;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.32);
+}
+.qrs-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.qrs-frame {
+  position: absolute;
+  inset: 18% 12%;
+  border-radius: 24px;
+  border: 3px solid rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 0 999px rgba(15, 23, 42, 0.35);
+}
+.qrs-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.72);
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 700;
+}
+.qrs-guide {
+  max-width: 340px;
+  text-align: center;
+  color: #fff;
+}
+.qrs-guide-title {
+  font-size: 16px;
+  font-weight: 800;
+}
+.qrs-guide-sub {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 600;
+}
+.qrs-error {
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffb4ab;
+}
+.qrs-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.qrs-retry,
+.qrs-settings {
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  --press: 0.96;
+}
+.qrs-retry {
+  background: rgba(255, 255, 255, 0.18);
+}
+.qrs-settings {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+}

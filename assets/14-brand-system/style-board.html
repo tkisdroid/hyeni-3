@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hyeni Calendar Design System</title>
+  <style>
+    @font-face {
+      font-family: "Pretendard Variable";
+      src: url("../09-fonts/PretendardVariable.woff2") format("woff2-variations");
+      font-weight: 45 920;
+      font-display: swap;
+    }
+
+    :root {
+      --rose: #F779A8;
+      --rose-deep: #D94F7F;
+      --rose-soft: #FFE2EC;
+      --mint: #31C48D;
+      --mint-deep: #15936B;
+      --mint-soft: #DDF7EA;
+      --lavender: #A78BFA;
+      --lavender-deep: #7C5CE1;
+      --lavender-soft: #EFE8FF;
+      --cream: #FFF7E8;
+      --bg: #FBFAF6;
+      --surface: #FFFFFF;
+      --ink: #171719;
+      --muted: rgba(46, 47, 51, 0.78);
+      --line: rgba(112, 115, 124, 0.16);
+      --danger: #E03030;
+      --shadow: 0 18px 44px rgba(31, 24, 28, 0.10);
+      --soft-shadow: 0 8px 24px rgba(31, 24, 28, 0.06);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Pretendard Variable", "Pretendard", sans-serif;
+      background:
+        radial-gradient(circle at 8% 2%, rgba(247, 121, 168, 0.20), transparent 28rem),
+        radial-gradient(circle at 90% 18%, rgba(49, 196, 141, 0.16), transparent 24rem),
+        var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+      letter-spacing: 0;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 48px 24px 72px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) 320px;
+      gap: 32px;
+      align-items: center;
+      min-height: 360px;
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--rose-deep);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(42px, 7vw, 86px);
+      line-height: 0.95;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      max-width: 620px;
+      margin: 22px 0 0;
+      color: var(--muted);
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .hero-art {
+      position: relative;
+      min-height: 300px;
+      display: grid;
+      place-items: center;
+    }
+
+    .hero-art::before {
+      content: "";
+      position: absolute;
+      width: 270px;
+      height: 270px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--rose-soft), var(--mint-soft));
+      box-shadow: var(--shadow);
+    }
+
+    .hero-art img {
+      position: relative;
+      width: 230px;
+      height: 230px;
+      object-fit: contain;
+      filter: drop-shadow(0 16px 22px rgba(31, 24, 28, 0.16));
+    }
+
+    section {
+      margin-top: 52px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.15;
+    }
+
+    .note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .colors {
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+
+    .swatch {
+      min-height: 132px;
+      border-radius: 24px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: end;
+      box-shadow: var(--soft-shadow);
+      border: 1px solid rgba(255, 255, 255, 0.65);
+      font-weight: 800;
+    }
+
+    .swatch span {
+      display: block;
+      margin-top: 3px;
+      color: rgba(23, 23, 25, 0.68);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.82);
+      box-shadow: var(--soft-shadow);
+      padding: 22px;
+    }
+
+    .type-row {
+      display: grid;
+      grid-template-columns: 180px minmax(0, 1fr);
+      gap: 18px;
+      align-items: baseline;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .type-row:last-child { border-bottom: 0; }
+    .type-name { color: var(--muted); font-size: 13px; font-weight: 800; }
+
+    .components {
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .btn {
+      min-height: 52px;
+      border: 0;
+      border-radius: 999px;
+      padding: 0 22px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font: inherit;
+      font-weight: 800;
+      cursor: default;
+    }
+
+    .btn-primary { background: linear-gradient(135deg, var(--rose), var(--rose-deep)); color: #fff; box-shadow: 0 12px 30px rgba(247, 121, 168, 0.22); }
+    .btn-mint { background: linear-gradient(135deg, var(--mint), var(--mint-deep)); color: #fff; box-shadow: 0 12px 30px rgba(49, 196, 141, 0.20); }
+    .btn-secondary { border: 1px solid var(--line); background: #fff; color: var(--ink); }
+    .btn img { width: 24px; height: 24px; object-fit: contain; }
+
+    .tile {
+      display: grid;
+      grid-template-columns: 56px minmax(0, 1fr);
+      gap: 14px;
+      align-items: center;
+      min-height: 84px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: #fff;
+      padding: 14px;
+    }
+
+    .tile img {
+      width: 52px;
+      height: 52px;
+      object-fit: contain;
+    }
+
+    .tile strong,
+    .sheet-title,
+    .toast strong,
+    .plan strong {
+      display: block;
+      font-size: 16px;
+      line-height: 1.25;
+    }
+
+    .tile span,
+    .toast span,
+    .plan span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .sheet {
+      border-radius: 28px 28px 0 0;
+      background: linear-gradient(180deg, #fff, #FFF8FB);
+      border: 1px solid var(--line);
+      padding: 12px 20px 22px;
+      min-height: 220px;
+    }
+
+    .grabber {
+      width: 42px;
+      height: 5px;
+      margin: 0 auto 14px;
+      border-radius: 999px;
+      background: rgba(112, 115, 124, 0.32);
+    }
+
+    .toast {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-radius: 20px;
+      background: #fff;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      padding: 14px 16px;
+    }
+
+    .toast img { width: 42px; height: 42px; object-fit: contain; }
+
+    .assets {
+      grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+    }
+
+    .asset-card {
+      min-height: 142px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: #fff;
+      padding: 14px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 750;
+      color: var(--muted);
+    }
+
+    .asset-card img {
+      width: 82px;
+      height: 82px;
+      object-fit: contain;
+      margin-bottom: 10px;
+    }
+
+    .sticker {
+      border: 7px solid #fff;
+      border-radius: 28px;
+      background: #fff;
+      box-shadow: 0 10px 20px rgba(31, 24, 28, 0.13);
+      transform: rotate(-2deg);
+    }
+
+    .plan {
+      min-height: 108px;
+      border-radius: 26px;
+      border: 1px solid rgba(247, 121, 168, 0.28);
+      background: linear-gradient(135deg, #fff, var(--rose-soft));
+      padding: 18px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .price {
+      font-size: 32px;
+      font-weight: 900;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      color: var(--rose-deep);
+      white-space: nowrap;
+    }
+
+    @media (max-width: 760px) {
+      .page { padding: 32px 18px 56px; }
+      .hero { grid-template-columns: 1fr; min-height: auto; }
+      .hero-art { min-height: 240px; }
+      .hero-art::before { width: 220px; height: 220px; }
+      .hero-art img { width: 190px; height: 190px; }
+      .section-title { display: block; }
+      .note { margin-top: 8px; }
+      .type-row { grid-template-columns: 1fr; gap: 6px; }
+      .plan { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Hyeni Calendar Design System</p>
+        <h1>가족 안전을 부드럽고 또렷하게.</h1>
+        <p class="lead">부모에게는 신뢰와 제어감을, 아이에게는 큰 캐릭터와 짧은 안내를 주는 소프트 3D 모바일 디자인 시스템입니다.</p>
+      </div>
+      <div class="hero-art">
+        <img src="../01-runtime-3d/mascot/wave.webp" alt="손 흔드는 혜니 캐릭터">
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <h2>Color</h2>
+        <p class="note">테마 색상은 parent/child 공통으로 흐릅니다.</p>
+      </div>
+      <div class="grid colors">
+        <div class="swatch" style="background: var(--rose-soft);">Rose<span>#F779A8</span></div>
+        <div class="swatch" style="background: var(--mint-soft);">Mint<span>#31C48D</span></div>
+        <div class="swatch" style="background: var(--lavender-soft);">Lavender<span>#A78BFA</span></div>
+        <div class="swatch" style="background: var(--cream);">Cream<span>#FFF7E8</span></div>
+        <div class="swatch" style="background: #FFE3E3;">Danger<span>#E03030</span></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <h2>Typography</h2>
+        <p class="note">Pretendard Variable 단일 체계.</p>
+      </div>
+      <div class="panel">
+        <div class="type-row"><div class="type-name">Screen title</div><div style="font-size: 28px; font-weight: 800;">오늘 아이 상태</div></div>
+        <div class="type-row"><div class="type-name">Section title</div><div style="font-size: 20px; font-weight: 750;">바로가기</div></div>
+        <div class="type-row"><div class="type-name">Body</div><div style="font-size: 15px; font-weight: 600;">아이에게 알림이 가요</div></div>
+        <div class="type-row"><div class="type-name">Caption</div><div style="font-size: 13px; font-weight: 650; color: var(--muted);">1분동안 아이의 주변소리를 들을 수 있어요</div></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <h2>Components</h2>
+        <p class="note">44px 이상 터치 영역과 일정한 여백을 기준으로 합니다.</p>
+      </div>
+      <div class="grid components">
+        <div class="panel">
+          <h3>Buttons</h3>
+          <div class="button-row">
+            <button class="btn btn-primary"><img src="../01-runtime-3d/ui/chat-heart.webp" alt="">아이와 대화하기</button>
+            <button class="btn btn-mint"><img src="../01-runtime-3d/ui/pin.webp" alt="">위치 확인</button>
+            <button class="btn btn-secondary">나중에</button>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Menu Tile</h3>
+          <div class="tile">
+            <img src="../01-runtime-3d/ui/menu-subscription.webp" alt="">
+            <div><strong>프리미엄 구독</strong><span>출시기념 할인가로 이용해요</span></div>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Toast</h3>
+          <div class="toast">
+            <img src="../01-runtime-3d/ui/warning.webp" alt="">
+            <div><strong>아직 아이 기기와 연결되지 않았어요</strong><span>아이모드 로그인과 페어링을 확인해주세요</span></div>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Bottom Sheet</h3>
+          <div class="sheet">
+            <div class="grabber"></div>
+            <div class="tile">
+              <img src="../01-runtime-3d/ui/mic-lavender.webp" alt="">
+              <div><strong>주변소리 듣기</strong><span>아이에게 알림이 가요</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <h2>Characters And Stickers</h2>
+        <p class="note">아이 화면은 큰 캐릭터와 촉감 있는 스티커가 중심입니다.</p>
+      </div>
+      <div class="grid assets">
+        <div class="asset-card"><img src="../01-runtime-3d/mascot/static.webp" alt="">Mascot</div>
+        <div class="asset-card"><img src="../01-runtime-3d/animal/panda.webp" alt="">AI Friend</div>
+        <div class="asset-card"><img class="sticker" src="../01-runtime-3d/sticker/praise-study.webp" alt="">Praise Sticker</div>
+        <div class="asset-card"><img src="../01-runtime-3d/ui/menu-friend-playdate.webp" alt="">Friend Play</div>
+        <div class="asset-card"><img src="../01-runtime-3d/ui/sos-shield.webp" alt="">SOS</div>
+        <div class="asset-card"><img src="../01-runtime-3d/ui/place-home.webp" alt="">Place</div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <h2>Subscription</h2>
+        <p class="note">가격이 절대 잘리지 않도록 큰 버튼과 tabular number를 씁니다.</p>
+      </div>
+      <div class="grid components">
+        <div class="plan">
+          <div><strong>프리미엄 월구독</strong><span>출시기념 할인가 · 곧 월 4,900원으로 인상 예정</span></div>
+          <div class="price">2,900원</div>
+        </div>
+        <div class="plan">
+          <div><strong>프리미엄 연구독</strong><span>가장 큰 할인으로 계속 보호해요</span></div>
+          <div class="price">29,000원</div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

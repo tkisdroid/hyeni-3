@@ -1,0 +1,235 @@
+/* 위험 알림(P-23) — 화면 전용 스타일. 긴급=레드(신호색 고정). */
+
+.da-screen {
+  min-height: 100%;
+  background: linear-gradient(180deg, #fdf1f2, #f7f4f3);
+  animation: hy-fadein 0.35s ease forwards;
+}
+
+/* ── 헤더(sticky · 뒤로가기) ─────────────────────────────────────────────── */
+.da-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(253, 241, 242, 0.92) 60%, rgba(253, 241, 242, 0));
+  backdrop-filter: blur(8px);
+}
+.da-back {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+.da-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--fg-primary);
+}
+
+/* ── 본문 ───────────────────────────────────────────────────────────────── */
+.da-body {
+  padding: 6px 20px calc(40px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ── 상태(로딩·에러) ────────────────────────────────────────────────────── */
+.da-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 56px 18px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--fg-muted);
+  text-align: center;
+}
+.da-retry {
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: var(--hy-accent-soft);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--hy-accent-text);
+  --press: 0.94;
+}
+
+/* ── 안전(위험 없음) 상태 ───────────────────────────────────────────────── */
+.da-safe {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 60px 18px;
+  text-align: center;
+}
+.da-safe__img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  margin-bottom: 6px;
+}
+.da-safe__title {
+  font-size: 15.5px;
+  font-weight: 800;
+  color: #1f7a56;
+}
+.da-safe__sub {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--fg-muted);
+}
+
+/* ── 최신 위험 히어로 ───────────────────────────────────────────────────── */
+.da-hero {
+  border-radius: 22px;
+  padding: 18px;
+  background: linear-gradient(180deg, #fff, #fff5f6);
+  border: 1.5px solid rgba(240, 71, 112, 0.32);
+  box-shadow: 0 14px 34px -14px rgba(229, 72, 77, 0.4);
+}
+.da-hero__top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.da-hero__icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: var(--danger-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.da-hero__img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+}
+.da-hero__time {
+  flex: 1;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--danger-text);
+}
+.da-hero__title {
+  margin-top: 14px;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  color: var(--danger-text);
+}
+.da-hero__msg {
+  margin-top: 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.55;
+  color: var(--fg-body);
+}
+.da-hero__cta {
+  margin-top: 16px;
+  width: 100%;
+  height: 52px;
+  border-radius: 16px;
+  background: linear-gradient(120deg, var(--danger-strong), var(--danger-500));
+  box-shadow: 0 14px 30px -12px rgba(229, 72, 77, 0.55);
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  --press: 0.98;
+}
+
+/* ── 과거 이력 ──────────────────────────────────────────────────────────── */
+.da-group__label {
+  font-size: 13px;
+  font-weight: 800;
+  color: #8b7e84;
+  margin-bottom: 11px;
+}
+.da-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.da-item {
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  border-radius: 18px;
+  padding: 13px;
+  box-shadow: 0 8px 22px rgba(32, 26, 29, 0.045);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  --press: 0.985;
+}
+.da-item__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: var(--danger-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.da-item__img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+.da-item__main {
+  flex: 1;
+  min-width: 0;
+}
+.da-item__title {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.da-item__detail {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-faint);
+}
+.da-item__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  flex: none;
+}
+.da-item__time {
+  font-size: 11px;
+  font-weight: 600;
+  color: #b7adb2;
+}
+.da-item__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger-strong);
+}

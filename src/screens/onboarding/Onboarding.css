@@ -1,0 +1,712 @@
+/* 온보딩 — 화면 전용 스타일 (원본 dc.html 491–664행 값 1:1) */
+
+/* 부모(.hy-screen)는 flex:1 로 height 가 명시되지 않아 min-height:100% 가 해석되지 않는다
+   (콘텐츠 높이로 붕괴 → 배경이 화면 절반에서 끊기는 버그). dvh 로 뷰포트에 직접 고정. */
+.ob-root {
+  min-height: 100dvh;
+}
+
+/* 스텝 공통 컨테이너 */
+.ob-step {
+  min-height: 100dvh;
+  box-sizing: border-box;
+}
+
+/* 공통 타이틀 / 서브텍스트 */
+.ob-h1 {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--fg-primary);
+}
+.ob-sub {
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #8b7e84;
+}
+
+/* 뒤로가기 버튼 */
+.ob-back {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  --press: 0.9;
+}
+.ob-back--dark {
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+}
+
+/* 공통 입력 */
+.ob-input {
+  width: 100%;
+  height: 52px;
+  box-sizing: border-box;
+  border-radius: 15px;
+  border: 1.5px solid rgba(32, 26, 29, 0.1);
+  background: #fff;
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--fg-primary);
+  outline: none;
+}
+.ob-input::placeholder {
+  color: #b7adb2;
+}
+.ob-input--tall {
+  height: 54px;
+  font-weight: 700;
+}
+.ob-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #8b7e84;
+  margin-bottom: 7px;
+}
+.ob-tlabel {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #6d6469;
+  margin-bottom: 7px;
+  padding-left: 4px;
+}
+
+/* 공통 CTA */
+.ob-cta {
+  width: 100%;
+  height: 56px;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  transition: transform 0.14s ease;
+  --press: 0.98;
+}
+.ob-cta--accent {
+  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  box-shadow: 0 14px 28px -10px rgba(240, 81, 143, 0.6);
+}
+.ob-cta--green {
+  background: linear-gradient(120deg, #46d19b, #23a876);
+  box-shadow: 0 16px 32px -12px rgba(35, 168, 118, 0.55);
+}
+.ob-cta--lav {
+  background: linear-gradient(120deg, #b79dfb, #8b6bec);
+  box-shadow: 0 14px 28px -10px rgba(124, 92, 225, 0.6);
+}
+
+/* ── STEP: ROLE ────────────────────────────────────────────────────────── */
+.ob-role {
+  padding: 76px 26px calc(40px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(120% 60% at 50% 0%, #fce3ee 0%, rgba(252, 227, 238, 0) 60%),
+    linear-gradient(180deg, #fdf4f1, #f6f3fb);
+  animation: hy-rise 0.46s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+}
+.ob-role-head {
+  text-align: center;
+}
+.ob-role-badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #b0477a;
+  padding: 5px 13px;
+  border-radius: 999px;
+  background: rgba(247, 121, 168, 0.12);
+}
+.ob-role-logo {
+  margin: 20px auto 0;
+  width: 92px;
+  height: 92px;
+  border-radius: 26px;
+  overflow: hidden;
+  background: linear-gradient(160deg, #ffe3ef, #ffd0e4);
+  box-shadow: 0 18px 36px -10px rgba(247, 121, 168, 0.5);
+  animation: hy-bob 3.4s ease-in-out infinite;
+}
+.ob-role-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 8px 8px 0;
+}
+.ob-role-title {
+  margin-top: 18px;
+  font-size: 27px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: var(--fg-primary);
+}
+.ob-role-sub {
+  margin-top: 6px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #8b7e84;
+}
+.ob-role-list {
+  margin-top: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ob-role-card {
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 20px;
+  border-radius: 24px;
+  transition: transform 0.14s ease;
+  --press: 0.98;
+}
+.ob-role-card--parent {
+  background: #fff;
+  box-shadow: 0 14px 34px -12px rgba(32, 26, 29, 0.14);
+}
+.ob-role-card--child {
+  background: linear-gradient(120deg, #fde7f1, #f1ecff);
+  box-shadow: 0 14px 34px -12px rgba(167, 139, 250, 0.3);
+}
+.ob-role-card--teacher {
+  background: linear-gradient(120deg, #e7f8f0, #e6f2fb);
+  box-shadow: 0 14px 34px -12px rgba(49, 196, 141, 0.28);
+}
+.ob-role-ic {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.ob-role-main {
+  flex: 1;
+  min-width: 0;
+}
+.ob-role-name {
+  display: block;
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.ob-role-desc {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #a99fa4;
+}
+.ob-role-terms {
+  margin-top: auto;
+  padding-top: 28px;
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #b7adb2;
+  line-height: 1.5;
+}
+.ob-role-terms span {
+  color: #8b7e84;
+  text-decoration: underline;
+}
+
+/* ── STEP: TEACHER SETUP ───────────────────────────────────────────────── */
+.ob-teacher {
+  padding: 64px 26px calc(40px + env(safe-area-inset-bottom, 0px));
+  background: radial-gradient(120% 50% at 50% 0%, #e3f6ec 0%, rgba(227, 246, 236, 0) 60%),
+    linear-gradient(180deg, #fdf4f1, #f4faf6);
+  animation: hy-slidein 0.4s ease forwards;
+}
+.ob-teacher-head {
+  margin-top: 22px;
+  text-align: center;
+}
+.ob-teacher-logo {
+  width: 92px;
+  height: 92px;
+  margin: 0 auto;
+  border-radius: 26px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 16px 34px -12px rgba(49, 196, 141, 0.4);
+  animation: hy-bob 3.4s ease-in-out infinite;
+}
+.ob-teacher-logo img {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+}
+.ob-teacher .ob-h1 {
+  margin-top: 16px;
+}
+.ob-teacher-sub {
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #5fa98a;
+  line-height: 1.5;
+}
+.ob-teacher-form {
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ob-teacher-note {
+  margin-top: 18px;
+  background: rgba(49, 196, 141, 0.08);
+  border-radius: 18px;
+  padding: 15px;
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+}
+.ob-teacher-note__ic {
+  font-size: 18px;
+}
+.ob-teacher-note__tx {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2f6b54;
+  line-height: 1.5;
+}
+.ob-teacher-note__tx b {
+  font-weight: 800;
+}
+.ob-teacher .ob-cta {
+  margin-top: 24px;
+}
+
+/* ── STEP: LOGIN ───────────────────────────────────────────────────────── */
+.ob-login {
+  padding: 64px 26px calc(40px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(180deg, #fdf4f1, #f7f4f3);
+  animation: hy-slidein 0.4s ease forwards;
+}
+.ob-login-head {
+  margin-top: 22px;
+  text-align: center;
+}
+.ob-login-mascot {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  animation: hy-bob 3s ease-in-out infinite;
+}
+.ob-login .ob-h1 {
+  margin-top: 6px;
+}
+.ob-login-social {
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.ob-social {
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  font-size: 16px;
+  font-weight: 800;
+  transition: transform 0.14s ease;
+  --press: 0.98;
+}
+.ob-social--kakao {
+  background: #fee500;
+  color: #341b1b;
+  box-shadow: 0 10px 24px -10px rgba(254, 229, 0, 0.8);
+}
+.ob-social--google {
+  background: #fff;
+  color: #3c3438;
+  border: 1.5px solid rgba(32, 26, 29, 0.1);
+  box-shadow: 0 6px 16px rgba(32, 26, 29, 0.05);
+  gap: 10px;
+}
+.ob-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0;
+}
+.ob-divider span {
+  flex: 1;
+  height: 1px;
+  background: rgba(32, 26, 29, 0.1);
+}
+.ob-divider em {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 700;
+  color: #b7adb2;
+}
+.ob-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ob-loginbtn {
+  height: 54px;
+  border-radius: 15px;
+  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  box-shadow: 0 14px 28px -10px rgba(240, 81, 143, 0.6);
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  margin-top: 4px;
+  transition: transform 0.14s ease;
+  --press: 0.98;
+}
+.ob-login-foot {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #8b7e84;
+}
+.ob-link {
+  font-weight: 800;
+  color: #b0477a;
+  background: transparent;
+}
+
+/* ── STEP: SIGNUP ──────────────────────────────────────────────────────── */
+.ob-signup {
+  padding: 64px 26px calc(40px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(180deg, #fdf4f1, #f7f4f3);
+  animation: hy-slidein 0.4s ease forwards;
+}
+.ob-signup-head {
+  margin-top: 22px;
+}
+.ob-signup-title {
+  font-size: 25px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--fg-primary);
+}
+.ob-signup-form {
+  margin-top: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ob-datebtn {
+  width: 100%;
+  height: 52px;
+  box-sizing: border-box;
+  border-radius: 15px;
+  border: 1.5px solid rgba(32, 26, 29, 0.1);
+  background: #fff;
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #b7adb2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ob-signup .ob-cta {
+  margin-top: 24px;
+}
+
+/* ── STEP: CONNECT ─────────────────────────────────────────────────────── */
+.ob-connect {
+  padding: 64px 26px calc(40px + env(safe-area-inset-bottom, 0px));
+  background: radial-gradient(120% 50% at 50% 0%, #fce3ee 0%, rgba(252, 227, 238, 0) 55%),
+    linear-gradient(180deg, #fdf4f1, #f6f3fb);
+  animation: hy-slidein 0.4s ease forwards;
+}
+.ob-connect-head {
+  margin-top: 18px;
+  text-align: center;
+}
+.ob-connect-mascot {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  animation: hy-float 5s ease-in-out infinite;
+}
+.ob-connect .ob-h1 {
+  margin-top: 6px;
+}
+.ob-connect-list {
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ob-connect-card {
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 12px 30px -12px rgba(32, 26, 29, 0.14);
+  transition: transform 0.14s ease;
+  --press: 0.98;
+}
+.ob-connect-card--child {
+  background: rgba(167, 139, 250, 0.1);
+  border: 1.5px dashed rgba(167, 139, 250, 0.45);
+  box-shadow: none;
+}
+.ob-connect-ic {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  flex: none;
+}
+.ob-connect-card--child .ob-connect-ic {
+  width: 44px;
+  height: 44px;
+}
+.ob-connect-main {
+  flex: 1;
+  min-width: 0;
+}
+.ob-connect-name {
+  display: block;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.ob-connect-desc {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #a99fa4;
+}
+
+/* ── STEP: PAIRING ─────────────────────────────────────────────────────── */
+.ob-pairing {
+  padding: 64px 26px calc(40px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(180deg, #201a22, #14100f);
+  animation: hy-slidein 0.4s ease forwards;
+}
+.ob-pair-head {
+  margin-top: 20px;
+  text-align: center;
+}
+.ob-pair-title {
+  font-size: 23px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+.ob-pair-sub {
+  margin-top: 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+}
+.ob-qr {
+  margin: 30px auto 0;
+  position: relative;
+  display: block;
+  width: 236px;
+  height: 236px;
+  border-radius: 28px;
+  background: #0c0a0a;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --press: 0.97;
+}
+/* 스캔 버튼 라벨 — 탭 가능함을 명시(장식으로 오인 방지) */
+.ob-qr-cta {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+.ob-qr-corner {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+}
+.ob-qr-corner--tl {
+  top: 16px;
+  left: 16px;
+  border-top: 3px solid #f76ba6;
+  border-left: 3px solid #f76ba6;
+  border-radius: 10px 0 0 0;
+}
+.ob-qr-corner--tr {
+  top: 16px;
+  right: 16px;
+  border-top: 3px solid #f76ba6;
+  border-right: 3px solid #f76ba6;
+  border-radius: 0 10px 0 0;
+}
+.ob-qr-corner--bl {
+  bottom: 16px;
+  left: 16px;
+  border-bottom: 3px solid #f76ba6;
+  border-left: 3px solid #f76ba6;
+  border-radius: 0 0 0 10px;
+}
+.ob-qr-corner--br {
+  bottom: 16px;
+  right: 16px;
+  border-bottom: 3px solid #f76ba6;
+  border-right: 3px solid #f76ba6;
+  border-radius: 0 0 10px 0;
+}
+.ob-qr-scan {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  top: 24px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #f76ba6, transparent);
+  box-shadow: 0 0 12px #f76ba6;
+  animation: hy-scan 2.4s ease-in-out infinite;
+}
+.ob-pair-hint {
+  margin-top: 26px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.55);
+}
+.ob-pair-cells {
+  position: relative;
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.ob-pair-cell {
+  width: 42px;
+  height: 52px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1.5px solid rgba(255, 255, 255, 0.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.ob-pair-cell[data-state="filled"] {
+  border-color: #f76ba6;
+}
+.ob-pair-cell[data-state="active"] {
+  border-color: rgba(247, 107, 166, 0.55);
+}
+.ob-pair-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: none;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  font-size: 16px;
+  cursor: pointer;
+}
+.ob-pairing .ob-cta {
+  margin-top: 24px;
+}
+
+/* ── STEP: PERMS ───────────────────────────────────────────────────────── */
+.ob-perms {
+  padding: 68px 26px calc(40px + env(safe-area-inset-bottom, 0px));
+  background: radial-gradient(120% 50% at 50% 0%, #eee7ff 0%, rgba(238, 231, 255, 0) 55%),
+    linear-gradient(180deg, #fdf4f1, #f6f3fb);
+  animation: hy-slidein 0.4s ease forwards;
+}
+.ob-perms-head {
+  text-align: center;
+}
+.ob-perms-mascot {
+  width: 110px;
+  height: 110px;
+  object-fit: contain;
+  animation: hy-bob 3s ease-in-out infinite;
+}
+.ob-perms .ob-h1 {
+  margin-top: 6px;
+}
+.ob-perms-list {
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ob-perm {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 10px 26px -12px rgba(32, 26, 29, 0.12);
+}
+.ob-perm-ic {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  flex: none;
+}
+.ob-perm-main {
+  flex: 1;
+  min-width: 0;
+}
+.ob-perm-title {
+  display: block;
+  font-size: 15.5px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.ob-perm-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #a99fa4;
+}
+.ob-perm-check {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #e7f8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.ob-perms .ob-cta {
+  margin-top: 26px;
+}

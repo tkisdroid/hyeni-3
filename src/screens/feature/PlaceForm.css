@@ -1,0 +1,184 @@
+/* 장소 등록/편집 — 화면 전용 스타일 (원본 dc.html 1700–1735행 값 1:1) */
+
+/* ── 래퍼: 로즈 그라디언트 배경 + 진입 모션 ──────────────────────────────── */
+.pf-screen {
+  min-height: 100%;
+  background: linear-gradient(180deg, #fdf4f1, #f7f4f3);
+  animation: hy-fadein 0.35s ease forwards;
+}
+
+/* ── 상단 헤더 (sticky · 뒤로가기) ───────────────────────────────────────── */
+.pf-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(253, 244, 241, 0.9) 60%, rgba(253, 244, 241, 0));
+  backdrop-filter: blur(8px);
+}
+.pf-back {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+.pf-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--fg-primary);
+}
+
+/* ── 본문 컬럼 ──────────────────────────────────────────────────────────── */
+.pf-body {
+  padding: 6px 20px calc(40px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ── 지도 미리보기 ──────────────────────────────────────────────────────── */
+.pf-map {
+  position: relative;
+  height: 150px;
+  border-radius: 22px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #eaf6ee 0%, #e6f2fb 60%, #fce6f1 100%);
+  box-shadow: 0 14px 34px -18px rgba(32, 26, 29, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pf-map__ring {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: rgba(240, 81, 143, 0.12);
+  border: 2px dashed rgba(240, 81, 143, 0.45);
+}
+.pf-map__pin {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 10px rgba(240, 81, 143, 0.35));
+}
+/* 실제 Kakao 지도 캔버스 — pf-map 박스를 꽉 채운다(둥근 모서리는 wrapper 가 clip). */
+.pf-map__canvas {
+  position: absolute;
+  inset: 0;
+}
+/* "지도를 눌러 위치 선택" 안내 칩 — 아직 선택 전에만 표시. */
+.pf-map__hint {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--fg-tertiary);
+  font-size: 11.5px;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.12);
+  pointer-events: none;
+}
+
+/* ── 필드 라벨 ──────────────────────────────────────────────────────────── */
+.pf-label {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--fg-tertiary);
+  margin-bottom: 8px;
+  padding: 0 2px;
+}
+.pf-label--types {
+  margin-bottom: 10px;
+}
+
+/* ── 텍스트 입력 ────────────────────────────────────────────────────────── */
+.pf-input {
+  width: 100%;
+  height: 54px;
+  border: 1.5px solid var(--line-soft);
+  background: #fff;
+  border-radius: 15px;
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--fg-primary);
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.pf-input::placeholder {
+  color: var(--fg-faint);
+  font-weight: 600;
+}
+.pf-input:focus {
+  border-color: var(--hy-accent);
+  box-shadow: 0 0 0 3px var(--hy-accent-soft);
+}
+
+/* ── 종류 칩 ────────────────────────────────────────────────────────────── */
+.pf-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pf-type {
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  --press: 0.95;
+}
+
+/* ── 안전 반경 ──────────────────────────────────────────────────────────── */
+.pf-radius-head {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 0 2px;
+}
+.pf-radius-label {
+  flex: 1;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--fg-tertiary);
+}
+.pf-radius-value {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--hy-accent-text);
+  font-variant-numeric: tabular-nums;
+}
+.pf-range {
+  width: 100%;
+  accent-color: var(--hy-accent-deep);
+}
+
+/* ── 저장 버튼 ──────────────────────────────────────────────────────────── */
+.pf-save {
+  width: 100%;
+  height: 56px;
+  border-radius: 18px;
+  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  box-shadow: 0 16px 32px -12px rgba(240, 81, 143, 0.6);
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  --press: 0.98;
+}

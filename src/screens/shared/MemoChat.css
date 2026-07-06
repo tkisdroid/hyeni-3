@@ -1,0 +1,282 @@
+/* 대화(부모↔아이) — 화면 전용 스타일 (원본 dc.html 817–861행 값 1:1) */
+
+.mc-root {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── 헤더 (sticky) ──────────────────────────────────────────────────────── */
+.mc-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: calc(env(safe-area-inset-top, 0px) + 20px) 20px 12px;
+  background: rgba(251, 247, 244, 0.94);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mc-back {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  margin-left: -6px;
+  color: var(--fg-primary);
+  --press: 0.9;
+}
+.mc-peer-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: var(--hy-accent-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.mc-peer-avatar img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+.mc-peer-main {
+  flex: 1;
+  min-width: 0;
+}
+.mc-peer-name {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--fg-primary);
+}
+.mc-peer-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 1px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--mint-text);
+}
+.mc-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--mint-500);
+  animation: hy-soft 1.6s ease-in-out infinite;
+}
+
+/* ── 스레드 ─────────────────────────────────────────────────────────────── */
+.mc-thread {
+  flex: 1;
+  padding: 8px 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.mc-daysep {
+  text-align: center;
+  margin: 4px 0;
+}
+.mc-daysep span {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #b7adb2;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(32, 26, 29, 0.05);
+}
+
+/* ── 말풍선 행 ──────────────────────────────────────────────────────────── */
+.mc-msg {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.mc-msg--peer {
+  justify-content: flex-start;
+}
+.mc-msg--mine {
+  justify-content: flex-end;
+}
+.mc-msg-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #f1eef0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.mc-msg-avatar img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+.mc-bubble-wrap {
+  max-width: 74%;
+}
+/* 그룹 대화: 상대 메시지 위 발신자 이름(아이1/아이2/부모 구분) */
+.mc-sender {
+  margin: 0 0 3px 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--fg-faint);
+}
+
+/* 텍스트 말풍선 */
+.mc-bubble {
+  padding: 11px 14px;
+  box-shadow: 0 4px 14px rgba(32, 26, 29, 0.06);
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  word-break: break-word;
+}
+.mc-msg--peer .mc-bubble {
+  border-radius: 6px 20px 20px 20px;
+  background: #fff;
+  color: #2a2327;
+}
+.mc-msg--mine .mc-bubble {
+  border-radius: 20px 6px 20px 20px;
+  background: linear-gradient(135deg, var(--hy-accent-light), var(--hy-accent-deep));
+  color: #fff;
+}
+
+/* 스티커 메시지 */
+.mc-sticker {
+  background: linear-gradient(150deg, #fff6e0, #ffe9c0);
+  border-radius: 20px;
+  padding: 14px;
+  box-shadow: 0 8px 20px rgba(214, 175, 90, 0.2);
+  text-align: center;
+}
+.mc-sticker img {
+  width: 76px;
+  height: 76px;
+  object-fit: contain;
+  animation: hy-bob 3s ease-in-out infinite;
+}
+.mc-sticker-text {
+  margin-top: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #8a6a1e;
+}
+
+/* 시각 */
+.mc-time {
+  margin-top: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #b7adb2;
+}
+.mc-msg--mine .mc-time {
+  text-align: right;
+}
+.mc-msg--peer .mc-time {
+  text-align: left;
+}
+
+/* 읽음 표시(내 메시지를 상대가 읽었을 때만 노출) */
+.mc-read {
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--mint-text);
+  text-align: right;
+}
+
+/* ── Composer (sticky) ──────────────────────────────────────────────────── */
+.mc-composer {
+  position: sticky;
+  /* 탭바(≈90px+safe-area) 위에 올라오도록 safe-area 포함. z-index는 탭바(45) 위. */
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  z-index: 46;
+  padding: 8px 16px 12px;
+  background: linear-gradient(180deg, rgba(251, 247, 244, 0), rgba(251, 247, 244, 0.96) 30%);
+}
+.mc-quick {
+  display: flex;
+  gap: 7px;
+  margin-bottom: 9px;
+  overflow-x: auto;
+}
+.mc-quick-btn {
+  flex: none;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(32, 26, 29, 0.06);
+  font-size: 13px;
+  font-weight: 700;
+  color: #6d4e7a;
+  white-space: nowrap;
+  --press: 0.94;
+}
+.mc-inputbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px;
+  box-shadow: 0 8px 22px rgba(32, 26, 29, 0.08);
+}
+/* 사진·위치 공유 버튼(입력 왼쪽) */
+.mc-attach {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(32, 26, 29, 0.05);
+  color: var(--fg-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+.mc-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: none;
+  font-size: 14.5px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #2a2327;
+  min-width: 0;
+}
+.mc-input::placeholder {
+  color: var(--fg-faint);
+}
+.mc-send {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  box-shadow: 0 8px 18px -6px rgba(240, 81, 143, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  color: #fff;
+  --press: 0.9;
+}
+/* 전송 중: 버튼을 펄스(투명도)로 표시해 진행 중임을 알린다. */
+.mc-send--sending {
+  animation: hy-soft 1s ease-in-out infinite;
+  cursor: progress;
+}
+.mc-end {
+  height: 0;
+}

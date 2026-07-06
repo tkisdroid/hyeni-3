@@ -1,0 +1,422 @@
+/* AI 일정추가 — 화면 전용 스타일 (원본 dc.html 1287–1348행 값 1:1)
+   이 화면은 아이 테마색(--hy-accent)과 무관하게 AI=라벤더 고정 톤을 사용한다. */
+
+/* ── 래퍼: 라벤더 그라디언트 배경 + 진입 모션 ─────────────────────────────── */
+.ais-wrap {
+  min-height: 100%;
+  background: radial-gradient(120% 44% at 50% 0%, #efe8ff 0%, rgba(239, 232, 255, 0) 55%),
+    linear-gradient(180deg, #fdf4f1, #f7f4f3);
+  animation: hy-fadein 0.35s ease forwards;
+}
+
+/* ── 상단 헤더 (sticky · 뒤로가기) ───────────────────────────────────────── */
+.ais-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(253, 244, 241, 0.9) 60%, rgba(253, 244, 241, 0));
+  backdrop-filter: blur(8px);
+}
+.ais-back {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+.ais-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--fg-primary);
+}
+
+/* ── 본문 컬럼 (하단 탭바 여백 포함) ────────────────────────────────────── */
+.ais-body {
+  padding: 10px 20px calc(120px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ── 입력 방식 탭 ───────────────────────────────────────────────────────── */
+.ais-tabs {
+  width: 100%;
+  display: flex;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 16px;
+  background: rgba(124, 92, 225, 0.08);
+}
+.ais-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 10px 4px;
+  border-radius: 12px;
+  background: transparent;
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 800;
+  color: #8b7e84;
+  transition: color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+  --press: 0.95;
+}
+.ais-tab__emoji {
+  font-size: 14px;
+}
+.ais-tab[data-active="true"] {
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(124, 92, 225, 0.18);
+  color: #43356b;
+}
+
+/* ── 음성 ───────────────────────────────────────────────────────────────── */
+.ais-voice {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 4px;
+}
+.ais-mic {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 6px 0 8px;
+}
+.ais-mic__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(167, 139, 250, 0.14);
+  animation: hy-ring 2.6s ease-out infinite;
+}
+.ais-mic__inner {
+  position: absolute;
+  inset: 22px;
+  border-radius: 50%;
+  background: rgba(167, 139, 250, 0.18);
+}
+.ais-mic__img {
+  position: relative;
+  width: 92px;
+  height: 92px;
+  object-fit: contain;
+  animation: hy-bob 2.6s ease-in-out infinite;
+}
+.ais-wave {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 26px;
+  margin-bottom: 14px;
+}
+.ais-wave__bar {
+  width: 3px;
+  height: 100%;
+  border-radius: 999px;
+  background: #b79dfb;
+  transform-origin: bottom;
+  animation: hy-wave 1s ease-in-out infinite;
+}
+.ais-listening {
+  font-size: 13px;
+  font-weight: 700;
+  color: #8b7e84;
+}
+.ais-bubble {
+  margin-top: 16px;
+  width: 100%;
+  padding: 16px 18px;
+  border-radius: 20px 20px 20px 6px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(124, 92, 225, 0.1);
+  font-size: 15px;
+  font-weight: 700;
+  color: #43356b;
+}
+
+/* 마이크는 버튼 — 리셋 + 탭 가능 */
+.ais-mic {
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  --press: 0.96;
+}
+.ais-mic:disabled {
+  cursor: progress;
+  opacity: 0.85;
+}
+/* 청취 중: 링·이미지를 더 또렷하게 */
+.ais-mic--on .ais-mic__ring {
+  background: rgba(167, 139, 250, 0.28);
+  animation-duration: 1.2s;
+}
+.ais-mic--on .ais-mic__inner {
+  background: rgba(167, 139, 250, 0.34);
+}
+/* 파형은 청취 중일 때만 움직임 */
+.ais-wave .ais-wave__bar {
+  animation-play-state: paused;
+  opacity: 0.4;
+}
+.ais-wave[data-on="true"] .ais-wave__bar {
+  animation-play-state: running;
+  opacity: 1;
+}
+/* 인식된 발화 말풍선 강조 */
+.ais-bubble--said {
+  background: linear-gradient(150deg, #efe8ff, #f6f1ff);
+  color: #43356b;
+  box-shadow: 0 8px 22px rgba(124, 92, 225, 0.16);
+}
+
+/* ── 텍스트 ─────────────────────────────────────────────────────────────── */
+.ais-text {
+  width: 100%;
+  padding-top: 8px;
+}
+.ais-textbox {
+  background: #fff;
+  border-radius: 20px;
+  padding: 6px;
+  box-shadow: 0 8px 22px rgba(124, 92, 225, 0.1);
+}
+.ais-textarea {
+  width: 100%;
+  min-height: 128px;
+  border: none;
+  background: transparent;
+  resize: none;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #43356b;
+  font-family: inherit;
+  line-height: 1.55;
+  outline: none;
+  box-sizing: border-box;
+}
+
+/* ── 알림장 ─────────────────────────────────────────────────────────────── */
+.ais-image {
+  width: 100%;
+  padding-top: 8px;
+}
+.ais-upload {
+  width: 100%;
+  border-radius: 20px;
+  border: 2px dashed rgba(124, 92, 225, 0.35);
+  background: rgba(124, 92, 225, 0.05);
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  --press: 0.98;
+}
+.ais-upload__icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(124, 92, 225, 0.14);
+}
+.ais-upload__icon img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+.ais-upload__text {
+  text-align: center;
+}
+.ais-upload__title {
+  display: block;
+  font-size: 15px;
+  font-weight: 800;
+  color: #43356b;
+}
+.ais-upload__sub {
+  display: block;
+  margin-top: 3px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #8b7e84;
+}
+
+/* 숨긴 파일 입력 — 업로드 버튼이 대신 트리거(직접 노출 안 함) */
+.ais-file {
+  display: none;
+}
+
+/* ── 선택한 알림장 사진 미리보기 ────────────────────────────────────────── */
+.ais-preview {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.ais-preview__img {
+  width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(124, 92, 225, 0.1);
+}
+.ais-preview__change {
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(124, 92, 225, 0.08);
+  font-size: 13px;
+  font-weight: 800;
+  color: #6d4e9c;
+  --press: 0.95;
+}
+
+/* ── 입력 힌트 (텍스트·알림장 공용) ─────────────────────────────────────── */
+.ais-hint {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #8b7e84;
+  padding: 0 2px;
+}
+.ais-hint__ico {
+  font-size: 15px;
+}
+
+/* ── AI 인식 결과 라벨 ──────────────────────────────────────────────────── */
+.ais-reslabel {
+  width: 100%;
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.ais-reslabel__badge {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: #efe8ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  flex: none;
+}
+.ais-reslabel__text {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #6d4e9c;
+}
+
+/* ── AI 인식 결과 카드 ──────────────────────────────────────────────────── */
+.ais-result {
+  margin-top: 16px;
+  width: 100%;
+  background: #fff;
+  border-radius: 22px;
+  padding: 8px;
+  box-shadow: 0 12px 30px rgba(32, 26, 29, 0.06);
+}
+.ais-result__top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+}
+.ais-result__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: #e7f8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.ais-result__icon img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+.ais-result__info {
+  flex: 1;
+  min-width: 0;
+}
+.ais-result__hr {
+  height: 1px;
+  background: rgba(32, 26, 29, 0.05);
+  margin: 0 12px;
+}
+.ais-result__grid {
+  display: flex;
+  padding: 12px;
+}
+.ais-result__cell {
+  flex: 1;
+  min-width: 0;
+}
+.ais-result__k {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #a99fa4;
+}
+.ais-result__v {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.ais-result__v--lg {
+  font-size: 15.5px;
+}
+
+/* ── 추가 버튼 ──────────────────────────────────────────────────────────── */
+.ais-confirm {
+  margin-top: 20px;
+  width: 100%;
+  height: 56px;
+  border-radius: 18px;
+  background: linear-gradient(120deg, #b79dfb, #8b6bec);
+  box-shadow: 0 16px 32px -12px rgba(124, 92, 225, 0.6);
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  --press: 0.98;
+}
+/* 비활성(입력 없음·요청 중) — 그림자 제거 + 흐리게. 클래스/톤 유지, 상태만 표현. */
+.ais-confirm:disabled {
+  opacity: 0.5;
+  box-shadow: none;
+  cursor: default;
+}

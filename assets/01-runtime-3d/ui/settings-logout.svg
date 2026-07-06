@@ -1,0 +1,18 @@
+<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoutDoor" x1="25" y1="20" x2="64" y2="76" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#FFF1D6"/>
+    </linearGradient>
+    <filter id="logoutShadow" x="10" y="12" width="78" height="80" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="9" stdDeviation="7" flood-color="#1F1A22" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+  <g filter="url(#logoutShadow)">
+    <rect x="25" y="20" width="34" height="56" rx="13" fill="url(#logoutDoor)" stroke="#FFD76A" stroke-width="3"/>
+    <circle cx="50" cy="48" r="4" fill="#F5A524"/>
+    <path d="M53 48H75" stroke="#F779A8" stroke-width="7" stroke-linecap="round"/>
+    <path d="M66 38L76 48L66 58" stroke="#F779A8" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M27 74H65" stroke="#D17600" stroke-width="5" stroke-linecap="round" opacity="0.55"/>
+  </g>
+</svg>

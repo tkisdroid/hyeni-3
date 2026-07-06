@@ -1,0 +1,205 @@
+/* 아이 초대/연결 (P-05 초대코드·QR) — 화면 전용 스타일 */
+
+.ci-screen {
+  min-height: 100%;
+  background:
+    radial-gradient(120% 44% at 50% 0%, #f1ecff 0%, rgba(241, 236, 255, 0) 55%),
+    linear-gradient(180deg, #fdf4f1, #f7f4f3);
+  animation: hy-fadein 0.35s ease forwards;
+}
+
+/* ── 상세 헤더(sticky) ──────────────────────────────────────────────────── */
+.ci-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: calc(env(safe-area-inset-top, 0px) + 20px) 18px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(253, 244, 241, 0.9) 60%, rgba(253, 244, 241, 0));
+  backdrop-filter: blur(8px);
+}
+.ci-back {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+.ci-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+
+/* ── 콘텐츠 컬럼(중앙 정렬) ─────────────────────────────────────────────── */
+.ci-content {
+  padding: 8px 22px calc(40px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ── 헤드라인 · 안내 ────────────────────────────────────────────────────── */
+.ci-headline {
+  margin-top: 4px;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  text-align: center;
+  color: var(--fg-primary);
+}
+.ci-lead {
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #8b7e84;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ── QR 카드 ────────────────────────────────────────────────────────────── */
+.ci-qr-card {
+  margin-top: 20px;
+  width: 252px;
+  height: 252px;
+  background: #fff;
+  border-radius: 26px;
+  box-shadow: 0 16px 38px -18px rgba(32, 26, 29, 0.26), 0 2px 6px rgba(32, 26, 29, 0.04);
+  border: 1px solid rgba(32, 26, 29, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ci-qr-skeleton {
+  width: 212px;
+  height: 212px;
+  border-radius: 12px;
+  background: #f6f1f4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  white-space: pre-line;
+  font-size: 13px;
+  font-weight: 700;
+  color: #b7adb2;
+  line-height: 1.5;
+}
+
+/* ── 코드 + 만료 타이머 ─────────────────────────────────────────────────── */
+.ci-code-row {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.ci-code {
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: var(--hy-accent-text, #b0477a);
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
+  text-align: center;
+}
+.ci-code--expired {
+  color: #b7adb2;
+  text-decoration: line-through;
+}
+.ci-timer {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #15936b;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #ddf7ea;
+}
+.ci-timer--expired {
+  color: #c0392b;
+  background: #fdecea;
+}
+
+/* ── 액션 ───────────────────────────────────────────────────────────────── */
+.ci-actions {
+  margin-top: 18px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.ci-btn {
+  height: 50px;
+  border-radius: 15px;
+  font-size: 14.5px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  --press: 0.96;
+}
+.ci-btn:disabled {
+  opacity: 0.5;
+}
+.ci-btn--copy {
+  background: #fde7f1;
+  color: #b0477a;
+}
+.ci-btn--share {
+  background: linear-gradient(120deg, #b79dfb, #8b6bec);
+  color: #fff;
+  box-shadow: 0 10px 22px -10px rgba(139, 107, 236, 0.7);
+}
+
+.ci-regen {
+  margin-top: 10px;
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.07);
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #6d4e7a;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  --press: 0.95;
+}
+.ci-regen:disabled {
+  opacity: 0.55;
+}
+
+/* ── 연결 대기 ──────────────────────────────────────────────────────────── */
+.ci-wait {
+  margin-top: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #8b7e84;
+}
+.ci-wait__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #15936b;
+  animation: hy-soft 1.6s ease-in-out infinite;
+}
+
+/* ── 마스코트 ───────────────────────────────────────────────────────────── */
+.ci-mascot {
+  margin-top: 14px;
+  width: 92px;
+  height: 92px;
+  object-fit: contain;
+  animation: hy-float 4.5s ease-in-out infinite;
+}

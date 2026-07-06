@@ -1,0 +1,65 @@
+/* C-15 권한 없음(재요청) */
+.pd-root {
+  min-height: 100%;
+  background: linear-gradient(180deg, #fdf4f1, #f7f4f3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 22px calc(24px + env(safe-area-inset-bottom, 0px));
+}
+.pd-card {
+  width: 100%;
+  background: #fff;
+  border-radius: 26px;
+  box-shadow: 0 18px 44px -20px rgba(32, 26, 29, 0.22);
+  padding: 30px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.pd-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: #f6f1f4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pd-title {
+  margin-top: 16px;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--fg-primary);
+}
+.pd-sub {
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #8b7e84;
+}
+.pd-steps {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f6f1f4;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: #6d4e7a;
+}
+.pd-cta {
+  margin-top: 20px;
+  width: 100%;
+  height: 52px;
+  border-radius: 16px;
+  background: linear-gradient(120deg, var(--hy-accent-light, #f779a8), var(--hy-accent-deep, #e23f7e));
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  box-shadow: 0 14px 28px -12px rgba(240, 81, 143, 0.7);
+  --press: 0.97;
+}

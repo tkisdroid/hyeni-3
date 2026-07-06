@@ -1,0 +1,235 @@
+/* 놀이요청 수락 — 화면 전용 스타일 (원본 dc.html 1544–1577행 값 1:1) */
+
+.pa-screen {
+  min-height: 100%;
+  background: radial-gradient(120% 44% at 50% 0%, #fff0d6 0%, rgba(255, 240, 214, 0) 55%),
+    linear-gradient(180deg, #fdf4f1, #f7f4f3);
+  animation: hy-fadein 0.35s ease forwards;
+}
+
+/* ── 헤더 (sticky · 뒤로가기) ───────────────────────────────────────────── */
+.pa-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(253, 244, 241, 0.9) 60%, rgba(253, 244, 241, 0));
+  backdrop-filter: blur(8px);
+}
+.pa-back {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+.pa-header__title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--fg-primary);
+}
+
+/* ── 스크롤 콘텐츠 ──────────────────────────────────────────────────────── */
+.pa-content {
+  padding: 6px 20px calc(40px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.pa-intro {
+  padding: 2px 2px 4px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  line-height: 1.5;
+}
+.pa-intro b {
+  color: var(--hy-accent-text);
+}
+
+/* ── 요청 카드 ──────────────────────────────────────────────────────────── */
+.pa-card {
+  padding: 16px;
+}
+.pa-card__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.pa-avatars {
+  display: flex;
+  align-items: center;
+}
+.pa-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: var(--hy-accent-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pa-avatar img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+.pa-avatar--friend {
+  background: #fdf0da;
+  margin-left: -12px;
+  border: 2px solid #fff;
+}
+.pa-who {
+  flex: 1;
+  min-width: 0;
+}
+.pa-who__name {
+  display: block;
+  font-size: 15.5px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.pa-who__when {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--hy-accent-text);
+}
+
+/* ── 장소 ───────────────────────────────────────────────────────────────── */
+.pa-place {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #554c50;
+}
+
+/* ── 아이 메모 말풍선 ───────────────────────────────────────────────────── */
+.pa-note {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 14px 14px 14px 6px;
+  background: var(--bg-press);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #43356b;
+  line-height: 1.5;
+}
+
+/* ── 액션 (거절 / 수락) ─────────────────────────────────────────────────── */
+.pa-actions {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 10px;
+}
+.pa-btn-decline {
+  height: 50px;
+  border-radius: 15px;
+  background: #f3eef0;
+  color: #6d6469;
+  font-size: 14.5px;
+  font-weight: 800;
+  --press: 0.97;
+}
+.pa-btn-accept {
+  height: 50px;
+  border-radius: 15px;
+  background: linear-gradient(120deg, #46d19b, #23a876);
+  box-shadow: 0 12px 24px -10px rgba(35, 168, 118, 0.55);
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 800;
+  --press: 0.97;
+}
+.pa-btn-accept:disabled,
+.pa-btn-decline:disabled {
+  opacity: 0.55;
+}
+.pa-btn-accept:disabled {
+  box-shadow: none;
+}
+
+/* ── 진행 중 세션(연결됨) 배너 ──────────────────────────────────────────── */
+.pa-active {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--mint-soft);
+}
+.pa-active__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--mint-text);
+}
+.pa-active__text {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #3f5a4f;
+  line-height: 1.45;
+}
+
+/* ── 빈 상태 ─────────────────────────────────────────────────────────────── */
+.pa-empty {
+  margin-top: 24px;
+  text-align: center;
+  padding: 20px 12px;
+}
+.pa-empty__img {
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
+  opacity: 0.9;
+}
+.pa-empty__title {
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.pa-empty__sub {
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  line-height: 1.5;
+}
+
+/* ── 처리 결과 배너 ─────────────────────────────────────────────────────── */
+.pa-status {
+  margin-top: 14px;
+  height: 48px;
+  border-radius: 15px;
+  font-size: 14px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.pa-status--accepted {
+  background: var(--mint-soft);
+  color: var(--mint-text);
+}
+.pa-status--declined {
+  background: #f3eef0;
+  color: var(--fg-muted);
+}

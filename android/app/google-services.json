@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "304298309837",
+    "project_id": "hyeni-calendar",
+    "storage_bucket": "hyeni-calendar.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:304298309837:android:ba88870dbf560d795d9184",
+        "android_client_info": {
+          "package_name": "com.hyeni.calendar"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDnM6KQtnDrMoYNbAOEF_Bc-TfQXPhAF4s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

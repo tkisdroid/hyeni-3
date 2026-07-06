@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#E879A0</color>
+    <color name="colorPrimaryDark">#BE185D</color>
+    <color name="colorAccent">#A78BFA</color>
+    <color name="splash_background">#FFF0F7</color>
+
+    <!-- 알림 브랜드 틴트: src/styles/tokens.css 의 brand-rose 토큰 미러.
+         모든 알림 setColor 가 이 단일 소스를 참조한다. -->
+    <color name="notification_accent">#F779A8</color>
+
+    <!-- ====================================================================
+         전체화면 알림 UI 팔레트 (PushAlertActivity / ForceRingActivity)
+         src/styles/tokens.css 의 Premium Kawaii 토큰을 미러한다.
+         라이트 값 정의 (다크 대응은 values-night/colors.xml).
+         하드코딩 금지 규칙에 따라 두 액티비티/레이아웃/drawable 은
+         반드시 이 리소스만 참조한다.
+         ==================================================================== -->
+
+    <!-- Scrim: 전체화면 알림 카드 뒤 어둡게 깔리는 배경 -->
+    <color name="alert_bg_scrim">#CC000000</color>
+
+    <!-- 공통 카드 surface: bg-card 미러 -->
+    <color name="alert_card_bg">#FFFFFF</color>
+
+    <!-- 텍스트: fg-primary / fg-secondary 미러 -->
+    <color name="alert_title">#171719</color>
+    <color name="alert_body">#5F6368</color>
+
+    <!-- 헤더 악센트 (아이콘 배지 배경)
+         emergency = rose-deep (응급 허용 영역) / kkuk = brand-rose -->
+    <color name="alert_accent_emergency">#D94F7F</color>
+    <color name="alert_accent_emergency_soft">#FFE2EC</color>
+    <color name="alert_accent_kkuk">#F779A8</color>
+    <color name="alert_accent_kkuk_soft">#FFE2EC</color>
+    <!-- 일반/null 톤: rose-soft 카드, brand-rose 악센트 -->
+    <color name="alert_accent_normal">#F779A8</color>
+    <color name="alert_accent_normal_soft">#FFE2EC</color>
+
+    <!-- 주 버튼: 웹 .btn-primary 그라데이션 미러 (brand-rose → rose-deep) / 텍스트 흰 bold -->
+    <color name="btn_primary_bg">#F779A8</color>
+    <color name="btn_primary_bg_deep">#D94F7F</color>
+    <color name="btn_primary_text">#FFFFFF</color>
+    <!-- 보조 버튼: soft fill + 연한 라인 + fg-secondary 텍스트 -->
+    <color name="btn_secondary_bg">#F7F7F8</color>
+    <color name="btn_secondary_text">#5F6368</color>
+    <color name="btn_secondary_line">#E7E0E4</color>
+
+    <!-- 카드 외곽선: line-soft 미러 -->
+    <color name="alert_card_line">#F1ECEE</color>
+
+    <!-- ForceRing (응급 강제 알람) — 풀-블리드 빨강 정체성 유지 -->
+    <color name="force_ring_bg">#DC2626</color>
+    <color name="force_ring_fg">#FFFFFF</color>
+    <color name="force_ring_fg_dim">#FECACA</color>
+    <!-- 메시지 카드 surface + 라벨 + 본문 -->
+    <color name="force_ring_card_bg">#FFFFFF</color>
+    <color name="force_ring_card_label">#9A6500</color>
+    <color name="force_ring_card_body">#171719</color>
+    <!-- ack 버튼: 흰 pill + 빨강 텍스트 -->
+    <color name="force_ring_btn_bg">#FFFFFF</color>
+    <color name="force_ring_btn_text">#DC2626</color>
+</resources>

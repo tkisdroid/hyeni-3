@@ -1,0 +1,139 @@
+/* 스티커북 — 화면 전용 스타일 (원본 dc.html 969–990행 값 1:1) */
+
+/* ── 상단 sticky 헤더 ───────────────────────────────────────────────────── */
+.sb-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: 56px 20px 12px;
+  background: linear-gradient(180deg, rgba(251, 247, 244, 0.94) 62%, rgba(251, 247, 244, 0));
+  backdrop-filter: blur(10px);
+}
+.sb-header__title {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--fg-primary);
+}
+
+/* 스크롤 컬럼: hy-content 패턴 재사용 + 간격만 시안값(20px)으로 */
+.sb-list {
+  gap: 20px;
+}
+
+/* ── 이번 주 리워드 카드 ────────────────────────────────────────────────── */
+.sb-reward {
+  position: relative;
+  overflow: hidden;
+  border-radius: 26px;
+  padding: 20px;
+  background: linear-gradient(140deg, #fff3d6, #ffe1ae);
+  box-shadow: 0 16px 34px -14px rgba(214, 175, 90, 0.5);
+}
+.sb-reward__gift {
+  position: absolute;
+  right: -8px;
+  bottom: -10px;
+  width: 82px;
+  height: 82px;
+  object-fit: contain;
+  animation: hy-bob 3s ease-in-out infinite;
+}
+.sb-reward__label {
+  font-size: 13px;
+  font-weight: 800;
+  color: #b08a3c;
+}
+.sb-reward__count {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 2px;
+}
+.sb-reward__num {
+  font-size: 42px;
+  font-weight: 900;
+  color: #8a6a1e;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.sb-reward__unit {
+  font-size: 16px;
+  font-weight: 800;
+  color: #b08a3c;
+}
+.sb-reward__track {
+  margin-top: 14px;
+  width: 80%;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  overflow: hidden;
+}
+.sb-reward__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ffb443, #f59021);
+}
+.sb-reward__hint {
+  margin-top: 7px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #b08a3c;
+}
+
+/* ── 스티커 그리드 ──────────────────────────────────────────────────────── */
+.sb-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.sb-sticker {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(32, 26, 29, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px;
+  transition: transform 0.14s ease;
+  --press: 0.93;
+}
+.sb-sticker__img {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+}
+.sb-sticker__name {
+  font-size: 11px;
+  font-weight: 800;
+  color: #6d6469;
+}
+.sb-sticker__lock {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 14px;
+}
+
+/* 아이콘 매핑이 없는 스티커는 이모지로 대체(webp 자리 그대로). */
+.sb-sticker__emoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  line-height: 1;
+}
+
+/* ── 로딩·빈·에러 상태 ─────────────────────────────────────────────────── */
+.sb-empty {
+  padding: 36px 20px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fg-muted);
+}

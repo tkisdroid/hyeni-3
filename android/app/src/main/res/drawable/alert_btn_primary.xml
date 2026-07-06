@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 공통 CTA 주 버튼 (pill). 웹 DS .btn-primary(tokens.css:729) 1:1 미러:
+     linear-gradient(135deg, brand-rose, brand-rose-deep) + 흰 bold 텍스트.
+     CSS 135deg = Android angle 315. radius 26dp (pill 중간값). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:angle="315"
+        android:startColor="@color/btn_primary_bg"
+        android:endColor="@color/btn_primary_bg_deep"
+        android:type="linear" />
+    <corners android:radius="26dp" />
+</shape>

@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 응급 강제 알람 (ForceRingActivity, 자녀 기기)
+     풀-블리드 빨강 정체성 유지 (응급 정당 영역).
+     메시지 카드 radius 24dp, ack 버튼 pill, 타이포 스케일을
+     PushAlert 와 일치 (제목 28sp / 본문 18sp), 아이콘 64sp.
+     색은 전부 force_ring_* 토큰 참조 (하드코딩 0). -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/force_ring_bg"
+    android:padding="24dp"
+    android:gravity="center_horizontal">
+
+  <TextView
+      android:id="@+id/icon_emoji"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:text="🚨"
+      android:textSize="64sp"
+      android:layout_marginTop="48dp" />
+
+  <TextView
+      android:id="@+id/title_text"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:text="응급 신호"
+      android:textColor="@color/force_ring_fg"
+      android:textSize="28sp"
+      android:textStyle="bold"
+      android:layout_marginTop="18dp" />
+
+  <TextView
+      android:id="@+id/initiator_text"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:textColor="@color/force_ring_fg"
+      android:textSize="18sp"
+      android:gravity="center"
+      android:layout_marginTop="10dp" />
+
+  <TextView
+      android:id="@+id/time_text"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:textColor="@color/force_ring_fg_dim"
+      android:textSize="15sp"
+      android:layout_marginTop="4dp" />
+
+  <LinearLayout
+      android:id="@+id/message_card"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:orientation="vertical"
+      android:background="@drawable/force_ring_card"
+      android:padding="20dp"
+      android:layout_marginTop="24dp"
+      android:layout_marginStart="12dp"
+      android:layout_marginEnd="12dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="부모님이 남긴 메시지"
+        android:textColor="@color/force_ring_card_label"
+        android:fontFamily="sans-serif-medium"
+        android:textSize="13sp" />
+
+    <TextView
+        android:id="@+id/message_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/force_ring_card_body"
+        android:textSize="18sp"
+        android:layout_marginTop="6dp" />
+  </LinearLayout>
+
+  <TextView
+      android:id="@+id/countdown_text"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:textColor="@color/force_ring_fg"
+      android:textSize="14sp"
+      android:layout_marginTop="32dp" />
+
+  <View
+      android:layout_width="0dp"
+      android:layout_height="0dp"
+      android:layout_weight="1" />
+
+  <Button
+      android:id="@+id/btn_ack"
+      android:layout_width="match_parent"
+      android:layout_height="72dp"
+      android:text="✓ 확인했어요"
+      android:textColor="@color/force_ring_btn_text"
+      android:textSize="22sp"
+      android:textStyle="bold"
+      android:background="@drawable/force_ring_btn"
+      android:layout_marginStart="12dp"
+      android:layout_marginEnd="12dp"
+      android:layout_marginBottom="20dp" />
+
+  <TextView
+      android:id="@+id/footer_text"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:text="※ 부모님이 응급 신호로 보낸 알람이라 무음모드를 우회했어요"
+      android:textColor="@color/force_ring_fg_dim"
+      android:gravity="center"
+      android:textSize="12sp"
+      android:layout_marginBottom="16dp" />
+
+</LinearLayout>

@@ -1,0 +1,256 @@
+/* 선생님 반 시간표 (T-02) — 화면 전용 스타일. 민트 계열(선생님 모드).
+   반 일정(events join)을 주간 스트립 + 선택일 타임라인으로 실데이터 렌더. */
+
+/* ── 상단 헤더 (민트 글래스, sticky) ────────────────────────────────────── */
+.tt-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 20px 12px;
+  background: linear-gradient(180deg, rgba(240, 250, 245, 0.92) 60%, rgba(240, 250, 245, 0));
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.tt-topbar__title {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--fg-primary);
+}
+.tt-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #e7f8f0;
+  color: #23a876;
+  font-size: 12.5px;
+  font-weight: 800;
+  --press: 0.94;
+}
+
+/* ── 본문 ───────────────────────────────────────────────────────────────── */
+.tt-body {
+  padding: 4px 20px calc(120px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.tt-meta {
+  padding: 2px 2px 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fg-muted);
+}
+.tt-meta__count {
+  color: #23a876;
+}
+
+/* ── 주간 날짜 스트립 ───────────────────────────────────────────────────── */
+.tt-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+.tt-day-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 0 9px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid var(--line-card);
+  --press: 0.94;
+}
+.tt-day-chip__dow {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--fg-tertiary);
+}
+.tt-day-chip__num {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--fg-primary);
+  font-variant-numeric: tabular-nums;
+}
+.tt-day-chip--today .tt-day-chip__dow {
+  color: #23a876;
+}
+.tt-day-chip--on {
+  background: linear-gradient(135deg, #5fd6a6 0%, #23a876 100%);
+  border-color: transparent;
+  box-shadow: 0 12px 22px -12px rgba(35, 168, 118, 0.6);
+}
+.tt-day-chip--on .tt-day-chip__dow,
+.tt-day-chip--on .tt-day-chip__num {
+  color: #fff;
+}
+
+/* ── 선택일 반 일정 카드 ────────────────────────────────────────────────── */
+.tt-day-card {
+  padding: 6px 8px 8px;
+}
+.tt-day-head {
+  padding: 10px 10px 8px;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.tt-day-state {
+  padding: 26px 12px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  line-height: 1.6;
+}
+.tt-day-state--err {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--danger-text, #c2410c);
+}
+.tt-retry {
+  padding: 9px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--line-soft);
+  background: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fg-muted);
+  --press: 0.96;
+}
+
+/* ── 타임라인 목록 ──────────────────────────────────────────────────────── */
+.tt-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.tt-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 10px;
+}
+.tt-item + .tt-item {
+  border-top: 1px solid var(--line-hair);
+}
+.tt-item__time {
+  flex: none;
+  width: 54px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  font-size: 13px;
+  font-weight: 800;
+  color: #23a876;
+  font-variant-numeric: tabular-nums;
+}
+.tt-item__end {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--fg-faint);
+}
+.tt-item__body {
+  flex: 1;
+  min-width: 0;
+}
+.tt-item__title {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--fg-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tt-item__sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-muted);
+}
+.tt-item__loc {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--fg-tertiary);
+}
+.tt-item__cat {
+  flex: none;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: #e7f8f0;
+  color: #23a876;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* ── 정직 안내 배너 ─────────────────────────────────────────────────────── */
+.tt-note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: #eefaf4;
+  border: 1px solid #cdeede;
+  font-size: 12px;
+  font-weight: 600;
+  color: #3f6b58;
+  line-height: 1.55;
+}
+.tt-note b {
+  font-weight: 800;
+  color: #2c6f52;
+}
+.tt-note__ico {
+  font-size: 15px;
+  flex: none;
+}
+
+/* ── 로딩 / 빈 상태 ─────────────────────────────────────────────────────── */
+.tt-empty {
+  margin-top: 8px;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--line-card);
+  padding: 34px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+.tt-empty--soft {
+  padding: 22px;
+  color: var(--fg-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.tt-empty__emoji {
+  font-size: 34px;
+}
+.tt-empty__title {
+  font-size: 15.5px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.tt-empty__sub {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  line-height: 1.5;
+}

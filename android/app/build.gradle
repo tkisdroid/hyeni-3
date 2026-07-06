@@ -1,0 +1,98 @@
+apply plugin: 'com.android.application'
+
+def hyeniSigningValue = { name ->
+    def value = project.findProperty(name)
+    if (value == null || !value.toString().trim()) {
+        value = System.getenv(name)
+    }
+    return value
+}
+def hyeniKeystorePath = hyeniSigningValue("HYENI_KEYSTORE")
+def hyeniKeystorePassword = hyeniSigningValue("HYENI_KEYSTORE_PASSWORD")
+def hyeniKeyAlias = hyeniSigningValue("HYENI_KEY_ALIAS")
+def hyeniKeyPassword = hyeniSigningValue("HYENI_KEY_PASSWORD")
+def hasHyeniReleaseSigning = [hyeniKeystorePath, hyeniKeystorePassword, hyeniKeyAlias, hyeniKeyPassword].every {
+    it != null && it.toString().trim()
+}
+
+android {
+    namespace = "com.hyeni.calendar"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "com.hyeni.calendar"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 2
+        versionName "1.1"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    signingConfigs {
+        release {
+            if (hasHyeniReleaseSigning) {
+                storeFile file(hyeniKeystorePath)
+                storePassword hyeniKeystorePassword
+                keyAlias hyeniKeyAlias
+                keyPassword hyeniKeyPassword
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (hasHyeniReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    testOptions {
+        unitTests {
+            it.returnDefaultValues = true
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    implementation 'com.google.android.play:review:2.0.2'
+    implementation 'com.android.billingclient:billing:9.0.0'
+    // Background location
+    implementation 'com.google.android.gms:play-services-location:21.3.0'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    // WorkManager for reliable service keepalive
+    implementation 'androidx.work:work-runtime:2.9.1'
+    // Firebase
+    implementation platform('com.google.firebase:firebase-bom:34.10.0')
+    implementation 'com.google.firebase:firebase-messaging'
+    testImplementation "junit:junit:$junitVersion"
+    testImplementation 'org.json:json:20231013'
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

@@ -1,0 +1,225 @@
+/* ============================================================================
+   혜니캘린더 — Redesign System · v1.0  포트 레이어  (redesign-system.css)
+   ----------------------------------------------------------------------------
+   목적: 이미 잘 만들어진 토큰 위에 "v1.0의 깔끔·따뜻·프리미엄" 감각을 앱 전체에
+        한 번에 입히는 드롭인 오버라이드. 컴포넌트를 건드리지 않고 재도색·통일한다.
+
+   왜 이것만으로 효과가 큰가:
+     · 앱의 대부분 UI가 var(--*) 토큰과 styleHelpers 의 DESIGN/make*Style 을 소비한다.
+     · 그래서 "기반 토큰"만 재조정하면 카드·시트·입력·버튼·경계선이 동시에 바뀐다.
+     · 현재 부조화의 원인: (1) 차가운 회색 계열 중립 토큰(#F7F7F8·112,115,124 라인),
+       (2) 파란 --primary/포커스(#0066FF), (3) 화면마다 제각각인 input 테두리.
+       → 이 파일이 셋 다 정리한다.
+
+   설치(둘 중 하나, 권장=A):
+     A) src/App.jsx 최상단 `import "./App.css";` 바로 "아래"에
+          import "./styles/redesign-system.css";
+        (App 청크에서 가장 마지막에 로드 → 확실히 우선 적용)
+     B) src/main.jsx 의 `import './index.css'` "아래"에
+          import './styles/redesign-system.css'
+        (스플래시까지 커버. App.css 가 지연 로드라 아래 !important 로 보강돼 있음)
+
+   되돌리기: import 한 줄 + 이 파일 삭제. 그러면 원상복구.
+   주의: 런타임 per-child 테마(--theme-accent*)는 절대 건드리지 않는다(색 선택 유지).
+   ========================================================================== */
+
+/* ──────────────────────────────────────────────────────────────────────────
+   1) 기반 토큰 락 — 차가운 회색/파랑을 v1.0의 따뜻한 로즈 시스템으로 재조정
+   (!important 는 지연 로드되는 App.css 의 :root 보다 확실히 이기기 위함)
+   ────────────────────────────────────────────────────────────────────────── */
+:root {
+  /* 앱 배경/호버/비활성 표면 — 차가운 #F7F7F8·#F4F4F5 → 따뜻한 크림 */
+  --bg-subtle: #F8F4F1 !important;
+  --bg-muted:  #F1EAE6 !important;
+
+  /* 헤어라인 — 차가운 coolNeutral(112,115,124) → 로즈 잉크 톤.
+     카드/리스트/입력 테두리가 이 토큰을 타므로 통일 효과가 가장 크다. */
+  --line-subtle:  rgba(60, 42, 52, 0.06) !important;
+  --line-soft:    rgba(60, 42, 52, 0.10) !important;
+  --line-default: rgba(60, 42, 52, 0.14) !important;
+  --line-strong:  rgba(60, 42, 52, 0.20) !important;
+
+  /* 브랜드 primary = "활성 테마"를 따른다 (구 WDS 파랑 #0066FF 제거).
+     아이가 테마 색을 바꾸면 primary 를 쓰는 요소까지 함께 그 색으로 바뀐다.
+     (theme.js applyThemeColor 가 --theme-accent* 를 런타임에 주입 → 여기서 상속) */
+  --primary:       var(--theme-accent, #F0518F) !important;
+  --primary-hover: var(--theme-accent-deep, #E23F7E) !important;
+  --primary-press: var(--theme-accent-deep, #CC2E6C) !important;
+
+  /* 포커스 링 — 파랑 → 활성 테마(기본 로즈) */
+  --focus-ring-color: var(--theme-accent, #F0518F) !important;
+  --focus-ring-halo:  color-mix(in srgb, var(--theme-accent, #F0518F) 20%, transparent) !important;
+
+  /* 한국식 달력 토요일 파랑은 명시 고정(로즈 primary 가 새지 않도록) */
+  --cal-weekday-color-sat: #5B92D6 !important;
+
+  /* 소프트 3D 그림자 스케일 통일 — 기존 DR 스케일(--shadow-soft/-card)로 정렬.
+     여기저기 쓰이는 --shadow-sm/-md/-lg 를 부드러운 톤으로 수렴시킨다. */
+  --shadow-sm: var(--shadow-xs) !important;
+  --shadow-md: var(--shadow-soft) !important;
+  --shadow-lg: var(--shadow-card) !important;
+
+  /* 본문 기본 웨이트를 v1.0 감각(500)로 — 이미 500이면 무해 */
+  --weight-regular: 500 !important;
+
+  /* 시트/모달 백드롭 블러를 살짝 더 부드럽게 */
+  --sheet-backdrop-blur: 14px !important;
+}
+
+/* 앱 셸 배경: 구 `.hyeni-app-shell { background-color:#F8F9FA !important }`(차가운 회청)
+   을 확실히 이기려 specificity 를 올려(html …) 따뜻한 캔버스로 교체 */
+html .hyeni-app-shell {
+  background-color: #FBF7F4 !important;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   2) 베이스 다듬기 — 렌더 품질 + 선택색
+   ────────────────────────────────────────────────────────────────────────── */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+::selection {
+  background: color-mix(in srgb, var(--theme-accent, #F0518F) 22%, transparent);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   3) 프리미티브 통일 — 화면마다 제각각이던 input/버튼/포커스를 한 언어로
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* 3-1) 입력류 — 구 `2px solid #E5E7EB`(차가운 회색) 난립을 정리.
+   따뜻한 1.5px 헤어라인 + 라운드 + 테마 포커스 링으로 앱 전체 통일. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+textarea,
+select {
+  border: 1.5px solid var(--line-soft) !important;
+  border-radius: var(--radius-input, 14px) !important;
+  background: var(--bg-base, #fff) !important;
+  color: var(--fg-primary, #201A1D);
+  transition: border-color .16s ease, box-shadow .16s ease !important;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):focus,
+textarea:focus,
+select:focus {
+  border-color: var(--theme-accent, #F0518F) !important;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--theme-accent, #F0518F) 15%, transparent) !important;
+  outline: none !important;
+}
+::placeholder { color: var(--fg-tertiary, #A99FA4); opacity: 1; }
+
+/* 3-2) 버튼 — 눌림 촉감(press-scale)과 트랜지션을 앱 전역에 통일.
+   (색/배경은 각 버튼 유지 — 여기선 인터랙션만 얹는다) */
+button,
+[role="button"] {
+  transition: transform .12s ease, box-shadow .16s ease, background-color .18s ease, filter .16s ease;
+}
+button:not(:disabled):active,
+[role="button"]:not([aria-disabled="true"]):active {
+  transform: scale(var(--hyeni-press-scale, 0.97));
+}
+button:disabled { cursor: default; }
+
+/* 3-3) 접근성 포커스 — 키보드 탐색 시 로즈 링(마우스 클릭엔 안 뜸) */
+:focus-visible {
+  outline: 2px solid var(--theme-accent, #F0518F);
+  outline-offset: 2px;
+}
+:focus:not(:focus-visible) { outline: none; }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   4) 유틸리티 클래스 (.hy-*) — v1.0 컴포넌트 언어.
+   토큰만으로 안 잡히는 "제각각 화면"에 점진 적용하라(className 만 추가).
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* 카드 */
+.hy-card {
+  background: var(--bg-base, #fff);
+  border-radius: var(--radius-card, 22px);
+  box-shadow: var(--shadow-card, 0 12px 32px rgba(31,24,28,.08));
+  border: 1px solid var(--line-soft);
+  padding: 16px;
+}
+.hy-card--flat { box-shadow: var(--shadow-soft); }
+
+/* 섹션 타이틀 */
+.hy-section-title {
+  font-size: 17px;
+  font-weight: var(--weight-semibold, 650);
+  letter-spacing: -0.01em;
+  color: var(--fg-primary);
+  margin: 0 0 14px;
+}
+
+/* 버튼 — Primary(로즈 pill) / Secondary / Ghost */
+.hy-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 54px; padding: 0 20px;
+  border-radius: var(--radius-pill, 9999px);
+  font-family: var(--font-sans); font-size: 16px; font-weight: var(--weight-bold, 700);
+  cursor: pointer; border: none; width: 100%;
+}
+.hy-btn--primary {
+  color: #fff;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--theme-accent, #F0518F) 82%, #fff) 0%, var(--theme-accent, #F0518F) 55%, var(--theme-accent-deep, #E23F7E) 100%);
+  box-shadow: 0 14px 28px -10px color-mix(in srgb, var(--theme-accent, #F0518F) 60%, transparent);
+}
+.hy-btn--secondary {
+  color: var(--fg-secondary); background: var(--bg-base);
+  border: 1.5px solid var(--line-soft); box-shadow: var(--shadow-xs);
+}
+.hy-btn--ghost { color: var(--theme-accent-text, #B0477A); background: transparent; min-height: 44px; }
+
+/* 칩/뱃지 — 상태 톤 프리셋 (안전/주의/브랜드/정보) */
+.hy-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 12px; border-radius: 9999px;
+  font-size: 12px; font-weight: var(--weight-bold, 700); line-height: 1;
+}
+.hy-chip--safe    { background: var(--brand-mint-soft, #DDF7EA);     color: var(--brand-mint-text, #087653); }
+.hy-chip--caution { background: var(--status-caution-soft, #FFF1D6); color: var(--status-caution-text, #9A6500); }
+.hy-chip--brand   { background: var(--brand-rose-soft, #FFE2EC);     color: var(--brand-rose-text, #B83262); }
+.hy-chip--info    { background: var(--brand-lavender-soft, #EFE8FF); color: var(--brand-lavender-text, #5F43B2); }
+
+/* 3D 아이콘 칩 — 카테고리/바로가기용 둥근 틴트 타일 */
+.hy-icon-tile {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 48px; height: 48px; border-radius: 15px;
+  background: var(--theme-accent-soft, #FFF5FA);
+}
+
+/* 리스트 로우 — 아이콘 · 텍스트 · 액션 3분할 통일 */
+.hy-row {
+  display: flex; align-items: center; gap: 13px;
+  padding: 13px 14px; border-radius: var(--radius-lg, 20px);
+  background: var(--bg-base, #fff); box-shadow: var(--shadow-soft);
+}
+
+/* 시트 핸들 — 바텀시트 상단 그립 통일 */
+.hy-sheet-handle {
+  width: var(--sheet-handle-width, 40px);
+  height: var(--sheet-handle-height, 5px);
+  border-radius: 9999px; background: var(--line-default);
+  margin: 0 auto 12px;
+}
+
+/* 실시간 점 — "추적 중/실시간" 표시 통일(부드러운 펄스) */
+.hy-live-dot {
+  position: relative; display: inline-block; width: 8px; height: 8px;
+}
+.hy-live-dot::before,
+.hy-live-dot::after {
+  content: ""; position: absolute; inset: 0; border-radius: 50%;
+  background: var(--brand-mint, #31C48D);
+}
+.hy-live-dot::after { animation: hy-live-ring 1.9s ease-out infinite; }
+@keyframes hy-live-ring { 0% { transform: scale(1); opacity: .55; } 100% { transform: scale(2.6); opacity: 0; } }
+
+/* 화면 진입 모션 — 컨테이너에 얹으면 v1.0의 부드러운 라이즈 인 */
+.hy-rise-in { animation: hy-rise-in var(--duration-screen-fade, 300ms) var(--easing-standard, cubic-bezier(.2,0,.2,1)) both; }
+@keyframes hy-rise-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .hy-rise-in, .hy-live-dot::after { animation: none; }
+  button:active, [role="button"]:active { transform: none; }
+}

@@ -1,0 +1,337 @@
+/* 선생님 알림장·공지 작성 (T-03) — 화면 전용 스타일. 라벤더 계열(선생님 알림장). */
+
+.tn-screen {
+  min-height: 100%;
+  background: linear-gradient(180deg, #f3f0fb, #f7f4f3);
+  animation: hy-fadein 0.35s ease forwards;
+}
+
+/* ── 상단 헤더 (sticky · 뒤로가기) ───────────────────────────────────────── */
+.tn-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(243, 240, 251, 0.92) 60%, rgba(243, 240, 251, 0));
+  backdrop-filter: blur(8px);
+}
+.tn-back {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+.tn-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--fg-primary);
+}
+
+/* ── 본문 컬럼 ──────────────────────────────────────────────────────────── */
+.tn-body {
+  padding: 6px 20px calc(40px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.tn-meta {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--lav-text);
+  padding: 2px 2px 0;
+}
+
+/* ── 필드 라벨 ──────────────────────────────────────────────────────────── */
+.tn-label {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--fg-tertiary);
+  margin-bottom: 8px;
+  padding: 0 2px;
+}
+
+/* ── 입력 ───────────────────────────────────────────────────────────────── */
+.tn-input {
+  width: 100%;
+  height: 52px;
+  border: 1.5px solid var(--line-soft);
+  background: #fff;
+  border-radius: 15px;
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--fg-primary);
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.tn-textarea {
+  width: 100%;
+  border: 1.5px solid var(--line-soft);
+  background: #fff;
+  border-radius: 15px;
+  padding: 13px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--fg-primary);
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 96px;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.tn-input::placeholder,
+.tn-textarea::placeholder {
+  color: var(--fg-faint);
+  font-weight: 600;
+}
+.tn-input:focus,
+.tn-textarea:focus {
+  border-color: var(--lav-400);
+  box-shadow: 0 0 0 3px var(--lav-soft);
+}
+
+/* ── 준비물 칩 ──────────────────────────────────────────────────────────── */
+.tn-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.tn-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 8px 7px 12px;
+  border-radius: 999px;
+  background: var(--blue-soft);
+  color: var(--blue-text);
+  font-size: 12.5px;
+  font-weight: 800;
+}
+.tn-chip__x {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(46, 109, 164, 0.16);
+  color: var(--blue-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  --press: 0.85;
+}
+.tn-chip-input {
+  flex: 1;
+  min-width: 130px;
+  height: 38px;
+  border: 1.5px dashed var(--line-strong);
+  background: transparent;
+  border-radius: 999px;
+  padding: 0 14px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--fg-body);
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+}
+.tn-chip-input::placeholder {
+  color: var(--fg-faint);
+  font-weight: 700;
+}
+
+/* ── 첨부(준비 중) ──────────────────────────────────────────────────────── */
+.tn-attach {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1.5px dashed var(--line-strong);
+  background: rgba(255, 255, 255, 0.5);
+  opacity: 0.75;
+}
+.tn-attach__icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.tn-attach__main {
+  flex: 1;
+  min-width: 0;
+}
+.tn-attach__title {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--fg-secondary);
+}
+.tn-attach__sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--fg-muted);
+}
+.tn-attach__badge {
+  flex: none;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bg-body);
+  color: var(--fg-muted);
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+/* ── 캘린더 반영 토글 ───────────────────────────────────────────────────── */
+.tn-reflect {
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--line-card);
+  padding: 6px 14px 14px;
+}
+.tn-reflect__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0 10px;
+}
+.tn-reflect__main {
+  flex: 1;
+  min-width: 0;
+}
+.tn-reflect__title {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.tn-reflect__sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--fg-muted);
+}
+.tn-toggle {
+  position: relative;
+  flex: none;
+  width: 48px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--line-strong);
+  transition: background 0.18s ease;
+}
+.tn-toggle--on {
+  background: var(--lav-500);
+}
+.tn-toggle__knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(32, 26, 29, 0.28);
+  transition: transform 0.18s ease;
+}
+.tn-toggle--on .tn-toggle__knob {
+  transform: translateX(20px);
+}
+.tn-date {
+  width: 100%;
+  height: 48px;
+  border: 1.5px solid var(--line-soft);
+  background: #fff;
+  border-radius: 13px;
+  padding: 0 14px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fg-primary);
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+}
+.tn-date:focus {
+  border-color: var(--lav-400);
+  box-shadow: 0 0 0 3px var(--lav-soft);
+}
+
+/* ── 발송 버튼 ──────────────────────────────────────────────────────────── */
+.tn-send {
+  width: 100%;
+  height: 56px;
+  border-radius: 18px;
+  background: linear-gradient(120deg, var(--lav-400), var(--lav-600));
+  box-shadow: 0 16px 32px -14px rgba(124, 92, 225, 0.6);
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  --press: 0.98;
+}
+.tn-send:disabled {
+  opacity: 0.5;
+  box-shadow: none;
+}
+.tn-hint {
+  padding: 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  line-height: 1.5;
+}
+
+/* ── 로딩 / 빈 상태 ─────────────────────────────────────────────────────── */
+.tn-empty {
+  margin-top: 8px;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--line-card);
+  padding: 34px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+.tn-empty--soft {
+  padding: 22px;
+  color: var(--fg-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.tn-empty__emoji {
+  font-size: 34px;
+}
+.tn-empty__title {
+  font-size: 15.5px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.tn-empty__sub {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  line-height: 1.5;
+}

@@ -1,0 +1,211 @@
+/* 혜니 AI 친구 — 화면 전용 스타일 (원본 dc.html 996–1025행 값 1:1) */
+/* 라벤더 톤 · AI 대화. 신호색과 무관하게 항상 라벤더 강조를 사용한다. */
+
+.afc {
+  min-height: 848px;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #f1ecff 0%, #fce9f2 45%, #fff2e6 100%);
+  animation: hy-fadein 0.35s ease forwards;
+}
+
+/* ── 헤더 (sticky) ──────────────────────────────────────────────────────── */
+.afc-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: 56px 18px 12px;
+  background: linear-gradient(180deg, rgba(241, 236, 255, 0.95) 60%, rgba(241, 236, 255, 0));
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.afc-back {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 12px rgba(124, 92, 225, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+.afc-avatar {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 16px rgba(124, 92, 225, 0.18);
+  flex: none;
+}
+.afc-avatar img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+.afc-online {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #31c48d;
+  border: 2px solid #fff;
+}
+.afc-head-main {
+  flex: 1;
+  min-width: 0;
+}
+.afc-head-name {
+  font-size: 17px;
+  font-weight: 800;
+  color: #43356b;
+}
+.afc-head-status {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #9b7fb8;
+}
+.afc-sparkle {
+  font-size: 22px;
+  animation: hy-sparkle 2.6s ease-in-out infinite;
+}
+
+/* ── 메시지 목록 ────────────────────────────────────────────────────────── */
+.afc-msgs {
+  flex: 1;
+  padding: 8px 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.afc-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.afc-row--ai {
+  justify-content: flex-start;
+}
+.afc-row--me {
+  justify-content: flex-end;
+}
+.afc-mini {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  box-shadow: 0 3px 8px rgba(124, 92, 225, 0.14);
+}
+.afc-mini img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+.afc-bubble {
+  max-width: 76%;
+  padding: 12px 15px;
+  box-shadow: 0 4px 14px rgba(124, 92, 225, 0.1);
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  word-break: break-word;
+}
+.afc-bubble--ai {
+  border-radius: 18px 18px 18px 6px;
+  background: #fff;
+  color: #43356b;
+}
+.afc-bubble--me {
+  border-radius: 18px 18px 6px 18px;
+  background: linear-gradient(120deg, #b79dfb, #8b6bec);
+  color: #fff;
+}
+
+/* ── 입력 영역 (sticky bottom) ──────────────────────────────────────────── */
+.afc-input-wrap {
+  position: sticky;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 30;
+  padding: 8px 16px 0;
+  background: linear-gradient(180deg, rgba(255, 242, 230, 0), rgba(255, 242, 230, 0.9) 40%);
+}
+.afc-suggest {
+  display: flex;
+  gap: 7px;
+  margin-bottom: 9px;
+  overflow-x: auto;
+}
+.afc-chip {
+  flex: none;
+  padding: 9px 15px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 3px 10px rgba(124, 92, 225, 0.12);
+  font-size: 13px;
+  font-weight: 700;
+  color: #6d4e9c;
+  white-space: nowrap;
+  --press: 0.94;
+}
+.afc-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 6px 6px 18px;
+  box-shadow: 0 8px 22px rgba(124, 92, 225, 0.16);
+}
+.afc-field {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: none;
+  font-size: 14.5px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #2a2327;
+  min-width: 0;
+}
+.afc-field::placeholder {
+  color: #b3a4c9;
+  font-weight: 600;
+}
+.afc-send {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(120deg, #b79dfb, #8b6bec);
+  box-shadow: 0 8px 18px -6px rgba(124, 92, 225, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+
+/* 헤더 우측 — AI 친구 설정(캐릭터·이름 바꾸기) 진입 */
+.afc-setup {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.55);
+  --press: 0.9;
+}

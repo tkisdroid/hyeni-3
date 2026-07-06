@@ -1,0 +1,49 @@
+# dependencies
+node_modules
+.pnp
+.pnp.js
+
+# build
+dist
+dist-ssr
+dev-dist
+*.local
+
+# env
+.env
+.env.*.local
+
+# editor / os
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+Thumbs.db
+
+# logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# capacitor / android
+android/app/build
+android/build
+android/.gradle
+android/capacitor-cordova-android-plugins/build
+android/local.properties
+android/.idea
+android/app/src/main/assets/public
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+.env.local
+ios/App/build
+ios/App/Pods
+
+# 디자인 export 원본(참고용, 앱 번들 아님) — 커밋 여부는 취향. 기본 추적 유지.

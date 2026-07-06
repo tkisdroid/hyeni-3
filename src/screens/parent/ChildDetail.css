@@ -1,0 +1,391 @@
+/* 아이 상세(P-03) — 화면 전용 스타일. 프리픽스 .cd-* */
+
+.cd-root {
+  min-height: 100%;
+  background: radial-gradient(120% 40% at 50% 0%, #ffe7f0 0%, rgba(255, 231, 240, 0) 55%),
+    linear-gradient(180deg, #fdf4f1, var(--bg-page));
+  animation: hy-fadein 0.35s ease forwards;
+}
+
+/* ── 헤더 (sticky) ──────────────────────────────────────────────────────── */
+.cd-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 16px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(253, 244, 241, 0.9) 60%, rgba(253, 244, 241, 0));
+  backdrop-filter: blur(8px);
+}
+.cd-back {
+  --press: 0.9;
+}
+.cd-htitle {
+  flex: 1;
+  min-width: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--fg-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cd-edit {
+  flex: none;
+  width: 42px;
+  --press: 0.9;
+}
+
+/* ── 콘텐츠 ─────────────────────────────────────────────────────────────── */
+.cd-content {
+  padding: 6px 20px calc(env(safe-area-inset-bottom, 0px) + 40px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── 프로필 히어로 ──────────────────────────────────────────────────────── */
+.cd-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #fff;
+  border-radius: 24px;
+  padding: 18px;
+  box-shadow: var(--shadow-card);
+}
+.cd-hero__avatar {
+  width: 76px;
+  height: 76px;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.cd-hero__avatar img {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+}
+.cd-hero__main {
+  flex: 1;
+  min-width: 0;
+}
+.cd-hero__name {
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--fg-primary);
+}
+.cd-hero__sub {
+  margin-top: 2px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--fg-faint);
+}
+.cd-hero__device {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  max-width: 100%;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--fg-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cd-hero__device svg {
+  flex: none;
+  color: var(--fg-faint);
+}
+.cd-safety {
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 800;
+}
+.cd-safety__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.cd-safety--safe {
+  background: var(--mint-soft);
+  color: var(--mint-text);
+}
+.cd-safety--safe .cd-safety__dot {
+  background: var(--mint-500);
+}
+.cd-safety--warn {
+  background: var(--cream-soft);
+  color: var(--gold-text);
+}
+.cd-safety--warn .cd-safety__dot {
+  background: var(--gold-600);
+}
+.cd-safety--muted {
+  background: var(--bg-body);
+  color: var(--fg-muted);
+}
+.cd-safety--muted .cd-safety__dot {
+  background: var(--fg-faint);
+}
+
+/* ── 오늘 요약(스탯 2열) ────────────────────────────────────────────────── */
+.cd-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.cd-stat {
+  background: #fff;
+  border-radius: 18px;
+  padding: 14px 16px;
+  box-shadow: 0 10px 26px -18px rgba(32, 26, 29, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cd-stat__k {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--fg-faint);
+}
+.cd-stat__v {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--fg-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 바로가기 CTA(2열) ──────────────────────────────────────────────────── */
+.cd-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.cd-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 52px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 10px 24px -18px rgba(32, 26, 29, 0.24);
+  border: 1px solid var(--line-card);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--fg-body);
+  --press: 0.96;
+}
+.cd-action__emoji {
+  font-size: 17px;
+  line-height: 1;
+}
+.cd-action--primary {
+  background: linear-gradient(120deg, var(--mint-soft), #fff);
+  border-color: var(--mint-line);
+  color: var(--mint-text);
+}
+
+/* ── 리스트 행(주변소리 · 프로필 편집) ─────────────────────────────────── */
+.cd-row {
+  text-align: left;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  background: #fff;
+  border-radius: 18px;
+  padding: 14px 16px;
+  box-shadow: 0 10px 26px -18px rgba(32, 26, 29, 0.2);
+  --press: 0.98;
+}
+.cd-row__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: var(--bg-page);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex: none;
+}
+.cd-row__main {
+  flex: 1;
+  min-width: 0;
+}
+.cd-row__title {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.cd-row__sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-faint);
+}
+
+/* ── 로딩/빈 상태 ──────────────────────────────────────────────────────── */
+.cd-state {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--fg-muted);
+  font-size: 14.5px;
+  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.cd-state__btn {
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+  font-size: 13.5px;
+  font-weight: 800;
+  --press: 0.95;
+}
+
+/* ── 아이 삭제(연결 해제) ─────────────────────────────────────────────── */
+.cd-danger {
+  text-align: left;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  background: #fff;
+  border: 1px solid var(--danger-soft);
+  border-radius: 18px;
+  padding: 14px 16px;
+  box-shadow: 0 10px 26px -18px rgba(32, 26, 29, 0.2);
+  --press: 0.98;
+}
+.cd-danger__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: var(--danger-soft);
+  color: var(--danger-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.cd-danger__main {
+  flex: 1;
+  min-width: 0;
+}
+.cd-danger__title {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--danger-text);
+}
+.cd-danger__sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-faint);
+}
+
+/* ── 삭제 확인 시트(인앱 오버레이) ──────────────────────────────────────── */
+.cd-confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.cd-confirm__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(28, 22, 25, 0.42);
+  border: none;
+  padding: 0;
+}
+.cd-confirm__sheet {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  padding: 24px 22px calc(22px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 -12px 40px -14px rgba(32, 26, 29, 0.3);
+  animation: cd-sheet-up 0.22s ease;
+}
+@keyframes cd-sheet-up {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.cd-confirm__icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--danger-soft);
+  color: var(--danger-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cd-confirm__title {
+  margin-top: 14px;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.cd-confirm__desc {
+  margin-top: 8px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  font-weight: 600;
+  color: var(--fg-muted);
+}
+.cd-confirm__btns {
+  margin-top: 20px;
+  width: 100%;
+  display: flex;
+  gap: 10px;
+}
+.cd-confirm__cancel,
+.cd-confirm__delete {
+  flex: 1;
+  padding: 14px 0;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 800;
+  --press: 0.97;
+}
+.cd-confirm__cancel {
+  background: var(--bg-page);
+  color: var(--fg-primary);
+}
+.cd-confirm__delete {
+  background: var(--danger-500);
+  color: #fff;
+}
+.cd-confirm__delete:disabled,
+.cd-confirm__cancel:disabled {
+  opacity: 0.6;
+}

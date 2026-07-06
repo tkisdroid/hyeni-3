@@ -1,0 +1,290 @@
+/* 페어링 위저드(P-04) — 화면 전용 스타일. 프리픽스 .pw-* */
+
+.pw-root {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(120% 40% at 50% 0%, #ffe7f0 0%, rgba(255, 231, 240, 0) 55%),
+    linear-gradient(180deg, #fdf4f1, var(--bg-page));
+  animation: hy-fadein 0.35s ease forwards;
+}
+
+/* ── 헤더 ───────────────────────────────────────────────────────────────── */
+.pw-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 16px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(253, 244, 241, 0.9) 60%, rgba(253, 244, 241, 0));
+  backdrop-filter: blur(8px);
+}
+.pw-back {
+  --press: 0.9;
+}
+.pw-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+
+/* ── 콘텐츠 ─────────────────────────────────────────────────────────────── */
+.pw-content {
+  flex: 1;
+  padding: 6px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── 진행 표시 ──────────────────────────────────────────────────────────── */
+.pw-progress {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+.pw-progress__seg {
+  flex: 1;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--line-soft);
+  transition: background 0.2s ease;
+}
+.pw-progress__seg.on {
+  background: var(--hy-accent);
+}
+.pw-steplabel {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--hy-accent-text);
+}
+.pw-lead {
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--fg-primary);
+  margin-top: 2px;
+}
+.pw-note {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.55;
+  color: var(--fg-muted);
+  margin: 2px 2px 0;
+}
+
+/* ── STEP 1 : 아이 수 ──────────────────────────────────────────────────── */
+.pw-count-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.pw-count {
+  height: 76px;
+  border-radius: 18px;
+  background: #fff;
+  border: 2px solid var(--line-card);
+  box-shadow: 0 10px 24px -18px rgba(32, 26, 29, 0.22);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  --press: 0.94;
+}
+.pw-count.on {
+  border-color: var(--hy-accent);
+  background: var(--hy-accent-soft);
+}
+.pw-count.locked {
+  opacity: 0.55;
+  background: var(--bg-page);
+}
+.pw-count__n {
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--fg-primary);
+}
+.pw-count.on .pw-count__n {
+  color: var(--hy-accent-text);
+}
+.pw-count.locked .pw-count__n {
+  color: var(--fg-faint);
+}
+.pw-count__u {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--fg-faint);
+}
+.pw-count.locked .pw-count__u {
+  color: var(--gold-text);
+}
+
+/* ── STEP 2 : 아이 정보 카드 ──────────────────────────────────────────── */
+.pw-childcard {
+  background: #fff;
+  border-radius: 22px;
+  padding: 16px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pw-childcard__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.pw-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+.pw-flabel {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--fg-tertiary);
+}
+.pw-input {
+  width: 100%;
+  height: 48px;
+  border: 1.5px solid var(--line-soft);
+  background: #fff;
+  border-radius: 13px;
+  padding: 0 14px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--fg-primary);
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.16s ease;
+}
+.pw-input:focus {
+  border-color: var(--hy-accent);
+}
+
+/* 사진 + 이름 한 줄 */
+.pw-photorow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.pw-photorow__field {
+  flex: 1;
+  min-width: 0;
+}
+.pw-photo {
+  position: relative;
+  width: 68px;
+  height: 68px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--hy-accent-soft);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 18px -10px rgba(32, 26, 29, 0.4);
+  --press: 0.94;
+}
+.pw-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pw-photo:disabled {
+  opacity: 0.7;
+}
+.pw-photo__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--hy-accent-text);
+}
+.pw-photo__edit {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--hy-accent);
+  border: 2.5px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── STEP 3 : 요약 ─────────────────────────────────────────────────────── */
+.pw-summary {
+  background: #fff;
+  border-radius: 20px;
+  padding: 6px 16px;
+  box-shadow: var(--shadow-card);
+}
+.pw-summary__row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line-hair);
+}
+.pw-summary__row:last-child {
+  border-bottom: none;
+}
+.pw-summary__photo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+  background: var(--hy-accent-soft);
+}
+.pw-summary__photo--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--hy-accent-text);
+}
+.pw-summary__name {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--fg-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── 하단 고정 CTA ─────────────────────────────────────────────────────── */
+.pw-footer {
+  position: sticky;
+  bottom: 0;
+  padding: 12px 20px calc(env(safe-area-inset-bottom, 0px) + 16px);
+  background: linear-gradient(0deg, var(--bg-page) 70%, rgba(247, 244, 243, 0));
+}
+.pw-cta {
+  width: 100%;
+  height: 56px;
+  border-radius: 18px;
+  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  box-shadow: 0 16px 32px -12px rgba(240, 81, 143, 0.6);
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  --press: 0.98;
+  transition: opacity 0.16s ease;
+}
+.pw-cta:disabled {
+  opacity: 0.45;
+  box-shadow: none;
+}

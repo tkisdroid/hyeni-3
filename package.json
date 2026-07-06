@@ -1,0 +1,36 @@
+{
+  "name": "hyeni-calendar",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "혜니캘린더 — 가족 일정 공유 + 부모·자녀 위치/안전 (리디자인)",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --noEmit"
+  },
+  "dependencies": {
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/core": "^8.4.1",
+    "@tanstack/react-query": "^5.101.2",
+    "lucide-react": "^0.469.0",
+    "qrcode": "^1.5.4",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.1.5"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/cli": "^8.4.1",
+    "@types/node": "^22.10.7",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "sharp": "^0.35.3",
+    "typescript": "^5.7.3",
+    "vite": "^7.3.1",
+    "vite-plugin-pwa": "^1.0.0"
+  }
+}

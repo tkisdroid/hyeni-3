@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 아이콘 헤더 배지 (원형) — 일반/null 톤. rose-soft 악센트 배경.
+     PushAlertActivity 가 channel 에 따라 코드에서 배경을 교체한다. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/alert_accent_normal_soft" />
+</shape>

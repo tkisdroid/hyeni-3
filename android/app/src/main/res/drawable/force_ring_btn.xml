@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ForceRing ack 버튼 (pill). 흰 surface + 빨강 텍스트.
+     radius 26dp (공통 pill 값). 색은 force_ring_btn_bg 토큰 참조. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/force_ring_btn_bg" />
+    <corners android:radius="26dp" />
+</shape>

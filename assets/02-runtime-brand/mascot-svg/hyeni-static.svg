@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88 88" width="88" height="88" role="img" aria-label="혜니 마스코트">
+  <!-- Face -->
+  <circle cx="44" cy="36" r="20" fill="#FFE4EF" stroke="#F779A8" stroke-width="1.5"/>
+  <!-- Eyes -->
+  <circle cx="37" cy="33" r="2.4" fill="#171719"/>
+  <circle cx="51" cy="33" r="2.4" fill="#171719"/>
+  <!-- Smile -->
+  <path d="M 36 42 Q 44 47 52 42" stroke="#171719" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- Cheeks -->
+  <circle cx="32" cy="38" r="3" fill="#F779A8" opacity="0.5"/>
+  <circle cx="56" cy="38" r="3" fill="#F779A8" opacity="0.5"/>
+  <!-- Ice cream cone -->
+  <path d="M 30 60 L 58 60 L 44 84 Z" fill="#FFF5FA" stroke="#F779A8" stroke-width="1.5"/>
+  <!-- Ice cream scoop -->
+  <ellipse cx="44" cy="60" rx="16" ry="7" fill="#FFFFFF" stroke="#F779A8" stroke-width="1.5"/>
+  <!-- Sprinkles -->
+  <circle cx="38" cy="58" r="2" fill="#F779A8" opacity="0.4"/>
+  <circle cx="46" cy="55" r="2" fill="#F779A8" opacity="0.4"/>
+  <circle cx="50" cy="59" r="2" fill="#F779A8" opacity="0.4"/>
+</svg>

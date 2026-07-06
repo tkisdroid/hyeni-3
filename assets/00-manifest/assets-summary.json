@@ -1,0 +1,188 @@
+[
+  {
+    "group": "audio",
+    "category": "root-notification",
+    "count": 1,
+    "bytes": 49998.0
+  },
+  {
+    "group": "audio",
+    "category": "src-lib-notification",
+    "count": 2,
+    "bytes": 59931.0
+  },
+  {
+    "group": "curated-library",
+    "category": "가족스티커",
+    "count": 4,
+    "bytes": 599672.0
+  },
+  {
+    "group": "curated-library",
+    "category": "긴급아이콘",
+    "count": 8,
+    "bytes": 776691.0
+  },
+  {
+    "group": "curated-library",
+    "category": "데코스티커",
+    "count": 52,
+    "bytes": 3453362.0
+  },
+  {
+    "group": "curated-library",
+    "category": "메인캐릭터",
+    "count": 12,
+    "bytes": 4624914.0
+  },
+  {
+    "group": "curated-library",
+    "category": "무드스티커",
+    "count": 18,
+    "bytes": 1730211.0
+  },
+  {
+    "group": "curated-library",
+    "category": "배경요소",
+    "count": 15,
+    "bytes": 887914.0
+  },
+  {
+    "group": "curated-library",
+    "category": "빈상태일러스트",
+    "count": 7,
+    "bytes": 979451.0
+  },
+  {
+    "group": "curated-library",
+    "category": "스플래시화면",
+    "count": 1,
+    "bytes": 162182.0
+  },
+  {
+    "group": "curated-library",
+    "category": "시스템아이콘",
+    "count": 16,
+    "bytes": 1018124.0
+  },
+  {
+    "group": "curated-library",
+    "category": "알림아이콘",
+    "count": 28,
+    "bytes": 2311738.0
+  },
+  {
+    "group": "curated-library",
+    "category": "위젯캐릭터",
+    "count": 3,
+    "bytes": 369306.0
+  },
+  {
+    "group": "curated-library",
+    "category": "위치아이콘",
+    "count": 12,
+    "bytes": 901354.0
+  },
+  {
+    "group": "curated-library",
+    "category": "이동스티커",
+    "count": 2,
+    "bytes": 173233.0
+  },
+  {
+    "group": "curated-library",
+    "category": "일정스티커",
+    "count": 17,
+    "bytes": 1962212.0
+  },
+  {
+    "group": "curated-library",
+    "category": "장소아이콘",
+    "count": 21,
+    "bytes": 1768044.0
+  },
+  {
+    "group": "curated-library",
+    "category": "카테고리아이콘",
+    "count": 103,
+    "bytes": 9160880.0
+  },
+  {
+    "group": "curated-library",
+    "category": "프로필이미지",
+    "count": 15,
+    "bytes": 1716793.0
+  },
+  {
+    "group": "design-reference",
+    "category": "design",
+    "count": 9,
+    "bytes": 10284959.0
+  },
+  {
+    "group": "design-reference",
+    "category": "screenshots",
+    "count": 64,
+    "bytes": 20772000.0
+  },
+  {
+    "group": "fonts",
+    "category": "public-fonts",
+    "count": 1,
+    "bytes": 2057688.0
+  },
+  {
+    "group": "platform",
+    "category": "android-res",
+    "count": 27,
+    "bytes": 2960349.0
+  },
+  {
+    "group": "platform",
+    "category": "web-public",
+    "count": 3,
+    "bytes": 209662.0
+  },
+  {
+    "group": "runtime-3d",
+    "category": "current-app-3d",
+    "count": 132,
+    "bytes": 2626474.0
+  },
+  {
+    "group": "runtime-brand",
+    "category": "legacy-mascot-svg",
+    "count": 2,
+    "bytes": 2770.0
+  },
+  {
+    "group": "runtime-brand",
+    "category": "logo-fallback",
+    "count": 1,
+    "bytes": 38020.0
+  },
+  {
+    "group": "runtime-brand",
+    "category": "template-leftover",
+    "count": 1,
+    "bytes": 4126.0
+  },
+  {
+    "group": "source-sheets",
+    "category": "raw-extracted",
+    "count": 58,
+    "bytes": 57019982.0
+  },
+  {
+    "group": "source-sheets",
+    "category": "stitch-root",
+    "count": 48,
+    "bytes": 59169912.0
+  },
+  {
+    "group": "store-listing",
+    "category": "play-console-assets",
+    "count": 4,
+    "bytes": 1687415.0
+  }
+]

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ====================================================================
+         전체화면 알림 UI 팔레트 — 다크 대응
+         src/styles/tokens.css §16 Dark Mode 토큰을 참조한다.
+         (bg-card 1E2226 / fg-primary FAFAFA / fg-secondary C7C7CC /
+          line 2D3338). 핑크/민트는 채도를 약간 낮추고, SOS 빨강은
+          다크에서도 명확하게 유지한다.
+         라이트 정의된 같은 이름의 color 만 override (추가/신설만 허용).
+         ==================================================================== -->
+
+    <!-- Scrim: 다크에서는 더 짙게 -->
+    <color name="alert_bg_scrim">#D9000000</color>
+
+    <!-- 공통 카드 surface: bg-card(dark) 미러 -->
+    <color name="alert_card_bg">#1E2226</color>
+
+    <!-- 텍스트: fg-primary / fg-secondary (dark) -->
+    <color name="alert_title">#FAFAFA</color>
+    <color name="alert_body">#C7C7CC</color>
+
+    <!-- 헤더 악센트: 채도 약간 낮춘 핑크 계열, soft 는 카드 위 옅은 틴트 -->
+    <color name="alert_accent_emergency">#E86B95</color>
+    <color name="alert_accent_emergency_soft">#3A2630</color>
+    <color name="alert_accent_kkuk">#F779A8</color>
+    <color name="alert_accent_kkuk_soft">#3A2630</color>
+    <color name="alert_accent_normal">#F779A8</color>
+    <color name="alert_accent_normal_soft">#3A2630</color>
+
+    <!-- 주 버튼: 핑크 유지(악센트), 텍스트 흰색 -->
+    <color name="btn_primary_bg">#F779A8</color>
+    <color name="btn_primary_bg_deep">#C2476F</color>
+    <color name="btn_primary_text">#FFFFFF</color>
+    <!-- 보조 버튼: 다크 surface + 라인 -->
+    <color name="btn_secondary_bg">#2A2F34</color>
+    <color name="btn_secondary_text">#C7C7CC</color>
+    <color name="btn_secondary_line">#3A4046</color>
+
+    <!-- 카드 외곽선: line-soft(dark) -->
+    <color name="alert_card_line">#2D3338</color>
+
+    <!-- ForceRing: 다크에서도 SOS 빨강 명확 유지 (약간만 톤다운) -->
+    <color name="force_ring_bg">#C81E1E</color>
+    <color name="force_ring_fg">#FFFFFF</color>
+    <color name="force_ring_fg_dim">#F5B5B5</color>
+    <!-- 메시지 카드: 다크 surface -->
+    <color name="force_ring_card_bg">#1E2226</color>
+    <color name="force_ring_card_label">#E0B15A</color>
+    <color name="force_ring_card_body">#FAFAFA</color>
+    <!-- ack 버튼: 밝은 surface + 빨강 텍스트 (가독성 유지) -->
+    <color name="force_ring_btn_bg">#FFFFFF</color>
+    <color name="force_ring_btn_text">#C81E1E</color>
+</resources>

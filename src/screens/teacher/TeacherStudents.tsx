@@ -1,0 +1,268 @@
+import { useMemo, useState } from "react";
+import { Plus, X } from "lucide-react";
+import { asset } from "@/lib/assets";
+import { useToast } from "@/app/toast";
+import {
+  useTeacherClasses,
+  useRoster,
+  useAttendance,
+  useSetAttendance,
+  useRequestPairing,
+} from "@/queries/useTeacher";
+import { isMissingFunction } from "@/lib/api/errors";
+import { isoDateKey, mapRosterToStudents, type StudentView } from "@/transform/teacherView";
+import "./TeacherStudents.css";
+
+// 선생님이 기록 가능한 참석 상태(백엔드 enum 중 의미 있는 3종). '지각'은 서버 상태가 없어 미노출.
+const ATTEND_ACTIONS = [
+  { status: "attended", label: "출석" },
+  { status: "left", label: "하교" },
+  { status: "absent", label: "결석" },
+] as const;
+
+// 연결 요청 결과 status → 학부모용 한글 안내(서버 jsonb status 계약).
+const PAIRING_MESSAGES: Record<string, string> = {
+  not_found: "입력한 번호로 연결할 보호자·아이를 찾지 못했어요. 번호를 다시 확인해 주세요",
+  rate_limited: "연결 요청이 많아요. 잠시 후 다시 시도해 주세요",
+  duplicate: "이미 연결 요청을 보냈어요",
+  revoked_blocked: "부모님이 연결을 해제하셨어요. 부모님께 직접 요청해 주세요",
+};
+
+export function TeacherStudents() {
+  const { show } = useToast();
+
+  // 출석 태그·기록 기준일(표준 ISO). 마운트 시 고정해 쿼리키 churn 방지.
+  const todayIso = useMemo(() => isoDateKey(new Date()), []);
+
+  const classesQ = useTeacherClasses();
+  const firstClass = classesQ.data?.[0] ?? null;
+  const classId = firstClass?.classId ?? null;
+  const className = firstClass?.className ?? "우리 반";
+
+  const rosterQ = useRoster(classId);
+  const attendanceQ = useAttendance(classId, todayIso);
+
+  const students = useMemo(
+    () => mapRosterToStudents(rosterQ.data ?? [], attendanceQ.data ?? []),
+    [rosterQ.data, attendanceQ.data],
+  );
+
+  // ── 출석 기록(출석·하교·결석) ──
+  const setAttendance = useSetAttendance();
+  const [savingId, setSavingId] = useState<string | null>(null);
+
+  const saveAttendance = (s: StudentView, status: (typeof ATTEND_ACTIONS)[number]["status"]) => {
+    if (s.status === status && savingId !== s.childMemberId) {
+      // 이미 같은 상태면 재저장 불필요.
+      return;
+    }
+    setSavingId(s.childMemberId);
+    setAttendance.mutate(
+      { childMemberId: s.childMemberId, dateKey: todayIso, status, scheduleId: null },
+      {
+        onSuccess: () => show(`${s.name} 참석 상태를 저장했어요`, "✅"),
+        onError: (err) =>
+          show(err instanceof Error ? err.message : "참석 상태를 저장하지 못했어요", "⚠️"),
+        onSettled: () => setSavingId(null),
+      },
+    );
+  };
+
+  // ── 학생 초대(선생님 → 부모 연결 요청) ──
+  const requestPairing = useRequestPairing();
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [invitePhone, setInvitePhone] = useState("");
+  const [inviteChild, setInviteChild] = useState("");
+
+  const openInvite = () => {
+    if (!classId) {
+      show("먼저 반을 만들어야 학생을 초대할 수 있어요", "🧑‍🏫");
+      return;
+    }
+    setInvitePhone("");
+    setInviteChild("");
+    setInviteOpen(true);
+  };
+
+  const sendInvite = () => {
+    if (!classId) return;
+    const phone = invitePhone.trim();
+    if (!phone) {
+      show("부모님 전화번호를 입력해 주세요", "📞");
+      return;
+    }
+    requestPairing.mutate(
+      { classId, phone, childName: inviteChild.trim() || null },
+      {
+        onSuccess: (data) => {
+          if (data.status === "ok") {
+            show("부모님께 연결 요청을 보냈어요", "🔗");
+            setInviteOpen(false);
+            setInvitePhone("");
+            setInviteChild("");
+          } else {
+            show(
+              PAIRING_MESSAGES[data.status ?? ""] ??
+                "연결 요청을 보내지 못했어요. 번호를 다시 확인해 주세요",
+              "⚠️",
+            );
+          }
+        },
+        onError: (err) => {
+          show(err instanceof Error ? err.message : "연결 요청을 보내지 못했어요", "⚠️");
+        },
+      },
+    );
+  };
+
+  const loading = classesQ.isLoading || rosterQ.isLoading;
+  const genuineError = classesQ.isError && !isMissingFunction(classesQ.error);
+  const notReady = !loading && !classId;
+
+  return (
+    <div className="hy-rise-in">
+      <div className="ts-header">
+        <span className="ts-title">학생</span>
+        <button
+          type="button"
+          className="ts-invite hy-press"
+          aria-label="학생 초대"
+          onClick={openInvite}
+        >
+          <Plus size={22} strokeWidth={2.4} color="#23A876" />
+        </button>
+      </div>
+
+      <div className="ts-body">
+        {loading && <div className="ts-empty ts-empty--soft">학생 명단을 불러오는 중…</div>}
+
+        {notReady && (
+          <div className="ts-empty">
+            <span className="ts-empty__emoji">🧑‍🏫</span>
+            <span className="ts-empty__title">
+              {genuineError ? "잠시 후 다시 시도해 주세요" : "선생님 모드 준비 중"}
+            </span>
+            <span className="ts-empty__sub">
+              {genuineError
+                ? "학생 명단을 불러오지 못했어요."
+                : "반을 만들고 학생을 연결하면 여기에 명단이 표시돼요."}
+            </span>
+          </div>
+        )}
+
+        {!loading && !notReady && (
+          <>
+            <div className="ts-meta">
+              {className} · 학생 <span className="ts-meta__count">{students.length}명</span>
+            </div>
+
+            <div className="hy-card ts-list">
+              {students.length === 0 && (
+                <div className="ts-row--empty">아직 등록된 학생이 없어요</div>
+              )}
+              {students.map((s) => {
+                const saving = savingId === s.childMemberId;
+                return (
+                  <div key={s.id} className="ts-row">
+                    <div className="ts-row__top">
+                      <span className="ts-avatar" style={{ background: s.soft }}>
+                        <img src={asset(s.avatar)} alt="" />
+                      </span>
+                      <span className="ts-main">
+                        <span className="ts-name">{s.name}</span>
+                        <span className="ts-parent">{s.subtitle}</span>
+                      </span>
+                      <span
+                        className="ts-tag"
+                        style={{ color: s.attend.tone, background: s.attend.bg }}
+                      >
+                        {s.attend.label}
+                      </span>
+                    </div>
+                    <div className="ts-attend" role="group" aria-label={`${s.name} 출결`}>
+                      {ATTEND_ACTIONS.map((a) => {
+                        const active = s.status === a.status;
+                        return (
+                          <button
+                            key={a.status}
+                            type="button"
+                            className={`ts-attend__btn${active ? " ts-attend__btn--on" : ""} hy-press`}
+                            data-status={a.status}
+                            onClick={() => saveAttendance(s, a.status)}
+                            disabled={saving}
+                          >
+                            {a.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="ts-hint">
+              <span className="ts-hint__ico">🔗</span>
+              부모님 전화번호로 초대하면, 부모님 승인 후 학생이 자동으로 연결돼요.
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* 학생 초대 시트 — 부모 전화번호로 연결 요청(useRequestPairing) */}
+      {inviteOpen && (
+        <div
+          className="ts-sheet-overlay"
+          role="presentation"
+          onClick={() => setInviteOpen(false)}
+        >
+          <div
+            className="ts-sheet"
+            role="dialog"
+            aria-label="학생 초대"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="ts-sheet__head">
+              <span className="ts-sheet__title">학생 초대</span>
+              <button
+                type="button"
+                className="ts-sheet__x hy-press"
+                aria-label="닫기"
+                onClick={() => setInviteOpen(false)}
+              >
+                <X size={20} strokeWidth={2.4} color="#6D6469" />
+              </button>
+            </div>
+            <p className="ts-sheet__desc">
+              부모님 전화번호로 초대하면, 부모님 승인 후 학생이 자동으로 연결돼요.
+            </p>
+            <div className="ts-sheet__label">부모님 전화번호</div>
+            <input
+              className="ts-sheet__input"
+              type="tel"
+              inputMode="tel"
+              value={invitePhone}
+              onChange={(e) => setInvitePhone(e.target.value)}
+              placeholder="010-1234-5678"
+            />
+            <div className="ts-sheet__label">아이 이름 (선택)</div>
+            <input
+              className="ts-sheet__input"
+              value={inviteChild}
+              onChange={(e) => setInviteChild(e.target.value)}
+              placeholder="자녀가 여럿일 때 특정을 도와요"
+            />
+            <button
+              type="button"
+              className="ts-sheet__send hy-press"
+              onClick={sendInvite}
+              disabled={requestPairing.isPending}
+            >
+              {requestPairing.isPending ? "요청 보내는 중…" : "연결 요청 보내기"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

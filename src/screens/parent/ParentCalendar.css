@@ -1,0 +1,435 @@
+/* 부모 캘린더 — 화면 전용 스타일 (원본 dc.html 669–743행 값 1:1) */
+
+/* ── 월 헤더 (sticky) ───────────────────────────────────────────────────── */
+.pc-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 20px 14px;
+  background: linear-gradient(180deg, rgba(251, 247, 244, 0.94) 62%, rgba(251, 247, 244, 0));
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+.pc-year {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fg-faint);
+}
+.pc-month {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--fg-primary);
+}
+.pc-header__nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pc-navbtn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(32, 26, 29, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  --press: 0.9;
+}
+.pc-addbtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  box-shadow: 0 8px 18px -6px rgba(240, 81, 143, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  --press: 0.9;
+}
+
+/* ── 본문 ───────────────────────────────────────────────────────────────── */
+.pc-body {
+  padding: 2px 16px calc(120px + env(safe-area-inset-bottom, 0px));
+}
+
+/* ── 월간 그리드 카드 ───────────────────────────────────────────────────── */
+.pc-card {
+  background: #fff;
+  border-radius: 26px;
+  padding: 16px 12px 10px;
+  box-shadow: 0 12px 30px rgba(32, 26, 29, 0.05);
+}
+.pc-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 6px;
+}
+.pc-weekday {
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #b7adb2;
+}
+.pc-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.pc-cell-empty {
+  height: 46px;
+}
+.pc-day {
+  height: 46px;
+  border-radius: 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: transparent;
+  --press: 0.9;
+}
+.pc-day__num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  transition: transform 0.12s ease;
+}
+.pc-day__dots {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 4px;
+}
+.pc-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+}
+/* 셀당 점 3개 초과 시 +N 배지 */
+.pc-day__more {
+  font-size: 7.5px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--fg-faint);
+  margin-left: 1px;
+}
+
+/* ── 선택일 헤더 ────────────────────────────────────────────────────────── */
+.pc-sel {
+  margin-top: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+.pc-sel__label {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--fg-primary);
+}
+.pc-today-badge {
+  flex: none;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--hy-accent-text);
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--hy-accent-soft);
+}
+
+/* ── 선택일 일정 타임라인 ───────────────────────────────────────────────── */
+.pc-events {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pc-event {
+  display: flex;
+  gap: 12px;
+}
+.pc-event__rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 6px;
+}
+.pc-event__node {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex: none;
+}
+.pc-event__line {
+  flex: 1;
+  width: 2px;
+  background: rgba(32, 26, 29, 0.08);
+  margin-top: 4px;
+}
+.pc-event__card {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: #fff;
+  border-radius: 18px;
+  padding: 12px 14px;
+  box-shadow: 0 8px 20px rgba(32, 26, 29, 0.045);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 2px;
+  --press: 0.985;
+}
+.pc-event__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.pc-event__icon img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+.pc-event__body {
+  flex: 1;
+  min-width: 0;
+}
+.pc-event__time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--fg-faint);
+}
+/* 다자녀: 배정 아이 이름 배지(배정 없는 가족 공유는 배지 없음) */
+.pc-event__child {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+  font-size: 10px;
+  font-weight: 800;
+}
+.pc-event__title {
+  display: block;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--fg-primary);
+}
+.pc-event__place {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--fg-faint);
+}
+.pc-event__tag {
+  flex: none;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* ── 빈 상태 ────────────────────────────────────────────────────────────── */
+.pc-empty {
+  margin-top: 30px;
+  text-align: center;
+  padding: 24px;
+}
+.pc-empty img {
+  width: 78px;
+  height: 78px;
+  object-fit: contain;
+  opacity: 0.8;
+}
+.pc-empty__title {
+  margin-top: 10px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.pc-empty__sub {
+  margin-top: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--fg-faint);
+}
+
+/* ── 일정 상세 바텀시트(P-08) ───────────────────────────────────────────── */
+/* 앱 프레임(.hy-app, max-width 448 중앙정렬)에 맞춰 시트를 constrain. */
+.pc-sheet-root {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  max-width: 448px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.pc-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(31, 24, 28, 0.32);
+  animation: hy-fadein 0.2s ease forwards;
+}
+.pc-sheet {
+  position: relative;
+  z-index: 1;
+  background: var(--bg-card);
+  border-radius: 26px 26px 0 0;
+  padding: 6px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -8px 34px rgba(32, 26, 29, 0.18);
+  animation: hy-sheetup 0.32s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.pc-sheet__grip {
+  padding: 6px 0 2px;
+  display: flex;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+}
+.pc-sheet__handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(32, 26, 29, 0.14);
+}
+.pc-sheet__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.pc-sheet__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  flex: none;
+}
+.pc-sheet__headtext {
+  flex: 1;
+  min-width: 0;
+}
+.pc-sheet__title {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--fg-primary);
+}
+.pc-sheet__sub {
+  margin-top: 2px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--fg-muted);
+}
+.pc-sheet__tag {
+  flex: none;
+  padding: 6px 11px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+}
+.pc-sheet__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pc-sheet__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 13px;
+  border-radius: 14px;
+  background: var(--bg-page);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--fg-body);
+}
+.pc-sheet__row svg {
+  flex: none;
+}
+.pc-sheet__row--memo {
+  align-items: flex-start;
+  line-height: 1.45;
+}
+.pc-sheet__memo-ic {
+  font-size: 15px;
+  line-height: 1.3;
+  flex: none;
+}
+.pc-sheet__note {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--fg-faint);
+  padding: 0 2px;
+}
+.pc-sheet__confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pc-sheet__confirm-text {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--fg-primary);
+  text-align: center;
+}
+.pc-sheet__actions {
+  display: flex;
+  gap: 8px;
+}
+.pc-btn {
+  height: 50px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 14.5px;
+  font-weight: 800;
+  --press: 0.97;
+}
+.pc-btn--ghost {
+  flex: 1;
+  background: #f2eef0;
+  color: var(--fg-tertiary);
+}
+.pc-btn--primary {
+  flex: 2;
+  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  color: #fff;
+  box-shadow: 0 12px 26px -10px rgba(240, 81, 143, 0.6);
+}
+.pc-btn--danger {
+  flex: 1;
+  background: #e5484d;
+  color: #fff;
+}
+.pc-btn:disabled {
+  opacity: 0.6;
+}

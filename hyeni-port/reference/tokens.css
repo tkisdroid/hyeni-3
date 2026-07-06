@@ -1,0 +1,1257 @@
+/* ==========================================================================
+   Wanted Design System — Hyeni App Tokens
+   Source: github.com/wanteddev/montage-web (WDS atomic palette) — aligned 2026-05-04
+   Atomic palette: coolNeutral[5..99], blue[10..99], green[10..99], red[10..99],
+                   orange[10..99], pink[10..99]
+   See: WANTED_DS_SPEC.md
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Light mode (default)
+   -------------------------------------------------------------------------- */
+:root {
+  /* Surfaces — WDS background.normal */
+  --bg-base:     #FFFFFF;     /* common[100] · card surface, primary canvas */
+  --bg-subtle:   #F7F7F8;     /* coolNeutral[99] · app background, hover */
+  --bg-muted:    #F4F4F5;     /* coolNeutral[98] · disabled surface */
+  --bg-inverse:  #1B1C1E;     /* coolNeutral[15] · inverse background */
+
+  /* Foreground — WDS label */
+  --fg-primary:    #171719;                   /* coolNeutral[10] · label.normal */
+  --fg-secondary:  rgba(46, 47, 51, 0.88);    /* coolNeutral[22]@88 · label.neutral */
+  --fg-tertiary:   rgba(55, 56, 60, 0.61);    /* coolNeutral[25]@61 · label.alternative */
+  --fg-disabled:   rgba(55, 56, 60, 0.16);    /* coolNeutral[25]@16 · label.disable */
+  --fg-strong:     #000000;                   /* common[0] · label.strong */
+  --fg-on-primary: #FFFFFF;                   /* common[100] */
+
+  /* Lines — WDS line.normal (coolNeutral[50] alpha) */
+  --line-subtle:   rgba(112, 115, 124, 0.08);   /* line.normal.alternative */
+  --line-soft:     rgba(112, 115, 124, 0.16);   /* line.normal.neutral · card border */
+  --line-default:  rgba(112, 115, 124, 0.22);   /* line.normal.normal · hover */
+  --line-strong:   rgba(112, 115, 124, 0.40);
+  --line-disabled: rgba(55, 56, 60, 0.10);
+
+  /* Brand — WDS primary (blue ramp) */
+  --primary:       #0066FF;   /* blue[50] · primary.normal */
+  --primary-hover: #005EEB;   /* blue[45] · primary.strong */
+  --primary-press: #0054D1;   /* blue[40] · primary.heavy */
+
+  /* Status — WDS status (atomic palette) */
+  --status-positive:          #00BF40;                   /* green[50] · surface */
+  --status-positive-strong:   #009632;                   /* green[40] · text on subtle bg */
+  --status-positive-subtle:   rgba(0, 191, 64, 0.10);
+  --status-negative:          #E52222;                   /* red[40] · surface (safer than red[50]) */
+  --status-negative-strong:   #B00C0C;                   /* red[30] · text on subtle bg */
+  --status-negative-subtle:   rgba(229, 34, 34, 0.10);
+  --status-cautionary:        #FF9200;                   /* orange[50] · surface */
+  --status-cautionary-strong: #D17600;                   /* orange[39] · text on subtle bg */
+  --status-cautionary-subtle: rgba(255, 146, 0, 0.10);
+
+  /* Secondary button press state — WDS coolNeutral[97] */
+  --secondary-press-bg: #EAEBEC;
+
+  /* ─── DESIGN_revision §5.1 — Premium Kawaii brand tokens ─────────────── */
+
+  /* App background */
+  --bg-app:           #F8FFF9;
+  --bg-page:          #FBFAF6;
+  --bg-page-mint:     #F1FBF6;
+  --bg-page-rose:     #FFF7FA;
+  --bg-card:          #FFFFFF;
+  --bg-card-soft:     #FFFDF8;
+  --bg-mint-soft:     #EAF9F1;
+  --bg-rose-soft:     #FFF0F5;
+  --bg-lavender-soft: #F2ECFF;
+  --bg-cream-soft:    #FFF7E8;
+
+  /* Foreground addition */
+  --fg-on-accent: #FFFFFF;
+
+  /* Brand Mint */
+  --brand-mint:       #31C48D;
+  --brand-mint-deep:  #15936B;
+  --brand-mint-soft:  #DDF7EA;
+  --brand-mint-line:  #BCEBD8;
+  --brand-mint-text:  #087653;
+
+  /* Brand Rose */
+  --brand-rose:       #F779A8;
+  --brand-rose-deep:  #D94F7F;
+  --brand-rose-soft:  #FFE2EC;
+  --brand-rose-line:  #FFD0DD;
+  --brand-rose-text:  #B83262;
+
+  /* Brand Lavender */
+  --brand-lavender:       #A78BFA;
+  --brand-lavender-deep:  #7C5CE1;
+  --brand-lavender-soft:  #EFE8FF;
+  --brand-lavender-line:  #DDD1FF;
+  --brand-lavender-text:  #5F43B2;
+
+  /* Warm Accent */
+  --brand-cream:       #FFF7E8;
+  --brand-yellow:      #FFD76A;
+  --brand-yellow-soft: #FFF3C7;
+
+  /* Brand-flavored line tokens (DR uses these for tinted card borders) */
+  --line-mint:     #BCEBD8;
+  --line-rose:     #FFD0DD;
+  --line-lavender: #DDD1FF;
+
+  /* DR status alias (semantic-named in DR; existing positive/negative/cautionary still valid) */
+  --status-safe:        #23B96F;
+  --status-safe-soft:   #DDF7EA;
+  --status-safe-text:   #087653;
+  --status-caution:     #F5A524;
+  --status-caution-soft:#FFF1D6;
+  --status-caution-text:#9A6500;
+  --status-danger:      #E03030;
+  --status-danger-soft: #FFE3E3;
+  --status-danger-text: #B91C1C;
+
+  /* ─── 2026-06-11 디자인 감사 백로그 #2/#3/#5 토큰 ─────────────────────── */
+
+  /* Scrim — 모달/시트/배너 백드롭 단일 정본(구 rgba 4종 통일, 다크 인지).
+     긴급(emergency)만 빨강 틴트 유지(빨강은 SOS/긴급 전용 정책과 부합). */
+  --scrim:           color-mix(in srgb, var(--theme-accent) 14%, color-mix(in srgb, var(--fg-primary) 36%, transparent));
+  --scrim-emergency: rgba(127, 29, 29, 0.46);
+  /* 시트/오버레이 백드롭 blur 단일 정본(구 12/32/10/6/4 난립 통일). */
+  --sheet-backdrop-blur: 12px;
+
+  /* z-index 레이어 스케일 — 화면 포맷 통일(구 250~10020 난립 치환).
+     sheet=일반 바텀시트, sheet-stacked=시트 위 시트, dialog=확인/위 모달, toast=최상단 알림. */
+  --z-sheet:         600;
+  --z-sheet-stacked: 680;
+  --z-dialog:        10000;
+  --z-toast:         10040;
+
+  /* Sheet surface — 하단 시트 공통 표면. 반투명 회색감을 제거하고 앱 테마 톤으로 통일. */
+  --glass-sheet-bg:
+    linear-gradient(180deg,
+      var(--bg-base) 0%,
+      color-mix(in srgb, var(--theme-accent-soft) 34%, var(--bg-base)) 100%);
+  --glass-sheet-line: var(--theme-accent-line);
+
+  /* 진입 화면(스플래시·역할선택·로그인·자녀 페어링) — 보스 결정: 테마 반영.
+     구 로즈 고정 그라디언트(#FFE7EE→#FFF6F2→#F4E4FB 등)를 theme-accent 기반으로. */
+  --auth-shell-gradient:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--theme-accent) 13%, var(--bg-base)) 0%,
+      color-mix(in srgb, var(--theme-accent) 4%, var(--bg-base)) 50%,
+      color-mix(in srgb, var(--brand-lavender) 14%, var(--bg-base)) 100%);
+  --auth-cta-gradient:
+    linear-gradient(90deg,
+      color-mix(in srgb, var(--theme-accent) 72%, var(--bg-base)) 0%,
+      var(--theme-accent) 100%);
+  --auth-frame-gradient:
+    linear-gradient(135deg,
+      var(--theme-accent-soft) 0%,
+      color-mix(in srgb, var(--theme-accent) 42%, var(--bg-base)) 100%);
+
+  /* AlertBanner friend/sync 확인 버튼 — 보스 결정: 현 색 보존 전용 토큰(팔레트 외 2색) */
+  --alert-banner-friend: linear-gradient(135deg, #059669, var(--status-positive));
+  --alert-banner-sync:   linear-gradient(135deg, #0369A1, #0EA5E9);
+
+  /* Map palette — DR §5.1 */
+  --map-green:    #BDEFD0;
+  --map-road:     #EFE6DA;
+  --map-water:    #CFEAFB;
+  --map-building: #F8D9E1;
+  --map-pin-mint: #31C48D;
+  --map-pin-rose: #F779A8;
+
+  /* DR §9.1 — Soft 3D shadow scale */
+  --shadow-xs:       0 2px 8px rgba(31, 24, 28, 0.04);
+  --shadow-soft:     0 8px 24px rgba(31, 24, 28, 0.06);
+  --shadow-card:     0 12px 32px rgba(31, 24, 28, 0.08);
+  --shadow-floating: 0 18px 44px rgba(31, 24, 28, 0.12);
+  --shadow-mint:     0 12px 30px rgba(49, 196, 141, 0.16);
+  --shadow-rose:     0 12px 30px rgba(247, 121, 168, 0.18);
+  --shadow-lavender: 0 12px 30px rgba(167, 139, 250, 0.16);
+
+  /* DR §7.1 layout constants */
+  --page-padding: 20px;
+  --section-gap:  26px;
+  --card-gap:     14px;
+
+  /* Radius scale — DESIGN_revision.md §8.1 */
+  --radius-xs:   8px;
+  --radius-sm:  12px;
+  --radius-md:  16px;
+  --radius-lg:  22px;
+  --radius-xl:  28px;
+  --radius-2xl: 34px;
+  --radius-3xl: 40px;
+  --radius-full: 9999px;
+  /* Aliases — DR §8.2 usage map */
+  --radius-card:    var(--radius-lg);   /* 22px — general card */
+  --radius-card-lg: var(--radius-xl);   /* 28px — hero / header card */
+  --radius-control: var(--radius-md);   /* 16px — button (18–24px range) */
+  --radius-pill:    var(--radius-full); /* pill — chip / button capsule */
+  --radius-input:   var(--radius-sm);   /* 12px */
+
+  /* Spacing — 4px grid */
+  --space-1:   4px;
+  --space-2:   8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Typography — max 3 app font roles: sans / display / mono */
+  --font-sans: "Pretendard Variable", "Pretendard", sans-serif;
+  --font-display: var(--font-sans);
+  --font-mono: ui-monospace, "SFMono-Regular", monospace;
+
+  /* Weight scale — DESIGN_revision.md §6.2 */
+  --weight-regular:  500;   /* body default — DR uses 500 as base */
+  --weight-medium:   500;   /* alias for back-compat */
+  --weight-semibold: 650;   /* section title / card title */
+  --weight-bold:     700;   /* hero number / screen title / primary button */
+
+  --leading-tight:  1.3;
+  --leading-normal: 1.5;
+  --leading-loose:  1.7;
+
+  --tracking-tight:  0;
+  --tracking-normal: 0;
+
+  /* Shadows — used sparingly. Stroke-first DS. */
+  --shadow-none: none;
+  --shadow-sm:
+    0 1px 2px rgba(15, 15, 18, 0.04);
+  --shadow-md:
+    0 1px 2px rgba(15, 15, 18, 0.04),
+    0 8px 24px rgba(15, 15, 18, 0.08);
+  --shadow-lg:
+    0 2px 4px rgba(15, 15, 18, 0.06),
+    0 16px 48px rgba(15, 15, 18, 0.12);
+
+  /* Controls */
+  --control-height:    48px;
+  --control-height-sm: 36px;
+
+  /* Focus ring */
+  --focus-ring-color:  #0066FF;
+  --focus-ring-width:  2px;
+  --focus-ring-offset: 2px;
+  --focus-ring-halo:   rgba(0, 102, 255, 0.18);
+
+  /* Motion */
+  --duration-fast:   120ms;
+  --duration-base:   200ms;
+  --easing-standard: cubic-bezier(0.2, 0.0, 0.2, 1);
+
+  /* ========================================================================
+     Phase 1 — entry screens (splash · role · login · child transition)
+     ======================================================================== */
+  --space-screen-pad: 24px;
+  --space-screen-gap: 48px;
+
+  /* Mode tone — parent (Minimal-Pro) */
+  --mode-parent-card-height: 80px;
+  --mode-parent-card-radius: var(--radius-card);
+  --mode-parent-card-bg:     var(--bg-base);
+  --mode-parent-card-border: 1px solid var(--line-soft);
+  --mode-parent-card-shadow: var(--shadow-none);
+  --mode-parent-icon-size:   32px;
+
+  /* Mode tone — child (Playful-Character) */
+  --mode-child-card-height:  104px;
+  --mode-child-card-radius:  var(--radius-2xl);
+  --mode-child-card-bg:
+    linear-gradient(135deg, var(--theme-accent-soft) 0%, var(--bg-base) 100%);
+  --mode-child-card-border:  1px solid var(--theme-accent-line);
+  --mode-child-card-shadow:  0 4px 12px color-mix(in srgb, var(--theme-accent) 10%, transparent);
+  --mode-child-mascot-size:  56px;
+
+  /* Entry-screen motion */
+  --duration-screen-fade:    280ms;
+  --duration-mascot-bounce:  600ms;
+  --easing-mascot:           cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ========================================================================
+     Phase 2 — parent daily (home · grid · sheet · child detail)
+     ======================================================================== */
+  /* Big-stat header */
+  --t-bigstat-eyebrow-size:    12px;
+  --t-bigstat-eyebrow-tracking: 0.06em;
+  --t-bigstat-date-size:       28px;
+  --t-bigstat-date-weight:     var(--weight-bold);
+  --t-bigstat-next-size:       14px;
+
+  /* Calendar grid (Cron-style) */
+  --cal-cell-min-height:   60px;
+  --cal-cell-padding:      var(--space-2);
+  --cal-cell-radius:       var(--radius-md);
+  --cal-cell-bg:           transparent;
+  --cal-cell-bg-selected:  var(--theme-accent-soft);
+  --cal-today-ring:        1px solid var(--theme-accent);
+  --cal-chip-rail-width:   3px;
+  --cal-chip-height:       16px;
+  --cal-chip-font-size:    10.5px;
+  --cal-chip-radius:       var(--radius-xs);
+  --cal-chip-bg:           var(--bg-base);
+  --cal-chip-bg-overflow:  var(--bg-muted);
+  --cal-weekday-color:     var(--fg-tertiary);
+  --cal-weekday-color-sun: var(--status-negative-strong);
+  --cal-weekday-color-sat: var(--primary);
+
+  /* Bottom sheet */
+  --sheet-bg:               var(--bg-base);
+  --sheet-radius-top:       var(--radius-2xl);
+  --sheet-handle-width:     40px;
+  --sheet-handle-height:    5px;
+  --sheet-handle-color:     var(--line-default);
+  --sheet-padding-x:        var(--space-screen-pad);
+  --sheet-shadow:           var(--shadow-lg);
+  --sheet-backdrop:         var(--scrim);
+  --sheet-height-default:   80vh;
+  --sheet-height-quick:     32vh;
+  --sheet-bottom-nav-offset: calc(78px + env(safe-area-inset-bottom, 0px));
+  --duration-sheet-open:    320ms;
+  --duration-sheet-close:   240ms;
+  --easing-sheet:           cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Child card density */
+  --child-card-full-height:  80px;
+  --child-card-row-height:   56px;
+  --child-card-mini-size:    72px;
+  --child-card-row-avatar:   36px;
+  --child-card-mini-avatar:  44px;
+
+  /* Control size — large CTA (Phase 1 kakao button) */
+  --control-height-lg:       56px;
+}
+
+/* --------------------------------------------------------------------------
+   Dark mode adjustments for Phase 1+2 tokens
+   -------------------------------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --mode-child-card-bg:
+      linear-gradient(135deg,
+        color-mix(in srgb, var(--theme-accent) 12%, var(--bg-base)) 0%,
+        var(--bg-base) 100%);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Phase 1+2 typography classes
+   -------------------------------------------------------------------------- */
+.t-screen-title {
+  font-size: 26px;
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: 0;
+  color: var(--fg-primary);
+  margin: 0;
+}
+.t-screen-subtitle {
+  font-size: 14px;
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-normal);
+  color: var(--fg-secondary);
+  margin: 0;
+}
+.t-screen-promise {
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--theme-accent-text);
+  margin: 0;
+}
+.t-bigstat-eyebrow {
+  font-size: var(--t-bigstat-eyebrow-size);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--t-bigstat-eyebrow-tracking);
+  color: var(--fg-tertiary);
+  text-transform: uppercase;
+  margin: 0;
+}
+.t-bigstat-date {
+  font-size: var(--t-bigstat-date-size);
+  font-weight: var(--t-bigstat-date-weight);
+  line-height: var(--leading-tight);
+  letter-spacing: 0;
+  color: var(--fg-primary);
+  margin: var(--space-1) 0 0;
+}
+.t-bigstat-next {
+  font-size: var(--t-bigstat-next-size);
+  font-weight: var(--weight-medium);
+  color: var(--theme-accent-text);
+  margin: var(--space-2) 0 0;
+}
+.t-bigstat-next-time { font-weight: var(--weight-bold); }
+.t-section-label {
+  font-size: 13px;
+  font-weight: var(--weight-bold);
+  color: var(--fg-secondary);
+  margin: 0 0 var(--space-3);
+  letter-spacing: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Multi-child parent home — NextEventHero, section head, today timeline
+   -------------------------------------------------------------------------- */
+.hyeni-hero-next {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
+  background: linear-gradient(180deg, var(--bg-base), color-mix(in srgb, var(--theme-accent-soft) 32%, var(--bg-base)));
+  border: 1px solid var(--cartoon-line);
+  border-inline-start: 4px solid var(--theme-accent);
+  border-radius: var(--radius-card);
+}
+
+.hyeni-hero-empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4) var(--space-5);
+  background: var(--bg-base);
+  border: 1px solid var(--cartoon-line);
+  border-radius: var(--radius-card);
+}
+
+.hyeni-hero-empty-msg {
+  margin: 0;
+  font-size: 14px;
+  font-weight: var(--weight-medium);
+  color: var(--fg-secondary);
+}
+
+.hyeni-hero-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.hyeni-hero-eyebrow {
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--theme-accent-text);
+}
+
+.hyeni-hero-countdown {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--theme-accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.hyeni-hero-time {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.hyeni-hero-time-clock {
+  font-size: 32px;
+  font-weight: var(--weight-bold);
+  line-height: 1;
+  letter-spacing: 0;
+  color: var(--fg-primary);
+}
+
+.hyeni-hero-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+  font-size: 18px;
+  font-weight: var(--weight-bold);
+  color: var(--fg-primary);
+  line-height: var(--leading-tight);
+}
+
+.hyeni-hero-emoji {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.hyeni-hero-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+  font-size: 13px;
+  font-weight: var(--weight-medium);
+  color: var(--fg-secondary);
+  flex-wrap: wrap;
+}
+
+.hyeni-hero-child-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.hyeni-hero-child-name {
+  font-weight: var(--weight-bold);
+  color: var(--fg-primary);
+}
+
+.hyeni-hero-meta-sep {
+  color: var(--fg-tertiary);
+}
+
+.hyeni-hero-meta-location {
+  color: var(--fg-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* Section head — 자녀 status 헤더 + 지도 inline toggle */
+.hyeni-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.hyeni-section-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--cartoon-line);
+  border-radius: 999px;
+  background: var(--bg-base);
+  color: var(--theme-accent-text);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--easing-standard),
+              border-color var(--duration-fast) var(--easing-standard);
+}
+
+.hyeni-section-toggle:hover,
+.hyeni-section-toggle[aria-expanded="true"] {
+  background: var(--theme-accent-soft);
+  border-color: var(--cartoon-line-strong);
+}
+
+/* Today timeline — 시간 컬럼 + 자녀 컬러 마커 + 제목/메타 */
+.hyeni-today-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.hyeni-today-empty {
+  padding: var(--space-5) 0;
+  text-align: center;
+  color: var(--fg-tertiary);
+  font-size: 14px;
+  font-weight: var(--weight-medium);
+}
+
+.hyeni-today-row {
+  display: grid;
+  grid-template-columns: 56px 16px 1fr;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--cartoon-bg-card);
+  border: 1px solid var(--cartoon-line);
+  border-radius: var(--radius-md);
+}
+
+.hyeni-today-time {
+  font-size: 16px;
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-primary);
+  letter-spacing: 0;
+}
+
+.hyeni-today-marker {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-full);
+  border-width: 2px;
+  justify-self: center;
+  flex-shrink: 0;
+}
+
+.hyeni-today-body {
+  min-width: 0;
+}
+
+.hyeni-today-title {
+  font-size: 14px;
+  font-weight: var(--weight-bold);
+  color: var(--fg-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hyeni-today-meta {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: var(--weight-medium);
+  color: var(--fg-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --------------------------------------------------------------------------
+   Base styles
+   -------------------------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  background: var(--bg-subtle);
+  color: var(--fg-primary);
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: var(--weight-medium);    /* 500 — Wanted DS signature */
+  font-size: 15px;
+  line-height: var(--leading-normal);
+  letter-spacing: var(--tracking-tight);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Focus management — keyboard only */
+*:focus { outline: none; }
+*:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: inherit;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Component baselines
+   -------------------------------------------------------------------------- */
+
+/* Card */
+.card {
+  background: var(--bg-base);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-none);
+}
+
+.card-elevated {
+  background: var(--bg-base);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-md);
+}
+
+.card-interactive {
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--easing-standard),
+    border-color var(--duration-fast) var(--easing-standard);
+}
+.card-interactive:hover {
+  background: var(--bg-subtle);
+  border-color: var(--line-default);
+}
+.card-interactive:active {
+  border-color: var(--line-strong);
+}
+
+/* Divider */
+.divider {
+  border: none;
+  border-bottom: 1px solid var(--line-subtle);
+}
+
+/* Input */
+.input {
+  width: 100%;
+  height: var(--control-height);
+  padding: 0 var(--space-4);
+  background: var(--bg-base);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-input);
+  color: var(--fg-primary);
+  font-family: var(--font-sans);
+  font-weight: var(--weight-medium);
+  font-size: 15px;
+  line-height: var(--leading-normal);
+  transition:
+    border-color var(--duration-fast) var(--easing-standard),
+    box-shadow var(--duration-fast) var(--easing-standard);
+}
+.input::placeholder { color: var(--fg-tertiary); }
+.input:hover { border-color: var(--line-default); }
+.input:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--focus-ring-halo);
+}
+.input:disabled {
+  background: var(--bg-muted);
+  color: var(--fg-disabled);
+  border-color: var(--line-disabled);
+  cursor: not-allowed;
+}
+
+/* ─── Buttons — DESIGN_revision §11.8 Premium Kawaii ─────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  padding: 0 var(--space-6);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-sans);
+  font-weight: var(--weight-semibold);
+  font-size: 15px;
+  line-height: 1.15;
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--easing-standard),
+    border-color var(--duration-fast) var(--easing-standard),
+    box-shadow var(--duration-fast) var(--easing-standard),
+    transform var(--duration-fast) var(--easing-standard);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  cursor: not-allowed;
+  background: var(--bg-muted);
+  color: var(--fg-disabled);
+  border-color: var(--line-disabled);
+  box-shadow: none;
+}
+.btn:not(:disabled):active { transform: scale(0.97); }
+
+/* Primary — rose gradient (default = onboarding / child / 가족 감성 CTA) */
+.btn-primary {
+  min-height: 56px;
+  padding: 0 var(--space-6);
+  border: none;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, var(--brand-rose), var(--brand-rose-deep));
+  color: var(--fg-on-accent);
+  box-shadow: var(--shadow-rose);
+  font-weight: var(--weight-bold);
+  font-size: 16px;
+}
+.btn-primary:not(:disabled):hover  { filter: brightness(1.04); }
+.btn-primary:not(:disabled):active { filter: brightness(0.96); }
+.btn-primary:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-rose), 0 0 0 3px rgba(247, 121, 168, 0.32);
+}
+
+/* Primary (mint) — parent mode CTA (위치, 연동, 안전 확인) — DR §5.2 */
+.btn-primary-mint {
+  min-height: 56px;
+  padding: 0 var(--space-6);
+  border: none;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, var(--brand-mint), var(--brand-mint-deep));
+  color: var(--fg-on-accent);
+  box-shadow: var(--shadow-mint);
+  font-weight: var(--weight-bold);
+  font-size: 16px;
+}
+.btn-primary-mint:not(:disabled):hover  { filter: brightness(1.04); }
+.btn-primary-mint:not(:disabled):active { filter: brightness(0.96); }
+.btn-primary-mint:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-mint), 0 0 0 3px rgba(49, 196, 141, 0.32);
+}
+
+/* Secondary — pill outline */
+.btn-secondary {
+  background: var(--bg-card);
+  color: var(--fg-primary);
+  border: 1.5px solid var(--line-default);
+}
+.btn-secondary:not(:disabled):hover  { background: var(--bg-muted); }
+.btn-secondary:not(:disabled):active { border-color: var(--line-strong); }
+.btn-secondary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(122, 122, 130, 0.18);
+}
+
+/* Destructive — red flat (DR §11.8 rule: destructive ≠ primary 스타일) */
+.btn-destructive {
+  background: var(--status-danger);
+  color: var(--fg-on-accent);
+  border: none;
+}
+.btn-destructive:not(:disabled):hover  { filter: brightness(0.94); }
+.btn-destructive:not(:disabled):active { filter: brightness(0.86); }
+.btn-destructive:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(224, 48, 48, 0.32);
+}
+
+/* Small variant — compact rows */
+.btn-sm {
+  min-height: var(--control-height-sm);
+  padding: 0 var(--space-4);
+  font-size: 14px;
+}
+.btn-sm.btn-primary,
+.btn-sm.btn-primary-mint {
+  min-height: 40px;
+  padding: 0 var(--space-5);
+  font-size: 14px;
+}
+
+/* ─── Icon-only round button — back/close/icon FAB ──────────────────── */
+.btn-icon-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid var(--line-default);
+  border-radius: var(--radius-full);
+  background: var(--bg-card);
+  color: var(--fg-secondary);
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition:
+    background var(--duration-fast) var(--easing-standard),
+    border-color var(--duration-fast) var(--easing-standard),
+    transform var(--duration-fast) var(--easing-standard);
+}
+.btn-icon-circle:hover {
+  border-color: var(--line-strong);
+  background: var(--bg-muted);
+}
+.btn-icon-circle:active { transform: scale(0.95); }
+.btn-icon-circle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-icon-circle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus-ring-halo);
+}
+.btn-icon-circle-sm {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  font-size: 14px;
+}
+.btn-icon-circle-lg {
+  width: 52px;
+  height: 52px;
+  min-height: 52px;
+  font-size: 22px;
+}
+
+/* ─── Chip — DESIGN_revision §11.9 ───────────────────────────────────── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 4px var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--bg-mint-soft);
+  color: var(--brand-mint-text);
+  border: 1px solid var(--brand-mint-line);
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  font-family: var(--font-sans);
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.chip-rose     { background: var(--bg-rose-soft);     color: var(--brand-rose-text);     border-color: var(--brand-rose-line); }
+.chip-lavender { background: var(--bg-lavender-soft); color: var(--brand-lavender-text); border-color: var(--brand-lavender-line); }
+.chip-cream    { background: var(--bg-cream-soft);    color: var(--fg-primary);          border-color: var(--brand-yellow-soft); }
+.chip-neutral  { background: var(--bg-muted);         color: var(--fg-secondary);        border-color: var(--line-soft); }
+.chip-danger   { background: var(--status-danger-soft); color: var(--status-danger-text); border-color: var(--status-danger); }
+.chip:disabled,
+.chip[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* --------------------------------------------------------------------------
+   Status bar scrim — 엣지투엣지 스크롤 시 상태바 아이콘 가독성 보장.
+   높이 = env(safe-area-inset-top) 이므로 인셋 0 환경에선 그려지지 않는다.
+   -------------------------------------------------------------------------- */
+.status-bar-scrim {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top, 0px);
+  z-index: 10060; /* 최상위 오버레이(10050) 위 — pointer-events 없음이라 무해 */
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--bg-base) 82%, transparent) 0%,
+    color-mix(in srgb, var(--bg-base) 40%, transparent) 70%,
+    transparent 100%
+  );
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+/* --------------------------------------------------------------------------
+   Phase 2 — Calendar grid (Cron-style chips)
+   -------------------------------------------------------------------------- */
+.cal-day {
+  min-height: var(--cal-cell-min-height);
+  padding: var(--cal-cell-padding);
+  background: var(--cal-cell-bg);
+  border: 1px solid transparent;
+  border-radius: var(--cal-cell-radius);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  transition:
+    background-color var(--duration-fast) var(--easing-standard),
+    border-color var(--duration-fast) var(--easing-standard);
+}
+.cal-day:hover { background: var(--bg-muted); }
+.cal-day.is-today { border: var(--cal-today-ring); }
+.cal-day.is-today .cal-day-num {
+  color: var(--theme-accent-text);
+  font-weight: var(--weight-bold);
+}
+.cal-day.is-selected { background: var(--cal-cell-bg-selected); }
+.cal-day-num {
+  font-size: 13px;
+  font-weight: var(--weight-medium);
+  color: var(--fg-primary);
+  margin-bottom: var(--space-1);
+  text-align: left;
+}
+.cal-day.is-sun .cal-day-num { color: var(--cal-weekday-color-sun); }
+.cal-day.is-sat .cal-day-num { color: var(--cal-weekday-color-sat); }
+.cal-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  overflow: hidden;
+}
+.cal-chip {
+  height: var(--cal-chip-height);
+  padding: 0 var(--space-1) 0 var(--space-2);
+  background: var(--cal-chip-bg);
+  border-radius: var(--cal-chip-radius);
+  font-size: var(--cal-chip-font-size);
+  font-weight: var(--weight-semibold);
+  color: var(--fg-primary);
+  border-left: var(--cal-chip-rail-width) solid var(--rail, var(--theme-accent));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+.cal-chip[data-family="true"] { border-left-style: dashed; }
+.cal-chip-overflow {
+  background: var(--cal-chip-bg-overflow);
+  color: var(--fg-tertiary);
+  border-left: none;
+  text-align: center;
+  padding: 0 var(--space-1);
+  font-size: 9.5px;
+  justify-content: center;
+}
+
+/* --------------------------------------------------------------------------
+   Sheet grabber — 바텀시트 공용 잡이 바 (2026-06-11 바텀시트 전수감사).
+   "아래로 내릴 수 있다" 어포던스가 없던 시트들에 일괄 제공한다.
+   탭하거나 아래로 드래그하면 닫히는 button 이며 시각 바(40×5)는 ::before,
+   히트 영역은 min-height 44px. 사용: <SheetGrabber onClose={...}/> (components/common).
+   -------------------------------------------------------------------------- */
+.sheet-grabber {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  flex-shrink: 0;
+  cursor: grab;
+}
+.sheet-grabber::before {
+  content: "";
+  width: var(--sheet-handle-width);
+  height: var(--sheet-handle-height);
+  border-radius: var(--radius-full);
+  background: var(--sheet-handle-color);
+  transition: background var(--duration-fast) var(--easing-standard);
+}
+.sheet-grabber:active::before {
+  background: var(--line-strong);
+}
+/* 끌기 중 가로바가 전역 button:active{transform:scale(.98)} 로 펄럭이지 않게 예외.
+   바는 끌어 닫는 핸들이지 탭 버튼이 아니므로 눌림 스케일을 적용하지 않는다. */
+.sheet-grabber:active {
+  transform: none !important;
+}
+
+.hyeni-sheet-titlebar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 58px;
+  padding: 0 var(--space-5) var(--space-3);
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+.hyeni-sheet-titlebar__icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--theme-accent-soft) 76%, var(--bg-base));
+  border: 1px solid var(--theme-accent-line);
+  box-shadow: var(--shadow-xs);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.hyeni-sheet-titlebar__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.hyeni-sheet-titlebar__title {
+  margin: 0;
+  color: var(--fg-primary);
+  font-size: 18px;
+  font-weight: 760;
+  line-height: 1.2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+  letter-spacing: 0;
+}
+.hyeni-sheet-titlebar__subtitle {
+  color: var(--fg-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+  letter-spacing: 0;
+}
+.hyeni-sheet-titlebar__right {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+.hyeni-sheet-titlebar__right:empty {
+  visibility: hidden;
+}
+
+/* --------------------------------------------------------------------------
+   Phase 2 — Bottom sheet
+   -------------------------------------------------------------------------- */
+.event-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--sheet-backdrop);
+  z-index: 600;
+  animation: backdropIn var(--duration-sheet-open) ease-out;
+}
+.event-sheet-backdrop--with-bottom-nav {
+  bottom: var(--sheet-bottom-nav-offset);
+}
+.event-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--sheet-bg);
+  border-radius: var(--sheet-radius-top) var(--sheet-radius-top) 0 0;
+  box-shadow: var(--sheet-shadow);
+  height: var(--sheet-height-default);
+  z-index: 601;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: sheetIn var(--duration-sheet-open) var(--easing-sheet);
+}
+.event-sheet--with-bottom-nav {
+  bottom: var(--sheet-bottom-nav-offset);
+  height: min(
+    var(--sheet-height-default),
+    calc(100dvh - var(--sheet-bottom-nav-offset) - env(safe-area-inset-top, 0px) - 8px)
+  );
+}
+.event-sheet-handle {
+  width: var(--sheet-handle-width);
+  height: var(--sheet-handle-height);
+  background: var(--sheet-handle-color);
+  border-radius: var(--radius-full);
+  margin: var(--space-2) auto 0;
+  flex-shrink: 0;
+  touch-action: none;
+  /* 터치 hit target 확장 — 시각적 bar 바깥 12px 영역까지 드래그 감지 */
+  padding: 12px 24px;
+  box-sizing: content-box;
+  display: block;
+  cursor: grab;
+}
+.event-sheet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-1) var(--sheet-padding-x) var(--space-3);
+  border-bottom: 1px solid var(--line-soft);
+  flex-shrink: 0;
+  touch-action: none;
+}
+.event-sheet-header .sheet-title {
+  font-size: 16px;
+  font-weight: var(--weight-bold);
+  color: var(--fg-primary);
+}
+.event-sheet-header button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  /* 2026-06-11 바텀시트 감사 — 뒤로/저장 유효 터치 약 28px → 44px 보정 */
+  min-height: 44px;
+  min-width: 44px;
+  padding: var(--space-2) var(--space-3);
+}
+.event-sheet-header .sheet-cancel {
+  color: var(--fg-secondary);
+  font-weight: var(--weight-medium);
+}
+.event-sheet-header .sheet-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.event-sheet-header .sheet-back svg {
+  flex: none;
+}
+.event-sheet-header .sheet-save {
+  color: var(--primary);
+  font-weight: var(--weight-bold);
+}
+.event-sheet-header .sheet-save:disabled {
+  color: var(--fg-disabled);
+  cursor: not-allowed;
+}
+.event-sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-4) var(--sheet-padding-x) calc(var(--space-12) + env(safe-area-inset-bottom, 0px));
+}
+.event-sheet-quick {
+  height: var(--sheet-height-quick);
+}
+[data-sheet-drag-root="true"] {
+  /* 열기(enter): 아래서 슬라이드업 — .event-sheet 와 동일한 sheetIn.
+     이 한 줄이 빠져 있어 부모모드 공용 바텀시트(BottomSheet · 알림/구독/주변소리 등)는
+     최종 위치에 즉시 렌더됐고, backdrop-filter(blur 32px) + will-change 합성 레이어가
+     마운트 첫 프레임에 늦게 채워지며 "한 번 깜빡"였다. 닫기(is-sheet-closing)는
+     animation:none!important 로 이 enter 를 끄고 아래 transition 으로 내려가므로 충돌 없음. */
+  animation: sheetIn var(--duration-sheet-open) var(--easing-sheet);
+  transition:
+    transform var(--duration-sheet-close) var(--easing-sheet),
+    opacity var(--duration-sheet-close) ease;
+  will-change: transform, opacity;
+}
+[data-sheet-drag-root="true"].is-sheet-closing {
+  animation: none !important;
+  transform: translateY(100%) !important;
+  opacity: 0 !important;
+  pointer-events: none;
+}
+@keyframes sheetIn {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@keyframes backdropIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .event-sheet, .event-sheet-backdrop { animation: none; }
+  [data-sheet-drag-root="true"] { transition: none; animation: none; }
+}
+
+/* Phase 3 child mode + Phase 4 operations + Cartoon-Warm 토큰은
+   src/main.jsx 에서 별도 import. (CSS @import 보다 Vite의 JS-side import 가
+   chunk 분석이 명확하고 dev 모드 HMR이 안정적임.) */

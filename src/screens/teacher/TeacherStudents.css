@@ -1,0 +1,293 @@
+/* 선생님 학생 목록 — 화면 전용 스타일 (원본 dc.html 1644–1665행 값 1:1) */
+
+/* ── 상단 헤더 (민트 글래스) ─────────────────────────────────────────────── */
+.ts-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 20px 12px;
+  background: linear-gradient(180deg, rgba(240, 250, 245, 0.92) 60%, rgba(240, 250, 245, 0));
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ts-title {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--fg-primary);
+}
+.ts-invite {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #e7f8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  --press: 0.92;
+}
+
+/* ── 본문 ───────────────────────────────────────────────────────────────── */
+.ts-body {
+  padding: 4px 20px 120px;
+}
+.ts-meta {
+  padding: 2px 2px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #8b7e84;
+}
+.ts-meta__count {
+  color: #23a876;
+}
+
+/* ── 학생 리스트 카드 ───────────────────────────────────────────────────── */
+.ts-list {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ts-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--bg-page);
+}
+.ts-row__top {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+.ts-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.ts-avatar img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+}
+.ts-main {
+  flex: 1;
+  min-width: 0;
+}
+.ts-name {
+  display: block;
+  font-size: 15px;
+  font-weight: 800;
+  color: #201a1d;
+}
+.ts-parent {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #a99fa4;
+}
+.ts-tag {
+  flex: none;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* ── 출결 세그먼트 컨트롤 (출석·하교·결석) ──────────────────────────────── */
+.ts-attend {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+}
+.ts-attend__btn {
+  height: 38px;
+  border-radius: 11px;
+  background: #fff;
+  border: 1.5px solid var(--line-soft);
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--fg-tertiary);
+  --press: 0.95;
+  transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+}
+.ts-attend__btn:disabled {
+  opacity: 0.55;
+}
+.ts-attend__btn--on[data-status="attended"] {
+  background: var(--mint-soft);
+  border-color: var(--mint-line);
+  color: var(--mint-text);
+}
+.ts-attend__btn--on[data-status="left"] {
+  background: var(--blue-soft);
+  border-color: #bcdcf1;
+  color: var(--blue-text);
+}
+.ts-attend__btn--on[data-status="absent"] {
+  background: var(--danger-soft);
+  border-color: #f5c9cd;
+  color: var(--danger-text);
+}
+
+/* ── 초대 안내 ──────────────────────────────────────────────────────────── */
+.ts-hint {
+  margin-top: 14px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 0 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #8b7e84;
+  line-height: 1.5;
+}
+.ts-hint__ico {
+  font-size: 15px;
+}
+
+/* ── 로딩 / 준비 중 빈 상태 (백엔드 연동) ───────────────────────────────────── */
+.ts-empty {
+  margin-top: 8px;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--line-card);
+  padding: 34px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+.ts-empty--soft {
+  padding: 22px;
+  color: #8b7e84;
+  font-size: 13px;
+  font-weight: 600;
+}
+.ts-empty__emoji {
+  font-size: 34px;
+}
+.ts-empty__title {
+  font-size: 15.5px;
+  font-weight: 800;
+  color: #201a1d;
+}
+.ts-empty__sub {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #8b7e84;
+  line-height: 1.5;
+}
+.ts-row--empty {
+  text-align: center;
+  color: #a99fa4;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 18px 12px;
+}
+
+/* ── 학생 초대 시트 (바텀 시트) ─────────────────────────────────────────── */
+.ts-sheet-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(24, 18, 22, 0.42);
+  backdrop-filter: blur(3px);
+  animation: hy-fadein 0.2s ease forwards;
+}
+.ts-sheet {
+  width: 100%;
+  background: #fff;
+  border-radius: 26px 26px 0 0;
+  padding: 20px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -18px 40px rgba(20, 10, 15, 0.22);
+  animation: hy-rise 0.34s var(--easing-standard) forwards;
+}
+.ts-sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.ts-sheet__title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--fg-primary);
+}
+.ts-sheet__x {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--bg-page);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+.ts-sheet__desc {
+  margin: 0 0 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  line-height: 1.5;
+}
+.ts-sheet__label {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--fg-tertiary);
+  margin: 0 0 7px 2px;
+}
+.ts-sheet__input {
+  width: 100%;
+  height: 52px;
+  border: 1.5px solid var(--line-soft);
+  background: #fff;
+  border-radius: 14px;
+  padding: 0 16px;
+  margin-bottom: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--fg-primary);
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.ts-sheet__input::placeholder {
+  color: var(--fg-faint);
+  font-weight: 600;
+}
+.ts-sheet__input:focus {
+  border-color: var(--mint-500);
+  box-shadow: 0 0 0 3px var(--mint-soft);
+}
+.ts-sheet__send {
+  width: 100%;
+  height: 54px;
+  border-radius: 16px;
+  margin-top: 2px;
+  background: linear-gradient(120deg, #5fd6a6, #23a876);
+  box-shadow: 0 14px 30px -14px rgba(35, 168, 118, 0.6);
+  font-size: 15.5px;
+  font-weight: 800;
+  color: #fff;
+  --press: 0.98;
+}
+.ts-sheet__send:disabled {
+  opacity: 0.55;
+  box-shadow: none;
+}

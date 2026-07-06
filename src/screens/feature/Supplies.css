@@ -1,0 +1,222 @@
+/* 숙제·준비물(P-13) — 화면 전용 스타일. 부모·아이 공용(테마색은 --hy-accent 계열). */
+
+.sup-screen {
+  min-height: 100%;
+  background: linear-gradient(180deg, #fdf4f1, #f7f4f3);
+  animation: hy-fadein 0.35s ease forwards;
+}
+
+/* ── 상세 헤더(sticky) ──────────────────────────────────────────────────── */
+.sup-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: calc(env(safe-area-inset-top, 0px) + 20px) 18px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(253, 244, 241, 0.9) 60%, rgba(253, 244, 241, 0));
+  backdrop-filter: blur(8px);
+}
+.sup-back {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+.sup-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.sup-date {
+  margin-left: auto;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--fg-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 스크롤 콘텐츠 ──────────────────────────────────────────────────────── */
+.sup-content {
+  padding: 6px 20px calc(40px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── 인트로 ─────────────────────────────────────────────────────────────── */
+.sup-intro {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 4px 2px;
+}
+.sup-intro__img {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  flex: none;
+}
+.sup-intro__title {
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--fg-primary);
+}
+.sup-intro__sub {
+  margin-top: 3px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-muted);
+}
+
+/* ── 섹션(준비물 / 숙제) ────────────────────────────────────────────────── */
+.sup-section__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 4px 10px;
+}
+.sup-section__title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.sup-section__count {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+  font-size: 11.5px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+.sup-card {
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 14px 34px -18px rgba(32, 26, 29, 0.22), 0 2px 6px rgba(32, 26, 29, 0.04);
+  border: 1px solid rgba(32, 26, 29, 0.05);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sup-empty {
+  padding: 18px 12px;
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--fg-muted);
+}
+
+/* ── 항목 행 ────────────────────────────────────────────────────────────── */
+.sup-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 14px;
+}
+.sup-check {
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.88;
+}
+.sup-label {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sup-label__text {
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+/* ── 행 액션(이름변경·삭제) + 인라인 편집 ─────────────────────────────────── */
+.sup-iconbtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.88;
+}
+.sup-iconbtn:disabled {
+  opacity: 0.4;
+}
+.sup-edit-input {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  border: 1.5px solid var(--hy-accent);
+  background: #fff;
+  border-radius: 11px;
+  padding: 0 12px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--fg-body);
+  font-family: inherit;
+  outline: none;
+}
+
+/* ── 추가 입력 ──────────────────────────────────────────────────────────── */
+.sup-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  margin-top: 2px;
+  border-top: 1px solid var(--line-hair);
+}
+.sup-add__input {
+  flex: 1;
+  min-width: 0;
+  height: 42px;
+  border: none;
+  background: #fbf3f6;
+  border-radius: 12px;
+  padding: 0 14px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--fg-body);
+  font-family: inherit;
+  outline: none;
+}
+.sup-add__btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+.sup-add__btn:disabled {
+  opacity: 0.45;
+}

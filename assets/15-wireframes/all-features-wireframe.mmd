@@ -1,0 +1,82 @@
+flowchart TD
+  Start([앱 실행]) --> Splash[Splash / 세션 복구]
+  Splash --> Role{역할 선택}
+
+  Role --> ParentAuth[부모 로그인/가입]
+  Role --> ChildEntry[아이모드 진입]
+  Role --> TeacherAuth[선생님 로그인/가입]
+
+  ParentAuth --> OAuthBridge{OAuth 기존 계정?}
+  OAuthBridge -->|기존 회원| PhoneOtp[전화번호 OTP / 계정 매칭]
+  OAuthBridge -->|새 회원| ParentSignup[전화번호 가입]
+  PhoneOtp --> ParentSetup[가족 생성 또는 합류]
+  ParentSignup --> ParentSetup
+  ParentSetup --> PairingWizard[가족 이름 / 자녀 등록 / KID 코드]
+  ParentSetup --> JoinFamily[기존 가족 KID 코드 합류]
+  PairingWizard --> ParentHome[부모 홈]
+  JoinFamily --> ParentHome
+
+  ChildEntry --> ChildPair{가족 연동됨?}
+  ChildPair -->|아니오| ChildPairInput[KID 코드 / QR 페어링]
+  ChildPairInput --> ChildPermission[위치 / 알림 / 마이크 권한]
+  ChildPair -->|예| ChildPermission
+  ChildPermission --> ChildHome[아이 홈]
+
+  TeacherAuth --> TeacherClass{반 있음?}
+  TeacherClass -->|아니오| ClassOnboarding[반 만들기]
+  TeacherClass -->|예| ClassManage[반 관리]
+  ClassOnboarding --> ClassManage
+
+  ParentHome --> ParentToday[오늘 요약 / 아이 현황 / 안전 지표]
+  ParentHome --> ParentCalendar[캘린더 / 일정 / AI 일정등록]
+  ParentHome --> ParentLocation[위치 지도 / 이동경로 / 길찾기]
+  ParentHome --> ParentChat[아이와 대화하기]
+  ParentHome --> ParentQuick[바로가기 11개]
+  ParentHome --> ParentSettings[설정 / 가족 / 구독]
+
+  ParentQuick --> AiSchedule[AI 일정등록]
+  ParentQuick --> Sticker[칭찬스티커]
+  ParentQuick --> Place[장소관리]
+  ParentQuick --> Playdate[친구놀이]
+  ParentQuick --> ForceRing[응급알림]
+  ParentQuick --> RemoteAudio[주변소리]
+  ParentQuick --> Subscription[구독]
+  ParentQuick --> Contact[연락처]
+  ParentQuick --> Feedback[피드백]
+  ParentQuick --> Credits[크레딧]
+  ParentQuick --> SettingsShortcut[설정]
+
+  ChildHome --> ChildSchedule[내 일정 / 타임테이블]
+  ChildHome --> DailySupplies[숙제 및 준비물]
+  ChildHome --> ChildMemo[부모님에게 이야기하기]
+  ChildHome --> ChildAI[AI 친구]
+  ChildHome --> ChildSos[SOS / 전화 countdown]
+  ChildHome --> ChildStickers[받은 스티커]
+  ChildHome --> ChildPlaydate[친구놀이 요청]
+  ChildHome --> ChildSettings[아이 설정 / 변경 요청]
+
+  ClassManage --> TeacherRequest[부모에게 연결 요청]
+  ClassManage --> TeacherToday[오늘 반 일정]
+  ClassManage --> Attendance[출석 참석/결석/하교/확인]
+  ClassManage --> Notice[알림장 쓰기 / 사진 / AI 일정 찾기]
+  ClassManage --> Roster[반 명단]
+
+  TeacherRequest --> ParentTeacherLinks[부모 선생님 연결 관리]
+  ParentTeacherLinks --> Scope{공유 범위}
+  Scope --> ScheduleOnly[일정만]
+  Scope --> ScheduleAttendance[일정 + 참석]
+  Scope --> ScheduleAttendanceLocation[일정 + 참석 + 위치]
+  ScheduleOnly --> ClassManage
+  ScheduleAttendance --> ClassManage
+  ScheduleAttendanceLocation --> ClassManage
+
+  ParentChat -.페어링된 아이만.-> ChildMemo
+  RemoteAudio -.선택 아이만.-> ChildHome
+  ParentLocation -.선택 아이 위치만.-> ChildHome
+  Sticker -.선택 아이만.-> ChildStickers
+  ParentSettings -.아이별 AI 크레딧/테마.-> ChildAI
+  Subscription -.Google Play 구매.-> ParentHome
+
+  AlertCenter[알림센터 / 긴급 overlay / push] -.공통.-> ParentHome
+  AlertCenter -.공통.-> ChildHome
+  AlertCenter -.공통.-> ClassManage

@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Permissions -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <!-- 차량 이동 감지(Activity Recognition)로 정지모드에서도 출발을 깨운다 -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <!-- Phase 5 D-B06 (RL-03): required for AmbientListenService on API 34+ -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- QR pairing scanner: WebView getUserMedia({video}) needs CAMERA.
+         Bundled into the first-launch permission prompt so child onboarding
+         is uninterrupted when the QR scanner button is tapped. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- Phase 5.x (force_ring): emergency parental alert FGS + alarm volume control -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- 자녀 SOS 자동 발신(ACTION_CALL). 권한 미보유 시 다이얼러(ACTION_DIAL)로 폴백.
+         Google Play 민감 권한 — 출시 시 Play Console 권한 선언 필요(아동 안전 SOS 핵심 기능). -->
+    <uses-permission android:name="android.permission.CALL_PHONE" />
+    <!-- 아이 화면시간: 기기 전체 화면 켜짐 시간 측정 (UsageStatsManager).
+         Usage Access — 시스템 설정에서 사용자가 직접 허용하는 특수 권한. -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+
+    <!-- 최근 실행 앱을 패키지명이 아닌 앱 이름으로 표시하기 위해, 런처에
+         아이콘이 있는 앱의 라벨을 PackageManager 로 조회할 수 있게 한다.
+         QUERY_ALL_PACKAGES 같은 민감 권한 없이 가시성을 확보한다. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
+    <application
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+
+        <meta-data
+            android:name="isMonitoringTool"
+            android:value="child_monitoring" />
+
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="hyeni_schedule_v6" />
+
+        <!-- FCM 이 시스템 트레이에 직접 표시하는 notification 블록 푸시(앱 백그라운드)
+             의 기본 small icon / accent color. 네이티브 게시 지점과 동일하게 통일. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_hyeni_notification" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_accent" />
+
+        <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
+            android:name=".MainActivity"
+            android:label="@string/title_activity_main"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Deep link: OAuth callback from system browser -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="hyenicalendar" android:host="auth-callback" />
+            </intent-filter>
+
+        </activity>
+
+        <activity
+            android:name=".PushAlertActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:showWhenLocked="true"
+            android:theme="@style/AppTheme.Alert"
+            android:turnScreenOn="true" />
+
+        <activity
+            android:name=".RemoteListenActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:showWhenLocked="true"
+            android:theme="@style/AppTheme.Alert"
+            android:turnScreenOn="true" />
+
+        <!-- Background Location Service -->
+        <service
+            android:name=".LocationService"
+            android:foregroundServiceType="location"
+            android:exported="false" />
+
+        <!-- Phase 5 D-B06 (RL-03): Ambient listen foreground service.
+             Play Store stalkerware policy requires this as a microphone-type
+             foreground service with a persistent non-dismissable notification
+             while capture is active.
+             2026-05-08: foregroundServiceType="microphone|specialUse".
+             Android 14+ silently mutes mic capture when FGS type is specialUse
+             (peak16=0 confirmed via parent device logs). Service code calls
+             startForeground(MICROPHONE) first, falls back to SPECIAL_USE only
+             if cover-display case throws ForegroundServiceStartNotAllowed —
+             but that fallback path will not produce audio anyway, so we just
+             surface a clear error.
+             SUBTYPE meta retained for Play Console review of the specialUse
+             fallback edge case. -->
+        <service
+            android:name=".AmbientListenService"
+            android:foregroundServiceType="microphone|specialUse"
+            android:exported="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="remote_listen_cover_display" />
+        </service>
+
+        <!-- Phase 5.x (force_ring): emergency parental alert FGS + fullscreen Activity.
+             specialUse type per Android 14+ requirement; SUBTYPE meta declares
+             intent for Play Console policy review. -->
+        <service
+            android:name=".ForceRingService"
+            android:foregroundServiceType="specialUse"
+            android:exported="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="emergency_parental_alert" />
+        </service>
+
+        <activity
+            android:name=".ForceRingActivity"
+            android:showOnLockScreen="true"
+            android:turnScreenOn="true"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:exported="false"
+            android:theme="@style/Theme.Hyeni.ForceRing.Fullscreen" />
+
+        <!-- FCM Messaging Service -->
+        <service
+            android:name=".MyFirebaseMessagingService"
+            android:directBootAware="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <!-- Boot Receiver: auto-start location service -->
+        <receiver
+            android:name=".BootReceiver"
+            android:directBootAware="true"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.USER_UNLOCKED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Phase 0-A: Power-off resilience — 시스템 종료 직전 마지막 위치를 부모에게 push.
+             ACTION_SHUTDOWN 은 protected broadcast 이므로 system 만 발신. exported=true 가능. -->
+        <receiver
+            android:name=".ShutdownReceiver"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter android:priority="1000">
+                <action android:name="android.intent.action.ACTION_SHUTDOWN" />
+                <action android:name="android.intent.action.QUICKBOOT_POWEROFF" />
+            </intent-filter>
+        </receiver>
+
+        <!-- 예약 일정 알림 수신기 — NotificationScheduleManager 가 AlarmManager broadcast
+             대상으로 사용. 명시적 컴포넌트라 manifest 등록 필수 (미등록 시 알람이
+             발화해도 receiver 인스턴스화 불가 → 예약 알림 전량 미발송). -->
+        <receiver
+            android:name=".ScheduledNotificationReceiver"
+            android:exported="false"
+            android:enabled="true" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"></meta-data>
+        </provider>
+    </application>
+
+</manifest>

@@ -1,0 +1,230 @@
+/* 하루 요약(P-28) — 화면 전용 스타일. 부모 톤(라벤더 · AI 요약). */
+
+.ds-screen {
+  min-height: 848px;
+  background: radial-gradient(120% 44% at 50% 0%, #efe8ff 0%, rgba(239, 232, 255, 0) 55%),
+    linear-gradient(180deg, #fdf4f1, #f7f4f3);
+  animation: hy-fadein 0.35s ease forwards;
+}
+
+/* ── 헤더(sticky) ─────────────────────────────────────────────────────────── */
+.ds-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: calc(env(safe-area-inset-top, 0px) + 56px) 18px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(253, 244, 241, 0.9) 60%, rgba(253, 244, 241, 0));
+  backdrop-filter: blur(8px);
+}
+.ds-back {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+.ds-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+
+/* ── 콘텐츠 ────────────────────────────────────────────────────────────────── */
+.ds-content {
+  gap: 14px;
+}
+
+/* ── 요약 히어로 ───────────────────────────────────────────────────────────── */
+.ds-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+  padding: 20px 20px 18px 96px;
+  min-height: 96px;
+  background: linear-gradient(135deg, #efe8ff, #fff);
+  border: 1px solid #e4d9ff;
+  box-shadow: 0 16px 34px -20px rgba(124, 92, 225, 0.4);
+}
+.ds-hero--caution {
+  background: linear-gradient(135deg, #fff2df, #fff);
+  border-color: #f4e0b8;
+}
+.ds-hero__mascot {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 68px;
+  height: 68px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 14px rgba(124, 92, 225, 0.3));
+}
+.ds-hero__status {
+  font-size: 16px;
+  font-weight: 900;
+  color: #43356b;
+  letter-spacing: -0.01em;
+}
+.ds-hero--caution .ds-hero__status {
+  color: #9a6a12;
+}
+.ds-hero__date {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #9b7fb8;
+}
+.ds-hero--caution .ds-hero__date {
+  color: #b48a3d;
+}
+
+/* ── 근거 행 ───────────────────────────────────────────────────────────────── */
+.ds-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ds-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: 0 8px 22px -16px rgba(32, 26, 29, 0.16);
+}
+.ds-row__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: #f4f0f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  flex: none;
+}
+.ds-row--safe .ds-row__icon {
+  background: #e7f8f0;
+}
+.ds-row--caution .ds-row__icon {
+  background: #fff2df;
+}
+.ds-row__body {
+  flex: 1;
+  min-width: 0;
+}
+.ds-row__text {
+  font-size: 14px;
+  font-weight: 700;
+  color: #201a1d;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ds-row--safe .ds-row__text {
+  color: #087653;
+}
+.ds-row--caution .ds-row__text {
+  color: #9a6a12;
+}
+.ds-row__sub {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #a99fa4;
+}
+
+/* ── 요약 문장 ─────────────────────────────────────────────────────────────── */
+.ds-quote {
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px 18px;
+  box-shadow: 0 8px 22px -16px rgba(32, 26, 29, 0.16);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.6;
+  color: #4a4145;
+}
+.ds-foot {
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #b7adb2;
+  line-height: 1.5;
+  padding: 0 6px;
+}
+
+/* ── 로딩 ──────────────────────────────────────────────────────────────────── */
+.ds-loading {
+  text-align: center;
+  padding: 60px 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #a99fa4;
+}
+
+/* ── 생성/프리미엄/빈 상태 패널 ────────────────────────────────────────────── */
+.ds-panel {
+  text-align: center;
+  background: #fff;
+  border-radius: 24px;
+  padding: 30px 22px 26px;
+  box-shadow: 0 14px 32px -20px rgba(32, 26, 29, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.ds-panel__art {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, #f4f0ff, #efe8ff 80%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: hy-float 5s ease-in-out infinite;
+}
+.ds-panel__art img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+}
+.ds-panel__title {
+  font-size: 17px;
+  font-weight: 900;
+  color: #201a1d;
+  letter-spacing: -0.01em;
+}
+.ds-panel__desc {
+  font-size: 13px;
+  font-weight: 600;
+  color: #8b7e84;
+  line-height: 1.6;
+}
+.ds-panel__cta {
+  margin-top: 6px;
+  padding: 14px 22px;
+  border-radius: 15px;
+  background: linear-gradient(120deg, #b79dfb, #8b6bec);
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 800;
+  box-shadow: 0 14px 28px -12px rgba(124, 92, 225, 0.6);
+  --press: 0.95;
+}
+.ds-panel__cta:disabled {
+  opacity: 0.6;
+  box-shadow: none;
+  cursor: default;
+}

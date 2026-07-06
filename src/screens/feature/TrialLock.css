@@ -1,0 +1,190 @@
+/* 체험 종료 · 잠금(S-03) — 화면 전용 스타일. prefix: tl- */
+
+.tl-root {
+  min-height: 100%;
+}
+
+.tl-head {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(251, 247, 244, 0.94);
+  backdrop-filter: blur(10px);
+}
+.tl-back {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+.tl-head-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--fg-primary);
+}
+
+.tl-content {
+  padding: 10px 20px calc(120px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tl-loading {
+  margin-top: 40px;
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--fg-muted);
+}
+
+/* ── 히어로(체험 / 프리미엄) ──────────────────────────────────────────────── */
+.tl-hero {
+  border-radius: 24px;
+  padding: 26px 20px;
+  text-align: center;
+  color: #fff;
+}
+.tl-hero--trial {
+  background: linear-gradient(135deg, #f76ba6, #a78bfa);
+  box-shadow: 0 16px 36px -16px rgba(167, 139, 250, 0.6);
+}
+.tl-hero--active {
+  background: linear-gradient(135deg, #f5a524, #f76ba6);
+  box-shadow: 0 16px 36px -16px rgba(245, 165, 36, 0.55);
+}
+.tl-hero__badge {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 12px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tl-hero__dday {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  opacity: 0.95;
+}
+.tl-hero__title {
+  margin-top: 4px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.tl-hero__sub {
+  margin-top: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+/* ── 잠금(무료/만료) ──────────────────────────────────────────────────────── */
+.tl-lock {
+  border-radius: 24px;
+  padding: 30px 20px;
+  text-align: center;
+  background: #fff;
+  box-shadow: 0 14px 34px rgba(32, 26, 29, 0.06);
+}
+.tl-lock__ring {
+  width: 74px;
+  height: 74px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: var(--hy-accent-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tl-lock__title {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--fg-primary);
+}
+.tl-lock__sub {
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.55;
+  color: var(--fg-tertiary);
+}
+.tl-lock__reviewed {
+  margin: 14px auto 0;
+  display: inline-block;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--cream-soft);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--gold-text);
+}
+
+/* ── 프리미엄 혜택 목록 ───────────────────────────────────────────────────── */
+.tl-perks {
+  background: #fff;
+  border-radius: 20px;
+  padding: 6px 16px;
+  box-shadow: 0 10px 26px rgba(32, 26, 29, 0.05);
+}
+.tl-perk {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 0;
+}
+.tl-perk + .tl-perk {
+  border-top: 1px solid var(--line-hair);
+}
+.tl-perk__ic {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: var(--hy-accent-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.tl-perk__label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fg-primary);
+}
+
+/* ── CTA ──────────────────────────────────────────────────────────────────── */
+.tl-cta {
+  height: 54px;
+  border-radius: 16px;
+  background: var(--hy-accent);
+  color: #fff;
+  font-size: 15.5px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  box-shadow: 0 12px 26px -10px var(--hy-accent-deep);
+  --press: 0.97;
+}
+.tl-ghost {
+  height: 46px;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--fg-muted);
+  font-size: 13.5px;
+  font-weight: 700;
+  --press: 0.97;
+}

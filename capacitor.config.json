@@ -1,0 +1,12 @@
+{
+  "appId": "com.hyeni.calendar",
+  "appName": "혜니캘린더",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https",
+    "allowNavigation": [
+      "*.workers.dev",
+      "*.kakao.com"
+    ]
+  }
+}

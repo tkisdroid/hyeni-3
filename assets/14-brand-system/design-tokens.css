@@ -1,0 +1,77 @@
+:root {
+  --hyeni-rose: #F779A8;
+  --hyeni-rose-deep: #D94F7F;
+  --hyeni-rose-soft: #FFE2EC;
+  --hyeni-rose-line: #FFD0DD;
+  --hyeni-rose-text: #B83262;
+
+  --hyeni-mint: #31C48D;
+  --hyeni-mint-deep: #15936B;
+  --hyeni-mint-soft: #DDF7EA;
+  --hyeni-mint-line: #BCEBD8;
+  --hyeni-mint-text: #087653;
+
+  --hyeni-lavender: #A78BFA;
+  --hyeni-lavender-deep: #7C5CE1;
+  --hyeni-lavender-soft: #EFE8FF;
+  --hyeni-lavender-line: #DDD1FF;
+  --hyeni-lavender-text: #5F43B2;
+
+  --hyeni-cream: #FFF7E8;
+  --hyeni-bg: #FBFAF6;
+  --hyeni-surface: #FFFFFF;
+  --hyeni-ink: #171719;
+  --hyeni-muted: rgba(46, 47, 51, 0.88);
+  --hyeni-danger: #E03030;
+  --hyeni-danger-soft: #FFE3E3;
+  --hyeni-danger-text: #B91C1C;
+
+  --theme-accent: var(--hyeni-rose);
+  --theme-accent-deep: var(--hyeni-rose-deep);
+  --theme-accent-soft: #FFF5FA;
+  --theme-accent-line: rgba(255, 255, 255, 0.5);
+  --theme-accent-text: #B0477A;
+
+  --font-sans: "Pretendard Variable", "Pretendard", sans-serif;
+  --font-display: var(--font-sans);
+  --font-mono: ui-monospace, "SFMono-Regular", monospace;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-control: 16px;
+  --radius-card: 22px;
+  --radius-panel: 28px;
+  --radius-hero: 34px;
+  --radius-pill: 9999px;
+
+  --shadow-xs: 0 2px 8px rgba(31, 24, 28, 0.04);
+  --shadow-soft: 0 8px 24px rgba(31, 24, 28, 0.06);
+  --shadow-card: 0 12px 32px rgba(31, 24, 28, 0.08);
+  --shadow-floating: 0 18px 44px rgba(31, 24, 28, 0.12);
+  --shadow-mint: 0 12px 30px rgba(49, 196, 141, 0.16);
+  --shadow-rose: 0 12px 30px rgba(247, 121, 168, 0.18);
+  --shadow-lavender: 0 12px 30px rgba(167, 139, 250, 0.16);
+
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --motion-enter: 260ms;
+  --motion-sticker: 320ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0.2, 1);
+  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --touch-target-min: 44px;
+  --button-min-height: 48px;
+  --button-primary-height: 56px;
+  --sheet-mid-height: 52dvh;
+  --sheet-full-max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 8px);
+}

@@ -1,0 +1,140 @@
+/* 지도 장소 피커 시트 */
+
+.mps-root {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.mps-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(28, 22, 25, 0.44);
+  border: none;
+  padding: 0;
+}
+.mps-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 448px;
+  background: var(--bg-page, #faf4ef);
+  border-radius: 24px 24px 0 0;
+  padding: 16px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 -12px 40px -14px rgba(32, 26, 29, 0.32);
+  animation: mps-up 0.24s ease;
+}
+@keyframes mps-up {
+  from { transform: translateY(28px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.mps-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.mps-title {
+  font-size: 16.5px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.mps-close {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: var(--fg-muted);
+  --press: 0.9;
+}
+.mps-map {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #eae4e0;
+}
+.mps-map__canvas {
+  width: 100%;
+  height: 300px;
+}
+.mps-map__hint {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  padding: 7px 13px;
+  border-radius: 999px;
+  background: rgba(32, 26, 29, 0.72);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.mps-saved {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+}
+.mps-saved__chip {
+  flex: none;
+  padding: 8px 13px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1.5px solid var(--line-card, #eee2da);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fg-body);
+  white-space: nowrap;
+  --press: 0.95;
+}
+.mps-saved__chip--on {
+  background: var(--hy-accent-soft);
+  border-color: var(--hy-accent);
+  color: var(--hy-accent-text);
+}
+.mps-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mps-sel {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fg-muted);
+}
+.mps-sel svg {
+  flex: none;
+  color: var(--hy-accent);
+}
+.mps-sel__text {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.mps-confirm {
+  flex: none;
+  padding: 13px 18px;
+  border-radius: 14px;
+  background: var(--hy-accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  --press: 0.96;
+}
+.mps-confirm:disabled {
+  opacity: 0.5;
+}

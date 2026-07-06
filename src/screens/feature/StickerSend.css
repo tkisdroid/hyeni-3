@@ -1,0 +1,232 @@
+/* 스티커 보내기 — 화면 전용 스타일 (원본 dc.html 1580–1602행 값 1:1)
+   미리보기 타일·선택칩·보내기 버튼은 아이 테마색(--hy-accent)을 따른다. */
+
+/* ── 래퍼: 로즈 그라디언트 배경 + 진입 모션 ─────────────────────────────── */
+.ss-wrap {
+  min-height: 100%;
+  background: radial-gradient(120% 42% at 50% 0%, #ffe7f0 0%, rgba(255, 231, 240, 0) 55%),
+    linear-gradient(180deg, #fdf4f1, #f7f4f3);
+  animation: hy-fadein 0.35s ease forwards;
+}
+
+/* ── 상단 헤더 (sticky · 뒤로가기) ───────────────────────────────────────── */
+.ss-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(253, 244, 241, 0.9) 60%, rgba(253, 244, 241, 0));
+  backdrop-filter: blur(8px);
+}
+.ss-back {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+.ss-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--fg-primary);
+}
+
+/* ── 본문 컬럼 (하단 탭바 여백 포함) ────────────────────────────────────── */
+.ss-body {
+  padding: 6px 20px calc(120px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ── 미리보기 카드 ─────────────────────────────────────────────────────── */
+.ss-preview {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.ss-preview__eyebrow {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--hy-accent-text);
+}
+.ss-preview__tile {
+  margin-top: 12px;
+  width: 108px;
+  height: 108px;
+  border-radius: 26px;
+  background: var(--hy-accent-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: hy-pop 0.4s ease;
+}
+.ss-preview__tile img {
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
+}
+.ss-preview__label {
+  margin-top: 12px;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  color: var(--fg-primary);
+}
+
+/* ── 선택 그리드 ───────────────────────────────────────────────────────── */
+.ss-pick-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--fg-muted);
+  margin-bottom: 12px;
+  padding: 0 2px;
+}
+.ss-grid {
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.ss-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 2px;
+  border-radius: 16px;
+  background: transparent;
+  border: 2px solid transparent;
+  transition: transform 0.12s ease, background 0.16s ease, border-color 0.16s ease;
+  --press: 0.92;
+}
+.ss-chip[data-active="true"] {
+  background: var(--hy-accent-soft);
+  border-color: var(--hy-accent);
+}
+.ss-chip__img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+.ss-chip__label {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #554c50;
+  white-space: nowrap;
+}
+
+/* ── 대상 자녀 선택(다자녀) ────────────────────────────────────────────── */
+.ss-children {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px;
+  scrollbar-width: none;
+}
+.ss-children::-webkit-scrollbar {
+  display: none;
+}
+.ss-child {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 6px;
+  border-radius: 999px;
+  background: #fff;
+  border: 2px solid transparent;
+  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.05);
+  transition: border-color 0.16s ease, background 0.16s ease;
+  --press: 0.95;
+}
+.ss-child[data-active="true"] {
+  border-color: var(--hy-accent);
+  background: var(--hy-accent-soft);
+}
+.ss-child__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--hy-accent-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.ss-child__avatar img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+.ss-child__name {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--fg-primary);
+  white-space: nowrap;
+}
+
+/* 받은 칭찬 누적(미리보기 하단) */
+.ss-preview__count {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--fg-muted);
+}
+
+/* ── 한마디 입력 ───────────────────────────────────────────────────────── */
+.ss-msg {
+  width: 100%;
+  min-height: 56px;
+  border-radius: 16px;
+  border: 1.5px solid var(--line-soft);
+  background: #fff;
+  padding: 13px 14px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--ink-2);
+  resize: none;
+  outline: none;
+  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.04);
+  transition: border-color 0.16s ease;
+}
+.ss-msg::placeholder {
+  color: var(--fg-faint);
+}
+.ss-msg:focus {
+  border-color: var(--hy-accent);
+}
+
+/* ── 보내기 버튼 ───────────────────────────────────────────────────────── */
+.ss-send {
+  width: 100%;
+  height: 56px;
+  border-radius: 18px;
+  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  box-shadow: 0 16px 32px -12px rgba(240, 81, 143, 0.6);
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  --press: 0.98;
+}
+.ss-send img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}

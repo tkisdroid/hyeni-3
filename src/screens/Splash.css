@@ -1,0 +1,140 @@
+/* C-01 스플래시 — hyeni-1 "포근한 로즈" 아트 레이어 이식.
+   배경 그라데이션·블롭·후광은 이 화면 전용 아트라 여기 직접 둔다(컴포넌트 JSX 엔 raw hex 없음). */
+
+.sp-root {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background:
+    radial-gradient(120% 78% at 50% -6%, #ffe7ef 0%, transparent 56%),
+    linear-gradient(180deg, #fff4f8 0%, #fff7f1 52%, #fceff4 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 44px;
+  padding: calc(env(safe-area-inset-top, 0px) + 8px) 0 calc(env(safe-area-inset-bottom, 0px) + 34px);
+  overflow: hidden;
+  isolation: isolate;
+  animation: hy-fadein 0.3s ease forwards;
+  transition: opacity 280ms cubic-bezier(0.2, 0, 0, 1);
+}
+.sp-root--exit {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── 배경 블롭(블러 원) ─────────────────────────────────────────────── */
+.sp-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(34px);
+  z-index: 0;
+  pointer-events: none;
+}
+.sp-blob--1 { width: 190px; height: 190px; background: #ffd3e2; top: 100px; left: -46px; }
+.sp-blob--2 { width: 160px; height: 160px; background: #e9dbff; top: 150px; right: -40px; }
+.sp-blob--3 { width: 140px; height: 140px; background: #d3f3e6; bottom: 220px; left: 20px; opacity: 0.7; }
+
+/* ── 본문(후광·마스코트·워드마크·슬로건) ────────────────────────────── */
+.sp-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+.sp-halo {
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  position: relative;
+  background: radial-gradient(circle at 50% 46%, #ffffff 0%, rgba(255, 240, 245, 0.85) 52%, rgba(255, 240, 245, 0) 74%);
+}
+.sp-halo::after {
+  content: "";
+  position: absolute;
+  bottom: 38px;
+  width: 150px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(216, 79, 127, 0.16);
+  filter: blur(11px);
+}
+.sp-mascot {
+  position: relative;
+  z-index: 2;
+  width: 236px;
+  height: 236px;
+  object-fit: contain;
+  animation: sp-floaty 4.8s ease-in-out infinite;
+  filter: drop-shadow(0 24px 30px rgba(216, 79, 127, 0.22));
+}
+.sp-title {
+  margin-top: 16px;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--fg-primary);
+  white-space: nowrap;
+}
+.sp-title b {
+  color: var(--hy-accent-text, #b0477a);
+  font-weight: 800;
+}
+.sp-sub {
+  margin-top: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  text-align: center;
+  line-height: 1.55;
+}
+
+/* ── 로딩 인디케이터(점 3개 + 문구) ─────────────────────────────────── */
+.sp-loadwrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 2;
+}
+.sp-dots {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+}
+.sp-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: block;
+  background: var(--hy-accent, #f0518f);
+  animation: sp-dot 1.3s infinite ease-in-out;
+}
+.sp-dot:nth-child(2) { animation-delay: 0.16s; }
+.sp-dot:nth-child(3) { animation-delay: 0.32s; }
+.sp-loadtext {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fg-faint);
+}
+
+@keyframes sp-floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes sp-dot {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40% { transform: translateY(-7px); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sp-mascot,
+  .sp-dot {
+    animation: none !important;
+  }
+}

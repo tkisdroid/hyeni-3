@@ -1,0 +1,270 @@
+/* SOS 수신(P-20) — 부모 긴급 화면 전용 스타일. 레드 신호색 중심. */
+
+.sr-root {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, var(--danger-soft), var(--bg-base, #f7f4f3));
+}
+
+.sr-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 12px;
+  background: rgba(255, 236, 238, 0.86);
+  backdrop-filter: blur(10px);
+}
+.sr-back {
+  flex: none;
+}
+.sr-title {
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--danger-text);
+}
+.sr-header-sp {
+  margin-left: auto;
+  width: 40px;
+}
+
+.sr-content {
+  flex: 1;
+  padding: 18px 18px calc(28px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  overflow-y: auto;
+}
+
+/* ── 빈 상태 ────────────────────────────────────────────────────────────── */
+.sr-empty {
+  margin: auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 40px 20px;
+}
+.sr-empty-icon {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: var(--mint-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sr-empty-title {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--fg-primary);
+}
+.sr-empty-sub {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  line-height: 1.5;
+}
+
+/* ── SOS 배너 ──────────────────────────────────────────────────────────── */
+.sr-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 15px;
+  border-radius: var(--radius-xl);
+  background: var(--danger-500);
+  color: #fff;
+  box-shadow: 0 12px 26px -10px rgba(229, 72, 77, 0.5);
+  animation: hy-soft 1.4s ease-in-out infinite;
+}
+.sr-banner--read {
+  background: var(--fg-secondary);
+  box-shadow: none;
+  animation: none;
+}
+.sr-banner-emoji {
+  font-size: 26px;
+}
+.sr-banner-body {
+  flex: 1;
+  min-width: 0;
+}
+.sr-banner-title {
+  font-size: 15.5px;
+  font-weight: 800;
+}
+.sr-banner-meta {
+  margin-top: 2px;
+  font-size: 11.5px;
+  font-weight: 600;
+  opacity: 0.9;
+  font-variant-numeric: tabular-nums;
+}
+.sr-banner-chip {
+  flex: none;
+  padding: 4px 9px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.22);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* ── 위치 카드 ─────────────────────────────────────────────────────────── */
+.sr-loc {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 13px 14px;
+  border-radius: var(--radius-lg);
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(32, 26, 29, 0.05);
+}
+.sr-loc-icon {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--danger-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sr-loc-body {
+  flex: 1;
+  min-width: 0;
+}
+.sr-loc-place {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--fg-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sr-loc-sub {
+  margin-top: 2px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--fg-muted);
+}
+.sr-loc-track {
+  flex: none;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--danger-soft);
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--danger-text);
+  --press: 0.94;
+}
+
+/* ── 액션(전화·주변소리) ──────────────────────────────────────────────── */
+.sr-actions {
+  display: flex;
+  gap: 10px;
+}
+.sr-act {
+  flex: 1;
+  height: 54px;
+  border-radius: var(--radius-lg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 15px;
+  font-weight: 800;
+  --press: 0.96;
+}
+.sr-act--call {
+  background: var(--danger-500);
+  color: #fff;
+  box-shadow: 0 12px 24px -12px rgba(229, 72, 77, 0.6);
+}
+.sr-act-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.sr-act--ghost {
+  background: #fff;
+  color: var(--fg-secondary);
+  border: 1.5px solid rgba(32, 26, 29, 0.08);
+}
+
+/* ── 확인 처리 ─────────────────────────────────────────────────────────── */
+.sr-confirm {
+  height: 52px;
+  border-radius: var(--radius-lg);
+  background: var(--fg-primary);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 800;
+  --press: 0.97;
+}
+.sr-confirm:disabled {
+  opacity: 0.7;
+}
+
+/* ── 지난 SOS ──────────────────────────────────────────────────────────── */
+.sr-history {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sr-history-label {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--fg-muted);
+  padding-left: 2px;
+}
+.sr-history-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 13px;
+  border-radius: var(--radius-md);
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(32, 26, 29, 0.04);
+}
+.sr-history-emoji {
+  font-size: 18px;
+}
+.sr-history-body {
+  flex: 1;
+  min-width: 0;
+}
+.sr-history-name {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--fg-primary);
+}
+.sr-history-time {
+  margin-top: 1px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+.sr-history-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger-500);
+}

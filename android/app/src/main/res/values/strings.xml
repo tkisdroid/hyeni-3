@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">혜니캘린더</string>
+    <string name="title_activity_main">혜니캘린더</string>
+    <string name="package_name">com.hyeni.calendar</string>
+    <string name="custom_url_scheme">com.hyeni.calendar</string>
+    <string name="push_alert_default_title">혜니캘린더</string>
+</resources>

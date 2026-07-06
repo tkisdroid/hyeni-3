@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>혜니 · Redesign System v1.0 포트 미리보기</title>
+
+<!-- 1) 실제 앱 토큰 (그대로) -->
+<link rel="stylesheet" href="reference/tokens.css" />
+<!-- 2) 포트 레이어 (이 오버라이드가 하는 일을 눈으로 확인) -->
+<link rel="stylesheet" href="src/styles/redesign-system.css" />
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" />
+<style>
+  /* App.css / theme.js 가 런타임에 주입하는 기본 테마 accent(로즈) 초기값 재현 */
+  :root {
+    --theme-accent: #F779A8; --theme-accent-deep: #E65C92;
+    --theme-accent-soft: #FFF5FA; --theme-accent-line: #FFE4EF; --theme-accent-text: #B0477A;
+    --hyeni-press-scale: 0.97;
+    --hyeni-theme-gradient: linear-gradient(135deg, var(--theme-accent) 0%, var(--theme-accent-deep) 100%);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: "Pretendard Variable", sans-serif; color: var(--fg-primary);
+    background:
+      radial-gradient(1000px 620px at 8% -6%, var(--theme-accent-soft) 0%, transparent 54%),
+      radial-gradient(900px 560px at 100% 8%, color-mix(in srgb, var(--theme-accent) 9%, transparent) 0%, transparent 60%),
+      linear-gradient(180deg, #FDFAF8 0%, #F6F1F0 100%);
+    padding: 36px 22px 90px;
+    transition: background .4s ease;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; }
+  .head { text-align: center; margin-bottom: 6px; }
+  .head h1 { font-size: 25px; font-weight: 800; letter-spacing: -0.02em; margin: 8px 0 0; }
+  .head p { color: var(--fg-secondary); font-weight: 600; font-size: 13.5px; margin: 8px 0 0; }
+  .badge { display:inline-block; font-size:11px; font-weight:800; letter-spacing:.08em; color:var(--theme-accent-text);
+           background:var(--theme-accent-soft); padding:5px 12px; border-radius:999px; transition: background .35s ease, color .35s ease; }
+  section.blk { margin-top: 30px; }
+  section.blk > .t { font-size:15px; font-weight:800; margin:0 0 14px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:16px; }
+  .panel { background:#fff; border-radius:22px; padding:20px; box-shadow: var(--shadow-card); border:1px solid var(--line-soft); }
+  .panel > h2 { font-size:12px; font-weight:800; letter-spacing:.08em; color:var(--fg-tertiary); margin:0 0 15px; text-transform:uppercase; }
+  .stack { display:flex; flex-direction:column; gap:12px; }
+  .rowflex { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .lbl { font-size:11px; font-weight:700; color:var(--fg-tertiary); margin-bottom:6px; }
+
+  /* ── 테마 스위처 (히어로) ─────────────────────────────── */
+  .theme-hero {
+    border-radius:26px; padding:22px 22px 20px;
+    background: linear-gradient(135deg, color-mix(in srgb,var(--theme-accent) 12%, #fff) 0%, #fff 60%, var(--theme-accent-soft) 100%);
+    border:1px solid var(--theme-accent-line); box-shadow: var(--shadow-card);
+    transition: background .4s ease, border-color .4s ease;
+  }
+  .theme-hero h2 { margin:0; font-size:18px; font-weight:800; letter-spacing:-.02em; }
+  .theme-hero p { margin:6px 0 0; font-size:13px; font-weight:600; color:var(--fg-secondary); }
+  .swatches { display:flex; gap:12px; flex-wrap:wrap; margin-top:16px; }
+  .sw { width:52px; height:52px; border-radius:16px; cursor:pointer; border:3px solid #fff;
+        box-shadow: 0 4px 12px rgba(31,24,28,.12); transition: transform .14s ease; position:relative; }
+  .sw:active { transform: scale(.92); }
+  .sw[aria-pressed="true"] { outline: 3px solid var(--theme-accent); outline-offset: 2px; }
+  .sw[aria-pressed="true"]::after { content:"✓"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900; font-size:20px; text-shadow:0 1px 3px rgba(0,0,0,.3); }
+  .sw-name { font-size:10px; font-weight:800; text-align:center; margin-top:5px; color:var(--fg-secondary); }
+
+  /* ── 라이브 데모 요소 (테마 따라 전부 재도색) ───────────── */
+  .demoEl { transition: background .35s ease, border-color .35s ease, box-shadow .35s ease, color .35s ease; }
+  .panel input.is-focus {
+    border-color: var(--theme-accent) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent) 18%, transparent) !important;
+    caret-color: var(--theme-accent);
+  }
+  .hint { display:flex; align-items:center; gap:5px; margin-top:7px; font-size:11px; font-weight:700; color:var(--theme-accent-text); }
+  .hint .dot { width:5px; height:5px; border-radius:50%; background:var(--theme-accent); }
+
+  /* 달력 */
+  .cal { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
+  .cal .d { height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:var(--fg-secondary); }
+  .cal .sel { color:#fff; background: linear-gradient(135deg, color-mix(in srgb,var(--theme-accent) 80%, #fff), var(--theme-accent));
+              box-shadow:0 6px 14px -4px color-mix(in srgb,var(--theme-accent) 55%, transparent); }
+  .cal .today { box-shadow: inset 0 0 0 1.5px var(--theme-accent); color: var(--theme-accent-text); }
+  .cal .sat { color: var(--cal-weekday-color-sat, #5B92D6); }
+  .cal .sun { color:#E8607F; }
+
+  /* 역할 카드 */
+  .role { display:flex; align-items:center; gap:14px; padding:16px; border-radius:22px; background:#fff; border:1px solid var(--line-soft); box-shadow:var(--shadow-soft); }
+  .role .av { width:52px; height:52px; border-radius:16px; display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; }
+  .role .av img { width:46px; height:46px; object-fit:contain; }
+  .role.child { background: linear-gradient(120deg, var(--theme-accent-soft), color-mix(in srgb, var(--brand-lavender) 16%, #fff)); border-color:transparent; }
+
+  .note { font-size:12.5px; color:var(--fg-secondary); font-weight:600; line-height:1.65; background:#fff; border:1px solid var(--line-soft); border-radius:18px; padding:16px 18px; }
+  .note b { color: var(--fg-primary); }
+  code { background: var(--bg-muted); border-radius:5px; padding:1px 5px; font-size:.9em; font-family: ui-monospace, monospace; }
+  .steps { counter-reset: s; list-style:none; padding:0; margin:10px 0 0; display:flex; flex-direction:column; gap:9px; }
+  .steps li { position:relative; padding-left:34px; font-size:13px; font-weight:600; color:var(--fg-secondary); line-height:1.5; }
+  .steps li::before { counter-increment:s; content:counter(s); position:absolute; left:0; top:-1px; width:24px; height:24px; border-radius:50%; background:var(--theme-accent); color:#fff; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <span class="badge">REDESIGN SYSTEM · v1.0 — PORT PREVIEW</span>
+    <h1>실제 <code>tokens.css</code> + 포트 레이어 적용 결과</h1>
+    <p>앱의 진짜 토큰 파일에 <code>redesign-system.css</code>를 얹어 렌더했어요 — 컴포넌트가 상속받는 공통 언어입니다.</p>
+  </div>
+
+  <!-- ============ 테마 스위처 (핵심) ============ -->
+  <section class="blk">
+    <div class="t">🎨 아이 테마 적용 <span class="badge">색을 바꾸면 전부 함께 바뀌어요</span></div>
+    <div class="theme-hero demoEl">
+      <h2>아이가 좋아하는 색을 고르면…</h2>
+      <p>버튼 · 캘린더 날짜 · 포커스 링 · "입력 중" 안내 · 칩 · 강조가 <b>한 번에 그 색으로</b> 통일돼요. 아래 색을 눌러보세요.</p>
+      <div class="swatches" id="swatches"></div>
+    </div>
+  </section>
+
+  <!-- ============ 라이브 데모 ============ -->
+  <section class="blk">
+    <div class="t">테마를 따라 바뀌는 요소들 <span class="badge">라이브</span></div>
+    <div class="grid">
+
+      <div class="panel">
+        <h2>버튼</h2>
+        <div class="stack">
+          <button class="hy-btn hy-btn--primary demoEl">기본 · Primary</button>
+          <button class="hy-btn hy-btn--secondary">보조 · Secondary</button>
+          <button class="hy-btn hy-btn--ghost demoEl" style="color:var(--theme-accent-text)">텍스트 · Ghost</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>입력 · 포커스 · 안내</h2>
+        <div class="stack">
+          <div><div class="lbl">기본</div><input placeholder="이름을 입력해주세요" /></div>
+          <div>
+            <div class="lbl">포커스 상태 <span style="color:var(--theme-accent-text)">(테마 링)</span></div>
+            <input class="is-focus demoEl" value="지우 엄마" />
+            <div class="hint demoEl"><span class="dot"></span>입력 중 · 테마 색으로 강조</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>캘린더 (선택 날짜 = 테마색)</h2>
+        <div class="cal">
+          <div class="d sun">일</div><div class="d">월</div><div class="d">화</div><div class="d">수</div><div class="d">목</div><div class="d">금</div><div class="d sat">토</div>
+          <div class="d">16</div><div class="d">17</div><div class="d">18</div><div class="d sel demoEl">19</div><div class="d today demoEl">20</div><div class="d">21</div><div class="d sat">22</div>
+        </div>
+        <div style="margin-top:14px" class="rowflex">
+          <span class="hy-chip hy-chip--brand demoEl" style="background:var(--theme-accent-soft);color:var(--theme-accent-text)">● 오늘</span>
+          <span class="hy-chip hy-chip--safe">안전구역</span>
+          <span class="hy-chip hy-chip--caution">45분 뒤</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>실시간 표시 · 역할 카드</h2>
+        <div class="rowflex" style="margin-bottom:14px">
+          <span style="position:relative;display:inline-flex;width:9px;height:9px">
+            <span class="demoEl" style="position:absolute;inset:0;border-radius:50%;background:var(--theme-accent)"></span>
+          </span>
+          <span class="demoEl" style="font-size:13px;font-weight:800;color:var(--theme-accent-text)">실시간 추적 중</span>
+        </div>
+        <div class="stack">
+          <div class="role"><span class="av" style="background:#EAF1FB"><img src="../assets/family/mom.webp" alt="" /></span><div style="flex:1"><div style="font-weight:800;font-size:16px">학부모</div><div style="font-size:12px;color:var(--fg-tertiary);font-weight:600">ID · 카카오로 로그인</div></div><span style="color:var(--line-strong);font-size:20px">›</span></div>
+          <div class="role child demoEl"><span class="av" style="background:#fff"><img src="../assets/animal/rabbit.webp" alt="" /></span><div style="flex:1"><div style="font-weight:800;font-size:16px;color:var(--theme-accent-text)">아이</div><div class="demoEl" style="font-size:12px;color:var(--theme-accent-text);opacity:.8;font-weight:600">부모님 코드로 시작</div></div><span class="demoEl" style="color:var(--theme-accent);font-size:20px">›</span></div>
+        </div>
+      </div>
+
+    </div>
+    <div class="note" style="margin-top:14px">
+      <b>안전·상태 색은 일부러 안 바뀝니다</b> — "안전구역(민트)" · "주의(앰버)" · "SOS(레드)"는 의미가 고정된 신호색이라 테마가 바뀌어도 유지돼요. 그래야 아이가 색을 바꿔도 <b>안전 신호를 헷갈리지 않아요</b>.
+    </div>
+  </section>
+
+  <!-- ============ 통일 규칙 ============ -->
+  <section class="blk">
+    <div class="t">통일된 기준 <span class="badge">배경 · 모양 · 버튼</span></div>
+    <div class="grid">
+      <div class="panel">
+        <h2>배경 · 중립색 (Before → After)</h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <div class="lbl" style="text-decoration:line-through">기존 (cool)</div>
+            <div style="border-radius:12px;overflow:hidden;border:1px solid var(--line-soft)">
+              <div style="height:40px;background:#F7F7F8"></div><div style="height:40px;background:#F4F4F5;border-top:1px solid #E9EAEC"></div>
+            </div>
+          </div>
+          <div>
+            <div class="lbl">포트 (warm)</div>
+            <div style="border-radius:12px;overflow:hidden;border:1px solid var(--line-soft)">
+              <div style="height:40px;background:var(--bg-subtle)"></div><div style="height:40px;background:var(--bg-muted);border-top:1px solid var(--line-soft)"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>섹션 모양 · 그림자 (통일)</h2>
+        <div class="rowflex">
+          <span style="width:70px;height:48px;border-radius:16px;background:#fff;box-shadow:var(--shadow-soft);border:1px solid var(--line-soft);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:var(--fg-tertiary)">16</span>
+          <span style="width:70px;height:48px;border-radius:22px;background:#fff;box-shadow:var(--shadow-card);border:1px solid var(--line-soft);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:var(--fg-tertiary)">22</span>
+          <span style="width:70px;height:48px;border-radius:28px;background:#fff;box-shadow:var(--shadow-floating);border:1px solid var(--line-soft);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:var(--fg-tertiary)">28</span>
+        </div>
+        <div class="lbl" style="margin-top:12px">카드 22 · 히어로 28 · 컨트롤 16 — 하나의 라운드 스케일</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 적용 방법 ============ -->
+  <section class="blk">
+    <div class="t">적용 방법 <span class="badge">2분</span></div>
+    <div class="panel">
+      <ol class="steps">
+        <li><code>src/styles/redesign-system.css</code> 를 프로젝트 같은 경로에 복사</li>
+        <li><code>src/App.jsx</code> 최상단의 <code>import "./App.css";</code> <b>바로 아래</b>에 <code>import "./styles/redesign-system.css";</code> 추가</li>
+        <li><code>npm run dev</code> 로 확인 — 끝! (import 한 줄 지우면 100% 원복)</li>
+      </ol>
+      <div class="note" style="margin-top:14px">
+        <b>테마가 전부 바뀌는 원리</b> — 앱의 <code>theme.js · applyThemeColor()</code> 가 아이 색을 <code>--theme-accent</code> 계열 변수로 주입해요. 포트 레이어가 <code>--primary</code>·포커스 링·버튼·캘린더 선택일을 전부 <code>--theme-accent</code> 에 연결해 두었기 때문에, 색 하나만 바뀌면 위 데모처럼 <b>모든 요소가 함께</b> 그 색으로 통일됩니다.
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+  // theme.js THEME_PALETTE 와 동일한 값 — 미리보기에서 런타임 주입을 재현
+  const PALETTE = [
+    { hex:"#F779A8", name:"핑크", deep:"#E65C92", soft:"#FFF5FA", line:"#FFE4EF", text:"#B0477A" },
+    { hex:"#3B82F6", name:"파랑", deep:"#2563EB", soft:"#EFF6FF", line:"#DBEAFE", text:"#1E40AF" },
+    { hex:"#10B981", name:"초록", deep:"#059669", soft:"#D1FAE5", line:"#A7F3D0", text:"#047857" },
+    { hex:"#F59E0B", name:"노랑", deep:"#D97706", soft:"#FEF3C7", line:"#FDE68A", text:"#92400E" },
+    { hex:"#A78BFA", name:"보라", deep:"#7C3AED", soft:"#EDE9FE", line:"#DDD6FE", text:"#5B21B6" },
+    { hex:"#F5A524", name:"주황", deep:"#D97706", soft:"#FEF3C7", line:"#FDE68A", text:"#92400E" },
+  ];
+  const root = document.documentElement;
+  function applyTheme(p) {
+    root.style.setProperty("--theme-accent", p.hex);
+    root.style.setProperty("--theme-accent-deep", p.deep);
+    root.style.setProperty("--theme-accent-soft", p.soft);
+    root.style.setProperty("--theme-accent-line", p.line);
+    root.style.setProperty("--theme-accent-text", p.text);
+    document.querySelectorAll(".sw").forEach((el,i)=> el.setAttribute("aria-pressed", String(PALETTE[i].hex===p.hex)));
+  }
+  const box = document.getElementById("swatches");
+  PALETTE.forEach((p) => {
+    const wrap = document.createElement("div");
+    const b = document.createElement("button");
+    b.className = "sw"; b.style.background = p.hex; b.setAttribute("aria-label", p.name+" 테마"); b.setAttribute("aria-pressed","false");
+    b.onclick = () => applyTheme(p);
+    const nm = document.createElement("div"); nm.className="sw-name"; nm.textContent = p.name;
+    wrap.appendChild(b); wrap.appendChild(nm); box.appendChild(wrap);
+  });
+  applyTheme(PALETTE[0]);
+</script>
+</body>
+</html>
