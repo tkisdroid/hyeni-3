@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, LocateFixed } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { KakaoMap } from "@/components/KakaoMap";
 import { loadKakaoMaps } from "@/lib/kakaoMap";
@@ -35,6 +35,73 @@ export function PlaceForm() {
   const [placeType, setPlaceType] = useState<PlaceTypeId>("academy");
   const [picked, setPicked] = useState<LatLng | null>(null);
   const [center, setCenter] = useState<LatLng | null>(null);
+  // 지도 높이 — 하단 핸들을 아래로 드래그해 확대(160~520px).
+  const [mapH, setMapH] = useState(260);
+  const dragRef = useRef<{ startY: number; startH: number } | null>(null);
+  const onHandleDown = (e: React.PointerEvent) => {
+    dragRef.current = { startY: e.clientY, startH: mapH };
+    try {
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {
+      // 일부 환경(합성 이벤트 등)에서 캡처 실패해도 드래그 자체는 동작
+    }
+  };
+  const onHandleMove = (e: React.PointerEvent) => {
+    const d = dragRef.current;
+    if (!d) return;
+    setMapH(Math.min(520, Math.max(160, d.startH + (e.clientY - d.startY))));
+  };
+  const onHandleUp = () => {
+    dragRef.current = null;
+  };
+
+  // 현재 위치 버튼 — 지도를 내 위치로 즉시 이동(선택 아님, 뷰 이동만).
+  // KakaoMap 은 같은 좌표 재설정을 무시하므로 recenterKey 로 강제 재이동한다.
+  const [recenterKey, setRecenterKey] = useState(0);
+  const [locating, setLocating] = useState(false);
+  const locateMe = () => {
+    if (!navigator.geolocation) {
+      show("이 기기에서 위치를 사용할 수 없어요", "📍");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocating(false);
+        setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setRecenterKey((k) => k + 1);
+      },
+      () => {
+        setLocating(false);
+        show("현재 위치를 가져오지 못했어요", "📍");
+      },
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 10_000 },
+    );
+  };
+
+  // 기본 지도 중심 = 현재 위치(4초 제한) — 등록하려는 곳은 대개 지금 있는 곳 근처.
+  // 실패 시 KakaoMap 내장 폴백(자녀 위치→서울) 그대로. 검색/선택으로 center 가 잡히면 덮지 않는다.
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    let done = false;
+    const timer = window.setTimeout(() => {
+      done = true;
+    }, 4000);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (done) return;
+        done = true;
+        window.clearTimeout(timer);
+        setCenter((prev) => prev ?? { lat: pos.coords.latitude, lng: pos.coords.longitude });
+      },
+      () => {
+        done = true;
+        window.clearTimeout(timer);
+      },
+      { enableHighAccuracy: false, timeout: 3500, maximumAge: 120_000 },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Kakao services(Geocoder) — 주소↔좌표 변환용. 키 미설정으로 로드 실패해도 화면은 동작.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -146,10 +213,11 @@ export function PlaceForm() {
 
       <div className="pf-body">
         {/* 지도 — 눌러서 위치 선택(선택 좌표에 마커) */}
-        <div className="pf-map">
+        <div className="pf-map" style={{ height: mapH }}>
           <KakaoMap
             className="pf-map__canvas"
             center={center}
+            recenterKey={recenterKey}
             picked={picked}
             onPick={handlePick}
           />
@@ -158,6 +226,28 @@ export function PlaceForm() {
               {hasKakaoKey ? "지도를 눌러 위치를 선택하세요" : "지도 기능 설정 전이에요"}
             </span>
           )}
+          {/* 현재 위치로 빠른 이동(우측 하단) */}
+          <button
+            type="button"
+            className={`pf-map-locate hy-press${locating ? " pf-map-locate--busy" : ""}`}
+            aria-label="현재 위치로 이동"
+            onClick={locateMe}
+            disabled={locating}
+          >
+            <LocateFixed size={19} strokeWidth={2.2} />
+          </button>
+        </div>
+        {/* 지도 크기 조절 핸들 — 아래로 드래그하면 지도가 커진다 */}
+        <div
+          className="pf-map-handle"
+          role="separator"
+          aria-label="지도 크기 조절"
+          onPointerDown={onHandleDown}
+          onPointerMove={onHandleMove}
+          onPointerUp={onHandleUp}
+          onPointerCancel={onHandleUp}
+        >
+          <span className="pf-map-handle__bar" />
         </div>
 
         {/* 장소 이름 */}

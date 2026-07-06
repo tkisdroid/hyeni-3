@@ -57,6 +57,7 @@ export function KakaoMap({
   picked = null,
   onPick,
   center = null,
+  recenterKey = 0,
   className,
 }: {
   child?: MapChild | null;
@@ -74,6 +75,8 @@ export function KakaoMap({
   onPick?: (lat: number, lng: number) => void;
   /** 명시적 중심(주소 검색 결과 등). 없으면 자녀 위치/기본값. */
   center?: LatLngPoint | null;
+  /** 값이 바뀌면 center 가 같은 좌표여도 강제로 재이동(현재 위치 버튼 등). */
+  recenterKey?: number;
   className?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -81,10 +84,14 @@ export function KakaoMap({
   const mapRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const overlaysRef = useRef<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const resizeObsRef = useRef<any>(null);
   // 최신 onPick 콜백을 ref 로 유지(리스너 재부착 없이 최신 클로저 호출).
   const onPickRef = useRef(onPick);
   // 마지막으로 적용한 중심(중복 setCenter 방지 → 클릭 시 지도 튐 방지).
   const lastCenterRef = useRef<string | null>(null);
+  // 마지막으로 적용한 recenterKey — 바뀌면 같은 좌표라도 강제 재이동.
+  const lastRecenterRef = useRef(0);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -104,6 +111,19 @@ export function KakaoMap({
         if (!mapRef.current) {
           mapRef.current = new maps.Map(ref.current, { center: centerLatLng, level: 4 });
           lastCenterRef.current = centerKey;
+          // 컨테이너 크기 변화(드래그 리사이즈 등) → relayout + 중심 유지.
+          // Kakao 지도는 컨테이너가 커져도 스스로 타일을 다시 깔지 않는다(회색 여백 버그 방지).
+          if (typeof ResizeObserver !== "undefined") {
+            const ro = new ResizeObserver(() => {
+              const map = mapRef.current;
+              if (!map) return;
+              const keep = map.getCenter();
+              map.relayout();
+              map.setCenter(keep);
+            });
+            ro.observe(ref.current);
+            resizeObsRef.current = ro;
+          }
           // 지도 클릭 → 좌표 선택. 리스너는 최초 1회만 부착하고 최신 콜백은 ref 로 호출.
           maps.event.addListener(
             mapRef.current,
@@ -114,11 +134,13 @@ export function KakaoMap({
               onPickRef.current?.(latlng.getLat(), latlng.getLng());
             },
           );
-        } else if (centerKey !== lastCenterRef.current) {
+        } else if (centerKey !== lastCenterRef.current || recenterKey !== lastRecenterRef.current) {
           // 중심이 실제로 바뀔 때만 이동(클릭으로 picked 만 갱신될 땐 지도 튐 방지).
+          // 단 recenterKey 가 갱신되면 같은 좌표여도 강제 재이동(현재 위치 버튼).
           mapRef.current.setCenter(centerLatLng);
           lastCenterRef.current = centerKey;
         }
+        lastRecenterRef.current = recenterKey;
         // 이전 오버레이 제거
         overlaysRef.current.forEach((o) => o.setMap(null));
         overlaysRef.current = [];
@@ -256,7 +278,16 @@ export function KakaoMap({
     return () => {
       cancelled = true;
     };
-  }, [child, zones, places, route, stays, destination, picked, center]);
+  }, [child, zones, places, route, stays, destination, picked, center, recenterKey]);
+
+  // 언마운트 시 ResizeObserver 해제.
+  useEffect(
+    () => () => {
+      resizeObsRef.current?.disconnect?.();
+      resizeObsRef.current = null;
+    },
+    [],
+  );
 
   if (failed) {
     return (

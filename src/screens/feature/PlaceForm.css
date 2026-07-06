@@ -182,3 +182,45 @@
   color: #fff;
   --press: 0.98;
 }
+
+/* 현재 위치 버튼(지도 우측 하단) — 내 위치로 빠른 이동 */
+.pf-map-locate {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 6;
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #4a4145;
+  box-shadow: 0 4px 14px rgba(32, 26, 29, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  --press: 0.9;
+}
+/* 위치 조회 중 — 펄스로 진행 표시 */
+.pf-map-locate--busy {
+  animation: hy-soft 1s ease-in-out infinite;
+  color: var(--hy-accent-deep);
+}
+
+/* 지도 크기 조절 핸들(아래로 드래그 = 확대) */
+.pf-map-handle {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 2px;
+  margin-top: -4px;
+  touch-action: none; /* 드래그 중 페이지 스크롤 방지 */
+  cursor: ns-resize;
+}
+.pf-map-handle__bar {
+  width: 52px;
+  height: 5px;
+  border-radius: 999px;
+  background: #d9cfd4;
+}
+.pf-map-handle:active .pf-map-handle__bar {
+  background: var(--hy-accent);
+}
