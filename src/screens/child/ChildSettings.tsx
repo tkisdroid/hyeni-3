@@ -59,7 +59,7 @@ export function ChildSettings() {
 
   const me = useMemo(() => {
     const children = (family?.members ?? []).filter((m) => m.role === "child");
-    return children.find((m) => m.user_id === userId) ?? children[0] ?? null;
+    return children.find((m) => m.user_id === userId) ?? null;
   }, [family, userId]);
 
   const parents = useMemo(() => (family?.members ?? []).filter((m) => m.role === "parent"), [family]);

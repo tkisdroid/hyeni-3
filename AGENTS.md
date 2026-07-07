@@ -50,6 +50,9 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 - **식별자 2축**: events/supplies/memo 귀속 = `family_members.id`(member id) /
   location/device/parent_alerts/remote-listen = auth `user_id`. `DailySupply.child_user_id` 는
   이름과 달리 member id — 이름만 보고 판단 금지, 저장값 기준.
+  준비물 저장 대상은 `src/transform/dailySupplyScope.ts`의 `resolveDailySupplyChildMemberId`가 검증하며,
+  부모 세션에서 명시 대상이 없으면 첫 아이로 폴백하지 않고 실패시킨다.
+  아이 설정 화면도 본인 `user_id`가 매칭된 child member만 사용하고 첫 아이로 대체하지 않는다.
 - **date_key 함정**: 월이 **0-indexed 비패딩**("2026-6-5" = 7월 5일). 반드시 `src/transform/dateKey.ts` 경유.
 - **메모 = 아이별 1:1 스레드**: fetch/send 에 childId(member id) 필수, `qk.memoReplies` 키에 childId 포함.
   리치 메시지 = content 마커 `[[img:R2key]]` / `[[loc:lat,lng|주소]]` (`src/transform/memoView.ts`).

@@ -49,6 +49,9 @@
 - hyeni-1 서버·인프라를 먼저 뒤진다(재구축 금지). 스키마를 늘리기 전에 기존 계약으로 풀 수 있는지 본다.
   (예: 채팅 사진 = child-photos R2 재사용 + content 마커 `[[img:key]]`/`[[loc:lat,lng|주소]]` — 서버 무변경 /
    AI 친구 = 서버 완비 확인 후 클라 배선만)
+- 식별자 오귀속 방지: 준비물 `DailySupply.child_user_id`는 이름과 달리 member id다. 부모 세션에서 대상 아이가
+  명시되지 않으면 첫 아이로 폴백하지 않고 저장을 실패시킨다(`resolveDailySupplyChildMemberId`).
+  아이 설정 화면도 본인 `user_id`가 매칭된 child member만 사용하고 첫 아이로 대체하지 않는다.
 
 ### G. 오케스트레이션 사용 기준
 - **넓은 탐색·감사** = 병렬 에이전트 + 적대 검증(REFUTED 걸러내고 **CONFIRMED 만** 수정).

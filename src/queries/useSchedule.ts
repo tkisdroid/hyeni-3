@@ -11,7 +11,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { qk } from "./keys";
 import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "./useFamily";
-import type { FamilyMember } from "@/lib/api/endpoints/family";
+import { resolveDailySupplyChildMemberId } from "@/transform/dailySupplyScope";
 import {
   fetchEvents,
   fetchDailySupplies,
@@ -145,27 +145,6 @@ export function useSaveEventsWithChildrenBatch() {
 
 // ── 준비물 read-modify-write 공용 ──
 
-/** child_user_id 힌트(member id 또는 user_id) → 대상 아이 member id 해석. */
-function resolveChildMemberId(
-  members: FamilyMember[],
-  role: string | null,
-  userId: string | null,
-  hint: string | null | undefined,
-): string | null {
-  const children = members.filter((m) => m.role === "child");
-  if (hint) {
-    const byMember = children.find((m) => m.id === hint);
-    if (byMember) return byMember.id;
-    const byUser = children.find((m) => m.user_id === hint);
-    if (byUser) return byUser.id;
-  }
-  if (role === "child" && userId) {
-    const own = children.find((m) => m.user_id === userId);
-    if (own) return own.id;
-  }
-  return children[0]?.id ?? null;
-}
-
 /** 그 아이의 그 날 행을 읽어 항목 리스트를 변형한 뒤 다시 저장(RMW). */
 async function rebuildChildDay(
   familyId: string,
@@ -204,7 +183,7 @@ export function useUpsertDailySupply() {
       const parsed = parseSupplyRowId(row.id);
       const kind: "prep" | "hw" = parsed?.kind ?? (row.kind === "hw" ? "hw" : "prep");
       const childId =
-        parsed?.childId ?? resolveChildMemberId(members, role, userId, row.child_user_id ?? null);
+        parsed?.childId ?? resolveDailySupplyChildMemberId(members, role, userId, row.child_user_id ?? null);
       if (!familyId || !childId) throw new Error("아이 정보를 찾을 수 없어요");
       return rebuildChildDay(familyId, childId, row.date_key, (lists) => {
         const list = kind === "hw" ? lists.hw : lists.prep;
