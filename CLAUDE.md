@@ -67,6 +67,9 @@
   그 사유를 최종 보고에 명확히 남긴다.
 
 ### J. 실기기 검증 치트시트 (함정 포함)
+- **기기 역할 확인**: A17/S25/razr 역할은 세션별로 바뀐 이력이 있으므로, 과거 단계 기록보다 최신 사용자 지시/goal을 우선한다.
+  완료 선언 전에는 CDP로 WebView 세션(`hyeni-api-session-v1`)의 role/familyId와 실제 화면을 함께 확인하고,
+  지시한 역할과 다르면 해당 실기기 검증은 미검증/차단으로 분리 보고한다.
 - **adb**: Git Bash 는 `MSYS_NO_PATHCONV=1` 필요(/sdcard 변환 방지) · razr 스크린샷은 `-d 4630947043778501762` ·
   `keyevent 26` 은 토글(끄기 전 상태 확인) · 기기 offline/unauthorized 는 `adb kill-server && start-server`.
 - **CDP(WebView)**: `adb forward tcp:922x localabstract:webview_devtools_remote_<pid>` · websocket 은

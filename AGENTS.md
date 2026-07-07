@@ -103,6 +103,9 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 ## 실기기 검증 치트시트
 
 - 기기: S25(R5CY521CFNZ)=부모 · A17(RFKL40DP73J)=아이 테스트 "테스티" · razr(ZY22H9VTQD)=아이 "혜니" 실사용.
+- 기기 역할은 세션별로 바뀐 이력이 있으므로, 문서의 과거 단계 기록보다 **최신 사용자 지시/goal**을 우선한다.
+  단, 완료 선언 전에는 CDP로 WebView 세션(`hyeni-api-session-v1`)의 role/familyId와 실제 화면을 다시 확인하고,
+  지시한 역할과 다르면 해당 실기기 검증은 미검증/차단으로 분리 보고한다.
 - adb(Git Bash): 원격 경로엔 `MSYS_NO_PATHCONV=1` · `keyevent 26` 은 토글(끄기 전 상태 확인) ·
   offline/unauthorized → `adb kill-server && adb start-server`.
 - CDP: `adb forward tcp:922x localabstract:webview_devtools_remote_<pid>` → `http://localhost:922x/json` ·
