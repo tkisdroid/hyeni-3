@@ -342,6 +342,54 @@
   --press: 0.98;
 }
 
+/* ── 원탭 상태 공유 ─────────────────────────────────────────────────────── */
+.ch-status-share {
+  padding: 16px;
+  border-radius: 24px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--line-card);
+}
+.ch-status-share__head {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.ch-status-share__head b {
+  display: block;
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--fg-primary);
+}
+.ch-status-share__head small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--fg-muted);
+}
+.ch-status-share__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+.ch-status-share__btn {
+  min-height: 48px;
+  border-radius: 16px;
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+  font-size: 14px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  --press: 0.94;
+}
+.ch-status-share__btn:disabled {
+  opacity: 0.52;
+}
+
 /* ── 바로 할 수 있어 ────────────────────────────────────────────────────── */
 .ch-qa-title {
   margin-bottom: 12px;

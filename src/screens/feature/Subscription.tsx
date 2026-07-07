@@ -31,11 +31,11 @@ import "./Subscription.css";
 
 /** 프리미엄 혜택 목록 (표현 데이터 — 화면 고정). */
 const BENEFITS = [
-  { icon: "ui/pin-heart.webp", t: "실시간 위치 무제한 조회", s: "10초 간격 정밀 추적" },
-  { icon: "ui/shield-heart.webp", t: "안전구역 알림 무제한", s: "도착·이탈 즉시 알림" },
-  { icon: "ui/ai-robot.png", t: "AI 일정 등록 무제한", s: "음성·사진·텍스트 자동 인식" },
-  { icon: "ui/sos-shield.webp", t: "SOS 긴급 알림 우선 전송", s: "가족 모두에게 즉시 전파" },
-  { icon: "ui/menu-sticker.webp", t: "프리미엄 스티커 개방", s: "광고 없이 모두 꾸미기" },
+  { icon: "ui/pin-heart.webp", t: "실시간 위치 확인", s: "아이의 이동 흐름을 더 촘촘하게 확인" },
+  { icon: "ui/shield-heart.webp", t: "주간 가족 리포트", s: "일정·준비물·대화·안전 알림을 한 번에 정리" },
+  { icon: "ui/ai-robot.png", t: "AI 일정 등록과 하루 요약", s: "음성·사진·텍스트로 일정을 빠르게 정리" },
+  { icon: "ui/menu-child-tracker.webp", t: "다자녀 관리", s: "프리미엄에서는 아이 2명까지 연결" },
+  { icon: "ui/menu-remote-audio.webp", t: "주변 소리 듣기", s: "위급할 때 보호자 확인 기능 제공" },
 ] as const;
 
 // ── 플랜 비교표(S-02) — 값은 전부 tierPolicy 단일 소스에서 파생 ──
@@ -65,6 +65,7 @@ const COMPARE_ROWS: readonly CompareRow[] = [
   { label: "일정 저장", cell: (t) => limitLabel(scheduleLimitFor(t)) },
   { label: "장소 저장", cell: (t) => limitLabel(placeLimitFor(t)) },
   { label: "주변 소리 듣기", cell: (t) => (canUse(t, FEATURES.REMOTE_AUDIO) ? YES : NO) },
+  { label: "주간 리포트", cell: (t) => (canUse(t, FEATURES.WEEKLY_REPORT) ? YES : NO) },
   { label: "AI 하루 요약", cell: (t) => (canUse(t, FEATURES.AI_ANALYSIS) ? YES : NO) },
   { label: "SOS · 안전 알림", cell: () => YES, safe: true },
 ];
@@ -156,7 +157,7 @@ export function Subscription() {
         <div className="sub-hero">
           <img className="sub-hero__crown" src={asset("ui/crown.webp")} alt="" />
           <div className="sub-hero__title">혜니 프리미엄</div>
-          <div className="sub-hero__sub">우리 가족을 더 안전하게, 광고 없이</div>
+          <div className="sub-hero__sub">일정과 SOS는 무료로 시작하고, 더 자세한 안심 기능은 프리미엄으로 확장하세요</div>
         </div>
 
         {/* 프리미엄 활성 배너 (실 티어) */}
@@ -185,7 +186,7 @@ export function Subscription() {
               <span className="sub-plan__ribbon">가장 인기 · 40% 할인</span>
               <div className="sub-plan__info">
                 <div className="sub-plan__name">프리미엄 연간 구독</div>
-                <div className="sub-plan__meta">월 2,417원 꼴 · 가장 큰 할인</div>
+                <div className="sub-plan__meta">월 2,417원 꼴 · Google Play 확인 화면 기준</div>
               </div>
               <div className="sub-plan__price">
                 29,000<span>원</span>
@@ -200,7 +201,7 @@ export function Subscription() {
             >
               <div className="sub-plan__info">
                 <div className="sub-plan__name">프리미엄 월구독</div>
-                <div className="sub-plan__meta">출시 기념 할인가</div>
+                <div className="sub-plan__meta">출시 기념 할인가 · 언제든 해지 가능</div>
               </div>
               <div className="sub-plan__price">
                 2,900<span>원</span>
@@ -277,8 +278,8 @@ export function Subscription() {
         {/* 안내 (미구독 시에만) */}
         {!premiumActive && (
           <div className="sub-note">
-            🎉 출시 기념 할인가예요. 이후 월 구독은 4,900원으로 인상될 예정이에요. 구독은 언제든 해지할 수
-            있어요.
+            가족 연결과 기본 안전 알림은 무료로 사용할 수 있어요. 표시 가격은 앱 안내용이며 최종 결제 금액은
+            Google Play 확인 화면 기준입니다.
           </div>
         )}
 

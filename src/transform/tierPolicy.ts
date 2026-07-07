@@ -5,7 +5,7 @@
  *  - 아이 등록: 무료/리뷰 1명, 프리미엄 2명.
  *  - 위치 보기: 무료 = 잠금, 리뷰 = 지연 위치, 프리미엄 = 실시간.  ← 사용자 확정
  *  - 일정/장소: 1 / 3 / 무제한.
- *  - 프리미엄 전용: 실시간위치·주변소리·AI하루요약·학원시간표·다중위험구역·이동경로연장·다자녀.
+ *  - 프리미엄 전용: 실시간위치·주변소리·AI하루요약·주간리포트·학원시간표·다중위험구역·이동경로연장·다자녀.
  *  - 안전(SOS·위험구역 안전알림)은 항상 무료(티어 무관).
  *  - 가격: 프리미엄 월 2,900원(아이별 구독). 리뷰 티어는 앱 리뷰 보상(일정/장소만 3개).
  */
@@ -23,6 +23,7 @@ export const FEATURES = {
   MULTI_CHILD: "multi_child",
   REMOTE_AUDIO: "remote_audio",
   AI_ANALYSIS: "ai_analysis",
+  WEEKLY_REPORT: "weekly_report",
   ACADEMY_SCHEDULE: "academy_schedule",
   MULTI_GEOFENCE: "multi_geofence",
   EXTENDED_HISTORY: "extended_history",
@@ -37,6 +38,7 @@ const PREMIUM_FEATURES: ReadonlySet<Feature> = new Set([
   FEATURES.MULTI_CHILD,
   FEATURES.REMOTE_AUDIO,
   FEATURES.AI_ANALYSIS,
+  FEATURES.WEEKLY_REPORT,
   FEATURES.ACADEMY_SCHEDULE,
   FEATURES.MULTI_GEOFENCE,
   FEATURES.EXTENDED_HISTORY,
@@ -144,6 +146,8 @@ export function lockMessageFor(feature: Feature): string {
       return "주변 소리 듣기는 프리미엄 기능이에요";
     case FEATURES.AI_ANALYSIS:
       return "AI 하루 요약은 프리미엄 기능이에요";
+    case FEATURES.WEEKLY_REPORT:
+      return "주간 리포트는 프리미엄에서 사용할 수 있어요";
     default:
       return "프리미엄에서 열리는 기능이에요";
   }

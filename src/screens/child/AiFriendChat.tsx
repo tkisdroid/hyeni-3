@@ -120,7 +120,7 @@ export function AiFriendChat() {
   const [messages, setMessages] = useState<ChatBubble[]>([]);
   const [seeded, setSeeded] = useState(false);
   const [input, setInput] = useState("");
-  const rootRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
 
   // 서버 기록이 도착하면 1회 시드(자동 전송 아님 — 표시만). 비어 있으면 인사 말풍선을 남긴다.
   useEffect(() => {
@@ -136,7 +136,7 @@ export function AiFriendChat() {
   const shown = messages.length > 0 ? messages : [greeting];
 
   useEffect(() => {
-    const host = rootRef.current?.parentElement;
+    const host = messagesRef.current;
     if (host) host.scrollTo({ top: host.scrollHeight, behavior: "smooth" });
     // sendChat.isPending 이 바뀔 때(타이핑 인디케이터 등장/퇴장)도 맨 아래로 스크롤한다.
   }, [shown.length, sendChat.isPending]);
@@ -175,7 +175,7 @@ export function AiFriendChat() {
   };
 
   return (
-    <div ref={rootRef} className="afc">
+    <div className="afc">
       <header className="afc-header">
         <button
           type="button"
@@ -205,7 +205,7 @@ export function AiFriendChat() {
         </button>
       </header>
 
-      <div className="afc-msgs">
+      <div ref={messagesRef} className="afc-msgs">
         {shown.map((m) => (
           <div key={m.id} className={`afc-row afc-row--${m.role}`}>
             {m.role === "ai" && (

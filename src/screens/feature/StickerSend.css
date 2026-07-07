@@ -3,7 +3,11 @@
 
 /* ── 래퍼: 로즈 그라디언트 배경 + 진입 모션 ─────────────────────────────── */
 .ss-wrap {
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: radial-gradient(120% 42% at 50% 0%, #ffe7f0 0%, rgba(255, 231, 240, 0) 55%),
     linear-gradient(180deg, #fdf4f1, #f7f4f3);
   animation: hy-fadein 0.35s ease forwards;
@@ -11,10 +15,10 @@
 
 /* ── 상단 헤더 (sticky · 뒤로가기) ───────────────────────────────────────── */
 .ss-header {
-  position: sticky;
-  top: 0;
+  position: relative;
+  flex: none;
   z-index: 40;
-  padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 8px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -40,31 +44,35 @@
   color: var(--fg-primary);
 }
 
-/* ── 본문 컬럼 (하단 탭바 여백 포함) ────────────────────────────────────── */
+/* ── 본문 컬럼 ──────────────────────────────────────────────────────────── */
 .ss-body {
-  padding: 6px 20px calc(120px + env(safe-area-inset-bottom, 0px));
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 6px 16px calc(20px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
 }
 
 /* ── 미리보기 카드 ─────────────────────────────────────────────────────── */
 .ss-preview {
-  padding: 20px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 .ss-preview__eyebrow {
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 800;
   color: var(--hy-accent-text);
 }
 .ss-preview__tile {
-  margin-top: 12px;
-  width: 108px;
-  height: 108px;
-  border-radius: 26px;
+  margin-top: 8px;
+  width: 82px;
+  height: 82px;
+  border-radius: 22px;
   background: var(--hy-accent-soft);
   display: flex;
   align-items: center;
@@ -72,13 +80,13 @@
   animation: hy-pop 0.4s ease;
 }
 .ss-preview__tile img {
-  width: 84px;
-  height: 84px;
+  width: 64px;
+  height: 64px;
   object-fit: contain;
 }
 .ss-preview__label {
-  margin-top: 12px;
-  font-size: 20px;
+  margin-top: 8px;
+  font-size: 18px;
   font-weight: 900;
   letter-spacing: -0.01em;
   color: var(--fg-primary);
@@ -86,25 +94,26 @@
 
 /* ── 선택 그리드 ───────────────────────────────────────────────────────── */
 .ss-pick-title {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 800;
   color: var(--fg-muted);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   padding: 0 2px;
 }
 .ss-grid {
-  padding: 12px;
+  padding: 10px;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  gap: 6px;
 }
 .ss-chip {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
-  padding: 8px 2px;
-  border-radius: 16px;
+  gap: 3px;
+  min-width: 0;
+  padding: 5px 1px;
+  border-radius: 14px;
   background: transparent;
   border: 2px solid transparent;
   transition: transform 0.12s ease, background 0.16s ease, border-color 0.16s ease;
@@ -115,15 +124,18 @@
   border-color: var(--hy-accent);
 }
 .ss-chip__img {
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   object-fit: contain;
 }
 .ss-chip__label {
-  font-size: 10.5px;
+  max-width: 100%;
+  font-size: 10px;
   font-weight: 800;
   color: #554c50;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ── 대상 자녀 선택(다자녀) ────────────────────────────────────────────── */
@@ -178,8 +190,8 @@
 
 /* 받은 칭찬 누적(미리보기 하단) */
 .ss-preview__count {
-  margin-top: 6px;
-  font-size: 12px;
+  margin-top: 4px;
+  font-size: 11.5px;
   font-weight: 700;
   color: var(--fg-muted);
 }
@@ -187,11 +199,11 @@
 /* ── 한마디 입력 ───────────────────────────────────────────────────────── */
 .ss-msg {
   width: 100%;
-  min-height: 56px;
+  min-height: 50px;
   border-radius: 16px;
   border: 1.5px solid var(--line-soft);
   background: #fff;
-  padding: 13px 14px;
+  padding: 11px 13px;
   font-family: inherit;
   font-size: 14px;
   font-weight: 600;
@@ -212,7 +224,7 @@
 /* ── 보내기 버튼 ───────────────────────────────────────────────────────── */
 .ss-send {
   width: 100%;
-  height: 56px;
+  min-height: 52px;
   border-radius: 18px;
   background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
   box-shadow: 0 16px 32px -12px rgba(240, 81, 143, 0.6);

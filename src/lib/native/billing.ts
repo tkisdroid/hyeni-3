@@ -22,6 +22,8 @@ const VERIFY_PATH = "/api/billing/google-play-verify";
 /** 프리미엄 구독 상품(단일). 월/연은 basePlanId 로 구분한다. */
 export const SUBSCRIPTION_PRODUCT_ID = "hyeni_premium";
 export const MONTHLY_BASE_PLAN_ID = "monthly-2900";
+// basePlanId 는 Google Play 상품 식별자이며, 화면 표시 가격의 단일 근거가 아니다.
+// 실제 결제 금액은 Play Console 설정과 결제 확인 화면 기준으로 검증해야 한다.
 export const ANNUAL_BASE_PLAN_ID = "annual-27840";
 
 /**

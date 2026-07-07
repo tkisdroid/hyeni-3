@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Phone, Volume2, MapPin, Check, ShieldCheck } from "lucide-react";
 import { useToast } from "@/app/toast";
+import { KakaoMap } from "@/components/KakaoMap";
 import { useMyFamily } from "@/queries/useFamily";
 import { useReceivedSos } from "@/queries/useSos";
 import { useMarkAlertRead } from "@/queries/useNotifications";
@@ -9,6 +10,7 @@ import { useChildLocations, useSavedPlaces } from "@/queries/useLocation";
 import { useLocationLabels } from "@/queries/useLocationLabels";
 import { parseServerTimestamp } from "@/transform/locationView";
 import { placePhoneCall } from "@/lib/native/phone";
+import { childAvatarPath } from "@/lib/avatar";
 import "./SosReceive.css";
 
 const pad2 = (n: number): string => String(n).padStart(2, "0");
@@ -53,11 +55,14 @@ export function SosReceive() {
   // parseServerTimestamp 로 정규화한 Date 를 시각 표시에 넘긴다.
   const latestAt = parseServerTimestamp(latest?.created_at);
 
-  // SOS 발신 아이(alert.child_user_id) 매칭 → 이름/전화.
+  const isMissedArrival = latest?.alert_type === "not_arrived" || latest?.alert_type === "missed_arrival";
+
+  // 긴급 알림 발신 아이(alert.child_user_id) 매칭 → 이름/전화.
   const child = latest?.child_user_id
     ? (family?.members ?? []).find((m) => m.user_id === latest.child_user_id) ?? null
     : null;
   const childName = child?.name || "아이";
+  const childAvatar = childAvatarPath(child?.photo_url);
 
   // 아이 실시간 위치 + 저장장소 라벨 — 발신 아이 것만(타 아이 위치 폴백 금지: 오노출·오판 방지).
   const childLoc = latest?.child_user_id
@@ -67,13 +72,18 @@ export function SosReceive() {
   const place = childLoc ? locationLabel(childLoc) : null;
   const locUpdated = relativeFrom(parseServerTimestamp(childLoc?.updated_at));
 
-  const callChild = () => {
-    if (!child?.phone) {
-      show("아이 전화번호가 등록되어 있지 않아요", "📞");
+  const callOrRingChild = () => {
+    if (child?.phone) {
+      show(`${childName}에게 전화를 거는 중…`, "📞");
+      void placePhoneCall(child.phone);
       return;
     }
-    show(`${childName}에게 전화를 거는 중…`, "📞");
-    void placePhoneCall(child.phone);
+    if (latest?.child_user_id) {
+      show("전화번호가 없어 SOS 호출 화면으로 이동해요", "🔔");
+      navigate("/remote-ring", { state: { childUserId: latest.child_user_id } });
+      return;
+    }
+    show("알림 대상 아이 정보가 없어 호출할 수 없어요", "⚠️");
   };
 
   const confirmSafe = () => {
@@ -98,7 +108,7 @@ export function SosReceive() {
         >
           <ChevronLeft size={22} strokeWidth={2.2} />
         </button>
-        <span className="sr-title">SOS 수신</span>
+        <span className="sr-title">긴급 수신</span>
         <span className="sr-header-sp" />
       </header>
 
@@ -119,10 +129,39 @@ export function SosReceive() {
 
         {latest && (
           <>
+            <div className="sr-map">
+              {childLoc ? (
+                <KakaoMap
+                  className="sr-map__canvas"
+                  child={{
+                    lat: childLoc.lat,
+                    lng: childLoc.lng,
+                    name: childName,
+                    avatar: childAvatar,
+                    tone: "danger",
+                  }}
+                  center={{ lat: childLoc.lat, lng: childLoc.lng }}
+                />
+              ) : (
+                <div className="sr-map__empty">
+                  <MapPin size={22} strokeWidth={2.2} color="var(--danger-500)" />
+                  <span>
+                    {latest.child_user_id ? "현재 위치 신호를 기다리는 중" : "알림 대상 아이 정보가 없어요"}
+                  </span>
+                </div>
+              )}
+              <div className="sr-map__label">
+                <MapPin size={15} strokeWidth={2.4} />
+                현재 실시간 위치
+              </div>
+            </div>
+
             <div className={`sr-banner${latest.read ? " sr-banner--read" : ""}`}>
-              <span className="sr-banner-emoji">🆘</span>
+              <span className="sr-banner-emoji">{isMissedArrival ? "🚨" : "🆘"}</span>
               <div className="sr-banner-body">
-                <div className="sr-banner-title">{childName}가 SOS를 보냈어요</div>
+                <div className="sr-banner-title">
+                  {isMissedArrival ? latest.title || `${childName} 미도착 긴급 알림` : `${childName}가 SOS를 보냈어요`}
+                </div>
                 <div className="sr-banner-meta">
                   {formatClock(latestAt)} · {relativeFrom(latestAt)}
                 </div>
@@ -157,24 +196,26 @@ export function SosReceive() {
             </div>
 
             <div className="sr-actions">
-              <button type="button" className="sr-act sr-act--call hy-press" onClick={callChild}>
-                <span className="sr-act-badge">
-                  <Phone size={16} strokeWidth={2.4} color="var(--danger-500)" />
-                </span>
-                전화
-              </button>
               <button
                 type="button"
-                className="sr-act sr-act--ghost hy-press"
+                className="sr-act sr-act--listen hy-press"
                 onClick={() =>
-                  // SOS 발신 아이 기기를 청취 대상으로 지정(활성 아이 폴백 방지).
                   navigate("/remote-audio", {
                     state: { childUserId: latest?.child_user_id ?? undefined },
                   })
                 }
+                disabled={!latest.child_user_id}
               >
-                <Volume2 size={17} strokeWidth={2.2} />
-                주변소리
+                <span className="sr-act-badge">
+                  <Volume2 size={17} strokeWidth={2.4} color="var(--danger-500)" />
+                </span>
+                주변 소리 듣기
+              </button>
+              <button type="button" className="sr-act sr-act--call hy-press" onClick={callOrRingChild}>
+                <span className="sr-act-badge">
+                  <Phone size={16} strokeWidth={2.4} color="var(--danger-500)" />
+                </span>
+                전화/SOS 호출
               </button>
             </div>
 
@@ -190,13 +231,14 @@ export function SosReceive() {
 
             {older.length > 0 && (
               <div className="sr-history">
-                <div className="sr-history-label">지난 SOS</div>
+                <div className="sr-history-label">지난 긴급 알림</div>
                 {older.map((s) => {
                   const c = (family?.members ?? []).find((m) => m.user_id === s.child_user_id);
                   const at = parseServerTimestamp(s.created_at);
+                  const pastMissed = s.alert_type === "not_arrived" || s.alert_type === "missed_arrival";
                   return (
                     <div key={s.id} className="sr-history-item">
-                      <span className="sr-history-emoji">🆘</span>
+                      <span className="sr-history-emoji">{pastMissed ? "🚨" : "🆘"}</span>
                       <div className="sr-history-body">
                         <div className="sr-history-name">{c?.name || "아이"}</div>
                         <div className="sr-history-time">

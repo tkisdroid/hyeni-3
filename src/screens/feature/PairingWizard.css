@@ -257,12 +257,20 @@
 .pw-summary__name {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   font-size: 15px;
   font-weight: 800;
   color: var(--fg-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.pw-summary__name small {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--fg-muted);
 }
 
 /* ── 하단 고정 CTA ─────────────────────────────────────────────────────── */

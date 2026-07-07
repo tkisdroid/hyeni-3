@@ -632,6 +632,67 @@
   white-space: nowrap;
 }
 
+/* ── 오늘 경로 시간대 슬라이더 ─────────────────────────────────────────── */
+.pl-scrub {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 154px;
+  z-index: 24;
+  padding: 12px 14px 10px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 24px rgba(32, 26, 29, 0.12);
+}
+.pl-scrub__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--fg-primary);
+}
+.pl-scrub__head strong {
+  color: #087653;
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+}
+.pl-scrub__range {
+  width: 100%;
+  height: 32px;
+  margin: 4px 0 0;
+  accent-color: #087653;
+}
+.pl-scrub__legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-height: 18px;
+  color: var(--fg-muted);
+  font-size: 11.5px;
+  font-weight: 800;
+}
+.pl-scrub__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.pl-scrub__line {
+  width: 22px;
+  height: 4px;
+  border-radius: 999px;
+  background: #31C48D;
+}
+.pl-scrub__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: #A78BFA;
+}
+
 /* ── 오늘 경로 — 스테이포인트(머문 곳) 목록 ─────────────────────────────── */
 .pl-stays {
   padding-bottom: 8px;

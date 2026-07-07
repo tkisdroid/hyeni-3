@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronLeft, Mic, VolumeX, Phone, Smartphone } from "lucide-react";
+import { ChevronLeft, FileClock, Mic, VolumeX, Phone, Smartphone } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
@@ -333,6 +333,14 @@ export function RemoteAudio() {
             1분 동안 들을 수 있어요
           </div>
           <div className="ra-note">🔔 아이에게 알림이 가요</div>
+          <button
+            type="button"
+            className="ra-audit-link hy-press"
+            onClick={() => navigate("/remote-audio-audit")}
+          >
+            <FileClock size={17} strokeWidth={2.2} />
+            청취 기록 보기
+          </button>
         </div>
 
         {native ? (

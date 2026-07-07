@@ -6,7 +6,8 @@ import { useToast } from "@/app/toast";
 import { useActiveChild } from "@/app/activeChild";
 import { useMyFamily, useSetChildProfile, useUploadChildPhoto } from "@/queries/useFamily";
 import { resizeImageFileSafe } from "@/lib/imageResize";
-import { normalizeBirthdate, normalizePhoneForStorage } from "@/transform/phone";
+import { normalizeRequiredChildBirthdate } from "@/transform/childProfileRequirements";
+import { normalizePhoneForStorage } from "@/transform/phone";
 import "./ProfileEdit.css";
 
 function normalizeHex(v: string | null | undefined): string | undefined {
@@ -143,15 +144,11 @@ export function ProfileEdit() {
       return;
     }
 
-    // 생일: 빈 값이면 null(지움), 값이 있으면 유효성 검증(미래·비존재 날짜 차단).
-    let birthdateToSave: string | null = null;
-    if (birthday.trim()) {
-      const nb = normalizeBirthdate(birthday);
-      if (!nb) {
-        show("생일을 올바르게 입력해주세요", "🎂");
-        return;
-      }
-      birthdateToSave = nb;
+    // 생일은 AI 친구의 연령대 맞춤 답변 기준이라 부모 화면에서는 비워서 저장하지 않는다.
+    const birthdateToSave = normalizeRequiredChildBirthdate(birthday);
+    if (!birthdateToSave) {
+      show(birthday.trim() ? "생일을 올바르게 입력해주세요" : "생일을 입력해주세요", "🎂");
+      return;
     }
 
     // 전화: 빈 값이면 null(지움), 값이 있으면 저장형으로 정규화(형식 오류 시 차단).
@@ -249,7 +246,7 @@ export function ProfileEdit() {
             {/* 생일(input type=date) + 나이 자동표시 */}
             <div className="pe-field">
               <div className="pe-label pe-label--sm pe-label--row">
-                <span>생일</span>
+                <span>생일 *</span>
                 {age != null && <span className="pe-age">만 {age}세</span>}
               </div>
               <input
@@ -260,6 +257,7 @@ export function ProfileEdit() {
                 onChange={(e) => setBirthday(e.target.value)}
                 disabled={!isPrimary}
               />
+              <p className="pe-hint">AI 친구가 아이 나이에 맞게 말하도록 꼭 필요해요.</p>
             </div>
 
             {/* 전화번호 */}

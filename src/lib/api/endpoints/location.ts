@@ -50,6 +50,7 @@ export interface SavedPlaceLocation {
   lng: number;
   address?: string;
   kakao_place_id?: string | null;
+  category?: "home" | "academy" | "frequent" | string;
 }
 
 export interface SavedPlace {

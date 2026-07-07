@@ -45,7 +45,7 @@ function keysForMessage(msg: FamilyMessage, familyId: string): (readonly unknown
 }
 
 // 부모 앱을 즉시 가로채야 하는 최우선 안전 알림 유형.
-const URGENT_ALERT_TYPES = new Set(["sos", "emergency"]);
+const URGENT_ALERT_TYPES = new Set(["sos", "emergency", "not_arrived", "missed_arrival"]);
 
 function maybeCelebrateSticker(msg: FamilyMessage, role: string | null, userId: string | null): void {
   if (role !== "child" || !userId) return;

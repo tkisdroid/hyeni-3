@@ -46,7 +46,7 @@ export function PlaceForm() {
   const onHandleDown = (e: React.PointerEvent) => {
     dragRef.current = { startY: e.clientY, startH: mapH };
     try {
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+      e.currentTarget.setPointerCapture(e.pointerId);
     } catch {
       // 일부 환경(합성 이벤트 등)에서 캡처 실패해도 드래그 자체는 동작
     }
@@ -197,6 +197,7 @@ export function PlaceForm() {
           lat: picked.lat,
           lng: picked.lng,
           address: address.trim() || undefined,
+          category: placeType,
         },
         is_home: placeType === "home",
       },

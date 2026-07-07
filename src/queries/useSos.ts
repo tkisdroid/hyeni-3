@@ -12,6 +12,8 @@ import { useMyFamily } from "./useFamily";
 import { sendSos, type SendSosResult } from "@/lib/api/endpoints/sos";
 import { fetchParentAlerts, type ParentAlert } from "@/lib/api/endpoints/notifications";
 
+const EMERGENCY_ALERT_TYPES = new Set(["sos", "emergency", "not_arrived", "missed_arrival"]);
+
 /** 발송 시점의 자녀 현재 위치(없으면 위치 단계 skip). */
 export interface SosPosition {
   lat?: number | null;
@@ -49,11 +51,11 @@ export function useSendSos() {
 }
 
 /**
- * 부모용 수신 SOS 목록(최신순).
+ * 부모용 수신 긴급 목록(최신순).
  *
  * 서버에 sos_events 조회(GET) 엔드포인트는 없다 — 부모 쪽 SOS 수신은
- * parent_alerts(alert_type='sos', severity='urgent')로 도달한다(sendSos 2단계).
- * 그래서 parentAlerts 캐시를 그대로 공유(qk.parentAlerts)하고 select 로 sos 만 거른다.
+ * parent_alerts(alert_type='sos' 등)로 도달한다(sendSos 2단계 + 미도착 안전 알림).
+ * 그래서 parentAlerts 캐시를 그대로 공유(qk.parentAlerts)하고 select 로 긴급 유형만 거른다.
  * → useParentAlerts 와 캐시/무효화(읽음 처리 후 refetch)가 자동 정합한다.
  * WS parent_alerts INSERT 브릿지가 이 키를 무효화하므로 새 SOS 가 실시간 반영된다.
  */
@@ -64,6 +66,6 @@ export function useReceivedSos(opts?: { pollMs?: number }) {
     queryFn: () => fetchParentAlerts(familyId as string, 50),
     enabled: status === "authenticated" && !!familyId,
     refetchInterval: opts?.pollMs && opts.pollMs > 0 ? opts.pollMs : false,
-    select: (all) => all.filter((a) => a.alert_type === "sos"),
+    select: (all) => all.filter((a) => EMERGENCY_ALERT_TYPES.has(a.alert_type)),
   });
 }

@@ -17,10 +17,17 @@ export type VisitChildScope = string | null | ReadonlyMap<string, string>;
 
 /** 도착 인정 반경(m) — GPS 오차·시설 규모 고려해 서버 미도착(50m)보다 관대하게. */
 export const VISIT_RADIUS_M = 200;
-/** 검증 시간창: 시작 N분 전부터. */
-const WINDOW_BEFORE_MIN = 15;
-/** 검증 시간창: 종료(없으면 시작+60분) N분 후까지. */
-const WINDOW_AFTER_MIN = 15;
+/** 일정 장소 체류 인정 비율. 시작~종료 구간의 80% 이상 머물러야 "다녀옴". */
+export const VISIT_REQUIRED_COVERAGE = 0.8;
+/** 위치 샘플 간격이 이보다 길면 중간 체류를 보수적으로 인정하지 않는다. */
+const VISIT_MAX_SAMPLE_GAP_MS = 12 * 60_000;
+
+interface NormalizedPoint {
+  user_id: string;
+  lat: number;
+  lng: number;
+  t: number;
+}
 
 function haversineMeters(aLat: number, aLng: number, bLat: number, bLng: number): number {
   const R = 6371000;
@@ -38,16 +45,20 @@ function timeToMinutes(time: string | null | undefined): number | null {
   return h * 60 + m;
 }
 
-/** 이벤트의 [검증 시작, 검증 끝] epoch ms. 시간·날짜가 무효면 null. */
-function eventWindow(event: CalendarEvent): { startMs: number; endMs: number } | null {
+/** 이벤트의 실제 [시작, 종료] epoch ms. 종료가 없으면 60분으로 둔다. */
+function eventWindow(event: CalendarEvent): { startMs: number; endMs: number; durationMs: number } | null {
   const date = parseAppDateKey(event.date_key);
   const startMin = timeToMinutes(event.time);
   if (!date || startMin == null) return null;
-  const endMin = timeToMinutes(event.end_time) ?? startMin + 60;
+  const endMinRaw = timeToMinutes(event.end_time);
+  const endMin = endMinRaw == null ? startMin + 60 : endMinRaw <= startMin ? endMinRaw + 24 * 60 : endMinRaw;
   const base = date.getTime();
+  const startMs = base + startMin * 60_000;
+  const endMs = base + endMin * 60_000;
   return {
-    startMs: base + (startMin - WINDOW_BEFORE_MIN) * 60_000,
-    endMs: base + (endMin + WINDOW_AFTER_MIN) * 60_000,
+    startMs,
+    endMs,
+    durationMs: Math.max(0, endMs - startMs),
   };
 }
 
@@ -74,9 +85,43 @@ function scopeForEvent(event: CalendarEvent, childScope: VisitChildScope): Set<s
   return userIds.length > 0 ? new Set(userIds) : new Set();
 }
 
+export function estimateVisitCoverage(
+  event: CalendarEvent,
+  points: NormalizedPoint[],
+): { dwellMs: number; durationMs: number; coverage: number } | null {
+  const lat = Number(event.location?.lat);
+  const lng = Number(event.location?.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  const win = eventWindow(event);
+  if (!win || win.durationMs <= 0) return null;
+
+  const scoped = points
+    .filter((p) => p.t >= win.startMs && p.t <= win.endMs)
+    .sort((a, b) => a.t - b.t);
+
+  let dwellMs = 0;
+  for (let i = 0; i < scoped.length - 1; i += 1) {
+    const cur = scoped[i];
+    const next = scoped[i + 1];
+    const gap = next.t - cur.t;
+    if (gap <= 0 || gap > VISIT_MAX_SAMPLE_GAP_MS) continue;
+    const curInside = haversineMeters(cur.lat, cur.lng, lat, lng) <= VISIT_RADIUS_M;
+    const nextInside = haversineMeters(next.lat, next.lng, lat, lng) <= VISIT_RADIUS_M;
+    if (!curInside || !nextInside) continue;
+    dwellMs += Math.min(gap, win.endMs - win.startMs);
+  }
+
+  const cappedDwellMs = Math.min(dwellMs, win.durationMs);
+  return {
+    dwellMs: cappedDwellMs,
+    durationMs: win.durationMs,
+    coverage: cappedDwellMs / win.durationMs,
+  };
+}
+
 /**
  * 이벤트별 방문 판정 맵. 장소가 있는 지난 일정만 포함:
- * - visited    = 시간창 내 이력 중 반경 이내 포인트 존재(위치로 확인된 다녀옴)
+ * - visited    = 일정 지속시간의 80% 이상 장소 반경 안에 머문 것으로 확인
  * - unverified = 시간창 내 반경 이내 포인트 없음(이력 부재 포함 — "확인 필요")
  * childScope 를 주면 해당 아이 이력만 대조한다. Map 은 member id → user id 로,
  * 캘린더처럼 여러 아이 일정이 섞인 화면에서 이벤트 배정 아이만 정확히 대조한다.
@@ -87,7 +132,7 @@ export function verifyVisits(
   childScope: VisitChildScope,
 ): Map<string, VisitVerdict> {
   const out = new Map<string, VisitVerdict>();
-  const points = (history ?? [])
+  const points: NormalizedPoint[] = (history ?? [])
     .map((p) => ({
       user_id: p.user_id,
       lat: Number(p.lat),
@@ -110,14 +155,9 @@ export function verifyVisits(
       out.set(ev.id, "unverified");
       continue;
     }
-    const visited = points.some(
-      (p) =>
-        (!userScope || userScope.has(p.user_id)) &&
-        p.t >= win.startMs &&
-        p.t <= win.endMs &&
-        haversineMeters(p.lat, p.lng, lat, lng) <= VISIT_RADIUS_M,
-    );
-    out.set(ev.id, visited ? "visited" : "unverified");
+    const scopedPoints = userScope ? points.filter((p) => userScope.has(p.user_id)) : points;
+    const coverage = estimateVisitCoverage(ev, scopedPoints);
+    out.set(ev.id, coverage && coverage.coverage >= VISIT_REQUIRED_COVERAGE ? "visited" : "unverified");
   }
   return out;
 }

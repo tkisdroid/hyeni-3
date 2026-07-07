@@ -2,19 +2,21 @@
 /* 라벤더 톤 · AI 대화. 신호색과 무관하게 항상 라벤더 강조를 사용한다. */
 
 .afc {
-  min-height: 848px;
+  height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   background: linear-gradient(180deg, #f1ecff 0%, #fce9f2 45%, #fff2e6 100%);
   animation: hy-fadein 0.35s ease forwards;
 }
 
 /* ── 헤더 (sticky) ──────────────────────────────────────────────────────── */
 .afc-header {
-  position: sticky;
-  top: 0;
+  position: relative;
+  flex: none;
   z-index: 40;
-  padding: 56px 18px 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 10px;
   background: linear-gradient(180deg, rgba(241, 236, 255, 0.95) 60%, rgba(241, 236, 255, 0));
   backdrop-filter: blur(10px);
   display: flex;
@@ -82,10 +84,13 @@
 /* ── 메시지 목록 ────────────────────────────────────────────────────────── */
 .afc-msgs {
   flex: 1;
-  padding: 8px 18px 20px;
+  min-height: 0;
+  padding: 8px 16px 14px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .afc-row {
   display: flex;
@@ -134,23 +139,23 @@
   color: #fff;
 }
 
-/* ── 입력 영역 (sticky bottom) ──────────────────────────────────────────── */
+/* ── 입력 영역 ──────────────────────────────────────────────────────────── */
 .afc-input-wrap {
-  position: sticky;
-  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  position: relative;
+  flex: none;
   z-index: 30;
-  padding: 8px 16px 0;
+  padding: 8px 16px calc(12px + env(safe-area-inset-bottom, 0px));
   background: linear-gradient(180deg, rgba(255, 242, 230, 0), rgba(255, 242, 230, 0.9) 40%);
 }
 .afc-suggest {
   display: flex;
   gap: 7px;
-  margin-bottom: 9px;
+  margin-bottom: 8px;
   overflow-x: auto;
 }
 .afc-chip {
   flex: none;
-  padding: 9px 15px;
+  padding: 8px 14px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 3px 10px rgba(124, 92, 225, 0.12);
@@ -166,7 +171,7 @@
   gap: 8px;
   background: #fff;
   border-radius: 999px;
-  padding: 6px 6px 6px 18px;
+  padding: 5px 5px 5px 16px;
   box-shadow: 0 8px 22px rgba(124, 92, 225, 0.16);
 }
 .afc-field {
@@ -185,8 +190,8 @@
   font-weight: 600;
 }
 .afc-send {
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: linear-gradient(120deg, #b79dfb, #8b6bec);
   box-shadow: 0 8px 18px -6px rgba(124, 92, 225, 0.7);

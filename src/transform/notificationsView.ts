@@ -18,6 +18,7 @@ export interface AlertItemView {
   unread: boolean;
   to: string | null; // 탭 시 이동 경로(없으면 토스트)
   childUserId: string | null; // 이 알림이 지목한 아이(auth user_id). 위치/SOS 이동 시 대상 특정용.
+  metadata: Record<string, unknown> | null;
 }
 
 export interface AlertGroupView {
@@ -61,6 +62,7 @@ const ICON_BY_TYPE: Record<string, string> = {
   child_setting_request: "ui/shield-heart.webp",
   battery_low: "ui/battery.webp",
   battery: "ui/battery.webp",
+  schedule_suggestion: "ui/calendar-heart.webp",
 };
 
 function isUrgentSeverity(severity: string): boolean {
@@ -95,6 +97,7 @@ function routeFor(alert: ParentAlert): string | null {
     return "/parent/location";
   }
   if (type.startsWith("memo") || type.startsWith("sticker")) return "/parent/memo";
+  if (type === "schedule_suggestion") return "/event-form";
   if (type.startsWith("event")) return "/parent/calendar";
   return null;
 }
@@ -148,6 +151,7 @@ function toItemView(alert: ParentAlert, now: Date): AlertItemView {
     unread: !alert.read,
     to: routeFor(alert),
     childUserId: alert.child_user_id ?? null,
+    metadata: alert.metadata ?? null,
   };
 }
 

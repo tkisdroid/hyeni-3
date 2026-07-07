@@ -10,6 +10,11 @@ import { useAiCredits, useAiFriendSettings, useSaveAiFriendSettings } from "@/qu
 import { qk } from "@/queries/keys";
 import { isBillingAvailable, launchCreditPurchase } from "@/lib/native/billing";
 import { creditHeroAmount } from "@/transform/aiView";
+import {
+  aiTopicsToText,
+  buildAiFriendControlPatch,
+  normalizeAiControlTime,
+} from "@/transform/aiFriendSettingsForm";
 import "./AiCredit.css";
 
 type CreditPack = {
@@ -71,12 +76,52 @@ export function AiCredit() {
   const saveSettings = useSaveAiFriendSettings();
   const aiEnabled = friendSettings?.ai_enabled ?? false;
   const dailyLimit = friendSettings?.daily_limit ?? 5;
+  const [forbiddenTopicsText, setForbiddenTopicsText] = useState("");
+  const [proactiveEnabled, setProactiveEnabled] = useState(false);
+  const [proactiveStartTime, setProactiveStartTime] = useState("08:00");
+  const [proactiveEndTime, setProactiveEndTime] = useState("20:00");
+  const [quietHoursStart, setQuietHoursStart] = useState("21:00");
+  const [quietHoursEnd, setQuietHoursEnd] = useState("07:00");
+  const [allowScheduleActions, setAllowScheduleActions] = useState(true);
+  const [allowContactActions, setAllowContactActions] = useState(true);
+
+  useEffect(() => {
+    setForbiddenTopicsText(aiTopicsToText(friendSettings?.forbidden_topics));
+    setProactiveEnabled(friendSettings?.proactive_enabled ?? false);
+    setProactiveStartTime(normalizeAiControlTime(friendSettings?.proactive_start_time, "08:00"));
+    setProactiveEndTime(normalizeAiControlTime(friendSettings?.proactive_end_time, "20:00"));
+    setQuietHoursStart(normalizeAiControlTime(friendSettings?.quiet_hours_start, "21:00"));
+    setQuietHoursEnd(normalizeAiControlTime(friendSettings?.quiet_hours_end, "07:00"));
+    setAllowScheduleActions(friendSettings?.allow_schedule_actions ?? true);
+    setAllowContactActions(friendSettings?.allow_contact_actions ?? true);
+  }, [childUserId, friendSettings]);
+
   const toggleAiEnabled = () => {
     if (!childUserId || saveSettings.isPending) return;
     saveSettings.mutate(
       { childUserId, patch: { ai_enabled: !aiEnabled } },
       {
         onSuccess: () => show(!aiEnabled ? "AI 친구를 켰어요" : "AI 친구를 껐어요", "🤖"),
+        onError: () => show("설정 저장에 실패했어요", "⚠️"),
+      },
+    );
+  };
+  const saveAdvancedSettings = () => {
+    if (!childUserId || saveSettings.isPending) return;
+    const patch = buildAiFriendControlPatch({
+      forbiddenTopicsText,
+      proactiveEnabled,
+      proactiveStartTime,
+      proactiveEndTime,
+      quietHoursStart,
+      quietHoursEnd,
+      allowScheduleActions,
+      allowContactActions,
+    });
+    saveSettings.mutate(
+      { childUserId, patch: { ai_enabled: aiEnabled, daily_limit: dailyLimit, ...patch } },
+      {
+        onSuccess: () => show("AI 친구 상세 설정을 저장했어요", "🤖"),
         onError: () => show("설정 저장에 실패했어요", "⚠️"),
       },
     );
@@ -247,7 +292,7 @@ export function AiCredit() {
             aria-pressed={aiEnabled}
             onClick={toggleAiEnabled}
             disabled={saveSettings.isPending || !childUserId}
-            style={{ background: aiEnabled ? "var(--hy-accent)" : "#E4DEE2" }}
+            style={{ background: aiEnabled ? "var(--hy-accent)" : "var(--line-soft)" }}
           >
             <span className="ac-toggle__knob" style={{ left: aiEnabled ? 22 : 2 }} />
           </button>
@@ -283,6 +328,134 @@ export function AiCredit() {
           </div>
         )}
 
+        <section className="ac-detail">
+          <div className="ac-detail__head">
+            <div>
+              <div className="ac-detail__title">AI 친구 상세 제어</div>
+              <div className="ac-detail__sub">{childName}에게 적용되는 부모 설정이에요</div>
+            </div>
+          </div>
+
+          <label className="ac-field">
+            <span className="ac-field__label">금지 주제</span>
+            <textarea
+              className="ac-textarea"
+              value={forbiddenTopicsText}
+              onChange={(e) => setForbiddenTopicsText(e.target.value)}
+              placeholder="예: 게임 결제, 모르는 사람, 무서운 이야기"
+              rows={3}
+              disabled={!childUserId}
+            />
+            <span className="ac-field__hint">쉼표나 줄바꿈으로 여러 주제를 입력할 수 있어요.</span>
+          </label>
+
+          <div className="ac-control-row">
+            <span className="ac-control-row__main">
+              <span className="ac-control-row__title">선제 대화</span>
+              <span className="ac-control-row__sub">일정이나 안내가 있을 때 먼저 말을 걸어요</span>
+            </span>
+            <button
+              type="button"
+              className="ac-toggle"
+              aria-label="선제 대화"
+              aria-pressed={proactiveEnabled}
+              onClick={() => setProactiveEnabled((v) => !v)}
+              disabled={!childUserId}
+              style={{ background: proactiveEnabled ? "var(--hy-accent)" : "var(--line-soft)" }}
+            >
+              <span className="ac-toggle__knob" style={{ left: proactiveEnabled ? 22 : 2 }} />
+            </button>
+          </div>
+
+          <div className="ac-time-grid">
+            <label className="ac-field">
+              <span className="ac-field__label">선제 대화 시작</span>
+              <input
+                className="ac-time"
+                type="time"
+                value={proactiveStartTime}
+                onChange={(e) => setProactiveStartTime(e.target.value)}
+                disabled={!childUserId || !proactiveEnabled}
+              />
+            </label>
+            <label className="ac-field">
+              <span className="ac-field__label">선제 대화 종료</span>
+              <input
+                className="ac-time"
+                type="time"
+                value={proactiveEndTime}
+                onChange={(e) => setProactiveEndTime(e.target.value)}
+                disabled={!childUserId || !proactiveEnabled}
+              />
+            </label>
+            <label className="ac-field">
+              <span className="ac-field__label">조용한 시간 시작</span>
+              <input
+                className="ac-time"
+                type="time"
+                value={quietHoursStart}
+                onChange={(e) => setQuietHoursStart(e.target.value)}
+                disabled={!childUserId}
+              />
+            </label>
+            <label className="ac-field">
+              <span className="ac-field__label">조용한 시간 종료</span>
+              <input
+                className="ac-time"
+                type="time"
+                value={quietHoursEnd}
+                onChange={(e) => setQuietHoursEnd(e.target.value)}
+                disabled={!childUserId}
+              />
+            </label>
+          </div>
+
+          <div className="ac-control-row">
+            <span className="ac-control-row__main">
+              <span className="ac-control-row__title">일정 조작 허용</span>
+              <span className="ac-control-row__sub">AI가 아이 일정 조회·추가·수정을 도울 수 있어요</span>
+            </span>
+            <button
+              type="button"
+              className="ac-toggle"
+              aria-label="일정 조작 허용"
+              aria-pressed={allowScheduleActions}
+              onClick={() => setAllowScheduleActions((v) => !v)}
+              disabled={!childUserId}
+              style={{ background: allowScheduleActions ? "var(--hy-accent)" : "var(--line-soft)" }}
+            >
+              <span className="ac-toggle__knob" style={{ left: allowScheduleActions ? 22 : 2 }} />
+            </button>
+          </div>
+
+          <div className="ac-control-row">
+            <span className="ac-control-row__main">
+              <span className="ac-control-row__title">연락 동작 허용</span>
+              <span className="ac-control-row__sub">AI가 부모에게 전화·메시지 요청을 도울 수 있어요</span>
+            </span>
+            <button
+              type="button"
+              className="ac-toggle"
+              aria-label="연락 동작 허용"
+              aria-pressed={allowContactActions}
+              onClick={() => setAllowContactActions((v) => !v)}
+              disabled={!childUserId}
+              style={{ background: allowContactActions ? "var(--hy-accent)" : "var(--line-soft)" }}
+            >
+              <span className="ac-toggle__knob" style={{ left: allowContactActions ? 22 : 2 }} />
+            </button>
+          </div>
+
+          <button
+            type="button"
+            className="ac-save-detail hy-press"
+            onClick={saveAdvancedSettings}
+            disabled={!childUserId || saveSettings.isPending}
+          >
+            {saveSettings.isPending ? "저장 중…" : "상세 설정 저장"}
+          </button>
+        </section>
+
         {/* 잔액 부족 알림 — 자동 결제는 하지 않고, 보호자 확인 후 직접 충전하도록 안내한다. */}
         <div className="ac-auto">
           <span className="ac-auto__icon">🔔</span>
@@ -304,7 +477,7 @@ export function AiCredit() {
               });
             }}
             disabled={!childUserId}
-            style={{ background: lowCreditAlert ? "var(--hy-accent)" : "#E4DEE2" }}
+            style={{ background: lowCreditAlert ? "var(--hy-accent)" : "var(--line-soft)" }}
           >
             <span className="ac-toggle__knob" style={{ left: lowCreditAlert ? 22 : 2 }} />
           </button>

@@ -31,6 +31,7 @@ import {
 } from "@/lib/api/endpoints/family";
 import { normalizePairCodeInput } from "@/transform/pairCode";
 import { readPairParam, clearPairParam } from "@/transform/pairLink";
+import { resolveAuthenticatedOnboardingRedirect } from "@/transform/onboardingRedirect";
 import { QrScanner } from "@/components/QrScanner";
 import "./Onboarding.css";
 
@@ -51,7 +52,7 @@ function errMsg(e: unknown): string {
 export function Onboarding() {
   const navigate = useNavigate();
   const { show } = useToast();
-  const { syncFromSession, user } = useAuth();
+  const { syncFromSession, user, role: authRole, familyId: authFamilyId } = useAuth();
   const [step, setStep] = useState<Step>("role");
   const [role, setRole] = useState<"parent" | "child" | "teacher">("parent");
   const [pairMode, setPairMode] = useState<"child" | "parent">("child");
@@ -84,6 +85,17 @@ export function Onboarding() {
       .finally(() => setBusy(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 앱이 마지막 URL(/onboarding)로 재실행되어도, 기존 유효 세션이 있으면 역할 홈으로 복귀한다.
+  useEffect(() => {
+    const redirect = resolveAuthenticatedOnboardingRedirect({
+      role: authRole,
+      familyId: authFamilyId,
+      hasOAuthCallback: !!readOAuthCallback(),
+      hasPairParam: !!readPairParam(),
+    });
+    if (redirect) navigate(redirect, { replace: true });
+  }, [authRole, authFamilyId, navigate]);
 
   // OAuth/외부 브라우저에서 복귀 시 busy 잠금 자동 해제 — stuck 방지.
   // 네이티브: 카카오/구글은 시스템 브라우저를 열고 앱을 백그라운드로 보낸다. 로그인을

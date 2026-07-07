@@ -63,6 +63,7 @@ function routeForAlert(alertType: string): string | null {
   }
   if (t === "academy_focus" || t.startsWith("battery")) return "/parent/location";
   if (t.startsWith("memo") || t.startsWith("sticker")) return "/parent/memo";
+  if (t === "schedule_suggestion") return "/event-form";
   if (t.startsWith("event")) return "/parent/calendar";
   return null;
 }
@@ -126,6 +127,20 @@ export function Notifications() {
       } else if (to === "/danger-alert") {
         // 탭한 알림을 상세 히어로에 앵커(전역 최신이 아니라 "이 알림"을 크게).
         dest = `${to}?alert=${encodeURIComponent(item.id)}`;
+      }
+      if (item.alertType === "schedule_suggestion") {
+        navigate(dest, {
+          state: {
+            mode: "create",
+            dateKey:
+              typeof item.metadata?.dateKey === "string" && item.metadata.dateKey.trim()
+                ? item.metadata.dateKey
+                : undefined,
+            suggestion: item.metadata,
+            childUserId: item.childUserId,
+          },
+        });
+        return;
       }
       navigate(dest);
       return;

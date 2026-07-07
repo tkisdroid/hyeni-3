@@ -30,6 +30,7 @@ const featureRows: FeatureRow[] = [
   { id: "place", icon: "ui/menu-place-manager.webp", label: "장소 관리", route: "/place-manager" },
   { id: "friend", icon: "ui/menu-friend-playdate.webp", label: "친구 · 놀이 약속", route: "/friend-play" },
   { id: "audio", icon: "ui/menu-remote-audio.webp", label: "원격 소리 듣기", route: "/remote-audio" },
+  { id: "audio-audit", icon: "ui/menu-remote-audio.webp", label: "주변 소리 듣기 기록", route: "/remote-audio-audit" },
   { id: "reward", icon: "ui/menu-sticker.webp", label: "스티커 · 보상", route: "/sticker-send" },
   { id: "ai", icon: "ui/menu-ai-schedule.webp", label: "AI 친구 · 크레딧", route: "/ai-credit" },
 ];

@@ -13,13 +13,14 @@ import { useEvents, useDailySupplies, useUpsertDailySupply, useDeleteDailySupply
 import { useSavedPlaces } from "@/queries/useLocation";
 import type { DailySupply } from "@/lib/api/endpoints/schedule";
 import { useStickerSummary } from "@/queries/useStickers";
-import { useMemoThread } from "@/queries/useMemo";
+import { useMemoThread, useSendMemo } from "@/queries/useMemo";
 import { useAiFriendPublicSettings } from "@/queries/useAi";
 import { useAuth } from "@/auth/AuthContext";
 import { groupEventsByDateKey, PAST_TAGS } from "@/transform/scheduleView";
 import { todayDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { DEFAULT_AI_FRIEND_NAME, resolveAiFriendDisplayName } from "@/transform/aiFriendName";
+import { QUICK_STATUS_ACTIONS, buildQuickStatusMemo, type QuickStatusActionId } from "@/transform/quickStatusShare";
 import "./ChildHome.css";
 
 function avatarSrc(path: string): string {
@@ -102,6 +103,7 @@ export function ChildHome() {
   );
   // 오늘 내 스레드의 부모님 최신 메시지 — 도착하면 티커 맨 앞에 내용 그대로 노출(WS 실시간 갱신).
   const memoThread = useMemoThread(useMemo(() => [todayKey], [todayKey]), myMember?.id ?? null);
+  const sendMemo = useSendMemo();
   const latestParentMemo = useMemo(() => {
     const replies = memoThread.data ?? [];
     for (let i = replies.length - 1; i >= 0; i -= 1) {
@@ -213,6 +215,14 @@ export function ChildHome() {
     );
   };
 
+  const sendQuickStatus = (actionId: QuickStatusActionId) => {
+    if (!myMember?.id || sendMemo.isPending) return;
+    sendMemo.mutate(buildQuickStatusMemo(actionId, myMember.id, todayKey), {
+      onSuccess: () => show("부모님께 보냈어", "💬"),
+      onError: () => show("보내지 못했어. 잠시 후 다시 해줘", "⚠️"),
+    });
+  };
+
   // 꾹 SOS — 누르고 3초 유지하면 발동
   const [sosHold, setSosHold] = useState(false);
   const sosTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -321,6 +331,29 @@ export function ChildHome() {
             길찾기
           </button>
         </div>
+
+        {/* 원탭 상태 공유 */}
+        <section className="ch-status-share">
+          <div className="ch-status-share__head">
+            <span>
+              <b>지금 상태 보내기</b>
+              <small>버튼만 누르면 부모님께 알려줄게</small>
+            </span>
+          </div>
+          <div className="ch-status-share__grid">
+            {QUICK_STATUS_ACTIONS.map((action) => (
+              <button
+                key={action.id}
+                type="button"
+                className="ch-status-share__btn hy-press"
+                onClick={() => sendQuickStatus(action.id)}
+                disabled={sendMemo.isPending || !myMember}
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
+        </section>
 
         {/* 바로 할 수 있어 */}
         <section>

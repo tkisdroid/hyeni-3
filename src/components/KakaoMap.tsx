@@ -11,6 +11,7 @@ export interface MapChild {
   lng: number;
   name: string;
   avatar: string; // asset 경로 또는 URL
+  tone?: "normal" | "danger";
 }
 export interface MapZone {
   lat: number;
@@ -244,8 +245,12 @@ export function KakaoMap({
         // 자녀(아바타 커스텀 오버레이)
         if (child) {
           const content = document.createElement("div");
+          const danger = child.tone === "danger";
           content.style.cssText =
-            "width:48px;height:48px;border-radius:50%;border:3px solid #fff;box-shadow:0 4px 14px rgba(240,81,143,.5);overflow:hidden;background:#FDE7F1;transform:translateY(-6px)";
+            "width:48px;height:48px;border-radius:50%;overflow:hidden;transform:translateY(-6px);" +
+            (danger
+              ? "border:3px solid #E5484D;box-shadow:0 0 0 8px rgba(229,72,77,.18),0 6px 18px rgba(229,72,77,.55);background:#FFE5E8;"
+              : "border:3px solid #fff;box-shadow:0 4px 14px rgba(240,81,143,.5);background:#FDE7F1;");
           content.innerHTML = `<img src="${src(child.avatar)}" alt="${child.name}" style="width:100%;height:100%;object-fit:cover"/>`;
           const overlay = new maps.CustomOverlay({
             position: centerLatLng,

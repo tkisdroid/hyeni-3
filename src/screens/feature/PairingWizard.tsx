@@ -6,6 +6,7 @@ import { useToast } from "@/app/toast";
 import { useMyFamily, useRegeneratePairCode, useCreateChildren } from "@/queries/useFamily";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { FEATURES, TIERS, tierFrom, maxChildrenFor, lockMessageFor } from "@/transform/tierPolicy";
+import { validateChildDraftRequirements } from "@/transform/childProfileRequirements";
 import { resizeImageFileSafe } from "@/lib/imageResize";
 import "./PairingWizard.css";
 
@@ -13,6 +14,7 @@ type Step = 1 | 2 | 3;
 
 interface ChildDraft {
   name: string;
+  birthdate: string;
   /** 미업로드 data:URL(선택). 코드 생성 시 order 기반 경로로 업로드된다. */
   photoDataUrl: string | null;
 }
@@ -21,7 +23,14 @@ interface ChildDraft {
 const COUNTS = [1, 2] as const;
 
 function emptyChild(): ChildDraft {
-  return { name: "", photoDataUrl: null };
+  return { name: "", birthdate: "", photoDataUrl: null };
+}
+
+function toDateInputValue(d: Date): string {
+  const y = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${mm}-${dd}`;
 }
 
 /**
@@ -59,6 +68,7 @@ export function PairingWizard() {
   const [count, setCount] = useState(1);
   const [children, setChildren] = useState<ChildDraft[]>([emptyChild()]);
   const [processingIndex, setProcessingIndex] = useState<number | null>(null);
+  const todayStr = useMemo(() => toDateInputValue(new Date()), []);
   const fileRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   // 티어/기존 아이 수가 바뀌면 선택 수를 남은 슬롯으로 클램프.
@@ -97,7 +107,8 @@ export function PairingWizard() {
     }
   };
 
-  const allNamed = useMemo(() => children.every((c) => c.name.trim().length > 0), [children]);
+  const childRequirements = useMemo(() => validateChildDraftRequirements(children), [children]);
+  const childInfoReady = childRequirements.ok;
 
   const back = () => {
     if (step === 1) navigate(-1);
@@ -113,15 +124,21 @@ export function PairingWizard() {
       }
       setStep(2);
     }
-    else if (step === 2 && allNamed) setStep(3);
+    else if (step === 2) {
+      if (!childRequirements.ok) {
+        show(childRequirements.message, "🎂");
+        return;
+      }
+      setStep(3);
+    }
   };
 
   // 실 연결 코드 발급(부모만) → 성공 시 초대코드·QR 화면으로 정보 전달.
-  const issueCode = () => {
+  const issueCode = (pendingChildren = children) => {
     regen.mutate(undefined, {
       onSuccess: () => {
         show("연결 코드를 만들었어요", "🔗");
-        navigate("/child-invite", { state: { pendingChildren: children } });
+        navigate("/child-invite", { state: { pendingChildren } });
       },
       onError: (e) => show(e instanceof Error ? e.message : "코드 생성에 실패했어요", "⚠️"),
     });
@@ -129,6 +146,17 @@ export function PairingWizard() {
 
   const makeCode = () => {
     if (busy) return;
+    const required = validateChildDraftRequirements(children);
+    if (!required.ok) {
+      show(required.message, "🎂");
+      setStep(2);
+      return;
+    }
+    const validChildren = required.children.map((child, i) => ({
+      ...children[i],
+      name: child.name,
+      birthdate: child.birthdate,
+    }));
     if (ready && existingChildCount + children.length > maxChildren) {
       show(childLimitMessage, "🔒");
       navigate("/subscription");
@@ -137,21 +165,22 @@ export function PairingWizard() {
     // 주 보호자면 아이 placeholder(사진·이름)를 서버에 먼저 생성한 뒤 코드를 발급한다.
     const canCreate = !!family?.isPrimaryParent && !!family.familyId;
     if (!canCreate) {
-      issueCode();
+      issueCode(validChildren);
       return;
     }
     createChildren.mutate(
       {
         parentName: family?.myName || family?.parentName || "부모",
-        plannedChildCount: existingChildCount + children.length,
+        plannedChildCount: existingChildCount + validChildren.length,
         startOrder: existingChildCount,
-        children: children.map((c) => ({
+        children: validChildren.map((c) => ({
           name: c.name.trim(),
+          birthdate: c.birthdate,
           photoDataUrl: c.photoDataUrl ?? undefined,
         })),
       },
       {
-        onSuccess: issueCode,
+        onSuccess: () => issueCode(validChildren),
         onError: (e) => show(e instanceof Error ? e.message : "아이 정보 저장에 실패했어요", "⚠️"),
       },
     );
@@ -206,10 +235,10 @@ export function PairingWizard() {
           </>
         )}
 
-        {/* ── STEP 2 : 아이 정보(사진 + 이름) ── */}
+        {/* ── STEP 2 : 아이 정보(사진 + 이름 + 생년월일) ── */}
         {step === 2 && (
           <>
-            <div className="pw-lead">아이 사진과 이름을 알려주세요</div>
+            <div className="pw-lead">아이 사진과 정보를 알려주세요</div>
             {children.map((child, i) => (
               <div key={i} className="pw-childcard">
                 <div className="pw-childcard__head">아이 {i + 1}</div>
@@ -253,9 +282,21 @@ export function PairingWizard() {
                     />
                   </label>
                 </div>
+                <label className="pw-field">
+                  <span className="pw-flabel">생년월일 *</span>
+                  <input
+                    className="pw-input pw-input--date"
+                    type="date"
+                    value={child.birthdate}
+                    max={todayStr}
+                    onChange={(e) => updateChild(i, { birthdate: e.target.value })}
+                  />
+                </label>
               </div>
             ))}
-            <p className="pw-note">사진은 선택이에요 — 지금 넣지 않아도 연결 후 프로필에서 추가할 수 있어요.</p>
+            <p className="pw-note">
+              생년월일은 AI 친구가 아이 나이에 맞게 말하도록 꼭 필요해요. 사진은 연결 후에도 추가할 수 있어요.
+            </p>
           </>
         )}
 
@@ -273,13 +314,16 @@ export function PairingWizard() {
                       <Camera size={16} strokeWidth={2.2} />
                     </span>
                   )}
-                  <span className="pw-summary__name">{child.name.trim() || `아이 ${i + 1}`}</span>
+                  <span className="pw-summary__name">
+                    {child.name.trim() || `아이 ${i + 1}`}
+                    <small>{child.birthdate}</small>
+                  </span>
                 </div>
               ))}
             </div>
             <p className="pw-note">
               {family?.isPrimaryParent
-                ? "연결 코드를 만들면 아이 정보(사진·이름·테마색)가 저장돼요. 아이 기기에서 코드를 입력하면 이 정보를 이어받아 연결돼요."
+                ? "연결 코드를 만들면 아이 정보(사진·이름·생년월일·테마색)가 저장돼요. 아이 기기에서 코드를 입력하면 이 정보를 이어받아 연결돼요."
                 : "주 보호자만 아이 정보를 서버에 저장할 수 있어요. 지금 만든 정보는 초대 화면에 미리보기로 전달돼요."}
             </p>
           </>
@@ -289,7 +333,7 @@ export function PairingWizard() {
       {/* 하단 고정 CTA */}
       <div className="pw-footer">
         {step < 3 ? (
-          <button type="button" className="pw-cta hy-press" onClick={next} disabled={step === 2 && !allNamed}>
+          <button type="button" className="pw-cta hy-press" onClick={next} disabled={step === 2 && !childInfoReady}>
             {step === 1 ? "다음" : "다음 · 연결 코드 만들기"}
           </button>
         ) : (

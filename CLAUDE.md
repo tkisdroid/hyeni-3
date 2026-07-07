@@ -213,15 +213,25 @@ hyeni-3/
     - **부수 원인(운영 실수, 정직 고지)**: 어제 A17 아이 전환 작업 중 부모 fcm_tokens 전부 삭제→S25 재등록 11:58 KST — 미도착 판정 시각(11:00~11:05)에 부모 토큰 0개. 설령 게이트를 통과했어도 FCM 미수신이었음. 현재 복구됨. 교훈: **실사용 가족의 FCM 토큰 일괄 삭제 금지**(만료는 서버가 자체 정리).
   - 미도착 파이프: 이벤트 좌표 필수(`location.lat/lng`)·윈도우=시작~+5분(cron 매분)·반경 50m·부모에게만 FCM(severity=emergency 전체화면). `not_arrived`는 인앱 SOS 화면 전환(URGENT_ALERT_TYPES) 대상 아님 — 오전환 없음.
 
+- ✅ **12단계: 사용자 확보/유료전환 기능(2026-07-07)** — `앱고도화.md` 실행. 부모 일상 사용 빈도·아이 참여·프리미엄 전환을 위한 화면/문구/문서 추가.
+  - **오늘의 안심 리포트**: `/daily-report` 신규. 활성 아이 기준으로 오늘 일정, 준비물, 최신 위치, 기기 상태, 최신 메모, 부모 알림을 조합한다. 위치는 `isLocationVisible(tier)` 게이트를 존중하고, 기기 상태 새로고침(`request_device_status`)은 자동 실행하지 않고 버튼에서만 보낸다. 제목/부제는 `src/i18n` 씨앗 구조를 사용한다.
+  - **아이 원탭 상태 공유**: ChildHome에 6개 버튼(도착/출발/늦음/픽업/전화/배터리)을 추가하고 기존 memo thread에 일반 메시지로 보낸다. `childId`는 member id, `origin="quick_status"`. SOS·force_ring과 혼동시키지 않는다.
+  - **주간 가족 리포트**: `/weekly-report` 신규. `FEATURES.WEEKLY_REPORT`는 프리미엄 전용. 전용 서버 endpoint 없이 기존 events/daily_supplies/memo/parent_alerts만 집계하므로, 위치 기반 주요 머문 곳은 가짜 수치 없이 "전용 집계 연결 후 표시"로 정직하게 강등한다.
+  - **AI 일정 사진 UX**: AiSchedule 사진 탭을 가정통신문/알림장 안내로 명확화. 사진 선택만으로 AI 호출하지 않고 사용자가 `일정 찾기` 버튼을 누를 때만 `voice-parse(image)` 호출. 크레딧 사용 가능성을 화면에 안내한다.
+  - **구독 화면 정합성**: 비교표에 주간 리포트 추가, SOS·기본 안전은 무료 유지 문구 보강. `annual-27840`은 basePlanId일 뿐 실제 가격 근거가 아니므로 금액은 Play Console/Google Play 결제 확인 화면 기준으로 별도 확인해야 한다.
+  - **원격청취 감사 로그 골격**: `/remote-audio-audit` 신규. 서버 감사 로그 조회 endpoint가 없어 빈 상태와 개인정보 안내만 표시한다. 원격청취 시작/중지 명령은 이 화면에서 절대 실행하지 않는다.
+  - **해외 진출 씨앗**: `src/i18n/messages.ts`, `src/i18n/useMessage.ts`와 `docs/market-expansion-plan.md` 추가. 전체 앱 번역은 대규모 리팩터라 이번 범위에서 제외.
+  - **검증**: node test 19개 통과, `npm run typecheck` exit 0, `npm run build` exit 0. Chrome DevTools 모바일 390x844에서 `/daily-report`, `/weekly-report`, `/remote-audio-audit`, `/ai-schedule` 사진 탭, `/subscription` 렌더·콘솔에러 0·수평 overflow 0 확인. 스크린샷=`output/screenshots/*-mobile.png`.
+
 ### 전체 라우트 맵 (전부 도달 가능)
 ```
 부모 탭(ParentShell)   /parent/home calendar location memo settings
 아이 탭(ChildShell)    /child/home sticker memo
 선생님 탭(TeacherShell) /teacher/home students (+calendar/settings 플레이스홀더)
-푸시(PushShell)        /onboarding subscription notifications remote-audio place-manager
+푸시(PushShell)        /onboarding subscription notifications remote-audio remote-audio-audit place-manager
                       friend-play ai-schedule ai-credit feedback phone-setup playdate-accept
                       sticker-send profile-edit place-form child-invite route
-                      parent/family child/sos child/ai-friend
+                      parent/family child/sos child/ai-friend child/ai-friend-setup daily-report weekly-report
 기본 진입 = /parent/home (App.tsx index redirect)
 ```
 

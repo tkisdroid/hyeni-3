@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, Settings, ChevronRight, Clock, Zap, Wifi, Check, MapPin, Smartphone } from "lucide-react";
+import { Bell, Settings, ChevronRight, Clock, Zap, Wifi, Check, MapPin, Smartphone, ShieldCheck } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
@@ -391,6 +391,25 @@ export function ParentHome() {
             )}
           </div>
         </section>
+
+        {/* 오늘의 안심 리포트 */}
+        <button
+          type="button"
+          className="hy-card ph-report hy-press"
+          onClick={() => navigate("/daily-report")}
+        >
+          <span className="ph-report__icon">
+            <ShieldCheck size={25} strokeWidth={2.2} />
+          </span>
+          <span className="ph-report__main">
+            <span className="ph-report__eyebrow">오늘 아이의 흐름을 정리했어요</span>
+            <span className="ph-report__title">오늘의 안심 리포트</span>
+            <span className="ph-report__sub">도착, 일정, 기기 상태를 한눈에 확인해요</span>
+          </span>
+          <span className="ph-report__cta">
+            리포트 보기 <ChevronRight size={15} strokeWidth={2.4} />
+          </span>
+        </button>
 
         {/* AI로 일정 추가 */}
         <div className="ph-ai">

@@ -43,6 +43,12 @@ const TRAIL_JITTER_M = 8; // hyeni-1 LOCATION_TRAIL_JITTER_M — 정지 중 GPS 
 const SCHEDULE_STAY_RADIUS_M = 220;
 const MIN_SCHEDULE_STAY_OVERLAP_MS = 10 * 60 * 1000;
 
+interface TrailPoint {
+  lat: number;
+  lng: number;
+  ms: number;
+}
+
 function timeToMinutes(value: string | null | undefined): number | null {
   if (!value) return null;
   const match = /^(\d{1,2}):(\d{2})$/.exec(value.trim());
@@ -102,21 +108,21 @@ function scheduleStayLabel(stay: StayPoint, events: CalendarEvent[]): string | n
  * 하루 위치 이력 → 이동 경로 폴리라인 좌표.
  * 선택 자녀만 · 시간순 · 8m 이내 인접 중복 제거로 과도한 점을 다운샘플(hyeni-1 trailMath 규칙 이관).
  */
-function buildTrailPolyline(
+function buildTrailPoints(
   points: LocationHistoryPoint[] | undefined,
   userId: string | null,
-): { lat: number; lng: number }[] {
+): TrailPoint[] {
   const rows = (points ?? [])
     .filter(
       (p) => (!userId || p.user_id === userId) && Number.isFinite(p.lat) && Number.isFinite(p.lng),
     )
     .map((p) => ({ lat: p.lat, lng: p.lng, ms: parseServerTimestamp(p.recorded_at)?.getTime() ?? 0 }))
     .sort((a, b) => a.ms - b.ms);
-  const out: { lat: number; lng: number }[] = [];
+  const out: TrailPoint[] = [];
   for (const r of rows) {
     const prev = out[out.length - 1];
     if (prev && distanceMeters(prev.lat, prev.lng, r.lat, r.lng) < TRAIL_JITTER_M) continue;
-    out.push({ lat: r.lat, lng: r.lng });
+    out.push(r);
   }
   return out;
 }
@@ -141,6 +147,14 @@ export function ParentLocation() {
 
   const now = useMemo(() => new Date(), [locations]);
   const todayKey = useMemo(() => todayDateKey(now), [now]);
+  const dayStartMs = useMemo(() => {
+    const today = parseAppDateKey(todayKey);
+    return today
+      ? new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
+      : new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  }, [now, todayKey]);
+  const currentMinuteOfDay = Math.min(1439, now.getHours() * 60 + now.getMinutes());
+  const [scrubMinute, setScrubMinute] = useState(currentMinuteOfDay);
 
   // 대상 아이 = 전역 활성 아이(스위치는 부모 홈에서만 — 이 화면엔 전환 UI 없음).
   // 예외: 알림/SOS/도착에서 `?child=<user_id>` 로 진입하면 그 아이를 우선(위급 아이 — 안전 규칙).
@@ -182,6 +196,9 @@ export function ParentLocation() {
   }, [requestedView]);
   // 무료(잠금)에서는 항상 실시간 화면(잠금 오버레이). 토글은 잠금이 아닐 때만 노출.
   const activeView: "live" | "history" = isLocked ? "live" : view;
+  useEffect(() => {
+    if (activeView === "history") setScrubMinute(currentMinuteOfDay);
+  }, [activeView, selected?.id]);
 
   // 오늘 0시(로컬) ~ 현재 ISO. 보기 전환 시점 기준으로 고정(쿼리 캐시 안정).
   const historyRange = useMemo(() => {
@@ -198,10 +215,17 @@ export function ParentLocation() {
     isError: historyError,
   } = useLocationHistory(historyRange.start, historyRange.end, historyEnabled);
 
-  const trail = useMemo(
-    () => buildTrailPolyline(history, selected?.user_id ?? null),
+  const timedTrail = useMemo(
+    () => buildTrailPoints(history, selected?.user_id ?? null),
     [history, selected?.user_id],
   );
+  const effectiveScrubMinute = Math.min(scrubMinute, currentMinuteOfDay);
+  const scrubMs = dayStartMs + effectiveScrubMinute * 60_000;
+  const trail = useMemo(
+    () => timedTrail.filter((p) => p.ms <= scrubMs).map((p) => ({ lat: p.lat, lng: p.lng })),
+    [scrubMs, timedTrail],
+  );
+  const scrubChildPoint = trail.length > 0 ? trail[trail.length - 1] : null;
   // 출발 마커(첫 위치). 현재 마커는 지도의 child 아바타 오버레이가 담당.
   const trailStart: MapPlace[] = trail.length
     ? [{ lat: trail[0].lat, lng: trail[0].lng, name: "출발" }]
@@ -224,6 +248,29 @@ export function ParentLocation() {
     () => stayPoints.map((s) => scheduleStayLabel(s, selectedTodayEvents) ?? stayPlaceLabel(s, places)),
     [stayPoints, selectedTodayEvents, places],
   );
+  const visibleStayPoints = useMemo(
+    () => stayPoints.filter((s) => s.arrivalMs <= scrubMs),
+    [scrubMs, stayPoints],
+  );
+  const scheduleMapPlaces = useMemo<MapPlace[]>(
+    () =>
+      selectedTodayEvents
+        .map((event) => {
+          const point = eventPoint(event);
+          if (!point) return null;
+          return {
+            lat: point.lat,
+            lng: point.lng,
+            name: `${event.time || ""} ${eventLabel(event)}`.trim(),
+          };
+        })
+        .filter((p): p is MapPlace => p !== null),
+    [selectedTodayEvents],
+  );
+  const historyPlaces = useMemo(
+    () => [...trailStart, ...scheduleMapPlaces],
+    [scheduleMapPlaces, trailStart],
+  );
   // 목록에서 선택한 스테이포인트(지도 포커스 + 강조).
   const [selectedStayIdx, setSelectedStayIdx] = useState<number | null>(null);
   const [staysCollapsed, setStaysCollapsed] = useState(false);
@@ -238,11 +285,11 @@ export function ParentLocation() {
     setStaysCollapsed(false);
   }, [activeView, stayPoints.length]);
   const activeStayIdx =
-    selectedStayIdx != null && selectedStayIdx < stayPoints.length ? selectedStayIdx : null;
+    selectedStayIdx != null && selectedStayIdx < visibleStayPoints.length ? selectedStayIdx : null;
   // 지도용 스테이 마커(순번·체류시간·장소명·강조).
   const mapStays = useMemo<MapStay[]>(
     () =>
-      stayPoints.map((s, i) => ({
+      visibleStayPoints.map((s, i) => ({
         lat: s.lat,
         lng: s.lng,
         order: i + 1,
@@ -250,11 +297,11 @@ export function ParentLocation() {
         placeName: stayLabels[i] ?? null,
         active: i === activeStayIdx,
       })),
-    [stayPoints, stayLabels, activeStayIdx],
+    [visibleStayPoints, stayLabels, activeStayIdx],
   );
   // 목록 항목 선택 시 지도 중심을 그 스테이포인트로.
   const stayCenter =
-    activeStayIdx != null ? { lat: stayPoints[activeStayIdx].lat, lng: stayPoints[activeStayIdx].lng } : null;
+    activeStayIdx != null ? { lat: visibleStayPoints[activeStayIdx].lat, lng: visibleStayPoints[activeStayIdx].lng } : null;
 
   const onStaysGripDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     staysDragStart.current = e.clientY;
@@ -279,10 +326,10 @@ export function ParentLocation() {
   };
 
   const histLocked = activeView === "history" && !premiumOpen;
-  const histLoading = activeView === "history" && premiumOpen && historyFetching && trail.length === 0;
-  const histErrored = activeView === "history" && premiumOpen && historyError && trail.length === 0;
+  const histLoading = activeView === "history" && premiumOpen && historyFetching && timedTrail.length === 0;
+  const histErrored = activeView === "history" && premiumOpen && historyError && timedTrail.length === 0;
   const histEmpty =
-    activeView === "history" && premiumOpen && !historyFetching && !historyError && trail.length === 0;
+    activeView === "history" && premiumOpen && !historyFetching && !historyError && timedTrail.length === 0;
 
   // 프리미엄 유도(실시간·경로·주변소리 등 잠긴 액션 탭 시).
   const upsell = () => {
@@ -335,11 +382,15 @@ export function ParentLocation() {
       {activeView === "history" ? (
         <KakaoMap
           className="pl-map"
-          child={stayPoints.length === 0 && loc ? { lat: loc.lat, lng: loc.lng, name: childName, avatar: childAvatar } : null}
+          child={
+            scrubChildPoint
+              ? { lat: scrubChildPoint.lat, lng: scrubChildPoint.lng, name: childName, avatar: childAvatar }
+              : null
+          }
           route={trail}
           stays={mapStays}
           center={stayCenter}
-          places={stayPoints.length === 0 ? trailStart : []}
+          places={historyPlaces}
         />
       ) : (
         <KakaoMap
@@ -380,6 +431,29 @@ export function ParentLocation() {
             : histLoading
               ? "오늘 이동 기록을 불러오는 중…"
               : "오늘 이동 기록이 아직 없어요"}
+        </div>
+      )}
+
+      {activeView === "history" && premiumOpen && !histLocked && timedTrail.length > 0 && (
+        <div className="pl-scrub">
+          <div className="pl-scrub__head">
+            <span>시간대별 경로</span>
+            <strong>{formatClockHM(scrubMs)}</strong>
+          </div>
+          <input
+            className="pl-scrub__range"
+            type="range"
+            min={0}
+            max={currentMinuteOfDay}
+            value={effectiveScrubMinute}
+            onChange={(e) => setScrubMinute(Number(e.target.value))}
+            aria-label="오늘 경로 시간 선택"
+          />
+          <div className="pl-scrub__legend">
+            <span><i className="pl-scrub__line" /> 이동선</span>
+            <span><i className="pl-scrub__dot" /> 머문 곳</span>
+            {scheduleMapPlaces.length > 0 && <span>📍 일정</span>}
+          </div>
         </div>
       )}
 
@@ -493,10 +567,10 @@ export function ParentLocation() {
           </div>
           <div className="pl-stays__head">
             <span className="pl-stays__title">오늘 머문 곳</span>
-            <span className="pl-stays__count">{stayPoints.length}곳</span>
+            <span className="pl-stays__count">{visibleStayPoints.length}/{stayPoints.length}곳</span>
           </div>
           <div className="pl-stays__list">
-            {stayPoints.map((s, i) => {
+            {visibleStayPoints.map((s, i) => {
               const place = stayLabels[i];
               const on = i === activeStayIdx;
               return (

@@ -219,6 +219,25 @@
   width: 100%;
   padding-top: 8px;
 }
+.ais-mode-intro {
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: var(--bg-card);
+  box-shadow: 0 8px 22px rgba(124, 92, 225, 0.1);
+}
+.ais-mode-intro__title {
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--fg-primary);
+}
+.ais-mode-intro p {
+  margin: 5px 0 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--fg-muted);
+}
 .ais-upload {
   width: 100%;
   border-radius: 20px;

@@ -2581,13 +2581,14 @@ public class LocationService extends Service {
                 // Get current time in KST
                 Calendar kst = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"));
                 int year = kst.get(Calendar.YEAR);
-                int month = kst.get(Calendar.MONTH) + 1; // Calendar.MONTH is 0-based, convert to 1-based
+                // 앱/Worker date_key 규칙은 0-index 월이다. 예: 2026-6-7 = 2026년 7월 7일.
+                int monthIndex = kst.get(Calendar.MONTH);
                 int day = kst.get(Calendar.DAY_OF_MONTH);
                 int nowHour = kst.get(Calendar.HOUR_OF_DAY);
                 int nowMin = kst.get(Calendar.MINUTE);
                 int nowTotalMin = nowHour * 60 + nowMin;
 
-                String dateKey = year + "-" + month + "-" + day;
+                String dateKey = year + "-" + monthIndex + "-" + day;
 
                 // 일정 목록은 자주 바뀌지 않으므로 네트워크 fetch 와 시각 평가를 분리한다.
                 // get_today_events 는 EVENT_REFRESH_INTERVAL_MS(2분)마다만 네트워크로 갱신해 캐시하고,
@@ -2683,6 +2684,8 @@ public class LocationService extends Service {
                     }
 
                     // ── Geo-fence checks: auto-silent + parent alerts ────────────
+                    // 위치 기반 도착/미도착은 실제 자녀 기기 위치에서만 평가한다.
+                    if (!isChildDevice) continue;
                     if (location == null) continue;
                     double evLat = location.optDouble("lat", Double.NaN);
                     double evLng = location.optDouble("lng", Double.NaN);
@@ -2862,6 +2865,7 @@ public class LocationService extends Service {
                 body.put("p_message", message);
                 body.put("p_severity", severity);
                 if (eventId != null) body.put("p_event_id", eventId);
+                if (userId != null && !userId.isEmpty()) body.put("p_child_user_id", userId);
                 boolean insertOk = postWithAuthRetry(
                     supabaseUrl + "/rest/v1/rpc/insert_parent_alert_v2", body.toString());
 

@@ -21,7 +21,7 @@ type TabKey = "voice" | "text" | "image";
 const AI_TABS: ReadonlyArray<{ key: TabKey; emoji: string; label: string }> = [
   { key: "voice", emoji: "🎤", label: "음성" },
   { key: "text", emoji: "⌨️", label: "텍스트" },
-  { key: "image", emoji: "🖼️", label: "알림장" },
+  { key: "image", emoji: "🖼️", label: "사진" },
 ];
 
 /** 음성 파형 막대 — 20개, 물결처럼 어긋난 delay. */
@@ -137,14 +137,22 @@ export function AiSchedule() {
       });
       if (result.events.length === 0) {
         setParsed(null);
-        show(result.message || (image ? "사진에서 일정을 찾지 못했어요" : "일정을 찾지 못했어요"), "🤔");
+        show(
+          result.message ||
+            (image ? "사진에서 일정을 찾지 못했어요. 날짜가 보이게 다시 찍어 주세요." : "일정을 찾지 못했어요"),
+          "🤔",
+        );
         return;
       }
       setParsed(result.events);
     } catch (e) {
       setParsed(null);
       show(
-        e instanceof ApiError ? e.message : image ? "사진 인식에 실패했어요" : "일정 정리에 실패했어요",
+        e instanceof ApiError
+          ? e.message
+          : image
+            ? "AI 일정 등록을 사용할 수 없어요. 잠시 후 다시 시도해 주세요."
+            : "일정 정리에 실패했어요",
         "⚠️",
       );
     }
@@ -185,10 +193,10 @@ export function AiSchedule() {
   const handleParse = async () => {
     if (tab === "image") {
       if (!imagePreview) {
-        show("먼저 알림장 사진을 올려주세요", "📸");
+        show("먼저 사진을 선택해 주세요", "📸");
         return;
       }
-      // 알림장 사진 → voice-parse(image) 엔드포인트로 실제 파싱.
+      // 가정통신문 사진 → voice-parse(image) 엔드포인트로 실제 파싱.
       await runParse("", imagePreview);
       return;
     }
@@ -346,7 +354,7 @@ export function AiSchedule() {
           </div>
         )}
 
-        {/* 알림장 — 실제 파일 입력(선택·미리보기 동작) → voice-parse(image) 로 실제 파싱 */}
+        {/* 사진 — 실제 파일 입력(선택·미리보기 동작) → voice-parse(image) 로 실제 파싱 */}
         {tab === "image" && (
           <div className="ais-image">
             {/* 숨긴 파일 입력: 촬영·갤러리 모두 열 수 있도록 capture 는 두지 않는다(디자인 문구 준수) */}
@@ -357,9 +365,13 @@ export function AiSchedule() {
               className="ais-file"
               onChange={handleImageSelect}
             />
+            <div className="ais-mode-intro">
+              <div className="ais-mode-intro__title">가정통신문 사진으로 일정 찾기</div>
+              <p>가정통신문이나 알림장 사진을 올리면 날짜와 준비물을 찾아드려요.</p>
+            </div>
             {imagePreview ? (
               <div className="ais-preview">
-                <img className="ais-preview__img" src={imagePreview} alt="선택한 알림장 사진" />
+                <img className="ais-preview__img" src={imagePreview} alt="선택한 가정통신문 사진" />
                 <button
                   type="button"
                   className="ais-preview__change hy-press"
@@ -378,14 +390,14 @@ export function AiSchedule() {
                   <img src={asset("cat/study.webp")} alt="" />
                 </span>
                 <span className="ais-upload__text">
-                  <span className="ais-upload__title">알림장 사진 올리기</span>
-                  <span className="ais-upload__sub">촬영하거나 갤러리에서 선택</span>
+                  <span className="ais-upload__title">사진 선택</span>
+                  <span className="ais-upload__sub">가정통신문 · 알림장 · 학원 안내문</span>
                 </span>
               </button>
             )}
             <div className="ais-hint">
               <span className="ais-hint__ico">📸</span>
-              알림장을 올리면 준비물·숙제·일정을 자동으로 인식해요
+              AI가 사진에서 일정을 찾습니다. 크레딧이 사용될 수 있어요.
             </div>
           </div>
         )}
@@ -450,7 +462,13 @@ export function AiSchedule() {
             disabled={!canParse || parseM.isPending}
           >
             <Sparkles size={20} strokeWidth={2.4} color="#fff" />
-            {parseM.isPending ? "정리하는 중..." : "AI로 정리하기"}
+            {parseM.isPending
+              ? tab === "image"
+                ? "찾는 중..."
+                : "정리하는 중..."
+              : tab === "image"
+                ? "일정 찾기"
+                : "AI로 정리하기"}
           </button>
         )}
       </div>

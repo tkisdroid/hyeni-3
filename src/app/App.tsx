@@ -66,6 +66,9 @@ import { NotificationSettings } from "@/screens/feature/NotificationSettings";
 import { ArrivalAlerts } from "@/screens/feature/ArrivalAlerts";
 import { DangerAlert } from "@/screens/feature/DangerAlert";
 import { DaySummary } from "@/screens/feature/DaySummary";
+import { DailySafetyReport } from "@/screens/feature/DailySafetyReport";
+import { WeeklyFamilyReport } from "@/screens/feature/WeeklyFamilyReport";
+import { RemoteAudioAudit } from "@/screens/feature/RemoteAudioAudit";
 import { AiFriendSetup } from "@/screens/child/AiFriendSetup";
 import { RemoteRing } from "@/screens/feature/RemoteRing";
 import { SosReceive } from "@/screens/feature/SosReceive";
@@ -164,6 +167,9 @@ const router = createHashRouter([
       { path: "arrival-alerts", element: <ArrivalAlerts /> },
       { path: "danger-alert", element: <DangerAlert /> },
       { path: "day-summary", element: <DaySummary /> },
+      { path: "daily-report", element: <DailySafetyReport /> },
+      { path: "weekly-report", element: <WeeklyFamilyReport /> },
+      { path: "remote-audio-audit", element: <RemoteAudioAudit /> },
       { path: "child/ai-friend-setup", element: <AiFriendSetup /> },
       { path: "remote-ring", element: <RemoteRing /> },
       { path: "sos-receive", element: <SosReceive /> },

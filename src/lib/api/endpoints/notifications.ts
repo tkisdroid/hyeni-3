@@ -17,6 +17,7 @@ export interface ParentAlert {
   severity: AlertSeverity | string;
   event_id: string | null;
   child_user_id: string | null;
+  metadata?: Record<string, unknown> | null;
   read: boolean;
   created_at: string; // ISO 8601
 }

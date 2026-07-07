@@ -44,6 +44,8 @@ interface FormNavState {
   mode?: Mode;
   event?: CalendarEvent;
   dateKey?: string;
+  childUserId?: string;
+  suggestion?: Record<string, unknown> | null;
 }
 
 /** 카테고리(색/이모지는 transform/scheduleView 의 CATEGORY_STYLE 과 동일 규칙). */
@@ -63,6 +65,14 @@ const PREALARMS: Array<{ label: string; minutes: number | null }> = [
   { label: "10분 전", minutes: 10 },
   { label: "30분 전", minutes: 30 },
   { label: "1시간 전", minutes: 60 },
+];
+
+const DURATION_OPTIONS: Array<{ label: string; minutes: number }> = [
+  { label: "30분", minutes: 30 },
+  { label: "1시간", minutes: 60 },
+  { label: "1시간 30분", minutes: 90 },
+  { label: "2시간", minutes: 120 },
+  { label: "3시간", minutes: 180 },
 ];
 
 const IDLE_BG = "#F3EEF1";
@@ -88,6 +98,43 @@ function weekdayFromDateInput(value: string): WeekdayIndex | null {
   return date.getDay() as WeekdayIndex;
 }
 
+function timeToMinutes(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const match = /^(\d{1,2}):(\d{2})$/.exec(value);
+  if (!match) return null;
+  const hour = Number(match[1]);
+  const min = Number(match[2]);
+  if (!Number.isInteger(hour) || !Number.isInteger(min) || hour < 0 || hour > 23 || min < 0 || min > 59) {
+    return null;
+  }
+  return hour * 60 + min;
+}
+
+function minutesToTimeValue(totalMin: number): string {
+  const dayMin = ((Math.round(totalMin) % (24 * 60)) + 24 * 60) % (24 * 60);
+  const hour = Math.floor(dayMin / 60);
+  const min = dayMin % 60;
+  return `${String(hour).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+}
+
+function durationFromEvent(start: string | null | undefined, end: string | null | undefined): number {
+  const startMin = timeToMinutes(start);
+  const endMinRaw = timeToMinutes(end);
+  if (startMin == null || endMinRaw == null) return 60;
+  const endMin = endMinRaw <= startMin ? endMinRaw + 24 * 60 : endMinRaw;
+  const duration = endMin - startMin;
+  return duration > 0 ? duration : 60;
+}
+
+function stringFrom(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function finiteNumberFrom(value: unknown): number | null {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
 export function EventForm() {
   const navigate = useNavigate();
   const { show } = useToast();
@@ -96,6 +143,7 @@ export function EventForm() {
 
   const mode: Mode = nav?.mode === "edit" ? "edit" : "create";
   const editing = mode === "edit" ? nav?.event ?? null : null;
+  const suggestion = mode === "create" ? nav?.suggestion ?? null : null;
 
   const familyQuery = useMyFamily();
   const children = useMemo(
@@ -114,19 +162,26 @@ export function EventForm() {
   const { activeChild } = useActiveChild();
   const editingNeedsAssignment =
     mode === "edit" && !!editing && editing.is_family_event !== true && initialChildIdList(editing).length === 0;
+  const suggestedChildId = useMemo(() => {
+    const explicit = stringFrom(suggestion?.childMemberId);
+    if (explicit) return explicit;
+    const childUserId = stringFrom(suggestion?.childUserId) ?? stringFrom(nav?.childUserId);
+    if (!childUserId) return null;
+    return children.find((m) => m.user_id === childUserId)?.id ?? null;
+  }, [children, nav?.childUserId, suggestion]);
   const initialAssignedChildIds = useMemo(
     () =>
       resolveInitialAssignedChildIds({
-        existingChildIds: initialChildIdList(editing ?? undefined),
+        existingChildIds: suggestedChildId ? [suggestedChildId] : initialChildIdList(editing ?? undefined),
         needsAssignment: editingNeedsAssignment,
         activeChildId: activeChild?.id ?? null,
         members: children,
       }),
-    [activeChild?.id, children, editing, editingNeedsAssignment],
+    [activeChild?.id, children, editing, editingNeedsAssignment, suggestedChildId],
   );
 
   // ── 폼 상태(초기값은 edit 이면 기존 일정, create 면 전달된 dateKey/오늘) ──
-  const [title, setTitle] = useState(() => editing?.title ?? "");
+  const [title, setTitle] = useState(() => editing?.title ?? stringFrom(suggestion?.title) ?? "");
   const [selectedChildIds, setSelectedChildIds] = useState<Set<string>>(() =>
     new Set(initialAssignedChildIds),
   );
@@ -134,6 +189,12 @@ export function EventForm() {
   // 빈 선택은 "가족 공유(모든 아이 표시)"로 저장되므로 기본값을 활성 아이로 둔다.
   const childDefaultDone = useRef(false);
   const editDefaultDone = useRef(false);
+  const suggestionDefaultDone = useRef(false);
+  useEffect(() => {
+    if (suggestionDefaultDone.current || mode !== "create" || !suggestedChildId) return;
+    suggestionDefaultDone.current = true;
+    setSelectedChildIds(new Set([suggestedChildId]));
+  }, [mode, suggestedChildId]);
   useEffect(() => {
     if (childDefaultDone.current || mode !== "create" || !activeChild) return;
     childDefaultDone.current = true;
@@ -150,15 +211,21 @@ export function EventForm() {
     const key = nav?.dateKey ?? todayDateKey();
     return dateKeyToDateInputValue(key);
   });
-  const [timeValue, setTimeValue] = useState(() => editing?.time ?? "");
-  const [category, setCategory] = useState<string>(() => editing?.category ?? "school");
-  const [place, setPlace] = useState(() => editing?.location?.address ?? "");
-  // 지도/저장장소로 지정한 좌표(있으면 event.location 에 lat/lng 로 함께 저장).
-  const [placeCoord, setPlaceCoord] = useState<{ lat: number; lng: number } | null>(() =>
-    typeof editing?.location?.lat === "number" && typeof editing?.location?.lng === "number"
-      ? { lat: editing.location.lat, lng: editing.location.lng }
-      : null,
+  const [timeValue, setTimeValue] = useState(() => editing?.time ?? stringFrom(suggestion?.time) ?? "");
+  const [durationMin, setDurationMin] = useState(
+    () => finiteNumberFrom(suggestion?.durationMinutes) ?? durationFromEvent(editing?.time, editing?.end_time),
   );
+  const [category, setCategory] = useState<string>(() => editing?.category ?? stringFrom(suggestion?.category) ?? "school");
+  const [place, setPlace] = useState(() => editing?.location?.address ?? stringFrom(suggestion?.address) ?? "");
+  // 지도/저장장소로 지정한 좌표(있으면 event.location 에 lat/lng 로 함께 저장).
+  const [placeCoord, setPlaceCoord] = useState<{ lat: number; lng: number } | null>(() => {
+    if (typeof editing?.location?.lat === "number" && typeof editing?.location?.lng === "number") {
+      return { lat: editing.location.lat, lng: editing.location.lng };
+    }
+    const lat = finiteNumberFrom(suggestion?.lat);
+    const lng = finiteNumberFrom(suggestion?.lng);
+    return lat != null && lng != null ? { lat, lng } : null;
+  });
   const [placeSuggestionsOpen, setPlaceSuggestionsOpen] = useState(false);
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [repeat, setRepeat] = useState<RepeatMode>("없음");
@@ -244,6 +311,12 @@ export function EventForm() {
 
     const catStyle = CATEGORIES.find((c) => c.id === category);
     const childIds = Array.from(selectedChildIds);
+    const startMin = timeToMinutes(timeValue);
+    if (startMin == null || durationMin <= 0) {
+      show("시간을 확인해 주세요", "🕒");
+      return;
+    }
+    const endTimeValue = minutesToTimeValue(startMin + durationMin);
     if (editingNeedsAssignment && childIds.length === 0) {
       show("배정할 아이를 선택해 주세요", "🧒");
       return;
@@ -252,6 +325,7 @@ export function EventForm() {
     const baseFields = {
       title: trimmedTitle,
       time: timeValue,
+      end_time: endTimeValue,
       category,
       emoji: catStyle?.emoji ?? "🌟",
       memo: memo.trim(),
@@ -407,6 +481,39 @@ export function EventForm() {
               onChange={(e) => setTimeValue(e.target.value)}
             />
           </div>
+        </div>
+
+        <div>
+          <div className="ef-label">지속시간</div>
+          <div className="ef-chips">
+            {DURATION_OPTIONS.map((d) => {
+              const active = durationMin === d.minutes;
+              return (
+                <button
+                  key={d.minutes}
+                  type="button"
+                  className="ef-chip hy-press"
+                  style={
+                    active
+                      ? {
+                          background: "var(--hy-accent-soft)",
+                          color: "var(--hy-accent-text)",
+                          border: "1.5px solid var(--hy-accent)",
+                        }
+                      : { background: IDLE_BG, color: IDLE_COLOR, border: "1.5px solid transparent" }
+                  }
+                  onClick={() => setDurationMin(d.minutes)}
+                >
+                  {d.label}
+                </button>
+              );
+            })}
+          </div>
+          {timeValue && (
+            <div className="ef-note">
+              종료 {minutesToTimeValue((timeToMinutes(timeValue) ?? 0) + durationMin)}
+            </div>
+          )}
         </div>
 
         {/* 카테고리 */}
