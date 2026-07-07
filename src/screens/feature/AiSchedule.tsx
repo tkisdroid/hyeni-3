@@ -67,6 +67,16 @@ function eventDateLabel(ev: ParsedScheduleEvent, cd: { year: number; month: numb
   return `${date.getMonth() + 1}/${date.getDate()} (${WEEKDAYS[date.getDay()]})`;
 }
 
+function scheduleLimitMessage(tier: string, limit: number): string {
+  if (tier === TIERS.FREE) {
+    return "무료 플랜에서는 일정 1개까지 저장할 수 있어요. 리뷰 혜택을 받으면 3개, 프리미엄에서는 무제한으로 저장할 수 있어요.";
+  }
+  if (tier === TIERS.REVIEWED) {
+    return "리뷰 혜택에서는 일정 3개까지 저장할 수 있어요. 프리미엄에서는 무제한으로 저장할 수 있어요.";
+  }
+  return `현재 플랜에서는 일정 ${limit}개까지 저장할 수 있어요`;
+}
+
 export function AiSchedule() {
   const navigate = useNavigate();
   const { show } = useToast();
@@ -138,8 +148,9 @@ export function AiSchedule() {
       if (result.events.length === 0) {
         setParsed(null);
         show(
-          result.message ||
-            (image ? "사진에서 일정을 찾지 못했어요. 날짜가 보이게 다시 찍어 주세요." : "일정을 찾지 못했어요"),
+          image
+            ? "사진에서 일정을 찾지 못했어요. 날짜와 시간이 잘 보이게 다시 찍어 주세요."
+            : "일정을 찾지 못했어요. 날짜와 시간을 조금 더 자세히 적어 주세요.",
           "🤔",
         );
         return;
@@ -223,7 +234,7 @@ export function AiSchedule() {
       const limit = scheduleLimitFor(tier);
       const currentCount = existingEvents.data?.length ?? 0;
       if (currentCount + parsed.length > limit) {
-        show(`현재 플랜에서는 일정 ${limit}개까지 저장할 수 있어요`, "👑");
+        show(scheduleLimitMessage(tier, limit), "👑");
         return;
       }
     }
@@ -367,7 +378,7 @@ export function AiSchedule() {
             />
             <div className="ais-mode-intro">
               <div className="ais-mode-intro__title">가정통신문 사진으로 일정 찾기</div>
-              <p>가정통신문이나 알림장 사진을 올리면 날짜와 준비물을 찾아드려요.</p>
+              <p>가정통신문, 알림장, 학원 안내문, 준비물 사진에서 날짜와 시간을 찾아드려요.</p>
             </div>
             {imagePreview ? (
               <div className="ais-preview">
@@ -397,7 +408,7 @@ export function AiSchedule() {
             )}
             <div className="ais-hint">
               <span className="ais-hint__ico">📸</span>
-              AI가 사진에서 일정을 찾습니다. 크레딧이 사용될 수 있어요.
+              AI가 사진에서 일정을 찾습니다. 크레딧이 사용될 수 있어요. 사진은 일정 후보를 찾기 위해 서버로 전송돼요.
             </div>
           </div>
         )}
@@ -440,6 +451,7 @@ export function AiSchedule() {
                 </div>
               </div>
             </div>
+            <div className="ais-edit-note">추가한 뒤 캘린더에서 수정할 수 있어요.</div>
           </>
         )}
 

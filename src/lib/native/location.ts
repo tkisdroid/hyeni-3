@@ -21,10 +21,11 @@ import {
   notifyTokens,
   setApiTokens,
   setApiUser,
+  type ApiUser,
   userFromAccessToken,
 } from "@/lib/api/session";
 import type { LocationIntervalMode } from "@/lib/api/endpoints/location";
-import { shouldAdoptNativeSessionTokens } from "@/transform/nativeTokenSync";
+import { shouldAdoptNativeSessionTokens, shouldRestoreNativeRefreshOnlySession } from "@/transform/nativeTokenSync";
 
 const PLUGIN_NAME = "BackgroundLocation";
 
@@ -50,6 +51,7 @@ interface BackgroundLocationPlugin {
   stopService(options?: { clearSession?: boolean }): Promise<{ status?: string }>;
   updateToken(options: { accessToken: string; refreshToken?: string }): Promise<{ status?: string }>;
   getSessionTokens?(): Promise<{ accessToken?: string; refreshToken?: string; serviceEnabled?: boolean }>;
+  getPushContext?(): Promise<{ userId?: string; familyId?: string; role?: string }>;
 }
 
 /** startLocationTracking/requestImmediateLocation 호출 시 넘기는 최소 컨텍스트. */
@@ -148,6 +150,46 @@ export async function syncNativeLocationToken(): Promise<void> {
   }
 }
 
+interface NativeRefreshResponse {
+  session?: { access_token?: string; refresh_token?: string; user?: ApiUser };
+  user?: ApiUser;
+}
+
+async function restoreNativeRefreshOnlySession(
+  plugin: BackgroundLocationPlugin,
+  nativeRefresh: string,
+  expected: { userId: string; familyId: string; role: string },
+): Promise<boolean> {
+  try {
+    const res = await fetch(`${getNativeBackendUrl()}/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: nativeRefresh }),
+    });
+    if (res.status === 401 || res.status === 403 || !res.ok) return false;
+    const data = (await res.json()) as NativeRefreshResponse;
+    const nextAccess = data.session?.access_token?.trim() ?? "";
+    const nextRefresh = data.session?.refresh_token?.trim() || nativeRefresh;
+    if (!nextAccess) return false;
+    const nextUser = data.session?.user ?? data.user ?? userFromAccessToken(nextAccess);
+    if (!nextUser) return false;
+    const nextRole = nextUser.role ?? nextUser.app_metadata?.role ?? nextUser.user_metadata?.role ?? "";
+    const nextFamilyId =
+      nextUser.family_id ?? nextUser.app_metadata?.family_id ?? nextUser.user_metadata?.family_id ?? "";
+    if (nextUser.id !== expected.userId || nextFamilyId !== expected.familyId || nextRole !== expected.role) {
+      return false;
+    }
+    setApiTokens({ access: nextAccess, refresh: nextRefresh });
+    setApiUser(nextUser);
+    notifyTokens();
+    await plugin.updateToken({ accessToken: nextAccess, refreshToken: nextRefresh });
+    return true;
+  } catch (error) {
+    console.error("[location] 네이티브 refresh-only 세션 복구 실패:", error);
+    return false;
+  }
+}
+
 /**
  * 백그라운드 위치 서비스가 WebView 없이 refresh token 을 회전한 경우, WebView localStorage 의
  * refresh token 이 낡아져 다음 API 401 때 로그아웃될 수 있다. refresh 직전 네이티브가 가진
@@ -163,8 +205,10 @@ export async function adoptNativeLocationSessionTokens(): Promise<boolean> {
     const nativeServiceEnabled = native?.serviceEnabled === true;
     const currentAccess = getApiAccessToken();
     const currentRefresh = getApiRefreshToken();
+    const pushContext =
+      typeof plugin.getPushContext === "function" ? await plugin.getPushContext() : null;
     if (
-      !shouldAdoptNativeSessionTokens({
+      shouldAdoptNativeSessionTokens({
         currentAccessToken: currentAccess,
         currentRefreshToken: currentRefresh,
         nativeAccessToken: nativeAccess,
@@ -172,14 +216,32 @@ export async function adoptNativeLocationSessionTokens(): Promise<boolean> {
         nativeServiceEnabled,
       })
     ) {
-      return false;
+      const nativeUser = userFromAccessToken(nativeAccess);
+      if (!nativeUser) return false;
+      setApiTokens({ access: nativeAccess, refresh: nativeRefresh });
+      setApiUser(nativeUser);
+      notifyTokens();
+      return true;
     }
-    const nativeUser = userFromAccessToken(nativeAccess);
-    if (!nativeUser) return false;
-    setApiTokens({ access: nativeAccess, refresh: nativeRefresh });
-    setApiUser(nativeUser);
-    notifyTokens();
-    return true;
+    if (
+      shouldRestoreNativeRefreshOnlySession({
+        currentAccessToken: currentAccess,
+        currentRefreshToken: currentRefresh,
+        nativeAccessToken: nativeAccess,
+        nativeRefreshToken: nativeRefresh,
+        nativeUserId: pushContext?.userId,
+        nativeFamilyId: pushContext?.familyId,
+        nativeRole: pushContext?.role,
+        nativeServiceEnabled,
+      })
+    ) {
+      return restoreNativeRefreshOnlySession(plugin, nativeRefresh, {
+        userId: pushContext?.userId?.trim() ?? "",
+        familyId: pushContext?.familyId?.trim() ?? "",
+        role: pushContext?.role?.trim() ?? "",
+      });
+    }
+    return false;
   } catch (error) {
     console.error("[location] 네이티브 세션 토큰 채택 실패:", error);
     return false;

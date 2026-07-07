@@ -103,6 +103,9 @@
   font-weight: 700;
   color: #a9812f;
 }
+.sub-active__check {
+  color: var(--gold-600);
+}
 
 /* ── 플랜 선택 ─────────────────────────────────────────────────────────── */
 .sub-plans {
@@ -214,6 +217,7 @@
 }
 .sub-benefit__check {
   flex: none;
+  color: var(--gold-600);
 }
 
 /* ── 안내 문구 ─────────────────────────────────────────────────────────── */
@@ -344,4 +348,14 @@
 }
 .sub-table__cell[data-safe="true"] {
   color: var(--mint-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sub-screen,
+  .sub-hero__crown,
+  .sub-plan,
+  .sub-cta {
+    animation: none;
+    transition: none;
+  }
 }

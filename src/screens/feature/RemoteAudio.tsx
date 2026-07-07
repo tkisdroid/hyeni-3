@@ -35,6 +35,24 @@ const WAVE_DELAYS = [
   "-0.45s", "-0.65s", "-0.25s", "-0.85s", "-0.50s",
 ] as const;
 
+const TRUST_CARDS = [
+  {
+    icon: "🔔",
+    title: "아이에게 알림이 가요",
+    text: "청취가 시작되면 아이 기기에 알림이 표시돼요.",
+  },
+  {
+    icon: "⏱️",
+    title: "1분 후 자동 종료돼요",
+    text: "위급 상황 확인을 위한 짧은 청취만 지원해요.",
+  },
+  {
+    icon: "📝",
+    title: "기록이 남아요",
+    text: "가족의 안전과 투명성을 위해 청취 기록을 남겨요.",
+  },
+] as const;
+
 const pad2 = (n: number): string => String(n).padStart(2, "0");
 const makeRequestId = (): string => {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -193,19 +211,21 @@ export function RemoteAudio() {
       });
     } catch {
       requestIdRef.current = null;
-      show("청취 명령을 전송하지 못했어요", "⚠️");
+      show("아이 기기가 오프라인이거나 알림을 받을 수 없어요. 잠시 후 다시 시도해 주세요.", "⚠️");
       return;
     }
     if (!res.ok) {
       requestIdRef.current = null;
-      if (res.status === 402) show("원격 청취는 프리미엄 구독에서 지원돼요", "⭐");
+      if (res.status === 402) {
+        show("주변 소리 듣기는 프리미엄에서 사용할 수 있어요. SOS와 긴급 알림은 무료로 계속 받을 수 있어요.", "⭐");
+      }
       else if (res.status === 403) show("주 보호자만 원격 청취를 시작할 수 있어요", "🔒");
-      else show("청취 명령을 전송하지 못했어요", "⚠️");
+      else show("아이 기기가 오프라인이거나 알림을 받을 수 없어요. 잠시 후 다시 시도해 주세요.", "⚠️");
       return;
     }
     if (res.total === 0) {
       requestIdRef.current = null;
-      show("연결된 아이 기기를 찾지 못했어요", "⚠️");
+      show("연결된 아이 기기를 찾지 못했어요. 아이 앱이 설치되어 있고 로그인되어 있는지 확인해 주세요.", "⚠️");
       return;
     }
     // audit 세션 행 생성(마이크 캡처보다 먼저 — 크래시 시 정리 가능).
@@ -332,7 +352,19 @@ export function RemoteAudio() {
             <br />
             1분 동안 들을 수 있어요
           </div>
-          <div className="ra-note">🔔 아이에게 알림이 가요</div>
+          <div className="ra-trust-grid">
+            {TRUST_CARDS.map((item) => (
+              <div key={item.title} className="ra-trust-card">
+                <span className="ra-trust-card__icon" aria-hidden="true">
+                  {item.icon}
+                </span>
+                <span className="ra-trust-card__body">
+                  <span className="ra-trust-card__title">{item.title}</span>
+                  <span className="ra-trust-card__text">{item.text}</span>
+                </span>
+              </div>
+            ))}
+          </div>
           <button
             type="button"
             className="ra-audit-link hy-press"
@@ -344,15 +376,20 @@ export function RemoteAudio() {
         </div>
 
         {native ? (
-          <button
-            type="button"
-            className="ra-start hy-press"
-            onClick={() => void startListen()}
-            disabled={requestListen.isPending}
-          >
-            <Mic size={21} strokeWidth={2} color="#fff" />
-            {requestListen.isPending ? "연결 요청 중" : "듣기 시작"}
-          </button>
+          <div className="ra-start-wrap">
+            <div className="ra-start-note">
+              위급할 때만 사용해 주세요. 청취 시작 전 아이 기기에 알림이 전송돼요.
+            </div>
+            <button
+              type="button"
+              className="ra-start hy-press"
+              onClick={() => void startListen()}
+              disabled={requestListen.isPending}
+            >
+              <Mic size={21} strokeWidth={2} color="#fff" />
+              {requestListen.isPending ? "연결 요청 중" : "듣기 시작"}
+            </button>
+          </div>
         ) : (
           <div className="ra-webnote">
             <Smartphone size={18} strokeWidth={2.2} color="#6d4e9c" />

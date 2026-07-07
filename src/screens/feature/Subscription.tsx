@@ -31,11 +31,11 @@ import "./Subscription.css";
 
 /** 프리미엄 혜택 목록 (표현 데이터 — 화면 고정). */
 const BENEFITS = [
-  { icon: "ui/pin-heart.webp", t: "실시간 위치 확인", s: "아이의 이동 흐름을 더 촘촘하게 확인" },
-  { icon: "ui/shield-heart.webp", t: "주간 가족 리포트", s: "일정·준비물·대화·안전 알림을 한 번에 정리" },
-  { icon: "ui/ai-robot.png", t: "AI 일정 등록과 하루 요약", s: "음성·사진·텍스트로 일정을 빠르게 정리" },
-  { icon: "ui/menu-child-tracker.webp", t: "다자녀 관리", s: "프리미엄에서는 아이 2명까지 연결" },
-  { icon: "ui/menu-remote-audio.webp", t: "주변 소리 듣기", s: "위급할 때 보호자 확인 기능 제공" },
+  { icon: "ui/pin-heart.webp", t: "실시간 위치 확인", s: "아이의 현재 위치와 이동 흐름을 더 빠르게 확인해요" },
+  { icon: "ui/menu-child-tracker.webp", t: "다자녀 안심 관리", s: "두 아이까지 일정과 위치를 함께 관리해요" },
+  { icon: "ui/ai-robot.png", t: "AI 하루 요약", s: "일정·위치·안전 기록을 AI가 정리해 드려요" },
+  { icon: "ui/menu-remote-audio.webp", t: "주변 소리 듣기", s: "위급할 때 1분 동안 아이 주변 상황을 확인해요" },
+  { icon: "ui/shield-heart.webp", t: "일정·장소 무제한", s: "학원, 학교, 준비물, 장소를 넉넉하게 등록해요" },
 ] as const;
 
 // ── 플랜 비교표(S-02) — 값은 전부 tierPolicy 단일 소스에서 파생 ──
@@ -61,13 +61,15 @@ interface CompareRow {
 }
 const COMPARE_ROWS: readonly CompareRow[] = [
   { label: "아이 등록", cell: (t) => `${maxChildrenFor(t)}명` },
-  { label: "위치 보기", cell: (t) => locationLabel(t) },
   { label: "일정 저장", cell: (t) => limitLabel(scheduleLimitFor(t)) },
   { label: "장소 저장", cell: (t) => limitLabel(placeLimitFor(t)) },
+  { label: "위치 보기", cell: (t) => locationLabel(t) },
+  { label: "위치 이력", cell: (t) => (canUse(t, FEATURES.EXTENDED_HISTORY) ? YES : NO) },
   { label: "주변 소리 듣기", cell: (t) => (canUse(t, FEATURES.REMOTE_AUDIO) ? YES : NO) },
-  { label: "주간 리포트", cell: (t) => (canUse(t, FEATURES.WEEKLY_REPORT) ? YES : NO) },
   { label: "AI 하루 요약", cell: (t) => (canUse(t, FEATURES.AI_ANALYSIS) ? YES : NO) },
-  { label: "SOS · 안전 알림", cell: () => YES, safe: true },
+  { label: "주간 리포트", cell: (t) => (canUse(t, FEATURES.WEEKLY_REPORT) ? YES : NO) },
+  { label: "다중 위험구역", cell: (t) => (canUse(t, FEATURES.MULTI_GEOFENCE) ? YES : NO) },
+  { label: "SOS · 긴급 알림", cell: () => YES, safe: true },
 ];
 
 type Plan = "year" | "month";
@@ -127,6 +129,7 @@ export function Subscription() {
   // ready && isPremium 일 때만 활성 배너 노출. 조회 실패/미확정(ready=false)에서는
   // 무료로 강등하지 않고 기본 페이월(중립)만 보여준다(R9).
   const premiumActive = ready && isPremium;
+  const purchaseLabel = plan === "year" ? "연간으로 더 안심하기" : "월 2,900원으로 시작하기";
 
   // 활성 배너 보조 문구(체험 남은 일수 → 결제 주기 종료 → 기본).
   const activeSub = (() => {
@@ -157,7 +160,7 @@ export function Subscription() {
         <div className="sub-hero">
           <img className="sub-hero__crown" src={asset("ui/crown.webp")} alt="" />
           <div className="sub-hero__title">혜니 프리미엄</div>
-          <div className="sub-hero__sub">일정과 SOS는 무료로 시작하고, 더 자세한 안심 기능은 프리미엄으로 확장하세요</div>
+          <div className="sub-hero__sub">실시간 위치와 AI 요약으로 아이의 하루를 더 안심하게 확인하세요</div>
         </div>
 
         {/* 프리미엄 활성 배너 (실 티어) */}
@@ -170,7 +173,7 @@ export function Subscription() {
               <div className="sub-active__title">{view.planLabel} 이용 중</div>
               <div className="sub-active__sub">{activeSub}</div>
             </div>
-            <Check size={22} strokeWidth={3} color="#E0A93E" />
+            <Check className="sub-active__check" size={22} strokeWidth={3} />
           </div>
         )}
 
@@ -221,7 +224,7 @@ export function Subscription() {
                 <div className="sub-benefit__t">{b.t}</div>
                 <div className="sub-benefit__s">{b.s}</div>
               </div>
-              <Check className="sub-benefit__check" size={20} strokeWidth={3} color="#E0A93E" />
+              <Check className="sub-benefit__check" size={20} strokeWidth={3} />
             </div>
           ))}
         </div>
@@ -278,8 +281,9 @@ export function Subscription() {
         {/* 안내 (미구독 시에만) */}
         {!premiumActive && (
           <div className="sub-note">
-            가족 연결과 기본 안전 알림은 무료로 사용할 수 있어요. 표시 가격은 앱 안내용이며 최종 결제 금액은
-            Google Play 확인 화면 기준입니다.
+            {
+              "SOS와 긴급 안전 알림은 무료로 계속 제공돼요. 프리미엄은 실시간 위치와 AI 요약처럼 더 자세한 안심 기능을 열어드려요. 표시 가격은 앱 안내용이며 최종 결제 금액은 Google Play 확인 화면 기준입니다."
+            }
           </div>
         )}
 
@@ -297,7 +301,7 @@ export function Subscription() {
             disabled={busy}
           >
             <img src={asset("ui/crown.webp")} alt="" />
-            {busy ? "결제 진행 중…" : "구독 시작하기"}
+            {busy ? "결제 진행 중…" : purchaseLabel}
           </button>
         )}
 
