@@ -10,6 +10,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/auth/AuthContext";
 import { fetchReviewReward } from "@/lib/api/endpoints/reviewReward";
+import { resolveReviewRewardQueryScope } from "@/transform/reviewRewardScope";
 
 export interface UseReviewRewardResult {
   /** 스토어 리뷰 보상(리뷰 티어)이 부여되었는가. ready=false면 항상 false. */
@@ -22,16 +23,17 @@ export interface UseReviewRewardResult {
 
 /** 현재 가족의 리뷰 보상 여부(/api/review-rewards). 무료 한도 상향(리뷰 티어) 판정에 사용. */
 export function useReviewReward(): UseReviewRewardResult {
-  const { familyId, status } = useAuth();
+  const { familyId, status, role } = useAuth();
+  const scope = resolveReviewRewardQueryScope({ status, role, familyId });
   const query = useQuery({
     queryKey: ["reviewReward", familyId ?? ""],
     queryFn: () => fetchReviewReward(familyId as string),
-    enabled: status === "authenticated" && !!familyId,
+    enabled: scope.enabled,
   });
 
-  const ready = query.data !== undefined;
+  const ready = scope.readyWithoutFetch || query.data !== undefined;
   return {
-    rewarded: ready && query.data?.rewarded === true,
+    rewarded: !scope.readyWithoutFetch && ready && query.data?.rewarded === true,
     ready,
     isLoading: query.isLoading,
     isError: query.isError,

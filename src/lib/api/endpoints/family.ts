@@ -4,8 +4,9 @@
  * join/join-as-parent 는 서버가 세션을 재발급하므로 applyApiSession + setApiUser 필수.
  */
 import { apiGet, apiPost, apiPatch, childPhotoProxyUrl } from "../client";
-import { applyApiSession, setApiUser, type ApiUser } from "../session";
+import { applyApiSession, getApiUser, notifyTokens, setApiUser, type ApiUser } from "../session";
 import { normalizePhoneForStorage } from "@/transform/phone";
+import { reconcileApiUserWithFamilyMine } from "@/transform/sessionFamilySync";
 
 /**
  * 아이 기기 상태(웹 수집 부분집합). 서버 family_members.device_health(jsonb)에 저장.
@@ -128,6 +129,14 @@ function extractPhotoPath(urlOrPath: string): string | null {
 export async function getMyFamily(): Promise<FamilyInfo | null> {
   const data = await apiGet<FamilyMineResponse | null>("/api/family/mine");
   if (!data) return null;
+  const reconciledUser = reconcileApiUserWithFamilyMine(getApiUser(), {
+    familyId: data.familyId,
+    myRole: data.myRole ?? null,
+  });
+  if (reconciledUser && reconciledUser !== getApiUser()) {
+    setApiUser(reconciledUser);
+    notifyTokens();
+  }
   return {
     familyId: data.familyId,
     pairCode: data.pairCode ?? null,

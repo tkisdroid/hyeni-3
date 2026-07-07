@@ -65,6 +65,9 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   events/daily_supplies/memo/parent_alerts만 집계한다. 전용 서버 endpoint가 없으면 가짜 수치 금지.
   원격청취 감사 로그도 조회 endpoint가 없으므로 빈 상태 UI만 표시한다. Google Play 실제 가격은 basePlanId가 아니라
   Play Console/결제 확인 화면 기준으로 판단한다.
+- **리뷰 보상 티어(2026-07-08)**: `/api/review-rewards`는 부모 전용 서버 계약이다. 아이/선생님 세션에서
+  엔타이틀먼트가 필요해도 이 API를 호출하지 말고 reviewed=false로 확정한다. 아이 화면 CDP 로그에 403 네트워크 오류가
+  남으면 실패로 보고 `resolveReviewRewardQueryScope` 규칙을 확인한다.
 - **출시 전 신뢰 UX 문구 가드(2026-07-07)**: 안전은 무료, 상세 안심은 프리미엄이라는 경계가 흔들리면 안 된다.
   구독·원격청취·AI 일정 문구는 `tests/subscriptionTrustCopy.test.mjs`, `tests/remoteAudioTrustCopy.test.mjs`,
   `tests/aiScheduleUxCopy.test.mjs`로 회귀 보호한다. SOS·긴급 알림을 프리미엄 혜택처럼 쓰지 말고,
@@ -74,6 +77,10 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   push context에 userId/familyId/role+refresh가 남은 경우 앱이 1회 `/auth/refresh`로 복구하되,
   응답 userId/familyId/role이 context와 일치할 때만 저장한다. 실기기 검증 스크립트에서 refresh 토큰 값을 출력하거나
   임의 회전시키지 않는다.
+- **세션 family id 정본(2026-07-08)**: access token claim의 `family_id`가 과거 가족 값으로 남을 수 있다.
+  `/api/family/mine` 응답이 현재 가족 정본이므로, 가족 조회 성공 시 `hyeni-api-session-v1.user.family_id`와
+  role을 `/mine` 기준으로 보정해야 한다. 실기기 검증도 token payload만 보지 말고 localStorage user와 `/mine`
+  familyId가 일치하는지 함께 확인한다.
 - **도보 길찾기**: Kakao affiliate 403 → 서버(`worker/routes/kakao.ts`)가 OSRM foot 으로 폴백해
   Kakao 응답 형태로 합성(클라 무변경). 트래픽 증가 시 제휴/자체 호스팅 필요.
 

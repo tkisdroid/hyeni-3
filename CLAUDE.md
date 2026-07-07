@@ -52,6 +52,13 @@
 - 식별자 오귀속 방지: 준비물 `DailySupply.child_user_id`는 이름과 달리 member id다. 부모 세션에서 대상 아이가
   명시되지 않으면 첫 아이로 폴백하지 않고 저장을 실패시킨다(`resolveDailySupplyChildMemberId`).
   아이 설정 화면도 본인 `user_id`가 매칭된 child member만 사용하고 첫 아이로 대체하지 않는다.
+- 세션 family id 정본: access token claim의 `family_id`가 과거 가족 값으로 남을 수 있다.
+  현재 가족은 `/api/family/mine` 응답이 정본이며, 클라이언트는 가족 조회 성공 시
+  `hyeni-api-session-v1.user.family_id`와 role을 `/mine` 기준으로 보정해야 한다. 실기기 검증도
+  token payload만 보지 말고 localStorage user와 `/mine` familyId 일치를 함께 확인한다.
+- 리뷰 보상 티어: `/api/review-rewards`는 부모 전용 계약이다. 아이/선생님 세션에서 엔타이틀먼트가 필요해도
+  서버 호출을 하지 말고 reviewed=false로 확정한다. 아이 화면 CDP 로그에 403이 남으면 실패로 보고
+  `resolveReviewRewardQueryScope` 규칙을 먼저 확인한다.
 
 ### G. 오케스트레이션 사용 기준
 - **넓은 탐색·감사** = 병렬 에이전트 + 적대 검증(REFUTED 걸러내고 **CONFIRMED 만** 수정).
