@@ -40,7 +40,7 @@
    이후 서버에서 OSRM 합성으로 인앱 복원 — 클라 계약 보존 / 기기 미리포트 → "—"와 대기 문구, 가짜 숫자 금지)
 
 ### E. 실사용 보호가 기능보다 우선
-- **실사용 기기(razr=혜니)는 무접촉** — 어떤 adb/세션 조작도 금지.
+- **실사용 기기(razr=혜니)는 검증에 사용할 수 있으나, 혜니 계정 데이터·페어링·세션이 유실되지 않도록 한다.**
 - 파괴적 작업 전 **안전 불변식부터 확인**(예: A17 페어링 전 프리미엄 캡=2 확인으로 razr 밀림 0 보장).
 - 테스트로 만든 데이터·바꾼 설정은 **반드시 원복/삭제**(이벤트·메모·SOS·notification_settings…).
 - 라이브 앱 refresh 토큰은 절대 조작하지 않는다(access 만 읽기 — 회전시키면 세션 파괴).
@@ -59,7 +59,14 @@
 - **결론 먼저 한 줄**, 검증 결과는 표, 리스크·미해결·사용자 몫(카카오 콘솔 등록, 스토어 업로드 등)을 끝에 정직하게.
 - 완료 근거는 "○○ 실기기 확인"처럼 **관측된 사실**로 쓴다("될 것입니다" 금지).
 
-### I. 실기기 검증 치트시트 (함정 포함)
+### I. 학습 문서 동기화 · 완료 루틴
+- 코드 수정 또는 지침 반영이 있으면 이번 작업에서 새로 확인한 운영 규칙·검증 함정·반복 절차를
+  `AGENTS.md`와 `CLAUDE.md`에 함께 반영한다. 두 문서의 안전 규칙·기기 구성·완료 루틴이 서로 어긋나면 안 된다.
+- 코드 수정 또는 지침 반영 후에는 기본적으로 관련 검증을 끝내고, 변경분을 커밋·푸시한 뒤,
+  연결된 Android 기기에 최신 빌드를 설치한다. 문서만 바뀐 경우에도 커밋·푸시는 수행하며, 설치가 불필요하거나 불가능하면
+  그 사유를 최종 보고에 명확히 남긴다.
+
+### J. 실기기 검증 치트시트 (함정 포함)
 - **adb**: Git Bash 는 `MSYS_NO_PATHCONV=1` 필요(/sdcard 변환 방지) · razr 스크린샷은 `-d 4630947043778501762` ·
   `keyevent 26` 은 토글(끄기 전 상태 확인) · 기기 offline/unauthorized 는 `adb kill-server && start-server`.
 - **CDP(WebView)**: `adb forward tcp:922x localabstract:webview_devtools_remote_<pid>` · websocket 은
@@ -197,7 +204,7 @@ hyeni-3/
   - **③미등록 장소 도착(Family Link식)**: `lib/arrivalDetect.ts` 신규 — `upsert_child_location`(rest-shim-rpc) waitUntil 훅. 앵커 150m·**5분 체류**·등록장소 150m 내 skip(네이티브 지오펜스 담당)·동일장소 2h 쿨다운. 장소명=Kakao coord2address 역지오코딩(일반 REST 키 동작). `child_arrival_state` 테이블(ALTER 완료). 실기기: 부모 FCM "📍 혜니 도착 — '경기도 성남시 분당구 무지개로 144' 근처에 도착해 5분째 머물고 있어요". 등록 장소(집 도착)는 네이티브 지오펜스로 기동작 확인. 한글 조사(이/가) 받침 처리.
   - 검증 방법 메모: 도착 감지 트리거는 `child_arrival_state.anchor_since` 6분 백데이트+동일좌표 upsert 1회(curl, 아이 토큰·apikey:worker). CDP fetch 는 CORS 로 /rest/v1 불가 — 호스트 curl 사용.
   - **대화 위치 공유·사진 전송(TK 제보 → 실구현)**: MemoChat 컴포저 버튼 실배선 — 위치=GPS(5s)→내 서버위치 폴백→역지오코딩→`[[loc:lat,lng|주소]]`(탭=카카오맵), 사진=리사이즈→**기존 child-photos R2 재사용**(`{familyId}/memo-*.jpg`, 가족 격리·서버 무변경)→`[[img:key]]`(표시=childPhotoProxyUrl ?token=). memoView 리치 파싱(kind). 실기기 E2E: 위치 버블("동탄대로 683")·R2 업로드·이미지 로드(320x240).
-  - **기기 구성(2026-07-06 오전, TK 지시)**: **razr=혜니(실사용! 학교 — 절대 무접촉)**, A17=아이 테스트 계정 "테스티"(3fd1f52c), S25=부모. razr 현역 uid=666fcc04(아침 재연결분 — uid 종속 시드는 이 값 기준, ai_parent_settings 재시드됨). ⚠️ 부모 FCM 토큰 정리로 **S25 앱 1회 실행해야 부모 푸시 재개**. ⚠️ CDP 함정: awaitPromise 긴 evaluate 가 A17 에서 hang — 클릭/조회는 짧은 동기 evaluate 로 분할, canvas.toBlob 대신 toDataURL.
+  - **기기 구성(2026-07-06 오전, TK 지시)**: razr=아이 "혜니" 실사용, A17=아이 테스트 계정 "테스티"(3fd1f52c), S25=부모. razr 현역 uid=666fcc04(아침 재연결분 — uid 종속 시드는 이 값 기준, ai_parent_settings 재시드됨). ⚠️ 부모 FCM 토큰 정리로 **S25 앱 1회 실행해야 부모 푸시 재개**. ⚠️ CDP 함정: awaitPromise 긴 evaluate 가 A17 에서 hang — 클릭/조회는 짧은 동기 evaluate 로 분할, canvas.toBlob 대신 toDataURL.
 
 - ✅ **11단계: 장소 지도 UX + 미도착 알림 실사고 수정(2026-07-06 낮)**
   - **①장소 등록(PlaceForm) 지도 3종(TK 제보)**: 진입 시 현재 위치 기본 중심(geolocation 4s, 검색/선택 우선) · 하단 핸들 드래그로 지도 확대(160~520px, KakaoMap ResizeObserver relayout+중심유지) · **우측 하단 현재 위치 버튼**(뷰 이동 전용). KakaoMap `recenterKey` prop 신설 — lastCenterRef 가 같은 좌표 재설정을 무시하므로 키 증가로 강제 재이동. S25 실기기: 서울 검색 이동→버튼 탭→실위치(동탄) 복귀 확인.
