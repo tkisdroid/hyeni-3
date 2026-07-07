@@ -809,3 +809,23 @@
   justify-content: center;
   flex: none;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .ch-ticker__dot,
+  .ch-ticker__text,
+  .ch-ai__spark,
+  .ch-ai__spark2,
+  .ch-ai__photo,
+  .ch-sos__fill {
+    animation: none;
+    transition: none;
+  }
+
+  .ch-ticker__text {
+    transform: none;
+  }
+
+  .ch-sos.is-holding .ch-sos__fill {
+    transform: scaleX(1);
+  }
+}

@@ -141,7 +141,7 @@ export function ChildHome() {
   const timetable = todayEvents.map((e) => ({
     id: e.id,
     time: e.time,
-    timeColor: e.tag === "진행 중" ? "var(--hy-accent-text)" : "#A99FA4",
+    timeColor: e.tag === "진행 중" ? "var(--hy-accent-text)" : "var(--fg-faint)",
     dotColor: e.color,
     soft: e.soft,
     emoji: e.emoji,
@@ -327,7 +327,7 @@ export function ChildHome() {
             </span>
           </div>
           <button type="button" className="ch-next__cta hy-press" onClick={() => navigate("/route")}>
-            <MapPin size={19} strokeWidth={2.2} color="#fff" />
+            <MapPin size={19} strokeWidth={2.2} color="var(--bg-card)" />
             길찾기
           </button>
         </div>
@@ -364,7 +364,7 @@ export function ChildHome() {
               className="ch-qa hy-press"
               onClick={() => navigate("/child/memo")}
             >
-              <span className="ch-qa__icon" style={{ background: "#FDE7F1" }}>
+              <span className="ch-qa__icon" style={{ background: "var(--rose-soft)" }}>
                 <img src={asset("ui/chat-heart.webp")} alt="" style={{ width: 30, height: 30, objectFit: "contain" }} />
               </span>
               <span className="ch-qa__main">
@@ -378,7 +378,7 @@ export function ChildHome() {
               className="ch-qa hy-press"
               onClick={() => navigate("/child/sticker")}
             >
-              <span className="ch-qa__icon" style={{ background: "#FFF3D6" }}>
+              <span className="ch-qa__icon" style={{ background: "var(--cream-soft)" }}>
                 <img src={asset("sticker/best.webp")} alt="" style={{ width: 40, height: 40, objectFit: "contain" }} />
               </span>
               <span className="ch-qa__main">
@@ -389,7 +389,7 @@ export function ChildHome() {
                     : "칭찬 받으면 스티커가 도착해 💝"}
                 </span>
               </span>
-              <ChevronRight size={20} strokeWidth={2.4} color="#C9BFC4" style={{ flex: "none" }} />
+              <ChevronRight size={20} strokeWidth={2.4} color="var(--fg-disabled)" style={{ flex: "none" }} />
             </button>
 
             <button
@@ -397,7 +397,7 @@ export function ChildHome() {
               className="ch-qa hy-press"
               onClick={() => navigate("/friend-play")}
             >
-              <span className="ch-qa__icon" style={{ background: "#FDF0DA" }}>
+              <span className="ch-qa__icon" style={{ background: "var(--cream-soft)" }}>
                 <img
                   src={asset("ui/menu-friend-playdate.webp")}
                   alt=""
@@ -408,7 +408,7 @@ export function ChildHome() {
                 <span className="ch-qa__title">친구랑 놀기</span>
                 <span className="ch-qa__sub">같이 놀 친구를 찾아 초대 보내기</span>
               </span>
-              <ChevronRight size={20} strokeWidth={2.4} color="#C9BFC4" style={{ flex: "none" }} />
+              <ChevronRight size={20} strokeWidth={2.4} color="var(--fg-disabled)" style={{ flex: "none" }} />
             </button>
           </div>
         </section>
@@ -425,15 +425,15 @@ export function ChildHome() {
             <button
               type="button"
               className="ch-call__btn hy-press"
-              style={{ background: "#FDE7F1" }}
+              style={{ background: "var(--rose-soft)" }}
               onClick={() => callParent("mom", "엄마")}
             >
               <img src={asset("family/mom.webp")} alt="" />
               <span className="ch-call__btn-text">
-                <span className="ch-call__name" style={{ color: "#B0477A" }}>
+                <span className="ch-call__name" style={{ color: "var(--rose-text)" }}>
                   엄마
                 </span>
-                <span className="ch-call__sub" style={{ color: "#C77CA0" }}>
+                <span className="ch-call__sub" style={{ color: "var(--rose-400)" }}>
                   전화 걸기
                 </span>
               </span>
@@ -441,15 +441,15 @@ export function ChildHome() {
             <button
               type="button"
               className="ch-call__btn hy-press"
-              style={{ background: "#E6F2FB" }}
+              style={{ background: "var(--blue-soft)" }}
               onClick={() => callParent("dad", "아빠")}
             >
               <img src={asset("family/dad.webp")} alt="" />
               <span className="ch-call__btn-text">
-                <span className="ch-call__name" style={{ color: "#2E6DA4" }}>
+                <span className="ch-call__name" style={{ color: "var(--blue-text)" }}>
                   아빠
                 </span>
-                <span className="ch-call__sub" style={{ color: "#6FA0C7" }}>
+                <span className="ch-call__sub" style={{ color: "var(--blue-500)" }}>
                   전화 걸기
                 </span>
               </span>
@@ -460,7 +460,7 @@ export function ChildHome() {
         {/* 오늘 시간표 */}
         <section>
           <SectionHeader
-            iconBg="#FDE7F1"
+            iconBg="var(--rose-soft)"
             icon={<img src={asset("ui/calendar-heart.webp")} alt="" />}
             title="오늘 시간표"
             action={
@@ -500,7 +500,7 @@ export function ChildHome() {
         {/* 준비물 · 숙제 */}
         <section>
           <SectionHeader
-            iconBg="#FDF0DA"
+            iconBg="var(--cream-soft)"
             icon={<img src={asset("cat/study.webp")} alt="" />}
             title="준비물 · 숙제"
             action={
@@ -547,7 +547,7 @@ export function ChildHome() {
                       aria-label="취소"
                       onClick={cancelEdit}
                     >
-                      <X size={15} strokeWidth={2.4} color="#E5484D" />
+                      <X size={15} strokeWidth={2.4} color="var(--danger-500)" />
                     </button>
                   </div>
                 ) : (
@@ -558,11 +558,11 @@ export function ChildHome() {
                       aria-label="완료 토글"
                       onClick={() => toggleSupply(s)}
                       style={{
-                        background: s.done ? "var(--hy-accent)" : "#fff",
+                        background: s.done ? "var(--hy-accent)" : "var(--bg-card)",
                         border: s.done ? "none" : "2px solid var(--line-strong)",
                       }}
                     >
-                      <Check size={15} strokeWidth={3} color="#fff" style={{ opacity: s.done ? 1 : 0 }} />
+                      <Check size={15} strokeWidth={3} color="var(--bg-card)" style={{ opacity: s.done ? 1 : 0 }} />
                     </button>
                     <button type="button" className="ch-prep-labelbtn" onClick={() => toggleSupply(s)}>
                       {s.kind === "hw" && (
@@ -589,7 +589,7 @@ export function ChildHome() {
                       aria-label="이름 바꾸기"
                       onClick={() => startEdit(s)}
                     >
-                      <Pencil size={14} strokeWidth={2.2} color="#C9BFC4" />
+                      <Pencil size={14} strokeWidth={2.2} color="var(--fg-disabled)" />
                     </button>
                     <button
                       type="button"
@@ -598,7 +598,7 @@ export function ChildHome() {
                       onClick={() => delSupply(s)}
                       disabled={remove.isPending}
                     >
-                      <Trash2 size={14} strokeWidth={2.2} color="#E5484D" />
+                      <Trash2 size={14} strokeWidth={2.2} color="var(--danger-500)" />
                     </button>
                   </div>
                 ),
@@ -634,7 +634,7 @@ export function ChildHome() {
                     setDraft("");
                   }}
                 >
-                  <X size={15} strokeWidth={2.4} color="#E5484D" />
+                  <X size={15} strokeWidth={2.4} color="var(--danger-500)" />
                 </button>
               </div>
             ) : (
@@ -683,7 +683,7 @@ export function ChildHome() {
             <span className="ch-sos__sub">3초 누르면 엄마·아빠한테 바로 연결</span>
           </span>
           <span className="ch-sos__chev">
-            <ChevronRight size={20} strokeWidth={2.6} color="#fff" />
+            <ChevronRight size={20} strokeWidth={2.6} color="var(--bg-card)" />
           </span>
         </button>
       </div>

@@ -81,6 +81,8 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 - 화면 패턴 정답 = `src/screens/parent/ParentHome.tsx`. 탭 화면=각 Shell 하위, 상세=PushShell(뒤로가기 `navigate(-1)`).
 - strict TS: `import type`, 미사용 금지, `<button type="button">`, 상태는 불변 업데이트(spread).
 - LLM 호출·크레딧 소모·원격 제어(force_ring 등)는 **사용자 버튼 onClick 에서만**(자동 실행 금지).
+- 아이 홈처럼 티커/스파클/SOS hold 등 움직임이 있는 화면은 `prefers-reduced-motion`에서 애니메이션·전환을 멈춘다.
+  ChildHome JSX의 주요 색상은 직접 hex 대신 토큰 변수를 사용하며, `tests/mobileViewportCss.test.mjs`가 회귀를 막는다.
 
 ## 작업 원칙 (실증된 사고방식 — CLAUDE.md §0.5 와 동일)
 

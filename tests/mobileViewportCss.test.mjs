@@ -32,3 +32,21 @@ test("스티커 전송 화면은 앱 프레임 안에서 본문만 스크롤된�
   assert.match(css, /\.ss-body\s*\{[^}]*overflow-y:\s*auto/s);
   assert.doesNotMatch(css, /120px \+ env\(safe-area-inset-bottom/);
 });
+
+test("아이 홈의 주요 애니메이션은 reduced motion에서 멈춘다", () => {
+  const css = readCss("src/screens/child/ChildHome.css");
+
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(css, /\.ch-ticker__dot[\s\S]*\.ch-ticker__text[\s\S]*\.ch-ai__spark[\s\S]*\.ch-ai__spark2[\s\S]*\.ch-ai__photo[\s\S]*\.ch-sos__fill[\s\S]*animation:\s*none/s);
+  assert.match(css, /\.ch-ticker__dot[\s\S]*\.ch-ticker__text[\s\S]*\.ch-ai__spark[\s\S]*\.ch-ai__spark2[\s\S]*\.ch-ai__photo[\s\S]*\.ch-sos__fill[\s\S]*transition:\s*none/s);
+});
+
+test("아이 홈 JSX의 주요 색상은 직접 hex 대신 토큰을 사용한다", () => {
+  const source = readCss("src/screens/child/ChildHome.tsx");
+
+  assert.doesNotMatch(source, /color="#[0-9A-Fa-f]{3,8}"/);
+  assert.doesNotMatch(source, /background:\s*"#[0-9A-Fa-f]{3,8}"/);
+  assert.match(source, /var\(--danger-500\)/);
+  assert.match(source, /var\(--rose-soft\)/);
+  assert.match(source, /var\(--fg-disabled\)/);
+});
