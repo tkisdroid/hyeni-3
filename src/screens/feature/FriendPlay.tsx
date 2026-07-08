@@ -9,6 +9,8 @@ import {
   useActivePlaydateSession,
   useCreatePlaydateInvite,
   useEndPlaydate,
+  usePlaydateEnabled,
+  useSetPlaydateEnabled,
 } from "@/queries/usePlaydate";
 import type { PlaydateCandidate } from "@/lib/api/endpoints/playdate";
 import "./FriendPlay.css";
@@ -49,11 +51,14 @@ export function FriendPlay() {
   const { show } = useToast();
   const { role } = useAuth();
 
-  const candidatesQ = usePlaydateCandidates();
+  const isParent = role === "parent";
+  const candidatesQ = usePlaydateCandidates(!isParent);
   const pendingQ = usePendingPlaydateInvites();
   const activeQ = useActivePlaydateSession();
   const createInvite = useCreatePlaydateInvite();
   const endPlaydate = useEndPlaydate();
+  const enabledQ = usePlaydateEnabled();
+  const setEnabled = useSetPlaydateEnabled();
 
   const active = activeQ.data ?? null;
   const candidates = candidatesQ.data?.candidates ?? [];
@@ -64,6 +69,17 @@ export function FriendPlay() {
 
   const canSend = role === "child";
   const sending = createInvite.isPending;
+
+  const playdateEnabled = enabledQ.data?.playdate_enabled ?? true;
+
+  const togglePlaydateEnabled = () => {
+    if (setEnabled.isPending) return;
+    const next = !playdateEnabled;
+    setEnabled.mutate(next, {
+      onSuccess: () => show(next ? "친구놀이를 허용했어요" : "친구놀이를 껐어요", "🎈"),
+      onError: () => show("친구놀이 설정 저장에 실패했어요", "⚠️"),
+    });
+  };
 
   const onSend = async () => {
     if (candidates.length === 0) return;
@@ -100,6 +116,98 @@ export function FriendPlay() {
   };
 
   const notice = candidateNotice(softError, candidates.length === 0);
+
+  if (role === "parent") {
+    return (
+      <div className="fp-screen">
+        <div className="fp-header">
+          <button
+            type="button"
+            className="fp-back hy-press"
+            aria-label="뒤로"
+            onClick={() => navigate(-1)}
+          >
+            <ChevronLeft size={22} strokeWidth={2.2} color="var(--fg-secondary)" />
+          </button>
+          <span className="fp-header__title">친구놀이 설정</span>
+        </div>
+
+        <div className="fp-content">
+          <div className="fp-hero fp-hero--parent">
+            <img className="fp-hero__mascot" src={asset("ui/menu-friend-playdate.webp")} alt="" />
+            <div className="fp-hero__title">친구놀이 설정</div>
+            <div className="fp-hero__sub">
+              아이 기기에서 친구놀이 요청을 보낼 수 있어요.
+              <br />
+              부모님이 허용 조건을 먼저 정해 주세요.
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="fp-setting hy-press"
+            aria-pressed={playdateEnabled}
+            onClick={togglePlaydateEnabled}
+            disabled={enabledQ.isLoading || setEnabled.isPending}
+          >
+            <span className="fp-setting__icon">🎈</span>
+            <span className="fp-setting__main">
+              <span className="fp-setting__title">친구놀이 요청 허용</span>
+              <span className="fp-setting__sub">
+                {playdateEnabled
+                  ? "아이가 안전한 장소에서 근처 친구에게 요청할 수 있어요"
+                  : "아이 화면에서 친구찾기와 요청 보내기가 꺼져요"}
+              </span>
+            </span>
+            <span className="fp-setting__switch" data-on={playdateEnabled}>
+              <span className="fp-setting__knob" />
+            </span>
+          </button>
+
+          <div className="fp-parent-card">
+            <div className="fp-parent-card__title">허용 기준</div>
+            <div className="fp-parent-rule">
+              <span>1</span>
+              양쪽 가족 모두 친구놀이를 켠 경우에만 보여요.
+            </div>
+            <div className="fp-parent-rule">
+              <span>2</span>
+              아이가 위험 구역 밖에 있고, 현재 위치가 확인될 때만 요청할 수 있어요.
+            </div>
+            <div className="fp-parent-rule">
+              <span>3</span>
+              진행 중인 친구놀이는 부모님이 언제든 종료할 수 있어요.
+            </div>
+          </div>
+
+          {active ? (
+            <div className="fp-connected fp-connected--parent">
+              <div className="fp-connected__badge">진행 중</div>
+              <div className="fp-connected__friend">{active.friend_child_name ?? "친구"}</div>
+              {active.place_name ? (
+                <div className="fp-connected__place">
+                  <MapPin size={14} strokeWidth={2} color="var(--mint-text)" />
+                  {active.place_name}
+                </div>
+              ) : null}
+              <button
+                type="button"
+                className="fp-end hy-press"
+                onClick={onEnd}
+                disabled={endPlaydate.isPending}
+              >
+                친구놀이 종료
+              </button>
+            </div>
+          ) : (
+            <div className="fp-note fp-note--parent">
+              현재 진행 중인 친구놀이가 없어요.
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fp-screen">

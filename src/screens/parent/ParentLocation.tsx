@@ -27,8 +27,13 @@ import {
   type StayPoint,
 } from "@/transform/stayPoints";
 import { TIERS, locationModeFor } from "@/transform/tierPolicy";
-import { parseAppDateKey, todayDateKey } from "@/transform/dateKey";
+import { parseAppDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
+import {
+  clampHistoryOffsetMinute,
+  getHistoryDayKey,
+  getHistoryDayWindow,
+} from "@/transform/locationHistoryWindow";
 import { placePhoneCall } from "@/lib/native/phone";
 import { requestLocationRefresh } from "@/lib/api/endpoints/remote";
 import type { LocationHistoryPoint } from "@/lib/api/endpoints/location";
@@ -146,15 +151,10 @@ export function ParentLocation() {
   const premiumOpen = !tierKnown || mode === "realtime";
 
   const now = useMemo(() => new Date(), [locations]);
-  const todayKey = useMemo(() => todayDateKey(now), [now]);
-  const dayStartMs = useMemo(() => {
-    const today = parseAppDateKey(todayKey);
-    return today
-      ? new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
-      : new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  }, [now, todayKey]);
-  const currentMinuteOfDay = Math.min(1439, now.getHours() * 60 + now.getMinutes());
-  const [scrubMinute, setScrubMinute] = useState(currentMinuteOfDay);
+  const historyWindow = useMemo(() => getHistoryDayWindow(now), [now]);
+  const historyDayKey = useMemo(() => getHistoryDayKey(now), [now]);
+  const historyMaxOffsetMinute = historyWindow.maxOffsetMinutes;
+  const [scrubOffsetMinute, setScrubOffsetMinute] = useState(historyMaxOffsetMinute);
 
   // 대상 아이 = 전역 활성 아이(스위치는 부모 홈에서만 — 이 화면엔 전환 UI 없음).
   // 예외: 알림/SOS/도착에서 `?child=<user_id>` 로 진입하면 그 아이를 우선(위급 아이 — 안전 규칙).
@@ -197,15 +197,13 @@ export function ParentLocation() {
   // 무료(잠금)에서는 항상 실시간 화면(잠금 오버레이). 토글은 잠금이 아닐 때만 노출.
   const activeView: "live" | "history" = isLocked ? "live" : view;
   useEffect(() => {
-    if (activeView === "history") setScrubMinute(currentMinuteOfDay);
-  }, [activeView, selected?.id]);
+    if (activeView === "history") setScrubOffsetMinute(historyMaxOffsetMinute);
+  }, [activeView, selected?.id, historyMaxOffsetMinute]);
 
-  // 오늘 0시(로컬) ~ 현재 ISO. 보기 전환 시점 기준으로 고정(쿼리 캐시 안정).
+  // 오늘경로는 오전 8시를 하루 시작으로 본다. 새벽(00~07시)은 전날 경로에 이어 붙인다.
   const historyRange = useMemo(() => {
-    const n = new Date();
-    const start = new Date(n.getFullYear(), n.getMonth(), n.getDate(), 0, 0, 0, 0);
-    return { start: start.toISOString(), end: n.toISOString() };
-  }, [activeView]);
+    return { start: historyWindow.start.toISOString(), end: historyWindow.end.toISOString() };
+  }, [historyWindow]);
 
   // 오늘경로는 프리미엄 전용(EXTENDED_HISTORY). 미확정(unknown)은 R9로 잠그지 않는다.
   const historyEnabled = activeView === "history" && premiumOpen;
@@ -219,13 +217,17 @@ export function ParentLocation() {
     () => buildTrailPoints(history, selected?.user_id ?? null),
     [history, selected?.user_id],
   );
-  const effectiveScrubMinute = Math.min(scrubMinute, currentMinuteOfDay);
-  const scrubMs = dayStartMs + effectiveScrubMinute * 60_000;
+  const effectiveScrubOffsetMinute = clampHistoryOffsetMinute(
+    scrubOffsetMinute,
+    historyMaxOffsetMinute,
+  );
+  const scrubMs = historyWindow.startMs + effectiveScrubOffsetMinute * 60_000;
   const trail = useMemo(
     () => timedTrail.filter((p) => p.ms <= scrubMs).map((p) => ({ lat: p.lat, lng: p.lng })),
     [scrubMs, timedTrail],
   );
   const scrubChildPoint = trail.length > 0 ? trail[trail.length - 1] : null;
+  const historyChildPoint = scrubChildPoint ?? (loc ? { lat: loc.lat, lng: loc.lng } : null);
   // 출발 마커(첫 위치). 현재 마커는 지도의 child 아바타 오버레이가 담당.
   const trailStart: MapPlace[] = trail.length
     ? [{ lat: trail[0].lat, lng: trail[0].lng, name: "출발" }]
@@ -239,10 +241,10 @@ export function ParentLocation() {
   const selectedTodayEvents = useMemo(
     () =>
       filterEventsForChild(
-        (events ?? []).filter((event) => event.date_key === todayKey),
+        (events ?? []).filter((event) => event.date_key === historyDayKey),
         selected?.id ?? null,
       ),
-    [events, todayKey, selected?.id],
+    [events, historyDayKey, selected?.id],
   );
   const stayLabels = useMemo(
     () => stayPoints.map((s) => scheduleStayLabel(s, selectedTodayEvents) ?? stayPlaceLabel(s, places)),
@@ -383,8 +385,8 @@ export function ParentLocation() {
         <KakaoMap
           className="pl-map"
           child={
-            scrubChildPoint
-              ? { lat: scrubChildPoint.lat, lng: scrubChildPoint.lng, name: childName, avatar: childAvatar }
+            historyChildPoint
+              ? { lat: historyChildPoint.lat, lng: historyChildPoint.lng, name: childName, avatar: childAvatar }
               : null
           }
           route={trail}
@@ -444,11 +446,15 @@ export function ParentLocation() {
             className="pl-scrub__range"
             type="range"
             min={0}
-            max={currentMinuteOfDay}
-            value={effectiveScrubMinute}
-            onChange={(e) => setScrubMinute(Number(e.target.value))}
+            max={historyMaxOffsetMinute}
+            value={effectiveScrubOffsetMinute}
+            onChange={(e) => setScrubOffsetMinute(Number(e.target.value))}
             aria-label="오늘 경로 시간 선택"
           />
+          <div className="pl-scrub__ticks" aria-hidden="true">
+            <span>{formatClockHM(historyWindow.startMs)}</span>
+            <span>{formatClockHM(historyWindow.endMs)}</span>
+          </div>
           <div className="pl-scrub__legend">
             <span><i className="pl-scrub__line" /> 이동선</span>
             <span><i className="pl-scrub__dot" /> 머문 곳</span>
@@ -539,6 +545,7 @@ export function ParentLocation() {
 
       {/* 하단 — 오늘 경로(스테이포인트 목록) */}
       {activeView === "history" && premiumOpen && stayPoints.length > 0 && (
+        <>
         <div className={`pl-sheet pl-stays${staysCollapsed ? " pl-stays--collapsed" : ""}`}>
           <div
             className="pl-stays__grip"
@@ -565,7 +572,13 @@ export function ParentLocation() {
           >
             <div className="pl-sheet__handle" />
           </div>
-          <div className="pl-stays__head">
+          <div
+            className="pl-stays__head"
+            onPointerDown={onStaysGripDown}
+            onPointerMove={onStaysGripMove}
+            onPointerUp={onStaysGripUp}
+            onPointerCancel={onStaysGripUp}
+          >
             <span className="pl-stays__title">오늘 머문 곳</span>
             <span className="pl-stays__count">{visibleStayPoints.length}/{stayPoints.length}곳</span>
           </div>
@@ -593,6 +606,16 @@ export function ParentLocation() {
             })}
           </div>
         </div>
+        {staysCollapsed && (
+          <button
+            type="button"
+            className="pl-stays-reopen hy-press"
+            onClick={() => setStaysCollapsed(false)}
+          >
+            오늘 머문 곳 {visibleStayPoints.length}곳
+          </button>
+        )}
+        </>
       )}
 
       {/* 하단 상세 카드 — 실시간(또는 경로에 스테이포인트가 없을 때) */}

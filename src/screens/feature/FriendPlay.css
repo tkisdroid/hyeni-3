@@ -48,6 +48,9 @@
   text-align: center;
   padding: 6px 0 20px;
 }
+.fp-hero--parent {
+  padding-bottom: 16px;
+}
 .fp-hero__mascot {
   width: 100px;
   height: 100px;
@@ -210,6 +213,120 @@
   text-align: center;
   line-height: 1.5;
 }
+.fp-note--parent {
+  background: var(--bg-card);
+  color: var(--fg-tertiary);
+}
+
+/* ── 부모 설정 화면 ───────────────────────────────────────────────────── */
+.fp-setting {
+  width: 100%;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--bg-card);
+  box-shadow: 0 12px 30px rgba(32, 26, 29, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  --press: 0.98;
+}
+.fp-setting:disabled {
+  opacity: 0.62;
+}
+.fp-setting__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--cream-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  font-size: 20px;
+}
+.fp-setting__main {
+  flex: 1;
+  min-width: 0;
+}
+.fp-setting__title {
+  display: block;
+  font-size: 15px;
+  font-weight: 850;
+  color: var(--fg-primary);
+}
+.fp-setting__sub {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--fg-muted);
+  line-height: 1.4;
+}
+.fp-setting__switch {
+  width: 48px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--line-soft);
+  position: relative;
+  flex: none;
+  transition: background 0.18s ease;
+}
+.fp-setting__switch[data-on="true"] {
+  background: var(--mint-500);
+}
+.fp-setting__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  box-shadow: 0 2px 5px rgba(32, 26, 29, 0.18);
+  transition: left 0.18s ease;
+}
+.fp-setting__switch[data-on="true"] .fp-setting__knob {
+  left: 22px;
+}
+.fp-parent-card {
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--line-hair);
+}
+.fp-parent-card__title {
+  font-size: 13px;
+  font-weight: 850;
+  color: var(--fg-primary);
+  margin-bottom: 10px;
+}
+.fp-parent-rule {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 12.5px;
+  font-weight: 650;
+  line-height: 1.45;
+  color: var(--fg-tertiary);
+}
+.fp-parent-rule + .fp-parent-rule {
+  margin-top: 9px;
+}
+.fp-parent-rule span {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--lav-soft);
+  color: var(--lav-text);
+  font-size: 11px;
+  font-weight: 850;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
 
 /* ── 연결됨(진행 중 세션) 카드 ──────────────────────────────────────────── */
 .fp-connected {
@@ -219,6 +336,9 @@
   padding: 22px 18px;
   box-shadow: 0 12px 30px rgba(32, 26, 29, 0.05);
   text-align: center;
+}
+.fp-connected--parent {
+  margin-top: 14px;
 }
 .fp-connected__badge {
   display: inline-flex;

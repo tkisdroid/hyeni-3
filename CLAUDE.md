@@ -59,6 +59,11 @@
 - 리뷰 보상 티어: `/api/review-rewards`는 부모 전용 계약이다. 아이/선생님 세션에서 엔타이틀먼트가 필요해도
   서버 호출을 하지 말고 reviewed=false로 확정한다. 아이 화면 CDP 로그에 403이 남으면 실패로 보고
   `resolveReviewRewardQueryScope` 규칙을 먼저 확인한다.
+- 설정/가입/오늘경로 안정화(2026-07-08): 부모 `/friend-play`는 아이 요청 UI가 아니라 가족 친구놀이 허용 설정이다.
+  장소 관리는 서버/AI 생성 없이 `resolvePlaceVisual` 정적 asset 매핑으로 장소명에 맞는 이미지를 고른다.
+  가입 전 설문은 progress 20%에서 시작하고 복수 선택만 수집한다. 부모 오늘경로는 오전 8시를 하루 시작으로,
+  00~07시는 전날 경로로 본다. 이력 로딩 중 지도 중심은 서울 기본점보다 현재 위치가 우선이며,
+  "오늘 머문 곳"은 완전 접힘+다시 열기 버튼까지 검증한다.
 
 ### G. 오케스트레이션 사용 기준
 - **넓은 탐색·감사** = 병렬 에이전트 + 적대 검증(REFUTED 걸러내고 **CONFIRMED 만** 수정).
@@ -239,6 +244,13 @@ hyeni-3/
   - **세션 복구 fast-follow**: WebView `hyeni-api-session-v1`만 사라지고 네이티브 `BackgroundLocation.getPushContext()`에 userId/familyId/role+refresh가 남은 경우, 앱 부팅 중 1회 `/auth/refresh`로 세션을 복구한다. refresh 응답 userId/familyId/role이 네이티브 context와 일치할 때만 저장하며, 검증 로그에는 refresh 토큰 값을 절대 출력하지 않는다.
   - **해외 진출 씨앗**: `src/i18n/messages.ts`, `src/i18n/useMessage.ts`와 `docs/market-expansion-plan.md` 추가. 전체 앱 번역은 대규모 리팩터라 이번 범위에서 제외.
   - **검증**: node test 19개 통과, `npm run typecheck` exit 0, `npm run build` exit 0. Chrome DevTools 모바일 390x844에서 `/daily-report`, `/weekly-report`, `/remote-audio-audit`, `/ai-schedule` 사진 탭, `/subscription` 렌더·콘솔에러 0·수평 overflow 0 확인. 스크린샷=`output/screenshots/*-mobile.png`.
+
+- ✅ **13단계: 설정·가입·오늘경로 실사용 제보 수정(2026-07-08)**
+  - **부모 설정 친구놀이**: `/friend-play`가 role=parent일 때 아이 후보/요청 화면을 숨기고, `/api/playdate/family-enabled` 기반 "친구놀이 요청 허용" 설정·허용 기준·진행 중 종료 UI를 보여준다. 아이 role의 요청 UI는 그대로 유지한다.
+  - **장소 이미지/구독/AI 크레딧 문구**: `resolvePlaceVisual`로 태권도·피아노·수영·축구·미술 등 장소명/카테고리별 정적 이미지를 매핑한다. 구독 소제목은 의도한 두 줄로 고정하고, AI 크레딧 안내는 "AI가 아이의 일정, 안전을 도와줘요"로 변경한다.
+  - **가입 전 설문**: 부모 회원가입 진입 전에 간단한 복수선택 설문을 추가하고, 가입 진행률은 20%→40%→60%→80%→100% 단계로 표시한다. 로그인 흐름은 설문 상태를 초기화한다.
+  - **오늘경로**: `getHistoryDayWindow`/`getHistoryDayKey`로 오전 8시 시작 경로를 계산한다. 00~07시는 전날 08:00부터 이어지는 경로로 보고, 이력 로딩/빈 trail에서는 현재 위치를 우선 마커로 넘긴다. "오늘 머문 곳" 시트는 헤더 드래그로 완전히 접히고 reopen pill로 다시 연다.
+  - **검증**: 신규 node tests 7개, 전체 `node --test tests/*.test.*` 48개, `npm run typecheck`, `npm run build` 통과. Playwright 모바일 390x844 API 모킹 검증으로 온보딩 설문/progress, 구독 줄바꿈, AI 크레딧 문구, 장소 이미지, 부모 친구놀이 설정, 오늘경로 08:00 슬라이더와 머문 곳 접힘을 콘솔 오류 0으로 확인.
 
 ### 전체 라우트 맵 (전부 도달 가능)
 ```

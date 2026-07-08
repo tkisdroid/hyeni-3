@@ -5,9 +5,8 @@ import { useToast } from "@/app/toast";
 import { useSavedPlaces, useDangerZones, useDeleteDangerZone, useDeleteSavedPlace } from "@/queries/useLocation";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { placeLimitFor, TIERS } from "@/transform/tierPolicy";
+import { resolvePlaceVisual } from "@/transform/placeVisual";
 import "./PlaceManager.css";
-
-const SOFTS = ["#E7F8F0", "#F1ECFF", "#FFF3D6", "#E6F2FB"];
 
 export function PlaceManager() {
   const navigate = useNavigate();
@@ -75,13 +74,18 @@ export function PlaceManager() {
             {!placesLoading && (places?.length ?? 0) === 0 && (
               <div className="pm-item__addr" style={{ padding: 16 }}>저장한 장소가 없어요</div>
             )}
-            {(places ?? []).map((p, i) => (
+            {(places ?? []).map((p) => {
+              const visual = resolvePlaceVisual(p);
+              return (
               <div key={p.id} className="pm-item">
-                <span className="pm-item__icon" style={{ background: SOFTS[i % SOFTS.length] }}>
-                  <img src={asset(p.is_home ? "ui/place-home.webp" : "ui/place-academy.webp")} alt="" />
+                <span className="pm-item__icon" data-tone={visual.tone}>
+                  <img src={asset(visual.assetPath)} alt="" />
                 </span>
                 <div className="pm-item__main">
-                  <div className="pm-item__name">{p.name}</div>
+                  <div className="pm-item__name">
+                    <span>{p.name}</span>
+                    <span className="pm-item__badge">{visual.label}</span>
+                  </div>
                   <div className="pm-item__addr">{p.location?.address ?? "주소 미등록"}</div>
                 </div>
                 {/* 편집(프리필) 미지원 — 빈 등록폼 오인 방지로 편집은 비노출. 삭제만 제공. */}
@@ -95,7 +99,8 @@ export function PlaceManager() {
                   <Trash2 size={17} strokeWidth={2.2} color="#8B7E84" />
                 </button>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

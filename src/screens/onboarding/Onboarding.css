@@ -71,6 +71,39 @@
   color: #8b7e84;
   margin-bottom: 7px;
 }
+
+/* 가입 진행률 */
+.ob-progress {
+  margin: 18px 0 0;
+}
+.ob-progress__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--fg-muted);
+}
+.ob-progress__meta strong {
+  color: var(--hy-accent-text);
+  font-size: 12.5px;
+}
+.ob-progress__track {
+  margin-top: 8px;
+  display: block;
+  height: 7px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--line-soft);
+}
+.ob-progress__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  transition: width 0.18s ease;
+}
 .ob-tlabel {
   font-size: 12.5px;
   font-weight: 800;
@@ -388,6 +421,77 @@
 }
 
 /* ── STEP: SIGNUP ──────────────────────────────────────────────────────── */
+.ob-survey {
+  padding: 64px 26px calc(40px + env(safe-area-inset-bottom, 0px));
+  background: radial-gradient(120% 50% at 50% 0%, var(--rose-soft) 0%, rgba(253, 231, 241, 0) 58%),
+    linear-gradient(180deg, var(--bg-app), var(--bg-page));
+  animation: hy-slidein 0.4s ease forwards;
+}
+.ob-survey-head {
+  margin-top: 22px;
+}
+.ob-survey-list {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.ob-survey-card {
+  width: 100%;
+  padding: 16px;
+  border: 1.5px solid var(--line-soft);
+  border-radius: 20px;
+  background: var(--bg-card);
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  text-align: left;
+  box-shadow: 0 10px 26px -18px rgba(32, 26, 29, 0.2);
+  --press: 0.98;
+}
+.ob-survey-card--on {
+  border-color: var(--hy-accent);
+  background: var(--hy-accent-soft);
+}
+.ob-survey-check {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--bg-card);
+}
+.ob-survey-card--on .ob-survey-check {
+  border-color: var(--hy-accent);
+  background: var(--hy-accent);
+}
+.ob-survey-main {
+  flex: 1;
+  min-width: 0;
+}
+.ob-survey-title {
+  display: block;
+  font-size: 15.5px;
+  font-weight: 850;
+  color: var(--fg-primary);
+}
+.ob-survey-sub {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.4;
+  color: var(--fg-muted);
+}
+.ob-survey .ob-cta {
+  margin-top: 24px;
+}
+
 .ob-signup {
   padding: 64px 26px calc(40px + env(safe-area-inset-bottom, 0px));
   background: linear-gradient(180deg, #fdf4f1, #f7f4f3);

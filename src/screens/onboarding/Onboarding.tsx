@@ -35,13 +35,21 @@ import { resolveAuthenticatedOnboardingRedirect } from "@/transform/onboardingRe
 import { QrScanner } from "@/components/QrScanner";
 import "./Onboarding.css";
 
-type Step = "role" | "teacherSetup" | "login" | "signup" | "connect" | "pairing" | "perms";
+type Step = "role" | "teacherSetup" | "login" | "survey" | "signup" | "connect" | "pairing" | "perms";
 type Show = (text: string, emoji?: string) => void;
 
 const PERM_ITEMS = [
   { id: "loc", icon: "ui/pin-heart.webp", title: "위치 정보", sub: "우리 아이가 어디서 안전한지 확인해요" },
   { id: "noti", icon: "ui/bell.webp", title: "알림", sub: "등하교·안전 소식을 바로 받아요" },
   { id: "battery", icon: "ui/battery.webp", title: "백그라운드 실행", sub: "앱이 꺼져도 아이 위치를 계속 확인해요" },
+] as const;
+
+const SURVEY_OPTIONS = [
+  { id: "schedule", title: "일정 관리", sub: "학교·학원·준비물을 놓치지 않기" },
+  { id: "location", title: "실시간 위치", sub: "아이 위치와 이동 경로 확인" },
+  { id: "arrival", title: "등하원·학원 도착 알림", sub: "도착·이탈 소식을 바로 받기" },
+  { id: "safety", title: "SOS 안전 알림", sub: "급할 때 부모님에게 빠르게 알리기" },
+  { id: "ai", title: "AI 하루 요약", sub: "일정과 안전 기록을 쉽게 정리하기" },
 ] as const;
 
 function errMsg(e: unknown): string {
@@ -59,6 +67,8 @@ export function Onboarding() {
   const [busy, setBusy] = useState(false);
   const [childStarting, setChildStarting] = useState(false);
   const [childJoinHint, setChildJoinHint] = useState<JoinFamilyOptions | null>(null);
+  const [signupFlowStarted, setSignupFlowStarted] = useState(false);
+  const [surveyChoices, setSurveyChoices] = useState<string[]>([]);
   // 전화 OTP 가입 시 입력한 이름 — 가입 직후 세션 user_metadata 가 비어 parentNameFromUser 가
   // "부모"로 깨지므로, 이 이름을 setupFamily(새 가족)의 parentName 으로 우선 사용한다.
   const [signupName, setSignupName] = useState<string | null>(null);
@@ -146,7 +156,15 @@ export function Onboarding() {
   }, []);
 
   const back = () =>
-    setStep((s) => (s === "signup" ? "login" : s === "pairing" ? "connect" : "role"));
+    setStep((s) =>
+      s === "survey"
+        ? "login"
+        : s === "signup"
+          ? "survey"
+          : s === "pairing"
+            ? "connect"
+            : "role",
+    );
 
   // 부모 로그인/가입 후: 가족 있으면 홈, 없으면 가족연결 단계.
   const routeAfterParentLogin = async () => {
@@ -209,6 +227,8 @@ export function Onboarding() {
           busy={busy}
           childStarting={childStarting}
           onParent={() => {
+            setSignupFlowStarted(false);
+            setSurveyChoices([]);
             setRole("parent");
             setStep("login");
           }}
@@ -227,9 +247,32 @@ export function Onboarding() {
           busy={busy}
           setBusy={setBusy}
           onBack={back}
-          onLoggedIn={routeAfterParentLogin}
-          onSignup={() => setStep("signup")}
+          onLoggedIn={async () => {
+            setSignupFlowStarted(false);
+            setSurveyChoices([]);
+            await routeAfterParentLogin();
+          }}
+          onSignup={() => {
+            setSignupFlowStarted(true);
+            setStep("survey");
+          }}
           show={show}
+        />
+      )}
+      {step === "survey" && (
+        <SurveyStep
+          selected={surveyChoices}
+          onBack={() => {
+            setSignupFlowStarted(false);
+            setSurveyChoices([]);
+            setStep("login");
+          }}
+          onToggle={(id) =>
+            setSurveyChoices((prev) =>
+              prev.includes(id) ? prev.filter((choice) => choice !== id) : [...prev, id],
+            )
+          }
+          onNext={() => setStep("signup")}
         />
       )}
       {step === "signup" && (
@@ -247,6 +290,7 @@ export function Onboarding() {
       {step === "connect" && (
         <ConnectStep
           busy={busy}
+          progressPercent={signupFlowStarted ? 80 : null}
           onBack={() => setStep("role")}
           onNewFamily={async () => {
             if (busy) return;
@@ -282,7 +326,10 @@ export function Onboarding() {
         />
       )}
       {step === "perms" && (
-        <PermsStep onDone={() => navigate(homePathForRole(role === "parent" ? "parent" : role === "child" ? "child" : "teacher"))} />
+        <PermsStep
+          progressPercent={signupFlowStarted ? 100 : null}
+          onDone={() => navigate(homePathForRole(role === "parent" ? "parent" : role === "child" ? "child" : "teacher"))}
+        />
       )}
     </div>
   );
@@ -308,6 +355,27 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
     <div>
       <div className="ob-label">{label}</div>
       {children}
+    </div>
+  );
+}
+
+function SignupProgress({ percent, label }: { percent: number; label: string }) {
+  return (
+    <div
+      className="ob-progress"
+      role="progressbar"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={percent}
+      aria-label={label}
+    >
+      <span className="ob-progress__meta">
+        <span>{label}</span>
+        <strong>{percent}%</strong>
+      </span>
+      <span className="ob-progress__track">
+        <span className="ob-progress__fill" style={{ width: `${percent}%` }} />
+      </span>
     </div>
   );
 }
@@ -563,6 +631,58 @@ function LoginStep({
 
 /* ── STEP: SIGNUP (전화+OTP 인증 포함) ──────────────────────────────────── */
 
+function SurveyStep({
+  selected,
+  onBack,
+  onToggle,
+  onNext,
+}: {
+  selected: string[];
+  onBack: () => void;
+  onToggle: (id: string) => void;
+  onNext: () => void;
+}) {
+  return (
+    <div className="ob-step ob-survey">
+      <BackButton onBack={onBack} />
+      <SignupProgress percent={20} label="1/5 관심 기능" />
+      <div className="ob-survey-head">
+        <div className="ob-signup-title">가입 전에 한 가지만 알려주세요</div>
+        <div className="ob-sub">
+          우리 아이에게 가장 필요한 기능을 골라주세요.
+          <br />
+          복수 선택할 수 있어요.
+        </div>
+      </div>
+
+      <div className="ob-survey-list">
+        {SURVEY_OPTIONS.map((option) => {
+          const on = selected.includes(option.id);
+          return (
+            <button
+              key={option.id}
+              type="button"
+              className={`ob-survey-card hy-press${on ? " ob-survey-card--on" : ""}`}
+              aria-pressed={on}
+              onClick={() => onToggle(option.id)}
+            >
+              <span className="ob-survey-check">{on ? "✓" : ""}</span>
+              <span className="ob-survey-main">
+                <span className="ob-survey-title">{option.title}</span>
+                <span className="ob-survey-sub">{option.sub}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <button type="button" className="ob-cta ob-cta--accent hy-press" onClick={onNext}>
+        다음
+      </button>
+    </div>
+  );
+}
+
 const GENDERS = [
   { value: "mom", label: "엄마" },
   { value: "dad", label: "아빠" },
@@ -626,6 +746,7 @@ function SignupStep({
     return (
       <div className="ob-step ob-signup">
         <BackButton onBack={() => setPhase("form")} />
+        <SignupProgress percent={60} label="3/5 휴대폰 인증" />
         <div className="ob-signup-head">
           <div className="ob-signup-title">인증번호 확인</div>
           <div className="ob-sub">{pending?.phoneStorage} 로 보낸 6자리를 입력해주세요</div>
@@ -659,6 +780,7 @@ function SignupStep({
   return (
     <div className="ob-step ob-signup">
       <BackButton onBack={onBack} />
+      <SignupProgress percent={40} label="2/5 계정 만들기" />
       <div className="ob-signup-head">
         <div className="ob-signup-title">혜니 가족 시작하기</div>
         <div className="ob-sub">부모님 계정을 만들어요</div>
@@ -720,12 +842,14 @@ function SignupStep({
 
 function ConnectStep({
   busy,
+  progressPercent,
   onBack,
   onNewFamily,
   onJoin,
   onChildDevice,
 }: {
   busy: boolean;
+  progressPercent?: number | null;
   onBack: () => void;
   onNewFamily: () => void;
   onJoin: () => void;
@@ -734,6 +858,7 @@ function ConnectStep({
   return (
     <div className="ob-step ob-connect">
       <BackButton onBack={onBack} />
+      {progressPercent != null && <SignupProgress percent={progressPercent} label="4/5 가족 연결" />}
       <div className="ob-connect-head">
         <img className="ob-connect-mascot" src={asset("mascot/family.webp")} alt="" />
         <div className="ob-h1">가족을 연결해요</div>
@@ -889,9 +1014,10 @@ function PairingStep({
 
 /* ── STEP: PERMS ───────────────────────────────────────────────────────── */
 
-function PermsStep({ onDone }: { onDone: () => void }) {
+function PermsStep({ progressPercent, onDone }: { progressPercent?: number | null; onDone: () => void }) {
   return (
     <div className="ob-step ob-perms">
+      {progressPercent != null && <SignupProgress percent={progressPercent} label="5/5 시작 준비" />}
       <div className="ob-perms-head">
         <img className="ob-perms-mascot" src={asset("mascot/wave.webp")} alt="" />
         <div className="ob-h1">몇 가지만 허용해 주세요</div>

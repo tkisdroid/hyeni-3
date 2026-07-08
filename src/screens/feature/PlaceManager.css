@@ -152,10 +152,34 @@
   width: 48px;
   height: 48px;
   border-radius: 15px;
+  background: var(--bg-page);
   display: flex;
   align-items: center;
   justify-content: center;
   flex: none;
+}
+.pm-item__icon[data-tone="home"],
+.pm-item__icon[data-tone="friend"] {
+  background: var(--mint-soft);
+}
+.pm-item__icon[data-tone="taekwondo"],
+.pm-item__icon[data-tone="sports"] {
+  background: var(--cream-soft);
+}
+.pm-item__icon[data-tone="piano"],
+.pm-item__icon[data-tone="music"],
+.pm-item__icon[data-tone="art"],
+.pm-item__icon[data-tone="hobby"] {
+  background: var(--lav-soft);
+}
+.pm-item__icon[data-tone="swim"],
+.pm-item__icon[data-tone="school"],
+.pm-item__icon[data-tone="study"] {
+  background: var(--blue-soft);
+}
+.pm-item__icon[data-tone="soccer"],
+.pm-item__icon[data-tone="family"] {
+  background: var(--rose-soft);
 }
 .pm-item__icon img {
   width: 38px;
@@ -167,9 +191,28 @@
   min-width: 0;
 }
 .pm-item__name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
   font-size: 15px;
   font-weight: 800;
   color: var(--fg-primary);
+}
+.pm-item__name > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pm-item__badge {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--bg-page);
+  color: var(--fg-muted);
+  font-size: 10.5px;
+  font-weight: 800;
 }
 .pm-item__addr {
   margin-top: 2px;

@@ -160,7 +160,11 @@ export function Subscription() {
         <div className="sub-hero">
           <img className="sub-hero__crown" src={asset("ui/crown.webp")} alt="" />
           <div className="sub-hero__title">혜니 프리미엄</div>
-          <div className="sub-hero__sub">실시간 위치와 AI 요약으로 아이의 하루를 더 안심하게 확인하세요</div>
+          <div className="sub-hero__sub">
+            실시간 위치와 AI 요약으로
+            <br />
+            아이의 하루를 더 안심하게 확인하세요
+          </div>
         </div>
 
         {/* 프리미엄 활성 배너 (실 티어) */}

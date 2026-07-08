@@ -17,6 +17,7 @@ import {
   acceptPlaydateInvite,
   declinePlaydateInvite,
   endPlaydate,
+  setFamilyPlaydateEnabled,
   type PlaydateCandidate,
   type StopReason,
 } from "@/lib/api/endpoints/playdate";
@@ -69,6 +70,22 @@ export function usePlaydateEnabled() {
     queryKey: pk.enabled(familyId ?? ""),
     queryFn: () => fetchFamilyPlaydateEnabled(familyId as string),
     enabled: status === "authenticated" && !!familyId,
+  });
+}
+
+/** 부모 친구놀이 허용 토글 저장. */
+export function useSetPlaydateEnabled() {
+  const qc = useQueryClient();
+  const { familyId } = useAuth();
+  return useMutation({
+    mutationFn: (enabled: boolean) => {
+      if (!familyId) throw new Error("가족 연결이 필요해요");
+      return setFamilyPlaydateEnabled(familyId, enabled);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: pk.enabled(familyId ?? "") });
+      qc.invalidateQueries({ queryKey: pk.candidates(familyId ?? "") });
+    },
   });
 }
 

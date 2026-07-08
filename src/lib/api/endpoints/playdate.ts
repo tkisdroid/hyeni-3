@@ -82,6 +82,10 @@ export interface FamilyPlaydateEnabled {
   playdate_enabled: boolean;
 }
 
+export interface SetFamilyPlaydateEnabledResult {
+  ok: boolean;
+}
+
 /** 근처(150m) 친구 후보 조회. soft error 포함 응답 객체 그대로 반환. */
 export function fetchPlaydateCandidates(familyId: string): Promise<PlaydateCandidatesResponse> {
   return apiGet<PlaydateCandidatesResponse>(
@@ -146,4 +150,15 @@ export function fetchFamilyPlaydateEnabled(familyId: string): Promise<FamilyPlay
   return apiGet<FamilyPlaydateEnabled>(
     `/api/playdate/family-enabled?family_id=${encodeURIComponent(familyId)}`,
   );
+}
+
+/** 부모가 우리 가족의 친구놀이 허용 여부를 변경한다. */
+export function setFamilyPlaydateEnabled(
+  familyId: string,
+  enabled: boolean,
+): Promise<SetFamilyPlaydateEnabledResult> {
+  return apiPatch<SetFamilyPlaydateEnabledResult>("/api/playdate/family-enabled", {
+    family_id: familyId,
+    enabled,
+  });
 }

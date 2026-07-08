@@ -238,7 +238,7 @@ export function AiCredit() {
             <span className="ac-hero__num">{heroAmount != null ? heroAmount : "—"}</span>
             <span className="ac-hero__unit">회</span>
           </div>
-          <div className="ac-hero__badge">✨ 혜니와 대화할 수 있어요</div>
+          <div className="ac-hero__badge">✨ AI가 아이의 일정, 안전을 도와줘요</div>
         </div>
 
         {/* 안내 */}
