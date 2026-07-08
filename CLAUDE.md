@@ -109,6 +109,7 @@
   native setter+`input` 이벤트 · 페이지 fetch 로 `/rest/v1` 은 CORS 차단 → 토큰만 CDP 로 읽고 **호스트 curl**.
 - **D1/Worker**: 시간 검증은 백데이트 트리거(예: `anchor_since` 6분 전 + upsert 1회, cron 은 이벤트를 target 분에 생성) ·
   `wrangler tail --format json` 을 파일로 받아 파이썬 파싱 · 컬럼명 추측 금지 — `pragma_table_info` 먼저.
+  `/api/events`처럼 `events_children`를 다건 조회할 때는 D1 변수 제한을 넘지 않도록 `IN (...)` 바인딩을 청크 처리한다.
 - **검증용 발사 자제**: 밤에 force_ring/SOS 실발사는 실기기 벨 울림 — 시간대 고려, 발동 후 정리.
 
 ---
