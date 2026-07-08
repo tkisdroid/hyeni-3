@@ -629,8 +629,8 @@ export function ParentLocation() {
         </div>
       )}
 
-      {/* 아이 표시 배지 — 전환은 부모 홈에서만(중복 스위치 제거). 현재 보는 아이를 명시. */}
-      {!isLocked && selected && (
+      {/* 아이 표시 배지 — 실시간에서만 현재 보는 아이를 명시한다. */}
+      {!isLocked && activeView === "live" && selected && (
         <div className="pl-chips">
           <div className="pl-chip pl-chip--active" aria-label={`현재 ${selected.name || "아이"} 위치 보기`}>
             <span className="pl-chip__avatar">

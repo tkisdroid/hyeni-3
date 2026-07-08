@@ -50,3 +50,10 @@ test("아이 홈 JSX의 주요 색상은 직접 hex 대신 토큰을 사용한�
   assert.match(source, /var\(--rose-soft\)/);
   assert.match(source, /var\(--fg-disabled\)/);
 });
+
+test("부모 오늘경로의 오늘 머문 곳 시트는 접힘 transform이 sheet-up 애니메이션에 덮이지 않는다", () => {
+  const css = readCss("src/screens/parent/ParentLocation.css");
+
+  assert.match(css, /\.pl-stays\s*\{[^}]*animation:\s*none/s);
+  assert.match(css, /\.pl-stays--collapsed\s*\{[^}]*transform:\s*translateY\(calc\(100% \+ 28px\)\)/s);
+});

@@ -708,6 +708,7 @@
   max-height: 42vh;
   display: flex;
   flex-direction: column;
+  animation: none;
   transition: transform 0.22s ease, max-height 0.22s ease;
   will-change: transform;
   user-select: none;
