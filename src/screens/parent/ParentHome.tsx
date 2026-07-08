@@ -335,7 +335,7 @@ export function ParentHome() {
         {/* 오늘의 일정 */}
         <section>
           <SectionHeader
-            iconBg="#FDE7F1"
+            iconBg="var(--rose-soft)"
             icon={<img src={asset("ui/calendar-heart.webp")} alt="" />}
             title="오늘의 일정"
             action={
@@ -408,7 +408,7 @@ export function ParentHome() {
         {/* 아이 현황 */}
         <section>
           <SectionHeader
-            iconBg="#E7F8F0"
+            iconBg="var(--mint-soft)"
             icon={<img src={asset("ui/pin-heart.webp")} alt="" />}
             title="아이 현황"
             action={
@@ -440,7 +440,7 @@ export function ParentHome() {
                         aria-pressed={active}
                         onClick={() => setActiveChildId(c.id)}
                       >
-                        <span className="ph-child__avatar" style={{ background: "#FDE7F1" }}>
+                        <span className="ph-child__avatar" style={{ background: "var(--rose-soft)" }}>
                           <img src={avatarSrc(c.avatar)} alt="" />
                           <span className="ph-child__online" />
                         </span>
@@ -494,7 +494,7 @@ export function ParentHome() {
         {/* 안전 지표 */}
         <section>
           <SectionHeader
-            iconBg="#F1ECFF"
+            iconBg="var(--lav-soft)"
             icon={<img src={asset("ui/shield-heart.webp")} alt="" />}
             title="안전 지표"
             action={
@@ -511,7 +511,7 @@ export function ParentHome() {
             )}
             <div className="ph-safety__grid">
               <div className="ph-metric">
-                <span className="ph-metric__icon" style={{ background: "#E7F8F0" }}>
+                <span className="ph-metric__icon" style={{ background: "var(--mint-soft)" }}>
                   <img src={asset("ui/battery.webp")} alt="" />
                 </span>
                 <span style={{ minWidth: 0 }}>
@@ -520,8 +520,8 @@ export function ParentHome() {
                 </span>
               </div>
               <div className="ph-metric">
-                <span className="ph-metric__icon" style={{ background: "#E6F2FB" }}>
-                  <Clock size={22} strokeWidth={2} color="#2E86C1" />
+                <span className="ph-metric__icon" style={{ background: "var(--blue-soft)" }}>
+                  <Clock size={22} strokeWidth={2} color="var(--blue-500)" />
                 </span>
                 <span style={{ minWidth: 0 }}>
                   <span className="ph-metric__k">화면시간</span>
@@ -529,8 +529,8 @@ export function ParentHome() {
                 </span>
               </div>
               <div className="ph-metric">
-                <span className="ph-metric__icon" style={{ background: "#FDF0DA" }}>
-                  <Zap size={20} strokeWidth={2} color="#E08A1E" />
+                <span className="ph-metric__icon" style={{ background: "var(--cream-soft)" }}>
+                  <Zap size={20} strokeWidth={2} color="var(--gold-600)" />
                 </span>
                 <span style={{ minWidth: 0 }}>
                   <span className="ph-metric__k">충전</span>
@@ -538,8 +538,8 @@ export function ParentHome() {
                 </span>
               </div>
               <div className="ph-metric">
-                <span className="ph-metric__icon" style={{ background: "#F1ECFF" }}>
-                  <Wifi size={22} strokeWidth={2} color="#7C5CE1" />
+                <span className="ph-metric__icon" style={{ background: "var(--lav-soft)" }}>
+                  <Wifi size={22} strokeWidth={2} color="var(--lav-600)" />
                 </span>
                 <span style={{ minWidth: 0 }}>
                   <span className="ph-metric__k">네트워크</span>
@@ -615,7 +615,7 @@ export function ParentHome() {
         {/* 준비물 · 숙제 */}
         <section>
           <SectionHeader
-            iconBg="#FDF0DA"
+            iconBg="var(--cream-soft)"
             icon={<img src={asset("cat/study.webp")} alt="" />}
             title="준비물 · 숙제"
             action={
@@ -661,11 +661,11 @@ export function ParentHome() {
                     aria-label="완료 토글"
                     onClick={() => togglePrep(s)}
                     style={{
-                      background: s.done ? "var(--hy-accent)" : "#fff",
+                      background: s.done ? "var(--hy-accent)" : "var(--bg-card)",
                       border: s.done ? "none" : "2px solid var(--line-strong)",
                     }}
                   >
-                    <Check size={15} strokeWidth={3} color="#fff" style={{ opacity: s.done ? 1 : 0 }} />
+                    <Check size={15} strokeWidth={3} color="var(--bg-card)" style={{ opacity: s.done ? 1 : 0 }} />
                   </button>
                   <button type="button" className="ph-prep-label" onClick={() => togglePrep(s)}>
                     {s.kind === "hw" && (
@@ -708,7 +708,7 @@ export function ParentHome() {
         {/* 바로가기 */}
         <section>
           <SectionHeader
-            iconBg="#F1ECFF"
+            iconBg="var(--lav-soft)"
             icon={<img src={asset("ui/sparkle.webp")} alt="" style={{ width: 20, height: 20 }} />}
             title="바로가기"
           />

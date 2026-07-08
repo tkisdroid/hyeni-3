@@ -44,7 +44,7 @@ function toDateInputValue(d: Date): string {
 export function PairingWizard() {
   const navigate = useNavigate();
   const { show } = useToast();
-  const { data: family } = useMyFamily();
+  const { data: family, isLoading: familyLoading } = useMyFamily();
   const regen = useRegeneratePairCode();
   const createChildren = useCreateChildren();
   const busy = regen.isPending || createChildren.isPending;
@@ -53,12 +53,14 @@ export function PairingWizard() {
   const { ready, isPremium } = useEntitlement();
   const tier = tierFrom({ ready, isPremium });
   const maxChildren = maxChildrenFor(tier);
+  const gatesReady = ready && !familyLoading && !!family;
   const existingChildCount = useMemo(
     () => (family?.members ?? []).filter((m) => m.role === "child").length,
     [family],
   );
-  const remainingSlots = ready ? Math.max(0, maxChildren - existingChildCount) : maxChildren;
-  const noSlots = ready && remainingSlots <= 0;
+  const remainingSlots = gatesReady ? Math.max(0, maxChildren - existingChildCount) : maxChildren;
+  const noSlots = gatesReady && remainingSlots <= 0;
+  const gateMessage = "가족·구독 정보를 확인 중이에요. 잠시 후 다시 시도해 주세요";
   const childLimitMessage =
     tier === TIERS.PREMIUM
       ? "프리미엄은 아이 2명까지 연결할 수 있어요"
@@ -79,8 +81,12 @@ export function PairingWizard() {
   }, [remainingSlots]);
 
   const selectCount = (n: number) => {
-    if (ready && (noSlots || n > remainingSlots)) {
-      show(childLimitMessage, "🔒");
+    if (!gatesReady && n > maxChildren) {
+      show(gateMessage, "⏳");
+      return;
+    }
+    if (noSlots || n > remainingSlots) {
+      show(gatesReady ? childLimitMessage : gateMessage, "🔒");
       return;
     }
     setCount(n);
@@ -117,6 +123,10 @@ export function PairingWizard() {
 
   const next = () => {
     if (step === 1) {
+      if (!gatesReady) {
+        show(gateMessage, "⏳");
+        return;
+      }
       if (noSlots) {
         show(childLimitMessage, "🔒");
         navigate("/subscription");
@@ -146,6 +156,10 @@ export function PairingWizard() {
 
   const makeCode = () => {
     if (busy) return;
+    if (!gatesReady) {
+      show(gateMessage, "⏳");
+      return;
+    }
     const required = validateChildDraftRequirements(children);
     if (!required.ok) {
       show(required.message, "🎂");
@@ -157,7 +171,7 @@ export function PairingWizard() {
       name: child.name,
       birthdate: child.birthdate,
     }));
-    if (ready && existingChildCount + children.length > maxChildren) {
+    if (existingChildCount + children.length > maxChildren) {
       show(childLimitMessage, "🔒");
       navigate("/subscription");
       return;
@@ -212,7 +226,7 @@ export function PairingWizard() {
             <div className="pw-lead">몇 명을 연결할까요?</div>
             <div className="pw-count-grid">
               {COUNTS.map((n) => {
-                const locked = ready && (noSlots || n > remainingSlots);
+                const locked = !gatesReady ? n > maxChildren : noSlots || n > remainingSlots;
                 return (
                   <button
                     key={n}
@@ -222,13 +236,15 @@ export function PairingWizard() {
                     aria-disabled={locked}
                   >
                     <span className="pw-count__n">{n}</span>
-                    <span className="pw-count__u">{locked ? "프리미엄" : "명"}</span>
+                    <span className="pw-count__u">{locked ? (!gatesReady ? "확인 중" : "프리미엄") : "명"}</span>
                   </button>
                 );
               })}
             </div>
             <p className="pw-note">
-              {noSlots
+              {!gatesReady
+                ? "가족과 구독 정보를 확인한 뒤 아이 연결을 진행해 주세요."
+                : noSlots
                 ? childLimitMessage
                 : "아이 1명은 무료예요. 두 번째 아이는 프리미엄(아이별 월 2,900원)에서 연결할 수 있어요."}
             </p>

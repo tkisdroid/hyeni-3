@@ -1,6 +1,19 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  AlertTriangle,
+  Bell,
+  ChevronLeft,
+  ChevronRight,
+  Crown,
+  DatabaseZap,
+  LogOut,
+  MapPin,
+  MessageCircleQuestion,
+  ShieldCheck,
+  UserRound,
+  type LucideIcon,
+} from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
@@ -13,27 +26,57 @@ import "./ParentSettings.css";
 
 /* ── 행 정의 (결합 회피: 화면 자체 정의) ─────────────────────────────── */
 
-type NavRow = { id: string; emoji: string; chipBg: string; label: string; route: string; badge?: boolean };
+type Tone = "lav" | "rose" | "blue" | "mint" | "gold" | "neutral" | "danger";
+type NavRow = { id: string; Icon: LucideIcon; tone: Tone; label: string; route: string; badge?: boolean };
 
 const settingsRows: NavRow[] = [
-  { id: "account", emoji: "👤", chipBg: "#EDE9FF", label: "계정 · 프로필", route: "/account" },
-  { id: "notif", emoji: "🔔", chipBg: "#FDE7F1", label: "알림 설정", route: "/notification-settings" },
-  { id: "location", emoji: "📍", chipBg: "#E6F2FB", label: "위치 · 백그라운드", route: "/location-settings" },
-  { id: "data", emoji: "🔄", chipBg: "#F1ECFF", label: "데이터 · 동기화", route: "/data-sync" },
-  { id: "subscription", emoji: "👑", chipBg: "#FFF3D6", label: "구독 관리", route: "/subscription", badge: true },
+  { id: "account", Icon: UserRound, tone: "lav", label: "계정 · 프로필", route: "/account" },
+  { id: "notif", Icon: Bell, tone: "rose", label: "알림 설정", route: "/notification-settings" },
+  { id: "location", Icon: MapPin, tone: "blue", label: "위치 · 백그라운드", route: "/location-settings" },
+  { id: "data", Icon: DatabaseZap, tone: "mint", label: "데이터 · 동기화", route: "/data-sync" },
+  { id: "subscription", Icon: Crown, tone: "gold", label: "구독 관리", route: "/subscription", badge: true },
 ];
 
-type FeatureRow = { id: string; icon: string; label: string; route: string };
+type FeatureRow = { id: string; icon: string; tone: Tone; label: string; route: string };
 
 const featureRows: FeatureRow[] = [
-  { id: "child", icon: "ui/menu-child-tracker.webp", label: "아이 관리", route: "/parent/family" },
-  { id: "place", icon: "ui/menu-place-manager.webp", label: "장소 관리", route: "/place-manager" },
-  { id: "friend", icon: "ui/menu-friend-playdate.webp", label: "친구 · 놀이 약속", route: "/friend-play" },
-  { id: "audio", icon: "ui/menu-remote-audio.webp", label: "원격 소리 듣기", route: "/remote-audio" },
-  { id: "audio-audit", icon: "ui/menu-remote-audio.webp", label: "주변 소리 듣기 기록", route: "/remote-audio-audit" },
-  { id: "reward", icon: "ui/menu-sticker.webp", label: "스티커 · 보상", route: "/sticker-send" },
-  { id: "ai", icon: "ui/menu-ai-schedule.webp", label: "AI 친구 · 크레딧", route: "/ai-credit" },
+  { id: "child", icon: "ui/menu-child-tracker.webp", tone: "blue", label: "아이 관리", route: "/parent/family" },
+  { id: "place", icon: "ui/menu-place-manager.webp", tone: "mint", label: "장소 관리", route: "/place-manager" },
+  { id: "friend", icon: "ui/menu-friend-playdate.webp", tone: "gold", label: "친구 · 놀이 약속", route: "/friend-play" },
+  { id: "audio", icon: "ui/menu-remote-audio.webp", tone: "rose", label: "원격 소리 듣기", route: "/remote-audio" },
+  { id: "audio-audit", icon: "ui/menu-remote-audio.webp", tone: "neutral", label: "주변 소리 듣기 기록", route: "/remote-audio-audit" },
+  { id: "reward", icon: "ui/menu-sticker.webp", tone: "gold", label: "스티커 · 보상", route: "/sticker-send" },
+  { id: "ai", icon: "ui/menu-ai-schedule.webp", tone: "lav", label: "AI 친구 · 크레딧", route: "/ai-credit" },
 ];
+
+type AccountRow = {
+  id: string;
+  Icon: LucideIcon;
+  tone: Tone;
+  label: string;
+  onClick: () => void;
+  danger?: boolean;
+  chevron?: boolean;
+};
+
+function SettingsIcon({ Icon, tone }: { Icon: LucideIcon; tone: Tone }) {
+  return (
+    <span className="ps-nav__chip" data-tone={tone}>
+      <Icon size={18} strokeWidth={2.3} />
+    </span>
+  );
+}
+
+function AccountIcon({ Icon, tone }: { Icon: LucideIcon; tone: Tone }) {
+  return (
+    <span className="ps-account__chip" data-tone={tone}>
+      <Icon size={18} strokeWidth={2.3} />
+    </span>
+  );
+}
+
+const chevronIcon = <ChevronRight className="ps-nav__chev" size={18} strokeWidth={2.4} />;
+const featureChevronIcon = <ChevronRight className="ps-feature__chev" size={19} strokeWidth={2.4} />;
 
 export function ParentSettings() {
   const navigate = useNavigate();
@@ -95,7 +138,7 @@ export function ParentSettings() {
           aria-label="뒤로"
           onClick={() => navigate(-1)}
         >
-          <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
+          <ChevronLeft size={22} strokeWidth={2.2} />
         </button>
         <span className="ps-head-title">설정</span>
       </header>
@@ -132,16 +175,14 @@ export function ParentSettings() {
                 className="ps-nav hy-press"
                 onClick={() => navigate(r.route)}
               >
-                <span className="ps-nav__chip" style={{ background: r.chipBg }}>
-                  {r.emoji}
-                </span>
+                <SettingsIcon Icon={r.Icon} tone={r.tone} />
                 <span className="ps-nav__label">{r.label}</span>
                 {r.badge && ready && view && (
                   <span className="ps-account__badge" data-premium={view.isPremium}>
                     {view.tierLabel}
                   </span>
                 )}
-                <ChevronRight className="ps-nav__chev" size={18} strokeWidth={2.4} color="#C9BFC4" />
+                {chevronIcon}
               </button>
             ))}
           </div>
@@ -158,11 +199,11 @@ export function ParentSettings() {
                 className="ps-feature hy-press"
                 onClick={() => navigate(f.route)}
               >
-                <span className="ps-feature__icon">
+                <span className="ps-feature__icon" data-tone={f.tone}>
                   <img src={asset(f.icon)} alt="" />
                 </span>
                 <span className="ps-feature__label">{f.label}</span>
-                <ChevronRight className="ps-feature__chev" size={19} strokeWidth={2.4} color="#C9BFC4" />
+                {featureChevronIcon}
               </button>
             ))}
           </div>
@@ -172,26 +213,20 @@ export function ParentSettings() {
         <div className="ps-group">
           <div className="ps-group__label">약관 · 계정</div>
           <div className="ps-list">
-            <button type="button" className="ps-account hy-press" onClick={openPrivacy}>
-              <span className="ps-account__chip" style={{ background: "#F7F3F5" }}>🔒</span>
-              <span className="ps-account__label">개인정보 처리방침</span>
-              <ChevronRight className="ps-nav__chev" size={18} strokeWidth={2.4} color="#C9BFC4" />
-            </button>
-            <button type="button" className="ps-account hy-press" onClick={() => navigate("/feedback")}>
-              <span className="ps-account__chip" style={{ background: "#E6F2FB" }}>💬</span>
-              <span className="ps-account__label">도움말 · 피드백</span>
-              <ChevronRight className="ps-nav__chev" size={18} strokeWidth={2.4} color="#C9BFC4" />
-            </button>
-            <button type="button" className="ps-account hy-press" onClick={() => void handleLogout()}>
-              <span className="ps-account__chip" style={{ background: "#FFECEE" }}>🚪</span>
-              <span className="ps-account__label">로그아웃</span>
-            </button>
-            <button type="button" className="ps-account hy-press" onClick={() => setConfirmDelete(true)}>
-              <span className="ps-account__chip" style={{ background: "#FFECEE" }}>⚠️</span>
-              <span className="ps-account__label" style={{ color: "var(--danger-text)" }}>
-                회원 탈퇴
-              </span>
-            </button>
+            {([
+              { id: "privacy", Icon: ShieldCheck, tone: "neutral", label: "개인정보 처리방침", onClick: openPrivacy, chevron: true },
+              { id: "feedback", Icon: MessageCircleQuestion, tone: "blue", label: "도움말 · 피드백", onClick: () => navigate("/feedback"), chevron: true },
+              { id: "logout", Icon: LogOut, tone: "danger", label: "로그아웃", onClick: () => void handleLogout() },
+              { id: "delete", Icon: AlertTriangle, tone: "danger", label: "회원 탈퇴", onClick: () => setConfirmDelete(true), danger: true },
+            ] satisfies AccountRow[]).map((r) => (
+              <button key={r.id} type="button" className="ps-account hy-press" onClick={r.onClick}>
+                <AccountIcon Icon={r.Icon} tone={r.tone} />
+                <span className="ps-account__label" data-danger={r.danger ? "true" : undefined}>
+                  {r.label}
+                </span>
+                {r.chevron && chevronIcon}
+              </button>
+            ))}
           </div>
         </div>
 

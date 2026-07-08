@@ -374,7 +374,6 @@ export function ParentLocation() {
   };
 
   const onStaysPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (e.pointerType === "touch") return;
     beginStaysDrag(e.clientY);
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -384,17 +383,14 @@ export function ParentLocation() {
   };
 
   const onStaysPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (e.pointerType === "touch") return;
     updateStaysDrag(e.clientY);
   };
 
-  const onStaysPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (e.pointerType === "touch") return;
+  const onStaysPointerUp = () => {
     finishStaysDrag();
   };
 
-  const onStaysPointerCancel = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (e.pointerType === "touch") return;
+  const onStaysPointerCancel = () => {
     cancelStaysDrag();
   };
 

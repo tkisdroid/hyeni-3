@@ -12,6 +12,7 @@ test("오늘 머문 곳 시트는 드래그 다운으로 접히고 pointer captu
   assert.match(source, /setStaysCollapsed\(true\)/);
   assert.match(source, /e\.currentTarget\.setPointerCapture\(e\.pointerId\)/);
   assert.match(source, /catch\s*\{\s*\/\/ 일부 합성\/비표준 pointer 이벤트/);
+  assert.doesNotMatch(source, /pointerType === "touch"\)\s*return/);
   assert.match(css, /\.pl-stays--collapsed\s*\{[^}]*transform:\s*translateY\(calc\(100% \+ 28px\)\)/s);
   assert.match(source, /className="pl-stays-reopen hy-press"/);
 });

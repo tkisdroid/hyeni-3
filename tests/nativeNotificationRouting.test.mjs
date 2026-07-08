@@ -28,3 +28,13 @@ test("부모 메모 알림을 탭하면 아이 메모 화면으로 진입한다"
   assert.match(main, /"child-memo"\.equals\(route\)/);
   assert.match(main, /injectHashRoute\("#\/child\/memo", 1000\)/);
 });
+
+test("아이 메시지 채널은 다른 일반 알림보다 우선 보이도록 high importance 계약을 유지한다", () => {
+  const helper = readSource("android/app/src/main/java/com/hyeni/calendar/NotificationHelper.java");
+
+  assert.match(helper, /CHANNEL_CHILD_MESSAGE = "hyeni_child_message_v1"/);
+  assert.match(helper, /CHANNEL_CHILD_MESSAGE,\s*"AI 친구·가족 메시지",\s*NotificationManager\.IMPORTANCE_HIGH/s);
+  assert.match(helper, /boolean childMessage = "child_message"\.equals\(channel\);/);
+  assert.match(helper, /fullScreen \|\| childMessage\) \? NotificationCompat\.PRIORITY_HIGH/);
+  assert.match(helper, /kkuk \|\| childMessage\) \? NotificationCompat\.CATEGORY_MESSAGE/);
+});

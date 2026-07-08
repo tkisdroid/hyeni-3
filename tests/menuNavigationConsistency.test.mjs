@@ -1,0 +1,43 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+function readSource(relativePath) {
+  return readFileSync(resolve(rootDir, relativePath), "utf8");
+}
+
+test("부모 홈 바로가기는 핵심 서비스 순서와 실제 라우트를 일관되게 유지한다", () => {
+  const home = readSource("src/screens/parent/ParentHome.tsx");
+  const mock = readSource("src/data/mock.ts");
+
+  const labels = [...mock.matchAll(/label: "([^"]+)"/g)]
+    .map((m) => m[1])
+    .filter((label) => ["AI 일정", "위치추적", "친구놀이", "장소관리", "주변소리", "안심리포트", "구독", "알림"].includes(label));
+
+  assert.deepEqual(labels, ["AI 일정", "위치추적", "친구놀이", "장소관리", "주변소리", "안심리포트", "구독", "알림"]);
+  assert.match(home, /"AI 일정": "\/ai-schedule"/);
+  assert.match(home, /"위치추적": "\/parent\/location\?view=history"/);
+  assert.match(home, /"친구놀이": "\/friend-play"/);
+  assert.match(home, /"안심리포트": "\/daily-report"/);
+  assert.match(home, /"알림": "\/notifications"/);
+});
+
+test("부모 메뉴 아이콘과 바로가기 색상은 토큰 기반으로 유지한다", () => {
+  const settings = readSource("src/screens/parent/ParentSettings.tsx");
+  const mock = readSource("src/data/mock.ts");
+  const shortcutsBlock = mock.slice(mock.indexOf("export const shortcuts"));
+
+  assert.doesNotMatch(settings, /emoji:/);
+  assert.doesNotMatch(settings, /chipBg:/);
+  assert.match(settings, /type LucideIcon/);
+  assert.match(settings, /data-tone=\{tone\}/);
+  assert.match(settings, /data-tone=\{f\.tone\}/);
+  assert.doesNotMatch(shortcutsBlock, /#[0-9A-Fa-f]{3,8}/);
+  assert.doesNotMatch(shortcutsBlock, /rgba\(/);
+  assert.match(shortcutsBlock, /var\(--lav-soft\)/);
+  assert.match(shortcutsBlock, /color-mix\(in srgb, var\(--blue-500\) 16%, transparent\)/);
+});

@@ -9,15 +9,16 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(251, 247, 244, 0.94);
+  background: color-mix(in srgb, var(--bg-app) 94%, transparent);
   backdrop-filter: blur(10px);
 }
 .ps-back {
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.06);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-soft);
+  color: var(--fg-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -46,14 +47,14 @@
   gap: 14px;
   padding: 16px;
   border-radius: 22px;
-  background: linear-gradient(120deg, #e6f2fb, #f1ecff);
-  box-shadow: 0 10px 26px -12px rgba(46, 134, 193, 0.25);
+  background: linear-gradient(120deg, var(--blue-soft), var(--lav-soft));
+  box-shadow: 0 10px 26px -12px color-mix(in srgb, var(--blue-500) 25%, transparent);
 }
 .ps-profile__avatar {
   width: 56px;
   height: 56px;
   border-radius: 17px;
-  background: #fff;
+  background: var(--bg-card);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -78,16 +79,16 @@
   margin-top: 2px;
   font-size: 12.5px;
   font-weight: 600;
-  color: #6d6d8a;
+  color: var(--fg-tertiary);
 }
 .ps-profile__edit {
   flex: none;
   padding: 8px 14px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.8);
+  background: color-mix(in srgb, var(--bg-card) 80%, transparent);
   font-size: 12.5px;
   font-weight: 800;
-  color: #5a6b8c;
+  color: var(--blue-text);
   --press: 0.94;
 }
 
@@ -96,14 +97,14 @@
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.02em;
-  color: #8b7e84;
+  color: var(--fg-muted);
   margin-bottom: 11px;
 }
 .ps-list {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 20px;
   padding: 6px;
-  box-shadow: 0 10px 26px rgba(32, 26, 29, 0.05);
+  box-shadow: var(--shadow-card);
 }
 
 /* ── 알림 토글 행 ───────────────────────────────────────────────────────── */
@@ -139,7 +140,7 @@
   margin-top: 1px;
   font-size: 11.5px;
   font-weight: 600;
-  color: #a99fa4;
+  color: var(--fg-faint);
 }
 
 /* iOS 스타일 토글 스위치 */
@@ -186,7 +187,7 @@
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  background: #f7f3f5;
+  background: var(--bg-press);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -197,6 +198,48 @@
   height: 32px;
   object-fit: contain;
 }
+.ps-feature__icon[data-tone="lav"],
+.ps-nav__chip[data-tone="lav"],
+.ps-account__chip[data-tone="lav"] {
+  background: var(--lav-soft);
+  color: var(--lav-text);
+}
+.ps-feature__icon[data-tone="rose"],
+.ps-nav__chip[data-tone="rose"],
+.ps-account__chip[data-tone="rose"] {
+  background: var(--rose-soft);
+  color: var(--rose-text);
+}
+.ps-feature__icon[data-tone="blue"],
+.ps-nav__chip[data-tone="blue"],
+.ps-account__chip[data-tone="blue"] {
+  background: var(--blue-soft);
+  color: var(--blue-text);
+}
+.ps-feature__icon[data-tone="mint"],
+.ps-nav__chip[data-tone="mint"],
+.ps-account__chip[data-tone="mint"] {
+  background: var(--mint-soft);
+  color: var(--mint-text);
+}
+.ps-feature__icon[data-tone="gold"],
+.ps-nav__chip[data-tone="gold"],
+.ps-account__chip[data-tone="gold"] {
+  background: var(--cream-soft);
+  color: var(--gold-text);
+}
+.ps-feature__icon[data-tone="neutral"],
+.ps-nav__chip[data-tone="neutral"],
+.ps-account__chip[data-tone="neutral"] {
+  background: var(--bg-press);
+  color: var(--fg-tertiary);
+}
+.ps-feature__icon[data-tone="danger"],
+.ps-nav__chip[data-tone="danger"],
+.ps-account__chip[data-tone="danger"] {
+  background: var(--danger-soft);
+  color: var(--danger-text);
+}
 .ps-feature__label {
   flex: 1;
   min-width: 0;
@@ -206,9 +249,10 @@
 }
 .ps-feature__chev {
   flex: none;
+  color: var(--fg-disabled);
 }
 
-/* ── 계정 행(이모지 칩 + 라벨) ──────────────────────────────────────────── */
+/* ── 계정 행(아이콘 칩 + 라벨) ──────────────────────────────────────────── */
 .ps-account {
   width: 100%;
   text-align: left;
@@ -226,8 +270,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
+  color: var(--fg-tertiary);
   flex: none;
+}
+.ps-account__chip svg,
+.ps-nav__chip svg {
+  display: block;
 }
 .ps-account__label {
   flex: 1;
@@ -236,21 +284,24 @@
   font-weight: 700;
   color: var(--fg-primary);
 }
+.ps-account__label[data-danger="true"] {
+  color: var(--danger-text);
+}
 .ps-account__badge {
   flex: none;
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 11.5px;
   font-weight: 800;
-  background: #f1ecf5;
-  color: #8b7e84;
+  background: var(--bg-press);
+  color: var(--fg-muted);
 }
 .ps-account__badge[data-premium="true"] {
-  background: #fff3d6;
-  color: #a9812f;
+  background: var(--cream-soft);
+  color: var(--gold-text);
 }
 
-/* ── 설정 네비 행(이모지 칩 + 라벨 + 셰브론) ────────────────────────────── */
+/* ── 설정 네비 행(아이콘 칩 + 라벨 + 셰브론) ────────────────────────────── */
 .ps-nav {
   width: 100%;
   text-align: left;
@@ -268,7 +319,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
+  color: var(--fg-tertiary);
   flex: none;
 }
 .ps-nav__label {
@@ -280,6 +331,7 @@
 }
 .ps-nav__chev {
   flex: none;
+  color: var(--fg-disabled);
 }
 
 /* ── 버전 푸터 ──────────────────────────────────────────────────────────── */
@@ -287,7 +339,7 @@
   text-align: center;
   font-size: 11.5px;
   font-weight: 600;
-  color: #c4babf;
+  color: var(--fg-disabled);
 }
 
 /* ── 탈퇴 확인 모달 ───────────────────────────────────────────────────────── */
@@ -311,7 +363,7 @@
   position: relative;
   width: 100%;
   max-width: 320px;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 24px;
   padding: 26px 22px 20px;
   text-align: center;

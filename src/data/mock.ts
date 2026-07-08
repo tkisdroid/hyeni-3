@@ -87,12 +87,12 @@ export const memoPreview = {
 };
 
 export const shortcuts: Shortcut[] = [
-  { id: "sc1", label: "AI 일정", icon: "ui/menu-ai-schedule.webp", soft: "#F1ECFF", shadow: "rgba(124,92,225,.16)" },
-  { id: "sc2", label: "위치추적", icon: "ui/menu-child-tracker.webp", soft: "#E6F2FB", shadow: "rgba(46,134,193,.16)" },
-  { id: "sc3", label: "친구놀이", icon: "ui/menu-friend-playdate.webp", soft: "#FFF3D6", shadow: "rgba(224,138,30,.16)" },
-  { id: "sc4", label: "장소관리", icon: "ui/menu-place-manager.webp", soft: "#E7F8F0", shadow: "rgba(35,168,118,.16)" },
-  { id: "sc5", label: "주변소리", icon: "ui/menu-remote-audio.webp", soft: "#FDE7F1", shadow: "rgba(240,81,143,.16)" },
-  { id: "sc6", label: "안심리포트", icon: "ui/shield-heart.webp", soft: "#E7F8F0", shadow: "rgba(35,168,118,.16)" },
-  { id: "sc7", label: "구독", icon: "ui/menu-subscription.webp", soft: "#F1ECFF", shadow: "rgba(124,92,225,.16)" },
-  { id: "sc8", label: "알림", icon: "ui/bell.webp", soft: "#E6F2FB", shadow: "rgba(46,134,193,.16)" },
+  { id: "sc1", label: "AI 일정", icon: "ui/menu-ai-schedule.webp", soft: "var(--lav-soft)", shadow: "color-mix(in srgb, var(--lav-600) 16%, transparent)" },
+  { id: "sc2", label: "위치추적", icon: "ui/menu-child-tracker.webp", soft: "var(--blue-soft)", shadow: "color-mix(in srgb, var(--blue-500) 16%, transparent)" },
+  { id: "sc3", label: "친구놀이", icon: "ui/menu-friend-playdate.webp", soft: "var(--cream-soft)", shadow: "color-mix(in srgb, var(--gold-600) 16%, transparent)" },
+  { id: "sc4", label: "장소관리", icon: "ui/menu-place-manager.webp", soft: "var(--mint-soft)", shadow: "color-mix(in srgb, var(--mint-600) 16%, transparent)" },
+  { id: "sc5", label: "주변소리", icon: "ui/menu-remote-audio.webp", soft: "var(--rose-soft)", shadow: "color-mix(in srgb, var(--rose-600) 16%, transparent)" },
+  { id: "sc6", label: "안심리포트", icon: "ui/shield-heart.webp", soft: "var(--mint-soft)", shadow: "color-mix(in srgb, var(--mint-600) 16%, transparent)" },
+  { id: "sc7", label: "구독", icon: "ui/menu-subscription.webp", soft: "var(--lav-soft)", shadow: "color-mix(in srgb, var(--lav-600) 16%, transparent)" },
+  { id: "sc8", label: "알림", icon: "ui/bell.webp", soft: "var(--blue-soft)", shadow: "color-mix(in srgb, var(--blue-500) 16%, transparent)" },
 ];
