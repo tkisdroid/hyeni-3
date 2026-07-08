@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, Settings, ChevronRight, Clock, Zap, Wifi, Check, MapPin, Smartphone, ShieldCheck } from "lucide-react";
+import { Bell, Settings, ChevronRight, Clock, Zap, Wifi, Check, MapPin, Smartphone } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
@@ -101,7 +101,7 @@ const shortcutRoutes: Record<string, string> = {
   "친구놀이": "/playdate-accept",
   "장소관리": "/place-manager",
   "주변소리": "/remote-audio",
-  "스티커": "/sticker-send",
+  "안심리포트": "/daily-report",
   "구독": "/subscription",
   "알림": "/notifications",
 };
@@ -221,7 +221,7 @@ export function ParentHome() {
     return all.filter((v) => allowedIds.has(v.id));
   }, [events, now, todayKey, activeChild, visitMap, places]);
 
-  const childName = activeChild?.name || "아이"; // 히어로·꾹 라벨 = 활성 아이
+  const childName = activeChild?.name || "아이"; // 히어로·상단 스티커 대상 = 활성 아이
 
   // 아이별 현황 카드 — 등록된 모든 아이를 각각 위치·기기·다음 일정과 함께 표시(다자녀 = 둘 다).
   // 위치는 각 아이 user_id 로 매칭(폴백 없음 → 없으면 정직하게 "위치 정보 없음"). 다음 일정은
@@ -274,23 +274,12 @@ export function ParentHome() {
           <>
             <button
               type="button"
-              className="ph-heartbtn hy-press"
-              aria-label={`${childName}에게 꾹 보내기`}
+              className="ph-stickerbtn hy-press"
+              aria-label={`${childName}에게 칭찬 스티커 보내기`}
               onClick={() => navigate("/sticker-send")}
             >
-              <svg width="44" height="44" viewBox="0 0 24 24">
-                <defs>
-                  <linearGradient id="hyHeartBtn" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0" stopColor="#FF9EC4" />
-                    <stop offset="1" stopColor="#F0518F" />
-                  </linearGradient>
-                </defs>
-                <path
-                  fill="url(#hyHeartBtn)"
-                  d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-                />
-              </svg>
-              <span>꾹</span>
+              <img src={asset("ui/menu-sticker.webp")} alt="" />
+              <span>스티커</span>
             </button>
             <button
               type="button"
@@ -391,25 +380,6 @@ export function ParentHome() {
             )}
           </div>
         </section>
-
-        {/* 오늘의 안심 리포트 */}
-        <button
-          type="button"
-          className="hy-card ph-report hy-press"
-          onClick={() => navigate("/daily-report")}
-        >
-          <span className="ph-report__icon">
-            <ShieldCheck size={25} strokeWidth={2.2} />
-          </span>
-          <span className="ph-report__main">
-            <span className="ph-report__eyebrow">오늘 아이의 흐름을 정리했어요</span>
-            <span className="ph-report__title">오늘의 안심 리포트</span>
-            <span className="ph-report__sub">도착, 일정, 기기 상태를 한눈에 확인해요</span>
-          </span>
-          <span className="ph-report__cta">
-            리포트 보기 <ChevronRight size={15} strokeWidth={2.4} />
-          </span>
-        </button>
 
         {/* AI로 일정 추가 */}
         <div className="ph-ai">

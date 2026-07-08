@@ -57,3 +57,9 @@ test("부모 오늘경로의 오늘 머문 곳 시트는 접힘 transform이 she
   assert.match(css, /\.pl-stays\s*\{[^}]*animation:\s*none/s);
   assert.match(css, /\.pl-stays--collapsed\s*\{[^}]*transform:\s*translateY\(calc\(100% \+ 28px\)\)/s);
 });
+
+test("부모 오늘경로의 시간대별 경로는 아이 배지 제거 후 위쪽에 붙는다", () => {
+  const css = readCss("src/screens/parent/ParentLocation.css");
+
+  assert.match(css, /\.pl-scrub\s*\{[^}]*top:\s*108px/s);
+});

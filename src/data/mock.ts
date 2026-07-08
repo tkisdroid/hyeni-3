@@ -92,7 +92,7 @@ export const shortcuts: Shortcut[] = [
   { id: "sc3", label: "친구놀이", icon: "ui/menu-friend-playdate.webp", soft: "#FFF3D6", shadow: "rgba(224,138,30,.16)" },
   { id: "sc4", label: "장소관리", icon: "ui/menu-place-manager.webp", soft: "#E7F8F0", shadow: "rgba(35,168,118,.16)" },
   { id: "sc5", label: "주변소리", icon: "ui/menu-remote-audio.webp", soft: "#FDE7F1", shadow: "rgba(240,81,143,.16)" },
-  { id: "sc6", label: "스티커", icon: "ui/menu-sticker.webp", soft: "#FFF3D6", shadow: "rgba(224,138,30,.16)" },
+  { id: "sc6", label: "안심리포트", icon: "ui/shield-heart.webp", soft: "#E7F8F0", shadow: "rgba(35,168,118,.16)" },
   { id: "sc7", label: "구독", icon: "ui/menu-subscription.webp", soft: "#F1ECFF", shadow: "rgba(124,92,225,.16)" },
   { id: "sc8", label: "알림", icon: "ui/bell.webp", soft: "#E6F2FB", shadow: "rgba(46,134,193,.16)" },
 ];

@@ -1,29 +1,28 @@
 /* 부모 홈 — 화면 전용 스타일 (원본 dc.html 98–303행 값 1:1) */
 
-/* 상단 하트(꾹) 버튼 */
-.ph-heartbtn {
-  position: relative;
-  width: 46px;
-  height: 46px;
+/* 상단 스티커 버튼 */
+.ph-stickerbtn {
+  height: 42px;
+  padding: 0 12px 0 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
-  --press: 0.84;
+  gap: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--cream-soft);
+  color: var(--gold-text);
+  box-shadow: 0 8px 18px -10px color-mix(in srgb, var(--gold-text) 38%, transparent);
+  --press: 0.9;
 }
-.ph-heartbtn svg {
-  position: absolute;
-  inset: 1px;
-  filter: drop-shadow(0 5px 12px rgba(240, 81, 143, 0.5));
+.ph-stickerbtn img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
 }
-.ph-heartbtn span {
-  position: relative;
-  font-size: 11px;
+.ph-stickerbtn span {
+  font-size: 12px;
   font-weight: 900;
-  color: #fff;
-  margin-top: -2px;
-  letter-spacing: -0.03em;
-  text-shadow: 0 1px 2px rgba(180, 40, 90, 0.4);
+  white-space: nowrap;
 }
 
 /* ── Hero ───────────────────────────────────────────────────────────────── */
@@ -175,70 +174,6 @@
   border-radius: 999px;
   font-size: 11.5px;
   font-weight: 800;
-}
-
-/* ── 오늘의 안심 리포트 ─────────────────────────────────────────────────── */
-.ph-report {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  padding: 16px;
-  text-align: left;
-  border: 1px solid var(--mint-line);
-  background: linear-gradient(135deg, var(--mint-soft), var(--bg-card));
-  --press: 0.985;
-}
-.ph-report__icon {
-  flex: none;
-  width: 50px;
-  height: 50px;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-card);
-  color: var(--mint-text);
-  box-shadow: var(--shadow-soft);
-}
-.ph-report__main {
-  flex: 1;
-  min-width: 0;
-}
-.ph-report__eyebrow {
-  display: block;
-  font-size: 11.5px;
-  font-weight: 800;
-  color: var(--mint-text);
-}
-.ph-report__title {
-  display: block;
-  margin-top: 2px;
-  font-size: 16px;
-  font-weight: 900;
-  color: var(--fg-primary);
-}
-.ph-report__sub {
-  display: block;
-  margin-top: 2px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--fg-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.ph-report__cta {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 8px 10px;
-  border-radius: var(--radius-pill);
-  background: var(--mint-500);
-  color: var(--bg-card);
-  font-size: 11.5px;
-  font-weight: 900;
 }
 
 /* ── AI 일정 추가 ───────────────────────────────────────────────────────── */
