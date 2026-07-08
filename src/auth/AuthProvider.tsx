@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { setOnApiTokensChanged } from "@/lib/api/session";
 import { logout as apiLogout, deleteAccount as apiDeleteAccount } from "@/lib/api/endpoints/auth";
-import { stopLocationTracking } from "@/lib/native/location";
+import { stopLocationTracking, syncNativeLocationToken } from "@/lib/native/location";
 import { queryClient } from "@/queries/QueryProvider";
 import { AuthContext, deriveAuthState, type AuthContextValue } from "./AuthContext";
 
@@ -20,7 +20,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // 토큰 회전(client.ts refreshAccess → notifyTokens) 시 상태 반영.
   useEffect(() => {
-    setOnApiTokensChanged(() => syncFromSession());
+    setOnApiTokensChanged(() => {
+      syncFromSession();
+      void syncNativeLocationToken();
+    });
     return () => setOnApiTokensChanged(null);
   }, [syncFromSession]);
 

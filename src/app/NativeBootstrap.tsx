@@ -8,7 +8,12 @@ import { useAuth } from "@/auth/AuthContext";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { initOAuthDeepLink } from "@/lib/native/oauthDeepLink";
 import { initPush, disposePush } from "@/lib/native/push";
-import { adoptNativeLocationSessionTokens, startLocationTracking, stopLocationTracking } from "@/lib/native/location";
+import {
+  adoptNativeLocationSessionTokens,
+  startLocationTracking,
+  stopLocationTracking,
+  syncNativeLocationToken,
+} from "@/lib/native/location";
 import { collectDeviceHealth, attachBatteryChange } from "@/lib/native/deviceStatus";
 import { detectDeviceLabel } from "@/lib/native/deviceName";
 import { reportDeviceStatus, reportDeviceLabel } from "@/lib/api/endpoints/family";
@@ -33,7 +38,10 @@ export function NativeBootstrap() {
   useEffect(() => {
     if (!isNativePlatform()) return;
     if (status === "authenticated" && familyId && userId) {
-      void initPush({ userId, familyId, role: role ?? undefined });
+      void (async () => {
+        await syncNativeLocationToken();
+        await initPush({ userId, familyId, role: role ?? undefined });
+      })();
     } else {
       void (async () => {
         if (await adoptNativeLocationSessionTokens()) {

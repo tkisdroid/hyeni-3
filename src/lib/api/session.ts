@@ -8,6 +8,7 @@
  * - family_id·role·is_anonymous 는 access token JWT claim 에서 클라가 직접 디코드한다.
  */
 import { API_BASE } from "@/config/env";
+import { mergeApiUserWithTokenUser } from "@/transform/sessionUserMerge";
 
 export interface ApiUser {
   id: string;
@@ -101,10 +102,14 @@ export function userFromAccessToken(token: string | null): ApiUser | null {
   };
 }
 
+export function mergeApiUserWithAccessToken(user: ApiUser | null, token: string | null): ApiUser | null {
+  return mergeApiUserWithTokenUser(user, userFromAccessToken(token));
+}
+
 function applyPersistedSession(session: PersistedSession | null): void {
   accessToken = session?.access ?? null;
   refreshToken = session?.refresh ?? null;
-  currentUser = session?.user ?? userFromAccessToken(accessToken);
+  currentUser = mergeApiUserWithAccessToken(session?.user ?? null, accessToken);
 }
 
 // access 가 있으면 {access,refresh,user} 저장, 없으면(로그아웃) 키 제거.
@@ -140,7 +145,7 @@ restoreSessionFromStorage();
 export function setApiTokens({ access, refresh }: TokenPair = {}): void {
   if (access !== undefined) accessToken = access;
   if (refresh !== undefined) refreshToken = refresh;
-  if (!currentUser && accessToken) currentUser = userFromAccessToken(accessToken);
+  currentUser = mergeApiUserWithAccessToken(currentUser, accessToken);
   // 회전 직후 프로세스가 죽어도 새 refresh 가 살아남게 즉시 영속화
   // (persist 지연 중 킬 → 옛 refresh 만 남음 → 이미 폐기된 토큰 → 세션 풀림 방지).
   persistSession();
@@ -160,7 +165,7 @@ export function getApiUser(): ApiUser | null {
 }
 
 export function setApiUser(user: ApiUser | null): void {
-  currentUser = user ?? null;
+  currentUser = mergeApiUserWithAccessToken(user ?? null, accessToken);
   persistSession();
 }
 
@@ -170,7 +175,7 @@ export function setApiUser(user: ApiUser | null): void {
  */
 export function getApiSession(): ApiSession | null {
   if (!currentUser && accessToken) {
-    currentUser = userFromAccessToken(accessToken);
+    currentUser = mergeApiUserWithAccessToken(currentUser, accessToken);
     if (currentUser) persistSession();
   }
   if (!accessToken) return null;
