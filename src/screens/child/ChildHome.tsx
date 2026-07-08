@@ -223,7 +223,7 @@ export function ChildHome() {
     });
   };
 
-  // 꾹 SOS — 누르고 3초 유지하면 발동
+  // SOS — 누르고 3초 유지하면 발동
   const [sosHold, setSosHold] = useState(false);
   const sosTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startSos = () => {
@@ -664,7 +664,7 @@ export function ChildHome() {
           </div>
         </section>
 
-        {/* 꾹 SOS */}
+        {/* SOS 도움 요청 */}
         <button
           type="button"
           className={`ch-sos hy-press${sosHold ? " is-holding" : ""}`}
@@ -679,7 +679,7 @@ export function ChildHome() {
             <img src={asset("ui/sos-shield.webp")} alt="" />
           </span>
           <span className="ch-sos__main">
-            <span className="ch-sos__label">꾹 SOS</span>
+            <span className="ch-sos__label">SOS 도움 요청</span>
             <span className="ch-sos__sub">3초 누르면 엄마·아빠한테 바로 연결</span>
           </span>
           <span className="ch-sos__chev">

@@ -8,7 +8,7 @@ import "./ChildSos.css";
 
 type Phase = "idle" | "counting" | "sending" | "sent" | "error";
 
-/** 버튼을 이만큼 꾹 눌러야 SOS 카운트다운이 시작돼요(ms). */
+/** 버튼을 이만큼 눌러야 SOS 카운트다운이 시작돼요(ms). */
 const HOLD_MS = 700;
 /** 카운트다운 시작 숫자(초). */
 const COUNT_FROM = 3;
@@ -16,7 +16,7 @@ const COUNT_FROM = 3;
 const RING_R = 100;
 const RING_C = 2 * Math.PI * RING_R;
 
-/** 꾹 SOS — 3초 홀드 → 카운트다운 → 전송완료. */
+/** SOS — 3초 홀드 → 카운트다운 → 전송완료. */
 export function ChildSos() {
   const { show } = useToast();
   const sos = useSendSos();
@@ -50,7 +50,7 @@ export function ChildSos() {
     );
   };
 
-  // 카운트다운 진입(사용자가 꾹 누르기를 완료했거나 키보드로 활성화한 순간).
+  // 카운트다운 진입(사용자가 버튼 누르기를 완료했거나 키보드로 활성화한 순간).
   // 실제 발송은 아직 아니며, 이 3초 창 동안 위치만 미리 취득한다.
   const startSos = () => {
     sentRef.current = false;
@@ -60,7 +60,7 @@ export function ChildSos() {
     acquirePosition();
   };
 
-  // ⚠️ 실제 SOS 발송 지점 — 사용자 액션(꾹 누르기 완료 → 카운트다운 만료 / "지금 바로 보내기")
+  // ⚠️ 실제 SOS 발송 지점 — 사용자 액션(버튼 누르기 완료 → 카운트다운 만료 / "지금 바로 보내기")
   //    에서만 도달한다. 마운트·타 effect 단독으로는 절대 호출되지 않는다.
   //    sentRef 로 세션당 1회만 mutate 를 호출한다.
   //    ⚠️ 안전 기능: 결과가 확정되기 전엔 "sending"(보내는 중)만 노출하고,
@@ -174,7 +174,7 @@ export function ChildSos() {
         <button
           type="button"
           className="cs-sos hy-press"
-          aria-label="SOS 보내기 — 꾹 눌러"
+          aria-label="SOS 보내기 — 3초 누르기"
           onPointerDown={beginHold}
           onPointerUp={endHold}
           onPointerLeave={endHold}
@@ -208,7 +208,7 @@ export function ChildSos() {
           </div>
         </button>
 
-        <div className="cs-hint">꾹 누르면 3초 뒤에 보내져</div>
+        <div className="cs-hint">3초 누르면 보내져</div>
 
         <div className="cs-calls">
           <button type="button" className="cs-call hy-press" onClick={callMom}>

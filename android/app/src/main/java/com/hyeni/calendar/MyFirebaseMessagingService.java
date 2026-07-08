@@ -319,13 +319,14 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         boolean isKkuk = "kkuk".equals(type);
         // 꾹은 긴급 등급 — 전체화면(fullScreenIntent)으로 띄운다.
         boolean fullScreen = isEmergency || isKkuk;
-        // AI 친구 메시지와 부모 칭찬 스티커는 child_message 채널(IMPORTANCE_HIGH)로
-        // heads-up 팝업 보장.
+        // AI 친구 메시지, 부모 메모, 부모 칭찬 스티커는 child_message 채널
+        // (IMPORTANCE_HIGH)로 heads-up 팝업을 보장한다.
         boolean isSticker = "sticker".equals(type);
-        boolean isChildMessage = "ai_proactive".equals(type) || isSticker;
+        boolean isMemo = "new_memo".equals(type);
+        boolean isChildMessage = "ai_proactive".equals(type) || isMemo || isSticker;
         String channel = isEmergency ? "emergency" : (isKkuk ? "kkuk" : (isChildMessage ? "child_message" : "schedule"));
-        // AI 선제 대화/스티커 알림은 탭하면 관련 아이 화면으로 직행한다.
-        String route = "ai_proactive".equals(type) ? "ai-chat" : (isSticker ? "child-sticker" : null);
+        // AI 선제 대화/부모 메모/스티커 알림은 탭하면 관련 아이 화면으로 직행한다.
+        String route = "ai_proactive".equals(type) ? "ai-chat" : (isMemo ? "child-memo" : (isSticker ? "child-sticker" : null));
         NotificationHelper.showNotification(
             this, title, body,
             channel, fullScreen, fullScreen, currentNotifId, route

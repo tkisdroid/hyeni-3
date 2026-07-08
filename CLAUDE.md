@@ -69,6 +69,13 @@
   `startService`/`requestCurrentLocation`/FCM `request_location` Intent에는 accessToken과 refreshToken을 모두 싣는다.
   WebView 세션이 빈 상태에서는 네이티브 access token을 직접 채택하지 말고, refresh token을 `/auth/refresh`로
   서버 검증해 새 세션을 받은 경우에만 복구한다(만료 access 재채택 루프 방지).
+- Capacitor SystemBars 패치(2026-07-09): Android WebView 시작 직후 `document.documentElement`가 아직 없으면
+  기본 `SystemBars` safe-area CSS 주입이 콘솔 오류를 낸다. `postinstall`의
+  `scripts/patch-capacitor-systembars.mjs`가 DOM 준비 전 주입을 건너뛰게 패치하므로, 의존성 재설치 후에는
+  `npm install` 또는 해당 스크립트 실행 뒤 Android 빌드를 검증한다.
+- 부모→아이 메모 알림: 서버는 `type: "new_memo"`와 `targetChildUserId`로 FCM을 보낸다. Android 네이티브는
+  이 알림을 일정 채널이 아니라 아이 메시지 채널(`hyeni_child_message_v1`)로 heads-up 표시하고,
+  탭/폴링 라우트는 `child-memo` → `#/child/memo`로 유지한다.
 - 리뷰 보상 티어: `/api/review-rewards`는 부모 전용 계약이다. 아이/선생님 세션에서 엔타이틀먼트가 필요해도
   서버 호출을 하지 말고 reviewed=false로 확정한다. 아이 화면 CDP 로그에 403이 남으면 실패로 보고
   `resolveReviewRewardQueryScope` 규칙을 먼저 확인한다.

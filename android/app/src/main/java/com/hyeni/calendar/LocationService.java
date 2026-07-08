@@ -3065,8 +3065,10 @@ public class LocationService extends Service {
         // (MyFirebaseMessagingService.showNotification: fullScreen = emergency || isKkuk)와 동일.
         boolean fullScreen = emergency || isKkuk;
         int notificationId = NotificationHelper.stableRequestCode(stableId);
-        // AI 선제 대화/스티커 알림은 탭하면 관련 아이 화면으로 직행한다.
-        String route = "ai_proactive".equals(type) ? "ai-chat" : ("sticker".equals(type) ? "child-sticker" : null);
+        // AI 선제 대화/부모 메모/스티커 알림은 탭하면 관련 아이 화면으로 직행한다.
+        String route = "ai_proactive".equals(type)
+            ? "ai-chat"
+            : ("new_memo".equals(type) ? "child-memo" : ("sticker".equals(type) ? "child-sticker" : null));
         NotificationHelper.showNotification(
             this,
             title,

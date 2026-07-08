@@ -244,7 +244,7 @@ export function AiCredit() {
         {/* 안내 */}
         <div className="ac-note">
           <span className="ac-note__emoji">💬</span>
-          AI 친구 혜니와 한 번 대화할 때마다 크레딧 1회가 사용돼요. 부모님이 충전해 주세요.
+          AI가 아이의 일정·안전 대화를 도울 때 크레딧 1회가 사용돼요. 부모님이 충전해 주세요.
         </div>
 
         {/* 충전팩 */}

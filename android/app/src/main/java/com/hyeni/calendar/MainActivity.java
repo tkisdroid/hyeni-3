@@ -275,7 +275,7 @@ public class MainActivity extends BridgeActivity {
         }, delayMs);
     }
 
-    // AI 선제 대화/스티커 알림 탭 → 관련 아이 화면 직행. WebView 부팅 타이밍이
+    // AI 선제 대화/부모 메모/스티커 알림 탭 → 관련 아이 화면 직행. WebView 부팅 타이밍이
     // 가변적이라 remote-listen 플래그 주입과 동일하게 지연 재주입한다.
     private void handleRouteLaunch(Intent intent) {
         if (intent == null) {
@@ -288,6 +288,14 @@ public class MainActivity extends BridgeActivity {
             injectOpenAiChatFlag(3000);
             injectOpenAiChatFlag(6000);
             injectOpenAiChatFlag(10000);
+            return;
+        }
+        if ("child-memo".equals(route)) {
+            Log.i("MainActivity", "Child memo route launch - will open memo");
+            injectHashRoute("#/child/memo", 1000);
+            injectHashRoute("#/child/memo", 3000);
+            injectHashRoute("#/child/memo", 6000);
+            injectHashRoute("#/child/memo", 10000);
             return;
         }
         if ("child-sticker".equals(route)) {

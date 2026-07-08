@@ -98,7 +98,7 @@ function schedulePlaceLabel(loc: ChildLocation, events: ChildScheduleEvent[]): s
 const shortcutRoutes: Record<string, string> = {
   "AI 일정": "/ai-schedule",
   "위치추적": "/parent/location?view=history",
-  "친구놀이": "/playdate-accept",
+  "친구놀이": "/friend-play",
   "장소관리": "/place-manager",
   "주변소리": "/remote-audio",
   "안심리포트": "/daily-report",

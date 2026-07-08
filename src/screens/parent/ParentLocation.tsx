@@ -376,7 +376,11 @@ export function ParentLocation() {
   const onStaysPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.pointerType === "touch") return;
     beginStaysDrag(e.clientY);
-    e.currentTarget.setPointerCapture(e.pointerId);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // 일부 합성/비표준 pointer 이벤트에서는 active pointer 가 없어 실패할 수 있다.
+    }
   };
 
   const onStaysPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
