@@ -9,7 +9,7 @@ import { useMyFamily } from "@/queries/useFamily";
 import { useChildLocations, useSavedPlaces } from "@/queries/useLocation";
 import { useLocationLabels } from "@/queries/useLocationLabels";
 import { requestLocationRefresh } from "@/lib/api/endpoints/remote";
-import { formatFreshness } from "@/transform/locationView";
+import { formatFreshness, hasNewerLocationUpdate } from "@/transform/locationView";
 import "./LocationStatus.css";
 
 type StatusKind = "loading" | "success" | "error" | "permission";
@@ -107,16 +107,28 @@ export function LocationStatus() {
     if (refreshing) return;
     setRefreshing(true);
     try {
-      const requested = familyId
-        ? await requestLocationRefresh(familyId, childMember?.user_id ?? null)
-        : { ok: false };
+      if (!familyId || !childMember?.user_id) {
+        show("아이 기기 정보가 없어 위치 요청을 보내지 못했어요", "⚠️");
+        return;
+      }
+      const before = loc;
+      const requested = await requestLocationRefresh(familyId, childMember.user_id);
       if (!requested.ok) {
         show("아이 기기에 위치 요청을 보내지 못했어요", "⚠️");
-      } else {
-        await new Promise((resolve) => window.setTimeout(resolve, 1800));
+        return;
       }
+      await new Promise((resolve) => window.setTimeout(resolve, 1800));
       const result = await refetch();
-      show(result.isError ? "다시 시도했지만 실패했어요" : "위치를 다시 확인했어요", result.isError ? "⚠️" : "📍");
+      if (result.isError) {
+        show("다시 시도했지만 실패했어요", "⚠️");
+        return;
+      }
+      const after = result.data?.find((l) => l.user_id === childMember.user_id) ?? null;
+      if (hasNewerLocationUpdate(before, after)) {
+        show("위치를 다시 확인했어요", "📍");
+      } else {
+        show("아이 기기에 요청은 보냈지만 아직 새 위치가 도착하지 않았어요", "⚠️");
+      }
     } catch (error) {
       console.error("위치 갱신 실패:", error);
       show("위치 갱신에 실패했어요", "⚠️");

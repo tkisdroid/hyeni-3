@@ -29,6 +29,18 @@ export function formatFreshness(updatedAt: string | null | undefined, now: Date 
   return { label: `${Math.round(diffHour / 24)}일 전`, status: "stale" };
 }
 
+export function hasNewerLocationUpdate(
+  before: Pick<ChildLocation, "updated_at"> | null | undefined,
+  after: Pick<ChildLocation, "updated_at"> | null | undefined,
+): boolean {
+  if (!after) return false;
+  if (!before) return true;
+  const beforeMs = parseServerTimestamp(before.updated_at)?.getTime();
+  const afterMs = parseServerTimestamp(after.updated_at)?.getTime();
+  if (beforeMs == null || !Number.isFinite(beforeMs)) return afterMs != null && Number.isFinite(afterMs);
+  return afterMs != null && Number.isFinite(afterMs) && afterMs > beforeMs;
+}
+
 const EARTH_R = 6371000;
 function toRad(deg: number): number {
   return (deg * Math.PI) / 180;

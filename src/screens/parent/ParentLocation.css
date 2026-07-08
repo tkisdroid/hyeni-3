@@ -710,6 +710,8 @@
   flex-direction: column;
   transition: transform 0.22s ease, max-height 0.22s ease;
   will-change: transform;
+  user-select: none;
+  touch-action: pan-y;
 }
 .pl-stays--collapsed {
   transform: translateY(calc(100% + 28px));
@@ -751,6 +753,7 @@
   flex-direction: column;
   gap: 8px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 2px;
 }
 .pl-stay {

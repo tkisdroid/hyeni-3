@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { PointerEvent as ReactPointerEvent } from "react";
+import type {
+  MouseEvent as ReactMouseEvent,
+  PointerEvent as ReactPointerEvent,
+  TouchEvent as ReactTouchEvent,
+} from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Lock, Crown } from "lucide-react";
 import { asset } from "@/lib/assets";
@@ -17,7 +21,12 @@ import {
 import { useEvents } from "@/queries/useSchedule";
 import { useLocationLabels } from "@/queries/useLocationLabels";
 import { useEntitlement } from "@/queries/useEntitlement";
-import { formatFreshness, parseServerTimestamp, distanceMeters } from "@/transform/locationView";
+import {
+  formatFreshness,
+  parseServerTimestamp,
+  distanceMeters,
+  hasNewerLocationUpdate,
+} from "@/transform/locationView";
 import {
   toTimedPoints,
   detectStayPoints,
@@ -47,6 +56,9 @@ function avatarSrc(path: string): string {
 const TRAIL_JITTER_M = 8; // hyeni-1 LOCATION_TRAIL_JITTER_M — 정지 중 GPS 지터(≈8m)를 한 점으로 압축.
 const SCHEDULE_STAY_RADIUS_M = 220;
 const MIN_SCHEDULE_STAY_OVERLAP_MS = 10 * 60 * 1000;
+const STAYS_DRAG_TOGGLE_PX = 42;
+const STAYS_DRAG_CLICK_GUARD_PX = 8;
+const STAYS_DRAG_CLICK_GUARD_MS = 650;
 
 interface TrailPoint {
   lat: number;
@@ -277,7 +289,9 @@ export function ParentLocation() {
   const [selectedStayIdx, setSelectedStayIdx] = useState<number | null>(null);
   const [staysCollapsed, setStaysCollapsed] = useState(false);
   const staysDragStart = useRef<number | null>(null);
+  const staysDragLast = useRef<number | null>(null);
   const staysDragged = useRef(false);
+  const staysDragClickGuardUntil = useRef(0);
   // 아이 전환(전역 스위치·?child=) 시 선택 초기화 — 다른 아이의 스테이가 강조 잔존하지 않게.
   useEffect(() => {
     setSelectedStayIdx(null);
@@ -305,26 +319,102 @@ export function ParentLocation() {
   const stayCenter =
     activeStayIdx != null ? { lat: visibleStayPoints[activeStayIdx].lat, lng: visibleStayPoints[activeStayIdx].lng } : null;
 
-  const onStaysGripDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    staysDragStart.current = e.clientY;
-    staysDragged.current = false;
-    e.currentTarget.setPointerCapture(e.pointerId);
+  const markStaysDragged = () => {
+    staysDragged.current = true;
+    staysDragClickGuardUntil.current = Date.now() + STAYS_DRAG_CLICK_GUARD_MS;
   };
-  const onStaysGripMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (staysDragStart.current == null) return;
-    const dy = e.clientY - staysDragStart.current;
-    if (dy > 46) {
+
+  const beginStaysDrag = (clientY: number) => {
+    staysDragStart.current = clientY;
+    staysDragLast.current = clientY;
+    staysDragged.current = false;
+  };
+
+  const updateStaysDrag = (clientY: number) => {
+    const startY = staysDragStart.current;
+    if (startY == null) return;
+    staysDragLast.current = clientY;
+    const dy = clientY - startY;
+    if (Math.abs(dy) > STAYS_DRAG_CLICK_GUARD_PX) {
+      markStaysDragged();
+    }
+    if (dy >= STAYS_DRAG_TOGGLE_PX) {
       setStaysCollapsed(true);
-      staysDragged.current = true;
-      staysDragStart.current = e.clientY;
-    } else if (dy < -46) {
+      staysDragStart.current = null;
+      staysDragLast.current = null;
+    } else if (dy <= -STAYS_DRAG_TOGGLE_PX) {
       setStaysCollapsed(false);
-      staysDragged.current = true;
-      staysDragStart.current = e.clientY;
+      staysDragStart.current = null;
+      staysDragLast.current = null;
     }
   };
-  const onStaysGripUp = () => {
+
+  const finishStaysDrag = () => {
+    const startY = staysDragStart.current;
+    const lastY = staysDragLast.current;
+    if (startY != null && lastY != null) {
+      const dy = lastY - startY;
+      if (dy >= STAYS_DRAG_TOGGLE_PX) {
+        setStaysCollapsed(true);
+        markStaysDragged();
+      } else if (dy <= -STAYS_DRAG_TOGGLE_PX) {
+        setStaysCollapsed(false);
+        markStaysDragged();
+      } else if (Math.abs(dy) > STAYS_DRAG_CLICK_GUARD_PX) {
+        markStaysDragged();
+      }
+    }
     staysDragStart.current = null;
+    staysDragLast.current = null;
+  };
+
+  const cancelStaysDrag = () => {
+    staysDragStart.current = null;
+    staysDragLast.current = null;
+  };
+
+  const onStaysPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === "touch") return;
+    beginStaysDrag(e.clientY);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const onStaysPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === "touch") return;
+    updateStaysDrag(e.clientY);
+  };
+
+  const onStaysPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === "touch") return;
+    finishStaysDrag();
+  };
+
+  const onStaysPointerCancel = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === "touch") return;
+    cancelStaysDrag();
+  };
+
+  const onStaysTouchStart = (e: ReactTouchEvent<HTMLDivElement>) => {
+    if (e.touches.length !== 1) return;
+    beginStaysDrag(e.touches[0].clientY);
+  };
+
+  const onStaysTouchMove = (e: ReactTouchEvent<HTMLDivElement>) => {
+    if (e.touches.length !== 1) return;
+    updateStaysDrag(e.touches[0].clientY);
+  };
+
+  const onStaysTouchEnd = () => {
+    finishStaysDrag();
+  };
+
+  const onStaysClickCapture = (e: ReactMouseEvent<HTMLDivElement>) => {
+    if (!staysDragged.current) return;
+    const shouldGuard = Date.now() <= staysDragClickGuardUntil.current;
+    staysDragged.current = false;
+    if (!shouldGuard) return;
+    e.preventDefault();
+    e.stopPropagation();
   };
 
   const histLocked = activeView === "history" && !premiumOpen;
@@ -352,19 +442,28 @@ export function ParentLocation() {
   // 새로고침 — 실제 리페치 결과에 따라 정직하게 안내(거짓 성공 금지).
   const refresh = async () => {
     if (isFetching) return;
-    if (familyId && selected?.user_id) {
-      const requested = await requestLocationRefresh(familyId, selected.user_id);
-      if (!requested.ok) {
-        show("아이 기기에 위치 요청을 보내지 못했어요", "⚠️");
-      } else {
-        await new Promise((resolve) => window.setTimeout(resolve, 1800));
-      }
+    if (!familyId || !selected?.user_id) {
+      show("아이 기기 정보가 없어 위치 요청을 보내지 못했어요", "⚠️");
+      return;
     }
+    const before = loc;
+    const requested = await requestLocationRefresh(familyId, selected.user_id);
+    if (!requested.ok) {
+      show("아이 기기에 위치 요청을 보내지 못했어요", "⚠️");
+      return;
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 1800));
     const result = await refetch();
-    show(
-      result.isError ? "위치 갱신에 실패했어요" : "실시간 위치를 새로고침했어요",
-      result.isError ? "⚠️" : "📍",
-    );
+    if (result.isError) {
+      show("위치 갱신에 실패했어요", "⚠️");
+      return;
+    }
+    const after = result.data?.find((l) => l.user_id === selected.user_id) ?? null;
+    if (hasNewerLocationUpdate(before, after)) {
+      show("실시간 위치를 새로고침했어요", "📍");
+      return;
+    }
+    show("아이 기기에 요청은 보냈지만 아직 새 위치가 도착하지 않았어요", "⚠️");
   };
 
   // 지도에 표시된 아이에게 전화. 번호 미등록이면 안내만.
@@ -546,23 +645,24 @@ export function ParentLocation() {
       {/* 하단 — 오늘 경로(스테이포인트 목록) */}
       {activeView === "history" && premiumOpen && stayPoints.length > 0 && (
         <>
-        <div className={`pl-sheet pl-stays${staysCollapsed ? " pl-stays--collapsed" : ""}`}>
+        <div
+          className={`pl-sheet pl-stays${staysCollapsed ? " pl-stays--collapsed" : ""}`}
+          onPointerDown={onStaysPointerDown}
+          onPointerMove={onStaysPointerMove}
+          onPointerUp={onStaysPointerUp}
+          onPointerCancel={onStaysPointerCancel}
+          onTouchStart={onStaysTouchStart}
+          onTouchMove={onStaysTouchMove}
+          onTouchEnd={onStaysTouchEnd}
+          onTouchCancel={cancelStaysDrag}
+          onClickCapture={onStaysClickCapture}
+        >
           <div
             className="pl-stays__grip"
             role="button"
             tabIndex={0}
             aria-label={staysCollapsed ? "오늘 머문 곳 펼치기" : "오늘 머문 곳 접기"}
-            onPointerDown={onStaysGripDown}
-            onPointerMove={onStaysGripMove}
-            onPointerUp={onStaysGripUp}
-            onPointerCancel={onStaysGripUp}
-            onClick={() => {
-              if (staysDragged.current) {
-                staysDragged.current = false;
-                return;
-              }
-              setStaysCollapsed((v) => !v);
-            }}
+            onClick={() => setStaysCollapsed((v) => !v)}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
@@ -572,13 +672,7 @@ export function ParentLocation() {
           >
             <div className="pl-sheet__handle" />
           </div>
-          <div
-            className="pl-stays__head"
-            onPointerDown={onStaysGripDown}
-            onPointerMove={onStaysGripMove}
-            onPointerUp={onStaysGripUp}
-            onPointerCancel={onStaysGripUp}
-          >
+          <div className="pl-stays__head">
             <span className="pl-stays__title">오늘 머문 곳</span>
             <span className="pl-stays__count">{visibleStayPoints.length}/{stayPoints.length}곳</span>
           </div>
