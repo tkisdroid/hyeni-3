@@ -427,8 +427,8 @@ function RoleStep({
 
       <div className="ob-role-list">
         <button type="button" className="ob-role-card ob-role-card--parent hy-press" onClick={onParent} disabled={busy}>
-          <span className="ob-role-ic" style={{ background: "#E6F2FB" }}>
-            <img src={asset(ROLE_ICON_ASSETS.parent)} alt="" style={{ width: 48, height: 48, objectFit: "contain" }} />
+          <span className="ob-role-ic ob-role-ic--parent">
+            <img className="ob-role-img" src={asset(ROLE_ICON_ASSETS.parent)} alt="" />
           </span>
           <span className="ob-role-main">
             <span className="ob-role-name">학부모</span>
@@ -438,8 +438,8 @@ function RoleStep({
         </button>
 
         <button type="button" className="ob-role-card ob-role-card--child hy-press" onClick={onChild} disabled={busy}>
-          <span className="ob-role-ic" style={{ background: "#fff" }}>
-            <img src={asset(ROLE_ICON_ASSETS.child)} alt="" style={{ width: 46, height: 46, objectFit: "contain" }} />
+          <span className="ob-role-ic ob-role-ic--child">
+            <img className="ob-role-img ob-role-img--child" src={asset(ROLE_ICON_ASSETS.child)} alt="" />
           </span>
           <span className="ob-role-main">
             <span className="ob-role-name" style={{ color: "#7C4B8E" }}>아이</span>
@@ -451,8 +451,8 @@ function RoleStep({
         </button>
 
         <button type="button" className="ob-role-card ob-role-card--teacher hy-press" onClick={onTeacher} disabled={busy}>
-          <span className="ob-role-ic" style={{ background: "#fff" }}>
-            <img src={asset(ROLE_ICON_ASSETS.teacher)} alt="" style={{ width: 44, height: 44, objectFit: "contain" }} />
+          <span className="ob-role-ic ob-role-ic--teacher">
+            <img className="ob-role-img" src={asset(ROLE_ICON_ASSETS.teacher)} alt="" />
           </span>
           <span className="ob-role-main">
             <span className="ob-role-name" style={{ color: "#0F7A57" }}>선생님</span>

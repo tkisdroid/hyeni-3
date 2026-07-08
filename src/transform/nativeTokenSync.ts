@@ -49,9 +49,7 @@ export function shouldAdoptNativeSessionTokens(input: NativeSessionTokenCandidat
   const nativeAccess = clean(input.nativeAccessToken);
   const nativeRefresh = clean(input.nativeRefreshToken);
   if (!nativeAccess || !nativeRefresh) return false;
-  if (!currentAccess) {
-    return Boolean(subject(nativeAccess) && issuedAtMs(nativeAccess));
-  }
+  if (!currentAccess) return false;
   if (nativeRefresh === currentRefresh) return false;
   const currentSub = subject(currentAccess);
   const nativeSub = subject(nativeAccess);
@@ -65,18 +63,16 @@ export function shouldAdoptNativeSessionTokens(input: NativeSessionTokenCandidat
 /**
  * WebView 세션(localStorage)만 사라졌고 네이티브 push context 에 refresh token 과
  * 사용자/가족/역할 식별자가 남아 있는 경우에만, 1회 refresh 복구를 허용한다.
- * access token 이 이미 있으면 기존 adopt 경로가 처리하므로 이 복구는 쓰지 않는다.
+ * 네이티브 access token 이 남아 있어도 서버 검증 전에는 신뢰하지 않는다.
  */
 export function shouldRestoreNativeRefreshOnlySession(input: NativeRefreshOnlySessionCandidate): boolean {
   const currentAccess = clean(input.currentAccessToken);
   const currentRefresh = clean(input.currentRefreshToken);
-  const nativeAccess = clean(input.nativeAccessToken);
   const nativeRefresh = clean(input.nativeRefreshToken);
   const nativeUserId = clean(input.nativeUserId);
   const nativeFamilyId = clean(input.nativeFamilyId);
   const nativeRole = clean(input.nativeRole);
   if (currentAccess || currentRefresh) return false;
-  if (nativeAccess) return false;
   if (!nativeRefresh || !nativeUserId || !nativeFamilyId) return false;
   return nativeRole === "parent" || nativeRole === "child" || nativeRole === "teacher";
 }

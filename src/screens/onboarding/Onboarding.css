@@ -223,6 +223,37 @@
   align-items: center;
   justify-content: center;
   flex: none;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.66);
+}
+.ob-role-ic--parent {
+  background: #e6f2fb;
+}
+.ob-role-ic--child,
+.ob-role-ic--teacher {
+  background: #fff;
+}
+.ob-role-img {
+  display: block;
+  width: 68px;
+  height: 68px;
+  object-fit: cover;
+  object-position: center;
+}
+.ob-role-ic--parent .ob-role-img {
+  width: 76px;
+  height: 76px;
+  object-position: center 43%;
+}
+.ob-role-ic--teacher .ob-role-img {
+  width: 72px;
+  height: 72px;
+  object-position: center 40%;
+}
+.ob-role-img--child {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
 }
 .ob-role-main {
   flex: 1;
