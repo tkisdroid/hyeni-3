@@ -58,6 +58,17 @@ public class BootReceiver extends BroadcastReceiver {
             SharedPreferences prefs = context.getSharedPreferences("hyeni_location_prefs", Context.MODE_PRIVATE);
             boolean enabled = prefs.getBoolean("serviceEnabled", false);
             String userId = prefs.getString("userId", null);
+            String accessToken = prefs.getString("accessToken", "");
+            String refreshToken = prefs.getString("refreshToken", "");
+            boolean hasAuthToken =
+                    (accessToken != null && !accessToken.isEmpty()) ||
+                    (refreshToken != null && !refreshToken.isEmpty());
+
+            if (enabled && userId != null && !hasAuthToken) {
+                Log.w(TAG, "Location service restart skipped: auth token missing");
+                prefs.edit().putBoolean("serviceEnabled", false).apply();
+                return;
+            }
 
             if (enabled && userId != null) {
                 // 위치 권한 체크 후 서비스 재시작 (권한 없으면 크래시 방지)

@@ -48,11 +48,16 @@ public class LocationPlugin extends Plugin {
         String supabaseUrl = call.getString("supabaseUrl");
         String supabaseKey = call.getString("supabaseKey");
         String accessToken = call.getString("accessToken", "");
+        String refreshToken = call.getString("refreshToken", "");
         String role = call.getString("role", "child");
         String intervalMode = call.getString("intervalMode", "balanced");
 
         if (userId == null || familyId == null) {
             call.reject("userId and familyId are required");
+            return;
+        }
+        if ((accessToken == null || accessToken.isEmpty()) && (refreshToken == null || refreshToken.isEmpty())) {
+            call.reject("accessToken or refreshToken is required");
             return;
         }
 
@@ -85,7 +90,7 @@ public class LocationPlugin extends Plugin {
         }
         requestActivityRecognitionIfNeeded();
 
-        launchService(userId, familyId, supabaseUrl, supabaseKey, accessToken, intervalMode);
+        launchService(userId, familyId, supabaseUrl, supabaseKey, accessToken, refreshToken, intervalMode);
         call.resolve(new JSObject().put("status", "started"));
     }
 
@@ -96,11 +101,16 @@ public class LocationPlugin extends Plugin {
         String supabaseUrl = call.getString("supabaseUrl");
         String supabaseKey = call.getString("supabaseKey");
         String accessToken = call.getString("accessToken", "");
+        String refreshToken = call.getString("refreshToken", "");
         String role = call.getString("role", "child");
         String intervalMode = call.getString("intervalMode", "balanced");
 
         if (userId == null || familyId == null) {
             call.reject("userId and familyId are required");
+            return;
+        }
+        if ((accessToken == null || accessToken.isEmpty()) && (refreshToken == null || refreshToken.isEmpty())) {
+            call.reject("accessToken or refreshToken is required");
             return;
         }
 
@@ -117,7 +127,7 @@ public class LocationPlugin extends Plugin {
             .remove("kakaoRestKey")
             .apply();
 
-        launchRefresh(userId, familyId, supabaseUrl, supabaseKey, accessToken, intervalMode);
+        launchRefresh(userId, familyId, supabaseUrl, supabaseKey, accessToken, refreshToken, intervalMode);
         call.resolve(new JSObject().put("status", "refresh_requested"));
     }
 
@@ -130,6 +140,7 @@ public class LocationPlugin extends Plugin {
             String supabaseUrl = call.getString("supabaseUrl");
             String supabaseKey = call.getString("supabaseKey");
             String accessToken = call.getString("accessToken", "");
+            String refreshToken = call.getString("refreshToken", "");
             String intervalMode = call.getString("intervalMode", "balanced");
 
             // Also request background location (Android 10+)
@@ -139,7 +150,7 @@ public class LocationPlugin extends Plugin {
             }
             requestActivityRecognitionIfNeeded();
 
-            launchService(userId, familyId, supabaseUrl, supabaseKey, accessToken, intervalMode);
+            launchService(userId, familyId, supabaseUrl, supabaseKey, accessToken, refreshToken, intervalMode);
             call.resolve(new JSObject().put("status", "started"));
         } else {
             call.reject("Location permission denied");
@@ -169,7 +180,7 @@ public class LocationPlugin extends Plugin {
         return "balanced";
     }
 
-    private void launchService(String userId, String familyId, String supabaseUrl, String supabaseKey, String accessToken, String intervalMode) {
+    private void launchService(String userId, String familyId, String supabaseUrl, String supabaseKey, String accessToken, String refreshToken, String intervalMode) {
         String role = getContext().getSharedPreferences("hyeni_location_prefs", android.content.Context.MODE_PRIVATE)
             .getString("role", "child");
         Intent intent = new Intent(getContext(), LocationService.class);
@@ -178,6 +189,7 @@ public class LocationPlugin extends Plugin {
         intent.putExtra("supabaseUrl", supabaseUrl);
         intent.putExtra("supabaseKey", supabaseKey);
         intent.putExtra("accessToken", accessToken);
+        intent.putExtra("refreshToken", refreshToken);
         intent.putExtra("role", role);
         intent.putExtra("intervalMode", normalizeIntervalMode(intervalMode));
 
@@ -189,7 +201,7 @@ public class LocationPlugin extends Plugin {
         Log.i(TAG, "Location service launched");
     }
 
-    private void launchRefresh(String userId, String familyId, String supabaseUrl, String supabaseKey, String accessToken, String intervalMode) {
+    private void launchRefresh(String userId, String familyId, String supabaseUrl, String supabaseKey, String accessToken, String refreshToken, String intervalMode) {
         String role = getContext().getSharedPreferences("hyeni_location_prefs", android.content.Context.MODE_PRIVATE)
             .getString("role", "child");
         Intent intent = new Intent(getContext(), LocationService.class);
@@ -199,6 +211,7 @@ public class LocationPlugin extends Plugin {
         intent.putExtra("supabaseUrl", supabaseUrl);
         intent.putExtra("supabaseKey", supabaseKey);
         intent.putExtra("accessToken", accessToken);
+        intent.putExtra("refreshToken", refreshToken);
         intent.putExtra("role", role);
         intent.putExtra("intervalMode", normalizeIntervalMode(intervalMode));
 
@@ -366,17 +379,21 @@ public class LocationPlugin extends Plugin {
             return;
         }
 
-        getContext()
+        android.content.SharedPreferences.Editor ed = getContext()
             .getSharedPreferences("hyeni_location_prefs", android.content.Context.MODE_PRIVATE)
             .edit()
             .putString("userId", userId)
             .putString("familyId", familyId)
             .putString("role", role)
             .putString("supabaseUrl", supabaseUrl)
-            .putString("supabaseKey", supabaseKey)
-            .putString("accessToken", accessToken)
-            .putString("refreshToken", refreshToken)
-            .apply();
+            .putString("supabaseKey", supabaseKey);
+        if (accessToken != null && !accessToken.isEmpty()) {
+            ed.putString("accessToken", accessToken);
+        }
+        if (refreshToken != null && !refreshToken.isEmpty()) {
+            ed.putString("refreshToken", refreshToken);
+        }
+        ed.apply();
 
         Log.i(TAG, "Push context saved for user=" + userId + ", family=" + familyId);
         syncCachedFcmToken();

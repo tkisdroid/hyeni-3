@@ -278,9 +278,15 @@ public class LocationService extends Service {
                 familyId = intent.getStringExtra("familyId");
                 supabaseUrl = intent.getStringExtra("supabaseUrl");
                 supabaseKey = intent.getStringExtra("supabaseKey");
-                accessToken = intent.getStringExtra("accessToken");
+                String intentAccess = intent.getStringExtra("accessToken");
+                if (intentAccess != null && !intentAccess.isEmpty()) {
+                    accessToken = intentAccess;
+                } else {
+                    accessToken = prefs.getString("accessToken", null);
+                }
                 String intentRefresh = intent.getStringExtra("refreshToken");
                 if (intentRefresh != null && !intentRefresh.isEmpty()) refreshToken = intentRefresh;
+                else refreshToken = prefs.getString("refreshToken", null);
                 String role = intent.getStringExtra("role");
                 String intervalMode = intent.getStringExtra("intervalMode");
 
@@ -292,9 +298,9 @@ public class LocationService extends Service {
                     .putString("familyId", familyId)
                     .putString("supabaseUrl", supabaseUrl)
                     .putString("supabaseKey", supabaseKey)
-                    .putString("accessToken", accessToken)
                     .putBoolean("serviceEnabled", true)
                     .remove("kakaoRestKey");
+                if (accessToken != null && !accessToken.isEmpty()) editor.putString("accessToken", accessToken);
                 if (refreshToken != null && !refreshToken.isEmpty()) editor.putString("refreshToken", refreshToken);
                 if (role != null) editor.putString("role", role);
                 if (intervalMode != null) editor.putString(PREF_LOCATION_INTERVAL_MODE, normalizeLocationIntervalMode(intervalMode));
@@ -331,6 +337,12 @@ public class LocationService extends Service {
 
         if (userId == null || familyId == null || supabaseUrl == null) {
             Log.w(TAG, "Missing config, stopping service");
+            stopSelf();
+            return START_NOT_STICKY;
+        }
+        if (isBlank(accessToken) && isBlank(refreshToken)) {
+            Log.w(TAG, "Missing auth token, stopping service");
+            prefs.edit().putBoolean("serviceEnabled", false).apply();
             stopSelf();
             return START_NOT_STICKY;
         }
@@ -901,8 +913,6 @@ public class LocationService extends Service {
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .edit()
             .putBoolean("serviceEnabled", false)
-            .remove("accessToken")
-            .remove("refreshToken")
             .apply();
         Runnable stop = () -> {
             stopAll();

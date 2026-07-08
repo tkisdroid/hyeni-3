@@ -63,6 +63,9 @@
   동기화 상태, D1 `refresh_tokens` 회전 상태를 토큰 원문 없이 확인한다. 라이브 refresh 토큰 원문을 DB에서 읽어
   주입하지 말고, 정상 로그인/페어링 경로로 복구한다. 부모의 `request_location` push 성공은 서버 위치 갱신 성공이
   아니므로, 새로고침 안내는 `/api/location/children`의 해당 아이 `updated_at`이 실제로 증가했을 때만 성공으로 본다.
+  네이티브 위치 서비스는 인증 실패를 이유로 access/refresh token을 삭제하면 안 된다. 세션 삭제는 로그아웃/계정삭제만
+  수행하고, 위치 서비스는 `serviceEnabled=false`로 멈춘 뒤 앱 foreground의 정상 세션 재주입을 기다린다.
+  `startService`/`requestCurrentLocation`/FCM `request_location` Intent에는 accessToken과 refreshToken을 모두 싣는다.
 - 리뷰 보상 티어: `/api/review-rewards`는 부모 전용 계약이다. 아이/선생님 세션에서 엔타이틀먼트가 필요해도
   서버 호출을 하지 말고 reviewed=false로 확정한다. 아이 화면 CDP 로그에 403이 남으면 실패로 보고
   `resolveReviewRewardQueryScope` 규칙을 먼저 확인한다.

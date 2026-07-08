@@ -408,9 +408,14 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         String supabaseUrl = prefs.getString("supabaseUrl", "");
         String supabaseKey = prefs.getString("supabaseKey", "");
         String accessToken = prefs.getString("accessToken", "");
+        String refreshToken = prefs.getString("refreshToken", "");
 
         if (isBlank(userId) || isBlank(familyId) || isBlank(supabaseUrl) || isBlank(supabaseKey)) {
             Log.w(TAG, "Location refresh skipped: push context missing");
+            return false;
+        }
+        if (isBlank(accessToken) && isBlank(refreshToken)) {
+            Log.w(TAG, "Location refresh skipped: auth token missing");
             return false;
         }
 
@@ -421,6 +426,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         intent.putExtra("supabaseUrl", supabaseUrl);
         intent.putExtra("supabaseKey", supabaseKey);
         intent.putExtra("accessToken", accessToken);
+        intent.putExtra("refreshToken", refreshToken);
         intent.putExtra("role", "child");
         String requestId = resolveRemoteListenRequestId(data);
         if (!isBlank(requestId)) {
