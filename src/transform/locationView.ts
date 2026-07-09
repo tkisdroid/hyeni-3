@@ -61,6 +61,8 @@ export interface NearestPlace {
   distanceM: number;
 }
 
+export const EXACT_SAVED_PLACE_LABEL_RADIUS_M = 100;
+
 /** 자녀 위치에서 가장 가까운 저장장소(반경 무관, 최단). */
 export function nearestPlace(loc: ChildLocation, places: SavedPlace[]): NearestPlace | null {
   let best: NearestPlace | null = null;
@@ -72,15 +74,30 @@ export function nearestPlace(loc: ChildLocation, places: SavedPlace[]): NearestP
   return best;
 }
 
+/**
+ * 현재 위치 헤더에 저장장소명을 확정 표시할 수 있는 경우만 반환한다.
+ * 학교·학원처럼 가까운 장소가 붙어 있으면 200m 반경은 오판을 만들 수 있어,
+ * 표시용 라벨은 더 좁은 반경 안에서만 저장장소명을 쓴다.
+ */
+export function exactSavedPlaceLabel(
+  loc: ChildLocation,
+  places: SavedPlace[],
+  radiusM = EXACT_SAVED_PLACE_LABEL_RADIUS_M,
+): string | null {
+  const near = nearestPlace(loc, places);
+  if (!near || near.distanceM > radiusM) return null;
+  return near.place.name;
+}
+
 /** 주소 조회가 아직 끝나지 않았을 때의 사용자용 fallback. 좌표는 기본 UI에 노출하지 않는다. */
 export function coordinateLabel(loc: ChildLocation): string {
   void loc;
   return "주소 확인 중";
 }
 
-/** 자녀 위치 → 현위치 라벨: 200m 이내 저장장소명, 아니면 주소 조회 대기. */
+/** 자녀 위치 → 현위치 라벨: 좁은 반경의 저장장소명, 아니면 주소 조회 대기. */
 export function placeLabel(loc: ChildLocation, places: SavedPlace[]): string {
-  const near = nearestPlace(loc, places);
-  if (near && near.distanceM <= 200) return near.place.name;
+  const place = exactSavedPlaceLabel(loc, places);
+  if (place) return place;
   return coordinateLabel(loc);
 }

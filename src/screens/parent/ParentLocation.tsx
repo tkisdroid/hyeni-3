@@ -59,6 +59,10 @@ const MIN_SCHEDULE_STAY_OVERLAP_MS = 10 * 60 * 1000;
 const STAYS_DRAG_TOGGLE_PX = 42;
 const STAYS_DRAG_CLICK_GUARD_PX = 8;
 const STAYS_DRAG_CLICK_GUARD_MS = 650;
+const LOCATION_REFRESH_POLL_MS = 2_500;
+const LOCATION_REFRESH_TIMEOUT_MS = 25_000;
+
+type LocationRefreshState = "idle" | "requesting" | "waiting";
 
 interface TrailPoint {
   lat: number;
@@ -100,6 +104,10 @@ function eventWindowMs(event: CalendarEvent): { startMs: number; endMs: number }
 
 function eventLabel(event: CalendarEvent): string {
   return (event.title || event.location?.address || "일정 장소").trim();
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
 function scheduleStayLabel(stay: StayPoint, events: CalendarEvent[]): string | null {
@@ -188,10 +196,35 @@ export function ParentLocation() {
   const loc = selected?.user_id
     ? locations?.find((l) => l.user_id === selected.user_id) ?? null
     : null;
+  const [refreshState, setRefreshState] = useState<LocationRefreshState>("idle");
+  const refreshSeq = useRef(0);
+  const isRefreshingLocation = refreshState !== "idle";
+  useEffect(() => {
+    refreshSeq.current += 1;
+    setRefreshState("idle");
+  }, [selected?.user_id]);
 
   const fresh = loc ? formatFreshness(loc.updated_at, now) : null;
   const locationLabel = useLocationLabels(loc ? [loc] : [], places);
   const curPlace = loc ? locationLabel(loc) : "위치 확인 중";
+  const isStaleLocation = !!loc && fresh?.status === "stale";
+  const sheetName = isLocked
+    ? childName
+    : isRefreshingLocation
+      ? `${childName} 위치 확인 중`
+      : isStaleLocation
+        ? `${childName} · 마지막 확인: ${curPlace}`
+        : `${childName} · ${curPlace}`;
+  const sheetZoneText = isLocked
+    ? "안전 기능은 계속 쓸 수 있어요"
+    : isRefreshingLocation
+      ? "아이 기기에 요청을 보냈어요 · 새 위치를 기다리는 중"
+      : fresh?.label ?? "위치 정보 없음";
+  const refreshOverlayTitle =
+    refreshState === "requesting" ? "아이 기기에 위치 요청을 보내는 중" : "새 위치를 기다리는 중";
+  const refreshOverlaySub = loc
+    ? "지도와 장소명은 마지막으로 확인된 위치예요."
+    : "아이 기기에서 첫 위치 신호가 오면 바로 바뀌어요.";
 
   // 리뷰(지연) 티어 배지용 지연 분(마지막 픽스 기준). 타임스탬프 미상이면 null.
   const delayMin = useMemo(() => {
@@ -441,29 +474,53 @@ export function ParentLocation() {
 
   // 새로고침 — 실제 리페치 결과에 따라 정직하게 안내(거짓 성공 금지).
   const refresh = async () => {
-    if (isFetching) return;
+    if (isFetching || isRefreshingLocation) return;
     if (!familyId || !selected?.user_id) {
       show("아이 기기 정보가 없어 위치 요청을 보내지 못했어요", "⚠️");
       return;
     }
+    const requestSeq = refreshSeq.current + 1;
+    refreshSeq.current = requestSeq;
+    const targetUserId = selected.user_id;
     const before = loc;
-    const requested = await requestLocationRefresh(familyId, selected.user_id);
-    if (!requested.ok) {
-      show("아이 기기에 위치 요청을 보내지 못했어요", "⚠️");
-      return;
-    }
-    await new Promise((resolve) => window.setTimeout(resolve, 1800));
-    const result = await refetch();
-    if (result.isError) {
+    setRefreshState("requesting");
+    try {
+      const requested = await requestLocationRefresh(familyId, targetUserId);
+      if (refreshSeq.current !== requestSeq) return;
+      if (!requested.ok) {
+        show("아이 기기에 위치 요청을 보내지 못했어요", "⚠️");
+        return;
+      }
+      setRefreshState("waiting");
+
+      const deadline = Date.now() + LOCATION_REFRESH_TIMEOUT_MS;
+      let lastError = false;
+      while (Date.now() < deadline) {
+        await wait(LOCATION_REFRESH_POLL_MS);
+        if (refreshSeq.current !== requestSeq) return;
+        const result = await refetch();
+        if (refreshSeq.current !== requestSeq) return;
+        if (result.isError) {
+          lastError = true;
+          continue;
+        }
+        const after = result.data?.find((l) => l.user_id === targetUserId) ?? null;
+        if (hasNewerLocationUpdate(before, after)) {
+          show("실시간 위치를 새로고침했어요", "📍");
+          return;
+        }
+      }
+      if (lastError) {
+        show("위치 갱신 결과를 확인하지 못했어요", "⚠️");
+        return;
+      }
+      show("아이 기기에 요청은 보냈지만 아직 새 위치가 도착하지 않았어요", "⚠️");
+    } catch {
       show("위치 갱신에 실패했어요", "⚠️");
       return;
+    } finally {
+      if (refreshSeq.current === requestSeq) setRefreshState("idle");
     }
-    const after = result.data?.find((l) => l.user_id === selected.user_id) ?? null;
-    if (hasNewerLocationUpdate(before, after)) {
-      show("실시간 위치를 새로고침했어요", "📍");
-      return;
-    }
-    show("아이 기기에 요청은 보냈지만 아직 새 위치가 도착하지 않았어요", "⚠️");
   };
 
   // 지도에 표시된 아이에게 전화. 번호 미등록이면 안내만.
@@ -613,10 +670,11 @@ export function ParentLocation() {
           {activeView === "live" && (
             <button
               type="button"
-              className="pl-refresh"
-              aria-label={isDelayed ? "실시간 새로고침은 프리미엄" : "새로고침"}
+              className={`pl-refresh${isRefreshingLocation ? " pl-refresh--loading" : ""}`}
+              aria-label={isDelayed ? "실시간 새로고침은 프리미엄" : isRefreshingLocation ? refreshOverlayTitle : "새로고침"}
+              aria-busy={isRefreshingLocation}
               onClick={refresh}
-              disabled={isFetching || isDelayed}
+              disabled={isFetching || isDelayed || isRefreshingLocation}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6D6469" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
@@ -626,6 +684,14 @@ export function ParentLocation() {
               </svg>
             </button>
           )}
+        </div>
+      )}
+
+      {!isLocked && activeView === "live" && isRefreshingLocation && (
+        <div className="pl-refreshing" role="status" aria-live="polite">
+          <span className="pl-refreshing__spinner" aria-hidden="true" />
+          <span className="pl-refreshing__title">{refreshOverlayTitle}</span>
+          <span className="pl-refreshing__sub">{refreshOverlaySub}</span>
         </div>
       )}
 
@@ -721,18 +787,20 @@ export function ParentLocation() {
             <img src={avatarSrc(childAvatar)} alt="" />
           </div>
           <div className="pl-sheet__info">
-            <div className="pl-sheet__name">
-              {isLocked ? childName : `${childName} · ${curPlace}`}
-            </div>
-            <div className={`pl-sheet__zone${isLocked ? " pl-sheet__zone--locked" : ""}`}>
+            <div className="pl-sheet__name">{sheetName}</div>
+            <div
+              className={`pl-sheet__zone${isLocked ? " pl-sheet__zone--locked" : ""}${isStaleLocation ? " pl-sheet__zone--stale" : ""}${isRefreshingLocation ? " pl-sheet__zone--loading" : ""}`}
+            >
               <span className="pl-sheet__zone-dot" />
-              {isLocked ? "안전 기능은 계속 쓸 수 있어요" : fresh?.label ?? "위치 정보 없음"}
+              {sheetZoneText}
               {isDelayed && delayMin != null && (
                 <span className="pl-delay-badge">약 {delayMin}분 지연</span>
               )}
             </div>
           </div>
-          <span className="pl-sheet__dur">{loc ? "" : "오프라인"}</span>
+          <span className={`pl-sheet__dur${isRefreshingLocation ? " pl-sheet__dur--loading" : ""}`}>
+            {isRefreshingLocation ? "확인 중" : loc ? "" : "오프라인"}
+          </span>
         </div>
 
         {/* 갱신 실패 / 위치 없음 → 상태 화면으로 (잠금 시엔 위치 부재가 아니라 잠금이므로 숨김) */}

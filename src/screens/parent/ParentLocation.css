@@ -260,6 +260,52 @@
 .pl-refresh:active {
   transform: rotate(180deg) scale(0.9);
 }
+.pl-refresh:disabled {
+  cursor: default;
+}
+.pl-refresh--loading svg {
+  animation: hy-spin 0.9s linear infinite;
+}
+
+/* ── 실시간 위치 요청 진행 상태 ───────────────────────────────────────── */
+.pl-refreshing {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 72px);
+  left: 50%;
+  z-index: 24;
+  width: min(calc(100% - 32px), 320px);
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  align-items: center;
+  gap: 3px 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 28px rgba(32, 26, 29, 0.12);
+}
+.pl-refreshing__spinner {
+  grid-row: 1 / span 2;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 3px solid var(--mint-line);
+  border-top-color: var(--mint-600);
+  animation: hy-spin 0.9s linear infinite;
+}
+.pl-refreshing__title {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--fg-primary);
+}
+.pl-refreshing__sub {
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--fg-muted);
+}
 
 /* ── 아이 칩(다자녀 전환) ───────────────────────────────────────────────── */
 .pl-chips {
@@ -382,6 +428,25 @@
   font-size: 12px;
   font-weight: 800;
   color: #087653;
+}
+.pl-sheet__zone--stale {
+  color: var(--gold-text);
+}
+.pl-sheet__zone--stale .pl-sheet__zone-dot {
+  background: var(--gold-600);
+}
+.pl-sheet__zone--loading {
+  color: var(--blue-text);
+}
+.pl-sheet__zone--loading .pl-sheet__zone-dot {
+  background: var(--blue-500);
+  animation: hy-soft 1s ease-in-out infinite;
+}
+.pl-sheet__dur--loading {
+  min-width: 54px;
+  background: var(--blue-soft);
+  color: var(--blue-text);
+  text-align: center;
 }
 
 /* 타임라인 */

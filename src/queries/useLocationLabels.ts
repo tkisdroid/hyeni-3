@@ -10,9 +10,7 @@ import {
   type ChildLocation,
   type SavedPlace,
 } from "@/lib/api/endpoints/location";
-import { nearestPlace } from "@/transform/locationView";
-
-const NEAR_PLACE_RADIUS_M = 200;
+import { exactSavedPlaceLabel } from "@/transform/locationView";
 
 function coordKey(loc: Pick<ChildLocation, "lat" | "lng">): string {
   return `${loc.lat.toFixed(5)},${loc.lng.toFixed(5)}`;
@@ -20,8 +18,7 @@ function coordKey(loc: Pick<ChildLocation, "lat" | "lng">): string {
 
 function savedPlaceLabel(loc: ChildLocation, places: SavedPlace[] | undefined): string | null {
   if (!places) return null;
-  const near = nearestPlace(loc, places);
-  return near && near.distanceM <= NEAR_PLACE_RADIUS_M ? near.place.name : null;
+  return exactSavedPlaceLabel(loc, places);
 }
 
 export function useLocationLabels(
