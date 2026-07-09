@@ -138,7 +138,7 @@ export function TeacherStudents() {
 
         {notReady && (
           <div className="ts-empty">
-            <span className="ts-empty__emoji">🧑‍🏫</span>
+            <span className="ts-empty__emoji"><img src={asset("mascot/teacher-glasses.webp")} alt="" style={{ width: 48, height: 48, objectFit: "contain", borderRadius: 12 }} /></span>
             <span className="ts-empty__title">
               {genuineError ? "잠시 후 다시 시도해 주세요" : "연결된 반이 없어요"}
             </span>

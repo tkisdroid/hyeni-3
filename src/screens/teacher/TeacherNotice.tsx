@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft, X, Paperclip } from "lucide-react";
+import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useTeacherClasses, useRoster, usePublishNotice } from "@/queries/useTeacher";
@@ -216,7 +217,7 @@ export function TeacherNotice() {
 
         {notReady && (
           <div className="tn-empty">
-            <span className="tn-empty__emoji">🧑‍🏫</span>
+            <span className="tn-empty__emoji"><img src={asset("mascot/teacher-glasses.webp")} alt="" style={{ width: 48, height: 48, objectFit: "contain", borderRadius: 12 }} /></span>
             <span className="tn-empty__title">
               {genuineError ? "잠시 후 다시 시도해 주세요" : "연결된 반이 없어요"}
             </span>

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, MapPin, Copy } from "lucide-react";
+import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useTeacherClasses, useRoster, useClassSchedule, useCopyClassWeekSchedule } from "@/queries/useTeacher";
 import { isMissingFunction } from "@/lib/api/errors";
@@ -136,7 +137,7 @@ export function TeacherTimetable() {
 
         {notReady && (
           <div className="tt-empty">
-            <span className="tt-empty__emoji">🧑‍🏫</span>
+            <span className="tt-empty__emoji"><img src={asset("mascot/teacher-glasses.webp")} alt="" style={{ width: 48, height: 48, objectFit: "contain", borderRadius: 12 }} /></span>
             <span className="tt-empty__title">
               {genuineError ? "잠시 후 다시 시도해 주세요" : "연결된 반이 없어요"}
             </span>
