@@ -17,7 +17,7 @@ import org.junit.Test;
 public class GeofenceStateMachineTest {
 
     private static final double PLACE_LAT = 37.5, PLACE_LNG = 127.0;
-    private static final GeofenceConfig CFG = GeofenceConfig.DEFAULT; // 30/50/75, dwell60s, cooldown600s, dep180s
+    private static final GeofenceConfig CFG = GeofenceConfig.DEFAULT; // 30/50/75, dwell180s, cooldown600s, dep180s
     private static final double INSIDE_LAT = 37.5, INSIDE_LNG = 127.0;      // dist 0 (< entry 30)
     private static final double OUTSIDE_LAT = 37.5 + 0.001, OUTSIDE_LNG = 127.0; // ~111m (> exit 50)
 
@@ -35,7 +35,7 @@ public class GeofenceStateMachineTest {
 
         assertEquals("in", bootstrapped.phase);
         assertEquals(Long.valueOf(1_000L), bootstrapped.firstInsideAtMs);
-        TransitionResult r = step(bootstrapped, true, 61_000L);
+        TransitionResult r = step(bootstrapped, true, 181_000L);
         assertEquals(Action.INSIDE_NO_CHANGE, r.action);
     }
 
@@ -70,42 +70,42 @@ public class GeofenceStateMachineTest {
         assertEquals("pending", r.nextState.phase);
         s = r.nextState;
 
-        // 2. inside @30s → dwell 30s<60s → PENDING_CONTINUE
-        r = step(s, true, 30_000L);
+        // 2. inside @90s → dwell 90s<180s → PENDING_CONTINUE
+        r = step(s, true, 90_000L);
         assertEquals(Action.PENDING_CONTINUE, r.action);
         s = r.nextState;
 
-        // 3. inside @60s → dwell satisfied → ENTER
-        r = step(s, true, 60_000L);
+        // 3. inside @180s → dwell satisfied → ENTER
+        r = step(s, true, 180_000L);
         assertEquals(Action.ENTER, r.action);
         assertEquals("in", r.nextState.phase);
         s = r.nextState;
 
-        // 4. inside @70s → INSIDE_NO_CHANGE
-        r = step(s, true, 70_000L);
+        // 4. inside @190s → INSIDE_NO_CHANGE
+        r = step(s, true, 190_000L);
         assertEquals(Action.INSIDE_NO_CHANGE, r.action);
         s = r.nextState;
 
-        // 5. outside @80s → OUTSIDE_ARMED
-        r = step(s, false, 80_000L);
+        // 5. outside @200s → OUTSIDE_ARMED
+        r = step(s, false, 200_000L);
         assertEquals(Action.OUTSIDE_ARMED, r.action);
-        assertEquals(Long.valueOf(80_000L), r.nextState.departureArmedAtMs);
+        assertEquals(Long.valueOf(200_000L), r.nextState.departureArmedAtMs);
         s = r.nextState;
 
-        // 6. outside @200s → departure 120s<180s → OUTSIDE_PENDING_TIMER
-        r = step(s, false, 200_000L);
+        // 6. outside @320s → departure 120s<180s → OUTSIDE_PENDING_TIMER
+        r = step(s, false, 320_000L);
         assertEquals(Action.OUTSIDE_PENDING_TIMER, r.action);
         s = r.nextState;
 
-        // 7. outside @300s → departure 220s>=180s → LEAVE
-        r = step(s, false, 300_000L);
+        // 7. outside @420s → departure 220s>=180s → LEAVE
+        r = step(s, false, 420_000L);
         assertEquals(Action.LEAVE, r.action);
         assertEquals("out", r.nextState.phase);
-        assertEquals(Long.valueOf(300_000L), r.nextState.lastDepartedAtMs);
+        assertEquals(Long.valueOf(420_000L), r.nextState.lastDepartedAtMs);
         s = r.nextState;
 
-        // 8. inside @350s → cooldown 50s<600s → SILENT_RE_ENTER (no ENTER alert)
-        r = step(s, true, 350_000L);
+        // 8. inside @470s → cooldown 50s<600s → SILENT_RE_ENTER (no ENTER alert)
+        r = step(s, true, 470_000L);
         assertEquals(Action.SILENT_RE_ENTER, r.action);
         assertEquals("in", r.nextState.phase);
     }
@@ -135,11 +135,28 @@ public class GeofenceStateMachineTest {
     public void departureCancelled_whenReturningInsideWhileArmed() {
         GeofenceState s = GeofenceState.INITIAL;
         s = step(s, true, 0L).nextState;       // pending
-        s = step(s, true, 60_000L).nextState;  // in
-        s = step(s, false, 70_000L).nextState; // armed
-        TransitionResult r = step(s, true, 80_000L); // back inside while armed
+        s = step(s, true, 180_000L).nextState;  // in
+        s = step(s, false, 190_000L).nextState; // armed
+        TransitionResult r = step(s, true, 200_000L); // back inside while armed
         assertEquals(Action.DEPARTURE_CANCELLED, r.action);
         assertEquals(null, r.nextState.departureArmedAtMs);
+    }
+
+    @Test
+    public void passingThroughUnderRegisteredDwell_doesNotEnter() {
+        GeofenceState s = GeofenceState.INITIAL;
+
+        TransitionResult r = step(s, true, 0L);
+        assertEquals(Action.PENDING_DWELL, r.action);
+        s = r.nextState;
+
+        r = step(s, true, 119_000L);
+        assertEquals(Action.PENDING_CONTINUE, r.action);
+        s = r.nextState;
+
+        r = step(s, false, 130_000L);
+        assertEquals(Action.PENDING_ABORTED, r.action);
+        assertEquals("out", r.nextState.phase);
     }
 
     @Test

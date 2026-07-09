@@ -13,7 +13,7 @@ package com.hyeni.calendar;
  * Location.distanceBetween 을 0 반환시키므로 거리도 자체 haversineM 사용).
  *
  * tMs 의미(★): 평가 시각 wall-clock(System.currentTimeMillis()) 을 넣는다. fix 가 안
- * 들어와도 시간이 흘러 dwell(60s)/departure(180s) 가 진행되도록 — 클라 App.jsx 동일.
+ * 들어와도 시간이 흘러 dwell(180s)/departure(180s) 가 진행되도록 — 클라 App.jsx 동일.
  */
 final class GeofenceStateMachine {
 
@@ -33,8 +33,9 @@ final class GeofenceStateMachine {
             this.entryRadiusM = entryRadiusM; this.exitRadiusM = exitRadiusM; this.maxAccuracyM = maxAccuracyM;
             this.dwellMs = dwellMs; this.cooldownMs = cooldownMs; this.departureTimeoutMs = departureTimeoutMs;
         }
-        // SERVER_GEOFENCE_CONFIG / locationConstants.js 동일 값.
-        static final GeofenceConfig DEFAULT = new GeofenceConfig(30, 50, 75, 60_000L, 600_000L, 180_000L);
+        // SERVER_GEOFENCE_CONFIG / locationConstants.js 동일 값. 진입은 3분 이상 체류해야
+        // 도착으로 승격한다. 학원가 옆 건물 통과를 도착 알림으로 만들지 않기 위해서다.
+        static final GeofenceConfig DEFAULT = new GeofenceConfig(30, 50, 75, 180_000L, 600_000L, 180_000L);
     }
 
     // 불변 상태. ms 필드는 null 가능(미설정) → Long.

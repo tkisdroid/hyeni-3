@@ -595,7 +595,7 @@ public class LocationService extends Service {
     // 이전 방문 상태로 다음날 출발 알림을 만들지 않게 6시간 뒤 persisted 상태를 만료한다.
     private static final long PLACE_STATE_TTL_MS = 6L * 60 * 60_000L;
     private static final String PLACE_STATE_PREFIX = "place_geo_";
-    private final java.util.List<org.json.JSONObject> cachedPlaces = new java.util.ArrayList<>(); // {placeKey,name,lat,lng}
+    private final java.util.List<org.json.JSONObject> cachedPlaces = new java.util.ArrayList<>(); // canonical {placeKey,name,source,lat,lng}
     private volatile boolean placeAlertsEnabled = false; // premium && registered_place_alerts_enabled
     private volatile String cachedChildName = ""; // family_members.name (부모 알림 카피용, M2)
     private static final long PLACE_FIX_FRESH_MS = 15 * 60_000L; // 서버 GEOFENCE_FIX_FRESH_MS parity (M1)
@@ -660,6 +660,7 @@ public class LocationService extends Service {
             java.util.List<org.json.JSONObject> next = new java.util.ArrayList<>();
             collectPlaces(next, base + "/rest/v1/saved_places?family_id=eq." + familyId + "&select=id,name,location", "saved_place");
             collectPlaces(next, base + "/rest/v1/academies?family_id=eq." + familyId + "&select=id,name,location", "academy");
+            next = canonicalizePlaceJson(next);
             synchronized (cachedPlaces) { cachedPlaces.clear(); cachedPlaces.addAll(next); }
         } catch (Exception e) {
             Log.w(TAG, "refreshPlacesAndGates failed", e);
@@ -677,10 +678,37 @@ public class LocationService extends Service {
                 if (Double.isNaN(lat) || Double.isNaN(lng)) continue;
                 out.add(new org.json.JSONObject()
                     .put("placeKey", "registered:" + source + ":" + r.optString("id"))
+                    .put("source", source)
                     .put("name", r.optString("name", "등록된 장소"))
                     .put("lat", lat).put("lng", lng));
             }
         } catch (Exception e) { Log.w(TAG, "collectPlaces failed: " + source, e); }
+    }
+
+    private java.util.List<org.json.JSONObject> canonicalizePlaceJson(java.util.List<org.json.JSONObject> input) {
+        java.util.List<RegisteredPlaceResolver.PlaceCandidate> candidates = new java.util.ArrayList<>();
+        for (org.json.JSONObject p : input) {
+            candidates.add(new RegisteredPlaceResolver.PlaceCandidate(
+                p.optString("placeKey", ""),
+                p.optString("name", "등록된 장소"),
+                p.optString("source", ""),
+                p.optDouble("lat", Double.NaN),
+                p.optDouble("lng", Double.NaN)));
+        }
+        java.util.List<org.json.JSONObject> out = new java.util.ArrayList<>();
+        for (RegisteredPlaceResolver.PlaceCandidate p : RegisteredPlaceResolver.canonicalize(candidates)) {
+            try {
+                out.add(new org.json.JSONObject()
+                    .put("placeKey", p.placeKey)
+                    .put("source", p.source)
+                    .put("name", p.name)
+                    .put("lat", p.lat)
+                    .put("lng", p.lng));
+            } catch (Exception e) {
+                Log.w(TAG, "canonicalizePlaceJson failed", e);
+            }
+        }
+        return out;
     }
 
     private org.json.JSONArray httpGetArray(String url) {
