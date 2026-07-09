@@ -8,6 +8,7 @@
  */
 import { API_BASE } from "@/config/env";
 import { adoptNativeLocationSessionTokens, syncNativeLocationToken } from "@/lib/native/location";
+import { getAuthDeviceInstallId } from "@/lib/native/deviceIdentity";
 import { ApiError } from "./errors";
 import {
   getApiAccessToken,
@@ -61,9 +62,14 @@ async function doRefreshAccess(): Promise<RefreshResult> {
   const refreshToken = getApiRefreshToken();
   if (!refreshToken) return "rejected"; // 회전 불가 → 세션 무효
   try {
+    // 기기 바인딩 회전 — 스탬핑된 체인은 같은 deviceInstallId 를 제시해야 회전된다.
+    const deviceInstallId = await getAuthDeviceInstallId().catch(() => null);
     const res = await doFetch("/auth/refresh", {
       method: "POST",
-      body: JSON.stringify({ refresh_token: refreshToken }),
+      body: JSON.stringify({
+        refresh_token: refreshToken,
+        ...(deviceInstallId ? { device_install_id: deviceInstallId } : {}),
+      }),
     });
     if (res.status === 401 || res.status === 403) return "rejected"; // refresh 토큰 만료/철회
     if (!res.ok) return "error"; // 5xx 등 일시 오류 — 세션 유지

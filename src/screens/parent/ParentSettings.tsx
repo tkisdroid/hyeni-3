@@ -81,8 +81,8 @@ const featureChevronIcon = <ChevronRight className="ps-feature__chev" size={19} 
 export function ParentSettings() {
   const navigate = useNavigate();
   const { show } = useToast();
-  const { logout } = useAuth();
-  const { account, providerLabel } = useAccount();
+  const { logout, user } = useAuth();
+  const { account, me, providerLabel } = useAccount();
   const deleteAccount = useDeleteAccount();
   const [confirmDelete, setConfirmDelete] = useState(false);
   // 티어 배지는 ready 일 때만 노출(미확정/조회실패 시 미표시 — R9: free 강등 금지).
@@ -90,6 +90,11 @@ export function ParentSettings() {
 
   const displayName = account?.myName || "보호자";
   const roleLabel = account?.isCoParent ? "공동 보호자" : "보호자";
+  // 프로필 아바타 — 업로드 사진 > 성별 매칭 3D 캐릭터(아빠 계정에 엄마 캐릭터가 뜨지 않게).
+  // 멤버 행 gender 가 비어 있으면 가입 메타(user_metadata.gender)를 본다.
+  const genderHint = String(me?.gender ?? user?.user_metadata?.gender ?? "");
+  const isDad = /dad|father|male|남/i.test(genderHint);
+  const profileAvatar = me?.photo_url || asset(isDad ? "family/dad.webp" : "family/mom.webp");
 
   const handleLogout = async () => {
     try {
@@ -147,7 +152,7 @@ export function ParentSettings() {
         {/* 프로필 (실 로그인 사용자) */}
         <div className="ps-profile">
           <div className="ps-profile__avatar">
-            <img src={asset("family/mom.webp")} alt="" />
+            <img src={profileAvatar} alt="" />
           </div>
           <div className="ps-profile__info">
             <div className="ps-profile__name">{displayName}</div>

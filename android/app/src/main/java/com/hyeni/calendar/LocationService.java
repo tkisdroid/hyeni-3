@@ -985,6 +985,12 @@ public class LocationService extends Service {
                 String url = supabaseUrl.replaceAll("/+$", "") + "/auth/refresh";
                 JSONObject reqBody = new JSONObject();
                 reqBody.put("refresh_token", refreshToken);
+                // 기기 바인딩 회전 — WebView 와 같은 deviceInstallId 를 제시해야
+                // 스탬핑된 체인이 회전된다(세션 사본의 회전으로 기기가 고아 되는 것 방지).
+                String deviceInstallId = prefs.getString("deviceInstallId", null);
+                if (deviceInstallId != null && !deviceInstallId.isEmpty()) {
+                    reqBody.put("device_install_id", deviceInstallId);
+                }
                 Response res = httpClient.newCall(new Request.Builder()
                     .url(url)
                     .header("Content-Type", "application/json")

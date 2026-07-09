@@ -51,7 +51,7 @@ interface BackgroundLocationPlugin {
   stopService(options?: { clearSession?: boolean }): Promise<{ status?: string }>;
   updateToken(options: { accessToken: string; refreshToken?: string }): Promise<{ status?: string }>;
   getSessionTokens?(): Promise<{ accessToken?: string; refreshToken?: string; serviceEnabled?: boolean }>;
-  getPushContext?(): Promise<{ userId?: string; familyId?: string; role?: string }>;
+  getPushContext?(): Promise<{ userId?: string; familyId?: string; role?: string; deviceInstallId?: string }>;
 }
 
 /** startLocationTracking/requestImmediateLocation 호출 시 넘기는 최소 컨텍스트. */
@@ -158,13 +158,17 @@ interface NativeRefreshResponse {
 async function restoreNativeRefreshOnlySession(
   plugin: BackgroundLocationPlugin,
   nativeRefresh: string,
-  expected: { userId: string; familyId: string; role: string },
+  expected: { userId: string; familyId: string; role: string; deviceInstallId?: string | null },
 ): Promise<boolean> {
   try {
+    const deviceInstallId = expected.deviceInstallId?.trim() || null;
     const res = await fetch(`${getNativeBackendUrl()}/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh_token: nativeRefresh }),
+      body: JSON.stringify({
+        refresh_token: nativeRefresh,
+        ...(deviceInstallId ? { device_install_id: deviceInstallId } : {}),
+      }),
     });
     if (res.status === 401 || res.status === 403 || !res.ok) return false;
     const data = (await res.json()) as NativeRefreshResponse;
@@ -239,6 +243,7 @@ export async function adoptNativeLocationSessionTokens(): Promise<boolean> {
         userId: pushContext?.userId?.trim() ?? "",
         familyId: pushContext?.familyId?.trim() ?? "",
         role: pushContext?.role?.trim() ?? "",
+        deviceInstallId: pushContext?.deviceInstallId ?? null,
       });
     }
     return false;

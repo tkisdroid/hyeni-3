@@ -2,6 +2,7 @@
   "appId": "com.hyeni.calendar",
   "appName": "혜니캘린더",
   "webDir": "dist",
+  "loggingBehavior": "none",
   "server": {
     "androidScheme": "https",
     "allowNavigation": [

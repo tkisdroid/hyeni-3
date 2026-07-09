@@ -12,6 +12,8 @@ export interface ThreadMsg {
   senderUserId: string | null; // 발신자 auth user_id — 그룹 대화에서 실제 보낸 사람(아이1/아이2/부모) 표시용
   text: string;
   time: string; // "오전/오후 h:mm"
+  /** 로컬 일자 스탬프("yyyy-mm-dd") — 날짜 구분선 렌더용. */
+  dayStamp: string;
   /** 리치 메시지 종류 — content 의 [[img:]]·[[loc:]] 마커에서 파생(기본 text). */
   kind: "text" | "image" | "location";
   /** kind=image: R2 키(child-photos 버킷). 표시 시 childPhotoProxyUrl 로 조립. */
@@ -52,6 +54,27 @@ export function encodeImageContent(path: string): string {
   return `[[img:${path}]]`;
 }
 
+/** UTC ISO created_at → 로컬 일자 스탬프("yyyy-mm-dd") — 날짜 구분선 그룹핑용. 무효 시 빈 문자열. */
+export function memoDayStamp(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** 일자 스탬프 → 구분선 라벨. 오늘/어제는 관용 표현, 그 외 "M월 D일 요일". */
+export function formatMemoDayLabel(dayStamp: string, now: Date = new Date()): string {
+  if (!dayStamp) return "";
+  const [y, m, d] = dayStamp.split("-").map(Number);
+  if (!y || !m || !d) return "";
+  const date = new Date(y, m - 1, d);
+  const startOf = (dt: Date) => new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()).getTime();
+  const diffDays = Math.round((startOf(now) - startOf(date)) / 86_400_000);
+  const weekday = date.toLocaleDateString("ko-KR", { weekday: "long" });
+  if (diffDays === 0) return `오늘 · ${weekday}`;
+  if (diffDays === 1) return `어제 · ${weekday}`;
+  return `${m}월 ${d}일 ${weekday}`;
+}
+
 /** UTC ISO created_at → "오전/오후 h:mm"(로컬 시각). 무효 시 빈 문자열. */
 export function formatMemoClock(iso: string): string {
   const d = new Date(iso);
@@ -88,6 +111,7 @@ export function mapRepliesToThread(
       showMeta: !mine,
       senderUserId: r.user_id ?? null,
       time: formatMemoClock(r.created_at),
+      dayStamp: memoDayStamp(r.created_at),
       ...rich,
     };
   });

@@ -8,6 +8,7 @@ import { apiRequest, apiPost } from "../client";
 import { applyApiSession, setApiUser, clearApiSession, notifyTokens, type ApiUser } from "../session";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { openExternal } from "@/lib/native/browser";
+import { getAuthDeviceInstallId } from "@/lib/native/deviceIdentity";
 import {
   normalizeLoginId,
   isValidLoginId,
@@ -45,9 +46,18 @@ export async function signInWithLoginId(input: { loginId: string; password: stri
   if (!isValidLoginId(loginId) || !input.password) {
     throw new Error("ID 또는 비밀번호를 확인해 주세요");
   }
+  // 기기 바인딩 — 이 기기에서 발급된 refresh 체인은 이 기기만 회전할 수 있게 스탬핑한다.
+  const deviceInstallId = await getAuthDeviceInstallId().catch(() => null);
   const data = await apiRequest<AuthResult>(
     "/auth/login-password",
-    { method: "POST", body: JSON.stringify({ loginId, password: input.password }) },
+    {
+      method: "POST",
+      body: JSON.stringify({
+        loginId,
+        password: input.password,
+        ...(deviceInstallId ? { device_install_id: deviceInstallId } : {}),
+      }),
+    },
     false,
   );
   adoptSession(data);
@@ -56,7 +66,15 @@ export async function signInWithLoginId(input: { loginId: string; password: stri
 
 /** 아이(child) 익명 로그인. 매 호출 새 익명 세션. allowRetry=false. */
 export async function anonymousLogin(): Promise<AuthResult> {
-  const data = await apiRequest<AuthResult>("/auth/anonymous", { method: "POST", body: "{}" }, false);
+  const deviceInstallId = await getAuthDeviceInstallId().catch(() => null);
+  const data = await apiRequest<AuthResult>(
+    "/auth/anonymous",
+    {
+      method: "POST",
+      body: JSON.stringify(deviceInstallId ? { device_install_id: deviceInstallId } : {}),
+    },
+    false,
+  );
   if (!data?.user) {
     throw new Error("아이 모드 준비에 실패했어. 잠시 후 다시 시도해줘!");
   }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Send, Image as ImageIcon, MapPin } from "lucide-react";
 import { asset } from "@/lib/assets";
@@ -13,9 +13,10 @@ import {
   mapRepliesToThread,
   encodeImageContent,
   encodeLocationContent,
+  formatMemoDayLabel,
   type ThreadMsg,
 } from "@/transform/memoView";
-import { todayDateKey } from "@/transform/dateKey";
+import { todayDateKey, addDaysToDateKey } from "@/transform/dateKey";
 import { apiUploadChildPhoto, childPhotoProxyUrl } from "@/lib/api/client";
 import { resizeImageFileSafe, dataUrlToBlob } from "@/lib/imageResize";
 import { loadKakaoMaps } from "@/lib/kakaoMap";
@@ -45,8 +46,12 @@ export function MemoChat() {
     return activeChild;
   }, [family, role, userId, activeChild]);
 
-  // 오늘 하루의 date_key 스레드(단일 날짜 → "오늘" 구분선과 일치) — 스코프 아이 한정.
-  const dateKeys = useMemo(() => [todayDateKey()], []);
+  // 최근 7일 date_key 스레드 — 스코프 아이 한정. 오늘만 보이던 이전 방식은
+  // 어제 대화가 사라져 보이는 실사용 혼란(주간 리포트 15건 vs 빈 대화 탭)을 만들었다.
+  const dateKeys = useMemo(() => {
+    const today = todayDateKey();
+    return Array.from({ length: 7 }, (_, i) => addDaysToDateKey(today, i - 6));
+  }, []);
   const thread = useMemoThread(dateKeys, scopeChild?.id ?? null);
   const sendMemo = useSendMemo();
   const markRead = useMarkRead();
@@ -110,12 +115,6 @@ export function MemoChat() {
   const [draft, setDraft] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
   const mounted = useRef(false);
-
-  // 오늘 요일(시안의 "오늘 · 목요일" 고정값을 실제 요일로 대체).
-  const dayLabel = useMemo(() => {
-    const weekday = new Date().toLocaleDateString("ko-KR", { weekday: "long" });
-    return `오늘 · ${weekday}`;
-  }, []);
   const lastMessageId = messages[messages.length - 1]?.id ?? "";
 
   const scrollThreadToBottom = (behavior: ScrollBehavior) => {
@@ -319,12 +318,6 @@ export function MemoChat() {
 
       {/* 대화 스레드 */}
       <div className="mc-thread">
-        {hasMessages && (
-          <div className="mc-daysep">
-            <span>{dayLabel}</span>
-          </div>
-        )}
-
         {thread.isLoading && (
           <div className="mc-daysep">
             <span>대화를 불러오는 중…</span>
@@ -341,13 +334,20 @@ export function MemoChat() {
           </div>
         )}
 
-        {messages.map((m) => {
+        {messages.map((m, i) => {
           // 상대 메시지는 실제 발신자 아바타로 귀속. 발신자가 헤더 상대와 다르면(공동부모 등)
           // 이름 라벨로 명시(1:1 스레드에서 제3자 발화 오독 방지).
           const sender = !m.mine && m.senderUserId ? memberByUserId.get(m.senderUserId) : null;
           const senderDiffers = !!sender && !!m.senderUserId && m.senderUserId !== peer.userId;
+          const newDay = !!m.dayStamp && m.dayStamp !== messages[i - 1]?.dayStamp;
           return (
-            <div key={m.id} className={`mc-msg ${m.mine ? "mc-msg--mine" : "mc-msg--peer"}`}>
+            <Fragment key={m.id}>
+              {newDay && (
+                <div className="mc-daysep">
+                  <span>{formatMemoDayLabel(m.dayStamp)}</span>
+                </div>
+              )}
+              <div className={`mc-msg ${m.mine ? "mc-msg--mine" : "mc-msg--peer"}`}>
               {m.showMeta && (
                 <span className="mc-msg-avatar">
                   <img src={sender?.avatar ?? peer.avatar} alt="" />
@@ -384,7 +384,8 @@ export function MemoChat() {
                 <div className="mc-time">{m.time}</div>
                 {m.mine && readByPeer.has(m.id) && <div className="mc-read">읽음</div>}
               </div>
-            </div>
+              </div>
+            </Fragment>
           );
         })}
         <div ref={endRef} className="mc-end" aria-hidden="true" />
