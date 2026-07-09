@@ -47,3 +47,8 @@ ios/App/build
 ios/App/Pods
 
 # 디자인 export 원본(참고용, 앱 번들 아님) — 커밋 여부는 취향. 기본 추적 유지.
+
+# 릴리즈 서명 키 — 절대 커밋 금지
+android/keystore/
+*.jks
+*.keystore

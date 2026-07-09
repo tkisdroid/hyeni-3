@@ -1,0 +1,30 @@
+# Play 출시 체크리스트 — 혜니캘린더 v1.2(versionCode 3)
+
+## 준비된 것 (2026-07-10)
+- [x] 서명된 릴리즈 AAB: `android/app/build/outputs/bundle/release/app-release.aab` (12.2MB, jar verified)
+- [x] 업로드 키스토어: `android/keystore/hyeni-upload.jks` (gitignore 처리)
+  - ⚠️ **자격 정보: `android/keystore/hyeni-upload-credentials.txt` — 비밀번호 관리자로 옮기고 파일 삭제!**
+  - 재빌드: `cd android && gradlew bundleRelease -PHYENI_KEYSTORE=../keystore/hyeni-upload.jks -PHYENI_KEYSTORE_PASSWORD=<pw> -PHYENI_KEY_ALIAS=hyeni-upload -PHYENI_KEY_PASSWORD=<pw>`
+- [x] 등록정보 문안: `docs/store/play-listing.md`
+- [x] 데이터 보안 설문 답안: `docs/store/play-data-safety.md`
+- [x] 개인정보처리방침/데이터 삭제 URL(Worker 서빙): /privacy, /data-deletion
+- [x] 스크린샷 초안: `output/store-screenshots/` (아래 주의 참조)
+
+## TK가 해야 하는 것 (Play Console)
+1. **앱 만들기**: com.hyeni.calendar, 한국어(ko-KR), 무료(인앱 구독 있음)
+2. **Play 앱 서명 사용**(기본) → 위 AAB 업로드(내부 테스트 트랙 권장)
+3. **앱 콘텐츠 섹션 전부 작성**:
+   - 개인정보처리방침 URL 입력
+   - 데이터 보안 설문 → `play-data-safety.md` 그대로
+   - 콘텐츠 등급 설문: 폭력/성/도박 없음, 사용자 간 통신 있음(가족 간), 위치 공유 있음 → 전체이용가(3+) 예상
+   - 민감 권한 선언: 백그라운드 위치(가족 위치 공유 데모 영상 필요), PACKAGE_USAGE_STATS(자녀 보호), FULL_SCREEN_INTENT(긴급 알림)
+   - 대상 연령 설정(listing 문서의 권고 참조)
+4. **구독 상품 등록**: hyeni_premium (monthly-2900 / annual-27840 base plan) — 앱 내 표시가와 Console 실제 가격 일치 확인
+5. **스크린샷 교체**: 현재 초안엔 실사용 데이터(아이 사진·실주소 지도)가 포함 — **데모 계정으로 재촬영 필수**
+6. 피처 그래픽 1024×500 제작
+7. 내부 테스트 → 비공개 테스트(20명·14일, 신규 개발자 계정인 경우) → 프로덕션
+
+## 주의(정책 리스크)
+- 백그라운드 위치 선언은 심사가 엄격 — 온보딩의 동의 화면과 기능 데모 영상(30초 내외)을 준비하면 통과율이 높음
+- PACKAGE_USAGE_STATS 는 자녀 보호 허용 사례로 선언(설명 문구에 "자녀 보호" 명시)
+- 아동 관련 앱 정책: 대상 연령에 아동 포함 시 광고·데이터 요건 강화(본 앱 광고 없음)

@@ -287,6 +287,20 @@ hyeni-3/
   - **안심리포트·스티커 진입점(2026-07-09)**: `/daily-report`는 부모 홈 별도 카드가 아니라 바로가기의 "안심리포트" 슬롯으로 진입한다. 기존 상단 하트/`꾹` 스티커 UI는 제거하고, 상단 액션은 명확한 "스티커" 전송 버튼(`/sticker-send`)으로 유지한다. 아이 모드 긴급 SOS 동선은 안전 기능이므로 이 부모 홈 `꾹` 제거와 별도로 취급한다.
   - **검증**: 신규 node tests 7개, 전체 `node --test tests/*.test.*` 48개, `npm run typecheck`, `npm run build` 통과. Playwright 모바일 390x844 API 모킹 검증으로 온보딩 설문/progress, 구독 줄바꿈, AI 크레딧 문구, 장소 이미지, 부모 친구놀이 설정, 오늘경로 08:00 슬라이더와 머문 곳 접힘을 콘솔 오류 0으로 확인.
 
+- ✅ **14단계: 세션 기기 바인딩·3D 디자인 통일·스토어 준비(2026-07-10)**
+  - **★세션 유실 사고 근본수정 — refresh 기기 바인딩**: 세션 사본(외부 홀더)이 체인을 회전시켜 두 기기 모두 고아가 된 사고. 서버 `rotateRefreshToken(db, old, presentedDeviceId)` — device_id 스탬핑된 체인은 같은 deviceInstallId 제시 시에만 회전(레거시 NULL 체인 허용+점진 스탬핑), 발급 지점(login/anonymous/signup/join/join-as-parent)에 플럼빙. 클라 `getAuthDeviceInstallId()`(localStorage 고정 캐시, 네이티브는 네이티브 id 채택 — 불일치 시 회전 거부되므로 웹 폴백 id를 네이티브에서 캐시 금지), 네이티브 LocationService 자체 refresh에도 동봉. 라이브 Red-Green 11케이스 검증.
+  - **무손실 재페어링 실증**: `/join`의 `reuseExistingChild`(previous_user_id·deviceInstallId 힌트)가 기존 활성 멤버를 찾으면 **같은 uid로 세션 재발급** — 멤버·메모·일정·ai설정 전부 보존. 세션 유실 복구는 딥링크 `#/onboarding?pair=KID-…` → "코드로 연결하기"가 정답(D1 토큰 주입 금지).
+  - **Capacitor 토큰 로그 유출 차단**: debug 빌드 브리지 로깅이 logcat에 토큰 원문 출력 → `capacitor.config.json loggingBehavior:"none"` (⚠️ "production"은 반대로 항상 로깅).
+  - **AI 선제 대화(서버 ai-proactive) 프로덕션화**: 도착트리거+크론 레이스로 같은 문구 2회 삽입 → 멱등 발급 id `aiproact-{uid8}-{date}-{hash}`(pending_notifications PK 충돌 시 크레딧 미차감 skip). 혜니 설정 테스트 잔재(24시간 발송) → 08~20시·quiet 21~07·한도10 원복. 선제 메시지는 `ai_chat_messages`에 `[선제 대화]` 프리픽스로 기록된다.
+  - **미도착 신선도 가드**: `partitionNotArrivedByFreshness`(notificationRouting) — 위치 30분 이상 stale/미보고면 "미도착 단정" 대신 "📍 도착 확인 필요"(warning·urgent=false·전체화면 미발동). node 테스트 5케이스(worker/tests).
+  - **대화 7일 윈도우**: MemoChat이 오늘 date_key만 조회해 어제 대화가 사라져 보이던 버그 → 최근 7일 + `formatMemoDayLabel` 날짜 구분선. 실기기 15버블·구분선 3개 확인(주간 리포트 집계와 일치).
+  - **3D 디자인 통일(TK 지시: "비싼 심플함"+아이 취향 캐릭터)**: 아이 홈 티커·상태버튼(3열 아이콘 칩)·다음일정·시간표 아이콘 전부 3D 에셋. `resolveEventCharacter`(일정 제목→cat/*.webp 정적 매핑) 신설. 안심/주간 리포트 lucide → 3D 타일(구독 화면과 동일 언어). ⚠️ `status/*.webp`·`mascot/teacher-glasses.webp`·`ui/mic-lavender.webp`는 흰 배경 불투명 — 색 칩 위에 쓰지 말 것(알파 검사: VP8X 헤더 0x10 비트).
+  - **부모 설정 아바타 성별 매칭**(아빠 계정에 mom.webp 노출 수정), AI 탭·버튼 유니코드 이모지 → lucide, 안심 리포트에 AI 하루 요약 CTA(/day-summary).
+  - **스토어 준비**: 업로드 키스토어 생성(`android/keystore/` — gitignore, 자격정보 파일은 TK가 비번관리자로 이동 후 삭제), versionCode 3/1.2, **서명 AAB 빌드·검증 완료**(`android/app/build/outputs/bundle/release/app-release.aab`). `docs/store/`(등록정보·데이터보안 답안·체크리스트), 스크린샷 초안 `output/store-screenshots/`(실사용 데이터 포함 캡처는 데모 계정 재촬영 필요). 키스토어 경로는 app/ 모듈 기준 상대라 `-PHYENI_KEYSTORE=../keystore/...`.
+  - **iOS**: `npx cap add ios` + sync + Info.plist(권한 문구) + `docs/ios-build.md`. Windows에서 Xcode 컴파일 불가 — macOS 절차 문서화(iPhone=부모 전용 전제 유지).
+  - **크로스 E2E**: 아이→부모 메모 WS 라운드트립(전송·수신·정리), AI 텍스트 파싱→저장→D1 확인→정리(date_key 0-index 정상), AI 친구 실 LLM 응답. 알림 실발사는 야간 자제 — 대신 서버의 위치미갱신→재연결 부모 알림이 이날 새벽 실작동(00:25/00:35)한 것을 실증.
+  - **검증 함정 추가**: 재설치 후 CDP 포워딩 PID 갱신 필수 · razr 스크린샷 `-d 4630947043778501762` · cp949 콘솔은 python stdout utf-8 래핑 · Cloudflare가 기본 UA(python-urllib)를 403 차단 — 커스텀 UA 필요.
+
 ### 전체 라우트 맵 (전부 도달 가능)
 ```
 부모 탭(ParentShell)   /parent/home calendar location memo settings

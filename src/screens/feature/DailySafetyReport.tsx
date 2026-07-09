@@ -577,6 +577,17 @@ export function DailySafetyReport() {
               )}
             </section>
 
+            <button type="button" className="hy-card dr-weekly hy-press" onClick={() => navigate("/day-summary")}>
+              <span className="dr-weekly__icon">
+                <img src={asset("ui/ai-robot.png")} alt="" />
+              </span>
+              <span>
+                <b>AI 하루 요약 보기</b>
+                <small>일정·위치·안전 기록을 AI가 정리해 드려요</small>
+              </span>
+              <ChevronRight size={20} strokeWidth={2.4} />
+            </button>
+
             <button type="button" className="hy-card dr-weekly hy-press" onClick={() => navigate("/weekly-report")}>
               <span className="dr-weekly__icon">
                 <img src={asset("ui/sparkle.webp")} alt="" />
