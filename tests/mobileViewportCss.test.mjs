@@ -41,6 +41,12 @@ test("아이 홈의 주요 애니메이션은 reduced motion에서 멈춘다", (
   assert.match(css, /\.ch-ticker__dot[\s\S]*\.ch-ticker__text[\s\S]*\.ch-ai__spark[\s\S]*\.ch-ai__spark2[\s\S]*\.ch-ai__photo[\s\S]*\.ch-sos__fill[\s\S]*transition:\s*none/s);
 });
 
+test("아이 홈 티커 자동 회전은 reduced-motion에서 시작하지 않는다", () => {
+  const source = readCss("src/screens/child/ChildHome.tsx");
+
+  assert.match(source, /prefers-reduced-motion: reduce[\s\S]{0,120}setInterval|matchMedia[\s\S]{0,200}setInterval/s);
+});
+
 test("아이 홈 JSX의 주요 색상은 직접 hex 대신 토큰을 사용한다", () => {
   const source = readCss("src/screens/child/ChildHome.tsx");
 

@@ -1,12 +1,14 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Lock, Crown, MapPin, Bell, Sparkles } from "lucide-react";
+import { ChevronLeft, Crown } from "lucide-react";
+import { asset } from "@/lib/assets";
 import { useEntitlement } from "@/queries/useEntitlement";
 import "./TrialLock.css";
 
+// 페이월 혜택 아이콘 — 3D 에셋(구독 화면과 동일 시각 언어).
 const PREMIUM_PERKS = [
-  { Icon: MapPin, label: "실시간 위치 · 이동 경로 확인" },
-  { Icon: Bell, label: "도착 · 위험구역 · 안전 알림 전체" },
-  { Icon: Sparkles, label: "AI 친구 · 일정 자동 정리" },
+  { icon: "ui/pin-heart.webp", label: "실시간 위치 · 이동 경로 확인" },
+  { icon: "ui/bell.webp", label: "도착 · 위험구역 · 안전 알림 전체" },
+  { icon: "ui/ai-robot.png", label: "AI 친구 · 일정 자동 정리" },
 ] as const;
 
 function formatDate(d: Date | null): string {
@@ -93,7 +95,7 @@ export function TrialLock() {
         <div className="tl-content">
           <div className="tl-lock">
             <div className="tl-lock__ring">
-              <Lock size={34} strokeWidth={2.2} color="var(--hy-accent-deep)" />
+              <img src={asset("ui/crown.webp")} alt="" style={{ width: 44, height: 44, objectFit: "contain" }} />
             </div>
             <div className="tl-lock__title">
               {view?.status === "expired" ? "체험이 종료되었어요" : "프리미엄 기능이에요"}
@@ -126,7 +128,7 @@ function PerkList() {
       {PREMIUM_PERKS.map((p) => (
         <div key={p.label} className="tl-perk">
           <span className="tl-perk__ic">
-            <p.Icon size={18} strokeWidth={2.2} color="var(--hy-accent-text)" />
+            <img src={asset(p.icon)} alt="" style={{ width: 22, height: 22, objectFit: "contain" }} />
           </span>
           <span className="tl-perk__label">{p.label}</span>
         </div>

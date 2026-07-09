@@ -118,9 +118,16 @@ export function WeeklyFamilyReport() {
                   </button>
                 </section>
                 <section className="wr-preview">
-                  {["이번 주 일정 흐름", "자주 머문 장소", "안전 알림 요약", "AI 요약"].map((label) => (
+                  {[
+                    { label: "이번 주 일정 흐름", icon: "ui/calendar-heart.webp" },
+                    { label: "자주 머문 장소", icon: "ui/pin-heart.webp" },
+                    { label: "안전 알림 요약", icon: "ui/bell.webp" },
+                    { label: "AI 요약", icon: "ui/ai-robot.png" },
+                  ].map(({ label, icon }) => (
                     <div key={label} className="hy-card wr-preview__item">
-                      <span />
+                      <span>
+                        <img src={asset(icon)} alt="" style={{ width: 26, height: 26, objectFit: "contain" }} />
+                      </span>
                       <b>{label}</b>
                       <small>프리미엄에서 기록이 쌓이면 보여드려요</small>
                     </div>

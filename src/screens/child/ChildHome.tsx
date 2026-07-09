@@ -152,6 +152,8 @@ export function ChildHome() {
   const [tickerIdx, setTickerIdx] = useState(0);
   useEffect(() => {
     if (tickerItems.length <= 1) return;
+    // reduced-motion 사용자는 자동 회전을 멈춘다(읽는 중 문구가 바뀌는 동작 자체가 모션).
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
     const id = setInterval(() => setTickerIdx((i) => (i + 1) % tickerItems.length), 3500);
     return () => clearInterval(id);
   }, [tickerItems.length]);

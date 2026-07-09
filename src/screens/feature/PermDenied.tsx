@@ -7,24 +7,25 @@ import "./PermDenied.css";
 
 type PermKind = "loc" | "noti" | "battery" | "mic";
 
+// 아이콘 색은 토큰 사용(하드코딩 hex 금지 — 온보딩 신뢰 순간의 화면).
 const COPY: Record<PermKind, { icon: ReactNode; title: string; sub: string }> = {
   loc: {
-    icon: <MapPin size={26} strokeWidth={2.2} color="#2E86C1" />,
+    icon: <MapPin size={26} strokeWidth={2.2} color="var(--blue-500)" />,
     title: "위치 권한이 필요해요",
     sub: "우리 아이가 어디서 안전한지 확인하려면 위치 접근을 허용해 주세요.",
   },
   noti: {
-    icon: <Bell size={26} strokeWidth={2.2} color="#B26A00" />,
+    icon: <Bell size={26} strokeWidth={2.2} color="var(--gold-text)" />,
     title: "알림 권한이 필요해요",
     sub: "등하교·도착·안전 소식을 제때 받으려면 알림을 허용해 주세요.",
   },
   battery: {
-    icon: <BatteryCharging size={26} strokeWidth={2.2} color="#087653" />,
+    icon: <BatteryCharging size={26} strokeWidth={2.2} color="var(--mint-600)" />,
     title: "백그라운드 실행이 필요해요",
     sub: "앱이 꺼져 있어도 위치를 지키려면 배터리 최적화 예외를 허용해 주세요.",
   },
   mic: {
-    icon: <Mic size={26} strokeWidth={2.2} color="#8b6bec" />,
+    icon: <Mic size={26} strokeWidth={2.2} color="var(--lav-500)" />,
     title: "마이크 권한이 필요해요",
     sub: "주변 소리 듣기 기능을 쓰려면 마이크 접근을 허용해 주세요.",
   },

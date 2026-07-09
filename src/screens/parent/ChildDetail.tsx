@@ -22,12 +22,13 @@ function avatarSrc(path: string): string {
 
 const ORDINAL: Record<number, string> = { 1: "첫째", 2: "둘째", 3: "셋째", 4: "넷째" };
 
-// 바로가기 CTA 정의(라벨·이모지·경로). 첫 항목만 강조(민트).
-const QUICK_ACTIONS: Array<{ emoji: string; label: string; to: string; primary?: boolean }> = [
-  { emoji: "📍", label: "실시간 위치", to: "/parent/location", primary: true },
-  { emoji: "🗓", label: "캘린더", to: "/parent/calendar" },
-  { emoji: "💬", label: "채팅", to: "/parent/memo" },
-  { emoji: "⭐", label: "스티커", to: "/sticker-send" },
+// 바로가기 CTA 정의(라벨·3D 아이콘·경로). 첫 항목만 강조(민트).
+// 유니코드 이모지 대신 3D 에셋 — 앱 공통 시각 언어(구독·홈과 동일).
+const QUICK_ACTIONS: Array<{ icon: string; label: string; to: string; primary?: boolean }> = [
+  { icon: "ui/pin-heart.webp", label: "실시간 위치", to: "/parent/location", primary: true },
+  { icon: "ui/calendar-heart.webp", label: "캘린더", to: "/parent/calendar" },
+  { icon: "ui/chat-heart.webp", label: "채팅", to: "/parent/memo" },
+  { icon: "ui/star-medal.webp", label: "스티커", to: "/sticker-send" },
 ];
 
 type SafetyTone = "safe" | "warn" | "muted";
@@ -215,7 +216,9 @@ export function ChildDetail() {
                 navigate(a.to);
               }}
             >
-              <span className="cd-action__emoji">{a.emoji}</span>
+              <span className="cd-action__emoji">
+                <img src={asset(a.icon)} alt="" style={{ width: 24, height: 24, objectFit: "contain" }} />
+              </span>
               {a.label}
             </button>
           ))}
@@ -230,7 +233,9 @@ export function ChildDetail() {
             navigate("/remote-audio", { state: { childUserId: rawChild.user_id ?? undefined } });
           }}
         >
-          <span className="cd-row__icon">🔊</span>
+          <span className="cd-row__icon">
+            <img src={asset("ui/menu-remote-audio.webp")} alt="" style={{ width: 26, height: 26, objectFit: "contain" }} />
+          </span>
           <span className="cd-row__main">
             <span className="cd-row__title">주변소리</span>
             <span className="cd-row__sub">긴급 상황에만 사용해요</span>
@@ -247,7 +252,9 @@ export function ChildDetail() {
             navigate("/remote-ring", { state: { childUserId: rawChild.user_id ?? undefined } });
           }}
         >
-          <span className="cd-row__icon">🔔</span>
+          <span className="cd-row__icon">
+            <img src={asset("ui/bell.webp")} alt="" style={{ width: 26, height: 26, objectFit: "contain" }} />
+          </span>
           <span className="cd-row__main">
             <span className="cd-row__title">소리 울리기</span>
             <span className="cd-row__sub">무음이어도 최대 볼륨으로 울려요</span>
@@ -261,7 +268,9 @@ export function ChildDetail() {
           className="cd-row hy-press"
           onClick={() => navigate("/profile-edit", { state: { childId: rawChild.id } })}
         >
-          <span className="cd-row__icon">🧸</span>
+          <span className="cd-row__icon">
+            <img src={asset("animal/bear.webp")} alt="" style={{ width: 26, height: 26, objectFit: "contain" }} />
+          </span>
           <span className="cd-row__main">
             <span className="cd-row__title">프로필 편집</span>
             <span className="cd-row__sub">이름·캐릭터·색상 바꾸기</span>

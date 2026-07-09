@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft, Map as MapIcon } from "lucide-react";
+import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useActiveChild } from "@/app/activeChild";
 import { MapPickerSheet } from "@/components/MapPickerSheet";
@@ -57,6 +58,17 @@ const CATEGORIES = [
   { id: "friend", label: "친구", emoji: "👫", color: "#31C48D", soft: "#E7F8F0" },
   { id: "other", label: "기타", emoji: "🌟", color: "#7C5CE1", soft: "#F1ECFF" },
 ] as const;
+
+// 카테고리 칩 3D 아이콘 — emoji 필드는 이벤트 데이터 계약(저장·타 화면 표시)이라 유지하고
+// 이 화면의 칩 렌더만 3D 캐릭터로 교체한다.
+const CATEGORY_ICONS: Record<string, string> = {
+  school: "cat/school.webp",
+  sports: "cat/sports.webp",
+  hobby: "cat/art.webp",
+  family: "cat/family.webp",
+  friend: "cat/friend.webp",
+  other: "cat/other.webp",
+};
 
 const REPEATS: RepeatMode[] = ["없음", "매일", "매주", "매월", "요일"];
 
@@ -534,7 +546,12 @@ export function EventForm() {
                   }
                   onClick={() => setCategory(c.id)}
                 >
-                  {c.emoji + " " + c.label}
+                  <img
+                    src={asset(CATEGORY_ICONS[c.id] ?? "cat/other.webp")}
+                    alt=""
+                    style={{ width: 20, height: 20, objectFit: "contain", verticalAlign: -4, marginRight: 5 }}
+                  />
+                  {c.label}
                 </button>
               );
             })}
