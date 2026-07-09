@@ -39,9 +39,11 @@ test("오늘의 안심 리포트는 아이콘형 요약과 안전 신호 섹션�
 
   assert.match(source, /overviewCards\.map/);
   assert.match(source, /safetySignals\.map/);
-  assert.match(source, /MapPinned/);
-  assert.match(source, /CalendarCheck2/);
-  assert.match(source, /HeartPulse/);
+  // 지표 아이콘은 lucide 라인 대신 3D 에셋(구독·홈과 같은 시각 언어)을 사용한다.
+  assert.match(source, /ui\/pin-heart\.webp/);
+  assert.match(source, /ui\/calendar-heart\.webp/);
+  assert.match(source, /ui\/battery\.webp/);
+  assert.match(source, /cat\/study\.webp/);
   assert.match(css, /\.dr-overview\s*\{/);
   assert.match(css, /\.dr-signal-grid\s*\{/);
   assert.match(css, /\.dr-device-grid\s*\{/);

@@ -21,7 +21,19 @@ import { todayDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { DEFAULT_AI_FRIEND_NAME, resolveAiFriendDisplayName } from "@/transform/aiFriendName";
 import { QUICK_STATUS_ACTIONS, buildQuickStatusMemo, type QuickStatusActionId } from "@/transform/quickStatusShare";
+import { resolveEventCharacter } from "@/transform/eventCharacter";
 import "./ChildHome.css";
+
+// 원탭 상태 버튼의 3D 아이콘(에셋 키) — 유니코드 이모지 대신 앱 고유 캐릭터로 통일.
+// status/*.webp 는 흰 배경 불투명이라 칩 위에서 어색 → 알파 채널 있는 에셋만 사용.
+const QUICK_STATUS_ICONS: Record<QuickStatusActionId, string> = {
+  arrived: "ui/place-home.webp",
+  departed: "mascot/wave.webp",
+  late: "ui/warning.webp",
+  pickup: "ui/pin-heart.webp",
+  call: "ui/phone-lavender.webp",
+  battery: "ui/battery.webp",
+};
 
 function avatarSrc(path: string): string {
   return path.startsWith("http") ? path : asset(path);
@@ -114,21 +126,27 @@ export function ChildHome() {
   }, [memoThread.data]);
 
   // 최상단 실시간 뉴스 티커 — 아이가 알아야 할 내용(부모 메시지·다음 일정·남은 일정·스티커).
+  // 아이콘은 유니코드 이모지 대신 3D 에셋으로 통일.
   const tickerItems = useMemo(() => {
-    const items: string[] = [];
+    const items: Array<{ icon: string; text: string }> = [];
     if (latestParentMemo) {
       // 부모님 메시지는 내용을 바로 보여준다(길면 말줄임 — 탭하면 대화로 이동하는 기존 동선 활용).
       const text = latestParentMemo.length > 34 ? `${latestParentMemo.slice(0, 34)}…` : latestParentMemo;
-      items.push(`💌 부모님 · ${text}`);
+      items.push({ icon: "ui/chat-heart.webp", text: `부모님 · ${text}` });
     }
     if (nextEvent) {
-      items.push(`📅 다음 · ${nextEvent.title}${nextEvent.time ? ` · ${nextEvent.time}` : ""}`);
+      items.push({
+        icon: "ui/calendar-heart.webp",
+        text: `다음 · ${nextEvent.title}${nextEvent.time ? ` · ${nextEvent.time}` : ""}`,
+      });
     } else {
-      items.push("📅 오늘 일정 다 끝났어 · 푹 쉬어도 돼");
+      items.push({ icon: "ui/calendar-heart.webp", text: "오늘 일정 다 끝났어 · 푹 쉬어도 돼" });
     }
-    if (remainingCount > 0) items.push(`⏰ 아직 ${remainingCount}개 남았어`);
-    if (weekStickerCount > 0) items.push(`⭐ 스티커 ${weekStickerCount}개 모았어`);
-    if (!latestParentMemo) items.push("💬 부모님께 오늘 이야기를 들려줘");
+    if (remainingCount > 0) items.push({ icon: "ui/bell.webp", text: `아직 ${remainingCount}개 남았어` });
+    if (weekStickerCount > 0)
+      items.push({ icon: "ui/star-medal.webp", text: `스티커 ${weekStickerCount}개 모았어` });
+    if (!latestParentMemo)
+      items.push({ icon: "ui/chat-heart.webp", text: "부모님께 오늘 이야기를 들려줘" });
     return items;
   }, [latestParentMemo, nextEvent, remainingCount, weekStickerCount]);
   const [tickerIdx, setTickerIdx] = useState(0);
@@ -137,7 +155,7 @@ export function ChildHome() {
     const id = setInterval(() => setTickerIdx((i) => (i + 1) % tickerItems.length), 3500);
     return () => clearInterval(id);
   }, [tickerItems.length]);
-  const tickerText = tickerItems[tickerIdx % tickerItems.length];
+  const ticker = tickerItems[tickerIdx % tickerItems.length];
   const timetable = todayEvents.map((e) => ({
     id: e.id,
     time: e.time,
@@ -255,7 +273,8 @@ export function ChildHome() {
       <header className="ch-header">
         <div className="ch-ticker" aria-live="polite">
           <span className="ch-ticker__dot" />
-          <span key={tickerIdx} className="ch-ticker__text">{tickerText}</span>
+          <img key={`ic-${tickerIdx}`} className="ch-ticker__ic" src={asset(ticker.icon)} alt="" />
+          <span key={tickerIdx} className="ch-ticker__text">{ticker.text}</span>
         </div>
         <button
           type="button"
@@ -270,14 +289,21 @@ export function ChildHome() {
       <div className="ch-content">
         {/* 히어로 — 본인 사진 또는 기본 혜니 캐릭터 + AI 친구 대화 */}
         <div className="ch-ai">
-          <div className="ch-ai__spark">✨</div>
-          <div className="ch-ai__spark2">💛</div>
+          <div className="ch-ai__spark">
+            <img src={asset("ui/sparkle.webp")} alt="" />
+          </div>
+          <div className="ch-ai__spark2">
+            <img src={asset("ui/heart.webp")} alt="" />
+          </div>
           <div className="ch-ai__row">
             <div className="ch-ai__photo">
               <img src={avatarSrc(myPhotoSrc)} alt={realChildName} />
             </div>
             <div className="ch-ai__col">
-              <div className="ch-ai__hello">안녕, {realChildName}! 🌈</div>
+              <div className="ch-ai__hello">
+                안녕, {realChildName}!
+                <img className="ch-ai__rainbow" src={asset("ui/rainbow.webp")} alt="" />
+              </div>
               <div className="ch-ai__mini">오늘도 반가워</div>
             </div>
           </div>
@@ -315,8 +341,11 @@ export function ChildHome() {
         {/* 다음 일정 + 길찾기 */}
         <div className="ch-next">
           <div className="ch-next__row">
-            <span className="ch-next__icon" style={{ fontSize: 26, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {nextEvent ? nextEvent.emoji : "🎈"}
+            <span className="ch-next__icon">
+              <img
+                src={asset(nextEvent ? resolveEventCharacter(nextEvent.title) : "mascot/cheer.webp")}
+                alt=""
+              />
             </span>
             <span className="ch-next__main">
               <span className="ch-next__label">다음 일정</span>
@@ -349,7 +378,8 @@ export function ChildHome() {
                 onClick={() => sendQuickStatus(action.id)}
                 disabled={sendMemo.isPending || !myMember}
               >
-                {action.label}
+                <img className="ch-status-share__ic" src={asset(QUICK_STATUS_ICONS[action.id])} alt="" />
+                <span>{action.label}</span>
               </button>
             ))}
           </div>
@@ -483,8 +513,8 @@ export function ChildHome() {
                     {t.time}
                   </span>
                   <span className="ch-tt-dot" style={{ background: t.dotColor }} />
-                  <span className="ch-tt-icon" style={{ background: t.soft, fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    {t.emoji}
+                  <span className="ch-tt-icon" style={{ background: t.soft }}>
+                    <img src={asset(resolveEventCharacter(t.title))} alt="" />
                   </span>
                   <span className="ch-tt-main">
                     <span className="ch-tt-title">{t.title}</span>

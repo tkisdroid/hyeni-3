@@ -222,6 +222,49 @@
   bottom: 10px;
 }
 
+/* 3D 에셋 아이콘 — lucide 라인 아이콘을 대체해 앱 공통(구독·홈) 톤과 일치시킨다. */
+.dr-hero__orb img {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+}
+.dr-hero__mini img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+.dr-overview-card__icon img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+.dr-section__icon img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+.dr-signal span img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+.dr-event__emoji img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+.dr-weekly__icon img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+.dr-premium__crown {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  flex: none;
+}
+
 .dr-overview {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -1,15 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  BarChart3,
-  Bell,
-  CalendarDays,
-  ChevronLeft,
-  Crown,
-  LockKeyhole,
-  MessageCircle,
-  PackageCheck,
-} from "lucide-react";
+import { BarChart3, ChevronLeft, LockKeyhole } from "lucide-react";
+import { asset } from "@/lib/assets";
 import { useActiveChild } from "@/app/activeChild";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { useEvents, useDailySupplies } from "@/queries/useSchedule";
@@ -139,24 +131,24 @@ export function WeeklyFamilyReport() {
               <>
                 <section className="wr-metrics">
                   <div className="hy-card wr-metric">
-                    <CalendarDays size={21} strokeWidth={2.2} />
+                    <img className="wr-metric__ic" src={asset("ui/calendar-heart.webp")} alt="" />
                     <span>이번 주 일정</span>
                     <b>{loading ? "-" : `${summary.eventCount}개`}</b>
                   </div>
                   <div className="hy-card wr-metric">
-                    <PackageCheck size={21} strokeWidth={2.2} />
+                    <img className="wr-metric__ic" src={asset("cat/study.webp")} alt="" />
                     <span>준비물 체크</span>
                     <b>
                       {loading ? "-" : `${summary.supplyDone}/${summary.supplyTotal}`}
                     </b>
                   </div>
                   <div className="hy-card wr-metric">
-                    <MessageCircle size={21} strokeWidth={2.2} />
+                    <img className="wr-metric__ic" src={asset("ui/chat-heart.webp")} alt="" />
                     <span>대화 메시지</span>
                     <b>{loading ? "-" : `${summary.memoCount}개`}</b>
                   </div>
                   <div className="hy-card wr-metric">
-                    <Bell size={21} strokeWidth={2.2} />
+                    <img className="wr-metric__ic" src={asset("ui/bell.webp")} alt="" />
                     <span>안전 알림</span>
                     <b>{loading ? "-" : `${summary.alertCount}개`}</b>
                   </div>
@@ -164,7 +156,7 @@ export function WeeklyFamilyReport() {
 
                 <section className="hy-card wr-section">
                   <div className="wr-section__head">
-                    <CalendarDays size={20} strokeWidth={2.2} />
+                    <img className="wr-metric__ic" src={asset("ui/star-medal.webp")} alt="" />
                     <b>가장 바빴던 날</b>
                   </div>
                   {summary.busiestDay ? (
@@ -181,7 +173,7 @@ export function WeeklyFamilyReport() {
 
                 <section className="hy-card wr-section">
                   <div className="wr-section__head">
-                    <Crown size={20} strokeWidth={2.2} />
+                    <img className="wr-metric__ic" src={asset("ui/crown.webp")} alt="" />
                     <b>데이터 상태</b>
                   </div>
                   {summary.hasEnoughData ? (

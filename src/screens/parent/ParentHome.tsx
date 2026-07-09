@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, Settings, ChevronRight, Clock, Zap, Wifi, Check, MapPin, Smartphone } from "lucide-react";
+import { Bell, Settings, ChevronRight, Clock, Zap, Wifi, Check, MapPin, Smartphone, Mic, Keyboard, Image as ImageIcon } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
@@ -394,13 +394,13 @@ export function ParentHome() {
           </div>
           <div className="ph-ai__grid">
             <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule")}>
-              🎤 음성
+              <Mic size={15} strokeWidth={2.4} /> 음성
             </button>
             <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule")}>
-              ⌨️ 텍스트
+              <Keyboard size={15} strokeWidth={2.4} /> 텍스트
             </button>
             <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule")}>
-              🖼️ 알림장
+              <ImageIcon size={15} strokeWidth={2.4} /> 알림장
             </button>
           </div>
         </div>

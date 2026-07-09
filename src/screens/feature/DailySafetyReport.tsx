@@ -2,32 +2,21 @@ import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Activity,
-  AlertTriangle,
   Battery,
   BellRing,
-  CalendarCheck2,
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
-  ClipboardCheck,
   Clock3,
-  Crown,
-  HeartPulse,
-  MapPin,
   MapPinned,
-  MessageCircle,
   MessageSquareText,
-  PackageCheck,
   PackageOpen,
   RefreshCw,
-  Route,
-  ShieldAlert,
   ShieldCheck,
-  Sparkles,
   Wifi,
   Zap,
 } from "lucide-react";
+import { asset } from "@/lib/assets";
+import { resolveEventCharacter } from "@/transform/eventCharacter";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useActiveChild } from "@/app/activeChild";
@@ -183,7 +172,7 @@ export function DailySafetyReport() {
         value: locationLocked ? "잠금" : childLocation ? locationLabel(childLocation) : "확인 중",
         detail: locationLocked ? "프리미엄에서 상세 위치 확인" : locationFreshness?.label ?? "위치 정보 없음",
         tone: locationTone,
-        icon: <MapPinned size={23} strokeWidth={2.2} />,
+        icon: <img src={asset("ui/pin-heart.webp")} alt="" />,
       },
       {
         id: "schedule",
@@ -191,7 +180,7 @@ export function DailySafetyReport() {
         value: `${todayEvents.length}개`,
         detail: nextEvent ? `${nextEvent.title}${nextEvent.time ? ` · ${nextEvent.time}` : ""}` : "남은 일정 없음",
         tone: todayEvents.length > 0 ? "blue" : "mint",
-        icon: <CalendarCheck2 size={23} strokeWidth={2.2} />,
+        icon: <img src={asset("ui/calendar-heart.webp")} alt="" />,
       },
       {
         id: "supplies",
@@ -199,7 +188,7 @@ export function DailySafetyReport() {
         value: supplySummary.total === 0 ? "없음" : `${supplySummary.done}/${supplySummary.total}`,
         detail: supplySummary.total === 0 ? "오늘 챙길 항목 없음" : `${supplyPercent}% 완료`,
         tone: supplySummary.remaining > 0 ? "cream" : "mint",
-        icon: <ClipboardCheck size={23} strokeWidth={2.2} />,
+        icon: <img src={asset("cat/study.webp")} alt="" />,
       },
       {
         id: "device",
@@ -207,7 +196,7 @@ export function DailySafetyReport() {
         value: device.safetyLabel,
         detail: device.hasData ? `${device.batteryLabel} · ${device.networkLabel}` : "새로고침으로 확인 필요",
         tone: device.safetyLabel === "주의 필요" || !device.hasData ? "cream" : "mint",
-        icon: <HeartPulse size={23} strokeWidth={2.2} />,
+        icon: <img src={asset("ui/battery.webp")} alt="" />,
       },
     ];
   }, [
@@ -235,7 +224,7 @@ export function DailySafetyReport() {
         value: todayAlerts.length > 0 ? `${todayAlerts.length}건` : "0건",
         detail: todayAlerts[0] ? alertLabel(todayAlerts[0]) : "오늘 긴급 신호 없음",
         tone: statusView.status === "danger" ? "danger" : todayAlerts.length > 0 ? "cream" : "mint",
-        icon: todayAlerts.length > 0 ? <BellRing size={21} strokeWidth={2.2} /> : <ShieldCheck size={21} strokeWidth={2.2} />,
+        icon: <img src={asset(todayAlerts.length > 0 ? "ui/bell.webp" : "ui/shield-heart.webp")} alt="" />,
       },
       {
         id: "freshness",
@@ -243,7 +232,7 @@ export function DailySafetyReport() {
         value: locationLocked ? "잠금" : locationFreshness?.label ?? "없음",
         detail: childLocation ? "아이 기기 위치 기준" : "위치 기록 대기 중",
         tone: locationLocked ? "lav" : locationFreshness?.status === "stale" || !childLocation ? "cream" : "mint",
-        icon: <Activity size={21} strokeWidth={2.2} />,
+        icon: <img src={asset("ui/pin.webp")} alt="" />,
       },
       {
         id: "device-signal",
@@ -251,7 +240,7 @@ export function DailySafetyReport() {
         value: device.freshnessLabel,
         detail: device.hasData ? device.chargingLabel : "아이 앱 연결 후 표시",
         tone: device.hasData ? "blue" : "cream",
-        icon: <Wifi size={21} strokeWidth={2.2} />,
+        icon: <img src={asset("ui/battery.webp")} alt="" />,
       },
     ],
     [
@@ -335,22 +324,25 @@ export function DailySafetyReport() {
               </div>
               <div className="dr-hero__visual" aria-hidden="true">
                 <span className="dr-hero__orb">
-                  {statusView.status === "danger" ? (
-                    <AlertTriangle size={34} strokeWidth={2.2} />
-                  ) : statusView.status === "attention" ? (
-                    <ShieldAlert size={34} strokeWidth={2.2} />
-                  ) : (
-                    <ShieldCheck size={34} strokeWidth={2.2} />
-                  )}
+                  <img
+                    src={asset(
+                      statusView.status === "danger"
+                        ? "ui/sos-shield.webp"
+                        : statusView.status === "attention"
+                          ? "ui/warning.webp"
+                          : "ui/shield-heart.webp",
+                    )}
+                    alt=""
+                  />
                 </span>
                 <span className="dr-hero__mini dr-hero__mini--map">
-                  <MapPin size={18} strokeWidth={2.2} />
+                  <img src={asset("ui/pin-heart.webp")} alt="" />
                 </span>
                 <span className="dr-hero__mini dr-hero__mini--battery">
-                  <Battery size={18} strokeWidth={2.2} />
+                  <img src={asset("ui/battery.webp")} alt="" />
                 </span>
                 <span className="dr-hero__mini dr-hero__mini--calendar">
-                  <CalendarDays size={18} strokeWidth={2.2} />
+                  <img src={asset("ui/calendar-heart.webp")} alt="" />
                 </span>
               </div>
             </section>
@@ -369,7 +361,7 @@ export function DailySafetyReport() {
             <section className="hy-card dr-section">
               <div className="dr-section__head dr-section__head--large">
                 <span className={`dr-section__icon dr-tone--${statusView.status === "danger" ? "danger" : statusView.status === "attention" ? "cream" : "mint"}`}>
-                  <HeartPulse size={20} strokeWidth={2.2} />
+                  <img src={asset("ui/safety-mascot.webp")} alt="" />
                 </span>
                 <span>
                   <b>안전 신호</b>
@@ -401,7 +393,7 @@ export function DailySafetyReport() {
             <section className="hy-card dr-section">
               <div className="dr-section__head dr-section__head--large">
                 <span className="dr-section__icon dr-tone--mint">
-                  <Route size={20} strokeWidth={2.2} />
+                  <img src={asset("ui/pin-heart.webp")} alt="" />
                 </span>
                 <span>
                   <b>이동 요약</b>
@@ -435,7 +427,7 @@ export function DailySafetyReport() {
               <section className="hy-card dr-section">
                 <div className="dr-section__head dr-section__head--large">
                   <span className="dr-section__icon dr-tone--blue">
-                    <CalendarDays size={20} strokeWidth={2.2} />
+                    <img src={asset("ui/calendar-heart.webp")} alt="" />
                   </span>
                   <span>
                     <b>일정 체크</b>
@@ -452,7 +444,7 @@ export function DailySafetyReport() {
                     {todayEvents.slice(0, 3).map((event) => (
                       <div key={event.id} className="dr-event">
                         <span className="dr-event__emoji" style={{ background: event.soft }}>
-                          {event.emoji}
+                          <img src={asset(resolveEventCharacter(event.title))} alt="" />
                         </span>
                         <span className="dr-event__main">
                           <b>{event.title}</b>
@@ -470,7 +462,7 @@ export function DailySafetyReport() {
               <section className="hy-card dr-section">
                 <div className="dr-section__head dr-section__head--large">
                   <span className="dr-section__icon dr-tone--cream">
-                    <PackageCheck size={20} strokeWidth={2.2} />
+                    <img src={asset("cat/study.webp")} alt="" />
                   </span>
                   <span>
                     <b>준비물</b>
@@ -505,7 +497,7 @@ export function DailySafetyReport() {
             <section className="hy-card dr-section">
               <div className="dr-section__head dr-section__head--large">
                 <span className="dr-section__icon dr-tone--lav">
-                  <Battery size={20} strokeWidth={2.2} />
+                  <img src={asset("ui/battery.webp")} alt="" />
                 </span>
                 <span>
                   <b>기기 상태</b>
@@ -557,7 +549,7 @@ export function DailySafetyReport() {
             <section className="hy-card dr-section">
               <div className="dr-section__head dr-section__head--large">
                 <span className="dr-section__icon dr-tone--rose">
-                  <MessageCircle size={20} strokeWidth={2.2} />
+                  <img src={asset("ui/chat-heart.webp")} alt="" />
                 </span>
                 <span>
                   <b>최신 소식</b>
@@ -587,7 +579,7 @@ export function DailySafetyReport() {
 
             <button type="button" className="hy-card dr-weekly hy-press" onClick={() => navigate("/weekly-report")}>
               <span className="dr-weekly__icon">
-                <Sparkles size={20} strokeWidth={2.2} />
+                <img src={asset("ui/sparkle.webp")} alt="" />
               </span>
               <span>
                 <b>이번 주 흐름 보기</b>
@@ -598,7 +590,7 @@ export function DailySafetyReport() {
 
             {!entitlement.isPremium && entitlement.ready && (
               <section className="dr-premium">
-                <Crown size={22} strokeWidth={2.2} />
+                <img className="dr-premium__crown" src={asset("ui/crown.webp")} alt="" />
                 <div>
                   <b>프리미엄으로 더 자세히 확인하세요</b>
                   <p>실시간 위치, 주간 리포트, AI 하루 요약까지 함께 볼 수 있어요.</p>

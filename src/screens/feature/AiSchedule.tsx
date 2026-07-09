@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Check, Sparkles } from "lucide-react";
+import { ChevronLeft, Check, Sparkles, Mic, Keyboard, Image as ImageIcon, type LucideIcon } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
@@ -18,10 +18,11 @@ import "./AiSchedule.css";
 
 type TabKey = "voice" | "text" | "image";
 
-const AI_TABS: ReadonlyArray<{ key: TabKey; emoji: string; label: string }> = [
-  { key: "voice", emoji: "🎤", label: "음성" },
-  { key: "text", emoji: "⌨️", label: "텍스트" },
-  { key: "image", emoji: "🖼️", label: "사진" },
+// 탭 아이콘 — 유니코드 이모지 대신 lucide 라인 아이콘(비싼 심플함 유지).
+const AI_TABS: ReadonlyArray<{ key: TabKey; Icon: LucideIcon; label: string }> = [
+  { key: "voice", Icon: Mic, label: "음성" },
+  { key: "text", Icon: Keyboard, label: "텍스트" },
+  { key: "image", Icon: ImageIcon, label: "사진" },
 ];
 
 /** 음성 파형 막대 — 20개, 물결처럼 어긋난 delay. */
@@ -303,7 +304,9 @@ export function AiSchedule() {
               data-active={tab === t.key}
               onClick={() => setTab(t.key)}
             >
-              <span className="ais-tab__emoji">{t.emoji}</span>
+              <span className="ais-tab__emoji">
+                <t.Icon size={15} strokeWidth={2.4} />
+              </span>
               {t.label}
             </button>
           ))}

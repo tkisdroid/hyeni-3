@@ -59,7 +59,10 @@ export function StickerBook() {
   return (
     <div className="hy-rise-in">
       <header className="sb-header">
-        <span className="sb-header__title">내 스티커 🏅</span>
+        <span className="sb-header__title">
+          내 스티커
+          <img className="sb-header__medal" src={asset("ui/star-medal.webp")} alt="" />
+        </span>
       </header>
 
       <div className="hy-content sb-list">

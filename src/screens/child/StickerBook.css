@@ -10,10 +10,18 @@
   backdrop-filter: blur(10px);
 }
 .sb-header__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-size: 22px;
   font-weight: 900;
   letter-spacing: -0.02em;
   color: var(--fg-primary);
+}
+.sb-header__medal {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
 }
 
 /* 스크롤 컬럼: hy-content 패턴 재사용 + 간격만 시안값(20px)으로 */
