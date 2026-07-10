@@ -6,6 +6,7 @@
 import type { CalendarEvent } from "@/lib/api/endpoints/schedule";
 import type { SavedPlace } from "@/lib/api/endpoints/location";
 import { resolveEventPlaceLabel } from "./eventPlaceLabel";
+import { resolveEventVisualAsset } from "./placeVisual.ts";
 import { parseAppDateKey } from "./dateKey";
 
 interface CategoryStyle {
@@ -94,6 +95,8 @@ export interface CalEventView {
   color: string;
   soft: string;
   emoji: string;
+  /** 3D 아이콘 에셋 경로 — 장소관리와 같은 키워드 출처(태권도 일정=도복 캐릭터). */
+  icon: string;
   time: string;
   title: string;
   place: string;
@@ -115,6 +118,7 @@ export function eventToView(
     color: style.color,
     soft: style.soft,
     emoji: event.emoji || style.emoji,
+    icon: resolveEventVisualAsset(event.title, event.category),
     time: formatTimeLabel(event.time),
     title: event.title || "일정",
     place: resolveEventPlaceLabel(event.location, places),

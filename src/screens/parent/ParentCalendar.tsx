@@ -407,8 +407,8 @@ export function ParentCalendar() {
                       }}
                       onClick={() => onCardClick(e.id)}
                     >
-                      <span className="pc-event__icon" style={{ background: e.soft, fontSize: 22, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        {e.emoji}
+                      <span className="pc-event__icon" style={{ background: e.soft, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <img src={asset(e.icon)} alt="" style={{ width: 32, height: 32, objectFit: "contain" }} />
                       </span>
                       <span className="pc-event__body">
                         <span className="pc-event__time">
@@ -459,8 +459,8 @@ export function ParentCalendar() {
             </div>
 
             <div className="pc-sheet__head">
-              <span className="pc-sheet__icon" style={{ background: sheetView.soft }}>
-                {sheetView.emoji}
+              <span className="pc-sheet__icon" style={{ background: sheetView.soft, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <img src={asset(sheetView.icon)} alt="" style={{ width: 34, height: 34, objectFit: "contain" }} />
               </span>
               <div className="pc-sheet__headtext">
                 <div className="pc-sheet__title">{sheetView.title}</div>

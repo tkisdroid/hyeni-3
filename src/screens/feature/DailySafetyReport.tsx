@@ -16,7 +16,6 @@ import {
   Zap,
 } from "lucide-react";
 import { asset } from "@/lib/assets";
-import { resolveEventCharacter } from "@/transform/eventCharacter";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useActiveChild } from "@/app/activeChild";
@@ -444,7 +443,7 @@ export function DailySafetyReport() {
                     {todayEvents.slice(0, 3).map((event) => (
                       <div key={event.id} className="dr-event">
                         <span className="dr-event__emoji" style={{ background: event.soft }}>
-                          <img src={asset(resolveEventCharacter(event.title))} alt="" />
+                          <img src={asset(event.icon)} alt="" />
                         </span>
                         <span className="dr-event__main">
                           <b>{event.title}</b>

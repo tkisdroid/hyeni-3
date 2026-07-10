@@ -365,8 +365,8 @@ export function ParentHome() {
                   className="ph-sched-row"
                   onClick={() => navigate("/parent/calendar")}
                 >
-                  <span className="ph-sched-icon" style={{ background: e.soft, fontSize: 20, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    {e.emoji}
+                  <span className="ph-sched-icon" style={{ background: e.soft, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <img src={asset(e.icon)} alt="" style={{ width: 30, height: 30, objectFit: "contain" }} />
                   </span>
                   <span className="ph-sched-main">
                     <span className="ph-sched-title">{e.title}</span>

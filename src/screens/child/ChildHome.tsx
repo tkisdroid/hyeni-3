@@ -21,7 +21,6 @@ import { todayDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { DEFAULT_AI_FRIEND_NAME, resolveAiFriendDisplayName } from "@/transform/aiFriendName";
 import { QUICK_STATUS_ACTIONS, buildQuickStatusMemo, type QuickStatusActionId } from "@/transform/quickStatusShare";
-import { resolveEventCharacter } from "@/transform/eventCharacter";
 import "./ChildHome.css";
 
 // 원탭 상태 버튼의 3D 아이콘(에셋 키) — 유니코드 이모지 대신 앱 고유 캐릭터로 통일.
@@ -164,7 +163,7 @@ export function ChildHome() {
     timeColor: e.tag === "진행 중" ? "var(--hy-accent-text)" : "var(--fg-faint)",
     dotColor: e.color,
     soft: e.soft,
-    emoji: e.emoji,
+    icon: e.icon,
     title: e.title,
     place: e.place,
     isNow: e.tag === "진행 중",
@@ -344,10 +343,7 @@ export function ChildHome() {
         <div className="ch-next">
           <div className="ch-next__row">
             <span className="ch-next__icon">
-              <img
-                src={asset(nextEvent ? resolveEventCharacter(nextEvent.title) : "mascot/cheer.webp")}
-                alt=""
-              />
+              <img src={asset(nextEvent ? nextEvent.icon : "mascot/cheer.webp")} alt="" />
             </span>
             <span className="ch-next__main">
               <span className="ch-next__label">다음 일정</span>
@@ -516,7 +512,7 @@ export function ChildHome() {
                   </span>
                   <span className="ch-tt-dot" style={{ background: t.dotColor }} />
                   <span className="ch-tt-icon" style={{ background: t.soft }}>
-                    <img src={asset(resolveEventCharacter(t.title))} alt="" />
+                    <img src={asset(t.icon)} alt="" />
                   </span>
                   <span className="ch-tt-main">
                     <span className="ch-tt-title">{t.title}</span>

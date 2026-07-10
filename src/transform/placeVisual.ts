@@ -21,6 +21,12 @@ export type PlaceVisualTone =
   | "family"
   | "friend"
   | "hobby"
+  | "church"
+  | "apartment"
+  | "park"
+  | "mart"
+  | "hospital"
+  | "library"
   | "frequent";
 
 export interface PlaceVisual {
@@ -107,7 +113,54 @@ const KEYWORD_VISUALS: ReadonlyArray<{
     assetPath: "cat/hobby.webp",
     keywords: ["취미", "방과후", "센터", "문화"],
   },
+  // 생활 장소(2026-07-10 신규 클레이 에셋 — scripts/generate-place-assets.mjs 로 생성).
+  {
+    tone: "church",
+    label: "성당·교회",
+    assetPath: "place/church.webp",
+    keywords: ["성당", "교회", "예배", "절", "사찰", "법당"],
+  },
+  {
+    tone: "apartment",
+    label: "아파트",
+    assetPath: "place/apartment.webp",
+    keywords: ["아파트", "빌라", "오피스텔", "주공", "단지"],
+  },
+  {
+    tone: "park",
+    label: "공원",
+    assetPath: "place/park.webp",
+    keywords: ["공원", "산책", "수목원", "캠핑", "숲"],
+  },
+  {
+    tone: "mart",
+    label: "마트",
+    assetPath: "place/mart.webp",
+    keywords: ["마트", "이마트", "홈플러스", "롯데마트", "코스트코", "시장", "슈퍼", "편의점", "장보기"],
+  },
+  {
+    tone: "hospital",
+    label: "병원",
+    assetPath: "place/hospital.webp",
+    keywords: ["병원", "의원", "소아과", "치과", "한의원", "약국"],
+  },
+  {
+    tone: "library",
+    label: "도서관",
+    assetPath: "place/library.webp",
+    keywords: ["도서관", "책방", "서점"],
+  },
 ];
+
+// 일정 카테고리 → 폴백 에셋(제목 키워드 미매칭 시). EventForm 칩·일정 카드가 공유한다.
+export const EVENT_CATEGORY_ASSETS: Readonly<Record<string, string>> = {
+  school: "cat/school.webp",
+  sports: "cat/sports.webp",
+  hobby: "cat/hobby.webp",
+  family: "cat/family.webp",
+  friend: "cat/friend.webp",
+  other: "cat/other.webp",
+};
 
 function normalize(value: string): string {
   return value.replace(/\s+/g, "").toLowerCase();
@@ -129,4 +182,15 @@ export function resolvePlaceVisual(place: PlaceVisualInput): PlaceVisual {
   }
 
   return { assetPath: "ui/place-frequent.webp", label: "자주 가는 곳", tone: "frequent" };
+}
+
+/**
+ * 일정 아이콘 — 장소관리와 같은 키워드 테이블(단일 출처)로 해석한다.
+ * "태권도 시범단" 일정과 "태권도 학원" 장소가 같은 도복 캐릭터를 쓰게 하는 규칙.
+ * 제목 키워드 미매칭 시 카테고리 폴백 → 그래도 없으면 cat/other.
+ */
+export function resolveEventVisualAsset(title: string | null | undefined, category?: string | null): string {
+  const visual = resolvePlaceVisual({ name: String(title ?? "") });
+  if (visual.tone !== "frequent") return visual.assetPath;
+  return EVENT_CATEGORY_ASSETS[String(category ?? "")] ?? "cat/other.webp";
 }

@@ -30,6 +30,7 @@ import {
   type WeekdayIndex,
 } from "@/transform/eventRecurrence";
 import { searchSavedPlacesForSchedule } from "@/transform/eventPlaceSearch";
+import { EVENT_CATEGORY_ASSETS } from "@/transform/placeVisual";
 import { resolveInitialAssignedChildIds } from "@/transform/eventAssignment";
 import {
   findFutureSeriesEvents,
@@ -59,16 +60,9 @@ const CATEGORIES = [
   { id: "other", label: "기타", emoji: "🌟", color: "#7C5CE1", soft: "#F1ECFF" },
 ] as const;
 
-// 카테고리 칩 3D 아이콘 — emoji 필드는 이벤트 데이터 계약(저장·타 화면 표시)이라 유지하고
-// 이 화면의 칩 렌더만 3D 캐릭터로 교체한다.
-const CATEGORY_ICONS: Record<string, string> = {
-  school: "cat/school.webp",
-  sports: "cat/sports.webp",
-  hobby: "cat/art.webp",
-  family: "cat/family.webp",
-  friend: "cat/friend.webp",
-  other: "cat/other.webp",
-};
+// 카테고리 칩 3D 아이콘 — 장소관리·일정 카드와 같은 단일 출처(placeVisual)를 쓴다.
+// emoji 필드는 이벤트 데이터 계약(저장·레거시 표시)이라 유지.
+const CATEGORY_ICONS = EVENT_CATEGORY_ASSETS;
 
 const REPEATS: RepeatMode[] = ["없음", "매일", "매주", "매월", "요일"];
 

@@ -3,6 +3,7 @@ import type { ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Check, Sparkles, Mic, Keyboard, Image as ImageIcon, type LucideIcon } from "lucide-react";
 import { asset } from "@/lib/assets";
+import { resolveEventVisualAsset } from "@/transform/placeVisual";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useParseSchedule } from "@/queries/useAi";
@@ -431,7 +432,11 @@ export function AiSchedule() {
             <div className="ais-result">
               <div className="ais-result__top">
                 <span className="ais-result__icon">
-                  <span style={{ fontSize: 24 }}>{CAT_EMOJI[first.category || "other"] || CAT_EMOJI.other}</span>
+                  <img
+                    src={asset(resolveEventVisualAsset(first.title, first.category || "other"))}
+                    alt=""
+                    style={{ width: 34, height: 34, objectFit: "contain" }}
+                  />
                 </span>
                 <span className="ais-result__info">
                   <span className="ais-result__k">일정</span>
