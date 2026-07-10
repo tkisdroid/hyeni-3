@@ -4,6 +4,7 @@
 .afc {
   height: 100%;
   overflow: hidden;
+  animation: hy-fadein 0.35s ease forwards;
   display: flex;
   flex-direction: column;
   background: linear-gradient(180deg, #f3eeff 0%, var(--bg-body) 40%);

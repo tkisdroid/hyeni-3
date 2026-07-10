@@ -76,7 +76,7 @@ function AccountIcon({ Icon, tone }: { Icon: LucideIcon; tone: Tone }) {
 }
 
 const chevronIcon = <ChevronRight className="ps-nav__chev" size={18} strokeWidth={2.4} />;
-const featureChevronIcon = <ChevronRight className="ps-feature__chev" size={19} strokeWidth={2.4} />;
+const featureChevronIcon = <ChevronRight className="ps-feature__chev" size={18} strokeWidth={2.4} />;
 
 export function ParentSettings() {
   const navigate = useNavigate();

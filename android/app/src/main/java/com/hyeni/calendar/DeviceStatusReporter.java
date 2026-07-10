@@ -315,22 +315,66 @@ final class DeviceStatusReporter {
                 long end = System.currentTimeMillis();
                 long start = end - 10 * 60 * 1000L;
                 appUsage = readAppUsage(context, usm, startOfTodayMillis(), end);
+                String rawRecentApp = "";
                 UsageEvents events = usm.queryEvents(start, end);
                 if (events != null) {
                     UsageEvents.Event event = new UsageEvents.Event();
                     while (events.hasNextEvent()) {
                         events.getNextEvent(event);
                         if (event.getEventType() == UsageEvents.Event.ACTIVITY_RESUMED && event.getPackageName() != null) {
-                            recentApp = event.getPackageName();
+                            rawRecentApp = event.getPackageName();
+                            if (!isSystemSurfacePackage(context, event.getPackageName())) {
+                                recentApp = event.getPackageName();
+                            }
                         }
                     }
                 }
-                usagePermission = recentApp.isEmpty() && appUsage.length() == 0 ? "requires_permission" : "granted";
+                usagePermission = rawRecentApp.isEmpty() && appUsage.length() == 0 ? "requires_permission" : "granted";
             }
         }
 
         return new UsageSnapshot(interactive, recentApp,
             resolveAppLabel(context, recentApp), usagePermission, appUsage);
+    }
+
+    /**
+     * 안전지표는 "실제 앱 실행" 기준 — 런처·설정·시스템UI 같은 시스템 표면은
+     * 최근 앱/앱 사용 목록·비율 분모에서 제외한다(TK 지시 2026-07-11).
+     * 화면시간(deviceScreenOnMs)은 물리적 스크린온이라 그대로 둔다.
+     */
+    private static volatile java.util.Set<String> homePackagesCache;
+
+    static boolean isSystemSurfacePackage(Context context, String pkg) {
+        if (isBlank(pkg)) return true;
+        if (pkg.equals("com.android.settings")
+            || pkg.equals("com.android.systemui")
+            || pkg.equals("com.google.android.permissioncontroller")
+            || pkg.equals("com.android.permissioncontroller")
+            || pkg.contains("packageinstaller")
+            || pkg.contains("launcher")) {
+            return true;
+        }
+        return homePackages(context).contains(pkg);
+    }
+
+    private static java.util.Set<String> homePackages(Context context) {
+        java.util.Set<String> cached = homePackagesCache;
+        if (cached != null) return cached;
+        java.util.HashSet<String> out = new java.util.HashSet<>();
+        try {
+            android.content.Intent home = new android.content.Intent(android.content.Intent.ACTION_MAIN)
+                .addCategory(android.content.Intent.CATEGORY_HOME);
+            for (android.content.pm.ResolveInfo info :
+                    context.getPackageManager().queryIntentActivities(home, 0)) {
+                if (info != null && info.activityInfo != null && info.activityInfo.packageName != null) {
+                    out.add(info.activityInfo.packageName);
+                }
+            }
+        } catch (Exception ignored) {
+            // 런처 목록을 못 읽어도 하드코딩 목록이 방어한다.
+        }
+        homePackagesCache = out;
+        return out;
     }
 
     // package-accessible — LocationPlugin(WebView 경로)도 동일한 top-N 앱 사용량을
@@ -345,6 +389,7 @@ final class DeviceStatusReporter {
             long totalMs = 0L;
             for (UsageStats stat : stats) {
                 if (stat == null || isBlank(stat.getPackageName())) continue;
+                if (isSystemSurfacePackage(context, stat.getPackageName())) continue;
                 long usageMs = stat.getTotalTimeInForeground();
                 if (usageMs <= 0L) continue;
                 long lastTimeUsed = stat.getLastTimeUsed();

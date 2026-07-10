@@ -1,7 +1,7 @@
 /* 길안내 — 화면 전용 스타일 (원본 dc.html 1764–1790행 값 1:1) */
 
 .rv-screen {
-  min-height: 848px;
+  min-height: 100%; /* 848px 하드코딩 → 큰 기기에서 배경 그라디언트 끊김 */
   background: linear-gradient(180deg, #fdf4f1, #f7f4f3);
   animation: hy-fadein 0.35s ease forwards;
 }
@@ -306,7 +306,7 @@
 /* 경로 API 불가 강등 — 카카오맵 안내 카드 */
 .rv-fallback {
   background: #fff;
-  border-radius: 18px;
+  border-radius: 24px;
   padding: 14px 16px;
   display: flex;
   flex-direction: column;

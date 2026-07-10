@@ -137,6 +137,7 @@
 /* 텍스트 말풍선 */
 .mc-bubble {
   padding: 11px 14px;
+  animation: hy-fadein 0.28s ease both;
   box-shadow: 0 4px 14px rgba(32, 26, 29, 0.06);
   font-size: 14.5px;
   font-weight: 600;

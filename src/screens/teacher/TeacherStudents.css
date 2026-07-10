@@ -86,6 +86,9 @@
   font-size: 15px;
   font-weight: 800;
   color: #201a1d;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .ts-parent {
   display: block;

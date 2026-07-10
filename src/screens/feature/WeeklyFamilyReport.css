@@ -231,11 +231,15 @@
   opacity: 0.72;
 }
 
+/* 원래 스켈레톤 막대였던 자리 — 실제 아이콘이 들어오면서 26px 가 10px 밖으로 삐져나왔다.
+   아이콘 타일로 정상화한다. */
 .wr-preview__item span {
-  display: block;
-  width: 42px;
-  height: 10px;
-  border-radius: var(--radius-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   background: var(--lav-soft);
   margin-bottom: var(--space-4);
 }

@@ -237,6 +237,9 @@
   gap: 8px;
   --press: 0.98;
 }
+.ss-send:disabled {
+  opacity: 0.62;
+}
 .ss-send img {
   width: 22px;
   height: 22px;

@@ -56,3 +56,16 @@ test("부모 위치 시트의 액션 버튼은 원시 이모지 대신 아이콘
   assert.match(actions, /<Navigation size=\{21\}/);
   assert.match(css, /\.pl-route-btn \{[^}]*background: var\(--blue-soft\)/);
 });
+
+test("아이콘 자리 원시 이모지 금지 — 긴급수신·캘린더·선생님설정(2026-07-11 감사 반영)", () => {
+  const sos = readSource("src/screens/feature/SosReceive.tsx");
+  assert.doesNotMatch(sos, /🚨|🆘/u);
+
+  const cal = readSource("src/screens/parent/ParentCalendar.tsx");
+  assert.doesNotMatch(cal, /📝/u);
+
+  const ts = readSource("src/screens/teacher/TeacherSettings.tsx");
+  // 칩 아이콘은 부모 설정과 같은 lucide + data-tone 패턴만.
+  assert.doesNotMatch(ts, /__chip"[^>]*>\s*[\u{1F300}-\u{1FAFF}]/u);
+  assert.match(ts, /data-tone="rose"><Bell/);
+});

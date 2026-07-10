@@ -189,7 +189,11 @@ export function RemoteRing() {
   const onStop = () => {
     if (!active) return;
     autoStopAtRef.current = null;
-    stop.mutate(active.id, { onSuccess: () => show("소리 울리기를 멈췄어요", "🔕") });
+    stop.mutate(active.id, {
+      onSuccess: () => show("소리 울리기를 멈췄어요", "🔕"),
+      // 아이 기기 최대 볼륨 알람을 멈추는 액션 — 실패가 조용하면 벨이 계속 울린다.
+      onError: () => show("멈추지 못했어요. 다시 눌러 주세요", "⚠️"),
+    });
   };
 
   return (

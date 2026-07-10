@@ -58,6 +58,7 @@
 /* ── 알림 카드 ──────────────────────────────────────────────────────────── */
 .nc-item {
   position: relative;
+  animation: hy-fadein 0.3s ease both;
   /* button 요소로 변경(접근성) — UA 기본 스타일 리셋 후 카드 룩 유지 */
   width: 100%;
   border: none;

@@ -669,6 +669,7 @@
   font-size: 13px;
   font-weight: 800;
   color: #6d6469;
+  transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
   --press: 0.96;
 }
 .pl-viewtog__btn--on {

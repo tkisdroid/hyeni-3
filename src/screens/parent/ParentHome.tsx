@@ -530,7 +530,7 @@ export function ParentHome() {
               </div>
               <div className="ph-metric">
                 <span className="ph-metric__icon" style={{ background: "var(--cream-soft)" }}>
-                  <Zap size={20} strokeWidth={2} color="var(--gold-600)" />
+                  <Zap size={22} strokeWidth={2} color="var(--gold-600)" />
                 </span>
                 <span style={{ minWidth: 0 }}>
                   <span className="ph-metric__k">충전</span>
@@ -709,7 +709,7 @@ export function ParentHome() {
         <section>
           <SectionHeader
             iconBg="var(--lav-soft)"
-            icon={<img src={asset("ui/sparkle.webp")} alt="" style={{ width: 20, height: 20 }} />}
+            icon={<img src={asset("ui/sparkle.webp")} alt="" />}
             title="바로가기"
           />
           <div className="ph-shortcuts">

@@ -215,6 +215,11 @@
 - 모든 인터랙티브 요소는 프레스 피드백이 있어야 한다: 버튼/카드=`hy-press`(+CSS `--press`), 목록 행/라벨=
   `:active { background: var(--bg-press) }`. CSS 에 `--press` 를 선언했는데 JSX 에 `hy-press` 를 빼먹는 실수가
   실제로 있었다(부모 홈 아이 카드). 스크림/딤 배경은 예외(정적이 맞다).
+- ★column flex 컨테이너 안의 고정 높이 버튼은 `flex: none` 필수(2026-07-11 실사고): `.sr-content`(column flex)가
+  넘칠 때 `.sr-confirm`(height 56px)이 18px 리본으로 찌그러져 "버튼이 이상하다" 제보의 실체였다.
+  스타일 문제로 오판하기 쉽다 — 높이가 CSS 와 다르게 렌더되면 flex 압축부터 의심.
+- 준비물 토글은 낙관적 업데이트(useUpsertDailySupply onMutate) — rebuildChildDay 가 GET→PUT→GET 이라
+  서버 바인딩만으로는 체크가 1~3초 얼었다. 롤백은 훅, 실패 문구는 콜사이트(없으면 announceFallbackToast 450ms 양보).
 
 ### J. 실기기 검증 치트시트 (함정 포함)
 - **현재 기기 역할(2026-07-09 사용자 지시)**: S25=부모, A17=부모모드 검증기, razr=아이 "혜니" 실사용.

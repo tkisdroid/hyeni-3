@@ -9,6 +9,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import { qk } from "./keys";
+import { announceFallbackToast } from "@/lib/globalToast";
 import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "./useFamily";
 import { resolveDailySupplyChildMemberId } from "@/transform/dailySupplyScope";
@@ -201,9 +202,32 @@ export function useUpsertDailySupply() {
         return kind === "hw" ? { prep: lists.prep, hw: nextList } : { prep: nextList, hw: lists.hw };
       });
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["dailySupplies", familyId ?? ""] }),
+    // 낙관적 토글 — rebuildChildDay 가 GET→PUT→GET(2~3홉)이라 서버 상태에만 바인딩하면
+    // 느린 회선에서 체크가 1~3초 얼어 죽은 체크박스처럼 보인다(중복 탭 유발).
+    // 캐시에 이미 있는 항목(id 일치)만 즉시 반전하고, 실패하면 스냅샷으로 원복한다.
+    onMutate: async (row) => {
+      if (!familyId || !row.id) return { snapshots: [] as SupplySnapshots };
+      await qc.cancelQueries({ queryKey: ["dailySupplies", familyId] });
+      const snapshots: SupplySnapshots = qc.getQueriesData<DailySupply[]>({
+        queryKey: ["dailySupplies", familyId],
+      });
+      qc.setQueriesData<DailySupply[]>({ queryKey: ["dailySupplies", familyId] }, (prev) =>
+        prev?.map((it) =>
+          it.id === row.id ? { ...it, done: !!row.done, label: row.label ?? it.label } : it,
+        ),
+      );
+      return { snapshots };
+    },
+    onError: (_err, _row, ctx) => {
+      for (const [key, data] of ctx?.snapshots ?? []) qc.setQueryData(key, data);
+      // 메시지는 콜사이트 토스트가 담당 — 콜사이트가 안 달았을 때만 이 폴백이 뜬다(450ms 양보).
+      announceFallbackToast("준비물을 저장하지 못했어요. 다시 시도해 주세요", "⚠️");
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["dailySupplies", familyId ?? ""] }),
   });
 }
+
+type SupplySnapshots = Array<readonly [readonly unknown[], DailySupply[] | undefined]>;
 
 /**
  * 준비물 항목 삭제. 서버에 per-item DELETE 는 없으므로 "그 아이 그 날 행에서 항목을 빼고

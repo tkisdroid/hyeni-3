@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Plus, Clock, MapPin, Bell, Pencil, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Clock, MapPin, Bell, Pencil, Trash2, StickyNote } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { Loading } from "@/components/ui/Loading";
@@ -498,7 +498,7 @@ export function ParentCalendar() {
               {sheetEvent.memo && (
                 <div className="pc-sheet__row pc-sheet__row--memo">
                   <span className="pc-sheet__memo-ic" aria-hidden="true">
-                    📝
+                    <StickyNote size={17} strokeWidth={2.2} />
                   </span>
                   <span>{sheetEvent.memo}</span>
                 </div>

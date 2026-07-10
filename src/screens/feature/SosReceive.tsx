@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Phone, Volume2, MapPin, Check, ShieldCheck } from "lucide-react";
+import { ChevronLeft, Phone, Volume2, MapPin, Check, ShieldCheck, Siren, LifeBuoy } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { KakaoMap } from "@/components/KakaoMap";
 import { useMyFamily } from "@/queries/useFamily";
@@ -42,7 +42,7 @@ function formatClock(d: Date | null): string {
 export function SosReceive() {
   const navigate = useNavigate();
   const { show } = useToast();
-  const { data: sosList } = useReceivedSos({ pollMs: 15000 });
+  const { data: sosList, isError: sosLoadError, refetch: refetchSos } = useReceivedSos({ pollMs: 15000 });
   const { data: family } = useMyFamily();
   const { data: locations } = useChildLocations();
   const { data: places } = useSavedPlaces();
@@ -94,6 +94,8 @@ export function SosReceive() {
     }
     markRead.mutate(latest.id, {
       onSuccess: () => show("안전 확인을 완료했어요", "🛡️"),
+      // 안전 화면 — 실패를 조용히 넘기면 "기록됐다"고 오인한다.
+      onError: () => show("안전 확인을 저장하지 못했어요. 다시 눌러 주세요", "⚠️"),
     });
   };
 
@@ -113,7 +115,20 @@ export function SosReceive() {
       </header>
 
       <div className="hy-content sr-content">
-        {!latest && (
+        {/* 조회 실패를 "없음"으로 위장하면 안전 화면의 거짓 안심이 된다 — 실패는 실패로 보여준다. */}
+        {!latest && sosLoadError && (
+          <div className="sr-empty">
+            <div className="sr-empty-icon">
+              <ShieldCheck size={40} strokeWidth={1.8} color="var(--gold-600)" />
+            </div>
+            <div className="sr-empty-title">SOS 기록을 불러오지 못했어요</div>
+            <div className="sr-empty-sub">네트워크를 확인하고 다시 시도해 주세요</div>
+            <button type="button" className="sr-retry hy-press" onClick={() => void refetchSos()}>
+              다시 불러오기
+            </button>
+          </div>
+        )}
+        {!latest && !sosLoadError && (
           <div className="sr-empty">
             <div className="sr-empty-icon">
               <ShieldCheck size={40} strokeWidth={1.8} color="var(--mint-600)" />
@@ -157,7 +172,9 @@ export function SosReceive() {
             </div>
 
             <div className={`sr-banner${latest.read ? " sr-banner--read" : ""}`}>
-              <span className="sr-banner-emoji">{isMissedArrival ? "🚨" : "🆘"}</span>
+              <span className="sr-banner-emoji" aria-hidden="true">
+                {isMissedArrival ? <Siren size={26} strokeWidth={2.2} color="#fff" /> : <LifeBuoy size={26} strokeWidth={2.2} color="#fff" />}
+              </span>
               <div className="sr-banner-body">
                 <div className="sr-banner-title">
                   {isMissedArrival ? latest.title || `${childName} 미도착 긴급 알림` : `${childName}가 SOS를 보냈어요`}
@@ -213,20 +230,22 @@ export function SosReceive() {
               </button>
               <button type="button" className="sr-act sr-act--call hy-press" onClick={callOrRingChild}>
                 <span className="sr-act-badge">
-                  <Phone size={16} strokeWidth={2.4} color="var(--danger-500)" />
+                  <Phone size={17} strokeWidth={2.4} color="var(--danger-500)" />
                 </span>
                 전화/SOS 호출
               </button>
             </div>
 
+            {/* 완료 전=동작(민트, 안전 신호색) / 완료 후=상태(연민트 완료 배지) — 검은 버튼과
+                "확인함 · 안전 확인 완료" 겹말이 어색하다는 제보(2026-07-11)로 재설계. */}
             <button
               type="button"
-              className="sr-confirm hy-press"
+              className={latest.read ? "sr-confirm sr-confirm--done" : "sr-confirm hy-press"}
               disabled={markRead.isPending}
               onClick={confirmSafe}
             >
               <Check size={18} strokeWidth={2.6} color={latest.read ? "var(--mint-600)" : "#fff"} />
-              {latest.read ? "안전 확인 완료" : "확인함 · 안전 확인 완료"}
+              {markRead.isPending ? "확인하는 중…" : latest.read ? "안전 확인 완료" : "안전 확인"}
             </button>
 
             {older.length > 0 && (
@@ -238,7 +257,9 @@ export function SosReceive() {
                   const pastMissed = s.alert_type === "not_arrived" || s.alert_type === "missed_arrival";
                   return (
                     <div key={s.id} className="sr-history-item">
-                      <span className="sr-history-emoji">{pastMissed ? "🚨" : "🆘"}</span>
+                      <span className="sr-history-emoji" aria-hidden="true">
+                        {pastMissed ? <Siren size={17} strokeWidth={2.2} color="var(--danger-500)" /> : <LifeBuoy size={17} strokeWidth={2.2} color="var(--danger-500)" />}
+                      </span>
                       <div className="sr-history-body">
                         <div className="sr-history-name">{c?.name || "아이"}</div>
                         <div className="sr-history-time">

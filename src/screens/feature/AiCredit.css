@@ -1,7 +1,7 @@
 /* AI 크레딧 — 화면 전용 스타일 (원본 dc.html 1412–1459행 값 1:1) */
 
 .ac-screen {
-  min-height: 848px;
+  min-height: 100%; /* 848px 하드코딩 → 큰 기기에서 배경 그라디언트 끊김 */
   background: radial-gradient(120% 44% at 50% 0%, #efe8ff 0%, rgba(239, 232, 255, 0) 55%),
     linear-gradient(180deg, #fdf4f1, #f7f4f3);
   animation: hy-fadein 0.35s ease forwards;

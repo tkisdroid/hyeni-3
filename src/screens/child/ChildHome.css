@@ -6,6 +6,7 @@
    ==========================================================================*/
 
 .kd-root {
+  animation: hy-fadein 0.35s ease forwards;
   --kd-sky-1: #bfe3ff;
   --kd-sky-2: #dff3e7;
   --kd-sky-3: #cdebbe;
@@ -754,8 +755,9 @@
   opacity: 0.55;
 }
 .kd-tt__time {
-  width: 46px;
+  min-width: 46px;
   flex: none;
+  white-space: nowrap;
   font-family: Jua, var(--font-sans);
   font-size: 15px;
   color: var(--fg-faint);

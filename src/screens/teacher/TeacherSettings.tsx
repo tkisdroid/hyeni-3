@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Bell, Lock, MessageCircle, LogOut, TriangleAlert } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
@@ -98,7 +98,7 @@ export function TeacherSettings() {
                   <img src={asset(r.icon)} alt="" />
                 </span>
                 <span className="ps-feature__label">{r.label}</span>
-                <ChevronRight className="ps-feature__chev" size={19} strokeWidth={2.4} color="#C9BFC4" />
+                <ChevronRight className="ps-feature__chev" size={18} strokeWidth={2.4} color="#C9BFC4" />
               </button>
             ))}
           </div>
@@ -113,7 +113,7 @@ export function TeacherSettings() {
               className="ps-nav hy-press"
               onClick={() => navigate("/notification-settings")}
             >
-              <span className="ps-nav__chip" style={{ background: "#FDE7F1" }}>🔔</span>
+              <span className="ps-nav__chip" data-tone="rose"><Bell size={18} strokeWidth={2.3} /></span>
               <span className="ps-nav__label">알림 설정</span>
               <ChevronRight className="ps-nav__chev" size={18} strokeWidth={2.4} color="#C9BFC4" />
             </button>
@@ -125,21 +125,21 @@ export function TeacherSettings() {
           <div className="ps-group__label">약관 · 계정</div>
           <div className="ps-list">
             <button type="button" className="ps-account hy-press" onClick={openPrivacy}>
-              <span className="ps-account__chip" style={{ background: "#F7F3F5" }}>🔒</span>
+              <span className="ps-account__chip" data-tone="neutral"><Lock size={18} strokeWidth={2.3} /></span>
               <span className="ps-account__label">개인정보 처리방침</span>
               <ChevronRight className="ps-nav__chev" size={18} strokeWidth={2.4} color="#C9BFC4" />
             </button>
             <button type="button" className="ps-account hy-press" onClick={() => navigate("/feedback")}>
-              <span className="ps-account__chip" style={{ background: "#E6F2FB" }}>💬</span>
+              <span className="ps-account__chip" data-tone="blue"><MessageCircle size={18} strokeWidth={2.3} /></span>
               <span className="ps-account__label">도움말 · 피드백</span>
               <ChevronRight className="ps-nav__chev" size={18} strokeWidth={2.4} color="#C9BFC4" />
             </button>
             <button type="button" className="ps-account hy-press" onClick={() => void handleLogout()}>
-              <span className="ps-account__chip" style={{ background: "#FFECEE" }}>🚪</span>
+              <span className="ps-account__chip" data-tone="danger"><LogOut size={18} strokeWidth={2.3} /></span>
               <span className="ps-account__label">로그아웃</span>
             </button>
             <button type="button" className="ps-account hy-press" onClick={() => setConfirmDelete(true)}>
-              <span className="ps-account__chip" style={{ background: "#FFECEE" }}>⚠️</span>
+              <span className="ps-account__chip" data-tone="danger"><TriangleAlert size={18} strokeWidth={2.3} /></span>
               <span className="ps-account__label" style={{ color: "var(--danger-text)" }}>
                 회원 탈퇴
               </span>

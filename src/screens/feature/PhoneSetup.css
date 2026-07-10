@@ -100,7 +100,8 @@
 }
 .psu-row__role {
   flex: none;
-  width: 42px;
+  min-width: 42px;
+  white-space: nowrap;
   font-size: 14px;
   font-weight: 800;
   color: #201a1d;

@@ -183,7 +183,7 @@ export function StickerSend() {
           disabled={sendSticker.isPending}
         >
           <img src={asset("ui/chat-heart.webp")} alt="" />
-          {childName}에게 보내기
+          {sendSticker.isPending ? "보내는 중…" : `${childName}에게 보내기`}
         </button>
       </div>
     </div>

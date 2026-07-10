@@ -729,6 +729,9 @@
   font-size: var(--text-micro);
   font-weight: var(--weight-bold);
   color: var(--fg-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dr-memo b {

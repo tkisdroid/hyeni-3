@@ -210,7 +210,7 @@ export function ChildSos() {
           </div>
 
           {mom && (
-            <button type="button" className="cs-callbtn hy-press" onClick={() => callParent("mom", "엄마")}>
+            <button type="button" className="cs-callbtn cs-callbtn--slim hy-press" onClick={() => callParent("mom", "엄마")}>
               <img src={asset("family/mom.webp")} alt="" />
               <span>엄마에게 전화하기</span>
             </button>
