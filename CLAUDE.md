@@ -205,6 +205,16 @@
   반투명은 `background: rgba(...)` 가 아니라 `background:#fff` + `opacity` 로 줘야 겹친 덩이의 이음선이 안 생긴다.
 - 원시 유니코드 이모지를 버튼 아이콘으로 쓰지 않는다(시스템 폰트라 옆 아이콘과 크기·베이스라인이 어긋난다).
   lucide 아이콘 또는 3D webp 에셋 중 하나로 통일한다. 가드=`tests/menuNavigationConsistency.test.mjs`.
+- ★조용한 에러 금지 안전망 3겹(2026-07-11 도입, 가드=`tests/globalErrorSafety.test.mjs`):
+  ①렌더 크래시 → `app/ErrorBoundary.tsx`(전 라우트 errorElement + RootErrorBoundary, `.hy-crash` 복구 화면.
+  DEV 전용 `#/crash-test`로 검증) ②uncaught/rejection → `app/GlobalErrorListeners.tsx` 폴백 토스트
+  ③onError 없는 mutation → QueryProvider MutationCache 폴백. **새 mutation 에 onError 를 안 달아도 최소
+  토스트는 뜨지만, 화면 맥락에 맞는 문구는 화면 몫**이다. 폴백이 겹치면 안 되는 백그라운드 작업은
+  `meta: { silentError: true }`. 전역 폴백은 `announceFallbackToast`(450ms 지연-양보 — ToastProvider.show 가
+  `markToastShown()`을 찍으면 물러남)라 화면 토스트와 이중으로 뜨지 않는다.
+- 모든 인터랙티브 요소는 프레스 피드백이 있어야 한다: 버튼/카드=`hy-press`(+CSS `--press`), 목록 행/라벨=
+  `:active { background: var(--bg-press) }`. CSS 에 `--press` 를 선언했는데 JSX 에 `hy-press` 를 빼먹는 실수가
+  실제로 있었다(부모 홈 아이 카드). 스크림/딤 배경은 예외(정적이 맞다).
 
 ### J. 실기기 검증 치트시트 (함정 포함)
 - **현재 기기 역할(2026-07-09 사용자 지시)**: S25=부모, A17=부모모드 검증기, razr=아이 "혜니" 실사용.
@@ -217,6 +227,14 @@
   `suppress_origin=True` 필수 · **awaitPromise 긴 evaluate 는 hang** — 클릭/조회를 짧은 동기 evaluate 로 쪼개고
   결과는 별도 폴링 · `canvas.toBlob` 콜백이 안 옴 → `toDataURL`(동기) 사용 · React 제어 input 은
   native setter+`input` 이벤트 · 페이지 fetch 로 `/rest/v1` 은 CORS 차단 → 토큰만 CDP 로 읽고 **호스트 curl**.
+- **토스트 검증 타이밍**: `.hy-toast` 수명은 2.4초 — 발사 후 1.2초 안에 읽거나, 같은 evaluate 에서
+  `setTimeout(()=>{window.__t=(document.querySelector('.hy-toast')||{}).textContent},400)` 로 캡처해 두고 읽는다.
+  늦게 읽고 "(없음)"이라 오판한 실측 실수가 있었다(2026-07-11).
+- **헤드리스 Chrome 렌더 검증**: `--headless=new --screenshot --window-size` 는 **레이아웃 폭에 적용되지 않을 수
+  있다**(512px 레이아웃을 390px 로 크롭해 "오른쪽 잘림"처럼 보이는 아티팩트 — 실제 오버플로로 오판 금지).
+  정확한 모바일 렌더는 `--remote-debugging-port` + CDP `Emulation.setDeviceMetricsOverride(390x844)` +
+  `Page.captureScreenshot` 로. 임시 `--user-data-dir` 필수(기본 프로필 오염 방지). ⚠️ localhost:5173 은
+  다른 프로젝트 dev 서버가 살아 있을 수 있다 — hyeni-3 는 `--port 5199 --strictPort` 처럼 명시 포트로 띄울 것.
 - **D1/Worker**: 시간 검증은 백데이트 트리거(예: `anchor_since` 6분 전 + upsert 1회, cron 은 이벤트를 target 분에 생성) ·
   `wrangler tail --format json` 을 파일로 받아 파이썬 파싱 · 컬럼명 추측 금지 — `pragma_table_info` 먼저.
   ★ `wrangler tail --format json` 출력은 **pretty-print** 라 줄 단위(JSONL) 파싱하면 0건으로 보인다 —
