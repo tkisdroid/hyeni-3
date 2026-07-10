@@ -26,7 +26,9 @@ npm run typecheck  # tsc -b  (수정 후 필수)
 npm run build      # 완료 기준 = exit 0
 # Android: npm run build && npx cap sync android && (cd android && ./gradlew assembleDebug)
 # 설치:    adb -s <serial> install -r android/app/build/outputs/apk/debug/app-debug.apk
-# 웹 배포: npx wrangler pages deploy dist --project-name=hyeni-calendar --branch=main --commit-dirty=true
+# 웹 배포: ★ hyeni-3/.env 의 CLOUDFLARE_API_TOKEN(Workers/D1 전용, Pages 권한 없음)을 wrangler 가
+#   자동 로드해 OAuth 를 덮어쓴다 → .env 가 없는 디렉터리에서 실행할 것.
+#   (cd <임시디렉터리> && npx wrangler pages deploy C:/Users/TK/Desktop/hyeni-3/dist \n#      --project-name=hyeni-calendar --branch=main --commit-dirty=true)
 # Worker(백엔드, C:\Users\TK\Desktop\hyeni-1\worker): npx tsc --noEmit && npx wrangler deploy
 ```
 

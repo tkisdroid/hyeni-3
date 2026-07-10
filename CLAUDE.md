@@ -260,7 +260,7 @@ hyeni-3/
   - **재빌드**: `npm run build && npx cap sync android && (cd android && ./gradlew assembleDebug)`. 설치: `adb -s <serial> install -r android/app/build/outputs/apk/debug/app-debug.apk`.
 - ✅ **5단계**: PWA 마감·아이콘·배포.
   - ✅ **P5-A**: 아이콘 세트(logo 1024→`public/pwa-{192,512,maskable-512}.png`·`apple-touch-icon.png`·`favicon-32x32.png`, sharp 생성), vite.config PWA manifest(PNG 3아이콘)·index.html apple-touch PNG. 안전영역(safe-area-inset)은 CSS에 이미 처리.
-  - ✅ **P5-B**: **Cloudflare Pages 배포** → **https://hyeni-calendar.pages.dev** (wrangler, 99파일). 브라우저 검증: 렌더·manifest·SW·설치가능 PWA. **재배포**: `npm run build && npx wrangler pages deploy dist --project-name=hyeni-calendar --branch=main --commit-dirty=true`.
+  - ✅ **P5-B**: **Cloudflare Pages 배포** → **https://hyeni-calendar.pages.dev** (wrangler, 99파일). 브라우저 검증: 렌더·manifest·SW·설치가능 PWA. **재배포**: `npm run build` 후, **`.env` 가 없는 디렉터리로 이동해** `npx wrangler pages deploy <hyeni-3>/dist --project-name=hyeni-calendar --branch=main --commit-dirty=true`. ★ `hyeni-3/.env` 의 `CLOUDFLARE_API_TOKEN` 은 Workers/D1 전용(Pages 권한 없음)인데 wrangler 4 가 이를 자동 로드해 OAuth 자격을 덮어쓴다 → `Failed to automatically retrieve account IDs`. 같은 이유로 hyeni-3 안에서는 `wrangler login` 도 거부된다(`Unset the CLOUDFLARE_API_TOKEN`). OAuth 자격(`%APPDATA%/xdg.config/.wrangler`)에는 `pages:write` 가 있다.
   - ⚠️ **배포 origin 설정 후속**(코드 아님): 소셜 OAuth redirect_uri·Kakao 지도 JS키 허용도메인에 `hyeni-calendar.pages.dev` 등록 필요(부모 ID/PW 로그인은 무관하게 동작). 지도는 도메인 등록 전까진 폴백.
 
 **🎉 5개 단계 전부 완료** — 백엔드 연동(3) + Capacitor Android 실기기 검증(4) + PWA 배포(5).
