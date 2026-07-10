@@ -1,14 +1,20 @@
 # 네이버 소셜 로그인 설정 가이드
 
-**현재 상태(2026-07-10)**: 서버(Worker)는 **이미 구현 완료**, 클라이언트(hyeni-3) 배선과 키 등록만 남음.
+**현재 상태(2026-07-10)**: 서버·클라이언트 **배선 전부 완료**. 남은 것은 **키 등록뿐**입니다.
 
 | 구성요소 | 상태 |
 |---|---|
 | Worker 라우트 `GET/POST /api/auth/naver` | ✅ 구현됨 (`hyeni-1/worker/routes/naver-auth.ts`) |
-| Worker secret `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET` | ❌ 미등록 |
-| 클라 `VITE_NAVER_CLIENT_ID` | ❌ 빈 값 |
-| 온보딩 "네이버로 계속하기" 버튼 | ❌ 없음 (카카오·구글만) |
+| Worker GET 콜백 → 딥링크 재전달 | ✅ 라이브 확인 (`hyenicalendar://auth-callback?provider=naver&code=…`) |
+| 클라 인가 URL 조립 + 교환(`POST /api/auth/naver`) | ✅ 구현됨 (`transform/oauthProvider`, `endpoints/auth.ts`) |
+| 딥링크 파서 `provider=naver` | ✅ 구현됨 (`native/oauthDeepLink.ts`) |
+| 온보딩 "네이버로 계속하기" 버튼 | ✅ 구현됨 (키 없으면 **자동 숨김**) |
 | 안드로이드 딥링크 `hyenicalendar://auth-callback` | ✅ 매니페스트 등록됨 |
+| Worker secret `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET` | ❌ **미등록 (TK)** |
+| 클라 `VITE_NAVER_CLIENT_ID` | ❌ **빈 값 (TK)** |
+
+> 키가 없으면 서버는 `503 naver_not_configured`로 정직하게 실패하고, 앱은 버튼 자체를 숨깁니다
+> (누르면 실패하는 버튼을 보여주지 않음). 키만 넣으면 즉시 동작합니다.
 
 ---
 
@@ -72,20 +78,21 @@ Client ID가 비어 있으면 온보딩에서 네이버 버튼이 **자동으로
 
 ---
 
-## 3. 남은 코드 작업 (내가 처리)
+## 3. 코드 배선 (완료)
 
-1. `src/lib/api/endpoints/auth.ts`
-   - `OAuthProvider` 타입에 `"naver"` 추가
-   - 네이버는 카카오/구글과 **계약이 다름**:
-     - 카카오/구글: `GET {API_BASE}/api/auth/oauth/{provider}/start` (Worker가 인가 URL 생성)
-     - 네이버: 클라가 직접 `https://nid.naver.com/oauth2.0/authorize` 로 이동
-       (`response_type=code`, `client_id`, `redirect_uri={API_BASE}/api/auth/naver`,
-        `state=base64({nonce,target})`)
-   - 콜백 완료는 `POST {API_BASE}/api/auth/naver` 에 `{code, state, redirect_uri}` 전송 → 세션 수신
-2. `src/screens/onboarding/Onboarding.tsx`
-   - `hasNaverClientId`일 때만 "네이버로 계속하기" 버튼 렌더(네이버 그린 `#03C75A`, 브랜드 가이드 준수)
-3. `oauthDeepLink` 핸들러에 `provider=naver` 분기
-4. 회귀 테스트 + 실기기 E2E
+- `src/transform/oauthProvider.ts` — 지원 provider 단일 출처. 네이버만 `usesWorkerStartRedirect=false`,
+  교환 경로 `/api/auth/naver`. (판별이 여러 곳에 흩어져 새 provider 추가 시 누락되던 문제 제거)
+- `src/lib/api/endpoints/auth.ts` — 네이버는 클라가 `https://nid.naver.com/oauth2.0/authorize` 로 직접 이동
+  (`redirect_uri={API_BASE}/api/auth/naver`), 교환 시 **동일한 redirect_uri 를 body 에 동봉**(서버 필수 검증).
+- `src/lib/native/oauthDeepLink.ts` — `provider=naver` 콜백 수용.
+- `src/screens/onboarding/Onboarding.tsx` — `hasNaverClientId` 게이트 + 브랜드 그린 버튼.
+
+**키 넣은 뒤 검증 절차**
+1. 위 2번(키 등록) 수행 → `npm run build && npx cap sync android` 후 재설치
+2. 온보딩에 "네이버로 계속하기" 버튼이 나타나는지 확인
+3. 버튼 → 네이버 로그인 → 앱 자동 복귀 → 부모 홈 도달이면 성공
+4. 실패 시 `npx wrangler tail --format pretty` 로 서버 오류 확인
+   (`naver_not_configured`=키 미등록, `token_exchange_failed`=redirect_uri/Secret 불일치)
 
 ---
 

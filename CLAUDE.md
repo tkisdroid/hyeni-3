@@ -53,6 +53,15 @@
 - 식별자 오귀속 방지: 준비물 `DailySupply.child_user_id`는 이름과 달리 member id다. 부모 세션에서 대상 아이가
   명시되지 않으면 첫 아이로 폴백하지 않고 저장을 실패시킨다(`resolveDailySupplyChildMemberId`).
   아이 설정 화면도 본인 `user_id`가 매칭된 child member만 사용하고 첫 아이로 대체하지 않는다.
+- ★refresh 체인 갈라짐 → 위치 중단(2026-07-10 실사고): 같은 기기에서 WebView 와 네이티브
+  `LocationService` 가 각자 refresh 를 회전하면 체인이 갈라진다(실측 0.7초 간격 2회전, 03:36엔 3회전).
+  낙오한 홀더가 폐기 토큰을 들고 남아 401 → `stopForInvalidSession` → **아이 위치가 조용히 멈춘다**
+  (혜니 89분 중단). 서버 수정: 기기 바인딩(device_id) 게이트를 통과한 뒤라면 같은 기기의 폐기 토큰은
+  도난이 아니라 "뒤처진 홀더"이므로 `rotated_to` 체인을 따라가 live 토큰으로 재동기화한다
+  (`findLiveTokenInChain`, MAX_CHAIN_HOPS=20, 순환 방어). 레거시(device_id NULL)는 60초 유예+1단계 유지.
+  **앱 재빌드 없이 서버만으로 복구**되므로 미연결 기기도 다음 회전 때 자동 정상화된다.
+  진단: `prefs.refreshToken` 앞 8자를 D1 `refresh_tokens` 와 대조 → revoked=1이면 이 사고.
+  logcat 태그 `LocationService` 의 `Token network-refresh failed: HTTP 401` / `invalid session`.
 - ★온보딩 세션 파괴 금지(2026-07-10 실사고): `/onboarding`은 세션을 새로 만드는 화면이라
   인증된 사용자가 도달하면 딥링크 한 번으로 로그아웃된다. 실제로 `#/onboarding?pair=CODE` 재진입 시
   `resolveAuthenticatedOnboardingRedirect`가 `hasPairParam`이면 리다이렉트를 포기했고, 그 자리에서
