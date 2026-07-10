@@ -167,7 +167,7 @@ export function TeacherTimetable() {
                     type="button"
                     role="tab"
                     aria-selected={active}
-                    className={`tt-day-chip${active ? " tt-day-chip--on" : ""}${
+                    className={`tt-day-chip hy-press${active ? " tt-day-chip--on" : ""}${
                       isToday ? " tt-day-chip--today" : ""
                     }`}
                     onClick={() => setSelectedKey(key)}

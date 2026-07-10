@@ -116,6 +116,11 @@
   font-size: 12.5px;
   font-weight: 700;
   color: var(--hy-accent-text);
+  transition: transform 0.12s ease, opacity 0.12s ease;
+}
+.hy-section-action:active {
+  transform: scale(0.94);
+  opacity: 0.75;
 }
 
 /* ── 카드 ───────────────────────────────────────────────────────────────── */
@@ -198,6 +203,23 @@
 .hy-tab[data-active="true"] .hy-tab__icon {
   background: var(--hy-accent-soft);
   color: var(--hy-accent-deep);
+  animation: hy-tab-pop 0.32s var(--easing-cheer);
+}
+@keyframes hy-tab-pop {
+  0% {
+    transform: scale(0.86);
+  }
+  60% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hy-tab[data-active="true"] .hy-tab__icon {
+    animation: none;
+  }
 }
 .hy-tab[data-active="true"] .hy-tab__label {
   color: var(--hy-accent-text);
@@ -311,6 +333,75 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .km-skeleton__shimmer {
+    animation: none;
+  }
+}
+
+/* ── 렌더 크래시 복구 화면(ErrorBoundary/RouteErrorScreen) — 흰 화면 금지 ── */
+.hy-crash {
+  min-height: 100dvh;
+  padding: 40px 28px calc(40px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: linear-gradient(180deg, #fdf4f1, #f6f3fb);
+  animation: hy-rise 0.4s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+}
+.hy-crash__img {
+  width: 108px;
+  height: 108px;
+  object-fit: contain;
+  animation: hy-bob 3s ease-in-out infinite;
+}
+.hy-crash__title {
+  margin-top: 14px;
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--fg-primary);
+}
+.hy-crash__sub {
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.55;
+  color: var(--fg-muted);
+}
+.hy-crash__btn {
+  margin-top: 24px;
+  width: min(280px, 100%);
+  height: 52px;
+  border-radius: 16px;
+  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  box-shadow: 0 12px 26px -10px rgba(240, 81, 143, 0.55);
+  font-size: 15.5px;
+  font-weight: 800;
+  color: #fff;
+}
+.hy-crash__ghost {
+  margin-top: 10px;
+  width: min(280px, 100%);
+  height: 48px;
+  border-radius: 16px;
+  background: var(--bg-card);
+  border: 1px solid rgba(32, 26, 29, 0.08);
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--fg-primary);
+}
+.hy-crash__detail {
+  margin-top: 18px;
+  max-width: 100%;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg-disabled);
+  word-break: break-all;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hy-crash,
+  .hy-crash__img {
     animation: none;
   }
 }

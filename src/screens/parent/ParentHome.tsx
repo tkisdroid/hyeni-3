@@ -436,7 +436,7 @@ export function ParentHome() {
                     <div className="ph-child__rowwrap">
                       <button
                         type="button"
-                        className="ph-child__row"
+                        className="ph-child__row hy-press"
                         aria-pressed={active}
                         onClick={() => setActiveChildId(c.id)}
                       >

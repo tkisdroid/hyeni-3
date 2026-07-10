@@ -656,6 +656,13 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  margin: -4px;
+  padding: 4px;
+  border-radius: 10px;
+  transition: background 0.16s ease;
+}
+.ph-prep-label:active {
+  background: var(--bg-press);
 }
 .ph-prep-kind {
   flex: none;

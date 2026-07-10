@@ -62,7 +62,7 @@ function ToggleRow({
   onToggle: () => void;
 }) {
   return (
-    <button type="button" className="nst-row" aria-pressed={on} onClick={onToggle}>
+    <button type="button" className="nst-row hy-press" aria-pressed={on} onClick={onToggle}>
       <span className="nst-row__icon" style={{ background: def.soft }}>
         {def.emoji}
       </span>
@@ -207,7 +207,7 @@ export function NotificationSettings() {
               <div className="nst-list">
                 <button
                   type="button"
-                  className="nst-row"
+                  className="nst-row hy-press"
                   aria-pressed={dnd}
                   onClick={toggleDnd}
                 >

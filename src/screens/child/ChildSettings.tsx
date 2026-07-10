@@ -132,7 +132,7 @@ export function ChildSettings() {
 
           <button
             type="button"
-            className="ks-row"
+            className="ks-row hy-press"
             onClick={() => {
               setNotifOn((v) => !v);
               show(notifOn ? "알림을 껐어 (이 기기에서만)" : "알림을 켰어 (이 기기에서만)", "🔔");

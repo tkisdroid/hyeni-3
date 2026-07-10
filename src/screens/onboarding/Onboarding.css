@@ -250,10 +250,13 @@
   height: 72px;
   object-position: center 40%;
 }
+/* 세 카드의 얼굴 크기를 맞춘다 — 학부모(76)·선생님(72)과 같은 cover 확대.
+   contain 46px 시절엔 아이 카드만 마스코트가 칩 안에 작게 떠 보였다. */
 .ob-role-img--child {
-  width: 46px;
-  height: 46px;
-  object-fit: contain;
+  width: 76px;
+  height: 76px;
+  object-fit: cover;
+  object-position: center 26%;
 }
 .ob-role-main {
   flex: 1;
@@ -455,6 +458,10 @@
   font-weight: 800;
   color: #b0477a;
   background: transparent;
+  transition: opacity 0.12s ease;
+}
+.ob-link:active {
+  opacity: 0.5;
 }
 
 /* ── STEP: SIGNUP ──────────────────────────────────────────────────────── */

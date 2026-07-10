@@ -222,7 +222,7 @@ export function ChildSos() {
             </button>
           )}
 
-          <button type="button" className="cs-ghost" onClick={() => navigate("/child/home")}>
+          <button type="button" className="cs-ghost hy-press" onClick={() => navigate("/child/home")}>
             괜찮아, 집으로 갈래
           </button>
         </div>
@@ -277,7 +277,7 @@ export function ChildSos() {
         </div>
 
         {armed && (
-          <button type="button" className="cs-cancel" onClick={cancelArmed}>
+          <button type="button" className="cs-cancel hy-press" onClick={cancelArmed}>
             취소
           </button>
         )}

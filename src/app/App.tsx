@@ -78,8 +78,14 @@ import { AppUpdate } from "@/screens/feature/AppUpdate";
 import { PermDenied } from "@/screens/feature/PermDenied";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import { StickerCelebrationHost } from "@/components/ui/StickerCelebration";
+import { RootErrorBoundary, RouteErrorScreen } from "./ErrorBoundary";
+import { GlobalErrorListeners } from "./GlobalErrorListeners";
 
+// 전 라우트를 pathless 루트로 감싸 렌더 에러가 흰 화면 대신 복구 화면(RouteErrorScreen)으로 간다.
 const router = createHashRouter([
+  {
+    errorElement: <RouteErrorScreen />,
+    children: [
   { index: true, element: <Navigate to="/parent/home" replace /> },
 
   // 부모 탭 (인증 + role=parent 가드)
@@ -189,8 +195,17 @@ const router = createHashRouter([
     ],
   },
 
+  // DEV 전용 — 복구 화면(RouteErrorScreen) E2E 확인용. 프로덕션 번들에서는 빠진다.
+  ...(import.meta.env.DEV ? [{ path: "crash-test", element: <CrashProbe /> }] : []),
+
   { path: "*", element: <Navigate to="/parent/home" replace /> },
+    ],
+  },
 ]);
+
+function CrashProbe(): never {
+  throw new Error("crash-probe: 복구 화면 검증용 의도적 크래시");
+}
 
 // 인증 세션 동안 가족소켓(WS)을 1회 연결·유지(라우트 이동에 영향 없음).
 function RealtimeBridge() {
@@ -246,10 +261,13 @@ export function App() {
         <ActiveChildProvider>
           <AccentProvider initial="rose">
             <ToastProvider>
+              <GlobalErrorListeners />
               <OfflineBanner />
               <BootSplash />
               <StickerCelebrationHost />
-              <RouterProvider router={router} />
+              <RootErrorBoundary>
+                <RouterProvider router={router} />
+              </RootErrorBoundary>
             </ToastProvider>
           </AccentProvider>
         </ActiveChildProvider>

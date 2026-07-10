@@ -146,7 +146,14 @@
   background: transparent;
   display: flex;
   align-items: center;
+  margin: -4px;
+  padding: 4px;
+  border-radius: 10px;
+  transition: background 0.16s ease;
   gap: 8px;
+}
+.sup-label:active {
+  background: var(--bg-press);
 }
 .sup-label__text {
   font-size: 14.5px;
