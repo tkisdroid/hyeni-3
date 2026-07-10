@@ -1,15 +1,22 @@
 /* 아이 모드 하단 독 — 흰 pill 탭 3개 + 오른쪽 SOS 버튼(시안 2a). */
 
-/* .hy-app 이 position:relative 라 absolute 로 프레임 하단에 붙는다(탭바와 같은 규약). */
+/* .hy-app 이 position:relative 라 absolute 로 프레임 하단에 붙는다(부모 탭바와 같은 규약).
+   독 아래(내비게이션 바 영역)로 콘텐츠가 비치지 않도록 배경을 페이드로 덮는다. */
 .kdock {
   position: absolute;
-  left: 14px;
-  right: 14px;
-  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 24px 14px calc(12px + env(safe-area-inset-bottom, 0px));
   display: flex;
   align-items: center;
   gap: 9px;
   z-index: 30;
+  background: linear-gradient(180deg, rgba(251, 247, 244, 0), rgba(251, 247, 244, 0.96) 42%);
+  pointer-events: none;
+}
+.kdock > * {
+  pointer-events: auto;
 }
 
 .kdock__bar {

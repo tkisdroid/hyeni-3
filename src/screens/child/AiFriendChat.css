@@ -9,11 +9,12 @@
   background: linear-gradient(180deg, #f3eeff 0%, var(--bg-body) 40%);
 }
 
+/* 상태바 아래에서 시작(아이 화면은 TopBar 가 없다). */
 .afc-header {
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: 14px 16px 10px;
+  padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 10px;
 }
 .afc-back,
 .afc-setup {

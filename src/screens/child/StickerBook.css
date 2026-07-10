@@ -5,8 +5,9 @@
   background: linear-gradient(180deg, #fff8ec 0%, var(--bg-body) 46%);
 }
 
+/* 상태바(시계·배터리) 아래에서 시작한다. 아이 화면은 TopBar 가 없어 각자 안전영역을 챙겨야 한다. */
 .sb-head {
-  padding: 18px 16px 8px;
+  padding: calc(18px + env(safe-area-inset-top, 0px)) 16px 8px;
   display: flex;
   align-items: center;
   gap: 10px;

@@ -269,12 +269,13 @@
   color: var(--bg-card);
 }
 
+/* 시안대로 살짝 오른쪽에 세운다. 가운데 두면 왼쪽 노드(2번 슬롯)의 동그라미를 덮는다. */
 .kd-hyeni {
   position: absolute;
   margin-top: var(--kd-safe);
-  left: 50%;
+  left: 59.5%;
   top: 150px;
-  width: 190px;
+  width: 172px;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;

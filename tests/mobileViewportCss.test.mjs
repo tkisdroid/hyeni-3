@@ -80,3 +80,30 @@ test("부모 오늘경로의 시간대별 경로는 아이 배지 제거 후 위
 
   assert.match(css, /\.pl-scrub\s*\{[^}]*top:\s*108px/s);
 });
+
+test("아이 화면은 TopBar 가 없으므로 각자 상단 안전영역을 챙긴다(상태바 겹침 금지)", () => {
+  // 실기기(razr, safe-area-inset-top=42px)에서 스티커북·AI친구·SOS 상단이 상태바에 가려졌다.
+  const home = readCss("src/screens/child/ChildHome.css");
+  assert.match(home, /--kd-safe: env\(safe-area-inset-top, 0px\)/);
+  assert.match(home, /\.kd-map\s*\{[^}]*padding-top: var\(--kd-safe\)/s);
+
+  const sticker = readCss("src/screens/child/StickerBook.css");
+  assert.match(sticker, /\.sb-head\s*\{[^}]*padding: calc\(18px \+ env\(safe-area-inset-top, 0px\)\)/s);
+
+  const ai = readCss("src/screens/child/AiFriendChat.css");
+  assert.match(ai, /\.afc-header\s*\{[^}]*padding: calc\(14px \+ env\(safe-area-inset-top, 0px\)\)/s);
+
+  const sos = readCss("src/screens/child/ChildSos.css");
+  assert.match(sos, /\.cs-page\s*\{[^}]*padding: calc\(16px \+ env\(safe-area-inset-top, 0px\)\)/s);
+  assert.match(sos, /\.cs-result\s*\{[^}]*padding: calc\(26px \+ env\(safe-area-inset-top, 0px\)\)/s);
+});
+
+test("아이 하단 독은 내비게이션 바 영역까지 배경을 덮는다(콘텐츠 비침 방지)", () => {
+  const dock = readCss("src/app/ChildDock.css");
+  assert.match(dock, /\.kdock\s*\{[^}]*bottom: 0/s);
+  assert.match(dock, /\.kdock\s*\{[^}]*padding: 24px 14px calc\(12px \+ env\(safe-area-inset-bottom, 0px\)\)/s);
+  assert.match(dock, /\.kdock\s*\{[^}]*background: linear-gradient/s);
+  // 페이드 영역이 클릭을 먹지 않도록.
+  assert.match(dock, /\.kdock\s*\{[^}]*pointer-events: none/s);
+  assert.match(dock, /\.kdock > \*\s*\{\s*pointer-events: auto/s);
+});
