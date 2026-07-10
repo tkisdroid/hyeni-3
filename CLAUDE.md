@@ -196,6 +196,15 @@
   그 사유를 최종 보고에 명확히 남긴다.
 - UI 움직임/색상 가드: 아이 홈 같은 화면은 `prefers-reduced-motion`에서 티커·스파클·SOS hold 전환을 멈추고,
   주요 JSX 색상은 직접 hex 대신 `tokens.css` 변수를 사용한다. `tests/mobileViewportCss.test.mjs`에 회귀 검사를 둔다.
+- ★공용 컴포넌트에 인라인 `style` 로 배치(position/inset/size)를 주지 않는다(2026-07-10 실사고):
+  `KakaoMap` 래퍼에 인라인 `position:relative` 를 넣자, `.pl-map{position:absolute;inset:0}` 인 부모 위치 화면에서
+  인라인이 그것을 덮어써 컨테이너 크기가 0 → **지도가 통째로 사라졌다**. 배치는 소비 화면 클래스의 몫이고,
+  컴포넌트는 `.km-host`/`.km-canvas` 처럼 **클래스**로만 내부 구조를 잡는다(components.css 가 먼저 로드돼
+  화면 CSS 가 항상 이긴다). 가드=`tests/mapPerf.test.ts`.
+- 장식 요소(구름·블롭)는 텍스트/노드 밴드를 침범시키지 않는다: 아이 홈 구름이 제목 뒤에 깔려 흰 알약처럼 보였다.
+  반투명은 `background: rgba(...)` 가 아니라 `background:#fff` + `opacity` 로 줘야 겹친 덩이의 이음선이 안 생긴다.
+- 원시 유니코드 이모지를 버튼 아이콘으로 쓰지 않는다(시스템 폰트라 옆 아이콘과 크기·베이스라인이 어긋난다).
+  lucide 아이콘 또는 3D webp 에셋 중 하나로 통일한다. 가드=`tests/menuNavigationConsistency.test.mjs`.
 
 ### J. 실기기 검증 치트시트 (함정 포함)
 - **현재 기기 역할(2026-07-09 사용자 지시)**: S25=부모, A17=부모모드 검증기, razr=아이 "혜니" 실사용.
