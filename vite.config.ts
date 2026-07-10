@@ -35,6 +35,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,woff2,webp,png,svg}"],
+        // Jua 는 유니코드 구간별 87개 서브셋(총 854KB)이라 전부 프리캐시하면 설치가 무거워진다.
+        // 브라우저가 실제로 쓰는 구간만 내려받게 두고, 네이티브는 어차피 로컬 파일이라 영향이 없다.
+        globIgnores: ["**/fonts/jua/**"],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
       },
       devOptions: { enabled: false },

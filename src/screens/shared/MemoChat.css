@@ -336,3 +336,32 @@
   line-height: 1.35;
   word-break: keep-all;
 }
+
+/* ────────────────────────────────────────────────────────────────────────
+   아이 모드 톤(시안 2a) — 부모 모드 화면은 그대로 두고 아이에게만 덧입힌다.
+   말풍선은 아이가 고른 강조색, 상대 이름은 Jua, 빠른답장은 강조색 pill.
+   ────────────────────────────────────────────────────────────────────── */
+
+.mc-root[data-child="true"] .mc-peer-name {
+  font-family: Jua, var(--font-sans);
+  font-weight: 400;
+  font-size: 20px;
+}
+
+.mc-root[data-child="true"] .mc-msg--mine .mc-bubble {
+  background: linear-gradient(120deg, var(--hy-accent), var(--hy-accent-deep));
+  color: var(--bg-card);
+  box-shadow: 0 10px 22px -10px rgba(240, 81, 143, 0.5);
+}
+
+.mc-root[data-child="true"] .mc-quick-btn {
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+  font-size: 14.5px;
+  font-weight: 800;
+  border-radius: 999px;
+}
+
+.mc-root[data-child="true"] .mc-send {
+  background: linear-gradient(120deg, var(--hy-accent), var(--hy-accent-deep));
+}

@@ -1,0 +1,106 @@
+/* 아이 모드 하단 독 — 흰 pill 탭 3개 + 오른쪽 SOS 버튼(시안 2a). */
+
+/* .hy-app 이 position:relative 라 absolute 로 프레임 하단에 붙는다(탭바와 같은 규약). */
+.kdock {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  z-index: 30;
+}
+
+.kdock__bar {
+  flex: 1;
+  height: 66px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
+  border-radius: 999px;
+  box-shadow: 0 18px 40px -14px rgba(32, 26, 29, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 10px;
+}
+
+.kdock__tab {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  transition: background 0.2s ease;
+  --press: 0.88;
+}
+.kdock__tab[aria-current="page"] {
+  background: var(--hy-accent-soft);
+}
+.kdock__tab img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
+.kdock__badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--hy-accent-deep);
+  color: var(--bg-card);
+  font-size: 10.5px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kdock__sos {
+  flex: none;
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  background: linear-gradient(140deg, #ff8ba3, #f04770);
+  box-shadow: 0 16px 34px -10px rgba(240, 71, 112, 0.65);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  animation: kdock-pulse 2.2s ease-in-out infinite;
+  --press: 0.9;
+}
+.kdock__sos img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+.kdock__sos span {
+  font-family: Jua, var(--font-sans);
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--bg-card);
+}
+
+@keyframes kdock-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kdock__sos {
+    animation: none;
+  }
+}

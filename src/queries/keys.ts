@@ -50,6 +50,7 @@ export const qk = {
   // AI
   aiCredits: (familyId: string) => ["aiCredits", familyId] as const,
   aiMessages: (childUserId: string) => ["aiMessages", childUserId] as const,
+  aiUsageToday: (familyId: string, childUserId: string) => ["aiUsageToday", familyId, childUserId] as const,
 
   // 선생님
   teacherMe: ["teacher", "me"] as const,

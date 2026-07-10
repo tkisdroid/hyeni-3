@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronLeft, Send, Settings } from "lucide-react";
+import { ChevronLeft, Settings } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "@/queries/useFamily";
 import { useEvents, useDailySupplies } from "@/queries/useSchedule";
 import { useSavedPlaces } from "@/queries/useLocation";
-import { useAiMessages, useAiFriendPublicSettings, useSendChildChat } from "@/queries/useAi";
+import { useAiMessages, useAiFriendPublicSettings, useAiUsageToday, useSendChildChat } from "@/queries/useAi";
+import { remainingAiChats } from "@/transform/childHomeData";
 import { messagesToBubbles, type ChatBubble } from "@/transform/aiView";
 import { groupEventsByDateKey, PAST_TAGS } from "@/transform/scheduleView";
 import { todayDateKey } from "@/transform/dateKey";
@@ -113,9 +114,13 @@ export function AiFriendChat() {
   }, [nextEvent, pendingSupply]);
 
   const { data: messagesData } = useAiMessages(userId);
+  const aiUsage = useAiUsageToday(userId);
   const sendChat = useSendChildChat();
-  // 남은 대화 횟수(서버 응답 메타) — 전송 후 갱신해 헤더에 표시.
+  // 남은 대화 횟수: 첫 진입엔 usage/today + daily_limit 로 계산하고(부모 전용 balance 는 호출 금지),
+  // 전송 뒤에는 서버가 준 remaining 으로 갱신한다.
   const [remaining, setRemaining] = useState<number | null>(null);
+  const shownRemaining =
+    remaining ?? remainingAiChats(publicSettings?.daily_limit, aiUsage.data?.count ?? 0);
 
   const [messages, setMessages] = useState<ChatBubble[]>([]);
   const [seeded, setSeeded] = useState(false);
@@ -191,17 +196,16 @@ export function AiFriendChat() {
         </div>
         <div className="afc-head-main">
           <div className="afc-head-name">{friendName}</div>
-          <div className="afc-head-status">
-            {remaining != null ? `오늘 ${remaining}번 더 얘기할 수 있어` : "언제나 네 편이야 💜"}
-          </div>
+          <div className="afc-head-status">● 이야기할 준비 됐어!</div>
         </div>
+        {shownRemaining != null && <span className="afc-credits">💬 {shownRemaining}번 남았어</span>}
         <button
           type="button"
           className="afc-setup hy-press"
           aria-label="AI 친구 바꾸기"
           onClick={() => navigate("/child/ai-friend-setup")}
         >
-          <Settings size={19} strokeWidth={2.2} color="#6D4E9C" />
+          <Settings size={19} strokeWidth={2.2} color="var(--lav-text)" />
         </button>
       </header>
 
@@ -222,7 +226,11 @@ export function AiFriendChat() {
             <div className="afc-mini">
               <img src={animalSrc} alt="" />
             </div>
-            <div className="afc-bubble afc-bubble--ai">{friendName}가 입력 중…</div>
+            <div className="afc-bubble afc-bubble--ai afc-typing" aria-label={`${friendName}가 생각하는 중`}>
+              <span />
+              <span />
+              <span />
+            </div>
           </div>
         )}
       </div>
@@ -257,11 +265,10 @@ export function AiFriendChat() {
           <button
             type="button"
             className="afc-send hy-press"
-            aria-label="보내기"
             onClick={handleSend}
-            disabled={sendChat.isPending}
+            disabled={sendChat.isPending || !input.trim()}
           >
-            <Send size={20} strokeWidth={2.2} color="#fff" />
+            보내기
           </button>
         </div>
       </div>

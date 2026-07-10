@@ -297,7 +297,7 @@ export function MemoChat() {
     : copy.noConversation;
 
   return (
-    <div className="mc-root hy-rise-in">
+    <div className="mc-root hy-rise-in" data-child={role === "child" ? "true" : undefined}>
       {/* 헤더 */}
       <header className="mc-header">
         <button

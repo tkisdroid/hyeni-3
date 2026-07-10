@@ -13,6 +13,7 @@ import {
   useSetPlaydateEnabled,
 } from "@/queries/usePlaydate";
 import type { PlaydateCandidate } from "@/lib/api/endpoints/playdate";
+import { playdateCandidateNotice } from "@/transform/playdateNotice";
 import "./FriendPlay.css";
 
 /** 친구 놀이요청 진행 단계 안내. */
@@ -31,20 +32,6 @@ function errMsg(e: unknown): string {
 }
 
 /** 후보 soft error → 아이 눈높이 안내(반말). */
-function candidateNotice(error: string | undefined, empty: boolean): string | null {
-  switch (error) {
-    case "playdate_not_enabled":
-      return "지금은 친구놀이가 꺼져 있어. 부모님한테 켜달라고 하자!";
-    case "current_location_unavailable":
-      return "아직 네 위치를 못 찾았어. 잠깐 있다가 다시 해볼까?";
-    case "in_danger_zone":
-      return "지금 있는 곳에선 친구를 찾을 수 없어.";
-    case "forbidden":
-      return "지금은 친구를 찾을 수 없어.";
-    default:
-      return empty ? "근처에 놀 수 있는 친구가 아직 없어. 조금 있다 다시 볼까?" : null;
-  }
-}
 
 export function FriendPlay() {
   const navigate = useNavigate();
@@ -115,7 +102,7 @@ export function FriendPlay() {
     }
   };
 
-  const notice = candidateNotice(softError, candidates.length === 0);
+  const notice = playdateCandidateNotice(softError, candidates.length === 0);
 
   if (role === "parent") {
     return (

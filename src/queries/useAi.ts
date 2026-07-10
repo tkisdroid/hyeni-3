@@ -27,6 +27,7 @@ import {
   type DaySummaryResult,
   type DaySummaryClientSignals,
   type AiFriendSettings,
+  fetchAiUsageToday,
 } from "@/lib/api/endpoints/ai";
 
 /**
@@ -40,6 +41,20 @@ export function useAiCredits(childUserId?: string | null) {
     queryKey: [...qk.aiCredits(familyId ?? ""), childUserId ?? ""],
     queryFn: () => fetchAiCredits(familyId as string, childUserId as string),
     enabled: status === "authenticated" && !!familyId && !!childUserId,
+  });
+}
+
+/**
+ * 오늘 AI 대화 사용 횟수(아이 본인도 호출 가능).
+ * 남은 횟수는 `remainingAiChats(daily_limit, count)` 로 계산한다 — 서버가 남은 값을 직접 주지 않는다.
+ */
+export function useAiUsageToday(childUserId?: string | null) {
+  const { familyId, status } = useAuth();
+  return useQuery({
+    queryKey: qk.aiUsageToday(familyId ?? "", childUserId ?? ""),
+    queryFn: () => fetchAiUsageToday(familyId as string, childUserId as string),
+    enabled: status === "authenticated" && !!familyId && !!childUserId,
+    staleTime: 60_000,
   });
 }
 

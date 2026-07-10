@@ -33,18 +33,29 @@ test("스티커 전송 화면은 앱 프레임 안에서 본문만 스크롤된�
   assert.doesNotMatch(css, /120px \+ env\(safe-area-inset-bottom/);
 });
 
-test("아이 홈의 주요 애니메이션은 reduced motion에서 멈춘다", () => {
-  const css = readCss("src/screens/child/ChildHome.css");
+test("아이 홈·독·오버레이의 애니메이션은 reduced motion에서 전부 멈춘다", () => {
+  // 리디자인(모험 지도)에서 지도 구름·마스코트 걷기·펄스 배지·SOS 링이 모두 CSS 애니메이션이다.
+  const home = readCss("src/screens/child/ChildHome.css");
+  assert.match(home, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.kd-root \*[\s\S]*animation: none/s);
+  assert.match(home, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.kd-root \*[\s\S]*transition: none/s);
 
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
-  assert.match(css, /\.ch-ticker__dot[\s\S]*\.ch-ticker__text[\s\S]*\.ch-ai__spark[\s\S]*\.ch-ai__spark2[\s\S]*\.ch-ai__photo[\s\S]*\.ch-sos__fill[\s\S]*animation:\s*none/s);
-  assert.match(css, /\.ch-ticker__dot[\s\S]*\.ch-ticker__text[\s\S]*\.ch-ai__spark[\s\S]*\.ch-ai__spark2[\s\S]*\.ch-ai__photo[\s\S]*\.ch-sos__fill[\s\S]*transition:\s*none/s);
+  const sheet = readCss("src/screens/child/overlays/ChildSheet.css");
+  assert.match(sheet, /@media \(prefers-reduced-motion: reduce\)[\s\S]*animation: none/s);
+  // 폭죽 조각은 멈추면 화면만 가리므로 아예 감춘다.
+  assert.match(sheet, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.ks-confetti[\s\S]*display: none/s);
+
+  const dock = readCss("src/app/ChildDock.css");
+  assert.match(dock, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.kdock__sos[\s\S]*animation: none/s);
+
+  const sticker = readCss("src/screens/child/StickerBook.css");
+  assert.match(sticker, /@media \(prefers-reduced-motion: reduce\)[\s\S]*animation: none/s);
 });
 
-test("아이 홈 티커 자동 회전은 reduced-motion에서 시작하지 않는다", () => {
+test("아이 홈에는 스스로 도는 타이머가 없다(모션은 전부 CSS 로 제어)", () => {
+  // 옛 뉴스 티커(setInterval 자동 회전)는 지도 히어로로 대체됐다.
+  // JS 타이머로 도는 UI 가 생기면 reduced-motion CSS 로는 멈출 수 없으므로 금지한다.
   const source = readCss("src/screens/child/ChildHome.tsx");
-
-  assert.match(source, /prefers-reduced-motion: reduce[\s\S]{0,120}setInterval|matchMedia[\s\S]{0,200}setInterval/s);
+  assert.doesNotMatch(source, /setInterval/);
 });
 
 test("아이 홈 JSX의 주요 색상은 직접 hex 대신 토큰을 사용한다", () => {
@@ -53,8 +64,8 @@ test("아이 홈 JSX의 주요 색상은 직접 hex 대신 토큰을 사용한�
   assert.doesNotMatch(source, /color="#[0-9A-Fa-f]{3,8}"/);
   assert.doesNotMatch(source, /background:\s*"#[0-9A-Fa-f]{3,8}"/);
   assert.match(source, /var\(--danger-500\)/);
-  assert.match(source, /var\(--rose-soft\)/);
-  assert.match(source, /var\(--fg-disabled\)/);
+  assert.match(source, /var\(--hy-accent-deep\)/);
+  assert.match(source, /var\(--bg-card\)/);
 });
 
 test("부모 오늘경로의 오늘 머문 곳 시트는 접힘 transform이 sheet-up 애니메이션에 덮이지 않는다", () => {

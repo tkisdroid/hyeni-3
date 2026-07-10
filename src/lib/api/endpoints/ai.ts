@@ -493,6 +493,23 @@ export async function fetchAiFriendSettings(
   );
 }
 
+/** 오늘 AI 대화 사용량(GET /usage/today · 부모/자녀 본인). 오늘 기록이 없으면 null. */
+export interface AiUsageToday {
+  count: number;
+  usage_date: string;
+}
+
+/**
+ * 아이 세션도 호출 가능한 유일한 사용량 소스.
+ * `/credits/balance` 는 부모 전용(403)이라 아이 화면에서는 절대 부르지 않는다.
+ */
+export async function fetchAiUsageToday(
+  familyId: string,
+  childUserId: string,
+): Promise<AiUsageToday | null> {
+  return apiGet<AiUsageToday | null>(`/api/ai/usage/today${aiQuery({ familyId, childUserId })}`);
+}
+
 /** 공개 설정 조회(GET /settings/friend-public · 부모/자녀 본인). 미설정이면 null. */
 export async function fetchAiFriendPublicSettings(
   familyId: string,

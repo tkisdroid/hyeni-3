@@ -1,0 +1,34 @@
+/**
+ * 스티커 상세 모달 — 스티커북에서 받은 스티커를 누르면 열린다.
+ *
+ * 서버 `stickers` 에는 보낸 사람 이름도, 칭찬 메시지도 없다. 그래서 시안의
+ * "엄마가 오늘 보냈어 / 태권도 가방을 스스로 챙겼구나!" 같은 문장은 만들지 않는다.
+ * 대신 확실한 사실만 쓴다: 언제 받았는지(earned_at), 어떤 종류인지(sticker_type), 몇 개인지.
+ */
+import { asset } from "@/lib/assets";
+import { stickerOriginText, stickerWhenLabel, type StickerSlot } from "@/transform/stickerBook";
+import { ChildModal } from "./ChildSheet";
+
+export interface StickerDetailProps {
+  slot: StickerSlot | null;
+  nowMs: number;
+  onClose: () => void;
+}
+
+export function StickerDetail({ slot, nowMs, onClose }: StickerDetailProps) {
+  if (!slot) return null;
+  return (
+    <ChildModal open onClose={onClose} label={`${slot.label} 스티커`}>
+      <img className="ks-modal__img" src={asset(slot.img)} alt={slot.label} />
+      <div className="ks-modal__label">{slot.label}</div>
+      <div className="ks-modal__meta">
+        {stickerWhenLabel(slot.latestAt, nowMs)}
+        {slot.count > 1 ? ` · ${slot.count}개 모았어` : ""}
+      </div>
+      <div className="ks-modal__msg">{stickerOriginText(slot.latestType)}</div>
+      <button type="button" className="ks-cta hy-press" onClick={onClose}>
+        좋아!
+      </button>
+    </ChildModal>
+  );
+}

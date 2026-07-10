@@ -1,15 +1,8 @@
 import { Outlet } from "react-router-dom";
-import {
-  Home,
-  CalendarDays,
-  MapPin,
-  MessageCircle,
-  Settings,
-  Sticker,
-  Users,
-} from "lucide-react";
+import { Home, CalendarDays, MapPin, MessageCircle, Settings, Users } from "lucide-react";
 import { useMemo } from "react";
 import { useAccent } from "./accent";
+import { ChildDock } from "./ChildDock";
 import { TabBar, type TabItem } from "./TabBar";
 import { ToastHost } from "./toast";
 import { useParentAlerts } from "@/queries/useNotifications";
@@ -21,12 +14,6 @@ const PARENT_TABS: TabItem[] = [
   { to: "/parent/location", label: "위치", Icon: MapPin },
   { to: "/parent/memo", label: "대화", Icon: MessageCircle },
   { to: "/parent/settings", label: "설정", Icon: Settings },
-];
-
-const CHILD_TABS: TabItem[] = [
-  { to: "/child/home", label: "홈", Icon: Home },
-  { to: "/child/sticker", label: "스티커", Icon: Sticker },
-  { to: "/child/memo", label: "대화", Icon: MessageCircle },
 ];
 
 /** 대화 탭 빨간 점 — 활성 아이의 미읽음 메모 알림(parent_alerts alert_type=memo_*)이 있을 때만.
@@ -73,15 +60,15 @@ export function ParentShell() {
   );
 }
 
-/** 아이 모드 셸: 아이 탭바. */
+/** 아이 모드 셸: 시안 2a 의 하단 독(홈·스티커·대화 + SOS). 색은 아이가 고른 강조색. */
 export function ChildShell() {
   const { accent } = useAccent();
   return (
     <div className="hy-app" data-accent={accent}>
-      <div className="hy-screen">
+      <div className="hy-screen hy-screen--dock">
         <Outlet />
       </div>
-      <TabBar tabs={CHILD_TABS} />
+      <ChildDock />
       <ToastHost />
     </div>
   );

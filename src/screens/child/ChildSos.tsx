@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Check, ChevronLeft } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useSendSos } from "@/queries/useSos";
@@ -6,39 +8,54 @@ import { useMyFamily } from "@/queries/useFamily";
 import { placePhoneCall } from "@/lib/native/phone";
 import "./ChildSos.css";
 
-type Phase = "idle" | "counting" | "sending" | "sent" | "error";
+type Phase = "idle" | "sending" | "sent" | "error";
 
-/** 버튼을 이만큼 눌러야 SOS 카운트다운이 시작돼요(ms). */
-const HOLD_MS = 700;
-/** 카운트다운 시작 숫자(초). */
-const COUNT_FROM = 3;
+/** 시안대로 3초를 꾹 눌러야 발사된다(오발사 방지). */
+const HOLD_MS = 3000;
 
-const RING_R = 100;
-const RING_C = 2 * Math.PI * RING_R;
-
-/** SOS — 3초 홀드 → 카운트다운 → 전송완료. */
+/**
+ * 아이 SOS — 3초 꾹 → 보호자에게 위치와 함께 긴급 알림.
+ *
+ * 발사 계약은 바꾸지 않았다(생명안전): 홀드 시작 시 위치를 1회 취득하고, 홀드가 끝나면
+ * `useSendSos` 로 위치 upsert → parent_alert → sos_events 3단계를 태운다.
+ * 부모 알림이 실제로 도달(`alertSent === true`)했을 때만 "보냈어"로 표시하고,
+ * 아니면 실패로 알린 뒤 재시도·전화 경로를 준다. 세션당 발사는 1회(sentRef).
+ */
 export function ChildSos() {
+  const navigate = useNavigate();
   const { show } = useToast();
   const sos = useSendSos();
   const { data: family } = useMyFamily();
+
   const [phase, setPhase] = useState<Phase>("idle");
-  const [count, setCount] = useState(COUNT_FROM);
-  const [holdProgress, setHoldProgress] = useState(0);
+  const [progress, setProgress] = useState(0); // 0~1
+  const [armed, setArmed] = useState(false); // 키보드로 시작한 자동 진행
 
   const holding = useRef(false);
   const rafRef = useRef<number | null>(null);
-  const holdStart = useRef(0);
-
-  // 카운트다운 동안 취득한 자녀 현재 위치(읽기 전용). 발송 시 이 값을 실어 보낸다.
+  const startRef = useRef(0);
   const posRef = useRef<{ lat: number; lng: number } | null>(null);
-  // 한 SOS 세션당 실제 발송을 1회로 제한하는 가드(중복 발송 방지).
   const sentRef = useRef(false);
 
-  // 자녀 현재 위치 취득(읽기 전용, 발송 아님). 카운트다운 시작 시 1회 호출한다.
-  // 거부/실패해도 SOS 는 위치 없이 발송되므로 조용히 무시한다.
+  const parents = family?.members.filter((m) => m.role === "parent") ?? [];
+  const mom = parents.find((p) => p.gender === "mom") ?? null;
+  const dad = parents.find((p) => p.gender === "dad") ?? null;
+  const parentLabel = mom && dad ? "엄마·아빠" : mom ? "엄마" : dad ? "아빠" : "부모님";
+
+  const callParent = (gender: "mom" | "dad", label: string) => {
+    const number = parents.find((p) => p.gender === gender)?.phone;
+    if (!number) {
+      show(`${label} 전화번호가 없어`, "📞");
+      return;
+    }
+    show(`${label}한테 전화 거는 중...`, "📞");
+    void placePhoneCall(number);
+  };
+
+  // 위치는 홀드가 시작될 때 1회만 읽는다(발송 아님). 거부/실패해도 SOS 는 위치 없이 나간다.
   const acquirePosition = () => {
     posRef.current = null;
-    if (!("geolocation" in navigator)) return;
+    if (typeof navigator === "undefined" || !("geolocation" in navigator)) return;
     navigator.geolocation.getCurrentPosition(
       (p) => {
         posRef.current = { lat: p.coords.latitude, lng: p.coords.longitude };
@@ -50,294 +67,223 @@ export function ChildSos() {
     );
   };
 
-  // 카운트다운 진입(사용자가 버튼 누르기를 완료했거나 키보드로 활성화한 순간).
-  // 실제 발송은 아직 아니며, 이 3초 창 동안 위치만 미리 취득한다.
-  const startSos = () => {
-    sentRef.current = false;
-    posRef.current = null;
-    setCount(COUNT_FROM);
-    setPhase("counting");
-    acquirePosition();
-  };
-
-  // ⚠️ 실제 SOS 발송 지점 — 사용자 액션(버튼 누르기 완료 → 카운트다운 만료 / "지금 바로 보내기")
-  //    에서만 도달한다. 마운트·타 effect 단독으로는 절대 호출되지 않는다.
-  //    sentRef 로 세션당 1회만 mutate 를 호출한다.
-  //    ⚠️ 안전 기능: 결과가 확정되기 전엔 "sending"(보내는 중)만 노출하고,
-  //       부모 긴급 알림이 실제로 도달(alertSent)했을 때만 "sent"(성공)로 전환한다.
-  //       발송 실패·알림 미도달은 절대 성공으로 오인시키지 않고 "error"로 처리한다.
-  const dispatchSos = () => {
+  // ⚠️ 실제 발사 지점 — 3초 홀드 완료에서만 도달한다.
+  const dispatchSos = useCallback(() => {
     if (sentRef.current) return;
     sentRef.current = true;
     setPhase("sending");
     sos.mutate(
       { lat: posRef.current?.lat ?? null, lng: posRef.current?.lng ?? null },
       {
-        // alertSent === true 여야 부모에게 긴급 알림이 실제 도달한 것.
-        // 위치/감사로그 실패는 넘어가되(부가 단계), 알림 자체가 실패면 error 로 처리한다.
         onSuccess: (result) => setPhase(result.alertSent ? "sent" : "error"),
         onError: () => setPhase("error"),
       },
     );
-  };
+  }, [sos]);
 
-  // 발송 실패 후 재시도 — 세션 가드를 풀고 같은(취득된) 위치로 다시 발송한다.
-  const retrySos = () => {
-    sentRef.current = false;
-    dispatchSos();
-  };
-
-  const sendSosNow = () => dispatchSos();
-  const cancelSos = () => setPhase("idle");
-
-  // 부모 전화: 성별로 엄마/아빠 번호를 찾아 발신. 번호 미등록이면 안내만.
-  const parents = family?.members.filter((m) => m.role === "parent") ?? [];
-  // 실제 연결된 부모(존재하는 쪽만). 완료 화면 라벨·전화버튼을 이 기준으로 파생한다.
-  const mom = parents.find((p) => p.gender === "mom") ?? null;
-  const dad = parents.find((p) => p.gender === "dad") ?? null;
-  const parentLabel = mom && dad ? "엄마·아빠" : mom ? "엄마" : dad ? "아빠" : "부모님";
-  const callParent = (gender: "mom" | "dad", label: string) => {
-    const number = parents.find((p) => p.gender === gender)?.phone;
-    if (!number) {
-      show(`${label} 전화번호가 없어`, "📞");
-      return;
-    }
-    show(`${label}에게 전화를 걸게`, "📞");
-    void placePhoneCall(number);
-  };
-  const callMom = () => callParent("mom", "엄마");
-  const callDad = () => callParent("dad", "아빠");
-
-  // 카운트다운: 1초마다 감소, 0이 되기 전에 발송·전송완료로 전환(0 노출 방지).
-  useEffect(() => {
-    if (phase !== "counting") return;
-    const t = window.setTimeout(() => {
-      if (count <= 1) dispatchSos();
-      else setCount(count - 1);
-    }, 1000);
-    return () => window.clearTimeout(t);
-    // dispatchSos 는 매 렌더 재생성되지만 effect 는 phase/count 변화 시에만 재구독되며
-    // 그때의 최신 클로저를 사용하므로 deps 에 넣지 않는다(단일 발송 흐름 유지).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, count]);
-
-  // 언마운트 시 홀드 애니메이션 프레임 정리.
-  useEffect(
-    () => () => {
-      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
-    },
-    [],
-  );
-
-  const endHold = () => {
+  const stopTick = () => {
     holding.current = false;
     if (rafRef.current != null) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
-    setHoldProgress(0);
   };
 
-  const beginHold = () => {
-    if (phase !== "idle") return;
-    holding.current = true;
-    holdStart.current = performance.now();
+  const runTick = useCallback(() => {
     const tick = (now: number) => {
       if (!holding.current) return;
-      const p = Math.min(1, (now - holdStart.current) / HOLD_MS);
-      setHoldProgress(p);
+      const p = Math.min(1, (now - startRef.current) / HOLD_MS);
+      setProgress(p);
       if (p >= 1) {
-        holding.current = false;
-        rafRef.current = null;
-        setHoldProgress(0);
-        startSos();
+        stopTick();
+        setArmed(false);
+        setProgress(0);
+        dispatchSos();
         return;
       }
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
+  }, [dispatchSos]);
+
+  const beginHold = () => {
+    if (phase !== "idle" || holding.current) return;
+    holding.current = true;
+    startRef.current = performance.now();
+    acquirePosition();
+    runTick();
   };
 
-  return (
-    <div className="cs-root">
-      {/* 대기(idle) */}
-      <div className="cs-idle">
-        <div className="cs-idle__heading">
-          <div className="cs-idle__title">도움이 필요하면 눌러</div>
-          <div className="cs-idle__sub">
-            버튼을 누르면 엄마·아빠에게
-            <br />
-            내 위치랑 같이 바로 알려줄게
+  const endHold = () => {
+    if (armed) return; // 키보드로 시작한 진행은 포인터 이탈로 취소되지 않는다.
+    stopTick();
+    setProgress(0);
+  };
+
+  const cancelArmed = () => {
+    setArmed(false);
+    stopTick();
+    setProgress(0);
+  };
+
+  const retrySos = () => {
+    sentRef.current = false;
+    dispatchSos();
+  };
+
+  useEffect(() => stopTick, []);
+
+  const remainSec = progress > 0 ? String(Math.max(1, Math.ceil((HOLD_MS - progress * HOLD_MS) / 1000))) : "SOS";
+  const hint = progress > 0 ? "놓지 마!" : "3초 꾹";
+  const ringBg = `conic-gradient(#FFE1E8 ${progress * 360}deg, rgba(255,255,255,.35) 0deg)`;
+
+  if (phase === "sending") {
+    return (
+      <div className="cs-root">
+        <div className="cs-result">
+          <div className="cs-spinner" aria-hidden="true">
+            💗
           </div>
+          <div className="cs-result__title">보내는 중…</div>
+          <div className="cs-result__sub">{parentLabel}에게 SOS를 보내고 있어</div>
         </div>
+      </div>
+    );
+  }
 
-        <button
-          type="button"
-          className="cs-sos hy-press"
-          aria-label="SOS 보내기 — 3초 누르기"
-          onPointerDown={beginHold}
-          onPointerUp={endHold}
-          onPointerLeave={endHold}
-          onPointerCancel={endHold}
-          onClick={(e) => {
-            // 키보드(Enter/Space)로 활성화하면 detail === 0 → 바로 시작.
-            if (e.detail === 0) startSos();
-          }}
-        >
-          <span className="cs-sos__ring" />
-          <span className="cs-sos__ring is-2" />
-          {holdProgress > 0 && (
-            <svg className="cs-sos__progress" viewBox="0 0 208 208" width="208" height="208" aria-hidden="true">
-              <circle
-                cx="104"
-                cy="104"
-                r={RING_R}
-                fill="none"
-                stroke="rgba(255,255,255,0.85)"
-                strokeWidth="6"
-                strokeLinecap="round"
-                strokeDasharray={RING_C}
-                strokeDashoffset={RING_C * (1 - holdProgress)}
-                transform="rotate(-90 104 104)"
-              />
-            </svg>
-          )}
-          <div className="cs-sos__inner">
-            <img className="cs-sos__shield" src={asset("ui/sos-shield.webp")} alt="" />
-            <div className="cs-sos__label">SOS</div>
+  if (phase === "error") {
+    return (
+      <div className="cs-root">
+        <div className="cs-result">
+          <div className="cs-spinner" aria-hidden="true">
+            😥
           </div>
-        </button>
-
-        <div className="cs-hint">3초 누르면 보내져</div>
-
-        <div className="cs-calls">
-          <button type="button" className="cs-call hy-press" onClick={callMom}>
-            <img src={asset("family/mom.webp")} alt="" />
-            <span>엄마에게 전화</span>
+          <div className="cs-result__title">앗, 못 보냈어</div>
+          <div className="cs-result__sub">
+            연결이 안 됐어.
+            <br />
+            다시 보내거나 바로 전화해!
+          </div>
+          <button type="button" className="cs-callbtn hy-press" onClick={retrySos} disabled={sos.isPending}>
+            <span>다시 보내기</span>
           </button>
-          <button type="button" className="cs-call hy-press" onClick={callDad}>
-            <img src={asset("family/dad.webp")} alt="" />
-            <span>아빠에게 전화</span>
+          {mom && (
+            <button type="button" className="cs-callbtn cs-callbtn--slim hy-press" onClick={() => callParent("mom", "엄마")}>
+              <img src={asset("family/mom.webp")} alt="" />
+              <span>엄마에게 전화하기</span>
+            </button>
+          )}
+          {dad && (
+            <button type="button" className="cs-callbtn cs-callbtn--slim hy-press" onClick={() => callParent("dad", "아빠")}>
+              <img src={asset("family/dad.webp")} alt="" />
+              <span>아빠에게 전화하기</span>
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === "sent") {
+    return (
+      <div className="cs-root">
+        <div className="cs-result">
+          <img className="cs-result__img" src={asset("mascot/phone.webp")} alt="" />
+          <div className="cs-result__title">{parentLabel}에게 알렸어!</div>
+          <div className="cs-result__sub">안전한 곳에서 기다리면 돼</div>
+
+          <div className="cs-checks">
+            <div className="cs-checks__row">
+              <span className="cs-checks__dot">
+                <Check size={17} strokeWidth={3} color="var(--mint-500)" />
+              </span>
+              <span className="cs-checks__text">
+                {posRef.current ? "지금 위치를 보냈어" : "위치는 못 찾았지만 알림은 갔어"}
+              </span>
+            </div>
+            <div className="cs-checks__row">
+              <span className="cs-checks__dot">
+                <Check size={17} strokeWidth={3} color="var(--mint-500)" />
+              </span>
+              <span className="cs-checks__text">보호자 모두에게 알림이 갔어</span>
+            </div>
+          </div>
+
+          {mom && (
+            <button type="button" className="cs-callbtn hy-press" onClick={() => callParent("mom", "엄마")}>
+              <img src={asset("family/mom.webp")} alt="" />
+              <span>엄마에게 전화하기</span>
+            </button>
+          )}
+          {dad && (
+            <button type="button" className="cs-callbtn cs-callbtn--slim hy-press" onClick={() => callParent("dad", "아빠")}>
+              <img src={asset("family/dad.webp")} alt="" />
+              <span>아빠에게 전화하기</span>
+            </button>
+          )}
+
+          <button type="button" className="cs-ghost" onClick={() => navigate("/child/home")}>
+            괜찮아, 집으로 갈래
           </button>
         </div>
       </div>
+    );
+  }
 
-      {/* 카운트다운 오버레이 */}
-      {phase === "counting" && (
-        <div className="cs-count">
-          <div className="cs-count__label">곧 보낼게</div>
-          <div className="cs-count__ring">
-            <span className="cs-count__ring-static" />
-            <span className="cs-count__ring-anim" />
-            <div className="cs-count__num">{count}</div>
-          </div>
-          <div className="cs-count__desc">
-            엄마·아빠에게 내 위치를
-            <br />
-            알리는 중이야
-          </div>
-          <button type="button" className="cs-count__send hy-press" onClick={sendSosNow}>
-            지금 바로 보내기
+  return (
+    <div className="cs-root">
+      <div className="cs-page">
+        <button type="button" className="cs-back hy-press" aria-label="뒤로" onClick={() => navigate(-1)}>
+          <ChevronLeft size={22} strokeWidth={2.6} color="var(--bg-card)" />
+        </button>
+
+        <img className="cs-shield" src={asset("ui/sos-shield.webp")} alt="" />
+        <div className="cs-title">꾹 눌러서 도와줘!</div>
+        <div className="cs-desc">
+          동그라미를 <b>3초</b> 동안 누르고 있으면
+          <br />
+          엄마·아빠에게 <b>내 위치</b>랑 같이 알려줄게
+        </div>
+
+        <div className="cs-holder">
+          <span className="cs-holder__ring" />
+          <span className="cs-holder__ring cs-holder__ring--b" />
+          <button
+            type="button"
+            className="cs-hold hy-press"
+            aria-label="SOS — 3초 누르고 있기"
+            style={{ background: ringBg }}
+            onPointerDown={beginHold}
+            onPointerUp={endHold}
+            onPointerLeave={endHold}
+            onPointerCancel={endHold}
+            onClick={(e) => {
+              // 키보드(Enter/Space)·스크린리더 활성화는 detail === 0 → 손을 뗄 수 없으므로
+              // 3초 자동 진행으로 대신하고 취소 버튼을 띄운다(누르기 어려운 아이도 쓸 수 있게).
+              if (e.detail === 0 && phase === "idle" && !holding.current) {
+                setArmed(true);
+                holding.current = true;
+                startRef.current = performance.now();
+                acquirePosition();
+                runTick();
+              }
+            }}
+          >
+            <span className="cs-hold__inner">
+              <span className="cs-hold__num">{remainSec}</span>
+              <span className="cs-hold__hint">{hint}</span>
+            </span>
           </button>
-          <button type="button" className="cs-count__cancel" onClick={cancelSos}>
+        </div>
+
+        {armed && (
+          <button type="button" className="cs-cancel" onClick={cancelArmed}>
             취소
           </button>
-        </div>
-      )}
+        )}
 
-      {/* 발송 중 오버레이 — 결과 확정 전. 성공/실패 어느 쪽도 단언하지 않는다. */}
-      {phase === "sending" && (
-        <div className="cs-count">
-          <div className="cs-count__label">보내는 중…</div>
-          <div className="cs-count__ring">
-            <span className="cs-count__ring-static" />
-            <span className="cs-count__ring-anim" />
-            <div className="cs-count__num" style={{ fontSize: 52 }}>
-              💗
-            </div>
-          </div>
-          <div className="cs-count__desc">
-            엄마·아빠에게 SOS를
-            <br />
-            보내고 있어
-          </div>
-        </div>
-      )}
-
-      {/* 발송 실패 오버레이 — 실패를 성공으로 오인 금지. 재시도 + 부모 전화 안내. */}
-      {phase === "error" && (
-        <div className="cs-count">
-          <div className="cs-count__label">앗, 못 보냈어</div>
-          <div className="cs-count__ring">
-            <span className="cs-count__ring-static" />
-            <div className="cs-count__num" style={{ fontSize: 80 }}>
-              !
-            </div>
-          </div>
-          <div className="cs-count__desc">
-            연결이 안 됐어.
-            <br />
-            다시 보내거나 엄마·아빠에게 바로 전화해
-          </div>
-          <button type="button" className="cs-count__send hy-press" onClick={retrySos}>
-            다시 보내기
-          </button>
-          <button type="button" className="cs-count__send hy-press" onClick={callMom}>
-            📞 엄마에게 전화
-          </button>
-          <button type="button" className="cs-count__cancel" onClick={callDad}>
-            아빠에게 전화
-          </button>
-        </div>
-      )}
-
-      {/* 전송완료 오버레이 */}
-      {phase === "sent" && (
-        <div className="cs-sent">
-          <div className="cs-sent__pop">
-            <img src={asset("status/safe.webp")} alt="" />
-          </div>
-          <div className="cs-sent__title">{parentLabel}에게 알렸어!</div>
-          <div className="cs-sent__desc">
-            내 위치도 같이 보냈어.
-            <br />
-            {parentLabel}가 곧 연락할 거야 💚
-          </div>
-          <div className="cs-sent__actions">
-            <div className="cs-sent__row">
-              <div className="cs-sent__check">
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#23A876"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M20 6 9 17l-5-5" />
-                </svg>
-              </div>
-              <span className="cs-sent__row-text">{parentLabel}가 알림을 받았어</span>
-            </div>
-            {mom && (
-              <button type="button" className="cs-sent__call hy-press" onClick={callMom}>
-                📞 엄마에게 전화하기
-              </button>
-            )}
-            {dad && (
-              <button type="button" className="cs-sent__call hy-press" onClick={callDad}>
-                📞 아빠에게 전화하기
-              </button>
-            )}
-            <button type="button" className="cs-sent__ok" onClick={cancelSos}>
-              괜찮아, 확인했어
-            </button>
-          </div>
-        </div>
-      )}
+        <div className="cs-foot">장난으로 누르면 엄마·아빠가 깜짝 놀랄 수 있어 🙏</div>
+      </div>
     </div>
   );
 }
