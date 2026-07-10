@@ -127,6 +127,14 @@
   안심리포트 → 구독 → 알림` 순서와 실제 라우트를 회귀 테스트로 고정한다. 부모 설정 메뉴는 emoji 칩 대신
   lucide/image 아이콘 + `data-tone` 토큰 색상만 사용한다. 페어링 위저드는 `/api/family/mine`과 엔타이틀먼트가
   모두 확정되기 전 2명 선택과 코드 생성을 막고, 코드 생성 직전에도 현재 티어의 아이 수 상한을 다시 검사한다.
+- OAuth 딥링크 인가코드는 1회용(2026-07-10 실기기 규명): Capacitor `App.getLaunchUrl()`은 실행 인텐트를 계속
+  반환하고(휘발되지 않음) `appUrlOpen`도 같은 인텐트를 전달해, 콜드 스타트에서 같은 code 가 2~3회 교환됐다.
+  구글은 코드 재사용을 감지하면 그 코드로 발급한 토큰을 전부 무효화하므로 로그인이 통째로 실패하고,
+  카카오는 먼저 도착한 요청만 성공해 증상이 가려진다(=D1 에 OAuth 세션 행이 1건만 남아 정상처럼 보임).
+  `transform/oauthCodeOnce.ts` 가드로 `provider:code` 당 1회만 교환하고(실행 직전 localStorage 영속화 →
+  프로세스 재시작 후 stale launch URL 재교환 차단), 딥링크 리스너는 참조 카운트로 단 1개만 유지한다.
+  OAuth nonce 는 sessionStorage 뿐 아니라 localStorage 에도 저장한다 — 네이티브는 OAuth 왕복 중 프로세스가
+  재생성되어 sessionStorage 가 비고, 그러면 CSRF 대조가 조용히 건너뛰어진다.
 
 ### G. 오케스트레이션 사용 기준
 - **넓은 탐색·감사** = 병렬 에이전트 + 적대 검증(REFUTED 걸러내고 **CONFIRMED 만** 수정).
@@ -159,6 +167,11 @@
   native setter+`input` 이벤트 · 페이지 fetch 로 `/rest/v1` 은 CORS 차단 → 토큰만 CDP 로 읽고 **호스트 curl**.
 - **D1/Worker**: 시간 검증은 백데이트 트리거(예: `anchor_since` 6분 전 + upsert 1회, cron 은 이벤트를 target 분에 생성) ·
   `wrangler tail --format json` 을 파일로 받아 파이썬 파싱 · 컬럼명 추측 금지 — `pragma_table_info` 먼저.
+  ★ `wrangler tail --format json` 출력은 **pretty-print** 라 줄 단위(JSONL) 파싱하면 0건으로 보인다 —
+  `json.JSONDecoder().raw_decode` 로 스트림 파싱할 것. CDP `Runtime.consoleAPICalled` 의 Error 인자는
+  `value` 가 아니라 `description` 에 들어온다(둘 다 읽지 않으면 오류를 못 세고 "0회"로 오판).
+  Git Bash 에서 `MSYS_NO_PATHCONV=1` 과 Windows python 을 함께 쓰면 `/tmp/x` 를 python 이 `C:\tmp\x` 로 읽는다 —
+  python 에는 Windows 경로를 넘길 것.
   `/api/events`처럼 `events_children`를 다건 조회할 때는 D1 변수 제한을 넘지 않도록 `IN (...)` 바인딩을 청크 처리한다.
 - **검증용 발사 자제**: 밤에 force_ring/SOS 실발사는 실기기 벨 울림 — 시간대 고려, 발동 후 정리.
 

@@ -196,6 +196,46 @@ const NAVER_AUTHORIZE_URL = "https://nid.naver.com/oauth2.0/authorize";
 const OAUTH_STATE_KEY = "hyeni-oauth-state";
 const OAUTH_PROVIDER_KEY = "hyeni-oauth-provider";
 
+// nonce 는 localStorage 에도 둔다. 네이티브는 OAuth 왕복 중 프로세스가 재생성될 수 있고,
+// 그러면 sessionStorage 가 비어 CSRF 검사(savedNonce)가 조용히 건너뛰어진다(코드 주입 방어 상실).
+function writeOAuthNonce(nonce: string, provider: string): void {
+  for (const store of [window.sessionStorage, window.localStorage]) {
+    try {
+      store.setItem(OAUTH_STATE_KEY, nonce);
+      store.setItem(OAUTH_PROVIDER_KEY, provider);
+    } catch {
+      /* 저장소 접근 불가 */
+    }
+  }
+}
+
+/** 저장된 nonce 를 읽고 즉시 폐기(재사용 금지). sessionStorage 우선, 없으면 localStorage. */
+function takeOAuthNonce(): string {
+  let nonce = "";
+  for (const store of [window.sessionStorage, window.localStorage]) {
+    try {
+      nonce = nonce || store.getItem(OAUTH_STATE_KEY) || "";
+      store.removeItem(OAUTH_STATE_KEY);
+      store.removeItem(OAUTH_PROVIDER_KEY);
+    } catch {
+      /* 저장소 접근 불가 */
+    }
+  }
+  return nonce;
+}
+
+function readOAuthProviderHint(): string | null {
+  for (const store of [window.sessionStorage, window.localStorage]) {
+    try {
+      const v = store.getItem(OAUTH_PROVIDER_KEY);
+      if (v) return v;
+    } catch {
+      /* 저장소 접근 불가 */
+    }
+  }
+  return null;
+}
+
 // 네이티브 OAuth 복귀 target. Worker /callback 이 이 스킴으로 재리다이렉트하고
 // AndroidManifest 의 intent-filter(scheme=hyenicalendar, host=auth-callback)가 앱을 깨운다.
 const NATIVE_OAUTH_REDIRECT_URL = "hyenicalendar://auth-callback";
@@ -224,12 +264,7 @@ export function startWorkerOAuth(provider: OAuthProvider): void {
   const target = native ? NATIVE_OAUTH_REDIRECT_URL : window.location.origin;
   const nonce = randomNonce();
   const encoded = btoa(JSON.stringify({ nonce, target }));
-  try {
-    window.sessionStorage.setItem(OAUTH_STATE_KEY, nonce);
-    window.sessionStorage.setItem(OAUTH_PROVIDER_KEY, provider);
-  } catch {
-    /* sessionStorage 불가 */
-  }
+  writeOAuthNonce(nonce, provider);
 
   // 네이버는 Worker /start 가 없다 — 클라가 인가 URL 을 직접 조립하고 redirect_uri 로 Worker 콜백을 준다.
   const startUrl = usesWorkerStartRedirect(provider)
@@ -262,14 +297,7 @@ export async function finishOAuthLogin(input: {
   }
   if (!input.code) throw new Error("로그인 인증 코드가 없어요. 다시 시도해 주세요!");
 
-  let savedNonce = "";
-  try {
-    savedNonce = window.sessionStorage.getItem(OAUTH_STATE_KEY) || "";
-    window.sessionStorage.removeItem(OAUTH_STATE_KEY);
-    window.sessionStorage.removeItem(OAUTH_PROVIDER_KEY);
-  } catch {
-    /* ignore */
-  }
+  const savedNonce = takeOAuthNonce();
   if (savedNonce && input.state && savedNonce !== input.state) {
     throw new Error("로그인 인증 정보가 어긋났어요. 보안을 위해 처음부터 다시 해주세요!");
   }
@@ -299,11 +327,7 @@ export function readOAuthCallback(): { provider: OAuthProvider; code: string; st
   const state = params.get("state") || "";
   let provider: unknown = params.get("provider");
   if (!isOAuthProvider(provider)) {
-    try {
-      provider = window.sessionStorage.getItem(OAUTH_PROVIDER_KEY);
-    } catch {
-      provider = null;
-    }
+    provider = readOAuthProviderHint();
   }
   if (!isOAuthProvider(provider)) return null;
   return { provider, code, state };
