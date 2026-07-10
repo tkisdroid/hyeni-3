@@ -53,6 +53,19 @@
 - 식별자 오귀속 방지: 준비물 `DailySupply.child_user_id`는 이름과 달리 member id다. 부모 세션에서 대상 아이가
   명시되지 않으면 첫 아이로 폴백하지 않고 저장을 실패시킨다(`resolveDailySupplyChildMemberId`).
   아이 설정 화면도 본인 `user_id`가 매칭된 child member만 사용하고 첫 아이로 대체하지 않는다.
+- ★온보딩 세션 파괴 금지(2026-07-10 실사고): `/onboarding`은 세션을 새로 만드는 화면이라
+  인증된 사용자가 도달하면 딥링크 한 번으로 로그아웃된다. 실제로 `#/onboarding?pair=CODE` 재진입 시
+  `resolveAuthenticatedOnboardingRedirect`가 `hasPairParam`이면 리다이렉트를 포기했고, 그 자리에서
+  딥링크 핸들러의 `anonymousLogin()`이 child 세션을 익명으로 덮어썼다(부모가 아이 초대 QR을 자기 폰으로
+  스캔해도 동일). 3중 방어: ①라우트 `RequireGuest`(인증+familyId면 마운트 전에 홈으로) ②딥링크 effect·
+  `startChildMode`가 `deriveAuthState()`로 조기 이탈 ③`syncNativeLocationToken`이 익명 토큰을 네이티브에
+  쓰지 않음(`shouldWriteNativeSessionToken`). ③이 없으면 네이티브 refresh까지 익명으로 덮여
+  `restoreNativeRefreshOnlySession` 복구 경로가 영구히 막힌다(재페어링 외 복구 불가). 회귀 테스트=
+  `tests/onboardingRedirect.test.ts`·`onboardingSessionGuard.test.mjs`·`nativeTokenWrite.test.ts`.
+  검증 스크립트가 로그인된 앱을 온보딩으로 강제 이동시키지 않도록 주의한다(이 사고의 직접 방아쇠).
+- 아이 페어링 placeholder 규칙(2026-07-10): 서버 `/api/family/join` Path B는 `user_id IS NULL` 중
+  **`is_active=1`인 placeholder만** 채운다. 비활성 placeholder에 붙이면 부모 화면(활성 아이만 표시)에서
+  보이지 않는 유령 페어링이 된다. 채울 때 `is_active=1`을 명시한다.
 - 세션 family id 정본: access token claim의 `family_id`가 과거 가족 값으로 남을 수 있다.
   현재 가족은 `/api/family/mine` 응답이 정본이며, 클라이언트는 가족 조회 성공 시
   `hyeni-api-session-v1.user.family_id`와 role을 `/mine` 기준으로 보정해야 한다. 실기기 검증도

@@ -26,6 +26,7 @@ import {
 } from "@/lib/api/session";
 import type { LocationIntervalMode } from "@/lib/api/endpoints/location";
 import { shouldAdoptNativeSessionTokens, shouldRestoreNativeRefreshOnlySession } from "@/transform/nativeTokenSync";
+import { shouldWriteNativeSessionToken } from "@/transform/nativeTokenWrite";
 
 const PLUGIN_NAME = "BackgroundLocation";
 
@@ -140,6 +141,18 @@ export async function syncNativeLocationToken(): Promise<void> {
   if (!plugin) return;
   const accessToken = getApiAccessToken();
   if (!accessToken) return;
+  // ★익명 세션 토큰은 네이티브에 쓰지 않는다. 쓰면 백그라운드 위치가 401 나고,
+  //   네이티브 refresh 기반 세션 복구 경로까지 영구히 막힌다(nativeTokenWrite 주석 참조).
+  const user = userFromAccessToken(accessToken);
+  if (
+    !shouldWriteNativeSessionToken({
+      isAnonymous: user?.is_anonymous,
+      familyId: user?.family_id ?? user?.app_metadata?.family_id ?? null,
+      role: user?.role ?? user?.app_metadata?.role ?? null,
+    })
+  ) {
+    return;
+  }
   try {
     await plugin.updateToken({
       accessToken,

@@ -130,6 +130,15 @@ export function Onboarding() {
   useEffect(() => {
     const code = readPairParam();
     if (!code || readOAuthCallback()) return;
+    // ★세션 보호: 이미 가족에 연결된 세션이면 익명 로그인으로 덮어쓰지 않는다.
+    //   (부모가 아이 초대 QR 을 자기 폰으로 스캔 → 부모 세션이 익명으로 파괴되던 실사고.)
+    //   위 리다이렉트 effect 와 같은 커밋에서 실행되므로 여기서도 독립적으로 막아야 한다.
+    const current = deriveAuthState();
+    if (current.status === "authenticated" && current.familyId) {
+      clearPairParam();
+      navigate(homePathForRole(current.role), { replace: true });
+      return;
+    }
     clearPairParam();
     setPairPrefill(code);
     setBusy(true);
@@ -202,6 +211,13 @@ export function Onboarding() {
     setBusy(true);
     setChildStarting(true);
     try {
+      // ★세션 보호: 이미 가족에 연결된 세션(부모/아이)이면 새 익명 세션을 만들지 않는다.
+      //   역할 선택 화면이 잘못 노출돼도 기존 로그인이 파괴되지 않게 하는 최후 방어.
+      const current = deriveAuthState();
+      if (current.status === "authenticated" && current.familyId) {
+        navigate(homePathForRole(current.role), { replace: true });
+        return;
+      }
       const hint = await readChildDeviceIdentityHint();
       setChildJoinHint(hint);
       if (await adoptNativeLocationSessionTokens()) {

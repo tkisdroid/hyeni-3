@@ -7,6 +7,7 @@ import { ToastProvider } from "./toast";
 import { QueryProvider } from "@/queries/QueryProvider";
 import { AuthProvider } from "@/auth/AuthProvider";
 import { RequireRole } from "@/auth/RequireRole";
+import { RequireGuest } from "@/auth/RequireGuest";
 import { useFamilyRealtime } from "@/queries/useFamilyRealtime";
 import { NativeBootstrap } from "./NativeBootstrap";
 import { ActiveChildProvider } from "./activeChild";
@@ -128,7 +129,16 @@ const router = createHashRouter([
   {
     element: <PushShell />,
     children: [
-      { path: "onboarding", element: <Onboarding /> },
+      {
+        // 인증된(가족 연결된) 세션은 온보딩에 들어올 수 없다 — 딥링크·오작동으로 기존
+        // 세션이 익명 로그인에 덮여 로그아웃되던 사고 방지(RequireGuest 주석 참조).
+        path: "onboarding",
+        element: (
+          <RequireGuest>
+            <Onboarding />
+          </RequireGuest>
+        ),
+      },
       { path: "parent/family", element: <ParentFamily /> },
       { path: "child/sos", element: <ChildSos /> },
       { path: "child/ai-friend", element: <AiFriendChat /> },
