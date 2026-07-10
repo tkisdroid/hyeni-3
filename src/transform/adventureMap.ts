@@ -67,7 +67,9 @@ export function compactTime(startMinutes: number | null): string {
   const h24 = Math.floor(startMinutes / 60) % 24;
   const m = startMinutes % 60;
   const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
-  return `${h12}:${String(m).padStart(2, "0")}`;
+  // 오전/오후를 빼면 아침 9시와 밤 9시가 같은 "9:00" 이 된다(앱 공통 규약 = scheduleView.formatTimeLabel).
+  const ampm = h24 < 12 ? "오전" : "오후";
+  return `${ampm} ${h12}:${String(m).padStart(2, "0")}`;
 }
 
 /** "HH:MM" → 분. 형식이 아니면 null. */

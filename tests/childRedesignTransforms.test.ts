@@ -102,11 +102,15 @@ test("시간 파싱과 짧은 시각 표기", () => {
   assert.equal(timeLabelToMinutes("보통"), null);
   assert.equal(timeLabelToMinutes(null), null);
 
-  assert.equal(compactTime(960), "4:00");
-  assert.equal(compactTime(510), "8:30");
-  assert.equal(compactTime(0), "12:00");
-  assert.equal(compactTime(720), "12:00");
+  assert.equal(compactTime(960), "오후 4:00");
+  assert.equal(compactTime(510), "오전 8:30");
+  assert.equal(compactTime(0), "오전 12:00");
+  assert.equal(compactTime(720), "오후 12:00");
   assert.equal(compactTime(null), "");
+
+  // 오전/오후가 없으면 아침 9시와 밤 9시가 구분되지 않는다(razr 실기기에서 23:40 → "11:40" 로 보였다).
+  assert.notEqual(compactTime(9 * 60), compactTime(21 * 60));
+  assert.equal(compactTime(23 * 60 + 40), "오후 11:40");
 });
 
 test("받침 판정으로 조사를 고른다", () => {
@@ -130,7 +134,7 @@ test("일정 4개 이하면 전부 배치하고 상태를 나눈다", () => {
   assert.equal(map.nodes.length, 4);
   assert.deepEqual(map.nodes.map((n) => n.state), ["done", "done", "next", "todo"]);
   assert.equal(map.nodes[0].pill, "학교 ✓");
-  assert.equal(map.nodes[2].pill, "태권도 4:00");
+  assert.equal(map.nodes[2].pill, "태권도 오후 4:00");
   assert.equal(map.next?.id, "c");
   assert.equal(map.nodes[0].leftPct, ADVENTURE_SLOTS[0].leftPct);
   assert.equal(map.nodes[3].top, ADVENTURE_SLOTS[3].top);
@@ -141,7 +145,7 @@ test("말풍선은 반말이고 남은 시간을 실제로 계산한다", () => 
   assert.equal(buildAdventureMap(events, 15 * 60 + 15).bubble, "45분 뒤 태권도야!\n나랑 같이 가자 🎒");
   assert.equal(buildAdventureMap([ev("s", "수영", "16:00", false)], 15 * 60 + 15).bubble.startsWith("45분 뒤 수영이야!"), true);
   assert.equal(buildAdventureMap(events, 16 * 60).bubble, "지금 태권도 갈 시간이야! 🏃");
-  assert.equal(buildAdventureMap(events, 9 * 60).bubble.startsWith("4:00에 태권도야!"), true);
+  assert.equal(buildAdventureMap(events, 9 * 60).bubble.startsWith("오후 4:00에 태권도야!"), true);
   assert.equal(buildAdventureMap([], 9 * 60).bubble, "오늘 일정 다 끝났어! 푹 쉬어도 돼 🎈");
   assert.equal(buildAdventureMap([ev("x", "학교", null, false)], 9 * 60).bubble, "다음은 학교야! 나랑 같이 가자 🎒");
 });
