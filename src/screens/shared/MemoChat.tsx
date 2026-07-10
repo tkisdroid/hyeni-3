@@ -16,6 +16,8 @@ import {
   formatMemoDayLabel,
   type ThreadMsg,
 } from "@/transform/memoView";
+import { resolveMemoQuickReplies } from "@/transform/memoQuickReplies";
+import { resolveMemoChatCopy } from "@/transform/memoChatCopy";
 import { todayDateKey, addDaysToDateKey } from "@/transform/dateKey";
 import { apiUploadChildPhoto, childPhotoProxyUrl } from "@/lib/api/client";
 import { resizeImageFileSafe, dataUrlToBlob } from "@/lib/imageResize";
@@ -28,8 +30,6 @@ function avatarSrc(path: string): string {
   return path.startsWith("http") ? path : asset(path);
 }
 
-/** 입력창을 채우는 빠른 답장(자동 전송 금지 — 사용자가 보내기를 눌러야 전송). */
-const QUICK_REPLIES = ["지금 어디야?", "숙제는 했어?", "몇 시에 끝나?", "조심히 와 💛", "간식 챙겼어?"];
 
 export function MemoChat() {
   const navigate = useNavigate();
@@ -116,6 +116,10 @@ export function MemoChat() {
   const endRef = useRef<HTMLDivElement>(null);
   const mounted = useRef(false);
   const lastMessageId = messages[messages.length - 1]?.id ?? "";
+  // 빠른 답장·안내 문구는 보내는 사람에 따라 다르다 — 아이 화면에 부모 문구("숙제는 했어?")나
+  // 존댓말 안내가 뜨면 안 된다(말투 규칙: 아이 모드 = 반말).
+  const quickReplies = useMemo(() => resolveMemoQuickReplies(role), [role]);
+  const copy = useMemo(() => resolveMemoChatCopy(role), [role]);
 
   const scrollThreadToBottom = (behavior: ScrollBehavior) => {
     const anchor = endRef.current;
@@ -155,7 +159,7 @@ export function MemoChat() {
   const handleSend = () => {
     const text = draft.trim();
     if (!text) {
-      show("메시지를 입력해 주세요", "✏️");
+      show(copy.emptyDraft, "✏️");
       return;
     }
     if (sendMemo.isPending) return;
@@ -164,7 +168,7 @@ export function MemoChat() {
       { content: text, childId: scopeChild?.id ?? null },
       {
         onSuccess: () => setDraft(""),
-        onError: () => show("메시지 전송에 실패했어요", "⚠️"),
+        onError: () => show(copy.sendFailed, "⚠️"),
       },
     );
   };
@@ -180,18 +184,18 @@ export function MemoChat() {
     try {
       const dataUrl = await resizeImageFileSafe(file, { maxEdge: 1280, quality: 0.8 });
       if (!dataUrl) {
-        show("사진을 불러오지 못했어요", "⚠️");
+        show(copy.imageLoadFailed, "⚠️");
         return;
       }
       const path = `${familyId}/memo-${Date.now()}-${Math.floor(Math.random() * 1e6)}.jpg`;
       await apiUploadChildPhoto(path, dataUrlToBlob(dataUrl), "image/jpeg");
       sendMemo.mutate(
         { content: encodeImageContent(path), childId: scopeChild?.id ?? null },
-        { onError: () => show("사진 전송에 실패했어요", "⚠️") },
+        { onError: () => show(copy.imageFailed, "⚠️") },
       );
     } catch (error) {
       console.error("사진 전송 실패:", error);
-      show("사진 전송에 실패했어요", "⚠️");
+      show(copy.imageFailed, "⚠️");
     } finally {
       setSharing("");
     }
@@ -265,13 +269,13 @@ export function MemoChat() {
         if (mine) point = { lat: mine.lat, lng: mine.lng };
       }
       if (!point) {
-        show(role === "child" ? "지금 위치를 못 찾았어. 잠시 후 다시 해줘" : "현재 위치를 확인하지 못했어요", "📍");
+        show(copy.locationUnavailable, "📍");
         return;
       }
       const address = await reverseAddress(point.lat, point.lng);
       sendMemo.mutate(
         { content: encodeLocationContent(point.lat, point.lng, address || "내 위치"), childId: scopeChild?.id ?? null },
-        { onError: () => show("위치 전송에 실패했어요", "⚠️") },
+        { onError: () => show(copy.locationFailed, "⚠️") },
       );
     } finally {
       setSharing("");
@@ -290,7 +294,7 @@ export function MemoChat() {
   // 실시간 프레즌스 데이터가 없으므로 "온라인" 대신 최근 대화 시각으로 정직하게 표기.
   const statusLabel = hasMessages
     ? `최근 대화 · ${messages[messages.length - 1].time}`
-    : "새 대화를 시작해요";
+    : copy.noConversation;
 
   return (
     <div className="mc-root hy-rise-in">
@@ -320,17 +324,17 @@ export function MemoChat() {
       <div className="mc-thread">
         {thread.isLoading && (
           <div className="mc-daysep">
-            <span>대화를 불러오는 중…</span>
+            <span>{copy.loading}</span>
           </div>
         )}
         {thread.isError && (
           <div className="mc-daysep">
-            <span>대화를 불러오지 못했어요</span>
+            <span>{copy.loadError}</span>
           </div>
         )}
         {showEmpty && (
           <div className="mc-daysep">
-            <span>아직 나눈 대화가 없어요. 먼저 인사를 건네보세요 💌</span>
+            <span>{copy.empty}</span>
           </div>
         )}
 
@@ -394,7 +398,7 @@ export function MemoChat() {
       {/* 하단 입력 (composer) */}
       <div className="mc-composer">
         <div className="mc-quick">
-          {QUICK_REPLIES.map((q) => (
+          {quickReplies.map((q) => (
             <button
               key={q}
               type="button"
@@ -428,7 +432,7 @@ export function MemoChat() {
           </button>
           <input
             className="mc-input"
-            placeholder="메시지를 입력하세요..."
+            placeholder={copy.inputPlaceholder}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
