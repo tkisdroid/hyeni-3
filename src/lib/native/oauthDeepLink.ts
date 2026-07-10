@@ -22,7 +22,7 @@ import type { PluginListenerHandle } from "@capacitor/core";
 import type { URLOpenListenerEvent } from "@capacitor/app";
 import { isNativePlatform } from "./plugins";
 import { closeExternal } from "./browser";
-import { finishOAuthLogin } from "@/lib/api/endpoints/auth";
+import { finishOAuthLogin, linkOAuthAccount, peekOAuthFlowMode } from "@/lib/api/endpoints/auth";
 import type { OAuthProvider } from "@/transform/oauthProvider";
 import { parseOAuthDeepLinkUrl, type OAuthDeepLinkCallback } from "@/transform/oauthDeepLinkParse";
 import {
@@ -41,8 +41,15 @@ const OAUTH_ONCE_STORAGE_KEY = "hyeni-oauth-consumed-v1";
 export interface OAuthDeepLinkResult {
   ok: boolean;
   provider: OAuthProvider;
+  /** 로그인인지 계정 연결인지 — 화면이 다른 피드백을 줄 수 있게. */
+  mode: "login" | "link";
+  /** 이미 연결돼 있었는가(link 모드 전용). */
+  already?: boolean;
   error?: Error;
 }
+
+/** 연결 결과를 화면(설정 등)이 받을 수 있게 알린다. 딥링크 복귀 시점엔 어떤 화면인지 모른다. */
+export const OAUTH_LINK_EVENT = "hyeni:oauth-link";
 
 export type OAuthResultHandler = (result: OAuthDeepLinkResult) => void;
 
@@ -74,15 +81,30 @@ function routeToHomeAfterLogin(): void {
 
 // 인가코드 1건 교환(실제 네트워크). 실패는 여기서 흡수해 호출자에게 false 로 알린다.
 async function exchange(cb: DeepLinkCallback, onResult?: OAuthResultHandler): Promise<boolean> {
+  const mode = peekOAuthFlowMode();
   try {
+    if (mode === "link") {
+      // 이미 로그인한 계정에 소셜을 붙이는 흐름 — 세션을 바꾸지 않고 화면도 유지한다.
+      const result = await linkOAuthAccount(cb);
+      onResult?.({ ok: true, provider: cb.provider, mode, already: !!result.already });
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent(OAUTH_LINK_EVENT, { detail: { provider: cb.provider, already: !!result.already } }),
+        );
+      }
+      return true;
+    }
     await finishOAuthLogin(cb);
     routeToHomeAfterLogin();
-    onResult?.({ ok: true, provider: cb.provider });
+    onResult?.({ ok: true, provider: cb.provider, mode });
     return true;
   } catch (error) {
     console.error("네이티브 OAuth 콜백 처리 실패:", error);
     const err = error instanceof Error ? error : new Error(String(error));
-    onResult?.({ ok: false, provider: cb.provider, error: err });
+    onResult?.({ ok: false, provider: cb.provider, mode, error: err });
+    if (mode === "link" && typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent(OAUTH_LINK_EVENT, { detail: { provider: cb.provider, error: err.message } }));
+    }
     return false;
   } finally {
     // OAuth 를 끝낸 시스템 브라우저 닫기 시도(대개 no-op).

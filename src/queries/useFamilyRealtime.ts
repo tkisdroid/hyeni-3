@@ -6,6 +6,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/auth/AuthContext";
+import { shouldInterruptForUrgentAlert } from "@/transform/urgentAlert";
 import { getApiAccessToken } from "@/lib/api/session";
 import { openFamilySocket, type FamilyMessage } from "@/realtime/familySocket";
 import { qk } from "./keys";
@@ -44,9 +45,6 @@ function keysForMessage(msg: FamilyMessage, familyId: string): (readonly unknown
   }
 }
 
-// 부모 앱을 즉시 가로채야 하는 최우선 안전 알림 유형.
-const URGENT_ALERT_TYPES = new Set(["sos", "emergency", "not_arrived", "missed_arrival"]);
-
 function maybeCelebrateSticker(msg: FamilyMessage, role: string | null, userId: string | null): void {
   if (role !== "child" || !userId) return;
   if (msg.kind !== "pg" || msg.table !== "stickers" || msg.eventType !== "INSERT") return;
@@ -67,15 +65,13 @@ function maybeCelebrateSticker(msg: FamilyMessage, role: string | null, userId: 
 /**
  * 부모에게 도착한 긴급 알림(SOS/emergency)이면 SOS 수신 화면으로 자동 전환한다.
  * WS 는 라우터 밖(App 최상위)에서 도므로 navigate 대신 HashRouter 해시를 직접 바꾼다.
- * 이미 수신 화면이면 재이동하지 않는다.
+ * 판정 규칙(미도착 제외 등)은 transform/urgentAlert 가 단일 출처.
  */
 function maybeInterruptForUrgentAlert(msg: FamilyMessage, role: string | null): void {
-  if (role !== "parent") return;
   if (msg.kind !== "pg" || msg.table !== "parent_alerts" || msg.eventType !== "INSERT") return;
-  const row = msg.new as { alert_type?: string } | null | undefined;
-  if (!row || !URGENT_ALERT_TYPES.has(row.alert_type ?? "")) return;
   if (typeof window === "undefined") return;
-  if (window.location.hash.includes("sos-receive")) return;
+  const row = msg.new as { alert_type?: string } | null | undefined;
+  if (!shouldInterruptForUrgentAlert({ role, alertType: row?.alert_type, currentHash: window.location.hash })) return;
   window.location.hash = "#/sos-receive";
 }
 

@@ -7,7 +7,7 @@ const src = readFileSync(new URL("../src/lib/api/endpoints/auth.ts", import.meta
 test("OAuth nonce 는 localStorage 에도 저장한다(네이티브 프로세스 재생성 대비)", () => {
   assert.match(src, /function writeOAuthNonce/);
   assert.match(src, /for \(const store of \[window\.sessionStorage, window\.localStorage\]\)[\s\S]{0,200}setItem\(OAUTH_STATE_KEY/);
-  assert.match(src, /writeOAuthNonce\(nonce, provider\)/);
+  assert.match(src, /writeOAuthNonce\(nonce, provider, mode\)/);
 });
 
 test("nonce 는 읽는 즉시 두 저장소에서 폐기된다(재사용 금지)", () => {

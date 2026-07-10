@@ -195,18 +195,35 @@ const NAVER_AUTHORIZE_URL = "https://nid.naver.com/oauth2.0/authorize";
 
 const OAUTH_STATE_KEY = "hyeni-oauth-state";
 const OAUTH_PROVIDER_KEY = "hyeni-oauth-provider";
+const OAUTH_MODE_KEY = "hyeni-oauth-mode";
+
+/** 로그인(login) 인지, 이미 로그인한 계정에 소셜을 붙이는 연결(link) 인지. */
+export type OAuthFlowMode = "login" | "link";
 
 // nonce 는 localStorage 에도 둔다. 네이티브는 OAuth 왕복 중 프로세스가 재생성될 수 있고,
 // 그러면 sessionStorage 가 비어 CSRF 검사(savedNonce)가 조용히 건너뛰어진다(코드 주입 방어 상실).
-function writeOAuthNonce(nonce: string, provider: string): void {
+function writeOAuthNonce(nonce: string, provider: string, mode: OAuthFlowMode): void {
   for (const store of [window.sessionStorage, window.localStorage]) {
     try {
       store.setItem(OAUTH_STATE_KEY, nonce);
       store.setItem(OAUTH_PROVIDER_KEY, provider);
+      store.setItem(OAUTH_MODE_KEY, mode);
     } catch {
       /* 저장소 접근 불가 */
     }
   }
+}
+
+/** 복귀한 콜백이 로그인인지 계정 연결인지 — 폐기하지 않고 들여다본다. */
+export function peekOAuthFlowMode(): OAuthFlowMode {
+  for (const store of [window.sessionStorage, window.localStorage]) {
+    try {
+      if (store.getItem(OAUTH_MODE_KEY) === "link") return "link";
+    } catch {
+      /* 저장소 접근 불가 */
+    }
+  }
+  return "login";
 }
 
 /** 저장된 nonce 를 읽고 즉시 폐기(재사용 금지). sessionStorage 우선, 없으면 localStorage. */
@@ -217,6 +234,7 @@ function takeOAuthNonce(): string {
       nonce = nonce || store.getItem(OAUTH_STATE_KEY) || "";
       store.removeItem(OAUTH_STATE_KEY);
       store.removeItem(OAUTH_PROVIDER_KEY);
+      store.removeItem(OAUTH_MODE_KEY);
     } catch {
       /* 저장소 접근 불가 */
     }
@@ -254,7 +272,7 @@ function randomNonce(): string {
  * nonce(CSRF)·provider 를 sessionStorage 에 저장하고 복귀 시 콜백에서 대조한다.
  * (네이티브도 WebView 는 백그라운드로 살아 있어 sessionStorage 가 왕복 동안 유지된다.)
  */
-export function startWorkerOAuth(provider: OAuthProvider): void {
+export function startWorkerOAuth(provider: OAuthProvider, mode: OAuthFlowMode = "login"): void {
   // 키 미설정이면 깨진 인가 URL 로 보내지 않고 명시적으로 알린다(가짜 성공 금지).
   // UI 는 hasNaverClientId 로 버튼 자체를 숨기므로 여기까지 오면 설정 실수다.
   if (provider === "naver" && !NAVER_CLIENT_ID) {
@@ -264,7 +282,7 @@ export function startWorkerOAuth(provider: OAuthProvider): void {
   const target = native ? NATIVE_OAUTH_REDIRECT_URL : window.location.origin;
   const nonce = randomNonce();
   const encoded = btoa(JSON.stringify({ nonce, target }));
-  writeOAuthNonce(nonce, provider);
+  writeOAuthNonce(nonce, provider, mode);
 
   // 네이버는 Worker /start 가 없다 — 클라가 인가 URL 을 직접 조립하고 redirect_uri 로 Worker 콜백을 준다.
   const startUrl = usesWorkerStartRedirect(provider)
@@ -316,6 +334,47 @@ export async function finishOAuthLogin(input: {
   }
   adoptSession(data);
   return data;
+}
+
+export interface OAuthLink {
+  provider: OAuthProvider;
+  email: string;
+}
+
+/** 서버가 계정 연결(POST /oauth/:provider/link)을 지원하는 provider. 네이버는 로그인만 지원한다. */
+export const LINKABLE_PROVIDERS: readonly OAuthProvider[] = ["kakao", "google"];
+
+/** 내 계정에 연결된 소셜 로그인 목록(인증 필요). */
+export function fetchOAuthLinks(): Promise<{ links: OAuthLink[] }> {
+  return apiRequest<{ links: OAuthLink[] }>("/api/auth/oauth/links");
+}
+
+/**
+ * 이미 로그인한 계정에 소셜 로그인을 추가 연결.
+ *
+ * 왜 필요한가: 전화(ID/PW)로 가입한 계정은 users.email 이 비어 있어, 같은 사람이 소셜로 로그인하면
+ * 서버가 "다른 계정"으로 보고 막거나(409) 엉뚱한 계정으로 보낸다. 로그인된 상태에서 명시적으로
+ * 연결해 두면 이후 그 소셜 로그인이 항상 이 계정으로 들어온다.
+ */
+export async function linkOAuthAccount(input: {
+  provider: OAuthProvider;
+  code: string;
+  state?: string;
+}): Promise<{ linked: boolean; already: boolean; provider: string; email?: string }> {
+  if (!LINKABLE_PROVIDERS.includes(input.provider)) {
+    throw new Error("이 소셜 계정은 아직 연결을 지원하지 않아요.");
+  }
+  if (!input.code) throw new Error("로그인 인증 코드가 없어요. 다시 시도해 주세요!");
+
+  const savedNonce = takeOAuthNonce();
+  if (savedNonce && input.state && savedNonce !== input.state) {
+    throw new Error("로그인 인증 정보가 어긋났어요. 보안을 위해 처음부터 다시 해주세요!");
+  }
+
+  return apiRequest(`/api/auth/oauth/${input.provider}/link`, {
+    method: "POST",
+    body: JSON.stringify({ code: input.code, state: input.state || savedNonce }),
+  });
 }
 
 /** 현재 URL 쿼리에서 OAuth 콜백(code) 감지. provider 는 sessionStorage 에서 복원. */

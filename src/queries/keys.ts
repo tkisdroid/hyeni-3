@@ -9,6 +9,7 @@ export const qk = {
 
   // 가족·멤버
   family: (familyId?: string | null) => ["family", familyId ?? "me"] as const,
+  oauthLinks: ["oauth-links"] as const,
   account: (familyId?: string | null) => ["account", familyId ?? "me"] as const,
 
   // 일정

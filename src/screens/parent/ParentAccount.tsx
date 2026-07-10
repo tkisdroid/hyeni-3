@@ -8,6 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { qk } from "@/queries/keys";
 import { useAccount, useChangePassword, useDeleteAccount } from "@/queries/useAccount";
 import { useUpdateProfile } from "@/queries/useFamily";
+import { SocialLinks } from "./SocialLinks";
 import "./ParentAccount.css";
 
 /** P-30 계정·프로필 — 프로필 편집·로그인 정보·로그아웃·회원 탈퇴. */
@@ -218,6 +219,8 @@ export function ParentAccount() {
             연동된 소셜 계정은 해당 서비스에서 관리돼요.
           </div>
         </div>
+
+        <SocialLinks />
 
         {/* 계정 액션 */}
         <div className="pa-group">
