@@ -1,0 +1,53 @@
+/* 계정 · 소셜 로그인 연결 섹션 (ParentAccount 내부). pa-* 카드 스타일 위에 최소한만 얹는다. */
+
+.sl-acct {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sl-acct__name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fg-secondary);
+  flex: 0 0 auto;
+}
+
+.sl-acct__email {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--fg-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sl-unlink {
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line-hair);
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--fg-muted);
+  --press: 0.96;
+}
+
+.sl-unlink--confirm {
+  border-color: transparent;
+  background: var(--danger-soft, #ffe9e9);
+  color: var(--danger, #d94a4a);
+}
+
+.sl-unlink:disabled {
+  opacity: 0.45;
+}
+
+.sl-empty {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-faint);
+  padding: 14px 0;
+}

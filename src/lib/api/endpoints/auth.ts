@@ -338,15 +338,38 @@ export async function finishOAuthLogin(input: {
 
 export interface OAuthLink {
   provider: OAuthProvider;
+  /** 같은 provider 에 계정이 여러 개일 수 있어 이 값으로 각 연결을 식별한다. */
+  providerId: string;
   email: string;
+  createdAt?: string;
+}
+
+export interface OAuthLinksResponse {
+  links: OAuthLink[];
+  /** 비밀번호 로그인이 가능한 계정인가 — 마지막 로그인 수단 판정에 쓴다. */
+  hasPasswordLogin: boolean;
 }
 
 /** 서버가 계정 연결(POST /oauth/:provider/link)을 지원하는 provider. 네이버는 로그인만 지원한다. */
 export const LINKABLE_PROVIDERS: readonly OAuthProvider[] = ["kakao", "google"];
 
 /** 내 계정에 연결된 소셜 로그인 목록(인증 필요). */
-export function fetchOAuthLinks(): Promise<{ links: OAuthLink[] }> {
-  return apiRequest<{ links: OAuthLink[] }>("/api/auth/oauth/links");
+export function fetchOAuthLinks(): Promise<OAuthLinksResponse> {
+  return apiRequest<OAuthLinksResponse>("/api/auth/oauth/links");
+}
+
+/**
+ * 소셜 연결 해제. 서버가 마지막 로그인 수단이면 409 last_login_method 로 막는다
+ * (해제하면 계정에 다시 못 들어가기 때문).
+ */
+export function unlinkOAuthAccount(input: {
+  provider: OAuthProvider;
+  providerId: string;
+}): Promise<{ unlinked: boolean; provider: string; providerId: string }> {
+  return apiRequest(`/api/auth/oauth/${input.provider}/unlink`, {
+    method: "POST",
+    body: JSON.stringify({ provider_id: input.providerId }),
+  });
 }
 
 /**

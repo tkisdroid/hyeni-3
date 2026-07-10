@@ -216,7 +216,7 @@ export function ParentAccount() {
             </button>
           </div>
           <div className="pa-note">
-            연동된 소셜 계정은 해당 서비스에서 관리돼요.
+            소셜 로그인은 아래에서 연결하거나 해제할 수 있어요.
           </div>
         </div>
 
