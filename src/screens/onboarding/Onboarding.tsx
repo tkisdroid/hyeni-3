@@ -29,6 +29,8 @@ import {
   parentNameFromUser,
   type JoinFamilyOptions,
 } from "@/lib/api/endpoints/family";
+import { hasNaverClientId } from "@/config/env";
+import type { OAuthProvider } from "@/transform/oauthProvider";
 import { normalizePairCodeInput } from "@/transform/pairCode";
 import { readPairParam, clearPairParam } from "@/transform/pairLink";
 import { resolveAuthenticatedOnboardingRedirect } from "@/transform/onboardingRedirect";
@@ -404,6 +406,15 @@ function KakaoIcon() {
   );
 }
 
+/** 네이버 공식 심볼(N) — 브랜드 가이드상 흰색 로고 + 그린 배경. */
+function NaverIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 20 20" fill="#fff" aria-hidden="true">
+      <path d="M13.06 10.7 6.66 1.5H1.5v17h5.44V9.3l6.4 9.2h5.16v-17h-5.44v9.2Z" />
+    </svg>
+  );
+}
+
 function GoogleIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24">
@@ -569,10 +580,16 @@ function LoginStep({
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
 
-  const social = (provider: "kakao" | "google") => {
+  const social = (provider: OAuthProvider) => {
     if (busy) return;
     setBusy(true);
-    startWorkerOAuth(provider); // 현재 페이지가 provider 로그인으로 전환(리다이렉트)
+    try {
+      startWorkerOAuth(provider); // 현재 페이지가 provider 로그인으로 전환(리다이렉트)
+    } catch (e) {
+      // 키 미설정 등 설정 오류 — busy 를 풀고 정직하게 안내(버튼이 영구 잠기지 않게).
+      setBusy(false);
+      show(errMsg(e), "⚠️");
+    }
   };
 
   const loginIdPw = async () => {
@@ -606,6 +623,13 @@ function LoginStep({
           <GoogleIcon />
           Google로 계속하기
         </button>
+        {/* 네이버 키가 없으면 버튼 자체를 숨긴다 — 누르면 실패하는 버튼을 보여주지 않는다. */}
+        {hasNaverClientId && (
+          <button type="button" className="ob-social ob-social--naver hy-press" onClick={() => social("naver")} disabled={busy}>
+            <NaverIcon />
+            네이버로 계속하기
+          </button>
+        )}
       </div>
 
       <div className="ob-divider">

@@ -3,7 +3,13 @@
  * 캐시 무효화(queryClient.clear)·React 상태 반영은 상위(AuthProvider/온보딩)가 담당한다.
  * OAuth(카카오/구글/네이버)·브리지는 Slice 2(온보딩)에서 추가한다.
  */
-import { API_BASE } from "@/config/env";
+import { API_BASE, NAVER_CLIENT_ID } from "@/config/env";
+import {
+  isOAuthProvider,
+  oauthExchangePath,
+  usesWorkerStartRedirect,
+  type OAuthProvider,
+} from "@/transform/oauthProvider";
 import { apiRequest, apiPost } from "../client";
 import { applyApiSession, setApiUser, clearApiSession, notifyTokens, type ApiUser } from "../session";
 import { isNativePlatform } from "@/lib/native/plugins";
@@ -177,10 +183,15 @@ export async function deleteAccount(): Promise<{ ok?: boolean; error?: string }>
   return data;
 }
 
-// ── OAuth(카카오/구글) — 웹 리다이렉트 + 네이티브 딥링크 복귀 ──────────────
-// 웹: 현재 창을 Worker /start 로 이동(origin 복귀). 네이티브(Capacitor): 시스템 브라우저로
-// /start 를 열고, 복귀는 딥링크(hyenicalendar://auth-callback)를 initOAuthDeepLink 가 처리.
-export type OAuthProvider = "kakao" | "google";
+// ── OAuth(카카오/구글/네이버) — 웹 리다이렉트 + 네이티브 딥링크 복귀 ──────────────
+// 웹: 현재 창을 인가 URL 로 이동(origin 복귀). 네이티브(Capacitor): 시스템 브라우저로 열고,
+// 복귀는 딥링크(hyenicalendar://auth-callback)를 initOAuthDeepLink 가 처리.
+// provider 별 계약 차이는 transform/oauthProvider 주석 참조.
+export type { OAuthProvider };
+
+/** 네이버 개발자센터 Callback URL 에 등록해야 하는 값과 정확히 일치해야 한다. */
+export const NAVER_CALLBACK_URL = `${API_BASE}/api/auth/naver`;
+const NAVER_AUTHORIZE_URL = "https://nid.naver.com/oauth2.0/authorize";
 
 const OAUTH_STATE_KEY = "hyeni-oauth-state";
 const OAUTH_PROVIDER_KEY = "hyeni-oauth-provider";
@@ -204,6 +215,11 @@ function randomNonce(): string {
  * (네이티브도 WebView 는 백그라운드로 살아 있어 sessionStorage 가 왕복 동안 유지된다.)
  */
 export function startWorkerOAuth(provider: OAuthProvider): void {
+  // 키 미설정이면 깨진 인가 URL 로 보내지 않고 명시적으로 알린다(가짜 성공 금지).
+  // UI 는 hasNaverClientId 로 버튼 자체를 숨기므로 여기까지 오면 설정 실수다.
+  if (provider === "naver" && !NAVER_CLIENT_ID) {
+    throw new Error("네이버 로그인 설정이 아직 안 됐어요. 운영자에게 문의해 주세요.");
+  }
   const native = isNativePlatform();
   const target = native ? NATIVE_OAUTH_REDIRECT_URL : window.location.origin;
   const nonce = randomNonce();
@@ -215,7 +231,16 @@ export function startWorkerOAuth(provider: OAuthProvider): void {
     /* sessionStorage 불가 */
   }
 
-  const startUrl = `${API_BASE}/api/auth/oauth/${provider}/start?state=${encodeURIComponent(encoded)}`;
+  // 네이버는 Worker /start 가 없다 — 클라가 인가 URL 을 직접 조립하고 redirect_uri 로 Worker 콜백을 준다.
+  const startUrl = usesWorkerStartRedirect(provider)
+    ? `${API_BASE}/api/auth/oauth/${provider}/start?state=${encodeURIComponent(encoded)}`
+    : `${NAVER_AUTHORIZE_URL}?${new URLSearchParams({
+        response_type: "code",
+        client_id: NAVER_CLIENT_ID,
+        redirect_uri: NAVER_CALLBACK_URL,
+        state: encoded,
+      }).toString()}`;
+
   if (native) {
     // 네이티브: 시스템 브라우저에서 열고 딥링크로 복귀. 실패는 로깅만(웹 리다이렉트와 달리 페이지 전환 없음).
     void openExternal(startUrl).catch((error) => {
@@ -232,7 +257,7 @@ export async function finishOAuthLogin(input: {
   code: string;
   state?: string;
 }): Promise<AuthResult> {
-  if (input.provider !== "kakao" && input.provider !== "google") {
+  if (!isOAuthProvider(input.provider)) {
     throw new Error("지원하지 않는 로그인 방식이에요.");
   }
   if (!input.code) throw new Error("로그인 인증 코드가 없어요. 다시 시도해 주세요!");
@@ -249,9 +274,13 @@ export async function finishOAuthLogin(input: {
     throw new Error("로그인 인증 정보가 어긋났어요. 보안을 위해 처음부터 다시 해주세요!");
   }
 
+  // 네이버는 인가 때와 동일한 redirect_uri 를 토큰 교환에도 보내야 한다(서버가 필수 검증).
+  const body: Record<string, unknown> = { code: input.code, state: input.state || savedNonce };
+  if (input.provider === "naver") body.redirect_uri = NAVER_CALLBACK_URL;
+
   const data = await apiRequest<AuthResult>(
-    `/api/auth/oauth/${input.provider}`,
-    { method: "POST", body: JSON.stringify({ code: input.code, state: input.state || savedNonce }) },
+    oauthExchangePath(input.provider),
+    { method: "POST", body: JSON.stringify(body) },
     false,
   );
   if (!data?.session?.access_token) {
@@ -268,16 +297,15 @@ export function readOAuthCallback(): { provider: OAuthProvider; code: string; st
   const code = params.get("code");
   if (!code) return null;
   const state = params.get("state") || "";
-  const urlProvider = params.get("provider");
-  let provider: string | null = urlProvider;
-  if (provider !== "kakao" && provider !== "google") {
+  let provider: unknown = params.get("provider");
+  if (!isOAuthProvider(provider)) {
     try {
       provider = window.sessionStorage.getItem(OAUTH_PROVIDER_KEY);
     } catch {
       provider = null;
     }
   }
-  if (provider !== "kakao" && provider !== "google") return null;
+  if (!isOAuthProvider(provider)) return null;
   return { provider, code, state };
 }
 

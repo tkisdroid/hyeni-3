@@ -16,7 +16,8 @@ import type { PluginListenerHandle } from "@capacitor/core";
 import type { URLOpenListenerEvent } from "@capacitor/app";
 import { isNativePlatform } from "./plugins";
 import { closeExternal } from "./browser";
-import { finishOAuthLogin, type OAuthProvider } from "@/lib/api/endpoints/auth";
+import { finishOAuthLogin } from "@/lib/api/endpoints/auth";
+import { isOAuthProvider, type OAuthProvider } from "@/transform/oauthProvider";
 import { deriveAuthState } from "@/auth/AuthContext";
 import { homePathForRole } from "@/auth/guards";
 
@@ -48,8 +49,9 @@ export function parseOAuthDeepLink(url: string): DeepLinkCallback | null {
   const params = new URLSearchParams(raw);
   const code = params.get("code");
   if (!code) return null;
+  // 네이버 콜백도 provider=naver 로 돌아온다(worker/routes/naver-auth.ts GET).
   const provider = params.get("provider");
-  if (provider !== "kakao" && provider !== "google") return null;
+  if (!isOAuthProvider(provider)) return null;
 
   return { provider, code, state: params.get("state") || "" };
 }
