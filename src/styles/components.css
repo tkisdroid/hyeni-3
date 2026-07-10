@@ -278,9 +278,18 @@
   max-width: 260px;
 }
 
-/* ── 지도 자리표시자 ──────────────────────────────────────────────────────
-   Kakao SDK 로드 + 첫 타일까지 흰 사각형이 보이면 실제보다 훨씬 느리게 느껴진다.
-   지도가 준비되면 사라진다(KakaoMap 이 ready 를 세운다). */
+/* ── 지도 컨테이너 · 자리표시자 ───────────────────────────────────────────
+   KakaoMap 은 소비 화면이 준 className 으로 크기·배치를 받는다(.pl-map 은 absolute, .rv-map 은 relative).
+   그래서 인라인 style 로 position 을 덮어쓰면 안 된다 — 여기서 "position 이 없으면 relative" 만 보탠다.
+   자리표시자는 첫 타일 전 흰 사각형이 실제보다 느리게 느껴지는 걸 막고, 지도가 준비되면 사라진다. */
+.km-host {
+  position: relative;
+}
+.km-canvas {
+  position: absolute;
+  inset: 0;
+}
+
 .km-skeleton {
   position: absolute;
   inset: 0;

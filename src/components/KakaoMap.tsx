@@ -304,9 +304,12 @@ export function KakaoMap({
       </div>
     );
   }
+  // ⚠️ 인라인 style 로 position 을 주면 안 된다. 소비 화면의 클래스가 이미 배치를 정한다
+  //    (예: .pl-map 은 position:absolute; inset:0). 인라인은 그것을 덮어써 지도가 사라진다.
+  //    .km-host 는 position 이 지정되지 않은 컨테이너에만 relative 를 얹는다.
   return (
-    <div className={className} style={{ position: "relative" }}>
-      <div ref={ref} style={{ position: "absolute", inset: 0 }} />
+    <div className={`${className} km-host`}>
+      <div ref={ref} className="km-canvas" />
       {!ready && (
         <div className="km-skeleton" aria-hidden="true">
           <span className="km-skeleton__shimmer" />

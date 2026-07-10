@@ -41,3 +41,18 @@ test("부모 메뉴 아이콘과 바로가기 색상은 토큰 기반으로 유�
   assert.match(shortcutsBlock, /var\(--lav-soft\)/);
   assert.match(shortcutsBlock, /color-mix\(in srgb, var\(--blue-500\) 16%, transparent\)/);
 });
+
+test("부모 위치 시트의 액션 버튼은 원시 이모지 대신 아이콘/에셋을 쓴다", () => {
+  const location = readSource("src/screens/parent/ParentLocation.tsx");
+  const css = readSource("src/screens/parent/ParentLocation.css");
+  const actions = location.slice(
+    location.indexOf('<div className="pl-actions">'),
+    location.indexOf("</div>", location.indexOf('className="pl-call-btn"')),
+  );
+
+  assert.ok(actions.length > 0, "pl-actions 블록을 찾지 못했다");
+  // 원시 이모지는 시스템 폰트로 렌더돼 크기·베이스라인이 옆 아이콘과 어긋난다.
+  assert.doesNotMatch(actions, /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
+  assert.match(actions, /<Navigation size=\{21\}/);
+  assert.match(css, /\.pl-route-btn \{[^}]*background: var\(--blue-soft\)/);
+});

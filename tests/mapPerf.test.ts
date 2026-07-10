@@ -50,3 +50,16 @@ test("길찾기 화면은 경로 API 를 기다리지 않고 지도를 먼저 �
   // 경로 API 가 죽으면 지도가 아니라 텍스트로만 "직선 …쯤"이라고 정직하게 강등한다.
   assert.match(rv, /직선 \$\{distanceLabel\(straightM\)\}/);
 });
+
+test("KakaoMap 은 인라인 style 로 position 을 덮어쓰지 않는다(소비 화면 배치 파괴 금지)", () => {
+  // 실기기 회귀: 래퍼에 인라인 position:relative 를 주자 .pl-map(absolute; inset:0)이 무력화돼
+  // 부모 위치 화면의 지도가 크기 0 이 되어 아예 보이지 않았다.
+  const map = read("src/components/KakaoMap.tsx");
+  assert.ok(!/style=\{\{\s*position:/.test(map), "인라인 position 금지");
+  assert.match(map, /className=\{`\$\{className\} km-host`\}/);
+  assert.match(map, /<div ref=\{ref\} className="km-canvas" \/>/);
+
+  const css = read("src/styles/components.css");
+  assert.match(css, /\.km-host\s*\{\s*position: relative;\s*\}/);
+  assert.match(css, /\.km-canvas\s*\{[^}]*position: absolute;[^}]*inset: 0;/s);
+});

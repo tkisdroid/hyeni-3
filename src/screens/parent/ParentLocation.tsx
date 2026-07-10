@@ -5,7 +5,7 @@ import type {
   TouchEvent as ReactTouchEvent,
 } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Lock, Crown } from "lucide-react";
+import { Lock, Crown, Navigation } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
@@ -850,7 +850,7 @@ export function ParentLocation() {
                 aria-label="경로 보기"
                 onClick={() => (premiumOpen ? navigate("/route") : upsell())}
               >
-                🧭
+                <Navigation size={21} strokeWidth={2.2} color="var(--blue-500)" />
               </button>
               <button
                 type="button"
