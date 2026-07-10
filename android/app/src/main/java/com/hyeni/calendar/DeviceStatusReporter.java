@@ -220,7 +220,11 @@ final class DeviceStatusReporter {
             .put("appState", "native-background")
             .put("screenInteractive", usage.screenInteractive)
             .put("recentApp", usage.recentAppPackage.isEmpty()
-                ? "혜니캘린더 (앱 외 사용기록은 OS 권한 필요)"
+                // 권한이 있어도 최근 10분 내 실행이 없으면 비는데, 그때 "권한 필요"라고
+                // 말하면 거짓 안내다(2026-07-11 아침 실측). 상태를 구분해 정직하게.
+                ? ("granted".equals(usage.usagePermission)
+                    ? "최근 사용한 앱 없음"
+                    : "혜니캘린더 (앱 외 사용기록은 OS 권한 필요)")
                 : usage.recentAppLabel)
             .put("usagePermission", usage.usagePermission)
             .put("appUsage", usage.appUsage)

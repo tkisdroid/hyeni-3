@@ -220,6 +220,14 @@
   스타일 문제로 오판하기 쉽다 — 높이가 CSS 와 다르게 렌더되면 flex 압축부터 의심.
 - 준비물 토글은 낙관적 업데이트(useUpsertDailySupply onMutate) — rebuildChildDay 가 GET→PUT→GET 이라
   서버 바인딩만으로는 체크가 1~3초 얼었다. 롤백은 훅, 실패 문구는 콜사이트(없으면 announceFallbackToast 450ms 양보).
+- 안전지표 앱 사용(2026-07-11 아침 실발사 검증): razr 에 Usage Access(appops GET_USAGE_STATS)를 adb 로 allow 함
+  (제품 기능 활성화 — 이전엔 미부여라 타 앱 데이터가 아예 없었다). `isSystemSurfacePackage` 필터 양성 대조 실증:
+  원시 이벤트에 launcher3·카카오톡 존재 + 마지막 전경=런처 상태에서 리포트 recentApp=혜니캘린더,
+  appUsage 에 카카오톡 포함·런처 제외. recentApp 빈 값일 때 "권한 필요" 문구는 granted 면 "최근 사용한 앱 없음"으로 구분.
+- 알림 실발사 검증 절차(아침): 테스트 이벤트는 time=+17분으로 만들면 15분 전(+2분)·5분 전(+12분) 두 윈도를
+  한 번에 본다. 수신 확인은 `dumpsys notification --noredact | grep android.text`. razr 는 FCM 이 30~60초
+  늦을 수 있다(도즈) — 없다고 단정 전에 재확인. force-ring 은 15초 + 확인 시트 2단계("지금 울리기" 버튼이 2개가 됨).
+  정리: 이벤트 DELETE API + force_ring_events/memo_replies 는 D1 직접 삭제, 기기 알림은 남는다(무해).
 
 ### J. 실기기 검증 치트시트 (함정 포함)
 - **현재 기기 역할(2026-07-09 사용자 지시)**: S25=부모, A17=부모모드 검증기, razr=아이 "혜니" 실사용.
