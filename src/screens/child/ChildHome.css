@@ -79,24 +79,49 @@
   border-radius: 50%;
   background: radial-gradient(circle, #ffe9a8 0%, rgba(255, 233, 168, 0) 70%);
 }
+/* 몸통 하나만 있으면 구름이 아니라 흰 알약으로 보인다. 위로 뭉게뭉게 두 덩이를 얹는다.
+   반투명을 background 가 아니라 opacity 로 주어야 덩이끼리 겹친 부분에 이음선이 안 생긴다. */
 .kd-map__cloud {
   position: absolute;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.85);
+  background: #fff;
+  opacity: 0.85;
   animation: kd-cloud 7s ease-in-out infinite;
 }
+.kd-map__cloud::before,
+.kd-map__cloud::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  background: inherit;
+}
+.kd-map__cloud::before {
+  left: 12%;
+  bottom: 38%;
+  width: 48%;
+  aspect-ratio: 1;
+}
+.kd-map__cloud::after {
+  right: 14%;
+  bottom: 30%;
+  width: 34%;
+  aspect-ratio: 1;
+}
+/* 구름은 하늘 장식이다. 날짜 칩·제목(스테이지 상단 0~92px)과 지도 노드 뒤에 깔리면
+   흰 알약 조각처럼 보이므로, 빈 하늘에만 둔다. */
+/* 좌우 여백은 kd-cloud 의 ±16px 이동을 감안해 화면 밖으로 잘리지 않게 잡는다. */
 .kd-map__cloud--a {
-  top: 46px;
-  left: 24px;
+  top: 112px;
+  left: 26px;
   width: 74px;
   height: 26px;
 }
 .kd-map__cloud--b {
-  top: 96px;
-  right: 60px;
+  top: 138px;
+  right: 32px;
   width: 54px;
   height: 20px;
-  background: rgba(255, 255, 255, 0.75);
+  opacity: 0.75;
   animation-duration: 9s;
   animation-delay: 1.2s;
 }

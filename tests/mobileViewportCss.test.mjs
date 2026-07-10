@@ -98,6 +98,19 @@ test("아이 화면은 TopBar 가 없으므로 각자 상단 안전영역을 챙
   assert.match(sos, /\.cs-result\s*\{[^}]*padding: calc\(26px \+ env\(safe-area-inset-top, 0px\)\)/s);
 });
 
+test("아이 홈 구름 장식은 날짜 칩·제목 밴드(스테이지 0~92px)를 침범하지 않는다", () => {
+  // 반투명 흰 알약이 제목 뒤에 깔리면 장식이 아니라 렌더 깨짐처럼 보인다(razr 실기기 제보).
+  // 구름 덩이(::before)가 몸통 위로 약 20px 솟으므로 밴드보다 20px 넉넉히 내려야 한다.
+  const home = readCss("src/screens/child/ChildHome.css");
+  const tops = [...home.matchAll(/\.kd-map__cloud--[ab]\s*\{[^}]*?top:\s*(\d+)px/gs)].map((m) => Number(m[1]));
+
+  assert.equal(tops.length, 2, "구름 2개의 top 을 찾지 못했다");
+  for (const top of tops) assert.ok(top >= 112, `구름 top=${top}px 은 제목 밴드(0~92px)와 겹친다`);
+  // 겹친 덩이의 이음선을 없애려면 알파를 background 가 아니라 opacity 로 줘야 한다.
+  assert.match(home, /\.kd-map__cloud\s*\{[^}]*background: #fff;[^}]*opacity: 0\.85/s);
+  assert.match(home, /\.kd-map__cloud::before,\s*\n\.kd-map__cloud::after/);
+});
+
 test("아이 하단 독은 내비게이션 바 영역까지 배경을 덮는다(콘텐츠 비침 방지)", () => {
   const dock = readCss("src/app/ChildDock.css");
   assert.match(dock, /\.kdock\s*\{[^}]*bottom: 0/s);
