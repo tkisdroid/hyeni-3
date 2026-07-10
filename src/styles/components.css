@@ -277,3 +277,31 @@
   line-height: 1.5;
   max-width: 260px;
 }
+
+/* ── 지도 자리표시자 ──────────────────────────────────────────────────────
+   Kakao SDK 로드 + 첫 타일까지 흰 사각형이 보이면 실제보다 훨씬 느리게 느껴진다.
+   지도가 준비되면 사라진다(KakaoMap 이 ready 를 세운다). */
+.km-skeleton {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: linear-gradient(135deg, #eaf3fb, #f3ecff);
+  pointer-events: none;
+}
+.km-skeleton__shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%);
+  transform: translateX(-100%);
+  animation: km-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes km-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .km-skeleton__shimmer {
+    animation: none;
+  }
+}

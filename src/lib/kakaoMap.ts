@@ -17,6 +17,21 @@ export type KakaoMaps = any;
 
 let loadPromise: Promise<KakaoMaps> | null = null;
 
+/**
+ * SDK 를 미리 받아 둔다(앱이 한가할 때).
+ * 지도 화면에 처음 들어가는 순간 스크립트를 받기 시작하면 그 왕복만큼 흰 화면이 길어진다.
+ * 실패는 무시 — 실제로 지도가 필요할 때 loadKakaoMaps 가 다시 시도한다.
+ */
+export function warmKakaoMaps(): void {
+  if (!hasKakaoKey || typeof window === "undefined") return;
+  if (window.kakao?.maps || loadPromise) return;
+  const start = () => void loadKakaoMaps().catch(() => {});
+  const ric = (window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => void })
+    .requestIdleCallback;
+  if (ric) ric(start, { timeout: 3000 });
+  else window.setTimeout(start, 1200);
+}
+
 export function loadKakaoMaps(): Promise<KakaoMaps> {
   if (!hasKakaoKey) return Promise.reject(new Error("Kakao 지도 키가 설정되지 않았어요"));
   if (typeof window === "undefined") return Promise.reject(new Error("브라우저 환경이 아니에요"));

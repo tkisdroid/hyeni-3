@@ -331,3 +331,34 @@
   font-weight: 800;
   --press: 0.97;
 }
+
+/* 지도를 먼저 띄우고 경로 상태는 지도 위 칩으로 알린다(흰 화면 대기 제거). */
+.rv-map-wrap {
+  position: relative;
+  display: flex;
+}
+.rv-map-wrap > .rv-map {
+  flex: 1;
+}
+.rv-map-chip {
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  transform: translateX(-50%);
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 10px 24px -12px rgba(32, 26, 29, 0.35);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--fg-tertiary);
+  white-space: nowrap;
+}
+.rv-map-chip--retry {
+  color: #0f7a57;
+  --press: 0.96;
+}

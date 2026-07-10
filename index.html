@@ -19,6 +19,12 @@
     <link rel="icon" href="./favicon-32x32.png" />
 
     <title>혜니캘린더</title>
+    <!-- 지도 첫 진입 지연 줄이기: DNS+TLS 를 미리 맺어 둔다(SDK·타일이 다른 호스트에서 온다). -->
+    <link rel="preconnect" href="https://dapi.kakao.com" crossorigin />
+    <link rel="preconnect" href="https://t1.daumcdn.net" crossorigin />
+    <link rel="preconnect" href="https://mts.daumcdn.net" crossorigin />
+    <link rel="dns-prefetch" href="https://dapi.kakao.com" />
+    <link rel="dns-prefetch" href="https://mts.daumcdn.net" />
   </head>
   <body>
     <div id="root"></div>

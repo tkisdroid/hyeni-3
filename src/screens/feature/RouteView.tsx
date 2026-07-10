@@ -343,40 +343,35 @@ export function RouteView() {
           </div>
         ) : (
           <>
-            {/* 지도 — ready 면 실 도보 폴리라인, error(경로 API 불가)면 출발·도착 마커만(직선 경로선 금지). */}
-            {routeState === "ready" ? (
-              <KakaoMap
-                className="rv-map"
-                child={originChild}
-                route={routePoints}
-                destination={destMarker}
-              />
-            ) : routeState === "error" && originChild && destMarker ? (
-              <KakaoMap className="rv-map" child={originChild} destination={destMarker} />
+            {/* 지도 — 출발·도착을 알면 **경로를 기다리지 않고 먼저 그린다**(지도가 뜨는 데만 3초를 기다리게 하지 않는다).
+                폴리라인은 실 도보 경로가 도착하면 얹는다. 직선 경로선은 절대 그리지 않는다. */}
+            {originChild && destMarker ? (
+              <div className="rv-map-wrap">
+                <KakaoMap
+                  className="rv-map"
+                  child={originChild}
+                  route={routeState === "ready" ? routePoints : []}
+                  destination={destMarker}
+                />
+                {routeState === "loading" && (
+                  <span className="rv-map-chip">
+                    <span className="rv-ph__spinner" aria-hidden="true" />
+                    걸어가는 길을 찾는 중…
+                  </span>
+                )}
+                {routeState === "error" && (
+                  <button type="button" className="rv-map-chip rv-map-chip--retry hy-press" onClick={() => void routeRefetch()}>
+                    <RotateCw size={15} strokeWidth={2.4} color="#23A876" />
+                    길을 못 찾았어 · 다시 시도
+                  </button>
+                )}
+              </div>
             ) : (
               <div className="rv-map rv-map--placeholder">
-                {routeState === "error" ? (
-                  <>
-                    <span className="rv-ph__msg">걸어가는 길을 못 찾았어</span>
-                    <button
-                      type="button"
-                      className="rv-retry hy-press"
-                      onClick={() => void routeRefetch()}
-                    >
-                      <RotateCw size={16} strokeWidth={2.4} color="#23A876" />
-                      다시 시도
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <span className="rv-ph__spinner" aria-hidden="true" />
-                    <span className="rv-ph__msg">
-                      {routeState === "no-origin"
-                        ? "네 위치를 확인하는 중…"
-                        : "걸어가는 길을 찾는 중…"}
-                    </span>
-                  </>
-                )}
+                <span className="rv-ph__spinner" aria-hidden="true" />
+                <span className="rv-ph__msg">
+                  {routeState === "no-origin" ? "네 위치를 확인하는 중…" : "갈 곳을 찾는 중…"}
+                </span>
               </div>
             )}
 

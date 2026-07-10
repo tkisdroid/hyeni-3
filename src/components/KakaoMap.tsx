@@ -94,6 +94,8 @@ export function KakaoMap({
   // 마지막으로 적용한 recenterKey — 바뀌면 같은 좌표라도 강제 재이동.
   const lastRecenterRef = useRef(0);
   const [failed, setFailed] = useState(false);
+  // 지도가 그려지기 전엔 흰 사각형 대신 부드러운 자리표시자를 보여준다(체감 지연 감소).
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     onPickRef.current = onPick;
@@ -112,6 +114,7 @@ export function KakaoMap({
         if (!mapRef.current) {
           mapRef.current = new maps.Map(ref.current, { center: centerLatLng, level: 4 });
           lastCenterRef.current = centerKey;
+          setReady(true);
           // 컨테이너 크기 변화(드래그 리사이즈 등) → relayout + 중심 유지.
           // Kakao 지도는 컨테이너가 커져도 스스로 타일을 다시 깔지 않는다(회색 여백 버그 방지).
           if (typeof ResizeObserver !== "undefined") {
@@ -301,5 +304,14 @@ export function KakaoMap({
       </div>
     );
   }
-  return <div ref={ref} className={className} />;
+  return (
+    <div className={className} style={{ position: "relative" }}>
+      <div ref={ref} style={{ position: "absolute", inset: 0 }} />
+      {!ready && (
+        <div className="km-skeleton" aria-hidden="true">
+          <span className="km-skeleton__shimmer" />
+        </div>
+      )}
+    </div>
+  );
 }
