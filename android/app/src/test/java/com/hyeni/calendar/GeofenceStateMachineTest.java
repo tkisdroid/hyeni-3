@@ -17,13 +17,21 @@ import org.junit.Test;
 public class GeofenceStateMachineTest {
 
     private static final double PLACE_LAT = 37.5, PLACE_LNG = 127.0;
-    private static final GeofenceConfig CFG = GeofenceConfig.DEFAULT; // 30/50/75, dwell180s, cooldown600s, dep180s
-    private static final double INSIDE_LAT = 37.5, INSIDE_LNG = 127.0;      // dist 0 (< entry 30)
+    private static final GeofenceConfig CFG = GeofenceConfig.DEFAULT; // 30/50/75, dwell180s(edge)/90s(deep), cooldown600s, dep180s
+    private static final double INSIDE_LAT = 37.5, INSIDE_LNG = 127.0;      // dist 0 (< entry 30, 심부)
+    // 경계 근처(25m): entry 30 안이지만 심부(entry*0.6=18m) 밖 → 기존 180초 dwell 계약.
+    private static final double EDGE_LAT = 37.5 + 25.0 / 111_000.0, EDGE_LNG = 127.0;
     private static final double OUTSIDE_LAT = 37.5 + 0.001, OUTSIDE_LNG = 127.0; // ~111m (> exit 50)
 
     private TransitionResult step(GeofenceState s, boolean inside, long tMs) {
         double lat = inside ? INSIDE_LAT : OUTSIDE_LAT;
         double lng = inside ? INSIDE_LNG : OUTSIDE_LNG;
+        return GeofenceStateMachine.evaluateTransition(s, lat, lng, null, tMs, PLACE_LAT, PLACE_LNG, 30.0, CFG);
+    }
+
+    private TransitionResult stepEdge(GeofenceState s, boolean inside, long tMs) {
+        double lat = inside ? EDGE_LAT : OUTSIDE_LAT;
+        double lng = inside ? EDGE_LNG : OUTSIDE_LNG;
         return GeofenceStateMachine.evaluateTransition(s, lat, lng, null, tMs, PLACE_LAT, PLACE_LNG, 30.0, CFG);
     }
 
@@ -64,19 +72,19 @@ public class GeofenceStateMachineTest {
     public void fullSequence_out_pending_enter_inside_armed_timer_leave_silentReenter() {
         GeofenceState s = GeofenceState.INITIAL;
 
-        // 1. inside @0 → PENDING_DWELL
-        TransitionResult r = step(s, true, 0L);
+        // 1. 경계 진입 @0 → PENDING_DWELL (경계는 180초 계약 유지)
+        TransitionResult r = stepEdge(s, true, 0L);
         assertEquals(Action.PENDING_DWELL, r.action);
         assertEquals("pending", r.nextState.phase);
         s = r.nextState;
 
-        // 2. inside @90s → dwell 90s<180s → PENDING_CONTINUE
-        r = step(s, true, 90_000L);
+        // 2. 경계 @90s → dwell 90s<180s → PENDING_CONTINUE
+        r = stepEdge(s, true, 90_000L);
         assertEquals(Action.PENDING_CONTINUE, r.action);
         s = r.nextState;
 
-        // 3. inside @180s → dwell satisfied → ENTER
-        r = step(s, true, 180_000L);
+        // 3. 경계 @180s → dwell satisfied → ENTER
+        r = stepEdge(s, true, 180_000L);
         assertEquals(Action.ENTER, r.action);
         assertEquals("in", r.nextState.phase);
         s = r.nextState;
@@ -144,19 +152,55 @@ public class GeofenceStateMachineTest {
 
     @Test
     public void passingThroughUnderRegisteredDwell_doesNotEnter() {
+        // 옆 건물 통과(경계 근처를 2분 이내 스침) — 도착 알림이 나가면 안 된다.
         GeofenceState s = GeofenceState.INITIAL;
 
-        TransitionResult r = step(s, true, 0L);
+        TransitionResult r = stepEdge(s, true, 0L);
         assertEquals(Action.PENDING_DWELL, r.action);
         s = r.nextState;
 
-        r = step(s, true, 119_000L);
+        r = stepEdge(s, true, 119_000L);
         assertEquals(Action.PENDING_CONTINUE, r.action);
         s = r.nextState;
 
-        r = step(s, false, 130_000L);
+        r = stepEdge(s, false, 130_000L);
         assertEquals(Action.PENDING_ABORTED, r.action);
         assertEquals("out", r.nextState.phase);
+    }
+
+    @Test
+    public void deepInside_promotesAfterShortDwell90s() {
+        // 반경 중심부(심부) 진입은 90초 체류로 도착 승격 — 도착 알림 지연 개선(2026-07-10).
+        GeofenceState s = GeofenceState.INITIAL;
+
+        TransitionResult r = step(s, true, 0L); // dist 0 = 심부
+        assertEquals(Action.PENDING_DWELL, r.action);
+        s = r.nextState;
+
+        r = step(s, true, 60_000L); // 60s < 90s → 아직
+        assertEquals(Action.PENDING_CONTINUE, r.action);
+        s = r.nextState;
+
+        r = step(s, true, 95_000L); // 95s ≥ 90s → ENTER
+        assertEquals(Action.ENTER, r.action);
+        assertEquals("in", r.nextState.phase);
+    }
+
+    @Test
+    public void placeRadius_expandsEntryAndKeepsDeepDwell() {
+        // 장소별 반경 100m: 70m 지점 진입(pending) 후 심부(60m 이내) 90초 → ENTER.
+        double lat70 = PLACE_LAT + 70.0 / 111_000.0;
+        double lat20 = PLACE_LAT + 20.0 / 111_000.0;
+        GeofenceState s = GeofenceState.INITIAL;
+
+        TransitionResult r = GeofenceStateMachine.evaluateTransition(
+                s, lat70, PLACE_LNG, null, 0L, PLACE_LAT, PLACE_LNG, 100.0, CFG);
+        assertEquals(Action.PENDING_DWELL, r.action);
+        s = r.nextState;
+
+        r = GeofenceStateMachine.evaluateTransition(
+                s, lat20, PLACE_LNG, null, 95_000L, PLACE_LAT, PLACE_LNG, 100.0, CFG);
+        assertEquals(Action.ENTER, r.action);
     }
 
     @Test

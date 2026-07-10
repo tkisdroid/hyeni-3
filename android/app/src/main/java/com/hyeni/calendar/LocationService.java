@@ -676,17 +676,32 @@ public class LocationService extends Service {
                 if (loc == null) continue;
                 double lat = loc.optDouble("lat", Double.NaN), lng = loc.optDouble("lng", Double.NaN);
                 if (Double.isNaN(lat) || Double.isNaN(lng)) continue;
-                out.add(new org.json.JSONObject()
+                String name = r.optString("name", "등록된 장소");
+                org.json.JSONObject p = new org.json.JSONObject()
                     .put("placeKey", "registered:" + source + ":" + r.optString("id"))
                     .put("source", source)
-                    .put("name", r.optString("name", "등록된 장소"))
-                    .put("lat", lat).put("lng", lng));
+                    .put("name", name)
+                    .put("lat", lat).put("lng", lng);
+                // 장소별 알림 반경(location JSON, 30~300 클램프). 없으면 학교류 기본 100m —
+                // 학교 부지는 넓어 핀 반경 30m 로는 교문 도착이 수 분 늦게 잡힌다(서버 parity).
+                double radius = loc.optDouble("alertRadiusM", loc.optDouble("alert_radius_m", Double.NaN));
+                Double resolved = null;
+                if (!Double.isNaN(radius) && radius > 0) {
+                    resolved = Math.min(300.0, Math.max(30.0, radius));
+                } else if (name.matches(".*(학교|초등|중학교|고등학교|유치원|어린이집).*")) {
+                    resolved = 100.0;
+                }
+                if (resolved != null) p.put("alertRadiusM", (double) resolved);
+                out.add(p);
             }
         } catch (Exception e) { Log.w(TAG, "collectPlaces failed: " + source, e); }
     }
 
     private java.util.List<org.json.JSONObject> canonicalizePlaceJson(java.util.List<org.json.JSONObject> input) {
         java.util.List<RegisteredPlaceResolver.PlaceCandidate> candidates = new java.util.ArrayList<>();
+        // canonicalize 는 PlaceCandidate 필드만 보존하므로, 장소별 알림 반경은 placeKey 로
+        // 별도 보관했다가 결과에 다시 붙인다.
+        java.util.Map<String, Double> radiusByKey = new java.util.HashMap<>();
         for (org.json.JSONObject p : input) {
             candidates.add(new RegisteredPlaceResolver.PlaceCandidate(
                 p.optString("placeKey", ""),
@@ -694,16 +709,21 @@ public class LocationService extends Service {
                 p.optString("source", ""),
                 p.optDouble("lat", Double.NaN),
                 p.optDouble("lng", Double.NaN)));
+            double r = p.optDouble("alertRadiusM", Double.NaN);
+            if (!Double.isNaN(r) && r > 0) radiusByKey.put(p.optString("placeKey", ""), r);
         }
         java.util.List<org.json.JSONObject> out = new java.util.ArrayList<>();
         for (RegisteredPlaceResolver.PlaceCandidate p : RegisteredPlaceResolver.canonicalize(candidates)) {
             try {
-                out.add(new org.json.JSONObject()
+                org.json.JSONObject o = new org.json.JSONObject()
                     .put("placeKey", p.placeKey)
                     .put("source", p.source)
                     .put("name", p.name)
                     .put("lat", p.lat)
-                    .put("lng", p.lng));
+                    .put("lng", p.lng);
+                Double r = radiusByKey.get(p.placeKey);
+                if (r != null) o.put("alertRadiusM", (double) r);
+                out.add(o);
             } catch (Exception e) {
                 Log.w(TAG, "canonicalizePlaceJson failed", e);
             }
@@ -735,15 +755,21 @@ public class LocationService extends Service {
     private void evaluateOnePlace(org.json.JSONObject p, double lat, double lng, long now) throws Exception {
         String placeKey = p.getString("placeKey");
         double plat = p.getDouble("lat"), plng = p.getDouble("lng");
+        // 장소별 알림 반경(없으면 null → config 기본 30m). collectPlaces 가 학교류 기본을 채운다.
+        double rRaw = p.optDouble("alertRadiusM", Double.NaN);
+        Double placeRadius = (!Double.isNaN(rRaw) && rRaw > 0) ? rRaw : null;
         boolean hadGeoState = hasFreshGeoState(placeKey);
         GeofenceStateMachine.GeofenceState prev = loadGeoState(placeKey);
         GeofenceStateMachine.GeofenceState evalState = hadGeoState
             ? prev
             : GeofenceStateMachine.bootstrapInitialInside(
-                prev, lat, lng, null, now, plat, plng, 30.0, GeofenceStateMachine.GeofenceConfig.DEFAULT);
-        if (!sameState(prev, evalState)) saveGeoState(placeKey, evalState);
+                prev, lat, lng, null, now, plat, plng, placeRadius, GeofenceStateMachine.GeofenceConfig.DEFAULT);
+        // TTL 만료 후 "밖" 상태가 이어지면 sameState 로 저장이 스킵돼 신선도가 영영 회복되지
+        // 않고, 이후 첫 도착이 bootstrap 에 무알림으로 삼켜진다 — 부트스트랩 평가를 했으면
+        // 값이 같아도 반드시 저장해 TTL 을 갱신한다(도착 알림 유실 방지, 2026-07-10).
+        if (!hadGeoState || !sameState(prev, evalState)) saveGeoState(placeKey, evalState);
         GeofenceStateMachine.TransitionResult res = GeofenceStateMachine.evaluateTransition(
-            evalState, lat, lng, null, now, plat, plng, 30.0, GeofenceStateMachine.GeofenceConfig.DEFAULT);
+            evalState, lat, lng, null, now, plat, plng, placeRadius, GeofenceStateMachine.GeofenceConfig.DEFAULT);
         if (res.action == GeofenceStateMachine.Action.ENTER || res.action == GeofenceStateMachine.Action.LEAVE) {
             final boolean arrived = res.action == GeofenceStateMachine.Action.ENTER;
             long episodeMs = arrived

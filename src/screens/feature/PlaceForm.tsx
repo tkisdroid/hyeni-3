@@ -38,6 +38,13 @@ export function PlaceForm() {
   const [placeName, setPlaceName] = useState("");
   const [address, setAddress] = useState("");
   const [placeType, setPlaceType] = useState<PlaceTypeId>("academy");
+  // 도착/출발 알림 반경(m) — 기본 30(정밀). 학교류는 저장 안 해도 서버가 100m 기본 적용.
+  const [alertRadius, setAlertRadius] = useState<number>(30);
+  const ALERT_RADII = [
+    { value: 30, label: "기본 30m" },
+    { value: 100, label: "넓게 100m" },
+    { value: 150, label: "아주 넓게 150m" },
+  ] as const;
   const [picked, setPicked] = useState<LatLng | null>(null);
   const [center, setCenter] = useState<LatLng | null>(null);
   // 지도 높이 — 하단 핸들을 아래로 드래그해 확대(160~520px).
@@ -198,6 +205,8 @@ export function PlaceForm() {
           lng: picked.lng,
           address: address.trim() || undefined,
           category: placeType,
+          // 기본 30m 는 저장 생략(레거시 동일) — 넓힌 경우에만 기록.
+          ...(alertRadius !== 30 ? { alertRadiusM: alertRadius } : {}),
         },
         is_home: placeType === "home",
       },
@@ -320,7 +329,33 @@ export function PlaceForm() {
           </div>
         </div>
 
-        {/* 안전 반경 — 저장장소 API(radius_m 미지원)라 슬라이더 비노출. 위험구역 반경은 별도 화면에서 설정. */}
+        {/* 알림 반경 — 도착/출발 판정 반경(location JSON alertRadiusM, 서버·네이티브 지오펜스 공용).
+            학교처럼 부지가 넓은 곳은 넓게 잡아야 교문 도착이 제때 잡힌다. */}
+        <div>
+          <div className="pf-label pf-label--types">도착 알림 반경</div>
+          <div className="pf-types">
+            {ALERT_RADII.map((r) => {
+              const active = alertRadius === r.value;
+              return (
+                <button
+                  key={r.value}
+                  type="button"
+                  className="pf-type hy-press"
+                  style={{
+                    background: active ? "var(--mint-soft)" : IDLE_BG,
+                    color: active ? "var(--mint-text)" : IDLE_COLOR,
+                  }}
+                  onClick={() => setAlertRadius(r.value)}
+                >
+                  {r.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="pf-label" style={{ marginTop: 10, marginBottom: 0 }}>
+            학교·놀이터처럼 넓은 곳은 ‘넓게’를 추천해요.
+          </div>
+        </div>
 
         {/* 저장 */}
         <button

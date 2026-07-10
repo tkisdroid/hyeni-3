@@ -75,6 +75,15 @@
   20m 이내 후보를 `saved_place` 우선으로 병합해 1개만 평가한다. 진입은 3분 이상 같은 장소에 머문 뒤 도착으로
   승격한다. 옆 건물 통과나 학원가 이동 중 1분 남짓 머무른 좌표를 도착 알림으로 만들지 않기 위한 규칙이며,
   네이티브 `LocationService`와 Worker `registered-place-geofence-check`가 같은 상태머신 값을 써야 한다.
+- 등록장소 알림 지연 개선(2026-07-10, TK 제보 "도착 알림 5분+ 지연" 실사고 — 실제 6.5분): 원인 3중 =
+  ①반경 30m 가 학교 부지에 너무 타이트(교문→핀까지 5분) ②일괄 180s dwell ③서버 크론이 최신 fix 1점만 평가
+  (tick 격자+정지 시 업로드 간격 합산). 수정: ①장소별 알림 반경 — location JSON `alertRadiusM`(30~300 클램프,
+  스키마 무변경), 명시 없으면 이름 기본(학교|초등|중학교|고등학교|유치원|어린이집 → 100m). PlaceForm 에 반경 칩.
+  ②심부 진입(entry 반경의 60% 이내) fix 는 dwell 90s 단축 — 경계 fix 는 180s 유지(오탐 방지 설계 보존).
+  ③서버 크론은 `location_history` 최근 8분을 시간순 재생(직전 영속 시각 이후 fix 만, 전이 시에만 영속=멱등).
+  ④네이티브 TTL 삼킴 버그 — 상태 6h 만료 후 "밖"이 지속되면 sameState 로 저장 스킵 → 신선도 영영 미회복 →
+  첫 도착이 bootstrap 에 무알림 삼켜짐. 부트스트랩 평가 시 값이 같아도 반드시 저장(TTL 갱신). 아침 실데이터
+  재생 검증: 학교 도착 08:47→08:41(-6분). 상태머신 값은 JS(shared)·Java 3중 parity — 한쪽만 바꾸면 안 된다.
 - Capacitor SystemBars 패치(2026-07-09): Android WebView 시작 직후 `document.documentElement`가 아직 없으면
   기본 `SystemBars` safe-area CSS 주입이 콘솔 오류를 낸다. `postinstall`의
   `scripts/patch-capacitor-systembars.mjs`가 DOM 준비 전 주입을 건너뛰게 패치하므로, 의존성 재설치 후에는

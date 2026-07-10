@@ -28,14 +28,24 @@ final class GeofenceStateMachine {
     static final class GeofenceConfig {
         final double entryRadiusM, exitRadiusM, maxAccuracyM;
         final long dwellMs, cooldownMs, departureTimeoutMs;
+        // 심부 진입 단축 dwell — 반경 중심부(entryR*deepInsideRatio 이내) fix 는 확실한
+        // 방문이므로 90초만 머물면 승격(도착 알림 지연 개선). 경계 fix 는 dwellMs 유지.
+        final long deepDwellMs;
+        final double deepInsideRatio;
         GeofenceConfig(double entryRadiusM, double exitRadiusM, double maxAccuracyM,
-                       long dwellMs, long cooldownMs, long departureTimeoutMs) {
+                       long dwellMs, long cooldownMs, long departureTimeoutMs,
+                       long deepDwellMs, double deepInsideRatio) {
             this.entryRadiusM = entryRadiusM; this.exitRadiusM = exitRadiusM; this.maxAccuracyM = maxAccuracyM;
             this.dwellMs = dwellMs; this.cooldownMs = cooldownMs; this.departureTimeoutMs = departureTimeoutMs;
+            this.deepDwellMs = deepDwellMs; this.deepInsideRatio = deepInsideRatio;
         }
-        // SERVER_GEOFENCE_CONFIG / locationConstants.js 동일 값. 진입은 3분 이상 체류해야
-        // 도착으로 승격한다. 학원가 옆 건물 통과를 도착 알림으로 만들지 않기 위해서다.
-        static final GeofenceConfig DEFAULT = new GeofenceConfig(30, 50, 75, 180_000L, 600_000L, 180_000L);
+        GeofenceConfig(double entryRadiusM, double exitRadiusM, double maxAccuracyM,
+                       long dwellMs, long cooldownMs, long departureTimeoutMs) {
+            this(entryRadiusM, exitRadiusM, maxAccuracyM, dwellMs, cooldownMs, departureTimeoutMs, dwellMs, 0);
+        }
+        // SERVER_GEOFENCE_CONFIG / locationConstants.js 동일 값. 진입은 경계 근처면 3분,
+        // 심부(60% 이내)면 90초 체류 후 도착으로 승격한다. 학원가 옆 건물 통과 오탐 방지 유지.
+        static final GeofenceConfig DEFAULT = new GeofenceConfig(30, 50, 75, 180_000L, 600_000L, 180_000L, 90_000L, 0.6);
     }
 
     // 불변 상태. ms 필드는 null 가능(미설정) → Long.
@@ -97,10 +107,11 @@ final class GeofenceStateMachine {
         double[] radii = resolveRadii(placeRadiusM, cfg);
         double entryR = radii[0], exitR = radii[1];
         boolean inside = "in".equals(prev.phase) ? dist <= exitR : dist <= entryR;
+        boolean deepInside = cfg.deepInsideRatio > 0 && dist <= entryR * cfg.deepInsideRatio;
 
         switch (prev.phase) {
             case "out": return fromOut(prev, tMs, inside, cfg);
-            case "pending": return fromPending(prev, tMs, inside, cfg);
+            case "pending": return fromPending(prev, tMs, inside, cfg, deepInside);
             case "in": return fromIn(prev, tMs, inside, cfg);
             default: return new TransitionResult(Action.OUTSIDE_NO_CHANGE, GeofenceState.INITIAL);
         }
@@ -153,12 +164,14 @@ final class GeofenceStateMachine {
                 new GeofenceState("pending", tMs, null, prev.lastDepartedAtMs));
     }
 
-    private static TransitionResult fromPending(GeofenceState prev, long tMs, boolean inside, GeofenceConfig cfg) {
+    private static TransitionResult fromPending(GeofenceState prev, long tMs, boolean inside, GeofenceConfig cfg,
+                                                boolean deepInside) {
         if (!inside) {
             return new TransitionResult(Action.PENDING_ABORTED,
                     new GeofenceState("out", null, null, prev.lastDepartedAtMs));
         }
-        boolean dwellSatisfied = prev.firstInsideAtMs != null && (tMs - prev.firstInsideAtMs) >= cfg.dwellMs;
+        long requiredDwellMs = deepInside ? cfg.deepDwellMs : cfg.dwellMs;
+        boolean dwellSatisfied = prev.firstInsideAtMs != null && (tMs - prev.firstInsideAtMs) >= requiredDwellMs;
         if (!dwellSatisfied) return new TransitionResult(Action.PENDING_CONTINUE, prev);
         return new TransitionResult(Action.ENTER,
                 new GeofenceState("in", prev.firstInsideAtMs, null, null));
