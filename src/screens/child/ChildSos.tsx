@@ -49,7 +49,9 @@ export function ChildSos() {
       return;
     }
     show(`${label}한테 전화 거는 중...`, "📞");
-    void placePhoneCall(number);
+    void placePhoneCall(number).then((r) => {
+      if (!r.ok) show("전화를 걸 수 없어. 전화 앱을 확인해 줘", "⚠️");
+    });
   };
 
   // 위치는 홀드가 시작될 때 1회만 읽는다(발송 아님). 거부/실패해도 SOS 는 위치 없이 나간다.

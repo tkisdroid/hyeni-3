@@ -311,7 +311,9 @@ export function RemoteAudio() {
       return;
     }
     show(`${callTarget.name || "보호자"}에게 전화를 거는 중…`, "📞");
-    void placePhoneCall(callTarget.phone);
+    void placePhoneCall(callTarget.phone).then((r) => {
+      if (!r.ok) show("전화를 걸 수 없어요. 전화 앱을 확인해 주세요", "⚠️");
+    });
   };
 
   const remoteTime = `${pad2(Math.floor(remaining / 60))}:${pad2(remaining % 60)}`;

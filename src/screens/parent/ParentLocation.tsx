@@ -531,7 +531,9 @@ export function ParentLocation() {
       return;
     }
     show(`${childName}에게 전화를 거는 중…`, "📞");
-    void placePhoneCall(number);
+    void placePhoneCall(number).then((r) => {
+      if (!r.ok) show("전화를 걸 수 없어요. 전화 앱을 확인해 주세요", "⚠️");
+    });
   };
 
   return (

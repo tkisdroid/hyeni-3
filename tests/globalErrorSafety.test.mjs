@@ -69,3 +69,41 @@ test("온보딩 역할 카드 3개는 같은 cover 확대를 쓴다(아이만 �
   assert.match(child, /object-fit: cover/);
   assert.doesNotMatch(child, /contain/);
 });
+
+test("친구놀이 하드 에러는 '친구 없음'으로 위장하지 않는다(razr Red 재현 2026-07-11)", async () => {
+  const { playdateCandidateNotice } = await import("../src/transform/playdateNotice.ts");
+  assert.equal(playdateCandidateNotice(undefined, true, true), "친구 목록을 불러오지 못했어. 다시 해볼래?");
+  assert.equal(playdateCandidateNotice(undefined, true, false), "근처에 놀 수 있는 친구가 아직 없어. 조금 있다 다시 볼까?");
+  assert.equal(playdateCandidateNotice("forbidden", true, false), "지금은 친구를 찾을 수 없어.");
+  // 하드 에러가 soft error 보다 우선(soft 는 200 응답이라 동시에 오지 않지만 방어)
+  assert.equal(playdateCandidateNotice("forbidden", true, true), "친구 목록을 불러오지 못했어. 다시 해볼래?");
+
+  const sheet = readFileSync(new URL("../src/screens/child/overlays/PlaydateSheet.tsx", import.meta.url), "utf8");
+  assert.match(sheet, /candidatesQuery\.isError/);
+  assert.match(sheet, /다시 찾기/);
+  const fp = readFileSync(new URL("../src/screens/feature/FriendPlay.tsx", import.meta.url), "utf8");
+  assert.match(fp, /candidatesQ\.isError/);
+});
+
+test("외부 열기·전화 콜사이트는 실패 피드백을 가진다(void 방치 금지)", () => {
+  const sites = [
+    ["src/screens/shared/MemoChat.tsx", /openExternal\([^;]*\)\.catch/s, 2],
+    ["src/screens/feature/RouteView.tsx", /openExternal\([^;]*\)\.catch/s, 1],
+    ["src/screens/teacher/TeacherSettings.tsx", /openExternal\(PRIVACY_POLICY_URL\)\.catch/, 1],
+    ["src/screens/feature/AppUpdate.tsx", /openExternal\(STORE_URL\)\.catch/, 1],
+  ];
+  for (const [file, re, min] of sites) {
+    const src = readFileSync(new URL("../" + file, import.meta.url), "utf8");
+    const n = (src.match(new RegExp(re.source, re.flags + (re.flags.includes("g") ? "" : "g"))) || []).length;
+    assert.ok(n >= min, `${file}: openExternal .catch ${n} < ${min}`);
+    assert.doesNotMatch(src, /void openExternal\(/);
+  }
+  for (const file of [
+    "src/screens/child/ChildHome.tsx", "src/screens/child/ChildSos.tsx",
+    "src/screens/feature/SosReceive.tsx", "src/screens/feature/RemoteAudio.tsx",
+    "src/screens/parent/ParentLocation.tsx",
+  ]) {
+    const src = readFileSync(new URL("../" + file, import.meta.url), "utf8");
+    assert.match(src, /placePhoneCall\([^)]*\)\.then\(\(r\) => \{\s*\n\s*if \(!r\.ok\)/, file);
+  }
+});

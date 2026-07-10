@@ -36,7 +36,7 @@ export function PlaydateSheet({ open, onClose, onError }: PlaydateSheetProps) {
   }, [open]);
 
   const candidates: PlaydateCandidate[] = candidatesQuery.data?.candidates ?? [];
-  const notice = playdateCandidateNotice(candidatesQuery.data?.error, candidates.length === 0);
+  const notice = playdateCandidateNotice(candidatesQuery.data?.error, candidates.length === 0, candidatesQuery.isError);
   const selected = candidates.find((c) => c.child_user_id === selectedId) ?? candidates[0] ?? null;
 
   const send = () => {
@@ -73,7 +73,18 @@ export function PlaydateSheet({ open, onClose, onError }: PlaydateSheetProps) {
           {candidatesQuery.isLoading ? (
             <div className="ks-empty">근처 친구를 찾는 중이야… 🔎</div>
           ) : notice ? (
-            <div className="ks-empty">{notice}</div>
+            <div className="ks-empty">
+              {notice}
+              {candidatesQuery.isError && (
+                <button
+                  type="button"
+                  className="ks-retry hy-press"
+                  onClick={() => void candidatesQuery.refetch()}
+                >
+                  다시 찾기
+                </button>
+              )}
+            </div>
           ) : (
             <>
               <div className="ks-friend-list">

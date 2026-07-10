@@ -61,7 +61,8 @@ export function TeacherSettings() {
   };
 
   const openPrivacy = () => {
-    if (isNativePlatform()) void openExternal(PRIVACY_POLICY_URL);
+    if (isNativePlatform())
+      openExternal(PRIVACY_POLICY_URL).catch(() => show("브라우저를 열 수 없어요", "⚠️"));
     else window.open(PRIVACY_POLICY_URL, "_blank", "noopener");
   };
 

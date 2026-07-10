@@ -102,7 +102,7 @@ export function FriendPlay() {
     }
   };
 
-  const notice = playdateCandidateNotice(softError, candidates.length === 0);
+  const notice = playdateCandidateNotice(softError, candidates.length === 0, candidatesQ.isError);
 
   if (role === "parent") {
     return (

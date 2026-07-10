@@ -6,7 +6,10 @@
 export function playdateCandidateNotice(
   error: string | undefined,
   empty: boolean,
+  loadFailed = false,
 ): string | null {
+  // 하드 에러(네트워크/5xx)는 "친구 없음"과 다르다 — 없다고 단정하면 거짓 안내가 된다.
+  if (loadFailed) return "친구 목록을 불러오지 못했어. 다시 해볼래?";
   switch (error) {
     case "playdate_not_enabled":
       return "지금은 친구놀이가 꺼져 있어. 부모님한테 켜달라고 하자!";

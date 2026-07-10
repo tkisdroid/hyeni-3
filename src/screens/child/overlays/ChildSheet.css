@@ -578,3 +578,16 @@
     display: none;
   }
 }
+
+/* 후보 로드 실패 재시도 — 빈 문구 아래 작은 버튼 */
+.ks-retry {
+  display: block;
+  margin: 12px auto 0;
+  height: 42px;
+  padding: 0 20px;
+  border-radius: 14px;
+  background: var(--hy-accent-soft);
+  font-family: Jua, var(--font-sans);
+  font-size: 15px;
+  color: var(--hy-accent-text);
+}

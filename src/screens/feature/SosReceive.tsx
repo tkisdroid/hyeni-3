@@ -75,7 +75,9 @@ export function SosReceive() {
   const callOrRingChild = () => {
     if (child?.phone) {
       show(`${childName}에게 전화를 거는 중…`, "📞");
-      void placePhoneCall(child.phone);
+      void placePhoneCall(child.phone).then((r) => {
+        if (!r.ok) show("전화를 걸 수 없어요. 전화 앱을 확인해 주세요", "⚠️");
+      });
       return;
     }
     if (latest?.child_user_id) {

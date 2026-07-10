@@ -324,7 +324,9 @@ export function ChildHome() {
       if (!target.phone) return;
       setCallOpen(false);
       show(`${target.label}한테 전화 거는 중...`, "📞");
-      void placePhoneCall(target.phone);
+      void placePhoneCall(target.phone).then((r) => {
+        if (!r.ok) show("전화를 걸 수 없어. 전화 앱을 확인해 줘", "⚠️");
+      });
     },
     [show],
   );
@@ -384,7 +386,7 @@ export function ChildHome() {
           </button>
         </div>
 
-        <div className="kd-map__headline kd-title">{childName}의 오늘 모험!</div>
+        <div className="kd-map__headline kd-title">{childName}의 오늘</div>
 
         {adventure.nodes.map((node) => (
           <button

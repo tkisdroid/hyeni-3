@@ -386,7 +386,11 @@ export function RouteView() {
                 <button
                   type="button"
                   className="rv-fallback__kakao hy-press"
-                  onClick={() => void openExternal(buildKakaoToUrl(destination.name, destination.point))}
+                  onClick={() =>
+                    openExternal(buildKakaoToUrl(destination.name, destination.point)).catch(() =>
+                      show("카카오맵을 열 수 없어", "🗺️"),
+                    )
+                  }
                 >
                   🗺️ 카카오맵에서 길찾기
                 </button>

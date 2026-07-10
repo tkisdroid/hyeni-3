@@ -35,6 +35,7 @@ export function MemoChat() {
   const navigate = useNavigate();
   const { show } = useToast();
   const { userId, role, familyId } = useAuth();
+  const isChildSession = role === "child";
   const { data: family } = useMyFamily();
   const { activeChild } = useActiveChild();
 
@@ -286,7 +287,9 @@ export function MemoChat() {
   const openLocation = (m: ThreadMsg) => {
     if (!m.location) return;
     const name = encodeURIComponent(m.location.address || "공유한 위치");
-    void openExternal(`https://map.kakao.com/link/map/${name},${m.location.lat},${m.location.lng}`);
+    openExternal(`https://map.kakao.com/link/map/${name},${m.location.lat},${m.location.lng}`).catch(() =>
+      show(isChildSession ? "지도를 열 수 없어" : "지도를 열 수 없어요", "🗺️"),
+    );
   };
 
   const hasMessages = messages.length > 0;
@@ -365,7 +368,10 @@ export function MemoChat() {
                     className="mc-bubble mc-bubble--img hy-press"
                     onClick={() => {
                       const u = childPhotoProxyUrl(m.imagePath);
-                      if (u) void openExternal(u);
+                      if (u)
+                        openExternal(u).catch(() =>
+                          show(isChildSession ? "사진을 열 수 없어" : "사진을 열 수 없어요", "🖼️"),
+                        );
                     }}
                   >
                     <img src={childPhotoProxyUrl(m.imagePath) ?? undefined} alt="공유한 사진" />
