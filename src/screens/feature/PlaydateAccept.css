@@ -58,6 +58,7 @@
 
 /* ── 요청 카드 ──────────────────────────────────────────────────────────── */
 .pa-card {
+  animation: hy-fadein 0.3s ease both;
   padding: 16px;
 }
 .pa-card__head {

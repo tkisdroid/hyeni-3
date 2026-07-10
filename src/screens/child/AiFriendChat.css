@@ -110,6 +110,7 @@
   word-break: break-word;
 }
 .afc-bubble--ai {
+  animation: afc-pop 0.3s ease forwards;
   background: var(--bg-card);
   border-radius: 20px 20px 20px 6px;
   box-shadow: 0 10px 24px -12px rgba(124, 92, 225, 0.4);

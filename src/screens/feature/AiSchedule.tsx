@@ -435,7 +435,6 @@ export function AiSchedule() {
                   <img
                     src={asset(resolveEventVisualAsset(first.title, first.category || "other"))}
                     alt=""
-                    style={{ width: 34, height: 34, objectFit: "contain" }}
                   />
                 </span>
                 <span className="ais-result__info">

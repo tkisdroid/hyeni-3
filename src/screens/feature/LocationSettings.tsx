@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight, MapPin, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, Check, Radar, BatteryCharging, History } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useEntitlement } from "@/queries/useEntitlement";
@@ -241,6 +241,9 @@ export function LocationSettings() {
 
         {/* 백그라운드 위치 전송 */}
         <div className="lset-row">
+          <span className="lset-row__icon">
+            <Radar size={18} strokeWidth={2.2} color="#2E86C1" />
+          </span>
           <span className="lset-row__main">
             <span className="lset-row__title">백그라운드 위치 전송</span>
             <span className="lset-row__sub">앱을 닫아도 위치를 전송해요</span>
@@ -285,6 +288,9 @@ export function LocationSettings() {
 
         {/* 배터리 최적화 예외 */}
         <div className="lset-row">
+          <span className="lset-row__icon">
+            <BatteryCharging size={18} strokeWidth={2.2} color="#2E86C1" />
+          </span>
           <span className="lset-row__main">
             <span className="lset-row__title">배터리 최적화 예외</span>
             <span className="lset-row__sub">권장 · 안정적 전송</span>
@@ -309,6 +315,9 @@ export function LocationSettings() {
           className="lset-row hy-press"
           onClick={() => navigate("/subscription")}
         >
+          <span className="lset-row__icon">
+            <History size={18} strokeWidth={2.2} color="#2E86C1" />
+          </span>
           <span className="lset-row__main">
             <span className="lset-row__title">위치 히스토리 보관</span>
             <span className="lset-row__sub">{retentionLabel}</span>

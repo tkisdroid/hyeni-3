@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, MapPin, Bell, HelpCircle, X } from "lucide-react";
+import { ChevronLeft, MapPin, Bell, HelpCircle, X, Cat, Mail, type LucideIcon } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
@@ -36,9 +36,9 @@ function avatarSrc(path: string): string {
 }
 
 // 부모에게 부탁할 수 있는 잠금 메뉴(요청형).
-const REQUEST_ITEMS: Array<{ menu: SettingRequestMenu; emoji: string; title: string; sub: string }> = [
-  { menu: "sound", emoji: "🔔", title: "소리·진동 바꾸기", sub: "부모님이 정하는 항목이야" },
-  { menu: "character", emoji: "🧸", title: "캐릭터 바꾸기", sub: "부모님한테 부탁해볼 수 있어" },
+const REQUEST_ITEMS: Array<{ menu: SettingRequestMenu; Icon: LucideIcon; title: string; sub: string }> = [
+  { menu: "sound", Icon: Bell, title: "소리·진동 바꾸기", sub: "부모님이 정하는 항목이야" },
+  { menu: "character", Icon: Cat, title: "캐릭터 바꾸기", sub: "부모님한테 부탁해볼 수 있어" },
 ];
 
 /**
@@ -162,7 +162,9 @@ export function ChildSettings() {
               onClick={() => askParent(item.menu, item.title)}
               disabled={request.isPending}
             >
-              <span className="ks-row__icon">{item.emoji}</span>
+              <span className="ks-row__icon">
+                <item.Icon size={18} strokeWidth={2.2} />
+              </span>
               <span className="ks-row__main">
                 <span className="ks-row__title">{item.title}</span>
                 <span className="ks-row__sub">{requested[item.menu] ? "부탁했어! 답을 기다려보자" : item.sub}</span>
@@ -196,21 +198,21 @@ export function ChildSettings() {
             </div>
             <div className="ks-help-list">
               <div className="ks-help-item">
-                <span className="ks-help-item__emoji">📍</span>
+                <span className="ks-help-item__emoji"><MapPin size={18} strokeWidth={2.2} /></span>
                 <span>
                   <b>위치 알려주기</b>
                   <small>부모님이 네가 안전한지 확인하려고 켜 둔 거야.</small>
                 </span>
               </div>
               <div className="ks-help-item">
-                <span className="ks-help-item__emoji">🔔</span>
+                <span className="ks-help-item__emoji"><Bell size={18} strokeWidth={2.2} /></span>
                 <span>
                   <b>알림</b>
                   <small>이 기기에서만 켜고 끌 수 있어. 중요한 안전 알림은 부모님에게 계속 가.</small>
                 </span>
               </div>
               <div className="ks-help-item">
-                <span className="ks-help-item__emoji">💌</span>
+                <span className="ks-help-item__emoji"><Mail size={18} strokeWidth={2.2} /></span>
                 <span>
                   <b>부모님한테 부탁하기</b>
                   <small>캐릭터나 소리를 바꾸고 싶을 때 부모님에게 요청을 보낼 수 있어.</small>

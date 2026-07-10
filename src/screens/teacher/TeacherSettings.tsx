@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Bell, Lock, MessageCircle, LogOut, TriangleAlert } from "lucide-react";
 import { asset } from "@/lib/assets";
@@ -32,13 +32,18 @@ export function TeacherSettings() {
   const displayName = account?.myName || "선생님";
   const className = classesQ.data?.[0]?.className ?? "우리 반";
 
+  const logoutBusyRef = useRef(false);
   const handleLogout = async () => {
+    if (logoutBusyRef.current) return; // 이중 탭 가드
+    logoutBusyRef.current = true;
     try {
       await logout();
       navigate("/onboarding");
     } catch (e) {
       console.error("로그아웃 실패:", e);
       show("로그아웃에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️");
+    } finally {
+      logoutBusyRef.current = false;
     }
   };
 

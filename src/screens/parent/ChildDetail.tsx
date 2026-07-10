@@ -286,7 +286,7 @@ export function ChildDetail() {
             onClick={() => setConfirmDelete(true)}
           >
             <span className="cd-danger__icon">
-              <Trash2 size={18} strokeWidth={2.2} />
+              <Trash2 size={20} strokeWidth={2.2} />
             </span>
             <span className="cd-danger__main">
               <span className="cd-danger__title">가족에서 삭제</span>
@@ -364,7 +364,7 @@ function Header({
           aria-label="프로필 편집"
           onClick={onEdit}
         >
-          <Pencil size={19} strokeWidth={2} />
+          <Pencil size={20} strokeWidth={2} />
         </button>
       ) : (
         <span className="cd-edit" />

@@ -8,6 +8,7 @@
   padding: 24px 22px calc(24px + env(safe-area-inset-bottom, 0px));
 }
 .pd-card {
+  animation: hy-rise 0.4s cubic-bezier(0.2, 0, 0.2, 1) forwards;
   width: 100%;
   background: #fff;
   border-radius: 26px;

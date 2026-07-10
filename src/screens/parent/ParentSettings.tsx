@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
@@ -96,7 +96,10 @@ export function ParentSettings() {
   const isDad = /dad|father|male|남/i.test(genderHint);
   const profileAvatar = me?.photo_url || asset(isDad ? "family/dad.webp" : "family/mom.webp");
 
+  const logoutBusyRef = useRef(false);
   const handleLogout = async () => {
+    if (logoutBusyRef.current) return; // 이중 탭 가드
+    logoutBusyRef.current = true;
     try {
       await logout();
       show("로그아웃되었어요", "👋");
@@ -104,6 +107,8 @@ export function ParentSettings() {
     } catch (error) {
       console.error("로그아웃 실패:", error);
       show("로그아웃에 실패했어요. 다시 시도해 주세요", "⚠️");
+    } finally {
+      logoutBusyRef.current = false;
     }
   };
 

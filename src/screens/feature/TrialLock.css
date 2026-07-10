@@ -1,6 +1,7 @@
 /* 체험 종료 · 잠금(S-03) — 화면 전용 스타일. prefix: tl- */
 
 .tl-root {
+  animation: hy-fadein 0.35s ease forwards;
   min-height: 100%;
 }
 
@@ -138,7 +139,7 @@
 /* ── 프리미엄 혜택 목록 ───────────────────────────────────────────────────── */
 .tl-perks {
   background: #fff;
-  border-radius: 20px;
+  border-radius: 24px;
   padding: 6px 16px;
   box-shadow: 0 10px 26px rgba(32, 26, 29, 0.05);
 }

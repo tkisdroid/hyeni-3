@@ -140,6 +140,7 @@
 
 /* ── 저장한 장소 카드 ───────────────────────────────────────────────────── */
 .pm-item {
+  animation: hy-fadein 0.3s ease both;
   background: #fff;
   border-radius: 20px;
   padding: 13px 14px;

@@ -205,7 +205,7 @@ export function AiFriendChat() {
           aria-label="AI 친구 바꾸기"
           onClick={() => navigate("/child/ai-friend-setup")}
         >
-          <Settings size={19} strokeWidth={2.2} color="var(--lav-text)" />
+          <Settings size={20} strokeWidth={2.2} color="var(--lav-text)" />
         </button>
       </header>
 

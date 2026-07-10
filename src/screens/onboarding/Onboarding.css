@@ -481,6 +481,7 @@
   gap: 11px;
 }
 .ob-survey-card {
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
   width: 100%;
   padding: 16px;
   border: 1.5px solid var(--line-soft);

@@ -69,7 +69,7 @@
   align-items: center;
   gap: 13px;
   padding: 16px 18px;
-  border-radius: 20px;
+  border-radius: 22px;
   background: linear-gradient(120deg, #fff3d6, #ffe4ef);
   box-shadow: 0 12px 28px -14px rgba(224, 138, 30, 0.5);
 }

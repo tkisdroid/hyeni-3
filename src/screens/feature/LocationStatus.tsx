@@ -88,14 +88,14 @@ export function LocationStatus() {
     },
     error: {
       kind: "error",
-      icon: <AlertTriangle size={24} strokeWidth={2.2} color="#B26A00" />,
+      icon: <AlertTriangle size={26} strokeWidth={2.2} color="#B26A00" />,
       title: "위치를 가져오지 못했어요",
       sub: loc ? `아이 기기 오프라인 · 마지막 확인 ${fresh?.label ?? "-"}` : "아이 기기가 오프라인이에요",
       tone: "caution",
     },
     permission: {
       kind: "permission",
-      icon: <AlertTriangle size={24} strokeWidth={2.2} color="#B26A00" />,
+      icon: <AlertTriangle size={26} strokeWidth={2.2} color="#B26A00" />,
       title: loc ? "위치 갱신이 지연되고 있어요" : "위치 정보가 아직 없어요",
       sub: loc ? `마지막 확인 ${fresh?.label ?? "-"}` : "아이 기기에서 위치가 아직 올라오지 않았어요",
       tone: "caution",

@@ -187,8 +187,9 @@
   justify-content: center;
 }
 .ks-route__dest img {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
 }
 .ks-route__line {
   margin-top: 6px;
@@ -241,6 +242,7 @@
 
 /* 친구랑 놀기 */
 .ks-friend {
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
   display: flex;
   align-items: center;
   gap: 12px;

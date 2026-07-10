@@ -179,7 +179,7 @@
   justify-content: center;
   gap: 8px;
   height: 52px;
-  border-radius: 16px;
+  border-radius: 18px;
   background: #fff;
   box-shadow: 0 10px 24px -18px rgba(32, 26, 29, 0.24);
   border: 1px solid var(--line-card);

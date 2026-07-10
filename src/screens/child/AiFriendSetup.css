@@ -99,6 +99,7 @@
   gap: 9px;
 }
 .afs-cell {
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
   aspect-ratio: 1;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.75);

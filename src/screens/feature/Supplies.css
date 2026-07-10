@@ -130,8 +130,9 @@
   border-radius: 14px;
 }
 .sup-check {
-  width: 26px;
-  height: 26px;
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+  width: 28px;
+  height: 28px;
   border-radius: 9px;
   display: flex;
   align-items: center;
@@ -162,8 +163,8 @@
 
 /* ── 행 액션(이름변경·삭제) + 인라인 편집 ─────────────────────────────────── */
 .sup-iconbtn {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border-radius: 9px;
   background: transparent;
   display: flex;

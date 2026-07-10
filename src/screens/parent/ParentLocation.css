@@ -686,7 +686,7 @@
   transform: translate(-50%, -50%);
   z-index: 22;
   padding: 12px 20px;
-  border-radius: 16px;
+  border-radius: 18px;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(8px);
   box-shadow: 0 10px 26px rgba(32, 26, 29, 0.14);
