@@ -45,9 +45,14 @@ test("온보딩 네이버 버튼은 키가 있을 때만 렌더된다", () => {
   assert.match(src, /네이버로 계속하기/);
 });
 
-test("딥링크 파서는 provider=naver 콜백을 수용한다(Worker GET 콜백 계약)", () => {
-  const src = readFileSync(new URL("../src/lib/native/oauthDeepLink.ts", import.meta.url), "utf8");
-  // 하드코딩 목록 대신 단일 출처 판별을 쓴다(새 provider 추가 시 누락 방지).
-  assert.match(src, /isOAuthProvider\(provider\)/);
-  assert.ok(!src.includes('provider !== "kakao" && provider !== "google"'));
+test("딥링크 파서는 단일 출처 판별을 쓴다(하드코딩 목록 금지)", () => {
+  // 파싱 로직은 transform/oauthDeepLinkParse 로 분리돼 실제 동작 테스트를 받는다
+  // (tests/oauthDeepLinkParse.test.ts — Worker 가 실제로 만든 콜백 URL 로 검증).
+  const parse = readFileSync(new URL("../src/transform/oauthDeepLinkParse.ts", import.meta.url), "utf8");
+  assert.match(parse, /isOAuthProvider\(provider\)/);
+  assert.ok(!parse.includes('provider !== "kakao" && provider !== "google"'));
+
+  // 네이티브 모듈은 그 파서를 그대로 위임한다(중복 구현 금지).
+  const native = readFileSync(new URL("../src/lib/native/oauthDeepLink.ts", import.meta.url), "utf8");
+  assert.match(native, /return parseOAuthDeepLinkUrl\(url\)/);
 });

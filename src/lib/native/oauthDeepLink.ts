@@ -17,17 +17,12 @@ import type { URLOpenListenerEvent } from "@capacitor/app";
 import { isNativePlatform } from "./plugins";
 import { closeExternal } from "./browser";
 import { finishOAuthLogin } from "@/lib/api/endpoints/auth";
-import { isOAuthProvider, type OAuthProvider } from "@/transform/oauthProvider";
+import type { OAuthProvider } from "@/transform/oauthProvider";
+import { parseOAuthDeepLinkUrl, type OAuthDeepLinkCallback } from "@/transform/oauthDeepLinkParse";
 import { deriveAuthState } from "@/auth/AuthContext";
 import { homePathForRole } from "@/auth/guards";
 
-const CALLBACK_SCHEME = "hyenicalendar://auth-callback";
-
-interface DeepLinkCallback {
-  provider: OAuthProvider;
-  code: string;
-  state: string;
-}
+type DeepLinkCallback = OAuthDeepLinkCallback;
 
 export interface OAuthDeepLinkResult {
   ok: boolean;
@@ -43,17 +38,7 @@ export type OAuthResultHandler = (result: OAuthDeepLinkResult) => void;
  * (Worker 는 query 로 보내지만 fragment 형태도 안전하게 커버 — hyeni-1 계약).
  */
 export function parseOAuthDeepLink(url: string): DeepLinkCallback | null {
-  if (!url || !url.startsWith(CALLBACK_SCHEME)) return null;
-
-  const raw = url.includes("#") ? url.split("#")[1] : url.split("?")[1] || "";
-  const params = new URLSearchParams(raw);
-  const code = params.get("code");
-  if (!code) return null;
-  // 네이버 콜백도 provider=naver 로 돌아온다(worker/routes/naver-auth.ts GET).
-  const provider = params.get("provider");
-  if (!isOAuthProvider(provider)) return null;
-
-  return { provider, code, state: params.get("state") || "" };
+  return parseOAuthDeepLinkUrl(url);
 }
 
 /**
