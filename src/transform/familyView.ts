@@ -92,7 +92,7 @@ export interface DeviceStatusView {
   hasData: boolean;
   batteryLevel: number | null;
   batteryLabel: string; // "82%" | "—"
-  unlockCountLabel: string; // 오늘 화면잠금 해제 "N회" | "—"(권한없음/미보고). 알림 화면켜짐은 미포함
+  unlockCountLabel: string; // 오늘 화면잠금 해제 "N회" | "0회"(권한없음/미보고). 알림 화면켜짐은 미포함
   networkLabel: string; // "Wi-Fi"/"4G"/"연결됨" | "오프라인" | "—"
   screenTimeLabel: string; // 네이티브 deviceScreenOnMs → "N시간 M분"; 웹은 "—"
   recentAppLabel: string | null; // 네이티브 recentApp(최근 사용앱). 없거나 권한없으면 null
@@ -142,7 +142,7 @@ export function deviceStatusView(
       hasData: false,
       batteryLevel: null,
       batteryLabel: "—",
-      unlockCountLabel: "—",
+      unlockCountLabel: "0회",
       networkLabel: "—",
       screenTimeLabel: "—",
       recentAppLabel: null,
