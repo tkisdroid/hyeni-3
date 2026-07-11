@@ -1,7 +1,10 @@
 package com.hyeni.calendar;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
+import android.app.usage.UsageEvents;
 import android.telephony.TelephonyManager;
 
 import org.junit.Test;
@@ -77,6 +80,13 @@ public class DeviceStatusReporterTest {
     @Test
     public void invalidWindow_returnsZero() {
         assertEquals(0L, DeviceStatusReporter.sumScreenOnMs(new long[0], new int[0], END, START, true));
+    }
+
+    @Test
+    public void keyguardHidden_onlyCountsActualUnlock() {
+        assertTrue(DeviceStatusReporter.isKeyguardHiddenEvent(UsageEvents.Event.KEYGUARD_HIDDEN));
+        assertFalse(DeviceStatusReporter.isKeyguardHiddenEvent(ON));
+        assertFalse(DeviceStatusReporter.isKeyguardHiddenEvent(OFF));
     }
 
     @Test

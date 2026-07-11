@@ -27,6 +27,8 @@ import com.getcapacitor.annotation.PermissionCallback;
 
 import com.google.firebase.messaging.FirebaseMessaging;
 
+import org.json.JSONObject;
+
 @CapacitorPlugin(
     name = "BackgroundLocation",
     permissions = {
@@ -273,6 +275,8 @@ public class LocationPlugin extends Plugin {
                 }
             }
             result.put("recentAppPackage", recentApp);
+            int unlockCount = DeviceStatusReporter.readUnlockCountToday(getContext());
+            result.put("deviceUnlockCount", unlockCount >= 0 ? unlockCount : JSONObject.NULL);
             result.put("recentAppLabel", recentAppLabel);
             result.put("appUsage", appUsage);
             result.put("usagePermission", usagePermission);

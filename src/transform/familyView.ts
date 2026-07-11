@@ -4,6 +4,7 @@
  * 배터리는 아이 기기 자기-리포트(device_health)에서 반영(미리포트면 null).
  */
 import type { DeviceHealth, FamilyMember } from "@/lib/api/endpoints/family";
+import { unlockCountLabel } from "./deviceUnlock";
 import { childAvatarPath } from "@/lib/avatar";
 import {
   buildDeviceAppUsageView,
@@ -91,7 +92,7 @@ export interface DeviceStatusView {
   hasData: boolean;
   batteryLevel: number | null;
   batteryLabel: string; // "82%" | "—"
-  chargingLabel: string; // "충전 중" | "충전 안 함" | "—"
+  unlockCountLabel: string; // 오늘 화면잠금 해제 "N회" | "—"(권한없음/미보고). 알림 화면켜짐은 미포함
   networkLabel: string; // "Wi-Fi"/"4G"/"연결됨" | "오프라인" | "—"
   screenTimeLabel: string; // 네이티브 deviceScreenOnMs → "N시간 M분"; 웹은 "—"
   recentAppLabel: string | null; // 네이티브 recentApp(최근 사용앱). 없거나 권한없으면 null
@@ -141,7 +142,7 @@ export function deviceStatusView(
       hasData: false,
       batteryLevel: null,
       batteryLabel: "—",
-      chargingLabel: "—",
+      unlockCountLabel: "—",
       networkLabel: "—",
       screenTimeLabel: "—",
       recentAppLabel: null,
@@ -161,7 +162,7 @@ export function deviceStatusView(
     hasData: true,
     batteryLevel: level,
     batteryLabel: level == null ? "—" : `${level}%`,
-    chargingLabel: health.isCharging == null ? "—" : health.isCharging ? "충전 중" : "충전 안 함",
+    unlockCountLabel: unlockCountLabel(health.deviceUnlockCount),
     networkLabel: health.networkConnected ? networkTypeLabel(netType) : "오프라인",
     screenTimeLabel: screen ?? "—",
     recentAppLabel: appUsage.recentAppLabel,

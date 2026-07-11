@@ -60,7 +60,7 @@ export const child = {
 export const safety = {
   battery: 82,
   screenTime: "1시간 20분",
-  charging: "충전 안 함",
+  unlockCount: "6회",
   network: "Wi-Fi",
   updatedLabel: "방금 업데이트됨",
 };

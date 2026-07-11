@@ -38,6 +38,8 @@ export interface DeviceHealth {
   recentApp?: string | null;
   usagePermission?: "granted" | "requires_permission" | "unavailable" | string | null;
   appUsage?: DeviceAppUsage[] | null;
+  /** 오늘 화면잠금 해제 횟수(KEYGUARD_HIDDEN). 알림 화면켜짐 미포함. 권한없음=null. */
+  deviceUnlockCount?: number | null;
 }
 
 export interface FamilyMember {

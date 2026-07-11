@@ -428,6 +428,7 @@ hyeni-3/
   - **iOS**: `npx cap add ios` + sync + Info.plist(권한 문구) + `docs/ios-build.md`. Windows에서 Xcode 컴파일 불가 — macOS 절차 문서화(iPhone=부모 전용 전제 유지).
   - **크로스 E2E**: 아이→부모 메모 WS 라운드트립(전송·수신·정리), AI 텍스트 파싱→저장→D1 확인→정리(date_key 0-index 정상), AI 친구 실 LLM 응답. 알림 실발사는 야간 자제 — 대신 서버의 위치미갱신→재연결 부모 알림이 이날 새벽 실작동(00:25/00:35)한 것을 실증.
   - **검증 함정 추가**: 재설치 후 CDP 포워딩 PID 갱신 필수 · razr 스크린샷 `-d 4630947043778501762` · cp949 콘솔은 python stdout utf-8 래핑 · Cloudflare가 기본 UA(python-urllib)를 403 차단 — 커스텀 UA 필요.
+  - **안전지표 잠금해제(2026-07-11)**: 부모 홈·안심리포트의 기존 `충전` 슬롯을 오늘의 `잠금해제` 횟수로 교체한다. Android `DeviceStatusReporter`는 Usage Access가 있을 때 `UsageEvents.Event.KEYGUARD_HIDDEN`만 세므로 알림 등으로 화면만 켜진 `SCREEN_INTERACTIVE`는 집계하지 않는다. Usage Access 없음·API 28 미만·미보고는 가짜 숫자 대신 `—`로 표시한다.
 
 ### 전체 라우트 맵 (전부 도달 가능)
 ```

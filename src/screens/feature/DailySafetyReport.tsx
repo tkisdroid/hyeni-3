@@ -13,7 +13,7 @@ import {
   RefreshCw,
   ShieldCheck,
   Wifi,
-  Zap,
+  LockOpen,
 } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
@@ -237,14 +237,14 @@ export function DailySafetyReport() {
         id: "device-signal",
         label: "기기 리포트",
         value: device.freshnessLabel,
-        detail: device.hasData ? device.chargingLabel : "아이 앱 연결 후 표시",
+        detail: device.hasData ? `잠금해제 ${device.unlockCountLabel}` : "아이 앱 연결 후 표시",
         tone: device.hasData ? "blue" : "cream",
         icon: <img src={asset("ui/battery.webp")} alt="" />,
       },
     ],
     [
       childLocation,
-      device.chargingLabel,
+      device.unlockCountLabel,
       device.freshnessLabel,
       device.hasData,
       locationFreshness?.label,
@@ -514,9 +514,9 @@ export function DailySafetyReport() {
                   <b>{device.batteryLabel}</b>
                 </div>
                 <div>
-                  <Zap size={17} strokeWidth={2.2} />
-                  <span>충전</span>
-                  <b>{device.chargingLabel}</b>
+                  <LockOpen size={17} strokeWidth={2.2} />
+                  <span>잠금해제</span>
+                  <b>{device.unlockCountLabel}</b>
                 </div>
                 <div>
                   <Wifi size={17} strokeWidth={2.2} />

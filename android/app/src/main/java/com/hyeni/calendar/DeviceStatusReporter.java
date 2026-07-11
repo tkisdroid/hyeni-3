@@ -161,6 +161,7 @@ final class DeviceStatusReporter {
         DeviceBattery battery = readBattery(context);
         UsageSnapshot usage = readUsageSnapshot(context);
         ScreenOnTime screenOn = computeTodayScreenOnMs(context, usage.screenInteractive);
+        int unlockCount = readUnlockCountToday(context);
         NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
@@ -227,6 +228,7 @@ final class DeviceStatusReporter {
                     : "혜니캘린더 (앱 외 사용기록은 OS 권한 필요)")
                 : usage.recentAppLabel)
             .put("usagePermission", usage.usagePermission)
+            .put("deviceUnlockCount", unlockCount >= 0 ? unlockCount : JSONObject.NULL)
             .put("appUsage", usage.appUsage)
             .put("deviceScreenOnMs", screenOn.ms >= 0L ? screenOn.ms : JSONObject.NULL)
             .put("deviceScreenOnSource", screenOn.source)
@@ -339,6 +341,36 @@ final class DeviceStatusReporter {
 
         return new UsageSnapshot(interactive, recentApp,
             resolveAppLabel(context, recentApp), usagePermission, appUsage);
+    }
+
+    /**
+     * 오늘(자정~현재) 화면 잠금 해제 횟수 — KEYGUARD_HIDDEN 이벤트만 센다.
+     * 알림으로 화면이 켜지기만 한 것(SCREEN_INTERACTIVE)은 잠금이 풀리지 않으므로
+     * 자연히 제외된다 = "아이가 직접 열어 본 횟수"(TK 요구 2026-07-11).
+     * Usage Access 권한이 없거나 API<28 이면 -1(클라는 "—" 표시).
+     */
+    static int readUnlockCountToday(Context context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return -1;
+        try {
+            if (!isUsageAccessGranted(context)) return -1;
+            UsageStatsManager usm = (UsageStatsManager) context.getSystemService(Context.USAGE_STATS_SERVICE);
+            if (usm == null) return -1;
+            UsageEvents events = usm.queryEvents(startOfTodayMillis(), System.currentTimeMillis());
+            if (events == null) return -1;
+            int count = 0;
+            UsageEvents.Event event = new UsageEvents.Event();
+            while (events.hasNextEvent()) {
+                events.getNextEvent(event);
+                if (isKeyguardHiddenEvent(event.getEventType())) count++;
+            }
+            return count;
+        } catch (Exception error) {
+            return -1;
+        }
+    }
+
+    static boolean isKeyguardHiddenEvent(int eventType) {
+        return eventType == UsageEvents.Event.KEYGUARD_HIDDEN;
     }
 
     /**

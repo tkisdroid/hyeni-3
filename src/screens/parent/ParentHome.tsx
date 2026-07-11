@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, Settings, ChevronRight, Clock, Zap, Wifi, Check, MapPin, Smartphone, Mic, Keyboard, Image as ImageIcon } from "lucide-react";
+import { Bell, Settings, ChevronRight, Clock, Wifi, Check, MapPin, Smartphone, Mic, Keyboard, Image as ImageIcon, LockOpen } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
@@ -530,11 +530,11 @@ export function ParentHome() {
               </div>
               <div className="ph-metric">
                 <span className="ph-metric__icon" style={{ background: "var(--cream-soft)" }}>
-                  <Zap size={22} strokeWidth={2} color="var(--gold-600)" />
+                  <LockOpen size={22} strokeWidth={2} color="var(--gold-600)" />
                 </span>
                 <span style={{ minWidth: 0 }}>
-                  <span className="ph-metric__k">충전</span>
-                  <span className="ph-metric__v">{deviceStatus.chargingLabel}</span>
+                  <span className="ph-metric__k">잠금해제</span>
+                  <span className="ph-metric__v">{deviceStatus.unlockCountLabel}</span>
                 </span>
               </div>
               <div className="ph-metric">

@@ -107,3 +107,13 @@ test("외부 열기·전화 콜사이트는 실패 피드백을 가진다(void �
     assert.match(src, /placePhoneCall\([^)]*\)\.then\(\(r\) => \{\s*\n\s*if \(!r\.ok\)/, file);
   }
 });
+
+test("잠금해제 횟수 라벨 — 숫자만 N회, 권한없음/미보고/음수는 정직하게 —", async () => {
+  const { unlockCountLabel } = await import("../src/transform/deviceUnlock.ts");
+  assert.equal(unlockCountLabel(6), "6회");
+  assert.equal(unlockCountLabel(0), "0회");
+  assert.equal(unlockCountLabel(null), "—");
+  assert.equal(unlockCountLabel(undefined), "—");
+  assert.equal(unlockCountLabel(-1), "—");
+  assert.equal(unlockCountLabel(NaN), "—");
+});
