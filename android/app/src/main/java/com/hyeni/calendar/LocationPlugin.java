@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.app.usage.UsageEvents;
 import android.app.usage.UsageStatsManager;
 import android.content.pm.PackageManager;
@@ -51,6 +52,7 @@ public class LocationPlugin extends Plugin {
         String supabaseKey = call.getString("supabaseKey");
         String accessToken = call.getString("accessToken", "");
         String refreshToken = call.getString("refreshToken", "");
+        String sessionNonce = call.getString("sessionNonce", "");
         String role = call.getString("role", "child");
         String intervalMode = call.getString("intervalMode", "balanced");
 
@@ -92,7 +94,7 @@ public class LocationPlugin extends Plugin {
         }
         requestActivityRecognitionIfNeeded();
 
-        launchService(userId, familyId, supabaseUrl, supabaseKey, accessToken, refreshToken, intervalMode);
+        launchService(userId, familyId, supabaseUrl, supabaseKey, accessToken, refreshToken, sessionNonce, intervalMode);
         call.resolve(new JSObject().put("status", "started"));
     }
 
@@ -104,6 +106,7 @@ public class LocationPlugin extends Plugin {
         String supabaseKey = call.getString("supabaseKey");
         String accessToken = call.getString("accessToken", "");
         String refreshToken = call.getString("refreshToken", "");
+        String sessionNonce = call.getString("sessionNonce", "");
         String role = call.getString("role", "child");
         String intervalMode = call.getString("intervalMode", "balanced");
 
@@ -129,7 +132,7 @@ public class LocationPlugin extends Plugin {
             .remove("kakaoRestKey")
             .apply();
 
-        launchRefresh(userId, familyId, supabaseUrl, supabaseKey, accessToken, refreshToken, intervalMode);
+        launchRefresh(userId, familyId, supabaseUrl, supabaseKey, accessToken, refreshToken, sessionNonce, intervalMode);
         call.resolve(new JSObject().put("status", "refresh_requested"));
     }
 
@@ -143,6 +146,7 @@ public class LocationPlugin extends Plugin {
             String supabaseKey = call.getString("supabaseKey");
             String accessToken = call.getString("accessToken", "");
             String refreshToken = call.getString("refreshToken", "");
+            String sessionNonce = call.getString("sessionNonce", "");
             String intervalMode = call.getString("intervalMode", "balanced");
 
             // Also request background location (Android 10+)
@@ -152,7 +156,7 @@ public class LocationPlugin extends Plugin {
             }
             requestActivityRecognitionIfNeeded();
 
-            launchService(userId, familyId, supabaseUrl, supabaseKey, accessToken, refreshToken, intervalMode);
+            launchService(userId, familyId, supabaseUrl, supabaseKey, accessToken, refreshToken, sessionNonce, intervalMode);
             call.resolve(new JSObject().put("status", "started"));
         } else {
             call.reject("Location permission denied");
@@ -182,16 +186,46 @@ public class LocationPlugin extends Plugin {
         return "balanced";
     }
 
-    private void launchService(String userId, String familyId, String supabaseUrl, String supabaseKey, String accessToken, String refreshToken, String intervalMode) {
+    private String[] preferFreshSessionTokens(
+        String incomingAccess,
+        String incomingRefresh,
+        String incomingSessionNonce
+    ) {
+        SharedPreferences prefs = getContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SessionTokenStore.Snapshot session = SessionTokenStore.reconcile(
+            prefs,
+            incomingAccess,
+            incomingRefresh,
+            false,
+            incomingSessionNonce
+        );
+        if (!session.acceptedIncoming && incomingAccess != null && !incomingAccess.isEmpty()) {
+            Log.w(TAG, "Ignored stale WebView session tokens; keeping newer native session");
+        }
+        return new String[] { session.accessToken, session.refreshToken };
+    }
+
+    private void launchService(
+        String userId,
+        String familyId,
+        String supabaseUrl,
+        String supabaseKey,
+        String accessToken,
+        String refreshToken,
+        String sessionNonce,
+        String intervalMode
+    ) {
         String role = getContext().getSharedPreferences("hyeni_location_prefs", android.content.Context.MODE_PRIVATE)
             .getString("role", "child");
+        String[] safeTokens = preferFreshSessionTokens(accessToken, refreshToken, sessionNonce);
         Intent intent = new Intent(getContext(), LocationService.class);
         intent.putExtra("userId", userId);
         intent.putExtra("familyId", familyId);
         intent.putExtra("supabaseUrl", supabaseUrl);
         intent.putExtra("supabaseKey", supabaseKey);
-        intent.putExtra("accessToken", accessToken);
-        intent.putExtra("refreshToken", refreshToken);
+        intent.putExtra("accessToken", safeTokens[0]);
+        intent.putExtra("refreshToken", safeTokens[1]);
+        intent.putExtra("sessionNonce", sessionNonce);
         intent.putExtra("role", role);
         intent.putExtra("intervalMode", normalizeIntervalMode(intervalMode));
 
@@ -203,17 +237,28 @@ public class LocationPlugin extends Plugin {
         Log.i(TAG, "Location service launched");
     }
 
-    private void launchRefresh(String userId, String familyId, String supabaseUrl, String supabaseKey, String accessToken, String refreshToken, String intervalMode) {
+    private void launchRefresh(
+        String userId,
+        String familyId,
+        String supabaseUrl,
+        String supabaseKey,
+        String accessToken,
+        String refreshToken,
+        String sessionNonce,
+        String intervalMode
+    ) {
         String role = getContext().getSharedPreferences("hyeni_location_prefs", android.content.Context.MODE_PRIVATE)
             .getString("role", "child");
+        String[] safeTokens = preferFreshSessionTokens(accessToken, refreshToken, sessionNonce);
         Intent intent = new Intent(getContext(), LocationService.class);
         intent.setAction(LocationService.ACTION_REFRESH_NOW);
         intent.putExtra("userId", userId);
         intent.putExtra("familyId", familyId);
         intent.putExtra("supabaseUrl", supabaseUrl);
         intent.putExtra("supabaseKey", supabaseKey);
-        intent.putExtra("accessToken", accessToken);
-        intent.putExtra("refreshToken", refreshToken);
+        intent.putExtra("accessToken", safeTokens[0]);
+        intent.putExtra("refreshToken", safeTokens[1]);
+        intent.putExtra("sessionNonce", sessionNonce);
         intent.putExtra("role", role);
         intent.putExtra("intervalMode", normalizeIntervalMode(intervalMode));
 
@@ -291,11 +336,10 @@ public class LocationPlugin extends Plugin {
     public void stopService(PluginCall call) {
         boolean clearSession = Boolean.TRUE.equals(call.getBoolean("clearSession"));
         if (clearSession) {
-            getContext().getSharedPreferences("hyeni_location_prefs", android.content.Context.MODE_PRIVATE)
-                .edit()
-                .remove("accessToken")
-                .remove("refreshToken")
-                .apply();
+            SessionTokenStore.clear(
+                getContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                call.getString("sessionNonce", "")
+            );
         }
         Intent intent = new Intent(getContext(), LocationService.class);
         intent.setAction("STOP");
@@ -311,17 +355,21 @@ public class LocationPlugin extends Plugin {
             return;
         }
         String newRefresh = call.getString("refreshToken");
-        // Write to SharedPreferences so LocationService picks it up on next refresh cycle.
-        // refreshToken 도 함께 써서 네이티브 자체 갱신 경로(networkRefreshAccessToken)와
-        // 포그라운드 WebView 갱신을 동기화한다.
-        android.content.SharedPreferences.Editor ed = getContext()
-            .getSharedPreferences("hyeni_location_prefs", android.content.Context.MODE_PRIVATE)
-            .edit()
-            .putString("accessToken", newToken);
-        if (newRefresh != null && !newRefresh.isEmpty()) {
-            ed.putString("refreshToken", newRefresh);
+        String sessionNonce = call.getString("sessionNonce", "");
+        boolean authoritative = Boolean.TRUE.equals(call.getBoolean("authoritative"));
+        SharedPreferences prefs = getContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SessionTokenStore.Snapshot session = SessionTokenStore.reconcile(
+            prefs,
+            newToken,
+            newRefresh,
+            authoritative,
+            sessionNonce
+        );
+        if (!session.acceptedIncoming) {
+            Log.w(TAG, "Ignored stale WebView updateToken; keeping newer native session");
+            call.resolve(new JSObject().put("status", "ignored_stale"));
+            return;
         }
-        ed.apply();
         Log.i(TAG, "Access token updated via bridge");
         call.resolve(new JSObject().put("status", "updated"));
     }
@@ -333,9 +381,10 @@ public class LocationPlugin extends Plugin {
     public void getSessionTokens(PluginCall call) {
         android.content.SharedPreferences prefs = getContext()
             .getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE);
+        SessionTokenStore.Snapshot session = SessionTokenStore.read(prefs);
         JSObject result = new JSObject();
-        result.put("accessToken", prefs.getString("accessToken", ""));
-        result.put("refreshToken", prefs.getString("refreshToken", ""));
+        result.put("accessToken", session.accessToken);
+        result.put("refreshToken", session.refreshToken);
         result.put("serviceEnabled", prefs.getBoolean("serviceEnabled", false));
         call.resolve(result);
     }
@@ -379,27 +428,31 @@ public class LocationPlugin extends Plugin {
         String supabaseKey = call.getString("supabaseKey");
         String accessToken = call.getString("accessToken", "");
         String refreshToken = call.getString("refreshToken", "");
+        String sessionNonce = call.getString("sessionNonce", "");
 
         if (userId == null || familyId == null || supabaseUrl == null || supabaseKey == null) {
             call.reject("userId, familyId, supabaseUrl, supabaseKey are required");
             return;
         }
 
-        android.content.SharedPreferences.Editor ed = getContext()
-            .getSharedPreferences("hyeni_location_prefs", android.content.Context.MODE_PRIVATE)
-            .edit()
+        SharedPreferences prefs = getContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences.Editor ed = prefs.edit()
             .putString("userId", userId)
             .putString("familyId", familyId)
             .putString("role", role)
             .putString("supabaseUrl", supabaseUrl)
             .putString("supabaseKey", supabaseKey);
-        if (accessToken != null && !accessToken.isEmpty()) {
-            ed.putString("accessToken", accessToken);
-        }
-        if (refreshToken != null && !refreshToken.isEmpty()) {
-            ed.putString("refreshToken", refreshToken);
-        }
         ed.apply();
+        SessionTokenStore.Snapshot session = SessionTokenStore.reconcile(
+            prefs,
+            accessToken,
+            refreshToken,
+            false,
+            sessionNonce
+        );
+        if (!session.acceptedIncoming && accessToken != null && !accessToken.isEmpty()) {
+            Log.w(TAG, "Ignored stale WebView push context tokens; keeping newer native session");
+        }
 
         Log.i(TAG, "Push context saved for user=" + userId + ", family=" + familyId);
         syncCachedFcmToken();
@@ -431,17 +484,17 @@ public class LocationPlugin extends Plugin {
 
     @PluginMethod
     public void clearPushContext(PluginCall call) {
-        getContext()
-            .getSharedPreferences("hyeni_location_prefs", android.content.Context.MODE_PRIVATE)
+        SharedPreferences prefs = getContext()
+            .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        prefs
             .edit()
             .remove("userId")
             .remove("familyId")
             .remove("role")
             .remove("supabaseUrl")
             .remove("supabaseKey")
-            .remove("accessToken")
-            .remove("refreshToken")
             .apply();
+        SessionTokenStore.clear(prefs, "");
         Log.i(TAG, "Push context cleared");
         call.resolve(new JSObject().put("status", "cleared"));
     }

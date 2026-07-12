@@ -58,10 +58,31 @@
   낙오한 홀더가 폐기 토큰을 들고 남아 401 → `stopForInvalidSession` → **아이 위치가 조용히 멈춘다**
   (혜니 89분 중단). 서버 수정: 기기 바인딩(device_id) 게이트를 통과한 뒤라면 같은 기기의 폐기 토큰은
   도난이 아니라 "뒤처진 홀더"이므로 `rotated_to` 체인을 따라가 live 토큰으로 재동기화한다
-  (`findLiveTokenInChain`, MAX_CHAIN_HOPS=20, 순환 방어). 레거시(device_id NULL)는 60초 유예+1단계 유지.
+  (`findLiveTokenInChain`, 현재 재귀 CTE MAX_CHAIN_HOPS=2048, depth 순환 방어). 레거시(device_id NULL)는
+  60초 유예+1단계 유지.
   **앱 재빌드 없이 서버만으로 복구**되므로 미연결 기기도 다음 회전 때 자동 정상화된다.
-  진단: `prefs.refreshToken` 앞 8자를 D1 `refresh_tokens` 와 대조 → revoked=1이면 이 사고.
-  logcat 태그 `LocationService` 의 `Token network-refresh failed: HTTP 401` / `invalid session`.
+  진단: refresh 원문·접두·해시는 읽거나 출력하지 말고, 기기 JWT의 `sub/iat/exp`와 D1의 user/device별
+  `issued_at/revoked/rotated_at/has_successor` 메타만 대조한다. logcat 태그 `LocationService` 의
+  `Token network-refresh failed: HTTP 401` / `invalid session`도 함께 본다.
+- ★장기 refresh 체인 + resume downgrade → 아이 QR 재인증(2026-07-12 실사고): razr device-bound refresh가
+  2.5일에 88행 누적됐지만 Worker `MAX_CHAIN_HOPS=20`이라, live 토큰이 남아도 오래된 holder는 401이 됐다.
+  앱 resume의 `setPushContext`, 부팅 `syncNativeLocationToken`, 60초 `startService`가 native-first 조정 없이 WebView
+  access/refresh를 prefs에 써 더 최신 native holder도 되돌릴 수 있었고, client가 refresh 401을 `clearApiSession()`으로
+  확대해 WebView는 anonymous(16:18:46)·QR pairing, native는 기존 child지만 expired access 상태로 갈라졌다.
+  다중 방어: ①모든 Web→native write 전에 `adoptNativeLocationSessionTokens()` + 복구 single-flight ②Android
+  `SessionTokenFreshness`가 같은 sub의 더 낮은 `iat` write를 거부하고, 동일 초 예외는 방금 검증한 서버 refresh 응답에만
+  허용. native direct adoption은 `setApiTokens`만 써 `/family/mine`으로 보정된 user family/role을 보존 ③Android 토큰
+  비교·pair 저장을 `SessionTokenStore` synchronized reconcile로 원자화하고 `LocationService`의 지연 Intent도
+  실제 반영 시 재검증. clear generation이 바뀌면 진행 중 refresh 응답도 저장 거부 ④Worker는 같은-device 최신 행 점프(별도 로그인
+  체인 부활 위험) 대신 `rotated_to` 인과 체인을 재귀 CTE 2048-hop으로 추적 ⑤refresh 성공 뒤 endpoint 401은 세션 clear
+  금지·native device id 일시 누락은 retryable error ⑥복구 실패 뒤 생긴 **가족 미연결 anonymous**만 기존 native child
+  context의 `/auth/refresh` 검증으로 교체(정상 가족 세션은 불가). 온보딩도 복구 await 뒤 `deriveAuthState()`를 재확인해야
+  anonymousLogin TOCTOU가 없다. 가드=`nativeSessionResumeSafety`·`nativeTokenSync`·Android
+  `SessionTokenFreshnessTest`·Worker `refreshChainResync`.
+  Worker 체인 추적 전에 제시 토큰의 `expires_at`을 먼저 검사해, 만료 토큰+device id가 후속 live 체인으로 복귀하지 못하게 한다.
+  명시적 로그아웃은 Web 로그인 단위 `session_instance_id`를 Android 최근 16개 bounded nonce tombstone으로 넘긴다. 로그아웃 전
+  시작된 지연 start/push/update writer는 같은 nonce라 거부되고 새 로그인 nonce만 tombstone을 해제한다. Web refresh 응답도
+  요청 전후 nonce 불일치 시 적용하지 않는다(로그아웃·계정전환 뒤 세션 부활 방지).
 - ★온보딩 세션 파괴 금지(2026-07-10 실사고): `/onboarding`은 세션을 새로 만드는 화면이라
   인증된 사용자가 도달하면 딥링크 한 번으로 로그아웃된다. 실제로 `#/onboarding?pair=CODE` 재진입 시
   `resolveAuthenticatedOnboardingRedirect`가 `hasPairParam`이면 리다이렉트를 포기했고, 그 자리에서

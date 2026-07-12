@@ -279,14 +279,21 @@ public class LocationService extends Service {
                 supabaseUrl = intent.getStringExtra("supabaseUrl");
                 supabaseKey = intent.getStringExtra("supabaseKey");
                 String intentAccess = intent.getStringExtra("accessToken");
-                if (intentAccess != null && !intentAccess.isEmpty()) {
-                    accessToken = intentAccess;
-                } else {
-                    accessToken = prefs.getString("accessToken", null);
-                }
                 String intentRefresh = intent.getStringExtra("refreshToken");
-                if (intentRefresh != null && !intentRefresh.isEmpty()) refreshToken = intentRefresh;
-                else refreshToken = prefs.getString("refreshToken", null);
+                String intentSessionNonce = intent.getStringExtra("sessionNonce");
+                // Intent 생성 뒤 도착하기 전 네이티브 refresh가 회전할 수 있다. 실제 반영 순간
+                // prefs를 다시 읽고 비교한 뒤, 토큰 쌍과 서비스 메모리를 같은 lock에서 갱신한다.
+                synchronized (SessionTokenStore.class) {
+                    SessionTokenStore.Snapshot session = SessionTokenStore.reconcile(
+                        prefs,
+                        intentAccess,
+                        intentRefresh,
+                        false,
+                        intentSessionNonce
+                    );
+                    accessToken = session.accessToken;
+                    refreshToken = session.refreshToken;
+                }
                 String role = intent.getStringExtra("role");
                 String intervalMode = intent.getStringExtra("intervalMode");
 
@@ -300,8 +307,6 @@ public class LocationService extends Service {
                     .putString("supabaseKey", supabaseKey)
                     .putBoolean("serviceEnabled", true)
                     .remove("kakaoRestKey");
-                if (accessToken != null && !accessToken.isEmpty()) editor.putString("accessToken", accessToken);
-                if (refreshToken != null && !refreshToken.isEmpty()) editor.putString("refreshToken", refreshToken);
                 if (role != null) editor.putString("role", role);
                 if (intervalMode != null) editor.putString(PREF_LOCATION_INTERVAL_MODE, normalizeLocationIntervalMode(intervalMode));
                 editor.apply();
@@ -324,8 +329,11 @@ public class LocationService extends Service {
             familyId = prefs.getString("familyId", null);
             supabaseUrl = prefs.getString("supabaseUrl", null);
             supabaseKey = prefs.getString("supabaseKey", null);
-            accessToken = prefs.getString("accessToken", null);
-            refreshToken = prefs.getString("refreshToken", null);
+            synchronized (SessionTokenStore.class) {
+                SessionTokenStore.Snapshot session = SessionTokenStore.read(prefs);
+                accessToken = session.accessToken;
+                refreshToken = session.refreshToken;
+            }
             // Drop legacy kakaoRestKey from older installs (best-effort
             // cleanup; new installs never write it).
             if (prefs.contains("kakaoRestKey")) {
@@ -989,12 +997,14 @@ public class LocationService extends Service {
             SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
             // 0) 포그라운드에선 WebView 가 갱신 후 updateToken 으로 prefs 에 새 토큰을 써둘 수 있다.
             //    회전 경쟁을 피하려고, 네트워크 갱신 전에 prefs 의 더 새 토큰을 먼저 채택한다.
-            String prefAccess = prefs.getString("accessToken", null);
-            String prefRefresh = prefs.getString("refreshToken", null);
-            if (prefAccess != null && !prefAccess.isEmpty() && !prefAccess.equals(failedToken)) {
-                accessToken = prefAccess;
-                if (prefRefresh != null && !prefRefresh.isEmpty()) refreshToken = prefRefresh;
-                return prefAccess;
+            synchronized (SessionTokenStore.class) {
+                SessionTokenStore.Snapshot beforeRefresh = SessionTokenStore.read(prefs);
+                String prefAccess = beforeRefresh.accessToken;
+                if (!prefAccess.isEmpty() && !prefAccess.equals(failedToken)) {
+                    accessToken = prefAccess;
+                    if (!beforeRefresh.refreshToken.isEmpty()) refreshToken = beforeRefresh.refreshToken;
+                    return prefAccess;
+                }
             }
             // 직전 5초 내 이미 네트워크 갱신했다면(다른 요청이 막 갱신) 현재 토큰을 재사용.
             long sinceLast = System.currentTimeMillis() - lastNetworkRefreshAtMs;
@@ -1007,6 +1017,9 @@ public class LocationService extends Service {
                 return null;
             }
             if (isBlank(supabaseUrl)) return null;
+            final long refreshGeneration = SessionTokenStore.generation();
+            SessionTokenStore.Snapshot refreshStart = SessionTokenStore.read(prefs);
+            if (refreshStart.accessToken.isEmpty() && refreshStart.refreshToken.isEmpty()) return null;
             try {
                 String url = supabaseUrl.replaceAll("/+$", "") + "/auth/refresh";
                 JSONObject reqBody = new JSONObject();
@@ -1029,13 +1042,17 @@ public class LocationService extends Service {
                     Log.w(TAG, "Token network-refresh failed: HTTP " + code);
                     // 회전 경쟁(WebView 가 동시에 refresh token 을 회전)으로 실패했을 수 있다.
                     // WebView 가 갱신 직후 updateToken 으로 prefs 에 새 토큰을 써뒀는지 재확인.
-                    String afterAccess = prefs.getString("accessToken", null);
-                    String afterRefresh = prefs.getString("refreshToken", null);
-                    if (afterAccess != null && !afterAccess.isEmpty() && !afterAccess.equals(failedToken)) {
-                        accessToken = afterAccess;
-                        if (afterRefresh != null && !afterRefresh.isEmpty()) refreshToken = afterRefresh;
-                        Log.i(TAG, "Adopted WebView-refreshed token from prefs after refresh race");
-                        return afterAccess;
+                    synchronized (SessionTokenStore.class) {
+                        SessionTokenStore.Snapshot afterRefreshAttempt = SessionTokenStore.read(prefs);
+                        String afterAccess = afterRefreshAttempt.accessToken;
+                        if (!afterAccess.isEmpty() && !afterAccess.equals(failedToken)) {
+                            accessToken = afterAccess;
+                            if (!afterRefreshAttempt.refreshToken.isEmpty()) {
+                                refreshToken = afterRefreshAttempt.refreshToken;
+                            }
+                            Log.i(TAG, "Adopted WebView-refreshed token from prefs after refresh race");
+                            return afterAccess;
+                        }
                     }
                     if (code == 401 || code == 403) {
                         stopForInvalidSession("refresh_http_" + code);
@@ -1047,15 +1064,24 @@ public class LocationService extends Service {
                 String newAccess = session.optString("access_token", "");
                 String newRefresh = session.optString("refresh_token", "");
                 if (newAccess.isEmpty()) return null;
-                accessToken = newAccess;
-                if (!newRefresh.isEmpty()) refreshToken = newRefresh;
+                synchronized (SessionTokenStore.class) {
+                    SessionTokenStore.Snapshot storedSession = SessionTokenStore.reconcileIfGeneration(
+                        prefs,
+                        newAccess,
+                        newRefresh,
+                        true,
+                        refreshGeneration
+                    );
+                    if (storedSession == null) {
+                        Log.i(TAG, "Ignored network refresh response after explicit session clear");
+                        return null;
+                    }
+                    accessToken = storedSession.accessToken;
+                    refreshToken = storedSession.refreshToken;
+                }
                 lastNetworkRefreshAtMs = System.currentTimeMillis();
-                SharedPreferences.Editor ed = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
-                    .putString("accessToken", newAccess);
-                if (!newRefresh.isEmpty()) ed.putString("refreshToken", newRefresh);
-                ed.apply();
                 Log.i(TAG, "Access token network-refreshed via /auth/refresh");
-                return newAccess;
+                return accessToken;
             } catch (Exception e) {
                 Log.w(TAG, "Token network-refresh error: " + e.getMessage());
                 return null;

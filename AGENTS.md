@@ -91,6 +91,25 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   push context에 userId/familyId/role+refresh가 남은 경우 앱이 1회 `/auth/refresh`로 복구하되,
   응답 userId/familyId/role이 context와 일치할 때만 저장한다. 실기기 검증 스크립트에서 refresh 토큰 값을 출력하거나
   임의 회전시키지 않는다.
+- **장기 refresh 체인·resume 무손실 복구(2026-07-12 실사고)**: razr 한 기기에서 2.5일 동안 device-bound
+  refresh 행이 88개 누적됐는데 Worker가 폐기 토큰을 20-hop만 추적해, 오래된 holder는 유효한 live 토큰이 남아 있어도
+  401을 받았다. 동시에 앱 resume/push/startService가 WebView 토큰을 최신성 비교 없이 네이티브 prefs에 써서 복구본까지
+  오래된 값으로 되돌릴 수 있었다. 모든 Web→native write는 반드시 `adoptNativeLocationSessionTokens()`를 먼저 거치고,
+  복구는 single-flight로 실행한다. Android `SessionTokenFreshness`도 같은 사용자의 더 오래된 `iat` write를 거부하고,
+  동일 초의 서로 다른 토큰은 서버 refresh 응답임이 명시된 경로에서만 수용한다. 동일 사용자 native 토큰 직접 채택 시
+  `setApiTokens`만 사용해 `/api/family/mine`으로 보정된 WebView user의 familyId/role 정본을 보존한다.
+  Android의 access/refresh 비교·저장은 반드시 `SessionTokenStore`의 synchronized reconcile을 거치며,
+  `LocationService.onStartCommand`도 지연 도착한 Intent를 저장 직전에 다시 검증한다(비교-저장 TOCTOU 금지).
+  명시적 로그아웃은 store generation을 올려 진행 중이던 native refresh 응답의 세션 부활을 막는다. Worker 체인 복구도
+  제시한 refresh 토큰 자체의 30일 만료를 먼저 검사하며, 만료 토큰을 후속 live 체인으로 되살리지 않는다.
+  로그인 1회마다 WebView `session_instance_id`를 유지하고 Android는 최근 로그아웃 `sessionNonce` 16개를 bounded tombstone으로 저장한다.
+  따라서 로그아웃 전에 시작돼 늦게 도착한 startService/setPushContext/updateToken은 거부되고, 새 로그인 nonce만 다시 활성화된다.
+  Web `/auth/refresh`도 요청 전후 nonce가 달라지면 응답을 폐기한다.
+  Worker는 보안상 "같은 기기의 최신 live 행"으로 점프하지 않고 `rotated_to` 인과 체인을 재귀 CTE로 최대 2048-hop 추적한다.
+  refresh 성공 뒤 개별 API 401은 전체 세션을 삭제하지 않으며, 네이티브 device id 일시 조회 실패도 rejected가 아니라
+  재시도 가능한 error로 남긴다. 실패 뒤 생성된 **가족 미연결 anonymous QR 세션만** 기존 native child context의 서버 검증
+  복구로 교체할 수 있고, 정상 가족 세션은 절대 덮지 않는다. 회귀 테스트=`tests/nativeSessionResumeSafety.test.mjs`·
+  `tests/nativeTokenSync.test.ts`·Android `SessionTokenFreshnessTest`·Worker `refreshChainResync.test.mjs`.
 - **세션 family id 정본(2026-07-08)**: access token claim의 `family_id`가 과거 가족 값으로 남을 수 있다.
   `/api/family/mine` 응답이 현재 가족 정본이므로, 가족 조회 성공 시 `hyeni-api-session-v1.user.family_id`와
   role을 `/mine` 기준으로 보정해야 한다. 실기기 검증도 token payload만 보지 말고 localStorage user와 `/mine`

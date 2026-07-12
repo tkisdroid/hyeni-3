@@ -22,7 +22,13 @@
  */
 import { getNativePlugin, isNativePlatform, getPlatform } from "./plugins";
 import { apiPost } from "@/lib/api/client";
-import { getApiAccessToken, getApiRefreshToken, getNativeBackendUrl } from "@/lib/api/session";
+import {
+  getApiAccessToken,
+  getApiRefreshToken,
+  getApiSessionInstanceId,
+  getNativeBackendUrl,
+} from "@/lib/api/session";
+import { adoptNativeLocationSessionTokens } from "@/lib/native/location";
 
 // 커스텀 플러그인 이름(android MainActivity registerPlugin 과 일치).
 const NOTIFICATION_PLUGIN = "NativeNotification"; // 권한(POST_NOTIFICATIONS)
@@ -42,6 +48,7 @@ interface PushContextOptions {
   supabaseKey: string;
   accessToken: string;
   refreshToken: string;
+  sessionNonce: string;
 }
 
 /** `BackgroundLocation` 중 이 브리지가 쓰는 FCM 관련 메서드만(위치 메서드는 native/location.ts). */
@@ -104,6 +111,9 @@ async function requestNotificationPermission(): Promise<boolean> {
  *   짧게 재시도해, SharedPreferences 에 context 가 확실히 저장되도록 한다.
  */
 async function setNativePushContext(params: InitPushParams, retries = 6): Promise<void> {
+  // 앱 resume 동안 네이티브 위치 서비스가 WebView보다 최신 refresh를 가질 수 있다.
+  // push context가 토큰도 함께 저장하므로 native-first 조정 없이 쓰면 최신 체인을 잃는다.
+  await adoptNativeLocationSessionTokens();
   const plugin = getNativePlugin<BackgroundLocationFcm>(LOCATION_PLUGIN);
   if (!plugin || typeof plugin.setPushContext !== "function") {
     // 플러그인 미준비 — 잠시 후 재시도(콜드스타트 초기 레이스 완화).
@@ -125,6 +135,7 @@ async function setNativePushContext(params: InitPushParams, retries = 6): Promis
       supabaseKey: "worker",
       accessToken: getApiAccessToken() ?? "",
       refreshToken: getApiRefreshToken() ?? "",
+      sessionNonce: getApiSessionInstanceId() ?? "",
     });
   } catch (error) {
     console.error("[push] push context 설정 실패:", error);

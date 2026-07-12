@@ -9,10 +9,12 @@
 import { API_BASE } from "@/config/env";
 import { adoptNativeLocationSessionTokens, syncNativeLocationToken } from "@/lib/native/location";
 import { getAuthDeviceInstallId } from "@/lib/native/deviceIdentity";
+import { isNativePlatform } from "@/lib/native/plugins";
 import { ApiError } from "./errors";
 import {
   getApiAccessToken,
   getApiRefreshToken,
+  getApiSessionInstanceId,
   setApiTokens,
   setApiUser,
   userFromAccessToken,
@@ -60,10 +62,14 @@ function refreshAccess(): Promise<RefreshResult> {
 async function doRefreshAccess(): Promise<RefreshResult> {
   await adoptNativeLocationSessionTokens();
   const refreshToken = getApiRefreshToken();
+  const refreshSessionNonce = getApiSessionInstanceId();
   if (!refreshToken) return "rejected"; // 회전 불가 → 세션 무효
   try {
     // 기기 바인딩 회전 — 스탬핑된 체인은 같은 deviceInstallId 를 제시해야 회전된다.
     const deviceInstallId = await getAuthDeviceInstallId().catch(() => null);
+    // 네이티브 bridge가 아직 준비되지 않은 순간 ID 없이 요청하면 device-bound 체인이 401을
+    // 반환한다. 이를 세션 철회로 오판해 로그아웃하지 말고 다음 요청에서 다시 시도한다.
+    if (isNativePlatform() && !deviceInstallId) return "error";
     const res = await doFetch("/auth/refresh", {
       method: "POST",
       body: JSON.stringify({
@@ -71,6 +77,9 @@ async function doRefreshAccess(): Promise<RefreshResult> {
         ...(deviceInstallId ? { device_install_id: deviceInstallId } : {}),
       }),
     });
+    // 요청 중 명시적 로그아웃 또는 다른 계정 로그인이 일어나면, 늦은 응답으로
+    // WebView·native 세션을 되살리거나 새 사용자를 덮지 않는다.
+    if (getApiSessionInstanceId() !== refreshSessionNonce) return "error";
     if (res.status === 401 || res.status === 403) return "rejected"; // refresh 토큰 만료/철회
     if (!res.ok) return "error"; // 5xx 등 일시 오류 — 세션 유지
     const data = (await res.json()) as RefreshResponse;
@@ -79,8 +88,10 @@ async function doRefreshAccess(): Promise<RefreshResult> {
     setApiTokens({ access: nextAccess, refresh: nextRefresh });
     const nextUser = data.session?.user ?? data.user ?? userFromAccessToken(nextAccess);
     setApiUser(nextUser);
+    // 이 응답이 서버에서 방금 검증·발급된 정본이다. 먼저 네이티브에 확정해야
+    // 동기 구독자가 이전 네이티브 holder를 다시 채택하는 경합이 생기지 않는다.
+    await syncNativeLocationToken({ nativeFirst: false, authoritativeServerRefresh: true });
     notifyTokens();
-    void syncNativeLocationToken();
     return "ok";
   } catch {
     return "error"; // 네트워크 오류 — 일시적, 세션 유지
@@ -101,8 +112,8 @@ export async function apiRequest<T = unknown>(
     const result = await refreshAccess();
     if (result === "ok") {
       res = await doFetch(path, opts);
-      // 회전 후에도 401 → 세션이 무효(철회 등). clear 로 재인증 유도.
-      if (res.status === 401) clearApiSession();
+      // refresh 자체가 성공했다면 세션은 유효하다. 개별 endpoint의 후속 401까지 전역
+      // 로그아웃으로 확대하지 않고 ApiError로 표면화해 해당 요청만 실패시킨다.
     } else if (result === "rejected") {
       // refresh 토큰 자체가 만료/철회/부재 → 세션 clear(notifyTokens 로 AuthProvider 재동기화).
       // 만료 사용자가 authenticated 로 남아 401 도배 홈에 갇히는 것 방지. 가드가 /onboarding 으로.

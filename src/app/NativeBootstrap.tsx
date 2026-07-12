@@ -39,6 +39,7 @@ export function NativeBootstrap() {
     if (!isNativePlatform()) return;
     if (status === "authenticated" && familyId && userId) {
       void (async () => {
+        if (await adoptNativeLocationSessionTokens()) syncFromSession();
         await syncNativeLocationToken();
         await initPush({ userId, familyId, role: role ?? undefined });
       })();
@@ -72,6 +73,7 @@ export function NativeBootstrap() {
     const syncPrefsAndService = () => {
       void (async () => {
         try {
+          if (await adoptNativeLocationSessionTokens()) syncFromSession();
           const prefs = await fetchLocationPreferences(familyId);
           if (cancelled) return;
           if (!prefs.background_enabled) {

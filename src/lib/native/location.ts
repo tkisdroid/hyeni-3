@@ -17,6 +17,7 @@ import { getNativePlugin, isNativePlatform } from "./plugins";
 import {
   getApiAccessToken,
   getApiRefreshToken,
+  getApiSessionInstanceId,
   getNativeBackendUrl,
   notifyTokens,
   setApiTokens,
@@ -41,6 +42,7 @@ interface StartServiceOptions {
   supabaseKey: string;
   accessToken: string;
   refreshToken: string;
+  sessionNonce: string;
   role: LocationRole;
   intervalMode: LocationIntervalMode;
 }
@@ -49,8 +51,13 @@ interface StartServiceOptions {
 interface BackgroundLocationPlugin {
   startService(options: StartServiceOptions): Promise<{ status?: string }>;
   requestCurrentLocation(options: StartServiceOptions): Promise<{ status?: string }>;
-  stopService(options?: { clearSession?: boolean }): Promise<{ status?: string }>;
-  updateToken(options: { accessToken: string; refreshToken?: string }): Promise<{ status?: string }>;
+  stopService(options?: { clearSession?: boolean; sessionNonce?: string }): Promise<{ status?: string }>;
+  updateToken(options: {
+    accessToken: string;
+    refreshToken?: string;
+    authoritative?: boolean;
+    sessionNonce?: string;
+  }): Promise<{ status?: string }>;
   getSessionTokens?(): Promise<{ accessToken?: string; refreshToken?: string; serviceEnabled?: boolean }>;
   getPushContext?(): Promise<{ userId?: string; familyId?: string; role?: string; deviceInstallId?: string }>;
 }
@@ -75,6 +82,7 @@ function buildServiceOptions(ctx: LocationTrackingContext): StartServiceOptions 
     supabaseKey: "worker",
     accessToken: getApiAccessToken() ?? "",
     refreshToken: getApiRefreshToken() ?? "",
+    sessionNonce: getApiSessionInstanceId() ?? "",
     role: ctx.role ?? "child",
     intervalMode: ctx.intervalMode ?? "balanced",
   };
@@ -90,6 +98,9 @@ export async function startLocationTracking(ctx: LocationTrackingContext): Promi
   if (!plugin) return false; // 웹(PWA)·iOS = no-op
   if (!ctx.familyId || !ctx.userId) return false; // 세션 미확정 시 시작 금지
   try {
+    // 백그라운드 네이티브가 더 최신 refresh 를 갖고 있을 수 있다. WebView 값을 Intent 에
+    // 싣기 전에 먼저 채택해야 오래된 토큰으로 네이티브 저장소를 되돌리지 않는다.
+    await adoptNativeLocationSessionTokens();
     await plugin.startService(buildServiceOptions(ctx));
     return true;
   } catch (error) {
@@ -106,7 +117,10 @@ export async function stopLocationTracking(options: { clearSession?: boolean } =
   const plugin = getNativePlugin<BackgroundLocationPlugin>(PLUGIN_NAME);
   if (!plugin) return false;
   try {
-    await plugin.stopService({ clearSession: options.clearSession === true });
+    await plugin.stopService({
+      clearSession: options.clearSession === true,
+      sessionNonce: getApiSessionInstanceId() ?? "",
+    });
     return true;
   } catch (error) {
     console.error("[location] 백그라운드 위치 서비스 중지 실패:", error);
@@ -123,6 +137,7 @@ export async function requestImmediateLocation(ctx: LocationTrackingContext): Pr
   if (!plugin) return false;
   if (!ctx.familyId || !ctx.userId) return false;
   try {
+    await adoptNativeLocationSessionTokens();
     await plugin.requestCurrentLocation(buildServiceOptions(ctx));
     return true;
   } catch (error) {
@@ -136,9 +151,23 @@ export async function requestImmediateLocation(ctx: LocationTrackingContext): Pr
  * (네이티브 백그라운드가 stale 토큰으로 upsert 401 나는 것을 막는다.)
  * App 이 토큰 변경 구독(setOnApiTokensChanged)에서 호출하면 좋다. 웹/iOS 에선 no-op.
  */
-export async function syncNativeLocationToken(): Promise<void> {
+export interface NativeLocationTokenSyncOptions {
+  nativeFirst?: boolean;
+  /** 서버 /auth/refresh 응답을 방금 검증한 호출만 true. 동일 iat 예외를 이 경로로 한정한다. */
+  authoritativeServerRefresh?: boolean;
+}
+
+export async function syncNativeLocationToken(
+  {
+    nativeFirst = true,
+    authoritativeServerRefresh = false,
+  }: NativeLocationTokenSyncOptions = {},
+): Promise<void> {
   const plugin = getNativePlugin<BackgroundLocationPlugin>(PLUGIN_NAME);
   if (!plugin) return;
+  // native-first: resume 시 WebView 토큰이 오래됐으면 쓰지 않고 네이티브 최신 세션을 채택한다.
+  // 채택/복구 성공 시 네이티브에는 이미 같은 토큰이 있으므로 추가 write 가 필요 없다.
+  if (nativeFirst && (await adoptNativeLocationSessionTokens())) return;
   const accessToken = getApiAccessToken();
   if (!accessToken) return;
   // ★익명 세션 토큰은 네이티브에 쓰지 않는다. 쓰면 백그라운드 위치가 401 나고,
@@ -157,6 +186,8 @@ export async function syncNativeLocationToken(): Promise<void> {
     await plugin.updateToken({
       accessToken,
       refreshToken: getApiRefreshToken() ?? undefined,
+      authoritative: authoritativeServerRefresh,
+      sessionNonce: getApiSessionInstanceId() ?? "",
     });
   } catch (error) {
     console.error("[location] 네이티브 토큰 동기화 실패:", error);
@@ -199,7 +230,12 @@ async function restoreNativeRefreshOnlySession(
     setApiTokens({ access: nextAccess, refresh: nextRefresh });
     setApiUser(nextUser);
     notifyTokens();
-    await plugin.updateToken({ accessToken: nextAccess, refreshToken: nextRefresh });
+    await plugin.updateToken({
+      accessToken: nextAccess,
+      refreshToken: nextRefresh,
+      authoritative: true,
+      sessionNonce: getApiSessionInstanceId() ?? "",
+    });
     return true;
   } catch (error) {
     console.error("[location] 네이티브 refresh-only 세션 복구 실패:", error);
@@ -212,7 +248,9 @@ async function restoreNativeRefreshOnlySession(
  * refresh token 이 낡아져 다음 API 401 때 로그아웃될 수 있다. refresh 직전 네이티브가 가진
  * 최신 토큰을 보수적으로 채택해 저장소 불일치를 복구한다.
  */
-export async function adoptNativeLocationSessionTokens(): Promise<boolean> {
+let nativeSessionAdoptionInFlight: Promise<boolean> | null = null;
+
+async function doAdoptNativeLocationSessionTokens(): Promise<boolean> {
   const plugin = getNativePlugin<BackgroundLocationPlugin>(PLUGIN_NAME);
   if (!plugin || typeof plugin.getSessionTokens !== "function") return false;
   try {
@@ -233,10 +271,10 @@ export async function adoptNativeLocationSessionTokens(): Promise<boolean> {
         nativeServiceEnabled,
       })
     ) {
-      const nativeUser = userFromAccessToken(nativeAccess);
-      if (!nativeUser) return false;
+      // shouldAdoptNativeSessionTokens가 같은 sub의 더 최신 JWT임을 이미 확인했다.
+      // setApiTokens는 기존 user를 유지하며 claim을 보강하므로 /family/mine으로 보정된
+      // family_id·role 정본을 오래된 access claim으로 되돌리지 않는다.
       setApiTokens({ access: nativeAccess, refresh: nativeRefresh });
-      setApiUser(nativeUser);
       notifyTokens();
       return true;
     }
@@ -264,6 +302,18 @@ export async function adoptNativeLocationSessionTokens(): Promise<boolean> {
     console.error("[location] 네이티브 세션 토큰 채택 실패:", error);
     return false;
   }
+}
+
+/**
+ * WebView·NativeBootstrap·온보딩이 동시에 복구를 요청해도 refresh 회전은 한 번만 실행한다.
+ * 같은 Promise 를 공유하지 않으면 응답 역전으로 더 오래된 refresh 가 마지막에 저장될 수 있다.
+ */
+export function adoptNativeLocationSessionTokens(): Promise<boolean> {
+  if (nativeSessionAdoptionInFlight) return nativeSessionAdoptionInFlight;
+  nativeSessionAdoptionInFlight = doAdoptNativeLocationSessionTokens().finally(() => {
+    nativeSessionAdoptionInFlight = null;
+  });
+  return nativeSessionAdoptionInFlight;
 }
 
 /** 이 기기에서 백그라운드 위치 추적이 가능한지(네이티브 + 플러그인 존재). 웹=false. */

@@ -152,6 +152,14 @@ export function Onboarding() {
           syncFromSession();
           if (routeAfterChildSession()) return;
         }
+        // 복구 Promise를 기다리는 동안 NativeBootstrap 등 다른 경로가 세션을 살렸을 수 있다.
+        // 익명 로그인을 만들기 직전에 다시 확인해 정상 child 세션을 덮어쓰지 않는다.
+        const recovered = deriveAuthState();
+        if (recovered.status === "authenticated" && recovered.familyId) {
+          syncFromSession();
+          routeAfterChildSession();
+          return;
+        }
         await anonymousLogin();
         syncFromSession();
         setRole("child");
@@ -223,6 +231,12 @@ export function Onboarding() {
       const hint = await readChildDeviceIdentityHint();
       setChildJoinHint(hint);
       if (await adoptNativeLocationSessionTokens()) {
+        syncFromSession();
+        routeAfterChildSession();
+        return;
+      }
+      const recovered = deriveAuthState();
+      if (recovered.status === "authenticated" && recovered.familyId) {
         syncFromSession();
         routeAfterChildSession();
         return;

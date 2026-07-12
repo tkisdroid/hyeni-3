@@ -8,6 +8,7 @@
  * - family_id·role·is_anonymous 는 access token JWT claim 에서 클라가 직접 디코드한다.
  */
 import { API_BASE } from "@/config/env";
+import { resolveSessionInstanceId } from "@/transform/sessionInstance";
 import { mergeApiUserWithTokenUser } from "@/transform/sessionUserMerge";
 
 export interface ApiUser {
@@ -45,6 +46,7 @@ type PersistedSession = {
   access: string | null;
   refresh: string | null;
   user: ApiUser | null;
+  session_instance_id?: string | null;
 };
 
 type TokensChangedListener = (tokens: { access: string | null; refresh: string | null }) => void;
@@ -54,7 +56,15 @@ const SESSION_KEY = "hyeni-api-session-v1";
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
 let currentUser: ApiUser | null = null;
+let sessionInstanceId: string | null = null;
 let onTokensChanged: TokensChangedListener | null = null;
+
+function createSessionInstanceId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `session-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 
 function readJsonStorage<T>(key: string): T | null {
   try {
@@ -110,6 +120,12 @@ function applyPersistedSession(session: PersistedSession | null): void {
   accessToken = session?.access ?? null;
   refreshToken = session?.refresh ?? null;
   currentUser = mergeApiUserWithAccessToken(session?.user ?? null, accessToken);
+  sessionInstanceId = resolveSessionInstanceId({
+    currentAccessToken: accessToken,
+    nextAccessToken: accessToken,
+    currentInstanceId: session?.session_instance_id ?? null,
+    createInstanceId: createSessionInstanceId,
+  });
 }
 
 // access 가 있으면 {access,refresh,user} 저장, 없으면(로그아웃) 키 제거.
@@ -118,7 +134,12 @@ export function persistSession(): void {
     if (accessToken) {
       localStorage.setItem(
         SESSION_KEY,
-        JSON.stringify({ access: accessToken, refresh: refreshToken, user: currentUser }),
+        JSON.stringify({
+          access: accessToken,
+          refresh: refreshToken,
+          user: currentUser,
+          session_instance_id: sessionInstanceId,
+        }),
       );
     } else {
       localStorage.removeItem(SESSION_KEY);
@@ -136,14 +157,22 @@ function restoreSessionFromStorage(): void {
   const persisted = readJsonStorage<PersistedSession>(SESSION_KEY);
   if (persisted?.access) {
     applyPersistedSession(persisted);
-    if (!persisted.user && currentUser) persistSession();
+    if ((!persisted.user && currentUser) || !persisted.session_instance_id) persistSession();
   }
 }
 
 restoreSessionFromStorage();
 
 export function setApiTokens({ access, refresh }: TokenPair = {}): void {
-  if (access !== undefined) accessToken = access;
+  if (access !== undefined) {
+    sessionInstanceId = resolveSessionInstanceId({
+      currentAccessToken: accessToken,
+      nextAccessToken: access,
+      currentInstanceId: sessionInstanceId,
+      createInstanceId: createSessionInstanceId,
+    });
+    accessToken = access;
+  }
   if (refresh !== undefined) refreshToken = refresh;
   currentUser = mergeApiUserWithAccessToken(currentUser, accessToken);
   // 회전 직후 프로세스가 죽어도 새 refresh 가 살아남게 즉시 영속화
@@ -157,6 +186,10 @@ export function getApiAccessToken(): string | null {
 
 export function getApiRefreshToken(): string | null {
   return refreshToken;
+}
+
+export function getApiSessionInstanceId(): string | null {
+  return sessionInstanceId;
 }
 
 /** 현재 로그인 사용자(서버가 발급한 user 객체). */
@@ -192,6 +225,7 @@ export function clearApiSession(): void {
   accessToken = null;
   refreshToken = null;
   currentUser = null;
+  sessionInstanceId = null;
   notifyTokens();
 }
 
