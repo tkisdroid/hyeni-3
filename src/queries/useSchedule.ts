@@ -22,6 +22,7 @@ import {
   updateEvent,
   deleteEvent,
   saveEventWithChildren,
+  saveEventsWithChildrenBatch,
   decodeSupplyItems,
   encodeSupplyItems,
   parseSupplyRowId,
@@ -48,19 +49,6 @@ function removeCachedEvent(qc: QueryClient, familyId: string | null | undefined,
   qc.setQueryData<CalendarEvent[]>(qk.events(familyId ?? ""), (prev) =>
     prev ? prev.filter((event) => event.id !== eventId) : prev,
   );
-}
-
-async function saveEventsWithChildren(inputs: SaveEventInput[]): Promise<CalendarEvent[]> {
-  if (inputs.length === 0) return [];
-  const results = await Promise.allSettled(inputs.map((input) => saveEventWithChildren(input)));
-  const saved: CalendarEvent[] = [];
-  for (const result of results) {
-    if (result.status === "rejected") {
-      throw result.reason instanceof Error ? result.reason : new Error("일정 저장에 실패했어요");
-    }
-    saved.push(result.value);
-  }
-  return saved;
 }
 
 /** 가족 일정 목록. */
@@ -131,12 +119,12 @@ export function useSaveEventWithChildren() {
   });
 }
 
-/** 반복/AI 일정처럼 여러 행을 저장할 때: 요청은 병렬, 캐시 갱신·재조회는 1회만. */
+/** 반복/AI 일정처럼 여러 행을 저장할 때 서버 원자 배치로 저장하고 캐시를 한 번 갱신한다. */
 export function useSaveEventsWithChildrenBatch() {
   const qc = useQueryClient();
   const { familyId } = useAuth();
   return useMutation({
-    mutationFn: (inputs: SaveEventInput[]) => saveEventsWithChildren(inputs),
+    mutationFn: (inputs: SaveEventInput[]) => saveEventsWithChildrenBatch(inputs),
     onSuccess: (saved) => {
       upsertCachedEvents(qc, familyId, saved);
       void qc.invalidateQueries({ queryKey: qk.events(familyId ?? "") });

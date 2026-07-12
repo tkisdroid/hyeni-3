@@ -43,9 +43,13 @@ export function buildOccurrenceDateKeys(
   if (repeat === "매월") {
     const base = parseAppDateKey(baseDateKey);
     if (!base) return [baseDateKey];
-    return Array.from({ length: 6 }, (_, i) =>
-      dateToDateKey(new Date(base.getFullYear(), base.getMonth() + i, base.getDate())),
-    );
+    const baseDay = base.getDate();
+    return Array.from({ length: 6 }, (_, i) => {
+      const targetYear = base.getFullYear();
+      const targetMonth = base.getMonth() + i;
+      const lastDay = new Date(targetYear, targetMonth + 1, 0).getDate();
+      return dateToDateKey(new Date(targetYear, targetMonth, Math.min(baseDay, lastDay)));
+    });
   }
   if (repeat === "요일") {
     const base = parseAppDateKey(baseDateKey);

@@ -1,0 +1,35 @@
+package com.hyeni.calendar;
+
+final class NotificationUrgencyPolicy {
+    private NotificationUrgencyPolicy() {}
+
+    static boolean isEmergency(String type, String urgent, String severity, String alertType) {
+        if ("emergency".equalsIgnoreCase(type) || "sos".equalsIgnoreCase(type)) return true;
+
+        String explicitUrgent = normalized(urgent);
+        if ("true".equals(explicitUrgent)) return true;
+        if ("false".equals(explicitUrgent)) return false;
+        if (!"parent_alert".equalsIgnoreCase(type)) return false;
+
+        String normalizedSeverity = normalized(severity);
+        if ("emergency".equals(normalizedSeverity)
+                || "critical".equals(normalizedSeverity)
+                || "urgent".equals(normalizedSeverity)) {
+            return true;
+        }
+
+        String normalizedAlertType = normalized(alertType);
+        return "not_arrived".equals(normalizedAlertType)
+                || "missed_arrival".equals(normalizedAlertType)
+                || "danger_zone".equals(normalizedAlertType)
+                || "danger_enter".equals(normalizedAlertType)
+                || "danger_entry".equals(normalizedAlertType)
+                || "danger_exit".equals(normalizedAlertType)
+                || "sos".equals(normalizedAlertType)
+                || "sos_followup".equals(normalizedAlertType);
+    }
+
+    private static String normalized(String value) {
+        return value == null ? "" : value.trim().toLowerCase(java.util.Locale.ROOT);
+    }
+}

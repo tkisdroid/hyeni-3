@@ -1,11 +1,11 @@
 /**
- * 네이티브(Android/Capacitor) 전용 초기화 — 인증 상태에 맞춰 딥링크·푸시·백그라운드위치.
- * 웹(PWA)에선 전부 no-op(isNativePlatform 가드). App 하위(AuthProvider 안)에 1회 마운트.
+ * 네이티브(Android/Capacitor) 초기화와 웹·PWA foreground pending fallback.
+ * App 하위(AuthProvider 안)에 1회 마운트.
  * ToastProvider 순서에 의존하지 않도록 useToast 미사용(실패는 콘솔 로깅).
  */
 import { useEffect } from "react";
 import { useAuth } from "@/auth/AuthContext";
-import { isNativePlatform } from "@/lib/native/plugins";
+import { getNativePlugin, isNativePlatform } from "@/lib/native/plugins";
 import { initOAuthDeepLink } from "@/lib/native/oauthDeepLink";
 import { initPush, disposePush } from "@/lib/native/push";
 import {
@@ -18,10 +18,27 @@ import { collectDeviceHealth, attachBatteryChange } from "@/lib/native/deviceSta
 import { detectDeviceLabel } from "@/lib/native/deviceName";
 import { reportDeviceStatus, reportDeviceLabel } from "@/lib/api/endpoints/family";
 import { fetchLocationPreferences } from "@/lib/api/endpoints/location";
+import {
+  fetchDevicePendingNotifications,
+  fetchParentPendingNotifications,
+  markPendingNotificationsDelivered,
+} from "@/lib/api/endpoints/notifications";
+import {
+  pollParentPendingNotifications,
+  presentWebPendingNotification,
+  startParentPendingForegroundPolling,
+  type ParentPendingDisplayResult,
+  type ParentPendingPresentation,
+} from "@/lib/native/parentPendingNotifications";
+import { announceGlobalToast } from "@/lib/globalToast";
 
 // 아이 기기 상태 리포트 주기(ms). 부모 '안전 지표'가 이 주기로 갱신된다.
 const DEVICE_REPORT_INTERVAL_MS = 120_000;
 const LOCATION_PREF_SYNC_INTERVAL_MS = 60_000;
+
+interface NativeNotificationPlugin {
+  showPending(input: ParentPendingPresentation): Promise<ParentPendingDisplayResult>;
+}
 
 export function NativeBootstrap() {
   const { status, userId, familyId, role, syncFromSession } = useAuth();
@@ -54,6 +71,48 @@ export function NativeBootstrap() {
       })();
     }
   }, [status, userId, familyId, role, syncFromSession]);
+
+  // 부모 네이티브 foreground fallback — FCM을 놓친 경우에만 짧은 주기로 pending을 확인한다.
+  // NativeNotification이 같은 pushId의 FCM ACK를 확인하므로 이미 본 알림은 다시 울리지 않는다.
+  useEffect(() => {
+    if (!isNativePlatform()) return;
+    if (status !== "authenticated" || role !== "parent" || !familyId || !userId) return;
+    const nativeNotification = getNativePlugin<NativeNotificationPlugin>("NativeNotification");
+    if (!nativeNotification) return;
+
+    return startParentPendingForegroundPolling(async (signal) => {
+      await pollParentPendingNotifications({
+        familyId,
+        userId,
+        signal,
+        fetchPending: fetchParentPendingNotifications,
+        showPending: (input) => nativeNotification.showPending(input),
+        markDelivered: markPendingNotificationsDelivered,
+      });
+    });
+  }, [status, role, familyId, userId]);
+
+  // 웹·PWA는 Android FCM fallback 서비스가 없으므로, 부모·아이 foreground에서
+  // 서버 pending을 인앱 토스트로 실제 표시한 뒤에만 delivered ACK한다.
+  useEffect(() => {
+    if (isNativePlatform()) return;
+    if (status !== "authenticated" || !familyId || !userId) return;
+    if (role !== "parent" && role !== "child") return;
+    const pendingRole = role;
+
+    return startParentPendingForegroundPolling(async (signal) => {
+      await pollParentPendingNotifications({
+        familyId,
+        userId,
+        signal,
+        fetchPending: (targetFamilyId, targetUserId) => (
+          fetchDevicePendingNotifications(targetFamilyId, targetUserId, pendingRole)
+        ),
+        showPending: async (input) => presentWebPendingNotification(input, announceGlobalToast),
+        markDelivered: markPendingNotificationsDelivered,
+      });
+    });
+  }, [status, role, familyId, userId]);
 
   // 아이 네이티브 위치 서비스 — 부모가 저장한 가족 위치 주기 설정을 읽어 반영한다.
   useEffect(() => {

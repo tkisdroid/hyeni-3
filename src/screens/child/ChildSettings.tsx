@@ -6,7 +6,9 @@ import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily, useSendChildSettingRequest } from "@/queries/useFamily";
+import { useNotifSettings, useSaveNotifSettings } from "@/queries/useNotifications";
 import { checkRequestCooldown, type SettingRequestMenu } from "@/lib/api/endpoints/family";
+import { DEFAULT_NOTIF_SETTINGS } from "@/lib/api/endpoints/notifications";
 import "./ChildSettings.css";
 
 // 만 나이(런타임 계산).
@@ -52,8 +54,9 @@ export function ChildSettings() {
   const { userId } = useAuth();
   const { data: family } = useMyFamily();
   const request = useSendChildSettingRequest();
+  const notifSettingsQuery = useNotifSettings();
+  const saveNotifSettings = useSaveNotifSettings();
 
-  const [notifOn, setNotifOn] = useState(true);
   const [requested, setRequested] = useState<Record<string, boolean>>({});
   const [helpOpen, setHelpOpen] = useState(false);
 
@@ -66,6 +69,20 @@ export function ChildSettings() {
   const conn = connectionLabel(parents);
   const age = ageFrom(me?.birthdate, now);
   const myName = me?.name || "친구";
+  const notifSettings = notifSettingsQuery.data ?? DEFAULT_NOTIF_SETTINGS;
+  const notifOn = notifSettings.childEnabled;
+
+  const toggleNotifications = () => {
+    if (notifSettingsQuery.isLoading || notifSettingsQuery.isError || saveNotifSettings.isPending) return;
+    const nextEnabled = !notifOn;
+    saveNotifSettings.mutate(
+      { ...notifSettings, childEnabled: nextEnabled },
+      {
+        onSuccess: () => show(nextEnabled ? "일정 알림을 켰어" : "일정 알림을 껐어", "🔔"),
+        onError: () => show("알림 설정을 저장하지 못했어. 다시 해줘", "⚠️"),
+      },
+    );
+  };
 
   const askParent = (menu: SettingRequestMenu, title: string) => {
     if (request.isPending) return;
@@ -133,17 +150,22 @@ export function ChildSettings() {
           <button
             type="button"
             className="ks-row hy-press"
-            onClick={() => {
-              setNotifOn((v) => !v);
-              show(notifOn ? "알림을 껐어 (이 기기에서만)" : "알림을 켰어 (이 기기에서만)", "🔔");
-            }}
+            onClick={toggleNotifications}
+            disabled={notifSettingsQuery.isLoading || notifSettingsQuery.isError || saveNotifSettings.isPending}
+            aria-pressed={notifOn}
           >
             <span className="ks-row__icon">
               <Bell size={18} strokeWidth={2.2} />
             </span>
             <span className="ks-row__main">
               <span className="ks-row__title">알림</span>
-              <span className="ks-row__sub">이 기기에서만 켜고 끌 수 있어</span>
+              <span className="ks-row__sub">
+                {notifSettingsQuery.isLoading
+                  ? "알림 설정을 확인하고 있어"
+                  : notifSettingsQuery.isError
+                    ? "알림 설정을 불러오지 못했어"
+                    : "내 일정 알림 설정으로 저장돼"}
+              </span>
             </span>
             <span className={notifOn ? "ks-toggle on" : "ks-toggle"} aria-hidden="true">
               <span className="ks-toggle__knob" />
@@ -208,7 +230,7 @@ export function ChildSettings() {
                 <span className="ks-help-item__emoji"><Bell size={18} strokeWidth={2.2} /></span>
                 <span>
                   <b>알림</b>
-                  <small>이 기기에서만 켜고 끌 수 있어. 중요한 안전 알림은 부모님에게 계속 가.</small>
+                  <small>내 일정 알림을 켜고 끌 수 있어. 중요한 안전 알림은 부모님에게 계속 가.</small>
                 </span>
               </div>
               <div className="ks-help-item">

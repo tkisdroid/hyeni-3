@@ -163,6 +163,8 @@ public class LocationService extends Service {
     private static final long HIGH_ACCURACY_FIX_TIMEOUT_MS = 12_000L;
     private static final long BALANCED_FIX_TIMEOUT_MS = 12_000L;
     private static final long LAST_KNOWN_FIX_TIMEOUT_MS = 3_000L;
+    private static final long EVENT_EVIDENCE_FIX_MIN_INTERVAL_MS = 3 * 60_000L;
+    private volatile long lastEventEvidenceFixRequestElapsedMs = 0L;
     // 측위 획득뿐 아니라 upsert 인증 재시도까지 포함한 single-flight의 절대 상한이다.
     // 늦게 도착한 Task/HTTP 콜백은 generation 검증에서 폐기되어 다음 요청을 막지 않는다.
     private static final long IMMEDIATE_FIX_CHAIN_DEADLINE_MS = 85_000L;
@@ -222,6 +224,7 @@ public class LocationService extends Service {
     // Last uploaded position for minimum distance filter
     private double lastUploadedLat = Double.NaN;
     private double lastUploadedLng = Double.NaN;
+    private float lastUploadedAccuracyM = Float.NaN;
     private long lastUploadedAtMs = 0L;
     private long lastUploadedElapsedRealtimeNanos = 0L;
     private double lastHistoryLat = Double.NaN;
@@ -570,8 +573,8 @@ public class LocationService extends Service {
         requestImmediateLocationFix();
     }
 
-    // 아이 기기 상태(저배터리·종료 등)를 부모에게 알린다.
-    // 알림센터(parent_alerts) + FCM 푸시(push-notify) 둘 다 best-effort. 백그라운드 스레드.
+    // 아이 기기 상태(저배터리·종료 등)를 부모에게 알린다. 서버의 단일 parent-alerts
+    // endpoint가 멱등 저장과 부모 FCM 연쇄를 함께 책임져 부분 성공·중복 푸시를 막는다.
     private void sendParentDeviceAlert(String alertType, String title, String message,
                                        String severity, String idempotencyKey) {
         if (isBlank(familyId) || isBlank(supabaseUrl) || isBlank(supabaseKey)) {
@@ -580,46 +583,26 @@ public class LocationService extends Service {
             return;
         }
         final String baseUrl = supabaseUrl.replaceAll("/+$", "");
-        // push_idempotency.key 는 uuid 컬럼이라 비-UUID 키는 400 으로 거부된다.
-        // 시간 버킷 문자열을 결정적 UUID(v3)로 변환해 서버측 중복 방지를 유지한다.
-        final String idemUuid = java.util.UUID.nameUUIDFromBytes(
-            idempotencyKey.getBytes(java.nio.charset.StandardCharsets.UTF_8)).toString();
         runOnNetworkThread("device_alert", () -> {
             try {
                 JSONObject alertBody = new JSONObject()
-                    .put("p_family_id", familyId)
-                    .put("p_alert_type", alertType)
-                    .put("p_title", title)
-                    .put("p_message", message)
-                    .put("p_severity", severity)
-                    .put("p_event_id", idempotencyKey);
-                boolean insertOk = postWithAuthRetry(
-                    baseUrl + "/rest/v1/rpc/insert_parent_alert_v2",
-                    alertBody.toString()
-                );
-
-                JSONObject pushBody = new JSONObject()
-                    .put("action", "parent_alert")
-                    .put("familyId", familyId)
-                    .put("senderUserId", userId)
-                    .put("severity", severity)
-                    .put("alertType", alertType)
+                    .put("family_id", familyId)
+                    .put("alert_type", alertType)
                     .put("title", title)
                     .put("message", message)
-                    .put("idempotency_key", idemUuid);
-                boolean pushOk = postWithAuthRetry(
-                    baseUrl + "/functions/v1/push-notify",
-                    pushBody.toString(),
-                    idemUuid
+                    .put("severity", severity)
+                    .put("event_id", idempotencyKey)
+                    .put("child_user_id", userId);
+                boolean delivered = postWithAuthRetry(
+                    baseUrl + "/api/parent-alerts",
+                    alertBody.toString()
                 );
-
-                if (insertOk || pushOk) {
-                    Log.i(TAG, "parent device alert sent: " + alertType
-                        + " (insert=" + insertOk + " push=" + pushOk + ")");
+                if (delivered) {
+                    Log.i(TAG, "parent device alert accepted: " + alertType);
                 } else {
                     Log.w(TAG, "parent device alert failed entirely: " + alertType);
                 }
-                if (!insertOk) {
+                if (!delivered) {
                     lowBatteryAlertSent = false;
                 }
             } catch (Exception e) {
@@ -669,11 +652,19 @@ public class LocationService extends Service {
         if (!placeAlertsEnabled || Double.isNaN(lastUploadedLat) || Double.isNaN(lastUploadedLng)) return;
         // M1: stale fix 면 평가 skip — wall-clock 만 흐르고 좌표가 frozen 이면 가짜
         // dwell/departure 전이가 날 수 있다(서버 GEOFENCE_FIX_FRESH_MS 와 동일 보호).
-        if (lastUploadedAtMs > 0L && now - lastUploadedAtMs > PLACE_FIX_FRESH_MS) return;
+        if (lastUploadedAtMs <= 0L || now < lastUploadedAtMs || now - lastUploadedAtMs > PLACE_FIX_FRESH_MS) return;
         java.util.List<org.json.JSONObject> places;
         synchronized (cachedPlaces) { places = new java.util.ArrayList<>(cachedPlaces); }
         for (org.json.JSONObject p : places) {
-            try { evaluateOnePlace(p, lastUploadedLat, lastUploadedLng, now); }
+            try {
+                evaluateOnePlace(
+                    p,
+                    lastUploadedLat,
+                    lastUploadedLng,
+                    lastUploadedAccuracyM,
+                    lastUploadedAtMs
+                );
+            }
             catch (Exception e) { Log.w(TAG, "place eval failed", e); }
         }
     }
@@ -797,7 +788,88 @@ public class LocationService extends Service {
         } catch (Exception e) { Log.w(TAG, "httpGetArray failed: " + url, e); return null; }
     }
 
-    private void evaluateOnePlace(org.json.JSONObject p, double lat, double lng, long now) throws Exception {
+    @Nullable
+    private JSONObject findOverlappingScheduledEvent(double placeLat, double placeLng, long fixCapturedAtMs) {
+        return findScheduledEventAtPlace(placeLat, placeLng, fixCapturedAtMs, true);
+    }
+
+    @Nullable
+    private JSONObject findNearbyScheduledEvent(double placeLat, double placeLng, long fixCapturedAtMs) {
+        return findScheduledEventAtPlace(placeLat, placeLng, fixCapturedAtMs, false);
+    }
+
+    @Nullable
+    private JSONObject findScheduledEventAtPlace(
+            double placeLat,
+            double placeLng,
+            long fixCapturedAtMs,
+            boolean requireActiveArrivalWindow) {
+        String raw = cachedEventsJson;
+        if (raw == null || raw.isEmpty()) return null;
+        try {
+            Calendar atFix = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"));
+            atFix.setTimeInMillis(fixCapturedAtMs);
+            String expectedDateKey = atFix.get(Calendar.YEAR) + "-" + atFix.get(Calendar.MONTH) + "-"
+                + atFix.get(Calendar.DAY_OF_MONTH);
+            if (!expectedDateKey.equals(cachedEventsDateKey)) return null;
+            int nowMinute = atFix.get(Calendar.HOUR_OF_DAY) * 60 + atFix.get(Calendar.MINUTE);
+            JSONArray events = new JSONArray(raw);
+            JSONObject best = null;
+            int bestEventMinute = 0;
+            String bestEventId = null;
+            for (int i = 0; i < events.length(); i++) {
+                JSONObject event = events.optJSONObject(i);
+                if (event == null) continue;
+                String time = event.optString("event_time", event.optString("time", ""));
+                String[] parts = time.split(":");
+                if (parts.length != 2) continue;
+                int eventMinute;
+                try {
+                    eventMinute = Integer.parseInt(parts[0]) * 60 + Integer.parseInt(parts[1]);
+                } catch (NumberFormatException ignored) {
+                    continue;
+                }
+                JSONObject location = event.optJSONObject("event_location");
+                if (location == null) location = event.optJSONObject("location");
+                if (location == null) {
+                    String locationJson = event.optString("event_location", event.optString("location", ""));
+                    if (!locationJson.isEmpty()) location = new JSONObject(locationJson);
+                }
+                if (location == null || !location.has("lat") || !location.has("lng")) continue;
+                boolean matches = requireActiveArrivalWindow
+                    ? RegisteredPlaceScheduleOverlapPolicy.shouldSuppress(
+                        placeLat,
+                        placeLng,
+                        location.optDouble("lat", Double.NaN),
+                        location.optDouble("lng", Double.NaN),
+                        eventMinute,
+                        nowMinute)
+                    : RegisteredPlaceScheduleOverlapPolicy.shouldAssociate(
+                        placeLat,
+                        placeLng,
+                        location.optDouble("lat", Double.NaN),
+                        location.optDouble("lng", Double.NaN),
+                        eventMinute,
+                        nowMinute);
+                if (!matches) continue;
+                String eventId = event.optString("event_id", "");
+                if (RegisteredPlaceScheduleOverlapPolicy.isBetterCandidate(
+                        eventMinute, eventId, bestEventMinute, bestEventId, nowMinute)) {
+                    best = event;
+                    bestEventMinute = eventMinute;
+                    bestEventId = eventId;
+                }
+            }
+            return best;
+        } catch (Exception e) {
+            Log.w(TAG, "schedule overlap check failed", e);
+        }
+        return null;
+    }
+
+    private void evaluateOnePlace(org.json.JSONObject p, double lat, double lng,
+                                  float accuracyM, long fixCapturedAtMs) throws Exception {
+        long now = fixCapturedAtMs;
         String placeKey = p.getString("placeKey");
         double plat = p.getDouble("lat"), plng = p.getDouble("lng");
         // 장소별 알림 반경(없으면 null → config 기본 30m). collectPlaces 가 학교류 기본을 채운다.
@@ -808,33 +880,56 @@ public class LocationService extends Service {
         GeofenceStateMachine.GeofenceState evalState = hadGeoState
             ? prev
             : GeofenceStateMachine.bootstrapInitialInside(
-                prev, lat, lng, null, now, plat, plng, placeRadius, GeofenceStateMachine.GeofenceConfig.DEFAULT);
+                prev, lat, lng, (double) accuracyM, now, plat, plng, placeRadius, GeofenceStateMachine.GeofenceConfig.DEFAULT);
         // TTL 만료 후 "밖" 상태가 이어지면 sameState 로 저장이 스킵돼 신선도가 영영 회복되지
         // 않고, 이후 첫 도착이 bootstrap 에 무알림으로 삼켜진다 — 부트스트랩 평가를 했으면
         // 값이 같아도 반드시 저장해 TTL 을 갱신한다(도착 알림 유실 방지, 2026-07-10).
         if (!hadGeoState || !sameState(prev, evalState)) saveGeoState(placeKey, evalState);
         GeofenceStateMachine.TransitionResult res = GeofenceStateMachine.evaluateTransition(
-            evalState, lat, lng, null, now, plat, plng, placeRadius, GeofenceStateMachine.GeofenceConfig.DEFAULT);
+            evalState, lat, lng, (double) accuracyM, now, plat, plng, placeRadius, GeofenceStateMachine.GeofenceConfig.DEFAULT);
         if (res.action == GeofenceStateMachine.Action.ENTER || res.action == GeofenceStateMachine.Action.LEAVE) {
             final boolean arrived = res.action == GeofenceStateMachine.Action.ENTER;
             long episodeMs = arrived
                 ? (res.nextState.firstInsideAtMs != null ? res.nextState.firstInsideAtMs : now)
                 : (res.nextState.lastDepartedAtMs != null ? res.nextState.lastDepartedAtMs : now);
+            final JSONObject scheduleEvent = arrived ? findOverlappingScheduledEvent(plat, plng, episodeMs) : null;
+            final JSONObject scheduleAssociation = arrived
+                ? (scheduleEvent != null ? scheduleEvent : findNearbyScheduledEvent(plat, plng, episodeMs))
+                : null;
             long bucket = GeofenceIdempotency.placeEpisodeBucket(episodeMs);
-            final String key = GeofenceIdempotency.placePresenceIdempotencyKey(arrived ? "arrived" : "left", userId, placeKey, bucket);
+            final String occurrenceId = scheduleAssociation != null
+                ? scheduleAssociation.optString("event_occurrence_id", "")
+                : "";
+            final String sourceEventId = scheduleAssociation != null
+                ? scheduleAssociation.optString("event_id", "")
+                : "";
+            final String key = !occurrenceId.isEmpty()
+                ? occurrenceId
+                : GeofenceIdempotency.placePresenceIdempotencyKey(arrived ? "arrived" : "left", userId, placeKey, bucket);
             String place = p.optString("name", "등록된 장소");
-            final String alertType = arrived ? "place_arrived" : "place_left";
-            final String title = arrived ? ("✅ " + place + " 도착") : ("🚶 " + place + " 출발");
-            final String msg = arrived
-                ? (childDisplayName() + "가 " + place + "에 도착했어요.")
-                : (childDisplayName() + "가 " + place + "에서 출발했어요.");
+            final String eventTitle = scheduleEvent != null
+                ? scheduleEvent.optString("event_title", "일정")
+                : "";
+            final String alertType = scheduleEvent != null ? "arrived" : (arrived ? "place_arrived" : "place_left");
+            final String title = scheduleEvent != null
+                ? ("✅ " + eventTitle + " 도착")
+                : (arrived ? ("✅ " + place + " 도착") : ("🚶 " + place + " 출발"));
+            final String msg = scheduleEvent != null
+                ? (childDisplayName() + "가 " + eventTitle + " 장소에 도착했어요.")
+                : (arrived
+                    ? (childDisplayName() + "가 " + place + "에 도착했어요.")
+                    : (childDisplayName() + "가 " + place + "에서 출발했어요."));
             final String fPlaceKey = placeKey;
             final String fPlaceName = place;
             final GeofenceStateMachine.GeofenceState fNext = res.nextState;
             // H1: 전송 성공 시에만 phase 진행(서버 deliverAlert retry 설계 parity). 실패 시
             // state 미진행 → 다음 tick 재시도(멱등키로 dedup, 부모 알림 유실 방지).
             runOnNetworkThread("place_alert", () -> {
-                if (sendPlaceAlert(alertType, title, msg, key)) {
+                if (sendPlaceAlert(alertType, title, msg, key, sourceEventId)) {
+                    if (!occurrenceId.isEmpty()) {
+                        shownEventNotifs.add(occurrenceId + "-arrived");
+                        persistShownEventNotifs();
+                    }
                     saveGeoState(fPlaceKey, fNext);
                     // 집 도착이면 AI 친구가 먼저 말을 건다(숙제·하루 이야기).
                     if (arrived && fPlaceName.contains("집")) triggerHomeArrivalAiGreeting(fPlaceName);
@@ -921,28 +1016,21 @@ public class LocationService extends Service {
         } catch (Exception e) { Log.w(TAG, "saveGeoState failed", e); }
     }
 
-    // place_arrived/place_left 부모 알림 발송 (멱등키 = GeofenceIdempotency v4 UUID,
-    // p_event_id·idempotency_key 둘 다 동일 → 서버 cron 발사와 dedup). 자녀 sender 제외.
-    // 동기 호출(background Thread 에서 호출됨) — insert·push 둘 다 성공해야 true 반환해
-    // 호출부가 state 를 진행(H1). 한쪽이라도 실패면 false → state 미진행 → 다음 tick 재시도.
-    // 재시도 안전: parent_alerts 는 event_id 부분 UNIQUE+ON CONFLICT, push 는 push_idempotency
-    // 로 각각 dedup → 재시도해도 중복 안 쌓임. 부분 실패 시 인앱/푸시 비대칭(한쪽 누락) 방지.
-    private boolean sendPlaceAlert(String alertType, String title, String message, String idemUuid) {
+    // place_arrived/place_left 부모 알림 발송. 서버 단일 endpoint가 event_id+alert_type
+    // 멱등 저장과 부모 FCM을 함께 처리한다. 실패 시 state를 진행하지 않아 다음 tick 재시도한다.
+    private boolean sendPlaceAlert(String alertType, String title, String message, String idemUuid,
+                                   @Nullable String sourceEventId) {
         if (isBlank(familyId) || isBlank(supabaseUrl) || isBlank(supabaseKey)) return false;
         final String base = supabaseUrl.replaceAll("/+$", "");
         try {
             JSONObject alertBody = new JSONObject()
-                .put("p_family_id", familyId).put("p_alert_type", alertType)
-                .put("p_title", title).put("p_message", message)
-                .put("p_severity", "info").put("p_event_id", idemUuid).put("p_child_user_id", userId);
-            boolean insertOk = postWithAuthRetry(base + "/rest/v1/rpc/insert_parent_alert_v2", alertBody.toString());
-            JSONObject pushBody = new JSONObject()
-                .put("action", "parent_alert").put("familyId", familyId).put("senderUserId", userId)
-                .put("severity", "info").put("alertType", alertType).put("title", title)
-                .put("message", message).put("idempotency_key", idemUuid);
-            boolean pushOk = postWithAuthRetry(base + "/functions/v1/push-notify", pushBody.toString(), idemUuid);
-            Log.i(TAG, "place alert " + alertType + " (insert=" + insertOk + " push=" + pushOk + ")");
-            return insertOk && pushOk;
+                .put("family_id", familyId).put("alert_type", alertType)
+                .put("title", title).put("message", message)
+                .put("severity", "info").put("event_id", idemUuid).put("child_user_id", userId);
+            if (!isBlank(sourceEventId)) alertBody.put("source_event_id", sourceEventId);
+            boolean delivered = postWithAuthRetry(base + "/api/parent-alerts", alertBody.toString());
+            Log.i(TAG, "place alert " + alertType + " accepted=" + delivered);
+            return delivered;
         } catch (Exception e) {
             Log.w(TAG, "sendPlaceAlert failed", e);
             return false;
@@ -1550,6 +1638,14 @@ public class LocationService extends Service {
         requestImmediateLocationFix(null, null);
     }
 
+    private void requestEventEvidenceLocationFix() {
+        long nowElapsed = android.os.SystemClock.elapsedRealtime();
+        long previous = lastEventEvidenceFixRequestElapsedMs;
+        if (previous > 0L && nowElapsed - previous < EVENT_EVIDENCE_FIX_MIN_INTERVAL_MS) return;
+        lastEventEvidenceFixRequestElapsedMs = nowElapsed;
+        requestImmediateLocationFix();
+    }
+
     private void requestImmediateLocationFix(@Nullable String requestId,
                                              @Nullable String pendingNotificationId) {
         registerLocationRefreshRequest(requestId, pendingNotificationId);
@@ -1801,6 +1897,7 @@ public class LocationService extends Service {
                         row.put("family_id", familyId);
                         row.put("lat", point.lat);
                         row.put("lng", point.lng);
+                        row.put("accuracy_m", point.accuracy);
                         row.put("recorded_at", formatIsoUtc(point.recordedAtMs));
                         rows.put(row);
                     }
@@ -2152,6 +2249,7 @@ public class LocationService extends Service {
                         if (uploaded && newerThanLastUpload) {
                             lastUploadedLat = lat;
                             lastUploadedLng = lng;
+                            lastUploadedAccuracyM = accuracy;
                             lastUploadedAtMs = capturedAtMs;
                             lastUploadedElapsedRealtimeNanos = fixElapsedRealtimeNanos;
                             acceptedAsLatestUpload = true;
@@ -2164,6 +2262,7 @@ public class LocationService extends Service {
                             getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
                                 .putString("last_uploaded_lat", String.valueOf(lat))
                                 .putString("last_uploaded_lng", String.valueOf(lng))
+                                .putFloat("last_uploaded_accuracy_m", accuracy)
                                 .putLong("last_uploaded_at_ms", capturedAtMs)
                                 .apply();
                         } catch (Exception persistErr) {
@@ -2190,7 +2289,7 @@ public class LocationService extends Service {
                 }
                 boolean historyRecorded = uploaded
                     && !isBlank(successfulBearer)
-                    && uploadLocationHistory(lat, lng, capturedAtMs, successfulBearer);
+                    && uploadLocationHistory(lat, lng, accuracy, capturedAtMs, successfulBearer);
                 synchronized (immediateFixStateLock) {
                     if (!isServiceLifecycleActive(uploadLifecycleEpoch)) return;
                     if (!historyRecorded) {
@@ -2251,12 +2350,13 @@ public class LocationService extends Service {
         }
     }
 
-    private boolean uploadLocationHistory(double lat, double lng, long capturedAtMs, String bearerToken) {
+    private boolean uploadLocationHistory(double lat, double lng, float accuracy,
+                                          long capturedAtMs, String bearerToken) {
         if (isBlank(userId) || isBlank(familyId) || isBlank(supabaseUrl) || isBlank(supabaseKey) || isBlank(bearerToken)) {
             return false;
         }
         try {
-            JSONArray body = buildLocationHistoryRows(lat, lng, capturedAtMs);
+            JSONArray body = buildLocationHistoryRows(lat, lng, accuracy, capturedAtMs);
             return uploadLocationHistoryRows(body, bearerToken);
         } catch (Exception e) {
             Log.w(TAG, "Location history insert error", e);
@@ -2264,7 +2364,8 @@ public class LocationService extends Service {
         }
     }
 
-    private JSONArray buildLocationHistoryRows(double lat, double lng, long capturedAtMs) throws Exception {
+    private JSONArray buildLocationHistoryRows(double lat, double lng, float accuracy,
+                                               long capturedAtMs) throws Exception {
         List<RoutePoint> points = new ArrayList<>();
         boolean hasPrevious = !Double.isNaN(lastHistoryLat) && !Double.isNaN(lastHistoryLng) && lastHistoryAtMs > 0L;
         // estimatedFill: 큰 갭을 직선으로 메운 '추정 채움점'에만 true. 실측 GPS 점(마지막)은 항상 실측.
@@ -2318,6 +2419,9 @@ public class LocationService extends Service {
             // 마지막 점은 실측 GPS fix → 항상 실측. 큰 갭을 메운 합성 채움점만 추정.
             if (estimatedFill && i < lastIndex) {
                 row.put("is_estimated", true);
+            }
+            if (i == lastIndex && Float.isFinite(accuracy) && accuracy >= 0f) {
+                row.put("accuracy_m", accuracy);
             }
             rows.put(row);
         }
@@ -3186,10 +3290,14 @@ public class LocationService extends Service {
                 for (int i = 0; i < events.length(); i++) {
                     JSONObject ev = events.getJSONObject(i);
                     String eventId = ev.getString("event_id");
+                    String eventOccurrenceId = ev.optString("event_occurrence_id", eventId + ":" + dateKey + ":legacy");
+                    String eventRevisionKey = ev.optString("event_revision_key", "legacy");
                     String title = ev.optString("event_title", "일정");
                     String time = ev.optString("event_time", "00:00");
                     String emoji = ev.optString("event_emoji", "📅");
                     JSONObject location = ev.optJSONObject("event_location");
+                    boolean eventRemindersEnabled = ev.optBoolean("event_reminders_enabled", true);
+                    JSONArray eventReminderMinutes = ev.optJSONArray("event_reminder_minutes");
 
                     String[] parts = time.split(":");
                     if (parts.length < 2) continue;
@@ -3203,12 +3311,23 @@ public class LocationService extends Service {
                     }
                     int evTotalMin = evHour * 60 + evMin;
 
-                    int diffToStart = evTotalMin - nowTotalMin;
+                    int minutesFromStart = nowTotalMin - evTotalMin;
 
                     // Cron 의존을 못 믿으므로 자녀 디바이스에서 자체 15min/5min/start 로컬 알림.
                     // notificationId가 push-notify cron의 pushId 와 동일 포맷이라 중복 시 교체됨.
                     if (isChildDevice) {
-                        fireLocalEventReminders(eventId, title, time, emoji, evTotalMin, nowTotalMin, dateKey);
+                        fireLocalEventReminders(
+                            eventId,
+                            title,
+                            time,
+                            emoji,
+                            evTotalMin,
+                            nowTotalMin,
+                            dateKey,
+                            eventRevisionKey,
+                            eventRemindersEnabled,
+                            eventReminderMinutes
+                        );
                     }
 
                     // ── Geo-fence checks: auto-silent + parent alerts ────────────
@@ -3226,14 +3345,28 @@ public class LocationService extends Service {
                     if (Double.isNaN(lastUploadedLat)) {
                         if (inTimeWindow) {
                             Log.i(TAG, "GPS not yet acquired for event " + title + " in window, requesting fix");
-                            requestImmediateLocationFix();
+                            requestEventEvidenceLocationFix();
                         }
                         continue;
                     }
 
                     float distToEvent = distanceBetween(
                         lastUploadedLat, lastUploadedLng, evLat, evLng);
-                    boolean atLocation = distToEvent <= GEOFENCE_RADIUS_M;
+                    EventArrivalPolicy.ArrivalDecision arrivalDecision = EventArrivalPolicy.classify(
+                        distToEvent,
+                        lastUploadedAccuracyM,
+                        lastUploadedAtMs,
+                        nowMs,
+                        GEOFENCE_RADIUS_M
+                    );
+                    if (arrivalDecision == EventArrivalPolicy.ArrivalDecision.UNKNOWN) {
+                        if (inTimeWindow || (minutesFromStart >= 0 && minutesFromStart <= 18)) {
+                            Log.i(TAG, "Event location evidence unknown for " + title + ", requesting fresh fix");
+                            requestEventEvidenceLocationFix();
+                        }
+                        continue;
+                    }
+                    boolean atLocation = arrivalDecision == EventArrivalPolicy.ArrivalDecision.AT_LOCATION;
 
                     if (eventId.equals(silentForEventId) && atLocation) {
                         stillAtSilentLocation = true;
@@ -3245,23 +3378,23 @@ public class LocationService extends Service {
                     }
 
                     // ── 시작 시각 ~ 시작 후 60분 윈도우에서 도착/미도착 판정 ──
-                    String keyStatus = eventId + "-status-" + dateKey;
-                    String keyArrived = eventId + "-arrived-" + dateKey;
-                    String keyNotArrived = eventId + "-not_arrived-" + dateKey;
+                    String keyStatus = eventOccurrenceId + "-status";
+                    String keyArrived = eventOccurrenceId + "-arrived";
+                    String keyNotArrived = eventOccurrenceId + "-not_arrived";
 
                     // 1. 도착(arrived) 판정: 15분 전부터 60분 후까지.
                     //    keyArrived 로 데둡하여 미도착 알림(keyNotArrived) 이후에도 1회 도착 알림 가능.
-                    if (diffToStart >= -15 && diffToStart <= 60 && atLocation && !shownEventNotifs.contains(keyArrived)) {
+                    if (minutesFromStart >= -15 && minutesFromStart <= 60 && atLocation && !shownEventNotifs.contains(keyArrived)) {
                         shownEventNotifs.add(keyArrived);
                         
                         // 이미 미도착 알림이 나간 상태라면 '지각 도착'으로 문구 변경
                         if (shownEventNotifs.contains(keyNotArrived)) {
-                            int lateMin = (int)diffToStart;
+                            int lateMin = minutesFromStart;
                             sendParentAlert(
                                 "late_arrived",
                                 "✅ 지각 도착",
                                 emoji + " " + title + "에 " + lateMin + "분 늦게 도착했어요",
-                                "info", eventId, keyArrived
+                                "info", eventOccurrenceId, eventId, keyArrived
                             );
                             Log.i(TAG, "Late arrival alert (dynamic) for " + title + " (+" + lateMin + "min)");
                         } else {
@@ -3271,7 +3404,7 @@ public class LocationService extends Service {
                                 "arrived",
                                 "✅ 도착 확인",
                                 emoji + " " + title + "에 잘 도착했어요! (" + time + ")",
-                                "info", eventId, keyArrived
+                                "info", eventOccurrenceId, eventId, keyArrived
                             );
                             Log.i(TAG, "Parent arrival alert for " + title);
                         }
@@ -3279,28 +3412,28 @@ public class LocationService extends Service {
 
                     // 2. 미도착(not_arrived) 판정: 정각(0) ~ 5분 사이 1회 허용.
                     //    이미 도착(keyArrived)한 상태면 미도착 알림은 생략.
-                    if (diffToStart >= 0 && diffToStart <= 5 && !atLocation && !shownEventNotifs.contains(keyArrived) && !shownEventNotifs.contains(keyNotArrived)) {
+                    if (minutesFromStart >= 0 && minutesFromStart <= 5 && !atLocation && !shownEventNotifs.contains(keyArrived) && !shownEventNotifs.contains(keyNotArrived)) {
                         shownEventNotifs.add(keyNotArrived);
                         shownEventNotifs.add(keyStatus); // 레거시 호환용 status 키도 함께 점유
                         sendParentAlert(
                             "not_arrived",
                             "🚨 미도착 알림",
                             emoji + " " + title + " 시작 시간인데 아직 도착하지 않았어요 (" + time + ")",
-                            "emergency", eventId, keyNotArrived
+                            "emergency", eventOccurrenceId, eventId, keyNotArrived
                         );
                         Log.i(TAG, "Parent miss alert for " + title);
                     }
 
                     // 3. 15분 경과 여전히 미도착인 경우 (초기 미도착 알림 이후 최종 경고)
-                    if (diffToStart >= 15 && diffToStart <= 18 && !atLocation && !shownEventNotifs.contains(keyArrived)) {
-                        String lateMarkKey = eventId + "-missed15-" + dateKey;
+                    if (minutesFromStart >= 15 && minutesFromStart <= 18 && !atLocation && !shownEventNotifs.contains(keyArrived)) {
+                        String lateMarkKey = eventOccurrenceId + "-missed15";
                         if (!shownEventNotifs.contains(lateMarkKey)) {
                             shownEventNotifs.add(lateMarkKey);
                             sendParentAlert(
                                 "missed_arrival",
                                 "🚨 15분 경과 — 미도착",
                                 emoji + " " + title + " 시작 후 15분이 지났는데 아직 도착하지 않았어요",
-                                "emergency", eventId, lateMarkKey
+                                "emergency", eventOccurrenceId, eventId, lateMarkKey
                             );
                             Log.i(TAG, "Missed arrival critical alert for " + title);
                         }
@@ -3383,40 +3516,25 @@ public class LocationService extends Service {
     // delivery channel fails, they are removed so the next checkEventTimes tick
     // retries — otherwise a transient failure would suppress the alert forever.
     private void sendParentAlert(String alertType, String title, String message,
-                                 String severity, String eventId, String... dedupKeys) {
+                                 String severity, String eventId, String sourceEventId,
+                                 String... dedupKeys) {
         runOnNetworkThread("parent_alert", () -> {
             try {
                 JSONObject body = new JSONObject();
-                body.put("p_family_id", familyId);
-                body.put("p_alert_type", alertType);
-                body.put("p_title", title);
-                body.put("p_message", message);
-                body.put("p_severity", severity);
-                if (eventId != null) body.put("p_event_id", eventId);
-                if (userId != null && !userId.isEmpty()) body.put("p_child_user_id", userId);
-                boolean insertOk = postWithAuthRetry(
-                    supabaseUrl + "/rest/v1/rpc/insert_parent_alert_v2", body.toString());
+                body.put("family_id", familyId);
+                body.put("alert_type", alertType);
+                body.put("title", title);
+                body.put("message", message);
+                body.put("severity", severity);
+                if (eventId != null) body.put("event_id", eventId);
+                if (sourceEventId != null) body.put("source_event_id", sourceEventId);
+                if (userId != null && !userId.isEmpty()) body.put("child_user_id", userId);
+                boolean delivered = postWithAuthRetry(
+                    supabaseUrl + "/api/parent-alerts", body.toString());
 
-                JSONObject pushBody = new JSONObject();
-                pushBody.put("action", "parent_alert");
-                pushBody.put("familyId", familyId);
-                pushBody.put("senderUserId", userId);
-                pushBody.put("title", title);
-                pushBody.put("message", message);
-                pushBody.put("alertType", alertType);
-                pushBody.put("severity", severity);
-                if (eventId != null) pushBody.put("eventId", eventId);
-                boolean pushOk = postWithAuthRetry(
-                    supabaseUrl + "/functions/v1/push-notify", pushBody.toString());
-
-                if (insertOk || pushOk) {
-                    Log.i(TAG, "Parent alert sent: " + alertType
-                        + " (insert=" + insertOk + " push=" + pushOk + ")");
+                if (delivered) {
+                    Log.i(TAG, "Parent alert accepted: " + alertType);
                 } else {
-                    // NTV-H2: total failure — the parent received nothing and
-                    // no record was written. Drop the dedup keys so the next
-                    // checkEventTimes tick retries. Safe from a double insert
-                    // because the insert above did not succeed.
                     Log.w(TAG, "Parent alert FAILED entirely, rolling back dedup: " + alertType);
                     for (String k : dedupKeys) shownEventNotifs.remove(k);
                     persistShownEventNotifs();
@@ -3434,38 +3552,61 @@ public class LocationService extends Service {
     // 와 동일하므로, cron이 정상 동작한 경우 동일 알림이 native side에서 다시 와도
     // OS가 같은 ID로 교체 — 사용자에게 중복으로 보이지 않는다.
     private void fireLocalEventReminders(String eventId, String title, String time, String emoji,
-                                         int evTotalMin, int nowTotalMin, String dateKey) {
-        int[] minsBefore = {15, 5, 0};
-        String[] keys = {"15min", "5min", "start"};
-        String[] notifTitles = {"🐰 준비 시간!", "🏃 출발!", "⏰ 시작!"};
-        String[] bodyTail = {
-            " 가기 15분 전이야! 준비물 챙겼니? 🎒",
-            " 곧 시작이야! 출발~ 화이팅! 💪",
-            " 시작 시간이야! 화이팅! 💪"
-        };
+                                         int evTotalMin, int nowTotalMin, String dateKey,
+                                         String eventRevisionKey,
+                                         boolean enabled, @Nullable JSONArray configuredMinutes) {
+        if (!enabled) return;
+        java.util.LinkedHashSet<Integer> minsBefore = new java.util.LinkedHashSet<>();
+        if (configuredMinutes != null) {
+            for (int i = 0; i < configuredMinutes.length(); i++) {
+                int minute = configuredMinutes.optInt(i, -1);
+                if (minute > 0 && minute <= 24 * 60) minsBefore.add(minute);
+            }
+        }
+        // 시작 알림은 사전 알림 시간과 별개인 아이 전용 기본 알림이다.
+        minsBefore.add(0);
 
-        for (int r = 0; r < minsBefore.length; r++) {
-            int diff = (evTotalMin - minsBefore[r]) - nowTotalMin;
-            if (diff < -1 || diff > 1) continue;
+        for (int minute : minsBefore) {
+            int targetMinute = evTotalMin - minute;
+            int lateBy = nowTotalMin - targetMinute;
+            if (lateBy < 0 || lateBy > 2) continue;
 
-            String reminderKey = eventId + "-" + keys[r] + "-" + dateKey;
+            String key = minute == 0 ? "start" : minute + "min";
+            String reminderKey = eventId + "-" + key + "-" + dateKey + "-" + eventRevisionKey;
             if (shownEventNotifs.contains(reminderKey)) continue;
+            if (PolledNotificationStore.isAcked(this, reminderKey)) {
+                shownEventNotifs.add(reminderKey);
+                continue;
+            }
             shownEventNotifs.add(reminderKey);
 
-            String body = emoji + " " + title + bodyTail[r] + " (" + time + ")";
+            String notifTitle;
+            String bodyTail;
+            if (minute == 0) {
+                notifTitle = "⏰ 시작!";
+                bodyTail = " 시작 시간이야! 화이팅! 💪";
+            } else if (minute <= 5) {
+                notifTitle = "🏃 출발!";
+                bodyTail = " 곧 시작이야! 출발~ 화이팅! 💪";
+            } else {
+                notifTitle = minute >= 30 ? "🐰 곧 준비!" : "🐰 준비 시간!";
+                bodyTail = " 가기 " + minute + "분 전이야! 준비물 챙겼니? 🎒";
+            }
+            String body = emoji + " " + title + bodyTail + " (" + time + ")";
             int notifId = NotificationHelper.stableRequestCode(reminderKey);
 
             try {
                 NotificationHelper.showNotification(
                     this,
-                    notifTitles[r],
+                    notifTitle,
                     body,
                     "schedule",
                     false,
                     false,
                     notifId
                 );
-                Log.i(TAG, "Local event reminder fired: " + keys[r] + " for " + title);
+                PolledNotificationStore.markAck(this, reminderKey);
+                Log.i(TAG, "Local event reminder fired: " + key + " for " + title);
             } catch (Exception e) {
                 Log.w(TAG, "Local event reminder failed: " + e.getMessage());
             }
@@ -3602,30 +3743,12 @@ public class LocationService extends Service {
     }
 
     private boolean isEmergencyNotification(String type, @Nullable JSONObject data) {
-        if ("emergency".equals(type) || "sos".equals(type)) {
-            return true;
-        }
-        if (data != null && "true".equalsIgnoreCase(data.optString("urgent", "false"))) {
-            return true;
-        }
-        if (!"parent_alert".equals(type)) {
-            return false;
-        }
-        String severity = data != null ? data.optString("severity", "") : "";
-        String alertType = data != null ? data.optString("alertType", data.optString("alert_type", "")) : "";
-        if ("emergency".equalsIgnoreCase(severity)
-                || "critical".equalsIgnoreCase(severity)
-                || "urgent".equalsIgnoreCase(severity)) {
-            return true;
-        }
-        return "not_arrived".equals(alertType)
-                || "missed_arrival".equals(alertType)
-                || "danger_zone".equals(alertType)
-                || "danger_enter".equals(alertType)
-                || "danger_entry".equals(alertType)
-                || "danger_exit".equals(alertType)
-                || "sos".equals(alertType)
-                || "sos_followup".equals(alertType);
+        return NotificationUrgencyPolicy.isEmergency(
+            type,
+            data != null ? data.optString("urgent", "") : "",
+            data != null ? data.optString("severity", "") : "",
+            data != null ? data.optString("alertType", data.optString("alert_type", "")) : ""
+        );
     }
 
     // ── Notification Channels ───────────────────────────────────────────────────

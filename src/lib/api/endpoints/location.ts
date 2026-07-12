@@ -24,6 +24,8 @@ export interface LocationHistoryPoint {
   lat: number;
   lng: number;
   recorded_at: string;
+  /** 해당 실제 GPS fix의 수평 오차(m). 추정점·레거시 행은 null/미제공. */
+  accuracy_m?: number | null;
   /** true/1이면 실제 GPS점 사이를 메운 추정 좌표. */
   is_estimated?: boolean | number;
 }

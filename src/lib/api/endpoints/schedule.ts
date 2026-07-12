@@ -4,7 +4,7 @@
  *
  * 서버 계약(hyeni-1 worker/routes):
  * - events: 다자녀 배정은 events_children(child_id = family_members.id, member id) M:N.
- *   반복(recurrence)은 서버 컬럼이 없다 → 클라에서 발생일마다 별도 행으로 확장(hyeni-1 App.jsx 동일).
+ *   반복(recurrence)은 클라에서 발생일마다 별도 행으로 확장하고 series_id로 같은 묶음만 식별한다.
  *   사전알림(reminder)은 notif_override jsonb(`{ minutesBefore: number[] }`)로 저장.
  * - daily-supplies: (family, child, date) 당 1행 + supplies/homework/note TEXT(GET/PUT 만, 항목행/DELETE 없음).
  *   체크리스트(항목별 done)는 supplies/homework TEXT 에 compact JSON 으로 인코딩해 왕복한다.
@@ -25,6 +25,8 @@ export interface EventNotifOverride {
 
 export interface CalendarEvent {
   id: string;
+  /** 반복 일정 묶음 식별자. 같은 값이 명시된 행만 일괄 수정한다. */
+  series_id?: string | null;
   family_id: string;
   date_key: string; // "YYYY-monthIndex0-D"
   title: string;
@@ -44,15 +46,28 @@ export interface CalendarEvent {
   events_children?: Array<{ child_id?: string }>;
 }
 
-/** 가족 일정 목록. */
-export function fetchEvents(familyId: string, limit = 300): Promise<CalendarEvent[]> {
-  return apiGet<CalendarEvent[]>(
+function eventDateSortValue(dateKey: string): number {
+  const match = /^(\d{4,})-(\d{1,2})-(\d{1,2})$/.exec(dateKey);
+  if (!match) return Number.NEGATIVE_INFINITY;
+  const year = Number(match[1]);
+  const monthIndex = Number(match[2]);
+  const day = Number(match[3]);
+  return year * 372 + monthIndex * 31 + day;
+}
+
+/** 가족 일정 목록. 서버 상한을 받고 0-indexed 비패딩 date_key를 숫자 날짜로 최신순 정렬한다. */
+export async function fetchEvents(familyId: string, limit = 1000): Promise<CalendarEvent[]> {
+  const rows = await apiGet<CalendarEvent[]>(
     `/api/events?family_id=${encodeURIComponent(familyId)}&limit=${limit}`,
+  );
+  return [...rows].sort(
+    (a, b) => eventDateSortValue(b.date_key) - eventDateSortValue(a.date_key) || b.id.localeCompare(a.id),
   );
 }
 
 export type NewEventRow = {
   id?: string;
+  series_id?: string | null;
   family_id: string;
   date_key: string;
   title: string;
@@ -86,6 +101,7 @@ export function deleteEvent(eventId: string): Promise<unknown> {
 // ── 다자녀 배정 저장(events + events_children 단일 트랜잭션) ──
 export interface EventRow {
   id: string;
+  series_id?: string | null;
   family_id: string;
   date_key: string;
   title: string;
@@ -118,7 +134,34 @@ export function saveEventWithChildren(input: SaveEventInput): Promise<CalendarEv
   return apiPost<CalendarEvent>("/api/events", input);
 }
 
-/** 사전알림(분) → notif_override. null 이면 알림 없음(override 미설정). */
+/** 여러 일정과 자녀 배정을 서버의 단일 원자 트랜잭션으로 저장한다. */
+export function saveEventsWithChildrenBatch(inputs: SaveEventInput[]): Promise<CalendarEvent[]> {
+  return apiPost<CalendarEvent[]>("/api/events/batch", { inputs });
+}
+
+export type EventReminderSelection = "default" | "none" | number;
+
+/** 폼 선택값 → 서버 override. null=사용자 기본 설정, 빈 배열=이 일정만 알림 없음. */
+export function reminderSelectionToNotifOverride(
+  selection: EventReminderSelection,
+): EventNotifOverride | null {
+  if (selection === "default") return null;
+  if (selection === "none") return { minutesBefore: [] };
+  return { minutesBefore: [selection] };
+}
+
+/** 서버 override → 폼 선택값. null 과 빈 배열을 서로 다른 의미로 보존한다. */
+export function notifOverrideToReminderSelection(
+  override: EventNotifOverride | null | undefined,
+): EventReminderSelection {
+  if (override == null) return "default";
+  const arr = override.minutesBefore;
+  if (Array.isArray(arr) && arr.length === 0) return "none";
+  if (Array.isArray(arr) && arr.length > 0 && Number.isFinite(arr[0])) return Number(arr[0]);
+  return "default";
+}
+
+/** 사전알림(분) → notif_override. null 이면 사용자 기본 알림 설정을 따른다. */
 export function reminderMinutesToNotifOverride(minutes: number | null): EventNotifOverride | null {
   if (minutes == null) return null;
   return { minutesBefore: [minutes] };

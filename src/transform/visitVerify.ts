@@ -11,6 +11,7 @@ import type { CalendarEvent } from "@/lib/api/endpoints/schedule";
 import type { LocationHistoryPoint } from "@/lib/api/endpoints/location";
 import { parseAppDateKey } from "./dateKey";
 import { eventChildMemberIds, eventIsFamilyShared } from "./eventScope";
+import { isReliableLocationEvidence } from "./locationAccuracy";
 
 export type VisitVerdict = "visited" | "unverified";
 export type VisitChildScope = string | null | ReadonlyMap<string, string>;
@@ -133,7 +134,10 @@ export function verifyVisits(
 ): Map<string, VisitVerdict> {
   const out = new Map<string, VisitVerdict>();
   const points: NormalizedPoint[] = (history ?? [])
-    .filter((p) => p.is_estimated !== true && p.is_estimated !== 1)
+    .filter(
+      (p) => p.is_estimated !== true && p.is_estimated !== 1
+        && isReliableLocationEvidence(p),
+    )
     .map((p) => ({
       user_id: p.user_id,
       lat: Number(p.lat),

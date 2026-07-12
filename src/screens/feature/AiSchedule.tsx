@@ -10,11 +10,14 @@ import { useParseSchedule } from "@/queries/useAi";
 import { useEvents, useSaveEventsWithChildrenBatch } from "@/queries/useSchedule";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { useActiveChild } from "@/app/activeChild";
-import { dateToDateKey } from "@/transform/dateKey";
+import {
+  buildAiScheduleDrafts,
+  buildAiScheduleSaveInputs,
+  type AiScheduleDraft,
+} from "@/transform/aiScheduleDraft";
 import { scheduleLimitFor, TIERS } from "@/transform/tierPolicy";
 import { ApiError } from "@/lib/api/errors";
 import { captureSpeech, isSpeechCaptureSupported } from "@/lib/native/speech";
-import type { ParsedScheduleEvent } from "@/lib/api/endpoints/ai";
 import "./AiSchedule.css";
 
 type TabKey = "voice" | "text" | "image";
@@ -32,15 +35,7 @@ const WAVE_BARS = Array.from({ length: 20 }, (_, i) => ({
   delay: `${(-((i * 7) % 11) * 0.09).toFixed(2)}s`,
 }));
 
-/** 카테고리(school/sports/...) → 결과 카드 이모지·라벨(hyeni-1 CATS 기준). */
-const CAT_EMOJI: Record<string, string> = {
-  school: "📚",
-  sports: "⚽",
-  hobby: "🎨",
-  family: "👨‍👩‍👧",
-  friend: "👫",
-  other: "📌",
-};
+/** 카테고리(school/sports/...) → 결과 카드 라벨(hyeni-1 CATS 기준). */
 const CAT_LABEL: Record<string, string> = {
   school: "학교·공부",
   sports: "운동",
@@ -50,23 +45,10 @@ const CAT_LABEL: Record<string, string> = {
   other: "기타",
 };
 
-const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
-
 /** 오늘 기준 currentDate(month 는 0-indexed — voice-parse 상대 날짜 해석용). */
 function currentDateParts(): { year: number; month: number; day: number } {
   const now = new Date();
   return { year: now.getFullYear(), month: now.getMonth(), day: now.getDate() };
-}
-
-/** 파싱 이벤트의 시간 표시("HH:MM" 또는 "시간 미정"). */
-function eventTimeLabel(ev: ParsedScheduleEvent): string {
-  return ev.time && ev.time !== "null" ? ev.time : "시간 미정";
-}
-
-/** 파싱 이벤트 → "M/D (요일)". 누락 필드는 오늘로 대체. */
-function eventDateLabel(ev: ParsedScheduleEvent, cd: { year: number; month: number; day: number }): string {
-  const date = new Date(ev.year ?? cd.year, ev.month ?? cd.month, ev.day ?? cd.day);
-  return `${date.getMonth() + 1}/${date.getDate()} (${WEEKDAYS[date.getDay()]})`;
 }
 
 function scheduleLimitMessage(tier: string, limit: number): string {
@@ -93,17 +75,16 @@ export function AiSchedule() {
   const [text, setText] = useState("");
   // 알림장 사진 미리보기(data URI). null = 사진 미선택.
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  // 파싱 결과(미리보기). null = 아직 정리 전(입력 모드).
-  const [parsed, setParsed] = useState<ParsedScheduleEvent[] | null>(null);
+  // 검증된 파싱 결과(미리보기). UUID도 이 시점에 확정해 저장 재시도에서 유지한다.
+  const [drafts, setDrafts] = useState<AiScheduleDraft[] | null>(null);
   // 음성 인식 진행 중 여부.
   const [listening, setListening] = useState(false);
   // 숨긴 파일 입력 — 업로드 버튼 onClick 에서 트리거(직접 노출하지 않음).
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const cd = currentDateParts();
-  const events = parsed ?? [];
+  const events = drafts ?? [];
   const hasResult = events.length > 0;
-  const first = hasResult ? events[0] : null;
   const count = events.length;
   // 정리하기 가능 여부 — 알림장 탭은 사진 선택 시, 텍스트·음성 탭은 인식/입력된 내용이 있을 때.
   const canParse = tab === "image" ? imagePreview !== null : text.trim().length > 0;
@@ -111,7 +92,7 @@ export function AiSchedule() {
   // 텍스트가 바뀌면 이전 미리보기는 무효 → 다시 정리하도록 초기화.
   const onTextChange = (value: string) => {
     setText(value);
-    if (parsed) setParsed(null);
+    if (drafts) setDrafts(null);
   };
 
   // ── 알림장 사진 선택(실제 파일 입력) — 선택·미리보기는 항상 동작 ──
@@ -128,7 +109,7 @@ export function AiSchedule() {
         return;
       }
       setImagePreview(dataUrl);
-      setParsed(null); // 새 사진 → 이전 인식 결과 무효화.
+      setDrafts(null); // 새 사진 → 이전 인식 결과 무효화.
     };
     reader.onerror = () => show("사진을 불러오지 못했어요", "⚠️");
     reader.readAsDataURL(file);
@@ -148,7 +129,7 @@ export function AiSchedule() {
         currentDate: cd,
       });
       if (result.events.length === 0) {
-        setParsed(null);
+        setDrafts(null);
         show(
           image
             ? "사진에서 일정을 찾지 못했어요. 날짜와 시간이 잘 보이게 다시 찍어 주세요."
@@ -157,9 +138,20 @@ export function AiSchedule() {
         );
         return;
       }
-      setParsed(result.events);
+      const prepared = buildAiScheduleDrafts(result.events, cd, () => crypto.randomUUID());
+      if (prepared.error) {
+        setDrafts(null);
+        const errorMessage = prepared.error.code === "invalid_title"
+          ? `AI가 ‘${prepared.error.title}’의 일정 이름을 읽지 못했어요. 이름을 포함해 다시 정리해 주세요.`
+          : prepared.error.code === "invalid_date"
+            ? `AI가 ‘${prepared.error.title}’ 일정의 날짜를 잘못 읽었어요. 날짜를 확인해 다시 정리해 주세요.`
+            : `AI가 ‘${prepared.error.title}’ 일정의 시간을 잘못 읽었어요. 0시부터 23시 59분 사이로 다시 적어 주세요.`;
+        show(errorMessage, "⚠️");
+        return;
+      }
+      setDrafts(prepared.drafts);
     } catch (e) {
-      setParsed(null);
+      setDrafts(null);
       show(
         e instanceof ApiError
           ? e.message
@@ -185,7 +177,7 @@ export function AiSchedule() {
       return;
     }
     setListening(true);
-    setParsed(null);
+    setDrafts(null);
     try {
       const transcript = await captureSpeech("ko-KR");
       if (!transcript) {
@@ -223,7 +215,7 @@ export function AiSchedule() {
 
   // ── 확정: 파싱된 일정 생성 — 사용자 버튼 onClick 에서만 호출(자동 실행 금지) ──
   const handleConfirm = async () => {
-    if (!parsed || parsed.length === 0) return;
+    if (!drafts || drafts.length === 0) return;
     if (status !== "authenticated" || !familyId) {
       show("로그인이 필요해요", "🔒");
       return;
@@ -235,43 +227,20 @@ export function AiSchedule() {
     if (tier !== TIERS.UNKNOWN) {
       const limit = scheduleLimitFor(tier);
       const currentCount = existingEvents.data?.length ?? 0;
-      if (currentCount + parsed.length > limit) {
+      if (currentCount + drafts.length > limit) {
         show(scheduleLimitMessage(tier, limit), "👑");
         return;
       }
     }
     try {
-      await createM.mutateAsync(
-        parsed.map((ev) => {
-          const dateKey = dateToDateKey(
-            new Date(ev.year ?? cd.year, ev.month ?? cd.month, ev.day ?? cd.day),
-          );
-          const category = ev.category || "other";
-          // AI 일정은 활성 아이에게 배정(가족 전체 노출 방지 — "AI가 아이 일정으로 정리" UI 와 일치).
-          return {
-            event: {
-              id: crypto.randomUUID(),
-              family_id: familyId,
-              date_key: dateKey,
-              title: ev.title,
-              time: ev.time && ev.time !== "null" ? ev.time : null,
-              category,
-              emoji: CAT_EMOJI[category] || CAT_EMOJI.other,
-              memo: ev.memo && ev.memo !== "null" ? ev.memo : "",
-            },
-            childIds: [activeChild.id],
-            familyAll: false,
-            expectedUpdatedAt: null,
-          };
-        }),
-      );
+      await createM.mutateAsync(buildAiScheduleSaveInputs(drafts, familyId, activeChild.id));
       show(
-        parsed.length > 1
-          ? `${parsed.length}건의 일정을 캘린더에 추가했어요`
-          : `‘${parsed[0].title}’ 일정을 캘린더에 추가했어요`,
+        drafts.length > 1
+          ? `${drafts.length}건의 일정을 캘린더에 추가했어요`
+          : `‘${drafts[0]?.title ?? "일정"}’ 일정을 캘린더에 추가했어요`,
         "✅",
       );
-      setParsed(null);
+      setDrafts(null);
       setText("");
       setImagePreview(null);
       navigate(-1);
@@ -342,11 +311,11 @@ export function AiSchedule() {
             {text ? (
               <div className="ais-bubble ais-bubble--said">“{text}”</div>
             ) : (
-              <div className="ais-bubble">예) “내일 오후 4시에 지우 태권도 일정 추가해줘”</div>
+              <div className="ais-bubble">예) “내일 오후 4시에 태권도 일정 추가해줘”</div>
             )}
             <div className="ais-hint">
               <span className="ais-hint__ico">🎙️</span>
-              말한 내용을 AI가 날짜·시간·아이로 정리해요
+              말한 내용에서 추가할 일정의 날짜와 시간을 정리해요
             </div>
           </div>
         )}
@@ -357,14 +326,14 @@ export function AiSchedule() {
             <div className="ais-textbox">
               <textarea
                 className="ais-textarea"
-                placeholder="예) 다음 주 화요일 4시에 지우 태권도 추가하고, 목요일 미술학원은 5시로 바꿔줘"
+                placeholder="예) 다음 주 화요일 4시 태권도와 목요일 5시 미술학원 추가해줘"
                 value={text}
                 onChange={(e) => onTextChange(e.target.value)}
               />
             </div>
             <div className="ais-hint">
               <span className="ais-hint__ico">✨</span>
-              자유롭게 적으면 AI가 날짜·시간·아이를 알아서 정리해요
+              자유롭게 적으면 AI가 추가할 일정의 날짜와 시간을 정리해요
             </div>
           </div>
         )}
@@ -418,47 +387,53 @@ export function AiSchedule() {
         )}
 
         {/* AI 인식 결과 — 파싱 성공 시에만 노출(입력 전/실패 시 숨김) */}
-        {hasResult && first && (
+        {hasResult && drafts && (
           <>
             <div className="ais-reslabel">
               <span className="ais-reslabel__badge">✨</span>
               <span className="ais-reslabel__text">
                 {count > 1
-                  ? `AI 인식 결과 · ${count}건을 캘린더에 추가해요`
-                  : "AI 인식 결과 · 캘린더에 반영돼요"}
+                  ? `AI 인식 결과 · ${count}건을 모두 확인해 주세요`
+                  : "AI 인식 결과 · 내용을 확인해 주세요"}
               </span>
             </div>
 
-            <div className="ais-result">
-              <div className="ais-result__top">
-                <span className="ais-result__icon">
-                  <img
-                    src={asset(resolveEventVisualAsset(first.title, first.category || "other"))}
-                    alt=""
-                  />
-                </span>
-                <span className="ais-result__info">
-                  <span className="ais-result__k">일정</span>
-                  <span className="ais-result__v ais-result__v--lg">{first.title}</span>
-                </span>
+            {drafts.map((draft) => (
+              <div key={draft.id} className="ais-result">
+                <div className="ais-result__top">
+                  <span className="ais-result__icon">
+                    <img
+                      src={asset(resolveEventVisualAsset(draft.title, draft.category))}
+                      alt=""
+                    />
+                  </span>
+                  <span className="ais-result__info">
+                    <span className="ais-result__k">일정</span>
+                    <span className="ais-result__v ais-result__v--lg">{draft.title}</span>
+                  </span>
+                </div>
+                <div className="ais-result__hr" />
+                <div className="ais-result__grid">
+                  <div className="ais-result__cell">
+                    <span className="ais-result__k">날짜</span>
+                    <span className="ais-result__v">{draft.dateLabel}</span>
+                  </div>
+                  <div className="ais-result__cell">
+                    <span className="ais-result__k">시간</span>
+                    <span className="ais-result__v">{draft.timeLabel}</span>
+                  </div>
+                  <div className="ais-result__cell">
+                    <span className="ais-result__k">분류</span>
+                    <span className="ais-result__v">{CAT_LABEL[draft.category] || CAT_LABEL.other}</span>
+                  </div>
+                </div>
               </div>
-              <div className="ais-result__hr" />
-              <div className="ais-result__grid">
-                <div className="ais-result__cell">
-                  <span className="ais-result__k">날짜</span>
-                  <span className="ais-result__v">{eventDateLabel(first, cd)}</span>
-                </div>
-                <div className="ais-result__cell">
-                  <span className="ais-result__k">시간</span>
-                  <span className="ais-result__v">{eventTimeLabel(first)}</span>
-                </div>
-                <div className="ais-result__cell">
-                  <span className="ais-result__k">분류</span>
-                  <span className="ais-result__v">{CAT_LABEL[first.category || "other"] || CAT_LABEL.other}</span>
-                </div>
-              </div>
+            ))}
+            <div className="ais-edit-note">
+              {activeChild
+                ? `${count}건 모두 ${activeChild.name || "선택한 아이"}에게 저장돼요. 추가한 뒤 캘린더에서 수정할 수 있어요.`
+                : "저장할 아이를 먼저 선택해 주세요."}
             </div>
-            <div className="ais-edit-note">추가한 뒤 캘린더에서 수정할 수 있어요.</div>
           </>
         )}
 

@@ -344,30 +344,12 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     private boolean isEmergencyNotification(String type, Map<String, String> data) {
-        if ("emergency".equals(type) || "sos".equals(type)) {
-            return true;
-        }
-        if ("true".equalsIgnoreCase(data.get("urgent"))) {
-            return true;
-        }
-        if (!"parent_alert".equals(type)) {
-            return false;
-        }
-        String severity = firstNonBlank(data.get("severity"), "");
-        String alertType = firstNonBlank(data.get("alertType"), data.get("alert_type"), "");
-        if ("emergency".equalsIgnoreCase(severity)
-                || "critical".equalsIgnoreCase(severity)
-                || "urgent".equalsIgnoreCase(severity)) {
-            return true;
-        }
-        return "not_arrived".equals(alertType)
-                || "missed_arrival".equals(alertType)
-                || "danger_zone".equals(alertType)
-                || "danger_enter".equals(alertType)
-                || "danger_entry".equals(alertType)
-                || "danger_exit".equals(alertType)
-                || "sos".equals(alertType)
-                || "sos_followup".equals(alertType);
+        return NotificationUrgencyPolicy.isEmergency(
+            type,
+            data.get("urgent"),
+            firstNonBlank(data.get("severity"), ""),
+            firstNonBlank(data.get("alertType"), data.get("alert_type"), "")
+        );
     }
 
     private boolean shouldHandleChildCommand(SharedPreferences prefs) {

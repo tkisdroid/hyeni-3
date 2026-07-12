@@ -50,6 +50,49 @@ export function markAllAlertsRead(familyId: string): Promise<{ ok: boolean; upda
   });
 }
 
+/** 네이티브 foreground fallback이 소비하는 서버 pending 알림. */
+export interface PendingDeviceNotification {
+  id: string;
+  title: string;
+  body: string;
+  data?: Record<string, unknown> | null;
+  created_at?: string;
+}
+
+/** 현재 기기용 미전달 알림 조회. 서버가 사용자·role·만료를 다시 검증한다. */
+export async function fetchDevicePendingNotifications(
+  familyId: string,
+  userId: string,
+  role: "parent" | "child",
+): Promise<PendingDeviceNotification[]> {
+  const rows = await apiPost<PendingDeviceNotification[] | null>(
+    "/rest/v1/rpc/get_pending_notifications_for_device",
+    {
+      p_family_id: familyId,
+      p_user_id: userId,
+      p_role: role,
+    },
+  );
+  return Array.isArray(rows) ? rows : [];
+}
+
+/** 부모 Android fallback의 기존 호출 계약. */
+export function fetchParentPendingNotifications(
+  familyId: string,
+  userId: string,
+): Promise<PendingDeviceNotification[]> {
+  return fetchDevicePendingNotifications(familyId, userId, "parent");
+}
+
+/** 실제 표시 또는 동일 FCM의 로컬 ACK가 확인된 행만 delivered 처리한다. */
+export async function markPendingNotificationsDelivered(ids: string[]): Promise<number> {
+  if (ids.length === 0) return 0;
+  const updated = await apiPost<number | null>("/rest/v1/rpc/mark_notifications_delivered", {
+    p_ids: ids,
+  });
+  return Number(updated ?? 0);
+}
+
 /* ── 알림 설정(notif-settings) ──────────────────────────────────────────────
  * per-user 알림 환경설정(user_id PK). 서버(GET /api/notif-settings)는 boolean·int[]
  * 형태의 snake_case row 또는 null(첫 실행)을 반환한다. 여기서 camelCase 로 정리해
@@ -98,9 +141,11 @@ export const DEFAULT_NOTIF_SETTINGS: NotifSettings = {
 /** 사전 알림 선택 후보(분) — hyeni-1 NOTIFICATION_MINUTE_OPTIONS. */
 export const NOTIF_MINUTE_OPTIONS: readonly number[] = [30, 15, 10, 5];
 
-// minutes_before 정규화: 정수·양수·중복제거·내림차순. 빈 값이면 기본값(서버 semantics 미러).
+// minutes_before 정규화: 정수·양수·중복제거·내림차순. 명시적 빈 배열은
+// "사전 알림 없음"이므로 보존하고, 필드 자체가 잘못 누락된 경우에만 기본값을 쓴다.
 function normalizeMinutes(raw: unknown): number[] {
-  const src = Array.isArray(raw) ? raw : [];
+  if (!Array.isArray(raw)) return [...DEFAULT_NOTIF_SETTINGS.minutesBefore];
+  const src = raw;
   const seen = new Set<number>();
   const out: number[] = [];
   for (const v of src) {
@@ -110,7 +155,7 @@ function normalizeMinutes(raw: unknown): number[] {
     out.push(n);
   }
   out.sort((a, b) => b - a);
-  return out.length ? out : [...DEFAULT_NOTIF_SETTINGS.minutesBefore];
+  return out;
 }
 
 // 서버 row → NotifSettings(누락 필드는 기본값 보정).

@@ -77,16 +77,20 @@ function computeTag(event: CalendarEvent, now: Date, visitMap?: VisitMap): TagSt
   const date = parseAppDateKey(event.date_key);
   if (!date) return TAG_STYLES.예정;
   const startMin = timeToMinutes(event.time);
-  const endMin = timeToMinutes(event.end_time) ?? (startMin != null ? startMin + 60 : null);
   const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const evMidnight = date.getTime();
-  if (evMidnight < todayMidnight) return donePast();
-  if (evMidnight > todayMidnight) return TAG_STYLES.예정;
-  // 오늘
-  if (startMin == null) return TAG_STYLES.예정;
-  const nowMin = now.getHours() * 60 + now.getMinutes();
-  if (endMin != null && nowMin >= endMin) return donePast();
-  if (nowMin >= startMin) return TAG_STYLES["진행 중"];
+  if (startMin == null) {
+    if (evMidnight < todayMidnight) return donePast();
+    return TAG_STYLES.예정;
+  }
+
+  const endMinRaw = timeToMinutes(event.end_time) ?? startMin + 60;
+  const endMin = endMinRaw <= startMin ? endMinRaw + 24 * 60 : endMinRaw;
+  const startAt = evMidnight + startMin * 60_000;
+  const endAt = evMidnight + endMin * 60_000;
+  const nowAt = now.getTime();
+  if (nowAt >= endAt) return donePast();
+  if (nowAt >= startAt) return TAG_STYLES["진행 중"];
   return TAG_STYLES.예정;
 }
 

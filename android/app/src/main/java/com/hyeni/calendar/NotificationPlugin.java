@@ -20,6 +20,7 @@ import android.os.PowerManager;
 import android.provider.Settings;
 
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
 import com.getcapacitor.JSArray;
@@ -71,6 +72,75 @@ public class NotificationPlugin extends Plugin {
         );
 
         call.resolve(new JSObject().put("success", true));
+    }
+
+    static boolean shouldPendingUseFullScreen(boolean urgent) {
+        return urgent;
+    }
+
+    static String pendingNotificationChannel(boolean urgent) {
+        return urgent ? "emergency" : "schedule";
+    }
+
+    /**
+     * 부모 foreground pending fallback 표시. FCM 경로와 같은 stableId(pushId)를
+     * PolledNotificationStore에서 확인하고, 실제 게시 가능한 경우에만 ACK를 남긴다.
+     */
+    @PluginMethod()
+    public void showPending(PluginCall call) {
+        Context context = getContext();
+        String stableId = call.getString(
+                "stableId",
+                call.getString("pushId", call.getString("id", null))
+        );
+        if (stableId == null || stableId.trim().isEmpty()) {
+            call.resolve(pendingDisplayResult(false, false));
+            return;
+        }
+
+        if (PolledNotificationStore.isAcked(context, stableId)) {
+            call.resolve(pendingDisplayResult(false, true));
+            return;
+        }
+        if (!canPostPendingNotification(context)) {
+            call.resolve(pendingDisplayResult(false, false));
+            return;
+        }
+
+        // 권한 확인 사이에 FCM이 먼저 표시됐을 수 있으므로 게시 직전에 한 번 더 확인한다.
+        if (PolledNotificationStore.isAcked(context, stableId)) {
+            call.resolve(pendingDisplayResult(false, true));
+            return;
+        }
+
+        boolean urgent = call.getBoolean("urgent", false);
+        boolean fullScreen = shouldPendingUseFullScreen(urgent);
+        String title = call.getString("title", "혜니캘린더");
+        String body = call.getString("body", "");
+        NotificationHelper.showNotification(
+                context,
+                title,
+                body,
+                pendingNotificationChannel(urgent),
+                fullScreen,
+                fullScreen,
+                NotificationHelper.stableRequestCode(stableId)
+        );
+        PolledNotificationStore.markAck(context, stableId);
+        call.resolve(pendingDisplayResult(true, true));
+    }
+
+    private static JSObject pendingDisplayResult(boolean displayed, boolean acknowledged) {
+        return new JSObject()
+                .put("displayed", displayed)
+                .put("acknowledged", acknowledged);
+    }
+
+    private boolean canPostPendingNotification(Context context) {
+        if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) return false;
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+                || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+                    == PackageManager.PERMISSION_GRANTED;
     }
 
     @PluginMethod()

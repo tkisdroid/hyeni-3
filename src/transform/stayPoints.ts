@@ -13,6 +13,7 @@
  * 일정 시간 머문 곳만 남는다.
  */
 import { distanceMeters, parseServerTimestamp } from "./locationView";
+import { isReliableLocationEvidence } from "./locationAccuracy";
 import type { LocationHistoryPoint } from "@/lib/api/endpoints/location";
 import type { SavedPlace } from "@/lib/api/endpoints/location";
 
@@ -57,6 +58,7 @@ export function toTimedPoints(
   return (history ?? [])
     .filter(
       (p) => p.is_estimated !== true && p.is_estimated !== 1
+        && isReliableLocationEvidence(p)
         && (!userId || p.user_id === userId)
         && Number.isFinite(p.lat)
         && Number.isFinite(p.lng),

@@ -45,6 +45,7 @@ import {
 import { placePhoneCall } from "@/lib/native/phone";
 import { requestLocationRefresh } from "@/lib/api/endpoints/remote";
 import { waitForNewChildLocation } from "@/transform/locationRefreshWait";
+import { isReliableLocationEvidence } from "@/transform/locationAccuracy";
 import type { LocationHistoryPoint } from "@/lib/api/endpoints/location";
 import type { CalendarEvent } from "@/lib/api/endpoints/schedule";
 import "./ParentLocation.css";
@@ -139,7 +140,8 @@ function buildTrailPoints(
       lat: p.lat,
       lng: p.lng,
       ms: parseServerTimestamp(p.recorded_at)?.getTime() ?? 0,
-      estimated: p.is_estimated === true || p.is_estimated === 1,
+      // 저정확도·정확도 미보고 실제점은 경로 자체에서는 숨기지 않되 점선으로 강등한다.
+      estimated: !isReliableLocationEvidence(p),
     }))
     .sort((a, b) => a.ms - b.ms);
   const out: TrailPoint[] = [];

@@ -11,9 +11,10 @@ import { useSavedPlaces } from "@/queries/useLocation";
 import { useEvents, useSaveEventsWithChildrenBatch } from "@/queries/useSchedule";
 import { useEntitlement } from "@/queries/useEntitlement";
 import {
-  notifOverrideToReminderMinutes,
-  reminderMinutesToNotifOverride,
+  notifOverrideToReminderSelection,
+  reminderSelectionToNotifOverride,
   type CalendarEvent,
+  type EventReminderSelection,
 } from "@/lib/api/endpoints/schedule";
 import { ApiError } from "@/lib/api/errors";
 import {
@@ -46,6 +47,7 @@ interface FormNavState {
   mode?: Mode;
   event?: CalendarEvent;
   dateKey?: string;
+  childId?: string;
   childUserId?: string;
   suggestion?: Record<string, unknown> | null;
 }
@@ -66,8 +68,9 @@ const CATEGORY_ICONS = EVENT_CATEGORY_ASSETS;
 
 const REPEATS: RepeatMode[] = ["없음", "매일", "매주", "매월", "요일"];
 
-const PREALARMS: Array<{ label: string; minutes: number | null }> = [
-  { label: "없음", minutes: null },
+const PREALARMS: Array<{ label: string; minutes: EventReminderSelection }> = [
+  { label: "기본 설정", minutes: "default" },
+  { label: "알림 없음", minutes: "none" },
   { label: "10분 전", minutes: 10 },
   { label: "30분 전", minutes: 30 },
   { label: "1시간 전", minutes: 60 },
@@ -152,6 +155,7 @@ export function EventForm() {
   const suggestion = mode === "create" ? nav?.suggestion ?? null : null;
 
   const familyQuery = useMyFamily();
+  const familyReady = !familyQuery.isLoading && !familyQuery.isError && !!familyQuery.data;
   const children = useMemo(
     () => (familyQuery.data?.members ?? []).filter((m) => m.role === "child"),
     [familyQuery.data],
@@ -169,12 +173,12 @@ export function EventForm() {
   const editingNeedsAssignment =
     mode === "edit" && !!editing && editing.is_family_event !== true && initialChildIdList(editing).length === 0;
   const suggestedChildId = useMemo(() => {
-    const explicit = stringFrom(suggestion?.childMemberId);
+    const explicit = stringFrom(suggestion?.childMemberId) ?? stringFrom(nav?.childId);
     if (explicit) return explicit;
     const childUserId = stringFrom(suggestion?.childUserId) ?? stringFrom(nav?.childUserId);
     if (!childUserId) return null;
     return children.find((m) => m.user_id === childUserId)?.id ?? null;
-  }, [children, nav?.childUserId, suggestion]);
+  }, [children, nav?.childId, nav?.childUserId, suggestion]);
   const initialAssignedChildIds = useMemo(
     () =>
       resolveInitialAssignedChildIds({
@@ -218,6 +222,7 @@ export function EventForm() {
     return dateKeyToDateInputValue(key);
   });
   const [timeValue, setTimeValue] = useState(() => editing?.time ?? stringFrom(suggestion?.time) ?? "");
+  const [allDay, setAllDay] = useState(() => (editing ? editing.time == null : false));
   const [durationMin, setDurationMin] = useState(
     () => finiteNumberFrom(suggestion?.durationMinutes) ?? durationFromEvent(editing?.time, editing?.end_time),
   );
@@ -236,10 +241,15 @@ export function EventForm() {
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [repeat, setRepeat] = useState<RepeatMode>("없음");
   const [repeatWeekdays, setRepeatWeekdays] = useState<Set<WeekdayIndex>>(() => new Set());
-  const [prealarm, setPrealarm] = useState<number | null>(() =>
-    notifOverrideToReminderMinutes(editing?.notif_override),
+  const [prealarm, setPrealarm] = useState<EventReminderSelection>(() =>
+    notifOverrideToReminderSelection(editing?.notif_override),
   );
   const [memo, setMemo] = useState(() => editing?.memo ?? "");
+  const createBatchIdentityRef = useRef<{
+    occurrenceKey: string;
+    seriesId: string | null;
+    idsByDateKey: Map<string, string>;
+  } | null>(null);
 
   const placeSuggestions = useMemo(
     () => searchSavedPlacesForSchedule(savedPlaces, place),
@@ -291,12 +301,19 @@ export function EventForm() {
 
   const handleSave = async (scope?: SeriesEditScope) => {
     if (busy) return;
+    if (!familyReady) {
+      show(
+        familyQuery.isError ? "가족 정보를 불러오지 못했어요. 다시 시도해 주세요" : "가족 정보를 불러오고 있어요",
+        "⚠️",
+      );
+      return;
+    }
     const trimmedTitle = title.trim();
     if (!trimmedTitle) {
       show("일정 제목을 입력해 주세요", "✏️");
       return;
     }
-    if (!timeValue) {
+    if (!allDay && !timeValue) {
       show("시간을 선택해 주세요", "🕒");
       return;
     }
@@ -317,12 +334,17 @@ export function EventForm() {
 
     const catStyle = CATEGORIES.find((c) => c.id === category);
     const childIds = Array.from(selectedChildIds);
-    const startMin = timeToMinutes(timeValue);
-    if (startMin == null || durationMin <= 0) {
+    const unknownChildId = childIds.find((id) => !children.some((child) => child.id === id));
+    if (unknownChildId) {
+      show("선택한 아이 정보를 확인하지 못했어요. 다시 선택해 주세요", "🧒");
+      return;
+    }
+    const startMin = allDay ? null : timeToMinutes(timeValue);
+    if ((!allDay && startMin == null) || durationMin <= 0) {
       show("시간을 확인해 주세요", "🕒");
       return;
     }
-    const endTimeValue = minutesToTimeValue(startMin + durationMin);
+    const endTimeValue = startMin == null ? "" : minutesToTimeValue(startMin + durationMin);
     if (editingNeedsAssignment && childIds.length === 0) {
       show("배정할 아이를 선택해 주세요", "🧒");
       return;
@@ -330,13 +352,13 @@ export function EventForm() {
     const familyAll = !editingNeedsAssignment && childIds.length === 0;
     const baseFields = {
       title: trimmedTitle,
-      time: timeValue,
-      end_time: endTimeValue,
+      time: allDay ? null : timeValue,
+      end_time: allDay ? null : endTimeValue,
       category,
       emoji: catStyle?.emoji ?? "🌟",
       memo: memo.trim(),
       location: buildEventLocation(place, placeCoord),
-      notif_override: reminderMinutesToNotifOverride(prealarm),
+      notif_override: reminderSelectionToNotifOverride(prealarm),
       is_family_event: familyAll,
     };
 
@@ -371,6 +393,7 @@ export function EventForm() {
               id: target.id,
               family_id: familyId,
               date_key: target.id === editing.id ? dateKey : target.date_key,
+              series_id: target.series_id ?? null,
               ...baseFields,
             },
             childIds,
@@ -385,9 +408,24 @@ export function EventForm() {
           "🗓️",
         );
       } else {
+        const occurrenceKey = keys.join("\u001f");
+        if (createBatchIdentityRef.current?.occurrenceKey !== occurrenceKey) {
+          createBatchIdentityRef.current = {
+            occurrenceKey,
+            seriesId: keys.length > 1 ? crypto.randomUUID() : null,
+            idsByDateKey: new Map(keys.map((key) => [key, crypto.randomUUID()])),
+          };
+        }
+        const createIdentity = createBatchIdentityRef.current;
         await saveEvents.mutateAsync(
           keys.map((dk) => ({
-            event: { id: crypto.randomUUID(), family_id: familyId, date_key: dk, ...baseFields },
+            event: {
+              id: createIdentity.idsByDateKey.get(dk) ?? crypto.randomUUID(),
+              series_id: createIdentity.seriesId,
+              family_id: familyId,
+              date_key: dk,
+              ...baseFields,
+            },
             childIds,
             familyAll,
             expectedUpdatedAt: null,
@@ -432,7 +470,11 @@ export function EventForm() {
         {/* 아이(다중 배정) — 서버 events_children 에 실제 저장 */}
         <div>
           <div className="ef-label">아이</div>
-          {children.length === 0 ? (
+          {familyQuery.isLoading ? (
+            <div className="ef-empty-note">가족 정보를 불러오고 있어요</div>
+          ) : familyQuery.isError ? (
+            <div className="ef-empty-note">가족 정보를 불러오지 못했어요. 뒤로 갔다 다시 열어 주세요</div>
+          ) : children.length === 0 ? (
             <div className="ef-empty-note">가족에 등록된 아이가 없어요</div>
           ) : (
             <div className="ef-chips">
@@ -473,6 +515,25 @@ export function EventForm() {
         {/* 날짜 · 시간 */}
         <div>
           <div className="ef-label">날짜 · 시간</div>
+          <div className="ef-chips">
+            <button
+              type="button"
+              className="ef-chip hy-press"
+              aria-pressed={allDay}
+              onClick={() => setAllDay((value) => !value)}
+              style={
+                allDay
+                  ? {
+                      background: "var(--hy-accent-soft)",
+                      color: "var(--hy-accent-text)",
+                      border: "1.5px solid var(--hy-accent)",
+                    }
+                  : { background: IDLE_BG, color: IDLE_COLOR, border: "1.5px solid transparent" }
+              }
+            >
+              하루 종일
+            </button>
+          </div>
           <div className="ef-row">
             <input
               type="date"
@@ -485,11 +546,12 @@ export function EventForm() {
               className="ef-input ef-input--time"
               value={timeValue}
               onChange={(e) => setTimeValue(e.target.value)}
+              disabled={allDay}
             />
           </div>
         </div>
 
-        <div>
+        {!allDay && <div>
           <div className="ef-label">지속시간</div>
           <div className="ef-chips">
             {DURATION_OPTIONS.map((d) => {
@@ -520,7 +582,7 @@ export function EventForm() {
               종료 {minutesToTimeValue((timeToMinutes(timeValue) ?? 0) + durationMin)}
             </div>
           )}
-        </div>
+        </div>}
 
         {/* 카테고리 */}
         <div>
@@ -640,9 +702,13 @@ export function EventForm() {
               지도
             </button>
           </div>
-          {placeCoord && (
+          {placeCoord ? (
             <div className="ef-note">📍 지도 위치가 함께 저장돼요</div>
-          )}
+          ) : place.trim() ? (
+            <div className="ef-note">
+              좌표가 없어 도착·미도착 알림은 동작하지 않아요. 저장된 장소나 지도에서 선택해 주세요
+            </div>
+          ) : null}
         </div>
 
         {/* 반복 — 생성 시에만(서버는 반복 컬럼이 없어 발생일마다 별도 일정으로 저장) */}
@@ -738,6 +804,10 @@ export function EventForm() {
               );
             })}
           </div>
+          {prealarm === "default" && (
+            <div className="ef-note">알림 설정에서 고른 시간을 사용해요</div>
+          )}
+          {prealarm === "none" && <div className="ef-note">이 일정의 사전 알림을 보내지 않아요</div>}
         </div>
 
         {/* 메모 */}
@@ -753,8 +823,21 @@ export function EventForm() {
         </div>
 
         {/* 저장 */}
-        <button type="button" className="ef-save hy-press" onClick={() => void handleSave()} disabled={busy}>
-          {busy ? "저장 중…" : editingNeedsAssignment ? "배정 저장" : mode === "edit" ? "수정 저장" : "일정 저장"}
+        <button
+          type="button"
+          className="ef-save hy-press"
+          onClick={() => void handleSave()}
+          disabled={busy || !familyReady}
+        >
+          {busy
+            ? "저장 중…"
+            : !familyReady
+              ? "가족 정보 확인 중"
+              : editingNeedsAssignment
+                ? "배정 저장"
+                : mode === "edit"
+                  ? "수정 저장"
+                  : "일정 저장"}
         </button>
       </div>
 
