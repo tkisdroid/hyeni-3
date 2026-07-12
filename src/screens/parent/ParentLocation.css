@@ -757,13 +757,18 @@
   width: 22px;
   height: 4px;
   border-radius: 999px;
-  background: #31C48D;
+  background: var(--mint-500);
+}
+.pl-scrub__estimate {
+  width: 22px;
+  height: 0;
+  border-top: 3px dashed var(--lav-400);
 }
 .pl-scrub__dot {
   width: 9px;
   height: 9px;
   border-radius: 999px;
-  background: #A78BFA;
+  background: var(--lav-400);
 }
 
 /* ── 오늘 경로 — 스테이포인트(머문 곳) 목록 ─────────────────────────────── */

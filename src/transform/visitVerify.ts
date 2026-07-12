@@ -133,6 +133,7 @@ export function verifyVisits(
 ): Map<string, VisitVerdict> {
   const out = new Map<string, VisitVerdict>();
   const points: NormalizedPoint[] = (history ?? [])
+    .filter((p) => p.is_estimated !== true && p.is_estimated !== 1)
     .map((p) => ({
       user_id: p.user_id,
       lat: Number(p.lat),

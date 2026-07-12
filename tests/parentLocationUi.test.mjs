@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const source = readFileSync(resolve(rootDir, "src/screens/parent/ParentLocation.tsx"), "utf8");
+const refreshWaitSource = readFileSync(resolve(rootDir, "src/transform/locationRefreshWait.ts"), "utf8");
 
 test("부모 위치 화면의 아이 표시 배지는 실시간 탭에서만 보인다", () => {
   assert.match(source, /!isLocked && activeView === "live" && selected && \(/);
@@ -13,9 +14,12 @@ test("부모 위치 화면의 아이 표시 배지는 실시간 탭에서만 보
 });
 
 test("실시간 위치 요청 중에는 대기 상태를 화면에 표시하고 실제 갱신까지 폴링한다", () => {
-  assert.match(source, /const LOCATION_REFRESH_TIMEOUT_MS = 25_000/);
-  assert.match(source, /const LOCATION_REFRESH_POLL_MS = 2_500/);
-  assert.match(source, /while \(Date\.now\(\) < deadline\)/);
+  assert.match(source, /import \{ waitForNewChildLocation \} from "@\/transform\/locationRefreshWait"/);
+  assert.match(source, /await waitForNewChildLocation\(\{/);
+  assert.match(refreshWaitSource, /export const LOCATION_REFRESH_TIMEOUT_MS = 215_000/);
+  assert.match(refreshWaitSource, /export const LOCATION_REFRESH_POLL_MS = 2_500/);
+  assert.match(refreshWaitSource, /while \(now\(\) < deadline\)/);
+  assert.match(source, /return \(\) => \{\s*refreshSeq\.current \+= 1;/s);
   assert.match(source, /className="pl-refreshing"/);
   assert.match(source, /지도와 장소명은 마지막으로 확인된 위치예요/);
 });

@@ -5,6 +5,10 @@
 import { useEffect, useRef, useState } from "react";
 import { loadKakaoMaps } from "@/lib/kakaoMap";
 import { asset } from "@/lib/assets";
+import {
+  splitLocationRouteSegments,
+  type LocationRoutePoint,
+} from "@/transform/locationRoute";
 
 export interface MapChild {
   lat: number;
@@ -65,7 +69,7 @@ export function KakaoMap({
   zones?: MapZone[];
   places?: MapPlace[];
   /** 도보 경로 폴리라인 좌표(출발→도착). 2점 이상이면 그린다. */
-  route?: LatLngPoint[];
+  route?: LocationRoutePoint[];
   /** 스테이포인트(머무른 장소) 마커 + 순번·체류시간 라벨 + 연결 폴리라인. */
   stays?: MapStay[];
   /** 도착지 마커(경로 끝점). */
@@ -194,18 +198,23 @@ export function KakaoMap({
           overlaysRef.current.push(marker);
         }
 
-        // 도보 경로 폴리라인
+        // 경로 폴리라인. 실측점 사이만 실선, 보간된 추정 구간은 점선으로 정직하게 구분한다.
         if (route && route.length >= 2) {
-          const path = route.map((p) => new maps.LatLng(p.lat, p.lng));
-          const polyline = new maps.Polyline({
-            path,
-            strokeWeight: 6,
-            strokeColor: "#31C48D",
-            strokeOpacity: 0.9,
-            strokeStyle: "solid",
-          });
-          polyline.setMap(mapRef.current);
-          overlaysRef.current.push(polyline);
+          const rootStyle = getComputedStyle(document.documentElement);
+          const actualRouteColor = rootStyle.getPropertyValue("--mint-500").trim();
+          const estimatedRouteColor = rootStyle.getPropertyValue("--lav-400").trim();
+          for (const segment of splitLocationRouteSegments(route)) {
+            const path = segment.points.map((p) => new maps.LatLng(p.lat, p.lng));
+            const polyline = new maps.Polyline({
+              path,
+              strokeWeight: segment.estimated ? 4 : 6,
+              strokeColor: segment.estimated ? estimatedRouteColor : actualRouteColor,
+              strokeOpacity: segment.estimated ? 0.72 : 0.9,
+              strokeStyle: segment.estimated ? "shortdash" : "solid",
+            });
+            polyline.setMap(mapRef.current);
+            overlaysRef.current.push(polyline);
+          }
         }
 
         // 스테이포인트(머무른 장소) — 순서 연결선(점선) + 순번·체류시간 핀.

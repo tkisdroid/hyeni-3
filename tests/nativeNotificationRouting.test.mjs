@@ -38,3 +38,54 @@ test("아이 메시지 채널은 다른 일반 알림보다 우선 보이도록 
   assert.match(helper, /fullScreen \|\| childMessage\) \? NotificationCompat\.PRIORITY_HIGH/);
   assert.match(helper, /kkuk \|\| childMessage\) \? NotificationCompat\.CATEGORY_MESSAGE/);
 });
+
+test("같은 위치 요청의 FCM·pending fallback은 GPS를 한 번만 깨운다", () => {
+  const fcm = readSource("android/app/src/main/java/com/hyeni/calendar/MyFirebaseMessagingService.java");
+  const service = readSource("android/app/src/main/java/com/hyeni/calendar/LocationService.java");
+  const requestLocationBranch = fcm.slice(
+    fcm.indexOf('if ("request_location".equals(type))'),
+    fcm.indexOf('if ("request_device_status".equals(type))'),
+  );
+
+  assert.match(fcm, /PolledNotificationStore\.isAcked\(this, stableId\)/);
+  assert.doesNotMatch(requestLocationBranch, /PolledNotificationStore\.markAck/);
+  assert.match(requestLocationBranch, /startLocationRefreshService\(data, stableId\)/);
+  assert.match(service, /if \(PolledNotificationStore\.isAcked\(this, stableId\)\)/);
+  assert.match(service, /data\.optString\("idempotency_key", ""\)/);
+  assert.match(service, /data\.optString\("requestId", ""\)/);
+  assert.match(service, /immediateFixInFlight\.compareAndSet\(false, true\)/);
+  assert.match(service, /immediateFixInFlight\.set\(false\)/);
+  assert.match(service, /activeLocationRefreshRequestIds = Collections\.unmodifiableSet/);
+  assert.match(service, /completeImmediateLocationFix\(generationToFinish\)/);
+  assert.match(service, /PolledNotificationStore\.markAck\(this, requestId\)/);
+  assert.match(service, /transitionImmediateLocationFix\(int generation, boolean uploaded\)/);
+  assert.match(service, /if \(!completionClaimed\) return;/);
+  assert.match(service, /!isImmediateFixGenerationActive\(generationToFinish\)/);
+  assert.match(service, /serviceLifecycleEpoch\.incrementAndGet\(\)/);
+  assert.match(service, /if \(!isServiceLifecycleActive\(uploadLifecycleEpoch\)\) return;/);
+  assert.match(service, /requestImmediateLocationFix\(stableId, id\)/);
+  assert.doesNotMatch(
+    service.slice(
+      service.indexOf('if ("request_location".equals(type))'),
+      service.indexOf('if ("request_device_status".equals(type))'),
+    ),
+    /requestImmediateLocationFix\(stableId, id\);[\s\S]*deliveredIds\.put\(id\)/,
+  );
+});
+
+test("네이티브 현재 위치는 provider fix 시각을 서버에 전달하고 오래된 cache를 현재로 위장하지 않는다", () => {
+  const service = readSource("android/app/src/main/java/com/hyeni/calendar/LocationService.java");
+
+  assert.match(service, /LocationFixPolicy\.resolveCapturedAtMs\(\s*location\.getTime\(\),\s*location\.getElapsedRealtimeNanos\(\),/s);
+  assert.match(service, /LocationFixPolicy\.isFreshForLiveRefresh/);
+  assert.match(service, /LocationFixPolicy\.isOutOfOrder/);
+  assert.match(service, /LocationFixPolicy\.isDuplicateAcceptedFix/);
+  assert.match(service, /lastLocationAcceptedElapsedRealtimeNanos/);
+  assert.match(service, /body\.put\("p_recorded_at", formatIsoUtc\(capturedAtMs\)\)/);
+  assert.match(service, /body\.put\("p_fix_age_ms",/);
+  assert.match(service, /\.setMaxUpdateAgeMillis\(0L\)/);
+  assert.match(service, /requestBalancedLocationFix\(generation\)/);
+  assert.match(service, /IMMEDIATE_FIX_CHAIN_DEADLINE_MS/);
+  assert.match(service, /activeImmediateFixGeneration = immediateFixGenerationCounter\.incrementAndGet\(\)/);
+  assert.doesNotMatch(service, /long now = System\.currentTimeMillis\(\);\s*lastLocationAcceptedAtMs = now;/s);
+});

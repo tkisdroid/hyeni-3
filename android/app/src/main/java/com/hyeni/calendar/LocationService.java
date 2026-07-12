@@ -41,6 +41,7 @@ import com.google.android.gms.location.ActivityTransition;
 import com.google.android.gms.location.ActivityTransitionEvent;
 import com.google.android.gms.location.ActivityTransitionRequest;
 import com.google.android.gms.location.ActivityTransitionResult;
+import com.google.android.gms.location.CurrentLocationRequest;
 import com.google.android.gms.location.DetectedActivity;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -57,7 +58,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
@@ -156,7 +159,13 @@ public class LocationService extends Service {
     // 네트워크 worst case: sendParentAlert insert+push 순차 retry(각 3회·OkHttp 15s) ≈ 273s(보수
     // 추정; 실측 worst ~183s) < 360s 상한. 정상 경로는 finally 즉시 release 라 상한에 도달하지 않는다.
     private static final long NETWORK_WAKELOCK_TIMEOUT_MS = 6 * 60 * 1000L; // 360s leak 비상 상한
-    private static final long FIX_WAKELOCK_TIMEOUT_MS = 25 * 1000L; // high 12s + balanced 폴백 여유
+    private static final long FIX_WAKELOCK_TIMEOUT_MS = 35 * 1000L; // high 12s + balanced 12s + last-known 3s 여유
+    private static final long HIGH_ACCURACY_FIX_TIMEOUT_MS = 12_000L;
+    private static final long BALANCED_FIX_TIMEOUT_MS = 12_000L;
+    private static final long LAST_KNOWN_FIX_TIMEOUT_MS = 3_000L;
+    // 측위 획득뿐 아니라 upsert 인증 재시도까지 포함한 single-flight의 절대 상한이다.
+    // 늦게 도착한 Task/HTTP 콜백은 generation 검증에서 폐기되어 다음 요청을 막지 않는다.
+    private static final long IMMEDIATE_FIX_CHAIN_DEADLINE_MS = 85_000L;
 
     private FusedLocationProviderClient fusedClient;
     private LocationCallback locationCallback;
@@ -214,10 +223,14 @@ public class LocationService extends Service {
     private double lastUploadedLat = Double.NaN;
     private double lastUploadedLng = Double.NaN;
     private long lastUploadedAtMs = 0L;
+    private long lastUploadedElapsedRealtimeNanos = 0L;
     private double lastHistoryLat = Double.NaN;
     private double lastHistoryLng = Double.NaN;
     private long lastHistoryAtMs = 0L;
+    private long lastHistoryElapsedRealtimeNanos = 0L;
     private long lastLocationAcceptedAtMs = 0L;
+    private long lastLocationAcceptedElapsedRealtimeNanos = 0L;
+    private boolean lastLocationAcceptedWasForceUpload = false;
     private long lastLowBatterySaveAtMs = 0L;
     // 배터리 ≤5% 진입 시 부모 알림을 에피소드당 1회만 보낸다(충전으로 회복되면 해제).
     private boolean lowBatteryAlertSent = false;
@@ -226,6 +239,21 @@ public class LocationService extends Service {
     private File locationBufferFile;
     private ConnectivityManager.NetworkCallback networkCallback;
     private final AtomicBoolean flushInFlight = new AtomicBoolean(false);
+    // startTracking 초기 fix·FCM REFRESH_NOW·pending fallback이 겹쳐도 한 측위 체인만 실행한다.
+    private final AtomicBoolean immediateFixInFlight = new AtomicBoolean(false);
+    private final AtomicInteger immediateFixGenerationCounter = new AtomicInteger(0);
+    private final AtomicInteger serviceLifecycleEpoch = new AtomicInteger(0);
+    private final Object immediateFixStateLock = new Object();
+    private final Object locationStateLock = new Object();
+    private final Map<String, Long> pendingLocationRefreshRequests = new ConcurrentHashMap<>();
+    private final Map<String, Set<String>> pendingLocationNotificationIds = new ConcurrentHashMap<>();
+    private volatile Set<String> activeLocationRefreshRequestIds = Collections.emptySet();
+    private volatile long activeLocationRefreshNotBeforeElapsedMs = 0L;
+    private volatile int activeImmediateFixGeneration = 0;
+    private volatile CancellationTokenSource activeHighAccuracyFixToken;
+    private volatile CancellationTokenSource activeBalancedFixToken;
+    private volatile Runnable immediateFixDeadlineTask;
+    private volatile boolean serviceStopping = false;
 
     private String supabaseUrl;
     private String supabaseKey;
@@ -271,6 +299,10 @@ public class LocationService extends Service {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         boolean refreshNow = intent != null && ACTION_REFRESH_NOW.equals(intent.getAction());
         boolean heartbeat = intent != null && ACTION_HEARTBEAT_FIX.equals(intent.getAction());
+        String refreshRequestId = refreshNow && intent != null
+            ? intent.getStringExtra("requestId")
+            : null;
+        serviceStopping = false;
 
         if (intent != null) {
             if (intent.hasExtra("userId")) {
@@ -384,6 +416,11 @@ public class LocationService extends Service {
             Log.e(TAG, "Cannot start foreground service: " + e.getMessage());
             stopSelf();
             return START_NOT_STICKY;
+        }
+        // 콜드 스타트에서는 startLocationTracking()이 먼저 단발 fix를 시작한다. 그 전에
+        // requestId를 등록해야 FCM 요청이 같은 generation snapshot에 포함되어 이중 측위를 막는다.
+        if (refreshNow) {
+            registerLocationRefreshRequest(refreshRequestId, null);
         }
         requestBatteryOptimizationExemption();
         ServiceKeepAlive.schedule(this);
@@ -1125,7 +1162,8 @@ public class LocationService extends Service {
 
     // ── Adaptive Location Mode ──────────────────────────────────────────────────
     private void updateStationaryState(Location location) {
-        long now = System.currentTimeMillis();
+        // wall clock 수동/네트워크 보정은 정지 시간을 되감거나 급증시킬 수 있다.
+        long now = android.os.SystemClock.elapsedRealtime();
 
         if (stationaryReferenceLocation == null) {
             stationaryReferenceLocation = location;
@@ -1474,9 +1512,12 @@ public class LocationService extends Service {
         locationFixWatchdogRunnable = new Runnable() {
             @Override
             public void run() {
-                long now = System.currentTimeMillis();
-                long ageMs = lastLocationAcceptedAtMs > 0L
-                    ? now - lastLocationAcceptedAtMs
+                long nowElapsedRealtimeNanos = android.os.SystemClock.elapsedRealtimeNanos();
+                long ageMs = lastLocationAcceptedElapsedRealtimeNanos > 0L
+                    ? Math.max(
+                        0L,
+                        (nowElapsedRealtimeNanos - lastLocationAcceptedElapsedRealtimeNanos) / 1_000_000L
+                    )
                     : Long.MAX_VALUE;
                 if (ageMs >= activeLocationFixStaleMs) {
                     Log.w(TAG, "Location fix watchdog requesting immediate fix; lastAcceptedAge="
@@ -1490,61 +1531,242 @@ public class LocationService extends Service {
         Log.i(TAG, "Location fix watchdog started");
     }
 
-    private void requestImmediateLocationFix() {
-        try {
-            acquireFixWakeLock();
-            final CancellationTokenSource cts = new CancellationTokenSource();
-            // NTV-H8: GPS(High Accuracy)가 12초 내에 안 잡히면 Balanced(WiFi/Cell)로 선회하여
-            // 실내에서도 응답을 보장함. 부모의 즉시 새로고침 응답성을 유지하기 위함.
-            final Runnable timeoutTask = () -> {
-                if (!cts.getToken().isCancellationRequested()) {
-                    Log.w(TAG, "High-accuracy fix timed out (12s), falling back to balanced power");
-                    cts.cancel();
-                    requestBalancedLocationFix();
-                }
-            };
-            handler.postDelayed(timeoutTask, 12000);
-
-            fusedClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cts.getToken())
-                .addOnSuccessListener(location -> {
-                    handler.removeCallbacks(timeoutTask);
-                    if (location != null) {
-                        handleLocation(location, true);
-                    } else if (!cts.getToken().isCancellationRequested()) {
-                        requestBalancedLocationFix();
-                    }
-                })
-                .addOnFailureListener(error -> {
-                    handler.removeCallbacks(timeoutTask);
-                    if (!cts.getToken().isCancellationRequested()) {
-                        Log.w(TAG, "Immediate high-accuracy request failed", error);
-                        requestBalancedLocationFix();
-                    }
-                });
-        } catch (SecurityException e) {
-            Log.e(TAG, "Location permission not granted for immediate fix", e);
+    private void registerLocationRefreshRequest(@Nullable String requestId,
+                                                @Nullable String pendingNotificationId) {
+        if (isBlank(requestId)) return;
+        String normalizedRequestId = requestId.trim();
+        pendingLocationRefreshRequests.putIfAbsent(
+            normalizedRequestId,
+            android.os.SystemClock.elapsedRealtime()
+        );
+        if (!isBlank(pendingNotificationId)) {
+            pendingLocationNotificationIds
+                .computeIfAbsent(normalizedRequestId, ignored -> ConcurrentHashMap.newKeySet())
+                .add(pendingNotificationId.trim());
         }
     }
 
-    private void requestBalancedLocationFix() {
+    private void requestImmediateLocationFix() {
+        requestImmediateLocationFix(null, null);
+    }
+
+    private void requestImmediateLocationFix(@Nullable String requestId,
+                                             @Nullable String pendingNotificationId) {
+        registerLocationRefreshRequest(requestId, pendingNotificationId);
+
+        final int generation;
+        final Runnable deadlineTask;
+        synchronized (immediateFixStateLock) {
+            if (serviceStopping) {
+                Log.d(TAG, "Immediate location fix ignored while service is stopping");
+                return;
+            }
+            if (!immediateFixInFlight.compareAndSet(false, true)) {
+                Log.d(TAG, "Immediate location fix already in flight — duplicate wake merged");
+                return;
+            }
+            generation = immediateFixGenerationCounter.incrementAndGet();
+            activeImmediateFixGeneration = generation;
+            activeLocationRefreshRequestIds = Collections.unmodifiableSet(
+                new HashSet<>(pendingLocationRefreshRequests.keySet())
+            );
+            long notBeforeElapsedMs = 0L;
+            for (String activeRequestId : activeLocationRefreshRequestIds) {
+                Long requestedAtElapsedMs = pendingLocationRefreshRequests.get(activeRequestId);
+                if (requestedAtElapsedMs != null) {
+                    notBeforeElapsedMs = Math.max(notBeforeElapsedMs, requestedAtElapsedMs);
+                }
+            }
+            activeLocationRefreshNotBeforeElapsedMs = notBeforeElapsedMs;
+            deadlineTask = () -> {
+                if (!isImmediateFixGenerationActive(generation)) return;
+                Log.e(TAG, "Immediate location fix chain exceeded hard deadline; generation=" + generation);
+                finishImmediateLocationFix(generation);
+            };
+            immediateFixDeadlineTask = deadlineTask;
+            handler.postDelayed(deadlineTask, IMMEDIATE_FIX_CHAIN_DEADLINE_MS);
+        }
+
+        acquireFixWakeLock();
+        requestHighAccuracyLocationFix(generation);
+    }
+
+    private void requestHighAccuracyLocationFix(int generation) {
+        if (!isImmediateFixGenerationActive(generation)) return;
+        final CancellationTokenSource cts = new CancellationTokenSource();
+        final AtomicBoolean stageFinished = new AtomicBoolean(false);
+        final Runnable timeoutTask = () -> {
+            if (!stageFinished.compareAndSet(false, true)
+                    || !isImmediateFixGenerationActive(generation)) return;
+            Log.w(TAG, "High-accuracy fix timed out (12s), falling back to balanced power");
+            cts.cancel();
+            requestBalancedLocationFix(generation);
+        };
         try {
-            acquireFixWakeLock();
-            CancellationTokenSource cts = new CancellationTokenSource();
-            fusedClient.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, cts.getToken())
+            synchronized (immediateFixStateLock) {
+                if (!isImmediateFixGenerationActive(generation)) return;
+                activeHighAccuracyFixToken = cts;
+            }
+            CurrentLocationRequest request = new CurrentLocationRequest.Builder()
+                .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+                .setMaxUpdateAgeMillis(0L)
+                .setDurationMillis(HIGH_ACCURACY_FIX_TIMEOUT_MS)
+                .build();
+            handler.postDelayed(timeoutTask, HIGH_ACCURACY_FIX_TIMEOUT_MS);
+            fusedClient.getCurrentLocation(request, cts.getToken())
                 .addOnSuccessListener(location -> {
-                    if (location != null) {
-                        handleLocation(location, true);
-                    } else {
-                        requestLastKnownLocationUpload("balanced_location_null");
+                    if (!stageFinished.compareAndSet(false, true)) return;
+                    handler.removeCallbacks(timeoutTask);
+                    if (!isImmediateFixGenerationActive(generation)) return;
+                    if (location != null && handleLocation(location, true, generation)) {
+                        return;
                     }
+                    // provider가 오래된 cache를 돌려준 경우에도 성공으로 끝내지 않고
+                    // Wi-Fi/Cell 기반의 새 fix를 다시 요구한다.
+                    requestBalancedLocationFix(generation);
                 })
                 .addOnFailureListener(error -> {
-                    Log.w(TAG, "Balanced location request failed", error);
-                    requestLastKnownLocationUpload("balanced_location_failed");
+                    if (!stageFinished.compareAndSet(false, true)) return;
+                    handler.removeCallbacks(timeoutTask);
+                    if (!isImmediateFixGenerationActive(generation)) return;
+                    Log.w(TAG, "Immediate high-accuracy request failed", error);
+                    requestBalancedLocationFix(generation);
                 });
-        } catch (SecurityException e) {
-            Log.e(TAG, "Location permission not granted for balanced fix", e);
+        } catch (SecurityException error) {
+            handler.removeCallbacks(timeoutTask);
+            Log.e(TAG, "Location permission not granted for immediate fix", error);
+            finishImmediateLocationFix(generation);
+        } catch (RuntimeException error) {
+            handler.removeCallbacks(timeoutTask);
+            Log.e(TAG, "Immediate high-accuracy request could not start", error);
+            finishImmediateLocationFix(generation);
         }
+    }
+
+    private void requestBalancedLocationFix(int generation) {
+        if (!isImmediateFixGenerationActive(generation)) return;
+        final CancellationTokenSource cts = new CancellationTokenSource();
+        final AtomicBoolean stageFinished = new AtomicBoolean(false);
+        final Runnable timeoutTask = () -> {
+            if (!stageFinished.compareAndSet(false, true)
+                    || !isImmediateFixGenerationActive(generation)) return;
+            Log.w(TAG, "Balanced location fix timed out (12s), trying last known fix");
+            cts.cancel();
+            requestLastKnownLocationUpload("balanced_location_timeout", generation);
+        };
+        try {
+            synchronized (immediateFixStateLock) {
+                if (!isImmediateFixGenerationActive(generation)) return;
+                activeBalancedFixToken = cts;
+            }
+            CurrentLocationRequest request = new CurrentLocationRequest.Builder()
+                .setPriority(Priority.PRIORITY_BALANCED_POWER_ACCURACY)
+                .setMaxUpdateAgeMillis(0L)
+                .setDurationMillis(BALANCED_FIX_TIMEOUT_MS)
+                .build();
+            handler.postDelayed(timeoutTask, BALANCED_FIX_TIMEOUT_MS);
+            fusedClient.getCurrentLocation(request, cts.getToken())
+                .addOnSuccessListener(location -> {
+                    if (!stageFinished.compareAndSet(false, true)) return;
+                    handler.removeCallbacks(timeoutTask);
+                    if (!isImmediateFixGenerationActive(generation)) return;
+                    if (location != null && handleLocation(location, true, generation)) {
+                        return;
+                    }
+                    requestLastKnownLocationUpload("balanced_location_unusable", generation);
+                })
+                .addOnFailureListener(error -> {
+                    if (!stageFinished.compareAndSet(false, true)) return;
+                    handler.removeCallbacks(timeoutTask);
+                    if (!isImmediateFixGenerationActive(generation)) return;
+                    Log.w(TAG, "Balanced location request failed", error);
+                    requestLastKnownLocationUpload("balanced_location_failed", generation);
+                });
+        } catch (SecurityException error) {
+            handler.removeCallbacks(timeoutTask);
+            Log.e(TAG, "Location permission not granted for balanced fix", error);
+            finishImmediateLocationFix(generation);
+        } catch (RuntimeException error) {
+            handler.removeCallbacks(timeoutTask);
+            Log.e(TAG, "Balanced location request could not start", error);
+            finishImmediateLocationFix(generation);
+        }
+    }
+
+    private boolean isImmediateFixGenerationActive(int generation) {
+        return generation > 0
+            && immediateFixInFlight.get()
+            && activeImmediateFixGeneration == generation
+            && !serviceStopping;
+    }
+
+    private boolean isServiceLifecycleActive(int lifecycleEpoch) {
+        return !serviceStopping && serviceLifecycleEpoch.get() == lifecycleEpoch;
+    }
+
+    private boolean finishImmediateLocationFix(int generation) {
+        return transitionImmediateLocationFix(generation, false);
+    }
+
+    private boolean completeImmediateLocationFix(int generation) {
+        return transitionImmediateLocationFix(generation, true);
+    }
+
+    private boolean transitionImmediateLocationFix(int generation, boolean uploaded) {
+        boolean hasUnattemptedRequest = false;
+        JSONArray deliveredNotificationIds = new JSONArray();
+        synchronized (immediateFixStateLock) {
+            if (serviceStopping
+                    || generation != activeImmediateFixGeneration
+                    || !immediateFixInFlight.get()) return false;
+            Set<String> attemptedRequestIds = activeLocationRefreshRequestIds;
+            if (uploaded) {
+                // 성공 completion claim과 stopAll/deadline을 같은 lock에서 직렬화한다.
+                // 이 블록을 먼저 획득한 쪽만 generation의 ACK 권한을 가진다.
+                for (String requestId : attemptedRequestIds) {
+                    PolledNotificationStore.markAck(this, requestId);
+                    pendingLocationRefreshRequests.remove(requestId);
+                    Set<String> notificationIds = pendingLocationNotificationIds.remove(requestId);
+                    if (notificationIds == null) continue;
+                    for (String notificationId : notificationIds) {
+                        if (!isBlank(notificationId)) deliveredNotificationIds.put(notificationId);
+                    }
+                }
+            }
+            for (String pendingRequestId : pendingLocationRefreshRequests.keySet()) {
+                if (!attemptedRequestIds.contains(pendingRequestId)) {
+                    hasUnattemptedRequest = true;
+                    break;
+                }
+            }
+            if (immediateFixDeadlineTask != null) {
+                handler.removeCallbacks(immediateFixDeadlineTask);
+                immediateFixDeadlineTask = null;
+            }
+            if (activeHighAccuracyFixToken != null) {
+                activeHighAccuracyFixToken.cancel();
+                activeHighAccuracyFixToken = null;
+            }
+            if (activeBalancedFixToken != null) {
+                activeBalancedFixToken.cancel();
+                activeBalancedFixToken = null;
+            }
+            activeLocationRefreshRequestIds = Collections.emptySet();
+            activeLocationRefreshNotBeforeElapsedMs = 0L;
+            activeImmediateFixGeneration = 0;
+            immediateFixInFlight.set(false);
+        }
+        releaseScopedWakeLock(fixWakeLock);
+        if (deliveredNotificationIds.length() > 0) {
+            runOnNetworkThread(
+                "location_refresh_ack",
+                () -> markDelivered(deliveredNotificationIds)
+            );
+        }
+        if (hasUnattemptedRequest && !serviceStopping) {
+            handler.post(this::requestImmediateLocationFix);
+        }
+        return true;
     }
 
     // ── Offline Location Buffer Flush ───────────────────────────────────────────
@@ -1640,26 +1862,81 @@ public class LocationService extends Service {
         networkCallback = null;
     }
 
-    private void requestLastKnownLocationUpload(String reason) {
+    private void requestLastKnownLocationUpload(String reason, int generation) {
+        if (!isImmediateFixGenerationActive(generation)) return;
+        final AtomicBoolean stageFinished = new AtomicBoolean(false);
+        final Runnable timeoutTask = () -> {
+            if (!stageFinished.compareAndSet(false, true)
+                    || !isImmediateFixGenerationActive(generation)) return;
+            Log.w(TAG, "Last known location request timed out after " + reason);
+            finishImmediateLocationFix(generation);
+        };
         try {
-            acquireFixWakeLock();
+            handler.postDelayed(timeoutTask, LAST_KNOWN_FIX_TIMEOUT_MS);
             fusedClient.getLastLocation()
                 .addOnSuccessListener(location -> {
+                    if (!stageFinished.compareAndSet(false, true)) return;
+                    handler.removeCallbacks(timeoutTask);
+                    if (!isImmediateFixGenerationActive(generation)) return;
                     if (location == null) {
                         Log.w(TAG, "Last known location unavailable after " + reason);
+                        finishImmediateLocationFix(generation);
                         return;
                     }
                     Log.i(TAG, "Uploading last known location after " + reason);
-                    handleLocation(location, true);
+                    if (!handleLocation(location, true, generation)) {
+                        finishImmediateLocationFix(generation);
+                    }
                 })
-                .addOnFailureListener(error -> Log.w(TAG, "Last known location request failed", error));
-        } catch (SecurityException e) {
-            Log.e(TAG, "Location permission not granted for last known location", e);
+                .addOnFailureListener(error -> {
+                    if (!stageFinished.compareAndSet(false, true)) return;
+                    handler.removeCallbacks(timeoutTask);
+                    if (!isImmediateFixGenerationActive(generation)) return;
+                    Log.w(TAG, "Last known location request failed", error);
+                    finishImmediateLocationFix(generation);
+                });
+        } catch (SecurityException error) {
+            handler.removeCallbacks(timeoutTask);
+            Log.e(TAG, "Location permission not granted for last known location", error);
+            finishImmediateLocationFix(generation);
+        } catch (RuntimeException error) {
+            handler.removeCallbacks(timeoutTask);
+            Log.e(TAG, "Last known location request could not start", error);
+            finishImmediateLocationFix(generation);
         }
     }
 
     private void handleLocation(Location location, boolean forceUpload) {
-        if (location == null) return;
+        handleLocation(location, forceUpload, 0);
+    }
+
+    private boolean handleLocation(Location location, boolean forceUpload, int refreshGeneration) {
+        if (location == null) return false;
+
+        long receivedAtMs = System.currentTimeMillis();
+        long receivedElapsedRealtimeNanos = android.os.SystemClock.elapsedRealtimeNanos();
+        long capturedAtMs = LocationFixPolicy.resolveCapturedAtMs(
+            location.getTime(),
+            location.getElapsedRealtimeNanos(),
+            receivedAtMs,
+            receivedElapsedRealtimeNanos
+        );
+        long providerElapsedRealtimeNanos = location.getElapsedRealtimeNanos();
+        long providerElapsedRealtimeMs = providerElapsedRealtimeNanos > 0L
+            ? providerElapsedRealtimeNanos / 1_000_000L
+            : 0L;
+        if (refreshGeneration > 0
+                && activeLocationRefreshNotBeforeElapsedMs > 0L
+                && providerElapsedRealtimeMs > 0L
+                && providerElapsedRealtimeMs < activeLocationRefreshNotBeforeElapsedMs) {
+            Log.w(TAG, "Location fix predates active refresh request; generation=" + refreshGeneration);
+            return false;
+        }
+        if (forceUpload && !LocationFixPolicy.isFreshForLiveRefresh(capturedAtMs, receivedAtMs)) {
+            Log.w(TAG, "Stale cached location rejected for live refresh: age="
+                + Math.max(0L, receivedAtMs - capturedAtMs) + "ms");
+            return false;
+        }
 
         float accuracy = location.getAccuracy();
         // NTV-H8: manual refresh (forceUpload=true) 는 아이가 실내에 있어 GPS 가 부정확해도
@@ -1668,48 +1945,115 @@ public class LocationService extends Service {
         if (accuracy > MAX_ACCURACY_M && !forceUpload) {
             Log.w(TAG, "Location rejected: accuracy " + String.format("%.0f", accuracy)
                 + "m exceeds " + (int) MAX_ACCURACY_M + "m threshold");
-            return;
+            return false;
         }
         if (accuracy > 200f && forceUpload) {
             Log.w(TAG, "Location accuracy is poor (" + String.format("%.0f", accuracy)
                 + "m) but forcing upload per parent request");
         }
 
-        double rawLat = location.getLatitude();
-        double rawLng = location.getLongitude();
+        final double lat;
+        final double lng;
+        synchronized (locationStateLock) {
+            // 비동기 provider 콜백이 역순으로 도착하면 오래된 fix가 Kalman·정지 판정·
+            // history 기준점을 과거로 되감는다. 모든 가변 상태를 건드리기 전에 차단한다.
+            if (LocationFixPolicy.isOutOfOrder(
+                    capturedAtMs,
+                    lastLocationAcceptedAtMs,
+                    providerElapsedRealtimeNanos,
+                    lastLocationAcceptedElapsedRealtimeNanos)) {
+                Log.w(TAG, "Out-of-order location fix rejected: capturedAt=" + capturedAtMs
+                    + ", lastAcceptedAt=" + lastLocationAcceptedAtMs);
+                return false;
+            }
+            if (LocationFixPolicy.isDuplicateAcceptedFix(
+                    capturedAtMs,
+                    lastLocationAcceptedAtMs,
+                    providerElapsedRealtimeNanos,
+                    lastLocationAcceptedElapsedRealtimeNanos,
+                    forceUpload,
+                    lastLocationAcceptedWasForceUpload)) {
+                Log.d(TAG, "Duplicate provider fix merged before upload: capturedAt=" + capturedAtMs);
+                return false;
+            }
 
-        double[] filtered = applyKalmanFilter(rawLat, rawLng, accuracy);
-        double lat = filtered[0];
-        double lng = filtered[1];
+            double[] filtered = applyKalmanFilter(
+                location.getLatitude(),
+                location.getLongitude(),
+                accuracy
+            );
+            lat = filtered[0];
+            lng = filtered[1];
 
-        updateStationaryState(location);
-
-        long now = System.currentTimeMillis();
-        lastLocationAcceptedAtMs = now;
-        if (!forceUpload && !Double.isNaN(lastUploadedLat)) {
-            float distFromLast = distanceBetween(lat, lng, lastUploadedLat, lastUploadedLng);
-            long ageMs = now - lastUploadedAtMs;
-            if (distFromLast < MIN_UPLOAD_DISTANCE_M && ageMs < activeMaxUploadAgeMs) {
-                Log.d(TAG, "Skipping upload: moved "
-                    + String.format("%.1f", distFromLast) + "m, age="
-                    + (ageMs / 1000) + "s");
-                return;
+            updateStationaryState(location);
+            lastLocationAcceptedAtMs = Math.max(lastLocationAcceptedAtMs, capturedAtMs);
+            if (providerElapsedRealtimeNanos > 0L) {
+                lastLocationAcceptedElapsedRealtimeNanos = Math.max(
+                    lastLocationAcceptedElapsedRealtimeNanos,
+                    providerElapsedRealtimeNanos
+                );
+            }
+            lastLocationAcceptedWasForceUpload = forceUpload;
+            if (!forceUpload && !Double.isNaN(lastUploadedLat)) {
+                float distFromLast = distanceBetween(lat, lng, lastUploadedLat, lastUploadedLng);
+                long ageMs = providerElapsedRealtimeNanos > 0L
+                        && lastUploadedElapsedRealtimeNanos > 0L
+                    ? (providerElapsedRealtimeNanos - lastUploadedElapsedRealtimeNanos) / 1_000_000L
+                    : capturedAtMs - lastUploadedAtMs;
+                if (distFromLast < MIN_UPLOAD_DISTANCE_M && ageMs < activeMaxUploadAgeMs) {
+                    Log.d(TAG, "Skipping upload: moved "
+                        + String.format("%.1f", distFromLast) + "m, age="
+                        + (ageMs / 1000) + "s");
+                    return false;
+                }
             }
         }
 
         Log.d(TAG, "Location update: accuracy=" + String.format("%.0f", accuracy)
             + "m, stationary=" + isStationary + ", force=" + forceUpload);
-        uploadLocation(lat, lng, accuracy, now);
+        uploadLocation(
+            lat,
+            lng,
+            accuracy,
+            capturedAtMs,
+            LocationFixPolicy.resolveFixAgeMs(capturedAtMs, receivedAtMs),
+            receivedElapsedRealtimeNanos / 1_000_000L,
+            providerElapsedRealtimeNanos,
+            refreshGeneration
+        );
+        return true;
     }
 
-    private void uploadLocation(double lat, double lng, float accuracy, long capturedAtMs) {
+    private void uploadLocation(double lat, double lng, float accuracy, long capturedAtMs,
+                                long fixAgeMs, long receivedElapsedRealtimeMs,
+                                long fixElapsedRealtimeNanos,
+                                int refreshGeneration) {
+        if (serviceStopping) return;
+        final int uploadLifecycleEpoch = serviceLifecycleEpoch.get();
+        if (!isServiceLifecycleActive(uploadLifecycleEpoch)) return;
         runOnNetworkThread("upload", () -> {
+            int generationToFinish = refreshGeneration;
             try {
+                if (!isServiceLifecycleActive(uploadLifecycleEpoch)
+                        || (generationToFinish > 0
+                            && !isImmediateFixGenerationActive(generationToFinish))) {
+                    generationToFinish = 0;
+                    return;
+                }
                 JSONObject body = new JSONObject();
                 body.put("p_user_id", userId);
                 body.put("p_family_id", familyId);
                 body.put("p_lat", lat);
                 body.put("p_lng", lng);
+                body.put("p_recorded_at", formatIsoUtc(capturedAtMs));
+                body.put("p_accuracy", accuracy);
+                // Worker는 이 monotonic 기반 age로 serverNow-age를 계산할 수 있어,
+                // 아이 기기 wall clock이 틀려도 정상 fix를 미래 시각으로 거절하지 않는다.
+                long queuedAgeMs = Math.max(
+                    0L,
+                    android.os.SystemClock.elapsedRealtime() - receivedElapsedRealtimeMs
+                );
+                body.put("p_fix_age_ms", Math.max(0L, fixAgeMs) + queuedAgeMs);
 
                 String url = supabaseUrl + "/rest/v1/rpc/upsert_child_location";
                 String bodyStr = body.toString();
@@ -1727,6 +2071,12 @@ public class LocationService extends Service {
                 uploaded = code >= 200 && code < 300;
                 if (uploaded) successfulBearer = bearer;
                 response.close();
+                if (!isServiceLifecycleActive(uploadLifecycleEpoch)
+                        || (generationToFinish > 0
+                            && !isImmediateFixGenerationActive(generationToFinish))) {
+                    generationToFinish = 0;
+                    return;
+                }
 
                 if (code == 401 || code == 403) {
                     // 2차 시도: SharedPreferences에서 최신 토큰 재로드
@@ -1741,6 +2091,12 @@ public class LocationService extends Service {
                     uploaded = code2 >= 200 && code2 < 300;
                     if (uploaded) successfulBearer = freshToken;
                     retry1.close();
+                    if (!isServiceLifecycleActive(uploadLifecycleEpoch)
+                            || (generationToFinish > 0
+                                && !isImmediateFixGenerationActive(generationToFinish))) {
+                        generationToFinish = 0;
+                        return;
+                    }
 
                     if (code2 == 401 || code2 == 403) {
                         // 3차 시도: refresh token 으로 access token 을 네트워크 갱신 후 재시도.
@@ -1748,6 +2104,12 @@ public class LocationService extends Service {
                         //  Worker rest-shim 이 ES256 access 만 받으므로 무효 → 제거.)
                         String renewed = networkRefreshAccessToken();
                         if (renewed != null && !renewed.isEmpty()) {
+                            if (!isServiceLifecycleActive(uploadLifecycleEpoch)
+                                    || (generationToFinish > 0
+                                        && !isImmediateFixGenerationActive(generationToFinish))) {
+                                generationToFinish = 0;
+                                return;
+                            }
                             Log.w(TAG, "Retry failed (" + code2 + "), retrying with network-refreshed token");
                             Response retry2 = httpClient.newCall(new Request.Builder()
                                 .url(url).header("apikey", supabaseKey).header("Content-Type", "application/json")
@@ -1772,33 +2134,65 @@ public class LocationService extends Service {
                 } else {
                     Log.w(TAG, "Location upload failed: " + code);
                 }
-                if (uploaded) {
-                    lastUploadedLat = lat;
-                    lastUploadedLng = lng;
-                    lastUploadedAtMs = capturedAtMs;
-                    // Phase 0-A: ShutdownReceiver 가 ACTION_SHUTDOWN 시 마지막 좌표를 읽어
-                    // is_final_before_shutdown=true 로 부모에게 푸시하기 위해 영속화.
-                    try {
-                        getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
-                            .putString("last_uploaded_lat", String.valueOf(lat))
-                            .putString("last_uploaded_lng", String.valueOf(lng))
-                            .putLong("last_uploaded_at_ms", capturedAtMs)
-                            .apply();
-                    } catch (Exception persistErr) {
-                        Log.w(TAG, "last-location prefs persist failed", persistErr);
+                if (generationToFinish > 0) {
+                    boolean completionClaimed = uploaded
+                        ? completeImmediateLocationFix(generationToFinish)
+                        : finishImmediateLocationFix(generationToFinish);
+                    generationToFinish = 0;
+                    if (!completionClaimed) return;
+                }
+                synchronized (immediateFixStateLock) {
+                    if (!isServiceLifecycleActive(uploadLifecycleEpoch)) return;
+                    boolean acceptedAsLatestUpload = false;
+                    synchronized (locationStateLock) {
+                        boolean newerThanLastUpload = fixElapsedRealtimeNanos > 0L
+                                && lastUploadedElapsedRealtimeNanos > 0L
+                            ? fixElapsedRealtimeNanos > lastUploadedElapsedRealtimeNanos
+                            : capturedAtMs > lastUploadedAtMs;
+                        if (uploaded && newerThanLastUpload) {
+                            lastUploadedLat = lat;
+                            lastUploadedLng = lng;
+                            lastUploadedAtMs = capturedAtMs;
+                            lastUploadedElapsedRealtimeNanos = fixElapsedRealtimeNanos;
+                            acceptedAsLatestUpload = true;
+                        }
                     }
-                    broadcastLocation(lat, lng, accuracy, capturedAtMs);
+                    if (acceptedAsLatestUpload) {
+                        // stopAll과 같은 lock 안에서 prefs/broadcast까지 commit해
+                        // lifecycle 확인 직후 종료되는 TOCTOU를 막는다.
+                        try {
+                            getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
+                                .putString("last_uploaded_lat", String.valueOf(lat))
+                                .putString("last_uploaded_lng", String.valueOf(lng))
+                                .putLong("last_uploaded_at_ms", capturedAtMs)
+                                .apply();
+                        } catch (Exception persistErr) {
+                            Log.w(TAG, "last-location prefs persist failed", persistErr);
+                        }
+                        broadcastLocation(lat, lng, accuracy, capturedAtMs);
+                    }
                 }
 
                 // 이동경로 점 — 서버 성공 전 로컬 큐에 먼저 적재한다.
                 // 온라인 업로드 성공 후에만 방금 적재한 동일 점을 제거하므로, 앱 종료/
                 // 네트워크 전환/프로세스 킬 타이밍에도 원본 GPS 점이 기기에 남는다.
-                if (shouldRecordLocationHistory(lat, lng, capturedAtMs)) {
-                    int pendingBefore = LocationBuffer.size(locationBufferFile);
-                    boolean queued = LocationBuffer.append(locationBufferFile, lat, lng, accuracy, capturedAtMs);
-                    boolean historyRecorded = uploaded
-                        && !isBlank(successfulBearer)
-                        && uploadLocationHistory(lat, lng, capturedAtMs, successfulBearer);
+                final int pendingBefore;
+                final boolean queued;
+                synchronized (immediateFixStateLock) {
+                    if (!isServiceLifecycleActive(uploadLifecycleEpoch)) return;
+                    if (!shouldRecordLocationHistory(
+                        lat,
+                        lng,
+                        capturedAtMs,
+                        fixElapsedRealtimeNanos)) return;
+                    pendingBefore = LocationBuffer.size(locationBufferFile);
+                    queued = LocationBuffer.append(locationBufferFile, lat, lng, accuracy, capturedAtMs);
+                }
+                boolean historyRecorded = uploaded
+                    && !isBlank(successfulBearer)
+                    && uploadLocationHistory(lat, lng, capturedAtMs, successfulBearer);
+                synchronized (immediateFixStateLock) {
+                    if (!isServiceLifecycleActive(uploadLifecycleEpoch)) return;
                     if (!historyRecorded) {
                         Log.d(TAG, "Location history kept in durable local queue for later flush");
                         flushLocationBuffer();
@@ -1809,12 +2203,25 @@ public class LocationService extends Service {
                     }
                     // 온라인/오프라인 어느 경로든 기준점을 갱신 — 오프라인 중에도
                     // 2m/전원정책 간격 밀도가 유지되어 경로 누락을 최소화한다.
-                    lastHistoryLat = lat;
-                    lastHistoryLng = lng;
-                    lastHistoryAtMs = capturedAtMs;
+                    synchronized (locationStateLock) {
+                        boolean newerThanLastHistory = fixElapsedRealtimeNanos > 0L
+                                && lastHistoryElapsedRealtimeNanos > 0L
+                            ? fixElapsedRealtimeNanos > lastHistoryElapsedRealtimeNanos
+                            : capturedAtMs > lastHistoryAtMs;
+                        if (newerThanLastHistory) {
+                            lastHistoryLat = lat;
+                            lastHistoryLng = lng;
+                            lastHistoryAtMs = capturedAtMs;
+                            lastHistoryElapsedRealtimeNanos = fixElapsedRealtimeNanos;
+                        }
+                    }
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Location upload error", e);
+            } finally {
+                if (generationToFinish > 0) {
+                    finishImmediateLocationFix(generationToFinish);
+                }
             }
         });
     }
@@ -1826,11 +2233,22 @@ public class LocationService extends Service {
         return iso.format(new java.util.Date(timeMs));
     }
 
-    private boolean shouldRecordLocationHistory(double lat, double lng, long capturedAtMs) {
-        if (Double.isNaN(lastHistoryLat)) return true;
-        float distFromLastHistory = distanceBetween(lat, lng, lastHistoryLat, lastHistoryLng);
-        long ageMs = capturedAtMs - lastHistoryAtMs;
-        return distFromLastHistory >= MIN_HISTORY_DISTANCE_M || ageMs >= activeMaxHistoryAgeMs;
+    private boolean shouldRecordLocationHistory(double lat, double lng, long capturedAtMs,
+                                                long fixElapsedRealtimeNanos) {
+        synchronized (locationStateLock) {
+            boolean outOfOrder = fixElapsedRealtimeNanos > 0L
+                    && lastHistoryElapsedRealtimeNanos > 0L
+                ? fixElapsedRealtimeNanos < lastHistoryElapsedRealtimeNanos
+                : capturedAtMs < lastHistoryAtMs;
+            if (outOfOrder) return false;
+            if (Double.isNaN(lastHistoryLat)) return true;
+            float distFromLastHistory = distanceBetween(lat, lng, lastHistoryLat, lastHistoryLng);
+            long ageMs = fixElapsedRealtimeNanos > 0L
+                    && lastHistoryElapsedRealtimeNanos > 0L
+                ? (fixElapsedRealtimeNanos - lastHistoryElapsedRealtimeNanos) / 1_000_000L
+                : capturedAtMs - lastHistoryAtMs;
+            return distFromLastHistory >= MIN_HISTORY_DISTANCE_M || ageMs >= activeMaxHistoryAgeMs;
+        }
     }
 
     private boolean uploadLocationHistory(double lat, double lng, long capturedAtMs, String bearerToken) {
@@ -2176,7 +2594,13 @@ public class LocationService extends Service {
                     String type = data != null ? data.optString("type", data.optString("action", "schedule")) : "schedule";
                     boolean emergency = isEmergencyNotification(type, data);
                     String stableId = data != null
-                        ? data.optString("pushId", data.optString("idempotencyKey", id))
+                        ? firstNonBlank(
+                            data.optString("pushId", ""),
+                            data.optString("idempotencyKey", ""),
+                            data.optString("idempotency_key", ""),
+                            data.optString("requestId", ""),
+                            id
+                        )
                         : id;
                     if (!isPendingTargetedToThisDevice(data)) {
                         Log.d(TAG, "Skipping pending notification for another device role: " + id);
@@ -2203,10 +2627,18 @@ public class LocationService extends Service {
                         continue;
                     }
                     if ("request_location".equals(type)) {
-                        if (shouldHandleLocationRefreshFromPending(data)) {
-                            requestImmediateLocationFix();
-                            publishDeviceStatusFromPending(data);
+                        if (PolledNotificationStore.isAcked(this, stableId)) {
+                            pendingLocationRefreshRequests.remove(stableId);
+                            pendingLocationNotificationIds.remove(stableId);
                             deliveredIds.put(id);
+                            Log.d(TAG, "Skipping duplicate location refresh pending fallback: " + stableId);
+                            continue;
+                        }
+                        if (shouldHandleLocationRefreshFromPending(data)) {
+                            // FCM과 같은 requestId면 현재 generation에 병합된다. fresh fix의
+                            // 서버 upsert가 실패하면 ACK/delivered를 남기지 않아 다음 poll이 재시도한다.
+                            requestImmediateLocationFix(stableId, id);
+                            publishDeviceStatusFromPending(data);
                         }
                         continue;
                     }
@@ -3241,6 +3673,30 @@ public class LocationService extends Service {
 
     // ── Cleanup ─────────────────────────────────────────────────────────────────
     private void stopAll() {
+        synchronized (immediateFixStateLock) {
+            serviceStopping = true;
+            serviceLifecycleEpoch.incrementAndGet();
+            // 진행 중 Task/HTTP 콜백의 generation을 무효화하고 single-flight를 완전히
+            // 초기화한다. 명시 로그아웃/서비스 종료 뒤 늦은 ACK가 세션을 되살리지 않는다.
+            activeImmediateFixGeneration = immediateFixGenerationCounter.incrementAndGet();
+            if (immediateFixDeadlineTask != null) {
+                handler.removeCallbacks(immediateFixDeadlineTask);
+                immediateFixDeadlineTask = null;
+            }
+            if (activeHighAccuracyFixToken != null) {
+                activeHighAccuracyFixToken.cancel();
+                activeHighAccuracyFixToken = null;
+            }
+            if (activeBalancedFixToken != null) {
+                activeBalancedFixToken.cancel();
+                activeBalancedFixToken = null;
+            }
+            activeLocationRefreshRequestIds = Collections.emptySet();
+            activeLocationRefreshNotBeforeElapsedMs = 0L;
+            pendingLocationRefreshRequests.clear();
+            pendingLocationNotificationIds.clear();
+            immediateFixInFlight.set(false);
+        }
         // Restore ringer if silent mode is active
         if (silentForEventId != null) {
             restoreRingerMode();

@@ -8,6 +8,8 @@ export interface ChildLocation {
   lat: number;
   lng: number;
   updated_at: string; // "YYYY-MM-DD HH:MM:SS.mmm+00"
+  /** 마지막 GPS fix의 수평 오차(m). 레거시 행은 null/미제공. */
+  accuracy_m?: number | null;
 }
 
 export interface ReverseGeocodeResult {
@@ -22,6 +24,8 @@ export interface LocationHistoryPoint {
   lat: number;
   lng: number;
   recorded_at: string;
+  /** true/1이면 실제 GPS점 사이를 메운 추정 좌표. */
+  is_estimated?: boolean | number;
 }
 
 export interface DangerZone {

@@ -25,7 +25,6 @@ import {
   formatFreshness,
   parseServerTimestamp,
   distanceMeters,
-  hasNewerLocationUpdate,
 } from "@/transform/locationView";
 import {
   toTimedPoints,
@@ -45,6 +44,7 @@ import {
 } from "@/transform/locationHistoryWindow";
 import { placePhoneCall } from "@/lib/native/phone";
 import { requestLocationRefresh } from "@/lib/api/endpoints/remote";
+import { waitForNewChildLocation } from "@/transform/locationRefreshWait";
 import type { LocationHistoryPoint } from "@/lib/api/endpoints/location";
 import type { CalendarEvent } from "@/lib/api/endpoints/schedule";
 import "./ParentLocation.css";
@@ -59,15 +59,13 @@ const MIN_SCHEDULE_STAY_OVERLAP_MS = 10 * 60 * 1000;
 const STAYS_DRAG_TOGGLE_PX = 42;
 const STAYS_DRAG_CLICK_GUARD_PX = 8;
 const STAYS_DRAG_CLICK_GUARD_MS = 650;
-const LOCATION_REFRESH_POLL_MS = 2_500;
-const LOCATION_REFRESH_TIMEOUT_MS = 25_000;
-
 type LocationRefreshState = "idle" | "requesting" | "waiting";
 
 interface TrailPoint {
   lat: number;
   lng: number;
   ms: number;
+  estimated: boolean;
 }
 
 function timeToMinutes(value: string | null | undefined): number | null {
@@ -106,10 +104,6 @@ function eventLabel(event: CalendarEvent): string {
   return (event.title || event.location?.address || "일정 장소").trim();
 }
 
-function wait(ms: number): Promise<void> {
-  return new Promise((resolve) => window.setTimeout(resolve, ms));
-}
-
 function scheduleStayLabel(stay: StayPoint, events: CalendarEvent[]): string | null {
   const candidates = events
     .map((event) => {
@@ -141,7 +135,12 @@ function buildTrailPoints(
     .filter(
       (p) => (!userId || p.user_id === userId) && Number.isFinite(p.lat) && Number.isFinite(p.lng),
     )
-    .map((p) => ({ lat: p.lat, lng: p.lng, ms: parseServerTimestamp(p.recorded_at)?.getTime() ?? 0 }))
+    .map((p) => ({
+      lat: p.lat,
+      lng: p.lng,
+      ms: parseServerTimestamp(p.recorded_at)?.getTime() ?? 0,
+      estimated: p.is_estimated === true || p.is_estimated === 1,
+    }))
     .sort((a, b) => a.ms - b.ms);
   const out: TrailPoint[] = [];
   for (const r of rows) {
@@ -202,9 +201,16 @@ export function ParentLocation() {
   useEffect(() => {
     refreshSeq.current += 1;
     setRefreshState("idle");
+    return () => {
+      refreshSeq.current += 1;
+    };
   }, [selected?.user_id]);
 
   const fresh = loc ? formatFreshness(loc.updated_at, now) : null;
+  const accuracyM = loc?.accuracy_m != null && Number.isFinite(Number(loc.accuracy_m))
+    ? Math.max(0, Math.round(Number(loc.accuracy_m)))
+    : null;
+  const isLowAccuracy = accuracyM != null && accuracyM > 150;
   const locationLabel = useLocationLabels(loc ? [loc] : [], places);
   const curPlace = loc ? locationLabel(loc) : "위치 확인 중";
   const isStaleLocation = !!loc && fresh?.status === "stale";
@@ -219,7 +225,9 @@ export function ParentLocation() {
     ? "안전 기능은 계속 쓸 수 있어요"
     : isRefreshingLocation
       ? "아이 기기에 요청을 보냈어요 · 새 위치를 기다리는 중"
-      : fresh?.label ?? "위치 정보 없음";
+      : isLowAccuracy
+        ? `정확도가 낮아요 · 오차 약 ${accuracyM}m · ${fresh?.label ?? "확인 시각 없음"}`
+        : `${fresh?.label ?? "위치 정보 없음"}${accuracyM != null ? ` · 오차 약 ${accuracyM}m` : ""}`;
   const refreshOverlayTitle =
     refreshState === "requesting" ? "아이 기기에 위치 요청을 보내는 중" : "새 위치를 기다리는 중";
   const refreshOverlaySub = loc
@@ -268,10 +276,13 @@ export function ParentLocation() {
   );
   const scrubMs = historyWindow.startMs + effectiveScrubOffsetMinute * 60_000;
   const trail = useMemo(
-    () => timedTrail.filter((p) => p.ms <= scrubMs).map((p) => ({ lat: p.lat, lng: p.lng })),
+    () => timedTrail
+      .filter((p) => p.ms <= scrubMs)
+      .map((p) => ({ lat: p.lat, lng: p.lng, estimated: p.estimated })),
     [scrubMs, timedTrail],
   );
   const scrubChildPoint = trail.length > 0 ? trail[trail.length - 1] : null;
+  const hasEstimatedTrail = trail.some((point) => point.estimated);
   const historyChildPoint = scrubChildPoint ?? (loc ? { lat: loc.lat, lng: loc.lng } : null);
   // 출발 마커(첫 위치). 현재 마커는 지도의 child 아바타 오버레이가 담당.
   const trailStart: MapPlace[] = trail.length
@@ -493,24 +504,18 @@ export function ParentLocation() {
       }
       setRefreshState("waiting");
 
-      const deadline = Date.now() + LOCATION_REFRESH_TIMEOUT_MS;
-      let lastError = false;
-      while (Date.now() < deadline) {
-        await wait(LOCATION_REFRESH_POLL_MS);
-        if (refreshSeq.current !== requestSeq) return;
-        const result = await refetch();
-        if (refreshSeq.current !== requestSeq) return;
-        if (result.isError) {
-          lastError = true;
-          continue;
-        }
-        const after = result.data?.find((l) => l.user_id === targetUserId) ?? null;
-        if (hasNewerLocationUpdate(before, after)) {
-          show("실시간 위치를 새로고침했어요", "📍");
-          return;
-        }
+      const outcome = await waitForNewChildLocation({
+        before,
+        targetUserId,
+        refetch,
+        isCancelled: () => refreshSeq.current !== requestSeq,
+      });
+      if (outcome === "cancelled") return;
+      if (outcome === "updated") {
+        show("실시간 위치를 새로고침했어요", "📍");
+        return;
       }
-      if (lastError) {
+      if (outcome === "error") {
         show("위치 갱신 결과를 확인하지 못했어요", "⚠️");
         return;
       }
@@ -615,6 +620,7 @@ export function ParentLocation() {
           </div>
           <div className="pl-scrub__legend">
             <span><i className="pl-scrub__line" /> 이동선</span>
+            {hasEstimatedTrail && <span><i className="pl-scrub__estimate" /> 추정 구간</span>}
             <span><i className="pl-scrub__dot" /> 머문 곳</span>
             {scheduleMapPlaces.length > 0 && <span>📍 일정</span>}
           </div>
@@ -791,7 +797,7 @@ export function ParentLocation() {
           <div className="pl-sheet__info">
             <div className="pl-sheet__name">{sheetName}</div>
             <div
-              className={`pl-sheet__zone${isLocked ? " pl-sheet__zone--locked" : ""}${isStaleLocation ? " pl-sheet__zone--stale" : ""}${isRefreshingLocation ? " pl-sheet__zone--loading" : ""}`}
+              className={`pl-sheet__zone${isLocked ? " pl-sheet__zone--locked" : ""}${isStaleLocation || isLowAccuracy ? " pl-sheet__zone--stale" : ""}${isRefreshingLocation ? " pl-sheet__zone--loading" : ""}`}
             >
               <span className="pl-sheet__zone-dot" />
               {sheetZoneText}

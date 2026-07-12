@@ -160,6 +160,7 @@ export async function requestLocationRefresh(
     targetRole: "child",
     requestId,
     requestedAt: new Date().toISOString(),
+    idempotency_key: requestId,
   };
   if (targetChildUserId) body.targetUserId = targetChildUserId;
   try {

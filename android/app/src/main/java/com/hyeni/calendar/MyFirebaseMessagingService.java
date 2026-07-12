@@ -148,6 +148,14 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         if (title == null) title = "혜니캘린더";
         if (body == null) body = "";
 
+        String stableId = firstNonBlank(
+            data.get("pushId"),
+            data.get("idempotencyKey"),
+            data.get("idempotency_key"),
+            data.get("requestId"),
+            type + ":" + title + ":" + body
+        );
+
         // Skip if this notification was sent by me
         String senderUserId = data.get("senderUserId");
         if (senderUserId != null && !senderUserId.isEmpty()) {
@@ -160,6 +168,10 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         if ("request_location".equals(type)) {
             SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            if (PolledNotificationStore.isAcked(this, stableId)) {
+                Log.i(TAG, "Skipping duplicate location refresh command: " + stableId);
+                return;
+            }
             if (!shouldHandleChildCommand(prefs)) {
                 Log.i(TAG, "Location refresh skipped: this device is not child mode");
                 return;
@@ -167,7 +179,9 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             if (!isTargetedToThisUser(prefs, data, "Location refresh")) {
                 return;
             }
-            if (startLocationRefreshService(data)) {
+            if (startLocationRefreshService(data, stableId)) {
+                // ACK는 LocationService가 fresh fix의 서버 upsert 2xx를 확인한 뒤 기록한다.
+                // 단순 FGS handoff 성공은 측위/업로드 성공이 아니므로 여기서는 완료하지 않는다.
                 publishDeviceStatusFromFcm(data, prefs);
                 return;
             }
@@ -272,12 +286,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
 
         boolean isEmergency = isEmergencyNotification(type, data);
-        String stableId = firstNonBlank(
-            data.get("pushId"),
-            data.get("idempotencyKey"),
-            data.get("idempotency_key"),
-            type + ":" + title + ":" + body
-        );
         if ("sticker".equals(type) && MainActivity.isAppForeground()) {
             Log.i(TAG, "Sticker FCM suppressed while app is foreground");
             PolledNotificationStore.markAck(this, stableId);
@@ -384,7 +392,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         return true;
     }
 
-    private boolean startLocationRefreshService(Map<String, String> data) {
+    private boolean startLocationRefreshService(Map<String, String> data, String stableId) {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
             Log.w(TAG, "Location refresh skipped: ACCESS_FINE_LOCATION permission missing");
@@ -429,7 +437,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         intent.putExtra("accessToken", accessToken);
         intent.putExtra("refreshToken", refreshToken);
         intent.putExtra("role", "child");
-        String requestId = resolveRemoteListenRequestId(data);
+        String requestId = firstNonBlank(stableId, resolveRemoteListenRequestId(data));
         if (!isBlank(requestId)) {
             intent.putExtra("requestId", requestId);
         }

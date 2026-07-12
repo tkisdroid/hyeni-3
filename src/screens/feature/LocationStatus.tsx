@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useLocation as useRouterLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronLeft, RefreshCw, Check, AlertTriangle, MapPin } from "lucide-react";
@@ -9,7 +9,8 @@ import { useMyFamily } from "@/queries/useFamily";
 import { useChildLocations, useSavedPlaces } from "@/queries/useLocation";
 import { useLocationLabels } from "@/queries/useLocationLabels";
 import { requestLocationRefresh } from "@/lib/api/endpoints/remote";
-import { formatFreshness, hasNewerLocationUpdate } from "@/transform/locationView";
+import { formatFreshness } from "@/transform/locationView";
+import { waitForNewChildLocation } from "@/transform/locationRefreshWait";
 import "./LocationStatus.css";
 
 type StatusKind = "loading" | "success" | "error" | "permission";
@@ -35,6 +36,10 @@ export function LocationStatus() {
   const { data: places } = useSavedPlaces();
 
   const [refreshing, setRefreshing] = useState(false);
+  const refreshSeq = useRef(0);
+  useEffect(() => () => {
+    refreshSeq.current += 1;
+  }, []);
 
   const now = useMemo(() => new Date(), [locations]);
   const navState = (route.state ?? null) as { childUserId?: string; childId?: string } | null;
@@ -59,6 +64,10 @@ export function LocationStatus() {
     : null;
 
   const fresh = loc ? formatFreshness(loc.updated_at, now) : null;
+  const accuracyM = loc?.accuracy_m != null && Number.isFinite(Number(loc.accuracy_m))
+    ? Math.max(0, Math.round(Number(loc.accuracy_m)))
+    : null;
+  const isLowAccuracy = accuracyM != null && accuracyM > 150;
   const locationLabel = useLocationLabels(loc ? [loc] : [], places);
   const lastPlace = loc ? locationLabel(loc) : null;
 
@@ -76,15 +85,17 @@ export function LocationStatus() {
       kind: "loading",
       icon: <RefreshCw size={26} strokeWidth={2.2} color="#2E86C1" className="ls-spin" />,
       title: "위치 확인 중…",
-      sub: "아이 기기에 요청을 보냈어요 · 최대 15초",
+      sub: "아이 기기에 요청을 보냈어요 · 최대 3분 35초",
       tone: "neutral",
     },
     success: {
       kind: "success",
-      icon: <Check size={26} strokeWidth={2.6} color="#087653" />,
-      title: "최신 위치로 갱신됐어요",
-      sub: `${fresh?.label ?? "방금 전"}${lastPlace ? ` · ${lastPlace}` : ""}`,
-      tone: "mint",
+      icon: isLowAccuracy
+        ? <AlertTriangle size={26} strokeWidth={2.2} color="#B26A00" />
+        : <Check size={26} strokeWidth={2.6} color="#087653" />,
+      title: isLowAccuracy ? "최근 위치가 왔지만 정확도가 낮아요" : "최신 위치로 갱신됐어요",
+      sub: `${fresh?.label ?? "방금 전"}${lastPlace ? ` · ${lastPlace}` : ""}${accuracyM != null ? ` · 오차 약 ${accuracyM}m` : ""}`,
+      tone: isLowAccuracy ? "caution" : "mint",
     },
     error: {
       kind: "error",
@@ -105,6 +116,8 @@ export function LocationStatus() {
 
   const retry = async () => {
     if (refreshing) return;
+    const requestSeq = refreshSeq.current + 1;
+    refreshSeq.current = requestSeq;
     setRefreshing(true);
     try {
       if (!familyId || !childMember?.user_id) {
@@ -117,14 +130,18 @@ export function LocationStatus() {
         show("아이 기기에 위치 요청을 보내지 못했어요", "⚠️");
         return;
       }
-      await new Promise((resolve) => window.setTimeout(resolve, 1800));
-      const result = await refetch();
-      if (result.isError) {
+      const outcome = await waitForNewChildLocation({
+        before,
+        targetUserId: childMember.user_id,
+        refetch,
+        isCancelled: () => refreshSeq.current !== requestSeq,
+      });
+      if (outcome === "cancelled") return;
+      if (outcome === "error") {
         show("다시 시도했지만 실패했어요", "⚠️");
         return;
       }
-      const after = result.data?.find((l) => l.user_id === childMember.user_id) ?? null;
-      if (hasNewerLocationUpdate(before, after)) {
+      if (outcome === "updated") {
         show("위치를 다시 확인했어요", "📍");
       } else {
         show("아이 기기에 요청은 보냈지만 아직 새 위치가 도착하지 않았어요", "⚠️");
@@ -133,7 +150,7 @@ export function LocationStatus() {
       console.error("위치 갱신 실패:", error);
       show("위치 갱신에 실패했어요", "⚠️");
     } finally {
-      setRefreshing(false);
+      if (refreshSeq.current === requestSeq) setRefreshing(false);
     }
   };
 

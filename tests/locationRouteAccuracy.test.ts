@@ -1,0 +1,30 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+
+import { splitLocationRouteSegments } from "../src/transform/locationRoute.ts";
+import { readFileSync } from "node:fs";
+
+test("오늘 경로의 추정 채움 구간은 실측 경로와 분리해 점선으로 그릴 수 있다", () => {
+  const segments = splitLocationRouteSegments([
+    { lat: 37.1, lng: 127.1, estimated: false },
+    { lat: 37.2, lng: 127.2, estimated: true },
+    { lat: 37.3, lng: 127.3, estimated: true },
+    { lat: 37.4, lng: 127.4, estimated: false },
+    { lat: 37.5, lng: 127.5, estimated: false },
+  ]);
+
+  assert.deepEqual(
+    segments.map((segment) => ({ estimated: segment.estimated, count: segment.points.length })),
+    [
+      { estimated: true, count: 4 },
+      { estimated: false, count: 2 },
+    ],
+  );
+});
+
+test("추정 채움점은 머문 곳·일정 방문의 실측 증거로 사용하지 않는다", () => {
+  const stay = readFileSync(new URL("../src/transform/stayPoints.ts", import.meta.url), "utf8");
+  const visit = readFileSync(new URL("../src/transform/visitVerify.ts", import.meta.url), "utf8");
+  assert.match(stay, /p\.is_estimated !== true && p\.is_estimated !== 1/);
+  assert.match(visit, /p\.is_estimated !== true && p\.is_estimated !== 1/);
+});

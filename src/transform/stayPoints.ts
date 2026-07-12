@@ -56,7 +56,10 @@ export function toTimedPoints(
 ): TimedPoint[] {
   return (history ?? [])
     .filter(
-      (p) => (!userId || p.user_id === userId) && Number.isFinite(p.lat) && Number.isFinite(p.lng),
+      (p) => p.is_estimated !== true && p.is_estimated !== 1
+        && (!userId || p.user_id === userId)
+        && Number.isFinite(p.lat)
+        && Number.isFinite(p.lng),
     )
     .map((p) => ({ lat: p.lat, lng: p.lng, ms: parseServerTimestamp(p.recorded_at)?.getTime() ?? NaN }))
     .filter((p) => Number.isFinite(p.ms))
