@@ -26,6 +26,9 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
 import java.util.ArrayList;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -147,21 +150,27 @@ public class GooglePlayBillingPlugin extends Plugin implements PurchasesUpdatedL
     public void purchaseSubscription(PluginCall call) {
         String productId = call.getString("productId", "");
         String basePlanId = call.getString("basePlanId", "");
+        String offerToken = call.getString("offerToken", "");
+        String offerId = call.getString("offerId", "");
+        String accountId = call.getString("accountId", "");
+        String profileId = call.getString("profileId", "");
         if (TextUtils.isEmpty(productId)) {
             call.reject("product_required");
             return;
         }
-        launchPurchase(call, productId, BillingClient.ProductType.SUBS, basePlanId);
+        launchPurchase(call, productId, BillingClient.ProductType.SUBS, basePlanId, offerToken, offerId, accountId, profileId);
     }
 
     @PluginMethod
     public void purchaseInAppProduct(PluginCall call) {
         String productId = call.getString("productId", "");
+        String accountId = call.getString("accountId", "");
+        String profileId = call.getString("profileId", "");
         if (TextUtils.isEmpty(productId)) {
             call.reject("product_required");
             return;
         }
-        launchPurchase(call, productId, BillingClient.ProductType.INAPP, null);
+        launchPurchase(call, productId, BillingClient.ProductType.INAPP, null, null, null, accountId, profileId);
     }
 
     @PluginMethod
@@ -218,10 +227,20 @@ public class GooglePlayBillingPlugin extends Plugin implements PurchasesUpdatedL
         });
     }
 
-    private void launchPurchase(PluginCall call, String productId, String productType, String basePlanId) {
+    private void launchPurchase(PluginCall call, String productId, String productType, String basePlanId, String offerToken, String offerId, String accountId, String profileId) {
+        if (TextUtils.isEmpty(accountId) || TextUtils.isEmpty(profileId)) {
+            call.reject("purchase_owner_required");
+            return;
+        }
+        String obfuscatedAccountId = hashIdentifier("hyeni-family:" + accountId);
+        String obfuscatedProfileId = hashIdentifier("hyeni-user:" + profileId);
+        if (TextUtils.isEmpty(obfuscatedAccountId) || TextUtils.isEmpty(obfuscatedProfileId)) {
+            call.reject("purchase_owner_hash_failed");
+            return;
+        }
         withReady(call, () -> queryProduct(productId, productType, call, productDetails -> {
-            String offerToken = pickOfferToken(productDetails, productType, basePlanId);
-            if (TextUtils.isEmpty(offerToken)) {
+            String selectedOfferToken = pickOfferToken(productDetails, productType, basePlanId, offerToken, offerId);
+            if (TextUtils.isEmpty(selectedOfferToken)) {
                 call.reject("product_offer_unavailable");
                 return;
             }
@@ -229,10 +248,12 @@ public class GooglePlayBillingPlugin extends Plugin implements PurchasesUpdatedL
             BillingFlowParams.ProductDetailsParams.Builder detailsBuilder =
                     BillingFlowParams.ProductDetailsParams.newBuilder()
                             .setProductDetails(productDetails)
-                            .setOfferToken(offerToken);
+                            .setOfferToken(selectedOfferToken);
 
             BillingFlowParams flowParams = BillingFlowParams.newBuilder()
                     .setProductDetailsParamsList(java.util.Collections.singletonList(detailsBuilder.build()))
+                    .setObfuscatedAccountId(obfuscatedAccountId)
+                    .setObfuscatedProfileId(obfuscatedProfileId)
                     .build();
 
             Activity activity = getActivity();
@@ -255,6 +276,19 @@ public class GooglePlayBillingPlugin extends Plugin implements PurchasesUpdatedL
                 rejectCall(call, "launch_billing_flow_failed", result);
             }
         }));
+    }
+
+    private String hashIdentifier(String value) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256")
+                    .digest(value.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder(digest.length * 2);
+            for (byte item : digest) hex.append(String.format("%02x", item & 0xff));
+            return hex.toString();
+        } catch (NoSuchAlgorithmException error) {
+            Log.e(TAG, "SHA-256 unavailable", error);
+            return null;
+        }
     }
 
     private interface ProductDetailsConsumer {
@@ -340,16 +374,23 @@ public class GooglePlayBillingPlugin extends Plugin implements PurchasesUpdatedL
         });
     }
 
-    private String pickOfferToken(ProductDetails productDetails, String productType, String basePlanId) {
+    private String pickOfferToken(ProductDetails productDetails, String productType, String basePlanId, String offerToken, String offerId) {
         if (BillingClient.ProductType.SUBS.equals(productType)) {
             List<ProductDetails.SubscriptionOfferDetails> offers = productDetails.getSubscriptionOfferDetails();
             if (offers == null || offers.isEmpty()) return null;
-            for (ProductDetails.SubscriptionOfferDetails offer : offers) {
-                if (!TextUtils.isEmpty(basePlanId) && basePlanId.equals(offer.getBasePlanId())) {
-                    return offer.getOfferToken();
+            if (!TextUtils.isEmpty(offerToken)) {
+                for (ProductDetails.SubscriptionOfferDetails offer : offers) {
+                    boolean baseMatches = TextUtils.isEmpty(basePlanId) || basePlanId.equals(offer.getBasePlanId());
+                    boolean idMatches = TextUtils.isEmpty(offerId) || offerId.equals(offer.getOfferId());
+                    if (baseMatches && idMatches && offerToken.equals(offer.getOfferToken())) {
+                        return offer.getOfferToken();
+                    }
                 }
+                return null;
             }
-            return offers.get(0).getOfferToken();
+            // 구독 조건은 화면에서 방금 조회·확인한 eligible offerToken과 정확히 일치해야 한다.
+            // token 없는 임의 fallback은 사용자가 보지 않은 가격/체험 조건을 결제할 수 있어 금지한다.
+            return null;
         }
 
         List<ProductDetails.OneTimePurchaseOfferDetails> offers = productDetails.getOneTimePurchaseOfferDetailsList();
@@ -381,6 +422,7 @@ public class GooglePlayBillingPlugin extends Plugin implements PurchasesUpdatedL
                             .put("priceAmountMicros", phase.getPriceAmountMicros())
                             .put("priceCurrencyCode", phase.getPriceCurrencyCode())
                             .put("billingPeriod", phase.getBillingPeriod())
+                            .put("billingCycleCount", phase.getBillingCycleCount())
                             .put("recurrenceMode", phase.getRecurrenceMode()));
                 }
                 offerJson.put("pricingPhases", phases);

@@ -22,6 +22,7 @@ import { useAccount, useDeleteAccount } from "@/queries/useAccount";
 import { openExternal } from "@/lib/native/browser";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { PRIVACY_POLICY_URL } from "@/lib/api/endpoints/account";
+import { getTierLabel, TIERS } from "@/transform/tierPolicy";
 import "./ParentSettings.css";
 
 /* ── 행 정의 (결합 회피: 화면 자체 정의) ─────────────────────────────── */
@@ -86,7 +87,7 @@ export function ParentSettings() {
   const deleteAccount = useDeleteAccount();
   const [confirmDelete, setConfirmDelete] = useState(false);
   // 티어 배지는 ready 일 때만 노출(미확정/조회실패 시 미표시 — R9: free 강등 금지).
-  const { ready, view } = useEntitlement();
+  const { ready, tier } = useEntitlement();
 
   const displayName = account?.myName || "보호자";
   const roleLabel = account?.isCoParent ? "공동 보호자" : "보호자";
@@ -187,9 +188,9 @@ export function ParentSettings() {
               >
                 <SettingsIcon Icon={r.Icon} tone={r.tone} />
                 <span className="ps-nav__label">{r.label}</span>
-                {r.badge && ready && view && (
-                  <span className="ps-account__badge" data-premium={view.isPremium}>
-                    {view.tierLabel}
+                {r.badge && ready && (
+                  <span className="ps-account__badge" data-premium={tier === TIERS.PREMIUM}>
+                    {getTierLabel(tier)}
                   </span>
                 )}
                 {chevronIcon}

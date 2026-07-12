@@ -172,6 +172,13 @@
 - 리뷰 보상 티어: `/api/review-rewards`는 부모 전용 계약이다. 아이/선생님 세션에서 엔타이틀먼트가 필요해도
   서버 호출을 하지 말고 reviewed=false로 확정한다. 아이 화면 CDP 로그에 403이 남으면 실패로 보고
   `resolveReviewRewardQueryScope` 규칙을 먼저 확인한다.
+- 구독 결제 정본(2026-07-13): Google Play가 현재 계정에 eligible 하다고 반환한 정확한 7일 무료 offer만 표시·구매하고,
+  결제 직전 재조회한 `offerToken`·`offerId`를 네이티브와 Worker까지 그대로 전달한다. 가격은 Play `formattedPrice` 정본만
+  표시한다. `trial`은 미래 `trial_ends_at`, `active/grace/cancelled`는 미래 `current_period_end`가 있을 때만 프리미엄이며,
+  해지는 이미 결제한 종료일까지 유지한다. Qonversion webhook은 secret 누락 시 fail-closed, Play service-account secret
+  누락 시 검증 503이 정상이다. Play 구매는 SHA-256 obfuscated family/parent id를 서버에서 대조하고, 부모 foreground에서
+  6시간 제한으로 기존 구독을 재검증해 자동갱신 종료일을 갱신한다. AI 크레딧은 event claim·잔액·원장을 D1 batch로
+  원자 확정한다. 기존 리뷰 스토어 이동 보상은 부모 본인 가족에만 지급하고 reviewed 한도를 유지한다.
 - 설정/가입/오늘경로 안정화(2026-07-08): 부모 `/friend-play`는 아이 요청 UI가 아니라 가족 친구놀이 허용 설정이다.
   장소 관리는 서버/AI 생성 없이 `resolvePlaceVisual` 정적 asset 매핑으로 장소명에 맞는 이미지를 고른다.
   가입 전 설문은 progress 20%에서 시작하고 복수 선택만 수집한다. 부모 오늘경로는 오전 8시를 하루 시작으로,

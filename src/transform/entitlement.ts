@@ -15,9 +15,11 @@ import type {
 } from "@/lib/api/endpoints/subscription";
 
 // 프리미엄으로 취급하는 구독 상태(hyeni-1 PREMIUM_STATUSES 동일).
-const PREMIUM_STATUSES = new Set(["trial", "active", "grace"]);
+const PREMIUM_STATUSES = new Set(["trial", "active", "grace", "cancelled"]);
 // legacy user_tier 중 프리미엄으로 취급하는 값(hyeni-1 LEGACY_PREMIUM_TIERS 동일).
-const LEGACY_PREMIUM_TIERS = new Set(["premium", "subscription", "trial", "active", "grace"]);
+// legacy 소스에는 trial_ends_at 증거가 없으므로 trial을 프리미엄으로 인정하지 않는다.
+// Google Play 7일 체험은 family_subscription.status=trial + 미래 trial_ends_at 조합만 유효하다.
+const LEGACY_PREMIUM_TIERS = new Set(["premium", "subscription", "active", "grace"]);
 
 export interface EntitlementView {
   isPremium: boolean;
@@ -94,12 +96,35 @@ function freeView(): EntitlementView {
 // 1순위: subscription 행. 존재하면(만료 포함) 이 행으로 확정한다.
 function fromSubscription(sub: SubscriptionRow): EntitlementView {
   const status = normalizeTierValue(sub.status) || "expired";
+  const trialEndsAt = parseDate(sub.trial_ends_at);
+  const periodEnd = parseDate(sub.current_period_end);
+  if (status === "trial" && (!trialEndsAt || trialEndsAt.getTime() <= Date.now())) {
+    return buildView({
+      isPremium: false,
+      status: "expired",
+      productId: sub.product_id ?? null,
+      periodEnd,
+      trialEndsAt: null,
+    });
+  }
+  if (
+    (status === "active" || status === "grace" || status === "cancelled")
+    && (!periodEnd || periodEnd.getTime() <= Date.now())
+  ) {
+    return buildView({
+      isPremium: false,
+      status: "expired",
+      productId: sub.product_id ?? null,
+      periodEnd,
+      trialEndsAt,
+    });
+  }
   return buildView({
     isPremium: PREMIUM_STATUSES.has(status),
     status,
     productId: sub.product_id ?? null,
-    periodEnd: parseDate(sub.current_period_end),
-    trialEndsAt: parseDate(sub.trial_ends_at),
+    periodEnd,
+    trialEndsAt,
   });
 }
 

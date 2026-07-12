@@ -4,6 +4,7 @@
  * ToastProvider 순서에 의존하지 않도록 useToast 미사용(실패는 콘솔 로깅).
  */
 import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/auth/AuthContext";
 import { getNativePlugin, isNativePlatform } from "@/lib/native/plugins";
 import { initOAuthDeepLink } from "@/lib/native/oauthDeepLink";
@@ -31,10 +32,15 @@ import {
   type ParentPendingPresentation,
 } from "@/lib/native/parentPendingNotifications";
 import { announceGlobalToast } from "@/lib/globalToast";
+import { restoreGooglePlaySubscriptions } from "@/lib/native/billing";
+import { qk } from "@/queries/keys";
 
 // 아이 기기 상태 리포트 주기(ms). 부모 '안전 지표'가 이 주기로 갱신된다.
 const DEVICE_REPORT_INTERVAL_MS = 120_000;
 const LOCATION_PREF_SYNC_INTERVAL_MS = 60_000;
+const BILLING_RESTORE_INTERVAL_MS = 6 * 60 * 60 * 1000;
+const lastBillingRestoreByFamily = new Map<string, number>();
+const billingRestoreInFlight = new Set<string>();
 
 interface NativeNotificationPlugin {
   showPending(input: ParentPendingPresentation): Promise<ParentPendingDisplayResult>;
@@ -42,6 +48,7 @@ interface NativeNotificationPlugin {
 
 export function NativeBootstrap() {
   const { status, userId, familyId, role, syncFromSession } = useAuth();
+  const queryClient = useQueryClient();
 
   // OAuth 딥링크(hyenicalendar://auth-callback) 리스너 — 1회 등록. 성공 시 role 홈 이동은 내장.
   useEffect(() => {
@@ -71,6 +78,49 @@ export function NativeBootstrap() {
       })();
     }
   }, [status, userId, familyId, role, syncFromSession]);
+
+  // 부모 앱 시작·foreground 복귀 시 기존 Play 구독을 재검증한다. 자동갱신 후 서버
+  // current_period_end가 첫 결제 기간에 멈춰 무료로 오강등되는 것을 막는다.
+  useEffect(() => {
+    if (!isNativePlatform()) return;
+    if (status !== "authenticated" || role !== "parent" || !familyId || !userId) return;
+    let disposed = false;
+    let listener: { remove(): Promise<void> } | null = null;
+
+    const restore = () => {
+      const now = Date.now();
+      const last = lastBillingRestoreByFamily.get(familyId) ?? 0;
+      if (now - last < BILLING_RESTORE_INTERVAL_MS || billingRestoreInFlight.has(familyId)) return;
+      billingRestoreInFlight.add(familyId);
+      void restoreGooglePlaySubscriptions(familyId)
+        .then(async (count) => {
+          lastBillingRestoreByFamily.set(familyId, Date.now());
+          if (!disposed && count > 0) {
+            await queryClient.invalidateQueries({ queryKey: qk.entitlement(familyId) });
+          }
+        })
+        .catch((error) => {
+          console.warn("Google Play 구독 갱신 동기화 실패:", error);
+        })
+        .finally(() => {
+          billingRestoreInFlight.delete(familyId);
+        });
+    };
+
+    restore();
+    void import("@capacitor/app").then(async ({ App }) => {
+      const handle = await App.addListener("appStateChange", (state) => {
+        if (state.isActive) restore();
+      });
+      if (disposed) await handle.remove();
+      else listener = handle;
+    });
+
+    return () => {
+      disposed = true;
+      void listener?.remove();
+    };
+  }, [status, role, familyId, userId, queryClient]);
 
   // 부모 네이티브 foreground fallback — FCM을 놓친 경우에만 짧은 주기로 pending을 확인한다.
   // NativeNotification이 같은 pushId의 FCM ACK를 확인하므로 이미 본 알림은 다시 울리지 않는다.

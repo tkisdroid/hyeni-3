@@ -7,8 +7,8 @@ import "./TrialLock.css";
 // 페이월 혜택 아이콘 — 3D 에셋(구독 화면과 동일 시각 언어).
 const PREMIUM_PERKS = [
   { icon: "ui/pin-heart.webp", label: "실시간 위치 · 이동 경로 확인" },
-  { icon: "ui/bell.webp", label: "도착 · 위험구역 · 안전 알림 전체" },
-  { icon: "ui/ai-robot.png", label: "AI 친구 · 일정 자동 정리" },
+  { icon: "ui/ai-robot.png", label: "AI 하루 요약 · 주간 가족 리포트" },
+  { icon: "ui/menu-child-tracker.webp", label: "두 아이 · 일정과 장소 넉넉하게" },
 ] as const;
 
 function formatDate(d: Date | null): string {
@@ -101,7 +101,9 @@ export function TrialLock() {
               {view?.status === "expired" ? "체험이 종료되었어요" : "프리미엄 기능이에요"}
             </div>
             <div className="tl-lock__sub">
-              프리미엄을 시작하면 위치·안전·AI 기능을 모두 다시 쓸 수 있어요.
+              프리미엄을 시작하면 실시간 위치·이동 경로·AI 상세 기능을 쓸 수 있어요.
+              <br />
+              SOS와 긴급 안전 알림은 무료로 계속 제공돼요.
             </div>
             {reviewed && (
               <div className="tl-lock__reviewed">

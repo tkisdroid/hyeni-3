@@ -148,7 +148,15 @@ const router = createHashRouter([
       { path: "parent/family", element: <ParentFamily /> },
       { path: "child/sos", element: <ChildSos /> },
       { path: "child/ai-friend", element: <AiFriendChat /> },
-      { path: "subscription", element: <Subscription /> },
+      {
+        // 실제 Google Play 결제와 구독 상태 화면은 부모 전용이다. 아이가 결제창을 먼저
+        // 완료한 뒤 서버 parent gate에서 403을 받는 유실 경로를 라우트에서 차단한다.
+        element: <RequireRole role="parent" />,
+        children: [
+          { path: "subscription", element: <Subscription /> },
+          { path: "trial-lock", element: <TrialLock /> },
+        ],
+      },
       { path: "notifications", element: <Notifications /> },
       { path: "remote-audio", element: <RemoteAudio /> },
       { path: "place-manager", element: <PlaceManager /> },
@@ -178,7 +186,6 @@ const router = createHashRouter([
       { path: "child/settings", element: <ChildSettings /> },
       { path: "account", element: <ParentAccount /> },
       { path: "data-sync", element: <DataSync /> },
-      { path: "trial-lock", element: <TrialLock /> },
       { path: "notification-settings", element: <NotificationSettings /> },
       { path: "arrival-alerts", element: <ArrivalAlerts /> },
       { path: "danger-alert", element: <DangerAlert /> },

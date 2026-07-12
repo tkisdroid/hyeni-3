@@ -14,6 +14,11 @@
  */
 import { getNativePlugin, isNativePlatform } from "./plugins";
 import { apiPost } from "@/lib/api/client";
+import { getApiUser } from "@/lib/api/session";
+import type {
+  BillingProductDetails,
+  SubscriptionOfferSelection,
+} from "@/transform/subscriptionOffer";
 
 export const GOOGLE_PLAY_PACKAGE_NAME = "com.hyeni.calendar";
 const PLUGIN_NAME = "GooglePlayBilling";
@@ -61,8 +66,23 @@ interface PurchaseResult {
 
 interface GooglePlayBillingPlugin {
   isAvailable(): Promise<{ available: boolean; connected: boolean }>;
-  purchaseSubscription(opts: { productId: string; basePlanId: string }): Promise<PurchaseResult>;
-  purchaseInAppProduct(opts: { productId: string }): Promise<PurchaseResult>;
+  queryProducts(opts: {
+    subscriptionProductIds: string[];
+    inAppProductIds: string[];
+  }): Promise<{ subscriptions?: BillingProductDetails[]; inAppProducts?: unknown[] }>;
+  purchaseSubscription(opts: {
+    productId: string;
+    basePlanId: string;
+    offerToken?: string;
+    offerId?: string;
+    accountId: string;
+    profileId: string;
+  }): Promise<PurchaseResult>;
+  purchaseInAppProduct(opts: {
+    productId: string;
+    accountId: string;
+    profileId: string;
+  }): Promise<PurchaseResult>;
   acknowledgePurchase(opts: { purchaseToken: string }): Promise<{ acknowledged: boolean }>;
   consumePurchase(opts: { purchaseToken: string }): Promise<{ consumed: boolean; purchaseToken: string }>;
   queryPurchases(): Promise<{ purchases: RawPurchase[] }>;
@@ -148,6 +168,16 @@ function requirePlugin(): GooglePlayBillingPlugin {
   return plugin;
 }
 
+/** 현재 Google 계정에 실제로 노출되는 구독 상품/eligible offer를 조회한다. */
+export async function fetchSubscriptionProductDetails(): Promise<BillingProductDetails | null> {
+  const plugin = requirePlugin();
+  const result = await plugin.queryProducts({
+    subscriptionProductIds: [SUBSCRIPTION_PRODUCT_ID],
+    inAppProductIds: [],
+  });
+  return (result.subscriptions ?? []).find((item) => item.productId === SUBSCRIPTION_PRODUCT_ID) ?? null;
+}
+
 function normalizePurchase(purchase: RawPurchase | undefined): NormalizedPurchase {
   const products = Array.isArray(purchase?.products) ? purchase.products : [];
   return {
@@ -181,6 +211,8 @@ export interface SubscriptionPurchaseInput {
   familyId: string;
   /** 미지정 시 월구독. 연구독은 ANNUAL_BASE_PLAN_ID. */
   basePlanId?: string;
+  /** queryProducts가 현재 계정에 eligible 하다고 확인한 정확한 offer. */
+  selectedOffer?: SubscriptionOfferSelection | null;
 }
 
 export interface SubscriptionPurchaseResult {
@@ -201,13 +233,29 @@ export interface SubscriptionPurchaseResult {
 export async function launchSubscriptionPurchase({
   familyId,
   basePlanId = MONTHLY_BASE_PLAN_ID,
+  selectedOffer = null,
 }: SubscriptionPurchaseInput): Promise<SubscriptionPurchaseResult> {
   if (!familyId) throw new Error("가족 연결 후 다시 시도해 주세요.");
+  if (!selectedOffer) {
+    throw new Error("Google Play 구독 조건을 확인하지 못했어요. 잠시 후 다시 시도해 주세요.");
+  }
+  if (selectedOffer.basePlanId !== basePlanId) {
+    throw new Error("선택한 구독 조건이 변경됐어요. 다시 확인해 주세요.");
+  }
+  const parentId = getApiUser()?.id ?? "";
+  if (!parentId) throw new Error("부모 계정을 확인하지 못했어요. 다시 로그인해 주세요.");
   const plugin = requirePlugin();
 
   let result: PurchaseResult;
   try {
-    result = await plugin.purchaseSubscription({ productId: SUBSCRIPTION_PRODUCT_ID, basePlanId });
+    result = await plugin.purchaseSubscription({
+      productId: SUBSCRIPTION_PRODUCT_ID,
+      basePlanId,
+      offerToken: selectedOffer?.offerToken ?? "",
+      offerId: selectedOffer?.offerId ?? "",
+      accountId: familyId,
+      profileId: parentId,
+    });
   } catch (error) {
     throw billingError(error, "구독을 시작하지 못했어요.");
   }
@@ -221,6 +269,7 @@ export async function launchSubscriptionPurchase({
     productType: "subscription",
     productId: SUBSCRIPTION_PRODUCT_ID,
     basePlanId,
+    offerId: selectedOffer?.offerId ?? null,
     purchaseToken: purchase.purchaseToken,
     orderId: purchase.orderId,
     purchase,
@@ -283,11 +332,17 @@ export async function launchCreditPurchase({
     throw new Error("AI 크레딧을 추가할 아이를 먼저 선택해 주세요.");
   }
   const productId = creditProductId(amount);
+  const authenticatedParentId = getApiUser()?.id ?? "";
+  if (!authenticatedParentId) throw new Error("부모 계정을 확인하지 못했어요. 다시 로그인해 주세요.");
   const plugin = requirePlugin();
 
   let result: PurchaseResult;
   try {
-    result = await plugin.purchaseInAppProduct({ productId });
+    result = await plugin.purchaseInAppProduct({
+      productId,
+      accountId: familyId,
+      profileId: authenticatedParentId,
+    });
   } catch (error) {
     throw billingError(error, "AI 크레딧 구매를 시작하지 못했어요.");
   }
@@ -372,4 +427,39 @@ export async function queryGooglePlayPurchases(): Promise<RawPurchase[]> {
   } catch (error) {
     throw billingError(error, "구매 내역을 확인하지 못했어요.");
   }
+}
+
+/**
+ * 부모 앱 foreground에서 기존 구독을 Google Play/Worker로 다시 검증한다.
+ * 결제창을 열거나 새 구매를 만들지 않고, 자동갱신으로 바뀐 expiry만 서버 정본에 반영한다.
+ */
+export async function restoreGooglePlaySubscriptions(familyId: string): Promise<number> {
+  if (!familyId) return 0;
+  const parentId = getApiUser()?.id ?? "";
+  if (!parentId) return 0;
+  const purchases = await queryGooglePlayPurchases();
+  const subscriptions = purchases.filter((purchase) => (
+    purchase.purchaseState === "PURCHASED"
+    && (purchase.products ?? []).includes(SUBSCRIPTION_PRODUCT_ID)
+    && !!purchase.purchaseToken
+  ));
+
+  let restored = 0;
+  for (const raw of subscriptions) {
+    const purchase = normalizePurchase(raw);
+    await verifyPurchase({
+      familyId,
+      packageName: GOOGLE_PLAY_PACKAGE_NAME,
+      productType: "subscription",
+      productId: SUBSCRIPTION_PRODUCT_ID,
+      basePlanId: "",
+      offerId: null,
+      restore: true,
+      purchaseToken: purchase.purchaseToken,
+      orderId: purchase.orderId,
+      purchase,
+    });
+    restored += 1;
+  }
+  return restored;
 }

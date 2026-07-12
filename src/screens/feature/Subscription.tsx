@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, Check } from "lucide-react";
@@ -9,12 +9,17 @@ import { useEntitlement } from "@/queries/useEntitlement";
 import { qk } from "@/queries/keys";
 import {
   isBillingAvailable,
+  fetchSubscriptionProductDetails,
   launchSubscriptionPurchase,
   ANNUAL_BASE_PLAN_ID,
   MONTHLY_BASE_PLAN_ID,
   GOOGLE_PLAY_PACKAGE_NAME,
   SUBSCRIPTION_PRODUCT_ID,
 } from "@/lib/native/billing";
+import {
+  selectSubscriptionOffer,
+  type BillingProductDetails,
+} from "@/transform/subscriptionOffer";
 import { openExternal } from "@/lib/native/browser";
 import {
   TIERS,
@@ -88,6 +93,29 @@ export function Subscription() {
   const [plan, setPlan] = useState<Plan>("year");
   const [busy, setBusy] = useState(false);
   const { ready, isPremium, view, tier } = useEntitlement();
+  const premiumActive = ready && isPremium;
+  const [productDetails, setProductDetails] = useState<BillingProductDetails | null>(null);
+
+  useEffect(() => {
+    if (premiumActive || !isBillingAvailable()) return;
+    let cancelled = false;
+    void fetchSubscriptionProductDetails()
+      .then((details) => {
+        if (!cancelled) setProductDetails(details);
+      })
+      .catch((error) => {
+        // 상품 조회 실패 시 가격·체험을 추측하지 않는다. 결제창에서 실제 조건을 확인한다.
+        console.warn("Google Play 구독 상품 조회 실패:", error);
+        if (!cancelled) setProductDetails(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [premiumActive]);
+
+  const annualOffer = selectSubscriptionOffer(productDetails, ANNUAL_BASE_PLAN_ID);
+  const monthlyOffer = selectSubscriptionOffer(productDetails, MONTHLY_BASE_PLAN_ID);
+  const selectedOffer = plan === "year" ? annualOffer : monthlyOffer;
 
   // 결제 CTA — 네이티브(Android)면 Google Play Billing, 웹(PWA)이면 안내 토스트만.
   // 자동 실행 금지: 버튼 onClick 에서만 호출된다.
@@ -104,10 +132,20 @@ export function Subscription() {
     setBusy(true);
     try {
       const basePlanId = plan === "year" ? ANNUAL_BASE_PLAN_ID : MONTHLY_BASE_PLAN_ID;
-      await launchSubscriptionPurchase({ familyId, basePlanId });
+      const freshProductDetails = await fetchSubscriptionProductDetails();
+      const freshSelectedOffer = selectSubscriptionOffer(freshProductDetails, basePlanId);
+      if (!freshSelectedOffer) {
+        throw new Error("Google Play 구독 조건을 확인하지 못했어요. 잠시 후 다시 시도해 주세요.");
+      }
+      setProductDetails(freshProductDetails);
+      const result = await launchSubscriptionPurchase({
+        familyId,
+        basePlanId,
+        selectedOffer: freshSelectedOffer,
+      });
       // 구독 성공 → 엔타이틀먼트 캐시 무효화로 활성 배너를 갱신한다.
       await qc.invalidateQueries({ queryKey: qk.entitlement(familyId) });
-      show("프리미엄 구독을 시작했어요", "👑");
+      show(result.isTrial ? "7일 무료 체험을 시작했어요" : "프리미엄 구독을 시작했어요", "👑");
     } catch (error) {
       show(error instanceof Error ? error.message : "구독을 시작하지 못했어요", "👑");
     } finally {
@@ -128,8 +166,9 @@ export function Subscription() {
 
   // ready && isPremium 일 때만 활성 배너 노출. 조회 실패/미확정(ready=false)에서는
   // 무료로 강등하지 않고 기본 페이월(중립)만 보여준다(R9).
-  const premiumActive = ready && isPremium;
-  const purchaseLabel = plan === "year" ? "연간으로 더 안심하기" : "월 2,900원으로 시작하기";
+  const purchaseLabel = selectedOffer?.hasSevenDayTrial
+    ? "결제 정보 등록하고 7일 무료 체험"
+    : `${selectedOffer?.displayPrice ?? "Google Play에서 확인"} · 시작하기`;
 
   // 활성 배너 보조 문구(체험 남은 일수 → 결제 주기 종료 → 기본).
   const activeSub = (() => {
@@ -190,14 +229,14 @@ export function Subscription() {
               data-selected={plan === "year"}
               onClick={() => setPlan("year")}
             >
-              <span className="sub-plan__ribbon">가장 인기 · 40% 할인</span>
+              <span className="sub-plan__ribbon">연간 플랜</span>
               <div className="sub-plan__info">
                 <div className="sub-plan__name">프리미엄 연간 구독</div>
-                <div className="sub-plan__meta">월 2,417원 꼴 · Google Play 확인 화면 기준</div>
+                <div className="sub-plan__meta">
+                  {annualOffer?.hasSevenDayTrial ? "7일 무료 체험 후 자동 갱신" : "Google Play 구독 · 언제든 해지 가능"}
+                </div>
               </div>
-              <div className="sub-plan__price">
-                29,000<span>원</span>
-              </div>
+              <div className="sub-plan__price">{annualOffer?.displayPrice ?? "Google Play에서 확인"}</div>
             </button>
 
             <button
@@ -208,12 +247,18 @@ export function Subscription() {
             >
               <div className="sub-plan__info">
                 <div className="sub-plan__name">프리미엄 월구독</div>
-                <div className="sub-plan__meta">출시 기념 할인가 · 언제든 해지 가능</div>
+                <div className="sub-plan__meta">
+                  {monthlyOffer?.hasSevenDayTrial ? "7일 무료 체험 후 자동 갱신" : "Google Play 구독 · 언제든 해지 가능"}
+                </div>
               </div>
-              <div className="sub-plan__price">
-                2,900<span>원</span>
-              </div>
+              <div className="sub-plan__price">{monthlyOffer?.displayPrice ?? "Google Play에서 확인"}</div>
             </button>
+          </div>
+        )}
+
+        {!premiumActive && selectedOffer?.hasSevenDayTrial && (
+          <div className="sub-note">
+            Google Play 결제 정보 등록 후 7일 동안 무료로 이용할 수 있어요. 7일 무료 체험 종료 후 Google Play에 표시된 구독 금액으로 자동 갱신돼요. 원하지 않으면 Google Play에서 체험 종료 전에 취소해 주세요.
           </div>
         )}
 
@@ -252,7 +297,7 @@ export function Subscription() {
                     >
                       <span className="sub-table__col-name">{getTierLabel(t)}</span>
                       {t === TIERS.PREMIUM && (
-                        <span className="sub-table__col-price">월 2,900원</span>
+                        <span className="sub-table__col-price">{monthlyOffer?.displayPrice ?? "Play 가격 확인"}</span>
                       )}
                       {t === tier && <span className="sub-table__col-badge">현재</span>}
                     </th>
@@ -286,7 +331,7 @@ export function Subscription() {
         {!premiumActive && (
           <div className="sub-note">
             {
-              "SOS와 긴급 안전 알림은 무료로 계속 제공돼요. 프리미엄은 실시간 위치와 AI 요약처럼 더 자세한 안심 기능을 열어드려요. 표시 가격은 앱 안내용이며 최종 결제 금액은 Google Play 확인 화면 기준입니다."
+              "SOS와 긴급 안전 알림은 무료로 계속 제공돼요. 프리미엄은 실시간 위치와 AI 요약처럼 더 자세한 안심 기능을 열어드려요. 실제 가격과 결제 조건은 Google Play 확인 화면 기준입니다."
             }
           </div>
         )}
@@ -312,9 +357,9 @@ export function Subscription() {
         <div className="sub-fine">
           {premiumActive ? (
             <>
-              구독은 설정 &gt; 구독 관리에서
-              <br />
-              언제든 해지할 수 있어요.
+              {view?.isTrial
+                ? "무료 체험은 종료 전 Google Play에서 취소하지 않으면 Google Play에 표시된 구독 금액으로 자동 갱신돼요."
+                : "구독은 설정 > 구독 관리에서 언제든 해지할 수 있어요."}
             </>
           ) : (
             <>
