@@ -6,6 +6,15 @@ const source = readFileSync(
   new URL("../src/app/NativeBootstrap.tsx", import.meta.url),
   "utf8",
 );
+const queryProviderSource = readFileSync(
+  new URL("../src/queries/QueryProvider.tsx", import.meta.url),
+  "utf8",
+);
+
+test("Android에서는 웹 visibility 갱신을 꺼서 수명주기 조회와 중복하지 않는다", () => {
+  assert.match(queryProviderSource, /shouldRefetchOnWindowFocus\(isNativePlatform\(\)\)/);
+  assert.doesNotMatch(queryProviderSource, /refetchOnWindowFocus:\s*true/);
+});
 
 test("Android 포그라운드는 세션 조정 뒤 활성 query만 취소·재조회한다", () => {
   const start = source.indexOf("// Android WebView 포그라운드 조회 복구");

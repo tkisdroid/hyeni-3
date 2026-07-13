@@ -12,7 +12,9 @@
 
 따라서 서버 데이터, 위치 업로드, 구독 판정 또는 지도 렌더링 실패가 아니라 Android WebView가 비활성 상태에서 멈춘 조회를 앱 복귀 시 확실히 재개하지 못하는 생명주기 연동 누락이 직접 원인이다.
 
-현재 `QueryProvider`는 `refetchOnWindowFocus: true`를 사용하지만 Capacitor의 `appStateChange`를 TanStack Query 조회와 연결하지 않는다. Android 앱의 활성 상태와 브라우저 `visibilitychange`는 같은 신호가 아니므로 다른 기기의 위치·채팅·일정 화면에서도 같은 오해가 생길 수 있다.
+변경 전 `QueryProvider`는 `refetchOnWindowFocus: true`를 사용하지만 Capacitor의 `appStateChange`를 TanStack Query 조회와 연결하지 않았다. Android 앱의 활성 상태와 브라우저 `visibilitychange`는 같은 신호가 아니므로 다른 기기의 위치·채팅·일정 화면에서도 같은 오해가 생길 수 있다.
+
+첫 실기기 빌드에서는 Android 복귀 시 브라우저 `visibilitychange`와 새 `appStateChange` 경로가 모두 활성 query를 갱신해 같은 API 묶음이 6ms 간격으로 두 번 시작됐다. 따라서 네이티브에서는 `refetchOnWindowFocus`를 끄고 이 설계의 수명주기 조정기만 사용하며, 웹·PWA에서는 기존 창 포커스 갱신을 유지한다.
 
 ## 목표
 
@@ -21,6 +23,7 @@
 - 조회 전에 기존 네이티브 세션 채택 절차를 완료해 오래된 WebView 토큰으로 요청하지 않는다.
 - 기존 캐시를 유지한 채 백그라운드 재조회하여 빈 화면이나 전체 새로고침을 만들지 않는다.
 - 중복 생명주기 이벤트와 React StrictMode 재마운트에서도 중복 조회를 제한한다.
+- 네이티브 복귀에서 동일 active query 묶음이 두 번 시작되지 않게 한다.
 
 ## 비목표와 안전 경계
 
@@ -68,6 +71,10 @@ TanStack Query 5.101.2의 `QueryClient`는 `focusManager`가 활성화될 때 `r
 
 따라서 이번 변경은 `focusManager`를 건드리지 않고 `queryClient.refetchQueries({ type: "active" }, { cancelRefetch: true })`만 직접 호출한다. 이로써 현재 화면의 읽기 전용 query는 갱신하면서 결제·AI·원격제어 자동 실행 가능성을 차단한다.
 
+### 4. 브라우저 포커스 갱신과의 중복 방지
+
+`QueryProvider`는 `shouldRefetchOnWindowFocus(isNativePlatform())`로 환경별 기본값을 정한다. 네이티브에서는 `false`로 설정해 `visibilitychange`가 수명주기 조정기의 조회와 겹치지 않게 하고, 웹·PWA에서는 `true`로 기존 동작을 보존한다. 이 분기는 단위 테스트와 소스 배선 테스트로 고정한다.
+
 ## 오류 처리
 
 - 세션 채택 실패는 기존 함수의 보수적 처리대로 현재 세션을 삭제하지 않는다.
@@ -89,6 +96,7 @@ TanStack Query 5.101.2의 `QueryClient`는 `focusManager`가 활성화될 때 `r
 - 실행 중 중복 이벤트가 동시 작업을 만들지 않는다.
 - 정리 이후 이벤트는 실행되지 않는다.
 - 세션 채택, Auth 동기화, 활성 query 재조회 순서가 보장된다.
+- 웹은 창 포커스 갱신을 유지하고 네이티브는 수명주기 조정기만 사용한다.
 - 재조회 필터가 `type: "active"`이고 mutation 실행 경로가 없다.
 
 기존 세션·위치 회귀 테스트와 함께 `npm run typecheck`, 전체 Node 테스트, `npm run build`를 실행한다.

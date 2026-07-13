@@ -1,5 +1,8 @@
 # Android 포그라운드 조회 복구 Implementation Plan
 
+> 실기기 보강: 최초 S25 검증에서 `visibilitychange`와 `appStateChange`가 동일 API 묶음을 중복 조회한 사실을 확인했다.
+> 네이티브 `refetchOnWindowFocus`를 끄고 웹·PWA만 유지하는 회귀 테스트와 구현을 최종 검증 범위에 포함한다.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Android 앱이 백그라운드에서 복귀할 때 세션을 먼저 안전하게 조정한 뒤 현재 화면의 활성 TanStack Query만 한 번 재조회한다.

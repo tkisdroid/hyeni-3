@@ -17,6 +17,11 @@ export interface NativeQueryResumeDependencies {
   refetchActiveQueries: () => Promise<void>;
 }
 
+/** 네이티브는 Capacitor appStateChange가 조회를 담당하므로 웹 포커스 갱신을 겹치지 않는다. */
+export function shouldRefetchOnWindowFocus(isNative: boolean): boolean {
+  return !isNative;
+}
+
 export function createNativeQueryResumeCoordinator(
   { resume, onError }: NativeQueryResumeCoordinatorOptions,
 ): NativeQueryResumeCoordinator {

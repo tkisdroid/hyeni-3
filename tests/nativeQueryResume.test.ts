@@ -4,9 +4,15 @@ import assert from "node:assert/strict";
 import {
   createNativeQueryResumeCoordinator,
   resumeActiveQueriesAfterNativeForeground,
+  shouldRefetchOnWindowFocus,
 } from "../src/queries/nativeQueryResume.ts";
 
 const flushAsync = () => new Promise<void>((resolve) => setImmediate(resolve));
+
+test("웹은 창 포커스 갱신을 유지하고 네이티브는 수명주기 갱신만 사용한다", () => {
+  assert.equal(shouldRefetchOnWindowFocus(false), true);
+  assert.equal(shouldRefetchOnWindowFocus(true), false);
+});
 
 test("최초 active와 중복 active는 조회하지 않고 inactive 복귀만 한 번 실행한다", async () => {
   let calls = 0;

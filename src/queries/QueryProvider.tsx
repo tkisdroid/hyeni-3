@@ -6,6 +6,8 @@ import { type ReactNode } from "react";
 import { MutationCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { isApiError } from "@/lib/api/errors";
 import { announceFallbackToast, isNoiseError } from "@/lib/globalToast";
+import { isNativePlatform } from "@/lib/native/plugins";
+import { shouldRefetchOnWindowFocus } from "@/queries/nativeQueryResume";
 
 /** 4xx(클라 오류: 401 만료·404 미배포·403 등)는 재시도 무의미 → 즉시 실패. */
 function shouldRetry(failureCount: number, error: unknown): boolean {
@@ -37,7 +39,7 @@ export const queryClient = new QueryClient({
       staleTime: 30_000, // 30s: 짧은 창 안에는 재요청 없이 캐시 사용
       gcTime: 5 * 60_000, // 5min 후 미사용 캐시 수거
       retry: shouldRetry,
-      refetchOnWindowFocus: true, // 포그라운드 복귀 시 재조회(WS 보완)
+      refetchOnWindowFocus: shouldRefetchOnWindowFocus(isNativePlatform()),
     },
     mutations: {
       retry: false,
