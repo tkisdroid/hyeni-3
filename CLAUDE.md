@@ -211,6 +211,9 @@
   결정한다. 온보딩 역할 카드에서 선생님을 숨기고 `/teacher/*`는 준비 안내 gate로 닫으며, 기존 teacher 세션에는 gate 안에서
   로그아웃·회원 탈퇴·약관·개인정보처리방침 동선을 유지한다. 준비물은 부모·아이 역할만 허용한다. 환경변수로 production을
   우회하지 않는다. 회귀=`tests/teacherProductionGate.test.mjs`.
+- **공개 법적 페이지 브라우저 품질(2026-07-14)**: Worker `/privacy`·`/terms`·`/data-deletion`은 서비스명 뒤 조사가
+  자연스러워야 하며 데스크톱·모바일에서 가로 오버플로와 콘솔 오류가 없어야 한다. 기본 브라우저 아이콘 요청도
+  `/favicon.ico`의 캐시 가능한 SVG 200 응답으로 닫아 새 세션에서 404를 남기지 않는다.
 - **활성 가족 권한·알림 endpoint 소유권(2026-07-14)**: 일반 API·로그인 역할·AI·준비물·위치 설정·스티커·친구놀이·
   결제는 활성 `parent|child` membership 또는 검증된 주보호자 소유 가족만 허용한다. 비활성 옛 child는 일반 데이터 접근이
   없고 SOS 발사만 안전 예외다. FCM/Web Push는 endpoint당 활성 행 1개와 exact `registration_instance_id`를 정본으로 삼아
@@ -441,6 +444,8 @@
   `suppress_origin=True` 필수 · **awaitPromise 긴 evaluate 는 hang** — 클릭/조회를 짧은 동기 evaluate 로 쪼개고
   결과는 별도 폴링 · `canvas.toBlob` 콜백이 안 옴 → `toDataURL`(동기) 사용 · React 제어 input 은
   native setter+`input` 이벤트 · 페이지 fetch 로 `/rest/v1` 은 CORS 차단 → 토큰만 CDP 로 읽고 **호스트 curl**.
+  최종 화면 판정은 `main` 같은 시맨틱 태그가 아니라 라우트별 실제 루트 선택자의 가시성으로 확인한다. `Log.enable`은
+  이전 WebView 로그를 다시 전달할 수 있으므로 `Log.clear`와 수집 배열 초기화 후 새로고침한 응답만 현재 오류로 판정한다.
 - **토스트 검증 타이밍**: `.hy-toast` 수명은 2.4초 — 발사 후 1.2초 안에 읽거나, 같은 evaluate 에서
   `setTimeout(()=>{window.__t=(document.querySelector('.hy-toast')||{}).textContent},400)` 로 캡처해 두고 읽는다.
   늦게 읽고 "(없음)"이라 오판한 실측 실수가 있었다(2026-07-11).

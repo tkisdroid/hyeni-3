@@ -30,6 +30,8 @@ let nextId = 1;
 const pending = new Map();
 const runtimeErrors = [];
 const consoleErrors = [];
+const networkRequests = new Map();
+const networkErrors = [];
 
 function safeMessage(value) {
   return String(value ?? "")
@@ -37,6 +39,18 @@ function safeMessage(value) {
     .replace(/([?&](?:token|access_token|refresh_token|code)=)[^&#\s]+/gi, "$1[숨김]")
     .replace(/[A-Za-z0-9_-]{80,}/g, "[긴 값 숨김]")
     .slice(0, 240);
+}
+
+function safeNetworkPath(value) {
+  try {
+    const parsed = new URL(String(value));
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+      return "[비 HTTP 요청]";
+    }
+    return `${parsed.origin}${parsed.pathname}`;
+  } catch {
+    return "[잘못된 URL]";
+  }
 }
 
 socket.addEventListener("message", (event) => {
@@ -64,6 +78,28 @@ socket.addEventListener("message", (event) => {
       .map((arg) => arg.value ?? arg.description ?? arg.type)
       .join(" ");
     consoleErrors.push(safeMessage(text));
+  }
+  if (message.method === "Network.requestWillBeSent") {
+    networkRequests.set(message.params?.requestId, {
+      method: String(message.params?.request?.method ?? "GET"),
+      path: safeNetworkPath(message.params?.request?.url),
+    });
+  }
+  if (message.method === "Network.responseReceived") {
+    const status = Number(message.params?.response?.status ?? 0);
+    if (status >= 400) {
+      const request = networkRequests.get(message.params?.requestId);
+      networkErrors.push({
+        status,
+        method: request?.method ?? "GET",
+        path: request?.path ?? safeNetworkPath(message.params?.response?.url),
+        resourceType: String(message.params?.type ?? "Other"),
+      });
+    }
+    networkRequests.delete(message.params?.requestId);
+  }
+  if (message.method === "Network.loadingFailed") {
+    networkRequests.delete(message.params?.requestId);
   }
 });
 
@@ -93,6 +129,15 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 await send("Runtime.enable");
 await send("Log.enable");
+await send("Network.enable");
+await delay(250);
+await send("Log.clear");
+runtimeErrors.length = 0;
+consoleErrors.length = 0;
+networkErrors.length = 0;
+networkRequests.clear();
+await evaluate(`setTimeout(() => location.reload(), 0); true`);
+await delay(Math.max(routeWaitMs, 4000));
 
 const sessionCheck = await evaluate(`(async () => {
   const raw = localStorage.getItem("hyeni-api-session-v1");
@@ -140,18 +185,24 @@ const routes = [
 const routeResults = [];
 for (const route of routes) {
   const errorOffset = runtimeErrors.length + consoleErrors.length;
+  const networkErrorOffset = networkErrors.length;
   await evaluate(`location.hash = ${JSON.stringify(route.hash)}; true`);
   await delay(routeWaitMs);
   const view = await evaluate(`(() => {
     const text = document.body?.innerText ?? "";
     const required = document.querySelector(${JSON.stringify(route.selector)});
     const mapCanvas = document.querySelector(".km-canvas");
-    const visible = [...document.querySelectorAll("main, section, article, [role='main']")]
-      .some((element) => {
-        const style = getComputedStyle(element);
-        const rect = element.getBoundingClientRect();
-        return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
-      });
+    const isElementVisible = (element) => {
+      if (!element) return false;
+      const style = getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      return style.display !== "none"
+        && style.visibility !== "hidden"
+        && Number.parseFloat(style.opacity || "1") > 0
+        && rect.width > 0
+        && rect.height > 0;
+    };
+    const requiredSelectorVisible = isElementVisible(required);
     const phrases = [
       "지도를 불러오지 못했어요",
       "문제가 발생했어요",
@@ -166,8 +217,8 @@ for (const route of routes) {
     ].filter((phrase) => text.includes(phrase));
     return {
       hash: location.hash,
-      visible,
-      requiredSelectorVisible: Boolean(required && required.getClientRects().length > 0),
+      visible: requiredSelectorVisible,
+      requiredSelectorVisible,
       mapReady: ${route.requiresMap === true}
         ? Boolean(mapCanvas && mapCanvas.childElementCount > 0 && !document.querySelector(".km-error"))
         : null,
@@ -184,6 +235,7 @@ for (const route of routes) {
     expectedHash: route.hash,
     ...view,
     newConsoleOrRuntimeErrors: runtimeErrors.length + consoleErrors.length - errorOffset,
+    newNetworkErrors: networkErrors.slice(networkErrorOffset),
   });
 }
 
@@ -194,6 +246,7 @@ const result = {
   routes: routeResults,
   runtimeErrors: [...new Set(runtimeErrors)],
   consoleErrors: [...new Set(consoleErrors)],
+  networkErrors,
 };
 
 console.log(JSON.stringify(result, null, 2));
@@ -213,9 +266,11 @@ const failed = (
     || route.errorPhrases.length > 0
     || route.horizontalOverflowPx > 1
     || route.newConsoleOrRuntimeErrors > 0
+    || route.newNetworkErrors.length > 0
   ))
   || runtimeErrors.length > 0
   || consoleErrors.length > 0
+  || networkErrors.length > 0
 );
 
 if (failed) process.exitCode = 1;
