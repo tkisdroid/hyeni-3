@@ -19,7 +19,7 @@ import type {
   BillingProductDetails,
   SubscriptionOfferSelection,
 } from "@/transform/subscriptionOffer";
-import { resolveSubscriptionProductQuery } from "@/transform/billingProductDiagnostics";
+import { querySubscriptionProductWithDiagnostics } from "@/transform/billingProductDiagnostics";
 import type {
   BillingProductsQueryResult,
   SubscriptionProductQueryResult,
@@ -178,11 +178,10 @@ export async function fetchSubscriptionProductDetailsWithDiagnostics(): Promise<
   SubscriptionProductQueryResult<BillingProductDetails>
 > {
   const plugin = requirePlugin();
-  const result = await plugin.queryProducts({
-    subscriptionProductIds: [SUBSCRIPTION_PRODUCT_ID],
-    inAppProductIds: [],
-  });
-  return resolveSubscriptionProductQuery(result, SUBSCRIPTION_PRODUCT_ID);
+  return querySubscriptionProductWithDiagnostics(
+    (options) => plugin.queryProducts(options),
+    SUBSCRIPTION_PRODUCT_ID,
+  );
 }
 
 /** 현재 Google 계정에 실제로 노출되는 구독 상품/eligible offer를 조회한다. */
