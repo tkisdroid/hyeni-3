@@ -238,6 +238,8 @@ export interface SendChildChatInput {
 /** 전송 성공 응답. 인증/한도/크레딧 차감/저장은 Worker 가 처리한다. */
 export interface ChildChatReply {
   reply: string;
+  /** 저장된 assistant 행 ID. 이 ID가 있어야 방금 받은 답변도 즉시 신고할 수 있다. */
+  assistantMessageId?: string | null;
   remaining?: number;
   dailyLimit?: number;
   creditBalance?: number;

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronLeft, Phone, Volume2, MapPin, Check, ShieldCheck, Siren, LifeBuoy } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { KakaoMap } from "@/components/KakaoMap";
@@ -11,6 +11,9 @@ import { useLocationLabels } from "@/queries/useLocationLabels";
 import { parseServerTimestamp } from "@/transform/locationView";
 import { placePhoneCall } from "@/lib/native/phone";
 import { childAvatarPath } from "@/lib/avatar";
+import { useEntitlement } from "@/queries/useEntitlement";
+import { TIERS, locationModeFor } from "@/transform/tierPolicy";
+import { resolveLocationTrustCopy } from "@/transform/locationTrustCopy";
 import "./SosReceive.css";
 
 const pad2 = (n: number): string => String(n).padStart(2, "0");
@@ -41,16 +44,31 @@ function formatClock(d: Date | null): string {
  */
 export function SosReceive() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { show } = useToast();
-  const { data: sosList, isError: sosLoadError, refetch: refetchSos } = useReceivedSos({ pollMs: 15000 });
+  const {
+    data: sosList,
+    isLoading: sosLoading,
+    isError: sosLoadError,
+    refetch: refetchSos,
+  } = useReceivedSos({ pollMs: 15000 });
   const { data: family } = useMyFamily();
-  const { data: locations } = useChildLocations();
+  const {
+    data: locations,
+    isLoading: locationsLoading,
+    isError: locationsLoadError,
+  } = useChildLocations();
   const { data: places } = useSavedPlaces();
+  const { tier } = useEntitlement();
   const markRead = useMarkAlertRead();
 
   const list = useMemo(() => sosList ?? [], [sosList]);
-  const latest = list[0] ?? null;
-  const older = list.slice(1);
+  const requestedAlertId = searchParams.get("alert")?.trim() || null;
+  const latest = requestedAlertId
+    ? list.find((alert) => alert.id === requestedAlertId) ?? null
+    : list[0] ?? null;
+  const anchoredAlertMissing = !!requestedAlertId && !latest && !sosLoading && !sosLoadError;
+  const older = latest ? list.filter((alert) => alert.id !== latest.id) : [];
   // 서버 pg 타임스탬프(공백구분 + bare +00)는 iOS Safari 에서 raw new Date 시 Invalid Date →
   // parseServerTimestamp 로 정규화한 Date 를 시각 표시에 넘긴다.
   const latestAt = parseServerTimestamp(latest?.created_at);
@@ -65,12 +83,19 @@ export function SosReceive() {
   const childAvatar = childAvatarPath(child?.photo_url);
 
   // 아이 실시간 위치 + 저장장소 라벨 — 발신 아이 것만(타 아이 위치 폴백 금지: 오노출·오판 방지).
-  const childLoc = latest?.child_user_id
+  const locationMode = locationModeFor(tier);
+  const locationModeKnown = tier !== TIERS.UNKNOWN;
+  const childLoc = latest?.child_user_id && locationModeKnown && locationMode !== "locked"
     ? (locations ?? []).find((l) => l.user_id === latest.child_user_id) ?? null
     : null;
   const locationLabel = useLocationLabels(childLoc ? [childLoc] : [], places);
   const place = childLoc ? locationLabel(childLoc) : null;
-  const locUpdated = relativeFrom(parseServerTimestamp(childLoc?.updated_at));
+  const locationCopy = resolveLocationTrustCopy({
+    mode: locationMode,
+    modeKnown: locationModeKnown,
+    updatedAt: childLoc?.updated_at,
+    loadState: locationsLoading ? "loading" : locationsLoadError ? "error" : "ready",
+  });
 
   const callOrRingChild = () => {
     if (child?.phone) {
@@ -118,7 +143,13 @@ export function SosReceive() {
 
       <div className="hy-content sr-content">
         {/* 조회 실패를 "없음"으로 위장하면 안전 화면의 거짓 안심이 된다 — 실패는 실패로 보여준다. */}
-        {!latest && sosLoadError && (
+        {!latest && sosLoading && (
+          <div className="sr-empty">
+            <div className="sr-empty-title">SOS 기록을 불러오는 중…</div>
+            <div className="sr-empty-sub">잠시만 기다려 주세요</div>
+          </div>
+        )}
+        {!latest && !sosLoading && sosLoadError && (
           <div className="sr-empty">
             <div className="sr-empty-icon">
               <ShieldCheck size={40} strokeWidth={1.8} color="var(--gold-600)" />
@@ -130,17 +161,30 @@ export function SosReceive() {
             </button>
           </div>
         )}
-        {!latest && !sosLoadError && (
+        {!latest && !sosLoading && !sosLoadError && (
           <div className="sr-empty">
             <div className="sr-empty-icon">
               <ShieldCheck size={40} strokeWidth={1.8} color="var(--mint-600)" />
             </div>
-            <div className="sr-empty-title">받은 SOS가 없어요</div>
-            <div className="sr-empty-sub">
-              아이가 SOS를 보내면
-              <br />
-              여기에서 바로 확인할 수 있어요.
+            <div className="sr-empty-title">
+              {anchoredAlertMissing ? "선택한 긴급 알림을 찾지 못했어요" : "받은 SOS가 없어요"}
             </div>
+            <div className="sr-empty-sub">
+              {anchoredAlertMissing ? (
+                <>알림 기록을 다시 불러오거나 알림 목록에서 확인해 주세요.</>
+              ) : (
+                <>
+                  아이가 SOS를 보내면
+                  <br />
+                  여기에서 바로 확인할 수 있어요.
+                </>
+              )}
+            </div>
+            {anchoredAlertMissing && (
+              <button type="button" className="sr-retry hy-press" onClick={() => void refetchSos()}>
+                다시 불러오기
+              </button>
+            )}
           </div>
         )}
 
@@ -163,13 +207,13 @@ export function SosReceive() {
                 <div className="sr-map__empty">
                   <MapPin size={22} strokeWidth={2.2} color="var(--danger-500)" />
                   <span>
-                    {latest.child_user_id ? "현재 위치 신호를 기다리는 중" : "알림 대상 아이 정보가 없어요"}
+                    {latest.child_user_id ? locationCopy.detail : "알림 대상 아이 정보가 없어요"}
                   </span>
                 </div>
               )}
               <div className="sr-map__label">
                 <MapPin size={15} strokeWidth={2.4} />
-                현재 실시간 위치
+                {locationCopy.badge}
               </div>
             </div>
 
@@ -193,10 +237,8 @@ export function SosReceive() {
                 <MapPin size={18} strokeWidth={2.2} color="var(--danger-500)" />
               </span>
               <div className="sr-loc-body">
-                <div className="sr-loc-place">{place || "위치 확인 중…"}</div>
-                <div className="sr-loc-sub">
-                  {childLoc ? `실시간 추적 중 · ${locUpdated || "방금"} 갱신` : "위치 신호를 기다리는 중"}
-                </div>
+                <div className="sr-loc-place">{place || locationCopy.badge}</div>
+                <div className="sr-loc-sub">{locationCopy.detail}</div>
               </div>
               <button
                 type="button"

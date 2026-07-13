@@ -122,7 +122,13 @@ public class ForceRingService extends Service {
                 .setContentText(message != null ? message : "")
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
                 .setPriority(NotificationCompat.PRIORITY_MAX)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+                .setPublicVersion(NotificationHelper.buildPublicVersion(
+                        this,
+                        NotificationHelper.FORCE_RING_CHANNEL_ID,
+                        true,
+                        fullScreenPI
+                ))
                 .setFullScreenIntent(fullScreenPI, true)
                 .setOnlyAlertOnce(true)
                 .setOngoing(true)

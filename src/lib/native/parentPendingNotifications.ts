@@ -10,6 +10,7 @@ export interface ParentPendingPresentation {
   urgent: boolean;
   severity: string;
   alertType: string;
+  route: string;
   [key: string]: unknown;
 }
 
@@ -56,6 +57,17 @@ function trueFlag(value: unknown): boolean {
   return value === true || (typeof value === "string" && value.toLowerCase() === "true");
 }
 
+const NATIVE_COMMAND_PENDING_TYPES = new Set([
+  "request_location",
+  "request_device_status",
+  "remote_listen",
+  "remote_listen_stop",
+]);
+
+export function isDisplayPendingType(type: string): boolean {
+  return !NATIVE_COMMAND_PENDING_TYPES.has(type.trim().toLowerCase());
+}
+
 export function pendingPresentation(notification: PendingDeviceNotification): ParentPendingPresentation {
   const data = dataRecord(notification.data);
   return {
@@ -72,6 +84,7 @@ export function pendingPresentation(notification: PendingDeviceNotification): Pa
     urgent: trueFlag(data.urgent),
     severity: firstText(data.severity),
     alertType: firstText(data.alertType, data.alert_type),
+    route: firstText(data.route),
   };
 }
 
@@ -95,7 +108,9 @@ export async function pollParentPendingNotifications({
   for (const notification of notifications) {
     if (signal.aborted) break;
     try {
-      const result = await showPending(pendingPresentation(notification));
+      const presentation = pendingPresentation(notification);
+      if (!isDisplayPendingType(presentation.type)) continue;
+      const result = await showPending(presentation);
       if (signal.aborted) break;
       if (result.displayed === true || result.acknowledged === true) {
         deliveredIds.add(notification.id);

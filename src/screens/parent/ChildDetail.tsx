@@ -140,7 +140,7 @@ export function ChildDetail() {
   const isPrimary = familyQuery.data?.isPrimaryParent ?? false;
   const childUserId = rawChild.user_id || null;
 
-  // 아이 삭제(연결 해제) — 주 보호자만. 서버가 위치기록·오디오·토큰까지 정리(되돌릴 수 없음).
+  // 아이 삭제(연결 해제) — 주 보호자만. 서버가 대화·공유 사진·위치·오디오·토큰까지 정리한다.
   const onDelete = async () => {
     if (unpair.isPending) return;
     if (!isPrimary) {
@@ -278,7 +278,7 @@ export function ChildDetail() {
           <ChevronRight size={20} strokeWidth={2.4} color="var(--fg-disabled)" />
         </button>
 
-        {/* 아이 삭제(연결 해제) — 주 보호자만. 위치기록·연결을 모두 지움(되돌릴 수 없음) */}
+        {/* 아이 삭제(연결 해제) — 주 보호자만. 대화·공유 사진·위치·연결을 영구 삭제 */}
         {isPrimary && (
           <button
             type="button"
@@ -290,7 +290,7 @@ export function ChildDetail() {
             </span>
             <span className="cd-danger__main">
               <span className="cd-danger__title">가족에서 삭제</span>
-              <span className="cd-danger__sub">연결·위치 기록을 모두 지워요</span>
+              <span className="cd-danger__sub">대화·공유 사진·위치 기록·연결을 모두 지워요</span>
             </span>
           </button>
         )}
@@ -313,8 +313,8 @@ export function ChildDetail() {
             </span>
             <div className="cd-confirm__title">{name} 삭제할까요?</div>
             <p className="cd-confirm__desc">
-              가족에서 완전히 삭제돼요. 위치 기록·연결이 모두 지워지고 되돌릴 수 없어요. 다시
-              함께하려면 연결 코드로 새로 연결하면 돼요.
+              가족에서 완전히 삭제돼요. 대화와 공유 사진, 위치 기록과 연결이 모두 영구 삭제되어
+              되돌릴 수 없어요. 다시 함께하려면 연결 코드로 새로 연결하면 돼요.
             </p>
             <div className="cd-confirm__btns">
               <button

@@ -27,6 +27,7 @@ export function useVisitVerify(
   dateKey: string,
   events: CalendarEvent[] | undefined,
   childScope: VisitChildScope,
+  locationHistoryAllowed: boolean,
 ): Map<string, VisitVerdict> {
   const range = useMemo(() => dayRangeIso(dateKey), [dateKey]);
   // 좌표 있는 이벤트가 그 날짜에 있고, 하루가 이미 시작됐을 때만 이력 조회.
@@ -41,11 +42,11 @@ export function useVisitVerify(
   const { data: history } = useLocationHistory(
     range?.start ?? "",
     range?.end ?? "",
-    !!range && hasTarget && dayStarted,
+    locationHistoryAllowed && !!range && hasTarget && dayStarted,
   );
 
   return useMemo(
-    () => verifyVisits(dayEvents, history ?? [], childScope),
-    [dayEvents, history, childScope],
+    () => verifyVisits(dayEvents, locationHistoryAllowed ? history ?? [] : [], childScope),
+    [dayEvents, history, childScope, locationHistoryAllowed],
   );
 }

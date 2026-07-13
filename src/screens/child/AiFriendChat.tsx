@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronLeft, Settings } from "lucide-react";
+import { ChevronLeft, Flag, Settings } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "@/queries/useFamily";
@@ -14,6 +14,10 @@ import { todayDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { isApiError } from "@/lib/api/errors";
 import { resolveAiFriendDisplayName } from "@/transform/aiFriendName";
+import { useToast } from "@/app/toast";
+import { MessageSafetyDialog, type ReportReasonOption } from "@/components/MessageSafetyDialog";
+import { useReportAiMessage } from "@/queries/useContentSafety";
+import type { AiContentReportReason } from "@/lib/api/endpoints/contentSafety";
 import {
   AI_FRIEND_PERSONAS,
   DEFAULT_CHARACTER,
@@ -23,6 +27,14 @@ import {
 import "./AiFriendChat.css";
 
 const BASE_SUGGESTIONS = ["오늘 뭐 하고 놀까?", "심심해 😪", "재밌는 얘기 해줘"];
+
+const AI_REPORT_REASONS: readonly ReportReasonOption<AiContentReportReason>[] = [
+  { value: "scary_or_uncomfortable", label: "무섭거나 불편해" },
+  { value: "abusive_language", label: "나쁜 말" },
+  { value: "asks_personal_info", label: "개인정보를 물어봐" },
+  { value: "inaccurate", label: "사실과 달라" },
+  { value: "other", label: "다른 이유" },
+];
 
 // 전송 실패 코드(Worker 가 비-2xx { error } 로 응답 → ApiError.message)를 아이 톤(반말) 안내로.
 function friendlyError(err: unknown): string {
@@ -45,6 +57,7 @@ function friendlyError(err: unknown): string {
 export function AiFriendChat() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { show } = useToast();
 
   // 아이 모드에서는 로그인 사용자 = 아이. childUserId = userId.
   const { familyId, userId } = useAuth();
@@ -116,6 +129,7 @@ export function AiFriendChat() {
   const { data: messagesData } = useAiMessages(userId);
   const aiUsage = useAiUsageToday(userId);
   const sendChat = useSendChildChat();
+  const reportAiMessage = useReportAiMessage();
   // 남은 대화 횟수: 첫 진입엔 usage/today + daily_limit 로 계산하고(부모 전용 balance 는 호출 금지),
   // 전송 뒤에는 서버가 준 remaining 으로 갱신한다.
   const [remaining, setRemaining] = useState<number | null>(null);
@@ -125,6 +139,7 @@ export function AiFriendChat() {
   const [messages, setMessages] = useState<ChatBubble[]>([]);
   const [seeded, setSeeded] = useState(false);
   const [input, setInput] = useState("");
+  const [reportTarget, setReportTarget] = useState<ChatBubble | null>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
 
   // 서버 기록이 도착하면 1회 시드(자동 전송 아님 — 표시만). 비어 있으면 인사 말풍선을 남긴다.
@@ -164,7 +179,12 @@ export function AiFriendChat() {
           if (typeof res.remaining === "number") setRemaining(res.remaining);
           setMessages((prev) => [
             ...prev,
-            { id: `${base}-ai`, role: "ai", text: res.reply || "그렇구나! 더 얘기해줄래? 😊" },
+            {
+              id: res.assistantMessageId || `${base}-ai`,
+              role: "ai",
+              text: res.reply || "그렇구나! 더 얘기해줄래? 😊",
+              reportable: !!res.assistantMessageId,
+            },
           ]);
         },
         onError: (err) => {
@@ -217,7 +237,19 @@ export function AiFriendChat() {
                 <img src={animalSrc} alt="" />
               </div>
             )}
-            <div className={`afc-bubble afc-bubble--${m.role}`}>{m.text}</div>
+            <div className="afc-bubble-stack">
+              <div className={`afc-bubble afc-bubble--${m.role}`}>{m.text}</div>
+              {m.role === "ai" && m.reportable && (
+                <button
+                  type="button"
+                  className="afc-report-link hy-press"
+                  onClick={() => setReportTarget(m)}
+                >
+                  <Flag size={13} strokeWidth={2.2} aria-hidden="true" />
+                  이 답변 신고
+                </button>
+              )}
+            </div>
           </div>
         ))}
         {/* AI 친구 응답 대기 중 — 타이핑 인디케이터(전송 진행 중임을 정직하게 표시). */}
@@ -272,6 +304,20 @@ export function AiFriendChat() {
           </button>
         </div>
       </div>
+
+      <MessageSafetyDialog
+        open={!!reportTarget}
+        tone="child"
+        title="이 답변을 알려줄래?"
+        description="불편하거나 이상한 답변은 앱 안에서 바로 신고할 수 있어."
+        reasons={AI_REPORT_REASONS}
+        onClose={() => setReportTarget(null)}
+        onReport={async (reason, detail) => {
+          if (!reportTarget?.id) throw new Error("report_target_missing");
+          await reportAiMessage.mutateAsync({ messageId: reportTarget.id, reason, detail });
+          show("알려줘서 고마워. 이 답변은 다시 확인할게.", "🛡️");
+        }}
+      />
     </div>
   );
 }

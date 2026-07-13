@@ -12,6 +12,10 @@ import { getAuthDeviceInstallId } from "@/lib/native/deviceIdentity";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { ApiError } from "./errors";
 import {
+  acquirePendingChildPhotoUploadRequest,
+  clearPendingChildPhotoUploadRequest,
+} from "./storageUploadIdempotency";
+import {
   getApiAccessToken,
   getApiRefreshToken,
   getApiSessionInstanceId,
@@ -173,36 +177,64 @@ function encodeStorageKey(path: string): string {
     .join("/");
 }
 
-/**
- * 자녀 사진 업로드 — 바이너리 본문 + Bearer. apiRequest 는 JSON 전용이라 별도 fetch.
- * 성공 시 서버가 { path } 반환(R2 동일 키 put = upsert).
- */
-export async function apiUploadChildPhoto(
-  path: string,
-  fileOrBlob: Blob,
-  contentType?: string,
-): Promise<{ path: string }> {
-  const accessToken = getApiAccessToken();
-  const url = API_BASE + "/api/storage/child-photos/" + encodeChildPhotoKey(path);
-  const res = await fetch(url, {
-    method: "PUT",
-    headers: {
-      ...(contentType ? { "Content-Type": contentType } : {}),
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-    },
-    body: fileOrBlob,
-  });
-  if (!res.ok) {
-    let detail: string | null = null;
-    try {
-      const body = (await res.clone().json()) as { error?: string; message?: string };
-      detail = body?.error || body?.message || null;
-    } catch {
-      /* non-json body */
-    }
-    throw new ApiError(detail || `Upload ${res.status}`, res.status);
+export type ChildPhotoUploadPurpose = "memo" | "profile" | "placeholder";
+
+export interface ChildPhotoUploadInput {
+  familyId: string;
+  purpose: ChildPhotoUploadPurpose;
+  targetMemberId?: string;
+  fileOrBlob: Blob;
+  contentType?: string;
+}
+
+function validateChildPhotoUploadResponse(
+  value: { path?: unknown },
+  familyId: string,
+): { path: string } {
+  const path = typeof value?.path === "string" ? value.path.trim() : "";
+  const segments = path.split("/");
+  const validFileName = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(?:jpg|png|webp)$/i;
+  if (
+    segments.length !== 4
+    || segments[0] !== familyId
+    || segments[1] !== "uploads"
+    || !/^[A-Za-z0-9_-]{1,128}$/.test(segments[2] ?? "")
+    || !validFileName.test(segments[3] ?? "")
+  ) {
+    throw new ApiError("invalid_upload_response", 502);
   }
-  return (await res.json()) as { path: string };
+  return { path };
+}
+
+/** 자녀 사진 신규 업로드 — 객체 키는 Worker가 만들며 클라이언트는 덮어쓸 키를 지정하지 않는다. */
+export async function apiUploadChildPhoto(input: ChildPhotoUploadInput): Promise<{ path: string }> {
+  const pending = await acquirePendingChildPhotoUploadRequest(input);
+  const upload = async (requestId: string) => apiRequest<{ path: string }>(
+    "/api/storage/child-photo-uploads/" + encodeURIComponent(input.familyId),
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": input.contentType || input.fileOrBlob.type || "application/octet-stream",
+        "X-Hyeni-Upload-Purpose": input.purpose,
+        "X-Hyeni-Upload-Request-Id": requestId,
+        ...(input.targetMemberId
+          ? { "X-Hyeni-Target-Member-Id": input.targetMemberId }
+          : {}),
+      },
+      body: input.fileOrBlob,
+    },
+  );
+  try {
+    const response = await upload(pending.requestId);
+    const validated = validateChildPhotoUploadResponse(response, input.familyId);
+    clearPendingChildPhotoUploadRequest(pending);
+    return validated;
+  } catch (error) {
+    if (error instanceof ApiError && error.message === "storage_upload_request_retired") {
+      clearPendingChildPhotoUploadRequest(pending);
+    }
+    throw error;
+  }
 }
 
 /**
@@ -226,27 +258,16 @@ export async function apiUploadTeacherNoticeFile(
   fileOrBlob: Blob,
   contentType?: string,
 ): Promise<{ path: string }> {
-  const accessToken = getApiAccessToken();
-  const url = API_BASE + "/api/storage/teacher-notices/" + encodeStorageKey(teacherNoticeRelativeKey(relativePath));
-  const res = await fetch(url, {
+  return apiRequest<{ path: string }>(
+    "/api/storage/teacher-notices/" + encodeStorageKey(teacherNoticeRelativeKey(relativePath)),
+    {
     method: "PUT",
     headers: {
-      ...(contentType ? { "Content-Type": contentType } : {}),
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      "Content-Type": contentType || fileOrBlob.type || "application/octet-stream",
     },
     body: fileOrBlob,
-  });
-  if (!res.ok) {
-    let detail: string | null = null;
-    try {
-      const body = (await res.clone().json()) as { error?: string; message?: string };
-      detail = body?.error || body?.message || null;
-    } catch {
-      /* non-json body */
-    }
-    throw new ApiError(detail || `Upload ${res.status}`, res.status);
-  }
-  return (await res.json()) as { path: string };
+    },
+  );
 }
 
 /** 선생님 알림장 첨부 조회용 proxy URL. */

@@ -73,11 +73,11 @@ export function SocialLinks() {
   // 남는 로그인 수단이 하나도 없으면 해제 금지(서버도 409 로 막지만 버튼부터 잠근다).
   const canUnlink = (data?.hasPasswordLogin ?? false) || links.length > 1;
 
-  const startLink = (provider: OAuthProvider) => {
+  const startLink = async (provider: OAuthProvider) => {
     setBusy(provider);
     setConfirming(null);
     try {
-      startWorkerOAuth(provider, "link");
+      await startWorkerOAuth(provider, "link");
     } catch (error) {
       setBusy(null);
       show(error instanceof Error ? error.message : "연결을 시작하지 못했어요.");

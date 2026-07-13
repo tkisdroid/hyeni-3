@@ -1,11 +1,16 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { Loading } from "@/components/ui/Loading";
 import { useParentAlerts, useMarkAlertRead, useMarkAllAlertsRead } from "@/queries/useNotifications";
-import { mapAlertsToGroups, type AlertItemView } from "@/transform/notificationsView";
+import {
+  alertCategory,
+  alertRoute,
+  mapAlertsToGroups,
+  type AlertItemView,
+} from "@/transform/notificationsView";
 import type { ParentAlert } from "@/lib/api/endpoints/notifications";
 import "./Notifications.css";
 
@@ -34,42 +39,11 @@ const FILTER_LABEL: Record<FilterKey, string> = {
   talk: "대화",
 };
 
-/** alert_type → 필터 카테고리. 미매칭은 위치(도착·이탈 등 위치 계열)로 수렴. */
-function categoryOf(alertType: string): Exclude<FilterKey, "all"> {
-  const t = alertType || "";
-  if (
-    t.startsWith("sos") ||
-    t.startsWith("danger") ||
-    t.startsWith("battery") ||
-    t === "child_setting_request"
-  ) {
-    return "safety";
-  }
-  if (t.startsWith("event")) return "schedule";
-  if (t.startsWith("memo") || t.startsWith("sticker") || t === "ai_credit_request") return "talk";
-  return "location";
-}
-
-/**
- * alert_type → 탭 시 이동 경로(유형별 상세).
- * 도착→도착 알림, 위험/SOS→위험 알림, 위치 계열→위치 지도, 대화→메모, 일정→캘린더.
- * (도착·위험 상세 화면 라우트는 통합 담당자가 배선; 여기서는 경로 문자열만 지정.)
- */
-function routeForAlert(alertType: string): string | null {
-  const t = alertType || "";
-  if (t.startsWith("sos") || t.startsWith("danger")) return "/danger-alert";
-  if (t === "arrived" || t === "place_arrived" || t === "not_arrived" || t === "place_left") {
-    return "/arrival-alerts";
-  }
-  if (t === "academy_focus" || t.startsWith("battery")) return "/parent/location";
-  if (t.startsWith("memo") || t.startsWith("sticker")) return "/parent/memo";
-  if (t === "schedule_suggestion") return "/event-form";
-  if (t.startsWith("event")) return "/parent/calendar";
-  return null;
-}
-
 export function Notifications() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const requestedAlertId = searchParams.get("alert")?.trim() || null;
+  const alertItemRefs = useRef(new Map<string, HTMLButtonElement>());
   const { show } = useToast();
   const { data: alerts, isLoading, isError, refetch } = useParentAlerts();
   const markRead = useMarkAlertRead();
@@ -85,7 +59,7 @@ export function Notifications() {
     const c: Record<FilterKey, number> = { all: 0, safety: 0, location: 0, schedule: 0, talk: 0 };
     for (const a of list) {
       c.all += 1;
-      c[categoryOf(a.alert_type)] += 1;
+      c[alertCategory(a.alert_type)] += 1;
     }
     return c;
   }, [list]);
@@ -96,10 +70,21 @@ export function Notifications() {
   );
 
   const filteredList = useMemo<ParentAlert[]>(
-    () => (filter === "all" ? list : list.filter((a) => categoryOf(a.alert_type) === filter)),
+    () => (filter === "all" ? list : list.filter((a) => alertCategory(a.alert_type) === filter)),
     [list, filter],
   );
   const groups = useMemo(() => mapAlertsToGroups(filteredList, now), [filteredList, now]);
+
+  useEffect(() => {
+    if (!requestedAlertId) return;
+    const target = alertItemRefs.current.get(requestedAlertId);
+    if (!target) return;
+    const frame = window.requestAnimationFrame(() => {
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      target.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [groups, requestedAlertId]);
 
   /** "모두 읽음" — 서버 1요청(read-all) + 낙관적 업데이트(훅)라 목록이 즉시 지워진다.
    *  실패하면 훅이 캐시를 원복하고 여기서 정직하게 안내한다. */
@@ -119,7 +104,7 @@ export function Notifications() {
    *  위치 화면으로 갈 땐 알림이 지목한 아이(childUserId)를 함께 실어 대표 아이 오연결을 막는다. */
   const openAlert = (item: AlertItemView) => {
     if (item.unread) markRead.mutate(item.id);
-    const to = routeForAlert(item.alertType) ?? item.to;
+    const to = alertRoute(item.alertType) ?? item.to;
     if (to) {
       let dest = to;
       if (to === "/parent/location" && item.childUserId) {
@@ -222,7 +207,13 @@ export function Notifications() {
                   <button
                     type="button"
                     key={a.id}
-                    className="nc-item hy-press"
+                    ref={(node) => {
+                      if (node) alertItemRefs.current.set(a.id, node);
+                      else alertItemRefs.current.delete(a.id);
+                    }}
+                    data-alert-id={a.id}
+                    aria-current={requestedAlertId === a.id ? "true" : undefined}
+                    className={`nc-item hy-press${requestedAlertId === a.id ? " nc-item--anchored" : ""}`}
                     onClick={() => openAlert(a)}
                   >
                     <span className="nc-item__icon" style={{ background: a.soft }}>

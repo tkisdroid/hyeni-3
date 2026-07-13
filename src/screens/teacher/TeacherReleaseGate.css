@@ -1,0 +1,217 @@
+.trg-screen {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: calc(env(safe-area-inset-top) + var(--space-6)) var(--space-5)
+    calc(env(safe-area-inset-bottom) + var(--space-6));
+  background:
+    radial-gradient(circle at 18% 12%, var(--mint-soft), transparent 42%),
+    linear-gradient(160deg, var(--bg-app), var(--bg-page));
+  color: var(--fg-primary);
+}
+
+.trg-card {
+  width: min(100%, 430px);
+  padding: 30px var(--space-5) var(--space-5);
+  border: 1px solid var(--line-card);
+  border-radius: var(--radius-hero);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+  text-align: center;
+}
+
+.trg-icon {
+  width: 68px;
+  height: 68px;
+  margin: 0 auto var(--space-4);
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-2xl);
+  background: var(--mint-soft);
+  color: var(--mint-text);
+}
+
+.trg-eyebrow {
+  margin: 0 0 var(--space-2);
+  color: var(--mint-text);
+  font-size: var(--text-label);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.03em;
+}
+
+.trg-card h1 {
+  margin: 0;
+  font-size: var(--text-title-xl);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+.trg-copy {
+  margin: var(--space-4) 0 0;
+  color: var(--fg-tertiary);
+  font-size: var(--text-body);
+  line-height: 1.65;
+  word-break: keep-all;
+}
+
+.trg-notice {
+  margin-top: var(--space-5);
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--blue-soft);
+  color: var(--blue-text);
+  text-align: left;
+  font-size: var(--text-body-sm);
+  line-height: var(--leading-normal);
+}
+
+.trg-notice svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.trg-actions {
+  margin-top: var(--space-5);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.trg-primary,
+.trg-danger {
+  min-height: 52px;
+  border: 0;
+  border-radius: var(--radius-lg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font: inherit;
+  font-weight: var(--weight-bold);
+}
+
+.trg-primary {
+  background: var(--mint-600);
+  color: var(--bg-card);
+  box-shadow: var(--shadow-mint);
+}
+
+.trg-danger {
+  background: var(--danger-soft);
+  color: var(--danger-text);
+}
+
+.trg-primary:disabled,
+.trg-danger:disabled,
+.trg-dialog button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.trg-legal {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line-soft);
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.trg-legal button {
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--fg-tertiary);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: var(--text-body-sm);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.trg-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: var(--space-5);
+}
+
+.trg-dialog__scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: color-mix(in srgb, var(--ink) 52%, transparent);
+}
+
+.trg-dialog__card {
+  position: relative;
+  width: min(100%, 390px);
+  padding: var(--space-6);
+  border-radius: var(--radius-2xl);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-floating);
+  text-align: left;
+}
+
+.trg-dialog__card h2 {
+  margin: 0;
+  font-size: var(--text-section);
+}
+
+.trg-dialog__card p {
+  margin: var(--space-3) 0 0;
+  color: var(--fg-tertiary);
+  font-size: var(--text-body-sm);
+  line-height: var(--leading-normal);
+}
+
+.trg-dialog__actions {
+  margin-top: var(--space-5);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.trg-dialog__actions button {
+  min-height: 48px;
+  border: 0;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-weight: var(--weight-bold);
+}
+
+.trg-dialog__cancel {
+  background: var(--bg-page);
+  color: var(--fg-secondary);
+}
+
+.trg-dialog__delete {
+  background: var(--danger-500);
+  color: var(--bg-card);
+}
+
+@media (max-width: 360px) {
+  .trg-card {
+    padding-inline: var(--space-4);
+  }
+
+  .trg-dialog__actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trg-screen *,
+  .trg-screen *::before,
+  .trg-screen *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

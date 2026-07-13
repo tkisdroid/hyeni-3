@@ -7,8 +7,8 @@ const deepLink = readFileSync(new URL("../src/lib/native/oauthDeepLink.ts", impo
 const screen = readFileSync(new URL("../src/screens/parent/SocialLinks.tsx", import.meta.url), "utf8");
 
 test("OAuth 시작 시 흐름(login/link)을 저장하고, 콜백에서 그대로 읽는다", () => {
-  assert.match(auth, /startWorkerOAuth\(provider: OAuthProvider, mode: OAuthFlowMode = "login"\)/);
-  assert.match(auth, /writeOAuthNonce\(nonce, provider, mode\)/);
+  assert.match(auth, /export async function startWorkerOAuth\([\s\S]{0,120}provider: OAuthProvider,[\s\S]{0,120}mode: OAuthFlowMode = "login"/);
+  assert.match(auth, /writeOAuthContext\(\{[\s\S]{0,160}provider,[\s\S]{0,160}mode,[\s\S]{0,160}transactionSecret/);
   assert.match(auth, /export function peekOAuthFlowMode\(\): OAuthFlowMode/);
   assert.match(deepLink, /const mode = peekOAuthFlowMode\(\)/);
 });
@@ -20,11 +20,12 @@ test("link 모드는 세션을 바꾸지 않는다(로그인 교환·홈 이동 
   assert.ok(!linkBranch.includes("finishOAuthLogin"), "연결 흐름은 세션을 교체하면 안 된다");
 });
 
-test("연결 API 는 인증된 /link 엔드포인트를 부르고 nonce 를 대조한다", () => {
+test("연결 API는 인증된 /link를 부르고 서버 state·secret·mode를 모두 대조한다", () => {
   assert.match(auth, /apiRequest\(`\/api\/auth\/oauth\/\$\{input\.provider\}\/link`/);
   const fn = auth.slice(auth.indexOf("export async function linkOAuthAccount"), auth.indexOf("/** 현재 URL 쿼리에서 OAuth 콜백"));
-  assert.match(fn, /const savedNonce = takeOAuthNonce\(\)/);
-  assert.match(fn, /savedNonce !== input\.state[\s\S]{0,120}throw new Error/);
+  assert.match(fn, /const context = takeOAuthContext\(\)/);
+  assert.match(fn, /context\.mode !== "link"[\s\S]{0,180}context\.state !== input\.state/);
+  assert.match(fn, /transactionSecret: context\.transactionSecret/);
 });
 
 test("서버가 지원하지 않는 provider 연결은 시작하지 않는다(네이버는 로그인만)", () => {
@@ -66,6 +67,14 @@ test("연결 결과는 이벤트로 화면에 전달된다(딥링크 복귀 시 
   assert.match(deepLink, /window\.dispatchEvent\(\s*new CustomEvent\(OAUTH_LINK_EVENT/);
   assert.match(screen, /window\.addEventListener\(OAUTH_LINK_EVENT, onLinked\)/);
   assert.match(screen, /window\.removeEventListener\(OAUTH_LINK_EVENT, onLinked\)/);
+});
+
+test("OAuth 취소도 context를 검증·폐기하고 연결 화면 잠금을 해제한다", () => {
+  assert.match(auth, /export function finishOAuthCancellation/);
+  assert.match(auth, /const context = takeOAuthContext\(\)/);
+  assert.match(deepLink, /parseOAuthCancellationUrl/);
+  assert.match(deepLink, /finishOAuthCancellation/);
+  assert.match(deepLink, /const error = new Error\("소셜 로그인을 취소했어요\."\)/);
 });
 
 test("계정 화면 안내문이 실제 동작과 맞는다(해제 가능한데 '해당 서비스에서 관리' 금지)", () => {

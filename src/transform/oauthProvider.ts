@@ -5,11 +5,9 @@
  * 한 곳을 빠뜨려 "로그인은 시작되는데 복귀가 안 되는" 침묵 실패가 난다.
  *
  * ⚠️ provider 별 계약 차이(worker 라우트 기준):
- *  - kakao/google: Worker 가 인가 URL 을 만든다 → GET  {API_BASE}/api/auth/oauth/{provider}/start
- *                  교환                        → POST {API_BASE}/api/auth/oauth/{provider}
- *  - naver:        클라가 직접 인가 URL 로 이동 → https://nid.naver.com/oauth2.0/authorize
- *                  교환                        → POST {API_BASE}/api/auth/naver
- *                  (code·state·redirect_uri 를 모두 보내야 한다 — worker/routes/naver-auth.ts)
+ *  - 세 provider 모두 Worker가 일회성 state+별도 transaction secret을 발급하는
+ *    POST {API_BASE}/api/auth/oauth/{provider}/start를 거친다.
+ *  - 교환은 kakao/google=/oauth/{provider}, naver=/naver이며 code·state·secret이 모두 필요하다.
  */
 export const OAUTH_PROVIDERS = ["kakao", "google", "naver"] as const;
 
@@ -19,9 +17,9 @@ export function isOAuthProvider(value: unknown): value is OAuthProvider {
   return typeof value === "string" && (OAUTH_PROVIDERS as readonly string[]).includes(value);
 }
 
-/** 네이버는 Worker /start 를 거치지 않고 클라가 직접 인가 URL 을 조립한다. */
+/** 세 provider 모두 서버 발급 start transaction을 사용한다. */
 export function usesWorkerStartRedirect(provider: OAuthProvider): boolean {
-  return provider !== "naver";
+  return OAUTH_PROVIDERS.includes(provider);
 }
 
 /** 코드 교환 경로. 네이버만 별도 라우트. */

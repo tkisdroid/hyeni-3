@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Bell, Lock, MessageCircle, LogOut, TriangleAlert } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
+import { APP_VERSION } from "@/config/version";
 import { useAuth } from "@/auth/AuthContext";
 import { useAccount, useDeleteAccount } from "@/queries/useAccount";
 import { useTeacherClasses } from "@/queries/useTeacher";
@@ -153,7 +154,7 @@ export function TeacherSettings() {
           </div>
         </div>
 
-        <div className="ps-version">혜니캘린더 v2.0.0 · 선생님 모드</div>
+        <div className="ps-version">혜니캘린더 v{APP_VERSION} · 선생님 모드</div>
       </div>
 
       {/* 회원 탈퇴 확인 모달 */}

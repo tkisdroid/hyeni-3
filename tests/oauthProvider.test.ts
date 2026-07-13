@@ -15,10 +15,10 @@ test("지원 provider 는 카카오·구글·네이버 3종이다", () => {
   for (const bad of ["apple", "", null, undefined, 1, {}]) assert.equal(isOAuthProvider(bad), false);
 });
 
-test("네이버만 Worker /start 를 거치지 않는다(클라가 인가 URL 직접 조립)", () => {
+test("세 provider 모두 Worker의 서버 발급 start transaction을 거친다", () => {
   assert.equal(usesWorkerStartRedirect("kakao"), true);
   assert.equal(usesWorkerStartRedirect("google"), true);
-  assert.equal(usesWorkerStartRedirect("naver"), false);
+  assert.equal(usesWorkerStartRedirect("naver"), true);
 });
 
 test("교환 경로는 네이버만 별도 라우트다", () => {
@@ -27,16 +27,16 @@ test("교환 경로는 네이버만 별도 라우트다", () => {
   assert.equal(oauthExchangePath("naver"), "/api/auth/naver");
 });
 
-test("네이버 교환은 redirect_uri 를 함께 보낸다(서버 필수 파라미터)", () => {
+test("네이버도 client redirect_uri 없이 state와 별도 secret으로 교환한다", () => {
   const src = readFileSync(new URL("../src/lib/api/endpoints/auth.ts", import.meta.url), "utf8");
-  assert.match(src, /if \(input\.provider === "naver"\) body\.redirect_uri = NAVER_CALLBACK_URL/);
-  // 콜백 URL 은 네이버 개발자센터 등록값과 같아야 한다.
-  assert.match(src, /NAVER_CALLBACK_URL = `\$\{API_BASE\}\/api\/auth\/naver`/);
+  assert.doesNotMatch(src, /redirect_uri/);
+  assert.match(src, /transactionSecret: context\.transactionSecret/);
 });
 
-test("키 미설정 시 네이버 로그인을 시작하지 않고 명시적으로 알린다(가짜 성공 금지)", () => {
+test("네이버 인가 URL도 클라이언트가 조립하지 않고 서버 응답만 사용한다", () => {
   const src = readFileSync(new URL("../src/lib/api/endpoints/auth.ts", import.meta.url), "utf8");
-  assert.match(src, /provider === "naver" && !NAVER_CLIENT_ID[\s\S]{0,120}throw new Error/);
+  assert.doesNotMatch(src, /nid\.naver\.com\/oauth2\.0\/authorize/);
+  assert.match(src, /validateAuthorizationUrl\(provider, response\.authorizationUrl\)/);
 });
 
 test("온보딩 네이버 버튼은 키가 있을 때만 렌더된다", () => {

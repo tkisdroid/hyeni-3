@@ -106,7 +106,7 @@ public final class NotificationScheduleManager {
         boolean wakeScreen = intent.getBooleanExtra(EXTRA_WAKE_SCREEN, false);
         boolean fullScreen = intent.getBooleanExtra(EXTRA_FULL_SCREEN, false);
 
-        NotificationHelper.showNotification(
+        NotificationHelper.DeliveryReceipt receipt = NotificationHelper.showNotification(
                 context,
                 title != null ? title : "혜니캘린더",
                 body != null ? body : "",
@@ -116,7 +116,11 @@ public final class NotificationScheduleManager {
                 NotificationHelper.stableRequestCode(scheduleId)
         );
 
-        removeStoredItem(context, scheduleId);
+        if (receipt.shouldAcknowledge()) {
+            removeStoredItem(context, scheduleId);
+        } else {
+            Log.w(TAG, "Scheduled notification was not posted: " + receipt.getStatus().name());
+        }
     }
 
     private static void scheduleAlarm(Context context, JSONObject item) {
@@ -128,12 +132,8 @@ public final class NotificationScheduleManager {
             return;
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && am.canScheduleExactAlarms()) {
-            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, fireAt, pi);
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, fireAt, pi);
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            am.setExact(AlarmManager.RTC_WAKEUP, fireAt, pi);
         } else {
             am.set(AlarmManager.RTC_WAKEUP, fireAt, pi);
         }

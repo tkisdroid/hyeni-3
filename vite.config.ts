@@ -2,10 +2,18 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { fileURLToPath, URL } from "node:url";
+import { readFileSync } from "node:fs";
+
+const packageMetadata = JSON.parse(
+  readFileSync(fileURLToPath(new URL("./package.json", import.meta.url)), "utf8"),
+) as { version: string };
 
 // 상대 경로 base('./') → Capacitor(file://)와 PWA 모두에서 자원이 정상 로드됩니다.
 export default defineConfig({
   base: "./",
+  define: {
+    __APP_VERSION__: JSON.stringify(packageMetadata.version),
+  },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
@@ -14,6 +22,9 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
       registerType: "autoUpdate",
       includeAssets: ["apple-touch-icon.png", "favicon-32x32.png", "assets/logo.webp"],
       manifest: {
@@ -33,7 +44,7 @@ export default defineConfig({
           { src: "pwa-maskable-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
         ],
       },
-      workbox: {
+      injectManifest: {
         globPatterns: ["**/*.{js,css,html,woff2,webp,png,svg}"],
         // Jua 는 유니코드 구간별 87개 서브셋(총 854KB)이라 전부 프리캐시하면 설치가 무거워진다.
         // 브라우저가 실제로 쓰는 구간만 내려받게 두고, 네이티브는 어차피 로컬 파일이라 영향이 없다.

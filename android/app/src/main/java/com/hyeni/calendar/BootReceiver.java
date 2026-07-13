@@ -55,22 +55,33 @@ public class BootReceiver extends BroadcastReceiver {
                 }
             }
 
+            // direct-boot 동안 FCM 서비스가 CE 세션을 읽지 않도록 막았으므로, 잠금 해제
+            // 직후에는 인증된 부모 문맥에 한해 서버 pending을 WorkManager로 복구한다.
+            // 서버 조회가 유효기간을 판정하며 unique work라 같은 부팅 이벤트가 겹쳐도 1회다.
+            if (Intent.ACTION_USER_UNLOCKED.equals(action)
+                    || Intent.ACTION_BOOT_COMPLETED.equals(action)
+                    || Intent.ACTION_MY_PACKAGE_REPLACED.equals(action)
+                    || "android.intent.action.QUICKBOOT_POWERON".equals(action)) {
+                ParentPendingRecoveryWorker.enqueue(context);
+            }
+
             SharedPreferences prefs = context.getSharedPreferences("hyeni_location_prefs", Context.MODE_PRIVATE);
-            boolean enabled = prefs.getBoolean("serviceEnabled", false);
-            String userId = prefs.getString("userId", null);
-            String accessToken = prefs.getString("accessToken", "");
-            String refreshToken = prefs.getString("refreshToken", "");
+            SessionTokenStore.ContextSnapshot session = SessionTokenStore.readContext(prefs);
+            boolean enabled = session.serviceEnabled;
+            String userId = session.userId;
+            String accessToken = session.accessToken;
+            String refreshToken = session.refreshToken;
             boolean hasAuthToken =
                     (accessToken != null && !accessToken.isEmpty()) ||
                     (refreshToken != null && !refreshToken.isEmpty());
 
-            if (enabled && userId != null && !hasAuthToken) {
-                Log.w(TAG, "Location service restart skipped: auth token missing");
-                prefs.edit().putBoolean("serviceEnabled", false).apply();
+            if (enabled && (userId.isEmpty() || !hasAuthToken)) {
+                Log.w(TAG, "Location service restart skipped: session context missing");
+                SessionTokenStore.setServiceEnabled(prefs, false);
                 return;
             }
 
-            if (enabled && userId != null) {
+            if (enabled && !userId.isEmpty()) {
                 // 위치 권한 체크 후 서비스 재시작 (권한 없으면 크래시 방지)
                 if (androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION)
                         != android.content.pm.PackageManager.PERMISSION_GRANTED) {

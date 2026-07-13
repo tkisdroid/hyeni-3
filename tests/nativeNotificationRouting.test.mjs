@@ -13,29 +13,49 @@ function readSource(relativePath) {
 test("부모가 보낸 메모 FCM은 아이 메시지 채널로 heads-up 표시된다", () => {
   const fcm = readSource("android/app/src/main/java/com/hyeni/calendar/MyFirebaseMessagingService.java");
   const poll = readSource("android/app/src/main/java/com/hyeni/calendar/LocationService.java");
+  const policy = readSource("android/app/src/main/java/com/hyeni/calendar/NotificationChannelPolicy.java");
 
   assert.match(fcm, /boolean isMemo = "new_memo"\.equals\(type\);/);
-  assert.match(fcm, /isChildMessage = "ai_proactive"\.equals\(type\) \|\| isMemo \|\| isSticker/);
-  assert.match(fcm, /isChildMessage \? "child_message" : "schedule"/);
+  assert.match(fcm, /NotificationChannelPolicy\.channelFor\(type, alertType, isEmergency\)/);
+  assert.match(policy, /"new_memo"\.equals\(type\)/);
+  assert.match(policy, /return "child_message"/);
   assert.match(poll, /"new_memo"\.equals\(type\) \? "child-memo"/);
 });
 
 test("부모 메모 알림을 탭하면 아이 메모 화면으로 진입한다", () => {
   const fcm = readSource("android/app/src/main/java/com/hyeni/calendar/MyFirebaseMessagingService.java");
   const main = readSource("android/app/src/main/java/com/hyeni/calendar/MainActivity.java");
+  const policy = readSource("android/app/src/main/java/com/hyeni/calendar/NotificationRoutePolicy.java");
 
-  assert.match(fcm, /isMemo \? "child-memo"/);
-  assert.match(main, /"child-memo"\.equals\(route\)/);
-  assert.match(main, /injectHashRoute\("#\/child\/memo", 1000\)/);
+  assert.match(fcm, /String route = data\.get\("route"\);/);
+  assert.match(fcm, /isMemo\s*\? \("parent"\.equalsIgnoreCase\(localRole\) \? "\/parent\/memo" : "child-memo"\)/);
+  assert.match(policy, /if \("child-memo"\.equals\(route\)\) route = "\/child\/memo";/);
+  assert.match(main, /NotificationRoutePolicy\.resolveHashRoute\(route, localRole\)/);
+});
+
+test("아이 기기의 로컬 일정 fallback을 탭하면 아이 홈으로 진입한다", () => {
+  const service = readSource("android/app/src/main/java/com/hyeni/calendar/LocationService.java");
+  const reminder = service.slice(
+    service.indexOf("private void fireLocalEventReminders("),
+    service.indexOf("private void activateSilentMode("),
+  );
+
+  assert.match(
+    reminder,
+    /NotificationHelper\.showNotification\([\s\S]*?"schedule",\s*false,\s*false,\s*notifId,\s*"\/child\/home"\s*\)/,
+  );
 });
 
 test("아이 메시지 채널은 다른 일반 알림보다 우선 보이도록 high importance 계약을 유지한다", () => {
   const helper = readSource("android/app/src/main/java/com/hyeni/calendar/NotificationHelper.java");
 
-  assert.match(helper, /CHANNEL_CHILD_MESSAGE = "hyeni_child_message_v1"/);
-  assert.match(helper, /CHANNEL_CHILD_MESSAGE,\s*"AI 친구·가족 메시지",\s*NotificationManager\.IMPORTANCE_HIGH/s);
+  assert.match(helper, /CHANNEL_CHILD_MESSAGE = "hyeni_child_message_v2_private"/);
+  assert.match(
+    helper,
+    /CHANNEL_CHILD_MESSAGE,\s*"AI 친구·가족 메시지",\s*legacyImportance\([\s\S]*?NotificationManager\.IMPORTANCE_HIGH\)/s,
+  );
   assert.match(helper, /boolean childMessage = "child_message"\.equals\(channel\);/);
-  assert.match(helper, /fullScreen \|\| childMessage\) \? NotificationCompat\.PRIORITY_HIGH/);
+  assert.match(helper, /fullScreen \|\| childMessage \|\| safety\) \? NotificationCompat\.PRIORITY_HIGH/);
   assert.match(helper, /kkuk \|\| childMessage\) \? NotificationCompat\.CATEGORY_MESSAGE/);
 });
 

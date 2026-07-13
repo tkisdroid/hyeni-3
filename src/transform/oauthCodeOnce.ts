@@ -8,7 +8,7 @@
  *   그래서 인가코드 1개가 2~3회 교환됐다. 인가코드는 1회용이라 구글은 재사용을 감지하면
  *   그 코드로 발급된 토큰을 모두 무효화한다 → 로그인 실패(카카오는 먼저 도착한 요청만 성공).
  *
- * 여기서는 provider:code 를 키로
+ * 여기서는 provider:state 를 키로 삼아 인가코드 원문을 영속 저장하지 않는다.
  *   - 진행 중이면 같은 Promise 를 공유하고(동시 진입),
  *   - 이미 시도한 키는 다시 실행하지 않으며(재진입),
  *   - 시도 사실을 즉시 영속화해 프로세스 재시작 뒤 stale launch URL 재교환도 막는다.
@@ -32,8 +32,8 @@ export interface OAuthCodeOnce {
   consumed(key: string): boolean;
 }
 
-export function oauthCodeKey(provider: string, code: string): string {
-  return `${provider}:${code}`;
+export function oauthStateKey(provider: string, state: string): string {
+  return `${provider}:${state}`;
 }
 
 export function createOAuthCodeOnce(store: OAuthOnceStore): OAuthCodeOnce {

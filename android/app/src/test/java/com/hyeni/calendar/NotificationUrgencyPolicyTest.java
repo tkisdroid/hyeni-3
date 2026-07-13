@@ -20,4 +20,14 @@ public class NotificationUrgencyPolicyTest {
         ));
         assertTrue(NotificationUrgencyPolicy.isEmergency("sos", "false", "info", ""));
     }
+
+    @Test
+    public void dangerExitIsNormalButDangerEnterStaysUrgent() {
+        assertFalse(NotificationUrgencyPolicy.isEmergency(
+            "parent_alert", "", "info", "danger_exit"
+        ));
+        assertTrue(NotificationUrgencyPolicy.isEmergency(
+            "parent_alert", "", "info", "danger_enter"
+        ));
+    }
 }

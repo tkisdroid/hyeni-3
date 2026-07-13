@@ -32,6 +32,8 @@ export interface DeviceHealth {
   deviceInstallId?: string | null;
   /** 마지막 리포트 시각(ISO). 웹 리포트에만 확실히 존재. */
   lastReportedAt?: string;
+  /** 네이티브 DeviceStatusReporter가 기록한 마지막 리포트 시각(ISO). */
+  updatedAt?: string;
   /** 네이티브(LocationService) 리치 리포트에만: 연결타입·오늘 화면사용(ms)·최근 사용앱. */
   connectionType?: string | null;
   deviceScreenOnMs?: number | null;
@@ -40,6 +42,26 @@ export interface DeviceHealth {
   appUsage?: DeviceAppUsage[] | null;
   /** 오늘 화면잠금 해제 횟수(KEYGUARD_HIDDEN). 알림 화면켜짐 미포함. 권한없음=null. */
   deviceUnlockCount?: number | null;
+  /** Android 알림 게시 종합 상태. false는 권한·앱 전체 알림·필수 채널 중 하나 이상 차단됨. */
+  postNotif?: boolean | null;
+  /** Android 13+ POST_NOTIFICATIONS 권한 상태. */
+  postPermissionGranted?: boolean | null;
+  /** OS 앱 단위 전체 알림 허용 상태. */
+  notificationsEnabled?: boolean | null;
+  /** 일정·긴급·꾹·아이 메시지·안전 필수 채널이 모두 활성인지 여부. */
+  requiredChannelsEnabled?: boolean | null;
+  /** Android 14+ 잠금화면 전체 표시 특별 접근 허용 상태. */
+  fullScreenIntentAllowed?: boolean | null;
+  /** 아이가 주변 소리 요청을 확인하는 전용 알림 채널 상태. */
+  remoteListenChannelEnabled?: boolean | null;
+  /** Android의 항상 허용 위치 권한 상태. */
+  backgroundLocationGranted?: boolean | null;
+  /** 구버전 네이티브 보고의 백그라운드 위치 권한 종합값. */
+  locationOk?: boolean | null;
+  /** 네이티브 백그라운드 위치 서비스 실행 상태. */
+  locationServiceRunning?: boolean | null;
+  /** OS가 앱 백그라운드 실행을 제한하고 있는지 여부. */
+  backgroundRestricted?: boolean | null;
 }
 
 export interface FamilyMember {

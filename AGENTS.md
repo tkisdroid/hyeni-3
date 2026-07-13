@@ -30,15 +30,17 @@ npm run build      # 완료 기준 = exit 0
 #   자동 로드해 OAuth 를 덮어쓴다 → .env 가 없는 디렉터리에서 실행할 것.
 #   (cd <임시디렉터리> && npx wrangler pages deploy C:/Users/TK/Desktop/hyeni-3/dist \n#      --project-name=hyeni-calendar --branch=main --commit-dirty=true)
 # Worker(백엔드, C:\Users\TK\Desktop\hyeni-1\worker): npx tsc --noEmit && npx wrangler deploy
+# Worker 전체 Node 테스트는 Vite root 오인식을 피하려고 부모 저장소에서 실행:
+#   (cd C:\Users\TK\Desktop\hyeni-1 && node --test worker/tests/*.test.mjs)
 ```
 
 API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: https://hyeni-calendar.pages.dev
 
 ## 절대 안전 규칙
 
-1. **실사용 기기 보호**: razr(모토로라)=혜니 실사용 기기 — 검증에 사용할 수 있으나 혜니 계정 데이터·페어링·세션이 유실되지 않도록 한다.
-   A17은 2026-07-09 사용자 지시 기준 부모모드 검증기로 운용하며 2026-07-13 출시 검증 중에는 계속 연결해 둔다.
-   아이 테스트 기기로 가정하지 말고, razr 조작이 필요하면 영향 범위를 먼저 확인한다.
+1. **실사용 기기 보호**: 2026-07-14 사용자 지시 기준 이번 최종 검증에서는 **A17(RFKL40DP73J)만 부모모드 검증기**로 사용한다.
+   S25와 razr는 연결 해제·검증 제외 상태이며, 다시 명시적으로 허용받기 전에는 adb 설치·실행·로그·세션 조회를 포함해
+   어떤 조작도 하지 않는다. razr는 혜니 실사용 기기이므로 계정 데이터·페어링·세션을 보존한다.
 2. **라이브 refresh 토큰 조작 금지** — 회전시키면 앱 세션이 파괴된다. access 토큰만 읽기.
    2026-07-10부터 refresh 체인은 **기기 바인딩**(device_install_id 스탬핑) — 외부에서 토큰 사본으로 회전 시도하면 401이 정상이다.
    세션이 유실된 아이 기기는 딥링크 `#/onboarding?pair=KID-…` 재페어링이 정답(previous_user_id 힌트로 같은 uid 무손실 복구).
@@ -80,7 +82,8 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 - **리포트/전환 기능(2026-07-07)**: 오늘의 안심 리포트=`/daily-report`, 주간 가족 리포트=`/weekly-report`,
   원격청취 감사 로그=`/remote-audio-audit`. 주간 리포트는 `FEATURES.WEEKLY_REPORT` 프리미엄 전용이며 기존
   events/daily_supplies/memo/parent_alerts만 집계한다. 전용 서버 endpoint가 없으면 가짜 수치 금지.
-  원격청취 감사 로그도 조회 endpoint가 없으므로 빈 상태 UI만 표시한다. Google Play 실제 가격은 basePlanId가 아니라
+  원격청취 감사 로그는 `GET /api/remote-listen/sessions`의 실제 세션 메타데이터만 표시하고 오디오 내용은 저장·표시하지 않는다.
+  조회 실패를 빈 기록으로 위장하지 말고 오류/재시도 상태를 보여준다. Google Play 실제 가격은 basePlanId가 아니라
   Play Console/결제 확인 화면 기준으로 판단한다.
 - **안심리포트·스티커 진입점(2026-07-09)**: 부모 홈에서 `/daily-report`는 바로가기의 "안심리포트"로만 진입한다.
   기존 상단 하트/`꾹` 스티커 UI는 재도입하지 말고, 상단 액션은 명확한 "스티커" 전송 버튼으로 유지한다.
@@ -113,6 +116,114 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   구독·원격청취·AI 일정 문구는 `tests/subscriptionTrustCopy.test.mjs`, `tests/remoteAudioTrustCopy.test.mjs`,
   `tests/aiScheduleUxCopy.test.mjs`로 회귀 보호한다. SOS·긴급 알림을 프리미엄 혜택처럼 쓰지 말고,
   원격청취는 아이 알림·1분 자동 종료·기록 안내를 함께 보여준다.
+- **알림 전달·원격청취 보안 계약(2026-07-14)**: 모든 즉시 알림은 네트워크 발송 전에 수신자별
+  `pending_notifications`를 만들고, 실제 네이티브 표시/Web Push 표시 ACK 전에는 delivered로 완료하지 않는다.
+  targetless 레거시 행은 일반 사용자가 조회·ACK할 수 없으며, 일정·도착·위험·메모 알림은 활성 가족 구성원과 정확한
+  `targetUserId`/role/아이 식별자를 서버가 검증한다. 원격청취는 부모 버튼 → 감사 세션 생성(세션 id=requestId) →
+  아이에게 일반 알림 → 아이가 해당 세션을 직접 1회 허용 → access JWT로 WAV 전송 → 요청한 부모 소켓에만 전달 →
+  **서버가 기록한 아이 동의 시각부터** 최대 60초 후 종료 순서다. 요청 시각부터 60초를 계산해 늦게 동의한 아이의 청취
+  시간을 줄이지 않는다. FCM·pending만으로 마이크를 자동 시작하거나 전체화면으로 가로채지 않는다. 익명 realtime
+  broadcast와 클라이언트 WebSocket relay는 금지하며, stop은 같은 requestId·아이·session nonce를 확인하고 감사 행을
+  닫기 전에 전송한다. 감사 종료 시각·길이·종료 사유는 서버가 확정한다.
+- **AI·가족 메모 콘텐츠 안전 계약(2026-07-14)**: 서버에 저장돼 id가 확정된 AI assistant 답변만 아이가 신고할 수 있다.
+  신고자는 자기 AI 스레드만 신고하고, 중복 신고는 같은 id로 멱등 처리하며 신고 레코드에는 원문을 복제하지 않는다.
+  가족 메모는 정확한 가족·아이 스레드의 상대 메시지만 신고할 수 있다. 사용자 차단은 메모 조회·새 메모 pending/푸시에만
+  적용하고 가족 연결·위치·도착·위험·SOS 안전 알림은 절대 막지 않는다. 신고 사유는 서버 allowlist, 상세는 500자로 제한하며,
+  개인정보처리방침과 이용약관에 AI/UGC 신고·차단·운영자 검토·이의 제기 절차를 함께 명시한다.
+- **메모 전달·차단 선형화(2026-07-14)**: 메모 저장과 `memo_notification_outbox` 생성을 한 D1 batch로 확정하고,
+  즉시 전달 실패는 같은 `memo:<replyId>`로 1→5→15→30→60분 재시도한다. 모든 `new_memo` 진입점과 차단·해제는
+  `memo_interaction_leases`의 정렬된 무방향 사용자 pair를 공유한다. 전달은 pair lease 획득 뒤 membership·차단을 다시 읽고
+  수신자별 pending을 먼저 저장한 뒤 Web Push/FCM까지 최대 90초 안에 끝내며, lease TTL은 120초다. 다중 수신자는
+  전부 획득하지 못하면 이미 얻은 lease를 되돌리고 fail-closed한다. 차단·해제는 caller/target account mutation lease 뒤
+  같은 pair lease를 잡아 완료 뒤 과거 메모 pending이 다시 표시되지 않게 한다. 운영에는
+  `db/memo-notification-outbox.sql`과 `db/memo-interaction-leases.sql`을 Worker보다 먼저 적용한다.
+  외부 Push 서비스에 이미 들어간 알림도 차단 뒤 보이지 않도록 FCM·Web Push·pending에는 수신자별 HMAC
+  `memoDisplayPermit`을 넣는다. Web Push·pending 보관은 120초, permit은 발송 상한과 표시 승인 왕복을 포함해 5분만
+  유효하다. Android와 Service Worker는 기존 대상·role·만료 검사 뒤 공개
+  `POST /api/push-notify/memo-display-authorize`로 현재 membership·대상 아이·양방향 차단을 다시 확인하며, 응답이 정확히
+  `{allowed:true}`일 때만 표시·ACK한다. permit 누락·변조·만료·HTTP/JSON/네트워크/timeout·DB 오류는 모두 미표시·미ACK로
+  닫고 permit·세션 토큰을 로그에 남기지 않는다.
+- **피드백 내구 접수 계약(2026-07-14)**: `/api/feedback`은 인증 세션만 허용하고 이름·이메일·role·user/family 식별자는
+  요청 본문을 신뢰하지 않고 서버 정본으로 계산한다. 사용자별 UUID requestId로 멱등 처리하고 시간당 5건으로 제한하며,
+  Resend 호출 전에 `user_feedback(type='feature_feedback', status='queued')`를 저장한다. Resend는 8초 상한이며 성공한 경우만
+  `sent`, 미설정·실패는 `queued` 202다. `queued`는 D1 운영 대기열에 안전하게 접수됐다는 뜻이지 이메일 자동 재전송을
+  약속하지 않는다. 운영자는 대기열을 모니터링·처리하고 앱도 두 상태를 다른 문구로 표시한다. 운영에는
+  `db/feedback-delivery-safety.sql`을 Worker보다 먼저 적용한다.
+- **선생님 모드 출시 차단(2026-07-14)**: v1.2.0 프로덕션은 미완성 선생님 가입·반 연동을 심사 화면에 노출하지 않는다.
+  `TEACHER_MODE_ENABLED`는 `import.meta.env.DEV`만 정본으로 사용하고 환경변수 우회를 두지 않는다. 프로덕션 온보딩은
+  선생님 역할 카드를 숨기며 `/teacher/*`는 준비 안내 gate로 닫는다. 기존 teacher 세션도 gate에서 로그아웃·회원 탈퇴·
+  이용약관·개인정보처리방침에 접근할 수 있어야 한다. 부모·아이 공용 준비물은 `RequireAnyRole(parent|child)` 아래에 두어
+  공개 URL과 teacher 세션의 직접 접근을 막는다.
+- **활성 가족 권한·알림 endpoint 소유권(2026-07-14)**: 일반 API·로그인 역할·AI·준비물·위치 설정·스티커·친구놀이·
+  결제는 `family_members.is_active=1`인 `parent|child` 또는 검증된 주보호자 소유 가족만 권한으로 인정한다. 연결 해제된
+  옛 아이는 다른 데이터에는 접근할 수 없고 기존 안전 동선을 끊지 않기 위해 `sos` 발사만 예외로 허용한다. FCM token과
+  Web Push endpoint는 활성 행 1개만 허용하며 `registration_instance_id`가 같은 세션만 갱신·해제한다. 타 사용자·지연된
+  옛 세션은 409로 닫고, 로그아웃/만료/무효 행은 삭제하지 않고 `disabled_at/disabled_reason`으로 비활성화한다.
+- **D1 정본 스키마·알림 migration(2026-07-14)**: `cloudflare/schema_d1.sql`은 auth·위치 정확도·일정 series·RTDN·OTP·
+  콘텐츠 안전·원격청취 동의·endpoint ownership을 포함한 fresh bootstrap 정본이며
+  `worker/tests/canonicalSchemaBootstrap.test.mjs`로 빈 SQLite 실행과 필수 컬럼·인덱스를 검증한다. 운영 endpoint ownership은
+  `db/notification-endpoint-ownership.sql`을 1회 적용한 뒤 즉시 해당 Worker를 배포하고 active-only readback을 확인한다.
+  이 migration은 과거 행을 삭제하지 않으며 재실행 금지다.
+- **Realtime 수신자 격리(2026-07-14)**: 모든 family realtime publish는 현재 활성 membership에서 계산한 명시적
+  `audienceUserIds`가 필수다. 부모 경보=현재 부모만, 아이 위치=현재 부모+해당 아이, 메모=현재 부모+해당 스레드 아이만
+  받으며 payload에는 필요한 식별자만 싣는다. Durable Object는 audience 없는 notify를 거부하고 user-tagged socket만
+  전송한다. 연결 중에도 토큰 만료와 membership 해제를 확인해 소켓을 닫는다.
+- **계정 삭제·첨부 저장소 완결성(2026-07-14)**: 신규 아이 사진은 서버가
+  `{familyId}/uploads/{uploaderUserId}/{uuid}.{ext}` 불변 키를 만들며, 요청 본문은 Content-Length를 믿지 않고 8MiB+1에서
+  중단하는 bounded stream으로 읽는다. MIME·magic byte 일치, HTML/SVG·위장 파일 거부 뒤에만 UTC 일일 quota
+  (업로더 계정과 대상 가족 각각 200개·256MiB)를 함께 원자 claim한다. 운영에는 `db/storage-upload-daily-usage.sql`과
+  `db/storage-upload-family-daily-usage.sql`을 Worker보다 먼저 적용한다.
+  razr 구버전의 3개 legacy 키(memo/profile/placeholder)는 active 가족 권한을 먼저 확인하고 기존 객체를 절대 덮어쓰지 않는
+  create-only 호환만 유지하며 `Deprecation`을 응답한다. `/uploads/` 조회는 R2 owner·purpose·target metadata가 없으면 fail-closed하고,
+  실제 스레드 수신자와 양방향 메시지 차단 상태를 확인한다. 계정 삭제는 user/member/teacher 관계와 알림 endpoint·세션·감사 데이터를
+  서버에서 열거해 지우고 R2 사용자 prefix를 pagination으로 회수하되, inactive 과거 아이나 다른 가족·교사·독립 로그인 관계가 있는
+  아이 계정은 전역 users/auth 데이터에서 삭제하지 않는다. 과거 hard-unpair 계정은 본인 refresh 행의 family snapshot으로 본인 prefix와
+  owner metadata만 회수한다. 아이 연결 해제는 inactive tombstone과 `family_unpair_cleanup_jobs`를 한 D1 batch로 먼저 확정해 권한을
+  즉시 닫고, R2·member/user 가족범위 참조를 멱등 정리한다. 중간 실패는 `cleanup_pending=true`와 job을 남겨 매분 cron이 재시도하며,
+  job 중 재페어링은 409다. 운영에는 `db/family-unpair-cleanup-jobs.sql`을 Worker보다 먼저 적용한다.
+- **삭제·연결해제·백그라운드 쓰기 선형화(2026-07-14)**: 인증 mutation, 수동 JWT push, 네이티브 rest-shim,
+  일정·도착·위험장소·위치 끊김·선생님·AI·force-ring·친구놀이 cron과 `waitUntil` 알림은 실제 사용자·가족·대상 자녀의
+  `account_mutation_leases`를 확보한 뒤에만 DB 쓰기와 push를 수행한다. 계정 삭제 claim이 먼저면 새 쓰기는 409/503으로
+  fail-closed하고, lease가 먼저면 삭제가 재시도된다. 완료된 삭제 scope는 stale access JWT보다 긴 24시간 tombstone으로
+  유지하고 비정상 종료 lease는 1시간 뒤 cron이 회수한다. unpair job과 대상 자녀 lease는 양방향 원자 조건으로 서로를 막고,
+  lease 뒤 활성 membership을 다시 확인해 캐시된 옛 자녀에게 상태·알림을 만들지 않는다. refresh 발급·회전과 기존 사용자
+  OAuth identity 연결도 `users` 생존+삭제 scope 부재를 같은 D1 문장/batch에서 확인한다. R2 PUT은 quota claim 뒤
+  `object_key+upload_nonce` cleanup journal을 먼저 확정하고 nonce가 일치하는 객체만 삭제한다. active PUT 보호 grace는 1시간이며,
+  journal commit 실패는 성공으로 응답하지 않는다. 운영에는 `db/account-storage-mutation-safety.sql`을 Worker보다 먼저 적용한다.
+- **익명 가입 남용·고아 세션 정리(2026-07-14)**: 익명 가입은 원문 IP·기기 id를 저장하지 않고 HMAC bucket만 저장하며
+  IP 30회/시간, 기기 5회/시간으로 제한한다. IPv6는 /64, IPv4와 IPv4-mapped IPv6는 같은 /32로 정규화하고 파싱 실패는
+  보수적인 unknown bucket으로 제한한다. 가족에 연결되지 않은 48시간 이상 익명 계정은 활성 mutation lease·삭제/unpair 상태를
+  재검증한 뒤 시간당 최대 40개만 멱등 정리한다. 운영에는 `db/anonymous-signup-protection.sql`을 Worker보다 먼저 적용한다.
+- **네이티브·DOM 경계 보안(2026-07-14)**: Android WebView 권한(origin)은 정확한 `https://localhost`에서만 허용하고
+  `allowNavigation` wildcard를 두지 않는다. 서버·사용자 문자열은 `innerHTML`로 렌더하지 않고 DOM `textContent`/React escape를
+  사용한다. FCM 등록 충돌은 소유권 검증 뒤 1회 새 installation id로 회복하되 토큰 원문·부분값을 로그에 남기지 않는다.
+  배터리 최적화는 설명 뒤 사용자 버튼에서 일반 설정 목록(`ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS`)만 열고,
+  앱별 직접 예외 권한·요청(`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`)은 사용하지 않는다. 앱 시작·서비스가 설정을 자동으로 띄우지 않는다.
+- **Android lint·백업 안전 게이트(2026-07-14)**: `lintDebug` 오류는 blanket baseline/suppress로 숨기지 않는다. 권한 lint의
+  API 버전 false-positive는 실제 runtime guard+`SecurityException` 방어가 있는 최소 wrapper에만 local suppress를 허용한다. 활동 인식은 Android 10+
+  런타임 권한을 실제 확인하고 권한 회수 `SecurityException`을 닫으며, 동적 내부 receiver는 `RECEIVER_NOT_EXPORTED`, 사용자 뒤로가기는
+  `OnBackPressedDispatcher`를 사용한다. 전화망 세대 조회를 위해 `READ_PHONE_STATE`를 추가하지 않고 telephony 하드웨어는 optional이다.
+  따라서 세대를 확인할 수 없는 셀룰러 연결은 4G/5G를 지어내지 않고 일반 `cellular`로 보고해 UI에서 `연결됨`으로 표시한다.
+  `allowBackup=false`와 함께 Android 12+ `dataExtractionRules`, 이전 버전 `fullBackupContent`에서 세션·아동 위치를 포함한 모든 앱
+  저장소를 cloud backup과 device transfer 모두에서 제외한다.
+- **OAuth 서버 트랜잭션·배포 순서(2026-07-14)**: OAuth 시작은 서버가 10분짜리 무작위 state와 별도 transaction secret을
+  발급하고 해시만 D1에 저장한다. callback target은 고정 앱 딥링크 또는 정확한 allowlist origin이며 클라이언트 target/base64
+  state와 Naver URL 직접 조립을 금지한다. callback code를 state에 결합한 뒤 provider·flow·사용자·secret과 원자적으로 1회
+  소비하며 raw code는 영속 저장·로그하지 않는다. 취소도 서버가 transaction을 소비한 `oauth_cancelled`만 앱이 context와 대조한다.
+  운영에는 `db/oauth-state-transactions.sql`을 먼저 적용하고 PRAGMA로 컬럼을 확인한 뒤 Worker를 배포한다. 네이티브 callback은
+  custom scheme·loopback 없이 정확한 `https://hyeni-calendar.pages.dev/oauth/callback` App Link만 허용한다. 현재
+  `/.well-known/assetlinks.json`의 debug 인증서 지문은 A17 개발 빌드 검증용일 뿐이다. Play 공개 전에는 debug 지문을 제거하고
+  **Play App Signing key certificate SHA-256**으로 교체한 뒤 내부 테스트 설치본의 App Link가 `verified`인지 확인해야 하며,
+  해당 인증서가 아직 없으면 출시 차단이다.
+- **권한·위치 캐시 fail-closed(2026-07-14)**: 배경 위치 권한은 아이에게 기능 설명 후 foreground 권한을 먼저 받고,
+  별도 설명·버튼으로 background 권한을 요청한다. 서비스가 임의로 권한 창을 띄우지 않는다. 위치 엔타이틀먼트가
+  미확정이거나 조회 오류이면 이전 캐시 좌표·경로·리포트를 표시하지 않고 명시적 확인/오류 상태로 닫는다. 방문 확인 쿼리도
+  같은 gate가 열리기 전에는 캐시된 위치 이력을 읽거나 `다녀옴`으로 표시하지 않는다.
+- **역할 라우트·알림 표시 경계(2026-07-14)**: 부모·아이뿐 아니라 선생님 탭과 알림장 상세도 `RequireRole`로 막아
+  URL 직접 입력이 역할 경계를 우회하지 못하게 한다. Android pending 복구는 표시용 알림인지 먼저 판정한 뒤에만
+  system/local ACK를 확인하며 `request_location`·`request_device_status`·원격청취 같은 네이티브 명령을 알림 표시 완료로
+  잘못 ACK하지 않는다. 메시지·일정·안전 채널은 민감한 본문이 잠금화면에 노출되지 않는 private 채널을 사용하고,
+  전체화면 인텐트는 `sos|emergency`와 실제 사용자 허용 상태에서만 사용한다.
 - **세션 복구(2026-07-07)**: 역할 선택 화면이 다시 보이면 먼저 WebView `hyeni-api-session-v1`과
   네이티브 `BackgroundLocation.getPushContext()`를 읽기 전용으로 확인한다. WebView 세션만 비고 네이티브
   push context에 userId/familyId/role+refresh가 남은 경우 앱이 1회 `/auth/refresh`로 복구하되,
@@ -316,7 +427,8 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 
 ## 실기기 검증 치트시트
 
-- 기기: S25(R5CY521CFNZ)=부모 · A17(RFKL40DP73J)=부모모드 검증기(2026-07-13 연결 유지) · razr(ZY22H9VTQD)=아이 "혜니" 실사용.
+- 기기(2026-07-14 사용자 지시): **A17(RFKL40DP73J)=유일한 부모모드 검증기**. S25와 razr는 연결 해제·검증 제외이며,
+  다시 명시적으로 허용받기 전에는 adb로 접근하지 않는다.
 - 기기 역할은 세션별로 바뀐 이력이 있으므로, 문서의 과거 단계 기록보다 **최신 사용자 지시/goal**을 우선한다.
   단, 완료 선언 전에는 CDP로 WebView 세션(`hyeni-api-session-v1`)의 role/familyId와 실제 화면을 다시 확인하고,
   지시한 역할과 다르면 해당 실기기 검증은 미검증/차단으로 분리 보고한다.

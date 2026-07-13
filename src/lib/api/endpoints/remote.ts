@@ -229,11 +229,11 @@ export interface RemoteListenCommandResult {
 export interface RequestRemoteListenInput {
   familyId: string;
   /** 대상 아이 user_id(다자녀 격리). */
-  targetChildUserId?: string | null;
+  targetChildUserId: string;
   /** 캡처 지속(초). 서버 pending_notifications data.durationSec 로 전달. */
   durationSec?: number;
-  /** 요청 상관관계 id(중복 제거·audit). */
-  requestId?: string;
+  /** 서버가 먼저 만든 remote_listen_sessions.id. */
+  requestId: string;
 }
 
 /**
@@ -245,10 +245,23 @@ export async function requestRemoteListen(
   input: RequestRemoteListenInput,
 ): Promise<RemoteListenCommandResult> {
   if (!input.familyId) throw new Error("familyId required");
-  const body: Record<string, unknown> = { action: "remote_listen", familyId: input.familyId };
-  if (input.targetChildUserId) body.targetUserId = input.targetChildUserId;
-  if (input.durationSec != null) body.durationSec = input.durationSec;
-  if (input.requestId) body.requestId = input.requestId;
+  const targetChildUserId = input.targetChildUserId.trim();
+  const requestId = input.requestId.trim();
+  if (!targetChildUserId) return { ok: false, error: "remote_listen_target_required" };
+  if (!requestId) return { ok: false, error: "remote_listen_audit_session_required" };
+  const durationSec = Math.min(60, Math.max(5, Math.trunc(input.durationSec ?? 60)));
+  const requestedAt = new Date();
+  const expiresAt = new Date(requestedAt.getTime() + 60_000);
+  const body: Record<string, unknown> = {
+    action: "remote_listen",
+    familyId: input.familyId,
+    targetUserId: targetChildUserId,
+    durationSec,
+    requestId,
+    requestedAt: requestedAt.toISOString(),
+    expiresAt: expiresAt.toISOString(),
+    idempotency_key: requestId,
+  };
   try {
     const res = await apiPost<Pick<RemoteListenCommandResult, "fcmSent" | "total" | "key">>(
       "/api/push-notify",
@@ -264,14 +277,20 @@ export async function requestRemoteListen(
 /** 원격 청취 중지 명령 — 아이 기기 캡처를 멈춘다. best-effort. */
 export async function stopRemoteListen(input: {
   familyId: string;
-  targetChildUserId?: string | null;
+  targetChildUserId: string;
+  requestId: string;
 }): Promise<RemoteListenCommandResult> {
   if (!input.familyId) throw new Error("familyId required");
+  const targetChildUserId = input.targetChildUserId.trim();
+  const requestId = input.requestId.trim();
+  if (!targetChildUserId) return { ok: false, error: "remote_listen_target_required" };
+  if (!requestId) return { ok: false, error: "remote_listen_request_required" };
   const body: Record<string, unknown> = {
     action: "remote_listen_stop",
     familyId: input.familyId,
+    targetUserId: targetChildUserId,
+    requestId,
   };
-  if (input.targetChildUserId) body.targetUserId = input.targetChildUserId;
   try {
     await apiPost("/api/push-notify", body);
     return { ok: true };

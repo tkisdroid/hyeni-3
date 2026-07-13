@@ -12,7 +12,11 @@ import { openFamilySocket, type FamilyMessage } from "@/realtime/familySocket";
 import { qk } from "./keys";
 
 // pg 변경 table → invalidate 대상 queryKey 목록.
-function keysForMessage(msg: FamilyMessage, familyId: string): (readonly unknown[])[] {
+function keysForMessage(
+  msg: FamilyMessage,
+  familyId: string,
+  userId: string | null,
+): (readonly unknown[])[] {
   if (msg.kind !== "pg") return [];
   switch (msg.table) {
     case "family_members":
@@ -35,6 +39,16 @@ function keysForMessage(msg: FamilyMessage, familyId: string): (readonly unknown
       return [qk.dangerZones(familyId)];
     case "parent_alerts":
       return [qk.parentAlerts(familyId)];
+    case "notification_settings": {
+      const row = (msg.new ?? msg.old) as { user_id?: unknown } | null | undefined;
+      const rowUserId = typeof row?.user_id === "string" ? row.user_id.trim() : "";
+      if (!rowUserId) return [];
+      const keys: (readonly unknown[])[] = [qk.childNotifSettings(familyId, rowUserId)];
+      if (userId && rowUserId === userId) keys.push(qk.notifSettings(userId));
+      return keys;
+    }
+    // Worker 결제 경로의 기존 단수 이벤트와 DB 테이블 복수명을 모두 수용한다.
+    case "family_subscription":
     case "family_subscriptions":
       return [qk.entitlement(familyId)];
     case "stickers":
@@ -85,7 +99,7 @@ export function useFamilyRealtime(): void {
       familyId,
       () => getApiAccessToken(),
       (msg) => {
-        for (const key of keysForMessage(msg, familyId)) {
+        for (const key of keysForMessage(msg, familyId, userId)) {
           qc.invalidateQueries({ queryKey: key });
         }
         maybeInterruptForUrgentAlert(msg, role);

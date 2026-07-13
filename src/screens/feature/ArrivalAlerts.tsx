@@ -3,7 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useParentAlerts, useMarkAlertRead } from "@/queries/useNotifications";
-import { relativeTime } from "@/transform/notificationsView";
+import {
+  arrivalAlertTone,
+  isArrivalAlertType,
+  relativeTime,
+  type ArrivalAlertTone,
+} from "@/transform/notificationsView";
 import type { ParentAlert } from "@/lib/api/endpoints/notifications";
 import "./ArrivalAlerts.css";
 
@@ -13,27 +18,12 @@ import "./ArrivalAlerts.css";
  * 부모 존댓말. 상세(일정명·장소·시간)는 서버 title/message 그대로 표기.
  */
 
-/** 도착 완료 계열(민트). */
-const ARRIVED = new Set(["arrived", "place_arrived", "event_ended_by_child", "event_started_by_child"]);
-/** 미도착·이탈 계열(앰버, 확인 필요). */
-const PENDING = new Set(["not_arrived", "place_left"]);
-
-function isArrival(type: string): boolean {
-  return ARRIVED.has(type) || PENDING.has(type);
-}
-
-type Tone = "arrived" | "pending";
-
-function toneOf(type: string): Tone {
-  return PENDING.has(type) ? "pending" : "arrived";
-}
-
-const TONE_ICON: Record<Tone, string> = {
+const TONE_ICON: Record<ArrivalAlertTone, string> = {
   arrived: "ui/pin-heart.webp",
   pending: "ui/warning.webp",
 };
 
-const TONE_BADGE: Record<Tone, string> = {
+const TONE_BADGE: Record<ArrivalAlertTone, string> = {
   arrived: "도착",
   pending: "확인 필요",
 };
@@ -45,12 +35,12 @@ export function ArrivalAlerts() {
 
   // 알림이 바뀔 때만 now 재계산(상대시간 안정화).
   const list = useMemo<ParentAlert[]>(
-    () => (data ?? []).filter((a) => isArrival(a.alert_type)),
+    () => (data ?? []).filter((a) => isArrivalAlertType(a.alert_type)),
     [data],
   );
   const now = useMemo(() => new Date(), [list]);
   const arrivedCount = useMemo(
-    () => list.filter((a) => toneOf(a.alert_type) === "arrived").length,
+    () => list.filter((a) => arrivalAlertTone(a.alert_type) === "arrived").length,
     [list],
   );
 
@@ -106,7 +96,7 @@ export function ArrivalAlerts() {
             </div>
             <div className="aa-list">
               {list.map((a) => {
-                const tone = toneOf(a.alert_type);
+                const tone = arrivalAlertTone(a.alert_type);
                 return (
                   <button
                     type="button"

@@ -98,6 +98,7 @@ export function KakaoMap({
   // 마지막으로 적용한 recenterKey — 바뀌면 같은 좌표라도 강제 재이동.
   const lastRecenterRef = useRef(0);
   const [failed, setFailed] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
   // 지도가 그려지기 전엔 흰 사각형 대신 부드러운 자리표시자를 보여준다(체감 지연 감소).
   const [ready, setReady] = useState(false);
 
@@ -235,14 +236,20 @@ export function KakaoMap({
             const el = document.createElement("div");
             const accent = s.active ? "#7C3AED" : "#A78BFA";
             el.style.cssText = "transform:translateY(-4px);text-align:center;white-space:nowrap;pointer-events:none";
-            el.innerHTML =
-              `<div style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px 3px 5px;border-radius:999px;` +
+            const stayChip = document.createElement("div");
+            stayChip.style.cssText =
+              "display:inline-flex;align-items:center;gap:4px;padding:3px 9px 3px 5px;border-radius:999px;" +
               `background:${accent};color:#fff;box-shadow:0 4px 12px rgba(124,58,237,.4);font-size:11.5px;font-weight:800;` +
-              (s.active ? "outline:2px solid #fff;" : "") +
-              `">` +
-              `<span style="display:inline-flex;width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.28);` +
-              `align-items:center;justify-content:center;font-size:10px">${s.order}</span>` +
-              `<span>${s.dwellLabel}</span></div>`;
+              (s.active ? "outline:2px solid #fff;" : "");
+            const orderText = document.createElement("span");
+            orderText.style.cssText =
+              "display:inline-flex;width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.28);" +
+              "align-items:center;justify-content:center;font-size:10px";
+            orderText.textContent = String(s.order);
+            const dwellText = document.createElement("span");
+            dwellText.textContent = s.dwellLabel;
+            stayChip.append(orderText, dwellText);
+            el.replaceChildren(stayChip);
             const overlay = new maps.CustomOverlay({
               position: new maps.LatLng(s.lat, s.lng),
               content: el,
@@ -263,7 +270,11 @@ export function KakaoMap({
             (danger
               ? "border:3px solid #E5484D;box-shadow:0 0 0 8px rgba(229,72,77,.18),0 6px 18px rgba(229,72,77,.55);background:#FFE5E8;"
               : "border:3px solid #fff;box-shadow:0 4px 14px rgba(240,81,143,.5);background:#FDE7F1;");
-          content.innerHTML = `<img src="${src(child.avatar)}" alt="${child.name}" style="width:100%;height:100%;object-fit:cover"/>`;
+          const avatarImage = document.createElement("img");
+          avatarImage.src = src(child.avatar);
+          avatarImage.alt = child.name;
+          avatarImage.style.cssText = "width:100%;height:100%;object-fit:cover";
+          content.replaceChildren(avatarImage);
           const overlay = new maps.CustomOverlay({
             position: centerLatLng,
             content,
@@ -295,7 +306,7 @@ export function KakaoMap({
     return () => {
       cancelled = true;
     };
-  }, [child, zones, places, route, stays, destination, picked, center, recenterKey]);
+  }, [child, zones, places, route, stays, destination, picked, center, recenterKey, retryKey]);
 
   // 언마운트 시 ResizeObserver 해제.
   useEffect(
@@ -308,8 +319,20 @@ export function KakaoMap({
 
   if (failed) {
     return (
-      <div className={className} style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#EAF3FB,#F3ECFF)", color: "#8B7E84", fontSize: 13, fontWeight: 600 }}>
-        지도를 불러오지 못했어요
+      <div className={[className, "km-error"].filter(Boolean).join(" ")} role="status">
+        <strong className="km-error__title">지도를 불러오지 못했어요</strong>
+        <span className="km-error__detail">인터넷 연결을 확인한 뒤 다시 시도해 주세요</span>
+        <button
+          type="button"
+          className="km-error__retry hy-press"
+          onClick={() => {
+            setFailed(false);
+            setReady(false);
+            setRetryKey((value) => value + 1);
+          }}
+        >
+          지도 다시 불러오기
+        </button>
       </div>
     );
   }

@@ -75,6 +75,9 @@
   gap: 13px;
   --press: 0.985;
 }
+.nc-item--anchored {
+  box-shadow: 0 0 0 2px var(--blue-500), var(--shadow-card);
+}
 .nc-item__icon {
   width: 46px;
   height: 46px;

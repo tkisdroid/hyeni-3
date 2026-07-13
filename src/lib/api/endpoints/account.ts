@@ -110,6 +110,7 @@ export async function changePassword(input: {
 
 // ── legal(약관 / 개인정보) — Worker 루트 공개 HTML ─────────────────────────
 export const PRIVACY_POLICY_URL = `${API_BASE}/privacy`;
+export const TERMS_OF_SERVICE_URL = `${API_BASE}/terms`;
 export const DATA_DELETION_URL = `${API_BASE}/data-deletion`;
 
 // ── 데이터 내보내기(데이터 이동권) — hyeni-1 dataExport.js 이관 ─────────────

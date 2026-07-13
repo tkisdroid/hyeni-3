@@ -4,6 +4,7 @@ import { ChevronLeft } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
+import { createFeedbackRequestId } from "@/lib/api/endpoints/feedback";
 import { useSendFeedback } from "@/queries/useFeedback";
 import "./Feedback.css";
 
@@ -23,35 +24,29 @@ const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
   CATEGORIES.map((c) => [c.id, c.label] as const),
 );
 
-/** user_metadata 에서 표시 이름을 안전하게 추출(없으면 빈 문자열). */
-function readName(meta: Record<string, unknown> | undefined): string {
-  const name = meta?.name;
-  return typeof name === "string" ? name : "";
-}
-
-/** 기능 투표 후보(추천 많은 순). */
+/** 화면에서 선택해 실제 피드백 본문에 포함할 관심 기능 후보. */
 const IDEAS = [
-  { id: "grocery", label: "가족 공유 장보기 리스트", votes: 128 },
-  { id: "sibling", label: "형제자매 일정 한눈에 보기", votes: 94 },
-  { id: "shuttle", label: "학원 차량 도착 알림", votes: 67 },
+  { id: "grocery", label: "가족 공유 장보기 리스트" },
+  { id: "sibling", label: "형제자매 일정 한눈에 보기" },
+  { id: "shuttle", label: "학원 차량 도착 알림" },
 ] as const;
 
 export function Feedback() {
   const navigate = useNavigate();
   const { show } = useToast();
-  const { user, userId, role, familyId } = useAuth();
+  const { familyId } = useAuth();
   const sendFeedback = useSendFeedback();
+  const [requestId] = useState(createFeedbackRequestId);
 
   const [rating, setRating] = useState(0);
   const [cat, setCat] = useState<string | null>(null);
   const [text, setText] = useState("");
-  const [voted, setVoted] = useState<Record<string, boolean>>({});
+  const [selectedIdeas, setSelectedIdeas] = useState<Record<string, boolean>>({});
 
-  // 투표 저장 API 미연동 → 로컬 선택만 반영하고, 집계 반영은 정직하게 안내(오인 방지).
-  const toggleVote = (id: string) => {
-    const turningOn = !voted[id];
-    setVoted((v) => ({ ...v, [id]: !v[id] }));
-    if (turningOn) show("베타 기간이라 투표는 아직 집계되지 않아요", "🚧");
+  const toggleIdea = (id: string) => {
+    const turningOn = !selectedIdeas[id];
+    setSelectedIdeas((current) => ({ ...current, [id]: !current[id] }));
+    show(turningOn ? "선택한 기능을 의견에 함께 담았어요" : "관심 기능 선택을 취소했어요", "💡");
   };
 
   // 실 전송(POST /api/feedback). 별점·카테고리는 content 에 함께 실어 보낸다.
@@ -68,25 +63,38 @@ export function Feedback() {
     }
     const catLabel = cat ? CATEGORY_LABEL[cat] : null;
     const header = `[만족도 ${rating}/5]${catLabel ? ` · ${catLabel}` : ""}`;
-    const content = `${header}\n\n${trimmed}`;
+    const selectedIdeaLabels = IDEAS.filter((idea) => selectedIdeas[idea.id]).map(
+      (idea) => idea.label,
+    );
+    const ideaSection = selectedIdeaLabels.length > 0
+      ? `\n\n[관심 기능]\n- ${selectedIdeaLabels.join("\n- ")}`
+      : "";
+    const content = `${header}\n\n${trimmed}${ideaSection}`;
 
     sendFeedback.mutate(
       {
+        requestId,
         content,
         familyId: familyId ?? null,
-        senderUserId: userId ?? null,
-        senderRole: role ?? null,
-        senderName: readName(user?.user_metadata),
-        senderEmail: "",
         appOrigin: typeof window !== "undefined" ? window.location.origin : "",
       },
       {
-        onSuccess: () => {
-          show("소중한 의견 잘 전달했어요. 고마워요!", "💌");
+        onSuccess: (result) => {
+          show(
+            result.status === "sent"
+              ? "소중한 의견을 전달했어요. 고마워요!"
+              : "의견을 안전하게 접수했어요. 운영 대기열에 보관했어요.",
+            "💌",
+          );
           navigate(-1);
         },
         onError: (error) => {
-          show(error.message || "전송에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️");
+          show(
+            error.message === "feedback_rate_limited"
+              ? "짧은 시간에 의견을 많이 보내셨어요. 한 시간 뒤 다시 시도해 주세요."
+              : "접수하지 못했어요. 잠시 후 다시 시도해 주세요.",
+            "⚠️",
+          );
         },
       },
     );
@@ -150,7 +158,7 @@ export function Feedback() {
                   type="button"
                   className="fb-cat hy-press"
                   style={{
-                    background: on ? "var(--hy-accent-soft)" : "#F3EDF0",
+                    background: on ? "var(--hy-accent-soft)" : "var(--bg-body)",
                     color: on ? "var(--hy-accent-text)" : "var(--fg-muted)",
                   }}
                   onClick={() => setCat((prev) => (prev === c.id ? null : c.id))}
@@ -168,35 +176,37 @@ export function Feedback() {
             className="fb-textarea"
             placeholder="자유롭게 알려주세요. 필요한 기능도 제안해 주세요!"
             value={text}
+            maxLength={3000}
             onChange={(e) => setText(e.target.value)}
           />
         </div>
 
-        {/* 기능 투표 */}
+        {/* 관심 기능 선택 — 집계 수를 만들지 않고 실제 피드백 본문에 포함한다. */}
         <div className="fb-ideas">
           <div className="fb-ideas__head">
-            <span className="fb-ideas__title">이런 기능은 어때요?</span>
-            <span className="fb-ideas__sort">추천 많은 순</span>
+            <span className="fb-ideas__title">관심 있는 기능</span>
+            <span className="fb-ideas__sort">선택 사항</span>
           </div>
+          <div className="fb-ideas__sort">관심 있는 기능을 선택하면 의견에 함께 적어 보내요</div>
           <div className="fb-ideas__card">
             {IDEAS.map((i) => {
-              const on = !!voted[i.id];
+              const on = !!selectedIdeas[i.id];
               return (
                 <div key={i.id} className="fb-idea">
                   <span className="fb-idea__main">
                     <span className="fb-idea__label">{i.label}</span>
-                    <span className="fb-idea__votes">👍 {i.votes}명이 원해요</span>
                   </span>
                   <button
                     type="button"
                     className="fb-vote hy-press"
+                    aria-pressed={on}
                     style={{
                       background: on ? "var(--hy-accent)" : "var(--hy-accent-soft)",
-                      color: on ? "#fff" : "var(--hy-accent-text)",
+                      color: on ? "var(--bg-card)" : "var(--hy-accent-text)",
                     }}
-                    onClick={() => toggleVote(i.id)}
+                    onClick={() => toggleIdea(i.id)}
                   >
-                    {on ? "추천함" : "추천"}
+                    {on ? "선택됨" : "관심 있어요"}
                   </button>
                 </div>
               );

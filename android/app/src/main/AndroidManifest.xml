@@ -24,9 +24,6 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <!-- Phase 5.x (force_ring): emergency parental alert FGS + alarm volume control -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
@@ -34,6 +31,7 @@
     <!-- 자녀 SOS 자동 발신(ACTION_CALL). 권한 미보유 시 다이얼러(ACTION_DIAL)로 폴백.
          Google Play 민감 권한 — 출시 시 Play Console 권한 선언 필요(아동 안전 SOS 핵심 기능). -->
     <uses-permission android:name="android.permission.CALL_PHONE" />
+    <uses-feature android:name="android.hardware.telephony" android:required="false" />
     <!-- 아이 화면시간: 기기 전체 화면 켜짐 시간 측정 (UsageStatsManager).
          Usage Access — 시스템 설정에서 사용자가 직접 허용하는 특수 권한. -->
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
@@ -51,6 +49,8 @@
 
     <application
         android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -68,7 +68,7 @@
 
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="hyeni_schedule_v6" />
+            android:value="hyeni_schedule_v7_private" />
 
         <!-- FCM 이 시스템 트레이에 직접 표시하는 notification 블록 푸시(앱 백그라운드)
              의 기본 small icon / accent color. 네이티브 게시 지점과 동일하게 통일. -->
@@ -93,12 +93,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Deep link: OAuth callback from system browser -->
-            <intent-filter>
+            <!-- OAuth 인증코드는 소유 도메인과 서명 인증서가 결합된 verified App Link로만 받는다. -->
+            <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="hyenicalendar" android:host="auth-callback" />
+                <data
+                    android:scheme="https"
+                    android:host="hyeni-calendar.pages.dev"
+                    android:path="/oauth/callback" />
             </intent-filter>
 
         </activity>
@@ -117,9 +120,8 @@
             android:excludeFromRecents="true"
             android:exported="false"
             android:launchMode="singleTop"
-            android:showWhenLocked="true"
-            android:theme="@style/AppTheme.Alert"
-            android:turnScreenOn="true" />
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.Alert" />
 
         <!-- Background Location Service -->
         <service
@@ -127,27 +129,12 @@
             android:foregroundServiceType="location"
             android:exported="false" />
 
-        <!-- Phase 5 D-B06 (RL-03): Ambient listen foreground service.
-             Play Store stalkerware policy requires this as a microphone-type
-             foreground service with a persistent non-dismissable notification
-             while capture is active.
-             2026-05-08: foregroundServiceType="microphone|specialUse".
-             Android 14+ silently mutes mic capture when FGS type is specialUse
-             (peak16=0 confirmed via parent device logs). Service code calls
-             startForeground(MICROPHONE) first, falls back to SPECIAL_USE only
-             if cover-display case throws ForegroundServiceStartNotAllowed —
-             but that fallback path will not produce audio anyway, so we just
-             surface a clear error.
-             SUBTYPE meta retained for Play Console review of the specialUse
-             fallback edge case. -->
+        <!-- 아이가 동의 화면에서 매 세션 직접 허용한 경우에만 시작한다.
+             Android 14+ AudioRecord는 microphone FGS type만 사용한다. -->
         <service
             android:name=".AmbientListenService"
-            android:foregroundServiceType="microphone|specialUse"
-            android:exported="false">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="remote_listen_cover_display" />
-        </service>
+            android:foregroundServiceType="microphone"
+            android:exported="false" />
 
         <!-- Phase 5.x (force_ring): emergency parental alert FGS + fullscreen Activity.
              specialUse type per Android 14+ requirement; SUBTYPE meta declares
@@ -170,10 +157,11 @@
             android:exported="false"
             android:theme="@style/Theme.Hyeni.ForceRing.Fullscreen" />
 
-        <!-- FCM Messaging Service -->
+        <!-- FCM Messaging Service: 자격 증명 암호화(CE) 세션을 사용하므로 잠금 해제 전
+             직접 실행하지 않는다. FCM/시스템이 잠금 해제 뒤 메시지를 전달한다. -->
         <service
             android:name=".MyFirebaseMessagingService"
-            android:directBootAware="true"
+            android:directBootAware="false"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
@@ -184,7 +172,7 @@
         <receiver
             android:name=".BootReceiver"
             android:directBootAware="true"
-            android:exported="true"
+            android:exported="false"
             android:enabled="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
@@ -195,11 +183,11 @@
             </intent-filter>
         </receiver>
 
-        <!-- Phase 0-A: Power-off resilience — 시스템 종료 직전 마지막 위치를 부모에게 push.
-             ACTION_SHUTDOWN 은 protected broadcast 이므로 system 만 발신. exported=true 가능. -->
+        <!-- Phase 0-A: Power-off resilience — 시스템 종료 직전 마지막 위치를 best-effort 전송.
+             시스템 broadcast와 앱 내부 명시 호출만 허용하고 외부 앱의 종료 위조를 차단한다. -->
         <receiver
             android:name=".ShutdownReceiver"
-            android:exported="true"
+            android:exported="false"
             android:enabled="true">
             <intent-filter android:priority="1000">
                 <action android:name="android.intent.action.ACTION_SHUTDOWN" />

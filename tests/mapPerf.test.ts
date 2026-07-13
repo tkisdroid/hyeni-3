@@ -25,6 +25,18 @@ test("Kakao SDK 는 앱이 한가할 때 미리 받아 둔다", () => {
   assert.match(shell.slice(shell.indexOf("export function ChildShell")), /useWarmKakaoMaps\(\)/);
 });
 
+test("Kakao SDK 초기화가 한 번 실패해도 다음 사용자 시도에서 다시 불러올 수 있다", () => {
+  const loader = read("src/lib/kakaoMap.ts");
+  assert.match(loader, /\.catch\(\(error: unknown\) => \{/);
+  assert.match(loader, /loadPromise = null;\s*throw error;/s);
+
+  const map = read("src/components/KakaoMap.tsx");
+  assert.match(map, /const \[retryKey, setRetryKey\] = useState\(0\)/);
+  assert.match(map, /setRetryKey\(\(value\) => value \+ 1\)/);
+  assert.match(map, /지도 다시 불러오기/);
+  assert.match(map, /인터넷 연결을 확인한 뒤 다시 시도해 주세요/);
+});
+
 test("지도가 그려지기 전에는 흰 사각형 대신 자리표시자를 보여준다", () => {
   const map = read("src/components/KakaoMap.tsx");
   assert.match(map, /const \[ready, setReady\] = useState\(false\)/);

@@ -2,7 +2,6 @@ package com.hyeni.calendar;
 
 import android.Manifest;
 import android.app.ActivityManager;
-import android.app.AlarmManager;
 import android.app.AppOpsManager;
 import android.app.KeyguardManager;
 import android.app.NotificationChannel;
@@ -158,6 +157,7 @@ final class DeviceStatusReporter {
             @Nullable String requesterUserId
     ) throws Exception {
         long now = System.currentTimeMillis();
+        NotificationHelper.createChannels(context);
         DeviceBattery battery = readBattery(context);
         UsageSnapshot usage = readUsageSnapshot(context);
         ScreenOnTime screenOn = computeTodayScreenOnMs(context, usage.screenInteractive);
@@ -165,17 +165,17 @@ final class DeviceStatusReporter {
         NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         AudioManager audio = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         KeyguardManager keyguard = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
         Configuration config = context.getResources().getConfiguration();
         ConnectivityHealth connectivity = readConnectivity(context);
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
 
-        boolean notificationsEnabled = nm == null || nm.areNotificationsEnabled();
+        boolean notificationsEnabled = nm != null && nm.areNotificationsEnabled();
         boolean postPermissionGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
             || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
             == PackageManager.PERMISSION_GRANTED;
+        boolean requiredChannelsEnabled = NotificationHelper.areRequiredDeliveryChannelsEnabled(nm);
         boolean batteryOptimizationsIgnored = Build.VERSION.SDK_INT < Build.VERSION_CODES.M
             || pm == null
             || pm.isIgnoringBatteryOptimizations(context.getPackageName());
@@ -187,12 +187,9 @@ final class DeviceStatusReporter {
             && activityManager.isBackgroundRestricted();
         // Android 14+: NotificationManager.canUseFullScreenIntent gates whether
         // the child can auto-open the foreground bridge from a lock-screen push.
-        boolean fullScreenIntentAllowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE
-            || nm == null
-            || nm.canUseFullScreenIntent();
-        boolean exactAlarmAllowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.S
-            || am == null
-            || am.canScheduleExactAlarms();
+        boolean fullScreenIntentAllowed = nm != null
+            && (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+            || nm.canUseFullScreenIntent());
         boolean recordAudioGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
             == PackageManager.PERMISSION_GRANTED;
         boolean backgroundLocationGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
@@ -234,7 +231,7 @@ final class DeviceStatusReporter {
             .put("deviceScreenOnSource", screenOn.source)
             .put("source", "native-fcm")
             .put("recordAudio", recordAudioGranted)
-            .put("postNotif", postPermissionGranted && notificationsEnabled)
+            .put("postNotif", postPermissionGranted && notificationsEnabled && requiredChannelsEnabled)
             .put("fullScreen", fullScreenIntentAllowed)
             .put("battery", batteryOptimizationsIgnored)
             .put("powerSaveMode", powerSaveMode)
@@ -246,11 +243,11 @@ final class DeviceStatusReporter {
             .put("recordAudioGranted", recordAudioGranted)
             .put("postPermissionGranted", postPermissionGranted)
             .put("notificationsEnabled", notificationsEnabled)
+            .put("requiredChannelsEnabled", requiredChannelsEnabled)
             .put("fullScreenIntentAllowed", fullScreenIntentAllowed)
             .put("batteryOptimizationsIgnored", batteryOptimizationsIgnored)
             .put("powerSaveMode", powerSaveMode)
             .put("backgroundRestricted", backgroundRestricted)
-            .put("exactAlarmAllowed", exactAlarmAllowed)
             .put("backgroundLocationGranted", backgroundLocationGranted)
             .put("remoteListenChannelEnabled", remoteListenChannelEnabled)
             .put("remoteListenChannelImportance", remoteListenChannelImportance)
@@ -271,11 +268,11 @@ final class DeviceStatusReporter {
             .put("model", Build.MODEL)
             .put("ready", notificationsEnabled
                 && postPermissionGranted
+                && requiredChannelsEnabled
                 && fullScreenIntentAllowed
                 && batteryOptimizationsIgnored
                 && !powerSaveMode
                 && !backgroundRestricted
-                && exactAlarmAllowed
                 && recordAudioGranted
                 && remoteListenChannelEnabled
                 && connectivity.connected
@@ -599,19 +596,17 @@ final class DeviceStatusReporter {
     }
 
     private static boolean isChannelEnabled(@Nullable NotificationManager nm, String channelId) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || nm == null) {
-            return true;
-        }
+        if (nm == null) return false;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return true;
         NotificationChannel channel = nm.getNotificationChannel(channelId);
-        return channel == null || channel.getImportance() != NotificationManager.IMPORTANCE_NONE;
+        return channel != null && channel.getImportance() != NotificationManager.IMPORTANCE_NONE;
     }
 
     private static int getChannelImportance(@Nullable NotificationManager nm, String channelId) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || nm == null) {
-            return NotificationManager.IMPORTANCE_DEFAULT;
-        }
+        if (nm == null) return NotificationManager.IMPORTANCE_NONE;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return NotificationManager.IMPORTANCE_DEFAULT;
         NotificationChannel channel = nm.getNotificationChannel(channelId);
-        return channel == null ? NotificationManager.IMPORTANCE_DEFAULT : channel.getImportance();
+        return channel == null ? NotificationManager.IMPORTANCE_NONE : channel.getImportance();
     }
 
     private static String describeRingerMode(@Nullable AudioManager audio) {
@@ -644,29 +639,22 @@ final class DeviceStatusReporter {
         boolean validated = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
         boolean wifi = caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI);
         boolean cellular = caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR);
-        int cellularType = readCellularNetworkType(context);
+        // READ_PHONE_STATE를 요청하지 않는 앱에서 망 세대 조회 API를 호출하면
+        // SecurityException 또는 민감 권한 확대로 이어진다. 연결 여부/전송망은
+        // NetworkCapabilities가 이미 제공하므로 연결망은 알 수 있지만 세대는 알 수 없다.
+        // 민감 권한 없이 확인되지 않은 4G/5G를 지어내지 않고 일반 셀룰러로 보고한다.
+        int cellularType = TelephonyManager.NETWORK_TYPE_UNKNOWN;
         return new ConnectivityHealth(connected, validated,
             normalizeConnectionType(connected, wifi, cellular, cellularType));
-    }
-
-    private static int readCellularNetworkType(Context context) {
-        try {
-            TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-            if (tm == null) return TelephonyManager.NETWORK_TYPE_UNKNOWN;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                return tm.getDataNetworkType();
-            }
-            return tm.getNetworkType();
-        } catch (Exception error) {
-            return TelephonyManager.NETWORK_TYPE_UNKNOWN;
-        }
     }
 
     static String normalizeConnectionType(boolean connected, boolean wifi, boolean cellular, int cellularNetworkType) {
         if (!connected) return "NONE";
         if (wifi) return "wi-fi";
         if (cellular) {
-            return cellularNetworkType == TelephonyManager.NETWORK_TYPE_NR ? "5g" : "4g";
+            if (cellularNetworkType == TelephonyManager.NETWORK_TYPE_NR) return "5g";
+            if (cellularNetworkType == TelephonyManager.NETWORK_TYPE_UNKNOWN) return "cellular";
+            return "4g";
         }
         return "NONE";
     }

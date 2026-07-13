@@ -1,0 +1,242 @@
+.msd-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 240;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 18px 14px calc(18px + env(safe-area-inset-bottom, 0px));
+  background: rgba(32, 26, 29, 0.46);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.msd-dialog {
+  position: relative;
+  width: min(100%, 480px);
+  max-height: min(88dvh, 720px);
+  overflow-y: auto;
+  padding: 22px;
+  border-radius: var(--radius-card);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-floating);
+  color: var(--fg-primary);
+}
+
+.msd-layer[data-tone="child"] .msd-dialog {
+  border: 2px solid var(--lav-line);
+  border-radius: var(--radius-3xl);
+}
+
+.msd-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--fg-muted);
+  background: var(--bg-page);
+}
+
+.msd-heading {
+  display: flex;
+  gap: 11px;
+  padding-right: 42px;
+}
+
+.msd-icon {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  color: var(--danger-text);
+  background: var(--danger-soft);
+}
+
+.msd-heading h2 {
+  margin: 1px 0 5px;
+  font-size: 19px;
+  line-height: 1.3;
+}
+
+.msd-layer[data-tone="child"] .msd-heading h2 {
+  font-family: Jua, var(--font-sans);
+  font-size: 21px;
+  font-weight: 400;
+}
+
+.msd-heading p {
+  margin: 0;
+  color: var(--fg-tertiary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.msd-reasons {
+  margin: 18px 0 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.msd-reasons legend {
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--fg-secondary);
+}
+
+.msd-reason {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  color: var(--fg-body);
+  background: var(--bg-page);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.msd-reason:has(input:checked) {
+  border-color: var(--lav-400);
+  background: var(--lav-soft);
+  color: var(--lav-text);
+}
+
+.msd-reason input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--lav-600);
+}
+
+.msd-detail {
+  position: relative;
+  display: grid;
+  gap: 7px;
+  margin-top: 15px;
+}
+
+.msd-detail > span {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--fg-secondary);
+}
+
+.msd-detail textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 82px;
+  padding: 11px 12px 25px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: var(--bg-page);
+  color: var(--fg-primary);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.msd-detail textarea:focus-visible {
+  outline: 3px solid var(--lav-line);
+  border-color: var(--lav-500);
+}
+
+.msd-detail small {
+  position: absolute;
+  right: 10px;
+  bottom: 7px;
+  color: var(--fg-faint);
+  font-size: 10.5px;
+}
+
+.msd-error {
+  margin: 11px 0 0;
+  padding: 9px 11px;
+  border-radius: var(--radius-sm);
+  color: var(--danger-text);
+  background: var(--danger-soft);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.msd-report {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 15px;
+  border-radius: var(--radius-lg);
+  color: var(--bg-card);
+  background: var(--lav-600);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.msd-report:disabled,
+.msd-block:disabled,
+.msd-close:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.msd-block-area {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid var(--line-soft);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.msd-block-area > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.msd-block-area strong {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--danger-text);
+  font-size: 13px;
+}
+
+.msd-block-area p {
+  margin: 4px 0 0;
+  color: var(--fg-muted);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.msd-block {
+  flex: none;
+  min-height: 42px;
+  padding: 0 13px;
+  border-radius: var(--radius-md);
+  color: var(--danger-text);
+  background: var(--danger-soft);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+@media (min-width: 640px) {
+  .msd-layer {
+    align-items: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .msd-layer,
+  .msd-dialog {
+    animation: none !important;
+    transition: none !important;
+  }
+}

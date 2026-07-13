@@ -1,122 +1,214 @@
 package com.hyeni.calendar;
 
 import android.Manifest;
-import android.app.ActivityOptions;
-import android.app.KeyguardManager;
-import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.hardware.display.DisplayManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.view.Display;
 import android.util.Log;
 import android.view.Gravity;
-import android.view.WindowManager;
+import android.view.View;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+/** 아이가 원격청취 요청을 확인하고 매 세션 직접 수락하거나 거절하는 화면. */
 public class RemoteListenActivity extends AppCompatActivity {
 
     private static final String TAG = "RemoteListenActivity";
     private static final String PREFS_NAME = "hyeni_location_prefs";
-    private static final String EXTRA_LAUNCHER_NOTIFICATION_ID = "launcherNotificationId";
     private static final int MICROPHONE_PERMISSION_CODE = 2101;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Intent pendingIntent;
     private TextView statusView;
+    private Button acceptButton;
+    private Button declineButton;
+    private String consentToken = "";
+    private boolean decisionMade = false;
+    private RemoteListenConsentClient.Operation serverConsentCall;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        wakeOverLockScreen();
-        renderStatus();
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (!decisionMade && pendingIntent != null) {
+                    declineRequest("back_pressed");
+                    return;
+                }
+                setEnabled(false);
+                getOnBackPressedDispatcher().onBackPressed();
+            }
+        });
+        renderConsent();
         handleRemoteListenIntent(getIntent());
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        cancelServerConsentCall();
+        if (!decisionMade && pendingIntent != null) {
+            RemoteListenRequestStore.markDeclined(
+                this,
+                pendingIntent.getStringExtra("requestId"),
+                "superseded"
+            );
+        }
         setIntent(intent);
+        decisionMade = false;
+        consentToken = "";
         handleRemoteListenIntent(intent);
     }
 
     @Override
     protected void onDestroy() {
+        cancelServerConsentCall();
         handler.removeCallbacksAndMessages(null);
         super.onDestroy();
     }
 
-    private void wakeOverLockScreen() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            setShowWhenLocked(true);
-            setTurnScreenOn(true);
-        } else {
-            getWindow().addFlags(
-                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
-                    | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
-                    | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
-                    | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
-            );
-        }
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-        KeyguardManager km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && km != null) {
-            km.requestDismissKeyguard(this, null);
-        }
-    }
-
-    private void renderStatus() {
+    private void renderConsent() {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setGravity(Gravity.CENTER);
         int padding = dp(24);
         root.setPadding(padding, padding, padding, padding);
-        root.setBackgroundColor(0xEEFFF4F8);
+        root.setBackgroundColor(ContextCompat.getColor(this, R.color.alert_accent_emergency_soft));
 
         TextView title = new TextView(this);
-        title.setText("주변 소리 연결");
-        title.setTextColor(0xFF3B2230);
-        title.setTextSize(20);
+        title.setText("주변 소리 공유 요청");
+        title.setTextColor(ContextCompat.getColor(this, R.color.alert_title));
+        title.setTextSize(22);
         title.setGravity(Gravity.CENTER);
         title.setTypeface(title.getTypeface(), android.graphics.Typeface.BOLD);
 
+        TextView description = new TextView(this);
+        description.setText("부모님이 1분 동안 네 주변 소리를 듣고 싶어 해.\n허용해야만 마이크가 시작돼.");
+        description.setTextColor(ContextCompat.getColor(this, R.color.alert_body));
+        description.setTextSize(16);
+        description.setGravity(Gravity.CENTER);
+        description.setLineSpacing(0f, 1.25f);
+        description.setPadding(0, dp(14), 0, dp(8));
+
         statusView = new TextView(this);
-        statusView.setText("아이 안전 확인을 연결하고 있어요.");
-        statusView.setTextColor(0xFF6B5F73);
+        statusView.setText("요청을 확인하고 있어.");
+        statusView.setTextColor(ContextCompat.getColor(this, R.color.alert_body));
         statusView.setTextSize(14);
         statusView.setGravity(Gravity.CENTER);
-        statusView.setPadding(0, dp(10), 0, 0);
+        statusView.setPadding(0, dp(8), 0, dp(20));
+
+        acceptButton = new Button(this);
+        acceptButton.setText("공유할게");
+        acceptButton.setAllCaps(false);
+        acceptButton.setTextSize(16);
+        acceptButton.setEnabled(false);
+        acceptButton.setOnClickListener(view -> acceptRequest());
+        LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            dp(54)
+        );
+        buttonParams.setMargins(0, dp(6), 0, dp(8));
+        acceptButton.setLayoutParams(buttonParams);
+
+        declineButton = new Button(this);
+        declineButton.setText("거절할게");
+        declineButton.setAllCaps(false);
+        declineButton.setTextSize(16);
+        declineButton.setEnabled(false);
+        declineButton.setOnClickListener(view -> declineRequest("child_declined"));
+        LinearLayout.LayoutParams declineParams = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            dp(54)
+        );
+        declineParams.setMargins(0, 0, 0, 0);
+        declineButton.setLayoutParams(declineParams);
 
         root.addView(title);
+        root.addView(description);
         root.addView(statusView);
+        root.addView(acceptButton);
+        root.addView(declineButton);
         setContentView(root);
     }
 
     private void handleRemoteListenIntent(Intent intent) {
+        handler.removeCallbacksAndMessages(null);
+        setDecisionButtonsEnabled(false);
         if (intent == null) {
-            finishSoon(1200);
+            updateStatus("확인할 요청이 없어.");
+            finishSoon(1500);
             return;
         }
 
         pendingIntent = new Intent(intent);
-        String requestId = pendingIntent.getStringExtra("requestId");
-        RemoteListenRequestStore.markLauncherShown(this, requestId);
         cancelLauncherNotification(pendingIntent);
-        handler.postDelayed(() -> cancelLauncherNotification(pendingIntent), 800);
+        String requestId = pendingIntent.getStringExtra("requestId");
+        SessionTokenStore.ContextSnapshot current = currentContext();
+        String sessionNonce = currentSessionNonce();
+        if (!"child".equalsIgnoreCase(current.role)) {
+            RemoteListenRequestStore.markDeclined(this, requestId, "not_child_role");
+            updateStatus("아이 모드에서만 확인할 수 있어.");
+            finishSoon(1700);
+            return;
+        }
+
+        RemoteListenRequestStore.PendingStatus status = RemoteListenRequestStore.inspectPending(
+            this,
+            requestId,
+            current.familyId,
+            current.userId,
+            sessionNonce,
+            System.currentTimeMillis()
+        );
+        if (status == RemoteListenRequestStore.PendingStatus.READY) {
+            updateStatus("60초 안에 직접 선택해 줘.");
+            setDecisionButtonsEnabled(true);
+            scheduleExpiry(requestId);
+            return;
+        }
+        if (status == RemoteListenRequestStore.PendingStatus.EXPIRED) {
+            RemoteListenRequestStore.markExpired(this, requestId);
+            updateStatus("시간이 지나 요청이 끝났어.");
+        } else if (status == RemoteListenRequestStore.PendingStatus.ALREADY_HANDLED) {
+            updateStatus("이미 처리한 요청이야.");
+        } else if (status == RemoteListenRequestStore.PendingStatus.CONTEXT_MISMATCH) {
+            RemoteListenRequestStore.markDeclined(this, requestId, "session_mismatch");
+            updateStatus("로그인 정보가 달라 요청을 열지 않았어.");
+        } else {
+            updateStatus("안전하게 확인할 수 없는 요청이야.");
+        }
+        finishSoon(1800);
+    }
+
+    private void acceptRequest() {
+        if (decisionMade || pendingIntent == null) return;
+        String requestId = pendingIntent.getStringExtra("requestId");
+        if (AmbientListenService.hasActiveSession()) {
+            decisionMade = true;
+            setDecisionButtonsEnabled(false);
+            RemoteListenRequestStore.markDeclined(this, requestId, "capture_already_active");
+            updateStatus("이미 다른 주변 소리를 공유하고 있어.");
+            finishSoon(1600);
+            return;
+        }
+        decisionMade = true;
+        handler.removeCallbacksAndMessages(null);
+        setDecisionButtonsEnabled(false);
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED) {
-            updateStatus("마이크 권한을 허용하면 바로 연결됩니다.");
+            updateStatus("공유하려면 마이크 권한을 허용해 줘.");
             ActivityCompat.requestPermissions(
                 this,
                 new String[]{ Manifest.permission.RECORD_AUDIO },
@@ -124,82 +216,168 @@ public class RemoteListenActivity extends AppCompatActivity {
             );
             return;
         }
+        startAcceptedCapture();
+    }
 
-        startAmbientListenFromForeground(pendingIntent);
+    private void declineRequest(String reason) {
+        if (decisionMade || pendingIntent == null) return;
+        decisionMade = true;
+        handler.removeCallbacksAndMessages(null);
+        setDecisionButtonsEnabled(false);
+        String requestId = pendingIntent.getStringExtra("requestId");
+        RemoteListenRequestStore.markDeclined(this, requestId, reason);
+        cancelLauncherNotification(pendingIntent);
+        updateStatus("주변 소리를 공유하지 않았어.");
+        finishSoon(1100);
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode != MICROPHONE_PERMISSION_CODE) return;
-
         boolean granted = grantResults.length > 0
             && grantResults[0] == PackageManager.PERMISSION_GRANTED;
         if (granted) {
-            startAmbientListenFromForeground(pendingIntent);
+            startAcceptedCapture();
             return;
         }
 
-        updateStatus("마이크 권한이 없어 연결하지 못했어요.");
-        openMainAppSoon(900);
+        String requestId = pendingIntent != null ? pendingIntent.getStringExtra("requestId") : "";
+        RemoteListenRequestStore.markDeclined(this, requestId, "permission_denied");
+        updateStatus("마이크 권한이 없어서 공유하지 않았어.");
+        finishSoon(1700);
     }
 
-    private void startAmbientListenFromForeground(Intent sourceIntent) {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        String role = prefs.getString("role", "");
-        if (!isBlank(role) && !"child".equalsIgnoreCase(role)) {
-            Log.i(TAG, "Remote listen skipped: this device is not child mode");
-            updateStatus("아이 모드 기기에서만 연결할 수 있어요.");
+    private void startAcceptedCapture() {
+        if (pendingIntent == null) {
+            updateStatus("요청을 다시 확인해 줘.");
             finishSoon(1400);
             return;
         }
-
-        String userId = prefs.getString("userId", "");
-        String requestedFamilyId = sourceIntent != null ? sourceIntent.getStringExtra("familyId") : null;
-        String prefsFamilyId = prefs.getString("familyId", "");
-        String familyId = firstNonBlank(requestedFamilyId, prefsFamilyId);
-        String supabaseUrl = prefs.getString("supabaseUrl", "");
-        String supabaseKey = prefs.getString("supabaseKey", "");
-        String accessToken = prefs.getString("accessToken", "");
-        if (!isBlank(requestedFamilyId) && !isBlank(prefsFamilyId) && !requestedFamilyId.equals(prefsFamilyId)) {
-            Log.i(TAG, "Remote listen foreground start skipped: family mismatch");
-            updateStatus("다른 가족 요청이에요.");
-            finishSoon(900);
+        if (serverConsentCall != null) return;
+        SessionTokenStore.ContextSnapshot current = currentContext();
+        String sessionNonce = currentSessionNonce();
+        String targetUserId = pendingIntent.getStringExtra("targetUserId");
+        if (!RemoteListenRequestPolicy.matchesContext(
+                pendingIntent.getStringExtra("familyId"),
+                targetUserId,
+                pendingIntent.getStringExtra(RemoteListenNotification.EXTRA_SESSION_NONCE),
+                current.familyId,
+                current.userId,
+                sessionNonce)) {
+            RemoteListenRequestStore.markDeclined(
+                this,
+                pendingIntent.getStringExtra("requestId"),
+                "session_changed_before_start"
+            );
+            updateStatus("로그인 정보가 바뀌어 공유하지 않았어.");
+            finishSoon(1600);
             return;
         }
 
-        String targetUserId = sourceIntent != null ? sourceIntent.getStringExtra("targetUserId") : null;
-        if (!isBlank(targetUserId) && !targetUserId.equals(userId)) {
-            Log.i(TAG, "Remote listen foreground start skipped: target user mismatch");
-            updateStatus("다른 아이 기기에 보낸 요청이에요.");
-            finishSoon(900);
+        String requestId = pendingIntent.getStringExtra("requestId");
+        if (consentToken.isEmpty()) {
+            consentToken = valueOrEmpty(RemoteListenRequestStore.accept(
+                this,
+                requestId,
+                current.familyId,
+                current.userId,
+                sessionNonce,
+                System.currentTimeMillis()
+            ));
+        }
+        if (consentToken.isEmpty()) {
+            RemoteListenRequestStore.markExpired(this, requestId);
+            updateStatus("시간이 지나 요청이 끝났어.");
+            setDecisionButtonsEnabled(false);
+            finishSoon(1600);
+            return;
+        }
+        updateStatus("동의를 안전하게 확인하고 있어.");
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        serverConsentCall = RemoteListenConsentClient.confirm(
+            prefs,
+            requestId,
+            result -> runOnUiThread(() -> handleServerConsentResult(
+                requestId,
+                targetUserId,
+                sessionNonce,
+                result
+            ))
+        );
+    }
+
+    private void handleServerConsentResult(
+            String requestId,
+            String targetUserId,
+            String acceptedSessionNonce,
+            RemoteListenConsentClient.Result result
+    ) {
+        serverConsentCall = null;
+        if (isFinishing() || isDestroyed() || pendingIntent == null
+                || !valueOrEmpty(pendingIntent.getStringExtra("requestId")).equals(requestId)) {
+            return;
+        }
+        if (!result.isSuccess()) {
+            RemoteListenRequestStore.markFinished(this, requestId, "server_consent_failed");
+            updateStatus("동의를 확인하지 못해 공유하지 않았어. 다시 요청해 줘.");
+            finishSoon(1800);
             return;
         }
 
-        if (isBlank(userId) || isBlank(familyId) || isBlank(supabaseUrl) || isBlank(supabaseKey)) {
-            Log.w(TAG, "Remote listen foreground start skipped: push context missing");
-            updateStatus("앱 연결 정보를 확인해야 해요.");
-            openMainAppSoon(900);
+        SessionTokenStore.ContextSnapshot current = currentContext();
+        String currentNonce = currentSessionNonce();
+        if (!RemoteListenRequestPolicy.matchesContext(
+                pendingIntent.getStringExtra("familyId"),
+                targetUserId,
+                acceptedSessionNonce,
+                current.familyId,
+                current.userId,
+                currentNonce)) {
+            RemoteListenRequestStore.markFinished(this, requestId, "session_changed_after_consent");
+            updateStatus("로그인 정보가 바뀌어 공유하지 않았어.");
+            finishSoon(1600);
+            return;
+        }
+        long nowMs = System.currentTimeMillis();
+        if (!RemoteListenRequestStore.confirmServerConsent(
+                this,
+                requestId,
+                consentToken,
+                result.getCaptureExpiresAtMs(),
+                nowMs)) {
+            RemoteListenRequestStore.markFinished(this, requestId, "server_consent_expired");
+            updateStatus("동의 시간이 지나 공유하지 않았어.");
+            finishSoon(1600);
             return;
         }
 
         Intent serviceIntent = new Intent(this, AmbientListenService.class);
         serviceIntent.setAction(AmbientListenService.ACTION_START);
-        serviceIntent.putExtra(AmbientListenService.EXTRA_USER_ID, userId);
-        serviceIntent.putExtra(AmbientListenService.EXTRA_FAMILY_ID, familyId);
-        serviceIntent.putExtra(AmbientListenService.EXTRA_SUPABASE_URL, supabaseUrl);
-        serviceIntent.putExtra(AmbientListenService.EXTRA_SUPABASE_KEY, supabaseKey);
-        serviceIntent.putExtra(AmbientListenService.EXTRA_ACCESS_TOKEN, accessToken);
-        serviceIntent.putExtra(AmbientListenService.EXTRA_DURATION_SEC, readDurationSec(sourceIntent));
-
-        String senderUserId = sourceIntent != null ? sourceIntent.getStringExtra("senderUserId") : null;
-        if (!isBlank(senderUserId)) {
-            serviceIntent.putExtra(AmbientListenService.EXTRA_INITIATOR_USER_ID, senderUserId);
-        }
-        String requestId = sourceIntent != null ? sourceIntent.getStringExtra("requestId") : null;
-        if (!isBlank(requestId)) {
-            serviceIntent.putExtra(AmbientListenService.EXTRA_REQUEST_ID, requestId);
-        }
+        serviceIntent.putExtra(AmbientListenService.EXTRA_USER_ID, current.userId);
+        serviceIntent.putExtra(AmbientListenService.EXTRA_TARGET_USER_ID, targetUserId);
+        serviceIntent.putExtra(AmbientListenService.EXTRA_FAMILY_ID, current.familyId);
+        serviceIntent.putExtra(AmbientListenService.EXTRA_SUPABASE_URL, current.supabaseUrl);
+        serviceIntent.putExtra(AmbientListenService.EXTRA_SUPABASE_KEY, current.supabaseKey);
+        serviceIntent.putExtra(AmbientListenService.EXTRA_ACCESS_TOKEN, current.accessToken);
+        serviceIntent.putExtra(
+            AmbientListenService.EXTRA_DURATION_SEC,
+            readDurationSec(pendingIntent)
+        );
+        serviceIntent.putExtra(
+            AmbientListenService.EXTRA_INITIATOR_USER_ID,
+            pendingIntent.getStringExtra("senderUserId")
+        );
+        serviceIntent.putExtra(
+            AmbientListenService.EXTRA_REQUEST_ID,
+            pendingIntent.getStringExtra("requestId")
+        );
+        serviceIntent.putExtra(AmbientListenService.EXTRA_CONSENT_TOKEN, consentToken);
+        serviceIntent.putExtra(AmbientListenService.EXTRA_SESSION_NONCE, currentNonce);
+        serviceIntent.putExtra(
+            AmbientListenService.EXTRA_CAPTURE_EXPIRES_AT_MS,
+            result.getCaptureExpiresAtMs()
+        );
 
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -207,131 +385,100 @@ public class RemoteListenActivity extends AppCompatActivity {
             } else {
                 startService(serviceIntent);
             }
-            Log.i(TAG, "Remote listen foreground bridge started AmbientListenService");
-            updateStatus("주변 소리 연결을 시작했어요.");
-            cancelLauncherNotification(sourceIntent);
-            finishSoon(1800);
-        } catch (Exception error) {
-            Log.w(TAG, "Remote listen foreground bridge failed", error);
-            updateStatus("앱을 열어 연결을 이어갈게요.");
-            openMainAppSoon(900);
+            updateStatus("주변 소리를 1분 동안 공유하기 시작했어.");
+            cancelLauncherNotification(pendingIntent);
+            finishSoon(1500);
+        } catch (RuntimeException error) {
+            Log.w(TAG, "Accepted remote listen service start failed", error);
+            RemoteListenRequestStore.markDeclined(
+                this,
+                pendingIntent.getStringExtra("requestId"),
+                "service_start_failed"
+            );
+            updateStatus("지금은 공유를 시작할 수 없어.");
+            finishSoon(1700);
         }
     }
 
-    private void openMainAppSoon(long delayMs) {
+    private void cancelServerConsentCall() {
+        RemoteListenConsentClient.Operation call = serverConsentCall;
+        serverConsentCall = null;
+        if (call != null) call.cancel();
+    }
+
+    private void scheduleExpiry(String requestId) {
+        long expiresAtMs = RemoteListenRequestStore.effectiveExpiresAt(this, requestId);
+        long delayMs = expiresAtMs - System.currentTimeMillis();
+        if (delayMs <= 0L) {
+            RemoteListenRequestStore.markExpired(this, requestId);
+            updateStatus("시간이 지나 요청이 끝났어.");
+            setDecisionButtonsEnabled(false);
+            finishSoon(1200);
+            return;
+        }
         handler.postDelayed(() -> {
-            Intent intent = new Intent(this, MainActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            intent.putExtra("fromPush", true);
-            intent.putExtra("remoteListen", true);
-            copyIfPresent(pendingIntent, intent, "familyId");
-            copyIfPresent(pendingIntent, intent, "senderUserId");
-            copyIfPresent(pendingIntent, intent, "durationSec");
-            copyIfPresent(pendingIntent, intent, "requestId");
-            copyIfPresent(pendingIntent, intent, "targetUserId");
-            startActivity(intent);
-            finish();
+            if (decisionMade) return;
+            decisionMade = true;
+            RemoteListenRequestStore.markExpired(this, requestId);
+            setDecisionButtonsEnabled(false);
+            updateStatus("시간이 지나 요청이 끝났어.");
+            finishSoon(1200);
         }, delayMs);
     }
 
-    private void finishSoon(long delayMs) {
-        handler.postDelayed(this::finish, delayMs);
+    private SessionTokenStore.ContextSnapshot currentContext() {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        return SessionTokenStore.readContext(prefs);
+    }
+
+    private String currentSessionNonce() {
+        return getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getString("sessionNonce", "");
+    }
+
+    private int readDurationSec(Intent intent) {
+        int durationSec = RemoteListenRequestPolicy.DEFAULT_DURATION_SEC;
+        if (intent != null) {
+            durationSec = intent.getIntExtra(
+                "durationSec",
+                RemoteListenRequestPolicy.DEFAULT_DURATION_SEC
+            );
+        }
+        return RemoteListenRequestPolicy.normalizeDurationSec(durationSec);
+    }
+
+    private void cancelLauncherNotification(Intent sourceIntent) {
+        if (sourceIntent == null) return;
+        RemoteListenNotification.cancel(
+            this,
+            sourceIntent.getIntExtra(RemoteListenNotification.EXTRA_LAUNCHER_NOTIFICATION_ID, 0)
+        );
+    }
+
+    private void setDecisionButtonsEnabled(boolean enabled) {
+        if (acceptButton != null) {
+            acceptButton.setEnabled(enabled);
+            acceptButton.setVisibility(View.VISIBLE);
+        }
+        if (declineButton != null) {
+            declineButton.setEnabled(enabled);
+            declineButton.setVisibility(View.VISIBLE);
+        }
     }
 
     private void updateStatus(String message) {
         if (statusView != null) statusView.setText(message);
     }
 
-    private void cancelLauncherNotification(Intent sourceIntent) {
-        if (sourceIntent == null) return;
-        int notificationId = sourceIntent.getIntExtra(EXTRA_LAUNCHER_NOTIFICATION_ID, 0);
-        if (notificationId <= 0) return;
-        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (manager != null) {
-            manager.cancel(notificationId);
-        }
-    }
-
-    private void copyIfPresent(Intent from, Intent to, String key) {
-        if (from == null || to == null || !from.hasExtra(key)) return;
-        Object value = from.getExtras() != null ? from.getExtras().get(key) : null;
-        if (value instanceof Integer) {
-            to.putExtra(key, (Integer) value);
-        } else if (value != null) {
-            to.putExtra(key, String.valueOf(value));
-        }
-    }
-
-    private int readDurationSec(Intent intent) {
-        if (intent == null) return 30;
-        int durationSec = 30;
-        Object rawDuration = intent.getExtras() != null ? intent.getExtras().get("durationSec") : null;
-        if (rawDuration instanceof Number) {
-            durationSec = ((Number) rawDuration).intValue();
-        } else if (rawDuration != null) {
-            try {
-                durationSec = Integer.parseInt(String.valueOf(rawDuration));
-            } catch (Exception ignored) {
-                durationSec = 30;
-            }
-        }
-        if (durationSec < 5) return 30;
-        return Math.min(durationSec, 120);
-    }
-
-    private String firstNonBlank(String first, String second) {
-        return !isBlank(first) ? first.trim() : (!isBlank(second) ? second.trim() : "");
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
+    private void finishSoon(long delayMs) {
+        handler.postDelayed(this::finish, delayMs);
     }
 
     private int dp(int value) {
         return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
-    /** 폴더블 대응: 켜진 커버/외부 디스플레이가 있으면 launch display 로 지정한다. */
-    public static void applyRemoteListenLaunchDisplay(Context ctx, ActivityOptions options) {
-        if (options == null) return;
-        int displayId = activeLaunchDisplayId(ctx);
-        // default display(0)를 명시하면 접힌 razr 에서 "Cannot launch ... on default display"로
-        // 실패할 수 있다. 기본 화면이면 시스템 선택에 맡기고, 커버 화면이 켜진 경우만 지정한다.
-        if (displayId != Display.DEFAULT_DISPLAY) {
-            options.setLaunchDisplayId(displayId);
-        }
-        Log.i(TAG, "Remote listen launch displayId=" + displayId + " states=" + displayStates(ctx));
-    }
-
-    private static int activeLaunchDisplayId(Context ctx) {
-        try {
-            DisplayManager dm = (DisplayManager) ctx.getSystemService(Context.DISPLAY_SERVICE);
-            if (dm == null) return Display.DEFAULT_DISPLAY;
-            // 내부 화면이 접힌 상태에서는 커버 디스플레이가 non-default 로 켜진다.
-            // 그때만 명시 지정하고, 기본 화면은 ActivityTaskManager 의 라우팅에 맡긴다.
-            for (Display d : dm.getDisplays()) {
-                if (d.getDisplayId() != Display.DEFAULT_DISPLAY && d.getState() == Display.STATE_ON) {
-                    return d.getDisplayId();
-                }
-            }
-            return Display.DEFAULT_DISPLAY;
-        } catch (Exception error) {
-            return Display.DEFAULT_DISPLAY;
-        }
-    }
-
-    private static String displayStates(Context ctx) {
-        try {
-            DisplayManager dm = (DisplayManager) ctx.getSystemService(Context.DISPLAY_SERVICE);
-            if (dm == null) return "displayManager=null";
-            StringBuilder sb = new StringBuilder();
-            for (Display d : dm.getDisplays()) {
-                if (sb.length() > 0) sb.append(',');
-                sb.append(d.getDisplayId()).append(':').append(d.getState());
-            }
-            return sb.toString();
-        } catch (Exception error) {
-            return "displayStatesError";
-        }
+    private String valueOrEmpty(String value) {
+        return value == null ? "" : value;
     }
 }

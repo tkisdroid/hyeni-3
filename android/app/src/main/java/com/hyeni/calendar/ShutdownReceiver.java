@@ -12,6 +12,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.MediaType;
@@ -23,8 +25,9 @@ import okhttp3.Response;
 // Phase 0-A: 시스템 종료(ACTION_SHUTDOWN) 직전, LocationService 가 영속화한
 // 마지막 좌표를 읽어 Supabase 에 final upload 를 시도한다.
 //
-// ACTION_SHUTDOWN 은 일반 BroadcastReceiver 에 수 초 단위 짧은 윈도우만 허용하므로
-// 동기 HTTP POST + 2s 타임아웃 으로 fire-and-forget. 실패해도 무시.
+// ACTION_SHUTDOWN 은 일반 BroadcastReceiver 에 짧은 윈도우만 허용한다. 이 신호는
+// 네트워크·OEM 종료 순서에 따라 실패할 수 있는 best-effort 보조 신호이며, 부모의
+// 위치 끊김 판정은 서버 staleness cron을 정본으로 유지한다.
 public class ShutdownReceiver extends BroadcastReceiver {
 
     private static final String TAG = "ShutdownReceiver";
@@ -32,6 +35,20 @@ public class ShutdownReceiver extends BroadcastReceiver {
     private static final String LAST_LAT = "last_uploaded_lat";
     private static final String LAST_LNG = "last_uploaded_lng";
     private static final String LAST_AT_MS = "last_uploaded_at_ms";
+    private static final long SHUTDOWN_CALL_TIMEOUT_MS = 1_200L;
+    private static final ThreadPoolExecutor SHUTDOWN_EXECUTOR = new ThreadPoolExecutor(
+            1,
+            1,
+            0L,
+            TimeUnit.MILLISECONDS,
+            new ArrayBlockingQueue<>(1),
+            runnable -> {
+                Thread thread = new Thread(runnable, "hyeni-shutdown-delivery");
+                thread.setDaemon(true);
+                return thread;
+            },
+            new ThreadPoolExecutor.AbortPolicy()
+    );
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -41,6 +58,25 @@ public class ShutdownReceiver extends BroadcastReceiver {
             return;
         }
 
+        PendingResult pendingResult = goAsync();
+        Context appContext = context.getApplicationContext();
+        if (appContext == null) appContext = context;
+        Context deliveryContext = appContext;
+        try {
+            SHUTDOWN_EXECUTOR.execute(() -> {
+                try {
+                    deliverShutdownBestEffort(deliveryContext);
+                } finally {
+                    pendingResult.finish();
+                }
+            });
+        } catch (RuntimeException rejected) {
+            Log.w(TAG, "shutdown delivery skipped: executor busy", rejected);
+            pendingResult.finish();
+        }
+    }
+
+    private static void deliverShutdownBestEffort(Context context) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         boolean enabled = prefs.getBoolean("serviceEnabled", false);
         String userId = prefs.getString("userId", null);
@@ -60,16 +96,15 @@ public class ShutdownReceiver extends BroadcastReceiver {
 
         final String bearer = (accessToken != null && !accessToken.isEmpty()) ? accessToken : supabaseKey;
         final OkHttpClient client = new OkHttpClient.Builder()
-                .connectTimeout(2, TimeUnit.SECONDS)
-                .readTimeout(2, TimeUnit.SECONDS)
-                .writeTimeout(2, TimeUnit.SECONDS)
+                .callTimeout(SHUTDOWN_CALL_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                .connectTimeout(700, TimeUnit.MILLISECONDS)
+                .readTimeout(900, TimeUnit.MILLISECONDS)
+                .writeTimeout(700, TimeUnit.MILLISECONDS)
                 .build();
 
-        // 1) 전원 종료 마커(최우선) — 종료 직전 ~2초 윈도우 안에 끝나야 하므로 단일 빠른
-        //    RPC 만 호출한다. 부모 "기기 전원을 껐어요" 알림은 이 마커를 본 staleness cron
-        //    (*/3분)이 안정적으로 발송한다(종료 윈도우 + edge 콜드스타트에 의존하던 기존
-        //    직접 푸시는 자주 실패해서 제거 — 2026-06-10 전원종료 통보 안정화). 위치 캐시가
-        //    없어도 마커는 남긴다.
+        // 1) 전원 종료 마커(최우선) — 종료 직전 네트워크가 살아 있을 때만 성공하는
+        //    best-effort 힌트다. 위치 캐시가 없어도 먼저 시도하고, 실패 시 서버의 위치
+        //    끊김 판정이 그대로 동작한다.
         try {
             JSONObject marker = new JSONObject();
             marker.put("p_family_id", familyId);

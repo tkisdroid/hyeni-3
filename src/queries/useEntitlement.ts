@@ -33,6 +33,10 @@ export interface UseEntitlementResult {
   isLoading: boolean;
   /** 조회 실패 여부(캐시가 있으면 view 는 그대로 유지됨). */
   isError: boolean;
+  /** 최초 조회 또는 사용자가 요청한 재조회가 진행 중인가. */
+  isFetching: boolean;
+  /** 현재 가족의 엔타이틀먼트를 다시 확인한다. */
+  refetch: () => Promise<void>;
 }
 
 /** 현재 가족의 엔타이틀먼트(/api/entitlement + /api/review-rewards). 프리미엄·리뷰 티어 판정. */
@@ -69,5 +73,9 @@ export function useEntitlement(): UseEntitlementResult {
     view,
     isLoading: query.isLoading,
     isError: query.isError,
+    isFetching: query.isFetching,
+    refetch: async () => {
+      await query.refetch();
+    },
   };
 }

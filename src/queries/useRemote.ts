@@ -96,7 +96,7 @@ export function useRequestRemoteListen() {
   return useMutation<
     RemoteListenCommandResult,
     unknown,
-    { targetChildUserId?: string | null; durationSec?: number; requestId?: string }
+    { targetChildUserId: string; durationSec?: number; requestId: string }
   >({
     mutationFn: (vars) => requestRemoteListen({ familyId: familyId ?? "", ...vars }),
   });
@@ -105,7 +105,11 @@ export function useRequestRemoteListen() {
 /** 원격 청취 중지 명령(종료/타임아웃에서만). */
 export function useStopRemoteListen() {
   const { familyId } = useAuth();
-  return useMutation<RemoteListenCommandResult, unknown, { targetChildUserId?: string | null }>({
+  return useMutation<
+    RemoteListenCommandResult,
+    unknown,
+    { targetChildUserId: string; requestId: string }
+  >({
     mutationFn: (vars) => stopRemoteListen({ familyId: familyId ?? "", ...vars }),
   });
 }

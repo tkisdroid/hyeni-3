@@ -1,19 +1,69 @@
 apply plugin: 'com.android.application'
 
+import groovy.json.JsonSlurper
+import java.util.Locale
+
+def hyeniPackageVersion = new JsonSlurper().parse(file('../../package.json')).version.toString()
+
+def isHyeniReleaseArtifactTask = { task ->
+    if (task.project.path != project.path) return false
+    def taskName = task.name.toLowerCase(Locale.ROOT)
+    if (!taskName.contains("release")) return false
+    def producesArtifact = taskName.startsWith("assemble")
+        || taskName.startsWith("bundle")
+        || taskName.startsWith("package")
+        || taskName.startsWith("sign")
+    def releaseOutput = taskName.endsWith("release")
+        || taskName.endsWith("releasebundle")
+        || taskName.endsWith("releaseapk")
+    return producesArtifact && releaseOutput
+}
+
+def hyeniSigningVariableNames = [
+    "HYENI_KEYSTORE",
+    "HYENI_KEYSTORE_PASSWORD",
+    "HYENI_KEY_ALIAS",
+    "HYENI_KEY_PASSWORD",
+]
+
 def hyeniSigningValue = { name ->
-    def value = project.findProperty(name)
-    if (value == null || !value.toString().trim()) {
-        value = System.getenv(name)
+    return System.getenv(name)
+}
+
+def hyeniSigningValues = hyeniSigningVariableNames.collectEntries { name ->
+    [(name): hyeniSigningValue(name)]
+}
+def missingHyeniSigningVariables = hyeniSigningVariableNames.findAll { name ->
+    def value = hyeniSigningValues[name]
+    value == null || !value.toString().trim()
+}
+gradle.taskGraph.whenReady { graph ->
+    def releaseArtifactScheduled = graph.allTasks.any { task ->
+        isHyeniReleaseArtifactTask(task)
     }
-    return value
+    if (!releaseArtifactScheduled) return
+
+    def forbiddenSigningProperties = hyeniSigningVariableNames.findAll { name ->
+        project.hasProperty(name)
+    }
+    if (!forbiddenSigningProperties.isEmpty()) {
+        throw new GradleException(
+            "릴리즈 서명 값은 Gradle property에 저장할 수 없습니다: "
+                + forbiddenSigningProperties.join(", ")
+        )
+    }
+    if (!missingHyeniSigningVariables.isEmpty()) {
+        throw new GradleException(
+            "릴리즈 서명 환경변수가 누락되었습니다: ${missingHyeniSigningVariables.join(", ")}"
+        )
+    }
 }
-def hyeniKeystorePath = hyeniSigningValue("HYENI_KEYSTORE")
-def hyeniKeystorePassword = hyeniSigningValue("HYENI_KEYSTORE_PASSWORD")
-def hyeniKeyAlias = hyeniSigningValue("HYENI_KEY_ALIAS")
-def hyeniKeyPassword = hyeniSigningValue("HYENI_KEY_PASSWORD")
-def hasHyeniReleaseSigning = [hyeniKeystorePath, hyeniKeystorePassword, hyeniKeyAlias, hyeniKeyPassword].every {
-    it != null && it.toString().trim()
-}
+
+def hyeniKeystorePath = hyeniSigningValues["HYENI_KEYSTORE"]
+def hyeniKeystorePassword = hyeniSigningValues["HYENI_KEYSTORE_PASSWORD"]
+def hyeniKeyAlias = hyeniSigningValues["HYENI_KEY_ALIAS"]
+def hyeniKeyPassword = hyeniSigningValues["HYENI_KEY_PASSWORD"]
+def hasHyeniReleaseSigning = missingHyeniSigningVariables.isEmpty()
 
 android {
     namespace = "com.hyeni.calendar"
@@ -22,8 +72,8 @@ android {
         applicationId "com.hyeni.calendar"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 3
-        versionName "1.2"
+        versionCode 4
+        versionName hyeniPackageVersion
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

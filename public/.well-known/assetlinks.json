@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.hyeni.calendar",
+      "sha256_cert_fingerprints": [
+        "2A:79:00:94:9B:4E:41:8B:59:20:11:47:3E:C9:73:ED:7E:A6:23:AD:E5:88:68:39:5A:01:9E:4A:F9:0E:1D:F2"
+      ]
+    }
+  }
+]

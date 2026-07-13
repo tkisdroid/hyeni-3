@@ -38,6 +38,7 @@ import {
   createNativeQueryResumeCoordinator,
   resumeActiveQueriesAfterNativeForeground,
 } from "@/queries/nativeQueryResume";
+import { syncWebPushSessionContext, wasWebPushDisplayed } from "@/lib/webPush";
 
 // 아이 기기 상태 리포트 주기(ms). 부모 '안전 지표'가 이 주기로 갱신된다.
 const DEVICE_REPORT_INTERVAL_MS = 120_000;
@@ -54,7 +55,20 @@ export function NativeBootstrap() {
   const { status, userId, familyId, role, syncFromSession } = useAuth();
   const queryClient = useQueryClient();
 
-  // OAuth 딥링크(hyenicalendar://auth-callback) 리스너 — 1회 등록. 성공 시 role 홈 이동은 내장.
+  // PWA service worker는 localStorage를 읽을 수 없으므로 현재 세션의 최소 대상 정보만
+  // 별도 저장한다. 구독 권한 요청은 설정 화면의 사용자 버튼에서만 수행한다.
+  useEffect(() => {
+    if (isNativePlatform()) return;
+    const context = status === "authenticated"
+      && userId
+      && familyId
+      && (role === "parent" || role === "child")
+      ? { userId, familyId, role }
+      : null;
+    void syncWebPushSessionContext(context);
+  }, [status, userId, familyId, role]);
+
+  // OAuth verified App Link 리스너 — 1회 등록. 성공 시 role 홈 이동은 내장.
   useEffect(() => {
     if (!isNativePlatform()) return;
     return initOAuthDeepLink((r) => {
@@ -185,11 +199,14 @@ export function NativeBootstrap() {
     };
   }, [status, role, familyId, userId, queryClient]);
 
-  // 부모 네이티브 foreground fallback — FCM을 놓친 경우에만 짧은 주기로 pending을 확인한다.
+  // 부모·아이 네이티브 foreground fallback — FCM을 놓친 표시형 pending만 회수한다.
+  // 네이티브 명령은 pollParentPendingNotifications에서 제외해 LocationService가 성공 후 ACK한다.
   // NativeNotification이 같은 pushId의 FCM ACK를 확인하므로 이미 본 알림은 다시 울리지 않는다.
   useEffect(() => {
     if (!isNativePlatform()) return;
-    if (status !== "authenticated" || role !== "parent" || !familyId || !userId) return;
+    if (status !== "authenticated" || !familyId || !userId) return;
+    if (role !== "parent" && role !== "child") return;
+    const pendingRole = role;
     const nativeNotification = getNativePlugin<NativeNotificationPlugin>("NativeNotification");
     if (!nativeNotification) return;
 
@@ -198,7 +215,11 @@ export function NativeBootstrap() {
         familyId,
         userId,
         signal,
-        fetchPending: fetchParentPendingNotifications,
+        fetchPending: pendingRole === "parent"
+          ? fetchParentPendingNotifications
+          : (targetFamilyId, targetUserId) => (
+              fetchDevicePendingNotifications(targetFamilyId, targetUserId, pendingRole)
+            ),
         showPending: (input) => nativeNotification.showPending(input),
         markDelivered: markPendingNotificationsDelivered,
       });
@@ -221,7 +242,13 @@ export function NativeBootstrap() {
         fetchPending: (targetFamilyId, targetUserId) => (
           fetchDevicePendingNotifications(targetFamilyId, targetUserId, pendingRole)
         ),
-        showPending: async (input) => presentWebPendingNotification(input, announceGlobalToast),
+        showPending: async (input) => {
+          if (await wasWebPushDisplayed(input.stableId, { familyId, userId })) {
+            return { acknowledged: true, displayed: false };
+          }
+          if (signal.aborted) return { acknowledged: false, displayed: false };
+          return presentWebPendingNotification(input, announceGlobalToast);
+        },
         markDelivered: markPendingNotificationsDelivered,
       });
     });

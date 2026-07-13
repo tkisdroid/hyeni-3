@@ -10,7 +10,9 @@ import { useMyFamily } from "@/queries/useFamily";
 import { useSavedPlaces } from "@/queries/useLocation";
 import { eventToView, formatTimeLabel, groupEventsByDateKey } from "@/transform/scheduleView";
 import { useVisitVerify } from "@/queries/useVisitVerify";
+import { useEntitlement } from "@/queries/useEntitlement";
 import { ymdToDateKey } from "@/transform/dateKey";
+import { locationModeFor } from "@/transform/tierPolicy";
 import { eventChildMemberIds, eventScopeLabel } from "@/transform/eventScope";
 import { notifOverrideToReminderMinutes, type CalendarEvent } from "@/lib/api/endpoints/schedule";
 
@@ -65,6 +67,7 @@ export function ParentCalendar() {
   const { data: events, isLoading, isError } = useEvents();
   const { data: family } = useMyFamily();
   const { data: savedPlaces } = useSavedPlaces();
+  const entitlement = useEntitlement();
   const deleteEvent = useDeleteEvent();
   // 선택 날짜의 지난 일정 "다녀옴"을 위치 이력로 검증(미확인=확인 필요).
   // 캘린더는 여러 아이 일정이 섞이므로 이벤트 배정 아이의 user_id 로 정확히 대조한다.
@@ -76,7 +79,8 @@ export function ParentCalendar() {
     }
     return map;
   }, [family]);
-  const visitMap = useVisitVerify(selectedKey, events, childUserByMemberId);
+  const canVerifyVisits = !entitlement.isError && locationModeFor(entitlement.tier) === "realtime";
+  const visitMap = useVisitVerify(selectedKey, events, childUserByMemberId, canVerifyVisits);
   const byKey = useMemo(
     () => groupEventsByDateKey(events ?? [], now, visitMap, savedPlaces),
     [events, now, visitMap, savedPlaces],

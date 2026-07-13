@@ -101,6 +101,10 @@ public class PushAlertActivity extends AppCompatActivity {
     private void openMainApp() {
         Intent intent = new Intent(this, MainActivity.class);
         intent.putExtra("fromPush", true);
+        String route = getIntent().getStringExtra("route");
+        if (route != null && !route.isEmpty()) {
+            intent.putExtra("route", route);
+        }
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         startActivity(intent);
         finish();

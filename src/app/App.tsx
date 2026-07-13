@@ -6,11 +6,12 @@ import { AccentProvider } from "./accent";
 import { ToastProvider } from "./toast";
 import { QueryProvider } from "@/queries/QueryProvider";
 import { AuthProvider } from "@/auth/AuthProvider";
-import { RequireRole } from "@/auth/RequireRole";
+import { RequireAnyRole, RequireAuthenticated, RequireRole } from "@/auth/RequireRole";
 import { RequireGuest } from "@/auth/RequireGuest";
 import { useFamilyRealtime } from "@/queries/useFamilyRealtime";
 import { NativeBootstrap } from "./NativeBootstrap";
 import { ActiveChildProvider } from "./activeChild";
+import { TEACHER_MODE_ENABLED } from "@/config/releaseFeatures";
 
 // 부모
 import { ParentHome } from "@/screens/parent/ParentHome";
@@ -29,6 +30,7 @@ import { AiFriendChat } from "@/screens/child/AiFriendChat";
 import { TeacherHome } from "@/screens/teacher/TeacherHome";
 import { TeacherStudents } from "@/screens/teacher/TeacherStudents";
 import { TeacherSettings } from "@/screens/teacher/TeacherSettings";
+import { TeacherReleaseGate } from "@/screens/teacher/TeacherReleaseGate";
 // 온보딩·기능(푸시)
 import { Onboarding } from "@/screens/onboarding/Onboarding";
 import { Subscription } from "@/screens/feature/Subscription";
@@ -120,14 +122,21 @@ const router = createHashRouter([
     ],
   },
 
-  // 선생님 탭
+  // 선생님 탭 (인증 + role=teacher 가드)
   {
-    element: <TeacherShell />,
-    children: [
-      { path: "teacher/home", element: <TeacherHome /> },
-      { path: "teacher/students", element: <TeacherStudents /> },
-      { path: "teacher/timetable", element: <TeacherTimetable /> },
-      { path: "teacher/settings", element: <TeacherSettings /> },
+    element: <RequireRole role="teacher" />,
+    children: TEACHER_MODE_ENABLED ? [
+      {
+        element: <TeacherShell />,
+        children: [
+          { path: "teacher/home", element: <TeacherHome /> },
+          { path: "teacher/students", element: <TeacherStudents /> },
+          { path: "teacher/timetable", element: <TeacherTimetable /> },
+          { path: "teacher/settings", element: <TeacherSettings /> },
+        ],
+      },
+    ] : [
+      { path: "teacher/*", element: <TeacherReleaseGate /> },
     ],
   },
 
@@ -145,57 +154,82 @@ const router = createHashRouter([
           </RequireGuest>
         ),
       },
-      { path: "parent/family", element: <ParentFamily /> },
-      { path: "child/sos", element: <ChildSos /> },
-      { path: "child/ai-friend", element: <AiFriendChat /> },
+      // 부모 전용 푸시/상세 — URL 직접 입력·잘못된 푸시 딥링크도 role 경계에서 차단한다.
       {
-        // 실제 Google Play 결제와 구독 상태 화면은 부모 전용이다. 아이가 결제창을 먼저
-        // 완료한 뒤 서버 parent gate에서 403을 받는 유실 경로를 라우트에서 차단한다.
         element: <RequireRole role="parent" />,
         children: [
+          { path: "parent/family", element: <ParentFamily /> },
           { path: "subscription", element: <Subscription /> },
           { path: "trial-lock", element: <TrialLock /> },
+          { path: "notifications", element: <Notifications /> },
+          { path: "remote-audio", element: <RemoteAudio /> },
+          { path: "place-manager", element: <PlaceManager /> },
+          { path: "friend-play", element: <FriendPlay /> },
+          { path: "ai-schedule", element: <AiSchedule /> },
+          { path: "ai-credit", element: <AiCredit /> },
+          { path: "phone-setup", element: <PhoneSetup /> },
+          { path: "sticker-send", element: <StickerSend /> },
+          { path: "profile-edit", element: <ProfileEdit /> },
+          { path: "place-form", element: <PlaceForm /> },
+          { path: "child-invite", element: <ChildInvite /> },
+          { path: "route", element: <RouteView /> },
+          { path: "event-form", element: <EventForm /> },
+          { path: "danger-zone-form", element: <DangerZoneForm /> },
+          { path: "location-status", element: <LocationStatus /> },
+          { path: "child-detail", element: <ChildDetail /> },
+          { path: "pairing-wizard", element: <PairingWizard /> },
+          { path: "family-connection", element: <FamilyConnection /> },
+          { path: "location-settings", element: <LocationSettings /> },
+          { path: "account", element: <ParentAccount /> },
+          { path: "data-sync", element: <DataSync /> },
+          { path: "notification-settings", element: <NotificationSettings /> },
+          { path: "arrival-alerts", element: <ArrivalAlerts /> },
+          { path: "danger-alert", element: <DangerAlert /> },
+          { path: "day-summary", element: <DaySummary /> },
+          { path: "daily-report", element: <DailySafetyReport /> },
+          { path: "weekly-report", element: <WeeklyFamilyReport /> },
+          { path: "remote-audio-audit", element: <RemoteAudioAudit /> },
+          { path: "remote-ring", element: <RemoteRing /> },
+          { path: "sos-receive", element: <SosReceive /> },
         ],
       },
-      { path: "notifications", element: <Notifications /> },
-      { path: "remote-audio", element: <RemoteAudio /> },
-      { path: "place-manager", element: <PlaceManager /> },
-      { path: "friend-play", element: <FriendPlay /> },
-      { path: "ai-schedule", element: <AiSchedule /> },
-      { path: "ai-credit", element: <AiCredit /> },
-      { path: "feedback", element: <Feedback /> },
-      { path: "phone-setup", element: <PhoneSetup /> },
-      { path: "playdate-accept", element: <PlaydateAccept /> },
-      { path: "sticker-send", element: <StickerSend /> },
-      { path: "profile-edit", element: <ProfileEdit /> },
-      { path: "place-form", element: <PlaceForm /> },
-      { path: "child-invite", element: <ChildInvite /> },
-      { path: "route", element: <RouteView /> },
-      // Wave 1 신규 상세/기능 화면
-      { path: "event-form", element: <EventForm /> },
-      { path: "supplies", element: <Supplies /> },
-      { path: "danger-zone-form", element: <DangerZoneForm /> },
-      { path: "location-status", element: <LocationStatus /> },
-      { path: "child-detail", element: <ChildDetail /> },
-      { path: "pairing-wizard", element: <PairingWizard /> },
-      { path: "teacher/notice", element: <TeacherNotice /> },
-      // Wave 2 신규 상세/기능 화면
-      { path: "family-connection", element: <FamilyConnection /> },
-      { path: "location-settings", element: <LocationSettings /> },
-      { path: "child/location-status", element: <ChildLocationStatus /> },
-      { path: "child/settings", element: <ChildSettings /> },
-      { path: "account", element: <ParentAccount /> },
-      { path: "data-sync", element: <DataSync /> },
-      { path: "notification-settings", element: <NotificationSettings /> },
-      { path: "arrival-alerts", element: <ArrivalAlerts /> },
-      { path: "danger-alert", element: <DangerAlert /> },
-      { path: "day-summary", element: <DaySummary /> },
-      { path: "daily-report", element: <DailySafetyReport /> },
-      { path: "weekly-report", element: <WeeklyFamilyReport /> },
-      { path: "remote-audio-audit", element: <RemoteAudioAudit /> },
-      { path: "child/ai-friend-setup", element: <AiFriendSetup /> },
-      { path: "remote-ring", element: <RemoteRing /> },
-      { path: "sos-receive", element: <SosReceive /> },
+
+      // 아이 전용 푸시/상세 — 부모·선생님 세션에서 아이 전용 액션을 열지 않는다.
+      {
+        element: <RequireRole role="child" />,
+        children: [
+          { path: "child/sos", element: <ChildSos /> },
+          { path: "child/ai-friend", element: <AiFriendChat /> },
+          { path: "child/location-status", element: <ChildLocationStatus /> },
+          { path: "child/settings", element: <ChildSettings /> },
+          { path: "child/ai-friend-setup", element: <AiFriendSetup /> },
+          { path: "playdate-accept", element: <PlaydateAccept /> },
+        ],
+      },
+
+      // 선생님 전용 푸시/상세 — v1.2.0 프로덕션에서는 위 teacher/* gate가 먼저 막는다.
+      ...(TEACHER_MODE_ENABLED ? [{
+        element: <RequireRole role="teacher" />,
+        children: [
+          { path: "teacher/notice", element: <TeacherNotice /> },
+        ],
+      }] : []),
+
+      // 인증 역할 공용 푸시/상세 — 공개 URL에서 피드백 relay를 열지 않는다.
+      {
+        element: <RequireAuthenticated />,
+        children: [
+          { path: "feedback", element: <Feedback /> },
+        ],
+      },
+
+      // 부모·아이 공용 상세 — 선생님·공개 URL에서 가족 준비물 데이터를 열지 않는다.
+      {
+        element: <RequireAnyRole roles={["parent", "child"]} />,
+        children: [
+          { path: "supplies", element: <Supplies /> },
+        ],
+      },
       // 앱레벨 골격 화면
       { path: "app-update", element: <AppUpdate /> },
       { path: "perm-denied", element: <PermDenied /> },

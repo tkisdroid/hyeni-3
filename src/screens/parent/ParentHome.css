@@ -115,6 +115,81 @@
   background: #7bebb4;
 }
 
+.ph-location-error {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin-top: -4px;
+  padding: 12px 13px;
+  border: 1px solid color-mix(in srgb, var(--gold-600) 30%, var(--line-card));
+  border-radius: 16px;
+  background: var(--cream-soft);
+  color: var(--gold-text);
+}
+
+.ph-location-error span {
+  min-width: 0;
+}
+
+.ph-location-error b,
+.ph-location-error small {
+  display: block;
+  line-height: 1.45;
+}
+
+.ph-location-error b {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.ph-location-error small {
+  margin-top: 2px;
+  color: var(--fg-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.ph-location-error__retry {
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--gold-text);
+  font-size: 12px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.06);
+}
+
+.ph-location-error__retry:disabled {
+  opacity: 0.6;
+}
+
+.ph-location-error__spin {
+  animation: ph-location-error-spin 0.9s linear infinite;
+}
+
+@keyframes ph-location-error-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 380px) {
+  .ph-location-error {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .ph-location-error__retry {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}
+
 /* ── 오늘 일정 ──────────────────────────────────────────────────────────── */
 .ph-sched {
   padding: 8px;
@@ -421,6 +496,18 @@
 .ph-safety {
   padding: 18px;
 }
+.ph-safety__status[data-state="ready"] {
+  color: var(--mint-text);
+  background: var(--mint-soft);
+}
+.ph-safety__status[data-state="attention"] {
+  color: var(--gold-text);
+  background: var(--cream-soft);
+}
+.ph-safety__status[data-state="unknown"] {
+  color: var(--fg-muted);
+  background: var(--bg-press);
+}
 /* 아이 미리포트 시 정직 안내(가짜 숫자 대신) */
 .ph-safety__pending {
   margin-bottom: 14px;
@@ -430,6 +517,45 @@
   font-size: 12.5px;
   font-weight: 600;
   line-height: 1.5;
+  color: var(--fg-muted);
+}
+.ph-safety__notification {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-bottom: 14px;
+  padding: 11px 13px;
+  border: 1px solid var(--line-card);
+  border-radius: 14px;
+  background: var(--bg-press);
+  color: var(--fg-muted);
+}
+.ph-safety__notification[data-state="ready"] {
+  border-color: var(--mint-line);
+  background: var(--mint-soft);
+  color: var(--mint-text);
+}
+.ph-safety__notification[data-state="attention"] {
+  border-color: color-mix(in srgb, var(--gold-600) 30%, var(--line-card));
+  background: var(--cream-soft);
+  color: var(--gold-text);
+}
+.ph-safety__notification > span {
+  min-width: 0;
+}
+.ph-safety__notification b,
+.ph-safety__notification small {
+  display: block;
+  line-height: 1.45;
+}
+.ph-safety__notification b {
+  font-size: 12.5px;
+  font-weight: 800;
+}
+.ph-safety__notification small {
+  margin-top: 2px;
+  font-size: 11.5px;
+  font-weight: 600;
   color: var(--fg-muted);
 }
 /* 최근 사용앱: appUsage 가 없으면 권한 안내, 있으면 이름+오늘 사용시간 표시 */
@@ -802,4 +928,13 @@
   font-weight: 700;
   color: #554c50;
   text-align: center;
+}
+.ph-location-chip {
+  color: var(--gold-text);
+  background: var(--cream-soft);
+}
+
+.ph-location-chip[data-current="true"] {
+  color: var(--mint-text);
+  background: var(--mint-soft);
 }

@@ -5,13 +5,12 @@
  * 3초 홀드해야 한다(오발사 방지). 대화 탭 배지는 아직 안 읽은 부모님 메시지 수.
  */
 import { NavLink, useNavigate } from "react-router-dom";
-import { useMemo } from "react";
 import { asset } from "@/lib/assets";
 import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "@/queries/useFamily";
 import { useMemoThread } from "@/queries/useMemo";
-import { todayDateKey } from "@/transform/dateKey";
 import { unreadParentMemoCount } from "@/transform/childHomeData";
+import { useRecentDateKeys } from "./useRecentDateKeys";
 import "./ChildDock.css";
 
 const TABS = [
@@ -25,8 +24,8 @@ export function ChildDock() {
   const { userId } = useAuth();
   const { data: family } = useMyFamily();
   const myMember = family?.members.find((m) => m.role === "child" && m.user_id === userId) ?? null;
-  const todayKey = useMemo(() => todayDateKey(new Date()), []);
-  const memoThread = useMemoThread(useMemo(() => [todayKey], [todayKey]), myMember?.id ?? null);
+  const dateKeys = useRecentDateKeys(7);
+  const memoThread = useMemoThread(dateKeys, myMember?.id ?? null);
   const unread = unreadParentMemoCount(memoThread.data, userId);
 
   return (

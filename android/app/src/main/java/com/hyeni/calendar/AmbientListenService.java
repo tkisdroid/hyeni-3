@@ -4,8 +4,11 @@ import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.media.AudioFormat;
@@ -35,6 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
+import okhttp3.HttpUrl;
 import okhttp3.Protocol;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -53,7 +57,6 @@ public class AmbientListenService extends Service {
     private static final String TAG = "AmbientListenService";
     private static final String CHANNEL_ID = "ambient_listen_fgs";
     private static final int NOTIF_ID = 1001;
-    private static final int DEFAULT_DURATION_SEC = 60;
 
     public static final String ACTION_START = "com.hyeni.calendar.AMBIENT_LISTEN_START";
     public static final String ACTION_STOP = "com.hyeni.calendar.AMBIENT_LISTEN_STOP";
@@ -65,12 +68,21 @@ public class AmbientListenService extends Service {
     public static final String EXTRA_ACCESS_TOKEN = "accessToken";
     public static final String EXTRA_DURATION_SEC = "durationSec";
     public static final String EXTRA_REQUEST_ID = "requestId";
+    public static final String EXTRA_TARGET_USER_ID = "targetUserId";
+    public static final String EXTRA_CONSENT_TOKEN = "consentToken";
+    public static final String EXTRA_SESSION_NONCE = "sessionNonce";
+    public static final String EXTRA_CAPTURE_EXPIRES_AT_MS = "captureExpiresAtMs";
     private static final String EVENT_DUPLICATE_START = "duplicate_start";
     private static final Object SESSION_LOCK = new Object();
     private static String activeRequestId = "";
+    private static String activeTargetUserId = "";
+    private static String activeSessionNonce = "";
 
     private static final int SAMPLE_RATE = 16_000;
     private static final int CHUNK_MS = 1_000;
+    private static final int MAX_AUDIO_UPLOAD_ATTEMPTS = 2;
+    private static final long AUDIO_UPLOAD_RETRY_DELAY_MS = 250L;
+    private static final String PREFS_NAME = "hyeni_location_prefs";
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
     private static final OkHttpClient HTTP = new OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
@@ -78,11 +90,22 @@ public class AmbientListenService extends Service {
         .writeTimeout(10, TimeUnit.SECONDS)
         .protocols(Collections.singletonList(Protocol.HTTP_1_1))
         .build();
+    private static final OkHttpClient STATUS_HTTP = new OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(10, TimeUnit.SECONDS)
+        .writeTimeout(10, TimeUnit.SECONDS)
+        .callTimeout(12, TimeUnit.SECONDS)
+        .protocols(Collections.singletonList(Protocol.HTTP_1_1))
+        .build();
+    private static final ExecutorService STATUS_EXECUTOR = Executors.newSingleThreadExecutor();
 
     private final AtomicBoolean recording = new AtomicBoolean(false);
+    private final AtomicBoolean uploadFailureReported = new AtomicBoolean(false);
+    private final AtomicBoolean serverEndReported = new AtomicBoolean(false);
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private ExecutorService uploadExecutor;
     private Thread captureThread;
+    private volatile AudioRecord activeRecorder;
     private PowerManager.WakeLock wakeLock;
     private int sequenceNumber = 0;
 
@@ -91,9 +114,28 @@ public class AmbientListenService extends Service {
     private String initiatorUserId;
     private String supabaseUrl;
     private String supabaseKey;
-    private String accessToken;
+    private volatile String accessToken;
     private String requestId;
+    private String targetUserId;
+    private String consentToken;
+    private String sessionNonce;
     private int durationSec;
+    private long captureExpiresAtMs;
+    private volatile String terminalReason = "";
+
+    private static final class BroadcastResult {
+        final boolean success;
+        final int statusCode;
+
+        BroadcastResult(boolean success, int statusCode) {
+            this.success = success;
+            this.statusCode = statusCode;
+        }
+
+        boolean retryable() {
+            return statusCode == 0 || statusCode == 429 || statusCode >= 500;
+        }
+    }
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -103,78 +145,98 @@ public class AmbientListenService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null && ACTION_STOP.equals(intent.getAction())) {
-            stopCapture("stop_requested");
-            stopSelf();
+            String stopRequestId = clean(intent.getStringExtra(EXTRA_REQUEST_ID));
+            String stopTargetUserId = clean(intent.getStringExtra(EXTRA_TARGET_USER_ID));
+            String stopSessionNonce = clean(intent.getStringExtra(EXTRA_SESSION_NONCE));
+            if (matchesActiveSession(stopRequestId, stopTargetUserId, stopSessionNonce)) {
+                stopCapture("stop_requested");
+                stopSelf();
+            } else {
+                Log.w(TAG, "Ignoring remote listen stop for a different session");
+            }
+            return START_NOT_STICKY;
+        }
+
+        String incomingRequestId = clean(
+            intent != null ? intent.getStringExtra(EXTRA_REQUEST_ID) : ""
+        );
+        synchronized (SESSION_LOCK) {
+            if (!activeRequestId.isEmpty()) {
+                Log.i(TAG, EVENT_DUPLICATE_START + " ignored for requestId=" + incomingRequestId);
+                if (!activeRequestId.equals(incomingRequestId)) {
+                    RemoteListenRequestStore.markFinished(
+                        this,
+                        incomingRequestId,
+                        "capture_already_active"
+                    );
+                }
+                return START_NOT_STICKY;
+            }
+        }
+
+        configure(intent);
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        SessionTokenStore.ContextSnapshot current = SessionTokenStore.readContext(prefs);
+        String currentSessionNonce = clean(prefs.getString("sessionNonce", ""));
+        applyCurrentCredentials(current);
+
+        if (!hasRecordAudioPermission() || !hasRequiredConfig()) {
+            rejectStart("permission_or_config_missing");
+            return START_NOT_STICKY;
+        }
+        if (!"child".equalsIgnoreCase(current.role)
+                || !childUserId.equals(targetUserId)
+                || !RemoteListenRequestPolicy.matchesContext(
+                    familyId,
+                    targetUserId,
+                    sessionNonce,
+                    current.familyId,
+                    current.userId,
+                    currentSessionNonce)) {
+            rejectStart("session_context_mismatch");
+            return START_NOT_STICKY;
+        }
+        if (!RemoteListenRequestStore.consumeAcceptance(
+                this,
+                requestId,
+                consentToken,
+                current.familyId,
+                current.userId,
+                currentSessionNonce,
+                captureExpiresAtMs,
+                System.currentTimeMillis())) {
+            rejectStart("consent_missing_or_expired");
+            return START_NOT_STICKY;
+        }
+        if (!reserveActiveSession()) {
+            rejectStart("duplicate_start");
             return START_NOT_STICKY;
         }
 
         createChannel();
-        Notification notification = buildOngoingNotification();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            // Android 14+ silently mutes mic capture when FGS type is anything
-            // other than MICROPHONE (peak16=0 with SPECIAL_USE confirmed via
-            // parent-device logs). Always try MICROPHONE first.
-            //
-            // The SPECIAL_USE fallback below is *normally unreachable*: with the
-            // 2026-05-08 fix this service is started exclusively from
-            // RemoteListenActivity.onCreate (foreground context), so
-            // startForeground(TYPE_MICROPHONE) will not throw
-            // ForegroundServiceStartNotAllowed. The fallback is retained as a
-            // belt-and-suspenders safeguard for OEMs that may still defer the
-            // activity launch on a closed cover display before its onCreate
-            // runs the foreground promotion. In that fallback path mic data is
-            // muted by the OS, so we stopSelf immediately — surfacing a clean
-            // failure rather than streaming silence that looks like success.
-            boolean micTypeStarted = false;
-            try {
+        try {
+            Notification notification = buildOngoingNotification();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 startForeground(
                     NOTIF_ID,
                     notification,
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
                 );
-                micTypeStarted = true;
-                Log.i(TAG, "Started FGS with TYPE_MICROPHONE");
-            } catch (Exception micError) {
-                Log.w(TAG, "FGS TYPE_MICROPHONE denied (likely cover-display path), falling back to SPECIAL_USE", micError);
-                try {
-                    startForeground(
-                        NOTIF_ID,
-                        notification,
-                        ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-                    );
-                } catch (Exception specError) {
-                    Log.e(TAG, "All FGS types denied; stopping ambient listen", specError);
-                    stopSelf();
-                    return START_NOT_STICKY;
-                }
+            } else {
+                startForeground(NOTIF_ID, notification);
             }
-            if (!micTypeStarted) {
-                Log.w(TAG, "Microphone foreground-service type denied; stopping ambient listen");
-                Log.w(TAG, "FGS started in SPECIAL_USE mode — mic capture will be silent on Android 14+. Stopping early.");
-                removeForegroundNotification();
-                stopSelf();
-                return START_NOT_STICKY;
-            }
-        } else {
-            startForeground(NOTIF_ID, notification);
-        }
-
-        configure(intent);
-        if (!hasRecordAudioPermission()) {
-            Log.w(TAG, "RECORD_AUDIO permission missing; ambient listen stopped");
+            startCapture();
+            return START_NOT_STICKY;
+        } catch (RuntimeException error) {
+            Log.e(TAG, "Consent-based microphone foreground service start failed", error);
+            terminalReason = "audio_upload_failed";
+            reportSessionEndBestEffort(terminalReason, false);
+            RemoteListenRequestStore.markFinished(this, requestId, terminalReason);
+            clearActiveRequest();
             removeForegroundNotification();
             stopSelf();
             return START_NOT_STICKY;
         }
-        if (!hasRequiredConfig()) {
-            Log.w(TAG, "Ambient listen config missing; ambient listen stopped");
-            removeForegroundNotification();
-            stopSelf();
-            return START_NOT_STICKY;
-        }
-
-        startCaptureIfNeeded();
-        return START_REDELIVER_INTENT;
     }
 
     @Override
@@ -185,30 +247,51 @@ public class AmbientListenService extends Service {
     }
 
     private void configure(Intent intent) {
-        familyId = readExtraOrPrefs(intent, EXTRA_FAMILY_ID, "familyId");
-        childUserId = readExtraOrPrefs(intent, EXTRA_USER_ID, "userId");
-        initiatorUserId = readExtraOrPrefs(intent, EXTRA_INITIATOR_USER_ID, "");
-        supabaseUrl = readExtraOrPrefs(intent, EXTRA_SUPABASE_URL, "supabaseUrl");
-        supabaseKey = readExtraOrPrefs(intent, EXTRA_SUPABASE_KEY, "supabaseKey");
-        accessToken = readExtraOrPrefs(intent, EXTRA_ACCESS_TOKEN, "accessToken");
-        requestId = intent != null ? intent.getStringExtra(EXTRA_REQUEST_ID) : "";
-        durationSec = intent != null ? intent.getIntExtra(EXTRA_DURATION_SEC, DEFAULT_DURATION_SEC) : DEFAULT_DURATION_SEC;
-        if (durationSec < 5) durationSec = DEFAULT_DURATION_SEC;
-        if (durationSec > 120) durationSec = 120;
+        uploadFailureReported.set(false);
+        serverEndReported.set(false);
+        terminalReason = "";
+        familyId = readExtra(intent, EXTRA_FAMILY_ID);
+        childUserId = readExtra(intent, EXTRA_USER_ID);
+        targetUserId = readExtra(intent, EXTRA_TARGET_USER_ID);
+        initiatorUserId = readExtra(intent, EXTRA_INITIATOR_USER_ID);
+        requestId = readExtra(intent, EXTRA_REQUEST_ID);
+        consentToken = readExtra(intent, EXTRA_CONSENT_TOKEN);
+        sessionNonce = readExtra(intent, EXTRA_SESSION_NONCE);
+        int requestedDuration = intent != null
+            ? intent.getIntExtra(
+                EXTRA_DURATION_SEC,
+                RemoteListenRequestPolicy.DEFAULT_DURATION_SEC
+            )
+            : RemoteListenRequestPolicy.DEFAULT_DURATION_SEC;
+        durationSec = RemoteListenRequestPolicy.normalizeDurationSec(requestedDuration);
+        captureExpiresAtMs = intent != null
+            ? intent.getLongExtra(EXTRA_CAPTURE_EXPIRES_AT_MS, 0L)
+            : 0L;
     }
 
-    private String readExtraOrPrefs(Intent intent, String extraKey, String prefKey) {
-        String value = intent != null ? intent.getStringExtra(extraKey) : null;
-        if (notBlank(value)) return value.trim();
-        if (!notBlank(prefKey)) return "";
-        return getSharedPreferences("hyeni_location_prefs", MODE_PRIVATE).getString(prefKey, "");
+    private void applyCurrentCredentials(SessionTokenStore.ContextSnapshot current) {
+        supabaseUrl = clean(current.supabaseUrl);
+        supabaseKey = clean(current.supabaseKey);
+        accessToken = clean(current.accessToken);
+    }
+
+    private String readExtra(Intent intent, String extraKey) {
+        return clean(intent != null ? intent.getStringExtra(extraKey) : "");
     }
 
     private boolean hasRequiredConfig() {
         return notBlank(familyId)
             && notBlank(childUserId)
+            && notBlank(targetUserId)
+            && notBlank(requestId)
+            && notBlank(consentToken)
+            && notBlank(accessToken)
             && notBlank(supabaseUrl)
-            && notBlank(supabaseKey);
+            && notBlank(supabaseKey)
+            && RemoteListenConsentClient.captureDeadlineMs(
+                System.currentTimeMillis(),
+                captureExpiresAtMs
+            ) > 0L;
     }
 
     private boolean hasRecordAudioPermission() {
@@ -216,29 +299,30 @@ public class AmbientListenService extends Service {
             == PackageManager.PERMISSION_GRANTED;
     }
 
-    private boolean notBlank(String value) {
+    private static boolean notBlank(String value) {
         return value != null && !value.trim().isEmpty();
     }
 
-    private void startCaptureIfNeeded() {
-        String nextRequestId = notBlank(requestId) ? requestId.trim() : "legacy-" + System.currentTimeMillis();
-        synchronized (SESSION_LOCK) {
-            if (recording.get()) {
-                if (nextRequestId.equals(activeRequestId)) {
-                    Log.i(TAG, EVENT_DUPLICATE_START + " ignored for requestId=" + nextRequestId);
-                } else {
-                    Log.i(TAG, "Ambient listen already running; " + EVENT_DUPLICATE_START + " ignored for requestId=" + nextRequestId);
-                }
-                requestId = activeRequestId;
-                return;
-            }
-            activeRequestId = nextRequestId;
-            requestId = nextRequestId;
-        }
+    private static String clean(String value) {
+        return value == null ? "" : value.trim();
+    }
 
+    private boolean reserveActiveSession() {
+        synchronized (SESSION_LOCK) {
+            if (!activeRequestId.isEmpty()) return false;
+            activeRequestId = requestId;
+            activeTargetUserId = targetUserId;
+            activeSessionNonce = sessionNonce;
+            return true;
+        }
+    }
+
+    private void startCapture() {
         if (!recording.compareAndSet(false, true)) {
-            Log.i(TAG, "Ambient listen capture already running");
+            RemoteListenRequestStore.markFinished(this, requestId, "capture_already_running");
             clearActiveRequest();
+            removeForegroundNotification();
+            stopSelf();
             return;
         }
 
@@ -259,14 +343,25 @@ public class AmbientListenService extends Service {
             Log.e(TAG, "Invalid AudioRecord min buffer: " + minBuffer);
             recording.set(false);
             releaseWakeLock();
-            shutdownUploader();
+            shutdownUploader(false);
+            terminalReason = "audio_upload_failed";
+            reportSessionEndBestEffort(terminalReason, false);
+            RemoteListenRequestStore.markFinished(this, requestId, terminalReason);
             clearActiveRequest();
             finishServiceAfterCapture();
             return;
         }
 
         AudioRecord recorder = null;
+        String completionReason = "timeout";
         try {
+            long stopAt = RemoteListenConsentClient.captureDeadlineMs(
+                System.currentTimeMillis(), captureExpiresAtMs
+            );
+            if (stopAt <= 0L) {
+                Log.w(TAG, "Server consent capture window expired before microphone start");
+                return;
+            }
             recorder = new AudioRecord(
                 MediaRecorder.AudioSource.MIC,
                 SAMPLE_RATE,
@@ -277,13 +372,14 @@ public class AmbientListenService extends Service {
 
             if (recorder.getState() != AudioRecord.STATE_INITIALIZED) {
                 Log.e(TAG, "AudioRecord failed to initialize");
+                completionReason = "audio_upload_failed";
                 return;
             }
 
+            activeRecorder = recorder;
             recorder.startRecording();
             Log.i(TAG, "Native ambient audio capture started");
 
-            long stopAt = System.currentTimeMillis() + durationSec * 1000L;
             int samplesPerChunk = SAMPLE_RATE * CHUNK_MS / 1000;
             short[] readBuffer = new short[Math.max(1024, minBuffer / 2)];
 
@@ -317,10 +413,13 @@ public class AmbientListenService extends Service {
             }
         } catch (SecurityException error) {
             Log.e(TAG, "Audio capture permission denied", error);
+            completionReason = "audio_upload_failed";
         } catch (Exception error) {
             Log.e(TAG, "Ambient audio capture failed", error);
+            completionReason = "audio_upload_failed";
         } finally {
             recording.set(false);
+            if (activeRecorder == recorder) activeRecorder = null;
             if (recorder != null) {
                 try {
                     if (recorder.getRecordingState() == AudioRecord.RECORDSTATE_RECORDING) {
@@ -332,7 +431,11 @@ public class AmbientListenService extends Service {
                 recorder.release();
             }
             releaseWakeLock();
-            shutdownUploader();
+            if (terminalReason.isEmpty()) terminalReason = completionReason;
+            String resolvedReason = normalizeServerEndReason(terminalReason);
+            reportSessionEndBestEffort(resolvedReason, true);
+            shutdownUploader(false);
+            RemoteListenRequestStore.markFinished(this, requestId, resolvedReason);
             clearActiveRequest();
             Log.i(TAG, "Ambient audio capture finished requestId=" + requestId + " chunks=" + sequenceNumber);
             finishServiceAfterCapture();
@@ -343,8 +446,67 @@ public class AmbientListenService extends Service {
         synchronized (SESSION_LOCK) {
             if (!notBlank(requestId) || requestId.equals(activeRequestId)) {
                 activeRequestId = "";
+                activeTargetUserId = "";
+                activeSessionNonce = "";
             }
         }
+    }
+
+    static boolean matchesActiveSession(
+            String stopRequestId,
+            String stopTargetUserId,
+            String stopSessionNonce
+    ) {
+        synchronized (SESSION_LOCK) {
+            return RemoteListenRequestPolicy.matchesStop(
+                activeRequestId,
+                stopRequestId,
+                activeTargetUserId,
+                stopTargetUserId,
+                activeSessionNonce,
+                stopSessionNonce
+            );
+        }
+    }
+
+    static boolean hasActiveSession() {
+        synchronized (SESSION_LOCK) {
+            return !activeRequestId.isEmpty();
+        }
+    }
+
+    static void stopForRetiringSession(Context context, String retiringSessionNonce) {
+        if (context == null) return;
+        String request;
+        String target;
+        String nonce;
+        synchronized (SESSION_LOCK) {
+            nonce = clean(retiringSessionNonce);
+            if (activeRequestId.isEmpty()
+                    || nonce.isEmpty()
+                    || !nonce.equals(activeSessionNonce)) {
+                return;
+            }
+            request = activeRequestId;
+            target = activeTargetUserId;
+        }
+        Intent stopIntent = new Intent(context, AmbientListenService.class);
+        stopIntent.setAction(ACTION_STOP);
+        stopIntent.putExtra(EXTRA_REQUEST_ID, request);
+        stopIntent.putExtra(EXTRA_TARGET_USER_ID, target);
+        stopIntent.putExtra(EXTRA_SESSION_NONCE, nonce);
+        try {
+            context.startService(stopIntent);
+        } catch (RuntimeException error) {
+            Log.w(TAG, "Retiring session remote listen stop dispatch failed", error);
+        }
+    }
+
+    private void rejectStart(String reason) {
+        Log.w(TAG, "Remote listen start rejected: " + reason);
+        RemoteListenRequestStore.markFinished(this, requestId, reason);
+        removeForegroundNotification();
+        stopSelf();
     }
 
     private void writePcm16Le(ByteArrayOutputStream out, short[] samples, int count) {
@@ -433,50 +595,276 @@ public class AmbientListenService extends Service {
             JSONObject body = new JSONObject()
                 .put("messages", new JSONArray().put(message));
 
-            boolean shouldFallbackToAnon = notBlank(accessToken) && !accessToken.equals(supabaseKey);
-            String primaryToken = shouldFallbackToAnon ? accessToken : supabaseKey;
-            boolean sent = postBroadcast(body, primaryToken, !shouldFallbackToAnon);
-            if (!sent && shouldFallbackToAnon) {
-                sent = postBroadcast(body, supabaseKey, true);
+            if (!notBlank(accessToken)) {
+                Log.w(TAG, "Realtime audio chunk skipped: access JWT missing");
+                return;
             }
-            if (sent) {
+            BroadcastResult result = postBroadcastWithRetry(body);
+            if (result.success) {
                 Log.i(TAG, "Realtime audio chunk sent seq=" + seq + " requestId=" + requestId);
+                return;
             }
+            String reason = result.statusCode == 401
+                ? "audio_auth_failed"
+                : System.currentTimeMillis() >= captureExpiresAtMs
+                    ? "timeout"
+                    : "audio_upload_failed";
+            reportCaptureFailure(reason);
         } catch (Exception error) {
             Log.e(TAG, "Failed to post ambient audio chunk", error);
+            reportCaptureFailure("audio_upload_failed");
         }
     }
 
-    private boolean postBroadcast(JSONObject body, String bearerToken, boolean logFailure) throws IOException {
-        String token = notBlank(bearerToken) ? bearerToken : supabaseKey;
+    private BroadcastResult postBroadcastWithRetry(JSONObject body) {
+        BroadcastResult last = new BroadcastResult(false, 0);
+        for (int attempt = 0; attempt < MAX_AUDIO_UPLOAD_ATTEMPTS; attempt++) {
+            last = postBroadcast(body, accessToken);
+            if (last.success) return last;
+
+            if (last.statusCode == 401) {
+                String renewed = refreshCurrentAccessToken(accessToken);
+                if (notBlank(renewed)) {
+                    accessToken = renewed;
+                } else {
+                    return last;
+                }
+            } else if (!last.retryable()) {
+                return last;
+            }
+
+            if (attempt + 1 < MAX_AUDIO_UPLOAD_ATTEMPTS) {
+                try {
+                    Thread.sleep(AUDIO_UPLOAD_RETRY_DELAY_MS);
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    return last;
+                }
+            }
+        }
+        return last;
+    }
+
+    private BroadcastResult postBroadcast(JSONObject body, String bearerToken) {
+        if (!notBlank(bearerToken)) return new BroadcastResult(false, 401);
         Request request = new Request.Builder()
             .url(supabaseUrl.replaceAll("/+$", "") + "/realtime/v1/api/broadcast")
             .header("apikey", supabaseKey)
-            .header("Authorization", "Bearer " + token)
+            .header("Authorization", "Bearer " + bearerToken)
             .header("Content-Type", "application/json")
             .post(RequestBody.create(body.toString(), JSON))
             .build();
 
         try (Response response = HTTP.newCall(request).execute()) {
-            if (response.isSuccessful()) return true;
+            if (response.isSuccessful()) return new BroadcastResult(true, response.code());
             String errorBody = response.body() != null ? response.body().string() : "";
-            if (logFailure) {
-                Log.w(TAG, "Realtime broadcast failed: " + response.code() + " / " + errorBody);
-            }
-            return false;
+            Log.w(TAG, "Realtime broadcast failed: " + response.code() + " / " + errorBody);
+            return new BroadcastResult(false, response.code());
+        } catch (IOException error) {
+            Log.w(TAG, "Realtime broadcast transport failed", error);
+            return new BroadcastResult(false, 0);
         }
     }
 
+    private String refreshCurrentAccessToken(String failedToken) {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        SessionTokenStore.ContextSnapshot current = SessionTokenStore.readContext(prefs);
+        String currentNonce = clean(prefs.getString("sessionNonce", ""));
+        if (!RemoteListenRequestPolicy.matchesContext(
+                familyId,
+                childUserId,
+                sessionNonce,
+                current.familyId,
+                current.userId,
+                currentNonce)) {
+            return null;
+        }
+        return RemoteListenConsentClient.refreshAccessToken(
+            prefs,
+            current,
+            currentNonce,
+            failedToken
+        );
+    }
+
+    private void reportCaptureFailure(String reason) {
+        String resolvedReason = normalizeServerEndReason(reason);
+        if (!uploadFailureReported.compareAndSet(false, true)) return;
+        terminalReason = resolvedReason;
+        Log.w(TAG, "Stopping remote listen after audio delivery failure: " + resolvedReason);
+        reportSessionEndBestEffort(resolvedReason, false);
+        mainHandler.post(() -> {
+            stopCapture(resolvedReason);
+            stopSelf();
+        });
+    }
+
+    private void reportSessionEndBestEffort(String reason, boolean afterPendingUploads) {
+        final String resolvedReason = normalizeServerEndReason(reason);
+        final String reportRequestId = clean(requestId);
+        final String reportFamilyId = clean(familyId);
+        final String reportChildUserId = clean(childUserId);
+        final String reportSessionNonce = clean(sessionNonce);
+        final String reportBaseUrl = clean(supabaseUrl);
+        if (reportRequestId.isEmpty()
+                || reportFamilyId.isEmpty()
+                || reportChildUserId.isEmpty()
+                || reportSessionNonce.isEmpty()
+                || reportBaseUrl.isEmpty()
+                || !serverEndReported.compareAndSet(false, true)) {
+            return;
+        }
+
+        Runnable report = () -> reportSessionEnd(
+            reportBaseUrl,
+            reportRequestId,
+            reportFamilyId,
+            reportChildUserId,
+            reportSessionNonce,
+            resolvedReason
+        );
+        ExecutorService currentUploader = uploadExecutor;
+        if (afterPendingUploads && currentUploader != null && !currentUploader.isShutdown()) {
+            try {
+                currentUploader.execute(report);
+                return;
+            } catch (RuntimeException error) {
+                Log.w(TAG, "Could not queue remote listen end after audio uploads", error);
+            }
+        }
+        STATUS_EXECUTOR.execute(report);
+    }
+
+    private void reportSessionEnd(
+            String backendUrl,
+            String endingRequestId,
+            String endingFamilyId,
+            String endingChildUserId,
+            String endingSessionNonce,
+            String reason
+    ) {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        SessionTokenStore.ContextSnapshot expected = SessionTokenStore.readContext(prefs);
+        String expectedNonce = clean(prefs.getString("sessionNonce", ""));
+        if (!RemoteListenRequestPolicy.matchesContext(
+                endingFamilyId,
+                endingChildUserId,
+                endingSessionNonce,
+                expected.familyId,
+                expected.userId,
+                expectedNonce)) {
+            Log.w(TAG, "Skipped remote listen end report after session changed");
+            return;
+        }
+
+        String bearer = expected.accessToken;
+        BroadcastResult last = new BroadcastResult(false, 0);
+        for (int attempt = 0; attempt < MAX_AUDIO_UPLOAD_ATTEMPTS; attempt++) {
+            last = patchSessionEnd(backendUrl, endingRequestId, reason, bearer);
+            if (last.success) {
+                Log.i(TAG, "Remote listen end reported: " + reason);
+                return;
+            }
+            if (last.statusCode == 401) {
+                String refreshed = RemoteListenConsentClient.refreshAccessToken(
+                    prefs,
+                    expected,
+                    expectedNonce,
+                    bearer
+                );
+                if (!notBlank(refreshed)) break;
+                bearer = refreshed;
+                accessToken = refreshed;
+            } else if (!last.retryable()) {
+                break;
+            }
+            if (attempt + 1 < MAX_AUDIO_UPLOAD_ATTEMPTS) {
+                try {
+                    Thread.sleep(AUDIO_UPLOAD_RETRY_DELAY_MS);
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }
+        Log.w(TAG, "Remote listen end report failed: HTTP " + last.statusCode);
+    }
+
+    private BroadcastResult patchSessionEnd(
+            String backendUrl,
+            String endingRequestId,
+            String reason,
+            String bearer
+    ) {
+        if (!notBlank(bearer)) return new BroadcastResult(false, 401);
+        final HttpUrl endpoint;
+        try {
+            endpoint = HttpUrl.get(backendUrl).newBuilder()
+                .addPathSegments("api/remote-listen/sessions")
+                .addPathSegment(endingRequestId)
+                .build();
+        } catch (IllegalArgumentException error) {
+            return new BroadcastResult(false, 0);
+        }
+        JSONObject body = new JSONObject();
+        try {
+            body.put("end_reason", reason);
+        } catch (Exception error) {
+            return new BroadcastResult(false, 0);
+        }
+        Request request = new Request.Builder()
+            .url(endpoint)
+            .header("Authorization", "Bearer " + bearer)
+            .header("Content-Type", "application/json")
+            .patch(RequestBody.create(body.toString(), JSON))
+            .build();
+        try (Response response = STATUS_HTTP.newCall(request).execute()) {
+            return new BroadcastResult(response.isSuccessful(), response.code());
+        } catch (IOException error) {
+            Log.w(TAG, "Remote listen end report transport failed", error);
+            return new BroadcastResult(false, 0);
+        }
+    }
+
+    private String normalizeServerEndReason(String reason) {
+        String value = clean(reason);
+        if ("timeout".equals(value)
+                || "request_timeout".equals(value)
+                || "user_stop".equals(value)
+                || "audio_auth_failed".equals(value)
+                || "audio_upload_failed".equals(value)) {
+            return value;
+        }
+        if ("stop_requested".equals(value)) return "user_stop";
+        return "audio_upload_failed";
+    }
+
     private void stopCapture(String reason) {
+        String resolvedReason = normalizeServerEndReason(reason);
+        if (terminalReason.isEmpty()) terminalReason = resolvedReason;
         if (recording.getAndSet(false)) {
-            Log.i(TAG, "Stopping ambient audio capture: " + reason);
+            Log.i(TAG, "Stopping ambient audio capture: " + resolvedReason);
+        }
+        AudioRecord recorder = activeRecorder;
+        activeRecorder = null;
+        if (recorder != null) {
+            try {
+                if (recorder.getRecordingState() == AudioRecord.RECORDSTATE_RECORDING) {
+                    recorder.stop();
+                }
+            } catch (RuntimeException error) {
+                Log.w(TAG, "Active recorder stop failed", error);
+            }
         }
         if (captureThread != null) {
             captureThread.interrupt();
             captureThread = null;
         }
+        HTTP.dispatcher().cancelAll();
         releaseWakeLock();
-        shutdownUploader();
+        shutdownUploader(true);
+        reportSessionEndBestEffort(terminalReason, false);
+        RemoteListenRequestStore.markFinished(this, requestId, terminalReason);
         removeForegroundNotification();
         clearActiveRequest();
     }
@@ -534,18 +922,30 @@ public class AmbientListenService extends Service {
         wakeLock = null;
     }
 
-    private void shutdownUploader() {
+    private void shutdownUploader(boolean immediate) {
         ExecutorService executor = uploadExecutor;
         uploadExecutor = null;
         if (executor != null) {
-            executor.shutdown();
+            if (immediate) executor.shutdownNow();
+            else executor.shutdown();
         }
     }
 
     private Notification buildOngoingNotification() {
+        Intent stopIntent = new Intent(this, AmbientListenService.class);
+        stopIntent.setAction(ACTION_STOP);
+        stopIntent.putExtra(EXTRA_REQUEST_ID, requestId);
+        stopIntent.putExtra(EXTRA_TARGET_USER_ID, targetUserId);
+        stopIntent.putExtra(EXTRA_SESSION_NONCE, sessionNonce);
+        PendingIntent stopPendingIntent = PendingIntent.getService(
+            this,
+            NotificationHelper.stableRequestCode("remote_listen_stop:" + requestId),
+            stopIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
         return new NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("\uC8FC\uBCC0 \uC18C\uB9AC \uC5F0\uACB0 \uC911")
-            .setContentText("\uBD80\uBAA8\uB2D8\uACFC \uC5F0\uACB0\uB41C \uC8FC\uBCC0 \uC18C\uB9AC \uB4E3\uAE30 \uC138\uC158\uC774 \uC2E4\uD589 \uC911\uC785\uB2C8\uB2E4")
+            .setContentTitle("주변 소리를 보호자에게 공유 중")
+            .setContentText("최대 1분 동안 공유돼. 언제든 바로 멈출 수 있어.")
             .setSmallIcon(R.drawable.ic_hyeni_notification)
             .setLargeIcon(NotificationHelper.largeIcon(this))
             .setColor(ContextCompat.getColor(this, R.color.notification_accent))
@@ -553,6 +953,7 @@ public class AmbientListenService extends Service {
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .addAction(0, "공유 중지", stopPendingIntent)
             .build();
     }
 
@@ -562,10 +963,10 @@ public class AmbientListenService extends Service {
             if (nm == null) return;
             NotificationChannel channel = new NotificationChannel(
                 CHANNEL_ID,
-                "\uC8FC\uBCC0 \uC18C\uB9AC \uC138\uC158",
+                "주변 소리 공유 상태",
                 NotificationManager.IMPORTANCE_LOW
             );
-            channel.setDescription("\uC8FC\uBCC0 \uC18C\uB9AC \uB4E3\uAE30 \uC138\uC158\uC774 \uD65C\uC131\uD654\uB41C \uB3D9\uC548 \uD45C\uC2DC\uB429\uB2C8\uB2E4");
+            channel.setDescription("아이가 직접 허용한 주변 소리 공유가 진행되는 동안 표시됩니다.");
             channel.setShowBadge(false);
             nm.createNotificationChannel(channel);
         }

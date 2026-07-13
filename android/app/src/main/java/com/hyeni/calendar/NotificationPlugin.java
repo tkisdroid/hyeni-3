@@ -2,7 +2,6 @@ package com.hyeni.calendar;
 
 import android.Manifest;
 import android.app.ActivityManager;
-import android.app.AlarmManager;
 import android.app.KeyguardManager;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -18,9 +17,9 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.PowerManager;
 import android.provider.Settings;
+import android.util.Log;
 
 import androidx.core.app.ActivityCompat;
-import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
 import com.getcapacitor.JSArray;
@@ -41,7 +40,6 @@ public class NotificationPlugin extends Plugin {
     // 기존 "hyeni_remote_listen_v2" 는 실제 게시 채널(v5_silent_cover)과 불일치해
     // delivery health 진단이 항상 잘못된 채널을 조회하던 버그였다.
     private static final String REMOTE_LISTEN_CHANNEL_ID = NotificationHelper.CHANNEL_REMOTE_LISTEN;
-
     private final AtomicInteger notifId = new AtomicInteger(1000);
 
     @Override
@@ -61,7 +59,7 @@ public class NotificationPlugin extends Plugin {
                 ? NotificationHelper.stableRequestCode(stableId)
                 : notifId.incrementAndGet();
 
-        NotificationHelper.showNotification(
+        NotificationHelper.DeliveryReceipt receipt = NotificationHelper.showNotification(
                 getContext(),
                 title,
                 body,
@@ -71,7 +69,10 @@ public class NotificationPlugin extends Plugin {
                 notificationId
         );
 
-        call.resolve(new JSObject().put("success", true));
+        call.resolve(new JSObject()
+                .put("success", receipt.shouldAcknowledge())
+                .put("displayed", receipt.wasPostedNow())
+                .put("deliveryStatus", receipt.getStatus().name()));
     }
 
     static boolean shouldPendingUseFullScreen(boolean urgent) {
@@ -79,7 +80,11 @@ public class NotificationPlugin extends Plugin {
     }
 
     static String pendingNotificationChannel(boolean urgent) {
-        return urgent ? "emergency" : "schedule";
+        return NotificationChannelPolicy.channelFor("schedule", "", urgent);
+    }
+
+    static String pendingNotificationChannel(String type, String alertType, boolean urgent) {
+        return NotificationChannelPolicy.channelFor(type, alertType, urgent);
     }
 
     /**
@@ -102,12 +107,7 @@ public class NotificationPlugin extends Plugin {
             call.resolve(pendingDisplayResult(false, true));
             return;
         }
-        if (!canPostPendingNotification(context)) {
-            call.resolve(pendingDisplayResult(false, false));
-            return;
-        }
-
-        // 권한 확인 사이에 FCM이 먼저 표시됐을 수 있으므로 게시 직전에 한 번 더 확인한다.
+        // 최초 확인 뒤 FCM이 먼저 표시됐을 수 있으므로 게시 직전에 한 번 더 확인한다.
         if (PolledNotificationStore.isAcked(context, stableId)) {
             call.resolve(pendingDisplayResult(false, true));
             return;
@@ -117,30 +117,29 @@ public class NotificationPlugin extends Plugin {
         boolean fullScreen = shouldPendingUseFullScreen(urgent);
         String title = call.getString("title", "혜니캘린더");
         String body = call.getString("body", "");
-        NotificationHelper.showNotification(
+        String route = call.getString("route", null);
+        String type = call.getString("type", "schedule");
+        String alertType = call.getString("alertType", call.getString("alert_type", ""));
+        NotificationHelper.DeliveryReceipt receipt = NotificationHelper.showNotification(
                 context,
                 title,
                 body,
-                pendingNotificationChannel(urgent),
+                pendingNotificationChannel(type, alertType, urgent),
                 fullScreen,
                 fullScreen,
-                NotificationHelper.stableRequestCode(stableId)
+                NotificationHelper.stableRequestCode(stableId),
+                route
         );
-        PolledNotificationStore.markAck(context, stableId);
-        call.resolve(pendingDisplayResult(true, true));
+        if (receipt.shouldAcknowledge()) {
+            PolledNotificationStore.markAck(context, stableId);
+        }
+        call.resolve(pendingDisplayResult(receipt.wasPostedNow(), receipt.shouldAcknowledge()));
     }
 
     private static JSObject pendingDisplayResult(boolean displayed, boolean acknowledged) {
         return new JSObject()
                 .put("displayed", displayed)
                 .put("acknowledged", acknowledged);
-    }
-
-    private boolean canPostPendingNotification(Context context) {
-        if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) return false;
-        return Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
-                || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
-                    == PackageManager.PERMISSION_GRANTED;
     }
 
     @PluginMethod()
@@ -167,13 +166,13 @@ public class NotificationPlugin extends Plugin {
                 .getSystemService(Context.NOTIFICATION_SERVICE);
         PowerManager pm = (PowerManager) ctx.getSystemService(Context.POWER_SERVICE);
         ActivityManager activityManager = (ActivityManager) ctx.getSystemService(Context.ACTIVITY_SERVICE);
-        AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
         AudioManager audio = (AudioManager) ctx.getSystemService(Context.AUDIO_SERVICE);
         KeyguardManager keyguard = (KeyguardManager) ctx.getSystemService(Context.KEYGUARD_SERVICE);
         ConnectivityHealth connectivity = readConnectivity(ctx);
         Configuration config = ctx.getResources().getConfiguration();
 
-        boolean notificationsEnabled = nm == null || nm.areNotificationsEnabled();
+        boolean notificationsEnabled = nm != null
+                && nm.areNotificationsEnabled();
         boolean postPermissionGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
                 || ContextCompat.checkSelfPermission(ctx, android.Manifest.permission.POST_NOTIFICATIONS)
                 == PackageManager.PERMISSION_GRANTED;
@@ -186,12 +185,9 @@ public class NotificationPlugin extends Plugin {
         boolean backgroundRestricted = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
                 && activityManager != null
                 && activityManager.isBackgroundRestricted();
-        boolean fullScreenIntentAllowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE
-                || nm == null
-                || nm.canUseFullScreenIntent();
-        boolean exactAlarmAllowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.S
-                || am == null
-                || am.canScheduleExactAlarms();
+        boolean fullScreenIntentAllowed = nm != null
+                && (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+                || nm.canUseFullScreenIntent());
         boolean recordAudioGranted = ContextCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO)
                 == PackageManager.PERMISSION_GRANTED;
         // Android 10 미만은 신체 활동 런타임 권한이 없으므로 항상 granted 로 본다.
@@ -215,21 +211,7 @@ public class NotificationPlugin extends Plugin {
         boolean networkConnected = connectivity.connected;
         boolean networkValidated = connectivity.validated;
 
-        boolean channelsEnabled = true;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && nm != null) {
-            String[] channels = {
-                    NotificationHelper.CHANNEL_SCHEDULE,
-                    NotificationHelper.CHANNEL_EMERGENCY,
-                    NotificationHelper.CHANNEL_KKUK
-            };
-            for (String chId : channels) {
-                NotificationChannel ch = nm.getNotificationChannel(chId);
-                if (ch == null || ch.getImportance() == NotificationManager.IMPORTANCE_NONE) {
-                    channelsEnabled = false;
-                    break;
-                }
-            }
-        }
+        boolean channelsEnabled = NotificationHelper.areRequiredDeliveryChannelsEnabled(nm);
 
         JSObject result = new JSObject();
         result.put("notificationsEnabled", notificationsEnabled);
@@ -238,7 +220,6 @@ public class NotificationPlugin extends Plugin {
         result.put("powerSaveMode", powerSaveMode);
         result.put("backgroundRestricted", backgroundRestricted);
         result.put("fullScreenIntentAllowed", fullScreenIntentAllowed);
-        result.put("exactAlarmAllowed", exactAlarmAllowed);
         result.put("channelsEnabled", channelsEnabled);
         result.put("recordAudioGranted", recordAudioGranted);
         result.put("activityRecognitionGranted", activityRecognitionGranted);
@@ -267,7 +248,6 @@ public class NotificationPlugin extends Plugin {
                 && !powerSaveMode
                 && !backgroundRestricted
                 && fullScreenIntentAllowed
-                && exactAlarmAllowed
                 && channelsEnabled
                 && recordAudioGranted
                 && remoteListenChannelEnabled
@@ -285,23 +265,14 @@ public class NotificationPlugin extends Plugin {
 
         NotificationManager nm = (NotificationManager) getContext()
                 .getSystemService(Context.NOTIFICATION_SERVICE);
-
-        boolean allEnabled = true;
-        String[] channels = {
-                NotificationHelper.CHANNEL_SCHEDULE,
-                NotificationHelper.CHANNEL_EMERGENCY,
-                NotificationHelper.CHANNEL_KKUK
-        };
-        for (String chId : channels) {
-            NotificationChannel ch = nm.getNotificationChannel(chId);
-            if (ch != null && ch.getImportance() == NotificationManager.IMPORTANCE_NONE) {
-                allEnabled = false;
-                break;
-            }
+        if (nm == null) {
+            call.resolve(new JSObject().put("enabled", false)
+                    .put("areNotificationsEnabled", false));
+            return;
         }
 
         JSObject result = new JSObject();
-        result.put("enabled", allEnabled);
+        result.put("enabled", NotificationHelper.areRequiredDeliveryChannelsEnabled(nm));
         result.put("areNotificationsEnabled", nm.areNotificationsEnabled());
         call.resolve(result);
     }
@@ -325,17 +296,26 @@ public class NotificationPlugin extends Plugin {
     @PluginMethod()
     public void openBatteryOptimizationSettings(PluginCall call) {
         Context ctx = getContext();
-        Intent intent;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
-            intent.setData(Uri.parse("package:" + ctx.getPackageName()));
-        } else {
-            intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-            intent.setData(Uri.parse("package:" + ctx.getPackageName()));
-        }
+        Intent intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        ctx.startActivity(intent);
-        call.resolve();
+        try {
+            ctx.startActivity(intent);
+            call.resolve(new JSObject().put("status", "opened_battery_settings"));
+            return;
+        } catch (RuntimeException error) {
+            Log.w("NotificationPlugin", "Battery settings list unavailable; opening app details", error);
+        }
+
+        Intent fallback = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        fallback.setData(Uri.parse("package:" + ctx.getPackageName()));
+        fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            ctx.startActivity(fallback);
+            call.resolve(new JSObject().put("status", "opened_app_details"));
+        } catch (RuntimeException error) {
+            Log.w("NotificationPlugin", "Battery and app settings unavailable", error);
+            call.reject("배터리 설정을 열 수 없습니다");
+        }
     }
 
     @PluginMethod()
@@ -350,24 +330,24 @@ public class NotificationPlugin extends Plugin {
             intent.putExtra(Settings.EXTRA_APP_PACKAGE, ctx.getPackageName());
         }
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        ctx.startActivity(intent);
-        call.resolve();
-    }
-
-    @PluginMethod()
-    public void openExactAlarmSettings(PluginCall call) {
-        Context ctx = getContext();
-        Intent intent;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
-            intent.setData(Uri.parse("package:" + ctx.getPackageName()));
-        } else {
-            intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-            intent.setData(Uri.parse("package:" + ctx.getPackageName()));
+        try {
+            ctx.startActivity(intent);
+            call.resolve(new JSObject().put("status", "opened_full_screen_settings"));
+            return;
+        } catch (RuntimeException error) {
+            Log.w("NotificationPlugin", "Full-screen intent settings unavailable; opening app details", error);
         }
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        ctx.startActivity(intent);
-        call.resolve();
+
+        Intent fallback = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        fallback.setData(Uri.parse("package:" + ctx.getPackageName()));
+        fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            ctx.startActivity(fallback);
+            call.resolve(new JSObject().put("status", "opened_app_details"));
+        } catch (RuntimeException error) {
+            Log.w("NotificationPlugin", "Full-screen intent and app settings unavailable", error);
+            call.reject("잠금화면 전체 표시 설정을 열 수 없습니다");
+        }
     }
 
     @PluginMethod()
@@ -490,19 +470,21 @@ public class NotificationPlugin extends Plugin {
     }
 
     private boolean isChannelEnabled(NotificationManager nm, String channelId) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || nm == null) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             return true;
         }
+        if (nm == null) return false;
         NotificationChannel channel = nm.getNotificationChannel(channelId);
-        return channel == null || channel.getImportance() != NotificationManager.IMPORTANCE_NONE;
+        return channel != null && channel.getImportance() != NotificationManager.IMPORTANCE_NONE;
     }
 
     private int getChannelImportance(NotificationManager nm, String channelId) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || nm == null) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             return NotificationManager.IMPORTANCE_DEFAULT;
         }
+        if (nm == null) return NotificationManager.IMPORTANCE_NONE;
         NotificationChannel channel = nm.getNotificationChannel(channelId);
-        return channel == null ? NotificationManager.IMPORTANCE_DEFAULT : channel.getImportance();
+        return channel == null ? NotificationManager.IMPORTANCE_NONE : channel.getImportance();
     }
 
     private String describeRingerMode(AudioManager audio) {

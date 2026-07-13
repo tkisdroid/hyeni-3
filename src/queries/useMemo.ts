@@ -3,13 +3,14 @@
  * 컴포넌트는 이 훅만 import(endpoints/memo 직접 호출 금지).
  * 실시간 INSERT 는 useFamilyRealtime 이 memo_replies → ["memoReplies", familyId] 무효화로 반영.
  */
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { qk } from "./keys";
 import { useAuth } from "@/auth/AuthContext";
 import {
   fetchMemoReplies,
   sendMemoReply,
   markReplyRead,
+  type MemoReply,
 } from "@/lib/api/endpoints/memo";
 import { todayDateKey } from "@/transform/dateKey";
 import { commitSentMemoReply } from "./memoCache";
@@ -20,9 +21,34 @@ export function useMemoThread(dateKeys: string[], childId?: string | null) {
   const keys = [...new Set(dateKeys.filter(Boolean))];
   return useQuery({
     queryKey: qk.memoReplies(familyId ?? "", keys.join(","), childId ?? null),
-    queryFn: () => fetchMemoReplies(familyId as string, keys, childId ?? null),
-    enabled: status === "authenticated" && !!familyId && keys.length > 0,
+    queryFn: () => fetchMemoReplies(familyId as string, keys, childId as string),
+    enabled: status === "authenticated" && !!familyId && !!childId && keys.length > 0,
   });
+}
+
+/** 부모 탭의 미읽음 점: 모든 아이의 실제 memo_replies.read_by를 조회한다. */
+export function useUnreadMemoForChildren(dateKeys: string[], childIds: string[]): boolean {
+  const { familyId, userId, status } = useAuth();
+  const keys = [...new Set(dateKeys.filter(Boolean))];
+  const scopedChildIds = [...new Set(childIds.filter(Boolean))];
+  const enabled = status === "authenticated" && !!familyId && !!userId && keys.length > 0;
+  const queries = useQueries({
+    queries: scopedChildIds.map((childId) => ({
+      queryKey: qk.memoReplies(familyId ?? "", keys.join(","), childId),
+      queryFn: () => fetchMemoReplies(familyId as string, keys, childId),
+      enabled,
+    })),
+  });
+
+  if (!enabled || !userId) return false;
+  return queries.some((query) =>
+    ((query.data ?? []) as MemoReply[]).some(
+      (r) =>
+        r.user_id !== userId
+        && (r.content ?? "").trim().length > 0
+        && !(r.read_by ?? []).includes(userId),
+    ),
+  );
 }
 
 export interface SendMemoVars {
@@ -61,6 +87,8 @@ export function useMarkRead() {
   const qc = useQueryClient();
   const { familyId, userId } = useAuth();
   return useMutation({
+    retry: 2,
+    retryDelay: (attempt) => Math.min(500 * 2 ** attempt, 2_000),
     mutationFn: (replyId: string) => {
       if (!userId) throw new Error("로그인이 필요해요");
       return markReplyRead(replyId, userId);

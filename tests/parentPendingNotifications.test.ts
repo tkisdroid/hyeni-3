@@ -47,6 +47,34 @@ test("실제 표시되거나 FCM ACK가 확인된 pending 행만 서버 delivere
   assert.deepEqual(result, { fetched: 3, acknowledged: 2 });
 });
 
+test("네이티브 전용 명령은 웹·foreground 표시 함수로 보내거나 delivered ACK하지 않는다", async () => {
+  const { pollParentPendingNotifications } = await loadBridge();
+  const shown: string[] = [];
+  const delivered: string[][] = [];
+
+  const result = await pollParentPendingNotifications({
+    familyId: "family-1",
+    userId: "child-1",
+    signal: new AbortController().signal,
+    fetchPending: async () => [
+      { id: "location", title: "새 알림", body: "", data: { pushId: "request-location", type: "request_location" } },
+      { id: "status", title: "새 알림", body: "", data: { pushId: "request-status", type: "request_device_status" } },
+      { id: "listen", title: "새 알림", body: "", data: { pushId: "remote-listen", type: "remote_listen" } },
+      { id: "listen-stop", title: "새 알림", body: "", data: { pushId: "remote-listen-stop", type: "remote_listen_stop" } },
+      { id: "memo", title: "엄마님의 메시지", body: "집에 와", data: { pushId: "memo-1", type: "new_memo" } },
+    ],
+    showPending: async (input: Record<string, unknown>) => {
+      shown.push(String(input.type));
+      return { acknowledged: true, displayed: true };
+    },
+    markDelivered: async (ids: string[]) => { delivered.push(ids); },
+  });
+
+  assert.deepEqual(shown, ["new_memo"]);
+  assert.deepEqual(delivered, [["memo"]]);
+  assert.deepEqual(result, { fetched: 5, acknowledged: 1 });
+});
+
 test("role 변경이나 background 전환으로 abort되면 늦은 조회 결과를 표시하지 않는다", async () => {
   const { pollParentPendingNotifications } = await loadBridge();
   const controller = new AbortController();
@@ -127,7 +155,7 @@ test("foreground에서만 즉시·주기 폴링하고 background와 cleanup에�
   assert.ok(cleared.length >= 2);
 });
 
-test("NativeBootstrap과 Android plugin이 부모 foreground·FCM ACK 계약을 실제 연결한다", async () => {
+test("NativeBootstrap과 Android plugin이 부모·아이 foreground 표시형 pending ACK 계약을 실제 연결한다", async () => {
   await loadBridge();
   const bootstrap = readFileSync(resolve(rootDir, "src/app/NativeBootstrap.tsx"), "utf8");
   const plugin = readFileSync(
@@ -135,7 +163,7 @@ test("NativeBootstrap과 Android plugin이 부모 foreground·FCM ACK 계약을 
     "utf8",
   );
 
-  assert.match(bootstrap, /role !== "parent"/);
+  assert.match(bootstrap, /role !== "parent" && role !== "child"/);
   assert.match(bootstrap, /startParentPendingForegroundPolling/);
   assert.match(bootstrap, /pollParentPendingNotifications/);
   assert.match(plugin, /public void showPending\(PluginCall call\)/);

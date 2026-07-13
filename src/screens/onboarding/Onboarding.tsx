@@ -16,7 +16,9 @@ import {
   requestPhoneSignupCode,
   verifyPhoneSignupCode,
   startWorkerOAuth,
+  finishOAuthCancellation,
   finishOAuthLogin,
+  readOAuthCancellation,
   readOAuthCallback,
   clearOAuthCallbackUrl,
   type PendingSignup,
@@ -30,20 +32,33 @@ import {
   type JoinFamilyOptions,
 } from "@/lib/api/endpoints/family";
 import { hasNaverClientId } from "@/config/env";
+import { TEACHER_MODE_ENABLED } from "@/config/releaseFeatures";
 import type { OAuthProvider } from "@/transform/oauthProvider";
 import { normalizePairCodeInput } from "@/transform/pairCode";
 import { readPairParam, clearPairParam } from "@/transform/pairLink";
 import { resolveAuthenticatedOnboardingRedirect } from "@/transform/onboardingRedirect";
+import {
+  requestBackgroundLocationPermission,
+  requestForegroundLocationPermission,
+} from "@/lib/native/permissions";
 import { QrScanner } from "@/components/QrScanner";
+import {
+  PRIVACY_POLICY_URL,
+  TERMS_OF_SERVICE_URL,
+} from "@/lib/api/endpoints/account";
 import "./Onboarding.css";
 
 type Step = "role" | "teacherSetup" | "login" | "survey" | "signup" | "connect" | "pairing" | "perms";
 type Show = (text: string, emoji?: string) => void;
 
-const PERM_ITEMS = [
-  { id: "loc", icon: "ui/pin-heart.webp", title: "위치 정보", sub: "우리 아이가 어디서 안전한지 확인해요" },
-  { id: "noti", icon: "ui/bell.webp", title: "알림", sub: "등하교·안전 소식을 바로 받아요" },
-  { id: "battery", icon: "ui/battery.webp", title: "백그라운드 실행", sub: "앱이 꺼져도 아이 위치를 계속 확인해요" },
+const CHILD_PERM_ITEMS = [
+  { id: "loc", icon: "ui/pin-heart.webp", title: "위치 정보", sub: "현재 위치와 이동 경로를 보호자에게 공유해요" },
+  { id: "noti", icon: "ui/bell.webp", title: "알림", sub: "일정·부모 메시지·안전 알림을 바로 받아요" },
+  { id: "battery", icon: "ui/battery.webp", title: "백그라운드 실행", sub: "앱을 닫아도 도착·출발을 확인할 수 있게 해요" },
+] as const;
+
+const GUARDIAN_PERM_ITEMS = [
+  { id: "noti", icon: "ui/bell.webp", title: "알림", sub: "아이의 일정·도착·위험·메시지 알림을 받아요" },
 ] as const;
 
 const SURVEY_OPTIONS = [
@@ -79,6 +94,21 @@ export function Onboarding() {
 
   // OAuth 콜백(?code&state) 감지 → 세션 교환 → 라우팅. (guard가 미인증을 여기로 보냄)
   useEffect(() => {
+    const cancellation = readOAuthCancellation();
+    if (cancellation) {
+      try {
+        finishOAuthCancellation(cancellation);
+        show("소셜 로그인을 취소했어요.", "ℹ️");
+      } catch (e) {
+        show(errMsg(e), "⚠️");
+      } finally {
+        clearOAuthCallbackUrl();
+        setBusy(false);
+        setRole("parent");
+        setStep("login");
+      }
+      return;
+    }
     const cb = readOAuthCallback();
     if (!cb) return;
     setBusy(true);
@@ -359,6 +389,7 @@ export function Onboarding() {
       )}
       {step === "perms" && (
         <PermsStep
+          role={role}
           progressPercent={signupFlowStarted ? 100 : null}
           onDone={() => navigate(homePathForRole(role === "parent" ? "parent" : role === "child" ? "child" : "teacher"))}
         />
@@ -491,20 +522,28 @@ function RoleStep({
           <ChevronRight size={22} strokeWidth={2.4} color="#C6A9CF" />
         </button>
 
-        <button type="button" className="ob-role-card ob-role-card--teacher hy-press" onClick={onTeacher} disabled={busy}>
-          <span className="ob-role-ic ob-role-ic--teacher">
-            <img className="ob-role-img" src={asset(ROLE_ICON_ASSETS.teacher)} alt="" />
-          </span>
-          <span className="ob-role-main">
-            <span className="ob-role-name" style={{ color: "#0F7A57" }}>선생님</span>
-            <span className="ob-role-desc" style={{ color: "#5FA98A" }}>학교·반 등록하고 시작</span>
-          </span>
-          <ChevronRight size={22} strokeWidth={2.4} color="#9AD3BE" />
-        </button>
+        {TEACHER_MODE_ENABLED && (
+          <button type="button" className="ob-role-card ob-role-card--teacher hy-press" onClick={onTeacher} disabled={busy}>
+            <span className="ob-role-ic ob-role-ic--teacher">
+              <img className="ob-role-img" src={asset(ROLE_ICON_ASSETS.teacher)} alt="" />
+            </span>
+            <span className="ob-role-main">
+              <span className="ob-role-name" style={{ color: "#0F7A57" }}>선생님</span>
+              <span className="ob-role-desc" style={{ color: "#5FA98A" }}>학교·반 등록하고 시작</span>
+            </span>
+            <ChevronRight size={22} strokeWidth={2.4} color="#9AD3BE" />
+          </button>
+        )}
       </div>
 
       <div className="ob-role-terms">
-        계속하면 <span>이용약관</span>과 <span>개인정보처리방침</span>에 동의합니다.
+        계속하면
+        {" "}
+        <a href={TERMS_OF_SERVICE_URL} target="_blank" rel="noopener noreferrer">이용약관</a>
+        과
+        {" "}
+        <a href={PRIVACY_POLICY_URL} target="_blank" rel="noopener noreferrer">개인정보처리방침</a>
+        에 동의합니다.
       </div>
     </div>
   );
@@ -594,11 +633,11 @@ function LoginStep({
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
 
-  const social = (provider: OAuthProvider) => {
+  const social = async (provider: OAuthProvider) => {
     if (busy) return;
     setBusy(true);
     try {
-      startWorkerOAuth(provider); // 현재 페이지가 provider 로그인으로 전환(리다이렉트)
+      await startWorkerOAuth(provider); // 서버 발급 일회성 state 저장 후 provider로 이동
     } catch (e) {
       // 키 미설정 등 설정 오류 — busy 를 풀고 정직하게 안내(버튼이 영구 잠기지 않게).
       setBusy(false);
@@ -1068,7 +1107,57 @@ function PairingStep({
 
 /* ── STEP: PERMS ───────────────────────────────────────────────────────── */
 
-function PermsStep({ progressPercent, onDone }: { progressPercent?: number | null; onDone: () => void }) {
+function PermsStep({
+  role,
+  progressPercent,
+  onDone,
+}: {
+  role: "parent" | "child" | "teacher";
+  progressPercent?: number | null;
+  onDone: () => void;
+}) {
+  const permissionItems = role === "child" ? CHILD_PERM_ITEMS : GUARDIAN_PERM_ITEMS;
+  const [locationStage, setLocationStage] = useState<
+    "idle" | "disclosure" | "backgroundEducation" | "foregroundDenied" | "backgroundDenied"
+  >("idle");
+  const [permissionBusy, setPermissionBusy] = useState(false);
+  const [locationUnsupported, setLocationUnsupported] = useState(false);
+
+  const start = () => {
+    if (role !== "child") {
+      onDone();
+      return;
+    }
+    setLocationStage("disclosure");
+  };
+
+  const requestForeground = async () => {
+    if (permissionBusy) return;
+    setPermissionBusy(true);
+    const result = await requestForegroundLocationPermission();
+    setPermissionBusy(false);
+    if (result.granted) {
+      setLocationUnsupported(false);
+      setLocationStage("backgroundEducation");
+      return;
+    }
+    setLocationUnsupported(!result.supported);
+    setLocationStage("foregroundDenied");
+  };
+
+  const requestBackground = async () => {
+    if (permissionBusy) return;
+    setPermissionBusy(true);
+    const result = await requestBackgroundLocationPermission();
+    setPermissionBusy(false);
+    if (result.granted) {
+      onDone();
+      return;
+    }
+    setLocationUnsupported(!result.supported);
+    setLocationStage("backgroundDenied");
+  };
+
   return (
     <div className="ob-step ob-perms">
       {progressPercent != null && <SignupProgress percent={progressPercent} label="5/5 시작 준비" />}
@@ -1079,7 +1168,7 @@ function PermsStep({ progressPercent, onDone }: { progressPercent?: number | nul
       </div>
 
       <div className="ob-perms-list">
-        {PERM_ITEMS.map((p) => (
+        {permissionItems.map((p) => (
           <div key={p.id} className="ob-perm">
             <img className="ob-perm-ic" src={asset(p.icon)} alt="" />
             <span className="ob-perm-main">
@@ -1105,9 +1194,101 @@ function PermsStep({ progressPercent, onDone }: { progressPercent?: number | nul
         ))}
       </div>
 
-      <button type="button" className="ob-cta ob-cta--lav hy-press" onClick={onDone}>
-        시작하기
+      <button type="button" className="ob-cta ob-cta--lav hy-press" onClick={start}>
+        {role === "child" ? "위치 권한 설정하고 시작하기" : "알림 설정하고 시작하기"}
       </button>
+
+      {locationStage !== "idle" && (
+        <div className="ob-consent-overlay">
+          <section
+            className="ob-consent-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ob-location-consent-title"
+            aria-describedby="ob-location-consent-description"
+          >
+            {locationStage === "disclosure" && (
+              <>
+                <span className="ob-consent-dialog__eyebrow">아이 위치 공유 안내</span>
+                <h2 id="ob-location-consent-title">백그라운드 위치를 사용해요</h2>
+                <div id="ob-location-consent-description" className="ob-consent-dialog__copy">
+                  <p>
+                    혜니캘린더는 아이가 앱을 닫거나 사용하지 않을 때도 위치를 수집해 연결된 보호자에게 공유합니다.
+                  </p>
+                  <p>
+                    위치는 실시간 위치·오늘 경로와 집·학교·학원 도착·출발, 일정 미도착, 위험장소 알림에 사용됩니다.
+                  </p>
+                  <p>
+                    위치 수집 중에는 Android의 지속 알림이 표시되며, 아이 기기의 위치 설정에서 언제든지 권한을 끌 수 있습니다.
+                  </p>
+                </div>
+                <div className="ob-consent-dialog__actions">
+                  <button type="button" className="ob-consent-secondary hy-press" onClick={onDone} disabled={permissionBusy}>
+                    나중에
+                  </button>
+                  <button type="button" className="ob-consent-primary hy-press" onClick={() => void requestForeground()} disabled={permissionBusy} autoFocus>
+                    {permissionBusy ? "권한 확인 중…" : "동의하고 계속"}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {locationStage === "backgroundEducation" && (
+              <>
+                <span className="ob-consent-dialog__eyebrow">마지막 위치 설정</span>
+                <h2 id="ob-location-consent-title">위치를 ‘항상 허용’으로 선택해 주세요</h2>
+                <div id="ob-location-consent-description" className="ob-consent-dialog__copy">
+                  <p>
+                    다음 Android 위치 권한 화면에서 ‘항상 허용’을 선택해야 앱을 닫은 뒤에도 도착·출발과 위험장소 알림이 이어집니다.
+                  </p>
+                  <p>허용하지 않아도 앱은 사용할 수 있으며, 아이 설정에서 나중에 다시 켤 수 있습니다.</p>
+                </div>
+                <div className="ob-consent-dialog__actions">
+                  <button type="button" className="ob-consent-secondary hy-press" onClick={onDone} disabled={permissionBusy}>
+                    나중에
+                  </button>
+                  <button type="button" className="ob-consent-primary hy-press" onClick={() => void requestBackground()} disabled={permissionBusy} autoFocus>
+                    {permissionBusy ? "설정 확인 중…" : "‘항상 허용’ 설정 열기"}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {(locationStage === "foregroundDenied" || locationStage === "backgroundDenied") && (
+              <>
+                <span className="ob-consent-dialog__eyebrow">위치 권한이 필요해요</span>
+                <h2 id="ob-location-consent-title">
+                  {locationUnsupported ? "이 기기에서는 지원하지 않아요" : "아직 위치 권한이 꺼져 있어요"}
+                </h2>
+                <div id="ob-location-consent-description" className="ob-consent-dialog__copy">
+                  <p>
+                    {locationUnsupported
+                      ? "아이의 백그라운드 위치 공유는 Android 앱에서 사용할 수 있습니다."
+                      : "권한 없이 시작하면 보호자에게 현재 위치와 도착·출발 알림이 전달되지 않습니다."}
+                  </p>
+                  <p>앱은 계속 사용할 수 있고, 아이 설정에서 언제든지 다시 설정할 수 있습니다.</p>
+                </div>
+                <div className="ob-consent-dialog__actions">
+                  <button type="button" className="ob-consent-secondary hy-press" onClick={onDone} disabled={permissionBusy}>
+                    권한 없이 시작
+                  </button>
+                  {!locationUnsupported && (
+                    <button
+                      type="button"
+                      className="ob-consent-primary hy-press"
+                      onClick={() => void (locationStage === "foregroundDenied" ? requestForeground() : requestBackground())}
+                      disabled={permissionBusy}
+                      autoFocus
+                    >
+                      {permissionBusy ? "권한 확인 중…" : "다시 설정"}
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </section>
+        </div>
+      )}
     </div>
   );
 }

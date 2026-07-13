@@ -109,6 +109,31 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
+.afc-bubble-stack {
+  max-width: 78%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.afc-row--me .afc-bubble-stack {
+  align-items: flex-end;
+}
+.afc-bubble-stack .afc-bubble {
+  max-width: 100%;
+}
+.afc-report-link {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: var(--fg-muted);
+  background: var(--bg-card);
+  font-size: 11.5px;
+  font-weight: 800;
+}
 .afc-bubble--ai {
   animation: afc-pop 0.3s ease forwards;
   background: var(--bg-card);

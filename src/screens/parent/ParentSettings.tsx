@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
+import { APP_VERSION } from "@/config/version";
 import { useAuth } from "@/auth/AuthContext";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { useClaimReviewReward } from "@/queries/useReviewReward";
@@ -292,7 +293,7 @@ export function ParentSettings() {
           </div>
         </div>
 
-        <div className="ps-version">혜니캘린더 v2.0.0 · 함께 보는 우리 가족 일정</div>
+        <div className="ps-version">혜니캘린더 v{APP_VERSION} · 함께 보는 우리 가족 일정</div>
       </div>
 
       {/* 회원 탈퇴 확인 모달 */}

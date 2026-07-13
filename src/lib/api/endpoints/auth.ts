@@ -3,11 +3,9 @@
  * 캐시 무효화(queryClient.clear)·React 상태 반영은 상위(AuthProvider/온보딩)가 담당한다.
  * OAuth(카카오/구글/네이버)·브리지는 Slice 2(온보딩)에서 추가한다.
  */
-import { API_BASE, NAVER_CLIENT_ID } from "@/config/env";
 import {
   isOAuthProvider,
   oauthExchangePath,
-  usesWorkerStartRedirect,
   type OAuthProvider,
 } from "@/transform/oauthProvider";
 import { apiRequest, apiPost } from "../client";
@@ -185,122 +183,189 @@ export async function deleteAccount(): Promise<{ ok?: boolean; error?: string }>
 
 // ── OAuth(카카오/구글/네이버) — 웹 리다이렉트 + 네이티브 딥링크 복귀 ──────────────
 // 웹: 현재 창을 인가 URL 로 이동(origin 복귀). 네이티브(Capacitor): 시스템 브라우저로 열고,
-// 복귀는 딥링크(hyenicalendar://auth-callback)를 initOAuthDeepLink 가 처리.
+// 복귀는 검증된 HTTPS App Link를 initOAuthDeepLink가 처리한다.
 // provider 별 계약 차이는 transform/oauthProvider 주석 참조.
 export type { OAuthProvider };
 
-/** 네이버 개발자센터 Callback URL 에 등록해야 하는 값과 정확히 일치해야 한다. */
-export const NAVER_CALLBACK_URL = `${API_BASE}/api/auth/naver`;
-const NAVER_AUTHORIZE_URL = "https://nid.naver.com/oauth2.0/authorize";
-
-const OAUTH_STATE_KEY = "hyeni-oauth-state";
-const OAUTH_PROVIDER_KEY = "hyeni-oauth-provider";
-const OAUTH_MODE_KEY = "hyeni-oauth-mode";
+const OAUTH_CONTEXT_KEY = "hyeni-oauth-context-v2";
+const LEGACY_OAUTH_KEYS = ["hyeni-oauth-state", "hyeni-oauth-provider", "hyeni-oauth-mode"] as const;
 
 /** 로그인(login) 인지, 이미 로그인한 계정에 소셜을 붙이는 연결(link) 인지. */
 export type OAuthFlowMode = "login" | "link";
 
-// nonce 는 localStorage 에도 둔다. 네이티브는 OAuth 왕복 중 프로세스가 재생성될 수 있고,
-// 그러면 sessionStorage 가 비어 CSRF 검사(savedNonce)가 조용히 건너뛰어진다(코드 주입 방어 상실).
-function writeOAuthNonce(nonce: string, provider: string, mode: OAuthFlowMode): void {
+interface OAuthFlowContext {
+  provider: OAuthProvider;
+  mode: OAuthFlowMode;
+  state: string;
+  transactionSecret: string;
+  expiresAt: string;
+}
+
+interface OAuthStartResponse {
+  authorizationUrl: unknown;
+  state: unknown;
+  transactionSecret: unknown;
+  expiresAt: unknown;
+}
+
+function parseOAuthContext(raw: string | null): OAuthFlowContext | null {
+  if (!raw) return null;
+  try {
+    const value = JSON.parse(raw) as Partial<OAuthFlowContext>;
+    if (!isOAuthProvider(value.provider)) return null;
+    if (value.mode !== "login" && value.mode !== "link") return null;
+    if (typeof value.state !== "string" || value.state.length < 40 || value.state.length > 256) return null;
+    if (
+      typeof value.transactionSecret !== "string"
+      || value.transactionSecret.length < 40
+      || value.transactionSecret.length > 256
+    ) return null;
+    if (typeof value.expiresAt !== "string" || !Number.isFinite(Date.parse(value.expiresAt))) return null;
+    if (Date.parse(value.expiresAt) <= Date.now()) return null;
+    return value as OAuthFlowContext;
+  } catch {
+    return null;
+  }
+}
+
+function clearOAuthContext(): void {
   for (const store of [window.sessionStorage, window.localStorage]) {
     try {
-      store.setItem(OAUTH_STATE_KEY, nonce);
-      store.setItem(OAUTH_PROVIDER_KEY, provider);
-      store.setItem(OAUTH_MODE_KEY, mode);
+      store.removeItem(OAUTH_CONTEXT_KEY);
+      for (const key of LEGACY_OAUTH_KEYS) store.removeItem(key);
     } catch {
       /* 저장소 접근 불가 */
     }
   }
+}
+
+function readOAuthContext(): OAuthFlowContext | null {
+  const contexts: OAuthFlowContext[] = [];
+  for (const store of [window.sessionStorage, window.localStorage]) {
+    try {
+      const parsed = parseOAuthContext(store.getItem(OAUTH_CONTEXT_KEY));
+      if (parsed) contexts.push(parsed);
+    } catch {
+      /* 저장소 접근 불가 */
+    }
+  }
+  if (contexts.length === 0) return null;
+  const canonical = JSON.stringify(contexts[0]);
+  return contexts.every((context) => JSON.stringify(context) === canonical) ? contexts[0] : null;
+}
+
+function writeOAuthContext(context: OAuthFlowContext): void {
+  const serialized = JSON.stringify(context);
+  clearOAuthContext();
+  try {
+    for (const store of [window.sessionStorage, window.localStorage]) {
+      store.setItem(OAUTH_CONTEXT_KEY, serialized);
+      if (store.getItem(OAUTH_CONTEXT_KEY) !== serialized) throw new Error("oauth_context_write_failed");
+    }
+  } catch (error) {
+    clearOAuthContext();
+    throw error;
+  }
+}
+
+function takeOAuthContext(): OAuthFlowContext | null {
+  const context = readOAuthContext();
+  clearOAuthContext();
+  return context;
 }
 
 /** 복귀한 콜백이 로그인인지 계정 연결인지 — 폐기하지 않고 들여다본다. */
 export function peekOAuthFlowMode(): OAuthFlowMode {
-  for (const store of [window.sessionStorage, window.localStorage]) {
-    try {
-      if (store.getItem(OAUTH_MODE_KEY) === "link") return "link";
-    } catch {
-      /* 저장소 접근 불가 */
-    }
-  }
-  return "login";
-}
-
-/** 저장된 nonce 를 읽고 즉시 폐기(재사용 금지). sessionStorage 우선, 없으면 localStorage. */
-function takeOAuthNonce(): string {
-  let nonce = "";
-  for (const store of [window.sessionStorage, window.localStorage]) {
-    try {
-      nonce = nonce || store.getItem(OAUTH_STATE_KEY) || "";
-      store.removeItem(OAUTH_STATE_KEY);
-      store.removeItem(OAUTH_PROVIDER_KEY);
-      store.removeItem(OAUTH_MODE_KEY);
-    } catch {
-      /* 저장소 접근 불가 */
-    }
-  }
-  return nonce;
+  return readOAuthContext()?.mode ?? "login";
 }
 
 function readOAuthProviderHint(): string | null {
-  for (const store of [window.sessionStorage, window.localStorage]) {
-    try {
-      const v = store.getItem(OAUTH_PROVIDER_KEY);
-      if (v) return v;
-    } catch {
-      /* 저장소 접근 불가 */
-    }
-  }
-  return null;
+  return readOAuthContext()?.provider ?? null;
 }
 
-// 네이티브 OAuth 복귀 target. Worker /callback 이 이 스킴으로 재리다이렉트하고
-// AndroidManifest 의 intent-filter(scheme=hyenicalendar, host=auth-callback)가 앱을 깨운다.
-const NATIVE_OAUTH_REDIRECT_URL = "hyenicalendar://auth-callback";
+const AUTHORIZE_ORIGIN: Record<OAuthProvider, string> = {
+  kakao: "https://kauth.kakao.com",
+  google: "https://accounts.google.com",
+  naver: "https://nid.naver.com",
+};
 
-function randomNonce(): string {
-  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
-  return `o-${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
+function validateAuthorizationUrl(provider: OAuthProvider, value: unknown): string {
+  if (typeof value !== "string") throw new Error("로그인 시작 주소가 올바르지 않아요.");
+  const url = new URL(value);
+  if (url.protocol !== "https:" || url.origin !== AUTHORIZE_ORIGIN[provider]) {
+    throw new Error("로그인 시작 주소가 안전하지 않아요.");
+  }
+  return url.toString();
+}
+
+function validateOAuthStartResponse(
+  response: OAuthStartResponse,
+): Pick<OAuthFlowContext, "state" | "transactionSecret" | "expiresAt"> {
+  if (
+    typeof response.state !== "string"
+    || response.state.length < 40
+    || response.state.length > 256
+    || typeof response.transactionSecret !== "string"
+    || response.transactionSecret.length < 40
+    || response.transactionSecret.length > 256
+    || typeof response.expiresAt !== "string"
+  ) {
+    throw new Error("로그인 시작 정보를 확인할 수 없어요. 다시 시도해 주세요.");
+  }
+  const expiresAt = Date.parse(response.expiresAt);
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+    throw new Error("로그인 시작 정보가 만료됐어요. 다시 시도해 주세요.");
+  }
+  return {
+    state: response.state,
+    transactionSecret: response.transactionSecret,
+    expiresAt: response.expiresAt,
+  };
 }
 
 /**
  * OAuth 시작 — Worker /start 를 연다.
  * - 웹: 현재 창을 이동(location.href). 복귀 target = window.location.origin.
- * - 네이티브: 시스템 브라우저로 열고(openExternal), 복귀 target = 딥링크 스킴.
+ * - 네이티브: 시스템 브라우저로 열고(openExternal), 복귀 target = verified HTTPS App Link.
  *   복귀는 initOAuthDeepLink 의 appUrlOpen 리스너가 받아 finishOAuthLogin 을 호출한다.
  *
- * nonce(CSRF)·provider 를 sessionStorage 에 저장하고 복귀 시 콜백에서 대조한다.
- * (네이티브도 WebView 는 백그라운드로 살아 있어 sessionStorage 가 왕복 동안 유지된다.)
+ * 서버가 발급한 state·별도 transaction secret·provider·mode를 두 저장소에 동일하게 기록하고
+ * 복귀 시 모두 대조한다. 두 저장소가 어긋나거나 만료되면 교환 전에 거부한다.
  */
-export function startWorkerOAuth(provider: OAuthProvider, mode: OAuthFlowMode = "login"): void {
-  // 키 미설정이면 깨진 인가 URL 로 보내지 않고 명시적으로 알린다(가짜 성공 금지).
-  // UI 는 hasNaverClientId 로 버튼 자체를 숨기므로 여기까지 오면 설정 실수다.
-  if (provider === "naver" && !NAVER_CLIENT_ID) {
-    throw new Error("네이버 로그인 설정이 아직 안 됐어요. 운영자에게 문의해 주세요.");
-  }
+export async function startWorkerOAuth(
+  provider: OAuthProvider,
+  mode: OAuthFlowMode = "login",
+): Promise<void> {
   const native = isNativePlatform();
-  const target = native ? NATIVE_OAUTH_REDIRECT_URL : window.location.origin;
-  const nonce = randomNonce();
-  const encoded = btoa(JSON.stringify({ nonce, target }));
-  writeOAuthNonce(nonce, provider, mode);
-
-  // 네이버는 Worker /start 가 없다 — 클라가 인가 URL 을 직접 조립하고 redirect_uri 로 Worker 콜백을 준다.
-  const startUrl = usesWorkerStartRedirect(provider)
-    ? `${API_BASE}/api/auth/oauth/${provider}/start?state=${encodeURIComponent(encoded)}`
-    : `${NAVER_AUTHORIZE_URL}?${new URLSearchParams({
-        response_type: "code",
-        client_id: NAVER_CLIENT_ID,
-        redirect_uri: NAVER_CALLBACK_URL,
-        state: encoded,
-      }).toString()}`;
+  const startPath = mode === "link"
+    ? `/api/auth/oauth/${provider}/link/start`
+    : `/api/auth/oauth/${provider}/start`;
+  const response = await apiRequest<OAuthStartResponse>(startPath, {
+    method: "POST",
+    body: JSON.stringify({
+      client: native ? "native" : "web",
+      webOrigin: native ? undefined : window.location.origin,
+    }),
+  }, false);
+  const validated = validateOAuthStartResponse(response);
+  const startUrl = validateAuthorizationUrl(provider, response.authorizationUrl);
+  writeOAuthContext({
+    provider,
+    mode,
+    state: validated.state,
+    transactionSecret: validated.transactionSecret,
+    expiresAt: validated.expiresAt,
+  });
 
   if (native) {
-    // 네이티브: 시스템 브라우저에서 열고 딥링크로 복귀. 실패는 로깅만(웹 리다이렉트와 달리 페이지 전환 없음).
-    void openExternal(startUrl).catch((error) => {
-      console.error("OAuth 시작 실패:", error);
-    });
+    try {
+      await openExternal(startUrl);
+    } catch (error) {
+      clearOAuthContext();
+      throw error;
+    }
   } else {
-    window.location.href = startUrl;
+    window.location.assign(startUrl);
   }
 }
 
@@ -315,18 +380,25 @@ export async function finishOAuthLogin(input: {
   }
   if (!input.code) throw new Error("로그인 인증 코드가 없어요. 다시 시도해 주세요!");
 
-  const savedNonce = takeOAuthNonce();
-  if (savedNonce && input.state && savedNonce !== input.state) {
+  const context = takeOAuthContext();
+  if (!context
+    || context.mode !== "login"
+    || context.provider !== input.provider
+    || !input.state
+    || context.state !== input.state) {
     throw new Error("로그인 인증 정보가 어긋났어요. 보안을 위해 처음부터 다시 해주세요!");
   }
 
-  // 네이버는 인가 때와 동일한 redirect_uri 를 토큰 교환에도 보내야 한다(서버가 필수 검증).
-  const body: Record<string, unknown> = { code: input.code, state: input.state || savedNonce };
-  if (input.provider === "naver") body.redirect_uri = NAVER_CALLBACK_URL;
-
   const data = await apiRequest<AuthResult>(
     oauthExchangePath(input.provider),
-    { method: "POST", body: JSON.stringify(body) },
+    {
+      method: "POST",
+      body: JSON.stringify({
+        code: input.code,
+        state: context.state,
+        transactionSecret: context.transactionSecret,
+      }),
+    },
     false,
   );
   if (!data?.session?.access_token) {
@@ -389,15 +461,40 @@ export async function linkOAuthAccount(input: {
   }
   if (!input.code) throw new Error("로그인 인증 코드가 없어요. 다시 시도해 주세요!");
 
-  const savedNonce = takeOAuthNonce();
-  if (savedNonce && input.state && savedNonce !== input.state) {
+  const context = takeOAuthContext();
+  if (!context
+    || context.mode !== "link"
+    || context.provider !== input.provider
+    || !input.state
+    || context.state !== input.state) {
     throw new Error("로그인 인증 정보가 어긋났어요. 보안을 위해 처음부터 다시 해주세요!");
   }
 
   return apiRequest(`/api/auth/oauth/${input.provider}/link`, {
     method: "POST",
-    body: JSON.stringify({ code: input.code, state: input.state || savedNonce }),
+    body: JSON.stringify({
+      code: input.code,
+      state: context.state,
+      transactionSecret: context.transactionSecret,
+    }),
   });
+}
+
+/** 서버가 검증·소비한 OAuth 취소 결과를 로컬 context와 대조하고 한 번만 폐기한다. */
+export function finishOAuthCancellation(input: {
+  provider: OAuthProvider;
+  state: string;
+}): OAuthFlowMode {
+  const context = takeOAuthContext();
+  if (
+    !context
+    || context.provider !== input.provider
+    || !input.state
+    || context.state !== input.state
+  ) {
+    throw new Error("로그인 취소 정보가 어긋났어요. 보안을 위해 다시 시작해 주세요.");
+  }
+  return context.mode;
 }
 
 /** 현재 URL 쿼리에서 OAuth 콜백(code) 감지. provider 는 sessionStorage 에서 복원. */
@@ -405,14 +502,27 @@ export function readOAuthCallback(): { provider: OAuthProvider; code: string; st
   if (typeof window === "undefined") return null;
   const params = new URLSearchParams(window.location.search);
   const code = params.get("code");
-  if (!code) return null;
   const state = params.get("state") || "";
+  if (!code || !state) return null;
   let provider: unknown = params.get("provider");
   if (!isOAuthProvider(provider)) {
     provider = readOAuthProviderHint();
   }
   if (!isOAuthProvider(provider)) return null;
   return { provider, code, state };
+}
+
+/** 현재 웹 URL에서 Worker가 정규화한 사용자 취소 결과를 읽는다. */
+export function readOAuthCancellation(): { provider: OAuthProvider; state: string } | null {
+  if (typeof window === "undefined") return null;
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("error") !== "oauth_cancelled" || params.get("code")) return null;
+  const state = params.get("state") || "";
+  if (!state) return null;
+  let provider: unknown = params.get("provider");
+  if (!isOAuthProvider(provider)) provider = readOAuthProviderHint();
+  if (!isOAuthProvider(provider)) return null;
+  return { provider, state };
 }
 
 /** 콜백 처리 후 URL 쿼리(?code&state) 제거 — 새로고침 시 재교환 방지. */

@@ -26,41 +26,149 @@ export interface AlertGroupView {
   items: AlertItemView[];
 }
 
-// SOS·위험구역 계열은 severity 와 무관하게 긴급(레드)로 취급.
-const URGENT_TYPES = new Set(["sos", "sos_followup", "danger_zone", "danger_exit"]);
-// 도착·귀가 계열은 안전(민트).
-const SAFE_TYPES = new Set(["arrived", "place_arrived", "event_ended_by_child"]);
-// 주의(앰버) 계열.
-const WARN_TYPES = new Set(["not_arrived", "place_left", "academy_focus", "battery_low", "battery"]);
+export type AlertCategory = "safety" | "location" | "schedule" | "talk";
+export type ArrivalAlertTone = "arrived" | "pending";
+
+// 서버가 실제 저장하는 canonical alert_type. 화면마다 별도 집합을 만들지 않는다.
+const DANGER_TYPES = new Set([
+  "sos",
+  "sos_followup",
+  "emergency",
+  "danger_zone",
+  "danger_enter",
+  "danger_entry",
+]);
+const ARRIVAL_SAFE_TYPES = new Set([
+  "arrived",
+  "place_arrived",
+  "event_ended_by_child",
+  "event_started_by_child",
+]);
+const ARRIVAL_PENDING_TYPES = new Set([
+  "not_arrived",
+  "missed_arrival",
+  "late_arrived",
+  "place_left",
+  "unregistered_stay_left",
+]);
+const WARN_TYPES = new Set([
+  ...ARRIVAL_PENDING_TYPES,
+  "academy_focus",
+  "low_battery",
+  "battery_low",
+  "battery",
+]);
+
+export function isDangerAlertType(type: string): boolean {
+  return DANGER_TYPES.has(type || "");
+}
+
+export function isArrivalAlertType(type: string): boolean {
+  const normalized = type || "";
+  return ARRIVAL_SAFE_TYPES.has(normalized) || ARRIVAL_PENDING_TYPES.has(normalized);
+}
+
+export function arrivalAlertTone(type: string): ArrivalAlertTone {
+  return ARRIVAL_PENDING_TYPES.has(type || "") ? "pending" : "arrived";
+}
+
+/** 위험 화면 표시 판정. danger_exit은 과거 행의 severity가 높아도 긴급으로 되살리지 않는다. */
+export function isDangerAlert(alert: ParentAlert): boolean {
+  const type = alert.alert_type || "";
+  if (isDangerAlertType(type)) return true;
+  if (
+    type === "danger_exit" ||
+    isArrivalAlertType(type) ||
+    WARN_TYPES.has(type) ||
+    type.startsWith("event") ||
+    type.startsWith("memo") ||
+    type.startsWith("sticker")
+  ) {
+    return false;
+  }
+  return isUrgentSeverity(alert.severity || "");
+}
+
+/** 알림 센터 필터 분류. 미지 유형은 위치·기기 상태 알림으로 보수적으로 표시한다. */
+export function alertCategory(type: string): AlertCategory {
+  const normalized = type || "";
+  if (
+    isDangerAlertType(normalized) ||
+    normalized.startsWith("sos") ||
+    normalized.startsWith("danger") ||
+    normalized === "low_battery" ||
+    normalized === "battery_low" ||
+    normalized === "battery" ||
+    normalized === "child_setting_request"
+  ) {
+    return "safety";
+  }
+  if (normalized.startsWith("event") || normalized === "schedule_suggestion") return "schedule";
+  if (
+    normalized.startsWith("memo") ||
+    normalized.startsWith("sticker") ||
+    normalized === "ai_credit_request"
+  ) {
+    return "talk";
+  }
+  return "location";
+}
+
+/** alert_type → 부모 상세 화면. 모든 알림 목록이 이 매핑만 사용한다. */
+export function alertRoute(type: string): string | null {
+  const normalized = type || "";
+  if (isDangerAlertType(normalized)) return "/danger-alert";
+  if (isArrivalAlertType(normalized)) return "/arrival-alerts";
+  if (
+    normalized === "danger_exit" ||
+    normalized === "academy_focus" ||
+    normalized === "low_battery" ||
+    normalized === "battery_low" ||
+    normalized === "battery"
+  ) {
+    return "/parent/location";
+  }
+  if (normalized.startsWith("memo") || normalized.startsWith("sticker")) return "/parent/memo";
+  if (normalized === "schedule_suggestion") return "/event-form";
+  if (normalized.startsWith("event")) return "/parent/calendar";
+  return null;
+}
 
 type Tone = "danger" | "warning" | "safe" | "memo" | "sticker" | "info";
 
 const TONE_SOFT: Record<Tone, string> = {
-  danger: "#FFECEE", // 레드 틴트
-  warning: "#FDF0DA", // 앰버 틴트
-  safe: "#E7F8F0", // 민트 틴트
-  memo: "#FDE7F1", // 로즈 틴트
-  sticker: "#FFF3D6", // 골드 틴트
-  info: "#E6F2FB", // 파랑(정보) 틴트
+  danger: "var(--danger-soft)",
+  warning: "var(--cream-soft)",
+  safe: "var(--mint-soft)",
+  memo: "var(--rose-soft)",
+  sticker: "var(--cream-soft)",
+  info: "var(--blue-soft)",
 };
 
 // alert_type → 아이콘(정확 매칭). 접두 매칭(memo_/sticker_)은 iconFor 에서 별도 처리.
 const ICON_BY_TYPE: Record<string, string> = {
   sos: "ui/sos-shield.webp",
   sos_followup: "ui/sos-shield.webp",
+  emergency: "ui/sos-shield.webp",
   danger_zone: "ui/warning.webp",
+  danger_enter: "ui/warning.webp",
+  danger_entry: "ui/warning.webp",
   danger_exit: "ui/warning.webp",
   arrived: "ui/pin-heart.webp",
   place_arrived: "ui/pin-heart.webp",
   place_left: "ui/pin.webp",
+  unregistered_stay_left: "ui/pin.webp",
   not_arrived: "ui/warning.webp",
+  missed_arrival: "ui/warning.webp",
+  late_arrived: "ui/warning.webp",
   academy_focus: "ui/place-academy.webp",
   event_started_by_child: "ui/calendar-heart.webp",
   event_ended_by_child: "ui/calendar-heart.webp",
   event_reminder: "ui/calendar-heart.webp",
   ai_credit_request: "ui/crown.webp",
   child_setting_request: "ui/shield-heart.webp",
-  battery_low: "ui/battery.webp",
+  low_battery: "ui/battery.webp",
+  battery_low: "ui/battery.webp", // 과거 저장 행 호환
   battery: "ui/battery.webp",
   schedule_suggestion: "ui/calendar-heart.webp",
 };
@@ -73,10 +181,11 @@ function isUrgentSeverity(severity: string): boolean {
 function toneFor(alert: ParentAlert): Tone {
   const type = alert.alert_type || "";
   const severity = alert.severity || "";
-  if (URGENT_TYPES.has(type) || isUrgentSeverity(severity)) return "danger";
+  if (type === "danger_exit") return "safe";
+  if (isDangerAlertType(type) || isUrgentSeverity(severity)) return "danger";
   if (type.startsWith("memo")) return "memo";
   if (type.startsWith("sticker")) return "sticker";
-  if (SAFE_TYPES.has(type)) return "safe";
+  if (ARRIVAL_SAFE_TYPES.has(type)) return "safe";
   if (WARN_TYPES.has(type) || severity === "warning") return "warning";
   return "info";
 }
@@ -92,14 +201,7 @@ function iconFor(alert: ParentAlert): string {
 
 // alert_type → 탭 시 이동 경로. 애매하면 null(화면에서 토스트).
 function routeFor(alert: ParentAlert): string | null {
-  const type = alert.alert_type || "";
-  if (URGENT_TYPES.has(type) || type.startsWith("arriv") || type.startsWith("place") || type === "not_arrived") {
-    return "/parent/location";
-  }
-  if (type.startsWith("memo") || type.startsWith("sticker")) return "/parent/memo";
-  if (type === "schedule_suggestion") return "/event-form";
-  if (type.startsWith("event")) return "/parent/calendar";
-  return null;
+  return alertRoute(alert.alert_type || "");
 }
 
 const MINUTE_MS = 60 * 1000;

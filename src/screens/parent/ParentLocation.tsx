@@ -5,7 +5,7 @@ import type {
   TouchEvent as ReactTouchEvent,
 } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Lock, Crown, Navigation } from "lucide-react";
+import { AlertTriangle, Lock, Crown, Navigation, RefreshCw } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
@@ -161,15 +161,19 @@ export function ParentLocation() {
   const { data: zones } = useDangerZones();
   const { data: places } = useSavedPlaces();
   const { data: events } = useEvents();
-  const { tier } = useEntitlement();
+  const entitlement = useEntitlement();
 
-  // 티어 위치 모드: 무료=잠금 / 리뷰=지연 / 프리미엄=실시간. unknown(미확정)은 잠그지 않는다(R9).
-  const tierKnown = tier !== TIERS.UNKNOWN;
-  const mode = locationModeFor(tier);
-  const isLocked = tierKnown && mode === "locked";
-  const isDelayed = tierKnown && mode === "delayed";
-  // 프리미엄 전용 액션(경로·주변소리)은 프리미엄이거나 티어 미확정일 때만 통과(확정 후 하위 티어는 유도).
-  const premiumOpen = !tierKnown || mode === "realtime";
+  // 위치 데이터는 조회 범위가 확정된 뒤에만 연다. 엔타이틀먼트 오류 때도
+  // TanStack 캐시의 정확한 좌표·경로가 잠깐 노출되지 않도록 fail-closed 한다.
+  const tierKnown = entitlement.tier !== TIERS.UNKNOWN;
+  const mode = locationModeFor(entitlement.tier);
+  const locationScopeError = entitlement.isError;
+  const locationScopePending = entitlement.isError || !tierKnown;
+  const canShowLocation = !locationScopePending && mode !== "locked";
+  const canShowHistory = !locationScopePending && mode === "realtime";
+  const isLocked = !locationScopePending && mode === "locked";
+  const isDelayed = canShowLocation && mode === "delayed";
+  const premiumOpen = canShowHistory;
 
   const now = useMemo(() => new Date(), [locations]);
   const historyWindow = useMemo(() => getHistoryDayWindow(now), [now]);
@@ -194,9 +198,10 @@ export function ParentLocation() {
 
   const childAvatar = childAvatarPath(selected?.photo_url);
   const childName = selected?.name || "아이";
-  const loc = selected?.user_id
+  const cachedLoc = selected?.user_id
     ? locations?.find((l) => l.user_id === selected.user_id) ?? null
     : null;
+  const loc = canShowLocation ? cachedLoc : null;
   const [refreshState, setRefreshState] = useState<LocationRefreshState>("idle");
   const refreshSeq = useRef(0);
   const isRefreshingLocation = refreshState !== "idle";
@@ -216,14 +221,22 @@ export function ParentLocation() {
   const locationLabel = useLocationLabels(loc ? [loc] : [], places);
   const curPlace = loc ? locationLabel(loc) : "위치 확인 중";
   const isStaleLocation = !!loc && fresh?.status === "stale";
-  const sheetName = isLocked
+  const sheetName = locationScopeError
+    ? `${childName} · 위치 조회 범위 확인 실패`
+    : locationScopePending
+    ? `${childName} · 조회 범위 확인 중`
+    : isLocked
     ? childName
     : isRefreshingLocation
       ? `${childName} 위치 확인 중`
       : isStaleLocation
         ? `${childName} · 마지막 확인: ${curPlace}`
         : `${childName} · ${curPlace}`;
-  const sheetZoneText = isLocked
+  const sheetZoneText = locationScopeError
+    ? "구독 상태를 확인하지 못했어요"
+    : locationScopePending
+    ? "구독 상태를 확인하고 있어요"
+    : isLocked
     ? "안전 기능은 계속 쓸 수 있어요"
     : isRefreshingLocation
       ? "아이 기기에 요청을 보냈어요 · 새 위치를 기다리는 중"
@@ -249,8 +262,8 @@ export function ParentLocation() {
   useEffect(() => {
     setView(requestedView);
   }, [requestedView]);
-  // 무료(잠금)에서는 항상 실시간 화면(잠금 오버레이). 토글은 잠금이 아닐 때만 노출.
-  const activeView: "live" | "history" = isLocked ? "live" : view;
+  // 무료(잠금)·조회 범위 미확정에서는 경로 캐시를 렌더링하지 않는다.
+  const activeView: "live" | "history" = isLocked || locationScopePending ? "live" : view;
   useEffect(() => {
     if (activeView === "history") setScrubOffsetMinute(historyMaxOffsetMinute);
   }, [activeView, selected?.id, historyMaxOffsetMinute]);
@@ -260,17 +273,18 @@ export function ParentLocation() {
     return { start: historyWindow.start.toISOString(), end: historyWindow.end.toISOString() };
   }, [historyWindow]);
 
-  // 오늘경로는 프리미엄 전용(EXTENDED_HISTORY). 미확정(unknown)은 R9로 잠그지 않는다.
-  const historyEnabled = activeView === "history" && premiumOpen;
+  // 오늘경로는 조회 범위가 확정된 프리미엄 부모만 요청한다.
+  const historyEnabled = activeView === "history" && canShowHistory;
   const {
     data: history,
     isFetching: historyFetching,
     isError: historyError,
   } = useLocationHistory(historyRange.start, historyRange.end, historyEnabled);
+  const visibleHistory = canShowHistory ? history : undefined;
 
   const timedTrail = useMemo(
-    () => buildTrailPoints(history, selected?.user_id ?? null),
-    [history, selected?.user_id],
+    () => buildTrailPoints(visibleHistory, selected?.user_id ?? null),
+    [visibleHistory, selected?.user_id],
   );
   const effectiveScrubOffsetMinute = clampHistoryOffsetMinute(
     scrubOffsetMinute,
@@ -293,8 +307,8 @@ export function ParentLocation() {
 
   // ── 스테이포인트: 하루 이력에서 GPS 노이즈를 걸러 머무른 장소 + 체류시간을 검출. ──
   const stayPoints = useMemo<StayPoint[]>(
-    () => detectStayPoints(toTimedPoints(history, selected?.user_id ?? null)),
-    [history, selected?.user_id],
+    () => detectStayPoints(toTimedPoints(visibleHistory, selected?.user_id ?? null)),
+    [visibleHistory, selected?.user_id],
   );
   const selectedTodayEvents = useMemo(
     () =>
@@ -487,7 +501,7 @@ export function ParentLocation() {
 
   // 새로고침 — 실제 리페치 결과에 따라 정직하게 안내(거짓 성공 금지).
   const refresh = async () => {
-    if (isFetching || isRefreshingLocation) return;
+    if (!canShowHistory || isFetching || isRefreshingLocation) return;
     if (!familyId || !selected?.user_id) {
       show("아이 기기 정보가 없어 위치 요청을 보내지 못했어요", "⚠️");
       return;
@@ -601,6 +615,47 @@ export function ParentLocation() {
         </div>
       )}
 
+      {locationScopePending && (
+        <div
+          className={`pl-lock${locationScopeError ? " pl-lock--error" : ""}`}
+          role={locationScopeError ? "alert" : "status"}
+          aria-live={locationScopeError ? "assertive" : "polite"}
+        >
+          <div className="pl-lock__ring">
+            {locationScopeError ? (
+              <AlertTriangle size={30} strokeWidth={2.2} color="var(--gold-600)" />
+            ) : (
+              <RefreshCw size={30} strokeWidth={2.2} color="var(--blue-500)" className="pl-lock__spin" />
+            )}
+          </div>
+          <div className="pl-lock__title">
+            {locationScopeError ? "위치 조회 범위 확인 실패" : "조회 범위 확인 중"}
+          </div>
+          <div className="pl-lock__sub">
+            {locationScopeError ? "구독 상태를 확인하지 못했어요." : "구독 상태를 확인하고 있어요."}
+            <br />
+            {locationScopeError
+              ? "인터넷 연결을 확인한 뒤 다시 시도해 주세요."
+              : "확인되면 볼 수 있는 위치 범위를 표시해 드려요."}
+          </div>
+          {locationScopeError && (
+            <button
+              type="button"
+              className="pl-lock__retry hy-press"
+              onClick={() => void entitlement.refetch()}
+              disabled={entitlement.isFetching}
+            >
+              <RefreshCw
+                size={18}
+                strokeWidth={2.4}
+                className={entitlement.isFetching ? "pl-lock__spin" : undefined}
+              />
+              {entitlement.isFetching ? "다시 확인 중…" : "다시 시도"}
+            </button>
+          )}
+        </div>
+      )}
+
       {activeView === "history" && premiumOpen && !histLocked && timedTrail.length > 0 && (
         <div className="pl-scrub">
           <div className="pl-scrub__head">
@@ -652,7 +707,7 @@ export function ParentLocation() {
       )}
 
       {/* 상단 오버레이(잠금 시 숨김) — 보기 토글 + (실시간에서만) 새로고침 */}
-      {!isLocked && (
+      {!isLocked && !locationScopePending && (
         <div className="pl-top">
           <div className="pl-viewtog" role="tablist" aria-label="위치 보기 전환">
             <button
@@ -697,7 +752,7 @@ export function ParentLocation() {
         </div>
       )}
 
-      {!isLocked && activeView === "live" && isRefreshingLocation && (
+      {!isLocked && !locationScopePending && activeView === "live" && isRefreshingLocation && (
         <div className="pl-refreshing" role="status" aria-live="polite">
           <span className="pl-refreshing__spinner" aria-hidden="true" />
           <span className="pl-refreshing__title">{refreshOverlayTitle}</span>
@@ -706,7 +761,7 @@ export function ParentLocation() {
       )}
 
       {/* 아이 표시 배지 — 실시간에서만 현재 보는 아이를 명시한다. */}
-      {!isLocked && activeView === "live" && selected && (
+      {!isLocked && !locationScopePending && activeView === "live" && selected && (
         <div className="pl-chips">
           <div className="pl-chip pl-chip--active" aria-label={`현재 ${selected.name || "아이"} 위치 보기`}>
             <span className="pl-chip__avatar">
@@ -809,12 +864,12 @@ export function ParentLocation() {
             </div>
           </div>
           <span className={`pl-sheet__dur${isRefreshingLocation ? " pl-sheet__dur--loading" : ""}`}>
-            {isRefreshingLocation ? "확인 중" : loc ? "" : "오프라인"}
+            {locationScopeError ? "오류" : locationScopePending ? "확인 중" : isRefreshingLocation ? "확인 중" : loc ? "" : "오프라인"}
           </span>
         </div>
 
         {/* 갱신 실패 / 위치 없음 → 상태 화면으로 (잠금 시엔 위치 부재가 아니라 잠금이므로 숨김) */}
-        {!isLocked && (isError || !loc) && (
+        {!isLocked && !locationScopePending && (isError || !loc) && (
           <button
             type="button"
             className="pl-status hy-press"
@@ -852,7 +907,7 @@ export function ParentLocation() {
             메모 남기기
           </button>
           {/* 경로·주변소리는 프리미엄 전용 — 하위 티어에서는 유도. 잠금(무료)에서는 숨김. */}
-          {!isLocked && (
+          {!isLocked && !locationScopePending && (
             <>
               <button
                 type="button"

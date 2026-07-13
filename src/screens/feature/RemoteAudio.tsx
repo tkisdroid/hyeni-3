@@ -17,15 +17,19 @@ import {
   type RemoteListenSession,
 } from "@/lib/native/ambient";
 import { useRequestRemoteListen, useStopRemoteListen } from "@/queries/useRemote";
+import { useRemoteListenSessionStatus } from "@/queries/useRemoteAudit";
 import { openFamilySocket, type FamilySocket } from "@/realtime/familySocket";
 import { getApiAccessToken } from "@/lib/api/session";
 import { RemoteAudioPlayer } from "@/lib/remoteAudioPlayer";
+import { resolveRemoteListenSessionTiming } from "@/transform/remoteListenSessionTiming";
 import "./RemoteAudio.css";
 
 /** 듣기 제한 시간(초) · 위급 시 1분 청취. */
 const LISTEN_SECONDS = 60;
 /** hyeni-1 과 동일: 아이가 잠금/접힘 상태이면 알림 확인까지 시간이 걸릴 수 있어 대기 안내만 전환한다. */
 const REMOTE_AUDIO_WAITING_HELP_MS = 25_000;
+/** 이 시간 동안 새 WAV가 없으면 LIVE를 해제하고 서버 세션 상태를 다시 확인한다. */
+const REMOTE_AUDIO_STREAM_STALE_MS = 4_000;
 
 /** 웨이브 이퀄라이저 막대(20개)의 애니메이션 위상차. */
 const WAVE_DELAYS = [
@@ -39,7 +43,7 @@ const TRUST_CARDS = [
   {
     icon: "🔔",
     title: "아이에게 알림이 가요",
-    text: "청취가 시작되면 아이 기기에 알림이 표시돼요.",
+    text: "아이 기기에서 알림을 누르고 직접 허용해야 시작돼요.",
   },
   {
     icon: "⏱️",
@@ -54,12 +58,6 @@ const TRUST_CARDS = [
 ] as const;
 
 const pad2 = (n: number): string => String(n).padStart(2, "0");
-const makeRequestId = (): string => {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-};
 
 /** 주변소리: 대기 화면 → '듣는 중' 오버레이(웨이브) 토글. */
 export function RemoteAudio() {
@@ -101,15 +99,62 @@ export function RemoteAudio() {
   const [native] = useState(isRemoteListenNativeSupported);
   const [listening, setListening] = useState(false);
   const [muted, setMuted] = useState(false);
-  const [remaining, setRemaining] = useState(LISTEN_SECONDS);
   const [waitingHint, setWaitingHint] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
+  const [localRequestStartedAtMs, setLocalRequestStartedAtMs] = useState<number | null>(null);
+  const [clockMs, setClockMs] = useState(() => Date.now());
+  const [lastAudioAtMs, setLastAudioAtMs] = useState<number | null>(null);
+  const startInFlightRef = useRef(false);
+  const mountedRef = useRef(true);
+  const endingRef = useRef(false);
 
   // 실제 청취 세션: 아이 기기 캡처 명령(push-notify) + audit 세션 행(remote_listen_sessions).
   const requestListen = useRequestRemoteListen();
   const stopListenCmd = useStopRemoteListen();
+  const stopListenMutateAsyncRef = useRef(stopListenCmd.mutateAsync);
+  stopListenMutateAsyncRef.current = stopListenCmd.mutateAsync;
+  const stopThenCloseRef = useRef<(
+    session: RemoteListenSession | null,
+    targetChildUserId: string | null,
+    requestId: string | null,
+    reason: string,
+  ) => Promise<void>>(async () => {});
+  stopThenCloseRef.current = async (session, targetChildUserId, requestId, reason) => {
+    try {
+      if (requestId && targetChildUserId) {
+        await stopListenMutateAsyncRef.current({ targetChildUserId, requestId });
+      }
+    } finally {
+      await closeRemoteListenSession(session, reason);
+    }
+  };
   const sessionRef = useRef<RemoteListenSession | null>(null);
   const requestIdRef = useRef<string | null>(null);
+  const targetChildUserIdRef = useRef<string | null>(null);
   const childUserId = childMember?.user_id ?? null;
+  const sessionStatusQuery = useRemoteListenSessionStatus(activeRequestId);
+  const sessionStatus =
+    sessionStatusQuery.data?.id === activeRequestId
+      && (!childUserId || sessionStatusQuery.data.childUserId === childUserId)
+      ? sessionStatusQuery.data
+      : null;
+  const estimatedServerNowMs = sessionStatus
+    ? sessionStatus.serverNowMs + Math.max(0, clockMs - sessionStatus.receivedAtMs)
+    : null;
+  const sessionTiming = useMemo(
+    () => resolveRemoteListenSessionTiming({
+      clientNowMs: clockMs,
+      localRequestStartedAtMs: localRequestStartedAtMs ?? clockMs,
+      serverNowMs: estimatedServerNowMs,
+      serverStartedAtMs: sessionStatus?.startedAtMs ?? null,
+      serverCheckedAtMs: sessionStatus?.serverNowMs ?? null,
+      consentedAtMs: sessionStatus?.consentedAtMs ?? null,
+      captureExpiresAtMs: sessionStatus?.captureExpiresAtMs ?? null,
+      endedAtMs: sessionStatus?.endedAtMs ?? null,
+    }),
+    [clockMs, estimatedServerNowMs, localRequestStartedAtMs, sessionStatus],
+  );
 
   // 실시간 오디오 수신: 아이 기기가 broadcast(audio_chunk)로 보낸 WAV 청크를 재생.
   // familySocket 은 App 레벨(useFamilyRealtime)과 별개 연결 — 청취 중에만 열고 종료 시 닫는다.
@@ -120,14 +165,21 @@ export function RemoteAudio() {
   const [receiving, setReceiving] = useState(false);
   const receivingRef = useRef(false);
   receivingRef.current = receiving;
+  const listeningRef = useRef(false);
+  listeningRef.current = listening;
 
   // 청취 종료(수동/타임아웃/언마운트 공통): 오디오 소켓/플레이어 정리 + audit 세션 종료 + 아이 캡처 중지.
   // 최신값 참조를 위해 매 렌더 ref 에 재바인딩(effect stale-closure 방지).
   const endListenRef = useRef<(reason: string) => void>(() => {});
   endListenRef.current = (reason: string) => {
+    if (endingRef.current) return;
+    endingRef.current = true;
     setListening(false);
     setReceiving(false);
     setWaitingHint(false);
+    setLastAudioAtMs(null);
+    setActiveRequestId(null);
+    setLocalRequestStartedAtMs(null);
     seenChunksRef.current.clear();
     // 오디오 수신 소켓·플레이어 정리.
     if (audioSocketRef.current) {
@@ -139,11 +191,20 @@ export function RemoteAudio() {
       playerRef.current = null;
     }
     const session = sessionRef.current;
+    const requestId = requestIdRef.current;
+    const targetChildUserId = targetChildUserIdRef.current;
     sessionRef.current = null;
     requestIdRef.current = null;
-    void closeRemoteListenSession(session, reason);
-    stopListenCmd.mutate({ targetChildUserId: childUserId });
+    targetChildUserIdRef.current = null;
+    void stopThenCloseRef.current(session, targetChildUserId, requestId, reason);
   };
+
+  useEffect(() => {
+    if (!listening) return;
+    setClockMs(Date.now());
+    const id = window.setInterval(() => setClockMs(Date.now()), 1_000);
+    return () => window.clearInterval(id);
+  }, [listening]);
 
   // 접힘/잠금 상태에서는 아이 기기가 알림/Activity 를 거쳐 늦게 열릴 수 있다.
   // hyeni-1 처럼 자동 종료하지 않고, 일정 시간 뒤 대기 안내만 더 명확하게 바꾼다.
@@ -158,89 +219,170 @@ export function RemoteAudio() {
     return () => window.clearTimeout(id);
   }, [listening, receiving]);
 
-  // 청취 중 1초 카운트다운. 첫 오디오 재생이 시작된 뒤에만 1분을 센다.
+  // 서버가 확인한 동의·캡처 절대 만료·아이 측 업로드 실패를 부모 화면의 정본으로 쓴다.
+  // 상태 조회가 일시 실패하면 resolver의 보수적 상한이 마지막 순간 동의를 조기 종료하지 않는다.
   useEffect(() => {
-    if (!listening || !receiving) return;
-    if (remaining <= 0) {
+    if (!listening) return;
+    if (sessionTiming.phase === "request_expired") {
+      endListenRef.current("request_timeout");
+      show("아이 기기에서 1분 안에 허용하지 않아 요청을 종료했어요", "⏱️");
+      return;
+    }
+    if (sessionTiming.phase === "capture_expired") {
       endListenRef.current("timeout");
       show("1분이 지나 듣기를 종료했어요", "⏱️");
       return;
     }
-    const id = window.setTimeout(() => setRemaining((r) => r - 1), 1000);
+    if (sessionTiming.phase === "ended") {
+      const reason = sessionStatus?.endReason ?? "timeout";
+      endListenRef.current(reason);
+      if (reason === "audio_auth_failed") {
+        show("아이 기기의 로그인 확인이 필요해 소리 공유가 중단됐어요", "🔒");
+      } else if (reason === "audio_upload_failed") {
+        show("소리 연결이 끊겨 듣기를 안전하게 종료했어요", "⚠️");
+      } else if (reason === "request_timeout") {
+        show("아이 기기에서 1분 안에 허용하지 않아 요청을 종료했어요", "⏱️");
+      } else if (reason === "timeout") {
+        show("1분이 지나 듣기를 종료했어요", "⏱️");
+      }
+    }
+  }, [listening, sessionStatus?.endReason, sessionTiming.phase, show]);
+
+  // 청크 전송이 끊겼는데 과거 청크만으로 LIVE가 계속 보이지 않도록 즉시 연결 상태를 내린다.
+  useEffect(() => {
+    if (!listening || !receiving || lastAudioAtMs === null) return;
+    const remainingFreshMs = lastAudioAtMs + REMOTE_AUDIO_STREAM_STALE_MS - Date.now();
+    const id = window.setTimeout(() => {
+      if (!listeningRef.current) return;
+      setReceiving(false);
+      setWaitingHint(true);
+    }, Math.max(0, remainingFreshMs));
     return () => window.clearTimeout(id);
-  }, [listening, receiving, remaining, show]);
+  }, [lastAudioAtMs, listening, receiving]);
 
   // 언마운트 시 열린 세션이 있으면 audit 행을 닫고 오디오 소켓/플레이어를 정리한다(never-ended·누수 방지).
   useEffect(
-    () => () => {
-      if (audioSocketRef.current) {
-        audioSocketRef.current.close();
-        audioSocketRef.current = null;
-      }
-      if (playerRef.current) {
-        playerRef.current.stop();
-        playerRef.current = null;
-      }
-      seenChunksRef.current.clear();
-      const s = sessionRef.current;
-      if (s) {
+    () => {
+      mountedRef.current = true;
+      return () => {
+        mountedRef.current = false;
+        if (audioSocketRef.current) {
+          audioSocketRef.current.close();
+          audioSocketRef.current = null;
+        }
+        if (playerRef.current) {
+          playerRef.current.stop();
+          playerRef.current = null;
+        }
+        seenChunksRef.current.clear();
+        const s = sessionRef.current;
+        const requestId = requestIdRef.current;
+        const targetChildUserId = targetChildUserIdRef.current;
         sessionRef.current = null;
-        void closeRemoteListenSession(s, "unmount");
-      }
+        requestIdRef.current = null;
+        targetChildUserIdRef.current = null;
+        void stopThenCloseRef.current(s, targetChildUserId, requestId, "unmount");
+      };
     },
     [],
   );
 
-  // 듣기 시작: 킬 스위치 확인 → 아이 기기 캡처 명령 → audit 세션 생성 → 오버레이. (사용자 액션 전용)
+  // 듣기 시작: 킬 스위치 확인 → audit 세션 선기록 → 아이 기기 캡처 명령 → 오버레이.
+  // 감사 기록을 만들 수 없으면 마이크 명령도 보내지 않는다(투명성 fail-closed).
   const startListen = async () => {
-    const allowed = await isRemoteListenAllowed(familyId);
-    if (!allowed) {
-      show("가족 설정에서 원격 청취가 꺼져 있어요", "🔕");
-      return;
-    }
-    // 아이 기기에 캡처 시작 명령(서버가 프리미엄·주보호자 게이트) — 실패 시 정직 안내.
-    const requestId = makeRequestId();
-    requestIdRef.current = requestId;
-    seenChunksRef.current.clear();
-    let res: Awaited<ReturnType<typeof requestListen.mutateAsync>>;
+    if (startInFlightRef.current || requestIdRef.current) return;
+    startInFlightRef.current = true;
+    endingRef.current = false;
+    setStarting(true);
     try {
-      res = await requestListen.mutateAsync({
-        targetChildUserId: childUserId,
-        durationSec: LISTEN_SECONDS,
-        requestId,
-      });
-    } catch {
-      requestIdRef.current = null;
-      show("아이 기기가 오프라인이거나 알림을 받을 수 없어요. 잠시 후 다시 시도해 주세요.", "⚠️");
-      return;
-    }
-    if (!res.ok) {
-      requestIdRef.current = null;
-      if (res.status === 402) {
-        show("주변 소리 듣기는 프리미엄에서 사용할 수 있어요. SOS와 긴급 알림은 무료로 계속 받을 수 있어요.", "⭐");
+      if (!familyId || !userId || !childUserId) {
+        show("대상 아이와 가족 정보를 확인한 뒤 다시 시도해 주세요.", "⚠️");
+        return;
       }
-      else if (res.status === 403) show("주 보호자만 원격 청취를 시작할 수 있어요", "🔒");
-      else show("아이 기기가 오프라인이거나 알림을 받을 수 없어요. 잠시 후 다시 시도해 주세요.", "⚠️");
-      return;
-    }
-    if (res.total === 0) {
-      requestIdRef.current = null;
-      show("연결된 아이 기기를 찾지 못했어요. 아이 앱이 설치되어 있고 로그인되어 있는지 확인해 주세요.", "⚠️");
-      return;
-    }
-    // audit 세션 행 생성(마이크 캡처보다 먼저 — 크래시 시 정리 가능).
-    sessionRef.current = await openRemoteListenSession({
-      familyId,
-      initiatorUserId: userId,
-      childUserId,
-    });
-
-    // 오디오 수신 시작: 플레이어 준비 + broadcast(audio_chunk) 구독.
-    // 아이 네이티브가 보낸 WAV 청크를 FamilyRoom 이 fan-out → 여기서 디코드·재생한다.
-    const player = new RemoteAudioPlayer();
-    player.start();
-    playerRef.current = player;
-    if (familyId) {
+      const allowed = await isRemoteListenAllowed(familyId);
+      if (!mountedRef.current) return;
+      if (!allowed) {
+        show("가족 설정에서 원격 청취가 꺼져 있어요", "🔕");
+        return;
+      }
+      seenChunksRef.current.clear();
+      const auditSession = await openRemoteListenSession({
+        familyId,
+        initiatorUserId: userId,
+        childUserId,
+      });
+      if (!mountedRef.current) {
+        await closeRemoteListenSession(auditSession, "unmount_before_command");
+        return;
+      }
+      if (!auditSession.id) {
+        show("청취 기록을 안전하게 남길 수 없어 시작하지 않았어요. 잠시 후 다시 시도해 주세요.", "🔒");
+        return;
+      }
+      const requestId = auditSession.id;
+      requestIdRef.current = requestId;
+      targetChildUserIdRef.current = childUserId;
+      sessionRef.current = auditSession;
+      let res: Awaited<ReturnType<typeof requestListen.mutateAsync>>;
+      try {
+        res = await requestListen.mutateAsync({
+          targetChildUserId: childUserId,
+          durationSec: LISTEN_SECONDS,
+          requestId,
+        });
+        if (!mountedRef.current) return;
+      } catch {
+        if (!mountedRef.current) return;
+        sessionRef.current = null;
+        requestIdRef.current = null;
+        targetChildUserIdRef.current = null;
+        await stopThenCloseRef.current(
+          auditSession,
+          childUserId,
+          requestId,
+          "command_failed",
+        );
+        if (!mountedRef.current) return;
+        show("아이 기기가 오프라인이거나 알림을 받을 수 없어요. 잠시 후 다시 시도해 주세요.", "⚠️");
+        return;
+      }
+      if (!res.ok) {
+        sessionRef.current = null;
+        requestIdRef.current = null;
+        targetChildUserIdRef.current = null;
+        await stopThenCloseRef.current(
+          auditSession,
+          childUserId,
+          requestId,
+          `command_http_${res.status}`,
+        );
+        if (!mountedRef.current) return;
+        if (res.status === 402) {
+          show("주변 소리 듣기는 프리미엄에서 사용할 수 있어요. SOS와 긴급 알림은 무료로 계속 받을 수 있어요.", "⭐");
+        }
+        else if (res.status === 403) show("주 보호자만 원격 청취를 시작할 수 있어요", "🔒");
+        else show("아이 기기가 오프라인이거나 알림을 받을 수 없어요. 잠시 후 다시 시도해 주세요.", "⚠️");
+        return;
+      }
+      if (res.total === 0) {
+        sessionRef.current = null;
+        requestIdRef.current = null;
+        targetChildUserIdRef.current = null;
+        await stopThenCloseRef.current(
+          auditSession,
+          childUserId,
+          requestId,
+          "no_target_device",
+        );
+        if (!mountedRef.current) return;
+        show("연결된 아이 기기를 찾지 못했어요. 아이 앱이 설치되어 있고 로그인되어 있는지 확인해 주세요.", "⚠️");
+        return;
+      }
+      // 오디오 수신 시작: 플레이어 준비 + broadcast(audio_chunk) 구독.
+      // 아이 네이티브가 보낸 WAV 청크를 FamilyRoom 이 fan-out → 여기서 디코드·재생한다.
+      const player = new RemoteAudioPlayer();
+      player.start();
+      playerRef.current = player;
       audioSocketRef.current = openFamilySocket(
         familyId,
         () => getApiAccessToken(),
@@ -257,17 +399,17 @@ export function RemoteAudio() {
                 source?: string;
               }
             | undefined;
-          // 대상 아이가 지정돼 있으면 그 아이 청크만 재생(다자녀 격리).
-          if (childUserId && payload?.childUserId && payload.childUserId !== childUserId) return;
           const activeRequestId = requestIdRef.current;
-          if (payload?.requestId && activeRequestId && payload.requestId !== activeRequestId) return;
+          if (!childUserId || !activeRequestId) return;
+          if (!payload?.childUserId || payload.childUserId !== childUserId) return;
+          if (!payload?.requestId || payload.requestId !== activeRequestId) return;
           if (!payload?.data) return;
           const sequence = Number.isFinite(Number(payload.sequenceNumber))
             ? Number(payload.sequenceNumber)
             : null;
           const chunkKey = [
-            payload.requestId || activeRequestId || "legacy",
-            payload.childUserId || "",
+            payload.requestId,
+            payload.childUserId,
             sequence === null ? payload.source || payload.mimeType || "audio" : "seq",
             sequence === null ? payload.data.slice(0, 96) : String(sequence),
           ].join(":");
@@ -279,21 +421,27 @@ export function RemoteAudio() {
           const activePlayer = playerRef.current;
           if (!activePlayer) return;
           void activePlayer.enqueueBase64Wav(payload.data, payload.mimeType ?? "audio/wav").then((played) => {
-            if (played && !receivingRef.current) {
-              setRemaining(LISTEN_SECONDS);
+            if (played && requestIdRef.current === payload.requestId) {
+              setLastAudioAtMs(Date.now());
               setWaitingHint(false);
-              setReceiving(true);
+              if (!receivingRef.current) setReceiving(true);
             }
           });
         },
       );
-    }
 
-    setMuted(false);
-    setReceiving(false);
-    setWaitingHint(false);
-    setRemaining(LISTEN_SECONDS);
-    setListening(true);
+      setMuted(false);
+      setReceiving(false);
+      setWaitingHint(false);
+      setLastAudioAtMs(null);
+      setLocalRequestStartedAtMs(auditSession.startedAt);
+      setActiveRequestId(requestId);
+      setClockMs(Date.now());
+      setListening(true);
+    } finally {
+      startInFlightRef.current = false;
+      if (mountedRef.current) setStarting(false);
+    }
   };
   const stopListen = () => endListenRef.current("user_stop");
   const toggleMute = () => {
@@ -316,17 +464,27 @@ export function RemoteAudio() {
     });
   };
 
-  const remoteTime = `${pad2(Math.floor(remaining / 60))}:${pad2(remaining % 60)}`;
+  const consentConfirmed = sessionTiming.phase === "consented";
+  const remaining = sessionTiming.remainingSeconds ?? 0;
+  const remoteTime = consentConfirmed
+    ? `${pad2(Math.floor(remaining / 60))}:${pad2(remaining % 60)}`
+    : "--:--";
   const listenEyebrow = receiving
     ? "주변 소리 듣는 중"
+    : consentConfirmed
+      ? "동의 확인 · 소리 연결 중"
     : waitingHint
       ? "응답 기다리는 중"
       : "아이 기기 연결 중";
-  const liveLabel = receiving ? "LIVE" : waitingHint ? "대기" : "연결 중";
+  const liveLabel = receiving ? "LIVE" : consentConfirmed ? "동의됨" : waitingHint ? "대기" : "연결 중";
   const listenFoot = receiving
     ? "소리가 연결됐어요"
+    : consentConfirmed
+      ? "아이의 동의를 확인했어요. 소리를 연결하고 있어요"
     : waitingHint
-      ? "아이 알림 확인 대기"
+      ? sessionStatusQuery.isError
+        ? "아이 응답과 서버 상태를 다시 확인하고 있어요"
+        : "아이 알림 확인 대기"
       : "아이 기기에서 소리를 여는 중이에요";
 
   return (
@@ -380,16 +538,16 @@ export function RemoteAudio() {
         {native ? (
           <div className="ra-start-wrap">
             <div className="ra-start-note">
-              위급할 때만 사용해 주세요. 청취 시작 전 아이 기기에 알림이 전송돼요.
+              위급할 때만 사용해 주세요. 아이가 알림을 열고 직접 허용해야 시작돼요.
             </div>
             <button
               type="button"
               className="ra-start hy-press"
               onClick={() => void startListen()}
-              disabled={requestListen.isPending}
+              disabled={starting || requestListen.isPending || !childUserId}
             >
               <Mic size={21} strokeWidth={2} color="#fff" />
-              {requestListen.isPending ? "연결 요청 중" : "듣기 시작"}
+              {starting || requestListen.isPending ? "연결 요청 중" : "듣기 시작"}
             </button>
           </div>
         ) : (

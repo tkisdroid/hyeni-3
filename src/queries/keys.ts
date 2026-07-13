@@ -28,6 +28,12 @@ export const qk = {
   dangerZones: (familyId: string) => ["dangerZones", familyId] as const,
   savedPlaces: (familyId: string) => ["savedPlaces", familyId] as const,
   parentAlerts: (familyId: string) => ["parentAlerts", familyId] as const,
+  remoteListenAudit: (familyId: string) => ["remoteListenAudit", familyId] as const,
+  remoteListenSession: (familyId: string, requestId: string) =>
+    ["remoteListenSession", familyId, requestId] as const,
+  notifSettings: (userId: string) => ["notif-settings", userId] as const,
+  childNotifSettings: (familyId: string, childUserId: string) =>
+    ["notif-settings", "child-status", familyId, childUserId] as const,
 
   // 도보 경로(출발/도착 좌표 기준)
   walkingRoute: (origin: string, destination: string) =>
@@ -36,6 +42,7 @@ export const qk = {
   // 메모 — childId(member id)까지 키에 포함(아이별 스레드 캐시 분리; 미포함 시 아이 간 캐시 충돌).
   memoReplies: (familyId: string, dateKeys?: string, childId?: string | null) =>
     ["memoReplies", familyId, dateKeys ?? "recent", childId ?? "all"] as const,
+  memoBlocks: (familyId: string) => ["memoBlocks", familyId] as const,
 
   // 스티커(칭찬)
   stickerSummary: (familyId: string) => ["stickers", "summary", familyId] as const,

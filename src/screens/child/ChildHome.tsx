@@ -4,6 +4,7 @@ import { Check, MapPin, Settings2, X } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAccent } from "@/app/accent";
+import { useRecentDateKeys } from "@/app/useRecentDateKeys";
 import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "@/queries/useFamily";
 import { useEvents, useDailySupplies, useUpsertDailySupply, useDeleteDailySupply } from "@/queries/useSchedule";
@@ -61,9 +62,10 @@ export function ChildHome() {
   const { accent, setAccent } = useAccent();
   const { userId } = useAuth();
 
-  const now = useMemo(() => new Date(), []);
+  const memoDateKeys = useRecentDateKeys(7);
+  const todayKey = memoDateKeys[memoDateKeys.length - 1] ?? todayDateKey();
+  const now = useMemo(() => new Date(), [todayKey]);
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  const todayKey = useMemo(() => todayDateKey(now), [now]);
 
   const { data: family } = useMyFamily();
   const { data: events } = useEvents();
@@ -233,7 +235,7 @@ export function ChildHome() {
   }, [book.slots]);
 
   // ── 부모님 대화 ──────────────────────────────────────────────────────
-  const memoThread = useMemoThread(useMemo(() => [todayKey], [todayKey]), myMember?.id ?? null);
+  const memoThread = useMemoThread(memoDateKeys, myMember?.id ?? null);
   const sendMemo = useSendMemo();
   const parentNote = latestParentMemoText(memoThread.data);
   const unreadCount = unreadParentMemoCount(memoThread.data, userId);
@@ -241,7 +243,7 @@ export function ChildHome() {
   const sendQuickStatus = (actionId: QuickStatusActionId) => {
     if (!myMember?.id || sendMemo.isPending) return;
     sendMemo.mutate(buildQuickStatusMemo(actionId, myMember.id, todayKey), {
-      onSuccess: () => show("부모님께 보냈어", "💬"),
+      onSuccess: () => show("가족 메시지에 남겼어", "💬"),
       onError: () => show("보내지 못했어. 잠시 후 다시 해줘", "⚠️"),
     });
   };

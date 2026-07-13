@@ -1,7 +1,6 @@
 package com.hyeni.calendar;
 
 import android.Manifest;
-import android.app.ActivityOptions;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -11,8 +10,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
-import android.os.Bundle;
-import android.os.PowerManager;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -39,17 +36,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     private static final String PREFS_NAME = "hyeni_location_prefs";
     private static final String ALERT_CHANNEL_ID = NotificationHelper.CHANNEL_EMERGENCY;
     private static final String SCHEDULE_CHANNEL_ID = NotificationHelper.CHANNEL_SCHEDULE;
-    // v5_silent_cover: 무음 + 폴더블 cover display 호환 채널.
-    // - sound=null + vibration=false → 사용자(아이) 에게 들키지 않음
-    // - bypassDnd=true → Samsung One UI 가 폴더 닫힌 상태에서도 알림을 cover display
-    //   에 표시 → fullScreenIntent 가 RemoteListenActivity launch 가능. bypassDnd 는
-    //   "표시 정책" 이고 sound 는 별개라 무음과 양립한다.
-    // 채널 ID 가 v4 → v5 로 바뀐 이유: NotificationChannel 의 importance/sound/
-    // bypassDnd 는 한 번 생성되면 immutable. v4_silent 은 bypassDnd=false 라 폴더
-    // 닫힌 상태에서 cover display 표시 실패. 새 ID 로 재생성해야 갱신됨.
-    // 채널 ID 단일 소스 = NotificationHelper.CHANNEL_REMOTE_LISTEN.
-    private static final String REMOTE_LISTEN_CHANNEL_ID = NotificationHelper.CHANNEL_REMOTE_LISTEN;
-    private static final int DEFAULT_REMOTE_LISTEN_DURATION_SEC = 60;
     private static final AtomicInteger notifId = new AtomicInteger(5000);
     private static final OkHttpClient HTTP_CLIENT = new OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -72,6 +58,19 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         Log.i(TAG, "FCM message received from: " + remoteMessage.getFrom());
 
         Map<String, String> data = remoteMessage.getData();
+
+        SharedPreferences targetPrefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        SessionTokenStore.ContextSnapshot targetContext = SessionTokenStore.readContext(targetPrefs);
+        NotificationTargetPolicy.Decision targetDecision = NotificationTargetPolicy.evaluate(
+            data,
+            targetContext.userId,
+            targetContext.familyId,
+            targetContext.role
+        );
+        if (!targetDecision.allowsDelivery()) {
+            Log.w(TAG, "FCM payload rejected by target policy: " + targetDecision.name());
+            return;
+        }
 
         String action = data.get("action");
         if ("force_ring".equals(action)) {
@@ -159,8 +158,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         // Skip if this notification was sent by me
         String senderUserId = data.get("senderUserId");
         if (senderUserId != null && !senderUserId.isEmpty()) {
-            String myUserId = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString("userId", "");
-            if (senderUserId.equals(myUserId)) {
+            if (senderUserId.equals(targetContext.userId)) {
                 Log.i(TAG, "Skipping self-notification for: " + type);
                 return;
             }
@@ -205,7 +203,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             return;
         }
 
-        // Remote listen: silently launch app for mic recording
+        // 주변소리 공유는 일반 알림만 게시한다. 마이크 시작은 아이가 알림을 열고
+        // 매 요청 직접 허용한 뒤 RemoteListenActivity에서만 수행한다.
         if ("remote_listen".equals(type)) {
             SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
             if (!shouldHandleChildCommand(prefs)) {
@@ -215,31 +214,20 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             if (!isTargetedToThisUser(prefs, data, "Remote listen")) {
                 return;
             }
-            String requestId = resolveRemoteListenRequestId(data);
-            Log.i(TAG, "Remote listen request - launching app requestId=" + requestId);
             publishDeviceStatusFromFcm(data, prefs);
-            wakeScreen();
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                int launcherNotificationId = showRemoteListenLauncher(data);
-                launchRemoteListenActivity(data, launcherNotificationId);
-                Log.i(TAG, "Remote listen native start skipped on Android 14+");
-                // 2026-05-08: background 에서 startForegroundService(AmbientListen)
-                // 호출 제거. Android 14+ 는 mic capture 를 위해 FGS type=MICROPHONE
-                // 이 필수인데, 그 type 은 background 시작을 거부한다 (SPECIAL_USE
-                // 로 우회하면 mic 가 silently muted 되어 peak16=0 무음 PCM 이 된다).
-                // 따라서 서비스 시작은 전적으로 RemoteListenActivity.onCreate (foreground
-                // context) 에서만 수행한다. cover display 등 activity launch 가 deferred
-                // 되는 기기는 폴더를 열어야 동작한다 (system 제약, 우회 불가).
-                return;
-            }
-            if (startAmbientListenService(data)) {
-                RemoteListenRequestStore.markLauncherShown(this, requestId);
-                return;
-            }
-            if (!launchRemoteListenActivity(data, 0)) {
-                Log.w(TAG, "Remote listen launch fallback notification required");
-                showRemoteListenLauncher(data);
-            }
+            RemoteListenNotification.Result result = RemoteListenNotification.show(
+                this,
+                new RemoteListenNotification.Request(
+                    data.get("requestId"),
+                    data.get("familyId"),
+                    firstNonBlank(data.get("targetUserId"), data.get("target_user_id")),
+                    data.get("senderUserId"),
+                    data.get("requestedAt"),
+                    data.get("expiresAt"),
+                    readDurationSec(data)
+                )
+            );
+            Log.i(TAG, "Remote listen consent notification result=" + result.name());
             return;
         }
 
@@ -288,32 +276,41 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         boolean isEmergency = isEmergencyNotification(type, data);
         if ("sticker".equals(type) && MainActivity.isAppForeground()) {
             Log.i(TAG, "Sticker FCM suppressed while app is foreground");
-            PolledNotificationStore.markAck(this, stableId);
             return;
         }
 
-        showNotification(title, body, type, isEmergency, stableId);
+        if ("new_memo".equals(type)) {
+            String memoDisplayPermit = data.get("memoDisplayPermit");
+            if (!MemoDisplayAuthorizationClient.authorize(targetContext, memoDisplayPermit)) {
+                Log.w(TAG, "Memo notification display authorization denied");
+                return;
+            }
+
+            SessionTokenStore.ContextSnapshot currentContext = SessionTokenStore.readContext(
+                getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            );
+            if (!NotificationTargetPolicy.evaluate(
+                    data,
+                    currentContext.userId,
+                    currentContext.familyId,
+                    currentContext.role
+                ).allowsDelivery()) {
+                Log.w(TAG, "Memo notification target changed before display");
+                return;
+            }
+        }
+
+        showNotification(title, body, type, isEmergency, stableId, data);
     }
 
-    private void wakeScreen() {
-        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        if (pm == null) return;
-        // FULL_WAKE_LOCK is deprecated but still wakes the screen on
-        // OEM-customised Android (Samsung One UI). 30s covers FCM-arrival →
-        // notification post → fullScreenIntent → activity onCreate → mic
-        // foreground-service start (each step can take 1-3s on a cold app).
-        @SuppressWarnings("deprecation")
-        PowerManager.WakeLock wl = pm.newWakeLock(
-            PowerManager.FULL_WAKE_LOCK
-                | PowerManager.ACQUIRE_CAUSES_WAKEUP
-                | PowerManager.ON_AFTER_RELEASE,
-            "hyeni:fcm_wake"
-        );
-        wl.setReferenceCounted(false);
-        wl.acquire(30_000);
-    }
-
-    private void showNotification(String title, String body, String type, boolean isEmergency, String stableId) {
+    private void showNotification(
+            String title,
+            String body,
+            String type,
+            boolean isEmergency,
+            String stableId,
+            Map<String, String> data
+    ) {
         // DB-H3: if the LocationService pending-notification poll already
         // displayed this push, skip the FCM copy. markAck below lets the poll
         // skip us in the reverse order — both channels carry the same pushId.
@@ -331,16 +328,30 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         // (IMPORTANCE_HIGH)로 heads-up 팝업을 보장한다.
         boolean isSticker = "sticker".equals(type);
         boolean isMemo = "new_memo".equals(type);
-        boolean isChildMessage = "ai_proactive".equals(type) || isMemo || isSticker;
-        String channel = isEmergency ? "emergency" : (isKkuk ? "kkuk" : (isChildMessage ? "child_message" : "schedule"));
+        String alertType = firstNonBlank(data.get("alertType"), data.get("alert_type"), "");
+        String channel = NotificationChannelPolicy.channelFor(type, alertType, isEmergency);
         // AI 선제 대화/부모 메모/스티커 알림은 탭하면 관련 아이 화면으로 직행한다.
-        String route = "ai_proactive".equals(type) ? "ai-chat" : (isMemo ? "child-memo" : (isSticker ? "child-sticker" : null));
-        NotificationHelper.showNotification(
+        String route = data.get("route");
+        if (isBlank(route)) {
+            String localRole = SessionTokenStore.readContext(
+                getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            ).role;
+            route = "ai_proactive".equals(type)
+                ? "ai-chat"
+                : (isMemo
+                    ? ("parent".equalsIgnoreCase(localRole) ? "/parent/memo" : "child-memo")
+                    : (isSticker ? "child-sticker" : null));
+        }
+        NotificationHelper.DeliveryReceipt receipt = NotificationHelper.showNotification(
             this, title, body,
             channel, fullScreen, fullScreen, currentNotifId, route
         );
-        // DB-H3: record the ack so the LocationService poll skips this push.
-        PolledNotificationStore.markAck(this, stableId);
+        // DB-H3: 실제 notify 성공 또는 과거 성공 중복일 때만 폴링 경로를 완료한다.
+        if (receipt.shouldAcknowledge()) {
+            PolledNotificationStore.markAck(this, stableId);
+        } else {
+            Log.w(TAG, "FCM notification was not posted: " + receipt.getStatus().name());
+        }
     }
 
     private boolean isEmergencyNotification(String type, Map<String, String> data) {
@@ -353,25 +364,24 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     private boolean shouldHandleChildCommand(SharedPreferences prefs) {
-        String role = prefs != null ? prefs.getString("role", "") : "";
+        String role = prefs != null ? SessionTokenStore.readContext(prefs).role : "";
         return isBlank(role) || "child".equalsIgnoreCase(role);
     }
 
     private boolean isTargetedToThisUser(SharedPreferences prefs, Map<String, String> data, String commandLabel) {
-        String pushFamilyId = data != null ? data.get("familyId") : null;
-        String prefsFamilyId = prefs != null ? prefs.getString("familyId", "") : "";
-        if (!isBlank(pushFamilyId) && !isBlank(prefsFamilyId) && !pushFamilyId.equals(prefsFamilyId)) {
-            Log.i(TAG, commandLabel + " skipped: family mismatch");
-            return false;
+        SessionTokenStore.ContextSnapshot context = prefs != null
+            ? SessionTokenStore.readContext(prefs)
+            : null;
+        NotificationTargetPolicy.Decision decision = NotificationTargetPolicy.evaluate(
+            data,
+            context != null ? context.userId : "",
+            context != null ? context.familyId : "",
+            context != null ? context.role : ""
+        );
+        if (!decision.allowsDelivery()) {
+            Log.i(TAG, commandLabel + " skipped by target policy: " + decision.name());
         }
-
-        String targetUserId = data != null ? firstNonBlank(data.get("targetUserId"), data.get("target_user_id")) : "";
-        String userId = prefs != null ? prefs.getString("userId", "") : "";
-        if (!isBlank(targetUserId) && !targetUserId.equals(userId)) {
-            Log.i(TAG, commandLabel + " skipped: target user mismatch");
-            return false;
-        }
-        return true;
+        return decision.allowsDelivery();
     }
 
     private boolean startLocationRefreshService(Map<String, String> data, String stableId) {
@@ -382,8 +392,9 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
 
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        String userId = prefs.getString("userId", "");
-        String prefsFamilyId = prefs.getString("familyId", "");
+        SessionTokenStore.ContextSnapshot context = SessionTokenStore.readContext(prefs);
+        String userId = context.userId;
+        String prefsFamilyId = context.familyId;
         String pushFamilyId = data != null ? data.get("familyId") : null;
         if (!isBlank(pushFamilyId) && !isBlank(prefsFamilyId) && !pushFamilyId.equals(prefsFamilyId)) {
             Log.w(TAG, "Location refresh skipped: family mismatch");
@@ -396,10 +407,10 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
 
         String familyId = firstNonBlank(pushFamilyId, prefsFamilyId);
-        String supabaseUrl = prefs.getString("supabaseUrl", "");
-        String supabaseKey = prefs.getString("supabaseKey", "");
-        String accessToken = prefs.getString("accessToken", "");
-        String refreshToken = prefs.getString("refreshToken", "");
+        String supabaseUrl = context.supabaseUrl;
+        String supabaseKey = context.supabaseKey;
+        String accessToken = context.accessToken;
+        String refreshToken = context.refreshToken;
 
         if (isBlank(userId) || isBlank(familyId) || isBlank(supabaseUrl) || isBlank(supabaseKey)) {
             Log.w(TAG, "Location refresh skipped: push context missing");
@@ -439,8 +450,9 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     private boolean publishDeviceStatusFromFcm(Map<String, String> data, SharedPreferences prefs) {
-        String userId = prefs.getString("userId", "");
-        String prefsFamilyId = prefs.getString("familyId", "");
+        SessionTokenStore.ContextSnapshot context = SessionTokenStore.readContext(prefs);
+        String userId = context.userId;
+        String prefsFamilyId = context.familyId;
         String pushFamilyId = data != null ? data.get("familyId") : null;
         if (!isBlank(pushFamilyId) && !isBlank(prefsFamilyId) && !pushFamilyId.equals(prefsFamilyId)) {
             Log.w(TAG, "Device status refresh skipped: family mismatch");
@@ -454,9 +466,9 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
 
         String familyId = firstNonBlank(pushFamilyId, prefsFamilyId);
-        String supabaseUrl = prefs.getString("supabaseUrl", "");
-        String supabaseKey = prefs.getString("supabaseKey", "");
-        String accessToken = prefs.getString("accessToken", "");
+        String supabaseUrl = context.supabaseUrl;
+        String supabaseKey = context.supabaseKey;
+        String accessToken = context.accessToken;
         if (isBlank(userId) || isBlank(familyId) || isBlank(supabaseUrl) || isBlank(supabaseKey)) {
             Log.w(TAG, "Device status refresh skipped: push context missing");
             return false;
@@ -473,45 +485,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             data != null ? data.get("requestId") : null,
             data != null ? data.get("requesterUserId") : null
         );
-    }
-
-    private int showRemoteListenLauncher(Map<String, String> data) {
-        String channelId = REMOTE_LISTEN_CHANNEL_ID;
-        int currentNotifId = notifId.getAndIncrement();
-        ensureRemoteListenChannel(channelId);
-
-        Intent launchIntent = createRemoteListenIntent(data, currentNotifId);
-        PendingIntent launchPendingIntent = createRemoteListenPendingIntent(
-            launchIntent,
-            currentNotifId
-        );
-
-        // 주변 소리 듣기는 아이가 모르게 깨워야 의미가 있어서 알람이 아닌 silent
-        // notification 으로 처리. fullScreenIntent 는 그대로 — 잠금화면에서도
-        // RemoteListenActivity 가 launch 되어 mic FGS 가 시작될 수 있게.
-        // Android 12+ setSilent(true) + 채널 자체 sound=null 로 이중 보장.
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(R.drawable.ic_hyeni_notification)
-            .setLargeIcon(NotificationHelper.largeIcon(this))
-            .setColor(ContextCompat.getColor(this, R.color.notification_accent))
-            .setContentTitle("주변 소리 연결 요청")
-            .setContentText("탭해서 아이 기기에서 연결을 시작하세요.")
-            .setStyle(new NotificationCompat.BigTextStyle().bigText("탭하면 아이 기기에서 마이크 연결 화면이 열립니다."))
-            .setAutoCancel(false)
-            .setContentIntent(launchPendingIntent)
-            .setOnlyAlertOnce(true)
-            .setSilent(true)
-            .setCategory(NotificationCompat.CATEGORY_CALL)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setFullScreenIntent(launchPendingIntent, true)
-            .setWhen(System.currentTimeMillis());
-
-        NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (nm != null) {
-            nm.notify(currentNotifId, builder.build());
-        }
-        return currentNotifId;
     }
 
     // UDC+ force_ring path: post a fullScreenIntent notification instead of
@@ -561,7 +534,13 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 .setContentText(body)
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+                .setPublicVersion(NotificationHelper.buildPublicVersion(
+                        this,
+                        NotificationHelper.FORCE_RING_CHANNEL_ID,
+                        true,
+                        fullScreenPI
+                ))
                 .setOngoing(true)
                 .setAutoCancel(false)
                 .setOnlyAlertOnce(true)
@@ -582,185 +561,54 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
     }
 
-    private boolean launchRemoteListenActivity(Map<String, String> data, int launcherNotificationId) {
-        Intent launchIntent = createRemoteListenIntent(data, launcherNotificationId);
-
-        int requestCode = notifId.getAndIncrement();
-        PendingIntent launchPendingIntent = createRemoteListenPendingIntent(
-            launchIntent,
-            requestCode
-        );
-
-        try {
-            launchPendingIntent.send(this, 0, null, null, null, null, remoteListenSendOptions());
-            return true;
-        } catch (PendingIntent.CanceledException pendingIntentError) {
-            Log.w(TAG, "PendingIntent remote listen launch failed", pendingIntentError);
-        }
-
-        try {
-            startActivity(launchIntent);
-            return true;
-        } catch (Exception launchError) {
-            Log.w(TAG, "Direct remote listen launch failed", launchError);
-            return false;
-        }
-    }
-
-    private Intent createRemoteListenIntent(Map<String, String> data, int launcherNotificationId) {
-        Intent launchIntent = new Intent(this, RemoteListenActivity.class);
-        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        launchIntent.putExtra("fromPush", true);
-        launchIntent.putExtra("remoteListen", true);
-        if (launcherNotificationId > 0) {
-            launchIntent.putExtra("launcherNotificationId", launcherNotificationId);
-        }
-        putRemoteListenExtras(launchIntent, data);
-        return launchIntent;
-    }
-
-    private PendingIntent createRemoteListenPendingIntent(Intent launchIntent, int requestCode) {
-        return PendingIntent.getActivity(
-            this,
-            requestCode,
-            launchIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE,
-            remoteListenCreatorOptions()
-        );
-    }
-
-    private Bundle remoteListenCreatorOptions() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-            return null;
-        }
-
-        ActivityOptions options = ActivityOptions.makeBasic();
-        options.setPendingIntentCreatorBackgroundActivityStartMode(
-            ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
-        );
-        RemoteListenActivity.applyRemoteListenLaunchDisplay(this, options);
-        return options.toBundle();
-    }
-
-    private Bundle remoteListenSendOptions() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            return null;
-        }
-
-        ActivityOptions options = ActivityOptions.makeBasic();
-        options.setPendingIntentBackgroundActivityStartMode(
-            ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
-        );
-        RemoteListenActivity.applyRemoteListenLaunchDisplay(this, options);
-        return options.toBundle();
-    }
-
-    private boolean startAmbientListenService(Map<String, String> data) {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
-                != PackageManager.PERMISSION_GRANTED) {
-            Log.w(TAG, "Remote listen native start skipped: RECORD_AUDIO permission missing");
-            return false;
-        }
-        // 2026-05-08: 이 경로는 pre-UDC14 (API < 34) 분기에서만 호출된다.
-        // UDC+ 에서는 onMessageReceived 의 UDC+ 분기에서 RemoteListenActivity
-        // 만 launch 하고, AmbientListenService 는 RemoteListenActivity.onCreate
-        // (foreground context) 에서 단일 시작한다. background 에서 직접 호출하면
-        // FOREGROUND_SERVICE_TYPE_MICROPHONE 이 ForegroundServiceStartNotAllowed
-        // 로 거부되고, SPECIAL_USE 로 우회하면 mic 가 silently muted 되기 때문.
-
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        String userId = prefs.getString("userId", "");
-        String prefsFamilyId = prefs.getString("familyId", "");
-        String pushFamilyId = data != null ? data.get("familyId") : null;
-        if (!isBlank(pushFamilyId) && !isBlank(prefsFamilyId) && !pushFamilyId.equals(prefsFamilyId)) {
-            Log.w(TAG, "Remote listen native start skipped: family mismatch");
-            return false;
-        }
-
-        String familyId = firstNonBlank(pushFamilyId, prefsFamilyId);
-        String supabaseUrl = prefs.getString("supabaseUrl", "");
-        String supabaseKey = prefs.getString("supabaseKey", "");
-        String accessToken = prefs.getString("accessToken", "");
-
-        if (isBlank(userId) || isBlank(familyId) || isBlank(supabaseUrl) || isBlank(supabaseKey)) {
-            Log.w(TAG, "Remote listen native start skipped: push context missing");
-            return false;
-        }
-
-        Intent intent = new Intent(this, AmbientListenService.class);
-        intent.setAction(AmbientListenService.ACTION_START);
-        intent.putExtra(AmbientListenService.EXTRA_USER_ID, userId);
-        intent.putExtra(AmbientListenService.EXTRA_FAMILY_ID, familyId);
-        intent.putExtra(AmbientListenService.EXTRA_SUPABASE_URL, supabaseUrl);
-        intent.putExtra(AmbientListenService.EXTRA_SUPABASE_KEY, supabaseKey);
-        intent.putExtra(AmbientListenService.EXTRA_ACCESS_TOKEN, accessToken);
-        intent.putExtra(AmbientListenService.EXTRA_DURATION_SEC, readDurationSec(data));
-
-        String senderUserId = data != null ? data.get("senderUserId") : null;
-        if (!isBlank(senderUserId)) {
-            intent.putExtra(AmbientListenService.EXTRA_INITIATOR_USER_ID, senderUserId);
-        }
-        String requestId = resolveRemoteListenRequestId(data);
-        if (!isBlank(requestId)) {
-            intent.putExtra(AmbientListenService.EXTRA_REQUEST_ID, requestId);
-        }
-
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(intent);
-            } else {
-                startService(intent);
-            }
-            Log.i(TAG, "Remote listen native foreground service started from FCM");
-            return true;
-        } catch (Exception error) {
-            Log.w(TAG, "Remote listen native service start failed from FCM", error);
-            return false;
-        }
-    }
-
     private boolean stopAmbientListenService(Map<String, String> data) {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        String prefsFamilyId = prefs.getString("familyId", "");
+        SessionTokenStore.ContextSnapshot current = SessionTokenStore.readContext(prefs);
+        String prefsFamilyId = current.familyId;
         String pushFamilyId = data != null ? data.get("familyId") : null;
         if (!isBlank(pushFamilyId) && !isBlank(prefsFamilyId) && !pushFamilyId.equals(prefsFamilyId)) {
             Log.w(TAG, "Remote listen native stop skipped: family mismatch");
             return false;
         }
 
+        String requestId = data != null ? data.get("requestId") : "";
+        String targetUserId = data != null
+            ? firstNonBlank(data.get("targetUserId"), data.get("target_user_id"))
+            : "";
+        String sessionNonce = prefs.getString("sessionNonce", "");
+        if (isBlank(requestId)
+                || isBlank(targetUserId)
+                || !targetUserId.equals(current.userId)
+                || !AmbientListenService.matchesActiveSession(
+                    requestId,
+                    targetUserId,
+                    sessionNonce)) {
+            Log.w(TAG, "Remote listen native stop skipped: session mismatch");
+            return false;
+        }
+
         Intent intent = new Intent(this, AmbientListenService.class);
         intent.setAction(AmbientListenService.ACTION_STOP);
-        boolean stopped = stopService(intent);
-        Log.i(TAG, "Remote listen native stop requested from FCM requestId="
-            + resolveRemoteListenRequestId(data)
-            + " stopped=" + stopped);
-        return stopped;
-    }
-
-    private void putRemoteListenExtras(Intent intent, Map<String, String> data) {
-        if (intent == null || data == null) return;
-        putIfPresent(intent, "familyId", data.get("familyId"));
-        putIfPresent(intent, "senderUserId", data.get("senderUserId"));
-        putIfPresent(intent, "durationSec", data.get("durationSec"));
-        putIfPresent(intent, "requestId", resolveRemoteListenRequestId(data));
-        putIfPresent(intent, "targetUserId", data.get("targetUserId"));
-    }
-
-    private void putIfPresent(Intent intent, String key, String value) {
-        if (!isBlank(value)) {
-            intent.putExtra(key, value);
+        intent.putExtra(AmbientListenService.EXTRA_REQUEST_ID, requestId);
+        intent.putExtra(AmbientListenService.EXTRA_TARGET_USER_ID, targetUserId);
+        intent.putExtra(AmbientListenService.EXTRA_SESSION_NONCE, sessionNonce);
+        try {
+            startService(intent);
+            Log.i(TAG, "Remote listen native stop requested from FCM requestId=" + requestId);
+            return true;
+        } catch (RuntimeException error) {
+            Log.w(TAG, "Remote listen native stop dispatch failed", error);
+            return false;
         }
     }
 
     private int readDurationSec(Map<String, String> data) {
         String raw = data != null ? data.get("durationSec") : null;
-        if (isBlank(raw)) return DEFAULT_REMOTE_LISTEN_DURATION_SEC;
+        if (isBlank(raw)) return RemoteListenRequestPolicy.DEFAULT_DURATION_SEC;
         try {
-            int durationSec = Integer.parseInt(raw);
-            if (durationSec < 5) return DEFAULT_REMOTE_LISTEN_DURATION_SEC;
-            return Math.min(durationSec, 120);
+            return RemoteListenRequestPolicy.normalizeDurationSec(Integer.parseInt(raw));
         } catch (NumberFormatException ignored) {
-            return DEFAULT_REMOTE_LISTEN_DURATION_SEC;
+            return RemoteListenRequestPolicy.DEFAULT_DURATION_SEC;
         }
     }
 
@@ -786,32 +634,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     private boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
-    }
-
-    private void ensureRemoteListenChannel(String channelId) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
-        NotificationManager nm = getSystemService(NotificationManager.class);
-        if (nm == null) return;
-
-        NotificationChannel existing = nm.getNotificationChannel(channelId);
-        if (existing != null) return;
-
-        // IMPORTANCE_HIGH 는 setFullScreenIntent 가 잠금화면 / cover display 에서
-        // RemoteListenActivity 를 launch 하도록 유지. sound=null + vibration=false
-        // 로 무음. bypassDnd=true 는 Samsung 폴더블 cover display 에 알림이 노출되어야
-        // fullScreenIntent activity launch 가 발동하기 때문에 다시 켠다 (DND 우회는
-        // 표시 정책, 사운드는 별개 — 채널이 sound=null 이면 우회해도 무음).
-        // 사용자 보고(2026-05-07): "폴더가 닫힌 상태에서 주변 소리 듣기 안 됨".
-        NotificationChannel channel = new NotificationChannel(
-            channelId, "원격 듣기 연결 (cover 호환 무음)", NotificationManager.IMPORTANCE_HIGH);
-        channel.setDescription("폴더 닫힘 / 잠금화면에서도 화면만 조용히 켜고 마이크 연결을 시작");
-        channel.enableVibration(false);
-        channel.setVibrationPattern(null);
-        channel.setBypassDnd(true);
-        channel.setSound(null, null);
-        channel.setLockscreenVisibility(android.app.Notification.VISIBILITY_PUBLIC);
-        channel.setShowBadge(false);
-        nm.createNotificationChannel(channel);
     }
 
 }

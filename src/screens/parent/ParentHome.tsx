@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, Settings, ChevronRight, Clock, Wifi, Check, MapPin, Smartphone, Mic, Keyboard, Image as ImageIcon, LockOpen } from "lucide-react";
+import { AlertTriangle, Bell, Settings, ChevronRight, Clock, Wifi, Check, MapPin, Smartphone, Mic, Keyboard, Image as ImageIcon, LockOpen, RefreshCw } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
@@ -10,7 +10,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { shortcuts } from "@/data/mock";
 import { useEvents, useDailySupplies, useUpsertDailySupply } from "@/queries/useSchedule";
 import type { CalendarEvent, DailySupply } from "@/lib/api/endpoints/schedule";
-import { useParentAlerts } from "@/queries/useNotifications";
+import { useChildNotifSettingsStatus, useParentAlerts } from "@/queries/useNotifications";
 import { countUnread } from "@/transform/notificationsView";
 import { useMyFamily } from "@/queries/useFamily";
 import { useActiveChild } from "@/app/activeChild";
@@ -24,8 +24,10 @@ import { groupEventsByDateKey, PAST_TAGS, type CalEventView } from "@/transform/
 import { useVisitVerify } from "@/queries/useVisitVerify";
 import { todayDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
-import { formatFreshness } from "@/transform/locationView";
 import { deviceStatusView } from "@/transform/familyView";
+import { useEntitlement } from "@/queries/useEntitlement";
+import { TIERS, locationModeFor } from "@/transform/tierPolicy";
+import { resolveLocationTrustCopy } from "@/transform/locationTrustCopy";
 import "./ParentHome.css";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
@@ -121,10 +123,18 @@ export function ParentHome() {
   const eventsQuery = useEvents();
   const familyQuery = useMyFamily();
   const locationsQuery = useChildLocations();
+  const entitlement = useEntitlement();
+  const locationMode = locationModeFor(entitlement.tier);
+  const locationScopeError = entitlement.isError;
+  const locationScopeLoading = !entitlement.isError && entitlement.tier === TIERS.UNKNOWN;
+  const locationScopeUnavailable = locationScopeError || locationScopeLoading;
   const placesQuery = useSavedPlaces();
   const events = eventsQuery.data;
   const family = familyQuery.data;
   const locations = locationsQuery.data;
+  const locationsForDisplay = !locationScopeUnavailable && locationMode !== "locked"
+    ? locations
+    : undefined;
 
   // 아이 기기 상태 새로고침 요청 — 네이티브 device_health 리포트는 on-demand 라
   // 홈 진입 시 1회 요청해야 안전지표가 채워진다(도착하면 WS 브릿지가 자동 반영).
@@ -136,7 +146,7 @@ export function ParentHome() {
     void requestDeviceStatus(familyId);
   }, [familyId]);
   const places = placesQuery.data;
-  const locationLabel = useLocationLabels(locations, places);
+  const locationLabel = useLocationLabels(locationsForDisplay, places);
 
   // 홈 바로가기에서 위치추적을 누를 때 지도 SDK 다운로드 대기 시간을 줄인다.
   useEffect(() => {
@@ -153,6 +163,26 @@ export function ParentHome() {
 
   // 활성 아이(전역 스위치) — 홈 카드 탭으로만 전환. 안전지표·오늘일정·준비물이 이 아이 기준.
   const { activeChild, setActiveChildId } = useActiveChild();
+  const childNotifSettingsQuery = useChildNotifSettingsStatus(activeChild?.user_id);
+  const activeHeroLocation = activeChild?.user_id
+    ? (locationsForDisplay ?? []).find((location) => location.user_id === activeChild.user_id) ?? null
+    : null;
+  const heroLocationCopy = resolveLocationTrustCopy({
+    mode: locationMode,
+    modeKnown: !locationScopeUnavailable,
+    updatedAt: activeHeroLocation?.updated_at,
+    loadState: locationScopeError
+      ? "error"
+      : locationScopeLoading
+        ? "loading"
+      : locationsQuery.isLoading
+      ? "loading"
+      : locationsQuery.isError
+        ? "error"
+        : "ready",
+    now,
+  });
+  const heroLocationIsCurrent = heroLocationCopy.badge === "현재 위치";
 
   // 준비물·숙제: 오늘 date_key 의 daily-supplies 실데이터 + 체크 토글(서버 업서트).
   // 서버 응답은 모든 아이가 섞여 있으므로 활성 아이(activeChild.id = child_user_id)만 필터.
@@ -204,7 +234,8 @@ export function ParentHome() {
   };
 
   // 지난 일정 "다녀옴" 위치 검증 — 활성 아이 이력으로 방문 확인(미확인=확인 필요).
-  const visitMap = useVisitVerify(todayKey, events, activeChild?.user_id ?? null);
+  const canVerifyVisits = !locationScopeUnavailable && locationMode === "realtime";
+  const visitMap = useVisitVerify(todayKey, events, activeChild?.user_id ?? null, canVerifyVisits);
 
   // 오늘 일정 — 활성 아이 배정(events_children.child_id) + 가족 공유(is_family_event)만.
   // 형제에게만 배정된 일정은 활성 아이 화면에서 제외(아이별 구분 — TK 결정).
@@ -233,8 +264,23 @@ export function ParentHome() {
     const allViews = groupEventsByDateKey(events ?? [], now, undefined, places)[todayKey] ?? [];
     return kids.map((kid) => {
       const kidLoc = kid.user_id
-        ? (locations ?? []).find((l) => l.user_id === kid.user_id) ?? null
+        ? (locationsForDisplay ?? []).find((l) => l.user_id === kid.user_id) ?? null
         : null;
+      const kidLocationCopy = resolveLocationTrustCopy({
+        mode: locationMode,
+        modeKnown: !locationScopeUnavailable,
+        updatedAt: kidLoc?.updated_at,
+        loadState: locationScopeError
+          ? "error"
+          : locationScopeLoading
+            ? "loading"
+          : locationsQuery.isLoading
+          ? "loading"
+          : locationsQuery.isError
+            ? "error"
+            : "ready",
+        now,
+      });
       const kidRaw = filterEventsForChild(rawToday, kid.id);
       const rawById = new Map(kidRaw.map((e) => [e.id, e]));
       const kidEvents = allViews
@@ -250,19 +296,50 @@ export function ParentHome() {
         name: kid.name || "아이",
         avatar: childAvatarPath(kid.photo_url),
         device: kid.device_label?.trim() || null,
-        place: kidLoc ? eventPlace ?? locationLabel(kidLoc) : "위치 확인 중",
-        fresh: kidLoc ? formatFreshness(kidLoc.updated_at, now).label : "위치 정보 없음",
+        place: kidLoc ? eventPlace ?? locationLabel(kidLoc) : kidLocationCopy.badge,
+        fresh: kidLocationCopy.detail,
         scheduleLabel: next?.tag === "진행 중" ? "진행 중" : "다음 일정",
         next,
       };
     });
-  }, [family, events, todayKey, locations, places, now]);
+  }, [
+    family,
+    events,
+    todayKey,
+    locationsForDisplay,
+    places,
+    now,
+    locationMode,
+    locationScopeError,
+    locationScopeLoading,
+    locationScopeUnavailable,
+    locationsQuery.isLoading,
+    locationsQuery.isError,
+    locationLabel,
+  ]);
 
   // 안전 지표 = 활성 아이의 기기 리포트(스위치 전환 시 함께 전환).
   const safetyChildName = activeChild?.name || "아이";
   const deviceStatus = useMemo(
-    () => deviceStatusView(activeChild?.device_health, now),
-    [activeChild, now],
+    () => deviceStatusView(
+      activeChild?.device_health,
+      now,
+      childNotifSettingsQuery.data?.userId === activeChild?.user_id
+        ? childNotifSettingsQuery.data?.childEnabled ?? null
+        : null,
+      childNotifSettingsQuery.isError
+        ? "error"
+        : childNotifSettingsQuery.isSuccess
+          ? "ready"
+          : "loading",
+    ),
+    [
+      activeChild,
+      childNotifSettingsQuery.data,
+      childNotifSettingsQuery.isError,
+      childNotifSettingsQuery.isSuccess,
+      now,
+    ],
   );
 
   const todayLabel = `${WEEKDAYS[now.getDay()]}요일 · ${now.getMonth() + 1}월 ${now.getDate()}일`;
@@ -324,13 +401,40 @@ export function ParentHome() {
             )}
           </div>
           <div className="ph-hero__live">
-            <span className="ph-live-dot">
-              <span className="ring" />
-              <span className="core" />
-            </span>
-            실시간 추적 중
+            {heroLocationIsCurrent ? (
+              <span className="ph-live-dot">
+                <span className="ring" />
+                <span className="core" />
+              </span>
+            ) : (
+              <MapPin size={14} strokeWidth={2.3} aria-hidden="true" />
+            )}
+            {heroLocationCopy.badge} · {heroLocationCopy.detail}
           </div>
         </button>
+
+        {locationScopeError && (
+          <div className="ph-location-error" role="alert" aria-live="assertive">
+            <AlertTriangle size={20} strokeWidth={2.2} aria-hidden="true" />
+            <span>
+              <b>위치 조회 범위 확인 실패</b>
+              <small>구독 상태를 확인하지 못했어요. 인터넷 연결을 확인한 뒤 다시 시도해 주세요.</small>
+            </span>
+            <button
+              type="button"
+              className="ph-location-error__retry hy-press"
+              onClick={() => void entitlement.refetch()}
+              disabled={entitlement.isFetching}
+            >
+              <RefreshCw
+                size={15}
+                strokeWidth={2.4}
+                className={entitlement.isFetching ? "ph-location-error__spin" : undefined}
+              />
+              {entitlement.isFetching ? "확인 중…" : "다시 시도"}
+            </button>
+          </div>
+        )}
 
         {/* 오늘의 일정 */}
         <section>
@@ -412,9 +516,13 @@ export function ParentHome() {
             icon={<img src={asset("ui/pin-heart.webp")} alt="" />}
             title="아이 현황"
             action={
-              <span className="hy-chip hy-chip--mint" style={{ marginLeft: "auto" }}>
-                <span className="hy-chip__pulse" />
-                실시간
+              <span
+                className="hy-chip ph-location-chip"
+                data-current={heroLocationIsCurrent}
+                style={{ marginLeft: "auto" }}
+              >
+                {heroLocationIsCurrent && <span className="hy-chip__pulse" />}
+                {heroLocationCopy.badge}
               </span>
             }
           />
@@ -498,7 +606,11 @@ export function ParentHome() {
             icon={<img src={asset("ui/shield-heart.webp")} alt="" />}
             title="안전 지표"
             action={
-              <span className="hy-chip hy-chip--mint" style={{ marginLeft: "auto" }}>
+              <span
+                className="hy-chip ph-safety__status"
+                data-state={deviceStatus.safetyLabel === "양호" ? "ready" : deviceStatus.safetyLabel === "주의 필요" ? "attention" : "unknown"}
+                style={{ marginLeft: "auto" }}
+              >
                 {safetyChildName} · {deviceStatus.safetyLabel}
               </span>
             }
@@ -509,6 +621,26 @@ export function ParentHome() {
                 아이 기기가 아직 상태를 보내지 않았어요. 아이 앱이 연결되면 실시간으로 표시돼요.
               </div>
             )}
+            <div
+              className="ph-safety__notification"
+              data-state={deviceStatus.notification.state}
+            >
+              <Bell size={18} strokeWidth={2.2} aria-hidden="true" />
+              <span>
+                <b>{deviceStatus.notification.label}</b>
+                <small>{deviceStatus.notification.detail}</small>
+              </span>
+            </div>
+            <div
+              className="ph-safety__notification"
+              data-state={deviceStatus.location.state}
+            >
+              <MapPin size={18} strokeWidth={2.2} aria-hidden="true" />
+              <span>
+                <b>{deviceStatus.location.label}</b>
+                <small>{deviceStatus.location.detail}</small>
+              </span>
+            </div>
             <div className="ph-safety__grid">
               <div className="ph-metric">
                 <span className="ph-metric__icon" style={{ background: "var(--mint-soft)" }}>

@@ -11,6 +11,12 @@ import {
   type DeviceAppUsageItemView,
 } from "./deviceAppUsageView";
 import { formatFreshness } from "./locationView";
+import {
+  deviceLocationHealthView,
+  deviceNotificationHealthView,
+  deviceOverallSafetyLabel,
+  type DeviceNotificationHealthView,
+} from "./deviceNotificationHealth";
 
 export interface ParentView {
   id: string;
@@ -101,6 +107,8 @@ export interface DeviceStatusView {
   recentApps: DeviceRecentAppView[];
   freshnessLabel: string; // "방금 업데이트" | "N분 전" | "아이 기기 연동 대기 중"
   safetyLabel: string; // "양호" | "주의 필요" | "확인 중"
+  notification: DeviceNotificationHealthView;
+  location: DeviceNotificationHealthView;
 }
 
 export type DeviceRecentAppView = DeviceAppUsageItemView;
@@ -136,7 +144,15 @@ function networkTypeLabel(networkType: string | null): string {
 export function deviceStatusView(
   health: DeviceHealth | null | undefined,
   now: Date = new Date(),
+  childScheduleEnabled: boolean | null = null,
+  childScheduleLoadState: "loading" | "error" | "ready" = "loading",
 ): DeviceStatusView {
+  const notification = deviceNotificationHealthView(health, {
+    now,
+    childScheduleEnabled,
+    childScheduleLoadState,
+  });
+  const location = deviceLocationHealthView(health, now);
   if (!health) {
     return {
       hasData: false,
@@ -150,7 +166,9 @@ export function deviceStatusView(
       topApps: [],
       recentApps: [],
       freshnessLabel: "아이 기기 연동 대기 중",
-      safetyLabel: "확인 중",
+      safetyLabel: deviceOverallSafetyLabel(false, notification.state, location.state, null),
+      notification,
+      location,
     };
   }
   const level = typeof health.batteryLevel === "number" ? health.batteryLevel : null;
@@ -158,6 +176,14 @@ export function deviceStatusView(
   const netType = health.connectionType ?? health.networkType;
   const screen = screenTimeLabelFrom(health.deviceScreenOnMs);
   const appUsage = buildDeviceAppUsageView(health);
+  const reportAt = health.lastReportedAt ?? health.updatedAt;
+  const lowBattery = level != null && level <= LOW_BATTERY_THRESHOLD;
+  const safetyLabel = deviceOverallSafetyLabel(
+    lowBattery,
+    notification.state,
+    location.state,
+    health.networkConnected,
+  );
   return {
     hasData: true,
     batteryLevel: level,
@@ -169,7 +195,9 @@ export function deviceStatusView(
     mostUsedApp: appUsage.mostUsedApp,
     topApps: appUsage.topApps,
     recentApps: appUsage.topApps,
-    freshnessLabel: health.lastReportedAt ? formatFreshness(health.lastReportedAt, now).label : "방금 업데이트",
-    safetyLabel: level != null && level <= LOW_BATTERY_THRESHOLD ? "주의 필요" : "양호",
+    freshnessLabel: reportAt ? formatFreshness(reportAt, now).label : "보고 시각 없음",
+    safetyLabel,
+    notification,
+    location,
   };
 }

@@ -43,6 +43,9 @@ public class LocationPlugin extends Plugin {
     private static final String TAG = "LocationPlugin";
     private static final String PREFS_NAME = "hyeni_location_prefs";
     private static final String DEVICE_INSTALL_ID = "deviceInstallId";
+    private static final String LAST_FCM_CONFLICT_ROTATION_NONCE = "lastFcmConflictRotationNonce";
+    private static final Object FCM_CONFLICT_RECOVERY_LOCK = new Object();
+    private static boolean fcmConflictRecoveryInFlight = false;
 
     @PluginMethod
     public void startService(PluginCall call) {
@@ -65,36 +68,24 @@ public class LocationPlugin extends Plugin {
             return;
         }
 
-        // Save role to SharedPreferences for LocationService. Also drop any
-        // legacy "kakaoRestKey" left from older builds — keys now live only
-        // server-side in the kakao-proxy Edge Function.
-        getContext().getSharedPreferences("hyeni_location_prefs", android.content.Context.MODE_PRIVATE)
-            .edit()
-            .putString("role", role)
-            .putString("locationIntervalMode", normalizeIntervalMode(intervalMode))
-            .remove("kakaoRestKey")
-            .apply();
-
-        // Check fine location permission first
+        // 권한 요청은 아이 온보딩의 prominent disclosure 또는 사용자가 누른 설정 화면에서만
+        // 수행한다. 서비스 자동 시작이 OS 권한창을 띄우면 거부 의사를 무시하고 Play의
+        // 백그라운드 위치 고지 순서도 깨지므로, 여기서는 상태만 반환한다.
         if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
-            // Android 11+ 는 foreground 와 ACCESS_BACKGROUND_LOCATION 을 한 요청에
-            // 섞으면 요청 전체를 무시한다(다이얼로그도 안 뜸). 반드시 foreground
-            // 만 먼저 요청하고, background 는 콜백에서 별도 요청한다.
-            requestPermissionForAliases(new String[]{ "location", "coarseLocation" }, call, "onLocationPermissionResult");
+            call.resolve(new JSObject().put("status", "permission_required").put("permission", "foreground"));
             return;
         }
 
-        // If we have fine location, also request background (Android 10+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
             ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_BACKGROUND_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(getActivity(),
-                new String[]{ Manifest.permission.ACCESS_BACKGROUND_LOCATION }, 2001);
+            call.resolve(new JSObject().put("status", "permission_required").put("permission", "background"));
+            return;
         }
         requestActivityRecognitionIfNeeded();
 
-        launchService(userId, familyId, supabaseUrl, supabaseKey, accessToken, refreshToken, sessionNonce, intervalMode);
+        launchService(userId, familyId, supabaseUrl, supabaseKey, accessToken, refreshToken, sessionNonce, role, intervalMode);
         call.resolve(new JSObject().put("status", "started"));
     }
 
@@ -125,14 +116,7 @@ public class LocationPlugin extends Plugin {
             return;
         }
 
-        getContext().getSharedPreferences("hyeni_location_prefs", android.content.Context.MODE_PRIVATE)
-            .edit()
-            .putString("role", role)
-            .putString("locationIntervalMode", normalizeIntervalMode(intervalMode))
-            .remove("kakaoRestKey")
-            .apply();
-
-        launchRefresh(userId, familyId, supabaseUrl, supabaseKey, accessToken, refreshToken, sessionNonce, intervalMode);
+        launchRefresh(userId, familyId, supabaseUrl, supabaseKey, accessToken, refreshToken, sessionNonce, role, intervalMode);
         call.resolve(new JSObject().put("status", "refresh_requested"));
     }
 
@@ -147,6 +131,7 @@ public class LocationPlugin extends Plugin {
             String accessToken = call.getString("accessToken", "");
             String refreshToken = call.getString("refreshToken", "");
             String sessionNonce = call.getString("sessionNonce", "");
+            String role = call.getString("role", "child");
             String intervalMode = call.getString("intervalMode", "balanced");
 
             // Also request background location (Android 10+)
@@ -156,7 +141,7 @@ public class LocationPlugin extends Plugin {
             }
             requestActivityRecognitionIfNeeded();
 
-            launchService(userId, familyId, supabaseUrl, supabaseKey, accessToken, refreshToken, sessionNonce, intervalMode);
+            launchService(userId, familyId, supabaseUrl, supabaseKey, accessToken, refreshToken, sessionNonce, role, intervalMode);
             call.resolve(new JSObject().put("status", "started"));
         } else {
             call.reject("Location permission denied");
@@ -186,25 +171,6 @@ public class LocationPlugin extends Plugin {
         return "balanced";
     }
 
-    private String[] preferFreshSessionTokens(
-        String incomingAccess,
-        String incomingRefresh,
-        String incomingSessionNonce
-    ) {
-        SharedPreferences prefs = getContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        SessionTokenStore.Snapshot session = SessionTokenStore.reconcile(
-            prefs,
-            incomingAccess,
-            incomingRefresh,
-            false,
-            incomingSessionNonce
-        );
-        if (!session.acceptedIncoming && incomingAccess != null && !incomingAccess.isEmpty()) {
-            Log.w(TAG, "Ignored stale WebView session tokens; keeping newer native session");
-        }
-        return new String[] { session.accessToken, session.refreshToken };
-    }
-
     private void launchService(
         String userId,
         String familyId,
@@ -213,18 +179,16 @@ public class LocationPlugin extends Plugin {
         String accessToken,
         String refreshToken,
         String sessionNonce,
+        String role,
         String intervalMode
     ) {
-        String role = getContext().getSharedPreferences("hyeni_location_prefs", android.content.Context.MODE_PRIVATE)
-            .getString("role", "child");
-        String[] safeTokens = preferFreshSessionTokens(accessToken, refreshToken, sessionNonce);
         Intent intent = new Intent(getContext(), LocationService.class);
         intent.putExtra("userId", userId);
         intent.putExtra("familyId", familyId);
         intent.putExtra("supabaseUrl", supabaseUrl);
         intent.putExtra("supabaseKey", supabaseKey);
-        intent.putExtra("accessToken", safeTokens[0]);
-        intent.putExtra("refreshToken", safeTokens[1]);
+        intent.putExtra("accessToken", accessToken);
+        intent.putExtra("refreshToken", refreshToken);
         intent.putExtra("sessionNonce", sessionNonce);
         intent.putExtra("role", role);
         intent.putExtra("intervalMode", normalizeIntervalMode(intervalMode));
@@ -245,19 +209,17 @@ public class LocationPlugin extends Plugin {
         String accessToken,
         String refreshToken,
         String sessionNonce,
+        String role,
         String intervalMode
     ) {
-        String role = getContext().getSharedPreferences("hyeni_location_prefs", android.content.Context.MODE_PRIVATE)
-            .getString("role", "child");
-        String[] safeTokens = preferFreshSessionTokens(accessToken, refreshToken, sessionNonce);
         Intent intent = new Intent(getContext(), LocationService.class);
         intent.setAction(LocationService.ACTION_REFRESH_NOW);
         intent.putExtra("userId", userId);
         intent.putExtra("familyId", familyId);
         intent.putExtra("supabaseUrl", supabaseUrl);
         intent.putExtra("supabaseKey", supabaseKey);
-        intent.putExtra("accessToken", safeTokens[0]);
-        intent.putExtra("refreshToken", safeTokens[1]);
+        intent.putExtra("accessToken", accessToken);
+        intent.putExtra("refreshToken", refreshToken);
         intent.putExtra("sessionNonce", sessionNonce);
         intent.putExtra("role", role);
         intent.putExtra("intervalMode", normalizeIntervalMode(intervalMode));
@@ -356,15 +318,39 @@ public class LocationPlugin extends Plugin {
         }
         String newRefresh = call.getString("refreshToken");
         String sessionNonce = call.getString("sessionNonce", "");
+        String userId = call.getString("userId", "");
+        String familyId = call.getString("familyId", "");
+        String role = call.getString("role", "");
+        String supabaseUrl = call.getString("supabaseUrl", "");
+        String supabaseKey = call.getString("supabaseKey", "");
+        if (userId == null || userId.isEmpty()
+                || familyId == null || familyId.isEmpty()
+                || role == null || role.isEmpty()
+                || supabaseUrl == null || supabaseUrl.isEmpty()
+                || supabaseKey == null || supabaseKey.isEmpty()) {
+            call.reject("complete session context is required");
+            return;
+        }
         boolean authoritative = Boolean.TRUE.equals(call.getBoolean("authoritative"));
         SharedPreferences prefs = getContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        SessionTokenStore.Snapshot session = SessionTokenStore.reconcile(
-            prefs,
-            newToken,
-            newRefresh,
-            authoritative,
-            sessionNonce
-        );
+        SessionTokenStore.ContextSnapshot session;
+        synchronized (SessionTokenStore.class) {
+            SessionTokenStore.ContextSnapshot stored = SessionTokenStore.readContext(prefs);
+            session = SessionTokenStore.reconcileContext(
+                prefs,
+                newToken,
+                newRefresh,
+                authoritative,
+                sessionNonce,
+                userId,
+                familyId,
+                role,
+                supabaseUrl,
+                supabaseKey,
+                stored.serviceEnabled,
+                stored.locationIntervalMode
+            );
+        }
         if (!session.acceptedIncoming) {
             Log.w(TAG, "Ignored stale WebView updateToken; keeping newer native session");
             call.resolve(new JSObject().put("status", "ignored_stale"));
@@ -381,11 +367,11 @@ public class LocationPlugin extends Plugin {
     public void getSessionTokens(PluginCall call) {
         android.content.SharedPreferences prefs = getContext()
             .getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE);
-        SessionTokenStore.Snapshot session = SessionTokenStore.read(prefs);
+        SessionTokenStore.ContextSnapshot session = SessionTokenStore.readContext(prefs);
         JSObject result = new JSObject();
         result.put("accessToken", session.accessToken);
         result.put("refreshToken", session.refreshToken);
-        result.put("serviceEnabled", prefs.getBoolean("serviceEnabled", false));
+        result.put("serviceEnabled", session.serviceEnabled);
         call.resolve(result);
     }
 
@@ -420,6 +406,120 @@ public class LocationPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void rotateFcmToken(PluginCall call) {
+        String expectedUserId = call.getString("userId", "").trim();
+        String expectedFamilyId = call.getString("familyId", "").trim();
+        String expectedSessionNonce = call.getString("sessionNonce", "").trim();
+        String conflictedToken = call.getString("conflictedToken", "").trim();
+        if (expectedUserId.isEmpty() || expectedFamilyId.isEmpty()
+                || expectedSessionNonce.isEmpty() || conflictedToken.isEmpty()) {
+            call.reject("current push context is required");
+            return;
+        }
+
+        Context appContext = getContext().getApplicationContext();
+        SharedPreferences prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        String cachedToken = prefs.getString("fcmToken", "");
+        if (FcmTokenConflictRecoveryPolicy.hasChangedToken(conflictedToken, cachedToken)
+                && isExpectedPushContext(
+                    prefs, expectedUserId, expectedFamilyId, expectedSessionNonce)) {
+            call.resolve(new JSObject().put("status", "already_rotated").put("token", cachedToken));
+            return;
+        }
+
+        synchronized (FCM_CONFLICT_RECOVERY_LOCK) {
+            SessionTokenStore.ContextSnapshot current;
+            String currentNonce;
+            synchronized (SessionTokenStore.class) {
+                current = SessionTokenStore.readContext(prefs);
+                currentNonce = prefs.getString("sessionNonce", "");
+            }
+            String lastRotatedNonce = prefs.getString(LAST_FCM_CONFLICT_ROTATION_NONCE, "");
+            if (!FcmTokenConflictRecoveryPolicy.canStart(
+                    expectedUserId,
+                    expectedFamilyId,
+                    expectedSessionNonce,
+                    current.userId,
+                    current.familyId,
+                    currentNonce,
+                    lastRotatedNonce,
+                    fcmConflictRecoveryInFlight)) {
+                call.resolve(new JSObject().put("status", "not_rotated"));
+                return;
+            }
+            fcmConflictRecoveryInFlight = true;
+        }
+
+        FirebaseMessaging.getInstance().deleteToken()
+            .addOnSuccessListener(unused -> {
+                // Firebase에서 폐기된 token을 다음 로그인에서 다시 채택하지 않게 즉시 제거한다.
+                prefs.edit().remove("fcmToken").apply();
+                if (!isExpectedPushContext(
+                        prefs, expectedUserId, expectedFamilyId, expectedSessionNonce)) {
+                    finishFcmConflictRecovery();
+                    call.resolve(new JSObject().put("status", "stale_context"));
+                    return;
+                }
+                FirebaseMessaging.getInstance().getToken()
+                    .addOnSuccessListener(newToken -> {
+                        String normalizedToken = newToken == null ? "" : newToken.trim();
+                        if (normalizedToken.isEmpty()
+                                || !isExpectedPushContext(
+                                    prefs,
+                                    expectedUserId,
+                                    expectedFamilyId,
+                                    expectedSessionNonce)) {
+                            finishFcmConflictRecovery();
+                            call.resolve(new JSObject().put("status", "stale_context"));
+                            return;
+                        }
+                        prefs.edit()
+                            .putString("fcmToken", normalizedToken)
+                            .putString(LAST_FCM_CONFLICT_ROTATION_NONCE, expectedSessionNonce)
+                            .apply();
+                        finishFcmConflictRecovery();
+                        NativePushTokenSync.sync(appContext, normalizedToken);
+                        call.resolve(new JSObject().put("status", "rotated").put("token", normalizedToken));
+                    })
+                    .addOnFailureListener(error -> {
+                        finishFcmConflictRecovery();
+                        Log.w(TAG, "FCM conflict replacement token failed", error);
+                        call.reject("Failed to replace FCM token");
+                    });
+            })
+            .addOnFailureListener(error -> {
+                finishFcmConflictRecovery();
+                Log.w(TAG, "FCM conflict token delete failed", error);
+                call.reject("Failed to delete conflicted FCM token");
+            });
+    }
+
+    private static boolean isExpectedPushContext(
+        SharedPreferences prefs,
+        String expectedUserId,
+        String expectedFamilyId,
+        String expectedSessionNonce
+    ) {
+        synchronized (SessionTokenStore.class) {
+            SessionTokenStore.ContextSnapshot current = SessionTokenStore.readContext(prefs);
+            return NativePushTokenSync.isSameRegistrationContext(
+                expectedUserId,
+                expectedFamilyId,
+                expectedSessionNonce,
+                current.userId,
+                current.familyId,
+                prefs.getString("sessionNonce", "")
+            );
+        }
+    }
+
+    private static void finishFcmConflictRecovery() {
+        synchronized (FCM_CONFLICT_RECOVERY_LOCK) {
+            fcmConflictRecoveryInFlight = false;
+        }
+    }
+
+    @PluginMethod
     public void setPushContext(PluginCall call) {
         String userId = call.getString("userId");
         String familyId = call.getString("familyId");
@@ -436,22 +536,29 @@ public class LocationPlugin extends Plugin {
         }
 
         SharedPreferences prefs = getContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        SharedPreferences.Editor ed = prefs.edit()
-            .putString("userId", userId)
-            .putString("familyId", familyId)
-            .putString("role", role)
-            .putString("supabaseUrl", supabaseUrl)
-            .putString("supabaseKey", supabaseKey);
-        ed.apply();
-        SessionTokenStore.Snapshot session = SessionTokenStore.reconcile(
-            prefs,
-            accessToken,
-            refreshToken,
-            false,
-            sessionNonce
-        );
-        if (!session.acceptedIncoming && accessToken != null && !accessToken.isEmpty()) {
-            Log.w(TAG, "Ignored stale WebView push context tokens; keeping newer native session");
+        SessionTokenStore.ContextSnapshot context;
+        synchronized (SessionTokenStore.class) {
+            SessionTokenStore.ContextSnapshot stored = SessionTokenStore.readContext(prefs);
+            context = SessionTokenStore.reconcileContext(
+                prefs,
+                accessToken,
+                refreshToken,
+                false,
+                sessionNonce,
+                userId,
+                familyId,
+                role,
+                supabaseUrl,
+                supabaseKey,
+                stored.serviceEnabled,
+                stored.locationIntervalMode
+            );
+        }
+        if (!context.acceptedIncoming) {
+            Log.w(TAG, "Ignored stale WebView push context; keeping newer native session");
+            syncCachedFcmToken();
+            call.resolve(new JSObject().put("status", "ignored_stale"));
+            return;
         }
 
         Log.i(TAG, "Push context saved for user=" + userId + ", family=" + familyId);
@@ -463,13 +570,14 @@ public class LocationPlugin extends Plugin {
     public void getPushContext(PluginCall call) {
         android.content.SharedPreferences prefs = getContext()
             .getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE);
+        SessionTokenStore.ContextSnapshot context = SessionTokenStore.readContext(prefs);
         JSObject result = new JSObject();
-        result.put("userId", prefs.getString("userId", ""));
-        result.put("familyId", prefs.getString("familyId", ""));
-        result.put("role", prefs.getString("role", ""));
+        result.put("userId", context.userId);
+        result.put("familyId", context.familyId);
+        result.put("role", context.role);
         result.put("deviceInstallId", getOrCreateDeviceInstallId(prefs));
-        result.put("hasAccessToken", !prefs.getString("accessToken", "").isEmpty());
-        result.put("hasRefreshToken", !prefs.getString("refreshToken", "").isEmpty());
+        result.put("hasAccessToken", !context.accessToken.isEmpty());
+        result.put("hasRefreshToken", !context.refreshToken.isEmpty());
         result.put("hasFcmToken", !prefs.getString("fcmToken", "").isEmpty());
         call.resolve(result);
     }
@@ -486,14 +594,10 @@ public class LocationPlugin extends Plugin {
     public void clearPushContext(PluginCall call) {
         SharedPreferences prefs = getContext()
             .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        prefs
-            .edit()
-            .remove("userId")
-            .remove("familyId")
-            .remove("role")
-            .remove("supabaseUrl")
-            .remove("supabaseKey")
-            .apply();
+        AmbientListenService.stopForRetiringSession(
+            getContext(),
+            prefs.getString("sessionNonce", "")
+        );
         SessionTokenStore.clear(prefs, "");
         Log.i(TAG, "Push context cleared");
         call.resolve(new JSObject().put("status", "cleared"));
@@ -598,6 +702,55 @@ public class LocationPlugin extends Plugin {
     // 영구 거부 상태에선 OS 가 화면 없이 즉시 거부하므로(콜백이 수백 ms 내 도착
     // + rationale=false) 앱 정보 화면으로 폴백해 사용자가 길을 잃지 않게 한다.
     private long alwaysOnBackgroundRequestedAt = 0L;
+
+    @PluginMethod
+    public void requestForegroundLocation(PluginCall call) {
+        boolean fineGranted = ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
+        if (fineGranted) {
+            call.resolve(new JSObject().put("granted", true).put("step", "foregroundComplete"));
+            return;
+        }
+        requestPermissionForAliases(
+                new String[]{ "location", "coarseLocation" },
+                call,
+                "onForegroundOnlyResult"
+        );
+    }
+
+    @PermissionCallback
+    private void onForegroundOnlyResult(PluginCall call) {
+        boolean fineGranted = ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
+        call.resolve(new JSObject()
+                .put("granted", fineGranted)
+                .put("step", fineGranted ? "foregroundComplete" : "foregroundDenied"));
+    }
+
+    @PluginMethod
+    public void requestBackgroundLocation(PluginCall call) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            boolean fineGranted = ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED;
+            call.resolve(new JSObject()
+                    .put("granted", fineGranted)
+                    .put("step", fineGranted ? "complete" : "foregroundRequired"));
+            return;
+        }
+        boolean fineGranted = ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
+        if (!fineGranted) {
+            call.resolve(new JSObject().put("granted", false).put("step", "foregroundRequired"));
+            return;
+        }
+        boolean backgroundGranted = ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
+        if (backgroundGranted) {
+            call.resolve(new JSObject().put("granted", true).put("step", "complete"));
+            return;
+        }
+        requestBackgroundAlwaysOn(call);
+    }
 
     @PluginMethod
     public void requestAlwaysOnLocation(PluginCall call) {

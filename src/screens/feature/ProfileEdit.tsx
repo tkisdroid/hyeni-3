@@ -164,7 +164,7 @@ export function ProfileEdit() {
 
     try {
       if (pickedDataUrl) {
-        await uploadPhoto.mutateAsync({ memberId: member.id, dataUrl: pickedDataUrl, stamp: Date.now() });
+        await uploadPhoto.mutateAsync({ memberId: member.id, dataUrl: pickedDataUrl });
       }
       await saveProfile.mutateAsync({
         memberId: member.id,

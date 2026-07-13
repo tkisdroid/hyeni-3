@@ -24,7 +24,6 @@ final class NotificationUrgencyPolicy {
                 || "danger_zone".equals(normalizedAlertType)
                 || "danger_enter".equals(normalizedAlertType)
                 || "danger_entry".equals(normalizedAlertType)
-                || "danger_exit".equals(normalizedAlertType)
                 || "sos".equals(normalizedAlertType)
                 || "sos_followup".equals(normalizedAlertType);
     }

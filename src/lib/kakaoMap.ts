@@ -38,7 +38,7 @@ export function loadKakaoMaps(): Promise<KakaoMaps> {
   if (window.kakao?.maps) return Promise.resolve(window.kakao.maps);
   if (loadPromise) return loadPromise;
 
-  loadPromise = new Promise((resolve, reject) => {
+  loadPromise = new Promise<KakaoMaps>((resolve, reject) => {
     const script = document.createElement("script");
     script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_APP_KEY}&autoload=false&libraries=services`;
     script.async = true;
@@ -54,6 +54,11 @@ export function loadKakaoMaps(): Promise<KakaoMaps> {
       reject(new Error("Kakao 지도를 불러오지 못했어요"));
     };
     document.head.appendChild(script);
+  }).catch((error: unknown) => {
+    // script.onerror뿐 아니라 SDK 초기화 예외도 singleton에 고착되지 않게 한다.
+    // 실패한 Promise가 남으면 화면의 "다시 불러오기"도 영구히 같은 실패만 받는다.
+    loadPromise = null;
+    throw error;
   });
   return loadPromise;
 }

@@ -1,8 +1,8 @@
-/* 알림 설정(P-24) — 화면 전용 스타일. 토큰 준수(hex 직접 사용 최소화). */
+/* 알림 설정(P-24) — 화면 전용 스타일. */
 
 .nst-screen {
   min-height: 100%;
-  background: linear-gradient(180deg, #fdf4f1, #f7f4f3);
+  background: linear-gradient(180deg, var(--rose-50), var(--bg-page));
   animation: hy-fadein 0.35s ease forwards;
 }
 
@@ -15,15 +15,19 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background: linear-gradient(180deg, rgba(253, 244, 241, 0.92) 60%, rgba(253, 244, 241, 0));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--rose-50) 92%, transparent) 60%,
+    transparent
+  );
   backdrop-filter: blur(8px);
 }
 .nst-back {
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.06);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-soft);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -72,14 +76,14 @@
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.02em;
-  color: #8b7e84;
+  color: var(--fg-muted);
   margin-bottom: 11px;
 }
 .nst-list {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 20px;
   padding: 6px;
-  box-shadow: 0 10px 26px rgba(32, 26, 29, 0.05);
+  box-shadow: var(--shadow-card);
 }
 
 /* ── 토글 행 ────────────────────────────────────────────────────────────── */
@@ -102,6 +106,22 @@
   font-size: 17px;
   flex: none;
 }
+.nst-row__icon[data-tone="rose"] {
+  color: var(--rose-text);
+  background: var(--rose-soft);
+}
+.nst-row__icon[data-tone="blue"] {
+  color: var(--blue-text);
+  background: var(--blue-soft);
+}
+.nst-row__icon[data-tone="mint"] {
+  color: var(--mint-text);
+  background: var(--mint-soft);
+}
+.nst-row__icon[data-tone="gold"] {
+  color: var(--gold-text);
+  background: var(--cream-soft);
+}
 .nst-row__main {
   flex: 1;
   min-width: 0;
@@ -117,7 +137,7 @@
   margin-top: 1px;
   font-size: 11.5px;
   font-weight: 600;
-  color: #a99fa4;
+  color: var(--fg-faint);
 }
 
 /* iOS 스타일 토글 스위치 */
@@ -126,7 +146,7 @@
   width: 46px;
   height: 27px;
   border-radius: 999px;
-  background: #e5e0e3;
+  background: var(--line-strong);
   flex: none;
   transition: background 0.2s ease;
 }
@@ -140,8 +160,8 @@
   width: 23px;
   height: 23px;
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.18);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-soft);
   transform: translateX(2px);
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -167,7 +187,7 @@
 .nst-minute {
   padding: 8px 13px;
   border-radius: 999px;
-  background: #f3edf0;
+  background: var(--bg-press);
   font-size: 12.5px;
   font-weight: 800;
   color: var(--fg-muted);
@@ -178,7 +198,109 @@
   color: var(--hy-accent-text);
 }
 
-/* ── 로컬 저장 안내 ─────────────────────────────────────────────────────── */
+/* ── 안전 계약·시스템 알림 상태 ────────────────────────────────────────── */
+.nst-safety-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 9px;
+  padding: 11px 12px;
+  border: 1px solid var(--mint-line);
+  border-radius: var(--radius-md);
+  background: var(--mint-soft);
+  color: var(--mint-text);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.nst-safety-note svg {
+  flex: none;
+  margin-top: 1px;
+}
+.nst-system-btn {
+  width: calc(100% - 24px);
+  min-height: 42px;
+  margin: 2px 12px 10px;
+  border-radius: var(--radius-md);
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+  font-size: 13px;
+  font-weight: 800;
+}
+.nst-web-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 2px 12px 10px;
+}
+.nst-web-facts span {
+  min-width: 0;
+  padding: 9px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-press);
+  color: var(--fg-secondary);
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.nst-web-facts b {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--fg-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+.nst-system-btn:disabled {
+  color: var(--fg-disabled);
+  background: var(--bg-press);
+}
+.nst-system-btn--secondary {
+  margin-top: -4px;
+  color: var(--fg-secondary);
+  background: var(--bg-press);
+}
+.nst-capability {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 2px 12px 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--gold-line);
+  border-radius: var(--radius-md);
+  background: var(--cream-soft);
+}
+.nst-capability[data-state="ready"] {
+  border-color: var(--mint-line);
+  background: var(--mint-soft);
+}
+.nst-capability__title {
+  color: var(--fg-primary);
+  font-size: 12.5px;
+  font-weight: 800;
+}
+.nst-capability__detail {
+  color: var(--fg-tertiary);
+  font-size: 11.5px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+@media (max-width: 360px) {
+  .nst-web-facts {
+    grid-template-columns: 1fr;
+  }
+  .nst-web-facts span {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    text-align: right;
+  }
+  .nst-web-facts b {
+    margin: 0;
+  }
+}
 .nst-note {
   margin-top: 9px;
   padding: 0 4px;
@@ -186,4 +308,12 @@
   font-weight: 600;
   line-height: 1.5;
   color: var(--fg-faint);
+}
+.nst-refresh {
+  margin-left: 7px;
+  color: var(--blue-text);
+  font-size: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }

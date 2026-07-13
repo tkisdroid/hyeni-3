@@ -5,10 +5,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { qk } from "./keys";
 import { useAuth } from "@/auth/AuthContext";
+import { getApiSessionInstanceId, getApiUser } from "@/lib/api/session";
 import {
   fetchParentAlerts,
   markAlertRead,
   markAllAlertsRead,
+  fetchChildNotifSettingsStatus,
   fetchNotifSettings,
   saveNotifSettings,
   type NotifSettings,
@@ -59,18 +61,27 @@ export function useMarkAllAlertsRead() {
   });
 }
 
-/** 알림 설정 queryKey(per-user). keys.ts 공유 팩토리를 건드리지 않도록 로컬 정의. */
-function notifSettingsKey(userId: string) {
-  return ["notif-settings", userId] as const;
-}
-
 /** 호출자 알림 설정 조회. 미저장이면 data=null → 화면이 기본값으로 시작. */
 export function useNotifSettings() {
   const { userId, status } = useAuth();
   return useQuery({
-    queryKey: notifSettingsKey(userId ?? ""),
+    queryKey: qk.notifSettings(userId ?? ""),
     queryFn: () => fetchNotifSettings(),
     enabled: status === "authenticated" && !!userId,
+  });
+}
+
+/** 부모가 현재 선택한 아이의 일정 알림 허용 상태만 조회한다. */
+export function useChildNotifSettingsStatus(childUserId: string | null | undefined) {
+  const { familyId, role, status } = useAuth();
+  return useQuery({
+    queryKey: qk.childNotifSettings(familyId ?? "", childUserId ?? ""),
+    queryFn: () => fetchChildNotifSettingsStatus(familyId as string, childUserId as string),
+    enabled:
+      status === "authenticated"
+      && role === "parent"
+      && !!familyId
+      && !!childUserId,
   });
 }
 
@@ -81,10 +92,26 @@ export function useNotifSettings() {
 export function useSaveNotifSettings() {
   const qc = useQueryClient();
   const { userId, familyId } = useAuth();
+  const expectedUserId = userId;
+  const expectedSessionInstanceId = getApiSessionInstanceId();
   return useMutation<void, Error, NotifSettings>({
-    mutationFn: (settings) => saveNotifSettings(familyId ?? null, settings),
+    // notif-settings POST는 전체 객체 upsert다. 같은 사용자의 빠른 연속 변경을
+    // 병렬 실행하면 늦게 끝난 과거 요청이 최신 초안을 덮으므로 반드시 직렬화한다.
+    scope: { id: `notif-settings:${userId ?? "anonymous"}` },
+    mutationFn: (settings) => {
+      if (!expectedUserId || !expectedSessionInstanceId) {
+        throw new Error("알림 설정을 저장할 로그인 세션이 없어요");
+      }
+      if (
+        getApiUser()?.id !== expectedUserId
+        || getApiSessionInstanceId() !== expectedSessionInstanceId
+      ) {
+        throw new Error("계정이 변경되어 이전 알림 설정 저장을 중단했어요");
+      }
+      return saveNotifSettings(familyId ?? null, expectedUserId, settings);
+    },
     onSuccess: (_data, settings) => {
-      qc.setQueryData(notifSettingsKey(userId ?? ""), settings);
+      if (expectedUserId) qc.setQueryData(qk.notifSettings(expectedUserId), settings);
     },
   });
 }

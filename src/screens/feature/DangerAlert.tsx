@@ -3,29 +3,21 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronLeft, MapPin } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useParentAlerts, useMarkAlertRead } from "@/queries/useNotifications";
-import { relativeTime } from "@/transform/notificationsView";
+import { isDangerAlert, relativeTime } from "@/transform/notificationsView";
 import type { ParentAlert } from "@/lib/api/endpoints/notifications";
 import "./DangerAlert.css";
 
 /**
  * 위험 알림(P-23): parent-alerts 에서 SOS·위험구역 계열만 필터해 긴급(레드)로 표시.
  * 최신 위험 알림은 히어로로 강조 + "위치 확인하기" CTA(지도 이동). 과거 이력은 아래 리스트.
- * 위험 알림이 없으면 안전(민트) 상태를 명시. 부모 존댓말.
+ * 이 목록에 위험 알림이 없다는 관측 사실만 표시하며 현재 안전을 단정하지 않는다. 부모 존댓말.
  */
-
-const DANGER_TYPES = new Set(["sos", "sos_followup", "danger_zone", "danger_exit"]);
-
-function isUrgentSeverity(severity: string): boolean {
-  return severity === "emergency" || severity === "critical" || severity === "urgent";
-}
-
-function isDanger(a: ParentAlert): boolean {
-  return DANGER_TYPES.has(a.alert_type) || isUrgentSeverity(a.severity);
-}
 
 /** SOS 계열은 방패, 위험구역/이탈은 경고 아이콘. */
 function iconOf(type: string): string {
-  return type.startsWith("sos") ? "ui/sos-shield.webp" : "ui/warning.webp";
+  return type.startsWith("sos") || type === "emergency"
+    ? "ui/sos-shield.webp"
+    : "ui/warning.webp";
 }
 
 export function DangerAlert() {
@@ -34,7 +26,7 @@ export function DangerAlert() {
   const markRead = useMarkAlertRead();
 
   // 히어로 앵커 = 알림센터에서 탭한 알림(?alert=) 우선, 없으면 최신(list[0]).
-  const list = useMemo<ParentAlert[]>(() => (data ?? []).filter(isDanger), [data]);
+  const list = useMemo<ParentAlert[]>(() => (data ?? []).filter(isDangerAlert), [data]);
   const now = useMemo(() => new Date(), [list]);
   const [searchParams] = useSearchParams();
   const anchorId = searchParams.get("alert");
@@ -84,8 +76,8 @@ export function DangerAlert() {
         {!isLoading && !isError && !latest && (
           <div className="da-safe">
             <img className="da-safe__img" src={asset("ui/shield-heart.webp")} alt="" />
-            <div className="da-safe__title">지금은 위험 알림이 없어요</div>
-            <div className="da-safe__sub">아이가 안전한 상태예요. 안심하세요.</div>
+            <div className="da-safe__title">최근 위험 알림이 없어요</div>
+            <div className="da-safe__sub">최근 알림 목록에 기록된 위험 알림이 없어요.</div>
           </div>
         )}
 

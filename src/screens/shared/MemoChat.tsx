@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Send, Image as ImageIcon, MapPin } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { ChevronLeft, Send, Image as ImageIcon, MapPin, ShieldAlert } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
@@ -18,12 +18,36 @@ import {
 } from "@/transform/memoView";
 import { resolveMemoQuickReplies } from "@/transform/memoQuickReplies";
 import { resolveMemoChatCopy } from "@/transform/memoChatCopy";
-import { todayDateKey, addDaysToDateKey } from "@/transform/dateKey";
+import { useRecentDateKeys } from "@/app/useRecentDateKeys";
 import { apiUploadChildPhoto, childPhotoProxyUrl } from "@/lib/api/client";
 import { resizeImageFileSafe, dataUrlToBlob } from "@/lib/imageResize";
 import { loadKakaoMaps } from "@/lib/kakaoMap";
 import { openExternal } from "@/lib/native/browser";
+import { MessageSafetyDialog, type ReportReasonOption } from "@/components/MessageSafetyDialog";
+import {
+  useBlockMemoUser,
+  useMemoBlocks,
+  useReportMemoReply,
+  useUnblockMemoUser,
+} from "@/queries/useContentSafety";
+import type { MemoContentReportReason } from "@/lib/api/endpoints/contentSafety";
 import "./MemoChat.css";
+
+const MEMO_REPORT_REASONS: readonly ReportReasonOption<MemoContentReportReason>[] = [
+  { value: "harassment", label: "괴롭히거나 불편하게 해요" },
+  { value: "sexual_or_violent", label: "성적이거나 폭력적인 내용이에요" },
+  { value: "personal_info", label: "개인정보를 요구하거나 노출해요" },
+  { value: "illegal_or_dangerous", label: "불법이거나 위험한 내용이에요" },
+  { value: "other", label: "다른 이유가 있어요" },
+];
+
+const CHILD_MEMO_REPORT_REASONS: readonly ReportReasonOption<MemoContentReportReason>[] = [
+  { value: "harassment", label: "괴롭히거나 불편하게 해" },
+  { value: "sexual_or_violent", label: "성적이거나 폭력적인 내용이야" },
+  { value: "personal_info", label: "개인정보를 요구하거나 보여줘" },
+  { value: "illegal_or_dangerous", label: "불법이거나 위험한 내용이야" },
+  { value: "other", label: "다른 이유가 있어" },
+];
 
 /** photo_url(원격 http)은 그대로, 로컬 캐릭터 키는 asset()으로 해석. */
 function avatarSrc(path: string): string {
@@ -36,26 +60,40 @@ export function MemoChat() {
   const { show } = useToast();
   const { userId, role, familyId } = useAuth();
   const isChildSession = role === "child";
-  const { data: family } = useMyFamily();
+  const { data: family, isLoading: familyLoading, isError: familyError } = useMyFamily();
   const { activeChild } = useActiveChild();
+  const [searchParams] = useSearchParams();
+  const childHint = searchParams.get("child")?.trim() || null;
 
   // 대화 스코프 아이(member id) — 아이별 1:1 스레드(TK 결정: 대화도 각각).
   // 부모/선생님 = 전역 활성 아이(홈 스위치), 아이 = 자기 자신. 메시지 fetch·send 모두 이 스코프.
   const scopeChild = useMemo(() => {
     const members = family?.members ?? [];
     if (role === "child") return members.find((m) => m.user_id === userId) ?? null;
+    if (childHint) {
+      const hintedChild = members.find(
+        (m) => m.role === "child" && (m.id === childHint || m.user_id === childHint),
+      ) ?? null;
+      return hintedChild;
+    }
     return activeChild;
-  }, [family, role, userId, activeChild]);
+  }, [family, role, userId, activeChild, childHint]);
+  const explicitChildMissing = role !== "child"
+    && !!childHint
+    && !familyLoading
+    && !familyError
+    && !scopeChild;
 
   // 최근 7일 date_key 스레드 — 스코프 아이 한정. 오늘만 보이던 이전 방식은
   // 어제 대화가 사라져 보이는 실사용 혼란(주간 리포트 15건 vs 빈 대화 탭)을 만들었다.
-  const dateKeys = useMemo(() => {
-    const today = todayDateKey();
-    return Array.from({ length: 7 }, (_, i) => addDaysToDateKey(today, i - 6));
-  }, []);
+  const dateKeys = useRecentDateKeys(7);
   const thread = useMemoThread(dateKeys, scopeChild?.id ?? null);
   const sendMemo = useSendMemo();
   const markRead = useMarkRead();
+  const memoBlocks = useMemoBlocks();
+  const reportMemoReply = useReportMemoReply();
+  const blockMemoUser = useBlockMemoUser();
+  const unblockMemoUser = useUnblockMemoUser();
   // mutate 를 ref 로 잡아 effect 재실행(매 렌더 새 mutation 객체 생성)을 막는다.
   const markReadRef = useRef(markRead);
   markReadRef.current = markRead;
@@ -114,6 +152,8 @@ export function MemoChat() {
   }, [replies, userId]);
 
   const [draft, setDraft] = useState("");
+  const [safetyTarget, setSafetyTarget] = useState<ThreadMsg | null>(null);
+  const [previewImagePath, setPreviewImagePath] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const mounted = useRef(false);
   const lastMessageId = messages[messages.length - 1]?.id ?? "";
@@ -121,6 +161,18 @@ export function MemoChat() {
   // 존댓말 안내가 뜨면 안 된다(말투 규칙: 아이 모드 = 반말).
   const quickReplies = useMemo(() => resolveMemoQuickReplies(role), [role]);
   const copy = useMemo(() => resolveMemoChatCopy(role), [role]);
+  const blockedUserIds = useMemo(
+    () => new Set(memoBlocks.data?.blockedUserIds ?? []),
+    [memoBlocks.data?.blockedUserIds],
+  );
+  const blockedMembers = useMemo(
+    () => [...blockedUserIds]
+      .map((id) => ({ id, member: memberByUserId.get(id) ?? null })),
+    [blockedUserIds, memberByUserId],
+  );
+  const safetySender = safetyTarget?.senderUserId
+    ? memberByUserId.get(safetyTarget.senderUserId) ?? null
+    : null;
 
   const scrollThreadToBottom = (behavior: ScrollBehavior) => {
     const anchor = endRef.current;
@@ -147,8 +199,12 @@ export function MemoChat() {
       if ((r.content ?? "").trim().length === 0) continue;
       if ((r.read_by ?? []).includes(userId)) continue;
       if (markedRef.current.has(r.id)) continue;
-      markedRef.current.add(r.id);
-      markReadRef.current.mutate(r.id);
+      const replyId = r.id;
+      markedRef.current.add(replyId);
+      void markReadRef.current
+        .mutateAsync(replyId)
+        .catch(() => undefined)
+        .finally(() => markedRef.current.delete(replyId));
     }
   }, [replies, userId]);
 
@@ -157,7 +213,20 @@ export function MemoChat() {
     mounted.current = true;
   }, [lastMessageId, messages.length]);
 
+  useEffect(() => {
+    if (!previewImagePath) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPreviewImagePath(null);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [previewImagePath]);
+
   const handleSend = () => {
+    if (!scopeChild) {
+      show("대화 대상 아이를 확인할 수 없어요", "⚠️");
+      return;
+    }
     const text = draft.trim();
     if (!text) {
       show(copy.emptyDraft, "✏️");
@@ -166,7 +235,7 @@ export function MemoChat() {
     if (sendMemo.isPending) return;
     // childId(member id)로 아이별 스레드에 귀속 — 다른 아이 화면엔 절대 표시되지 않음.
     sendMemo.mutate(
-      { content: text, childId: scopeChild?.id ?? null },
+      { content: text, childId: scopeChild.id },
       {
         onSuccess: () => setDraft(""),
         onError: () => show(copy.sendFailed, "⚠️"),
@@ -180,7 +249,7 @@ export function MemoChat() {
   const onPickImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = ""; // 같은 파일 재선택 허용
-    if (!file || !familyId || sharing) return;
+    if (!file || !familyId || !scopeChild || sharing) return;
     setSharing("image");
     try {
       const dataUrl = await resizeImageFileSafe(file, { maxEdge: 1280, quality: 0.8 });
@@ -188,10 +257,16 @@ export function MemoChat() {
         show(copy.imageLoadFailed, "⚠️");
         return;
       }
-      const path = `${familyId}/memo-${Date.now()}-${Math.floor(Math.random() * 1e6)}.jpg`;
-      await apiUploadChildPhoto(path, dataUrlToBlob(dataUrl), "image/jpeg");
+      const imageBlob = dataUrlToBlob(dataUrl);
+      const uploaded = await apiUploadChildPhoto({
+        familyId,
+        purpose: "memo",
+        targetMemberId: scopeChild.id,
+        fileOrBlob: imageBlob,
+        contentType: imageBlob.type || "image/jpeg",
+      });
       sendMemo.mutate(
-        { content: encodeImageContent(path), childId: scopeChild?.id ?? null },
+        { content: encodeImageContent(uploaded.path), childId: scopeChild.id },
         { onError: () => show(copy.imageFailed, "⚠️") },
       );
     } catch (error) {
@@ -260,7 +335,7 @@ export function MemoChat() {
     }
   };
   const shareLocation = async () => {
-    if (sharing || sendMemo.isPending) return;
+    if (sharing || sendMemo.isPending || !scopeChild) return;
     setSharing("location");
     try {
       // GPS 실패 시(권한 없음 등) 서버에 기록된 내 최신 위치로 폴백(아이 세션은 백그라운드 추적 중).
@@ -275,7 +350,7 @@ export function MemoChat() {
       }
       const address = await reverseAddress(point.lat, point.lng);
       sendMemo.mutate(
-        { content: encodeLocationContent(point.lat, point.lng, address || "내 위치"), childId: scopeChild?.id ?? null },
+        { content: encodeLocationContent(point.lat, point.lng, address || "내 위치"), childId: scopeChild.id },
         { onError: () => show(copy.locationFailed, "⚠️") },
       );
     } finally {
@@ -293,7 +368,7 @@ export function MemoChat() {
   };
 
   const hasMessages = messages.length > 0;
-  const showEmpty = !thread.isLoading && !thread.isError && !hasMessages;
+  const showEmpty = !!scopeChild && !thread.isLoading && !thread.isError && !hasMessages;
   // 실시간 프레즌스 데이터가 없으므로 "온라인" 대신 최근 대화 시각으로 정직하게 표기.
   const statusLabel = hasMessages
     ? `최근 대화 · ${messages[messages.length - 1].time}`
@@ -325,9 +400,49 @@ export function MemoChat() {
 
       {/* 대화 스레드 */}
       <div className="mc-thread">
+        {blockedMembers.length > 0 && (
+          <div className="mc-blocked-banner" role="status">
+            <ShieldAlert size={18} strokeWidth={2.2} aria-hidden="true" />
+            <div>
+              <strong>{isChildSession ? "차단한 메시지는 숨겼어" : "차단한 사용자의 메시지를 숨겼어요"}</strong>
+              <div className="mc-blocked-list">
+                {blockedMembers.map(({ id, member }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className="mc-unblock hy-press"
+                    disabled={unblockMemoUser.isPending}
+                    onClick={() => {
+                      void unblockMemoUser.mutateAsync(id)
+                        .then(() => show(isChildSession ? `${member?.name ?? "상대"} 메시지를 다시 볼 수 있어.` : `${member?.name ?? "상대"}님의 차단을 해제했어요.`, "🛡️"))
+                        .catch(() => show(isChildSession ? "차단을 풀지 못했어. 다시 눌러줘." : "차단을 해제하지 못했어요.", "⚠️"));
+                    }}
+                  >
+                    {member?.name ?? "보호자"} · 차단 해제
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
         {thread.isLoading && (
           <div className="mc-daysep">
             <span>{copy.loading}</span>
+          </div>
+        )}
+        {familyLoading && (
+          <div className="mc-daysep">
+            <span>{copy.loading}</span>
+          </div>
+        )}
+        {familyError && (
+          <div className="mc-daysep">
+            <span>{copy.loadError}</span>
+          </div>
+        )}
+        {explicitChildMissing && (
+          <div className="mc-daysep">
+            <span>알림이 가리킨 아이 대화를 찾을 수 없어요</span>
           </div>
         )}
         {thread.isError && (
@@ -367,11 +482,7 @@ export function MemoChat() {
                     type="button"
                     className="mc-bubble mc-bubble--img hy-press"
                     onClick={() => {
-                      const u = childPhotoProxyUrl(m.imagePath);
-                      if (u)
-                        openExternal(u).catch(() =>
-                          show(isChildSession ? "사진을 열 수 없어" : "사진을 열 수 없어요", "🖼️"),
-                        );
+                      if (m.imagePath) setPreviewImagePath(m.imagePath);
                     }}
                   >
                     <img src={childPhotoProxyUrl(m.imagePath) ?? undefined} alt="공유한 사진" />
@@ -393,6 +504,16 @@ export function MemoChat() {
                 )}
                 <div className="mc-time">{m.time}</div>
                 {m.mine && readByPeer.has(m.id) && <div className="mc-read">읽음</div>}
+                {!m.mine && m.senderUserId && (
+                  <button
+                    type="button"
+                    className="mc-safety-action hy-press"
+                    onClick={() => setSafetyTarget(m)}
+                  >
+                    <ShieldAlert size={12} strokeWidth={2.2} aria-hidden="true" />
+                    신고·차단
+                  </button>
+                )}
               </div>
               </div>
             </Fragment>
@@ -410,6 +531,7 @@ export function MemoChat() {
               type="button"
               className="mc-quick-btn hy-press"
               onClick={() => setDraft(q)}
+              disabled={!scopeChild}
             >
               {q}
             </button>
@@ -422,7 +544,7 @@ export function MemoChat() {
             className="mc-attach hy-press"
             aria-label="사진 보내기"
             onClick={() => fileRef.current?.click()}
-            disabled={sharing !== ""}
+            disabled={sharing !== "" || !scopeChild}
           >
             <ImageIcon size={19} strokeWidth={2} />
           </button>
@@ -432,7 +554,7 @@ export function MemoChat() {
             className="mc-attach hy-press"
             aria-label="위치 보내기"
             onClick={() => void shareLocation()}
-            disabled={sharing !== ""}
+            disabled={sharing !== "" || !scopeChild}
           >
             <MapPin size={19} strokeWidth={2} />
           </button>
@@ -440,6 +562,7 @@ export function MemoChat() {
             className="mc-input"
             placeholder={copy.inputPlaceholder}
             value={draft}
+            disabled={!scopeChild}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
               // 한글 조합 중(IME) Enter 는 글자 확정용이므로 전송하지 않는다.
@@ -451,12 +574,78 @@ export function MemoChat() {
             className={`mc-send hy-press${sendMemo.isPending ? " mc-send--sending" : ""}`}
             aria-label={sendMemo.isPending ? "보내는 중" : "보내기"}
             onClick={handleSend}
-            disabled={sendMemo.isPending}
+            disabled={sendMemo.isPending || !scopeChild}
           >
             <Send size={20} strokeWidth={2.2} />
           </button>
         </div>
       </div>
+
+      {previewImagePath && (
+        <div
+          className="mc-photo-preview"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="mc-photo-preview-title"
+          onClick={(event) => {
+            if (event.currentTarget === event.target) setPreviewImagePath(null);
+          }}
+        >
+          <div className="mc-photo-preview__panel">
+            <div className="mc-photo-preview__header">
+              <h2 id="mc-photo-preview-title">공유한 사진</h2>
+              <button
+                type="button"
+                className="mc-photo-preview__close hy-press"
+                onClick={() => setPreviewImagePath(null)}
+                autoFocus
+              >
+                닫기
+              </button>
+            </div>
+            <img
+              src={childPhotoProxyUrl(previewImagePath) ?? undefined}
+              alt="공유한 사진 크게 보기"
+            />
+          </div>
+        </div>
+      )}
+
+      <MessageSafetyDialog
+        open={!!safetyTarget}
+        tone={isChildSession ? "child" : "parent"}
+        title={isChildSession ? "이 메시지가 불편했어?" : "메시지 신고 및 차단"}
+        description={isChildSession
+          ? "신고하면 운영자가 확인해. 부모님께 자동으로 전달되지는 않아."
+          : "신고 내용은 운영 검토 큐에 안전하게 저장돼요."}
+        reasons={isChildSession ? CHILD_MEMO_REPORT_REASONS : MEMO_REPORT_REASONS}
+        onClose={() => setSafetyTarget(null)}
+        onReport={async (reason, detail) => {
+          if (!safetyTarget?.id) throw new Error("report_target_missing");
+          await reportMemoReply.mutateAsync({ replyId: safetyTarget.id, reason, detail });
+          show(
+            isChildSession ? "알려줘서 고마워. 운영자가 확인할게." : "신고를 접수했어요. 운영자가 확인할게요.",
+            "🛡️",
+          );
+        }}
+        blockLabel={safetyTarget?.senderUserId && !blockedUserIds.has(safetyTarget.senderUserId)
+          ? (isChildSession ? `${safetySender?.name ?? "이 사람"} 메시지 차단` : `${safetySender?.name ?? "이 사용자"}님의 메시지 차단`)
+          : undefined}
+        blockDescription={isChildSession
+          ? "메시지만 서로 안 보여. SOS와 안전 알림은 그대로 받아."
+          : "가족 연결·위치·SOS·안전 알림은 유지되고 메모만 서로 보이지 않아요."}
+        onBlock={safetyTarget?.senderUserId && !blockedUserIds.has(safetyTarget.senderUserId)
+          ? async () => {
+              const targetUserId = safetyTarget.senderUserId;
+              if (!targetUserId) throw new Error("block_target_missing");
+              await blockMemoUser.mutateAsync(targetUserId);
+              show(
+                isChildSession ? "이 사람 메시지를 차단했어. 안전 알림은 계속 와." : "메시지를 차단했어요. 안전 알림은 계속 전달돼요.",
+                "🛡️",
+              );
+            }
+          : undefined}
+      />
     </div>
   );
 }

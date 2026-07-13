@@ -87,7 +87,8 @@ test("친구놀이 하드 에러는 '친구 없음'으로 위장하지 않는다
 
 test("외부 열기·전화 콜사이트는 실패 피드백을 가진다(void 방치 금지)", () => {
   const sites = [
-    ["src/screens/shared/MemoChat.tsx", /openExternal\([^;]*\)\.catch/s, 2],
+    // 사진은 JWT를 외부 브라우저에 넘기지 않고 앱 내부 dialog로 열므로 위치 링크 1건만 남는다.
+    ["src/screens/shared/MemoChat.tsx", /openExternal\([^;]*\)\.catch/s, 1],
     ["src/screens/feature/RouteView.tsx", /openExternal\([^;]*\)\.catch/s, 1],
     ["src/screens/teacher/TeacherSettings.tsx", /openExternal\(PRIVACY_POLICY_URL\)\.catch/, 1],
     ["src/screens/feature/AppUpdate.tsx", /openExternal\(STORE_URL\)\.catch/, 1],

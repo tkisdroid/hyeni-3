@@ -18,6 +18,7 @@ import {
   getApiAccessToken,
   getApiRefreshToken,
   getApiSessionInstanceId,
+  getApiUser,
   getNativeBackendUrl,
   notifyTokens,
   setApiTokens,
@@ -49,7 +50,7 @@ interface StartServiceOptions {
 
 /** BackgroundLocation 커스텀 플러그인(사용 메서드만). */
 interface BackgroundLocationPlugin {
-  startService(options: StartServiceOptions): Promise<{ status?: string }>;
+  startService(options: StartServiceOptions): Promise<{ status?: string; permission?: string }>;
   requestCurrentLocation(options: StartServiceOptions): Promise<{ status?: string }>;
   stopService(options?: { clearSession?: boolean; sessionNonce?: string }): Promise<{ status?: string }>;
   updateToken(options: {
@@ -57,8 +58,14 @@ interface BackgroundLocationPlugin {
     refreshToken?: string;
     authoritative?: boolean;
     sessionNonce?: string;
+    userId: string;
+    familyId: string;
+    role: string;
+    supabaseUrl: string;
+    supabaseKey: string;
   }): Promise<{ status?: string }>;
   getSessionTokens?(): Promise<{ accessToken?: string; refreshToken?: string; serviceEnabled?: boolean }>;
+  isRunning?(): Promise<{ running?: boolean }>;
   getPushContext?(): Promise<{ userId?: string; familyId?: string; role?: string; deviceInstallId?: string }>;
 }
 
@@ -101,8 +108,8 @@ export async function startLocationTracking(ctx: LocationTrackingContext): Promi
     // 백그라운드 네이티브가 더 최신 refresh 를 갖고 있을 수 있다. WebView 값을 Intent 에
     // 싣기 전에 먼저 채택해야 오래된 토큰으로 네이티브 저장소를 되돌리지 않는다.
     await adoptNativeLocationSessionTokens();
-    await plugin.startService(buildServiceOptions(ctx));
-    return true;
+    const result = await plugin.startService(buildServiceOptions(ctx));
+    return result?.status === "started";
   } catch (error) {
     console.error("[location] 백그라운드 위치 서비스 시작 실패:", error);
     return false;
@@ -172,22 +179,30 @@ export async function syncNativeLocationToken(
   if (!accessToken) return;
   // ★익명 세션 토큰은 네이티브에 쓰지 않는다. 쓰면 백그라운드 위치가 401 나고,
   //   네이티브 refresh 기반 세션 복구 경로까지 영구히 막힌다(nativeTokenWrite 주석 참조).
-  const user = userFromAccessToken(accessToken);
+  const user = getApiUser() ?? userFromAccessToken(accessToken);
+  const familyId = user?.family_id ?? user?.app_metadata?.family_id ?? null;
+  const role = user?.role ?? user?.app_metadata?.role ?? null;
   if (
     !shouldWriteNativeSessionToken({
       isAnonymous: user?.is_anonymous,
-      familyId: user?.family_id ?? user?.app_metadata?.family_id ?? null,
-      role: user?.role ?? user?.app_metadata?.role ?? null,
+      familyId,
+      role,
     })
   ) {
     return;
   }
+  if (!user?.id || !familyId || !role) return;
   try {
     await plugin.updateToken({
       accessToken,
       refreshToken: getApiRefreshToken() ?? undefined,
       authoritative: authoritativeServerRefresh,
       sessionNonce: getApiSessionInstanceId() ?? "",
+      userId: user.id,
+      familyId,
+      role,
+      supabaseUrl: getNativeBackendUrl(),
+      supabaseKey: "worker",
     });
   } catch (error) {
     console.error("[location] 네이티브 토큰 동기화 실패:", error);
@@ -235,6 +250,11 @@ async function restoreNativeRefreshOnlySession(
       refreshToken: nextRefresh,
       authoritative: true,
       sessionNonce: getApiSessionInstanceId() ?? "",
+      userId: expected.userId,
+      familyId: expected.familyId,
+      role: expected.role,
+      supabaseUrl: getNativeBackendUrl(),
+      supabaseKey: "worker",
     });
     return true;
   } catch (error) {
@@ -319,4 +339,19 @@ export function adoptNativeLocationSessionTokens(): Promise<boolean> {
 /** 이 기기에서 백그라운드 위치 추적이 가능한지(네이티브 + 플러그인 존재). 웹=false. */
 export function isLocationTrackingSupported(): boolean {
   return isNativePlatform() && getNativePlugin(PLUGIN_NAME) !== null;
+}
+
+export type LocationTrackingStatus = "on" | "off" | "unsupported" | "error";
+
+/** 아이 설정 화면용 읽기 전용 상태. 토큰을 읽지 않고 네이티브 serviceEnabled 실값만 확인한다. */
+export async function readLocationTrackingStatus(): Promise<LocationTrackingStatus> {
+  const plugin = getNativePlugin<BackgroundLocationPlugin>(PLUGIN_NAME);
+  if (!plugin || typeof plugin.isRunning !== "function") return "unsupported";
+  try {
+    const result = await plugin.isRunning();
+    return result?.running === true ? "on" : "off";
+  } catch (error) {
+    console.error("[location] 위치 추적 상태 확인 실패:", error);
+    return "error";
+  }
 }

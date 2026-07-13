@@ -1,14 +1,18 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { MapPin, Bell, BatteryCharging, Mic } from "lucide-react";
 import type { ReactNode } from "react";
 import { isNativePlatform } from "@/lib/native/plugins";
+import {
+  readPermissionState,
+  requestOrOpenPermission,
+  type PermissionKind,
+  type PermissionState,
+} from "@/lib/native/permissions";
 import "./PermDenied.css";
 
-type PermKind = "loc" | "noti" | "battery" | "mic";
-
 // 아이콘 색은 토큰 사용(하드코딩 hex 금지 — 온보딩 신뢰 순간의 화면).
-const COPY: Record<PermKind, { icon: ReactNode; title: string; sub: string }> = {
+const COPY: Record<PermissionKind, { icon: ReactNode; title: string; sub: string }> = {
   loc: {
     icon: <MapPin size={26} strokeWidth={2.2} color="var(--blue-500)" />,
     title: "위치 권한이 필요해요",
@@ -22,7 +26,7 @@ const COPY: Record<PermKind, { icon: ReactNode; title: string; sub: string }> = 
   battery: {
     icon: <BatteryCharging size={26} strokeWidth={2.2} color="var(--mint-600)" />,
     title: "백그라운드 실행이 필요해요",
-    sub: "앱이 꺼져 있어도 위치를 지키려면 배터리 최적화 예외를 허용해 주세요.",
+    sub: "앱이 꺼져 있어도 위치를 이어가려면 배터리 설정 목록에서 혜니캘린더를 찾아 설정해 주세요.",
   },
   mic: {
     icon: <Mic size={26} strokeWidth={2.2} color="var(--lav-500)" />,
@@ -35,17 +39,61 @@ const COPY: Record<PermKind, { icon: ReactNode; title: string; sub: string }> = 
 export function PermDenied() {
   const navigate = useNavigate();
   const { state } = useLocation();
-  const kind: PermKind = (state as { kind?: PermKind } | null)?.kind ?? "loc";
+  const kind: PermissionKind = (state as { kind?: PermissionKind } | null)?.kind ?? "loc";
   const c = COPY[kind];
+  const [permission, setPermission] = useState<PermissionState | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  // 설정에서 허용 후 앱으로 복귀하면 자동으로 이전 흐름으로 되돌아가 재확인시킨다.
+  const recheck = useCallback(async () => {
+    const result = await readPermissionState(kind);
+    setPermission(result);
+    if (result.granted) navigate(-1);
+    return result;
+  }, [kind, navigate]);
+
+  // 설정에서 복귀해도 실제 권한이 granted일 때만 이전 흐름으로 돌아간다.
   useEffect(() => {
-    const recheck = () => {
-      if (document.visibilityState === "visible") navigate(-1);
+    let disposed = false;
+    let appListener: { remove(): Promise<void> } | null = null;
+    const check = async () => {
+      const result = await readPermissionState(kind);
+      if (disposed) return;
+      setPermission(result);
+      if (result.granted) navigate(-1);
     };
-    document.addEventListener("visibilitychange", recheck);
-    return () => document.removeEventListener("visibilitychange", recheck);
-  }, [navigate]);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void check();
+    };
+    void check();
+    document.addEventListener("visibilitychange", onVisibility);
+    if (isNativePlatform()) {
+      void import("@capacitor/app")
+        .then(async ({ App }) => {
+          const listener = await App.addListener("appStateChange", (next) => {
+            if (next.isActive) void check();
+          });
+          if (disposed) await listener.remove();
+          else appListener = listener;
+        })
+        .catch((error: unknown) => {
+          console.error("[permission] 앱 복귀 권한 확인 등록 실패:", error);
+        });
+    }
+    return () => {
+      disposed = true;
+      document.removeEventListener("visibilitychange", onVisibility);
+      void appListener?.remove();
+    };
+  }, [kind, navigate]);
+
+  const requestAccess = async () => {
+    if (busy) return;
+    setBusy(true);
+    const result = await requestOrOpenPermission(kind);
+    setPermission(result);
+    setBusy(false);
+    if (result.granted) navigate(-1);
+  };
 
   return (
     <div className="pd-root">
@@ -54,12 +102,25 @@ export function PermDenied() {
         <div className="pd-title">{c.title}</div>
         <div className="pd-sub">{c.sub}</div>
         <div className="pd-steps">
-          {isNativePlatform()
+          {kind === "battery" && isNativePlatform()
+            ? "배터리 설정 목록에서 혜니캘린더를 찾아 제한 없음 또는 최적화 안 함으로 바꿔 주세요."
+            : isNativePlatform()
             ? "휴대폰 설정 → 앱 → 혜니캘린더 → 권한 에서 허용으로 바꿔 주세요."
             : "브라우저 주소창의 자물쇠 아이콘 → 사이트 설정 에서 허용으로 바꿔 주세요."}
         </div>
-        <button type="button" className="pd-cta hy-press" onClick={() => navigate(-1)}>
-          허용했어요 · 다시 확인
+        {permission?.supported === false && !isNativePlatform() && (
+          <div className="pd-steps">이 브라우저에서는 권한 상태를 자동으로 확인할 수 없어요.</div>
+        )}
+        <button
+          type="button"
+          className="pd-cta hy-press"
+          onClick={requestAccess}
+          disabled={busy}
+        >
+          {busy ? "권한 확인 중…" : "권한 허용 · 설정 열기"}
+        </button>
+        <button type="button" className="pd-recheck hy-press" onClick={() => void recheck()}>
+          상태 다시 확인
         </button>
       </div>
     </div>

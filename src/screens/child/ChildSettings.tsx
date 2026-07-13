@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, MapPin, Bell, HelpCircle, X, Cat, Mail, type LucideIcon } from "lucide-react";
 import { asset } from "@/lib/assets";
@@ -9,6 +9,11 @@ import { useMyFamily, useSendChildSettingRequest } from "@/queries/useFamily";
 import { useNotifSettings, useSaveNotifSettings } from "@/queries/useNotifications";
 import { checkRequestCooldown, type SettingRequestMenu } from "@/lib/api/endpoints/family";
 import { DEFAULT_NOTIF_SETTINGS } from "@/lib/api/endpoints/notifications";
+import {
+  readLocationTrackingStatus,
+  type LocationTrackingStatus,
+} from "@/lib/native/location";
+import { isNativePlatform } from "@/lib/native/plugins";
 import "./ChildSettings.css";
 
 // 만 나이(런타임 계산).
@@ -59,6 +64,40 @@ export function ChildSettings() {
 
   const [requested, setRequested] = useState<Record<string, boolean>>({});
   const [helpOpen, setHelpOpen] = useState(false);
+  const [locationStatus, setLocationStatus] = useState<LocationTrackingStatus | null>(null);
+
+  useEffect(() => {
+    let disposed = false;
+    let appListener: { remove(): Promise<void> } | null = null;
+    const refresh = async () => {
+      const next = await readLocationTrackingStatus();
+      if (!disposed) setLocationStatus(next);
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+
+    void refresh();
+    document.addEventListener("visibilitychange", onVisibility);
+    if (isNativePlatform()) {
+      void import("@capacitor/app")
+        .then(async ({ App }) => {
+          const listener = await App.addListener("appStateChange", (state) => {
+            if (state.isActive) void refresh();
+          });
+          if (disposed) await listener.remove();
+          else appListener = listener;
+        })
+        .catch((error: unknown) => {
+          console.error("[child-settings] 앱 복귀 위치 상태 확인 등록 실패:", error);
+        });
+    }
+    return () => {
+      disposed = true;
+      document.removeEventListener("visibilitychange", onVisibility);
+      void appListener?.remove();
+    };
+  }, []);
 
   const me = useMemo(() => {
     const children = (family?.members ?? []).filter((m) => m.role === "child");
@@ -71,6 +110,20 @@ export function ChildSettings() {
   const myName = me?.name || "친구";
   const notifSettings = notifSettingsQuery.data ?? DEFAULT_NOTIF_SETTINGS;
   const notifOn = notifSettings.childEnabled;
+  const locationView = (() => {
+    switch (locationStatus) {
+      case "on":
+        return { sub: "이 기기에서 위치를 보내고 있어", chip: "켜짐" };
+      case "off":
+        return { sub: "이 기기의 위치 보내기가 꺼져 있어", chip: "꺼짐" };
+      case "unsupported":
+        return { sub: "이 기기에서는 위치 상태를 확인할 수 없어", chip: "확인 불가" };
+      case "error":
+        return { sub: "위치 상태를 확인하지 못했어", chip: "오류" };
+      default:
+        return { sub: "이 기기의 위치 상태를 확인하고 있어", chip: "확인 중" };
+    }
+  })();
 
   const toggleNotifications = () => {
     if (notifSettingsQuery.isLoading || notifSettingsQuery.isError || saveNotifSettings.isPending) return;
@@ -142,9 +195,9 @@ export function ChildSettings() {
             </span>
             <span className="ks-row__main">
               <span className="ks-row__title">위치 알려주기</span>
-              <span className="ks-row__sub">항상 켜져 있어 (부모님이 정했어)</span>
+              <span className="ks-row__sub">{locationView.sub}</span>
             </span>
-            <span className="ks-onchip">켜짐</span>
+            <span className="ks-onchip">{locationView.chip}</span>
           </div>
 
           <button

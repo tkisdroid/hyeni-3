@@ -105,6 +105,16 @@ public class DeviceStatusReporterTest {
     }
 
     @Test
+    public void normalizeConnectionType_cellularGenerationUnknown_doesNotInvent4g() {
+        assertEquals("cellular", DeviceStatusReporter.normalizeConnectionType(
+            true,
+            false,
+            true,
+            TelephonyManager.NETWORK_TYPE_UNKNOWN
+        ));
+    }
+
+    @Test
     public void normalizeConnectionType_disconnected_returnsNone() {
         assertEquals("NONE", DeviceStatusReporter.normalizeConnectionType(false, true, true, TelephonyManager.NETWORK_TYPE_NR));
     }

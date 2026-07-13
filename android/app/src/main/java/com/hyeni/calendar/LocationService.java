@@ -1,7 +1,7 @@
 package com.hyeni.calendar;
 
 import android.Manifest;
-import android.app.ActivityOptions;
+import android.annotation.SuppressLint;
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -25,7 +25,6 @@ import android.net.ConnectivityManager;
 import android.net.Network;
 import android.os.Build;
 import android.os.BatteryManager;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -58,6 +57,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -78,15 +78,11 @@ import okhttp3.Response;
 public class LocationService extends Service {
 
     private static final String TAG = "LocationService";
-    private static final String CHANNEL_ID = "hyeni_location_v4";
+    private static final String CHANNEL_ID = "hyeni_location_v5_private";
     private static final String ALERT_CHANNEL_ID = NotificationHelper.CHANNEL_EMERGENCY;
-    // v5_silent_cover: 무음 + 폴더블 cover display 호환. 채널 ID 단일 소스 =
-    // NotificationHelper.CHANNEL_REMOTE_LISTEN. sound=null + vibration=false 로 무음,
-    // bypassDnd=true 로 cover display 에 알림 노출 → fullScreenIntent 가 RemoteListenActivity launch 가능.
-    private static final String REMOTE_LISTEN_CHANNEL_ID = NotificationHelper.CHANNEL_REMOTE_LISTEN;
     public static final String ACTION_REFRESH_NOW = "REFRESH_NOW";
     // Doze-bypass 위치 heartbeat (staleness reliability Phase 2). 정지+Doze 에서
-    // FusedLocation 콜백이 멈춰도 AlarmManager(setExactAndAllowWhileIdle)가 주기적으로
+    // FusedLocation 콜백이 멈춰도 특별 권한이 필요 없는 AlarmManager inexact alarm이 주기적으로
     // 깨워 단발 fix 를 강제 → '학교 종일 정지' 4시간+ 공백을 주기 상한으로 근절한다.
     public static final String ACTION_HEARTBEAT_FIX = "HEARTBEAT_FIX";
     private static final int NOTIFICATION_ID = 9001;
@@ -262,6 +258,7 @@ public class LocationService extends Service {
     private String supabaseKey;
     private String userId;
     private String familyId;
+    private String role;
     private String accessToken;
     // D1 access token(1h)이 백그라운드에서 만료되면 WebView 가 정지되어 갱신하지 못한다.
     // 저장된 refresh token(30일)으로 Worker /auth/refresh 를 직접 호출해 자체 갱신한다.
@@ -307,76 +304,51 @@ public class LocationService extends Service {
             : null;
         serviceStopping = false;
 
-        if (intent != null) {
-            if (intent.hasExtra("userId")) {
-                userId = intent.getStringExtra("userId");
-                familyId = intent.getStringExtra("familyId");
-                supabaseUrl = intent.getStringExtra("supabaseUrl");
-                supabaseKey = intent.getStringExtra("supabaseKey");
-                String intentAccess = intent.getStringExtra("accessToken");
-                String intentRefresh = intent.getStringExtra("refreshToken");
-                String intentSessionNonce = intent.getStringExtra("sessionNonce");
-                // Intent 생성 뒤 도착하기 전 네이티브 refresh가 회전할 수 있다. 실제 반영 순간
-                // prefs를 다시 읽고 비교한 뒤, 토큰 쌍과 서비스 메모리를 같은 lock에서 갱신한다.
-                synchronized (SessionTokenStore.class) {
-                    SessionTokenStore.Snapshot session = SessionTokenStore.reconcile(
-                        prefs,
-                        intentAccess,
-                        intentRefresh,
-                        false,
-                        intentSessionNonce
-                    );
-                    accessToken = session.accessToken;
-                    refreshToken = session.refreshToken;
-                }
-                String role = intent.getStringExtra("role");
-                String intervalMode = intent.getStringExtra("intervalMode");
+        if (intent != null && "STOP".equals(intent.getAction())) {
+            SessionTokenStore.setServiceEnabled(prefs, false);
+            ServiceKeepAlive.cancel(this);
+            cancelAlarmRestart();
+            cancelHeartbeat();
+            stopAll();
+            stopForeground(true);
+            stopSelf();
+            return START_NOT_STICKY;
+        }
 
-                // Walking-route lookups go through the kakao-proxy Edge
-                // Function, so kakaoRestKey is no longer ingested. Strip any
-                // legacy value left from previous installs.
-                SharedPreferences.Editor editor = prefs.edit()
-                    .putString("userId", userId)
-                    .putString("familyId", familyId)
-                    .putString("supabaseUrl", supabaseUrl)
-                    .putString("supabaseKey", supabaseKey)
-                    .putBoolean("serviceEnabled", true)
-                    .remove("kakaoRestKey");
-                if (role != null) editor.putString("role", role);
-                if (intervalMode != null) editor.putString(PREF_LOCATION_INTERVAL_MODE, normalizeLocationIntervalMode(intervalMode));
-                editor.apply();
+        SessionTokenStore.ContextSnapshot context;
+        if (intent != null && intent.hasExtra("userId")) {
+            context = SessionTokenStore.reconcileContext(
+                prefs,
+                intent.getStringExtra("accessToken"),
+                intent.getStringExtra("refreshToken"),
+                false,
+                intent.getStringExtra("sessionNonce"),
+                intent.getStringExtra("userId"),
+                intent.getStringExtra("familyId"),
+                intent.getStringExtra("role"),
+                intent.getStringExtra("supabaseUrl"),
+                intent.getStringExtra("supabaseKey"),
+                true,
+                intent.getStringExtra("intervalMode")
+            );
+            if (!context.acceptedIncoming && !context.serviceEnabled) {
+                Log.w(TAG, "Rejected stale location context while service is disabled");
+                stopSelf();
+                return START_NOT_STICKY;
             }
-
-            if ("STOP".equals(intent.getAction())) {
-                prefs.edit().putBoolean("serviceEnabled", false).apply();
-                ServiceKeepAlive.cancel(this);
-                cancelAlarmRestart();
-                cancelHeartbeat();
-                stopAll();
-                stopForeground(true);
+            if (!context.acceptedIncoming) {
+                Log.w(TAG, "Ignored stale location context; using current native session");
+            }
+        } else {
+            context = SessionTokenStore.readContext(prefs);
+            if (!context.serviceEnabled) {
+                Log.i(TAG, "Location service restart skipped because tracking is disabled");
                 stopSelf();
                 return START_NOT_STICKY;
             }
         }
-
-        if (userId == null) {
-            userId = prefs.getString("userId", null);
-            familyId = prefs.getString("familyId", null);
-            supabaseUrl = prefs.getString("supabaseUrl", null);
-            supabaseKey = prefs.getString("supabaseKey", null);
-            synchronized (SessionTokenStore.class) {
-                SessionTokenStore.Snapshot session = SessionTokenStore.read(prefs);
-                accessToken = session.accessToken;
-                refreshToken = session.refreshToken;
-            }
-            // Drop legacy kakaoRestKey from older installs (best-effort
-            // cleanup; new installs never write it).
-            if (prefs.contains("kakaoRestKey")) {
-                prefs.edit().remove("kakaoRestKey").apply();
-            }
-        }
-
-        applyLocationIntervalMode(prefs.getString(PREF_LOCATION_INTERVAL_MODE, "balanced"), true);
+        applySessionContext(context);
+        applyLocationIntervalMode(context.locationIntervalMode, true);
 
         if (userId == null || familyId == null || supabaseUrl == null) {
             Log.w(TAG, "Missing config, stopping service");
@@ -385,7 +357,7 @@ public class LocationService extends Service {
         }
         if (isBlank(accessToken) && isBlank(refreshToken)) {
             Log.w(TAG, "Missing auth token, stopping service");
-            prefs.edit().putBoolean("serviceEnabled", false).apply();
+            SessionTokenStore.setServiceEnabled(prefs, false);
             stopSelf();
             return START_NOT_STICKY;
         }
@@ -425,7 +397,6 @@ public class LocationService extends Service {
         if (refreshNow) {
             registerLocationRefreshRequest(refreshRequestId, null);
         }
-        requestBatteryOptimizationExemption();
         ServiceKeepAlive.schedule(this);
         startLocationTracking();
         startLocationFixWatchdog();
@@ -451,6 +422,16 @@ public class LocationService extends Service {
         scheduleNextHeartbeat();
 
         return START_STICKY;
+    }
+
+    private void applySessionContext(SessionTokenStore.ContextSnapshot context) {
+        accessToken = context.accessToken;
+        refreshToken = context.refreshToken;
+        userId = context.userId;
+        familyId = context.familyId;
+        role = context.role;
+        supabaseUrl = context.supabaseUrl;
+        supabaseKey = context.supabaseKey;
     }
 
     // ── 스코프드 WakeLock (영구 6h wakelock 대체) ────────────────────────────────
@@ -506,27 +487,6 @@ public class LocationService extends Service {
             fixWakeLock.acquire(FIX_WAKELOCK_TIMEOUT_MS);
         } catch (Exception e) {
             Log.w(TAG, "fix wakelock acquire failed", e);
-        }
-    }
-
-    // ── Battery Optimization Exemption ──────────────────────────────────────────
-    @android.annotation.SuppressLint("BatteryLife")
-    private void requestBatteryOptimizationExemption() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-            if (pm != null && !pm.isIgnoringBatteryOptimizations(getPackageName())) {
-                try {
-                    Intent intent = new Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
-                    intent.setData(android.net.Uri.parse("package:" + getPackageName()));
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(intent);
-                    Log.i(TAG, "Requesting battery optimization exemption");
-                } catch (Exception e) {
-                    Log.w(TAG, "Cannot request battery exemption: " + e.getMessage());
-                }
-            } else {
-                Log.i(TAG, "Already exempted from battery optimizations");
-            }
         }
     }
 
@@ -642,8 +602,7 @@ public class LocationService extends Service {
     }
 
     private void tickPlaceGeofence() {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        if (!"child".equalsIgnoreCase(prefs.getString("role", ""))) return; // 자녀 기기 전용
+        if (!"child".equalsIgnoreCase(role)) return; // 자녀 기기 전용
         long now = System.currentTimeMillis();
         if (now - placeRefreshAtMs > PLACE_REFRESH_INTERVAL_MS || (placeRefreshAtMs == 0L)) {
             placeRefreshAtMs = now;
@@ -1080,15 +1039,14 @@ public class LocationService extends Service {
 
     private void refreshAccessToken() {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        String newToken = prefs.getString("accessToken", null);
-        if (newToken != null && !newToken.equals(accessToken)) {
-            accessToken = newToken;
+        SessionTokenStore.Snapshot session = SessionTokenStore.read(prefs);
+        if (!session.accessToken.isEmpty() && !session.accessToken.equals(accessToken)) {
+            accessToken = session.accessToken;
             Log.i(TAG, "Access token refreshed from SharedPreferences");
         }
         // 포그라운드에서 WebView 가 updateToken 으로 새 refresh token 을 써둘 수 있으므로 동기화.
-        String prefRefresh = prefs.getString("refreshToken", null);
-        if (prefRefresh != null && !prefRefresh.isEmpty() && !prefRefresh.equals(refreshToken)) {
-            refreshToken = prefRefresh;
+        if (!session.refreshToken.isEmpty() && !session.refreshToken.equals(refreshToken)) {
+            refreshToken = session.refreshToken;
         }
     }
 
@@ -1097,10 +1055,10 @@ public class LocationService extends Service {
 
     private void stopForInvalidSession(String reason) {
         Log.w(TAG, "Stopping location service due to invalid session: " + reason);
-        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            .edit()
-            .putBoolean("serviceEnabled", false)
-            .apply();
+        SessionTokenStore.setServiceEnabled(
+            getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
+            false
+        );
         Runnable stop = () -> {
             stopAll();
             stopForeground(true);
@@ -1195,7 +1153,10 @@ public class LocationService extends Service {
                         newAccess,
                         newRefresh,
                         true,
-                        refreshGeneration
+                        refreshGeneration,
+                        userId,
+                        familyId,
+                        role
                     );
                     if (storedSession == null) {
                         Log.i(TAG, "Ignored network refresh response after explicit session clear");
@@ -1471,11 +1432,12 @@ public class LocationService extends Service {
 
     private void setupActivityTransitionTracking() {
         if (activityTransitionRegistered) return;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
-                && ContextCompat.checkSelfPermission(this, Manifest.permission.ACTIVITY_RECOGNITION)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACTIVITY_RECOGNITION)
                     != PackageManager.PERMISSION_GRANTED) {
-            Log.i(TAG, "ACTIVITY_RECOGNITION not granted — vehicle wake disabled (significant-motion only)");
-            return;
+                Log.i(TAG, "ACTIVITY_RECOGNITION not granted — vehicle wake disabled (significant-motion only)");
+                return;
+            }
         }
         try {
             List<ActivityTransition> transitions = new ArrayList<>();
@@ -1515,33 +1477,43 @@ public class LocationService extends Service {
                     }
                 }
             };
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                registerReceiver(activityTransitionReceiver,
-                    new IntentFilter(ACTION_ACTIVITY_TRANSITION), Context.RECEIVER_NOT_EXPORTED);
-            } else {
-                registerReceiver(activityTransitionReceiver, new IntentFilter(ACTION_ACTIVITY_TRANSITION));
-            }
+            ContextCompat.registerReceiver(
+                this,
+                activityTransitionReceiver,
+                new IntentFilter(ACTION_ACTIVITY_TRANSITION),
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            );
 
-            ActivityRecognition.getClient(this)
-                .requestActivityTransitionUpdates(request, activityTransitionPendingIntent)
-                .addOnSuccessListener(ignored -> Log.i(TAG, "Activity transition updates registered"))
-                .addOnFailureListener(error -> Log.w(TAG, "Activity transition register failed", error));
-            activityTransitionRegistered = true;
+            requestActivityTransitionUpdates(request);
         } catch (Exception error) {
             Log.w(TAG, "setupActivityTransitionTracking failed", error);
         }
     }
 
+    /**
+     * Android 10+는 호출 직전 권한 확인 뒤에만 진입한다. Android 9 이하는 해당
+     * 런타임 권한이 없으며, 호출 중 권한이 바뀌는 경합도 SecurityException으로 닫는다.
+     */
+    @SuppressLint("MissingPermission")
+    private void requestActivityTransitionUpdates(ActivityTransitionRequest request) {
+        try {
+            ActivityRecognition.getClient(this)
+                .requestActivityTransitionUpdates(request, activityTransitionPendingIntent)
+                .addOnSuccessListener(ignored -> Log.i(TAG, "Activity transition updates registered"))
+                .addOnFailureListener(error -> Log.w(TAG, "Activity transition register failed", error));
+            activityTransitionRegistered = true;
+        } catch (SecurityException error) {
+            if (activityTransitionReceiver != null) {
+                unregisterReceiver(activityTransitionReceiver);
+                activityTransitionReceiver = null;
+            }
+            Log.w(TAG, "Activity transition permission changed before registration", error);
+        }
+    }
+
     private void teardownActivityTransitionTracking() {
         if (!activityTransitionRegistered) return;
-        try {
-            if (activityTransitionPendingIntent != null) {
-                ActivityRecognition.getClient(this)
-                    .removeActivityTransitionUpdates(activityTransitionPendingIntent);
-            }
-        } catch (Exception ignored) {
-            // ignore unregister errors
-        }
+        removeActivityTransitionUpdatesIfPermitted();
         try {
             if (activityTransitionReceiver != null) unregisterReceiver(activityTransitionReceiver);
         } catch (Exception ignored) {
@@ -1549,6 +1521,23 @@ public class LocationService extends Service {
         }
         activityTransitionReceiver = null;
         activityTransitionRegistered = false;
+    }
+
+    @SuppressLint("MissingPermission")
+    private void removeActivityTransitionUpdatesIfPermitted() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+                && ContextCompat.checkSelfPermission(this, Manifest.permission.ACTIVITY_RECOGNITION)
+                    != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        try {
+            if (activityTransitionPendingIntent != null) {
+                ActivityRecognition.getClient(this)
+                    .removeActivityTransitionUpdates(activityTransitionPendingIntent);
+            }
+        } catch (SecurityException ignored) {
+            // 권한이 확인 직후 회수되면 해제 요청만 건너뛴다.
+        }
     }
 
     // ── Distance Calculation ────────────────────────────────────────────────────
@@ -2624,7 +2613,7 @@ public class LocationService extends Service {
                 JSONObject body = new JSONObject();
                 body.put("p_family_id", familyId);
                 body.put("p_user_id", userId);
-                body.put("p_role", getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString("role", ""));
+                body.put("p_role", role);
 
                 String bearer = (accessToken != null && !accessToken.isEmpty()) ? accessToken : supabaseKey;
                 Response response = executePendingNotificationsRequest(body, bearer);
@@ -2696,6 +2685,9 @@ public class LocationService extends Service {
                     String title = notif.optString("title", "혜니캘린더");
                     String notifBody = notif.optString("body", "");
                     String type = data != null ? data.optString("type", data.optString("action", "schedule")) : "schedule";
+                    String alertType = data != null
+                        ? data.optString("alertType", data.optString("alert_type", ""))
+                        : "";
                     boolean emergency = isEmergencyNotification(type, data);
                     String stableId = data != null
                         ? firstNonBlank(
@@ -2711,17 +2703,27 @@ public class LocationService extends Service {
                         continue;
                     }
                     if ("remote_listen".equals(type)) {
-                        String requestId = readRemoteListenRequestId(data);
-                        if (RemoteListenRequestStore.wasLauncherRecentlyShown(this, requestId)) {
-                            Log.d(TAG, "Skipping duplicate remote listen pending fallback: " + requestId);
-                            deliveredIds.put(id);
-                            continue;
-                        }
                         publishDeviceStatusFromPending(data);
-                        if (!startAmbientListenFromPending(data)) {
-                            showRemoteListenLauncher(data, stableId);
+                        RemoteListenNotification.Result result = RemoteListenNotification.show(
+                            this,
+                            new RemoteListenNotification.Request(
+                                readRemoteListenRequestId(data),
+                                data != null ? data.optString("familyId", "") : "",
+                                data != null
+                                    ? firstNonBlank(
+                                        data.optString("targetUserId", ""),
+                                        data.optString("target_user_id", "")
+                                    )
+                                    : "",
+                                data != null ? data.optString("senderUserId", "") : "",
+                                data != null ? data.optString("requestedAt", "") : "",
+                                data != null ? data.optString("expiresAt", "") : "",
+                                readRemoteListenDurationSec(data)
+                            )
+                        );
+                        if (result.shouldAcknowledge()) {
+                            deliveredIds.put(id);
                         }
-                        deliveredIds.put(id);
                         continue;
                     }
                     if ("remote_listen_stop".equals(type)) {
@@ -2770,9 +2772,22 @@ public class LocationService extends Service {
                         Log.d(TAG, "Pending notification already shown by system tray (tag=" + pushTag + "), skipping poll copy");
                         continue;
                     }
-                    deliveredIds.put(id);  // 실제 수신한 알림만 delivered 처리
-                    showPolledNotification(title, notifBody, type, emergency, stableId);
-                    markLocalPolledNotificationAck(stableId);
+                    NotificationHelper.DeliveryReceipt receipt = showPolledNotification(
+                        title,
+                        notifBody,
+                        type,
+                        alertType,
+                        emergency,
+                        stableId,
+                        data != null ? data.optString("route", "") : ""
+                    );
+                    if (receipt.shouldAcknowledge()) {
+                        deliveredIds.put(id);
+                        markLocalPolledNotificationAck(stableId);
+                        PolledNotificationStore.markAck(this, stableId);
+                    } else {
+                        Log.w(TAG, "Pending notification was not posted: " + receipt.getStatus().name());
+                    }
                 }
 
                 if (deliveredIds.length() > 0) {
@@ -2810,24 +2825,27 @@ public class LocationService extends Service {
     }
 
     private boolean isPendingTargetedToThisDevice(@Nullable JSONObject data) {
-        if (data == null) return true;
-        String requestFamilyId = data.optString("familyId", "");
-        if (!isBlank(requestFamilyId) && !isBlank(familyId) && !requestFamilyId.equals(familyId)) {
-            Log.d(TAG, "Skipping pending notification for another family");
-            return false;
-        }
-
-        String targetRole = data.optString("targetRole", "");
-        if (!isBlank(targetRole)) {
-            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-            String role = prefs.getString("role", "");
-            if (!isBlank(role) && !targetRole.equalsIgnoreCase(role)) {
-                return false;
+        Map<String, String> payload = new HashMap<>();
+        String[] targetKeys = {
+            "targetUserId", "target_user_id",
+            "targetFamilyId", "target_family_id", "familyId", "family_id",
+            "targetRole", "target_role"
+        };
+        for (String key : targetKeys) {
+            if (data != null && data.has(key) && !data.isNull(key)) {
+                payload.put(key, data.optString(key, ""));
             }
         }
-
-        String targetUserId = data.optString("targetUserId", "");
-        return isBlank(targetUserId) || targetUserId.equals(userId);
+        NotificationTargetPolicy.Decision decision = NotificationTargetPolicy.evaluate(
+            payload,
+            userId,
+            familyId,
+            role
+        );
+        if (!decision.allowsDelivery()) {
+            Log.d(TAG, "Skipping pending notification by target policy: " + decision.name());
+        }
+        return decision.allowsDelivery();
     }
 
     private boolean publishDeviceStatusFromPending(@Nullable JSONObject data) {
@@ -2852,71 +2870,7 @@ public class LocationService extends Service {
         );
     }
 
-    private boolean startAmbientListenFromPending(@Nullable JSONObject data) {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
-                != PackageManager.PERMISSION_GRANTED) {
-            Log.w(TAG, "Remote listen pending start skipped: RECORD_AUDIO permission missing");
-            return false;
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            Log.i(TAG, "Remote listen pending start skipped on Android 14+: microphone FGS requires foreground UI");
-            return false;
-        }
-
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        String role = prefs.getString("role", "");
-        if (!isBlank(role) && !"child".equalsIgnoreCase(role)) {
-            Log.i(TAG, "Remote listen pending skipped: this device is not child mode");
-            return false;
-        }
-
-        String requestFamilyId = data != null ? data.optString("familyId", "") : "";
-        if (!isBlank(requestFamilyId) && !isBlank(familyId) && !requestFamilyId.equals(familyId)) {
-            Log.w(TAG, "Remote listen pending start skipped: family mismatch");
-            return false;
-        }
-
-        String resolvedFamilyId = firstNonBlank(requestFamilyId, familyId);
-        if (isBlank(userId) || isBlank(resolvedFamilyId) || isBlank(supabaseUrl) || isBlank(supabaseKey)) {
-            Log.w(TAG, "Remote listen pending start skipped: service context missing");
-            return false;
-        }
-
-        Intent intent = new Intent(this, AmbientListenService.class);
-        intent.setAction(AmbientListenService.ACTION_START);
-        intent.putExtra(AmbientListenService.EXTRA_USER_ID, userId);
-        intent.putExtra(AmbientListenService.EXTRA_FAMILY_ID, resolvedFamilyId);
-        intent.putExtra(AmbientListenService.EXTRA_SUPABASE_URL, supabaseUrl);
-        intent.putExtra(AmbientListenService.EXTRA_SUPABASE_KEY, supabaseKey);
-        intent.putExtra(AmbientListenService.EXTRA_ACCESS_TOKEN, accessToken != null ? accessToken : "");
-        intent.putExtra(AmbientListenService.EXTRA_DURATION_SEC, readRemoteListenDurationSec(data));
-
-        String senderUserId = data != null ? data.optString("senderUserId", "") : "";
-        if (!isBlank(senderUserId)) {
-            intent.putExtra(AmbientListenService.EXTRA_INITIATOR_USER_ID, senderUserId);
-        }
-        String requestId = readRemoteListenRequestId(data);
-        if (!isBlank(requestId)) {
-            intent.putExtra(AmbientListenService.EXTRA_REQUEST_ID, requestId);
-        }
-
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(intent);
-            } else {
-                startService(intent);
-            }
-            Log.i(TAG, "Remote listen native foreground service started from pending notification");
-            return true;
-        } catch (Exception error) {
-            Log.w(TAG, "Remote listen native service start failed from pending notification", error);
-            return false;
-        }
-    }
-
     private boolean stopAmbientListenFromPending(@Nullable JSONObject data) {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        String role = prefs.getString("role", "");
         if (!isBlank(role) && !"child".equalsIgnoreCase(role)) {
             Log.i(TAG, "Remote listen pending stop skipped: this device is not child mode");
             return false;
@@ -2928,18 +2882,42 @@ public class LocationService extends Service {
             return false;
         }
 
+        String requestId = readRemoteListenRequestId(data);
+        String targetUserId = data != null
+            ? firstNonBlank(
+                data.optString("targetUserId", ""),
+                data.optString("target_user_id", "")
+            )
+            : "";
+        String sessionNonce = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            .getString("sessionNonce", "");
+        if (isBlank(requestId)
+                || isBlank(targetUserId)
+                || !targetUserId.equals(userId)
+                || !AmbientListenService.matchesActiveSession(
+                    requestId,
+                    targetUserId,
+                    sessionNonce)) {
+            Log.w(TAG, "Remote listen pending stop skipped: session mismatch");
+            return false;
+        }
+
         Intent intent = new Intent(this, AmbientListenService.class);
         intent.setAction(AmbientListenService.ACTION_STOP);
-        boolean stopped = stopService(intent);
-        Log.i(TAG, "Remote listen native stop requested from pending notification requestId="
-            + readRemoteListenRequestId(data)
-            + " stopped=" + stopped);
-        return true;
+        intent.putExtra(AmbientListenService.EXTRA_REQUEST_ID, requestId);
+        intent.putExtra(AmbientListenService.EXTRA_TARGET_USER_ID, targetUserId);
+        intent.putExtra(AmbientListenService.EXTRA_SESSION_NONCE, sessionNonce);
+        try {
+            startService(intent);
+            Log.i(TAG, "Remote listen native stop requested from pending requestId=" + requestId);
+            return true;
+        } catch (RuntimeException error) {
+            Log.w(TAG, "Remote listen pending stop dispatch failed", error);
+            return false;
+        }
     }
 
     private boolean shouldHandleLocationRefreshFromPending(@Nullable JSONObject data) {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        String role = prefs.getString("role", "");
         if (!isBlank(role) && !"child".equalsIgnoreCase(role)) {
             Log.i(TAG, "Location refresh pending skipped: this device is not child mode");
             return false;
@@ -2966,150 +2944,19 @@ public class LocationService extends Service {
         return !isBlank(userId) && !isBlank(familyId) && !isBlank(supabaseUrl) && !isBlank(supabaseKey);
     }
 
-    private void showRemoteListenLauncher(@Nullable JSONObject data, String stableId) {
-        ensureRemoteListenChannel();
-
-        int notificationId = NotificationHelper.stableRequestCode("remote_listen:" + stableId);
-        Intent launchIntent = new Intent(this, RemoteListenActivity.class);
-        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        launchIntent.putExtra("fromPush", true);
-        launchIntent.putExtra("remoteListen", true);
-        launchIntent.putExtra("launcherNotificationId", notificationId);
-        if (data != null) {
-            putIfNotBlank(launchIntent, "familyId", data.optString("familyId", familyId));
-            putIfNotBlank(launchIntent, "senderUserId", data.optString("senderUserId", ""));
-            putIfNotBlank(launchIntent, "durationSec", data.optString("durationSec", ""));
-            putIfNotBlank(launchIntent, "requestId", readRemoteListenRequestId(data));
-            putIfNotBlank(launchIntent, "targetUserId", data.optString("targetUserId", ""));
-        } else {
-            putIfNotBlank(launchIntent, "familyId", familyId);
-        }
-
-        PendingIntent launchPendingIntent = createRemoteListenPendingIntent(
-            launchIntent,
-            notificationId
-        );
-
-        // 방해금지모드에서도 알람이 울리던 문제 (2026-05-07 사용자 보고) 수정.
-        // 알림 자체는 silent + CATEGORY_SERVICE — 알람 채널 우회로 인한 사운드/진동 0.
-        // fullScreenIntent 는 그대로 유지 (잠금화면 RemoteListenActivity launch 위해).
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, REMOTE_LISTEN_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_hyeni_notification)
-            .setLargeIcon(NotificationHelper.largeIcon(this))
-            .setColor(ContextCompat.getColor(this, R.color.notification_accent))
-            .setContentTitle("주변 소리 연결 요청")
-            .setContentText("탭해서 아이 기기에서 연결을 시작하세요.")
-            .setStyle(new NotificationCompat.BigTextStyle().bigText("탭하면 아이 기기에서 마이크 연결 화면이 열립니다."))
-            .setAutoCancel(false)
-            .setContentIntent(launchPendingIntent)
-            .setOnlyAlertOnce(true)
-            .setSilent(true)
-            .setCategory(NotificationCompat.CATEGORY_CALL)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setFullScreenIntent(launchPendingIntent, true)
-            .setWhen(System.currentTimeMillis());
-
-        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (manager != null) {
-            manager.notify(notificationId, builder.build());
-        }
-        try {
-            launchPendingIntent.send(this, 0, null, null, null, null, remoteListenSendOptions());
-        } catch (PendingIntent.CanceledException error) {
-            Log.w(TAG, "Remote listen pending wake activity launch failed", error);
-        }
-    }
-
-    private PendingIntent createRemoteListenPendingIntent(Intent launchIntent, int requestCode) {
-        return PendingIntent.getActivity(
-            this,
-            requestCode,
-            launchIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE,
-            remoteListenCreatorOptions()
-        );
-    }
-
-    private Bundle remoteListenCreatorOptions() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-            return null;
-        }
-
-        ActivityOptions options = ActivityOptions.makeBasic();
-        options.setPendingIntentCreatorBackgroundActivityStartMode(
-            ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
-        );
-        RemoteListenActivity.applyRemoteListenLaunchDisplay(this, options);
-        return options.toBundle();
-    }
-
-    private Bundle remoteListenSendOptions() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            return null;
-        }
-
-        ActivityOptions options = ActivityOptions.makeBasic();
-        options.setPendingIntentBackgroundActivityStartMode(
-            ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
-        );
-        RemoteListenActivity.applyRemoteListenLaunchDisplay(this, options);
-        return options.toBundle();
-    }
-
-    private void ensureRemoteListenChannel() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
-        NotificationManager manager = getSystemService(NotificationManager.class);
-        if (manager == null) return;
-        NotificationChannel existing = manager.getNotificationChannel(REMOTE_LISTEN_CHANNEL_ID);
-        if (existing != null) return;
-
-        // IMPORTANCE_HIGH + setFullScreenIntent 로 잠금화면 / Samsung 폴더블 cover
-        // display 에서 RemoteListenActivity launch. sound=null + vibration=false 로
-        // 무음, bypassDnd=true 로 cover display 알림 노출 (DND 우회는 표시 정책,
-        // 사운드는 별개 — 채널이 sound=null 이면 무음 유지).
-        // 사용자 보고(2026-05-07): "폴더가 닫힌 상태에서 주변 소리 듣기 안 됨".
-        NotificationChannel channel = new NotificationChannel(
-            REMOTE_LISTEN_CHANNEL_ID,
-            "원격 듣기 연결 (cover 호환 무음)",
-            NotificationManager.IMPORTANCE_HIGH
-        );
-        channel.setDescription("폴더 닫힘 / 잠금화면에서도 화면만 조용히 켜고 마이크 연결을 시작");
-        channel.enableVibration(false);
-        channel.setVibrationPattern(null);
-        channel.setSound(null, null);
-        channel.setBypassDnd(true);
-        channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
-        channel.setShowBadge(false);
-        manager.createNotificationChannel(channel);
-    }
-
-    private void putIfNotBlank(Intent intent, String key, String value) {
-        if (!isBlank(value)) {
-            intent.putExtra(key, value);
-        }
-    }
-
     private int readRemoteListenDurationSec(@Nullable JSONObject data) {
         String raw = data != null ? data.optString("durationSec", "") : "";
-        if (isBlank(raw)) return 30;
+        if (isBlank(raw)) return RemoteListenRequestPolicy.DEFAULT_DURATION_SEC;
         try {
-            int durationSec = Integer.parseInt(raw);
-            if (durationSec < 5) return 30;
-            return Math.min(durationSec, 120);
+            return RemoteListenRequestPolicy.normalizeDurationSec(Integer.parseInt(raw));
         } catch (NumberFormatException ignored) {
-            return 30;
+            return RemoteListenRequestPolicy.DEFAULT_DURATION_SEC;
         }
     }
 
     private String readRemoteListenRequestId(@Nullable JSONObject data) {
         if (data == null) return "";
-        return firstNonBlank(
-            data.optString("requestId", ""),
-            data.optString("pushId", ""),
-            data.optString("idempotencyKey", ""),
-            data.optString("idempotency_key", "")
-        );
+        return data.optString("requestId", "").trim();
     }
 
     private String firstNonBlank(String... values) {
@@ -3278,11 +3125,7 @@ public class LocationService extends Service {
                 }
                 if (events.length() == 0) return;
 
-                boolean isChildDevice;
-                {
-                    SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-                    isChildDevice = "child".equalsIgnoreCase(prefs.getString("role", ""));
-                }
+                boolean isChildDevice = "child".equalsIgnoreCase(role);
 
                 // Track whether we're still at the silenced event's location
                 boolean stillAtSilentLocation = false;
@@ -3578,8 +3421,6 @@ public class LocationService extends Service {
                 shownEventNotifs.add(reminderKey);
                 continue;
             }
-            shownEventNotifs.add(reminderKey);
-
             String notifTitle;
             String bodyTail;
             if (minute == 0) {
@@ -3596,17 +3437,23 @@ public class LocationService extends Service {
             int notifId = NotificationHelper.stableRequestCode(reminderKey);
 
             try {
-                NotificationHelper.showNotification(
+                NotificationHelper.DeliveryReceipt receipt = NotificationHelper.showNotification(
                     this,
                     notifTitle,
                     body,
                     "schedule",
                     false,
                     false,
-                    notifId
+                    notifId,
+                    "/child/home"
                 );
-                PolledNotificationStore.markAck(this, reminderKey);
-                Log.i(TAG, "Local event reminder fired: " + key + " for " + title);
+                if (receipt.shouldAcknowledge()) {
+                    shownEventNotifs.add(reminderKey);
+                    PolledNotificationStore.markAck(this, reminderKey);
+                    Log.i(TAG, "Local event reminder fired: " + key + " for " + title);
+                } else {
+                    Log.w(TAG, "Local event reminder was not posted: " + receipt.getStatus().name());
+                }
             } catch (Exception e) {
                 Log.w(TAG, "Local event reminder failed: " + e.getMessage());
             }
@@ -3649,6 +3496,10 @@ public class LocationService extends Service {
                     .setColor(ContextCompat.getColor(this, R.color.notification_accent))
                     .setOngoing(true)
                     .setPriority(NotificationCompat.PRIORITY_LOW)
+                    .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+                    .setPublicVersion(NotificationHelper.buildPublicVersion(
+                        this, CHANNEL_ID, false, null
+                    ))
                     .build();
                 manager.notify(NOTIFICATION_ID, notif);
             }
@@ -3714,21 +3565,28 @@ public class LocationService extends Service {
     }
 
     // ── Heads-Up Notification (popup) ───────────────────────────────────────────
-    private void showPolledNotification(String title, String body, String type, boolean emergency, String stableId) {
+    private NotificationHelper.DeliveryReceipt showPolledNotification(
+            String title,
+            String body,
+            String type,
+            String alertType,
+            boolean emergency,
+            String stableId,
+            String payloadRoute
+    ) {
         boolean isKkuk = "kkuk".equals(type);
-        // LocationService 는 자녀 기기 전용 — 비긴급 폴링 알림은 전부 "아이가 받는
-        // 메시지"이므로 child_message 채널(IMPORTANCE_HIGH)로 heads-up 팝업을 보장한다.
-        // (구버전 설치 기기의 고착된 schedule 채널 설정 때문에 트레이 직행되는 것 방지)
-        String channel = emergency ? "emergency" : (isKkuk ? "kkuk" : "child_message");
+        String channel = NotificationChannelPolicy.channelFor(type, alertType, emergency);
         // 꾹은 긴급 등급 — 전체화면(fullScreenIntent)으로 띄운다. FCM 경로
         // (MyFirebaseMessagingService.showNotification: fullScreen = emergency || isKkuk)와 동일.
         boolean fullScreen = emergency || isKkuk;
         int notificationId = NotificationHelper.stableRequestCode(stableId);
         // AI 선제 대화/부모 메모/스티커 알림은 탭하면 관련 아이 화면으로 직행한다.
-        String route = "ai_proactive".equals(type)
-            ? "ai-chat"
-            : ("new_memo".equals(type) ? "child-memo" : ("sticker".equals(type) ? "child-sticker" : null));
-        NotificationHelper.showNotification(
+        String route = !isBlank(payloadRoute)
+            ? payloadRoute
+            : ("ai_proactive".equals(type)
+                ? "ai-chat"
+                : ("new_memo".equals(type) ? "child-memo" : ("sticker".equals(type) ? "child-sticker" : null)));
+        NotificationHelper.DeliveryReceipt receipt = NotificationHelper.showNotification(
             this,
             title,
             body,
@@ -3739,7 +3597,10 @@ public class LocationService extends Service {
             route
         );
 
-        Log.i(TAG, "Polled notification: " + title + ", emergency=" + emergency + ", kkuk=" + isKkuk);
+        if (receipt.shouldAcknowledge()) {
+            Log.i(TAG, "Polled notification: " + title + ", emergency=" + emergency + ", kkuk=" + isKkuk);
+        }
+        return receipt;
     }
 
     private boolean isEmergencyNotification(String type, @Nullable JSONObject data) {
@@ -3758,10 +3619,19 @@ public class LocationService extends Service {
             if (manager == null) return;
 
             // 위치 추적 FGS 전용 채널만 LocationService 에서 생성한다.
+            NotificationChannel previous = manager.getNotificationChannel("hyeni_location_v4");
             NotificationChannel locationChannel = new NotificationChannel(
-                CHANNEL_ID, "위치 추적", NotificationManager.IMPORTANCE_LOW);
+                CHANNEL_ID,
+                "위치 추적",
+                NotificationHelper.legacyImportance(
+                    manager, "hyeni_location_v4", NotificationManager.IMPORTANCE_LOW
+                )
+            );
             locationChannel.setDescription("아이 위치를 부모님께 공유합니다");
+            NotificationHelper.applyLegacyChannelBehavior(locationChannel, previous);
+            locationChannel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PRIVATE);
             manager.createNotificationChannel(locationChannel);
+            if (previous != null) manager.deleteNotificationChannel("hyeni_location_v4");
         }
 
         // 긴급/일정/꾹/무음 알림 채널은 NotificationHelper 단일 정의를 따른다.
@@ -3777,7 +3647,6 @@ public class LocationService extends Service {
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, openIntent,
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-        String role = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString("role", "child");
         String statusText = "parent".equals(role)
             ? "아이와 함께하고 있어요 💕"
             : "부모님이 함께하고 있어요 💕";
@@ -3791,6 +3660,10 @@ public class LocationService extends Service {
             .setOngoing(true)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setPublicVersion(NotificationHelper.buildPublicVersion(
+                this, CHANNEL_ID, false, pendingIntent
+            ))
             .build();
     }
 
@@ -3898,11 +3771,11 @@ public class LocationService extends Service {
             if (am != null) {
                 long triggerAt = System.currentTimeMillis() + 5000; // restart in 5 seconds
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi);
+                    am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi);
                 } else {
-                    am.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pi);
+                    am.set(AlarmManager.RTC_WAKEUP, triggerAt, pi);
                 }
-                Log.i(TAG, "AlarmManager restart scheduled in 5 seconds");
+                Log.i(TAG, "AlarmManager inexact restart requested after 5 seconds");
             }
         } catch (Exception e) {
             Log.e(TAG, "Failed to schedule alarm restart: " + e.getMessage());
@@ -3932,8 +3805,8 @@ public class LocationService extends Service {
     // onStartCommand 가 매번 다음 회차를 다시 예약). last_location_at 갱신 → 서버
     // staleness 가 '복구'로 자연 전환된다.
     private static final int ALARM_HEARTBEAT_REQUEST_CODE = 9998;
-    // 5분 주기. setExactAndAllowWhileIdle 은 Doze 중 앱당 ~9분 1회로 OS rate-limit
-    // 되므로 정지+Doze 최악 시 실발화는 5~9분이 될 수 있다(비-Doze 면 5분 정확).
+    // 5분 후 inexact alarm을 요청한다. Doze·시스템 부하에서는 maintenance window까지
+    // 지연될 수 있으며, 15분 WorkManager keepalive가 끊긴 chain을 함께 복구한다.
     private static final long HEARTBEAT_INTERVAL_MS = 5 * 60 * 1000L;
 
     private PendingIntent heartbeatPendingIntent() {
@@ -3951,19 +3824,10 @@ public class LocationService extends Service {
             if (am == null) return;
             long triggerAt = System.currentTimeMillis() + HEARTBEAT_INTERVAL_MS;
             PendingIntent pi = heartbeatPendingIntent();
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                // Android 12+: exact alarm 권한이 없으면(사용자 미허용) inexact
-                // allow-while-idle 로 폴백 — 발화가 maintenance window 까지 밀릴 수
-                // 있으나 chain 은 끊기지 않는다.
-                if (am.canScheduleExactAlarms()) {
-                    am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi);
-                } else {
-                    am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi);
-                }
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi);
             } else {
-                am.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pi);
+                am.set(AlarmManager.RTC_WAKEUP, triggerAt, pi);
             }
         } catch (Exception e) {
             Log.e(TAG, "Failed to schedule heartbeat: " + e.getMessage());

@@ -21,20 +21,10 @@ import java.util.List;
 public class MainActivity extends BridgeActivity {
 
     private static final int NOTIFICATION_PERMISSION_CODE = 1001;
-    private static final int MICROPHONE_PERMISSION_CODE = 1002;
     private static final int CORE_PERMISSION_REQUEST_CODE = 1003;
     private static final String PREFS_NAME = "hyeni_location_prefs";
     private static final String CORE_PERMISSION_PROMPTED_KEY = "corePermissionPrompted";
     private static volatile boolean appForegroundForMicrophone = false;
-    private boolean pendingRemoteListen = false;
-    private Intent pendingRemoteListenIntent = null;
-    private boolean suppressNotificationPermissionPrompt = false;
-
-    private enum RemoteListenStartResult {
-        STARTED,
-        FALLBACK_ALLOWED,
-        BLOCKED
-    }
 
     static boolean isAppForeground() {
         return appForegroundForMicrophone;
@@ -83,6 +73,11 @@ public class MainActivity extends BridgeActivity {
             @Override
             public void onPermissionRequest(final PermissionRequest request) {
                 runOnUiThread(() -> {
+                    if (request.getOrigin() == null
+                            || !WebViewOriginPolicy.isTrusted(request.getOrigin().toString())) {
+                        request.deny();
+                        return;
+                    }
                     String[] resources = request.getResources();
                     java.util.List<String> grantList = new java.util.ArrayList<>();
                     boolean cameraDenied = false;
@@ -118,6 +113,10 @@ public class MainActivity extends BridgeActivity {
 
             @Override
             public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
+                if (!WebViewOriginPolicy.isTrusted(origin)) {
+                    callback.invoke(origin, false, false);
+                    return;
+                }
                 // Phase 5 Stream B: gate WebView geolocation on the OS-level
                 // ACCESS_FINE_LOCATION runtime permission. The previous
                 // unconditional callback.invoke(origin, true, true) auto-granted
@@ -167,9 +166,6 @@ public class MainActivity extends BridgeActivity {
     }
 
     private void requestNotificationPermission() {
-        if (suppressNotificationPermissionPrompt) {
-            return;
-        }
         if (getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getBoolean(CORE_PERMISSION_PROMPTED_KEY, false)) {
             return;
         }
@@ -227,52 +223,11 @@ public class MainActivity extends BridgeActivity {
 
     private void handleRemoteListen(Intent intent) {
         if (intent == null || !intent.getBooleanExtra("remoteListen", false)) return;
-        suppressNotificationPermissionPrompt = true;
-        Intent remoteListenIntent = new Intent(intent);
-        intent.removeExtra("remoteListen"); // consume once
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
-                != PackageManager.PERMISSION_GRANTED) {
-            pendingRemoteListen = true;
-            pendingRemoteListenIntent = remoteListenIntent;
-            ActivityCompat.requestPermissions(this,
-                    new String[]{ Manifest.permission.RECORD_AUDIO },
-                    MICROPHONE_PERMISSION_CODE);
-            return;
-        }
-        RemoteListenStartResult result = startNativeAmbientListen(remoteListenIntent);
-        if (result == RemoteListenStartResult.FALLBACK_ALLOWED) {
-            queueRemoteListenFlagInjection();
-        } else {
-            pendingRemoteListen = false;
-            pendingRemoteListenIntent = null;
-        }
-    }
-
-    private void queueRemoteListenFlagInjection() {
-        pendingRemoteListen = false;
-        Intent pendingIntent = pendingRemoteListenIntent;
-        pendingRemoteListenIntent = null;
-        Log.i("MainActivity", "Remote listen intent - will inject JS flag");
-        injectRemoteListenFlag(1000, pendingIntent);
-        injectRemoteListenFlag(3000, pendingIntent);
-        injectRemoteListenFlag(6000, pendingIntent);
-        injectRemoteListenFlag(10000, pendingIntent);
-    }
-
-    private void injectRemoteListenFlag(long delayMs, Intent sourceIntent) {
-        if (getBridge() == null || getBridge().getWebView() == null) {
-            return;
-        }
-        String requestId = sourceIntent != null ? sourceIntent.getStringExtra("requestId") : null;
-        if (requestId == null) requestId = "";
-        String escapedRequestId = requestId.replace("\\", "\\\\").replace("'", "\\'");
-        final String js = "window.__REMOTE_LISTEN_REQUESTED = true;window.__REMOTE_LISTEN_REQUEST_ID='" + escapedRequestId + "';";
-        getBridge().getWebView().postDelayed(() -> {
-            if (getBridge() == null || getBridge().getWebView() == null) {
-                return;
-            }
-            getBridge().getWebView().evaluateJavascript(js, null);
-        }, delayMs);
+        // 구버전 full-screen 인텐트는 마이크를 시작하거나 권한을 요청하지 않는다.
+        // 현재 경로는 RemoteListenNotification → RemoteListenActivity의 명시적
+        // 세션별 동의만 허용한다.
+        intent.removeExtra("remoteListen");
+        Log.w("MainActivity", "Legacy remote listen auto-start intent ignored");
     }
 
     // AI 선제 대화/부모 메모/스티커 알림 탭 → 관련 아이 화면 직행. WebView 부팅 타이밍이
@@ -282,42 +237,19 @@ public class MainActivity extends BridgeActivity {
             return;
         }
         String route = intent.getStringExtra("route");
-        if ("ai-chat".equals(route)) {
-            Log.i("MainActivity", "AI chat route launch - will inject JS flag");
-            injectOpenAiChatFlag(1000);
-            injectOpenAiChatFlag(3000);
-            injectOpenAiChatFlag(6000);
-            injectOpenAiChatFlag(10000);
-            return;
-        }
-        if ("child-memo".equals(route)) {
-            Log.i("MainActivity", "Child memo route launch - will open memo");
-            injectHashRoute("#/child/memo", 1000);
-            injectHashRoute("#/child/memo", 3000);
-            injectHashRoute("#/child/memo", 6000);
-            injectHashRoute("#/child/memo", 10000);
-            return;
-        }
-        if ("child-sticker".equals(route)) {
-            Log.i("MainActivity", "Sticker route launch - will open sticker book");
-            injectHashRoute("#/child/sticker", 1000);
-            injectHashRoute("#/child/sticker", 3000);
-            injectHashRoute("#/child/sticker", 6000);
-            injectHashRoute("#/child/sticker", 10000);
-        }
-    }
-
-    private void injectOpenAiChatFlag(long delayMs) {
-        if (getBridge() == null || getBridge().getWebView() == null) {
-            return;
-        }
-        final String js = "window.__OPEN_AI_CHAT_REQUESTED = true;";
-        getBridge().getWebView().postDelayed(() -> {
-            if (getBridge() == null || getBridge().getWebView() == null) {
-                return;
+        String localRole = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString("role", "");
+        String hashRoute = NotificationRoutePolicy.resolveHashRoute(route, localRole);
+        if (hashRoute == null) {
+            if (route != null && !route.trim().isEmpty()) {
+                Log.w("MainActivity", "Rejected notification route for current role");
             }
-            getBridge().getWebView().evaluateJavascript(js, null);
-        }, delayMs);
+            return;
+        }
+        Log.i("MainActivity", "Notification route launch accepted");
+        injectHashRoute(hashRoute, 1000);
+        injectHashRoute(hashRoute, 3000);
+        injectHashRoute(hashRoute, 6000);
+        injectHashRoute(hashRoute, 10000);
     }
 
     private void injectHashRoute(String hashRoute, long delayMs) {
@@ -365,7 +297,7 @@ public class MainActivity extends BridgeActivity {
                     .putString("fcmToken", token)
                     .apply();
 
-                Log.i("MainActivity", "FCM token primed: " + token.substring(0, Math.min(20, token.length())) + "...");
+                Log.i("MainActivity", "FCM token primed");
             })
             .addOnFailureListener(error ->
                 Log.w("MainActivity", "Failed to prime FCM token", error)
@@ -381,27 +313,6 @@ public class MainActivity extends BridgeActivity {
             return;
         }
 
-        if (requestCode != MICROPHONE_PERMISSION_CODE) {
-            return;
-        }
-
-        boolean granted = grantResults.length > 0
-            && grantResults[0] == PackageManager.PERMISSION_GRANTED;
-
-        if (granted && pendingRemoteListen) {
-            RemoteListenStartResult result = startNativeAmbientListen(pendingRemoteListenIntent);
-            if (result == RemoteListenStartResult.FALLBACK_ALLOWED) {
-                queueRemoteListenFlagInjection();
-            } else {
-                pendingRemoteListen = false;
-                pendingRemoteListenIntent = null;
-            }
-            return;
-        }
-
-        pendingRemoteListen = false;
-        pendingRemoteListenIntent = null;
-        Log.w("MainActivity", "Remote listen microphone permission denied");
     }
 
     // Phase 5 RL-03: synchronous check used by the WebChromeClient permission
@@ -410,7 +321,7 @@ public class MainActivity extends BridgeActivity {
     // RECORD_AUDIO grant — we do NOT attempt to re-request it here, because
     // onPermissionRequest runs on the UI thread during a WebView callback and
     // cannot block for an async runtime prompt. The runtime prompt is handled
-    // by the in-app permission wizard / handleRemoteListen().
+    // by the in-app permission wizard / RemoteListenActivity consent flow.
     private boolean hasRecordAudioPermissionGranted() {
         return ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
             == PackageManager.PERMISSION_GRANTED;
@@ -427,94 +338,4 @@ public class MainActivity extends BridgeActivity {
             == PackageManager.PERMISSION_GRANTED;
     }
 
-    private RemoteListenStartResult startNativeAmbientListen(Intent sourceIntent) {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        String userId = prefs.getString("userId", "");
-        String requestedFamilyId = sourceIntent != null ? sourceIntent.getStringExtra("familyId") : null;
-        String prefsFamilyId = prefs.getString("familyId", "");
-        String familyId = firstNonBlank(requestedFamilyId, prefsFamilyId);
-        String supabaseUrl = prefs.getString("supabaseUrl", "");
-        String supabaseKey = prefs.getString("supabaseKey", "");
-        String accessToken = prefs.getString("accessToken", "");
-        String role = prefs.getString("role", "");
-        String targetUserId = sourceIntent != null ? sourceIntent.getStringExtra("targetUserId") : null;
-
-        if (!isBlank(role) && !"child".equalsIgnoreCase(role)) {
-            Log.i("MainActivity", "Remote listen native start skipped: this device is not child mode");
-            return RemoteListenStartResult.BLOCKED;
-        }
-
-        if (!isBlank(requestedFamilyId) && !isBlank(prefsFamilyId) && !requestedFamilyId.equals(prefsFamilyId)) {
-            Log.i("MainActivity", "Remote listen native start skipped: family mismatch");
-            return RemoteListenStartResult.BLOCKED;
-        }
-
-        if (!isBlank(targetUserId) && !targetUserId.equals(userId)) {
-            Log.i("MainActivity", "Remote listen native start skipped: target user mismatch");
-            return RemoteListenStartResult.BLOCKED;
-        }
-
-        if (isBlank(userId) || isBlank(familyId) || isBlank(supabaseUrl) || isBlank(supabaseKey)) {
-            Log.w("MainActivity", "Remote listen native start skipped: push context missing");
-            return RemoteListenStartResult.FALLBACK_ALLOWED;
-        }
-
-        Intent serviceIntent = new Intent(this, AmbientListenService.class);
-        serviceIntent.setAction(AmbientListenService.ACTION_START);
-        serviceIntent.putExtra(AmbientListenService.EXTRA_USER_ID, userId);
-        serviceIntent.putExtra(AmbientListenService.EXTRA_FAMILY_ID, familyId);
-        serviceIntent.putExtra(AmbientListenService.EXTRA_SUPABASE_URL, supabaseUrl);
-        serviceIntent.putExtra(AmbientListenService.EXTRA_SUPABASE_KEY, supabaseKey);
-        serviceIntent.putExtra(AmbientListenService.EXTRA_ACCESS_TOKEN, accessToken);
-        serviceIntent.putExtra(AmbientListenService.EXTRA_DURATION_SEC, readDurationSec(sourceIntent));
-
-        String senderUserId = sourceIntent != null ? sourceIntent.getStringExtra("senderUserId") : null;
-        if (!isBlank(senderUserId)) {
-            serviceIntent.putExtra(AmbientListenService.EXTRA_INITIATOR_USER_ID, senderUserId);
-        }
-        String requestId = sourceIntent != null ? sourceIntent.getStringExtra("requestId") : null;
-        if (!isBlank(requestId)) {
-            serviceIntent.putExtra(AmbientListenService.EXTRA_REQUEST_ID, requestId);
-        }
-
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(serviceIntent);
-            } else {
-                startService(serviceIntent);
-            }
-            pendingRemoteListen = false;
-            pendingRemoteListenIntent = null;
-            Log.i("MainActivity", "Remote listen native foreground service started");
-            return RemoteListenStartResult.STARTED;
-        } catch (Exception error) {
-            Log.w("MainActivity", "Remote listen native service start failed", error);
-            return RemoteListenStartResult.FALLBACK_ALLOWED;
-        }
-    }
-
-    private int readDurationSec(Intent intent) {
-        if (intent == null) return 30;
-        int durationSec = 30;
-        Object rawDuration = intent.getExtras() != null ? intent.getExtras().get("durationSec") : null;
-        if (rawDuration instanceof Number) {
-            durationSec = ((Number) rawDuration).intValue();
-        } else if (rawDuration != null) {
-            try {
-                durationSec = Integer.parseInt(String.valueOf(rawDuration));
-            } catch (Exception ignored) {
-                durationSec = 30;
-            }
-        }
-        if (durationSec < 5) return 30;
-        return Math.min(durationSec, 120);
-    }
-
-    private String firstNonBlank(String first, String second) {
-        return !isBlank(first) ? first.trim() : (!isBlank(second) ? second.trim() : "");
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
-    }
 }

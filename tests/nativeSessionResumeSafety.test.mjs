@@ -88,8 +88,8 @@ test("동일 iat 예외는 서버 refresh 응답을 네이티브에 확정하는
   const store = read("android/app/src/main/java/com/hyeni/calendar/SessionTokenStore.java");
   assert.match(location, /authoritative: authoritativeServerRefresh/);
   assert.match(plugin, /call\.getBoolean\("authoritative"\)/);
-  assert.match(plugin, /SessionTokenStore\.reconcile\(\s*prefs,\s*newToken,\s*newRefresh,\s*authoritative,/s);
-  assert.match(store, /shouldReplaceStored\(storedAccess, nextAccess, authoritative\)/);
+  assert.match(plugin, /SessionTokenStore\.reconcileContext\(\s*prefs,\s*newToken,\s*newRefresh,\s*authoritative,/s);
+  assert.match(store, /shouldReplaceStored\(\s*stored\.accessToken,\s*nextAccess,\s*authoritative\s*\)/s);
 });
 
 test("Android 토큰 비교와 저장은 공통 원자 helper를 거치고 서비스 도착 시 다시 검증한다", () => {
@@ -106,7 +106,7 @@ test("Android 토큰 비교와 저장은 공통 원자 helper를 거치고 서�
   assert.doesNotMatch(service, /putString\("refreshToken"/);
 
   const onStart = functionBody(service, "public int onStartCommand", "private void createNotificationChannels");
-  assert.match(onStart, /SessionTokenStore\.reconcile\(\s*prefs,\s*intentAccess,\s*intentRefresh,\s*false,/s);
+  assert.match(onStart, /SessionTokenStore\.reconcileContext\(/);
   const refresh = functionBody(service, "private String networkRefreshAccessToken", "// ── Kalman Filter");
   assert.match(refresh, /SessionTokenStore\.reconcileIfGeneration\(\s*prefs,\s*newAccess,\s*newRefresh,\s*true,/s);
 });
@@ -134,7 +134,7 @@ test("로그아웃한 session nonce의 지연 start/push/update writer는 native
 
   assert.match(store, /BLOCKED_SESSION_NONCES/);
   assert.match(store, /MAX_BLOCKED_SESSION_NONCES = 16/);
-  assert.match(store, /blockedSessionNonces\.contains\(nextSessionNonce\)/);
+  assert.match(store, /blockedSessionNonces\.contains\(clean\(sessionNonce\)\)/);
   assert.match(store, /blockedSessionNonces\.add\(retiringSessionNonce\)/);
   assert.match(store, /putString\(BLOCKED_SESSION_NONCES, String\.join\("\|", blockedSessionNonces\)\)/);
   assert.doesNotMatch(store, /remove\(BLOCKED_SESSION_NONCES\)/);

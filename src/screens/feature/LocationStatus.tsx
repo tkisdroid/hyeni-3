@@ -1,19 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useLocation as useRouterLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { ChevronLeft, RefreshCw, Check, AlertTriangle, MapPin } from "lucide-react";
+import { ChevronLeft, RefreshCw, Check, AlertTriangle, MapPin, Lock } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useActiveChild } from "@/app/activeChild";
 import { useMyFamily } from "@/queries/useFamily";
 import { useChildLocations, useSavedPlaces } from "@/queries/useLocation";
 import { useLocationLabels } from "@/queries/useLocationLabels";
+import { useEntitlement } from "@/queries/useEntitlement";
 import { requestLocationRefresh } from "@/lib/api/endpoints/remote";
 import { formatFreshness } from "@/transform/locationView";
 import { waitForNewChildLocation } from "@/transform/locationRefreshWait";
+import { locationModeFor, TIERS } from "@/transform/tierPolicy";
 import "./LocationStatus.css";
 
-type StatusKind = "loading" | "success" | "error" | "permission";
+type StatusKind = "scope" | "scope_error" | "locked" | "loading" | "success" | "error" | "permission";
 
 interface StatusView {
   kind: StatusKind;
@@ -23,7 +25,7 @@ interface StatusView {
   tone: "mint" | "caution" | "neutral";
 }
 
-/** P-15 위치 갱신 상태. 갱신중 · 성공 · 실패(재시도) · 권한필요 4상태 + 마지막 known 위치 유지. */
+/** P-15 위치 갱신 상태. 조회 범위·잠금·갱신중·성공·실패·권한 상태 + 마지막 known 위치 유지. */
 export function LocationStatus() {
   const navigate = useNavigate();
   const route = useRouterLocation();
@@ -34,6 +36,12 @@ export function LocationStatus() {
   const { data: family } = useMyFamily();
   const { data: locations, refetch, isFetching, isError } = useChildLocations();
   const { data: places } = useSavedPlaces();
+  const entitlement = useEntitlement();
+  const locationScopeError = entitlement.isError;
+  const locationScopePending = entitlement.isError || entitlement.tier === TIERS.UNKNOWN;
+  const mode = locationModeFor(entitlement.tier);
+  const canShowLocation = !locationScopePending && mode !== "locked";
+  const locationLocked = !locationScopePending && mode === "locked";
 
   const [refreshing, setRefreshing] = useState(false);
   const refreshSeq = useRef(0);
@@ -59,9 +67,10 @@ export function LocationStatus() {
     return activeChild;
   }, [family, childMembers, childParam, navState?.childId, navState?.childUserId, activeChild]);
   const childName = childMember?.name || "아이";
-  const loc = childMember?.user_id
+  const cachedLoc = childMember?.user_id
     ? locations?.find((l) => l.user_id === childMember.user_id) ?? null
     : null;
+  const loc = canShowLocation ? cachedLoc : null;
 
   const fresh = loc ? formatFreshness(loc.updated_at, now) : null;
   const accuracyM = loc?.accuracy_m != null && Number.isFinite(Number(loc.accuracy_m))
@@ -72,15 +81,42 @@ export function LocationStatus() {
   const lastPlace = loc ? locationLabel(loc) : null;
 
   // 상태 판정: 수동 갱신중/최초로딩 → loading, 에러 → error, 최신 위치 → success, 그 외(없음/오래됨) → permission.
-  const kind: StatusKind = refreshing || (isFetching && !loc)
-    ? "loading"
-    : isError
-      ? "error"
-      : loc && fresh && fresh.status !== "stale"
-        ? "success"
-        : "permission";
+  const kind: StatusKind = locationScopeError
+    ? "scope_error"
+    : locationScopePending
+      ? "scope"
+      : locationLocked
+        ? "locked"
+        : refreshing || (isFetching && !loc)
+          ? "loading"
+          : isError
+            ? "error"
+            : loc && fresh && fresh.status !== "stale"
+              ? "success"
+              : "permission";
 
   const views: Record<StatusKind, StatusView> = {
+    scope: {
+      kind: "scope",
+      icon: <RefreshCw size={26} strokeWidth={2.2} color="var(--blue-500)" className="ls-spin" />,
+      title: "위치 조회 범위 확인 중",
+      sub: "구독 상태를 확인하고 있어요",
+      tone: "neutral",
+    },
+    scope_error: {
+      kind: "scope_error",
+      icon: <AlertTriangle size={26} strokeWidth={2.2} color="#B26A00" />,
+      title: "위치 조회 범위를 확인하지 못했어요",
+      sub: "인터넷 연결을 확인한 뒤 다시 시도해 주세요",
+      tone: "caution",
+    },
+    locked: {
+      kind: "locked",
+      icon: <Lock size={26} strokeWidth={2.2} color="var(--blue-500)" />,
+      title: "현재 위치는 표시되지 않아요",
+      sub: "무료 플랜에서도 SOS와 긴급 알림은 계속 받을 수 있어요",
+      tone: "neutral",
+    },
     loading: {
       kind: "loading",
       icon: <RefreshCw size={26} strokeWidth={2.2} color="#2E86C1" className="ls-spin" />,
@@ -115,6 +151,14 @@ export function LocationStatus() {
   const view = views[kind];
 
   const retry = async () => {
+    if (locationScopeError) {
+      await entitlement.refetch();
+      return;
+    }
+    if (!canShowLocation) {
+      show(locationScopePending ? "위치 조회 범위를 확인하고 있어요" : "현재 플랜에서는 위치를 조회할 수 없어요", "🔒");
+      return;
+    }
     if (refreshing) return;
     const requestSeq = refreshSeq.current + 1;
     refreshSeq.current = requestSeq;
@@ -165,7 +209,11 @@ export function LocationStatus() {
 
       <div className="ls-body">
         {/* 현재 상태 카드 */}
-        <div className={`ls-card ls-card--${view.tone}`}>
+        <div
+          className={`ls-card ls-card--${view.tone}`}
+          role={locationScopeError ? "alert" : "status"}
+          aria-live={locationScopeError ? "assertive" : "polite"}
+        >
           <span className={`ls-card__icon ls-card__icon--${view.tone}`}>{view.icon}</span>
           <div className="ls-card__main">
             <div className="ls-card__title">{view.title}</div>
@@ -192,16 +240,36 @@ export function LocationStatus() {
           </div>
         )}
 
-        {/* 권한 안내 */}
-        <div className="ls-permit">
-          아이 기기의 위치 권한이 꺼져 있거나 GPS가 잡히지 않으면 갱신이 지연될 수 있어요. 아이 기기에서 위치 권한과 GPS를 확인해 주세요.
-        </div>
+        {locationScopeError && (
+          <button
+            type="button"
+            className="ls-retry hy-press"
+            onClick={() => void retry()}
+            disabled={entitlement.isFetching}
+          >
+            <RefreshCw
+              size={18}
+              strokeWidth={2.4}
+              className={entitlement.isFetching ? "ls-spin" : undefined}
+            />
+            {entitlement.isFetching ? "다시 확인 중…" : "다시 시도"}
+          </button>
+        )}
 
-        {/* 다시 시도 */}
-        <button type="button" className="ls-retry hy-press" onClick={retry} disabled={refreshing || isFetching}>
-          <RefreshCw size={18} strokeWidth={2.4} className={refreshing || isFetching ? "ls-spin" : undefined} />
-          {refreshing || isFetching ? "갱신 중…" : "다시 시도"}
-        </button>
+        {canShowLocation && (
+          <>
+            {/* 권한 안내 */}
+            <div className="ls-permit">
+              아이 기기의 위치 권한이 꺼져 있거나 GPS가 잡히지 않으면 갱신이 지연될 수 있어요. 아이 기기에서 위치 권한과 GPS를 확인해 주세요.
+            </div>
+
+            {/* 다시 시도 */}
+            <button type="button" className="ls-retry hy-press" onClick={retry} disabled={refreshing || isFetching}>
+              <RefreshCw size={18} strokeWidth={2.4} className={refreshing || isFetching ? "ls-spin" : undefined} />
+              {refreshing || isFetching ? "갱신 중…" : "다시 시도"}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

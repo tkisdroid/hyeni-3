@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Battery,
+  AlertTriangle,
   BellRing,
   ChevronLeft,
   ChevronRight,
@@ -23,7 +24,7 @@ import { useEvents, useDailySupplies } from "@/queries/useSchedule";
 import { useChildLocations, useSavedPlaces } from "@/queries/useLocation";
 import { useLocationLabels } from "@/queries/useLocationLabels";
 import { useMemoThread } from "@/queries/useMemo";
-import { useParentAlerts } from "@/queries/useNotifications";
+import { useChildNotifSettingsStatus, useParentAlerts } from "@/queries/useNotifications";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { requestDeviceStatus } from "@/lib/api/endpoints/remote";
 import { todayDateKey } from "@/transform/dateKey";
@@ -32,7 +33,7 @@ import { groupEventsByDateKey, PAST_TAGS } from "@/transform/scheduleView";
 import { deviceStatusView } from "@/transform/familyView";
 import { formatFreshness } from "@/transform/locationView";
 import { deriveDailyReportStatus, summarizeDailySupplies, type DailyReportAlertInput } from "@/transform/dailyReportView";
-import { isLocationVisible } from "@/transform/tierPolicy";
+import { isLocationVisible, TIERS } from "@/transform/tierPolicy";
 import { useMessage } from "@/i18n/useMessage";
 import "./DailySafetyReport.css";
 
@@ -108,18 +109,43 @@ export function DailySafetyReport() {
   const locationsQuery = useChildLocations();
   const placesQuery = useSavedPlaces();
   const alertsQuery = useParentAlerts();
+  const childNotifSettingsQuery = useChildNotifSettingsStatus(activeChild?.user_id);
   const memoThread = useMemoThread([todayKey], activeChild?.id ?? null);
   const entitlement = useEntitlement();
 
-  const locations = locationsQuery.data ?? [];
+  const locationScopeError = entitlement.isError;
+  const locationScopePending = entitlement.isError || entitlement.tier === TIERS.UNKNOWN;
+  const canShowLocation = !locationScopePending && isLocationVisible(entitlement.tier);
+  const locations = canShowLocation ? locationsQuery.data ?? [] : [];
   const places = placesQuery.data ?? [];
   const locationLabel = useLocationLabels(locations, places);
-  const childLocation = activeChild?.user_id
-    ? locations.find((loc) => loc.user_id === activeChild.user_id) ?? null
+  const cachedChildLocation = activeChild?.user_id
+    ? locationsQuery.data?.find((loc) => loc.user_id === activeChild.user_id) ?? null
     : null;
+  const childLocation = canShowLocation ? cachedChildLocation : null;
   const locationFreshness = childLocation ? formatFreshness(childLocation.updated_at, now) : null;
-  const locationLocked = entitlement.ready && !isLocationVisible(entitlement.tier);
-  const device = useMemo(() => deviceStatusView(activeChild?.device_health, now), [activeChild, now]);
+  const locationLocked = !locationScopePending && !isLocationVisible(entitlement.tier);
+  const device = useMemo(
+    () => deviceStatusView(
+      activeChild?.device_health,
+      now,
+      childNotifSettingsQuery.data?.userId === activeChild?.user_id
+        ? childNotifSettingsQuery.data?.childEnabled ?? null
+        : null,
+      childNotifSettingsQuery.isError
+        ? "error"
+        : childNotifSettingsQuery.isSuccess
+          ? "ready"
+          : "loading",
+    ),
+    [
+      activeChild,
+      childNotifSettingsQuery.data,
+      childNotifSettingsQuery.isError,
+      childNotifSettingsQuery.isSuccess,
+      now,
+    ],
+  );
 
   const todayEvents = useMemo(() => {
     if (!activeChild) return [];
@@ -159,17 +185,33 @@ export function DailySafetyReport() {
   const reportTimeLabel = useMemo(() => formatClock(now), [now]);
   const supplyPercent = supplySummary.total > 0 ? Math.round((supplySummary.done / supplySummary.total) * 100) : 0;
   const overviewCards = useMemo<ReportOverviewCard[]>(() => {
-    const locationTone: ReportTone = locationLocked
-      ? "lav"
-      : !childLocation || locationFreshness?.status === "stale"
-        ? "cream"
-        : "mint";
+    const locationTone: ReportTone = locationScopeError
+      ? "cream"
+      : locationScopePending || locationLocked
+        ? "lav"
+        : !childLocation || locationFreshness?.status === "stale"
+          ? "cream"
+          : "mint";
     return [
       {
         id: "location",
         label: "최근 위치",
-        value: locationLocked ? "잠금" : childLocation ? locationLabel(childLocation) : "확인 중",
-        detail: locationLocked ? "프리미엄에서 상세 위치 확인" : locationFreshness?.label ?? "위치 정보 없음",
+        value: locationScopeError
+          ? "조회 범위 확인 실패"
+          : locationScopePending
+          ? "조회 범위 확인 중"
+          : locationLocked
+            ? "잠금"
+            : childLocation
+              ? locationLabel(childLocation)
+              : "확인 중",
+        detail: locationScopeError
+          ? "구독 상태를 확인하지 못했어요"
+          : locationScopePending
+            ? "구독 상태를 확인하고 있어요"
+            : locationLocked
+              ? "프리미엄에서 상세 위치 확인"
+              : locationFreshness?.label ?? "위치 정보 없음",
         tone: locationTone,
         icon: <img src={asset("ui/pin-heart.webp")} alt="" />,
       },
@@ -194,7 +236,7 @@ export function DailySafetyReport() {
         label: "기기 상태",
         value: device.safetyLabel,
         detail: device.hasData ? `${device.batteryLabel} · ${device.networkLabel}` : "새로고침으로 확인 필요",
-        tone: device.safetyLabel === "주의 필요" || !device.hasData ? "cream" : "mint",
+        tone: device.safetyLabel === "양호" ? "mint" : "cream",
         icon: <img src={asset("ui/battery.webp")} alt="" />,
       },
     ];
@@ -208,6 +250,8 @@ export function DailySafetyReport() {
     locationFreshness?.status,
     locationLabel,
     locationLocked,
+    locationScopeError,
+    locationScopePending,
     nextEvent,
     supplyPercent,
     supplySummary.done,
@@ -228,9 +272,9 @@ export function DailySafetyReport() {
       {
         id: "freshness",
         label: "위치 신선도",
-        value: locationLocked ? "잠금" : locationFreshness?.label ?? "없음",
-        detail: childLocation ? "아이 기기 위치 기준" : "위치 기록 대기 중",
-        tone: locationLocked ? "lav" : locationFreshness?.status === "stale" || !childLocation ? "cream" : "mint",
+        value: locationScopeError ? "조회 범위 확인 실패" : locationScopePending ? "조회 범위 확인 중" : locationLocked ? "잠금" : locationFreshness?.label ?? "없음",
+        detail: locationScopeError ? "구독 상태를 확인하지 못했어요" : locationScopePending ? "구독 상태를 확인하고 있어요" : childLocation ? "아이 기기 위치 기준" : "위치 기록 대기 중",
+        tone: locationScopeError ? "cream" : locationScopePending || locationLocked ? "lav" : locationFreshness?.status === "stale" || !childLocation ? "cream" : "mint",
         icon: <img src={asset("ui/pin.webp")} alt="" />,
       },
       {
@@ -238,7 +282,7 @@ export function DailySafetyReport() {
         label: "기기 리포트",
         value: device.freshnessLabel,
         detail: device.hasData ? `잠금해제 ${device.unlockCountLabel}` : "아이 앱 연결 후 표시",
-        tone: device.hasData ? "blue" : "cream",
+        tone: device.safetyLabel === "양호" ? "blue" : "cream",
         icon: <img src={asset("ui/battery.webp")} alt="" />,
       },
     ],
@@ -247,9 +291,12 @@ export function DailySafetyReport() {
       device.unlockCountLabel,
       device.freshnessLabel,
       device.hasData,
+      device.safetyLabel,
       locationFreshness?.label,
       locationFreshness?.status,
       locationLocked,
+      locationScopeError,
+      locationScopePending,
       statusView.status,
       todayAlerts,
     ],
@@ -403,7 +450,32 @@ export function DailySafetyReport() {
                   <ChevronRight size={14} strokeWidth={2.4} />
                 </button>
               </div>
-              {locationLocked ? (
+              {locationScopeError ? (
+                <div className="dr-scope-error" role="alert" aria-live="assertive">
+                  <AlertTriangle size={20} strokeWidth={2.2} aria-hidden="true" />
+                  <span>
+                    <b>위치 조회 범위 확인 실패</b>
+                    <small>구독 상태를 확인하지 못했어요. 인터넷 연결을 확인한 뒤 다시 시도해 주세요.</small>
+                  </span>
+                  <button
+                    type="button"
+                    className="dr-scope-error__retry hy-press"
+                    onClick={() => void entitlement.refetch()}
+                    disabled={entitlement.isFetching}
+                  >
+                    <RefreshCw
+                      size={15}
+                      strokeWidth={2.4}
+                      className={entitlement.isFetching ? "dr-spin" : undefined}
+                    />
+                    {entitlement.isFetching ? "확인 중…" : "다시 시도"}
+                  </button>
+                </div>
+              ) : locationScopePending ? (
+                <div className="dr-emptyline" role="status" aria-live="polite">
+                  위치 조회 범위 확인 중 · 구독 상태를 확인하고 있어요.
+                </div>
+              ) : locationLocked ? (
                 <div className="dr-lock">
                   실시간 위치는 프리미엄에서 확인할 수 있어요. SOS와 긴급 알림은 계속 무료로 받을 수 있어요.
                 </div>
@@ -528,6 +600,26 @@ export function DailySafetyReport() {
                   <span>마지막 확인</span>
                   <b>{device.freshnessLabel}</b>
                 </div>
+              </div>
+              <div
+                className="dr-notification-health"
+                data-state={device.notification.state}
+              >
+                <BellRing size={17} strokeWidth={2.2} aria-hidden="true" />
+                <span>
+                  <b>{device.notification.label}</b>
+                  <small>{device.notification.detail}</small>
+                </span>
+              </div>
+              <div
+                className="dr-notification-health"
+                data-state={device.location.state}
+              >
+                <MapPinned size={17} strokeWidth={2.2} aria-hidden="true" />
+                <span>
+                  <b>{device.location.label}</b>
+                  <small>{device.location.detail}</small>
+                </span>
               </div>
               {!device.hasData ? (
                 <div className="dr-emptyline">기기 상태를 확인하려면 새로고침을 눌러 주세요.</div>

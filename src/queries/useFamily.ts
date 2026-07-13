@@ -110,9 +110,9 @@ export function useUploadChildPhoto() {
   const qc = useQueryClient();
   const { familyId } = useAuth();
   return useMutation({
-    mutationFn: (input: { memberId: string; dataUrl: string; stamp: number | string }) => {
+    mutationFn: (input: { memberId: string; dataUrl: string }) => {
       if (!familyId) throw new Error("가족 정보가 없어요");
-      return uploadChildPhoto(familyId, input.memberId, input.dataUrl, input.stamp);
+      return uploadChildPhoto(familyId, input.memberId, input.dataUrl);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.family(familyId) }),
   });
@@ -121,7 +121,7 @@ export function useUploadChildPhoto() {
 /**
  * 새 아이(placeholder) 서버 생성 — /api/family/setup 로 children 행 insert(+ 사진 업로드).
  * 주 보호자만 안전(setup 은 parent_id 소유 가족에 append). 성공 시 가족 캐시 무효화.
- * 사진이 있으면 order 기반 경로로 먼저 업로드하고 photo_url 로 함께 저장한다.
+ * 사진이 있으면 서버 발급 경로로 먼저 업로드하고 photo_url 로 함께 저장한다.
  */
 export function useCreateChildren() {
   const qc = useQueryClient();

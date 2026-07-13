@@ -326,6 +326,38 @@
   transform: translateX(-100%);
   animation: km-shimmer 1.4s ease-in-out infinite;
 }
+.km-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  text-align: center;
+  background: linear-gradient(135deg, var(--blue-soft), var(--lav-soft));
+  color: var(--fg-secondary);
+}
+.km-error__title {
+  font-size: 15px;
+  font-weight: 800;
+}
+.km-error__detail {
+  color: var(--fg-muted);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.km-error__retry {
+  min-height: 44px;
+  margin-top: 4px;
+  padding: 0 18px;
+  border: 1px solid var(--lav-line);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--lav-text);
+  font-size: 13px;
+  font-weight: 800;
+}
 @keyframes km-shimmer {
   to {
     transform: translateX(100%);

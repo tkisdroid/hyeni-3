@@ -7,8 +7,9 @@ import { warmKakaoMaps } from "@/lib/kakaoMap";
 import { ChildDock } from "./ChildDock";
 import { TabBar, type TabItem } from "./TabBar";
 import { ToastHost } from "./toast";
-import { useParentAlerts } from "@/queries/useNotifications";
-import { useActiveChild } from "./activeChild";
+import { useMyFamily } from "@/queries/useFamily";
+import { useUnreadMemoForChildren } from "@/queries/useMemo";
+import { useRecentDateKeys } from "./useRecentDateKeys";
 
 const PARENT_TABS: TabItem[] = [
   { to: "/parent/home", label: "홈", Icon: Home },
@@ -18,22 +19,15 @@ const PARENT_TABS: TabItem[] = [
   { to: "/parent/settings", label: "설정", Icon: Settings },
 ];
 
-/** 대화 탭 빨간 점 — 활성 아이의 미읽음 메모 알림(parent_alerts alert_type=memo_*)이 있을 때만.
- *  child_user_id 없는(legacy) 메모 알림은 포함(놓치는 것보다 안전). */
+/** 대화 탭 빨간 점 — 모든 아이의 실제 1:1 스레드 read_by 기준. */
 function useMemoDotTabs(baseTabs: TabItem[], memoPath: string): TabItem[] {
-  const { data: alerts } = useParentAlerts();
-  const { activeChild } = useActiveChild();
-  const activeUserId = activeChild?.user_id ?? null;
-  const hasUnreadMemo = useMemo(
-    () =>
-      (alerts ?? []).some(
-        (a) =>
-          !a.read &&
-          (a.alert_type ?? "").startsWith("memo") &&
-          (!a.child_user_id || !activeUserId || a.child_user_id === activeUserId),
-      ),
-    [alerts, activeUserId],
+  const { data: family } = useMyFamily();
+  const dateKeys = useRecentDateKeys(7);
+  const childIds = useMemo(
+    () => (family?.members ?? []).filter((member) => member.role === "child").map((member) => member.id),
+    [family],
   );
+  const hasUnreadMemo = useUnreadMemoForChildren(dateKeys, childIds);
   return useMemo(
     () => baseTabs.map((t) => (t.to === memoPath ? { ...t, dot: hasUnreadMemo } : t)),
     [baseTabs, memoPath, hasUnreadMemo],

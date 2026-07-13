@@ -33,14 +33,36 @@ final class SessionTokenFreshness {
 
     private static Claims readClaims(String token) {
         try {
-            String[] parts = token.split("\\.");
-            if (parts.length < 2) return null;
-            String json = new String(decodeBase64Url(parts[1]), StandardCharsets.UTF_8);
-            JSONObject payload = new JSONObject(json);
+            JSONObject payload = readPayload(token);
+            if (payload == null) return null;
             String subject = payload.optString("sub", "").trim();
             long issuedAt = payload.optLong("iat", 0L);
             if (subject.isEmpty() || issuedAt <= 0L) return null;
             return new Claims(subject, issuedAt);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    /** 파싱 불가·누락·overflow JWT는 0으로 반환해 인증 필요 작업이 fail-closed 하게 한다. */
+    static long accessTokenExpiresAtMs(String token) {
+        try {
+            JSONObject payload = readPayload(token);
+            if (payload == null) return 0L;
+            long expiresAtSeconds = payload.optLong("exp", 0L);
+            if (expiresAtSeconds <= 0L || expiresAtSeconds > Long.MAX_VALUE / 1000L) return 0L;
+            return expiresAtSeconds * 1000L;
+        } catch (Exception ignored) {
+            return 0L;
+        }
+    }
+
+    private static JSONObject readPayload(String token) {
+        try {
+            String[] parts = token == null ? new String[0] : token.split("\\.");
+            if (parts.length < 2) return null;
+            String json = new String(decodeBase64Url(parts[1]), StandardCharsets.UTF_8);
+            return new JSONObject(json);
         } catch (Exception ignored) {
             return null;
         }

@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 
 import {
   createOAuthCodeOnce,
-  oauthCodeKey,
+  oauthStateKey,
   OAUTH_ONCE_HISTORY,
   type OAuthOnceStore,
 } from "../src/transform/oauthCodeOnce.ts";
@@ -21,9 +21,9 @@ function memStore(seed: string[] = []): OAuthOnceStore & { keys: string[] } {
   };
 }
 
-const KEY = oauthCodeKey("google", "CODE123");
+const KEY = oauthStateKey("google", "STATE123");
 
-test("같은 인가코드는 두 번 교환하지 않는다(순차 재진입)", async () => {
+test("같은 OAuth state는 두 번 교환하지 않는다(순차 재진입)", async () => {
   const store = memStore();
   const once = createOAuthCodeOnce(store);
   let calls = 0;
@@ -52,7 +52,7 @@ test("동시 진입(getLaunchUrl + appUrlOpen)에도 교환은 1회다", async (
   assert.deepEqual([a, b, c], [true, true, true]);
 });
 
-test("프로세스 재시작(stale launch URL) 후에도 소비된 코드는 재교환하지 않는다", async () => {
+test("프로세스 재시작(stale launch URL) 후에도 소비된 state는 재교환하지 않는다", async () => {
   const store = memStore();
   let calls = 0;
   const exec = async () => {
@@ -68,7 +68,7 @@ test("프로세스 재시작(stale launch URL) 후에도 소비된 코드는 재
   assert.equal(calls, 1);
 });
 
-test("실행 실패해도 코드는 소비된 것으로 남는다(1회용 코드는 되살아나지 않는다)", async () => {
+test("실행 실패해도 state는 소비된 것으로 남는다(1회용 흐름은 되살아나지 않는다)", async () => {
   const store = memStore();
   const once = createOAuthCodeOnce(store);
   let calls = 0;
@@ -83,7 +83,7 @@ test("실행 실패해도 코드는 소비된 것으로 남는다(1회용 코드
   assert.equal(calls, 1);
 });
 
-test("다른 코드는 정상적으로 교환된다", async () => {
+test("다른 state는 정상적으로 교환된다", async () => {
   const store = memStore();
   const once = createOAuthCodeOnce(store);
   let calls = 0;
@@ -91,9 +91,9 @@ test("다른 코드는 정상적으로 교환된다", async () => {
     calls += 1;
     return true;
   };
-  await once.run(oauthCodeKey("google", "A"), exec);
-  await once.run(oauthCodeKey("kakao", "A"), exec); // provider 가 다르면 다른 키
-  await once.run(oauthCodeKey("google", "B"), exec);
+  await once.run(oauthStateKey("google", "A"), exec);
+  await once.run(oauthStateKey("kakao", "A"), exec); // provider 가 다르면 다른 키
+  await once.run(oauthStateKey("google", "B"), exec);
   assert.equal(calls, 3);
 });
 
@@ -101,16 +101,17 @@ test("영속 목록은 상한을 넘지 않는다", async () => {
   const store = memStore();
   const once = createOAuthCodeOnce(store);
   for (let i = 0; i < OAUTH_ONCE_HISTORY + 3; i += 1) {
-    await once.run(oauthCodeKey("google", `C${i}`), async () => true);
+    await once.run(oauthStateKey("google", `C${i}`), async () => true);
   }
   assert.equal(store.read().length, OAUTH_ONCE_HISTORY);
-  assert.equal(store.read().includes(oauthCodeKey("google", "C0")), false, "오래된 키는 밀려난다");
+  assert.equal(store.read().includes(oauthStateKey("google", "C0")), false, "오래된 키는 밀려난다");
 });
 
 test("딥링크 핸들러가 1회 소비 가드를 실제로 쓴다(배선 회귀)", () => {
   const src = readFileSync(new URL("../src/lib/native/oauthDeepLink.ts", import.meta.url), "utf8");
   assert.match(src, /createOAuthCodeOnce/);
-  assert.match(src, /oauthCodeKey\(cb\.provider, cb\.code\)/);
+  assert.match(src, /oauthStateKey\(cb\.provider, cb\.state\)/);
+  assert.doesNotMatch(src, /oauthStateKey\(cb\.provider, cb\.code\)/);
   // 리스너를 먼저 등록하고 launch URL 을 나중에 처리해야 인텐트를 놓치지 않는다.
   assert.ok(
     src.indexOf("addListener") < src.indexOf("getLaunchUrl"),

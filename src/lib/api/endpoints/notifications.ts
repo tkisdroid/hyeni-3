@@ -139,7 +139,7 @@ export const DEFAULT_NOTIF_SETTINGS: NotifSettings = {
 };
 
 /** 사전 알림 선택 후보(분) — hyeni-1 NOTIFICATION_MINUTE_OPTIONS. */
-export const NOTIF_MINUTE_OPTIONS: readonly number[] = [30, 15, 10, 5];
+export const NOTIF_MINUTE_OPTIONS: readonly number[] = [60, 30, 15, 10, 5];
 
 // minutes_before 정규화: 정수·양수·중복제거·내림차순. 명시적 빈 배열은
 // "사전 알림 없음"이므로 보존하고, 필드 자체가 잘못 누락된 경우에만 기본값을 쓴다.
@@ -180,16 +180,56 @@ export async function fetchNotifSettings(): Promise<NotifSettings | null> {
   return rowToSettings(row);
 }
 
+interface ChildNotifSettingsStatusRow {
+  user_id: string;
+  child_enabled: boolean;
+  configured: boolean;
+}
+
+export interface ChildNotifSettingsStatus {
+  userId: string;
+  childEnabled: boolean;
+  configured: boolean;
+}
+
+/** 부모가 같은 가족의 활성 아이 일정 알림 허용 여부만 최소 범위로 조회한다. */
+export async function fetchChildNotifSettingsStatus(
+  familyId: string,
+  childUserId: string,
+): Promise<ChildNotifSettingsStatus> {
+  const params = new URLSearchParams({
+    family_id: familyId,
+    child_user_id: childUserId,
+  });
+  const row = await apiGet<ChildNotifSettingsStatusRow>(
+    `/api/notif-settings/child-status?${params.toString()}`,
+  );
+  if (
+    row.user_id !== childUserId
+    || typeof row.child_enabled !== "boolean"
+    || typeof row.configured !== "boolean"
+  ) {
+    throw new Error("아이 알림 설정 응답이 올바르지 않아요");
+  }
+  return {
+    userId: row.user_id,
+    childEnabled: row.child_enabled,
+    configured: row.configured,
+  };
+}
+
 /**
  * 호출자 본인 알림 설정 upsert(user_id PK). family_id 는 같은 사용자의 다른 기기로의
  * fan-out 통지에만 쓰인다(없으면 실시간 동기화만 생략, 저장은 정상 동작).
  */
 export async function saveNotifSettings(
   familyId: string | null,
+  expectedUserId: string,
   settings: NotifSettings,
 ): Promise<void> {
   await apiPost("/api/notif-settings", {
     family_id: familyId || null,
+    expected_user_id: expectedUserId,
     child_enabled: settings.childEnabled,
     parent_enabled: settings.parentEnabled,
     location_enabled: settings.locationEnabled,

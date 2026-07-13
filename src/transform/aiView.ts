@@ -21,6 +21,7 @@ export interface ChatBubble {
   id: string;
   role: ChatBubbleRole;
   text: string;
+  reportable?: boolean;
 }
 
 /** 도메인 메시지 → 말풍선. assistant → ai, 그 외(user) → me. */
@@ -29,6 +30,7 @@ export function messageToBubble(message: AiChatMessage): ChatBubble {
     id: message.id,
     role: message.role === "assistant" ? "ai" : "me",
     text: message.content,
+    reportable: message.role === "assistant",
   };
 }
 

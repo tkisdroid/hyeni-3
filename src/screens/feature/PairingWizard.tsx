@@ -15,7 +15,7 @@ type Step = 1 | 2 | 3;
 interface ChildDraft {
   name: string;
   birthdate: string;
-  /** 미업로드 data:URL(선택). 코드 생성 시 order 기반 경로로 업로드된다. */
+  /** 미업로드 data:URL(선택). 코드 생성 시 서버 발급 경로로 업로드된다. */
   photoDataUrl: string | null;
 }
 
