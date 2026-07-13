@@ -14,6 +14,10 @@
 - [x] 구독 상태: 앱 foreground 재검증 + Google Play RTDN 수신·재검증 코드, 멱등/lease/owner binding 구현
 - [x] 구독 티어 위치: 무료 잠금, 스토어 방문 혜택 15분 지연, 프리미엄 실시간을 서버에서 강제
 - [x] 스토어 혜택 문구: 평점·리뷰 대가로 오해되지 않도록 "스토어 방문 혜택"으로 고정
+- [x] production Worker 배포: Version `609cb48a-cf1a-4b47-a5b0-6f4758f7f8d7`, health 200,
+  Qonversion 미설정 `configured:false`, RTDN 미설정 503 fail-closed 확인
+- [x] production Pages 배포: `hyeni-calendar.pages.dev`가 2026-07-13 build asset `index-BkUQcvh9.js` 제공
+- [x] debug APK 실기기 설치: A17·S25 `install -r` 성공, 두 기기 부모 세션과 `/api/family/mine` 정본 일치 확인
 
 ## 출시 전 외부 설정 — 아직 미완료
 
