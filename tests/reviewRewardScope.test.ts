@@ -43,3 +43,32 @@ test("비로그인이나 가족 미확정 상태는 리뷰 보상 판정을 보�
     { enabled: false, readyWithoutFetch: false },
   );
 });
+
+test("리뷰 혜택 지급은 인증된 부모의 확정된 무료 티어에서만 허용한다", async () => {
+  const scopeModule = await import("../src/transform/reviewRewardScope.ts");
+  assert.equal(typeof scopeModule.resolveReviewRewardClaimScope, "function");
+  const resolveClaimScope = scopeModule.resolveReviewRewardClaimScope;
+
+  assert.equal(
+    resolveClaimScope({
+      status: "authenticated",
+      role: "parent",
+      familyId: "family-1",
+      ready: true,
+      tier: "free",
+    }).enabled,
+    true,
+  );
+
+  for (const input of [
+    { status: "unauthenticated", role: null, familyId: null, ready: true, tier: "free" },
+    { status: "authenticated", role: "parent", familyId: null, ready: true, tier: "free" },
+    { status: "authenticated", role: "child", familyId: "family-1", ready: true, tier: "free" },
+    { status: "authenticated", role: "teacher", familyId: "family-1", ready: true, tier: "free" },
+    { status: "authenticated", role: "parent", familyId: "family-1", ready: false, tier: "unknown" },
+    { status: "authenticated", role: "parent", familyId: "family-1", ready: true, tier: "reviewed" },
+    { status: "authenticated", role: "parent", familyId: "family-1", ready: true, tier: "premium" },
+  ] as const) {
+    assert.equal(resolveClaimScope(input).enabled, false, JSON.stringify(input));
+  }
+});

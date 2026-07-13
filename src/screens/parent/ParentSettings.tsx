@@ -11,6 +11,7 @@ import {
   MapPin,
   MessageCircleQuestion,
   ShieldCheck,
+  Star,
   UserRound,
   type LucideIcon,
 } from "lucide-react";
@@ -18,8 +19,14 @@ import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useEntitlement } from "@/queries/useEntitlement";
+import { useClaimReviewReward } from "@/queries/useReviewReward";
 import { useAccount, useDeleteAccount } from "@/queries/useAccount";
 import { openExternal } from "@/lib/native/browser";
+import {
+  openGooglePlayReviewListing,
+  runReviewRewardClaimFlow,
+  type ReviewRewardClaimFlowResult,
+} from "@/lib/native/review";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { PRIVACY_POLICY_URL } from "@/lib/api/endpoints/account";
 import { getTierLabel, TIERS } from "@/transform/tierPolicy";
@@ -88,6 +95,9 @@ export function ParentSettings() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   // 티어 배지는 ready 일 때만 노출(미확정/조회실패 시 미표시 — R9: free 강등 금지).
   const { ready, tier } = useEntitlement();
+  const reviewRewardClaim = useClaimReviewReward({ ready, tier });
+  const showReviewRewardCta = ready && tier === TIERS.FREE;
+  const reviewRewardClaimInFlightRef = useRef<Promise<ReviewRewardClaimFlowResult> | null>(null);
 
   const displayName = account?.myName || "보호자";
   const roleLabel = account?.isCoParent ? "공동 보호자" : "보호자";
@@ -124,6 +134,33 @@ export function ParentSettings() {
       return;
     }
     window.open(PRIVACY_POLICY_URL, "_blank", "noopener");
+  };
+
+  const handleReviewRewardClaim = () => {
+    if (
+      !showReviewRewardCta ||
+      !reviewRewardClaim.canClaim ||
+      reviewRewardClaim.isPending ||
+      reviewRewardClaimInFlightRef.current
+    ) {
+      return;
+    }
+
+    void runReviewRewardClaimFlow(
+      reviewRewardClaimInFlightRef,
+      () => reviewRewardClaim.mutateAsync(),
+      () => show("일정과 장소를 각각 3개까지 쓰는 혜택을 적용했어요", "🎁"),
+      () => openGooglePlayReviewListing(openExternal),
+    )
+      .then((result) => {
+        if (result.storeOpened) return;
+        console.error("Google Play 열기 실패:", result.storeError);
+        show("혜택은 적용됐지만 Google Play를 열지 못했어요", "⚠️");
+      })
+      .catch((error) => {
+        console.error("리뷰 혜택 적용 실패:", error);
+        show("혜택을 적용하지 못했어요. 잠시 후 다시 시도해 주세요", "⚠️");
+      });
   };
 
   const handleDelete = () => {
@@ -196,6 +233,20 @@ export function ParentSettings() {
                 {chevronIcon}
               </button>
             ))}
+            {showReviewRewardCta && (
+              <button
+                type="button"
+                className="ps-nav hy-press"
+                onClick={handleReviewRewardClaim}
+                disabled={reviewRewardClaim.isPending || reviewRewardClaimInFlightRef.current !== null}
+              >
+                <SettingsIcon Icon={Star} tone="gold" />
+                <span className="ps-nav__label">
+                  {reviewRewardClaim.isPending ? "혜택 적용 중…" : "앱 평가하고 혜택 받기"}
+                </span>
+                {chevronIcon}
+              </button>
+            )}
           </div>
         </div>
 

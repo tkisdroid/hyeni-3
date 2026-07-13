@@ -46,6 +46,7 @@ export const qk = {
 
   // 구독·엔타이틀먼트
   entitlement: (familyId: string) => ["entitlement", familyId] as const,
+  reviewReward: (familyId: string) => ["reviewReward", familyId] as const,
 
   // AI
   aiCredits: (familyId: string) => ["aiCredits", familyId] as const,
