@@ -1,7 +1,8 @@
 # Play 출시 체크리스트 — 혜니캘린더 v1.2(versionCode 3)
 
 ## 준비된 것 (2026-07-13)
-- [x] 서명된 릴리즈 AAB: `android/app/build/outputs/bundle/release/app-release.aab` (12.2MB, jar verified)
+- [ ] 최신 서명 릴리즈 AAB 재빌드 필요: 현재 `android/app/build/outputs/bundle/release/app-release.aab`은
+  2026-07-10 산출물이라 2026-07-13 스토어 방문 혜택·Billing 진단 변경이 포함되지 않았다. 재빌드 전 업로드 금지.
 - [x] 업로드 키스토어: `android/keystore/hyeni-upload.jks` (gitignore 처리)
   - ⚠️ **자격 정보: `android/keystore/hyeni-upload-credentials.txt` — 비밀번호 관리자로 옮기고 파일 삭제!**
   - 재빌드: `cd android && gradlew bundleRelease -PHYENI_KEYSTORE=../keystore/hyeni-upload.jks -PHYENI_KEYSTORE_PASSWORD=<pw> -PHYENI_KEY_ALIAS=hyeni-upload -PHYENI_KEY_PASSWORD=<pw>`
