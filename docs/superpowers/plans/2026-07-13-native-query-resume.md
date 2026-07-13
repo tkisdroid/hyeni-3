@@ -403,8 +403,8 @@ Insert this effect after the OAuth listener and before the existing authenticati
 
 ```ts
   // Android WebView 포그라운드 조회 복구 — 브라우저 visibilitychange가 오지 않아도
-  // 세션을 먼저 조정한 뒤 현재 화면의 읽기 query만 갱신한다. focusManager는 paused
-  // mutation까지 재개하므로 사용하지 않는다.
+  // 세션을 먼저 조정한 뒤 현재 화면의 읽기 query만 갱신한다. TanStack 전역 focus
+  // 신호는 paused mutation까지 재개하므로 사용하지 않는다.
   useEffect(() => {
     if (!isNativePlatform()) return;
     let disposed = false;
@@ -421,7 +421,7 @@ Insert this effect after the OAuth listener and before the existing authenticati
         refetchActiveQueries: async () => {
           await queryClient.refetchQueries(
             { type: "active" },
-            { cancelRefetch: true },
+            { cancelRefetch: true }
           );
         },
       }),
