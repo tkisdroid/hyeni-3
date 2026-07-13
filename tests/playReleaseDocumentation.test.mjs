@@ -78,6 +78,8 @@ test("대상 연령과 선생님 모드는 실제 이용자·Families 적격성�
     assert.match(source, /선생님 모드[^\n]*(?:정식 출시|production gate)/);
     assert.match(source, /심사 계정[^\n]*E2E/);
   }
+  assert.match(guide, /아동만을 대상으로 하면 위치 권한 자체를 요청할 수 없고/);
+  assert.match(guide, /정밀 위치를 수집·사용·전송할 수도 없다/);
 });
 
 test("모든 Play 트랙·결제·CALL_PHONE·증거 등급을 독립 출시 게이트로 기록한다", () => {
@@ -198,6 +200,8 @@ test("App Link와 아이 흐름 검증은 A17 serial과 격리 브라우저 역�
   assert.match(guide, /#\/child\/ai-friend/);
   assert.match(guide, /#\/child\/memo/);
   assert.match(guide, /네이티브 아이 FCM·pending 표시 ACK/);
+  assert.doesNotMatch(guide, /install -r \.\.\./);
+  assert.match(guide, /install -r android\/app\/build\/outputs\/apk\/debug\/app-debug\.apk/);
 });
 
 test("가이드 생성기는 compact_reference_guide의 고정 지오메트리와 실제 numbering을 사용한다", () => {
@@ -218,4 +222,18 @@ test("가이드 생성기는 compact_reference_guide의 고정 지오메트리�
   assert.doesNotMatch(generator, /OUTPUT = ROOT/);
   assert.doesNotMatch(generator, /2026-07-14/);
   assert.match(generator, /sys\.stdout\.reconfigure\(encoding="utf-8"\)/);
+});
+
+test("가이드 생성기는 짝수 페이지에도 독립 머리글과 바닥글을 넣는다", () => {
+  assert.match(generator, /odd_and_even_pages_header_footer = True/);
+  assert.match(generator, /section\.even_page_header/);
+  assert.match(generator, /section\.even_page_footer/);
+});
+
+test("가이드 생성기는 표지 다음 도입 문단과 인용문 인라인 강조를 보존한다", () => {
+  assert.match(generator, /def is_cover_metadata_line/);
+  assert.match(generator, /not is_cover_metadata_line\(stripped\)/);
+  assert.match(generator, /add_inline\(paragraph, stripped\[2:\]\)/);
+  assert.doesNotMatch(generator, /add_run\(stripped\[2:\]\)/);
+  assert.doesNotMatch(generator, /startswith\("15\. 최종 서명"\)/);
 });
