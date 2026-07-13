@@ -281,6 +281,7 @@ export async function launchSubscriptionPurchase({
     productType: "subscription",
     productId: SUBSCRIPTION_PRODUCT_ID,
     basePlanId,
+    offerToken: selectedOffer?.offerToken ?? null,
     offerId: selectedOffer?.offerId ?? null,
     purchaseToken: purchase.purchaseToken,
     orderId: purchase.orderId,

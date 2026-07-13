@@ -37,7 +37,10 @@ test("네이티브 결제는 조회한 offerToken과 offerId를 그대로 구매
   assert.match(subscription, /if \(!freshSelectedOffer\)/);
   assert.match(billing, /offerToken:\s*selectedOffer\?\.offerToken/);
   assert.match(billing, /offerId:\s*selectedOffer\?\.offerId/);
-  assert.match(billing, /offerId:\s*selectedOffer\?\.offerId[^}]*purchaseToken:/s);
+  assert.match(
+    billing,
+    /offerToken:\s*selectedOffer\?\.offerToken\s*\?\?\s*null,\s*offerId:\s*selectedOffer\?\.offerId[^}]*purchaseToken:/s,
+  );
   assert.match(billing, /if \(!selectedOffer\)/);
   assert.match(java, /call\.getString\("offerToken"/);
   assert.match(java, /call\.getString\("offerId"/);
