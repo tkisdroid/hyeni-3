@@ -30,6 +30,41 @@
 
 ---
 
+### Task 0: Windows CRLF 기준선 테스트 보정
+
+**Files:**
+- Modify: `tests/nativeSessionResumeSafety.test.mjs`
+
+**Interfaces:**
+- Keeps: 기존 세션 안전 정규식과 함수 경계 검증.
+- Normalizes: `read()`가 읽은 소스의 `CRLF`/`CR`만 `LF`로 변환.
+
+- [ ] **Step 1: 기존 전체 테스트에서 3개 함수 경계 검사가 실패하는 RED 확인**
+
+Run: `node --test tests/*.test.*`
+
+Expected: 291 pass, 3 fail with `함수의 끝을 찾지 못했습니다`.
+
+- [ ] **Step 2: 테스트 입력 줄바꿈만 정규화**
+
+```js
+const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8").replace(/\r\n?/g, "\n");
+```
+
+- [ ] **Step 3: 전체 기준 테스트 GREEN 확인**
+
+Run: `node --test tests/*.test.*`
+
+Expected: 294 pass, 0 fail.
+
+- [ ] **Step 4: 기준선 테스트와 승인된 계획 보정만 커밋**
+
+```powershell
+git add -- tests/nativeSessionResumeSafety.test.mjs docs/superpowers/plans/2026-07-13-native-query-resume.md
+git diff --cached --check
+git commit -m "test: Windows 줄바꿈에서도 세션 안전 검사"
+```
+
 ### Task 1: 생명주기 조정기와 세션 우선 복구 함수
 
 **Files:**
