@@ -53,10 +53,10 @@ function currentDateParts(): { year: number; month: number; day: number } {
 
 function scheduleLimitMessage(tier: string, limit: number): string {
   if (tier === TIERS.FREE) {
-    return "무료 플랜에서는 일정 1개까지 저장할 수 있어요. 리뷰 혜택을 받으면 3개, 프리미엄에서는 무제한으로 저장할 수 있어요.";
+    return "무료 플랜에서는 일정 1개까지 저장할 수 있어요. 스토어 방문 혜택을 받으면 3개, 프리미엄에서는 무제한으로 저장할 수 있어요.";
   }
   if (tier === TIERS.REVIEWED) {
-    return "리뷰 혜택에서는 일정 3개까지 저장할 수 있어요. 프리미엄에서는 무제한으로 저장할 수 있어요.";
+    return "스토어 방문 혜택으로 일정 3개까지 저장할 수 있어요. 프리미엄에서는 무제한으로 저장할 수 있어요.";
   }
   return `현재 플랜에서는 일정 ${limit}개까지 저장할 수 있어요`;
 }

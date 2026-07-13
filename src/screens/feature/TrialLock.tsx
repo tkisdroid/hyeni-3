@@ -107,7 +107,7 @@ export function TrialLock() {
             </div>
             {reviewed && (
               <div className="tl-lock__reviewed">
-                🎁 리뷰 혜택 적용 중 · 일정·장소를 3개까지 쓰고 있어요
+                🎁 스토어 방문 혜택 적용 중 · 일정·장소를 3개까지 쓰고 있어요
               </div>
             )}
           </div>

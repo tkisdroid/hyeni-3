@@ -81,7 +81,7 @@ export function tierFrom(input: { ready?: boolean; isPremium?: boolean; reviewed
 
 export function getTierLabel(tier: Tier): string {
   if (tier === TIERS.PREMIUM) return "프리미엄";
-  if (tier === TIERS.REVIEWED) return "리뷰 혜택";
+  if (tier === TIERS.REVIEWED) return "스토어 방문 혜택";
   if (tier === TIERS.UNKNOWN) return "확인 중";
   return "무료";
 }

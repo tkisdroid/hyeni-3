@@ -20,7 +20,7 @@ export interface UseEntitlementResult {
   ready: boolean;
   /** ready 일 때만 true 가능. ready=false면 항상 false(프리미엄 게이트 미표시). */
   isPremium: boolean;
-  /** 효과 티어가 리뷰 혜택인가(tier===reviewed). 프리미엄이면 false. */
+  /** 효과 티어가 스토어 방문 혜택인가(tier===reviewed). 프리미엄이면 false. */
   reviewed: boolean;
   /**
    * 확정 티어(unknown|free|reviewed|premium). tierFrom({ready, isPremium, reviewed}).

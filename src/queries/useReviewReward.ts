@@ -62,7 +62,7 @@ export function useClaimReviewReward(input: UseClaimReviewRewardInput) {
   });
   const mutation = useMutation({
     mutationFn: async () => {
-      if (!scope.enabled || !familyId) throw new Error("리뷰 혜택을 받을 수 없는 상태예요");
+      if (!scope.enabled || !familyId) throw new Error("스토어 방문 혜택을 받을 수 없는 상태예요");
       const claimedFamilyId = familyId;
       await claimReviewReward(claimedFamilyId);
       return { familyId: claimedFamilyId };

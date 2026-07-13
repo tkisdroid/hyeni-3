@@ -117,3 +117,22 @@ test("부모 설정 CTA는 스토어 방문 혜택만 안내하고 평가·리�
   assert.doesNotMatch(settings, /앱 평가하고 혜택 받기/);
   assert.doesNotMatch(settings, /(?:평가|리뷰|별점).{0,20}혜택|혜택.{0,20}(?:평가|리뷰|별점)/);
 });
+
+test("혜택 적용 뒤 노출 문구도 리뷰 대가가 아니라 스토어 방문 혜택으로 통일한다", () => {
+  const tierPolicy = read("src/transform/tierPolicy.ts");
+  const aiSchedule = read("src/screens/feature/AiSchedule.tsx");
+  const trialLock = read("src/screens/feature/TrialLock.tsx");
+  const rewardHook = read("src/queries/useReviewReward.ts");
+  const endpoint = read("src/lib/api/endpoints/reviewReward.ts");
+
+  assert.match(tierPolicy, /return "스토어 방문 혜택"/);
+  assert.match(aiSchedule, /스토어 방문 혜택을 받으면 3개/);
+  assert.match(aiSchedule, /스토어 방문 혜택으로 일정 3개/);
+  assert.match(trialLock, /스토어 방문 혜택 적용 중/);
+  assert.match(rewardHook, /"스토어 방문 혜택을 받을 수 없는 상태예요"/);
+  assert.match(endpoint, /"스토어 방문 혜택을 적용하지 못했어요"/);
+
+  for (const source of [tierPolicy, aiSchedule, trialLock, rewardHook, endpoint]) {
+    assert.doesNotMatch(source, /"[^"\n]*리뷰 혜택[^"\n]*"/);
+  }
+});

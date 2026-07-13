@@ -35,7 +35,7 @@ export async function claimReviewReward(familyId: string): Promise<ReviewRewardC
     { familyId },
   );
   if (response.ok !== true || response.rewarded !== true) {
-    throw new Error("리뷰 혜택을 적용하지 못했어요");
+    throw new Error("스토어 방문 혜택을 적용하지 못했어요");
   }
   return response;
 }
