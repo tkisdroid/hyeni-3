@@ -16,7 +16,7 @@
 
 ## 출시 전 외부 설정 — 아직 미완료
 
-- [ ] `google-play-rtdn-schema.sql`을 production D1에 먼저 적용하고 컬럼·인덱스 확인
+- [x] `google-play-rtdn-schema.sql` production D1 적용 및 컬럼·인덱스 확인(2026-07-13, 빈 테이블로 시작)
 - [ ] Android Publisher API 활성화 및 service account에 Play Console 구독 조회 권한 부여
 - [ ] Pub/Sub topic을 Play Console RTDN에 연결하고 인증 push subscription 구성
 - [ ] Worker에 `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`, `GOOGLE_PLAY_PACKAGE_NAME`,
