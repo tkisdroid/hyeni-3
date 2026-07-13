@@ -52,3 +52,4 @@ ios/App/Pods
 android/keystore/
 *.jks
 *.keystore
+.superpowers/

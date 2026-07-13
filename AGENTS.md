@@ -83,6 +83,12 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 - **리뷰 보상 티어(2026-07-08)**: `/api/review-rewards`는 부모 전용 서버 계약이다. 아이/선생님 세션에서
   엔타이틀먼트가 필요해도 이 API를 호출하지 말고 reviewed=false로 확정한다. 아이 화면 CDP 로그에 403 네트워크 오류가
   남으면 실패로 보고 `resolveReviewRewardQueryScope` 규칙을 확인한다.
+- **스토어 방문 혜택·위치 티어(2026-07-13)**: 부모 무료 화면의 CTA는 "스토어 방문 혜택 받기"이며 평점·리뷰 작성의
+  대가처럼 안내하지 않는다. 지급은 서버 `store_visit` 계약과 부모 본인 가족 검증을 통과한 경우에만 확정한다. 위치 조회는
+  서버가 `locked|delayed|realtime`으로 판정한다. 무료 부모는 빈 위치, reviewed 부모는 서버 현재 시각 기준 정확히 15분 이전의
+  `location_history` 실측점 중 최신값, 프리미엄 부모는 현재 위치를 받는다. cutoff 이전 점이 없으면 현재점을 대신 노출하지 않는다.
+  아이 세션은 본인 위치만 조회하고, 경로 이력은 프리미엄 부모만, 위치 인시던트는 티어와 무관하게 부모만 조회한다.
+  엔타이틀먼트 DB 판정 실패는 최신 위치를 열지 않고 `503 location_entitlement_unavailable`로 닫는다.
 - **구독 결제 정본(2026-07-13)**: 7일 무료 체험은 Google Play가 현재 계정에 eligible 하다고 반환한 offer 중
   무료 pricing phase가 정확히 7일인 경우에만 표시·구매한다. 결제 직전에 상품을 다시 조회하고 그 `offerToken`·`offerId`를
   네이티브 결제와 Worker 검증까지 그대로 전달하며, 가격은 Play `formattedPrice`만 표시한다. `trial`은 미래
@@ -90,9 +96,11 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   BillingFlow에는 가족·부모 식별자의 SHA-256 값을 obfuscated account/profile id로 넣고 Worker가 Play 응답과 대조한다.
   부모 앱 시작·foreground에서는 6시간 제한으로 기존 `PURCHASED` 구독을 서버 재검증해 자동갱신 종료일을 동기화한다.
   AI 크레딧은 purchase event claim·잔액·원장을 한 D1 batch로 확정하고 consume 실패 재시도에서 중복 가산하지 않는다.
-  Qonversion webhook은 secret 미설정 시 fail-closed이고 `provider=qonversion`을 명시한다. Google service-account secret이
-  없으면 Play 검증은 503으로 막히는 것이 정상이며 임의 승인 금지. 기존 리뷰 스토어 이동 보상은 부모 본인 가족에만 지급하고
-  GET/POST 계약과 reviewed 한도(일정·장소 3개)를 유지한다.
+  Google Play 직접 검증이 결제 정본이며 RTDN도 notification type만 믿지 않고 `purchases.subscriptionsv2.get`으로 재검증한다.
+  RTDN은 Google OIDC·audience·push service-account email을 모두 검증하고, additive D1 schema를 먼저 적용해야 한다. 설정 누락은
+  `503` fail-closed가 정상이다. Qonversion은 비활성·비정본 보조 route이며 health는 secret이 없으면
+  `configured:false, accepting:false, primaryProvider:false`를 반환한다. Billing 상품 조회 진단은 response code/debug message와
+  미조회 product id/type/status만 다루고 purchase/order token을 로그나 응답 진단에 포함하지 않는다.
 - **출시 전 신뢰 UX 문구 가드(2026-07-07)**: 안전은 무료, 상세 안심은 프리미엄이라는 경계가 흔들리면 안 된다.
   구독·원격청취·AI 일정 문구는 `tests/subscriptionTrustCopy.test.mjs`, `tests/remoteAudioTrustCopy.test.mjs`,
   `tests/aiScheduleUxCopy.test.mjs`로 회귀 보호한다. SOS·긴급 알림을 프리미엄 혜택처럼 쓰지 말고,

@@ -172,13 +172,22 @@
 - 리뷰 보상 티어: `/api/review-rewards`는 부모 전용 계약이다. 아이/선생님 세션에서 엔타이틀먼트가 필요해도
   서버 호출을 하지 말고 reviewed=false로 확정한다. 아이 화면 CDP 로그에 403이 남으면 실패로 보고
   `resolveReviewRewardQueryScope` 규칙을 먼저 확인한다.
+- 스토어 방문 혜택·위치 티어(2026-07-13): 부모 무료 화면의 CTA는 "스토어 방문 혜택 받기"이며 평점·리뷰 작성의
+  대가처럼 안내하지 않는다. 지급은 서버 `store_visit` 계약과 부모 본인 가족 검증을 통과한 경우에만 확정한다. 위치 조회는
+  서버가 `locked|delayed|realtime`으로 판정한다. 무료 부모는 빈 위치, reviewed 부모는 서버 현재 시각 기준 정확히 15분 이전의
+  `location_history` 실측점 중 최신값, 프리미엄 부모는 현재 위치를 받는다. cutoff 이전 점이 없으면 현재점을 대신 노출하지 않는다.
+  아이 세션은 본인 위치만 조회하고, 경로 이력은 프리미엄 부모만, 위치 인시던트는 티어와 무관하게 부모만 조회한다.
+  엔타이틀먼트 DB 판정 실패는 최신 위치를 열지 않고 `503 location_entitlement_unavailable`로 닫는다.
 - 구독 결제 정본(2026-07-13): Google Play가 현재 계정에 eligible 하다고 반환한 정확한 7일 무료 offer만 표시·구매하고,
   결제 직전 재조회한 `offerToken`·`offerId`를 네이티브와 Worker까지 그대로 전달한다. 가격은 Play `formattedPrice` 정본만
   표시한다. `trial`은 미래 `trial_ends_at`, `active/grace/cancelled`는 미래 `current_period_end`가 있을 때만 프리미엄이며,
-  해지는 이미 결제한 종료일까지 유지한다. Qonversion webhook은 secret 누락 시 fail-closed, Play service-account secret
-  누락 시 검증 503이 정상이다. Play 구매는 SHA-256 obfuscated family/parent id를 서버에서 대조하고, 부모 foreground에서
-  6시간 제한으로 기존 구독을 재검증해 자동갱신 종료일을 갱신한다. AI 크레딧은 event claim·잔액·원장을 D1 batch로
-  원자 확정한다. 기존 리뷰 스토어 이동 보상은 부모 본인 가족에만 지급하고 reviewed 한도를 유지한다.
+  해지는 이미 결제한 종료일까지 유지한다. Google Play 직접 검증이 결제 정본이며 RTDN도 notification type만 믿지 않고
+  `purchases.subscriptionsv2.get`으로 재검증한다. RTDN은 Google OIDC·audience·push service-account email을 모두 검증하고,
+  additive D1 schema를 먼저 적용해야 한다. 설정 누락은 `503` fail-closed가 정상이다. Qonversion은 비활성·비정본 보조
+  route이며 health는 secret이 없으면 `configured:false, accepting:false, primaryProvider:false`를 반환한다. Billing 상품 조회
+  진단은 response code/debug message와 미조회 product id/type/status만 다루고 purchase/order token을 로그나 응답 진단에
+  포함하지 않는다. Play 구매는 SHA-256 obfuscated family/parent id를 서버에서 대조하고, 부모 foreground에서 6시간 제한으로
+  기존 구독을 재검증해 자동갱신 종료일을 갱신한다. AI 크레딧은 event claim·잔액·원장을 D1 batch로 원자 확정한다.
 - 설정/가입/오늘경로 안정화(2026-07-08): 부모 `/friend-play`는 아이 요청 UI가 아니라 가족 친구놀이 허용 설정이다.
   장소 관리는 서버/AI 생성 없이 `resolvePlaceVisual` 정적 asset 매핑으로 장소명에 맞는 이미지를 고른다.
   가입 전 설문은 progress 20%에서 시작하고 복수 선택만 수집한다. 부모 오늘경로는 오전 8시를 하루 시작으로,
