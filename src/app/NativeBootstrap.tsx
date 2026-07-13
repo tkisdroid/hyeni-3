@@ -34,6 +34,10 @@ import {
 import { announceGlobalToast } from "@/lib/globalToast";
 import { restoreGooglePlaySubscriptions } from "@/lib/native/billing";
 import { qk } from "@/queries/keys";
+import {
+  createNativeQueryResumeCoordinator,
+  resumeActiveQueriesAfterNativeForeground,
+} from "@/queries/nativeQueryResume";
 
 // 아이 기기 상태 리포트 주기(ms). 부모 '안전 지표'가 이 주기로 갱신된다.
 const DEVICE_REPORT_INTERVAL_MS = 120_000;
@@ -57,6 +61,65 @@ export function NativeBootstrap() {
       if (!r.ok) console.error("OAuth 딥링크 처리 실패:", r.error);
     });
   }, []);
+
+  // Android WebView 포그라운드 조회 복구 — 브라우저 visibilitychange가 오지 않아도
+  // 세션을 먼저 조정한 뒤 현재 화면의 읽기 query만 갱신한다. TanStack 전역 focus
+  // 신호는 paused mutation까지 재개하므로 사용하지 않는다.
+  useEffect(() => {
+    if (!isNativePlatform()) return;
+    let disposed = false;
+    let listener: { remove(): Promise<void> } | null = null;
+
+    const coordinator = createNativeQueryResumeCoordinator({
+      resume: () => resumeActiveQueriesAfterNativeForeground({
+        adoptSession: adoptNativeLocationSessionTokens,
+        syncSession: syncFromSession,
+        waitForAuthRender: () => new Promise<void>((resolve) => {
+          window.setTimeout(resolve, 0);
+        }),
+        isDisposed: () => disposed,
+        refetchActiveQueries: async () => {
+          await queryClient.refetchQueries(
+            { type: "active" },
+            { cancelRefetch: true }
+          );
+        },
+      }),
+      onError: (error) => {
+        console.warn("Android 포그라운드 활성 조회 갱신 실패:", error);
+      },
+    });
+
+    const attach = async () => {
+      const { App } = await import("@capacitor/app");
+      const initialState = await App.getState();
+      if (disposed) return;
+      coordinator.initialize(initialState.isActive);
+
+      const handle = await App.addListener("appStateChange", (state) => {
+        coordinator.handleAppState(state.isActive);
+      });
+      if (disposed) {
+        coordinator.dispose();
+        await handle.remove();
+        return;
+      }
+      listener = handle;
+
+      const currentState = await App.getState();
+      if (!disposed) coordinator.handleAppState(currentState.isActive);
+    };
+
+    void attach().catch((error: unknown) => {
+      if (!disposed) console.warn("Android 앱 상태 리스너 등록 실패:", error);
+    });
+
+    return () => {
+      disposed = true;
+      coordinator.dispose();
+      void listener?.remove();
+    };
+  }, [queryClient, syncFromSession]);
 
   // 인증 확정 → FCM 푸시 등록. 로그아웃 → 정리.
   useEffect(() => {
