@@ -158,7 +158,7 @@ export function ParentSettings() {
         show("혜택은 적용됐지만 Google Play를 열지 못했어요", "⚠️");
       })
       .catch((error) => {
-        console.error("리뷰 혜택 적용 실패:", error);
+        console.error("스토어 방문 혜택 적용 실패:", error);
         show("혜택을 적용하지 못했어요. 잠시 후 다시 시도해 주세요", "⚠️");
       });
   };
@@ -242,7 +242,7 @@ export function ParentSettings() {
               >
                 <SettingsIcon Icon={Star} tone="gold" />
                 <span className="ps-nav__label">
-                  {reviewRewardClaim.isPending ? "혜택 적용 중…" : "앱 평가하고 혜택 받기"}
+                  {reviewRewardClaim.isPending ? "혜택 적용 중…" : "스토어 방문 혜택 받기"}
                 </span>
                 {chevronIcon}
               </button>

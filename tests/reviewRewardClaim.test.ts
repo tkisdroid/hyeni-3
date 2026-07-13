@@ -105,14 +105,15 @@ test("리뷰 지급 실패는 스토어를 열지 않고, 스토어 실패는 �
   assert.match(String(storeFailure.storeError), /스토어 실패/);
 });
 
-test("부모 설정 CTA는 ready 무료 티어에만 보이고 pending과 single-flight로 중복 탭을 막는다", () => {
+test("부모 설정 CTA는 스토어 방문 혜택만 안내하고 평가·리뷰·별점을 대가로 요구하지 않는다", () => {
   const settings = read("src/screens/parent/ParentSettings.tsx");
   assert.match(settings, /const showReviewRewardCta = ready && tier === TIERS\.FREE/);
   assert.match(settings, /useRef<Promise<ReviewRewardClaimFlowResult> \| null>\(null\)/);
   assert.match(settings, /runReviewRewardClaimFlow\(/);
   assert.match(settings, /reviewRewardClaim\.isPending/);
   assert.match(settings, /disabled=\{reviewRewardClaim\.isPending/);
-  assert.match(settings, /앱 평가하고 혜택 받기/);
+  assert.match(settings, /스토어 방문 혜택 받기/);
   assert.match(settings, /혜택은 적용됐지만 Google Play를 열지 못했어요/);
-  assert.doesNotMatch(settings, /리뷰.*확인|긍정.*리뷰|별점.*혜택/);
+  assert.doesNotMatch(settings, /앱 평가하고 혜택 받기/);
+  assert.doesNotMatch(settings, /(?:평가|리뷰|별점).{0,20}혜택|혜택.{0,20}(?:평가|리뷰|별점)/);
 });
