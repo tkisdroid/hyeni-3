@@ -19,6 +19,11 @@ import type {
   BillingProductDetails,
   SubscriptionOfferSelection,
 } from "@/transform/subscriptionOffer";
+import { resolveSubscriptionProductQuery } from "@/transform/billingProductDiagnostics";
+import type {
+  BillingProductsQueryResult,
+  SubscriptionProductQueryResult,
+} from "@/transform/billingProductDiagnostics";
 
 export const GOOGLE_PLAY_PACKAGE_NAME = "com.hyeni.calendar";
 const PLUGIN_NAME = "GooglePlayBilling";
@@ -69,7 +74,7 @@ interface GooglePlayBillingPlugin {
   queryProducts(opts: {
     subscriptionProductIds: string[];
     inAppProductIds: string[];
-  }): Promise<{ subscriptions?: BillingProductDetails[]; inAppProducts?: unknown[] }>;
+  }): Promise<BillingProductsQueryResult<BillingProductDetails>>;
   purchaseSubscription(opts: {
     productId: string;
     basePlanId: string;
@@ -168,14 +173,22 @@ function requirePlugin(): GooglePlayBillingPlugin {
   return plugin;
 }
 
-/** 현재 Google 계정에 실제로 노출되는 구독 상품/eligible offer를 조회한다. */
-export async function fetchSubscriptionProductDetails(): Promise<BillingProductDetails | null> {
+/** 현재 Google 계정에 노출되는 구독 상품과 Billing 9 미조회 사유를 함께 조회한다. */
+export async function fetchSubscriptionProductDetailsWithDiagnostics(): Promise<
+  SubscriptionProductQueryResult<BillingProductDetails>
+> {
   const plugin = requirePlugin();
   const result = await plugin.queryProducts({
     subscriptionProductIds: [SUBSCRIPTION_PRODUCT_ID],
     inAppProductIds: [],
   });
-  return (result.subscriptions ?? []).find((item) => item.productId === SUBSCRIPTION_PRODUCT_ID) ?? null;
+  return resolveSubscriptionProductQuery(result, SUBSCRIPTION_PRODUCT_ID);
+}
+
+/** 현재 Google 계정에 실제로 노출되는 구독 상품/eligible offer를 조회한다. */
+export async function fetchSubscriptionProductDetails(): Promise<BillingProductDetails | null> {
+  const result = await fetchSubscriptionProductDetailsWithDiagnostics();
+  return result.product;
 }
 
 function normalizePurchase(purchase: RawPurchase | undefined): NormalizedPurchase {

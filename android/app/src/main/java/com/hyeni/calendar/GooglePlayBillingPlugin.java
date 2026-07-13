@@ -18,6 +18,7 @@ import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.android.billingclient.api.QueryProductDetailsParams;
 import com.android.billingclient.api.QueryProductDetailsResult;
 import com.android.billingclient.api.QueryPurchasesParams;
+import com.android.billingclient.api.UnfetchedProduct;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -138,10 +139,12 @@ public class GooglePlayBillingPlugin extends Plugin implements PurchasesUpdatedL
             ArrayList<String> subscriptionIds = readStringArray(call.getArray("subscriptionProductIds"));
             ArrayList<String> inAppIds = readStringArray(call.getArray("inAppProductIds"));
             JSObject response = new JSObject();
+            JSObject diagnostics = new JSObject();
             response.put("subscriptions", new JSArray());
             response.put("inAppProducts", new JSArray());
-            queryProductType(subscriptionIds, BillingClient.ProductType.SUBS, response, call, () ->
-                    queryProductType(inAppIds, BillingClient.ProductType.INAPP, response, call, () -> call.resolve(response))
+            response.put("diagnostics", diagnostics);
+            queryProductType(subscriptionIds, BillingClient.ProductType.SUBS, "subscriptions", response, diagnostics, call, () ->
+                    queryProductType(inAppIds, BillingClient.ProductType.INAPP, "inAppProducts", response, diagnostics, call, () -> call.resolve(response))
             );
         });
     }
@@ -316,35 +319,60 @@ public class GooglePlayBillingPlugin extends Plugin implements PurchasesUpdatedL
         void run();
     }
 
-    private void queryProductType(ArrayList<String> productIds, String productType, JSObject response, PluginCall call, ProductQueryDone done) {
-        if (productIds.isEmpty()) {
+    private void queryProductType(ArrayList<String> productIds, String productType, String responseKey, JSObject response, JSObject diagnostics, PluginCall call, ProductQueryDone done) {
+        ArrayList<String> requestedProductIds = normalizeProductIds(productIds);
+        if (requestedProductIds.isEmpty()) {
             done.run();
             return;
         }
-        queryProductDetails(productIds, productType, (billingResult, result) -> {
+        queryProductDetails(requestedProductIds, productType, (billingResult, result) -> {
+            List<ProductDetails> productDetailsList = result != null && result.getProductDetailsList() != null
+                    ? result.getProductDetailsList()
+                    : java.util.Collections.emptyList();
+            JSObject queryDiagnostics = serializeProductQueryDiagnostics(
+                    billingResult,
+                    requestedProductIds.size(),
+                    productDetailsList,
+                    result
+            );
+            diagnostics.put(responseKey, queryDiagnostics);
             if (billingResult.getResponseCode() != BillingClient.BillingResponseCode.OK) {
-                rejectCall(call, "query_products_failed", billingResult);
+                JSObject data = billingResultToJson(billingResult);
+                data.put("code", "query_products_failed");
+                data.put("diagnostics", diagnostics);
+                call.reject("query_products_failed", "query_products_failed", null, data);
                 return;
             }
             JSArray products = new JSArray();
-            for (ProductDetails productDetails : result.getProductDetailsList()) {
+            for (ProductDetails productDetails : productDetailsList) {
                 products.put(serializeProduct(productDetails));
             }
-            if (BillingClient.ProductType.SUBS.equals(productType)) {
-                response.put("subscriptions", products);
-            } else {
-                response.put("inAppProducts", products);
-            }
+            response.put(responseKey, products);
             done.run();
         });
     }
 
+    private JSObject serializeProductQueryDiagnostics(BillingResult billingResult, int requestedCount, List<ProductDetails> productDetailsList, QueryProductDetailsResult result) {
+        JSArray unfetchedProducts = new JSArray();
+        List<UnfetchedProduct> unfetchedProductList = result != null ? result.getUnfetchedProductList() : null;
+        if (unfetchedProductList != null) {
+            for (UnfetchedProduct unfetchedProduct : unfetchedProductList) {
+                unfetchedProducts.put(new JSObject()
+                        .put("productId", unfetchedProduct.getProductId())
+                        .put("productType", unfetchedProduct.getProductType())
+                        .put("statusCode", unfetchedProduct.getStatusCode()));
+            }
+        }
+        return new JSObject()
+                .put("billingResult", billingResultToJson(billingResult))
+                .put("requestedCount", requestedCount)
+                .put("returnedCount", productDetailsList.size())
+                .put("unfetchedProducts", unfetchedProducts);
+    }
+
     private void queryProductDetails(ArrayList<String> productIds, String productType, ProductDetailsResponseListener listener) {
         List<QueryProductDetailsParams.Product> products = new ArrayList<>();
-        Set<String> seen = new HashSet<>();
-        for (String productId : productIds) {
-            if (TextUtils.isEmpty(productId) || seen.contains(productId)) continue;
-            seen.add(productId);
+        for (String productId : normalizeProductIds(productIds)) {
             products.add(QueryProductDetailsParams.Product.newBuilder()
                     .setProductId(productId)
                     .setProductType(productType)
@@ -354,6 +382,17 @@ public class GooglePlayBillingPlugin extends Plugin implements PurchasesUpdatedL
                 .setProductList(products)
                 .build();
         billingClient.queryProductDetailsAsync(params, listener);
+    }
+
+    private ArrayList<String> normalizeProductIds(List<String> productIds) {
+        ArrayList<String> normalized = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        if (productIds == null) return normalized;
+        for (String productId : productIds) {
+            if (TextUtils.isEmpty(productId) || !seen.add(productId)) continue;
+            normalized.add(productId);
+        }
+        return normalized;
     }
 
     private void queryPurchasesForType(String productType, JSArray purchases, PluginCall call, Runnable done) {
