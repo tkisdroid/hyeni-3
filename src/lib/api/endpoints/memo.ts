@@ -13,6 +13,7 @@ import { apiGet, apiPost } from "../client";
 export interface MemoReply {
   id: string;
   family_id?: string;
+  date_key: string; // 0-indexed 월 date_key. 전송 성공 캐시를 정확한 조회 윈도우에만 반영한다.
   child_id: string | null; // family_members.id (멀티차일드 분리). legacy row 는 null.
   user_id: string;
   user_role: "parent" | "child";

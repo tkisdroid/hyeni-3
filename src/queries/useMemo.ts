@@ -12,6 +12,7 @@ import {
   markReplyRead,
 } from "@/lib/api/endpoints/memo";
 import { todayDateKey } from "@/transform/dateKey";
+import { commitSentMemoReply } from "./memoCache";
 
 /** 선택 date_key 들의 대화 스레드. childId(member id) 지정 시 그 아이 스레드만(아이별 분리). */
 export function useMemoThread(dateKeys: string[], childId?: string | null) {
@@ -50,8 +51,8 @@ export function useSendMemo() {
         origin: vars.origin,
       });
     },
-    // date_key 별로 키가 갈리므로 familyId 접두로 전 스레드 무효화(useFamilyRealtime 과 동일 범위).
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["memoReplies", familyId ?? ""] }),
+    // 서버가 반환한 저장 행은 즉시 표시하고, 정본 재조회는 전송 완료를 막지 않게 백그라운드로 실행한다.
+    onSuccess: (saved) => commitSentMemoReply(qc, familyId ?? "", saved),
   });
 }
 

@@ -169,6 +169,11 @@
 - 부모→아이 메모 알림: 서버는 `type: "new_memo"`와 `targetChildUserId`로 FCM을 보낸다. Android 네이티브는
   이 알림을 일정 채널이 아니라 아이 메시지 채널(`hyeni_child_message_v1`)로 heads-up 표시하고,
   탭/폴링 라우트는 `child-memo` → `#/child/memo`로 유지한다.
+- **대화 전송 즉시 표시(2026-07-13 실사고)**: `POST /api/memos/replies`가 성공해 D1·FCM 전달까지 끝났어도,
+  클라이언트가 후속 GET/WS에만 의존하면 재조회 지연 동안 과거 대화(실제 제보: 토요일)가 마지막으로 남는다.
+  서버가 반환한 저장 행은 `commitSentMemoReply`로 family/date_key/child_id가 맞는 `qk.memoReplies` 캐시에 즉시 합치고,
+  정본 `invalidateQueries`는 백그라운드로 실행해 전송 완료를 막지 않는다. 검증은 D1 저장·pending/FCM ACK·양방향 WS·
+  상대 열람 후 `read_by`와 발신 화면 `읽음` 갱신까지 교차 확인한다.
 - 리뷰 보상 티어: `/api/review-rewards`는 부모 전용 계약이다. 아이/선생님 세션에서 엔타이틀먼트가 필요해도
   서버 호출을 하지 말고 reviewed=false로 확정한다. 아이 화면 CDP 로그에 403이 남으면 실패로 보고
   `resolveReviewRewardQueryScope` 규칙을 먼저 확인한다.
