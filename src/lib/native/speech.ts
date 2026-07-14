@@ -46,6 +46,8 @@ function extractTranscript(result: SpeechResult | null | undefined): string {
 }
 
 /** Web Speech API 단발 인식(웹/폴백). 미지원·오류·무음이면 "". */
+let activeWebRecognition: WebSpeechRecognition | null = null;
+
 function startWebSpeech(lang: string): Promise<string> {
   return new Promise((resolve) => {
     const SR = webSpeechCtor();
@@ -57,6 +59,7 @@ function startWebSpeech(lang: string): Promise<string> {
     const finish = (v: string) => {
       if (!done) {
         done = true;
+        activeWebRecognition = null;
         resolve(v);
       }
     };
@@ -68,6 +71,7 @@ function startWebSpeech(lang: string): Promise<string> {
       rec.onresult = (e) => finish((e.results?.[0]?.[0]?.transcript || "").trim());
       rec.onerror = () => finish("");
       rec.onend = () => finish("");
+      activeWebRecognition = rec;
       rec.start();
     } catch {
       finish("");
@@ -96,4 +100,22 @@ export async function captureSpeech(language = "ko-KR"): Promise<string> {
     /* 네이티브 실패 → 웹 폴백 시도 */
   }
   return (await startWebSpeech(language)).trim();
+}
+
+/**
+ * 진행 중인 음성 인식을 중단한다(탭 전환·화면 이탈 등).
+ * 진행 중이던 captureSpeech Promise 는 빈 문자열로 끝난다(호출부는 세대 카운터로 무시).
+ */
+export function cancelSpeechCapture(): void {
+  try {
+    const plugin = getNativePlugin<NativeSpeechPlugin>("SpeechRecognition");
+    void plugin?.stop?.().catch(() => undefined);
+  } catch {
+    /* 네이티브 미지원 — 무시 */
+  }
+  try {
+    activeWebRecognition?.stop();
+  } catch {
+    /* 이미 종료 — 무시 */
+  }
 }

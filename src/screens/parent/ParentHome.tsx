@@ -25,6 +25,7 @@ import { useVisitVerify } from "@/queries/useVisitVerify";
 import { todayDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { deviceStatusView } from "@/transform/familyView";
+import { nearestPlace, EXACT_SAVED_PLACE_LABEL_RADIUS_M } from "@/transform/locationView";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { TIERS, locationModeFor } from "@/transform/tierPolicy";
 import { resolveLocationTrustCopy } from "@/transform/locationTrustCopy";
@@ -68,7 +69,10 @@ function distanceM(lat1: number, lng1: number, lat2: number, lng2: number): numb
   return 2 * r * Math.asin(Math.sqrt(a));
 }
 
-function schedulePlaceLabel(loc: ChildLocation, events: ChildScheduleEvent[]): string | null {
+function schedulePlaceHit(
+  loc: ChildLocation,
+  events: ChildScheduleEvent[],
+): { label: string; distanceM: number } | null {
   const hits = events
     .map(({ raw, view }) => {
       const point = eventLocationPoint(raw);
@@ -94,7 +98,7 @@ function schedulePlaceLabel(loc: ChildLocation, events: ChildScheduleEvent[]): s
     });
   const hit = hits[0];
   if (!hit) return null;
-  return `${eventTitleForPlace(hit.raw, hit.view)} 근처`;
+  return { label: `${eventTitleForPlace(hit.raw, hit.view)} 근처`, distanceM: hit.distance };
 }
 
 const shortcutRoutes: Record<string, string> = {
@@ -290,7 +294,14 @@ export function ParentHome() {
         })
         .filter((row): row is ChildScheduleEvent => row !== null);
       const next = kidEvents.find(({ view }) => !PAST_TAGS.has(view.tag))?.view ?? null;
-      const eventPlace = kidLoc ? schedulePlaceLabel(kidLoc, kidEvents) : null;
+      // 일정 장소 라벨은 등록 장소보다 "더 가까울 때만" 이긴다(2026-07-14 TK 제보:
+      // 학교가 더 가까운데 다음 일정인 피아노 학원 근처로 표시됨). 동률이면 등록 장소명.
+      const eventHit = kidLoc ? schedulePlaceHit(kidLoc, kidEvents) : null;
+      const savedHit = kidLoc ? nearestPlace(kidLoc, places ?? []) : null;
+      const savedNearby = savedHit && savedHit.distanceM <= EXACT_SAVED_PLACE_LABEL_RADIUS_M ? savedHit : null;
+      const eventPlace = eventHit && (!savedNearby || eventHit.distanceM < savedNearby.distanceM)
+        ? eventHit.label
+        : null;
       return {
         id: kid.id,
         name: kid.name || "아이",
@@ -497,13 +508,13 @@ export function ParentHome() {
             </span>
           </div>
           <div className="ph-ai__grid">
-            <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule")}>
+            <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=voice")}>
               <Mic size={15} strokeWidth={2.4} /> 음성
             </button>
-            <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule")}>
+            <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=text")}>
               <Keyboard size={15} strokeWidth={2.4} /> 텍스트
             </button>
-            <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule")}>
+            <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=image")}>
               <ImageIcon size={15} strokeWidth={2.4} /> 알림장
             </button>
           </div>
@@ -738,9 +749,11 @@ export function ParentHome() {
                 </div>
               ) : (
                 <div className="ph-recent-empty">
-                  {deviceStatus.hasData
-                    ? "아이 기기 설정 > 사용정보 접근 허용을 켜면 표시돼요"
-                    : "아이 기기가 연동되면 표시돼요"}
+                  {!deviceStatus.hasData
+                    ? "아이 기기가 연동되면 표시돼요"
+                    : deviceStatus.appUsagePermissionGranted
+                      ? "혜니캘린더 외에 오늘 쓴 앱이 없어요"
+                      : "아이 기기 설정 > 사용정보 접근 허용을 켜면 표시돼요"}
                 </div>
               )}
             </div>

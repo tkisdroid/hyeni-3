@@ -1,6 +1,6 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Camera, ChevronLeft, Check, Sparkles, Mic, Keyboard, Image as ImageIcon, type LucideIcon } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { resolveEventVisualAsset } from "@/transform/placeVisual";
@@ -17,7 +17,7 @@ import {
 } from "@/transform/aiScheduleDraft";
 import { scheduleLimitFor, TIERS } from "@/transform/tierPolicy";
 import { ApiError } from "@/lib/api/errors";
-import { captureSpeech, isSpeechCaptureSupported } from "@/lib/native/speech";
+import { cancelSpeechCapture, captureSpeech, isSpeechCaptureSupported } from "@/lib/native/speech";
 import "./AiSchedule.css";
 
 type TabKey = "voice" | "text" | "image";
@@ -71,7 +71,18 @@ export function AiSchedule() {
   const existingEvents = useEvents();
   const { tier } = useEntitlement();
 
-  const [tab, setTab] = useState<TabKey>("voice");
+  // 진입 탭 — 부모 홈 "AI로 일정 추가"의 음성/텍스트/알림장 버튼이 ?tab= 으로 지정한다.
+  const [searchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const [tab, setTab] = useState<TabKey>(
+    requestedTab === "text" || requestedTab === "image" || requestedTab === "voice" ? requestedTab : "voice",
+  );
+  // 화면이 이미 떠 있는 상태에서 ?tab= 만 바뀌는 재진입(같은 문서 해시 변경)도 반영한다.
+  useEffect(() => {
+    if (requestedTab === "text" || requestedTab === "image" || requestedTab === "voice") {
+      setTab(requestedTab);
+    }
+  }, [requestedTab]);
   const [text, setText] = useState("");
   // 알림장 사진 미리보기(data URI). null = 사진 미선택.
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -81,6 +92,33 @@ export function AiSchedule() {
   const [listening, setListening] = useState(false);
   // 숨긴 파일 입력 — 업로드 버튼 onClick 에서 트리거(직접 노출하지 않음).
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── 마이크 오발동 방어(2026-07-14 TK 제보 "진입 시 마이크 자동실행") ──
+  // 홈 버튼 탭이 화면 전환 직후 같은 좌표의 큰 마이크 버튼에 고스트 클릭으로 떨어지면
+  // 음성 인식이 저절로 시작된다. 진입 후 짧은 무장 지연을 두고, 탭 전환·화면 이탈 시
+  // 진행 중 인식은 취소한다(취소된 인식의 결과·토스트는 세대 카운터로 무시).
+  const micArmedRef = useRef(false);
+  const voiceGenRef = useRef(0);
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      micArmedRef.current = true;
+    }, 700);
+    return () => {
+      window.clearTimeout(id);
+      voiceGenRef.current += 1;
+      cancelSpeechCapture();
+    };
+  }, []);
+
+  const switchTab = (key: TabKey) => {
+    if (key === tab) return;
+    if (listening) {
+      voiceGenRef.current += 1;
+      cancelSpeechCapture();
+      setListening(false);
+    }
+    setTab(key);
+  };
 
   const cd = currentDateParts();
   const events = drafts ?? [];
@@ -166,7 +204,7 @@ export function AiSchedule() {
   // ── 음성 인식(STT) → 인식 텍스트를 그대로 AI 정리로 투입 ──
   // 네이티브 SpeechRecognition 플러그인 우선, 웹은 Web Speech API 폴백(@/lib/native/speech).
   const startVoice = async () => {
-    if (listening || parseM.isPending) return;
+    if (!micArmedRef.current || listening || parseM.isPending) return;
     if (status !== "authenticated") {
       show("로그인이 필요해요", "🔒");
       return;
@@ -176,10 +214,12 @@ export function AiSchedule() {
       setTab("text");
       return;
     }
+    const gen = ++voiceGenRef.current;
     setListening(true);
     setDrafts(null);
     try {
       const transcript = await captureSpeech("ko-KR");
+      if (gen !== voiceGenRef.current) return; // 탭 전환·이탈로 취소된 인식 — 결과·토스트 무시
       if (!transcript) {
         show("음성을 인식하지 못했어요. 다시 말해 주세요.", "🎤");
         return;
@@ -188,9 +228,10 @@ export function AiSchedule() {
       // 인식 성공 → 곧바로 AI 정리(결과 카드 표시). 실제 저장은 사용자가 '이대로 추가하기'로 확정.
       await runParse(transcript);
     } catch (e) {
+      if (gen !== voiceGenRef.current) return;
       show(e instanceof Error ? e.message : "음성 인식에 실패했어요", "⚠️");
     } finally {
-      setListening(false);
+      if (gen === voiceGenRef.current) setListening(false);
     }
   };
 
@@ -272,7 +313,7 @@ export function AiSchedule() {
               type="button"
               className="ais-tab hy-press"
               data-active={tab === t.key}
-              onClick={() => setTab(t.key)}
+              onClick={() => switchTab(t.key)}
             >
               <span className="ais-tab__emoji">
                 <t.Icon size={15} strokeWidth={2.4} />
