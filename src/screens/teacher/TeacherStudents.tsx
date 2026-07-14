@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plus, X } from "lucide-react";
+import { Link2, Plus, X } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import {
@@ -118,6 +118,15 @@ export function TeacherStudents() {
   const loading = classesQ.isLoading || rosterQ.isLoading;
   const genuineError = classesQ.isError && !isMissingFunction(classesQ.error);
   const notReady = !loading && !classId;
+  const [filterNotArrivedOnly, setFilterNotArrivedOnly] = useState(false);
+
+  const isNotArrived = (status: StudentView["status"]) =>
+    status !== "attended" && status !== "left";
+
+  const visibleStudents = useMemo(
+    () => (filterNotArrivedOnly ? students.filter((s) => isNotArrived(s.status)) : students),
+    [students, filterNotArrivedOnly],
+  );
 
   return (
     <div className="hy-rise-in">
@@ -155,12 +164,39 @@ export function TeacherStudents() {
             <div className="ts-meta">
               {className} · 학생 <span className="ts-meta__count">{students.length}명</span>
             </div>
+            <div className="ts-meta ts-meta-row">
+              <span className="ts-subtitle">
+                {filterNotArrivedOnly
+                  ? `미도착만 ${visibleStudents.length}명`
+                  : `표시 학생 ${visibleStudents.length}명`}
+              </span>
+              <div className="ts-filter" role="group" aria-label="학생 보기 필터">
+                <button
+                  type="button"
+                  className={`ts-filter__btn hy-press${!filterNotArrivedOnly ? " ts-filter__btn--on" : ""}`}
+                  onClick={() => setFilterNotArrivedOnly(false)}
+                  aria-pressed={!filterNotArrivedOnly}
+                >
+                  전체
+                </button>
+                <button
+                  type="button"
+                  className={`ts-filter__btn hy-press${filterNotArrivedOnly ? " ts-filter__btn--on" : ""}`}
+                  onClick={() => setFilterNotArrivedOnly(true)}
+                  aria-pressed={filterNotArrivedOnly}
+                >
+                  미도착만
+                </button>
+              </div>
+            </div>
 
             <div className="hy-card ts-list">
-              {students.length === 0 && (
-                <div className="ts-row--empty">아직 등록된 학생이 없어요</div>
+              {visibleStudents.length === 0 && (
+                <div className="ts-row--empty">
+                  {filterNotArrivedOnly ? "현재 미도착 아이가 없어요" : "아직 등록된 학생이 없어요"}
+                </div>
               )}
-              {students.map((s) => {
+              {visibleStudents.map((s) => {
                 const saving = savingId === s.childMemberId;
                 return (
                   <div key={s.id} className="ts-row">
@@ -202,7 +238,7 @@ export function TeacherStudents() {
             </div>
 
             <div className="ts-hint">
-              <span className="ts-hint__ico">🔗</span>
+              <span className="ts-hint__ico"><Link2 size={15} strokeWidth={2.2} /></span>
               부모님 전화번호로 초대하면, 부모님 승인 후 학생이 자동으로 연결돼요.
             </div>
           </>
