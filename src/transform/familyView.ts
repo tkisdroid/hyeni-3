@@ -102,6 +102,8 @@ export interface DeviceStatusView {
   networkLabel: string; // "Wi-Fi"/"4G"/"연결됨" | "오프라인" | "—"
   screenTimeLabel: string; // 네이티브 deviceScreenOnMs → "N시간 M분"; 웹은 "—"
   recentAppLabel: string | null; // 네이티브 recentApp(최근 사용앱). 없거나 권한없으면 null
+  /** Usage Access 허용 여부. 앱 목록이 비었을 때 "권한 필요"와 "쓴 앱 없음" 문구를 구분한다. */
+  appUsagePermissionGranted: boolean;
   mostUsedApp: DeviceRecentAppView | null;
   topApps: DeviceRecentAppView[];
   recentApps: DeviceRecentAppView[];
@@ -162,6 +164,7 @@ export function deviceStatusView(
       networkLabel: "—",
       screenTimeLabel: "—",
       recentAppLabel: null,
+      appUsagePermissionGranted: false,
       mostUsedApp: null,
       topApps: [],
       recentApps: [],
@@ -192,6 +195,7 @@ export function deviceStatusView(
     networkLabel: health.networkConnected ? networkTypeLabel(netType) : "오프라인",
     screenTimeLabel: screen ?? "—",
     recentAppLabel: appUsage.recentAppLabel,
+    appUsagePermissionGranted: health.usagePermission === "granted",
     mostUsedApp: appUsage.mostUsedApp,
     topApps: appUsage.topApps,
     recentApps: appUsage.topApps,

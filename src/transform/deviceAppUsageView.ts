@@ -57,6 +57,17 @@ function cleanPercent(value: number | null | undefined): number | null {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
+// 혜니캘린더 자신은 "오늘 많이 쓴 앱" 대상이 아니다 — 부모가 보고 싶은 건 다른 앱 사용이고,
+// 아이가 이 앱으로 위치·일정을 확인한 시간이 1위를 차지하면 신호가 묻힌다.
+// 구버전 아이 기기 리포트에도 적용되도록 서버/네이티브가 아니라 표시 계층에서 거른다.
+const OWN_APP_PACKAGE = "com.hyeni.calendar";
+const OWN_APP_NAMES = new Set(["혜니캘린더", "hyeni calendar", "hyenicalendar"]);
+
+function isOwnAppRow(row: DeviceAppUsageInput): boolean {
+  if (normalizeAppText(row.packageName) === OWN_APP_PACKAGE) return true;
+  return OWN_APP_NAMES.has(normalizeAppText(row.name));
+}
+
 export function buildDeviceAppUsageView(
   health: DeviceAppUsageHealthInput,
   maxRows = 3,
@@ -64,6 +75,7 @@ export function buildDeviceAppUsageView(
   const recent = cleanRecentAppLabel(health.recentApp);
   const rows = Array.isArray(health.appUsage) ? health.appUsage : [];
   const topApps = rows
+    .filter((row) => !isOwnAppRow(row))
     .map((row, index) => {
       const name = (row.name || row.packageName || "").trim();
       const usageMs = typeof row.usageMs === "number" && Number.isFinite(row.usageMs) ? row.usageMs : 0;

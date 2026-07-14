@@ -630,7 +630,11 @@ export function DailySafetyReport() {
                   ))}
                 </div>
               ) : (
-                <div className="dr-emptyline">사용정보 접근 권한을 켜면 많이 쓴 앱이 표시돼요.</div>
+                <div className="dr-emptyline">
+                  {device.appUsagePermissionGranted
+                    ? "혜니캘린더 외에 오늘 쓴 앱이 없어요."
+                    : "사용정보 접근 권한을 켜면 많이 쓴 앱이 표시돼요."}
+                </div>
               )}
             </section>
 
