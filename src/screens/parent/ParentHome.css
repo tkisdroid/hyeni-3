@@ -519,6 +519,38 @@
   line-height: 1.5;
   color: var(--fg-muted);
 }
+/* 알림·위치 컴팩트 상태 칩(정상/확인 중). 조치 필요 상세는 __notification 박스가 담당 */
+.ph-safety__signals {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.ph-safety__signal {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line-card);
+  border-radius: 999px;
+  background: var(--bg-press);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--fg-muted);
+  white-space: nowrap;
+}
+.ph-safety__signal[data-state="ready"] {
+  border-color: var(--mint-line);
+  background: var(--mint-soft);
+  color: var(--mint-text);
+}
+.ph-safety__signal[data-state="attention"] {
+  border-color: color-mix(in srgb, var(--gold-600) 30%, var(--line-card));
+  background: var(--cream-soft);
+  color: var(--gold-text);
+}
 .ph-safety__notification {
   display: flex;
   align-items: flex-start;

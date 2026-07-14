@@ -419,6 +419,10 @@
   토스트는 뜨지만, 화면 맥락에 맞는 문구는 화면 몫**이다. 폴백이 겹치면 안 되는 백그라운드 작업은
   `meta: { silentError: true }`. 전역 폴백은 `announceFallbackToast`(450ms 지연-양보 — ToastProvider.show 가
   `markToastShown()`을 찍으면 물러남)라 화면 토스트와 이중으로 뜨지 않는다.
+- 부모 홈 안전 지표의 알림·위치 건강 상태는 컴팩트 칩(`shortLabel`, `.ph-safety__signals`) 한 줄로 표시하고,
+  긴 `label`/`detail` 안내 박스는 `attention`(조치 필요) 상태에만 렌더한다(2026-07-14 TK 제보 "과도한 텍스트가
+  디자인을 해침" 수정). 안심리포트(`DailySafetyReport`)는 상세 화면이라 label/detail 전체 표시를 유지한다.
+  회귀=`tests/deviceNotificationHealth.test.ts`.
 - 모든 인터랙티브 요소는 프레스 피드백이 있어야 한다: 버튼/카드=`hy-press`(+CSS `--press`), 목록 행/라벨=
   `:active { background: var(--bg-press) }`. CSS 에 `--press` 를 선언했는데 JSX 에 `hy-press` 를 빼먹는 실수가
   실제로 있었다(부모 홈 아이 카드). 스크림/딤 배경은 예외(정적이 맞다).
@@ -442,6 +446,9 @@
 - **기기 역할 확인**: 역할은 세션별로 바뀐 이력이 있으므로, 과거 단계 기록보다 최신 사용자 지시/goal을 우선한다.
   완료 선언 전에는 CDP로 WebView 세션(`hyeni-api-session-v1`)의 role/familyId와 실제 화면을 함께 확인하고,
   지시한 역할과 다르면 해당 실기기 검증은 미검증/차단으로 분리 보고한다.
+- **Windows cmd 함정**: 실행 환경에 `NoDefaultCurrentDirectoryInExePath=1`이 있으면 cmd가 현재 디렉터리의
+  `gradlew.bat`를 경로 접두어 없이 찾지 못한다("내부 또는 외부 명령이 아닙니다"). gradle 호출은 항상
+  `.\gradlew.bat`처럼 경로를 명시한다(`tests/androidMergedManifestSecurity.test.mjs` 동일 적용).
 - **adb**: Git Bash 는 `MSYS_NO_PATHCONV=1` 필요(/sdcard 변환 방지) · razr 스크린샷은 `-d 4630947043778501762` ·
   `keyevent 26` 은 토글(끄기 전 상태 확인) · 기기 offline/unauthorized 는 `adb kill-server && start-server`.
 - **CDP(WebView)**: `adb forward tcp:922x localabstract:webview_devtools_remote_<pid>` · websocket 은

@@ -23,6 +23,8 @@ export type DeviceNotificationHealthState = "ready" | "attention" | "unknown";
 export interface DeviceNotificationHealthView {
   state: DeviceNotificationHealthState;
   label: string;
+  /** 홈 컴팩트 칩용 짧은 라벨. 상세 안내는 label/detail 을 사용한다. */
+  shortLabel: string;
   detail: string;
 }
 
@@ -85,6 +87,7 @@ export function deviceNotificationHealthView(
     return {
       state: "attention",
       label: "일정 알림 설정 확인 필요",
+      shortLabel: "알림 확인 필요",
       detail: "아이 앱의 일정 알림 설정이 꺼져 있어요.",
     };
   }
@@ -92,6 +95,7 @@ export function deviceNotificationHealthView(
     return {
       state: "attention",
       label: "알림 확인 필요",
+      shortLabel: "알림 확인 필요",
       detail: "마지막 보고에서 아이 기기의 알림 권한이 꺼져 있어요.",
     };
   }
@@ -99,6 +103,7 @@ export function deviceNotificationHealthView(
     return {
       state: "attention",
       label: "알림 확인 필요",
+      shortLabel: "알림 확인 필요",
       detail: "마지막 보고에서 아이 기기의 앱 알림이 꺼져 있어요.",
     };
   }
@@ -106,6 +111,7 @@ export function deviceNotificationHealthView(
     return {
       state: "attention",
       label: "알림 확인 필요",
+      shortLabel: "알림 확인 필요",
       detail: "마지막 보고에서 아이 기기의 필수 알림 채널 중 꺼진 항목이 있어요.",
     };
   }
@@ -113,6 +119,7 @@ export function deviceNotificationHealthView(
     return {
       state: "attention",
       label: "긴급 알림 전체 화면 확인 필요",
+      shortLabel: "알림 확인 필요",
       detail: "마지막 보고에서 잠금화면 전체 표시가 꺼져 있어 긴급 알림이 heads-up 팝업으로만 표시돼요.",
     };
   }
@@ -120,6 +127,7 @@ export function deviceNotificationHealthView(
     return {
       state: "attention",
       label: "주변 소리 요청 알림 확인 필요",
+      shortLabel: "알림 확인 필요",
       detail: "마지막 보고에서 아이 기기의 주변 소리 요청 알림 채널이 꺼져 있어요.",
     };
   }
@@ -127,6 +135,7 @@ export function deviceNotificationHealthView(
     return {
       state: "attention",
       label: "알림 확인 필요",
+      shortLabel: "알림 확인 필요",
       detail: "마지막 보고에서 아이 기기의 알림 권한 또는 필수 채널이 꺼져 있어요.",
     };
   }
@@ -134,6 +143,7 @@ export function deviceNotificationHealthView(
     return {
       state: "unknown",
       label: "알림 상태 확인 대기",
+      shortLabel: "알림 확인 중",
       detail: health
         ? "아이 기기 상태가 오래돼 현재 알림 표시 가능 여부를 확인할 수 없어요. 새로고침해 주세요."
         : "아이 기기에서 새 상태를 받으면 알림 권한과 필수 채널을 확인할 수 있어요.",
@@ -150,6 +160,7 @@ export function deviceNotificationHealthView(
       return {
         state: "unknown",
         label: "일정 알림 설정 확인 실패",
+        shortLabel: "알림 확인 중",
         detail: "아이 일정 알림 설정을 불러오지 못했어요. 네트워크 연결 후 다시 확인해 주세요.",
       };
     }
@@ -157,18 +168,21 @@ export function deviceNotificationHealthView(
       return {
         state: "unknown",
         label: "일정 알림 설정 확인 중",
+        shortLabel: "알림 확인 중",
         detail: "기기 알림 표시는 켜져 있지만 아이 일정 알림 설정을 확인 중이에요.",
       };
     }
     return {
       state: "ready",
       label: "알림 표시 설정 정상",
+      shortLabel: "알림 정상",
       detail: "최근 보고 기준으로 알림 권한·필수 채널·잠금화면 전체 표시·요청 채널과 일정 알림 설정이 켜져 있어요.",
     };
   }
   return {
     state: "unknown",
     label: "알림 상태 확인 대기",
+    shortLabel: "알림 확인 중",
     detail: "아이 기기의 알림 권한과 필수 채널 전체 상태를 아직 확인하지 못했어요.",
   };
 }
@@ -186,6 +200,7 @@ export function deviceLocationHealthView(
     return {
       state: "attention",
       label: "위치 권한 확인 필요",
+      shortLabel: "위치 확인 필요",
       detail: "마지막 보고에서 아이 기기의 항상 허용 위치 권한이 꺼져 있어요.",
     };
   }
@@ -193,6 +208,7 @@ export function deviceLocationHealthView(
     return {
       state: "attention",
       label: "백그라운드 제한 확인 필요",
+      shortLabel: "위치 확인 필요",
       detail: "마지막 보고에서 아이 기기의 백그라운드 사용이 제한되어 있어요.",
     };
   }
@@ -200,6 +216,7 @@ export function deviceLocationHealthView(
     return {
       state: "attention",
       label: "위치 전송 확인 필요",
+      shortLabel: "위치 확인 필요",
       detail: "마지막 보고에서 혜니캘린더 위치 서비스가 멈춰 있어요.",
     };
   }
@@ -207,6 +224,7 @@ export function deviceLocationHealthView(
     return {
       state: "attention",
       label: "기기 오프라인",
+      shortLabel: "기기 오프라인",
       detail: "마지막 보고에서 아이 기기가 오프라인이라 위치를 전송할 수 없었어요.",
     };
   }
@@ -214,6 +232,7 @@ export function deviceLocationHealthView(
     return {
       state: "unknown",
       label: "위치 상태 확인 대기",
+      shortLabel: "위치 확인 중",
       detail: health
         ? "아이 기기 상태가 오래돼 현재 위치 전송 가능 여부를 확인할 수 없어요. 새로고침해 주세요."
         : "아이 기기에서 새 상태를 받으면 위치 권한과 전송 서비스를 확인할 수 있어요.",
@@ -228,12 +247,14 @@ export function deviceLocationHealthView(
     return {
       state: "ready",
       label: "위치 전송 설정 정상",
+      shortLabel: "위치 정상",
       detail: "최근 보고 기준으로 항상 허용 위치 권한과 전송 서비스가 켜져 있어요.",
     };
   }
   return {
     state: "unknown",
     label: "위치 상태 확인 대기",
+    shortLabel: "위치 확인 중",
     detail: "아이 기기의 위치 권한과 전송 서비스 전체 상태를 아직 확인하지 못했어요.",
   };
 }

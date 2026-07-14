@@ -20,8 +20,10 @@ function receiverBlock(manifest, className) {
 test("출시 manifest 병합 뒤에도 부팅·종료 receiver는 외부 앱에 노출되지 않는다", { timeout: 300_000 }, () => {
   const isWindows = process.platform === "win32";
   const gradleCommand = isWindows ? (process.env.ComSpec ?? "cmd.exe") : "./gradlew";
+  // NoDefaultCurrentDirectoryInExePath=1 환경에서는 경로 접두어 없는 현재 디렉터리
+  // 실행 파일을 cmd가 찾지 못하므로 .\ 를 명시한다.
   const gradleArgs = isWindows
-    ? ["/d", "/s", "/c", "gradlew.bat :app:processReleaseMainManifest --no-daemon"]
+    ? ["/d", "/s", "/c", ".\\gradlew.bat :app:processReleaseMainManifest --no-daemon"]
     : [":app:processReleaseMainManifest", "--no-daemon"];
   const result = spawnSync(
     gradleCommand,

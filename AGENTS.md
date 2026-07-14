@@ -72,6 +72,10 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   클라 로컬 스케줄러 없음) · 긴급(sos/emergency)은 `POST /api/parent-alerts` insert 시 서버가 FCM
   전체화면 연쇄 · 기기 상태(device_health)는 **on-demand**(부모가 `request_device_status` 푸시를 보내야 옴) ·
   미등록 장소 도착 = `worker/lib/arrivalDetect.ts`(150m·5분 체류·2h 쿨다운).
+  부모 홈 안전 지표의 알림·위치 건강 상태는 컴팩트 칩(`shortLabel`, `.ph-safety__signals`) 한 줄로 표시하고,
+  긴 `label`/`detail` 안내 박스는 `attention`(조치 필요) 상태에만 렌더한다(2026-07-14 TK 제보 "과도한 텍스트" 수정).
+  안심리포트(`DailySafetyReport`)는 상세 화면이므로 label/detail 전체 표시를 유지한다.
+  회귀=`tests/deviceNotificationHealth.test.ts`.
   안전지표의 `잠금해제`는 Android `UsageEvents.Event.KEYGUARD_HIDDEN`의 오늘 누적값만 표시한다.
   `SCREEN_INTERACTIVE`(알림 등으로 화면만 켜짐)는 절대 포함하지 않으며, Usage Access 없음·API 28 미만·미보고는 `0회`로 표시한다.
   등록장소 도착/출발(saved_places+academies)은 네이티브 `LocationService`와 Worker
@@ -441,6 +445,9 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   지시한 역할과 다르면 해당 실기기 검증은 미검증/차단으로 분리 보고한다.
 - adb(Git Bash): 원격 경로엔 `MSYS_NO_PATHCONV=1` · `keyevent 26` 은 토글(끄기 전 상태 확인) ·
   offline/unauthorized → `adb kill-server && adb start-server`.
+- Windows cmd 함정: 실행 환경에 `NoDefaultCurrentDirectoryInExePath=1`이 있으면 cmd가 현재 디렉터리의
+  `gradlew.bat`를 경로 접두어 없이 찾지 못한다("내부 또는 외부 명령이 아닙니다"). gradle 호출은 항상
+  `.\gradlew.bat`처럼 경로를 명시한다(`tests/androidMergedManifestSecurity.test.mjs`도 동일).
 - CDP: `adb forward tcp:922x localabstract:webview_devtools_remote_<pid>` → `http://localhost:922x/json` ·
   websocket 연결에 `suppress_origin` 필수 · **awaitPromise 긴 evaluate 는 hang** → 클릭/조회를 짧은 동기
   evaluate 로 쪼개고 결과는 별도 폴링 · `canvas.toBlob` 대신 `toDataURL`(동기) · React 제어 input 은

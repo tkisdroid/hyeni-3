@@ -621,26 +621,41 @@ export function ParentHome() {
                 아이 기기가 아직 상태를 보내지 않았어요. 아이 앱이 연결되면 실시간으로 표시돼요.
               </div>
             )}
-            <div
-              className="ph-safety__notification"
-              data-state={deviceStatus.notification.state}
-            >
-              <Bell size={18} strokeWidth={2.2} aria-hidden="true" />
-              <span>
-                <b>{deviceStatus.notification.label}</b>
-                <small>{deviceStatus.notification.detail}</small>
+            {/* 정상/확인 중은 컴팩트 칩 한 줄, 조치 필요(attention)만 상세 안내 박스 */}
+            <div className="ph-safety__signals">
+              <span
+                className="ph-safety__signal"
+                data-state={deviceStatus.notification.state}
+              >
+                <Bell size={14} strokeWidth={2.4} aria-hidden="true" />
+                {deviceStatus.notification.shortLabel}
+              </span>
+              <span
+                className="ph-safety__signal"
+                data-state={deviceStatus.location.state}
+              >
+                <MapPin size={14} strokeWidth={2.4} aria-hidden="true" />
+                {deviceStatus.location.shortLabel}
               </span>
             </div>
-            <div
-              className="ph-safety__notification"
-              data-state={deviceStatus.location.state}
-            >
-              <MapPin size={18} strokeWidth={2.2} aria-hidden="true" />
-              <span>
-                <b>{deviceStatus.location.label}</b>
-                <small>{deviceStatus.location.detail}</small>
-              </span>
-            </div>
+            {deviceStatus.notification.state === "attention" && (
+              <div className="ph-safety__notification" data-state="attention">
+                <Bell size={18} strokeWidth={2.2} aria-hidden="true" />
+                <span>
+                  <b>{deviceStatus.notification.label}</b>
+                  <small>{deviceStatus.notification.detail}</small>
+                </span>
+              </div>
+            )}
+            {deviceStatus.location.state === "attention" && (
+              <div className="ph-safety__notification" data-state="attention">
+                <MapPin size={18} strokeWidth={2.2} aria-hidden="true" />
+                <span>
+                  <b>{deviceStatus.location.label}</b>
+                  <small>{deviceStatus.location.detail}</small>
+                </span>
+              </div>
+            )}
             <div className="ph-safety__grid">
               <div className="ph-metric">
                 <span className="ph-metric__icon" style={{ background: "var(--mint-soft)" }}>

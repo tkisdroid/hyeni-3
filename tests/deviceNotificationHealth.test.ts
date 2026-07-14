@@ -26,6 +26,7 @@ test("최근 기기 보고와 아이 일정 알림 설정이 모두 켜져야 �
 
   assert.equal(view.state, "ready");
   assert.equal(view.label, "알림 표시 설정 정상");
+  assert.equal(view.shortLabel, "알림 정상");
   assert.match(view.detail, /최근 보고 기준/);
   assert.match(view.detail, /일정 알림 설정/);
   assert.doesNotMatch(view.label, /수신 정상/);
@@ -121,8 +122,10 @@ test("오래된 보고와 아이 설정 조회 대기는 정상으로 추정하�
   }, { now: NOW, childScheduleEnabled: null });
 
   assert.equal(stale.state, "unknown");
+  assert.equal(stale.shortLabel, "알림 확인 중");
   assert.match(stale.detail, /상태가 오래돼/);
   assert.equal(settingsUnknown.state, "unknown");
+  assert.equal(settingsUnknown.shortLabel, "알림 확인 중");
   assert.match(settingsUnknown.detail, /일정 알림 설정을 확인 중/);
 });
 
@@ -202,7 +205,9 @@ test("위치 전송도 최근 보고의 필수 조건이 모두 true일 때만 �
 
   assert.equal(ready.state, "ready");
   assert.equal(ready.label, "위치 전송 설정 정상");
+  assert.equal(ready.shortLabel, "위치 정상");
   assert.equal(stale.state, "unknown");
+  assert.equal(stale.shortLabel, "위치 확인 중");
 });
 
 test("전체 안전 라벨은 알림·위치·네트워크 중 하나라도 막히면 주의, 미확인이면 확인 중이다", () => {
@@ -260,4 +265,20 @@ test("부모 홈과 안심 리포트가 아이 알림 설정·기기 알림·위
   assert.match(report, /device\.notification\.detail/);
   assert.match(report, /device\.location\.label/);
   assert.match(report, /device\.location\.detail/);
+});
+
+test("부모 홈 안전 지표는 정상/확인 중을 컴팩트 칩으로, 상세 안내는 조치 필요일 때만 보여준다", () => {
+  const home = readSource("src/screens/parent/ParentHome.tsx");
+  const homeCss = readSource("src/screens/parent/ParentHome.css");
+
+  assert.match(home, /ph-safety__signals/);
+  assert.match(home, /deviceStatus\.notification\.shortLabel/);
+  assert.match(home, /deviceStatus\.location\.shortLabel/);
+  assert.match(home, /deviceStatus\.notification\.state === "attention" && \(/);
+  assert.match(home, /deviceStatus\.location\.state === "attention" && \(/);
+  assert.match(homeCss, /\.ph-safety__signal\b/);
+  // 정상/확인 중 상태에서 긴 detail 문장이 항상 노출되던 회귀 방지:
+  // detail 박스는 attention 조건부 렌더 안에만 존재해야 한다.
+  const unconditionalDetailBox = /<div\s+className="ph-safety__notification"\s+data-state=\{deviceStatus/.test(home);
+  assert.equal(unconditionalDetailBox, false, "detail 박스가 상태 무관하게 항상 렌더되면 안 됨");
 });
