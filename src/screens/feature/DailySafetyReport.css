@@ -716,6 +716,12 @@
   color: var(--lav-text);
 }
 
+.dr-device-grid img {
+  width: 17px;
+  height: 17px;
+  object-fit: contain;
+}
+
 .dr-device-grid span,
 .dr-device-grid b {
   min-width: 0;

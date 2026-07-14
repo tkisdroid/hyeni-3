@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft } from "lucide-react";
+import { BellRing, Bot, ChevronLeft, Hash, MessageCircle } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
@@ -243,7 +243,7 @@ export function AiCredit() {
 
         {/* 안내 */}
         <div className="ac-note">
-          <span className="ac-note__emoji">💬</span>
+          <span className="ac-note__emoji"><MessageCircle size={15} strokeWidth={2.2} /></span>
           AI가 아이의 일정·안전 대화를 도울 때 크레딧 1회가 사용돼요. 부모님이 충전해 주세요.
         </div>
 
@@ -278,7 +278,7 @@ export function AiCredit() {
 
         {/* AI 친구 켜기 + 하루 대화 한도(부모 설정 — 꺼져 있으면 아이가 대화 불가) */}
         <div className="ac-auto">
-          <span className="ac-auto__icon">🤖</span>
+          <span className="ac-auto__icon"><Bot size={20} strokeWidth={2.2} color="var(--mint-text)" /></span>
           <span className="ac-auto__main">
             <span className="ac-auto__title">AI 친구 대화 허용</span>
             <span className="ac-auto__sub">
@@ -299,7 +299,7 @@ export function AiCredit() {
         </div>
         {aiEnabled && (
           <div className="ac-auto" style={{ marginTop: -4 }}>
-            <span className="ac-auto__icon">🔢</span>
+            <span className="ac-auto__icon"><Hash size={20} strokeWidth={2.2} color="var(--mint-text)" /></span>
             <span className="ac-auto__main">
               <span className="ac-auto__title">하루 대화 한도</span>
               <span className="ac-auto__sub">무료 포함분 기준 · 초과분은 크레딧 사용</span>
@@ -458,7 +458,7 @@ export function AiCredit() {
 
         {/* 잔액 부족 알림 — 자동 결제는 하지 않고, 보호자 확인 후 직접 충전하도록 안내한다. */}
         <div className="ac-auto">
-          <span className="ac-auto__icon">🔔</span>
+          <span className="ac-auto__icon"><BellRing size={20} strokeWidth={2.2} color="var(--mint-text)" /></span>
           <span className="ac-auto__main">
             <span className="ac-auto__title">잔액 부족 알림</span>
             <span className="ac-auto__sub">

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Camera, ChevronLeft, ChevronRight, Link2 } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { DEFAULT_CHILD_AVATAR } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
@@ -599,7 +599,7 @@ function TeacherStep({ onBack, onSave, show }: { onBack: () => void; onSave: () 
       </div>
 
       <div className="ob-teacher-note">
-        <span className="ob-teacher-note__ic">🔗</span>
+        <span className="ob-teacher-note__ic"><Link2 size={18} strokeWidth={2.2} /></span>
         <span className="ob-teacher-note__tx">
           등록 후 <b>부모님 전화번호</b>로 학생을 초대해요. 부모님이 승인하면 반 일정·알림장이 아이 캘린더에
           연결됩니다. 개인정보는 최소한만 안전하게 보관해요.
@@ -1068,7 +1068,7 @@ function PairingStep({
         <span className="ob-qr-corner ob-qr-corner--bl" />
         <span className="ob-qr-corner ob-qr-corner--br" />
         <span className="ob-qr-scan" />
-        <span className="ob-qr-cta">📷 탭해서 QR 스캔</span>
+        <span className="ob-qr-cta"><Camera size={15} strokeWidth={2.4} /> 탭해서 QR 스캔</span>
       </button>
 
       <div className="ob-pair-hint">QR이 없다면 코드를 직접 입력</div>

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { BarChart3, ChevronLeft, LockKeyhole } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useActiveChild } from "@/app/activeChild";
 import { useEntitlement } from "@/queries/useEntitlement";
@@ -77,7 +77,9 @@ export function WeeklyFamilyReport() {
       <div className="wr-content">
         {!activeChild ? (
           <section className="hy-card wr-empty">
-            <BarChart3 size={36} strokeWidth={2.1} />
+            <div className="wr-empty__icon">
+              <img src={asset("ui/chart-3d.webp")} alt="" />
+            </div>
             <b>선택된 아이가 없어요</b>
             <p>부모 홈에서 아이를 선택하면 주간 흐름을 확인할 수 있어요.</p>
             <button type="button" className="wr-primary hy-press" onClick={() => navigate("/parent/home")}>
@@ -88,7 +90,7 @@ export function WeeklyFamilyReport() {
           <>
             <section className="wr-hero">
               <div className="wr-hero__icon">
-                <BarChart3 size={30} strokeWidth={2.2} />
+                <img src={asset("ui/chart-3d.webp")} alt="" />
               </div>
               <div className="wr-hero__body">
                 <div className="wr-hero__eyebrow">{activeChild.name} · {rangeLabel(weekDateKeys)}</div>
@@ -108,7 +110,7 @@ export function WeeklyFamilyReport() {
             ) : !allowed ? (
               <>
                 <section className="hy-card wr-lock">
-                  <LockKeyhole size={28} strokeWidth={2.2} />
+                  <img className="wr-lock__icon" src={asset("ui/lock-3d.webp")} alt="" />
                   <div>
                     <b>{lockMessageFor(FEATURES.WEEKLY_REPORT)}</b>
                     <p>일정과 SOS는 무료로 시작하고, 더 자세한 주간 흐름은 프리미엄에서 확인하세요.</p>
@@ -122,7 +124,7 @@ export function WeeklyFamilyReport() {
                     { label: "이번 주 일정 흐름", icon: "ui/calendar-heart.webp" },
                     { label: "자주 머문 장소", icon: "ui/pin-heart.webp" },
                     { label: "안전 알림 요약", icon: "ui/bell.webp" },
-                    { label: "AI 요약", icon: "ui/ai-robot.png" },
+                    { label: "AI 요약", icon: "ui/ai-robot.webp" },
                   ].map(({ label, icon }) => (
                     <div key={label} className="hy-card wr-preview__item">
                       <span>

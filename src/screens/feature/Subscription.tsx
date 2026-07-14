@@ -38,7 +38,7 @@ import "./Subscription.css";
 const BENEFITS = [
   { icon: "ui/pin-heart.webp", t: "실시간 위치 확인", s: "아이의 현재 위치와 이동 흐름을 더 빠르게 확인해요" },
   { icon: "ui/menu-child-tracker.webp", t: "다자녀 안심 관리", s: "두 아이까지 일정과 위치를 함께 관리해요" },
-  { icon: "ui/ai-robot.png", t: "AI 하루 요약", s: "일정·위치·안전 기록을 AI가 정리해 드려요" },
+  { icon: "ui/ai-robot.webp", t: "AI 하루 요약", s: "일정·위치·안전 기록을 AI가 정리해 드려요" },
   { icon: "ui/menu-remote-audio.webp", t: "주변 소리 듣기", s: "위급할 때 1분 동안 아이 주변 상황을 확인해요" },
   { icon: "ui/shield-heart.webp", t: "일정·장소 무제한", s: "학원, 학교, 준비물, 장소를 넉넉하게 등록해요" },
 ] as const;

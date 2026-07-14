@@ -423,7 +423,13 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 ## 디자인 규칙 (2026-07-10)
 
 - UI 요소 아이콘은 유니코드 이모지 대신 **3D 에셋(public/assets)** 또는 lucide 라인 아이콘. 색 칩 위에는 알파 채널 있는 에셋만
-  (`status/*.webp`·`ui/mic-lavender.webp`는 흰 배경 불투명 — 사용 금지 목록). 일정 아이콘은 `resolveEventCharacter`(제목→cat/*.webp).
+  (`status/*.webp`는 흰 배경 불투명 — 사용 금지 목록. `ui/mic-lavender.webp`는 2026-07-14 투명본으로 교체돼 사용 가능).
+  일정 아이콘은 `resolveEventCharacter`(제목→cat/*.webp).
+- ★아이콘 언어 통일(2026-07-14): 기능 타일·색 칩·히어로·안전지표 = 3D webp(menu-*/place-* 기준), 텍스트 행 인라인·유틸 =
+  lucide. 진한 선 스타일 플랫 SVG(`ui/icon-*.svg`) 재유입 금지. 안전지표 4칸 = battery/clock-3d/lock-open-3d/wifi-3d.webp,
+  프리미엄 잠금 = lock-3d.webp, 주간리포트 히어로 = chart-3d.webp. 새 3D 아이콘은 원본 팩 `assets/05-icons/*` 변환 우선,
+  없으면 클레이 스타일 SVG→sharp 렌더(알파 투명 256px). 화면 내 형제 요소와의 일관성이 우선(설정/알림 색 칩 lucide+data-tone
+  유지). 가드=`tests/iconConsistency.test.mjs`.
 - 리포트류 화면(안심/주간)은 구독 화면과 같은 3D 타일 언어를 유지한다. `loggingBehavior:"none"` 유지(토큰 로그 차단 — "production"은 반대 의미).
 - ★공용 컴포넌트에 인라인 `style` 로 배치(position/inset/size)를 주지 않는다. `KakaoMap` 래퍼의 인라인 `position:relative` 가
   `.pl-map{position:absolute;inset:0}` 을 덮어써 **부모모드 지도가 통째로 사라진 사고**(2026-07-10)가 있었다. 배치는 소비 화면

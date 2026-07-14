@@ -5,7 +5,7 @@
  * 현재 위치 실패 시 폴백: 집(is_home) > 첫 저장장소 > 서울 시청.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MapPin, X } from "lucide-react";
+import { Home, MapPin, X } from "lucide-react";
 import { KakaoMap, type MapPlace } from "@/components/KakaoMap";
 import { loadKakaoMaps } from "@/lib/kakaoMap";
 import type { SavedPlace } from "@/lib/api/endpoints/location";
@@ -170,7 +170,8 @@ export function MapPickerSheet({
                 className={`mps-saved__chip hy-press${pickedName === p.name ? " mps-saved__chip--on" : ""}`}
                 onClick={() => pickSaved(p)}
               >
-                {p.is_home ? "🏠" : "📍"} {p.name}
+                {p.is_home ? <Home size={13} strokeWidth={2.4} /> : <MapPin size={13} strokeWidth={2.4} />}
+                {p.name}
               </button>
             ))}
           </div>

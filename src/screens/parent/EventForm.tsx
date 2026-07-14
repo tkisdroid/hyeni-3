@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronLeft, Map as MapIcon } from "lucide-react";
+import { ChevronLeft, Home, Map as MapIcon, MapPin } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useActiveChild } from "@/app/activeChild";
@@ -621,7 +621,7 @@ export function EventForm() {
           {savedPlaces.length > 0 && (
             <div className="ef-chips" style={{ marginBottom: 8 }}>
               {savedPlaces.map((p) => {
-                const label = p.is_home ? `🏠 ${p.name}` : `📍 ${p.name}`;
+                const PlaceIcon = p.is_home ? Home : MapPin;
                 const active = place.trim() === p.name;
                 return (
                   <button
@@ -647,7 +647,8 @@ export function EventForm() {
                       selectSavedPlace(p);
                     }}
                   >
-                    {label}
+                    <PlaceIcon size={13} strokeWidth={2.4} style={{ verticalAlign: -2, marginRight: 4 }} />
+                    {p.name}
                   </button>
                 );
               })}
@@ -682,7 +683,10 @@ export function EventForm() {
                       onClick={() => selectSavedPlace(p)}
                     >
                       <span className="ef-place-option-name">
-                        {p.is_home ? "🏠" : "📍"} {p.name}
+                        {p.is_home
+                          ? <Home size={13} strokeWidth={2.4} style={{ verticalAlign: -2, marginRight: 4 }} />
+                          : <MapPin size={13} strokeWidth={2.4} style={{ verticalAlign: -2, marginRight: 4 }} />}
+                        {p.name}
                       </span>
                       {p.location.address && (
                         <span className="ef-place-option-address">{p.location.address}</span>

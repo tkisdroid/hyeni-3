@@ -412,6 +412,16 @@
   반투명은 `background: rgba(...)` 가 아니라 `background:#fff` + `opacity` 로 줘야 겹친 덩이의 이음선이 안 생긴다.
 - 원시 유니코드 이모지를 버튼 아이콘으로 쓰지 않는다(시스템 폰트라 옆 아이콘과 크기·베이스라인이 어긋난다).
   lucide 아이콘 또는 3D webp 에셋 중 하나로 통일한다. 가드=`tests/menuNavigationConsistency.test.mjs`.
+- ★아이콘 언어 통일(2026-07-14 TK 제보 "안전지표·위치 아이콘이 다른 아이콘과 다름" 수정): **기능 타일·색 칩·히어로·
+  안전지표 = 소프트 3D webp**(바로가기 menu-*.webp·장소 place-*.webp 가 기준), **텍스트 행 인라인(14~19px)·유틸리티 =
+  lucide**(주변 텍스트/형제 lucide와 색·크기 정합). 진한 선(line) 스타일 플랫 SVG(`ui/icon-*.svg`)는 재유입 금지 —
+  실제로 이전 작업이 lucide를 플랫 SVG `<img>`로 일괄 교체해 파스텔 3D 앱에서 이질감을 만든 실사고. 안전지표 4칸은
+  battery.webp 와 같은 3D 언어(`clock-3d`/`lock-open-3d`/`wifi-3d.webp`), 프리미엄 잠금=`lock-3d.webp`,
+  주간리포트 히어로=`chart-3d.webp`. 시계·와이파이는 원본 팩 `assets/05-icons/system/*`에서 변환했고 자물쇠·차트는
+  클레이 스타일 SVG→sharp 렌더로 생성(둘 다 알파 투명 256px 필수). `ai-robot`·`mic-lavender`는 투명 webp만 남김
+  (png 삭제 — 기존 mic-lavender.webp 는 흰 배경 불투명이었는데 투명본으로 교체돼 색 칩 위 사용 가능해짐).
+  화면 내 형제 요소와의 일관성이 앱 전체 방향보다 우선한다(설정/알림 색 칩은 lucide+data-tone 유지 — 가드 테스트가 강제).
+  가드=`tests/iconConsistency.test.mjs`.
 - ★조용한 에러 금지 안전망 3겹(2026-07-11 도입, 가드=`tests/globalErrorSafety.test.mjs`):
   ①렌더 크래시 → `app/ErrorBoundary.tsx`(전 라우트 errorElement + RootErrorBoundary, `.hy-crash` 복구 화면.
   DEV 전용 `#/crash-test`로 검증) ②uncaught/rejection → `app/GlobalErrorListeners.tsx` 폴백 토스트

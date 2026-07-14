@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Check, Sparkles, Mic, Keyboard, Image as ImageIcon, type LucideIcon } from "lucide-react";
+import { Camera, ChevronLeft, Check, Sparkles, Mic, Keyboard, Image as ImageIcon, type LucideIcon } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { resolveEventVisualAsset } from "@/transform/placeVisual";
 import { useToast } from "@/app/toast";
@@ -294,7 +294,7 @@ export function AiSchedule() {
             >
               <span className="ais-mic__ring" />
               <span className="ais-mic__inner" />
-              <img className="ais-mic__img" src={asset("ui/mic-lavender.png")} alt="" />
+              <img className="ais-mic__img" src={asset("ui/mic-lavender.webp")} alt="" />
             </button>
             <div className="ais-wave" data-on={listening ? "true" : "false"}>
               {WAVE_BARS.map((b) => (
@@ -314,7 +314,7 @@ export function AiSchedule() {
               <div className="ais-bubble">예) “내일 오후 4시에 태권도 일정 추가해줘”</div>
             )}
             <div className="ais-hint">
-              <span className="ais-hint__ico">🎙️</span>
+              <span className="ais-hint__ico"><Mic size={15} strokeWidth={2.2} /></span>
               말한 내용에서 추가할 일정의 날짜와 시간을 정리해요
             </div>
           </div>
@@ -332,7 +332,7 @@ export function AiSchedule() {
               />
             </div>
             <div className="ais-hint">
-              <span className="ais-hint__ico">✨</span>
+              <span className="ais-hint__ico"><Sparkles size={15} strokeWidth={2.2} /></span>
               자유롭게 적으면 AI가 추가할 일정의 날짜와 시간을 정리해요
             </div>
           </div>
@@ -380,7 +380,7 @@ export function AiSchedule() {
               </button>
             )}
             <div className="ais-hint">
-              <span className="ais-hint__ico">📸</span>
+              <span className="ais-hint__ico"><Camera size={15} strokeWidth={2.2} /></span>
               AI가 사진에서 일정을 찾습니다. 크레딧이 사용될 수 있어요. 사진은 일정 후보를 찾기 위해 서버로 전송돼요.
             </div>
           </div>
@@ -390,7 +390,7 @@ export function AiSchedule() {
         {hasResult && drafts && (
           <>
             <div className="ais-reslabel">
-              <span className="ais-reslabel__badge">✨</span>
+              <span className="ais-reslabel__badge"><Sparkles size={13} strokeWidth={2.2} color="var(--lav-text)" /></span>
               <span className="ais-reslabel__text">
                 {count > 1
                   ? `AI 인식 결과 · ${count}건을 모두 확인해 주세요`

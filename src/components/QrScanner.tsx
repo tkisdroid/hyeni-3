@@ -6,6 +6,7 @@
  * 아이 온보딩에서 쓰므로 문구는 반말(아이 모드 규칙).
  */
 import { useEffect, useRef, useState } from "react";
+import { Camera } from "lucide-react";
 import { ensureQrCameraPermission, openCameraPermissionSettings } from "@/lib/native/cameraPermission";
 import "./QrScanner.css";
 
@@ -153,7 +154,7 @@ export function QrScanner({
         <button type="button" className="qrs-close hy-press" onClick={onClose}>
           ← 닫기
         </button>
-        <span className="qrs-title">📷 QR 코드 스캔</span>
+        <span className="qrs-title"><Camera size={16} strokeWidth={2.4} /> QR 코드 스캔</span>
       </div>
 
       <div className="qrs-body">

@@ -5,6 +5,7 @@
  * 한 번 열어보면 사라진다("열어봤다"는 이 기기에만 저장 — 서버에 읽음 컬럼이 없다).
  */
 import { useMemo, useState } from "react";
+import { Lock } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
@@ -94,7 +95,7 @@ export function StickerBook() {
                 <span className="sb-slot__label">{slot.label}</span>
                 {!slot.got && (
                   <span className="sb-slot__lock" aria-hidden="true">
-                    🔒
+                    <Lock size={14} strokeWidth={2.4} color="var(--fg-muted)" />
                   </span>
                 )}
               </button>

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Battery,
   AlertTriangle,
   BellRing,
   ChevronLeft,
@@ -13,8 +12,6 @@ import {
   PackageOpen,
   RefreshCw,
   ShieldCheck,
-  Wifi,
-  LockOpen,
 } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
@@ -581,22 +578,22 @@ export function DailySafetyReport() {
               </div>
               <div className="dr-device-grid">
                 <div>
-                  <Battery size={17} strokeWidth={2.2} />
+                  <img src={asset("ui/battery.webp")} alt="" />
                   <span>배터리</span>
                   <b>{device.batteryLabel}</b>
                 </div>
                 <div>
-                  <LockOpen size={17} strokeWidth={2.2} />
+                  <img src={asset("ui/lock-open-3d.webp")} alt="" />
                   <span>잠금해제</span>
                   <b>{device.unlockCountLabel}</b>
                 </div>
                 <div>
-                  <Wifi size={17} strokeWidth={2.2} />
+                  <img src={asset("ui/wifi-3d.webp")} alt="" />
                   <span>네트워크</span>
                   <b>{device.networkLabel}</b>
                 </div>
                 <div>
-                  <Clock3 size={17} strokeWidth={2.2} />
+                  <img src={asset("ui/clock-3d.webp")} alt="" />
                   <span>마지막 확인</span>
                   <b>{device.freshnessLabel}</b>
                 </div>
@@ -670,7 +667,7 @@ export function DailySafetyReport() {
 
             <button type="button" className="hy-card dr-weekly hy-press" onClick={() => navigate("/day-summary")}>
               <span className="dr-weekly__icon">
-                <img src={asset("ui/ai-robot.png")} alt="" />
+                <img src={asset("ui/ai-robot.webp")} alt="" />
               </span>
               <span>
                 <b>AI 하루 요약 보기</b>

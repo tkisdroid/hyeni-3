@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, MapPin, Copy } from "lucide-react";
+import { Plus, MapPin, Copy, CalendarDays } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useTeacherClasses, useRoster, useClassSchedule, useCopyClassWeekSchedule } from "@/queries/useTeacher";
@@ -233,7 +233,7 @@ export function TeacherTimetable() {
 
             {/* 반 일정은 알림장으로 추가하고, 현재 주간은 서버에서 다음 주로 복사한다. */}
             <div className="tt-note">
-              <span className="tt-note__ico">🗓️</span>
+              <span className="tt-note__ico"><CalendarDays size={15} strokeWidth={2.2} /></span>
               <span>
                 반 일정은 아이별 캘린더에서 모여요. 새 일정은 <b>‘일정 추가’(알림장)</b>로 보내면
                 학부모 캘린더에 함께 반영돼요.

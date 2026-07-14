@@ -493,7 +493,7 @@ export function MemoChat() {
                     className={`mc-bubble mc-bubble--${m.mine ? "mine" : "peer"} mc-bubble--loc hy-press`}
                     onClick={() => openLocation(m)}
                   >
-                    <span className="mc-loc-ic">📍</span>
+                    <span className="mc-loc-ic"><MapPin size={22} strokeWidth={2.2} /></span>
                     <span className="mc-loc-main">
                       <span className="mc-loc-title">위치 공유</span>
                       <span className="mc-loc-addr">{m.location.address || "지도에서 보기"}</span>

@@ -7,7 +7,7 @@ import "./TrialLock.css";
 // 페이월 혜택 아이콘 — 3D 에셋(구독 화면과 동일 시각 언어).
 const PREMIUM_PERKS = [
   { icon: "ui/pin-heart.webp", label: "실시간 위치 · 이동 경로 확인" },
-  { icon: "ui/ai-robot.png", label: "AI 하루 요약 · 주간 가족 리포트" },
+  { icon: "ui/ai-robot.webp", label: "AI 하루 요약 · 주간 가족 리포트" },
   { icon: "ui/menu-child-tracker.webp", label: "두 아이 · 일정과 장소 넉넉하게" },
 ] as const;
 

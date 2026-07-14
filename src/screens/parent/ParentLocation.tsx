@@ -5,7 +5,7 @@ import type {
   TouchEvent as ReactTouchEvent,
 } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { AlertTriangle, Lock, Crown, Navigation, RefreshCw } from "lucide-react";
+import { AlertTriangle, Crown, Navigation, RefreshCw } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
@@ -586,7 +586,7 @@ export function ParentLocation() {
       {histLocked && (
         <div className="pl-lock">
           <div className="pl-lock__ring">
-            <Lock size={30} strokeWidth={2.2} color="var(--gold-600)" />
+            <img src={asset("ui/lock-3d.webp")} alt="" className="pl-lock__icon" />
           </div>
           <div className="pl-lock__title">오늘 이동경로는 프리미엄이에요</div>
           <div className="pl-lock__sub">
@@ -688,7 +688,7 @@ export function ParentLocation() {
       {isLocked && (
         <div className="pl-lock">
           <div className="pl-lock__ring">
-            <Lock size={30} strokeWidth={2.2} color="var(--gold-600)" />
+            <img src={asset("ui/lock-3d.webp")} alt="" className="pl-lock__icon" />
           </div>
           <div className="pl-lock__title">실시간 위치는 프리미엄이에요</div>
           <div className="pl-lock__sub">

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, Bell, Settings, ChevronRight, Clock, Wifi, Check, MapPin, Smartphone, Mic, Keyboard, Image as ImageIcon, LockOpen, RefreshCw } from "lucide-react";
+import { AlertTriangle, Bell, Settings, ChevronRight, Check, MapPin, Smartphone, Mic, Keyboard, Image as ImageIcon, RefreshCw } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
@@ -489,7 +489,7 @@ export function ParentHome() {
         <div className="ph-ai">
           <div className="ph-ai__head">
             <span className="ph-ai__icon">
-              <img src={asset("ui/mic-lavender.png")} alt="" />
+              <img src={asset("ui/mic-lavender.webp")} alt="" />
             </span>
             <span style={{ flex: 1, minWidth: 0 }}>
               <span className="ph-ai__title">AI로 일정 추가</span>
@@ -667,8 +667,8 @@ export function ParentHome() {
                 </span>
               </div>
               <div className="ph-metric">
-                <span className="ph-metric__icon" style={{ background: "var(--blue-soft)" }}>
-                  <Clock size={22} strokeWidth={2} color="var(--blue-500)" />
+                <span className="ph-metric__icon" style={{ background: "var(--rose-soft)" }}>
+                  <img src={asset("ui/clock-3d.webp")} alt="" />
                 </span>
                 <span style={{ minWidth: 0 }}>
                   <span className="ph-metric__k">화면시간</span>
@@ -677,7 +677,7 @@ export function ParentHome() {
               </div>
               <div className="ph-metric">
                 <span className="ph-metric__icon" style={{ background: "var(--cream-soft)" }}>
-                  <LockOpen size={22} strokeWidth={2} color="var(--gold-600)" />
+                  <img src={asset("ui/lock-open-3d.webp")} alt="" />
                 </span>
                 <span style={{ minWidth: 0 }}>
                   <span className="ph-metric__k">잠금해제</span>
@@ -686,7 +686,7 @@ export function ParentHome() {
               </div>
               <div className="ph-metric">
                 <span className="ph-metric__icon" style={{ background: "var(--lav-soft)" }}>
-                  <Wifi size={22} strokeWidth={2} color="var(--lav-600)" />
+                  <img src={asset("ui/wifi-3d.webp")} alt="" />
                 </span>
                 <span style={{ minWidth: 0 }}>
                   <span className="ph-metric__k">네트워크</span>

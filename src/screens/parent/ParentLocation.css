@@ -597,6 +597,11 @@
   justify-content: center;
   box-shadow: 0 12px 28px -12px rgba(224, 138, 30, 0.5);
 }
+.pl-lock__icon {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
 .pl-lock--error .pl-lock__ring {
   background: var(--cream-soft);
   box-shadow: 0 12px 28px -12px rgba(178, 106, 0, 0.42);

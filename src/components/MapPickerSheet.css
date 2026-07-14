@@ -85,6 +85,9 @@
 }
 .mps-saved__chip {
   flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 8px 13px;
   border-radius: 999px;
   background: #fff;

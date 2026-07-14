@@ -24,6 +24,9 @@
   --press: 0.95;
 }
 .qrs-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 16px;
   font-weight: 800;
   color: #fff;
