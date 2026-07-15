@@ -8,7 +8,8 @@ import { MapPickerSheet } from "@/components/MapPickerSheet";
 import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "@/queries/useFamily";
 import { useSavedPlaces } from "@/queries/useLocation";
-import { useEvents, useSaveEventsWithChildrenBatch } from "@/queries/useSchedule";
+import { useAddEventSupplies, useEvents, useSaveEventsWithChildrenBatch } from "@/queries/useSchedule";
+import { parseSupplyLabelInput } from "@/transform/eventSupplies";
 import { useEntitlement } from "@/queries/useEntitlement";
 import {
   notifOverrideToReminderSelection,
@@ -245,6 +246,36 @@ export function EventForm() {
     notifOverrideToReminderSelection(editing?.notif_override),
   );
   const [memo, setMemo] = useState(() => editing?.memo ?? "");
+  // ── 준비물(가방 챙기기 연동, 2026-07-16) ──
+  // 저장 시 배정된 아이들의 그 날짜 daily_supplies(prep)에 추가돼 부모 홈 준비물과
+  // 아이 홈 '가방 챙기기'에 실시간 반영된다. 수정 모드는 "추가"만 한다(기존 준비물과
+  // 이 일정의 연결 정보가 서버에 없어 삭제/이동은 준비물 화면에서 한다).
+  const addEventSupplies = useAddEventSupplies();
+  const [supplyInput, setSupplyInput] = useState("");
+  const [supplyLabels, setSupplyLabels] = useState<string[]>([]);
+
+  const addSupplyChips = () => {
+    const parsed = parseSupplyLabelInput(supplyInput);
+    if (parsed.length === 0) return;
+    setSupplyLabels((prev) => {
+      const seen = new Set(prev.map((l) => l.replace(/\s+/g, "").toLowerCase()));
+      return [...prev, ...parsed.filter((l) => !seen.has(l.replace(/\s+/g, "").toLowerCase()))];
+    });
+    setSupplyInput("");
+  };
+
+  const removeSupplyChip = (label: string) =>
+    setSupplyLabels((prev) => prev.filter((l) => l !== label));
+
+  /** 칩 + 아직 '추가'를 안 누른 입력창 잔여 텍스트까지 합친 최종 준비물 라벨. */
+  const pendingSupplyLabels = () => {
+    const seen = new Set(supplyLabels.map((l) => l.replace(/\s+/g, "").toLowerCase()));
+    return [
+      ...supplyLabels,
+      ...parseSupplyLabelInput(supplyInput).filter((l) => !seen.has(l.replace(/\s+/g, "").toLowerCase())),
+    ];
+  };
+
   const createBatchIdentityRef = useRef<{
     occurrenceKey: string;
     seriesId: string | null;
@@ -383,6 +414,30 @@ export function EventForm() {
 
     setSeriesScopePrompt(null);
     setBusy(true);
+    // 준비물 대상: 배정 아이(가족 공유면 모든 아이 — 일정이 모든 아이에게 표시되는 것과
+    // 같은 의미). 폴백 아님: familyAll 은 사용자가 배정을 비워 명시적으로 고른 상태다.
+    const labelsToAdd = pendingSupplyLabels();
+    const supplyChildIds = familyAll ? children.map((c) => c.id) : childIds;
+    const applyEventSupplies = async (supplyDateKeys: string[]) => {
+      if (labelsToAdd.length === 0 || supplyChildIds.length === 0) return null;
+      try {
+        return await addEventSupplies.mutateAsync({
+          childIds: supplyChildIds,
+          dateKeys: supplyDateKeys,
+          labels: labelsToAdd,
+        });
+      } catch {
+        return { added: 0, dropped: 0, failedRows: supplyChildIds.length * supplyDateKeys.length };
+      }
+    };
+    // 일정 저장은 성공했고 준비물만 문제면, 저장을 되돌리지 않고 정직하게 안내한다.
+    const composeSaveToast = (base: string, res: { added: number; dropped: number; failedRows: number } | null) => {
+      if (!res) return base;
+      if (res.failedRows > 0) return `${base} · 준비물 일부는 저장하지 못했어요`;
+      if (res.dropped > 0) return `${base} · 준비물은 하루 8개까지만 담았어요`;
+      if (res.added > 0) return `${base} · 준비물도 가방에 담았어요`;
+      return base;
+    };
     try {
       if (mode === "edit" && editing) {
         const sourceEvents = uniqueEventsById([...(eventsQuery.data ?? []), editing]);
@@ -401,10 +456,16 @@ export function EventForm() {
             expectedUpdatedAt: target.updated_at ?? null,
           })),
         );
+        const supplyRes = await applyEventSupplies(
+          targets.map((target) => (target.id === editing.id ? dateKey : target.date_key)),
+        );
         show(
-          targets.length > 1
-            ? `이 일정과 이후 반복 일정 ${targets.length - 1}개를 수정했어요`
-            : "일정을 수정했어요",
+          composeSaveToast(
+            targets.length > 1
+              ? `이 일정과 이후 반복 일정 ${targets.length - 1}개를 수정했어요`
+              : "일정을 수정했어요",
+            supplyRes,
+          ),
           "🗓️",
         );
       } else {
@@ -431,7 +492,12 @@ export function EventForm() {
             expectedUpdatedAt: null,
           })),
         );
-        show(keys.length > 1 ? `${keys.length}개 일정을 저장했어요` : "일정을 저장했어요", "🗓️");
+        // 반복 일정이면 회차 날짜마다 그 날 준비물이 필요하므로 occurrence 전체에 담는다.
+        const supplyRes = await applyEventSupplies(keys);
+        show(
+          composeSaveToast(keys.length > 1 ? `${keys.length}개 일정을 저장했어요` : "일정을 저장했어요", supplyRes),
+          "🗓️",
+        );
       }
       navigate(-1);
     } catch (e) {
@@ -814,14 +880,59 @@ export function EventForm() {
           {prealarm === "none" && <div className="ef-note">이 일정의 사전 알림을 보내지 않아요</div>}
         </div>
 
+        {/* 준비물 — 저장하면 배정 아이의 '가방 챙기기'(daily_supplies)에 함께 담긴다 */}
+        <div>
+          <div className="ef-label">준비물</div>
+          <div className="ef-supply-row">
+            <input
+              className="ef-input"
+              value={supplyInput}
+              onChange={(e) => setSupplyInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addSupplyChips();
+                }
+              }}
+              placeholder="예) 실내화, 물통 (쉼표로 여러 개)"
+              aria-label="준비물 입력"
+            />
+            <button
+              type="button"
+              className="ef-supply-add hy-press"
+              onClick={addSupplyChips}
+              disabled={supplyInput.trim().length === 0}
+            >
+              추가
+            </button>
+          </div>
+          {supplyLabels.length > 0 && (
+            <div className="ef-supply-chips">
+              {supplyLabels.map((label) => (
+                <button
+                  key={label}
+                  type="button"
+                  className="ef-supply-chip hy-press"
+                  aria-label={`준비물 ${label} 빼기`}
+                  onClick={() => removeSupplyChip(label)}
+                >
+                  {label}
+                  <span aria-hidden="true">×</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="ef-note">저장하면 아이 홈 ‘가방 챙기기’와 부모 홈 준비물에 실시간으로 담겨요</div>
+        </div>
+
         {/* 메모 */}
         <div>
-          <div className="ef-label">메모 · 준비물</div>
+          <div className="ef-label">메모</div>
           <textarea
             className="ef-textarea"
             value={memo}
             onChange={(e) => setMemo(e.target.value)}
-            placeholder="예) 악보, 물통"
+            placeholder="예) 선생님께 전달할 내용"
             rows={3}
           />
         </div>

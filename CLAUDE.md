@@ -454,6 +454,14 @@
   스타일 문제로 오판하기 쉽다 — 높이가 CSS 와 다르게 렌더되면 flex 압축부터 의심.
 - 준비물 토글은 낙관적 업데이트(useUpsertDailySupply onMutate) — rebuildChildDay 가 GET→PUT→GET 이라
   서버 바인딩만으로는 체크가 1~3초 얼었다. 롤백은 훅, 실패 문구는 콜사이트(없으면 announceFallbackToast 450ms 양보).
+- 일정 등록 준비물 연동(2026-07-16 TK 요청): EventForm 준비물 칩 입력 → 저장 시 배정 아이들의 occurrence
+  날짜별 daily_supplies(prep)에 병합(`useAddEventSupplies` + `transform/eventSupplies`). (아이,날짜) 쌍은 서로
+  다른 서버 행이라 병렬 안전 — 같은 행 병렬 재작성 금지 규칙과 충돌하지 않는다. 병합은 라벨 정규화(공백·대소문자
+  무시) 중복 제거로 재저장 멱등, 하루 8개 상한 초과는 dropped 로 집계해 토스트로 정직 안내("하루 8개까지만
+  담았어요"). 준비물 저장 실패는 일정 저장을 되돌리지 않고 "준비물 일부는 저장하지 못했어요"로 안내. 상한 상수
+  단일 출처=`transform/eventSupplies.ts`(endpoints/schedule 이 역 import — node 테스트가 endpoints 체인 없이
+  import 하기 위함). 부모 홈 준비물·아이 홈 가방 챙기기는 기존 `daily_supplies` WS 브릿지로 실시간 반영.
+  회귀=`tests/eventSupplies.test.ts`.
 - 안전지표 앱 사용(2026-07-11 아침 실발사 검증): razr 에 Usage Access(appops GET_USAGE_STATS)를 adb 로 allow 함
   (제품 기능 활성화 — 이전엔 미부여라 타 앱 데이터가 아예 없었다). `isSystemSurfacePackage` 필터 양성 대조 실증:
   원시 이벤트에 launcher3·카카오톡 존재 + 마지막 전경=런처 상태에서 리포트 recentApp=혜니캘린더,

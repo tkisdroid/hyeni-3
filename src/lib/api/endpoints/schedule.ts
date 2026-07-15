@@ -209,8 +209,10 @@ export interface SupplyItem {
 
 // 서버 cleanText 가 각 컬럼을 500자로 자른다. 잘림→JSON 깨짐을 막으려 항목 수/라벨을
 // 보수적으로 제한하고, 인코딩 결과가 SAFE_LEN 을 넘으면 뒤 항목부터 버린다.
-const MAX_ITEMS_PER_KIND = 8;
-const MAX_LABEL_LEN = 20;
+// 상한 상수의 단일 출처는 transform/eventSupplies(일정 등록 준비물 병합과 공유 계약).
+import { MAX_SUPPLY_ITEMS_PER_KIND, MAX_SUPPLY_LABEL_LEN } from "../../../transform/eventSupplies";
+const MAX_ITEMS_PER_KIND = MAX_SUPPLY_ITEMS_PER_KIND;
+const MAX_LABEL_LEN = MAX_SUPPLY_LABEL_LEN;
 const SAFE_LEN = 460;
 
 /** 짧은 항목 id(6자 base36). */

@@ -338,3 +338,49 @@
   flex: 1;
   min-width: 0;
 }
+
+/* ── 준비물(가방 챙기기 연동) ─────────────────────────────────────────────── */
+.ef-supply-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.ef-supply-row .ef-input {
+  flex: 1;
+  min-width: 0;
+}
+.ef-supply-add {
+  flex: none;
+  padding: 0 16px;
+  border-radius: 14px;
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+  font-size: 14px;
+  font-weight: 800;
+  --press: 0.96;
+}
+.ef-supply-add:disabled {
+  opacity: 0.45;
+}
+.ef-supply-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.ef-supply-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: var(--bg-press);
+  color: var(--fg-body);
+  font-size: 13px;
+  font-weight: 700;
+  --press: 0.95;
+}
+.ef-supply-chip span {
+  color: var(--fg-faint);
+  font-weight: 800;
+}

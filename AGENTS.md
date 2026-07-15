@@ -60,6 +60,10 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   준비물 저장 대상은 `src/transform/dailySupplyScope.ts`의 `resolveDailySupplyChildMemberId`가 검증하며,
   부모 세션에서 명시 대상이 없으면 첫 아이로 폴백하지 않고 실패시킨다.
   아이 설정 화면도 본인 `user_id`가 매칭된 child member만 사용하고 첫 아이로 대체하지 않는다.
+  일정 등록 준비물(2026-07-16): EventForm 준비물 칩은 저장 시 배정 아이들의 occurrence 날짜별
+  daily_supplies(prep)에 병합된다(`useAddEventSupplies`+`transform/eventSupplies`, 라벨 정규화 중복 제거로
+  재저장 멱등, 하루 8개 초과는 dropped 집계 후 정직 안내). (아이,날짜) 쌍은 서로 다른 행이라 병렬 안전.
+  부모 홈·아이 홈 반영은 기존 daily_supplies WS 브릿지. 회귀=`tests/eventSupplies.test.ts`.
 - **date_key 함정**: 월이 **0-indexed 비패딩**("2026-6-5" = 7월 5일). 반드시 `src/transform/dateKey.ts` 경유.
 - **메모 = 아이별 1:1 스레드**: fetch/send 에 childId(member id) 필수, `qk.memoReplies` 키에 childId 포함.
   리치 메시지 = content 마커 `[[img:R2key]]` / `[[loc:lat,lng|주소]]` (`src/transform/memoView.ts`).

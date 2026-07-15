@@ -13,6 +13,7 @@ import { announceFallbackToast } from "@/lib/globalToast";
 import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "./useFamily";
 import { resolveDailySupplyChildMemberId } from "@/transform/dailySupplyScope";
+import { mergeSupplyLabels } from "@/transform/eventSupplies";
 import {
   fetchEvents,
   fetchDailySupplies,
@@ -210,6 +211,60 @@ export function useUpsertDailySupply() {
       for (const [key, data] of ctx?.snapshots ?? []) qc.setQueryData(key, data);
       // 메시지는 콜사이트 토스트가 담당 — 콜사이트가 안 달았을 때만 이 폴백이 뜬다(450ms 양보).
       announceFallbackToast("준비물을 저장하지 못했어요. 다시 시도해 주세요", "⚠️");
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["dailySupplies", familyId ?? ""] }),
+  });
+}
+
+/**
+ * 일정 등록/수정 시 입력한 준비물을 배정된 아이들의 해당 날짜 '가방 챙기기'(prep)에
+ * 추가한다. 부모 홈 준비물·아이 홈 가방 챙기기는 dailySupplies 쿼리+WS 브릿지로
+ * 실시간 반영된다. (아이,날짜) 쌍은 서로 다른 서버 행이라 병렬이 안전하고,
+ * 같은 행 병렬 재작성(덮어쓰기 사고)은 쌍이 겹치지 않으므로 발생하지 않는다.
+ */
+export interface AddEventSuppliesInput {
+  /** 대상 아이 member id 목록 — 폴백 금지, 콜사이트(EventForm 배정)가 명시한다. */
+  childIds: string[];
+  /** 일정 occurrence 날짜들(반복이면 회차마다 그 날 준비물이 필요하다). */
+  dateKeys: string[];
+  labels: string[];
+}
+
+export interface AddEventSuppliesResult {
+  added: number;
+  /** 하루 8개 상한에 걸려 담지 못한 라벨 수(조용한 유실 금지 — 화면이 안내). */
+  dropped: number;
+  /** 저장에 실패한 (아이,날짜) 행 수 — 0이 아니면 화면이 정직하게 안내한다. */
+  failedRows: number;
+}
+
+export function useAddEventSupplies() {
+  const qc = useQueryClient();
+  const { familyId } = useAuth();
+  return useMutation({
+    mutationFn: async (input: AddEventSuppliesInput): Promise<AddEventSuppliesResult> => {
+      if (!familyId) throw new Error("가족 정보가 없어요");
+      const labels = input.labels.map((s) => s.trim()).filter(Boolean);
+      const childIds = [...new Set(input.childIds.filter(Boolean))];
+      const dateKeys = [...new Set(input.dateKeys.filter(Boolean))];
+      if (!labels.length || !childIds.length || !dateKeys.length) {
+        return { added: 0, dropped: 0, failedRows: 0 };
+      }
+      let added = 0;
+      let dropped = 0;
+      const pairs = childIds.flatMap((childId) => dateKeys.map((dateKey) => ({ childId, dateKey })));
+      const results = await Promise.allSettled(
+        pairs.map((pair) =>
+          rebuildChildDay(familyId, pair.childId, pair.dateKey, (lists) => {
+            const merged = mergeSupplyLabels(lists.prep, labels, newSupplyItemId);
+            added += merged.added;
+            dropped += merged.dropped;
+            return { prep: merged.items, hw: lists.hw };
+          }),
+        ),
+      );
+      const failedRows = results.filter((r) => r.status === "rejected").length;
+      return { added, dropped, failedRows };
     },
     onSettled: () => qc.invalidateQueries({ queryKey: ["dailySupplies", familyId ?? ""] }),
   });
