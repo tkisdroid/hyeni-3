@@ -211,4 +211,45 @@ public class GeofenceStateMachineTest {
         TransitionResult r = GeofenceStateMachine.evaluateTransition(in, lat40, PLACE_LNG, null, 1000L, PLACE_LAT, PLACE_LNG, 30.0, CFG);
         assertEquals(Action.INSIDE_NO_CHANGE, r.action); // 40m <= exit 50 → still inside
     }
+
+    @Test
+    public void silentReenterEpisode_leavesSilently_withoutSecondLeaveAlert() {
+        // 2026-07-16 회귀: LEAVE 후 쿨다운 내 SILENT_RE_ENTER 로 다시 들어간 에피소드는
+        // 부모가 재도착 알림을 받은 적이 없으므로 재이탈도 SILENT_LEAVE(무알림)여야 한다.
+        // ("집 출발"·"피아노 학원 출발" 이 사이 도착 없이 반복되던 실사고)
+        double outLat = PLACE_LAT + 200.0 / 111_000.0;
+        // 정상 도착 후 출발 완료 상태 (lastDepartedAtMs = 500s)
+        GeofenceState s = new GeofenceState("out", null, null, 500_000L);
+
+        // 쿨다운(600s) 내 재진입 → SILENT_RE_ENTER (lastDepartedAtMs 보존)
+        TransitionResult r = GeofenceStateMachine.evaluateTransition(
+                s, PLACE_LAT, PLACE_LNG, null, 560_000L, PLACE_LAT, PLACE_LNG, 30.0, CFG);
+        assertEquals(Action.SILENT_RE_ENTER, r.action);
+        s = r.nextState;
+
+        // 다시 밖으로 → armed → 180s 뒤 이탈 확정은 SILENT_LEAVE
+        r = GeofenceStateMachine.evaluateTransition(
+                s, outLat, PLACE_LNG, null, 600_000L, PLACE_LAT, PLACE_LNG, 30.0, CFG);
+        assertEquals(Action.OUTSIDE_ARMED, r.action);
+        s = r.nextState;
+        r = GeofenceStateMachine.evaluateTransition(
+                s, outLat, PLACE_LNG, null, 800_000L, PLACE_LAT, PLACE_LNG, 30.0, CFG);
+        assertEquals(Action.SILENT_LEAVE, r.action);
+        assertEquals("out", r.nextState.phase);
+        assertEquals(Long.valueOf(800_000L), r.nextState.lastDepartedAtMs);
+    }
+
+    @Test
+    public void announcedEpisode_stillLeavesWithAlert() {
+        // 정상 ENTER(lastDepartedAtMs=null) 에피소드의 출발은 그대로 LEAVE 알림.
+        double outLat = PLACE_LAT + 200.0 / 111_000.0;
+        GeofenceState s = new GeofenceState("in", 0L, null, null);
+        TransitionResult r = GeofenceStateMachine.evaluateTransition(
+                s, outLat, PLACE_LNG, null, 100_000L, PLACE_LAT, PLACE_LNG, 30.0, CFG);
+        assertEquals(Action.OUTSIDE_ARMED, r.action);
+        s = r.nextState;
+        r = GeofenceStateMachine.evaluateTransition(
+                s, outLat, PLACE_LNG, null, 300_000L, PLACE_LAT, PLACE_LNG, 30.0, CFG);
+        assertEquals(Action.LEAVE, r.action);
+    }
 }

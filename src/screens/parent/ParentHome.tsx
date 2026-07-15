@@ -102,7 +102,7 @@ function schedulePlaceHit(
 }
 
 const shortcutRoutes: Record<string, string> = {
-  "AI 일정": "/ai-schedule",
+  "AI 일정": "/ai-schedule?tab=text",
   "위치추적": "/parent/location?view=history",
   "친구놀이": "/friend-play",
   "장소관리": "/place-manager",

@@ -424,6 +424,27 @@ export function ChildHome() {
       </div>
 
       <div className="kd-body">
+        {/* ── 안 읽은 부모님 메시지 ─────────────────────────────────── */}
+        {/* 혜니가 알림을 잘 확인하지 않는다는 제보(2026-07-16) — 독 배지·타일 배지는
+            눈에 잘 안 띄어서, 안 읽은 메시지가 있으면 본문 맨 위에 크게 세운다. */}
+        {unreadCount > 0 && (
+          <button
+            type="button"
+            className="kd-memo-banner hy-press"
+            aria-label={`부모님 메시지 ${unreadCount}개 확인하기`}
+            onClick={() => navigate("/child/memo")}
+          >
+            <img src={asset("ui/chat-heart.webp")} alt="" />
+            <span className="kd-memo-banner__main">
+              <span className="kd-memo-banner__title">
+                부모님 메시지 {unreadCount}개가 기다리고 있어!
+              </span>
+              <span className="kd-memo-banner__sub">{parentNote ?? "지금 열어봐 💌"}</span>
+            </span>
+            <span className="kd-memo-banner__badge">{unreadCount}</span>
+          </button>
+        )}
+
         {/* ── 다음 일정 ─────────────────────────────────────────────── */}
         <div className="kd-card kd-next">
           <div className="kd-next__row">

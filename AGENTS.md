@@ -81,6 +81,10 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   등록장소 도착/출발(saved_places+academies)은 네이티브 `LocationService`와 Worker
   `registered-place-geofence-check`가 같은 상태머신으로 처리한다. 20m 이내 중복 장소는 `saved_place` 우선으로
   1개만 평가하고, 진입은 3분 이상 체류해야 도착으로 승격한다(학원가 통과/중복 알림 방지).
+  ★이동 알림 현실화(2026-07-16): 서버 cron 은 자녀 단위로 전이를 수집해 episode 시간순으로 전달하고, 같은 배치의
+  출발은 다른 장소 도착에 병합한다("○○에서 출발해서 △△에 도착했어요"). 조용한 재진입(SILENT_RE_ENTER) 에피소드의
+  재이탈은 `SILENT_LEAVE`(무알림, JS·Java 3중 parity — `phase=in && lastDepartedAtMs != null` 불변식으로 판별)이며,
+  최근 15분 내 다른 장소 도착을 이미 전달했으면 늦게 흘러온 출발은 조용히 상태만 진행한다(같은 장소 재출발은 억제 금지).
   부모→아이 메모 FCM(`type: "new_memo"`)은 일정 채널이 아니라 아이 메시지 채널(`hyeni_child_message_v1`)로
   heads-up 표시하고, 탭/폴링 라우트는 `#/child/memo`로 유지한다.
 - **리포트/전환 기능(2026-07-07)**: 오늘의 안심 리포트=`/daily-report`, 주간 가족 리포트=`/weekly-report`,

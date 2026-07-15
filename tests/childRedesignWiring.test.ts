@@ -198,3 +198,22 @@ test("여러 항목 이름을 한꺼번에 저장할 때 서로 덮어쓰지 않
 test("준비물 아이콘은 장소관리·일정등록과 같은 출처를 쓴다(태권도복 → 도복 캐릭터)", () => {
   assert.match(home, /resolveEventVisualAsset\(s\.label, s\.kind === "hw" \? "school" : "other"\)/);
 });
+
+// ── 2026-07-16: 아이 앱 참여 개선 — 안 읽은 부모 메시지 전면 배너 ─────────────
+
+test("안 읽은 부모 메시지가 있으면 홈 본문 맨 위에 배너를 세운다", () => {
+  // 실제 unread 수(read_by 기반)로만 표시하고, 탭하면 대화로 간다.
+  assert.match(home, /unreadCount > 0 && \(/);
+  assert.match(home, /className="kd-memo-banner hy-press"[\s\S]{0,120}navigate\("\/child\/memo"\)/);
+  assert.match(home, /부모님 메시지 \{unreadCount\}개가 기다리고 있어!/);
+  // 미리보기는 실제 최근 부모 메시지(latestParentMemoText) — 가짜 문구 목업 금지.
+  assert.match(home, /\{parentNote \?\? "지금 열어봐 💌"\}/);
+});
+
+test("메시지 배너 스타일은 토큰 색상만 쓰고 reduced-motion 전역 가드 아래에 있다", () => {
+  const css = read("src/screens/child/ChildHome.css");
+  const banner = css.slice(css.indexOf(".kd-memo-banner"), css.indexOf(".kd-sticker-banner"));
+  assert.ok(banner.length > 0, "kd-memo-banner 블록 존재");
+  assert.ok(!/#[0-9a-fA-F]{3,8}\b/.test(banner), "hex 직접 사용 금지 — tokens.css 변수만");
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+});

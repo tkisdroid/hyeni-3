@@ -147,6 +147,19 @@
   20m 이내 후보를 `saved_place` 우선으로 병합해 1개만 평가한다. 진입은 3분 이상 같은 장소에 머문 뒤 도착으로
   승격한다. 옆 건물 통과나 학원가 이동 중 1분 남짓 머무른 좌표를 도착 알림으로 만들지 않기 위한 규칙이며,
   네이티브 `LocationService`와 Worker `registered-place-geofence-check`가 같은 상태머신 값을 써야 한다.
+- ★이동 알림 현실화(2026-07-16, TK 제보 "학교 출발 직후 집 도착" 실사고 — D1 재현: 10초 간격 연발·순서 역전·
+  같은 장소 출발 2연발): 원인 3중 = ①서버 cron 이 장소별 독립 평가라 위치 미보고 뒤 몰아친 재생에서 출발·도착이
+  장소 배열 순서로 같은 tick 에 연달아 발사 ②`SILENT_RE_ENTER`(쿨다운 내 재진입, 무알림)로 들어간 에피소드의
+  재이탈이 또 `LEAVE` 알림(GPS 지터 → "집 출발"/"피아노 출발" 중복) ③이탈 확정(armed+180s)이 다음 장소 도착보다
+  늦게 흘러오는 순서 역전. 수정: ①cron 을 수집→계획→전달 2단계로 — 자녀 단위로 전이를 모아 `episodeMs` 시간순
+  정렬, 같은 배치에 다른 장소 도착이 있으면 출발을 그 도착에 병합("○○에서 출발해서 △△에 도착했어요",
+  `planRegisteredPlacePresenceDelivery`) ②상태머신에 `SILENT_LEAVE` 액션 — `phase=in && lastDepartedAtMs != null`
+  ⇔ 조용한 재진입 에피소드(정상 ENTER 는 null 로 지움)라는 기존 불변식으로 스키마 무변경 판별, JS(shared)·클라
+  JS·Java 3중 parity ③이전 tick 에서 이미 다른 장소 도착을 전달했으면 15분 창 내 늦은 출발은 조용히 상태만 진행
+  (`isStaleRegisteredPlaceLeave`, 같은 장소 재출발은 억제 금지). 전달 실패 시 장소별 체인 블록으로 상태 미진행
+  유지(다음 tick 재시도). 콜사이트는 전부 `ENTER`/`LEAVE` 명시 분기라 `SILENT_LEAVE` 는 자동으로 조용한 영속.
+  회귀=Worker `tests/registeredPlaceGeofence.test.mjs`(병합·정렬·억제·SILENT_LEAVE), Android
+  `GeofenceStateMachineTest`. cron 반환 메트릭에 `mergedLeft`/`staleLeftSuppressed`/`silentLeft` 추가.
 - 등록장소 알림 지연 개선(2026-07-10, TK 제보 "도착 알림 5분+ 지연" 실사고 — 실제 6.5분): 원인 3중 =
   ①반경 30m 가 학교 부지에 너무 타이트(교문→핀까지 5분) ②일괄 180s dwell ③서버 크론이 최신 fix 1점만 평가
   (tick 격자+정지 시 업로드 간격 합산). 수정: ①장소별 알림 반경 — location JSON `alertRadiusM`(30~300 클램프,

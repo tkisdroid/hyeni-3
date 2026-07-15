@@ -22,7 +22,9 @@ final class GeofenceStateMachine {
     enum Action {
         IGNORE_LOW_ACCURACY, PENDING_DWELL, PENDING_CONTINUE, PENDING_ABORTED,
         ENTER, SILENT_RE_ENTER, INSIDE_NO_CHANGE, DEPARTURE_CANCELLED,
-        OUTSIDE_ARMED, OUTSIDE_PENDING_TIMER, LEAVE, OUTSIDE_NO_CHANGE
+        // SILENT_LEAVE: 조용한 재진입(SILENT_RE_ENTER) 에피소드의 출발 — 부모는 재도착
+        // 알림을 받은 적이 없으므로 출발 알림도 발사하지 않고 상태만 갱신(서버/클라 parity).
+        OUTSIDE_ARMED, OUTSIDE_PENDING_TIMER, LEAVE, SILENT_LEAVE, OUTSIDE_NO_CHANGE
     }
 
     static final class GeofenceConfig {
@@ -191,7 +193,10 @@ final class GeofenceStateMachine {
         }
         boolean departureSatisfied = (tMs - prev.departureArmedAtMs) >= cfg.departureTimeoutMs;
         if (!departureSatisfied) return new TransitionResult(Action.OUTSIDE_PENDING_TIMER, prev);
-        return new TransitionResult(Action.LEAVE,
+        // 정상 ENTER 는 lastDepartedAtMs 를 null 로 지우고 SILENT_RE_ENTER 만 보존하므로,
+        // non-null = 조용한 재진입 에피소드 → 출발도 조용히(SILENT_LEAVE) 처리한다.
+        boolean enteredSilently = prev.lastDepartedAtMs != null;
+        return new TransitionResult(enteredSilently ? Action.SILENT_LEAVE : Action.LEAVE,
                 new GeofenceState("out", null, null, tMs));
     }
 }
