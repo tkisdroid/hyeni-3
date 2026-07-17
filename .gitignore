@@ -54,3 +54,16 @@ android/keystore/
 *.keystore
 .superpowers/
 .worktrees/
+
+# python cache
+__pycache__/
+*.pyc
+
+# 로컬 검증 산출물·임시 파일 (커밋 제외)
+test-results/
+tmp_s25_check/
+
+# output 스크린샷/렌더 산출물 — store-screenshots(기존 추적)만 예외로 유지
+output/
+!output/store-screenshots/
+!output/store-screenshots/**
