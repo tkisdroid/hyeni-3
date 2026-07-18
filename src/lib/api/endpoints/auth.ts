@@ -14,6 +14,11 @@ import { isNativePlatform } from "@/lib/native/plugins";
 import { openExternal } from "@/lib/native/browser";
 import { getAuthDeviceInstallId } from "@/lib/native/deviceIdentity";
 import {
+  createIdempotentAuthResultAdopter,
+  returnAuthResultWithAdoption,
+  type AuthResultAdoptionOptions,
+} from "@/auth/authResultAdoption";
+import {
   normalizeLoginId,
   isValidLoginId,
   normalizePhoneForAuth,
@@ -34,18 +39,29 @@ export interface AuthResult {
   session: AuthSession;
 }
 
-// 로그인/가입 성공 응답을 세션 상태에 반영(토큰 + user) 후 리스너 알림.
-function adoptSession(data: { user?: ApiUser | null; session?: AuthSession }): void {
-  applyApiSession({
-    access_token: data.session?.access_token,
-    refresh_token: data.session?.refresh_token ?? null,
-  });
-  setApiUser(data.user ?? data.session?.user ?? null);
-  notifyTokens();
+const adoptAuthResultOnce = createIdempotentAuthResultAdopter<AuthResult>({
+  applySession: (data) => {
+    applyApiSession({
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token ?? null,
+    });
+  },
+  applyUser: (data) => {
+    setApiUser(data.user ?? data.session.user ?? null);
+  },
+  notify: notifyTokens,
+});
+
+/** 로그인 응답을 토큰→사용자 순서로 한 번만 채택하고 기존 토큰 구독자에게 알린다. */
+export function adoptAuthResult(data: AuthResult): boolean {
+  return adoptAuthResultOnce(data);
 }
 
 /** 부모 ID+비밀번호 로그인. 단회용이라 allowRetry=false. */
-export async function signInWithLoginId(input: { loginId: string; password: string }): Promise<AuthResult> {
+export async function signInWithLoginId(
+  input: { loginId: string; password: string },
+  options?: AuthResultAdoptionOptions,
+): Promise<AuthResult> {
   const loginId = normalizeLoginId(input.loginId);
   if (!isValidLoginId(loginId) || !input.password) {
     throw new Error("ID 또는 비밀번호를 확인해 주세요");
@@ -64,8 +80,7 @@ export async function signInWithLoginId(input: { loginId: string; password: stri
     },
     false,
   );
-  adoptSession(data);
-  return data;
+  return returnAuthResultWithAdoption(data, options, adoptAuthResult);
 }
 
 /** 아이(child) 익명 로그인. 매 호출 새 익명 세션. allowRetry=false. */
@@ -82,7 +97,7 @@ export async function anonymousLogin(): Promise<AuthResult> {
   if (!data?.user) {
     throw new Error("아이 모드 준비에 실패했어. 잠시 후 다시 시도해줘!");
   }
-  adoptSession(data);
+  adoptAuthResult(data);
   return data;
 }
 
@@ -162,7 +177,7 @@ export async function verifyPhoneSignupCode(input: {
   if (!data?.user || !data?.session?.access_token) {
     throw new Error("인증 후 사용자 정보를 확인하지 못했어요");
   }
-  adoptSession(data);
+  adoptAuthResult(data);
   return data;
 }
 
@@ -374,7 +389,7 @@ export async function finishOAuthLogin(input: {
   provider: OAuthProvider;
   code: string;
   state?: string;
-}): Promise<AuthResult> {
+}, options?: AuthResultAdoptionOptions): Promise<AuthResult> {
   if (!isOAuthProvider(input.provider)) {
     throw new Error("지원하지 않는 로그인 방식이에요.");
   }
@@ -404,8 +419,7 @@ export async function finishOAuthLogin(input: {
   if (!data?.session?.access_token) {
     throw new Error("로그인 응답이 이상해요. 다시 시도해 주세요!");
   }
-  adoptSession(data);
-  return data;
+  return returnAuthResultWithAdoption(data, options, adoptAuthResult);
 }
 
 export interface OAuthLink {

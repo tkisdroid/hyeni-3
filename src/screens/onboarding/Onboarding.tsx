@@ -10,8 +10,10 @@ import { homePathForRole } from "@/auth/guards";
 import {
   beginOnboardingAuthTransition,
   cancelOnboardingAuthTransitions,
+  commitOnboardingAuthResult,
   completeOnboardingAuthTransitionsThrough,
   endOnboardingAuthTransition,
+  getOnboardingAuthCommitSnapshot,
   getOnboardingAuthTransitionSnapshot,
   isOnboardingAuthTransitionActive,
   subscribeOnboardingAuthTransition,
@@ -22,6 +24,7 @@ import { readChildDeviceIdentityHint } from "@/lib/native/deviceIdentity";
 import { ROLE_ICON_ASSETS } from "@/transform/roleIconAssets";
 import {
   signInWithLoginId,
+  adoptAuthResult,
   anonymousLogin,
   requestPhoneSignupCode,
   verifyPhoneSignupCode,
@@ -93,6 +96,11 @@ export function Onboarding() {
     getOnboardingAuthTransitionSnapshot,
     getOnboardingAuthTransitionSnapshot,
   );
+  const authCommitBoundaryActive = useSyncExternalStore(
+    subscribeOnboardingAuthTransition,
+    getOnboardingAuthCommitSnapshot,
+    getOnboardingAuthCommitSnapshot,
+  );
   const [step, setStep] = useState<Step>("role");
   const [role, setRole] = useState<"parent" | "child" | "teacher">("parent");
   const [pairMode, setPairMode] = useState<"child" | "parent">("child");
@@ -129,29 +137,29 @@ export function Onboarding() {
     const cb = readOAuthCallback();
     if (!cb) return;
     setBusy(true);
-    let sessionAdopted = false;
     const transitionToken = beginOnboardingAuthTransition();
-    const oauthLoginPromise = oauthLoginPromiseRef.current ?? finishOAuthLogin(cb);
+    const oauthLoginPromise = oauthLoginPromiseRef.current
+      ?? finishOAuthLogin(cb, { sessionAdoption: "deferred" });
     oauthLoginPromiseRef.current = oauthLoginPromise;
     oauthLoginPromise
-      .then(async () => {
-        sessionAdopted = true;
+      .then(async (result) => {
+        const commitResult = commitOnboardingAuthResult(transitionToken, result, adoptAuthResult);
+        if (commitResult === "stale") return;
         clearOAuthCallbackUrl();
-        if (!isOnboardingAuthTransitionActive(transitionToken)) {
-          return;
-        }
         syncFromSession();
         await routeAfterParentLogin(transitionToken);
       })
       .catch((e) => {
         const canApplySideEffects = isOnboardingAuthTransitionActive(transitionToken);
+        // 공유 Promise의 OAuth code는 단회용이라 stale continuation도 URL 재교환만 막는다.
+        // toast·step·busy 같은 UI 상태는 아래 active token만 변경한다.
         clearOAuthCallbackUrl();
         if (!canApplySideEffects) return;
         show(errMsg(e), "⚠️");
         setRole("parent");
         setStep("login");
         setBusy(false);
-        if (!sessionAdopted) endOnboardingAuthTransition(transitionToken);
+        endOnboardingAuthTransition(transitionToken);
       })
       .finally(() => {
         if (isOnboardingAuthTransitionActive(transitionToken)) setBusy(false);
@@ -323,16 +331,24 @@ export function Onboarding() {
     <div className="ob-root">
       {step === "role" && (
         <RoleStep
-          busy={busy}
+          busy={busy || authCommitBoundaryActive}
           childStarting={childStarting}
           onParent={() => {
+            if (authCommitBoundaryActive) return;
+            cancelOnboardingAuthTransitions();
             setSignupFlowStarted(false);
             setSurveyChoices([]);
             setRole("parent");
             setStep("login");
           }}
-          onChild={startChildMode}
+          onChild={() => {
+            if (authCommitBoundaryActive) return;
+            cancelOnboardingAuthTransitions();
+            void startChildMode();
+          }}
           onTeacher={() => {
+            if (authCommitBoundaryActive) return;
+            cancelOnboardingAuthTransitions();
             setRole("teacher");
             setStep("teacherSetup");
           }}
@@ -345,7 +361,9 @@ export function Onboarding() {
         <LoginStep
           busy={busy}
           setBusy={setBusy}
+          commitBoundaryActive={authCommitBoundaryActive}
           onBack={() => {
+            if (authCommitBoundaryActive) return;
             cancelOnboardingAuthTransitions();
             back();
           }}
@@ -355,6 +373,7 @@ export function Onboarding() {
             await routeAfterParentLogin(transitionToken);
           }}
           onSignup={() => {
+            if (authCommitBoundaryActive) return;
             cancelOnboardingAuthTransitions();
             setSignupFlowStarted(true);
             setStep("survey");
@@ -441,13 +460,22 @@ export function Onboarding() {
 
 /* ── 공통 조각 ─────────────────────────────────────────────────────────── */
 
-function BackButton({ onBack, dark }: { onBack: () => void; dark?: boolean }) {
+function BackButton({
+  onBack,
+  dark,
+  disabled = false,
+}: {
+  onBack: () => void;
+  dark?: boolean;
+  disabled?: boolean;
+}) {
   return (
     <button
       type="button"
       className={dark ? "ob-back ob-back--dark hy-press" : "ob-back hy-press"}
       aria-label="뒤로"
       onClick={onBack}
+      disabled={disabled}
     >
       <ChevronLeft size={22} strokeWidth={2.2} color={dark ? "#fff" : "#4A4145"} />
     </button>
@@ -659,6 +687,7 @@ function TeacherStep({ onBack, onSave, show }: { onBack: () => void; onSave: () 
 function LoginStep({
   busy,
   setBusy,
+  commitBoundaryActive,
   onBack,
   onLoggedIn,
   onSignup,
@@ -666,6 +695,7 @@ function LoginStep({
 }: {
   busy: boolean;
   setBusy: (v: boolean) => void;
+  commitBoundaryActive: boolean;
   onBack: () => void;
   onLoggedIn: (transitionToken: OnboardingAuthTransitionToken) => Promise<void>;
   onSignup: () => void;
@@ -692,12 +722,14 @@ function LoginStep({
   const loginIdPw = async () => {
     if (busy) return;
     setBusy(true);
-    let sessionAdopted = false;
     const transitionToken = beginOnboardingAuthTransition();
     try {
-      await signInWithLoginId({ loginId, password });
-      if (!isOnboardingAuthTransitionActive(transitionToken)) return;
-      sessionAdopted = true;
+      const result = await signInWithLoginId(
+        { loginId, password },
+        { sessionAdoption: "deferred" },
+      );
+      const commitResult = commitOnboardingAuthResult(transitionToken, result, adoptAuthResult);
+      if (commitResult === "stale") return;
       await onLoggedIn(transitionToken);
     } catch (e) {
       if (!isOnboardingAuthTransitionActive(transitionToken)) return;
@@ -705,14 +737,14 @@ function LoginStep({
     } finally {
       if (isOnboardingAuthTransitionActive(transitionToken)) {
         setBusy(false);
-        if (!sessionAdopted) endOnboardingAuthTransition(transitionToken);
+        endOnboardingAuthTransition(transitionToken);
       }
     }
   };
 
   return (
     <div className="ob-step ob-login">
-      <BackButton onBack={onBack} />
+      <BackButton onBack={onBack} disabled={commitBoundaryActive} />
       <div className="ob-login-head">
         <img className="ob-login-mascot" src={asset("mascot/wave.webp")} alt="" />
         <div className="ob-h1">다시 만나 반가워요</div>
@@ -766,7 +798,12 @@ function LoginStep({
 
       <div className="ob-login-foot">
         아직 계정이 없나요?{" "}
-        <button type="button" className="ob-link" onClick={onSignup} disabled={busy}>
+        <button
+          type="button"
+          className="ob-link"
+          onClick={onSignup}
+          disabled={busy || commitBoundaryActive}
+        >
           회원가입
         </button>
       </div>
