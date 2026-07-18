@@ -55,10 +55,12 @@ import {
   requestForegroundLocationPermission,
 } from "@/lib/native/permissions";
 import { QrScanner } from "@/components/QrScanner";
+import { BusyLabel } from "@/components/ui/BusyLabel";
 import {
   PRIVACY_POLICY_URL,
   TERMS_OF_SERVICE_URL,
 } from "@/lib/api/endpoints/account";
+import { validateLoginForm, type LoginFormErrors } from "@/transform/loginForm";
 import "./Onboarding.css";
 
 type Step = "role" | "teacherSetup" | "login" | "survey" | "signup" | "connect" | "pairing" | "perms";
@@ -703,9 +705,23 @@ function LoginStep({
 }) {
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState<LoginFormErrors>({});
+  const [pendingAction, setPendingAction] = useState<"id" | OAuthProvider | null>(null);
+  const loginIdInputRef = useRef<HTMLInputElement>(null);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
+
+  const clearFieldError = (field: keyof LoginFormErrors) => {
+    setErrors((current) => {
+      if (!current[field]) return current;
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
+  };
 
   const social = async (provider: OAuthProvider) => {
     if (busy) return;
+    setPendingAction(provider);
     setBusy(true);
     const transitionToken = beginOnboardingAuthTransition();
     try {
@@ -714,6 +730,7 @@ function LoginStep({
       if (!isOnboardingAuthTransitionActive(transitionToken)) return;
       show(errMsg(e), "⚠️");
       // 키 미설정 등 설정 오류 — busy 를 풀고 정직하게 안내(버튼이 영구 잠기지 않게).
+      setPendingAction(null);
       setBusy(false);
       endOnboardingAuthTransition(transitionToken);
     }
@@ -721,6 +738,17 @@ function LoginStep({
 
   const loginIdPw = async () => {
     if (busy) return;
+    const validationErrors = validateLoginForm({ loginId, password });
+    setErrors(validationErrors);
+    if (validationErrors.loginId) {
+      loginIdInputRef.current?.focus();
+      return;
+    }
+    if (validationErrors.password) {
+      passwordInputRef.current?.focus();
+      return;
+    }
+    setPendingAction("id");
     setBusy(true);
     const transitionToken = beginOnboardingAuthTransition();
     try {
@@ -736,6 +764,7 @@ function LoginStep({
       show(errMsg(e), "⚠️");
     } finally {
       if (isOnboardingAuthTransitionActive(transitionToken)) {
+        setPendingAction(null);
         setBusy(false);
         endOnboardingAuthTransition(transitionToken);
       }
@@ -754,17 +783,17 @@ function LoginStep({
       <div className="ob-login-social">
         <button type="button" className="ob-social ob-social--kakao hy-press" onClick={() => social("kakao")} disabled={busy}>
           <KakaoIcon />
-          카카오로 계속하기
+          <BusyLabel busy={busy && pendingAction === "kakao"} idle="카카오로 계속하기" pending="카카오 로그인 중…" />
         </button>
         <button type="button" className="ob-social ob-social--google hy-press" onClick={() => social("google")} disabled={busy}>
           <GoogleIcon />
-          Google로 계속하기
+          <BusyLabel busy={busy && pendingAction === "google"} idle="Google로 계속하기" pending="Google 로그인 중…" />
         </button>
         {/* 네이버 키가 없으면 버튼 자체를 숨긴다 — 누르면 실패하는 버튼을 보여주지 않는다. */}
         {hasNaverClientId && (
           <button type="button" className="ob-social ob-social--naver hy-press" onClick={() => social("naver")} disabled={busy}>
             <NaverIcon />
-            네이버로 계속하기
+            <BusyLabel busy={busy && pendingAction === "naver"} idle="네이버로 계속하기" pending="네이버 로그인 중…" />
           </button>
         )}
       </div>
@@ -776,23 +805,51 @@ function LoginStep({
       </div>
 
       <div className="ob-login-form">
-        <input
-          className="ob-input"
-          placeholder="아이디"
-          autoComplete="username"
-          value={loginId}
-          onChange={(e) => setLoginId(e.target.value)}
-        />
-        <input
-          className="ob-input"
-          type="password"
-          placeholder="비밀번호"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+        <div className="ob-login-field">
+          <input
+            ref={loginIdInputRef}
+            className="ob-input"
+            placeholder="아이디"
+            aria-label="아이디"
+            aria-invalid={Boolean(errors.loginId)}
+            aria-describedby={errors.loginId ? "ob-login-id-error" : undefined}
+            autoComplete="username"
+            value={loginId}
+            onChange={(e) => {
+              setLoginId(e.target.value);
+              clearFieldError("loginId");
+            }}
+          />
+          {errors.loginId && (
+            <p id="ob-login-id-error" className="ob-field-error" role="alert">
+              {errors.loginId}
+            </p>
+          )}
+        </div>
+        <div className="ob-login-field">
+          <input
+            ref={passwordInputRef}
+            className="ob-input"
+            type="password"
+            placeholder="비밀번호"
+            aria-label="비밀번호"
+            aria-invalid={Boolean(errors.password)}
+            aria-describedby={errors.password ? "ob-login-password-error" : undefined}
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              clearFieldError("password");
+            }}
+          />
+          {errors.password && (
+            <p id="ob-login-password-error" className="ob-field-error" role="alert">
+              {errors.password}
+            </p>
+          )}
+        </div>
         <button type="button" className="ob-loginbtn hy-press" onClick={loginIdPw} disabled={busy}>
-          {busy ? "로그인 중…" : "로그인"}
+          <BusyLabel busy={busy && pendingAction === "id"} idle="로그인" pending="로그인 중…" />
         </button>
       </div>
 
@@ -946,7 +1003,7 @@ function SignupStep({
           </Field>
         </div>
         <button type="button" className="ob-cta ob-cta--accent hy-press" onClick={verify} disabled={busy}>
-          {busy ? "확인 중…" : "인증하고 가입 완료"}
+          <BusyLabel busy={busy} idle="인증하고 가입 완료" pending="가입 확인 중…" />
         </button>
         {/* 재전송은 requestPhoneSignupCode 를 다시 호출(실 전송) */}
         <div className="ob-login-foot">

@@ -25,9 +25,10 @@
   animation-delay: 0.3s;
 }
 .hy-loading__label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
-  color: var(--fg-faint);
+  line-height: 1.5;
+  color: var(--fg-tertiary);
 }
 @keyframes hy-loading-pulse {
   0%,

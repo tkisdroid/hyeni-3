@@ -442,6 +442,21 @@
   flex-direction: column;
   gap: 10px;
 }
+.ob-login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ob-input[aria-invalid="true"] {
+  border-color: var(--danger-500);
+}
+.ob-field-error {
+  margin: 0 4px;
+  color: var(--danger-text);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
 .ob-loginbtn {
   height: 54px;
   border-radius: 15px;

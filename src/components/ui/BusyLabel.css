@@ -1,0 +1,29 @@
+.hy-busy-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.hy-busy-label__spinner {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: hy-busy-label-spin 0.75s linear infinite;
+}
+
+@keyframes hy-busy-label-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hy-busy-label__spinner {
+    animation: none;
+    opacity: 0.65;
+  }
+}

@@ -229,11 +229,14 @@ export function DangerZoneForm() {
         {/* 진입/이탈 알림 */}
         <div className="dzf-toggles">
           <div className="dzf-toggle-row">
-            <span className="dzf-toggle-label">진입 시 알림</span>
+            <span id="danger-zone-entry-alert-label" className="dzf-toggle-label">
+              진입 시 알림
+            </span>
             <button
               type="button"
               className="dzf-toggle"
               role="switch"
+              aria-labelledby="danger-zone-entry-alert-label"
               aria-checked={entryAlert}
               data-on={entryAlert}
               onClick={() => setEntryAlert((v) => !v)}
@@ -242,11 +245,14 @@ export function DangerZoneForm() {
             </button>
           </div>
           <div className="dzf-toggle-row">
-            <span className="dzf-toggle-label">이탈 시 알림</span>
+            <span id="danger-zone-exit-alert-label" className="dzf-toggle-label">
+              이탈 시 알림
+            </span>
             <button
               type="button"
               className="dzf-toggle"
               role="switch"
+              aria-labelledby="danger-zone-exit-alert-label"
               aria-checked={exitAlert}
               data-on={exitAlert}
               onClick={() => setExitAlert((v) => !v)}

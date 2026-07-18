@@ -73,6 +73,11 @@ a {
   text-decoration: none;
 }
 
+body :where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 3px solid var(--blue-500);
+  outline-offset: 3px;
+}
+
 /* 스크롤바 숨김 (앱 느낌) */
 ::-webkit-scrollbar {
   width: 0;
