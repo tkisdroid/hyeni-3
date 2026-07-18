@@ -15,8 +15,10 @@ import {
 } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
+import { Loading } from "@/components/ui/Loading";
 import { useAuth } from "@/auth/AuthContext";
 import { useActiveChild } from "@/app/activeChild";
+import { useMyFamily } from "@/queries/useFamily";
 import { useEvents, useDailySupplies } from "@/queries/useSchedule";
 import { useChildLocations, useSavedPlaces } from "@/queries/useLocation";
 import { useLocationLabels } from "@/queries/useLocationLabels";
@@ -103,6 +105,7 @@ export function DailySafetyReport() {
   const todayKey = useMemo(() => todayDateKey(now), [now]);
   const eventsQuery = useEvents();
   const suppliesQuery = useDailySupplies(todayKey);
+  const familyQuery = useMyFamily();
   const locationsQuery = useChildLocations();
   const placesQuery = useSavedPlaces();
   const alertsQuery = useParentAlerts();
@@ -112,6 +115,27 @@ export function DailySafetyReport() {
 
   const locationScopeError = entitlement.isError;
   const locationScopePending = entitlement.isError || entitlement.tier === TIERS.UNKNOWN;
+  const safetySourceHasError =
+    familyQuery.isError
+    || alertsQuery.isError
+    || locationsQuery.isError
+    || entitlement.isError
+    || (!!activeChild?.user_id && childNotifSettingsQuery.isError);
+  const safetySourceIsLoading =
+    !safetySourceHasError
+    && (
+      familyQuery.isLoading
+      || alertsQuery.isLoading
+      || locationsQuery.isLoading
+      || entitlement.isLoading
+      || entitlement.tier === TIERS.UNKNOWN
+      || (!!activeChild?.user_id && childNotifSettingsQuery.isLoading)
+    );
+  const safetySourceState = safetySourceHasError
+    ? "error"
+    : safetySourceIsLoading
+      ? "loading"
+      : "ready";
   const canShowLocation = !locationScopePending && isLocationVisible(entitlement.tier);
   const locations = canShowLocation ? locationsQuery.data ?? [] : [];
   const places = placesQuery.data ?? [];
@@ -168,6 +192,7 @@ export function DailySafetyReport() {
     return (alertsQuery.data ?? []).filter((alert) => !alert.child_user_id || !childUserId || alert.child_user_id === childUserId);
   }, [alertsQuery.data, activeChild?.user_id]);
   const statusView = deriveDailyReportStatus({
+    sourceState: safetySourceState,
     hasActiveChild: !!activeChild,
     alerts: childAlerts,
     locationFreshness: locationFreshness?.status ?? "unknown",
@@ -309,6 +334,43 @@ export function DailySafetyReport() {
     [memoThread.data],
   );
 
+  const safetySourceIssues = [
+    {
+      id: "alerts",
+      label: "안전 알림",
+      retryLabel: "안전 알림 다시 시도",
+      failed: alertsQuery.isError,
+      isFetching: alertsQuery.isFetching,
+      refetch: async () => {
+        await alertsQuery.refetch();
+      },
+    },
+    {
+      id: "location",
+      label: "위치",
+      retryLabel: "위치 다시 시도",
+      failed: locationsQuery.isError || entitlement.isError,
+      isFetching: locationsQuery.isFetching || entitlement.isFetching,
+      refetch: async () => {
+        await Promise.all([locationsQuery.refetch(), entitlement.refetch()]);
+      },
+    },
+    {
+      id: "device",
+      label: "기기 상태",
+      retryLabel: "기기 상태 다시 시도",
+      failed: familyQuery.isError || (!!activeChild?.user_id && childNotifSettingsQuery.isError),
+      isFetching: familyQuery.isFetching || childNotifSettingsQuery.isFetching,
+      refetch: async () => {
+        if (activeChild?.user_id) {
+          await Promise.all([familyQuery.refetch(), childNotifSettingsQuery.refetch()]);
+          return;
+        }
+        await familyQuery.refetch();
+      },
+    },
+  ].filter((source) => source.failed);
+
   const refreshDevice = async () => {
     if (!familyId || refreshingDevice) return;
     setRefreshingDevice(true);
@@ -338,7 +400,42 @@ export function DailySafetyReport() {
       </header>
 
       <div className="dr-content">
-        {!activeChild ? (
+        {safetySourceState === "loading" ? (
+          <section className="hy-card dr-loading">
+            <Loading label="안심 데이터를 불러오는 중" />
+          </section>
+        ) : safetySourceState === "error" ? (
+          <section className="hy-card dr-source-error" role="alert" aria-live="assertive">
+            <div className="dr-source-error__head">
+              <span className="dr-source-error__icon" aria-hidden="true">
+                <AlertTriangle size={24} strokeWidth={2.3} />
+              </span>
+              <span>
+                <b>안심 데이터를 확인하지 못했어요</b>
+                <small>실패한 항목을 다시 확인한 뒤 리포트를 보여드릴게요.</small>
+              </span>
+            </div>
+            <div className="dr-source-error__actions" aria-label="안심 데이터 다시 시도">
+              {safetySourceIssues.map((source) => (
+                <button
+                  key={source.id}
+                  type="button"
+                  className="dr-source-error__retry hy-press"
+                  onClick={() => void source.refetch()}
+                  disabled={source.isFetching}
+                  aria-label={source.retryLabel}
+                >
+                  <RefreshCw
+                    size={16}
+                    strokeWidth={2.4}
+                    className={source.isFetching ? "dr-spin" : undefined}
+                  />
+                  {source.isFetching ? `${source.label} 확인 중…` : source.retryLabel}
+                </button>
+              ))}
+            </div>
+          </section>
+        ) : !activeChild ? (
           <section className="hy-card dr-empty">
             <ShieldCheck size={38} strokeWidth={2.1} />
             <div className="dr-empty__title">연결된 아이가 없어요</div>

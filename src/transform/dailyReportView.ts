@@ -1,4 +1,5 @@
-export type DailyReportStatus = "safe" | "attention" | "danger" | "empty";
+export type DailyReportSourceState = "ready" | "loading" | "error";
+export type DailyReportStatus = "safe" | "attention" | "danger" | "empty" | "unavailable";
 export type FreshnessStatus = "live" | "recent" | "stale" | "unknown";
 
 export interface DailyReportAlertInput {
@@ -8,6 +9,7 @@ export interface DailyReportAlertInput {
 }
 
 export interface DailyReportStatusInput {
+  sourceState: DailyReportSourceState;
   hasActiveChild: boolean;
   alerts: DailyReportAlertInput[];
   locationFreshness: FreshnessStatus;
@@ -56,6 +58,22 @@ function hasAlert(
 }
 
 export function deriveDailyReportStatus(input: DailyReportStatusInput): DailyReportStatusView {
+  if (input.sourceState === "error") {
+    return {
+      status: "unavailable",
+      title: "안심 데이터를 확인하지 못했어요",
+      description: "안전 알림, 위치, 기기 상태를 다시 확인해 주세요.",
+    };
+  }
+
+  if (input.sourceState === "loading") {
+    return {
+      status: "unavailable",
+      title: "안심 데이터를 확인하고 있어요",
+      description: "안전 알림, 위치, 기기 상태를 불러오고 있어요.",
+    };
+  }
+
   if (!input.hasActiveChild) {
     return {
       status: "empty",
