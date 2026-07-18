@@ -9,6 +9,8 @@ import { deriveAuthState, useAuth } from "@/auth/AuthContext";
 import { homePathForRole } from "@/auth/guards";
 import {
   beginOnboardingAuthTransition,
+  cancelOnboardingAuthTransitions,
+  completeOnboardingAuthTransitions,
   endOnboardingAuthTransition,
   getOnboardingAuthTransitionSnapshot,
   subscribeOnboardingAuthTransition,
@@ -113,7 +115,7 @@ export function Onboarding() {
       } catch (e) {
         show(errMsg(e), "⚠️");
       } finally {
-        endOnboardingAuthTransition();
+        cancelOnboardingAuthTransitions();
         clearOAuthCallbackUrl();
         setBusy(false);
         setRole("parent");
@@ -125,7 +127,7 @@ export function Onboarding() {
     if (!cb) return;
     setBusy(true);
     let sessionAdopted = false;
-    beginOnboardingAuthTransition();
+    const transitionToken = beginOnboardingAuthTransition();
     finishOAuthLogin(cb)
       .then(async () => {
         sessionAdopted = true;
@@ -134,7 +136,7 @@ export function Onboarding() {
         await routeAfterParentLogin();
       })
       .catch((e) => {
-        if (!sessionAdopted) endOnboardingAuthTransition();
+        if (!sessionAdopted) endOnboardingAuthTransition(transitionToken);
         clearOAuthCallbackUrl();
         show(errMsg(e), "⚠️");
         setRole("parent");
@@ -238,11 +240,11 @@ export function Onboarding() {
     try {
       const fam = await getMyFamily();
       if (fam === null) {
-        endOnboardingAuthTransition();
+        completeOnboardingAuthTransitions();
         setStep("connect");
         return;
       }
-      endOnboardingAuthTransition();
+      completeOnboardingAuthTransitions();
       navigate("/parent/home");
     } catch {
       throw new Error("가족 정보를 확인하지 못했어요. 다시 시도해 주세요.");
@@ -328,7 +330,7 @@ export function Onboarding() {
           busy={busy}
           setBusy={setBusy}
           onBack={() => {
-            endOnboardingAuthTransition();
+            cancelOnboardingAuthTransitions();
             back();
           }}
           onLoggedIn={async () => {
@@ -337,7 +339,7 @@ export function Onboarding() {
             await routeAfterParentLogin();
           }}
           onSignup={() => {
-            endOnboardingAuthTransition();
+            cancelOnboardingAuthTransitions();
             setSignupFlowStarted(true);
             setStep("survey");
           }}
@@ -659,11 +661,11 @@ function LoginStep({
   const social = async (provider: OAuthProvider) => {
     if (busy) return;
     setBusy(true);
-    beginOnboardingAuthTransition();
+    const transitionToken = beginOnboardingAuthTransition();
     try {
       await startWorkerOAuth(provider); // 서버 발급 일회성 state 저장 후 provider로 이동
     } catch (e) {
-      endOnboardingAuthTransition();
+      endOnboardingAuthTransition(transitionToken);
       show(errMsg(e), "⚠️");
       // 키 미설정 등 설정 오류 — busy 를 풀고 정직하게 안내(버튼이 영구 잠기지 않게).
       setBusy(false);
@@ -674,13 +676,13 @@ function LoginStep({
     if (busy) return;
     setBusy(true);
     let sessionAdopted = false;
-    beginOnboardingAuthTransition();
+    const transitionToken = beginOnboardingAuthTransition();
     try {
       await signInWithLoginId({ loginId, password });
       sessionAdopted = true;
       await onLoggedIn();
     } catch (e) {
-      if (!sessionAdopted) endOnboardingAuthTransition();
+      if (!sessionAdopted) endOnboardingAuthTransition(transitionToken);
       show(errMsg(e), "⚠️");
     } finally {
       setBusy(false);
