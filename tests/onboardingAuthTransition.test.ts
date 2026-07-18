@@ -62,7 +62,12 @@ test("A 가족 조회 실패 뒤 B 성공은 B 세대까지 남은 전환을 모
     const transitionB = authTransition.beginOnboardingAuthTransition();
 
     assert.equal(typeof authTransition.completeOnboardingAuthTransitionsThrough, "function");
-    authTransition.completeOnboardingAuthTransitionsThrough(transitionB);
+    let routeApplied = false;
+    const completed = authTransition.completeOnboardingAuthTransitionsThrough(transitionB);
+    if (completed) routeApplied = true;
+
+    assert.equal(completed, true);
+    assert.equal(routeApplied, true);
     assert.equal(authTransition.getOnboardingAuthTransitionSnapshot(), false);
 
     authTransition.endOnboardingAuthTransition(transitionA);
@@ -101,15 +106,50 @@ test("StrictMode 유사 중복 effect의 첫 cleanup은 replay 전환을 닫지 
   }
 });
 
+test("StrictMode 첫 effect가 stale이면 늦은 catch와 finally가 replay UI를 바꾸지 않는다", () => {
+  resetTransitions();
+  try {
+    const staleEffectToken = authTransition.beginOnboardingAuthTransition();
+    authTransition.endOnboardingAuthTransition(staleEffectToken);
+    const replayEffectToken = authTransition.beginOnboardingAuthTransition();
+    const ui = { busy: true, step: "login", toasts: 0 };
+
+    if (authTransition.isOnboardingAuthTransitionActive(staleEffectToken)) {
+      ui.toasts += 1;
+      ui.step = "role";
+    }
+    if (authTransition.isOnboardingAuthTransitionActive(staleEffectToken)) {
+      ui.busy = false;
+    }
+
+    assert.deepEqual(ui, { busy: true, step: "login", toasts: 0 });
+    assert.equal(authTransition.isOnboardingAuthTransitionActive(replayEffectToken), true);
+    authTransition.endOnboardingAuthTransition(replayEffectToken);
+  } finally {
+    resetTransitions();
+  }
+});
+
 test("A 시작 후 cancel하고 B를 시작하면 늦은 A 완료가 B를 닫지 않는다", () => {
   resetTransitions();
   try {
     const staleToken = authTransition.beginOnboardingAuthTransition();
     authTransition.cancelOnboardingAuthTransitions();
     const currentToken = authTransition.beginOnboardingAuthTransition();
+    let connectTransitions = 0;
+    let navigations = 0;
 
-    authTransition.completeOnboardingAuthTransitionsThrough(staleToken);
+    const completed = authTransition.completeOnboardingAuthTransitionsThrough(staleToken);
+    if (completed) {
+      connectTransitions += 1;
+      navigations += 1;
+    }
+
+    assert.equal(completed, false);
+    assert.equal(connectTransitions, 0);
+    assert.equal(navigations, 0);
     assert.equal(authTransition.getOnboardingAuthTransitionSnapshot(), true);
+    assert.equal(authTransition.isOnboardingAuthTransitionActive(currentToken), true);
 
     authTransition.endOnboardingAuthTransition(currentToken);
     assert.equal(authTransition.getOnboardingAuthTransitionSnapshot(), false);
@@ -124,8 +164,10 @@ test("A와 B가 동시에 진행 중일 때 먼저 끝난 A 성공은 더 최신
     const transitionA = authTransition.beginOnboardingAuthTransition();
     const transitionB = authTransition.beginOnboardingAuthTransition();
 
-    authTransition.completeOnboardingAuthTransitionsThrough(transitionA);
+    const completed = authTransition.completeOnboardingAuthTransitionsThrough(transitionA);
+    assert.equal(completed, true);
     assert.equal(authTransition.getOnboardingAuthTransitionSnapshot(), true);
+    assert.equal(authTransition.isOnboardingAuthTransitionActive(transitionB), true);
 
     authTransition.endOnboardingAuthTransition(transitionB);
     assert.equal(authTransition.getOnboardingAuthTransitionSnapshot(), false);

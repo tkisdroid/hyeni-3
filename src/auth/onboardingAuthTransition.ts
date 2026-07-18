@@ -26,14 +26,21 @@ export function endOnboardingAuthTransition(token: OnboardingAuthTransitionToken
   if (activeTokens.size === 0) notifyListeners();
 }
 
+export function isOnboardingAuthTransitionActive(
+  token: OnboardingAuthTransitionToken,
+): boolean {
+  return activeTokens.has(token);
+}
+
 export function completeOnboardingAuthTransitionsThrough(
   token: OnboardingAuthTransitionToken,
-): void {
-  const wasActive = activeTokens.size > 0;
+): boolean {
+  if (!activeTokens.has(token)) return false;
   activeTokens.forEach((activeToken) => {
     if (activeToken <= token) activeTokens.delete(activeToken);
   });
-  if (wasActive && activeTokens.size === 0) notifyListeners();
+  if (activeTokens.size === 0) notifyListeners();
+  return true;
 }
 
 export function cancelOnboardingAuthTransitions(): void {

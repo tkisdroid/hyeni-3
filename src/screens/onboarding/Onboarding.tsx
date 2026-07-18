@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Camera, ChevronLeft, ChevronRight, Link2 } from "lucide-react";
@@ -13,6 +13,7 @@ import {
   completeOnboardingAuthTransitionsThrough,
   endOnboardingAuthTransition,
   getOnboardingAuthTransitionSnapshot,
+  isOnboardingAuthTransitionActive,
   subscribeOnboardingAuthTransition,
   type OnboardingAuthTransitionToken,
 } from "@/auth/onboardingAuthTransition";
@@ -105,6 +106,7 @@ export function Onboarding() {
   const [signupName, setSignupName] = useState<string | null>(null);
   // QR 딥링크(?pair=)로 진입 시 아이 코드 프리필.
   const [pairPrefill, setPairPrefill] = useState<string | null>(null);
+  const oauthLoginPromiseRef = useRef<ReturnType<typeof finishOAuthLogin> | null>(null);
 
   // OAuth 콜백(?code&state) 감지 → 세션 교환 → 라우팅. (guard가 미인증을 여기로 보냄)
   useEffect(() => {
@@ -129,21 +131,32 @@ export function Onboarding() {
     setBusy(true);
     let sessionAdopted = false;
     const transitionToken = beginOnboardingAuthTransition();
-    finishOAuthLogin(cb)
+    const oauthLoginPromise = oauthLoginPromiseRef.current ?? finishOAuthLogin(cb);
+    oauthLoginPromiseRef.current = oauthLoginPromise;
+    oauthLoginPromise
       .then(async () => {
         sessionAdopted = true;
         clearOAuthCallbackUrl();
+        if (!isOnboardingAuthTransitionActive(transitionToken)) {
+          return;
+        }
         syncFromSession();
         await routeAfterParentLogin(transitionToken);
       })
       .catch((e) => {
-        if (!sessionAdopted) endOnboardingAuthTransition(transitionToken);
+        const canApplySideEffects = isOnboardingAuthTransitionActive(transitionToken);
         clearOAuthCallbackUrl();
+        if (!canApplySideEffects) return;
         show(errMsg(e), "⚠️");
         setRole("parent");
         setStep("login");
+        setBusy(false);
+        if (!sessionAdopted) endOnboardingAuthTransition(transitionToken);
       })
-      .finally(() => setBusy(false));
+      .finally(() => {
+        if (isOnboardingAuthTransitionActive(transitionToken)) setBusy(false);
+      });
+    return () => endOnboardingAuthTransition(transitionToken);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -237,15 +250,17 @@ export function Onboarding() {
 
   // 부모 로그인/가입 후: 가족 있으면 홈, 없으면 가족연결 단계.
   const routeAfterParentLogin = async (transitionToken: OnboardingAuthTransitionToken) => {
+    if (!isOnboardingAuthTransitionActive(transitionToken)) return;
     syncFromSession();
     try {
       const fam = await getMyFamily();
+      const completed = completeOnboardingAuthTransitionsThrough(transitionToken);
+      if (!completed) return;
+      setBusy(false);
       if (fam === null) {
-        completeOnboardingAuthTransitionsThrough(transitionToken);
         setStep("connect");
         return;
       }
-      completeOnboardingAuthTransitionsThrough(transitionToken);
       navigate("/parent/home");
     } catch {
       throw new Error("가족 정보를 확인하지 못했어요. 다시 시도해 주세요.");
@@ -666,10 +681,11 @@ function LoginStep({
     try {
       await startWorkerOAuth(provider); // 서버 발급 일회성 state 저장 후 provider로 이동
     } catch (e) {
-      endOnboardingAuthTransition(transitionToken);
+      if (!isOnboardingAuthTransitionActive(transitionToken)) return;
       show(errMsg(e), "⚠️");
       // 키 미설정 등 설정 오류 — busy 를 풀고 정직하게 안내(버튼이 영구 잠기지 않게).
       setBusy(false);
+      endOnboardingAuthTransition(transitionToken);
     }
   };
 
@@ -680,13 +696,17 @@ function LoginStep({
     const transitionToken = beginOnboardingAuthTransition();
     try {
       await signInWithLoginId({ loginId, password });
+      if (!isOnboardingAuthTransitionActive(transitionToken)) return;
       sessionAdopted = true;
       await onLoggedIn(transitionToken);
     } catch (e) {
-      if (!sessionAdopted) endOnboardingAuthTransition(transitionToken);
+      if (!isOnboardingAuthTransitionActive(transitionToken)) return;
       show(errMsg(e), "⚠️");
     } finally {
-      setBusy(false);
+      if (isOnboardingAuthTransitionActive(transitionToken)) {
+        setBusy(false);
+        if (!sessionAdopted) endOnboardingAuthTransition(transitionToken);
+      }
     }
   };
 

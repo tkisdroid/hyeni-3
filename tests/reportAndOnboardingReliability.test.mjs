@@ -90,25 +90,29 @@ test("ID 로그인과 OAuth callback은 세션 채택 전에 인증 전환 gate�
   assert.ok(callbackBegin >= 0 && finishOAuth > callbackBegin, "OAuth 교환 전에 gate를 시작해야 합니다");
 });
 
-test("가족 판정 성공과 null은 현재 세대까지 완료하지만 조회 실패는 유지한다", () => {
+test("가족 판정 성공과 null은 active token 완료가 확인된 뒤에만 UI를 바꾼다", () => {
   const start = onboarding.indexOf("const routeAfterParentLogin = async (");
   const end = onboarding.indexOf("const routeAfterChildSession", start);
   const route = onboarding.slice(start, end);
-  const nullBranch = route.slice(route.indexOf("if (fam === null)"), route.indexOf('navigate("/parent/home")'));
   const catchBlock = route.match(/catch\s*\{([\s\S]*?)\n\s*\}/)?.[1] ?? "";
   const completeCalls = route.match(/completeOnboardingAuthTransitionsThrough\(transitionToken\)/g) ?? [];
 
   assert.match(route, /routeAfterParentLogin = async \(transitionToken: OnboardingAuthTransitionToken\)/);
-  assert.equal(completeCalls.length, 2, "null과 가족 있음 경로가 각각 현재 세대까지 완료해야 합니다");
-  assert.match(nullBranch, /completeOnboardingAuthTransitionsThrough\(transitionToken\)[\s\S]*setStep\("connect"\)/);
-  assert.match(route, /completeOnboardingAuthTransitionsThrough\(transitionToken\);\s*navigate\("\/parent\/home"\)/);
+  assert.equal(completeCalls.length, 1, "가족 응답 뒤 현재 token 완료를 한 번만 판정해야 합니다");
+  assert.match(route, /if \(!isOnboardingAuthTransitionActive\(transitionToken\)\) return;[\s\S]*syncFromSession\(\)/);
+  assert.match(route, /const completed = completeOnboardingAuthTransitionsThrough\(transitionToken\);\s*if \(!completed\) return;/);
+  assert.match(route, /if \(!completed\) return;[\s\S]*setBusy\(false\)[\s\S]*if \(fam === null\)[\s\S]*setStep\("connect"\)/);
+  assert.match(route, /if \(!completed\) return;[\s\S]*navigate\("\/parent\/home"\)/);
   assert.doesNotMatch(catchBlock, /OnboardingAuthTransition/);
 });
 
 test("부모 로그인에서 back·signup·인증 시작 실패로 이탈하면 gate를 해제한다", () => {
   assert.match(onboarding, /onBack=\{\(\) => \{[\s\S]{0,160}cancelOnboardingAuthTransitions\(\)[\s\S]{0,160}back\(\)/);
   assert.match(onboarding, /onSignup=\{\(\) => \{[\s\S]{0,200}cancelOnboardingAuthTransitions\(\)/);
-  assert.match(onboarding, /catch \(e\) \{\s*endOnboardingAuthTransition\(transitionToken\);\s*show\(errMsg\(e\), "⚠️"\)/);
+  assert.match(
+    onboarding,
+    /catch \(e\) \{\s*if \(!isOnboardingAuthTransitionActive\(transitionToken\)\) return;[\s\S]{0,180}show\(errMsg\(e\), "⚠️"\)[\s\S]{0,180}setBusy\(false\);[\s\S]{0,120}endOnboardingAuthTransition\(transitionToken\)/,
+  );
 });
 
 test("인증 채택 전 실패는 자신이 시작한 token만 끝내고 명시적 OAuth 취소는 전체 gate를 취소한다", () => {
@@ -122,4 +126,32 @@ test("인증 채택 전 실패는 자신이 시작한 token만 끝내고 명시�
   );
   assert.match(onboarding, /await routeAfterParentLogin\(transitionToken\)/);
   assert.match(onboarding, /await onLoggedIn\(transitionToken\)/);
+});
+
+test("stale OAuth·ID continuation은 toast·step·busy를 바꾸지 않고 StrictMode cleanup이 token을 끝낸다", () => {
+  const callbackStart = onboarding.indexOf("const cb = readOAuthCallback();");
+  const callbackEnd = onboarding.indexOf("// eslint-disable-next-line", callbackStart);
+  const callback = onboarding.slice(callbackStart, callbackEnd);
+  const loginStart = onboarding.indexOf("const loginIdPw = async () => {");
+  const loginEnd = onboarding.indexOf("return (", loginStart);
+  const login = onboarding.slice(loginStart, loginEnd);
+
+  assert.match(callback, /if \(!isOnboardingAuthTransitionActive\(transitionToken\)\) \{[\s\S]*return;[\s\S]*\}/);
+  assert.match(callback, /catch\(\(e\) => \{[\s\S]*isOnboardingAuthTransitionActive\(transitionToken\)[\s\S]*if \(!canApplySideEffects\) return;/);
+  assert.match(callback, /finally\(\(\) => \{\s*if \(isOnboardingAuthTransitionActive\(transitionToken\)\) setBusy\(false\);\s*\}\)/);
+  assert.match(callback, /return \(\) => endOnboardingAuthTransition\(transitionToken\)/);
+  assert.match(
+    onboarding,
+    /const oauthLoginPromiseRef = useRef<ReturnType<typeof finishOAuthLogin> \| null>\(null\)/,
+  );
+  assert.match(
+    callback,
+    /const oauthLoginPromise = oauthLoginPromiseRef\.current \?\? finishOAuthLogin\(cb\);\s*oauthLoginPromiseRef\.current = oauthLoginPromise;\s*oauthLoginPromise\s*\.then/,
+  );
+  assert.match(login, /catch \(e\) \{\s*if \(!isOnboardingAuthTransitionActive\(transitionToken\)\) return;/);
+  assert.match(login, /finally \{\s*if \(isOnboardingAuthTransitionActive\(transitionToken\)\) \{/);
+  assert.match(
+    login,
+    /await signInWithLoginId\(\{ loginId, password \}\);\s*if \(!isOnboardingAuthTransitionActive\(transitionToken\)\) return;\s*sessionAdopted = true;\s*await onLoggedIn\(transitionToken\)/,
+  );
 });
