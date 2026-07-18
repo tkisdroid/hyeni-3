@@ -464,7 +464,7 @@ export function ParentCalendar() {
 
             <div className="pc-sheet__head">
               <span className="pc-sheet__icon" style={{ background: sheetView.soft, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <img src={asset(sheetView.icon)} alt="" style={{ width: 34, height: 34, objectFit: "contain" }} />
+                <img src={asset(sheetView.icon)} alt="" style={{ width: 32, height: 32, objectFit: "contain" }} />
               </span>
               <div className="pc-sheet__headtext">
                 <div className="pc-sheet__title">{sheetView.title}</div>

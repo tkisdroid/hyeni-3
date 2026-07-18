@@ -92,7 +92,7 @@
   font-weight: var(--type-label-weight);
 
   color: var(--fg-tertiary);
-  padding: 0 2px;
+  padding: 0;
 }
 
 /* ── 기기/보호자 행 ─────────────────────────────────────────────────────── */
@@ -270,7 +270,7 @@
 
   color: var(--fg-muted);
 
-  padding: 4px 2px;
+  padding: 4px 0;
 }
 
 /* ── 로딩/에러 상태 ─────────────────────────────────────────────────────── */

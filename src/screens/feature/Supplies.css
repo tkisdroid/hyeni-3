@@ -60,7 +60,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 4px 2px;
+  padding: 4px 0;
 }
 .sup-intro__img {
   width: 54px;
@@ -182,7 +182,7 @@
   padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 .sup-empty {
   padding: 16px 12px;

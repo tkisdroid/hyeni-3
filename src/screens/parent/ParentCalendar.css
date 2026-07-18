@@ -58,19 +58,19 @@
 
 /* ── 본문 ───────────────────────────────────────────────────────────────── */
 .pc-body {
-  padding: 2px 16px calc(120px + env(safe-area-inset-bottom, 0px));
+  padding: 0 12px calc(120px + env(safe-area-inset-bottom, 0px));
 }
 
 /* ── 월간 그리드 카드 ───────────────────────────────────────────────────── */
 .pc-card {
   background: #fff;
   border-radius: var(--radius-16);
-  padding: 16px 12px 8px;
+  padding: 16px 8px 8px;
   box-shadow: var(--shadow-soft);
 }
 .pc-weekdays {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(var(--control-min-size), 1fr));
   margin-bottom: 6px;
 }
 .pc-weekday {
@@ -83,20 +83,21 @@
 }
 .pc-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
+  grid-template-columns: repeat(7, minmax(var(--control-min-size), 1fr));
+  gap: 0;
 }
 .pc-cell-empty {
-  height: 46px;
+  height: 52px;
 }
 .pc-day {
-  height: 46px;
+  min-width: var(--control-min-size);
+  height: 52px;
   border-radius: 13px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 0;
   background: transparent;
   --press: 0.9;
 }
@@ -116,8 +117,10 @@
 .pc-day__dots {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 2px;
-  height: 4px;
+  min-height: 17px;
+  height: 17px;
 }
 .pc-dot {
   width: 4px;
@@ -131,7 +134,7 @@
   font-weight: var(--type-caption-weight);
 
   color: var(--fg-muted);
-  margin-left: 1px;
+  margin-left: 4px;
 }
 
 /* ── 선택일 헤더 ────────────────────────────────────────────────────────── */
@@ -304,7 +307,7 @@
 }
 /* 다자녀: 배정 아이 이름 배지(배정 누락은 배정 필요로 표시) */
 .pc-event__child {
-  padding: 2px 8px;
+  padding: 4px 8px;
   border-radius: 999px;
   background: var(--hy-accent-soft);
   color: var(--hy-accent-text);
@@ -406,7 +409,7 @@
   gap: 12px;
 }
 .pc-sheet__grip {
-  padding: 4px 0 2px;
+  padding: 4px 0 4px;
   display: flex;
   justify-content: center;
   cursor: grab;
@@ -504,7 +507,7 @@
   font-weight: var(--type-caption-weight);
 
   color: var(--fg-muted);
-  padding: 0 2px;
+  padding: 0;
 }
 .pc-sheet__confirm {
   display: flex;

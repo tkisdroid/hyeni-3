@@ -36,7 +36,7 @@
   padding: 4px 20px 120px;
 }
 .ts-meta {
-  padding: 2px 2px 12px;
+  padding: 4px 0 12px;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
@@ -70,11 +70,11 @@
   align-items: center;
   background: #f5f1f3;
   border-radius: 999px;
-  padding: 2px;
+  padding: 4px;
 }
 .ts-filter__btn {
   min-width: 76px;
-  height: 30px;
+  height: var(--control-min-size);
   border-radius: 999px;
   padding: 0 8px;
   border: 0;
@@ -167,7 +167,7 @@
   gap: 4px;
 }
 .ts-attend__btn {
-  height: 38px;
+  height: var(--control-min-size);
   border-radius: 11px;
   background: #fff;
   border: 1.5px solid var(--line-soft);

@@ -53,7 +53,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 4px 2px;
+  padding: 4px 0;
 }
 .fb-intro__mascot {
   width: 66px;
@@ -124,7 +124,7 @@
 
   color: var(--fg-muted);
   margin-bottom: 10px;
-  padding: 0 2px;
+  padding: 0;
 }
 .fb-cats__row {
   display: flex;
@@ -175,7 +175,7 @@
   align-items: baseline;
   gap: 8px;
   margin-bottom: 12px;
-  padding: 0 2px;
+  padding: 0;
 }
 .fb-ideas__title {
   font-size: var(--type-body);

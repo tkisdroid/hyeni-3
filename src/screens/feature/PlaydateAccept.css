@@ -48,7 +48,7 @@
   gap: 12px;
 }
 .pa-intro {
-  padding: 2px 2px 4px;
+  padding: 4px 0 4px;
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);
   font-weight: var(--type-body-sm-weight);

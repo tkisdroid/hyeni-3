@@ -168,7 +168,7 @@
 
 /* ── 후보 없음 안내 ─────────────────────────────────────────────────────── */
 .fp-empty {
-  padding: 8px 2px 2px;
+  padding: 8px 0 4px;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);

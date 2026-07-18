@@ -35,7 +35,7 @@ export function ChildTimetableList({
           className="kd-tt__row"
           data-next={r.next}
           data-todo={!r.done && !r.next}
-          style={compact ? { minHeight: 54 } : undefined}
+          style={compact ? { minHeight: 56 } : undefined}
         >
           <span className="kd-tt__time">{r.time}</span>
           <span className="kd-tt__icon" style={{ background: r.soft }}>

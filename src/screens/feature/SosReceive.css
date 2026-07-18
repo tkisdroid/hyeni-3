@@ -329,7 +329,7 @@
   font-weight: var(--type-caption-weight);
 
   color: var(--fg-muted);
-  padding-left: 2px;
+  padding-left: 4px;
 }
 .sr-history-item {
   display: flex;

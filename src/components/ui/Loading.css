@@ -10,7 +10,7 @@
 }
 .hy-loading__dots {
   display: inline-flex;
-  gap: 6px;
+  gap: 8px;
 }
 .hy-loading__dot {
   border-radius: 50%;

@@ -46,9 +46,9 @@
 /* ── 보호자 ─────────────────────────────────────────────────────────────── */
 .pf-parents {
   background: #fff;
-  border-radius: 22px;
+  border-radius: var(--radius-16);
   padding: 4px;
-  box-shadow: 0 10px 26px rgba(32, 26, 29, 0.05);
+  box-shadow: none;
 }
 .pf-parent {
   display: flex;
@@ -94,7 +94,7 @@
   font-weight: var(--type-caption-weight);
 
   color: var(--rose-text);
-  padding: 2px 8px;
+  padding: 4px 8px;
   border-radius: 999px;
   background: var(--rose-soft);
 }
@@ -117,9 +117,9 @@
 .pf-child {
   text-align: left;
   background: #fff;
-  border-radius: 22px;
+  border-radius: var(--radius-16);
   padding: 16px;
-  box-shadow: 0 10px 26px rgba(32, 26, 29, 0.05);
+  box-shadow: none;
   display: flex;
   align-items: center;
   gap: 12px;

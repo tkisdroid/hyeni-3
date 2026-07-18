@@ -111,7 +111,7 @@
   font-weight: var(--type-label-weight);
 
   color: var(--fg-secondary);
-  padding: 0 2px;
+  padding: 0;
 }
 
 /* ── 리스트 행 ──────────────────────────────────────────────────────────── */

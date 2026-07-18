@@ -234,7 +234,7 @@ export function ChildDetail() {
           }}
         >
           <span className="cd-row__icon">
-            <img src={asset("ui/menu-remote-audio.webp")} alt="" style={{ width: 26, height: 26, objectFit: "contain" }} />
+            <img src={asset("ui/menu-remote-audio.webp")} alt="" style={{ width: 24, height: 24, objectFit: "contain" }} />
           </span>
           <span className="cd-row__main">
             <span className="cd-row__title">주변소리</span>
@@ -253,7 +253,7 @@ export function ChildDetail() {
           }}
         >
           <span className="cd-row__icon">
-            <img src={asset("ui/bell.webp")} alt="" style={{ width: 26, height: 26, objectFit: "contain" }} />
+            <img src={asset("ui/bell.webp")} alt="" style={{ width: 24, height: 24, objectFit: "contain" }} />
           </span>
           <span className="cd-row__main">
             <span className="cd-row__title">소리 울리기</span>
@@ -269,7 +269,7 @@ export function ChildDetail() {
           onClick={() => navigate("/profile-edit", { state: { childId: rawChild.id } })}
         >
           <span className="cd-row__icon">
-            <img src={asset("animal/bear.webp")} alt="" style={{ width: 26, height: 26, objectFit: "contain" }} />
+            <img src={asset("animal/bear.webp")} alt="" style={{ width: 24, height: 24, objectFit: "contain" }} />
           </span>
           <span className="cd-row__main">
             <span className="cd-row__title">프로필 편집</span>

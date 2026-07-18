@@ -1,7 +1,7 @@
 /* 전화번호 설정 — 화면 전용 스타일 (원본 dc.html 1519–1540행 값 1:1) */
 
 .psu-screen {
-  min-height: 100dvh;
+  min-height: 100%;
   background: linear-gradient(180deg, #fdf4f1, #f7f4f3);
   animation: hy-fadein 0.35s ease forwards;
 }
@@ -51,7 +51,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 4px 2px;
+  padding: 4px 0;
 }
 .psu-intro__img {
   width: 60px;

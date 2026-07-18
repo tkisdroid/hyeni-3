@@ -52,7 +52,7 @@
   font-weight: var(--type-label-weight);
 
   color: var(--lav-text);
-  padding: 2px 2px 0;
+  padding: 4px 0 0;
 }
 
 /* ── 필드 라벨 ──────────────────────────────────────────────────────────── */
@@ -63,7 +63,7 @@
 
   color: var(--fg-tertiary);
   margin-bottom: 8px;
-  padding: 0 2px;
+  padding: 0;
 }
 
 /* ── 입력 ───────────────────────────────────────────────────────────────── */
@@ -232,7 +232,9 @@
   gap: 8px;
 }
 .tn-file-chip {
+  min-width: 0;
   max-width: 100%;
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -246,22 +248,39 @@
 
 }
 .tn-file-chip__name {
+  flex: 1;
   min-width: 0;
-  max-width: 210px;
+  max-width: min(210px, calc(100vw - 132px));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .tn-file-chip__x {
-  width: 18px;
-  height: 18px;
+  position: relative;
+  z-index: 0;
+  flex: none;
+  width: var(--control-min-size);
+  height: var(--control-min-size);
+  margin: -13px;
+  margin-left: -8px;
   border-radius: 50%;
-  background: rgba(124, 92, 225, 0.16);
+  background: transparent;
   color: var(--lav-text);
   display: flex;
   align-items: center;
   justify-content: center;
   --press: 0.85;
+}
+.tn-file-chip__x::before {
+  position: absolute;
+  top: 13px;
+  left: 13px;
+  z-index: -1;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(124, 92, 225, 0.16);
+  content: "";
 }
 
 /* ── 캘린더 반영 토글 ───────────────────────────────────────────────────── */
@@ -303,9 +322,12 @@
   position: relative;
   flex: none;
   width: 48px;
+  min-height: var(--control-min-size);
   height: 28px;
+  padding-block: 8px;
   border-radius: 999px;
   background: var(--line-strong);
+  background-clip: content-box;
   transition: background 0.18s ease;
 }
 .tn-toggle--on {
@@ -313,7 +335,7 @@
 }
 .tn-toggle__knob {
   position: absolute;
-  top: 3px;
+  top: 11px;
   left: 3px;
   width: 22px;
   height: 22px;

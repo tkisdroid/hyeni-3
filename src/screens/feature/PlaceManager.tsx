@@ -61,9 +61,9 @@ export function PlaceManager() {
           <span className="pm-hero__blob pm-hero__blob--a" />
           <span className="pm-hero__blob pm-hero__blob--b" />
           <span className="pm-hero__streak" />
-          <img className="pm-hero__pin" src={asset("ui/place-home.webp")} alt="" style={{ top: 34, left: 60, width: 34, height: 34 }} />
+          <img className="pm-hero__pin" src={asset("ui/place-home.webp")} alt="" style={{ top: 34, left: 60, width: 32, height: 32 }} />
           <img className="pm-hero__pin" src={asset("ui/place-academy.webp")} alt="" style={{ top: 62, right: 78, width: 32, height: 32 }} />
-          <img className="pm-hero__pin" src={asset("ui/place-frequent.webp")} alt="" style={{ bottom: 22, left: 120, width: 30, height: 30 }} />
+          <img className="pm-hero__pin" src={asset("ui/place-frequent.webp")} alt="" style={{ bottom: 22, left: 120, width: 32, height: 32 }} />
         </div>
 
         {/* 저장한 장소 */}

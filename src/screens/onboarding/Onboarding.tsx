@@ -1117,10 +1117,10 @@ function SignupStep({
                 onClick={() => setGender(g.value)}
                 style={{
                   flex: 1,
-                  height: 46,
+                  height: 48,
                   borderRadius: 12,
                   fontWeight: 700,
-                  fontSize: 14,
+                  fontSize: "var(--type-body-sm)",
                   border: gender === g.value ? "none" : "1.5px solid var(--line-strong)",
                   background: gender === g.value ? "var(--hy-accent)" : "#fff",
                   color: gender === g.value ? "#fff" : "var(--fg-body)",
@@ -1399,9 +1399,9 @@ function PermsStep({
               className="ob-perm-check"
               style={{
                 width: "auto",
-                padding: "0 11px",
+                padding: "0 12px",
                 height: 24,
-                fontSize: 11.5,
+                fontSize: "var(--type-caption)",
                 fontWeight: 800,
                 color: "#8FA093",
                 background: "#EEF3F0",

@@ -138,7 +138,7 @@ export function WeeklyFamilyReport() {
                   ].map(({ label, icon }) => (
                     <div key={label} className="hy-card wr-preview__item">
                       <span>
-                        <img src={asset(icon)} alt="" style={{ width: 26, height: 26, objectFit: "contain" }} />
+                        <img src={asset(icon)} alt="" style={{ width: 24, height: 24, objectFit: "contain" }} />
                       </span>
                       <b>{label}</b>
                       <small>프리미엄에서 기록이 쌓이면 보여드려요</small>

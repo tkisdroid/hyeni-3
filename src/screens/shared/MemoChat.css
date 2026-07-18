@@ -339,8 +339,8 @@
   color: var(--fg-placeholder);
 }
 .mc-send {
-  width: 42px;
-  height: 42px;
+  width: var(--control-min-size);
+  height: var(--control-min-size);
   border-radius: 50%;
   background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
   box-shadow: 0 8px 18px -6px rgba(240, 81, 143, 0.7);
@@ -464,7 +464,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 .mc-loc-title {
   font-size: var(--type-caption);

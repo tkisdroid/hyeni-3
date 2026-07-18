@@ -477,7 +477,7 @@ export function ChildHome() {
         {/* ── 가방 챙기기 ───────────────────────────────────────────── */}
         <div className="kd-card">
           <div className="kd-prep__head">
-            <span className="kd-title" style={{ fontSize: 20 }}>
+            <span className="kd-title" style={{ fontSize: "var(--type-title-lg)" }}>
               🎒 가방 챙기기
             </span>
             <span className="kd-prep__count">
@@ -645,7 +645,7 @@ export function ChildHome() {
         {/* ── 지금 상태 보내기 ──────────────────────────────────────── */}
         <div className="kd-card">
           <div className="kd-status__head">
-            <span className="kd-title" style={{ fontSize: 20 }}>
+            <span className="kd-title" style={{ fontSize: "var(--type-title-lg)" }}>
               💬 지금 상태 보내기
             </span>
             <span className="kd-status__sub">누르면 바로 알려줄게</span>
@@ -670,7 +670,7 @@ export function ChildHome() {
         <div className="kd-card">
           <div className="kd-tt__head">
             <img src={asset("ui/calendar-heart.webp")} alt="" />
-            <span className="kd-title" style={{ fontSize: 20 }}>
+            <span className="kd-title" style={{ fontSize: "var(--type-title-lg)" }}>
               오늘 시간표
             </span>
             <span className="kd-tt__date">{dateLabel}</span>
@@ -681,7 +681,7 @@ export function ChildHome() {
         {/* ── 내 색깔 고르기 ────────────────────────────────────────── */}
         <div className="kd-card">
           <div className="kd-color__head">
-            <span className="kd-title" style={{ fontSize: 20 }}>
+            <span className="kd-title" style={{ fontSize: "var(--type-title-lg)" }}>
               🎨 내 색깔 고르기
             </span>
             <span className="kd-color__hint">앱 색이 바뀌어</span>

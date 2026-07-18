@@ -13,7 +13,7 @@
   align-items: center;
   justify-content: center;
   gap: 44px;
-  padding: calc(env(safe-area-inset-top, 0px) + 8px) 0 calc(env(safe-area-inset-bottom, 0px) + 34px);
+  padding: calc(env(safe-area-inset-top, 0px) + 8px) 0 calc(env(safe-area-inset-bottom, 0px) + 32px);
   overflow: hidden;
   isolation: isolate;
   animation: hy-fadein 0.3s ease forwards;
@@ -74,8 +74,9 @@
 }
 .sp-title {
   margin-top: 16px;
-  font-size: 32px;
-  font-weight: 800;
+  font-size: var(--type-display);
+  line-height: var(--type-display-line-height);
+  font-weight: var(--type-display-weight);
   letter-spacing: -0.02em;
   color: var(--fg-primary);
   white-space: nowrap;
@@ -86,11 +87,11 @@
 }
 .sp-sub {
   margin-top: 12px;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
   color: var(--fg-muted);
   text-align: center;
-  line-height: 1.55;
 }
 
 /* ── 로딩 인디케이터(점 3개 + 문구) ─────────────────────────────────── */
@@ -104,7 +105,7 @@
 }
 .sp-dots {
   display: inline-flex;
-  gap: 7px;
+  gap: 8px;
   align-items: center;
 }
 .sp-dot {
@@ -118,8 +119,9 @@
 .sp-dot:nth-child(2) { animation-delay: 0.16s; }
 .sp-dot:nth-child(3) { animation-delay: 0.32s; }
 .sp-loadtext {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
   color: var(--fg-muted);
 }
 

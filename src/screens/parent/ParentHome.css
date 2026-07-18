@@ -208,7 +208,7 @@
   padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 .ph-sched-row {
   text-align: left;
@@ -460,7 +460,7 @@
 .ph-child__device {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   flex: 1 1 auto;
   min-width: 0;
   font-size: var(--type-caption);
@@ -806,7 +806,7 @@
 }
 .ph-recent-row__badge {
   flex: none;
-  padding: 2px 4px;
+  padding: 4px 4px;
   border-radius: var(--radius-pill);
   background: var(--hy-accent-soft);
   color: var(--hy-accent-text);
@@ -864,7 +864,7 @@
   padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 .ph-prep-row {
   display: flex;
@@ -901,7 +901,7 @@
 }
 .ph-prep-kind {
   flex: none;
-  padding: 2px 8px;
+  padding: 4px 8px;
   border-radius: 999px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
@@ -1018,7 +1018,7 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 4px 2px;
+  padding: 4px 0;
   border-radius: 16px;
   --press: 0.93;
 }

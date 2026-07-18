@@ -301,7 +301,7 @@
 }
 .sub-compare__title {
   margin-bottom: 10px;
-  padding-left: 2px;
+  padding-left: 4px;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
@@ -364,7 +364,7 @@
 .sub-table__col-badge {
   display: inline-block;
   margin-top: 4px;
-  padding: 2px 8px;
+  padding: 4px 8px;
   border-radius: 999px;
   background: var(--gold-600);
   font-size: var(--type-caption);

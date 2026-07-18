@@ -1,7 +1,7 @@
 /* 프로필 편집 — 화면 전용 스타일 (원본 dc.html 1668–1698행 값 1:1) */
 
 .pe-root {
-  min-height: 100dvh;
+  min-height: 100%;
   background: radial-gradient(120% 42% at 50% 0%, #ffe7f0 0%, rgba(255, 231, 240, 0) 55%),
     linear-gradient(180deg, #fdf4f1, #f7f4f3);
   animation: hy-fadein 0.35s ease forwards;
@@ -142,7 +142,7 @@
 
   color: #6d6469;
   margin-bottom: 10px;
-  padding: 0 2px;
+  padding: 0;
 }
 .pe-label--sm {
   margin-bottom: 8px;
@@ -159,7 +159,7 @@
 
   color: var(--hy-accent-text);
   background: var(--hy-accent-soft);
-  padding: 2px 8px;
+  padding: 4px 8px;
   border-radius: 999px;
 }
 
@@ -198,7 +198,7 @@
 /* ── 보조 안내 ─────────────────────────────────────────────────────────── */
 .pe-hint {
   margin-top: 8px;
-  padding: 0 2px;
+  padding: 0;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);

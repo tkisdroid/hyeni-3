@@ -1,7 +1,7 @@
 /* AI 친구 설정(K-04) — 화면 전용 스타일. 라벤더 톤(아이 · AI). */
 
 .afs {
-  min-height: 100dvh;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   background: linear-gradient(180deg, #f1ecff 0%, #fce9f2 55%, #fff2e6 100%);
@@ -52,7 +52,7 @@
 /* ── 선택 미리보기 ─────────────────────────────────────────────────────────── */
 .afs-preview {
   text-align: center;
-  padding: 8px 0 2px;
+  padding: 8px 0 4px;
 }
 .afs-preview__art {
   width: 120px;
@@ -96,7 +96,7 @@
   font-weight: var(--type-label-weight);
 
   color: #6d4e9c;
-  padding: 0 2px;
+  padding: 0;
   margin-top: 4px;
 }
 

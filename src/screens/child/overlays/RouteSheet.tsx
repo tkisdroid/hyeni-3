@@ -71,9 +71,9 @@ export function RouteSheet({
             <img src={asset("ui/place-home.webp")} alt="" />
             <span>지금 여기</span>
           </span>
-          <img className="ks-route__deco" src={asset("bg/crosswalk.webp")} alt="" style={{ width: 74 }} />
+          <img className="ks-route__deco" src={asset("bg/crosswalk.webp")} alt="" style={{ width: 72 }} />
           <img className="ks-route__deco" src={asset("bg/busstop.webp")} alt="" style={{ width: 56 }} />
-          <img className="ks-route__deco" src={asset("bg/playground.webp")} alt="" style={{ width: 82 }} />
+          <img className="ks-route__deco" src={asset("bg/playground.webp")} alt="" style={{ width: 80 }} />
           <span className="ks-route__spot">
             <span className="ks-route__dest">
               <img src={asset(icon)} alt="" />

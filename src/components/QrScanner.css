@@ -9,7 +9,7 @@
   flex-direction: column;
 }
 .qrs-top {
-  padding: calc(env(safe-area-inset-top, 0px) + 18px) 20px 14px;
+  padding: calc(env(safe-area-inset-top, 0px) + 20px) 20px 16px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -17,18 +17,21 @@
 .qrs-close {
   background: rgba(255, 255, 255, 0.12);
   border-radius: 12px;
-  padding: 9px 14px;
-  font-size: 14px;
-  font-weight: 700;
+  min-height: var(--control-min-size);
+  padding: 8px 16px;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
   color: #fff;
   --press: 0.95;
 }
 .qrs-title {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 16px;
-  font-weight: 800;
+  gap: 8px;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
   color: #fff;
 }
 .qrs-body {
@@ -38,7 +41,7 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 18px;
+  gap: 20px;
 }
 .qrs-cam {
   width: 100%;
@@ -70,8 +73,9 @@
   justify-content: center;
   background: rgba(15, 23, 42, 0.72);
   color: #fff;
-  font-size: 14.5px;
-  font-weight: 700;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
 }
 .qrs-guide {
   max-width: 340px;
@@ -79,20 +83,22 @@
   color: #fff;
 }
 .qrs-guide-title {
-  font-size: 16px;
-  font-weight: 800;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
 }
 .qrs-guide-sub {
   margin-top: 6px;
-  font-size: 13px;
-  line-height: 1.6;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
   color: rgba(255, 255, 255, 0.8);
-  font-weight: 600;
+  font-weight: var(--type-label-weight);
 }
 .qrs-error {
   margin-top: 12px;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
   color: #ffb4ab;
 }
 .qrs-actions {
@@ -105,9 +111,11 @@
 .qrs-retry,
 .qrs-settings {
   border-radius: 14px;
-  padding: 10px 14px;
-  font-size: 13px;
-  font-weight: 700;
+  min-height: var(--control-min-size);
+  padding: 12px 16px;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
   color: #fff;
   --press: 0.96;
 }

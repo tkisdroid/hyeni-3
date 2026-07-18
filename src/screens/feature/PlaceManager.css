@@ -1,7 +1,7 @@
 /* 장소 관리 — 화면 전용 스타일 (원본 dc.html 1210–1250행 값 1:1) */
 
 .pm-screen {
-  min-height: 100dvh;
+  min-height: 100%;
   animation: hy-fadein 0.35s ease forwards;
 }
 
@@ -216,7 +216,7 @@
 }
 .pm-item__badge {
   flex: none;
-  padding: 2px 8px;
+  padding: 4px 8px;
   border-radius: 999px;
   background: var(--bg-page);
   color: var(--fg-muted);

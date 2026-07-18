@@ -929,9 +929,9 @@
   max-height: calc(100dvh - 32px);
   overflow-y: auto;
   padding: var(--space-6);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-20);
   background: var(--bg-card);
-  box-shadow: var(--shadow-floating);
+  box-shadow: var(--shadow-modal);
 }
 .ob-consent-dialog__eyebrow {
   display: block;

@@ -469,7 +469,7 @@ export function ParentHome() {
                 <Loading label="일정을 불러오는 중" />
               </div>
             ) : todayEvents.length === 0 ? (
-              <div className="ph-sched-row" style={{ color: "var(--fg-muted)", fontSize: 14, fontWeight: 600, justifyContent: "center" }}>
+              <div className="ph-sched-row" style={{ color: "var(--fg-muted)", fontSize: "var(--type-body-sm)", fontWeight: 600, justifyContent: "center" }}>
                 오늘은 일정이 없어요
               </div>
             ) : (
@@ -481,7 +481,7 @@ export function ParentHome() {
                   onClick={() => navigate("/parent/calendar")}
                 >
                   <span className="ph-sched-icon" style={{ background: e.soft, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <img src={asset(e.icon)} alt="" style={{ width: 30, height: 30, objectFit: "contain" }} />
+                    <img src={asset(e.icon)} alt="" style={{ width: 32, height: 32, objectFit: "contain" }} />
                   </span>
                   <span className="ph-sched-main">
                     <span className="ph-sched-title">{e.title}</span>
@@ -808,7 +808,7 @@ export function ParentHome() {
             ) : prep.length === 0 ? (
               <div
                 className="ph-prep-row"
-                style={{ color: "var(--fg-muted)", fontSize: 14, fontWeight: 600, justifyContent: "center" }}
+                style={{ color: "var(--fg-muted)", fontSize: "var(--type-body-sm)", fontWeight: 600, justifyContent: "center" }}
               >
                 오늘은 준비물·숙제가 없어요
               </div>

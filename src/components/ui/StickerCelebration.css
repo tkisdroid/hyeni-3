@@ -32,7 +32,7 @@
   flex-direction: column;
   align-items: center;
   width: min(86vw, 360px);
-  padding: 30px 20px 34px;
+  padding: 32px 20px;
   border: 3px solid color-mix(in srgb, var(--bg-card) 76%, transparent);
   border-radius: 28px;
   background: color-mix(in srgb, var(--bg-card) 88%, transparent);
@@ -41,8 +41,9 @@
 }
 
 .sticker-celebration__eyebrow {
-  font-size: 18px;
-  font-weight: 900;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
   color: var(--rose-text);
 }
 
@@ -57,17 +58,18 @@
 
 .sticker-celebration__title {
   max-width: 100%;
-  font-size: clamp(31px, 9vw, 48px);
-  font-weight: 950;
-  line-height: 1.02;
+  font-size: var(--type-display);
+  line-height: var(--type-display-line-height);
+  font-weight: var(--type-display-weight);
   color: var(--ink);
   overflow-wrap: anywhere;
 }
 
 .sticker-celebration__sub {
   margin-top: 10px;
-  font-size: 15px;
-  font-weight: 850;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
   color: var(--fg-tertiary);
 }
 
@@ -78,8 +80,8 @@
 }
 
 .sticker-celebration__confetti span {
-  --x: calc((var(--i) * 37 % 100) * 1vw);
-  --delay: calc((var(--i) % 8) * -0.11s);
+  --x: calc((var(--i, 0) * 37 % 100) * 1vw);
+  --delay: calc((var(--i, 0) % 8) * -0.11s);
   position: absolute;
   left: var(--x);
   top: -16px;
@@ -87,7 +89,7 @@
   height: 20px;
   border-radius: 3px;
   background: var(--hy-accent);
-  transform: rotate(calc(var(--i) * 17deg));
+  transform: rotate(calc(var(--i, 0) * 17deg));
   animation: sc-confetti 2.4s var(--delay) linear infinite;
 }
 
@@ -106,7 +108,9 @@
 .sticker-celebration__stars span {
   position: absolute;
   z-index: 3;
-  font-size: 54px;
+  font-size: var(--type-display);
+  line-height: var(--type-display-line-height);
+  font-weight: var(--type-display-weight);
   color: var(--bg-card);
   text-shadow: 0 8px 20px color-mix(in srgb, var(--rose-text) 28%, transparent);
   animation: sc-star 1.3s ease-in-out infinite;
@@ -154,7 +158,7 @@
 
 @keyframes sc-confetti {
   from { transform: translate3d(0, -20px, 0) rotate(0deg); }
-  to { transform: translate3d(calc(((var(--i) % 5) - 2) * 18px), 112vh, 0) rotate(560deg); }
+  to { transform: translate3d(calc(((var(--i, 0) % 5) - 2) * 18px), 112vh, 0) rotate(560deg); }
 }
 
 @keyframes sc-star {

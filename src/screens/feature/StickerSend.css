@@ -106,7 +106,7 @@
 
   color: var(--fg-muted);
   margin-bottom: 8px;
-  padding: 0 2px;
+  padding: 0;
 }
 .ss-grid {
   padding: 8px;
@@ -118,9 +118,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   min-width: 0;
-  padding: 4px 2px;
+  padding: 4px 0;
   border-radius: 14px;
   background: transparent;
   border: 2px solid transparent;
@@ -153,7 +153,7 @@
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  padding: 2px;
+  padding: 4px;
   scrollbar-width: none;
 }
 .ss-children::-webkit-scrollbar {

@@ -1,7 +1,7 @@
 /* 알림 센터 — 화면 전용 스타일 (원본 dc.html 1135–1160행 값 1:1) */
 
 .nc-root {
-  min-height: 100dvh;
+  min-height: 100%;
   animation: hy-fadein 0.35s ease forwards;
 }
 
@@ -172,7 +172,7 @@
 .nc-filters {
   display: flex;
   gap: 8px;
-  padding: 2px 16px 4px;
+  padding: 4px 16px 4px;
   overflow-x: auto;
   scrollbar-width: none;
 }

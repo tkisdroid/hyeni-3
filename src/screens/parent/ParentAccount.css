@@ -51,9 +51,9 @@
   align-items: center;
   gap: 12px;
   padding: 16px;
-  border-radius: 22px;
+  border-radius: var(--radius-20);
   background: linear-gradient(120deg, #e6f2fb, #f1ecff);
-  box-shadow: 0 10px 26px -12px rgba(46, 134, 193, 0.25);
+  box-shadow: var(--shadow-soft);
 }
 .pa-profile__avatar {
   width: 56px;
@@ -214,7 +214,7 @@
   font-weight: var(--type-caption-weight);
 
   color: var(--fg-muted);
-  padding: 0 2px;
+  padding: 0;
 }
 
 /* ── 계정 액션(로그아웃 / 탈퇴) ───────────────────────────────────────────── */
