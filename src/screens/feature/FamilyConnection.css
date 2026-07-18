@@ -136,7 +136,7 @@
   margin-top: 2px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 
 /* ── 상태 칩 ────────────────────────────────────────────────────────────── */
@@ -210,7 +210,7 @@
   margin-top: 2px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 
 /* ── 보조 버튼 ──────────────────────────────────────────────────────────── */

@@ -104,7 +104,7 @@
   margin-bottom: 11px;
 }
 .pm-label--saved {
-  color: #8b7e84;
+  color: var(--fg-muted);
 }
 .pm-label--danger {
   color: #c0334c;
@@ -219,7 +219,7 @@
   margin-top: 2px;
   font-size: 12px;
   font-weight: 600;
-  color: #a99fa4;
+  color: var(--fg-muted);
 }
 .pm-item__edit {
   width: 34px;
@@ -309,5 +309,5 @@
   margin-top: 2px;
   font-size: 12px;
   font-weight: 600;
-  color: #d2889a;
+  color: var(--danger-text);
 }

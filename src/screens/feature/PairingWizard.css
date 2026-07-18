@@ -111,12 +111,12 @@
   color: var(--hy-accent-text);
 }
 .pw-count.locked .pw-count__n {
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 .pw-count__u {
   font-size: 11px;
   font-weight: 700;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 .pw-count.locked .pw-count__u {
   color: var(--gold-text);

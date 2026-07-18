@@ -58,7 +58,7 @@
   margin-top: 6px;
   font-size: 14px;
   font-weight: 600;
-  color: #8b7e84;
+  color: var(--fg-muted);
   line-height: 1.45;
 }
 
@@ -102,7 +102,7 @@
   margin-top: 3px;
   font-size: 12.5px;
   font-weight: 700;
-  color: #a9812f;
+  color: var(--gold-text);
 }
 .sub-active__check {
   color: var(--gold-600);
@@ -157,7 +157,7 @@
   margin-top: 3px;
   font-size: 12.5px;
   font-weight: 600;
-  color: #a99fa4;
+  color: var(--fg-muted);
 }
 .sub-plan__price {
   flex: none;
@@ -214,7 +214,7 @@
   margin-top: 1px;
   font-size: 12px;
   font-weight: 600;
-  color: #a99fa4;
+  color: var(--fg-muted);
 }
 .sub-benefit__check {
   flex: none;
@@ -229,7 +229,7 @@
   background: rgba(224, 138, 30, 0.08);
   font-size: 11.5px;
   font-weight: 600;
-  color: #a9812f;
+  color: var(--gold-text);
   line-height: 1.5;
 }
 
@@ -260,7 +260,7 @@
   text-align: center;
   font-size: 11px;
   font-weight: 600;
-  color: #b7adb2;
+  color: var(--fg-muted);
   line-height: 1.5;
 }
 
@@ -298,7 +298,7 @@
 }
 .sub-table__corner {
   font-weight: 800;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 .sub-table__col {
   padding: 10px 6px;

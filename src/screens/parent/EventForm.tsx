@@ -947,13 +947,17 @@ export function EventForm() {
         >
           {busy
             ? "저장 중…"
-            : !familyReady
-              ? "가족 정보 확인 중"
-              : editingNeedsAssignment
-                ? "배정 저장"
-                : mode === "edit"
-                  ? "수정 저장"
-                  : "일정 저장"}
+            : familyQuery.isLoading
+              ? "가족 정보 확인 중…"
+              : familyQuery.isError
+                ? "가족 정보 불러오기 실패"
+                : !familyQuery.data
+                  ? "저장할 가족 정보가 없어요"
+                  : editingNeedsAssignment
+                    ? "배정 저장"
+                    : mode === "edit"
+                      ? "수정 저장"
+                      : "일정 저장"}
         </button>
       </div>
 

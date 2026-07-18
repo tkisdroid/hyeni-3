@@ -15,7 +15,7 @@
 .pc-year {
   font-size: 13px;
   font-weight: 700;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 .pc-month {
   font-size: 26px;
@@ -73,7 +73,7 @@
   text-align: center;
   font-size: 11.5px;
   font-weight: 700;
-  color: #b7adb2;
+  color: var(--fg-muted);
 }
 .pc-grid {
   display: grid;
@@ -121,7 +121,7 @@
   font-size: 7.5px;
   font-weight: 800;
   line-height: 1;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
   margin-left: 1px;
 }
 
@@ -283,7 +283,7 @@
   gap: 6px;
   font-size: 11.5px;
   font-weight: 700;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 /* 다자녀: 배정 아이 이름 배지(배정 누락은 배정 필요로 표시) */
 .pc-event__child {
@@ -309,7 +309,7 @@
   display: block;
   font-size: 11.5px;
   font-weight: 600;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 .pc-event__tag {
   flex: none;
@@ -341,7 +341,7 @@
   margin-top: 4px;
   font-size: 12.5px;
   font-weight: 600;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 
 /* ── 일정 상세 바텀시트(P-08) ───────────────────────────────────────────── */
@@ -462,7 +462,7 @@
 .pc-sheet__note {
   font-size: 11px;
   font-weight: 700;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
   padding: 0 2px;
 }
 .pc-sheet__confirm {

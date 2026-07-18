@@ -84,7 +84,7 @@
   margin-top: 2px;
   font-size: 12.5px;
   font-weight: 700;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 .cd-hero__device {
   display: inline-flex;
@@ -101,7 +101,7 @@
 }
 .cd-hero__device svg {
   flex: none;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 .cd-safety {
   margin-top: 8px;
@@ -158,7 +158,7 @@
 .cd-stat__k {
   font-size: 11.5px;
   font-weight: 700;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 .cd-stat__v {
   font-size: 20px;
@@ -237,7 +237,7 @@
   margin-top: 2px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 
 /* ── 로딩/빈 상태 ──────────────────────────────────────────────────────── */
@@ -302,7 +302,7 @@
   margin-top: 2px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 
 /* ── 삭제 확인 시트(인앱 오버레이) ──────────────────────────────────────── */

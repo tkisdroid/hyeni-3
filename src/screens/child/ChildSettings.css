@@ -76,7 +76,7 @@
 .ks-hero__age {
   font-size: 15px;
   font-weight: 800;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 .ks-hero__chip {
   margin-top: 8px;
@@ -152,7 +152,7 @@
   margin-top: 2px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 
 /* ── 상태/토글/부탁 칩 ──────────────────────────────────────────────────── */

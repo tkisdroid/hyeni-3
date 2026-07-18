@@ -183,7 +183,7 @@
   text-align: center;
   font-size: 12px;
   font-weight: 600;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 
 /* ── 확인 모달 ──────────────────────────────────────────────────────────── */

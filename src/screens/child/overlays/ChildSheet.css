@@ -83,7 +83,7 @@
   margin-top: 6px;
   font-size: 13px;
   font-weight: 700;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 
 .ks-cta {
@@ -287,7 +287,7 @@
   display: block;
   font-size: 12px;
   font-weight: 700;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 .ks-friend__check {
   width: 28px;
@@ -388,7 +388,7 @@
   margin-top: 12px;
   font-size: 12.5px;
   font-weight: 700;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
   text-align: center;
 }
 

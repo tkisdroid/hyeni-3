@@ -95,7 +95,7 @@
 }
 .tn-input::placeholder,
 .tn-textarea::placeholder {
-  color: var(--fg-faint);
+  color: var(--fg-placeholder);
   font-weight: 600;
 }
 .tn-input:focus,
@@ -149,7 +149,7 @@
   box-sizing: border-box;
 }
 .tn-chip-input::placeholder {
-  color: var(--fg-faint);
+  color: var(--fg-placeholder);
   font-weight: 700;
 }
 

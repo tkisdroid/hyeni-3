@@ -476,7 +476,7 @@
 .pl-tl-cell__label {
   font-size: 10.5px;
   font-weight: 600;
-  color: #a99fa4;
+  color: var(--fg-muted);
 }
 
 /* 갱신 실패 / 위치 없음 안내 → 상태 화면 */
@@ -853,7 +853,7 @@
 .pl-stays__count {
   font-size: 12.5px;
   font-weight: 700;
-  color: #8B6CE0;
+  color: var(--lav-text);
 }
 .pl-stays__list {
   display: flex;

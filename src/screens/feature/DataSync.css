@@ -178,7 +178,7 @@
   font-size: 11.5px;
   font-weight: 600;
   line-height: 1.5;
-  color: #a99fa4;
+  color: var(--fg-muted);
   padding: 0 4px;
   margin-top: -4px;
 }

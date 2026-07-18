@@ -241,7 +241,7 @@
   margin-top: 3px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 .ph-sched-tag {
   flex: none;
@@ -423,7 +423,7 @@
 .ph-child__grade {
   font-size: 11.5px;
   font-weight: 700;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 .ph-child__device {
   display: inline-flex;
@@ -433,7 +433,7 @@
   min-width: 0;
   font-size: 11.5px;
   font-weight: 700;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 .ph-child__device svg {
   flex: none;
@@ -594,7 +594,7 @@
 .ph-recent-empty {
   font-size: 12.5px;
   font-weight: 600;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 .ph-safety__grid {
   display: grid;
@@ -624,7 +624,7 @@
   display: block;
   font-size: 11px;
   font-weight: 700;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 .ph-metric__v {
   display: block;
@@ -657,7 +657,7 @@
   display: block;
   font-size: 10.5px;
   font-weight: 800;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 .ph-app-summary__v {
   display: block;
@@ -694,7 +694,7 @@
   margin-left: auto;
   font-size: 11px;
   font-weight: 700;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 .ph-recent-list {
   display: flex;
@@ -767,7 +767,7 @@
 .ph-safety__refresh > span {
   font-size: 11.5px;
   font-weight: 600;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 .ph-safety__refresh button {
   display: inline-flex;
@@ -892,7 +892,7 @@
   margin-top: 2px;
   font-size: 11.5px;
   font-weight: 600;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 .ph-memo__badge {
   flex: none;

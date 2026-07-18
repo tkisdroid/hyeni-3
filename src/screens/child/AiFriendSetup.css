@@ -80,7 +80,7 @@
   margin-top: 3px;
   font-size: 12.5px;
   font-weight: 700;
-  color: #9b7fb8;
+  color: var(--lav-text);
 }
 
 /* ── 섹션 라벨 ─────────────────────────────────────────────────────────────── */
@@ -160,7 +160,7 @@
 .afs-trait-hint {
   font-size: 11.5px;
   font-weight: 700;
-  color: #9b7fb8;
+  color: var(--lav-text);
 }
 
 /* ── CTA ───────────────────────────────────────────────────────────────────── */

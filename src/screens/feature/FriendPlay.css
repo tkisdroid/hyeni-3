@@ -68,7 +68,7 @@
   margin-top: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: #8b7e84;
+  color: var(--fg-muted);
   line-height: 1.5;
 }
 
@@ -157,7 +157,7 @@
   padding: 8px 2px 2px;
   font-size: 13px;
   font-weight: 600;
-  color: #8b7e84;
+  color: var(--fg-muted);
   line-height: 1.5;
 }
 

@@ -107,7 +107,7 @@
 .cs-hold__hint {
   font-size: 13px;
   font-weight: 800;
-  color: #e88;
+  color: var(--danger-text);
 }
 
 .cs-cancel {

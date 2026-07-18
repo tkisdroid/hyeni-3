@@ -272,7 +272,7 @@
 .wr-kv span {
   font-size: var(--text-caption);
   font-weight: var(--weight-bold);
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 
 .wr-kv strong {

@@ -140,7 +140,7 @@
   margin-top: 1px;
   font-size: 11.5px;
   font-weight: 600;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 
 /* iOS 스타일 토글 스위치 */
@@ -339,7 +339,7 @@
   text-align: center;
   font-size: 11.5px;
   font-weight: 600;
-  color: var(--fg-disabled);
+  color: var(--fg-muted);
 }
 
 /* ── 탈퇴 확인 모달 ───────────────────────────────────────────────────────── */

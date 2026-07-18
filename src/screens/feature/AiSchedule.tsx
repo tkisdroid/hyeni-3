@@ -486,6 +486,7 @@ export function AiSchedule() {
             className="ais-confirm hy-press"
             onClick={handleConfirm}
             disabled={createM.isPending}
+            aria-busy={createM.isPending}
           >
             <Check size={20} strokeWidth={2.4} color="#fff" />
             {createM.isPending ? "추가하는 중..." : "이대로 추가하기"}
@@ -496,6 +497,7 @@ export function AiSchedule() {
             className="ais-confirm hy-press"
             onClick={handleParse}
             disabled={!canParse || parseM.isPending}
+            aria-busy={parseM.isPending}
           >
             <Sparkles size={20} strokeWidth={2.4} color="#fff" />
             {parseM.isPending

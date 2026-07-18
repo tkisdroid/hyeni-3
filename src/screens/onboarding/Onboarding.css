@@ -335,7 +335,7 @@
   margin-top: 6px;
   font-size: 14px;
   font-weight: 600;
-  color: #5fa98a;
+  color: var(--mint-text);
   line-height: 1.5;
 }
 .ob-teacher-form {

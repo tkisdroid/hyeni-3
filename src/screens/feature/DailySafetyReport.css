@@ -867,7 +867,7 @@
 .dr-device-grid span {
   font-size: var(--text-micro);
   font-weight: var(--weight-heavy);
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 
 .dr-device-grid b {
@@ -991,7 +991,7 @@
 .dr-memo small {
   font-size: var(--text-micro);
   font-weight: var(--weight-bold);
-  color: var(--fg-faint);
+  color: var(--fg-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
