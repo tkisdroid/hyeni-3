@@ -220,14 +220,14 @@ export function Onboarding() {
     syncFromSession();
     try {
       const fam = await getMyFamily();
-      if (fam?.familyId) {
-        navigate("/parent/home");
+      if (fam === null) {
+        setStep("connect");
         return;
       }
+      navigate("/parent/home");
     } catch {
-      /* 가족 조회 실패 → 연결 단계로 진행 */
+      throw new Error("가족 정보를 확인하지 못했어요. 다시 시도해 주세요.");
     }
-    setStep("connect");
   };
 
   const routeAfterChildSession = () => {

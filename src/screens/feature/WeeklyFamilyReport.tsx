@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import { AlertTriangle, ChevronLeft, RefreshCw } from "lucide-react";
 import { asset } from "@/lib/assets";
+import { Loading } from "@/components/ui/Loading";
 import { useActiveChild } from "@/app/activeChild";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { useEvents, useDailySupplies } from "@/queries/useSchedule";
@@ -9,6 +10,7 @@ import { useMemoThread } from "@/queries/useMemo";
 import { useParentAlerts } from "@/queries/useNotifications";
 import { FEATURES, canUse, lockMessageFor } from "@/transform/tierPolicy";
 import { parseAppDateKey } from "@/transform/dateKey";
+import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import { buildRecentWeekDateKeys, summarizeWeeklyReport } from "@/transform/weeklyReportView";
 import { useMessage } from "@/i18n/useMessage";
 import "./WeeklyFamilyReport.css";
@@ -38,29 +40,37 @@ export function WeeklyFamilyReport() {
   const alertsQuery = useParentAlerts(80);
 
   const allowed = ready && canUse(tier, FEATURES.WEEKLY_REPORT);
-  const summary = useMemo(
-    () =>
-      summarizeWeeklyReport({
-        childMemberId: activeChild?.id ?? null,
-        childUserId: activeChild?.user_id ?? null,
-        weekDateKeys,
-        events: eventsQuery.data ?? [],
-        supplies: suppliesQuery.data ?? [],
-        memos: memoThread.data ?? [],
-        alerts: alertsQuery.data ?? [],
-      }),
-    [
-      activeChild?.id,
-      activeChild?.user_id,
-      alertsQuery.data,
-      eventsQuery.data,
-      memoThread.data,
-      suppliesQuery.data,
+  const queryState = resolveQueryTruthState([
+    { isLoading: eventsQuery.isLoading, isError: eventsQuery.isError },
+    { isLoading: suppliesQuery.isLoading, isError: suppliesQuery.isError },
+    { isLoading: memoThread.isLoading, isError: memoThread.isError },
+    { isLoading: alertsQuery.isLoading, isError: alertsQuery.isError },
+  ]);
+  const summary = useMemo(() => {
+    if (!allowed) return null;
+    if (queryState !== "ready") return null;
+    return summarizeWeeklyReport({
+      childMemberId: activeChild?.id ?? null,
+      childUserId: activeChild?.user_id ?? null,
       weekDateKeys,
-    ],
-  );
-  const loading =
-    eventsQuery.isLoading || suppliesQuery.isLoading || memoThread.isLoading || alertsQuery.isLoading;
+      events: eventsQuery.data ?? [],
+      supplies: suppliesQuery.data ?? [],
+      memos: memoThread.data ?? [],
+      alerts: alertsQuery.data ?? [],
+    });
+  }, [
+    activeChild?.id,
+    activeChild?.user_id,
+    allowed,
+    alertsQuery.data,
+    eventsQuery.data,
+    memoThread.data,
+    queryState,
+    suppliesQuery.data,
+    weekDateKeys,
+  ]);
+  const refetching =
+    eventsQuery.isFetching || suppliesQuery.isFetching || memoThread.isFetching || alertsQuery.isFetching;
 
   return (
     <div className="wr-root">
@@ -136,30 +146,61 @@ export function WeeklyFamilyReport() {
                   ))}
                 </section>
               </>
-            ) : (
+            ) : queryState === "error" ? (
+              <section className="hy-card wr-state wr-state--error" role="alert" aria-live="assertive">
+                <span className="wr-state__icon" aria-hidden="true">
+                  <AlertTriangle size={25} strokeWidth={2.3} />
+                </span>
+                <b>주간 리포트를 불러오지 못했어요</b>
+                <p>일정, 준비물, 대화, 안전 알림을 다시 확인해 주세요.</p>
+                <button
+                  type="button"
+                  className="wr-state__retry hy-press"
+                  onClick={() =>
+                    void Promise.all([
+                      eventsQuery.refetch(),
+                      suppliesQuery.refetch(),
+                      memoThread.refetch(),
+                      alertsQuery.refetch(),
+                    ])
+                  }
+                  disabled={refetching}
+                >
+                  <RefreshCw
+                    size={17}
+                    strokeWidth={2.4}
+                    className={refetching ? "wr-spin" : undefined}
+                    aria-hidden="true"
+                  />
+                  {refetching ? "다시 확인하고 있어요…" : "다시 불러오기"}
+                </button>
+              </section>
+            ) : queryState === "loading" ? (
+              <section className="hy-card wr-state" aria-busy="true">
+                <Loading label="주간 리포트를 불러오는 중" />
+              </section>
+            ) : summary ? (
               <>
                 <section className="wr-metrics">
                   <div className="hy-card wr-metric">
                     <img className="wr-metric__ic" src={asset("ui/calendar-heart.webp")} alt="" />
                     <span>이번 주 일정</span>
-                    <b>{loading ? "-" : `${summary.eventCount}개`}</b>
+                    <b>{summary.eventCount}개</b>
                   </div>
                   <div className="hy-card wr-metric">
                     <img className="wr-metric__ic" src={asset("cat/study.webp")} alt="" />
                     <span>준비물 체크</span>
-                    <b>
-                      {loading ? "-" : `${summary.supplyDone}/${summary.supplyTotal}`}
-                    </b>
+                    <b>{summary.supplyDone}/{summary.supplyTotal}</b>
                   </div>
                   <div className="hy-card wr-metric">
                     <img className="wr-metric__ic" src={asset("ui/chat-heart.webp")} alt="" />
                     <span>대화 메시지</span>
-                    <b>{loading ? "-" : `${summary.memoCount}개`}</b>
+                    <b>{summary.memoCount}개</b>
                   </div>
                   <div className="hy-card wr-metric">
                     <img className="wr-metric__ic" src={asset("ui/bell.webp")} alt="" />
                     <span>안전 알림</span>
-                    <b>{loading ? "-" : `${summary.alertCount}개`}</b>
+                    <b>{summary.alertCount}개</b>
                   </div>
                 </section>
 
@@ -197,7 +238,7 @@ export function WeeklyFamilyReport() {
                   )}
                 </section>
               </>
-            )}
+            ) : null}
           </>
         )}
       </div>
