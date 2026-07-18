@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronLeft, MapPin } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useParentAlerts, useMarkAlertRead } from "@/queries/useNotifications";
+import { useSafeBack } from "@/app/useSafeBack";
 import { isDangerAlert, relativeTime } from "@/transform/notificationsView";
 import type { ParentAlert } from "@/lib/api/endpoints/notifications";
 import "./DangerAlert.css";
@@ -22,6 +23,7 @@ function iconOf(type: string): string {
 
 export function DangerAlert() {
   const navigate = useNavigate();
+  const goBack = useSafeBack("/notifications");
   const { data, isLoading, isError, refetch } = useParentAlerts();
   const markRead = useMarkAlertRead();
 
@@ -54,7 +56,7 @@ export function DangerAlert() {
           type="button"
           className="da-back hy-press"
           aria-label="뒤로"
-          onClick={() => navigate(-1)}
+          onClick={goBack}
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="var(--fg-secondary)" />
         </button>

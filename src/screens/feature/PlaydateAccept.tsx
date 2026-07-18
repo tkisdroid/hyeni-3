@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { ChevronLeft, MapPin, Check } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
@@ -10,6 +9,7 @@ import {
   useDeclinePlaydateInvite,
 } from "@/queries/usePlaydate";
 import type { PlaydateInvite } from "@/lib/api/endpoints/playdate";
+import { useSafeBack } from "@/app/useSafeBack";
 import "./PlaydateAccept.css";
 
 /** 친구 아바타(도메인엔 이름만 있어 index 파생). */
@@ -19,14 +19,14 @@ function errMsg(e: unknown): string {
   return e instanceof Error ? e.message : "";
 }
 
-/** 서버 에러코드 → 부모 눈높이 안내(존댓말). */
+/** 서버 에러코드 → 아이 눈높이 안내(반말). */
 function friendlyError(e: unknown): string {
   const m = errMsg(e);
-  if (m === "forbidden") return "수락·거절은 아이가 아이 기기에서 할 수 있어요.";
-  if (m === "invite_expired") return "요청이 만료됐어요.";
-  if (m === "invite_not_pending") return "이미 처리된 요청이에요.";
-  if (m === "already_active") return "이미 놀이 중인 친구예요.";
-  return m || "잠시 후 다시 시도해주세요.";
+  if (m === "forbidden") return "이 기기에서는 수락하거나 거절할 수 없어.";
+  if (m === "invite_expired") return "요청이 만료됐어.";
+  if (m === "invite_not_pending") return "이미 처리한 요청이야.";
+  if (m === "already_active") return "이미 놀이 중인 친구야.";
+  return m || "잠시 후 다시 시도해 줘.";
 }
 
 /** expires_at(ISO) → "N분 후 만료" 라벨(만료면 null). */
@@ -39,7 +39,7 @@ function expiresLabel(expiresAt: string | null): string | null {
 }
 
 export function PlaydateAccept() {
-  const navigate = useNavigate();
+  const goBack = useSafeBack("/child/home");
   const { show } = useToast();
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -57,7 +57,7 @@ export function PlaydateAccept() {
     setBusyId(invite.id);
     try {
       await accept.mutateAsync(invite.id);
-      show("놀이 약속이 연결됐어요!", "🎈");
+      show("놀이 약속이 연결됐어!", "🎈");
       await Promise.all([pendingQ.refetch(), activeQ.refetch()]);
     } catch (e) {
       show(friendlyError(e), "🎈");
@@ -70,7 +70,7 @@ export function PlaydateAccept() {
     setBusyId(invite.id);
     try {
       await decline.mutateAsync(invite.id);
-      show("요청을 거절했어요.", "🎈");
+      show("요청을 거절했어.", "🎈");
       await pendingQ.refetch();
     } catch (e) {
       show(friendlyError(e), "🎈");
@@ -86,7 +86,7 @@ export function PlaydateAccept() {
           type="button"
           className="pa-back hy-press"
           aria-label="뒤로"
-          onClick={() => navigate(-1)}
+          onClick={goBack}
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="var(--fg-secondary)" />
         </button>
@@ -95,7 +95,7 @@ export function PlaydateAccept() {
 
       <div className="pa-content">
         <p className="pa-intro">
-          근처 친구가 보낸 놀이 요청이에요. 확인하고 <b>수락</b>하면 함께 놀이가 시작돼요.
+          근처 친구가 보낸 놀이 요청이야. 확인하고 <b>수락</b>하면 함께 놀이가 시작돼.
         </p>
 
         {/* 진행 중 세션(연결됨) */}
@@ -107,7 +107,7 @@ export function PlaydateAccept() {
             </span>
             <span className="pa-active__text">
               {active.friend_child_name ?? "친구"}
-              {active.place_name ? ` · ${active.place_name}` : ""} 에서 놀이 중이에요.
+              {active.place_name ? ` · ${active.place_name}` : ""} 에서 놀이 중이야.
             </span>
           </div>
         ) : null}
@@ -115,9 +115,9 @@ export function PlaydateAccept() {
         {incoming.length === 0 ? (
           <div className="pa-empty">
             <img className="pa-empty__img" src={asset("ui/menu-friend-playdate.webp")} alt="" />
-            <div className="pa-empty__title">받은 놀이 요청이 없어요</div>
+            <div className="pa-empty__title">받은 놀이 요청이 없어</div>
             <div className="pa-empty__sub">
-              근처 친구가 “같이 놀자”를 보내면 여기에 표시돼요.
+              근처 친구가 “같이 놀자”를 보내면 여기에 표시돼.
             </div>
           </div>
         ) : (
@@ -150,7 +150,7 @@ export function PlaydateAccept() {
                   {r.place_name ?? "현재 장소"}
                 </div>
 
-                <div className="pa-note">“{r.friend_child_name ?? "친구"}(이)랑 같이 놀고 싶어요!”</div>
+                <div className="pa-note">“{r.friend_child_name ?? "친구"}(이)랑 같이 놀고 싶어!”</div>
 
                 <div className="pa-actions">
                   <button

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
+import { useSafeBack } from "@/app/useSafeBack";
 import { Loading } from "@/components/ui/Loading";
 import { useParentAlerts, useMarkAlertRead, useMarkAllAlertsRead } from "@/queries/useNotifications";
 import {
@@ -41,6 +42,7 @@ const FILTER_LABEL: Record<FilterKey, string> = {
 
 export function Notifications() {
   const navigate = useNavigate();
+  const goBack = useSafeBack("/parent/home");
   const [searchParams] = useSearchParams();
   const requestedAlertId = searchParams.get("alert")?.trim() || null;
   const alertItemRefs = useRef(new Map<string, HTMLButtonElement>());
@@ -142,7 +144,7 @@ export function Notifications() {
           type="button"
           className="hy-iconbtn hy-press nc-back"
           aria-label="뒤로"
-          onClick={() => navigate(-1)}
+          onClick={goBack}
         >
           <ChevronLeft size={22} strokeWidth={2.2} />
         </button>

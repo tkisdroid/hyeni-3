@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronLeft, Phone, Volume2, MapPin, Check, ShieldCheck, Siren, LifeBuoy } from "lucide-react";
 import { useToast } from "@/app/toast";
+import { useSafeBack } from "@/app/useSafeBack";
 import { KakaoMap } from "@/components/KakaoMap";
 import { useMyFamily } from "@/queries/useFamily";
 import { useReceivedSos } from "@/queries/useSos";
@@ -44,6 +45,7 @@ function formatClock(d: Date | null): string {
  */
 export function SosReceive() {
   const navigate = useNavigate();
+  const goBack = useSafeBack("/notifications");
   const [searchParams] = useSearchParams();
   const { show } = useToast();
   const {
@@ -133,7 +135,7 @@ export function SosReceive() {
           type="button"
           className="hy-iconbtn hy-press sr-back"
           aria-label="뒤로"
-          onClick={() => navigate(-1)}
+          onClick={goBack}
         >
           <ChevronLeft size={22} strokeWidth={2.2} />
         </button>

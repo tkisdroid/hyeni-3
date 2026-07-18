@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { ChevronRight, Plus, UserPlus, Link2, Lock, Copy, QrCode as QrIcon, Smartphone } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, UserPlus, Link2, Lock, Copy, QrCode as QrIcon, Smartphone } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
@@ -12,6 +12,7 @@ import { mapFamilyToView } from "@/transform/familyView";
 import { TIERS, FEATURES, canAddChild, lockMessageFor } from "@/transform/tierPolicy";
 import { QrCode } from "@/components/ui/QrCode";
 import { buildPairLink } from "@/transform/pairLink";
+import { useSafeBack } from "@/app/useSafeBack";
 import "./ParentFamily.css";
 
 // 자녀 사진은 proxy URL(http…), 기본 아바타는 asset 경로.
@@ -21,6 +22,7 @@ function avatarSrc(path: string): string {
 
 export function ParentFamily() {
   const navigate = useNavigate();
+  const goBack = useSafeBack("/parent/home");
   const { show } = useToast();
   const { userId } = useAuth();
   const { data: family, isLoading, isError, error } = useMyFamily();
@@ -76,6 +78,14 @@ export function ParentFamily() {
   return (
     <div className="hy-rise-in">
       <header className="pf-header">
+        <button
+          type="button"
+          className="hy-iconbtn hy-press"
+          aria-label="뒤로"
+          onClick={goBack}
+        >
+          <ChevronLeft size={22} strokeWidth={2.2} />
+        </button>
         <span className="pf-header__title">우리 가족</span>
         <button
           type="button"

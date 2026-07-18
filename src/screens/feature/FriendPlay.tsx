@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import { ChevronLeft, MapPin } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
@@ -14,6 +13,7 @@ import {
 } from "@/queries/usePlaydate";
 import type { PlaydateCandidate } from "@/lib/api/endpoints/playdate";
 import { playdateCandidateNotice } from "@/transform/playdateNotice";
+import { useSafeBack } from "@/app/useSafeBack";
 import "./FriendPlay.css";
 
 /** 친구 놀이요청 진행 단계 안내. */
@@ -34,11 +34,11 @@ function errMsg(e: unknown): string {
 /** 후보 soft error → 아이 눈높이 안내(반말). */
 
 export function FriendPlay() {
-  const navigate = useNavigate();
   const { show } = useToast();
   const { role } = useAuth();
 
   const isParent = role === "parent";
+  const goBack = useSafeBack(isParent ? "/parent/home" : "/child/home");
   const candidatesQ = usePlaydateCandidates(!isParent);
   const pendingQ = usePendingPlaydateInvites();
   const activeQ = useActivePlaydateSession();
@@ -96,9 +96,14 @@ export function FriendPlay() {
         sessionId: active.id,
         reason: role === "child" ? "child_end" : "parent_end",
       });
-      show("친구랑 그만 놀았어. 재밌었지?", "👋");
+      show(isParent ? "친구놀이를 종료했어요" : "친구랑 그만 놀았어. 재밌었지?", "👋");
     } catch (e) {
-      show(errMsg(e) || "종료에 실패했어.", "😢");
+      show(
+        isParent
+          ? "친구놀이를 종료하지 못했어요. 다시 시도해 주세요"
+          : errMsg(e) || "종료에 실패했어.",
+        "😢",
+      );
     }
   };
 
@@ -112,7 +117,7 @@ export function FriendPlay() {
             type="button"
             className="fp-back hy-press"
             aria-label="뒤로"
-            onClick={() => navigate(-1)}
+            onClick={goBack}
           >
             <ChevronLeft size={22} strokeWidth={2.2} color="var(--fg-secondary)" />
           </button>
@@ -203,7 +208,7 @@ export function FriendPlay() {
           type="button"
           className="fp-back hy-press"
           aria-label="뒤로"
-          onClick={() => navigate(-1)}
+          onClick={goBack}
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="var(--fg-secondary)" />
         </button>
