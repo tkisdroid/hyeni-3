@@ -1,40 +1,196 @@
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
 import test from "node:test";
 
-const moduleUrl = new URL("../src/transform/asyncUiState.ts", import.meta.url);
+type ActionToken<Action extends string> = Readonly<{
+  generation: number;
+  action: Action;
+}>;
 
-test("비동기 UI 상태 모듈을 제공한다", () => {
-  assert.equal(existsSync(moduleUrl), true);
+type ActionController<Action extends string> = {
+  begin: (action: Action) => ActionToken<Action>;
+  isOwner: (token: ActionToken<Action>) => boolean;
+  complete: (token: ActionToken<Action>) => boolean;
+  current: () => ActionToken<Action> | null;
+};
+
+type AsyncUiStateModule = {
+  createAsyncActionController: <Action extends string>() => ActionController<Action>;
+  runOwnedAsyncAction: <Action extends string, Result>(input: {
+    controller: ActionController<Action>;
+    token: ActionToken<Action>;
+    request: () => Promise<Result>;
+    onSuccess: (result: Result) => void;
+    onError: (error: unknown) => void;
+    onFinally: () => void;
+  }) => Promise<void>;
+  shouldReleaseOAuthBusyOnResume: (input: {
+    documentVisible: boolean;
+    oauthExternalPending: boolean;
+  }) => boolean;
+};
+
+async function loadModule(): Promise<AsyncUiStateModule> {
+  const module = await import("../src/transform/asyncUiState.ts");
+  assert.equal(typeof module.createAsyncActionController, "function");
+  assert.equal(typeof module.runOwnedAsyncAction, "function");
+  assert.equal(typeof module.shouldReleaseOAuthBusyOnResume, "function");
+  return module as unknown as AsyncUiStateModule;
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (error: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
+test("같은 이름의 가입 요청도 고유 generation token으로 구분한다", async () => {
+  const { createAsyncActionController } = await loadModule();
+  const controller = createAsyncActionController<"request-code">();
+  const tokenA = controller.begin("request-code");
+  const tokenB = controller.begin("request-code");
+
+  assert.notEqual(tokenA, tokenB);
+  assert.notEqual(tokenA.generation, tokenB.generation);
+  assert.equal(controller.isOwner(tokenA), false);
+  assert.equal(controller.isOwner(tokenB), true);
 });
 
-test("로그인 요청이나 세션 commit 중에는 이전 화면 이탈을 잠근다", async () => {
-  assert.equal(existsSync(moduleUrl), true, "비동기 UI 상태 모듈이 필요합니다");
-  const { isLoginNavigationLocked } = await import(moduleUrl.href);
+test("같은 request-code A/B가 역전돼도 늦은 A의 성공·finally는 UI를 바꾸지 않는다", async () => {
+  const { createAsyncActionController, runOwnedAsyncAction } = await loadModule();
+  const controller = createAsyncActionController<"request-code">();
+  const pendingA = deferred<string>();
+  const pendingB = deferred<string>();
+  const effects: string[] = [];
 
-  assert.equal(isLoginNavigationLocked({ busy: false, commitBoundaryActive: false }), false);
-  assert.equal(isLoginNavigationLocked({ busy: true, commitBoundaryActive: false }), true);
-  assert.equal(isLoginNavigationLocked({ busy: false, commitBoundaryActive: true }), true);
-  assert.equal(isLoginNavigationLocked({ busy: true, commitBoundaryActive: true }), true);
+  const tokenA = controller.begin("request-code");
+  const runA = runOwnedAsyncAction({
+    controller,
+    token: tokenA,
+    request: () => pendingA.promise,
+    onSuccess: (value) => effects.push(`A:success:${value}`),
+    onError: () => effects.push("A:error"),
+    onFinally: () => effects.push("A:finally"),
+  });
+  const tokenB = controller.begin("request-code");
+  const runB = runOwnedAsyncAction({
+    controller,
+    token: tokenB,
+    request: () => pendingB.promise,
+    onSuccess: (value) => effects.push(`B:success:${value}`),
+    onError: () => effects.push("B:error"),
+    onFinally: () => effects.push("B:finally"),
+  });
+
+  pendingA.resolve("old");
+  await runA;
+  assert.deepEqual(effects, []);
+  assert.equal(controller.isOwner(tokenB), true);
+
+  pendingB.resolve("current");
+  await runB;
+  assert.deepEqual(effects, ["B:success:current", "B:finally"]);
+  assert.equal(controller.current(), null);
 });
 
-test("가입 진행 표시는 현재 요청을 소유한 버튼에만 나타난다", async () => {
-  assert.equal(existsSync(moduleUrl), true, "비동기 UI 상태 모듈이 필요합니다");
-  const { isSignupActionPending } = await import(moduleUrl.href);
+test("같은 request-code A/B의 늦은 A 오류도 toast·busy를 바꾸지 않는다", async () => {
+  const { createAsyncActionController, runOwnedAsyncAction } = await loadModule();
+  const controller = createAsyncActionController<"request-code">();
+  const pendingA = deferred<string>();
+  const pendingB = deferred<string>();
+  const effects: string[] = [];
 
-  assert.equal(isSignupActionPending("request-code", "request-code"), true);
-  assert.equal(isSignupActionPending("request-code", "verify"), false);
-  assert.equal(isSignupActionPending("verify", "request-code"), false);
-  assert.equal(isSignupActionPending("verify", "verify"), true);
-  assert.equal(isSignupActionPending(null, "verify"), false);
+  const tokenA = controller.begin("request-code");
+  const runA = runOwnedAsyncAction({
+    controller,
+    token: tokenA,
+    request: () => pendingA.promise,
+    onSuccess: () => effects.push("A:success"),
+    onError: () => effects.push("A:error"),
+    onFinally: () => effects.push("A:finally"),
+  });
+  const tokenB = controller.begin("request-code");
+  const runB = runOwnedAsyncAction({
+    controller,
+    token: tokenB,
+    request: () => pendingB.promise,
+    onSuccess: () => effects.push("B:success"),
+    onError: () => effects.push("B:error"),
+    onFinally: () => effects.push("B:finally"),
+  });
+
+  pendingA.reject(new Error("old failure"));
+  await runA;
+  assert.deepEqual(effects, []);
+  assert.equal(controller.isOwner(tokenB), true);
+
+  pendingB.reject(new Error("current failure"));
+  await runB;
+  assert.deepEqual(effects, ["B:error", "B:finally"]);
 });
 
-test("늦게 끝난 이전 가입 요청은 최신 진행 상태를 해제하지 않는다", async () => {
-  assert.equal(existsSync(moduleUrl), true, "비동기 UI 상태 모듈이 필요합니다");
-  const { completeSignupPendingAction } = await import(moduleUrl.href);
+test("같은 verify A/B 역전에서는 stale 세션 0회, current 세션 1회만 채택한다", async () => {
+  const { createAsyncActionController, runOwnedAsyncAction } = await loadModule();
+  const controller = createAsyncActionController<"verify">();
+  const pendingA = deferred<string>();
+  const pendingB = deferred<string>();
+  const adopted: string[] = [];
+  const effects: string[] = [];
 
-  assert.equal(completeSignupPendingAction("request-code", "request-code"), null);
-  assert.equal(completeSignupPendingAction("verify", "request-code"), "verify");
-  assert.equal(completeSignupPendingAction("request-code", "verify"), "request-code");
-  assert.equal(completeSignupPendingAction(null, "verify"), null);
+  const tokenA = controller.begin("verify");
+  const runA = runOwnedAsyncAction({
+    controller,
+    token: tokenA,
+    request: () => pendingA.promise,
+    onSuccess: (session) => {
+      adopted.push(session);
+      effects.push("A:success");
+    },
+    onError: () => effects.push("A:error"),
+    onFinally: () => effects.push("A:finally"),
+  });
+  const tokenB = controller.begin("verify");
+  const runB = runOwnedAsyncAction({
+    controller,
+    token: tokenB,
+    request: () => pendingB.promise,
+    onSuccess: (session) => {
+      adopted.push(session);
+      effects.push("B:success");
+    },
+    onError: () => effects.push("B:error"),
+    onFinally: () => effects.push("B:finally"),
+  });
+
+  pendingA.resolve("stale-session");
+  await runA;
+  assert.deepEqual(adopted, []);
+  assert.deepEqual(effects, []);
+  assert.equal(controller.isOwner(tokenB), true);
+
+  pendingB.resolve("current-session");
+  await runB;
+  assert.deepEqual(adopted, ["current-session"]);
+  assert.deepEqual(effects, ["B:success", "B:finally"]);
+});
+
+test("visibility와 pageshow 복귀는 OAuth 외부 브라우저 busy만 해제한다", async () => {
+  const { shouldReleaseOAuthBusyOnResume } = await loadModule();
+
+  assert.equal(
+    shouldReleaseOAuthBusyOnResume({ documentVisible: true, oauthExternalPending: true }),
+    true,
+  );
+  assert.equal(
+    shouldReleaseOAuthBusyOnResume({ documentVisible: true, oauthExternalPending: false }),
+    false,
+    "가입·ID API busy는 유지해야 합니다",
+  );
+  assert.equal(
+    shouldReleaseOAuthBusyOnResume({ documentVisible: false, oauthExternalPending: true }),
+    false,
+  );
 });

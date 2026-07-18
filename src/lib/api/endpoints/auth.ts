@@ -159,7 +159,7 @@ export async function verifyPhoneSignupCode(input: {
   token: string;
   profile: PendingSignup["profile"];
   password: string;
-}): Promise<AuthResult> {
+}, options?: AuthResultAdoptionOptions): Promise<AuthResult> {
   const phoneAuth = normalizePhoneForAuth(input.phone);
   const token = String(input.token || "").replace(/\D/g, "");
   if (!/^\d{6}$/.test(token)) {
@@ -177,8 +177,7 @@ export async function verifyPhoneSignupCode(input: {
   if (!data?.user || !data?.session?.access_token) {
     throw new Error("인증 후 사용자 정보를 확인하지 못했어요");
   }
-  adoptAuthResult(data);
-  return data;
+  return returnAuthResultWithAdoption(data, options, adoptAuthResult);
 }
 
 /** 로그아웃 — 메모리 세션 제거(캐시 clear 는 AuthProvider 가 수행). */
@@ -207,6 +206,11 @@ const LEGACY_OAUTH_KEYS = ["hyeni-oauth-state", "hyeni-oauth-provider", "hyeni-o
 
 /** 로그인(login) 인지, 이미 로그인한 계정에 소셜을 붙이는 연결(link) 인지. */
 export type OAuthFlowMode = "login" | "link";
+
+export interface OAuthStartOptions {
+  /** 검증된 인가 URL을 외부 브라우저에 넘기기 직전에 호출한다. */
+  onExternalOpen?: () => void;
+}
 
 interface OAuthFlowContext {
   provider: OAuthProvider;
@@ -350,6 +354,7 @@ function validateOAuthStartResponse(
 export async function startWorkerOAuth(
   provider: OAuthProvider,
   mode: OAuthFlowMode = "login",
+  options?: OAuthStartOptions,
 ): Promise<void> {
   const native = isNativePlatform();
   const startPath = mode === "link"
@@ -372,6 +377,7 @@ export async function startWorkerOAuth(
     expiresAt: validated.expiresAt,
   });
 
+  options?.onExternalOpen?.();
   if (native) {
     try {
       await openExternal(startUrl);

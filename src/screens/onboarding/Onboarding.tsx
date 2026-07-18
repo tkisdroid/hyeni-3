@@ -62,9 +62,12 @@ import {
 } from "@/lib/api/endpoints/account";
 import { validateLoginForm, type LoginFormErrors } from "@/transform/loginForm";
 import {
-  completeSignupPendingAction,
+  createAsyncActionController,
+  isAsyncActionTokenFor,
   isLoginNavigationLocked,
-  isSignupActionPending,
+  runOwnedAsyncAction,
+  shouldReleaseOAuthBusyOnResume,
+  type AsyncActionToken,
   type SignupPendingAction,
 } from "@/transform/asyncUiState";
 import "./Onboarding.css";
@@ -123,6 +126,18 @@ export function Onboarding() {
   // QR 딥링크(?pair=)로 진입 시 아이 코드 프리필.
   const [pairPrefill, setPairPrefill] = useState<string | null>(null);
   const oauthLoginPromiseRef = useRef<ReturnType<typeof finishOAuthLogin> | null>(null);
+  const oauthExternalBusyRef = useRef(false);
+  const [oauthExternalBusy, setOAuthExternalBusy] = useState(false);
+
+  const markOAuthExternalBusy = () => {
+    oauthExternalBusyRef.current = true;
+    setOAuthExternalBusy(true);
+  };
+
+  const clearOAuthExternalBusy = () => {
+    oauthExternalBusyRef.current = false;
+    setOAuthExternalBusy(false);
+  };
 
   // OAuth 콜백(?code&state) 감지 → 세션 교환 → 라우팅. (guard가 미인증을 여기로 보냄)
   useEffect(() => {
@@ -135,6 +150,7 @@ export function Onboarding() {
         show(errMsg(e), "⚠️");
       } finally {
         cancelOnboardingAuthTransitions();
+        clearOAuthExternalBusy();
         clearOAuthCallbackUrl();
         setBusy(false);
         setRole("parent");
@@ -153,6 +169,7 @@ export function Onboarding() {
       .then(async (result) => {
         const commitResult = commitOnboardingAuthResult(transitionToken, result, adoptAuthResult);
         if (commitResult === "stale") return;
+        clearOAuthExternalBusy();
         clearOAuthCallbackUrl();
         syncFromSession();
         await routeAfterParentLogin(transitionToken);
@@ -163,6 +180,7 @@ export function Onboarding() {
         // toast·step·busy 같은 UI 상태는 아래 active token만 변경한다.
         clearOAuthCallbackUrl();
         if (!canApplySideEffects) return;
+        clearOAuthExternalBusy();
         show(errMsg(e), "⚠️");
         setRole("parent");
         setStep("login");
@@ -191,20 +209,26 @@ export function Onboarding() {
   // OAuth/외부 브라우저에서 복귀 시 busy 잠금 자동 해제 — stuck 방지.
   // 네이티브: 카카오/구글은 시스템 브라우저를 열고 앱을 백그라운드로 보낸다. 로그인을
   // 완료하지 않고 뒤로 오면 딥링크 콜백이 오지 않아 busy=true 가 영구히 남아 UI 가 잠긴다.
-  // 앱이 다시 보이는 순간 busy 를 풀어 되살린다(성공 복귀는 딥링크가 홈으로 이동하므로 무해).
+  // 실제 외부 OAuth를 연 뒤 앱이 다시 보이는 순간에만 busy를 풀어 되살린다.
+  // ID 로그인·가입 API의 진행 상태는 visibility/pageshow가 대신 해제하지 않는다.
   // 웹: bfcache 뒤로가기(pageshow persisted)도 동일 처리. 초기 로드의 pageshow 는 리스너
   // 등록 전에 이미 발화하므로 OAuth 콜백 처리와 충돌하지 않는다.
   useEffect(() => {
-    const unstick = () => {
-      if (document.visibilityState === "visible") setBusy(false);
+    const unstickOAuth = () => {
+      if (!shouldReleaseOAuthBusyOnResume({
+        documentVisible: document.visibilityState === "visible",
+        oauthExternalPending: oauthExternalBusyRef.current,
+      })) return;
+      clearOAuthExternalBusy();
+      setBusy(false);
     };
-    document.addEventListener("visibilitychange", unstick);
-    window.addEventListener("pageshow", unstick);
+    document.addEventListener("visibilitychange", unstickOAuth);
+    window.addEventListener("pageshow", unstickOAuth);
     return () => {
-      document.removeEventListener("visibilitychange", unstick);
-      window.removeEventListener("pageshow", unstick);
+      document.removeEventListener("visibilitychange", unstickOAuth);
+      window.removeEventListener("pageshow", unstickOAuth);
     };
-  }, []);
+  }, [oauthExternalBusy]);
 
   // QR 딥링크(?pair=KID-XXXX)로 진입 → 익명 로그인 후 아이 페어링 단계로(코드 프리필).
   // OAuth 콜백이 동시에 있으면 그쪽을 우선한다.
@@ -370,6 +394,8 @@ export function Onboarding() {
           busy={busy}
           setBusy={setBusy}
           commitBoundaryActive={authCommitBoundaryActive}
+          onOAuthExternalOpen={markOAuthExternalBusy}
+          onOAuthExternalEnd={clearOAuthExternalBusy}
           onBack={() => {
             if (authCommitBoundaryActive) return;
             cancelOnboardingAuthTransitions();
@@ -697,6 +723,8 @@ function LoginStep({
   busy,
   setBusy,
   commitBoundaryActive,
+  onOAuthExternalOpen,
+  onOAuthExternalEnd,
   onBack,
   onLoggedIn,
   onSignup,
@@ -705,6 +733,8 @@ function LoginStep({
   busy: boolean;
   setBusy: (v: boolean) => void;
   commitBoundaryActive: boolean;
+  onOAuthExternalOpen: () => void;
+  onOAuthExternalEnd: () => void;
   onBack: () => void;
   onLoggedIn: (transitionToken: OnboardingAuthTransitionToken) => Promise<void>;
   onSignup: () => void;
@@ -733,9 +763,10 @@ function LoginStep({
     setBusy(true);
     const transitionToken = beginOnboardingAuthTransition();
     try {
-      await startWorkerOAuth(provider); // 서버 발급 일회성 state 저장 후 provider로 이동
+      await startWorkerOAuth(provider, "login", { onExternalOpen: onOAuthExternalOpen });
     } catch (e) {
       if (!isOnboardingAuthTransitionActive(transitionToken)) return;
+      onOAuthExternalEnd();
       show(errMsg(e), "⚠️");
       // 키 미설정 등 설정 오류 — busy 를 풀고 정직하게 안내(버튼이 영구 잠기지 않게).
       setPendingAction(null);
@@ -959,51 +990,56 @@ function SignupStep({
   const [phone, setPhone] = useState("");
   const [pending, setPending] = useState<PendingSignup | null>(null);
   const [otp, setOtp] = useState("");
-  const [pendingSignupAction, setPendingSignupAction] = useState<SignupPendingAction | null>(null);
-  const pendingSignupActionRef = useRef<SignupPendingAction | null>(null);
+  const signupActionControllerRef = useRef(createAsyncActionController<SignupPendingAction>());
+  const [pendingSignupAction, setPendingSignupAction] = useState<AsyncActionToken<SignupPendingAction> | null>(null);
 
-  const beginSignupAction = (action: SignupPendingAction) => {
-    pendingSignupActionRef.current = action;
-    setPendingSignupAction(action);
+  const beginSignupAction = (action: SignupPendingAction): AsyncActionToken<SignupPendingAction> => {
+    const token = signupActionControllerRef.current.begin(action);
+    setPendingSignupAction(token);
     setBusy(true);
+    return token;
   };
 
-  const finishSignupAction = (action: SignupPendingAction) => {
-    const current = pendingSignupActionRef.current;
-    const ownsAction = isSignupActionPending(current, action);
-    const next = completeSignupPendingAction(current, action);
-    pendingSignupActionRef.current = next;
-    setPendingSignupAction(next);
-    if (ownsAction) setBusy(false);
+  const finishSignupAction = (requestToken: AsyncActionToken<SignupPendingAction>) => {
+    setPendingSignupAction((current) => current === requestToken ? null : current);
+    setBusy(false);
   };
 
   const requestCode = async () => {
     if (busy) return;
-    beginSignupAction("request-code");
-    try {
-      const result = await requestPhoneSignupCode({ name, loginId, password, passwordConfirm, gender, birthdate, phone });
-      setPending(result);
-      setPhase("otp");
-      show("인증번호를 보냈어요", "📩");
-    } catch (e) {
-      show(errMsg(e), "⚠️");
-    } finally {
-      finishSignupAction("request-code");
-    }
+    const requestToken = beginSignupAction("request-code");
+    await runOwnedAsyncAction({
+      controller: signupActionControllerRef.current,
+      token: requestToken,
+      request: () => requestPhoneSignupCode({ name, loginId, password, passwordConfirm, gender, birthdate, phone }),
+      onSuccess: (result) => {
+        setPending(result);
+        setPhase("otp");
+        show("인증번호를 보냈어요", "📩");
+      },
+      onError: (error) => show(errMsg(error), "⚠️"),
+      onFinally: () => finishSignupAction(requestToken),
+    });
   };
 
   const verify = async () => {
     if (busy || !pending) return;
-    beginSignupAction("verify");
-    try {
-      await verifyPhoneSignupCode({ phone: pending.phone, token: otp, profile: pending.profile, password: pending.password });
-      show("가입이 완료됐어요", "🎉");
-      onDone(name);
-    } catch (e) {
-      show(errMsg(e), "⚠️");
-    } finally {
-      finishSignupAction("verify");
-    }
+    const requestToken = beginSignupAction("verify");
+    await runOwnedAsyncAction({
+      controller: signupActionControllerRef.current,
+      token: requestToken,
+      request: () => verifyPhoneSignupCode(
+        { phone: pending.phone, token: otp, profile: pending.profile, password: pending.password },
+        { sessionAdoption: "deferred" },
+      ),
+      onSuccess: (result) => {
+        adoptAuthResult(result);
+        show("가입이 완료됐어요", "🎉");
+        onDone(name);
+      },
+      onError: (error) => show(errMsg(error), "⚠️"),
+      onFinally: () => finishSignupAction(requestToken),
+    });
   };
 
   if (phase === "otp") {
@@ -1029,7 +1065,7 @@ function SignupStep({
         </div>
         <button type="button" className="ob-cta ob-cta--accent hy-press" onClick={verify} disabled={busy}>
           <BusyLabel
-            busy={busy && isSignupActionPending(pendingSignupAction, "verify")}
+            busy={busy && isAsyncActionTokenFor(pendingSignupAction, "verify")}
             idle="인증하고 가입 완료"
             pending="가입 확인 중…"
           />
@@ -1039,7 +1075,7 @@ function SignupStep({
           인증번호를 못 받으셨나요?{" "}
           <button type="button" className="ob-link" onClick={requestCode} disabled={busy}>
             <BusyLabel
-              busy={busy && isSignupActionPending(pendingSignupAction, "request-code")}
+              busy={busy && isAsyncActionTokenFor(pendingSignupAction, "request-code")}
               idle="재전송"
               pending="재전송 중…"
             />
@@ -1105,7 +1141,7 @@ function SignupStep({
 
       <button type="button" className="ob-cta ob-cta--accent hy-press" onClick={requestCode} disabled={busy}>
         <BusyLabel
-          busy={busy && isSignupActionPending(pendingSignupAction, "request-code")}
+          busy={busy && isAsyncActionTokenFor(pendingSignupAction, "request-code")}
           idle="인증번호 받기"
           pending="인증번호 전송 중…"
         />

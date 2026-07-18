@@ -14,6 +14,7 @@ const busyLabelCss = readOptional("../src/components/ui/BusyLabel.css");
 const loadingCss = readOptional("../src/components/ui/Loading.css");
 const globalCss = readOptional("../src/styles/global.css");
 const dangerZone = readOptional("../src/screens/feature/DangerZoneForm.tsx");
+const authEndpoint = readOptional("../src/lib/api/endpoints/auth.ts");
 
 test("로그인 오류는 각 입력과 연결되고 첫 오류 필드로 초점을 옮긴다", () => {
   assert.match(onboarding, /validateLoginForm/);
@@ -86,20 +87,71 @@ test("가입 발송·재전송·완료 확인은 각자 소유한 진행 문구�
   assert.ok(start >= 0 && end > start, "가입 단계 구현이 필요합니다");
   const signup = onboarding.slice(start, end);
 
-  assert.match(signup, /useState<SignupPendingAction \| null>\(null\)/);
-  assert.match(signup, /const beginSignupAction = \(action: SignupPendingAction\)[\s\S]{0,240}setBusy\(true\)/);
-  assert.match(signup, /const finishSignupAction = \(action: SignupPendingAction\)[\s\S]{0,360}completeSignupPendingAction/);
-  assert.match(signup, /beginSignupAction\("request-code"\)/);
-  assert.match(signup, /beginSignupAction\("verify"\)/);
-  assert.match(signup, /finally \{\s*finishSignupAction\("request-code"\)/);
-  assert.match(signup, /finally \{\s*finishSignupAction\("verify"\)/);
+  assert.match(signup, /useState<AsyncActionToken<SignupPendingAction> \| null>\(null\)/);
+  assert.match(signup, /createAsyncActionController<SignupPendingAction>\(\)/);
+  assert.match(signup, /const beginSignupAction = \(action: SignupPendingAction\): AsyncActionToken<SignupPendingAction>[\s\S]{0,300}return token/);
+  assert.match(signup, /const requestToken = beginSignupAction\("request-code"\)/);
+  assert.match(signup, /const requestToken = beginSignupAction\("verify"\)/);
+  assert.equal((signup.match(/runOwnedAsyncAction\(\{/g) ?? []).length, 2);
   assert.match(signup, /<BackButton onBack=\{\(\) => setPhase\("form"\)\} disabled=\{busy\} \/>/);
   assert.match(signup, /<BackButton onBack=\{onBack\} disabled=\{busy\} \/>/);
   assert.match(signup, /idle="인증번호 받기"[\s\S]{0,80}pending="인증번호 전송 중…"/);
   assert.match(signup, /idle="재전송"[\s\S]{0,80}pending="재전송 중…"/);
   assert.match(signup, /idle="인증하고 가입 완료"[\s\S]{0,80}pending="가입 확인 중…"/);
-  assert.match(signup, /isSignupActionPending\(pendingSignupAction, "request-code"\)/);
-  assert.match(signup, /isSignupActionPending\(pendingSignupAction, "verify"\)/);
+  assert.match(signup, /isAsyncActionTokenFor\(pendingSignupAction, "request-code"\)/);
+  assert.match(signup, /isAsyncActionTokenFor\(pendingSignupAction, "verify"\)/);
+});
+
+test("가입 성공·오류·finally와 세션 채택은 모두 고유 request token 경계 안에 있다", () => {
+  const start = onboarding.indexOf("function SignupStep(");
+  const end = onboarding.indexOf("/* ── STEP: CONNECT", start);
+  const signup = onboarding.slice(start, end);
+
+  assert.match(signup, /runOwnedAsyncAction\(\{[\s\S]*token: requestToken[\s\S]*onSuccess: \(result\) => \{[\s\S]*setPending\(result\)[\s\S]*setPhase\("otp"\)[\s\S]*show\("인증번호를 보냈어요"/);
+  assert.match(signup, /verifyPhoneSignupCode\([\s\S]*\{ sessionAdoption: "deferred" \}[\s\S]*onSuccess: \(result\) => \{[\s\S]*adoptAuthResult\(result\)[\s\S]*show\("가입이 완료됐어요"[\s\S]*onDone\(name\)/);
+  assert.equal((signup.match(/onError: \(error\) => show\(errMsg\(error\), "⚠️"\)/g) ?? []).length, 2);
+  assert.equal((signup.match(/onFinally: \(\) => finishSignupAction\(requestToken\)/g) ?? []).length, 2);
+});
+
+test("전화 가입 endpoint는 기본 즉시 채택을 유지하고 SignupStep만 deferred로 받는다", () => {
+  const start = authEndpoint.indexOf("export async function verifyPhoneSignupCode");
+  const end = authEndpoint.indexOf("/** 로그아웃", start);
+  assert.ok(start >= 0 && end > start, "전화 가입 검증 endpoint가 필요합니다");
+  const verifyEndpoint = authEndpoint.slice(start, end);
+
+  assert.match(verifyEndpoint, /options\?: AuthResultAdoptionOptions/);
+  assert.match(verifyEndpoint, /returnAuthResultWithAdoption\(data, options, adoptAuthResult\)/);
+  assert.doesNotMatch(verifyEndpoint, /\badoptAuthResult\(data\)/);
+});
+
+test("visibility·pageshow는 외부 OAuth가 실제 열린 경우에만 busy를 해제한다", () => {
+  const start = onboarding.indexOf("// OAuth/외부 브라우저에서 복귀 시 busy 잠금 자동 해제");
+  const end = onboarding.indexOf("// QR 딥링크", start);
+  assert.ok(start >= 0 && end > start, "OAuth 복귀 해제 effect가 필요합니다");
+  const resumeEffect = onboarding.slice(start, end);
+
+  assert.match(onboarding, /const oauthExternalBusyRef = useRef\(false\)/);
+  assert.match(onboarding, /const \[oauthExternalBusy, setOAuthExternalBusy\] = useState\(false\)/);
+  assert.match(onboarding, /const markOAuthExternalBusy = \(\) =>/);
+  assert.match(onboarding, /const clearOAuthExternalBusy = \(\) =>/);
+  assert.match(resumeEffect, /shouldReleaseOAuthBusyOnResume\(/);
+  assert.match(resumeEffect, /oauthExternalBusyRef\.current/);
+  assert.doesNotMatch(resumeEffect, /if \(document\.visibilityState === "visible"\) setBusy\(false\)/);
+
+  const socialStart = onboarding.indexOf("const social = async");
+  const socialEnd = onboarding.indexOf("const loginIdPw", socialStart);
+  const social = onboarding.slice(socialStart, socialEnd);
+  assert.match(social, /startWorkerOAuth\(provider, "login", \{ onExternalOpen: onOAuthExternalOpen \}\)/);
+  assert.match(social, /onOAuthExternalEnd\(\)/);
+
+  const endpointStart = authEndpoint.indexOf("export async function startWorkerOAuth");
+  const endpointEnd = authEndpoint.indexOf("/** OAuth 콜백", endpointStart);
+  const oauthStart = authEndpoint.slice(endpointStart, endpointEnd);
+  assert.match(oauthStart, /options\?: OAuthStartOptions/);
+  const callback = oauthStart.indexOf("options?.onExternalOpen?.()");
+  const nativeOpen = oauthStart.indexOf("openExternal(startUrl)");
+  const webOpen = oauthStart.indexOf("window.location.assign(startUrl)");
+  assert.ok(callback >= 0 && nativeOpen > callback && webOpen > callback, "외부 열기 직전에 owner를 표시해야 합니다");
 });
 
 test("전역 키보드 초점과 로딩 문구는 눈으로 구분할 수 있다", () => {
