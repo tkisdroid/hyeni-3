@@ -63,9 +63,43 @@ test("ID·소셜·가입 확인 버튼은 중복 실행을 막은 채 BusyLabel�
   assert.match(onboarding, /idle="카카오로 계속하기" pending="카카오 로그인 중…"/);
   assert.match(onboarding, /idle="Google로 계속하기" pending="Google 로그인 중…"/);
   assert.match(onboarding, /idle="네이버로 계속하기" pending="네이버 로그인 중…"/);
-  assert.match(onboarding, /idle="인증하고 가입 완료" pending="가입 확인 중…"/);
+  assert.match(onboarding, /idle="인증하고 가입 완료"[\s\S]{0,80}pending="가입 확인 중…"/);
   assert.match(onboarding, /onClick=\{loginIdPw\} disabled=\{busy\}/);
   assert.match(onboarding, /onClick=\{verify\} disabled=\{busy\}/);
+});
+
+test("로그인 요청 중에는 뒤로가기를 잠가 취소된 요청의 busy가 역할 화면에 남지 않는다", () => {
+  const start = onboarding.indexOf("function LoginStep(");
+  const end = onboarding.indexOf("/* ── STEP: SIGNUP", start);
+  assert.ok(start >= 0 && end > start, "로그인 단계 구현이 필요합니다");
+  const login = onboarding.slice(start, end);
+
+  assert.match(login, /const loginNavigationLocked = isLoginNavigationLocked\(\{ busy, commitBoundaryActive \}\)/);
+  assert.match(login, /<BackButton onBack=\{onBack\} disabled=\{loginNavigationLocked\} \/>/);
+  assert.match(onboarding, /aria-disabled=\{disabled\}/);
+  assert.match(onboardingCss, /\.ob-back:disabled\s*\{[\s\S]*opacity:/);
+});
+
+test("가입 발송·재전송·완료 확인은 각자 소유한 진행 문구만 표시한다", () => {
+  const start = onboarding.indexOf("function SignupStep(");
+  const end = onboarding.indexOf("/* ── STEP: CONNECT", start);
+  assert.ok(start >= 0 && end > start, "가입 단계 구현이 필요합니다");
+  const signup = onboarding.slice(start, end);
+
+  assert.match(signup, /useState<SignupPendingAction \| null>\(null\)/);
+  assert.match(signup, /const beginSignupAction = \(action: SignupPendingAction\)[\s\S]{0,240}setBusy\(true\)/);
+  assert.match(signup, /const finishSignupAction = \(action: SignupPendingAction\)[\s\S]{0,360}completeSignupPendingAction/);
+  assert.match(signup, /beginSignupAction\("request-code"\)/);
+  assert.match(signup, /beginSignupAction\("verify"\)/);
+  assert.match(signup, /finally \{\s*finishSignupAction\("request-code"\)/);
+  assert.match(signup, /finally \{\s*finishSignupAction\("verify"\)/);
+  assert.match(signup, /<BackButton onBack=\{\(\) => setPhase\("form"\)\} disabled=\{busy\} \/>/);
+  assert.match(signup, /<BackButton onBack=\{onBack\} disabled=\{busy\} \/>/);
+  assert.match(signup, /idle="인증번호 받기"[\s\S]{0,80}pending="인증번호 전송 중…"/);
+  assert.match(signup, /idle="재전송"[\s\S]{0,80}pending="재전송 중…"/);
+  assert.match(signup, /idle="인증하고 가입 완료"[\s\S]{0,80}pending="가입 확인 중…"/);
+  assert.match(signup, /isSignupActionPending\(pendingSignupAction, "request-code"\)/);
+  assert.match(signup, /isSignupActionPending\(pendingSignupAction, "verify"\)/);
 });
 
 test("전역 키보드 초점과 로딩 문구는 눈으로 구분할 수 있다", () => {

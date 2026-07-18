@@ -61,6 +61,12 @@ import {
   TERMS_OF_SERVICE_URL,
 } from "@/lib/api/endpoints/account";
 import { validateLoginForm, type LoginFormErrors } from "@/transform/loginForm";
+import {
+  completeSignupPendingAction,
+  isLoginNavigationLocked,
+  isSignupActionPending,
+  type SignupPendingAction,
+} from "@/transform/asyncUiState";
 import "./Onboarding.css";
 
 type Step = "role" | "teacherSetup" | "login" | "survey" | "signup" | "connect" | "pairing" | "perms";
@@ -476,6 +482,7 @@ function BackButton({
       type="button"
       className={dark ? "ob-back ob-back--dark hy-press" : "ob-back hy-press"}
       aria-label="뒤로"
+      aria-disabled={disabled}
       onClick={onBack}
       disabled={disabled}
     >
@@ -709,6 +716,7 @@ function LoginStep({
   const [pendingAction, setPendingAction] = useState<"id" | OAuthProvider | null>(null);
   const loginIdInputRef = useRef<HTMLInputElement>(null);
   const passwordInputRef = useRef<HTMLInputElement>(null);
+  const loginNavigationLocked = isLoginNavigationLocked({ busy, commitBoundaryActive });
 
   const clearFieldError = (field: keyof LoginFormErrors) => {
     setErrors((current) => {
@@ -773,7 +781,7 @@ function LoginStep({
 
   return (
     <div className="ob-step ob-login">
-      <BackButton onBack={onBack} disabled={commitBoundaryActive} />
+      <BackButton onBack={onBack} disabled={loginNavigationLocked} />
       <div className="ob-login-head">
         <img className="ob-login-mascot" src={asset("mascot/wave.webp")} alt="" />
         <div className="ob-h1">다시 만나 반가워요</div>
@@ -951,10 +959,27 @@ function SignupStep({
   const [phone, setPhone] = useState("");
   const [pending, setPending] = useState<PendingSignup | null>(null);
   const [otp, setOtp] = useState("");
+  const [pendingSignupAction, setPendingSignupAction] = useState<SignupPendingAction | null>(null);
+  const pendingSignupActionRef = useRef<SignupPendingAction | null>(null);
+
+  const beginSignupAction = (action: SignupPendingAction) => {
+    pendingSignupActionRef.current = action;
+    setPendingSignupAction(action);
+    setBusy(true);
+  };
+
+  const finishSignupAction = (action: SignupPendingAction) => {
+    const current = pendingSignupActionRef.current;
+    const ownsAction = isSignupActionPending(current, action);
+    const next = completeSignupPendingAction(current, action);
+    pendingSignupActionRef.current = next;
+    setPendingSignupAction(next);
+    if (ownsAction) setBusy(false);
+  };
 
   const requestCode = async () => {
     if (busy) return;
-    setBusy(true);
+    beginSignupAction("request-code");
     try {
       const result = await requestPhoneSignupCode({ name, loginId, password, passwordConfirm, gender, birthdate, phone });
       setPending(result);
@@ -963,13 +988,13 @@ function SignupStep({
     } catch (e) {
       show(errMsg(e), "⚠️");
     } finally {
-      setBusy(false);
+      finishSignupAction("request-code");
     }
   };
 
   const verify = async () => {
     if (busy || !pending) return;
-    setBusy(true);
+    beginSignupAction("verify");
     try {
       await verifyPhoneSignupCode({ phone: pending.phone, token: otp, profile: pending.profile, password: pending.password });
       show("가입이 완료됐어요", "🎉");
@@ -977,14 +1002,14 @@ function SignupStep({
     } catch (e) {
       show(errMsg(e), "⚠️");
     } finally {
-      setBusy(false);
+      finishSignupAction("verify");
     }
   };
 
   if (phase === "otp") {
     return (
       <div className="ob-step ob-signup">
-        <BackButton onBack={() => setPhase("form")} />
+        <BackButton onBack={() => setPhase("form")} disabled={busy} />
         <SignupProgress percent={60} label="3/5 휴대폰 인증" />
         <div className="ob-signup-head">
           <div className="ob-signup-title">인증번호 확인</div>
@@ -1003,13 +1028,21 @@ function SignupStep({
           </Field>
         </div>
         <button type="button" className="ob-cta ob-cta--accent hy-press" onClick={verify} disabled={busy}>
-          <BusyLabel busy={busy} idle="인증하고 가입 완료" pending="가입 확인 중…" />
+          <BusyLabel
+            busy={busy && isSignupActionPending(pendingSignupAction, "verify")}
+            idle="인증하고 가입 완료"
+            pending="가입 확인 중…"
+          />
         </button>
         {/* 재전송은 requestPhoneSignupCode 를 다시 호출(실 전송) */}
         <div className="ob-login-foot">
           인증번호를 못 받으셨나요?{" "}
           <button type="button" className="ob-link" onClick={requestCode} disabled={busy}>
-            재전송
+            <BusyLabel
+              busy={busy && isSignupActionPending(pendingSignupAction, "request-code")}
+              idle="재전송"
+              pending="재전송 중…"
+            />
           </button>
         </div>
       </div>
@@ -1018,7 +1051,7 @@ function SignupStep({
 
   return (
     <div className="ob-step ob-signup">
-      <BackButton onBack={onBack} />
+      <BackButton onBack={onBack} disabled={busy} />
       <SignupProgress percent={40} label="2/5 계정 만들기" />
       <div className="ob-signup-head">
         <div className="ob-signup-title">혜니 가족 시작하기</div>
@@ -1071,7 +1104,11 @@ function SignupStep({
       </div>
 
       <button type="button" className="ob-cta ob-cta--accent hy-press" onClick={requestCode} disabled={busy}>
-        {busy ? "전송 중…" : "인증번호 받기"}
+        <BusyLabel
+          busy={busy && isSignupActionPending(pendingSignupAction, "request-code")}
+          idle="인증번호 받기"
+          pending="인증번호 전송 중…"
+        />
       </button>
     </div>
   );

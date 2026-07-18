@@ -42,6 +42,10 @@
   background: rgba(255, 255, 255, 0.12);
   box-shadow: none;
 }
+.ob-back:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
 
 /* 공통 입력 */
 .ob-input {

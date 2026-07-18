@@ -169,11 +169,12 @@ test("stale OAuth·ID continuation은 채택하지 않고 StrictMode cleanup은 
   );
 });
 
-test("세션 commit boundary 동안 로그인 단계의 back과 signup은 비활성화된다", () => {
+test("로그인 요청과 세션 commit boundary 동안 back과 signup은 비활성화된다", () => {
   assert.match(onboarding, /getOnboardingAuthCommitSnapshot/);
   assert.match(onboarding, /if \(authCommitBoundaryActive\) return;[\s\S]*cancelOnboardingAuthTransitions\(\)/);
   assert.match(onboarding, /<RoleStep[\s\S]{0,120}busy=\{busy \|\| authCommitBoundaryActive\}/);
-  assert.match(onboarding, /<BackButton onBack=\{onBack\} disabled=\{commitBoundaryActive\} \/>/);
+  assert.match(onboarding, /const loginNavigationLocked = isLoginNavigationLocked\(\{ busy, commitBoundaryActive \}\)/);
+  assert.match(onboarding, /<BackButton onBack=\{onBack\} disabled=\{loginNavigationLocked\} \/>/);
   assert.match(onboarding, /disabled=\{busy \|\| commitBoundaryActive\}/);
 });
 
