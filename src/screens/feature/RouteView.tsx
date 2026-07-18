@@ -18,6 +18,12 @@ import { straightDistanceM, type RoutePoint } from "@/lib/api/endpoints/route";
 import type { CalendarEvent } from "@/lib/api/endpoints/schedule";
 import { parseAppDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
+import {
+  beginRouteDestinationScope,
+  resolveRouteDestination,
+  selectRouteDestinationForChild,
+  type OwnedRouteDestination,
+} from "@/transform/routeDestinationScope";
 import "./RouteView.css";
 
 // 도보 4km/h ≈ 67m/분 — 실 도보 경로의 '거리'만으로 소요시간을 보정할 때 쓴다
@@ -124,27 +130,35 @@ export function RouteView() {
     [events, childMember?.id],
   );
   const nextEvent = useMemo(() => pickNextEventWithPlace(childEvents, nowMs), [childEvents, nowMs]);
-  const [destination, setDestination] = useState<DestPick | null | undefined>(undefined);
+  const [destinationState, setDestinationState] = useState<OwnedRouteDestination<DestPick> | null>(null);
+  const destination = selectRouteDestinationForChild(destinationState, childMember?.id ?? null);
   useEffect(() => {
-    if (!childMember) {
-      setDestination(null);
+    const ownerChildMemberId = childMember?.id ?? null;
+    if (!ownerChildMemberId) {
+      setDestinationState(null);
       return;
     }
+    setDestinationState(beginRouteDestinationScope<DestPick>(ownerChildMemberId));
     if (!events) return; // 일정 로딩 중
+    const commit = (value: DestPick | null) => {
+      setDestinationState((current) =>
+        resolveRouteDestination(current, ownerChildMemberId, value),
+      );
+    };
     if (!nextEvent) {
-      setDestination(null);
+      commit(null);
       return;
     }
     const evLoc = nextEvent.location;
     const name = nextEvent.title || "다음 일정";
     // ① 일정에 좌표가 직접 저장돼 있으면 그대로(지도 피커/저장장소 칩으로 등록된 일정).
     if (typeof evLoc?.lat === "number" && typeof evLoc?.lng === "number") {
-      setDestination({ name, point: { lat: evLoc.lat, lng: evLoc.lng } });
+      commit({ name, point: { lat: evLoc.lat, lng: evLoc.lng } });
       return;
     }
     const label = (evLoc?.address ?? "").trim();
     if (!label) {
-      setDestination(null);
+      commit(null);
       return;
     }
     // ② 저장장소 이름 매칭(장소관리에 등록된 곳이면 그 좌표).
@@ -156,22 +170,21 @@ export function RouteView() {
         typeof p.location?.lng === "number",
     );
     if (saved) {
-      setDestination({ name, point: { lat: saved.location.lat, lng: saved.location.lng } });
+      commit({ name, point: { lat: saved.location.lat, lng: saved.location.lng } });
       return;
     }
     // ③ Kakao 키워드 검색 → 주소 검색 순으로 좌표 해석(둘 다 실패 시 빈 상태).
     let cancelled = false;
-    setDestination(undefined);
     loadKakaoMaps()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .then((maps: any) => {
         if (cancelled) return;
         if (!maps?.services) {
-          setDestination(null);
+          commit(null);
           return;
         }
         const done = (lat: number, lng: number) => {
-          if (!cancelled) setDestination({ name, point: { lat, lng } });
+          if (!cancelled) commit({ name, point: { lat, lng } });
         };
         const fallbackAddress = () => {
           const geocoder = new maps.services.Geocoder();
@@ -181,7 +194,7 @@ export function RouteView() {
             (res: any[], st: string) => {
               if (cancelled) return;
               if (st === "OK" && res[0]) done(Number(res[0].y), Number(res[0].x));
-              else setDestination(null);
+              else commit(null);
             },
           );
         };
@@ -197,12 +210,12 @@ export function RouteView() {
         );
       })
       .catch(() => {
-        if (!cancelled) setDestination(null);
+        if (!cancelled) commit(null);
       });
     return () => {
       cancelled = true;
     };
-  }, [childMember, events, nextEvent, places]);
+  }, [childMember?.id, events, nextEvent, places]);
 
   // 실 도보 경로(출발·도착 모두 있을 때만 활성).
   const {

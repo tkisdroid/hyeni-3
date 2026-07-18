@@ -50,3 +50,21 @@ test("유효한 아이 member가 없으면 위치·일정 query 결과를 화면
   assert.match(source, /!childMember\s*\? "no-child"/);
   assert.match(source, /routeState === "no-child"/);
 });
+
+test("길찾기 목적지는 현재 child owner가 일치하는 값만 경로·지도·제목에 전달한다", () => {
+  const source = readSource("src/screens/feature/RouteView.tsx");
+
+  assert.match(source, /beginRouteDestinationScope/);
+  assert.match(source, /resolveRouteDestination/);
+  assert.match(source, /selectRouteDestinationForChild/);
+  assert.match(
+    source,
+    /const destination = selectRouteDestinationForChild\(destinationState, childMember\?\.id \?\? null\)/,
+  );
+  assert.match(source, /useWalkingRoute\(origin, destination\?\.point \?\? null\)/);
+  assert.match(
+    source,
+    /resolveRouteDestination\(current, ownerChildMemberId, value\)/,
+  );
+  assert.doesNotMatch(source, /useState<DestPick \| null \| undefined>/);
+});
