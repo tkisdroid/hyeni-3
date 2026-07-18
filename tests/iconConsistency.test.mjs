@@ -102,3 +102,43 @@ test("전용 아이콘 슬롯에 원시 이모지를 쓰지 않는다 (2026-07-1
     assert.doesNotMatch(readSource(file), pattern, `${file} 아이콘 슬롯에 원시 이모지`);
   }
 });
+
+test("출시 화면 유틸리티 아이콘은 손작성 SVG나 전용 슬롯 이모지를 쓰지 않는다", () => {
+  const parentLocation = readSource("src/screens/parent/ParentLocation.tsx");
+  assert.doesNotMatch(
+    parentLocation,
+    /<svg\b[\s\S]*?<\/svg>/,
+    "ParentLocation 유틸리티 아이콘은 lucide-react를 사용해야 함",
+  );
+
+  const dedicatedSlots = [
+    ["src/screens/feature/DaySummary.tsx", /icon:\s*["'][^"']*[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u],
+    ["src/screens/feature/RemoteAudio.tsx", /icon:\s*["'][^"']*[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u],
+    ["src/screens/feature/FriendPlay.tsx", /className="fp-(setting__icon|connected__badge)"[^>]*>\s*[^<{]*[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u],
+    ["src/screens/feature/RemoteRing.tsx", /className="rr-modal-emoji"[^>]*>\s*[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u],
+    ["src/screens/parent/ParentLocation.tsx", /<span>\s*[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]\s*일정\s*<\/span>/u],
+  ];
+
+  for (const [file, pattern] of dedicatedSlots) {
+    assert.doesNotMatch(readSource(file), pattern, `${file} 전용 슬롯에 원시 이모지`);
+  }
+});
+
+test("장소 삭제 아이콘은 44px 조작 영역과 18px 이하 glyph를 유지한다", () => {
+  const css = readSource("src/screens/feature/PlaceManager.css");
+  const screen = readSource("src/screens/feature/PlaceManager.tsx");
+
+  for (const selector of ["pm-item__del", "pm-danger__del"]) {
+    assert.match(
+      css,
+      new RegExp(`\\.${selector}[\\s\\S]*?min-height:\\s*var\\(--control-min-size\\)`),
+      `${selector} 최소 높이 44px 계약 누락`,
+    );
+    assert.match(
+      css,
+      new RegExp(`\\.${selector}[\\s\\S]*?min-width:\\s*var\\(--control-min-size\\)`),
+      `${selector} 최소 너비 44px 계약 누락`,
+    );
+  }
+  assert.doesNotMatch(screen, /<Trash2\s+size=\{(?:19|[2-9]\d)\}/, "삭제 glyph가 18px를 초과함");
+});

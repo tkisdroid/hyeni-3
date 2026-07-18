@@ -284,7 +284,9 @@ export function RemoteRing() {
       {showConfirm && (
         <div className="rr-modal-backdrop" onClick={() => setShowConfirm(false)}>
           <div className="rr-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="rr-modal-emoji">🔔</div>
+            <div className="rr-modal-emoji" aria-hidden="true">
+              <Bell size={32} strokeWidth={2.1} />
+            </div>
             <div className="rr-modal-title">{childName} 기기에서 울릴까요?</div>
             <div className="rr-modal-sub">
               {durationLabel(durationSec)} 동안 최대 볼륨으로 울리고,

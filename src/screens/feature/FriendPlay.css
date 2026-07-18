@@ -216,6 +216,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   padding: 12px 16px;
   text-align: center;
 
@@ -265,7 +266,7 @@
   align-items: center;
   justify-content: center;
   flex: none;
-  font-size: 20px;
+  color: var(--gold-text);
 }
 .fp-setting__main {
   flex: 1;

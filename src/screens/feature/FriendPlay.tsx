@@ -1,4 +1,4 @@
-import { ChevronLeft, MapPin } from "lucide-react";
+import { ChevronLeft, MapPin, PartyPopper } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
@@ -142,7 +142,9 @@ export function FriendPlay() {
             onClick={togglePlaydateEnabled}
             disabled={enabledQ.isLoading || setEnabled.isPending}
           >
-            <span className="fp-setting__icon">🎈</span>
+            <span className="fp-setting__icon" aria-hidden="true">
+              <PartyPopper size={22} strokeWidth={2.2} />
+            </span>
             <span className="fp-setting__main">
               <span className="fp-setting__title">친구놀이 요청 허용</span>
               <span className="fp-setting__sub">
@@ -242,7 +244,10 @@ export function FriendPlay() {
         {active ? (
           /* ── 연결됨 상태 ─────────────────────────────── */
           <div className="fp-connected">
-            <div className="fp-connected__badge">🎈 놀이 연결됨</div>
+            <div className="fp-connected__badge">
+              <PartyPopper size={16} strokeWidth={2.2} aria-hidden="true" />
+              놀이 연결됨
+            </div>
             <div className="fp-connected__friend">{active.friend_child_name ?? "친구"}</div>
             {active.place_name ? (
               <div className="fp-connected__place">
@@ -298,7 +303,8 @@ export function FriendPlay() {
             {/* 발신 상태 / 보내기 */}
             {outgoing.length > 0 ? (
               <div className="fp-waiting">
-                🎈 친구에게 보냈어! 친구의 답을 기다리는 중…
+                <PartyPopper size={20} strokeWidth={2.2} aria-hidden="true" />
+                친구에게 보냈어! 친구의 답을 기다리는 중…
               </div>
             ) : !canSend ? (
               <div className="fp-note">아이가 아이 기기에서 친구에게 보낼 수 있어요.</div>
@@ -309,7 +315,8 @@ export function FriendPlay() {
                 onClick={onSend}
                 disabled={sending || candidates.length === 0}
               >
-                🎈 {sending ? "보내는 중…" : "같이 놀자고 보내기"}
+                <PartyPopper size={20} strokeWidth={2.2} aria-hidden="true" />
+                {sending ? "보내는 중…" : "같이 놀자고 보내기"}
               </button>
             )}
           </>

@@ -5,7 +5,15 @@ import type {
   TouchEvent as ReactTouchEvent,
 } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { AlertTriangle, Crown, Navigation, RefreshCw } from "lucide-react";
+import {
+  AlertTriangle,
+  Crown,
+  MapPin,
+  MessageCircle,
+  Navigation,
+  Phone,
+  RefreshCw,
+} from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
@@ -679,7 +687,9 @@ export function ParentLocation() {
             <span><i className="pl-scrub__line" /> 이동선</span>
             {hasEstimatedTrail && <span><i className="pl-scrub__estimate" /> 추정 구간</span>}
             <span><i className="pl-scrub__dot" /> 머문 곳</span>
-            {scheduleMapPlaces.length > 0 && <span>📍 일정</span>}
+            {scheduleMapPlaces.length > 0 && (
+              <span><MapPin size={16} strokeWidth={2.2} aria-hidden="true" /> 일정</span>
+            )}
           </div>
         </div>
       )}
@@ -741,12 +751,7 @@ export function ParentLocation() {
               onClick={refresh}
               disabled={isFetching || isDelayed || isRefreshingLocation}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6D6469" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
-                <path d="M21 3v5h-5" />
-                <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-                <path d="M21 21v-5h5" />
-              </svg>
+              <RefreshCw size={20} strokeWidth={2.2} color="var(--fg-muted)" aria-hidden="true" />
             </button>
           )}
         </div>
@@ -901,9 +906,7 @@ export function ParentLocation() {
 
         <div className="pl-actions">
           <button type="button" className="pl-memo-btn" onClick={() => navigate("/parent/memo")}>
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 11.5a8.5 8.5 0 0 1-12.2 7.7L3 21l1.9-5.6A8.5 8.5 0 1 1 21 11.5Z" />
-            </svg>
+            <MessageCircle size={20} strokeWidth={2.2} color="#fff" aria-hidden="true" />
             메모 남기기
           </button>
           {/* 경로·주변소리는 프리미엄 전용 — 하위 티어에서는 유도. 잠금(무료)에서는 숨김. */}
@@ -928,9 +931,7 @@ export function ParentLocation() {
             </>
           )}
           <button type="button" className="pl-call-btn" aria-label="전화 걸기" onClick={callChild}>
-            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#23A876" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z" />
-            </svg>
+            <Phone size={20} strokeWidth={2.2} color="var(--mint-text)" aria-hidden="true" />
           </button>
         </div>
       </div>

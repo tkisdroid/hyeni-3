@@ -121,9 +121,9 @@
 .ra-trust-card__icon {
   flex: none;
   width: 24px;
-  text-align: center;
-  font-size: 17px;
-  line-height: 1.4;
+  display: grid;
+  place-items: center;
+  color: var(--lav-text);
 }
 .ra-trust-card__body {
   min-width: 0;

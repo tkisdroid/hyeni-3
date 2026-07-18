@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronLeft, FileClock, Mic, VolumeX, Phone, Smartphone } from "lucide-react";
+import { Bell, ChevronLeft, FileClock, Mic, Phone, Smartphone, Timer, VolumeX } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
@@ -41,17 +41,17 @@ const WAVE_DELAYS = [
 
 const TRUST_CARDS = [
   {
-    icon: "🔔",
+    icon: Bell,
     title: "아이에게 알림이 가요",
     text: "아이 기기에서 알림을 누르고 직접 허용해야 시작돼요.",
   },
   {
-    icon: "⏱️",
+    icon: Timer,
     title: "1분 후 자동 종료돼요",
     text: "위급 상황 확인을 위한 짧은 청취만 지원해요.",
   },
   {
-    icon: "📝",
+    icon: FileClock,
     title: "기록이 남아요",
     text: "가족의 안전과 투명성을 위해 청취 기록을 남겨요.",
   },
@@ -513,17 +513,20 @@ export function RemoteAudio() {
             1분 동안 들을 수 있어요
           </div>
           <div className="ra-trust-grid">
-            {TRUST_CARDS.map((item) => (
-              <div key={item.title} className="ra-trust-card">
-                <span className="ra-trust-card__icon" aria-hidden="true">
-                  {item.icon}
-                </span>
-                <span className="ra-trust-card__body">
-                  <span className="ra-trust-card__title">{item.title}</span>
-                  <span className="ra-trust-card__text">{item.text}</span>
-                </span>
-              </div>
-            ))}
+            {TRUST_CARDS.map((item) => {
+              const TrustIcon = item.icon;
+              return (
+                <div key={item.title} className="ra-trust-card">
+                  <span className="ra-trust-card__icon" aria-hidden="true">
+                    <TrustIcon size={20} strokeWidth={2.2} />
+                  </span>
+                  <span className="ra-trust-card__body">
+                    <span className="ra-trust-card__title">{item.title}</span>
+                    <span className="ra-trust-card__text">{item.text}</span>
+                  </span>
+                </div>
+              );
+            })}
           </div>
           <button
             type="button"

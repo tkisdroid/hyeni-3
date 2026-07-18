@@ -245,8 +245,8 @@
   --press: 0.9;
 }
 .pm-item__del {
-  width: 34px;
-  height: 34px;
+  width: var(--control-min-size);
+  height: var(--control-min-size);
   border-radius: 11px;
   background: #f4eff2;
   display: flex;
@@ -280,8 +280,8 @@
   --press: 0.98;
 }
 .pm-danger__del {
-  width: 36px;
-  height: 36px;
+  width: var(--control-min-size);
+  height: var(--control-min-size);
   border-radius: 11px;
   background: #ffecee;
   display: flex;

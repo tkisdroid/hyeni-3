@@ -224,7 +224,10 @@
   box-shadow: var(--shadow-modal);
 }
 .rr-modal-emoji {
-  font-size: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--hy-accent-deep);
 }
 .rr-modal-title {
   margin-top: 12px;

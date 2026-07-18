@@ -1,6 +1,14 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronLeft,
+  MapPin,
+  MessageCircle,
+  ShieldCheck,
+  TriangleAlert,
+  type LucideIcon,
+} from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useActiveChild } from "@/app/activeChild";
@@ -15,7 +23,7 @@ import "./DaySummary.css";
 type RowTone = "info" | "safe" | "caution";
 interface SummaryRow {
   key: string;
-  icon: string;
+  icon: LucideIcon;
   text: string;
   sub?: string;
   tone: RowTone;
@@ -28,29 +36,29 @@ function buildRows(signals: DaySummarySignals | null): SummaryRow[] {
   (signals.events ?? []).slice(0, 4).forEach((e, i) => {
     rows.push({
       key: `ev-${i}`,
-      icon: "🗓",
+      icon: CalendarDays,
       text: e.title,
       sub: e.time ? formatTimeLabel(e.time) : undefined,
       tone: "info",
     });
   });
   (signals.dwellPlaces ?? []).slice(0, 3).forEach((p, i) => {
-    rows.push({ key: `dw-${i}`, icon: "📍", text: p.title, sub: p.durationLabel || undefined, tone: "info" });
+    rows.push({ key: `dw-${i}`, icon: MapPin, text: p.title, sub: p.durationLabel || undefined, tone: "info" });
   });
   if ((signals.chatCount ?? 0) > 0) {
-    rows.push({ key: "chat", icon: "💬", text: `AI 친구와 ${signals.chatCount}번 이야기했어요`, tone: "info" });
+    rows.push({ key: "chat", icon: MessageCircle, text: `AI 친구와 ${signals.chatCount}번 이야기했어요`, tone: "info" });
   }
   const alertTotal =
     (signals.notArrived ?? 0) + (signals.dangerZone ?? 0) + (signals.sos ?? 0) + (signals.playdate ?? 0);
   if (alertTotal > 0) {
     const highlights = signals.alertHighlights ?? [];
     if (highlights.length > 0) {
-      highlights.slice(0, 3).forEach((h, i) => rows.push({ key: `al-${i}`, icon: "⚠️", text: h, tone: "caution" }));
+      highlights.slice(0, 3).forEach((h, i) => rows.push({ key: `al-${i}`, icon: TriangleAlert, text: h, tone: "caution" }));
     } else {
-      rows.push({ key: "al", icon: "⚠️", text: `안전 알림 ${alertTotal}건`, tone: "caution" });
+      rows.push({ key: "al", icon: TriangleAlert, text: `안전 알림 ${alertTotal}건`, tone: "caution" });
     }
   } else {
-    rows.push({ key: "safe", icon: "🛡️", text: "안전 알림 없이 잘 보냈어요", tone: "safe" });
+    rows.push({ key: "safe", icon: ShieldCheck, text: "안전 알림 없이 잘 보냈어요", tone: "safe" });
   }
   return rows;
 }
@@ -168,15 +176,20 @@ export function DaySummary() {
 
             {rows.length > 0 && (
               <div className="ds-rows">
-                {rows.map((r) => (
-                  <div key={r.key} className={`ds-row ds-row--${r.tone}`}>
-                    <span className="ds-row__icon">{r.icon}</span>
-                    <div className="ds-row__body">
-                      <div className="ds-row__text">{r.text}</div>
-                      {r.sub && <div className="ds-row__sub">{r.sub}</div>}
+                {rows.map((r) => {
+                  const RowIcon = r.icon;
+                  return (
+                    <div key={r.key} className={`ds-row ds-row--${r.tone}`}>
+                      <span className="ds-row__icon" aria-hidden="true">
+                        <RowIcon size={18} strokeWidth={2.2} />
+                      </span>
+                      <div className="ds-row__body">
+                        <div className="ds-row__text">{r.text}</div>
+                        {r.sub && <div className="ds-row__sub">{r.sub}</div>}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
