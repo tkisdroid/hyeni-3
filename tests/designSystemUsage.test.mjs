@@ -620,7 +620,9 @@ test("ParentCalendar는 360px에서 7열 44px hit area와 17px dots 행을 overf
 test("TeacherNotice는 360px에서 toggle·파일 삭제의 hit와 visual 크기를 분리하고 긴 파일명을 자른다", () => {
   const path = "src/screens/teacher/TeacherNotice.css";
   const toggle = classStyleAtWidth(path, "tn-toggle", 360);
+  const toggleOn = classStyleAtWidth(path, "tn-toggle--on", 360);
   const knob = classStyleAtWidth(path, "tn-toggle__knob", 360);
+  const attachmentList = classStyleAtWidth(path, "tn-attach-list", 360);
   const fileRemove = classStyleAtWidth(path, "tn-file-chip__x", 360);
   const fileRemoveVisual = selectorStyleAtWidth(path, ".tn-file-chip__x::before", 360);
   const fileName = classStyleAtWidth(path, "tn-file-chip__name", 360);
@@ -642,6 +644,10 @@ test("TeacherNotice는 360px에서 toggle·파일 삭제의 hit와 visual 크기
     || declarationValue(toggle, "padding-block") !== "8px"
     || declarationValue(toggle, "background-clip") !== "content-box") {
     violations.push(`${path} .tn-toggle (28px visual track 분리 누락)`);
+  }
+  if (declarationValue(toggleOn, "background-color") !== "var(--lav-500)"
+    || declarationValue(toggleOn, "background") !== null) {
+    violations.push(`${path} .tn-toggle--on (background-clip을 보존하는 color longhand 누락)`);
   }
   if (declarationValue(knob, "top") !== "11px") {
     violations.push(`${path} .tn-toggle__knob (44px hit 기준 optical top ${declarationValue(knob, "top") ?? "누락"})`);
@@ -672,6 +678,10 @@ test("TeacherNotice는 360px에서 toggle·파일 삭제의 hit와 visual 크기
   if (declarationValue(fileChip, "max-width") !== "100%"
     || declarationValue(fileChip, "box-sizing") !== "border-box") {
     violations.push(`${path} .tn-file-chip (360px overflow 방지 계약 누락)`);
+  }
+  const attachmentRowGap = resolvePixels(declarationValue(attachmentList, "row-gap")) ?? 0;
+  if (attachmentRowGap < 12) {
+    violations.push(`${path} .tn-attach-list (행간 ${attachmentRowGap}px, 44px 삭제 hit 중첩)`);
   }
 
   assert.deepEqual(violations, [], `TeacherNotice 360px 위반 ${violations.length}건:\n${violations.join("\n")}`);

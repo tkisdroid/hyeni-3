@@ -229,7 +229,8 @@
   margin-top: 9px;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  column-gap: 8px;
+  row-gap: 12px;
 }
 .tn-file-chip {
   min-width: 0;
@@ -331,7 +332,7 @@
   transition: background 0.18s ease;
 }
 .tn-toggle--on {
-  background: var(--lav-500);
+  background-color: var(--lav-500);
 }
 .tn-toggle__knob {
   position: absolute;
