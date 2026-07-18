@@ -9,6 +9,7 @@ import { useActiveChild } from "@/app/activeChild";
 import { useDailySupplies, useUpsertDailySupply, useDeleteDailySupply } from "@/queries/useSchedule";
 import type { DailySupply } from "@/lib/api/endpoints/schedule";
 import { parseAppDateKey, todayDateKey } from "@/transform/dateKey";
+import { resolveDailySupplyChildMemberId } from "@/transform/dailySupplyScope";
 import "./Supplies.css";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
@@ -35,28 +36,33 @@ export function Supplies() {
     return `${d.getMonth() + 1}월 ${d.getDate()}일 (${WEEKDAYS[d.getDay()]})`;
   }, [dateKey]);
 
-  const { data: family } = useMyFamily();
+  const familyQuery = useMyFamily();
+  const family = familyQuery.data;
   const childMembers = useMemo(
     () => (family?.members ?? []).filter((m) => m.role === "child"),
     [family],
   );
-  // 대상 아이(member id): nav.childId > 아이 세션이면 본인 > 전역 활성 아이.
-  // 첫째 폴백 제거 — 홈(활성 아이)과 이 화면이 다른 아이를 가리키던 읽기·쓰기 오귀속 차단.
+  // 대상 힌트: 명시적 화면 state > 부모 홈 전역 활성 아이. 실제 대상 검증은 공용 resolver 한 곳에서만 한다.
   const { activeChild } = useActiveChild();
-  const targetChildId = useMemo(() => {
+  const targetHint = useMemo(() => {
     const fromState = (location.state as { childId?: string } | null)?.childId;
     if (fromState) return fromState;
-    if (isChild) return childMembers.find((m) => m.user_id === userId)?.id ?? null;
     return activeChild?.id ?? null;
-  }, [location.state, isChild, childMembers, userId, activeChild]);
+  }, [location.state, activeChild]);
+  const targetChildId = useMemo(
+    () => resolveDailySupplyChildMemberId(family?.members ?? [], role, userId, targetHint),
+    [family?.members, role, userId, targetHint],
+  );
   const targetChildName = childMembers.find((m) => m.id === targetChildId)?.name ?? "";
 
   const suppliesQuery = useDailySupplies(dateKey);
   // 서버 응답은 모든 아이가 섞여 있으므로 대상 아이로 필터.
   const supplies = useMemo(() => {
     const all = suppliesQuery.data ?? [];
-    return targetChildId ? all.filter((s) => s.child_user_id === targetChildId) : all;
+    return targetChildId ? all.filter((s) => s.child_user_id === targetChildId) : [];
   }, [suppliesQuery.data, targetChildId]);
+  const isLoading = familyQuery.isLoading || suppliesQuery.isLoading;
+  const isError = familyQuery.isError || suppliesQuery.isError;
   const upsert = useUpsertDailySupply();
   const remove = useDeleteDailySupply();
 
@@ -71,7 +77,7 @@ export function Supplies() {
   const doneCount = supplies.filter((s) => s.done).length;
 
   const toggle = (item: DailySupply) => {
-    if (editId) return; // 편집 중엔 토글 금지
+    if (editId || !targetChildId || item.child_user_id !== targetChildId) return;
     upsert.mutate(
       {
         id: item.id,
@@ -79,7 +85,7 @@ export function Supplies() {
         label: item.label,
         done: !item.done,
         kind: item.kind ?? "prep",
-        child_user_id: item.child_user_id ?? targetChildId,
+        child_user_id: targetChildId,
       },
       { onError: () => show(isChild ? "안 됐어. 다시 눌러볼래?" : "반영에 실패했어요", "⚠️") },
     );
@@ -110,6 +116,7 @@ export function Supplies() {
     setEditDraft("");
   };
   const commitEdit = (item: DailySupply) => {
+    if (!targetChildId || item.child_user_id !== targetChildId) return;
     const label = editDraft.trim();
     if (!label) {
       cancelEdit();
@@ -126,7 +133,7 @@ export function Supplies() {
         label,
         done: item.done,
         kind: item.kind ?? "prep",
-        child_user_id: item.child_user_id ?? targetChildId,
+        child_user_id: targetChildId,
       },
       {
         onSuccess: cancelEdit,
@@ -135,7 +142,7 @@ export function Supplies() {
     );
   };
   const del = (item: DailySupply) => {
-    if (remove.isPending) return;
+    if (remove.isPending || !targetChildId || item.child_user_id !== targetChildId) return;
     if (editId === item.id) cancelEdit();
     remove.mutate(item, {
       onError: () => show(isChild ? "못 지웠어. 다시 해볼래?" : "삭제하지 못했어요", "⚠️"),
@@ -179,23 +186,51 @@ export function Supplies() {
           <div>
             <div className="sup-intro__title">{isChild ? "오늘 챙길 것" : "오늘 준비물·숙제"}</div>
             <div className="sup-intro__sub">
-              {suppliesQuery.isLoading
+              {isLoading
                 ? "불러오는 중…"
+                : isError
+                  ? isChild ? "정보를 불러오지 못했어" : "정보를 불러오지 못했어요"
+                  : !targetChildId
+                    ? isChild ? "내 가족 정보를 확인해 줘" : "준비물을 볼 아이를 선택해 주세요"
                 : `${targetChildName ? targetChildName + " · " : ""}${supplies.length}개 중 ${doneCount}개 완료`}
             </div>
           </div>
         </div>
 
-        {sections.map((sec) => (
+        {isLoading ? (
+          <div className="sup-status sup-status--loading" role="status">
+            <span className="sup-status__spinner" aria-hidden="true" />
+            <strong>준비물을 불러오는 중…</strong>
+          </div>
+        ) : isError ? (
+          <div className="sup-status sup-status--error" role="alert">
+            <strong>{isChild ? "준비물을 불러오지 못했어" : "준비물을 불러오지 못했어요"}</strong>
+            <span>{isChild ? "잠시 후 다시 확인해 줘." : "잠시 후 다시 확인해 주세요."}</span>
+            <button
+              type="button"
+              className="sup-status__retry hy-press"
+              onClick={() => void Promise.all([familyQuery.refetch(), suppliesQuery.refetch()])}
+            >
+              다시 시도
+            </button>
+          </div>
+        ) : !targetChildId ? (
+          <div className="sup-status sup-status--no-target">
+            <strong>{isChild ? "내 정보를 찾지 못했어" : "준비물을 볼 아이를 선택할 수 없어요"}</strong>
+            <span>
+              {isChild
+                ? "가족 연결을 확인한 뒤 다시 들어와 줘."
+                : "부모 홈에서 아이를 선택한 뒤 다시 시도해 주세요."}
+            </span>
+          </div>
+        ) : sections.map((sec) => (
           <section key={sec.kind} className="sup-section">
             <div className="sup-section__head">
               <span className="sup-section__title">{sec.heading}</span>
               <span className="sup-section__count">{sec.list.length}</span>
             </div>
             <div className="sup-card">
-              {suppliesQuery.isLoading ? (
-                <div className="sup-empty">불러오는 중…</div>
-              ) : sec.list.length === 0 ? (
+              {sec.list.length === 0 ? (
                 <div className="sup-empty">{emptyText}</div>
               ) : (
                 sec.list.map((s) =>

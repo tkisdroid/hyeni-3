@@ -31,7 +31,7 @@ interface DestPick {
 }
 
 // 경로 표시 상태(모두 실데이터 기반 — 직선 근사·가짜 경로 없음).
-type RouteState = "no-dest" | "no-origin" | "loading" | "error" | "ready";
+type RouteState = "no-child" | "no-dest" | "no-origin" | "loading" | "error" | "ready";
 
 function distanceLabel(m: number): string {
   if (m < 1000) return `${Math.round(m)}m`;
@@ -88,7 +88,9 @@ function pickNextEventWithPlace(
 export function RouteView() {
   const navigate = useNavigate();
   const { show } = useToast();
-  const { userId } = useAuth();
+  const { role, userId } = useAuth();
+  const isChild = role === "child";
+  const homePath = isChild ? "/child/home" : "/parent/home";
   const { activeChild } = useActiveChild();
   const { data: family } = useMyFamily();
   const { data: locations } = useChildLocations();
@@ -103,10 +105,12 @@ export function RouteView() {
     activeChild && family?.members.some((m) => m.role === "child" && m.id === activeChild.id)
       ? activeChild
       : null;
-  const childMember = ownChild ?? activeChildMember;
+  const childMember = isChild ? ownChild : activeChildMember;
   const childAvatar = childAvatarPath(childMember?.photo_url);
   const childName = childMember?.name || "아이";
-  const loc = locations?.find((l) => l.user_id === childMember?.user_id) ?? null;
+  const loc = childMember
+    ? locations?.find((l) => l.user_id === childMember.user_id) ?? null
+    : null;
   const origin = useMemo<RoutePoint | null>(
     () => (loc ? { lat: loc.lat, lng: loc.lng } : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -116,12 +120,16 @@ export function RouteView() {
   // 도착 = 다음 일정 장소. 좌표가 없으면 ①저장장소 이름 매칭 ②Kakao 키워드/주소 검색으로 해석.
   // undefined = 해석 중(로딩), null = 안내할 곳 없음(정직한 빈 상태 — 직선 폴백 금지).
   const childEvents = useMemo(
-    () => filterEventsForChild(events ?? [], childMember?.id),
+    () => childMember ? filterEventsForChild(events ?? [], childMember.id) : [],
     [events, childMember?.id],
   );
   const nextEvent = useMemo(() => pickNextEventWithPlace(childEvents, nowMs), [childEvents, nowMs]);
   const [destination, setDestination] = useState<DestPick | null | undefined>(undefined);
   useEffect(() => {
+    if (!childMember) {
+      setDestination(null);
+      return;
+    }
     if (!events) return; // 일정 로딩 중
     if (!nextEvent) {
       setDestination(null);
@@ -194,7 +202,7 @@ export function RouteView() {
     return () => {
       cancelled = true;
     };
-  }, [events, nextEvent, places]);
+  }, [childMember, events, nextEvent, places]);
 
   // 실 도보 경로(출발·도착 모두 있을 때만 활성).
   const {
@@ -208,7 +216,9 @@ export function RouteView() {
 
   // 상태 판정: 장소 해석 중 → 도착지 없음 → 출발지 없음 → 경로 준비 → 실패 → 로딩.
   const routeState: RouteState =
-    destination === undefined
+    !childMember
+      ? "no-child"
+      : destination === undefined
       ? "loading"
       : destination === null
         ? "no-dest"
@@ -242,6 +252,27 @@ export function RouteView() {
   const curPlace = loc ? locationLabel(loc) : "현재 위치";
   const title = destination ? `${destination.name} 길찾기` : "길찾기";
   const canStart = !!origin && !!destination;
+  const routeLoadingText = isChild ? "걸어가는 길을 찾는 중…" : "걸어가는 길을 찾는 중이에요…";
+  const routeRetryText = isChild ? "길을 못 찾았어 · 다시 시도" : "길을 찾지 못했어요 · 다시 시도";
+  const locationPendingText = isChild
+    ? "네 위치를 확인하는 중…"
+    : `${childName} 위치를 확인하는 중이에요…`;
+  const emptyTitle =
+    routeState === "no-child"
+      ? isChild ? "내 정보를 찾지 못했어" : "길을 안내할 아이를 선택할 수 없어요"
+      : isChild ? "안내할 곳이 없어" : "안내할 곳이 없어요";
+  const emptyDescription =
+    routeState === "no-child"
+      ? isChild
+        ? "가족 연결을 확인한 뒤 다시 들어와 줘."
+        : "부모 홈에서 아이를 선택한 뒤 다시 시도해 주세요."
+      : nextEvent
+        ? isChild
+          ? "다음 일정의 장소를 아직 못 찾았어.\n부모님께 지도로 장소를 정해달라고 해줘."
+          : "다음 일정의 장소를 아직 찾지 못했어요.\n일정에서 지도 위치를 지정해 주세요."
+        : isChild
+          ? "남은 일정이 없어서\n길을 안내할 곳이 없어."
+          : "남은 일정이 없어\n길을 안내할 곳이 없어요.";
 
   // 안내 시작 — 외부 지도 앱(네이티브: 시스템 브라우저 / 웹: 새 탭)에서 도보 길안내를 연다.
   const startNavigation = async () => {
@@ -253,14 +284,19 @@ export function RouteView() {
       } else {
         const win = window.open(url, "_blank", "noopener,noreferrer");
         if (!win) {
-          show("지도를 못 열었어. 팝업 차단을 확인해줘", "🧭");
+          show(
+            isChild
+              ? "지도를 못 열었어. 팝업 차단을 확인해줘"
+              : "지도를 열지 못했어요. 팝업 차단을 확인해 주세요",
+            "🧭",
+          );
           return;
         }
       }
-      show("지도 앱에서 걷는 길 안내를 열었어", "🧭");
+      show(isChild ? "지도 앱에서 걷는 길 안내를 열었어" : "지도 앱에서 걷는 길 안내를 열었어요", "🧭");
     } catch (error) {
       console.error("길안내 열기 실패:", error);
-      show("길 안내를 못 열었어", "⚠️");
+      show(isChild ? "길 안내를 못 열었어" : "길 안내를 열지 못했어요", "⚠️");
     }
   };
 
@@ -279,16 +315,18 @@ export function RouteView() {
     routeState === "ready" && distanceM != null
       ? `${durationLabel(durationSec)} · ${distanceLabel(distanceM)}`
       : routeState === "loading"
-        ? "걸어가는 길을 찾는 중…"
+        ? routeLoadingText
         : routeState === "error"
-          ? straightEta ?? "도보 경로를 못 찾았어"
-          : "네 위치를 확인하는 중";
+          ? straightEta ?? (isChild ? "도보 경로를 못 찾았어" : "도보 경로를 찾지 못했어요")
+          : locationPendingText;
 
   // 경로 안내 단계 — 실 도보 경로의 턴바이턴(guides)을 아이가 따라갈 수 있게 나열.
   // 서버가 안내문을 안 주면 총거리 요약으로 폴백(가짜 안내 금지).
   const steps: Step[] = useMemo(() => {
     if (routeState !== "ready" || distanceM == null) return [];
-    const out: Step[] = [{ tone: "pink", text: `출발 · ${curPlace}에서 시작해` }];
+    const out: Step[] = [
+      { tone: "pink", text: `출발 · ${curPlace}에서 ${isChild ? "시작해" : "시작해요"}` },
+    ];
     const guides = routeData?.guides ?? [];
     if (guides.length > 0) {
       for (const g of guides.slice(0, 12)) {
@@ -299,11 +337,14 @@ export function RouteView() {
       }
       if (guides.length > 12) out.push({ tone: "pink", text: `…남은 길 ${guides.length - 12}구간` });
     } else {
-      out.push({ tone: "pink", text: `길을 따라 약 ${distanceLabel(distanceM)} 걸어가` });
+      out.push({
+        tone: "pink",
+        text: `길을 따라 약 ${distanceLabel(distanceM)} ${isChild ? "걸어가" : "걸어가세요"}`,
+      });
     }
     out.push({ tone: "mint", text: `도착 · ${destination?.name ?? "다음 일정"}` });
     return out;
-  }, [routeState, distanceM, curPlace, routeData?.guides, destination?.name]);
+  }, [routeState, distanceM, curPlace, routeData?.guides, destination?.name, isChild]);
 
   return (
     <div className="rv-screen">
@@ -320,22 +361,18 @@ export function RouteView() {
       </div>
 
       <div className="rv-content">
-        {routeState === "no-dest" ? (
-          // 정직한 빈 상태 — 다음 일정 장소가 없으면 안내할 곳이 없다(직선 폴백 금지). 아이 반말.
+        {routeState === "no-child" || routeState === "no-dest" ? (
+          // 유효한 아이나 다음 일정 장소가 없으면 query 결과를 대신 보여주지 않는다.
           <div className="rv-empty">
             <span className="rv-empty__icon">
               <MapPin size={34} strokeWidth={2} color="#23A876" />
             </span>
-            <span className="rv-empty__title">안내할 곳이 없어</span>
-            <span className="rv-empty__sub">
-              {nextEvent
-                ? "다음 일정의 장소를 아직 못 찾았어.\n부모님께 지도로 장소를 정해달라고 해줘."
-                : "남은 일정이 없어서\n길을 안내할 곳이 없어."}
-            </span>
+            <span className="rv-empty__title">{emptyTitle}</span>
+            <span className="rv-empty__sub">{emptyDescription}</span>
             <button
               type="button"
               className="rv-empty__home hy-press"
-              onClick={() => navigate("/parent/home")}
+              onClick={() => navigate(homePath)}
             >
               <Home size={17} strokeWidth={2.4} color="#fff" />
               홈으로
@@ -356,13 +393,13 @@ export function RouteView() {
                 {routeState === "loading" && (
                   <span className="rv-map-chip">
                     <span className="rv-ph__spinner" aria-hidden="true" />
-                    걸어가는 길을 찾는 중…
+                    {routeLoadingText}
                   </span>
                 )}
                 {routeState === "error" && (
                   <button type="button" className="rv-map-chip rv-map-chip--retry hy-press" onClick={() => void routeRefetch()}>
                     <RotateCw size={15} strokeWidth={2.4} color="#23A876" />
-                    길을 못 찾았어 · 다시 시도
+                    {routeRetryText}
                   </button>
                 )}
               </div>
@@ -370,7 +407,9 @@ export function RouteView() {
               <div className="rv-map rv-map--placeholder">
                 <span className="rv-ph__spinner" aria-hidden="true" />
                 <span className="rv-ph__msg">
-                  {routeState === "no-origin" ? "네 위치를 확인하는 중…" : "갈 곳을 찾는 중…"}
+                  {routeState === "no-origin"
+                    ? locationPendingText
+                    : isChild ? "갈 곳을 찾는 중…" : "갈 곳을 찾는 중이에요…"}
                 </span>
               </div>
             )}
@@ -379,16 +418,20 @@ export function RouteView() {
             {routeState === "error" && destination && (
               <div className="rv-fallback">
                 <span className="rv-fallback__msg">
-                  자세한 걷는 길은 카카오맵이 안내해줘.
+                  {isChild
+                    ? "자세한 걷는 길은 카카오맵이 안내해줘."
+                    : "자세한 걷는 길은 카카오맵에서 확인해 주세요."}
                   <br />
-                  아래 버튼을 눌러 길찾기를 켜줘!
+                  {isChild
+                    ? "아래 버튼을 눌러 길찾기를 켜줘!"
+                    : "아래 버튼을 눌러 길찾기를 시작해 주세요."}
                 </span>
                 <button
                   type="button"
                   className="rv-fallback__kakao hy-press"
                   onClick={() =>
                     openExternal(buildKakaoToUrl(destination.name, destination.point)).catch(() =>
-                      show("카카오맵을 열 수 없어", "🗺️"),
+                      show(isChild ? "카카오맵을 열 수 없어" : "카카오맵을 열 수 없어요", "🗺️"),
                     )
                   }
                 >

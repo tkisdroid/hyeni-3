@@ -172,7 +172,6 @@ const router = createHashRouter([
           { path: "profile-edit", element: <ProfileEdit /> },
           { path: "place-form", element: <PlaceForm /> },
           { path: "child-invite", element: <ChildInvite /> },
-          { path: "route", element: <RouteView /> },
           { path: "event-form", element: <EventForm /> },
           { path: "danger-zone-form", element: <DangerZoneForm /> },
           { path: "location-status", element: <LocationStatus /> },
@@ -228,6 +227,7 @@ const router = createHashRouter([
         element: <RequireAnyRole roles={["parent", "child"]} />,
         children: [
           { path: "supplies", element: <Supplies /> },
+          { path: "route", element: <RouteView /> },
         ],
       },
       // 앱레벨 골격 화면

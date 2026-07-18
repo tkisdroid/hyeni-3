@@ -71,12 +71,15 @@ test("위험구역 이탈은 과거 severity가 emergency여도 긴급으로 다
   assert.equal(group?.items[0]?.soft, "var(--mint-soft)");
 });
 
-test("PushShell 상세 라우트는 부모·아이 역할별 가드 안에 있다", () => {
+test("PushShell 상세 라우트는 부모·아이·공용 역할 가드 안에 있다", () => {
   const app = readSource("src/app/App.tsx");
   const parentStart = app.indexOf("// 부모 전용 푸시/상세");
   const childStart = app.indexOf("// 아이 전용 푸시/상세");
   const commonStart = app.indexOf("// 인증 역할 공용 푸시/상세");
+  const familyStart = app.indexOf("// 부모·아이 공용 상세");
+  const skeletonStart = app.indexOf("// 앱레벨 골격 화면");
   assert.ok(parentStart >= 0 && childStart > parentStart && commonStart > childStart);
+  assert.ok(familyStart > commonStart && skeletonStart > familyStart);
 
   const parentBlock = app.slice(parentStart, childStart);
   const childBlock = app.slice(childStart, commonStart);
@@ -89,7 +92,6 @@ test("PushShell 상세 라우트는 부모·아이 역할별 가드 안에 있�
     "sos-receive",
     "remote-audio",
     "remote-ring",
-    "route",
     "location-status",
   ]) {
     assert.ok(parentBlock.includes(`path: "${path}"`), `${path} 부모 가드 누락`);
@@ -106,6 +108,10 @@ test("PushShell 상세 라우트는 부모·아이 역할별 가드 안에 있�
   ]) {
     assert.ok(childBlock.includes(`path: "${path}"`), `${path} 아이 가드 누락`);
   }
+
+  const familyBlock = app.slice(familyStart, skeletonStart);
+  assert.match(familyBlock, /<RequireAnyRole roles=\{\["parent", "child"\]\}\s*\/>/);
+  assert.ok(familyBlock.includes('path: "route"'), "route 부모·아이 공용 가드 누락");
 });
 
 test("선생님 탭과 알림장 상세는 teacher 역할 가드를 우회하지 않는다", () => {
