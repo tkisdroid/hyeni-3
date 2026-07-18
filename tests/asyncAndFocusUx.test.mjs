@@ -156,9 +156,9 @@ test("visibility·pageshow는 외부 OAuth가 실제 열린 경우에만 busy를
 
 test("전역 키보드 초점과 로딩 문구는 눈으로 구분할 수 있다", () => {
   assert.match(globalCss, /:where\([^)]+\):focus-visible\s*\{/);
-  assert.match(globalCss, /outline:\s*3px solid var\(--blue-500\)/);
+  assert.match(globalCss, /outline:\s*var\(--focus-ring-width\) solid var\(--focus-ring-color\)/);
   assert.match(globalCss, /outline-offset:\s*3px/);
-  assert.match(loadingCss, /\.hy-loading__label\s*\{[\s\S]*font-size:\s*13px/);
+  assert.match(loadingCss, /\.hy-loading__label\s*\{[\s\S]*font-size:\s*var\(--type-label\)/);
   assert.match(loadingCss, /\.hy-loading__label\s*\{[\s\S]*color:\s*var\(--fg-tertiary\)/);
 });
 

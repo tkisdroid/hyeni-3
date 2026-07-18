@@ -5,7 +5,7 @@
 
 /* 탭 눌림 피드백 (--press 로 스케일 조정) */
 .hy-press {
-  transition: transform 0.12s ease;
+  transition: transform var(--duration-fast) var(--easing-standard);
 }
 .hy-press:active {
   transform: scale(var(--press, 0.96));
@@ -49,17 +49,33 @@
 }
 
 /* 상단 원형 아이콘 버튼 */
+.hy-btn {
+  min-width: var(--control-min-size);
+  min-height: var(--control-min-size);
+  padding-inline: var(--spacing-16);
+  border-radius: var(--radius-12);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-8);
+  font-size: var(--type-body-sm);
+  font-weight: var(--type-label-weight);
+  line-height: var(--type-body-sm-line-height);
+  touch-action: manipulation;
+}
+
 .hy-iconbtn {
   position: relative;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.06);
+  width: var(--control-min-size);
+  height: var(--control-min-size);
+  border-radius: var(--radius-pill);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-soft);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--fg-secondary);
+  touch-action: manipulation;
 }
 .hy-iconbtn__dot {
   position: absolute;
@@ -126,9 +142,21 @@
 /* ── 카드 ───────────────────────────────────────────────────────────────── */
 .hy-card {
   background: var(--bg-card);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-16);
+  box-shadow: none;
   border: 1px solid var(--line-card);
+}
+
+/* 공통 로더의 레이아웃·문구도 동일한 간격/타이포 척도를 사용한다. */
+.hy-loading {
+  gap: var(--spacing-8);
+  padding-block: var(--spacing-20);
+}
+.hy-loading .hy-loading__label {
+  color: var(--fg-tertiary);
+  font-size: var(--type-label);
+  font-weight: var(--type-label-weight);
+  line-height: var(--type-label-line-height);
 }
 
 /* ── 칩/뱃지 ────────────────────────────────────────────────────────────── */

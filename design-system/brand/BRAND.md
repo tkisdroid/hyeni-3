@@ -53,8 +53,10 @@
 - 아이콘은 카테고리(학교·태권도·미술·음악·수영 등) 전용 3D 세트로 통일.
 
 ## 8. 접근성 / Accessibility
-- 본문 대비 AA 이상, 상태색은 색 + 텍스트/아이콘 병행(색맹 대응).
-- 최소 터치 44px. 모션 최소화 모드 지원(`data-motion="calm"`).
+- 본문·보조 문구·placeholder는 밝은 카드와 앱 배경에서 WCAG AA 4.5:1 이상을 유지합니다. 낮은 대비의 `fg-faint`는 선·장식·disabled에만 씁니다.
+- 상태색은 색 + 텍스트/아이콘을 병행합니다(색맹 대응).
+- 최소 터치 44×44px, glyph는 16/18/20/22/24px 정본을 별도로 사용합니다.
+- 키보드 `focus-visible`을 숨기지 않고 모션 최소화 모드(`data-motion="calm"`, `prefers-reduced-motion`)를 지원합니다.
 
 ---
-값·토큰은 `../tokens/`, 컴포넌트 규칙은 `../spec/COMPONENTS.md` 참고.
+런타임 값·토큰은 `../../src/styles/tokens.css`, 컴포넌트 규칙은 `../spec/COMPONENTS.md`를 참고합니다.

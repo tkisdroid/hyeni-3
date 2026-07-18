@@ -30,7 +30,9 @@ html {
 
 body {
   font-family: var(--font-sans);
-  font-weight: var(--weight-medium);
+  font-size: var(--type-body);
+  font-weight: var(--type-body-weight);
+  line-height: var(--type-body-line-height);
   color: var(--fg-primary);
   background: var(--bg-body);
   -webkit-font-smoothing: antialiased;
@@ -59,8 +61,21 @@ button {
 }
 
 input,
-textarea {
+textarea,
+select {
   font-family: inherit;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--fg-placeholder);
+  opacity: 1;
+}
+
+:where(button, input, textarea, select):disabled,
+:where(button, [role="button"], input, textarea, select)[aria-disabled="true"] {
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
 }
 
 img {
@@ -74,7 +89,7 @@ a {
 }
 
 body :where(a, button, input, textarea, select, [tabindex]):focus-visible {
-  outline: 3px solid var(--blue-500);
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: 3px;
 }
 
