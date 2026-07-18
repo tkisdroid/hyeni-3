@@ -240,17 +240,39 @@ export function DailySafetyReport() {
       {
         id: "schedule",
         label: "오늘 일정",
-        value: `${todayEvents.length}개`,
-        detail: nextEvent ? `${nextEvent.title}${nextEvent.time ? ` · ${nextEvent.time}` : ""}` : "남은 일정 없음",
-        tone: todayEvents.length > 0 ? "blue" : "mint",
+        value: eventsQuery.isError
+          ? "확인 실패"
+          : eventsQuery.isLoading
+            ? "확인 중"
+            : `${todayEvents.length}개`,
+        detail: eventsQuery.isError
+          ? "아래에서 다시 시도해 주세요"
+          : eventsQuery.isLoading
+            ? "오늘 일정을 불러오는 중"
+            : nextEvent
+              ? `${nextEvent.title}${nextEvent.time ? ` · ${nextEvent.time}` : ""}`
+              : "남은 일정 없음",
+        tone: eventsQuery.isError ? "cream" : todayEvents.length > 0 ? "blue" : "mint",
         icon: <img src={asset("ui/calendar-heart.webp")} alt="" />,
       },
       {
         id: "supplies",
         label: "준비물",
-        value: supplySummary.total === 0 ? "없음" : `${supplySummary.done}/${supplySummary.total}`,
-        detail: supplySummary.total === 0 ? "오늘 챙길 항목 없음" : `${supplyPercent}% 완료`,
-        tone: supplySummary.remaining > 0 ? "cream" : "mint",
+        value: suppliesQuery.isError
+          ? "확인 실패"
+          : suppliesQuery.isLoading
+            ? "확인 중"
+            : supplySummary.total === 0
+              ? "없음"
+              : `${supplySummary.done}/${supplySummary.total}`,
+        detail: suppliesQuery.isError
+          ? "아래에서 다시 시도해 주세요"
+          : suppliesQuery.isLoading
+            ? "준비물을 불러오는 중"
+            : supplySummary.total === 0
+              ? "오늘 챙길 항목 없음"
+              : `${supplyPercent}% 완료`,
+        tone: suppliesQuery.isError ? "cream" : supplySummary.remaining > 0 ? "cream" : "mint",
         icon: <img src={asset("cat/study.webp")} alt="" />,
       },
       {
@@ -268,6 +290,8 @@ export function DailySafetyReport() {
     device.hasData,
     device.networkLabel,
     device.safetyLabel,
+    eventsQuery.isError,
+    eventsQuery.isLoading,
     locationFreshness?.label,
     locationFreshness?.status,
     locationLabel,
@@ -276,6 +300,8 @@ export function DailySafetyReport() {
     locationScopePending,
     nextEvent,
     supplyPercent,
+    suppliesQuery.isError,
+    suppliesQuery.isLoading,
     supplySummary.done,
     supplySummary.remaining,
     supplySummary.total,
@@ -596,13 +622,42 @@ export function DailySafetyReport() {
                   </span>
                   <span>
                     <b>일정 체크</b>
-                    <small>지난 일정 {pastEventCount}개 · 남은 일정 {Math.max(0, todayEvents.length - pastEventCount)}개</small>
+                    <small>
+                      {eventsQuery.isError
+                        ? "일정 조회를 다시 시도해 주세요"
+                        : eventsQuery.isLoading
+                          ? "오늘 일정을 불러오는 중"
+                          : `지난 일정 ${pastEventCount}개 · 남은 일정 ${Math.max(0, todayEvents.length - pastEventCount)}개`}
+                    </small>
                   </span>
                   <button type="button" className="dr-link hy-press" onClick={() => navigate("/event-form", { state: { childId: activeChild.id } })}>
                     일정 추가
                   </button>
                 </div>
-                {todayEvents.length === 0 ? (
+                {eventsQuery.isError ? (
+                  <div className="dr-section-error" role="alert" aria-live="assertive">
+                    <AlertTriangle size={19} strokeWidth={2.3} aria-hidden="true" />
+                    <span>
+                      <b>오늘 일정을 확인하지 못했어요</b>
+                      <small>인터넷 연결을 확인한 뒤 다시 시도해 주세요.</small>
+                    </span>
+                    <button
+                      type="button"
+                      className="dr-section-error__retry hy-press"
+                      onClick={() => void eventsQuery.refetch()}
+                      disabled={eventsQuery.isFetching}
+                    >
+                      <RefreshCw
+                        size={15}
+                        strokeWidth={2.4}
+                        className={eventsQuery.isFetching ? "dr-spin" : undefined}
+                      />
+                      {eventsQuery.isFetching ? "일정 확인 중…" : "일정 다시 시도"}
+                    </button>
+                  </div>
+                ) : eventsQuery.isLoading ? (
+                  <Loading label="오늘 일정을 불러오는 중" />
+                ) : todayEvents.length === 0 ? (
                   <div className="dr-emptyline">오늘 일정이 없어요.</div>
                 ) : (
                   <div className="dr-event-list">
@@ -634,7 +689,30 @@ export function DailySafetyReport() {
                     <small>가방에 챙길 항목을 점검합니다</small>
                   </span>
                 </div>
-                {supplySummary.total === 0 ? (
+                {suppliesQuery.isError ? (
+                  <div className="dr-section-error" role="alert" aria-live="assertive">
+                    <AlertTriangle size={19} strokeWidth={2.3} aria-hidden="true" />
+                    <span>
+                      <b>준비물을 확인하지 못했어요</b>
+                      <small>인터넷 연결을 확인한 뒤 다시 시도해 주세요.</small>
+                    </span>
+                    <button
+                      type="button"
+                      className="dr-section-error__retry hy-press"
+                      onClick={() => void suppliesQuery.refetch()}
+                      disabled={suppliesQuery.isFetching}
+                    >
+                      <RefreshCw
+                        size={15}
+                        strokeWidth={2.4}
+                        className={suppliesQuery.isFetching ? "dr-spin" : undefined}
+                      />
+                      {suppliesQuery.isFetching ? "준비물 확인 중…" : "준비물 다시 시도"}
+                    </button>
+                  </div>
+                ) : suppliesQuery.isLoading ? (
+                  <Loading label="준비물을 불러오는 중" />
+                ) : supplySummary.total === 0 ? (
                   <div className="dr-emptyline">오늘 챙길 준비물이 없어요.</div>
                 ) : (
                   <>
@@ -748,7 +826,30 @@ export function DailySafetyReport() {
                   대화 열기
                 </button>
               </div>
-              {memoPreview.length === 0 ? (
+              {memoThread.isError ? (
+                <div className="dr-section-error" role="alert" aria-live="assertive">
+                  <AlertTriangle size={19} strokeWidth={2.3} aria-hidden="true" />
+                  <span>
+                    <b>최신 소식을 확인하지 못했어요</b>
+                    <small>인터넷 연결을 확인한 뒤 다시 시도해 주세요.</small>
+                  </span>
+                  <button
+                    type="button"
+                    className="dr-section-error__retry hy-press"
+                    onClick={() => void memoThread.refetch()}
+                    disabled={memoThread.isFetching}
+                  >
+                    <RefreshCw
+                      size={15}
+                      strokeWidth={2.4}
+                      className={memoThread.isFetching ? "dr-spin" : undefined}
+                    />
+                    {memoThread.isFetching ? "메시지 확인 중…" : "메시지 다시 시도"}
+                  </button>
+                </div>
+              ) : memoThread.isLoading ? (
+                <Loading label="최신 소식을 불러오는 중" />
+              ) : memoPreview.length === 0 ? (
                 <div className="dr-emptyline">오늘 주고받은 메시지가 없어요.</div>
               ) : (
                 <div className="dr-memos">
