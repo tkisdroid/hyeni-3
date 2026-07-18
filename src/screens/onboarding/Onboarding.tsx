@@ -10,10 +10,11 @@ import { homePathForRole } from "@/auth/guards";
 import {
   beginOnboardingAuthTransition,
   cancelOnboardingAuthTransitions,
-  completeOnboardingAuthTransitions,
+  completeOnboardingAuthTransitionsThrough,
   endOnboardingAuthTransition,
   getOnboardingAuthTransitionSnapshot,
   subscribeOnboardingAuthTransition,
+  type OnboardingAuthTransitionToken,
 } from "@/auth/onboardingAuthTransition";
 import { adoptNativeLocationSessionTokens } from "@/lib/native/location";
 import { readChildDeviceIdentityHint } from "@/lib/native/deviceIdentity";
@@ -133,7 +134,7 @@ export function Onboarding() {
         sessionAdopted = true;
         clearOAuthCallbackUrl();
         syncFromSession();
-        await routeAfterParentLogin();
+        await routeAfterParentLogin(transitionToken);
       })
       .catch((e) => {
         if (!sessionAdopted) endOnboardingAuthTransition(transitionToken);
@@ -235,16 +236,16 @@ export function Onboarding() {
     );
 
   // 부모 로그인/가입 후: 가족 있으면 홈, 없으면 가족연결 단계.
-  const routeAfterParentLogin = async () => {
+  const routeAfterParentLogin = async (transitionToken: OnboardingAuthTransitionToken) => {
     syncFromSession();
     try {
       const fam = await getMyFamily();
       if (fam === null) {
-        completeOnboardingAuthTransitions();
+        completeOnboardingAuthTransitionsThrough(transitionToken);
         setStep("connect");
         return;
       }
-      completeOnboardingAuthTransitions();
+      completeOnboardingAuthTransitionsThrough(transitionToken);
       navigate("/parent/home");
     } catch {
       throw new Error("가족 정보를 확인하지 못했어요. 다시 시도해 주세요.");
@@ -333,10 +334,10 @@ export function Onboarding() {
             cancelOnboardingAuthTransitions();
             back();
           }}
-          onLoggedIn={async () => {
+          onLoggedIn={async (transitionToken) => {
             setSignupFlowStarted(false);
             setSurveyChoices([]);
-            await routeAfterParentLogin();
+            await routeAfterParentLogin(transitionToken);
           }}
           onSignup={() => {
             cancelOnboardingAuthTransitions();
@@ -651,7 +652,7 @@ function LoginStep({
   busy: boolean;
   setBusy: (v: boolean) => void;
   onBack: () => void;
-  onLoggedIn: () => Promise<void>;
+  onLoggedIn: (transitionToken: OnboardingAuthTransitionToken) => Promise<void>;
   onSignup: () => void;
   show: Show;
 }) {
@@ -680,7 +681,7 @@ function LoginStep({
     try {
       await signInWithLoginId({ loginId, password });
       sessionAdopted = true;
-      await onLoggedIn();
+      await onLoggedIn(transitionToken);
     } catch (e) {
       if (!sessionAdopted) endOnboardingAuthTransition(transitionToken);
       show(errMsg(e), "⚠️");

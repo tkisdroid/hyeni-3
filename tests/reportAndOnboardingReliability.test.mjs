@@ -34,7 +34,7 @@ test("주간 리포트는 ready에서만 집계하고 오류 카드에서 네 �
 });
 
 test("가족 조회가 null로 성공한 경우에만 신규 가족 연결 단계로 이동한다", () => {
-  const start = onboarding.indexOf("const routeAfterParentLogin = async () => {");
+  const start = onboarding.indexOf("const routeAfterParentLogin = async (");
   const end = onboarding.indexOf("const routeAfterChildSession", start);
   const route = onboarding.slice(start, end);
 
@@ -45,7 +45,7 @@ test("가족 조회가 null로 성공한 경우에만 신규 가족 연결 단�
 });
 
 test("가족 조회 실패는 연결 단계로 보내지 않고 기존 로그인 오류 처리로 전달한다", () => {
-  const start = onboarding.indexOf("const routeAfterParentLogin = async () => {");
+  const start = onboarding.indexOf("const routeAfterParentLogin = async (");
   const end = onboarding.indexOf("const routeAfterChildSession", start);
   const route = onboarding.slice(start, end);
   const connectIndex = route.indexOf('setStep("connect")');
@@ -58,7 +58,7 @@ test("가족 조회 실패는 연결 단계로 보내지 않고 기존 로그인
   );
   assert.match(
     onboarding,
-    /await onLoggedIn\(\);[\s\S]{0,120}catch \(e\) \{[\s\S]{0,120}show\(errMsg\(e\), "⚠️"\)/,
+    /await onLoggedIn\(transitionToken\);[\s\S]{0,120}catch \(e\) \{[\s\S]{0,120}show\(errMsg\(e\), "⚠️"\)/,
   );
 });
 
@@ -90,17 +90,18 @@ test("ID 로그인과 OAuth callback은 세션 채택 전에 인증 전환 gate�
   assert.ok(callbackBegin >= 0 && finishOAuth > callbackBegin, "OAuth 교환 전에 gate를 시작해야 합니다");
 });
 
-test("가족 판정 성공과 null은 모든 gate를 완료하지만 조회 실패는 유지한다", () => {
-  const start = onboarding.indexOf("const routeAfterParentLogin = async () => {");
+test("가족 판정 성공과 null은 현재 세대까지 완료하지만 조회 실패는 유지한다", () => {
+  const start = onboarding.indexOf("const routeAfterParentLogin = async (");
   const end = onboarding.indexOf("const routeAfterChildSession", start);
   const route = onboarding.slice(start, end);
   const nullBranch = route.slice(route.indexOf("if (fam === null)"), route.indexOf('navigate("/parent/home")'));
   const catchBlock = route.match(/catch\s*\{([\s\S]*?)\n\s*\}/)?.[1] ?? "";
-  const completeCalls = route.match(/completeOnboardingAuthTransitions\(\)/g) ?? [];
+  const completeCalls = route.match(/completeOnboardingAuthTransitionsThrough\(transitionToken\)/g) ?? [];
 
-  assert.equal(completeCalls.length, 2, "null과 가족 있음 경로가 각각 모든 gate를 완료해야 합니다");
-  assert.match(nullBranch, /completeOnboardingAuthTransitions\(\)[\s\S]*setStep\("connect"\)/);
-  assert.match(route, /completeOnboardingAuthTransitions\(\);\s*navigate\("\/parent\/home"\)/);
+  assert.match(route, /routeAfterParentLogin = async \(transitionToken: OnboardingAuthTransitionToken\)/);
+  assert.equal(completeCalls.length, 2, "null과 가족 있음 경로가 각각 현재 세대까지 완료해야 합니다");
+  assert.match(nullBranch, /completeOnboardingAuthTransitionsThrough\(transitionToken\)[\s\S]*setStep\("connect"\)/);
+  assert.match(route, /completeOnboardingAuthTransitionsThrough\(transitionToken\);\s*navigate\("\/parent\/home"\)/);
   assert.doesNotMatch(catchBlock, /OnboardingAuthTransition/);
 });
 
@@ -119,4 +120,6 @@ test("인증 채택 전 실패는 자신이 시작한 token만 끝내고 명시�
     onboarding,
     /finishOAuthCancellation\(cancellation\)[\s\S]{0,240}cancelOnboardingAuthTransitions\(\)/,
   );
+  assert.match(onboarding, /await routeAfterParentLogin\(transitionToken\)/);
+  assert.match(onboarding, /await onLoggedIn\(transitionToken\)/);
 });

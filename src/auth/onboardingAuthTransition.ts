@@ -1,8 +1,12 @@
 type OnboardingAuthTransitionListener = () => void;
-export type OnboardingAuthTransitionToken = symbol;
+declare const onboardingAuthTransitionTokenBrand: unique symbol;
+export type OnboardingAuthTransitionToken = number & {
+  readonly [onboardingAuthTransitionTokenBrand]: true;
+};
 
 const activeTokens = new Set<OnboardingAuthTransitionToken>();
 const listeners = new Set<OnboardingAuthTransitionListener>();
+let nextToken = 0;
 
 function notifyListeners(): void {
   listeners.forEach((listener) => listener());
@@ -10,7 +14,8 @@ function notifyListeners(): void {
 
 export function beginOnboardingAuthTransition(): OnboardingAuthTransitionToken {
   const shouldNotify = activeTokens.size === 0;
-  const token = Symbol("onboarding-auth-transition");
+  nextToken += 1;
+  const token = nextToken as OnboardingAuthTransitionToken;
   activeTokens.add(token);
   if (shouldNotify) notifyListeners();
   return token;
@@ -21,18 +26,20 @@ export function endOnboardingAuthTransition(token: OnboardingAuthTransitionToken
   if (activeTokens.size === 0) notifyListeners();
 }
 
-function clearOnboardingAuthTransitions(): void {
-  if (activeTokens.size === 0) return;
-  activeTokens.clear();
-  notifyListeners();
-}
-
-export function completeOnboardingAuthTransitions(): void {
-  clearOnboardingAuthTransitions();
+export function completeOnboardingAuthTransitionsThrough(
+  token: OnboardingAuthTransitionToken,
+): void {
+  const wasActive = activeTokens.size > 0;
+  activeTokens.forEach((activeToken) => {
+    if (activeToken <= token) activeTokens.delete(activeToken);
+  });
+  if (wasActive && activeTokens.size === 0) notifyListeners();
 }
 
 export function cancelOnboardingAuthTransitions(): void {
-  clearOnboardingAuthTransitions();
+  if (activeTokens.size === 0) return;
+  activeTokens.clear();
+  notifyListeners();
 }
 
 export function getOnboardingAuthTransitionSnapshot(): boolean {

@@ -55,15 +55,17 @@ test("A 가족 조회 실패 유지 중 B의 세션 채택 전 실패가 A gate�
   }
 });
 
-test("가족 판정 완료는 남아 있는 모든 인증 전환 token을 끝낸다", () => {
+test("A 가족 조회 실패 뒤 B 성공은 B 세대까지 남은 전환을 모두 끝낸다", () => {
   resetTransitions();
   try {
-    authTransition.beginOnboardingAuthTransition();
-    authTransition.beginOnboardingAuthTransition();
+    const transitionA = authTransition.beginOnboardingAuthTransition();
+    const transitionB = authTransition.beginOnboardingAuthTransition();
 
-    assert.equal(typeof authTransition.completeOnboardingAuthTransitions, "function");
-    authTransition.completeOnboardingAuthTransitions();
+    assert.equal(typeof authTransition.completeOnboardingAuthTransitionsThrough, "function");
+    authTransition.completeOnboardingAuthTransitionsThrough(transitionB);
     assert.equal(authTransition.getOnboardingAuthTransitionSnapshot(), false);
+
+    authTransition.endOnboardingAuthTransition(transitionA);
   } finally {
     resetTransitions();
   }
@@ -99,18 +101,48 @@ test("StrictMode 유사 중복 effect의 첫 cleanup은 replay 전환을 닫지 
   }
 });
 
-test("전체 완료 뒤 늦게 도착한 이전 token 종료는 새 전환을 닫지 않는다", () => {
+test("A 시작 후 cancel하고 B를 시작하면 늦은 A 완료가 B를 닫지 않는다", () => {
   resetTransitions();
   try {
     const staleToken = authTransition.beginOnboardingAuthTransition();
-    authTransition.completeOnboardingAuthTransitions();
+    authTransition.cancelOnboardingAuthTransitions();
     const currentToken = authTransition.beginOnboardingAuthTransition();
 
-    authTransition.endOnboardingAuthTransition(staleToken);
+    authTransition.completeOnboardingAuthTransitionsThrough(staleToken);
     assert.equal(authTransition.getOnboardingAuthTransitionSnapshot(), true);
 
     authTransition.endOnboardingAuthTransition(currentToken);
     assert.equal(authTransition.getOnboardingAuthTransitionSnapshot(), false);
+  } finally {
+    resetTransitions();
+  }
+});
+
+test("A와 B가 동시에 진행 중일 때 먼저 끝난 A 성공은 더 최신 B를 닫지 않는다", () => {
+  resetTransitions();
+  try {
+    const transitionA = authTransition.beginOnboardingAuthTransition();
+    const transitionB = authTransition.beginOnboardingAuthTransition();
+
+    authTransition.completeOnboardingAuthTransitionsThrough(transitionA);
+    assert.equal(authTransition.getOnboardingAuthTransitionSnapshot(), true);
+
+    authTransition.endOnboardingAuthTransition(transitionB);
+    assert.equal(authTransition.getOnboardingAuthTransitionSnapshot(), false);
+  } finally {
+    resetTransitions();
+  }
+});
+
+test("cancel은 active token만 비우고 다음 token의 단조 증가 세대를 초기화하지 않는다", () => {
+  resetTransitions();
+  try {
+    const beforeCancel = authTransition.beginOnboardingAuthTransition();
+    authTransition.cancelOnboardingAuthTransitions();
+    const afterCancel = authTransition.beginOnboardingAuthTransition();
+
+    assert.ok(afterCancel > beforeCancel);
+    authTransition.endOnboardingAuthTransition(afterCancel);
   } finally {
     resetTransitions();
   }
