@@ -72,7 +72,7 @@
   transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
 .ef-input::placeholder {
-  color: var(--fg-faint);
+  color: var(--fg-placeholder);
   font-weight: 600;
 }
 .ef-input:focus {
@@ -111,7 +111,7 @@
   transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
 .ef-textarea::placeholder {
-  color: var(--fg-faint);
+  color: var(--fg-placeholder);
   font-weight: 600;
 }
 .ef-textarea:focus {
@@ -167,12 +167,12 @@
   padding: 0 2px;
   font-size: 11px;
   font-weight: 700;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 .ef-empty-note {
   font-size: 13px;
   font-weight: 700;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
   padding: 4px 2px;
 }
 
@@ -190,7 +190,12 @@
   --press: 0.98;
 }
 .ef-save:disabled {
-  opacity: 0.7;
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+}
+.ef-save[aria-busy="true"]:disabled {
+  opacity: var(--busy-opacity);
+  cursor: progress;
 }
 
 /* 반복 일정 수정 범위 확인 */
@@ -381,6 +386,6 @@
   --press: 0.95;
 }
 .ef-supply-chip span {
-  color: var(--fg-faint);
+  color: var(--fg-muted);
   font-weight: 800;
 }

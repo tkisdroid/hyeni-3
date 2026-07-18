@@ -63,7 +63,7 @@ design-system/
 1. **따뜻하고 안전하게 / Warm & safe** — 차가운 회색·순수 블랙 대신 웜 잉크(`#201A1D`)와 로즈·민트·라벤더 파스텔. 부모에겐 신뢰, 아이에겐 다정함.
 2. **절제된 카드 언어 / Restrained cards** — 기본 카드는 `radius 16 · border 1px · no shadow`, hero·modal은 radius 20, sheet만 radius 24입니다.
 3. **역할별 강조색 / Accent by role** — 부모·아이=로즈, 선생님=민트, AI=라벤더. 나머지는 중립.
-4. **3D 캐릭터·아이콘 / 3D imagery** — 플랫 라인 아이콘이 아니라 부드러운 3D 마스코트/아이콘(webp). 감정과 온기를 담당.
+4. **검증된 아이콘 언어 / Verified icon language** — 기능·hero에는 검증된 3D WebP 자산을 사용하고, 텍스트 행·utility에는 Lucide를 사용합니다.
 5. **큰 터치 타깃 / Big targets** — 최소 44px. 아이·긴급 상황에서도 누르기 쉽게.
 6. **부드러운 모션 / Gentle motion** — 스프링(`cheer`) 등장, 눌림 `scale .96`. 항상 `prefers-reduced-motion` 존중.
 

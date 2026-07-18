@@ -136,7 +136,7 @@
   color: #2a2327;
 }
 .afs-name-field::placeholder {
-  color: #b3a4c9;
+  color: var(--fg-placeholder);
   font-weight: 700;
 }
 

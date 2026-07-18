@@ -101,7 +101,7 @@
   transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
 .dzf-input::placeholder {
-  color: var(--fg-faint);
+  color: var(--fg-placeholder);
   font-weight: 600;
 }
 .dzf-input:focus {
@@ -210,5 +210,5 @@
   margin-top: 6px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }

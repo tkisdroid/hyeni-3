@@ -147,7 +147,7 @@
 }
 
 .msd-detail textarea:focus-visible {
-  outline: 3px solid var(--lav-line);
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
   border-color: var(--lav-500);
 }
 

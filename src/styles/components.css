@@ -68,6 +68,9 @@
   position: relative;
   width: var(--control-min-size);
   height: var(--control-min-size);
+  min-width: var(--control-min-size);
+  min-height: var(--control-min-size);
+  flex: none;
   border-radius: var(--radius-pill);
   background: var(--bg-card);
   box-shadow: var(--shadow-soft);

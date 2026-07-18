@@ -215,7 +215,7 @@
   transition: border-color 0.16s ease;
 }
 .ss-msg::placeholder {
-  color: var(--fg-faint);
+  color: var(--fg-placeholder);
 }
 .ss-msg:focus {
   border-color: var(--hy-accent);

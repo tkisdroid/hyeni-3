@@ -331,7 +331,8 @@ export function AiSchedule() {
               className={listening ? "ais-mic ais-mic--on hy-press" : "ais-mic hy-press"}
               onClick={startVoice}
               disabled={parseM.isPending}
-              aria-label={listening ? "듣는 중" : "말하기 시작"}
+              aria-busy={parseM.isPending}
+              aria-label={parseM.isPending ? "일정 정리 중" : listening ? "듣는 중" : "말하기 시작"}
             >
               <span className="ais-mic__ring" />
               <span className="ais-mic__inner" />

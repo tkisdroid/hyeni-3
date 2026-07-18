@@ -153,7 +153,7 @@
   box-sizing: border-box;
 }
 .fb-textarea::placeholder {
-  color: var(--fg-faint);
+  color: var(--fg-placeholder);
 }
 
 /* ── 관심 기능 선택 ────────────────────────────────────────────────────── */
@@ -172,7 +172,7 @@
 .fb-ideas__sort {
   font-size: 11.5px;
   font-weight: 700;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 .fb-ideas > .fb-ideas__sort {
   display: block;

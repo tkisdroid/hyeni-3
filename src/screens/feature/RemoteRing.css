@@ -169,7 +169,13 @@
 .rr-cta:disabled {
   background: var(--fg-disabled);
   box-shadow: none;
-  opacity: 0.85;
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+}
+.rr-cta[aria-busy="true"]:disabled {
+  background: linear-gradient(135deg, var(--danger-strong), #e5484d);
+  opacity: var(--busy-opacity);
+  cursor: progress;
 }
 
 .rr-recent {

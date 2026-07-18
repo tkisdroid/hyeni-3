@@ -943,6 +943,7 @@ export function EventForm() {
           className="ef-save hy-press"
           onClick={() => void handleSave()}
           disabled={busy || !familyReady}
+          aria-busy={busy || familyQuery.isLoading}
         >
           {busy
             ? "저장 중…"

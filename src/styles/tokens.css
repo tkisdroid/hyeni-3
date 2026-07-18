@@ -182,6 +182,7 @@
   --focus-ring-width: 3px;
   --focus-ring-color: var(--blue-500);
   --disabled-opacity: 0.48;
+  --busy-opacity: 0.78;
 
   /* ── Elevation ── */
   --shadow-soft: 0 2px 8px rgba(32, 26, 29, 0.08);

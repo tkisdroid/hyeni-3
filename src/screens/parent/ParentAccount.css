@@ -95,7 +95,7 @@
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.02em;
-  color: #8b7e84;
+  color: var(--fg-muted);
 }
 .pa-card {
   background: #fff;
@@ -133,7 +133,7 @@
   text-align: right;
 }
 .pa-input::placeholder {
-  color: var(--fg-disabled);
+  color: var(--fg-placeholder);
   font-weight: 500;
 }
 .pa-input:disabled {
@@ -178,7 +178,7 @@
 .pa-row__hint {
   font-size: 12.5px;
   font-weight: 700;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 .pa-row-btn {
   width: 100%;
@@ -192,7 +192,7 @@
   font-size: 12px;
   font-weight: 600;
   line-height: 1.5;
-  color: #a99fa4;
+  color: var(--fg-muted);
   padding: 0 2px;
 }
 

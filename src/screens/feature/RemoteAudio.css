@@ -181,8 +181,13 @@
   --press: 0.98;
 }
 .ra-start:disabled {
-  opacity: 0.72;
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
   box-shadow: none;
+}
+.ra-start[aria-busy="true"]:disabled {
+  opacity: var(--busy-opacity);
+  cursor: progress;
 }
 
 /* 웹(PWA/아이폰) 안내 — 네이티브 전용 기능이라 시작 버튼 대신 표시 */

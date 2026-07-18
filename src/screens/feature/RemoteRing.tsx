@@ -265,10 +265,11 @@ export function RemoteRing() {
           type="button"
           className="rr-cta hy-press"
           disabled={!quotaAllowed || !targetChild || ringing || trigger.isPending}
+          aria-busy={ringing || trigger.isPending}
           onClick={onRingClick}
         >
           <Bell size={20} strokeWidth={2.2} color="#fff" />
-          지금 울리기
+          {ringing || trigger.isPending ? "울리는 중…" : "지금 울리기"}
         </button>
 
         {recent && (

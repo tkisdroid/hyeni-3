@@ -160,8 +160,12 @@
   --press: 0.96;
 }
 .ais-mic:disabled {
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+}
+.ais-mic[aria-busy="true"]:disabled {
+  opacity: var(--busy-opacity);
   cursor: progress;
-  opacity: 0.85;
 }
 /* 청취 중: 링·이미지를 더 또렷하게 */
 .ais-mic--on .ais-mic__ring {

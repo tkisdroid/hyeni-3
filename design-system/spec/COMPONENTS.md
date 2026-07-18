@@ -21,11 +21,11 @@
 | Tint chip-button | `--rose-soft` | `--rose-text` | 44 이상 hit area | pill | none |
 | Icon-circle | `--bg-card` | glyph 20, `--fg-secondary` | 44×44 | pill | `--shadow-soft` |
 
-상태 / States: default · press(scale .96) · disabled(`--disabled-opacity`, semantic disabled) · loading(스피너, 라벨 유지). 아이콘+라벨은 `--spacing-8`.
+상태 / States: default · press(scale .96) · disabled(`--disabled-opacity`, `cursor: not-allowed`) · busy(`aria-busy="true"`, `--busy-opacity`, 진행 라벨, `cursor: progress`). 아이콘+라벨은 `--spacing-8`.
 
-## 2. 하트 "꾹" 버튼 / Heart "kkuk" button
-- 부모 헤더의 시그니처 액션. 실제 하트 SVG(rose gradient) 46px + 중앙 "꾹" 텍스트(12px/800 이상).
-- 탭 → 아이에게 하트 전송(토스트 "지우에게 하트를 꾹 보냈어요 💗"). press `scale .84`.
+## 2. 부모 헤더 스티커 액션 / Parent header sticker action
+- 부모 헤더에서 아이에게 스티커를 보내는 명시적 액션입니다. 아이콘과 `스티커` 라벨을 함께 사용하고 전체 hit area를 44px 이상 확보합니다.
+- 탭하면 스티커 선택·전송 화면을 열며 press `scale .96`을 사용합니다.
 
 ## 3. Card
 - **Base:** `radius-16`, border, 무그림자. padding `spacing-16` 또는 `spacing-20`.

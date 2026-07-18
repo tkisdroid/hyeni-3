@@ -545,6 +545,7 @@ export function RemoteAudio() {
               className="ra-start hy-press"
               onClick={() => void startListen()}
               disabled={starting || requestListen.isPending || !childUserId}
+              aria-busy={starting || requestListen.isPending}
             >
               <Mic size={21} strokeWidth={2} color="#fff" />
               {starting || requestListen.isPending ? "연결 요청 중" : "듣기 시작"}

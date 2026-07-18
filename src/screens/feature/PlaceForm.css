@@ -124,7 +124,7 @@
   transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
 .pf-input::placeholder {
-  color: var(--fg-faint);
+  color: var(--fg-placeholder);
   font-weight: 600;
 }
 .pf-input:focus {
