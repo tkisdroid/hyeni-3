@@ -4,6 +4,7 @@ interface AuthenticatedOnboardingRedirectInput {
   role: OnboardingRole;
   familyId: string | null;
   hasOAuthCallback: boolean;
+  authTransitionActive?: boolean;
   /**
    * QR 딥링크(?pair=)로 진입했는지. 인증 상태에서는 리다이렉트를 막지 않는다.
    * (예전엔 pair 파라미터가 있으면 온보딩에 머물렀고, 그 자리에서 딥링크 핸들러의
@@ -23,7 +24,9 @@ export function resolveAuthenticatedOnboardingRedirect({
   role,
   familyId,
   hasOAuthCallback,
+  authTransitionActive = false,
 }: AuthenticatedOnboardingRedirectInput): string | null {
+  if (authTransitionActive) return null;
   if (hasOAuthCallback) return null;
   if (!role || !familyId) return null;
   if (role === "child") return "/child/home";

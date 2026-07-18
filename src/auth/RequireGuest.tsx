@@ -11,14 +11,23 @@
  * - 익명 세션 + 가족 미연결(아이 페어링 대기)
  * - 부모/선생님 로그인 + 가족 미생성(가족 설정 단계)
  */
-import type { ReactNode } from "react";
+import { useSyncExternalStore, type ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 import { homePathForRole } from "./guards";
+import {
+  getOnboardingAuthTransitionSnapshot,
+  subscribeOnboardingAuthTransition,
+} from "./onboardingAuthTransition";
 
 export function RequireGuest({ children }: { children: ReactNode }) {
   const auth = useAuth();
-  if (auth.status === "authenticated" && auth.familyId) {
+  const authTransitionActive = useSyncExternalStore(
+    subscribeOnboardingAuthTransition,
+    getOnboardingAuthTransitionSnapshot,
+    getOnboardingAuthTransitionSnapshot,
+  );
+  if (!authTransitionActive && auth.status === "authenticated" && auth.familyId) {
     return <Navigate to={homePathForRole(auth.role)} replace />;
   }
   return <>{children}</>;

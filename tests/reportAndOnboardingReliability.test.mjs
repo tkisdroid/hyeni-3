@@ -2,9 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const [weeklyReport, onboarding] = await Promise.all([
+const [weeklyReport, onboarding, requireGuest] = await Promise.all([
   readFile(new URL("../src/screens/feature/WeeklyFamilyReport.tsx", import.meta.url), "utf8"),
   readFile(new URL("../src/screens/onboarding/Onboarding.tsx", import.meta.url), "utf8"),
+  readFile(new URL("../src/auth/RequireGuest.tsx", import.meta.url), "utf8"),
 ]);
 
 test("주간 리포트는 네 조회의 오류를 로딩보다 먼저 분기한다", () => {
@@ -59,4 +60,52 @@ test("가족 조회 실패는 연결 단계로 보내지 않고 기존 로그인
     onboarding,
     /await onLoggedIn\(\);[\s\S]{0,120}catch \(e\) \{[\s\S]{0,120}show\(errMsg\(e\), "⚠️"\)/,
   );
+});
+
+test("RequireGuest와 온보딩 자체 리다이렉트는 명시적 인증 전환 중 역할 홈 이동을 보류한다", () => {
+  assert.match(requireGuest, /useSyncExternalStore/);
+  assert.match(requireGuest, /subscribeOnboardingAuthTransition/);
+  assert.match(requireGuest, /getOnboardingAuthTransitionSnapshot/);
+  assert.match(
+    requireGuest,
+    /!authTransitionActive\s*&&\s*auth\.status === "authenticated"\s*&&\s*auth\.familyId/,
+  );
+  assert.match(onboarding, /authTransitionActive:\s*authTransitionActive/);
+});
+
+test("ID 로그인과 OAuth callback은 세션 채택 전에 인증 전환 gate를 시작한다", () => {
+  const loginStart = onboarding.indexOf("const loginIdPw = async () => {");
+  const loginEnd = onboarding.indexOf("return (", loginStart);
+  const login = onboarding.slice(loginStart, loginEnd);
+  const loginBegin = login.indexOf("beginOnboardingAuthTransition()");
+  const signIn = login.indexOf("signInWithLoginId(");
+
+  const callbackStart = onboarding.indexOf("const cb = readOAuthCallback();");
+  const callbackEnd = onboarding.indexOf("// eslint-disable-next-line", callbackStart);
+  const callback = onboarding.slice(callbackStart, callbackEnd);
+  const callbackBegin = callback.indexOf("beginOnboardingAuthTransition()");
+  const finishOAuth = callback.indexOf("finishOAuthLogin(cb)");
+
+  assert.ok(loginBegin >= 0 && signIn > loginBegin, "ID 로그인 전에 gate를 시작해야 합니다");
+  assert.ok(callbackBegin >= 0 && finishOAuth > callbackBegin, "OAuth 교환 전에 gate를 시작해야 합니다");
+});
+
+test("가족 판정 성공과 null은 gate를 끝내지만 조회 실패는 유지한다", () => {
+  const start = onboarding.indexOf("const routeAfterParentLogin = async () => {");
+  const end = onboarding.indexOf("const routeAfterChildSession", start);
+  const route = onboarding.slice(start, end);
+  const nullBranch = route.slice(route.indexOf("if (fam === null)"), route.indexOf('navigate("/parent/home")'));
+  const catchBlock = route.match(/catch\s*\{([\s\S]*?)\n\s*\}/)?.[1] ?? "";
+  const endCalls = route.match(/endOnboardingAuthTransition\(\)/g) ?? [];
+
+  assert.equal(endCalls.length, 2, "null과 가족 있음 경로가 각각 gate를 끝내야 합니다");
+  assert.match(nullBranch, /endOnboardingAuthTransition\(\)[\s\S]*setStep\("connect"\)/);
+  assert.match(route, /endOnboardingAuthTransition\(\);\s*navigate\("\/parent\/home"\)/);
+  assert.doesNotMatch(catchBlock, /endOnboardingAuthTransition/);
+});
+
+test("부모 로그인에서 back·signup·인증 시작 실패로 이탈하면 gate를 해제한다", () => {
+  assert.match(onboarding, /onBack=\{\(\) => \{[\s\S]{0,160}endOnboardingAuthTransition\(\)[\s\S]{0,160}back\(\)/);
+  assert.match(onboarding, /onSignup=\{\(\) => \{[\s\S]{0,200}endOnboardingAuthTransition\(\)/);
+  assert.match(onboarding, /catch \(e\) \{\s*endOnboardingAuthTransition\(\);\s*show\(errMsg\(e\), "⚠️"\)/);
 });

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Camera, ChevronLeft, ChevronRight, Link2 } from "lucide-react";
@@ -7,6 +7,12 @@ import { DEFAULT_CHILD_AVATAR } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { deriveAuthState, useAuth } from "@/auth/AuthContext";
 import { homePathForRole } from "@/auth/guards";
+import {
+  beginOnboardingAuthTransition,
+  endOnboardingAuthTransition,
+  getOnboardingAuthTransitionSnapshot,
+  subscribeOnboardingAuthTransition,
+} from "@/auth/onboardingAuthTransition";
 import { adoptNativeLocationSessionTokens } from "@/lib/native/location";
 import { readChildDeviceIdentityHint } from "@/lib/native/deviceIdentity";
 import { ROLE_ICON_ASSETS } from "@/transform/roleIconAssets";
@@ -78,6 +84,11 @@ export function Onboarding() {
   const navigate = useNavigate();
   const { show } = useToast();
   const { syncFromSession, user, role: authRole, familyId: authFamilyId } = useAuth();
+  const authTransitionActive = useSyncExternalStore(
+    subscribeOnboardingAuthTransition,
+    getOnboardingAuthTransitionSnapshot,
+    getOnboardingAuthTransitionSnapshot,
+  );
   const [step, setStep] = useState<Step>("role");
   const [role, setRole] = useState<"parent" | "child" | "teacher">("parent");
   const [pairMode, setPairMode] = useState<"child" | "parent">("child");
@@ -102,6 +113,7 @@ export function Onboarding() {
       } catch (e) {
         show(errMsg(e), "⚠️");
       } finally {
+        endOnboardingAuthTransition();
         clearOAuthCallbackUrl();
         setBusy(false);
         setRole("parent");
@@ -112,13 +124,17 @@ export function Onboarding() {
     const cb = readOAuthCallback();
     if (!cb) return;
     setBusy(true);
+    let sessionAdopted = false;
+    beginOnboardingAuthTransition();
     finishOAuthLogin(cb)
       .then(async () => {
+        sessionAdopted = true;
         clearOAuthCallbackUrl();
         syncFromSession();
         await routeAfterParentLogin();
       })
       .catch((e) => {
+        if (!sessionAdopted) endOnboardingAuthTransition();
         clearOAuthCallbackUrl();
         show(errMsg(e), "⚠️");
         setRole("parent");
@@ -135,9 +151,10 @@ export function Onboarding() {
       familyId: authFamilyId,
       hasOAuthCallback: !!readOAuthCallback(),
       hasPairParam: !!readPairParam(),
+      authTransitionActive: authTransitionActive,
     });
     if (redirect) navigate(redirect, { replace: true });
-  }, [authRole, authFamilyId, navigate]);
+  }, [authRole, authFamilyId, authTransitionActive, navigate]);
 
   // OAuth/외부 브라우저에서 복귀 시 busy 잠금 자동 해제 — stuck 방지.
   // 네이티브: 카카오/구글은 시스템 브라우저를 열고 앱을 백그라운드로 보낸다. 로그인을
@@ -221,9 +238,11 @@ export function Onboarding() {
     try {
       const fam = await getMyFamily();
       if (fam === null) {
+        endOnboardingAuthTransition();
         setStep("connect");
         return;
       }
+      endOnboardingAuthTransition();
       navigate("/parent/home");
     } catch {
       throw new Error("가족 정보를 확인하지 못했어요. 다시 시도해 주세요.");
@@ -308,13 +327,17 @@ export function Onboarding() {
         <LoginStep
           busy={busy}
           setBusy={setBusy}
-          onBack={back}
+          onBack={() => {
+            endOnboardingAuthTransition();
+            back();
+          }}
           onLoggedIn={async () => {
             setSignupFlowStarted(false);
             setSurveyChoices([]);
             await routeAfterParentLogin();
           }}
           onSignup={() => {
+            endOnboardingAuthTransition();
             setSignupFlowStarted(true);
             setStep("survey");
           }}
@@ -636,22 +659,28 @@ function LoginStep({
   const social = async (provider: OAuthProvider) => {
     if (busy) return;
     setBusy(true);
+    beginOnboardingAuthTransition();
     try {
       await startWorkerOAuth(provider); // 서버 발급 일회성 state 저장 후 provider로 이동
     } catch (e) {
+      endOnboardingAuthTransition();
+      show(errMsg(e), "⚠️");
       // 키 미설정 등 설정 오류 — busy 를 풀고 정직하게 안내(버튼이 영구 잠기지 않게).
       setBusy(false);
-      show(errMsg(e), "⚠️");
     }
   };
 
   const loginIdPw = async () => {
     if (busy) return;
     setBusy(true);
+    let sessionAdopted = false;
+    beginOnboardingAuthTransition();
     try {
       await signInWithLoginId({ loginId, password });
+      sessionAdopted = true;
       await onLoggedIn();
     } catch (e) {
+      if (!sessionAdopted) endOnboardingAuthTransition();
       show(errMsg(e), "⚠️");
     } finally {
       setBusy(false);
