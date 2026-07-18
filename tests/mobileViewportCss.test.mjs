@@ -88,14 +88,14 @@ test("아이 화면은 TopBar 가 없으므로 각자 상단 안전영역을 챙
   assert.match(home, /\.kd-map\s*\{[^}]*padding-top: var\(--kd-safe\)/s);
 
   const sticker = readCss("src/screens/child/StickerBook.css");
-  assert.match(sticker, /\.sb-head\s*\{[^}]*padding: calc\(18px \+ env\(safe-area-inset-top, 0px\)\)/s);
+  assert.match(sticker, /\.sb-head\s*\{[^}]*padding: calc\(16px \+ env\(safe-area-inset-top, 0px\)\)/s);
 
   const ai = readCss("src/screens/child/AiFriendChat.css");
-  assert.match(ai, /\.afc-header\s*\{[^}]*padding: calc\(14px \+ env\(safe-area-inset-top, 0px\)\)/s);
+  assert.match(ai, /\.afc-header\s*\{[^}]*padding: calc\(12px \+ env\(safe-area-inset-top, 0px\)\)/s);
 
   const sos = readCss("src/screens/child/ChildSos.css");
   assert.match(sos, /\.cs-page\s*\{[^}]*padding: calc\(16px \+ env\(safe-area-inset-top, 0px\)\)/s);
-  assert.match(sos, /\.cs-result\s*\{[^}]*padding: calc\(26px \+ env\(safe-area-inset-top, 0px\)\)/s);
+  assert.match(sos, /\.cs-result\s*\{[^}]*padding: calc\(24px \+ env\(safe-area-inset-top, 0px\)\)/s);
 });
 
 test("아이 홈 구름 장식은 날짜 칩·제목 밴드(스테이지 0~92px)를 침범하지 않는다", () => {

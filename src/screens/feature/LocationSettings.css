@@ -11,10 +11,10 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 12px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: linear-gradient(180deg, rgba(244, 248, 252, 0.92) 60%, rgba(244, 248, 252, 0));
   backdrop-filter: blur(8px);
 }
@@ -31,15 +31,17 @@
   --press: 0.9;
 }
 .lset-title {
-  font-size: 18px;
-  font-weight: 800;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   letter-spacing: -0.01em;
   color: var(--fg-primary);
 }
 
 /* ── 본문 ───────────────────────────────────────────────────────────────── */
 .lset-body {
-  padding: 6px 20px calc(40px + env(safe-area-inset-bottom, 0px));
+  padding: 4px 20px calc(40px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -51,7 +53,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 12px 16px;
   background: var(--bg-card);
   border-radius: 16px;
   box-shadow: 0 8px 22px rgba(32, 26, 29, 0.045);
@@ -76,28 +78,34 @@ button.lset-row:disabled {
 .lset-row__main {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   flex: 1;
   min-width: 0;
 }
 .lset-row__title {
-  font-size: 14.5px;
-  font-weight: 800;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: var(--fg-primary);
 }
 .lset-row__sub {
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-tertiary);
 }
 
 /* ── 상태 칩 ────────────────────────────────────────────────────────────── */
 .lset-chip {
   flex: none;
-  padding: 5px 11px;
+  padding: 4px 12px;
   border-radius: 999px;
-  font-size: 11px;
-  font-weight: 800;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
 }
 .lset-chip--safe {
   background: var(--mint-soft);
@@ -116,18 +124,20 @@ button.lset-row:disabled {
 .lset-toggle {
   width: 46px;
   height: 28px;
+  padding-block: 8px;
   border-radius: 999px;
-  background: #e2dce0;
+  background-color: #e2dce0;
+  background-clip: content-box;
   position: relative;
   flex: none;
   transition: background 0.18s ease;
 }
 .lset-toggle[data-on="true"] {
-  background: var(--mint-500);
+  background-color: var(--mint-500);
 }
 .lset-toggle__knob {
   position: absolute;
-  top: 3px;
+  top: 11px;
   left: 3px;
   width: 22px;
   height: 22px;
@@ -148,8 +158,10 @@ button.lset-row:disabled {
   padding: 4px 2px 0;
 }
 .lset-flabel {
-  font-size: 12.5px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-tertiary);
 }
 .lset-seg {
@@ -162,13 +174,15 @@ button.lset-row:disabled {
   border-radius: 13px;
   background: var(--bg-card);
   box-shadow: 0 6px 16px rgba(32, 26, 29, 0.04);
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 4px;
   --press: 0.96;
   transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
 }
@@ -182,17 +196,28 @@ button.lset-row:disabled {
 }
 .lset-desc {
   margin: 2px 0 0;
-  font-size: 11.5px;
-  font-weight: 600;
-  line-height: 1.55;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-tertiary);
 }
 
 /* ── 정직 안내 ──────────────────────────────────────────────────────────── */
 .lset-note {
   margin: 4px 2px 0;
-  font-size: 11.5px;
-  font-weight: 600;
-  line-height: 1.6;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
+}
+
+/* 실제 TSX 상호작용 요소의 최소 터치 영역 */
+.lset-back,
+.lset-toggle {
+  min-height: var(--control-min-size);
+}
+.lset-back {
+  min-width: var(--control-min-size);
 }

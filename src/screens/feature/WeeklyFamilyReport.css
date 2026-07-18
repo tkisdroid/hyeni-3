@@ -36,15 +36,19 @@
 }
 
 .wr-title {
-  font-size: var(--text-section);
-  font-weight: var(--weight-heavy);
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   color: var(--fg-primary);
 }
 
 .wr-subtitle {
   margin-top: 2px;
-  font-size: var(--text-caption);
-  font-weight: var(--weight-bold);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
 }
 
@@ -59,11 +63,11 @@
   display: flex;
   gap: var(--space-4);
   align-items: center;
-  border-radius: var(--radius-hero);
+  border-radius: var(--radius-20);
   padding: var(--space-5);
   background: linear-gradient(135deg, var(--cream-soft), var(--bg-card));
   border: 1px solid var(--line-card);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-floating);
 }
 
 .wr-hero__icon {
@@ -109,15 +113,19 @@
 }
 
 .wr-hero__eyebrow {
-  font-size: var(--text-caption);
-  font-weight: var(--weight-heavy);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--gold-text);
 }
 
 .wr-hero h1 {
   margin: 4px 0 0;
-  font-size: 20px;
-  font-weight: var(--weight-black);
+  font-size: var(--type-title-lg);
+  line-height: var(--type-title-lg-line-height);
+  font-weight: var(--type-title-lg-weight);
+
   letter-spacing: var(--tracking-tight);
   color: var(--fg-primary);
 }
@@ -126,9 +134,10 @@
 .wr-lock p,
 .wr-empty p {
   margin: 6px 0 0;
-  font-size: var(--text-label);
-  font-weight: var(--weight-semibold);
-  line-height: 1.5;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
 }
 
@@ -148,8 +157,10 @@
 }
 
 .wr-metric span {
-  font-size: var(--text-caption);
-  font-weight: var(--weight-bold);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
 }
 
@@ -163,8 +174,10 @@
 
 .wr-metric b {
   margin-top: auto;
-  font-size: 24px;
-  font-weight: var(--weight-black);
+  font-size: var(--type-title-xl);
+  line-height: var(--type-title-xl-line-height);
+  font-weight: var(--type-title-xl-weight);
+
   color: var(--fg-primary);
 }
 
@@ -203,16 +216,19 @@
 }
 
 .wr-state b {
-  font-size: var(--text-body-sm);
-  font-weight: var(--weight-black);
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-primary);
 }
 
 .wr-state p {
   margin: 0;
-  font-size: var(--text-label);
-  font-weight: var(--weight-semibold);
-  line-height: 1.5;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
 }
 
@@ -224,12 +240,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 8px;
   background: var(--bg-card);
   border: 1px solid color-mix(in srgb, var(--gold-600) 24%, var(--line-card));
   color: var(--gold-text);
-  font-size: var(--text-label);
-  font-weight: var(--weight-heavy);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   --press: 0.95;
 }
 
@@ -258,38 +276,46 @@
 .wr-section__head b,
 .wr-lock b,
 .wr-empty b {
-  font-size: var(--text-body-sm);
-  font-weight: var(--weight-heavy);
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-primary);
 }
 
 .wr-kv {
   display: grid;
   grid-template-columns: minmax(70px, 0.32fr) minmax(0, 1fr);
-  gap: 9px var(--space-3);
+  gap: 8px var(--space-3);
 }
 
 .wr-kv span {
-  font-size: var(--text-caption);
-  font-weight: var(--weight-bold);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
 }
 
 .wr-kv strong {
   min-width: 0;
-  font-size: var(--text-body-sm);
-  font-weight: var(--weight-heavy);
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-primary);
 }
 
 .wr-emptyline {
-  padding: 11px 13px;
+  padding: 12px 12px;
   border-radius: var(--radius-md);
   background: var(--bg-press);
-  font-size: var(--text-label);
-  font-weight: var(--weight-semibold);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
-  line-height: 1.45;
+
 }
 
 .wr-lock {
@@ -314,13 +340,15 @@
 
 .wr-primary {
   flex: none;
-  padding: 11px 14px;
+  padding: 12px 12px;
   border-radius: var(--radius-lg);
   background: linear-gradient(120deg, var(--lav-300), var(--lav-500));
   box-shadow: var(--shadow-lavender);
   color: var(--bg-card);
-  font-size: var(--text-label);
-  font-weight: var(--weight-heavy);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   --press: 0.95;
 }
 
@@ -351,18 +379,22 @@
 
 .wr-preview__item b {
   display: block;
-  font-size: var(--text-body-sm);
-  font-weight: var(--weight-heavy);
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-primary);
 }
 
 .wr-preview__item small {
   display: block;
   margin-top: 5px;
-  font-size: var(--text-caption);
-  font-weight: var(--weight-semibold);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
-  line-height: 1.4;
+
 }
 
 .wr-empty {
@@ -391,4 +423,12 @@
     flex-direction: column;
     text-align: center;
   }
+}
+
+/* 실제 TSX 상호작용 요소의 최소 터치 영역 */
+.wr-back {
+  min-height: var(--control-min-size);
+}
+.wr-back {
+  min-width: var(--control-min-size);
 }

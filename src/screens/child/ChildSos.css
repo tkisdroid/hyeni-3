@@ -8,7 +8,7 @@
 
 .cs-page {
   min-height: 100%;
-  padding: calc(16px + env(safe-area-inset-top, 0px)) 20px calc(28px + env(safe-area-inset-bottom, 0px));
+  padding: calc(16px + env(safe-area-inset-top, 0px)) 20px calc(24px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -37,17 +37,22 @@
 .cs-title {
   margin-top: 10px;
   font-family: Jua, var(--font-sans);
-  font-weight: 400;
-  font-size: 30px;
+
+  font-size: var(--type-display);
+  line-height: var(--type-display-line-height);
+  font-weight: var(--type-display-weight);
+
   text-align: center;
 }
 .cs-desc {
   margin-top: 8px;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: rgba(255, 255, 255, 0.92);
   text-align: center;
-  line-height: 1.55;
+
 }
 .cs-desc b {
   font-weight: 900;
@@ -99,33 +104,42 @@
 }
 .cs-hold__num {
   font-family: Jua, var(--font-sans);
-  font-weight: 400;
-  font-size: 46px;
+
+  font-size: var(--type-display);
+  line-height: var(--type-display-line-height);
+  font-weight: var(--type-display-weight);
+
   color: #f04770;
-  line-height: 1;
+
 }
 .cs-hold__hint {
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--danger-text);
 }
 
 .cs-cancel {
   margin-top: 4px;
   height: 44px;
-  padding: 0 18px;
+  padding: 0 16px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.18);
-  font-size: 14px;
-  font-weight: 800;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--bg-card);
 }
 
 .cs-foot {
   margin-top: auto;
-  padding-top: 14px;
-  font-size: 12.5px;
-  font-weight: 700;
+  padding-top: 12px;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: rgba(255, 255, 255, 0.85);
   text-align: center;
 }
@@ -133,7 +147,7 @@
 /* 보낸 뒤 / 보내는 중 / 실패 */
 .cs-result {
   min-height: 100%;
-  padding: calc(26px + env(safe-area-inset-top, 0px)) 20px calc(28px + env(safe-area-inset-bottom, 0px));
+  padding: calc(24px + env(safe-area-inset-top, 0px)) 20px calc(24px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -147,17 +161,22 @@
 .cs-result__title {
   margin-top: 12px;
   font-family: Jua, var(--font-sans);
-  font-weight: 400;
-  font-size: 28px;
+
+  font-size: var(--type-title-xl);
+  line-height: var(--type-title-xl-line-height);
+  font-weight: var(--type-title-xl-weight);
+
   text-align: center;
 }
 .cs-result__sub {
   margin-top: 6px;
-  font-size: 14.5px;
-  font-weight: 700;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: rgba(255, 255, 255, 0.92);
   text-align: center;
-  line-height: 1.5;
+
 }
 
 .cs-checks {
@@ -174,7 +193,7 @@
 .cs-checks__row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .cs-checks__dot {
   width: 34px;
@@ -187,8 +206,10 @@
   flex: none;
 }
 .cs-checks__text {
-  font-size: 15.5px;
-  font-weight: 800;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+
   color: var(--fg-primary);
 }
 
@@ -202,7 +223,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   --press: 0.97;
 }
 .cs-callbtn img {
@@ -212,8 +233,11 @@
 }
 .cs-callbtn span {
   font-family: Jua, var(--font-sans);
-  font-weight: 400;
-  font-size: 19px;
+
+  font-size: var(--type-title-lg);
+  line-height: var(--type-title-lg-line-height);
+  font-weight: var(--type-title-lg-weight);
+
   color: #c22b55;
 }
 .cs-callbtn--slim {
@@ -227,8 +251,10 @@
   padding: 0 20px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.18);
-  font-size: 14.5px;
-  font-weight: 800;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: var(--bg-card);
 }
 

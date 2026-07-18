@@ -5,15 +5,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px 22px calc(24px + env(safe-area-inset-bottom, 0px));
+  padding: 24px 20px calc(24px + env(safe-area-inset-bottom, 0px));
 }
 .pd-card {
   animation: hy-rise 0.4s cubic-bezier(0.2, 0, 0.2, 1) forwards;
   width: 100%;
   background: var(--bg-card);
-  border-radius: var(--radius-hero);
-  box-shadow: var(--shadow-card);
-  padding: 30px 24px 24px;
+  border-radius: var(--radius-16);
+  box-shadow: var(--shadow-soft);
+  padding: 32px 24px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -30,26 +30,30 @@
 }
 .pd-title {
   margin-top: 16px;
-  font-size: 20px;
-  font-weight: 900;
+  font-size: var(--type-title-lg);
+  line-height: var(--type-title-lg-line-height);
+  font-weight: var(--type-title-lg-weight);
+
   letter-spacing: -0.02em;
   color: var(--fg-primary);
 }
 .pd-sub {
   margin-top: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.5;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-muted);
 }
 .pd-steps {
   margin-top: 16px;
-  padding: 12px 14px;
+  padding: 12px 12px;
   border-radius: 14px;
   background: var(--bg-press);
-  font-size: 12.5px;
-  font-weight: 700;
-  line-height: 1.5;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--lav-text);
 }
 .pd-cta {
@@ -59,8 +63,10 @@
   border-radius: 16px;
   background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
   color: var(--bg-card);
-  font-size: 15px;
-  font-weight: 800;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   box-shadow: var(--shadow-rose-btn);
   --press: 0.97;
 }
@@ -74,6 +80,8 @@
   margin-top: 8px;
   padding: 0 16px;
   color: var(--blue-text);
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
 }

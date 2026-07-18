@@ -785,7 +785,7 @@ export function ParentHome() {
                 </span>
                 <button
                   type="button"
-                  style={{ fontSize: 12.5, fontWeight: 800, color: "var(--hy-accent-text)" }}
+                  className="ph-prep-edit"
                   onClick={() =>
                     navigate("/supplies", {
                       state: { dateKey: todayKey, childId: activeChild?.id },

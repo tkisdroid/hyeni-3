@@ -11,10 +11,10 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 12px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: linear-gradient(
     180deg,
     color-mix(in srgb, var(--rose-50) 92%, transparent) 60%,
@@ -35,8 +35,10 @@
   --press: 0.9;
 }
 .nst-title {
-  font-size: 18px;
-  font-weight: 800;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   letter-spacing: -0.01em;
   color: var(--fg-primary);
 }
@@ -46,7 +48,7 @@
   padding: 4px 20px calc(120px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 20px;
 }
 
 /* ── 상태(로딩·에러) ────────────────────────────────────────────────────── */
@@ -55,26 +57,32 @@
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  padding: 56px 18px;
-  font-size: 13.5px;
-  font-weight: 700;
+  padding: 56px 16px;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-muted);
   text-align: center;
 }
 .nst-retry {
-  padding: 9px 16px;
+  padding: 8px 16px;
   border-radius: 999px;
   background: var(--hy-accent-soft);
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--hy-accent-text);
   --press: 0.94;
 }
 
 /* ── 그룹(라벨 + 흰 카드 리스트) ────────────────────────────────────────── */
 .nst-group__label {
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   letter-spacing: 0.02em;
   color: var(--fg-muted);
   margin-bottom: 11px;
@@ -82,7 +90,7 @@
 .nst-list {
   background: var(--bg-card);
   border-radius: 20px;
-  padding: 6px;
+  padding: 4px;
   box-shadow: var(--shadow-card);
 }
 
@@ -93,7 +101,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 11px 12px;
+  padding: 12px 12px;
   background: transparent;
 }
 .nst-row__icon {
@@ -128,15 +136,19 @@
 }
 .nst-row__label {
   display: block;
-  font-size: 14.5px;
-  font-weight: 700;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: var(--fg-primary);
 }
 .nst-row__sub {
   display: block;
   margin-top: 1px;
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
 }
 
@@ -171,11 +183,13 @@
 
 /* ── 사전 알림 시간(칩 멀티 선택) ───────────────────────────────────────── */
 .nst-minutes {
-  padding: 4px 12px 12px 62px;
+  padding: 4px 12px 12px 64px;
 }
 .nst-minutes__label {
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-tertiary);
   margin-bottom: 9px;
 }
@@ -185,11 +199,13 @@
   gap: 8px;
 }
 .nst-minute {
-  padding: 8px 13px;
+  padding: 8px 12px;
   border-radius: 999px;
   background: var(--bg-press);
-  font-size: 12.5px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
   --press: 0.94;
 }
@@ -204,14 +220,15 @@
   align-items: flex-start;
   gap: 8px;
   margin-top: 9px;
-  padding: 11px 12px;
+  padding: 12px 12px;
   border: 1px solid var(--mint-line);
   border-radius: var(--radius-md);
   background: var(--mint-soft);
   color: var(--mint-text);
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.5;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
 }
 .nst-safety-note svg {
   flex: none;
@@ -224,23 +241,27 @@
   border-radius: var(--radius-md);
   background: var(--hy-accent-soft);
   color: var(--hy-accent-text);
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
 }
 .nst-web-facts {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+  gap: 4px;
   margin: 2px 12px 10px;
 }
 .nst-web-facts span {
   min-width: 0;
-  padding: 9px 6px;
+  padding: 8px 4px;
   border-radius: var(--radius-sm);
   background: var(--bg-press);
   color: var(--fg-secondary);
-  font-size: 11px;
-  font-weight: 800;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   text-align: center;
   overflow-wrap: anywhere;
 }
@@ -248,8 +269,10 @@
   display: block;
   margin-bottom: 3px;
   color: var(--fg-muted);
-  font-size: 10px;
-  font-weight: 700;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
 }
 .nst-system-btn:disabled {
   color: var(--fg-disabled);
@@ -263,9 +286,9 @@
 .nst-capability {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   margin: 2px 12px 10px;
-  padding: 11px 12px;
+  padding: 12px 12px;
   border: 1px solid var(--gold-line);
   border-radius: var(--radius-md);
   background: var(--cream-soft);
@@ -276,14 +299,17 @@
 }
 .nst-capability__title {
   color: var(--fg-primary);
-  font-size: 12.5px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
 }
 .nst-capability__detail {
   color: var(--fg-tertiary);
-  font-size: 11.5px;
-  font-weight: 650;
-  line-height: 1.45;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
 }
 
 @media (max-width: 360px) {
@@ -304,16 +330,28 @@
 .nst-note {
   margin-top: 9px;
   padding: 0 4px;
-  font-size: 11.5px;
-  font-weight: 600;
-  line-height: 1.5;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
 }
 .nst-refresh {
   margin-left: 7px;
   color: var(--blue-text);
-  font-size: inherit;
-  font-weight: 800;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+/* 실제 TSX 상호작용 요소의 최소 터치 영역 */
+.nst-back,
+.nst-system-btn {
+  min-height: var(--control-min-size);
+}
+.nst-back {
+  min-width: var(--control-min-size);
 }

@@ -11,10 +11,10 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  padding: 56px 18px 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 12px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: linear-gradient(180deg, rgba(253, 244, 241, 0.9) 60%, rgba(253, 244, 241, 0));
   backdrop-filter: blur(8px);
 }
@@ -31,14 +31,16 @@
   --press: 0.9;
 }
 .rv-title {
-  font-size: 18px;
-  font-weight: 800;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   color: var(--fg-primary);
 }
 
 /* ── 스크롤 콘텐츠 ──────────────────────────────────────────────────────── */
 .rv-content {
-  padding: 6px 20px 40px;
+  padding: 4px 20px 40px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -88,11 +90,13 @@
   position: absolute;
   left: 30px;
   bottom: 12px;
-  font-size: 11px;
-  font-weight: 800;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: #b0477a;
   background: rgba(255, 255, 255, 0.85);
-  padding: 3px 8px;
+  padding: 2px 8px;
   border-radius: 999px;
 }
 
@@ -105,7 +109,7 @@
   padding: 16px;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 .rv-info__icon {
   width: 52px;
@@ -128,22 +132,28 @@
 }
 .rv-info__name {
   display: block;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: #087653;
 }
 .rv-info__eta {
   display: block;
-  font-size: 18px;
-  font-weight: 900;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   color: #201a1d;
 }
 .rv-info__tag {
   flex: none;
-  padding: 6px 12px;
+  padding: 4px 12px;
   border-radius: 999px;
-  font-size: 11.5px;
-  font-weight: 800;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: #087653;
   background: #e7f8f0;
 }
@@ -170,8 +180,10 @@
   width: 26px;
   height: 26px;
   border-radius: 8px;
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   display: flex;
   align-items: center;
   justify-content: center;
@@ -186,8 +198,10 @@
   color: #087653;
 }
 .rv-step__text {
-  font-size: 13.5px;
-  font-weight: 700;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: #3a3236;
 }
 
@@ -198,8 +212,10 @@
   border-radius: 18px;
   background: linear-gradient(120deg, #46d19b, #23a876);
   box-shadow: 0 16px 32px -12px rgba(35, 168, 118, 0.55);
-  font-size: 16px;
-  font-weight: 800;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+
   color: #fff;
   display: flex;
   align-items: center;
@@ -217,8 +233,10 @@
   gap: 12px;
 }
 .rv-ph__msg {
-  font-size: 13.5px;
-  font-weight: 700;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: #6d6469;
 }
 .rv-ph__spinner {
@@ -237,13 +255,15 @@
 .rv-retry {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 9px 16px;
+  gap: 4px;
+  padding: 8px 16px;
   border-radius: 999px;
   background: #fff;
   box-shadow: 0 6px 16px rgba(32, 26, 29, 0.1);
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--mint-text);
   --press: 0.96;
 }
@@ -273,14 +293,17 @@
   justify-content: center;
 }
 .rv-empty__title {
-  font-size: 17px;
-  font-weight: 900;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   color: var(--fg-primary);
 }
 .rv-empty__sub {
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.55;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-tertiary);
   white-space: pre-line; /* 안내 문구 개행(
 ) 렌더 */
@@ -293,13 +316,15 @@
   border-radius: 16px;
   background: linear-gradient(120deg, #46d19b, #23a876);
   box-shadow: 0 14px 30px -14px rgba(35, 168, 118, 0.6);
-  font-size: 15px;
-  font-weight: 800;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 8px;
   --press: 0.97;
 }
 
@@ -307,28 +332,31 @@
 .rv-fallback {
   background: #fff;
   border-radius: 24px;
-  padding: 14px 16px;
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 11px;
+  gap: 12px;
   box-shadow: 0 10px 26px -18px rgba(32, 26, 29, 0.2);
 }
 .rv-fallback__msg {
-  font-size: 13.5px;
-  font-weight: 700;
-  line-height: 1.5;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-muted);
   text-align: center;
 }
 .rv-fallback__kakao {
   width: 100%;
-  padding: 13px 0;
+  padding: 12px 0;
   border-radius: 14px;
   background: #fee500;
   color: #191600;
-  font-size: 14.5px;
-  font-weight: 800;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   --press: 0.97;
 }
 
@@ -349,16 +377,26 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 14px;
+  padding: 8px 12px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.95);
   box-shadow: 0 10px 24px -12px rgba(32, 26, 29, 0.35);
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-tertiary);
   white-space: nowrap;
 }
 .rv-map-chip--retry {
   color: #0f7a57;
   --press: 0.96;
+}
+
+/* 실제 TSX 상호작용 요소의 최소 터치 영역 */
+.rv-back {
+  min-height: var(--control-min-size);
+}
+.rv-back {
+  min-width: var(--control-min-size);
 }

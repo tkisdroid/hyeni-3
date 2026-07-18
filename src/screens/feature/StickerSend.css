@@ -21,7 +21,7 @@
   padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 8px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: linear-gradient(180deg, rgba(253, 244, 241, 0.9) 60%, rgba(253, 244, 241, 0));
   backdrop-filter: blur(8px);
 }
@@ -38,8 +38,10 @@
   --press: 0.9;
 }
 .ss-title {
-  font-size: 18px;
-  font-weight: 800;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   letter-spacing: -0.01em;
   color: var(--fg-primary);
 }
@@ -50,7 +52,7 @@
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 6px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+  padding: 4px 16px calc(20px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -58,14 +60,16 @@
 
 /* ── 미리보기 카드 ─────────────────────────────────────────────────────── */
 .ss-preview {
-  padding: 14px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 .ss-preview__eyebrow {
-  font-size: 12px;
-  font-weight: 800;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--hy-accent-text);
 }
 .ss-preview__tile {
@@ -86,33 +90,37 @@
 }
 .ss-preview__label {
   margin-top: 8px;
-  font-size: 18px;
-  font-weight: 900;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   letter-spacing: -0.01em;
   color: var(--fg-primary);
 }
 
 /* ── 선택 그리드 ───────────────────────────────────────────────────────── */
 .ss-pick-title {
-  font-size: 12.5px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
   margin-bottom: 8px;
   padding: 0 2px;
 }
 .ss-grid {
-  padding: 10px;
+  padding: 8px;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  gap: 4px;
 }
 .ss-chip {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
-  padding: 5px 1px;
+  padding: 4px 2px;
   border-radius: 14px;
   background: transparent;
   border: 2px solid transparent;
@@ -130,8 +138,10 @@
 }
 .ss-chip__label {
   max-width: 100%;
-  font-size: 10px;
-  font-weight: 800;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: #554c50;
   white-space: nowrap;
   overflow: hidden;
@@ -154,7 +164,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px 6px 6px;
+  padding: 4px 12px 4px 4px;
   border-radius: 999px;
   background: #fff;
   border: 2px solid transparent;
@@ -182,8 +192,10 @@
   object-fit: contain;
 }
 .ss-child__name {
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-primary);
   white-space: nowrap;
 }
@@ -191,8 +203,10 @@
 /* 받은 칭찬 누적(미리보기 하단) */
 .ss-preview__count {
   margin-top: 4px;
-  font-size: 11.5px;
-  font-weight: 700;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
 }
 
@@ -203,14 +217,15 @@
   border-radius: 16px;
   border: 1.5px solid var(--line-soft);
   background: #fff;
-  padding: 11px 13px;
+  padding: 12px 12px;
   font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.45;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--ink-2);
   resize: none;
-  outline: none;
+
   box-shadow: 0 4px 12px rgba(32, 26, 29, 0.04);
   transition: border-color 0.16s ease;
 }
@@ -228,8 +243,10 @@
   border-radius: 18px;
   background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
   box-shadow: 0 16px 32px -12px rgba(240, 81, 143, 0.6);
-  font-size: 16px;
-  font-weight: 800;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+
   color: #fff;
   display: flex;
   align-items: center;
@@ -244,4 +261,12 @@
   width: 22px;
   height: 22px;
   object-fit: contain;
+}
+
+/* 실제 TSX 상호작용 요소의 최소 터치 영역 */
+.ss-back {
+  min-height: var(--control-min-size);
+}
+.ss-back {
+  min-width: var(--control-min-size);
 }

@@ -11,10 +11,10 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 12px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: linear-gradient(180deg, rgba(243, 240, 251, 0.92) 60%, rgba(243, 240, 251, 0));
   backdrop-filter: blur(8px);
 }
@@ -31,30 +31,36 @@
   --press: 0.9;
 }
 .tn-title {
-  font-size: 18px;
-  font-weight: 800;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   letter-spacing: -0.01em;
   color: var(--fg-primary);
 }
 
 /* ── 본문 컬럼 ──────────────────────────────────────────────────────────── */
 .tn-body {
-  padding: 6px 20px calc(40px + env(safe-area-inset-bottom, 0px));
+  padding: 4px 20px calc(40px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
 }
 .tn-meta {
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--lav-text);
   padding: 2px 2px 0;
 }
 
 /* ── 필드 라벨 ──────────────────────────────────────────────────────────── */
 .tn-label {
-  font-size: 12.5px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-tertiary);
   margin-bottom: 8px;
   padding: 0 2px;
@@ -68,11 +74,13 @@
   background: #fff;
   border-radius: 15px;
   padding: 0 16px;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: var(--fg-primary);
   font-family: inherit;
-  outline: none;
+
   box-sizing: border-box;
   transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
@@ -81,13 +89,14 @@
   border: 1.5px solid var(--line-soft);
   background: #fff;
   border-radius: 15px;
-  padding: 13px 16px;
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.5;
+  padding: 12px 16px;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: var(--fg-primary);
   font-family: inherit;
-  outline: none;
+
   box-sizing: border-box;
   resize: vertical;
   min-height: 96px;
@@ -114,13 +123,15 @@
 .tn-chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 7px 8px 7px 12px;
+  gap: 4px;
+  padding: 8px 8px 8px 12px;
   border-radius: 999px;
   background: var(--blue-soft);
   color: var(--blue-text);
-  font-size: 12.5px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
 }
 .tn-chip__x {
   width: 18px;
@@ -140,12 +151,14 @@
   border: 1.5px dashed var(--line-strong);
   background: transparent;
   border-radius: 999px;
-  padding: 0 14px;
-  font-size: 12.5px;
-  font-weight: 700;
+  padding: 0 12px;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-body);
   font-family: inherit;
-  outline: none;
+
   box-sizing: border-box;
 }
 .tn-chip-input::placeholder {
@@ -160,7 +173,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
+  padding: 12px 12px;
   border-radius: 16px;
   border: 1.5px dashed var(--line-strong);
   background: rgba(255, 255, 255, 0.76);
@@ -186,25 +199,31 @@
 }
 .tn-attach__title {
   display: block;
-  font-size: 13.5px;
-  font-weight: 800;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-secondary);
 }
 .tn-attach__sub {
   display: block;
   margin-top: 2px;
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
 }
 .tn-attach__badge {
   flex: none;
-  padding: 4px 10px;
+  padding: 4px 8px;
   border-radius: 999px;
   background: var(--bg-body);
   color: var(--fg-muted);
-  font-size: 10.5px;
-  font-weight: 800;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
 }
 .tn-attach-list {
   margin-top: 9px;
@@ -216,13 +235,15 @@
   max-width: 100%;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 7px 8px 7px 10px;
+  gap: 4px;
+  padding: 8px 8px 8px 8px;
   border-radius: 999px;
   background: var(--lav-soft);
   color: var(--lav-text);
-  font-size: 12px;
-  font-weight: 800;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
 }
 .tn-file-chip__name {
   min-width: 0;
@@ -249,13 +270,13 @@
   background: #fff;
   box-shadow: var(--shadow-card);
   border: 1px solid var(--line-card);
-  padding: 6px 14px 14px;
+  padding: 4px 12px 12px;
 }
 .tn-reflect__row {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 0 10px;
+  padding: 12px 0 8px;
 }
 .tn-reflect__main {
   flex: 1;
@@ -263,15 +284,19 @@
 }
 .tn-reflect__title {
   display: block;
-  font-size: 14px;
-  font-weight: 800;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-primary);
 }
 .tn-reflect__sub {
   display: block;
   margin-top: 2px;
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
 }
 .tn-toggle {
@@ -306,12 +331,14 @@
   border: 1.5px solid var(--line-soft);
   background: #fff;
   border-radius: 15px;
-  padding: 0 14px;
-  font-size: 14px;
-  font-weight: 700;
+  padding: 0 12px;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-primary);
   font-family: inherit;
-  outline: none;
+
   box-sizing: border-box;
 }
 .tn-date:focus {
@@ -326,8 +353,10 @@
   border-radius: 18px;
   background: linear-gradient(120deg, var(--lav-400), var(--lav-600));
   box-shadow: 0 16px 32px -14px rgba(124, 92, 225, 0.6);
-  font-size: 16px;
-  font-weight: 800;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+
   color: #fff;
   --press: 0.98;
 }
@@ -337,10 +366,12 @@
 }
 .tn-hint {
   padding: 0 4px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
-  line-height: 1.5;
+
 }
 
 /* ── 로딩 / 빈 상태 ─────────────────────────────────────────────────────── */
@@ -350,7 +381,7 @@
   background: #fff;
   box-shadow: var(--shadow-card);
   border: 1px solid var(--line-card);
-  padding: 34px 22px;
+  padding: 32px 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -358,22 +389,41 @@
   text-align: center;
 }
 .tn-empty--soft {
-  padding: 22px;
+  padding: 20px;
   color: var(--fg-muted);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
 }
 .tn-empty__emoji {
   font-size: 34px;
 }
 .tn-empty__title {
-  font-size: 15.5px;
-  font-weight: 800;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+
   color: var(--fg-primary);
 }
 .tn-empty__sub {
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
-  line-height: 1.5;
+
+}
+
+/* 실제 TSX 상호작용 요소의 최소 터치 영역 */
+.tn-back,
+.tn-chip__x,
+.tn-chip-input,
+.tn-file-chip__x {
+  min-height: var(--control-min-size);
+}
+.tn-back,
+.tn-chip__x,
+.tn-file-chip__x {
+  min-width: var(--control-min-size);
 }

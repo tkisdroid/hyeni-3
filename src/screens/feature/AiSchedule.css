@@ -14,10 +14,10 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 12px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: linear-gradient(180deg, rgba(253, 244, 241, 0.9) 60%, rgba(253, 244, 241, 0));
   backdrop-filter: blur(8px);
 }
@@ -34,15 +34,17 @@
   --press: 0.9;
 }
 .ais-title {
-  font-size: 18px;
-  font-weight: 800;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   letter-spacing: -0.01em;
   color: var(--fg-primary);
 }
 
 /* ── 본문 컬럼 (하단 탭바 여백 포함) ────────────────────────────────────── */
 .ais-body {
-  padding: 10px 20px calc(120px + env(safe-area-inset-bottom, 0px));
+  padding: 8px 20px calc(120px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -53,7 +55,7 @@
   width: 100%;
   display: flex;
   gap: 4px;
-  padding: 5px;
+  padding: 4px;
   border-radius: 16px;
   background: rgba(124, 92, 225, 0.08);
 }
@@ -62,13 +64,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 10px 4px;
+  gap: 4px;
+  padding: 8px 4px;
   border-radius: 12px;
   background: transparent;
   box-shadow: none;
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
   transition: color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
   --press: 0.95;
@@ -122,7 +126,7 @@
 .ais-wave {
   display: flex;
   align-items: flex-end;
-  gap: 3px;
+  gap: 2px;
   height: 26px;
   margin-bottom: 14px;
 }
@@ -135,19 +139,23 @@
   animation: hy-wave 1s ease-in-out infinite;
 }
 .ais-listening {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
 }
 .ais-bubble {
   margin-top: 16px;
   width: 100%;
-  padding: 16px 18px;
+  padding: 16px 16px;
   border-radius: 20px 20px 20px 6px;
   background: #fff;
   box-shadow: 0 8px 22px rgba(124, 92, 225, 0.1);
-  font-size: 15px;
-  font-weight: 700;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: #43356b;
 }
 
@@ -199,7 +207,7 @@
 .ais-textbox {
   background: #fff;
   border-radius: 20px;
-  padding: 6px;
+  padding: 4px;
   box-shadow: 0 8px 22px rgba(124, 92, 225, 0.1);
 }
 .ais-textarea {
@@ -208,13 +216,14 @@
   border: none;
   background: transparent;
   resize: none;
-  padding: 14px;
-  font-size: 15px;
-  font-weight: 600;
+  padding: 12px;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: #43356b;
   font-family: inherit;
-  line-height: 1.55;
-  outline: none;
+
   box-sizing: border-box;
 }
 
@@ -225,21 +234,24 @@
 }
 .ais-mode-intro {
   margin-bottom: 12px;
-  padding: 14px 16px;
+  padding: 12px 16px;
   border-radius: 18px;
   background: var(--bg-card);
   box-shadow: 0 8px 22px rgba(124, 92, 225, 0.1);
 }
 .ais-mode-intro__title {
-  font-size: 15px;
-  font-weight: 900;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: var(--fg-primary);
 }
 .ais-mode-intro p {
   margin: 5px 0 0;
-  font-size: 12.5px;
-  font-weight: 700;
-  line-height: 1.45;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
 }
 .ais-upload {
@@ -247,7 +259,7 @@
   border-radius: 20px;
   border: 2px dashed rgba(124, 92, 225, 0.35);
   background: rgba(124, 92, 225, 0.05);
-  padding: 30px 20px;
+  padding: 32px 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -274,15 +286,19 @@
 }
 .ais-upload__title {
   display: block;
-  font-size: 15px;
-  font-weight: 800;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: #43356b;
 }
 .ais-upload__sub {
   display: block;
   margin-top: 3px;
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
 }
 
@@ -308,11 +324,13 @@
   box-shadow: 0 8px 22px rgba(124, 92, 225, 0.1);
 }
 .ais-preview__change {
-  padding: 10px 18px;
+  padding: 8px 16px;
   border-radius: 999px;
   background: rgba(124, 92, 225, 0.08);
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: #6d4e9c;
   --press: 0.95;
 }
@@ -323,13 +341,18 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
   padding: 0 2px;
 }
 .ais-hint__ico {
-  font-size: 15px;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
 }
 
 /* ── AI 인식 결과 라벨 ──────────────────────────────────────────────────── */
@@ -338,7 +361,7 @@
   margin-top: 20px;
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
 }
 .ais-reslabel__badge {
   width: 20px;
@@ -348,12 +371,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   flex: none;
 }
 .ais-reslabel__text {
-  font-size: 12.5px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: #6d4e9c;
 }
 
@@ -406,29 +434,37 @@
 }
 .ais-result__k {
   display: block;
-  font-size: 11.5px;
-  font-weight: 700;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
 }
 .ais-result__v {
   display: block;
-  font-size: 14.5px;
-  font-weight: 800;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: var(--fg-primary);
 }
 .ais-result__v--lg {
-  font-size: 15.5px;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+
 }
 
 .ais-edit-note {
   width: 100%;
   margin-top: 10px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: 14px;
   background: var(--lav-soft);
-  font-size: 12.5px;
-  font-weight: 800;
-  line-height: 1.45;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--lav-text);
   text-align: center;
 }
@@ -441,8 +477,10 @@
   border-radius: 18px;
   background: linear-gradient(120deg, #b79dfb, #8b6bec);
   box-shadow: 0 16px 32px -12px rgba(124, 92, 225, 0.6);
-  font-size: 16px;
-  font-weight: 800;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+
   color: #fff;
   display: flex;
   align-items: center;
@@ -471,4 +509,12 @@
     animation: none;
     transition: none;
   }
+}
+
+/* 실제 TSX 상호작용 요소의 최소 터치 영역 */
+.ais-back {
+  min-height: var(--control-min-size);
+}
+.ais-back {
+  min-width: var(--control-min-size);
 }

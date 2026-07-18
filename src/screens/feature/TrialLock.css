@@ -9,10 +9,10 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 12px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: rgba(251, 247, 244, 0.94);
   backdrop-filter: blur(10px);
 }
@@ -29,14 +29,16 @@
   --press: 0.9;
 }
 .tl-head-title {
-  font-size: 18px;
-  font-weight: 800;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   letter-spacing: -0.01em;
   color: var(--fg-primary);
 }
 
 .tl-content {
-  padding: 10px 20px calc(120px + env(safe-area-inset-bottom, 0px));
+  padding: 8px 20px calc(120px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -45,15 +47,17 @@
 .tl-loading {
   margin-top: 40px;
   text-align: center;
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-muted);
 }
 
 /* ── 히어로(체험 / 프리미엄) ──────────────────────────────────────────────── */
 .tl-hero {
-  border-radius: 24px;
-  padding: 26px 20px;
+  border-radius: var(--radius-20);
+  padding: 24px 20px;
   text-align: center;
   color: #fff;
 }
@@ -76,28 +80,34 @@
   justify-content: center;
 }
 .tl-hero__dday {
-  font-size: 14px;
-  font-weight: 800;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   letter-spacing: 0.02em;
   opacity: 0.95;
 }
 .tl-hero__title {
   margin-top: 4px;
-  font-size: 18px;
-  font-weight: 800;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   letter-spacing: -0.01em;
 }
 .tl-hero__sub {
   margin-top: 6px;
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   opacity: 0.9;
 }
 
 /* ── 잠금(무료/만료) ──────────────────────────────────────────────────────── */
 .tl-lock {
   border-radius: 24px;
-  padding: 30px 20px;
+  padding: 32px 20px;
   text-align: center;
   background: #fff;
   box-shadow: 0 14px 34px rgba(32, 26, 29, 0.06);
@@ -113,26 +123,31 @@
   justify-content: center;
 }
 .tl-lock__title {
-  font-size: 19px;
-  font-weight: 800;
+  font-size: var(--type-title-lg);
+  line-height: var(--type-title-lg-line-height);
+  font-weight: var(--type-title-lg-weight);
+
   letter-spacing: -0.01em;
   color: var(--fg-primary);
 }
 .tl-lock__sub {
   margin-top: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.55;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-tertiary);
 }
 .tl-lock__reviewed {
   margin: 14px auto 0;
   display: inline-block;
-  padding: 7px 14px;
+  padding: 8px 12px;
   border-radius: 999px;
   background: var(--cream-soft);
-  font-size: 12px;
-  font-weight: 800;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--gold-text);
 }
 
@@ -140,14 +155,14 @@
 .tl-perks {
   background: #fff;
   border-radius: 24px;
-  padding: 6px 16px;
+  padding: 4px 16px;
   box-shadow: 0 10px 26px rgba(32, 26, 29, 0.05);
 }
 .tl-perk {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 13px 0;
+  padding: 12px 0;
 }
 .tl-perk + .tl-perk {
   border-top: 1px solid var(--line-hair);
@@ -163,8 +178,10 @@
   flex: none;
 }
 .tl-perk__label {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-primary);
 }
 
@@ -174,8 +191,10 @@
   border-radius: 16px;
   background: var(--hy-accent);
   color: #fff;
-  font-size: 15.5px;
-  font-weight: 800;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+
   letter-spacing: -0.01em;
   box-shadow: 0 12px 26px -10px var(--hy-accent-deep);
   --press: 0.97;
@@ -185,7 +204,17 @@
   border-radius: 14px;
   background: transparent;
   color: var(--fg-muted);
-  font-size: 13.5px;
-  font-weight: 700;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   --press: 0.97;
+}
+
+/* 실제 TSX 상호작용 요소의 최소 터치 영역 */
+.tl-back {
+  min-height: var(--control-min-size);
+}
+.tl-back {
+  min-width: var(--control-min-size);
 }

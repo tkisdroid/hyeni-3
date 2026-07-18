@@ -11,10 +11,10 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 12px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: linear-gradient(180deg, rgba(253, 241, 242, 0.92) 60%, rgba(253, 241, 242, 0));
   backdrop-filter: blur(8px);
 }
@@ -31,18 +31,20 @@
   --press: 0.9;
 }
 .da-title {
-  font-size: 18px;
-  font-weight: 800;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   letter-spacing: -0.01em;
   color: var(--fg-primary);
 }
 
 /* ── 본문 ───────────────────────────────────────────────────────────────── */
 .da-body {
-  padding: 6px 20px calc(40px + env(safe-area-inset-bottom, 0px));
+  padding: 4px 20px calc(40px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
 }
 
 /* ── 상태(로딩·에러) ────────────────────────────────────────────────────── */
@@ -51,18 +53,22 @@
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  padding: 56px 18px;
-  font-size: 13.5px;
-  font-weight: 700;
+  padding: 56px 16px;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-muted);
   text-align: center;
 }
 .da-retry {
-  padding: 9px 16px;
+  padding: 8px 16px;
   border-radius: 999px;
   background: var(--hy-accent-soft);
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--hy-accent-text);
   --press: 0.94;
 }
@@ -72,8 +78,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 60px 18px;
+  gap: 4px;
+  padding: 56px 16px;
   text-align: center;
 }
 .da-safe__img {
@@ -83,23 +89,27 @@
   margin-bottom: 6px;
 }
 .da-safe__title {
-  font-size: 15.5px;
-  font-weight: 800;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+
   color: #1f7a56;
 }
 .da-safe__sub {
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
 }
 
 /* ── 최신 위험 히어로 ───────────────────────────────────────────────────── */
 .da-hero {
-  border-radius: 22px;
-  padding: 18px;
+  border-radius: var(--radius-20);
+  padding: 16px;
   background: linear-gradient(180deg, #fff, #fff5f6);
   border: 1.5px solid rgba(240, 71, 112, 0.32);
-  box-shadow: 0 14px 34px -14px rgba(229, 72, 77, 0.4);
+  box-shadow: var(--shadow-floating);
 }
 .da-hero__top {
   display: flex;
@@ -124,22 +134,27 @@
 .da-hero__time {
   flex: 1;
   text-align: right;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--danger-text);
 }
 .da-hero__title {
   margin-top: 14px;
-  font-size: 18px;
-  font-weight: 900;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   letter-spacing: -0.01em;
   color: var(--danger-text);
 }
 .da-hero__msg {
   margin-top: 6px;
-  font-size: 13.5px;
-  font-weight: 600;
-  line-height: 1.55;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-body);
 }
 .da-hero__cta {
@@ -149,8 +164,10 @@
   border-radius: 16px;
   background: linear-gradient(120deg, var(--danger-strong), var(--danger-500));
   box-shadow: 0 14px 30px -12px rgba(229, 72, 77, 0.55);
-  font-size: 15px;
-  font-weight: 800;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: #fff;
   display: flex;
   align-items: center;
@@ -161,22 +178,24 @@
 
 /* ── 과거 이력 ──────────────────────────────────────────────────────────── */
 .da-group__label {
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
   margin-bottom: 11px;
 }
 .da-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 .da-item {
   width: 100%;
   text-align: left;
   background: #fff;
   border-radius: 18px;
-  padding: 13px;
+  padding: 12px;
   box-shadow: 0 8px 22px rgba(32, 26, 29, 0.045);
   display: flex;
   align-items: center;
@@ -204,27 +223,33 @@
 }
 .da-item__title {
   display: block;
-  font-size: 14px;
-  font-weight: 800;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-primary);
 }
 .da-item__detail {
   display: block;
   margin-top: 2px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
 }
 .da-item__meta {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 5px;
+  gap: 4px;
   flex: none;
 }
 .da-item__time {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
 }
 .da-item__dot {
@@ -232,4 +257,12 @@
   height: 8px;
   border-radius: 50%;
   background: var(--danger-strong);
+}
+
+/* 실제 TSX 상호작용 요소의 최소 터치 영역 */
+.da-back {
+  min-height: var(--control-min-size);
+}
+.da-back {
+  min-width: var(--control-min-size);
 }

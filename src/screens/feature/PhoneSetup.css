@@ -1,7 +1,7 @@
 /* 전화번호 설정 — 화면 전용 스타일 (원본 dc.html 1519–1540행 값 1:1) */
 
 .psu-screen {
-  min-height: 848px;
+  min-height: 100dvh;
   background: linear-gradient(180deg, #fdf4f1, #f7f4f3);
   animation: hy-fadein 0.35s ease forwards;
 }
@@ -11,10 +11,10 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  padding: 56px 18px 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 12px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: linear-gradient(180deg, rgba(253, 244, 241, 0.9) 60%, rgba(253, 244, 241, 0));
   backdrop-filter: blur(8px);
 }
@@ -31,24 +31,26 @@
   --press: 0.9;
 }
 .psu-title {
-  font-size: 18px;
-  font-weight: 800;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   color: var(--fg-primary);
 }
 
 /* ── 스크롤 콘텐츠 ──────────────────────────────────────────────────────── */
 .psu-content {
-  padding: 6px 20px 40px;
+  padding: 4px 20px 40px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
 }
 
 /* ── 인트로(아이콘 + 문구) ──────────────────────────────────────────────── */
 .psu-intro {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   padding: 4px 2px;
 }
 .psu-intro__img {
@@ -58,23 +60,27 @@
   flex: none;
 }
 .psu-intro__title {
-  font-size: 19px;
-  font-weight: 900;
+  font-size: var(--type-title-lg);
+  line-height: var(--type-title-lg-line-height);
+  font-weight: var(--type-title-lg-weight);
+
   letter-spacing: -0.02em;
   color: #201a1d;
 }
 .psu-intro__sub {
   margin-top: 3px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
 }
 
 /* ── 입력 카드 ──────────────────────────────────────────────────────────── */
 .psu-card {
   background: #fff;
-  border-radius: 24px;
-  box-shadow: 0 14px 34px -18px rgba(32, 26, 29, 0.22), 0 2px 6px rgba(32, 26, 29, 0.04);
+  border-radius: var(--radius-16);
+  box-shadow: var(--shadow-soft);
   border: 1px solid rgba(32, 26, 29, 0.05);
   padding: 8px;
 }
@@ -102,8 +108,10 @@
   flex: none;
   min-width: 42px;
   white-space: nowrap;
-  font-size: 14px;
-  font-weight: 800;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: #201a1d;
 }
 .psu-row__input {
@@ -113,28 +121,35 @@
   border: none;
   background: #fbf3f6;
   border-radius: 12px;
-  padding: 0 14px;
-  font-size: 15px;
-  font-weight: 700;
+  padding: 0 12px;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: #201a1d;
   font-family: inherit;
-  outline: none;
+
   font-variant-numeric: tabular-nums;
 }
 
 /* ── 안내 문구 ──────────────────────────────────────────────────────────── */
 .psu-note {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: flex-start;
   padding: 0 4px;
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
-  line-height: 1.5;
+
 }
 .psu-note__lock {
-  font-size: 15px;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   flex: none;
 }
 
@@ -145,8 +160,18 @@
   border-radius: 18px;
   background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
   box-shadow: 0 16px 32px -12px rgba(240, 81, 143, 0.6);
-  font-size: 16px;
-  font-weight: 800;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+
   color: #fff;
   --press: 0.98;
+}
+
+/* 실제 TSX 상호작용 요소의 최소 터치 영역 */
+.psu-back {
+  min-height: var(--control-min-size);
+}
+.psu-back {
+  min-width: var(--control-min-size);
 }

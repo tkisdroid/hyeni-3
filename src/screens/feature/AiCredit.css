@@ -12,10 +12,10 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  padding: 56px 18px 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 12px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: linear-gradient(180deg, rgba(253, 244, 241, 0.9) 60%, rgba(253, 244, 241, 0));
   backdrop-filter: blur(8px);
 }
@@ -32,24 +32,26 @@
   --press: 0.9;
 }
 .ac-title {
-  font-size: 18px;
-  font-weight: 800;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   color: var(--fg-primary);
 }
 
 /* ── 스크롤 콘텐츠(간격 시안 18px) ──────────────────────────────────────── */
 .ac-content {
-  gap: 18px;
+  gap: 16px;
 }
 
 /* ── 잔액 히어로 ────────────────────────────────────────────────────────── */
 .ac-hero {
   position: relative;
   overflow: hidden;
-  border-radius: 26px;
-  padding: 22px;
+  border-radius: var(--radius-20);
+  padding: 20px;
   background: linear-gradient(140deg, #b79dfb 0%, #8b6bec 100%);
-  box-shadow: 0 22px 44px -18px rgba(124, 92, 225, 0.6);
+  box-shadow: var(--shadow-floating);
 }
 .ac-hero__sheen {
   position: absolute;
@@ -72,8 +74,10 @@
 }
 .ac-hero__label {
   position: relative;
-  font-size: 12.5px;
-  font-weight: 700;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: rgba(255, 255, 255, 0.9);
 }
 .ac-hero__amount {
@@ -84,15 +88,19 @@
   gap: 4px;
 }
 .ac-hero__num {
-  font-size: 44px;
-  font-weight: 900;
+  font-size: var(--type-display);
+  line-height: var(--type-display-line-height);
+  font-weight: var(--type-display-weight);
+
   color: #fff;
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
 }
 .ac-hero__unit {
-  font-size: 18px;
-  font-weight: 800;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   color: rgba(255, 255, 255, 0.92);
 }
 .ac-hero__badge {
@@ -100,12 +108,14 @@
   margin-top: 8px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 4px;
+  padding: 4px 12px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.22);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: #fff;
 }
 
@@ -113,12 +123,14 @@
 .ac-note {
   display: flex;
   align-items: flex-start;
-  gap: 9px;
+  gap: 8px;
   padding: 0 2px;
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
-  line-height: 1.5;
+
 }
 .ac-note__emoji {
   font-size: 15px;
@@ -126,8 +138,10 @@
 
 /* ── 충전팩 ─────────────────────────────────────────────────────────────── */
 .ac-packs__label {
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
   margin-bottom: 12px;
   padding: 0 2px;
@@ -135,16 +149,16 @@
 .ac-packs__list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 .ac-pack {
   position: relative;
   background: #fff;
   border-radius: 20px;
-  padding: 15px;
+  padding: 16px;
   display: flex;
   align-items: center;
-  gap: 13px;
+  gap: 12px;
   box-shadow: 0 10px 26px -16px rgba(32, 26, 29, 0.16);
 }
 .ac-pack__icon {
@@ -169,27 +183,33 @@
 .ac-pack__amt-row {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
 }
 .ac-pack__amt {
-  font-size: 17px;
-  font-weight: 900;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   color: #201a1d;
   letter-spacing: -0.01em;
 }
 .ac-pack__tag {
-  padding: 3px 9px;
+  padding: 2px 8px;
   border-radius: 999px;
-  font-size: 10.5px;
-  font-weight: 800;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: #6d4e9c;
   background: #efe8ff;
 }
 .ac-pack__per {
   display: block;
   margin-top: 3px;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
 }
 .ac-buy {
@@ -198,8 +218,10 @@
   border-radius: 13px;
   background: linear-gradient(120deg, #b79dfb, #8b6bec);
   color: #fff;
-  font-size: 14px;
-  font-weight: 800;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   box-shadow: 0 12px 24px -10px rgba(124, 92, 225, 0.6);
   --press: 0.94;
 }
@@ -237,28 +259,34 @@
 }
 .ac-auto__title {
   display: block;
-  font-size: 14.5px;
-  font-weight: 800;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: #201a1d;
 }
 .ac-auto__sub {
   display: block;
   margin-top: 2px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
 }
 .ac-toggle {
   flex: none;
   width: 48px;
   height: 28px;
+  padding-block: 8px;
   border-radius: 999px;
   position: relative;
+  background-clip: content-box !important;
   transition: background 0.2s ease;
 }
 .ac-toggle__knob {
   position: absolute;
-  top: 2px;
+  top: 10px;
   width: 24px;
   height: 24px;
   border-radius: 50%;
@@ -270,10 +298,12 @@
 /* ── 하단 안내 ──────────────────────────────────────────────────────────── */
 .ac-footer {
   text-align: center;
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
-  line-height: 1.5;
+
 }
 
 /* 하루 대화 한도 스테퍼 */
@@ -288,8 +318,10 @@
   border-radius: 10px;
   background: var(--hy-accent-soft);
   color: var(--hy-accent-text);
-  font-size: 17px;
-  font-weight: 800;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   display: flex;
   align-items: center;
   justify-content: center;
@@ -298,8 +330,10 @@
 .ac-limit__num {
   min-width: 26px;
   text-align: center;
-  font-size: 15px;
-  font-weight: 800;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: var(--fg-primary);
   font-variant-numeric: tabular-nums;
 }
@@ -312,7 +346,7 @@
   box-shadow: 0 10px 26px -16px rgba(32, 26, 29, 0.14);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 .ac-detail__head {
   display: flex;
@@ -321,32 +355,40 @@
   gap: 12px;
 }
 .ac-detail__title {
-  font-size: 15px;
-  font-weight: 900;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: var(--fg-primary);
 }
 .ac-detail__sub {
   margin-top: 3px;
-  font-size: 12px;
-  font-weight: 650;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
 }
 .ac-field {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 8px;
 }
 .ac-field__label {
-  font-size: 12px;
-  font-weight: 850;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-tertiary);
 }
 .ac-field__hint {
-  font-size: 11.5px;
-  font-weight: 650;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
-  line-height: 1.45;
+
 }
 .ac-textarea,
 .ac-time {
@@ -357,7 +399,7 @@
   font-family: inherit;
   font-weight: 750;
   color: var(--fg-primary);
-  outline: none;
+
   box-sizing: border-box;
   transition: border-color 0.16s ease, background 0.16s ease;
 }
@@ -372,15 +414,21 @@
 }
 .ac-textarea {
   min-height: 92px;
-  padding: 12px 13px;
+  padding: 12px 12px;
   resize: vertical;
-  line-height: 1.45;
-  font-size: 13.5px;
+
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
 }
 .ac-time {
   height: 46px;
   padding: 0 12px;
-  font-size: 14px;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color-scheme: light;
 }
 .ac-time-grid {
@@ -403,25 +451,31 @@
 }
 .ac-control-row__title {
   display: block;
-  font-size: 13.5px;
-  font-weight: 850;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-primary);
 }
 .ac-control-row__sub {
   display: block;
   margin-top: 2px;
-  font-size: 11.5px;
-  font-weight: 650;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
-  line-height: 1.35;
+
 }
 .ac-save-detail {
   height: 50px;
   border-radius: 16px;
   background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
   color: var(--bg-card);
-  font-size: 14.5px;
-  font-weight: 850;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   box-shadow: 0 14px 26px -14px rgba(124, 92, 225, 0.55);
   --press: 0.96;
 }
@@ -434,4 +488,15 @@
   .ac-time-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* 실제 TSX 상호작용 요소의 최소 터치 영역 */
+.ac-back,
+.ac-toggle,
+.ac-limit__btn {
+  min-height: var(--control-min-size);
+}
+.ac-back,
+.ac-limit__btn {
+  min-width: var(--control-min-size);
 }

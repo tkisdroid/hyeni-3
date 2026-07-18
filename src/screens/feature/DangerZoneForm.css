@@ -11,10 +11,10 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 12px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: linear-gradient(180deg, rgba(253, 241, 242, 0.9) 60%, rgba(253, 241, 242, 0));
   backdrop-filter: blur(8px);
 }
@@ -31,18 +31,20 @@
   --press: 0.9;
 }
 .dzf-title {
-  font-size: 18px;
-  font-weight: 800;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   letter-spacing: -0.01em;
   color: var(--fg-primary);
 }
 
 /* ── 본문 ───────────────────────────────────────────────────────────────── */
 .dzf-body {
-  padding: 6px 20px calc(40px + env(safe-area-inset-bottom, 0px));
+  padding: 4px 20px calc(40px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
 }
 
 /* ── 지도 미리보기 ──────────────────────────────────────────────────────── */
@@ -67,20 +69,24 @@
   left: 50%;
   transform: translateX(-50%);
   z-index: 5;
-  padding: 5px 12px;
+  padding: 4px 12px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.92);
   color: var(--fg-tertiary);
-  font-size: 11.5px;
-  font-weight: 700;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   box-shadow: 0 4px 12px rgba(32, 26, 29, 0.12);
   pointer-events: none;
 }
 
 /* ── 필드 라벨 · 입력 ───────────────────────────────────────────────────── */
 .dzf-label {
-  font-size: 12.5px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-tertiary);
   margin-bottom: 8px;
   padding: 0 2px;
@@ -92,11 +98,13 @@
   background: #fff;
   border-radius: 15px;
   padding: 0 16px;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: var(--fg-primary);
   font-family: inherit;
-  outline: none;
+
   box-sizing: border-box;
   transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
@@ -118,13 +126,17 @@
 }
 .dzf-radius-label {
   flex: 1;
-  font-size: 12.5px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-tertiary);
 }
 .dzf-radius-value {
-  font-size: 14px;
-  font-weight: 800;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: #c0334c;
   font-variant-numeric: tabular-nums;
 }
@@ -137,7 +149,7 @@
 .dzf-toggles {
   background: #fff;
   border-radius: 18px;
-  padding: 6px 16px 14px;
+  padding: 4px 16px 12px;
   box-shadow: 0 8px 22px rgba(32, 26, 29, 0.045);
 }
 .dzf-toggle-row {
@@ -151,25 +163,29 @@
 }
 .dzf-toggle-label {
   flex: 1;
-  font-size: 14px;
-  font-weight: 800;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-primary);
 }
 .dzf-toggle {
   width: 46px;
   height: 28px;
+  padding-block: 8px;
   border-radius: 999px;
-  background: #e2dce0;
+  background-color: #e2dce0;
+  background-clip: content-box;
   position: relative;
   flex: none;
   transition: background 0.18s ease;
 }
 .dzf-toggle[data-on="true"] {
-  background: #31c48d;
+  background-color: #31c48d;
 }
 .dzf-toggle__knob {
   position: absolute;
-  top: 3px;
+  top: 11px;
   left: 3px;
   width: 22px;
   height: 22px;
@@ -183,9 +199,10 @@
 }
 .dzf-toggle-note {
   margin-top: 10px;
-  font-size: 11.5px;
-  font-weight: 600;
-  line-height: 1.5;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-tertiary);
 }
 
@@ -196,8 +213,10 @@
   border-radius: 18px;
   background: linear-gradient(120deg, #f0656a, #d63a3f);
   box-shadow: 0 16px 32px -12px rgba(214, 58, 63, 0.55);
-  font-size: 16px;
-  font-weight: 800;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+
   color: #fff;
   --press: 0.98;
 }
@@ -208,7 +227,18 @@
 /* 작은 반경 안내 */
 .dzf-hint {
   margin-top: 6px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
+}
+
+/* 실제 TSX 상호작용 요소의 최소 터치 영역 */
+.dzf-back,
+.dzf-toggle {
+  min-height: var(--control-min-size);
+}
+.dzf-back {
+  min-width: var(--control-min-size);
 }

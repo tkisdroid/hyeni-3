@@ -8,7 +8,7 @@
 /* ── 대기 화면 ──────────────────────────────────────────────────────────── */
 .rr-idle {
   min-height: 100%;
-  padding: 56px 26px calc(28px + env(safe-area-inset-bottom, 0px));
+  padding: 56px 24px calc(24px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   background: radial-gradient(120% 46% at 50% 0%, #ffe9d6 0%, rgba(255, 233, 214, 0) 55%),
@@ -68,34 +68,40 @@
 }
 
 .rr-title {
-  font-size: 22px;
-  font-weight: 900;
+  font-size: var(--type-title-lg);
+  line-height: var(--type-title-lg-line-height);
+  font-weight: var(--type-title-lg-weight);
+
   letter-spacing: -0.02em;
   color: var(--fg-primary);
-  line-height: 1.35;
+
 }
 .rr-sub {
   margin-top: 10px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-muted);
-  line-height: 1.5;
+
 }
 
 .rr-children {
   margin-top: 18px;
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
+  gap: 8px;
   justify-content: center;
 }
 .rr-childchip {
-  padding: 9px 16px;
+  padding: 8px 16px;
   border-radius: var(--radius-pill);
   background: #fff;
   border: 1.5px solid rgba(32, 26, 29, 0.08);
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-secondary);
   --press: 0.94;
 }
@@ -112,12 +118,14 @@
   justify-content: center;
 }
 .rr-chip {
-  padding: 9px 16px;
+  padding: 8px 16px;
   border-radius: var(--radius-pill);
   background: #fff;
   border: 1.5px solid rgba(32, 26, 29, 0.08);
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-secondary);
   --press: 0.94;
 }
@@ -132,11 +140,13 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 14px;
+  padding: 8px 12px;
   border-radius: var(--radius-pill);
   background: rgba(245, 158, 66, 0.1);
-  font-size: 12.5px;
-  font-weight: 700;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--gold-text);
 }
 .rr-quota--empty {
@@ -147,8 +157,10 @@
   padding: 2px 8px;
   border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.75);
-  font-size: 11px;
-  font-weight: 800;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
 }
 
 .rr-cta {
@@ -157,8 +169,10 @@
   border-radius: var(--radius-xl);
   background: linear-gradient(120deg, #f0518f, #e5484d);
   box-shadow: 0 16px 32px -12px rgba(229, 72, 77, 0.6);
-  font-size: 17px;
-  font-weight: 800;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   color: #fff;
   display: flex;
   align-items: center;
@@ -181,8 +195,10 @@
 .rr-recent {
   margin-top: 14px;
   text-align: center;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
 }
 
@@ -194,47 +210,53 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 26px;
+  padding: 24px;
   background: rgba(20, 16, 15, 0.5);
   animation: hy-fadein 0.2s ease forwards;
 }
 .rr-modal {
   width: 100%;
   max-width: 320px;
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-20);
   background: #fff;
-  padding: 26px 22px 20px;
+  padding: 24px 20px 20px;
   text-align: center;
-  box-shadow: 0 24px 60px -18px rgba(20, 16, 15, 0.5);
+  box-shadow: var(--shadow-modal);
 }
 .rr-modal-emoji {
   font-size: 40px;
 }
 .rr-modal-title {
   margin-top: 10px;
-  font-size: 18px;
-  font-weight: 900;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   color: var(--fg-primary);
 }
 .rr-modal-sub {
   margin-top: 8px;
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-muted);
-  line-height: 1.5;
+
 }
 .rr-modal-actions {
   margin-top: 20px;
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
 .rr-modal-cancel {
   flex: 1;
   height: 50px;
   border-radius: var(--radius-lg);
   background: var(--fg-disabled);
-  font-size: 15px;
-  font-weight: 800;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: #fff;
   --press: 0.96;
 }
@@ -243,8 +265,10 @@
   height: 50px;
   border-radius: var(--radius-lg);
   background: linear-gradient(120deg, #f0518f, #e5484d);
-  font-size: 15px;
-  font-weight: 800;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: #fff;
   box-shadow: 0 12px 24px -10px rgba(229, 72, 77, 0.6);
   --press: 0.96;
@@ -258,7 +282,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 72px 30px calc(40px + env(safe-area-inset-bottom, 0px));
+  padding: 72px 32px calc(40px + env(safe-area-inset-bottom, 0px));
   background: radial-gradient(circle at 50% 34%, #3a1720, #17100f);
   animation: hy-fadein 0.25s ease forwards;
 }
@@ -266,15 +290,19 @@
   text-align: center;
 }
 .rr-ring-eyebrow {
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   letter-spacing: 0.1em;
   color: rgba(255, 255, 255, 0.5);
 }
 .rr-ring-title {
   margin-top: 6px;
-  font-size: 22px;
-  font-weight: 900;
+  font-size: var(--type-title-lg);
+  line-height: var(--type-title-lg-line-height);
+  font-weight: var(--type-title-lg-weight);
+
   color: #fff;
 }
 
@@ -315,8 +343,10 @@
 }
 
 .rr-ring-status {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: rgba(255, 255, 255, 0.72);
 }
 
@@ -329,28 +359,34 @@
   font-variant-numeric: tabular-nums;
 }
 .rr-timer-cap {
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: rgba(255, 255, 255, 0.5);
 }
 .rr-timer-val {
-  font-size: 34px;
-  font-weight: 800;
+  font-size: var(--type-display);
+  line-height: var(--type-display-line-height);
+  font-weight: var(--type-display-weight);
+
   color: #fff;
 }
 
 .rr-stop {
   margin-top: auto;
   height: 60px;
-  padding: 0 30px;
+  padding: 0 32px;
   border-radius: var(--radius-pill);
   background: #fff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  font-size: 16px;
-  font-weight: 800;
+  gap: 8px;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+
   color: var(--danger-500);
   box-shadow: 0 14px 30px -8px rgba(255, 255, 255, 0.35);
   --press: 0.95;
@@ -363,4 +399,12 @@
   height: 22px;
   border-radius: 6px;
   background: var(--danger-500);
+}
+
+/* 실제 TSX 상호작용 요소의 최소 터치 영역 */
+.rr-back {
+  min-height: var(--control-min-size);
+}
+.rr-back {
+  min-width: var(--control-min-size);
 }

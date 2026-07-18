@@ -1,7 +1,7 @@
 /* 장소 관리 — 화면 전용 스타일 (원본 dc.html 1210–1250행 값 1:1) */
 
 .pm-screen {
-  min-height: 848px;
+  min-height: 100dvh;
   animation: hy-fadein 0.35s ease forwards;
 }
 
@@ -10,10 +10,10 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  padding: 56px 18px 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 12px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: rgba(251, 247, 244, 0.94);
   backdrop-filter: blur(10px);
 }
@@ -31,8 +31,10 @@
 }
 .pm-title {
   flex: 1;
-  font-size: 18px;
-  font-weight: 800;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   color: var(--fg-primary);
 }
 .pm-add {
@@ -50,17 +52,17 @@
 
 /* ── 스크롤 콘텐츠(간격은 시안 22px) ────────────────────────────────────── */
 .pm-content {
-  gap: 22px;
+  gap: 20px;
 }
 
 /* ── 히어로 배너 ────────────────────────────────────────────────────────── */
 .pm-hero {
   position: relative;
   height: 140px;
-  border-radius: 22px;
+  border-radius: var(--radius-20);
   overflow: hidden;
   background: linear-gradient(160deg, #eaf2e6, #ede9f1);
-  box-shadow: 0 10px 26px rgba(32, 26, 29, 0.06);
+  box-shadow: var(--shadow-floating);
 }
 .pm-hero__blob {
   position: absolute;
@@ -99,8 +101,10 @@
 
 /* ── 섹션 라벨 ──────────────────────────────────────────────────────────── */
 .pm-label {
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   margin-bottom: 11px;
 }
 .pm-label--saved {
@@ -121,12 +125,14 @@
   margin-bottom: 0;
 }
 .pm-zone-add {
-  padding: 6px 13px;
+  padding: 4px 12px;
   border-radius: 999px;
   background: #ffecee;
   color: #c0334c;
-  font-size: 12px;
-  font-weight: 800;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   flex: none;
   --press: 0.94;
 }
@@ -135,7 +141,7 @@
 .pm-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 /* ── 저장한 장소 카드 ───────────────────────────────────────────────────── */
@@ -143,11 +149,11 @@
   animation: hy-fadein 0.3s ease both;
   background: #fff;
   border-radius: 20px;
-  padding: 13px 14px;
+  padding: 12px 12px;
   box-shadow: 0 8px 22px rgba(32, 26, 29, 0.045);
   display: flex;
   align-items: center;
-  gap: 13px;
+  gap: 12px;
 }
 .pm-item__icon {
   width: 48px;
@@ -194,10 +200,12 @@
 .pm-item__name {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   min-width: 0;
-  font-size: 15px;
-  font-weight: 800;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: var(--fg-primary);
 }
 .pm-item__name > span:first-child {
@@ -208,17 +216,21 @@
 }
 .pm-item__badge {
   flex: none;
-  padding: 3px 8px;
+  padding: 2px 8px;
   border-radius: 999px;
   background: var(--bg-page);
   color: var(--fg-muted);
-  font-size: 10.5px;
-  font-weight: 800;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
 }
 .pm-item__addr {
   margin-top: 2px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
 }
 .pm-item__edit {
@@ -252,18 +264,18 @@
   background: #fff;
   border: 1.5px solid rgba(232, 69, 92, 0.2);
   border-radius: 20px;
-  padding: 13px 14px;
+  padding: 12px 12px;
   box-shadow: 0 8px 22px rgba(232, 69, 92, 0.06);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .pm-danger__body {
   flex: 1;
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 13px;
+  gap: 12px;
   text-align: left;
   --press: 0.98;
 }
@@ -301,13 +313,31 @@
   min-width: 0;
 }
 .pm-danger__name {
-  font-size: 15px;
-  font-weight: 800;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: #c0334c;
 }
 .pm-danger__addr {
   margin-top: 2px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--danger-text);
+}
+
+/* 실제 TSX 상호작용 요소의 최소 터치 영역 */
+.pm-back,
+.pm-add,
+.pm-item__del,
+.pm-danger__del {
+  min-height: var(--control-min-size);
+}
+.pm-back,
+.pm-add,
+.pm-item__del,
+.pm-danger__del {
+  min-width: var(--control-min-size);
 }

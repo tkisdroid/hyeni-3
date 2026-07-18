@@ -12,11 +12,11 @@
 
 .trg-card {
   width: min(100%, 430px);
-  padding: 30px var(--space-5) var(--space-5);
+  padding: 32px var(--space-5) var(--space-5);
   border: 1px solid var(--line-card);
-  border-radius: var(--radius-hero);
+  border-radius: var(--radius-16);
   background: var(--bg-card);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-soft);
   text-align: center;
 }
 
@@ -34,23 +34,29 @@
 .trg-eyebrow {
   margin: 0 0 var(--space-2);
   color: var(--mint-text);
-  font-size: var(--text-label);
-  font-weight: var(--weight-bold);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   letter-spacing: 0.03em;
 }
 
 .trg-card h1 {
   margin: 0;
-  font-size: var(--text-title-xl);
-  line-height: var(--leading-tight);
+  font-size: var(--type-title-xl);
+  line-height: var(--type-title-xl-line-height);
+  font-weight: var(--type-title-xl-weight);
+
   letter-spacing: var(--tracking-tight);
 }
 
 .trg-copy {
   margin: var(--space-4) 0 0;
   color: var(--fg-tertiary);
-  font-size: var(--text-body);
-  line-height: 1.65;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   word-break: keep-all;
 }
 
@@ -64,8 +70,10 @@
   background: var(--blue-soft);
   color: var(--blue-text);
   text-align: left;
-  font-size: var(--text-body-sm);
-  line-height: var(--leading-normal);
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
 }
 
 .trg-notice svg {
@@ -127,9 +135,12 @@
   color: var(--fg-tertiary);
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   font: inherit;
-  font-size: var(--text-body-sm);
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -154,22 +165,27 @@
   position: relative;
   width: min(100%, 390px);
   padding: var(--space-6);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-20);
   background: var(--bg-card);
-  box-shadow: var(--shadow-floating);
+  box-shadow: var(--shadow-modal);
   text-align: left;
 }
 
 .trg-dialog__card h2 {
   margin: 0;
-  font-size: var(--text-section);
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
 }
 
 .trg-dialog__card p {
   margin: var(--space-3) 0 0;
   color: var(--fg-tertiary);
-  font-size: var(--text-body-sm);
-  line-height: var(--leading-normal);
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
 }
 
 .trg-dialog__actions {

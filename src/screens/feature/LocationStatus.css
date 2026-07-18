@@ -11,10 +11,10 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 12px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: linear-gradient(180deg, rgba(242, 247, 251, 0.9) 60%, rgba(242, 247, 251, 0));
   backdrop-filter: blur(8px);
 }
@@ -31,15 +31,17 @@
   --press: 0.9;
 }
 .ls-title {
-  font-size: 18px;
-  font-weight: 800;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   letter-spacing: -0.01em;
   color: var(--fg-primary);
 }
 
 /* ── 본문 ───────────────────────────────────────────────────────────────── */
 .ls-body {
-  padding: 6px 20px calc(40px + env(safe-area-inset-bottom, 0px));
+  padding: 4px 20px calc(40px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -49,11 +51,11 @@
 .ls-card {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 18px 16px;
-  border-radius: 20px;
+  gap: 12px;
+  padding: 16px 16px;
+  border-radius: var(--radius-16);
   background: #fff;
-  box-shadow: 0 10px 26px rgba(32, 26, 29, 0.06);
+  box-shadow: var(--shadow-soft);
   border: 1.5px solid transparent;
 }
 .ls-card--mint {
@@ -87,14 +89,18 @@
   min-width: 0;
 }
 .ls-card__title {
-  font-size: 16px;
-  font-weight: 800;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+
   color: var(--fg-primary);
 }
 .ls-card__sub {
   margin-top: 3px;
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-tertiary);
 }
 
@@ -106,8 +112,10 @@
   box-shadow: 0 8px 22px rgba(32, 26, 29, 0.045);
 }
 .ls-last__label {
-  font-size: 12.5px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-tertiary);
   margin-bottom: 10px;
 }
@@ -131,33 +139,39 @@
   min-width: 0;
 }
 .ls-last__place {
-  font-size: 15px;
-  font-weight: 800;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: var(--fg-primary);
 }
 .ls-last__meta {
   margin-top: 2px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
   font-variant-numeric: tabular-nums;
 }
 .ls-last__note {
   margin-top: 12px;
-  font-size: 11.5px;
-  font-weight: 600;
-  line-height: 1.5;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-tertiary);
 }
 
 /* ── 권한 안내 ──────────────────────────────────────────────────────────── */
 .ls-permit {
-  padding: 13px 14px;
+  padding: 12px 12px;
   border-radius: 14px;
   background: #fdf0da;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.55;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: #925c12;
 }
 
@@ -168,8 +182,10 @@
   border-radius: 16px;
   background: linear-gradient(120deg, #4fb2e8, #2e86c1);
   box-shadow: 0 14px 30px -12px rgba(46, 134, 193, 0.55);
-  font-size: 15px;
-  font-weight: 800;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: #fff;
   display: flex;
   align-items: center;
@@ -189,4 +205,12 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* 실제 TSX 상호작용 요소의 최소 터치 영역 */
+.ls-back {
+  min-height: var(--control-min-size);
+}
+.ls-back {
+  min-width: var(--control-min-size);
 }

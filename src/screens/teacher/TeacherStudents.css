@@ -5,7 +5,7 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  padding: calc(env(safe-area-inset-top, 0px) + 18px) 20px 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 20px 12px;
   background: linear-gradient(180deg, rgba(240, 250, 245, 0.92) 60%, rgba(240, 250, 245, 0));
   backdrop-filter: blur(10px);
   display: flex;
@@ -13,8 +13,10 @@
   justify-content: space-between;
 }
 .ts-title {
-  font-size: 22px;
-  font-weight: 900;
+  font-size: var(--type-title-lg);
+  line-height: var(--type-title-lg-line-height);
+  font-weight: var(--type-title-lg-weight);
+
   letter-spacing: -0.02em;
   color: var(--fg-primary);
 }
@@ -35,15 +37,17 @@
 }
 .ts-meta {
   padding: 2px 2px 12px;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
 }
 .ts-meta-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: nowrap;
 }
 .ts-meta__count {
@@ -51,8 +55,10 @@
 }
 .ts-subtitle {
   color: var(--fg-muted);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   letter-spacing: -0.01em;
   flex: 1;
   min-width: 0;
@@ -60,20 +66,22 @@
 
 .ts-filter {
   display: inline-flex;
-  gap: 6px;
+  gap: 4px;
   align-items: center;
   background: #f5f1f3;
   border-radius: 999px;
-  padding: 3px;
+  padding: 2px;
 }
 .ts-filter__btn {
   min-width: 76px;
   height: 30px;
   border-radius: 999px;
-  padding: 0 10px;
+  padding: 0 8px;
   border: 0;
-  font-size: 11.5px;
-  font-weight: 800;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
   background: transparent;
 }
@@ -88,13 +96,13 @@
   padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 .ts-row {
   animation: hy-fadein 0.3s ease both;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   padding: 12px;
   border-radius: 16px;
   background: var(--bg-page);
@@ -102,7 +110,7 @@
 .ts-row__top {
   display: flex;
   align-items: center;
-  gap: 13px;
+  gap: 12px;
 }
 .ts-avatar {
   width: 48px;
@@ -124,8 +132,10 @@
 }
 .ts-name {
   display: block;
-  font-size: 15px;
-  font-weight: 800;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: #201a1d;
   white-space: nowrap;
   overflow: hidden;
@@ -134,31 +144,37 @@
 .ts-parent {
   display: block;
   margin-top: 2px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
 }
 .ts-tag {
   flex: none;
-  padding: 5px 11px;
+  padding: 4px 12px;
   border-radius: 999px;
-  font-size: 11px;
-  font-weight: 800;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
 }
 
 /* ── 출결 세그먼트 컨트롤 (출석·하교·결석) ──────────────────────────────── */
 .ts-attend {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 6px;
+  gap: 4px;
 }
 .ts-attend__btn {
   height: 38px;
   border-radius: 11px;
   background: #fff;
   border: 1.5px solid var(--line-soft);
-  font-size: 12.5px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-tertiary);
   --press: 0.95;
   transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
@@ -186,16 +202,21 @@
 .ts-hint {
   margin-top: 14px;
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: flex-start;
   padding: 0 4px;
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
-  line-height: 1.5;
+
 }
 .ts-hint__ico {
-  font-size: 15px;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
 }
 
 /* ── 로딩 / 빈 상태 (백엔드 연동) ───────────────────────────────────── */
@@ -205,7 +226,7 @@
   background: #fff;
   box-shadow: var(--shadow-card);
   border: 1px solid var(--line-card);
-  padding: 34px 22px;
+  padding: 32px 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -213,31 +234,39 @@
   text-align: center;
 }
 .ts-empty--soft {
-  padding: 22px;
+  padding: 20px;
   color: var(--fg-muted);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
 }
 .ts-empty__emoji {
   font-size: 34px;
 }
 .ts-empty__title {
-  font-size: 15.5px;
-  font-weight: 800;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+
   color: #201a1d;
 }
 .ts-empty__sub {
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
-  line-height: 1.5;
+
 }
 .ts-row--empty {
   text-align: center;
   color: var(--fg-muted);
-  font-size: 13px;
-  font-weight: 600;
-  padding: 18px 12px;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
+  padding: 16px 12px;
 }
 
 /* ── 학생 초대 시트 (바텀 시트) ─────────────────────────────────────────── */
@@ -254,9 +283,9 @@
 .ts-sheet {
   width: 100%;
   background: #fff;
-  border-radius: 26px 26px 0 0;
+  border-radius: var(--radius-24) var(--radius-24) 0 0;
   padding: 20px 20px calc(24px + env(safe-area-inset-bottom, 0px));
-  box-shadow: 0 -18px 40px rgba(20, 10, 15, 0.22);
+  box-shadow: var(--shadow-modal);
   animation: hy-rise 0.34s var(--easing-standard) forwards;
 }
 .ts-sheet__head {
@@ -266,8 +295,10 @@
   margin-bottom: 6px;
 }
 .ts-sheet__title {
-  font-size: 18px;
-  font-weight: 800;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   letter-spacing: -0.02em;
   color: var(--fg-primary);
 }
@@ -284,14 +315,18 @@
 }
 .ts-sheet__desc {
   margin: 0 0 14px;
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
-  line-height: 1.5;
+
 }
 .ts-sheet__label {
-  font-size: 12px;
-  font-weight: 800;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-tertiary);
   margin: 0 0 7px 2px;
 }
@@ -303,11 +338,13 @@
   border-radius: 14px;
   padding: 0 16px;
   margin-bottom: 14px;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: var(--fg-primary);
   font-family: inherit;
-  outline: none;
+
   box-sizing: border-box;
   transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
@@ -326,12 +363,24 @@
   margin-top: 2px;
   background: linear-gradient(120deg, #5fd6a6, #23a876);
   box-shadow: 0 14px 30px -14px rgba(35, 168, 118, 0.6);
-  font-size: 15.5px;
-  font-weight: 800;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+
   color: #fff;
   --press: 0.98;
 }
 .ts-sheet__send:disabled {
   opacity: 0.55;
   box-shadow: none;
+}
+
+/* 실제 TSX 상호작용 요소의 최소 터치 영역 */
+.ts-invite,
+.ts-sheet__x {
+  min-height: var(--control-min-size);
+}
+.ts-invite,
+.ts-sheet__x {
+  min-width: var(--control-min-size);
 }

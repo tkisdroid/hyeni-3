@@ -7,10 +7,10 @@
 
 /* 상태바(시계·배터리) 아래에서 시작한다. 아이 화면은 TopBar 가 없어 각자 안전영역을 챙겨야 한다. */
 .sb-head {
-  padding: calc(18px + env(safe-area-inset-top, 0px)) 16px 8px;
+  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 8px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .sb-head img {
   width: 34px;
@@ -20,43 +20,54 @@
 }
 .sb-head__title {
   font-family: Jua, var(--font-sans);
-  font-weight: 400;
-  font-size: 26px;
+
+  font-size: var(--type-title-xl);
+  line-height: var(--type-title-xl-line-height);
+  font-weight: var(--type-title-xl-weight);
+
   color: var(--fg-primary);
 }
 .sb-head__badge {
   margin-left: auto;
-  padding: 6px 12px;
+  padding: 4px 12px;
   border-radius: 999px;
   background: var(--cream-soft);
   font-family: Jua, var(--font-sans);
-  font-weight: 400;
-  font-size: 15px;
+
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: #8a6a1e;
 }
 
 .sb-body {
-  padding: 6px 16px calc(96px + env(safe-area-inset-bottom, 0px));
+  padding: 4px 16px calc(96px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .sb-progress {
   background: linear-gradient(120deg, #fff3d6, #ffe9ef);
   border-radius: 24px;
-  padding: 15px 16px;
+  padding: 16px 16px;
   border: 1px solid rgba(224, 161, 30, 0.15);
 }
 .sb-progress__count {
-  font-size: 15px;
-  font-weight: 800;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: #6b510f;
 }
 .sb-progress__count b {
   font-family: Jua, var(--font-sans);
-  font-weight: 400;
-  font-size: 20px;
+
+  font-size: var(--type-title-lg);
+  line-height: var(--type-title-lg-line-height);
+  font-weight: var(--type-title-lg-weight);
+
   color: #c2571e;
 }
 .sb-progress__bar {
@@ -74,27 +85,29 @@
 }
 .sb-progress__hint {
   margin-top: 7px;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--gold-text);
 }
 
 .sb-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 8px;
 }
 .sb-slot {
   position: relative;
   background: var(--bg-card);
   border-radius: 22px;
-  padding: 13px 8px 11px;
+  padding: 12px 8px 12px;
   border: 1px solid rgba(32, 26, 29, 0.05);
   box-shadow: 0 12px 26px -14px rgba(32, 26, 29, 0.28);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   --press: 0.93;
 }
 .sb-slot--locked {
@@ -111,11 +124,13 @@
   filter: grayscale(1) opacity(0.4);
 }
 .sb-slot__label {
-  font-size: 12px;
-  font-weight: 800;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-primary);
   text-align: center;
-  line-height: 1.25;
+
 }
 .sb-slot--locked .sb-slot__label {
   color: var(--fg-disabled);
@@ -124,19 +139,24 @@
   position: absolute;
   top: 8px;
   right: 8px;
-  padding: 3px 8px;
+  padding: 2px 8px;
   border-radius: 999px;
   background: var(--hy-accent-deep);
   color: var(--bg-card);
-  font-size: 10px;
-  font-weight: 800;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   animation: sb-pulse 1.6s ease-in-out infinite;
 }
 .sb-slot__lock {
   position: absolute;
   top: 10px;
   right: 10px;
-  font-size: 14px;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
 }
 .sb-slot__count {
   position: absolute;
@@ -144,22 +164,26 @@
   left: 8px;
   min-width: 20px;
   height: 20px;
-  padding: 0 6px;
+  padding: 0 4px;
   border-radius: 999px;
   background: var(--cream-soft);
   color: #8a6a1e;
-  font-size: 11px;
-  font-weight: 800;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .sb-state {
-  padding: 26px 12px;
+  padding: 24px 12px;
   text-align: center;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: var(--fg-muted);
 }
 

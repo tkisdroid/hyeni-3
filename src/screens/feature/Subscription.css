@@ -14,10 +14,10 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 12px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: linear-gradient(180deg, rgba(253, 244, 241, 0.9) 60%, rgba(253, 244, 241, 0));
   backdrop-filter: blur(8px);
 }
@@ -25,8 +25,10 @@
   --press: 0.9;
 }
 .sub-header__title {
-  font-size: 18px;
-  font-weight: 800;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   letter-spacing: -0.01em;
   color: var(--fg-primary);
 }
@@ -49,17 +51,21 @@
 }
 .sub-hero__title {
   margin-top: 8px;
-  font-size: 24px;
-  font-weight: 900;
+  font-size: var(--type-title-xl);
+  line-height: var(--type-title-xl-line-height);
+  font-weight: var(--type-title-xl-weight);
+
   letter-spacing: -0.02em;
   color: var(--fg-primary);
 }
 .sub-hero__sub {
   margin-top: 6px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-muted);
-  line-height: 1.45;
+
 }
 
 /* ── 프리미엄 활성 배너 (실 티어) ──────────────────────────────────────── */
@@ -67,8 +73,8 @@
   margin-bottom: 4px;
   display: flex;
   align-items: center;
-  gap: 13px;
-  padding: 16px 18px;
+  gap: 12px;
+  padding: 16px 16px;
   border-radius: 22px;
   background: linear-gradient(120deg, #fff3d6, #ffe4ef);
   box-shadow: 0 12px 28px -14px rgba(224, 138, 30, 0.5);
@@ -93,15 +99,19 @@
   min-width: 0;
 }
 .sub-active__title {
-  font-size: 16px;
-  font-weight: 900;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+
   letter-spacing: -0.01em;
   color: var(--fg-primary);
 }
 .sub-active__sub {
   margin-top: 3px;
-  font-size: 12.5px;
-  font-weight: 700;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--gold-text);
 }
 .sub-active__check {
@@ -112,14 +122,14 @@
 .sub-plans {
   display: flex;
   flex-direction: column;
-  gap: 11px;
+  gap: 12px;
 }
 .sub-plan {
   position: relative;
   text-align: left;
   width: 100%;
   border-radius: 22px;
-  padding: 18px 20px;
+  padding: 16px 20px;
   border: 2px solid rgba(32, 26, 29, 0.08);
   background: #fff;
   display: flex;
@@ -137,11 +147,13 @@
   position: absolute;
   top: -11px;
   left: 20px;
-  padding: 4px 11px;
+  padding: 4px 12px;
   border-radius: 999px;
   background: linear-gradient(120deg, #ff9ec4, #f0518f);
-  font-size: 11px;
-  font-weight: 800;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: #fff;
   box-shadow: 0 6px 14px -4px rgba(240, 81, 143, 0.6);
 }
@@ -149,27 +161,36 @@
   min-width: 0;
 }
 .sub-plan__name {
-  font-size: 16px;
-  font-weight: 800;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+
   color: var(--fg-primary);
 }
 .sub-plan__meta {
   margin-top: 3px;
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
 }
 .sub-plan__price {
   flex: none;
   text-align: right;
-  font-size: 26px;
-  font-weight: 900;
+  font-size: var(--type-title-xl);
+  line-height: var(--type-title-xl-line-height);
+  font-weight: var(--type-title-xl-weight);
+
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
   color: var(--fg-primary);
 }
 .sub-plan__price span {
-  font-size: 15px;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
 }
 
 /* ── 혜택 리스트 ───────────────────────────────────────────────────────── */
@@ -183,8 +204,8 @@
 .sub-benefit {
   display: flex;
   align-items: center;
-  gap: 13px;
-  padding: 11px 12px;
+  gap: 12px;
+  padding: 12px 12px;
 }
 .sub-benefit__icon {
   width: 42px;
@@ -206,14 +227,18 @@
   min-width: 0;
 }
 .sub-benefit__t {
-  font-size: 14.5px;
-  font-weight: 800;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: var(--fg-primary);
 }
 .sub-benefit__s {
   margin-top: 1px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
 }
 .sub-benefit__check {
@@ -224,13 +249,15 @@
 /* ── 안내 문구 ─────────────────────────────────────────────────────────── */
 .sub-note {
   margin-top: 16px;
-  padding: 12px 14px;
+  padding: 12px 12px;
   border-radius: 14px;
   background: rgba(224, 138, 30, 0.08);
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--gold-text);
-  line-height: 1.5;
+
 }
 
 /* ── 결제 CTA ──────────────────────────────────────────────────────────── */
@@ -241,8 +268,10 @@
   border-radius: 18px;
   background: linear-gradient(120deg, #ffb443, #f0518f);
   box-shadow: 0 16px 32px -12px rgba(240, 81, 143, 0.6);
-  font-size: 17px;
-  font-weight: 800;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   color: #fff;
   display: flex;
   align-items: center;
@@ -258,10 +287,12 @@
 .sub-fine {
   margin-top: 12px;
   text-align: center;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
-  line-height: 1.5;
+
 }
 
 /* ── 플랜 비교표 (S-02) ─────────────────────────────────────────────────── */
@@ -271,14 +302,16 @@
 .sub-compare__title {
   margin-bottom: 10px;
   padding-left: 2px;
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   letter-spacing: 0.02em;
   color: var(--fg-muted);
 }
 .sub-compare__scroll {
   overflow-x: auto;
-  padding: 6px;
+  padding: 4px;
   background: #fff;
   border-radius: 22px;
   box-shadow: 0 10px 26px rgba(32, 26, 29, 0.05);
@@ -289,10 +322,12 @@
   font-variant-numeric: tabular-nums;
 }
 .sub-table__rowhead {
-  padding: 11px 10px;
+  padding: 12px 8px;
   text-align: left;
-  font-size: 12.5px;
-  font-weight: 700;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-tertiary);
   white-space: nowrap;
 }
@@ -301,7 +336,7 @@
   color: var(--fg-muted);
 }
 .sub-table__col {
-  padding: 10px 6px;
+  padding: 8px 4px;
   text-align: center;
   border-top-left-radius: 14px;
   border-top-right-radius: 14px;
@@ -311,25 +346,31 @@
 }
 .sub-table__col-name {
   display: block;
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-primary);
 }
 .sub-table__col-price {
   display: block;
   margin-top: 2px;
-  font-size: 10.5px;
-  font-weight: 700;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--gold-600);
 }
 .sub-table__col-badge {
   display: inline-block;
   margin-top: 4px;
-  padding: 1px 7px;
+  padding: 2px 8px;
   border-radius: 999px;
   background: var(--gold-600);
-  font-size: 9.5px;
-  font-weight: 800;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: #fff;
 }
 .sub-table tbody tr + tr .sub-table__rowhead,
@@ -337,10 +378,12 @@
   border-top: 1px solid var(--line-hair);
 }
 .sub-table__cell {
-  padding: 11px 6px;
+  padding: 12px 4px;
   text-align: center;
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-body);
 }
 .sub-table__cell[data-current="true"] {

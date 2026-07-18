@@ -14,7 +14,7 @@
   z-index: 10;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 12px;
   background: rgba(255, 236, 238, 0.86);
   backdrop-filter: blur(10px);
@@ -23,8 +23,10 @@
   flex: none;
 }
 .sr-title {
-  font-size: 17px;
-  font-weight: 900;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   color: var(--danger-text);
 }
 .sr-header-sp {
@@ -34,10 +36,10 @@
 
 .sr-content {
   flex: 1;
-  padding: 12px 18px calc(28px + env(safe-area-inset-bottom, 0px));
+  padding: 12px 16px calc(24px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
-  gap: 13px;
+  gap: 12px;
   overflow-y: auto;
 }
 
@@ -61,15 +63,19 @@
   justify-content: center;
 }
 .sr-empty-title {
-  font-size: 18px;
-  font-weight: 900;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   color: var(--fg-primary);
 }
 .sr-empty-sub {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-muted);
-  line-height: 1.5;
+
 }
 
 /* ── 긴급 위치 지도 ───────────────────────────────────────────────────── */
@@ -93,12 +99,14 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 9px;
+  gap: 8px;
   padding: 24px;
   text-align: center;
   color: var(--danger-text);
-  font-size: 13.5px;
-  font-weight: 800;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   background: linear-gradient(135deg, #fff, var(--danger-soft));
 }
 .sr-map__label {
@@ -107,13 +115,15 @@
   top: 12px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 11px;
+  gap: 4px;
+  padding: 8px 12px;
   border-radius: var(--radius-pill);
   background: var(--danger-500);
   color: #fff;
-  font-size: 12.5px;
-  font-weight: 900;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   box-shadow: 0 10px 20px rgba(229, 72, 77, 0.28);
 }
 
@@ -122,7 +132,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 15px;
+  padding: 12px 16px;
   border-radius: var(--radius-xl);
   background: var(--danger-500);
   color: #fff;
@@ -145,31 +155,37 @@
   min-width: 0;
 }
 .sr-banner-title {
-  font-size: 15.5px;
-  font-weight: 800;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+
 }
 .sr-banner-meta {
   margin-top: 2px;
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   opacity: 0.9;
   font-variant-numeric: tabular-nums;
 }
 .sr-banner-chip {
   flex: none;
-  padding: 4px 9px;
+  padding: 4px 8px;
   border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.22);
-  font-size: 11px;
-  font-weight: 800;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
 }
 
 /* ── 위치 카드 ─────────────────────────────────────────────────────────── */
 .sr-loc {
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 13px 14px;
+  gap: 12px;
+  padding: 12px 12px;
   border-radius: var(--radius-lg);
   background: #fff;
   box-shadow: 0 4px 14px rgba(32, 26, 29, 0.05);
@@ -189,8 +205,10 @@
   min-width: 0;
 }
 .sr-loc-place {
-  font-size: 14.5px;
-  font-weight: 800;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   color: var(--fg-primary);
   white-space: nowrap;
   overflow: hidden;
@@ -198,17 +216,21 @@
 }
 .sr-loc-sub {
   margin-top: 2px;
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
 }
 .sr-loc-track {
   flex: none;
-  padding: 8px 14px;
+  padding: 8px 12px;
   border-radius: var(--radius-pill);
   background: var(--danger-soft);
-  font-size: 12.5px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--danger-text);
   --press: 0.94;
 }
@@ -216,7 +238,7 @@
 /* ── 액션(전화·주변소리) ──────────────────────────────────────────────── */
 .sr-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
 .sr-act {
   flex: 1;
@@ -225,9 +247,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  font-size: 15px;
-  font-weight: 800;
+  gap: 8px;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   --press: 0.96;
 }
 .sr-act:disabled {
@@ -274,8 +298,10 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-size: 15px;
-  font-weight: 800;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   --press: 0.97;
   transition: background 0.2s ease, box-shadow 0.2s ease;
 }
@@ -298,16 +324,18 @@
   gap: 8px;
 }
 .sr-history-label {
-  font-size: 12px;
-  font-weight: 800;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
   padding-left: 2px;
 }
 .sr-history-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 11px 13px;
+  gap: 8px;
+  padding: 12px 12px;
   border-radius: var(--radius-md);
   background: #fff;
   box-shadow: 0 3px 10px rgba(32, 26, 29, 0.04);
@@ -327,14 +355,18 @@
   min-width: 0;
 }
 .sr-history-name {
-  font-size: 13.5px;
-  font-weight: 800;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-primary);
 }
 .sr-history-time {
   margin-top: 1px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -350,11 +382,13 @@
 .sr-retry {
   margin-top: 4px;
   height: 44px;
-  padding: 0 22px;
+  padding: 0 20px;
   border-radius: 14px;
   background: var(--bg-card);
   border: 1.5px solid rgba(32, 26, 29, 0.1);
-  font-size: 14px;
-  font-weight: 800;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-primary);
 }

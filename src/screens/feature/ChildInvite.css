@@ -13,10 +13,10 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  padding: calc(env(safe-area-inset-top, 0px) + 20px) 18px 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 20px) 16px 12px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: linear-gradient(180deg, rgba(253, 244, 241, 0.9) 60%, rgba(253, 244, 241, 0));
   backdrop-filter: blur(8px);
 }
@@ -33,14 +33,16 @@
   --press: 0.9;
 }
 .ci-title {
-  font-size: 18px;
-  font-weight: 800;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   color: var(--fg-primary);
 }
 
 /* ── 콘텐츠 컬럼(중앙 정렬) ─────────────────────────────────────────────── */
 .ci-content {
-  padding: 8px 22px calc(40px + env(safe-area-inset-bottom, 0px));
+  padding: 8px 20px calc(40px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -49,19 +51,23 @@
 /* ── 헤드라인 · 안내 ────────────────────────────────────────────────────── */
 .ci-headline {
   margin-top: 4px;
-  font-size: 22px;
-  font-weight: 900;
+  font-size: var(--type-title-lg);
+  line-height: var(--type-title-lg-line-height);
+  font-weight: var(--type-title-lg-weight);
+
   letter-spacing: -0.02em;
   text-align: center;
   color: var(--fg-primary);
 }
 .ci-lead {
   margin-top: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-muted);
   text-align: center;
-  line-height: 1.5;
+
 }
 
 /* ── QR 카드 ────────────────────────────────────────────────────────────── */
@@ -70,8 +76,8 @@
   width: 252px;
   height: 252px;
   background: #fff;
-  border-radius: 26px;
-  box-shadow: 0 16px 38px -18px rgba(32, 26, 29, 0.26), 0 2px 6px rgba(32, 26, 29, 0.04);
+  border-radius: var(--radius-16);
+  box-shadow: var(--shadow-soft);
   border: 1px solid rgba(32, 26, 29, 0.05);
   display: flex;
   align-items: center;
@@ -87,10 +93,12 @@
   justify-content: center;
   text-align: center;
   white-space: pre-line;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
-  line-height: 1.5;
+
 }
 
 /* ── 코드 + 만료 타이머 ─────────────────────────────────────────────────── */
@@ -99,11 +107,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 .ci-code {
-  font-size: 30px;
-  font-weight: 900;
+  font-size: var(--type-display);
+  line-height: var(--type-display-line-height);
+  font-weight: var(--type-display-weight);
+
   letter-spacing: 2px;
   color: var(--hy-accent-text, #b0477a);
   font-variant-numeric: tabular-nums;
@@ -115,8 +125,10 @@
   text-decoration: line-through;
 }
 .ci-timer {
-  font-size: 12.5px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--mint-text);
   padding: 4px 12px;
   border-radius: 999px;
@@ -133,13 +145,15 @@
   width: 100%;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 8px;
 }
 .ci-btn {
   height: 50px;
   border-radius: 15px;
-  font-size: 14.5px;
-  font-weight: 800;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   display: flex;
   align-items: center;
   justify-content: center;
@@ -161,12 +175,14 @@
 .ci-regen {
   margin-top: 10px;
   height: 44px;
-  padding: 0 18px;
+  padding: 0 16px;
   border-radius: 999px;
   background: #fff;
   box-shadow: 0 4px 12px rgba(32, 26, 29, 0.07);
-  font-size: 13.5px;
-  font-weight: 800;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: #6d4e7a;
   display: inline-flex;
   align-items: center;
@@ -182,9 +198,11 @@
   margin-top: 16px;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  font-size: 12.5px;
-  font-weight: 700;
+  gap: 8px;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
 }
 .ci-wait__dot {
@@ -202,4 +220,12 @@
   height: 92px;
   object-fit: contain;
   animation: hy-float 4.5s ease-in-out infinite;
+}
+
+/* 실제 TSX 상호작용 요소의 최소 터치 영역 */
+.ci-back {
+  min-height: var(--control-min-size);
+}
+.ci-back {
+  min-width: var(--control-min-size);
 }

@@ -12,10 +12,10 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 12px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: linear-gradient(180deg, rgba(253, 244, 241, 0.9) 60%, rgba(253, 244, 241, 0));
   backdrop-filter: blur(8px);
 }
@@ -32,25 +32,29 @@
   --press: 0.9;
 }
 .pa-header__title {
-  font-size: 18px;
-  font-weight: 800;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   letter-spacing: -0.02em;
   color: var(--fg-primary);
 }
 
 /* ── 스크롤 콘텐츠 ──────────────────────────────────────────────────────── */
 .pa-content {
-  padding: 6px 20px calc(40px + env(safe-area-inset-bottom, 0px));
+  padding: 4px 20px calc(40px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 .pa-intro {
   padding: 2px 2px 4px;
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-muted);
-  line-height: 1.5;
+
 }
 .pa-intro b {
   color: var(--hy-accent-text);
@@ -95,15 +99,19 @@
 }
 .pa-who__name {
   display: block;
-  font-size: 15.5px;
-  font-weight: 800;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+
   color: var(--fg-primary);
 }
 .pa-who__when {
   display: block;
   margin-top: 2px;
-  font-size: 12.5px;
-  font-weight: 700;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--hy-accent-text);
 }
 
@@ -112,22 +120,26 @@
   margin-top: 12px;
   display: flex;
   align-items: center;
-  gap: 7px;
-  font-size: 12.5px;
-  font-weight: 700;
+  gap: 8px;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: #554c50;
 }
 
 /* ── 아이 메모 말풍선 ───────────────────────────────────────────────────── */
 .pa-note {
   margin-top: 12px;
-  padding: 12px 14px;
+  padding: 12px 12px;
   border-radius: 14px 14px 14px 6px;
   background: var(--bg-press);
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: #43356b;
-  line-height: 1.5;
+
 }
 
 /* ── 액션 (거절 / 수락) ─────────────────────────────────────────────────── */
@@ -135,15 +147,17 @@
   margin-top: 14px;
   display: grid;
   grid-template-columns: 1fr 1.4fr;
-  gap: 10px;
+  gap: 8px;
 }
 .pa-btn-decline {
   height: 50px;
   border-radius: 15px;
   background: #f3eef0;
   color: #6d6469;
-  font-size: 14.5px;
-  font-weight: 800;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   --press: 0.97;
 }
 .pa-btn-accept {
@@ -152,8 +166,10 @@
   background: linear-gradient(120deg, #46d19b, #23a876);
   box-shadow: 0 12px 24px -10px rgba(35, 168, 118, 0.55);
   color: #fff;
-  font-size: 14.5px;
-  font-weight: 800;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
   --press: 0.97;
 }
 .pa-btn-accept:disabled,
@@ -168,24 +184,28 @@
 .pa-active {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 14px 16px;
+  gap: 4px;
+  padding: 12px 16px;
   border-radius: 16px;
   background: var(--mint-soft);
 }
 .pa-active__badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 12.5px;
-  font-weight: 800;
+  gap: 4px;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--mint-text);
 }
 .pa-active__text {
-  font-size: 13.5px;
-  font-weight: 700;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: #3f5a4f;
-  line-height: 1.45;
+
 }
 
 /* ── 빈 상태 ─────────────────────────────────────────────────────────────── */
@@ -202,16 +222,20 @@
 }
 .pa-empty__title {
   margin-top: 10px;
-  font-size: 16px;
-  font-weight: 800;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+
   color: var(--fg-primary);
 }
 .pa-empty__sub {
   margin-top: 6px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-muted);
-  line-height: 1.5;
+
 }
 
 /* ── 처리 결과 배너 ─────────────────────────────────────────────────────── */
@@ -219,12 +243,14 @@
   margin-top: 14px;
   height: 48px;
   border-radius: 15px;
-  font-size: 14px;
-  font-weight: 800;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
 }
 .pa-status--accepted {
   background: var(--mint-soft);

@@ -8,7 +8,7 @@
 /* ── 대기 화면 ──────────────────────────────────────────────────────────── */
 .ra-idle {
   min-height: 100%;
-  padding: 48px 22px 112px;
+  padding: 48px 20px 120px;
   display: flex;
   flex-direction: column;
   background: radial-gradient(120% 46% at 50% 0%, #efe8ff 0%, rgba(239, 232, 255, 0) 55%),
@@ -35,7 +35,7 @@
   align-items: center;
   justify-content: flex-start;
   text-align: center;
-  padding-top: 14px;
+  padding-top: 12px;
 }
 
 .ra-halo {
@@ -68,28 +68,34 @@
 }
 
 .ra-title {
-  font-size: 23px;
-  font-weight: 900;
+  font-size: var(--type-title-xl);
+  line-height: var(--type-title-xl-line-height);
+  font-weight: var(--type-title-xl-weight);
+
   letter-spacing: -0.02em;
   color: var(--fg-primary);
 }
 .ra-sub {
   margin-top: 10px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: var(--fg-muted);
-  line-height: 1.5;
+
 }
 .ra-note {
   margin-top: 18px;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 9px 15px;
+  gap: 8px;
+  padding: 8px 16px;
   border-radius: 999px;
   background: rgba(167, 139, 250, 0.12);
-  font-size: 12.5px;
-  font-weight: 700;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: #6d4e9c;
 }
 
@@ -104,9 +110,9 @@
   min-height: 58px;
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 14px;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius-16);
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid var(--line-card);
   box-shadow: var(--shadow-soft);
@@ -126,14 +132,17 @@
   gap: 2px;
 }
 .ra-trust-card__title {
-  font-size: 12.5px;
-  font-weight: 900;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--fg-primary);
 }
 .ra-trust-card__text {
-  font-size: 11.5px;
-  font-weight: 700;
-  line-height: 1.42;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
 }
 
@@ -141,13 +150,15 @@
   margin-top: 10px;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 9px 14px;
+  gap: 8px;
+  padding: 8px 12px;
   border-radius: 999px;
   background: var(--bg-card);
   box-shadow: var(--shadow-soft);
-  font-size: 12.5px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   color: var(--lav-text);
   --press: 0.94;
 }
@@ -158,9 +169,10 @@
 .ra-start-note {
   margin-bottom: 10px;
   padding: 0 8px;
-  font-size: 11.5px;
-  font-weight: 700;
-  line-height: 1.45;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: var(--fg-muted);
   text-align: center;
 }
@@ -171,8 +183,10 @@
   border-radius: 18px;
   background: linear-gradient(120deg, #b79dfb, #8b6bec);
   box-shadow: 0 16px 32px -12px rgba(124, 92, 225, 0.6);
-  font-size: 17px;
-  font-weight: 800;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+
   color: #fff;
   display: flex;
   align-items: center;
@@ -200,13 +214,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 9px;
-  padding: 14px 18px;
-  font-size: 14px;
-  font-weight: 700;
+  gap: 8px;
+  padding: 12px 16px;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
   color: #6d4e9c;
   text-align: center;
-  line-height: 1.4;
+
 }
 
 /* ── 듣는 중 오버레이 ───────────────────────────────────────────────────── */
@@ -217,7 +233,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 72px 30px calc(40px + env(safe-area-inset-bottom, 0px));
+  padding: 72px 32px calc(40px + env(safe-area-inset-bottom, 0px));
   background: radial-gradient(circle at 50% 34%, #2a2140, #14100f);
   animation: hy-fadein 0.25s ease forwards;
 }
@@ -226,15 +242,19 @@
   text-align: center;
 }
 .ra-listen-eyebrow {
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
   letter-spacing: 0.1em;
   color: rgba(255, 255, 255, 0.5);
 }
 .ra-listen-title {
   margin-top: 6px;
-  font-size: 22px;
-  font-weight: 900;
+  font-size: var(--type-title-lg);
+  line-height: var(--type-title-lg-line-height);
+  font-weight: var(--type-title-lg-weight);
+
   color: #fff;
 }
 
@@ -313,12 +333,14 @@
 .ra-live {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
+  gap: 4px;
+  padding: 4px 8px;
   border-radius: 999px;
   background: rgba(226, 48, 80, 0.25);
-  font-size: 11px;
-  font-weight: 800;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: #ff9dad;
 }
 .ra-live-dot {
@@ -336,8 +358,10 @@
   background: #b79dfb;
 }
 .ra-time {
-  font-size: 30px;
-  font-weight: 800;
+  font-size: var(--type-display);
+  line-height: var(--type-display-line-height);
+  font-weight: var(--type-display-weight);
+
   color: #fff;
 }
 
@@ -345,7 +369,7 @@
   margin-top: auto;
   display: flex;
   align-items: center;
-  gap: 22px;
+  gap: 20px;
 }
 .ra-ctrl-mute {
   width: 58px;
@@ -390,8 +414,10 @@
 
 .ra-listen-foot {
   margin-top: 20px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
   color: rgba(255, 255, 255, 0.5);
 }
 
@@ -408,4 +434,12 @@
     animation: none;
     transition: none;
   }
+}
+
+/* 실제 TSX 상호작용 요소의 최소 터치 영역 */
+.ra-back {
+  min-height: var(--control-min-size);
+}
+.ra-back {
+  min-width: var(--control-min-size);
 }
