@@ -261,7 +261,7 @@ export function TeacherStudents() {
               })}
             </div>
 
-            <div className="ts-hint">
+            <div className="ts-hint hy-explain">
               <span className="ts-hint__ico"><Link2 size={15} strokeWidth={2.2} /></span>
               부모님 전화번호로 초대하면, 부모님 승인 후 학생이 자동으로 연결돼요.
             </div>

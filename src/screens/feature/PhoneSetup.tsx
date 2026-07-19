@@ -199,11 +199,14 @@ export function PhoneSetup() {
           })}
         </div>
 
-        <div className="psu-note">
+        <div className="psu-note hy-explain">
           <span className="psu-note__lock" aria-hidden="true">
             <Lock size={18} strokeWidth={2.2} />
           </span>
-          본인 번호만 수정할 수 있어요. 번호는 가족·담임 선생님 연결에만 사용하고 아이에게는 공개되지 않아요.
+          <span className="hy-explain__lines">
+            <span className="hy-explain__line">본인 번호만 수정할 수 있어요.</span>
+            <span className="hy-explain__line">번호는 가족·담임 선생님 연결에만 사용하고 아이에게는 공개되지 않아요.</span>
+          </span>
         </div>
 
         <button

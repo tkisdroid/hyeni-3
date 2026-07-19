@@ -284,7 +284,7 @@ export function ParentAccount() {
               <span className="pa-row__hint">변경</span>
             </button>
           </div>
-          <div className="pa-note">
+          <div className="pa-note hy-explain">
             소셜 로그인은 아래에서 연결하거나 해제할 수 있어요.
           </div>
         </div>

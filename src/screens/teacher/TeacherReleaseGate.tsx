@@ -75,7 +75,7 @@ export function TeacherReleaseGate() {
           개인정보 보호 준비가 끝나면 선생님 기능을 안전하게 다시 열겠습니다.
         </p>
 
-        <div className="trg-notice">
+        <div className="trg-notice hy-explain">
           <ShieldCheck size={20} strokeWidth={2.2} aria-hidden="true" />
           <span>기존 계정은 유지되며, 원하시면 아래에서 로그아웃하거나 탈퇴할 수 있습니다.</span>
         </div>

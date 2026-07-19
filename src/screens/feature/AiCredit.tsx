@@ -327,7 +327,7 @@ export function AiCredit() {
         </div>
 
         {/* 안내 */}
-        <div className="ac-note">
+        <div className="ac-note hy-explain">
           <span className="ac-note__emoji"><MessageCircle size={15} strokeWidth={2.2} /></span>
           AI가 아이의 일정·안전 대화를 도울 때 크레딧 1회가 사용돼요. 부모님이 충전해 주세요.
         </div>
@@ -432,7 +432,7 @@ export function AiCredit() {
               rows={3}
               disabled={!advancedSettingsReady || saveSettings.isPending}
             />
-            <span className="ac-field__hint">쉼표나 줄바꿈으로 여러 주제를 입력할 수 있어요.</span>
+            <span className="ac-field__hint hy-explain">쉼표나 줄바꿈으로 여러 주제를 입력할 수 있어요.</span>
           </label>
 
           <div className="ac-control-row">

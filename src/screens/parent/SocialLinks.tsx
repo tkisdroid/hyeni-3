@@ -178,7 +178,7 @@ export function SocialLinks() {
         })}
       </div>
 
-      <div className="pa-note">
+      <div className="pa-note hy-explain">
         {native
           ? canUnlink
             ? "계정을 바꾸려면 새 계정을 먼저 연결한 뒤 예전 계정을 해제하세요. 해제해도 가족·일정 데이터는 그대로예요."

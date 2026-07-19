@@ -285,7 +285,7 @@ export function PairingWizard() {
                 );
               })}
             </div>
-            <p className="pw-note">
+            <p className="pw-note hy-explain">
               {!gatesReady
                 ? "가족과 구독 정보를 확인한 뒤 아이 연결을 진행해 주세요."
                 : noSlots
@@ -354,7 +354,7 @@ export function PairingWizard() {
                 </label>
               </div>
             ))}
-            <p className="pw-note">
+            <p className="pw-note hy-explain">
               생년월일은 AI 친구가 아이 나이에 맞게 말하도록 꼭 필요해요. 사진은 연결 후에도 추가할 수 있어요.
             </p>
           </>
@@ -381,7 +381,7 @@ export function PairingWizard() {
                 </div>
               ))}
             </div>
-            <p className="pw-note">
+            <p className="pw-note hy-explain">
               {family?.isPrimaryParent
                 ? "연결 코드를 만들면 아이 정보(사진·이름·생년월일·테마색)가 저장돼요. 아이 기기에서 코드를 입력하면 이 정보를 이어받아 연결돼요."
                 : "주 보호자만 아이 정보를 서버에 저장할 수 있어요. 지금 만든 정보는 초대 화면에 미리보기로 전달돼요."}

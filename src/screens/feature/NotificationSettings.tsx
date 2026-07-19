@@ -421,10 +421,11 @@ export function NotificationSettings() {
                   <ToggleRow key={d.key} def={d} on={draft[d.key]} onToggle={() => toggle(d.key)} />
                 ))}
               </div>
-              <div className="nst-safety-note">
+              <div className="nst-safety-note hy-explain">
                 <ShieldCheck size={17} strokeWidth={2.2} aria-hidden="true" />
-                <span>
-                  위험·SOS·미도착 알림은 항상 전달 대상으로 처리돼요. 위 토글은 일반 위치 소식에만 적용돼요.
+                <span className="hy-explain__lines">
+                  <span className="hy-explain__line">위험·SOS·미도착 알림은 항상 전달 대상으로 처리돼요.</span>
+                  <span className="hy-explain__line">위 토글은 일반 위치 소식에만 적용돼요.</span>
                 </span>
               </div>
             </div>
@@ -534,7 +535,7 @@ export function NotificationSettings() {
                   </>
                 ) : null}
               </div>
-              <div className="nst-note">
+              <div className="nst-note hy-explain">
                 알림 소리·진동과 방해금지는 휴대폰 또는 브라우저의 알림 설정에서 관리해 주세요.
                 <button type="button" className="nst-refresh" onClick={() => void refreshDelivery()}>
                   상태 다시 확인

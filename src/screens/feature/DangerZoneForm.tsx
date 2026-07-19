@@ -273,7 +273,7 @@ export function DangerZoneForm() {
             onChange={(e) => setRadius(Number(e.target.value))}
           />
           {radius < 50 && (
-            <p className="dzf-hint">반경이 아주 작으면 GPS 오차로 감지가 조금 늦을 수 있어요</p>
+            <p className="dzf-hint hy-explain">반경이 아주 작으면 GPS 오차로 감지가 조금 늦을 수 있어요</p>
           )}
         </div>
 
@@ -311,7 +311,7 @@ export function DangerZoneForm() {
               <span className="dzf-toggle__knob" />
             </button>
           </div>
-          <div className="dzf-toggle-note">
+          <div className="dzf-toggle-note hy-explain">
             저장한 설정대로 아이가 위험구역에 들어가거나 벗어날 때 부모님께 알려드려요.
           </div>
         </div>

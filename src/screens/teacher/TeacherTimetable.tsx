@@ -232,11 +232,13 @@ export function TeacherTimetable() {
             </div>
 
             {/* 반 일정은 알림장으로 추가하고, 현재 주간은 서버에서 다음 주로 복사한다. */}
-            <div className="tt-note">
+            <div className="tt-note hy-explain">
               <span className="tt-note__ico"><CalendarDays size={15} strokeWidth={2.2} /></span>
-              <span>
-                반 일정은 아이별 캘린더에서 모여요. 새 일정은 <b>‘일정 추가’(알림장)</b>로 보내면
-                학부모 캘린더에 함께 반영돼요.
+              <span className="hy-explain__lines">
+                <span className="hy-explain__line">반 일정은 아이별 캘린더에서 모여요.</span>
+                <span className="hy-explain__line">
+                  새 일정은 <b>‘일정 추가’(알림장)</b>로 보내면 학부모 캘린더에 함께 반영돼요.
+                </span>
               </span>
               <button
                 type="button"

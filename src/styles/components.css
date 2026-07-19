@@ -167,6 +167,38 @@
   border: 1px solid var(--line-card);
 }
 
+/* 설명문은 화면별 색상·배경·아이콘을 유지하고 조판과 표면만 공통화한다. */
+.hy-explain.hy-explain {
+  border: 0;
+  box-shadow: none;
+  font-size: var(--type-body-sm);
+  font-weight: var(--type-body-sm-weight);
+  line-height: var(--type-body-sm-line-height);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+.hy-explain__lines {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.hy-explain__line {
+  display: block;
+}
+
+/* 화면별 자식 타이포 선언보다 높은 우선순위로 본문 줄 간격만 일관되게 유지한다. */
+.hy-explain.hy-explain .hy-explain__line {
+  margin-block: 0;
+  line-height: 1.55;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
 /* 원격 프로필 사진은 다운로드 전에도 정사각형 자리를 예약한다. */
 .hy-network-avatar {
   aspect-ratio: 1 / 1;

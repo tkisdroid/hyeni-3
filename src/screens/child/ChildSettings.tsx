@@ -362,25 +362,25 @@ export function ChildSettings() {
               </button>
             </div>
             <div id={helpDescriptionId} className="ks-help-list">
-              <div className="ks-help-item">
+              <div className="ks-help-item hy-explain">
                 <span className="ks-help-item__emoji"><MapPin size={18} strokeWidth={2.2} /></span>
-                <span>
-                  <b>위치 알려주기</b>
-                  <small>부모님이 네가 안전한지 확인하려고 켜 둔 거야.</small>
+                <span className="hy-explain__lines">
+                  <b className="hy-explain__line">위치 알려주기</b>
+                  <small className="hy-explain__line">부모님이 네가 안전한지 확인하려고 켜 둔 거야.</small>
                 </span>
               </div>
-              <div className="ks-help-item">
+              <div className="ks-help-item hy-explain">
                 <span className="ks-help-item__emoji"><Bell size={18} strokeWidth={2.2} /></span>
-                <span>
-                  <b>알림</b>
-                  <small>내 일정 알림을 켜고 끌 수 있어. 중요한 안전 알림은 부모님에게 계속 가.</small>
+                <span className="hy-explain__lines">
+                  <b className="hy-explain__line">알림</b>
+                  <small className="hy-explain__line">내 일정 알림을 켜고 끌 수 있어. 중요한 안전 알림은 부모님에게 계속 가.</small>
                 </span>
               </div>
-              <div className="ks-help-item">
+              <div className="ks-help-item hy-explain">
                 <span className="ks-help-item__emoji"><Mail size={18} strokeWidth={2.2} /></span>
-                <span>
-                  <b>부모님한테 부탁하기</b>
-                  <small>캐릭터나 소리를 바꾸고 싶을 때 부모님에게 요청을 보낼 수 있어.</small>
+                <span className="hy-explain__lines">
+                  <b className="hy-explain__line">부모님한테 부탁하기</b>
+                  <small className="hy-explain__line">캐릭터나 소리를 바꾸고 싶을 때 부모님에게 요청을 보낼 수 있어.</small>
                 </span>
               </div>
             </div>

@@ -417,7 +417,7 @@ export function AiSchedule() {
             ) : (
               <div className="ais-bubble">예) “내일 오후 4시에 태권도 일정 추가해줘”</div>
             )}
-            <div className="ais-hint">
+            <div className="ais-hint hy-explain">
               <span className="ais-hint__ico"><Mic size={15} strokeWidth={2.2} /></span>
               말한 내용에서 추가할 일정의 날짜와 시간을 정리해요
             </div>
@@ -436,7 +436,7 @@ export function AiSchedule() {
                 onChange={(e) => onTextChange(e.target.value)}
               />
             </div>
-            <div className="ais-hint">
+            <div className="ais-hint hy-explain">
               <span className="ais-hint__ico"><Sparkles size={15} strokeWidth={2.2} /></span>
               자유롭게 적으면 AI가 추가할 일정의 날짜와 시간을 정리해요
             </div>
@@ -484,7 +484,7 @@ export function AiSchedule() {
                 </span>
               </button>
             )}
-            <div className="ais-hint">
+            <div className="ais-hint hy-explain">
               <span className="ais-hint__ico"><Camera size={15} strokeWidth={2.2} /></span>
               AI가 사진에서 일정을 찾습니다. 크레딧이 사용될 수 있어요. 사진은 일정 후보를 찾기 위해 서버로 전송돼요.
             </div>
@@ -534,7 +534,7 @@ export function AiSchedule() {
                 </div>
               </div>
             ))}
-            <div className="ais-edit-note">
+            <div className="ais-edit-note hy-explain">
               {activeChild
                 ? `${count}건 모두 ${activeChild.name || "선택한 아이"}에게 저장돼요. 추가한 뒤 캘린더에서 수정할 수 있어요.`
                 : "저장할 아이를 먼저 선택해 주세요."}

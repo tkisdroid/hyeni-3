@@ -301,7 +301,7 @@ export function ProfileEdit() {
               </button>
               <input ref={fileRef} type="file" accept="image/*" hidden disabled={!profileFormReady} onChange={onPickFile} />
               <div className="pe-photo-name">{name.trim() || member.name || "아이"}</div>
-              <p className="pe-hint">{processing ? "사진 처리 중…" : "얼굴이 잘 보이는 사진이 좋아요."}</p>
+              <p className="pe-hint hy-explain">{processing ? "사진 처리 중…" : "얼굴이 잘 보이는 사진이 좋아요."}</p>
             </div>
 
             {/* 이름 */}
@@ -333,7 +333,7 @@ export function ProfileEdit() {
                 onChange={(e) => setBirthday(e.target.value)}
                 disabled={!profileFormReady || !isPrimary}
               />
-              <p className="pe-hint">AI 친구가 아이 나이에 맞게 말하도록 꼭 필요해요.</p>
+              <p className="pe-hint hy-explain">AI 친구가 아이 나이에 맞게 말하도록 꼭 필요해요.</p>
             </div>
 
             {/* 전화번호 */}
@@ -350,7 +350,7 @@ export function ProfileEdit() {
                 maxLength={13}
                 disabled={!profileFormReady || !isPrimary}
               />
-              <p className="pe-hint">아이 기기가 없어도 연락할 번호예요.</p>
+              <p className="pe-hint hy-explain">아이 기기가 없어도 연락할 번호예요.</p>
             </div>
 
             {!isPrimary && <p className="pe-hint pe-hint--warn">주 보호자만 아이 프로필을 저장할 수 있어요.</p>}
@@ -364,7 +364,7 @@ export function ProfileEdit() {
               {busy ? "저장 중…" : "저장하기"}
             </button>
             {isPrimary && (
-              <p className="pe-hint pe-hint--center">변경한 내용은 아이 기기에 실시간으로 반영돼요.</p>
+              <p className="pe-hint pe-hint--center hy-explain">변경한 내용은 아이 기기에 실시간으로 반영돼요.</p>
             )}
           </>
         )}

@@ -729,11 +729,12 @@ function TeacherStep({ onBack, onSave, show }: { onBack: () => void; onSave: () 
         </Field>
       </div>
 
-      <div className="ob-teacher-note">
+      <div className="ob-teacher-note hy-explain">
         <span className="ob-teacher-note__ic"><Link2 size={18} strokeWidth={2.2} /></span>
-        <span className="ob-teacher-note__tx">
-          등록 후 <b>부모님 전화번호</b>로 학생을 초대해요. 부모님이 승인하면 반 일정·알림장이 아이 캘린더에
-          연결됩니다. 개인정보는 최소한만 안전하게 보관해요.
+        <span className="ob-teacher-note__tx hy-explain__lines">
+          <span className="hy-explain__line">등록 후 <b>부모님 전화번호</b>로 학생을 초대해요.</span>
+          <span className="hy-explain__line">부모님이 승인하면 반 일정·알림장이 아이 캘린더에 연결됩니다.</span>
+          <span className="hy-explain__line">개인정보는 최소한만 안전하게 보관해요.</span>
         </span>
       </div>
 
