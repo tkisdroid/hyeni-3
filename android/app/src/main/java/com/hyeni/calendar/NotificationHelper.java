@@ -402,13 +402,6 @@ public final class NotificationHelper {
             String route,
             NotificationQuietHoursPolicy.NotificationIdentity identity
     ) {
-        try {
-            createChannels(context);
-        } catch (RuntimeException error) {
-            Log.w(TAG, "notification channel setup failed", error);
-            return DeliveryReceipt.forStatus(DeliveryStatus.NOTIFY_FAILED);
-        }
-
         NotificationQuietHoursPolicy.Decision quietDecision = NotificationQuietHoursStore.decide(
             context,
             identity,
@@ -416,6 +409,13 @@ public final class NotificationHelper {
         );
         if (quietDecision == NotificationQuietHoursPolicy.Decision.SUPPRESS) {
             return DeliveryReceipt.forStatus(DeliveryStatus.QUIET_HOURS_SUPPRESSED);
+        }
+
+        try {
+            createChannels(context);
+        } catch (RuntimeException error) {
+            Log.w(TAG, "notification channel setup failed", error);
+            return DeliveryReceipt.forStatus(DeliveryStatus.NOTIFY_FAILED);
         }
 
         int requestCode = Math.max(1, notificationId);

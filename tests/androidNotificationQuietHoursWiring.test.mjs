@@ -50,7 +50,11 @@ test("Helper 조용한 시간 gate는 중복·권한·wake·게시보다 먼저 
     helper.indexOf("private static boolean wasRecentlyPosted("),
   );
   const quiet = body.indexOf("NotificationQuietHoursStore.decide(");
+  const createChannels = body.indexOf("createChannels(context)");
+  const channelSetupFailure = body.indexOf("notification channel setup failed");
   assert.ok(quiet >= 0, "Helper의 조용한 시간 gate가 필요합니다");
+  assert.ok(createChannels > quiet, "조용한 시간 판정은 채널 생성보다 먼저여야 합니다");
+  assert.ok(channelSetupFailure > quiet, "조용한 시간 판정은 채널 생성 실패 처리보다 먼저여야 합니다");
   for (const marker of [
     "POST_NOTIFICATIONS",
     "wasRecentlyPosted(context, requestCode)",

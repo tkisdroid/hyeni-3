@@ -73,7 +73,7 @@ public class NotificationDeliveryReceiptTest {
         int markPosted = source.indexOf("markPosted(context, requestCode)", overload);
 
         assertTrue("identity overload가 있어야 합니다", overload >= 0);
-        assertTrue("채널 생성 뒤 quiet 정책을 판단해야 합니다", createChannels >= 0 && createChannels < quietDecision);
+        assertTrue("quiet 정책은 채널 생성보다 먼저 실행해야 합니다", quietDecision >= 0 && quietDecision < createChannels);
         assertTrue("quiet 정책은 권한 확인보다 먼저 실행해야 합니다", quietDecision < permission);
         assertTrue("quiet 정책은 채널 상태 확인보다 먼저 실행해야 합니다", quietDecision < channelState);
         assertTrue("quiet 정책은 중복 확인보다 먼저 실행해야 합니다", quietDecision < dedupe);
