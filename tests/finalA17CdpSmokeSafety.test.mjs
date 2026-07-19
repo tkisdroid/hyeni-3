@@ -41,6 +41,36 @@ test("A17 CDP 최종 점검은 각 화면의 실제 루트 선택자로 표시 �
   assert.doesNotMatch(source, /querySelectorAll\("main, section, article, \[role='main'\]"\)/);
 });
 
+test("같은 CDP 점검은 razr 아이모드 핵심 화면을 안전하게 검사한다", () => {
+  assert.match(source, /process\.env\.EXPECTED_ROLE/);
+  assert.match(source, /sessionCheck\?\.localRole !== expectedRole/);
+  for (const route of [
+    "#/child/home",
+    "#/child/sticker",
+    "#/child/memo",
+    "#/child/location-status",
+    "#/child/settings",
+    "#/supplies",
+    "#/route",
+    "#/child/sos",
+  ]) {
+    assert.match(source, new RegExp(route.replace(/[?]/g, "\\?")));
+  }
+  for (const selector of [
+    ".kd-root",
+    ".sb-root",
+    ".mc-root",
+    ".cls-screen",
+    ".ks-root",
+    ".sup-screen",
+    ".rv-screen",
+    ".cs-root",
+  ]) {
+    assert.match(source, new RegExp(selector.replace(/[.]/g, "\\.")));
+  }
+  assert.doesNotMatch(source, /\.click\s*\(/, "SOS를 포함한 실기기 버튼을 자동 클릭하면 안 됩니다");
+});
+
 test("A17 CDP 최종 점검은 새로고침부터 실패 응답의 경로만 안전하게 수집한다", () => {
   assert.match(source, /await send\("Network\.enable"\)/);
   assert.match(source, /message\.method === "Network\.responseReceived"/);

@@ -4,6 +4,10 @@ if (!Number.isInteger(cdpPort) || cdpPort < 1 || cdpPort > 65535) {
 }
 
 const routeWaitMs = Number.parseInt(process.env.ROUTE_WAIT_MS ?? "2500", 10);
+const expectedRole = (process.env.EXPECTED_ROLE ?? "parent").trim();
+if (expectedRole !== "parent" && expectedRole !== "child") {
+  throw new Error("EXPECTED_ROLE은 parent 또는 child여야 합니다.");
+}
 const baseUrl = `http://127.0.0.1:${cdpPort}`;
 const targetsResponse = await fetch(`${baseUrl}/json/list`);
 if (!targetsResponse.ok) {
@@ -171,16 +175,52 @@ const sessionCheck = await evaluate(`(async () => {
   }
 })()`);
 
-const routes = [
-  { name: "부모 홈", hash: "#/parent/home", selector: ".ph-hero" },
-  { name: "일정", hash: "#/parent/calendar", selector: ".pc-body" },
-  { name: "위치", hash: "#/parent/location", selector: ".pl-root", requiresMap: true },
-  { name: "오늘 경로", hash: "#/parent/location?view=history", selector: ".pl-root", requiresMap: true },
-  { name: "메시지", hash: "#/parent/memo", selector: ".mc-root" },
-  { name: "알림함", hash: "#/notifications", selector: ".nc-root" },
-  { name: "알림 설정", hash: "#/notification-settings", selector: ".nst-screen" },
-  { name: "설정", hash: "#/parent/settings", selector: ".ps-content" },
-];
+const routesByRole = {
+  parent: [
+    { name: "부모 홈", hash: "#/parent/home", selector: ".ph-hero" },
+    { name: "일정", hash: "#/parent/calendar", selector: ".pc-body" },
+    { name: "위치", hash: "#/parent/location", selector: ".pl-root", requiresMap: true },
+    { name: "오늘 경로", hash: "#/parent/location?view=history", selector: ".pl-root", requiresMap: true },
+    { name: "메시지", hash: "#/parent/memo", selector: ".mc-root" },
+    { name: "알림함", hash: "#/notifications", selector: ".nc-root" },
+    { name: "알림 설정", hash: "#/notification-settings", selector: ".nst-screen" },
+    { name: "설정", hash: "#/parent/settings", selector: ".ps-content" },
+  ],
+  child: [
+    { name: "아이 홈", hash: "#/child/home", selector: ".kd-root" },
+    { name: "스티커북", hash: "#/child/sticker", selector: ".sb-root" },
+    { name: "메시지", hash: "#/child/memo", selector: ".mc-root" },
+    { name: "내 위치", hash: "#/child/location-status", selector: ".cls-screen" },
+    { name: "아이 설정", hash: "#/child/settings", selector: ".ks-root" },
+    { name: "준비물", hash: "#/supplies", selector: ".sup-screen" },
+    { name: "길찾기", hash: "#/route", selector: ".rv-screen" },
+    { name: "SOS 진입", hash: "#/child/sos", selector: ".cs-root" },
+  ],
+};
+const routes = routesByRole[expectedRole];
+const errorPhrases = expectedRole === "parent"
+  ? [
+      "지도를 불러오지 못했어요",
+      "문제가 발생했어요",
+      "오류가 발생했어요",
+      "페이지를 표시할 수 없어요",
+      "다시 로그인해 주세요",
+      "일정을 불러오지 못했어요",
+      "위치 갱신에 실패했어요",
+      "대화를 불러오지 못했어요",
+      "알림을 불러오지 못했어요",
+      "설정을 불러오지 못했어요",
+    ]
+  : [
+      "문제가 생겼어",
+      "페이지를 표시할 수 없어요",
+      "다시 로그인해 줘",
+      "대화를 불러오지 못했어",
+      "위치 상태를 못 불러왔어",
+      "설정을 불러오지 못했어",
+      "준비물을 불러오지 못했어",
+      "길찾기를 불러오지 못했어",
+    ];
 
 const routeResults = [];
 for (const route of routes) {
@@ -203,18 +243,7 @@ for (const route of routes) {
         && rect.height > 0;
     };
     const requiredSelectorVisible = isElementVisible(required);
-    const phrases = [
-      "지도를 불러오지 못했어요",
-      "문제가 발생했어요",
-      "오류가 발생했어요",
-      "페이지를 표시할 수 없어요",
-      "다시 로그인해 주세요",
-      "일정을 불러오지 못했어요",
-      "위치 갱신에 실패했어요",
-      "대화를 불러오지 못했어요",
-      "알림을 불러오지 못했어요",
-      "설정을 불러오지 못했어요"
-    ].filter((phrase) => text.includes(phrase));
+    const phrases = ${JSON.stringify(errorPhrases)}.filter((phrase) => text.includes(phrase));
     return {
       hash: location.hash,
       visible: requiredSelectorVisible,
@@ -242,6 +271,7 @@ for (const route of routes) {
 const result = {
   checkedAt: new Date().toISOString(),
   targetUrl: String(target.url).replace(/[?#].*$/, ""),
+  expectedRole,
   session: sessionCheck,
   routes: routeResults,
   runtimeErrors: [...new Set(runtimeErrors)],
@@ -254,7 +284,7 @@ socket.close();
 
 const failed = (
   !sessionCheck?.hasSession
-  || sessionCheck?.localRole !== "parent"
+  || sessionCheck?.localRole !== expectedRole
   || sessionCheck?.familyMineStatus !== 200
   || !sessionCheck?.familyMatches
   || routeResults.some((route) => (
