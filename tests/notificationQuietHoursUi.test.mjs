@@ -35,6 +35,26 @@ test("부모 알림 시간 편집기는 한 개의 매일 반복 구간을 명�
   assert.doesNotMatch(parent, /localStorage/);
 });
 
+test("quiet 저장 응답은 제출 target과 draft가 그대로일 때만 현재 UI에 반영한다", async () => {
+  const parent = source("src/screens/feature/NotificationSettings.tsx");
+  const quietTransform = await import("../src/transform/notificationQuietHours.ts");
+  const isSameDraft = quietTransform.isSameNotificationQuietHoursTargetDraft;
+  const submitted = {
+    targetUserId: "parent-1",
+    enabled: true,
+    startMinute: 1320,
+    endMinute: 420,
+  };
+
+  assert.equal(typeof isSameDraft, "function");
+  assert.equal(isSameDraft(submitted, { ...submitted }), true);
+  assert.equal(isSameDraft(submitted, { ...submitted, targetUserId: "child-1" }), false);
+  assert.equal(isSameDraft(submitted, { ...submitted, startMinute: 1260 }), false);
+  assert.match(parent, /submittedQuietDraft/);
+  assert.match(parent, /quietDraftRef/);
+  assert.ok((parent.match(/isSameNotificationQuietHoursTargetDraft/g) ?? []).length >= 3);
+});
+
 test("조용한 시간 설명은 억제 범위와 안전 예외 및 기기 설정 경계를 분리한다", () => {
   const parent = source("src/screens/feature/NotificationSettings.tsx");
 
@@ -42,6 +62,18 @@ test("조용한 시간 설명은 억제 범위와 안전 예외 및 기기 설�
   assert.match(parent, /SOS·긴급·위험구역 알림은 이 시간에도 항상 전달돼요\./);
   assert.match(parent, /알림 소리와 진동은 휴대폰 또는 브라우저 설정에서 관리해 주세요\./);
   assert.doesNotMatch(parent, /알림 소리·진동과 방해금지는/);
+});
+
+test("조용한 시간 설명은 공통 설명문 조판을 사용하고 caption으로 덮지 않는다", () => {
+  const parent = source("src/screens/feature/NotificationSettings.tsx");
+  const css = source("src/screens/feature/NotificationSettings.css");
+  const components = source("src/styles/components.css");
+  const quietCopyRule = /\.nst-quiet__copy\s*\{([^}]*)\}/s.exec(css)?.[1] ?? "";
+
+  assert.match(parent, /className="nst-quiet__copy hy-explain"/);
+  assert.doesNotMatch(quietCopyRule, /font-size|font-weight|line-height/);
+  assert.match(components, /\.hy-explain\.hy-explain\s*\{[^}]*font-size:\s*var\(--type-body-sm\)[^}]*font-weight:\s*var\(--type-body-sm-weight\)[^}]*word-break:\s*keep-all[^}]*overflow-wrap:\s*anywhere[^}]*text-wrap:\s*pretty/s);
+  assert.match(components, /\.hy-explain\.hy-explain\s*\{\s*line-height:\s*1\.55;/s);
 });
 
 test("새 가족 quiet 조회 오류는 기존 알림 설정 화면 전체를 막지 않는다", () => {

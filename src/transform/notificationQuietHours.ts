@@ -12,6 +12,10 @@ export interface NotificationQuietHoursDraft {
   endMinute: number;
 }
 
+export interface NotificationQuietHoursTargetDraft extends NotificationQuietHoursDraft {
+  targetUserId: string;
+}
+
 export const DEFAULT_NOTIFICATION_QUIET_HOURS: NotificationQuietHours = {
   enabled: false,
   startMinute: 1320,
@@ -43,6 +47,16 @@ export function isValidNotificationQuietHours(value: NotificationQuietHoursDraft
     && isMinuteOfDay(value.startMinute)
     && isMinuteOfDay(value.endMinute)
     && value.startMinute !== value.endMinute;
+}
+
+export function isSameNotificationQuietHoursTargetDraft(
+  current: NotificationQuietHoursTargetDraft,
+  submitted: NotificationQuietHoursTargetDraft,
+): boolean {
+  return current.targetUserId === submitted.targetUserId
+    && current.enabled === submitted.enabled
+    && current.startMinute === submitted.startMinute
+    && current.endMinute === submitted.endMinute;
 }
 
 function koreanTimeLabel(value: number): string {

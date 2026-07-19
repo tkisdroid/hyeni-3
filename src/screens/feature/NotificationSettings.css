@@ -261,9 +261,6 @@
   flex-direction: column;
   gap: var(--spacing-4);
   color: var(--fg-secondary);
-  font-size: var(--type-caption);
-  line-height: var(--type-caption-line-height);
-  font-weight: var(--type-caption-weight);
 }
 .nst-quiet__copy p {
   margin: 0;

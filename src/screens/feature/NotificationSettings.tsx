@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   BellOff,
@@ -42,10 +42,11 @@ import {
 import { webPushDeliveryView } from "@/transform/notificationDeliveryView";
 import {
   DEFAULT_NOTIFICATION_QUIET_HOURS,
+  isSameNotificationQuietHoursTargetDraft,
   isValidNotificationQuietHours,
   minuteOfDayToTimeInput,
   timeInputToMinuteOfDay,
-  type NotificationQuietHoursDraft,
+  type NotificationQuietHoursTargetDraft,
 } from "@/transform/notificationQuietHours";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
@@ -100,11 +101,7 @@ const SAFETY_TOGGLES: ToggleDef[] = [
   },
 ];
 
-interface QuietHoursEditorDraft extends NotificationQuietHoursDraft {
-  targetUserId: string;
-}
-
-function createQuietHoursDraft(targetUserId: string): QuietHoursEditorDraft {
+function createQuietHoursDraft(targetUserId: string): NotificationQuietHoursTargetDraft {
   return {
     targetUserId,
     enabled: DEFAULT_NOTIFICATION_QUIET_HOURS.enabled,
@@ -163,9 +160,18 @@ export function NotificationSettings() {
   const [webPushState, setWebPushState] = useState<WebPushState | null>(null);
   const [webPushLoadError, setWebPushLoadError] = useState(false);
   const [deliveryBusy, setDeliveryBusy] = useState(false);
-  const [quietDraft, setQuietDraft] = useState<QuietHoursEditorDraft>(
+  const [quietDraft, setQuietDraftState] = useState<NotificationQuietHoursTargetDraft>(
     () => createQuietHoursDraft(userId ?? ""),
   );
+  const quietDraftRef = useRef(quietDraft);
+  const setQuietDraft = useCallback((
+    next: NotificationQuietHoursTargetDraft
+      | ((current: NotificationQuietHoursTargetDraft) => NotificationQuietHoursTargetDraft),
+  ) => {
+    const resolved = typeof next === "function" ? next(quietDraftRef.current) : next;
+    quietDraftRef.current = resolved;
+    setQuietDraftState(resolved);
+  }, []);
   const [quietSaveMessage, setQuietSaveMessage] = useState("");
   const webDelivery = webPushDeliveryView(webPushState);
   const webPushContext = useMemo<WebPushSessionContext | null>(
@@ -368,34 +374,40 @@ export function NotificationSettings() {
       || !valid
       || saveQuietHours.isPending
     ) return;
-    const requestedTargetUserId = quietDraft.targetUserId;
+    const submittedQuietDraft = { ...quietDraft };
     setQuietSaveMessage("");
     saveQuietHours.mutate(
       {
-        targetUserId: requestedTargetUserId,
+        targetUserId: submittedQuietDraft.targetUserId,
         quietHours: {
-          enabled: quietDraft.enabled,
-          startMinute: quietDraft.startMinute,
-          endMinute: quietDraft.endMinute,
+          enabled: submittedQuietDraft.enabled,
+          startMinute: submittedQuietDraft.startMinute,
+          endMinute: submittedQuietDraft.endMinute,
         },
       },
       {
         onSuccess: (result) => {
-          if (result.targetUserId !== requestedTargetUserId) {
+          if (!isSameNotificationQuietHoursTargetDraft(quietDraftRef.current, submittedQuietDraft)) {
+            return;
+          }
+          if (result.targetUserId !== submittedQuietDraft.targetUserId) {
             setQuietSaveMessage("저장 대상을 확인하지 못해 반영하지 않았어요.");
             return;
           }
-          setQuietDraft((current) => current.targetUserId === requestedTargetUserId
-            ? {
-              targetUserId: result.targetUserId,
-              enabled: result.quietHours.enabled,
-              startMinute: result.quietHours.startMinute,
-              endMinute: result.quietHours.endMinute,
-            }
-            : current);
+          setQuietDraft({
+            targetUserId: result.targetUserId,
+            enabled: result.quietHours.enabled,
+            startMinute: result.quietHours.startMinute,
+            endMinute: result.quietHours.endMinute,
+          });
           setQuietSaveMessage("조용한 시간을 적용했어요.");
         },
-        onError: () => setQuietSaveMessage("조용한 시간을 저장하지 못했어요. 다시 시도해 주세요."),
+        onError: () => {
+          if (!isSameNotificationQuietHoursTargetDraft(quietDraftRef.current, submittedQuietDraft)) {
+            return;
+          }
+          setQuietSaveMessage("조용한 시간을 저장하지 못했어요. 다시 시도해 주세요.");
+        },
       },
     );
   };
@@ -657,7 +669,7 @@ export function NotificationSettings() {
                   </div>
                 ) : quietDataReady ? (
                   <div className="nst-list nst-quiet__card">
-                    <div className="nst-quiet__copy">
+                    <div className="nst-quiet__copy hy-explain">
                       <p>조용한 시간에는 일정·메시지·일반 도착·출발 알림을 보내지 않아요.</p>
                       <p>SOS·긴급·위험구역 알림은 이 시간에도 항상 전달돼요.</p>
                       <p>알림 소리와 진동은 휴대폰 또는 브라우저 설정에서 관리해 주세요.</p>
