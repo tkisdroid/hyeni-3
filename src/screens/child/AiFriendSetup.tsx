@@ -7,6 +7,8 @@ import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "@/queries/useFamily";
 import { useAiFriendPublicSettings, useSetAiFriendName } from "@/queries/useAi";
 import { resolveAiFriendDisplayName } from "@/transform/aiFriendName";
+import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
+import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./AiFriendSetup.css";
 
 /**
@@ -84,8 +86,23 @@ export function AiFriendSetup() {
 
   // 아이 모드: 로그인 사용자 = 아이. childUserId = userId.
   const { familyId, userId } = useAuth();
-  const { data: family } = useMyFamily();
-  const { data: publicSettings } = useAiFriendPublicSettings(userId);
+  const familyQuery = useMyFamily();
+  const publicSettingsQuery = useAiFriendPublicSettings(userId);
+  const family = familyQuery.data;
+  const publicSettings = publicSettingsQuery.data;
+  const aiFriendSetupQueryState = resolveQueryTruthState([
+    { isLoading: familyQuery.isLoading, isError: familyQuery.isError },
+    { isLoading: publicSettingsQuery.isLoading, isError: publicSettingsQuery.isError },
+  ]);
+  const aiFriendSetupDataMissing = aiFriendSetupQueryState === "ready" && (
+    !family || publicSettings === undefined
+  );
+  const aiFriendSetupDataReady = aiFriendSetupQueryState === "ready" && !aiFriendSetupDataMissing;
+  const aiFriendSetupDataEmpty = aiFriendSetupDataReady && publicSettings === null;
+  const aiFriendSetupRefetching = familyQuery.isFetching || publicSettingsQuery.isFetching;
+  const retryAiFriendSetup = async (): Promise<void> => {
+    await Promise.all([familyQuery.refetch(), publicSettingsQuery.refetch()]);
+  };
   const setNameMutation = useSetAiFriendName();
 
   const [selected, setSelected] = useState<string>(
@@ -96,8 +113,10 @@ export function AiFriendSetup() {
 
   const persona = personaFor(selected);
   const serverName = publicSettings?.ai_friend_name || "";
-  const childName =
-    userId ? family?.members.find((m) => m.role === "child" && m.user_id === userId)?.name ?? "" : "";
+  const childMember = userId
+    ? family?.members.find((m) => m.role === "child" && m.user_id === userId) ?? null
+    : null;
+  const childName = childMember?.name ?? "";
   const effectiveName =
     customName != null
       ? customName
@@ -110,14 +129,17 @@ export function AiFriendSetup() {
   }, [familyId, userId]);
 
   const save = () => {
-    if (setNameMutation.isPending) return;
+    if (!aiFriendSetupDataReady || !childMember || !familyId || !userId || setNameMutation.isPending) {
+      show("내 가족과 AI 친구 설정을 확인한 뒤 다시 해줘", "⚠️");
+      return;
+    }
     writeSelectedCharacter(familyId, userId, selected);
     const finalName = (effectiveName || persona.name).trim().slice(0, MAX_NAME_LEN);
     const goChat = () =>
       navigate("/child/ai-friend", { state: { characterEmoji: selected, friendName: finalName } });
 
     // 이름이 서버값과 다르면 자녀 본인 write(friend-name). 실패해도 대화는 이어간다.
-    if (familyId && finalName && finalName !== serverName) {
+    if (finalName && finalName !== serverName) {
       setNameMutation.mutate(finalName, {
         onSuccess: () => goChat(),
         onError: () => {
@@ -129,6 +151,48 @@ export function AiFriendSetup() {
       goChat();
     }
   };
+
+  if (aiFriendSetupQueryState === "loading") {
+    return (
+      <ScreenQueryState
+        screenTitle="내 AI 친구"
+        state="loading"
+        heading="내 AI 친구를 불러오고 있어"
+        description="저장한 이름과 가족 연결을 확인하는 중이야."
+        onBack={() => navigate(-1)}
+      />
+    );
+  }
+
+  if (aiFriendSetupQueryState === "error" || aiFriendSetupDataMissing) {
+    return (
+      <ScreenQueryState
+        screenTitle="내 AI 친구"
+        state="error"
+        heading="AI 친구 설정을 불러오지 못했어"
+        description="저장한 이름을 덮어쓰지 않도록 잠깐 닫았어. 다시 확인해 줘."
+        onBack={() => navigate(-1)}
+        onRetry={() => void retryAiFriendSetup()}
+        retrying={aiFriendSetupRefetching}
+        retryLabel="다시 확인하기"
+        retryingLabel="다시 확인하고 있어…"
+      />
+    );
+  }
+
+  if (!childMember) {
+    return (
+      <ScreenQueryState
+        screenTitle="내 AI 친구"
+        state="empty"
+        heading="내 가족 연결을 찾지 못했어"
+        description="부모님과 다시 연결하면 AI 친구를 고를 수 있어."
+        onBack={() => navigate(-1)}
+        onRetry={() => navigate("/onboarding")}
+        retryLabel="연결 화면으로 가기"
+      />
+    );
+  }
 
   return (
     <div className="afs">
@@ -145,6 +209,11 @@ export function AiFriendSetup() {
       </header>
 
       <div className="afs-body">
+        {aiFriendSetupDataEmpty && (
+          <div className="sqs-inline-empty">
+            아직 저장한 AI 친구 이름이 없어. 마음에 드는 친구부터 골라 봐.
+          </div>
+        )}
         {/* 선택한 친구 미리보기 */}
         <div className="afs-preview">
           <div className="afs-preview__art">

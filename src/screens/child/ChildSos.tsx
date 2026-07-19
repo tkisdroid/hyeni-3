@@ -3,9 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { Check, ChevronLeft } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
+import { useAuth } from "@/auth/AuthContext";
 import { useSendSos } from "@/queries/useSos";
 import { useMyFamily } from "@/queries/useFamily";
 import { placePhoneCall } from "@/lib/native/phone";
+import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
+import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./ChildSos.css";
 
 type Phase = "idle" | "sending" | "sent" | "error";
@@ -24,8 +27,17 @@ const HOLD_MS = 3000;
 export function ChildSos() {
   const navigate = useNavigate();
   const { show } = useToast();
+  const { familyId } = useAuth();
   const sos = useSendSos();
-  const { data: family } = useMyFamily();
+  const familyQuery = useMyFamily();
+  const family = familyQuery.data;
+  const sosFamilyQueryState = resolveQueryTruthState([
+    { isLoading: familyQuery.isLoading, isError: familyQuery.isError },
+  ]);
+  const sosFamilyDataMissing = sosFamilyQueryState === "ready" && family === undefined;
+  const retrySosFamily = async (): Promise<void> => {
+    await familyQuery.refetch();
+  };
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [progress, setProgress] = useState(0); // 0~1
@@ -139,6 +151,20 @@ export function ChildSos() {
   const hint = progress > 0 ? "놓지 마!" : "3초 꾹";
   const ringBg = `conic-gradient(#FFE1E8 ${progress * 360}deg, rgba(255,255,255,.35) 0deg)`;
 
+  if (!familyId) {
+    return (
+      <ScreenQueryState
+        screenTitle="SOS"
+        state="empty"
+        heading="연결된 가족 정보가 없어"
+        description="SOS를 받을 가족을 다시 연결한 뒤 사용할 수 있어."
+        onBack={() => navigate(-1)}
+        onRetry={() => navigate("/onboarding")}
+        retryLabel="연결 화면으로 가기"
+      />
+    );
+  }
+
   if (phase === "sending") {
     return (
       <div className="cs-root">
@@ -246,6 +272,32 @@ export function ChildSos() {
           <br />
           엄마·아빠에게 <b>내 위치</b>랑 같이 알려줄게
         </div>
+
+        {sosFamilyQueryState === "loading" && (
+          <div className="cs-query-note" aria-live="polite">
+            가족 정보를 확인 중이야. 기다리지 않고 SOS를 보낼 수 있어.
+          </div>
+        )}
+
+        {(sosFamilyQueryState === "error" || sosFamilyDataMissing) && (
+          <div className="cs-query-note cs-query-note--error" role="alert">
+            <span>가족 이름과 전화번호는 못 불러왔지만 SOS 알림은 보낼 수 있어.</span>
+            <button
+              type="button"
+              className="cs-query-retry hy-press"
+              onClick={() => void retrySosFamily()}
+              disabled={familyQuery.isFetching}
+            >
+              {familyQuery.isFetching ? "다시 확인 중…" : "가족 정보 다시 확인"}
+            </button>
+          </div>
+        )}
+
+        {sosFamilyQueryState === "ready" && !sosFamilyDataMissing && parents.length === 0 && (
+          <div className="cs-query-note">
+            전화할 보호자 번호는 아직 없지만 SOS 알림은 그대로 보낼 수 있어.
+          </div>
+        )}
 
         <div className="cs-holder">
           <span className="cs-holder__ring" />

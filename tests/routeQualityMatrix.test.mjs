@@ -79,7 +79,7 @@ const routeQualityMatrix = [
   route("child-detail", "ChildDetail", "src/screens/parent/ChildDetail.tsx", "parent", "all", "query", queryStates(/detailLoading/, /detailError/, /!rawChild/, /title=\{name\}/, /void retryChildDetail\(\)/), "screen", "parent-formal"),
   route("pairing-wizard", "PairingWizard", "src/screens/feature/PairingWizard.tsx", "parent", "all", "hybrid", queryStates(/pairingQueryState === "loading"/, /pairingQueryState === "error"/, /existingChildCount === 0/, /COUNTS\.map/, /void retryPairingWizard\(\)/), "screen", "parent-formal"),
   route("family-connection", "FamilyConnection", "src/screens/feature/FamilyConnection.tsx", "parent", "all", "query", queryStates(/connectionLoading/, /connectionError/, /connected\.length === 0/, /connected\.map/, /void retryFamilyConnection\(\)/), "screen", "parent-formal"),
-  route("location-settings", "LocationSettings", "src/screens/feature/LocationSettings.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
+  route("location-settings", "LocationSettings", "src/screens/feature/LocationSettings.tsx", "parent", "all", "hybrid", queryStates(/locationSettingsQueryState === "loading"/, /locationSettingsQueryState === "error"/, /locationSettingsEmpty/, /INTERVALS\.map/, /void retryLocationSettings\(\)/), "screen", "parent-formal"),
   route("account", "ParentAccount", "src/screens/parent/ParentAccount.tsx", "parent", "all", "query", [
     queryStatesAt("src/screens/parent/ParentAccount.tsx", /isLoading \|\| accountLoadError/, /accountIsError/, /account === null/, /const isPrimary = account\.isPrimaryParent/, /void refetchAccount\(\)/),
     queryStatesAt("src/screens/parent/SocialLinks.tsx", /native && isLoading/, /native && isError/, /links\.length === 0/, /links\.map/, /void refetch\(\)/),
@@ -95,14 +95,14 @@ const routeQualityMatrix = [
   route("remote-ring", "RemoteRing", "src/screens/feature/RemoteRing.tsx", "parent", "all", "hybrid", queryStates(/ringQueryState === "loading"/, /ringQueryState === "error"/, /children\.length === 0/, /ringDataReady && ringing/, /void retryRemoteRing\(\)/), "screen", "parent-formal", "focus-trapped"),
   route("sos-receive", "SosReceive", "src/screens/feature/SosReceive.tsx", "parent", "all", "query", queryStates(/sosLoading/, /sosLoadError/, /!latest && !sosLoading && !sosLoadError/, /\{latest && \(/, /void refetchSos\(\)/), "safe", "parent-formal"),
 
-  route("child/sos", "ChildSos", "src/screens/child/ChildSos.tsx", "child", "all", "hybrid", null, "screen", "child-informal"),
+  route("child/sos", "ChildSos", "src/screens/child/ChildSos.tsx", "child", "all", "hybrid", queryStates(/sosFamilyQueryState === "loading"/, /sosFamilyQueryState === "error"/, /parents\.length === 0/, /className="cs-hold hy-press"/, /void retrySosFamily\(\)/), "screen", "child-informal"),
   route("child/ai-friend", "AiFriendChat", "src/screens/child/AiFriendChat.tsx", "child", "all", "query", queryStates(/chatLoading/, /chatError/, /messagesData\.length === 0/, /shown\.map/, /void retryChat\(\)/), "screen", "child-informal"),
   route("child/location-status", "ChildLocationStatus", "src/screens/child/ChildLocationStatus.tsx", "child", "all", "query", queryStates(/isLoading/, /isError/, /!location/, /location &&/, /void refetchLocation\(\)/), "screen", "child-informal"),
-  route("child/settings", "ChildSettings", "src/screens/child/ChildSettings.tsx", "child", "all", "hybrid", null, "screen", "child-informal"),
-  route("child/ai-friend-setup", "AiFriendSetup", "src/screens/child/AiFriendSetup.tsx", "child", "all", "hybrid", null, "screen", "child-informal"),
+  route("child/settings", "ChildSettings", "src/screens/child/ChildSettings.tsx", "child", "all", "hybrid", queryStates(/childSettingsQueryState === "loading"/, /childSettingsQueryState === "error"/, /childSettingsDataEmpty|!me/, /REQUEST_ITEMS\.map/, /void retryChildSettings\(\)/), "screen", "child-informal"),
+  route("child/ai-friend-setup", "AiFriendSetup", "src/screens/child/AiFriendSetup.tsx", "child", "all", "hybrid", queryStates(/aiFriendSetupQueryState === "loading"/, /aiFriendSetupQueryState === "error"/, /aiFriendSetupDataEmpty|!childMember/, /AI_FRIEND_PERSONAS\.map/, /void retryAiFriendSetup\(\)/), "screen", "child-informal"),
   route("playdate-accept", "PlaydateAccept", "src/screens/feature/PlaydateAccept.tsx", "child", "all", "query", queryStates(/playdateLoading/, /playdateError/, /incoming\.length === 0/, /incoming\.map/, /void retryPlaydates\(\)/), "safe", "child-informal"),
 
-  route("teacher/notice", "TeacherNotice", "src/screens/teacher/TeacherNotice.tsx", "teacher", "dev", "hybrid", null, "screen", "teacher-dev"),
+  route("teacher/notice", "TeacherNotice", "src/screens/teacher/TeacherNotice.tsx", "teacher", "dev", "hybrid", queryStates(/teacherNoticeQueryState === "loading"/, /teacherNoticeQueryState === "error"/, /teacherNoticeDataEmpty/, /attachments\.map/, /void retryTeacherNotice\(\)/), "screen", "teacher-dev"),
   route("feedback", "Feedback", "src/screens/feature/Feedback.tsx", "authenticated", "all", "mutation", null, "screen", "role-aware"),
   route("supplies", "Supplies", "src/screens/feature/Supplies.tsx", "parent-child", "all", "query", queryStates(/isLoading/, /isError/, /sec\.list\.length === 0/, /sec\.list\.map/, /void Promise\.all/), "screen", "role-aware"),
   route("route", "RouteView", "src/screens/feature/RouteView.tsx", "parent-child", "all", "query", queryStates(/routeFetching/, /routeError/, /routeState === "no-child" \|\| routeState === "no-dest"/, /steps\.map/, /routeRefetch\(\)/), "screen", "role-aware"),
@@ -536,9 +536,14 @@ test("감사 완료된 hybrid 화면은 read query의 다섯 상태와 실제 �
     "event-form",
     "danger-zone-form",
     "pairing-wizard",
+    "location-settings",
     "data-sync",
     "notification-settings",
     "remote-ring",
+    "child/sos",
+    "child/settings",
+    "child/ai-friend-setup",
+    "teacher/notice",
   ]);
   auditedHybridRows.forEach(assertStateContracts);
 });

@@ -12,6 +12,7 @@ interface ScreenQueryStateProps {
   onRetry?: () => void;
   retrying?: boolean;
   retryLabel?: string;
+  retryingLabel?: string;
 }
 
 /** 조회 화면의 로딩·오류·빈 상태를 같은 간격과 터치 크기로 표시한다. */
@@ -24,6 +25,7 @@ export function ScreenQueryState({
   onRetry,
   retrying = false,
   retryLabel = "다시 불러오기",
+  retryingLabel = "다시 확인하고 있어요…",
 }: ScreenQueryStateProps) {
   const Icon = state === "loading" ? LoaderCircle : state === "error" ? AlertTriangle : Inbox;
   return (
@@ -64,7 +66,7 @@ export function ScreenQueryState({
               strokeWidth={2.4}
               aria-hidden="true"
             />
-            {retrying ? "다시 확인하고 있어요…" : retryLabel}
+            {retrying ? retryingLabel : retryLabel}
           </button>
         )}
       </main>

@@ -4,12 +4,11 @@ import { ChevronLeft, ChevronRight, MapPin, Check, Radar, BatteryCharging, Histo
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useEntitlement } from "@/queries/useEntitlement";
+import { useLocationPreferences, useSaveLocationPreferences } from "@/queries/useLocation";
 import { isLocationTrackingSupported } from "@/lib/native/location";
-import {
-  fetchLocationPreferences,
-  saveLocationPreferences,
-  type LocationIntervalMode,
-} from "@/lib/api/endpoints/location";
+import type { LocationIntervalMode } from "@/lib/api/endpoints/location";
+import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
+import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./LocationSettings.css";
 
 /**
@@ -78,7 +77,7 @@ function savePrefs(prefs: LocationPrefs): void {
 }
 
 const PERM_LABEL: Record<PermState, { text: string; tone: "safe" | "caution" | "neutral" }> = {
-  granted: { text: "항상 허용", tone: "safe" },
+  granted: { text: "허용됨", tone: "safe" },
   prompt: { text: "요청 필요", tone: "caution" },
   denied: { text: "꺼짐", tone: "caution" },
   unknown: { text: "확인 불가", tone: "neutral" },
@@ -88,7 +87,25 @@ export function LocationSettings() {
   const navigate = useNavigate();
   const { show } = useToast();
   const { familyId } = useAuth();
-  const { isPremium, ready } = useEntitlement();
+  const entitlementQuery = useEntitlement();
+  const preferencesQuery = useLocationPreferences();
+  const savePreferences = useSaveLocationPreferences();
+  const { isPremium } = entitlementQuery;
+  const locationSettingsQueryState = resolveQueryTruthState([
+    { isLoading: preferencesQuery.isLoading, isError: preferencesQuery.isError },
+    { isLoading: entitlementQuery.isLoading, isError: entitlementQuery.isError },
+  ]);
+  const locationSettingsEmpty = locationSettingsQueryState === "ready" && !familyId;
+  const locationSettingsDataMissing = locationSettingsQueryState === "ready"
+    && !!familyId
+    && (!preferencesQuery.data || !entitlementQuery.ready);
+  const locationSettingsDataReady = locationSettingsQueryState === "ready"
+    && !!familyId
+    && !locationSettingsDataMissing;
+  const locationSettingsRefetching = preferencesQuery.isFetching || entitlementQuery.isFetching;
+  const retryLocationSettings = async (): Promise<void> => {
+    await Promise.all([preferencesQuery.refetch(), entitlementQuery.refetch()]);
+  };
 
   const [prefs, setPrefs] = useState<LocationPrefs>(loadPrefs);
   const [perm, setPerm] = useState<PermState>("unknown");
@@ -116,71 +133,57 @@ export function LocationSettings() {
   }, [refreshPermission]);
 
   useEffect(() => {
-    if (!familyId) return;
-    let cancelled = false;
-    void fetchLocationPreferences(familyId)
-      .then((serverPrefs) => {
-        if (cancelled) return;
-        const next: LocationPrefs = {
-          background: serverPrefs.background_enabled,
-          interval: serverPrefs.interval_mode,
-          batterySaverException: serverPrefs.battery_saver_exception,
-        };
-        setPrefs(next);
-        savePrefs(next);
-      })
-      .catch((error) => {
-        console.error("위치 설정 조회 실패:", error);
-      });
-    return () => {
-      cancelled = true;
+    const serverPrefs = preferencesQuery.data;
+    if (!serverPrefs) return;
+    const next: LocationPrefs = {
+      background: serverPrefs.background_enabled,
+      interval: serverPrefs.interval_mode,
+      batterySaverException: serverPrefs.battery_saver_exception,
     };
-  }, [familyId]);
+    setPrefs(next);
+    savePrefs(next);
+  }, [preferencesQuery.data]);
 
-  const update = (patch: Partial<LocationPrefs>, message: string, icon: string) => {
-    setPrefs((prev) => {
-      const next = { ...prev, ...patch };
-      savePrefs(next);
-      if (!familyId) {
-        show("이 기기에 저장했어요", icon);
-        return next;
-      }
-      setSaving(true);
-      void saveLocationPreferences(familyId, {
+  const update = async (patch: Partial<LocationPrefs>, message: string, icon: string) => {
+    if (!locationSettingsDataReady || saving || savePreferences.isPending) {
+      show("서버의 위치 설정을 확인한 뒤 다시 시도해 주세요", "⚠️");
+      return;
+    }
+    const next = { ...prefs, ...patch };
+    setSaving(true);
+    try {
+      const saved = await savePreferences.mutateAsync({
         background_enabled: next.background,
         interval_mode: next.interval,
         battery_saver_exception: next.batterySaverException,
-      })
-        .then((saved) => {
-          const confirmed: LocationPrefs = {
-            background: saved.background_enabled,
-            interval: saved.interval_mode,
-            batterySaverException: saved.battery_saver_exception,
-          };
-          setPrefs(confirmed);
-          savePrefs(confirmed);
-          show(message, icon);
-        })
-        .catch((error) => {
-          console.error("위치 설정 저장 실패:", error);
-          show("위치 설정 저장에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️");
-        })
-        .finally(() => setSaving(false));
-      return next;
-    });
+      });
+      const confirmed: LocationPrefs = {
+        background: saved.background_enabled,
+        interval: saved.interval_mode,
+        batterySaverException: saved.battery_saver_exception,
+      };
+      setPrefs(confirmed);
+      savePrefs(confirmed);
+      show(message, icon);
+    } catch (error) {
+      console.error("위치 설정 저장 실패:", error);
+      show("위치 설정 저장에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const toggleBackground = () => {
-    update({ background: !prefs.background }, "아이 기기에 곧 반영돼요", "📍");
+    void update({ background: !prefs.background }, "아이 기기에 곧 반영돼요", "📍");
   };
 
   const toggleBatteryException = () => {
-    update({ batterySaverException: !prefs.batterySaverException }, "배터리 설정을 저장했어요", "🔋");
+    void update({ batterySaverException: !prefs.batterySaverException }, "배터리 설정 선호를 저장했어요", "🔋");
   };
 
   const pickInterval = (interval: UpdateInterval) => {
     if (interval === prefs.interval) return;
-    update({ interval }, "업데이트 주기를 저장했어요. 아이 기기에 곧 반영돼요", "⏱️");
+    void update({ interval }, "업데이트 주기를 저장했어요. 아이 기기에 곧 반영돼요", "⏱️");
   };
 
   // 권한 요청: 웹은 getCurrentPosition 으로 OS 권한 프롬프트를 띄운다(실 동작).
@@ -204,7 +207,47 @@ export function LocationSettings() {
   };
 
   const permView = PERM_LABEL[perm];
-  const retentionLabel = !ready ? "확인 중" : isPremium ? "30일 (프리미엄)" : "7일 (무료)";
+  const retentionLabel = isPremium ? "30일 (프리미엄)" : "7일 (무료)";
+
+  if (locationSettingsQueryState === "loading") {
+    return (
+      <ScreenQueryState
+        screenTitle="위치 · 백그라운드"
+        state="loading"
+        heading="위치 설정을 확인하고 있어요"
+        description="아이 기기에 적용할 전송 주기와 이용 범위를 불러오는 중이에요."
+        onBack={() => navigate(-1)}
+      />
+    );
+  }
+
+  if (locationSettingsQueryState === "error" || locationSettingsDataMissing) {
+    return (
+      <ScreenQueryState
+        screenTitle="위치 · 백그라운드"
+        state="error"
+        heading="위치 설정을 확인하지 못했어요"
+        description="기기에 남은 값이 서버 설정을 덮어쓰지 않도록 변경 기능을 닫았어요."
+        onBack={() => navigate(-1)}
+        onRetry={() => void retryLocationSettings()}
+        retrying={locationSettingsRefetching}
+      />
+    );
+  }
+
+  if (locationSettingsEmpty) {
+    return (
+      <ScreenQueryState
+        screenTitle="위치 · 백그라운드"
+        state="empty"
+        heading="연결된 가족이 없어요"
+        description="가족을 연결한 뒤 아이 기기에 적용할 위치 설정을 관리할 수 있어요."
+        onBack={() => navigate(-1)}
+        onRetry={() => navigate("/parent/family")}
+        retryLabel="가족 연결 확인"
+      />
+    );
+  }
 
   return (
     <div className="lset-screen">
@@ -227,13 +270,13 @@ export function LocationSettings() {
             <MapPin size={18} strokeWidth={2.2} color="#2E86C1" />
           </span>
           <span className="lset-row__main">
-            <span className="lset-row__title">위치 권한</span>
+            <span className="lset-row__title">이 휴대폰의 위치 권한</span>
             <span className="lset-row__sub">
               {perm === "granted"
-                ? "항상 허용됨"
+                ? "이 휴대폰에서 위치를 사용할 수 있어요"
                 : perm === "unknown"
                   ? "이 기기에서 상태를 확인할 수 없어요"
-                  : "탭하면 권한을 요청해요"}
+                  : "탭하면 이 휴대폰의 권한을 요청해요"}
             </span>
           </span>
           <span className={`lset-chip lset-chip--${permView.tone}`}>{permView.text}</span>
@@ -256,7 +299,7 @@ export function LocationSettings() {
             aria-label="백그라운드 위치 전송"
             data-on={prefs.background}
             onClick={toggleBackground}
-            disabled={saving}
+            disabled={saving || !locationSettingsDataReady}
           >
             <span className="lset-toggle__knob" />
           </button>
@@ -275,7 +318,7 @@ export function LocationSettings() {
                   className="lset-seg__item hy-press"
                   data-on={on}
                   onClick={() => pickInterval(opt.id)}
-                  disabled={saving}
+                  disabled={saving || !locationSettingsDataReady}
                 >
                   {on && <Check size={13} strokeWidth={3} className="lset-seg__check" />}
                   {opt.label}
@@ -293,7 +336,7 @@ export function LocationSettings() {
           </span>
           <span className="lset-row__main">
             <span className="lset-row__title">배터리 최적화 예외</span>
-            <span className="lset-row__sub">권장 · 안정적 전송</span>
+            <span className="lset-row__sub">아이 기기에서 직접 허용해야 최종 적용돼요</span>
           </span>
           <button
             type="button"
@@ -303,7 +346,7 @@ export function LocationSettings() {
             aria-label="배터리 최적화 예외"
             data-on={prefs.batterySaverException}
             onClick={toggleBatteryException}
-            disabled={saving}
+            disabled={saving || !locationSettingsDataReady}
           >
             <span className="lset-toggle__knob" />
           </button>
@@ -330,6 +373,7 @@ export function LocationSettings() {
           {nativeSupported
             ? "저장한 주기·백그라운드 설정은 아이 안드로이드 앱이 주기적으로 확인해 반영해요."
             : "위치 전송은 아이 안드로이드 앱에서 동작해요. 저장한 설정은 아이 앱이 주기적으로 확인해 반영해요."}
+          {" "}이 화면의 위치 권한은 현재 휴대폰 기준이며, 아이 기기 권한과 배터리 예외는 아이 앱에서 직접 허용해야 해요.
         </p>
       </div>
     </div>

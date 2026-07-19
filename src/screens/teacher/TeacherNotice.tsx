@@ -1,7 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft, X, Paperclip } from "lucide-react";
-import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useTeacherClasses, useRoster, usePublishNotice } from "@/queries/useTeacher";
@@ -10,6 +9,8 @@ import { apiUploadTeacherNoticeFile } from "@/lib/api/client";
 import { isoDateKey } from "@/transform/teacherView";
 import { dateInputValueToDateKey } from "@/transform/dateKey";
 import type { TeacherNoticeAttachment } from "@/lib/api/endpoints/teacher";
+import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
+import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./TeacherNotice.css";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
@@ -43,6 +44,29 @@ export function TeacherNotice() {
 
   const rosterQ = useRoster(classId);
   const recipientCount = rosterQ.data?.length ?? 0;
+  const classesFeatureMissing = classesQ.isError && isMissingFunction(classesQ.error);
+  const teacherNoticeQueryState = resolveQueryTruthState([
+    { isLoading: classesQ.isLoading, isError: classesQ.isError && !classesFeatureMissing },
+    { isLoading: !!classId && rosterQ.isLoading, isError: !!classId && rosterQ.isError },
+  ]);
+  const teacherNoticeDataMissing = teacherNoticeQueryState === "ready"
+    && !classesFeatureMissing
+    && (classesQ.data === undefined || (!!classId && rosterQ.data === undefined));
+  const teacherNoticeDataEmpty = teacherNoticeQueryState === "ready" && (
+    classesFeatureMissing
+    || classesQ.data?.length === 0
+    || (!!classId && rosterQ.data?.length === 0)
+  );
+  const teacherNoticeDataReady = teacherNoticeQueryState === "ready"
+    && !teacherNoticeDataMissing
+    && !teacherNoticeDataEmpty
+    && !!classId;
+  const teacherNoticeRefetching = classesQ.isFetching || rosterQ.isFetching;
+  const retryTeacherNotice = async (): Promise<void> => {
+    const retries: Array<Promise<unknown>> = [classesQ.refetch()];
+    if (classId) retries.push(rosterQ.refetch());
+    await Promise.all(retries);
+  };
 
   const publish = usePublishNotice();
 
@@ -69,10 +93,6 @@ export function TeacherNotice() {
   const [attachments, setAttachments] = useState<AttachmentDraft[]>([]);
   const [uploading, setUploading] = useState(false);
 
-  const loading = classesQ.isLoading;
-  const genuineError = classesQ.isError && !isMissingFunction(classesQ.error);
-  const notReady = !loading && !classId;
-
   const addSupply = () => {
     const item = supplyInput.trim();
     if (!item) return;
@@ -86,7 +106,10 @@ export function TeacherNotice() {
   const removeSupply = (item: string) =>
     setSupplies((list) => list.filter((s) => s !== item));
 
-  const canSend = !!classId && title.trim().length > 0 && !publish.isPending && !uploading;
+  const canSend = teacherNoticeDataReady
+    && title.trim().length > 0
+    && !publish.isPending
+    && !uploading;
 
   const addAttachments = (files: FileList | null) => {
     if (!files?.length) return;
@@ -136,8 +159,8 @@ export function TeacherNotice() {
   };
 
   const handleSend = async () => {
-    if (!classId) {
-      show("연결된 반이 없어 알림장을 보낼 수 없어요", "🧑‍🏫");
+    if (!teacherNoticeDataReady || !classId || recipientCount === 0) {
+      show("연결된 반과 학생을 확인한 뒤 다시 시도해 주세요", "🧑‍🏫");
       return;
     }
     const trimmedTitle = title.trim();
@@ -198,6 +221,58 @@ export function TeacherNotice() {
     );
   };
 
+  if (teacherNoticeQueryState === "loading") {
+    return (
+      <ScreenQueryState
+        screenTitle="알림장"
+        state="loading"
+        heading="반과 학생 정보를 불러오고 있어요"
+        description="알림장을 받을 학생과 반 정보를 확인하는 중이에요."
+        onBack={() => navigate(-1)}
+      />
+    );
+  }
+
+  if (teacherNoticeQueryState === "error" || teacherNoticeDataMissing) {
+    return (
+      <ScreenQueryState
+        screenTitle="알림장"
+        state="error"
+        heading="알림장 대상을 확인하지 못했어요"
+        description="수신자가 확인되지 않은 상태에서는 파일 업로드와 발송을 시작하지 않아요."
+        onBack={() => navigate(-1)}
+        onRetry={() => void retryTeacherNotice()}
+        retrying={teacherNoticeRefetching}
+      />
+    );
+  }
+
+  if (teacherNoticeDataEmpty) {
+    const hasClass = !!classId;
+    const emptyHeading = classesFeatureMissing
+      ? "알림장 서버 기능이 준비되지 않았어요"
+      : hasClass
+        ? "연결된 학생이 없어요"
+        : "연결된 반이 없어요";
+    const emptyDescription = classesFeatureMissing
+      ? "개발 환경의 선생님 기능을 확인한 뒤 다시 시도해 주세요."
+      : hasClass
+        ? "학생이 연결되면 학부모에게 알림장과 준비물을 보낼 수 있어요."
+        : "반을 만들고 학생을 연결하면 알림장을 보낼 수 있어요.";
+    return (
+      <ScreenQueryState
+        screenTitle="알림장"
+        state="empty"
+        heading={emptyHeading}
+        description={emptyDescription}
+        onBack={() => navigate(-1)}
+        onRetry={() => void retryTeacherNotice()}
+        retrying={teacherNoticeRefetching}
+        retryLabel="반 정보 다시 확인"
+      />
+    );
+  }
+
   return (
     <div className="tn-screen">
       <header className="tn-header">
@@ -213,24 +288,7 @@ export function TeacherNotice() {
       </header>
 
       <div className="tn-body">
-        {loading && <div className="tn-empty tn-empty--soft">반 정보를 불러오는 중…</div>}
-
-        {notReady && (
-          <div className="tn-empty">
-            <span className="tn-empty__emoji"><img src={asset("mascot/teacher-glasses.webp")} alt="" style={{ width: 48, height: 48, objectFit: "contain", borderRadius: 12 }} /></span>
-            <span className="tn-empty__title">
-              {genuineError ? "잠시 후 다시 시도해 주세요" : "연결된 반이 없어요"}
-            </span>
-            <span className="tn-empty__sub">
-              {genuineError
-                ? "반 정보를 불러오지 못했어요."
-                : "반을 만들고 학생을 연결하면 알림장을 보낼 수 있어요."}
-            </span>
-          </div>
-        )}
-
-        {!loading && !notReady && (
-          <>
+        <>
             <div className="tn-meta">
               {todayLabel} · {className}
             </div>
@@ -385,8 +443,7 @@ export function TeacherNotice() {
                 아직 연결된 학생이 없어요. 학생이 연결되면 알림장이 학부모에게 전달돼요.
               </div>
             )}
-          </>
-        )}
+        </>
       </div>
     </div>
   );

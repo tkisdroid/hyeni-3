@@ -14,6 +14,8 @@ import {
   type LocationTrackingStatus,
 } from "@/lib/native/location";
 import { isNativePlatform } from "@/lib/native/plugins";
+import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
+import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./ChildSettings.css";
 
 // 만 나이(런타임 계산).
@@ -57,10 +59,24 @@ export function ChildSettings() {
   const { show } = useToast();
   const now = useMemo(() => new Date(), []);
   const { userId } = useAuth();
-  const { data: family } = useMyFamily();
+  const familyQuery = useMyFamily();
+  const family = familyQuery.data;
   const request = useSendChildSettingRequest();
   const notifSettingsQuery = useNotifSettings();
   const saveNotifSettings = useSaveNotifSettings();
+  const childSettingsQueryState = resolveQueryTruthState([
+    { isLoading: familyQuery.isLoading, isError: familyQuery.isError },
+    { isLoading: notifSettingsQuery.isLoading, isError: notifSettingsQuery.isError },
+  ]);
+  const childSettingsDataMissing = childSettingsQueryState === "ready" && (
+    !family || notifSettingsQuery.data === undefined
+  );
+  const childSettingsDataReady = childSettingsQueryState === "ready" && !childSettingsDataMissing;
+  const childSettingsDataEmpty = childSettingsDataReady && notifSettingsQuery.data === null;
+  const childSettingsRefetching = familyQuery.isFetching || notifSettingsQuery.isFetching;
+  const retryChildSettings = async (): Promise<void> => {
+    await Promise.all([familyQuery.refetch(), notifSettingsQuery.refetch()]);
+  };
 
   const [requested, setRequested] = useState<Record<string, boolean>>({});
   const [helpOpen, setHelpOpen] = useState(false);
@@ -126,7 +142,7 @@ export function ChildSettings() {
   })();
 
   const toggleNotifications = () => {
-    if (notifSettingsQuery.isLoading || notifSettingsQuery.isError || saveNotifSettings.isPending) return;
+    if (!childSettingsDataReady || saveNotifSettings.isPending) return;
     const nextEnabled = !notifOn;
     saveNotifSettings.mutate(
       { ...notifSettings, childEnabled: nextEnabled },
@@ -138,7 +154,7 @@ export function ChildSettings() {
   };
 
   const askParent = (menu: SettingRequestMenu, title: string) => {
-    if (request.isPending) return;
+    if (!childSettingsDataReady || !me || request.isPending) return;
     const cd = checkRequestCooldown(menu);
     if (!cd.allowed) {
       show(`조금만 기다렸다 다시 해줘 (${cd.remainingSec}초)`, "⏳");
@@ -156,6 +172,48 @@ export function ChildSettings() {
     );
   };
 
+  if (childSettingsQueryState === "loading") {
+    return (
+      <ScreenQueryState
+        screenTitle="내 정보"
+        state="loading"
+        heading="내 정보와 알림 설정을 확인하고 있어"
+        description="가족 연결과 이 기기의 일정 알림 설정을 불러오는 중이야."
+        onBack={() => navigate(-1)}
+      />
+    );
+  }
+
+  if (childSettingsQueryState === "error" || childSettingsDataMissing) {
+    return (
+      <ScreenQueryState
+        screenTitle="내 정보"
+        state="error"
+        heading="내 설정을 불러오지 못했어"
+        description="다른 사람 설정을 바꾸지 않도록 잠깐 닫았어. 다시 확인해 줘."
+        onBack={() => navigate(-1)}
+        onRetry={() => void retryChildSettings()}
+        retrying={childSettingsRefetching}
+        retryLabel="다시 확인하기"
+        retryingLabel="다시 확인하고 있어…"
+      />
+    );
+  }
+
+  if (!me) {
+    return (
+      <ScreenQueryState
+        screenTitle="내 정보"
+        state="empty"
+        heading="내 가족 연결을 찾지 못했어"
+        description="부모님과 다시 연결한 뒤 내 설정을 확인할 수 있어."
+        onBack={() => navigate(-1)}
+        onRetry={() => navigate("/onboarding")}
+        retryLabel="연결 화면으로 가기"
+      />
+    );
+  }
+
   return (
     <div className="ks-root">
       <header className="ks-header">
@@ -166,6 +224,11 @@ export function ChildSettings() {
       </header>
 
       <div className="ks-content">
+        {childSettingsDataEmpty && (
+          <div className="sqs-inline-empty">
+            아직 저장한 알림 설정이 없어. 안전한 기본값으로 보여주고 있어.
+          </div>
+        )}
         {/* 히어로 */}
         <div className="ks-hero">
           <span className="ks-hero__avatar">
@@ -204,7 +267,7 @@ export function ChildSettings() {
             type="button"
             className="ks-row hy-press"
             onClick={toggleNotifications}
-            disabled={notifSettingsQuery.isLoading || notifSettingsQuery.isError || saveNotifSettings.isPending}
+            disabled={!childSettingsDataReady || saveNotifSettings.isPending}
             aria-pressed={notifOn}
           >
             <span className="ks-row__icon">
@@ -213,11 +276,7 @@ export function ChildSettings() {
             <span className="ks-row__main">
               <span className="ks-row__title">알림</span>
               <span className="ks-row__sub">
-                {notifSettingsQuery.isLoading
-                  ? "알림 설정을 확인하고 있어"
-                  : notifSettingsQuery.isError
-                    ? "알림 설정을 불러오지 못했어"
-                    : "내 일정 알림 설정으로 저장돼"}
+                내 일정 알림 설정으로 저장돼
               </span>
             </span>
             <span className={notifOn ? "ks-toggle on" : "ks-toggle"} aria-hidden="true">

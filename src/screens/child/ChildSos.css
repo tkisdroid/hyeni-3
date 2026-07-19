@@ -58,6 +58,42 @@
   font-weight: 900;
 }
 
+.cs-query-note {
+  width: min(100%, 360px);
+  margin-top: 12px;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: var(--radius-16);
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--bg-card);
+  text-align: center;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+}
+
+.cs-query-note--error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.cs-query-retry {
+  min-height: var(--control-min-size);
+  padding: 0 16px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-card);
+  color: var(--danger-text);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+}
+
+.cs-query-retry:disabled {
+  opacity: var(--disabled-opacity);
+}
+
 .cs-holder {
   position: relative;
   margin: 28px 0 12px;

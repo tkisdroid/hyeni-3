@@ -21,6 +21,7 @@ export const qk = {
 
   // 위치·안전
   childLocations: (familyId: string) => ["location", "children", familyId] as const,
+  locationPreferences: (familyId: string) => ["location", "preferences", familyId] as const,
   reverseGeocode: (coord: string) => ["location", "reverseGeocode", coord] as const,
   locationHistory: (familyId: string, start: string, end: string) =>
     ["location", "history", familyId, start, end] as const,

@@ -6,6 +6,7 @@ import { qk } from "./keys";
 import { useAuth } from "@/auth/AuthContext";
 import {
   fetchChildLocations,
+  fetchLocationPreferences,
   fetchLocationHistory,
   fetchDangerZones,
   fetchSavedPlaces,
@@ -14,7 +15,9 @@ import {
   deleteDangerZone,
   createSavedPlace,
   deleteSavedPlace,
+  saveLocationPreferences,
   type DangerZoneInput,
+  type LocationPreferencesInput,
   type NewSavedPlace,
 } from "@/lib/api/endpoints/location";
 
@@ -26,6 +29,31 @@ export function useChildLocations() {
     enabled: status === "authenticated" && !!familyId,
     // 위치는 자주 갱신 — 30s마다 폴링(WS invalidate 보완)
     refetchInterval: 30_000,
+  });
+}
+
+/** 가족 단위 위치 전송 주기·백그라운드 설정. */
+export function useLocationPreferences() {
+  const { familyId, status } = useAuth();
+  return useQuery({
+    queryKey: qk.locationPreferences(familyId ?? ""),
+    queryFn: () => fetchLocationPreferences(familyId as string),
+    enabled: status === "authenticated" && !!familyId,
+  });
+}
+
+/** 위치 설정 저장 후 동일 가족의 설정 캐시를 서버 응답으로 즉시 맞춘다. */
+export function useSaveLocationPreferences() {
+  const qc = useQueryClient();
+  const { familyId } = useAuth();
+  return useMutation({
+    mutationFn: (prefs: LocationPreferencesInput) => {
+      if (!familyId) throw new Error("가족 정보를 확인하지 못했어요");
+      return saveLocationPreferences(familyId, prefs);
+    },
+    onSuccess: (saved) => {
+      if (familyId) qc.setQueryData(qk.locationPreferences(familyId), saved);
+    },
   });
 }
 
