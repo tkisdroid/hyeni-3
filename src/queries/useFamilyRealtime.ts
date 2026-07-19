@@ -42,7 +42,7 @@ function keysForMessage(
     case "notification_settings": {
       const row = (msg.new ?? msg.old) as { user_id?: unknown } | null | undefined;
       const rowUserId = typeof row?.user_id === "string" ? row.user_id.trim() : "";
-      const keys: (readonly unknown[])[] = [qk.familyNotificationQuietHours(familyId)];
+      const keys: (readonly unknown[])[] = [qk.familyNotificationQuietHoursPrefix(familyId)];
       if (!rowUserId) return keys;
       keys.push(qk.childNotifSettings(familyId, rowUserId));
       if (userId && rowUserId === userId) keys.push(qk.notifSettings(userId));

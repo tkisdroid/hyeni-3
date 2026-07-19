@@ -28,6 +28,13 @@ import {
   type SavedNotificationQuietHours,
 } from "@/lib/api/endpoints/notifications";
 import type { NotificationQuietHoursDraft } from "@/transform/notificationQuietHours";
+import {
+  commitNotificationQuietHoursIfSessionCurrent,
+  executeNotificationQuietHoursScopedMutation,
+  runNotificationQuietHoursSessionBound,
+  type NotificationQuietHoursSessionSnapshot,
+  type NotificationQuietHoursSessionState,
+} from "./notificationQuietHoursRuntime";
 
 /** 가족 부모 알림 목록(최신순). limit 기본 50. */
 export function useParentAlerts(limit = 50) {
@@ -97,21 +104,15 @@ export function useChildNotifSettingsStatus(childUserId: string | null | undefin
   });
 }
 
-function assertCurrentQuietHoursParentSession(
-  expectedParentUserId: string,
-  expectedFamilyId: string,
-  expectedSessionInstanceId: string,
-): void {
+function readCurrentNotificationQuietHoursSession(): NotificationQuietHoursSessionState {
   const current = deriveAuthState();
-  if (
-    current.status !== "authenticated"
-    || current.userId !== expectedParentUserId
-    || current.familyId !== expectedFamilyId
-    || current.role !== "parent"
-    || getApiSessionInstanceId() !== expectedSessionInstanceId
-  ) {
-    throw new Error("계정 또는 가족이 변경되어 알림 조용한 시간 작업을 중단했어요");
-  }
+  return {
+    status: current.status,
+    userId: current.userId,
+    familyId: current.familyId,
+    role: current.role,
+    sessionInstanceId: getApiSessionInstanceId(),
+  };
 }
 
 /** 부모 본인과 같은 가족 활성 아이들의 조용한 시간 조회. */
@@ -123,24 +124,36 @@ export function useFamilyNotificationQuietHours(): UseQueryResult<
   const expectedParentUserId = userId;
   const expectedFamilyId = familyId;
   const expectedSessionInstanceId = getApiSessionInstanceId();
+  const sessionSnapshot: NotificationQuietHoursSessionSnapshot | null =
+    expectedParentUserId && expectedFamilyId && expectedSessionInstanceId
+      ? {
+        parentUserId: expectedParentUserId,
+        familyId: expectedFamilyId,
+        sessionInstanceId: expectedSessionInstanceId,
+      }
+      : null;
   const enabled = status === "authenticated"
     && role === "parent"
-    && !!expectedParentUserId
-    && !!expectedFamilyId
-    && !!expectedSessionInstanceId;
+    && sessionSnapshot !== null;
 
   return useQuery<FamilyNotificationQuietHours, Error>({
-    queryKey: qk.familyNotificationQuietHours(expectedFamilyId ?? ""),
+    queryKey: qk.familyNotificationQuietHours(
+      expectedFamilyId ?? "",
+      expectedParentUserId ?? "",
+      expectedSessionInstanceId ?? "",
+    ),
     queryFn: () => {
-      if (!expectedParentUserId || !expectedFamilyId || !expectedSessionInstanceId) {
+      if (!sessionSnapshot) {
         throw new Error("알림 조용한 시간을 조회할 부모 세션이 없어요");
       }
-      assertCurrentQuietHoursParentSession(
-        expectedParentUserId,
-        expectedFamilyId,
-        expectedSessionInstanceId,
+      return runNotificationQuietHoursSessionBound(
+        sessionSnapshot,
+        readCurrentNotificationQuietHoursSession,
+        () => fetchFamilyNotificationQuietHours(
+          sessionSnapshot.familyId,
+          sessionSnapshot.parentUserId,
+        ),
       );
-      return fetchFamilyNotificationQuietHours(expectedFamilyId, expectedParentUserId);
     },
     enabled,
   });
@@ -162,77 +175,84 @@ export function useSaveNotificationQuietHours(): UseMutationResult<
   const expectedParentUserId = userId;
   const expectedFamilyId = familyId;
   const expectedSessionInstanceId = getApiSessionInstanceId();
+  const sessionSnapshot: NotificationQuietHoursSessionSnapshot | null =
+    expectedParentUserId && expectedFamilyId && expectedSessionInstanceId
+      ? {
+        parentUserId: expectedParentUserId,
+        familyId: expectedFamilyId,
+        sessionInstanceId: expectedSessionInstanceId,
+      }
+      : null;
 
   return useMutation<SavedNotificationQuietHours, Error, SaveNotificationQuietHoursVariables>({
     mutationFn: (variables) => {
       if (
         status !== "authenticated"
         || role !== "parent"
-        || !expectedParentUserId
-        || !expectedFamilyId
-        || !expectedSessionInstanceId
+        || !sessionSnapshot
       ) {
         throw new Error("알림 조용한 시간을 저장할 부모 세션이 없어요");
       }
-      const scopeId = `notif-quiet-hours:${expectedFamilyId}:${variables.targetUserId}`;
-      return qc.getMutationCache().build<
-        SavedNotificationQuietHours,
-        Error,
-        SaveNotificationQuietHoursVariables,
-        unknown
-      >(
+      return executeNotificationQuietHoursScopedMutation(
         qc,
-        {
-          scope: { id: scopeId },
-          mutationFn: async (scopedVariables) => {
-            assertCurrentQuietHoursParentSession(
-              expectedParentUserId,
-              expectedFamilyId,
-              expectedSessionInstanceId,
-            );
-            const data = await saveNotificationQuietHours(
-              expectedFamilyId,
-              expectedParentUserId,
+        sessionSnapshot.familyId,
+        variables,
+        async (scopedVariables) => {
+          const data = await runNotificationQuietHoursSessionBound(
+            sessionSnapshot,
+            readCurrentNotificationQuietHoursSession,
+            () => saveNotificationQuietHours(
+              sessionSnapshot.familyId,
+              sessionSnapshot.parentUserId,
               scopedVariables.targetUserId,
               scopedVariables.quietHours,
-            );
-            if (data.targetUserId !== variables.targetUserId) {
-              throw new Error("저장 대상이 달라져 알림 조용한 시간을 반영하지 않았어요");
-            }
-            return data;
-          },
-        },
-      ).execute(variables);
-    },
-    onSuccess: (data) => {
-      if (!expectedFamilyId) return;
-      qc.setQueryData<FamilyNotificationQuietHours>(
-        qk.familyNotificationQuietHours(expectedFamilyId),
-        (current) => {
-          if (!current || current.familyId !== expectedFamilyId) return current;
-          let changed = false;
-          const recipients = current.recipients.map((recipient) => {
-            if (recipient.targetUserId === data.targetUserId) {
-              changed = true;
-              return { ...recipient, quietHours: data.quietHours };
-            }
-            return recipient;
-          });
-          return changed ? { ...current, recipients } : current;
+            ),
+          );
+          if (data.targetUserId !== scopedVariables.targetUserId) {
+            throw new Error("저장 대상이 달라져 알림 조용한 시간을 반영하지 않았어요");
+          }
+          return data;
         },
       );
-      if (data.targetUserId === expectedParentUserId && expectedParentUserId) {
-        qc.setQueryData<NotifSettings | null>(
-          qk.notifSettings(expectedParentUserId),
-          (current) => {
-            if (current === undefined) return current;
-            if (current === null) {
-              return { ...DEFAULT_NOTIF_SETTINGS, quietHours: data.quietHours };
-            }
-            return { ...current, quietHours: data.quietHours };
-          },
-        );
-      }
+    },
+    onSuccess: (data) => {
+      if (!sessionSnapshot) return;
+      commitNotificationQuietHoursIfSessionCurrent(
+        sessionSnapshot,
+        readCurrentNotificationQuietHoursSession,
+        () => {
+          qc.setQueryData<FamilyNotificationQuietHours>(
+            qk.familyNotificationQuietHours(
+              sessionSnapshot.familyId,
+              sessionSnapshot.parentUserId,
+              sessionSnapshot.sessionInstanceId,
+            ),
+            (current) => {
+              if (!current || current.familyId !== sessionSnapshot.familyId) return current;
+              let changed = false;
+              const recipients = current.recipients.map((recipient) => {
+                if (recipient.targetUserId === data.targetUserId) {
+                  changed = true;
+                  return { ...recipient, quietHours: data.quietHours };
+                }
+                return recipient;
+              });
+              return changed ? { ...current, recipients } : current;
+            },
+          );
+          if (data.targetUserId !== sessionSnapshot.parentUserId) return;
+          qc.setQueryData<NotifSettings | null>(
+            qk.notifSettings(sessionSnapshot.parentUserId),
+            (current) => {
+              if (current === undefined) return current;
+              if (current === null) {
+                return { ...DEFAULT_NOTIF_SETTINGS, quietHours: data.quietHours };
+              }
+              return { ...current, quietHours: data.quietHours };
+            },
+          );
+        },
+      );
     },
   });
 }

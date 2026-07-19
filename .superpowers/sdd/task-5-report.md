@@ -15,6 +15,7 @@
 - 기존 `NotifSettings`와 `saveNotifSettings`는 일정/위치 알림 전체 객체만 다뤘고, 부모가 정한 quiet 값을 읽되 기존 POST가 덮어쓰지 않도록 분리할 경계가 필요했습니다.
 - 기존 `notification_settings` realtime은 본인 설정과 아이 상태 키만 정밀 무효화했으므로 가족 quiet 캐시를 갱신할 수 없었습니다.
 - 연속 저장은 같은 대상끼리 직렬화하면서도 다른 대상은 독립 실행해야 했고, 대기 중 계정·가족·role·session instance가 바뀌면 이전 요청을 중단해야 했습니다.
+- 독립 리뷰에서 가족 quiet query key가 `familyId`만 포함해 같은 가족 공동부모의 응답과 재로그인 session 응답이 한 캐시에서 충돌할 수 있고, 요청 시작 시점만 검사해 응답 대기 중 로그아웃·session 교체가 발생하면 이전 결과가 캐시를 되살릴 수 있음이 확인됐습니다.
 
 ## 수정 방식
 
@@ -28,12 +29,15 @@
    - PUT은 `family_id`, `target_user_id`, `expected_parent_user_id`, quiet draft만 전송하고 반환 target·role·configured를 다시 확인합니다.
    - 기존 `saveNotifSettings` POST body에는 quiet 필드를 추가하지 않았습니다.
 3. `src/queries/keys.ts`, `src/queries/useNotifications.ts`
-   - 가족별 `familyNotificationQuietHours` 키를 추가했습니다.
-   - query는 authenticated parent이면서 캡처한 family/user/session instance가 실행 시점의 정본과 모두 같을 때만 호출합니다.
-   - 저장은 TanStack MutationCache의 동적 scope `notif-quiet-hours:{familyId}:{targetUserId}`로 대상별 직렬화하고 실제 요청 직전에 부모·가족·세션을 다시 확인합니다.
+   - 가족 realtime 무효화용 prefix key와 `familyId + parentUserId + sessionInstanceId` 상세 query key를 분리해 공동부모·재로그인 session 캐시를 격리했습니다.
+   - query는 authenticated parent이면서 캡처한 family/user/session instance가 요청 직전과 응답 직후 정본에 모두 일치할 때만 결과를 반환합니다.
+   - 저장은 TanStack MutationCache의 동적 scope `notif-quiet-hours:{familyId}:{targetUserId}`로 같은 대상만 직렬화하고 다른 대상은 병렬 실행합니다. 실제 PUT 직전과 응답 직후 부모·가족·role·session을 다시 확인합니다.
+   - outer `onSuccess`도 캐시 반영 직전에 같은 snapshot을 다시 확인합니다. 불일치 시 상세 family cache와 self cache 모두 생성·갱신하지 않습니다.
    - 성공 응답 target 불일치는 throw하며, family cache에서는 정확한 target row만 불변 갱신합니다. self target일 때만 본인 `notifSettings` quiet cache도 갱신합니다.
-4. `src/queries/useFamilyRealtime.ts`
-   - 모든 `notification_settings` 이벤트에서 가족 quiet key를 무효화합니다.
+4. `src/queries/notificationQuietHoursRuntime.ts`
+   - query와 mutation이 공유하는 요청 전후 session guard, stale commit guard, 실제 MutationCache target scope 실행을 작은 테스트 가능 helper로 분리했습니다.
+5. `src/queries/useFamilyRealtime.ts`
+   - 모든 `notification_settings` 이벤트에서 가족 prefix key를 무효화해 같은 가족의 모든 부모·session 상세 캐시를 갱신 대상으로 삼습니다.
    - row user id가 있는 경우 기존 self 설정·child-status 정밀 무효화도 그대로 유지합니다.
 
 ## 보존한 계약
@@ -50,13 +54,19 @@
   - 결과: `15개 중 8 PASS / 7 FAIL`
   - 새 transform 모듈 부재와 endpoint/query/cache/realtime 계약 부재로 예상 실패를 확인했습니다.
 - transform 중간 GREEN: `tests/notificationQuietHours.test.ts` `4/4 PASS`
-- 최종 집중 GREEN: 지정 2개 파일 `18/18 PASS`, fail 0, exit 0
+- 독립 리뷰 RED:
+  - 상세 query key 재현: `1개 중 0 PASS / 1 FAIL` — 실제 key에 parent/session segment가 빠진 차이를 확인했습니다.
+  - prefix 포함 재현: `2개 중 0 PASS / 2 FAIL` — 상세 key 충돌과 prefix factory 부재를 함께 확인했습니다.
+  - session/runtime 재현: helper 모듈 부재로 예상 실패를 확인한 뒤 실제 `QueryClient/MutationCache` 행동 테스트를 연결했습니다.
+  - hook 결합 재현: query/save/onSuccess/realtime 경계 `4개 중 0 PASS / 4 FAIL`을 확인했습니다.
+- 최종 집중 GREEN: 지정 2개 파일 `22/22 PASS`, fail 0, exit 0
 
 ## 최종 코드
 
 - `src/transform/notificationQuietHours.ts`
 - `src/lib/api/endpoints/notifications.ts`
 - `src/queries/keys.ts`
+- `src/queries/notificationQuietHoursRuntime.ts`
 - `src/queries/useNotifications.ts`
 - `src/queries/useFamilyRealtime.ts`
 - `tests/notificationQuietHours.test.ts`
@@ -66,10 +76,10 @@
 
 - 집중 회귀:
   - `node --test tests/notificationQuietHours.test.ts tests/notificationSettingsReliability.test.ts`
-  - 결과: `18/18 PASS`, fail 0, exit 0
+  - 결과: `22/22 PASS`, fail 0, exit 0
 - 앱 전체 Node 회귀:
   - `node --test tests/*.test.*`
-  - 결과: `779/779 PASS`, fail 0, exit 0
+  - 결과: `792/792 PASS`, fail 0, exit 0
 - TypeScript:
   - `npm run typecheck`
   - 결과: exit 0

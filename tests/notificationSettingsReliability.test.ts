@@ -9,6 +9,14 @@ import {
   arrivalAlertTone,
   isArrivalAlertType,
 } from "../src/transform/notificationsView.ts";
+import { qk } from "../src/queries/keys.ts";
+import {
+  commitNotificationQuietHoursIfSessionCurrent,
+  executeNotificationQuietHoursScopedMutation,
+  runNotificationQuietHoursSessionBound,
+  type NotificationQuietHoursSessionSnapshot,
+  type NotificationQuietHoursSessionState,
+} from "../src/queries/notificationQuietHoursRuntime.ts";
 
 const readSource = (path: string) =>
   readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
@@ -53,6 +61,180 @@ test("같은 사용자 scope의 과거 설정 요청이 끝나기 전에는 최�
   releaseFirst();
   await Promise.all([first, latest]);
   assert.deepEqual(completed, ["과거 초안", "최신 초안"]);
+  client.clear();
+});
+
+test("family quiet 상세 query key는 같은 가족의 공동부모와 session별로 캐시를 분리한다", () => {
+  const client = new QueryClient();
+  const firstParentSession = qk.familyNotificationQuietHours(
+    "family-1",
+    "parent-1",
+    "session-1",
+  );
+  const secondParentSession = qk.familyNotificationQuietHours(
+    "family-1",
+    "parent-2",
+    "session-2",
+  );
+  const renewedSession = qk.familyNotificationQuietHours(
+    "family-1",
+    "parent-1",
+    "session-3",
+  );
+
+  assert.deepEqual(firstParentSession, [
+    "notif-settings",
+    "family-quiet-hours",
+    "family-1",
+    "parent-1",
+    "session-1",
+  ]);
+  assert.notDeepEqual(firstParentSession, secondParentSession);
+  assert.notDeepEqual(firstParentSession, renewedSession);
+  client.setQueryData(firstParentSession, { marker: "첫 부모" });
+  client.setQueryData(secondParentSession, { marker: "공동부모" });
+  client.setQueryData(renewedSession, { marker: "새 session" });
+  assert.deepEqual(client.getQueryData(firstParentSession), { marker: "첫 부모" });
+  assert.deepEqual(client.getQueryData(secondParentSession), { marker: "공동부모" });
+  assert.deepEqual(client.getQueryData(renewedSession), { marker: "새 session" });
+  client.clear();
+});
+
+test("family quiet realtime prefix는 같은 가족의 모든 부모·session cache만 무효화한다", async () => {
+  const client = new QueryClient();
+  const firstFamilyParent = qk.familyNotificationQuietHours(
+    "family-1",
+    "parent-1",
+    "session-1",
+  );
+  const firstFamilyCoParent = qk.familyNotificationQuietHours(
+    "family-1",
+    "parent-2",
+    "session-2",
+  );
+  const otherFamilyParent = qk.familyNotificationQuietHours(
+    "family-2",
+    "parent-3",
+    "session-3",
+  );
+  client.setQueryData(firstFamilyParent, { marker: "first-parent" });
+  client.setQueryData(firstFamilyCoParent, { marker: "co-parent" });
+  client.setQueryData(otherFamilyParent, { marker: "other-family" });
+
+  await client.invalidateQueries({
+    queryKey: qk.familyNotificationQuietHoursPrefix("family-1"),
+  });
+
+  assert.equal(client.getQueryState(firstFamilyParent)?.isInvalidated, true);
+  assert.equal(client.getQueryState(firstFamilyCoParent)?.isInvalidated, true);
+  assert.equal(client.getQueryState(otherFamilyParent)?.isInvalidated, false);
+  client.clear();
+});
+
+test("family quiet 응답 대기 중 session이 바뀌면 결과와 cache 반영을 모두 거부한다", async () => {
+  const client = new QueryClient();
+  const snapshot: NotificationQuietHoursSessionSnapshot = {
+    parentUserId: "parent-1",
+    familyId: "family-1",
+    sessionInstanceId: "session-1",
+  };
+  let current: NotificationQuietHoursSessionState = {
+    status: "authenticated",
+    userId: "parent-1",
+    familyId: "family-1",
+    role: "parent",
+    sessionInstanceId: "session-1",
+  };
+  let releaseResponse = () => undefined;
+  const responseGate = new Promise<void>((resolve) => {
+    releaseResponse = resolve;
+  });
+  const staleKey = qk.familyNotificationQuietHours(
+    snapshot.familyId,
+    snapshot.parentUserId,
+    snapshot.sessionInstanceId,
+  );
+  client.setQueryData(staleKey, { marker: "기존 캐시" });
+
+  const request = client.fetchQuery({
+    queryKey: staleKey,
+    staleTime: 0,
+    queryFn: () => runNotificationQuietHoursSessionBound(
+      snapshot,
+      () => current,
+      async () => {
+        await responseGate;
+        return { marker: "늦은 응답" };
+      },
+    ),
+  });
+  await new Promise<void>((resolve) => setImmediate(resolve));
+  current = { ...current, sessionInstanceId: "session-2" };
+  releaseResponse();
+
+  await assert.rejects(request, /계정 또는 가족이 변경되어/);
+  const committed = commitNotificationQuietHoursIfSessionCurrent(
+    snapshot,
+    () => current,
+    () => {
+      client.setQueryData(staleKey, { marker: "늦은 응답" });
+      client.setQueryData(qk.notifSettings(snapshot.parentUserId), { marker: "새 캐시" });
+    },
+  );
+  assert.equal(committed, false);
+  assert.deepEqual(client.getQueryData(staleKey), { marker: "기존 캐시" });
+  assert.equal(client.getQueryData(qk.notifSettings(snapshot.parentUserId)), undefined);
+  client.clear();
+});
+
+test("quiet MutationCache는 같은 target만 직렬화하고 다른 target은 병렬 실행한다", async () => {
+  const client = new QueryClient({
+    defaultOptions: { mutations: { retry: false } },
+  });
+  const started: string[] = [];
+  const completed: string[] = [];
+  let releaseFirst = () => undefined;
+  let releaseOther = () => undefined;
+  const firstGate = new Promise<void>((resolve) => {
+    releaseFirst = resolve;
+  });
+  const otherGate = new Promise<void>((resolve) => {
+    releaseOther = resolve;
+  });
+  interface Variables {
+    targetUserId: string;
+    marker: string;
+  }
+  const mutationFn = async (variables: Variables) => {
+    started.push(variables.marker);
+    if (variables.marker === "같은 대상 첫 요청") await firstGate;
+    if (variables.marker === "다른 대상 요청") await otherGate;
+    completed.push(variables.marker);
+    return variables.marker;
+  };
+  const execute = (variables: Variables) => executeNotificationQuietHoursScopedMutation(
+    client,
+    "family-1",
+    variables,
+    mutationFn,
+  );
+
+  const first = execute({ targetUserId: "child-1", marker: "같은 대상 첫 요청" });
+  const latest = execute({ targetUserId: "child-1", marker: "같은 대상 최신 요청" });
+  const other = execute({ targetUserId: "child-2", marker: "다른 대상 요청" });
+  await new Promise<void>((resolve) => setImmediate(resolve));
+
+  assert.deepEqual(started, ["같은 대상 첫 요청", "다른 대상 요청"]);
+  releaseOther();
+  await other;
+  assert.deepEqual(started, ["같은 대상 첫 요청", "다른 대상 요청"]);
+  releaseFirst();
+  await Promise.all([first, latest]);
+  assert.deepEqual(completed, [
+    "다른 대상 요청",
+    "같은 대상 첫 요청",
+    "같은 대상 최신 요청",
+  ]);
   client.clear();
 });
 
@@ -137,8 +319,9 @@ test("기존 self 알림 설정 POST는 quiet 필드를 절대 포함하지 않�
   assert.doesNotMatch(selfSave, /quiet_hours_(enabled|start_minute|end_minute)/);
 });
 
-test("family quiet query는 부모 가족·사용자·세션 snapshot이 정확할 때만 실행한다", () => {
+test("family quiet query는 상세 key를 쓰고 응답 전후 부모 세션을 재검증한다", () => {
   const hook = readSource("src/queries/useNotifications.ts");
+  const runtime = readSource("src/queries/notificationQuietHoursRuntime.ts");
 
   assert.match(hook, /export function useFamilyNotificationQuietHours/);
   assert.match(hook, /role === "parent"/);
@@ -146,34 +329,49 @@ test("family quiet query는 부모 가족·사용자·세션 snapshot이 정확�
   assert.match(hook, /const expectedFamilyId = familyId/);
   assert.match(hook, /const expectedSessionInstanceId = getApiSessionInstanceId\(\)/);
   assert.match(hook, /deriveAuthState\(\)/);
-  assert.match(hook, /current\.userId !== expectedParentUserId/);
-  assert.match(hook, /current\.familyId !== expectedFamilyId/);
-  assert.match(hook, /current\.role !== "parent"/);
-  assert.match(hook, /getApiSessionInstanceId\(\) !== expectedSessionInstanceId/);
+  assert.match(runtime, /current\.userId === snapshot\.parentUserId/);
+  assert.match(runtime, /current\.familyId === snapshot\.familyId/);
+  assert.match(runtime, /current\.role === "parent"/);
+  assert.match(runtime, /current\.sessionInstanceId === snapshot\.sessionInstanceId/);
+  assert.match(
+    hook,
+    /qk\.familyNotificationQuietHours\(\s*expectedFamilyId \?\? "",\s*expectedParentUserId \?\? "",\s*expectedSessionInstanceId \?\? "",\s*\)/,
+  );
+  assert.match(
+    hook,
+    /runNotificationQuietHoursSessionBound\([\s\S]{0,500}fetchFamilyNotificationQuietHours/,
+  );
 });
 
-test("quiet 저장은 target별 scope로 직렬화하고 직전 세션 재검증 뒤 요청한다", () => {
+test("quiet 저장은 실제 target scope helper와 save 응답 후 세션 재검증을 사용한다", () => {
   const hook = readSource("src/queries/useNotifications.ts");
+  const runtime = readSource("src/queries/notificationQuietHoursRuntime.ts");
 
   assert.match(hook, /export function useSaveNotificationQuietHours/);
-  assert.match(hook, /notif-quiet-hours:\$\{expectedFamilyId\}:\$\{variables\.targetUserId\}/);
-  assert.match(hook, /scope:\s*\{\s*id:\s*scopeId\s*\}/);
+  assert.match(runtime, /notif-quiet-hours:\$\{familyId\}:\$\{variables\.targetUserId\}/);
+  assert.match(runtime, /scope:\s*\{\s*id:/);
+  assert.match(hook, /executeNotificationQuietHoursScopedMutation\(/);
+  assert.match(hook, /runNotificationQuietHoursSessionBound\(/);
   assert.match(hook, /expectedParentUserId/);
   assert.match(hook, /expectedFamilyId/);
   assert.match(hook, /expectedSessionInstanceId/);
   assert.match(hook, /saveNotificationQuietHours\(/);
-  assert.match(hook, /data\.targetUserId !== variables\.targetUserId/);
+  assert.match(hook, /data\.targetUserId !== scopedVariables\.targetUserId/);
   assert.match(hook, /저장 대상이 달라져/);
 });
 
 test("quiet 저장 성공은 정확한 target family cache와 self cache만 불변 갱신한다", () => {
   const hook = readSource("src/queries/useNotifications.ts");
 
-  assert.match(hook, /qk\.familyNotificationQuietHours\(expectedFamilyId\)/);
+  assert.match(hook, /commitNotificationQuietHoursIfSessionCurrent\(/);
+  assert.match(
+    hook,
+    /qk\.familyNotificationQuietHours\(\s*sessionSnapshot\.familyId,\s*sessionSnapshot\.parentUserId,\s*sessionSnapshot\.sessionInstanceId,\s*\)/,
+  );
   assert.match(hook, /recipient\.targetUserId === data\.targetUserId/);
   assert.match(hook, /\{\s*\.\.\.recipient,\s*quietHours:\s*data\.quietHours\s*\}/);
-  assert.match(hook, /data\.targetUserId === expectedParentUserId/);
-  assert.match(hook, /qk\.notifSettings\(expectedParentUserId\)/);
+  assert.match(hook, /data\.targetUserId !== sessionSnapshot\.parentUserId/);
+  assert.match(hook, /qk\.notifSettings\(sessionSnapshot\.parentUserId\)/);
   assert.match(hook, /\{\s*\.\.\.current,\s*quietHours:\s*data\.quietHours\s*\}/);
   assert.doesNotMatch(hook, /children\[0\]/);
 });
@@ -199,8 +397,8 @@ test("notification_settings realtime은 변경 사용자에 맞는 설정 query�
   assert.match(realtime, /rowUserId === userId/);
   assert.match(realtime, /qk\.notifSettings\(userId\)/);
   assert.match(realtime, /qk\.childNotifSettings\(familyId, rowUserId\)/);
-  assert.match(keys, /familyNotificationQuietHours:\s*\(familyId:\s*string\)/);
-  assert.match(realtime, /qk\.familyNotificationQuietHours\(familyId\)/);
+  assert.match(keys, /familyNotificationQuietHoursPrefix:\s*\(familyId:\s*string\)/);
+  assert.match(realtime, /qk\.familyNotificationQuietHoursPrefix\(familyId\)/);
 });
 
 test("Android 전체화면 특별 접근은 일반 알림 권한과 분리해 설명 후 사용자 버튼으로만 연다", () => {
