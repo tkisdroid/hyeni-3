@@ -59,6 +59,31 @@ export function isSameNotificationQuietHoursTargetDraft(
     && current.endMinute === submitted.endMinute;
 }
 
+export interface NotificationQuietHoursSourceResolution {
+  draft: NotificationQuietHoursTargetDraft;
+  source: NotificationQuietHoursTargetDraft;
+  hydrated: boolean;
+}
+
+export function resolveNotificationQuietHoursSourceUpdate(
+  current: NotificationQuietHoursTargetDraft,
+  previousSource: NotificationQuietHoursTargetDraft | null,
+  nextSource: NotificationQuietHoursTargetDraft,
+): NotificationQuietHoursSourceResolution {
+  const targetChanged = previousSource === null
+    || current.targetUserId !== nextSource.targetUserId
+    || previousSource.targetUserId !== nextSource.targetUserId;
+  const hydrated = targetChanged
+    || (previousSource !== null
+      && isSameNotificationQuietHoursTargetDraft(current, previousSource));
+
+  return {
+    draft: hydrated ? nextSource : current,
+    source: nextSource,
+    hydrated,
+  };
+}
+
 function koreanTimeLabel(value: number): string {
   const hour = Math.floor(value / 60);
   const minute = value % 60;

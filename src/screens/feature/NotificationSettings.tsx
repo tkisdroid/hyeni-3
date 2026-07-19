@@ -45,6 +45,7 @@ import {
   isSameNotificationQuietHoursTargetDraft,
   isValidNotificationQuietHours,
   minuteOfDayToTimeInput,
+  resolveNotificationQuietHoursSourceUpdate,
   timeInputToMinuteOfDay,
   type NotificationQuietHoursTargetDraft,
 } from "@/transform/notificationQuietHours";
@@ -164,6 +165,7 @@ export function NotificationSettings() {
     () => createQuietHoursDraft(userId ?? ""),
   );
   const quietDraftRef = useRef(quietDraft);
+  const quietServerSourceRef = useRef<NotificationQuietHoursTargetDraft | null>(null);
   const setQuietDraft = useCallback((
     next: NotificationQuietHoursTargetDraft
       | ((current: NotificationQuietHoursTargetDraft) => NotificationQuietHoursTargetDraft),
@@ -313,23 +315,29 @@ export function NotificationSettings() {
   )?.recipient ?? null;
 
   useEffect(() => {
+    quietServerSourceRef.current = null;
     setQuietDraft(createQuietHoursDraft(userId ?? ""));
     setQuietSaveMessage("");
   }, [userId]);
 
   useEffect(() => {
     if (!quietDataReady || !selectedQuietRecipient) return;
-    const targetUserId = selectedQuietRecipient.targetUserId;
-    const quietHours = selectedQuietRecipient.quietHours;
-    setQuietDraft((current) => current.targetUserId === targetUserId
-      ? {
-        targetUserId,
-        enabled: quietHours.enabled,
-        startMinute: quietHours.startMinute,
-        endMinute: quietHours.endMinute,
-      }
-      : current);
-    setQuietSaveMessage("");
+    const nextSource = {
+      targetUserId: selectedQuietRecipient.targetUserId,
+      enabled: selectedQuietRecipient.quietHours.enabled,
+      startMinute: selectedQuietRecipient.quietHours.startMinute,
+      endMinute: selectedQuietRecipient.quietHours.endMinute,
+    };
+    const resolution = resolveNotificationQuietHoursSourceUpdate(
+      quietDraftRef.current,
+      quietServerSourceRef.current,
+      nextSource,
+    );
+    quietServerSourceRef.current = resolution.source;
+    if (resolution.hydrated) {
+      setQuietDraft(resolution.draft);
+      setQuietSaveMessage("");
+    }
   }, [
     quietDataReady,
     selectedQuietRecipient?.targetUserId,
@@ -351,12 +359,14 @@ export function NotificationSettings() {
   const selectQuietTarget = (targetUserId: string) => {
     const target = quietTargets.find((candidate) => candidate.targetUserId === targetUserId);
     if (!target) return;
-    setQuietDraft({
+    const nextSource = {
       targetUserId: target.recipient.targetUserId,
       enabled: target.recipient.quietHours.enabled,
       startMinute: target.recipient.quietHours.startMinute,
       endMinute: target.recipient.quietHours.endMinute,
-    });
+    };
+    quietServerSourceRef.current = nextSource;
+    setQuietDraft(nextSource);
     setQuietSaveMessage("");
   };
 

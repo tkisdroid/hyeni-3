@@ -55,6 +55,15 @@ test("quiet 저장 응답은 제출 target과 draft가 그대로일 때만 현�
   assert.ok((parent.match(/isSameNotificationQuietHoursTargetDraft/g) ?? []).length >= 3);
 });
 
+test("quiet cache hydration은 마지막 서버 source와 비교해 사용자 재편집을 보존한다", () => {
+  const parent = source("src/screens/feature/NotificationSettings.tsx");
+
+  assert.match(parent, /quietServerSourceRef/);
+  assert.match(parent, /resolveNotificationQuietHoursSourceUpdate/);
+  assert.match(parent, /quietServerSourceRef\.current\s*=\s*resolution\.source/);
+  assert.match(parent, /setQuietDraft\(resolution\.draft\)/);
+});
+
 test("조용한 시간 설명은 억제 범위와 안전 예외 및 기기 설정 경계를 분리한다", () => {
   const parent = source("src/screens/feature/NotificationSettings.tsx");
 

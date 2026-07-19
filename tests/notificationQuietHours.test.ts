@@ -71,3 +71,60 @@ test("Asia/Seoul 조용한 시간 범위를 자연스러운 한국어로 표시�
     "낮 12시 30분부터 저녁 6시 30분까지",
   );
 });
+
+test("서버 quiet source 갱신은 편집 중 draft를 보존하고 baseline만 전진시킨다", async () => {
+  const quietTransform = await import("../src/transform/notificationQuietHours.ts");
+  const resolveSourceUpdate = quietTransform.resolveNotificationQuietHoursSourceUpdate;
+  const sourceA = {
+    targetUserId: "parent-1",
+    enabled: false,
+    startMinute: 1320,
+    endMinute: 420,
+  };
+  const submittedB = { ...sourceA, enabled: true };
+  const editedC = { ...submittedB, endMinute: 480 };
+
+  assert.equal(typeof resolveSourceUpdate, "function");
+  assert.deepEqual(resolveSourceUpdate(editedC, sourceA, submittedB), {
+    draft: editedC,
+    source: submittedB,
+    hydrated: false,
+  });
+
+  const serverD = { ...submittedB, startMinute: 1260 };
+  assert.deepEqual(resolveSourceUpdate(editedC, submittedB, serverD), {
+    draft: editedC,
+    source: serverD,
+    hydrated: false,
+  });
+});
+
+test("서버 quiet source는 초기 로드·깨끗한 draft·target 전환에서 hydrate한다", async () => {
+  const quietTransform = await import("../src/transform/notificationQuietHours.ts");
+  const resolveSourceUpdate = quietTransform.resolveNotificationQuietHoursSourceUpdate;
+  const parentSource = {
+    targetUserId: "parent-1",
+    enabled: false,
+    startMinute: 1320,
+    endMinute: 420,
+  };
+  const parentUpdate = { ...parentSource, enabled: true };
+  const childSource = { ...parentUpdate, targetUserId: "child-1" };
+
+  assert.equal(typeof resolveSourceUpdate, "function");
+  assert.deepEqual(resolveSourceUpdate(parentSource, null, parentUpdate), {
+    draft: parentUpdate,
+    source: parentUpdate,
+    hydrated: true,
+  });
+  assert.deepEqual(resolveSourceUpdate(parentSource, parentSource, parentUpdate), {
+    draft: parentUpdate,
+    source: parentUpdate,
+    hydrated: true,
+  });
+  assert.deepEqual(resolveSourceUpdate(parentUpdate, parentUpdate, childSource), {
+    draft: childSource,
+    source: childSource,
+    hydrated: true,
+  });
+});
