@@ -208,8 +208,25 @@ function staticClassTokens(opening) {
   return new Set(text.split(/\s+/).filter(Boolean));
 }
 
+function jsxTextContainsEmoji(text) {
+  if (emojiPattern.test(text)) return true;
+  const decodedNumericEntities = text.replace(
+    /&#(?:x([0-9a-f]+)|([0-9]+));/gi,
+    (entity, hexValue, decimalValue) => {
+      const codePoint = Number.parseInt(hexValue ?? decimalValue, hexValue ? 16 : 10);
+      if (!Number.isInteger(codePoint) || codePoint < 0 || codePoint > 0x10ffff) return entity;
+      return String.fromCodePoint(codePoint);
+    },
+  );
+  return emojiPattern.test(decodedNumericEntities);
+}
+
 function expressionContainsEmoji(expression) {
   if (!expression) return false;
+  if (ts.isJsxText(expression)) return jsxTextContainsEmoji(expression.text);
+  if (ts.isJsxElement(expression) || ts.isJsxFragment(expression)) {
+    return jsxChildrenContainEmoji(expression);
+  }
   if (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression)) {
     return emojiPattern.test(expression.text);
   }
@@ -231,7 +248,7 @@ function expressionContainsEmoji(expression) {
 function jsxChildrenContainEmoji(node) {
   const children = ts.isJsxElement(node) || ts.isJsxFragment(node) ? node.children : [];
   return children.some((child) => {
-    if (ts.isJsxText(child)) return emojiPattern.test(child.text);
+    if (ts.isJsxText(child)) return jsxTextContainsEmoji(child.text);
     if (ts.isJsxExpression(child)) return expressionContainsEmoji(child.expression);
     if (ts.isJsxElement(child) || ts.isJsxFragment(child)) return jsxChildrenContainEmoji(child);
     return false;
@@ -579,6 +596,29 @@ test("저수준 fixture: JSX 표현식과 class가 있는 일정 슬롯의 이�
     }
   `;
   assert.deepEqual(collectDedicatedSlotEmojiViolations(source), ["fp-waiting", "pl-scrub__legend"]);
+});
+
+test("저수준 fixture: 조건식 안 중첩 JSX 텍스트 이모지를 거부한다", () => {
+  const source = `
+    export function Fixture() {
+      return <span className="fp-waiting">{true && <span>🔔</span>}</span>;
+    }
+  `;
+  assert.deepEqual(collectDedicatedSlotEmojiViolations(source), ["fp-waiting"]);
+});
+
+test("저수준 fixture: JSX 숫자 entity와 문자열 표현식 이모지를 모두 거부한다", () => {
+  const source = `
+    export function Fixture() {
+      return <>
+        <span className="fp-waiting">&#x1F514;</span>
+        <span className="rr-modal-emoji">{"🔔"}</span>
+        <span className="fp-cta">{"&#x1F514;"}</span>
+        <span className="fp-connected__badge">&#65;</span>
+      </>;
+    }
+  `;
+  assert.deepEqual(collectDedicatedSlotEmojiViolations(source), ["fp-waiting", "rr-modal-emoji"]);
 });
 
 test("저수준 fixture: OAuth SVG 검사는 다음 함수 경계를 넘지 않는다", () => {
