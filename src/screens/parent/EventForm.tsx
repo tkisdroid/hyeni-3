@@ -671,7 +671,7 @@ export function EventForm() {
                   <img
                     src={asset(CATEGORY_ICONS[c.id] ?? "cat/other.webp")}
                     alt=""
-                    style={{ width: 20, height: 20, objectFit: "contain", verticalAlign: -4, marginRight: 5 }}
+                    style={{ width: 20, height: 20, objectFit: "contain", verticalAlign: -4, marginRight: 4 }}
                   />
                   {c.label}
                 </button>

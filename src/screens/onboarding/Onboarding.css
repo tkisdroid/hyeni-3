@@ -997,9 +997,9 @@
   align-items: center;
   gap: 12px;
   padding: 16px;
-  border-radius: 20px;
+  border-radius: var(--radius-16);
   background: #fff;
-  box-shadow: 0 10px 26px -12px rgba(32, 26, 29, 0.12);
+  box-shadow: var(--shadow-soft);
 }
 .ob-perm-ic {
   width: 44px;

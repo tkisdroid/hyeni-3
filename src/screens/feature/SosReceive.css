@@ -133,10 +133,10 @@
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-20);
   background: var(--danger-500);
   color: #fff;
-  box-shadow: 0 12px 26px -10px rgba(229, 72, 77, 0.5);
+  box-shadow: var(--shadow-floating);
   animation: hy-soft 1.4s ease-in-out infinite;
 }
 .sr-banner--read {
@@ -186,9 +186,9 @@
   align-items: center;
   gap: 12px;
   padding: 12px 12px;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-16);
   background: #fff;
-  box-shadow: 0 4px 14px rgba(32, 26, 29, 0.05);
+  box-shadow: var(--shadow-soft);
 }
 .sr-loc-icon {
   width: 38px;
@@ -336,9 +336,9 @@
   align-items: center;
   gap: 8px;
   padding: 12px 12px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-16);
   background: #fff;
-  box-shadow: 0 3px 10px rgba(32, 26, 29, 0.04);
+  box-shadow: var(--shadow-soft);
 }
 .sr-history-emoji {
   width: 34px;

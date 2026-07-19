@@ -176,11 +176,11 @@ export function ChildInvite() {
         {/* 액션 */}
         <div className="ci-actions">
           <button type="button" className="ci-btn ci-btn--copy hy-press" onClick={copyCode} disabled={!pairCode}>
-            <Copy size={16} strokeWidth={2.4} style={{ verticalAlign: "-3px", marginRight: 5 }} />
+            <Copy size={16} strokeWidth={2.4} style={{ verticalAlign: "-3px", marginRight: 4 }} />
             코드 복사
           </button>
           <button type="button" className="ci-btn ci-btn--share hy-press" onClick={shareLink} disabled={!pairCode}>
-            <Share2 size={16} strokeWidth={2.4} style={{ verticalAlign: "-3px", marginRight: 5 }} />
+            <Share2 size={16} strokeWidth={2.4} style={{ verticalAlign: "-3px", marginRight: 4 }} />
             공유하기
           </button>
         </div>
@@ -191,7 +191,7 @@ export function ChildInvite() {
           onClick={regenerate}
           disabled={regen.isPending}
         >
-          <RefreshCw size={15} strokeWidth={2.4} style={{ verticalAlign: "-2px", marginRight: 5 }} />
+          <RefreshCw size={15} strokeWidth={2.4} style={{ verticalAlign: "-2px", marginRight: 4 }} />
           {regen.isPending ? "발급 중…" : "새 코드 발급"}
         </button>
 

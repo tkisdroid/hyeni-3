@@ -324,7 +324,7 @@ export function PlaceForm() {
             })}
           </div>
           {/* 위험 구역은 저장장소가 아니라 지오펜스라 별도 경로에서 등록(오인 방지). */}
-          <div className="pf-label" style={{ marginTop: 10, marginBottom: 0 }}>
+          <div className="pf-label" style={{ marginTop: 12, marginBottom: 0 }}>
             위험 구역은 지도의 위험구역 추가에서 등록해요.
           </div>
         </div>
@@ -352,7 +352,7 @@ export function PlaceForm() {
               );
             })}
           </div>
-          <div className="pf-label" style={{ marginTop: 10, marginBottom: 0 }}>
+          <div className="pf-label" style={{ marginTop: 12, marginBottom: 0 }}>
             학교·놀이터처럼 넓은 곳은 ‘넓게’를 추천해요.
           </div>
         </div>

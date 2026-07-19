@@ -103,9 +103,9 @@
   align-items: center;
   gap: 12px;
   background: #fff;
-  border-radius: 16px;
+  border-radius: var(--radius-16);
   padding: 12px 12px;
-  box-shadow: 0 8px 22px -16px rgba(32, 26, 29, 0.16);
+  box-shadow: var(--shadow-soft);
 }
 .ds-row__icon {
   width: 34px;
@@ -156,9 +156,9 @@
 /* ── 요약 문장 ─────────────────────────────────────────────────────────────── */
 .ds-quote {
   background: #fff;
-  border-radius: 16px;
+  border-radius: var(--radius-16);
   padding: 16px 16px;
-  box-shadow: 0 8px 22px -16px rgba(32, 26, 29, 0.16);
+  box-shadow: var(--shadow-soft);
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);
   font-weight: var(--type-body-sm-weight);

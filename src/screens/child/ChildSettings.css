@@ -122,9 +122,9 @@
   align-items: center;
   gap: 12px;
   background: #fff;
-  border-radius: 20px;
+  border-radius: var(--radius-16);
   padding: 12px 16px;
-  box-shadow: 0 10px 26px -18px rgba(32, 26, 29, 0.2);
+  box-shadow: var(--shadow-soft);
   border: 1px solid var(--line-card);
   --press: 0.98;
 }

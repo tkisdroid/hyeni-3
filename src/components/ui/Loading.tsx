@@ -5,7 +5,7 @@ import "./Loading.css";
  * 풀스크린 스플래시(Splash)는 콜드스타트 브랜드 연출 전용이고,
  * 화면 내부의 "불러오는 중" 상태는 이 소형 컴포넌트로 분리한다.
  */
-export function Loading({ label, size = 7 }: { label?: string; size?: number }) {
+export function Loading({ label, size = 8 }: { label?: string; size?: number }) {
   return (
     <div className="hy-loading" role="status" aria-live="polite" aria-label={label ?? "불러오는 중"}>
       <span className="hy-loading__dots" aria-hidden="true">

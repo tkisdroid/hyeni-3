@@ -102,10 +102,10 @@
   text-align: left;
   position: relative;
   overflow: hidden;
-  border-radius: 22px;
+  border-radius: var(--radius-16);
   padding: 16px;
   background: linear-gradient(135deg, #f1ecff, #e6f2fb);
-  box-shadow: 0 14px 30px -16px rgba(124, 92, 225, 0.4);
+  box-shadow: var(--shadow-soft);
   border: 1px solid rgba(255, 255, 255, 0.6);
   display: flex;
   align-items: center;
@@ -219,8 +219,8 @@
 }
 .th-tile {
   background: #fff;
-  border-radius: 20px;
-  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-16);
+  box-shadow: var(--shadow-soft);
   border: 1px solid var(--line-card);
   padding: 16px;
   display: flex;
@@ -253,9 +253,9 @@
 /* ── 로딩 / 빈 상태 (백엔드 연동) ───────────────────────────────────── */
 .th-empty {
   margin-top: 8px;
-  border-radius: 22px;
+  border-radius: var(--radius-16);
   background: #fff;
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-soft);
   border: 1px solid var(--line-card);
   padding: 32px 20px;
   display: flex;

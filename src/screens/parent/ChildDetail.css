@@ -158,9 +158,9 @@
 }
 .cd-stat {
   background: #fff;
-  border-radius: 18px;
+  border-radius: var(--radius-16);
   padding: 12px 16px;
-  box-shadow: 0 10px 26px -18px rgba(32, 26, 29, 0.2);
+  box-shadow: var(--shadow-soft);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -222,9 +222,9 @@
   align-items: center;
   gap: 12px;
   background: #fff;
-  border-radius: 18px;
+  border-radius: var(--radius-16);
   padding: 12px 16px;
-  box-shadow: 0 10px 26px -18px rgba(32, 26, 29, 0.2);
+  box-shadow: var(--shadow-soft);
   --press: 0.98;
 }
 .cd-row__icon {
@@ -295,9 +295,9 @@
   gap: 12px;
   background: #fff;
   border: 1px solid var(--danger-soft);
-  border-radius: 18px;
+  border-radius: var(--radius-16);
   padding: 12px 16px;
-  box-shadow: 0 10px 26px -18px rgba(32, 26, 29, 0.2);
+  box-shadow: var(--shadow-soft);
   --press: 0.98;
 }
 .cd-danger__icon {

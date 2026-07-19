@@ -341,9 +341,9 @@
 /* AI 친구 상세 제어 */
 .ac-detail {
   background: var(--bg-card);
-  border-radius: 20px;
+  border-radius: var(--radius-16);
   padding: 16px;
-  box-shadow: 0 10px 26px -16px rgba(32, 26, 29, 0.14);
+  box-shadow: var(--shadow-soft);
   display: flex;
   flex-direction: column;
   gap: 12px;

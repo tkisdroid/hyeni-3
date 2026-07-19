@@ -286,9 +286,9 @@
 
 /* ── 캘린더 반영 토글 ───────────────────────────────────────────────────── */
 .tn-reflect {
-  border-radius: 18px;
+  border-radius: var(--radius-16);
   background: #fff;
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-soft);
   border: 1px solid var(--line-card);
   padding: 4px 12px 12px;
 }
@@ -400,9 +400,9 @@
 /* ── 로딩 / 빈 상태 ─────────────────────────────────────────────────────── */
 .tn-empty {
   margin-top: 8px;
-  border-radius: 22px;
+  border-radius: var(--radius-16);
   background: #fff;
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-soft);
   border: 1px solid var(--line-card);
   padding: 32px 20px;
   display: flex;

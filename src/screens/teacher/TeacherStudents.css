@@ -222,9 +222,9 @@
 /* ── 로딩 / 빈 상태 (백엔드 연동) ───────────────────────────────────── */
 .ts-empty {
   margin-top: 8px;
-  border-radius: 22px;
+  border-radius: var(--radius-16);
   background: #fff;
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-soft);
   border: 1px solid var(--line-card);
   padding: 32px 20px;
   display: flex;

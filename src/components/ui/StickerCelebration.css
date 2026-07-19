@@ -34,9 +34,9 @@
   width: min(86vw, 360px);
   padding: 32px 20px;
   border: 3px solid color-mix(in srgb, var(--bg-card) 76%, transparent);
-  border-radius: 28px;
+  border-radius: var(--radius-20);
   background: color-mix(in srgb, var(--bg-card) 88%, transparent);
-  box-shadow: var(--shadow-floating);
+  box-shadow: var(--shadow-modal);
   animation: sc-main 0.62s cubic-bezier(0.18, 1.4, 0.34, 1) both;
 }
 

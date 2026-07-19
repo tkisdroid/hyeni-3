@@ -226,8 +226,8 @@
   gap: 12px;
   padding: 12px 16px;
   background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 8px 20px rgba(32, 26, 29, 0.05);
+  border-radius: var(--radius-16);
+  box-shadow: var(--shadow-soft);
   --press: 0.98;
 }
 .pa-action + .pa-action {

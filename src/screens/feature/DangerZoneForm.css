@@ -148,9 +148,9 @@
 /* ── 진입/이탈 알림 토글 ────────────────────────────────────────────────── */
 .dzf-toggles {
   background: #fff;
-  border-radius: 18px;
+  border-radius: var(--radius-16);
   padding: 4px 16px 12px;
-  box-shadow: 0 8px 22px rgba(32, 26, 29, 0.045);
+  box-shadow: var(--shadow-soft);
 }
 .dzf-toggle-row {
   display: flex;

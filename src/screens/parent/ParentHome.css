@@ -274,10 +274,10 @@
 .ph-ai {
   position: relative;
   overflow: hidden;
-  border-radius: 24px;
+  border-radius: var(--radius-16);
   padding: 16px;
   background: linear-gradient(135deg, #f1ecff 0%, #fce6f1 100%);
-  box-shadow: 0 16px 34px -18px rgba(124, 92, 225, 0.5);
+  box-shadow: var(--shadow-soft);
   border: 1px solid rgba(255, 255, 255, 0.6);
 }
 .ph-ai__head {

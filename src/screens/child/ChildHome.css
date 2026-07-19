@@ -47,9 +47,9 @@
   height: calc(486px + var(--kd-safe));
   padding-top: var(--kd-safe);
   overflow: hidden;
-  border-radius: 0 0 34px 34px;
+  border-radius: 0 0 var(--radius-20) var(--radius-20);
   background: linear-gradient(180deg, var(--kd-sky-1) 0%, var(--kd-sky-2) 52%, var(--kd-sky-3) 100%);
-  box-shadow: 0 20px 40px -22px rgba(46, 134, 193, 0.4);
+  box-shadow: var(--shadow-floating);
 }
 
 /* 그림 요소(해·구름·길·노드)는 상태바 아래에서 시작하도록 별도 무대에 올린다.

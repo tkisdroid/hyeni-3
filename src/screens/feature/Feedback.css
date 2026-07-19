@@ -81,8 +81,8 @@
 /* ── 만족도 별점 카드 ───────────────────────────────────────────────────── */
 .fb-satis {
   background: var(--bg-card);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-16);
+  box-shadow: var(--shadow-soft);
   border: 1px solid var(--line-card);
   padding: 16px;
 }

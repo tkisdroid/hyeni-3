@@ -194,9 +194,9 @@
   width: 100%;
   text-align: left;
   background: #fff;
-  border-radius: 18px;
+  border-radius: var(--radius-16);
   padding: 12px;
-  box-shadow: 0 8px 22px rgba(32, 26, 29, 0.045);
+  box-shadow: var(--shadow-soft);
   display: flex;
   align-items: center;
   gap: 12px;

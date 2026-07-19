@@ -270,15 +270,15 @@
   align-items: center;
   gap: 12px;
   background: var(--bg-card);
-  border-radius: 20px;
+  border-radius: var(--radius-16);
   padding: 12px 12px;
   border: 2.5px solid transparent;
-  box-shadow: 0 10px 22px -14px rgba(32, 26, 29, 0.2);
+  box-shadow: var(--shadow-soft);
   --press: 0.97;
 }
 .ks-friend[aria-pressed="true"] {
   border-color: var(--hy-accent);
-  box-shadow: 0 12px 26px -12px rgba(240, 81, 143, 0.45);
+  box-shadow: var(--shadow-floating);
 }
 .ks-friend__ava {
   width: 52px;
@@ -570,9 +570,9 @@
 .ks-day__list {
   margin-top: 8px;
   background: var(--bg-card);
-  border-radius: 20px;
+  border-radius: var(--radius-16);
   padding: 4px 12px;
-  box-shadow: 0 10px 24px -16px rgba(32, 26, 29, 0.3);
+  box-shadow: var(--shadow-soft);
 }
 
 @keyframes ks-sheetup {

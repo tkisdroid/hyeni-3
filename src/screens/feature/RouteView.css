@@ -103,8 +103,8 @@
 /* ── 목적지 · 소요시간 카드 ─────────────────────────────────────────────── */
 .rv-info {
   background: #fff;
-  border-radius: 24px;
-  box-shadow: 0 14px 34px -18px rgba(32, 26, 29, 0.22), 0 2px 6px rgba(32, 26, 29, 0.04);
+  border-radius: var(--radius-16);
+  box-shadow: var(--shadow-soft);
   border: 1px solid rgba(32, 26, 29, 0.05);
   padding: 16px;
   display: flex;
@@ -161,8 +161,8 @@
 /* ── 경로 안내 단계 카드 ────────────────────────────────────────────────── */
 .rv-steps {
   background: #fff;
-  border-radius: 24px;
-  box-shadow: 0 14px 34px -18px rgba(32, 26, 29, 0.22), 0 2px 6px rgba(32, 26, 29, 0.04);
+  border-radius: var(--radius-16);
+  box-shadow: var(--shadow-soft);
   border: 1px solid rgba(32, 26, 29, 0.05);
   padding: 8px 16px;
 }
@@ -277,9 +277,9 @@
   gap: 12px;
   margin-top: 40px;
   padding: 40px 24px;
-  border-radius: 24px;
+  border-radius: var(--radius-16);
   background: #fff;
-  box-shadow: 0 14px 34px -18px rgba(32, 26, 29, 0.22), 0 2px 6px rgba(32, 26, 29, 0.04);
+  box-shadow: var(--shadow-soft);
   border: 1px solid rgba(32, 26, 29, 0.05);
   text-align: center;
 }
@@ -331,13 +331,13 @@
 /* 경로 API 불가 강등 — 카카오맵 안내 카드 */
 .rv-fallback {
   background: #fff;
-  border-radius: 24px;
+  border-radius: var(--radius-16);
   padding: 12px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  box-shadow: 0 10px 26px -18px rgba(32, 26, 29, 0.2);
+  box-shadow: var(--shadow-soft);
 }
 .rv-fallback__msg {
   font-size: var(--type-body-sm);

@@ -107,9 +107,9 @@
 /* ── 마지막 확인 위치 ───────────────────────────────────────────────────── */
 .ls-last {
   background: #fff;
-  border-radius: 20px;
+  border-radius: var(--radius-16);
   padding: 16px;
-  box-shadow: 0 8px 22px rgba(32, 26, 29, 0.045);
+  box-shadow: var(--shadow-soft);
 }
 .ls-last__label {
   font-size: var(--type-label);

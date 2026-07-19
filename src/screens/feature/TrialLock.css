@@ -106,11 +106,11 @@
 
 /* ── 잠금(무료/만료) ──────────────────────────────────────────────────────── */
 .tl-lock {
-  border-radius: 24px;
+  border-radius: var(--radius-16);
   padding: 32px 20px;
   text-align: center;
   background: #fff;
-  box-shadow: 0 14px 34px rgba(32, 26, 29, 0.06);
+  box-shadow: var(--shadow-soft);
 }
 .tl-lock__ring {
   width: 74px;
@@ -154,9 +154,9 @@
 /* ── 프리미엄 혜택 목록 ───────────────────────────────────────────────────── */
 .tl-perks {
   background: #fff;
-  border-radius: 24px;
+  border-radius: var(--radius-16);
   padding: 4px 16px;
-  box-shadow: 0 10px 26px rgba(32, 26, 29, 0.05);
+  box-shadow: var(--shadow-soft);
 }
 .tl-perk {
   display: flex;

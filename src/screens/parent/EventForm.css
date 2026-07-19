@@ -310,9 +310,9 @@
   gap: 4px;
   padding: 8px;
   border: 1.5px solid var(--line-soft);
-  border-radius: 16px;
+  border-radius: var(--radius-16);
   background: var(--bg-card);
-  box-shadow: 0 14px 30px rgba(32, 26, 29, 0.12);
+  box-shadow: var(--shadow-floating);
 }
 .ef-place-option {
   width: 100%;

@@ -46,9 +46,9 @@
 /* ── 동기화 상태 카드 ─────────────────────────────────────────────────────── */
 .ds-sync {
   background: linear-gradient(135deg, #e7f8f0, #e6f2fb);
-  border-radius: 22px;
+  border-radius: var(--radius-16);
   padding: 16px;
-  box-shadow: 0 12px 28px -14px rgba(46, 134, 193, 0.28);
+  box-shadow: var(--shadow-soft);
 }
 .ds-sync__top {
   display: flex;

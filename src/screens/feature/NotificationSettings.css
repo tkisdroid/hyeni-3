@@ -89,9 +89,9 @@
 }
 .nst-list {
   background: var(--bg-card);
-  border-radius: 20px;
+  border-radius: var(--radius-16);
   padding: 4px;
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-soft);
 }
 
 /* ── 토글 행 ────────────────────────────────────────────────────────────── */

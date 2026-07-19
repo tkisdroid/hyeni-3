@@ -148,9 +148,9 @@
 .pm-item {
   animation: hy-fadein 0.3s ease both;
   background: #fff;
-  border-radius: 20px;
+  border-radius: var(--radius-16);
   padding: 12px 12px;
-  box-shadow: 0 8px 22px rgba(32, 26, 29, 0.045);
+  box-shadow: var(--shadow-soft);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -263,9 +263,9 @@
 .pm-danger {
   background: #fff;
   border: 1.5px solid rgba(232, 69, 92, 0.2);
-  border-radius: 20px;
+  border-radius: var(--radius-16);
   padding: 12px 12px;
-  box-shadow: 0 8px 22px rgba(232, 69, 92, 0.06);
+  box-shadow: var(--shadow-soft);
   display: flex;
   align-items: center;
   gap: 8px;

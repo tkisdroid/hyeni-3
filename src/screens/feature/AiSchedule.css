@@ -235,9 +235,9 @@
 .ais-mode-intro {
   margin-bottom: 12px;
   padding: 12px 16px;
-  border-radius: 18px;
+  border-radius: var(--radius-16);
   background: var(--bg-card);
-  box-shadow: 0 8px 22px rgba(124, 92, 225, 0.1);
+  box-shadow: var(--shadow-soft);
 }
 .ais-mode-intro__title {
   font-size: var(--type-body);
@@ -390,9 +390,9 @@
   margin-top: 16px;
   width: 100%;
   background: #fff;
-  border-radius: 22px;
+  border-radius: var(--radius-16);
   padding: 8px;
-  box-shadow: 0 12px 30px rgba(32, 26, 29, 0.06);
+  box-shadow: var(--shadow-soft);
 }
 .ais-result__top {
   display: flex;

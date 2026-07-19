@@ -401,9 +401,9 @@
   flex-direction: column;
   gap: 12px;
   padding: 12px;
-  border-radius: var(--radius-16);
+  border-radius: var(--radius-20);
   background: var(--bg-card);
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-modal);
 }
 
 .mc-photo-preview__header {

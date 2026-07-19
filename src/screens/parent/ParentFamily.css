@@ -312,9 +312,9 @@
   text-align: left;
   width: 100%;
   background: #fff;
-  border-radius: 22px;
+  border-radius: var(--radius-16);
   padding: 16px;
-  box-shadow: 0 10px 26px rgba(32, 26, 29, 0.05);
+  box-shadow: var(--shadow-soft);
   display: flex;
   align-items: center;
   gap: 12px;

@@ -244,9 +244,9 @@
 .fp-setting {
   width: 100%;
   padding: 16px;
-  border-radius: 20px;
+  border-radius: var(--radius-16);
   background: var(--bg-card);
-  box-shadow: 0 12px 30px rgba(32, 26, 29, 0.05);
+  box-shadow: var(--shadow-soft);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -364,9 +364,9 @@
 .fp-connected {
   margin-top: 4px;
   background: #fff;
-  border-radius: 22px;
+  border-radius: var(--radius-16);
   padding: 20px 16px;
-  box-shadow: 0 12px 30px rgba(32, 26, 29, 0.05);
+  box-shadow: var(--shadow-soft);
   text-align: center;
 }
 .fp-connected--parent {

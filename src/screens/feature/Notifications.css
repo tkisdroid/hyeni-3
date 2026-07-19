@@ -73,16 +73,17 @@
   color: inherit;
   cursor: pointer;
   background: #fff;
-  border-radius: 20px;
+  border-radius: var(--radius-16);
   padding: 12px;
-  box-shadow: 0 8px 22px rgba(32, 26, 29, 0.045);
+  box-shadow: var(--shadow-soft);
   display: flex;
   align-items: center;
   gap: 12px;
   --press: 0.985;
 }
 .nc-item--anchored {
-  box-shadow: 0 0 0 2px var(--blue-500), var(--shadow-card);
+  outline: 2px solid var(--blue-500);
+  box-shadow: var(--shadow-soft);
 }
 .nc-item__icon {
   width: 46px;
