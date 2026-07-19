@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { asset } from "@/lib/assets";
+import { useSafeBack } from "@/app/useSafeBack";
 import { useParentAlerts, useMarkAlertRead } from "@/queries/useNotifications";
 import {
   arrivalAlertTone,
@@ -30,6 +31,7 @@ const TONE_BADGE: Record<ArrivalAlertTone, string> = {
 
 export function ArrivalAlerts() {
   const navigate = useNavigate();
+  const goBack = useSafeBack("/notifications");
   const { data, isLoading, isError, refetch } = useParentAlerts();
   const markRead = useMarkAlertRead();
 
@@ -61,7 +63,7 @@ export function ArrivalAlerts() {
           type="button"
           className="aa-back hy-press"
           aria-label="뒤로"
-          onClick={() => navigate(-1)}
+          onClick={goBack}
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="var(--fg-secondary)" />
         </button>

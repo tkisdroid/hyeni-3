@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Check, ChevronLeft } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
+import { useSafeBack } from "@/app/useSafeBack";
 import { useAuth } from "@/auth/AuthContext";
 import { useSendSos } from "@/queries/useSos";
 import { useMyFamily } from "@/queries/useFamily";
@@ -26,6 +27,7 @@ const HOLD_MS = 3000;
  */
 export function ChildSos() {
   const navigate = useNavigate();
+  const goBack = useSafeBack("/child/home");
   const { show } = useToast();
   const { familyId } = useAuth();
   const sos = useSendSos();
@@ -158,7 +160,7 @@ export function ChildSos() {
         state="empty"
         heading="연결된 가족 정보가 없어"
         description="SOS를 받을 가족을 다시 연결한 뒤 사용할 수 있어."
-        onBack={() => navigate(-1)}
+        onBack={goBack}
         onRetry={() => navigate("/onboarding")}
         retryLabel="연결 화면으로 가기"
       />
@@ -261,7 +263,7 @@ export function ChildSos() {
   return (
     <div className="cs-root">
       <div className="cs-page">
-        <button type="button" className="cs-back hy-press" aria-label="뒤로" onClick={() => navigate(-1)}>
+        <button type="button" className="cs-back hy-press" aria-label="뒤로" onClick={goBack}>
           <ChevronLeft size={22} strokeWidth={2.6} color="var(--bg-card)" />
         </button>
 

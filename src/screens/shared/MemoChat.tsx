@@ -1,9 +1,10 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { ChevronLeft, Send, Image as ImageIcon, MapPin, ShieldAlert } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
+import { useSafeBack } from "@/app/useSafeBack";
 import { useAuth } from "@/auth/AuthContext";
 import { useActiveChild } from "@/app/activeChild";
 import { useMyFamily } from "@/queries/useFamily";
@@ -56,7 +57,7 @@ function avatarSrc(path: string): string {
 
 
 export function MemoChat() {
-  const navigate = useNavigate();
+  const goBack = useSafeBack();
   const { show } = useToast();
   const { userId, role, familyId } = useAuth();
   const isChildSession = role === "child";
@@ -390,7 +391,7 @@ export function MemoChat() {
           type="button"
           className="mc-back hy-press"
           aria-label="뒤로"
-          onClick={() => navigate(-1)}
+          onClick={goBack}
         >
           <ChevronLeft size={24} strokeWidth={2.4} />
         </button>

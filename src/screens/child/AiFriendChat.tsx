@@ -15,6 +15,7 @@ import { filterEventsForChild } from "@/transform/eventScope";
 import { isApiError } from "@/lib/api/errors";
 import { resolveAiFriendDisplayName } from "@/transform/aiFriendName";
 import { useToast } from "@/app/toast";
+import { useSafeBack } from "@/app/useSafeBack";
 import { MessageSafetyDialog, type ReportReasonOption } from "@/components/MessageSafetyDialog";
 import { useReportAiMessage } from "@/queries/useContentSafety";
 import type { AiContentReportReason } from "@/lib/api/endpoints/contentSafety";
@@ -56,6 +57,7 @@ function friendlyError(err: unknown): string {
 
 export function AiFriendChat() {
   const navigate = useNavigate();
+  const goBack = useSafeBack("/child/home");
   const location = useLocation();
   const { show } = useToast();
 
@@ -213,7 +215,7 @@ export function AiFriendChat() {
           type="button"
           className="afc-back hy-press"
           aria-label="뒤로"
-          onClick={() => navigate(-1)}
+          onClick={goBack}
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="#6D4E9C" />
         </button>
