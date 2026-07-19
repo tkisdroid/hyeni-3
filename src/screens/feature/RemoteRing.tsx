@@ -252,7 +252,7 @@ export function RemoteRing() {
           </section>
         ) : ringQueryState === "error" || ringDataMissing ? (
           <section className="rr-query-state rr-query-state--error" role="alert" aria-live="assertive">
-            <AlertTriangle size={28} strokeWidth={2.2} aria-hidden="true" />
+            <AlertTriangle size={24} strokeWidth={2.4} aria-hidden="true" />
             <b>소리 울리기 정보를 불러오지 못했어요</b>
             <p>연결된 아이와 오늘 사용 횟수를 다시 확인해 주세요.</p>
             <button
@@ -262,8 +262,8 @@ export function RemoteRing() {
               disabled={ringRefetching}
             >
               <RefreshCw
-                size={17}
-                strokeWidth={2.3}
+                size={18}
+                strokeWidth={2.2}
                 className={ringRefetching ? "rr-spin" : undefined}
                 aria-hidden="true"
               />
@@ -272,7 +272,7 @@ export function RemoteRing() {
           </section>
         ) : children.length === 0 ? (
           <section className="rr-query-state rr-query-state--empty">
-            <Bell size={30} strokeWidth={2} aria-hidden="true" />
+            <Bell size={24} strokeWidth={2.4} aria-hidden="true" />
             <b>연결된 아이가 없어요</b>
             <p>아이를 연결한 뒤 기기에서 소리를 울릴 수 있어요.</p>
             <button
