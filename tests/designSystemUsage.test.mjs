@@ -2201,6 +2201,7 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/child/overlays/ChildSheet.css", ".ks-cta"],
   ["src/screens/child/overlays/ChildSheet.css", ".ks-cta--soft"],
   ["src/screens/child/overlays/ChildSheet.css", ".ks-cta--ghost"],
+  ["src/screens/child/overlays/ChildSheet.css", ".ks-dialog-close"],
   ["src/screens/child/overlays/ChildSheet.css", ".ks-retry"],
   ["src/screens/child/ChildHome.css", ".kd-next__cta"],
   ["src/screens/child/ChildHome.css", ".kd-prep__edit"],
