@@ -81,9 +81,9 @@
   gap: 8px;
   padding: 12px 16px;
   border: 1px solid rgba(255, 255, 255, 0.72);
-  border-radius: 18px;
+  border-radius: var(--radius-16);
   background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 8px 24px rgba(72, 53, 76, 0.1);
+  box-shadow: var(--shadow-floating);
   color: var(--fg-secondary);
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);

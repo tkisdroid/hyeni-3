@@ -2055,6 +2055,11 @@ const semanticSurfaceManifest = [
     ["src/screens/feature/DailySafetyReport.css", "dr-memo", "card"],
     ["src/screens/feature/DailySafetyReport.css", "dr-premium", "card"],
     ["src/screens/feature/DailySafetyReport.css", "dr-empty", "card"],
+    ["src/components/ui/ScreenQueryState.css", "sqs-card", "card"],
+    ["src/components/ui/ScreenQueryState.css", "sqs-inline-empty", "card"],
+    ["src/screens/child/AiFriendChat.css", "afc-query-state", "card"],
+    ["src/screens/child/ChildHome.css", "kd-map__query-state", "floating"],
+    ["src/screens/feature/RemoteRing.css", "rr-query-state", "card"],
 ];
 
 function surfaceManifestKey(path, selector) {
@@ -2162,7 +2167,14 @@ const nonSurfacePaintManifest = new Set([
   ["src/styles/components.css", ".km-error__retry"],
   ["src/styles/components.css", ".hy-crash__btn"],
   ["src/styles/components.css", ".hy-crash__ghost"],
+  ["src/components/ui/ScreenQueryState.css", ".sqs-retry"],
+  ["src/components/ui/ScreenQueryState.css", ".sqs-inline-empty button"],
   ["src/app/ChildDock.css", ".kdock__sos"],
+  ["src/screens/child/AiFriendChat.css", ".afc-query-state button"],
+  ["src/screens/child/ChildHome.css", ".kd-map__query-state button"],
+  ["src/screens/child/StickerBook.css", ".sb-state button"],
+  ["src/screens/feature/RemoteRing.css", ".rr-query-retry"],
+  ["src/screens/parent/SocialLinks.css", ".sl-retry"],
   ["src/screens/parent/ParentHome.css", ".ph-ai__btn"],
   ["src/screens/parent/ParentHome.css", ".ph-safety__refresh button"],
   ["src/screens/parent/ParentCalendar.css", ".pc-navbtn"],
@@ -2466,6 +2478,8 @@ const nonSurfacePaintManifest = new Set([
   // 장식과 미디어 조각 — exact path + selector만 허용
   ["src/styles/components.css", ".hy-iconbtn__dot"],
   ["src/styles/components.css", ".hy-chip__pulse"],
+  ["src/components/ui/RouteLoading.css", ".route-loading__visual"],
+  ["src/components/ui/ScreenQueryState.css", ".sqs-icon"],
   ["src/screens/Splash.css", ".sp-halo"],
   ["src/screens/Splash.css", ".sp-halo::after"],
   ["src/screens/parent/ParentHome.css", ".ph-live-dot .ring"],

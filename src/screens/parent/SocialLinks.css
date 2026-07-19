@@ -62,14 +62,15 @@
 
 .sl-state {
   min-height: 72px;
-  padding: 14px 16px;
+  padding: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
   text-align: center;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
   color: var(--fg-muted);
 }
 

@@ -34,14 +34,14 @@
   margin: 24px auto 0;
   padding: 32px 24px;
   border: 1px solid var(--line-hair);
-  border-radius: var(--radius-20);
+  border-radius: var(--radius-16);
   background: rgba(255, 255, 255, 0.86);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-soft);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
   text-align: center;
   color: var(--fg-secondary);
 }
@@ -49,6 +49,7 @@
 .rr-query-state b {
   font-size: var(--type-title);
   line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
   color: var(--fg-primary);
 }
 
@@ -56,6 +57,7 @@
   margin: 0;
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
   color: var(--fg-muted);
 }
 
@@ -70,14 +72,14 @@
 .rr-query-retry {
   min-height: var(--control-min-size);
   margin-top: 8px;
-  padding: 0 18px;
+  padding: 0 20px;
   border-radius: var(--radius-pill);
   background: var(--fg-primary);
   color: #fff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 8px;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
