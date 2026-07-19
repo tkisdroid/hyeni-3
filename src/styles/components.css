@@ -199,6 +199,11 @@
   text-wrap: pretty;
 }
 
+/* body-sm 토큰 묶음은 유지하고 직접 텍스트도 문장 행과 같은 실제 행간을 쓴다. */
+.hy-explain.hy-explain {
+  line-height: 1.55;
+}
+
 /* 원격 프로필 사진은 다운로드 전에도 정사각형 자리를 예약한다. */
 .hy-network-avatar {
   aspect-ratio: 1 / 1;

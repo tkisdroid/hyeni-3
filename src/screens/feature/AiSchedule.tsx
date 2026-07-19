@@ -486,7 +486,11 @@ export function AiSchedule() {
             )}
             <div className="ais-hint hy-explain">
               <span className="ais-hint__ico"><Camera size={15} strokeWidth={2.2} /></span>
-              AI가 사진에서 일정을 찾습니다. 크레딧이 사용될 수 있어요. 사진은 일정 후보를 찾기 위해 서버로 전송돼요.
+              <span className="hy-explain__lines">
+                <span className="hy-explain__line">AI가 사진에서 일정을 찾습니다.</span>
+                <span className="hy-explain__line">크레딧이 사용될 수 있어요.</span>
+                <span className="hy-explain__line">사진은 일정 후보를 찾기 위해 서버로 전송돼요.</span>
+              </span>
             </div>
           </div>
         )}

@@ -329,7 +329,10 @@ export function AiCredit() {
         {/* 안내 */}
         <div className="ac-note hy-explain">
           <span className="ac-note__emoji"><MessageCircle size={15} strokeWidth={2.2} /></span>
-          AI가 아이의 일정·안전 대화를 도울 때 크레딧 1회가 사용돼요. 부모님이 충전해 주세요.
+          <span className="hy-explain__lines">
+            <span className="hy-explain__line">AI가 아이의 일정·안전 대화를 도울 때 크레딧 1회가 사용돼요.</span>
+            <span className="hy-explain__line">부모님이 충전해 주세요.</span>
+          </span>
         </div>
 
         {/* 충전팩 */}

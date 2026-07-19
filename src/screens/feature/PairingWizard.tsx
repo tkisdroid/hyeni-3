@@ -383,8 +383,18 @@ export function PairingWizard() {
             </div>
             <p className="pw-note hy-explain">
               {family?.isPrimaryParent
-                ? "연결 코드를 만들면 아이 정보(사진·이름·생년월일·테마색)가 저장돼요. 아이 기기에서 코드를 입력하면 이 정보를 이어받아 연결돼요."
-                : "주 보호자만 아이 정보를 서버에 저장할 수 있어요. 지금 만든 정보는 초대 화면에 미리보기로 전달돼요."}
+                ? (
+                  <span className="hy-explain__lines">
+                    <span className="hy-explain__line">연결 코드를 만들면 아이 정보(사진·이름·생년월일·테마색)가 저장돼요.</span>
+                    <span className="hy-explain__line">아이 기기에서 코드를 입력하면 이 정보를 이어받아 연결돼요.</span>
+                  </span>
+                )
+                : (
+                  <span className="hy-explain__lines">
+                    <span className="hy-explain__line">주 보호자만 아이 정보를 서버에 저장할 수 있어요.</span>
+                    <span className="hy-explain__line">지금 만든 정보는 초대 화면에 미리보기로 전달돼요.</span>
+                  </span>
+                )}
             </p>
           </>
         )}
