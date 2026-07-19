@@ -65,6 +65,7 @@
   border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: var(--radius-16);
   background: rgba(255, 255, 255, 0.16);
+  box-shadow: none;
   color: var(--bg-card);
   text-align: center;
   font-size: var(--type-label);
