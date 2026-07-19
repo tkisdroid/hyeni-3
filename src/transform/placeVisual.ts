@@ -181,7 +181,7 @@ export function resolvePlaceVisual(place: PlaceVisualInput): PlaceVisual {
     return { assetPath: match.assetPath, label: match.label, tone: match.tone };
   }
 
-  return { assetPath: "ui/place-frequent.webp", label: "자주 가는 곳", tone: "frequent" };
+  return { assetPath: "ui/menu-place-manager.webp", label: "자주 가는 곳", tone: "frequent" };
 }
 
 /**

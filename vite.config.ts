@@ -48,7 +48,22 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,woff2,webp,png,svg}"],
         // Jua 는 유니코드 구간별 87개 서브셋(총 854KB)이라 전부 프리캐시하면 설치가 무거워진다.
         // 브라우저가 실제로 쓰는 구간만 내려받게 두고, 네이티브는 어차피 로컬 파일이라 영향이 없다.
-        globIgnores: ["**/fonts/jua/**"],
+        globIgnores: [
+          "**/fonts/jua/**",
+          // 정적·동적 앱 참조와 manifest에 없는 레거시 자산은 설치 precache에서 제외한다.
+          "**/assets/family/daughter.webp",
+          "**/assets/status/busy.webp",
+          "**/assets/status/danger.webp",
+          "**/assets/status/happy.webp",
+          "**/assets/status/late.webp",
+          "**/assets/status/love.webp",
+          "**/assets/status/scheduled.webp",
+          "**/assets/ui/gift.webp",
+          "**/assets/ui/pin-lavender.webp",
+          "**/assets/ui/place-frequent.webp",
+          "**/assets/ui/rainbow.webp",
+          "**/pwa-180x180.png",
+        ],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
       },
       devOptions: { enabled: false },
