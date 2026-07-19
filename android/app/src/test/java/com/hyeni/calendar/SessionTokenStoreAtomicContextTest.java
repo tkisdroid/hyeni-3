@@ -118,6 +118,32 @@ public class SessionTokenStoreAtomicContextTest {
         assertEquals("new-refresh", SessionTokenStore.readContext(prefs).refreshToken);
     }
 
+    @Test
+    public void clearRemovesQuietHoursWithTheSameAtomicEditor() {
+        FakePreferences prefs = new FakePreferences();
+        prefs.edit()
+            .putString("userId", "parent-1")
+            .putString("sessionNonce", "nonce-1")
+            .putString(NotificationQuietHoursStore.KEY_USER_ID, "parent-1")
+            .putBoolean(NotificationQuietHoursStore.KEY_ENABLED, true)
+            .putInt(NotificationQuietHoursStore.KEY_START_MINUTE, 1320)
+            .putInt(NotificationQuietHoursStore.KEY_END_MINUTE, 420)
+            .putString(NotificationQuietHoursStore.KEY_TIME_ZONE, "Asia/Seoul")
+            .putLong(NotificationQuietHoursStore.KEY_UPDATED_AT_MS, 2_000L)
+            .apply();
+        int editCallsBeforeClear = prefs.editCalls;
+
+        SessionTokenStore.clear(prefs, "nonce-1");
+
+        assertEquals(editCallsBeforeClear + 1, prefs.editCalls);
+        assertFalse(prefs.contains(NotificationQuietHoursStore.KEY_USER_ID));
+        assertFalse(prefs.contains(NotificationQuietHoursStore.KEY_ENABLED));
+        assertFalse(prefs.contains(NotificationQuietHoursStore.KEY_START_MINUTE));
+        assertFalse(prefs.contains(NotificationQuietHoursStore.KEY_END_MINUTE));
+        assertFalse(prefs.contains(NotificationQuietHoursStore.KEY_TIME_ZONE));
+        assertFalse(prefs.contains(NotificationQuietHoursStore.KEY_UPDATED_AT_MS));
+    }
+
     private static SessionTokenStore.ContextSnapshot writeContext(
         SharedPreferences prefs,
         String access,
@@ -144,6 +170,7 @@ public class SessionTokenStoreAtomicContextTest {
 
     private static final class FakePreferences implements SharedPreferences {
         private final Map<String, Object> values = new HashMap<>();
+        private int editCalls;
 
         @Override public Map<String, ?> getAll() { return Collections.unmodifiableMap(values); }
         @Override public String getString(String key, String defValue) {
@@ -160,7 +187,7 @@ public class SessionTokenStoreAtomicContextTest {
         @Override public float getFloat(String key, float defValue) { return value(key, Float.class, defValue); }
         @Override public boolean getBoolean(String key, boolean defValue) { return value(key, Boolean.class, defValue); }
         @Override public boolean contains(String key) { return values.containsKey(key); }
-        @Override public Editor edit() { return new FakeEditor(); }
+        @Override public Editor edit() { editCalls++; return new FakeEditor(); }
         @Override public void registerOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener listener) {}
         @Override public void unregisterOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener listener) {}
 

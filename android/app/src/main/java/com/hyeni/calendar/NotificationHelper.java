@@ -52,6 +52,7 @@ public final class NotificationHelper {
     public enum DeliveryStatus {
         POSTED(true, true),
         ALREADY_POSTED(true, false),
+        QUIET_HOURS_SUPPRESSED(true, false),
         APP_NOTIFICATIONS_DISABLED(false, false),
         POST_NOTIFICATIONS_PERMISSION_DENIED(false, false),
         CHANNEL_DISABLED(false, false),
@@ -377,11 +378,44 @@ public final class NotificationHelper {
             int notificationId,
             String route
     ) {
+        return showNotification(
+            context,
+            title,
+            body,
+            channel,
+            wakeScreen,
+            fullScreen,
+            notificationId,
+            route,
+            null
+        );
+    }
+
+    public static DeliveryReceipt showNotification(
+            Context context,
+            String title,
+            String body,
+            String channel,
+            boolean wakeScreen,
+            boolean fullScreen,
+            int notificationId,
+            String route,
+            NotificationQuietHoursPolicy.NotificationIdentity identity
+    ) {
         try {
             createChannels(context);
         } catch (RuntimeException error) {
             Log.w(TAG, "notification channel setup failed", error);
             return DeliveryReceipt.forStatus(DeliveryStatus.NOTIFY_FAILED);
+        }
+
+        NotificationQuietHoursPolicy.Decision quietDecision = NotificationQuietHoursStore.decide(
+            context,
+            identity,
+            System.currentTimeMillis()
+        );
+        if (quietDecision == NotificationQuietHoursPolicy.Decision.SUPPRESS) {
+            return DeliveryReceipt.forStatus(DeliveryStatus.QUIET_HOURS_SUPPRESSED);
         }
 
         int requestCode = Math.max(1, notificationId);
