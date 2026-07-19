@@ -185,9 +185,12 @@ export function LocationSettings() {
     setSaving(true);
     try {
       const saved = await savePreferences.mutateAsync({
-        background_enabled: next.background,
-        interval_mode: next.interval,
-        battery_saver_exception: next.batterySaverException,
+        familyId: updateFamilyId,
+        prefs: {
+          background_enabled: next.background,
+          interval_mode: next.interval,
+          battery_saver_exception: next.batterySaverException,
+        },
       });
       if (currentFamilyIdRef.current !== updateFamilyId) return;
       const savedPreferencesKey = locationPreferencesHydrationKey(updateFamilyId, saved);

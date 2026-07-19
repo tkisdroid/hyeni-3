@@ -43,16 +43,23 @@ export function useLocationPreferences() {
 }
 
 /** 위치 설정 저장 후 동일 가족의 설정 캐시를 서버 응답으로 즉시 맞춘다. */
+interface SaveLocationPreferencesVariables {
+  familyId: string;
+  prefs: LocationPreferencesInput;
+}
+
 export function useSaveLocationPreferences() {
   const qc = useQueryClient();
-  const { familyId } = useAuth();
   return useMutation({
-    mutationFn: (prefs: LocationPreferencesInput) => {
+    mutationFn: ({ familyId, prefs }: SaveLocationPreferencesVariables) => {
       if (!familyId) throw new Error("가족 정보를 확인하지 못했어요");
       return saveLocationPreferences(familyId, prefs);
     },
-    onSuccess: (saved) => {
-      if (familyId) qc.setQueryData(qk.locationPreferences(familyId), saved);
+    onSuccess: (saved, { familyId }) => {
+      if (saved.family_id !== familyId) {
+        throw new Error("저장된 위치 설정의 가족 범위가 일치하지 않아요");
+      }
+      qc.setQueryData(qk.locationPreferences(familyId), saved);
     },
   });
 }

@@ -6,6 +6,10 @@ const screen = readFileSync(
   new URL("../src/screens/feature/LocationSettings.tsx", import.meta.url),
   "utf8",
 );
+const locationHook = readFileSync(
+  new URL("../src/queries/useLocation.ts", import.meta.url),
+  "utf8",
+);
 
 test("위치 설정은 현재 가족의 서버 snapshot을 state에 hydrate한 뒤에만 컨트롤을 연다", () => {
   assert.match(screen, /const \[hydratedFamilyId, setHydratedFamilyId\] = useState<string \| null>\(null\)/);
@@ -28,5 +32,24 @@ test("가족 scope가 바뀌면 이전 초안과 늦게 끝난 저장 응답은 
   assert.match(
     screen,
     /setPrefs\(confirmed\);[\s\S]{0,120}setHydratedFamilyId\(updateFamilyId\);[\s\S]{0,120}setHydratedPreferencesKey\(/,
+  );
+});
+
+test("위치 설정 저장 mutation은 시작 가족을 variables로 고정해 정확한 cache만 갱신한다", () => {
+  assert.match(
+    locationHook,
+    /mutationFn: \(\{ familyId, prefs \}: SaveLocationPreferencesVariables\)[\s\S]{0,180}saveLocationPreferences\(familyId, prefs\)/,
+  );
+  assert.match(
+    locationHook,
+    /onSuccess: \(saved, \{ familyId \}\)[\s\S]{0,160}saved\.family_id !== familyId[\s\S]{0,200}qk\.locationPreferences\(familyId\)/,
+  );
+  assert.doesNotMatch(
+    locationHook,
+    /export function useSaveLocationPreferences\(\)[\s\S]{0,160}const \{ familyId \} = useAuth\(\)/,
+  );
+  assert.match(
+    screen,
+    /savePreferences\.mutateAsync\(\{[\s\S]{0,100}familyId: updateFamilyId,[\s\S]{0,100}prefs: \{/,
   );
 });
