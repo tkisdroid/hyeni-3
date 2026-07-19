@@ -568,7 +568,7 @@ export function ParentHome() {
                         onClick={() => setActiveChildId(c.id)}
                       >
                         <span className="ph-child__avatar" style={{ background: "var(--rose-soft)" }}>
-                          <img src={avatarSrc(c.avatar)} alt="" />
+                          <img className="hy-network-avatar" src={avatarSrc(c.avatar)} alt="" loading="lazy" decoding="async" />
                           <span className="ph-child__online" />
                         </span>
                         <span className="ph-child__main">

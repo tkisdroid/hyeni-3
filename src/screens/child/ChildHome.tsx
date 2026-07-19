@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, MapPin, Settings2, X } from "lucide-react";
+import { Backpack, Check, MapPin, MessageCircle, Palette, Settings2, X } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAccent } from "@/app/accent";
@@ -502,8 +502,9 @@ export function ChildHome() {
         {/* ── 가방 챙기기 ───────────────────────────────────────────── */}
         <div className="kd-card">
           <div className="kd-prep__head">
-            <span className="kd-title" style={{ fontSize: "var(--type-title-lg)" }}>
-              🎒 가방 챙기기
+            <span className="kd-title kd-title--icon" style={{ fontSize: "var(--type-title-lg)" }}>
+              <Backpack size={20} strokeWidth={2.2} aria-hidden="true" />
+              가방 챙기기
             </span>
             <span className="kd-prep__count">
               {prepDone}/{supplies.length}
@@ -567,7 +568,7 @@ export function ChildHome() {
                         onClick={() => remove.mutate(s, { onError: () => show("못 지웠어. 다시 해볼래?", "⚠️") })}
                         disabled={remove.isPending}
                       >
-                        <X size={16} strokeWidth={2.6} color="var(--danger-500)" />
+                        <X size={16} strokeWidth={2.4} color="var(--danger-500)" />
                       </button>
                     </>
                   ) : (
@@ -670,8 +671,9 @@ export function ChildHome() {
         {/* ── 지금 상태 보내기 ──────────────────────────────────────── */}
         <div className="kd-card">
           <div className="kd-status__head">
-            <span className="kd-title" style={{ fontSize: "var(--type-title-lg)" }}>
-              💬 지금 상태 보내기
+            <span className="kd-title kd-title--icon" style={{ fontSize: "var(--type-title-lg)" }}>
+              <MessageCircle size={20} strokeWidth={2.2} aria-hidden="true" />
+              지금 상태 보내기
             </span>
             <span className="kd-status__sub">누르면 바로 알려줄게</span>
           </div>
@@ -706,8 +708,9 @@ export function ChildHome() {
         {/* ── 내 색깔 고르기 ────────────────────────────────────────── */}
         <div className="kd-card">
           <div className="kd-color__head">
-            <span className="kd-title" style={{ fontSize: "var(--type-title-lg)" }}>
-              🎨 내 색깔 고르기
+            <span className="kd-title kd-title--icon" style={{ fontSize: "var(--type-title-lg)" }}>
+              <Palette size={20} strokeWidth={2.2} aria-hidden="true" />
+              내 색깔 고르기
             </span>
             <span className="kd-color__hint">앱 색이 바뀌어</span>
           </div>
@@ -735,10 +738,10 @@ export function ChildHome() {
         {/* ── 내 위치 · 내 설정(시안엔 없지만 아이가 닿아야 하는 화면) ── */}
         <div className="kd-more">
           <button type="button" className="kd-more__btn hy-press" onClick={() => navigate("/child/location-status")}>
-            <MapPin size={19} strokeWidth={2.4} color="var(--hy-accent-deep)" />내 위치
+            <MapPin size={22} strokeWidth={2.4} color="var(--hy-accent-deep)" />내 위치
           </button>
           <button type="button" className="kd-more__btn hy-press" onClick={() => navigate("/child/settings")}>
-            <Settings2 size={19} strokeWidth={2.4} color="var(--fg-muted)" />내 설정
+            <Settings2 size={22} strokeWidth={2.4} color="var(--fg-muted)" />내 설정
           </button>
         </div>
       </div>

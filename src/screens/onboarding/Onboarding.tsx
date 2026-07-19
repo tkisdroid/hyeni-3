@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Camera, ChevronLeft, ChevronRight, Link2 } from "lucide-react";
@@ -6,6 +6,7 @@ import { asset } from "@/lib/assets";
 import { DEFAULT_CHILD_AVATAR } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { deriveAuthState, useAuth } from "@/auth/AuthContext";
+import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import { homePathForRole } from "@/auth/guards";
 import {
   beginOnboardingAuthTransition,
@@ -1365,6 +1366,15 @@ function PermsStep({
   >("idle");
   const [permissionBusy, setPermissionBusy] = useState(false);
   const [locationUnsupported, setLocationUnsupported] = useState(false);
+  const consentTitleId = useId();
+  const consentDescriptionId = useId();
+  const consentSecondaryRef = useRef<HTMLButtonElement>(null);
+  const consentDialogRef = useDialogFocusLifecycle<HTMLElement>({
+    open: locationStage !== "idle",
+    onClose: onDone,
+    initialFocusRef: consentSecondaryRef,
+    canClose: () => !permissionBusy,
+  });
 
   const start = () => {
     if (role !== "child") {
@@ -1444,17 +1454,18 @@ function PermsStep({
       {locationStage !== "idle" && (
         <div className="ob-consent-overlay">
           <section
+            ref={consentDialogRef}
             className="ob-consent-dialog"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="ob-location-consent-title"
-            aria-describedby="ob-location-consent-description"
+            aria-labelledby={consentTitleId}
+            aria-describedby={consentDescriptionId}
           >
             {locationStage === "disclosure" && (
               <>
                 <span className="ob-consent-dialog__eyebrow">아이 위치 공유 안내</span>
-                <h2 id="ob-location-consent-title">백그라운드 위치를 사용해요</h2>
-                <div id="ob-location-consent-description" className="ob-consent-dialog__copy">
+                <h2 id={consentTitleId}>백그라운드 위치를 사용해요</h2>
+                <div id={consentDescriptionId} className="ob-consent-dialog__copy">
                   <p>
                     혜니캘린더는 아이가 앱을 닫거나 사용하지 않을 때도 위치를 수집해 연결된 보호자에게 공유합니다.
                   </p>
@@ -1466,10 +1477,10 @@ function PermsStep({
                   </p>
                 </div>
                 <div className="ob-consent-dialog__actions">
-                  <button type="button" className="ob-consent-secondary hy-press" onClick={onDone} disabled={permissionBusy}>
+                  <button ref={consentSecondaryRef} type="button" className="ob-consent-secondary hy-press" onClick={onDone} disabled={permissionBusy}>
                     나중에
                   </button>
-                  <button type="button" className="ob-consent-primary hy-press" onClick={() => void requestForeground()} disabled={permissionBusy} autoFocus>
+                  <button type="button" className="ob-consent-primary hy-press" onClick={() => void requestForeground()} disabled={permissionBusy}>
                     {permissionBusy ? "권한 확인 중…" : "동의하고 계속"}
                   </button>
                 </div>
@@ -1479,18 +1490,18 @@ function PermsStep({
             {locationStage === "backgroundEducation" && (
               <>
                 <span className="ob-consent-dialog__eyebrow">마지막 위치 설정</span>
-                <h2 id="ob-location-consent-title">위치를 ‘항상 허용’으로 선택해 주세요</h2>
-                <div id="ob-location-consent-description" className="ob-consent-dialog__copy">
+                <h2 id={consentTitleId}>위치를 ‘항상 허용’으로 선택해 주세요</h2>
+                <div id={consentDescriptionId} className="ob-consent-dialog__copy">
                   <p>
                     다음 Android 위치 권한 화면에서 ‘항상 허용’을 선택해야 앱을 닫은 뒤에도 도착·출발과 위험장소 알림이 이어집니다.
                   </p>
                   <p>허용하지 않아도 앱은 사용할 수 있으며, 아이 설정에서 나중에 다시 켤 수 있습니다.</p>
                 </div>
                 <div className="ob-consent-dialog__actions">
-                  <button type="button" className="ob-consent-secondary hy-press" onClick={onDone} disabled={permissionBusy}>
+                  <button ref={consentSecondaryRef} type="button" className="ob-consent-secondary hy-press" onClick={onDone} disabled={permissionBusy}>
                     나중에
                   </button>
-                  <button type="button" className="ob-consent-primary hy-press" onClick={() => void requestBackground()} disabled={permissionBusy} autoFocus>
+                  <button type="button" className="ob-consent-primary hy-press" onClick={() => void requestBackground()} disabled={permissionBusy}>
                     {permissionBusy ? "설정 확인 중…" : "‘항상 허용’ 설정 열기"}
                   </button>
                 </div>
@@ -1500,10 +1511,10 @@ function PermsStep({
             {(locationStage === "foregroundDenied" || locationStage === "backgroundDenied") && (
               <>
                 <span className="ob-consent-dialog__eyebrow">위치 권한이 필요해요</span>
-                <h2 id="ob-location-consent-title">
+                <h2 id={consentTitleId}>
                   {locationUnsupported ? "이 기기에서는 지원하지 않아요" : "아직 위치 권한이 꺼져 있어요"}
                 </h2>
-                <div id="ob-location-consent-description" className="ob-consent-dialog__copy">
+                <div id={consentDescriptionId} className="ob-consent-dialog__copy">
                   <p>
                     {locationUnsupported
                       ? "아이의 백그라운드 위치 공유는 Android 앱에서 사용할 수 있습니다."
@@ -1512,7 +1523,7 @@ function PermsStep({
                   <p>앱은 계속 사용할 수 있고, 아이 설정에서 언제든지 다시 설정할 수 있습니다.</p>
                 </div>
                 <div className="ob-consent-dialog__actions">
-                  <button type="button" className="ob-consent-secondary hy-press" onClick={onDone} disabled={permissionBusy}>
+                  <button ref={consentSecondaryRef} type="button" className="ob-consent-secondary hy-press" onClick={onDone} disabled={permissionBusy}>
                     권한 없이 시작
                   </button>
                   {!locationUnsupported && (
@@ -1521,7 +1532,6 @@ function PermsStep({
                       className="ob-consent-primary hy-press"
                       onClick={() => void (locationStage === "foregroundDenied" ? requestForeground() : requestBackground())}
                       disabled={permissionBusy}
-                      autoFocus
                     >
                       {permissionBusy ? "권한 확인 중…" : "다시 설정"}
                     </button>

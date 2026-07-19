@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { BookOpenCheck, FileText, LogOut, ShieldCheck, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
+import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import {
   PRIVACY_POLICY_URL,
   TERMS_OF_SERVICE_URL,
@@ -18,15 +19,15 @@ export function TeacherReleaseGate() {
   const { logout, deleteAccount } = useAuth();
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
-
-  useEffect(() => {
-    if (!confirmDelete) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !busyAction) setConfirmDelete(false);
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [busyAction, confirmDelete]);
+  const deleteTitleId = useId();
+  const deleteDescriptionId = useId();
+  const deleteCancelRef = useRef<HTMLButtonElement>(null);
+  const deleteDialogRef = useDialogFocusLifecycle<HTMLDivElement>({
+    open: confirmDelete,
+    onClose: () => setConfirmDelete(false),
+    initialFocusRef: deleteCancelRef,
+    canClose: () => !busyAction,
+  });
 
   const handleLogout = async () => {
     if (busyAction) return;
@@ -113,23 +114,31 @@ export function TeacherReleaseGate() {
       </section>
 
       {confirmDelete && (
-        <div className="trg-dialog" role="dialog" aria-modal="true" aria-labelledby="teacher-delete-title">
+        <div
+          ref={deleteDialogRef}
+          className="trg-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={deleteTitleId}
+          aria-describedby={deleteDescriptionId}
+        >
           <button
             type="button"
             className="trg-dialog__scrim"
+            tabIndex={-1}
             aria-label="회원 탈퇴 확인 닫기"
             onClick={() => !busyAction && setConfirmDelete(false)}
           />
           <div className="trg-dialog__card">
-            <h2 id="teacher-delete-title">선생님 계정을 삭제할까요?</h2>
-            <p>내 계정과 내가 만든 반·학생 연결 정보는 삭제되며 복구할 수 없습니다.</p>
+            <h2 id={deleteTitleId}>선생님 계정을 삭제할까요?</h2>
+            <p id={deleteDescriptionId}>내 계정과 내가 만든 반·학생 연결 정보는 삭제되며 복구할 수 없습니다.</p>
             <div className="trg-dialog__actions">
               <button
+                ref={deleteCancelRef}
                 type="button"
                 className="trg-dialog__cancel hy-press"
                 onClick={() => setConfirmDelete(false)}
                 disabled={busyAction !== null}
-                autoFocus
               >
                 취소
               </button>

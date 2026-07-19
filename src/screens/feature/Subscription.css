@@ -82,7 +82,7 @@
 .sub-active__badge {
   width: 46px;
   height: 46px;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   background: #fff;
   display: flex;
   align-items: center;
@@ -211,7 +211,7 @@
 .sub-benefit__icon {
   width: 42px;
   height: 42px;
-  border-radius: 13px;
+  border-radius: var(--radius-12);
   background: #fff6e5;
   display: flex;
   align-items: center;
@@ -267,7 +267,7 @@
   margin-top: 20px;
   width: 100%;
   height: 58px;
-  border-radius: 18px;
+  border-radius: var(--radius-16);
   background: linear-gradient(120deg, #ffb443, #f0518f);
   box-shadow: 0 16px 32px -12px rgba(240, 81, 143, 0.6);
   font-size: var(--type-title);

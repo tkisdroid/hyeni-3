@@ -59,10 +59,11 @@ export function ScreenQueryState({
             className="sqs-retry hy-press"
             onClick={onRetry}
             disabled={retrying}
+            aria-busy={retrying}
           >
             <RefreshCw
               className={retrying ? "sqs-spin" : undefined}
-              size={17}
+              size={18}
               strokeWidth={2.4}
               aria-hidden="true"
             />

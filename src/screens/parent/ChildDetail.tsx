@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Pencil, Smartphone, Trash2, AlertTriangle } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { useActiveChild } from "@/app/activeChild";
+import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import { useMyFamily, useUnpairChild } from "@/queries/useFamily";
 import { useEvents } from "@/queries/useSchedule";
 import { useChildLocations, useSavedPlaces } from "@/queries/useLocation";
@@ -53,6 +54,15 @@ export function ChildDetail() {
   const unpair = useUnpairChild();
   const { activeChild, setActiveChildId } = useActiveChild();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const deleteTitleId = useId();
+  const deleteDescriptionId = useId();
+  const deleteCancelRef = useRef<HTMLButtonElement>(null);
+  const deleteDialogRef = useDialogFocusLifecycle<HTMLDivElement>({
+    open: confirmDelete,
+    onClose: () => setConfirmDelete(false),
+    initialFocusRef: deleteCancelRef,
+    canClose: () => !unpair.isPending,
+  });
   const detailLoading = familyQuery.isLoading
     || eventsQuery.isLoading
     || locationsQuery.isLoading
@@ -201,7 +211,7 @@ export function ChildDetail() {
         {/* 프로필 히어로 */}
         <div className="cd-hero">
           <span className="cd-hero__avatar" style={{ background: soft }}>
-            <img src={avatarSrc(avatar)} alt="" />
+            <img className="hy-network-avatar" src={avatarSrc(avatar)} alt="" loading="lazy" decoding="async" />
           </span>
           <div className="cd-hero__main">
             <div className="cd-hero__name">{name}</div>
@@ -327,10 +337,18 @@ export function ChildDetail() {
 
       {/* 삭제 확인 시트(네이티브 confirm 미사용 — 인앱 오버레이) */}
       {confirmDelete && (
-        <div className="cd-confirm" role="dialog" aria-modal="true">
+        <div
+          ref={deleteDialogRef}
+          className="cd-confirm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={deleteTitleId}
+          aria-describedby={deleteDescriptionId}
+        >
           <button
             type="button"
             className="cd-confirm__scrim"
+            tabIndex={-1}
             aria-label="닫기"
             onClick={() => {
               if (!unpair.isPending) setConfirmDelete(false);
@@ -340,13 +358,14 @@ export function ChildDetail() {
             <span className="cd-confirm__icon">
               <AlertTriangle size={26} strokeWidth={2.2} />
             </span>
-            <div className="cd-confirm__title">{name} 삭제할까요?</div>
-            <p className="cd-confirm__desc">
+            <div id={deleteTitleId} className="cd-confirm__title">{name} 삭제할까요?</div>
+            <p id={deleteDescriptionId} className="cd-confirm__desc">
               가족에서 완전히 삭제돼요. 대화와 공유 사진, 위치 기록과 연결이 모두 영구 삭제되어
               되돌릴 수 없어요. 다시 함께하려면 연결 코드로 새로 연결하면 돼요.
             </p>
             <div className="cd-confirm__btns">
               <button
+                ref={deleteCancelRef}
                 type="button"
                 className="cd-confirm__cancel hy-press"
                 onClick={() => setConfirmDelete(false)}

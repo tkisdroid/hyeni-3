@@ -167,6 +167,11 @@
   border: 1px solid var(--line-card);
 }
 
+/* 원격 프로필 사진은 다운로드 전에도 정사각형 자리를 예약한다. */
+.hy-network-avatar {
+  aspect-ratio: 1 / 1;
+}
+
 /* 공통 로더의 레이아웃·문구도 동일한 간격/타이포 척도를 사용한다. */
 .hy-loading {
   gap: var(--spacing-8);
@@ -215,7 +220,7 @@
 }
 .hy-tabbar__inner {
   background: #fff;
-  border-radius: 26px;
+  border-radius: var(--radius-pill);
   box-shadow: var(--shadow-floating);
   padding: 8px;
   display: flex;

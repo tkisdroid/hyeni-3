@@ -26,7 +26,7 @@ export function OfflineBanner() {
 
   return (
     <div className="ofb-root" role="status">
-      <WifiOff size={15} strokeWidth={2.4} />
+      <WifiOff size={16} strokeWidth={2.4} />
       <span className="ofb-text">오프라인 상태예요 · 저장한 내용은 연결되면 동기화돼요</span>
     </div>
   );

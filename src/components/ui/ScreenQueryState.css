@@ -111,6 +111,12 @@
 
 .sqs-retry:disabled {
   opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+}
+
+.sqs-retry[aria-busy="true"]:disabled {
+  opacity: var(--busy-opacity);
+  cursor: progress;
 }
 
 .sqs-spin {

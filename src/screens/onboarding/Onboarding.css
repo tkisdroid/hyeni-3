@@ -56,7 +56,7 @@
   width: 100%;
   height: 52px;
   box-sizing: border-box;
-  border-radius: 15px;
+  border-radius: var(--radius-16);
   border: 1.5px solid rgba(32, 26, 29, 0.1);
   background: #fff;
   padding: 0 16px;
@@ -185,7 +185,7 @@
   margin: 20px auto 0;
   width: 92px;
   height: 92px;
-  border-radius: 26px;
+  border-radius: var(--radius-24);
   overflow: hidden;
   background: linear-gradient(160deg, #ffe3ef, #ffd0e4);
   box-shadow: 0 18px 36px -10px rgba(247, 121, 168, 0.5);
@@ -245,7 +245,7 @@
 .ob-role-ic {
   width: 58px;
   height: 58px;
-  border-radius: 18px;
+  border-radius: var(--radius-16);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -344,7 +344,7 @@
   width: 92px;
   height: 92px;
   margin: 0 auto;
-  border-radius: 26px;
+  border-radius: var(--radius-24);
   background: #fff;
   display: flex;
   align-items: center;
@@ -505,7 +505,7 @@
 }
 .ob-loginbtn {
   height: 54px;
-  border-radius: 15px;
+  border-radius: var(--radius-16);
   background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
   box-shadow: 0 14px 28px -10px rgba(240, 81, 143, 0.6);
   font-size: var(--type-body-lg);
@@ -640,7 +640,7 @@
   width: 100%;
   height: 52px;
   box-sizing: border-box;
-  border-radius: 15px;
+  border-radius: var(--radius-16);
   border: 1.5px solid rgba(32, 26, 29, 0.1);
   background: #fff;
   padding: 0 16px;
@@ -852,7 +852,7 @@
 .ob-pair-cell {
   width: 42px;
   height: 52px;
-  border-radius: 13px;
+  border-radius: var(--radius-12);
   background: rgba(255, 255, 255, 0.08);
   border: 1.5px solid rgba(255, 255, 255, 0.16);
   display: flex;

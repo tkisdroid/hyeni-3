@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { Link2, Plus, X } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
+import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import {
   useTeacherClasses,
   useRoster,
@@ -73,6 +74,15 @@ export function TeacherStudents() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [invitePhone, setInvitePhone] = useState("");
   const [inviteChild, setInviteChild] = useState("");
+  const inviteTitleId = useId();
+  const inviteDescriptionId = useId();
+  const inviteCloseRef = useRef<HTMLButtonElement>(null);
+  const inviteDialogRef = useDialogFocusLifecycle<HTMLDivElement>({
+    open: inviteOpen,
+    onClose: () => setInviteOpen(false),
+    initialFocusRef: inviteCloseRef,
+    canClose: () => !requestPairing.isPending,
+  });
 
   const openInvite = () => {
     if (!classId) {
@@ -264,26 +274,31 @@ export function TeacherStudents() {
         <div
           className="ts-sheet-overlay"
           role="presentation"
-          onClick={() => setInviteOpen(false)}
+          onClick={() => !requestPairing.isPending && setInviteOpen(false)}
         >
           <div
+            ref={inviteDialogRef}
             className="ts-sheet"
             role="dialog"
-            aria-label="학생 초대"
+            aria-modal="true"
+            aria-labelledby={inviteTitleId}
+            aria-describedby={inviteDescriptionId}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="ts-sheet__head">
-              <span className="ts-sheet__title">학생 초대</span>
+              <span id={inviteTitleId} className="ts-sheet__title">학생 초대</span>
               <button
+                ref={inviteCloseRef}
                 type="button"
                 className="ts-sheet__x hy-press"
                 aria-label="닫기"
                 onClick={() => setInviteOpen(false)}
+                disabled={requestPairing.isPending}
               >
                 <X size={20} strokeWidth={2.4} color="#6D6469" />
               </button>
             </div>
-            <p className="ts-sheet__desc">
+            <p id={inviteDescriptionId} className="ts-sheet__desc">
               부모님 전화번호로 초대하면, 부모님 승인 후 학생이 자동으로 연결돼요.
             </p>
             <div className="ts-sheet__label">부모님 전화번호</div>

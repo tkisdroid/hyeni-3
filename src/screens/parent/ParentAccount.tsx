@@ -329,6 +329,7 @@ export function ParentAccount() {
           <button
             type="button"
             className="pa-modal__scrim"
+            tabIndex={-1}
             aria-label="닫기"
             onClick={() => !deleteAccount.isPending && setConfirmDelete(false)}
           />
@@ -377,6 +378,7 @@ export function ParentAccount() {
           <button
             type="button"
             className="pa-modal__scrim"
+            tabIndex={-1}
             aria-label="닫기"
             onClick={() => closePassword()}
           />

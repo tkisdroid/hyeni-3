@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, UserPlus, Link2Off, Wifi } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { DEFAULT_CHILD_AVATAR } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
+import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import { useMyFamily, useUnpairChild } from "@/queries/useFamily";
 import { useChildLocations } from "@/queries/useLocation";
 import { mapFamilyToView } from "@/transform/familyView";
@@ -44,6 +45,15 @@ export function FamilyConnection() {
   const unpair = useUnpairChild();
 
   const [confirm, setConfirm] = useState<UnpairTarget | null>(null);
+  const confirmTitleId = useId();
+  const confirmDescriptionId = useId();
+  const confirmCancelRef = useRef<HTMLButtonElement>(null);
+  const confirmDialogRef = useDialogFocusLifecycle<HTMLDivElement>({
+    open: confirm !== null,
+    onClose: () => setConfirm(null),
+    initialFocusRef: confirmCancelRef,
+    canClose: () => !unpair.isPending,
+  });
 
   const members = useMemo(() => family?.members ?? [], [family]);
   const view = useMemo(() => mapFamilyToView(members, null), [members]);
@@ -146,7 +156,7 @@ export function FamilyConnection() {
                   return (
                     <div key={c.id} className="fc-device">
                       <span className="fc-device__avatar" style={{ background: soft }}>
-                        <img src={avatarSrc(avatar)} alt="" />
+                        <img className="hy-network-avatar" src={avatarSrc(avatar)} alt="" loading="lazy" decoding="async" />
                       </span>
                       <span className="fc-device__main">
                         <span className="fc-device__name">{c.name || "아이"}</span>
@@ -172,7 +182,7 @@ export function FamilyConnection() {
                 {pending.map((c) => (
                   <div key={c.id} className="fc-device fc-device--pending">
                     <span className="fc-device__avatar fc-device__avatar--muted">
-                      <img src={avatarSrc(avatarFor(c.id).avatar)} alt="" />
+                      <img className="hy-network-avatar" src={avatarSrc(avatarFor(c.id).avatar)} alt="" loading="lazy" decoding="async" />
                     </span>
                     <span className="fc-device__main">
                       <span className="fc-device__name">{c.name || "아이"}</span>
@@ -248,21 +258,30 @@ export function FamilyConnection() {
 
       {/* 연결 해제 확인 모달 */}
       {confirm && (
-        <div className="fc-modal" role="dialog" aria-modal="true">
+        <div
+          ref={confirmDialogRef}
+          className="fc-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={confirmTitleId}
+          aria-describedby={confirmDescriptionId}
+        >
           <button
             type="button"
             className="fc-modal__scrim"
+            tabIndex={-1}
             aria-label="닫기"
             onClick={() => !unpair.isPending && setConfirm(null)}
           />
           <div className="fc-modal__card">
-            <div className="fc-modal__title">{confirm.name} 연결을 해제할까요?</div>
-            <div className="fc-modal__body">
+            <div id={confirmTitleId} className="fc-modal__title">{confirm.name} 연결을 해제할까요?</div>
+            <div id={confirmDescriptionId} className="fc-modal__body">
               연결을 해제하면 이 아이의 위치·알림 연동이 중단되고, 아이 기기의 연결이 풀려요.
               다시 연결하려면 연결 코드가 필요해요.
             </div>
             <div className="fc-modal__actions">
               <button
+                ref={confirmCancelRef}
                 type="button"
                 className="fc-modal__btn fc-modal__btn--ghost hy-press"
                 onClick={() => setConfirm(null)}

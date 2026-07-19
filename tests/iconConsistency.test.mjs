@@ -520,6 +520,11 @@ test("장소 삭제 아이콘은 44px 조작 영역과 18px glyph를 유지한�
 
 test("출시 화면 Lucide 유틸리티 아이콘은 승인된 glyph와 stroke 척도만 쓴다", () => {
   const files = [
+    "src/components/MapPickerSheet.tsx",
+    "src/components/ui/OfflineBanner.tsx",
+    "src/components/ui/ScreenQueryState.tsx",
+    "src/screens/child/ChildHome.tsx",
+    "src/screens/child/ChildSettings.tsx",
     "src/screens/parent/ParentLocation.tsx",
     "src/screens/feature/DaySummary.tsx",
     "src/screens/feature/RemoteAudio.tsx",
@@ -530,6 +535,8 @@ test("출시 화면 Lucide 유틸리티 아이콘은 승인된 glyph와 stroke �
   const allowedSizes = new Set([16, 18, 20, 22, 24]);
   const allowedStrokes = new Set([2.2, 2.4]);
   const decorativeAllowlist = new Set([
+    "src/components/ui/ScreenQueryState.tsx|Icon|32|2.1",
+    "src/screens/child/ChildHome.tsx|Check|19|3.4",
     "src/screens/parent/ParentLocation.tsx|AlertTriangle|30|2.2",
     "src/screens/parent/ParentLocation.tsx|RefreshCw|30|2.2",
     "src/screens/feature/RemoteAudio.tsx|Mic|52|1.8",

@@ -28,7 +28,7 @@ export function TabBar({ tabs }: { tabs: TabItem[] }) {
               onClick={() => navigate(t.to)}
             >
               <span className="hy-tab__icon">
-                <t.Icon size={21} strokeWidth={active ? 2.4 : 2} />
+                <t.Icon size={22} strokeWidth={active ? 2.4 : 2.2} />
                 {t.dot && <span className="hy-tab__dot" />}
               </span>
               <span className="hy-tab__label">{t.label}</span>

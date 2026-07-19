@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useId, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
@@ -12,6 +12,7 @@ import {
   MessageCircleQuestion,
   ShieldCheck,
   Star,
+  Trash2,
   UserRound,
   type LucideIcon,
 } from "lucide-react";
@@ -23,6 +24,7 @@ import { useAuth } from "@/auth/AuthContext";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { useClaimReviewReward } from "@/queries/useReviewReward";
 import { useAccount, useDeleteAccount } from "@/queries/useAccount";
+import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import { openExternal } from "@/lib/native/browser";
 import {
   openGooglePlayReviewListing,
@@ -97,6 +99,15 @@ export function ParentSettings() {
   const { account, me, providerLabel } = accountQuery;
   const deleteAccount = useDeleteAccount();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const deleteTitleId = useId();
+  const deleteDescriptionId = useId();
+  const deleteCancelRef = useRef<HTMLButtonElement>(null);
+  const deleteDialogRef = useDialogFocusLifecycle<HTMLDivElement>({
+    open: confirmDelete,
+    onClose: () => setConfirmDelete(false),
+    initialFocusRef: deleteCancelRef,
+    canClose: () => !deleteAccount.isPending,
+  });
   // 티어 배지는 ready 일 때만 노출(미확정/조회실패 시 미표시 — R9: free 강등 금지).
   const entitlementQuery = useEntitlement();
   const { ready, tier } = entitlementQuery;
@@ -250,7 +261,7 @@ export function ParentSettings() {
         {/* 프로필 (실 로그인 사용자) */}
         <div className="ps-profile">
           <div className="ps-profile__avatar">
-            <img src={profileAvatar} alt="" />
+            <img className="hy-network-avatar" src={profileAvatar} alt="" loading="lazy" decoding="async" />
           </div>
           <div className="ps-profile__info">
             <div className="ps-profile__name">{displayName}</div>
@@ -352,23 +363,34 @@ export function ParentSettings() {
 
       {/* 회원 탈퇴 확인 모달 */}
       {confirmDelete && (
-        <div className="ps-modal" role="dialog" aria-modal="true">
+        <div
+          ref={deleteDialogRef}
+          className="ps-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={deleteTitleId}
+          aria-describedby={deleteDescriptionId}
+        >
           <button
             type="button"
             className="ps-modal__scrim"
+            tabIndex={-1}
             aria-label="닫기"
             onClick={() => !deleteAccount.isPending && setConfirmDelete(false)}
           />
           <div className="ps-modal__card">
-            <div className="ps-modal__emoji">🗑️</div>
-            <div className="ps-modal__title">정말 탈퇴하시겠어요?</div>
-            <p className="ps-modal__body">
+            <div className="ps-modal__emoji" aria-hidden="true">
+              <Trash2 size={24} strokeWidth={2.2} />
+            </div>
+            <div id={deleteTitleId} className="ps-modal__title">정말 탈퇴하시겠어요?</div>
+            <p id={deleteDescriptionId} className="ps-modal__body">
               {account?.isPrimaryParent
                 ? "가족의 일정·위치 이력·대화·아이 계정이 모두 영구 삭제되며 복구할 수 없어요."
                 : "내 계정과 이 가족에서의 정보가 삭제돼요."}
             </p>
             <div className="ps-modal__btns">
               <button
+                ref={deleteCancelRef}
                 type="button"
                 className="ps-modal__btn ps-modal__btn--ghost hy-press"
                 onClick={() => setConfirmDelete(false)}

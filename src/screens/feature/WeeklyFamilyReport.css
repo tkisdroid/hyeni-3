@@ -73,7 +73,7 @@
 .wr-hero__icon {
   width: 56px;
   height: 56px;
-  border-radius: 18px;
+  border-radius: var(--radius-16);
   background: var(--bg-card);
   color: var(--gold-text);
   box-shadow: var(--shadow-soft);
@@ -92,7 +92,7 @@
 .wr-empty__icon {
   width: 56px;
   height: 56px;
-  border-radius: 18px;
+  border-radius: var(--radius-16);
   background: var(--bg-card);
   color: var(--gold-text);
   box-shadow: var(--shadow-soft);
@@ -207,7 +207,7 @@
   width: 46px;
   height: 46px;
   margin-bottom: var(--space-1);
-  border-radius: 15px;
+  border-radius: var(--radius-16);
   display: grid;
   place-items: center;
   background: var(--bg-card);

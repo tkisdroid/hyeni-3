@@ -191,4 +191,29 @@ test("실제 hook 키보드 알고리즘은 최상단 dialog에서만 Escape와 
     focusIsOutside: true,
   }), true);
   assert.deepEqual(calls, ["prevent", "dialog"]);
+
+  const nonTabbableContainer = { id: "container", focus: () => calls.push("container") };
+  calls.length = 0;
+  assert.equal(handleTopmostDialogKey({
+    ...common,
+    dialogId: "inner",
+    key: "Tab",
+    shiftKey: false,
+    focusable: [first, last],
+    activeElement: nonTabbableContainer,
+    focusIsOutside: false,
+  }), true);
+  assert.deepEqual(calls, ["prevent", "first"], "tabIndex=-1 초기 컨테이너에서 첫 Tab이 dialog 밖으로 나가면 안 됩니다");
+
+  calls.length = 0;
+  assert.equal(handleTopmostDialogKey({
+    ...common,
+    dialogId: "inner",
+    key: "Tab",
+    shiftKey: true,
+    focusable: [first, last],
+    activeElement: nonTabbableContainer,
+    focusIsOutside: false,
+  }), true);
+  assert.deepEqual(calls, ["prevent", "last"], "tabIndex=-1 초기 컨테이너에서 Shift+Tab은 마지막 항목으로 가야 합니다");
 });

@@ -1,7 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, MapPin, Bell, HelpCircle, X, Cat, Mail, type LucideIcon } from "lucide-react";
+import {
+  Bell,
+  Cat,
+  ChevronLeft,
+  HelpCircle,
+  Link2,
+  Mail,
+  MapPin,
+  UserRound,
+  Users,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import { asset } from "@/lib/assets";
+import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
@@ -30,14 +43,14 @@ function ageFrom(bd: string | null | undefined, now: Date): number | null {
 }
 
 // 부모 연결 문구(반말) — 성별 기반.
-function connectionLabel(parents: { gender?: string | null }[]): { emoji: string; text: string } {
+function connectionLabel(parents: { gender?: string | null }[]): { Icon: LucideIcon; text: string } {
   const hasMom = parents.some((p) => p.gender === "mom");
   const hasDad = parents.some((p) => p.gender === "dad");
-  if (hasMom && hasDad) return { emoji: "👩👨", text: "엄마·아빠와 연결됐어" };
-  if (hasMom) return { emoji: "👩", text: "엄마와 연결됐어" };
-  if (hasDad) return { emoji: "👨", text: "아빠와 연결됐어" };
-  if (parents.length) return { emoji: "👪", text: "가족과 연결됐어" };
-  return { emoji: "🔗", text: "아직 연결 대기 중이야" };
+  if (hasMom && hasDad) return { Icon: Users, text: "엄마·아빠와 연결됐어" };
+  if (hasMom) return { Icon: UserRound, text: "엄마와 연결됐어" };
+  if (hasDad) return { Icon: UserRound, text: "아빠와 연결됐어" };
+  if (parents.length) return { Icon: Users, text: "가족과 연결됐어" };
+  return { Icon: Link2, text: "아직 연결 대기 중이야" };
 }
 
 function avatarSrc(path: string): string {
@@ -81,6 +94,14 @@ export function ChildSettings() {
   const [requested, setRequested] = useState<Record<string, boolean>>({});
   const [helpOpen, setHelpOpen] = useState(false);
   const [locationStatus, setLocationStatus] = useState<LocationTrackingStatus | null>(null);
+  const helpTitleId = useId();
+  const helpDescriptionId = useId();
+  const helpCloseRef = useRef<HTMLButtonElement>(null);
+  const helpDialogRef = useDialogFocusLifecycle<HTMLDivElement>({
+    open: helpOpen,
+    onClose: () => setHelpOpen(false),
+    initialFocusRef: helpCloseRef,
+  });
 
   useEffect(() => {
     let disposed = false;
@@ -233,8 +254,11 @@ export function ChildSettings() {
         <div className="ks-hero">
           <span className="ks-hero__avatar">
             <img
+              className="hy-network-avatar"
               src={avatarSrc(childAvatarPath(me?.photo_url))}
               alt=""
+              loading="lazy"
+              decoding="async"
             />
           </span>
           <div className="ks-hero__main">
@@ -243,7 +267,7 @@ export function ChildSettings() {
               {age != null && <span className="ks-hero__age"> · {age}살</span>}
             </div>
             <span className="ks-hero__chip">
-              <span aria-hidden="true">{conn.emoji}</span>
+              <conn.Icon size={16} strokeWidth={2.2} aria-hidden="true" />
               {conn.text}
             </span>
           </div>
@@ -321,16 +345,23 @@ export function ChildSettings() {
       </div>
 
       {helpOpen && (
-        <div className="ks-modal" role="dialog" aria-modal="true" aria-label="도움말">
-          <button type="button" className="ks-modal__scrim" aria-label="닫기" onClick={() => setHelpOpen(false)} />
+        <div
+          ref={helpDialogRef}
+          className="ks-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={helpTitleId}
+          aria-describedby={helpDescriptionId}
+        >
+          <button type="button" className="ks-modal__scrim" tabIndex={-1} aria-label="닫기" onClick={() => setHelpOpen(false)} />
           <div className="ks-modal__card">
             <div className="ks-modal__head">
-              <span className="ks-modal__title">도움말</span>
-              <button type="button" className="ks-modal__x hy-press" aria-label="닫기" onClick={() => setHelpOpen(false)}>
-                <X size={19} strokeWidth={2.4} />
+              <span id={helpTitleId} className="ks-modal__title">도움말</span>
+              <button ref={helpCloseRef} type="button" className="ks-modal__x hy-press" aria-label="닫기" onClick={() => setHelpOpen(false)}>
+                <X size={20} strokeWidth={2.4} />
               </button>
             </div>
-            <div className="ks-help-list">
+            <div id={helpDescriptionId} className="ks-help-list">
               <div className="ks-help-item">
                 <span className="ks-help-item__emoji"><MapPin size={18} strokeWidth={2.2} /></span>
                 <span>

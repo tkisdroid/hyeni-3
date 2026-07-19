@@ -183,7 +183,7 @@ export function StickerSend() {
                 onClick={() => setSelectedUserId(c.user_id)}
               >
                 <span className="ss-child__avatar">
-                  <img src={avatarSrc(childAvatarPath(c.photo_url))} alt="" />
+                  <img className="hy-network-avatar" src={avatarSrc(childAvatarPath(c.photo_url))} alt="" loading="lazy" decoding="async" />
                 </span>
                 <span className="ss-child__name">{c.name || "아이"}</span>
               </button>

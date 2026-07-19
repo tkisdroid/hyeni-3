@@ -1,10 +1,11 @@
-import { useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Plus, Clock, MapPin, Bell, Pencil, Trash2, StickyNote } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { Loading } from "@/components/ui/Loading";
+import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import { useEvents, useDeleteEvent } from "@/queries/useSchedule";
 import { useMyFamily } from "@/queries/useFamily";
 import { useSavedPlaces } from "@/queries/useLocation";
@@ -102,6 +103,9 @@ export function ParentCalendar() {
   const [confirmSwipeDeleteId, setConfirmSwipeDeleteId] = useState<string | null>(null);
   const swipeStart = useRef<{ id: string; x: number; y: number } | null>(null);
   const suppressCardClick = useRef(false);
+  const sheetTitleId = useId();
+  const sheetDescriptionId = useId();
+  const sheetContentRef = useRef<HTMLDivElement>(null);
 
   const openSheet = (id: string) => {
     const raw = rawById.get(id);
@@ -116,6 +120,12 @@ export function ParentCalendar() {
     setDragY(0);
     dragStart.current = null;
   };
+  const sheetDialogRef = useDialogFocusLifecycle<HTMLDivElement>({
+    open: sheetEvent !== null,
+    onClose: closeSheet,
+    initialFocusRef: sheetContentRef,
+    canClose: () => !deleteEvent.isPending,
+  });
 
   // 시트 손잡이 아래로 드래그 → 임계값 넘으면 닫기(탭아웃은 스크림 클릭).
   const onGripDown = (e: ReactPointerEvent<HTMLDivElement>) => {
@@ -129,7 +139,7 @@ export function ParentCalendar() {
   };
   const onGripUp = () => {
     if (dragStart.current == null) return;
-    if (dragY > 90) closeSheet();
+    if (dragY > 90 && !deleteEvent.isPending) closeSheet();
     else setDragY(0);
     dragStart.current = null;
   };
@@ -449,10 +459,25 @@ export function ParentCalendar() {
 
       {/* 일정 상세 바텀시트(P-08) */}
       {sheetEvent && sheetView && (
-        <div className="pc-sheet-root" role="dialog" aria-modal="true">
-          <button type="button" className="pc-scrim" aria-label="닫기" onClick={closeSheet} />
+        <div
+          ref={sheetDialogRef}
+          className="pc-sheet-root"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={sheetTitleId}
+          aria-describedby={sheetDescriptionId}
+        >
+          <button
+            type="button"
+            className="pc-scrim"
+            tabIndex={-1}
+            aria-label="닫기"
+            onClick={() => !deleteEvent.isPending && closeSheet()}
+          />
           <div
+            ref={sheetContentRef}
             className="pc-sheet"
+            tabIndex={-1}
             style={dragY ? { transform: `translateY(${dragY}px)` } : undefined}
           >
             <div
@@ -470,7 +495,7 @@ export function ParentCalendar() {
                 <img src={asset(sheetView.icon)} alt="" style={{ width: 32, height: 32, objectFit: "contain" }} />
               </span>
               <div className="pc-sheet__headtext">
-                <div className="pc-sheet__title">{sheetView.title}</div>
+                <div id={sheetTitleId} className="pc-sheet__title">{sheetView.title}</div>
                 {sheetChildLabel && (
                   <div className={`pc-sheet__sub${sheetNeedsAssignment ? " pc-sheet__sub--warn" : ""}`}>
                     {sheetChildLabel}
@@ -485,7 +510,7 @@ export function ParentCalendar() {
               </span>
             </div>
 
-            <div className="pc-sheet__rows">
+            <div id={sheetDescriptionId} className="pc-sheet__rows">
               <div className="pc-sheet__row">
                 <Clock size={17} strokeWidth={2} color="var(--fg-muted)" />
                 <span>{sheetTimeLabel}</span>

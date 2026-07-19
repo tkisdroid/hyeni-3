@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft, Home, Map as MapIcon, MapPin } from "lucide-react";
 import { asset } from "@/lib/assets";
+import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import { useToast } from "@/app/toast";
 import { useActiveChild } from "@/app/activeChild";
 import { MapPickerSheet } from "@/components/MapPickerSheet";
@@ -198,6 +199,15 @@ export function EventForm() {
   const saveEvents = useSaveEventsWithChildrenBatch();
   const [busy, setBusy] = useState(false);
   const [seriesScopePrompt, setSeriesScopePrompt] = useState<{ futureCount: number } | null>(null);
+  const seriesScopeTitleId = useId();
+  const seriesScopeDescriptionId = useId();
+  const seriesScopeCancelRef = useRef<HTMLButtonElement>(null);
+  const seriesScopeDialogRef = useDialogFocusLifecycle<HTMLElement>({
+    open: seriesScopePrompt !== null,
+    onClose: () => setSeriesScopePrompt(null),
+    initialFocusRef: seriesScopeCancelRef,
+    canClose: () => !busy,
+  });
   const { activeChild } = useActiveChild();
   const editingNeedsAssignment =
     mode === "edit" && !!editing && editing.is_family_event !== true && initialChildIdList(editing).length === 0;
@@ -1038,15 +1048,17 @@ export function EventForm() {
       {seriesScopePrompt && (
         <div className="ef-scope-backdrop" role="presentation">
           <section
+            ref={seriesScopeDialogRef}
             className="ef-scope-sheet"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="ef-scope-title"
+            aria-labelledby={seriesScopeTitleId}
+            aria-describedby={seriesScopeDescriptionId}
           >
-            <div id="ef-scope-title" className="ef-scope-title">
+            <div id={seriesScopeTitleId} className="ef-scope-title">
               반복 일정 수정
             </div>
-            <p className="ef-scope-desc">
+            <p id={seriesScopeDescriptionId} className="ef-scope-desc">
               같은 반복으로 이어지는 이후 일정 {seriesScopePrompt.futureCount}개가 있어요. 수정 범위를
               선택해 주세요.
             </p>
@@ -1068,6 +1080,7 @@ export function EventForm() {
                 이후 반복 일정도 수정
               </button>
               <button
+                ref={seriesScopeCancelRef}
                 type="button"
                 className="ef-scope-cancel hy-press"
                 onClick={() => setSeriesScopePrompt(null)}

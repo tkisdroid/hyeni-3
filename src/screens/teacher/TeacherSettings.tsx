@@ -1,12 +1,13 @@
-import { useState, useRef } from "react";
+import { useId, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Bell, Lock, MessageCircle, LogOut, TriangleAlert } from "lucide-react";
+import { Bell, ChevronLeft, ChevronRight, Lock, LogOut, MessageCircle, Trash2, TriangleAlert } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { APP_VERSION } from "@/config/version";
 import { useAuth } from "@/auth/AuthContext";
 import { useAccount, useDeleteAccount } from "@/queries/useAccount";
+import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import { useTeacherClasses } from "@/queries/useTeacher";
 import { openExternal } from "@/lib/native/browser";
 import { isNativePlatform } from "@/lib/native/plugins";
@@ -32,6 +33,15 @@ export function TeacherSettings() {
   const deleteAccount = useDeleteAccount();
   const classesQ = useTeacherClasses();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const deleteTitleId = useId();
+  const deleteDescriptionId = useId();
+  const deleteCancelRef = useRef<HTMLButtonElement>(null);
+  const deleteDialogRef = useDialogFocusLifecycle<HTMLDivElement>({
+    open: confirmDelete,
+    onClose: () => setConfirmDelete(false),
+    initialFocusRef: deleteCancelRef,
+    canClose: () => !deleteAccount.isPending,
+  });
   const teacherSettingsQueryState = resolveQueryTruthState([
     { isLoading: accountQuery.isLoading, isError: accountQuery.isError },
     { isLoading: classesQ.isLoading, isError: classesQ.isError },
@@ -206,21 +216,32 @@ export function TeacherSettings() {
 
       {/* 회원 탈퇴 확인 모달 */}
       {confirmDelete && (
-        <div className="ps-modal" role="dialog" aria-modal="true">
+        <div
+          ref={deleteDialogRef}
+          className="ps-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={deleteTitleId}
+          aria-describedby={deleteDescriptionId}
+        >
           <button
             type="button"
             className="ps-modal__scrim"
+            tabIndex={-1}
             aria-label="닫기"
             onClick={() => !deleteAccount.isPending && setConfirmDelete(false)}
           />
           <div className="ps-modal__card">
-            <div className="ps-modal__emoji">🗑️</div>
-            <div className="ps-modal__title">정말 탈퇴하시겠어요?</div>
-            <p className="ps-modal__body">
+            <div className="ps-modal__emoji" aria-hidden="true">
+              <Trash2 size={24} strokeWidth={2.2} />
+            </div>
+            <div id={deleteTitleId} className="ps-modal__title">정말 탈퇴하시겠어요?</div>
+            <p id={deleteDescriptionId} className="ps-modal__body">
               내 선생님 계정과 만든 반·학생 연결 정보가 삭제돼요. 복구할 수 없어요.
             </p>
             <div className="ps-modal__btns">
               <button
+                ref={deleteCancelRef}
                 type="button"
                 className="ps-modal__btn ps-modal__btn--ghost hy-press"
                 onClick={() => setConfirmDelete(false)}

@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Ban, Flag, X } from "lucide-react";
+import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import "./MessageSafetyDialog.css";
 
 export interface ReportReasonOption<TReason extends string> {
@@ -34,52 +35,25 @@ export function MessageSafetyDialog<TReason extends string>({
 }: MessageSafetyDialogProps<TReason>) {
   const titleId = useId();
   const descriptionId = useId();
-  const dialogRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
   const [reason, setReason] = useState<TReason | null>(null);
   const [detail, setDetail] = useState("");
   const [action, setAction] = useState<"report" | "block" | null>(null);
   const [error, setError] = useState("");
   const pending = action !== null;
-  const pendingRef = useRef(pending);
-  pendingRef.current = pending;
+  const dialogRef = useDialogFocusLifecycle<HTMLElement>({
+    open,
+    onClose,
+    initialFocusRef: closeRef,
+    canClose: () => !pending,
+  });
 
   useEffect(() => {
     if (!open) return;
-    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setReason(null);
     setDetail("");
     setAction(null);
     setError("");
-    window.requestAnimationFrame(() => closeRef.current?.focus());
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !pendingRef.current) {
-        event.preventDefault();
-        onCloseRef.current();
-        return;
-      }
-      if (event.key !== "Tab") return;
-      const focusable = [...(dialogRef.current?.querySelectorAll<HTMLElement>(
-        'button:not(:disabled), input:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
-      ) ?? [])];
-      if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last?.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first?.focus();
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      previous?.focus();
-    };
   }, [open]);
 
   if (!open) return null;

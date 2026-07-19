@@ -40,6 +40,7 @@ export function MapPickerSheet({
   const [pickedName, setPickedName] = useState<string | null>(null);
   const [center, setCenter] = useState<{ lat: number; lng: number } | null>(initial ?? null);
   const titleId = useId();
+  const descriptionId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useDialogFocusLifecycle<HTMLDivElement>({
     open: true,
@@ -155,11 +156,13 @@ export function MapPickerSheet({
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
+      aria-describedby={descriptionId}
       tabIndex={-1}
     >
       <button
         type="button"
         className="mps-scrim"
+        tabIndex={-1}
         aria-label="닫기"
         onClick={onClose}
       />
@@ -185,7 +188,7 @@ export function MapPickerSheet({
                 className={`mps-saved__chip hy-press${pickedName === p.name ? " mps-saved__chip--on" : ""}`}
                 onClick={() => pickSaved(p)}
               >
-                {p.is_home ? <Home size={13} strokeWidth={2.4} /> : <MapPin size={13} strokeWidth={2.4} />}
+                {p.is_home ? <Home size={16} strokeWidth={2.4} /> : <MapPin size={16} strokeWidth={2.4} />}
                 {p.name}
               </button>
             ))}
@@ -194,8 +197,8 @@ export function MapPickerSheet({
 
         <div className="mps-foot">
           <span className="mps-sel">
-            <MapPin size={15} strokeWidth={2.2} />
-            <span className="mps-sel__text">{selectionLabel || "위치를 선택해 주세요"}</span>
+            <MapPin size={16} strokeWidth={2.2} />
+            <span id={descriptionId} className="mps-sel__text">{selectionLabel || "위치를 선택해 주세요"}</span>
           </span>
           <button type="button" className="mps-confirm hy-press" onClick={confirm} disabled={!picked}>
             이 위치로 지정

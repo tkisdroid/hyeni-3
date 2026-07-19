@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Settings, ChevronRight, X } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import {
   useTeacherMe,
   useTeacherClasses,
@@ -55,6 +56,15 @@ export function TeacherHome() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [invitePhone, setInvitePhone] = useState("");
   const [inviteChild, setInviteChild] = useState("");
+  const inviteTitleId = useId();
+  const inviteDescriptionId = useId();
+  const inviteCloseRef = useRef<HTMLButtonElement>(null);
+  const inviteDialogRef = useDialogFocusLifecycle<HTMLDivElement>({
+    open: inviteOpen,
+    onClose: () => setInviteOpen(false),
+    initialFocusRef: inviteCloseRef,
+    canClose: () => !requestPairing.isPending,
+  });
 
   const openInvite = () => {
     setInvitePhone("");
@@ -100,6 +110,15 @@ export function TeacherHome() {
   const createClass = useCreateClass();
   const [createOpen, setCreateOpen] = useState(false);
   const [createName, setCreateName] = useState("");
+  const createTitleId = useId();
+  const createDescriptionId = useId();
+  const createCloseRef = useRef<HTMLButtonElement>(null);
+  const createDialogRef = useDialogFocusLifecycle<HTMLDivElement>({
+    open: createOpen,
+    onClose: () => setCreateOpen(false),
+    initialFocusRef: createCloseRef,
+    canClose: () => !createClass.isPending,
+  });
 
   const openCreate = () => {
     setCreateName("");
@@ -289,21 +308,31 @@ export function TeacherHome() {
         <div
           className="th-sheet-overlay"
           role="presentation"
-          onClick={() => setInviteOpen(false)}
+          onClick={() => !requestPairing.isPending && setInviteOpen(false)}
         >
-          <div className="th-sheet" role="dialog" aria-label="학생 초대" onClick={(e) => e.stopPropagation()}>
+          <div
+            ref={inviteDialogRef}
+            className="th-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={inviteTitleId}
+            aria-describedby={inviteDescriptionId}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="th-sheet__head">
-              <span className="th-sheet__title">학생 초대</span>
+              <span id={inviteTitleId} className="th-sheet__title">학생 초대</span>
               <button
+                ref={inviteCloseRef}
                 type="button"
                 className="th-sheet__x hy-press"
                 aria-label="닫기"
                 onClick={() => setInviteOpen(false)}
+                disabled={requestPairing.isPending}
               >
                 <X size={20} strokeWidth={2.4} color="#6D6469" />
               </button>
             </div>
-            <p className="th-sheet__desc">
+            <p id={inviteDescriptionId} className="th-sheet__desc">
               부모님 전화번호로 초대하면, 부모님 승인 후 학생이 자동으로 연결돼요.
             </p>
             <div className="th-sheet__label">부모님 전화번호</div>
@@ -339,26 +368,31 @@ export function TeacherHome() {
         <div
           className="th-sheet-overlay"
           role="presentation"
-          onClick={() => setCreateOpen(false)}
+          onClick={() => !createClass.isPending && setCreateOpen(false)}
         >
           <div
+            ref={createDialogRef}
             className="th-sheet"
             role="dialog"
-            aria-label="반 만들기"
+            aria-modal="true"
+            aria-labelledby={createTitleId}
+            aria-describedby={createDescriptionId}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="th-sheet__head">
-              <span className="th-sheet__title">반 만들기</span>
+              <span id={createTitleId} className="th-sheet__title">반 만들기</span>
               <button
+                ref={createCloseRef}
                 type="button"
                 className="th-sheet__x hy-press"
                 aria-label="닫기"
                 onClick={() => setCreateOpen(false)}
+                disabled={createClass.isPending}
               >
                 <X size={20} strokeWidth={2.4} color="#6D6469" />
               </button>
             </div>
-            <p className="th-sheet__desc">
+            <p id={createDescriptionId} className="th-sheet__desc">
               반을 만들면 학생을 초대하고 오늘 출석·알림장을 관리할 수 있어요.
             </p>
             <div className="th-sheet__label">반 이름</div>

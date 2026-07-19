@@ -110,7 +110,11 @@ export function handleTopmostDialogKey<TId, TFocus extends FocusTarget>({
 
   const first = focusable[0];
   const last = focusable[focusable.length - 1];
-  if (shiftKey && (activeElement === first || focusIsOutside)) {
+  const activeIsTabbable = activeElement !== null && focusable.includes(activeElement);
+  if (!activeIsTabbable) {
+    preventDefault();
+    (shiftKey ? last : first)?.focus();
+  } else if (shiftKey && (activeElement === first || focusIsOutside)) {
     preventDefault();
     last?.focus();
   } else if (!shiftKey && (activeElement === last || focusIsOutside)) {

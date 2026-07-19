@@ -40,6 +40,12 @@
   letter-spacing: 0.2px;
 }
 
+.kd-title--icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* ── 지도 히어로 ───────────────────────────────────────────────────────── */
 
 .kd-map {

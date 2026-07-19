@@ -778,7 +778,7 @@ export function ParentLocation() {
         <div className="pl-chips">
           <div className="pl-chip pl-chip--active" aria-label={`현재 ${selected.name || "아이"} 위치 보기`}>
             <span className="pl-chip__avatar">
-              <img src={avatarSrc(childAvatarPath(selected.photo_url))} alt="" />
+              <img className="hy-network-avatar" src={avatarSrc(childAvatarPath(selected.photo_url))} alt="" loading="lazy" decoding="async" />
             </span>
             <span className="pl-chip__name">{selected.name || "아이"}</span>
             <span className="pl-chip__dot" />
@@ -862,7 +862,7 @@ export function ParentLocation() {
         <div className="pl-sheet__handle" />
         <div className="pl-sheet__head">
           <div className="pl-sheet__avatar">
-            <img src={avatarSrc(childAvatar)} alt="" />
+            <img className="hy-network-avatar" src={avatarSrc(childAvatar)} alt="" loading="lazy" decoding="async" />
           </div>
           <div className="pl-sheet__info">
             <div className="pl-sheet__name">{sheetName}</div>

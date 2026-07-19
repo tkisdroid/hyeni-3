@@ -124,7 +124,7 @@
   min-height: 44px;
   margin-top: 4px;
   padding: 0 16px;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   background: var(--hy-accent);
   color: #fff;
   font-size: var(--type-body-sm);
@@ -200,13 +200,13 @@
   align-items: center;
   gap: 8px;
   padding: 8px;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
 }
 .sup-check {
   transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
   width: 28px;
   height: 28px;
-  border-radius: 9px;
+  border-radius: var(--radius-8);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -222,7 +222,7 @@
   align-items: center;
   margin: -4px;
   padding: 4px;
-  border-radius: 10px;
+  border-radius: var(--radius-8);
   transition: background 0.16s ease;
   gap: 8px;
 }
@@ -240,7 +240,7 @@
 .sup-iconbtn {
   width: 28px;
   height: 28px;
-  border-radius: 9px;
+  border-radius: var(--radius-8);
   background: transparent;
   display: flex;
   align-items: center;

@@ -5,8 +5,9 @@
  * 미지원 기기(BarcodeDetector 없음)는 정직하게 안내 → 코드 직접 입력으로 유도.
  * 아이 온보딩에서 쓰므로 문구는 반말(아이 모드 규칙).
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Camera } from "lucide-react";
+import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import { ensureQrCameraPermission, openCameraPermissionSettings } from "@/lib/native/cameraPermission";
 import "./QrScanner.css";
 
@@ -51,6 +52,14 @@ export function QrScanner({
   const [loadingLabel, setLoadingLabel] = useState("카메라 허용 확인 중…");
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
+  const titleId = useId();
+  const descriptionId = useId();
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useDialogFocusLifecycle<HTMLDivElement>({
+    open: true,
+    onClose,
+    initialFocusRef: closeRef,
+  });
 
   useEffect(() => {
     let active = true;
@@ -149,12 +158,19 @@ export function QrScanner({
   }, [retryKey]);
 
   return (
-    <div className="qrs-root" role="dialog" aria-modal="true" aria-label="QR 코드 스캔">
+    <div
+      ref={dialogRef}
+      className="qrs-root"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      aria-describedby={descriptionId}
+    >
       <div className="qrs-top">
-        <button type="button" className="qrs-close hy-press" onClick={onClose}>
+        <button ref={closeRef} type="button" className="qrs-close hy-press" onClick={onClose}>
           ← 닫기
         </button>
-        <span className="qrs-title"><Camera size={16} strokeWidth={2.4} /> QR 코드 스캔</span>
+        <span id={titleId} className="qrs-title"><Camera size={16} strokeWidth={2.4} /> QR 코드 스캔</span>
       </div>
 
       <div className="qrs-body">
@@ -165,7 +181,7 @@ export function QrScanner({
         </div>
         <div className="qrs-guide">
           <div className="qrs-guide-title">부모님 화면의 QR 코드를 비춰줘</div>
-          <div className="qrs-guide-sub">QR을 인식하면 코드 입력 없이 바로 연결돼</div>
+          <div id={descriptionId} className="qrs-guide-sub">QR을 인식하면 코드 입력 없이 바로 연결돼</div>
           {error && <div className="qrs-error">{error}</div>}
           {permissionDenied && (
             <div className="qrs-actions">
