@@ -14,22 +14,22 @@ import "./PermDenied.css";
 // 아이콘 색은 토큰 사용(하드코딩 hex 금지 — 온보딩 신뢰 순간의 화면).
 const COPY: Record<PermissionKind, { icon: ReactNode; title: string; sub: string }> = {
   loc: {
-    icon: <MapPin size={26} strokeWidth={2.2} color="var(--blue-500)" />,
+    icon: <MapPin size={24} strokeWidth={2.2} color="var(--blue-500)" />,
     title: "위치 권한이 필요해요",
     sub: "아이 위치와 도착·출발 알림에 사용해요.",
   },
   noti: {
-    icon: <Bell size={26} strokeWidth={2.2} color="var(--gold-text)" />,
+    icon: <Bell size={24} strokeWidth={2.2} color="var(--gold-text)" />,
     title: "알림 권한이 필요해요",
     sub: "일정·도착·안전 소식을 알려드려요.",
   },
   battery: {
-    icon: <BatteryCharging size={26} strokeWidth={2.2} color="var(--mint-600)" />,
+    icon: <BatteryCharging size={24} strokeWidth={2.2} color="var(--mint-600)" />,
     title: "백그라운드 실행이 필요해요",
     sub: "앱을 닫아도 위치 알림이 이어지도록 설정해 주세요.",
   },
   mic: {
-    icon: <Mic size={26} strokeWidth={2.2} color="var(--lav-500)" />,
+    icon: <Mic size={24} strokeWidth={2.2} color="var(--lav-500)" />,
     title: "마이크 권한이 필요해요",
     sub: "주변 소리 듣기를 사용할 때 필요해요.",
   },

@@ -1318,7 +1318,7 @@ function PairingStep({
         <span className="ob-qr-corner ob-qr-corner--bl" />
         <span className="ob-qr-corner ob-qr-corner--br" />
         <span className="ob-qr-scan" />
-        <span className="ob-qr-cta"><Camera size={15} strokeWidth={2.4} /> 탭해서 QR 스캔</span>
+        <span className="ob-qr-cta"><Camera size={16} strokeWidth={2.4} /> 탭해서 QR 스캔</span>
       </button>
 
       <div className="ob-pair-hint">QR이 없다면 코드를 직접 입력</div>
@@ -1445,18 +1445,7 @@ function PermsStep({
               <span className="ob-perm-sub">{p.sub}</span>
             </span>
             {/* 권한은 시작 시 실제로 요청됨 — 아직 '허용됨'이 아니므로 '예정' 배지로 정직 표기 */}
-            <span
-              className="ob-perm-check"
-              style={{
-                width: "auto",
-                padding: "0 12px",
-                height: 24,
-                fontSize: "var(--type-caption)",
-                fontWeight: 800,
-                color: "#8FA093",
-                background: "#EEF3F0",
-              }}
-            >
+            <span className="ob-perm-check">
               예정
             </span>
           </div>
