@@ -66,7 +66,8 @@ test("가족 로딩·오류 중에는 빈 배정을 가족 공유로 오인 저�
   const src = readFileSync(new URL("../src/screens/parent/EventForm.tsx", import.meta.url), "utf8");
   assert.match(src, /familyQuery\.isLoading/);
   assert.match(src, /familyQuery\.isError/);
-  assert.match(src, /disabled=\{busy \|\| !familyReady\}/);
+  assert.match(src, /eventFormQueryState === "error" \|\| eventFormDataMissing/);
+  assert.match(src, /disabled=\{busy \|\| !eventFormDataReady\}/);
 });
 
 test("하루 종일 일정은 수정 폼에서 시간 강제 없이 왕복 저장한다", () => {

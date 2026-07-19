@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, LocateFixed } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { KakaoMap } from "@/components/KakaoMap";
+import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { loadKakaoMaps } from "@/lib/kakaoMap";
 import { hasKakaoKey } from "@/config/env";
 import { useCreateSavedPlace, useSavedPlaces } from "@/queries/useLocation";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { placeLimitFor, TIERS } from "@/transform/tierPolicy";
+import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import { ApiError } from "@/lib/api/errors";
 import "./PlaceForm.css";
 
@@ -33,7 +35,18 @@ export function PlaceForm() {
   const { show } = useToast();
   const createPlace = useCreateSavedPlace();
   const placesQuery = useSavedPlaces();
-  const { tier } = useEntitlement();
+  const entitlementQuery = useEntitlement();
+  const { tier } = entitlementQuery;
+  const places = placesQuery.data ?? [];
+  const placeFormQueryState = resolveQueryTruthState([
+    { isLoading: placesQuery.isLoading, isError: placesQuery.isError },
+    { isLoading: entitlementQuery.isLoading, isError: entitlementQuery.isError },
+  ]);
+  const placeFormDataMissing = placeFormQueryState === "ready" && tier === TIERS.UNKNOWN;
+  const placeFormRefetching = placesQuery.isFetching || entitlementQuery.isFetching;
+  const retryPlaceForm = async (): Promise<void> => {
+    await Promise.all([placesQuery.refetch(), entitlementQuery.refetch()]);
+  };
 
   const [placeName, setPlaceName] = useState("");
   const [address, setAddress] = useState("");
@@ -176,6 +189,10 @@ export function PlaceForm() {
 
   // 저장 — 사용자 onClick 에서만 실행. 이름·선택 위치 검증 후 useCreateSavedPlace 호출.
   const savePlace = () => {
+    if (placeFormQueryState !== "ready" || tier === TIERS.UNKNOWN) {
+      show("장소 한도를 확인한 뒤 다시 시도해 주세요", "⚠️");
+      return;
+    }
     if (!picked) {
       // 지도 미설정(키 없음)이면 위치를 고를 수 없으니 정직하게 안내.
       show(
@@ -189,13 +206,10 @@ export function PlaceForm() {
       show("장소 이름을 입력해 주세요", "✏️");
       return;
     }
-    if (tier !== TIERS.UNKNOWN) {
-      const limit = placeLimitFor(tier);
-      const count = placesQuery.data?.length ?? 0;
-      if (count >= limit) {
-        show(`현재 플랜에서는 장소 ${limit}개까지 저장할 수 있어요`, "👑");
-        return;
-      }
+    const limit = placeLimitFor(tier);
+    if (places.length >= limit) {
+      show(`현재 플랜에서는 장소 ${limit}개까지 저장할 수 있어요`, "👑");
+      return;
     }
     createPlace.mutate(
       {
@@ -220,6 +234,32 @@ export function PlaceForm() {
     );
   };
 
+  if (placeFormQueryState === "loading") {
+    return (
+      <ScreenQueryState
+        screenTitle="장소 등록"
+        state="loading"
+        heading="장소 정보를 확인하고 있어요"
+        description="저장된 장소 수와 현재 이용 한도를 불러오는 중이에요."
+        onBack={() => navigate(-1)}
+      />
+    );
+  }
+
+  if (placeFormQueryState === "error" || placeFormDataMissing) {
+    return (
+      <ScreenQueryState
+        screenTitle="장소 등록"
+        state="error"
+        heading="장소 등록 정보를 확인하지 못했어요"
+        description="저장 한도가 확인되기 전에는 새 장소를 저장하지 않아요."
+        onBack={() => navigate(-1)}
+        onRetry={() => void retryPlaceForm()}
+        retrying={placeFormRefetching}
+      />
+    );
+  }
+
   return (
     <div className="pf-screen">
       <header className="pf-header">
@@ -235,6 +275,11 @@ export function PlaceForm() {
       </header>
 
       <div className="pf-body">
+        {places.length === 0 && (
+          <div className="sqs-inline-empty">
+            <span>아직 저장한 장소가 없어요. 첫 장소를 정확한 위치로 등록해 보세요.</span>
+          </div>
+        )}
         {/* 지도 — 눌러서 위치 선택(선택 좌표에 마커) */}
         <div className="pf-map" style={{ height: mapH }}>
           <KakaoMap

@@ -3,11 +3,13 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { KakaoMap } from "@/components/KakaoMap";
+import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { loadKakaoMaps } from "@/lib/kakaoMap";
 import { hasKakaoKey } from "@/config/env";
 import { useCreateDangerZone, useDangerZones, useUpdateDangerZone } from "@/queries/useLocation";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { TIERS } from "@/transform/tierPolicy";
+import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import { ApiError } from "@/lib/api/errors";
 import type { DangerZone } from "@/lib/api/endpoints/location";
 import "./DangerZoneForm.css";
@@ -35,7 +37,18 @@ export function DangerZoneForm() {
   const createZone = useCreateDangerZone();
   const updateZone = useUpdateDangerZone();
   const zonesQuery = useDangerZones();
-  const { tier } = useEntitlement();
+  const entitlementQuery = useEntitlement();
+  const { tier } = entitlementQuery;
+  const zones = zonesQuery.data ?? [];
+  const dangerZoneQueryState = resolveQueryTruthState([
+    { isLoading: zonesQuery.isLoading, isError: zonesQuery.isError },
+    { isLoading: entitlementQuery.isLoading, isError: entitlementQuery.isError },
+  ]);
+  const dangerZoneDataMissing = dangerZoneQueryState === "ready" && tier === TIERS.UNKNOWN;
+  const dangerZoneRefetching = zonesQuery.isFetching || entitlementQuery.isFetching;
+  const retryDangerZoneForm = async (): Promise<void> => {
+    await Promise.all([zonesQuery.refetch(), entitlementQuery.refetch()]);
+  };
 
   const [name, setName] = useState(editing?.name ?? "");
   const [address, setAddress] = useState("");
@@ -113,6 +126,10 @@ export function DangerZoneForm() {
   // 저장 — 사용자 onClick 에서만. 편집이면 같은 구역을 부분수정(id·created_at 보존), 신규면 생성.
   const save = () => {
     if (saving) return;
+    if (dangerZoneQueryState !== "ready" || tier === TIERS.UNKNOWN) {
+      show("위험구역 이용 한도를 확인한 뒤 다시 시도해 주세요", "⚠️");
+      return;
+    }
     if (!picked) {
       show(
         hasKakaoKey ? "지도를 눌러 구역 중심을 선택해 주세요" : "지도 설정 전이라 구역을 저장할 수 없어요",
@@ -125,7 +142,7 @@ export function DangerZoneForm() {
       show("구역 이름을 입력해 주세요", "✏️");
       return;
     }
-    if (!editing && tier !== TIERS.UNKNOWN && tier !== TIERS.PREMIUM && (zonesQuery.data?.length ?? 0) >= 1) {
+    if (!editing && tier !== TIERS.PREMIUM && zones.length >= 1) {
       show("위험구역을 여러 개 쓰려면 프리미엄이 필요해요", "👑");
       return;
     }
@@ -152,6 +169,32 @@ export function DangerZoneForm() {
     }
   };
 
+  if (dangerZoneQueryState === "loading") {
+    return (
+      <ScreenQueryState
+        screenTitle={editing ? "위험구역 편집" : "위험구역 추가"}
+        state="loading"
+        heading="위험구역 정보를 확인하고 있어요"
+        description="저장된 구역과 현재 이용 한도를 불러오는 중이에요."
+        onBack={() => navigate(-1)}
+      />
+    );
+  }
+
+  if (dangerZoneQueryState === "error" || dangerZoneDataMissing) {
+    return (
+      <ScreenQueryState
+        screenTitle={editing ? "위험구역 편집" : "위험구역 추가"}
+        state="error"
+        heading="위험구역 정보를 확인하지 못했어요"
+        description="안전 구역과 이용 한도가 확인되기 전에는 저장하지 않아요."
+        onBack={() => navigate(-1)}
+        onRetry={() => void retryDangerZoneForm()}
+        retrying={dangerZoneRefetching}
+      />
+    );
+  }
+
   return (
     <div className="dzf-screen">
       <header className="dzf-header">
@@ -162,6 +205,11 @@ export function DangerZoneForm() {
       </header>
 
       <div className="dzf-body">
+        {!editing && zones.length === 0 && (
+          <div className="sqs-inline-empty">
+            <span>아직 등록한 위험구역이 없어요. 필요한 범위만 작게 지정해 주세요.</span>
+          </div>
+        )}
         {/* 지도 — 눌러서 구역 중심 선택(반경 원 미리보기) */}
         <div className="dzf-map">
           <KakaoMap

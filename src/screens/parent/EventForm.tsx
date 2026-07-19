@@ -5,6 +5,7 @@ import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useActiveChild } from "@/app/activeChild";
 import { MapPickerSheet } from "@/components/MapPickerSheet";
+import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "@/queries/useFamily";
 import { useSavedPlaces } from "@/queries/useLocation";
@@ -40,6 +41,7 @@ import {
   type SeriesEditScope,
 } from "@/transform/eventSeries";
 import { scheduleLimitFor, TIERS } from "@/transform/tierPolicy";
+import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./EventForm.css";
 
 type Mode = "create" | "edit";
@@ -156,7 +158,6 @@ export function EventForm() {
   const suggestion = mode === "create" ? nav?.suggestion ?? null : null;
 
   const familyQuery = useMyFamily();
-  const familyReady = !familyQuery.isLoading && !familyQuery.isError && !!familyQuery.data;
   const children = useMemo(
     () => (familyQuery.data?.members ?? []).filter((m) => m.role === "child"),
     [familyQuery.data],
@@ -166,7 +167,34 @@ export function EventForm() {
   const savedPlaces = savedPlacesQuery.data ?? [];
 
   const eventsQuery = useEvents();
-  const { tier } = useEntitlement();
+  const entitlementQuery = useEntitlement();
+  const { tier } = entitlementQuery;
+  const eventFormQueryState = resolveQueryTruthState([
+    { isLoading: familyQuery.isLoading, isError: familyQuery.isError },
+    { isLoading: savedPlacesQuery.isLoading, isError: savedPlacesQuery.isError },
+    { isLoading: eventsQuery.isLoading, isError: eventsQuery.isError },
+    { isLoading: entitlementQuery.isLoading, isError: entitlementQuery.isError },
+  ]);
+  const eventFormDataMissing = eventFormQueryState === "ready" && (
+    !familyQuery.data
+    || savedPlacesQuery.data === undefined
+    || eventsQuery.data === undefined
+    || tier === TIERS.UNKNOWN
+  );
+  const eventFormDataReady = eventFormQueryState === "ready" && !eventFormDataMissing;
+  const eventFormRefetching =
+    familyQuery.isFetching
+    || savedPlacesQuery.isFetching
+    || eventsQuery.isFetching
+    || entitlementQuery.isFetching;
+  const retryEventForm = async (): Promise<void> => {
+    await Promise.all([
+      familyQuery.refetch(),
+      savedPlacesQuery.refetch(),
+      eventsQuery.refetch(),
+      entitlementQuery.refetch(),
+    ]);
+  };
   const saveEvents = useSaveEventsWithChildrenBatch();
   const [busy, setBusy] = useState(false);
   const [seriesScopePrompt, setSeriesScopePrompt] = useState<{ futureCount: number } | null>(null);
@@ -332,11 +360,8 @@ export function EventForm() {
 
   const handleSave = async (scope?: SeriesEditScope) => {
     if (busy) return;
-    if (!familyReady) {
-      show(
-        familyQuery.isError ? "가족 정보를 불러오지 못했어요. 다시 시도해 주세요" : "가족 정보를 불러오고 있어요",
-        "⚠️",
-      );
+    if (!eventFormDataReady) {
+      show("일정 저장에 필요한 정보를 다시 확인해 주세요", "⚠️");
       return;
     }
     const trimmedTitle = title.trim();
@@ -394,7 +419,7 @@ export function EventForm() {
     };
 
     const keys = mode === "create" ? buildOccurrenceDateKeys(dateKey, repeat, repeatWeekdayList) : [];
-    if (mode === "create" && tier !== TIERS.UNKNOWN) {
+    if (mode === "create") {
       const limit = scheduleLimitFor(tier);
       const currentCount = eventsQuery.data?.length ?? 0;
       if (currentCount + keys.length > limit) {
@@ -506,6 +531,47 @@ export function EventForm() {
       setBusy(false);
     }
   };
+
+  if (eventFormQueryState === "loading") {
+    return (
+      <ScreenQueryState
+        screenTitle={mode === "edit" ? "일정 수정" : "새 일정"}
+        state="loading"
+        heading="일정 정보를 불러오고 있어요"
+        description="가족, 장소, 기존 일정과 이용 한도를 확인하는 중이에요."
+        onBack={() => navigate(-1)}
+      />
+    );
+  }
+
+  if (eventFormQueryState === "error" || eventFormDataMissing) {
+    return (
+      <ScreenQueryState
+        screenTitle={mode === "edit" ? "일정 수정" : "새 일정"}
+        state="error"
+        heading="일정 정보를 모두 확인하지 못했어요"
+        description="일부 데이터가 빠진 상태로 저장하지 않도록 폼을 잠시 닫았어요."
+        onBack={() => navigate(-1)}
+        onRetry={() => void retryEventForm()}
+        retrying={eventFormRefetching}
+      />
+    );
+  }
+
+  if (children.length === 0) {
+    return (
+      <ScreenQueryState
+        screenTitle={mode === "edit" ? "일정 수정" : "새 일정"}
+        state="empty"
+        heading="일정을 배정할 아이가 없어요"
+        description="아이를 연결한 뒤 가족 일정을 등록할 수 있어요."
+        onBack={() => navigate(-1)}
+        onRetry={() => void retryEventForm()}
+        retrying={eventFormRefetching}
+        retryLabel="가족 정보 다시 확인"
+      />
+    );
+  }
 
   return (
     <div className="ef-screen">
@@ -942,22 +1008,16 @@ export function EventForm() {
           type="button"
           className="ef-save hy-press"
           onClick={() => void handleSave()}
-          disabled={busy || !familyReady}
-          aria-busy={busy || familyQuery.isLoading}
+          disabled={busy || !eventFormDataReady}
+          aria-busy={busy}
         >
           {busy
             ? "저장 중…"
-            : familyQuery.isLoading
-              ? "가족 정보 확인 중…"
-              : familyQuery.isError
-                ? "가족 정보 불러오기 실패"
-                : !familyQuery.data
-                  ? "저장할 가족 정보가 없어요"
-                  : editingNeedsAssignment
-                    ? "배정 저장"
-                    : mode === "edit"
-                      ? "수정 저장"
-                      : "일정 저장"}
+            : editingNeedsAssignment
+              ? "배정 저장"
+              : mode === "edit"
+                ? "수정 저장"
+                : "일정 저장"}
         </button>
       </div>
 

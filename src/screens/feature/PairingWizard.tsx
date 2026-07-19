@@ -3,10 +3,12 @@ import type { ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Camera } from "lucide-react";
 import { useToast } from "@/app/toast";
+import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { useMyFamily, useRegeneratePairCode, useCreateChildren } from "@/queries/useFamily";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { FEATURES, TIERS, tierFrom, maxChildrenFor, lockMessageFor } from "@/transform/tierPolicy";
 import { validateChildDraftRequirements } from "@/transform/childProfileRequirements";
+import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import { resizeImageFileSafe } from "@/lib/imageResize";
 import "./PairingWizard.css";
 
@@ -44,16 +46,27 @@ function toDateInputValue(d: Date): string {
 export function PairingWizard() {
   const navigate = useNavigate();
   const { show } = useToast();
-  const { data: family, isLoading: familyLoading } = useMyFamily();
+  const familyQuery = useMyFamily();
+  const family = familyQuery.data;
   const regen = useRegeneratePairCode();
   const createChildren = useCreateChildren();
   const busy = regen.isPending || createChildren.isPending;
 
   // 티어 상한(ready=false → unknown → 보수적으로 1명).
-  const { ready, isPremium } = useEntitlement();
+  const entitlementQuery = useEntitlement();
+  const { ready, isPremium } = entitlementQuery;
+  const pairingQueryState = resolveQueryTruthState([
+    { isLoading: familyQuery.isLoading, isError: familyQuery.isError },
+    { isLoading: entitlementQuery.isLoading, isError: entitlementQuery.isError },
+  ]);
+  const pairingDataMissing = pairingQueryState === "ready" && (!family || !ready);
+  const pairingRefetching = familyQuery.isFetching || entitlementQuery.isFetching;
+  const retryPairingWizard = async (): Promise<void> => {
+    await Promise.all([familyQuery.refetch(), entitlementQuery.refetch()]);
+  };
   const tier = tierFrom({ ready, isPremium });
   const maxChildren = maxChildrenFor(tier);
-  const gatesReady = ready && !familyLoading && !!family;
+  const gatesReady = pairingQueryState === "ready" && ready && !!family;
   const existingChildCount = useMemo(
     () => (family?.members ?? []).filter((m) => m.role === "child").length,
     [family],
@@ -200,6 +213,32 @@ export function PairingWizard() {
     );
   };
 
+  if (pairingQueryState === "loading") {
+    return (
+      <ScreenQueryState
+        screenTitle="아이 연결"
+        state="loading"
+        heading="연결 가능 인원을 확인하고 있어요"
+        description="현재 가족과 구독 한도를 불러오는 중이에요."
+        onBack={() => navigate(-1)}
+      />
+    );
+  }
+
+  if (pairingQueryState === "error" || pairingDataMissing) {
+    return (
+      <ScreenQueryState
+        screenTitle="아이 연결"
+        state="error"
+        heading="아이 연결 정보를 확인하지 못했어요"
+        description="기존 아이가 밀리지 않도록 연결 한도가 확인될 때까지 진행하지 않아요."
+        onBack={() => navigate(-1)}
+        onRetry={() => void retryPairingWizard()}
+        retrying={pairingRefetching}
+      />
+    );
+  }
+
   return (
     <div className="pw-root">
       <header className="pw-header">
@@ -210,6 +249,11 @@ export function PairingWizard() {
       </header>
 
       <div className="pw-content">
+        {existingChildCount === 0 && (
+          <div className="sqs-inline-empty">
+            <span>아직 연결된 아이가 없어요. 첫 아이 정보를 차례로 입력해 주세요.</span>
+          </div>
+        )}
         {/* 진행 표시 */}
         <div className="pw-progress" aria-hidden="true">
           {[1, 2, 3].map((n) => (

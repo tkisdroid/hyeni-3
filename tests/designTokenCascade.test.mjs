@@ -161,11 +161,10 @@ test("일반 disabled와 진행 중 busy는 서로 다른 의미 토큰을 사�
 
 test("busy 상태는 실제 버튼의 aria-busy와 중복 실행 차단 조건에 연결된다", () => {
   assert.match(onboarding, /aria-disabled=\{disabled\}[\s\S]{0,120}disabled=\{disabled\}/);
-  assert.match(eventForm, /className="ef-save hy-press"[\s\S]{0,160}disabled=\{busy \|\| !familyReady\}[\s\S]{0,100}aria-busy=\{busy \|\| familyQuery\.isLoading\}/);
-  assert.match(eventForm, /familyQuery\.isLoading\s*\?\s*"가족 정보 확인 중…"/);
-  assert.match(eventForm, /familyQuery\.isError\s*\?\s*"가족 정보 불러오기 실패"/);
-  assert.match(eventForm, /!familyQuery\.data\s*\?\s*"저장할 가족 정보가 없어요"/);
-  assert.match(eventForm, /가족 정보를 불러오지 못했어요\. 뒤로 갔다 다시 열어 주세요/);
+  assert.match(eventForm, /className="ef-save hy-press"[\s\S]{0,160}disabled=\{busy \|\| !eventFormDataReady\}[\s\S]{0,80}aria-busy=\{busy\}/);
+  assert.match(eventForm, /eventFormQueryState === "loading"/);
+  assert.match(eventForm, /eventFormQueryState === "error" \|\| eventFormDataMissing/);
+  assert.match(eventForm, /onRetry=\{\(\) => void retryEventForm\(\)\}/);
   assert.match(aiSchedule, /className=\{listening[\s\S]{0,220}disabled=\{parseM\.isPending\}[\s\S]{0,100}aria-busy=\{parseM\.isPending\}/);
   assert.match(aiSchedule, /className="ais-confirm hy-press"[\s\S]{0,150}disabled=\{createM\.isPending\}[\s\S]{0,80}aria-busy=\{createM\.isPending\}/);
   assert.match(aiSchedule, /className="ais-confirm hy-press"[\s\S]{0,170}disabled=\{!canParse \|\| parseM\.isPending\}[\s\S]{0,80}aria-busy=\{parseM\.isPending\}/);

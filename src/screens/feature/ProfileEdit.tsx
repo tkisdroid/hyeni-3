@@ -4,10 +4,12 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft, Camera } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { useActiveChild } from "@/app/activeChild";
+import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { useMyFamily, useSetChildProfile, useUploadChildPhoto } from "@/queries/useFamily";
 import { resizeImageFileSafe } from "@/lib/imageResize";
 import { normalizeRequiredChildBirthdate } from "@/transform/childProfileRequirements";
 import { normalizePhoneForStorage } from "@/transform/phone";
+import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./ProfileEdit.css";
 
 function normalizeHex(v: string | null | undefined): string | undefined {
@@ -64,7 +66,8 @@ export function ProfileEdit() {
   const now = useMemo(() => new Date(), []);
   const todayStr = useMemo(() => toDateInputValue(now), [now]);
 
-  const { data: family, isLoading } = useMyFamily();
+  const familyQuery = useMyFamily();
+  const family = familyQuery.data;
   const saveProfile = useSetChildProfile();
   const uploadPhoto = useUploadChildPhoto();
 
@@ -107,6 +110,12 @@ export function ProfileEdit() {
   // 미리보기: 방금 고른 사진 > 저장된 사진(proxy URL) > 없음(카메라 placeholder).
   const savedPhoto = member?.photo_url && member.photo_url.startsWith("http") ? member.photo_url : null;
   const previewSrc = pickedDataUrl ?? savedPhoto;
+  const profileQueryState = resolveQueryTruthState([
+    { isLoading: familyQuery.isLoading, isError: familyQuery.isError },
+  ]);
+  const retryProfileEdit = async (): Promise<void> => {
+    await familyQuery.refetch();
+  };
 
   const onPickFile = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -181,6 +190,47 @@ export function ProfileEdit() {
     }
   };
 
+  if (profileQueryState === "loading") {
+    return (
+      <ScreenQueryState
+        screenTitle="프로필 편집"
+        state="loading"
+        heading="아이 정보를 불러오고 있어요"
+        description="수정할 아이의 최신 프로필을 확인하는 중이에요."
+        onBack={() => navigate(-1)}
+      />
+    );
+  }
+
+  if (profileQueryState === "error") {
+    return (
+      <ScreenQueryState
+        screenTitle="프로필 편집"
+        state="error"
+        heading="아이 정보를 불러오지 못했어요"
+        description="기존 프로필을 확인하지 못한 상태에서는 덮어쓰지 않아요."
+        onBack={() => navigate(-1)}
+        onRetry={() => void retryProfileEdit()}
+        retrying={familyQuery.isFetching}
+      />
+    );
+  }
+
+  if (!member) {
+    return (
+      <ScreenQueryState
+        screenTitle="프로필 편집"
+        state="empty"
+        heading="수정할 아이를 찾지 못했어요"
+        description="아이 선택 상태나 가족 연결을 다시 확인해 주세요."
+        onBack={() => navigate(-1)}
+        onRetry={() => void retryProfileEdit()}
+        retrying={familyQuery.isFetching}
+        retryLabel="아이 정보 다시 확인"
+      />
+    );
+  }
+
   return (
     <div className="pe-root">
       <header className="pe-header">
@@ -191,17 +241,6 @@ export function ProfileEdit() {
       </header>
 
       <div className="pe-content">
-        {isLoading && !member && <div className="pe-state">아이 정보를 불러오는 중…</div>}
-
-        {!isLoading && !member && (
-          <div className="pe-state">
-            아이를 찾지 못했어요
-            <button type="button" className="pe-state__btn hy-press" onClick={() => navigate(-1)}>
-              돌아가기
-            </button>
-          </div>
-        )}
-
         {member && (
           <>
             {/* 사진 등록 + 미리보기 */}
