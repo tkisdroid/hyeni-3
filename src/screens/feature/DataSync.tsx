@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, RefreshCw, Download, Trash2, Users } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/app/toast";
+import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { useAccount, useExportFamilyData } from "@/queries/useAccount";
 import { useMyFamily } from "@/queries/useFamily";
 import { serializeDataExport } from "@/lib/api/endpoints/account";
+import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./DataSync.css";
 
 function nowLabel(): string {
@@ -21,8 +23,10 @@ export function DataSync() {
   const navigate = useNavigate();
   const { show } = useToast();
   const qc = useQueryClient();
-  const { account } = useAccount();
-  const { data: family, isLoading: familyLoading } = useMyFamily();
+  const accountQuery = useAccount();
+  const { account } = accountQuery;
+  const familyQuery = useMyFamily();
+  const family = familyQuery.data;
   const exportData = useExportFamilyData();
 
   const [syncedAt, setSyncedAt] = useState<string>(nowLabel());
@@ -31,8 +35,17 @@ export function DataSync() {
   const parentCount = members.filter((m) => m.role === "parent").length;
   const childCount = members.filter((m) => m.role === "child").length;
   const memberCount = parentCount + childCount;
+  const dataSyncQueryState = resolveQueryTruthState([
+    { isLoading: accountQuery.isLoading, isError: accountQuery.isError },
+    { isLoading: familyQuery.isLoading, isError: familyQuery.isError },
+  ]);
+  const dataSyncEmpty = dataSyncQueryState === "ready" && (!account || !family || members.length === 0);
+  const dataSyncRefetching = accountQuery.isFetching || familyQuery.isFetching;
+  const retryDataSync = async (): Promise<void> => {
+    await Promise.all([accountQuery.refetch(), familyQuery.refetch()]);
+  };
   const countReady = !!family;
-  const formatCount = (count: number) => (countReady ? `${count}명` : familyLoading ? "불러오는 중" : "0명");
+  const formatCount = (count: number) => (countReady ? `${count}명` : familyQuery.isLoading ? "불러오는 중" : "확인 안 됨");
 
   // 지금 동기화 — 전 쿼리 무효화(서버 최신값 재요청). 실제 리페치 트리거.
   const resync = () => {
@@ -80,6 +93,47 @@ export function DataSync() {
     setSyncedAt(nowLabel());
     show("임시 데이터를 비웠어요", "🧹");
   };
+
+  if (dataSyncQueryState === "loading") {
+    return (
+      <ScreenQueryState
+        screenTitle="데이터 · 동기화"
+        state="loading"
+        heading="가족 데이터를 확인하고 있어요"
+        description="내보낼 계정과 가족 범위를 불러오는 중이에요."
+        onBack={() => navigate(-1)}
+      />
+    );
+  }
+
+  if (dataSyncQueryState === "error") {
+    return (
+      <ScreenQueryState
+        screenTitle="데이터 · 동기화"
+        state="error"
+        heading="동기화 정보를 불러오지 못했어요"
+        description="불완전한 파일을 만들지 않도록 내보내기를 잠시 닫았어요."
+        onBack={() => navigate(-1)}
+        onRetry={() => void retryDataSync()}
+        retrying={dataSyncRefetching}
+      />
+    );
+  }
+
+  if (dataSyncEmpty) {
+    return (
+      <ScreenQueryState
+        screenTitle="데이터 · 동기화"
+        state="empty"
+        heading="내보낼 가족 정보가 없어요"
+        description="계정과 가족 연결 상태를 다시 확인해 주세요."
+        onBack={() => navigate(-1)}
+        onRetry={() => void retryDataSync()}
+        retrying={dataSyncRefetching}
+        retryLabel="연결 상태 다시 확인"
+      />
+    );
+  }
 
   return (
     <div className="ds-root hy-rise-in">

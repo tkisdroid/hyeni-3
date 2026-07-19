@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
+import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { useMyFamily, useUpdateProfile } from "@/queries/useFamily";
 import { useAuth } from "@/auth/AuthContext";
 import { normalizePhoneForStorage } from "@/transform/phone";
+import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import type { FamilyMember } from "@/lib/api/endpoints/family";
 import "./PhoneSetup.css";
 
@@ -36,13 +38,22 @@ export function PhoneSetup() {
   const navigate = useNavigate();
   const { show } = useToast();
   const { userId } = useAuth();
-  const { data: family, isLoading } = useMyFamily();
+  const familyQuery = useMyFamily();
+  const family = familyQuery.data;
   const update = useUpdateProfile();
 
   const parents = useMemo(
     () => (family?.members ?? []).filter((m: FamilyMember) => m.role === "parent"),
     [family],
   );
+  const phoneQueryState = resolveQueryTruthState([
+    { isLoading: familyQuery.isLoading, isError: familyQuery.isError },
+  ]);
+  const noParents = family && parents.length === 0;
+  const phoneDataEmpty = phoneQueryState === "ready" && (!family || noParents);
+  const retryPhoneSetup = async (): Promise<void> => {
+    await familyQuery.refetch();
+  };
   const me = parents.find((p) => p.user_id === userId);
 
   const [myPhone, setMyPhone] = useState("");
@@ -68,6 +79,47 @@ export function PhoneSetup() {
     );
   };
 
+  if (phoneQueryState === "loading") {
+    return (
+      <ScreenQueryState
+        screenTitle="전화번호 설정"
+        state="loading"
+        heading="가족 정보를 불러오고 있어요"
+        description="전화번호를 안전하게 연결할 보호자를 확인하는 중이에요."
+        onBack={() => navigate(-1)}
+      />
+    );
+  }
+
+  if (phoneQueryState === "error") {
+    return (
+      <ScreenQueryState
+        screenTitle="전화번호 설정"
+        state="error"
+        heading="가족 정보를 불러오지 못했어요"
+        description="본인 보호자 행을 확인한 뒤에만 전화번호를 변경할 수 있어요."
+        onBack={() => navigate(-1)}
+        onRetry={() => void retryPhoneSetup()}
+        retrying={familyQuery.isFetching}
+      />
+    );
+  }
+
+  if (phoneDataEmpty) {
+    return (
+      <ScreenQueryState
+        screenTitle="전화번호 설정"
+        state="empty"
+        heading="연결된 보호자 정보가 없어요"
+        description="가족 연결 상태를 다시 확인해 주세요."
+        onBack={() => navigate(-1)}
+        onRetry={() => void retryPhoneSetup()}
+        retrying={familyQuery.isFetching}
+        retryLabel="가족 정보 다시 확인"
+      />
+    );
+  }
+
   return (
     <div className="psu-screen">
       <div className="psu-header">
@@ -91,13 +143,8 @@ export function PhoneSetup() {
           </div>
         </div>
 
-        {isLoading ? (
-          <div className="psu-card" style={{ padding: 24, textAlign: "center", color: "var(--fg-muted)" }}>
-            불러오는 중…
-          </div>
-        ) : (
-          <div className="psu-card">
-            {parents.map((g) => {
+        <div className="psu-card">
+          {parents.map((g) => {
               const isMe = g.user_id === userId;
               return (
                 <div key={g.id} className="psu-row">
@@ -124,9 +171,8 @@ export function PhoneSetup() {
                   )}
                 </div>
               );
-            })}
-          </div>
-        )}
+          })}
+        </div>
 
         <div className="psu-note">
           <span className="psu-note__lock">🔒</span>

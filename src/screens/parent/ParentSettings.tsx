@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
+import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { APP_VERSION } from "@/config/version";
 import { useAuth } from "@/auth/AuthContext";
 import { useEntitlement } from "@/queries/useEntitlement";
@@ -31,6 +32,7 @@ import {
 import { isNativePlatform } from "@/lib/native/plugins";
 import { PRIVACY_POLICY_URL } from "@/lib/api/endpoints/account";
 import { getTierLabel, TIERS } from "@/transform/tierPolicy";
+import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./ParentSettings.css";
 
 /* ── 행 정의 (결합 회피: 화면 자체 정의) ─────────────────────────────── */
@@ -91,11 +93,22 @@ export function ParentSettings() {
   const navigate = useNavigate();
   const { show } = useToast();
   const { logout, user } = useAuth();
-  const { account, me, providerLabel } = useAccount();
+  const accountQuery = useAccount();
+  const { account, me, providerLabel } = accountQuery;
   const deleteAccount = useDeleteAccount();
   const [confirmDelete, setConfirmDelete] = useState(false);
   // 티어 배지는 ready 일 때만 노출(미확정/조회실패 시 미표시 — R9: free 강등 금지).
-  const { ready, tier } = useEntitlement();
+  const entitlementQuery = useEntitlement();
+  const { ready, tier } = entitlementQuery;
+  const settingsQueryState = resolveQueryTruthState([
+    { isLoading: accountQuery.isLoading, isError: accountQuery.isError },
+    { isLoading: entitlementQuery.isLoading, isError: entitlementQuery.isError },
+  ]);
+  const settingsDataEmpty = settingsQueryState === "ready" && (!account || !entitlementQuery.view);
+  const settingsRefetching = accountQuery.isFetching || entitlementQuery.isFetching;
+  const retryParentSettings = async (): Promise<void> => {
+    await Promise.all([accountQuery.refetch(), entitlementQuery.refetch()]);
+  };
   const reviewRewardClaim = useClaimReviewReward({ ready, tier });
   const showReviewRewardCta = ready && tier === TIERS.FREE;
   const reviewRewardClaimInFlightRef = useRef<Promise<ReviewRewardClaimFlowResult> | null>(null);
@@ -177,6 +190,47 @@ export function ParentSettings() {
       },
     });
   };
+
+  if (settingsQueryState === "loading") {
+    return (
+      <ScreenQueryState
+        screenTitle="설정"
+        state="loading"
+        heading="설정을 불러오고 있어요"
+        description="계정과 구독 상태를 안전하게 확인하는 중이에요."
+        onBack={() => navigate(-1)}
+      />
+    );
+  }
+
+  if (settingsQueryState === "error") {
+    return (
+      <ScreenQueryState
+        screenTitle="설정"
+        state="error"
+        heading="설정을 불러오지 못했어요"
+        description="계정이나 구독 상태를 확인하지 못해 설정 변경을 잠시 닫았어요."
+        onBack={() => navigate(-1)}
+        onRetry={() => void retryParentSettings()}
+        retrying={settingsRefetching}
+      />
+    );
+  }
+
+  if (settingsDataEmpty) {
+    return (
+      <ScreenQueryState
+        screenTitle="설정"
+        state="empty"
+        heading="확인할 설정 정보가 없어요"
+        description="계정 연결 상태를 다시 확인해 주세요."
+        onBack={() => navigate(-1)}
+        onRetry={() => void retryParentSettings()}
+        retrying={settingsRefetching}
+        retryLabel="다시 확인하기"
+      />
+    );
+  }
 
   return (
     <div className="hy-rise-in">

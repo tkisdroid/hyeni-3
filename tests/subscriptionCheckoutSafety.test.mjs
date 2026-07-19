@@ -62,7 +62,8 @@ test("체험 종료 화면은 무료 안전 기능을 프리미엄 혜택으로 
 
 test("부모 설정은 리뷰 혜택을 무료로 오표기하지 않고 합성 tier 라벨을 쓴다", () => {
   const settings = read("src/screens/parent/ParentSettings.tsx");
-  assert.match(settings, /const \{ ready, tier \} = useEntitlement\(\)/);
+  assert.match(settings, /const entitlementQuery = useEntitlement\(\)/);
+  assert.match(settings, /const \{ ready, tier \} = entitlementQuery/);
   assert.match(settings, /getTierLabel\(tier\)/);
   assert.doesNotMatch(settings, /\{view\.tierLabel\}/);
 });

@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, Check } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
+import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { useAuth } from "@/auth/AuthContext";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { qk } from "@/queries/keys";
@@ -21,6 +22,7 @@ import {
   type BillingProductDetails,
 } from "@/transform/subscriptionOffer";
 import { openExternal } from "@/lib/native/browser";
+import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import {
   TIERS,
   FEATURES,
@@ -92,7 +94,15 @@ export function Subscription() {
   const qc = useQueryClient();
   const [plan, setPlan] = useState<Plan>("year");
   const [busy, setBusy] = useState(false);
-  const { ready, isPremium, view, tier } = useEntitlement();
+  const entitlementQuery = useEntitlement();
+  const { ready, isPremium, view, tier } = entitlementQuery;
+  const subscriptionQueryState = resolveQueryTruthState([
+    { isLoading: entitlementQuery.isLoading, isError: entitlementQuery.isError },
+  ]);
+  const subscriptionDataEmpty = subscriptionQueryState === "ready" && (!ready || !view);
+  const retrySubscription = async (): Promise<void> => {
+    await entitlementQuery.refetch();
+  };
   const premiumActive = ready && isPremium;
   const [productDetails, setProductDetails] = useState<BillingProductDetails | null>(null);
 
@@ -179,6 +189,47 @@ export function Subscription() {
     if (view.periodEnd) return `${formatPeriodEnd(view.periodEnd)}까지 이용할 수 있어요`;
     return "프리미엄 혜택을 모두 이용 중이에요";
   })();
+
+  if (subscriptionQueryState === "loading") {
+    return (
+      <ScreenQueryState
+        screenTitle="프리미엄 구독"
+        state="loading"
+        heading="구독 상태를 확인하고 있어요"
+        description="현재 이용 중인 혜택과 결제 가능 상태를 안전하게 확인하는 중이에요."
+        onBack={() => navigate(-1)}
+      />
+    );
+  }
+
+  if (subscriptionQueryState === "error") {
+    return (
+      <ScreenQueryState
+        screenTitle="프리미엄 구독"
+        state="error"
+        heading="구독 상태를 확인하지 못했어요"
+        description="확인되지 않은 상태에서 결제를 진행하지 않도록 잠시 닫았어요."
+        onBack={() => navigate(-1)}
+        onRetry={() => void retrySubscription()}
+        retrying={entitlementQuery.isFetching}
+      />
+    );
+  }
+
+  if (subscriptionDataEmpty) {
+    return (
+      <ScreenQueryState
+        screenTitle="프리미엄 구독"
+        state="empty"
+        heading="구독 정보가 아직 준비되지 않았어요"
+        description="잠시 후 다시 확인해 주세요. 확인 전에는 결제가 시작되지 않아요."
+        onBack={() => navigate(-1)}
+        onRetry={() => void retrySubscription()}
+        retrying={entitlementQuery.isFetching}
+        retryLabel="구독 상태 다시 확인"
+      />
+    );
+  }
 
   return (
     <div className="sub-screen">

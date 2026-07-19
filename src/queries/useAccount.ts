@@ -42,6 +42,7 @@ export interface UseAccountResult {
   providerLabel: string;
   isLoading: boolean;
   isError: boolean;
+  isFetching: boolean;
   refetch: () => Promise<QueryObserverResult<AccountInfo | null, Error>>;
 }
 
@@ -65,6 +66,7 @@ export function useAccount(): UseAccountResult {
     providerLabel: providerLabel(provider),
     isLoading: query.isLoading,
     isError: query.isError,
+    isFetching: query.isFetching,
     refetch: query.refetch,
   };
 }

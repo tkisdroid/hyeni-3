@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Bell, Lock, MessageCircle, LogOut, TriangleAlert } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
+import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { APP_VERSION } from "@/config/version";
 import { useAuth } from "@/auth/AuthContext";
 import { useAccount, useDeleteAccount } from "@/queries/useAccount";
@@ -10,6 +11,7 @@ import { useTeacherClasses } from "@/queries/useTeacher";
 import { openExternal } from "@/lib/native/browser";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { PRIVACY_POLICY_URL } from "@/lib/api/endpoints/account";
+import { resolveQueryTruthState } from "@/transform/queryTruthState";
 // 설정 화면 공통 스타일(ps-*) 재사용 — 부모/선생님 설정이 동일 레이아웃.
 import "../parent/ParentSettings.css";
 
@@ -25,13 +27,24 @@ export function TeacherSettings() {
   const navigate = useNavigate();
   const { show } = useToast();
   const { logout } = useAuth();
-  const { account, providerLabel } = useAccount();
+  const accountQuery = useAccount();
+  const { account, providerLabel } = accountQuery;
   const deleteAccount = useDeleteAccount();
   const classesQ = useTeacherClasses();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const teacherSettingsQueryState = resolveQueryTruthState([
+    { isLoading: accountQuery.isLoading, isError: accountQuery.isError },
+    { isLoading: classesQ.isLoading, isError: classesQ.isError },
+  ]);
+  const teacherSettingsDataMissing = teacherSettingsQueryState === "ready" && !account;
+  const noTeacherClasses = teacherSettingsQueryState === "ready" && classesQ.data?.length === 0;
+  const teacherSettingsRefetching = accountQuery.isFetching || classesQ.isFetching;
+  const retryTeacherSettings = async (): Promise<void> => {
+    await Promise.all([accountQuery.refetch(), classesQ.refetch()]);
+  };
 
   const displayName = account?.myName || "선생님";
-  const className = classesQ.data?.[0]?.className ?? "우리 반";
+  const className = classesQ.data?.[0]?.className ?? "연결된 반 없음";
 
   const logoutBusyRef = useRef(false);
   const handleLogout = async () => {
@@ -67,6 +80,32 @@ export function TeacherSettings() {
     else window.open(PRIVACY_POLICY_URL, "_blank", "noopener");
   };
 
+  if (teacherSettingsQueryState === "loading") {
+    return (
+      <ScreenQueryState
+        screenTitle="선생님 설정"
+        state="loading"
+        heading="설정을 불러오고 있어요"
+        description="계정과 연결된 반을 확인하는 중이에요."
+        onBack={() => navigate(-1)}
+      />
+    );
+  }
+
+  if (teacherSettingsQueryState === "error" || teacherSettingsDataMissing) {
+    return (
+      <ScreenQueryState
+        screenTitle="선생님 설정"
+        state="error"
+        heading="설정을 불러오지 못했어요"
+        description="계정과 반 정보를 다시 확인해 주세요."
+        onBack={() => navigate(-1)}
+        onRetry={() => void retryTeacherSettings()}
+        retrying={teacherSettingsRefetching}
+      />
+    );
+  }
+
   return (
     <div className="hy-rise-in">
       <header className="ps-head">
@@ -77,6 +116,14 @@ export function TeacherSettings() {
       </header>
 
       <div className="ps-content">
+        {noTeacherClasses && (
+          <div className="sqs-inline-empty">
+            <span>아직 연결된 반이 없어요. 반을 만든 뒤 시간표와 학생 관리를 시작할 수 있어요.</span>
+            <button type="button" className="hy-press" onClick={() => void retryTeacherSettings()}>
+              다시 확인하기
+            </button>
+          </div>
+        )}
         {/* 프로필 (선생님) */}
         <div className="ps-profile">
           <div className="ps-profile__avatar">

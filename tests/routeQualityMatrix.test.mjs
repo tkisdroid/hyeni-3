@@ -42,7 +42,7 @@ const routeQualityMatrix = [
   route("parent/calendar", "ParentCalendar", "src/screens/parent/ParentCalendar.tsx", "parent", "all", "query", queryStates(/isLoading \? \(/, /isError \? \(/, /selEvents\.length > 0/, /selEvents\.map/, /void refetchEvents\(\)/), "shell", "parent-formal"),
   route("parent/location", "ParentLocation", "src/screens/parent/ParentLocation.tsx", "parent", "all", "query", queryStates(/histLoading/, /histErrored/, /histEmpty/, /timedTrail\.length > 0/, /void refetchHistory\(\)/), "shell", "parent-formal"),
   route("parent/memo", "MemoChat", "src/screens/shared/MemoChat.tsx", "parent", "all", "query", queryStates(/thread\.isLoading/, /thread\.isError/, /showEmpty/, /messages\.map/, /void thread\.refetch\(\)/), "shell", "role-aware"),
-  route("parent/settings", "ParentSettings", "src/screens/parent/ParentSettings.tsx", "parent", "all", "hybrid", null, "shell", "parent-formal"),
+  route("parent/settings", "ParentSettings", "src/screens/parent/ParentSettings.tsx", "parent", "all", "hybrid", queryStates(/settingsQueryState === "loading"/, /settingsQueryState === "error"/, /settingsDataEmpty/, /settingsRows\.map/, /void retryParentSettings\(\)/), "shell", "parent-formal"),
 
   route("child/home", "ChildHome", "src/screens/child/ChildHome.tsx", "child", "all", "query", [
     queryStatesAt("src/screens/child/ChildHome.tsx", /homeLoading/, /homeError/, /adventure\.nodes\.length === 0/, /adventure\.nodes\.map/, /void retryHomeData\(\)/),
@@ -55,12 +55,12 @@ const routeQualityMatrix = [
   route("teacher/home", "TeacherHome", "src/screens/teacher/TeacherHome.tsx", "teacher", "dev", "query", queryStates(/loading/, /genuineError/, /preview\.length === 0/, /preview\.map/, /void retryTeacherHome\(\)/), "shell", "teacher-dev"),
   route("teacher/students", "TeacherStudents", "src/screens/teacher/TeacherStudents.tsx", "teacher", "dev", "query", queryStates(/studentsLoading/, /studentsError/, /visibleStudents\.length === 0/, /visibleStudents\.map/, /void retryTeacherStudents\(\)/), "shell", "teacher-dev"),
   route("teacher/timetable", "TeacherTimetable", "src/screens/teacher/TeacherTimetable.tsx", "teacher", "dev", "query", queryStates(/scheduleQ\.isLoading/, /scheduleQ\.isError/, /rows\.length === 0/, /rows\.map/, /scheduleQ\.refetch\(\)/), "shell", "teacher-dev"),
-  route("teacher/settings", "TeacherSettings", "src/screens/teacher/TeacherSettings.tsx", "teacher", "dev", "hybrid", null, "shell", "teacher-dev"),
+  route("teacher/settings", "TeacherSettings", "src/screens/teacher/TeacherSettings.tsx", "teacher", "dev", "hybrid", queryStates(/teacherSettingsQueryState === "loading"/, /teacherSettingsQueryState === "error"/, /classesQ\.data\?\.length === 0/, /CLASS_ROWS\.map/, /void retryTeacherSettings\(\)/), "shell", "teacher-dev"),
   route("teacher/*", "TeacherReleaseGate", "src/screens/teacher/TeacherReleaseGate.tsx", "teacher", "production", "mutation", null, "none", "teacher-release"),
 
   route("onboarding", "Onboarding", "src/screens/onboarding/Onboarding.tsx", "guest", "all", "mutation", null, "none", "role-aware"),
   route("parent/family", "ParentFamily", "src/screens/parent/ParentFamily.tsx", "parent", "all", "query", queryStates(/isLoading/, /isError/, /view\.children\.length === 0/, /view\.children\.map/, /void refetchFamily\(\)/), "safe", "parent-formal"),
-  route("subscription", "Subscription", "src/screens/feature/Subscription.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
+  route("subscription", "Subscription", "src/screens/feature/Subscription.tsx", "parent", "all", "hybrid", queryStates(/subscriptionQueryState === "loading"/, /subscriptionQueryState === "error"/, /subscriptionDataEmpty/, /BENEFITS\.map/, /void retrySubscription\(\)/), "screen", "parent-formal"),
   route("trial-lock", "TrialLock", "src/screens/feature/TrialLock.tsx", "parent", "all", "static", null, "screen", "parent-formal"),
   route("notifications", "Notifications", "src/screens/feature/Notifications.tsx", "parent", "all", "query", queryStates(/isLoading/, /isError/, /groups\.length === 0/, /groups\.map/, /refetch\(\)/), "safe", "parent-formal"),
   route("remote-audio", "RemoteAudio", "src/screens/feature/RemoteAudio.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
@@ -68,7 +68,7 @@ const routeQualityMatrix = [
   route("friend-play", "FriendPlay", "src/screens/feature/FriendPlay.tsx", "parent", "all", "query", queryStates(/parentPlaydateLoading/, /parentPlaydateError/, /현재 진행 중인 친구놀이가 없어요/, /active \? \(/, /void retryParentPlaydate\(\)/), "safe", "parent-formal"),
   route("ai-schedule", "AiSchedule", "src/screens/feature/AiSchedule.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
   route("ai-credit", "AiCredit", "src/screens/feature/AiCredit.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
-  route("phone-setup", "PhoneSetup", "src/screens/feature/PhoneSetup.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
+  route("phone-setup", "PhoneSetup", "src/screens/feature/PhoneSetup.tsx", "parent", "all", "hybrid", queryStates(/phoneQueryState === "loading"/, /phoneQueryState === "error"/, /family && parents\.length === 0/, /parents\.map/, /void retryPhoneSetup\(\)/), "screen", "parent-formal"),
   route("sticker-send", "StickerSend", "src/screens/feature/StickerSend.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
   route("profile-edit", "ProfileEdit", "src/screens/feature/ProfileEdit.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
   route("place-form", "PlaceForm", "src/screens/feature/PlaceForm.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
@@ -84,7 +84,7 @@ const routeQualityMatrix = [
     queryStatesAt("src/screens/parent/ParentAccount.tsx", /isLoading \|\| accountLoadError/, /accountIsError/, /account === null/, /const isPrimary = account\.isPrimaryParent/, /void refetchAccount\(\)/),
     queryStatesAt("src/screens/parent/SocialLinks.tsx", /native && isLoading/, /native && isError/, /links\.length === 0/, /links\.map/, /void refetch\(\)/),
   ], "screen", "parent-formal", "focus-trapped"),
-  route("data-sync", "DataSync", "src/screens/feature/DataSync.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
+  route("data-sync", "DataSync", "src/screens/feature/DataSync.tsx", "parent", "all", "hybrid", queryStates(/dataSyncQueryState === "loading"/, /dataSyncQueryState === "error"/, /dataSyncEmpty/, /members\.filter/, /void retryDataSync\(\)/), "screen", "parent-formal"),
   route("notification-settings", "NotificationSettings", "src/screens/feature/NotificationSettings.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
   route("arrival-alerts", "ArrivalAlerts", "src/screens/feature/ArrivalAlerts.tsx", "parent", "all", "query", queryStates(/isLoading/, /isError/, /list\.length === 0/, /list\.map/, /refetch\(\)/), "screen", "parent-formal"),
   route("danger-alert", "DangerAlert", "src/screens/feature/DangerAlert.tsx", "parent", "all", "query", queryStates(/isLoading/, /isError/, /!latest/, /latest &&/, /refetch\(\)/), "safe", "parent-formal"),
@@ -522,7 +522,14 @@ test("query 화면은 loading/error/empty/success와 실제 retry UI 계약을 �
 
 test("감사 완료된 hybrid 화면은 read query의 다섯 상태와 실제 재시도를 계약한다", () => {
   const auditedHybridRows = routeQualityMatrix.filter((item) => item.kind === "hybrid" && item.states);
-  assert.deepEqual(auditedHybridRows.map((item) => item.path), ["remote-ring"]);
+  assert.deepEqual(auditedHybridRows.map((item) => item.path), [
+    "parent/settings",
+    "teacher/settings",
+    "subscription",
+    "phone-setup",
+    "data-sync",
+    "remote-ring",
+  ]);
   auditedHybridRows.forEach(assertStateContracts);
 });
 
