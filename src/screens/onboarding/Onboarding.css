@@ -273,9 +273,10 @@
   object-position: center 43%;
 }
 .ob-role-ic--teacher .ob-role-img {
-  width: 72px;
-  height: 72px;
-  object-position: center 40%;
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+  object-position: center top;
 }
 /* 원본 상단에 머리 여백이 거의 없어 확대하면 머리카락이 잘린다.
    아이 슬롯 안에서 상단을 고정하고 하단만 덜어 얼굴 크기와 윤곽을 함께 보존한다. */

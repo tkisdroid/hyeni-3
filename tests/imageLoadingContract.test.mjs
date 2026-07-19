@@ -136,6 +136,7 @@ test("첫 viewport의 온보딩 hero와 역할 이미지는 eager 계약을 유�
     /<img\s+src=\{asset\("mascot\/wave\.webp"\)\}\s+alt="혜니캘린더"[^>]*>/,
     /<img\s+className="ob-role-img"\s+src=\{asset\(ROLE_ICON_ASSETS\.parent\)\}[^>]*>/,
     /<img\s+className="ob-role-img ob-role-img--child"\s+src=\{asset\(ROLE_ICON_ASSETS\.child\)\}[^>]*>/,
+    /<img\s+className="ob-role-img"\s+src=\{asset\(ROLE_ICON_ASSETS\.teacher\)\}[^>]*>/,
   ];
 
   for (const pattern of tags) {
@@ -144,6 +145,30 @@ test("첫 viewport의 온보딩 hero와 역할 이미지는 eager 계약을 유�
     assert.match(tag, /decoding="async"/, `async decoding 누락: ${pattern}`);
     assert.doesNotMatch(tag, /loading="lazy"/);
   }
+});
+
+test("역할 선택의 선생님 이미지는 아이콘 슬롯 밖으로 잘리지 않는다", () => {
+  const onboarding = source("src/screens/onboarding/Onboarding.tsx");
+  const onboardingCss = source("src/screens/onboarding/Onboarding.css");
+  const slot = cssBlock(onboardingCss, ".ob-role-ic");
+  const teacher = cssBlock(onboardingCss, ".ob-role-ic--teacher .ob-role-img");
+
+  assert.match(
+    onboarding,
+    /<span className="ob-role-ic ob-role-ic--teacher">\s*<img\s+className="ob-role-img"\s+src=\{asset\(ROLE_ICON_ASSETS\.teacher\)\}/s,
+    "선생님 이미지가 전용 크롭 방지 슬롯 안에 있어야 합니다",
+  );
+
+  const px = (body, property) => {
+    const match = new RegExp(`${property}:\\s*(\\d+)px`).exec(body);
+    assert.ok(match, `${property} 선언을 찾지 못했습니다`);
+    return Number(match[1]);
+  };
+
+  assert.equal(px(teacher, "width"), px(slot, "width"), "선생님 이미지 너비는 슬롯과 같아야 합니다");
+  assert.equal(px(teacher, "height"), px(slot, "height"), "선생님 이미지 높이는 슬롯과 같아야 합니다");
+  assert.match(teacher, /object-fit:\s*contain\s*;/, "선생님 원본 전체를 보존해야 합니다");
+  assert.match(teacher, /object-position:\s*center\s+top\s*;/, "선생님 머리 위쪽을 고정해야 합니다");
 });
 
 test("콜드스타트 스플래시 LCP 이미지는 즉시 높은 우선순위로 요청한다", () => {
