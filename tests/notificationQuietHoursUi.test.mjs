@@ -114,3 +114,20 @@ test("quiet 편집기는 44px 조작 영역과 360px 한 열을 보장한다", (
   assert.match(css, /\.nst-quiet__time[^}]*min-width:\s*0[^}]*width:\s*100%/s);
   assert.match(css, /@media\s*\(max-width:\s*360px\)[\s\S]*?\.nst-quiet__time-grid\s*\{[^}]*grid-template-columns:\s*1fr/s);
 });
+
+test("운영 문서는 알림 조용한 시간 정본과 배포 순서를 보존한다", () => {
+  const docs = `${source("AGENTS.md")}\n${source("CLAUDE.md")}`;
+
+  assert.match(docs, /notification quiet hours/i);
+  assert.match(docs, /부모 본인[^\n]*user_id[^\n]*활성 아이/);
+  assert.match(docs, /22:00[^\n]*07:00/);
+  assert.match(docs, /Asia\/Seoul/);
+  assert.match(docs, /pending_notifications[^\n]*(이전|전에)/);
+  assert.match(docs, /suppressed_quiet_hours/);
+  assert.match(docs, /SOS[^\n]*미도착[^\n]*위험구역/);
+  assert.match(docs, /kkuk[^\n]*(일반|억제)/);
+  assert.match(docs, /notification-quiet-hours\.sql[^\n]*Worker[^\n]*(이전|전에)/);
+  assert.match(docs, /A17[^\n]*(단독|한 대)/);
+  assert.match(docs, /razr[^\n]*(연결 해제|미조작)/);
+  assert.match(docs, /S25[^\n]*(제외|미조작)/);
+});

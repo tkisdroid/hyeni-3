@@ -48,6 +48,17 @@
 - 파괴적 작업 전 **안전 불변식부터 확인**(예: 아이 페어링 전 프리미엄 캡=2 확인으로 razr 밀림 0 보장).
 - 테스트로 만든 데이터·바꾼 설정은 **반드시 원복/삭제**(이벤트·메모·SOS·notification_settings…).
 - 라이브 앱 refresh 토큰은 절대 조작하지 않는다(access 만 읽기 — 회전시키면 세션 파괴).
+- **notification quiet hours 운영 계약(2026-07-19)**: 부모 본인 `user_id` 계정과 활성 아이 `user_id` 계정만
+  부모가 설정하고 공동 부모 계정은 제외한다. 각 계정은 매일 같은 한 구간만 반복하며 기본값은 비활성
+  `22:00→07:00`, `Asia/Seoul`, `[start,end)`이고 시작=끝은 400으로 거부한다. Worker의
+  `lib/notificationQuietHours.ts`가 일반 알림을 `pending_notifications` 생성 이전에 수신자별로 억제하므로 알림은
+  저장·표시·재생하지 않지만 지오펜스와 상태 전이는 계속 진행한다. 정상 억제는 `suppressed_quiet_hours` 의미로
+  완료하며 Android `QUIET_HOURS_SUPPRESSED` receipt는 ACK 성공·미게시다. SOS·emergency·미도착·위험구역은 항상 전달하고,
+  force ring·remote listen·request_location·request_device_status는 표시 대상이 아닌 명령으로 항상 통과한다.
+  `kkuk`은 일반 알림이므로 억제한다. Android는 사용자와 업데이트 시각을 묶은 session-bound
+  `NotificationQuietHoursStore`를 쓰고 Web 시작 동기화·FCM 갱신·LocationService 401 재시도 뒤에만 값을 채택하며,
+  `NotificationHelper` 진입점이 8개 표시 경로를 채널/권한/중복 판정보다 먼저 차단한다. 운영 순서는 D1
+  `worker/db/notification-quiet-hours.sql` 적용·PRAGMA 확인 → Worker 배포 → Pages/Android 배포다.
 
 ### F. 재사용 우선 · 서버 무변경 해법 선호
 - hyeni-1 서버·인프라를 먼저 뒤진다(재구축 금지). 스키마를 늘리기 전에 기존 계약으로 풀 수 있는지 본다.

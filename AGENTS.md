@@ -79,6 +79,17 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   클라 로컬 스케줄러 없음) · 긴급(sos/emergency)은 `POST /api/parent-alerts` insert 시 서버가 FCM
   전체화면 연쇄 · 기기 상태(device_health)는 **on-demand**(부모가 `request_device_status` 푸시를 보내야 옴) ·
   미등록 장소 도착 = `worker/lib/arrivalDetect.ts`(150m·5분 체류·2h 쿨다운).
+- **notification quiet hours 정본(2026-07-19)**: 부모 본인 `user_id` 계정과 활성 아이 `user_id` 계정만
+  부모가 각각 설정하며, 공동 부모 계정에는 적용하지 않는다. 계정별 매일 반복 구간은 1개이고 기본값은
+  비활성 `22:00→07:00`, 시간대는 `Asia/Seoul`, 판정 범위는 `[start,end)`이며 시작=끝 저장은 거부한다.
+  부모 설정은 대상 칩으로 명시 선택하고 아이 설정은 자기 계정 값을 읽기 전용으로 보여준다. Worker는 일반 알림을
+  `pending_notifications` 생성 이전에 수신자별로 걸러 억제 시 행·푸시를 만들지 않고 재생하지 않으며, 도착·출발
+  상태머신은 계속 진행한다. 이 억제는 `suppressed_quiet_hours` 의미의 성공 완료이고 Android 실제 receipt는
+  `QUIET_HOURS_SUPPRESSED(acknowledge=true, posted=false)`다. SOS·emergency·미도착(not_arrived/missed_arrival)·위험구역은
+  항상 전달하고 force ring·remote listen·위치/기기 상태 요청 명령도 통과시킨다. `kkuk`은 일반 알림이라 억제 대상이다.
+  Android는 `NotificationQuietHoursStore`의 session-bound 캐시와 FCM `notification_quiet_hours_updated` 갱신을 사용하며,
+  `NotificationHelper`가 채널·권한·중복·화면 깨우기·게시보다 먼저 모든 8개 표시 경로에 동일 정책을 적용한다.
+  운영 배포는 D1 `worker/db/notification-quiet-hours.sql`을 Worker 배포 이전에 정확히 1회 적용하고 컬럼 기본값을 읽어 확인한다.
   부모 홈 안전 지표의 알림·위치 건강 상태는 컴팩트 칩(`shortLabel`, `.ph-safety__signals`) 한 줄로 표시하고,
   긴 `label`/`detail` 안내 박스는 `attention`(조치 필요) 상태에만 렌더한다(2026-07-14 TK 제보 "과도한 텍스트" 수정).
   안심리포트(`DailySafetyReport`)는 상세 화면이므로 label/detail 전체 표시를 유지한다.
@@ -468,6 +479,11 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   `loading="lazy" decoding="async"`로 레이아웃 이동 없이 로드한다. 역할 선택 아이콘처럼 `overflow:hidden`인 슬롯에서는
   원본 상단 여백을 확인하지 않은 확대를 금지한다. 선생님 512×512 원본은 58×58 슬롯에 72×72로 넣으면 위쪽 7px가
   잘리므로 58×58 `contain`으로 맞추며, 회귀는 `tests/imageLoadingContract.test.mjs`가 보호한다.
+- ★안전지표·설명문 표면(2026-07-19): 아이 안전지표의 최근 앱·앱 사용 목록은 `DeviceStatusReporter`와
+  `deviceHealthView` 양쪽에서 런처·System UI·설정·권한 컨트롤러·시스템 자녀 보호 기능 같은 OS 표면을 제외하되,
+  실제 실행 가능한 일반 사용자 앱은 보존한다. 순수 설명문은 `.hy-explain`을 사용해 테두리·그림자 없이 배경과
+  아이콘만 유지하고 14px/500/1.55, `word-break:keep-all`, `overflow-wrap:anywhere`, `text-wrap:pretty`로 문장을 읽기 좋게
+  나눈다. 오류·경고·재시도·attention·SOS·차단·권한 정책 모달·클릭 카드·데이터 요약은 이 평면화 대상이 아니다.
 - ★화면 완결성·성능(2026-07-19): 조회 화면은 loading/error/empty/success/retry를 정직하게 분리하고, 현재 family/user/source
   snapshot hydration이 끝나기 전 입력·저장을 닫는다. busy 버튼은 중복 실행을 막고 상태를 접근성 이름으로 알린다.
   App 정본은 58개 라우트·57개 lazy screen이며 진입 JS는 `tests/routeBundleBudget.test.mjs`의 500,000-byte 미만 예산을 지킨다.
