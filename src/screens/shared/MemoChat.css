@@ -114,8 +114,9 @@
   gap: 8px;
   padding: 12px 12px;
   border: 1px solid var(--lav-line);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-16);
   background: var(--lav-soft);
+  box-shadow: none;
   color: var(--lav-text);
 }
 .mc-blocked-banner > div {

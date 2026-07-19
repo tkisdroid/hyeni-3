@@ -186,8 +186,9 @@
   flex-direction: column;
   gap: 4px;
   padding: 12px 16px;
-  border-radius: 16px;
+  border-radius: var(--radius-16);
   background: var(--mint-soft);
+  box-shadow: none;
 }
 .pa-active__badge {
   display: inline-flex;

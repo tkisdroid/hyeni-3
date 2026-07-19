@@ -308,8 +308,9 @@
 
 .wr-emptyline {
   padding: 12px 12px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-16);
   background: var(--bg-press);
+  box-shadow: none;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);

@@ -148,8 +148,9 @@
 .ks-empty {
   margin-top: 16px;
   padding: 20px 12px;
-  border-radius: 20px;
+  border-radius: var(--radius-16);
   background: var(--bg-card);
+  box-shadow: none;
   font-size: var(--type-body);
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
@@ -162,9 +163,10 @@
 .ks-route__strip {
   margin-top: 16px;
   background: linear-gradient(180deg, #dff3ff, #eaf7e6);
-  border-radius: 22px;
+  border-radius: var(--radius-20);
   padding: 12px 12px 8px;
   overflow: hidden;
+  box-shadow: none;
 }
 .ks-route__row {
   display: flex;
@@ -235,8 +237,9 @@
   align-items: center;
   gap: 12px;
   background: var(--bg-card);
-  border-radius: 16px;
+  border-radius: var(--radius-16);
   padding: 12px 12px;
+  box-shadow: none;
 }
 .ks-route__no {
   width: 28px;
@@ -278,7 +281,7 @@
 }
 .ks-friend[aria-pressed="true"] {
   border-color: var(--hy-accent);
-  box-shadow: var(--shadow-floating);
+  box-shadow: var(--shadow-soft);
 }
 .ks-friend__ava {
   width: 52px;
@@ -470,8 +473,9 @@
 .ks-modal__msg {
   margin-top: 12px;
   background: var(--hy-accent-soft);
-  border-radius: 16px;
+  border-radius: var(--radius-16);
   padding: 12px 12px;
+  box-shadow: none;
   font-size: var(--type-body);
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
@@ -548,8 +552,9 @@
   align-items: center;
   gap: 8px;
   background: var(--cream-soft);
-  border-radius: 16px;
+  border-radius: var(--radius-16);
   padding: 8px 12px;
+  box-shadow: none;
 }
 .ks-day__notice img {
   width: 26px;

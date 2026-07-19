@@ -146,8 +146,9 @@
 
 .raa-empty {
   min-height: 156px;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-16);
   background: var(--bg-press);
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -166,8 +167,9 @@
 
 .raa-item {
   padding: 12px 12px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-16);
   background: var(--bg-press);
+  box-shadow: none;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -269,8 +271,9 @@
 
 .raa-note {
   padding: 12px 12px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-16);
   background: var(--bg-press);
+  box-shadow: none;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);

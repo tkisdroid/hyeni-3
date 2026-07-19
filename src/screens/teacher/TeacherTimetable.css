@@ -229,8 +229,9 @@
   gap: 8px;
   align-items: flex-start;
   padding: 12px 12px;
-  border-radius: 16px;
+  border-radius: var(--radius-16);
   background: #eefaf4;
+  box-shadow: none;
   border: 1px solid #cdeede;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);

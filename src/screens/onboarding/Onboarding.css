@@ -378,8 +378,9 @@
 .ob-teacher-note {
   margin-top: 20px;
   background: rgba(49, 196, 141, 0.08);
-  border-radius: 18px;
+  border-radius: var(--radius-16);
   padding: 16px;
+  box-shadow: none;
   display: flex;
   gap: 12px;
   align-items: flex-start;
@@ -763,10 +764,11 @@
   display: block;
   width: 236px;
   height: 236px;
-  border-radius: 28px;
+  border-radius: var(--radius-20);
   background: #0c0a0a;
   overflow: hidden;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-modal);
   --press: 0.97;
 }
 /* 스캔 버튼 라벨 — 탭 가능함을 명시(장식으로 오인 방지) */

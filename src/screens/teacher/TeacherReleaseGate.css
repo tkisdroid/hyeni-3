@@ -66,8 +66,9 @@
   gap: var(--space-3);
   align-items: flex-start;
   padding: var(--space-4);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-16);
   background: var(--blue-soft);
+  box-shadow: none;
   color: var(--blue-text);
   text-align: left;
   font-size: var(--type-body-sm);

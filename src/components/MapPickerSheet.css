@@ -55,9 +55,10 @@
 }
 .mps-map {
   position: relative;
-  border-radius: 18px;
+  border-radius: var(--radius-20);
   overflow: hidden;
   background: #eae4e0;
+  box-shadow: none;
 }
 .mps-map__canvas {
   width: 100%;

@@ -251,8 +251,9 @@
 .sub-note {
   margin-top: 16px;
   padding: 12px 12px;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   background: rgba(224, 138, 30, 0.08);
+  box-shadow: none;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);

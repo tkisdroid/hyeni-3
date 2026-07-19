@@ -256,10 +256,11 @@
 }
 .ais-upload {
   width: 100%;
-  border-radius: 20px;
+  border-radius: var(--radius-20);
   border: 2px dashed rgba(124, 92, 225, 0.35);
   background: rgba(124, 92, 225, 0.05);
   padding: 32px 20px;
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -319,9 +320,9 @@
   width: 100%;
   max-height: 280px;
   object-fit: contain;
-  border-radius: 20px;
+  border-radius: var(--radius-20);
   background: #fff;
-  box-shadow: 0 8px 22px rgba(124, 92, 225, 0.1);
+  box-shadow: var(--shadow-soft);
 }
 .ais-preview__change {
   padding: 8px 16px;
@@ -459,8 +460,9 @@
   width: 100%;
   margin-top: 12px;
   padding: 8px 12px;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   background: var(--lav-soft);
+  box-shadow: none;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);

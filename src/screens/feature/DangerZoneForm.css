@@ -51,10 +51,10 @@
 .dzf-map {
   position: relative;
   height: 160px;
-  border-radius: 22px;
+  border-radius: var(--radius-20);
   overflow: hidden;
   background: linear-gradient(135deg, #eaf6ee 0%, #e6f2fb 60%, #fce6f1 100%);
-  box-shadow: 0 14px 34px -18px rgba(32, 26, 29, 0.22);
+  box-shadow: var(--shadow-soft);
   display: flex;
   align-items: center;
   justify-content: center;

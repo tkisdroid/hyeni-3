@@ -498,8 +498,9 @@
   gap: var(--space-2);
   padding: 12px 12px;
   border: 1px solid color-mix(in srgb, var(--gold-600) 30%, var(--line-card));
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-16);
   background: var(--cream-soft);
+  box-shadow: none;
   color: var(--gold-text);
 }
 
@@ -557,8 +558,9 @@
   gap: var(--space-2);
   padding: 12px 12px;
   border: 1px solid color-mix(in srgb, var(--gold-600) 30%, var(--line-card));
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-16);
   background: var(--cream-soft);
+  box-shadow: none;
   color: var(--gold-text);
 }
 
@@ -643,8 +645,9 @@
 .dr-signal {
   min-width: 0;
   padding: 12px 8px;
-  border-radius: 16px;
+  border-radius: var(--radius-16);
   background: var(--tone-bg);
+  box-shadow: none;
   border: 1px solid var(--tone-line);
   color: var(--tone-text);
 }
@@ -690,8 +693,9 @@
   align-items: center;
   gap: var(--space-2);
   padding: 8px 12px;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   background: var(--tone-bg);
+  box-shadow: none;
   color: var(--tone-text);
   border: 1px solid var(--tone-line);
 }
@@ -720,8 +724,9 @@
   align-items: center;
   gap: var(--space-3);
   padding: 12px;
-  border-radius: 18px;
+  border-radius: var(--radius-16);
   background: var(--bg-press);
+  box-shadow: none;
 }
 
 .dr-feature-row__icon {
@@ -777,8 +782,9 @@
 .dr-lock,
 .dr-note {
   padding: 12px 12px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-16);
   background: var(--bg-press);
+  box-shadow: none;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
@@ -798,8 +804,9 @@
   align-items: center;
   gap: var(--space-2);
   padding: 8px 12px;
-  border-radius: 16px;
+  border-radius: var(--radius-16);
   background: var(--bg-press);
+  box-shadow: none;
 }
 
 .dr-event__emoji {
@@ -950,8 +957,9 @@
   margin-top: var(--space-3);
   padding: 12px 12px;
   border: 1px solid var(--line-card);
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   background: var(--bg-press);
+  box-shadow: none;
   color: var(--fg-muted);
 }
 
@@ -1005,8 +1013,9 @@
   align-items: center;
   gap: var(--space-2);
   padding: 8px 12px;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   background: var(--lav-soft);
+  box-shadow: none;
 }
 
 .dr-app span {
@@ -1043,8 +1052,9 @@
   gap: var(--space-2);
   align-items: center;
   padding: 8px 12px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-16);
   background: var(--bg-press);
+  box-shadow: none;
 }
 
 .dr-memo__icon {
@@ -1135,10 +1145,11 @@
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-16);
   padding: var(--space-4);
   background: linear-gradient(135deg, var(--lav-soft), var(--bg-card));
   border: 1px solid var(--lav-line);
+  box-shadow: none;
   color: var(--lav-text);
 }
 

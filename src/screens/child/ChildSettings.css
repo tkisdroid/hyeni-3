@@ -282,8 +282,9 @@
   display: flex;
   gap: 12px;
   padding: 12px;
-  border-radius: 18px;
+  border-radius: var(--radius-16);
   background: #fbf7f8;
+  box-shadow: none;
 }
 .ks-help-item__emoji {
   flex: none;

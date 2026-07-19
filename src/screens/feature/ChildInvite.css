@@ -76,7 +76,7 @@
   width: 252px;
   height: 252px;
   background: #fff;
-  border-radius: var(--radius-16);
+  border-radius: var(--radius-20);
   box-shadow: var(--shadow-soft);
   border: 1px solid rgba(32, 26, 29, 0.05);
   display: flex;

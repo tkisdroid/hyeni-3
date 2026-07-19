@@ -76,12 +76,13 @@
   margin-top: 8px;
   width: 82px;
   height: 82px;
-  border-radius: 22px;
+  border-radius: var(--radius-20);
   background: var(--hy-accent-soft);
   display: flex;
   align-items: center;
   justify-content: center;
   animation: hy-pop 0.4s ease;
+  box-shadow: none;
 }
 .ss-preview__tile img {
   width: 64px;

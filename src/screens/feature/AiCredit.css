@@ -442,8 +442,9 @@
   gap: 12px;
   padding: 12px;
   border: 1px solid var(--line-hair);
-  border-radius: 16px;
+  border-radius: var(--radius-16);
   background: var(--bg-page);
+  box-shadow: none;
 }
 .ac-control-row__main {
   flex: 1;

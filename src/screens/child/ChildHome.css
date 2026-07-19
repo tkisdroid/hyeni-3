@@ -664,9 +664,10 @@
   align-items: center;
   gap: 12px;
   background: var(--bg-card);
-  border-radius: 26px;
+  border-radius: var(--radius-16);
   padding: 12px 16px;
   border: 2px solid var(--hy-accent);
+  box-shadow: var(--shadow-soft);
   text-align: left;
   --press: 0.97;
 }
@@ -725,9 +726,10 @@
   align-items: center;
   gap: 12px;
   background: var(--kd-cream);
-  border-radius: 26px;
+  border-radius: var(--radius-16);
   padding: 12px 16px;
   border: 1px solid var(--kd-cream-line);
+  box-shadow: var(--shadow-soft);
   text-align: left;
   --press: 0.97;
 }

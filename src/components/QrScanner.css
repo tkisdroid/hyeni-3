@@ -47,11 +47,11 @@
   width: 100%;
   max-width: 360px;
   aspect-ratio: 3 / 4;
-  border-radius: 28px;
+  border-radius: var(--radius-20);
   overflow: hidden;
   background: #0f172a;
   position: relative;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.32);
+  box-shadow: var(--shadow-modal);
 }
 .qrs-video {
   width: 100%;
