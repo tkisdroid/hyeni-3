@@ -20,10 +20,9 @@ function imageTagForExpression(body, expression) {
   return new RegExp(`<img\\b(?=[^>]*\\bsrc=\\{${escaped}\\})[^>]*>`, "s").exec(body)?.[0] ?? "";
 }
 
-test("대화의 네트워크 프로필·첨부 이미지는 지연 로드와 비동기 디코딩을 쓴다", () => {
+test("대화 목록의 네트워크 프로필·첨부 이미지는 지연 로드와 비동기 디코딩을 쓴다", () => {
   const memo = source("src/screens/shared/MemoChat.tsx");
   const imageTags = [
-    /<img\s+src=\{peer\.avatar\}[^>]*>/,
     /<img\s+src=\{sender\?\.avatar \?\? peer\.avatar\}[^>]*>/,
     /<img\s+src=\{childPhotoProxyUrl\(m\.imagePath\) \?\? undefined\}[^>]*>/,
     /<img\s+src=\{childPhotoProxyUrl\(previewImagePath\) \?\? undefined\}[^>]*>/,
@@ -34,6 +33,14 @@ test("대화의 네트워크 프로필·첨부 이미지는 지연 로드와 비
     assert.match(tag, /loading="lazy"/, `lazy 누락: ${pattern}`);
     assert.match(tag, /decoding="async"/, `async decoding 누락: ${pattern}`);
   }
+});
+
+test("대화 첫 화면 헤더 아바타는 즉시 요청하고 비동기 디코딩을 쓴다", () => {
+  const memo = source("src/screens/shared/MemoChat.tsx");
+  const tag = /<img\s+src=\{peer\.avatar\}[^>]*>/.exec(memo)?.[0] ?? "";
+  assert.match(tag, /loading="eager"/);
+  assert.match(tag, /decoding="async"/);
+  assert.doesNotMatch(tag, /fetchPriority="high"/);
 });
 
 test("가족 화면의 네트워크 프로필 이미지는 지연 로드와 비동기 디코딩을 쓴다", () => {
@@ -137,4 +144,33 @@ test("첫 viewport의 온보딩 hero와 역할 이미지는 eager 계약을 유�
     assert.match(tag, /decoding="async"/, `async decoding 누락: ${pattern}`);
     assert.doesNotMatch(tag, /loading="lazy"/);
   }
+});
+
+test("콜드스타트 스플래시 LCP 이미지는 즉시 높은 우선순위로 요청한다", () => {
+  const splash = source("src/screens/Splash.tsx");
+  const tag = /<img\b(?=[^>]*className="sp-mascot")[^>]*>/s.exec(splash)?.[0] ?? "";
+  assert.match(tag, /loading="eager"/);
+  assert.match(tag, /decoding="async"/);
+  assert.match(tag, /fetchPriority="high"/);
+});
+
+test("프로필 편집 첫 화면의 저장 사진은 즉시 요청하되 LCP 우선순위를 점유하지 않는다", () => {
+  const profile = source("src/screens/feature/ProfileEdit.tsx");
+  const tag = /<img\s+src=\{previewSrc\}[^>]*>/.exec(profile)?.[0] ?? "";
+  assert.match(tag, /loading="eager"/);
+  assert.match(tag, /decoding="async"/);
+  assert.doesNotMatch(tag, /fetchPriority="high"/);
+});
+
+test("안심리포트 이미지는 첫 hero만 high priority이고 나머지는 명시적으로 지연한다", () => {
+  const report = source("src/screens/feature/DailySafetyReport.tsx");
+  const tags = report.match(/<img\b[\s\S]*?\/>/g) ?? [];
+  assert.ok(tags.length >= 20, "안심리포트 이미지 전수 계약이 사라짐");
+  for (const tag of tags) {
+    assert.match(tag, /loading="(?:eager|lazy)"/, `loading 힌트 누락: ${tag}`);
+    assert.match(tag, /decoding="async"/, `async decoding 누락: ${tag}`);
+  }
+  const highPriority = tags.filter((tag) => /fetchPriority="high"/.test(tag));
+  assert.equal(highPriority.length, 1);
+  assert.match(highPriority[0], /loading="eager"/);
 });

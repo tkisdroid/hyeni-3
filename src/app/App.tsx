@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useState, type ReactElement } from "react";
-import { createHashRouter, Navigate, RouterProvider } from "react-router-dom";
+import { createHashRouter, Navigate, Outlet, RouterProvider } from "react-router-dom";
 import { ParentShell, ChildShell, TeacherShell, PushShell } from "./AppShell";
 import { Splash } from "@/screens/Splash";
 import { AccentProvider } from "./accent";
@@ -18,6 +18,7 @@ import { RouteLoading } from "@/components/ui/RouteLoading";
 import { RootErrorBoundary, RouteErrorScreen } from "./ErrorBoundary";
 import { GlobalErrorListeners } from "./GlobalErrorListeners";
 import { lazyScreen } from "./lazyScreen";
+import { AppVersionGate } from "./AppVersionGate";
 
 // Provider·shell·오류 경계는 즉시 로드하고 사용자 화면만 route 단위로 분리한다.
 const ParentHome = lazyScreen(() => import("@/screens/parent/ParentHome"), "ParentHome");
@@ -82,11 +83,23 @@ function routeElement(element: ReactElement): ReactElement {
   return <Suspense fallback={<RouteLoading />}>{element}</Suspense>;
 }
 
+function AppRouteServices() {
+  return (
+    <>
+      <AppVersionGate />
+      <Outlet />
+    </>
+  );
+}
+
 // 전 라우트를 pathless 루트로 감싸 렌더 에러가 흰 화면 대신 복구 화면(RouteErrorScreen)으로 간다.
 const router = createHashRouter([
   {
-    errorElement: <RouteErrorScreen />,
+    element: <AppRouteServices />,
     children: [
+      {
+        errorElement: <RouteErrorScreen />,
+        children: [
   { index: true, element: <Navigate to="/parent/home" replace /> },
 
   // 부모 탭 (인증 + role=parent 가드)
@@ -239,6 +252,8 @@ const router = createHashRouter([
   ...(import.meta.env.DEV ? [{ path: "crash-test", element: <CrashProbe /> }] : []),
 
   { path: "*", element: <Navigate to="/parent/home" replace /> },
+        ],
+      },
     ],
   },
 ]);

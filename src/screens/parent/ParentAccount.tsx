@@ -1,6 +1,6 @@
 import { useEffect, useId, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, LogOut, ShieldAlert, KeyRound } from "lucide-react";
+import { ChevronLeft, KeyRound, LogOut, ShieldAlert, Trash2 } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
@@ -334,7 +334,9 @@ export function ParentAccount() {
             onClick={() => !deleteAccount.isPending && setConfirmDelete(false)}
           />
           <div className="pa-modal__card">
-            <div className="pa-modal__emoji">🗑️</div>
+            <div className="pa-modal__emoji" aria-hidden="true">
+              <Trash2 size={34} strokeWidth={2.2} />
+            </div>
             <div id={deleteTitleId} className="pa-modal__title">정말 탈퇴하시겠어요?</div>
             <p id={deleteDescriptionId} className="pa-modal__body">
               {isPrimary
@@ -392,6 +394,7 @@ export function ParentAccount() {
                 ref={currentPasswordRef}
                 className="pa-modal__input"
                 type="password"
+                aria-label="현재 비밀번호"
                 autoComplete="current-password"
                 placeholder="현재 비밀번호"
                 value={currentPassword}
@@ -400,6 +403,7 @@ export function ParentAccount() {
               <input
                 className="pa-modal__input"
                 type="password"
+                aria-label="새 비밀번호"
                 autoComplete="new-password"
                 placeholder="새 비밀번호 (6자 이상)"
                 value={newPassword}
@@ -408,6 +412,7 @@ export function ParentAccount() {
               <input
                 className="pa-modal__input"
                 type="password"
+                aria-label="새 비밀번호 확인"
                 autoComplete="new-password"
                 placeholder="새 비밀번호 확인"
                 value={newPasswordConfirm}

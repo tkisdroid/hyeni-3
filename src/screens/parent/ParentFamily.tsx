@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { ChevronLeft, ChevronRight, Plus, UserPlus, Link2, Lock, Copy, QrCode as QrIcon, Smartphone } from "lucide-react";
+import { Battery, ChevronLeft, ChevronRight, Copy, Link2, Lock, Plus, QrCode as QrIcon, Smartphone, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
@@ -159,7 +159,8 @@ export function ParentFamily() {
                       <span className="pf-child__chips">
                         {c.battery != null && (
                           <span className="pf-chip" style={{ background: "#E7F8F0", color: "#087653" }}>
-                            🔋 {c.battery}%
+                            <Battery size={12} strokeWidth={2.2} aria-hidden="true" />
+                            {c.battery}%
                           </span>
                         )}
                         <span className="pf-chip pf-chip--place">

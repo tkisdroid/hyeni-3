@@ -339,6 +339,7 @@ export function TeacherHome() {
             <input
               className="th-sheet__input"
               type="tel"
+              aria-label="부모님 전화번호"
               inputMode="tel"
               value={invitePhone}
               onChange={(e) => setInvitePhone(e.target.value)}
@@ -347,6 +348,7 @@ export function TeacherHome() {
             <div className="th-sheet__label">아이 이름 (선택)</div>
             <input
               className="th-sheet__input"
+              aria-label="아이 이름"
               value={inviteChild}
               onChange={(e) => setInviteChild(e.target.value)}
               placeholder="자녀가 여럿일 때 특정을 도와요"
@@ -398,6 +400,7 @@ export function TeacherHome() {
             <div className="th-sheet__label">반 이름</div>
             <input
               className="th-sheet__input"
+              aria-label="반 이름"
               value={createName}
               onChange={(e) => setCreateName(e.target.value)}
               placeholder="예) 햇살반, 방과후 A반"

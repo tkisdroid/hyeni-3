@@ -1051,3 +1051,9 @@
 .ob-back {
   min-width: var(--control-min-size);
 }
+
+@media (max-width: 348px) {
+  .ob-consent-dialog__actions {
+    grid-template-columns: 1fr;
+  }
+}

@@ -430,6 +430,7 @@ export function AiSchedule() {
             <div className="ais-textbox">
               <textarea
                 className="ais-textarea"
+                aria-label="정리할 일정 내용"
                 placeholder="예) 다음 주 화요일 4시 태권도와 목요일 5시 미술학원 추가해줘"
                 value={text}
                 onChange={(e) => onTextChange(e.target.value)}

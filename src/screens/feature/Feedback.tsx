@@ -174,6 +174,7 @@ export function Feedback() {
         <div className="fb-textwrap">
           <textarea
             className="fb-textarea"
+            aria-label="피드백 내용"
             placeholder="자유롭게 알려주세요. 필요한 기능도 제안해 주세요!"
             value={text}
             maxLength={3000}

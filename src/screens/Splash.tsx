@@ -21,6 +21,9 @@ export function Splash({ exiting = false }: { exiting?: boolean }) {
             className="sp-mascot"
             src={asset("mascot/wave.webp")}
             alt="손을 흔들며 인사하는 혜니"
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
           />
         </div>
         <div className="sp-title">

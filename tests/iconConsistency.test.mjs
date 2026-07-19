@@ -273,6 +273,19 @@ const dedicatedSlotClasses = new Set([
   "fp-cta",
   "rr-modal-emoji",
   "pl-scrub__legend",
+  "psu-note__lock",
+  "pa-modal__emoji",
+  "rv-fallback__kakao",
+  "rv-start",
+  "pm-label--danger",
+  "pf-chip",
+  "afc-credits",
+  "ac-hero__badge",
+  "tl-lock__reviewed",
+  "cls-detail__icon",
+  "ob-survey-check",
+  "rr-chip",
+  "afs-chip",
 ]);
 
 function collectDedicatedSlotEmojiViolations(source, file = "fixture.tsx") {
@@ -452,6 +465,16 @@ test("전용 아이콘 슬롯에 원시 이모지를 쓰지 않는다 (2026-07-1
     "src/screens/teacher/TeacherStudents.tsx",
     "src/screens/teacher/TeacherTimetable.tsx",
     "src/screens/onboarding/Onboarding.tsx",
+    "src/screens/feature/PhoneSetup.tsx",
+    "src/screens/parent/ParentAccount.tsx",
+    "src/screens/feature/RouteView.tsx",
+    "src/screens/feature/PlaceManager.tsx",
+    "src/screens/parent/ParentFamily.tsx",
+    "src/screens/child/AiFriendChat.tsx",
+    "src/screens/feature/TrialLock.tsx",
+    "src/screens/child/ChildLocationStatus.tsx",
+    "src/screens/feature/RemoteRing.tsx",
+    "src/screens/child/AiFriendSetup.tsx",
   ];
   for (const file of slotFiles) {
     assert.deepEqual(
@@ -460,6 +483,11 @@ test("전용 아이콘 슬롯에 원시 이모지를 쓰지 않는다 (2026-07-1
       `${file} 아이콘 슬롯에 원시 이모지`,
     );
   }
+  assert.doesNotMatch(
+    readSource("src/screens/parent/EventForm.tsx"),
+    /active\s*\?\s*"\s*✓/,
+    "일정 아이 선택 상태는 원시 체크 문자를 쓰지 않음",
+  );
   for (const file of ["src/screens/feature/DaySummary.tsx", "src/screens/feature/RemoteAudio.tsx"]) {
     assert.deepEqual(
       collectIconPropertyEmojiViolations(readSource(file), file),

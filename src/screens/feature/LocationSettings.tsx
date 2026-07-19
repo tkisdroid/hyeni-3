@@ -229,6 +229,10 @@ export function LocationSettings() {
   // 권한 요청: 웹은 getCurrentPosition 으로 OS 권한 프롬프트를 띄운다(실 동작).
   const requestPermission = () => {
     if (perm === "granted") return;
+    if (perm === "denied") {
+      navigate("/perm-denied", { state: { kind: "loc" } });
+      return;
+    }
     if (!("geolocation" in navigator)) {
       show("이 기기에서는 위치 권한을 확인할 수 없어요", "📍");
       return;

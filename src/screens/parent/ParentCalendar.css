@@ -569,3 +569,13 @@
 .pc-addbtn {
   min-width: var(--control-min-size);
 }
+
+@media (max-width: 348px) {
+  .pc-body {
+    padding: 0 4px calc(120px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .pc-card {
+    padding: 16px 0 8px;
+  }
+}

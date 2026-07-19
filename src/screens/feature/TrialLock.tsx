@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Crown } from "lucide-react";
+import { ChevronLeft, Crown, Gift } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useEntitlement } from "@/queries/useEntitlement";
 import "./TrialLock.css";
@@ -107,7 +107,8 @@ export function TrialLock() {
             </div>
             {reviewed && (
               <div className="tl-lock__reviewed">
-                🎁 스토어 방문 혜택 적용 중 · 일정·장소를 3개까지 쓰고 있어요
+                <Gift size={14} strokeWidth={2.2} aria-hidden="true" />
+                스토어 방문 혜택 적용 중 · 일정·장소를 3개까지 쓰고 있어요
               </div>
             )}
           </div>

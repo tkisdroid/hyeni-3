@@ -133,6 +133,9 @@
   gap: 8px;
 }
 .ef-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
   padding: 8px 16px;
   border-radius: 999px;
@@ -426,4 +429,10 @@
 }
 .ef-back {
   min-width: var(--control-min-size);
+}
+
+@media (max-width: 348px) {
+  .ef-body {
+    padding: 4px 4px calc(40px + env(safe-area-inset-bottom, 0px));
+  }
 }

@@ -187,6 +187,10 @@
   justify-content: center;
 }
 .rr-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   padding: 8px 16px;
   border-radius: var(--radius-pill);
   background: #fff;

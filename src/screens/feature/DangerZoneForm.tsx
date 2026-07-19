@@ -231,6 +231,7 @@ export function DangerZoneForm() {
           <div className="dzf-label">구역 이름</div>
           <input
             className="dzf-input"
+            aria-label="구역 이름"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="예) 공사장 인근"
@@ -242,6 +243,7 @@ export function DangerZoneForm() {
           <div className="dzf-label">주소</div>
           <input
             className="dzf-input"
+            aria-label="주소"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             onKeyDown={(e) => {
@@ -263,6 +265,7 @@ export function DangerZoneForm() {
           <input
             className="dzf-range"
             type="range"
+            aria-label="안전 반경"
             min={RADIUS_MIN}
             max={RADIUS_MAX}
             step={RADIUS_STEP}

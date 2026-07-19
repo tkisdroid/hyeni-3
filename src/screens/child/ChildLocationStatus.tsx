@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, RefreshCw } from "lucide-react";
+import { Check, ChevronLeft, RefreshCw, TriangleAlert } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
@@ -146,6 +146,13 @@ export function ChildLocationStatus() {
   };
 
   const busy = working || isFetching;
+  const handlePrimaryAction = () => {
+    if (view.kind === "permission") {
+      navigate("/perm-denied", { state: { kind: "loc" } });
+      return;
+    }
+    void turnOn();
+  };
 
   return (
     <div className={`cls-screen cls-screen--${view.tone}`}>
@@ -188,7 +195,11 @@ export function ChildLocationStatus() {
 
         {/* 상태 상세 행 */}
         <div className={`cls-detail cls-detail--${view.tone}`}>
-          <span className="cls-detail__icon">{view.kind === "sending" ? "✓" : "!"}</span>
+          <span className="cls-detail__icon" aria-hidden="true">
+            {view.kind === "sending"
+              ? <Check size={18} strokeWidth={2.4} />
+              : <TriangleAlert size={18} strokeWidth={2.4} />}
+          </span>
           <div className="cls-detail__main">
             <div className="cls-detail__title">
               {view.kind === "sending" ? "위치 켜짐 · 배터리 아껴 전송" : "위치 전송을 켜 줘"}
@@ -204,7 +215,7 @@ export function ChildLocationStatus() {
         </div>
 
         {/* 켜기 / 새로고침 */}
-        <button type="button" className="cls-cta hy-press" onClick={turnOn} disabled={busy}>
+        <button type="button" className="cls-cta hy-press" onClick={handlePrimaryAction} disabled={busy}>
           <RefreshCw size={18} strokeWidth={2.4} className={busy ? "cls-spin" : undefined} />
           {busy ? "확인 중…" : view.kind === "sending" ? "지금 새로고침" : "위치 켜기"}
         </button>

@@ -2823,6 +2823,50 @@ test("ParentCalendar는 360px에서 7열 44px hit area와 17px dots 행을 overf
   assert.deepEqual(violations, [], `360px calendar 위반 ${violations.length}건:\n${violations.join("\n")}`);
 });
 
+test("320~349px 경계에서도 달력·요일 선택과 권한 모달 행동이 화면 안에 들어온다", () => {
+  const widths = [320, 340, 341, 344, 347, 348, 349];
+  const calendarPath = "src/screens/parent/ParentCalendar.css";
+  const eventPath = "src/screens/parent/EventForm.css";
+  const onboardingPath = "src/screens/onboarding/Onboarding.css";
+  const violations = [];
+  for (const width of widths) {
+    const calendarBody = classStyleAtWidth(calendarPath, "pc-body", width);
+    const calendarCard = classStyleAtWidth(calendarPath, "pc-card", width);
+    const [bodyLeft, bodyRight] = horizontalInsetsFromPadding(declarationValue(calendarBody, "padding"));
+    const [cardLeft, cardRight] = horizontalInsetsFromPadding(declarationValue(calendarCard, "padding"));
+    const calendarAvailable = width
+      - (bodyLeft ?? 0)
+      - (bodyRight ?? 0)
+      - (cardLeft ?? 0)
+      - (cardRight ?? 0);
+
+    const eventBody = classStyleAtWidth(eventPath, "ef-body", width);
+    const weekday = classStyleAtWidth(eventPath, "ef-weekday", width);
+    const [eventLeft, eventRight] = horizontalInsetsFromPadding(declarationValue(eventBody, "padding"));
+    const eventAvailable = width - (eventLeft ?? 0) - (eventRight ?? 0);
+    const weekdayHeight = Math.max(
+      resolvePixels(declarationValue(weekday, "height")) ?? 0,
+      resolvePixels(declarationValue(weekday, "min-height")) ?? 0,
+    );
+
+    const actions = classStyleAtWidth(onboardingPath, "ob-consent-dialog__actions", width);
+    const columns = declarationValue(actions, "grid-template-columns")?.trim();
+
+    if (calendarAvailable < 7 * 44) {
+      violations.push(`${calendarPath} ${width}px 달력 가용폭 ${calendarAvailable}px`);
+    }
+    if (eventAvailable < 7 * 44) {
+      violations.push(`${eventPath} ${width}px 요일 선택 가용폭 ${eventAvailable}px`);
+    }
+    if (weekdayHeight < 44) violations.push(`${eventPath} ${width}px 요일 높이 ${weekdayHeight}px`);
+    if (width <= 348 && columns !== "1fr") {
+      violations.push(`${onboardingPath} ${width}px 권한 버튼 열 ${columns ?? "미지정"}`);
+    }
+  }
+
+  assert.deepEqual(violations, [], `좁은 화면 경계 위반 ${violations.length}건:\n${violations.join("\n")}`);
+});
+
 test("TeacherNotice는 360px에서 toggle·파일 삭제의 hit와 visual 크기를 분리하고 긴 파일명을 자른다", () => {
   const path = "src/screens/teacher/TeacherNotice.css";
   const toggle = classStyleAtWidth(path, "tn-toggle", 360);

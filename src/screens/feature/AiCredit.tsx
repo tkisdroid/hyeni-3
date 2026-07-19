@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { BellRing, Bot, ChevronLeft, Hash, MessageCircle } from "lucide-react";
+import { BellRing, Bot, ChevronLeft, Hash, MessageCircle, Sparkles } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
@@ -320,7 +320,10 @@ export function AiCredit() {
             <span className="ac-hero__num">{heroAmount != null ? heroAmount : "—"}</span>
             <span className="ac-hero__unit">회</span>
           </div>
-          <div className="ac-hero__badge">✨ AI가 아이의 일정, 안전을 도와줘요</div>
+          <div className="ac-hero__badge">
+            <Sparkles size={13} strokeWidth={2.2} aria-hidden="true" />
+            AI가 아이의 일정, 안전을 도와줘요
+          </div>
         </div>
 
         {/* 안내 */}

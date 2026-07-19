@@ -323,6 +323,7 @@ export function PlaceForm() {
           <div className="pf-label">장소 이름</div>
           <input
             className="pf-input"
+            aria-label="장소 이름"
             value={placeName}
             onChange={(e) => setPlaceName(e.target.value)}
             placeholder="예) 피아노 학원"
@@ -334,6 +335,7 @@ export function PlaceForm() {
           <div className="pf-label">주소</div>
           <input
             className="pf-input"
+            aria-label="주소"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             onKeyDown={(e) => {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import { Check, ChevronLeft } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
@@ -244,6 +244,7 @@ export function AiFriendSetup() {
         <input
           className="afs-name-field"
           value={effectiveName}
+          aria-label="AI 친구 이름"
           maxLength={MAX_NAME_LEN}
           placeholder={persona.name}
           onChange={(e) => setCustomName(e.target.value)}
@@ -252,7 +253,10 @@ export function AiFriendSetup() {
         {/* 성격 · 말투(친구를 고르면 정해져) */}
         <div className="afs-label">성격 · 말투</div>
         <div className="afs-traits">
-          <span className="afs-chip afs-chip--on">{persona.tone} ✓</span>
+          <span className="afs-chip afs-chip--on">
+            {persona.tone}
+            <Check size={16} strokeWidth={2.4} aria-hidden="true" />
+          </span>
           <span className="afs-trait-hint">친구를 고르면 성격이 정해져</span>
         </div>
 

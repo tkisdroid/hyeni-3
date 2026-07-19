@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { AlertTriangle, Bell, ChevronLeft, RefreshCw } from "lucide-react";
+import { AlertTriangle, Bell, Check, ChevronLeft, RefreshCw } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
@@ -330,7 +330,7 @@ export function RemoteRing() {
                 onClick={() => setDurationSec(sec)}
               >
                 {durationLabel(sec)}
-                {durationSec === sec ? " ✓" : ""}
+                {durationSec === sec && <Check size={16} strokeWidth={2.4} aria-hidden="true" />}
               </button>
             ))}
           </div>

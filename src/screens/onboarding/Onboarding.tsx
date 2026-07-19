@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { Camera, ChevronLeft, ChevronRight, Link2 } from "lucide-react";
+import { Camera, Check, ChevronLeft, ChevronRight, Link2 } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { DEFAULT_CHILD_AVATAR } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
@@ -712,6 +712,7 @@ function TeacherStep({ onBack, onSave, show }: { onBack: () => void; onSave: () 
         <Field label="학교 이름">
           <input
             className="ob-input ob-input--tall"
+            aria-label="학교 이름"
             placeholder="예) 혜니초등학교"
             value={school}
             onChange={(e) => setSchool(e.target.value)}
@@ -720,6 +721,7 @@ function TeacherStep({ onBack, onSave, show }: { onBack: () => void; onSave: () 
         <Field label="반 이름">
           <input
             className="ob-input ob-input--tall"
+            aria-label="반 이름"
             placeholder="예) 3학년 햇살반"
             value={klass}
             onChange={(e) => setKlass(e.target.value)}
@@ -969,7 +971,9 @@ function SurveyStep({
               aria-pressed={on}
               onClick={() => onToggle(option.id)}
             >
-              <span className="ob-survey-check">{on ? "✓" : ""}</span>
+              <span className="ob-survey-check" aria-hidden="true">
+                {on && <Check size={16} strokeWidth={2.4} />}
+              </span>
               <span className="ob-survey-main">
                 <span className="ob-survey-title">{option.title}</span>
                 <span className="ob-survey-sub">{option.sub}</span>
@@ -1080,6 +1084,7 @@ function SignupStep({
           <Field label="인증번호">
             <input
               className="ob-input"
+              aria-label="인증번호"
               inputMode="numeric"
               maxLength={6}
               placeholder="000000"
@@ -1121,16 +1126,16 @@ function SignupStep({
 
       <div className="ob-signup-form">
         <Field label="이름">
-          <input className="ob-input" placeholder="이름을 입력해주세요" value={name} onChange={(e) => setName(e.target.value)} />
+          <input className="ob-input" aria-label="이름" placeholder="이름을 입력해주세요" value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
         <Field label="아이디">
-          <input className="ob-input" placeholder="영문 소문자·숫자 4자 이상" autoCapitalize="none" value={loginId} onChange={(e) => setLoginId(e.target.value)} />
+          <input className="ob-input" aria-label="아이디" placeholder="영문 소문자·숫자 4자 이상" autoCapitalize="none" value={loginId} onChange={(e) => setLoginId(e.target.value)} />
         </Field>
         <Field label="비밀번호">
-          <input className="ob-input" type="password" placeholder="6자 이상" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <input className="ob-input" type="password" aria-label="비밀번호" placeholder="6자 이상" value={password} onChange={(e) => setPassword(e.target.value)} />
         </Field>
         <Field label="비밀번호 확인">
-          <input className="ob-input" type="password" placeholder="비밀번호 재입력" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} />
+          <input className="ob-input" type="password" aria-label="비밀번호 확인" placeholder="비밀번호 재입력" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} />
         </Field>
         <Field label="보호자 구분">
           <div style={{ display: "flex", gap: 8 }}>
@@ -1157,10 +1162,10 @@ function SignupStep({
           </div>
         </Field>
         <Field label="생년월일">
-          <input className="ob-input" type="date" value={birthdate} onChange={(e) => setBirthdate(e.target.value)} />
+          <input className="ob-input" type="date" aria-label="생년월일" value={birthdate} onChange={(e) => setBirthdate(e.target.value)} />
         </Field>
         <Field label="휴대폰 번호">
-          <input className="ob-input" inputMode="tel" placeholder="010-0000-0000" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <input className="ob-input" inputMode="tel" aria-label="휴대폰 번호" placeholder="010-0000-0000" value={phone} onChange={(e) => setPhone(e.target.value)} />
         </Field>
       </div>
 
@@ -1319,6 +1324,7 @@ function PairingStep({
 
       <input
         className="ob-input"
+        aria-label="아이 연결 코드"
         placeholder="KID-XXXXXXXX"
         autoCapitalize="characters"
         autoComplete="off"

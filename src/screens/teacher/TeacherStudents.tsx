@@ -305,6 +305,7 @@ export function TeacherStudents() {
             <input
               className="ts-sheet__input"
               type="tel"
+              aria-label="부모님 전화번호"
               inputMode="tel"
               value={invitePhone}
               onChange={(e) => setInvitePhone(e.target.value)}
@@ -313,6 +314,7 @@ export function TeacherStudents() {
             <div className="ts-sheet__label">아이 이름 (선택)</div>
             <input
               className="ts-sheet__input"
+              aria-label="아이 이름"
               value={inviteChild}
               onChange={(e) => setInviteChild(e.target.value)}
               placeholder="자녀가 여럿일 때 특정을 도와요"

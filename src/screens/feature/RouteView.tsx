@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, MapPin, RotateCw, Home } from "lucide-react";
+import { ChevronLeft, Home, Map, MapPin, Navigation, RotateCw } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { childAvatarPath } from "@/lib/avatar";
 import { KakaoMap, type MapPlace } from "@/components/KakaoMap";
@@ -448,7 +448,8 @@ export function RouteView() {
                     )
                   }
                 >
-                  🗺️ 카카오맵에서 길찾기
+                  <Map size={18} strokeWidth={2.2} aria-hidden="true" />
+                  카카오맵에서 길찾기
                 </button>
               </div>
             )}
@@ -484,7 +485,8 @@ export function RouteView() {
               style={{ opacity: canStart ? 1 : 0.5 }}
               onClick={() => void startNavigation()}
             >
-              🧭 안내 시작
+              <Navigation size={20} strokeWidth={2.2} aria-hidden="true" />
+              안내 시작
             </button>
           </>
         )}

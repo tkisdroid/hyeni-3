@@ -392,7 +392,7 @@ export function MemoChat() {
           <ChevronLeft size={24} strokeWidth={2.4} />
         </button>
         <span className="mc-peer-avatar">
-          <img src={peer.avatar} alt="" loading="lazy" decoding="async" />
+          <img src={peer.avatar} alt="" loading="eager" decoding="async" />
         </span>
         <div className="mc-peer-main">
           <div className="mc-peer-name">{peer.name}</div>
@@ -576,6 +576,7 @@ export function MemoChat() {
           </button>
           <input
             className="mc-input"
+            aria-label={copy.inputPlaceholder}
             placeholder={copy.inputPlaceholder}
             value={draft}
             disabled={!scopeChild}

@@ -350,6 +350,10 @@
 .rv-fallback__kakao {
   width: 100%;
   padding: 12px 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   border-radius: var(--radius-16);
   background: #fee500;
   color: #191600;

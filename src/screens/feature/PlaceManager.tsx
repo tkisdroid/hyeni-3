@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, Plus, Trash2, TriangleAlert } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useSavedPlaces, useDangerZones, useDeleteDangerZone, useDeleteSavedPlace } from "@/queries/useLocation";
@@ -121,7 +121,10 @@ export function PlaceManager() {
         {/* 위험 구역 */}
         <div>
           <div className="pm-danger-head">
-            <div className="pm-label pm-label--danger">⚠ 위험 구역</div>
+            <div className="pm-label pm-label--danger">
+              <TriangleAlert size={16} strokeWidth={2.2} aria-hidden="true" />
+              위험 구역
+            </div>
             <button
               type="button"
               className="pm-zone-add hy-press"

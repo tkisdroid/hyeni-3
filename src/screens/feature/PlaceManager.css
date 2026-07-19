@@ -111,6 +111,9 @@
   color: var(--fg-muted);
 }
 .pm-label--danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   color: #c0334c;
 }
 

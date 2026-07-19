@@ -247,6 +247,10 @@ export function NotificationSettings() {
 
   const openDeliverySettings = async () => {
     if (deliveryBusy) return;
+    if (nativePlatform && delivery?.supported === true && delivery.granted !== true) {
+      navigate("/perm-denied", { state: { kind: "noti" } });
+      return;
+    }
     setDeliveryBusy(true);
     const next = await requestOrOpenPermission("noti");
     await refreshDelivery();

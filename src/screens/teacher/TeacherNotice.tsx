@@ -297,6 +297,7 @@ export function TeacherNotice() {
               <div className="tn-label">제목</div>
               <input
                 className="tn-input"
+                aria-label="알림장 제목"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="예) 내일 준비물 안내"
@@ -308,6 +309,7 @@ export function TeacherNotice() {
               <div className="tn-label">내용</div>
               <textarea
                 className="tn-textarea"
+                aria-label="알림장 내용"
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 placeholder="예) 내일 수학 단원평가 있어요. 교과서 32–40p 복습해 오세요."
@@ -333,6 +335,7 @@ export function TeacherNotice() {
                 ))}
                 <input
                   className="tn-chip-input"
+                  aria-label="준비물 추가"
                   value={supplyInput}
                   onChange={(e) => setSupplyInput(e.target.value)}
                   onKeyDown={(e) => {
@@ -417,6 +420,7 @@ export function TeacherNotice() {
                 <input
                   type="date"
                   className="tn-date"
+                  aria-label="학부모 캘린더 반영 날짜"
                   value={reflectDate}
                   onChange={(e) => setReflectDate(e.target.value)}
                 />

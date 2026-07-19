@@ -225,6 +225,7 @@ export function StickerSend() {
           <div className="ss-pick-title">한마디 (선택)</div>
           <textarea
             className="ss-msg"
+            aria-label="스티커와 함께 보낼 한마디"
             placeholder="예) 숙제 스스로 끝냈어! 최고 👏"
             value={message}
             onChange={(e) => setMessage(e.target.value)}

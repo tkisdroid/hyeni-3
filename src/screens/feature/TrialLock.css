@@ -140,7 +140,9 @@
 }
 .tl-lock__reviewed {
   margin: 16px auto 0;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 8px 12px;
   border-radius: 999px;
   background: var(--cream-soft);

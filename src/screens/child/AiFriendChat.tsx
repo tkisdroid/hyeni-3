@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronLeft, Flag, Settings } from "lucide-react";
+import { ChevronLeft, Flag, MessageCircle, Settings } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "@/queries/useFamily";
@@ -227,7 +227,12 @@ export function AiFriendChat() {
           <div className="afc-head-name">{friendName}</div>
           <div className="afc-head-status">● 이야기할 준비 됐어!</div>
         </div>
-        {shownRemaining != null && <span className="afc-credits">💬 {shownRemaining}번 남았어</span>}
+        {shownRemaining != null && (
+          <span className="afc-credits">
+            <MessageCircle size={14} strokeWidth={2.2} aria-hidden="true" />
+            {shownRemaining}번 남았어
+          </span>
+        )}
         <button
           type="button"
           className="afc-setup hy-press"
@@ -308,6 +313,7 @@ export function AiFriendChat() {
           <input
             className="afc-field"
             value={input}
+            aria-label={`${friendName}에게 메시지`}
             placeholder={`${friendName}에게 말해봐...`}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {

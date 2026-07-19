@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronLeft, Home, Map as MapIcon, MapPin } from "lucide-react";
+import { Check, ChevronLeft, Home, Map as MapIcon, MapPin } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import { useToast } from "@/app/toast";
@@ -604,6 +604,7 @@ export function EventForm() {
           <div className="ef-label">제목</div>
           <input
             className="ef-input"
+            aria-label="일정 제목"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="예) 피아노 학원"
@@ -640,7 +641,7 @@ export function EventForm() {
                     onClick={() => toggleChild(m.id)}
                   >
                     {(m.emoji || "🧒") + " " + (m.name || "아이")}
-                    {active ? " ✓" : ""}
+                    {active && <Check size={16} strokeWidth={2.4} aria-hidden="true" />}
                   </button>
                 );
               })}
@@ -681,12 +682,14 @@ export function EventForm() {
             <input
               type="date"
               className="ef-input ef-input--date"
+              aria-label="일정 날짜"
               value={dateValue}
               onChange={(e) => setDateValue(e.target.value)}
             />
             <input
               type="time"
               className="ef-input ef-input--time"
+              aria-label="일정 시작 시간"
               value={timeValue}
               onChange={(e) => setTimeValue(e.target.value)}
               disabled={allDay}
@@ -801,6 +804,7 @@ export function EventForm() {
             <div className="ef-place-field">
               <input
                 className="ef-input"
+                aria-label="일정 장소"
                 value={place}
                 onFocus={() => setPlaceSuggestionsOpen(true)}
                 onBlur={() => window.setTimeout(() => setPlaceSuggestionsOpen(false), 120)}
@@ -1007,6 +1011,7 @@ export function EventForm() {
           <div className="ef-label">메모</div>
           <textarea
             className="ef-textarea"
+            aria-label="일정 메모"
             value={memo}
             onChange={(e) => setMemo(e.target.value)}
             placeholder="예) 선생님께 전달할 내용"

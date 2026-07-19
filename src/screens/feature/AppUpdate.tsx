@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { openExternal } from "@/lib/native/browser";
@@ -7,11 +7,12 @@ import "./AppUpdate.css";
 
 const STORE_URL = "https://play.google.com/store/apps/details?id=com.hyeni.calendar";
 
-/** C-14 앱 업데이트 안내. 권장(나중에 가능) 기본. 강제 모드는 state.forced 로 '나중에' 숨김. */
+/** C-14 앱 업데이트 안내. 권장(나중에 가능) 기본. forced 쿼리일 때 '나중에'를 숨긴다. */
 export function AppUpdate() {
   const navigate = useNavigate();
+  const { search } = useLocation();
   const { show } = useToast();
-  const forced = false; // 강제 업데이트는 최소버전 체크(스플래시) 결과로 상위에서 forced state 주입 예정
+  const forced = new URLSearchParams(search).get("forced") === "1";
 
   const update = () => {
     openExternal(STORE_URL).catch(() => show("스토어를 열 수 없어요. 브라우저에서 열어 주세요", "⚠️"));

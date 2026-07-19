@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Lock } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
@@ -200,7 +200,9 @@ export function PhoneSetup() {
         </div>
 
         <div className="psu-note">
-          <span className="psu-note__lock">🔒</span>
+          <span className="psu-note__lock" aria-hidden="true">
+            <Lock size={18} strokeWidth={2.2} />
+          </span>
           본인 번호만 수정할 수 있어요. 번호는 가족·담임 선생님 연결에만 사용하고 아이에게는 공개되지 않아요.
         </div>
 

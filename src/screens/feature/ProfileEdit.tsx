@@ -288,7 +288,7 @@ export function ProfileEdit() {
                 aria-label="사진 선택"
               >
                 {previewSrc ? (
-                  <img src={previewSrc} alt="" />
+                  <img src={previewSrc} alt="" loading="eager" decoding="async" />
                 ) : (
                   <span className="pe-photo__empty">
                     <Camera size={30} strokeWidth={2} />
@@ -309,6 +309,7 @@ export function ProfileEdit() {
               <div className="pe-label pe-label--sm">이름</div>
               <input
                 className="pe-input"
+                aria-label="이름"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="이름"
@@ -326,6 +327,7 @@ export function ProfileEdit() {
               <input
                 className="pe-input pe-input--date"
                 type="date"
+                aria-label="생일"
                 value={birthday}
                 max={todayStr}
                 onChange={(e) => setBirthday(e.target.value)}
@@ -340,6 +342,7 @@ export function ProfileEdit() {
               <input
                 className="pe-input"
                 type="tel"
+                aria-label="전화번호"
                 inputMode="tel"
                 value={phone}
                 onChange={(e) => setPhone(formatPhoneDisplay(e.target.value))}
