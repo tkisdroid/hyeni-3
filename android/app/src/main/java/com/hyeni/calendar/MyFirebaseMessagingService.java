@@ -73,6 +73,13 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
 
         String action = data.get("action");
+        String messageType = data.get("type");
+        if ("notification_quiet_hours_updated".equals(action)
+                || "notification_quiet_hours_updated".equals(messageType)) {
+            handleNotificationQuietHoursUpdate(data, targetPrefs, targetContext);
+            // 유효·무효·stale 모두 control command다. 일반 표시/ACK로 절대 흘리지 않는다.
+            return;
+        }
         if ("force_ring".equals(action)) {
             String eventId = firstNonBlank(data.get("event_id"), data.get("eventId"));
             if (ForceRingRequestStore.wasStoppedRecently(this, eventId)) {
@@ -136,7 +143,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         String title = data.get("title");
         String body = data.get("body");
-        String type = data.get("type");
+        String type = messageType;
 
         // Fallback to notification payload if data payload is empty
         if (title == null && remoteMessage.getNotification() != null) {
@@ -261,15 +268,23 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 ? Math.abs(sessionId.hashCode())
                 : (int) (System.currentTimeMillis() & 0x7fffffff);
 
-            NotificationHelper.showNotification(
+            NotificationHelper.DeliveryReceipt receipt = NotificationHelper.showNotification(
                 this,
                 playdateTitle,
                 playdateBody,
                 "schedule",
                 false,
                 false,
-                playdateNotifId
+                playdateNotifId,
+                null,
+                NotificationQuietHoursPolicy.NotificationIdentity.of(type, "")
             );
+            if (receipt.shouldAcknowledge()) {
+                PolledNotificationStore.markAck(this, stableId);
+            } else {
+                Log.w(TAG, "Playdate notification was not posted: "
+                        + receipt.getStatus().name());
+            }
             return;
         }
 
@@ -301,6 +316,66 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
 
         showNotification(title, body, type, isEmergency, stableId, data);
+    }
+
+    private void handleNotificationQuietHoursUpdate(
+            Map<String, String> data,
+            SharedPreferences targetPrefs,
+            SessionTokenStore.ContextSnapshot targetContext
+    ) {
+        String targetUserId = data.get("targetUserId");
+        String familyId = data.get("familyId");
+        String enabledValue = data.get("enabled");
+        Integer startMinute = parseMinuteOfDay(data.get("startMinute"));
+        Integer endMinute = parseMinuteOfDay(data.get("endMinute"));
+        String timeZoneId = data.get("timeZoneId");
+        long updatedAtMs = parseQuietHoursTimestampMs(data.get("updatedAt"));
+
+        if (targetContext == null
+                || targetUserId == null
+                || !targetUserId.equals(targetContext.userId)
+                || familyId == null
+                || !familyId.equals(targetContext.familyId)
+                || (!("true".equals(enabledValue)) && !("false".equals(enabledValue)))
+                || startMinute == null
+                || endMinute == null
+                || startMinute.equals(endMinute)
+                || !NotificationQuietHoursStore.SEOUL_TIME_ZONE_ID.equals(timeZoneId)
+                || updatedAtMs <= 0L) {
+            Log.w(TAG, "Quiet-hours control payload rejected");
+            return;
+        }
+
+        NotificationQuietHoursStore.SaveResult result =
+                NotificationQuietHoursStore.saveIfCurrentSession(
+                        targetPrefs,
+                        targetContext.userId,
+                        "true".equals(enabledValue),
+                        startMinute,
+                        endMinute,
+                        timeZoneId,
+                        updatedAtMs
+                );
+        Log.i(TAG, "Quiet-hours control result=" + result.name());
+    }
+
+    private static Integer parseMinuteOfDay(String value) {
+        if (value == null || !value.matches("\\d{1,4}")) return null;
+        try {
+            int minute = Integer.parseInt(value);
+            return minute >= 0 && minute <= 1439 ? minute : null;
+        } catch (NumberFormatException error) {
+            return null;
+        }
+    }
+
+    private static long parseQuietHoursTimestampMs(String value) {
+        if (value == null) return 0L;
+        String normalized = value.trim();
+        if (normalized.matches("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?")) {
+            normalized = normalized.replace(' ', 'T') + "Z";
+        }
+        return RemoteListenRequestPolicy.parseTimestampMs(normalized);
     }
 
     private void showNotification(
@@ -344,7 +419,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
         NotificationHelper.DeliveryReceipt receipt = NotificationHelper.showNotification(
             this, title, body,
-            channel, fullScreen, fullScreen, currentNotifId, route
+            channel, fullScreen, fullScreen, currentNotifId, route,
+            NotificationQuietHoursPolicy.NotificationIdentity.of(type, alertType)
         );
         // DB-H3: 실제 notify 성공 또는 과거 성공 중복일 때만 폴링 경로를 완료한다.
         if (receipt.shouldAcknowledge()) {

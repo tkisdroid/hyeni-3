@@ -42,7 +42,7 @@ test("아이 기기의 로컬 일정 fallback을 탭하면 아이 홈으로 진�
 
   assert.match(
     reminder,
-    /NotificationHelper\.showNotification\([\s\S]*?"schedule",\s*false,\s*false,\s*notifId,\s*"\/child\/home"\s*\)/,
+    /NotificationHelper\.showNotification\([\s\S]*?"schedule",\s*false,\s*false,\s*notifId,\s*"\/child\/home",\s*NotificationQuietHoursPolicy\.NotificationIdentity\.of\("event_reminder", ""\)\s*\)/,
   );
 });
 

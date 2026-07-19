@@ -232,7 +232,8 @@ public final class ParentPendingRecoveryWorker extends Worker {
                 fullScreen,
                 fullScreen,
                 NotificationHelper.stableRequestCode(stableId),
-                data.optString("route", null)
+                data.optString("route", null),
+                NotificationQuietHoursPolicy.NotificationIdentity.of(type, alertType)
             );
             if (receipt.shouldAcknowledge()) {
                 PolledNotificationStore.markAck(appContext, stableId);

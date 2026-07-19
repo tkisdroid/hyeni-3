@@ -250,3 +250,38 @@ test("data 없는 pending도 target policy를 우회하지 않는다", () => {
   assert.match(targetFn, /Map<String, String> payload = new HashMap<>\(\)/);
   assert.match(targetFn, /NotificationTargetPolicy\.evaluate\(/);
 });
+
+test("quiet policy는 geofence·부모 안전 전송·직접 명령·foreground service를 감싸지 않는다", () => {
+  const service = read("android/app/src/main/java/com/hyeni/calendar/LocationService.java");
+  const fcm = read("android/app/src/main/java/com/hyeni/calendar/MyFirebaseMessagingService.java");
+
+  const sendPlaceAlert = service.slice(
+    service.indexOf("private boolean sendPlaceAlert("),
+    service.indexOf("private void", service.indexOf("private boolean sendPlaceAlert(") + 1),
+  );
+  const sendParentAlert = service.slice(
+    service.indexOf("private void sendParentAlert("),
+    service.indexOf("private void refreshNotificationQuietHoursBestEffort()"),
+  );
+  const foreground = service.slice(
+    service.indexOf("private Notification buildForegroundNotification()"),
+  );
+  const directCommands = fcm.slice(
+    fcm.indexOf('if ("force_ring".equals(action))'),
+    fcm.indexOf('// Friend playdate session lifecycle'),
+  );
+
+  for (const [label, block] of [
+    ["sendPlaceAlert", sendPlaceAlert],
+    ["sendParentAlert", sendParentAlert],
+    ["foreground", foreground],
+    ["FCM 직접 명령", directCommands],
+  ]) {
+    assert.notEqual(block, "", `${label} 소스를 찾을 수 없습니다`);
+    assert.doesNotMatch(block, /NotificationQuietHoursStore\.decide|QUIET_HOURS_SUPPRESSED/);
+  }
+  assert.match(directCommands, /force_ring/);
+  assert.match(directCommands, /request_location/);
+  assert.match(directCommands, /request_device_status/);
+  assert.match(directCommands, /remote_listen/);
+});

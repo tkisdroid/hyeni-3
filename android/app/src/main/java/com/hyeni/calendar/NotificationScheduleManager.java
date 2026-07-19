@@ -21,6 +21,8 @@ public final class NotificationScheduleManager {
     private static final String EXTRA_TITLE = "title";
     private static final String EXTRA_BODY = "body";
     private static final String EXTRA_CHANNEL = "channel";
+    private static final String EXTRA_TYPE = "type";
+    private static final String EXTRA_ALERT_TYPE = "alertType";
     private static final String EXTRA_WAKE_SCREEN = "wakeScreen";
     private static final String EXTRA_FULL_SCREEN = "fullScreen";
 
@@ -103,6 +105,10 @@ public final class NotificationScheduleManager {
         String title = intent.getStringExtra(EXTRA_TITLE);
         String body = intent.getStringExtra(EXTRA_BODY);
         String channel = intent.getStringExtra(EXTRA_CHANNEL);
+        String type = intent.getStringExtra(EXTRA_TYPE);
+        if (type == null || type.trim().isEmpty()) type = "scheduled_notification";
+        String alertType = intent.getStringExtra(EXTRA_ALERT_TYPE);
+        if (alertType == null) alertType = "";
         boolean wakeScreen = intent.getBooleanExtra(EXTRA_WAKE_SCREEN, false);
         boolean fullScreen = intent.getBooleanExtra(EXTRA_FULL_SCREEN, false);
 
@@ -113,7 +119,9 @@ public final class NotificationScheduleManager {
                 channel != null ? channel : "schedule",
                 wakeScreen,
                 fullScreen,
-                NotificationHelper.stableRequestCode(scheduleId)
+                NotificationHelper.stableRequestCode(scheduleId),
+                null,
+                NotificationQuietHoursPolicy.NotificationIdentity.of(type, alertType)
         );
 
         if (receipt.shouldAcknowledge()) {
@@ -151,6 +159,9 @@ public final class NotificationScheduleManager {
         intent.putExtra(EXTRA_TITLE, item.optString("title", "혜니캘린더"));
         intent.putExtra(EXTRA_BODY, item.optString("body", ""));
         intent.putExtra(EXTRA_CHANNEL, item.optString("channel", "schedule"));
+        intent.putExtra(EXTRA_TYPE, item.optString("type", "scheduled_notification"));
+        intent.putExtra(EXTRA_ALERT_TYPE,
+                item.optString("alertType", item.optString("alert_type", "")));
         intent.putExtra(EXTRA_WAKE_SCREEN, item.optBoolean("wakeScreen", false));
         intent.putExtra(EXTRA_FULL_SCREEN, item.optBoolean("fullScreen", false));
 
