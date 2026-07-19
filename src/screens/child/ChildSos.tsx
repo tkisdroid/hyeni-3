@@ -21,8 +21,8 @@ const HOLD_MS = 3000;
  *
  * 발사 계약은 바꾸지 않았다(생명안전): 홀드 시작 시 위치를 1회 취득하고, 홀드가 끝나면
  * `useSendSos` 로 위치 upsert → parent_alert → sos_events 3단계를 태운다.
- * 부모 알림이 실제로 도달(`alertSent === true`)했을 때만 "보냈어"로 표시하고,
- * 아니면 실패로 알린 뒤 재시도·전화 경로를 준다. 세션당 발사는 1회(sentRef).
+ * parent_alerts 접수(`alertSent === true`)까지 성공했을 때만 전송 시작으로 표시하고,
+ * 기기 표시 완료를 단정하지 않는다. 실패하면 재시도·전화 경로를 준다. 세션당 발사는 1회(sentRef).
  */
 export function ChildSos() {
   const navigate = useNavigate();
@@ -217,8 +217,8 @@ export function ChildSos() {
       <div className="cs-root">
         <div className="cs-result">
           <img className="cs-result__img" src={asset("mascot/phone.webp")} alt="" />
-          <div className="cs-result__title">{parentLabel}에게 알렸어!</div>
-          <div className="cs-result__sub">안전한 곳에서 기다리면 돼</div>
+          <div className="cs-result__title">SOS를 접수했어!</div>
+          <div className="cs-result__sub">보호자에게 전송을 시작했어. 안전한 곳에서 기다려</div>
 
           <div className="cs-checks">
             <div className="cs-checks__row">
@@ -226,14 +226,14 @@ export function ChildSos() {
                 <Check size={17} strokeWidth={3} color="var(--mint-500)" />
               </span>
               <span className="cs-checks__text">
-                {posRef.current ? "지금 위치를 보냈어" : "위치는 못 찾았지만 알림은 갔어"}
+                {posRef.current ? "지금 위치도 SOS에 담았어" : "위치는 못 찾았지만 SOS는 접수했어"}
               </span>
             </div>
             <div className="cs-checks__row">
               <span className="cs-checks__dot">
                 <Check size={17} strokeWidth={3} color="var(--mint-500)" />
               </span>
-              <span className="cs-checks__text">보호자 모두에게 알림이 갔어</span>
+              <span className="cs-checks__text">보호자에게 알림 전송을 시작했어</span>
             </div>
           </div>
 
@@ -270,7 +270,7 @@ export function ChildSos() {
         <div className="cs-desc">
           동그라미를 <b>3초</b> 동안 누르고 있으면
           <br />
-          엄마·아빠에게 <b>내 위치</b>랑 같이 알려줄게
+          엄마·아빠에게 SOS를 보내고 찾은 <b>내 위치</b>도 함께 담을게
         </div>
 
         {sosFamilyQueryState === "loading" && (

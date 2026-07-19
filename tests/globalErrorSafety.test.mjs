@@ -62,11 +62,13 @@ test("announceGlobalToast 는 window 없는 환경(SSR/테스트)에서 조용�
   assert.equal(announceGlobalToast("x"), false);
 });
 
-test("온보딩 역할 카드 3개는 같은 cover 확대를 쓴다(아이만 작아 보이던 회귀 금지)", () => {
+test("온보딩 아이 역할 이미지는 얼굴 크기를 유지하면서 상단을 자르지 않는다", () => {
   const css = read("src/screens/onboarding/Onboarding.css");
   const child = /\.ob-role-img--child \{[^}]*\}/s.exec(css)?.[0] ?? "";
-  assert.match(child, /width: 76px/);
+  assert.match(child, /width: 58px/);
+  assert.match(child, /height: 58px/);
   assert.match(child, /object-fit: cover/);
+  assert.match(child, /object-position: center top/);
   assert.doesNotMatch(child, /contain/);
 });
 

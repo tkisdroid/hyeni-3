@@ -29,7 +29,6 @@ type CreditPack = {
   backendAmount: number;
   tag?: string;
   per: string;
-  price: string;
   ring: string;
 };
 
@@ -38,7 +37,6 @@ const CREDIT_PACKS: CreditPack[] = [
     id: "p30",
     backendAmount: 30,
     per: "가볍게 시작하기 좋아요",
-    price: "₩3,000",
     ring: "1px solid rgba(32,26,29,.06)",
   },
   {
@@ -46,7 +44,6 @@ const CREDIT_PACKS: CreditPack[] = [
     backendAmount: 80,
     tag: "인기",
     per: "한 달 넉넉하게 써요",
-    price: "₩9,000",
     ring: "2px solid #B79DFB",
   },
   {
@@ -54,7 +51,6 @@ const CREDIT_PACKS: CreditPack[] = [
     backendAmount: 200,
     tag: "최대 혜택",
     per: "가장 넉넉한 크레딧",
-    price: "₩24,000",
     ring: "1px solid rgba(32,26,29,.06)",
   },
 ];
@@ -108,8 +104,16 @@ export function AiCredit() {
   const [quietHoursEnd, setQuietHoursEnd] = useState("07:00");
   const [allowScheduleActions, setAllowScheduleActions] = useState(true);
   const [allowContactActions, setAllowContactActions] = useState(true);
+  const [formHydration, setFormHydration] = useState<{
+    childUserId: string;
+    source: typeof friendSettings;
+  } | null>(null);
 
   useEffect(() => {
+    if (!aiCreditDataReady || !childUserId || friendSettings === undefined) {
+      setFormHydration(null);
+      return;
+    }
     setForbiddenTopicsText(aiTopicsToText(friendSettings?.forbidden_topics));
     setProactiveEnabled(friendSettings?.proactive_enabled ?? false);
     setProactiveStartTime(normalizeAiControlTime(friendSettings?.proactive_start_time, "08:00"));
@@ -118,7 +122,12 @@ export function AiCredit() {
     setQuietHoursEnd(normalizeAiControlTime(friendSettings?.quiet_hours_end, "07:00"));
     setAllowScheduleActions(friendSettings?.allow_schedule_actions ?? true);
     setAllowContactActions(friendSettings?.allow_contact_actions ?? true);
-  }, [childUserId, friendSettings]);
+    setFormHydration({ childUserId, source: friendSettings });
+  }, [aiCreditDataReady, childUserId, friendSettings]);
+
+  const advancedSettingsReady = aiCreditDataReady
+    && formHydration?.childUserId === childUserId
+    && formHydration.source === friendSettings;
 
   const toggleAiEnabled = () => {
     if (!aiCreditDataReady || !childUserId || saveSettings.isPending) return;
@@ -131,7 +140,7 @@ export function AiCredit() {
     );
   };
   const saveAdvancedSettings = () => {
-    if (!aiCreditDataReady || !childUserId || saveSettings.isPending) return;
+    if (!advancedSettingsReady || !childUserId || saveSettings.isPending) return;
     const patch = buildAiFriendControlPatch({
       forbiddenTopicsText,
       proactiveEnabled,
@@ -341,8 +350,9 @@ export function AiCredit() {
                   className="ac-buy hy-press"
                   onClick={() => buy(p)}
                   disabled={!billingAvailable || busyPack !== null}
+                  aria-label={`${p.backendAmount}회 가격 Google Play에서 확인`}
                 >
-                  {!billingAvailable ? "앱에서 결제" : busyPack === p.id ? "결제 중…" : p.price}
+                  {!billingAvailable ? "앱에서 결제" : busyPack === p.id ? "결제 중…" : "가격 확인"}
                 </button>
               </div>
             ))}
@@ -401,7 +411,7 @@ export function AiCredit() {
           </div>
         )}
 
-        <section className="ac-detail">
+        <section className="ac-detail" aria-busy={!advancedSettingsReady}>
           <div className="ac-detail__head">
             <div>
               <div className="ac-detail__title">AI 친구 상세 제어</div>
@@ -417,7 +427,7 @@ export function AiCredit() {
               onChange={(e) => setForbiddenTopicsText(e.target.value)}
               placeholder="예: 게임 결제, 모르는 사람, 무서운 이야기"
               rows={3}
-              disabled={!childUserId}
+              disabled={!advancedSettingsReady || saveSettings.isPending}
             />
             <span className="ac-field__hint">쉼표나 줄바꿈으로 여러 주제를 입력할 수 있어요.</span>
           </label>
@@ -433,7 +443,7 @@ export function AiCredit() {
               aria-label="선제 대화"
               aria-pressed={proactiveEnabled}
               onClick={() => setProactiveEnabled((v) => !v)}
-              disabled={!childUserId}
+              disabled={!advancedSettingsReady || saveSettings.isPending}
               style={{ background: proactiveEnabled ? "var(--hy-accent)" : "var(--line-soft)" }}
             >
               <span className="ac-toggle__knob" style={{ left: proactiveEnabled ? 22 : 2 }} />
@@ -448,7 +458,7 @@ export function AiCredit() {
                 type="time"
                 value={proactiveStartTime}
                 onChange={(e) => setProactiveStartTime(e.target.value)}
-                disabled={!childUserId || !proactiveEnabled}
+                disabled={!advancedSettingsReady || saveSettings.isPending || !proactiveEnabled}
               />
             </label>
             <label className="ac-field">
@@ -458,7 +468,7 @@ export function AiCredit() {
                 type="time"
                 value={proactiveEndTime}
                 onChange={(e) => setProactiveEndTime(e.target.value)}
-                disabled={!childUserId || !proactiveEnabled}
+                disabled={!advancedSettingsReady || saveSettings.isPending || !proactiveEnabled}
               />
             </label>
             <label className="ac-field">
@@ -468,7 +478,7 @@ export function AiCredit() {
                 type="time"
                 value={quietHoursStart}
                 onChange={(e) => setQuietHoursStart(e.target.value)}
-                disabled={!childUserId}
+                disabled={!advancedSettingsReady || saveSettings.isPending}
               />
             </label>
             <label className="ac-field">
@@ -478,7 +488,7 @@ export function AiCredit() {
                 type="time"
                 value={quietHoursEnd}
                 onChange={(e) => setQuietHoursEnd(e.target.value)}
-                disabled={!childUserId}
+                disabled={!advancedSettingsReady || saveSettings.isPending}
               />
             </label>
           </div>
@@ -494,7 +504,7 @@ export function AiCredit() {
               aria-label="일정 조작 허용"
               aria-pressed={allowScheduleActions}
               onClick={() => setAllowScheduleActions((v) => !v)}
-              disabled={!childUserId}
+              disabled={!advancedSettingsReady || saveSettings.isPending}
               style={{ background: allowScheduleActions ? "var(--hy-accent)" : "var(--line-soft)" }}
             >
               <span className="ac-toggle__knob" style={{ left: allowScheduleActions ? 22 : 2 }} />
@@ -512,7 +522,7 @@ export function AiCredit() {
               aria-label="연락 동작 허용"
               aria-pressed={allowContactActions}
               onClick={() => setAllowContactActions((v) => !v)}
-              disabled={!childUserId}
+              disabled={!advancedSettingsReady || saveSettings.isPending}
               style={{ background: allowContactActions ? "var(--hy-accent)" : "var(--line-soft)" }}
             >
               <span className="ac-toggle__knob" style={{ left: allowContactActions ? 22 : 2 }} />
@@ -523,7 +533,7 @@ export function AiCredit() {
             type="button"
             className="ac-save-detail hy-press"
             onClick={saveAdvancedSettings}
-            disabled={!childUserId || saveSettings.isPending}
+            disabled={!advancedSettingsReady || saveSettings.isPending}
           >
             {saveSettings.isPending ? "저장 중…" : "상세 설정 저장"}
           </button>

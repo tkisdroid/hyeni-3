@@ -16,22 +16,22 @@ const COPY: Record<PermissionKind, { icon: ReactNode; title: string; sub: string
   loc: {
     icon: <MapPin size={26} strokeWidth={2.2} color="var(--blue-500)" />,
     title: "위치 권한이 필요해요",
-    sub: "우리 아이가 어디서 안전한지 확인하려면 위치 접근을 허용해 주세요.",
+    sub: "아이 위치와 도착·출발 알림에 사용해요.",
   },
   noti: {
     icon: <Bell size={26} strokeWidth={2.2} color="var(--gold-text)" />,
     title: "알림 권한이 필요해요",
-    sub: "등하교·도착·안전 소식을 제때 받으려면 알림을 허용해 주세요.",
+    sub: "일정·도착·안전 소식을 알려드려요.",
   },
   battery: {
     icon: <BatteryCharging size={26} strokeWidth={2.2} color="var(--mint-600)" />,
     title: "백그라운드 실행이 필요해요",
-    sub: "앱이 꺼져 있어도 위치를 이어가려면 배터리 설정 목록에서 혜니캘린더를 찾아 설정해 주세요.",
+    sub: "앱을 닫아도 위치 알림이 이어지도록 설정해 주세요.",
   },
   mic: {
     icon: <Mic size={26} strokeWidth={2.2} color="var(--lav-500)" />,
     title: "마이크 권한이 필요해요",
-    sub: "주변 소리 듣기 기능을 쓰려면 마이크 접근을 허용해 주세요.",
+    sub: "주변 소리 듣기를 사용할 때 필요해요.",
   },
 };
 
@@ -103,13 +103,13 @@ export function PermDenied() {
         <div className="pd-sub">{c.sub}</div>
         <div className="pd-steps">
           {kind === "battery" && isNativePlatform()
-            ? "배터리 설정 목록에서 혜니캘린더를 찾아 제한 없음 또는 최적화 안 함으로 바꿔 주세요."
+            ? "혜니캘린더 → 제한 없음(또는 최적화 안 함)"
             : isNativePlatform()
-            ? "휴대폰 설정 → 앱 → 혜니캘린더 → 권한 에서 허용으로 바꿔 주세요."
-            : "브라우저 주소창의 자물쇠 아이콘 → 사이트 설정 에서 허용으로 바꿔 주세요."}
+            ? "설정 → 앱 → 혜니캘린더 → 권한"
+            : "주소창 자물쇠 → 사이트 설정 → 허용"}
         </div>
         {permission?.supported === false && !isNativePlatform() && (
-          <div className="pd-steps">이 브라우저에서는 권한 상태를 자동으로 확인할 수 없어요.</div>
+          <div className="pd-steps">이 브라우저에서는 자동 확인이 어려워요.</div>
         )}
         <button
           type="button"
@@ -117,10 +117,10 @@ export function PermDenied() {
           onClick={requestAccess}
           disabled={busy}
         >
-          {busy ? "권한 확인 중…" : "권한 허용 · 설정 열기"}
+          {busy ? "확인 중…" : isNativePlatform() ? "설정 열기" : "권한 요청"}
         </button>
         <button type="button" className="pd-recheck hy-press" onClick={() => void recheck()}>
-          상태 다시 확인
+          다시 확인
         </button>
       </div>
     </div>

@@ -19,7 +19,13 @@ test("구독과 체험 화면은 부모 role 가드 안에 있어 아이가 결�
 
 test("구독 UI는 실제 Google Play offer 가격만 쓰고 확인되지 않은 가격과 할인율을 약속하지 않는다", () => {
   const subscription = read("src/screens/feature/Subscription.tsx");
+  const pairing = read("src/screens/feature/PairingWizard.tsx");
+  const credits = read("src/screens/feature/AiCredit.tsx");
   assert.doesNotMatch(subscription, /40% 할인|29,000|2,417원|월 2,900원으로 시작하기/);
+  assert.doesNotMatch(pairing, /2,900원|아이별 월|₩[0-9,]+/);
+  assert.match(pairing, /두 번째 아이는 프리미엄에서 연결할 수 있어요/);
+  assert.doesNotMatch(credits, /₩[0-9,]+/);
+  assert.match(credits, /Google Play에서 확인/);
   assert.match(subscription, /fetchSubscriptionProductDetails/);
   assert.match(subscription, /selectedOffer\?\.displayPrice/);
   assert.match(subscription, /selectedOffer\?\.hasSevenDayTrial/);

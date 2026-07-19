@@ -60,6 +60,5 @@ test("위치 서비스는 배터리 예외 화면을 자동으로 띄우지 않�
   assert.match(notificationPluginSource, /public void openBatteryOptimizationSettings/);
   assert.doesNotMatch(notificationPluginSource, /ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS/);
   assert.match(notificationPluginSource, /ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS/);
-  assert.match(permissionScreenSource, /배터리 설정 목록에서 혜니캘린더를 찾아/);
-  assert.match(permissionScreenSource, /제한 없음 또는 최적화 안 함/);
+  assert.match(permissionScreenSource, /혜니캘린더 → 제한 없음\(또는 최적화 안 함\)/);
 });
