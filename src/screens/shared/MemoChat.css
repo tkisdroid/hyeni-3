@@ -29,7 +29,7 @@
   align-items: center;
   justify-content: center;
   flex: none;
-  margin-left: -6px;
+  margin-left: -8px;
   color: var(--fg-primary);
   --press: 0.9;
 }
@@ -64,7 +64,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-top: 1px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -127,7 +127,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  margin-top: 7px;
+  margin-top: 8px;
 }
 .mc-unblock {
   min-height: 32px;
@@ -176,7 +176,7 @@
 }
 /* 그룹 대화: 상대 메시지 위 발신자 이름(아이1/아이2/부모 구분) */
 .mc-sender {
-  margin: 0 0 3px 4px;
+  margin: 0 0 4px 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -221,7 +221,7 @@
   animation: hy-bob 3s ease-in-out infinite;
 }
 .mc-sticker-text {
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
@@ -247,7 +247,7 @@
 
 /* 읽음 표시(내 메시지를 상대가 읽었을 때만 노출) */
 .mc-read {
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -257,7 +257,7 @@
 }
 .mc-safety-action {
   min-height: 30px;
-  margin-top: 2px;
+  margin-top: 4px;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -283,7 +283,7 @@
 .mc-quick {
   display: flex;
   gap: 8px;
-  margin-bottom: 9px;
+  margin-bottom: 12px;
   overflow-x: auto;
 }
 .mc-quick-btn {

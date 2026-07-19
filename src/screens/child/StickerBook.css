@@ -71,7 +71,7 @@
   color: #c2571e;
 }
 .sb-progress__bar {
-  margin-top: 9px;
+  margin-top: 12px;
   height: 14px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.75);
@@ -84,7 +84,7 @@
   transition: width 0.5s cubic-bezier(0.2, 0, 0.2, 1);
 }
 .sb-progress__hint {
-  margin-top: 7px;
+  margin-top: 8px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);

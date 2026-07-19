@@ -145,7 +145,7 @@
   color: #9a6a12;
 }
 .ds-row__sub {
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -198,7 +198,7 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 .ds-panel__art {
   width: 96px;
@@ -232,7 +232,7 @@
 
 }
 .ds-panel__cta {
-  margin-top: 6px;
+  margin-top: 8px;
   padding: 12px 20px;
   border-radius: 15px;
   background: linear-gradient(120deg, #b79dfb, #8b6bec);

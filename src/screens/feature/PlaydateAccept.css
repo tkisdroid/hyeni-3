@@ -107,7 +107,7 @@
 }
 .pa-who__when {
   display: block;
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
@@ -144,7 +144,7 @@
 
 /* ── 액션 (거절 / 수락) ─────────────────────────────────────────────────── */
 .pa-actions {
-  margin-top: 14px;
+  margin-top: 16px;
   display: grid;
   grid-template-columns: 1fr 1.4fr;
   gap: 8px;
@@ -221,7 +221,7 @@
   opacity: 0.9;
 }
 .pa-empty__title {
-  margin-top: 10px;
+  margin-top: 12px;
   font-size: var(--type-body-lg);
   line-height: var(--type-body-lg-line-height);
   font-weight: var(--type-body-lg-weight);
@@ -229,7 +229,7 @@
   color: var(--fg-primary);
 }
 .pa-empty__sub {
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
@@ -240,7 +240,7 @@
 
 /* ── 처리 결과 배너 ─────────────────────────────────────────────────────── */
 .pa-status {
-  margin-top: 14px;
+  margin-top: 16px;
   height: 48px;
   border-radius: 15px;
   font-size: var(--type-body-sm);

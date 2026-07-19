@@ -76,7 +76,7 @@
   color: var(--fg-primary);
 }
 .ra-sub {
-  margin-top: 10px;
+  margin-top: 12px;
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);
   font-weight: var(--type-body-sm-weight);
@@ -85,7 +85,7 @@
 
 }
 .ra-note {
-  margin-top: 18px;
+  margin-top: 20px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -147,7 +147,7 @@
 }
 
 .ra-audit-link {
-  margin-top: 10px;
+  margin-top: 12px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -167,7 +167,7 @@
   width: 100%;
 }
 .ra-start-note {
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   padding: 0 8px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
@@ -250,7 +250,7 @@
   color: rgba(255, 255, 255, 0.5);
 }
 .ra-listen-title {
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: var(--type-title-lg);
   line-height: var(--type-title-lg-line-height);
   font-weight: var(--type-title-lg-weight);
@@ -298,7 +298,7 @@
   align-items: flex-end;
   gap: 4px;
   height: 44px;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 .ra-bar {
   width: 4px;

@@ -63,11 +63,11 @@
 }
 .tl-hero--trial {
   background: linear-gradient(135deg, #f76ba6, #a78bfa);
-  box-shadow: 0 16px 36px -16px rgba(167, 139, 250, 0.6);
+  box-shadow: var(--shadow-floating);
 }
 .tl-hero--active {
   background: linear-gradient(135deg, #f5a524, #f76ba6);
-  box-shadow: 0 16px 36px -16px rgba(245, 165, 36, 0.55);
+  box-shadow: var(--shadow-floating);
 }
 .tl-hero__badge {
   width: 60px;
@@ -96,7 +96,7 @@
   letter-spacing: -0.01em;
 }
 .tl-hero__sub {
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
@@ -115,7 +115,7 @@
 .tl-lock__ring {
   width: 74px;
   height: 74px;
-  margin: 0 auto 14px;
+  margin: 0 auto 16px;
   border-radius: 50%;
   background: var(--hy-accent-soft);
   display: flex;
@@ -139,7 +139,7 @@
   color: var(--fg-tertiary);
 }
 .tl-lock__reviewed {
-  margin: 14px auto 0;
+  margin: 16px auto 0;
   display: inline-block;
   padding: 8px 12px;
   border-radius: 999px;

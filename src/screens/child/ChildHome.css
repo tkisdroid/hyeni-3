@@ -362,7 +362,7 @@
 }
 
 .kd-sec-title {
-  margin: 0 2px 10px;
+  margin: 0 4px 12px;
   font-size: var(--type-title-lg);
   line-height: var(--type-title-lg-line-height);
   font-weight: var(--type-title-lg-weight);
@@ -409,7 +409,7 @@
 }
 .kd-next__title {
   display: block;
-  margin-top: 5px;
+  margin-top: 8px;
   font-size: var(--type-title-xl);
   line-height: var(--type-title-xl-line-height);
   font-weight: var(--type-title-xl-weight);
@@ -421,7 +421,7 @@
 }
 .kd-next__sub {
   display: block;
-  margin-top: 1px;
+  margin-top: 4px;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
@@ -432,7 +432,7 @@
   white-space: nowrap;
 }
 .kd-next__cta {
-  margin-top: 13px;
+  margin-top: 16px;
   width: 100%;
   height: 54px;
   border-radius: 18px;
@@ -481,7 +481,7 @@
   --press: 0.95;
 }
 .kd-prep__bar {
-  margin-top: 11px;
+  margin-top: 12px;
   height: 12px;
   border-radius: 999px;
   background: var(--line-soft);
@@ -664,7 +664,7 @@
 }
 .kd-memo-banner__sub {
   display: block;
-  margin-top: 1px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -725,7 +725,7 @@
 }
 .kd-sticker-banner__sub {
   display: block;
-  margin-top: 1px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -767,7 +767,7 @@
 }
 .kd-tile__sub {
   display: block;
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);

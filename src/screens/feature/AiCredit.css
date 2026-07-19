@@ -82,7 +82,7 @@
 }
 .ac-hero__amount {
   position: relative;
-  margin-top: 6px;
+  margin-top: 8px;
   display: flex;
   align-items: baseline;
   gap: 4px;
@@ -205,7 +205,7 @@
 }
 .ac-pack__per {
   display: block;
-  margin-top: 3px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -267,7 +267,7 @@
 }
 .ac-auto__sub {
   display: block;
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -362,7 +362,7 @@
   color: var(--fg-primary);
 }
 .ac-detail__sub {
-  margin-top: 3px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -459,7 +459,7 @@
 }
 .ac-control-row__sub {
   display: block;
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);

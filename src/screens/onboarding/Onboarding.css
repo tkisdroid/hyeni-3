@@ -22,7 +22,7 @@
   color: var(--fg-primary);
 }
 .ob-sub {
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);
   font-weight: var(--type-body-sm-weight);
@@ -81,12 +81,12 @@
   font-weight: var(--type-label-weight);
 
   color: var(--fg-muted);
-  margin-bottom: 7px;
+  margin-bottom: 8px;
 }
 
 /* 가입 진행률 */
 .ob-progress {
-  margin: 18px 0 0;
+  margin: 20px 0 0;
 }
 .ob-progress__meta {
   display: flex;
@@ -127,7 +127,7 @@
   font-weight: var(--type-label-weight);
 
   color: #6d6469;
-  margin-bottom: 7px;
+  margin-bottom: 8px;
   padding-left: 4px;
 }
 
@@ -198,7 +198,7 @@
   padding: 8px 8px 0;
 }
 .ob-role-title {
-  margin-top: 18px;
+  margin-top: 20px;
   font-size: var(--type-title-xl);
   line-height: var(--type-title-xl-line-height);
   font-weight: var(--type-title-xl-weight);
@@ -207,7 +207,7 @@
   color: var(--fg-primary);
 }
 .ob-role-sub {
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: var(--type-body);
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
@@ -232,15 +232,15 @@
 }
 .ob-role-card--parent {
   background: #fff;
-  box-shadow: 0 14px 34px -12px rgba(32, 26, 29, 0.14);
+  box-shadow: var(--shadow-soft);
 }
 .ob-role-card--child {
   background: linear-gradient(120deg, #fde7f1, #f1ecff);
-  box-shadow: 0 14px 34px -12px rgba(167, 139, 250, 0.3);
+  box-shadow: var(--shadow-soft);
 }
 .ob-role-card--teacher {
   background: linear-gradient(120deg, #e7f8f0, #e6f2fb);
-  box-shadow: 0 14px 34px -12px rgba(49, 196, 141, 0.28);
+  box-shadow: var(--shadow-soft);
 }
 .ob-role-ic {
   width: 58px;
@@ -299,7 +299,7 @@
 }
 .ob-role-desc {
   display: block;
-  margin-top: 3px;
+  margin-top: 4px;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
@@ -337,7 +337,7 @@
   animation: hy-slidein 0.4s ease forwards;
 }
 .ob-teacher-head {
-  margin-top: 22px;
+  margin-top: 24px;
   text-align: center;
 }
 .ob-teacher-logo {
@@ -361,7 +361,7 @@
   margin-top: 16px;
 }
 .ob-teacher-sub {
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);
   font-weight: var(--type-body-sm-weight);
@@ -376,7 +376,7 @@
   gap: 12px;
 }
 .ob-teacher-note {
-  margin-top: 18px;
+  margin-top: 20px;
   background: rgba(49, 196, 141, 0.08);
   border-radius: 18px;
   padding: 16px;
@@ -412,7 +412,7 @@
   animation: hy-slidein 0.4s ease forwards;
 }
 .ob-login-head {
-  margin-top: 22px;
+  margin-top: 24px;
   text-align: center;
 }
 .ob-login-mascot {
@@ -422,10 +422,10 @@
   animation: hy-bob 3s ease-in-out infinite;
 }
 .ob-login .ob-h1 {
-  margin-top: 6px;
+  margin-top: 8px;
 }
 .ob-login-social {
-  margin-top: 30px;
+  margin-top: 32px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -466,7 +466,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 22px 0;
+  margin: 24px 0;
 }
 .ob-divider span {
   flex: 1;
@@ -543,7 +543,7 @@
   animation: hy-slidein 0.4s ease forwards;
 }
 .ob-survey-head {
-  margin-top: 22px;
+  margin-top: 24px;
 }
 .ob-survey-list {
   margin-top: 24px;
@@ -602,7 +602,7 @@
 }
 .ob-survey-sub {
   display: block;
-  margin-top: 3px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -619,7 +619,7 @@
   animation: hy-slidein 0.4s ease forwards;
 }
 .ob-signup-head {
-  margin-top: 22px;
+  margin-top: 24px;
 }
 .ob-signup-title {
   font-size: var(--type-title-xl);
@@ -630,7 +630,7 @@
   color: var(--fg-primary);
 }
 .ob-signup-form {
-  margin-top: 26px;
+  margin-top: 28px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -664,7 +664,7 @@
   animation: hy-slidein 0.4s ease forwards;
 }
 .ob-connect-head {
-  margin-top: 18px;
+  margin-top: 20px;
   text-align: center;
 }
 .ob-connect-mascot {
@@ -674,7 +674,7 @@
   animation: hy-float 5s ease-in-out infinite;
 }
 .ob-connect .ob-h1 {
-  margin-top: 6px;
+  margin-top: 8px;
 }
 .ob-connect-list {
   margin-top: 28px;
@@ -723,7 +723,7 @@
 }
 .ob-connect-desc {
   display: block;
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
@@ -750,7 +750,7 @@
   letter-spacing: -0.02em;
 }
 .ob-pair-sub {
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);
   font-weight: var(--type-body-sm-weight);
@@ -758,7 +758,7 @@
   color: rgba(255, 255, 255, 0.6);
 }
 .ob-qr {
-  margin: 30px auto 0;
+  margin: 32px auto 0;
   position: relative;
   display: block;
   width: 236px;
@@ -832,7 +832,7 @@
   animation: hy-scan 2.4s ease-in-out infinite;
 }
 .ob-pair-hint {
-  margin-top: 26px;
+  margin-top: 28px;
   text-align: center;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
@@ -906,7 +906,7 @@
   animation: hy-bob 3s ease-in-out infinite;
 }
 .ob-perms .ob-h1 {
-  margin-top: 6px;
+  margin-top: 8px;
 }
 .ob-perms-list {
     margin-top: 28px;
@@ -1021,7 +1021,7 @@
 }
 .ob-perm-sub {
   display: block;
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -1039,7 +1039,7 @@
   flex: none;
 }
 .ob-perms .ob-cta {
-  margin-top: 26px;
+  margin-top: 28px;
 }
 
 /* 실제 TSX 상호작용 요소의 최소 터치 영역 */

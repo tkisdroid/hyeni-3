@@ -195,7 +195,7 @@ button.lset-row:disabled {
   color: var(--mint-text);
 }
 .lset-desc {
-  margin: 2px 0 0;
+  margin: 4px 0 0;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -205,7 +205,7 @@ button.lset-row:disabled {
 
 /* ── 정직 안내 ──────────────────────────────────────────────────────────── */
 .lset-note {
-  margin: 4px 2px 0;
+  margin: 4px 4px 0;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);

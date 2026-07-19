@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { dirname, extname, join, relative, resolve, sep } from "node:path";
 import test from "node:test";
 import ts from "typescript";
 import { fileURLToPath } from "node:url";
@@ -97,8 +97,10 @@ function parseDeclarations(source) {
     const separator = raw.indexOf(":");
     if (separator < 0) return [];
     const property = raw.slice(0, separator).trim().toLowerCase();
-    const value = raw.slice(separator + 1).trim();
-    return property && value ? [{ property, value }] : [];
+    const rawValue = raw.slice(separator + 1).trim();
+    const important = /!\s*important\s*$/i.test(rawValue);
+    const value = rawValue.replace(/!\s*important\s*$/i, "").trim();
+    return property && value ? [{ property, value, important }] : [];
   });
 }
 
@@ -369,23 +371,67 @@ function selectorTargetsClass(selector, className) {
   });
 }
 
-function selectorTargetsElement(selector, element) {
-  return splitTopLevel(selector, ",").some((arm) => {
-    if (/::(?:before|after)\b/.test(arm)) return false;
-    const compounds = arm.trim().split(/\s+|>|\+|~/).filter(Boolean);
-    const target = compounds.at(-1) ?? "";
-    const targetWithoutFunctionalPseudos = target.replace(/:[a-z-]+\([^)]*\)/gi, "");
-    const targetClasses = [...targetWithoutFunctionalPseudos.matchAll(/\.([a-z][a-z0-9_-]*)/gi)]
-      .map((match) => match[1]);
-    if (!targetClasses.every((className) => element.classes.has(className))) return false;
-    const tag = targetWithoutFunctionalPseudos.match(/^([a-z][a-z0-9-]*)/i)?.[1];
-    if (tag && tag.toLowerCase() !== element.renderedTag.toLowerCase()) return false;
+function selectorArmTargetsElement(arm, element) {
+  if (/::(?:before|after)\b/.test(arm)) return false;
+  if (/:(?:hover|active|focus|focus-visible|focus-within|visited)\b/i.test(arm)) return false;
+  const compounds = arm.trim().split(/\s+|>|\+|~/).filter(Boolean);
+  const target = compounds.at(-1) ?? "";
+  const targetWithoutFunctionalPseudos = target.replace(/:[a-z-]+\([^)]*\)/gi, "");
+  const targetClasses = [...targetWithoutFunctionalPseudos.matchAll(/\.([a-z][a-z0-9_-]*)/gi)]
+    .map((match) => match[1]);
+  if (!targetClasses.every((className) => element.classes.has(className))) return false;
+  const tag = targetWithoutFunctionalPseudos.match(/^([a-z][a-z0-9-]*)/i)?.[1];
+  if (tag && tag.toLowerCase() !== element.renderedTag.toLowerCase()) return false;
 
-    const ancestorClasses = compounds.slice(0, -1).flatMap((compound) =>
-      [...compound.replace(/:[a-z-]+\([^)]*\)/gi, "").matchAll(/\.([a-z][a-z0-9_-]*)/gi)]
-        .map((match) => match[1]));
-    return ancestorClasses.every((className) => element.ancestorClasses.has(className));
-  });
+  const ancestorClasses = compounds.slice(0, -1).flatMap((compound) =>
+    [...compound.replace(/:[a-z-]+\([^)]*\)/gi, "").matchAll(/\.([a-z][a-z0-9_-]*)/gi)]
+      .map((match) => match[1]));
+  return ancestorClasses.every((className) => element.ancestorClasses.has(className));
+}
+
+function selectorTargetsElement(selector, element) {
+  return splitTopLevel(selector, ",").some((arm) => selectorArmTargetsElement(arm, element));
+}
+
+function removeFunctionalPseudo(source, pseudoName) {
+  let output = source;
+  const marker = `:${pseudoName.toLowerCase()}(`;
+  while (true) {
+    const start = output.toLowerCase().indexOf(marker);
+    if (start < 0) return output;
+    let depth = 1;
+    let end = start + marker.length;
+    while (end < output.length && depth > 0) {
+      if (output[end] === "(") depth += 1;
+      else if (output[end] === ")") depth -= 1;
+      end += 1;
+    }
+    output = `${output.slice(0, start)}${output.slice(end)}`;
+  }
+}
+
+function selectorSpecificity(arm) {
+  let selector = removeFunctionalPseudo(arm, "where");
+  const ids = (selector.match(/#[a-z0-9_-]+/gi) ?? []).length;
+  const classes = (selector.match(/\.[a-z][a-z0-9_-]*/gi) ?? []).length;
+  const attributes = (selector.match(/\[[^\]]+\]/g) ?? []).length;
+  const pseudoClasses = (selector.match(/:(?!:)[a-z-]+(?:\([^)]*\))?/gi) ?? []).length;
+  selector = selector
+    .replace(/#[a-z0-9_-]+/gi, "")
+    .replace(/\.[a-z][a-z0-9_-]*/gi, "")
+    .replace(/\[[^\]]+\]/g, "")
+    .replace(/::[a-z-]+/gi, "")
+    .replace(/:(?!:)[a-z-]+(?:\([^)]*\))?/gi, "");
+  const types = selector.split(/\s+|>|\+|~/).filter((part) => /^[a-z][a-z0-9-]*$/i.test(part)).length;
+  return [0, ids, classes + attributes + pseudoClasses, types];
+}
+
+function compareSpecificity(left, right) {
+  for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
+    const difference = (left[index] ?? 0) - (right[index] ?? 0);
+    if (difference !== 0) return difference;
+  }
+  return 0;
 }
 
 function isGlyphSelector(selector) {
@@ -399,11 +445,59 @@ function isGlyphSelector(selector) {
 }
 
 function withCssBlocks(files) {
+  let sourceOrder = 0;
   return files.flatMap((absolutePath) => cssBlocks(readFileSync(absolutePath, "utf8"))
-    .map((block) => ({ ...block, path: displayPath(absolutePath) })));
+    .map((block) => ({ ...block, path: displayPath(absolutePath), sourceOrder: sourceOrder++ })));
 }
 
-const releaseBlocks = withCssBlocks(releaseCssFiles);
+function resolveLocalImport(fromPath, specifier) {
+  if (!specifier.startsWith(".") && !specifier.startsWith("@/")) return null;
+  const base = specifier.startsWith("@/")
+    ? join(repoRoot, "src", specifier.slice(2))
+    : resolve(dirname(fromPath), specifier);
+  const candidates = extname(base)
+    ? [base]
+    : [base, `${base}.ts`, `${base}.tsx`, `${base}.js`, `${base}.jsx`, join(base, "index.ts"), join(base, "index.tsx")];
+  return candidates.find(existsSync) ?? null;
+}
+
+function collectRuntimeCssOrder(entryPath) {
+  const visitedModules = new Set();
+  const seenCss = new Set();
+  const cssOrder = [];
+
+  const visitModule = (absolutePath) => {
+    if (visitedModules.has(absolutePath) || !existsSync(absolutePath)) return;
+    visitedModules.add(absolutePath);
+    const source = readFileSync(absolutePath, "utf8");
+    const sourceFile = ts.createSourceFile(absolutePath, source, ts.ScriptTarget.Latest, true,
+      absolutePath.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+    for (const statement of sourceFile.statements) {
+      if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) continue;
+      const imported = resolveLocalImport(absolutePath, statement.moduleSpecifier.text);
+      if (!imported) continue;
+      if (imported.endsWith(".css")) {
+        if (!seenCss.has(imported)) {
+          seenCss.add(imported);
+          cssOrder.push(imported);
+        }
+      } else {
+        visitModule(imported);
+      }
+    }
+  };
+
+  visitModule(entryPath);
+  return cssOrder;
+}
+
+const runtimeCssOrder = collectRuntimeCssOrder(join(repoRoot, "src", "main.tsx"));
+const releaseCssSet = new Set(releaseCssFiles);
+const orderedReleaseCssFiles = [
+  ...runtimeCssOrder.filter((path) => releaseCssSet.has(path)),
+  ...releaseCssFiles.filter((path) => !runtimeCssOrder.includes(path)),
+];
+const releaseBlocks = withCssBlocks(orderedReleaseCssFiles);
 
 function rootClassBlock(path, className) {
   return releaseBlocks.find((block) => block.path === path && block.selectors.includes(`.${className}`)) ?? null;
@@ -417,6 +511,75 @@ function mediaAppliesAtWidth(atRules, width) {
     if (minWidths.some((minimum) => width < minimum) || maxWidths.some((maximum) => width > maximum)) return false;
   }
   return true;
+}
+
+function candidateWins(next, current) {
+  if (!current) return true;
+  if (next.important !== current.important) return next.important;
+  const specificity = compareSpecificity(next.specificity, current.specificity);
+  if (specificity !== 0) return specificity > 0;
+  return next.sourceOrder >= current.sourceOrder;
+}
+
+function cascadedElementDeclarations(element, width, blocks = releaseBlocks, inlineDeclarations = []) {
+  const winners = new Map();
+  for (let blockIndex = 0; blockIndex < blocks.length; blockIndex += 1) {
+    const block = blocks[blockIndex];
+    if (!mediaAppliesAtWidth(block.atRules, width)) continue;
+    const matchedSpecificities = block.selectors
+      .filter((arm) => selectorArmTargetsElement(arm, element))
+      .map(selectorSpecificity);
+    if (matchedSpecificities.length === 0) continue;
+    const specificity = matchedSpecificities.reduce((best, current) =>
+      compareSpecificity(current, best) > 0 ? current : best);
+    for (let declarationIndex = 0; declarationIndex < block.declarations.length; declarationIndex += 1) {
+      const declaration = block.declarations[declarationIndex];
+      const candidate = {
+        ...declaration,
+        specificity,
+        sourceOrder: (block.sourceOrder ?? blockIndex) * 1000 + declarationIndex,
+      };
+      if (candidateWins(candidate, winners.get(declaration.property))) {
+        winners.set(declaration.property, candidate);
+      }
+    }
+  }
+
+  for (let index = 0; index < inlineDeclarations.length; index += 1) {
+    const declaration = inlineDeclarations[index];
+    if (!declaration.value) continue;
+    const candidate = {
+      ...declaration,
+      important: declaration.important === true,
+      specificity: [1, 0, 0, 0],
+      sourceOrder: Number.MAX_SAFE_INTEGER - inlineDeclarations.length + index,
+    };
+    if (candidateWins(candidate, winners.get(declaration.property))) {
+      winners.set(declaration.property, candidate);
+    }
+  }
+  return winners;
+}
+
+function computeElementBoxAtWidth(element, width, blocks = releaseBlocks, inlineDeclarations = []) {
+  const declarations = cascadedElementDeclarations(element, width, blocks, inlineDeclarations);
+  const pixels = (property) => resolvePixels(declarations.get(property)?.value ?? null);
+  const inset = declarations.get("inset")?.value ?? null;
+  return {
+    height: pixels("height"),
+    minHeight: pixels("min-height"),
+    width: pixels("width"),
+    minWidth: pixels("min-width"),
+    fillsContainingBlock: /^0(?:px)?$/i.test(inset ?? ""),
+  };
+}
+
+function hasAdequateHitArea(box) {
+  if (box.fillsContainingBlock) return true;
+  const usedHeight = Math.max(box.height ?? 0, box.minHeight ?? 0);
+  if (usedHeight < 44) return false;
+  const explicitWidths = [box.width, box.minWidth].filter(Number.isFinite);
+  return explicitWidths.length === 0 || Math.max(...explicitWidths) >= 44;
 }
 
 function selectorStyleAtWidth(path, selector, width) {
@@ -558,6 +721,12 @@ test("명시된 semantic surface root는 역할별 radius와 shadow를 직접 �
     ["src/screens/onboarding/Onboarding.css", "ob-consent-dialog", "modal"],
     ["src/components/MapPickerSheet.css", "mps-sheet", "sheet"],
     ["src/components/MessageSafetyDialog.css", "msd-dialog", "modal"],
+    ["src/screens/feature/PairingWizard.css", "pw-childcard", "card"],
+    ["src/screens/parent/ParentSettings.css", "ps-profile", "card"],
+    ["src/screens/feature/Subscription.css", "sub-plan", "card"],
+    ["src/screens/onboarding/Onboarding.css", "ob-role-card--parent", "card"],
+    ["src/screens/onboarding/Onboarding.css", "ob-role-card--child", "card"],
+    ["src/screens/onboarding/Onboarding.css", "ob-role-card--teacher", "card"],
   ];
   const specs = {
     card: { radius: ["var(--radius-16)"], shadow: ["none", "var(--shadow-soft)"] },
@@ -573,8 +742,11 @@ test("명시된 semantic surface root는 역할별 radius와 shadow를 직접 �
       violations.push(`${path} .${className} (root selector 누락)`);
       continue;
     }
-    const radius = declarationValue(block.declarations, "border-radius");
-    const shadow = declarationValue(block.declarations, "box-shadow");
+    const baseClassName = className.split("--")[0];
+    const baseBlock = baseClassName === className ? null : rootClassBlock(path, baseClassName);
+    const declarations = [...(baseBlock?.declarations ?? []), ...block.declarations];
+    const radius = declarationValue(declarations, "border-radius");
+    const shadow = declarationValue(declarations, "box-shadow");
     if (!specs[role].radius.includes(radius)) {
       violations.push(`${path}:${block.line} .${className} (${role} radius ${radius ?? "누락"})`);
     }
@@ -730,41 +902,58 @@ test("부모 홈의 내용 기반 소형 버튼도 실제 44px hit area를 보�
   assert.match(parentHome, /\.ph-prep-edit\s*\{[^}]*min-height:\s*var\(--control-min-size\)/s);
 });
 
+test("hit-area cascade 계산은 후행 고특이도 30px override를 이전 44px로 숨기지 않는다", () => {
+  const fixtureElement = {
+    path: "fixture/HitArea.tsx",
+    line: 1,
+    tagName: "button",
+    renderedTag: "button",
+    classes: new Set(["cascade-fixture"]),
+    ancestorClasses: new Set(["qa-shell"]),
+    styles: [],
+  };
+  const fixtureBlocks = cssBlocks(`
+    :where(button) {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    .qa-shell .cascade-fixture.cascade-fixture {
+      width: 44px !important;
+      min-width: 44px !important;
+      height: 44px !important;
+      min-height: 44px !important;
+    }
+    @media (max-width: 390px) {
+      .qa-shell .cascade-fixture.cascade-fixture {
+        width: 30px !important;
+        min-width: 30px !important;
+        height: 30px !important;
+        min-height: 30px !important;
+      }
+    }
+  `).map((block, sourceOrder) => ({ ...block, path: "fixture/hit-area.css", sourceOrder }));
+
+  for (const width of [360, 390]) {
+    const box = computeElementBoxAtWidth(fixtureElement, width, fixtureBlocks);
+    assert.equal(box.height, 30, `${width}px final height`);
+    assert.equal(box.minHeight, 30, `${width}px final min-height`);
+    assert.equal(box.width, 30, `${width}px final width`);
+    assert.equal(box.minWidth, 30, `${width}px final min-width`);
+    assert.equal(hasAdequateHitArea(box), false, `${width}px 30px override를 실패로 판정해야 합니다`);
+  }
+});
+
 test("실제 JSX 상호작용 요소는 모든 viewport에서 최소 세로 44px을 명시하고 소형 정사각형은 가로도 보장한다", () => {
   const violations = [];
 
   for (const element of releaseElements) {
-    const rules = releaseBlocks.filter((block) => selectorTargetsElement(block.selector, element));
-    const mediaScopes = new Set(["base", ...rules.flatMap((rule) => {
-      const media = rule.atRules.filter((atRule) => /^@media\b/i.test(atRule) && /(?:min|max)-width\s*:/i.test(atRule));
-      return media.length > 0 ? [media.join(" && ")] : [];
-    })]);
-
-    for (const scope of mediaScopes) {
-      const scopedRules = rules.filter((rule) => {
-        const widthMedia = rule.atRules.filter((atRule) => /^@media\b/i.test(atRule) && /(?:min|max)-width\s*:/i.test(atRule)).join(" && ");
-        const nonWidthMedia = rule.atRules.some((atRule) => /^@media\b/i.test(atRule) && !/(?:min|max)-width\s*:/i.test(atRule));
-        if (nonWidthMedia) return false;
-        return widthMedia === "" || (scope !== "base" && widthMedia === scope);
-      });
-      const declarations = [
-        ...scopedRules.flatMap((rule) => rule.declarations),
-        ...element.styles.flat(),
-      ];
-      const heights = ["height", "min-height"].flatMap((property) => declarations
-        .filter((declaration) => declaration.property === property)
-        .map((declaration) => resolvePixels(declaration.value))
-        .filter(Number.isFinite));
-      const widths = ["width", "min-width"].flatMap((property) => declarations
-        .filter((declaration) => declaration.property === property)
-        .map((declaration) => resolvePixels(declaration.value))
-        .filter(Number.isFinite));
-      const fillsContainingBlock = declarations.some((declaration) => declaration.property === "inset" && /^0(?:px)?$/i.test(declaration.value));
-      const hasAdequateHeight = fillsContainingBlock || heights.some((height) => height >= 44);
-      const hasExplicitSmallSquare = heights.some((height) => height < 44) && widths.some((width) => width < 44);
-      const hasAdequateWidth = fillsContainingBlock || widths.some((width) => width >= 44);
-      if (!hasAdequateHeight || (hasExplicitSmallSquare && !hasAdequateWidth)) {
-        violations.push(`${element.path}:${element.line} <${element.tagName}> ${[...element.classes].map((name) => `.${name}`).join(" ") || "class 없음"} [${scope}] (높이 ${heights.join("/") || "미지정"}, 너비 ${widths.join("/") || "미지정"})`);
+    const inlineScenarios = element.styles.length > 0 ? element.styles : [[]];
+    for (const width of [360, 390]) {
+      for (let scenario = 0; scenario < inlineScenarios.length; scenario += 1) {
+        const box = computeElementBoxAtWidth(element, width, releaseBlocks, inlineScenarios[scenario]);
+        if (!hasAdequateHitArea(box)) {
+          violations.push(`${element.path}:${element.line} <${element.tagName}> ${[...element.classes].map((name) => `.${name}`).join(" ") || "class 없음"} [${width}px, inline ${scenario + 1}] (final height ${box.height ?? "auto"}, min-height ${box.minHeight ?? "0"}, width ${box.width ?? "auto"}, min-width ${box.minWidth ?? "0"})`);
+        }
       }
     }
   }
@@ -800,36 +989,44 @@ test("출시 화면은 브라우저 focus outline을 제거하지 않는다", ()
   assert.deepEqual(hiddenFocus, [], `outline:none ${hiddenFocus.length}건:\n${hiddenFocus.join("\n")}`);
 });
 
-const optical2pxSpacingAllowlist = new Set([
+const opticalSpacingAllowlist = new Map([
   // 360px 화면에서 66px SOS와 pill 독의 합산 폭을 보존하는 기존 좌우 14px optical inset입니다.
-  "src/app/ChildDock.css|.kdock|padding",
+  ["src/app/ChildDock.css|.kdock|padding", new Set([14])],
   // 정사각 로고 raster가 baseline보다 아래로 처져 보이지 않도록 아래쪽만 0으로 맞춘 optical inset입니다.
-  "src/styles/components.css|.hy-topbar__logo|padding",
+  ["src/styles/components.css|.hy-topbar__logo|padding", new Set([2])],
   // 7열 캘린더의 일정 점과 숫자 사이를 분리하는 micro-density 간격입니다.
-  "src/screens/parent/ParentCalendar.css|.pc-grid|gap",
-  "src/screens/parent/ParentCalendar.css|.pc-day|gap",
-  "src/screens/parent/ParentCalendar.css|.pc-day__dots|gap",
+  ["src/screens/parent/ParentCalendar.css|.pc-day__dots|gap", new Set([2])],
   // 음성 waveform bar 사이의 시각적 박자를 유지하는 장식 전용 간격입니다.
-  "src/screens/feature/AiSchedule.css|.ais-wave|gap",
+  ["src/screens/feature/AiSchedule.css|.ais-wave|gap", new Set([2])],
   // 작은 상태 capsule의 세로 2px은 44px hit box와 분리된 내부 optical padding입니다.
-  "src/screens/shared/MemoChat.css|.mc-safety-action|padding",
-  "src/screens/child/AiFriendChat.css|.afc-report-link|padding",
-  "src/screens/parent/ParentHome.css|.ph-child__now|padding",
+  ["src/screens/shared/MemoChat.css|.mc-safety-action|padding", new Set([2])],
+  ["src/screens/child/AiFriendChat.css|.afc-report-link|padding", new Set([2])],
+  ["src/screens/parent/ParentHome.css|.ph-child__now|padding", new Set([2])],
+  // 44px hit 안의 18px 삭제 원을 중앙에 두는 13px 역마진입니다.
+  ["src/screens/teacher/TeacherNotice.css|.tn-file-chip__x|margin", new Set([-13])],
+  // 지도 marker/ring 중심을 실제 좌표에 맞추는 기하 오프셋입니다.
+  ["src/screens/parent/ParentLocation.css|.pl-child-ring|margin-left", new Set([-75])],
+  ["src/screens/parent/ParentLocation.css|.pl-child-ring|margin-top", new Set([-46])],
+  // scrub tick의 1px stroke 중심을 track에 맞추는 optical 오프셋입니다.
+  ["src/screens/parent/ParentLocation.css|.pl-scrub__ticks|margin-top", new Set([-2])],
 ]);
 
-test("출시 화면의 단순 padding과 gap은 4px 리듬을 사용한다", () => {
+test("출시 화면의 padding·gap·margin은 근거 있는 optical 예외 외 4px 리듬을 사용한다", () => {
   const violations = [];
-  const spacingProperties = /^(?:padding(?:-(?:top|right|bottom|left|block|inline))?|gap|row-gap|column-gap)$/;
+  const spacingProperties = /^(?:(?:padding|margin)(?:-(?:top|right|bottom|left|block|inline))?|gap|row-gap|column-gap)$/;
 
   for (const absolutePath of releaseCssFiles) {
     for (const block of cssBlocks(readFileSync(absolutePath, "utf8"))) {
       for (const declaration of block.declarations) {
         if (!spacingProperties.test(declaration.property)) continue;
-        const literals = [...declaration.value.matchAll(/(?<![-\w])([0-9.]+)px\b/g)].map((item) => Number.parseFloat(item[1]));
-        const allowOpticalTwo = optical2pxSpacingAllowlist.has(
+        const literals = [...declaration.value.matchAll(/(?<![\w.])(-?[0-9.]+)px\b/g)].map((item) => Number.parseFloat(item[1]));
+        const allowedOpticalValues = opticalSpacingAllowlist.get(
           `${displayPath(absolutePath)}|${block.selector}|${declaration.property}`,
-        );
-        const offGrid = literals.filter((value) => value !== 0 && value % 4 !== 0 && !(value % 4 === 2 && allowOpticalTwo));
+        ) ?? new Set();
+        const offGrid = literals.filter((value) => {
+          const magnitude = Math.abs(value);
+          return magnitude !== 0 && magnitude % 4 !== 0 && !allowedOpticalValues.has(value);
+        });
         if (offGrid.length > 0) {
           violations.push(`${displayPath(absolutePath)}:${block.line} ${block.selector} (${declaration.property}: ${declaration.value})`);
         }
@@ -860,32 +1057,59 @@ test("sticky/fixed 화면 header는 상단 safe area를 포함한다", () => {
 test("카드·hero·modal·sheet 표면은 정본 radius와 elevation만 사용한다", () => {
   const violations = [];
   const expectedRadius = { card: "--radius-16", panel: "--radius-16", hero: "--radius-20", modal: "--radius-20", sheet: "--radius-24" };
+  const candidates = new Map();
+  const roleOverrides = new Map([
+    ["src/screens/parent/ParentAccount.css|pa-profile", "hero"],
+  ]);
 
-  for (const absolutePath of releaseCssFiles) {
-    for (const block of cssBlocks(readFileSync(absolutePath, "utf8"))) {
-      if (/::(?:before|after)\b/.test(block.selector)) continue;
-      const lastCompound = block.selector.trim().split(/\s+|>|\+|~/).at(-1) ?? "";
-      const classNames = [...lastCompound.matchAll(/\.([a-z][a-z0-9_-]*)/gi)].map((match) => match[1]);
-      const surfaceClass = classNames.find((className) => /(?:^|[-_])(card|panel|hero|modal|sheet)$/i.test(className));
-      if (!surfaceClass) continue;
-      const role = /sheet/i.test(surfaceClass)
-        ? "sheet"
-        : /(?:modal|dialog)/i.test(surfaceClass)
+  const baseDeclarations = (path, className) => releaseBlocks
+    .filter((entry) => entry.path === path && entry.atRules.length === 0 && entry.selectors.includes(`.${className}`))
+    .flatMap((entry) => entry.declarations);
+
+  for (const block of releaseBlocks) {
+    if (block.atRules.length > 0) continue;
+    for (const arm of block.selectors) {
+      if (/::|\[|:|\s|>|\+|~/.test(arm)) continue;
+      const classNames = [...arm.matchAll(/\.([a-z][a-z0-9_-]*)/gi)].map((match) => match[1]);
+      for (const className of classNames) {
+        const surfaceRoot = className.split("--")[0];
+        const bemPart = surfaceRoot.includes("__") ? surfaceRoot.split("__").at(-1) : null;
+        const surfaceType = (bemPart?.match(/^(profile|plan|card|panel|hero|modal|dialog|sheet)$/i)?.[1]
+          ?? surfaceRoot.match(/(?:^|[-_])(childcard|profile|plan|card|panel|hero|modal|dialog|sheet)$/i)?.[1])?.toLowerCase();
+        if (!surfaceType) continue;
+        const hasSurfacePaint = block.declarations.some((declaration) =>
+          /^(?:background(?:-color)?|border|box-shadow)$/.test(declaration.property));
+        if (!hasSurfacePaint) continue;
+        const defaultRole = /(?:modal|dialog)__card/i.test(surfaceRoot)
           ? "modal"
-          : /hero/i.test(surfaceClass)
-            ? "hero"
-            : surfaceClass.match(/(?:^|[-_])(card|panel)$/i)?.[1].toLowerCase();
-      const radius = declarationValue(block.declarations, "border-radius");
-      const canonicalRadius = `var(${expectedRadius[role]})`;
-      const isCanonicalSheetTopRadius = role === "sheet"
-        && radius === `${canonicalRadius} ${canonicalRadius} 0 0`;
-      if (radius && radius !== canonicalRadius && !isCanonicalSheetTopRadius) {
-        violations.push(`${displayPath(absolutePath)}:${block.line} ${block.selector} (${role} radius ${radius})`);
+          : surfaceType === "sheet"
+          ? "sheet"
+          : surfaceType === "modal" || surfaceType === "dialog"
+            ? "modal"
+            : surfaceType === "hero"
+              ? "hero"
+              : surfaceType === "panel" ? "panel" : "card";
+        const role = roleOverrides.get(`${block.path}|${surfaceRoot}`) ?? defaultRole;
+        const key = `${block.path}|${arm}|${role}`;
+        const inheritedBase = className.includes("--") ? baseDeclarations(block.path, surfaceRoot) : [];
+        const current = candidates.get(key) ?? { path: block.path, arm, role, line: block.line, declarations: [...inheritedBase] };
+        current.declarations.push(...block.declarations);
+        candidates.set(key, current);
       }
-      const shadow = declarationValue(block.declarations, "box-shadow");
-      if (shadow && shadow !== "none" && !/^var\(--shadow-(?:soft|floating|modal)\)$/.test(shadow)) {
-        violations.push(`${displayPath(absolutePath)}:${block.line} ${block.selector} (${role} shadow ${shadow})`);
-      }
+    }
+  }
+
+  for (const { path, arm, role, line, declarations } of candidates.values()) {
+    const radius = declarationValue(declarations, "border-radius");
+    const canonicalRadius = `var(${expectedRadius[role]})`;
+    const isCanonicalSheetTopRadius = role === "sheet"
+      && radius === `${canonicalRadius} ${canonicalRadius} 0 0`;
+    if (radius !== canonicalRadius && !isCanonicalSheetTopRadius) {
+      violations.push(`${path}:${line} ${arm} (${role} radius ${radius ?? "누락"})`);
+    }
+    const shadow = declarationValue(declarations, "box-shadow");
+    if (!shadow || (shadow !== "none" && !/^var\(--shadow-(?:soft|floating|modal)\)$/.test(shadow))) {
+      violations.push(`${path}:${line} ${arm} (${role} shadow ${shadow ?? "누락"})`);
     }
   }
 

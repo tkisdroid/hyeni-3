@@ -72,7 +72,7 @@
   object-fit: contain;
 }
 .afs-preview__name {
-  margin-top: 10px;
+  margin-top: 12px;
   font-size: var(--type-title-lg);
   line-height: var(--type-title-lg-line-height);
   font-weight: var(--type-title-lg-weight);
@@ -81,7 +81,7 @@
   letter-spacing: -0.01em;
 }
 .afs-preview__tone {
-  margin-top: 3px;
+  margin-top: 4px;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);

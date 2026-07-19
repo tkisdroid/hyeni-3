@@ -68,7 +68,7 @@
   color: #201a1d;
 }
 .psu-intro__sub {
-  margin-top: 3px;
+  margin-top: 4px;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);

@@ -86,7 +86,7 @@
   width: 72px;
   height: 72px;
   object-fit: contain;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 .da-safe__title {
   font-size: var(--type-body-lg);
@@ -141,7 +141,7 @@
   color: var(--danger-text);
 }
 .da-hero__title {
-  margin-top: 14px;
+  margin-top: 16px;
   font-size: var(--type-title);
   line-height: var(--type-title-line-height);
   font-weight: var(--type-title-weight);
@@ -150,7 +150,7 @@
   color: var(--danger-text);
 }
 .da-hero__msg {
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);
   font-weight: var(--type-body-sm-weight);
@@ -183,7 +183,7 @@
   font-weight: var(--type-label-weight);
 
   color: var(--fg-muted);
-  margin-bottom: 11px;
+  margin-bottom: 12px;
 }
 .da-list {
   display: flex;
@@ -231,7 +231,7 @@
 }
 .da-item__detail {
   display: block;
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);

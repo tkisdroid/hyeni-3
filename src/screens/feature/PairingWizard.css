@@ -71,7 +71,7 @@
 
   letter-spacing: -0.02em;
   color: var(--fg-primary);
-  margin-top: 2px;
+  margin-top: 4px;
 }
 .pw-note {
   font-size: var(--type-caption);
@@ -79,7 +79,7 @@
   font-weight: var(--type-caption-weight);
 
   color: var(--fg-muted);
-  margin: 2px 2px 0;
+  margin: 4px 4px 0;
 }
 
 /* ── STEP 1 : 아이 수 ──────────────────────────────────────────────────── */
@@ -136,9 +136,9 @@
 /* ── STEP 2 : 아이 정보 카드 ──────────────────────────────────────────── */
 .pw-childcard {
   background: #fff;
-  border-radius: 22px;
+  border-radius: var(--radius-16);
   padding: 16px;
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-soft);
   display: flex;
   flex-direction: column;
   gap: 8px;

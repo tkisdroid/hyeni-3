@@ -88,7 +88,7 @@
   font-weight: var(--type-body-lg-weight);
 }
 .qrs-guide-sub {
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   color: rgba(255, 255, 255, 0.8);
@@ -102,7 +102,7 @@
   color: #ffb4ab;
 }
 .qrs-actions {
-  margin-top: 14px;
+  margin-top: 16px;
   display: flex;
   justify-content: center;
   gap: 8px;

@@ -423,7 +423,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
@@ -470,7 +470,7 @@
 .pl-timeline {
   display: flex;
   gap: 4px;
-  margin: 14px 0;
+  margin: 16px 0;
 }
 .pl-tl-cell {
   flex: 1;
@@ -506,7 +506,7 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-  margin: 12px 0 2px;
+  margin: 12px 0 4px;
   padding: 8px 12px;
   border-radius: 13px;
   background: #fdf0da;
@@ -714,7 +714,7 @@
   justify-content: center;
   gap: 8px;
   width: 100%;
-  margin: 12px 0 2px;
+  margin: 12px 0 4px;
   padding: 12px 12px;
   border-radius: 13px;
   background: linear-gradient(120deg, #fff3d6, #ffe4ef);

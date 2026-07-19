@@ -70,7 +70,7 @@
   color: var(--fg-primary);
 }
 .fb-intro__sub {
-  margin-top: 3px;
+  margin-top: 4px;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
@@ -95,7 +95,7 @@
   text-align: center;
 }
 .fb-stars {
-  margin-top: 14px;
+  margin-top: 16px;
   display: flex;
   justify-content: center;
   gap: 8px;
@@ -123,7 +123,7 @@
   font-weight: var(--type-label-weight);
 
   color: var(--fg-muted);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   padding: 0;
 }
 .fb-cats__row {
@@ -193,7 +193,7 @@
 }
 .fb-ideas > .fb-ideas__sort {
   display: block;
-  margin: -6px 2px 10px;
+  margin: -8px 4px 12px;
 }
 .fb-ideas__card {
   background: var(--bg-card);

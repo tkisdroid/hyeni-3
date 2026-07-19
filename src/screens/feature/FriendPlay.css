@@ -118,7 +118,7 @@
   object-fit: contain;
 }
 .fp-friend__name {
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
@@ -137,7 +137,7 @@
   display: flex;
   gap: 12px;
   align-items: flex-start;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 .fp-step:last-child {
   margin-bottom: 0;
@@ -281,7 +281,7 @@
 }
 .fp-setting__sub {
   display: block;
-  margin-top: 3px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -316,11 +316,12 @@
   left: 22px;
 }
 .fp-parent-card {
-  margin-top: 14px;
+  margin-top: 16px;
   padding: 16px;
   border-radius: var(--radius-16);
   background: rgba(255, 255, 255, 0.7);
   border: 1px solid var(--line-hair);
+  box-shadow: none;
 }
 .fp-parent-card__title {
   font-size: var(--type-label);
@@ -328,7 +329,7 @@
   font-weight: var(--type-label-weight);
 
   color: var(--fg-primary);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 .fp-parent-rule {
   display: flex;
@@ -341,7 +342,7 @@
   color: var(--fg-tertiary);
 }
 .fp-parent-rule + .fp-parent-rule {
-  margin-top: 9px;
+  margin-top: 12px;
 }
 .fp-parent-rule span {
   width: 20px;
@@ -369,7 +370,7 @@
   text-align: center;
 }
 .fp-connected--parent {
-  margin-top: 14px;
+  margin-top: 16px;
 }
 .fp-connected__badge {
   display: inline-flex;
@@ -385,7 +386,7 @@
 
 }
 .fp-connected__friend {
-  margin-top: 14px;
+  margin-top: 16px;
   font-size: var(--type-title-lg);
   line-height: var(--type-title-lg-line-height);
   font-weight: var(--type-title-lg-weight);

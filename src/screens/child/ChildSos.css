@@ -30,12 +30,12 @@
   width: 86px;
   height: 86px;
   object-fit: contain;
-  margin-top: 6px;
+  margin-top: 8px;
   animation: cs-bob 2.4s ease-in-out infinite;
 }
 
 .cs-title {
-  margin-top: 10px;
+  margin-top: 12px;
   font-family: Jua, var(--font-sans);
 
   font-size: var(--type-display);
@@ -60,7 +60,7 @@
 
 .cs-holder {
   position: relative;
-  margin: 26px 0 10px;
+  margin: 28px 0 12px;
   width: 200px;
   height: 200px;
   display: flex;
@@ -169,7 +169,7 @@
   text-align: center;
 }
 .cs-result__sub {
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: var(--type-body);
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
@@ -241,7 +241,7 @@
   color: #c22b55;
 }
 .cs-callbtn--slim {
-  margin-top: 10px;
+  margin-top: 12px;
   height: 52px;
 }
 

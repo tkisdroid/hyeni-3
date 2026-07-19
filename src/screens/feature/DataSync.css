@@ -70,7 +70,7 @@
   color: #0e6f64;
 }
 .ds-sync__rows {
-  margin-top: 14px;
+  margin-top: 16px;
   background: rgba(255, 255, 255, 0.66);
   border-radius: 14px;
   padding: 4px 12px;
@@ -103,7 +103,7 @@
   font-variant-numeric: tabular-nums;
 }
 .ds-sync__btn {
-  margin-top: 14px;
+  margin-top: 16px;
   width: 100%;
   height: 46px;
   border-radius: 14px;
@@ -160,7 +160,7 @@
   color: var(--fg-primary);
 }
 .ds-card__desc {
-  margin-top: 3px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);

@@ -110,7 +110,7 @@
   padding: 0;
 }
 .pf-label--types {
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 /* ── 텍스트 입력 ────────────────────────────────────────────────────────── */
@@ -160,7 +160,7 @@
 .pf-radius-head {
   display: flex;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   padding: 0;
 }
 .pf-radius-label {

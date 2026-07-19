@@ -63,7 +63,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 6px;
+  margin-top: 8px;
 }
 .cls-orb--mint {
   background: var(--mint-soft);
@@ -118,7 +118,7 @@
   color: var(--gold-text);
 }
 .cls-heading__desc {
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);
   font-weight: var(--type-body-sm-weight);
@@ -170,7 +170,7 @@
   color: var(--fg-primary);
 }
 .cls-detail__sub {
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);

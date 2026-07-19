@@ -85,7 +85,7 @@
   color: var(--fg-primary);
 }
 .cd-hero__sub {
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
@@ -252,7 +252,7 @@
 }
 .cd-row__sub {
   display: block;
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -325,7 +325,7 @@
 }
 .cd-danger__sub {
   display: block;
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -378,7 +378,7 @@
   justify-content: center;
 }
 .cd-confirm__title {
-  margin-top: 14px;
+  margin-top: 16px;
   font-size: var(--type-title);
   line-height: var(--type-title-line-height);
   font-weight: var(--type-title-weight);

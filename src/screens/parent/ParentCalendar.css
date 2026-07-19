@@ -71,7 +71,7 @@
 .pc-weekdays {
   display: grid;
   grid-template-columns: repeat(7, minmax(var(--control-min-size), 1fr));
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 .pc-weekday {
   text-align: center;
@@ -139,7 +139,7 @@
 
 /* ── 선택일 헤더 ────────────────────────────────────────────────────────── */
 .pc-sel {
-  margin-top: 22px;
+  margin-top: 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -167,7 +167,7 @@
 
 /* ── 선택일 일정 타임라인 ───────────────────────────────────────────────── */
 .pc-events {
-  margin-top: 14px;
+  margin-top: 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -266,7 +266,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
   --press: 0.985;
   transition: transform 0.18s ease;
   touch-action: pan-y;
@@ -349,7 +349,7 @@
 
 /* ── 빈 상태 ────────────────────────────────────────────────────────────── */
 .pc-empty {
-  margin-top: 30px;
+  margin-top: 32px;
   text-align: center;
   padding: 24px;
 }
@@ -360,7 +360,7 @@
   opacity: 0.8;
 }
 .pc-empty__title {
-  margin-top: 10px;
+  margin-top: 12px;
   font-size: var(--type-body);
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
@@ -449,7 +449,7 @@
   color: var(--fg-primary);
 }
 .pc-sheet__sub {
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);

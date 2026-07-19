@@ -161,7 +161,7 @@
 
 }
 .sr-banner-meta {
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -215,7 +215,7 @@
   text-overflow: ellipsis;
 }
 .sr-loc-sub {
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -288,7 +288,7 @@
   /* column flex(.sr-content) 안에서 내용이 넘치면 고정 높이가 찌그러져
      리본처럼 보였다(TK 제보의 실체). 압축 금지. */
   flex: none;
-  margin-top: 2px;
+  margin-top: 4px;
   height: 56px;
   border-radius: var(--radius-lg);
   background: linear-gradient(120deg, var(--mint-400), var(--mint-600));
@@ -318,7 +318,7 @@
 
 /* ── 지난 SOS ──────────────────────────────────────────────────────────── */
 .sr-history {
-  margin-top: 6px;
+  margin-top: 8px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -362,7 +362,7 @@
   color: var(--fg-primary);
 }
 .sr-history-time {
-  margin-top: 1px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);

@@ -48,9 +48,9 @@
   align-items: center;
   gap: 12px;
   padding: 16px;
-  border-radius: 22px;
+  border-radius: var(--radius-16);
   background: linear-gradient(120deg, var(--blue-soft), var(--lav-soft));
-  box-shadow: 0 10px 26px -12px color-mix(in srgb, var(--blue-500) 25%, transparent);
+  box-shadow: var(--shadow-soft);
 }
 .ps-profile__avatar {
   width: 56px;
@@ -80,7 +80,7 @@
   color: var(--fg-primary);
 }
 .ps-profile__meta {
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
@@ -108,7 +108,7 @@
 
   letter-spacing: 0.02em;
   color: var(--fg-muted);
-  margin-bottom: 11px;
+  margin-bottom: 12px;
 }
 .ps-list {
   background: var(--bg-card);
@@ -149,7 +149,7 @@
   color: var(--fg-primary);
 }
 .ps-notif__sub {
-  margin-top: 1px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -398,7 +398,7 @@
   font-size: 34px;
 }
 .ps-modal__title {
-  margin-top: 10px;
+  margin-top: 12px;
   font-size: var(--type-title);
   line-height: var(--type-title-line-height);
   font-weight: var(--type-title-weight);

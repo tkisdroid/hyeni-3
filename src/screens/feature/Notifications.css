@@ -53,7 +53,7 @@
   font-weight: var(--type-label-weight);
 
   color: var(--fg-muted);
-  margin-bottom: 11px;
+  margin-bottom: 12px;
 }
 .nc-items {
   display: flex;
@@ -112,7 +112,7 @@
 }
 .nc-item__detail {
   display: block;
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);

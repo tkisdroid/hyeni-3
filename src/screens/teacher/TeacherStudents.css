@@ -143,7 +143,7 @@
 }
 .ts-parent {
   display: block;
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -200,7 +200,7 @@
 
 /* ── 초대 안내 ──────────────────────────────────────────────────────────── */
 .ts-hint {
-  margin-top: 14px;
+  margin-top: 16px;
   display: flex;
   gap: 8px;
   align-items: flex-start;
@@ -292,7 +292,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 .ts-sheet__title {
   font-size: var(--type-title);
@@ -314,7 +314,7 @@
   --press: 0.9;
 }
 .ts-sheet__desc {
-  margin: 0 0 14px;
+  margin: 0 0 16px;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
@@ -328,7 +328,7 @@
   font-weight: var(--type-caption-weight);
 
   color: var(--fg-tertiary);
-  margin: 0 0 7px 2px;
+  margin: 0 0 8px 4px;
 }
 .ts-sheet__input {
   width: 100%;
@@ -337,7 +337,7 @@
   background: #fff;
   border-radius: 14px;
   padding: 0 16px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
   font-size: var(--type-body);
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
@@ -360,7 +360,7 @@
   width: 100%;
   height: 54px;
   border-radius: 16px;
-  margin-top: 2px;
+  margin-top: 4px;
   background: linear-gradient(120deg, #5fd6a6, #23a876);
   box-shadow: 0 14px 30px -14px rgba(35, 168, 118, 0.6);
   font-size: var(--type-body-lg);

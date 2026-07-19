@@ -61,7 +61,7 @@
 }
 
 .raa-subtitle {
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -115,7 +115,7 @@
 
 .raa-hero p,
 .raa-empty p {
-  margin: 6px 0 0;
+  margin: 8px 0 0;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);

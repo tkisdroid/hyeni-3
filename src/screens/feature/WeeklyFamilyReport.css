@@ -44,7 +44,7 @@
 }
 
 .wr-subtitle {
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -133,7 +133,7 @@
 .wr-hero p,
 .wr-lock p,
 .wr-empty p {
-  margin: 6px 0 0;
+  margin: 8px 0 0;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
@@ -388,7 +388,7 @@
 
 .wr-preview__item small {
   display: block;
-  margin-top: 5px;
+  margin-top: 8px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);

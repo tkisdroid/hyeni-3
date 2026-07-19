@@ -121,7 +121,7 @@
 .dzf-radius-head {
   display: flex;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   padding: 0;
 }
 .dzf-radius-label {
@@ -198,7 +198,7 @@
   transform: translateX(18px);
 }
 .dzf-toggle-note {
-  margin-top: 10px;
+  margin-top: 12px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -226,7 +226,7 @@
 
 /* 작은 반경 안내 */
 .dzf-hint {
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);

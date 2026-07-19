@@ -44,7 +44,7 @@
 }
 
 .dr-subtitle {
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -108,7 +108,7 @@
 }
 
 .dr-source-error__head small {
-  margin-top: 3px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -234,7 +234,7 @@
 }
 
 .dr-hero__title {
-  margin-top: 5px;
+  margin-top: 8px;
   font-size: var(--type-title-lg);
   line-height: var(--type-title-lg-line-height);
   font-weight: var(--type-title-lg-weight);
@@ -245,7 +245,7 @@
 .dr-hero p,
 .dr-premium p,
 .dr-empty p {
-  margin: 7px 0 0;
+  margin: 8px 0 0;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
@@ -399,14 +399,14 @@
 }
 
 .dr-overview-card__label {
-  margin-top: 10px;
+  margin-top: 12px;
   color: var(--tone-text);
 }
 
 .dr-overview-card strong {
   display: block;
   min-width: 0;
-  margin-top: 3px;
+  margin-top: 4px;
   font-size: var(--type-title);
   line-height: var(--type-title-line-height);
   font-weight: var(--type-title-weight);
@@ -449,7 +449,7 @@
 
 .dr-section__head small {
   display: block;
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -521,7 +521,7 @@
 }
 
 .dr-scope-error small {
-  margin-top: 2px;
+  margin-top: 4px;
   color: var(--fg-muted);
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
@@ -581,7 +581,7 @@
 }
 
 .dr-section-error small {
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -670,7 +670,7 @@
 
 .dr-signal small {
   display: block;
-  margin-top: 3px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -759,7 +759,7 @@
 }
 
 .dr-feature-row__main small {
-  margin-top: 3px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -836,7 +836,7 @@
 }
 
 .dr-event__main small {
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -985,7 +985,7 @@
 }
 
 .dr-notification-health small {
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -1122,7 +1122,7 @@
 
 .dr-weekly small {
   display: block;
-  margin-top: 3px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);

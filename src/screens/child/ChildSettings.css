@@ -161,7 +161,7 @@
 }
 .ks-row__sub {
   display: block;
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -242,7 +242,7 @@
   position: relative;
   width: 100%;
   max-width: 430px;
-  margin: 0 14px calc(14px + env(safe-area-inset-bottom, 0px));
+  margin: 0 16px calc(16px + env(safe-area-inset-bottom, 0px));
   border-radius: var(--radius-20);
   background: #fff;
   box-shadow: var(--shadow-modal);
@@ -307,7 +307,7 @@
   color: var(--fg-primary);
 }
 .ks-help-item small {
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);

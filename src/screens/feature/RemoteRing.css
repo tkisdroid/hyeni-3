@@ -44,7 +44,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 22px;
+  margin-bottom: 24px;
 }
 .rr-hero-ring1 {
   position: absolute;
@@ -77,7 +77,7 @@
 
 }
 .rr-sub {
-  margin-top: 10px;
+  margin-top: 12px;
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);
   font-weight: var(--type-body-sm-weight);
@@ -87,7 +87,7 @@
 }
 
 .rr-children {
-  margin-top: 18px;
+  margin-top: 20px;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -193,7 +193,7 @@
 }
 
 .rr-recent {
-  margin-top: 14px;
+  margin-top: 16px;
   text-align: center;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
@@ -227,7 +227,7 @@
   font-size: 40px;
 }
 .rr-modal-title {
-  margin-top: 10px;
+  margin-top: 12px;
   font-size: var(--type-title);
   line-height: var(--type-title-line-height);
   font-weight: var(--type-title-weight);
@@ -298,7 +298,7 @@
   color: rgba(255, 255, 255, 0.5);
 }
 .rr-ring-title {
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: var(--type-title-lg);
   line-height: var(--type-title-lg-line-height);
   font-weight: var(--type-title-lg-weight);
@@ -308,7 +308,7 @@
 
 .rr-pulse {
   position: relative;
-  margin: 42px 0 34px;
+  margin: 44px 0 36px;
   width: 200px;
   height: 200px;
   display: flex;

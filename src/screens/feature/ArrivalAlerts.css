@@ -86,7 +86,7 @@
   width: 68px;
   height: 68px;
   object-fit: contain;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 .aa-empty__title {
   font-size: var(--type-body);
@@ -171,7 +171,7 @@
 }
 .aa-item__detail {
   display: block;
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
