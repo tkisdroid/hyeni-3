@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import tsModule from "typescript";
 
@@ -37,7 +37,7 @@ const routeQualityMatrix = [
   route("parent/calendar", "ParentCalendar", "src/screens/parent/ParentCalendar.tsx", "parent", "all", "query", queryStates(/isLoading \? \(/, /isError \? \(/, /selEvents\.length > 0/, /selEvents\.map/, /void refetchEvents\(\)/), "shell", "parent-formal"),
   route("parent/location", "ParentLocation", "src/screens/parent/ParentLocation.tsx", "parent", "all", "query", queryStates(/histLoading/, /histErrored/, /histEmpty/, /timedTrail\.length > 0/, /void refetchHistory\(\)/), "shell", "parent-formal"),
   route("parent/memo", "MemoChat", "src/screens/shared/MemoChat.tsx", "parent", "all", "query", queryStates(/thread\.isLoading/, /thread\.isError/, /showEmpty/, /messages\.map/, /void thread\.refetch\(\)/), "shell", "role-aware"),
-  route("parent/settings", "ParentSettings", "src/screens/parent/ParentSettings.tsx", "parent", "all", "mutation", null, "shell", "parent-formal"),
+  route("parent/settings", "ParentSettings", "src/screens/parent/ParentSettings.tsx", "parent", "all", "hybrid", null, "shell", "parent-formal"),
 
   route("child/home", "ChildHome", "src/screens/child/ChildHome.tsx", "child", "all", "query", queryStates(/homeLoading/, /homeError/, /adventure\.nodes\.length === 0/, /adventure\.nodes\.map/, /void retryHomeData\(\)/), "shell", "child-informal"),
   route("child/sticker", "StickerBook", "src/screens/child/StickerBook.tsx", "child", "all", "query", queryStates(/received\.isLoading/, /received\.isError/, /book\.gotCount === 0/, /book\.slots\.map/, /void received\.refetch\(\)/), "shell", "child-informal"),
@@ -46,51 +46,51 @@ const routeQualityMatrix = [
   route("teacher/home", "TeacherHome", "src/screens/teacher/TeacherHome.tsx", "teacher", "dev", "query", queryStates(/loading/, /genuineError/, /preview\.length === 0/, /preview\.map/, /void retryTeacherHome\(\)/), "shell", "teacher-dev"),
   route("teacher/students", "TeacherStudents", "src/screens/teacher/TeacherStudents.tsx", "teacher", "dev", "query", queryStates(/studentsLoading/, /studentsError/, /visibleStudents\.length === 0/, /visibleStudents\.map/, /void retryTeacherStudents\(\)/), "shell", "teacher-dev"),
   route("teacher/timetable", "TeacherTimetable", "src/screens/teacher/TeacherTimetable.tsx", "teacher", "dev", "query", queryStates(/scheduleQ\.isLoading/, /scheduleQ\.isError/, /rows\.length === 0/, /rows\.map/, /scheduleQ\.refetch\(\)/), "shell", "teacher-dev"),
-  route("teacher/settings", "TeacherSettings", "src/screens/teacher/TeacherSettings.tsx", "teacher", "dev", "mutation", null, "shell", "teacher-dev"),
+  route("teacher/settings", "TeacherSettings", "src/screens/teacher/TeacherSettings.tsx", "teacher", "dev", "hybrid", null, "shell", "teacher-dev"),
   route("teacher/*", "TeacherReleaseGate", "src/screens/teacher/TeacherReleaseGate.tsx", "teacher", "production", "mutation", null, "none", "teacher-release"),
 
   route("onboarding", "Onboarding", "src/screens/onboarding/Onboarding.tsx", "guest", "all", "mutation", null, "none", "role-aware"),
   route("parent/family", "ParentFamily", "src/screens/parent/ParentFamily.tsx", "parent", "all", "query", queryStates(/isLoading/, /isError/, /view\.children\.length === 0/, /view\.children\.map/, /void refetchFamily\(\)/), "safe", "parent-formal"),
-  route("subscription", "Subscription", "src/screens/feature/Subscription.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
+  route("subscription", "Subscription", "src/screens/feature/Subscription.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
   route("trial-lock", "TrialLock", "src/screens/feature/TrialLock.tsx", "parent", "all", "static", null, "screen", "parent-formal"),
   route("notifications", "Notifications", "src/screens/feature/Notifications.tsx", "parent", "all", "query", queryStates(/isLoading/, /isError/, /groups\.length === 0/, /groups\.map/, /refetch\(\)/), "safe", "parent-formal"),
-  route("remote-audio", "RemoteAudio", "src/screens/feature/RemoteAudio.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
+  route("remote-audio", "RemoteAudio", "src/screens/feature/RemoteAudio.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
   route("place-manager", "PlaceManager", "src/screens/feature/PlaceManager.tsx", "parent", "all", "query", queryStates(/placesLoading/, /placesError/, /places\.length === 0/, /places\.map/, /void retryPlaces\(\)/), "screen", "parent-formal"),
-  route("friend-play", "FriendPlay", "src/screens/feature/FriendPlay.tsx", "parent", "all", "query", queryStates(/candidatesQ\.isLoading/, /candidatesQ\.isError/, /candidates\.length === 0/, /candidates\.map/, /void candidatesQ\.refetch\(\)/), "safe", "parent-formal"),
-  route("ai-schedule", "AiSchedule", "src/screens/feature/AiSchedule.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
-  route("ai-credit", "AiCredit", "src/screens/feature/AiCredit.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
-  route("phone-setup", "PhoneSetup", "src/screens/feature/PhoneSetup.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
-  route("sticker-send", "StickerSend", "src/screens/feature/StickerSend.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
-  route("profile-edit", "ProfileEdit", "src/screens/feature/ProfileEdit.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
-  route("place-form", "PlaceForm", "src/screens/feature/PlaceForm.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
+  route("friend-play", "FriendPlay", "src/screens/feature/FriendPlay.tsx", "parent", "all", "query", queryStates(/parentPlaydateLoading/, /parentPlaydateError/, /현재 진행 중인 친구놀이가 없어요/, /active \? \(/, /void retryParentPlaydate\(\)/), "safe", "parent-formal"),
+  route("ai-schedule", "AiSchedule", "src/screens/feature/AiSchedule.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
+  route("ai-credit", "AiCredit", "src/screens/feature/AiCredit.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
+  route("phone-setup", "PhoneSetup", "src/screens/feature/PhoneSetup.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
+  route("sticker-send", "StickerSend", "src/screens/feature/StickerSend.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
+  route("profile-edit", "ProfileEdit", "src/screens/feature/ProfileEdit.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
+  route("place-form", "PlaceForm", "src/screens/feature/PlaceForm.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
   route("child-invite", "ChildInvite", "src/screens/feature/ChildInvite.tsx", "parent", "all", "query", queryStates(/isLoading/, /isError/, /!pairCode/, /pairLink/, /void refetchFamily\(\)/), "screen", "parent-formal"),
-  route("event-form", "EventForm", "src/screens/parent/EventForm.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
-  route("danger-zone-form", "DangerZoneForm", "src/screens/feature/DangerZoneForm.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
+  route("event-form", "EventForm", "src/screens/parent/EventForm.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
+  route("danger-zone-form", "DangerZoneForm", "src/screens/feature/DangerZoneForm.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
   route("location-status", "LocationStatus", "src/screens/feature/LocationStatus.tsx", "parent", "all", "query", queryStates(/\? "loading"/, /\? "error"/, /!loc/, /loc && fresh/, /void retry\(\)/), "screen", "parent-formal"),
   route("child-detail", "ChildDetail", "src/screens/parent/ChildDetail.tsx", "parent", "all", "query", queryStates(/detailLoading/, /detailError/, /!rawChild/, /title=\{name\}/, /void retryChildDetail\(\)/), "screen", "parent-formal"),
-  route("pairing-wizard", "PairingWizard", "src/screens/feature/PairingWizard.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
-  route("family-connection", "FamilyConnection", "src/screens/feature/FamilyConnection.tsx", "parent", "all", "query", queryStates(/isLoading/, /isError/, /connected\.length === 0/, /connected\.map/, /void refetchFamily\(\)/), "screen", "parent-formal"),
-  route("location-settings", "LocationSettings", "src/screens/feature/LocationSettings.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
-  route("account", "ParentAccount", "src/screens/parent/ParentAccount.tsx", "parent", "all", "mutation", null, "screen", "parent-formal", "focus-trapped"),
-  route("data-sync", "DataSync", "src/screens/feature/DataSync.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
-  route("notification-settings", "NotificationSettings", "src/screens/feature/NotificationSettings.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
+  route("pairing-wizard", "PairingWizard", "src/screens/feature/PairingWizard.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
+  route("family-connection", "FamilyConnection", "src/screens/feature/FamilyConnection.tsx", "parent", "all", "query", queryStates(/connectionLoading/, /connectionError/, /connected\.length === 0/, /connected\.map/, /void retryFamilyConnection\(\)/), "screen", "parent-formal"),
+  route("location-settings", "LocationSettings", "src/screens/feature/LocationSettings.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
+  route("account", "ParentAccount", "src/screens/parent/ParentAccount.tsx", "parent", "all", "query", queryStates(/isLoading \|\| accountLoadError/, /accountIsError/, /account === null/, /const isPrimary = account\.isPrimaryParent/, /void refetchAccount\(\)/), "screen", "parent-formal", "focus-trapped"),
+  route("data-sync", "DataSync", "src/screens/feature/DataSync.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
+  route("notification-settings", "NotificationSettings", "src/screens/feature/NotificationSettings.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
   route("arrival-alerts", "ArrivalAlerts", "src/screens/feature/ArrivalAlerts.tsx", "parent", "all", "query", queryStates(/isLoading/, /isError/, /list\.length === 0/, /list\.map/, /refetch\(\)/), "screen", "parent-formal"),
   route("danger-alert", "DangerAlert", "src/screens/feature/DangerAlert.tsx", "parent", "all", "query", queryStates(/isLoading/, /isError/, /!latest/, /latest &&/, /refetch\(\)/), "safe", "parent-formal"),
   route("day-summary", "DaySummary", "src/screens/feature/DaySummary.tsx", "parent", "all", "query", queryStates(/isLoading/, /isError/, /isEmpty/, /rows\.map/, /void refetchSummary\(\)/), "screen", "parent-formal"),
   route("daily-report", "DailySafetyReport", "src/screens/feature/DailySafetyReport.tsx", "parent", "all", "query", queryStates(/safetySourceIsLoading/, /safetySourceHasError/, /todayEvents\.length === 0/, /overviewCards\.map/, /source\.refetch\(\)/), "screen", "parent-formal"),
   route("weekly-report", "WeeklyFamilyReport", "src/screens/feature/WeeklyFamilyReport.tsx", "parent", "all", "query", queryStates(/queryState === "loading"/, /queryState === "error"/, /summary\.busiestDay \?/, /summary \? \(/, /void Promise\.all/), "screen", "parent-formal"),
   route("remote-audio-audit", "RemoteAudioAudit", "src/screens/feature/RemoteAudioAudit.tsx", "parent", "all", "query", queryStates(/audit\.isLoading/, /audit\.isError/, /items\.length === 0/, /items\.map/, /audit\.refetch\(\)/), "screen", "parent-formal"),
-  route("remote-ring", "RemoteRing", "src/screens/feature/RemoteRing.tsx", "parent", "all", "mutation", null, "screen", "parent-formal", "focus-trapped"),
+  route("remote-ring", "RemoteRing", "src/screens/feature/RemoteRing.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal", "focus-trapped"),
   route("sos-receive", "SosReceive", "src/screens/feature/SosReceive.tsx", "parent", "all", "query", queryStates(/sosLoading/, /sosLoadError/, /!latest && !sosLoading && !sosLoadError/, /\{latest && \(/, /void refetchSos\(\)/), "safe", "parent-formal"),
 
-  route("child/sos", "ChildSos", "src/screens/child/ChildSos.tsx", "child", "all", "mutation", null, "screen", "child-informal"),
+  route("child/sos", "ChildSos", "src/screens/child/ChildSos.tsx", "child", "all", "hybrid", null, "screen", "child-informal"),
   route("child/ai-friend", "AiFriendChat", "src/screens/child/AiFriendChat.tsx", "child", "all", "query", queryStates(/chatLoading/, /chatError/, /messagesData\.length === 0/, /shown\.map/, /void retryChat\(\)/), "screen", "child-informal"),
   route("child/location-status", "ChildLocationStatus", "src/screens/child/ChildLocationStatus.tsx", "child", "all", "query", queryStates(/isLoading/, /isError/, /!location/, /location &&/, /void refetchLocation\(\)/), "screen", "child-informal"),
-  route("child/settings", "ChildSettings", "src/screens/child/ChildSettings.tsx", "child", "all", "mutation", null, "screen", "child-informal"),
-  route("child/ai-friend-setup", "AiFriendSetup", "src/screens/child/AiFriendSetup.tsx", "child", "all", "mutation", null, "screen", "child-informal"),
+  route("child/settings", "ChildSettings", "src/screens/child/ChildSettings.tsx", "child", "all", "hybrid", null, "screen", "child-informal"),
+  route("child/ai-friend-setup", "AiFriendSetup", "src/screens/child/AiFriendSetup.tsx", "child", "all", "hybrid", null, "screen", "child-informal"),
   route("playdate-accept", "PlaydateAccept", "src/screens/feature/PlaydateAccept.tsx", "child", "all", "query", queryStates(/playdateLoading/, /playdateError/, /incoming\.length === 0/, /incoming\.map/, /void retryPlaydates\(\)/), "safe", "child-informal"),
 
-  route("teacher/notice", "TeacherNotice", "src/screens/teacher/TeacherNotice.tsx", "teacher", "dev", "mutation", null, "screen", "teacher-dev"),
+  route("teacher/notice", "TeacherNotice", "src/screens/teacher/TeacherNotice.tsx", "teacher", "dev", "hybrid", null, "screen", "teacher-dev"),
   route("feedback", "Feedback", "src/screens/feature/Feedback.tsx", "authenticated", "all", "mutation", null, "screen", "role-aware"),
   route("supplies", "Supplies", "src/screens/feature/Supplies.tsx", "parent-child", "all", "query", queryStates(/isLoading/, /isError/, /sec\.list\.length === 0/, /sec\.list\.map/, /void Promise\.all/), "screen", "role-aware"),
   route("route", "RouteView", "src/screens/feature/RouteView.tsx", "parent-child", "all", "query", queryStates(/routeFetching/, /routeError/, /routeState === "no-child" \|\| routeState === "no-dest"/, /steps\.map/, /routeRefetch\(\)/), "screen", "role-aware"),
@@ -164,6 +164,122 @@ function extractLazyScreens(sourceFile) {
   };
   visit(sourceFile);
   return lazyScreens;
+}
+
+const queryModuleCache = new Map();
+
+function sourcePathForImport(fromSource, moduleName) {
+  let absolute;
+  if (moduleName.startsWith("@/")) {
+    absolute = resolve(rootDir, "src", `${moduleName.slice(2)}.ts`);
+  } else if (moduleName.startsWith(".")) {
+    absolute = resolve(rootDir, dirname(fromSource), `${moduleName}.ts`);
+  } else {
+    return null;
+  }
+  const sourcePath = relative(rootDir, absolute).replaceAll("\\", "/");
+  return sourcePath.startsWith("src/queries/") ? sourcePath : null;
+}
+
+function queryModuleInfo(sourcePath) {
+  const cached = queryModuleCache.get(sourcePath);
+  if (cached) return cached;
+  const sourceFile = ts.createSourceFile(
+    sourcePath,
+    read(sourcePath),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const functions = new Map();
+  const imports = new Map();
+  sourceFile.statements.forEach((statement) => {
+    if (ts.isFunctionDeclaration(statement) && statement.name) {
+      functions.set(statement.name.text, statement);
+    }
+    if (ts.isVariableStatement(statement)) {
+      statement.declarationList.declarations.forEach((declaration) => {
+        if (ts.isIdentifier(declaration.name) && declaration.initializer) {
+          functions.set(declaration.name.text, declaration.initializer);
+        }
+      });
+    }
+    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) return;
+    const importedSource = sourcePathForImport(sourcePath, statement.moduleSpecifier.text);
+    if (!importedSource) return;
+    statement.importClause?.namedBindings?.elements?.forEach((element) => {
+      imports.set(element.name.text, {
+        source: importedSource,
+        name: element.propertyName?.text ?? element.name.text,
+      });
+    });
+  });
+  const info = { sourceFile, functions, imports };
+  queryModuleCache.set(sourcePath, info);
+  return info;
+}
+
+function isReadQueryHook(sourcePath, hookName, seen = new Set()) {
+  const key = `${sourcePath}#${hookName}`;
+  if (seen.has(key)) return false;
+  seen.add(key);
+  const info = queryModuleInfo(sourcePath);
+  const hook = info.functions.get(hookName);
+  if (!hook) return false;
+  let readQuery = false;
+  const visit = (node) => {
+    if (readQuery) return;
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+      const called = node.expression.text;
+      if (called === "useQuery" || called === "useQueries") {
+        readQuery = true;
+        return;
+      }
+      if (info.functions.has(called) && isReadQueryHook(sourcePath, called, new Set(seen))) {
+        readQuery = true;
+        return;
+      }
+      const imported = info.imports.get(called);
+      if (imported && isReadQueryHook(imported.source, imported.name, new Set(seen))) {
+        readQuery = true;
+        return;
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(hook);
+  return readQuery;
+}
+
+function readQueryHooksForScreen(sourcePath) {
+  const sourceFile = ts.createSourceFile(
+    sourcePath,
+    read(sourcePath),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX,
+  );
+  const hooks = [];
+  sourceFile.statements.forEach((statement) => {
+    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) return;
+    const importedSource = sourcePathForImport(sourcePath, statement.moduleSpecifier.text);
+    if (!importedSource) return;
+    statement.importClause?.namedBindings?.elements?.forEach((element) => {
+      const importedName = element.propertyName?.text ?? element.name.text;
+      if (isReadQueryHook(importedSource, importedName)) hooks.push(element.name.text);
+    });
+  });
+  return hooks.sort();
+}
+
+function assertReadQueryClassification(row) {
+  const hooks = readQueryHooksForScreen(row.source);
+  if (row.kind === "mutation") {
+    assert.deepEqual(hooks, [], `${row.path}는 read query ${hooks.join(", ")}를 mutation-only로 숨겼습니다`);
+  }
+  if (row.kind === "hybrid") {
+    assert.ok(hooks.length > 0, `${row.path} hybrid 분류에 실제 read query가 없습니다`);
+  }
 }
 
 function extractAppRoutes() {
@@ -240,8 +356,10 @@ function extractAppRoutes() {
 test("라우트 품질 매트릭스는 App.tsx의 58개 실제 화면·가드·출시 범위를 정확히 대조한다", () => {
   assert.equal(routeQualityMatrix.length, 58);
   assert.equal(new Set(routeQualityMatrix.map((item) => item.path)).size, 58, "매트릭스 path 중복");
-  assert.equal(routeQualityMatrix.filter((item) => item.kind === "query").length, 30);
-  assert.equal(routeQualityMatrix.filter((item) => item.kind === "mutation").length, 27);
+  assert.equal(new Set(routeQualityMatrix.map((item) => item.source)).size, 57, "MemoChat 외 화면 소스 중복 또는 누락");
+  assert.equal(routeQualityMatrix.filter((item) => item.kind === "query").length, 31);
+  assert.equal(routeQualityMatrix.filter((item) => item.kind === "hybrid").length, 21);
+  assert.equal(routeQualityMatrix.filter((item) => item.kind === "mutation").length, 5);
   assert.equal(routeQualityMatrix.filter((item) => item.kind === "static").length, 1);
   for (const item of routeQualityMatrix.filter((row) => row.kind !== "query")) {
     assert.equal(item.states, null, `${item.path}는 query 상태 계약 대상이 아닙니다`);
@@ -256,10 +374,20 @@ test("라우트 품질 매트릭스는 App.tsx의 58개 실제 화면·가드·�
   assert.deepEqual(actualSignatures, expectedSignatures);
 });
 
+test("mutation-only 분류는 실제 read query를 숨길 수 없고 hybrid는 조회 사용을 명시한다", () => {
+  routeQualityMatrix.forEach(assertReadQueryClassification);
+  const parentSettings = routeQualityMatrix.find((row) => row.path === "parent/settings");
+  assert.ok(parentSettings);
+  assert.throws(
+    () => assertReadQueryClassification({ ...parentSettings, kind: "mutation" }),
+    /mutation-only로 숨겼습니다/,
+  );
+});
+
 test("query 화면은 loading/error/empty/success와 실제 retry UI 계약을 모두 가진다", () => {
   const queryRows = routeQualityMatrix.filter((item) => item.kind === "query");
-  assert.equal(queryRows.length, 30);
-  assert.equal(new Set(queryRows.map((item) => item.source)).size, 29, "MemoChat만 부모·아이 라우트에서 공유됩니다");
+  assert.equal(queryRows.length, 31);
+  assert.equal(new Set(queryRows.map((item) => item.source)).size, 30, "MemoChat만 부모·아이 라우트에서 공유됩니다");
 
   for (const item of queryRows) {
     assert.deepEqual(Object.keys(item.states).sort(), ["empty", "error", "loading", "retry", "success"]);
@@ -305,10 +433,11 @@ test("계정·지도 선택·원격 울림 dialog는 공통 focus lifecycle을 �
   const hook = read("src/components/useDialogFocusLifecycle.ts");
   assert.match(hook, /previousFocus/);
   assert.match(hook, /requestAnimationFrame/);
+  assert.match(hook, /shouldHandleDialogKey\(dialogFocusStack, dialogId, event\.key\)/);
   assert.match(hook, /event\.key === "Escape"/);
-  assert.match(hook, /event\.key !== "Tab"/);
   assert.match(hook, /event\.shiftKey/);
-  assert.match(hook, /previousFocus\?\.focus\(\)/);
+  assert.match(hook, /previousFocus\?\.isConnected/);
+  assert.match(hook, /restoreDialogFocus\(closeResult, restorePrevious\)/);
 
   const account = read("src/screens/parent/ParentAccount.tsx");
   assert.equal((account.match(/useDialogFocusLifecycle(?:<[^>]+>)?\(/g) ?? []).length, 2, "계정 dialog 2개 모두 focus lifecycle 필요");

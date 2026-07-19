@@ -53,8 +53,14 @@ export function ChildDetail() {
   const unpair = useUnpairChild();
   const { activeChild, setActiveChildId } = useActiveChild();
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const detailLoading = familyQuery.isLoading;
-  const detailError = familyQuery.isError;
+  const detailLoading = familyQuery.isLoading
+    || eventsQuery.isLoading
+    || locationsQuery.isLoading
+    || placesQuery.isLoading;
+  const detailError = familyQuery.isError
+    || eventsQuery.isError
+    || locationsQuery.isError
+    || placesQuery.isError;
   const retryChildDetail = async () => {
     await Promise.all([
       familyQuery.refetch(),
@@ -120,14 +126,6 @@ export function ChildDetail() {
   }, [rawChild, fresh, placeName]);
 
   // ── 로딩/빈 상태 ──
-  if (detailLoading && !rawChild) {
-    return (
-      <div className="cd-root">
-        <Header title="아이 상세" onBack={() => navigate(-1)} onEdit={null} />
-        <div className="cd-state">아이 정보를 불러오는 중…</div>
-      </div>
-    );
-  }
   if (detailError) {
     return (
       <div className="cd-root">
@@ -138,6 +136,14 @@ export function ChildDetail() {
             다시 시도
           </button>
         </div>
+      </div>
+    );
+  }
+  if (detailLoading) {
+    return (
+      <div className="cd-root">
+        <Header title="아이 상세" onBack={() => navigate(-1)} onEdit={null} />
+        <div className="cd-state">아이 정보를 불러오는 중…</div>
       </div>
     );
   }

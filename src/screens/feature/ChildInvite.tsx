@@ -7,6 +7,10 @@ import { useMyFamily, useRegeneratePairCode } from "@/queries/useFamily";
 import { QrCode } from "@/components/ui/QrCode";
 import { buildPairLink } from "@/transform/pairLink";
 import type { FamilyMember } from "@/lib/api/endpoints/family";
+import {
+  advanceChildInviteConnection,
+  type ChildInviteConnectionState,
+} from "@/transform/childInviteConnection";
 import "./ChildInvite.css";
 
 /** 만료까지 남은 시간 표시 + 만료 여부. 무기한(expiresAt 없음)이면 null. */
@@ -49,6 +53,7 @@ export function ChildInvite() {
     data: family,
     isLoading,
     isError,
+    isSuccess,
     refetch: refetchFamily,
   } = useMyFamily({ pollMs: 6000 });
   const regen = useRegeneratePairCode();
@@ -68,27 +73,20 @@ export function ChildInvite() {
       (family?.members ?? [])
         .filter((m: FamilyMember) => m.role === "child" && !!m.user_id)
         .map((m) => m.user_id as string)
-        .sort()
-        .join(","),
+        .sort(),
     [family],
   );
-  const baselineRef = useRef<string | null>(null);
-  const notifiedRef = useRef(false);
+  const connectionRef = useRef<ChildInviteConnectionState>({ baseline: null, notified: false });
   useEffect(() => {
-    if (isLoading) return;
-    if (baselineRef.current === null) {
-      baselineRef.current = childUids;
-      return;
-    }
-    const baseSet = new Set(baselineRef.current.split(",").filter(Boolean));
-    const hasNewUid = childUids.split(",").filter(Boolean).some((uid) => !baseSet.has(uid));
-    if (!notifiedRef.current && hasNewUid) {
-      notifiedRef.current = true;
+    const status = isSuccess && family ? "success" : isError ? "error" : "loading";
+    const result = advanceChildInviteConnection(connectionRef.current, { status, childUids });
+    connectionRef.current = result.state;
+    if (result.newChildUid) {
       show("아이가 연결됐어요! 🎉", "🔗");
       const t = setTimeout(() => navigate("/parent/family"), 1200);
       return () => clearTimeout(t);
     }
-  }, [childUids, isLoading, navigate, show]);
+  }, [childUids, family, isError, isSuccess, navigate, show]);
 
   const copyCode = () => {
     if (!pairCode) return;
@@ -129,7 +127,7 @@ export function ChildInvite() {
 
   const regenerate = () => {
     if (regen.isPending) return;
-    notifiedRef.current = false;
+    connectionRef.current = { ...connectionRef.current, notified: false };
     regen.mutate(undefined, {
       onSuccess: () => show("새 연결 코드를 발급했어요", "🔄"),
       onError: (e) => show(e instanceof Error ? e.message : "재발급에 실패했어요", "⚠️"),

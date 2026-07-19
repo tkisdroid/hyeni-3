@@ -60,7 +60,12 @@ export function MemoChat() {
   const { show } = useToast();
   const { userId, role, familyId } = useAuth();
   const isChildSession = role === "child";
-  const { data: family, isLoading: familyLoading, isError: familyError } = useMyFamily();
+  const {
+    data: family,
+    isLoading: familyLoading,
+    isError: familyError,
+    refetch: refetchFamily,
+  } = useMyFamily();
   const { activeChild } = useActiveChild();
   const [searchParams] = useSearchParams();
   const childHint = searchParams.get("child")?.trim() || null;
@@ -68,7 +73,8 @@ export function MemoChat() {
   // 대화 스코프 아이(member id) — 아이별 1:1 스레드(TK 결정: 대화도 각각).
   // 부모/선생님 = 전역 활성 아이(홈 스위치), 아이 = 자기 자신. 메시지 fetch·send 모두 이 스코프.
   const scopeChild = useMemo(() => {
-    const members = family?.members ?? [];
+    if (!family) return null;
+    const members = family.members;
     if (role === "child") return members.find((m) => m.user_id === userId) ?? null;
     if (childHint) {
       const hintedChild = members.find(
@@ -76,7 +82,9 @@ export function MemoChat() {
       ) ?? null;
       return hintedChild;
     }
-    return activeChild;
+    return activeChild && members.some((member) => member.role === "child" && member.id === activeChild.id)
+      ? activeChild
+      : null;
   }, [family, role, userId, activeChild, childHint]);
   const explicitChildMissing = role !== "child"
     && !!childHint
@@ -436,8 +444,11 @@ export function MemoChat() {
           </div>
         )}
         {familyError && (
-          <div className="mc-daysep">
+          <div className="mc-daysep mc-daysep--error" role="alert">
             <span>{copy.loadError}</span>
+            <button type="button" className="hy-section-action hy-press" onClick={() => void refetchFamily()}>
+              {isChildSession ? "다시 불러오기" : "다시 시도"}
+            </button>
           </div>
         )}
         {explicitChildMissing && (

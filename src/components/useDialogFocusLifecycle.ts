@@ -1,4 +1,9 @@
 import { useEffect, useRef, type RefObject } from "react";
+import {
+  dialogFocusStack,
+  restoreDialogFocus,
+  shouldHandleDialogKey,
+} from "./dialogFocusStack";
 
 const FOCUSABLE_SELECTOR = [
   "a[href]",
@@ -25,6 +30,7 @@ export function useDialogFocusLifecycle<TDialog extends HTMLElement>({
   canClose = () => true,
 }: DialogFocusLifecycleOptions): RefObject<TDialog | null> {
   const dialogRef = useRef<TDialog>(null);
+  const dialogIdRef = useRef(Symbol("dialog-focus"));
   const onCloseRef = useRef(onClose);
   const canCloseRef = useRef(canClose);
   onCloseRef.current = onClose;
@@ -40,20 +46,25 @@ export function useDialogFocusLifecycle<TDialog extends HTMLElement>({
       [...(dialogRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR) ?? [])]
         .filter((element) => element.tabIndex >= 0 && !element.hidden);
 
-    const animationFrame = window.requestAnimationFrame(() => {
+    const focusDialog = () => {
       const preferred = initialFocusRef?.current;
       (preferred ?? focusableElements()[0] ?? dialogRef.current)?.focus();
+    };
+    const dialogId = dialogIdRef.current;
+    dialogFocusStack.open({ id: dialogId, focusFallback: focusDialog });
+
+    const animationFrame = window.requestAnimationFrame(() => {
+      if (dialogFocusStack.isTop(dialogId)) focusDialog();
     });
 
     const onKeyDown = (event: KeyboardEvent) => {
+      if (!shouldHandleDialogKey(dialogFocusStack, dialogId, event.key)) return;
       if (event.key === "Escape") {
         if (!canCloseRef.current()) return;
         event.preventDefault();
         onCloseRef.current();
         return;
       }
-      if (event.key !== "Tab") return;
-
       const focusable = focusableElements();
       if (focusable.length === 0) {
         event.preventDefault();
@@ -78,7 +89,11 @@ export function useDialogFocusLifecycle<TDialog extends HTMLElement>({
     return () => {
       window.cancelAnimationFrame(animationFrame);
       window.removeEventListener("keydown", onKeyDown);
-      previousFocus?.focus();
+      const closeResult = dialogFocusStack.close(dialogId);
+      const restorePrevious = previousFocus?.isConnected
+        ? () => previousFocus.focus()
+        : null;
+      restoreDialogFocus(closeResult, restorePrevious);
     };
   }, [initialFocusRef, open]);
 

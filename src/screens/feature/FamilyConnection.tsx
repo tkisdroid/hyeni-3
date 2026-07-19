@@ -31,8 +31,16 @@ export function FamilyConnection() {
   const { show } = useToast();
   const now = useMemo(() => new Date(), []);
 
-  const { data: family, isLoading, isError, error, refetch: refetchFamily } = useMyFamily();
-  const { data: locations } = useChildLocations();
+  const familyQuery = useMyFamily();
+  const locationsQuery = useChildLocations();
+  const family = familyQuery.data;
+  const locations = locationsQuery.data;
+  const connectionLoading = familyQuery.isLoading || locationsQuery.isLoading;
+  const connectionError = familyQuery.isError || locationsQuery.isError;
+  const connectionErrorValue = familyQuery.error ?? locationsQuery.error;
+  const retryFamilyConnection = async () => {
+    await Promise.all([familyQuery.refetch(), locationsQuery.refetch()]);
+  };
   const unpair = useUnpairChild();
 
   const [confirm, setConfirm] = useState<UnpairTarget | null>(null);
@@ -92,18 +100,18 @@ export function FamilyConnection() {
       </header>
 
       <div className="fc-content">
-        {isLoading && <div className="fc-state">연결 정보를 불러오는 중…</div>}
-        {isError && (
-          <div className="fc-state fc-state--error">
+        {connectionLoading && !connectionError && <div className="fc-state">연결 정보를 불러오는 중…</div>}
+        {connectionError && (
+          <div className="fc-state fc-state--error" role="alert">
             연결 정보를 불러오지 못했어요
-            {error instanceof Error ? ` (${error.message})` : ""}
-            <button type="button" className="fc-ghost hy-press" onClick={() => void refetchFamily()}>
+            {connectionErrorValue instanceof Error ? ` (${connectionErrorValue.message})` : ""}
+            <button type="button" className="fc-ghost hy-press" onClick={() => void retryFamilyConnection()}>
               다시 시도
             </button>
           </div>
         )}
 
-        {!isLoading && !isError && (
+        {!connectionLoading && !connectionError && (
           <>
             {/* 히어로 — 연결 요약 */}
             <div className={connected.length ? "fc-hero fc-hero--ok" : "fc-hero"}>

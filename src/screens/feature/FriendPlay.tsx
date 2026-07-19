@@ -31,6 +31,37 @@ function errMsg(e: unknown): string {
   return e instanceof Error ? e.message : "";
 }
 
+function ParentPlaydateQueryState({
+  loading,
+  onBack,
+  onRetry,
+}: {
+  loading: boolean;
+  onBack: () => void;
+  onRetry: () => void;
+}) {
+  return (
+    <div className="fp-screen">
+      <div className="fp-header">
+        <button type="button" className="fp-back hy-press" aria-label="뒤로" onClick={onBack}>
+          <ChevronLeft size={22} strokeWidth={2.2} color="var(--fg-secondary)" />
+        </button>
+        <span className="fp-header__title">친구놀이 설정</span>
+      </div>
+      <div className="fp-content">
+        <div className="fp-empty" role={loading ? "status" : "alert"}>
+          <span>{loading ? "친구놀이 설정을 불러오는 중…" : "친구놀이 설정을 불러오지 못했어요"}</span>
+          {!loading && (
+            <button type="button" className="fp-cta hy-press" onClick={onRetry}>
+              다시 시도
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** 후보 soft error → 아이 눈높이 안내(반말). */
 
 export function FriendPlay() {
@@ -57,10 +88,23 @@ export function FriendPlay() {
   const canSend = role === "child";
   const sending = createInvite.isPending;
 
-  const playdateEnabled = enabledQ.data?.playdate_enabled ?? true;
+  const playdateEnabled = enabledQ.data?.playdate_enabled === true;
+  const parentPlaydateReady = enabledQ.isSuccess && activeQ.isSuccess && pendingQ.isSuccess;
+  const parentPlaydateLoading = enabledQ.isLoading || activeQ.isLoading || pendingQ.isLoading;
+  const parentPlaydateError = enabledQ.isError
+    || activeQ.isError
+    || pendingQ.isError
+    || (!parentPlaydateLoading && !parentPlaydateReady);
+  const retryParentPlaydate = async () => {
+    await Promise.all([
+      enabledQ.refetch(),
+      activeQ.refetch(),
+      pendingQ.refetch(),
+    ]);
+  };
 
   const togglePlaydateEnabled = () => {
-    if (setEnabled.isPending) return;
+    if (!isParent || parentPlaydateLoading || parentPlaydateError || !enabledQ.data || setEnabled.isPending) return;
     const next = !playdateEnabled;
     setEnabled.mutate(next, {
       onSuccess: () => show(next ? "친구놀이를 허용했어요" : "친구놀이를 껐어요", "🎈"),
@@ -110,6 +154,18 @@ export function FriendPlay() {
   const notice = playdateCandidateNotice(softError, candidates.length === 0, candidatesQ.isError);
 
   if (role === "parent") {
+    if (parentPlaydateLoading) {
+      return <ParentPlaydateQueryState loading onBack={goBack} onRetry={() => undefined} />;
+    }
+    if (parentPlaydateError) {
+      return (
+        <ParentPlaydateQueryState
+          loading={false}
+          onBack={goBack}
+          onRetry={() => void retryParentPlaydate()}
+        />
+      );
+    }
     return (
       <div className="fp-screen">
         <div className="fp-header">

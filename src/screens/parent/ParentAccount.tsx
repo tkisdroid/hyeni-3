@@ -18,7 +18,14 @@ export function ParentAccount() {
   const { show } = useToast();
   const qc = useQueryClient();
   const { logout, familyId, user } = useAuth();
-  const { account, me, providerLabel, isLoading } = useAccount();
+  const {
+    account,
+    me,
+    providerLabel,
+    isLoading,
+    isError: accountIsError,
+    refetch: refetchAccount,
+  } = useAccount();
   const updateProfile = useUpdateProfile();
   const deleteAccount = useDeleteAccount();
   const changePassword = useChangePassword();
@@ -69,8 +76,13 @@ export function ParentAccount() {
     me?.gender === "dad" ? "family/dad.webp" : "family/mom.webp";
 
   const dirty = seeded && (name.trim() !== (me?.name ?? account?.myName ?? "") || phone.trim() !== (me?.phone ?? ""));
+  const accountReady = !isLoading && !accountIsError && account !== null;
 
   const saveProfile = () => {
+    if (!accountReady) {
+      show("계정 정보를 확인한 뒤 다시 시도해 주세요", "⚠️");
+      return;
+    }
     if (!name.trim()) {
       show("이름을 입력해 주세요", "✏️");
       return;
@@ -108,6 +120,10 @@ export function ParentAccount() {
   };
 
   const handleDelete = () => {
+    if (!accountReady) {
+      show("계정 정보를 확인한 뒤 다시 시도해 주세요", "⚠️");
+      return;
+    }
     deleteAccount.mutate(undefined, {
       onSuccess: () => {
         show("계정이 삭제되었어요", "🗑️");
@@ -154,7 +170,36 @@ export function ParentAccount() {
     );
   };
 
-  const isPrimary = account?.isPrimaryParent === true;
+  const accountLoadError = accountIsError || (!isLoading && account === null);
+  if (isLoading || accountLoadError || !account) {
+    return (
+      <div className="pa-root hy-rise-in">
+        <header className="pa-head">
+          <button
+            type="button"
+            className="pa-back hy-press"
+            aria-label="뒤로"
+            onClick={() => navigate(-1)}
+          >
+            <ChevronLeft size={22} strokeWidth={2.2} color="var(--fg-secondary)" />
+          </button>
+          <span className="pa-head-title">계정 · 프로필</span>
+        </header>
+        <div className="pa-content">
+          <div className="pa-account-state" role={accountLoadError ? "alert" : "status"}>
+            <span>{accountLoadError ? "계정 정보를 불러오지 못했어요" : "계정 정보를 불러오는 중…"}</span>
+            {accountLoadError && (
+              <button type="button" className="pa-save hy-press" onClick={() => void refetchAccount()}>
+                다시 시도
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isPrimary = account.isPrimaryParent;
 
   return (
     <div className="pa-root hy-rise-in">

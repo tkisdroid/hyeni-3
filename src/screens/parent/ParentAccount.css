@@ -382,3 +382,16 @@
 .pa-back {
   min-width: var(--control-min-size);
 }
+.pa-account-state {
+  min-height: 180px;
+  display: grid;
+  place-content: center;
+  gap: 16px;
+  color: var(--fg-secondary);
+  text-align: center;
+}
+
+.pa-account-state .pa-save {
+  min-width: 120px;
+  margin: 0 auto;
+}

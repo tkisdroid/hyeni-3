@@ -4,6 +4,7 @@
  * 프로필 수정(useUpdateProfile)·가족 조회(useMyFamily)는 queries/useFamily 를 그대로 재사용한다.
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { QueryObserverResult } from "@tanstack/react-query";
 import { qk } from "./keys";
 import { useAuth } from "@/auth/AuthContext";
 import type { FamilyMember } from "@/lib/api/endpoints/family";
@@ -41,6 +42,7 @@ export interface UseAccountResult {
   providerLabel: string;
   isLoading: boolean;
   isError: boolean;
+  refetch: () => Promise<QueryObserverResult<AccountInfo | null, Error>>;
 }
 
 /** 현재 사용자의 계정 정보(/api/family/mine 파생). */
@@ -63,6 +65,7 @@ export function useAccount(): UseAccountResult {
     providerLabel: providerLabel(provider),
     isLoading: query.isLoading,
     isError: query.isError,
+    refetch: query.refetch,
   };
 }
 
