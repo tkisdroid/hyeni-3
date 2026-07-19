@@ -34,6 +34,8 @@ import {
   type WebPushState,
 } from "@/lib/webPush";
 import { webPushDeliveryView } from "@/transform/notificationDeliveryView";
+import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
+import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./NotificationSettings.css";
 
 /**
@@ -115,7 +117,17 @@ export function NotificationSettings() {
   const navigate = useNavigate();
   const { show } = useToast();
   const { userId, familyId, role } = useAuth();
-  const { data, isLoading, isError, refetch } = useNotifSettings();
+  const settingsQuery = useNotifSettings();
+  const { data } = settingsQuery;
+  const notificationQueryState = resolveQueryTruthState([
+    { isLoading: settingsQuery.isLoading, isError: settingsQuery.isError },
+  ]);
+  const notificationDataMissing = notificationQueryState === "ready" && data === undefined;
+  const notificationDataEmpty = notificationQueryState === "ready" && data === null;
+  const notificationDataReady = notificationQueryState === "ready" && !notificationDataMissing;
+  const retryNotificationSettings = async (): Promise<void> => {
+    await settingsQuery.refetch();
+  };
   const save = useSaveNotifSettings();
   const nativePlatform = isNativePlatform();
   const [delivery, setDelivery] = useState<NotificationDeliveryState | null>(null);
@@ -209,7 +221,7 @@ export function NotificationSettings() {
 
   // 초안 즉시 반영 + 서버 upsert. 실패 시 정직하게 안내(초안은 유지 → 재시도 가능).
   const persist = (next: NotifSettings) => {
-    if (!userId || hydratedUserId !== userId) {
+    if (!notificationDataReady || !userId || hydratedUserId !== userId) {
       show("현재 계정의 설정을 불러온 뒤 다시 시도해 주세요");
       return;
     }
@@ -317,6 +329,32 @@ export function NotificationSettings() {
       ? "서버 설정과 이 브라우저의 구독 상태를 다시 확인해 주세요."
       : webDelivery.detail;
 
+  if (notificationQueryState === "loading") {
+    return (
+      <ScreenQueryState
+        screenTitle="알림 설정"
+        state="loading"
+        heading="알림 설정을 불러오고 있어요"
+        description="현재 계정에 저장된 일정과 위치 알림 설정을 확인하는 중이에요."
+        onBack={() => navigate(-1)}
+      />
+    );
+  }
+
+  if (notificationQueryState === "error" || notificationDataMissing) {
+    return (
+      <ScreenQueryState
+        screenTitle="알림 설정"
+        state="error"
+        heading="알림 설정을 불러오지 못했어요"
+        description="확인되지 않은 기본값이 기존 설정을 덮어쓰지 않도록 저장 기능을 닫았어요."
+        onBack={() => navigate(-1)}
+        onRetry={() => void retryNotificationSettings()}
+        retrying={settingsQuery.isFetching}
+      />
+    );
+  }
+
   return (
     <div className="nst-screen">
       <header className="nst-header">
@@ -332,19 +370,12 @@ export function NotificationSettings() {
       </header>
 
       <div className="nst-body">
-        {isLoading && <div className="nst-state">설정을 불러오는 중…</div>}
-
-        {isError && !isLoading && (
-          <div className="nst-state">
-            <span>설정을 불러오지 못했어요</span>
-            <button type="button" className="nst-retry hy-press" onClick={() => refetch()}>
-              다시 시도
-            </button>
+        {notificationDataEmpty && (
+          <div className="sqs-inline-empty">
+            아직 저장한 알림 설정이 없어 안전한 기본값으로 보여드려요. 변경하면 현재 계정에 저장돼요.
           </div>
         )}
-
-        {!isLoading && !isError && (
-          <>
+        <>
             {/* 일정 알림 + 사전 알림 시간 */}
             <div className="nst-group">
               <div className="nst-group__label">일정</div>
@@ -506,8 +537,7 @@ export function NotificationSettings() {
                 </button>
               </div>
             </div>
-          </>
-        )}
+        </>
       </div>
     </div>
   );

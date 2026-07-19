@@ -15,6 +15,8 @@ import {
   buildAiFriendControlPatch,
   normalizeAiControlTime,
 } from "@/transform/aiFriendSettingsForm";
+import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
+import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./AiCredit.css";
 
 type CreditPack = {
@@ -68,11 +70,33 @@ export function AiCredit() {
   const childUserId = activeChild?.user_id ?? null;
   const childName = activeChild?.name || "우리 아이";
 
-  const { data: creditStatus } = useAiCredits(childUserId);
-  const heroAmount = creditStatus ? creditHeroAmount(creditStatus) : null;
+  const creditQuery = useAiCredits(childUserId);
+  const creditStatus = creditQuery.data;
+  const heroAmount = creditStatus
+    ? creditHeroAmount(creditStatus)
+    : creditStatus === null
+      ? 0
+      : null;
 
   // AI 대화 켜기/하루 한도(부모 설정, ai_parent_settings) — 이 설정이 없으면 아이 채팅이 403.
-  const { data: friendSettings } = useAiFriendSettings(childUserId);
+  const friendSettingsQuery = useAiFriendSettings(childUserId);
+  const friendSettings = friendSettingsQuery.data;
+  const aiCreditQueryState = resolveQueryTruthState([
+    { isLoading: creditQuery.isLoading, isError: creditQuery.isError },
+    { isLoading: friendSettingsQuery.isLoading, isError: friendSettingsQuery.isError },
+  ]);
+  const aiCreditDataMissing = aiCreditQueryState === "ready"
+    && !!childUserId
+    && (creditStatus === undefined || friendSettings === undefined);
+  const aiCreditDataReady = aiCreditQueryState === "ready"
+    && !!childUserId
+    && !aiCreditDataMissing;
+  const aiCreditDataEmpty = aiCreditDataReady
+    && (creditStatus === null || friendSettings === null);
+  const aiCreditRefetching = creditQuery.isFetching || friendSettingsQuery.isFetching;
+  const retryAiCredit = async (): Promise<void> => {
+    await Promise.all([creditQuery.refetch(), friendSettingsQuery.refetch()]);
+  };
   const saveSettings = useSaveAiFriendSettings();
   const aiEnabled = friendSettings?.ai_enabled ?? false;
   const dailyLimit = friendSettings?.daily_limit ?? 5;
@@ -97,7 +121,7 @@ export function AiCredit() {
   }, [childUserId, friendSettings]);
 
   const toggleAiEnabled = () => {
-    if (!childUserId || saveSettings.isPending) return;
+    if (!aiCreditDataReady || !childUserId || saveSettings.isPending) return;
     saveSettings.mutate(
       { childUserId, patch: { ai_enabled: !aiEnabled } },
       {
@@ -107,7 +131,7 @@ export function AiCredit() {
     );
   };
   const saveAdvancedSettings = () => {
-    if (!childUserId || saveSettings.isPending) return;
+    if (!aiCreditDataReady || !childUserId || saveSettings.isPending) return;
     const patch = buildAiFriendControlPatch({
       forbiddenTopicsText,
       proactiveEnabled,
@@ -127,7 +151,7 @@ export function AiCredit() {
     );
   };
   const changeDailyLimit = (delta: number) => {
-    if (!childUserId || saveSettings.isPending) return;
+    if (!aiCreditDataReady || !childUserId || saveSettings.isPending) return;
     const next = Math.min(100, Math.max(1, dailyLimit + delta));
     if (next === dailyLimit) return;
     saveSettings.mutate(
@@ -184,6 +208,10 @@ export function AiCredit() {
   // 웹(PWA)에서는 버튼이 disabled 라 여기까지 오지 않는다(방어적으로 가드 유지).
   // 자동 실행 금지: 팩 버튼 onClick 에서만 호출된다. 잔액 정본은 서버.
   const buy = async (p: CreditPack) => {
+    if (!aiCreditDataReady) {
+      show("크레딧과 아이 설정을 확인한 뒤 다시 시도해 주세요.", "⚠️");
+      return;
+    }
     if (!billingAvailable) {
       show(`${p.backendAmount}회 충전은 안드로이드 앱에서 가능해요`, "🤖");
       return;
@@ -211,6 +239,46 @@ export function AiCredit() {
     }
   };
 
+  if (!childUserId) {
+    return (
+      <ScreenQueryState
+        screenTitle="AI 크레딧"
+        state="empty"
+        heading="연결된 아이가 없어요"
+        description="AI 크레딧을 확인하거나 충전하려면 먼저 아이를 연결해 주세요."
+        onBack={() => navigate(-1)}
+        onRetry={() => navigate("/child-invite")}
+        retryLabel="아이 연결하기"
+      />
+    );
+  }
+
+  if (aiCreditQueryState === "loading") {
+    return (
+      <ScreenQueryState
+        screenTitle="AI 크레딧"
+        state="loading"
+        heading="크레딧과 아이 설정을 확인하고 있어요"
+        description="잔액과 AI 친구 설정을 안전하게 불러오는 중이에요."
+        onBack={() => navigate(-1)}
+      />
+    );
+  }
+
+  if (aiCreditQueryState === "error" || aiCreditDataMissing) {
+    return (
+      <ScreenQueryState
+        screenTitle="AI 크레딧"
+        state="error"
+        heading="AI 크레딧 정보를 확인하지 못했어요"
+        description="확인되지 않은 잔액으로 결제하거나 설정을 바꾸지 않도록 잠시 닫았어요."
+        onBack={() => navigate(-1)}
+        onRetry={() => void retryAiCredit()}
+        retrying={aiCreditRefetching}
+      />
+    );
+  }
+
   return (
     <div className="ac-screen">
       {/* sticky 헤더 */}
@@ -227,6 +295,11 @@ export function AiCredit() {
       </div>
 
       <div className="hy-content ac-content">
+        {aiCreditDataEmpty && (
+          <div className="sqs-inline-empty">
+            아직 크레딧 또는 AI 친구 설정 기록이 없어요. 현재 안전한 기본값부터 시작할 수 있어요.
+          </div>
+        )}
         {/* 잔액 히어로 */}
         <div className="ac-hero">
           <span className="ac-hero__sheen" />

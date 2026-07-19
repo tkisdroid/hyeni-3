@@ -96,7 +96,7 @@
 .sqs-retry {
   min-height: var(--control-min-size);
   margin-top: 12px;
-  padding: 0 20px;
+  padding: 0 16px;
   border-radius: var(--radius-pill);
   background: var(--fg-primary);
   color: var(--bg-card);
@@ -127,7 +127,7 @@
 
 .sqs-inline-empty {
   margin-bottom: 16px;
-  padding: 16px;
+  padding: 12px 16px;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-16);
   background: var(--bg-card);

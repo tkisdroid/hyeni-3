@@ -22,6 +22,8 @@ import { openFamilySocket, type FamilySocket } from "@/realtime/familySocket";
 import { getApiAccessToken } from "@/lib/api/session";
 import { RemoteAudioPlayer } from "@/lib/remoteAudioPlayer";
 import { resolveRemoteListenSessionTiming } from "@/transform/remoteListenSessionTiming";
+import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
+import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./RemoteAudio.css";
 
 /** 듣기 제한 시간(초) · 위급 시 1분 청취. */
@@ -64,9 +66,30 @@ export function RemoteAudio() {
   const navigate = useNavigate();
   const { show } = useToast();
   const { familyId, userId } = useAuth();
-  const { data: family } = useMyFamily();
-  const { data: locations } = useChildLocations();
-  const { data: places } = useSavedPlaces();
+  const familyQuery = useMyFamily();
+  const locationsQuery = useChildLocations();
+  const placesQuery = useSavedPlaces();
+  const family = familyQuery.data;
+  const locations = locationsQuery.data;
+  const places = placesQuery.data;
+  const remoteAudioQueryState = resolveQueryTruthState([
+    { isLoading: familyQuery.isLoading, isError: familyQuery.isError },
+    { isLoading: locationsQuery.isLoading, isError: locationsQuery.isError },
+    { isLoading: placesQuery.isLoading, isError: placesQuery.isError },
+  ]);
+  const remoteAudioDataMissing = remoteAudioQueryState === "ready" && (
+    !family || locations === undefined || places === undefined
+  );
+  const remoteAudioDataReady = remoteAudioQueryState === "ready" && !remoteAudioDataMissing;
+  const remoteAudioRefetching =
+    familyQuery.isFetching || locationsQuery.isFetching || placesQuery.isFetching;
+  const retryRemoteAudio = async (): Promise<void> => {
+    await Promise.all([
+      familyQuery.refetch(),
+      locationsQuery.refetch(),
+      placesQuery.refetch(),
+    ]);
+  };
 
   // 대상 아이 = 진입 시 지정(state.childUserId, 아이 상세에서 전달) > 전역 활성 아이.
   // 첫 아이 하드코딩 제거 — 다자녀에서 엉뚱한(기기 없는) 아이를 듣던 오연결 차단.
@@ -291,6 +314,10 @@ export function RemoteAudio() {
   // 감사 기록을 만들 수 없으면 마이크 명령도 보내지 않는다(투명성 fail-closed).
   const startListen = async () => {
     if (startInFlightRef.current || requestIdRef.current) return;
+    if (!remoteAudioDataReady) {
+      show("아이와 위치 정보를 확인한 뒤 다시 시도해 주세요.", "⚠️");
+      return;
+    }
     startInFlightRef.current = true;
     endingRef.current = false;
     setStarting(true);
@@ -487,6 +514,48 @@ export function RemoteAudio() {
         : "아이 알림 확인 대기"
       : "아이 기기에서 소리를 여는 중이에요";
 
+  // 청취가 시작된 뒤의 일시적 재조회 실패는 중지 동선을 가리지 않는다.
+  // 대기 상태에서는 대상·위치·가족 정본이 모두 확인된 경우에만 원격 청취를 연다.
+  if (!listening && remoteAudioQueryState === "loading") {
+    return (
+      <ScreenQueryState
+        screenTitle="주변 소리 듣기"
+        state="loading"
+        heading="아이 연결 정보를 확인하고 있어요"
+        description="청취 대상과 현재 위치 정보를 안전하게 확인하는 중이에요."
+        onBack={() => navigate(-1)}
+      />
+    );
+  }
+
+  if (!listening && (remoteAudioQueryState === "error" || remoteAudioDataMissing)) {
+    return (
+      <ScreenQueryState
+        screenTitle="주변 소리 듣기"
+        state="error"
+        heading="주변 소리 정보를 확인하지 못했어요"
+        description="확인되지 않은 아이에게 요청이 가지 않도록 시작 기능을 닫았어요."
+        onBack={() => navigate(-1)}
+        onRetry={() => void retryRemoteAudio()}
+        retrying={remoteAudioRefetching}
+      />
+    );
+  }
+
+  if (!listening && childMembers.length === 0) {
+    return (
+      <ScreenQueryState
+        screenTitle="주변 소리 듣기"
+        state="empty"
+        heading="연결된 아이가 없어요"
+        description="아이를 연결한 뒤, 아이가 직접 허용하면 주변 소리를 들을 수 있어요."
+        onBack={() => navigate(-1)}
+        onRetry={() => navigate("/child-invite")}
+        retryLabel="아이 연결하기"
+      />
+    );
+  }
+
   return (
     <div className="ra-root">
       {/* 대기 화면 */}
@@ -547,7 +616,7 @@ export function RemoteAudio() {
               type="button"
               className="ra-start hy-press"
               onClick={() => void startListen()}
-              disabled={starting || requestListen.isPending || !childUserId}
+              disabled={starting || requestListen.isPending || !childUserId || !remoteAudioDataReady}
               aria-busy={starting || requestListen.isPending}
             >
               <Mic size={20} strokeWidth={2.2} color="#fff" />

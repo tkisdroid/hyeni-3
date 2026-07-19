@@ -8,6 +8,8 @@ import { useMyFamily } from "@/queries/useFamily";
 import { useActiveChild } from "@/app/activeChild";
 import { useSendSticker, useStickerSummary } from "@/queries/useStickers";
 import { todayDateKey } from "@/transform/dateKey";
+import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
+import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./StickerSend.css";
 
 type Sticker = { id: string; img: string; label: string; emoji: string };
@@ -37,8 +39,20 @@ function avatarSrc(path: string): string {
 export function StickerSend() {
   const navigate = useNavigate();
   const { show } = useToast();
-  const { data: family } = useMyFamily();
-  const { data: summary } = useStickerSummary();
+  const familyQuery = useMyFamily();
+  const summaryQuery = useStickerSummary();
+  const family = familyQuery.data;
+  const summary = summaryQuery.data;
+  const stickerQueryState = resolveQueryTruthState([
+    { isLoading: familyQuery.isLoading, isError: familyQuery.isError },
+    { isLoading: summaryQuery.isLoading, isError: summaryQuery.isError },
+  ]);
+  const stickerDataMissing = stickerQueryState === "ready" && (!family || summary === undefined);
+  const stickerDataReady = stickerQueryState === "ready" && !stickerDataMissing;
+  const stickerRefetching = familyQuery.isFetching || summaryQuery.isFetching;
+  const retryStickerSend = async (): Promise<void> => {
+    await Promise.all([familyQuery.refetch(), summaryQuery.refetch()]);
+  };
   const sendSticker = useSendSticker();
 
   const [pickedId, setPickedId] = useState<string>(STICKERS[0].id);
@@ -72,6 +86,10 @@ export function StickerSend() {
 
   // 전송은 사용자가 버튼을 눌러야만 실행(자동 실행 금지).
   const handleSend = () => {
+    if (!stickerDataReady) {
+      show("아이와 칭찬 기록을 확인한 뒤 다시 시도해 주세요", "⚠️");
+      return;
+    }
     if (!targetChild?.user_id) {
       show("아이와 연결되면 스티커를 보낼 수 있어요", "👶");
       return;
@@ -97,6 +115,46 @@ export function StickerSend() {
       },
     );
   };
+
+  if (stickerQueryState === "loading") {
+    return (
+      <ScreenQueryState
+        screenTitle="칭찬 스티커 보내기"
+        state="loading"
+        heading="아이와 칭찬 기록을 확인하고 있어요"
+        description="보낼 대상과 받은 스티커 개수를 불러오는 중이에요."
+        onBack={() => navigate(-1)}
+      />
+    );
+  }
+
+  if (stickerQueryState === "error" || stickerDataMissing) {
+    return (
+      <ScreenQueryState
+        screenTitle="칭찬 스티커 보내기"
+        state="error"
+        heading="스티커 정보를 불러오지 못했어요"
+        description="잘못된 아이에게 보내지 않도록 대상과 기록을 다시 확인해 주세요."
+        onBack={() => navigate(-1)}
+        onRetry={() => void retryStickerSend()}
+        retrying={stickerRefetching}
+      />
+    );
+  }
+
+  if (children.length === 0) {
+    return (
+      <ScreenQueryState
+        screenTitle="칭찬 스티커 보내기"
+        state="empty"
+        heading="연결된 아이가 없어요"
+        description="아이를 연결하면 칭찬 스티커와 한마디를 보낼 수 있어요."
+        onBack={() => navigate(-1)}
+        onRetry={() => navigate("/child-invite")}
+        retryLabel="아이 연결하기"
+      />
+    );
+  }
 
   return (
     <div className="ss-wrap">

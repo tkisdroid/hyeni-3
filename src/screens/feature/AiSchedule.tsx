@@ -18,6 +18,8 @@ import {
 import { scheduleLimitFor, TIERS } from "@/transform/tierPolicy";
 import { ApiError } from "@/lib/api/errors";
 import { cancelSpeechCapture, captureSpeech, isSpeechCaptureSupported } from "@/lib/native/speech";
+import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
+import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./AiSchedule.css";
 
 type TabKey = "voice" | "text" | "image";
@@ -69,7 +71,21 @@ export function AiSchedule() {
   const createM = useSaveEventsWithChildrenBatch();
   const { activeChild } = useActiveChild();
   const existingEvents = useEvents();
-  const { tier } = useEntitlement();
+  const entitlementQuery = useEntitlement();
+  const { tier } = entitlementQuery;
+  const aiScheduleQueryState = resolveQueryTruthState([
+    { isLoading: existingEvents.isLoading, isError: existingEvents.isError },
+    { isLoading: entitlementQuery.isLoading, isError: entitlementQuery.isError },
+  ]);
+  const aiScheduleDataMissing = aiScheduleQueryState === "ready" && (
+    existingEvents.data === undefined || tier === TIERS.UNKNOWN
+  );
+  const aiScheduleDataReady = aiScheduleQueryState === "ready" && !aiScheduleDataMissing;
+  const aiScheduleDataEmpty = aiScheduleDataReady && existingEvents.data?.length === 0;
+  const aiScheduleRefetching = existingEvents.isFetching || entitlementQuery.isFetching;
+  const retryAiSchedule = async (): Promise<void> => {
+    await Promise.all([existingEvents.refetch(), entitlementQuery.refetch()]);
+  };
 
   // 진입 탭 — 부모 홈 "AI로 일정 추가"의 음성/텍스트/알림장 버튼이 ?tab= 으로 지정한다.
   const [searchParams] = useSearchParams();
@@ -155,6 +171,10 @@ export function AiSchedule() {
 
   // ── AI 정리(파싱) 코어 — 텍스트/알림장 사진 공통. 사용자 버튼 onClick 에서만 호출 ──
   const runParse = async (payloadText: string, image?: string) => {
+    if (!aiScheduleDataReady) {
+      show("현재 일정과 이용 상태를 확인한 뒤 다시 시도해 주세요.", "⚠️");
+      return;
+    }
     if (status !== "authenticated") {
       show("로그인이 필요해요", "🔒");
       return;
@@ -205,6 +225,10 @@ export function AiSchedule() {
   // 네이티브 SpeechRecognition 플러그인 우선, 웹은 Web Speech API 폴백(@/lib/native/speech).
   const startVoice = async () => {
     if (!micArmedRef.current || listening || parseM.isPending) return;
+    if (!aiScheduleDataReady) {
+      show("현재 일정과 이용 상태를 확인한 뒤 다시 시도해 주세요.", "⚠️");
+      return;
+    }
     if (status !== "authenticated") {
       show("로그인이 필요해요", "🔒");
       return;
@@ -257,6 +281,10 @@ export function AiSchedule() {
   // ── 확정: 파싱된 일정 생성 — 사용자 버튼 onClick 에서만 호출(자동 실행 금지) ──
   const handleConfirm = async () => {
     if (!drafts || drafts.length === 0) return;
+    if (!aiScheduleDataReady) {
+      show("일정 개수와 이용 상태를 확인한 뒤 다시 시도해 주세요.", "⚠️");
+      return;
+    }
     if (status !== "authenticated" || !familyId) {
       show("로그인이 필요해요", "🔒");
       return;
@@ -265,13 +293,16 @@ export function AiSchedule() {
       show("일정을 넣을 아이를 먼저 선택해 주세요", "⚠️");
       return;
     }
-    if (tier !== TIERS.UNKNOWN) {
-      const limit = scheduleLimitFor(tier);
-      const currentCount = existingEvents.data?.length ?? 0;
-      if (currentCount + drafts.length > limit) {
-        show(scheduleLimitMessage(tier, limit), "👑");
-        return;
-      }
+    const currentEvents = existingEvents.data;
+    if (!currentEvents || tier === TIERS.UNKNOWN) {
+      show("일정 개수와 이용 상태를 확인한 뒤 다시 시도해 주세요.", "⚠️");
+      return;
+    }
+    const limit = scheduleLimitFor(tier);
+    const currentCount = currentEvents.length;
+    if (currentCount + drafts.length > limit) {
+      show(scheduleLimitMessage(tier, limit), "👑");
+      return;
     }
     try {
       await createM.mutateAsync(buildAiScheduleSaveInputs(drafts, familyId, activeChild.id));
@@ -290,6 +321,32 @@ export function AiSchedule() {
     }
   };
 
+  if (aiScheduleQueryState === "loading") {
+    return (
+      <ScreenQueryState
+        screenTitle="AI로 일정 추가"
+        state="loading"
+        heading="일정과 이용 상태를 확인하고 있어요"
+        description="현재 일정 개수와 저장 가능한 범위를 안전하게 확인하는 중이에요."
+        onBack={() => navigate(-1)}
+      />
+    );
+  }
+
+  if (aiScheduleQueryState === "error" || aiScheduleDataMissing) {
+    return (
+      <ScreenQueryState
+        screenTitle="AI로 일정 추가"
+        state="error"
+        heading="일정 추가 조건을 확인하지 못했어요"
+        description="확인되지 않은 상태에서 AI 처리나 일정 저장이 시작되지 않도록 잠시 닫았어요."
+        onBack={() => navigate(-1)}
+        onRetry={() => void retryAiSchedule()}
+        retrying={aiScheduleRefetching}
+      />
+    );
+  }
+
   return (
     <div className="ais-wrap">
       <header className="ais-header">
@@ -305,6 +362,11 @@ export function AiSchedule() {
       </header>
 
       <div className="ais-body">
+        {aiScheduleDataEmpty && (
+          <div className="sqs-inline-empty">
+            아직 등록된 일정이 없어요. 아래에서 첫 일정을 정리해 보세요.
+          </div>
+        )}
         {/* 입력 방식 탭 */}
         <div className="ais-tabs">
           {AI_TABS.map((t) => (
