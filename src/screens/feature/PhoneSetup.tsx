@@ -37,7 +37,7 @@ function softFor(gender: string | null | undefined): string {
 export function PhoneSetup() {
   const navigate = useNavigate();
   const { show } = useToast();
-  const { userId } = useAuth();
+  const { userId, familyId } = useAuth();
   const familyQuery = useMyFamily();
   const family = familyQuery.data;
   const update = useUpdateProfile();
@@ -55,14 +55,38 @@ export function PhoneSetup() {
     await familyQuery.refetch();
   };
   const me = parents.find((p) => p.user_id === userId);
+  const phoneSourceKey = familyId
+    && family?.familyId === familyId
+    && userId
+    && me?.user_id === userId
+    ? JSON.stringify([familyId, userId, me.id, me.phone ?? ""])
+    : null;
 
   const [myPhone, setMyPhone] = useState("");
+  const [hydratedPhoneSourceKey, setHydratedPhoneSourceKey] = useState<string | null>(null);
+  const phoneFormReady = phoneQueryState === "ready"
+    && phoneSourceKey !== null
+    && hydratedPhoneSourceKey === phoneSourceKey;
+  const phoneFormHydrating = phoneQueryState === "ready"
+    && phoneSourceKey !== null
+    && !phoneFormReady;
+
   useEffect(() => {
+    if (!me || !phoneSourceKey) {
+      setHydratedPhoneSourceKey(null);
+      return;
+    }
+    if (hydratedPhoneSourceKey === phoneSourceKey) return;
     setMyPhone(me?.phone ? formatPhone(me.phone) : "");
-  }, [me?.phone]);
+    setHydratedPhoneSourceKey(phoneSourceKey);
+  }, [hydratedPhoneSourceKey, me, phoneSourceKey]);
 
   const save = () => {
     if (update.isPending) return;
+    if (!phoneFormReady || !me) {
+      show("현재 계정의 전화번호를 불러온 뒤 다시 시도해 주세요", "⚠️");
+      return;
+    }
     let phone: string;
     try {
       phone = normalizePhoneForStorage(myPhone);
@@ -79,7 +103,7 @@ export function PhoneSetup() {
     );
   };
 
-  if (phoneQueryState === "loading") {
+  if (phoneQueryState === "loading" || phoneFormHydrating) {
     return (
       <ScreenQueryState
         screenTitle="전화번호 설정"
@@ -163,6 +187,7 @@ export function PhoneSetup() {
                       placeholder="010-0000-0000"
                       inputMode="numeric"
                       aria-label={`${roleLabel(g.gender)} 전화번호`}
+                      disabled={!phoneFormReady || update.isPending}
                     />
                   ) : (
                     <span className="psu-row__input" style={{ color: "var(--fg-muted)", display: "flex", alignItems: "center" }}>
@@ -179,7 +204,12 @@ export function PhoneSetup() {
           본인 번호만 수정할 수 있어요. 번호는 가족·담임 선생님 연결에만 사용하고 아이에게는 공개되지 않아요.
         </div>
 
-        <button type="button" className="psu-save hy-press" onClick={save} disabled={update.isPending || !me}>
+        <button
+          type="button"
+          className="psu-save hy-press"
+          onClick={save}
+          disabled={!phoneFormReady || update.isPending || !me}
+        >
           {update.isPending ? "저장 중…" : "저장하기"}
         </button>
       </div>

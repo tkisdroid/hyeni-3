@@ -3,6 +3,7 @@ import type { ChangeEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft, Camera } from "lucide-react";
 import { useToast } from "@/app/toast";
+import { useAuth } from "@/auth/AuthContext";
 import { useActiveChild } from "@/app/activeChild";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { useMyFamily, useSetChildProfile, useUploadChildPhoto } from "@/queries/useFamily";
@@ -63,6 +64,7 @@ export function ProfileEdit() {
   const routeLocation = useLocation();
   const childId = (routeLocation.state as { childId?: string } | null)?.childId ?? null;
   const { show } = useToast();
+  const { familyId } = useAuth();
   const now = useMemo(() => new Date(), []);
   const todayStr = useMemo(() => toDateInputValue(now), [now]);
 
@@ -86,23 +88,51 @@ export function ProfileEdit() {
     return idx >= 0 ? idx : 0;
   }, [member, children]);
 
+  const profileQueryState = resolveQueryTruthState([
+    { isLoading: familyQuery.isLoading, isError: familyQuery.isError },
+  ]);
+  const profileSourceKey = familyId
+    && family?.familyId === familyId
+    && member
+    ? JSON.stringify([
+        familyId,
+        member.id,
+        member.name ?? "",
+        toDateFieldValue(member.birthdate),
+        formatPhoneDisplay(member.phone),
+      ])
+    : null;
+
   const [name, setName] = useState("");
   const [birthday, setBirthday] = useState("");
   const [phone, setPhone] = useState("");
   const [pickedDataUrl, setPickedDataUrl] = useState<string | null>(null);
+  const [hydratedProfileSourceKey, setHydratedProfileSourceKey] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
-  const initedFor = useRef<string | null>(null);
 
-  // 멤버가 로드되면(비동기) 폼 값을 1회 초기화한다(이름·생일·전화 프리필).
+  const profileFormReady = profileQueryState === "ready"
+    && profileSourceKey !== null
+    && hydratedProfileSourceKey === profileSourceKey;
+  const profileFormHydrating = profileQueryState === "ready"
+    && profileSourceKey !== null
+    && !profileFormReady;
+
+  // 현재 가족·아이의 서버 snapshot을 폼에 반영한 뒤에만 수정 UI를 연다.
+  // 같은 snapshot에서 사용자가 입력 중이면 query 객체가 바뀌어도 초안을 덮어쓰지 않는다.
   useEffect(() => {
-    if (!member || initedFor.current === member.id) return;
-    initedFor.current = member.id;
+    if (!member || !profileSourceKey) {
+      setHydratedProfileSourceKey(null);
+      setPickedDataUrl(null);
+      return;
+    }
+    if (hydratedProfileSourceKey === profileSourceKey) return;
     setName(member.name || "");
     setBirthday(toDateFieldValue(member.birthdate));
     setPhone(formatPhoneDisplay(member.phone));
     setPickedDataUrl(null);
-  }, [member]);
+    setHydratedProfileSourceKey(profileSourceKey);
+  }, [hydratedProfileSourceKey, member, profileSourceKey]);
 
   const isPrimary = family?.isPrimaryParent ?? false;
   const busy = uploadPhoto.isPending || saveProfile.isPending;
@@ -110,9 +140,6 @@ export function ProfileEdit() {
   // 미리보기: 방금 고른 사진 > 저장된 사진(proxy URL) > 없음(카메라 placeholder).
   const savedPhoto = member?.photo_url && member.photo_url.startsWith("http") ? member.photo_url : null;
   const previewSrc = pickedDataUrl ?? savedPhoto;
-  const profileQueryState = resolveQueryTruthState([
-    { isLoading: familyQuery.isLoading, isError: familyQuery.isError },
-  ]);
   const retryProfileEdit = async (): Promise<void> => {
     await familyQuery.refetch();
   };
@@ -121,6 +148,10 @@ export function ProfileEdit() {
     const file = e.target.files?.[0];
     e.target.value = ""; // 같은 파일 재선택 허용
     if (!file) return;
+    if (!profileFormReady) {
+      show("현재 아이의 프로필을 불러온 뒤 다시 시도해 주세요", "⚠️");
+      return;
+    }
     if (!isPrimary) {
       show("주 보호자만 사진을 바꿀 수 있어요", "🔒");
       return;
@@ -140,6 +171,10 @@ export function ProfileEdit() {
 
   const onSave = async () => {
     if (busy) return;
+    if (!profileFormReady) {
+      show("현재 아이의 프로필을 불러온 뒤 다시 시도해 주세요", "⚠️");
+      return;
+    }
     if (!member) {
       show("아이 정보를 찾지 못했어요", "⚠️");
       return;
@@ -190,7 +225,7 @@ export function ProfileEdit() {
     }
   };
 
-  if (profileQueryState === "loading") {
+  if (profileQueryState === "loading" || profileFormHydrating) {
     return (
       <ScreenQueryState
         screenTitle="프로필 편집"
@@ -249,7 +284,7 @@ export function ProfileEdit() {
                 type="button"
                 className="pe-photo hy-press"
                 onClick={() => fileRef.current?.click()}
-                disabled={!isPrimary || processing}
+                disabled={!profileFormReady || !isPrimary || processing}
                 aria-label="사진 선택"
               >
                 {previewSrc ? (
@@ -264,7 +299,7 @@ export function ProfileEdit() {
                   <Camera size={15} strokeWidth={2.4} color="#fff" />
                 </span>
               </button>
-              <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickFile} />
+              <input ref={fileRef} type="file" accept="image/*" hidden disabled={!profileFormReady} onChange={onPickFile} />
               <div className="pe-photo-name">{name.trim() || member.name || "아이"}</div>
               <p className="pe-hint">{processing ? "사진 처리 중…" : "얼굴이 잘 보이는 사진이 좋아요."}</p>
             </div>
@@ -278,7 +313,7 @@ export function ProfileEdit() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="이름"
                 maxLength={20}
-                disabled={!isPrimary}
+                disabled={!profileFormReady || !isPrimary}
               />
             </div>
 
@@ -294,7 +329,7 @@ export function ProfileEdit() {
                 value={birthday}
                 max={todayStr}
                 onChange={(e) => setBirthday(e.target.value)}
-                disabled={!isPrimary}
+                disabled={!profileFormReady || !isPrimary}
               />
               <p className="pe-hint">AI 친구가 아이 나이에 맞게 말하도록 꼭 필요해요.</p>
             </div>
@@ -310,14 +345,19 @@ export function ProfileEdit() {
                 onChange={(e) => setPhone(formatPhoneDisplay(e.target.value))}
                 placeholder="010-0000-0000"
                 maxLength={13}
-                disabled={!isPrimary}
+                disabled={!profileFormReady || !isPrimary}
               />
               <p className="pe-hint">아이 기기가 없어도 연락할 번호예요.</p>
             </div>
 
             {!isPrimary && <p className="pe-hint pe-hint--warn">주 보호자만 아이 프로필을 저장할 수 있어요.</p>}
 
-            <button type="button" className="pe-save hy-press" onClick={onSave} disabled={busy || !isPrimary}>
+            <button
+              type="button"
+              className="pe-save hy-press"
+              onClick={onSave}
+              disabled={!profileFormReady || busy || !isPrimary}
+            >
               {busy ? "저장 중…" : "저장하기"}
             </button>
             {isPrimary && (
