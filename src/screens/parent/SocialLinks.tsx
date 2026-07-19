@@ -163,7 +163,7 @@ export function SocialLinks() {
               <button
                 type="button"
                 className="pa-row pa-row-btn hy-press"
-                disabled={!native || busy === provider}
+                disabled={!native || isLoading || busy === provider}
                 onClick={() => startLink(provider)}
               >
                 <span className="pa-row__k">
