@@ -7,6 +7,8 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 const ai = await read("src/screens/child/AiFriendChat.tsx");
 const memo = await read("src/screens/shared/MemoChat.tsx");
 const dialog = await read("src/components/MessageSafetyDialog.tsx");
+const dialogFocusLifecycle = await read("src/components/useDialogFocusLifecycle.ts");
+const dialogFocusStack = await read("src/components/dialogFocusStack.ts");
 const endpoint = await read("src/lib/api/endpoints/contentSafety.ts");
 const queries = await read("src/queries/useContentSafety.ts");
 const childHome = await read("src/screens/child/ChildHome.tsx");
@@ -34,7 +36,10 @@ test("가족 메모 상대 메시지에는 앱 내 신고·차단 동선과 차�
 test("신고 dialog는 키보드·스크린리더·실패 재시도를 지원하고 아이 톤을 분리한다", () => {
   assert.match(dialog, /role="dialog"/);
   assert.match(dialog, /aria-modal="true"/);
-  assert.match(dialog, /Escape/);
+  assert.match(dialog, /useDialogFocusLifecycle/);
+  assert.match(dialog, /canClose:\s*\(\) => !pending/);
+  assert.match(dialogFocusLifecycle, /handleTopmostDialogKey/);
+  assert.match(dialogFocusStack, /key === "Escape"/);
   assert.match(dialog, /disabled=\{pending/);
   assert.match(dialog, /textarea/);
   assert.match(dialog, /tone === "child"/);
