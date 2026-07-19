@@ -40,9 +40,9 @@
    이후 서버에서 OSRM 합성으로 인앱 복원 — 클라 계약 보존 / 기기 미리포트 → "—"와 대기 문구, 가짜 숫자 금지)
 
 ### E. 실사용 보호가 기능보다 우선
-- **2026-07-14 사용자 지시 기준 이번 최종 검증은 A17(RFKL40DP73J) 부모모드만 사용한다.**
-- S25와 razr는 연결 해제·검증 제외다. 다시 명시적으로 허용받기 전에는 adb 설치·실행·로그·세션 조회를 포함해
-  어떤 조작도 하지 않는다. razr 혜니 계정 데이터·페어링·세션은 그대로 보존한다.
+- **2026-07-19 최신 사용자 지시 기준 이번 최종 검증은 A17(RFKL40DP73J)=부모모드,
+  razr(ZY22H9VTQD)=아이모드로 수행한다.** 두 기기는 `adb install -r`만 사용해 앱 데이터·계정·페어링·세션을
+  그대로 보존하고 refresh 토큰을 출력·복사·회전하지 않는다. S25는 검증 제외이며 다시 명시적으로 허용받기 전에는 접근하지 않는다.
 - 파괴적 작업 전 **안전 불변식부터 확인**(예: 아이 페어링 전 프리미엄 캡=2 확인으로 razr 밀림 0 보장).
 - 테스트로 만든 데이터·바꾼 설정은 **반드시 원복/삭제**(이벤트·메모·SOS·notification_settings…).
 - 라이브 앱 refresh 토큰은 절대 조작하지 않는다(access 만 읽기 — 회전시키면 세션 파괴).
@@ -140,9 +140,10 @@
   `resumePausedMutations()`를 호출할 수 있으므로 금지하며, 위치 요청·결제·AI·원격제어 mutation을 자동 실행하지 않는다.
   네이티브 `QueryProvider`는 브라우저 `visibilitychange`와 이 경로가 겹치지 않도록 `refetchOnWindowFocus=false`, 웹·PWA는
   기존대로 `true`를 사용한다. 중복 active 이벤트는 무시하고 복구 중 새 전환은 한 번만 직렬 처리한다. 완료 판정은 S25 일반
-  복귀 동선에서 동일 API 묶음이 1회만 시작되는지와 CDP/API 갱신, razr 세션·위치 서비스 유지를 함께 확인한다. 격리 worktree의
-  Android 빌드 전에는 ignored `.env`의 `VITE_KAKAO_APP_KEY` 존재 여부만 확인해 원본 설정을 안전하게 반영하며, 값은 출력하지 않는다.
-  키 없는 APK의 "지도를 불러오지 못했어요"는 위치 API 장애와 구분한다.
+  복귀 동선에서 동일 API 묶음이 1회만 시작되는지와 CDP/API 갱신, razr 세션·위치 서비스 유지를 함께 확인한다. 격리 worktree에
+  ignored `.env`가 없으면 **주 체크아웃 `.env`의 `VITE_*`만 빌드 프로세스 환경에 일시 주입**하고, `CLOUDFLARE_*`는 읽거나
+  복사하지 않는다. Android 동기화 전에는 `VITE_KAKAO_APP_KEY`가 최종 번들에 실제 포함됐는지를 값 노출 없이 확인한다.
+  키 없는 APK의 "지도를 불러오지 못했어요"는 위치 API 장애와 구분하며, 최종 실기기 지도 캔버스 검증 전에는 설치 완료로 보지 않는다.
 - 등록장소 도착/출발(2026-07-09): 피아노/태권도처럼 `saved_places`와 `academies`에 같은 물리 장소가 중복 등록되면
   20m 이내 후보를 `saved_place` 우선으로 병합해 1개만 평가한다. 진입은 3분 이상 같은 장소에 머문 뒤 도착으로
   승격한다. 옆 건물 통과나 학원가 이동 중 1분 남짓 머무른 좌표를 도착 알림으로 만들지 않기 위한 규칙이며,
@@ -472,7 +473,8 @@
   정리: 이벤트 DELETE API + force_ring_events/memo_replies 는 D1 직접 삭제, 기기 알림은 남는다(무해).
 
 ### J. 실기기 검증 치트시트 (함정 포함)
-- **현재 기기 역할(2026-07-14 사용자 지시)**: A17(RFKL40DP73J)=유일한 부모모드 검증기. S25와 razr는 연결 해제·검증 제외이며
+- **현재 기기 역할(2026-07-19 최신 사용자 지시)**: A17(RFKL40DP73J)=부모모드,
+  razr(ZY22H9VTQD)=아이모드 검증기다. 두 기기는 `adb install -r`로 세션을 보존한다. S25는 검증 제외이며
   다시 명시적으로 허용받기 전에는 adb로 접근하지 않는다.
 - **기기 역할 확인**: 역할은 세션별로 바뀐 이력이 있으므로, 과거 단계 기록보다 최신 사용자 지시/goal을 우선한다.
   완료 선언 전에는 CDP로 WebView 세션(`hyeni-api-session-v1`)의 role/familyId와 실제 화면을 함께 확인하고,
@@ -719,6 +721,18 @@ hyeni-3/
 - **strict TS**: `import type` 필수, 미사용 변수/import 금지, 인라인 style에 `--커스텀` 금지(press는 className), 모든 `<button type="button">`.
 - **말투**: 부모·페어링·구독 = 존댓말, 아이(아이모드) = 반말.
 - **불변성**: 상태 업데이트는 spread로 새 객체(뮤테이션 금지).
+- **타입·여백·아이콘 정본(2026-07-19)**: `--type-*` 12/13/14/15/16/18/20/24/32px 단계는 대응
+  line-height·weight와 함께 쓰고, 여백은 4px 리듬(`--spacing-*`), glyph는 `--icon-*` 16/18/20/22/24px를 쓴다.
+  조작 영역은 최소 44px, 주요 CTA는 48px 이상이며 lucide 형제는 같은 크기·strokeWidth를 유지한다.
+- **표면·모달 정본(2026-07-19)**: radius는 8/12/16/20/24px·pill, elevation은
+  `--shadow-soft/floating/modal`만 사용한다. 모든 modal dialog는 `useDialogFocusLifecycle`, 실제 label/description id,
+  열림 초점·Tab 순환·Escape·트리거 초점 복원을 갖춘다.
+- **정보 밀도·이미지(2026-07-19)**: 권한/오류/설정 유도는 제목→한 문장 설명→상태/경로→주/보조 CTA로 압축한다.
+  인물·캐릭터는 aspect-ratio와 `object-position`으로 상단 크롭을 방지하고, 비핵심 네트워크 이미지는
+  `loading="lazy" decoding="async"` 및 예약 공간으로 CLS를 막는다. 의미 전달용 유니코드 이모지는 쓰지 않는다.
+- **화면 완결성·성능(2026-07-19)**: read query는 loading/error/empty/success/retry를 분리하고 현재
+  family/user/source snapshot hydration 전 입력·저장을 닫는다. App 정본은 58개 라우트·57개 lazy screen이며 진입 JS는
+  `tests/routeBundleBudget.test.mjs`의 500,000-byte 미만 예산을 지킨다.
 
 ## 8. 알려진 후속 정리 (TODO)
 

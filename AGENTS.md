@@ -38,9 +38,9 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 
 ## 절대 안전 규칙
 
-1. **실사용 기기 보호**: 2026-07-14 사용자 지시 기준 이번 최종 검증에서는 **A17(RFKL40DP73J)만 부모모드 검증기**로 사용한다.
-   S25와 razr는 연결 해제·검증 제외 상태이며, 다시 명시적으로 허용받기 전에는 adb 설치·실행·로그·세션 조회를 포함해
-   어떤 조작도 하지 않는다. razr는 혜니 실사용 기기이므로 계정 데이터·페어링·세션을 보존한다.
+1. **실사용 기기 보호**: 2026-07-19 최신 사용자 지시 기준 이번 최종 검증은 **A17(RFKL40DP73J)=부모모드**,
+   **razr(ZY22H9VTQD)=아이모드**로만 수행한다. 두 기기는 `adb install -r`로 앱 데이터·계정·페어링·세션을 보존하며,
+   refresh 토큰을 출력·복사·회전하지 않는다. **S25는 검증 제외**이며 다시 명시적으로 허용받기 전에는 adb로 접근하지 않는다.
 2. **라이브 refresh 토큰 조작 금지** — 회전시키면 앱 세션이 파괴된다. access 토큰만 읽기.
    2026-07-10부터 refresh 체인은 **기기 바인딩**(device_install_id 스탬핑) — 외부에서 토큰 사본으로 회전 시도하면 401이 정상이다.
    세션이 유실된 아이 기기는 딥링크 `#/onboarding?pair=KID-…` 재페어링이 정답(previous_user_id 힌트로 같은 uid 무손실 복구).
@@ -310,9 +310,10 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   `resumePausedMutations()`를 호출할 수 있으므로 금지하며, 위치 요청·결제·AI·원격제어 mutation을 자동 실행하지 않는다.
   네이티브 `QueryProvider`는 브라우저 `visibilitychange`와 이 경로가 겹치지 않도록 `refetchOnWindowFocus=false`, 웹·PWA는
   기존대로 `true`를 사용한다. 중복 active 이벤트는 무시하고 복구 중 새 전환은 한 번만 직렬 처리한다. 완료 판정은 S25 일반
-  복귀 동선에서 동일 API 묶음이 1회만 시작되는지와 CDP/API 갱신, razr 세션·위치 서비스 유지를 함께 확인한다. 격리 worktree의
-  Android 빌드 전에는 ignored `.env`의 `VITE_KAKAO_APP_KEY` 존재 여부만 확인해 원본 설정을 안전하게 반영하며, 값은 출력하지 않는다.
-  키 없는 APK의 "지도를 불러오지 못했어요"는 위치 API 장애와 구분한다.
+  복귀 동선에서 동일 API 묶음이 1회만 시작되는지와 CDP/API 갱신, razr 세션·위치 서비스 유지를 함께 확인한다. 격리 worktree에
+  ignored `.env`가 없으면 **주 체크아웃 `.env`의 `VITE_*`만 빌드 프로세스 환경에 일시 주입**하고, `CLOUDFLARE_*`는 읽거나
+  복사하지 않는다. Android 동기화 전에는 `VITE_KAKAO_APP_KEY`가 최종 번들에 실제 포함됐는지를 값 노출 없이 확인한다.
+  키 없는 APK의 "지도를 불러오지 못했어요"는 위치 API 장애와 구분하며, 최종 실기기 지도 캔버스 검증 전에는 설치 완료로 보지 않는다.
 - **일정·도착 알림 신뢰성 계약(2026-07-13)**: 반복 일정은 고정 UUID+`series_id`를 가진
   `POST /api/events/batch` 한 트랜잭션으로 event·자녀 링크·기존 알림 claim까지 함께 저장한다. `notif_override=null`은
   사용자 기본 설정, 명시적 빈 배열은 사전 알림 없음이므로 기본 15·5분으로 되살리지 않는다. 서버 cron은 목표 분보다 일찍
@@ -449,11 +450,28 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   450ms 지연-양보, `meta:{silentError:true}` 옵트아웃). 가드=`tests/globalErrorSafety.test.mjs`.
 - 모든 인터랙티브 요소에 프레스 피드백: 버튼/카드=`hy-press`, 행/라벨=`:active{background:var(--bg-press)}`.
   스크림/딤은 예외.
+- ★타입·여백·아이콘 정본(2026-07-19): 글자는 `--type-*`의 12/13/14/15/16/18/20/24/32px 의미 단계와
+  대응 line-height·weight를 한 묶음으로 사용한다. 여백은 4px 리듬(`--spacing-*`), 아이콘 glyph는
+  16/18/20/22/24px(`--icon-*`)로 제한하고 터치 영역과 분리한다. 모든 조작 영역은 최소 44px, 주요 저장·확인·위험 CTA는
+  48px 이상을 유지한다. lucide 형제 아이콘은 같은 크기·strokeWidth를 사용하며 의미 전달용 유니코드 이모지는 금지한다.
+- ★표면 정본(2026-07-19): radius는 8/12/16/20/24px·pill만, elevation은 `--shadow-soft/floating/modal`만 사용한다.
+  임의 radius·shadow를 새로 만들지 않고 같은 계층의 카드·시트·모달은 같은 토큰을 쓴다.
+- ★모달 접근성(2026-07-19): `role="dialog" aria-modal="true"` 화면은 `useDialogFocusLifecycle`로 열림 초점,
+  Tab/Shift+Tab 순환, Escape 닫기, 닫힌 뒤 트리거 초점 복원을 보장한다. 제목은 `aria-labelledby`, 필요한 설명은
+  `aria-describedby`로 실제 DOM id와 연결하고 스크림 닫기·닫기 버튼을 함께 제공한다.
+- ★정보 밀도·이미지 크롭(2026-07-19): 권한·오류·설정 유도 화면은 제목, 한 문장 설명, 현재 상태/경로, 주 CTA,
+  보조 CTA 순으로 한 화면에서 훑히게 만든다. 같은 내용을 장문 카드로 반복하지 않는다. 인물/캐릭터 이미지는 예약된
+  aspect-ratio와 의도한 `object-position`을 명시해 머리·얼굴이 잘리지 않게 하고, 비핵심 네트워크 이미지는
+  `loading="lazy" decoding="async"`로 레이아웃 이동 없이 로드한다.
+- ★화면 완결성·성능(2026-07-19): 조회 화면은 loading/error/empty/success/retry를 정직하게 분리하고, 현재 family/user/source
+  snapshot hydration이 끝나기 전 입력·저장을 닫는다. busy 버튼은 중복 실행을 막고 상태를 접근성 이름으로 알린다.
+  App 정본은 58개 라우트·57개 lazy screen이며 진입 JS는 `tests/routeBundleBudget.test.mjs`의 500,000-byte 미만 예산을 지킨다.
 
 ## 실기기 검증 치트시트
 
-- 기기(2026-07-14 사용자 지시): **A17(RFKL40DP73J)=유일한 부모모드 검증기**. S25와 razr는 연결 해제·검증 제외이며,
-  다시 명시적으로 허용받기 전에는 adb로 접근하지 않는다.
+- 기기(2026-07-19 최신 사용자 지시): **A17(RFKL40DP73J)=부모모드**, **razr(ZY22H9VTQD)=아이모드** 검증기다.
+  두 기기는 `adb install -r`만 사용해 앱 데이터·계정·페어링·세션을 보존한다. **S25는 검증 제외**이며 다시
+  명시적으로 허용받기 전에는 adb로 접근하지 않는다.
 - 기기 역할은 세션별로 바뀐 이력이 있으므로, 문서의 과거 단계 기록보다 **최신 사용자 지시/goal**을 우선한다.
   단, 완료 선언 전에는 CDP로 WebView 세션(`hyeni-api-session-v1`)의 role/familyId와 실제 화면을 다시 확인하고,
   지시한 역할과 다르면 해당 실기기 검증은 미검증/차단으로 분리 보고한다.
