@@ -321,6 +321,8 @@
 .ob-role-terms a {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  min-width: var(--control-min-size);
   min-height: var(--control-min-size);
   color: var(--fg-muted);
   text-decoration: underline;

@@ -17,6 +17,7 @@ test("역할 선택 약관 링크는 문장 안에서도 44px 터치 영역을 �
 
   assert.match(link, /display:\s*inline-flex\s*;/);
   assert.match(link, /align-items:\s*center\s*;/);
+  assert.match(link, /min-width:\s*var\(--control-min-size\)\s*;/);
   assert.match(link, /min-height:\s*var\(--control-min-size\)\s*;/);
 });
 
