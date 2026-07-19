@@ -35,6 +35,8 @@ export const qk = {
   notifSettings: (userId: string) => ["notif-settings", userId] as const,
   childNotifSettings: (familyId: string, childUserId: string) =>
     ["notif-settings", "child-status", familyId, childUserId] as const,
+  familyNotificationQuietHours: (familyId: string) =>
+    ["notif-settings", "family-quiet-hours", familyId] as const,
 
   // 도보 경로(출발/도착 좌표 기준)
   walkingRoute: (origin: string, destination: string) =>

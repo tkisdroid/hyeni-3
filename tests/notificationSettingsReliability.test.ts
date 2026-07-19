@@ -89,6 +89,95 @@ test("알림 설정 저장은 호출 계정과 세션 nonce를 캡처하고 서�
   assert.match(hook, /saveNotifSettings\(familyId \?\? null, expectedUserId, settings\)/);
 });
 
+test("quiet endpoint는 Worker snake_case를 엄격한 camelCase 계약으로 변환한다", () => {
+  const endpoint = readSource("src/lib/api/endpoints/notifications.ts");
+
+  assert.match(endpoint, /quietHours:\s*NotificationQuietHours/);
+  assert.match(endpoint, /export interface FamilyNotificationQuietHoursRecipient/);
+  assert.match(endpoint, /targetUserId:\s*string/);
+  assert.match(endpoint, /role:\s*"parent"\s*\|\s*"child"/);
+  assert.match(endpoint, /export interface FamilyNotificationQuietHours/);
+  assert.match(endpoint, /familyId:\s*string/);
+  assert.match(endpoint, /fetchFamilyNotificationQuietHours/);
+  assert.match(endpoint, /family_id/);
+  assert.match(endpoint, /target_user_id/);
+  assert.match(endpoint, /start_minute/);
+  assert.match(endpoint, /end_minute/);
+  assert.match(endpoint, /updated_at/);
+  assert.match(endpoint, /configured/);
+  assert.match(endpoint, /typeof[\s\S]{0,120}family_id[\s\S]{0,120}string/);
+  assert.match(endpoint, /typeof[\s\S]{0,120}target_user_id[\s\S]{0,120}string/);
+  assert.match(endpoint, /typeof[\s\S]{0,120}enabled[\s\S]{0,120}boolean/);
+  assert.match(endpoint, /Number\.isInteger\([\s\S]{0,120}start_minute/);
+  assert.match(endpoint, /Number\.isInteger\([\s\S]{0,120}end_minute/);
+  assert.match(endpoint, /알림 조용한 시간 응답이 올바르지 않아요/);
+});
+
+test("quiet PUT은 부모·가족·대상 소유권 필드만 snake_case로 보낸다", () => {
+  const endpoint = readSource("src/lib/api/endpoints/notifications.ts");
+
+  assert.match(endpoint, /apiPut/);
+  assert.match(endpoint, /"\/api\/notif-settings\/quiet-hours"/);
+  assert.match(endpoint, /expected_parent_user_id:\s*expectedParentUserId/);
+  assert.match(endpoint, /family_id:\s*familyId/);
+  assert.match(endpoint, /target_user_id:\s*targetUserId/);
+  assert.match(endpoint, /enabled:\s*quietHours\.enabled/);
+  assert.match(endpoint, /start_minute:\s*quietHours\.startMinute/);
+  assert.match(endpoint, /end_minute:\s*quietHours\.endMinute/);
+});
+
+test("기존 self 알림 설정 POST는 quiet 필드를 절대 포함하지 않는다", () => {
+  const endpoint = readSource("src/lib/api/endpoints/notifications.ts");
+  const selfSave = endpoint.slice(
+    endpoint.indexOf("export async function saveNotifSettings"),
+    endpoint.indexOf("export async function saveNotificationQuietHours"),
+  );
+
+  assert.ok(selfSave.length > 0);
+  assert.doesNotMatch(selfSave, /quiet_hours_(enabled|start_minute|end_minute)/);
+});
+
+test("family quiet query는 부모 가족·사용자·세션 snapshot이 정확할 때만 실행한다", () => {
+  const hook = readSource("src/queries/useNotifications.ts");
+
+  assert.match(hook, /export function useFamilyNotificationQuietHours/);
+  assert.match(hook, /role === "parent"/);
+  assert.match(hook, /const expectedParentUserId = userId/);
+  assert.match(hook, /const expectedFamilyId = familyId/);
+  assert.match(hook, /const expectedSessionInstanceId = getApiSessionInstanceId\(\)/);
+  assert.match(hook, /deriveAuthState\(\)/);
+  assert.match(hook, /current\.userId !== expectedParentUserId/);
+  assert.match(hook, /current\.familyId !== expectedFamilyId/);
+  assert.match(hook, /current\.role !== "parent"/);
+  assert.match(hook, /getApiSessionInstanceId\(\) !== expectedSessionInstanceId/);
+});
+
+test("quiet 저장은 target별 scope로 직렬화하고 직전 세션 재검증 뒤 요청한다", () => {
+  const hook = readSource("src/queries/useNotifications.ts");
+
+  assert.match(hook, /export function useSaveNotificationQuietHours/);
+  assert.match(hook, /notif-quiet-hours:\$\{expectedFamilyId\}:\$\{variables\.targetUserId\}/);
+  assert.match(hook, /scope:\s*\{\s*id:\s*scopeId\s*\}/);
+  assert.match(hook, /expectedParentUserId/);
+  assert.match(hook, /expectedFamilyId/);
+  assert.match(hook, /expectedSessionInstanceId/);
+  assert.match(hook, /saveNotificationQuietHours\(/);
+  assert.match(hook, /data\.targetUserId !== variables\.targetUserId/);
+  assert.match(hook, /저장 대상이 달라져/);
+});
+
+test("quiet 저장 성공은 정확한 target family cache와 self cache만 불변 갱신한다", () => {
+  const hook = readSource("src/queries/useNotifications.ts");
+
+  assert.match(hook, /qk\.familyNotificationQuietHours\(expectedFamilyId\)/);
+  assert.match(hook, /recipient\.targetUserId === data\.targetUserId/);
+  assert.match(hook, /\{\s*\.\.\.recipient,\s*quietHours:\s*data\.quietHours\s*\}/);
+  assert.match(hook, /data\.targetUserId === expectedParentUserId/);
+  assert.match(hook, /qk\.notifSettings\(expectedParentUserId\)/);
+  assert.match(hook, /\{\s*\.\.\.current,\s*quietHours:\s*data\.quietHours\s*\}/);
+  assert.doesNotMatch(hook, /children\[0\]/);
+});
+
 test("알림 설정 화면은 사용자 전환 때 이전 초안을 버리고 새 사용자 데이터로 hydrate한다", () => {
   const screen = readSource("src/screens/feature/NotificationSettings.tsx");
   assert.match(screen, /hydratedUserId/);
@@ -110,6 +199,8 @@ test("notification_settings realtime은 변경 사용자에 맞는 설정 query�
   assert.match(realtime, /rowUserId === userId/);
   assert.match(realtime, /qk\.notifSettings\(userId\)/);
   assert.match(realtime, /qk\.childNotifSettings\(familyId, rowUserId\)/);
+  assert.match(keys, /familyNotificationQuietHours:\s*\(familyId:\s*string\)/);
+  assert.match(realtime, /qk\.familyNotificationQuietHours\(familyId\)/);
 });
 
 test("Android 전체화면 특별 접근은 일반 알림 권한과 분리해 설명 후 사용자 버튼으로만 연다", () => {
