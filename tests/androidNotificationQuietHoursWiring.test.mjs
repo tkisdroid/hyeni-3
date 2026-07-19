@@ -216,6 +216,15 @@ test("AlarmManager는 type·alertType을 Intent에 보존하고 recovery도 exac
   assert.match(worker, /NotificationIdentity\.of\(type, alertType\)/);
 });
 
+test("pending 복구는 Helper의 quiet gate보다 먼저 채널을 만들지 않는다", () => {
+  const worker = read("android/app/src/main/java/com/hyeni/calendar/ParentPendingRecoveryWorker.java");
+  const doWork = methodBody(worker, "public Result doWork()", "private Response executePendingRequest(");
+
+  assert.notEqual(doWork, "");
+  assert.doesNotMatch(doWork, /NotificationHelper\.createChannels\(/);
+  assert.match(worker, /NotificationHelper\.showNotification\(/);
+});
+
 test("instrumentation은 prefs를 원복하며 일반 억제 ACK와 안전 우회를 검증한다", () => {
   const deviceTest = readMaybe(
     "android/app/src/androidTest/java/com/hyeni/calendar/NotificationQuietHoursDeviceTest.java",

@@ -87,7 +87,6 @@ public final class ParentPendingRecoveryWorker extends Worker {
         }
 
         try {
-            NotificationHelper.createChannels(appContext);
             String bearer = context.accessToken;
             if (isBlank(bearer)) {
                 bearer = networkRefreshAccessToken(prefs, context);
