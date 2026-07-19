@@ -144,6 +144,8 @@ test("알림 설정과 권한 화면은 가짜 로컬 방해금지 대신 실제
   const settings = readSource("src/screens/feature/NotificationSettings.tsx");
   const permDenied = readSource("src/screens/feature/PermDenied.tsx");
   assert.doesNotMatch(settings, /hyeni-dnd-v1|localStorage\.setItem\(DND/);
+  assert.match(settings, /알림 소리와 진동은 휴대폰 또는 브라우저 설정에서 관리해 주세요\./);
+  assert.doesNotMatch(settings, /방해금지/);
   assert.match(settings, /readNotificationDeliveryState\(\)/);
   assert.match(settings, /requestOrOpenPermission\("noti"\)/);
   assert.match(settings, /위험·SOS·미도착 알림은 항상 전달 대상으로 처리/);

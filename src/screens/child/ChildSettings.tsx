@@ -4,6 +4,7 @@ import {
   Bell,
   Cat,
   ChevronLeft,
+  Clock3,
   HelpCircle,
   Link2,
   Mail,
@@ -28,6 +29,7 @@ import {
 } from "@/lib/native/location";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
+import { notificationQuietHoursRange } from "@/transform/notificationQuietHours";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./ChildSettings.css";
 
@@ -147,6 +149,8 @@ export function ChildSettings() {
   const myName = me?.name || "친구";
   const notifSettings = notifSettingsQuery.data ?? DEFAULT_NOTIF_SETTINGS;
   const notifOn = notifSettings.childEnabled;
+  const quietHoursRange = notificationQuietHoursRange(notifSettings.quietHours);
+  const quietHoursOn = notifSettings.quietHours.enabled && quietHoursRange.length > 0;
   const locationView = (() => {
     switch (locationStatus) {
       case "on":
@@ -285,6 +289,21 @@ export function ChildSettings() {
               <span className="ks-row__sub">{locationView.sub}</span>
             </span>
             <span className="ks-onchip">{locationView.chip}</span>
+          </div>
+
+          <div className="ks-row ks-row--locked ks-row--quiet">
+            <span className="ks-row__icon">
+              <Clock3 size={18} strokeWidth={2.2} />
+            </span>
+            <span className="ks-row__main">
+              <span className="ks-row__title">알림 쉬는 시간</span>
+              <span className="ks-row__sub">
+                {quietHoursOn
+                  ? `${quietHoursRange} 알림을 쉬어`
+                  : "알림 쉬는 시간이 설정되지 않았어"}
+              </span>
+            </span>
+            <span className="ks-onchip">{quietHoursOn ? "설정됨" : "없음"}</span>
           </div>
 
           <button

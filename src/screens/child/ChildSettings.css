@@ -132,6 +132,14 @@
   background: linear-gradient(135deg, var(--mint-soft), #fff);
   border-color: var(--mint-line);
 }
+.ks-row--quiet .ks-row__icon {
+  background: var(--cream-soft);
+  color: var(--gold-text);
+}
+.ks-row--quiet .ks-onchip {
+  background: var(--cream-soft);
+  color: var(--gold-text);
+}
 .ks-row--muted {
   opacity: 0.66;
 }
