@@ -805,6 +805,52 @@
   git commit -m "feat: 부모와 아이 알림 시간 화면을 추가"
   ```
 
+### Task 6b: 온보딩·권한 화면 디자인 감사 후속
+
+**Files:**
+- Modify: `src/screens/onboarding/Onboarding.tsx`
+- Modify: `src/screens/onboarding/Onboarding.css`
+- Modify: `src/screens/feature/PermDenied.tsx`
+- Modify only if needed: `src/screens/feature/PermDenied.css`
+- Modify: `tests/designSystemUsage.test.mjs`
+- Verify: `tests/imageLoadingContract.test.mjs`, `tests/globalErrorSafety.test.mjs`, `tests/permissionCopyDensity.test.mjs`, `tests/backgroundLocationDisclosure.test.mjs`
+
+- [ ] 역할 선택의 child/teacher 이미지 `object-fit`과 `object-position:center top` 회귀를 먼저 고정한다.
+- [ ] `.ob-role-terms a`를 `inline-flex`, `align-items:center`, `min-height:var(--control-min-size)`로 만들어 실제 44px 조작 영역을 보장한다.
+- [ ] `PermDenied` Lucide 26px를 24px로, QR Camera 15px를 16px로 맞춘다.
+- [ ] 권한 목록 `예정` 배지의 인라인 typography를 caption size·line-height·weight 토큰 CSS class로 이동한다.
+- [ ] `/perm-denied`의 제목+한 문장+설정 경로+두 CTA와 백그라운드 위치 3문단 Play 공개 안내는 축약·삭제하지 않는다.
+- [ ] 관련 Node 테스트, typecheck, build, diff-check를 통과한 뒤 `fix: 온보딩과 권한 화면 터치 영역을 정리`로 커밋한다.
+
+### Task 6c: 안전지표 시스템 앱 행 이중 필터
+
+**Files:**
+- Modify: `src/transform/deviceAppUsageView.ts`
+- Modify: `tests/deviceAppUsageView.test.ts`
+- Modify: `android/app/src/main/java/com/hyeni/calendar/DeviceStatusReporter.java`
+- Modify: `android/app/src/test/java/com/hyeni/calendar/DeviceStatusReporterTest.java`
+
+- [ ] 합성 `recentApp/appUsage`에 `시스템 자녀 보호 기능`을 넣어 recent/top/most-used 노출 RED를 확인한다.
+- [ ] 표시 계층에서 확인된 이름 `시스템 자녀 보호 기능`·공백 변형·`System parental controls`와 기존 settings/systemui/permissioncontroller/packageinstaller/launcher 패키지를 canonical 비교로 제외한다.
+- [ ] Android는 기존 명시 시스템 표면·HOME 제외 뒤 `FLAG_SYSTEM|FLAG_UPDATED_SYSTEM_APP`이면서 `getLaunchIntentForPackage(pkg)==null`인 패키지만 추가 제외한다. 조회 실패는 미확인 앱을 숨기지 않는다.
+- [ ] 시스템 플래그+런처 없음, updated-system+런처 없음은 제외하고 시스템+런처 있음, 일반 앱+런처 없음은 유지하는 JVM 테스트를 추가한다.
+- [ ] Usage Access 권한 판정은 필터 뒤 빈 목록으로 오판하지 않는다. ParentHome·DailySafetyReport/API 계약은 공용 변환을 그대로 사용한다.
+- [ ] 관련 Node·Android unit 테스트, typecheck, diff-check를 통과한 뒤 `fix: 안전지표에서 시스템 앱을 제외`로 커밋한다.
+
+### Task 6d: 설명문 상자·줄바꿈 전수 정리
+
+**Files:**
+- Modify: `src/styles/components.css`
+- Modify: 순수 설명문을 렌더하는 기존 TSX/CSS
+- Create: `tests/explanatoryCopyStyle.test.mjs`
+
+- [ ] 공통 `.hy-explain`을 무테두리·무그림자, `type-body-sm`, 행간 1.55, `word-break:keep-all`, `overflow-wrap:anywhere`, `text-wrap:pretty`로 정의한다.
+- [ ] `.hy-explain__lines/.hy-explain__line`으로 두 문장 이상 핵심 설명을 4px 간격의 문장별 block으로 나눈다.
+- [ ] 최소 필수 대상은 `.nst-safety-note`, `.ra-trust-card`, `.ra-webnote`, `.tt-note`이며 배경·아이콘·정책 내용·독립 버튼은 유지한다.
+- [ ] AiSchedule/AiCredit/LocationSettings/LocationStatus/PhoneSetup/PairingWizard/RemoteAudio/RemoteAudioAudit/Subscription/Onboarding/ParentAccount/SocialLinks/TeacherReleaseGate/ChildSettings와 인라인 보조 설명 후보를 명시적으로 공통화한다.
+- [ ] `*-note` 전역 치환은 금지한다. 오류·경고·재시도·attention·SOS·차단·권한 정책 모달, 클릭 카드, 데이터 요약, PlaydateAccept 인용문은 제외한다.
+- [ ] 정적 회귀, 신뢰 copy, 디자인 시스템, typecheck, build를 통과한 뒤 `style: 설명문을 무테두리로 정리`로 커밋한다.
+
 ### Task 7: Android 순수 정책·세션 저장소·공통 표시 receipt
 
 **Files:**
