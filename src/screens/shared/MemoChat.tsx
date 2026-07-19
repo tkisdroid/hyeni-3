@@ -25,6 +25,7 @@ import { resizeImageFileSafe, dataUrlToBlob } from "@/lib/imageResize";
 import { loadKakaoMaps } from "@/lib/kakaoMap";
 import { openExternal } from "@/lib/native/browser";
 import { MessageSafetyDialog, type ReportReasonOption } from "@/components/MessageSafetyDialog";
+import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import {
   useBlockMemoUser,
   useMemoBlocks,
@@ -163,6 +164,10 @@ export function MemoChat() {
   const [draft, setDraft] = useState("");
   const [safetyTarget, setSafetyTarget] = useState<ThreadMsg | null>(null);
   const [previewImagePath, setPreviewImagePath] = useState<string | null>(null);
+  const previewDialogRef = useDialogFocusLifecycle<HTMLDivElement>({
+    open: previewImagePath !== null,
+    onClose: () => setPreviewImagePath(null),
+  });
   const endRef = useRef<HTMLDivElement>(null);
   const mounted = useRef(false);
   const lastMessageId = messages[messages.length - 1]?.id ?? "";
@@ -221,15 +226,6 @@ export function MemoChat() {
     scrollThreadToBottom(mounted.current ? "smooth" : "auto");
     mounted.current = true;
   }, [lastMessageId, messages.length]);
-
-  useEffect(() => {
-    if (!previewImagePath) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setPreviewImagePath(null);
-    };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [previewImagePath]);
 
   const handleSend = () => {
     if (!scopeChild) {
@@ -603,6 +599,7 @@ export function MemoChat() {
 
       {previewImagePath && (
         <div
+          ref={previewDialogRef}
           className="mc-photo-preview"
           role="dialog"
           aria-modal="true"
