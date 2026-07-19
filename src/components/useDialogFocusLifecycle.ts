@@ -1,8 +1,8 @@
 import { useEffect, useRef, type RefObject } from "react";
 import {
   dialogFocusStack,
+  handleTopmostDialogKey,
   restoreDialogFocus,
-  shouldHandleDialogKey,
 } from "./dialogFocusStack";
 
 const FOCUSABLE_SELECTOR = [
@@ -51,38 +51,37 @@ export function useDialogFocusLifecycle<TDialog extends HTMLElement>({
       (preferred ?? focusableElements()[0] ?? dialogRef.current)?.focus();
     };
     const dialogId = dialogIdRef.current;
-    dialogFocusStack.open({ id: dialogId, focusFallback: focusDialog });
+    dialogFocusStack.open({
+      id: dialogId,
+      focusFallback: focusDialog,
+      restoreFallback: () => {
+        if (!previousFocus?.isConnected) return false;
+        previousFocus.focus();
+        return true;
+      },
+    });
 
     const animationFrame = window.requestAnimationFrame(() => {
       if (dialogFocusStack.isTop(dialogId)) focusDialog();
     });
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (!shouldHandleDialogKey(dialogFocusStack, dialogId, event.key)) return;
-      if (event.key === "Escape") {
-        if (!canCloseRef.current()) return;
-        event.preventDefault();
-        onCloseRef.current();
-        return;
-      }
       const focusable = focusableElements();
-      if (focusable.length === 0) {
-        event.preventDefault();
-        dialogRef.current?.focus();
-        return;
-      }
-
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
       const active = document.activeElement;
       const focusIsOutside = !dialogRef.current?.contains(active);
-      if (event.shiftKey && (active === first || focusIsOutside)) {
-        event.preventDefault();
-        last?.focus();
-      } else if (!event.shiftKey && (active === last || focusIsOutside)) {
-        event.preventDefault();
-        first?.focus();
-      }
+      handleTopmostDialogKey({
+        stack: dialogFocusStack,
+        dialogId,
+        key: event.key,
+        shiftKey: event.shiftKey,
+        canClose: canCloseRef.current,
+        onClose: onCloseRef.current,
+        preventDefault: () => event.preventDefault(),
+        focusable,
+        activeElement: active instanceof HTMLElement ? active : null,
+        focusIsOutside,
+        focusDialog,
+      });
     };
 
     window.addEventListener("keydown", onKeyDown);
@@ -90,10 +89,7 @@ export function useDialogFocusLifecycle<TDialog extends HTMLElement>({
       window.cancelAnimationFrame(animationFrame);
       window.removeEventListener("keydown", onKeyDown);
       const closeResult = dialogFocusStack.close(dialogId);
-      const restorePrevious = previousFocus?.isConnected
-        ? () => previousFocus.focus()
-        : null;
-      restoreDialogFocus(closeResult, restorePrevious);
+      restoreDialogFocus(closeResult);
     };
   }, [initialFocusRef, open]);
 

@@ -46,7 +46,7 @@ export function SocialLinks() {
   const [busy, setBusy] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: qk.oauthLinks,
     queryFn: fetchOAuthLinks,
     staleTime: 60_000,
@@ -108,11 +108,29 @@ export function SocialLinks() {
       <div className="pa-group__label">소셜 로그인 연결</div>
 
       <div className="pa-card">
-        {native && !isLoading && links.length === 0 && (
+        {native && isLoading && (
+          <div className="sl-state" aria-busy="true">연결된 계정을 확인하고 있어요.</div>
+        )}
+
+        {native && isError && (
+          <div className="sl-state sl-state--error" role="alert" aria-live="assertive">
+            <span>소셜 계정 연결 정보를 불러오지 못했어요.</span>
+            <button
+              type="button"
+              className="sl-retry hy-press"
+              onClick={() => void refetch()}
+              disabled={isFetching}
+            >
+              {isFetching ? "다시 확인 중…" : "다시 불러오기"}
+            </button>
+          </div>
+        )}
+
+        {native && !isLoading && !isError && links.length === 0 && (
           <div className="sl-empty">아직 연결된 소셜 계정이 없어요.</div>
         )}
 
-        {links.map((link, index) => {
+        {!isError && links.map((link, index) => {
           const key = linkKey(link);
           const isConfirming = confirming === key;
           return (
@@ -137,7 +155,7 @@ export function SocialLinks() {
           );
         })}
 
-        {LINKABLE_PROVIDERS.map((provider) => {
+        {(!native || (!isLoading && !isError)) && LINKABLE_PROVIDERS.map((provider) => {
           const hasAny = links.some((l) => l.provider === provider);
           return (
             <div key={`add-${provider}`}>
@@ -145,7 +163,7 @@ export function SocialLinks() {
               <button
                 type="button"
                 className="pa-row pa-row-btn hy-press"
-                disabled={!native || isLoading || busy === provider}
+                disabled={!native || busy === provider}
                 onClick={() => startLink(provider)}
               >
                 <span className="pa-row__k">

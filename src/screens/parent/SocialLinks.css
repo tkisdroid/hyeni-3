@@ -59,3 +59,36 @@
   color: var(--fg-muted);
   padding: 12px 0;
 }
+
+.sl-state {
+  min-height: 72px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  color: var(--fg-muted);
+}
+
+.sl-state--error {
+  flex-direction: column;
+  color: var(--danger-text);
+}
+
+.sl-retry {
+  min-height: var(--control-min-size);
+  padding: 0 16px;
+  border-radius: var(--radius-pill);
+  background: var(--fg-primary);
+  color: #fff;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+}
+
+.sl-retry:disabled {
+  opacity: var(--disabled-opacity);
+}

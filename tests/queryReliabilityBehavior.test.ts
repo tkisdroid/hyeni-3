@@ -6,6 +6,7 @@ import {
 } from "../src/transform/childInviteConnection.ts";
 import {
   DialogFocusStack,
+  handleTopmostDialogKey,
   restoreDialogFocus,
   shouldHandleDialogKey,
 } from "../src/components/dialogFocusStack.ts";
@@ -84,4 +85,110 @@ test("dialog focus 복원은 연결된 이전 요소를 우선하고 없으면 �
   const removedUnderlay = stack.close("outer");
   restoreDialogFocus(removedUnderlay, () => calls.push("should-not-run"));
   assert.deepEqual(calls, ["previous", "outer"], "최상단이 아닌 dialog 정리 시 포커스를 훔치면 안 됩니다");
+});
+
+test("바깥 dialog가 먼저 unmount돼도 안쪽 dialog 종료 후 원래 페이지 포커스를 복원한다", () => {
+  const calls: string[] = [];
+  const stack = new DialogFocusStack<string>();
+  stack.open({
+    id: "outer",
+    focusFallback: () => calls.push("outer-focus"),
+    restoreFallback: () => {
+      calls.push("page");
+      return true;
+    },
+  });
+  stack.open({
+    id: "inner",
+    focusFallback: () => calls.push("inner-focus"),
+    restoreFallback: () => {
+      calls.push("detached-outer-button");
+      return false;
+    },
+  });
+
+  restoreDialogFocus(stack.close("outer"));
+  assert.deepEqual(calls, [], "최상단이 아닌 바깥 dialog 정리는 포커스를 훔치면 안 됩니다");
+
+  restoreDialogFocus(stack.close("inner"));
+  assert.deepEqual(
+    calls,
+    ["detached-outer-button", "page"],
+    "끊긴 바깥 호출 버튼 다음으로 페이지 복귀 지점을 이어서 사용해야 합니다",
+  );
+});
+
+test("실제 hook 키보드 알고리즘은 최상단 dialog에서만 Escape와 양방향 Tab 순환을 수행한다", () => {
+  const stack = new DialogFocusStack<string>();
+  stack.open({ id: "outer", focusFallback: () => undefined });
+  stack.open({ id: "inner", focusFallback: () => undefined });
+
+  const calls: string[] = [];
+  const common = {
+    stack,
+    canClose: () => true,
+    onClose: () => calls.push("close"),
+    preventDefault: () => calls.push("prevent"),
+    focusDialog: () => calls.push("dialog"),
+  };
+  const first = { id: "first", focus: () => calls.push("first") };
+  const last = { id: "last", focus: () => calls.push("last") };
+
+  assert.equal(handleTopmostDialogKey({
+    ...common,
+    dialogId: "outer",
+    key: "Escape",
+    shiftKey: false,
+    focusable: [first, last],
+    activeElement: last,
+    focusIsOutside: false,
+  }), false);
+  assert.deepEqual(calls, []);
+
+  assert.equal(handleTopmostDialogKey({
+    ...common,
+    dialogId: "inner",
+    key: "Escape",
+    shiftKey: false,
+    focusable: [first, last],
+    activeElement: last,
+    focusIsOutside: false,
+  }), true);
+  assert.deepEqual(calls, ["prevent", "close"]);
+
+  calls.length = 0;
+  assert.equal(handleTopmostDialogKey({
+    ...common,
+    dialogId: "inner",
+    key: "Tab",
+    shiftKey: false,
+    focusable: [first, last],
+    activeElement: last,
+    focusIsOutside: false,
+  }), true);
+  assert.deepEqual(calls, ["prevent", "first"]);
+
+  calls.length = 0;
+  assert.equal(handleTopmostDialogKey({
+    ...common,
+    dialogId: "inner",
+    key: "Tab",
+    shiftKey: true,
+    focusable: [first, last],
+    activeElement: first,
+    focusIsOutside: false,
+  }), true);
+  assert.deepEqual(calls, ["prevent", "last"]);
+
+  calls.length = 0;
+  assert.equal(handleTopmostDialogKey({
+    ...common,
+    dialogId: "inner",
+    key: "Tab",
+    shiftKey: false,
+    focusable: [],
+    activeElement: null,
+    focusIsOutside: true,
+  }), true);
+  assert.deepEqual(calls, ["prevent", "dialog"]);
 });

@@ -1,10 +1,11 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronLeft, Bell } from "lucide-react";
+import { AlertTriangle, Bell, ChevronLeft, RefreshCw } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { useActiveChild } from "@/app/activeChild";
+import { Loading } from "@/components/ui/Loading";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import { useMyFamily } from "@/queries/useFamily";
 import {
@@ -14,6 +15,7 @@ import {
   useTriggerForceRing,
   useStopForceRing,
 } from "@/queries/useRemote";
+import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./RemoteRing.css";
 
 /** 선택 가능한 벨소리 지속(초). 아이 기기 알람을 이 시간 뒤 자동 정지한다. */
@@ -48,12 +50,34 @@ const durationLabel = (sec: number): string => (sec >= 60 ? `${sec / 60}분` : `
 export function RemoteRing() {
   const navigate = useNavigate();
   const { show } = useToast();
-  const { data: family } = useMyFamily();
-  const { data: active } = useForceRingActive({ pollMs: 3000 });
-  const { data: history } = useForceRingHistory(5);
-  const { data: quota } = useForceRingQuota();
+  const familyQuery = useMyFamily();
+  const activeQuery = useForceRingActive({ pollMs: 3000 });
+  const historyQuery = useForceRingHistory(5);
+  const quotaQuery = useForceRingQuota();
+  const family = familyQuery.data;
+  const active = activeQuery.data;
+  const history = historyQuery.data;
+  const quota = quotaQuery.data;
   const trigger = useTriggerForceRing();
   const stop = useStopForceRing();
+  const ringQueryState = resolveQueryTruthState([
+    { isLoading: familyQuery.isLoading, isError: familyQuery.isError },
+    { isLoading: activeQuery.isLoading, isError: activeQuery.isError },
+    { isLoading: historyQuery.isLoading, isError: historyQuery.isError },
+    { isLoading: quotaQuery.isLoading, isError: quotaQuery.isError },
+  ]);
+  const ringDataMissing = ringQueryState === "ready" && (!family || !quota);
+  const ringDataReady = ringQueryState === "ready" && !ringDataMissing;
+  const ringRefetching =
+    familyQuery.isFetching || activeQuery.isFetching || historyQuery.isFetching || quotaQuery.isFetching;
+  const retryRemoteRing = async (): Promise<void> => {
+    await Promise.all([
+      familyQuery.refetch(),
+      activeQuery.refetch(),
+      historyQuery.refetch(),
+      quotaQuery.refetch(),
+    ]);
+  };
 
   // 대상 아이 목록(연결된 자녀). child_order 순.
   const children = useMemo(
@@ -124,7 +148,7 @@ export function RemoteRing() {
     }
   }, [ringing, active, nowMs, stop]);
 
-  const quotaAllowed = quota ? quota.allowed : true;
+  const quotaAllowed = quota?.allowed === true;
   const tierLabel = quota?.tier === "premium" ? "프리미엄" : "무료";
   const childName = targetChild?.name || "우리 아이";
   const childAvatar = avatarSrc(childAvatarPath(targetChild?.photo_url));
@@ -165,6 +189,10 @@ export function RemoteRing() {
     : "";
 
   const onRingClick = () => {
+    if (!ringDataReady) {
+      show("소리 울리기 정보를 다시 확인해 주세요", "⚠️");
+      return;
+    }
     if (!targetChild) {
       show("연결된 아이가 없어요", "🔔");
       return;
@@ -178,7 +206,7 @@ export function RemoteRing() {
 
   const confirmRing = async () => {
     setShowConfirm(false);
-    if (!targetChild?.user_id) return;
+    if (!ringDataReady || !quotaAllowed || !targetChild?.user_id) return;
     const res = await trigger.mutateAsync({ targetChildUserId: targetChild.user_id, message: "" });
     if (res.error) {
       if (res.error === "force_ring_quota_exceeded") show("오늘 소리 울리기 횟수를 다 썼어요", "🔕");
@@ -218,7 +246,46 @@ export function RemoteRing() {
           <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
         </button>
 
-        <div className="rr-idle-center">
+        {ringQueryState === "loading" ? (
+          <section className="rr-query-state" aria-busy="true">
+            <Loading label="소리 울리기 정보를 불러오는 중" />
+          </section>
+        ) : ringQueryState === "error" || ringDataMissing ? (
+          <section className="rr-query-state rr-query-state--error" role="alert" aria-live="assertive">
+            <AlertTriangle size={28} strokeWidth={2.2} aria-hidden="true" />
+            <b>소리 울리기 정보를 불러오지 못했어요</b>
+            <p>연결된 아이와 오늘 사용 횟수를 다시 확인해 주세요.</p>
+            <button
+              type="button"
+              className="rr-query-retry hy-press"
+              onClick={() => void retryRemoteRing()}
+              disabled={ringRefetching}
+            >
+              <RefreshCw
+                size={17}
+                strokeWidth={2.3}
+                className={ringRefetching ? "rr-spin" : undefined}
+                aria-hidden="true"
+              />
+              {ringRefetching ? "다시 확인하고 있어요…" : "다시 불러오기"}
+            </button>
+          </section>
+        ) : children.length === 0 ? (
+          <section className="rr-query-state rr-query-state--empty">
+            <Bell size={30} strokeWidth={2} aria-hidden="true" />
+            <b>연결된 아이가 없어요</b>
+            <p>아이를 연결한 뒤 기기에서 소리를 울릴 수 있어요.</p>
+            <button
+              type="button"
+              className="rr-query-retry hy-press"
+              onClick={() => navigate("/child-invite")}
+            >
+              아이 연결하기
+            </button>
+          </section>
+        ) : (
+          <>
+          <div className="rr-idle-center">
           <div className="rr-hero">
             <span className="rr-hero-ring1" />
             <span className="rr-hero-ring2" />
@@ -288,10 +355,12 @@ export function RemoteRing() {
             {recentOutcome ? ` · ${recentOutcome}` : ""}
           </div>
         )}
+          </>
+        )}
       </div>
 
       {/* 확인 모달 */}
-      {showConfirm && (
+      {ringDataReady && showConfirm && (
         <div className="rr-modal-backdrop" onClick={() => !trigger.isPending && setShowConfirm(false)}>
           <div
             ref={confirmDialogRef}
@@ -335,7 +404,7 @@ export function RemoteRing() {
       )}
 
       {/* 울리는 중 오버레이 */}
-      {ringing && (
+      {ringDataReady && ringing && (
         <div className="rr-ring">
           <div className="rr-ring-head">
             <div className="rr-ring-eyebrow">벨소리 울리는 중</div>

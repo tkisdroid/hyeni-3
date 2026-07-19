@@ -433,11 +433,12 @@ test("계정·지도 선택·원격 울림 dialog는 공통 focus lifecycle을 �
   const hook = read("src/components/useDialogFocusLifecycle.ts");
   assert.match(hook, /previousFocus/);
   assert.match(hook, /requestAnimationFrame/);
-  assert.match(hook, /shouldHandleDialogKey\(dialogFocusStack, dialogId, event\.key\)/);
-  assert.match(hook, /event\.key === "Escape"/);
-  assert.match(hook, /event\.shiftKey/);
+  assert.match(hook, /handleTopmostDialogKey\(\{/);
+  assert.match(hook, /key: event\.key/);
+  assert.match(hook, /shiftKey: event\.shiftKey/);
   assert.match(hook, /previousFocus\?\.isConnected/);
-  assert.match(hook, /restoreDialogFocus\(closeResult, restorePrevious\)/);
+  assert.match(hook, /restoreFallback:/);
+  assert.match(hook, /restoreDialogFocus\(closeResult\)/);
 
   const account = read("src/screens/parent/ParentAccount.tsx");
   assert.equal((account.match(/useDialogFocusLifecycle(?:<[^>]+>)?\(/g) ?? []).length, 2, "계정 dialog 2개 모두 focus lifecycle 필요");

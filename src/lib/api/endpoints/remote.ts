@@ -172,44 +172,33 @@ export async function requestLocationRefresh(
   }
 }
 
-/** GET /api/force-ring/active — 조회 실패는 null 로 떨궈 패널 부팅을 막지 않는다. */
+/** GET /api/force-ring/active — 진행 중인 울림이 없을 때만 null이다. */
 export async function fetchActiveForceRing(familyId: string): Promise<ForceRingActive | null> {
-  if (!familyId) return null;
-  try {
-    return await apiGet<ForceRingActive | null>(
-      `/api/force-ring/active?family_id=${encodeURIComponent(familyId)}`,
-    );
-  } catch {
-    return null;
-  }
+  if (!familyId) throw new Error("force_ring_family_required");
+  return apiGet<ForceRingActive | null>(
+    `/api/force-ring/active?family_id=${encodeURIComponent(familyId)}`,
+  );
 }
 
-/** GET /api/force-ring/history — 실패는 빈 배열. */
+/** GET /api/force-ring/history — 실제 이력이 없을 때만 빈 배열이다. */
 export async function fetchForceRingHistory(
   familyId: string,
   limit = 10,
 ): Promise<ForceRingHistoryItem[]> {
-  if (!familyId) return [];
-  try {
-    const data = await apiGet<ForceRingHistoryItem[] | null>(
-      `/api/force-ring/history?family_id=${encodeURIComponent(familyId)}&limit=${limit}`,
-    );
-    return Array.isArray(data) ? data : [];
-  } catch {
-    return [];
-  }
+  if (!familyId) throw new Error("force_ring_family_required");
+  const data = await apiGet<ForceRingHistoryItem[]>(
+    `/api/force-ring/history?family_id=${encodeURIComponent(familyId)}&limit=${limit}`,
+  );
+  if (!Array.isArray(data)) throw new Error("force_ring_history_invalid");
+  return data;
 }
 
-/** GET /api/force-ring/quota — 실패는 null(호출부에서 기본 허용). */
-export async function fetchForceRingQuota(familyId: string): Promise<ForceRingQuota | null> {
-  if (!familyId) return null;
-  try {
-    return await apiGet<ForceRingQuota>(
-      `/api/force-ring/quota?family_id=${encodeURIComponent(familyId)}`,
-    );
-  } catch {
-    return null;
-  }
+/** GET /api/force-ring/quota — 확인 실패 시 호출부가 사용을 허용하지 않도록 오류를 유지한다. */
+export async function fetchForceRingQuota(familyId: string): Promise<ForceRingQuota> {
+  if (!familyId) throw new Error("force_ring_family_required");
+  return apiGet<ForceRingQuota>(
+    `/api/force-ring/quota?family_id=${encodeURIComponent(familyId)}`,
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
