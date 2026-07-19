@@ -13,6 +13,7 @@ import { qk } from "../src/queries/keys.ts";
 import {
   commitNotificationQuietHoursIfSessionCurrent,
   executeNotificationQuietHoursScopedMutation,
+  mergeNotifSettingsPreservingQuietHours,
   runNotificationQuietHoursSessionBound,
   type NotificationQuietHoursSessionSnapshot,
   type NotificationQuietHoursSessionState,
@@ -235,6 +236,60 @@ test("quiet MutationCache는 같은 target만 직렬화하고 다른 target은 �
     "같은 대상 첫 요청",
     "같은 대상 최신 요청",
   ]);
+  client.clear();
+});
+
+test("일반 설정과 self quiet 저장 완료 순서가 바뀌어도 최신 quiet cache를 보존한다", () => {
+  const client = new QueryClient();
+  const key = qk.notifSettings("parent-1");
+  const oldQuiet = {
+    enabled: false,
+    startMinute: 1320,
+    endMinute: 420,
+    updatedAt: null,
+    configured: false,
+  };
+  const latestQuiet = {
+    enabled: true,
+    startMinute: 1380,
+    endMinute: 360,
+    updatedAt: "2026-07-19T18:00:00.000Z",
+    configured: true,
+  };
+  const initial = {
+    childEnabled: true,
+    parentEnabled: true,
+    locationEnabled: true,
+    registeredPlaceEnabled: true,
+    playdateEnabled: true,
+    minutesBefore: [15, 5],
+    quietHours: oldQuiet,
+  };
+  const submittedGeneral = { ...initial, parentEnabled: false };
+
+  client.setQueryData(key, initial);
+  client.setQueryData(key, { ...initial, quietHours: latestQuiet });
+  client.setQueryData(key, (current) => mergeNotifSettingsPreservingQuietHours(
+    current,
+    submittedGeneral,
+  ));
+  assert.deepEqual(client.getQueryData(key), {
+    ...submittedGeneral,
+    quietHours: latestQuiet,
+  });
+
+  client.setQueryData(key, initial);
+  client.setQueryData(key, (current) => mergeNotifSettingsPreservingQuietHours(
+    current,
+    submittedGeneral,
+  ));
+  client.setQueryData(key, (current: typeof initial | undefined) => (
+    current ? { ...current, quietHours: latestQuiet } : current
+  ));
+  assert.deepEqual(client.getQueryData(key), {
+    ...submittedGeneral,
+    quietHours: latestQuiet,
+  });
   client.clear();
 });
 

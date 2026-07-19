@@ -1,4 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
+import type { NotifSettings } from "@/lib/api/endpoints/notifications";
 
 export interface NotificationQuietHoursSessionSnapshot {
   readonly parentUserId: string;
@@ -16,6 +17,16 @@ export interface NotificationQuietHoursSessionState {
 
 interface NotificationQuietHoursTargetVariables {
   readonly targetUserId: string;
+}
+
+/** 일반 설정 POST는 quiet 컬럼을 저장하지 않으므로 최신 quiet 캐시를 덮지 않는다. */
+export function mergeNotifSettingsPreservingQuietHours(
+  current: NotifSettings | null | undefined,
+  submitted: NotifSettings,
+): NotifSettings | null | undefined {
+  if (current === undefined) return undefined;
+  if (current === null) return submitted;
+  return { ...submitted, quietHours: current.quietHours };
 }
 
 export function isNotificationQuietHoursSessionCurrent(

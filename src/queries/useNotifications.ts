@@ -31,6 +31,7 @@ import type { NotificationQuietHoursDraft } from "@/transform/notificationQuietH
 import {
   commitNotificationQuietHoursIfSessionCurrent,
   executeNotificationQuietHoursScopedMutation,
+  mergeNotifSettingsPreservingQuietHours,
   runNotificationQuietHoursSessionBound,
   type NotificationQuietHoursSessionSnapshot,
   type NotificationQuietHoursSessionState,
@@ -283,7 +284,11 @@ export function useSaveNotifSettings() {
       return saveNotifSettings(familyId ?? null, expectedUserId, settings);
     },
     onSuccess: (_data, settings) => {
-      if (expectedUserId) qc.setQueryData(qk.notifSettings(expectedUserId), settings);
+      if (!expectedUserId) return;
+      qc.setQueryData<NotifSettings | null>(
+        qk.notifSettings(expectedUserId),
+        (current) => mergeNotifSettingsPreservingQuietHours(current, settings),
+      );
     },
   });
 }
