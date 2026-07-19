@@ -1368,13 +1368,22 @@ function PermsStep({
   const [locationUnsupported, setLocationUnsupported] = useState(false);
   const consentTitleId = useId();
   const consentDescriptionId = useId();
+  const consentStageTitleRef = useRef<HTMLHeadingElement>(null);
   const consentSecondaryRef = useRef<HTMLButtonElement>(null);
+  const previousLocationStageRef = useRef(locationStage);
   const consentDialogRef = useDialogFocusLifecycle<HTMLElement>({
     open: locationStage !== "idle",
     onClose: onDone,
     initialFocusRef: consentSecondaryRef,
     canClose: () => !permissionBusy,
   });
+
+  useEffect(() => {
+    const previousLocationStage = previousLocationStageRef.current;
+    previousLocationStageRef.current = locationStage;
+    if (previousLocationStage === "idle" || locationStage === "idle") return;
+    consentStageTitleRef.current?.focus({ preventScroll: true });
+  }, [locationStage]);
 
   const start = () => {
     if (role !== "child") {
@@ -1464,7 +1473,7 @@ function PermsStep({
             {locationStage === "disclosure" && (
               <>
                 <span className="ob-consent-dialog__eyebrow">아이 위치 공유 안내</span>
-                <h2 id={consentTitleId}>백그라운드 위치를 사용해요</h2>
+                <h2 ref={consentStageTitleRef} id={consentTitleId} tabIndex={-1}>백그라운드 위치를 사용해요</h2>
                 <div id={consentDescriptionId} className="ob-consent-dialog__copy">
                   <p>
                     혜니캘린더는 아이가 앱을 닫거나 사용하지 않을 때도 위치를 수집해 연결된 보호자에게 공유합니다.
@@ -1490,7 +1499,7 @@ function PermsStep({
             {locationStage === "backgroundEducation" && (
               <>
                 <span className="ob-consent-dialog__eyebrow">마지막 위치 설정</span>
-                <h2 id={consentTitleId}>위치를 ‘항상 허용’으로 선택해 주세요</h2>
+                <h2 ref={consentStageTitleRef} id={consentTitleId} tabIndex={-1}>위치를 ‘항상 허용’으로 선택해 주세요</h2>
                 <div id={consentDescriptionId} className="ob-consent-dialog__copy">
                   <p>
                     다음 Android 위치 권한 화면에서 ‘항상 허용’을 선택해야 앱을 닫은 뒤에도 도착·출발과 위험장소 알림이 이어집니다.
@@ -1511,7 +1520,7 @@ function PermsStep({
             {(locationStage === "foregroundDenied" || locationStage === "backgroundDenied") && (
               <>
                 <span className="ob-consent-dialog__eyebrow">위치 권한이 필요해요</span>
-                <h2 id={consentTitleId}>
+                <h2 ref={consentStageTitleRef} id={consentTitleId} tabIndex={-1}>
                   {locationUnsupported ? "이 기기에서는 지원하지 않아요" : "아직 위치 권한이 꺼져 있어요"}
                 </h2>
                 <div id={consentDescriptionId} className="ob-consent-dialog__copy">

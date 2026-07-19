@@ -7,6 +7,7 @@
  * 접근성: 공통 dialog lifecycle로 포커스를 가두고 Esc·복귀 포커스를 관리한다.
  */
 import { useId, useRef, type ReactNode } from "react";
+import { X } from "lucide-react";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import "./ChildSheet.css";
 
@@ -24,11 +25,11 @@ export interface ChildSheetProps {
 export function ChildSheet({ open, onClose, label, description, children }: ChildSheetProps) {
   const titleId = useId();
   const descriptionId = useId();
-  const contentRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useDialogFocusLifecycle<HTMLDivElement>({
     open,
     onClose,
-    initialFocusRef: contentRef,
+    initialFocusRef: closeRef,
   });
   if (!open) return null;
   return (
@@ -43,8 +44,13 @@ export function ChildSheet({ open, onClose, label, description, children }: Chil
       <span id={titleId} className="ks-dialog-a11y">{label}</span>
       <span id={descriptionId} className="ks-dialog-a11y">{description ?? `${label} 창이 열렸어.`}</span>
       <button type="button" className="ks-dim" tabIndex={-1} aria-label="닫기" onClick={onClose} />
-      <div ref={contentRef} className="ks-sheet" tabIndex={-1}>
-        <div className="ks-handle" />
+      <div className="ks-sheet">
+        <div className="ks-dialog-toolbar">
+          <div className="ks-handle" aria-hidden="true" />
+          <button ref={closeRef} type="button" className="ks-dialog-close hy-press" aria-label="닫기" onClick={onClose}>
+            <X size={20} strokeWidth={2.4} aria-hidden="true" />
+          </button>
+        </div>
         {children}
       </div>
     </div>
@@ -55,11 +61,11 @@ export function ChildSheet({ open, onClose, label, description, children }: Chil
 export function ChildModal({ open, onClose, label, description, children }: ChildSheetProps) {
   const titleId = useId();
   const descriptionId = useId();
-  const contentRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useDialogFocusLifecycle<HTMLDivElement>({
     open,
     onClose,
-    initialFocusRef: contentRef,
+    initialFocusRef: closeRef,
   });
   if (!open) return null;
   return (
@@ -74,7 +80,14 @@ export function ChildModal({ open, onClose, label, description, children }: Chil
       <span id={titleId} className="ks-dialog-a11y">{label}</span>
       <span id={descriptionId} className="ks-dialog-a11y">{description ?? `${label} 창이 열렸어.`}</span>
       <button type="button" className="ks-dim ks-dim--strong" tabIndex={-1} aria-label="닫기" onClick={onClose} />
-      <div ref={contentRef} className="ks-modal" tabIndex={-1}>{children}</div>
+      <div className="ks-modal">
+        <div className="ks-dialog-toolbar ks-dialog-toolbar--modal">
+          <button ref={closeRef} type="button" className="ks-dialog-close hy-press" aria-label="닫기" onClick={onClose}>
+            <X size={20} strokeWidth={2.4} aria-hidden="true" />
+          </button>
+        </div>
+        {children}
+      </div>
     </div>
   );
 }

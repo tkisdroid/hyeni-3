@@ -289,7 +289,14 @@ export function RemoteRing() {
           <div className="rr-hero">
             <span className="rr-hero-ring1" />
             <span className="rr-hero-ring2" />
-            <img className="rr-hero-img hy-network-avatar" src={childAvatar} alt="" loading="lazy" decoding="async" />
+            <img
+              className="rr-hero-img hy-network-avatar"
+              src={childAvatar}
+              alt=""
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
+            />
           </div>
 
           <div className="rr-title">{childName} 기기에서 벨을 울릴까요?</div>

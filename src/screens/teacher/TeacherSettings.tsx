@@ -36,17 +36,18 @@ export function TeacherSettings() {
   const deleteTitleId = useId();
   const deleteDescriptionId = useId();
   const deleteCancelRef = useRef<HTMLButtonElement>(null);
-  const deleteDialogRef = useDialogFocusLifecycle<HTMLDivElement>({
-    open: confirmDelete,
-    onClose: () => setConfirmDelete(false),
-    initialFocusRef: deleteCancelRef,
-    canClose: () => !deleteAccount.isPending,
-  });
   const teacherSettingsQueryState = resolveQueryTruthState([
     { isLoading: accountQuery.isLoading, isError: accountQuery.isError },
     { isLoading: classesQ.isLoading, isError: classesQ.isError },
   ]);
   const teacherSettingsDataMissing = teacherSettingsQueryState === "ready" && !account;
+  const deleteDialogVisible = confirmDelete && teacherSettingsQueryState === "ready" && !teacherSettingsDataMissing;
+  const deleteDialogRef = useDialogFocusLifecycle<HTMLDivElement>({
+    open: deleteDialogVisible,
+    onClose: () => setConfirmDelete(false),
+    initialFocusRef: deleteCancelRef,
+    canClose: () => !deleteAccount.isPending,
+  });
   const noTeacherClasses = teacherSettingsQueryState === "ready" && classesQ.data?.length === 0;
   const teacherSettingsRefetching = accountQuery.isFetching || classesQ.isFetching;
   const retryTeacherSettings = async (): Promise<void> => {
@@ -215,7 +216,7 @@ export function TeacherSettings() {
       </div>
 
       {/* 회원 탈퇴 확인 모달 */}
-      {confirmDelete && (
+      {deleteDialogVisible && (
         <div
           ref={deleteDialogRef}
           className="ps-modal"

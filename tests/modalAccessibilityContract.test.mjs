@@ -67,6 +67,20 @@ function dialogsIn(absolute) {
   return { dialogs, source };
 }
 
+function descendantButtonsWithClass(node, className) {
+  const buttons = [];
+  const visit = (child) => {
+    if (ts.isJsxElement(child)
+      && child.openingElement.tagName.getText() === "button"
+      && stringAttribute(child.openingElement, "className")?.split(/\s+/).includes(className)) {
+      buttons.push(child.openingElement);
+    }
+    ts.forEachChild(child, visit);
+  };
+  visit(node);
+  return buttons;
+}
+
 test("MemoChat을 제외한 모든 dialog를 전수 목록으로 고정한다", () => {
   const actual = new Map();
   for (const absolute of tsxFiles(resolve(root, "src"))) {
@@ -119,4 +133,27 @@ test("dialog의 투명 scrim은 Tab 순서에 들어오지 않는다", () => {
   }
   assert.equal(scrimCount, 12, "dialog scrim 전수 목록이 바뀌면 접근성 계약도 갱신해야 합니다");
   assert.deepEqual(violations, [], `Tab 순서에 남은 투명 scrim:\n${violations.join("\n")}`);
+});
+
+test("공용 아이 sheet와 modal은 항상 44px 이상의 명시적 닫기 버튼을 첫 focus로 제공한다", () => {
+  const path = "src/screens/child/overlays/ChildSheet.tsx";
+  const absolute = resolve(root, path);
+  const { dialogs, source } = dialogsIn(absolute);
+  assert.equal(dialogs.length, 2);
+  for (const { opening } of dialogs) {
+    const dialog = opening.parent;
+    const closeButtons = descendantButtonsWithClass(dialog, "ks-dialog-close");
+    assert.equal(closeButtons.length, 1, "ChildSheet와 ChildModal 각각에 닫기 버튼이 하나씩 있어야 합니다");
+    const closeButton = closeButtons[0];
+    assert.equal(stringAttribute(closeButton, "aria-label"), "닫기");
+    assert.ok(attribute(closeButton, "onClick"), "닫기 버튼은 실제 onClose 동작을 연결해야 합니다");
+    assert.ok(attribute(closeButton, "ref"), "닫기 버튼은 초기 focus 대상을 연결해야 합니다");
+    assert.equal(attribute(closeButton, "tabIndex"), undefined, "닫기 버튼은 Tab 순서에서 빠지면 안 됩니다");
+  }
+  assert.equal((source.match(/initialFocusRef:\s*closeRef/g) ?? []).length, 2);
+
+  const css = readFileSync(resolve(root, "src/screens/child/overlays/ChildSheet.css"), "utf8");
+  const closeRule = /\.ks-dialog-close\s*\{([^}]*)\}/.exec(css)?.[1] ?? "";
+  assert.match(closeRule, /width:\s*44px\s*;/);
+  assert.match(closeRule, /height:\s*44px\s*;/);
 });

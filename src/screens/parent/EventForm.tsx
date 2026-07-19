@@ -202,8 +202,9 @@ export function EventForm() {
   const seriesScopeTitleId = useId();
   const seriesScopeDescriptionId = useId();
   const seriesScopeCancelRef = useRef<HTMLButtonElement>(null);
+  const seriesScopeDialogVisible = seriesScopePrompt !== null && eventFormDataReady && children.length > 0;
   const seriesScopeDialogRef = useDialogFocusLifecycle<HTMLElement>({
-    open: seriesScopePrompt !== null,
+    open: seriesScopeDialogVisible,
     onClose: () => setSeriesScopePrompt(null),
     initialFocusRef: seriesScopeCancelRef,
     canClose: () => !busy,
@@ -1045,7 +1046,7 @@ export function EventForm() {
         />
       )}
 
-      {seriesScopePrompt && (
+      {seriesScopeDialogVisible && (
         <div className="ef-scope-backdrop" role="presentation">
           <section
             ref={seriesScopeDialogRef}

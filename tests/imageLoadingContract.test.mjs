@@ -62,32 +62,60 @@ test("네트워크 이미지 슬롯은 다운로드 전에도 크기와 비율�
   }
 });
 
-test("출시 화면의 동적 가족 아바타를 전수 목록으로 고정하고 지연 로드한다", () => {
-  const inventory = [
-    ["src/screens/parent/ParentHome.tsx", ["avatarSrc(c.avatar)"]],
+test("출시 화면의 동적 가족 아바타는 첫 viewport와 목록 위치에 맞는 로딩 우선순위를 쓴다", () => {
+  const eagerInventory = [
     ["src/screens/parent/ParentLocation.tsx", [
       "avatarSrc(childAvatarPath(selected.photo_url))",
       "avatarSrc(childAvatar)",
     ]],
     ["src/screens/parent/ChildDetail.tsx", ["avatarSrc(avatar)"]],
     ["src/screens/parent/ParentSettings.tsx", ["profileAvatar"]],
+    ["src/screens/feature/RemoteRing.tsx", ["childAvatar"]],
+    ["src/screens/child/ChildSettings.tsx", ["avatarSrc(childAvatarPath(me?.photo_url))"]],
+  ];
+  const lazyInventory = [
+    ["src/screens/parent/ParentHome.tsx", ["avatarSrc(c.avatar)"]],
     ["src/screens/feature/FamilyConnection.tsx", [
       "avatarSrc(avatar)",
       "avatarSrc(avatarFor(c.id).avatar)",
     ]],
-    ["src/screens/feature/RemoteRing.tsx", ["childAvatar"]],
     ["src/screens/feature/StickerSend.tsx", ["avatarSrc(childAvatarPath(c.photo_url))"]],
-    ["src/screens/child/ChildSettings.tsx", ["avatarSrc(childAvatarPath(me?.photo_url))"]],
   ];
 
-  for (const [file, expressions] of inventory) {
+  for (const [file, expressions] of eagerInventory) {
     const body = source(file);
     for (const expression of expressions) {
       const tag = imageTagForExpression(body, expression);
       assert.ok(tag, `${file}: ${expression} 이미지가 전수 목록에서 사라짐`);
       assert.match(tag, /className="[^"]*hy-network-avatar[^"]*"/, `${file}: ${expression} 비율 클래스 누락`);
-      assert.match(tag, /loading="lazy"/, `${file}: ${expression} lazy 누락`);
+      assert.match(tag, /loading="eager"/, `${file}: ${expression} first viewport eager 누락`);
       assert.match(tag, /decoding="async"/, `${file}: ${expression} async decoding 누락`);
+    }
+  }
+
+  for (const [file, expressions] of lazyInventory) {
+    const body = source(file);
+    for (const expression of expressions) {
+      const tag = imageTagForExpression(body, expression);
+      assert.ok(tag, `${file}: ${expression} 이미지가 전수 목록에서 사라짐`);
+      assert.match(tag, /className="[^"]*hy-network-avatar[^"]*"/, `${file}: ${expression} 비율 클래스 누락`);
+      assert.match(tag, /loading="lazy"/, `${file}: ${expression} below-fold lazy 누락`);
+      assert.match(tag, /decoding="async"/, `${file}: ${expression} async decoding 누락`);
+      assert.doesNotMatch(tag, /fetchPriority="high"/, `${file}: ${expression} 목록 이미지가 high priority를 점유하면 안 됨`);
+    }
+  }
+
+  const remoteRing = source("src/screens/feature/RemoteRing.tsx");
+  const remoteRingHero = imageTagForExpression(remoteRing, "childAvatar");
+  assert.match(remoteRingHero, /fetchPriority="high"/, "실제 LCP 후보인 원격 울림 hero만 high priority여야 합니다");
+  for (const [file, expressions] of eagerInventory.filter(([file]) => file !== "src/screens/feature/RemoteRing.tsx")) {
+    const body = source(file);
+    for (const expression of expressions) {
+      assert.doesNotMatch(
+        imageTagForExpression(body, expression),
+        /fetchPriority="high"/,
+        `${file}: ${expression}은 LCP high priority 대상이 아닙니다`,
+      );
     }
   }
 

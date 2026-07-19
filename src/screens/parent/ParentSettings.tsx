@@ -102,12 +102,6 @@ export function ParentSettings() {
   const deleteTitleId = useId();
   const deleteDescriptionId = useId();
   const deleteCancelRef = useRef<HTMLButtonElement>(null);
-  const deleteDialogRef = useDialogFocusLifecycle<HTMLDivElement>({
-    open: confirmDelete,
-    onClose: () => setConfirmDelete(false),
-    initialFocusRef: deleteCancelRef,
-    canClose: () => !deleteAccount.isPending,
-  });
   // 티어 배지는 ready 일 때만 노출(미확정/조회실패 시 미표시 — R9: free 강등 금지).
   const entitlementQuery = useEntitlement();
   const { ready, tier } = entitlementQuery;
@@ -116,6 +110,13 @@ export function ParentSettings() {
     { isLoading: entitlementQuery.isLoading, isError: entitlementQuery.isError },
   ]);
   const settingsDataEmpty = settingsQueryState === "ready" && (!account || !entitlementQuery.view);
+  const deleteDialogVisible = confirmDelete && settingsQueryState === "ready" && !settingsDataEmpty;
+  const deleteDialogRef = useDialogFocusLifecycle<HTMLDivElement>({
+    open: deleteDialogVisible,
+    onClose: () => setConfirmDelete(false),
+    initialFocusRef: deleteCancelRef,
+    canClose: () => !deleteAccount.isPending,
+  });
   const settingsRefetching = accountQuery.isFetching || entitlementQuery.isFetching;
   const retryParentSettings = async (): Promise<void> => {
     await Promise.all([accountQuery.refetch(), entitlementQuery.refetch()]);
@@ -261,7 +262,7 @@ export function ParentSettings() {
         {/* 프로필 (실 로그인 사용자) */}
         <div className="ps-profile">
           <div className="ps-profile__avatar">
-            <img className="hy-network-avatar" src={profileAvatar} alt="" loading="lazy" decoding="async" />
+            <img className="hy-network-avatar" src={profileAvatar} alt="" loading="eager" decoding="async" />
           </div>
           <div className="ps-profile__info">
             <div className="ps-profile__name">{displayName}</div>
@@ -362,7 +363,7 @@ export function ParentSettings() {
       </div>
 
       {/* 회원 탈퇴 확인 모달 */}
-      {confirmDelete && (
+      {deleteDialogVisible && (
         <div
           ref={deleteDialogRef}
           className="ps-modal"

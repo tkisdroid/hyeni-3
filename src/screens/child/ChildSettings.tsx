@@ -257,7 +257,7 @@ export function ChildSettings() {
               className="hy-network-avatar"
               src={avatarSrc(childAvatarPath(me?.photo_url))}
               alt=""
-              loading="lazy"
+              loading="eager"
               decoding="async"
             />
           </span>

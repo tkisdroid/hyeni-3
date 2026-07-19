@@ -57,12 +57,6 @@ export function ChildDetail() {
   const deleteTitleId = useId();
   const deleteDescriptionId = useId();
   const deleteCancelRef = useRef<HTMLButtonElement>(null);
-  const deleteDialogRef = useDialogFocusLifecycle<HTMLDivElement>({
-    open: confirmDelete,
-    onClose: () => setConfirmDelete(false),
-    initialFocusRef: deleteCancelRef,
-    canClose: () => !unpair.isPending,
-  });
   const detailLoading = familyQuery.isLoading
     || eventsQuery.isLoading
     || locationsQuery.isLoading
@@ -88,6 +82,13 @@ export function ChildDetail() {
     if (childId) return children.find((m) => m.id === childId) ?? null;
     return activeChild && children.some((m) => m.id === activeChild.id) ? activeChild : null;
   }, [members, childId, activeChild]);
+  const deleteDialogVisible = confirmDelete && !detailError && !detailLoading && rawChild !== null;
+  const deleteDialogRef = useDialogFocusLifecycle<HTMLDivElement>({
+    open: deleteDialogVisible,
+    onClose: () => setConfirmDelete(false),
+    initialFocusRef: deleteCancelRef,
+    canClose: () => !unpair.isPending,
+  });
 
   const childView = useMemo(() => {
     const view = mapFamilyToView(members, null);
@@ -211,7 +212,7 @@ export function ChildDetail() {
         {/* 프로필 히어로 */}
         <div className="cd-hero">
           <span className="cd-hero__avatar" style={{ background: soft }}>
-            <img className="hy-network-avatar" src={avatarSrc(avatar)} alt="" loading="lazy" decoding="async" />
+            <img className="hy-network-avatar" src={avatarSrc(avatar)} alt="" loading="eager" decoding="async" />
           </span>
           <div className="cd-hero__main">
             <div className="cd-hero__name">{name}</div>
@@ -336,7 +337,7 @@ export function ChildDetail() {
       </div>
 
       {/* 삭제 확인 시트(네이티브 confirm 미사용 — 인앱 오버레이) */}
-      {confirmDelete && (
+      {deleteDialogVisible && (
         <div
           ref={deleteDialogRef}
           className="cd-confirm"
