@@ -6,13 +6,14 @@
 - 부모·아이·개발 선생님·공개 화면의 loading/error/empty/success/retry 계약
 - 글자·여백·아이콘·터치 영역·radius·shadow·네트워크 이미지 로딩 정책
 - 폼 accessible name, dialog 초점 수명주기, 320~349px 좁은 화면 경계
-- 사용자 제보 화면: 역할 선택 아이 이미지 상단 크롭, 위치 권한 복구 안내의 정보 밀도
+- 사용자 제보 화면: 역할 선택 아이·선생님 이미지 상단 크롭, 위치 권한 복구 안내의 정보 밀도
 - 앱 최소 버전 정책의 강제/권장 전환, foreground 재확인, 라우트·오류 경계 우회 방지
 - 최신 Pages 배포와 A17 부모모드·razr 아이모드의 실제 설치본·실세션 주요 화면
 
 ## 주요 수정 결과
 
 - 역할 선택 아이 이미지는 58×58 예약 슬롯과 `object-position: center top`을 사용해 얼굴 상단이 잘리지 않는다.
+- 역할 선택 선생님 이미지는 58×58 슬롯보다 큰 72×72 확대를 제거하고 `contain`으로 맞춰 머리와 전체 윤곽을 보존한다.
 - 위치 권한 복구 화면은 제목, 한 문장 이유, 짧은 설정 경로, 주/보조 행동으로 압축했다. 위치·알림 설정의 실제 거부 상태도 이 복구 화면으로 연결했다.
 - 모든 사용자 입력 컨트롤에 명시적 accessible name을 제공했다.
 - 상태·행동용 원시 `✓`, `!`, 이모지 아이콘을 Lucide 아이콘으로 통일하고 16~24px glyph, 2.2~2.4 stroke 척도를 유지했다.
@@ -37,15 +38,16 @@
 
 - 이 232개 조합은 `/api/family/mine`과 bootstrap 안전 응답 외 API를 의도적으로 HTTP 418로 만들어 정직한 오류 UI를 검사한 것이다. 모든 mutation 성공 E2E로 과장하지 않는다.
 - 역할 선택 아이 이미지: natural 920×1130, 슬롯 58×58, `center top`, 카드 내부 완전 포함, 가로 overflow 0.
+- 역할 선택 선생님 이미지: natural 512×512, 슬롯·이미지 58×58, `contain center top`, 360×800·390×844에서 카드 내부 완전 포함, 가로 overflow 0.
 - 권한 복구 카드: 360×800에서 한 문장 이유와 버튼 2개(52px/44px), 첫 viewport 포함, 가로 overflow 0.
-- 2026-07-19 최종 Pages 배포: `https://09deaa10.hyeni-calendar.pages.dev`.
-- 정식 주소 `https://hyeni-calendar.pages.dev`는 최종 entry `assets/index-tdRMBiSc.js`를 제공한다.
+- 2026-07-19 최종 Pages 배포: `https://44c029b6.hyeni-calendar.pages.dev`.
+- 정식 주소 `https://hyeni-calendar.pages.dev`는 최종 entry `assets/index-CMJZ0UPG.js`를 제공한다.
 - `app-version.json`: HTTP 200, `latestVersion=1.2.0`, CORS `*`, `Cache-Control: no-store`.
-- 정식 배포 CSS에서 아이 역할 이미지 `object-position:center top`, 권한 축약 문구, 348px 보정 규칙을 확인했다.
+- 정식 배포 CSS `assets/Onboarding-eywHQb9O.css`에서 선생님 역할 이미지 58×58 `contain center top`, 아이 역할 이미지 `object-position:center top`, 권한 축약 문구, 348px 보정 규칙을 확인했다.
 
 ## 자동 검증
 
-- 앱 Node 회귀: 768/768 통과
+- 앱 Node 회귀: 769/769 통과
 - 재사용 Worker 회귀: 557/557 통과
 - TypeScript strict: `npm run typecheck` 통과
 - 의존성 감사: `npm audit --audit-level=high` 취약점 0건
@@ -60,7 +62,7 @@
 
 - APK: `android/app/build/outputs/apk/debug/app-debug.apk`
 - 크기: 15,862,908 bytes
-- SHA-256: `38A42AAFC87B344365D91D5A24D9666893CDB77A2CA8787B0FD2491A46BB4189`
+- SHA-256: `3958F0AF2109666E76BADF51D7913245E91119BDCEB09AD0AA403F5C53AAEEA2`
 - A17 `RFKL40DP73J`: `1.2.0 (versionCode 4)`, 부모 세션·가족 정합성 200, 부모 핵심 8개 화면 통과, Kakao 지도 canvas 통과
 - razr `ZY22H9VTQD`: `1.2.0 (versionCode 4)`, 아이 세션·가족 정합성 200, 아이 핵심 8개 화면 통과
 - 두 기기 모두 가로 overflow 0, console/runtime/network 오류 0이었다.

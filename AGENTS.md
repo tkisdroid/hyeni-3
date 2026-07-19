@@ -462,7 +462,9 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 - ★정보 밀도·이미지 크롭(2026-07-19): 권한·오류·설정 유도 화면은 제목, 한 문장 설명, 현재 상태/경로, 주 CTA,
   보조 CTA 순으로 한 화면에서 훑히게 만든다. 같은 내용을 장문 카드로 반복하지 않는다. 인물/캐릭터 이미지는 예약된
   aspect-ratio와 의도한 `object-position`을 명시해 머리·얼굴이 잘리지 않게 하고, 비핵심 네트워크 이미지는
-  `loading="lazy" decoding="async"`로 레이아웃 이동 없이 로드한다.
+  `loading="lazy" decoding="async"`로 레이아웃 이동 없이 로드한다. 역할 선택 아이콘처럼 `overflow:hidden`인 슬롯에서는
+  원본 상단 여백을 확인하지 않은 확대를 금지한다. 선생님 512×512 원본은 58×58 슬롯에 72×72로 넣으면 위쪽 7px가
+  잘리므로 58×58 `contain`으로 맞추며, 회귀는 `tests/imageLoadingContract.test.mjs`가 보호한다.
 - ★화면 완결성·성능(2026-07-19): 조회 화면은 loading/error/empty/success/retry를 정직하게 분리하고, 현재 family/user/source
   snapshot hydration이 끝나기 전 입력·저장을 닫는다. busy 버튼은 중복 실행을 막고 상태를 접근성 이름으로 알린다.
   App 정본은 58개 라우트·57개 lazy screen이며 진입 JS는 `tests/routeBundleBudget.test.mjs`의 500,000-byte 미만 예산을 지킨다.

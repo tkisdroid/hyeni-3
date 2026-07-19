@@ -730,6 +730,9 @@ hyeni-3/
 - **정보 밀도·이미지(2026-07-19)**: 권한/오류/설정 유도는 제목→한 문장 설명→상태/경로→주/보조 CTA로 압축한다.
   인물·캐릭터는 aspect-ratio와 `object-position`으로 상단 크롭을 방지하고, 비핵심 네트워크 이미지는
   `loading="lazy" decoding="async"` 및 예약 공간으로 CLS를 막는다. 의미 전달용 유니코드 이모지는 쓰지 않는다.
+  ★역할 선택 선생님 이미지 실사고(2026-07-19): 58×58 `overflow:hidden` 슬롯에 72×72 정사각 이미지를 중앙 배치하면
+  `object-position`과 무관하게 위·아래 7px가 잘린다. 상단 여백이 작은 인물 원본은 슬롯과 같은 58×58 `contain`으로
+  맞추고 확대 크롭을 금지한다. 회귀=`tests/imageLoadingContract.test.mjs`.
 - **화면 완결성·성능(2026-07-19)**: read query는 loading/error/empty/success/retry를 분리하고 현재
   family/user/source snapshot hydration 전 입력·저장을 닫는다. App 정본은 58개 라우트·57개 lazy screen이며 진입 JS는
   `tests/routeBundleBudget.test.mjs`의 500,000-byte 미만 예산을 지킨다.
