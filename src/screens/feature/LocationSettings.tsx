@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, MapPin, Check, Radar, BatteryCharging, History } from "lucide-react";
 import { useToast } from "@/app/toast";
@@ -6,7 +6,7 @@ import { useAuth } from "@/auth/AuthContext";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { useLocationPreferences, useSaveLocationPreferences } from "@/queries/useLocation";
 import { isLocationTrackingSupported } from "@/lib/native/location";
-import type { LocationIntervalMode } from "@/lib/api/endpoints/location";
+import type { LocationIntervalMode, LocationPreferences } from "@/lib/api/endpoints/location";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./LocationSettings.css";
@@ -76,6 +76,19 @@ function savePrefs(prefs: LocationPrefs): void {
   }
 }
 
+function locationPreferencesHydrationKey(
+  familyId: string | null,
+  serverPrefs: LocationPreferences | undefined,
+): string | null {
+  if (!familyId || !serverPrefs || serverPrefs.family_id !== familyId) return null;
+  return JSON.stringify([
+    familyId,
+    serverPrefs.background_enabled,
+    serverPrefs.interval_mode,
+    serverPrefs.battery_saver_exception,
+  ]);
+}
+
 const PERM_LABEL: Record<PermState, { text: string; tone: "safe" | "caution" | "neutral" }> = {
   granted: { text: "허용됨", tone: "safe" },
   prompt: { text: "요청 필요", tone: "caution" },
@@ -91,25 +104,36 @@ export function LocationSettings() {
   const preferencesQuery = useLocationPreferences();
   const savePreferences = useSaveLocationPreferences();
   const { isPremium } = entitlementQuery;
+  const [prefs, setPrefs] = useState<LocationPrefs>(loadPrefs);
+  const [hydratedFamilyId, setHydratedFamilyId] = useState<string | null>(null);
+  const [hydratedPreferencesKey, setHydratedPreferencesKey] = useState<string | null>(null);
+  const [perm, setPerm] = useState<PermState>("unknown");
+  const [saving, setSaving] = useState(false);
+  const currentFamilyIdRef = useRef(familyId);
+  currentFamilyIdRef.current = familyId;
+
   const locationSettingsQueryState = resolveQueryTruthState([
     { isLoading: preferencesQuery.isLoading, isError: preferencesQuery.isError },
     { isLoading: entitlementQuery.isLoading, isError: entitlementQuery.isError },
   ]);
+  const serverPreferencesKey = locationPreferencesHydrationKey(familyId, preferencesQuery.data);
   const locationSettingsEmpty = locationSettingsQueryState === "ready" && !familyId;
   const locationSettingsDataMissing = locationSettingsQueryState === "ready"
     && !!familyId
-    && (!preferencesQuery.data || !entitlementQuery.ready);
+    && (!serverPreferencesKey || !entitlementQuery.ready);
   const locationSettingsDataReady = locationSettingsQueryState === "ready"
     && !!familyId
-    && !locationSettingsDataMissing;
+    && !locationSettingsDataMissing
+    && hydratedFamilyId === familyId
+    && hydratedPreferencesKey === serverPreferencesKey;
+  const locationSettingsHydrating = locationSettingsQueryState === "ready"
+    && !!familyId
+    && !locationSettingsDataMissing
+    && !locationSettingsDataReady;
   const locationSettingsRefetching = preferencesQuery.isFetching || entitlementQuery.isFetching;
   const retryLocationSettings = async (): Promise<void> => {
     await Promise.all([preferencesQuery.refetch(), entitlementQuery.refetch()]);
   };
-
-  const [prefs, setPrefs] = useState<LocationPrefs>(loadPrefs);
-  const [perm, setPerm] = useState<PermState>("unknown");
-  const [saving, setSaving] = useState(false);
 
   const nativeSupported = isLocationTrackingSupported();
 
@@ -133,8 +157,13 @@ export function LocationSettings() {
   }, [refreshPermission]);
 
   useEffect(() => {
+    setHydratedFamilyId(null);
+    setHydratedPreferencesKey(null);
+  }, [familyId]);
+
+  useEffect(() => {
     const serverPrefs = preferencesQuery.data;
-    if (!serverPrefs) return;
+    if (!familyId || !serverPrefs || !serverPreferencesKey) return;
     const next: LocationPrefs = {
       background: serverPrefs.background_enabled,
       interval: serverPrefs.interval_mode,
@@ -142,10 +171,13 @@ export function LocationSettings() {
     };
     setPrefs(next);
     savePrefs(next);
-  }, [preferencesQuery.data]);
+    setHydratedFamilyId(familyId);
+    setHydratedPreferencesKey(serverPreferencesKey);
+  }, [familyId, preferencesQuery.data, serverPreferencesKey]);
 
   const update = async (patch: Partial<LocationPrefs>, message: string, icon: string) => {
-    if (!locationSettingsDataReady || saving || savePreferences.isPending) {
+    const updateFamilyId = familyId;
+    if (!updateFamilyId || !locationSettingsDataReady || saving || savePreferences.isPending) {
       show("서버의 위치 설정을 확인한 뒤 다시 시도해 주세요", "⚠️");
       return;
     }
@@ -157,12 +189,17 @@ export function LocationSettings() {
         interval_mode: next.interval,
         battery_saver_exception: next.batterySaverException,
       });
+      if (currentFamilyIdRef.current !== updateFamilyId) return;
+      const savedPreferencesKey = locationPreferencesHydrationKey(updateFamilyId, saved);
+      if (!savedPreferencesKey) throw new Error("저장된 위치 설정의 가족 범위가 일치하지 않아요");
       const confirmed: LocationPrefs = {
         background: saved.background_enabled,
         interval: saved.interval_mode,
         batterySaverException: saved.battery_saver_exception,
       };
       setPrefs(confirmed);
+      setHydratedFamilyId(updateFamilyId);
+      setHydratedPreferencesKey(savedPreferencesKey);
       savePrefs(confirmed);
       show(message, icon);
     } catch (error) {
@@ -209,7 +246,7 @@ export function LocationSettings() {
   const permView = PERM_LABEL[perm];
   const retentionLabel = isPremium ? "30일 (프리미엄)" : "7일 (무료)";
 
-  if (locationSettingsQueryState === "loading") {
+  if (locationSettingsQueryState === "loading" || locationSettingsHydrating) {
     return (
       <ScreenQueryState
         screenTitle="위치 · 백그라운드"
