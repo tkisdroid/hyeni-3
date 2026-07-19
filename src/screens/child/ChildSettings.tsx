@@ -4,6 +4,7 @@ import {
   Bell,
   Cat,
   ChevronLeft,
+  Clock3,
   HelpCircle,
   Link2,
   Mail,
@@ -28,6 +29,7 @@ import {
 } from "@/lib/native/location";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
+import { notificationQuietHoursRange } from "@/transform/notificationQuietHours";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./ChildSettings.css";
 
@@ -147,6 +149,8 @@ export function ChildSettings() {
   const myName = me?.name || "친구";
   const notifSettings = notifSettingsQuery.data ?? DEFAULT_NOTIF_SETTINGS;
   const notifOn = notifSettings.childEnabled;
+  const quietHoursRange = notificationQuietHoursRange(notifSettings.quietHours);
+  const quietHoursOn = notifSettings.quietHours.enabled && quietHoursRange.length > 0;
   const locationView = (() => {
     switch (locationStatus) {
       case "on":
@@ -287,6 +291,21 @@ export function ChildSettings() {
             <span className="ks-onchip">{locationView.chip}</span>
           </div>
 
+          <div className="ks-row ks-row--locked ks-row--quiet">
+            <span className="ks-row__icon">
+              <Clock3 size={18} strokeWidth={2.2} />
+            </span>
+            <span className="ks-row__main">
+              <span className="ks-row__title">알림 쉬는 시간</span>
+              <span className="ks-row__sub">
+                {quietHoursOn
+                  ? `${quietHoursRange} 알림을 쉬어`
+                  : "알림 쉬는 시간이 설정되지 않았어"}
+              </span>
+            </span>
+            <span className="ks-onchip">{quietHoursOn ? "설정됨" : "없음"}</span>
+          </div>
+
           <button
             type="button"
             className="ks-row hy-press"
@@ -362,25 +381,25 @@ export function ChildSettings() {
               </button>
             </div>
             <div id={helpDescriptionId} className="ks-help-list">
-              <div className="ks-help-item">
+              <div className="ks-help-item hy-explain">
                 <span className="ks-help-item__emoji"><MapPin size={18} strokeWidth={2.2} /></span>
-                <span>
-                  <b>위치 알려주기</b>
-                  <small>부모님이 네가 안전한지 확인하려고 켜 둔 거야.</small>
+                <span className="hy-explain__lines">
+                  <b className="hy-explain__line">위치 알려주기</b>
+                  <small className="hy-explain__line">부모님이 네가 안전한지 확인하려고 켜 둔 거야.</small>
                 </span>
               </div>
-              <div className="ks-help-item">
+              <div className="ks-help-item hy-explain">
                 <span className="ks-help-item__emoji"><Bell size={18} strokeWidth={2.2} /></span>
-                <span>
-                  <b>알림</b>
-                  <small>내 일정 알림을 켜고 끌 수 있어. 중요한 안전 알림은 부모님에게 계속 가.</small>
+                <span className="hy-explain__lines">
+                  <b className="hy-explain__line">알림</b>
+                  <small className="hy-explain__line">내 일정 알림을 켜고 끌 수 있어. 중요한 안전 알림은 부모님에게 계속 가.</small>
                 </span>
               </div>
-              <div className="ks-help-item">
+              <div className="ks-help-item hy-explain">
                 <span className="ks-help-item__emoji"><Mail size={18} strokeWidth={2.2} /></span>
-                <span>
-                  <b>부모님한테 부탁하기</b>
-                  <small>캐릭터나 소리를 바꾸고 싶을 때 부모님에게 요청을 보낼 수 있어.</small>
+                <span className="hy-explain__lines">
+                  <b className="hy-explain__line">부모님한테 부탁하기</b>
+                  <small className="hy-explain__line">캐릭터나 소리를 바꾸고 싶을 때 부모님에게 요청을 보낼 수 있어.</small>
                 </span>
               </div>
             </div>

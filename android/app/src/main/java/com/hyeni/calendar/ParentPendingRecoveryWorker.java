@@ -87,7 +87,6 @@ public final class ParentPendingRecoveryWorker extends Worker {
         }
 
         try {
-            NotificationHelper.createChannels(appContext);
             String bearer = context.accessToken;
             if (isBlank(bearer)) {
                 bearer = networkRefreshAccessToken(prefs, context);
@@ -232,7 +231,8 @@ public final class ParentPendingRecoveryWorker extends Worker {
                 fullScreen,
                 fullScreen,
                 NotificationHelper.stableRequestCode(stableId),
-                data.optString("route", null)
+                data.optString("route", null),
+                NotificationQuietHoursPolicy.NotificationIdentity.of(type, alertType)
             );
             if (receipt.shouldAcknowledge()) {
                 PolledNotificationStore.markAck(appContext, stableId);

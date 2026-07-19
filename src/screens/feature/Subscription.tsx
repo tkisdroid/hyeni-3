@@ -308,8 +308,12 @@ export function Subscription() {
         )}
 
         {!premiumActive && selectedOffer?.hasSevenDayTrial && (
-          <div className="sub-note">
-            Google Play 결제 정보 등록 후 7일 동안 무료로 이용할 수 있어요. 7일 무료 체험 종료 후 Google Play에 표시된 구독 금액으로 자동 갱신돼요. 원하지 않으면 Google Play에서 체험 종료 전에 취소해 주세요.
+          <div className="sub-note hy-explain">
+            <span className="hy-explain__lines">
+              <span className="hy-explain__line">Google Play 결제 정보 등록 후 7일 동안 무료로 이용할 수 있어요.</span>
+              <span className="hy-explain__line">7일 무료 체험 종료 후 Google Play에 표시된 구독 금액으로 자동 갱신돼요.</span>
+              <span className="hy-explain__line">원하지 않으면 Google Play에서 체험 종료 전에 취소해 주세요.</span>
+            </span>
           </div>
         )}
 
@@ -380,10 +384,12 @@ export function Subscription() {
 
         {/* 안내 (미구독 시에만) */}
         {!premiumActive && (
-          <div className="sub-note">
-            {
-              "SOS와 긴급 안전 알림은 무료로 계속 제공돼요. 프리미엄은 실시간 위치와 AI 요약처럼 더 자세한 안심 기능을 열어드려요. 실제 가격과 결제 조건은 Google Play 확인 화면 기준입니다."
-            }
+          <div className="sub-note hy-explain">
+            <span className="hy-explain__lines">
+              <span className="hy-explain__line">SOS와 긴급 안전 알림은 무료로 계속 제공돼요.</span>
+              <span className="hy-explain__line">프리미엄은 실시간 위치와 AI 요약처럼 더 자세한 안심 기능을 열어드려요.</span>
+              <span className="hy-explain__line">실제 가격과 결제 조건은 Google Play 확인 화면 기준입니다.</span>
+            </span>
           </div>
         )}
 

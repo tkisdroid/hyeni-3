@@ -332,7 +332,11 @@ final class DeviceStatusReporter {
                         }
                     }
                 }
-                usagePermission = rawRecentApp.isEmpty() && appUsage.length() == 0 ? "requires_permission" : "granted";
+                usagePermission = resolveUsagePermission(
+                    isUsageAccessGranted(context),
+                    !rawRecentApp.isEmpty(),
+                    appUsage.length() > 0
+                );
             }
         }
 
@@ -379,15 +383,47 @@ final class DeviceStatusReporter {
 
     static boolean isSystemSurfacePackage(Context context, String pkg) {
         if (isBlank(pkg)) return true;
-        if (pkg.equals("com.android.settings")
-            || pkg.equals("com.android.systemui")
-            || pkg.equals("com.google.android.permissioncontroller")
-            || pkg.equals("com.android.permissioncontroller")
-            || pkg.contains("packageinstaller")
-            || pkg.contains("launcher")) {
-            return true;
+        if (isExplicitSystemSurfacePackage(pkg)) return true;
+        if (homePackages(context).contains(pkg)) return true;
+        try {
+            PackageManager pm = context.getPackageManager();
+            ApplicationInfo info = pm.getApplicationInfo(pkg, 0);
+            boolean systemApp = (info.flags & ApplicationInfo.FLAG_SYSTEM) != 0;
+            boolean updatedSystemApp = (info.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0;
+            boolean hasLaunchIntent = pm.getLaunchIntentForPackage(pkg) != null;
+            return shouldExcludeNonLaunchableSystemApp(systemApp, updatedSystemApp, hasLaunchIntent);
+        } catch (Exception ignored) {
+            // 조회 실패만으로 일반 앱을 숨기지 않는다. 명시 목록은 위에서 이미 처리했다.
+            return false;
         }
-        return homePackages(context).contains(pkg);
+    }
+
+    static boolean isExplicitSystemSurfacePackage(String pkg) {
+        return "com.android.settings".equals(pkg)
+            || "com.android.systemui".equals(pkg)
+            || "com.google.android.permissioncontroller".equals(pkg)
+            || "com.android.permissioncontroller".equals(pkg)
+            || "com.google.android.packageinstaller".equals(pkg)
+            || "com.android.packageinstaller".equals(pkg)
+            || "com.sec.android.app.launcher".equals(pkg);
+    }
+
+    static boolean shouldExcludeNonLaunchableSystemApp(
+            boolean systemApp,
+            boolean updatedSystemApp,
+            boolean hasLaunchIntent
+    ) {
+        return (systemApp || updatedSystemApp) && !hasLaunchIntent;
+    }
+
+    static String resolveUsagePermission(
+            boolean appOpsGranted,
+            boolean hasRawRecentApp,
+            boolean hasVisibleUsageRows
+    ) {
+        return appOpsGranted || hasRawRecentApp || hasVisibleUsageRows
+            ? "granted"
+            : "requires_permission";
     }
 
     private static java.util.Set<String> homePackages(Context context) {

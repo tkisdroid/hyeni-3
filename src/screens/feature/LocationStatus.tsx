@@ -259,8 +259,11 @@ export function LocationStatus() {
         {canShowLocation && (
           <>
             {/* 권한 안내 */}
-            <div className="ls-permit">
-              아이 기기의 위치 권한이 꺼져 있거나 GPS가 잡히지 않으면 갱신이 지연될 수 있어요. 아이 기기에서 위치 권한과 GPS를 확인해 주세요.
+            <div className="ls-permit hy-explain">
+              <span className="hy-explain__lines">
+                <span className="hy-explain__line">아이 기기의 위치 권한이 꺼져 있거나 GPS가 잡히지 않으면 갱신이 지연될 수 있어요.</span>
+                <span className="hy-explain__line">아이 기기에서 위치 권한과 GPS를 확인해 주세요.</span>
+              </span>
             </div>
 
             {/* 다시 시도 */}

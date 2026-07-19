@@ -202,7 +202,7 @@ export function DataSync() {
             {exportData.isPending ? "모으는 중…" : "내보내기"}
           </button>
         </div>
-        <div className="ds-note">위치 이력과 대화 내용은 용량이 커서 이 파일에는 포함되지 않아요.</div>
+        <div className="ds-note hy-explain">위치 이력과 대화 내용은 용량이 커서 이 파일에는 포함되지 않아요.</div>
 
         {/* 캐시 비우기 */}
         <div className="ds-card">

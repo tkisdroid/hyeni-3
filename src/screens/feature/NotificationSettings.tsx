@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   BellOff,
@@ -13,7 +13,13 @@ import {
 } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
-import { useNotifSettings, useSaveNotifSettings } from "@/queries/useNotifications";
+import { useMyFamily } from "@/queries/useFamily";
+import {
+  useFamilyNotificationQuietHours,
+  useNotifSettings,
+  useSaveNotificationQuietHours,
+  useSaveNotifSettings,
+} from "@/queries/useNotifications";
 import {
   DEFAULT_NOTIF_SETTINGS,
   NOTIF_MINUTE_OPTIONS,
@@ -34,6 +40,15 @@ import {
   type WebPushState,
 } from "@/lib/webPush";
 import { webPushDeliveryView } from "@/transform/notificationDeliveryView";
+import {
+  DEFAULT_NOTIFICATION_QUIET_HOURS,
+  isSameNotificationQuietHoursTargetDraft,
+  isValidNotificationQuietHours,
+  minuteOfDayToTimeInput,
+  resolveNotificationQuietHoursSourceUpdate,
+  timeInputToMinuteOfDay,
+  type NotificationQuietHoursTargetDraft,
+} from "@/transform/notificationQuietHours";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./NotificationSettings.css";
@@ -87,6 +102,15 @@ const SAFETY_TOGGLES: ToggleDef[] = [
   },
 ];
 
+function createQuietHoursDraft(targetUserId: string): NotificationQuietHoursTargetDraft {
+  return {
+    targetUserId,
+    enabled: DEFAULT_NOTIFICATION_QUIET_HOURS.enabled,
+    startMinute: DEFAULT_NOTIFICATION_QUIET_HOURS.startMinute,
+    endMinute: DEFAULT_NOTIFICATION_QUIET_HOURS.endMinute,
+  };
+}
+
 /** 토글 행(아이콘 + 라벨 + iOS 스위치). */
 function ToggleRow({
   def,
@@ -118,6 +142,9 @@ export function NotificationSettings() {
   const { show } = useToast();
   const { userId, familyId, role } = useAuth();
   const settingsQuery = useNotifSettings();
+  const familyQuery = useMyFamily();
+  const quietHoursQuery = useFamilyNotificationQuietHours();
+  const saveQuietHours = useSaveNotificationQuietHours();
   const { data } = settingsQuery;
   const notificationQueryState = resolveQueryTruthState([
     { isLoading: settingsQuery.isLoading, isError: settingsQuery.isError },
@@ -134,6 +161,20 @@ export function NotificationSettings() {
   const [webPushState, setWebPushState] = useState<WebPushState | null>(null);
   const [webPushLoadError, setWebPushLoadError] = useState(false);
   const [deliveryBusy, setDeliveryBusy] = useState(false);
+  const [quietDraft, setQuietDraftState] = useState<NotificationQuietHoursTargetDraft>(
+    () => createQuietHoursDraft(userId ?? ""),
+  );
+  const quietDraftRef = useRef(quietDraft);
+  const quietServerSourceRef = useRef<NotificationQuietHoursTargetDraft | null>(null);
+  const setQuietDraft = useCallback((
+    next: NotificationQuietHoursTargetDraft
+      | ((current: NotificationQuietHoursTargetDraft) => NotificationQuietHoursTargetDraft),
+  ) => {
+    const resolved = typeof next === "function" ? next(quietDraftRef.current) : next;
+    quietDraftRef.current = resolved;
+    setQuietDraftState(resolved);
+  }, []);
+  const [quietSaveMessage, setQuietSaveMessage] = useState("");
   const webDelivery = webPushDeliveryView(webPushState);
   const webPushContext = useMemo<WebPushSessionContext | null>(
     () => userId && familyId && (role === "parent" || role === "child")
@@ -200,6 +241,191 @@ export function NotificationSettings() {
       void appListener?.remove();
     };
   }, [nativePlatform, webPushContext]);
+
+  const quietHoursData = role === "parent" ? quietHoursQuery.data : undefined;
+  const familyData = role === "parent" ? familyQuery.data : undefined;
+  const connectedChildMembers = useMemo(
+    () => role === "parent"
+      ? (familyData?.members ?? []).filter(
+        (member) => member.role === "child" && member.user_id !== null,
+      )
+      : [],
+    [familyData, role],
+  );
+  const unlinkedChildMembers = useMemo(
+    () => role === "parent"
+      ? (familyData?.members ?? []).filter(
+        (member) => member.role === "child" && member.user_id === null,
+      )
+      : [],
+    [familyData, role],
+  );
+  const parentQuietRecipient = useMemo(
+    () => userId
+      ? quietHoursData?.recipients.find(
+        (recipient) => recipient.role === "parent" && recipient.targetUserId === userId,
+      ) ?? null
+      : null,
+    [quietHoursData, userId],
+  );
+  const childQuietTargets = useMemo(
+    () => connectedChildMembers.flatMap((member) => {
+      if (!member.user_id) return [];
+      const recipient = quietHoursData?.recipients.find(
+        (candidate) => candidate.role === "child" && candidate.targetUserId === member.user_id,
+      );
+      if (!recipient) return [];
+      return [{
+        targetUserId: recipient.targetUserId,
+        label: member.name?.trim() || "아이",
+        recipient,
+      }];
+    }),
+    [connectedChildMembers, quietHoursData],
+  );
+  const quietTargets = useMemo(
+    () => parentQuietRecipient
+      ? [{ targetUserId: parentQuietRecipient.targetUserId, label: "내 알림", recipient: parentQuietRecipient }]
+        .concat(childQuietTargets)
+      : [],
+    [childQuietTargets, parentQuietRecipient],
+  );
+  const quietGroupLoading = role === "parent"
+    && !quietHoursQuery.isError
+    && !familyQuery.isError
+    && (quietHoursQuery.isLoading || familyQuery.isLoading);
+  const quietRecipientsComplete = connectedChildMembers.length === childQuietTargets.length;
+  const quietDataReady = role === "parent"
+    && !!userId
+    && !!quietHoursData
+    && !!familyData
+    && !!parentQuietRecipient
+    && quietRecipientsComplete
+    && !quietHoursQuery.isError
+    && !familyQuery.isError;
+  const quietGroupError = role === "parent"
+    && !quietGroupLoading
+    && (
+      quietHoursQuery.isError
+      || familyQuery.isError
+      || !quietDataReady
+    );
+  const selectedQuietRecipient = quietTargets.find(
+    (target) => target.targetUserId === quietDraft.targetUserId,
+  )?.recipient ?? null;
+
+  useEffect(() => {
+    quietServerSourceRef.current = null;
+    setQuietDraft(createQuietHoursDraft(userId ?? ""));
+    setQuietSaveMessage("");
+  }, [userId]);
+
+  useEffect(() => {
+    if (!quietDataReady || !selectedQuietRecipient) return;
+    const nextSource = {
+      targetUserId: selectedQuietRecipient.targetUserId,
+      enabled: selectedQuietRecipient.quietHours.enabled,
+      startMinute: selectedQuietRecipient.quietHours.startMinute,
+      endMinute: selectedQuietRecipient.quietHours.endMinute,
+    };
+    const resolution = resolveNotificationQuietHoursSourceUpdate(
+      quietDraftRef.current,
+      quietServerSourceRef.current,
+      nextSource,
+    );
+    quietServerSourceRef.current = resolution.source;
+    if (resolution.hydrated) {
+      setQuietDraft(resolution.draft);
+      setQuietSaveMessage("");
+    }
+  }, [
+    quietDataReady,
+    selectedQuietRecipient?.targetUserId,
+    selectedQuietRecipient?.quietHours.enabled,
+    selectedQuietRecipient?.quietHours.startMinute,
+    selectedQuietRecipient?.quietHours.endMinute,
+    selectedQuietRecipient?.quietHours.updatedAt,
+  ]);
+
+  const dirty = selectedQuietRecipient !== null && (
+    quietDraft.enabled !== selectedQuietRecipient.quietHours.enabled
+    || quietDraft.startMinute !== selectedQuietRecipient.quietHours.startMinute
+    || quietDraft.endMinute !== selectedQuietRecipient.quietHours.endMinute
+  );
+  const valid = isValidNotificationQuietHours(quietDraft);
+  const sameTimeError = quietDraft.startMinute >= 0
+    && quietDraft.startMinute === quietDraft.endMinute;
+
+  const selectQuietTarget = (targetUserId: string) => {
+    const target = quietTargets.find((candidate) => candidate.targetUserId === targetUserId);
+    if (!target) return;
+    const nextSource = {
+      targetUserId: target.recipient.targetUserId,
+      enabled: target.recipient.quietHours.enabled,
+      startMinute: target.recipient.quietHours.startMinute,
+      endMinute: target.recipient.quietHours.endMinute,
+    };
+    quietServerSourceRef.current = nextSource;
+    setQuietDraft(nextSource);
+    setQuietSaveMessage("");
+  };
+
+  const updateQuietTime = (key: "startMinute" | "endMinute", value: string) => {
+    const minute = timeInputToMinuteOfDay(value);
+    setQuietDraft((current) => ({ ...current, [key]: minute ?? -1 }));
+    setQuietSaveMessage("");
+  };
+
+  const applyQuietHours = () => {
+    if (
+      !quietDataReady
+      || !selectedQuietRecipient
+      || !dirty
+      || !valid
+      || saveQuietHours.isPending
+    ) return;
+    const submittedQuietDraft = { ...quietDraft };
+    setQuietSaveMessage("");
+    saveQuietHours.mutate(
+      {
+        targetUserId: submittedQuietDraft.targetUserId,
+        quietHours: {
+          enabled: submittedQuietDraft.enabled,
+          startMinute: submittedQuietDraft.startMinute,
+          endMinute: submittedQuietDraft.endMinute,
+        },
+      },
+      {
+        onSuccess: (result) => {
+          if (!isSameNotificationQuietHoursTargetDraft(quietDraftRef.current, submittedQuietDraft)) {
+            return;
+          }
+          if (result.targetUserId !== submittedQuietDraft.targetUserId) {
+            setQuietSaveMessage("저장 대상을 확인하지 못해 반영하지 않았어요.");
+            return;
+          }
+          setQuietDraft({
+            targetUserId: result.targetUserId,
+            enabled: result.quietHours.enabled,
+            startMinute: result.quietHours.startMinute,
+            endMinute: result.quietHours.endMinute,
+          });
+          setQuietSaveMessage("조용한 시간을 적용했어요.");
+        },
+        onError: () => {
+          if (!isSameNotificationQuietHoursTargetDraft(quietDraftRef.current, submittedQuietDraft)) {
+            return;
+          }
+          setQuietSaveMessage("조용한 시간을 저장하지 못했어요. 다시 시도해 주세요.");
+        },
+      },
+    );
+  };
+
+  const retryQuietHours = async (): Promise<void> => {
+    setQuietSaveMessage("");
+    await Promise.all([quietHoursQuery.refetch(), familyQuery.refetch()]);
+  };
 
   // 서버 값(없으면 기본값)으로 초안 초기화. 데이터 첫 도착 시 1회 동기화.
   const [draft, setDraft] = useState<NotifSettings>(DEFAULT_NOTIF_SETTINGS);
@@ -421,13 +647,149 @@ export function NotificationSettings() {
                   <ToggleRow key={d.key} def={d} on={draft[d.key]} onToggle={() => toggle(d.key)} />
                 ))}
               </div>
-              <div className="nst-safety-note">
+              <div className="nst-safety-note hy-explain">
                 <ShieldCheck size={17} strokeWidth={2.2} aria-hidden="true" />
-                <span>
-                  위험·SOS·미도착 알림은 항상 전달 대상으로 처리돼요. 위 토글은 일반 위치 소식에만 적용돼요.
+                <span className="hy-explain__lines">
+                  <span className="hy-explain__line">위험·SOS·미도착 알림은 항상 전달 대상으로 처리돼요.</span>
+                  <span className="hy-explain__line">위 토글은 일반 위치 소식에만 적용돼요.</span>
                 </span>
               </div>
             </div>
+
+            {role === "parent" && (
+              <div className="nst-group nst-quiet">
+                <div className="nst-group__label">조용한 시간</div>
+                {quietGroupLoading ? (
+                  <div className="nst-list nst-quiet__state" aria-busy="true">
+                    <strong>조용한 시간 설정을 불러오고 있어요</strong>
+                    <span>가족별 알림 시간을 확인하는 중이에요.</span>
+                  </div>
+                ) : quietGroupError ? (
+                  <div className="nst-list nst-quiet__state" role="alert">
+                    <strong>조용한 시간 설정을 불러오지 못했어요</strong>
+                    <span>기존 알림 유형과 이 기기의 알림 설정은 계속 이용할 수 있어요.</span>
+                    <button
+                      type="button"
+                      className="nst-retry nst-quiet__retry hy-press"
+                      onClick={() => void retryQuietHours()}
+                      disabled={quietHoursQuery.isFetching || familyQuery.isFetching}
+                    >
+                      {quietHoursQuery.isFetching || familyQuery.isFetching ? "다시 확인 중…" : "다시 확인"}
+                    </button>
+                  </div>
+                ) : quietDataReady ? (
+                  <div className="nst-list nst-quiet__card">
+                    <div className="nst-quiet__copy hy-explain">
+                      <p>조용한 시간에는 일정·메시지·일반 도착·출발 알림을 보내지 않아요.</p>
+                      <p>SOS·긴급·위험구역 알림은 이 시간에도 항상 전달돼요.</p>
+                      <p>알림 소리와 진동은 휴대폰 또는 브라우저 설정에서 관리해 주세요.</p>
+                    </div>
+
+                    <div className="nst-quiet__targets" role="group" aria-label="알림 시간 설정 대상">
+                      {quietTargets[0] && (
+                        <button
+                          type="button"
+                          className="nst-minute nst-quiet__target hy-press"
+                          data-selected={quietDraft.targetUserId === quietTargets[0].targetUserId}
+                          aria-pressed={quietDraft.targetUserId === quietTargets[0].targetUserId}
+                          onClick={() => selectQuietTarget(quietTargets[0].targetUserId)}
+                        >
+                          <span>내 알림</span>
+                        </button>
+                      )}
+                      {quietTargets.slice(1).map((target) => {
+                        const selected = quietDraft.targetUserId === target.targetUserId;
+                        return (
+                          <button
+                            key={target.targetUserId}
+                            type="button"
+                            className="nst-minute nst-quiet__target hy-press"
+                            data-selected={selected}
+                            aria-pressed={selected}
+                            onClick={() => selectQuietTarget(target.targetUserId)}
+                          >
+                            {target.label}
+                          </button>
+                        );
+                      })}
+                      {unlinkedChildMembers.map((member) => (
+                        <button
+                          key={member.id}
+                          type="button"
+                          className="nst-minute nst-quiet__target nst-quiet__target--unlinked"
+                          disabled
+                        >
+                          <span>{member.name?.trim() || "아이"}</span>
+                          <small>아이 기기 연결이 필요해요</small>
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="nst-quiet__editor">
+                      <button
+                        type="button"
+                        className="nst-quiet__switch-row hy-press"
+                        role="switch"
+                        aria-checked={quietDraft.enabled}
+                        onClick={() => {
+                          setQuietDraft((current) => ({ ...current, enabled: !current.enabled }));
+                          setQuietSaveMessage("");
+                        }}
+                      >
+                        <span>
+                          <b>매일 조용한 시간 사용</b>
+                          <small>시작 시간부터 끝 시간 직전까지 적용돼요.</small>
+                        </span>
+                        <span className="nst-switch" data-on={quietDraft.enabled} aria-hidden="true">
+                          <span className="nst-switch__knob" />
+                        </span>
+                      </button>
+
+                      <div className="nst-quiet__time-grid">
+                        <label className="nst-quiet__time-field">
+                          <span>시작 시간</span>
+                          <input
+                            className="nst-minute nst-quiet__time"
+                            type="time"
+                            value={minuteOfDayToTimeInput(quietDraft.startMinute)}
+                            onChange={(event) => updateQuietTime("startMinute", event.target.value)}
+                            aria-invalid={sameTimeError || undefined}
+                          />
+                        </label>
+                        <label className="nst-quiet__time-field">
+                          <span>끝 시간</span>
+                          <input
+                            className="nst-minute nst-quiet__time"
+                            type="time"
+                            value={minuteOfDayToTimeInput(quietDraft.endMinute)}
+                            onChange={(event) => updateQuietTime("endMinute", event.target.value)}
+                            aria-invalid={sameTimeError || undefined}
+                          />
+                        </label>
+                      </div>
+
+                      {sameTimeError && (
+                        <p className="nst-quiet__validation" role="alert">
+                          시작 시간과 끝 시간을 다르게 선택해 주세요
+                        </p>
+                      )}
+
+                      <button
+                        type="button"
+                        className="nst-system-btn nst-quiet__apply hy-press"
+                        onClick={applyQuietHours}
+                        disabled={!dirty || !valid || saveQuietHours.isPending}
+                      >
+                        {saveQuietHours.isPending ? "적용 중…" : <span>적용</span>}
+                      </button>
+                      <p className="nst-quiet__live" aria-live="polite">
+                        {quietSaveMessage}
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )}
 
             {/* 이 기기의 실제 OS/브라우저 알림 상태 */}
             <div className="nst-group">
@@ -534,8 +896,8 @@ export function NotificationSettings() {
                   </>
                 ) : null}
               </div>
-              <div className="nst-note">
-                알림 소리·진동과 방해금지는 휴대폰 또는 브라우저의 알림 설정에서 관리해 주세요.
+              <div className="nst-note hy-explain">
+                알림 소리와 진동은 휴대폰 또는 브라우저 설정에서 관리해 주세요.
                 <button type="button" className="nst-refresh" onClick={() => void refreshDelivery()}>
                   상태 다시 확인
                 </button>

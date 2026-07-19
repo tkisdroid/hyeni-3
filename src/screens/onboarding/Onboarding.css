@@ -319,9 +319,15 @@
 
 }
 .ob-role-terms a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--control-min-size);
+  min-height: var(--control-min-size);
   color: var(--fg-muted);
   text-decoration: underline;
   text-underline-offset: 2px;
+  vertical-align: middle;
 }
 
 .ob-role-terms a:focus-visible {
@@ -1032,14 +1038,19 @@
   color: var(--fg-muted);
 }
 .ob-perm-check {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: #e7f8f0;
-  display: flex;
+  width: auto;
+  min-height: 24px;
+  padding: 0 var(--spacing-12);
+  border-radius: var(--radius-pill);
+  background: var(--bg-page);
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: none;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  color: var(--fg-muted);
 }
 .ob-perms .ob-cta {
   margin-top: 28px;

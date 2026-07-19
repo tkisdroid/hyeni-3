@@ -585,13 +585,13 @@ export function RemoteAudio() {
             {TRUST_CARDS.map((item) => {
               const TrustIcon = item.icon;
               return (
-                <div key={item.title} className="ra-trust-card">
+                <div key={item.title} className="ra-trust-card hy-explain">
                   <span className="ra-trust-card__icon" aria-hidden="true">
                     <TrustIcon size={20} strokeWidth={2.2} />
                   </span>
-                  <span className="ra-trust-card__body">
-                    <span className="ra-trust-card__title">{item.title}</span>
-                    <span className="ra-trust-card__text">{item.text}</span>
+                  <span className="ra-trust-card__body hy-explain__lines">
+                    <span className="ra-trust-card__title hy-explain__line">{item.title}</span>
+                    <span className="ra-trust-card__text hy-explain__line">{item.text}</span>
                   </span>
                 </div>
               );
@@ -609,8 +609,11 @@ export function RemoteAudio() {
 
         {native ? (
           <div className="ra-start-wrap">
-            <div className="ra-start-note">
-              위급할 때만 사용해 주세요. 아이가 알림을 열고 직접 허용해야 시작돼요.
+            <div className="ra-start-note hy-explain">
+              <span className="hy-explain__lines">
+                <span className="hy-explain__line">위급할 때만 사용해 주세요.</span>
+                <span className="hy-explain__line">아이가 알림을 열고 직접 허용해야 시작돼요.</span>
+              </span>
             </div>
             <button
               type="button"
@@ -624,7 +627,7 @@ export function RemoteAudio() {
             </button>
           </div>
         ) : (
-          <div className="ra-webnote">
+          <div className="ra-webnote hy-explain">
             <Smartphone size={18} strokeWidth={2.2} color="#6d4e9c" />
             주변 소리 듣기는 안드로이드 앱에서 지원돼요
           </div>

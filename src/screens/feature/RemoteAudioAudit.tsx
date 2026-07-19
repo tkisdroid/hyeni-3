@@ -136,9 +136,11 @@ export function RemoteAudioAudit() {
             <ShieldCheck size={20} strokeWidth={2.2} />
             <b>개인정보 · 안전 안내</b>
           </div>
-          <div className="raa-note">
-            이 화면은 감사 기록 조회 전용이며 청취를 시작하지 않습니다. 기록에는 요청자와 대상, 시작·종료 시각,
-            종료 사유만 포함되고 실시간 오디오 내용은 저장하지 않습니다.
+          <div className="raa-note hy-explain">
+            <span className="hy-explain__lines">
+              <span className="hy-explain__line">이 화면은 감사 기록 조회 전용이며 청취를 시작하지 않습니다.</span>
+              <span className="hy-explain__line">기록에는 요청자와 대상, 시작·종료 시각, 종료 사유만 포함되고 실시간 오디오 내용은 저장하지 않습니다.</span>
+            </span>
           </div>
         </section>
       </div>

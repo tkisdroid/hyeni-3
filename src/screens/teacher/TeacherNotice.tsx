@@ -443,8 +443,11 @@ export function TeacherNotice() {
             </button>
 
             {recipientCount === 0 && (
-              <div className="tn-hint">
-                아직 연결된 학생이 없어요. 학생이 연결되면 알림장이 학부모에게 전달돼요.
+              <div className="tn-hint hy-explain">
+                <span className="hy-explain__lines">
+                  <span className="hy-explain__line">아직 연결된 학생이 없어요.</span>
+                  <span className="hy-explain__line">학생이 연결되면 알림장이 학부모에게 전달돼요.</span>
+                </span>
               </div>
             )}
         </>

@@ -7,6 +7,7 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.media.AudioManager;
@@ -48,12 +49,53 @@ public class NotificationPlugin extends Plugin {
     }
 
     @PluginMethod()
+    public void setQuietHours(PluginCall call) {
+        String userId = call.getString("userId");
+        Boolean enabled = call.getBoolean("enabled");
+        Integer startMinute = call.getInt("startMinute");
+        Integer endMinute = call.getInt("endMinute");
+        String timeZoneId = call.getString("timeZoneId");
+        Long updatedAtMs = readNonNegativeLong(call, "updatedAtMs");
+
+        if (userId == null || userId.trim().isEmpty()
+                || enabled == null
+                || startMinute == null
+                || endMinute == null
+                || startMinute < 0 || startMinute > 1439
+                || endMinute < 0 || endMinute > 1439
+                || startMinute.equals(endMinute)
+                || !NotificationQuietHoursStore.SEOUL_TIME_ZONE_ID.equals(timeZoneId)
+                || updatedAtMs == null) {
+            call.resolve(quietHoursResult(
+                    NotificationQuietHoursStore.SaveResult.INVALID_POLICY));
+            return;
+        }
+
+        SharedPreferences prefs = getContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        NotificationQuietHoursStore.SaveResult result =
+                NotificationQuietHoursStore.saveIfCurrentSession(
+                        prefs,
+                        userId.trim(),
+                        enabled,
+                        startMinute,
+                        endMinute,
+                        timeZoneId,
+                        updatedAtMs
+                );
+        call.resolve(quietHoursResult(result));
+    }
+
+    @PluginMethod()
     public void show(PluginCall call) {
         String title = call.getString("title", "혜니캘린더");
         String body = call.getString("body", "");
         String channel = call.getString("channel", "schedule");
         boolean wakeScreen = call.getBoolean("wakeScreen", false);
         boolean fullScreen = call.getBoolean("fullScreen", false);
+        String route = call.getString("route", null);
+        String type = call.getString("type", "local_notification");
+        if (type == null || type.trim().isEmpty()) type = "local_notification";
+        String alertType = call.getString("alertType", call.getString("alert_type", ""));
         String stableId = call.getString("id", call.getString("tag", null));
         int notificationId = stableId != null && !stableId.trim().isEmpty()
                 ? NotificationHelper.stableRequestCode(stableId)
@@ -66,7 +108,9 @@ public class NotificationPlugin extends Plugin {
                 channel,
                 wakeScreen,
                 fullScreen,
-                notificationId
+                notificationId,
+                route,
+                NotificationQuietHoursPolicy.NotificationIdentity.of(type, alertType)
         );
 
         call.resolve(new JSObject()
@@ -128,7 +172,8 @@ public class NotificationPlugin extends Plugin {
                 fullScreen,
                 fullScreen,
                 NotificationHelper.stableRequestCode(stableId),
-                route
+                route,
+                NotificationQuietHoursPolicy.NotificationIdentity.of(type, alertType)
         );
         if (receipt.shouldAcknowledge()) {
             PolledNotificationStore.markAck(context, stableId);
@@ -140,6 +185,32 @@ public class NotificationPlugin extends Plugin {
         return new JSObject()
                 .put("displayed", displayed)
                 .put("acknowledged", acknowledged);
+    }
+
+    private static Long readNonNegativeLong(PluginCall call, String key) {
+        Object raw = call.getData().opt(key);
+        if (!(raw instanceof Number)) return null;
+        Number number = (Number) raw;
+        double numeric = number.doubleValue();
+        long value = number.longValue();
+        if (!Double.isFinite(numeric) || numeric != (double) value || value < 0L) return null;
+        return value;
+    }
+
+    private static JSObject quietHoursResult(NotificationQuietHoursStore.SaveResult result) {
+        String reason;
+        if (result == NotificationQuietHoursStore.SaveResult.SAVED) {
+            reason = "saved";
+        } else if (result == NotificationQuietHoursStore.SaveResult.STALE_SESSION) {
+            reason = "stale_session";
+        } else if (result == NotificationQuietHoursStore.SaveResult.STALE_UPDATE) {
+            reason = "stale_update";
+        } else {
+            reason = "invalid_policy";
+        }
+        return new JSObject()
+                .put("saved", result == NotificationQuietHoursStore.SaveResult.SAVED)
+                .put("reason", reason);
     }
 
     @PluginMethod()

@@ -2,20 +2,40 @@
  * 알림(parent-alerts) 도메인 TanStack Query 훅.
  * 컴포넌트는 이 훅만 import(endpoints/notifications 직접 호출 금지).
  */
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type UseMutationResult,
+  type UseQueryResult,
+} from "@tanstack/react-query";
 import { qk } from "./keys";
-import { useAuth } from "@/auth/AuthContext";
+import { deriveAuthState, useAuth } from "@/auth/AuthContext";
 import { getApiSessionInstanceId, getApiUser } from "@/lib/api/session";
 import {
+  DEFAULT_NOTIF_SETTINGS,
+  fetchFamilyNotificationQuietHours,
   fetchParentAlerts,
   markAlertRead,
   markAllAlertsRead,
   fetchChildNotifSettingsStatus,
   fetchNotifSettings,
+  saveNotificationQuietHours,
   saveNotifSettings,
+  type FamilyNotificationQuietHours,
   type NotifSettings,
   type ParentAlert,
+  type SavedNotificationQuietHours,
 } from "@/lib/api/endpoints/notifications";
+import type { NotificationQuietHoursDraft } from "@/transform/notificationQuietHours";
+import {
+  commitNotificationQuietHoursIfSessionCurrent,
+  executeNotificationQuietHoursScopedMutation,
+  mergeNotifSettingsPreservingQuietHours,
+  runNotificationQuietHoursSessionBound,
+  type NotificationQuietHoursSessionSnapshot,
+  type NotificationQuietHoursSessionState,
+} from "./notificationQuietHoursRuntime";
 
 /** 가족 부모 알림 목록(최신순). limit 기본 50. */
 export function useParentAlerts(limit = 50) {
@@ -85,6 +105,159 @@ export function useChildNotifSettingsStatus(childUserId: string | null | undefin
   });
 }
 
+function readCurrentNotificationQuietHoursSession(): NotificationQuietHoursSessionState {
+  const current = deriveAuthState();
+  return {
+    status: current.status,
+    userId: current.userId,
+    familyId: current.familyId,
+    role: current.role,
+    sessionInstanceId: getApiSessionInstanceId(),
+  };
+}
+
+/** 부모 본인과 같은 가족 활성 아이들의 조용한 시간 조회. */
+export function useFamilyNotificationQuietHours(): UseQueryResult<
+  FamilyNotificationQuietHours,
+  Error
+> {
+  const { familyId, role, status, userId } = useAuth();
+  const expectedParentUserId = userId;
+  const expectedFamilyId = familyId;
+  const expectedSessionInstanceId = getApiSessionInstanceId();
+  const sessionSnapshot: NotificationQuietHoursSessionSnapshot | null =
+    expectedParentUserId && expectedFamilyId && expectedSessionInstanceId
+      ? {
+        parentUserId: expectedParentUserId,
+        familyId: expectedFamilyId,
+        sessionInstanceId: expectedSessionInstanceId,
+      }
+      : null;
+  const enabled = status === "authenticated"
+    && role === "parent"
+    && sessionSnapshot !== null;
+
+  return useQuery<FamilyNotificationQuietHours, Error>({
+    queryKey: qk.familyNotificationQuietHours(
+      expectedFamilyId ?? "",
+      expectedParentUserId ?? "",
+      expectedSessionInstanceId ?? "",
+    ),
+    queryFn: () => {
+      if (!sessionSnapshot) {
+        throw new Error("알림 조용한 시간을 조회할 부모 세션이 없어요");
+      }
+      return runNotificationQuietHoursSessionBound(
+        sessionSnapshot,
+        readCurrentNotificationQuietHoursSession,
+        () => fetchFamilyNotificationQuietHours(
+          sessionSnapshot.familyId,
+          sessionSnapshot.parentUserId,
+        ),
+      );
+    },
+    enabled,
+  });
+}
+
+export interface SaveNotificationQuietHoursVariables {
+  targetUserId: string;
+  quietHours: NotificationQuietHoursDraft;
+}
+
+/** 부모 본인 또는 활성 아이 한 명의 조용한 시간을 target별로 직렬 저장한다. */
+export function useSaveNotificationQuietHours(): UseMutationResult<
+  SavedNotificationQuietHours,
+  Error,
+  SaveNotificationQuietHoursVariables
+> {
+  const qc = useQueryClient();
+  const { familyId, role, status, userId } = useAuth();
+  const expectedParentUserId = userId;
+  const expectedFamilyId = familyId;
+  const expectedSessionInstanceId = getApiSessionInstanceId();
+  const sessionSnapshot: NotificationQuietHoursSessionSnapshot | null =
+    expectedParentUserId && expectedFamilyId && expectedSessionInstanceId
+      ? {
+        parentUserId: expectedParentUserId,
+        familyId: expectedFamilyId,
+        sessionInstanceId: expectedSessionInstanceId,
+      }
+      : null;
+
+  return useMutation<SavedNotificationQuietHours, Error, SaveNotificationQuietHoursVariables>({
+    mutationFn: (variables) => {
+      if (
+        status !== "authenticated"
+        || role !== "parent"
+        || !sessionSnapshot
+      ) {
+        throw new Error("알림 조용한 시간을 저장할 부모 세션이 없어요");
+      }
+      return executeNotificationQuietHoursScopedMutation(
+        qc,
+        sessionSnapshot.familyId,
+        variables,
+        async (scopedVariables) => {
+          const data = await runNotificationQuietHoursSessionBound(
+            sessionSnapshot,
+            readCurrentNotificationQuietHoursSession,
+            () => saveNotificationQuietHours(
+              sessionSnapshot.familyId,
+              sessionSnapshot.parentUserId,
+              scopedVariables.targetUserId,
+              scopedVariables.quietHours,
+            ),
+          );
+          if (data.targetUserId !== scopedVariables.targetUserId) {
+            throw new Error("저장 대상이 달라져 알림 조용한 시간을 반영하지 않았어요");
+          }
+          return data;
+        },
+      );
+    },
+    onSuccess: (data) => {
+      if (!sessionSnapshot) return;
+      commitNotificationQuietHoursIfSessionCurrent(
+        sessionSnapshot,
+        readCurrentNotificationQuietHoursSession,
+        () => {
+          qc.setQueryData<FamilyNotificationQuietHours>(
+            qk.familyNotificationQuietHours(
+              sessionSnapshot.familyId,
+              sessionSnapshot.parentUserId,
+              sessionSnapshot.sessionInstanceId,
+            ),
+            (current) => {
+              if (!current || current.familyId !== sessionSnapshot.familyId) return current;
+              let changed = false;
+              const recipients = current.recipients.map((recipient) => {
+                if (recipient.targetUserId === data.targetUserId) {
+                  changed = true;
+                  return { ...recipient, quietHours: data.quietHours };
+                }
+                return recipient;
+              });
+              return changed ? { ...current, recipients } : current;
+            },
+          );
+          if (data.targetUserId !== sessionSnapshot.parentUserId) return;
+          qc.setQueryData<NotifSettings | null>(
+            qk.notifSettings(sessionSnapshot.parentUserId),
+            (current) => {
+              if (current === undefined) return current;
+              if (current === null) {
+                return { ...DEFAULT_NOTIF_SETTINGS, quietHours: data.quietHours };
+              }
+              return { ...current, quietHours: data.quietHours };
+            },
+          );
+        },
+      );
+    },
+  });
+}
+
 /**
  * 알림 설정 저장(upsert) → 성공 시 캐시 반영. familyId 는 다른 기기 fan-out 통지용.
  * 컴포넌트가 낙관적 초안을 들고 있고, 실패는 onError 로 표면화한다.
@@ -111,7 +284,11 @@ export function useSaveNotifSettings() {
       return saveNotifSettings(familyId ?? null, expectedUserId, settings);
     },
     onSuccess: (_data, settings) => {
-      if (expectedUserId) qc.setQueryData(qk.notifSettings(expectedUserId), settings);
+      if (!expectedUserId) return;
+      qc.setQueryData<NotifSettings | null>(
+        qk.notifSettings(expectedUserId),
+        (current) => mergeNotifSettingsPreservingQuietHours(current, settings),
+      );
     },
   });
 }

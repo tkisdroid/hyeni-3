@@ -647,7 +647,7 @@ export function EventForm() {
               })}
             </div>
           )}
-          <div className="ef-note">
+          <div className="ef-note hy-explain">
             {editingNeedsAssignment
               ? "이 일정은 배정이 빠져 있어요. 아이를 선택해야 저장돼요"
               : selectedChildIds.size === 0
@@ -724,7 +724,7 @@ export function EventForm() {
             })}
           </div>
           {timeValue && (
-            <div className="ef-note">
+            <div className="ef-note hy-explain">
               종료 {minutesToTimeValue((timeToMinutes(timeValue) ?? 0) + durationMin)}
             </div>
           )}
@@ -854,9 +854,9 @@ export function EventForm() {
             </button>
           </div>
           {placeCoord ? (
-            <div className="ef-note">📍 지도 위치가 함께 저장돼요</div>
+            <div className="ef-note hy-explain">📍 지도 위치가 함께 저장돼요</div>
           ) : place.trim() ? (
-            <div className="ef-note">
+            <div className="ef-note hy-explain">
               좌표가 없어 도착·미도착 알림은 동작하지 않아요. 저장된 장소나 지도에서 선택해 주세요
             </div>
           ) : null}
@@ -909,7 +909,7 @@ export function EventForm() {
               </div>
             )}
             {repeat !== "없음" && (
-              <div className="ef-note">
+              <div className="ef-note hy-explain">
                 {repeat === "매일"
                   ? "오늘부터 14일간"
                   : repeat === "매주"
@@ -924,7 +924,7 @@ export function EventForm() {
         ) : (
           <div>
             <div className="ef-label">반복</div>
-            <div className="ef-note">반복은 새 일정에서만 설정할 수 있어요</div>
+            <div className="ef-note hy-explain">반복은 새 일정에서만 설정할 수 있어요</div>
           </div>
         )}
 
@@ -956,9 +956,9 @@ export function EventForm() {
             })}
           </div>
           {prealarm === "default" && (
-            <div className="ef-note">알림 설정에서 고른 시간을 사용해요</div>
+            <div className="ef-note hy-explain">알림 설정에서 고른 시간을 사용해요</div>
           )}
-          {prealarm === "none" && <div className="ef-note">이 일정의 사전 알림을 보내지 않아요</div>}
+          {prealarm === "none" && <div className="ef-note hy-explain">이 일정의 사전 알림을 보내지 않아요</div>}
         </div>
 
         {/* 준비물 — 저장하면 배정 아이의 '가방 챙기기'(daily_supplies)에 함께 담긴다 */}
@@ -1003,7 +1003,7 @@ export function EventForm() {
               ))}
             </div>
           )}
-          <div className="ef-note">저장하면 아이 홈 ‘가방 챙기기’와 부모 홈 준비물에 실시간으로 담겨요</div>
+          <div className="ef-note hy-explain">저장하면 아이 홈 ‘가방 챙기기’와 부모 홈 준비물에 실시간으로 담겨요</div>
         </div>
 
         {/* 메모 */}

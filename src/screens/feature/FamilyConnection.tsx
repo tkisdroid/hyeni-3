@@ -248,7 +248,7 @@ export function FamilyConnection() {
                     </button>
                   ))
                 ) : (
-                  <p className="fc-note">주 보호자만 아이 연결을 해제할 수 있어요.</p>
+                  <p className="fc-note hy-explain">주 보호자만 아이 연결을 해제할 수 있어요.</p>
                 )}
               </section>
             )}

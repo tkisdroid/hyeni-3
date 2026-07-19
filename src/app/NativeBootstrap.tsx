@@ -21,6 +21,7 @@ import { reportDeviceStatus, reportDeviceLabel } from "@/lib/api/endpoints/famil
 import { fetchLocationPreferences } from "@/lib/api/endpoints/location";
 import {
   fetchDevicePendingNotifications,
+  fetchNotifSettings,
   fetchParentPendingNotifications,
   markPendingNotificationsDelivered,
 } from "@/lib/api/endpoints/notifications";
@@ -39,6 +40,10 @@ import {
   resumeActiveQueriesAfterNativeForeground,
 } from "@/queries/nativeQueryResume";
 import { syncWebPushSessionContext, wasWebPushDisplayed } from "@/lib/webPush";
+import { syncNativeNotificationQuietHours } from "@/lib/native/notificationQuietHours";
+import { getApiSessionInstanceId, getApiUser } from "@/lib/api/session";
+import { DEFAULT_NOTIFICATION_QUIET_HOURS } from "@/transform/notificationQuietHours";
+import { parseServerTimestamp } from "@/transform/locationView";
 
 // 아이 기기 상태 리포트 주기(ms). 부모 '안전 지표'가 이 주기로 갱신된다.
 const DEVICE_REPORT_INTERVAL_MS = 120_000;
@@ -155,6 +160,78 @@ export function NativeBootstrap() {
       })();
     }
   }, [status, userId, familyId, role, syncFromSession]);
+
+  // 서버 정본의 사용자별 조용한 시간을 Android 표시 경로에 바인딩한다. 조회가
+  // 늦게 끝나는 동안 로그아웃·계정 전환이 일어나면 결과를 절대 새 세션에 쓰지 않는다.
+  useEffect(() => {
+    if (!isNativePlatform()) return;
+    if (status !== "authenticated" || !userId) return;
+    if (role !== "parent" && role !== "child") return;
+
+    const expectedUserId = userId;
+    const expectedSessionInstanceId = getApiSessionInstanceId()?.trim() ?? "";
+    if (!expectedSessionInstanceId) return;
+
+    let disposed = false;
+    let listener: { remove(): Promise<void> } | null = null;
+
+    const isCurrentSession = () => {
+      if (disposed) return false;
+      if (getApiUser()?.id !== expectedUserId) return false;
+      if ((getApiSessionInstanceId()?.trim() ?? "") !== expectedSessionInstanceId) return false;
+      return true;
+    };
+
+    const syncQuietHours = () => {
+      if (!isCurrentSession()) return;
+      void fetchNotifSettings()
+        .then(async (settings) => {
+          if (!isCurrentSession()) return;
+          const quietHours = settings?.quietHours ?? DEFAULT_NOTIFICATION_QUIET_HOURS;
+          const parsedUpdatedAt = quietHours.updatedAt === null
+            ? 0
+            : (parseServerTimestamp(quietHours.updatedAt)?.getTime() ?? Number.NaN);
+          if (!Number.isFinite(parsedUpdatedAt) || parsedUpdatedAt < 0) {
+            console.warn("Android 알림 시간 동기화 응답 시각이 올바르지 않아요");
+            return;
+          }
+          // native 호출 바로 전에도 사용자와 로그인 instance를 다시 확인한다.
+          if (!isCurrentSession()) return;
+          const saved = await syncNativeNotificationQuietHours({
+            userId: expectedUserId,
+            enabled: quietHours.enabled,
+            startMinute: quietHours.startMinute,
+            endMinute: quietHours.endMinute,
+            timeZoneId: "Asia/Seoul",
+            updatedAtMs: parsedUpdatedAt,
+          });
+          if (isCurrentSession() && !saved) {
+            console.warn("Android 알림 시간 동기화를 반영하지 못했어요");
+          }
+        })
+        .catch((error: unknown) => {
+          if (!disposed) console.warn("Android 알림 시간 조회 실패:", error);
+        });
+    };
+
+    syncQuietHours();
+    void import("@capacitor/app")
+      .then(async ({ App }) => {
+        const handle = await App.addListener("appStateChange", (state) => {
+          if (state.isActive) syncQuietHours();
+        });
+        if (disposed) await handle.remove();
+        else listener = handle;
+      })
+      .catch((error: unknown) => {
+        if (!disposed) console.warn("Android 알림 시간 상태 리스너 등록 실패:", error);
+      });
+
+    return () => {
+      disposed = true;
+      void listener?.remove();
+    };
+  }, [status, userId, role]);
 
   // 부모 앱 시작·foreground 복귀 시 기존 Play 구독을 재검증한다. 자동갱신 후 서버
   // current_period_end가 첫 결제 기간에 멈춰 무료로 오강등되는 것을 막는다.

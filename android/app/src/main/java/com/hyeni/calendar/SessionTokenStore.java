@@ -257,6 +257,12 @@ final class SessionTokenStore {
             .remove("accessToken")
             .remove("refreshToken")
             .remove(SESSION_NONCE)
+            .remove(NotificationQuietHoursStore.KEY_USER_ID)
+            .remove(NotificationQuietHoursStore.KEY_ENABLED)
+            .remove(NotificationQuietHoursStore.KEY_START_MINUTE)
+            .remove(NotificationQuietHoursStore.KEY_END_MINUTE)
+            .remove(NotificationQuietHoursStore.KEY_TIME_ZONE)
+            .remove(NotificationQuietHoursStore.KEY_UPDATED_AT_MS)
             .putBoolean("serviceEnabled", false);
         if (!retiringSessionNonce.isEmpty()) {
             LinkedHashSet<String> blockedSessionNonces = readBlockedSessionNonces(prefs);

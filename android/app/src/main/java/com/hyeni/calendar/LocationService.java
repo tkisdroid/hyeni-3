@@ -3081,6 +3081,9 @@ public class LocationService extends Service {
                     || nowMs - eventRefreshAtMs > EVENT_REFRESH_INTERVAL_MS;
                 JSONArray events;
                 if (refreshEvents) {
+                    // 알림 시간은 일정 배열과 별도 정본이다. 일정이 비었거나 RPC가 실패해도
+                    // 2분 cycle마다 best-effort로 현재 사용자 cache를 갱신한다.
+                    refreshNotificationQuietHoursBestEffort();
                     // Fetch today's events via RPC
                     JSONObject body = new JSONObject();
                     body.put("p_family_id", familyId);
@@ -3390,6 +3393,126 @@ public class LocationService extends Service {
         });
     }
 
+    /** 일정 조회와 독립적인 현재 사용자 알림 시간 cache 갱신. 실패 시 기존 snapshot을 보존한다. */
+    private void refreshNotificationQuietHoursBestEffort() {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        SessionTokenStore.ContextSnapshot requestContext = SessionTokenStore.readContext(prefs);
+        if (isBlank(requestContext.userId)
+                || isBlank(requestContext.accessToken)
+                || isBlank(requestContext.supabaseUrl)) {
+            return;
+        }
+
+        String expectedUserId = requestContext.userId;
+        Response response = null;
+        try {
+            response = executeNotificationQuietHoursRequest(
+                    requestContext.supabaseUrl,
+                    requestContext.supabaseKey,
+                    requestContext.accessToken
+            );
+            if (response.code() == 401) {
+                response.close();
+                response = null;
+                String renewed = networkRefreshAccessToken();
+                if (isBlank(renewed)) return;
+
+                SessionTokenStore.ContextSnapshot retryContext = SessionTokenStore.readContext(prefs);
+                if (!expectedUserId.equals(retryContext.userId)) return;
+                response = executeNotificationQuietHoursRequest(
+                        retryContext.supabaseUrl,
+                        retryContext.supabaseKey,
+                        renewed
+                );
+            }
+            if (!response.isSuccessful() || response.body() == null) return;
+
+            String responseBody = response.body().string();
+            if (isBlank(responseBody) || "null".equals(responseBody.trim())) return;
+            JSONObject row = new JSONObject(responseBody);
+            String responseUserId = row.optString("user_id", "");
+            JSONObject quietHours = row.optJSONObject("quiet_hours");
+            if (isBlank(responseUserId) || quietHours == null) return;
+
+            Object enabledRaw = quietHours.opt("enabled");
+            Integer startMinute = readQuietMinute(quietHours, "start_minute");
+            Integer endMinute = readQuietMinute(quietHours, "end_minute");
+            if (!(enabledRaw instanceof Boolean)
+                    || startMinute == null
+                    || endMinute == null
+                    || startMinute.equals(endMinute)) {
+                return;
+            }
+
+            Object updatedAtRaw = quietHours.opt("updated_at");
+            long updatedAtMs;
+            if (updatedAtRaw == null || updatedAtRaw == JSONObject.NULL) {
+                updatedAtMs = 0L;
+            } else if (updatedAtRaw instanceof String) {
+                updatedAtMs = parseQuietHoursUpdatedAtMs((String) updatedAtRaw);
+                if (updatedAtMs <= 0L) return;
+            } else {
+                return;
+            }
+
+            // 네트워크 응답 직후 계정이 바뀌었으면 이전 사용자의 설정을 저장하지 않는다.
+            SessionTokenStore.ContextSnapshot currentContext = SessionTokenStore.readContext(prefs);
+            if (!responseUserId.equals(currentContext.userId)
+                    || !expectedUserId.equals(currentContext.userId)) {
+                return;
+            }
+            NotificationQuietHoursStore.SaveResult result =
+                    NotificationQuietHoursStore.saveIfCurrentSession(
+                            prefs,
+                            currentContext.userId,
+                            (Boolean) enabledRaw,
+                            startMinute,
+                            endMinute,
+                            NotificationQuietHoursStore.SEOUL_TIME_ZONE_ID,
+                            updatedAtMs
+                    );
+            Log.i(TAG, "Quiet-hours refresh result=" + result.name());
+        } catch (Exception error) {
+            Log.w(TAG, "Quiet-hours refresh failed: " + error.getClass().getSimpleName());
+        } finally {
+            if (response != null) response.close();
+        }
+    }
+
+    private Response executeNotificationQuietHoursRequest(
+            String baseUrl,
+            String apiKey,
+            String bearerToken
+    ) throws Exception {
+        Request.Builder builder = new Request.Builder()
+                .url(baseUrl.replaceAll("/+$", "") + "/api/notif-settings")
+                .header("Authorization", "Bearer " + bearerToken)
+                .get();
+        if (!isBlank(apiKey)) builder.header("apikey", apiKey);
+        return httpClient.newCall(builder.build()).execute();
+    }
+
+    private static Integer readQuietMinute(JSONObject quietHours, String key) {
+        Object raw = quietHours.opt(key);
+        if (!(raw instanceof Number)) return null;
+        Number number = (Number) raw;
+        double numeric = number.doubleValue();
+        int value = number.intValue();
+        if (!Double.isFinite(numeric) || numeric != (double) value || value < 0 || value > 1439) {
+            return null;
+        }
+        return value;
+    }
+
+    private static long parseQuietHoursUpdatedAtMs(String value) {
+        if (value == null) return 0L;
+        String normalized = value.trim();
+        if (normalized.matches("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?")) {
+            normalized = normalized.replace(' ', 'T') + "Z";
+        }
+        return RemoteListenRequestPolicy.parseTimestampMs(normalized);
+    }
+
     // ── Local event reminder fallback (자녀 디바이스, cron 미동작 시 보호) ────
     // notificationId 포맷이 push-notify cron의 pushId(`<eventId>-<window>-<dateKey>`)
     // 와 동일하므로, cron이 정상 동작한 경우 동일 알림이 native side에서 다시 와도
@@ -3445,7 +3568,8 @@ public class LocationService extends Service {
                     false,
                     false,
                     notifId,
-                    "/child/home"
+                    "/child/home",
+                    NotificationQuietHoursPolicy.NotificationIdentity.of("event_reminder", "")
                 );
                 if (receipt.shouldAcknowledge()) {
                     shownEventNotifs.add(reminderKey);
@@ -3594,7 +3718,8 @@ public class LocationService extends Service {
             fullScreen,
             fullScreen,
             notificationId,
-            route
+            route,
+            NotificationQuietHoursPolicy.NotificationIdentity.of(type, alertType)
         );
 
         if (receipt.shouldAcknowledge()) {

@@ -39,9 +39,13 @@ function normalizeAppText(value: string | null | undefined): string {
   return (value || "").trim().toLowerCase();
 }
 
+function canonicalAppText(value: string | null | undefined): string {
+  return normalizeAppText(value).normalize("NFKC").replace(/\s+/g, "");
+}
+
 function cleanRecentAppLabel(value: string | null | undefined): string {
   const label = (value || "").trim();
-  if (!label || label.includes("권한 필요")) return "";
+  if (!label || label.includes("권한 필요") || isSystemRecentApp(label)) return "";
   return label;
 }
 
@@ -62,6 +66,40 @@ function cleanPercent(value: number | null | undefined): number | null {
 // 구버전 아이 기기 리포트에도 적용되도록 서버/네이티브가 아니라 표시 계층에서 거른다.
 const OWN_APP_PACKAGE = "com.hyeni.calendar";
 const OWN_APP_NAMES = new Set(["혜니캘린더", "hyeni calendar", "hyenicalendar"]);
+const SYSTEM_SURFACE_NAMES = new Set(["시스템자녀보호기능", "systemparentalcontrols"]);
+const SYSTEM_SURFACE_PACKAGES = new Set([
+  "com.android.settings",
+  "com.android.systemui",
+  "com.google.android.permissioncontroller",
+  "com.android.permissioncontroller",
+  "com.google.android.packageinstaller",
+  "com.android.packageinstaller",
+  "com.sec.android.app.launcher",
+]);
+
+function isSystemSurfacePackage(value: string | null | undefined): boolean {
+  const packageName = canonicalAppText(value);
+  return SYSTEM_SURFACE_PACKAGES.has(packageName);
+}
+
+function isSystemSurfaceName(value: string | null | undefined): boolean {
+  return SYSTEM_SURFACE_NAMES.has(canonicalAppText(value));
+}
+
+function isPackageLikeAppText(value: string | null | undefined): boolean {
+  return /^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+$/.test(normalizeAppText(value));
+}
+
+function isSystemRecentApp(value: string | null | undefined): boolean {
+  return isSystemSurfaceName(value)
+    || (isPackageLikeAppText(value) && isSystemSurfacePackage(value));
+}
+
+function isSystemSurfaceRow(row: DeviceAppUsageInput): boolean {
+  return isSystemSurfaceName(row.name)
+    || isSystemSurfacePackage(row.packageName)
+    || (isPackageLikeAppText(row.name) && isSystemSurfacePackage(row.name));
+}
 
 function isOwnAppRow(row: DeviceAppUsageInput): boolean {
   if (normalizeAppText(row.packageName) === OWN_APP_PACKAGE) return true;
@@ -74,8 +112,9 @@ export function buildDeviceAppUsageView(
 ): DeviceAppUsageView {
   const recent = cleanRecentAppLabel(health.recentApp);
   const rows = Array.isArray(health.appUsage) ? health.appUsage : [];
-  const topApps = rows
-    .filter((row) => !isOwnAppRow(row))
+  const visibleRows = rows.filter((row) => !isOwnAppRow(row) && !isSystemSurfaceRow(row));
+  const hasFilteredAppRows = visibleRows.length !== rows.length;
+  const topApps = visibleRows
     .map((row, index) => {
       const name = (row.name || row.packageName || "").trim();
       const usageMs = typeof row.usageMs === "number" && Number.isFinite(row.usageMs) ? row.usageMs : 0;
@@ -86,7 +125,7 @@ export function buildDeviceAppUsageView(
         id: `${packageName || name}-${index}`,
         name,
         timeLabel,
-        percent: cleanPercent(row.percent),
+        percent: hasFilteredAppRows ? null : cleanPercent(row.percent),
         isLatest: appRowMatchesRecent(row, recent),
         usageMs,
         lastTimeUsed: typeof row.lastTimeUsed === "number" && Number.isFinite(row.lastTimeUsed)
