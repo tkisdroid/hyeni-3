@@ -67,6 +67,53 @@ test("명시된 시스템 표면은 오늘 많이 쓴 앱과 최다 사용 앱�
   assert.equal(view.mostUsedApp?.name, "유튜브");
 });
 
+test("Launcher Pro처럼 시스템 키워드가 포함된 정상 표시명은 최근·상위·최다 사용에 유지한다", () => {
+  const view = buildDeviceAppUsageView({
+    recentApp: "Launcher Pro",
+    appUsage: [
+      { name: "Launcher Pro", packageName: "com.example.tools", usageMs: 45 * 60000, percent: 75 },
+      { name: "유튜브", packageName: "com.google.android.youtube", usageMs: 15 * 60000, percent: 25 },
+    ],
+  });
+
+  assert.equal(view.recentAppLabel, "Launcher Pro");
+  assert.deepEqual(view.topApps.map((app) => app.name), ["Launcher Pro", "유튜브"]);
+  assert.equal(view.mostUsedApp?.name, "Launcher Pro");
+});
+
+test("시스템 또는 자체 행을 제거하면 남은 앱의 과거 분모 비율을 표시하지 않는다", () => {
+  const systemFiltered = buildDeviceAppUsageView({
+    recentApp: "유튜브",
+    appUsage: [
+      { name: "설정", packageName: "com.android.settings", usageMs: 90 * 60000, percent: 90 },
+      { name: "유튜브", packageName: "com.google.android.youtube", usageMs: 10 * 60000, percent: 10 },
+    ],
+  });
+  const ownAppFiltered = buildDeviceAppUsageView({
+    recentApp: "카카오톡",
+    appUsage: [
+      { name: "혜니캘린더", packageName: "com.hyeni.calendar", usageMs: 90 * 60000, percent: 90 },
+      { name: "카카오톡", packageName: "com.kakao.talk", usageMs: 10 * 60000, percent: 10 },
+    ],
+  });
+
+  assert.equal(systemFiltered.mostUsedApp?.name, "유튜브");
+  assert.equal(systemFiltered.mostUsedApp?.percent, null);
+  assert.equal(ownAppFiltered.mostUsedApp?.name, "카카오톡");
+  assert.equal(ownAppFiltered.mostUsedApp?.percent, null);
+});
+
+test("필터가 없는 정상 payload는 기존 비율 정규화를 유지한다", () => {
+  const view = buildDeviceAppUsageView({
+    recentApp: "유튜브",
+    appUsage: [
+      { name: "유튜브", packageName: "com.google.android.youtube", usageMs: 20 * 60000, percent: 66.6 },
+    ],
+  });
+
+  assert.equal(view.mostUsedApp?.percent, 67);
+});
+
 test("빈 목록 문구는 Usage Access 허용 여부로 '권한 필요'와 '쓴 앱 없음'을 구분한다", () => {
   const familyView = readSource("src/transform/familyView.ts");
   assert.match(familyView, /appUsagePermissionGranted: health\.usagePermission === "granted"/);

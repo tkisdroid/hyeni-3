@@ -45,7 +45,7 @@ function canonicalAppText(value: string | null | undefined): string {
 
 function cleanRecentAppLabel(value: string | null | undefined): string {
   const label = (value || "").trim();
-  if (!label || label.includes("권한 필요") || isSystemSurfaceText(label)) return "";
+  if (!label || label.includes("권한 필요") || isSystemRecentApp(label)) return "";
   return label;
 }
 
@@ -77,12 +77,21 @@ function isSystemSurfacePackage(value: string | null | undefined): boolean {
     || packageName.includes("launcher");
 }
 
-function isSystemSurfaceText(value: string | null | undefined): boolean {
-  return SYSTEM_SURFACE_NAMES.has(canonicalAppText(value)) || isSystemSurfacePackage(value);
+function isSystemSurfaceName(value: string | null | undefined): boolean {
+  return SYSTEM_SURFACE_NAMES.has(canonicalAppText(value));
+}
+
+function isPackageLikeAppText(value: string | null | undefined): boolean {
+  return /^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+$/.test(normalizeAppText(value));
+}
+
+function isSystemRecentApp(value: string | null | undefined): boolean {
+  return isSystemSurfaceName(value)
+    || (isPackageLikeAppText(value) && isSystemSurfacePackage(value));
 }
 
 function isSystemSurfaceRow(row: DeviceAppUsageInput): boolean {
-  return isSystemSurfaceText(row.name) || isSystemSurfacePackage(row.packageName);
+  return isSystemSurfaceName(row.name) || isSystemSurfacePackage(row.packageName);
 }
 
 function isOwnAppRow(row: DeviceAppUsageInput): boolean {
@@ -96,8 +105,9 @@ export function buildDeviceAppUsageView(
 ): DeviceAppUsageView {
   const recent = cleanRecentAppLabel(health.recentApp);
   const rows = Array.isArray(health.appUsage) ? health.appUsage : [];
-  const topApps = rows
-    .filter((row) => !isOwnAppRow(row) && !isSystemSurfaceRow(row))
+  const visibleRows = rows.filter((row) => !isOwnAppRow(row) && !isSystemSurfaceRow(row));
+  const hasFilteredAppRows = visibleRows.length !== rows.length;
+  const topApps = visibleRows
     .map((row, index) => {
       const name = (row.name || row.packageName || "").trim();
       const usageMs = typeof row.usageMs === "number" && Number.isFinite(row.usageMs) ? row.usageMs : 0;
@@ -108,7 +118,7 @@ export function buildDeviceAppUsageView(
         id: `${packageName || name}-${index}`,
         name,
         timeLabel,
-        percent: cleanPercent(row.percent),
+        percent: hasFilteredAppRows ? null : cleanPercent(row.percent),
         isLatest: appRowMatchesRecent(row, recent),
         usageMs,
         lastTimeUsed: typeof row.lastTimeUsed === "number" && Number.isFinite(row.lastTimeUsed)
