@@ -387,6 +387,175 @@ function assertStateContracts(row) {
   }
 }
 
+function localFunctionMap(sourceFile) {
+  const functions = new Map();
+  const visit = (node) => {
+    if (ts.isFunctionDeclaration(node) && node.name) {
+      functions.set(node.name.text, node);
+    }
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) {
+      if (ts.isArrowFunction(node.initializer) || ts.isFunctionExpression(node.initializer)) {
+        functions.set(node.name.text, node.initializer);
+      } else if (ts.isCallExpression(node.initializer)
+        && ts.isIdentifier(node.initializer.expression)
+        && node.initializer.expression.text === "useCallback"
+        && node.initializer.arguments[0]
+        && (ts.isArrowFunction(node.initializer.arguments[0]) || ts.isFunctionExpression(node.initializer.arguments[0]))) {
+        functions.set(node.name.text, node.initializer.arguments[0]);
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return functions;
+}
+
+function stateReceiverNames(node, propertyName) {
+  const names = new Set();
+  const visit = (child) => {
+    if (ts.isPropertyAccessExpression(child)
+      && child.name.text === propertyName
+      && ts.isIdentifier(child.expression)) {
+      names.add(child.expression.text);
+    }
+    ts.forEachChild(child, visit);
+  };
+  visit(node);
+  return names;
+}
+
+function compositeReadQueryNames(sourceFile, row) {
+  const calls = [];
+  const visit = (node) => {
+    if (ts.isCallExpression(node)
+      && ts.isIdentifier(node.expression)
+      && node.expression.text === "resolveQueryTruthState") {
+      calls.push(node);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  assert.equal(calls.length, 1, `${row.path}는 resolveQueryTruthState를 정확히 한 번 사용해야 합니다`);
+
+  const stateList = calls[0].arguments[0];
+  assert.ok(ts.isArrayLiteralExpression(stateList), `${row.path} query state 입력은 정적 배열이어야 합니다`);
+  const queryNames = [];
+  for (const item of stateList.elements) {
+    assert.ok(ts.isObjectLiteralExpression(item), `${row.path} query state 항목은 객체여야 합니다`);
+    const loadingProperty = property(item, "isLoading");
+    const errorProperty = property(item, "isError");
+    assert.ok(loadingProperty && errorProperty, `${row.path} query state 항목에 loading/error가 모두 필요합니다`);
+    const loadingNames = stateReceiverNames(loadingProperty.initializer, "isLoading");
+    const errorNames = stateReceiverNames(errorProperty.initializer, "isError");
+    const sharedNames = [...loadingNames].filter((name) => errorNames.has(name));
+    assert.equal(sharedNames.length, 1, `${row.path} query state 항목은 같은 query의 loading/error를 사용해야 합니다`);
+    queryNames.push(sharedNames[0]);
+  }
+  assert.ok(queryNames.length > 0, `${row.path} query state에 read query가 없습니다`);
+  assert.equal(new Set(queryNames).size, queryNames.length, `${row.path} query state에 같은 query가 중복됐습니다`);
+  return queryNames;
+}
+
+function readQueryBindings(sourceFile, sourcePath) {
+  const readHooks = new Set(readQueryHooksForScreen(sourcePath));
+  const bindings = new Map();
+  const visit = (node) => {
+    if (ts.isVariableDeclaration(node)
+      && ts.isIdentifier(node.name)
+      && node.initializer
+      && ts.isCallExpression(node.initializer)
+      && ts.isIdentifier(node.initializer.expression)
+      && readHooks.has(node.initializer.expression.text)) {
+      bindings.set(node.name.text, node.initializer.expression.text);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return bindings;
+}
+
+function directReceiverName(node) {
+  let current = node;
+  while (ts.isParenthesizedExpression(current)
+    || ts.isNonNullExpression(current)
+    || ts.isAsExpression(current)) {
+    current = current.expression;
+  }
+  return ts.isIdentifier(current) ? current.text : null;
+}
+
+function refetchesReachedFromHandler(node, functions, seen = new Set()) {
+  const refetches = new Set();
+  const expandFunction = (name) => {
+    if (seen.has(name)) return;
+    const fn = functions.get(name);
+    if (!fn) return;
+    seen.add(name);
+    visit(fn.body ?? fn);
+  };
+  const visit = (child) => {
+    if (ts.isCallExpression(child)) {
+      if (ts.isPropertyAccessExpression(child.expression) && child.expression.name.text === "refetch") {
+        const receiver = directReceiverName(child.expression.expression);
+        if (receiver) refetches.add(receiver);
+      } else if (ts.isIdentifier(child.expression) && functions.has(child.expression.text)) {
+        expandFunction(child.expression.text);
+      }
+    }
+    ts.forEachChild(child, visit);
+  };
+  if (ts.isIdentifier(node) && functions.has(node.text)) {
+    expandFunction(node.text);
+  } else {
+    visit(node);
+  }
+  return refetches;
+}
+
+function jsxHandlerRefetchSets(sourceFile, functions) {
+  const handlerSets = [];
+  const visit = (node) => {
+    if (ts.isJsxAttribute(node)
+      && ts.isIdentifier(node.name)
+      && /^on[A-Z]/.test(node.name.text)
+      && node.initializer
+      && ts.isJsxExpression(node.initializer)
+      && node.initializer.expression) {
+      handlerSets.push(refetchesReachedFromHandler(node.initializer.expression, functions));
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return handlerSets;
+}
+
+function assertCompositeRetryWiring(row, source = read(row.source)) {
+  const sourceFile = ts.createSourceFile(
+    row.source,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX,
+  );
+  const queryNames = compositeReadQueryNames(sourceFile, row);
+  const bindings = readQueryBindings(sourceFile, row.source);
+  for (const queryName of queryNames) {
+    assert.ok(
+      bindings.has(queryName),
+      `${row.path}의 ${queryName}는 src/queries의 실제 read query hook 결과여야 합니다`,
+    );
+  }
+
+  const handlerSets = jsxHandlerRefetchSets(sourceFile, localFunctionMap(sourceFile));
+  const completeHandler = handlerSets.find((set) => queryNames.every((queryName) => set.has(queryName)));
+  if (!completeHandler) {
+    const reached = new Set(handlerSets.flatMap((set) => [...set]));
+    const missing = queryNames.filter((queryName) => !reached.has(queryName));
+    const names = missing.length > 0 ? missing : queryNames;
+    assert.fail(`${row.path}의 ${names.join(", ")} read query가 하나의 실제 retry handler에서 모두 refetch되지 않습니다`);
+  }
+}
+
 function extractAppRoutes() {
   const source = read("src/app/App.tsx");
   const sourceFile = ts.createSourceFile("App.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
@@ -546,6 +715,21 @@ test("감사 완료된 hybrid 화면은 read query의 다섯 상태와 실제 �
     "teacher/notice",
   ]);
   auditedHybridRows.forEach(assertStateContracts);
+});
+
+test("hybrid 화면의 retry handler는 상태를 만든 동일 read query를 모두 다시 조회한다", () => {
+  const auditedHybridRows = routeQualityMatrix.filter((item) => item.kind === "hybrid" && item.states);
+  auditedHybridRows.forEach((row) => assertCompositeRetryWiring(row));
+
+  const locationSettings = routeQualityMatrix.find((row) => row.path === "location-settings");
+  assert.ok(locationSettings);
+  const source = read(locationSettings.source);
+  const brokenSource = source.replace("preferencesQuery.refetch()", "Promise.resolve()");
+  assert.notEqual(brokenSource, source, "회귀 fixture가 실제 preferencesQuery retry를 제거해야 합니다");
+  assert.throws(
+    () => assertCompositeRetryWiring(locationSettings, brokenSource),
+    /preferencesQuery.*retry handler/,
+  );
 });
 
 test("모든 화면은 뒤로가기와 역할별 말투 정책을 분류하고 DEV 선생님 경계를 보존한다", () => {
