@@ -332,7 +332,11 @@ final class DeviceStatusReporter {
                         }
                     }
                 }
-                usagePermission = rawRecentApp.isEmpty() && appUsage.length() == 0 ? "requires_permission" : "granted";
+                usagePermission = resolveUsagePermission(
+                    isUsageAccessGranted(context),
+                    !rawRecentApp.isEmpty(),
+                    appUsage.length() > 0
+                );
             }
         }
 
@@ -387,7 +391,36 @@ final class DeviceStatusReporter {
             || pkg.contains("launcher")) {
             return true;
         }
-        return homePackages(context).contains(pkg);
+        if (homePackages(context).contains(pkg)) return true;
+        try {
+            PackageManager pm = context.getPackageManager();
+            ApplicationInfo info = pm.getApplicationInfo(pkg, 0);
+            boolean systemApp = (info.flags & ApplicationInfo.FLAG_SYSTEM) != 0;
+            boolean updatedSystemApp = (info.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0;
+            boolean hasLaunchIntent = pm.getLaunchIntentForPackage(pkg) != null;
+            return shouldExcludeNonLaunchableSystemApp(systemApp, updatedSystemApp, hasLaunchIntent);
+        } catch (Exception ignored) {
+            // 조회 실패만으로 일반 앱을 숨기지 않는다. 명시 목록은 위에서 이미 처리했다.
+            return false;
+        }
+    }
+
+    static boolean shouldExcludeNonLaunchableSystemApp(
+            boolean systemApp,
+            boolean updatedSystemApp,
+            boolean hasLaunchIntent
+    ) {
+        return (systemApp || updatedSystemApp) && !hasLaunchIntent;
+    }
+
+    static String resolveUsagePermission(
+            boolean appOpsGranted,
+            boolean hasRawRecentApp,
+            boolean hasVisibleUsageRows
+    ) {
+        return appOpsGranted || hasRawRecentApp || hasVisibleUsageRows
+            ? "granted"
+            : "requires_permission";
     }
 
     private static java.util.Set<String> homePackages(Context context) {

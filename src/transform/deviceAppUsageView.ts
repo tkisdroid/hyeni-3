@@ -39,9 +39,13 @@ function normalizeAppText(value: string | null | undefined): string {
   return (value || "").trim().toLowerCase();
 }
 
+function canonicalAppText(value: string | null | undefined): string {
+  return normalizeAppText(value).normalize("NFKC").replace(/\s+/g, "");
+}
+
 function cleanRecentAppLabel(value: string | null | undefined): string {
   const label = (value || "").trim();
-  if (!label || label.includes("권한 필요")) return "";
+  if (!label || label.includes("권한 필요") || isSystemSurfaceText(label)) return "";
   return label;
 }
 
@@ -62,6 +66,24 @@ function cleanPercent(value: number | null | undefined): number | null {
 // 구버전 아이 기기 리포트에도 적용되도록 서버/네이티브가 아니라 표시 계층에서 거른다.
 const OWN_APP_PACKAGE = "com.hyeni.calendar";
 const OWN_APP_NAMES = new Set(["혜니캘린더", "hyeni calendar", "hyenicalendar"]);
+const SYSTEM_SURFACE_NAMES = new Set(["시스템자녀보호기능", "systemparentalcontrols"]);
+const SYSTEM_SURFACE_PACKAGES = new Set(["com.android.settings", "com.android.systemui"]);
+
+function isSystemSurfacePackage(value: string | null | undefined): boolean {
+  const packageName = canonicalAppText(value);
+  return SYSTEM_SURFACE_PACKAGES.has(packageName)
+    || packageName.includes("permissioncontroller")
+    || packageName.includes("packageinstaller")
+    || packageName.includes("launcher");
+}
+
+function isSystemSurfaceText(value: string | null | undefined): boolean {
+  return SYSTEM_SURFACE_NAMES.has(canonicalAppText(value)) || isSystemSurfacePackage(value);
+}
+
+function isSystemSurfaceRow(row: DeviceAppUsageInput): boolean {
+  return isSystemSurfaceText(row.name) || isSystemSurfacePackage(row.packageName);
+}
 
 function isOwnAppRow(row: DeviceAppUsageInput): boolean {
   if (normalizeAppText(row.packageName) === OWN_APP_PACKAGE) return true;
@@ -75,7 +97,7 @@ export function buildDeviceAppUsageView(
   const recent = cleanRecentAppLabel(health.recentApp);
   const rows = Array.isArray(health.appUsage) ? health.appUsage : [];
   const topApps = rows
-    .filter((row) => !isOwnAppRow(row))
+    .filter((row) => !isOwnAppRow(row) && !isSystemSurfaceRow(row))
     .map((row, index) => {
       const name = (row.name || row.packageName || "").trim();
       const usageMs = typeof row.usageMs === "number" && Number.isFinite(row.usageMs) ? row.usageMs : 0;

@@ -118,4 +118,20 @@ public class DeviceStatusReporterTest {
     public void normalizeConnectionType_disconnected_returnsNone() {
         assertEquals("NONE", DeviceStatusReporter.normalizeConnectionType(false, true, true, TelephonyManager.NETWORK_TYPE_NR));
     }
+
+    @Test
+    public void nonLaunchableSystemSurface_onlyExcludesSystemCandidatesWithoutLauncher() {
+        assertTrue(DeviceStatusReporter.shouldExcludeNonLaunchableSystemApp(true, false, false));
+        assertTrue(DeviceStatusReporter.shouldExcludeNonLaunchableSystemApp(false, true, false));
+        assertFalse(DeviceStatusReporter.shouldExcludeNonLaunchableSystemApp(true, false, true));
+        assertFalse(DeviceStatusReporter.shouldExcludeNonLaunchableSystemApp(false, false, false));
+    }
+
+    @Test
+    public void usagePermission_preservesRawEvidenceAfterSystemRowsAreFiltered() {
+        assertEquals("granted", DeviceStatusReporter.resolveUsagePermission(false, true, false));
+        assertEquals("granted", DeviceStatusReporter.resolveUsagePermission(true, false, false));
+        assertEquals("granted", DeviceStatusReporter.resolveUsagePermission(false, false, true));
+        assertEquals("requires_permission", DeviceStatusReporter.resolveUsagePermission(false, false, false));
+    }
 }
