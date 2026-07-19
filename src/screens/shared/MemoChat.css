@@ -46,6 +46,7 @@
 .mc-peer-avatar img {
   width: 34px;
   height: 34px;
+  aspect-ratio: 1;
   object-fit: contain;
 }
 .mc-peer-main {
@@ -169,6 +170,7 @@
 .mc-msg-avatar img {
   width: 24px;
   height: 24px;
+  aspect-ratio: 1;
   object-fit: contain;
 }
 .mc-bubble-wrap {
@@ -378,6 +380,7 @@
   width: 100%;
   max-width: 220px;
   max-height: 260px;
+  aspect-ratio: 4 / 3;
   object-fit: cover;
   border-radius: 13px;
 }
@@ -439,6 +442,7 @@
   width: 100%;
   min-height: 0;
   max-height: calc(100dvh - 150px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  aspect-ratio: 4 / 3;
   border-radius: var(--radius-lg);
   object-fit: contain;
   background: var(--bg-body);

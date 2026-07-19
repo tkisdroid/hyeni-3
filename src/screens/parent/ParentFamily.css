@@ -69,6 +69,7 @@
 .pf-parent__avatar img {
   width: 40px;
   height: 40px;
+  aspect-ratio: 1;
   object-fit: contain;
 }
 .pf-parent__main {
@@ -137,6 +138,7 @@
 .pf-child__avatar img {
   width: 48px;
   height: 48px;
+  aspect-ratio: 1;
   object-fit: contain;
 }
 .pf-child__main {

@@ -387,7 +387,7 @@ export function MemoChat() {
           <ChevronLeft size={24} strokeWidth={2.4} />
         </button>
         <span className="mc-peer-avatar">
-          <img src={peer.avatar} alt="" />
+          <img src={peer.avatar} alt="" loading="lazy" decoding="async" />
         </span>
         <div className="mc-peer-main">
           <div className="mc-peer-name">{peer.name}</div>
@@ -472,7 +472,7 @@ export function MemoChat() {
               <div className={`mc-msg ${m.mine ? "mc-msg--mine" : "mc-msg--peer"}`}>
               {m.showMeta && (
                 <span className="mc-msg-avatar">
-                  <img src={sender?.avatar ?? peer.avatar} alt="" />
+                  <img src={sender?.avatar ?? peer.avatar} alt="" loading="lazy" decoding="async" />
                 </span>
               )}
               <div className="mc-bubble-wrap">
@@ -485,7 +485,12 @@ export function MemoChat() {
                       if (m.imagePath) setPreviewImagePath(m.imagePath);
                     }}
                   >
-                    <img src={childPhotoProxyUrl(m.imagePath) ?? undefined} alt="공유한 사진" />
+                    <img
+                      src={childPhotoProxyUrl(m.imagePath) ?? undefined}
+                      alt="공유한 사진"
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </button>
                 ) : m.kind === "location" && m.location ? (
                   <button
@@ -606,6 +611,8 @@ export function MemoChat() {
             <img
               src={childPhotoProxyUrl(previewImagePath) ?? undefined}
               alt="공유한 사진 크게 보기"
+              loading="lazy"
+              decoding="async"
             />
           </div>
         </div>

@@ -115,7 +115,7 @@ export function ParentFamily() {
                 {view.parents.map((p) => (
                   <div key={p.id} className="pf-parent">
                     <span className="pf-parent__avatar">
-                      <img src={avatarSrc(p.avatar)} alt="" />
+                      <img src={avatarSrc(p.avatar)} alt="" loading="lazy" decoding="async" />
                     </span>
                     <span className="pf-parent__main">
                       <span className="pf-parent__name-row">
@@ -141,7 +141,7 @@ export function ParentFamily() {
                     onClick={() => navigate("/child-detail", { state: { childId: c.id } })}
                   >
                     <span className="pf-child__avatar" style={{ background: c.soft }}>
-                      <img src={avatarSrc(c.avatar)} alt="" />
+                      <img src={avatarSrc(c.avatar)} alt="" loading="lazy" decoding="async" />
                     </span>
                     <span className="pf-child__main">
                       <span className="pf-child__name">{c.name}</span>

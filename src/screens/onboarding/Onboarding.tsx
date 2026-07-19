@@ -595,7 +595,13 @@ function RoleStep({
       <div className="ob-role-head">
         <span className="ob-role-badge">함께 보는 우리 가족</span>
         <div className="ob-role-logo">
-          <img src={asset("mascot/wave.webp")} alt="혜니캘린더" />
+          <img
+            src={asset("mascot/wave.webp")}
+            alt="혜니캘린더"
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
+          />
         </div>
         <div className="ob-role-title">혜니캘린더</div>
         <div className="ob-role-sub">함께 보는 우리 가족 일정</div>
@@ -604,7 +610,13 @@ function RoleStep({
       <div className="ob-role-list">
         <button type="button" className="ob-role-card ob-role-card--parent hy-press" onClick={onParent} disabled={busy}>
           <span className="ob-role-ic ob-role-ic--parent">
-            <img className="ob-role-img" src={asset(ROLE_ICON_ASSETS.parent)} alt="" />
+            <img
+              className="ob-role-img"
+              src={asset(ROLE_ICON_ASSETS.parent)}
+              alt=""
+              loading="eager"
+              decoding="async"
+            />
           </span>
           <span className="ob-role-main">
             <span className="ob-role-name">학부모</span>
@@ -615,7 +627,13 @@ function RoleStep({
 
         <button type="button" className="ob-role-card ob-role-card--child hy-press" onClick={onChild} disabled={busy}>
           <span className="ob-role-ic ob-role-ic--child">
-            <img className="ob-role-img ob-role-img--child" src={asset(ROLE_ICON_ASSETS.child)} alt="" />
+            <img
+              className="ob-role-img ob-role-img--child"
+              src={asset(ROLE_ICON_ASSETS.child)}
+              alt=""
+              loading="eager"
+              decoding="async"
+            />
           </span>
           <span className="ob-role-main">
             <span className="ob-role-name" style={{ color: "#7C4B8E" }}>아이</span>
@@ -629,7 +647,13 @@ function RoleStep({
         {TEACHER_MODE_ENABLED && (
           <button type="button" className="ob-role-card ob-role-card--teacher hy-press" onClick={onTeacher} disabled={busy}>
             <span className="ob-role-ic ob-role-ic--teacher">
-              <img className="ob-role-img" src={asset(ROLE_ICON_ASSETS.teacher)} alt="" />
+              <img
+                className="ob-role-img"
+                src={asset(ROLE_ICON_ASSETS.teacher)}
+                alt=""
+                loading="eager"
+                decoding="async"
+              />
             </span>
             <span className="ob-role-main">
               <span className="ob-role-name" style={{ color: "#0F7A57" }}>선생님</span>
