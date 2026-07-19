@@ -127,10 +127,23 @@ export function TeacherHome() {
     );
   };
 
-  const loading = meQ.isLoading || classesQ.isLoading;
+  const loading = meQ.isLoading
+    || classesQ.isLoading
+    || (!!classId && (rosterQ.isLoading || attendanceQ.isLoading));
   // 반이 없으면 반 생성 CTA를 보여준다. 진짜 오류(미배포 아님)는 재시도 안내.
-  const genuineError = classesQ.isError && !isMissingFunction(classesQ.error);
+  const genuineError = (classesQ.isError && !isMissingFunction(classesQ.error))
+    || meQ.isError
+    || rosterQ.isError
+    || attendanceQ.isError;
   const notReady = !loading && !classId;
+  const retryTeacherHome = async () => {
+    await Promise.all([
+      meQ.refetch(),
+      classesQ.refetch(),
+      rosterQ.refetch(),
+      attendanceQ.refetch(),
+    ]);
+  };
 
   return (
     <div className="hy-rise-in">
@@ -155,26 +168,32 @@ export function TeacherHome() {
       <div className="hy-content th-content">
         {loading && <div className="th-empty th-empty--soft">반 정보를 불러오는 중…</div>}
 
-        {notReady && (
-          <div className="th-empty">
-            <span className="th-empty__emoji"><img src={asset("mascot/teacher-glasses.webp")} alt="" style={{ width: 48, height: 48, objectFit: "contain", borderRadius: 12 }} /></span>
-            <span className="th-empty__title">
-              {genuineError ? "잠시 후 다시 시도해 주세요" : "연결된 반이 없어요"}
-            </span>
-            <span className="th-empty__sub">
-              {genuineError
-                ? "선생님 정보를 불러오지 못했어요."
-                : "반을 만들고 학생을 연결하면 오늘 출석과 알림장이 여기에 표시돼요."}
-            </span>
-            {!genuineError && (
-              <button type="button" className="th-empty__cta hy-press" onClick={openCreate}>
-                반 만들기
-              </button>
-            )}
+        {!loading && genuineError && (
+          <div className="th-empty" role="alert">
+            <span className="th-empty__title">반 정보를 불러오지 못했어요</span>
+            <span className="th-empty__sub">네트워크 연결을 확인한 뒤 다시 시도해 주세요.</span>
+            <button type="button" className="th-empty__cta hy-press" onClick={() => void retryTeacherHome()}>
+              다시 시도
+            </button>
           </div>
         )}
 
-        {!loading && !notReady && (
+        {notReady && !genuineError && (
+          <div className="th-empty">
+            <span className="th-empty__emoji"><img src={asset("mascot/teacher-glasses.webp")} alt="" style={{ width: 48, height: 48, objectFit: "contain", borderRadius: 12 }} /></span>
+            <span className="th-empty__title">
+              연결된 반이 없어요
+            </span>
+            <span className="th-empty__sub">
+              반을 만들고 학생을 연결하면 오늘 출석과 알림장이 여기에 표시돼요.
+            </span>
+            <button type="button" className="th-empty__cta hy-press" onClick={openCreate}>
+              반 만들기
+            </button>
+          </div>
+        )}
+
+        {!loading && !genuineError && !notReady && (
           <>
             {/* 반 요약 히어로 */}
             <div className="th-hero">

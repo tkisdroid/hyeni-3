@@ -287,6 +287,7 @@ export function ParentLocation() {
     data: history,
     isFetching: historyFetching,
     isError: historyError,
+    refetch: refetchHistory,
   } = useLocationHistory(historyRange.start, historyRange.end, historyEnabled);
   const visibleHistory = canShowHistory ? history : undefined;
 
@@ -614,12 +615,19 @@ export function ParentLocation() {
 
       {/* 오늘경로 — 로딩/실패/빈 상태(프리미엄, 정직 안내). */}
       {(histLoading || histErrored || histEmpty) && (
-        <div className="pl-histmsg">
-          {histErrored
-            ? "이동 기록을 불러오지 못했어요"
-            : histLoading
-              ? "오늘 이동 기록을 불러오는 중…"
-              : "오늘 이동 기록이 아직 없어요"}
+        <div className={`pl-histmsg${histErrored ? " pl-histmsg--error" : ""}`} role={histErrored ? "alert" : "status"}>
+          <span>
+            {histErrored
+              ? "이동 기록을 불러오지 못했어요"
+              : histLoading
+                ? "오늘 이동 기록을 불러오는 중…"
+                : "오늘 이동 기록이 아직 없어요"}
+          </span>
+          {histErrored && (
+            <button type="button" className="pl-lock__retry hy-press" onClick={() => void refetchHistory()}>
+              다시 시도
+            </button>
+          )}
         </div>
       )}
 

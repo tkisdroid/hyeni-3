@@ -100,6 +100,14 @@
   color: var(--fg-muted);
 
 }
+.ci-qr-skeleton--error {
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+.ci-qr-skeleton--error .ci-regen {
+  margin-top: 0;
+}
 
 /* ── 코드 + 만료 타이머 ─────────────────────────────────────────────────── */
 .ci-code-row {

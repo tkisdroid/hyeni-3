@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useId, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, LogOut, ShieldAlert, KeyRound } from "lucide-react";
 import { asset } from "@/lib/assets";
@@ -9,6 +9,7 @@ import { qk } from "@/queries/keys";
 import { useAccount, useChangePassword, useDeleteAccount } from "@/queries/useAccount";
 import { useUpdateProfile } from "@/queries/useFamily";
 import { SocialLinks } from "./SocialLinks";
+import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import "./ParentAccount.css";
 
 /** P-30 계정·프로필 — 프로필 편집·로그인 정보·로그아웃·회원 탈퇴. */
@@ -30,6 +31,24 @@ export function ParentAccount() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
+  const deleteTitleId = useId();
+  const deleteDescriptionId = useId();
+  const passwordTitleId = useId();
+  const passwordDescriptionId = useId();
+  const deleteCancelRef = useRef<HTMLButtonElement>(null);
+  const currentPasswordRef = useRef<HTMLInputElement>(null);
+  const deleteDialogRef = useDialogFocusLifecycle<HTMLDivElement>({
+    open: confirmDelete,
+    onClose: () => setConfirmDelete(false),
+    initialFocusRef: deleteCancelRef,
+    canClose: () => !deleteAccount.isPending,
+  });
+  const passwordDialogRef = useDialogFocusLifecycle<HTMLDivElement>({
+    open: passwordOpen,
+    onClose: () => closePassword(),
+    initialFocusRef: currentPasswordRef,
+    canClose: () => !changePassword.isPending,
+  });
 
   // me 가 도착하면 편집 폼을 1회 seed(이후 사용자가 입력 중이면 덮어쓰지 않음).
   useEffect(() => {
@@ -253,7 +272,15 @@ export function ParentAccount() {
 
       {/* 회원 탈퇴 확인 모달 */}
       {confirmDelete && (
-        <div className="pa-modal" role="dialog" aria-modal="true">
+        <div
+          ref={deleteDialogRef}
+          className="pa-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={deleteTitleId}
+          aria-describedby={deleteDescriptionId}
+          tabIndex={-1}
+        >
           <button
             type="button"
             className="pa-modal__scrim"
@@ -262,14 +289,15 @@ export function ParentAccount() {
           />
           <div className="pa-modal__card">
             <div className="pa-modal__emoji">🗑️</div>
-            <div className="pa-modal__title">정말 탈퇴하시겠어요?</div>
-            <p className="pa-modal__body">
+            <div id={deleteTitleId} className="pa-modal__title">정말 탈퇴하시겠어요?</div>
+            <p id={deleteDescriptionId} className="pa-modal__body">
               {isPrimary
                 ? "가족의 일정·위치 이력·대화·아이 계정이 모두 영구 삭제되며 복구할 수 없어요."
                 : "내 계정과 이 가족에서의 정보가 삭제돼요. 가족의 다른 데이터는 유지돼요."}
             </p>
             <div className="pa-modal__btns">
               <button
+                ref={deleteCancelRef}
                 type="button"
                 className="pa-modal__btn pa-modal__btn--ghost hy-press"
                 onClick={() => setConfirmDelete(false)}
@@ -292,7 +320,15 @@ export function ParentAccount() {
 
       {/* 비밀번호 변경 모달 */}
       {passwordOpen && (
-        <div className="pa-modal" role="dialog" aria-modal="true">
+        <div
+          ref={passwordDialogRef}
+          className="pa-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={passwordTitleId}
+          aria-describedby={passwordDescriptionId}
+          tabIndex={-1}
+        >
           <button
             type="button"
             className="pa-modal__scrim"
@@ -303,9 +339,10 @@ export function ParentAccount() {
             <div className="pa-modal__emoji">
               <KeyRound size={34} strokeWidth={2.2} />
             </div>
-            <div className="pa-modal__title">비밀번호 변경</div>
-            <div className="pa-modal__fields">
+            <div id={passwordTitleId} className="pa-modal__title">비밀번호 변경</div>
+            <div id={passwordDescriptionId} className="pa-modal__fields">
               <input
+                ref={currentPasswordRef}
                 className="pa-modal__input"
                 type="password"
                 autoComplete="current-password"

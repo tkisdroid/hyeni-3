@@ -187,6 +187,18 @@
   color: var(--fg-muted);
 }
 
+.sb-state button {
+  display: block;
+  min-height: 44px;
+  margin: 12px auto 0;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--hy-accent);
+  color: #fff;
+  font: inherit;
+}
+
 @keyframes sb-wiggle {
   0%,
   100% {

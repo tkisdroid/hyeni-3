@@ -52,6 +52,11 @@ export function PlaydateAccept() {
   const incoming = (pendingQ.data ?? []).filter(
     (i) => i.direction === "incoming" && i.status === "pending",
   );
+  const playdateLoading = pendingQ.isLoading || activeQ.isLoading;
+  const playdateError = pendingQ.isError || activeQ.isError;
+  const retryPlaydates = async () => {
+    await Promise.all([pendingQ.refetch(), activeQ.refetch()]);
+  };
 
   const onAccept = async (invite: PlaydateInvite) => {
     setBusyId(invite.id);
@@ -112,7 +117,19 @@ export function PlaydateAccept() {
           </div>
         ) : null}
 
-        {incoming.length === 0 ? (
+        {playdateLoading ? (
+          <div className="pa-empty" role="status">
+            <div className="pa-empty__title">놀이 요청을 불러오는 중이야…</div>
+          </div>
+        ) : playdateError ? (
+          <div className="pa-empty" role="alert">
+            <div className="pa-empty__title">놀이 요청을 못 불러왔어</div>
+            <div className="pa-empty__sub">인터넷을 확인하고 다시 눌러줘.</div>
+            <button type="button" className="pa-btn-accept hy-press" onClick={() => void retryPlaydates()}>
+              다시 불러오기
+            </button>
+          </div>
+        ) : incoming.length === 0 ? (
           <div className="pa-empty">
             <img className="pa-empty__img" src={asset("ui/menu-friend-playdate.webp")} alt="" />
             <div className="pa-empty__title">받은 놀이 요청이 없어</div>

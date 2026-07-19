@@ -126,7 +126,10 @@ export function AiFriendChat() {
     return out.slice(0, 4);
   }, [nextEvent, pendingSupply]);
 
-  const { data: messagesData } = useAiMessages(userId);
+  const messagesQuery = useAiMessages(userId);
+  const messagesData = useMemo(() => messagesQuery.data ?? [], [messagesQuery.data]);
+  const chatLoading = messagesQuery.isLoading;
+  const chatError = messagesQuery.isError;
   const aiUsage = useAiUsageToday(userId);
   const sendChat = useSendChildChat();
   const reportAiMessage = useReportAiMessage();
@@ -141,10 +144,14 @@ export function AiFriendChat() {
   const [input, setInput] = useState("");
   const [reportTarget, setReportTarget] = useState<ChatBubble | null>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
+  const retryChat = async () => {
+    const result = await messagesQuery.refetch();
+    if (result.data) setSeeded(false);
+  };
 
   // 서버 기록이 도착하면 1회 시드(자동 전송 아님 — 표시만). 비어 있으면 인사 말풍선을 남긴다.
   useEffect(() => {
-    if (seeded || !messagesData) return;
+    if (seeded || !messagesQuery.data) return;
     const bubbles = messagesToBubbles(messagesData);
     setMessages(bubbles.length > 0 ? bubbles : [greeting]);
     setSeeded(true);
@@ -230,28 +237,42 @@ export function AiFriendChat() {
       </header>
 
       <div ref={messagesRef} className="afc-msgs">
-        {shown.map((m) => (
-          <div key={m.id} className={`afc-row afc-row--${m.role}`}>
-            {m.role === "ai" && (
-              <div className="afc-mini">
-                <img src={animalSrc} alt="" />
-              </div>
-            )}
-            <div className="afc-bubble-stack">
-              <div className={`afc-bubble afc-bubble--${m.role}`}>{m.text}</div>
-              {m.role === "ai" && m.reportable && (
-                <button
-                  type="button"
-                  className="afc-report-link hy-press"
-                  onClick={() => setReportTarget(m)}
-                >
-                  <Flag size={13} strokeWidth={2.2} aria-hidden="true" />
-                  이 답변 신고
-                </button>
-              )}
-            </div>
+        {chatLoading ? (
+          <div className="afc-query-state" role="status">지난 이야기를 불러오는 중이야…</div>
+        ) : chatError ? (
+          <div className="afc-query-state" role="alert">
+            <span>지난 이야기를 못 불러왔어.</span>
+            <button type="button" className="hy-press" onClick={() => void retryChat()}>다시 불러오기</button>
           </div>
-        ))}
+        ) : (
+          <>
+            {messagesData.length === 0 && (
+              <div className="afc-query-state">아직 나눈 이야기가 없어. 먼저 말을 걸어봐!</div>
+            )}
+            {shown.map((m) => (
+              <div key={m.id} className={`afc-row afc-row--${m.role}`}>
+                {m.role === "ai" && (
+                  <div className="afc-mini">
+                    <img src={animalSrc} alt="" />
+                  </div>
+                )}
+                <div className="afc-bubble-stack">
+                  <div className={`afc-bubble afc-bubble--${m.role}`}>{m.text}</div>
+                  {m.role === "ai" && m.reportable && (
+                    <button
+                      type="button"
+                      className="afc-report-link hy-press"
+                      onClick={() => setReportTarget(m)}
+                    >
+                      <Flag size={13} strokeWidth={2.2} aria-hidden="true" />
+                      이 답변 신고
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </>
+        )}
         {/* AI 친구 응답 대기 중 — 타이핑 인디케이터(전송 진행 중임을 정직하게 표시). */}
         {sendChat.isPending && (
           <div className="afc-row afc-row--ai">

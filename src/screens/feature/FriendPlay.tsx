@@ -271,7 +271,16 @@ export function FriendPlay() {
               <div className="fp-card__title">
                 근처에 있는 친구 <span>{candidates.length}명</span>
               </div>
-              {candidates.length > 0 ? (
+              {candidatesQ.isLoading ? (
+                <div className="fp-empty">근처 친구를 찾는 중…</div>
+              ) : candidatesQ.isError ? (
+                <div className="fp-empty" role="alert">
+                  <span>{notice ?? "근처 친구를 찾지 못했어요."}</span>
+                  <button type="button" className="fp-cta hy-press" onClick={() => void candidatesQ.refetch()}>
+                    다시 시도
+                  </button>
+                </div>
+              ) : candidates.length > 0 ? (
                 <div className="fp-friends">
                   {candidates.map((f, i) => (
                     <div key={f.child_user_id} className="fp-friend">

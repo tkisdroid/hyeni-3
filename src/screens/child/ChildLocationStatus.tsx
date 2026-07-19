@@ -37,7 +37,7 @@ export function ChildLocationStatus() {
   const navigate = useNavigate();
   const { show } = useToast();
   const { userId, familyId } = useAuth();
-  const { data: locations, refetch, isFetching } = useChildLocations();
+  const { data: locations, refetch, isFetching, isLoading, isError } = useChildLocations();
 
   const [perm, setPerm] = useState<PermState>("unknown");
   const [working, setWorking] = useState(false);
@@ -47,10 +47,13 @@ export function ChildLocationStatus() {
 
   // 내 위치 행(본인 user_id). 아이 세션에서도 가족 접근 권한으로 조회된다.
   const myLoc = useMemo(() => {
-    if (!locations) return null;
-    if (userId) return locations.find((l) => l.user_id === userId) ?? null;
-    return locations[0] ?? null;
+    if (!locations || !userId) return null;
+    return locations.find((l) => l.user_id === userId) ?? null;
   }, [locations, userId]);
+  const location = myLoc;
+  const refetchLocation = async () => {
+    await refetch();
+  };
 
   const fresh = myLoc ? formatFreshness(myLoc.updated_at, now) : null;
   const isFreshEnough = fresh != null && fresh.status !== "stale";
@@ -153,7 +156,24 @@ export function ChildLocationStatus() {
         <span className="cls-title">내 위치</span>
       </header>
 
+      {isLoading ? (
+        <div className="cls-body" role="status">
+          <div className="cls-heading"><div className="cls-heading__title">내 위치를 확인하는 중이야…</div></div>
+        </div>
+      ) : isError ? (
+        <div className="cls-body" role="alert">
+          <div className="cls-heading">
+            <div className="cls-heading__title">위치 상태를 못 불러왔어</div>
+            <div className="cls-heading__desc">인터넷을 확인하고 다시 눌러줘.</div>
+          </div>
+          <button type="button" className="cls-cta hy-press" onClick={() => void refetchLocation()}>
+            <RefreshCw size={18} strokeWidth={2.4} /> 다시 불러오기
+          </button>
+        </div>
+      ) : (
       <div className="cls-body">
+        {!location && <div className="cls-heading__desc" role="status">아직 보낸 위치가 없어.</div>}
+        {location && <span className="sr-only">최근 위치 상태 확인됨</span>}
         {/* 상태 마스코트 */}
         <div className={`cls-orb cls-orb--${view.tone}`}>
           {view.kind === "sending" && <span className="cls-live" aria-hidden="true" />}
@@ -189,6 +209,7 @@ export function ChildLocationStatus() {
           {busy ? "확인 중…" : view.kind === "sending" ? "지금 새로고침" : "위치 켜기"}
         </button>
       </div>
+      )}
     </div>
   );
 }

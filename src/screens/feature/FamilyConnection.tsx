@@ -31,7 +31,7 @@ export function FamilyConnection() {
   const { show } = useToast();
   const now = useMemo(() => new Date(), []);
 
-  const { data: family, isLoading, isError, error } = useMyFamily();
+  const { data: family, isLoading, isError, error, refetch: refetchFamily } = useMyFamily();
   const { data: locations } = useChildLocations();
   const unpair = useUnpairChild();
 
@@ -97,6 +97,9 @@ export function FamilyConnection() {
           <div className="fc-state fc-state--error">
             연결 정보를 불러오지 못했어요
             {error instanceof Error ? ` (${error.message})` : ""}
+            <button type="button" className="fc-ghost hy-press" onClick={() => void refetchFamily()}>
+              다시 시도
+            </button>
           </div>
         )}
 
@@ -111,11 +114,11 @@ export function FamilyConnection() {
               />
               <div className="fc-hero__main">
                 <div className="fc-hero__title">
-                  {connected.length
-                    ? connected.length === 1
+                  {connected.length === 0
+                    ? "아직 연결된 아이가 없어요"
+                    : connected.length === 1
                       ? `${connected[0].name || "아이"}와 연결 완료!`
-                      : `아이 ${connected.length}명과 연결됨`
-                    : "아직 연결된 아이가 없어요"}
+                      : `아이 ${connected.length}명과 연결됨`}
                 </div>
                 <div className="fc-hero__sub">
                   {connected.length

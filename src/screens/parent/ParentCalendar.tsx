@@ -64,7 +64,7 @@ export function ParentCalendar() {
   const [view, setView] = useState<ViewMonth>({ year: TODAY.year, month: TODAY.month });
   const [selected, setSelected] = useState<SelDate>({ ...TODAY });
 
-  const { data: events, isLoading, isError } = useEvents();
+  const { data: events, isLoading, isError, refetch: refetchEvents } = useEvents();
   const { data: family } = useMyFamily();
   const { data: savedPlaces } = useSavedPlaces();
   const entitlement = useEntitlement();
@@ -344,6 +344,9 @@ export function ParentCalendar() {
         ) : isError ? (
           <div className="pc-empty">
             <div className="pc-empty__title">일정을 불러오지 못했어요</div>
+            <button type="button" className="hy-section-action hy-press" onClick={() => void refetchEvents()}>
+              다시 시도
+            </button>
           </div>
         ) : selEvents.length > 0 ? (
           <div className="pc-events">

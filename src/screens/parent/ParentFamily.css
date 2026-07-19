@@ -115,6 +115,14 @@
   flex-direction: column;
   gap: 12px;
 }
+.pf-children__empty {
+  padding: 8px 4px;
+  color: var(--fg-muted);
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+  text-align: center;
+}
 .pf-child {
   text-align: left;
   background: #fff;

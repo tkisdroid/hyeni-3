@@ -115,9 +115,15 @@ export function TeacherStudents() {
     );
   };
 
-  const loading = classesQ.isLoading || rosterQ.isLoading;
-  const genuineError = classesQ.isError && !isMissingFunction(classesQ.error);
-  const notReady = !loading && !classId;
+  const studentsLoading = classesQ.isLoading
+    || (!!classId && (rosterQ.isLoading || attendanceQ.isLoading));
+  const studentsError = (classesQ.isError && !isMissingFunction(classesQ.error))
+    || rosterQ.isError
+    || attendanceQ.isError;
+  const notReady = !studentsLoading && !classId;
+  const retryTeacherStudents = async () => {
+    await Promise.all([classesQ.refetch(), rosterQ.refetch(), attendanceQ.refetch()]);
+  };
   const [filterNotArrivedOnly, setFilterNotArrivedOnly] = useState(false);
 
   const isNotArrived = (status: StudentView["status"]) =>
@@ -143,23 +149,31 @@ export function TeacherStudents() {
       </div>
 
       <div className="ts-body">
-        {loading && <div className="ts-empty ts-empty--soft">학생 명단을 불러오는 중…</div>}
+        {studentsLoading && <div className="ts-empty ts-empty--soft">학생 명단을 불러오는 중…</div>}
 
-        {notReady && (
+        {!studentsLoading && studentsError && (
+          <div className="ts-empty" role="alert">
+            <span className="ts-empty__title">학생 명단을 불러오지 못했어요</span>
+            <span className="ts-empty__sub">네트워크 연결을 확인한 뒤 다시 시도해 주세요.</span>
+            <button type="button" className="ts-filter__btn hy-press" onClick={() => void retryTeacherStudents()}>
+              다시 시도
+            </button>
+          </div>
+        )}
+
+        {notReady && !studentsError && (
           <div className="ts-empty">
             <span className="ts-empty__emoji"><img src={asset("mascot/teacher-glasses.webp")} alt="" style={{ width: 48, height: 48, objectFit: "contain", borderRadius: 12 }} /></span>
             <span className="ts-empty__title">
-              {genuineError ? "잠시 후 다시 시도해 주세요" : "연결된 반이 없어요"}
+              연결된 반이 없어요
             </span>
             <span className="ts-empty__sub">
-              {genuineError
-                ? "학생 명단을 불러오지 못했어요."
-                : "반을 만들고 학생을 연결하면 여기에 명단이 표시돼요."}
+              반을 만들고 학생을 연결하면 여기에 명단이 표시돼요.
             </span>
           </div>
         )}
 
-        {!loading && !notReady && (
+        {!studentsLoading && !studentsError && !notReady && (
           <>
             <div className="ts-meta">
               {className} · 학생 <span className="ts-meta__count">{students.length}명</span>

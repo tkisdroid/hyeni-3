@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft, Bell } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { useActiveChild } from "@/app/activeChild";
+import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import { useMyFamily } from "@/queries/useFamily";
 import {
   useForceRingActive,
@@ -82,6 +83,15 @@ export function RemoteRing() {
 
   const [durationSec, setDurationSec] = useState<number>(30);
   const [showConfirm, setShowConfirm] = useState(false);
+  const confirmTitleId = useId();
+  const confirmDescriptionId = useId();
+  const confirmCancelRef = useRef<HTMLButtonElement>(null);
+  const confirmDialogRef = useDialogFocusLifecycle<HTMLDivElement>({
+    open: showConfirm,
+    onClose: () => setShowConfirm(false),
+    initialFocusRef: confirmCancelRef,
+    canClose: () => !trigger.isPending,
+  });
 
   // 진행 중(정지 전) 여부 = 서버 active 행 존재 + stopped_at 없음 + 10분 이내(zombie 방어).
   // 서버도 zombie 를 거르지만, 캐시/구버전 응답이 남아도 12일치 "울린 시간"이 뜨지 않게 이중 방어.
@@ -282,22 +292,33 @@ export function RemoteRing() {
 
       {/* 확인 모달 */}
       {showConfirm && (
-        <div className="rr-modal-backdrop" onClick={() => setShowConfirm(false)}>
-          <div className="rr-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="rr-modal-backdrop" onClick={() => !trigger.isPending && setShowConfirm(false)}>
+          <div
+            ref={confirmDialogRef}
+            className="rr-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={confirmTitleId}
+            aria-describedby={confirmDescriptionId}
+            tabIndex={-1}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="rr-modal-emoji" aria-hidden="true">
               <Bell size={24} strokeWidth={2.4} />
             </div>
-            <div className="rr-modal-title">{childName} 기기에서 울릴까요?</div>
-            <div className="rr-modal-sub">
+            <div id={confirmTitleId} className="rr-modal-title">{childName} 기기에서 울릴까요?</div>
+            <div id={confirmDescriptionId} className="rr-modal-sub">
               {durationLabel(durationSec)} 동안 최대 볼륨으로 울리고,
               <br />
               아이에게 알림이 가요.
             </div>
             <div className="rr-modal-actions">
               <button
+                ref={confirmCancelRef}
                 type="button"
                 className="rr-modal-cancel hy-press"
                 onClick={() => setShowConfirm(false)}
+                disabled={trigger.isPending}
               >
                 취소
               </button>

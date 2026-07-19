@@ -45,7 +45,12 @@ export function ChildInvite() {
   const navigate = useNavigate();
   const { show } = useToast();
   // 대기 화면이므로 6초 폴링으로 아이 연결을 감지한다.
-  const { data: family, isLoading } = useMyFamily({ pollMs: 6000 });
+  const {
+    data: family,
+    isLoading,
+    isError,
+    refetch: refetchFamily,
+  } = useMyFamily({ pollMs: 6000 });
   const regen = useRegeneratePairCode();
 
   const pairCode = family?.pairCode ?? "";
@@ -152,11 +157,20 @@ export function ChildInvite() {
         <div className="ci-qr-card">
           {isLoading ? (
             <div className="ci-qr-skeleton">불러오는 중…</div>
+          ) : isError ? (
+            <div className="ci-qr-skeleton ci-qr-skeleton--error" role="alert">
+              <span>연결 코드를 불러오지 못했어요</span>
+              <button type="button" className="ci-regen hy-press" onClick={() => void refetchFamily()}>
+                다시 시도
+              </button>
+            </div>
           ) : pairLink && !expired ? (
             <QrCode value={pairLink} size={212} label="아이 연결 QR 코드" />
+          ) : !pairCode ? (
+            <div className="ci-qr-skeleton" role="status">사용할 수 있는 연결 코드가 없어요</div>
           ) : (
             <div className="ci-qr-skeleton">
-              {expired ? "코드가 만료됐어요\n새 코드를 발급해 주세요" : "코드를 준비하지 못했어요"}
+              코드가 만료됐어요{"\n"}새 코드를 발급해 주세요
             </div>
           )}
         </div>

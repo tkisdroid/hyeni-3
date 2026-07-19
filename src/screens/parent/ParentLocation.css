@@ -772,6 +772,18 @@
   color: #6d6469;
   white-space: nowrap;
 }
+.pl-histmsg--error {
+  display: grid;
+  width: min(calc(100% - 32px), 320px);
+  gap: 8px;
+  justify-items: center;
+  white-space: normal;
+  text-align: center;
+}
+.pl-histmsg--error .pl-lock__retry {
+  min-height: 44px;
+  margin-top: 0;
+}
 
 /* ── 오늘 경로 시간대 슬라이더 ─────────────────────────────────────────── */
 .pl-scrub {

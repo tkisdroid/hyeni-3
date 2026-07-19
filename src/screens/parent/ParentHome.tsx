@@ -223,6 +223,7 @@ export function ParentHome() {
         familyQuery.refetch(),
         locationsQuery.refetch(),
         placesQuery.refetch(),
+        suppliesQuery.refetch(),
       ]);
       if (results.some((r) => r.isError)) {
         show("갱신에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️");
@@ -467,6 +468,13 @@ export function ParentHome() {
             {eventsQuery.isLoading ? (
               <div className="ph-sched-row" style={{ justifyContent: "center" }}>
                 <Loading label="일정을 불러오는 중" />
+              </div>
+            ) : eventsQuery.isError ? (
+              <div className="ph-sched-row" style={{ justifyContent: "center", gap: 8 }} role="alert">
+                <span>일정을 불러오지 못했어요</span>
+                <button type="button" className="hy-section-action hy-press" onClick={() => void handleRefresh()}>
+                  다시 시도
+                </button>
               </div>
             ) : todayEvents.length === 0 ? (
               <div className="ph-sched-row" style={{ color: "var(--fg-muted)", fontSize: "var(--type-body-sm)", fontWeight: 600, justifyContent: "center" }}>
@@ -804,6 +812,13 @@ export function ParentHome() {
                 style={{ justifyContent: "center" }}
               >
                 <Loading label="준비물을 불러오는 중" />
+              </div>
+            ) : suppliesQuery.isError ? (
+              <div className="ph-prep-row" style={{ justifyContent: "center", gap: 8 }} role="alert">
+                <span>준비물을 불러오지 못했어요</span>
+                <button type="button" className="hy-section-action hy-press" onClick={() => void handleRefresh()}>
+                  다시 시도
+                </button>
               </div>
             ) : prep.length === 0 ? (
               <div

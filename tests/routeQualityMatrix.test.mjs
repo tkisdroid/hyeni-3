@@ -1,0 +1,331 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import tsModule from "typescript";
+
+const ts = tsModule.default ?? tsModule;
+const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const read = (path) => readFileSync(resolve(rootDir, path), "utf8");
+
+const queryStates = (loading, error, empty, success, retry) => ({
+  loading,
+  error,
+  empty,
+  success,
+  retry,
+});
+
+const route = (
+  path,
+  screen,
+  source,
+  guard,
+  availability,
+  kind,
+  states,
+  back,
+  tone,
+  dialog = "none",
+) => ({ path, screen, source, guard, availability, kind, states, back, tone, dialog });
+
+// App.tsx에서 실제 렌더되는 58개 사용자 화면의 출시 품질 계약이다.
+// 같은 MemoChat 소스를 쓰더라도 부모/아이 라우트는 guard·말투 계약이 달라 별도 행으로 둔다.
+const routeQualityMatrix = [
+  route("parent/home", "ParentHome", "src/screens/parent/ParentHome.tsx", "parent", "all", "query", queryStates(/eventsQuery\.isLoading/, /eventsQuery\.isError/, /todayEvents\.length === 0/, /todayEvents\.map/, /void handleRefresh\(\)/), "shell", "parent-formal"),
+  route("parent/calendar", "ParentCalendar", "src/screens/parent/ParentCalendar.tsx", "parent", "all", "query", queryStates(/isLoading \? \(/, /isError \? \(/, /selEvents\.length > 0/, /selEvents\.map/, /void refetchEvents\(\)/), "shell", "parent-formal"),
+  route("parent/location", "ParentLocation", "src/screens/parent/ParentLocation.tsx", "parent", "all", "query", queryStates(/histLoading/, /histErrored/, /histEmpty/, /timedTrail\.length > 0/, /void refetchHistory\(\)/), "shell", "parent-formal"),
+  route("parent/memo", "MemoChat", "src/screens/shared/MemoChat.tsx", "parent", "all", "query", queryStates(/thread\.isLoading/, /thread\.isError/, /showEmpty/, /messages\.map/, /void thread\.refetch\(\)/), "shell", "role-aware"),
+  route("parent/settings", "ParentSettings", "src/screens/parent/ParentSettings.tsx", "parent", "all", "mutation", null, "shell", "parent-formal"),
+
+  route("child/home", "ChildHome", "src/screens/child/ChildHome.tsx", "child", "all", "query", queryStates(/homeLoading/, /homeError/, /adventure\.nodes\.length === 0/, /adventure\.nodes\.map/, /void retryHomeData\(\)/), "shell", "child-informal"),
+  route("child/sticker", "StickerBook", "src/screens/child/StickerBook.tsx", "child", "all", "query", queryStates(/received\.isLoading/, /received\.isError/, /book\.gotCount === 0/, /book\.slots\.map/, /void received\.refetch\(\)/), "shell", "child-informal"),
+  route("child/memo", "MemoChat", "src/screens/shared/MemoChat.tsx", "child", "all", "query", queryStates(/thread\.isLoading/, /thread\.isError/, /showEmpty/, /messages\.map/, /void thread\.refetch\(\)/), "shell", "role-aware"),
+
+  route("teacher/home", "TeacherHome", "src/screens/teacher/TeacherHome.tsx", "teacher", "dev", "query", queryStates(/loading/, /genuineError/, /preview\.length === 0/, /preview\.map/, /void retryTeacherHome\(\)/), "shell", "teacher-dev"),
+  route("teacher/students", "TeacherStudents", "src/screens/teacher/TeacherStudents.tsx", "teacher", "dev", "query", queryStates(/studentsLoading/, /studentsError/, /visibleStudents\.length === 0/, /visibleStudents\.map/, /void retryTeacherStudents\(\)/), "shell", "teacher-dev"),
+  route("teacher/timetable", "TeacherTimetable", "src/screens/teacher/TeacherTimetable.tsx", "teacher", "dev", "query", queryStates(/scheduleQ\.isLoading/, /scheduleQ\.isError/, /rows\.length === 0/, /rows\.map/, /scheduleQ\.refetch\(\)/), "shell", "teacher-dev"),
+  route("teacher/settings", "TeacherSettings", "src/screens/teacher/TeacherSettings.tsx", "teacher", "dev", "mutation", null, "shell", "teacher-dev"),
+  route("teacher/*", "TeacherReleaseGate", "src/screens/teacher/TeacherReleaseGate.tsx", "teacher", "production", "mutation", null, "none", "teacher-release"),
+
+  route("onboarding", "Onboarding", "src/screens/onboarding/Onboarding.tsx", "guest", "all", "mutation", null, "none", "role-aware"),
+  route("parent/family", "ParentFamily", "src/screens/parent/ParentFamily.tsx", "parent", "all", "query", queryStates(/isLoading/, /isError/, /view\.children\.length === 0/, /view\.children\.map/, /void refetchFamily\(\)/), "safe", "parent-formal"),
+  route("subscription", "Subscription", "src/screens/feature/Subscription.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
+  route("trial-lock", "TrialLock", "src/screens/feature/TrialLock.tsx", "parent", "all", "static", null, "screen", "parent-formal"),
+  route("notifications", "Notifications", "src/screens/feature/Notifications.tsx", "parent", "all", "query", queryStates(/isLoading/, /isError/, /groups\.length === 0/, /groups\.map/, /refetch\(\)/), "safe", "parent-formal"),
+  route("remote-audio", "RemoteAudio", "src/screens/feature/RemoteAudio.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
+  route("place-manager", "PlaceManager", "src/screens/feature/PlaceManager.tsx", "parent", "all", "query", queryStates(/placesLoading/, /placesError/, /places\.length === 0/, /places\.map/, /void retryPlaces\(\)/), "screen", "parent-formal"),
+  route("friend-play", "FriendPlay", "src/screens/feature/FriendPlay.tsx", "parent", "all", "query", queryStates(/candidatesQ\.isLoading/, /candidatesQ\.isError/, /candidates\.length === 0/, /candidates\.map/, /void candidatesQ\.refetch\(\)/), "safe", "parent-formal"),
+  route("ai-schedule", "AiSchedule", "src/screens/feature/AiSchedule.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
+  route("ai-credit", "AiCredit", "src/screens/feature/AiCredit.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
+  route("phone-setup", "PhoneSetup", "src/screens/feature/PhoneSetup.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
+  route("sticker-send", "StickerSend", "src/screens/feature/StickerSend.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
+  route("profile-edit", "ProfileEdit", "src/screens/feature/ProfileEdit.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
+  route("place-form", "PlaceForm", "src/screens/feature/PlaceForm.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
+  route("child-invite", "ChildInvite", "src/screens/feature/ChildInvite.tsx", "parent", "all", "query", queryStates(/isLoading/, /isError/, /!pairCode/, /pairLink/, /void refetchFamily\(\)/), "screen", "parent-formal"),
+  route("event-form", "EventForm", "src/screens/parent/EventForm.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
+  route("danger-zone-form", "DangerZoneForm", "src/screens/feature/DangerZoneForm.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
+  route("location-status", "LocationStatus", "src/screens/feature/LocationStatus.tsx", "parent", "all", "query", queryStates(/\? "loading"/, /\? "error"/, /!loc/, /loc && fresh/, /void retry\(\)/), "screen", "parent-formal"),
+  route("child-detail", "ChildDetail", "src/screens/parent/ChildDetail.tsx", "parent", "all", "query", queryStates(/detailLoading/, /detailError/, /!rawChild/, /title=\{name\}/, /void retryChildDetail\(\)/), "screen", "parent-formal"),
+  route("pairing-wizard", "PairingWizard", "src/screens/feature/PairingWizard.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
+  route("family-connection", "FamilyConnection", "src/screens/feature/FamilyConnection.tsx", "parent", "all", "query", queryStates(/isLoading/, /isError/, /connected\.length === 0/, /connected\.map/, /void refetchFamily\(\)/), "screen", "parent-formal"),
+  route("location-settings", "LocationSettings", "src/screens/feature/LocationSettings.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
+  route("account", "ParentAccount", "src/screens/parent/ParentAccount.tsx", "parent", "all", "mutation", null, "screen", "parent-formal", "focus-trapped"),
+  route("data-sync", "DataSync", "src/screens/feature/DataSync.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
+  route("notification-settings", "NotificationSettings", "src/screens/feature/NotificationSettings.tsx", "parent", "all", "mutation", null, "screen", "parent-formal"),
+  route("arrival-alerts", "ArrivalAlerts", "src/screens/feature/ArrivalAlerts.tsx", "parent", "all", "query", queryStates(/isLoading/, /isError/, /list\.length === 0/, /list\.map/, /refetch\(\)/), "screen", "parent-formal"),
+  route("danger-alert", "DangerAlert", "src/screens/feature/DangerAlert.tsx", "parent", "all", "query", queryStates(/isLoading/, /isError/, /!latest/, /latest &&/, /refetch\(\)/), "safe", "parent-formal"),
+  route("day-summary", "DaySummary", "src/screens/feature/DaySummary.tsx", "parent", "all", "query", queryStates(/isLoading/, /isError/, /isEmpty/, /rows\.map/, /void refetchSummary\(\)/), "screen", "parent-formal"),
+  route("daily-report", "DailySafetyReport", "src/screens/feature/DailySafetyReport.tsx", "parent", "all", "query", queryStates(/safetySourceIsLoading/, /safetySourceHasError/, /todayEvents\.length === 0/, /overviewCards\.map/, /source\.refetch\(\)/), "screen", "parent-formal"),
+  route("weekly-report", "WeeklyFamilyReport", "src/screens/feature/WeeklyFamilyReport.tsx", "parent", "all", "query", queryStates(/queryState === "loading"/, /queryState === "error"/, /summary\.busiestDay \?/, /summary \? \(/, /void Promise\.all/), "screen", "parent-formal"),
+  route("remote-audio-audit", "RemoteAudioAudit", "src/screens/feature/RemoteAudioAudit.tsx", "parent", "all", "query", queryStates(/audit\.isLoading/, /audit\.isError/, /items\.length === 0/, /items\.map/, /audit\.refetch\(\)/), "screen", "parent-formal"),
+  route("remote-ring", "RemoteRing", "src/screens/feature/RemoteRing.tsx", "parent", "all", "mutation", null, "screen", "parent-formal", "focus-trapped"),
+  route("sos-receive", "SosReceive", "src/screens/feature/SosReceive.tsx", "parent", "all", "query", queryStates(/sosLoading/, /sosLoadError/, /!latest && !sosLoading && !sosLoadError/, /\{latest && \(/, /void refetchSos\(\)/), "safe", "parent-formal"),
+
+  route("child/sos", "ChildSos", "src/screens/child/ChildSos.tsx", "child", "all", "mutation", null, "screen", "child-informal"),
+  route("child/ai-friend", "AiFriendChat", "src/screens/child/AiFriendChat.tsx", "child", "all", "query", queryStates(/chatLoading/, /chatError/, /messagesData\.length === 0/, /shown\.map/, /void retryChat\(\)/), "screen", "child-informal"),
+  route("child/location-status", "ChildLocationStatus", "src/screens/child/ChildLocationStatus.tsx", "child", "all", "query", queryStates(/isLoading/, /isError/, /!location/, /location &&/, /void refetchLocation\(\)/), "screen", "child-informal"),
+  route("child/settings", "ChildSettings", "src/screens/child/ChildSettings.tsx", "child", "all", "mutation", null, "screen", "child-informal"),
+  route("child/ai-friend-setup", "AiFriendSetup", "src/screens/child/AiFriendSetup.tsx", "child", "all", "mutation", null, "screen", "child-informal"),
+  route("playdate-accept", "PlaydateAccept", "src/screens/feature/PlaydateAccept.tsx", "child", "all", "query", queryStates(/playdateLoading/, /playdateError/, /incoming\.length === 0/, /incoming\.map/, /void retryPlaydates\(\)/), "safe", "child-informal"),
+
+  route("teacher/notice", "TeacherNotice", "src/screens/teacher/TeacherNotice.tsx", "teacher", "dev", "mutation", null, "screen", "teacher-dev"),
+  route("feedback", "Feedback", "src/screens/feature/Feedback.tsx", "authenticated", "all", "mutation", null, "screen", "role-aware"),
+  route("supplies", "Supplies", "src/screens/feature/Supplies.tsx", "parent-child", "all", "query", queryStates(/isLoading/, /isError/, /sec\.list\.length === 0/, /sec\.list\.map/, /void Promise\.all/), "screen", "role-aware"),
+  route("route", "RouteView", "src/screens/feature/RouteView.tsx", "parent-child", "all", "query", queryStates(/routeFetching/, /routeError/, /routeState === "no-child" \|\| routeState === "no-dest"/, /steps\.map/, /routeRefetch\(\)/), "screen", "role-aware"),
+  route("app-update", "AppUpdate", "src/screens/feature/AppUpdate.tsx", "public", "all", "mutation", null, "none", "system"),
+  route("perm-denied", "PermDenied", "src/screens/feature/PermDenied.tsx", "public", "all", "mutation", null, "none", "system"),
+];
+
+function property(object, name) {
+  return object.properties.find(
+    (item) => ts.isPropertyAssignment(item)
+      && ((ts.isIdentifier(item.name) && item.name.text === name)
+        || (ts.isStringLiteral(item.name) && item.name.text === name)),
+  );
+}
+
+function stringValue(node) {
+  return ts.isStringLiteralLike(node) ? node.text : null;
+}
+
+function guardFromElement(node, sourceFile) {
+  if (!node) return null;
+  const text = node.getText(sourceFile);
+  const roleMatch = text.match(/<RequireRole\s+role="(parent|child|teacher)"/);
+  if (roleMatch) return roleMatch[1];
+  if (/<RequireAnyRole\s+roles=\{\["parent",\s*"child"\]\}/.test(text)) return "parent-child";
+  if (/<RequireAuthenticated\b/.test(text)) return "authenticated";
+  if (/<RequireGuest\b/.test(text)) return "guest";
+  return null;
+}
+
+function screenFromElement(node, sourceFile, lazyScreens) {
+  let found = null;
+  const visit = (child) => {
+    if (found) return;
+    if (ts.isJsxSelfClosingElement(child) && ts.isIdentifier(child.tagName)) {
+      const name = child.tagName.text;
+      if (lazyScreens.has(name)) found = name;
+    }
+    ts.forEachChild(child, visit);
+  };
+  visit(node);
+  return found;
+}
+
+function extractLazyScreens(sourceFile) {
+  const lazyScreens = new Map();
+  const visit = (node) => {
+    if (ts.isVariableDeclaration(node)
+      && ts.isIdentifier(node.name)
+      && node.initializer
+      && ts.isCallExpression(node.initializer)
+      && ts.isIdentifier(node.initializer.expression)
+      && node.initializer.expression.text === "lazyScreen") {
+      const importCall = node.initializer.arguments[0];
+      let importPath = null;
+      const findImport = (child) => {
+        if (ts.isCallExpression(child)
+          && child.expression.kind === ts.SyntaxKind.ImportKeyword
+          && child.arguments[0]
+          && ts.isStringLiteral(child.arguments[0])) {
+          importPath = child.arguments[0].text;
+        }
+        ts.forEachChild(child, findImport);
+      };
+      findImport(importCall);
+      if (importPath?.startsWith("@/")) {
+        lazyScreens.set(node.name.text, `src/${importPath.slice(2)}.tsx`);
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return lazyScreens;
+}
+
+function extractAppRoutes() {
+  const source = read("src/app/App.tsx");
+  const sourceFile = ts.createSourceFile("App.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const lazyScreens = extractLazyScreens(sourceFile);
+  const routes = [];
+  let routerArray = null;
+
+  const findRouter = (node) => {
+    if (ts.isCallExpression(node)
+      && ts.isIdentifier(node.expression)
+      && node.expression.text === "createHashRouter"
+      && ts.isArrayLiteralExpression(node.arguments[0])) {
+      routerArray = node.arguments[0];
+      return;
+    }
+    ts.forEachChild(node, findRouter);
+  };
+  findRouter(sourceFile);
+  assert.ok(routerArray, "App.tsx의 createHashRouter 배열을 찾지 못했습니다");
+
+  const walk = (node, context = { guard: "public", availability: "all" }) => {
+    if (ts.isParenthesizedExpression(node)) {
+      walk(node.expression, context);
+      return;
+    }
+    if (ts.isSpreadElement(node)) {
+      walk(node.expression, context);
+      return;
+    }
+    if (ts.isConditionalExpression(node)) {
+      const condition = node.condition.getText(sourceFile);
+      const usesTeacherFlag = condition.includes("TEACHER_MODE_ENABLED");
+      walk(node.whenTrue, { ...context, availability: usesTeacherFlag ? "dev" : context.availability });
+      walk(node.whenFalse, { ...context, availability: usesTeacherFlag ? "production" : context.availability });
+      return;
+    }
+    if (ts.isArrayLiteralExpression(node)) {
+      node.elements.forEach((item) => walk(item, context));
+      return;
+    }
+    if (!ts.isObjectLiteralExpression(node)) return;
+
+    const elementProperty = property(node, "element");
+    const pathProperty = property(node, "path");
+    const localGuard = guardFromElement(elementProperty?.initializer, sourceFile) ?? context.guard;
+    const localContext = { ...context, guard: localGuard };
+
+    if (pathProperty) {
+      const path = stringValue(pathProperty.initializer);
+      const screen = elementProperty
+        ? screenFromElement(elementProperty.initializer, sourceFile, lazyScreens)
+        : null;
+      if (path && screen) {
+        routes.push({
+          path,
+          screen,
+          source: lazyScreens.get(screen),
+          guard: localGuard,
+          availability: context.availability,
+        });
+      }
+    }
+
+    const childrenProperty = property(node, "children");
+    if (childrenProperty) walk(childrenProperty.initializer, localContext);
+  };
+
+  walk(routerArray);
+  return routes;
+}
+
+test("라우트 품질 매트릭스는 App.tsx의 58개 실제 화면·가드·출시 범위를 정확히 대조한다", () => {
+  assert.equal(routeQualityMatrix.length, 58);
+  assert.equal(new Set(routeQualityMatrix.map((item) => item.path)).size, 58, "매트릭스 path 중복");
+  assert.equal(routeQualityMatrix.filter((item) => item.kind === "query").length, 30);
+  assert.equal(routeQualityMatrix.filter((item) => item.kind === "mutation").length, 27);
+  assert.equal(routeQualityMatrix.filter((item) => item.kind === "static").length, 1);
+  for (const item of routeQualityMatrix.filter((row) => row.kind !== "query")) {
+    assert.equal(item.states, null, `${item.path}는 query 상태 계약 대상이 아닙니다`);
+  }
+
+  const actual = extractAppRoutes();
+  assert.equal(actual.length, 58, "App.tsx 사용자 화면 수가 바뀌면 매트릭스도 함께 갱신해야 합니다");
+
+  const signature = (item) => [item.path, item.screen, item.source, item.guard, item.availability].join("|");
+  const expectedSignatures = routeQualityMatrix.map(signature).sort();
+  const actualSignatures = actual.map(signature).sort();
+  assert.deepEqual(actualSignatures, expectedSignatures);
+});
+
+test("query 화면은 loading/error/empty/success와 실제 retry UI 계약을 모두 가진다", () => {
+  const queryRows = routeQualityMatrix.filter((item) => item.kind === "query");
+  assert.equal(queryRows.length, 30);
+  assert.equal(new Set(queryRows.map((item) => item.source)).size, 29, "MemoChat만 부모·아이 라우트에서 공유됩니다");
+
+  for (const item of queryRows) {
+    assert.deepEqual(Object.keys(item.states).sort(), ["empty", "error", "loading", "retry", "success"]);
+    const source = read(item.source);
+    for (const [state, pattern] of Object.entries(item.states)) {
+      assert.match(source, pattern, `${item.path} (${item.source})의 ${state} 계약이 없습니다`);
+    }
+  }
+});
+
+test("모든 화면은 뒤로가기와 역할별 말투 정책을 분류하고 DEV 선생님 경계를 보존한다", () => {
+  const validBack = new Set(["shell", "safe", "screen", "none"]);
+  const validTone = new Set([
+    "parent-formal",
+    "child-informal",
+    "teacher-dev",
+    "teacher-release",
+    "role-aware",
+    "system",
+  ]);
+  for (const item of routeQualityMatrix) {
+    assert.ok(validBack.has(item.back), `${item.path} 뒤로가기 분류 누락`);
+    assert.ok(validTone.has(item.tone), `${item.path} 말투 분류 누락`);
+    if (item.guard === "parent") assert.notEqual(item.tone, "child-informal", item.path);
+    if (item.guard === "child") assert.notEqual(item.tone, "parent-formal", item.path);
+    if (item.guard === "teacher" && item.screen !== "TeacherReleaseGate") {
+      assert.equal(item.availability, "dev", `${item.path}는 DEV에서만 열려야 합니다`);
+      assert.equal(item.tone, "teacher-dev", item.path);
+    }
+    if (item.back === "safe") {
+      const source = read(item.source);
+      assert.match(source, /useSafeBack/, `${item.path} safe back hook 누락`);
+      assert.match(source, /onClick=\{goBack\}/, `${item.path} safe back 버튼 누락`);
+    }
+  }
+
+  const appShell = read("src/app/AppShell.tsx");
+  assert.match(appShell, /to:\s*"\/teacher\/settings"/);
+  assert.match(read("src/config/releaseFeatures.ts"), /TEACHER_MODE_ENABLED\s*=\s*import\.meta\.env\.DEV/);
+});
+
+test("계정·지도 선택·원격 울림 dialog는 공통 focus lifecycle을 실제로 연결한다", () => {
+  const hook = read("src/components/useDialogFocusLifecycle.ts");
+  assert.match(hook, /previousFocus/);
+  assert.match(hook, /requestAnimationFrame/);
+  assert.match(hook, /event\.key === "Escape"/);
+  assert.match(hook, /event\.key !== "Tab"/);
+  assert.match(hook, /event\.shiftKey/);
+  assert.match(hook, /previousFocus\?\.focus\(\)/);
+
+  const account = read("src/screens/parent/ParentAccount.tsx");
+  assert.equal((account.match(/useDialogFocusLifecycle(?:<[^>]+>)?\(/g) ?? []).length, 2, "계정 dialog 2개 모두 focus lifecycle 필요");
+  assert.match(account, /ref=\{deleteDialogRef\}/);
+  assert.match(account, /ref=\{passwordDialogRef\}/);
+  assert.match(account, /aria-labelledby=\{deleteTitleId\}/);
+  assert.match(account, /aria-labelledby=\{passwordTitleId\}/);
+
+  const picker = read("src/components/MapPickerSheet.tsx");
+  assert.match(picker, /useDialogFocusLifecycle/);
+  assert.match(picker, /ref=\{dialogRef\}/);
+  assert.match(picker, /aria-labelledby=\{titleId\}/);
+
+  const ring = read("src/screens/feature/RemoteRing.tsx");
+  assert.match(ring, /useDialogFocusLifecycle/);
+  assert.match(ring, /ref=\{confirmDialogRef\}/);
+  assert.match(ring, /role="dialog"/);
+  assert.match(ring, /aria-modal="true"/);
+  assert.match(ring, /aria-labelledby=\{confirmTitleId\}/);
+});

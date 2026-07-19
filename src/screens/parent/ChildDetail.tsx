@@ -53,6 +53,16 @@ export function ChildDetail() {
   const unpair = useUnpairChild();
   const { activeChild, setActiveChildId } = useActiveChild();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const detailLoading = familyQuery.isLoading;
+  const detailError = familyQuery.isError;
+  const retryChildDetail = async () => {
+    await Promise.all([
+      familyQuery.refetch(),
+      eventsQuery.refetch(),
+      locationsQuery.refetch(),
+      placesQuery.refetch(),
+    ]);
+  };
 
   const members = useMemo(() => familyQuery.data?.members ?? [], [familyQuery.data]);
 
@@ -110,11 +120,24 @@ export function ChildDetail() {
   }, [rawChild, fresh, placeName]);
 
   // ── 로딩/빈 상태 ──
-  if (familyQuery.isLoading && !rawChild) {
+  if (detailLoading && !rawChild) {
     return (
       <div className="cd-root">
         <Header title="아이 상세" onBack={() => navigate(-1)} onEdit={null} />
         <div className="cd-state">아이 정보를 불러오는 중…</div>
+      </div>
+    );
+  }
+  if (detailError) {
+    return (
+      <div className="cd-root">
+        <Header title="아이 상세" onBack={() => navigate(-1)} onEdit={null} />
+        <div className="cd-state" role="alert">
+          아이 정보를 불러오지 못했어요
+          <button type="button" className="cd-state__btn hy-press" onClick={() => void retryChildDetail()}>
+            다시 시도
+          </button>
+        </div>
       </div>
     );
   }

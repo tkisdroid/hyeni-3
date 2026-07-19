@@ -4,11 +4,12 @@
  * 주소 자동 채움. 저장된 장소(장소관리)는 지도 마커 + 하단 칩으로 바로 선택 가능.
  * 현재 위치 실패 시 폴백: 집(is_home) > 첫 저장장소 > 서울 시청.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Home, MapPin, X } from "lucide-react";
 import { KakaoMap, type MapPlace } from "@/components/KakaoMap";
 import { loadKakaoMaps } from "@/lib/kakaoMap";
 import type { SavedPlace } from "@/lib/api/endpoints/location";
+import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import "./MapPickerSheet.css";
 
 export interface PickedPlace {
@@ -38,6 +39,13 @@ export function MapPickerSheet({
   const [address, setAddress] = useState("");
   const [pickedName, setPickedName] = useState<string | null>(null);
   const [center, setCenter] = useState<{ lat: number; lng: number } | null>(initial ?? null);
+  const titleId = useId();
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useDialogFocusLifecycle<HTMLDivElement>({
+    open: true,
+    onClose,
+    initialFocusRef: closeRef,
+  });
 
   // 역지오코더(coord→주소). 로드 실패해도 좌표 선택 자체는 가능(주소만 빈 값).
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -141,7 +149,14 @@ export function MapPickerSheet({
   const selectionLabel = pickedName || address || (picked ? "지도에서 선택한 위치" : "");
 
   return (
-    <div className="mps-root" role="dialog" aria-modal="true" aria-label="지도에서 장소 선택">
+    <div
+      ref={dialogRef}
+      className="mps-root"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      tabIndex={-1}
+    >
       <button
         type="button"
         className="mps-scrim"
@@ -150,8 +165,8 @@ export function MapPickerSheet({
       />
       <div className="mps-sheet">
         <div className="mps-head">
-          <span className="mps-title">지도에서 장소 지정</span>
-          <button type="button" className="mps-close hy-press" aria-label="닫기" onClick={onClose}>
+          <span id={titleId} className="mps-title">지도에서 장소 지정</span>
+          <button ref={closeRef} type="button" className="mps-close hy-press" aria-label="닫기" onClick={onClose}>
             <X size={20} strokeWidth={2.2} />
           </button>
         </div>

@@ -67,14 +67,28 @@ export function ChildHome() {
   const now = useMemo(() => new Date(), [todayKey]);
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
-  const { data: family } = useMyFamily();
-  const { data: events } = useEvents();
-  const { data: places } = useSavedPlaces();
-  const { data: locations } = useChildLocations();
+  const familyQuery = useMyFamily();
+  const eventsQuery = useEvents();
+  const placesQuery = useSavedPlaces();
+  const locationsQuery = useChildLocations();
+  const family = familyQuery.data;
+  const events = eventsQuery.data;
+  const places = placesQuery.data;
+  const locations = locationsQuery.data;
   const { data: stickerSummary } = useStickerSummary();
   const receivedStickers = useReceivedStickers(userId);
   const aiFriend = useAiFriendPublicSettings(userId);
   const aiUsage = useAiUsageToday(userId);
+  const homeLoading = familyQuery.isLoading || eventsQuery.isLoading || placesQuery.isLoading;
+  const homeError = familyQuery.isError || eventsQuery.isError || placesQuery.isError;
+  const retryHomeData = async () => {
+    await Promise.all([
+      familyQuery.refetch(),
+      eventsQuery.refetch(),
+      placesQuery.refetch(),
+      locationsQuery.refetch(),
+    ]);
+  };
 
   const myMember = family?.members.find((m) => m.role === "child" && m.user_id === userId) ?? null;
   const childName = myMember?.name || "친구";
@@ -390,27 +404,38 @@ export function ChildHome() {
 
         <div className="kd-map__headline kd-title">{childName}의 오늘</div>
 
-        {adventure.nodes.map((node) => (
-          <button
-            key={node.id}
-            type="button"
-            className={`kd-node kd-node--${node.state} hy-press`}
-            style={{ left: `${node.leftPct}%`, top: node.top }}
-            aria-label={`${node.title} ${node.state === "next" ? "· 길찾기" : "· 시간표 보기"}`}
-            onClick={() => (node.state === "next" ? openRoute() : setDayOpen(true))}
-          >
-            <span className="kd-node__disc">
-              {node.state === "next" && <span className="kd-node__ring" />}
-              <img src={asset(node.icon)} alt="" />
-              {node.state === "done" && (
-                <span className="kd-node__star" aria-hidden="true">
-                  ⭐
-                </span>
-              )}
-            </span>
-            <span className="kd-node__pill">{node.pill}</span>
-          </button>
-        ))}
+        {homeLoading ? (
+          <div className="kd-map__query-state" role="status">오늘 모험을 불러오는 중이야…</div>
+        ) : homeError ? (
+          <div className="kd-map__query-state" role="alert">
+            <span>오늘 모험을 못 불러왔어.</span>
+            <button type="button" className="hy-press" onClick={() => void retryHomeData()}>다시 불러오기</button>
+          </div>
+        ) : adventure.nodes.length === 0 ? (
+          <div className="kd-map__query-state" role="status">오늘은 등록된 일정이 없어. 신나게 시작해 볼까?</div>
+        ) : (
+          adventure.nodes.map((node) => (
+            <button
+              key={node.id}
+              type="button"
+              className={`kd-node kd-node--${node.state} hy-press`}
+              style={{ left: `${node.leftPct}%`, top: node.top }}
+              aria-label={`${node.title} ${node.state === "next" ? "· 길찾기" : "· 시간표 보기"}`}
+              onClick={() => (node.state === "next" ? openRoute() : setDayOpen(true))}
+            >
+              <span className="kd-node__disc">
+                {node.state === "next" && <span className="kd-node__ring" />}
+                <img src={asset(node.icon)} alt="" />
+                {node.state === "done" && (
+                  <span className="kd-node__star" aria-hidden="true">
+                    ⭐
+                  </span>
+                )}
+              </span>
+              <span className="kd-node__pill">{node.pill}</span>
+            </button>
+          ))
+        )}
 
         <button
           type="button"

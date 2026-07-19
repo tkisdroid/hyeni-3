@@ -90,6 +90,29 @@
   flex-direction: column;
   gap: 12px;
 }
+
+.afc-query-state {
+  display: grid;
+  gap: 8px;
+  margin: 8px auto 16px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--fg-secondary);
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+  text-align: center;
+}
+
+.afc-query-state button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--lav-text);
+  color: #fff;
+  font: inherit;
+}
 .afc-row {
   display: flex;
   align-items: flex-end;

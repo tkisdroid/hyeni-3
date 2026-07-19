@@ -78,29 +78,35 @@ export function StickerBook() {
         {received.isLoading ? (
           <div className="sb-state">스티커를 불러오는 중이야…</div>
         ) : received.isError ? (
-          <div className="sb-state">스티커를 못 불러왔어. 잠시 뒤에 다시 열어볼래?</div>
-        ) : (
-          <div className="sb-grid">
-            {book.slots.map((slot) => (
-              <button
-                key={slot.key}
-                type="button"
-                className={`sb-slot${slot.got ? "" : " sb-slot--locked"} hy-press`}
-                onClick={() => openSlot(slot)}
-                aria-label={slot.got ? `${slot.label} 스티커 열어보기` : `${slot.label} 스티커 아직 못 받았어`}
-              >
-                {slot.isNew && <span className="sb-slot__new">NEW</span>}
-                {slot.count > 1 && <span className="sb-slot__count">{slot.count}</span>}
-                <img src={asset(slot.img)} alt="" />
-                <span className="sb-slot__label">{slot.label}</span>
-                {!slot.got && (
-                  <span className="sb-slot__lock" aria-hidden="true">
-                    <Lock size={14} strokeWidth={2.4} color="var(--fg-muted)" />
-                  </span>
-                )}
-              </button>
-            ))}
+          <div className="sb-state" role="alert">
+            <span>스티커를 못 불러왔어.</span>
+            <button type="button" className="hy-press" onClick={() => void received.refetch()}>다시 불러오기</button>
           </div>
+        ) : (
+          <>
+            {book.gotCount === 0 && <div className="sb-state">아직 받은 스티커가 없어. 첫 칭찬을 기다려 보자!</div>}
+            <div className="sb-grid">
+              {book.slots.map((slot) => (
+                <button
+                  key={slot.key}
+                  type="button"
+                  className={`sb-slot${slot.got ? "" : " sb-slot--locked"} hy-press`}
+                  onClick={() => openSlot(slot)}
+                  aria-label={slot.got ? `${slot.label} 스티커 열어보기` : `${slot.label} 스티커 아직 못 받았어`}
+                >
+                  {slot.isNew && <span className="sb-slot__new">NEW</span>}
+                  {slot.count > 1 && <span className="sb-slot__count">{slot.count}</span>}
+                  <img src={asset(slot.img)} alt="" />
+                  <span className="sb-slot__label">{slot.label}</span>
+                  {!slot.got && (
+                    <span className="sb-slot__lock" aria-hidden="true">
+                      <Lock size={14} strokeWidth={2.4} color="var(--fg-muted)" />
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </>
         )}
       </div>
 

@@ -106,7 +106,13 @@ export function DaySummary() {
     return dayEvents.length > 0 ? { events: dayEvents } : undefined;
   }, [events, appDateKey]);
 
-  const { data: cached, isLoading } = useDaySummary(childUserId, isoDateKey);
+  const summaryQuery = useDaySummary(childUserId, isoDateKey);
+  const cached = summaryQuery.data;
+  const isLoading = summaryQuery.isLoading;
+  const isError = summaryQuery.isError;
+  const refetchSummary = async () => {
+    await summaryQuery.refetch();
+  };
   const generate = useGenerateDaySummary();
   const [generated, setGenerated] = useState<DaySummaryResult | null>(null);
 
@@ -150,6 +156,17 @@ export function DaySummary() {
             </div>
             <div className="ds-panel__title">연결된 아이가 없어요</div>
             <div className="ds-panel__desc">아이를 연결하면 AI 하루 요약을 볼 수 있어요.</div>
+          </div>
+        ) : isError ? (
+          <div className="ds-panel" role="alert">
+            <div className="ds-panel__art">
+              <img src={asset("mascot/diary.webp")} alt="" />
+            </div>
+            <div className="ds-panel__title">하루 요약을 불러오지 못했어요</div>
+            <div className="ds-panel__desc">인터넷 연결을 확인한 뒤 다시 시도해 주세요.</div>
+            <button type="button" className="ds-panel__cta hy-press" onClick={() => void refetchSummary()}>
+              다시 시도
+            </button>
           </div>
         ) : premiumLocked ? (
           <div className="ds-panel">

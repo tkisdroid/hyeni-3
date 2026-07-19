@@ -11,16 +11,25 @@ import "./PlaceManager.css";
 export function PlaceManager() {
   const navigate = useNavigate();
   const { show } = useToast();
-  const { data: places, isLoading: placesLoading } = useSavedPlaces();
-  const { data: zones, isLoading: zonesLoading } = useDangerZones();
+  const placesQuery = useSavedPlaces();
+  const zonesQuery = useDangerZones();
+  const places = placesQuery.data ?? [];
+  const zones = zonesQuery.data ?? [];
+  const placesLoading = placesQuery.isLoading;
+  const zonesLoading = zonesQuery.isLoading;
+  const placesError = placesQuery.isError;
+  const zonesError = zonesQuery.isError;
   const deleteZone = useDeleteDangerZone();
   const deletePlace = useDeleteSavedPlace();
   const { tier } = useEntitlement();
+  const retryPlaces = async () => {
+    await Promise.all([placesQuery.refetch(), zonesQuery.refetch()]);
+  };
 
   const handleAddPlace = () => {
     if (tier !== TIERS.UNKNOWN) {
       const limit = placeLimitFor(tier);
-      const count = places?.length ?? 0;
+      const count = places.length;
       if (count >= limit) {
         show(`현재 플랜에서는 장소 ${limit}개까지 저장할 수 있어요`, "👑");
         return;
@@ -71,10 +80,15 @@ export function PlaceManager() {
           <div className="pm-label pm-label--saved">저장한 장소</div>
           <div className="pm-list">
             {placesLoading && <div className="pm-item__addr" style={{ padding: 16 }}>불러오는 중…</div>}
-            {!placesLoading && (places?.length ?? 0) === 0 && (
+            {placesError && !placesLoading && (
+              <div className="pm-item__addr" style={{ padding: 16 }} role="alert">
+                장소를 불러오지 못했어요. <button type="button" className="hy-section-action hy-press" onClick={() => void retryPlaces()}>다시 시도</button>
+              </div>
+            )}
+            {!placesLoading && !placesError && places.length === 0 && (
               <div className="pm-item__addr" style={{ padding: 16 }}>저장한 장소가 없어요</div>
             )}
-            {(places ?? []).map((p) => {
+            {!placesLoading && !placesError && places.map((p) => {
               const visual = resolvePlaceVisual(p);
               return (
               <div key={p.id} className="pm-item">
@@ -118,10 +132,15 @@ export function PlaceManager() {
           </div>
           <div className="pm-list">
             {zonesLoading && <div className="pm-danger__addr" style={{ padding: 16 }}>불러오는 중…</div>}
-            {!zonesLoading && (zones?.length ?? 0) === 0 && (
+            {zonesError && !zonesLoading && (
+              <div className="pm-danger__addr" style={{ padding: 16 }} role="alert">
+                위험 구역을 불러오지 못했어요. <button type="button" className="hy-section-action hy-press" onClick={() => void retryPlaces()}>다시 시도</button>
+              </div>
+            )}
+            {!zonesLoading && !zonesError && zones.length === 0 && (
               <div className="pm-danger__addr" style={{ padding: 16 }}>등록된 위험 구역이 없어요</div>
             )}
-            {(zones ?? []).map((z) => (
+            {!zonesLoading && !zonesError && zones.map((z) => (
               <div key={z.id} className="pm-danger">
                 <button
                   type="button"

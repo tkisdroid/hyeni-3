@@ -25,7 +25,7 @@ export function ParentFamily() {
   const goBack = useSafeBack("/parent/home");
   const { show } = useToast();
   const { userId } = useAuth();
-  const { data: family, isLoading, isError, error } = useMyFamily();
+  const { data: family, isLoading, isError, error, refetch: refetchFamily } = useMyFamily();
   const { data: locations } = useChildLocations();
   const { data: places } = useSavedPlaces();
   const locationLabel = useLocationLabels(locations, places);
@@ -103,6 +103,9 @@ export function ParentFamily() {
           <div className="pf-state pf-state--error">
             가족 정보를 불러오지 못했어요
             {error instanceof Error ? ` (${error.message})` : ""}
+            <button type="button" className="hy-section-action hy-press" onClick={() => void refetchFamily()}>
+              다시 시도
+            </button>
           </div>
         )}
 
@@ -133,6 +136,9 @@ export function ParentFamily() {
             <section>
               <div className="pf-label">아이</div>
               <div className="pf-children">
+                {view.children.length === 0 && (
+                  <div className="pf-children__empty">아직 연결된 아이가 없어요. 아이 추가로 연결을 시작해 주세요.</div>
+                )}
                 {view.children.map((c) => (
                   <button
                     key={c.id}

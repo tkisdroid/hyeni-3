@@ -446,8 +446,11 @@ export function MemoChat() {
           </div>
         )}
         {thread.isError && (
-          <div className="mc-daysep">
+          <div className="mc-daysep mc-daysep--error">
             <span>{copy.loadError}</span>
+            <button type="button" className="hy-section-action hy-press" onClick={() => void thread.refetch()}>
+              {isChildSession ? "다시 불러오기" : "다시 시도"}
+            </button>
           </div>
         )}
         {showEmpty && (
