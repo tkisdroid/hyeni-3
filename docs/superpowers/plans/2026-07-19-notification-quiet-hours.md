@@ -21,8 +21,8 @@
 - quiet 수신자에는 pending·FCM·Web Push를 만들지 않고 `suppressed_quiet_hours` 성공으로 완료한다. 억제한 알림은 종료 뒤 재생하지 않는다.
 - `parent_alerts` 이력, 위치 측정·저장, 지오펜스 평가·전이·상태 영속은 계속 수행한다.
 - 설정 조회 실패 시 일반 알림은 `settings_unavailable`로 fail-closed하고 지연 재생하지 않는다. 명시적 안전 예외는 설정 조회 없이 전달한다.
-- refresh token을 읽거나 출력하거나 회전하지 않는다. S25는 조작하지 않는다.
-- 실기기 설치 대상은 A17 `RFKL40DP73J` 부모모드와 razr `ZY22H9VTQD` 아이모드이며 `adb install -r`로 앱 데이터·세션·페어링을 보존한다.
+- refresh token을 읽거나 출력하거나 회전하지 않는다. 연결 해제된 razr와 검증 제외 상태인 S25는 조작하지 않는다.
+- 실기기 설치 대상은 A17 `RFKL40DP73J` 한 대뿐이다. 현재 부모모드 세션을 유지하고 `adb install -r`로 앱 데이터·세션·페어링을 보존한다. 아이 역할 전용 동작은 A17 계측 테스트와 브라우저 역할 검증으로 확인한다.
 - 프로덕션 D1은 additive migration 1회만 적용하고 사전/사후 `PRAGMA table_info(notification_settings)` readback을 남긴다.
 
 ## 파일 구조와 책임
@@ -1058,7 +1058,8 @@
     assert.match(docs, /notification-quiet-hours\.sql/);
     assert.match(docs, /Asia\/Seoul/);
     assert.match(docs, /suppressed_quiet_hours/);
-    assert.match(docs, /A17[\s\S]*razr/);
+    assert.match(docs, /A17[\s\S]*(단독|한 대)/);
+    assert.match(docs, /razr[\s\S]*(연결 해제|미조작)/);
   });
   ```
 
@@ -1072,7 +1073,7 @@
 
 - [ ] **Step 3: AGENTS.md와 CLAUDE.md를 갱신한다**
 
-  다음 내용을 실제 구현 파일명과 함께 기록한다: 부모 self+active child 계정 단위, `22:00→07:00` disabled 기본, `Asia/Seoul`, pending 전 필터, suppression ACK, 명시 안전 예외, `kkuk` 일반 적용, Android session-bound cache, D1 migration-before-Worker, A17/razr 검증 및 S25 제외.
+  다음 내용을 실제 구현 파일명과 함께 기록한다: 부모 self+active child 계정 단위, `22:00→07:00` disabled 기본, `Asia/Seoul`, pending 전 필터, suppression ACK, 명시 안전 예외, `kkuk` 일반 적용, Android session-bound cache, D1 migration-before-Worker, A17 단독 실기기 검증 및 razr·S25 미조작.
 
 - [ ] **Step 4: 두 저장소 전체 자동 검증을 실행한다**
 
@@ -1112,11 +1113,11 @@
 - Deploy: `C:\Users\TK\Desktop\hyeni-1\worker\db\notification-quiet-hours.sql`
 - Deploy: `C:\Users\TK\Desktop\hyeni-3\dist`
 - Install: `C:\Users\TK\Desktop\hyeni-3\android\app\build\outputs\apk\debug\app-debug.apk`
-- Verify: A17 `RFKL40DP73J`, razr `ZY22H9VTQD`
+- Verify: A17 `RFKL40DP73J` only; razr와 S25는 미조작
 
 **Interfaces:**
 - Consumes: 로컬 전체 PASS와 두 저장소의 clean intended commits.
-- Produces: 프로덕션 schema/Worker/Pages와 두 기기의 같은 빌드 설치 증거.
+- Produces: 프로덕션 schema/Worker/Pages와 A17의 최신 빌드 설치·검증 증거.
 
 - [ ] **Step 1: 브라우저에서 부모·아이 UI를 먼저 검수한다**
 
@@ -1152,33 +1153,29 @@
   ```
   Expected: `https://hyeni-calendar.pages.dev` 배포 성공, 새 세션 HTTP 200, console error 0.
 
-- [ ] **Step 5: 동일 debug APK를 A17과 razr에 세션 보존 설치한다**
+- [ ] **Step 5: debug APK를 A17에만 세션 보존 설치한다**
 
   ```powershell
   Set-Location C:\Users\TK\Desktop\hyeni-3
   adb -s RFKL40DP73J install -r android/app/build/outputs/apk/debug/app-debug.apk
-  adb -s ZY22H9VTQD install -r android/app/build/outputs/apk/debug/app-debug.apk
   adb -s RFKL40DP73J shell dumpsys package com.hyeni.calendar | Select-String "versionName|versionCode|lastUpdateTime"
-  adb -s ZY22H9VTQD shell dumpsys package com.hyeni.calendar | Select-String "versionName|versionCode|lastUpdateTime"
   ```
-  Expected: 두 install `Success`, 같은 versionName/versionCode, 앱 데이터 삭제 없음. S25 serial을 사용하는 명령은 실행하지 않는다.
+  Expected: A17 install `Success`, 앱 데이터·부모 계정·세션 삭제 없음. razr와 S25 serial을 사용하는 명령은 실행하지 않는다.
 
-- [ ] **Step 6: 기기별 instrumentation과 실제 역할 화면을 검증한다**
+- [ ] **Step 6: A17 instrumentation과 실제 부모 역할 화면을 검증한다**
 
   ```powershell
   Set-Location android
   $env:ANDROID_SERIAL = "RFKL40DP73J"
   .\gradlew.bat connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.hyeni.calendar.NotificationQuietHoursDeviceTest
-  $env:ANDROID_SERIAL = "ZY22H9VTQD"
-  .\gradlew.bat connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.hyeni.calendar.NotificationQuietHoursDeviceTest
   Remove-Item Env:ANDROID_SERIAL
   Set-Location ..
   ```
-  Expected: 양쪽 PASS, test가 prefs/notification을 finally에서 원복. A17은 부모 홈과 대상 칩 저장, razr는 아이 홈과 읽기 전용 문구를 눈으로 확인하고 역할 선택 화면으로 로그아웃되지 않았는지 확인한다.
+  Expected: A17 PASS, test가 격리된 test prefs/notification을 finally에서 원복. A17 실제 부모 홈과 대상 칩 저장을 확인하고 역할 선택 화면으로 로그아웃되지 않았는지 확인한다. 아이 홈 읽기 전용 문구와 아이 수신 정책은 브라우저 역할 검증 및 A17 instrumentation으로 확인하며 A17 실제 계정은 전환하지 않는다.
 
 - [ ] **Step 7: 서버 계정 단위 교차 검증과 원복을 수행한다**
 
-  A17에서 현재 KST를 포함하는 quiet 구간을 부모 본인과 razr 아이에 서로 다른 분 값으로 저장한다. A17 앱 재시작 뒤 부모 본인 값, razr 앱 재시작과 아이 설정 화면에서 아이 값을 각각 확인한다. Step 6 instrumentation 결과로 일반 schedule 미표시와 `not_arrived` 예외 표시를 확인하고, Worker의 `notificationQuietHours`, `registeredPlaceGeofence`, `pendingNotificationOwnership` runtime 테스트 결과로 pending 0·상태 전이·지연 재생 없음을 연결해 기록한다. 프로덕션에 가짜 안전 알림을 생성하지 않는다. 두 quiet 설정은 검증 전 GET snapshot으로 PUT 원복하고 instrumentation notification은 finally에서 취소한다.
+  A17 부모 UI에서 현재 KST를 포함하는 quiet 구간을 부모 본인과 활성 아이 계정에 서로 다른 분 값으로 저장한다. A17 앱 재시작 뒤 부모 본인 값과 아이 대상 값을 다시 확인한다. 아이 화면의 읽기 전용 표시와 일반 schedule 미표시·`not_arrived` 예외 표시는 브라우저 역할 검증 및 Step 6 A17 instrumentation으로 확인한다. Worker의 `notificationQuietHours`, `registeredPlaceGeofence`, `pendingNotificationOwnership` runtime 결과로 pending 0·상태 전이·지연 재생 없음을 연결해 기록한다. 프로덕션에 가짜 안전 알림을 생성하지 않는다. 두 quiet 설정은 검증 전 GET snapshot으로 PUT 원복하고 instrumentation notification은 finally에서 취소한다. A17 실제 계정의 로그아웃·역할 전환·재페어링은 하지 않는다.
 
 ### Task 11: 최종 fresh review, merge, push, 원격 SHA 확인
 
@@ -1261,4 +1258,4 @@
 
 - [ ] **Step 6: 최종 상태를 분리 보고한다**
 
-  다음 다섯 줄을 실제 값으로 보고한다: 문제 원인, 수정 방식, 자동 검증 결과, Worker/Pages 배포 version 및 commit SHA, A17 부모모드·razr 아이모드 설치/교차검증 상태. 테스트 설정 원복 여부와 S25 미조작도 명시한다.
+  다음 다섯 줄을 실제 값으로 보고한다: 문제 원인, 수정 방식, 자동 검증 결과, Worker/Pages 배포 version 및 commit SHA, A17 단독 설치·부모 화면·계측 교차검증 상태. 테스트 설정 원복 여부와 razr 연결 해제·미조작 및 S25 미조작도 명시한다.
