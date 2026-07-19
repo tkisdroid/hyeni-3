@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import tsModule from "typescript";
@@ -15,6 +15,11 @@ const queryStates = (loading, error, empty, success, retry) => ({
   empty,
   success,
   retry,
+});
+
+const queryStatesAt = (source, loading, error, empty, success, retry) => ({
+  source,
+  states: queryStates(loading, error, empty, success, retry),
 });
 
 const route = (
@@ -39,7 +44,11 @@ const routeQualityMatrix = [
   route("parent/memo", "MemoChat", "src/screens/shared/MemoChat.tsx", "parent", "all", "query", queryStates(/thread\.isLoading/, /thread\.isError/, /showEmpty/, /messages\.map/, /void thread\.refetch\(\)/), "shell", "role-aware"),
   route("parent/settings", "ParentSettings", "src/screens/parent/ParentSettings.tsx", "parent", "all", "hybrid", null, "shell", "parent-formal"),
 
-  route("child/home", "ChildHome", "src/screens/child/ChildHome.tsx", "child", "all", "query", queryStates(/homeLoading/, /homeError/, /adventure\.nodes\.length === 0/, /adventure\.nodes\.map/, /void retryHomeData\(\)/), "shell", "child-informal"),
+  route("child/home", "ChildHome", "src/screens/child/ChildHome.tsx", "child", "all", "query", [
+    queryStatesAt("src/screens/child/ChildHome.tsx", /homeLoading/, /homeError/, /adventure\.nodes\.length === 0/, /adventure\.nodes\.map/, /void retryHomeData\(\)/),
+    queryStatesAt("src/screens/child/overlays/PlaydateSheet.tsx", /candidatesQuery\.isLoading/, /candidatesQuery\.isError/, /candidates\.length === 0/, /candidates\.map/, /void candidatesQuery\.refetch\(\)/),
+    queryStatesAt("src/screens/child/overlays/RouteSheet.tsx", /route\.isLoading/, /route\.isError/, /!destination/, /steps\.map/, /void route\.refetch\(\)/),
+  ], "shell", "child-informal"),
   route("child/sticker", "StickerBook", "src/screens/child/StickerBook.tsx", "child", "all", "query", queryStates(/received\.isLoading/, /received\.isError/, /book\.gotCount === 0/, /book\.slots\.map/, /void received\.refetch\(\)/), "shell", "child-informal"),
   route("child/memo", "MemoChat", "src/screens/shared/MemoChat.tsx", "child", "all", "query", queryStates(/thread\.isLoading/, /thread\.isError/, /showEmpty/, /messages\.map/, /void thread\.refetch\(\)/), "shell", "role-aware"),
 
@@ -71,7 +80,10 @@ const routeQualityMatrix = [
   route("pairing-wizard", "PairingWizard", "src/screens/feature/PairingWizard.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
   route("family-connection", "FamilyConnection", "src/screens/feature/FamilyConnection.tsx", "parent", "all", "query", queryStates(/connectionLoading/, /connectionError/, /connected\.length === 0/, /connected\.map/, /void retryFamilyConnection\(\)/), "screen", "parent-formal"),
   route("location-settings", "LocationSettings", "src/screens/feature/LocationSettings.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
-  route("account", "ParentAccount", "src/screens/parent/ParentAccount.tsx", "parent", "all", "query", queryStates(/isLoading \|\| accountLoadError/, /accountIsError/, /account === null/, /const isPrimary = account\.isPrimaryParent/, /void refetchAccount\(\)/), "screen", "parent-formal", "focus-trapped"),
+  route("account", "ParentAccount", "src/screens/parent/ParentAccount.tsx", "parent", "all", "query", [
+    queryStatesAt("src/screens/parent/ParentAccount.tsx", /isLoading \|\| accountLoadError/, /accountIsError/, /account === null/, /const isPrimary = account\.isPrimaryParent/, /void refetchAccount\(\)/),
+    queryStatesAt("src/screens/parent/SocialLinks.tsx", /native && isLoading/, /native && isError/, /links\.length === 0/, /links\.map/, /void refetch\(\)/),
+  ], "screen", "parent-formal", "focus-trapped"),
   route("data-sync", "DataSync", "src/screens/feature/DataSync.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
   route("notification-settings", "NotificationSettings", "src/screens/feature/NotificationSettings.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal"),
   route("arrival-alerts", "ArrivalAlerts", "src/screens/feature/ArrivalAlerts.tsx", "parent", "all", "query", queryStates(/isLoading/, /isError/, /list\.length === 0/, /list\.map/, /refetch\(\)/), "screen", "parent-formal"),
@@ -80,7 +92,7 @@ const routeQualityMatrix = [
   route("daily-report", "DailySafetyReport", "src/screens/feature/DailySafetyReport.tsx", "parent", "all", "query", queryStates(/safetySourceIsLoading/, /safetySourceHasError/, /todayEvents\.length === 0/, /overviewCards\.map/, /source\.refetch\(\)/), "screen", "parent-formal"),
   route("weekly-report", "WeeklyFamilyReport", "src/screens/feature/WeeklyFamilyReport.tsx", "parent", "all", "query", queryStates(/queryState === "loading"/, /queryState === "error"/, /summary\.busiestDay \?/, /summary \? \(/, /void Promise\.all/), "screen", "parent-formal"),
   route("remote-audio-audit", "RemoteAudioAudit", "src/screens/feature/RemoteAudioAudit.tsx", "parent", "all", "query", queryStates(/audit\.isLoading/, /audit\.isError/, /items\.length === 0/, /items\.map/, /audit\.refetch\(\)/), "screen", "parent-formal"),
-  route("remote-ring", "RemoteRing", "src/screens/feature/RemoteRing.tsx", "parent", "all", "hybrid", null, "screen", "parent-formal", "focus-trapped"),
+  route("remote-ring", "RemoteRing", "src/screens/feature/RemoteRing.tsx", "parent", "all", "hybrid", queryStates(/ringQueryState === "loading"/, /ringQueryState === "error"/, /children\.length === 0/, /ringDataReady && ringing/, /void retryRemoteRing\(\)/), "screen", "parent-formal", "focus-trapped"),
   route("sos-receive", "SosReceive", "src/screens/feature/SosReceive.tsx", "parent", "all", "query", queryStates(/sosLoading/, /sosLoadError/, /!latest && !sosLoading && !sosLoadError/, /\{latest && \(/, /void refetchSos\(\)/), "safe", "parent-formal"),
 
   route("child/sos", "ChildSos", "src/screens/child/ChildSos.tsx", "child", "all", "hybrid", null, "screen", "child-informal"),
@@ -168,17 +180,27 @@ function extractLazyScreens(sourceFile) {
 
 const queryModuleCache = new Map();
 
-function sourcePathForImport(fromSource, moduleName) {
-  let absolute;
+function localSourcePathForImport(fromSource, moduleName) {
+  let base;
   if (moduleName.startsWith("@/")) {
-    absolute = resolve(rootDir, "src", `${moduleName.slice(2)}.ts`);
+    base = resolve(rootDir, "src", moduleName.slice(2));
   } else if (moduleName.startsWith(".")) {
-    absolute = resolve(rootDir, dirname(fromSource), `${moduleName}.ts`);
+    base = resolve(rootDir, dirname(fromSource), moduleName);
   } else {
     return null;
   }
+  const candidates = /\.[cm]?[jt]sx?$/.test(base)
+    ? [base]
+    : [`${base}.ts`, `${base}.tsx`, resolve(base, "index.ts"), resolve(base, "index.tsx")];
+  const absolute = candidates.find((candidate) => existsSync(candidate));
+  if (!absolute) return null;
   const sourcePath = relative(rootDir, absolute).replaceAll("\\", "/");
-  return sourcePath.startsWith("src/queries/") ? sourcePath : null;
+  return sourcePath.startsWith("src/") ? sourcePath : null;
+}
+
+function sourcePathForImport(fromSource, moduleName) {
+  const sourcePath = localSourcePathForImport(fromSource, moduleName);
+  return sourcePath?.startsWith("src/queries/") ? sourcePath : null;
 }
 
 function queryModuleInfo(sourcePath) {
@@ -272,13 +294,96 @@ function readQueryHooksForScreen(sourcePath) {
   return hooks.sort();
 }
 
+/** 화면이 실제 JSX로 렌더하는 지역 컴포넌트까지 따라가 read query가 있는 파일을 찾는다. */
+function readQuerySourcesForScreen(sourcePath, seen = new Set()) {
+  if (seen.has(sourcePath)) return [];
+  seen.add(sourcePath);
+  const sourceFile = ts.createSourceFile(
+    sourcePath,
+    read(sourcePath),
+    ts.ScriptTarget.Latest,
+    true,
+    sourcePath.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+  );
+  const sources = new Set();
+  const jsxNames = new Set();
+  let directReadQuery = false;
+
+  const visit = (node) => {
+    if (ts.isJsxOpeningLikeElement(node) && ts.isIdentifier(node.tagName)) {
+      jsxNames.add(node.tagName.text);
+    }
+    if (ts.isCallExpression(node)
+      && ts.isIdentifier(node.expression)
+      && (node.expression.text === "useQuery" || node.expression.text === "useQueries")) {
+      directReadQuery = true;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  if (directReadQuery) sources.add(sourcePath);
+
+  sourceFile.statements.forEach((statement) => {
+    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) return;
+    const moduleName = statement.moduleSpecifier.text;
+    const importedSource = localSourcePathForImport(sourcePath, moduleName);
+    if (!importedSource) return;
+
+    if (importedSource.startsWith("src/queries/")) {
+      statement.importClause?.namedBindings?.elements?.forEach((element) => {
+        const importedName = element.propertyName?.text ?? element.name.text;
+        if (isReadQueryHook(importedSource, importedName)) sources.add(sourcePath);
+      });
+      return;
+    }
+
+    if (!importedSource.endsWith(".tsx")) return;
+    const importedLocals = [];
+    if (statement.importClause?.name) importedLocals.push(statement.importClause.name.text);
+    statement.importClause?.namedBindings?.elements?.forEach((element) => {
+      importedLocals.push(element.name.text);
+    });
+    if (!importedLocals.some((name) => jsxNames.has(name))) return;
+    readQuerySourcesForScreen(importedSource, new Set(seen)).forEach((item) => sources.add(item));
+  });
+
+  return [...sources].sort();
+}
+
 function assertReadQueryClassification(row) {
   const hooks = readQueryHooksForScreen(row.source);
+  const sources = readQuerySourcesForScreen(row.source);
   if (row.kind === "mutation") {
-    assert.deepEqual(hooks, [], `${row.path}는 read query ${hooks.join(", ")}를 mutation-only로 숨겼습니다`);
+    assert.deepEqual(
+      sources,
+      [],
+      `${row.path}는 read query ${[...hooks, ...sources].join(", ")}를 mutation-only로 숨겼습니다`,
+    );
   }
   if (row.kind === "hybrid") {
-    assert.ok(hooks.length > 0, `${row.path} hybrid 분류에 실제 read query가 없습니다`);
+    assert.ok(sources.length > 0, `${row.path} hybrid 분류에 실제 read query가 없습니다`);
+  }
+}
+
+function stateContracts(row) {
+  if (!row.states) return [];
+  if (Array.isArray(row.states)) return row.states;
+  return [{ source: row.source, states: row.states }];
+}
+
+function assertStateContracts(row) {
+  const contracts = stateContracts(row);
+  assert.ok(contracts.length > 0, `${row.path} read query 상태 계약이 없습니다`);
+  for (const contract of contracts) {
+    assert.deepEqual(Object.keys(contract.states).sort(), ["empty", "error", "loading", "retry", "success"]);
+    const source = read(contract.source);
+    for (const [state, pattern] of Object.entries(contract.states)) {
+      assert.match(source, pattern, `${row.path} (${contract.source})의 ${state} 계약이 없습니다`);
+    }
+  }
+  const coveredSources = new Set(contracts.map((contract) => contract.source));
+  for (const querySource of readQuerySourcesForScreen(row.source)) {
+    assert.ok(coveredSources.has(querySource), `${row.path}의 중첩 read query ${querySource} 상태 계약이 없습니다`);
   }
 }
 
@@ -361,7 +466,7 @@ test("라우트 품질 매트릭스는 App.tsx의 58개 실제 화면·가드·�
   assert.equal(routeQualityMatrix.filter((item) => item.kind === "hybrid").length, 21);
   assert.equal(routeQualityMatrix.filter((item) => item.kind === "mutation").length, 5);
   assert.equal(routeQualityMatrix.filter((item) => item.kind === "static").length, 1);
-  for (const item of routeQualityMatrix.filter((row) => row.kind !== "query")) {
+  for (const item of routeQualityMatrix.filter((row) => row.kind === "mutation" || row.kind === "static")) {
     assert.equal(item.states, null, `${item.path}는 query 상태 계약 대상이 아닙니다`);
   }
 
@@ -384,18 +489,41 @@ test("mutation-only 분류는 실제 read query를 숨길 수 없고 hybrid는 �
   );
 });
 
+test("중첩 렌더 컴포넌트의 read query도 화면 상태 계약에서 빠질 수 없다", () => {
+  const account = routeQualityMatrix.find((row) => row.path === "account");
+  assert.ok(account);
+  assert.deepEqual(readQuerySourcesForScreen(account.source), [
+    "src/screens/parent/ParentAccount.tsx",
+    "src/screens/parent/SocialLinks.tsx",
+  ]);
+  assertStateContracts(account);
+
+  assert.throws(
+    () => assertStateContracts({ ...account, states: account.states.slice(0, 1) }),
+    /SocialLinks\.tsx 상태 계약이 없습니다/,
+  );
+});
+
 test("query 화면은 loading/error/empty/success와 실제 retry UI 계약을 모두 가진다", () => {
   const queryRows = routeQualityMatrix.filter((item) => item.kind === "query");
   assert.equal(queryRows.length, 31);
   assert.equal(new Set(queryRows.map((item) => item.source)).size, 30, "MemoChat만 부모·아이 라우트에서 공유됩니다");
 
+  const failures = [];
   for (const item of queryRows) {
-    assert.deepEqual(Object.keys(item.states).sort(), ["empty", "error", "loading", "retry", "success"]);
-    const source = read(item.source);
-    for (const [state, pattern] of Object.entries(item.states)) {
-      assert.match(source, pattern, `${item.path} (${item.source})의 ${state} 계약이 없습니다`);
+    try {
+      assertStateContracts(item);
+    } catch (error) {
+      failures.push(error instanceof Error ? error.message : String(error));
     }
   }
+  assert.deepEqual(failures, []);
+});
+
+test("감사 완료된 hybrid 화면은 read query의 다섯 상태와 실제 재시도를 계약한다", () => {
+  const auditedHybridRows = routeQualityMatrix.filter((item) => item.kind === "hybrid" && item.states);
+  assert.deepEqual(auditedHybridRows.map((item) => item.path), ["remote-ring"]);
+  auditedHybridRows.forEach(assertStateContracts);
 });
 
 test("모든 화면은 뒤로가기와 역할별 말투 정책을 분류하고 DEV 선생님 경계를 보존한다", () => {

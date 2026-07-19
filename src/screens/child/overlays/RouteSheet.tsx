@@ -103,6 +103,9 @@ export function RouteSheet({
           길을 못 찾았어.
           <br />
           지도에서 직접 볼 수 있어!
+          <button type="button" className="ks-retry hy-press" onClick={() => void route.refetch()}>
+            다시 찾기
+          </button>
         </div>
       ) : steps.length > 0 ? (
         <div className="ks-route__steps">
