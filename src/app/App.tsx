@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState, type ReactElement } from "react";
 import { createHashRouter, Navigate, RouterProvider } from "react-router-dom";
 import { ParentShell, ChildShell, TeacherShell, PushShell } from "./AppShell";
 import { Splash } from "@/screens/Splash";
@@ -12,76 +12,75 @@ import { useFamilyRealtime } from "@/queries/useFamilyRealtime";
 import { NativeBootstrap } from "./NativeBootstrap";
 import { ActiveChildProvider } from "./activeChild";
 import { TEACHER_MODE_ENABLED } from "@/config/releaseFeatures";
-
-// 부모
-import { ParentHome } from "@/screens/parent/ParentHome";
-import { ParentCalendar } from "@/screens/parent/ParentCalendar";
-import { ParentLocation } from "@/screens/parent/ParentLocation";
-import { ParentFamily } from "@/screens/parent/ParentFamily";
-import { ParentSettings } from "@/screens/parent/ParentSettings";
-// 공용
-import { MemoChat } from "@/screens/shared/MemoChat";
-// 아이
-import { ChildHome } from "@/screens/child/ChildHome";
-import { StickerBook } from "@/screens/child/StickerBook";
-import { ChildSos } from "@/screens/child/ChildSos";
-import { AiFriendChat } from "@/screens/child/AiFriendChat";
-// 선생님
-import { TeacherHome } from "@/screens/teacher/TeacherHome";
-import { TeacherStudents } from "@/screens/teacher/TeacherStudents";
-import { TeacherSettings } from "@/screens/teacher/TeacherSettings";
-import { TeacherReleaseGate } from "@/screens/teacher/TeacherReleaseGate";
-// 온보딩·기능(푸시)
-import { Onboarding } from "@/screens/onboarding/Onboarding";
-import { Subscription } from "@/screens/feature/Subscription";
-import { Notifications } from "@/screens/feature/Notifications";
-import { RemoteAudio } from "@/screens/feature/RemoteAudio";
-import { PlaceManager } from "@/screens/feature/PlaceManager";
-import { FriendPlay } from "@/screens/feature/FriendPlay";
-import { AiSchedule } from "@/screens/feature/AiSchedule";
-import { AiCredit } from "@/screens/feature/AiCredit";
-import { Feedback } from "@/screens/feature/Feedback";
-import { PhoneSetup } from "@/screens/feature/PhoneSetup";
-import { PlaydateAccept } from "@/screens/feature/PlaydateAccept";
-import { StickerSend } from "@/screens/feature/StickerSend";
-import { ProfileEdit } from "@/screens/feature/ProfileEdit";
-import { PlaceForm } from "@/screens/feature/PlaceForm";
-import { ChildInvite } from "@/screens/feature/ChildInvite";
-import { RouteView } from "@/screens/feature/RouteView";
-// Wave 1 신규 화면
-import { EventForm } from "@/screens/parent/EventForm";
-import { Supplies } from "@/screens/feature/Supplies";
-import { DangerZoneForm } from "@/screens/feature/DangerZoneForm";
-import { LocationStatus } from "@/screens/feature/LocationStatus";
-import { ChildDetail } from "@/screens/parent/ChildDetail";
-import { PairingWizard } from "@/screens/feature/PairingWizard";
-import { TeacherNotice } from "@/screens/teacher/TeacherNotice";
-import { TeacherTimetable } from "@/screens/teacher/TeacherTimetable";
-// Wave 2 신규 화면
-import { FamilyConnection } from "@/screens/feature/FamilyConnection";
-import { LocationSettings } from "@/screens/feature/LocationSettings";
-import { ChildLocationStatus } from "@/screens/child/ChildLocationStatus";
-import { ChildSettings } from "@/screens/child/ChildSettings";
-import { ParentAccount } from "@/screens/parent/ParentAccount";
-import { DataSync } from "@/screens/feature/DataSync";
-import { TrialLock } from "@/screens/feature/TrialLock";
-import { NotificationSettings } from "@/screens/feature/NotificationSettings";
-import { ArrivalAlerts } from "@/screens/feature/ArrivalAlerts";
-import { DangerAlert } from "@/screens/feature/DangerAlert";
-import { DaySummary } from "@/screens/feature/DaySummary";
-import { DailySafetyReport } from "@/screens/feature/DailySafetyReport";
-import { WeeklyFamilyReport } from "@/screens/feature/WeeklyFamilyReport";
-import { RemoteAudioAudit } from "@/screens/feature/RemoteAudioAudit";
-import { AiFriendSetup } from "@/screens/child/AiFriendSetup";
-import { RemoteRing } from "@/screens/feature/RemoteRing";
-import { SosReceive } from "@/screens/feature/SosReceive";
-// 앱레벨 골격
-import { AppUpdate } from "@/screens/feature/AppUpdate";
-import { PermDenied } from "@/screens/feature/PermDenied";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import { StickerCelebrationHost } from "@/components/ui/StickerCelebration";
+import { RouteLoading } from "@/components/ui/RouteLoading";
 import { RootErrorBoundary, RouteErrorScreen } from "./ErrorBoundary";
 import { GlobalErrorListeners } from "./GlobalErrorListeners";
+import { lazyScreen } from "./lazyScreen";
+
+// Provider·shell·오류 경계는 즉시 로드하고 사용자 화면만 route 단위로 분리한다.
+const ParentHome = lazyScreen(() => import("@/screens/parent/ParentHome"), "ParentHome");
+const ParentCalendar = lazyScreen(() => import("@/screens/parent/ParentCalendar"), "ParentCalendar");
+const ParentLocation = lazyScreen(() => import("@/screens/parent/ParentLocation"), "ParentLocation");
+const ParentFamily = lazyScreen(() => import("@/screens/parent/ParentFamily"), "ParentFamily");
+const ParentSettings = lazyScreen(() => import("@/screens/parent/ParentSettings"), "ParentSettings");
+const MemoChat = lazyScreen(() => import("@/screens/shared/MemoChat"), "MemoChat");
+const ChildHome = lazyScreen(() => import("@/screens/child/ChildHome"), "ChildHome");
+const StickerBook = lazyScreen(() => import("@/screens/child/StickerBook"), "StickerBook");
+const ChildSos = lazyScreen(() => import("@/screens/child/ChildSos"), "ChildSos");
+const AiFriendChat = lazyScreen(() => import("@/screens/child/AiFriendChat"), "AiFriendChat");
+const TeacherHome = lazyScreen(() => import("@/screens/teacher/TeacherHome"), "TeacherHome");
+const TeacherStudents = lazyScreen(() => import("@/screens/teacher/TeacherStudents"), "TeacherStudents");
+const TeacherSettings = lazyScreen(() => import("@/screens/teacher/TeacherSettings"), "TeacherSettings");
+const TeacherReleaseGate = lazyScreen(() => import("@/screens/teacher/TeacherReleaseGate"), "TeacherReleaseGate");
+const Onboarding = lazyScreen(() => import("@/screens/onboarding/Onboarding"), "Onboarding");
+const Subscription = lazyScreen(() => import("@/screens/feature/Subscription"), "Subscription");
+const Notifications = lazyScreen(() => import("@/screens/feature/Notifications"), "Notifications");
+const RemoteAudio = lazyScreen(() => import("@/screens/feature/RemoteAudio"), "RemoteAudio");
+const PlaceManager = lazyScreen(() => import("@/screens/feature/PlaceManager"), "PlaceManager");
+const FriendPlay = lazyScreen(() => import("@/screens/feature/FriendPlay"), "FriendPlay");
+const AiSchedule = lazyScreen(() => import("@/screens/feature/AiSchedule"), "AiSchedule");
+const AiCredit = lazyScreen(() => import("@/screens/feature/AiCredit"), "AiCredit");
+const Feedback = lazyScreen(() => import("@/screens/feature/Feedback"), "Feedback");
+const PhoneSetup = lazyScreen(() => import("@/screens/feature/PhoneSetup"), "PhoneSetup");
+const PlaydateAccept = lazyScreen(() => import("@/screens/feature/PlaydateAccept"), "PlaydateAccept");
+const StickerSend = lazyScreen(() => import("@/screens/feature/StickerSend"), "StickerSend");
+const ProfileEdit = lazyScreen(() => import("@/screens/feature/ProfileEdit"), "ProfileEdit");
+const PlaceForm = lazyScreen(() => import("@/screens/feature/PlaceForm"), "PlaceForm");
+const ChildInvite = lazyScreen(() => import("@/screens/feature/ChildInvite"), "ChildInvite");
+const RouteView = lazyScreen(() => import("@/screens/feature/RouteView"), "RouteView");
+const EventForm = lazyScreen(() => import("@/screens/parent/EventForm"), "EventForm");
+const Supplies = lazyScreen(() => import("@/screens/feature/Supplies"), "Supplies");
+const DangerZoneForm = lazyScreen(() => import("@/screens/feature/DangerZoneForm"), "DangerZoneForm");
+const LocationStatus = lazyScreen(() => import("@/screens/feature/LocationStatus"), "LocationStatus");
+const ChildDetail = lazyScreen(() => import("@/screens/parent/ChildDetail"), "ChildDetail");
+const PairingWizard = lazyScreen(() => import("@/screens/feature/PairingWizard"), "PairingWizard");
+const TeacherNotice = lazyScreen(() => import("@/screens/teacher/TeacherNotice"), "TeacherNotice");
+const TeacherTimetable = lazyScreen(() => import("@/screens/teacher/TeacherTimetable"), "TeacherTimetable");
+const FamilyConnection = lazyScreen(() => import("@/screens/feature/FamilyConnection"), "FamilyConnection");
+const LocationSettings = lazyScreen(() => import("@/screens/feature/LocationSettings"), "LocationSettings");
+const ChildLocationStatus = lazyScreen(() => import("@/screens/child/ChildLocationStatus"), "ChildLocationStatus");
+const ChildSettings = lazyScreen(() => import("@/screens/child/ChildSettings"), "ChildSettings");
+const ParentAccount = lazyScreen(() => import("@/screens/parent/ParentAccount"), "ParentAccount");
+const DataSync = lazyScreen(() => import("@/screens/feature/DataSync"), "DataSync");
+const TrialLock = lazyScreen(() => import("@/screens/feature/TrialLock"), "TrialLock");
+const NotificationSettings = lazyScreen(() => import("@/screens/feature/NotificationSettings"), "NotificationSettings");
+const ArrivalAlerts = lazyScreen(() => import("@/screens/feature/ArrivalAlerts"), "ArrivalAlerts");
+const DangerAlert = lazyScreen(() => import("@/screens/feature/DangerAlert"), "DangerAlert");
+const DaySummary = lazyScreen(() => import("@/screens/feature/DaySummary"), "DaySummary");
+const DailySafetyReport = lazyScreen(() => import("@/screens/feature/DailySafetyReport"), "DailySafetyReport");
+const WeeklyFamilyReport = lazyScreen(() => import("@/screens/feature/WeeklyFamilyReport"), "WeeklyFamilyReport");
+const RemoteAudioAudit = lazyScreen(() => import("@/screens/feature/RemoteAudioAudit"), "RemoteAudioAudit");
+const AiFriendSetup = lazyScreen(() => import("@/screens/child/AiFriendSetup"), "AiFriendSetup");
+const RemoteRing = lazyScreen(() => import("@/screens/feature/RemoteRing"), "RemoteRing");
+const SosReceive = lazyScreen(() => import("@/screens/feature/SosReceive"), "SosReceive");
+const AppUpdate = lazyScreen(() => import("@/screens/feature/AppUpdate"), "AppUpdate");
+const PermDenied = lazyScreen(() => import("@/screens/feature/PermDenied"), "PermDenied");
+
+function routeElement(element: ReactElement): ReactElement {
+  return <Suspense fallback={<RouteLoading />}>{element}</Suspense>;
+}
 
 // 전 라우트를 pathless 루트로 감싸 렌더 에러가 흰 화면 대신 복구 화면(RouteErrorScreen)으로 간다.
 const router = createHashRouter([
@@ -97,11 +96,11 @@ const router = createHashRouter([
       {
         element: <ParentShell />,
         children: [
-          { path: "parent/home", element: <ParentHome /> },
-          { path: "parent/calendar", element: <ParentCalendar /> },
-          { path: "parent/location", element: <ParentLocation /> },
-          { path: "parent/memo", element: <MemoChat /> },
-          { path: "parent/settings", element: <ParentSettings /> },
+          { path: "parent/home", element: routeElement(<ParentHome />) },
+          { path: "parent/calendar", element: routeElement(<ParentCalendar />) },
+          { path: "parent/location", element: routeElement(<ParentLocation />) },
+          { path: "parent/memo", element: routeElement(<MemoChat />) },
+          { path: "parent/settings", element: routeElement(<ParentSettings />) },
         ],
       },
     ],
@@ -114,9 +113,9 @@ const router = createHashRouter([
       {
         element: <ChildShell />,
         children: [
-          { path: "child/home", element: <ChildHome /> },
-          { path: "child/sticker", element: <StickerBook /> },
-          { path: "child/memo", element: <MemoChat /> },
+          { path: "child/home", element: routeElement(<ChildHome />) },
+          { path: "child/sticker", element: routeElement(<StickerBook />) },
+          { path: "child/memo", element: routeElement(<MemoChat />) },
         ],
       },
     ],
@@ -129,14 +128,14 @@ const router = createHashRouter([
       {
         element: <TeacherShell />,
         children: [
-          { path: "teacher/home", element: <TeacherHome /> },
-          { path: "teacher/students", element: <TeacherStudents /> },
-          { path: "teacher/timetable", element: <TeacherTimetable /> },
-          { path: "teacher/settings", element: <TeacherSettings /> },
+          { path: "teacher/home", element: routeElement(<TeacherHome />) },
+          { path: "teacher/students", element: routeElement(<TeacherStudents />) },
+          { path: "teacher/timetable", element: routeElement(<TeacherTimetable />) },
+          { path: "teacher/settings", element: routeElement(<TeacherSettings />) },
         ],
       },
     ] : [
-      { path: "teacher/*", element: <TeacherReleaseGate /> },
+      { path: "teacher/*", element: routeElement(<TeacherReleaseGate />) },
     ],
   },
 
@@ -150,7 +149,7 @@ const router = createHashRouter([
         path: "onboarding",
         element: (
           <RequireGuest>
-            <Onboarding />
+            {routeElement(<Onboarding />)}
           </RequireGuest>
         ),
       },
@@ -158,38 +157,38 @@ const router = createHashRouter([
       {
         element: <RequireRole role="parent" />,
         children: [
-          { path: "parent/family", element: <ParentFamily /> },
-          { path: "subscription", element: <Subscription /> },
-          { path: "trial-lock", element: <TrialLock /> },
-          { path: "notifications", element: <Notifications /> },
-          { path: "remote-audio", element: <RemoteAudio /> },
-          { path: "place-manager", element: <PlaceManager /> },
-          { path: "friend-play", element: <FriendPlay /> },
-          { path: "ai-schedule", element: <AiSchedule /> },
-          { path: "ai-credit", element: <AiCredit /> },
-          { path: "phone-setup", element: <PhoneSetup /> },
-          { path: "sticker-send", element: <StickerSend /> },
-          { path: "profile-edit", element: <ProfileEdit /> },
-          { path: "place-form", element: <PlaceForm /> },
-          { path: "child-invite", element: <ChildInvite /> },
-          { path: "event-form", element: <EventForm /> },
-          { path: "danger-zone-form", element: <DangerZoneForm /> },
-          { path: "location-status", element: <LocationStatus /> },
-          { path: "child-detail", element: <ChildDetail /> },
-          { path: "pairing-wizard", element: <PairingWizard /> },
-          { path: "family-connection", element: <FamilyConnection /> },
-          { path: "location-settings", element: <LocationSettings /> },
-          { path: "account", element: <ParentAccount /> },
-          { path: "data-sync", element: <DataSync /> },
-          { path: "notification-settings", element: <NotificationSettings /> },
-          { path: "arrival-alerts", element: <ArrivalAlerts /> },
-          { path: "danger-alert", element: <DangerAlert /> },
-          { path: "day-summary", element: <DaySummary /> },
-          { path: "daily-report", element: <DailySafetyReport /> },
-          { path: "weekly-report", element: <WeeklyFamilyReport /> },
-          { path: "remote-audio-audit", element: <RemoteAudioAudit /> },
-          { path: "remote-ring", element: <RemoteRing /> },
-          { path: "sos-receive", element: <SosReceive /> },
+          { path: "parent/family", element: routeElement(<ParentFamily />) },
+          { path: "subscription", element: routeElement(<Subscription />) },
+          { path: "trial-lock", element: routeElement(<TrialLock />) },
+          { path: "notifications", element: routeElement(<Notifications />) },
+          { path: "remote-audio", element: routeElement(<RemoteAudio />) },
+          { path: "place-manager", element: routeElement(<PlaceManager />) },
+          { path: "friend-play", element: routeElement(<FriendPlay />) },
+          { path: "ai-schedule", element: routeElement(<AiSchedule />) },
+          { path: "ai-credit", element: routeElement(<AiCredit />) },
+          { path: "phone-setup", element: routeElement(<PhoneSetup />) },
+          { path: "sticker-send", element: routeElement(<StickerSend />) },
+          { path: "profile-edit", element: routeElement(<ProfileEdit />) },
+          { path: "place-form", element: routeElement(<PlaceForm />) },
+          { path: "child-invite", element: routeElement(<ChildInvite />) },
+          { path: "event-form", element: routeElement(<EventForm />) },
+          { path: "danger-zone-form", element: routeElement(<DangerZoneForm />) },
+          { path: "location-status", element: routeElement(<LocationStatus />) },
+          { path: "child-detail", element: routeElement(<ChildDetail />) },
+          { path: "pairing-wizard", element: routeElement(<PairingWizard />) },
+          { path: "family-connection", element: routeElement(<FamilyConnection />) },
+          { path: "location-settings", element: routeElement(<LocationSettings />) },
+          { path: "account", element: routeElement(<ParentAccount />) },
+          { path: "data-sync", element: routeElement(<DataSync />) },
+          { path: "notification-settings", element: routeElement(<NotificationSettings />) },
+          { path: "arrival-alerts", element: routeElement(<ArrivalAlerts />) },
+          { path: "danger-alert", element: routeElement(<DangerAlert />) },
+          { path: "day-summary", element: routeElement(<DaySummary />) },
+          { path: "daily-report", element: routeElement(<DailySafetyReport />) },
+          { path: "weekly-report", element: routeElement(<WeeklyFamilyReport />) },
+          { path: "remote-audio-audit", element: routeElement(<RemoteAudioAudit />) },
+          { path: "remote-ring", element: routeElement(<RemoteRing />) },
+          { path: "sos-receive", element: routeElement(<SosReceive />) },
         ],
       },
 
@@ -197,12 +196,12 @@ const router = createHashRouter([
       {
         element: <RequireRole role="child" />,
         children: [
-          { path: "child/sos", element: <ChildSos /> },
-          { path: "child/ai-friend", element: <AiFriendChat /> },
-          { path: "child/location-status", element: <ChildLocationStatus /> },
-          { path: "child/settings", element: <ChildSettings /> },
-          { path: "child/ai-friend-setup", element: <AiFriendSetup /> },
-          { path: "playdate-accept", element: <PlaydateAccept /> },
+          { path: "child/sos", element: routeElement(<ChildSos />) },
+          { path: "child/ai-friend", element: routeElement(<AiFriendChat />) },
+          { path: "child/location-status", element: routeElement(<ChildLocationStatus />) },
+          { path: "child/settings", element: routeElement(<ChildSettings />) },
+          { path: "child/ai-friend-setup", element: routeElement(<AiFriendSetup />) },
+          { path: "playdate-accept", element: routeElement(<PlaydateAccept />) },
         ],
       },
 
@@ -210,7 +209,7 @@ const router = createHashRouter([
       ...(TEACHER_MODE_ENABLED ? [{
         element: <RequireRole role="teacher" />,
         children: [
-          { path: "teacher/notice", element: <TeacherNotice /> },
+          { path: "teacher/notice", element: routeElement(<TeacherNotice />) },
         ],
       }] : []),
 
@@ -218,7 +217,7 @@ const router = createHashRouter([
       {
         element: <RequireAuthenticated />,
         children: [
-          { path: "feedback", element: <Feedback /> },
+          { path: "feedback", element: routeElement(<Feedback />) },
         ],
       },
 
@@ -226,13 +225,13 @@ const router = createHashRouter([
       {
         element: <RequireAnyRole roles={["parent", "child"]} />,
         children: [
-          { path: "supplies", element: <Supplies /> },
-          { path: "route", element: <RouteView /> },
+          { path: "supplies", element: routeElement(<Supplies />) },
+          { path: "route", element: routeElement(<RouteView />) },
         ],
       },
       // 앱레벨 골격 화면
-      { path: "app-update", element: <AppUpdate /> },
-      { path: "perm-denied", element: <PermDenied /> },
+      { path: "app-update", element: routeElement(<AppUpdate />) },
+      { path: "perm-denied", element: routeElement(<PermDenied />) },
     ],
   },
 
