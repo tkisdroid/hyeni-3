@@ -549,7 +549,7 @@ function SignupProgress({ percent, label }: { percent: number; label: string }) 
 
 function KakaoIcon() {
   return (
-    <svg width="21" height="21" viewBox="0 0 24 24" fill="#341B1B">
+    <svg width="21" height="21" viewBox="0 0 24 24" fill="#341B1B" aria-hidden="true">
       <path d="M12 3C6.9 3 3 6.3 3 10.3c0 2.6 1.7 4.9 4.3 6.2-.2.7-.7 2.5-.8 2.9 0 .3.2.3.4.2.2-.1 2.6-1.8 3.6-2.5.5.1 1 .1 1.5.1 5.1 0 9-3.3 9-7.3S17.1 3 12 3Z" />
     </svg>
   );
@@ -566,7 +566,7 @@ function NaverIcon() {
 
 function GoogleIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24">
+    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
       <path fill="#4285F4" d="M22.5 12.2c0-.7-.1-1.4-.2-2H12v3.9h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.2-4.8 3.2-7.9Z" />
       <path fill="#34A853" d="M12 23c2.9 0 5.4-1 7.2-2.6l-3.6-2.7c-1 .7-2.3 1.1-3.6 1.1-2.8 0-5.1-1.9-6-4.4H2.3v2.8A11 11 0 0 0 12 23Z" />
       <path fill="#FBBC05" d="M6 14.3a6.6 6.6 0 0 1 0-4.2V7.3H2.3a11 11 0 0 0 0 9.8L6 14.3Z" />

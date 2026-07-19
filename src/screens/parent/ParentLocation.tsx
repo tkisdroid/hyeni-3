@@ -918,7 +918,7 @@ export function ParentLocation() {
                 aria-label="경로 보기"
                 onClick={() => (premiumOpen ? navigate("/route") : upsell())}
               >
-                <Navigation size={21} strokeWidth={2.2} color="var(--blue-500)" />
+                <Navigation size={20} strokeWidth={2.2} color="var(--blue-500)" />
               </button>
               <button
                 type="button"

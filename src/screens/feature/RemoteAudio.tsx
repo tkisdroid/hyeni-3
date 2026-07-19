@@ -533,7 +533,7 @@ export function RemoteAudio() {
             className="ra-audit-link hy-press"
             onClick={() => navigate("/remote-audio-audit")}
           >
-            <FileClock size={17} strokeWidth={2.2} />
+            <FileClock size={18} strokeWidth={2.2} />
             청취 기록 보기
           </button>
         </div>
@@ -550,7 +550,7 @@ export function RemoteAudio() {
               disabled={starting || requestListen.isPending || !childUserId}
               aria-busy={starting || requestListen.isPending}
             >
-              <Mic size={21} strokeWidth={2} color="#fff" />
+              <Mic size={20} strokeWidth={2.2} color="#fff" />
               {starting || requestListen.isPending ? "연결 요청 중" : "듣기 시작"}
             </button>
           </div>
@@ -603,7 +603,7 @@ export function RemoteAudio() {
               data-muted={muted}
               onClick={toggleMute}
             >
-              <VolumeX size={24} strokeWidth={2} color="#fff" />
+              <VolumeX size={24} strokeWidth={2.2} color="#fff" />
             </button>
             <button
               type="button"
@@ -619,7 +619,7 @@ export function RemoteAudio() {
               aria-label="보호자에게 전화"
               onClick={callGuardian}
             >
-              <Phone size={24} strokeWidth={2} color="#fff" />
+              <Phone size={24} strokeWidth={2.2} color="#fff" />
             </button>
           </div>
 

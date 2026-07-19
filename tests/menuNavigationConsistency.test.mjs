@@ -53,7 +53,7 @@ test("부모 위치 시트의 액션 버튼은 원시 이모지 대신 아이콘
   assert.ok(actions.length > 0, "pl-actions 블록을 찾지 못했다");
   // 원시 이모지는 시스템 폰트로 렌더돼 크기·베이스라인이 옆 아이콘과 어긋난다.
   assert.doesNotMatch(actions, /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
-  assert.match(actions, /<Navigation size=\{21\}/);
+  assert.match(actions, /<Navigation size=\{20\} strokeWidth=\{2\.2\}/);
   assert.match(css, /\.pl-route-btn \{[^}]*background: var\(--blue-soft\)/);
 });
 

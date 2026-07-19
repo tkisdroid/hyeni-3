@@ -180,7 +180,7 @@ export function FriendPlay() {
               <div className="fp-connected__friend">{active.friend_child_name ?? "친구"}</div>
               {active.place_name ? (
                 <div className="fp-connected__place">
-                  <MapPin size={14} strokeWidth={2} color="var(--mint-text)" />
+                  <MapPin size={16} strokeWidth={2.2} color="var(--mint-text)" />
                   {active.place_name}
                 </div>
               ) : null}
@@ -251,7 +251,7 @@ export function FriendPlay() {
             <div className="fp-connected__friend">{active.friend_child_name ?? "친구"}</div>
             {active.place_name ? (
               <div className="fp-connected__place">
-                <MapPin size={14} strokeWidth={2} color="var(--mint-text)" />
+                <MapPin size={16} strokeWidth={2.2} color="var(--mint-text)" />
                 {active.place_name}
               </div>
             ) : null}

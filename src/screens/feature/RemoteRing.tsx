@@ -285,7 +285,7 @@ export function RemoteRing() {
         <div className="rr-modal-backdrop" onClick={() => setShowConfirm(false)}>
           <div className="rr-modal" onClick={(e) => e.stopPropagation()}>
             <div className="rr-modal-emoji" aria-hidden="true">
-              <Bell size={32} strokeWidth={2.1} />
+              <Bell size={24} strokeWidth={2.4} />
             </div>
             <div className="rr-modal-title">{childName} 기기에서 울릴까요?</div>
             <div className="rr-modal-sub">

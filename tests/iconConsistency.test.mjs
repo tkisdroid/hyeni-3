@@ -114,7 +114,7 @@ test("출시 화면 유틸리티 아이콘은 손작성 SVG나 전용 슬롯 이
   const dedicatedSlots = [
     ["src/screens/feature/DaySummary.tsx", /icon:\s*["'][^"']*[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u],
     ["src/screens/feature/RemoteAudio.tsx", /icon:\s*["'][^"']*[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u],
-    ["src/screens/feature/FriendPlay.tsx", /className="fp-(setting__icon|connected__badge)"[^>]*>\s*[^<{]*[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u],
+    ["src/screens/feature/FriendPlay.tsx", /className="fp-(setting__icon|connected__badge|waiting|cta)[^"]*"[^>]*>[\s\S]{0,160}?[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u],
     ["src/screens/feature/RemoteRing.tsx", /className="rr-modal-emoji"[^>]*>\s*[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u],
     ["src/screens/parent/ParentLocation.tsx", /<span>\s*[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]\s*일정\s*<\/span>/u],
   ];
@@ -124,21 +124,56 @@ test("출시 화면 유틸리티 아이콘은 손작성 SVG나 전용 슬롯 이
   }
 });
 
-test("장소 삭제 아이콘은 44px 조작 영역과 18px 이하 glyph를 유지한다", () => {
+test("장소 삭제 아이콘은 44px 조작 영역과 18px glyph를 유지한다", () => {
   const css = readSource("src/screens/feature/PlaceManager.css");
   const screen = readSource("src/screens/feature/PlaceManager.tsx");
 
   for (const selector of ["pm-item__del", "pm-danger__del"]) {
-    assert.match(
-      css,
-      new RegExp(`\\.${selector}[\\s\\S]*?min-height:\\s*var\\(--control-min-size\\)`),
-      `${selector} 최소 높이 44px 계약 누락`,
-    );
-    assert.match(
-      css,
-      new RegExp(`\\.${selector}[\\s\\S]*?min-width:\\s*var\\(--control-min-size\\)`),
-      `${selector} 최소 너비 44px 계약 누락`,
-    );
+    const block = new RegExp(`\\.${selector}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? "";
+    assert.match(block, /width:\s*var\(--control-min-size\)/, `${selector} 너비 44px 계약 누락`);
+    assert.match(block, /height:\s*var\(--control-min-size\)/, `${selector} 높이 44px 계약 누락`);
   }
-  assert.doesNotMatch(screen, /<Trash2\s+size=\{(?:19|[2-9]\d)\}/, "삭제 glyph가 18px를 초과함");
+  assert.equal((screen.match(/<Trash2\s+size=\{18\}\s+strokeWidth=\{2\.2\}/g) ?? []).length, 2);
+});
+
+test("출시 화면 Lucide 유틸리티 아이콘은 승인된 glyph와 stroke 척도만 쓴다", () => {
+  const files = [
+    "src/screens/parent/ParentLocation.tsx",
+    "src/screens/feature/DaySummary.tsx",
+    "src/screens/feature/RemoteAudio.tsx",
+    "src/screens/feature/FriendPlay.tsx",
+    "src/screens/feature/RemoteRing.tsx",
+    "src/screens/feature/PlaceManager.tsx",
+  ];
+  const allowedSizes = new Set([16, 18, 20, 22, 24]);
+  const allowedStrokes = new Set([2.2, 2.4]);
+  const decorativeAllowlist = new Set([
+    "src/screens/parent/ParentLocation.tsx|AlertTriangle|30|2.2",
+    "src/screens/parent/ParentLocation.tsx|RefreshCw|30|2.2",
+    "src/screens/feature/RemoteAudio.tsx|Mic|52|1.8",
+    "src/screens/feature/RemoteRing.tsx|Bell|52|1.9",
+  ]);
+  const violations = [];
+
+  for (const file of files) {
+    const body = readSource(file);
+    const tags = body.matchAll(/<([A-Z][A-Za-z0-9]*)\b[^>]*\bsize=\{(\d+)\}[^>]*\bstrokeWidth=\{([0-9.]+)\}[^>]*\/?\s*>/g);
+    for (const match of tags) {
+      const [, icon, sizeRaw, strokeRaw] = match;
+      const size = Number(sizeRaw);
+      const stroke = Number(strokeRaw);
+      const key = `${file}|${icon}|${size}|${stroke}`;
+      if (decorativeAllowlist.has(key)) continue;
+      if (!allowedSizes.has(size) || !allowedStrokes.has(stroke)) violations.push(key);
+    }
+  }
+  assert.deepEqual(violations, [], `Lucide 규격 위반:\n${violations.join("\n")}`);
+});
+
+test("OAuth 브랜드 SVG는 버튼 이름과 중복 낭독되지 않는다", () => {
+  const onboarding = readSource("src/screens/onboarding/Onboarding.tsx");
+  for (const component of ["KakaoIcon", "NaverIcon", "GoogleIcon"]) {
+    const body = new RegExp(`function ${component}\\(\\) \\{[\\s\\S]*?<svg\\b([^>]*)>`).exec(onboarding)?.[1] ?? "";
+    assert.match(body, /aria-hidden="true"/, `${component} aria-hidden 누락`);
+  }
 });

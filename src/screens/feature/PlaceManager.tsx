@@ -51,7 +51,7 @@ export function PlaceManager() {
         </button>
         <span className="pm-title">장소 관리</span>
         <button type="button" className="pm-add hy-press" aria-label="장소 추가" onClick={handleAddPlace}>
-          <Plus size={20} strokeWidth={2.6} color="#fff" />
+          <Plus size={20} strokeWidth={2.4} color="#fff" />
         </button>
       </div>
 
@@ -96,7 +96,7 @@ export function PlaceManager() {
                   onClick={() => handleDeletePlace(p.id, p.name)}
                   disabled={deletePlace.isPending}
                 >
-                  <Trash2 size={17} strokeWidth={2.2} color="#8B7E84" />
+                  <Trash2 size={18} strokeWidth={2.2} color="#8B7E84" />
                 </button>
               </div>
               );
@@ -143,7 +143,7 @@ export function PlaceManager() {
                   onClick={() => handleDeleteZone(z.id, z.name)}
                   disabled={deleteZone.isPending}
                 >
-                  <Trash2 size={17} strokeWidth={2.2} color="#C0334C" />
+                  <Trash2 size={18} strokeWidth={2.2} color="#C0334C" />
                 </button>
               </div>
             ))}
