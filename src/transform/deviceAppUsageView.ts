@@ -67,14 +67,19 @@ function cleanPercent(value: number | null | undefined): number | null {
 const OWN_APP_PACKAGE = "com.hyeni.calendar";
 const OWN_APP_NAMES = new Set(["혜니캘린더", "hyeni calendar", "hyenicalendar"]);
 const SYSTEM_SURFACE_NAMES = new Set(["시스템자녀보호기능", "systemparentalcontrols"]);
-const SYSTEM_SURFACE_PACKAGES = new Set(["com.android.settings", "com.android.systemui"]);
+const SYSTEM_SURFACE_PACKAGES = new Set([
+  "com.android.settings",
+  "com.android.systemui",
+  "com.google.android.permissioncontroller",
+  "com.android.permissioncontroller",
+  "com.google.android.packageinstaller",
+  "com.android.packageinstaller",
+  "com.sec.android.app.launcher",
+]);
 
 function isSystemSurfacePackage(value: string | null | undefined): boolean {
   const packageName = canonicalAppText(value);
-  return SYSTEM_SURFACE_PACKAGES.has(packageName)
-    || packageName.includes("permissioncontroller")
-    || packageName.includes("packageinstaller")
-    || packageName.includes("launcher");
+  return SYSTEM_SURFACE_PACKAGES.has(packageName);
 }
 
 function isSystemSurfaceName(value: string | null | undefined): boolean {
@@ -91,7 +96,9 @@ function isSystemRecentApp(value: string | null | undefined): boolean {
 }
 
 function isSystemSurfaceRow(row: DeviceAppUsageInput): boolean {
-  return isSystemSurfaceName(row.name) || isSystemSurfacePackage(row.packageName);
+  return isSystemSurfaceName(row.name)
+    || isSystemSurfacePackage(row.packageName)
+    || (isPackageLikeAppText(row.name) && isSystemSurfacePackage(row.name));
 }
 
 function isOwnAppRow(row: DeviceAppUsageInput): boolean {

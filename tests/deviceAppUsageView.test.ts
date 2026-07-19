@@ -71,7 +71,7 @@ test("Launcher Pro처럼 시스템 키워드가 포함된 정상 표시명은 �
   const view = buildDeviceAppUsageView({
     recentApp: "Launcher Pro",
     appUsage: [
-      { name: "Launcher Pro", packageName: "com.example.tools", usageMs: 45 * 60000, percent: 75 },
+      { name: "Launcher Pro", packageName: "com.example.launcherpro", usageMs: 45 * 60000, percent: 75 },
       { name: "유튜브", packageName: "com.google.android.youtube", usageMs: 15 * 60000, percent: 25 },
     ],
   });
@@ -79,6 +79,19 @@ test("Launcher Pro처럼 시스템 키워드가 포함된 정상 표시명은 �
   assert.equal(view.recentAppLabel, "Launcher Pro");
   assert.deepEqual(view.topApps.map((app) => app.name), ["Launcher Pro", "유튜브"]);
   assert.equal(view.mostUsedApp?.name, "Launcher Pro");
+});
+
+test("구버전 name-only 시스템 패키지는 표시명으로 노출하지 않는다", () => {
+  const view = buildDeviceAppUsageView({
+    recentApp: "유튜브",
+    appUsage: [
+      { name: "com.android.systemui", packageName: null, usageMs: 90 * 60000 },
+      { name: "유튜브", packageName: "com.google.android.youtube", usageMs: 10 * 60000 },
+    ],
+  });
+
+  assert.deepEqual(view.topApps.map((app) => app.name), ["유튜브"]);
+  assert.equal(view.mostUsedApp?.name, "유튜브");
 });
 
 test("시스템 또는 자체 행을 제거하면 남은 앱의 과거 분모 비율을 표시하지 않는다", () => {

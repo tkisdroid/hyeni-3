@@ -128,6 +128,14 @@ public class DeviceStatusReporterTest {
     }
 
     @Test
+    public void explicitSystemSurfacePackage_doesNotMatchUserPackageKeyword() {
+        assertTrue(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.android.systemui"));
+        assertTrue(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.google.android.packageinstaller"));
+        assertFalse(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.example.launcherpro"));
+        assertFalse(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.example.packageinstaller.tools"));
+    }
+
+    @Test
     public void usagePermission_preservesRawEvidenceAfterSystemRowsAreFiltered() {
         assertEquals("granted", DeviceStatusReporter.resolveUsagePermission(false, true, false));
         assertEquals("granted", DeviceStatusReporter.resolveUsagePermission(true, false, false));
