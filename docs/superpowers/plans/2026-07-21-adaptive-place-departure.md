@@ -452,4 +452,3 @@ git -C C:\Users\TK\Desktop\hyeni-3 status --short
 ```
 
 Expected: 두 저장소 모두 깨끗하다.
-
