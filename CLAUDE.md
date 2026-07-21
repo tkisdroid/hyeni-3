@@ -209,6 +209,17 @@
   클라이언트 WS relay 금지. stop은 같은 requestId·아이·session nonce를 검증해 감사 PATCH보다 먼저 보내고,
   감사 종료 시각·길이·사유는 서버가 확정한다. 회귀=`tests/remoteListenConsentSafety.test.mjs`,
   Worker `tests/realtimeBroadcastSecurity.test.mjs`·`tests/remoteListenCommandSecurity.test.mjs`.
+- ★주변소리 세션 조기 종료(2026-07-22 TK 제보 "1분 안 됐는데 1분 지나 종료" 실사고): 부모 화면이 시작
+  ~4.5초 만에 "1분이 지나 듣기를 종료했어요"로 닫혔다. 원인은 서버가 아니라 **클라 파싱 버그** —
+  `src/lib/api/endpoints/remoteAudit.ts`의 `finiteMs`가 `Number(null)===0`을 유한값으로 통과시켜, 미동의·미종료
+  세션의 `consented_at_ms`/`capture_expires_at_ms`/`ended_at_ms`(서버 JSON null)를 **0**으로 둔갑시켰다.
+  타이밍 resolver의 첫 검사 `finite(endedAtMs)`가 0을 finite로 보아 즉시 phase="ended" → 클라가 PATCH로
+  `end_reason=timeout` 종료(프로덕션 D1 확진: consented=NULL·duration_ms=0·종료 ~4.5s). 서버 계약(동의 시각+60초·
+  미동의 65초 request_timeout)과 resolver 자체는 정상이었다. 수정: null/비숫자를 반드시 null로 남기는 순수 파서
+  `src/transform/remoteListenStatusMs.ts`(`parseRemoteListenMs`, typeof-number 가드)로 교체. 서버 시간 필드를
+  `number|null`로 받는 다른 경계 파서도 `parsePushExpiry`식 typeof 가드를 쓰고 `Number()`로 null을 강제하지 않는다.
+  회귀=`tests/remoteListenStatusParse.test.ts`(red-green: 버그 강제 시 ended, 수정 시 waiting_for_consent). 웹 배포
+  완료·A17 미연결로 APK 재설치는 보류(재연결 시 `npm run build && npx cap sync android && gradlew assembleDebug` → `adb install -r`).
 - **AI·가족 메모 콘텐츠 안전 계약(2026-07-14)**: id가 서버에 저장된 자기 AI assistant 답변만 아이가 신고한다.
   중복 신고는 같은 id로 멱등 처리하고 신고 레코드에 원문을 복제하지 않는다. 메모는 정확한 가족·아이 스레드의 상대 메시지만
   신고할 수 있다. 사용자 차단은 메모 조회·`new_memo` pending/푸시에만 적용하고 가족 연결·위치·도착·위험·SOS 알림은

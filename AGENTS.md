@@ -151,6 +151,13 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   시간을 줄이지 않는다. FCM·pending만으로 마이크를 자동 시작하거나 전체화면으로 가로채지 않는다. 익명 realtime
   broadcast와 클라이언트 WebSocket relay는 금지하며, stop은 같은 requestId·아이·session nonce를 확인하고 감사 행을
   닫기 전에 전송한다. 감사 종료 시각·길이·종료 사유는 서버가 확정한다.
+- ★주변소리 세션 조기 종료(2026-07-22 실사고): 부모 화면이 시작 ~4.5초 만에 "1분이 지나 듣기를 종료했어요"로
+  닫혔다. 근본 원인은 클라 파싱 버그 — `src/lib/api/endpoints/remoteAudit.ts`의 `finiteMs`가 `Number(null)===0`을
+  유한값으로 통과시켜 미동의 세션의 `ended_at_ms`(서버 JSON null)를 0으로 만들었고, 타이밍 resolver의
+  `finite(endedAtMs)`가 즉시 phase="ended"로 조기 종료했다(D1 확진: consented=NULL·duration=0·~4.5s). 서버 계약과
+  resolver는 정상. 수정=null/비숫자를 null로 남기는 순수 파서 `src/transform/remoteListenStatusMs.ts`
+  (`parseRemoteListenMs`, typeof-number 가드). 서버 `number|null` 시간 필드는 `Number()`로 null을 강제하지 말 것.
+  회귀=`tests/remoteListenStatusParse.test.ts`.
 - **AI·가족 메모 콘텐츠 안전 계약(2026-07-14)**: 서버에 저장돼 id가 확정된 AI assistant 답변만 아이가 신고할 수 있다.
   신고자는 자기 AI 스레드만 신고하고, 중복 신고는 같은 id로 멱등 처리하며 신고 레코드에는 원문을 복제하지 않는다.
   가족 메모는 정확한 가족·아이 스레드의 상대 메시지만 신고할 수 있다. 사용자 차단은 메모 조회·새 메모 pending/푸시에만
