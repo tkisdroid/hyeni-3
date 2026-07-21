@@ -1,4 +1,5 @@
 import { apiGet } from "../client";
+import { parseRemoteListenMs } from "@/transform/remoteListenStatusMs";
 
 interface RemoteListenAuditRow {
   id: string;
@@ -74,11 +75,6 @@ export interface RemoteListenSessionStatus {
   receivedAtMs: number;
 }
 
-const finiteMs = (value: unknown): number | null => {
-  const parsed = typeof value === "number" ? value : Number(value);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
-};
-
 /** 요청한 부모 본인의 단일 세션 상태. 오디오 데이터는 반환하지 않는다. */
 export async function fetchRemoteListenSessionStatus(
   familyId: string,
@@ -87,15 +83,17 @@ export async function fetchRemoteListenSessionStatus(
   const row = await apiGet<RemoteListenSessionStatusRow>(
     `/api/remote-listen/sessions/${encodeURIComponent(requestId)}?family_id=${encodeURIComponent(familyId)}`,
   );
-  const serverNowMs = finiteMs(row.server_now_ms);
+  // parseRemoteListenMs 는 null/비숫자를 반드시 null 로 남긴다. Number(null)===0 로 강제하면
+  // 미동의 세션의 endedAtMs 가 0(유한값)이 되어 resolver 가 즉시 "ended" 로 조기 종료한다.
+  const serverNowMs = parseRemoteListenMs(row.server_now_ms);
   if (serverNowMs === null) throw new Error("remote_listen_server_time_missing");
   return {
     id: row.id,
     childUserId: row.child_user_id,
-    startedAtMs: finiteMs(row.started_at_ms),
-    consentedAtMs: finiteMs(row.consented_at_ms),
-    captureExpiresAtMs: finiteMs(row.capture_expires_at_ms),
-    endedAtMs: finiteMs(row.ended_at_ms),
+    startedAtMs: parseRemoteListenMs(row.started_at_ms),
+    consentedAtMs: parseRemoteListenMs(row.consented_at_ms),
+    captureExpiresAtMs: parseRemoteListenMs(row.capture_expires_at_ms),
+    endedAtMs: parseRemoteListenMs(row.ended_at_ms),
     endReason: row.end_reason,
     serverNowMs,
     receivedAtMs: Date.now(),
