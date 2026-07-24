@@ -589,6 +589,10 @@ public class LocationService extends Service {
     private static final long PLACE_FIX_FRESH_MS = 15 * 60_000L; // 서버 GEOFENCE_FIX_FRESH_MS parity (M1)
     private long placeRefreshAtMs = 0L;
     private Runnable placeGeofenceRunnable;
+    // 발사 중인 장소 — 알림 성공 뒤에야 상태가 저장되므로, 그 사이 재평가(새 fix 즉시 평가 또는
+    // 60초 tick)가 같은 전이를 한 번 더 쏘지 못하게 막는다(2026-07-24 중복 알림 방어).
+    private final java.util.Set<String> placeAlertInFlight =
+        java.util.Collections.synchronizedSet(new java.util.HashSet<String>());
 
     private void startPlaceGeofenceChecking() {
         if (handler == null) return; // handler 는 onCreate 에서 init (startEventTimeChecking 도 의존)
@@ -846,6 +850,17 @@ public class LocationService extends Service {
         if (!hadGeoState || !sameState(prev, evalState)) saveGeoState(placeKey, evalState);
         GeofenceStateMachine.TransitionResult res = GeofenceStateMachine.evaluateTransition(
             evalState, lat, lng, (double) accuracyM, now, plat, plng, placeRadius, GeofenceStateMachine.GeofenceConfig.DEFAULT);
+        // fix 기반 평가가 알림 전이를 내지 않았으면 wall-clock 타이머로 한 번 더 본다. 정지 중
+        // 업로드 간격(120초) 때문에 dwell·이탈 타이머가 이미 만족했는데도 다음 fix 가 올 때까지
+        // 알림이 밀리던 지연을 없앤다(2026-07-24 실측: 도착 3.5분·출발 2분).
+        if (res.action != GeofenceStateMachine.Action.ENTER
+            && res.action != GeofenceStateMachine.Action.LEAVE) {
+            GeofenceStateMachine.TransitionResult timer = GeofenceStateMachine.evaluateTimer(
+                res.nextState, lat, lng, (double) accuracyM, fixCapturedAtMs, System.currentTimeMillis(),
+                plat, plng, placeRadius, GeofenceStateMachine.GeofenceConfig.DEFAULT,
+                GeofenceStateMachine.TIMER_FIX_FRESH_MS);
+            if (!sameState(res.nextState, timer.nextState)) res = timer;
+        }
         if (res.action == GeofenceStateMachine.Action.ENTER || res.action == GeofenceStateMachine.Action.LEAVE) {
             final boolean arrived = res.action == GeofenceStateMachine.Action.ENTER;
             long episodeMs = arrived
@@ -883,15 +898,22 @@ public class LocationService extends Service {
             final GeofenceStateMachine.GeofenceState fNext = res.nextState;
             // H1: 전송 성공 시에만 phase 진행(서버 deliverAlert retry 설계 parity). 실패 시
             // state 미진행 → 다음 tick 재시도(멱등키로 dedup, 부모 알림 유실 방지).
+            // 상태가 저장되기 전까지는 같은 전이가 다시 평가될 수 있으므로 장소별 in-flight
+            // 가드로 잠근다 — 이게 없으면 새 fix 즉시 평가가 같은 알림을 한 번 더 쏜다.
+            if (!placeAlertInFlight.add(fPlaceKey)) return;
             runOnNetworkThread("place_alert", () -> {
-                if (sendPlaceAlert(alertType, title, msg, key, sourceEventId)) {
-                    if (!occurrenceId.isEmpty()) {
-                        shownEventNotifs.add(occurrenceId + "-arrived");
-                        persistShownEventNotifs();
+                try {
+                    if (sendPlaceAlert(alertType, title, msg, key, sourceEventId, fPlaceKey)) {
+                        if (!occurrenceId.isEmpty()) {
+                            shownEventNotifs.add(occurrenceId + "-arrived");
+                            persistShownEventNotifs();
+                        }
+                        saveGeoState(fPlaceKey, fNext);
+                        // 집 도착이면 AI 친구가 먼저 말을 건다(숙제·하루 이야기).
+                        if (arrived && fPlaceName.contains("집")) triggerHomeArrivalAiGreeting(fPlaceName);
                     }
-                    saveGeoState(fPlaceKey, fNext);
-                    // 집 도착이면 AI 친구가 먼저 말을 건다(숙제·하루 이야기).
-                    if (arrived && fPlaceName.contains("집")) triggerHomeArrivalAiGreeting(fPlaceName);
+                } finally {
+                    placeAlertInFlight.remove(fPlaceKey);
                 }
             });
             return;
@@ -978,7 +1000,7 @@ public class LocationService extends Service {
     // place_arrived/place_left 부모 알림 발송. 서버 단일 endpoint가 event_id+alert_type
     // 멱등 저장과 부모 FCM을 함께 처리한다. 실패 시 state를 진행하지 않아 다음 tick 재시도한다.
     private boolean sendPlaceAlert(String alertType, String title, String message, String idemUuid,
-                                   @Nullable String sourceEventId) {
+                                   @Nullable String sourceEventId, @Nullable String placeKey) {
         if (isBlank(familyId) || isBlank(supabaseUrl) || isBlank(supabaseKey)) return false;
         final String base = supabaseUrl.replaceAll("/+$", "");
         try {
@@ -987,6 +1009,9 @@ public class LocationService extends Service {
                 .put("title", title).put("message", message)
                 .put("severity", "info").put("event_id", idemUuid).put("child_user_id", userId);
             if (!isBlank(sourceEventId)) alertBody.put("source_event_id", sourceEventId);
+            // 서버가 장소 단위 쿨다운으로 cron 발사와 중복을 합칠 수 있도록 평가한 장소를 함께
+            // 보낸다(없으면 서버가 event_id 로 역산하지만, 명시가 정확하고 저렴하다).
+            if (!isBlank(placeKey)) alertBody.put("place_key", placeKey);
             boolean delivered = postWithAuthRetry(base + "/api/parent-alerts", alertBody.toString());
             Log.i(TAG, "place alert " + alertType + " accepted=" + delivered);
             return delivered;
@@ -2258,6 +2283,15 @@ public class LocationService extends Service {
                             Log.w(TAG, "last-location prefs persist failed", persistErr);
                         }
                         broadcastLocation(lat, lng, accuracy, capturedAtMs);
+                        // 새 fix 를 채택했으면 60초 tick 을 기다리지 않고 바로 재평가한다.
+                        // 도착·출발 확정이 최대 tick 주기만큼 밀리던 지연을 없앤다(2026-07-24).
+                        // 계산만 하는 경로라 배터리 영향은 없고, 발사 경합은 placeAlertInFlight 가 막는다.
+                        if (handler != null) {
+                            handler.post(() -> {
+                                try { tickPlaceGeofence(); }
+                                catch (Exception e) { Log.w(TAG, "place geofence immediate tick failed", e); }
+                            });
+                        }
                     }
                 }
 

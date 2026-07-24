@@ -103,6 +103,19 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   출발은 다른 장소 도착에 병합한다("○○에서 출발해서 △△에 도착했어요"). 조용한 재진입(SILENT_RE_ENTER) 에피소드의
   재이탈은 `SILENT_LEAVE`(무알림, JS·Java 3중 parity — `phase=in && lastDepartedAtMs != null` 불변식으로 판별)이며,
   최근 15분 내 다른 장소 도착을 이미 전달했으면 늦게 흘러온 출발은 조용히 상태만 진행한다(같은 장소 재출발은 억제 금지).
+  ★장소 출입 중복·지연 근절(2026-07-24): 도착/출발 dedup 을 episode 10분 버킷 멱등키에 의존하지 않는다.
+  네이티브와 서버 cron 은 서로 다른 fix 스트림을 보므로 episode 시각이 다르고, 버킷 경계를 사이에 두면 키가 갈려
+  같은 방문이 두 번 알려졌다(실사고: 집 도착 07:24+07:26, 집 출발 08:30+08:32). 두 경로의 공통 합류점
+  `insertParentAlertV2` 앞단에서 `(family, child, placeKey, kind)` 10분 쿨다운으로 판정한다
+  (`lib/registeredPlacePresenceDedupe.ts`). placeKey 는 요청 `place_key` 우선, 없으면 event_id 를 후보
+  (placeKey, bucket) 집합과 대조해 역산하므로 **앱 재배포 없이 서버 배포만으로 중복이 멎는다**. 신규 알림은
+  `metadata.{placeKey,presenceKind}` 를 남긴다. 장소 미상은 fail-open(안전 알림 우선).
+  실시간성은 ①정확도를 뺀 거리가 이탈반경×2 를 넘으면 180초 타이머 없이 즉시 LEAVE(`farExitRatio`)
+  ②`evaluateRegisteredPlaceTimer` 로 dwell·이탈 타이머를 wall-clock 진행(마지막 fix 5분 이내일 때만 —
+  좌표 frozen 가짜 전이 금지, episode 시각은 실측 fix 시각 보존) ③네이티브는 새 fix 채택 시 60초 tick 을
+  기다리지 않고 즉시 재평가하되 `placeAlertInFlight` 로 발사 중 재평가를 잠근다.
+  회귀=`worker/tests/registeredPlacePresenceDedupe.test.mjs`(프로덕션 실제 멱등키 재생)·
+  `registeredPlaceLatency.test.mjs`(오늘 아침 실측 fix 재생)·Android `GeofenceStateMachineTest`.
   부모→아이 메모 FCM(`type: "new_memo"`)은 일정 채널이 아니라 아이 메시지 채널(`hyeni_child_message_v1`)로
   heads-up 표시하고, 탭/폴링 라우트는 `#/child/memo`로 유지한다.
 - **리포트/전환 기능(2026-07-07)**: 오늘의 안심 리포트=`/daily-report`, 주간 가족 리포트=`/weekly-report`,

@@ -34,21 +34,37 @@ final class GeofenceStateMachine {
         // 방문이므로 90초만 머물면 승격(도착 알림 지연 개선). 경계 fix 는 dwellMs 유지.
         final long deepDwellMs;
         final double deepInsideRatio;
+        // 확실한 이탈 즉시 확정 비율 — 정확도를 뺀 거리가 exitRadiusM 의 이 배수를 넘으면
+        // 이탈 타이머(180초)를 기다리지 않는다. 0 이면 비활성(기존 동작).
+        final double farExitRatio;
+        GeofenceConfig(double entryRadiusM, double exitRadiusM, double maxAccuracyM,
+                       long dwellMs, long cooldownMs, long departureTimeoutMs,
+                       long deepDwellMs, double deepInsideRatio, double farExitRatio) {
+            this.entryRadiusM = entryRadiusM; this.exitRadiusM = exitRadiusM; this.maxAccuracyM = maxAccuracyM;
+            this.dwellMs = dwellMs; this.cooldownMs = cooldownMs; this.departureTimeoutMs = departureTimeoutMs;
+            this.deepDwellMs = deepDwellMs; this.deepInsideRatio = deepInsideRatio; this.farExitRatio = farExitRatio;
+        }
         GeofenceConfig(double entryRadiusM, double exitRadiusM, double maxAccuracyM,
                        long dwellMs, long cooldownMs, long departureTimeoutMs,
                        long deepDwellMs, double deepInsideRatio) {
-            this.entryRadiusM = entryRadiusM; this.exitRadiusM = exitRadiusM; this.maxAccuracyM = maxAccuracyM;
-            this.dwellMs = dwellMs; this.cooldownMs = cooldownMs; this.departureTimeoutMs = departureTimeoutMs;
-            this.deepDwellMs = deepDwellMs; this.deepInsideRatio = deepInsideRatio;
+            this(entryRadiusM, exitRadiusM, maxAccuracyM, dwellMs, cooldownMs, departureTimeoutMs,
+                    deepDwellMs, deepInsideRatio, 0);
         }
         GeofenceConfig(double entryRadiusM, double exitRadiusM, double maxAccuracyM,
                        long dwellMs, long cooldownMs, long departureTimeoutMs) {
-            this(entryRadiusM, exitRadiusM, maxAccuracyM, dwellMs, cooldownMs, departureTimeoutMs, dwellMs, 0);
+            this(entryRadiusM, exitRadiusM, maxAccuracyM, dwellMs, cooldownMs, departureTimeoutMs, dwellMs, 0, 0);
         }
         // SERVER_GEOFENCE_CONFIG / locationConstants.js 동일 값. 진입은 경계 근처면 3분,
         // 심부(60% 이내)면 90초 체류 후 도착으로 승격한다. 학원가 옆 건물 통과 오탐 방지 유지.
-        static final GeofenceConfig DEFAULT = new GeofenceConfig(30, 50, 75, 180_000L, 600_000L, 180_000L, 90_000L, 0.6);
+        static final GeofenceConfig DEFAULT =
+                new GeofenceConfig(30, 50, 75, 180_000L, 600_000L, 180_000L, 90_000L, 0.6, 2);
     }
+
+    /**
+     * 타이머 전용 재평가에서 마지막 fix 를 신뢰하는 최대 나이 —
+     * shared/registeredPlaceGeofence.js 의 REGISTERED_PLACE_TIMER_FIX_FRESH_MS 와 동일.
+     */
+    static final long TIMER_FIX_FRESH_MS = 5 * 60_000L;
 
     // 불변 상태. ms 필드는 null 가능(미설정) → Long.
     static final class GeofenceState {
@@ -110,13 +126,76 @@ final class GeofenceStateMachine {
         double entryR = radii[0], exitR = radii[1];
         boolean inside = "in".equals(prev.phase) ? dist <= exitR : dist <= entryR;
         boolean deepInside = cfg.deepInsideRatio > 0 && dist <= entryR * cfg.deepInsideRatio;
+        boolean farOutside = isFarOutsideExitRadius(dist, accuracy, exitR, cfg);
 
         switch (prev.phase) {
             case "out": return fromOut(prev, tMs, inside, cfg);
             case "pending": return fromPending(prev, tMs, inside, cfg, deepInside);
-            case "in": return fromIn(prev, tMs, inside, cfg);
+            case "in": return fromIn(prev, tMs, inside, cfg, farOutside);
             default: return new TransitionResult(Action.OUTSIDE_NO_CHANGE, GeofenceState.INITIAL);
         }
+    }
+
+    // 이탈 반경 밖으로 "지터로는 설명되지 않을 만큼" 멀어졌는가. 정확도만큼 보수적으로 뺀
+    // 거리를 쓰므로 오차가 큰 fix 는 자동으로 조기 확정 대상에서 빠진다(서버 parity).
+    private static boolean isFarOutsideExitRadius(double dist, Double accuracy, double exitR, GeofenceConfig cfg) {
+        if (cfg == null || !(cfg.farExitRatio > 0)) return false;
+        double margin = (accuracy != null && Double.isFinite(accuracy) && accuracy > 0) ? accuracy : 0;
+        return (dist - margin) >= exitR * cfg.farExitRatio;
+    }
+
+    /**
+     * 타이머 전용 재평가 — 새 fix 가 없어도 dwell/이탈 타이머를 wall-clock 으로 진행시킨다.
+     * shared/registeredPlaceGeofence.js 의 evaluateRegisteredPlaceTimer 와 1:1 parity.
+     *
+     * 정지 중에는 위치 업로드가 120초 간격이라 fix 사이 공백이 3~4분씩 생긴다. 판정을 fix
+     * 도착에만 걸면 타이머가 이미 만족했는데도 알림이 밀린다(2026-07-24 실측 지연).
+     * 마지막 fix 가 fixFreshMs 안쪽일 때만 진행해 좌표 frozen 가짜 전이를 막고,
+     * episode 시각(firstInsideAtMs)은 실측 fix 시각을 그대로 보존한다.
+     *
+     * @param fixTMs 마지막으로 관측한 fix 의 시각, @param nowMs 평가 시각(wall-clock).
+     */
+    static TransitionResult evaluateTimer(
+            GeofenceState state, double lat, double lng, Double accuracy, long fixTMs, long nowMs,
+            double placeLat, double placeLng, Double placeRadiusM, GeofenceConfig cfg, long fixFreshMs) {
+        GeofenceState prev = new GeofenceState(normPhase(state),
+                state == null ? null : state.firstInsideAtMs,
+                state == null ? null : state.departureArmedAtMs,
+                state == null ? null : state.lastDepartedAtMs);
+        Action idle = "in".equals(prev.phase) ? Action.INSIDE_NO_CHANGE : Action.OUTSIDE_NO_CHANGE;
+        TransitionResult noChange = new TransitionResult(idle, prev);
+
+        if (!Double.isFinite(lat) || !Double.isFinite(lng)) return noChange;
+        if (!Double.isFinite(placeLat) || !Double.isFinite(placeLng)) return noChange;
+        if (!"pending".equals(prev.phase) && !"in".equals(prev.phase)) return noChange;
+        if (nowMs <= fixTMs) return noChange;
+        if (nowMs - fixTMs > fixFreshMs) return noChange;
+        if (accuracy != null && Double.isFinite(accuracy) && accuracy > cfg.maxAccuracyM) return noChange;
+
+        double dist = haversineM(lat, lng, placeLat, placeLng);
+        double[] radii = resolveRadii(placeRadiusM, cfg);
+        double entryR = radii[0], exitR = radii[1];
+        boolean inside = "in".equals(prev.phase) ? dist <= exitR : dist <= entryR;
+
+        if ("pending".equals(prev.phase)) {
+            if (!inside) return noChange; // 밖으로 나간 판정은 실제 fix 가 담당한다.
+            boolean deepInside = cfg.deepInsideRatio > 0 && dist <= entryR * cfg.deepInsideRatio;
+            long requiredDwellMs = deepInside ? cfg.deepDwellMs : cfg.dwellMs;
+            boolean dwellSatisfied = prev.firstInsideAtMs != null
+                    && (nowMs - prev.firstInsideAtMs) >= requiredDwellMs;
+            if (!dwellSatisfied) return new TransitionResult(Action.PENDING_CONTINUE, prev);
+            return new TransitionResult(Action.ENTER,
+                    new GeofenceState("in", prev.firstInsideAtMs, null, null));
+        }
+
+        // phase == "in": 이탈 타이머만 진행한다(재진입 취소는 실제 fix 가 담당).
+        if (inside || prev.departureArmedAtMs == null) return noChange;
+        if ((nowMs - prev.departureArmedAtMs) < cfg.departureTimeoutMs) {
+            return new TransitionResult(Action.OUTSIDE_PENDING_TIMER, prev);
+        }
+        boolean enteredSilently = prev.lastDepartedAtMs != null;
+        return new TransitionResult(enteredSilently ? Action.SILENT_LEAVE : Action.LEAVE,
+                new GeofenceState("out", null, null, nowMs));
     }
 
     static GeofenceState bootstrapInitialInside(
@@ -179,7 +258,8 @@ final class GeofenceStateMachine {
                 new GeofenceState("in", prev.firstInsideAtMs, null, null));
     }
 
-    private static TransitionResult fromIn(GeofenceState prev, long tMs, boolean inside, GeofenceConfig cfg) {
+    private static TransitionResult fromIn(GeofenceState prev, long tMs, boolean inside, GeofenceConfig cfg,
+                                           boolean farOutside) {
         if (inside) {
             if (prev.departureArmedAtMs != null) {
                 return new TransitionResult(Action.DEPARTURE_CANCELLED,
@@ -187,11 +267,15 @@ final class GeofenceStateMachine {
             }
             return new TransitionResult(Action.INSIDE_NO_CHANGE, prev);
         }
-        if (prev.departureArmedAtMs == null) {
+        // 확실히 멀어졌으면 이탈 타이머(180초)를 기다리지 않고 바로 확정한다. 타이머는 경계
+        // 지터를 거르려는 장치이고, 이 거리는 지터로 설명되지 않는다(서버 parity).
+        if (prev.departureArmedAtMs == null && !farOutside) {
             return new TransitionResult(Action.OUTSIDE_ARMED,
                     new GeofenceState("in", prev.firstInsideAtMs, tMs, prev.lastDepartedAtMs));
         }
-        boolean departureSatisfied = (tMs - prev.departureArmedAtMs) >= cfg.departureTimeoutMs;
+        boolean departureSatisfied = farOutside
+                || (prev.departureArmedAtMs != null
+                    && (tMs - prev.departureArmedAtMs) >= cfg.departureTimeoutMs);
         if (!departureSatisfied) return new TransitionResult(Action.OUTSIDE_PENDING_TIMER, prev);
         // 정상 ENTER 는 lastDepartedAtMs 를 null 로 지우고 SILENT_RE_ENTER 만 보존하므로,
         // non-null = 조용한 재진입 에피소드 → 출발도 조용히(SILENT_LEAVE) 처리한다.

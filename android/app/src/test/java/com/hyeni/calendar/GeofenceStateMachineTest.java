@@ -21,7 +21,8 @@ public class GeofenceStateMachineTest {
     private static final double INSIDE_LAT = 37.5, INSIDE_LNG = 127.0;      // dist 0 (< entry 30, 심부)
     // 경계 근처(25m): entry 30 안이지만 심부(entry*0.6=18m) 밖 → 기존 180초 dwell 계약.
     private static final double EDGE_LAT = 37.5 + 25.0 / 111_000.0, EDGE_LNG = 127.0;
-    private static final double OUTSIDE_LAT = 37.5 + 0.001, OUTSIDE_LNG = 127.0; // ~111m (> exit 50)
+    // 70m: exit 50 밖이지만 조기 이탈 확정선(exit*farExitRatio=100m) 안 → 기존 180초 타이머 계약.
+    private static final double OUTSIDE_LAT = 37.5 + 70.0 / 111_000.0, OUTSIDE_LNG = 127.0;
 
     private TransitionResult step(GeofenceState s, boolean inside, long tMs) {
         double lat = inside ? INSIDE_LAT : OUTSIDE_LAT;
@@ -217,7 +218,8 @@ public class GeofenceStateMachineTest {
         // 2026-07-16 회귀: LEAVE 후 쿨다운 내 SILENT_RE_ENTER 로 다시 들어간 에피소드는
         // 부모가 재도착 알림을 받은 적이 없으므로 재이탈도 SILENT_LEAVE(무알림)여야 한다.
         // ("집 출발"·"피아노 학원 출발" 이 사이 도착 없이 반복되던 실사고)
-        double outLat = PLACE_LAT + 200.0 / 111_000.0;
+        // 70m — 반경 밖이지만 지터 가능 구간이라 기존 180초 이탈 타이머를 그대로 탄다.
+        double outLat = PLACE_LAT + 70.0 / 111_000.0;
         // 정상 도착 후 출발 완료 상태 (lastDepartedAtMs = 500s)
         GeofenceState s = new GeofenceState("out", null, null, 500_000L);
 
@@ -242,7 +244,8 @@ public class GeofenceStateMachineTest {
     @Test
     public void announcedEpisode_stillLeavesWithAlert() {
         // 정상 ENTER(lastDepartedAtMs=null) 에피소드의 출발은 그대로 LEAVE 알림.
-        double outLat = PLACE_LAT + 200.0 / 111_000.0;
+        // 70m — 반경 밖이지만 지터 가능 구간이라 기존 180초 이탈 타이머를 그대로 탄다.
+        double outLat = PLACE_LAT + 70.0 / 111_000.0;
         GeofenceState s = new GeofenceState("in", 0L, null, null);
         TransitionResult r = GeofenceStateMachine.evaluateTransition(
                 s, outLat, PLACE_LNG, null, 100_000L, PLACE_LAT, PLACE_LNG, 30.0, CFG);
@@ -251,5 +254,100 @@ public class GeofenceStateMachineTest {
         r = GeofenceStateMachine.evaluateTransition(
                 s, outLat, PLACE_LNG, null, 300_000L, PLACE_LAT, PLACE_LNG, 30.0, CFG);
         assertEquals(Action.LEAVE, r.action);
+    }
+
+    // ── 2026-07-24 출발/도착 지연 개선 parity (shared/registeredPlaceGeofence.js) ──
+
+    @Test
+    public void farOutsideExit_settlesImmediately_withoutDepartureTimer() {
+        // 이탈 반경(50m)의 2배를 넘게 멀어지면 180초 타이머를 기다리지 않는다.
+        double farLat = PLACE_LAT + 200.0 / 111_000.0;
+        GeofenceState s = new GeofenceState("in", 0L, null, null);
+        TransitionResult r = GeofenceStateMachine.evaluateTransition(
+                s, farLat, PLACE_LNG, null, 100_000L, PLACE_LAT, PLACE_LNG, 30.0, CFG);
+        assertEquals(Action.LEAVE, r.action);
+        assertEquals("out", r.nextState.phase);
+        assertEquals(Long.valueOf(100_000L), r.nextState.lastDepartedAtMs);
+    }
+
+    @Test
+    public void farOutsideExit_staysSilentForSilentEpisode() {
+        double farLat = PLACE_LAT + 200.0 / 111_000.0;
+        // 조용한 재진입 에피소드(lastDepartedAtMs 보존)
+        GeofenceState s = new GeofenceState("in", 560_000L, null, 500_000L);
+        TransitionResult r = GeofenceStateMachine.evaluateTransition(
+                s, farLat, PLACE_LNG, null, 600_000L, PLACE_LAT, PLACE_LNG, 30.0, CFG);
+        assertEquals(Action.SILENT_LEAVE, r.action);
+    }
+
+    @Test
+    public void farOutsideExit_ignoredWhenAccuracyIsPoor() {
+        // 120m 지만 오차가 ±60m — 실제로는 60m 일 수 있어 조기 확정하지 않는다.
+        double noisyLat = PLACE_LAT + 120.0 / 111_000.0;
+        GeofenceState s = new GeofenceState("in", 0L, null, null);
+        TransitionResult r = GeofenceStateMachine.evaluateTransition(
+                s, noisyLat, PLACE_LNG, 60.0, 100_000L, PLACE_LAT, PLACE_LNG, 30.0, CFG);
+        assertEquals(Action.OUTSIDE_ARMED, r.action);
+    }
+
+    @Test
+    public void timer_confirmsArrival_whenFixGapOutlastsDwell() {
+        // 마지막 fix 는 반경 안(20m)이고 dwell 이 아직 안 찼다. 새 fix 없이 시간만 흘러도
+        // dwell 을 채우면 도착으로 확정하고, episode 시각은 실측 fix 시각을 보존한다.
+        double insideLat = PLACE_LAT + 20.0 / 111_000.0;
+        GeofenceState s = new GeofenceState("pending", 1_000_000L, null, null);
+
+        TransitionResult early = GeofenceStateMachine.evaluateTimer(
+                s, insideLat, PLACE_LNG, 20.0, 1_100_000L, 1_150_000L,
+                PLACE_LAT, PLACE_LNG, 30.0, CFG, GeofenceStateMachine.TIMER_FIX_FRESH_MS);
+        assertEquals(Action.PENDING_CONTINUE, early.action);
+
+        TransitionResult settled = GeofenceStateMachine.evaluateTimer(
+                s, insideLat, PLACE_LNG, 20.0, 1_100_000L, 1_180_000L,
+                PLACE_LAT, PLACE_LNG, 30.0, CFG, GeofenceStateMachine.TIMER_FIX_FRESH_MS);
+        assertEquals(Action.ENTER, settled.action);
+        assertEquals(Long.valueOf(1_000_000L), settled.nextState.firstInsideAtMs);
+        assertEquals("in", settled.nextState.phase);
+    }
+
+    @Test
+    public void timer_rejectsStaleFix_soFrozenCoordsCannotFakeTransition() {
+        double insideLat = PLACE_LAT + 20.0 / 111_000.0;
+        GeofenceState s = new GeofenceState("pending", 1_000_000L, null, null);
+        // fix 가 5분보다 오래됐다 — 좌표가 frozen 인 상황이므로 진행시키지 않는다.
+        TransitionResult r = GeofenceStateMachine.evaluateTimer(
+                s, insideLat, PLACE_LNG, 20.0, 1_000_000L, 1_000_000L + 6 * 60_000L,
+                PLACE_LAT, PLACE_LNG, 30.0, CFG, GeofenceStateMachine.TIMER_FIX_FRESH_MS);
+        assertEquals(Action.OUTSIDE_NO_CHANGE, r.action);
+        assertEquals("pending", r.nextState.phase);
+    }
+
+    @Test
+    public void timer_confirmsDeparture_afterDepartureTimeout() {
+        double outLat = PLACE_LAT + 70.0 / 111_000.0;
+        GeofenceState s = new GeofenceState("in", 0L, 1_000_000L, null);
+
+        TransitionResult pending = GeofenceStateMachine.evaluateTimer(
+                s, outLat, PLACE_LNG, 10.0, 1_050_000L, 1_170_000L,
+                PLACE_LAT, PLACE_LNG, 30.0, CFG, GeofenceStateMachine.TIMER_FIX_FRESH_MS);
+        assertEquals(Action.OUTSIDE_PENDING_TIMER, pending.action);
+
+        TransitionResult settled = GeofenceStateMachine.evaluateTimer(
+                s, outLat, PLACE_LNG, 10.0, 1_050_000L, 1_181_000L,
+                PLACE_LAT, PLACE_LNG, 30.0, CFG, GeofenceStateMachine.TIMER_FIX_FRESH_MS);
+        assertEquals(Action.LEAVE, settled.action);
+        assertEquals(Long.valueOf(1_181_000L), settled.nextState.lastDepartedAtMs);
+    }
+
+    @Test
+    public void timer_doesNotArmDeparture_thatIsTheFixPath() {
+        // armed 가 아직 없으면 타이머는 아무것도 하지 않는다(이탈 판정 시작은 실제 fix 의 몫).
+        double outLat = PLACE_LAT + 70.0 / 111_000.0;
+        GeofenceState s = new GeofenceState("in", 0L, null, null);
+        TransitionResult r = GeofenceStateMachine.evaluateTimer(
+                s, outLat, PLACE_LNG, 10.0, 1_050_000L, 1_300_000L,
+                PLACE_LAT, PLACE_LNG, 30.0, CFG, GeofenceStateMachine.TIMER_FIX_FRESH_MS);
+        assertEquals(Action.INSIDE_NO_CHANGE, r.action);
+        assertEquals("in", r.nextState.phase);
     }
 }

@@ -174,6 +174,29 @@
   유지(다음 tick 재시도). 콜사이트는 전부 `ENTER`/`LEAVE` 명시 분기라 `SILENT_LEAVE` 는 자동으로 조용한 영속.
   회귀=Worker `tests/registeredPlaceGeofence.test.mjs`(병합·정렬·억제·SILENT_LEAVE), Android
   `GeofenceStateMachineTest`. cron 반환 메트릭에 `mergedLeft`/`staleLeftSuppressed`/`silentLeft` 추가.
+- ★장소 도착·출발 중복 알림 근절 + 실시간화(2026-07-24, TK 제보 "집 도착 7:24·7:26, 집 출발 8:30·8:32 두 번씩,
+  8:20까지 집에 있었음" — D1 확진): 원인은 **dedup 설계가 운에 맡겨져 있던 것**. 네이티브 `LocationService` 와 서버
+  cron 이 같은 방문을 각자 평가하는데 dedup 은 `placePresenceIdempotencyKey(kind, child, placeKey, floor(episodeMs/10분))`
+  의 10분 버킷이 **우연히 일치할 때만** 걸렸다. 두 평가자는 서로 다른 fix 스트림(네이티브=기기 GPS 콜백,
+  서버=`location_history` 8분 재생)을 보므로 episode 시각이 다르고, 그날은 경계(07:20:00·08:30:00)를 45초~1분
+  차이로 갈라 키가 달라졌다. 프로덕션 멱등키 5개를 버킷 역산해 전부 매칭시켜 확진했다(도착#2 의 episode 가
+  도착#1 보다 **이르다** = 서버 재생본). 오후에 중복이 없던 건 우연히 같은 버킷에 들어갔을 뿐이다.
+  수정 ①**단일 합류점 쿨다운 dedup** — 두 경로가 모두 지나는 `insertParentAlertV2` 앞단에서
+  `(family, child, placeKey, kind)` 10분(상태머신 cooldownMs 동일) 창으로 판정하고, 중복이면 기존 alert id 를
+  성공 반환해 호출자가 상태를 진행시킨다(재시도 루프 없음). placeKey 는 요청 `place_key` 우선 · 없으면 event_id 를
+  가족 장소 × 최근 버킷 후보와 대조해 **역산** → 구버전 앱도 커버되어 **앱 재배포 없이 서버 배포만으로 복구**된다.
+  스키마 무변경(`parent_alerts.metadata` 에 `{placeKey,presenceKind}` 기록). 장소 미상은 fail-open.
+  ②**출발 조기 확정** — 정확도를 뺀 거리가 이탈반경×`farExitRatio`(2) 를 넘으면 180초 타이머를 기다리지 않는다.
+  타이머는 경계 지터용이고 그 거리는 지터로 설명되지 않는다. 실측 재생 −124초.
+  ③**wall-clock 타이머** — `evaluateRegisteredPlaceTimer`(JS·Java parity)로 fix 공백 중에도 dwell·이탈을 진행.
+  정지 중 업로드가 120초 간격이라 그날 3분 46초 공백이 있었다. 마지막 fix 5분 이내일 때만 진행(좌표 frozen 가짜
+  전이 금지)하고 **episode 시각은 실측 fix 시각을 보존**한다. 실측 재생 도착 −3분 31초.
+  ④네이티브는 새 fix 채택 시 60초 tick 을 기다리지 않고 즉시 재평가 — 단 상태는 알림 성공 뒤에 저장되므로
+  `placeAlertInFlight` 로 발사 중 재평가를 잠근다(이 가드 없이 즉시 평가만 넣으면 오히려 중복이 는다).
+  회귀=`worker/tests/registeredPlacePresenceDedupe.test.mjs`(프로덕션 실제 멱등키로 red-green 확인 — 장소 단위
+  판정을 끄면 4건 실패)·`registeredPlaceLatency.test.mjs`(그날 실측 fix 시퀀스 재생)·Android
+  `GeofenceStateMachineTest`. ⚠️ 상태머신 테스트의 "밖" 좌표를 200m 등으로 잡으면 이제 조기 확정에 걸린다 —
+  타이머 경로를 검증하려면 70m 처럼 이탈반경×2 **안쪽**을 써야 한다.
 - 등록장소 알림 지연 개선(2026-07-10, TK 제보 "도착 알림 5분+ 지연" 실사고 — 실제 6.5분): 원인 3중 =
   ①반경 30m 가 학교 부지에 너무 타이트(교문→핀까지 5분) ②일괄 180s dwell ③서버 크론이 최신 fix 1점만 평가
   (tick 격자+정지 시 업로드 간격 합산). 수정: ①장소별 알림 반경 — location JSON `alertRadiusM`(30~300 클램프,
