@@ -494,6 +494,28 @@
   긴 `label`/`detail` 안내 박스는 `attention`(조치 필요) 상태에만 렌더한다(2026-07-14 TK 제보 "과도한 텍스트가
   디자인을 해침" 수정). 안심리포트(`DailySafetyReport`)는 상세 화면이라 label/detail 전체 표시를 유지한다.
   회귀=`tests/deviceNotificationHealth.test.ts`.
+- ★채팅 화면 UI 계약(2026-07-24 TK 제보 "입력할 때 파란 네모·문장마다 신고 버튼·사진 확대 저장"):
+  ①**포커스 링은 없앨 수 없다** — `tests/designSystemUsage`의 "출시 화면은 브라우저 focus outline을
+  제거하지 않는다"가 `outline:none`을 예외 없이 금지한다(접근성). 파란 네모의 실체는 전역
+  `--focus-ring-color: var(--blue-500)` 3px + offset 3px 이 **radius 없는 input** 에 각지게 그려진 것이므로,
+  제거 대신 `outline-color`(accent/lavender)·`outline-width:2px`·`outline-offset:0`·`border-radius` 로
+  모양과 색만 바꾼다. 전역 규칙은 `body :where(...):focus-visible`(특이도 0,1,1)이라 `.mc-input`(0,1,0)으로는
+  못 이긴다 — 반드시 `.mc-input:focus,.mc-input:focus-visible`(0,2,0)로 쓴다. 실측 검증은 프로그래매틱
+  `el.focus()` 로는 `:focus-visible` 이 안 켜지므로 CDP `Input.dispatchKeyEvent`(Tab)·`dispatchMouseEvent`
+  로 실제 입력을 보내고 computed `outlineStyle/Color/Width` 를 읽는다.
+  ②**신고 버튼은 메시지마다 띄우지 않는다** — 상대 메시지(MemoChat)·AI 답변(AiFriendChat)을 **길게 눌러**
+  연다(`src/lib/useLongPress.ts`). 시각적으로만 감추는 sr-only 버튼은 "상호작용 요소 최소 44px" 가드에
+  1px 로 걸리므로 쓸 수 없다 → 버튼을 제거하고 대화 맨 위 한 줄 안내(`.mc-safety-hint`/`.afc-safety-hint`)로
+  발견성과 `contentSafetyUx` 문자열 계약("신고·차단"·"이 답변 신고")을 함께 만족시킨다. UGC 신고 수단
+  자체는 스토어 정책상 없애면 안 된다. 길게 누른 뒤 따라오는 click 은 1회 삼켜 사진 프리뷰가 함께 열리지 않게 한다.
+  ③★**JSX attribute spread 금지** — `designSystemUsage` 가 `{...handlers}` 를 만나면
+  "scenario 해석을 지원하지 않습니다"로 **파일 전체 분석이 죽는다**(다른 위반이 가려져 뒤늦게 드러난다).
+  훅이 핸들러 묶음을 주더라도 `onPointerDown={press.onPointerDown}` 처럼 prop 을 하나씩 연결한다.
+  ④사진은 프리뷰에서 핀치·더블탭 확대와 팬(`src/lib/usePinchZoom.ts`, 컨테이너 `touch-action:none` 필수),
+  저장은 `src/lib/native/mediaSave.ts` → Android `MediaSavePlugin`(MediaStore `Pictures/혜니캘린더`).
+  WebView 가 인증된 상태로 받은 이미지를 base64 로 넘겨 R2 토큰이 네이티브 경계를 넘지 않는다.
+  `WRITE_EXTERNAL_STORAGE` 는 `maxSdkVersion="28"` 로 제한(API 29+ 는 scoped storage 라 권한 불필요).
+  새 CSS 클래스는 `designSystemUsage` 의 surface/non-surface manifest 에 등록하고 여백은 4px 리듬을 지킨다.
 - 모든 인터랙티브 요소는 프레스 피드백이 있어야 한다: 버튼/카드=`hy-press`(+CSS `--press`), 목록 행/라벨=
   `:active { background: var(--bg-press) }`. CSS 에 `--press` 를 선언했는데 JSX 에 `hy-press` 를 빼먹는 실수가
   실제로 있었다(부모 홈 아이 카드). 스크림/딤 배경은 예외(정적이 맞다).

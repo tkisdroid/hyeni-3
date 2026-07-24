@@ -59,7 +59,8 @@ test("네트워크 이미지 슬롯은 다운로드 전에도 크기와 비율�
     [memoCss, ".mc-peer-avatar img"],
     [memoCss, ".mc-msg-avatar img"],
     [memoCss, ".mc-bubble--img img"],
-    [memoCss, ".mc-photo-preview__panel > img"],
+    // 확대 보기는 핀치/팬을 처리하는 stage 가 공간을 예약한다(이미지는 그 안에서 transform).
+    [memoCss, ".mc-photo-preview__stage"],
     [familyCss, ".pf-parent__avatar img"],
     [familyCss, ".pf-child__avatar img"],
   ];

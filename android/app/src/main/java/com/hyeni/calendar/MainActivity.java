@@ -46,6 +46,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(GooglePlayBillingPlugin.class);
         registerPlugin(InAppReviewPlugin.class);
         registerPlugin(PhoneCallPlugin.class);
+        registerPlugin(MediaSavePlugin.class);
         super.onCreate(savedInstanceState);
 
         // Phase 5 RL-03: WebView WebChromeClient no longer auto-grants the

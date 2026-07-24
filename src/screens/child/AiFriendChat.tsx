@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft, Flag, MessageCircle, Settings } from "lucide-react";
+import { useLongPress, type LongPressHandlers } from "@/lib/useLongPress";
 import { asset } from "@/lib/assets";
 import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "@/queries/useFamily";
@@ -145,6 +146,15 @@ export function AiFriendChat() {
   const [seeded, setSeeded] = useState(false);
   const [input, setInput] = useState("");
   const [reportTarget, setReportTarget] = useState<ChatBubble | null>(null);
+  // 신고는 AI 답변을 길게 눌러 연다(버블마다 버튼을 띄우지 않기 위해).
+  // 신고 대상이 아닌 말풍선(내 메시지·로컬 인사)에는 핸들러를 붙이지 않는다.
+  const bindLongPressReport = useLongPress<ChatBubble>((m) => setReportTarget(m));
+  const bindReportPress = useCallback(
+    (m: ChatBubble): LongPressHandlers => (
+      m.role === "ai" && m.reportable ? bindLongPressReport(m) : {}
+    ),
+    [bindLongPressReport],
+  );
   const messagesRef = useRef<HTMLDivElement>(null);
   const retryChat = async () => {
     const result = await messagesQuery.refetch();
@@ -256,7 +266,15 @@ export function AiFriendChat() {
             {messagesData.length === 0 && (
               <div className="afc-query-state">아직 나눈 이야기가 없어. 먼저 말을 걸어봐!</div>
             )}
-            {shown.map((m) => (
+            {/* 신고 진입점 안내 — 답변마다 버튼을 띄우는 대신 길게 누르기로 옮겼다. */}
+            <p className="afc-safety-hint">
+              <Flag size={12} strokeWidth={2.2} aria-hidden="true" />
+              마음에 걸리는 답이 있으면 길게 눌러 「이 답변 신고」를 해줘.
+            </p>
+            {shown.map((m) => {
+              // JSX spread 는 디자인 시스템 정적 분석이 해석하지 못해 하나씩 연결한다.
+              const reportPress = bindReportPress(m);
+              return (
               <div key={m.id} className={`afc-row afc-row--${m.role}`}>
                 {m.role === "ai" && (
                   <div className="afc-mini">
@@ -264,20 +282,22 @@ export function AiFriendChat() {
                   </div>
                 )}
                 <div className="afc-bubble-stack">
-                  <div className={`afc-bubble afc-bubble--${m.role}`}>{m.text}</div>
-                  {m.role === "ai" && m.reportable && (
-                    <button
-                      type="button"
-                      className="afc-report-link hy-press"
-                      onClick={() => setReportTarget(m)}
-                    >
-                      <Flag size={13} strokeWidth={2.2} aria-hidden="true" />
-                      이 답변 신고
-                    </button>
-                  )}
+                  <div
+                    className={`afc-bubble afc-bubble--${m.role}`}
+                    onPointerDown={reportPress.onPointerDown}
+                    onPointerMove={reportPress.onPointerMove}
+                    onPointerUp={reportPress.onPointerUp}
+                    onPointerCancel={reportPress.onPointerCancel}
+                    onPointerLeave={reportPress.onPointerLeave}
+                    onContextMenu={reportPress.onContextMenu}
+                  >
+                    {m.text}
+                  </div>
+
                 </div>
               </div>
-            ))}
+              );
+            })}
           </>
         )}
         {/* AI 친구 응답 대기 중 — 타이핑 인디케이터(전송 진행 중임을 정직하게 표시). */}

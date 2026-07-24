@@ -278,6 +278,13 @@
   font-weight: var(--type-caption-weight);
 
 }
+/* 상대 말풍선을 길게 눌러도 텍스트 선택 핸들이 뜨지 않게 한다(신고 시트와 겹침 방지). */
+.mc-bubble--peer,
+.mc-bubble--img {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
 
 /* ── Composer (sticky) ──────────────────────────────────────────────────── */
 .mc-composer {
@@ -342,6 +349,17 @@
   font-family: inherit;
   color: #2a2327;
   min-width: 0;
+}
+/* 입력 중 보이던 "파란 네모" 제거 — 접근성상 focus 표시는 없앨 수 없으므로(가드:
+   출시 화면은 브라우저 focus outline을 제거하지 않는다) 모양과 색만 앱 톤으로 바꾼다.
+   각져 보이던 원인은 이 필드에 radius 가 없어 outline 이 직사각형으로 그려진 것이다.
+   알약 안쪽에 딱 맞는 둥근 링으로 만들고 색은 accent 로 교체한다. */
+.mc-input:focus,
+.mc-input:focus-visible {
+  outline-color: var(--hy-accent);
+  outline-width: 2px;
+  outline-offset: 0;
+  border-radius: 999px;
 }
 .mc-input::placeholder {
   color: var(--fg-placeholder);
@@ -444,14 +462,59 @@
 
 }
 
-.mc-photo-preview__panel > img {
+.mc-photo-preview__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mc-photo-preview__save {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg-body);
+  color: var(--fg-primary);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+}
+.mc-photo-preview__save:disabled {
+  opacity: 0.6;
+}
+
+/* 확대 무대 — 핀치/드래그를 직접 처리하므로 브라우저 기본 제스처를 끈다. */
+.mc-photo-preview__stage {
   width: 100%;
   min-height: 0;
-  max-height: calc(100dvh - 150px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  max-height: calc(100dvh - 190px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   aspect-ratio: 4 / 3;
   border-radius: var(--radius-lg);
-  object-fit: contain;
   background: var(--bg-body);
+  overflow: hidden;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.mc-photo-preview__stage > img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform-origin: center center;
+  will-change: transform;
+  -webkit-user-drag: none;
+}
+
+.mc-photo-preview__hint {
+  margin: 0;
+  text-align: center;
+  color: var(--fg-muted);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
 }
 
 /* ── 리치 메시지: 위치 카드 ── */
@@ -535,4 +598,17 @@
 .mc-back,
 .mc-attach {
   min-width: var(--control-min-size);
+}
+
+/* 길게 눌러 신고하는 방법 안내 — 대화 맨 위 한 줄(장식 아님, 상시 노출 버튼의 대체). */
+.mc-safety-hint {
+  margin: 0 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--fg-muted);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
 }

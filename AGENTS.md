@@ -490,6 +490,15 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   48px 이상을 유지한다. lucide 형제 아이콘은 같은 크기·strokeWidth를 사용하며 의미 전달용 유니코드 이모지는 금지한다.
 - ★표면 정본(2026-07-19): radius는 8/12/16/20/24px·pill만, elevation은 `--shadow-soft/floating/modal`만 사용한다.
   임의 radius·shadow를 새로 만들지 않고 같은 계층의 카드·시트·모달은 같은 토큰을 쓴다.
+- ★채팅 UI·포커스 링(2026-07-24): `outline:none`은 `tests/designSystemUsage`가 예외 없이 금지한다.
+  입력창의 "파란 네모"는 전역 focus ring이 radius 없는 input에 각지게 그려진 것이므로 제거 대신
+  `outline-color/width/offset`과 `border-radius`로 앱 톤의 둥근 링으로 바꾼다. 전역 규칙이
+  `body :where(...):focus-visible`(0,1,1)이라 `.cls:focus,.cls:focus-visible`(0,2,0)로 써야 이긴다.
+  신고 진입점은 메시지마다 버튼을 띄우지 않고 **길게 누르기**(`src/lib/useLongPress.ts`) + 대화 상단 안내 한 줄로 옮긴다
+  (sr-only 버튼은 최소 44px 가드에 걸린다). ★JSX attribute spread(`{...handlers}`)는 designSystemUsage가
+  해석하지 못해 파일 분석이 통째로 중단되므로 prop을 하나씩 연결한다. 사진 확대는 `usePinchZoom`
+  (컨테이너 `touch-action:none`), 저장은 `lib/native/mediaSave.ts` → Android `MediaSavePlugin`(MediaStore,
+  `WRITE_EXTERNAL_STORAGE`는 maxSdkVersion 28)이며 base64만 네이티브로 넘겨 R2 토큰을 노출하지 않는다.
 - ★모달 접근성(2026-07-19): `role="dialog" aria-modal="true"` 화면은 `useDialogFocusLifecycle`로 열림 초점,
   Tab/Shift+Tab 순환, Escape 닫기, 닫힌 뒤 트리거 초점 복원을 보장한다. 제목은 `aria-labelledby`, 필요한 설명은
   `aria-describedby`로 실제 DOM id와 연결하고 스크림 닫기·닫기 버튼을 함께 제공한다.

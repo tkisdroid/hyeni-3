@@ -1,6 +1,7 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import { useSearchParams } from "react-router-dom";
-import { ChevronLeft, Send, Image as ImageIcon, MapPin, ShieldAlert } from "lucide-react";
+import { ChevronLeft, Send, Image as ImageIcon, MapPin, ShieldAlert, Download } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
@@ -26,6 +27,9 @@ import { loadKakaoMaps } from "@/lib/kakaoMap";
 import { openExternal } from "@/lib/native/browser";
 import { MessageSafetyDialog, type ReportReasonOption } from "@/components/MessageSafetyDialog";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
+import { useLongPress, type LongPressHandlers } from "@/lib/useLongPress";
+import { usePinchZoom } from "@/lib/usePinchZoom";
+import { saveImageToDevice } from "@/lib/native/mediaSave";
 import {
   useBlockMemoUser,
   useMemoBlocks,
@@ -164,10 +168,47 @@ export function MemoChat() {
   const [draft, setDraft] = useState("");
   const [safetyTarget, setSafetyTarget] = useState<ThreadMsg | null>(null);
   const [previewImagePath, setPreviewImagePath] = useState<string | null>(null);
+  const [savingPhoto, setSavingPhoto] = useState(false);
   const previewDialogRef = useDialogFocusLifecycle<HTMLDivElement>({
     open: previewImagePath !== null,
     onClose: () => setPreviewImagePath(null),
   });
+  const photoZoom = usePinchZoom();
+  // 사진을 닫을 때 확대 상태를 초기화한다(다음 사진에 이전 배율이 남지 않게).
+  // reset 은 안정적인 참조라 previewImagePath 가 바뀔 때만 실행된다.
+  const resetPhotoZoom = photoZoom.reset;
+  useEffect(() => {
+    if (previewImagePath === null) resetPhotoZoom();
+  }, [previewImagePath, resetPhotoZoom]);
+
+  const savePreviewPhoto = useCallback(async () => {
+    const url = childPhotoProxyUrl(previewImagePath);
+    if (!url || savingPhoto) return;
+    setSavingPhoto(true);
+    try {
+      const result = await saveImageToDevice(url);
+      if (result.ok) {
+        show(result.target === "gallery" ? "사진첩에 저장했어요." : "사진을 내려받았어요.");
+      } else if (result.reason === "permission_denied") {
+        show("저장하려면 기기 설정에서 저장 권한을 허용해 주세요.");
+      } else if (result.reason === "unsupported") {
+        show("이 기기에서는 저장을 지원하지 않아요.");
+      } else {
+        show("사진을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
+      }
+    } finally {
+      setSavingPhoto(false);
+    }
+  }, [previewImagePath, savingPhoto, show]);
+  // 신고·차단은 상대 메시지를 길게 누르면 열린다(버튼을 매 메시지에 띄우지 않기 위해).
+  // 내 메시지와 발신자를 알 수 없는 레거시 행은 신고 대상이 아니므로 길게 누르기를 붙이지 않는다.
+  const bindLongPressSafety = useLongPress<ThreadMsg>((m) => setSafetyTarget(m));
+  const bindSafetyPress = useCallback(
+    (m: ThreadMsg, onClick?: (event: ReactMouseEvent) => void): LongPressHandlers => (
+      !m.mine && m.senderUserId ? bindLongPressSafety(m, onClick) : { onClick }
+    ),
+    [bindLongPressSafety],
+  );
   const endRef = useRef<HTMLDivElement>(null);
   const mounted = useRef(false);
   const lastMessageId = messages[messages.length - 1]?.id ?? "";
@@ -467,12 +508,30 @@ export function MemoChat() {
           </div>
         )}
 
+        {/* 신고 진입점 안내 — 메시지마다 버튼을 띄우는 대신 길게 누르기로 옮겼으므로
+            찾는 방법을 대화 맨 위에 한 줄로 알린다(스크롤하면 자연스럽게 지나간다). */}
+        {messages.length > 0 && (
+          <p className="mc-safety-hint">
+            <ShieldAlert size={12} strokeWidth={2.2} aria-hidden="true" />
+            {isChildSession
+              ? "받은 메시지를 길게 누르면 신고·차단할 수 있어."
+              : "받은 메시지를 길게 누르면 신고·차단할 수 있어요."}
+          </p>
+        )}
+
         {messages.map((m, i) => {
           // 상대 메시지는 실제 발신자 아바타로 귀속. 발신자가 헤더 상대와 다르면(공동부모 등)
           // 이름 라벨로 명시(1:1 스레드에서 제3자 발화 오독 방지).
           const sender = !m.mine && m.senderUserId ? memberByUserId.get(m.senderUserId) : null;
           const senderDiffers = !!sender && !!m.senderUserId && m.senderUserId !== peer.userId;
           const newDay = !!m.dayStamp && m.dayStamp !== messages[i - 1]?.dayStamp;
+          // 상대 메시지는 길게 눌러 신고를 연다. JSX spread 는 디자인 시스템 정적 분석이
+          // 해석하지 못하므로 핸들러를 하나씩 연결한다.
+          const imagePress = bindSafetyPress(m, () => {
+            if (m.imagePath) setPreviewImagePath(m.imagePath);
+          });
+          const locationPress = bindSafetyPress(m, () => openLocation(m));
+          const textPress = bindSafetyPress(m);
           return (
             <Fragment key={m.id}>
               {newDay && (
@@ -492,9 +551,13 @@ export function MemoChat() {
                   <button
                     type="button"
                     className="mc-bubble mc-bubble--img hy-press"
-                    onClick={() => {
-                      if (m.imagePath) setPreviewImagePath(m.imagePath);
-                    }}
+                    onClick={imagePress.onClick}
+                    onPointerDown={imagePress.onPointerDown}
+                    onPointerMove={imagePress.onPointerMove}
+                    onPointerUp={imagePress.onPointerUp}
+                    onPointerCancel={imagePress.onPointerCancel}
+                    onPointerLeave={imagePress.onPointerLeave}
+                    onContextMenu={imagePress.onContextMenu}
                   >
                     <img
                       src={childPhotoProxyUrl(m.imagePath) ?? undefined}
@@ -507,7 +570,13 @@ export function MemoChat() {
                   <button
                     type="button"
                     className={`mc-bubble mc-bubble--${m.mine ? "mine" : "peer"} mc-bubble--loc hy-press`}
-                    onClick={() => openLocation(m)}
+                    onClick={locationPress.onClick}
+                    onPointerDown={locationPress.onPointerDown}
+                    onPointerMove={locationPress.onPointerMove}
+                    onPointerUp={locationPress.onPointerUp}
+                    onPointerCancel={locationPress.onPointerCancel}
+                    onPointerLeave={locationPress.onPointerLeave}
+                    onContextMenu={locationPress.onContextMenu}
                   >
                     <span className="mc-loc-ic"><MapPin size={22} strokeWidth={2.2} /></span>
                     <span className="mc-loc-main">
@@ -516,20 +585,21 @@ export function MemoChat() {
                     </span>
                   </button>
                 ) : (
-                  <div className={`mc-bubble mc-bubble--${m.mine ? "mine" : "peer"}`}>{m.text}</div>
+                  <div
+                    className={`mc-bubble mc-bubble--${m.mine ? "mine" : "peer"}`}
+                    onPointerDown={textPress.onPointerDown}
+                    onPointerMove={textPress.onPointerMove}
+                    onPointerUp={textPress.onPointerUp}
+                    onPointerCancel={textPress.onPointerCancel}
+                    onPointerLeave={textPress.onPointerLeave}
+                    onContextMenu={textPress.onContextMenu}
+                  >
+                    {m.text}
+                  </div>
                 )}
                 <div className="mc-time">{m.time}</div>
                 {m.mine && readByPeer.has(m.id) && <div className="mc-read">읽음</div>}
-                {!m.mine && m.senderUserId && (
-                  <button
-                    type="button"
-                    className="mc-safety-action hy-press"
-                    onClick={() => setSafetyTarget(m)}
-                  >
-                    <ShieldAlert size={12} strokeWidth={2.2} aria-hidden="true" />
-                    신고·차단
-                  </button>
-                )}
+
               </div>
               </div>
             </Fragment>
@@ -612,21 +682,49 @@ export function MemoChat() {
           <div className="mc-photo-preview__panel">
             <div className="mc-photo-preview__header">
               <h2 id="mc-photo-preview-title">공유한 사진</h2>
-              <button
-                type="button"
-                className="mc-photo-preview__close hy-press"
-                onClick={() => setPreviewImagePath(null)}
-                autoFocus
-              >
-                닫기
-              </button>
+              <div className="mc-photo-preview__actions">
+                <button
+                  type="button"
+                  className="mc-photo-preview__save hy-press"
+                  onClick={() => void savePreviewPhoto()}
+                  disabled={savingPhoto}
+                >
+                  <Download size={16} strokeWidth={2.2} aria-hidden="true" />
+                  {savingPhoto ? "저장 중" : "저장"}
+                </button>
+                <button
+                  type="button"
+                  className="mc-photo-preview__close hy-press"
+                  onClick={() => setPreviewImagePath(null)}
+                  autoFocus
+                >
+                  닫기
+                </button>
+              </div>
             </div>
-            <img
-              src={childPhotoProxyUrl(previewImagePath) ?? undefined}
-              alt="공유한 사진 크게 보기"
-              loading="lazy"
-              decoding="async"
-            />
+            {/* 손가락 두 개로 확대·축소, 두 번 탭으로 확대 토글, 확대 상태에서 끌어 이동. */}
+            <div
+              ref={photoZoom.containerRef}
+              className="mc-photo-preview__stage"
+              onPointerDown={photoZoom.handlers.onPointerDown}
+              onPointerMove={photoZoom.handlers.onPointerMove}
+              onPointerUp={photoZoom.handlers.onPointerUp}
+              onPointerCancel={photoZoom.handlers.onPointerCancel}
+            >
+              <img
+                src={childPhotoProxyUrl(previewImagePath) ?? undefined}
+                alt="공유한 사진 크게 보기"
+                loading="lazy"
+                decoding="async"
+                draggable={false}
+                style={{
+                  transform: `translate(${photoZoom.transform.x}px, ${photoZoom.transform.y}px) scale(${photoZoom.transform.scale})`,
+                }}
+              />
+            </div>
+            <p className="mc-photo-preview__hint">
+              {photoZoom.isZoomed ? "끌어서 옮기고, 두 번 탭하면 원래 크기로 돌아가요" : "두 손가락으로 벌리거나 두 번 탭하면 확대돼요"}
+            </p>
           </div>
         </div>
       )}

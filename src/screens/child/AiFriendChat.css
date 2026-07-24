@@ -329,3 +329,32 @@
 .afc-setup {
   min-width: var(--control-min-size);
 }
+
+/* AI 말풍선을 길게 눌러도 텍스트 선택 핸들이 뜨지 않게 한다(신고 시트와 겹침 방지). */
+.afc-bubble--ai {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* 입력 중 보이던 "파란 네모" 제거 — focus 표시 자체는 접근성상 유지해야 하므로
+   (가드: 출시 화면은 브라우저 focus outline을 제거하지 않는다) 색과 두께만 라벤더 톤으로
+   바꾸고 입력창 radius 에 맞춰 둥글게 붙인다. */
+.afc-field:focus,
+.afc-field:focus-visible {
+  outline-color: var(--lav-500);
+  outline-width: 2px;
+  outline-offset: 0;
+}
+
+/* 길게 눌러 신고하는 방법 안내 — 대화 맨 위 한 줄(상시 노출 버튼의 대체). */
+.afc-safety-hint {
+  margin: 0 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--fg-muted);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+}
