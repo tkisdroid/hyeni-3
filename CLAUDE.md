@@ -804,9 +804,20 @@ hyeni-3/
   ★역할 선택 선생님 이미지 실사고(2026-07-19): 58×58 `overflow:hidden` 슬롯에 72×72 정사각 이미지를 중앙 배치하면
   `object-position`과 무관하게 위·아래 7px가 잘린다. 상단 여백이 작은 인물 원본은 슬롯과 같은 58×58 `contain`으로
   맞추고 확대 크롭을 금지한다. 회귀=`tests/imageLoadingContract.test.mjs`.
-- **화면 완결성·성능(2026-07-19)**: read query는 loading/error/empty/success/retry를 분리하고 현재
-  family/user/source snapshot hydration 전 입력·저장을 닫는다. App 정본은 58개 라우트·57개 lazy screen이며 진입 JS는
-  `tests/routeBundleBudget.test.mjs`의 500,000-byte 미만 예산을 지킨다.
+- **화면 완결성·성능(2026-07-19, 라우트 수 2026-07-24 갱신)**: read query는 loading/error/empty/success/retry를 분리하고 현재
+  family/user/source snapshot hydration 전 입력·저장을 닫는다. App 정본은 59개 라우트·58개 lazy screen이며 진입 JS는
+  `tests/routeBundleBudget.test.mjs`의 500,000-byte 미만 예산을 지킨다. 라우트를 늘리면
+  `tests/routeLazyLoading.test.mjs`·`tests/routeQualityMatrix.test.mjs`·`tests/helpers/routeContract.mjs`의
+  개수·정본 배열을 함께 갱신해야 한다(kind는 read query가 있으면 `hybrid`, tone은 존댓말 화면이면 `parent-formal`).
+- **★운영자 전역 AI 지침(2026-07-24)**: 관리자가 `#/admin/ai-prompt`(메뉴 미노출 숨은 라우트)에서 아이 AI 친구
+  프롬프트를 정하면 **모든 가족의 아이**에게 적용된다. 이 앱에는 admin 역할이 없으므로 권한은 Worker secret
+  `ADMIN_USER_IDS` 화이트리스트 하나로만 열리고(`worker/lib/adminAccess.ts`), **secret 미설정이면 아무도 관리자가
+  아니다(fail-closed)**. 화이트리스트 밖 계정에는 관리자 API 존재를 숨기려 404를 준다. 저장은
+  `app_global_settings` 키-값(additive, `writeGlobalSetting`이 CREATE TABLE IF NOT EXISTS 보장)이고 입력은 서버가
+  정규화한다(개행·탭만 남기고 제어문자 제거, 4000자 상한, 원문이 2배 초과면 400). 프롬프트에서 `## 운영자 지침`은
+  **안전 규칙보다 앞**에 놓아 마지막 발언권을 안전 규칙에 남기고, 정책 우선순위는 안전 > 앱 안전 > 부모 설정 >
+  운영자 지침 > 아이 요청 순이다. 조회 실패는 지침 없음으로 강등해 아이 대화를 막지 않는다. 선제 대화
+  (`ai-proactive`)는 LLM이 아니라 고정 문구 템플릿이라 적용 대상이 아니다. 회귀=`worker/tests/adminGlobalPrompt.test.mjs`.
 
 ## 8. 알려진 후속 정리 (TODO)
 

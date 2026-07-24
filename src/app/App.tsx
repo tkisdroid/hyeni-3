@@ -44,6 +44,8 @@ const FriendPlay = lazyScreen(() => import("@/screens/feature/FriendPlay"), "Fri
 const AiSchedule = lazyScreen(() => import("@/screens/feature/AiSchedule"), "AiSchedule");
 const AiCredit = lazyScreen(() => import("@/screens/feature/AiCredit"), "AiCredit");
 const Feedback = lazyScreen(() => import("@/screens/feature/Feedback"), "Feedback");
+// 운영자 전용 숨은 라우트 — 메뉴·탭에 노출하지 않는다.
+const AdminAiPrompt = lazyScreen(() => import("@/screens/admin/AdminAiPrompt"), "AdminAiPrompt");
 const PhoneSetup = lazyScreen(() => import("@/screens/feature/PhoneSetup"), "PhoneSetup");
 const PlaydateAccept = lazyScreen(() => import("@/screens/feature/PlaydateAccept"), "PlaydateAccept");
 const StickerSend = lazyScreen(() => import("@/screens/feature/StickerSend"), "StickerSend");
@@ -231,6 +233,7 @@ const router = createHashRouter([
         element: <RequireAuthenticated />,
         children: [
           { path: "feedback", element: routeElement(<Feedback />) },
+          { path: "admin/ai-prompt", element: routeElement(<AdminAiPrompt />) },
         ],
       },
 

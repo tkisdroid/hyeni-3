@@ -1,0 +1,140 @@
+/* 운영자 전용 — 아이 AI 친구 전역 지침 (숨은 라우트). */
+
+.aap-root {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.aap-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.aap-back {
+  width: var(--control-min-size);
+  height: var(--control-min-size);
+  min-width: var(--control-min-size);
+  min-height: var(--control-min-size);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  margin-left: -8px;
+  color: var(--fg-primary);
+  --press: 0.9;
+}
+.aap-title {
+  margin: 0;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+  color: var(--fg-primary);
+}
+
+.aap-state {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fg-muted);
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+}
+.aap-state--denied,
+.aap-state--error {
+  color: var(--fg-primary);
+}
+.aap-retry {
+  min-height: var(--control-min-size);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: var(--fg-primary);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+}
+
+/* 적용 범위 경고 — 모든 아이에게 나가는 값이라 화면에서 분명히 알린다. */
+.aap-notice {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border-radius: var(--radius-16);
+  background: var(--lav-soft);
+  color: var(--lav-text);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+}
+.aap-notice strong {
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+}
+
+.aap-label {
+  color: var(--fg-muted);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+}
+.aap-textarea {
+  width: 100%;
+  min-height: 240px;
+  padding: 12px;
+  border: 1px solid var(--lav-line);
+  border-radius: var(--radius-16);
+  background: var(--bg-card);
+  color: var(--fg-primary);
+  font-family: inherit;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+  resize: vertical;
+}
+.aap-textarea:focus,
+.aap-textarea:focus-visible {
+  outline-color: var(--hy-accent);
+  outline-width: 2px;
+  outline-offset: 0;
+}
+
+.aap-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--fg-muted);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+}
+
+.aap-save {
+  min-height: 48px;
+  padding: 12px 16px;
+  border-radius: var(--radius-16);
+  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  color: #fff;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+  --press: 0.96;
+}
+.aap-save:disabled {
+  opacity: 0.55;
+}
+
+.aap-hint {
+  margin: 0;
+  color: var(--fg-muted);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+}

@@ -490,6 +490,12 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   48px 이상을 유지한다. lucide 형제 아이콘은 같은 크기·strokeWidth를 사용하며 의미 전달용 유니코드 이모지는 금지한다.
 - ★표면 정본(2026-07-19): radius는 8/12/16/20/24px·pill만, elevation은 `--shadow-soft/floating/modal`만 사용한다.
   임의 radius·shadow를 새로 만들지 않고 같은 계층의 카드·시트·모달은 같은 토큰을 쓴다.
+- ★운영자 전역 AI 지침(2026-07-24): 관리자가 `#/admin/ai-prompt`(숨은 라우트)에서 저장한 지침이 **모든 가족의 아이**
+  AI 대화에 들어간다. admin 역할이 없으므로 권한은 Worker secret `ADMIN_USER_IDS` 화이트리스트뿐이고 미설정이면
+  아무도 관리자가 아니다(fail-closed). 화이트리스트 밖에는 404. 입력은 서버가 정규화(제어문자 제거·4000자 상한)하고,
+  `## 운영자 지침`은 안전 규칙보다 앞에 배치해 마지막 발언권을 안전 규칙에 남긴다. 정책 우선순위는
+  안전 > 앱 안전 > 부모 설정 > 운영자 지침 > 아이 요청. 조회 실패는 지침 없음으로 강등한다.
+  라우트를 늘렸으면 routeLazyLoading·routeQualityMatrix·helpers/routeContract의 개수 정본도 함께 갱신한다.
 - ★채팅 UI·포커스 링(2026-07-24): `outline:none`은 `tests/designSystemUsage`가 예외 없이 금지한다.
   입력창의 "파란 네모"는 전역 focus ring이 radius 없는 input에 각지게 그려진 것이므로 제거 대신
   `outline-color/width/offset`과 `border-radius`로 앱 톤의 둥근 링으로 바꾼다. 전역 규칙이

@@ -80,4 +80,8 @@ export const qk = {
   teacherRoster: (classId: string) => ["teacher", "roster", classId] as const,
   teacherAttendance: (classId: string, dateKey: string) =>
     ["teacher", "attendance", classId, dateKey] as const,
+
+  // 운영자(관리자) — 계정 단위라 familyId 를 키에 넣지 않는다.
+  adminStatus: ["admin", "me"] as const,
+  adminAiPrompt: ["admin", "aiPrompt"] as const,
 } as const;
