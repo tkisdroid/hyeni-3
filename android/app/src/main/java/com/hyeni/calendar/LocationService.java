@@ -901,6 +901,7 @@ public class LocationService extends Service {
             // 상태가 저장되기 전까지는 같은 전이가 다시 평가될 수 있으므로 장소별 in-flight
             // 가드로 잠근다 — 이게 없으면 새 fix 즉시 평가가 같은 알림을 한 번 더 쏜다.
             if (!placeAlertInFlight.add(fPlaceKey)) return;
+            try {
             runOnNetworkThread("place_alert", () -> {
                 try {
                     if (sendPlaceAlert(alertType, title, msg, key, sourceEventId, fPlaceKey)) {
@@ -916,6 +917,12 @@ public class LocationService extends Service {
                     placeAlertInFlight.remove(fPlaceKey);
                 }
             });
+            } catch (Throwable t) {
+                // 스레드 제출 자체가 실패하면 람다의 finally 가 돌지 않아 잠금이 영구히 남는다
+                // → 그 장소는 앱 재시작까지 알림이 끊긴다. 여기서 반드시 풀어준다.
+                placeAlertInFlight.remove(fPlaceKey);
+                Log.w(TAG, "place alert dispatch failed", t);
+            }
             return;
         }
         // 비-발사 전이(pending/armed 타이머)는 네트워크 없이 즉시 영속.
