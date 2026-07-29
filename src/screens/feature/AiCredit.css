@@ -292,7 +292,11 @@
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.18);
-  transition: left 0.2s ease;
+  transition: left 0.2s ease, transform var(--duration-fast) var(--easing-standard);
+}
+/* 누르는 순간 노브를 살짝 눌러 실제로 눌렸다는 걸 알린다. */
+.ac-toggle:active .ac-toggle__knob {
+  transform: scale(0.9);
 }
 
 /* ── 하단 안내 ──────────────────────────────────────────────────────────── */

@@ -45,7 +45,7 @@ const TRUST_CARDS = [
   {
     icon: Bell,
     title: "아이에게 알림이 가요",
-    text: "아이 기기에서 알림을 누르고 직접 허용해야 시작돼요.",
+    text: "위급 확인이라 아이가 누르지 않아도 연결되고, 듣는 동안 아이 화면에 계속 표시돼요.",
   },
   {
     icon: Timer,
@@ -242,13 +242,13 @@ export function RemoteAudio() {
     return () => window.clearTimeout(id);
   }, [listening, receiving]);
 
-  // 서버가 확인한 동의·캡처 절대 만료·아이 측 업로드 실패를 부모 화면의 정본으로 쓴다.
-  // 상태 조회가 일시 실패하면 resolver의 보수적 상한이 마지막 순간 동의를 조기 종료하지 않는다.
+  // 서버가 확인한 연결·캡처 절대 만료·아이 측 업로드 실패를 부모 화면의 정본으로 쓴다.
+  // 상태 조회가 일시 실패하면 resolver의 보수적 상한이 마지막 순간 연결을 조기 종료하지 않는다.
   useEffect(() => {
     if (!listening) return;
     if (sessionTiming.phase === "request_expired") {
       endListenRef.current("request_timeout");
-      show("아이 기기에서 1분 안에 허용하지 않아 요청을 종료했어요", "⏱️");
+      show("아이 기기가 1분 안에 연결되지 않아 요청을 종료했어요", "⏱️");
       return;
     }
     if (sessionTiming.phase === "capture_expired") {
@@ -264,7 +264,7 @@ export function RemoteAudio() {
       } else if (reason === "audio_upload_failed") {
         show("소리 연결이 끊겨 듣기를 안전하게 종료했어요", "⚠️");
       } else if (reason === "request_timeout") {
-        show("아이 기기에서 1분 안에 허용하지 않아 요청을 종료했어요", "⏱️");
+        show("아이 기기가 1분 안에 연결되지 않아 요청을 종료했어요", "⏱️");
       } else if (reason === "timeout") {
         show("1분이 지나 듣기를 종료했어요", "⏱️");
       }
@@ -499,19 +499,19 @@ export function RemoteAudio() {
   const listenEyebrow = receiving
     ? "주변 소리 듣는 중"
     : consentConfirmed
-      ? "동의 확인 · 소리 연결 중"
+      ? "기기 확인 · 소리 연결 중"
     : waitingHint
       ? "응답 기다리는 중"
       : "아이 기기 연결 중";
-  const liveLabel = receiving ? "LIVE" : consentConfirmed ? "동의됨" : waitingHint ? "대기" : "연결 중";
+  const liveLabel = receiving ? "LIVE" : consentConfirmed ? "확인됨" : waitingHint ? "대기" : "연결 중";
   const listenFoot = receiving
     ? "소리가 연결됐어요"
     : consentConfirmed
-      ? "아이의 동의를 확인했어요. 소리를 연결하고 있어요"
+      ? "아이 기기를 확인했어요. 소리를 연결하고 있어요"
     : waitingHint
       ? sessionStatusQuery.isError
         ? "아이 응답과 서버 상태를 다시 확인하고 있어요"
-        : "아이 알림 확인 대기"
+        : "아이 기기 응답 대기"
       : "아이 기기에서 소리를 여는 중이에요";
 
   // 청취가 시작된 뒤의 일시적 재조회 실패는 중지 동선을 가리지 않는다.
@@ -612,7 +612,7 @@ export function RemoteAudio() {
             <div className="ra-start-note hy-explain">
               <span className="hy-explain__lines">
                 <span className="hy-explain__line">위급할 때만 사용해 주세요.</span>
-                <span className="hy-explain__line">아이가 알림을 열고 직접 허용해야 시작돼요.</span>
+                <span className="hy-explain__line">아이 기기에 알림이 뜨고 곧바로 연결돼요.</span>
               </span>
             </div>
             <button

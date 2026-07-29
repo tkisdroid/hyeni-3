@@ -37,17 +37,23 @@ test("pending 원격청취도 동의 알림만 게시하고 직접 캡처·Activ
   assert.doesNotMatch(service, /remoteListenSendOptions\(/);
 });
 
-test("원격청취 알림은 high-priority 일반 알림이며 full-screen·CALL·무음·DND 우회를 쓰지 않는다", () => {
+test("위급 주변소리 알림은 잠금화면까지 닿는 전체화면 인텐트를 쓰되 CALL·무음·DND 우회는 쓰지 않는다", () => {
   const notification = read("android/app/src/main/java/com/hyeni/calendar/RemoteListenNotification.java");
   const helper = read("android/app/src/main/java/com/hyeni/calendar/NotificationHelper.java");
 
   assert.notEqual(notification, "");
   assert.match(notification, /PRIORITY_HIGH/);
   assert.match(notification, /setTimeoutAfter\(/);
-  assert.match(notification, /부모님이 주변 소리 듣기를 요청했어/);
-  assert.doesNotMatch(notification, /setFullScreenIntent/);
+  // 아이 탭이 필요 없으므로 알림은 "요청" 대신 "지금 듣고 있다"는 사실을 알린다.
+  assert.match(notification, /부모님이 주변 소리를 확인하고 있어요/);
+  assert.match(notification, /따로 누르지 않아도 돼요/);
+  assert.doesNotMatch(notification, /addAction\(/);
+  // 잠금·꺼짐 화면에서도 아이가 청취 사실을 볼 수 있어야 하므로 전체화면 인텐트를 쓴다.
+  assert.match(notification, /setFullScreenIntent\(consentIntent, true\)/);
+  // 통화로 위장하거나 소리를 죽여 몰래 열지는 않는다.
   assert.doesNotMatch(notification, /CATEGORY_CALL/);
   assert.doesNotMatch(notification, /setSilent\(true\)/);
+  assert.doesNotMatch(notification, /VISIBILITY_SECRET/);
   assert.doesNotMatch(notification, /\.send\s*\(/);
   assert.match(helper, /hyeni_remote_listen_v6_consent/);
   const channelBody = helper.slice(
@@ -59,22 +65,42 @@ test("원격청취 알림은 high-priority 일반 알림이며 full-screen·CALL
   assert.doesNotMatch(channelBody, /setSound\(null/);
 });
 
-test("아이 동의 화면은 매 요청 수락·거절·만료·권한 거부를 처리하고 자동 시작하지 않는다", () => {
+test("위급 주변소리 화면은 아이 탭 없이 즉시 연결하되 청취 사실을 숨기지 않는다", () => {
   const activity = read("android/app/src/main/java/com/hyeni/calendar/RemoteListenActivity.java");
-  const handler = activity.slice(
-    activity.indexOf("private void handleRemoteListenIntent("),
-    activity.indexOf("private void acceptRequest("),
+  const readyBranch = activity.slice(
+    activity.indexOf("if (status == RemoteListenRequestStore.PendingStatus.READY)"),
+    activity.indexOf("if (status == RemoteListenRequestStore.PendingStatus.EXPIRED)"),
   );
 
-  assert.match(activity, /공유할게/);
-  assert.match(activity, /거절할게/);
+  // 아이 동의 탭(허용/거절 버튼)은 받지 않는다.
+  assert.doesNotMatch(activity, /공유할게|거절할게|setDecisionButtonsEnabled|acceptButton|declineButton/);
+  // READY 면 곧바로 연결한다.
+  assert.notEqual(readyBranch, "");
+  assert.match(readyBranch, /acceptRequest\(\);/);
+  // 숨기지 않는다: 아이 화면에 무엇이 일어나는지 항상 문장으로 알린다.
+  assert.match(activity, /부모님이 위급 상황을 확인하려고/);
+  assert.match(activity, /부모님께 주변 소리를 연결하고 있어요/);
+  // 잠금·꺼짐 화면에서도 안내가 보이게 하되 기기 잠금은 열지 않는다.
+  assert.match(activity, /private void wakeOverLockScreen\(\)/);
+  assert.match(activity, /setShowWhenLocked\(true\)/);
+  assert.match(activity, /setTurnScreenOn\(true\)/);
+  assert.doesNotMatch(activity, /requestDismissKeyguard/);
+  // 세션·만료·권한 안전장치는 그대로 유지한다.
   assert.match(activity, /RemoteListenRequestStore\.inspectPending/);
   assert.match(activity, /RemoteListenRequestStore\.accept/);
   assert.match(activity, /markDeclined/);
   assert.match(activity, /markExpired/);
   assert.match(activity, /permission_denied/);
-  assert.doesNotMatch(handler, /startAmbientListen/);
-  assert.doesNotMatch(activity, /wakeOverLockScreen|setTurnScreenOn|requestDismissKeyguard/);
+  assert.match(activity, /not_child_role/);
+  assert.match(activity, /session_changed_before_start/);
+  assert.match(activity, /session_changed_after_consent/);
+  // 서버 승인 확인 없이 마이크를 켜지는 않는다.
+  assert.match(activity, /RemoteListenConsentClient\.confirm\(/);
+  const acceptBody = activity.slice(
+    activity.indexOf("private void acceptRequest("),
+    activity.indexOf("private void declineRequest("),
+  );
+  assert.doesNotMatch(acceptBody, /startForegroundService|startService/);
 });
 
 test("캡처 서비스는 승인 증표를 1회 소비하고 1분 뒤 종료하며 알림 중지 액션을 제공한다", () => {
@@ -107,7 +133,7 @@ test("원격청취 요청·중지는 requestId·대상·60초 만료를 서버 �
   assert.match(screen, /const requestId = auditSession\.id/);
   assert.doesNotMatch(screen, /const makeRequestId/);
   assert.match(screen, /request_timeout/);
-  assert.match(screen, /아이 기기에서 1분 안에 허용하지 않아 요청을 종료했어요/);
+  assert.match(screen, /아이 기기가 1분 안에 연결되지 않아 요청을 종료했어요/);
 });
 
 test("오디오 업로드는 access JWT만 쓰고 부모는 audit session과 대상 아이가 모두 정확한 청크만 재생한다", () => {
@@ -121,14 +147,16 @@ test("오디오 업로드는 access JWT만 쓰고 부모는 audit session과 대
   assert.match(screen, /if \(!payload\?\.requestId \|\| payload\.requestId !== activeRequestId\) return;/);
 });
 
-test("원격청취 Activity는 잠금화면 자동 표시 속성을 갖지 않고 SOS 전체화면 경로는 유지한다", () => {
+test("위급 주변소리 Activity는 잠금화면 표시 속성을 갖고 SOS 전체화면 경로도 유지한다", () => {
   const manifest = read("android/app/src/main/AndroidManifest.xml");
   const remoteActivity = manifest.match(
     /<activity(?=[^>]*android:name="\.RemoteListenActivity")[^>]*\/>/s,
   )?.[0] ?? "";
 
   assert.notEqual(remoteActivity, "");
-  assert.doesNotMatch(remoteActivity, /showWhenLocked|turnScreenOn/);
+  assert.match(remoteActivity, /android:showWhenLocked="true"/);
+  assert.match(remoteActivity, /android:turnScreenOn="true"/);
+  assert.match(remoteActivity, /android:exported="false"/);
   assert.match(manifest, /android:name="\.PushAlertActivity"[\s\S]*?android:showWhenLocked="true"/);
   assert.match(manifest, /android:name="\.ForceRingActivity"[\s\S]*?android:turnScreenOn="true"/);
 });

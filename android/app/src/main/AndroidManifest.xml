@@ -111,6 +111,8 @@
 
         </activity>
 
+        <!-- showWhenLocked/turnScreenOn 은 API 27+ 전용이고 그 아래는 Activity 가 window flag 로
+             같은 동작을 한다. 의도된 API 분기라 tools:targetApi 로 lint 를 닫는다. -->
         <activity
             android:name=".PushAlertActivity"
             android:excludeFromRecents="true"
@@ -118,15 +120,21 @@
             android:launchMode="singleTop"
             android:showWhenLocked="true"
             android:theme="@style/AppTheme.Alert"
-            android:turnScreenOn="true" />
+            android:turnScreenOn="true"
+            tools:targetApi="o_mr1" />
 
+        <!-- 위급 주변소리: 부모 요청을 아이 탭 없이 곧바로 연결한다. 잠금·꺼짐 화면에서도
+             전체화면 인텐트가 떠야 하므로 showWhenLocked/turnScreenOn 을 함께 선언한다. -->
         <activity
             android:name=".RemoteListenActivity"
             android:excludeFromRecents="true"
             android:exported="false"
             android:launchMode="singleTop"
             android:screenOrientation="portrait"
-            android:theme="@style/AppTheme.Alert" />
+            android:showWhenLocked="true"
+            android:theme="@style/AppTheme.Alert"
+            android:turnScreenOn="true"
+            tools:targetApi="o_mr1" />
 
         <!-- Background Location Service -->
         <service
@@ -134,7 +142,8 @@
             android:foregroundServiceType="location"
             android:exported="false" />
 
-        <!-- 아이가 동의 화면에서 매 세션 직접 허용한 경우에만 시작한다.
+        <!-- 위급 주변소리 캡처. RemoteListenActivity 가 서버 승인 증표를 받은 세션에서만 시작하고,
+             캡처 중에는 포그라운드 알림으로 아이에게 계속 알린다.
              Android 14+ AudioRecord는 microphone FGS type만 사용한다. -->
         <service
             android:name=".AmbientListenService"
@@ -160,7 +169,8 @@
             android:excludeFromRecents="true"
             android:launchMode="singleInstance"
             android:exported="false"
-            android:theme="@style/Theme.Hyeni.ForceRing.Fullscreen" />
+            android:theme="@style/Theme.Hyeni.ForceRing.Fullscreen"
+            tools:targetApi="o_mr1" />
 
         <!-- FCM Messaging Service: 자격 증명 암호화(CE) 세션을 사용하므로 잠금 해제 전
              직접 실행하지 않는다. FCM/시스템이 잠금 해제 뒤 메시지를 전달한다. -->

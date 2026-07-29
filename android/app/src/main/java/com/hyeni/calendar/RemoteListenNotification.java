@@ -17,7 +17,12 @@ import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
-/** 원격청취 요청을 아이 동의 화면으로 연결하는 일반 high-priority 알림. */
+/**
+ * 위급 주변소리 알림.
+ *
+ * 아이 탭 없이 곧바로 연결되는 경로라 알림은 "허용해 줘"가 아니라 "지금 듣고 있다"는 사실을 알린다.
+ * 잠금·꺼짐 화면에서도 아이가 그 사실을 볼 수 있도록 전체화면 인텐트로 연결 화면을 띄운다.
+ */
 final class RemoteListenNotification {
 
     private static final String TAG = "RemoteListenNotification";
@@ -182,14 +187,14 @@ final class RemoteListenNotification {
             .setSmallIcon(R.drawable.ic_hyeni_notification)
             .setLargeIcon(NotificationHelper.largeIcon(context))
             .setColor(ContextCompat.getColor(context, R.color.notification_accent))
-            .setContentTitle("부모님이 주변 소리 듣기를 요청했어")
-            .setContentText("60초 안에 눌러서 허용하거나 거절해 줘.")
+            .setContentTitle("부모님이 주변 소리를 확인하고 있어요")
+            .setContentText("위급 상황 확인을 위해 잠시 주변 소리를 들어요.")
             .setStyle(new NotificationCompat.BigTextStyle().bigText(
-                "부모님이 1분 동안 주변 소리를 듣고 싶어 해. 알림을 눌러 직접 정해 줘."
+                "위급 상황을 확인하려고 부모님이 1분 동안 주변 소리를 들어요. 따로 누르지 않아도 돼요."
             ))
             .setAutoCancel(true)
             .setContentIntent(consentIntent)
-            .addAction(0, "확인하기", consentIntent)
+            .setFullScreenIntent(consentIntent, true)
             .setOnlyAlertOnce(true)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

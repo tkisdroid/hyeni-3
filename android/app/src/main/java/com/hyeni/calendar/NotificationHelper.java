@@ -11,6 +11,9 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Rect;
 import android.media.AudioAttributes;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -26,6 +29,11 @@ import androidx.core.content.ContextCompat;
 public final class NotificationHelper {
 
     private static final String TAG = "NotificationHelper";
+
+    /** 정규화한 큰 아이콘 캐시. 알림마다 자산을 다시 디코딩·스케일하지 않는다. */
+    private static final Object LARGE_ICON_LOCK = new Object();
+    private static Bitmap largeIconCache;
+    private static int largeIconCacheCanvasPx;
 
     // Android 알림 채널의 잠금화면 공개 범위는 생성 뒤 바뀌지 않을 수 있다.
     // private ID로 이관해 기존 설치에서도 가족 메시지·일정·위치 상세를 가린다.
@@ -324,12 +332,100 @@ public final class NotificationHelper {
         return true;
     }
 
+    /**
+     * 알림 큰 아이콘. 원본을 정사각형으로 정규화해서 돌려준다.
+     *
+     * 혜니 캐릭터 원본은 세로가 더 길고 인물이 위아래 끝까지 닿아 있어서, 시스템 정사각 슬롯에
+     * 채우기로 들어가면 머리 위와 옷 아래가 잘렸다. 그래서 자르지 않고 원형 크롭 여유를 남긴
+     * 정사각 비트맵을 만들어 캐시한다(알림마다 재디코딩하지 않는다).
+     */
     public static Bitmap largeIcon(Context context) {
-        Bitmap icon = BitmapFactory.decodeResource(context.getResources(), R.drawable.hyeni_notification_large);
-        if (icon != null) {
-            return icon;
+        if (context == null) return null;
+        int canvasPx = largeIconCanvasPx(context);
+        synchronized (LARGE_ICON_LOCK) {
+            if (largeIconCache != null
+                    && !largeIconCache.isRecycled()
+                    && largeIconCacheCanvasPx == canvasPx) {
+                return largeIconCache;
+            }
         }
-        return BitmapFactory.decodeResource(context.getResources(), R.mipmap.ic_launcher_foreground);
+
+        Bitmap source = decodeLargeIconSource(context, canvasPx);
+        if (source == null) return null;
+        Bitmap squared = squareLargeIcon(source, canvasPx);
+        if (squared == null) return source;
+        synchronized (LARGE_ICON_LOCK) {
+            largeIconCache = squared;
+            largeIconCacheCanvasPx = canvasPx;
+        }
+        return squared;
+    }
+
+    private static int largeIconCanvasPx(Context context) {
+        int px = 0;
+        try {
+            px = context.getResources()
+                .getDimensionPixelSize(android.R.dimen.notification_large_icon_width);
+        } catch (RuntimeException error) {
+            Log.w(TAG, "Notification large icon size lookup failed", error);
+        }
+        return NotificationLargeIconLayout.clampCanvasSize(px);
+    }
+
+    private static Bitmap decodeLargeIconSource(Context context, int canvasPx) {
+        Bitmap icon = decodeSampledResource(context, R.drawable.hyeni_notification_large, canvasPx);
+        if (icon != null) return icon;
+        return decodeSampledResource(context, R.mipmap.ic_launcher_foreground, canvasPx);
+    }
+
+    /** 큰 자산을 통째로 올리지 않도록 경계만 먼저 읽고 2의 거듭제곱으로 축소 디코딩한다. */
+    private static Bitmap decodeSampledResource(Context context, int resId, int targetPx) {
+        try {
+            BitmapFactory.Options bounds = new BitmapFactory.Options();
+            bounds.inJustDecodeBounds = true;
+            BitmapFactory.decodeResource(context.getResources(), resId, bounds);
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+                return BitmapFactory.decodeResource(context.getResources(), resId);
+            }
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inSampleSize = NotificationLargeIconLayout.sampleSize(
+                bounds.outWidth,
+                bounds.outHeight,
+                targetPx
+            );
+            return BitmapFactory.decodeResource(context.getResources(), resId, options);
+        } catch (OutOfMemoryError | RuntimeException error) {
+            Log.w(TAG, "Notification large icon decode failed", error);
+            return null;
+        }
+    }
+
+    /** 원본을 자르지 않고 정사각 캔버스 가운데에 그린다. 실패하면 null 이라 호출부가 원본을 쓴다. */
+    private static Bitmap squareLargeIcon(Bitmap source, int canvasPx) {
+        NotificationLargeIconLayout.Box box = NotificationLargeIconLayout.contain(
+            source.getWidth(),
+            source.getHeight(),
+            canvasPx,
+            NotificationLargeIconLayout.SAFE_RATIO
+        );
+        if (box.isEmpty()) return null;
+        try {
+            Bitmap out = Bitmap.createBitmap(canvasPx, canvasPx, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(out);
+            Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            paint.setFilterBitmap(true);
+            paint.setDither(true);
+            canvas.drawBitmap(
+                source,
+                null,
+                new Rect(box.left, box.top, box.left + box.width, box.top + box.height),
+                paint
+            );
+            return out;
+        } catch (OutOfMemoryError | RuntimeException error) {
+            Log.w(TAG, "Notification large icon square normalize failed", error);
+            return null;
+        }
     }
 
     /** 잠금화면에는 가족 메시지·일정·위치·긴급 상세를 싣지 않는다. */

@@ -539,6 +539,11 @@
 
   text-decoration: underline;
   text-underline-offset: 2px;
+  transition: opacity var(--duration-fast) ease;
+}
+/* 문장 안 글자 버튼이라 크기는 그대로 두고 눌림만 알린다. */
+.nst-refresh:active {
+  opacity: 0.55;
 }
 
 /* 실제 TSX 상호작용 요소의 최소 터치 영역 */

@@ -9,7 +9,9 @@ const source = readFileSync(resolve(rootDir, "src/screens/feature/RemoteAudio.ts
 
 test("원격청취 화면은 민감 기능 투명성 안내를 보여준다", () => {
   assert.match(source, /아이에게 알림이 가요/);
-  assert.match(source, /아이 기기에서 알림을 누르고 직접 허용해야 시작돼요/);
+  // 위급 청취는 아이 동의 탭을 받지 않는다. 대신 숨기지 않는다는 사실을 부모에게 정확히 알린다.
+  assert.match(source, /아이가 누르지 않아도 연결되고, 듣는 동안 아이 화면에 계속 표시돼요/);
+  assert.doesNotMatch(source, /직접 허용해야 시작돼요/);
   assert.match(source, /1분 후 자동 종료돼요/);
   assert.match(source, /기록이 남아요/);
   assert.match(source, /위급할 때만 사용해 주세요/);

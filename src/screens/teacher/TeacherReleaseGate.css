@@ -144,6 +144,11 @@
 
   text-decoration: underline;
   text-underline-offset: 3px;
+  transition: opacity var(--duration-fast) ease;
+}
+/* 약관·정책 링크도 눌린 걸 알린다(외부 브라우저가 열리기 전 피드백). */
+.trg-legal button:active {
+  opacity: 0.55;
 }
 
 .trg-dialog {

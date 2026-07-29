@@ -149,6 +149,13 @@ button.lset-row:disabled {
 .lset-toggle[data-on="true"] .lset-toggle__knob {
   transform: translateX(18px);
 }
+/* 누르는 순간 노브를 살짝 눌러 실제로 눌렸다는 걸 알린다(전역 reduced-motion 이 duration 을 없앤다). */
+.lset-toggle:active .lset-toggle__knob {
+  transform: scale(0.9);
+}
+.lset-toggle[data-on="true"]:active .lset-toggle__knob {
+  transform: translateX(18px) scale(0.9);
+}
 
 /* ── 업데이트 주기(세그먼트) ────────────────────────────────────────────── */
 .lset-field {

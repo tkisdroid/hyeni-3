@@ -154,14 +154,22 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 - **출시 전 신뢰 UX 문구 가드(2026-07-07)**: 안전은 무료, 상세 안심은 프리미엄이라는 경계가 흔들리면 안 된다.
   구독·원격청취·AI 일정 문구는 `tests/subscriptionTrustCopy.test.mjs`, `tests/remoteAudioTrustCopy.test.mjs`,
   `tests/aiScheduleUxCopy.test.mjs`로 회귀 보호한다. SOS·긴급 알림을 프리미엄 혜택처럼 쓰지 말고,
-  원격청취는 아이 알림·1분 자동 종료·기록 안내를 함께 보여준다.
+  원격청취는 아이 알림·1분 자동 종료·기록 안내를 함께 보여준다. 아이 동의 탭이 없어졌으므로 부모 문구는
+  "아이가 허용해야 시작"이 아니라 "아이가 누르지 않아도 연결되고 듣는 동안 아이 화면에 계속 표시된다"로 쓴다.
+- **위급 주변소리(2026-07-29, 보호자 결정)**: 위급 상황 확인용 경로라 아이 동의 탭을 받지 않는다. 대신 숨기지 않는다.
+  `RemoteListenActivity`는 pending 상태가 `READY`면 곧바로 `acceptRequest()`로 연결하고, 허용/거절 버튼 대신 무슨 일이
+  일어나는지 문장으로 알린다. 알림은 "요청"이 아니라 "지금 듣고 있다"를 알리며 잠금·꺼짐 화면에서도 보이도록
+  `setFullScreenIntent` + Activity `showWhenLocked`/`turnScreenOn`을 쓴다. 기기 잠금 해제는 요청하지 않는다.
+  통화 위장(`CATEGORY_CALL`)·무음(`setSilent`)·`VISIBILITY_SECRET`·DND 우회는 금지다. 서버 승인 증표 1회 소비,
+  세션 nonce·가족·대상 일치 검사, 마이크 권한, 1분 상한, 캡처 중 포그라운드 알림, 감사 기록은 그대로 유지한다.
+  회귀=`tests/remoteListenConsentSafety.test.mjs`.
 - **알림 전달·원격청취 보안 계약(2026-07-14)**: 모든 즉시 알림은 네트워크 발송 전에 수신자별
   `pending_notifications`를 만들고, 실제 네이티브 표시/Web Push 표시 ACK 전에는 delivered로 완료하지 않는다.
   targetless 레거시 행은 일반 사용자가 조회·ACK할 수 없으며, 일정·도착·위험·메모 알림은 활성 가족 구성원과 정확한
   `targetUserId`/role/아이 식별자를 서버가 검증한다. 원격청취는 부모 버튼 → 감사 세션 생성(세션 id=requestId) →
-  아이에게 일반 알림 → 아이가 해당 세션을 직접 1회 허용 → access JWT로 WAV 전송 → 요청한 부모 소켓에만 전달 →
-  **서버가 기록한 아이 동의 시각부터** 최대 60초 후 종료 순서다. 요청 시각부터 60초를 계산해 늦게 동의한 아이의 청취
-  시간을 줄이지 않는다. FCM·pending만으로 마이크를 자동 시작하거나 전체화면으로 가로채지 않는다. 익명 realtime
+  아이에게 알림 → 아이 기기가 그 세션의 서버 승인 증표를 1회 받음 → access JWT로 WAV 전송 → 요청한 부모 소켓에만 전달 →
+  **서버가 기록한 승인 시각부터** 최대 60초 후 종료 순서다. 요청 시각부터 60초를 계산해 늦게 연결된 아이 기기의 청취
+  시간을 줄이지 않는다. FCM·pending 수신만으로 마이크를 시작하지 않는다(반드시 `RemoteListenActivity` 경유). 익명 realtime
   broadcast와 클라이언트 WebSocket relay는 금지하며, stop은 같은 requestId·아이·session nonce를 확인하고 감사 행을
   닫기 전에 전송한다. 감사 종료 시각·길이·종료 사유는 서버가 확정한다.
 - ★주변소리 세션 조기 종료(2026-07-22 실사고): 부모 화면이 시작 ~4.5초 만에 "1분이 지나 듣기를 종료했어요"로
@@ -276,7 +284,18 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   URL 직접 입력이 역할 경계를 우회하지 못하게 한다. Android pending 복구는 표시용 알림인지 먼저 판정한 뒤에만
   system/local ACK를 확인하며 `request_location`·`request_device_status`·원격청취 같은 네이티브 명령을 알림 표시 완료로
   잘못 ACK하지 않는다. 메시지·일정·안전 채널은 민감한 본문이 잠금화면에 노출되지 않는 private 채널을 사용하고,
-  전체화면 인텐트는 `sos|emergency`와 실제 사용자 허용 상태에서만 사용한다.
+  전체화면 인텐트는 `sos|emergency`와 위급 주변소리처럼 실제 위급 경로에서만 사용한다.
+- **알림 큰 아이콘(2026-07-29)**: 혜니 캐릭터 원본은 세로가 더 긴 비율이라 시스템 정사각 슬롯에 채우기로 들어가면
+  머리 위와 옷 아래가 잘렸다. `NotificationHelper.largeIcon`은 원본을 자르지 않고(contain) 원형 크롭 여유를 남긴
+  정사각 비트맵으로 정규화해 크기별로 캐시한다. 기하는 프레임워크에 의존하지 않는 `NotificationLargeIconLayout`에 두고
+  JVM 단위 테스트로 고정한다. 회귀=`tests/notificationLargeIcon.test.mjs`·`NotificationLargeIconLayoutTest`.
+- **오늘 경로 시각 포커스(2026-07-29)**: 이동선 실선화 계약은 위치 신뢰 항목에 있다. 여기에 더해 지도 중심과 아이 마커
+  좌표는 독립이다 — 머문 곳을 선택하면 지도만 옮기고 아바타는 실제 이력 좌표에 남는다. 기본은 최신 따라가기
+  (슬라이더 값 `null`)이고 조회창은 하루 시작+24h로 고정해, 30초 위치 폴링이 부모가 고른 시각과 접어 둔 시트를
+  되돌리지 않는다. 신선도는 배경 폴링으로만 유지한다. 회귀=`tests/parentLocationScrubFocus.test.mjs`.
+- **눌림 피드백(2026-07-29)**: 실제 버튼은 `hy-press`(전체 축소) 또는 자기 클래스의 `:active` 반응 중 하나를 반드시
+  갖는다. 토글 스위치는 트랙이 흔들려 보이지 않게 노브만 `scale(0.9)`로 누르고, 문장 안 글자 버튼은 크기를 바꾸지 않고
+  opacity로만 알린다. 보이지 않는 닫기용 스크림은 의도적으로 제외한다. 회귀=`tests/pressFeedbackCoverage.test.mjs`.
 - **세션 복구(2026-07-07)**: 역할 선택 화면이 다시 보이면 먼저 WebView `hyeni-api-session-v1`과
   네이티브 `BackgroundLocation.getPushContext()`를 읽기 전용으로 확인한다. WebView 세션만 비고 네이티브
   push context에 userId/familyId/role+refresh가 남은 경우 앱이 1회 `/auth/refresh`로 복구하되,

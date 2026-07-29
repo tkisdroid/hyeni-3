@@ -197,6 +197,13 @@
 .dzf-toggle[data-on="true"] .dzf-toggle__knob {
   transform: translateX(18px);
 }
+/* 누르는 순간 노브를 살짝 눌러 실제로 눌렸다는 걸 알린다. */
+.dzf-toggle:active .dzf-toggle__knob {
+  transform: scale(0.9);
+}
+.dzf-toggle[data-on="true"]:active .dzf-toggle__knob {
+  transform: translateX(18px) scale(0.9);
+}
 .dzf-toggle-note {
   margin-top: 12px;
   font-size: var(--type-caption);

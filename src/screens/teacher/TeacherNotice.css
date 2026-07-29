@@ -348,6 +348,13 @@
 .tn-toggle--on .tn-toggle__knob {
   transform: translateX(20px);
 }
+/* 누르는 순간 노브를 살짝 눌러 실제로 눌렸다는 걸 알린다. */
+.tn-toggle:active .tn-toggle__knob {
+  transform: scale(0.9);
+}
+.tn-toggle--on:active .tn-toggle__knob {
+  transform: translateX(20px) scale(0.9);
+}
 .tn-date {
   width: 100%;
   height: 48px;

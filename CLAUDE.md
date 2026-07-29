@@ -233,12 +233,19 @@
   `pending_notifications`를 만들고 실제 네이티브 표시/Web Push 표시 ACK 전에는 delivered로 완료하지 않는다.
   targetless 레거시 행은 일반 사용자가 조회·ACK하지 못한다. 일정·도착·위험·메모는 활성 가족 구성원과 정확한
   `targetUserId`/role/아이 식별자를 Worker가 검증한다. 원격청취는 부모 버튼 → 감사 세션 생성(id=requestId) →
-  아이 일반 알림 → 아이가 해당 세션을 1회 직접 허용 → access JWT WAV 업로드 → 요청한 부모의 user-tagged 소켓만 수신 →
-  **서버 동의 시각부터** 최대 60초 종료 순서다(요청 시각 기준 조기 종료 금지). FCM·pending에서 마이크 자동 시작·
-  전체화면 가로채기 금지, 익명 realtime broadcast와
+  아이 알림 → 아이 기기가 그 세션의 서버 승인 증표를 1회 받음 → access JWT WAV 업로드 → 요청한 부모의 user-tagged 소켓만 수신 →
+  **서버 승인 시각부터** 최대 60초 종료 순서다(요청 시각 기준 조기 종료 금지). FCM·pending 수신만으로 마이크를 시작하지
+  않는다(반드시 `RemoteListenActivity` 경유). 익명 realtime broadcast와
   클라이언트 WS relay 금지. stop은 같은 requestId·아이·session nonce를 검증해 감사 PATCH보다 먼저 보내고,
   감사 종료 시각·길이·사유는 서버가 확정한다. 회귀=`tests/remoteListenConsentSafety.test.mjs`,
   Worker `tests/realtimeBroadcastSecurity.test.mjs`·`tests/remoteListenCommandSecurity.test.mjs`.
+- **위급 주변소리(2026-07-29, 보호자 결정)**: 위급 확인 경로라 아이 동의 탭을 받지 않는다. 대신 숨기지 않는다.
+  `RemoteListenActivity`는 pending 이 `READY`면 곧바로 `acceptRequest()`로 연결하고 허용/거절 버튼 없이 무슨 일이
+  일어나는지 문장으로 알린다. 알림은 "요청" 대신 "지금 듣고 있다"를 알리고 잠금·꺼짐 화면에서도 보이도록
+  `setFullScreenIntent` + Activity `showWhenLocked`/`turnScreenOn`을 쓴다. 기기 잠금 해제(`requestDismissKeyguard`)는
+  하지 않는다. `CATEGORY_CALL`·`setSilent`·`VISIBILITY_SECRET`·DND 우회는 금지. 서버 승인 증표 1회 소비, 세션 nonce·
+  가족·대상 일치 검사, 마이크 권한, 1분 상한, 캡처 중 포그라운드 알림, 감사 기록은 유지한다. 부모 문구도 "아이가 허용해야
+  시작"이 아니라 "아이가 누르지 않아도 연결되고 듣는 동안 아이 화면에 계속 표시된다"로 맞춘다.
 - ★주변소리 세션 조기 종료(2026-07-22 TK 제보 "1분 안 됐는데 1분 지나 종료" 실사고): 부모 화면이 시작
   ~4.5초 만에 "1분이 지나 듣기를 종료했어요"로 닫혔다. 원인은 서버가 아니라 **클라 파싱 버그** —
   `src/lib/api/endpoints/remoteAudit.ts`의 `finiteMs`가 `Number(null)===0`을 유한값으로 통과시켜, 미동의·미종료
@@ -355,8 +362,23 @@
 - **역할 라우트·알림 표시 경계(2026-07-14)**: 선생님 탭·알림장 상세도 `RequireRole role="teacher"` 아래에 둔다.
   Android pending 복구는 표시용 유형을 먼저 검사한 뒤 system/local ACK를 확인해 위치·기기상태·원격청취 명령을 표시 완료로
   잘못 처리하지 않는다. 메시지·일정·안전 알림은 private 채널과 일반적인 잠금화면 publicVersion을 사용하고, 전체화면은
-  `sos|emergency`와 실제 사용자 허용 상태에서만 사용한다. 회귀=`tests/notificationUiReliability.test.ts`·
+  `sos|emergency`와 위급 주변소리처럼 실제 위급 경로에서만 사용한다. 회귀=`tests/notificationUiReliability.test.ts`·
   `tests/androidNotificationSafetyWiring.test.mjs`·Android `PendingNotificationTypePolicyTest`·`NotificationChannelPolicyTest`.
+- **알림 큰 아이콘 정사각 정규화(2026-07-29 TK 제보 "알림 아이콘 위아래가 잘린다")**: 혜니 캐릭터 원본은 세로가 더 긴
+  비율이라 시스템 정사각 슬롯의 채우기(center-crop)에 들어가면 머리 위와 옷 아래가 잘렸다. `NotificationHelper.largeIcon`이
+  자르지 않고(contain) 원형 크롭 여유(`SAFE_RATIO` 0.82)를 남긴 정사각 비트맵을 만들어 크기별로 캐시한다. 경계만 먼저 읽고
+  2의 거듭제곱으로 축소 디코딩해 알림마다 큰 비트맵을 다시 올리지 않는다. 기하는 프레임워크 비의존
+  `NotificationLargeIconLayout`에 두고 JVM 단위 테스트로 고정한다.
+  회귀=`tests/notificationLargeIcon.test.mjs`·Android `NotificationLargeIconLayoutTest`.
+- **오늘 경로 시각 포커스(2026-07-29)**: 이동선 실선화 계약은 위치 신뢰 항목의 ★부모 오늘경로 줄에 있다. 여기에 더해
+  지도 중심과 아이 마커 좌표는 독립이다(머문 곳 선택은 지도만 옮기고 아바타는 실제 이력 좌표에 남는다). 기본은 최신
+  따라가기(`scrubOffsetMinute === null`)이고 조회창은 하루 시작+24h 고정이라 30초 위치 폴링이 부모가 고른 시각과 접어 둔
+  시트를 되돌리지 않는다. 신선도는 `useLocationHistory(..., 60_000)` 배경 폴링으로만 유지한다.
+  회귀=`tests/parentLocationScrubFocus.test.mjs`.
+- **눌림 피드백 계약(2026-07-29)**: 실제 버튼은 `hy-press`(전체 축소) 또는 자기 클래스의 `:active` 반응 중 하나를 반드시
+  갖는다. 토글 스위치는 트랙이 흔들려 보이지 않게 노브만 `scale(0.9)`로 누르고, 문장 안 글자 버튼은 크기를 바꾸지 않고
+  opacity로만 알린다. 보이지 않는 닫기용 스크림은 의도적으로 제외한다(무엇이 눌렸는지 오해를 준다).
+  전역 `prefers-reduced-motion` 규칙이 새 전환 시간도 함께 줄인다. 회귀=`tests/pressFeedbackCoverage.test.mjs`.
 - Capacitor SystemBars 패치(2026-07-09): Android WebView 시작 직후 `document.documentElement`가 아직 없으면
   기본 `SystemBars` safe-area CSS 주입이 콘솔 오류를 낸다. `postinstall`의
   `scripts/patch-capacitor-systembars.mjs`가 DOM 준비 전 주입을 건너뛰게 패치하므로, 의존성 재설치 후에는

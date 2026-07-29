@@ -932,6 +932,12 @@
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
+  transition: transform var(--duration-fast) ease, opacity var(--duration-fast) ease;
+}
+/* 글자 버튼도 눌린 걸 알린다(hy-section-action 과 같은 척도). */
+.ph-prep-edit:active {
+  transform: scale(0.94);
+  opacity: 0.75;
 }
 
 /* ── 대화 프리뷰 ────────────────────────────────────────────────────────── */
