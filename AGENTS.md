@@ -331,7 +331,14 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   즉시 요청과 상시 추적 콜백이 같은 provider fix를 함께 받으면 elapsedRealtime 기준 1회만 업로드하고,
   history insert도 `user_id+recorded_at` 조건부 insert로 중복을 막는다.
   마지막 GPS `accuracy_m`을 부모에게 표시하고 150m 초과는 정확도 낮음으로 강등하며 도착 상태머신 근거에서 제외한다.
-  추정 보간점(`is_estimated`)은 경로에서 점선으로 표시하되 머문 곳·일정 방문·출발 시각의 실측 증거로 쓰지 않는다.
+  추정 보간점(`is_estimated`)은 머문 곳·일정 방문·출발 시각의 실측 증거로 쓰지 않는다.
+  ★부모 오늘경로 이동선은 전 구간 실선 하나다(2026-07-29 TK 제보 — 4시 출발~과천 도착 구간만 점선으로 끊겨 보였다).
+  원인은 GPS·서버가 아니라 네이티브가 갭(>150m)을 12m 간격으로 메운 직선 채움점이었다(D1 확진: 같은 날 15:50~16:40
+  1184점 중 1014점이 `is_estimated=1`·`accuracy_m` NULL). 채움점은 두 실측점 사이 직선 위의 합성점이라
+  `transform/locationHistoryScrub.buildTrailPoints`가 경로에서 제외하고, 남은 실측점을 `strokeStyle:"solid"` 폴리라인
+  1개로 잇는다(기하 동일·점 수 1/3). 저정확도 실측점은 숨기지 않으며 `shortdash`·"추정 구간" 범례는 재도입 금지.
+  경로가 있으면 머문 곳 순서 연결선은 그리지 않는다(선 두 겹 방지). 회귀=`tests/locationRouteAccuracy.test.ts`·
+  `tests/locationHistoryScrub.test.ts`.
   미등록 장소 지연 출발은 첫 실측 이탈 `event_at`과 서버 확인 `detected_at`을 함께 저장하고 지연 기록임을 제목·문구에
   밝힌다. 임의 장소 도착 알림은 anchor episode lease+eventId로 DB 중복을 막고, FCM 0건은 같은 pushId로 재시도해
   단말 중복 표시 없이 at-least-once 전달한다. 자동 stale wake는
@@ -377,6 +384,19 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   `.pl-stays`에서 animation을 끄고, S25 WebView computed transform까지 확인한다. 오늘경로에서는 상단 아이 배지를
   숨기고 시간대별 경로 UI만 남긴다.
   로컬 mock 검증 시 현재 시각이 08시 전이면 mock 이력도 `/api/location/history`의 `start` 파라미터 기준으로 만든다.
+- ★**시간대별 경로 조작 정본(2026-07-29 TK 제보)**: 슬라이더로 시각을 옮기면 ①하단 "오늘 머문 곳" 시트를 자동으로
+  접어 지도를 열고(다시 열기 pill 유지) ②그 시각의 마지막 확인 위치를 지도 중심(`center`)으로 잡고 ③하루 전체 축척으로
+  멀어져 있으면 `centerLevel=4`까지만 당긴다(이미 더 확대한 화면은 유지 — 확대 방향 보정만). `KakaoMap`은 명시적
+  `center`가 있으면 `setBounds`로 덮지 않으며, 자녀 아바타는 `center`가 아니라 자기 좌표에 그린다(머문 곳 선택 시 분리).
+  슬라이더 상태는 `null`=최신 따라가기이고 30초 위치 폴링(`now` 갱신)으로 부모가 고른 시각·접어 둔 시트를 되돌리지 않는다.
+  `/api/location/history` 쿼리 키의 끝시각은 하루 창 끝(시작+24h)으로 고정하고 신선도는 화면이 열려 있는 동안의
+  60초 배경 폴링으로 유지한다(끝시각에 `now`를 넣으면 키가 매번 바뀌어 하루치를 다시 받고 슬라이더가 최신으로 튄다).
+  헤더는 `시각 · 위치`(머문 곳 이름/이동 중/기록 없음)와 "최신으로" 버튼을 보여주고, 판정 시각은 마지막 기록 시각으로
+  clamp 해 기록이 끊긴 뒤를 "이동 중"으로 단정하지 않는다. 머문 곳 시트 여백은 `12/16/20px`(손잡이 4/8, 헤더 하단 12,
+  목록 gap 12). 회귀=`tests/parentLocationScrubFocus.test.mjs`·`tests/locationHistoryScrub.test.ts`.
+  로컬 검증 팁: Kakao JS 키는 도메인 제한이 있어 로컬 하니스에서 실 SDK가 로드되지 않으므로, `window.kakao.maps`
+  계측 스텁(Polyline/Map 호출 기록)을 주입해 선 스타일·`setCenter/setLevel/setBounds` 결정을 확인한다. 5173 포트는
+  다른 프로젝트가 쓸 수 있으니 preview 포트를 따로 잡고, mock 이력은 08시 하루 창(자정 이후=전날 08시) 기준으로 만든다.
 - **메뉴·페어링 안정화(2026-07-09)**: 부모 홈 바로가기는 `AI 일정 → 위치추적 → 친구놀이 → 장소관리 → 주변소리 →
   안심리포트 → 구독 → 알림` 순서와 실제 라우트를 회귀 테스트로 고정한다. 부모 설정 메뉴는 emoji 칩 대신
   lucide/image 아이콘 + `data-tone` 토큰 색상만 사용한다. 페어링 위저드는 `/api/family/mine`과 엔타이틀먼트가

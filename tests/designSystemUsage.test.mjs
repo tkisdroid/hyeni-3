@@ -2115,6 +2115,7 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/parent/ParentLocation.css", ".pl-lock__cta"],
   ["src/screens/parent/ParentLocation.css", ".pl-lock__retry"],
   ["src/screens/parent/ParentLocation.css", ".pl-viewtog"],
+  ["src/screens/parent/ParentLocation.css", ".pl-scrub__latest"],
   ["src/screens/parent/ParentLocation.css", ".pl-stays-reopen"],
   ["src/screens/shared/MemoChat.css", ".mc-quick-btn"],
   ["src/screens/child/AiFriendSetup.css", ".afs-cta"],

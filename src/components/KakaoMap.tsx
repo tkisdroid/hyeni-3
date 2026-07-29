@@ -5,10 +5,7 @@
 import { useEffect, useRef, useState } from "react";
 import { loadKakaoMaps } from "@/lib/kakaoMap";
 import { asset } from "@/lib/assets";
-import {
-  splitLocationRouteSegments,
-  type LocationRoutePoint,
-} from "@/transform/locationRoute";
+import type { LocationRoutePoint } from "@/transform/locationRoute";
 
 export interface MapChild {
   lat: number;
@@ -62,6 +59,7 @@ export function KakaoMap({
   picked = null,
   onPick,
   center = null,
+  centerLevel = null,
   recenterKey = 0,
   className,
 }: {
@@ -80,6 +78,11 @@ export function KakaoMap({
   onPick?: (lat: number, lng: number) => void;
   /** 명시적 중심(주소 검색 결과 등). 없으면 자녀 위치/기본값. */
   center?: LatLngPoint | null;
+  /**
+   * 명시적 중심으로 이동할 때 원하는 확대 단계(작을수록 확대).
+   * 이미 더 확대된 화면은 건드리지 않는다(사용자 확대 존중 — 확대 방향으로만 보정).
+   */
+  centerLevel?: number | null;
   /** 값이 바뀌면 center 가 같은 좌표여도 강제로 재이동(현재 위치 버튼 등). */
   recenterKey?: number;
   className?: string;
@@ -148,6 +151,10 @@ export function KakaoMap({
           // 단 recenterKey 가 갱신되면 같은 좌표여도 강제 재이동(현재 위치 버튼).
           mapRef.current.setCenter(centerLatLng);
           lastCenterRef.current = centerKey;
+          // 포커스 요청은 "더 넓게 보고 있을 때만" 확대한다(사용자가 직접 확대한 화면은 유지).
+          if (centerLevel != null && typeof mapRef.current.getLevel === "function") {
+            if (mapRef.current.getLevel() > centerLevel) mapRef.current.setLevel(centerLevel);
+          }
         }
         lastRecenterRef.current = recenterKey;
         // 이전 오버레이 제거
@@ -199,35 +206,34 @@ export function KakaoMap({
           overlaysRef.current.push(marker);
         }
 
-        // 경로 폴리라인. 실측점 사이만 실선, 보간된 추정 구간은 점선으로 정직하게 구분한다.
+        // 경로 폴리라인 — 전 구간 실선 하나로 그린다.
+        // 소비 화면이 실측점만 넘기므로(직선 보간 채움점 제외) 선의 기하는 그대로이고,
+        // 끊긴 점선 때문에 이동이 '기록 안 됨'처럼 보이던 오해만 없앤다.
         if (route && route.length >= 2) {
           const rootStyle = getComputedStyle(document.documentElement);
-          const actualRouteColor = rootStyle.getPropertyValue("--mint-500").trim();
-          const estimatedRouteColor = rootStyle.getPropertyValue("--lav-400").trim();
-          for (const segment of splitLocationRouteSegments(route)) {
-            const path = segment.points.map((p) => new maps.LatLng(p.lat, p.lng));
-            const polyline = new maps.Polyline({
-              path,
-              strokeWeight: segment.estimated ? 4 : 6,
-              strokeColor: segment.estimated ? estimatedRouteColor : actualRouteColor,
-              strokeOpacity: segment.estimated ? 0.72 : 0.9,
-              strokeStyle: segment.estimated ? "shortdash" : "solid",
-            });
-            polyline.setMap(mapRef.current);
-            overlaysRef.current.push(polyline);
-          }
+          const routeColor = rootStyle.getPropertyValue("--mint-500").trim();
+          const polyline = new maps.Polyline({
+            path: route.map((p) => new maps.LatLng(p.lat, p.lng)),
+            strokeWeight: 6,
+            strokeColor: routeColor,
+            strokeOpacity: 0.9,
+            strokeStyle: "solid",
+          });
+          polyline.setMap(mapRef.current);
+          overlaysRef.current.push(polyline);
         }
 
-        // 스테이포인트(머무른 장소) — 순서 연결선(점선) + 순번·체류시간 핀.
+        // 스테이포인트(머무른 장소) — 순번·체류시간 핀. 경로 폴리라인이 없을 때만 순서 연결선을 얹는다
+        // (경로가 있으면 실제 이동선이 이미 순서를 보여줘 선이 두 겹으로 겹친다).
         if (stays && stays.length > 0) {
-          if (stays.length >= 2) {
+          if (stays.length >= 2 && !(route && route.length >= 2)) {
             const path = stays.map((s) => new maps.LatLng(s.lat, s.lng));
             const link = new maps.Polyline({
               path,
               strokeWeight: 3,
               strokeColor: "#A78BFA",
               strokeOpacity: 0.8,
-              strokeStyle: "shortdash",
+              strokeStyle: "solid",
             });
             link.setMap(mapRef.current);
             overlaysRef.current.push(link);
@@ -276,7 +282,9 @@ export function KakaoMap({
           avatarImage.style.cssText = "width:100%;height:100%;object-fit:cover";
           content.replaceChildren(avatarImage);
           const overlay = new maps.CustomOverlay({
-            position: centerLatLng,
+            // 지도 중심(center)과 자녀 좌표를 분리한다. 머문 곳·특정 시각으로 지도를 옮겨도
+            // 아바타는 실제 이력점에 남아야 한다.
+            position: new maps.LatLng(child.lat, child.lng),
             content,
             yAnchor: 1,
             zIndex: 10,
@@ -286,13 +294,14 @@ export function KakaoMap({
         }
 
         // 경로가 있으면 출발·도착이 모두 보이도록 bounds 맞춤(중심/레벨 대체).
-        if (route && route.length >= 2) {
+        // 단 소비 화면이 명시적 center 를 주면(시간대 포커스·머문 곳 선택) 그 지점을 유지한다.
+        if (!center && route && route.length >= 2) {
           const bounds = new maps.LatLngBounds();
           route.forEach((p) => bounds.extend(new maps.LatLng(p.lat, p.lng)));
           if (destination) bounds.extend(new maps.LatLng(destination.lat, destination.lng));
           if (child) bounds.extend(new maps.LatLng(child.lat, child.lng));
           mapRef.current.setBounds(bounds);
-        } else if (stays && stays.length > 0 && !center) {
+        } else if (!center && stays && stays.length > 0) {
           // 스테이포인트 전체가 보이도록 bounds. 단 명시적 center(목록 항목 선택)면 그 지점 우선.
           const bounds = new maps.LatLngBounds();
           stays.forEach((s) => bounds.extend(new maps.LatLng(s.lat, s.lng)));
@@ -306,7 +315,7 @@ export function KakaoMap({
     return () => {
       cancelled = true;
     };
-  }, [child, zones, places, route, stays, destination, picked, center, recenterKey, retryKey]);
+  }, [child, zones, places, route, stays, destination, picked, center, centerLevel, recenterKey, retryKey]);
 
   // 언마운트 시 ResizeObserver 해제.
   useEffect(

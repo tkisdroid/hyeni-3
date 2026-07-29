@@ -64,12 +64,23 @@ export function useSaveLocationPreferences() {
   });
 }
 
-export function useLocationHistory(start: string, end: string, enabled = true) {
+/**
+ * 하루 위치 이력.
+ * `refetchIntervalMs` 를 주면 화면이 열려 있는 동안 배경 폴링으로 신선도를 유지한다
+ * (쿼리 키에 현재 시각을 넣어 매번 새 키로 다시 받는 방식은 슬라이더·캐시를 망친다).
+ */
+export function useLocationHistory(
+  start: string,
+  end: string,
+  enabled = true,
+  refetchIntervalMs?: number,
+) {
   const { familyId, status } = useAuth();
   return useQuery({
     queryKey: qk.locationHistory(familyId ?? "", start, end),
     queryFn: () => fetchLocationHistory(familyId as string, start, end),
     enabled: enabled && status === "authenticated" && !!familyId,
+    refetchInterval: refetchIntervalMs && refetchIntervalMs > 0 ? refetchIntervalMs : undefined,
   });
 }
 
