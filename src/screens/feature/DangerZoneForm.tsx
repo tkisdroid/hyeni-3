@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { useToast } from "@/app/toast";
@@ -6,8 +6,9 @@ import { KakaoMap } from "@/components/KakaoMap";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { loadKakaoMaps } from "@/lib/kakaoMap";
 import { hasKakaoKey } from "@/config/env";
-import { useCreateDangerZone, useDangerZones, useUpdateDangerZone } from "@/queries/useLocation";
+import { useChildLocations, useCreateDangerZone, useDangerZones, useSavedPlaces, useUpdateDangerZone } from "@/queries/useLocation";
 import { useEntitlement } from "@/queries/useEntitlement";
+import { resolveMapCenter } from "@/transform/mapCenter";
 import { TIERS } from "@/transform/tierPolicy";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import { ApiError } from "@/lib/api/errors";
@@ -58,6 +59,17 @@ export function DangerZoneForm() {
   );
   const [center, setCenter] = useState<LatLng | null>(
     editing ? { lat: editing.lat, lng: editing.lng } : null,
+  );
+  // 지도 기본 중심: 편집 좌표 > 집 > 아이 마지막 위치 > 서울(서울 밖 가족 배려).
+  const savedPlacesQuery = useSavedPlaces();
+  const childLocationsQuery = useChildLocations();
+  const mapCenter = useMemo(
+    () => resolveMapCenter({
+      current: center,
+      places: savedPlacesQuery.data ?? [],
+      childLocations: childLocationsQuery.data ?? [],
+    }),
+    [center, savedPlacesQuery.data, childLocationsQuery.data],
   );
   const [entryAlert, setEntryAlert] = useState(editing?.alert_on_entry ?? true);
   const [exitAlert, setExitAlert] = useState(editing?.alert_on_exit ?? false);
@@ -214,7 +226,7 @@ export function DangerZoneForm() {
         <div className="dzf-map">
           <KakaoMap
             className="dzf-map__canvas"
-            center={center}
+            center={mapCenter}
             picked={picked}
             zones={picked ? [{ lat: picked.lat, lng: picked.lng, radiusM: radius, name: name.trim() || "위험구역" }] : []}
             onPick={handlePick}
@@ -317,7 +329,7 @@ export function DangerZoneForm() {
         </div>
 
         {/* 저장 */}
-        <button type="button" className="dzf-save hy-press" onClick={save} disabled={saving}>
+        <button type="button" className="dzf-save hy-press" onClick={save} disabled={saving} aria-busy={saving}>
           {saving ? "저장 중…" : editing ? "구역 수정하기" : "구역 저장하기"}
         </button>
       </div>

@@ -109,7 +109,7 @@
 .afs-cell {
   transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
   aspect-ratio: 1;
-  border-radius: 18px;
+  border-radius: var(--radius-20);
   background: rgba(255, 255, 255, 0.75);
   border: 2px solid transparent;
   box-shadow: 0 6px 16px -10px rgba(124, 92, 225, 0.4);
@@ -185,7 +185,7 @@
   margin-top: auto;
   width: 100%;
   padding: 16px;
-  border-radius: 18px;
+  border-radius: var(--radius-20);
   background: linear-gradient(120deg, #b79dfb, #8b6bec);
   color: #fff;
   font-size: var(--type-body-lg);

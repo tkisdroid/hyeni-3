@@ -90,7 +90,7 @@
 .raa-hero__icon {
   width: 56px;
   height: 56px;
-  border-radius: 18px;
+  border-radius: var(--radius-20);
   background: var(--bg-card);
   color: var(--lav-text);
   box-shadow: var(--shadow-soft);

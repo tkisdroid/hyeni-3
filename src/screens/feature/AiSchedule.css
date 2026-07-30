@@ -149,7 +149,7 @@
   margin-top: 16px;
   width: 100%;
   padding: 16px 16px;
-  border-radius: 20px 20px 20px 6px;
+  border-radius: 20px 20px 20px var(--radius-8);
   background: #fff;
   box-shadow: 0 8px 22px rgba(124, 92, 225, 0.1);
   font-size: var(--type-body);
@@ -367,7 +367,7 @@
 .ais-reslabel__badge {
   width: 20px;
   height: 20px;
-  border-radius: 6px;
+  border-radius: var(--radius-8);
   background: #efe8ff;
   display: flex;
   align-items: center;
@@ -404,7 +404,7 @@
 .ais-result__icon {
   width: 44px;
   height: 44px;
-  border-radius: 13px;
+  border-radius: var(--radius-12);
   background: #e7f8f0;
   display: flex;
   align-items: center;
@@ -476,7 +476,7 @@
   margin-top: 20px;
   width: 100%;
   height: 56px;
-  border-radius: 18px;
+  border-radius: var(--radius-20);
   background: linear-gradient(120deg, #b79dfb, #8b6bec);
   box-shadow: 0 16px 32px -12px rgba(124, 92, 225, 0.6);
   font-size: var(--type-body-lg);

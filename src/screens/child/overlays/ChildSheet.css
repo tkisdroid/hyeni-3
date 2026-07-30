@@ -126,7 +126,7 @@
   margin-top: 16px;
   width: 100%;
   height: 56px;
-  border-radius: 18px;
+  border-radius: var(--radius-20);
   background: linear-gradient(120deg, var(--hy-accent), var(--hy-accent-deep));
   box-shadow: 0 14px 28px -10px rgba(240, 81, 143, 0.5);
   font-family: Jua, var(--font-sans);
@@ -162,7 +162,7 @@
 .ks-cta--ghost {
   margin-top: 12px;
   height: 52px;
-  border-radius: 18px;
+  border-radius: var(--radius-20);
   background: var(--hy-accent-soft);
   font-family: var(--font-sans);
   font-size: var(--type-body-lg);
@@ -314,7 +314,7 @@
 .ks-friend__ava {
   width: 52px;
   height: 52px;
-  border-radius: 18px;
+  border-radius: var(--radius-20);
   background: var(--hy-accent-soft);
   display: flex;
   align-items: center;
@@ -673,7 +673,7 @@
   margin: 12px auto 0;
   height: 42px;
   padding: 0 20px;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   background: var(--hy-accent-soft);
   font-family: Jua, var(--font-sans);
   font-size: var(--type-body);

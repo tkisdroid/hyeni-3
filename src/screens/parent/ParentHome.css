@@ -68,13 +68,15 @@
   gap: 4px;
   padding: 4px 12px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.24);
+  /* 로즈 히어로 위 반투명 흰 알약에 흰 글자를 올리면 ~2.3:1 이다.
+     알약을 또렷한 흰색으로 굳히고 라벨을 진한 브랜드색으로 바꿔 4.6:1 을 만든다. */
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(4px);
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
 
-  color: #fff;
+  color: var(--hy-accent-text);
 }
 .ph-hero__title {
   position: relative;
@@ -215,7 +217,7 @@
   text-align: left;
   width: 100%;
   background: transparent;
-  border-radius: 18px;
+  border-radius: var(--radius-20);
   padding: 12px;
   display: flex;
   align-items: center;
@@ -235,7 +237,7 @@
 .ph-sched-icon {
   width: 48px;
   height: 48px;
-  border-radius: 15px;
+  border-radius: var(--radius-16);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -296,7 +298,7 @@
 .ph-ai__icon {
   width: 46px;
   height: 46px;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   background: #fff;
   display: flex;
   align-items: center;
@@ -340,7 +342,7 @@
   justify-content: center;
   gap: 4px;
   padding: 12px 4px;
-  border-radius: 13px;
+  border-radius: var(--radius-12);
   background: rgba(255, 255, 255, 0.8);
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
@@ -413,7 +415,7 @@
   position: relative;
   width: 60px;
   height: 60px;
-  border-radius: 19px;
+  border-radius: var(--radius-20);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -560,7 +562,7 @@
 .ph-safety__pending {
   margin-bottom: 16px;
   padding: 12px 12px;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   background: var(--bg-press);
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
@@ -609,7 +611,7 @@
   margin-bottom: 16px;
   padding: 12px 12px;
   border: 1px solid var(--line-card);
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   background: var(--bg-press);
   color: var(--fg-muted);
 }
@@ -666,7 +668,7 @@
 .ph-metric__icon {
   width: 42px;
   height: 42px;
-  border-radius: 13px;
+  border-radius: var(--radius-12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -783,7 +785,7 @@
 .ph-recent-row__icon {
   width: 34px;
   height: 34px;
-  border-radius: 10px;
+  border-radius: var(--radius-12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -880,12 +882,12 @@
   align-items: center;
   gap: 8px;
   padding: 8px;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
 }
 .ph-prep-check {
   width: 26px;
   height: 26px;
-  border-radius: 9px;
+  border-radius: var(--radius-8);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -902,7 +904,7 @@
   gap: 8px;
   margin: -4px;
   padding: 4px;
-  border-radius: 10px;
+  border-radius: var(--radius-12);
   transition: background 0.16s ease;
 }
 .ph-prep-label:active {
@@ -935,6 +937,8 @@
 }
 .ph-prep-edit {
   min-height: var(--control-min-size);
+  /* 글자 버튼도 최소 조작 영역 44px 을 폭까지 지킨다(실측 21px). */
+  min-width: var(--control-min-size);
   color: var(--hy-accent-text);
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
@@ -960,7 +964,7 @@
 .ph-memo__icon {
   width: 48px;
   height: 48px;
-  border-radius: 15px;
+  border-radius: var(--radius-16);
   background: var(--rose-soft);
   display: flex;
   align-items: center;
@@ -1011,7 +1015,8 @@
   height: 26px;
   padding: 0 8px;
   border-radius: 999px;
-  background: var(--hy-accent-deep);
+  /* 흰 숫자라 accent-deep(3.34:1) 대신 CTA 등급 채움을 쓴다. */
+  background: var(--hy-accent-cta);
   color: #fff;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
@@ -1041,7 +1046,7 @@
   position: relative;
   width: 58px;
   height: 58px;
-  border-radius: 18px;
+  border-radius: var(--radius-20);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1059,7 +1064,8 @@
   height: 18px;
   padding: 0 4px;
   border-radius: 999px;
-  background: var(--danger-strong);
+  /* 12px 흰 숫자라 danger-strong(3.6:1)로는 부족하다 — CTA 등급 danger(4.56:1). */
+  background: var(--danger-cta);
   color: #fff;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);

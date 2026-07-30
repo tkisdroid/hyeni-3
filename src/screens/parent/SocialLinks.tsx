@@ -119,7 +119,7 @@ export function SocialLinks() {
               type="button"
               className="sl-retry hy-press"
               onClick={() => void refetch()}
-              disabled={isFetching}
+              disabled={isFetching} aria-busy={isFetching}
             >
               {isFetching ? "다시 확인 중…" : "다시 불러오기"}
             </button>
@@ -145,7 +145,7 @@ export function SocialLinks() {
                 <button
                   type="button"
                   className={`sl-unlink hy-press${isConfirming ? " sl-unlink--confirm" : ""}`}
-                  disabled={!canUnlink || busy === key}
+                  disabled={!canUnlink || busy === key} aria-busy={busy === key}
                   onClick={() => void unlink(link)}
                 >
                   {busy === key ? "해제 중…" : isConfirming ? "정말 해제할까요?" : "해제"}
@@ -163,7 +163,7 @@ export function SocialLinks() {
               <button
                 type="button"
                 className="pa-row pa-row-btn hy-press"
-                disabled={!native || isLoading || busy === provider}
+                disabled={!native || isLoading || busy === provider} aria-busy={isLoading || busy === provider}
                 onClick={() => startLink(provider)}
               >
                 <span className="pa-row__k">

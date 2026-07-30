@@ -91,6 +91,11 @@
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.92);
   color: var(--fg-tertiary);
+  /* '선택하 / 세요' 처럼 어절 중간에서 끊기지 않게 한다(2026-07-30 실기기 확인). */
+  max-width: calc(100% - 24px);
+  text-align: center;
+  word-break: keep-all;
+  white-space: normal;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -119,7 +124,7 @@
   height: 54px;
   border: 1.5px solid var(--line-soft);
   background: #fff;
-  border-radius: 15px;
+  border-radius: var(--radius-16);
   padding: 0 16px;
   font-size: var(--type-body);
   line-height: var(--type-body-line-height);
@@ -147,6 +152,8 @@
   gap: 8px;
 }
 .pf-type {
+  /* 한 글자 라벨('집')도 최소 조작 영역 44px 을 지킨다(실측 43x44). */
+  min-width: var(--control-min-size);
   padding: 8px 16px;
   border-radius: 999px;
   font-size: var(--type-label);
@@ -188,8 +195,8 @@
 .pf-save {
   width: 100%;
   height: 56px;
-  border-radius: 18px;
-  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  border-radius: var(--radius-20);
+  background: var(--cta-grad-accent);
   box-shadow: 0 16px 32px -12px rgba(240, 81, 143, 0.6);
   font-size: var(--type-body-lg);
   line-height: var(--type-body-lg-line-height);
@@ -207,7 +214,7 @@
   z-index: 6;
   width: var(--control-min-size);
   height: var(--control-min-size);
-  border-radius: 13px;
+  border-radius: var(--radius-12);
   background: rgba(255, 255, 255, 0.95);
   color: #4a4145;
   box-shadow: 0 4px 14px rgba(32, 26, 29, 0.18);

@@ -244,7 +244,7 @@ export function TeacherTimetable() {
                 type="button"
                 className="tt-copy hy-press"
                 onClick={copyCurrentWeek}
-                disabled={copyWeek.isPending}
+                disabled={copyWeek.isPending} aria-busy={copyWeek.isPending}
               >
                 <Copy size={14} strokeWidth={2.4} />
                 {copyWeek.isPending ? "복사 중" : "다음 주로 복사"}

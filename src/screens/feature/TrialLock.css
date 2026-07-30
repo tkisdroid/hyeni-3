@@ -172,7 +172,7 @@
 .tl-perk__ic {
   width: 36px;
   height: 36px;
-  border-radius: 11px;
+  border-radius: var(--radius-12);
   background: var(--hy-accent-soft);
   display: flex;
   align-items: center;
@@ -188,14 +188,15 @@
 }
 
 /* ── CTA ──────────────────────────────────────────────────────────────────── */
+/* 주요 CTA — 흰 라벨이 AA 를 넘도록 채움은 --hy-accent-cta, 라벨은 18px/700. */
 .tl-cta {
-  height: 54px;
-  border-radius: 16px;
-  background: var(--hy-accent);
+  height: 56px;
+  border-radius: var(--radius-16);
+  background: var(--hy-accent-cta);
   color: #fff;
-  font-size: var(--type-body-lg);
-  line-height: var(--type-body-lg-line-height);
-  font-weight: var(--type-body-lg-weight);
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
 
   letter-spacing: -0.01em;
   box-shadow: 0 12px 26px -10px var(--hy-accent-deep);
@@ -203,7 +204,7 @@
 }
 .tl-ghost {
   height: 46px;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   background: transparent;
   color: var(--fg-muted);
   font-size: var(--type-body-sm);

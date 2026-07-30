@@ -62,7 +62,7 @@ export function AiCredit() {
   const qc = useQueryClient();
 
   // 크레딧은 자녀별 — 전역 활성 아이(홈 스위치) 기준. 스위치 전환 시 대상 아이도 함께 바뀐다.
-  const { activeChild } = useActiveChild();
+  const { activeChild, familyLoading } = useActiveChild();
   const childUserId = activeChild?.user_id ?? null;
   const childName = activeChild?.name || "우리 아이";
 
@@ -248,6 +248,18 @@ export function AiCredit() {
     }
   };
 
+  if (!childUserId && familyLoading) {
+    return (
+      <ScreenQueryState
+        screenTitle="AI 크레딧"
+        state="loading"
+        heading="가족 정보를 불러오는 중이에요"
+        description="연결된 아이를 확인하고 있어요."
+        onBack={() => navigate(-1)}
+      />
+    );
+  }
+
   if (!childUserId) {
     return (
       <ScreenQueryState
@@ -380,7 +392,7 @@ export function AiCredit() {
             aria-label="AI 친구 대화 허용"
             aria-pressed={aiEnabled}
             onClick={toggleAiEnabled}
-            disabled={saveSettings.isPending || !childUserId}
+            disabled={saveSettings.isPending || !childUserId} aria-busy={saveSettings.isPending}
             style={{ background: aiEnabled ? "var(--hy-accent)" : "var(--line-soft)" }}
           >
             <span className="ac-toggle__knob" style={{ left: aiEnabled ? 22 : 2 }} />
@@ -399,7 +411,7 @@ export function AiCredit() {
                 className="ac-limit__btn hy-press"
                 aria-label="한도 줄이기"
                 onClick={() => changeDailyLimit(-5)}
-                disabled={saveSettings.isPending}
+                disabled={saveSettings.isPending} aria-busy={saveSettings.isPending}
               >
                 −
               </button>
@@ -409,7 +421,7 @@ export function AiCredit() {
                 className="ac-limit__btn hy-press"
                 aria-label="한도 늘리기"
                 onClick={() => changeDailyLimit(5)}
-                disabled={saveSettings.isPending}
+                disabled={saveSettings.isPending} aria-busy={saveSettings.isPending}
               >
                 +
               </button>
@@ -449,7 +461,7 @@ export function AiCredit() {
               aria-label="선제 대화"
               aria-pressed={proactiveEnabled}
               onClick={() => setProactiveEnabled((v) => !v)}
-              disabled={!advancedSettingsReady || saveSettings.isPending}
+              disabled={!advancedSettingsReady || saveSettings.isPending} aria-busy={saveSettings.isPending}
               style={{ background: proactiveEnabled ? "var(--hy-accent)" : "var(--line-soft)" }}
             >
               <span className="ac-toggle__knob" style={{ left: proactiveEnabled ? 22 : 2 }} />
@@ -510,7 +522,7 @@ export function AiCredit() {
               aria-label="일정 조작 허용"
               aria-pressed={allowScheduleActions}
               onClick={() => setAllowScheduleActions((v) => !v)}
-              disabled={!advancedSettingsReady || saveSettings.isPending}
+              disabled={!advancedSettingsReady || saveSettings.isPending} aria-busy={saveSettings.isPending}
               style={{ background: allowScheduleActions ? "var(--hy-accent)" : "var(--line-soft)" }}
             >
               <span className="ac-toggle__knob" style={{ left: allowScheduleActions ? 22 : 2 }} />
@@ -528,7 +540,7 @@ export function AiCredit() {
               aria-label="연락 동작 허용"
               aria-pressed={allowContactActions}
               onClick={() => setAllowContactActions((v) => !v)}
-              disabled={!advancedSettingsReady || saveSettings.isPending}
+              disabled={!advancedSettingsReady || saveSettings.isPending} aria-busy={saveSettings.isPending}
               style={{ background: allowContactActions ? "var(--hy-accent)" : "var(--line-soft)" }}
             >
               <span className="ac-toggle__knob" style={{ left: allowContactActions ? 22 : 2 }} />
@@ -539,7 +551,7 @@ export function AiCredit() {
             type="button"
             className="ac-save-detail hy-press"
             onClick={saveAdvancedSettings}
-            disabled={!advancedSettingsReady || saveSettings.isPending}
+            disabled={!advancedSettingsReady || saveSettings.isPending} aria-busy={saveSettings.isPending}
           >
             {saveSettings.isPending ? "저장 중…" : "상세 설정 저장"}
           </button>

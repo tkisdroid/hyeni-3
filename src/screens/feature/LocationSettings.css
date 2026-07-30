@@ -178,7 +178,7 @@ button.lset-row:disabled {
 .lset-seg__item {
   flex: 1;
   height: 44px;
-  border-radius: 13px;
+  border-radius: var(--radius-12);
   background: var(--bg-card);
   box-shadow: 0 6px 16px rgba(32, 26, 29, 0.04);
   font-size: var(--type-label);

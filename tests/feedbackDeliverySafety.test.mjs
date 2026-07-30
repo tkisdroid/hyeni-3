@@ -58,8 +58,15 @@ test("feedback 화면은 인증 가드 아래에만 있고 JSX 직접 색상값�
   assert.match(roleGuard, /export function RequireAuthenticated\(\)/);
   assert.match(routes, /element:\s*<RequireAuthenticated\s*\/>[\s\S]*path:\s*"feedback"/);
   assert.doesNotMatch(routes, /\/\/ 역할 공용 푸시\/상세[\s\S]{0,120}\{ path: "feedback"/);
-  assert.doesNotMatch(screen, /#F3EDF0|#fff/i);
+  // 색상은 전부 토큰이어야 한다 — JSX 에 원시 hex 가 하나도 없는지로 검사한다
+  // (특정 토큰 이름을 고정하면 대비 개선으로 토큰이 바뀔 때 의도와 무관하게 깨진다).
+  assert.doesNotMatch(screen, /#[0-9a-f]{3,8}\b/i);
   assert.doesNotMatch(screenCss, /#[0-9a-f]{3,8}/i);
-  assert.match(screen, /var\(--bg-body\)/);
-  assert.match(screen, /var\(--bg-card\)/);
+  // 칩은 미선택 = 중립 채움 + 보조 글자, 선택 = accent soft 채움 + 대비 맞춘 accent 글자.
+  assert.match(screen, /var\(--bg-chip-idle\)/);
+  assert.match(screen, /var\(--fg-tertiary\)/);
+  assert.match(screen, /var\(--hy-accent-soft\)/);
+  assert.match(screen, /var\(--hy-accent-text\)/);
+  // 파스텔 채움 위 흰 글자는 2.8:1 미만이라 이 화면에서 다시 등장해선 안 된다.
+  assert.doesNotMatch(screen, /background:\s*"var\(--hy-accent\)"/);
 });

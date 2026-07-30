@@ -97,7 +97,7 @@ export function RouteView() {
   const { role, userId } = useAuth();
   const isChild = role === "child";
   const homePath = isChild ? "/child/home" : "/parent/home";
-  const { activeChild } = useActiveChild();
+  const { activeChild, familyLoading } = useActiveChild();
   const { data: family } = useMyFamily();
   const { data: locations } = useChildLocations();
   const { data: places } = useSavedPlaces();
@@ -230,7 +230,8 @@ export function RouteView() {
   // 상태 판정: 장소 해석 중 → 도착지 없음 → 출발지 없음 → 경로 준비 → 실패 → 로딩.
   const routeState: RouteState =
     !childMember
-      ? "no-child"
+      // 가족 조회가 끝나기 전에는 '아이 없음'을 단정하지 않는다 — 조회 중은 로딩이다.
+      ? (familyLoading ? "loading" : "no-child")
       : destination === undefined
       ? "loading"
       : destination === null

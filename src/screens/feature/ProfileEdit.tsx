@@ -10,6 +10,7 @@ import { useMyFamily, useSetChildProfile, useUploadChildPhoto } from "@/queries/
 import { resizeImageFileSafe } from "@/lib/imageResize";
 import { normalizeRequiredChildBirthdate } from "@/transform/childProfileRequirements";
 import { normalizePhoneForStorage } from "@/transform/phone";
+import { formatPhoneDisplay } from "@/transform/phoneFormat";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./ProfileEdit.css";
 
@@ -43,14 +44,6 @@ function toDateFieldValue(bd: string | null | undefined): string {
   if (!bd) return "";
   const m = String(bd).match(/^\d{4}-\d{2}-\d{2}/);
   return m ? m[0] : "";
-}
-
-// 저장형/원시 전화 → 화면 표시용 "010-0000-0000"(숫자만 추출 후 하이픈).
-function formatPhoneDisplay(v: string | null | undefined): string {
-  const d = String(v || "").replace(/\D/g, "").slice(0, 11);
-  if (d.length <= 3) return d;
-  if (d.length <= 7) return `${d.slice(0, 3)}-${d.slice(3)}`;
-  return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;
 }
 
 /**
@@ -359,7 +352,7 @@ export function ProfileEdit() {
               type="button"
               className="pe-save hy-press"
               onClick={onSave}
-              disabled={!profileFormReady || busy || !isPrimary}
+              disabled={!profileFormReady || busy || !isPrimary} aria-busy={busy}
             >
               {busy ? "저장 중…" : "저장하기"}
             </button>

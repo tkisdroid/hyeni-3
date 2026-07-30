@@ -121,7 +121,7 @@ export function PlaydateSheet({ open, onClose, onError }: PlaydateSheetProps) {
                 type="button"
                 className="ks-cta hy-press"
                 onClick={send}
-                disabled={!selected || createInvite.isPending}
+                disabled={!selected || createInvite.isPending} aria-busy={createInvite.isPending}
               >
                 {createInvite.isPending ? "보내는 중…" : "같이 놀자고 보내기 💌"}
               </button>

@@ -246,7 +246,7 @@ export function TeacherSettings() {
                 type="button"
                 className="ps-modal__btn ps-modal__btn--ghost hy-press"
                 onClick={() => setConfirmDelete(false)}
-                disabled={deleteAccount.isPending}
+                disabled={deleteAccount.isPending} aria-busy={deleteAccount.isPending}
               >
                 취소
               </button>
@@ -254,7 +254,7 @@ export function TeacherSettings() {
                 type="button"
                 className="ps-modal__btn ps-modal__btn--danger hy-press"
                 onClick={handleDelete}
-                disabled={deleteAccount.isPending}
+                disabled={deleteAccount.isPending} aria-busy={deleteAccount.isPending}
               >
                 {deleteAccount.isPending ? "삭제 중…" : "탈퇴하기"}
               </button>

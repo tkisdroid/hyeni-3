@@ -141,7 +141,7 @@
 .aa-item__icon {
   width: 46px;
   height: 46px;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   display: flex;
   align-items: center;
   justify-content: center;

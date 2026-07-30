@@ -6,6 +6,7 @@ import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useChildLocations } from "@/queries/useLocation";
 import { formatFreshness } from "@/transform/locationView";
+import { Loading } from "@/components/ui/Loading";
 import {
   isLocationTrackingSupported,
   requestImmediateLocation,
@@ -165,7 +166,7 @@ export function ChildLocationStatus() {
 
       {isLoading ? (
         <div className="cls-body" role="status">
-          <div className="cls-heading"><div className="cls-heading__title">내 위치를 확인하는 중이야…</div></div>
+          <div className="cls-heading"><Loading label="내 위치를 확인하는 중이야" /></div>
         </div>
       ) : isError ? (
         <div className="cls-body" role="alert">
@@ -215,7 +216,7 @@ export function ChildLocationStatus() {
         </div>
 
         {/* 켜기 / 새로고침 */}
-        <button type="button" className="cls-cta hy-press" onClick={handlePrimaryAction} disabled={busy}>
+        <button type="button" className="cls-cta hy-press hy-busy-quiet" onClick={handlePrimaryAction} disabled={busy} aria-busy={busy}>
           <RefreshCw size={18} strokeWidth={2.4} className={busy ? "cls-spin" : undefined} />
           {busy ? "확인 중…" : view.kind === "sending" ? "지금 새로고침" : "위치 켜기"}
         </button>

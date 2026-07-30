@@ -10,6 +10,7 @@ import {
 } from "@/queries/usePlaydate";
 import type { PlaydateInvite } from "@/lib/api/endpoints/playdate";
 import { useSafeBack } from "@/app/useSafeBack";
+import { Loading } from "@/components/ui/Loading";
 import "./PlaydateAccept.css";
 
 /** 친구 아바타(도메인엔 이름만 있어 index 파생). */
@@ -121,7 +122,7 @@ export function PlaydateAccept() {
 
         {playdateLoading ? (
           <div className="pa-empty" role="status">
-            <div className="pa-empty__title">놀이 요청을 불러오는 중이야…</div>
+            <div className="pa-empty__title"><Loading label="놀이 요청을 불러오는 중이야" /></div>
           </div>
         ) : playdateError ? (
           <div className="pa-empty" role="alert">
@@ -176,7 +177,7 @@ export function PlaydateAccept() {
                     type="button"
                     className="pa-btn-decline hy-press"
                     onClick={() => onDecline(r)}
-                    disabled={busy}
+                    disabled={busy} aria-busy={busy}
                   >
                     거절
                   </button>
@@ -184,7 +185,7 @@ export function PlaydateAccept() {
                     type="button"
                     className="pa-btn-accept hy-press"
                     onClick={() => onAccept(r)}
-                    disabled={busy}
+                    disabled={busy} aria-busy={busy}
                   >
                     🎈 {busy ? "처리 중…" : "수락하기"}
                   </button>

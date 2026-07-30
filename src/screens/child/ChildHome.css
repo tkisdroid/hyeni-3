@@ -98,12 +98,14 @@
   transform: translateX(-50%);
 }
 
+/* 지도 상태 카드의 재시도 — 보조 등급. 파스텔 채움 위 흰 글자(2.76:1)를 버린다. */
 .kd-map__query-state button {
   min-height: 44px;
   border: 0;
-  border-radius: 13px;
-  background: var(--hy-accent);
-  color: #fff;
+  border-radius: var(--radius-12);
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+  box-shadow: inset 0 0 0 1.5px var(--hy-accent);
   font: inherit;
 }
 
@@ -249,7 +251,8 @@
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
 
-  color: var(--kd-gold-deep);
+  /* 크림 칩 위 전용 대비 토큰(gold-deep 은 3.46:1). */
+  color: var(--kd-cream-text);
 }
 
 .kd-map__headline {
@@ -306,11 +309,15 @@
   opacity: 0.8;
 }
 
+/* 완료 표시 별 — 원시 이모지(19px, 시스템 폰트)를 3D 에셋으로 바꿨다.
+   이모지는 기기 폰트에 따라 크기·베이스라인이 흔들려 앱 아이콘 언어와 어긋났다. */
 .kd-node__star {
   position: absolute;
   top: -9px;
   right: -7px;
-  font-size: 19px;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
   animation: kd-starpop 0.5s ease forwards;
 }
 .kd-node__ring {
@@ -325,12 +332,14 @@
   max-width: 120px;
   padding: 4px 8px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
+  /* 하늘 그라디언트가 반투명 알약 아래로 비쳐 실효 대비가 3.34:1 까지 떨어졌다.
+     불투명도를 올리고 글자를 한 단계 진하게 해 4.5:1 을 넘긴다. */
+  background: rgba(255, 255, 255, 0.97);
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
 
-  color: var(--fg-tertiary);
+  color: var(--fg-secondary);
   /* 한 줄 고정이면 긴 제목이 시간을 밀어냈다 → 어절 단위로 최대 두 줄까지 접는다. */
   white-space: normal;
   word-break: keep-all;
@@ -344,7 +353,8 @@
   color: var(--kd-done-text);
 }
 .kd-node--next .kd-node__pill {
-  background: var(--hy-accent-deep);
+  /* 12px 흰 글자라 accent-deep(3.34:1)로는 부족하다 — CTA 등급 채움(4.5:1). */
+  background: var(--hy-accent-cta);
   color: var(--bg-card);
 }
 
@@ -364,7 +374,7 @@
 }
 .kd-hyeni__bubble {
   padding: 8px 12px;
-  border-radius: 16px 16px 16px 5px;
+  border-radius: 16px 16px 16px var(--radius-8);
   background: var(--bg-card);
   box-shadow: 0 10px 22px -10px rgba(32, 26, 29, 0.35);
   font-size: var(--type-label);
@@ -476,7 +486,7 @@
   margin-top: 16px;
   width: 100%;
   height: 54px;
-  border-radius: 18px;
+  border-radius: var(--radius-20);
   background: linear-gradient(120deg, var(--kd-go-1), var(--kd-go-2));
   box-shadow: 0 12px 26px -10px rgba(35, 168, 118, 0.55);
   display: flex;
@@ -549,7 +559,7 @@
 .kd-prep__check {
   width: 38px;
   height: 38px;
-  border-radius: 13px;
+  border-radius: var(--radius-12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -578,7 +588,7 @@
   gap: 8px;
   margin: -4px;
   padding: 4px;
-  border-radius: 10px;
+  border-radius: var(--radius-12);
   transition: background 0.16s ease;
 }
 .kd-prep__label:active {
@@ -626,7 +636,7 @@
 .kd-prep__del {
   width: 36px;
   height: 36px;
-  border-radius: 11px;
+  border-radius: var(--radius-12);
   background: var(--danger-soft);
   display: flex;
   align-items: center;
@@ -642,7 +652,7 @@
 .kd-prep__add {
   flex: 1;
   height: 46px;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);
   font-weight: var(--type-body-sm-weight);
@@ -721,7 +731,7 @@
   min-width: 26px;
   height: 26px;
   padding: 0 8px;
-  border-radius: 13px;
+  border-radius: var(--radius-12);
   background: var(--hy-accent);
   color: var(--bg-card);
   font-size: var(--type-body-sm);
@@ -869,7 +879,7 @@
   align-items: center;
   gap: 4px;
   padding: 12px 4px;
-  border-radius: 18px;
+  border-radius: var(--radius-20);
   background: var(--bg-page);
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
@@ -927,10 +937,12 @@
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
 
-  color: var(--fg-muted);
+  /* 종이 질감 배경 위에서 --fg-muted 는 3.34:1 이라 한 단계 진하게 쓴다. */
+  color: var(--fg-secondary);
 }
 .kd-tt__row[data-next="true"] .kd-tt__time {
-  color: var(--hy-accent-deep);
+  /* 밝은 배경 위 글자색이라 accent-deep(3.34:1) 대신 문구용 토큰(4.6:1). */
+  color: var(--hy-accent-text);
 }
 .kd-tt__icon {
   width: 48px;

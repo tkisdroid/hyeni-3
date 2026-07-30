@@ -259,7 +259,10 @@ function collectClassNamesFromExpression(expression, names) {
   }
 }
 
-const MAX_JSX_SCENARIOS = 32;
+// 분석기가 한 파일에서 펼치는 상호작용 요소 시나리오 상한(폭발 방지용 용량 한계이며
+// 디자인 규칙 자체는 아니다). 상한을 올리면 더 많은 요소가 검사되므로 규칙은 더 엄격해진다.
+// 진행 표시자 계약으로 pending 버튼에 aria-busy 를 붙이면서 상태 조합이 늘어 32 를 넘었다.
+const MAX_JSX_SCENARIOS = 64;
 
 function assertScenarioLimit(count, kind) {
   if (count > MAX_JSX_SCENARIOS) {
@@ -3249,7 +3252,7 @@ test("JSX attribute spread는 상태 분기를 조용히 생략하지 않고 명
   `), /attribute spread.*지원하지 않습니다/i);
 });
 
-test("JSX scenario가 상한 32개를 넘으면 후반 분기를 자르지 않고 명시적으로 실패한다", () => {
+test("JSX scenario가 상한을 넘으면 후반 분기를 자르지 않고 명시적으로 실패한다", () => {
   assert.throws(() => collectElementsFromSource("fixture/OverflowBranches.tsx", `
     export function OverflowBranches({ pressed, active, invalid, on, selected, current }) {
       return <input
@@ -3262,10 +3265,10 @@ test("JSX scenario가 상한 32개를 넘으면 후반 분기를 자르지 않�
         data-current={current}
       />;
     }
-  `), /scenario.*32/i);
+  `), new RegExp(`scenario.*${MAX_JSX_SCENARIOS}`, "i"));
 });
 
-test("실제 JSX scenario 확장은 상호작용 node마다 상한 32개를 지킨다", () => {
+test("실제 JSX scenario 확장은 상호작용 node마다 상한을 지킨다", () => {
   const counts = new Map();
   for (const element of releaseElements) {
     const key = `${element.path}:${element.sourcePosition}`;

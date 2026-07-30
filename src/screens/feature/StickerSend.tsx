@@ -239,7 +239,7 @@ export function StickerSend() {
           type="button"
           className="ss-send hy-press"
           onClick={handleSend}
-          disabled={sendSticker.isPending}
+          disabled={sendSticker.isPending} aria-busy={sendSticker.isPending}
         >
           <img src={asset("ui/chat-heart.webp")} alt="" />
           {sendSticker.isPending ? "보내는 중…" : `${childName}에게 보내기`}

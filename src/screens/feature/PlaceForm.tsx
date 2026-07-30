@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, LocateFixed } from "lucide-react";
 import { useToast } from "@/app/toast";
@@ -6,18 +6,21 @@ import { KakaoMap } from "@/components/KakaoMap";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { loadKakaoMaps } from "@/lib/kakaoMap";
 import { hasKakaoKey } from "@/config/env";
-import { useCreateSavedPlace, useSavedPlaces } from "@/queries/useLocation";
+import { useChildLocations, useCreateSavedPlace, useSavedPlaces } from "@/queries/useLocation";
 import { useEntitlement } from "@/queries/useEntitlement";
+import { resolveMapCenter } from "@/transform/mapCenter";
 import { placeLimitFor, TIERS } from "@/transform/tierPolicy";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import { ApiError } from "@/lib/api/errors";
 import "./PlaceForm.css";
 
 /** 장소 종류 — 선택 시 신호색으로 채워진다(집=민트/학원=라벤더/자주=파랑). 위험 구역은 저장장소 API에 카테고리가 없어 별도 화면(위험구역 추가)에서 등록한다. */
+// 선택 칩은 신호색 soft 채움 + 같은 계열 진한 라벨 + 테두리로 알린다.
+// 이전에는 채도 높은 채움(#31C48D 등)에 흰 글자라 2.2~2.7:1 로 읽히지 않았다.
 const PLACE_TYPES = [
-  { id: "home", label: "집", activeBg: "#31C48D", activeColor: "#fff" },
-  { id: "academy", label: "학원", activeBg: "#A78BFA", activeColor: "#fff" },
-  { id: "frequent", label: "자주", activeBg: "#4FB2E8", activeColor: "#fff" },
+  { id: "home", label: "집", activeBg: "var(--mint-soft)", activeColor: "var(--mint-text)", activeLine: "var(--mint-500)" },
+  { id: "academy", label: "학원", activeBg: "var(--lav-soft)", activeColor: "var(--lav-text)", activeLine: "var(--lav-400)" },
+  { id: "frequent", label: "자주", activeBg: "var(--blue-soft)", activeColor: "var(--blue-text)", activeLine: "var(--blue-500)" },
 ] as const;
 
 type PlaceTypeId = (typeof PLACE_TYPES)[number]["id"];
@@ -27,8 +30,9 @@ interface LatLng {
   lng: number;
 }
 
-const IDLE_BG = "#F3EEF1";
-const IDLE_COLOR = "#8B7E84";
+// 미선택 칩 — EventForm 과 같은 토큰 정본(3.38:1 → 4.98:1).
+const IDLE_BG = "var(--bg-chip-idle)";
+const IDLE_COLOR = "var(--fg-tertiary)";
 
 export function PlaceForm() {
   const navigate = useNavigate();
@@ -47,6 +51,8 @@ export function PlaceForm() {
   const retryPlaceForm = async (): Promise<void> => {
     await Promise.all([placesQuery.refetch(), entitlementQuery.refetch()]);
   };
+  // 지도 기본 중심: 현재 위치 > 집 > 아이 마지막 위치 > 서울(서울 밖 가족이 매번 지도를 끌던 문제).
+  const childLocationsQuery = useChildLocations();
 
   const [placeName, setPlaceName] = useState("");
   const [address, setAddress] = useState("");
@@ -60,6 +66,14 @@ export function PlaceForm() {
   ] as const;
   const [picked, setPicked] = useState<LatLng | null>(null);
   const [center, setCenter] = useState<LatLng | null>(null);
+  const mapCenter = useMemo(
+    () => resolveMapCenter({
+      current: center,
+      places,
+      childLocations: childLocationsQuery.data ?? [],
+    }),
+    [center, places, childLocationsQuery.data],
+  );
   // 지도 높이 — 하단 핸들을 아래로 드래그해 확대(160~520px).
   const [mapH, setMapH] = useState(260);
   const dragRef = useRef<{ startY: number; startH: number } | null>(null);
@@ -284,7 +298,7 @@ export function PlaceForm() {
         <div className="pf-map" style={{ height: mapH }}>
           <KakaoMap
             className="pf-map__canvas"
-            center={center}
+            center={mapCenter}
             recenterKey={recenterKey}
             picked={picked}
             onPick={handlePick}
@@ -300,7 +314,7 @@ export function PlaceForm() {
             className={`pf-map-locate hy-press${locating ? " pf-map-locate--busy" : ""}`}
             aria-label="현재 위치로 이동"
             onClick={locateMe}
-            disabled={locating}
+            disabled={locating} aria-busy={locating}
           >
             <LocateFixed size={19} strokeWidth={2.2} />
           </button>
@@ -362,6 +376,7 @@ export function PlaceForm() {
                   style={{
                     background: active ? t.activeBg : IDLE_BG,
                     color: active ? t.activeColor : IDLE_COLOR,
+                    boxShadow: active ? `inset 0 0 0 1.5px ${t.activeLine}` : "none",
                   }}
                   onClick={() => setPlaceType(t.id)}
                 >
@@ -409,7 +424,7 @@ export function PlaceForm() {
           type="button"
           className="pf-save hy-press"
           onClick={savePlace}
-          disabled={createPlace.isPending}
+          disabled={createPlace.isPending} aria-busy={createPlace.isPending}
         >
           {createPlace.isPending ? "저장 중…" : "저장하기"}
         </button>

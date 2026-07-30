@@ -648,7 +648,7 @@ export function ParentLocation() {
                 : "오늘 이동 기록이 아직 없어요"}
           </span>
           {histErrored && (
-            <button type="button" className="pl-lock__retry hy-press" onClick={() => void refetchHistory()}>
+            <button type="button" className="pl-lock__retry hy-press hy-busy-quiet" onClick={() => void refetchHistory()}>
               다시 시도
             </button>
           )}
@@ -681,9 +681,9 @@ export function ParentLocation() {
           {locationScopeError && (
             <button
               type="button"
-              className="pl-lock__retry hy-press"
+              className="pl-lock__retry hy-press hy-busy-quiet"
               onClick={() => void entitlement.refetch()}
-              disabled={entitlement.isFetching}
+              disabled={entitlement.isFetching} aria-busy={entitlement.isFetching}
             >
               <RefreshCw
                 size={18}

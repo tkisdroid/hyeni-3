@@ -153,7 +153,7 @@ export function Notifications() {
           type="button"
           className="nc-markread hy-press"
           onClick={markAllRead}
-          disabled={markAll.isPending}
+          disabled={markAll.isPending} aria-busy={markAll.isPending}
         >
           모두 읽음
         </button>

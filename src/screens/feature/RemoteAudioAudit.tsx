@@ -24,7 +24,10 @@ function formatDateTime(value: string): string {
 function statusFor(item: RemoteListenAuditRecord): { label: string; tone: "safe" | "warning" | "info" } {
   if (item.endedAt) {
     const durationSec = item.durationMs == null ? null : Math.max(0, Math.round(item.durationMs / 1000));
-    return { label: durationSec == null ? "종료됨" : `${durationSec}초 후 종료`, tone: "safe" };
+    if (durationSec == null) return { label: "종료됨", tone: "safe" };
+    // 0초는 "0초 후 종료"라고 쓰면 문장이 어색하고 실제로도 '듣지 못한' 세션이다.
+    if (durationSec === 0) return { label: "청취 없이 종료", tone: "safe" };
+    return { label: `${durationSec}초 청취`, tone: "safe" };
   }
   const started = parseServerDate(item.startedAt)?.getTime() ?? 0;
   const recent = started > 0 && Date.now() - started <= 2 * 60_000;
@@ -67,7 +70,7 @@ export function RemoteAudioAudit() {
           className="raa-refresh hy-press"
           aria-label="기록 새로고침"
           onClick={() => void audit.refetch()}
-          disabled={audit.isFetching}
+          disabled={audit.isFetching} aria-busy={audit.isFetching}
         >
           <RefreshCw size={18} strokeWidth={2.3} aria-hidden="true" />
         </button>

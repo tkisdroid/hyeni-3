@@ -264,7 +264,7 @@ export function AiFriendSetup() {
           type="button"
           className="afs-cta hy-press"
           onClick={save}
-          disabled={setNameMutation.isPending}
+          disabled={setNameMutation.isPending} aria-busy={setNameMutation.isPending}
         >
           {setNameMutation.isPending ? "저장 중…" : "저장하고 대화하기"}
         </button>

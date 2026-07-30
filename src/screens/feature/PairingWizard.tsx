@@ -407,7 +407,7 @@ export function PairingWizard() {
             {step === 1 ? "다음" : "다음 · 연결 코드 만들기"}
           </button>
         ) : (
-          <button type="button" className="pw-cta hy-press" onClick={makeCode} disabled={busy}>
+          <button type="button" className="pw-cta hy-press" onClick={makeCode} disabled={busy} aria-busy={busy}>
             {busy ? "코드 만드는 중…" : "연결 코드 만들기"}
           </button>
         )}

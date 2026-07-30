@@ -73,6 +73,9 @@
 .au-later {
   margin-top: 12px;
   height: 44px;
+  /* 실측 36px — 최소 조작 영역을 폭까지 지킨다. */
+  min-width: var(--control-min-size);
+  padding-inline: var(--spacing-12);
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);
   font-weight: var(--type-body-sm-weight);

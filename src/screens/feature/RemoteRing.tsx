@@ -394,7 +394,7 @@ export function RemoteRing() {
                 type="button"
                 className="rr-modal-cancel hy-press"
                 onClick={() => setShowConfirm(false)}
-                disabled={trigger.isPending}
+                disabled={trigger.isPending} aria-busy={trigger.isPending}
               >
                 취소
               </button>
@@ -433,7 +433,7 @@ export function RemoteRing() {
             <span className="rr-timer-val">{timerText}</span>
           </div>
 
-          <button type="button" className="rr-stop hy-press" onClick={onStop} disabled={stop.isPending}>
+          <button type="button" className="rr-stop hy-press" onClick={onStop} disabled={stop.isPending} aria-busy={stop.isPending}>
             <span className="rr-stop-square" />
             멈추기
           </button>

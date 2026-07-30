@@ -379,6 +379,34 @@
   갖는다. 토글 스위치는 트랙이 흔들려 보이지 않게 노브만 `scale(0.9)`로 누르고, 문장 안 글자 버튼은 크기를 바꾸지 않고
   opacity로만 알린다. 보이지 않는 닫기용 스크림은 의도적으로 제외한다(무엇이 눌렸는지 오해를 준다).
   전역 `prefers-reduced-motion` 규칙이 새 전환 시간도 함께 줄인다. 회귀=`tests/pressFeedbackCoverage.test.mjs`.
+- ★**색상 대비 계약(2026-07-30 디자인 검수)**: 파스텔 팔레트 위 **흰 글자는 어떤 테마색에서도 AA 를 만족할 수 없다**
+  (`--hy-accent` 1.4~2.8:1, `--hy-accent-deep` 3.34:1). WCAG 큰 글씨 완화(3:1)는 굵은 글씨라도 **18.66px 이상**에만
+  적용되므로 18px/700 버튼에는 4.5:1 이 그대로 걸린다. 그래서 3단 체계를 쓴다:
+  ①**주요 CTA** = `--hy-accent-cta`(테마별 딥 톤, 흰 글자 4.5:1↑) · 그라디언트는 `--cta-grad-accent/-danger/-lavender`
+  (두 stop 모두 통과 — 이전엔 밝은 stop 이 2.0:1 이라 저장·전송 버튼이 안 읽혔다) ②**보조 버튼·선택 칩** =
+  `--hy-accent-soft` 채움 + `--hy-accent-text` 라벨 + 1.5px accent 테두리 ③**미선택 칩** = `--bg-chip-idle` +
+  `--fg-tertiary`(하드코딩 `#F3EEF1`/`#8B7E84` 조합은 3.38:1 이라 고를 수 있는 칩이 비활성처럼 보였다).
+  장식·아바타·진행바·마커 같은 **비텍스트 면은 계속 `--hy-accent`** 를 쓴다. 문구 토큰(`--fg-muted`·`--fg-placeholder`·
+  `--rose-text`·`--gold-text`·테마별 `--hy-accent-text`)은 card·app·page·body **네 표면 모두**에서 4.5:1 이상이어야 한다
+  (이전 값은 card·app 만 기준이라 page 4.41·body 3.98 에서 미달했다). 일정 카테고리·태그 색은 `--cat-*-text/-soft` 와
+  `--mint-text`/`--gold-text`/`--fg-tertiary` 토큰이 정본이고 중간 톤을 soft 위 글자색으로 쓰지 않는다.
+  ⚠️ 런타임 대비 계측은 **그라디언트 채움을 못 본다**(배경 이미지라 배경색이 없음) — 정적 검사가 이 맹점을 잡았다.
+  회귀=`tests/colorContrastAndRadius.test.mjs`(토큰 대비 계산 + 흰글자/파스텔 조합 스캔).
+- ★**모서리 반경 정규화(2026-07-30)**: 8/12/16/20/24px·pill 만 쓴다. 10·11·13·14·15·17·18·19px 등 161건을
+  가장 가까운 단계의 `var(--radius-*)` 로 정규화했다. 제외 대상은 **UI 표면이 아닌 것**뿐이다 —
+  장식(색종이·유기적 블롭·히어로 orb), 폰 베젤 프레임(`.hy-app` 44px), 인라인 링크 `:focus-visible` 링(2px).
+  회귀=`tests/colorContrastAndRadius.test.mjs`.
+- ★**진행 표시자 계약(2026-07-30 지시)**: ①약 1초 이상 걸릴 수 있는 작업에는 진행 표시자를 둔다 ②진행률을 모르는
+  작업은 loop(무한 회전) ③percent-done 은 10초 이상 작업에만 ④**정적 표시자 금지** — 문구만 "저장 중…"으로
+  바꾸는 처리는 안 된다. 구현은 화면마다 만들지 않고 **`aria-busy` 한 곳에 걸어** 둔다:
+  `components.css` 의 `button[aria-busy="true"]:not(.hy-busy-quiet)::before` 가 `currentColor` 회전 링을 자동으로
+  붙이고 `--press:1` 로 진행 중 눌림 축소를 멈춘다. 그래서 **새 화면은 `aria-busy={<진행 식>}` 만 정확히 켜면 된다**.
+  `disabled` 식에서 진행 항만 골라 써야 한다(유효성 항까지 넣으면 그냥 못 누르는 버튼이 '작업 중'으로 잘못 알려진다).
+  자기 스피너를 그리는 버튼(`sqs-retry`·`cls-cta`·`ls-retry`·`ais-mic`)은 `hy-busy-quiet` 로 제외해 표시자가 겹치지 않게 한다.
+  화면 단위 로딩은 애니메이션이 있는 `<Loading/>`·`ScreenQueryState`·`hy-skel` 만 쓰고 맨 문구를 쓰지 않는다.
+  `useActiveChild().familyLoading` 은 **조회 중과 "아이 없음"을 구분**하기 위한 값이다 — 이게 없으면 주간리포트·
+  하루요약·AI크레딧·길찾기가 가족 조회 중에 "아이가 없어요"를 미리 단정해 표시자도 못 띄웠다.
+  회귀=`tests/progressIndicatorContract.test.mjs`.
 - Capacitor SystemBars 패치(2026-07-09): Android WebView 시작 직후 `document.documentElement`가 아직 없으면
   기본 `SystemBars` safe-area CSS 주입이 콘솔 오류를 낸다. `postinstall`의
   `scripts/patch-capacitor-systembars.mjs`가 DOM 준비 전 주입을 건너뛰게 패치하므로, 의존성 재설치 후에는
@@ -601,6 +629,19 @@
   닫으면 실계정·실서버 무영향으로 부모/아이 전 화면의 모든 버튼을 눌러볼 수 있다. `window.kakao.maps` 계측 스텁 주입,
   서버 계약과 정확히 같은 fixture(`events_children`, `notif-settings.quiet_hours`), 외부 링크 이탈 후 절대 URL 복구,
   5173 포트 충돌 회피가 함정이다.
+- ★**디자인 계측 스윕의 함정 6가지(2026-07-30 — 전부 실제로 오판했던 것)**: 같은 하니스에 계측(대비·반경·폰트·
+  터치타깃·오버플로)을 얹으면 눈으로 못 잡는 결함이 잡히지만, **다음을 안 걸러내면 숫자가 거짓말을 한다.**
+  ①**비활성 컨트롤은 WCAG 대비 면제** — `:disabled` 버튼(`#b3aaae` on `#e5e0e3` 1.74:1)을 섞으면 "저장 버튼이
+  최악"이라는 오진이 난다. `[disabled],[aria-disabled],.sb-slot--locked` 를 제외한다. ②**가로 스크롤 행의 자식과
+  `overflow:hidden` 장식은 오버플로가 아니다** — 조상의 `overflowX` 를 확인해야 칩 행·해 장식 오탐 7건이 사라진다.
+  ③**런타임 대비 계측은 그라디언트 채움을 못 본다**(배경 이미지라 배경색이 없어 계산 자체를 건너뜀) → 정적 CSS 스캔을
+  **반드시 병행**한다. 이 맹점 때문에 앱 전역 저장·전송 버튼 18곳(밝은 stop 2.0:1)이 런타임에선 0건으로 보였다.
+  ④**SVG 의 `className` 은 문자열이 아니다**(`SVGAnimatedString`) — `getAttribute("class")` 로 읽어야 lucide 스피너를
+  놓치지 않는다. 이걸 놓쳐 이미 스피너가 있는 화면을 "표시자 없음"으로 오판했다. ⑤**로딩 상태를 보려면 라우트마다 새
+  문서를 띄운다** — hash 만 바꾸면 TanStack Query 캐시가 남아 조회가 이미 끝난 상태로 측정된다(첫 측정 전체 무효).
+  `Page.navigate` + `Page.reload` 후 **BootSplash 1.6초 게이트를 지나고** API 응답(mock 지연 3초) 전 창(≈2.4초)에서 읽는다.
+  ⑥**"움직이는 요소가 있다"로 진행 표시자를 판정하면 안 된다** — 화면 진입 페이드(`hy-rise-in`)·마스코트 부유가
+  전부 걸려 42/42 통과처럼 보인다. 진행 맥락(`[aria-busy]`·`[role=status]`·skel/loading/spin 클래스) 안의 애니메이션만 센다.
 - ★**Worker 배포 자격(2026-07-30)**: `hyeni-3/.env` 토큰은 D1 전용이라 배포가 `Authentication error 10000` 이다.
   `hyeni-1/.env.local` 의 `CLOUDFLARE_API_TOKEN` + `hyeni-3/.env` 의 `CLOUDFLARE_ACCOUNT_ID` 를 따옴표를 벗겨
   프로세스 env 로 주입해 배포한다.

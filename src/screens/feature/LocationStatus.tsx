@@ -243,9 +243,9 @@ export function LocationStatus() {
         {locationScopeError && (
           <button
             type="button"
-            className="ls-retry hy-press"
+            className="ls-retry hy-press hy-busy-quiet"
             onClick={() => void retry()}
-            disabled={entitlement.isFetching}
+            disabled={entitlement.isFetching} aria-busy={entitlement.isFetching}
           >
             <RefreshCw
               size={18}
@@ -267,7 +267,7 @@ export function LocationStatus() {
             </div>
 
             {/* 다시 시도 */}
-            <button type="button" className="ls-retry hy-press" onClick={retry} disabled={refreshing || isFetching}>
+            <button type="button" className="ls-retry hy-press hy-busy-quiet" onClick={retry} disabled={refreshing || isFetching} aria-busy={isFetching}>
               <RefreshCw size={18} strokeWidth={2.4} className={refreshing || isFetching ? "ls-spin" : undefined} />
               {refreshing || isFetching ? "갱신 중…" : "다시 시도"}
             </button>

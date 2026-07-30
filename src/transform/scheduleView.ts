@@ -15,13 +15,15 @@ interface CategoryStyle {
   emoji: string;
 }
 
+// color 는 soft 채움 위 라벨로 쓰이므로 중간 톤이 아니라 대비를 맞춘 -text 토큰을 쓴다
+// (중간 톤은 soft 위에서 3.4~4.0:1 이었다). 값 정본은 tokens.css 의 --cat-* 이다.
 const CATEGORY_STYLE: Record<string, CategoryStyle> = {
-  school: { color: "#2E86C1", soft: "#E6F2FB", emoji: "📚" },
-  sports: { color: "#F26B3F", soft: "#FFEEE3", emoji: "⚽" },
-  hobby: { color: "#E08A1E", soft: "#FFF3D6", emoji: "🎨" },
-  family: { color: "var(--hy-accent)", soft: "var(--hy-accent-soft)", emoji: "👨‍👩‍👧" },
-  friend: { color: "#31C48D", soft: "#E7F8F0", emoji: "👫" },
-  other: { color: "#7C5CE1", soft: "#F1ECFF", emoji: "🌟" },
+  school: { color: "var(--cat-school-text)", soft: "var(--cat-school-soft)", emoji: "📚" },
+  sports: { color: "var(--cat-sports-text)", soft: "var(--cat-sports-soft)", emoji: "⚽" },
+  hobby: { color: "var(--cat-hobby-text)", soft: "var(--cat-hobby-soft)", emoji: "🎨" },
+  family: { color: "var(--hy-accent-text)", soft: "var(--hy-accent-soft)", emoji: "👨‍👩‍👧" },
+  friend: { color: "var(--cat-friend-text)", soft: "var(--cat-friend-soft)", emoji: "👫" },
+  other: { color: "var(--cat-other-text)", soft: "var(--cat-other-soft)", emoji: "🌟" },
 };
 
 function styleFor(category: string): CategoryStyle {
@@ -54,12 +56,14 @@ interface TagStyle {
   tagBg: string;
 }
 
+// 태그 색은 전부 토큰이다 — 하드코딩 중간 톤(#8B7E84 on #F2EEF0 = 3.37:1)이
+// "다녀옴" 태그를 읽기 어렵게 만들었다.
 const TAG_STYLES: Record<ScheduleTagKind, TagStyle> = {
   예정: { tag: "예정", tagText: "var(--hy-accent-text)", tagBg: "var(--hy-accent-soft)" },
-  "진행 중": { tag: "진행 중", tagText: "#087653", tagBg: "#E7F8F0" },
-  다녀옴: { tag: "다녀옴", tagText: "#8B7E84", tagBg: "#F2EEF0" },
+  "진행 중": { tag: "진행 중", tagText: "var(--mint-text)", tagBg: "var(--mint-soft)" },
+  다녀옴: { tag: "다녀옴", tagText: "var(--fg-tertiary)", tagBg: "var(--bg-chip-idle)" },
   // 시간은 지났지만 위치 이력으로 방문이 확인되지 않음(앰버=주의 신호색).
-  "확인 필요": { tag: "확인 필요", tagText: "#9A6A00", tagBg: "#FFF3D6" },
+  "확인 필요": { tag: "확인 필요", tagText: "var(--gold-text)", tagBg: "var(--cream-soft)" },
 };
 
 /** 이벤트별 방문 판정(transform/visitVerify) — "다녀옴"을 위치로 확정/보류할 때 주입. */

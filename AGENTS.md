@@ -504,6 +504,15 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 
 ## 디자인 규칙 (2026-07-10)
 
+- ★**색상 대비 3단 체계(2026-07-30 검수)**: 파스텔 팔레트 위 **흰 글자는 어떤 테마색에서도 AA 를 만족할 수 없다**
+  (`--hy-accent` 1.4~2.8:1 · `--hy-accent-deep` 3.34:1). WCAG 큰 글씨 완화(3:1)는 굵은 글씨라도 **18.66px 이상**에만
+  적용되므로 18px/700 버튼에도 4.5:1 이 걸린다. ①주요 CTA = `--hy-accent-cta`(테마별 딥 톤) · 그라디언트는
+  `--cta-grad-accent/-danger/-lavender`(두 stop 모두 통과) ②보조 버튼·선택 칩 = `--hy-accent-soft` + `--hy-accent-text`
+  + 1.5px accent 테두리 ③미선택 칩 = `--bg-chip-idle` + `--fg-tertiary`. **비텍스트 면(장식·아바타·진행바·마커)은 계속
+  `--hy-accent`.** 문구 토큰은 card·app·page·body **네 표면 전부** 4.5:1 이상이어야 한다. 카테고리·태그 색은
+  `--cat-*-text/-soft` 토큰이 정본이며 중간 톤을 soft 위 글자색으로 쓰지 않는다. 가드=`tests/colorContrastAndRadius.test.mjs`.
+- ★**모서리 반경은 8/12/16/20/24px·pill 만**(2026-07-30 · 161건 정규화). 예외는 UI 표면이 아닌 것뿐 —
+  장식(색종이·블롭·히어로 orb), 폰 베젤 `.hy-app`(44px), 인라인 링크 `:focus-visible` 링(2px). 같은 가드가 강제한다.
 - UI 요소 아이콘은 유니코드 이모지 대신 **3D 에셋(public/assets)** 또는 lucide 라인 아이콘. 색 칩 위에는 알파 채널 있는 에셋만
   (`status/*.webp`는 흰 배경 불투명 — 사용 금지 목록. `ui/mic-lavender.webp`는 2026-07-14 투명본으로 교체돼 사용 가능).
   일정 아이콘은 `resolveEventCharacter`(제목→cat/*.webp).
@@ -592,6 +601,22 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   정확히 따라야 한다(`events_children[{child_id}]`, `notif-settings.quiet_hours{enabled,start_minute,end_minute,
   updated_at,configured}` — 틀리면 화면이 정직하게 error/fail-closed 로 닫혀 오탐이 된다) ③외부 링크(스토어 등)
   클릭으로 페이지가 앱을 떠나면 `Page.navigate` 로 절대 URL 복구가 필요하다 ④5173 포트는 다른 프로젝트가 쓸 수 있다.
+- ★**디자인을 계측으로 검수할 때 숫자를 믿기 전에 걸러야 하는 6가지(2026-07-30 — 전부 실제로 오판)**:
+  같은 스윕에 대비·반경·폰트·터치타깃·오버플로 계측을 얹으면 눈으로 못 보는 결함이 나오지만, 아래를 안 걸러내면
+  결과가 거짓말을 한다. ①**비활성 컨트롤은 WCAG 대비 면제** — `:disabled` 를 섞으면 "저장 버튼이 최악(1.74:1)"이라는
+  오진이 난다 ②**가로 스크롤 행의 자식·`overflow:hidden` 장식은 오버플로가 아니다**(조상 `overflowX` 확인)
+  ③**런타임 대비 계측은 그라디언트 채움을 못 본다** — 배경 이미지라 배경색이 없어 계산을 건너뛴다. 정적 CSS 스캔을
+  병행해야 한다(이 맹점 때문에 저장·전송 버튼 18곳의 2.0:1 이 런타임 0건으로 보였다) ④**SVG `className` 은 문자열이
+  아니다**(`SVGAnimatedString`) → `getAttribute("class")` 로 읽어야 lucide 스피너를 안 놓친다 ⑤**로딩 상태는 라우트마다
+  새 문서를 띄워야 보인다** — hash 만 바꾸면 TanStack Query 캐시로 이미 끝난 상태가 측정된다(첫 측정 전체 무효).
+  `Page.navigate`+`Page.reload` → BootSplash 1.6초 게이트 통과 → mock 3초 지연 응답 전(≈2.4초)에 읽는다
+  ⑥**"움직이는 요소 있음"으로 진행 표시자를 판정하지 않는다** — 진입 페이드·마스코트 부유가 다 걸려 전부 통과처럼
+  보인다. `[aria-busy]`·`[role=status]`·skel/loading/spin 맥락 안의 애니메이션만 센다.
+- ★**진행 표시자는 화면마다 만들지 않는다(2026-07-30)**: `components.css` 의
+  `button[aria-busy="true"]:not(.hy-busy-quiet)::before` 가 `currentColor` 회전 링을 자동으로 붙인다.
+  새 화면은 `aria-busy={<진행 식>}` 만 정확히 켜면 된다(`disabled` 식에서 **진행 항만** 골라야 한다 — 유효성 항까지
+  넣으면 그냥 못 누르는 버튼이 '작업 중'으로 잘못 알려진다). 자기 스피너를 그리는 버튼은 `hy-busy-quiet` 로 제외한다.
+  가드=`tests/progressIndicatorContract.test.mjs`.
 - ★**Worker 배포 자격(2026-07-30)**: `hyeni-3/.env` 의 `CLOUDFLARE_API_TOKEN` 은 D1 만 되고 Workers 배포는
   `Authentication error 10000` 이다. 배포는 **`hyeni-1/.env.local` 의 `CLOUDFLARE_API_TOKEN` + `hyeni-3/.env` 의
   `CLOUDFLARE_ACCOUNT_ID`** 를 프로세스 env 로 주입해서 한다. 두 값 모두 따옴표를 벗겨야 한다(`"…"` 그대로면

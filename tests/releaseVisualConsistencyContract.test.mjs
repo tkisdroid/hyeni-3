@@ -92,7 +92,9 @@ test("보고된 비표준 모서리 반경은 디자인 토큰으로 정규화�
 test("조회 재시도 버튼은 진행 중 상태를 보조기술과 시각적으로 구분한다", () => {
   const queryState = source("src/components/ui/ScreenQueryState.tsx");
   const queryCss = source("src/components/ui/ScreenQueryState.css");
-  assert.match(queryState, /className="sqs-retry hy-press"[\s\S]*?aria-busy=\{retrying\}/);
+  // hy-busy-quiet = 이 버튼은 자기 RefreshCw 스피너를 그리므로 공용 회전 링을 겹치지 않는다.
+  assert.match(queryState, /className="sqs-retry hy-press hy-busy-quiet"[\s\S]*?aria-busy=\{retrying\}/);
+  assert.match(queryState, /className=\{retrying \? "sqs-spin" : undefined\}/);
   assert.match(cssBlock(queryCss, '.sqs-retry[aria-busy="true"]:disabled'), /opacity:\s*var\(--busy-opacity\)\s*;/);
   assert.match(cssBlock(queryCss, '.sqs-retry[aria-busy="true"]:disabled'), /cursor:\s*progress\s*;/);
   assert.match(cssBlock(queryCss, ".sqs-retry:disabled"), /cursor:\s*not-allowed\s*;/);

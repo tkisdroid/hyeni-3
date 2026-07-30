@@ -13,6 +13,7 @@ import { TIERS, FEATURES, canAddChild, lockMessageFor } from "@/transform/tierPo
 import { QrCode } from "@/components/ui/QrCode";
 import { buildPairLink } from "@/transform/pairLink";
 import { useSafeBack } from "@/app/useSafeBack";
+import { Loading } from "@/components/ui/Loading";
 import "./ParentFamily.css";
 
 // 자녀 사진은 proxy URL(http…), 기본 아바타는 asset 경로.
@@ -98,7 +99,7 @@ export function ParentFamily() {
       </header>
 
       <div className="hy-content">
-        {isLoading && <div className="pf-state">가족 정보를 불러오는 중…</div>}
+        {isLoading && <div className="pf-state"><Loading label="가족 정보를 불러오는 중" /></div>}
         {isError && (
           <div className="pf-state pf-state--error">
             가족 정보를 불러오지 못했어요

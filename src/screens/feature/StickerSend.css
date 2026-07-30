@@ -122,7 +122,7 @@
   gap: 4px;
   min-width: 0;
   padding: 4px 0;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   background: transparent;
   border: 2px solid transparent;
   transition: transform 0.12s ease, background 0.16s ease, border-color 0.16s ease;
@@ -241,8 +241,8 @@
 .ss-send {
   width: 100%;
   min-height: 52px;
-  border-radius: 18px;
-  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  border-radius: var(--radius-20);
+  background: var(--cta-grad-accent);
   box-shadow: 0 16px 32px -12px rgba(240, 81, 143, 0.6);
   font-size: var(--type-body-lg);
   line-height: var(--type-body-lg-line-height);

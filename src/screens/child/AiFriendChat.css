@@ -175,7 +175,7 @@
 .afc-bubble--ai {
   animation: afc-pop 0.3s ease forwards;
   background: var(--bg-card);
-  border-radius: 20px 20px 20px 6px;
+  border-radius: 20px 20px 20px var(--radius-8);
   box-shadow: 0 10px 24px -12px rgba(124, 92, 225, 0.4);
   font-weight: 600;
   color: #3a3050;
@@ -183,7 +183,7 @@
 .afc-bubble--me {
   background: linear-gradient(120deg, #b79dfb, #8b6bec);
   color: var(--bg-card);
-  border-radius: 20px 20px 6px 20px;
+  border-radius: 20px 20px var(--radius-8) 20px;
   box-shadow: 0 10px 22px -10px rgba(124, 92, 225, 0.5);
   font-weight: 700;
   animation: afc-pop 0.3s ease forwards;
@@ -248,7 +248,7 @@
   height: 52px;
   border: none;
   background: var(--bg-card);
-  border-radius: 18px;
+  border-radius: var(--radius-20);
   padding: 0 16px;
   font-size: var(--type-body-lg);
   line-height: var(--type-body-lg-line-height);
@@ -262,7 +262,7 @@
   flex: none;
   height: 52px;
   padding: 0 16px;
-  border-radius: 18px;
+  border-radius: var(--radius-20);
   background: linear-gradient(120deg, #b79dfb, #8b6bec);
   box-shadow: 0 12px 24px -10px rgba(124, 92, 225, 0.55);
   font-family: Jua, var(--font-sans);

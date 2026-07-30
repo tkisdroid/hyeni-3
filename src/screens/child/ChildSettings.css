@@ -146,7 +146,7 @@
 .ks-row__icon {
   width: 44px;
   height: 44px;
-  border-radius: 15px;
+  border-radius: var(--radius-16);
   background: var(--hy-accent-soft);
   color: var(--hy-accent-text);
   display: flex;
@@ -178,12 +178,14 @@
 }
 
 /* ── 상태/토글/부탁 칩 ──────────────────────────────────────────────────── */
+/* 상태 칩 — 12px 흰 글자는 mint-500 위에서 2.23:1 이라 읽히지 않았다(5.12:1). */
 .ks-onchip {
   flex: none;
   padding: 4px 12px;
   border-radius: 999px;
-  background: var(--mint-500);
-  color: #fff;
+  background: var(--mint-soft);
+  color: var(--mint-text);
+  box-shadow: inset 0 0 0 1px var(--mint-line);
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);

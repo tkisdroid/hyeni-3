@@ -327,7 +327,7 @@ export function TeacherHome() {
                 className="th-sheet__x hy-press"
                 aria-label="닫기"
                 onClick={() => setInviteOpen(false)}
-                disabled={requestPairing.isPending}
+                disabled={requestPairing.isPending} aria-busy={requestPairing.isPending}
               >
                 <X size={20} strokeWidth={2.4} color="#6D6469" />
               </button>
@@ -357,7 +357,7 @@ export function TeacherHome() {
               type="button"
               className="th-sheet__send hy-press"
               onClick={sendInvite}
-              disabled={requestPairing.isPending}
+              disabled={requestPairing.isPending} aria-busy={requestPairing.isPending}
             >
               {requestPairing.isPending ? "요청 보내는 중…" : "연결 요청 보내기"}
             </button>
@@ -389,7 +389,7 @@ export function TeacherHome() {
                 className="th-sheet__x hy-press"
                 aria-label="닫기"
                 onClick={() => setCreateOpen(false)}
-                disabled={createClass.isPending}
+                disabled={createClass.isPending} aria-busy={createClass.isPending}
               >
                 <X size={20} strokeWidth={2.4} color="#6D6469" />
               </button>
@@ -416,7 +416,7 @@ export function TeacherHome() {
               type="button"
               className="th-sheet__send hy-press"
               onClick={submitCreate}
-              disabled={createClass.isPending}
+              disabled={createClass.isPending} aria-busy={createClass.isPending}
             >
               {createClass.isPending ? "만드는 중…" : "반 만들기"}
             </button>

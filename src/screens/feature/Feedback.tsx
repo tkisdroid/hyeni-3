@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import { Check, ChevronLeft } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
@@ -158,8 +158,9 @@ export function Feedback() {
                   type="button"
                   className="fb-cat hy-press"
                   style={{
-                    background: on ? "var(--hy-accent-soft)" : "var(--bg-body)",
-                    color: on ? "var(--hy-accent-text)" : "var(--fg-muted)",
+                    background: on ? "var(--hy-accent-soft)" : "var(--bg-chip-idle)",
+                    color: on ? "var(--hy-accent-text)" : "var(--fg-tertiary)",
+                    boxShadow: on ? "inset 0 0 0 1.5px var(--hy-accent)" : "none",
                   }}
                   onClick={() => setCat((prev) => (prev === c.id ? null : c.id))}
                 >
@@ -201,12 +202,23 @@ export function Feedback() {
                     type="button"
                     className="fb-vote hy-press"
                     aria-pressed={on}
-                    style={{
-                      background: on ? "var(--hy-accent)" : "var(--hy-accent-soft)",
-                      color: on ? "var(--bg-card)" : "var(--hy-accent-text)",
-                    }}
+                    style={
+                      on
+                        ? {
+                            // 파스텔 채움 위 흰 글자는 2.76:1 이라 쓰지 않는다 — soft 채움 + 진한 라벨(4.6:1).
+                            background: "var(--hy-accent-soft)",
+                            color: "var(--hy-accent-text)",
+                            border: "1.5px solid var(--hy-accent)",
+                          }
+                        : {
+                            background: "transparent",
+                            color: "var(--hy-accent-text)",
+                            border: "1.5px solid var(--line-strong)",
+                          }
+                    }
                     onClick={() => toggleIdea(i.id)}
                   >
+                    {on && <Check size={16} strokeWidth={2.4} aria-hidden="true" />}
                     {on ? "선택됨" : "관심 있어요"}
                   </button>
                 </div>
@@ -220,7 +232,7 @@ export function Feedback() {
           type="button"
           className="fb-submit hy-press"
           onClick={submit}
-          disabled={sendFeedback.isPending}
+          disabled={sendFeedback.isPending} aria-busy={sendFeedback.isPending}
         >
           <img className="fb-submit__icon" src={asset("ui/chat-heart.webp")} alt="" />
           {sendFeedback.isPending ? "보내는 중…" : "피드백 보내기"}

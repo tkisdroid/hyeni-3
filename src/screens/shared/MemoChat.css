@@ -36,7 +36,7 @@
 .mc-peer-avatar {
   width: 42px;
   height: 42px;
-  border-radius: 13px;
+  border-radius: var(--radius-12);
   background: var(--hy-accent-soft);
   display: flex;
   align-items: center;
@@ -204,13 +204,13 @@
   word-break: break-word;
 }
 .mc-msg--peer .mc-bubble {
-  border-radius: 6px 20px 20px 20px;
+  border-radius: var(--radius-8) 20px 20px 20px;
   background: #fff;
   color: #2a2327;
 }
 .mc-msg--mine .mc-bubble {
-  border-radius: 20px 6px 20px 20px;
-  background: linear-gradient(135deg, var(--hy-accent-light), var(--hy-accent-deep));
+  border-radius: 20px var(--radius-8) 20px 20px;
+  background: var(--cta-grad-accent);
   color: #fff;
 }
 
@@ -368,7 +368,7 @@
   width: var(--control-min-size);
   height: var(--control-min-size);
   border-radius: 50%;
-  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  background: var(--cta-grad-accent);
   box-shadow: 0 8px 18px -6px rgba(240, 81, 143, 0.7);
   display: flex;
   align-items: center;
@@ -406,7 +406,7 @@
   max-height: 260px;
   aspect-ratio: 4 / 3;
   object-fit: cover;
-  border-radius: 13px;
+  border-radius: var(--radius-12);
 }
 
 /* 사진 확대는 인증 URL을 외부 브라우저에 넘기지 않고 앱 내부에서만 표시한다. */

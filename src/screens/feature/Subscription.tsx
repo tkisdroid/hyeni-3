@@ -404,7 +404,7 @@ export function Subscription() {
             type="button"
             className="sub-cta hy-press"
             onClick={purchase}
-            disabled={busy}
+            disabled={busy} aria-busy={busy}
           >
             <img src={asset("ui/crown.webp")} alt="" />
             {busy ? "결제 진행 중…" : purchaseLabel}

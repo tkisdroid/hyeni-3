@@ -14,6 +14,7 @@ import { mapFamilyToView } from "@/transform/familyView";
 import { todayDateKey, parseAppDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { formatFreshness } from "@/transform/locationView";
+import { Loading } from "@/components/ui/Loading";
 import "./ChildDetail.css";
 
 // 자녀 사진은 proxy URL(http…), 기본 아바타는 asset 경로.
@@ -154,7 +155,7 @@ export function ChildDetail() {
     return (
       <div className="cd-root">
         <Header title="아이 상세" onBack={() => navigate(-1)} onEdit={null} />
-        <div className="cd-state">아이 정보를 불러오는 중…</div>
+        <div className="cd-state"><Loading label="아이 정보를 불러오는 중" /></div>
       </div>
     );
   }
@@ -370,7 +371,7 @@ export function ChildDetail() {
                 type="button"
                 className="cd-confirm__cancel hy-press"
                 onClick={() => setConfirmDelete(false)}
-                disabled={unpair.isPending}
+                disabled={unpair.isPending} aria-busy={unpair.isPending}
               >
                 취소
               </button>
@@ -378,7 +379,7 @@ export function ChildDetail() {
                 type="button"
                 className="cd-confirm__delete hy-press"
                 onClick={onDelete}
-                disabled={unpair.isPending}
+                disabled={unpair.isPending} aria-busy={unpair.isPending}
               >
                 {unpair.isPending ? "삭제 중…" : "삭제하기"}
               </button>

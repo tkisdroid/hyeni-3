@@ -193,7 +193,7 @@
   justify-content: center;
   gap: 8px;
   height: 52px;
-  border-radius: 18px;
+  border-radius: var(--radius-20);
   background: #fff;
   box-shadow: 0 10px 24px -18px rgba(32, 26, 29, 0.24);
   border: 1px solid var(--line-card);
@@ -230,7 +230,7 @@
 .cd-row__icon {
   width: 42px;
   height: 42px;
-  border-radius: 13px;
+  border-radius: var(--radius-12);
   background: var(--bg-page);
   display: flex;
   align-items: center;
@@ -303,7 +303,7 @@
 .cd-danger__icon {
   width: 42px;
   height: 42px;
-  border-radius: 13px;
+  border-radius: var(--radius-12);
   background: var(--danger-soft);
   color: var(--danger-text);
   display: flex;
@@ -403,7 +403,7 @@
 .cd-confirm__delete {
   flex: 1;
   padding: 12px 0;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   font-size: var(--type-body);
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);

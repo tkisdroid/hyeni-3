@@ -201,7 +201,7 @@ export function ChildInvite() {
           type="button"
           className="ci-regen hy-press"
           onClick={regenerate}
-          disabled={regen.isPending}
+          disabled={regen.isPending} aria-busy={regen.isPending}
         >
           <RefreshCw size={15} strokeWidth={2.4} style={{ verticalAlign: "-2px", marginRight: 4 }} />
           {regen.isPending ? "발급 중…" : "새 코드 발급"}

@@ -672,7 +672,7 @@ export function NotificationSettings() {
                       type="button"
                       className="nst-retry nst-quiet__retry hy-press"
                       onClick={() => void retryQuietHours()}
-                      disabled={quietHoursQuery.isFetching || familyQuery.isFetching}
+                      disabled={quietHoursQuery.isFetching || familyQuery.isFetching} aria-busy={quietHoursQuery.isFetching || familyQuery.isFetching}
                     >
                       {quietHoursQuery.isFetching || familyQuery.isFetching ? "다시 확인 중…" : "다시 확인"}
                     </button>
@@ -778,7 +778,7 @@ export function NotificationSettings() {
                         type="button"
                         className="nst-system-btn nst-quiet__apply hy-press"
                         onClick={applyQuietHours}
-                        disabled={!dirty || !valid || saveQuietHours.isPending}
+                        disabled={!dirty || !valid || saveQuietHours.isPending} aria-busy={saveQuietHours.isPending}
                       >
                         {saveQuietHours.isPending ? "적용 중…" : <span>적용</span>}
                       </button>

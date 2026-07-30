@@ -310,7 +310,7 @@ export function ChildSettings() {
             type="button"
             className="ks-row hy-press"
             onClick={toggleNotifications}
-            disabled={!childSettingsDataReady || saveNotifSettings.isPending}
+            disabled={!childSettingsDataReady || saveNotifSettings.isPending} aria-busy={saveNotifSettings.isPending}
             aria-pressed={notifOn}
           >
             <span className="ks-row__icon">
@@ -337,7 +337,7 @@ export function ChildSettings() {
               type="button"
               className="ks-row hy-press"
               onClick={() => askParent(item.menu, item.title)}
-              disabled={request.isPending}
+              disabled={request.isPending} aria-busy={request.isPending}
             >
               <span className="ks-row__icon">
                 <item.Icon size={18} strokeWidth={2.2} />

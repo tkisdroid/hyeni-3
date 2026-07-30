@@ -10,6 +10,7 @@ import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useReceivedStickers } from "@/queries/useStickers";
+import { Loading } from "@/components/ui/Loading";
 import {
   buildStickerBook,
   readSeenStickers,
@@ -76,7 +77,7 @@ export function StickerBook() {
         </div>
 
         {received.isLoading ? (
-          <div className="sb-state">스티커를 불러오는 중이야…</div>
+          <div className="sb-state"><Loading label="스티커를 불러오는 중이야" /></div>
         ) : received.isError ? (
           <div className="sb-state" role="alert">
             <span>스티커를 못 불러왔어.</span>

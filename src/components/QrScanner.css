@@ -110,7 +110,7 @@
 }
 .qrs-retry,
 .qrs-settings {
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   min-height: var(--control-min-size);
   padding: 12px 16px;
   font-size: var(--type-label);

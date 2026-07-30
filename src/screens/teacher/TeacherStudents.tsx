@@ -249,7 +249,7 @@ export function TeacherStudents() {
                             className={`ts-attend__btn${active ? " ts-attend__btn--on" : ""} hy-press`}
                             data-status={a.status}
                             onClick={() => saveAttendance(s, a.status)}
-                            disabled={saving}
+                            disabled={saving} aria-busy={saving}
                           >
                             {a.label}
                           </button>
@@ -293,7 +293,7 @@ export function TeacherStudents() {
                 className="ts-sheet__x hy-press"
                 aria-label="닫기"
                 onClick={() => setInviteOpen(false)}
-                disabled={requestPairing.isPending}
+                disabled={requestPairing.isPending} aria-busy={requestPairing.isPending}
               >
                 <X size={20} strokeWidth={2.4} color="#6D6469" />
               </button>
@@ -323,7 +323,7 @@ export function TeacherStudents() {
               type="button"
               className="ts-sheet__send hy-press"
               onClick={sendInvite}
-              disabled={requestPairing.isPending}
+              disabled={requestPairing.isPending} aria-busy={requestPairing.isPending}
             >
               {requestPairing.isPending ? "요청 보내는 중…" : "연결 요청 보내기"}
             </button>

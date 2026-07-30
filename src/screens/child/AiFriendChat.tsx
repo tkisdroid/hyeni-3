@@ -20,6 +20,7 @@ import { useSafeBack } from "@/app/useSafeBack";
 import { MessageSafetyDialog, type ReportReasonOption } from "@/components/MessageSafetyDialog";
 import { useReportAiMessage } from "@/queries/useContentSafety";
 import type { AiContentReportReason } from "@/lib/api/endpoints/contentSafety";
+import { Loading } from "@/components/ui/Loading";
 import {
   AI_FRIEND_PERSONAS,
   DEFAULT_CHARACTER,
@@ -255,7 +256,7 @@ export function AiFriendChat() {
 
       <div ref={messagesRef} className="afc-msgs">
         {chatLoading ? (
-          <div className="afc-query-state" role="status">지난 이야기를 불러오는 중이야…</div>
+          <div className="afc-query-state"><Loading label="지난 이야기를 불러오는 중이야" size={6} /></div>
         ) : chatError ? (
           <div className="afc-query-state" role="alert">
             <span>지난 이야기를 못 불러왔어.</span>
@@ -323,7 +324,7 @@ export function AiFriendChat() {
               type="button"
               className="afc-chip hy-press"
               onClick={() => send(q)}
-              disabled={sendChat.isPending}
+              disabled={sendChat.isPending} aria-busy={sendChat.isPending}
             >
               {q}
             </button>
@@ -347,7 +348,7 @@ export function AiFriendChat() {
             type="button"
             className="afc-send hy-press"
             onClick={handleSend}
-            disabled={sendChat.isPending || !input.trim()}
+            disabled={sendChat.isPending || !input.trim()} aria-busy={sendChat.isPending}
           >
             보내기
           </button>

@@ -356,7 +356,7 @@ export function TeacherNotice() {
                 type="button"
                 className="tn-attach hy-press"
                 onClick={() => fileRef.current?.click()}
-                disabled={uploading || publish.isPending || attachments.length >= MAX_ATTACHMENTS}
+                disabled={uploading || publish.isPending || attachments.length >= MAX_ATTACHMENTS} aria-busy={uploading || publish.isPending}
               >
                 <span className="tn-attach__icon">
                   <Paperclip size={18} strokeWidth={2} color="#8B7E84" />

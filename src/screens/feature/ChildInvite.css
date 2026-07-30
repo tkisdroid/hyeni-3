@@ -157,7 +157,7 @@
 }
 .ci-btn {
   height: 50px;
-  border-radius: 15px;
+  border-radius: var(--radius-16);
   font-size: var(--type-body);
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);

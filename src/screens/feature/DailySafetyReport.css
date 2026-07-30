@@ -80,7 +80,7 @@
 .dr-source-error__icon {
   width: 44px;
   height: 44px;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   display: grid;
   place-items: center;
   flex: none;
@@ -304,7 +304,7 @@
 .dr-hero__mini {
   width: 34px;
   height: 34px;
-  border-radius: 13px;
+  border-radius: var(--radius-12);
 }
 
 .dr-hero__mini--map {
@@ -384,7 +384,7 @@
 .dr-overview-card__icon {
   width: 40px;
   height: 40px;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -464,7 +464,7 @@
 .dr-section__icon {
   width: 42px;
   height: 42px;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -816,7 +816,7 @@
 .dr-event__emoji {
   width: 40px;
   height: 40px;
-  border-radius: 13px;
+  border-radius: var(--radius-12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1064,7 +1064,7 @@
 .dr-memo__icon {
   width: 28px;
   height: 28px;
-  border-radius: 10px;
+  border-radius: var(--radius-12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1109,7 +1109,7 @@
 .dr-weekly__icon {
   width: 42px;
   height: 42px;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   display: flex;
   align-items: center;
   justify-content: center;

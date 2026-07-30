@@ -125,10 +125,10 @@ export function RouteSheet({
         </div>
       )}
 
-      <button type="button" className="ks-cta ks-cta--go hy-press" onClick={onDepart} disabled={sending}>
+      <button type="button" className="ks-cta ks-cta--go hy-press" onClick={onDepart} disabled={sending} aria-busy={sending}>
         출발할게! 🏃
       </button>
-      <button type="button" className="ks-cta ks-cta--soft hy-press" onClick={onArrive} disabled={sending}>
+      <button type="button" className="ks-cta ks-cta--soft hy-press" onClick={onArrive} disabled={sending} aria-busy={sending}>
         도착했다고 알리기 🏠
       </button>
       <button type="button" className="ks-cta ks-cta--ghost hy-press" onClick={onOpenMap}>

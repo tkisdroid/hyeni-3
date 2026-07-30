@@ -16,6 +16,7 @@ import { childAvatarPath } from "@/lib/avatar";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { TIERS, locationModeFor } from "@/transform/tierPolicy";
 import { resolveLocationTrustCopy } from "@/transform/locationTrustCopy";
+import { Loading } from "@/components/ui/Loading";
 import "./SosReceive.css";
 
 const pad2 = (n: number): string => String(n).padStart(2, "0");
@@ -148,7 +149,7 @@ export function SosReceive() {
         {/* 조회 실패를 "없음"으로 위장하면 안전 화면의 거짓 안심이 된다 — 실패는 실패로 보여준다. */}
         {!latest && sosLoading && (
           <div className="sr-empty">
-            <div className="sr-empty-title">SOS 기록을 불러오는 중…</div>
+            <div className="sr-empty-title"><Loading label="SOS 기록을 불러오는 중" /></div>
             <div className="sr-empty-sub">잠시만 기다려 주세요</div>
           </div>
         )}
@@ -288,7 +289,7 @@ export function SosReceive() {
             <button
               type="button"
               className={latest.read ? "sr-confirm sr-confirm--done" : "sr-confirm hy-press"}
-              disabled={markRead.isPending}
+              disabled={markRead.isPending} aria-busy={markRead.isPending}
               onClick={confirmSafe}
             >
               <Check size={18} strokeWidth={2.6} color={latest.read ? "var(--mint-600)" : "#fff"} />

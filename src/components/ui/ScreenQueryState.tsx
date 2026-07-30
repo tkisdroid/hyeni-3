@@ -56,7 +56,7 @@ export function ScreenQueryState({
         {state !== "loading" && onRetry && (
           <button
             type="button"
-            className="sqs-retry hy-press"
+            className="sqs-retry hy-press hy-busy-quiet"
             onClick={onRetry}
             disabled={retrying}
             aria-busy={retrying}

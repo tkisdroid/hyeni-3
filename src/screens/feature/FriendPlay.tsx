@@ -14,6 +14,7 @@ import {
 import type { PlaydateCandidate } from "@/lib/api/endpoints/playdate";
 import { playdateCandidateNotice } from "@/transform/playdateNotice";
 import { useSafeBack } from "@/app/useSafeBack";
+import { Loading } from "@/components/ui/Loading";
 import "./FriendPlay.css";
 
 /** 친구 놀이요청 진행 단계 안내. */
@@ -50,7 +51,9 @@ function ParentPlaydateQueryState({
       </div>
       <div className="fp-content">
         <div className="fp-empty" role={loading ? "status" : "alert"}>
-          <span>{loading ? "친구놀이 설정을 불러오는 중…" : "친구놀이 설정을 불러오지 못했어요"}</span>
+          {loading
+            ? <Loading label="친구놀이 설정을 불러오는 중" />
+            : <span>친구놀이 설정을 불러오지 못했어요</span>}
           {!loading && (
             <button type="button" className="fp-cta hy-press" onClick={onRetry}>
               다시 시도
@@ -196,7 +199,7 @@ export function FriendPlay() {
             className="fp-setting hy-press"
             aria-pressed={playdateEnabled}
             onClick={togglePlaydateEnabled}
-            disabled={enabledQ.isLoading || setEnabled.isPending}
+            disabled={enabledQ.isLoading || setEnabled.isPending} aria-busy={enabledQ.isLoading || setEnabled.isPending}
           >
             <span className="fp-setting__icon" aria-hidden="true">
               <PartyPopper size={22} strokeWidth={2.2} />
@@ -244,7 +247,7 @@ export function FriendPlay() {
                 type="button"
                 className="fp-end hy-press"
                 onClick={onEnd}
-                disabled={endPlaydate.isPending}
+                disabled={endPlaydate.isPending} aria-busy={endPlaydate.isPending}
               >
                 친구놀이 종료
               </button>
@@ -315,7 +318,7 @@ export function FriendPlay() {
               type="button"
               className="fp-end hy-press"
               onClick={onEnd}
-              disabled={endPlaydate.isPending}
+              disabled={endPlaydate.isPending} aria-busy={endPlaydate.isPending}
             >
               그만 놀래요
             </button>
@@ -378,7 +381,7 @@ export function FriendPlay() {
                 type="button"
                 className="fp-cta hy-press"
                 onClick={onSend}
-                disabled={sending || candidates.length === 0}
+                disabled={sending || candidates.length === 0} aria-busy={sending}
               >
                 <PartyPopper size={20} strokeWidth={2.2} aria-hidden="true" />
                 {sending ? "보내는 중…" : "같이 놀자고 보내기"}

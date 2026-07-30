@@ -6,6 +6,7 @@ import { useSavedPlaces, useDangerZones, useDeleteDangerZone, useDeleteSavedPlac
 import { useEntitlement } from "@/queries/useEntitlement";
 import { placeLimitFor, TIERS } from "@/transform/tierPolicy";
 import { resolvePlaceVisual } from "@/transform/placeVisual";
+import { Loading } from "@/components/ui/Loading";
 import "./PlaceManager.css";
 
 export function PlaceManager() {
@@ -79,7 +80,7 @@ export function PlaceManager() {
         <div>
           <div className="pm-label pm-label--saved">저장한 장소</div>
           <div className="pm-list">
-            {placesLoading && <div className="pm-item__addr" style={{ padding: 16 }}>불러오는 중…</div>}
+            {placesLoading && <Loading label="저장한 장소를 불러오는 중" size={6} />}
             {placesError && !placesLoading && (
               <div className="pm-item__addr" style={{ padding: 16 }} role="alert">
                 장소를 불러오지 못했어요. <button type="button" className="hy-section-action hy-press" onClick={() => void retryPlaces()}>다시 시도</button>
@@ -108,7 +109,7 @@ export function PlaceManager() {
                   className="pm-item__del hy-press"
                   aria-label={`${p.name} 삭제`}
                   onClick={() => handleDeletePlace(p.id, p.name)}
-                  disabled={deletePlace.isPending}
+                  disabled={deletePlace.isPending} aria-busy={deletePlace.isPending}
                 >
                   <Trash2 size={18} strokeWidth={2.2} color="#8B7E84" />
                 </button>
@@ -134,7 +135,7 @@ export function PlaceManager() {
             </button>
           </div>
           <div className="pm-list">
-            {zonesLoading && <div className="pm-danger__addr" style={{ padding: 16 }}>불러오는 중…</div>}
+            {zonesLoading && <Loading label="위험 구역을 불러오는 중" size={6} />}
             {zonesError && !zonesLoading && (
               <div className="pm-danger__addr" style={{ padding: 16 }} role="alert">
                 위험 구역을 불러오지 못했어요. <button type="button" className="hy-section-action hy-press" onClick={() => void retryPlaces()}>다시 시도</button>
@@ -163,7 +164,7 @@ export function PlaceManager() {
                   className="pm-danger__del hy-press"
                   aria-label={`${z.name} 삭제`}
                   onClick={() => handleDeleteZone(z.id, z.name)}
-                  disabled={deleteZone.isPending}
+                  disabled={deleteZone.isPending} aria-busy={deleteZone.isPending}
                 >
                   <Trash2 size={18} strokeWidth={2.2} color="#C0334C" />
                 </button>

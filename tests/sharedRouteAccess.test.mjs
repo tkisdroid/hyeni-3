@@ -47,7 +47,10 @@ test("유효한 아이 member가 없으면 위치·일정 query 결과를 화면
     /childMember \? filterEventsForChild\(events \?\? \[\], childMember\.id\) : \[\]/,
   );
   assert.match(source, /type RouteState = "no-child"/);
-  assert.match(source, /!childMember\s*\? "no-child"/);
+  // 아이 member 가 없으면 절대 ready 로 가지 않는다.
+  // 가족 조회가 아직 진행 중일 때는 "아이 없음"을 단정하지 않고 loading 으로 남긴다
+  // (진행 표시자를 띄우기 위한 구분 — 어느 쪽이든 query 결과는 쓰지 않는다).
+  assert.match(source, /!childMember\s*(\/\/[^\n]*\n\s*)*\?\s*\(familyLoading \? "loading" : "no-child"\)/);
   assert.match(source, /routeState === "no-child"/);
 });
 

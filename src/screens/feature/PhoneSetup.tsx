@@ -7,17 +7,10 @@ import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { useMyFamily, useUpdateProfile } from "@/queries/useFamily";
 import { useAuth } from "@/auth/AuthContext";
 import { normalizePhoneForStorage } from "@/transform/phone";
+import { formatPhoneDisplay, formatPhoneOrMissing } from "@/transform/phoneFormat";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import type { FamilyMember } from "@/lib/api/endpoints/family";
 import "./PhoneSetup.css";
-
-/** 숫자만 남겨 010-0000-0000 형태로 정규화(표시용). */
-function formatPhone(raw: string): string {
-  const d = raw.replace(/\D/g, "").slice(0, 11);
-  if (d.length <= 3) return d;
-  if (d.length <= 7) return `${d.slice(0, 3)}-${d.slice(3)}`;
-  return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;
-}
 
 function roleLabel(gender: string | null | undefined): string {
   if (gender === "mom") return "엄마";
@@ -77,7 +70,7 @@ export function PhoneSetup() {
       return;
     }
     if (hydratedPhoneSourceKey === phoneSourceKey) return;
-    setMyPhone(me?.phone ? formatPhone(me.phone) : "");
+    setMyPhone(me?.phone ? formatPhoneDisplay(me.phone) : "");
     setHydratedPhoneSourceKey(phoneSourceKey);
   }, [hydratedPhoneSourceKey, me, phoneSourceKey]);
 
@@ -183,7 +176,7 @@ export function PhoneSetup() {
                     <input
                       className="psu-row__input"
                       value={myPhone}
-                      onChange={(e) => setMyPhone(formatPhone(e.target.value))}
+                      onChange={(e) => setMyPhone(formatPhoneDisplay(e.target.value))}
                       placeholder="010-0000-0000"
                       inputMode="numeric"
                       aria-label={`${roleLabel(g.gender)} 전화번호`}
@@ -191,7 +184,7 @@ export function PhoneSetup() {
                     />
                   ) : (
                     <span className="psu-row__input" style={{ color: "var(--fg-muted)", display: "flex", alignItems: "center" }}>
-                      {g.phone ? formatPhone(g.phone) : "미등록"}
+                      {formatPhoneOrMissing(g.phone)}
                     </span>
                   )}
                 </div>
@@ -213,7 +206,7 @@ export function PhoneSetup() {
           type="button"
           className="psu-save hy-press"
           onClick={save}
-          disabled={!phoneFormReady || update.isPending || !me}
+          disabled={!phoneFormReady || update.isPending || !me} aria-busy={update.isPending}
         >
           {update.isPending ? "저장 중…" : "저장하기"}
         </button>

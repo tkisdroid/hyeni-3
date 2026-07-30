@@ -23,6 +23,7 @@ import { buildAdventureMap, timeLabelToMinutes, type AdventureEventInput } from 
 import { buildStickerBook, readSeenStickers } from "@/transform/stickerBook";
 import { resolveEventVisualAsset } from "@/transform/placeVisual";
 import { CHILD_ACCENTS } from "@/transform/childAccent";
+import { Loading } from "@/components/ui/Loading";
 import {
   latestParentMemoText,
   remainingAiChats,
@@ -405,7 +406,7 @@ export function ChildHome() {
         <div className="kd-map__headline kd-title">{childName}의 오늘</div>
 
         {homeLoading ? (
-          <div className="kd-map__query-state" role="status">오늘 모험을 불러오는 중이야…</div>
+          <div className="kd-map__query-state"><Loading label="오늘 모험을 불러오는 중이야" size={6} /></div>
         ) : homeError ? (
           <div className="kd-map__query-state" role="alert">
             <span>오늘 모험을 못 불러왔어.</span>
@@ -427,9 +428,12 @@ export function ChildHome() {
                 {node.state === "next" && <span className="kd-node__ring" />}
                 <img src={asset(node.icon)} alt="" />
                 {node.state === "done" && (
-                  <span className="kd-node__star" aria-hidden="true">
-                    ⭐
-                  </span>
+                  <img
+                    className="kd-node__star"
+                    src={asset("ui/star-medal.webp")}
+                    alt=""
+                    aria-hidden="true"
+                  />
                 )}
               </span>
               <span className="kd-node__pill">{node.pill}</span>
@@ -572,7 +576,7 @@ export function ChildHome() {
                         className="kd-prep__del hy-press"
                         aria-label={`${s.label} 지우기`}
                         onClick={() => remove.mutate(s, { onError: () => show("못 지웠어. 다시 해볼래?", "⚠️") })}
-                        disabled={remove.isPending}
+                        disabled={remove.isPending} aria-busy={remove.isPending}
                       >
                         <X size={16} strokeWidth={2.4} color="var(--danger-500)" />
                       </button>
@@ -595,7 +599,7 @@ export function ChildHome() {
                   type="button"
                   className="kd-prep__add kd-prep__add--prep hy-press"
                   onClick={() => addSupply("prep")}
-                  disabled={upsert.isPending}
+                  disabled={upsert.isPending} aria-busy={upsert.isPending}
                 >
                   + 준비물
                 </button>
@@ -603,7 +607,7 @@ export function ChildHome() {
                   type="button"
                   className="kd-prep__add kd-prep__add--hw hy-press"
                   onClick={() => addSupply("hw")}
-                  disabled={upsert.isPending}
+                  disabled={upsert.isPending} aria-busy={upsert.isPending}
                 >
                   + 숙제
                 </button>
@@ -690,7 +694,7 @@ export function ChildHome() {
                 type="button"
                 className="kd-status__btn hy-press"
                 onClick={() => sendQuickStatus(action.id)}
-                disabled={sendMemo.isPending || !myMember}
+                disabled={sendMemo.isPending || !myMember} aria-busy={sendMemo.isPending}
               >
                 <img src={asset(QUICK_STATUS_ICONS[action.id])} alt="" />
                 <span>{action.label}</span>

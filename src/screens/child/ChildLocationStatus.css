@@ -179,16 +179,18 @@
 }
 
 /* ── 켜기 / 새로고침 버튼 ───────────────────────────────────────────────── */
+/* 화면의 주요 CTA — 파스텔 --hy-accent 위 흰 글자는 2.76:1 이라 읽히지 않았다.
+   채움을 --hy-accent-cta 로, 라벨을 18px/700 로 올려 큰 글씨 기준(3.0)을 넘긴다. */
 .cls-cta {
   width: 100%;
-  height: 54px;
-  border-radius: 16px;
-  background: var(--hy-accent, var(--mint-500));
+  height: 56px;
+  border-radius: var(--radius-16);
+  background: var(--hy-accent-cta, var(--mint-cta));
   box-shadow: 0 14px 30px -12px rgba(35, 168, 118, 0.5);
   color: #fff;
-  font-size: var(--type-body);
-  line-height: var(--type-body-line-height);
-  font-weight: var(--type-body-weight);
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
 
   display: flex;
   align-items: center;

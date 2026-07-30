@@ -48,7 +48,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  background: var(--cta-grad-accent);
   box-shadow: 0 8px 18px -6px rgba(240, 81, 143, 0.7);
   display: flex;
   align-items: center;
@@ -92,7 +92,7 @@
 .pc-day {
   min-width: var(--control-min-size);
   height: 52px;
-  border-radius: 13px;
+  border-radius: var(--radius-12);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -199,7 +199,7 @@
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  border-radius: 18px;
+  border-radius: var(--radius-20);
 }
 .pc-swipe__actions {
   position: absolute;
@@ -242,11 +242,12 @@
   color: var(--hy-accent-text);
 }
 .pc-swipe__action--delete {
-  background: #e5484d;
+  /* 13px 흰 라벨 — danger-500(3.91:1)으로는 부족해 CTA 등급을 쓴다(4.56:1). */
+  background: var(--danger-cta);
   color: #fff;
 }
 .pc-swipe__action--cancel {
-  background: #f2eef0;
+  background: var(--bg-chip-idle);
   color: var(--fg-tertiary);
 }
 .pc-swipe__action:disabled {
@@ -280,7 +281,7 @@
 .pc-event__icon {
   width: 44px;
   height: 44px;
-  border-radius: 13px;
+  border-radius: var(--radius-12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -429,7 +430,7 @@
 .pc-sheet__icon {
   width: 48px;
   height: 48px;
-  border-radius: 15px;
+  border-radius: var(--radius-16);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -529,7 +530,7 @@
 }
 .pc-btn {
   height: 50px;
-  border-radius: 15px;
+  border-radius: var(--radius-16);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -547,7 +548,7 @@
 }
 .pc-btn--primary {
   flex: 2;
-  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  background: var(--cta-grad-accent);
   color: #fff;
   box-shadow: 0 12px 26px -10px rgba(240, 81, 143, 0.6);
 }

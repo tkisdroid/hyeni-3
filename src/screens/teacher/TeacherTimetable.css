@@ -67,7 +67,7 @@
   align-items: center;
   gap: 4px;
   padding: 8px 0 8px;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   background: #fff;
   border: 1px solid var(--line-card);
   --press: 0.94;

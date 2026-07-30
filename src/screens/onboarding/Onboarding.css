@@ -118,7 +118,7 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  background: var(--cta-grad-accent);
   transition: width 0.18s ease;
 }
 .ob-tlabel {
@@ -145,7 +145,7 @@
   --press: 0.98;
 }
 .ob-cta--accent {
-  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  background: var(--cta-grad-accent);
   box-shadow: 0 14px 28px -10px rgba(240, 81, 143, 0.6);
 }
 .ob-cta--green {
@@ -513,7 +513,7 @@
 .ob-loginbtn {
   height: 54px;
   border-radius: var(--radius-16);
-  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  background: var(--cta-grad-accent);
   box-shadow: 0 14px 28px -10px rgba(240, 81, 143, 0.6);
   font-size: var(--type-body-lg);
   line-height: var(--type-body-lg-line-height);
@@ -807,28 +807,28 @@
   left: 16px;
   border-top: 3px solid #f76ba6;
   border-left: 3px solid #f76ba6;
-  border-radius: 10px 0 0 0;
+  border-radius: var(--radius-12) 0 0 0;
 }
 .ob-qr-corner--tr {
   top: 16px;
   right: 16px;
   border-top: 3px solid #f76ba6;
   border-right: 3px solid #f76ba6;
-  border-radius: 0 10px 0 0;
+  border-radius: 0 var(--radius-12) 0 0;
 }
 .ob-qr-corner--bl {
   bottom: 16px;
   left: 16px;
   border-bottom: 3px solid #f76ba6;
   border-left: 3px solid #f76ba6;
-  border-radius: 0 0 0 10px;
+  border-radius: 0 0 0 var(--radius-12);
 }
 .ob-qr-corner--br {
   bottom: 16px;
   right: 16px;
   border-bottom: 3px solid #f76ba6;
   border-right: 3px solid #f76ba6;
-  border-radius: 0 0 10px 0;
+  border-radius: 0 0 var(--radius-12) 0;
 }
 .ob-qr-scan {
   position: absolute;

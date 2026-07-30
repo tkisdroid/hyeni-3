@@ -343,7 +343,7 @@ export function LocationSettings() {
             aria-label="백그라운드 위치 전송"
             data-on={prefs.background}
             onClick={toggleBackground}
-            disabled={saving || !locationSettingsDataReady}
+            disabled={saving || !locationSettingsDataReady} aria-busy={saving}
           >
             <span className="lset-toggle__knob" />
           </button>
@@ -362,7 +362,7 @@ export function LocationSettings() {
                   className="lset-seg__item hy-press"
                   data-on={on}
                   onClick={() => pickInterval(opt.id)}
-                  disabled={saving || !locationSettingsDataReady}
+                  disabled={saving || !locationSettingsDataReady} aria-busy={saving}
                 >
                   {on && <Check size={13} strokeWidth={3} className="lset-seg__check" />}
                   {opt.label}
@@ -390,7 +390,7 @@ export function LocationSettings() {
             aria-label="배터리 최적화 예외"
             data-on={prefs.batterySaverException}
             onClick={toggleBatteryException}
-            disabled={saving || !locationSettingsDataReady}
+            disabled={saving || !locationSettingsDataReady} aria-busy={saving}
           >
             <span className="lset-toggle__knob" />
           </button>

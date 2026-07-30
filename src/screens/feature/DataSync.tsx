@@ -197,7 +197,7 @@ export function DataSync() {
             type="button"
             className="ds-card__cta hy-press"
             onClick={exportJson}
-            disabled={exportData.isPending || !account}
+            disabled={exportData.isPending || !account} aria-busy={exportData.isPending}
           >
             {exportData.isPending ? "모으는 중…" : "내보내기"}
           </button>

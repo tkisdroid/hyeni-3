@@ -194,7 +194,7 @@ export function ChildSos() {
             <br />
             다시 보내거나 바로 전화해!
           </div>
-          <button type="button" className="cs-callbtn hy-press" onClick={retrySos} disabled={sos.isPending}>
+          <button type="button" className="cs-callbtn hy-press" onClick={retrySos} disabled={sos.isPending} aria-busy={sos.isPending}>
             <span>다시 보내기</span>
           </button>
           {mom && (
@@ -288,7 +288,7 @@ export function ChildSos() {
               type="button"
               className="cs-query-retry hy-press"
               onClick={() => void retrySosFamily()}
-              disabled={familyQuery.isFetching}
+              disabled={familyQuery.isFetching} aria-busy={familyQuery.isFetching}
             >
               {familyQuery.isFetching ? "다시 확인 중…" : "가족 정보 다시 확인"}
             </button>

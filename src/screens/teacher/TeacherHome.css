@@ -20,7 +20,7 @@
 .th-brand__icon {
   width: 36px;
   height: 36px;
-  border-radius: 11px;
+  border-radius: var(--radius-12);
   background: #e7f8f0;
   display: flex;
   align-items: center;
@@ -115,7 +115,7 @@
 .th-note__icon {
   width: 48px;
   height: 48px;
-  border-radius: 15px;
+  border-radius: var(--radius-16);
   background: #fff;
   display: flex;
   align-items: center;
@@ -166,7 +166,7 @@
 .th-student__avatar {
   width: 42px;
   height: 42px;
-  border-radius: 13px;
+  border-radius: var(--radius-12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -232,7 +232,7 @@
 .th-tile__icon {
   width: 44px;
   height: 44px;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -379,7 +379,7 @@
   height: 52px;
   border: 1.5px solid var(--line-soft);
   background: #fff;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   padding: 0 16px;
   margin-bottom: 16px;
   font-size: var(--type-body);

@@ -112,7 +112,7 @@ export function AdminAiPrompt() {
                 type="button"
                 className="aap-save hy-press"
                 onClick={() => void handleSave()}
-                disabled={savePrompt.isPending || !dirty}
+                disabled={savePrompt.isPending || !dirty} aria-busy={savePrompt.isPending}
               >
                 {savePrompt.isPending ? "저장 중…" : dirty ? "저장하기" : "저장됨"}
               </button>

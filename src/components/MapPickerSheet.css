@@ -134,16 +134,17 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+/* 시트의 주요 확정 버튼 — 흰 라벨은 --hy-accent-cta 채움 + 18px/700 에서만 AA(3.0)를 넘는다. */
 .mps-confirm {
   flex: none;
-  min-height: var(--control-min-size);
+  min-height: 48px;
   padding: 12px 16px;
   border-radius: var(--radius-12);
-  background: var(--hy-accent);
+  background: var(--hy-accent-cta);
   color: #fff;
-  font-size: var(--type-body-sm);
-  line-height: var(--type-body-sm-line-height);
-  font-weight: var(--type-body-sm-weight);
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
   --press: 0.96;
 }
 .mps-confirm:disabled {

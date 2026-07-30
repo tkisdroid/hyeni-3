@@ -609,7 +609,7 @@ function RoleStep({
       </div>
 
       <div className="ob-role-list">
-        <button type="button" className="ob-role-card ob-role-card--parent hy-press" onClick={onParent} disabled={busy}>
+        <button type="button" className="ob-role-card ob-role-card--parent hy-press" onClick={onParent} disabled={busy} aria-busy={busy}>
           <span className="ob-role-ic ob-role-ic--parent">
             <img
               className="ob-role-img"
@@ -626,7 +626,7 @@ function RoleStep({
           <ChevronRight size={22} strokeWidth={2.4} color="#C9BFC4" />
         </button>
 
-        <button type="button" className="ob-role-card ob-role-card--child hy-press" onClick={onChild} disabled={busy}>
+        <button type="button" className="ob-role-card ob-role-card--child hy-press" onClick={onChild} disabled={busy} aria-busy={busy}>
           <span className="ob-role-ic ob-role-ic--child">
             <img
               className="ob-role-img ob-role-img--child"
@@ -646,7 +646,7 @@ function RoleStep({
         </button>
 
         {TEACHER_MODE_ENABLED && (
-          <button type="button" className="ob-role-card ob-role-card--teacher hy-press" onClick={onTeacher} disabled={busy}>
+          <button type="button" className="ob-role-card ob-role-card--teacher hy-press" onClick={onTeacher} disabled={busy} aria-busy={busy}>
             <span className="ob-role-ic ob-role-ic--teacher">
               <img
                 className="ob-role-img"
@@ -848,17 +848,17 @@ function LoginStep({
       </div>
 
       <div className="ob-login-social">
-        <button type="button" className="ob-social ob-social--kakao hy-press" onClick={() => social("kakao")} disabled={busy}>
+        <button type="button" className="ob-social ob-social--kakao hy-press" onClick={() => social("kakao")} disabled={busy} aria-busy={busy}>
           <KakaoIcon />
           <BusyLabel busy={busy && pendingAction === "kakao"} idle="카카오로 계속하기" pending="카카오 로그인 중…" />
         </button>
-        <button type="button" className="ob-social ob-social--google hy-press" onClick={() => social("google")} disabled={busy}>
+        <button type="button" className="ob-social ob-social--google hy-press" onClick={() => social("google")} disabled={busy} aria-busy={busy}>
           <GoogleIcon />
           <BusyLabel busy={busy && pendingAction === "google"} idle="Google로 계속하기" pending="Google 로그인 중…" />
         </button>
         {/* 네이버 키가 없으면 버튼 자체를 숨긴다 — 누르면 실패하는 버튼을 보여주지 않는다. */}
         {hasNaverClientId && (
-          <button type="button" className="ob-social ob-social--naver hy-press" onClick={() => social("naver")} disabled={busy}>
+          <button type="button" className="ob-social ob-social--naver hy-press" onClick={() => social("naver")} disabled={busy} aria-busy={busy}>
             <NaverIcon />
             <BusyLabel busy={busy && pendingAction === "naver"} idle="네이버로 계속하기" pending="네이버 로그인 중…" />
           </button>
@@ -915,7 +915,7 @@ function LoginStep({
             </p>
           )}
         </div>
-        <button type="button" className="ob-loginbtn hy-press" onClick={loginIdPw} disabled={busy}>
+        <button type="button" className="ob-loginbtn hy-press" onClick={loginIdPw} disabled={busy} aria-busy={busy}>
           <BusyLabel busy={busy && pendingAction === "id"} idle="로그인" pending="로그인 중…" />
         </button>
       </div>
@@ -926,7 +926,7 @@ function LoginStep({
           type="button"
           className="ob-link"
           onClick={onSignup}
-          disabled={busy || commitBoundaryActive}
+          disabled={busy || commitBoundaryActive} aria-busy={busy}
         >
           회원가입
         </button>
@@ -1094,7 +1094,7 @@ function SignupStep({
             />
           </Field>
         </div>
-        <button type="button" className="ob-cta ob-cta--accent hy-press" onClick={verify} disabled={busy}>
+        <button type="button" className="ob-cta ob-cta--accent hy-press" onClick={verify} disabled={busy} aria-busy={busy}>
           <BusyLabel
             busy={busy && isAsyncActionTokenFor(pendingSignupAction, "verify")}
             idle="인증하고 가입 완료"
@@ -1104,7 +1104,7 @@ function SignupStep({
         {/* 재전송은 requestPhoneSignupCode 를 다시 호출(실 전송) */}
         <div className="ob-login-foot">
           인증번호를 못 받으셨나요?{" "}
-          <button type="button" className="ob-link" onClick={requestCode} disabled={busy}>
+          <button type="button" className="ob-link" onClick={requestCode} disabled={busy} aria-busy={busy}>
             <BusyLabel
               busy={busy && isAsyncActionTokenFor(pendingSignupAction, "request-code")}
               idle="재전송"
@@ -1170,7 +1170,7 @@ function SignupStep({
         </Field>
       </div>
 
-      <button type="button" className="ob-cta ob-cta--accent hy-press" onClick={requestCode} disabled={busy}>
+      <button type="button" className="ob-cta ob-cta--accent hy-press" onClick={requestCode} disabled={busy} aria-busy={busy}>
         <BusyLabel
           busy={busy && isAsyncActionTokenFor(pendingSignupAction, "request-code")}
           idle="인증번호 받기"
@@ -1209,7 +1209,7 @@ function ConnectStep({
       </div>
 
       <div className="ob-connect-list">
-        <button type="button" className="ob-connect-card hy-press" onClick={onNewFamily} disabled={busy}>
+        <button type="button" className="ob-connect-card hy-press" onClick={onNewFamily} disabled={busy} aria-busy={busy}>
           <img className="ob-connect-ic" src={asset("ui/place-home.webp")} alt="" />
           <span className="ob-connect-main">
             <span className="ob-connect-name">새 가족 만들기</span>
@@ -1218,7 +1218,7 @@ function ConnectStep({
           <ChevronRight size={20} strokeWidth={2.4} color="#C9BFC4" />
         </button>
 
-        <button type="button" className="ob-connect-card hy-press" onClick={onJoin} disabled={busy}>
+        <button type="button" className="ob-connect-card hy-press" onClick={onJoin} disabled={busy} aria-busy={busy}>
           <img className="ob-connect-ic" src={asset("ui/friend-pair.webp")} alt="" />
           <span className="ob-connect-main">
             <span className="ob-connect-name">기존 가족에 합류</span>
@@ -1227,7 +1227,7 @@ function ConnectStep({
           <ChevronRight size={20} strokeWidth={2.4} color="#C9BFC4" />
         </button>
 
-        <button type="button" className="ob-connect-card ob-connect-card--child hy-press" onClick={onChildDevice} disabled={busy}>
+        <button type="button" className="ob-connect-card ob-connect-card--child hy-press" onClick={onChildDevice} disabled={busy} aria-busy={busy}>
           <img className="ob-connect-ic" src={asset(DEFAULT_CHILD_AVATAR)} alt="" />
           <span className="ob-connect-main">
             <span className="ob-connect-name" style={{ color: "#6D4E9C" }}>아이 기기인가요?</span>
@@ -1311,7 +1311,7 @@ function PairingStep({
         className="ob-qr hy-press"
         aria-label="카메라로 QR 스캔"
         onClick={() => setShowScanner(true)}
-        disabled={busy}
+        disabled={busy} aria-busy={busy}
       >
         <span className="ob-qr-corner ob-qr-corner--tl" />
         <span className="ob-qr-corner ob-qr-corner--tr" />
@@ -1338,7 +1338,7 @@ function PairingStep({
         type="button"
         className="ob-cta ob-cta--accent hy-press"
         onClick={() => void submit()}
-        disabled={busy}
+        disabled={busy} aria-busy={busy}
       >
         {busy ? "연결 중…" : "코드로 연결하기"}
       </button>

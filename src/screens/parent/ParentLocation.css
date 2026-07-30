@@ -287,7 +287,7 @@
   gap: 4px 8px;
   padding: 12px 12px;
   border: 1px solid var(--line-soft);
-  border-radius: 18px;
+  border-radius: var(--radius-20);
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(10px);
   box-shadow: 0 12px 28px rgba(32, 26, 29, 0.12);
@@ -397,7 +397,7 @@
 .pl-sheet__avatar {
   width: 48px;
   height: 48px;
-  border-radius: 15px;
+  border-radius: var(--radius-16);
   background: #fde7f1;
   display: flex;
   align-items: center;
@@ -476,7 +476,7 @@
   flex: 1;
   text-align: center;
   padding: 8px 4px;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
 }
 .pl-tl-cell img {
   width: 30px;
@@ -556,7 +556,7 @@
   color: var(--blue-text);
 }
 .pl-memo-btn {
-  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  background: var(--cta-grad-accent);
   box-shadow: 0 10px 22px -8px rgba(240, 81, 143, 0.6);
   color: #fff;
 }
@@ -739,7 +739,7 @@
   transform: translate(-50%, -50%);
   z-index: 22;
   padding: 12px 20px;
-  border-radius: 18px;
+  border-radius: var(--radius-20);
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(8px);
   box-shadow: 0 10px 26px rgba(32, 26, 29, 0.14);
@@ -771,7 +771,7 @@
   top: 108px;
   z-index: 24;
   padding: 12px 12px 8px;
-  border-radius: 18px;
+  border-radius: var(--radius-20);
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(10px);
   box-shadow: 0 10px 24px rgba(32, 26, 29, 0.12);

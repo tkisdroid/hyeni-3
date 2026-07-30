@@ -59,12 +59,12 @@ interface FormNavState {
 
 /** 카테고리(색/이모지는 transform/scheduleView 의 CATEGORY_STYLE 과 동일 규칙). */
 const CATEGORIES = [
-  { id: "school", label: "학교", emoji: "📚", color: "#2E86C1", soft: "#E6F2FB" },
-  { id: "sports", label: "운동", emoji: "⚽", color: "#F26B3F", soft: "#FFEEE3" },
-  { id: "hobby", label: "취미", emoji: "🎨", color: "#E08A1E", soft: "#FFF3D6" },
-  { id: "family", label: "가족", emoji: "👨‍👩‍👧", color: "var(--hy-accent)", soft: "var(--hy-accent-soft)" },
-  { id: "friend", label: "친구", emoji: "👫", color: "#31C48D", soft: "#E7F8F0" },
-  { id: "other", label: "기타", emoji: "🌟", color: "#7C5CE1", soft: "#F1ECFF" },
+  { id: "school", label: "학교", emoji: "📚", color: "var(--cat-school-text)", soft: "var(--cat-school-soft)" },
+  { id: "sports", label: "운동", emoji: "⚽", color: "var(--cat-sports-text)", soft: "var(--cat-sports-soft)" },
+  { id: "hobby", label: "취미", emoji: "🎨", color: "var(--cat-hobby-text)", soft: "var(--cat-hobby-soft)" },
+  { id: "family", label: "가족", emoji: "👨‍👩‍👧", color: "var(--hy-accent-text)", soft: "var(--hy-accent-soft)" },
+  { id: "friend", label: "친구", emoji: "👫", color: "var(--cat-friend-text)", soft: "var(--cat-friend-soft)" },
+  { id: "other", label: "기타", emoji: "🌟", color: "var(--cat-other-text)", soft: "var(--cat-other-soft)" },
 ] as const;
 
 // 카테고리 칩 3D 아이콘 — 장소관리·일정 카드와 같은 단일 출처(placeVisual)를 쓴다.
@@ -89,8 +89,10 @@ const DURATION_OPTIONS: Array<{ label: string; minutes: number }> = [
   { label: "3시간", minutes: 180 },
 ];
 
-const IDLE_BG = "#F3EEF1";
-const IDLE_COLOR = "#8B7E84";
+// 미선택 칩 — 토큰 정본을 쓴다. 하드코딩 #8B7E84/#F3EEF1 은 3.38:1 이라
+// 고를 수 있는 칩이 비활성처럼 보였다(--fg-tertiary 조합은 4.98:1).
+const IDLE_BG = "var(--bg-chip-idle)";
+const IDLE_COLOR = "var(--fg-tertiary)";
 
 function initialChildIdList(event?: CalendarEvent): string[] {
   const ids = (event?.events_children ?? [])
@@ -1099,7 +1101,7 @@ export function EventForm() {
                 type="button"
                 className="ef-scope-primary hy-press"
                 onClick={() => void handleSave("single")}
-                disabled={busy}
+                disabled={busy} aria-busy={busy}
               >
                 이 일정만 수정
               </button>
@@ -1107,7 +1109,7 @@ export function EventForm() {
                 type="button"
                 className="ef-scope-secondary hy-press"
                 onClick={() => void handleSave("future")}
-                disabled={busy}
+                disabled={busy} aria-busy={busy}
               >
                 이후 반복 일정도 수정
               </button>
@@ -1116,7 +1118,7 @@ export function EventForm() {
                 type="button"
                 className="ef-scope-cancel hy-press"
                 onClick={() => setSeriesScopePrompt(null)}
-                disabled={busy}
+                disabled={busy} aria-busy={busy}
               >
                 취소
               </button>

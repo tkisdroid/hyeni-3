@@ -446,9 +446,9 @@ export function DailySafetyReport() {
                 <button
                   key={source.id}
                   type="button"
-                  className="dr-source-error__retry hy-press"
+                  className="dr-source-error__retry hy-press hy-busy-quiet"
                   onClick={() => void source.refetch()}
-                  disabled={source.isFetching}
+                  disabled={source.isFetching} aria-busy={source.isFetching}
                   aria-label={source.retryLabel}
                 >
                   <RefreshCw
@@ -582,9 +582,9 @@ export function DailySafetyReport() {
                   </span>
                   <button
                     type="button"
-                    className="dr-scope-error__retry hy-press"
+                    className="dr-scope-error__retry hy-press hy-busy-quiet"
                     onClick={() => void entitlement.refetch()}
-                    disabled={entitlement.isFetching}
+                    disabled={entitlement.isFetching} aria-busy={entitlement.isFetching}
                   >
                     <RefreshCw
                       size={15}
@@ -646,9 +646,9 @@ export function DailySafetyReport() {
                     </span>
                     <button
                       type="button"
-                      className="dr-section-error__retry hy-press"
+                      className="dr-section-error__retry hy-press hy-busy-quiet"
                       onClick={() => void eventsQuery.refetch()}
-                      disabled={eventsQuery.isFetching}
+                      disabled={eventsQuery.isFetching} aria-busy={eventsQuery.isFetching}
                     >
                       <RefreshCw
                         size={15}
@@ -701,9 +701,9 @@ export function DailySafetyReport() {
                     </span>
                     <button
                       type="button"
-                      className="dr-section-error__retry hy-press"
+                      className="dr-section-error__retry hy-press hy-busy-quiet"
                       onClick={() => void suppliesQuery.refetch()}
-                      disabled={suppliesQuery.isFetching}
+                      disabled={suppliesQuery.isFetching} aria-busy={suppliesQuery.isFetching}
                     >
                       <RefreshCw
                         size={15}
@@ -838,9 +838,9 @@ export function DailySafetyReport() {
                   </span>
                   <button
                     type="button"
-                    className="dr-section-error__retry hy-press"
+                    className="dr-section-error__retry hy-press hy-busy-quiet"
                     onClick={() => void memoThread.refetch()}
-                    disabled={memoThread.isFetching}
+                    disabled={memoThread.isFetching} aria-busy={memoThread.isFetching}
                   >
                     <RefreshCw
                       size={15}

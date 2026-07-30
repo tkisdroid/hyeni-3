@@ -107,7 +107,7 @@
   margin-top: 16px;
   width: 100%;
   height: 46px;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   background: #fff;
   color: #0e6f64;
   font-size: var(--type-body-sm);
@@ -135,7 +135,7 @@
 .ds-card__icon {
   width: 44px;
   height: 44px;
-  border-radius: 13px;
+  border-radius: var(--radius-12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -168,14 +168,17 @@
 
   color: var(--fg-muted);
 }
+/* 카드 안 보조 버튼 — 13px 흰 글자는 파스텔 채움 위 2.76:1 이라 읽히지 않았다.
+   주요 CTA 가 아니므로 soft 채움 + 진한 브랜드 라벨(보조 등급)로 내린다. */
 .ds-card__cta {
   flex: none;
   align-self: stretch;
   min-width: 68px;
   padding: 0 12px;
-  border-radius: 13px;
-  background: var(--hy-accent);
-  color: #fff;
+  border-radius: var(--radius-12);
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+  box-shadow: inset 0 0 0 1.5px var(--hy-accent);
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);

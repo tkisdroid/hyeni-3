@@ -252,7 +252,7 @@ export function Supplies() {
                         className="sup-iconbtn hy-press"
                         aria-label="이름 변경 저장"
                         onClick={() => commitEdit(s)}
-                        disabled={upsert.isPending || !editDraft.trim()}
+                        disabled={upsert.isPending || !editDraft.trim()} aria-busy={upsert.isPending}
                       >
                         <Check size={16} strokeWidth={2.6} color="var(--hy-accent-text)" />
                       </button>
@@ -303,7 +303,7 @@ export function Supplies() {
                         className="sup-iconbtn hy-press"
                         aria-label="삭제"
                         onClick={() => del(s)}
-                        disabled={remove.isPending}
+                        disabled={remove.isPending} aria-busy={remove.isPending}
                       >
                         <Trash2 size={15} strokeWidth={2.2} color="#E5484D" />
                       </button>
@@ -328,7 +328,7 @@ export function Supplies() {
                   className="sup-add__btn hy-press"
                   aria-label={`${sec.heading} 추가 확인`}
                   onClick={() => add(sec.kind, sec.draft, () => sec.setDraft(""))}
-                  disabled={upsert.isPending || !sec.draft.trim()}
+                  disabled={upsert.isPending || !sec.draft.trim()} aria-busy={upsert.isPending}
                 >
                   <Plus size={18} strokeWidth={2.6} color="#fff" />
                 </button>

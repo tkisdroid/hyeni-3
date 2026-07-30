@@ -30,7 +30,7 @@ function rangeLabel(keys: readonly string[]): string {
 export function WeeklyFamilyReport() {
   const navigate = useNavigate();
   const msg = useMessage();
-  const { activeChild } = useActiveChild();
+  const { activeChild, familyLoading } = useActiveChild();
   const { ready, tier } = useEntitlement();
   const [now] = useState(() => new Date());
   const weekDateKeys = useMemo(() => buildRecentWeekDateKeys(now), [now]);
@@ -85,7 +85,11 @@ export function WeeklyFamilyReport() {
       </header>
 
       <div className="wr-content">
-        {!activeChild ? (
+        {!activeChild && familyLoading ? (
+          <section className="hy-card wr-empty">
+            <Loading label="가족 정보를 불러오는 중" />
+          </section>
+        ) : !activeChild ? (
           <section className="hy-card wr-empty">
             <div className="wr-empty__icon">
               <img src={asset("ui/chart-3d.webp")} alt="" />

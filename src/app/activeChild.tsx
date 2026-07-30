@@ -20,6 +20,12 @@ interface ActiveChildValue {
   activeChild: FamilyMember | null;
   /** role=child 멤버 목록(정렬: child_order → 원순서). */
   childMembers: FamilyMember[];
+  /**
+   * 가족 조회가 아직 진행 중인가.
+   * activeChild 는 조회 중에도 null 이므로, 이 값 없이는 화면이
+   * "아이 없음"을 미리 단정해 버린다(진행 표시자도 못 띄운다).
+   */
+  familyLoading: boolean;
 }
 
 const ActiveChildContext = createContext<ActiveChildValue | null>(null);
@@ -38,7 +44,7 @@ function readStored(familyId: string | null): string | null {
 
 export function ActiveChildProvider({ children }: { children: ReactNode }) {
   const { familyId } = useAuth();
-  const { data: family } = useMyFamily();
+  const { data: family, isLoading: familyLoading } = useMyFamily();
 
   const childMembers = useMemo(() => {
     const kids = (family?.members ?? []).filter((m) => m.role === "child");
@@ -72,10 +78,11 @@ export function ActiveChildProvider({ children }: { children: ReactNode }) {
       setActiveChildId,
       activeChild,
       childMembers,
+      familyLoading,
     }),
     // setActiveChildId 는 familyId 클로저만 가진 안정 함수 취급(재생성 무해)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeChild, childMembers, familyId],
+    [activeChild, childMembers, familyId, familyLoading],
   );
 
   return <ActiveChildContext.Provider value={value}>{children}</ActiveChildContext.Provider>;

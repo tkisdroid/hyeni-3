@@ -120,13 +120,15 @@
   border-radius: 50%;
   animation: sup-spin 0.8s linear infinite;
 }
+/* 상태 카드의 재시도 — 보조 등급. soft 채움 + 진한 브랜드 라벨(4.6:1). */
 .sup-status__retry {
   min-height: 44px;
   margin-top: 4px;
   padding: 0 16px;
   border-radius: var(--radius-16);
-  background: var(--hy-accent);
-  color: #fff;
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+  box-shadow: inset 0 0 0 1.5px var(--hy-accent);
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);
   font-weight: var(--type-body-sm-weight);
@@ -257,7 +259,7 @@
   height: 38px;
   border: 1.5px solid var(--hy-accent);
   background: #fff;
-  border-radius: 11px;
+  border-radius: var(--radius-12);
   padding: 0 12px;
   font-size: var(--type-body);
   line-height: var(--type-body-line-height);
@@ -297,7 +299,7 @@
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  background: var(--cta-grad-accent);
   display: flex;
   align-items: center;
   justify-content: center;

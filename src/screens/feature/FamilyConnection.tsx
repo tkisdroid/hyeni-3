@@ -9,6 +9,7 @@ import { useMyFamily, useUnpairChild } from "@/queries/useFamily";
 import { useChildLocations } from "@/queries/useLocation";
 import { mapFamilyToView } from "@/transform/familyView";
 import { formatFreshness } from "@/transform/locationView";
+import { Loading } from "@/components/ui/Loading";
 import "./FamilyConnection.css";
 
 // 자녀 사진은 proxy URL(http…), 기본 아바타는 asset 경로.
@@ -110,7 +111,7 @@ export function FamilyConnection() {
       </header>
 
       <div className="fc-content">
-        {connectionLoading && !connectionError && <div className="fc-state">연결 정보를 불러오는 중…</div>}
+        {connectionLoading && !connectionError && <div className="fc-state"><Loading label="연결 정보를 불러오는 중" /></div>}
         {connectionError && (
           <div className="fc-state fc-state--error" role="alert">
             연결 정보를 불러오지 못했어요
@@ -285,7 +286,7 @@ export function FamilyConnection() {
                 type="button"
                 className="fc-modal__btn fc-modal__btn--ghost hy-press"
                 onClick={() => setConfirm(null)}
-                disabled={unpair.isPending}
+                disabled={unpair.isPending} aria-busy={unpair.isPending}
               >
                 취소
               </button>
@@ -293,7 +294,7 @@ export function FamilyConnection() {
                 type="button"
                 className="fc-modal__btn fc-modal__btn--danger hy-press"
                 onClick={doUnpair}
-                disabled={unpair.isPending}
+                disabled={unpair.isPending} aria-busy={unpair.isPending}
               >
                 {unpair.isPending ? "해제 중…" : "연결 해제"}
               </button>

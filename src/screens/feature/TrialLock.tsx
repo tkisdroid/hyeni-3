@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Crown, Gift } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useEntitlement } from "@/queries/useEntitlement";
+import { Loading } from "@/components/ui/Loading";
 import "./TrialLock.css";
 
 // 페이월 혜택 아이콘 — 3D 에셋(구독 화면과 동일 시각 언어).
@@ -41,7 +42,9 @@ export function TrialLock() {
       {!ready && (
         <div className="tl-content">
           <div className="tl-loading">
-            {isLoading ? "구독 상태를 확인하고 있어요…" : "구독 상태를 불러오지 못했어요."}
+            {isLoading
+              ? <Loading label="구독 상태를 확인하고 있어요" />
+              : "구독 상태를 불러오지 못했어요."}
           </div>
         </div>
       )}

@@ -20,8 +20,9 @@
   backdrop-filter: blur(8px);
 }
 .pa-back {
-  width: 42px;
-  height: 42px;
+  /* 원형 뒤로가기도 최소 조작 영역 44px(실측 42px). */
+  width: var(--control-min-size);
+  height: var(--control-min-size);
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 4px 12px rgba(32, 26, 29, 0.06);
@@ -77,7 +78,7 @@
 .pa-avatar {
   width: 46px;
   height: 46px;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   background: var(--hy-accent-soft);
   display: flex;
   align-items: center;
@@ -132,7 +133,7 @@
 .pa-note {
   margin-top: 12px;
   padding: 12px 12px;
-  border-radius: 14px 14px 14px 6px;
+  border-radius: var(--radius-16) var(--radius-16) var(--radius-16) var(--radius-8);
   background: var(--bg-press);
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);
@@ -151,7 +152,7 @@
 }
 .pa-btn-decline {
   height: 50px;
-  border-radius: 15px;
+  border-radius: var(--radius-16);
   background: #f3eef0;
   color: #6d6469;
   font-size: var(--type-body);
@@ -162,7 +163,7 @@
 }
 .pa-btn-accept {
   height: 50px;
-  border-radius: 15px;
+  border-radius: var(--radius-16);
   background: linear-gradient(120deg, #46d19b, #23a876);
   box-shadow: 0 12px 24px -10px rgba(35, 168, 118, 0.55);
   color: #fff;
@@ -243,7 +244,7 @@
 .pa-status {
   margin-top: 16px;
   height: 48px;
-  border-radius: 15px;
+  border-radius: var(--radius-16);
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);
   font-weight: var(--type-body-sm-weight);

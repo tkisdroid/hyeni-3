@@ -473,7 +473,7 @@
 .rr-stop-square {
   width: 22px;
   height: 22px;
-  border-radius: 6px;
+  border-radius: var(--radius-8);
   background: var(--danger-500);
 }
 

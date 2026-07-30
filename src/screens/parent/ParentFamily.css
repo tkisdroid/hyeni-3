@@ -59,7 +59,7 @@
 .pf-parent__avatar {
   width: 48px;
   height: 48px;
-  border-radius: 15px;
+  border-radius: var(--radius-16);
   background: var(--blue-soft);
   display: flex;
   align-items: center;
@@ -137,7 +137,7 @@
 .pf-child__avatar {
   width: 58px;
   height: 58px;
-  border-radius: 18px;
+  border-radius: var(--radius-20);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -333,7 +333,7 @@
 .pf-conn__icon {
   width: 44px;
   height: 44px;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   background: var(--mint-soft);
   display: flex;
   align-items: center;
@@ -404,7 +404,7 @@
   flex: none;
   width: 96px;
   height: 96px;
-  border-radius: 14px;
+  border-radius: var(--radius-16);
   overflow: hidden;
   background: #fff;
   border: 1px solid var(--line-soft);

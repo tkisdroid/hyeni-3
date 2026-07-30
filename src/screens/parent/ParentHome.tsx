@@ -434,9 +434,9 @@ export function ParentHome() {
             </span>
             <button
               type="button"
-              className="ph-location-error__retry hy-press"
+              className="ph-location-error__retry hy-press hy-busy-quiet"
               onClick={() => void entitlement.refetch()}
-              disabled={entitlement.isFetching}
+              disabled={entitlement.isFetching} aria-busy={entitlement.isFetching}
             >
               <RefreshCw
                 size={15}
@@ -776,7 +776,7 @@ export function ParentHome() {
                 type="button"
                 className="hy-press"
                 onClick={handleRefresh}
-                disabled={refreshing}
+                disabled={refreshing} aria-busy={refreshing}
               >
                 {refreshing ? "갱신 중…" : "지금 갱신"}
               </button>

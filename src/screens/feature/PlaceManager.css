@@ -41,7 +41,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
+  background: var(--cta-grad-accent);
   box-shadow: 0 8px 18px -6px rgba(240, 81, 143, 0.7);
   display: flex;
   align-items: center;
@@ -161,7 +161,7 @@
 .pm-item__icon {
   width: 48px;
   height: 48px;
-  border-radius: 15px;
+  border-radius: var(--radius-16);
   background: var(--bg-page);
   display: flex;
   align-items: center;
@@ -239,7 +239,7 @@
 .pm-item__edit {
   width: 34px;
   height: 34px;
-  border-radius: 10px;
+  border-radius: var(--radius-12);
   background: #f7f3f5;
   display: flex;
   align-items: center;
@@ -250,7 +250,7 @@
 .pm-item__del {
   width: var(--control-min-size);
   height: var(--control-min-size);
-  border-radius: 11px;
+  border-radius: var(--radius-12);
   background: #f4eff2;
   display: flex;
   align-items: center;
@@ -285,7 +285,7 @@
 .pm-danger__del {
   width: var(--control-min-size);
   height: var(--control-min-size);
-  border-radius: 11px;
+  border-radius: var(--radius-12);
   background: #ffecee;
   display: flex;
   align-items: center;
@@ -299,7 +299,7 @@
 .pm-danger__icon {
   width: 48px;
   height: 48px;
-  border-radius: 15px;
+  border-radius: var(--radius-16);
   background: #ffecee;
   display: flex;
   align-items: center;

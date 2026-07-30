@@ -18,6 +18,7 @@ import { useDaySummary, useGenerateDaySummary } from "@/queries/useAi";
 import type { DaySummarySignals, DaySummaryResult } from "@/lib/api/endpoints/ai";
 import { formatTimeLabel } from "@/transform/scheduleView";
 import { todayDateKey, dateKeyToDateInputValue, parseAppDateKey } from "@/transform/dateKey";
+import { Loading } from "@/components/ui/Loading";
 import "./DaySummary.css";
 
 type RowTone = "info" | "safe" | "caution";
@@ -79,7 +80,7 @@ export function DaySummary() {
   // 크레딧·요약은 자녀별. state(딥링크) > 전역 활성 아이. state uid 가 현재 가족에 없으면
   // stale uid 로 생성하지 않도록 활성 아이로 폴백(첫 아이 하드코딩 제거 — AI 생성 오귀속 방지).
   const { data: family } = useMyFamily();
-  const { activeChild: globalActive } = useActiveChild();
+  const { activeChild: globalActive, familyLoading } = useActiveChild();
   const children = (family?.members ?? []).filter((m) => m.role === "child");
   const targetChild =
     (state.childUserId ? children.find((m) => m.user_id === state.childUserId) : undefined) ??
@@ -149,7 +150,11 @@ export function DaySummary() {
       </div>
 
       <div className="hy-content ds-content">
-        {!childUserId ? (
+        {!childUserId && familyLoading ? (
+          <div className="ds-panel">
+            <Loading label="가족 정보를 불러오는 중" />
+          </div>
+        ) : !childUserId ? (
           <div className="ds-panel">
             <div className="ds-panel__art">
               <img src={asset("mascot/diary.webp")} alt="" />
@@ -249,7 +254,7 @@ export function DaySummary() {
               type="button"
               className="ds-panel__cta hy-press"
               onClick={onGenerate}
-              disabled={generate.isPending}
+              disabled={generate.isPending} aria-busy={generate.isPending}
             >
               {generate.isPending ? "요약 만드는 중…" : "AI 하루 요약 만들기"}
             </button>

@@ -115,7 +115,7 @@ export function PermDenied() {
           type="button"
           className="pd-cta hy-press"
           onClick={requestAccess}
-          disabled={busy}
+          disabled={busy} aria-busy={busy}
         >
           {busy ? "확인 중…" : isNativePlatform() ? "설정 열기" : "권한 요청"}
         </button>

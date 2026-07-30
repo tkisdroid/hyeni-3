@@ -12,6 +12,7 @@ import {
   type ArrivalAlertTone,
 } from "@/transform/notificationsView";
 import type { ParentAlert } from "@/lib/api/endpoints/notifications";
+import { Loading } from "@/components/ui/Loading";
 import "./ArrivalAlerts.css";
 
 /**
@@ -82,7 +83,7 @@ export function ArrivalAlerts() {
       </header>
 
       <div className="aa-body">
-        {isLoading && <div className="aa-state">알림을 불러오는 중…</div>}
+        {isLoading && <div className="aa-state"><Loading label="알림을 불러오는 중" /></div>}
 
         {isError && !isLoading && (
           <div className="aa-state">

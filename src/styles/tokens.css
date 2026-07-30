@@ -12,7 +12,8 @@
   --rose-400: #F779A8;
   --rose-500: #F76BA6;
   --rose-600: #F0518F;
-  --rose-text: #B0477A;
+  /* rose-soft(#FDE7F1) 위에서 4.60:1 — 4.44:1 이던 값을 AA 통과선까지만 내렸다. */
+  --rose-text: #A94475;
 
   /* ── Brand · Mint (안전·성공·위치양호) ── */
   --mint-soft: #E7F8F0;
@@ -21,6 +22,8 @@
   --mint-500: #31C48D;
   --mint-600: #23A876;
   --mint-text: #087653;
+  /* 흰 라벨을 올리는 mint 채움(안전 확인 CTA) — 4.54:1. */
+  --mint-cta: #1C865E;
 
   /* ── Brand · Lavender (AI·프리미엄) ── */
   --lav-soft: #F1ECFF;
@@ -36,7 +39,8 @@
   --cream-soft: #FFF3D6;
   --gold-400: #FFD76A;
   --gold-600: #E08A1E;
-  --gold-text: #8A6A1E;
+  /* cream-soft(#FFF3D6)·bg-body 위 4.58:1. */
+  --gold-text: #82641C;
 
   /* ── Info · Blue (기기·네트워크) ── */
   --blue-soft: #E6F2FB;
@@ -48,6 +52,23 @@
   --danger-500: #E5484D;
   --danger-strong: #F04770;
   --danger-text: #B91C1C;
+  /* 흰 라벨을 올리는 danger 채움(삭제·탈퇴 확인) — 4.56:1. */
+  --danger-cta: #E12C32;
+
+  /* ── 일정 카테고리 신호색 ──
+     라벨(-text)은 반드시 자기 채움(-soft) 위에서 4.5:1 이상이어야 한다.
+     이전에는 화면·transform 두 곳이 중간 톤(#2E86C1·#F26B3F·#E08A1E·#31C48D)을
+     soft 위 글자색으로 하드코딩해 3.4~4.0:1 이었다. 정본은 여기 한 곳이다. */
+  --cat-school-text: #2E6DA4;
+  --cat-school-soft: #E6F2FB;
+  --cat-sports-text: #A94E28;
+  --cat-sports-soft: #FFEEE3;
+  --cat-hobby-text: #82641C;
+  --cat-hobby-soft: #FFF3D6;
+  --cat-friend-text: #087653;
+  --cat-friend-soft: #E7F8F0;
+  --cat-other-text: #6D4E9C;
+  --cat-other-soft: #F1ECFF;
 
   /* ── Neutrals · warm ── */
   --ink: #201A1D;
@@ -56,9 +77,11 @@
   --fg-secondary: #4A4145;
   --fg-body: #3A3236;
   --fg-tertiary: #6D6469;
-  /* 일반 보조 문구는 app/card 위 4.5:1 이상. faint/disabled는 장식·비활성 전용. */
-  --fg-muted: #7A6F74;
-  --fg-placeholder: #756A70;
+  /* 보조 문구는 card·app·page·body 네 표면 모두에서 4.5:1 이상.
+     이전 값(#7A6F74/#756A70)은 card·app 만 기준이라 page(4.41)·body(3.98)에서 미달했다.
+     faint/disabled는 장식·비활성 전용이라 대비 요건에서 제외한다. */
+  --fg-muted: #70666A;
+  --fg-placeholder: #70666B;
   --fg-faint: #A99FA4;
   --fg-disabled: #C9BFC4;
 
@@ -74,6 +97,10 @@
   --bg-body: #EFE7EE;
   --bg-card: #FFFFFF;
   --bg-press: #FBF3F6;
+  /* 미선택 칩 채움 — 선택 상태(--hy-accent-soft)와 구분되는 중립 톤.
+     라벨은 --fg-tertiary 를 쓴다(이 위에서 4.98:1). 이전에 화면마다 하드코딩하던
+     #F3EEF1 + #8B7E84 조합은 3.38:1 이라 미선택 칩이 비활성처럼 보였다. */
+  --bg-chip-idle: #F3EEF1;
 
   /* ── Typography ── */
   --font-sans: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont,
@@ -207,13 +234,29 @@
   --hy-accent-light: #FF9EC4;
   --hy-accent-deep: #F0518F;
   --hy-accent-soft: #FDE7F1;
-  --hy-accent-text: #B0477A;
+  --hy-accent-text: #A94475;
+  /* 흰 라벨을 올리는 채움 정본 — 라벨 크기와 무관하게 4.5:1 이상.
+     파스텔 --hy-accent 위의 흰 글자는 어떤 테마색에서도 AA 를 만족할 수 없다(1.4~2.8:1).
+     --hy-accent-deep(3.34:1)로도 부족하다: WCAG 큰 글씨 완화는 굵은 글씨라도
+     18.66px 이상이어야 적용되므로 18px/700 버튼에는 4.5:1 이 그대로 걸린다.
+     그래서 명도를 내리고 채도를 살짝 낮춘 '딥 로즈' 계열을 CTA 채움으로 따로 둔다.
+     장식·아바타·진행바·마커 같은 비텍스트 면은 계속 --hy-accent 를 쓴다. */
+  --hy-accent-cta: #D93072;
+
+  /* 흰 라벨 CTA 그라디언트 — 두 stop 모두 4.5:1 이상이어야 한다.
+     이전에는 밝은 stop(--hy-accent-light 2.0:1 · --lav-400 2.7:1 · --danger-strong 3.6:1)에서
+     저장·전송 버튼 글자가 사실상 읽히지 않았다. */
+  --cta-grad-accent: linear-gradient(120deg, var(--hy-accent-cta), var(--hy-accent-text));
+  --cta-grad-danger: linear-gradient(120deg, var(--danger-cta), var(--danger-text));
+  --cta-grad-lavender: linear-gradient(120deg, var(--lav-600), var(--lav-text));
 }
 
-/* 아이 테마색 스위칭 — 앱 루트에 data-accent 부여 */
-[data-accent="rose"]     { --hy-accent: #F76BA6; --hy-accent-light: #FF9EC4; --hy-accent-deep: #F0518F; --hy-accent-soft: #FDE7F1; --hy-accent-text: #B0477A; }
-[data-accent="peach"]    { --hy-accent: #FF9E7A; --hy-accent-light: #FFC7A6; --hy-accent-deep: #F26B3F; --hy-accent-soft: #FFEEE3; --hy-accent-text: #C25A2E; }
-[data-accent="lavender"] { --hy-accent: #A78BFA; --hy-accent-light: #C4B0FF; --hy-accent-deep: #7C5CE1; --hy-accent-soft: #EFE8FF; --hy-accent-text: #6D4E9C; }
-[data-accent="mint"]     { --hy-accent: #31C48D; --hy-accent-light: #6FE0B4; --hy-accent-deep: #1E9E6E; --hy-accent-soft: #E7F8F0; --hy-accent-text: #0C7A54; }
-[data-accent="sky"]      { --hy-accent: #4FB2E8; --hy-accent-light: #8FD4F5; --hy-accent-deep: #2E86C1; --hy-accent-soft: #E6F4FC; --hy-accent-text: #1F6FA5; }
-[data-accent="lemon"]    { --hy-accent: #F5C542; --hy-accent-light: #FFDE7A; --hy-accent-deep: #E0A11E; --hy-accent-soft: #FFF6DC; --hy-accent-text: #9A6D0E; }
+/* 아이 테마색 스위칭 — 앱 루트에 data-accent 부여.
+   --hy-accent-text 는 자기 --hy-accent-soft 와 card·app·page·body 표면 모두에서
+   4.5:1 이상이어야 한다(선택 칩·강조 문구가 전부 이 조합을 쓴다). */
+[data-accent="rose"]     { --hy-accent: #F76BA6; --hy-accent-light: #FF9EC4; --hy-accent-deep: #F0518F; --hy-accent-soft: #FDE7F1; --hy-accent-text: #A94475; --hy-accent-cta: #D93072; }
+[data-accent="peach"]    { --hy-accent: #FF9E7A; --hy-accent-light: #FFC7A6; --hy-accent-deep: #F26B3F; --hy-accent-soft: #FFEEE3; --hy-accent-text: #A94E28; --hy-accent-cta: #CC4C22; }
+[data-accent="lavender"] { --hy-accent: #A78BFA; --hy-accent-light: #C4B0FF; --hy-accent-deep: #7C5CE1; --hy-accent-soft: #EFE8FF; --hy-accent-text: #6D4E9C; --hy-accent-cta: #7E63D4; }
+[data-accent="mint"]     { --hy-accent: #31C48D; --hy-accent-light: #6FE0B4; --hy-accent-deep: #1E9E6E; --hy-accent-soft: #E7F8F0; --hy-accent-text: #0C7752; --hy-accent-cta: #268561; }
+[data-accent="sky"]      { --hy-accent: #4FB2E8; --hy-accent-light: #8FD4F5; --hy-accent-deep: #2E86C1; --hy-accent-soft: #E6F4FC; --hy-accent-text: #1F6EA3; --hy-accent-cta: #387CA9; }
+[data-accent="lemon"]    { --hy-accent: #F5C542; --hy-accent-light: #FFDE7A; --hy-accent-deep: #E0A11E; --hy-accent-soft: #FFF6DC; --hy-accent-text: #89610C; --hy-accent-cta: #957022; }

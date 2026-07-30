@@ -390,7 +390,7 @@ export function AiSchedule() {
           <div className="ais-voice">
             <button
               type="button"
-              className={listening ? "ais-mic ais-mic--on hy-press" : "ais-mic hy-press"}
+              className={listening ? "ais-mic ais-mic--on hy-press hy-busy-quiet" : "ais-mic hy-press hy-busy-quiet"}
               onClick={startVoice}
               disabled={parseM.isPending}
               aria-busy={parseM.isPending}

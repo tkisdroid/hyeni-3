@@ -2,6 +2,7 @@ import { useEffect, useId, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, KeyRound, LogOut, ShieldAlert, Trash2 } from "lucide-react";
 import { asset } from "@/lib/assets";
+import { formatPhoneDisplay } from "@/transform/phoneFormat";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
@@ -10,6 +11,7 @@ import { useAccount, useChangePassword, useDeleteAccount } from "@/queries/useAc
 import { useUpdateProfile } from "@/queries/useFamily";
 import { SocialLinks } from "./SocialLinks";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
+import { Loading } from "@/components/ui/Loading";
 import "./ParentAccount.css";
 
 /** P-30 계정·프로필 — 프로필 편집·로그인 정보·로그아웃·회원 탈퇴. */
@@ -62,7 +64,7 @@ export function ParentAccount() {
     if (seeded) return;
     if (me || account) {
       setName(me?.name ?? account?.myName ?? "");
-      setPhone(me?.phone ?? "");
+      setPhone(formatPhoneDisplay(me?.phone ?? ""));
       setSeeded(true);
     }
   }, [me, account, seeded]);
@@ -75,7 +77,12 @@ export function ParentAccount() {
   const avatarSrc =
     me?.gender === "dad" ? "family/dad.webp" : "family/mom.webp";
 
-  const dirty = seeded && (name.trim() !== (me?.name ?? account?.myName ?? "") || phone.trim() !== (me?.phone ?? ""));
+  // 전화번호는 표시 포맷("010-0000-0000")으로 통일해 비교한다 —
+  // 저장값이 하이픈 없이 들어와도 화면에 들어온 것만으로 '변경됨'이 되지 않게 한다.
+  const dirty = seeded && (
+    name.trim() !== (me?.name ?? account?.myName ?? "")
+    || phone.trim() !== formatPhoneDisplay(me?.phone ?? "")
+  );
   const accountReady = !isLoading && !accountIsError && account !== null;
 
   const saveProfile = () => {
@@ -187,7 +194,9 @@ export function ParentAccount() {
         </header>
         <div className="pa-content">
           <div className="pa-account-state" role={accountLoadError ? "alert" : "status"}>
-            <span>{accountLoadError ? "계정 정보를 불러오지 못했어요" : "계정 정보를 불러오는 중…"}</span>
+            {accountLoadError
+              ? <span>계정 정보를 불러오지 못했어요</span>
+              : <Loading label="계정 정보를 불러오는 중" />}
             {accountLoadError && (
               <button type="button" className="pa-save hy-press" onClick={() => void refetchAccount()}>
                 다시 시도
@@ -249,7 +258,7 @@ export function ParentAccount() {
               <input
                 className="pa-input"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => setPhone(formatPhoneDisplay(e.target.value))}
                 placeholder="010-0000-0000"
                 inputMode="tel"
                 disabled={isLoading}
@@ -260,7 +269,7 @@ export function ParentAccount() {
             type="button"
             className="pa-save hy-press"
             onClick={saveProfile}
-            disabled={!dirty || updateProfile.isPending}
+            disabled={!dirty || updateProfile.isPending} aria-busy={updateProfile.isPending}
           >
             {updateProfile.isPending ? "저장 중…" : "프로필 저장"}
           </button>
@@ -349,7 +358,7 @@ export function ParentAccount() {
                 type="button"
                 className="pa-modal__btn pa-modal__btn--ghost hy-press"
                 onClick={() => setConfirmDelete(false)}
-                disabled={deleteAccount.isPending}
+                disabled={deleteAccount.isPending} aria-busy={deleteAccount.isPending}
               >
                 취소
               </button>
@@ -357,7 +366,7 @@ export function ParentAccount() {
                 type="button"
                 className="pa-modal__btn pa-modal__btn--danger hy-press"
                 onClick={handleDelete}
-                disabled={deleteAccount.isPending}
+                disabled={deleteAccount.isPending} aria-busy={deleteAccount.isPending}
               >
                 {deleteAccount.isPending ? "삭제 중…" : "탈퇴하기"}
               </button>
@@ -427,7 +436,7 @@ export function ParentAccount() {
                 type="button"
                 className="pa-modal__btn pa-modal__btn--ghost hy-press"
                 onClick={() => closePassword()}
-                disabled={changePassword.isPending}
+                disabled={changePassword.isPending} aria-busy={changePassword.isPending}
               >
                 취소
               </button>
@@ -435,7 +444,7 @@ export function ParentAccount() {
                 type="button"
                 className="pa-modal__btn pa-modal__btn--primary hy-press"
                 onClick={handlePasswordChange}
-                disabled={changePassword.isPending}
+                disabled={changePassword.isPending} aria-busy={changePassword.isPending}
               >
                 {changePassword.isPending ? "변경 중…" : "변경하기"}
               </button>

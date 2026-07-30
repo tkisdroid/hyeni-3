@@ -6,6 +6,7 @@ import { useParentAlerts, useMarkAlertRead } from "@/queries/useNotifications";
 import { useSafeBack } from "@/app/useSafeBack";
 import { cleanAlertTitle, isDangerAlert, relativeTime } from "@/transform/notificationsView";
 import type { ParentAlert } from "@/lib/api/endpoints/notifications";
+import { Loading } from "@/components/ui/Loading";
 import "./DangerAlert.css";
 
 /**
@@ -64,7 +65,7 @@ export function DangerAlert() {
       </header>
 
       <div className="da-body">
-        {isLoading && <div className="da-state">알림을 불러오는 중…</div>}
+        {isLoading && <div className="da-state"><Loading label="알림을 불러오는 중" /></div>}
 
         {isError && !isLoading && (
           <div className="da-state">

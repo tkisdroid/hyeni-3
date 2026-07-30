@@ -39,9 +39,10 @@ const CATEGORY_LABELS: Record<string, string> = {
   other: "기타",
 };
 
-/** 주말 신호색: 일요일 레드, 토요일 파랑, 평일 본문색. */
+/** 주말 신호색: 일요일 레드, 토요일 파랑, 평일 본문색.
+ *  중간 톤(#E5484D·#2E86C1)은 흰 배경에서 3.9:1 이라 14px 날짜 숫자에 미달했다 → 문구용 토큰. */
 const weekendColor = (dow: number): string =>
-  dow === 0 ? "#E5484D" : dow === 6 ? "#2E86C1" : "#3A3236";
+  dow === 0 ? "var(--danger-text)" : dow === 6 ? "var(--blue-text)" : "var(--fg-body)";
 
 /** 해당 월의 셀 배열 = 앞 공백(null) + 1..말일. */
 const buildCells = (year: number, month: number): (number | null)[] => {
@@ -311,8 +312,10 @@ export function ParentCalendar() {
               const extra = dayViews.length - dots.length;
               const numStyle = isSel
                 ? {
+                    // 흰 숫자를 올리므로 두 stop 모두 4.5:1 을 넘는 채움을 쓴다
+                    // (accent-light stop 은 2.0:1 이라 선택한 날짜가 가장 안 읽혔다).
                     color: "#fff",
-                    background: "linear-gradient(135deg, var(--hy-accent-light), var(--hy-accent-deep))",
+                    background: "linear-gradient(135deg, var(--hy-accent-cta), var(--hy-accent-text))",
                     boxShadow: "0 6px 14px -4px rgba(240,81,143,.5)",
                   }
                 : isToday
@@ -398,7 +401,7 @@ export function ParentCalendar() {
                             type="button"
                             className="pc-swipe__action pc-swipe__action--delete hy-press"
                             onClick={() => deleteEventById(e.id)}
-                            disabled={deleteEvent.isPending}
+                            disabled={deleteEvent.isPending} aria-busy={deleteEvent.isPending}
                           >
                             {deleteEvent.isPending ? "삭제 중" : "삭제"}
                           </button>
@@ -545,7 +548,7 @@ export function ParentCalendar() {
                     type="button"
                     className="pc-btn pc-btn--ghost hy-press"
                     onClick={() => setConfirmDelete(false)}
-                    disabled={deleteEvent.isPending}
+                    disabled={deleteEvent.isPending} aria-busy={deleteEvent.isPending}
                   >
                     취소
                   </button>
@@ -553,7 +556,7 @@ export function ParentCalendar() {
                     type="button"
                     className="pc-btn pc-btn--danger hy-press"
                     onClick={handleDelete}
-                    disabled={deleteEvent.isPending}
+                    disabled={deleteEvent.isPending} aria-busy={deleteEvent.isPending}
                   >
                     {deleteEvent.isPending ? "삭제 중…" : "삭제"}
                   </button>

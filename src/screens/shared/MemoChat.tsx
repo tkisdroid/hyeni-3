@@ -37,6 +37,7 @@ import {
   useUnblockMemoUser,
 } from "@/queries/useContentSafety";
 import type { MemoContentReportReason } from "@/lib/api/endpoints/contentSafety";
+import { Loading } from "@/components/ui/Loading";
 import "./MemoChat.css";
 
 const MEMO_REPORT_REASONS: readonly ReportReasonOption<MemoContentReportReason>[] = [
@@ -457,7 +458,7 @@ export function MemoChat() {
                     key={id}
                     type="button"
                     className="mc-unblock hy-press"
-                    disabled={unblockMemoUser.isPending}
+                    disabled={unblockMemoUser.isPending} aria-busy={unblockMemoUser.isPending}
                     onClick={() => {
                       void unblockMemoUser.mutateAsync(id)
                         .then(() => show(isChildSession ? `${member?.name ?? "상대"} 메시지를 다시 볼 수 있어.` : `${member?.name ?? "상대"}님의 차단을 해제했어요.`, "🛡️"))
@@ -473,12 +474,12 @@ export function MemoChat() {
         )}
         {thread.isLoading && (
           <div className="mc-daysep">
-            <span>{copy.loading}</span>
+            <Loading label={copy.loading} size={6} />
           </div>
         )}
         {familyLoading && (
           <div className="mc-daysep">
-            <span>{copy.loading}</span>
+            <Loading label={copy.loading} size={6} />
           </div>
         )}
         {familyError && (
@@ -661,7 +662,7 @@ export function MemoChat() {
             className={`mc-send hy-press${sendMemo.isPending ? " mc-send--sending" : ""}`}
             aria-label={sendMemo.isPending ? "보내는 중" : "보내기"}
             onClick={handleSend}
-            disabled={sendMemo.isPending || !scopeChild}
+            disabled={sendMemo.isPending || !scopeChild} aria-busy={sendMemo.isPending}
           >
             <Send size={20} strokeWidth={2.2} />
           </button>
