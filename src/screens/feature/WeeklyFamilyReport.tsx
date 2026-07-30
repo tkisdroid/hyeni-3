@@ -228,8 +228,7 @@ export function WeeklyFamilyReport() {
                   </div>
                   {summary.hasEnoughData ? (
                     <div className="wr-emptyline">
-                      현재 앱에 저장된 일정, 준비물, 대화, 안전 알림만 사용했어요. 위치 이력 기반 주요
-                      머문 곳은 전용 집계가 연결되면 표시할 예정이에요.
+                      일정·준비물·대화·안전 알림만 집계해요. 머문 곳 집계는 준비 중이에요.
                     </div>
                   ) : (
                     <div className="wr-emptyline">

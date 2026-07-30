@@ -16,17 +16,19 @@ import "./ArrivalAlerts.css";
 
 /**
  * 도착 알림(P-22): parent-alerts 에서 도착·미도착/이탈 계열만 필터해 상세 표시.
- * 도착=민트, 미도착·이탈=앰버(신호색 고정). 탭 시 읽음 처리 후 위치 지도로 이동.
+ * 도착=민트, 출발=라벤더(정상 이동), 미도착·지연=앰버(신호색 고정). 탭 시 읽음 처리 후 위치 지도로 이동.
  * 부모 존댓말. 상세(일정명·장소·시간)는 서버 title/message 그대로 표기.
  */
 
 const TONE_ICON: Record<ArrivalAlertTone, string> = {
   arrived: "ui/pin-heart.webp",
+  left: "ui/pin.webp",
   pending: "ui/warning.webp",
 };
 
 const TONE_BADGE: Record<ArrivalAlertTone, string> = {
   arrived: "도착",
+  left: "출발",
   pending: "확인 필요",
 };
 
@@ -44,6 +46,14 @@ export function ArrivalAlerts() {
   const now = useMemo(() => new Date(), [list]);
   const arrivedCount = useMemo(
     () => list.filter((a) => arrivalAlertTone(a.alert_type) === "arrived").length,
+    [list],
+  );
+  const leftCount = useMemo(
+    () => list.filter((a) => arrivalAlertTone(a.alert_type) === "left").length,
+    [list],
+  );
+  const pendingCount = useMemo(
+    () => list.filter((a) => arrivalAlertTone(a.alert_type) === "pending").length,
     [list],
   );
 
@@ -94,8 +104,13 @@ export function ArrivalAlerts() {
         {!isLoading && !isError && list.length > 0 && (
           <>
             <div className="aa-summary">
-              오늘까지 도착 알림 <b>{arrivedCount}</b>건 · 확인 필요{" "}
-              <b>{list.length - arrivedCount}</b>건
+              오늘까지 도착 <b>{arrivedCount}</b>건 · 출발 <b>{leftCount}</b>건
+              {pendingCount > 0 ? (
+                <>
+                  {" · 확인 필요 "}
+                  <b>{pendingCount}</b>건
+                </>
+              ) : null}
             </div>
             <div className="aa-list">
               {list.map((a) => {

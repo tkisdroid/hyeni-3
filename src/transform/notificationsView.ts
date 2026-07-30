@@ -27,7 +27,8 @@ export interface AlertGroupView {
 }
 
 export type AlertCategory = "safety" | "location" | "schedule" | "talk";
-export type ArrivalAlertTone = "arrived" | "pending";
+/** 도착=민트, 출발=라벤더(정상 이동), 미도착·지연=앰버(확인 필요). */
+export type ArrivalAlertTone = "arrived" | "left" | "pending";
 
 // 서버가 실제 저장하는 canonical alert_type. 화면마다 별도 집합을 만들지 않는다.
 const DANGER_TYPES = new Set([
@@ -51,6 +52,8 @@ const ARRIVAL_PENDING_TYPES = new Set([
   "place_left",
   "unregistered_stay_left",
 ]);
+/** 출발 계열 — 도착·미도착과 함께 도착 알림 목록에 들어가지만 경고 톤은 아니다. */
+const DEPARTURE_TYPES = new Set(["place_left", "unregistered_stay_left"]);
 const WARN_TYPES = new Set([
   ...ARRIVAL_PENDING_TYPES,
   "academy_focus",
@@ -69,7 +72,10 @@ export function isArrivalAlertType(type: string): boolean {
 }
 
 export function arrivalAlertTone(type: string): ArrivalAlertTone {
-  return ARRIVAL_PENDING_TYPES.has(type || "") ? "pending" : "arrived";
+  const normalized = type || "";
+  // 출발은 정상 이동 소식이다. "확인 필요"(앰버)는 미도착·지연처럼 부모가 실제로 확인해야 하는 것만.
+  if (DEPARTURE_TYPES.has(normalized)) return "left";
+  return ARRIVAL_PENDING_TYPES.has(normalized) ? "pending" : "arrived";
 }
 
 /** 위험 화면 표시 판정. danger_exit은 과거 행의 severity가 높아도 긴급으로 되살리지 않는다. */

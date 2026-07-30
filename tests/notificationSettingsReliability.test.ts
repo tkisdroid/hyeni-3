@@ -307,7 +307,11 @@ test("서버가 지원하는 60분 알림을 1시간 전으로 표시한다", ()
 test("미등록 장소 출발은 일반 위치의 도착·출발 알림으로 상세 화면에 연결한다", () => {
   assert.equal(alertCategory("unregistered_stay_left"), "location");
   assert.equal(isArrivalAlertType("unregistered_stay_left"), true);
-  assert.equal(arrivalAlertTone("unregistered_stay_left"), "pending");
+  // 출발은 정상 이동 소식이라 경고(확인 필요)가 아니라 중립 톤이다(2026-07-30).
+  assert.equal(arrivalAlertTone("unregistered_stay_left"), "left");
+  assert.equal(arrivalAlertTone("place_left"), "left");
+  assert.equal(arrivalAlertTone("not_arrived"), "pending");
+  assert.equal(arrivalAlertTone("place_arrived"), "arrived");
   assert.equal(alertRoute("unregistered_stay_left"), "/arrival-alerts");
 });
 

@@ -150,6 +150,9 @@
 .aa-item__icon--arrived {
   background: #e7f8f0;
 }
+.aa-item__icon--left {
+  background: var(--lav-soft);
+}
 .aa-item__icon--pending {
   background: #fdf0da;
 }
@@ -197,6 +200,10 @@
 .aa-badge[data-tone="arrived"] {
   background: #e7f8f0;
   color: #1f7a56;
+}
+.aa-badge[data-tone="left"] {
+  background: var(--lav-soft);
+  color: var(--lav-text);
 }
 .aa-badge[data-tone="pending"] {
   background: #fdf0da;

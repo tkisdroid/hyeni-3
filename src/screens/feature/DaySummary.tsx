@@ -226,7 +226,14 @@ export function DaySummary() {
             </div>
           </div>
         ) : isLoading ? (
-          <div className="ds-loading">하루 요약을 불러오는 중이에요…</div>
+          <div className="ds-panel ds-panel--skel" role="status" aria-label="하루 요약을 불러오는 중">
+            <span className="hy-skel ds-skel__art" aria-hidden="true" />
+            <span className="hy-skel-lines ds-skel__lines" aria-hidden="true">
+              <span className="hy-skel hy-skel--line hy-skel--line-lg" />
+              <span className="hy-skel hy-skel--line" />
+              <span className="hy-skel hy-skel--line" />
+            </span>
+          </div>
         ) : (
           <div className="ds-panel">
             <div className="ds-panel__art">

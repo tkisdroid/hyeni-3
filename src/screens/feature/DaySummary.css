@@ -178,17 +178,6 @@
   padding: 0 4px;
 }
 
-/* ── 로딩 ──────────────────────────────────────────────────────────────────── */
-.ds-loading {
-  text-align: center;
-  padding: 56px 0;
-  font-size: var(--type-label);
-  line-height: var(--type-label-line-height);
-  font-weight: var(--type-label-weight);
-
-  color: var(--fg-muted);
-}
-
 /* ── 생성/프리미엄/빈 상태 패널 ────────────────────────────────────────────── */
 .ds-panel {
   text-align: center;
@@ -201,6 +190,25 @@
   align-items: center;
   gap: 8px;
   margin-top: 12px;
+}
+/* 로딩 스켈레톤 — 완성 패널과 같은 골격(원형 아트 + 3줄)으로 자리를 먼저 잡는다. */
+.ds-panel--skel {
+  gap: 16px;
+}
+.ds-skel__art {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+}
+.ds-skel__lines {
+  width: 100%;
+  align-items: center;
+}
+.ds-panel--skel .hy-skel--line {
+  width: 55%;
+}
+.ds-panel--skel .hy-skel--line-lg {
+  width: 78%;
 }
 .ds-panel__art {
   width: 96px;
