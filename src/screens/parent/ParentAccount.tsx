@@ -358,7 +358,8 @@ export function ParentAccount() {
                 type="button"
                 className="pa-modal__btn pa-modal__btn--ghost hy-press"
                 onClick={() => setConfirmDelete(false)}
-                disabled={deleteAccount.isPending} aria-busy={deleteAccount.isPending}
+                disabled={deleteAccount.isPending}
+                data-progress-owner="confirm-action"
               >
                 취소
               </button>
@@ -436,7 +437,8 @@ export function ParentAccount() {
                 type="button"
                 className="pa-modal__btn pa-modal__btn--ghost hy-press"
                 onClick={() => closePassword()}
-                disabled={changePassword.isPending} aria-busy={changePassword.isPending}
+                disabled={changePassword.isPending}
+                data-progress-owner="confirm-action"
               >
                 취소
               </button>

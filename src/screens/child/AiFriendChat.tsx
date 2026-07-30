@@ -15,6 +15,7 @@ import { todayDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { isApiError } from "@/lib/api/errors";
 import { resolveAiFriendDisplayName } from "@/transform/aiFriendName";
+import { hasJongseong } from "@/transform/adventureMap";
 import { useToast } from "@/app/toast";
 import { useSafeBack } from "@/app/useSafeBack";
 import { MessageSafetyDialog, type ReportReasonOption } from "@/components/MessageSafetyDialog";
@@ -46,14 +47,14 @@ function friendlyError(err: unknown): string {
     case "daily_limit_reached":
       return "오늘 이야기는 다 했어! 내일 또 만나자 💜";
     case "feature_disabled":
-      return "나 지금 잠깐 쉬는 중이야. 부모님께 켜달라고 부탁해줘 🙏";
+      return "나 지금 잠깐 쉬는 중이야. 부모님께 켜 달라고 부탁해 줘 🙏";
     case "not_child":
     case "no_family":
       return "지금은 이야기할 수 없어. 부모님께 알려줘!";
     case "message_too_long":
-      return "조금만 짧게 다시 말해줄래? 😊";
+      return "조금만 짧게 다시 말해 줄래? 😊";
     default:
-      return "잠깐 연결이 안 됐어. 다시 말해줄래? 💜";
+      return "잠깐 연결이 안 됐어. 다시 말해 줄래? 💜";
   }
 }
 
@@ -114,7 +115,7 @@ export function AiFriendChat() {
   const greeting: ChatBubble = useMemo(() => {
     let text = persona.greeting;
     if (pendingSupply) {
-      text = `${persona.greeting.split("!")[0]}! 오늘 「${pendingSupply.label}」 아직 안 챙겼지? 같이 확인해볼까? 😊`;
+      text = `${persona.greeting.split("!")[0]}! 오늘 「${pendingSupply.label}」 아직 안 챙겼지? 같이 확인해 볼까? 😊`;
     } else if (nextEvent) {
       text = `${persona.greeting.split("!")[0]}! 오늘 ${nextEvent.time ? `${nextEvent.time} ` : ""}${nextEvent.title} 있네! 준비는 다 됐어?`;
     }
@@ -146,6 +147,7 @@ export function AiFriendChat() {
   const [messages, setMessages] = useState<ChatBubble[]>([]);
   const [seeded, setSeeded] = useState(false);
   const [input, setInput] = useState("");
+  const [pendingSendSource, setPendingSendSource] = useState<string | null>(null);
   const [reportTarget, setReportTarget] = useState<ChatBubble | null>(null);
   // 신고는 AI 답변을 길게 눌러 연다(버블마다 버튼을 띄우지 않기 위해).
   // 신고 대상이 아닌 말풍선(내 메시지·로컬 인사)에는 핸들러를 붙이지 않는다.
@@ -182,7 +184,7 @@ export function AiFriendChat() {
   }, [shown.length, sendChat.isPending]);
 
   // 전송 = 사용자 액션(버튼·칩·Enter)에서만. 자동 실행 금지. 크레딧 소모 주의.
-  const send = (raw: string) => {
+  const send = (raw: string, source: string) => {
     const text = raw.trim();
     if (!text || sendChat.isPending) return;
     // 사용자가 대화를 시작하면 로컬 상태가 정본 — 뒤늦게 도착한 서버 기록이 덮어쓰지 않게 시드 잠금.
@@ -192,30 +194,40 @@ export function AiFriendChat() {
       ...(prev.length > 0 ? prev : [greeting]),
       { id: `${base}-me`, role: "me", text },
     ]);
+    setPendingSendSource(source);
     sendChat.mutate(
       { message: text, characterEmoji: character },
       {
         onSuccess: (res) => {
           if (typeof res.remaining === "number") setRemaining(res.remaining);
+          const reply = String(res.reply ?? "").trim();
           setMessages((prev) => [
             ...prev,
-            {
-              id: res.assistantMessageId || `${base}-ai`,
-              role: "ai",
-              text: res.reply || "그렇구나! 더 얘기해줄래? 😊",
-              reportable: !!res.assistantMessageId,
-            },
+            reply
+              ? {
+                  id: res.assistantMessageId || `${base}-ai`,
+                  role: "ai",
+                  text: reply,
+                  reportable: !!res.assistantMessageId,
+                }
+              // 서버가 빈 답을 주면 대답한 척하지 않는다(가짜 응답 금지 — 아이는 반말 안내).
+              : {
+                  id: `${base}-ai`,
+                  role: "ai",
+                  text: "지금은 대답을 못 받았어. 잠시 뒤에 다시 말 걸어줘!",
+                },
           ]);
         },
         onError: (err) => {
           setMessages((prev) => [...prev, { id: `${base}-ai`, role: "ai", text: friendlyError(err) }]);
         },
+        onSettled: () => setPendingSendSource((current) => (current === source ? null : current)),
       },
     );
   };
 
   const handleSend = () => {
-    send(input);
+    send(input, "composer");
     setInput("");
   };
 
@@ -228,7 +240,7 @@ export function AiFriendChat() {
           aria-label="뒤로"
           onClick={goBack}
         >
-          <ChevronLeft size={22} strokeWidth={2.2} color="#6D4E9C" />
+          <ChevronLeft size={22} strokeWidth={2.2} color="var(--hy-accent-text)" />
         </button>
         <div className="afc-avatar">
           <img src={animalSrc} alt="" />
@@ -236,7 +248,7 @@ export function AiFriendChat() {
         </div>
         <div className="afc-head-main">
           <div className="afc-head-name">{friendName}</div>
-          <div className="afc-head-status">● 이야기할 준비 됐어!</div>
+          <div className="afc-head-status">● 이야기할 준비됐어!</div>
         </div>
         {shownRemaining != null && (
           <span className="afc-credits">
@@ -250,7 +262,7 @@ export function AiFriendChat() {
           aria-label="AI 친구 바꾸기"
           onClick={() => navigate("/child/ai-friend-setup")}
         >
-          <Settings size={20} strokeWidth={2.2} color="var(--lav-text)" />
+          <Settings size={20} strokeWidth={2.2} color="var(--hy-accent-text)" />
         </button>
       </header>
 
@@ -307,7 +319,7 @@ export function AiFriendChat() {
             <div className="afc-mini">
               <img src={animalSrc} alt="" />
             </div>
-            <div className="afc-bubble afc-bubble--ai afc-typing" aria-label={`${friendName}가 생각하는 중`}>
+            <div className="afc-bubble afc-bubble--ai afc-typing" aria-label={`${friendName}${hasJongseong(friendName) ? "이" : "가"} 생각하는 중`}>
               <span />
               <span />
               <span />
@@ -323,8 +335,9 @@ export function AiFriendChat() {
               key={q}
               type="button"
               className="afc-chip hy-press"
-              onClick={() => send(q)}
-              disabled={sendChat.isPending} aria-busy={sendChat.isPending}
+              onClick={() => send(q, `suggestion:${q}`)}
+              disabled={sendChat.isPending}
+              aria-busy={sendChat.isPending && pendingSendSource === `suggestion:${q}`}
             >
               {q}
             </button>
@@ -335,7 +348,7 @@ export function AiFriendChat() {
             className="afc-field"
             value={input}
             aria-label={`${friendName}에게 메시지`}
-            placeholder={`${friendName}에게 말해봐...`}
+            placeholder={`${friendName}에게 말해 봐…`}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.nativeEvent.isComposing) {
@@ -348,7 +361,8 @@ export function AiFriendChat() {
             type="button"
             className="afc-send hy-press"
             onClick={handleSend}
-            disabled={sendChat.isPending || !input.trim()} aria-busy={sendChat.isPending}
+            disabled={sendChat.isPending || !input.trim()}
+            aria-busy={sendChat.isPending && pendingSendSource === "composer"}
           >
             보내기
           </button>
@@ -365,7 +379,7 @@ export function AiFriendChat() {
         onReport={async (reason, detail) => {
           if (!reportTarget?.id) throw new Error("report_target_missing");
           await reportAiMessage.mutateAsync({ messageId: reportTarget.id, reason, detail });
-          show("알려줘서 고마워. 이 답변은 다시 확인할게.", "🛡️");
+          show("알려 줘서 고마워. 이 답변은 다시 확인할게.", "🛡️");
         }}
       />
     </div>

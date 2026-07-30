@@ -14,7 +14,7 @@ import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import { ApiError } from "@/lib/api/errors";
 import "./PlaceForm.css";
 
-/** 장소 종류 — 선택 시 신호색으로 채워진다(집=민트/학원=라벤더/자주=파랑). 위험 구역은 저장장소 API에 카테고리가 없어 별도 화면(위험구역 추가)에서 등록한다. */
+/** 장소 종류 — 선택 시 신호색으로 채워진다(집=민트/학원=라벤더/자주=파랑). 위험구역은 저장장소 API에 카테고리가 없어 별도 화면(위험구역 추가)에서 등록한다. */
 // 선택 칩은 신호색 soft 채움 + 같은 계열 진한 라벨 + 테두리로 알린다.
 // 이전에는 채도 높은 채움(#31C48D 등)에 흰 글자라 2.2~2.7:1 로 읽히지 않았다.
 const PLACE_TYPES = [
@@ -385,9 +385,9 @@ export function PlaceForm() {
               );
             })}
           </div>
-          {/* 위험 구역은 저장장소가 아니라 지오펜스라 별도 경로에서 등록(오인 방지). */}
+          {/* 위험구역은 저장장소가 아니라 지오펜스라 별도 경로에서 등록(오인 방지). */}
           <div className="pf-label" style={{ marginTop: 12, marginBottom: 0 }}>
-            위험 구역은 지도의 위험구역 추가에서 등록해요.
+            위험구역은 지도의 위험구역 추가에서 등록해요.
           </div>
         </div>
 

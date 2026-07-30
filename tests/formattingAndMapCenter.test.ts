@@ -64,3 +64,21 @@ test("장소·위험구역 등록 지도는 공용 중심 폴백을 쓴다", () 
     assert.match(source, /center=\{mapCenter\}/, `${path} 지도에 폴백 미전달`);
   }
 });
+
+test("AI 친구는 빈 응답을 대답한 척하지 않는다", () => {
+  const chat = read("src/screens/child/AiFriendChat.tsx");
+  assert.doesNotMatch(chat, /res\.reply \|\|/);
+  assert.match(chat, /const reply = String\(res\.reply \?\? ""\)\.trim\(\);/);
+  assert.match(chat, /지금은 대답을 못 받았어/);
+  // 정직 안내 메시지는 신고 대상(서버 저장 id)이 아니다.
+  const fallbackBlock = chat.slice(chat.indexOf("지금은 대답을 못 받았어") - 200, chat.indexOf("지금은 대답을 못 받았어") + 80);
+  assert.doesNotMatch(fallbackBlock, /reportable: true/);
+});
+
+test("주변 소리 기록의 0초 세션은 '청취 없이 종료'로 정확히 표기한다", () => {
+  const audit = read("src/screens/feature/RemoteAudioAudit.tsx");
+  assert.match(audit, /청취 없이 종료/);
+  assert.match(audit, /\$\{durationSec\}초 청취/);
+  // 라벨 자체에 "N초 후 종료" 표기가 남아 있지 않은지(주석 인용은 허용).
+  assert.doesNotMatch(audit, /label: `\$\{durationSec\}초 후 종료`/);
+});

@@ -173,7 +173,7 @@ export function ProfileEdit() {
       return;
     }
     if (!name.trim()) {
-      show("이름을 입력해주세요", "✏️");
+      show("이름을 입력해 주세요", "✏️");
       return;
     }
     if (!isPrimary) {
@@ -184,7 +184,7 @@ export function ProfileEdit() {
     // 생일은 AI 친구의 연령대 맞춤 답변 기준이라 부모 화면에서는 비워서 저장하지 않는다.
     const birthdateToSave = normalizeRequiredChildBirthdate(birthday);
     if (!birthdateToSave) {
-      show(birthday.trim() ? "생일을 올바르게 입력해주세요" : "생일을 입력해주세요", "🎂");
+      show(birthday.trim() ? "생일을 올바르게 입력해 주세요" : "생일을 입력해 주세요", "🎂");
       return;
     }
 
@@ -194,7 +194,7 @@ export function ProfileEdit() {
       try {
         phoneToSave = normalizePhoneForStorage(phone);
       } catch (e) {
-        show(e instanceof Error ? e.message : "전화번호를 확인해주세요", "📱");
+        show(e instanceof Error ? e.message : "전화번호를 확인해 주세요", "📱");
         return;
       }
     }

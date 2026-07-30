@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, ChevronLeft } from "lucide-react";
+import { Check, ChevronLeft, Heart } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
@@ -10,6 +10,9 @@ import "./Feedback.css";
 
 /** 별점(하트) — 1~5. */
 const STARS = [1, 2, 3, 4, 5] as const;
+/** 만족도 척도 라벨(1~5). 하트만 있으면 무엇을 고르는지 알 수 없다. */
+const FORMAL_RATING_LABELS = ["별로예요", "아쉬워요", "보통이에요", "좋아요", "아주 좋아요"] as const;
+const CHILD_RATING_LABELS = ["별로야", "아쉬워", "보통이야", "좋아", "아주 좋아"] as const;
 
 /** 피드백 카테고리(단일 선택 토글). */
 const CATEGORIES = [
@@ -34,7 +37,9 @@ const IDEAS = [
 export function Feedback() {
   const navigate = useNavigate();
   const { show } = useToast();
-  const { familyId } = useAuth();
+  const { familyId, role } = useAuth();
+  const childTone = role === "child";
+  const ratingLabels = childTone ? CHILD_RATING_LABELS : FORMAL_RATING_LABELS;
   const sendFeedback = useSendFeedback();
   const [requestId] = useState(createFeedbackRequestId);
 
@@ -46,19 +51,24 @@ export function Feedback() {
   const toggleIdea = (id: string) => {
     const turningOn = !selectedIdeas[id];
     setSelectedIdeas((current) => ({ ...current, [id]: !current[id] }));
-    show(turningOn ? "선택한 기능을 의견에 함께 담았어요" : "관심 기능 선택을 취소했어요", "💡");
+    show(
+      turningOn
+        ? childTone ? "선택한 기능을 의견에 함께 담았어" : "선택한 기능을 의견에 함께 담았어요"
+        : childTone ? "관심 기능 선택을 취소했어" : "관심 기능 선택을 취소했어요",
+      "💡",
+    );
   };
 
   // 실 전송(POST /api/feedback). 별점·카테고리는 content 에 함께 실어 보낸다.
   const submit = () => {
     if (sendFeedback.isPending) return;
     if (rating === 0) {
-      show("별점을 먼저 선택해 주세요", "⭐");
+      show(childTone ? "만족도를 먼저 골라 줘" : "만족도를 먼저 선택해 주세요", "⭐");
       return;
     }
     const trimmed = text.trim();
     if (!trimmed) {
-      show("의견 내용을 적어주세요", "✍️");
+      show(childTone ? "의견을 적어 줘" : "의견 내용을 적어 주세요", "✍️");
       return;
     }
     const catLabel = cat ? CATEGORY_LABEL[cat] : null;
@@ -82,8 +92,10 @@ export function Feedback() {
         onSuccess: (result) => {
           show(
             result.status === "sent"
-              ? "소중한 의견을 전달했어요. 고마워요!"
-              : "의견을 안전하게 접수했어요. 운영 대기열에 보관했어요.",
+              ? childTone ? "소중한 의견을 전달했어. 고마워!" : "소중한 의견을 전달했어요. 고마워요!"
+              : childTone
+                ? "의견을 안전하게 접수했어. 운영 대기열에 보관했어."
+                : "의견을 안전하게 접수했어요. 운영 대기열에 보관했어요.",
             "💌",
           );
           navigate(-1);
@@ -91,8 +103,12 @@ export function Feedback() {
         onError: (error) => {
           show(
             error.message === "feedback_rate_limited"
-              ? "짧은 시간에 의견을 많이 보내셨어요. 한 시간 뒤 다시 시도해 주세요."
-              : "접수하지 못했어요. 잠시 후 다시 시도해 주세요.",
+              ? childTone
+                ? "짧은 시간에 의견을 많이 보냈어. 한 시간 뒤 다시 해 줘."
+                : "짧은 시간에 의견을 많이 보내셨어요. 한 시간 뒤 다시 시도해 주세요."
+              : childTone
+                ? "접수하지 못했어. 잠시 후 다시 해 줘."
+                : "접수하지 못했어요. 잠시 후 다시 시도해 주세요.",
             "⚠️",
           );
         },
@@ -121,34 +137,49 @@ export function Feedback() {
           <img className="fb-intro__mascot" src={asset("mascot/wave.webp")} alt="" />
           <div>
             <div className="fb-intro__title">혜니를 더 좋게</div>
-            <div className="fb-intro__sub">여러분의 의견이 다음 업데이트를 만들어요</div>
+            <div className="fb-intro__sub">
+              {childTone ? "네 의견이 다음 업데이트를 만들어" : "여러분의 의견이 다음 업데이트를 만들어요"}
+            </div>
           </div>
         </div>
 
-        {/* 만족도 별점 */}
+        {/* 만족도 */}
         <div className="fb-satis">
-          <div className="fb-satis__title">얼마나 만족하세요?</div>
+          <div className="fb-satis__title">{childTone ? "얼마나 마음에 들어?" : "얼마나 만족하세요?"}</div>
           <div className="fb-stars">
-            {STARS.map((n) => (
-              <button
-                key={n}
-                type="button"
-                className="fb-star hy-press"
-                aria-label={`별점 ${n}점`}
-                aria-pressed={rating === n}
-                onClick={() => setRating(n)}
-              >
-                <svg width="40" height="40" viewBox="0 0 24 24" style={{ opacity: rating >= n ? 1 : 0.22 }}>
-                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                </svg>
-              </button>
-            ))}
+            {STARS.map((n) => {
+              const on = rating >= n;
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  className="fb-star hy-press"
+                  aria-label={`${n}점 · ${ratingLabels[n - 1]}`}
+                  aria-pressed={rating === n}
+                  onClick={() => setRating(n)}
+                >
+                  <Heart
+                    size={30}
+                    strokeWidth={2.2}
+                    color={on ? "var(--hy-accent-cta)" : "var(--line-strong)"}
+                    fill={on ? "var(--hy-accent-cta)" : "none"}
+                    aria-hidden="true"
+                  />
+                </button>
+              );
+            })}
+          </div>
+          {/* 척도를 말로 알려준다 — 하트만 있으면 무엇을 고르는지 첫 사용자가 모른다. */}
+          <div className="fb-satis__scale" aria-hidden="true">
+            <span>{ratingLabels[0]}</span>
+            <span className="fb-satis__picked">{rating > 0 ? ratingLabels[rating - 1] : ""}</span>
+            <span>{ratingLabels[ratingLabels.length - 1]}</span>
           </div>
         </div>
 
         {/* 카테고리 */}
         <div className="fb-cats">
-          <div className="fb-cats__label">무엇에 대한 의견인가요?</div>
+          <div className="fb-cats__label">{childTone ? "어떤 기능에 대한 의견이야?" : "무엇에 대한 의견인가요?"}</div>
           <div className="fb-cats__row">
             {CATEGORIES.map((c) => {
               const on = cat === c.id;
@@ -162,6 +193,7 @@ export function Feedback() {
                     color: on ? "var(--hy-accent-text)" : "var(--fg-tertiary)",
                     boxShadow: on ? "inset 0 0 0 1.5px var(--hy-accent)" : "none",
                   }}
+                  aria-pressed={on}
                   onClick={() => setCat((prev) => (prev === c.id ? null : c.id))}
                 >
                   {c.label}
@@ -176,7 +208,9 @@ export function Feedback() {
           <textarea
             className="fb-textarea"
             aria-label="피드백 내용"
-            placeholder="자유롭게 알려주세요. 필요한 기능도 제안해 주세요!"
+            placeholder={childTone
+              ? "자유롭게 알려 줘. 필요한 기능도 말해 줘!"
+              : "자유롭게 알려 주세요. 필요한 기능도 제안해 주세요!"}
             value={text}
             maxLength={3000}
             onChange={(e) => setText(e.target.value)}
@@ -189,7 +223,11 @@ export function Feedback() {
             <span className="fb-ideas__title">관심 있는 기능</span>
             <span className="fb-ideas__sort">선택 사항</span>
           </div>
-          <div className="fb-ideas__sort">관심 있는 기능을 선택하면 의견에 함께 적어 보내요</div>
+          <div className="fb-ideas__sort">
+            {childTone
+              ? "관심 있는 기능을 고르면 의견에 함께 적어 보내"
+              : "관심 있는 기능을 선택하면 의견에 함께 적어 보내요"}
+          </div>
           <div className="fb-ideas__card">
             {IDEAS.map((i) => {
               const on = !!selectedIdeas[i.id];
@@ -219,7 +257,7 @@ export function Feedback() {
                     onClick={() => toggleIdea(i.id)}
                   >
                     {on && <Check size={16} strokeWidth={2.4} aria-hidden="true" />}
-                    {on ? "선택됨" : "관심 있어요"}
+                    {on ? (childTone ? "골랐어" : "선택됨") : (childTone ? "관심 있어" : "관심 있어요")}
                   </button>
                 </div>
               );
