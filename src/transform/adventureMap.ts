@@ -107,6 +107,16 @@ function bubbleFor(next: AdventureEventInput | null, nowMinutes: number): string
 }
 
 /**
+ * 노드 라벨(pill)은 최대 두 줄까지 접히고, 그보다 긴 제목만 줄인다.
+ * 예전에는 한 줄 고정이라 긴 제목이 **시간을 먹어치웠다**("가족 저녁 오후 8:…").
+ */
+function clampNodeTitle(title: string, max = 8): string {
+  const text = String(title ?? "").trim();
+  if (text.length <= max) return text;
+  return `${text.slice(0, max).trimEnd()}…`;
+}
+
+/**
  * 오늘 일정(시간순) → 지도 모델.
  * @param events 오늘 일정. 시간순 정렬 전제(groupEventsByDateKey 가 정렬해 준다).
  * @param nowMinutes 지금 시각(자정 기준 분).
@@ -121,11 +131,12 @@ export function buildAdventureMap(
     const state: AdventureNodeState = e.isPast ? "done" : e.id === next?.id ? "next" : "todo";
     const slot = ADVENTURE_SLOTS[i] ?? ADVENTURE_SLOTS[ADVENTURE_SLOTS.length - 1];
     const time = compactTime(e.startMinutes);
+    const shortTitle = clampNodeTitle(e.title);
     return {
       id: e.id,
       icon: e.icon,
       title: e.title,
-      pill: state === "done" ? `${e.title} ✓` : time ? `${e.title} ${time}` : e.title,
+      pill: state === "done" ? `${shortTitle} ✓` : time ? `${shortTitle} ${time}` : shortTitle,
       state,
       leftPct: slot.leftPct,
       top: slot.top,

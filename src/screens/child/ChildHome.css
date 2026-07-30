@@ -322,7 +322,7 @@
   animation: kd-ring 1.8s ease-out infinite;
 }
 .kd-node__pill {
-  max-width: 108px;
+  max-width: 120px;
   padding: 4px 8px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.92);
@@ -331,9 +331,14 @@
   font-weight: var(--type-caption-weight);
 
   color: var(--fg-tertiary);
-  white-space: nowrap;
+  /* 한 줄 고정이면 긴 제목이 시간을 밀어냈다 → 어절 단위로 최대 두 줄까지 접는다. */
+  white-space: normal;
+  word-break: keep-all;
+  text-align: center;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 .kd-node--done .kd-node__pill {
   color: var(--kd-done-text);

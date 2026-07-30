@@ -7,8 +7,7 @@ import { fileURLToPath } from "node:url";
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (path) => readFileSync(resolve(rootDir, path), "utf8");
 
-test("공용 스켈레톤은 장식 전용이고 reduced motion에서 멈춘다", () => {
-  const css = read("src/styles/components.css");
+test("공용 스켈레톤은 장식 전용이고 reduced motion에서 멈춘다", () => {  const css = read("src/styles/components.css");
   assert.match(css, /\.hy-skel\s*\{[^}]*background: var\(--bg-page\)/s);
   assert.match(css, /\.hy-skel::after\s*\{[^}]*animation: km-shimmer/s);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.hy-skel::after\s*\{\s*animation: none/s);

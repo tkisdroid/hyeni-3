@@ -135,6 +135,12 @@ test("일정 4개 이하면 전부 배치하고 상태를 나눈다", () => {
   assert.deepEqual(map.nodes.map((n) => n.state), ["done", "done", "next", "todo"]);
   assert.equal(map.nodes[0].pill, "학교 ✓");
   assert.equal(map.nodes[2].pill, "태권도 오후 4:00");
+  // 긴 제목은 pill 두 줄 안에서 시간을 밀어내지 않도록 8자까지만 쓴다(2026-07-30 실기기 제보).
+  assert.equal(map.nodes[3].pill, "가족 저녁 오후 7:00");
+  assert.equal(
+    buildAdventureMap([ev("e", "방과후 코딩교실 심화반", "18:00", false)], 9 * 60).nodes[0].pill,
+    "방과후 코딩교실… 오후 6:00",
+  );
   assert.equal(map.next?.id, "c");
   assert.equal(map.nodes[0].leftPct, ADVENTURE_SLOTS[0].leftPct);
   assert.equal(map.nodes[3].top, ADVENTURE_SLOTS[3].top);
