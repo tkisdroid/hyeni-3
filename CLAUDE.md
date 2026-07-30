@@ -582,7 +582,28 @@
   늦을 수 있다(도즈) — 없다고 단정 전에 재확인. force-ring 은 15초 + 확인 시트 2단계("지금 울리기" 버튼이 2개가 됨).
   정리: 이벤트 DELETE API + force_ring_events/memo_replies 는 D1 직접 삭제, 기기 알림은 남는다(무해).
 
+- ★미등록 체류 출발 중복 근절(2026-07-30): `child_stay_presence.grid_key` 가 소수 4자리(≈11m)라 한 체류가 grid
+  2~4개로 갈려 각각 출발 알림을 발사했다(실사고 4중복, D1 확인 37.2146/37.2147,127.1007).
+  `lib/unregisteredStayPresenceDedupe.ts` 의 거친 지역키(소수 3자리 ≈110m)+10분 쿨다운으로 `cron/_deliver.ts`
+  합류점에서 걸러내고 metadata `{stayAreaKey,stayKind}` 를 남긴다. 구버전 행은 제목으로 역산 → 서버 배포만으로 멎는다.
+  cron 은 같은 패스의 같은 지역 출발을 1회만 발사한다. 회귀=`worker/tests/unregisteredStayPresenceDedupe.test.mjs`.
+- ★알림 표시 문구(2026-07-30): 서버 카피의 선행 이모지는 `cleanAlertTitle` 로 표시 단계에서 제거한다(3D 아이콘과 중복).
+  위치 끊김 본문은 2문장 이내로 줄이고 절전 추측 대신 "마지막 확인"/"새로고침하면 지금 위치를 확인해요"만 남긴다.
+- ★네이티브 채움점 생성 중단(2026-07-30): `interpolateLinearPath` 를 삭제하고 `is_estimated` 를 더 쓰지 않는다.
+  소비자가 없는데 업로드·D1 행만 3배로 불렸다. 과거 행 때문에 클라 필터(`isInterpolatedFillPoint`)는 유지한다.
+  회귀=`tests/nativeLocationTrailRows.test.mjs`.
+
 ### J. 실기기 검증 치트시트 (함정 포함)
+- ★**CDP 스크린샷은 디자인 판정용이 아니다(2026-07-30)**: WebView 가 `backdrop-filter`·`filter` 레이어를
+  합성하지 못해 히어로 카드가 흐릿하게/겹쳐 보이는 캡처 아티팩트가 난다. 실제 화면 판정은
+  `adb -s <serial> exec-out screencap -p` 프레임버퍼로 하고 CDP 는 DOM·상태·클릭에만 쓴다(리뷰는 width 420 축소본).
+- ★**모의 API 브라우저 스윕(2026-07-30)**: ms-playwright chromium + `Fetch.enable` 로 외부 요청을 전부 mock 으로
+  닫으면 실계정·실서버 무영향으로 부모/아이 전 화면의 모든 버튼을 눌러볼 수 있다. `window.kakao.maps` 계측 스텁 주입,
+  서버 계약과 정확히 같은 fixture(`events_children`, `notif-settings.quiet_hours`), 외부 링크 이탈 후 절대 URL 복구,
+  5173 포트 충돌 회피가 함정이다.
+- ★**Worker 배포 자격(2026-07-30)**: `hyeni-3/.env` 토큰은 D1 전용이라 배포가 `Authentication error 10000` 이다.
+  `hyeni-1/.env.local` 의 `CLOUDFLARE_API_TOKEN` + `hyeni-3/.env` 의 `CLOUDFLARE_ACCOUNT_ID` 를 따옴표를 벗겨
+  프로세스 env 로 주입해 배포한다.
 - **현재 기기 역할(2026-07-19 최신 사용자 지시)**: A17(RFKL40DP73J)만 실기기 검증기다.
   현재 부모모드 세션을 유지한 채 `adb install -r`로 세션을 보존한다. 아이 역할 전용 동작은 A17 계측 테스트와
   브라우저 역할 검증으로 확인하고 실제 계정의 로그아웃·역할 전환·재페어링은 하지 않는다. razr는 연결 해제·

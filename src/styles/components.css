@@ -464,6 +464,50 @@
   }
 }
 
+/* ── 공용 스켈레톤(목록·카드 로딩) ─────────────────────────────────────────
+   점 3개 로더보다 실제 레이아웃을 미리 보여줘 체감 지연을 줄인다.
+   장식 전용이므로 aria-hidden 으로 넘기고, 상태 안내는 부모 요소의 role=status 가 맡는다. */
+.hy-skel {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-page);
+  border-radius: var(--radius-8);
+}
+.hy-skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.7) 50%, transparent 70%);
+  transform: translateX(-100%);
+  animation: km-shimmer 1.4s ease-in-out infinite;
+}
+.hy-skel--avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-12);
+  flex: none;
+}
+.hy-skel-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.hy-skel--line {
+  height: 12px;
+  width: 60%;
+}
+.hy-skel--line-lg {
+  height: 16px;
+  width: 85%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hy-skel::after {
+    animation: none;
+  }
+}
+
 /* ── 렌더 크래시 복구 화면(ErrorBoundary/RouteErrorScreen) — 흰 화면 금지 ── */
 .hy-crash {
   min-height: 100dvh;

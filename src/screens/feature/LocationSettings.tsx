@@ -412,18 +412,15 @@ export function LocationSettings() {
           <ChevronRight size={18} strokeWidth={2.2} color="var(--fg-tertiary)" />
         </button>
 
-        {/* 정직 안내 */}
+        {/* 정직 안내 — 설명은 짧게 두 줄까지만(사실은 유지, 문장만 줄임). */}
         <p className="lset-note hy-explain">
           <span className="hy-explain__lines">
             {nativeSupported ? (
-              <span className="hy-explain__line">저장한 주기·백그라운드 설정은 아이 안드로이드 앱이 주기적으로 확인해 반영해요.</span>
+              <span className="hy-explain__line">저장한 설정은 아이 앱이 주기적으로 확인해 반영해요.</span>
             ) : (
-              <>
-                <span className="hy-explain__line">위치 전송은 아이 안드로이드 앱에서 동작해요.</span>
-                <span className="hy-explain__line">저장한 설정은 아이 앱이 주기적으로 확인해 반영해요.</span>
-              </>
+              <span className="hy-explain__line">위치 전송은 아이 안드로이드 앱에서 동작해요.</span>
             )}
-            <span className="hy-explain__line">이 화면의 위치 권한은 현재 휴대폰 기준이며, 아이 기기 권한과 배터리 예외는 아이 앱에서 직접 허용해야 해요.</span>
+            <span className="hy-explain__line">아이 기기의 권한·배터리 예외는 아이 앱에서 직접 허용해야 해요.</span>
           </span>
         </p>
       </div>

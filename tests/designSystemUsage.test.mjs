@@ -2162,6 +2162,8 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/feature/SosReceive.css", ".sr-map__label"],
   // 기존 장식 조각 — exact path + selector만 허용
   ["src/styles/components.css", ".hy-topbar__logo"],
+  // 로딩 스켈레톤(장식 전용, aria-hidden) — 목록·카드 자리표시자
+  ["src/styles/components.css", ".hy-skel"],
   // 레이아웃 루트 — exact path + selector만 허용
   ["src/styles/global.css", ".hy-app"],
   // 버튼과 액션 컨트롤 — exact path + selector만 허용
@@ -2571,6 +2573,7 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/feature/PlaydateAccept.css", ".pa-avatar"],
   ["src/screens/feature/PlaydateAccept.css", ".pa-btn-decline"],
   ["src/screens/feature/StickerSend.css", ".ss-child__avatar"],
+  ["src/screens/parent/EventForm.css", ".ef-chip__avatar"],
   ["src/screens/feature/ProfileEdit.css", ".pe-photo"],
   ["src/screens/feature/ProfileEdit.css", ".pe-photo__edit"],
   ["src/screens/feature/PlaceForm.css", ".pf-map__ring"],

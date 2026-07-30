@@ -124,8 +124,11 @@ test("장소 관리 이미지는 menu-place-manager 한 정본만 사용한다",
   const visual = readFileSync(resolve(rootDir, "src/transform/placeVisual.ts"), "utf8");
   const manager = readFileSync(resolve(rootDir, "src/screens/feature/PlaceManager.tsx"), "utf8");
   assert.doesNotMatch(`${visual}\n${manager}`, /ui\/place-frequent\.webp/);
-  assert.match(visual, /ui\/menu-place-manager\.webp/);
+  // 메뉴 타일·히어로는 menu-place-manager 를 쓰고, 목록의 미매칭 장소는 중립 핀을 쓴다
+  // (지도+톱니 아이콘이 목록에서 '설정'처럼 읽히고 여러 행에 반복돼 미완성처럼 보였다).
   assert.match(manager, /ui\/menu-place-manager\.webp/);
+  assert.match(visual, /ui\/pin\.webp/);
+  assert.doesNotMatch(visual, /ui\/menu-place-manager\.webp/);
 });
 
 test("manifest 필수 PWA 아이콘은 삭제·precache 제외하지 않는다", () => {

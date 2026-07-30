@@ -225,6 +225,13 @@
 .ph-sched-row:active {
   background: var(--bg-press);
 }
+/* 로딩 스켈레톤 행 — 실제 일정 행과 같은 여백으로 레이아웃 점프를 막는다. */
+.ph-sched-skel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+}
 .ph-sched-icon {
   width: 48px;
   height: 48px;

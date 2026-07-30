@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Check, ChevronLeft, Home, Map as MapIcon, MapPin } from "lucide-react";
 import { asset } from "@/lib/assets";
+import { childAvatarPath } from "@/lib/avatar";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import { useToast } from "@/app/toast";
 import { useActiveChild } from "@/app/activeChild";
@@ -148,6 +149,20 @@ function finiteNumberFrom(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/** 새 일정 시작 시간 기본값 — 지금 이후 가장 가까운 30분 경계("HH:MM"). 빈 시간 입력을 없앤다. */
+function nextHalfHourTime(now: Date = new Date()): string {
+  const stepped = new Date(now.getTime());
+  stepped.setSeconds(0, 0);
+  const minutes = stepped.getMinutes();
+  stepped.setMinutes(minutes <= 30 ? 30 : 60);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(stepped.getHours())}:${pad(stepped.getMinutes())}`;
+}
+
+function avatarSrc(path: string): string {
+  return path.startsWith("http") ? path : asset(path);
+}
+
 export function EventForm() {
   const navigate = useNavigate();
   const { show } = useToast();
@@ -261,7 +276,9 @@ export function EventForm() {
     const key = nav?.dateKey ?? todayDateKey();
     return dateKeyToDateInputValue(key);
   });
-  const [timeValue, setTimeValue] = useState(() => editing?.time ?? stringFrom(suggestion?.time) ?? "");
+  const [timeValue, setTimeValue] = useState(
+    () => editing?.time ?? stringFrom(suggestion?.time) ?? nextHalfHourTime(),
+  );
   const [allDay, setAllDay] = useState(() => (editing ? editing.time == null : false));
   const [durationMin, setDurationMin] = useState(
     () => finiteNumberFrom(suggestion?.durationMinutes) ?? durationFromEvent(editing?.time, editing?.end_time),
@@ -640,7 +657,16 @@ export function EventForm() {
                     }
                     onClick={() => toggleChild(m.id)}
                   >
-                    {(m.emoji || "🧒") + " " + (m.name || "아이")}
+                    <span className="ef-chip__avatar">
+                      <img
+                        className="hy-network-avatar"
+                        src={avatarSrc(childAvatarPath(m.photo_url))}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </span>
+                    {m.name || "아이"}
                     {active && <Check size={16} strokeWidth={2.4} aria-hidden="true" />}
                   </button>
                 );

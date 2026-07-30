@@ -466,8 +466,12 @@ export function ParentHome() {
           />
           <div className="hy-card ph-sched">
             {eventsQuery.isLoading ? (
-              <div className="ph-sched-row" style={{ justifyContent: "center" }}>
-                <Loading label="일정을 불러오는 중" />
+              <div className="ph-sched-skel" role="status" aria-label="일정을 불러오는 중">
+                <span className="hy-skel hy-skel--avatar" aria-hidden="true" />
+                <span className="hy-skel-lines" aria-hidden="true">
+                  <span className="hy-skel hy-skel--line hy-skel--line-lg" />
+                  <span className="hy-skel hy-skel--line" />
+                </span>
               </div>
             ) : eventsQuery.isError ? (
               <div className="ph-sched-row" style={{ justifyContent: "center", gap: 8 }} role="alert">

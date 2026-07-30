@@ -167,13 +167,15 @@ function normalize(value: string): string {
 }
 
 export function resolvePlaceVisual(place: PlaceVisualInput): PlaceVisual {
-  if (place.is_home) {
-    return { assetPath: "ui/place-home.webp", label: "집", tone: "home" };
-  }
-
   const haystack = normalize(
     [place.name, place.location?.address, place.location?.category].filter(Boolean).join(" "),
   );
+  // is_home 플래그가 없어도 이름이 '집'이면 집 아이콘을 쓴다(사용자가 그렇게 저장한다).
+  const namedHome = ["집", "우리집", "home", "하우스"].some((k) => normalize(place.name ?? "") === normalize(k));
+  if (place.is_home || namedHome) {
+    return { assetPath: "ui/place-home.webp", label: "집", tone: "home" };
+  }
+
   const match = KEYWORD_VISUALS.find((visual) =>
     visual.keywords.some((keyword) => haystack.includes(normalize(keyword))),
   );
@@ -181,7 +183,8 @@ export function resolvePlaceVisual(place: PlaceVisualInput): PlaceVisual {
     return { assetPath: match.assetPath, label: match.label, tone: match.tone };
   }
 
-  return { assetPath: "ui/menu-place-manager.webp", label: "자주 가는 곳", tone: "frequent" };
+  // 미매칭 장소는 '장소관리 메뉴' 아이콘(지도+톱니 = 설정처럼 읽힘)이 아니라 중립 핀을 쓴다.
+  return { assetPath: "ui/pin.webp", label: "자주 가는 곳", tone: "frequent" };
 }
 
 /**

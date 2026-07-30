@@ -562,7 +562,40 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   snapshot hydration이 끝나기 전 입력·저장을 닫는다. busy 버튼은 중복 실행을 막고 상태를 접근성 이름으로 알린다.
   App 정본은 58개 라우트·57개 lazy screen이며 진입 JS는 `tests/routeBundleBudget.test.mjs`의 500,000-byte 미만 예산을 지킨다.
 
+- ★**미등록 체류 출발 중복 근절(2026-07-30)**: `child_stay_presence.grid_key` 는 소수 4자리(≈11m)라 한 체류가
+  GPS 지터로 grid 2~4개로 갈리고, 각 grid 가 자기 에피소드로 출발 알림을 발사했다(실사고: "과천동 국립과천과학관
+  근처 출발" 4건, D1 확인 시 37.2146/37.2147,127.1007). 판정은 `lib/unregisteredStayPresenceDedupe.ts` 의
+  **거친 지역키(소수 3자리 ≈110m) + 10분 쿨다운**으로 하고, `cron/_deliver.ts` 공통 합류점에서 걸러 metadata
+  `{stayAreaKey,stayKind}` 를 남긴다. 구버전 행은 같은 제목으로 역산하므로 **앱 재배포 없이 서버 배포만으로 멎는다**.
+  cron 은 같은 패스에서 같은 지역의 출발을 1회만 발사하고 나머지는 알림 없이 에피소드만 닫는다. 지역 미상은 fail-open.
+  회귀=`worker/tests/unregisteredStayPresenceDedupe.test.mjs`.
+- ★**알림 표시 문구 정본(2026-07-30)**: 서버 카피의 선행 이모지(📍🚶✅🕘)는 표시 단계에서
+  `transform/notificationsView.cleanAlertTitle` 로 떼어낸다(목록·상세에 이미 3D 아이콘 타일이 있어 중복).
+  알림센터·도착 알림·위험 알림·긴급 수신이 모두 이 함수를 통과한다. 위치 끊김 본문은 2문장 이내로 줄이고
+  절전 추측 대신 "마지막 확인" 또는 "새로고침하면 지금 위치를 확인해요"만 남긴다.
+- ★**네이티브 보간 채움점 생성 중단(2026-07-30)**: 갭(>150m)을 12m 간격 직선으로 메워 `is_estimated=1` 로
+  올리던 채움점은 소비자가 없어졌다(경로는 실측점만 실선으로 잇고, 머문 곳·방문 근거에서도 제외). 업로드·D1 행만
+  3배로 불렸으므로 `LocationService` 에서 생성을 제거했다(`interpolateLinearPath` 삭제, 상수는
+  `ROUTE_MATCH_MIN_GAP_M`). 과거 행은 남으므로 클라의 `isInterpolatedFillPoint` 필터는 유지한다.
+  회귀=`tests/nativeLocationTrailRows.test.mjs`.
+
 ## 실기기 검증 치트시트
+
+- ★**CDP 스크린샷은 디자인 판정용이 아니다(2026-07-30)**: Android WebView 의 `backdrop-filter`·`filter`
+  레이어를 합성하지 못해 히어로 카드가 흐릿하게/텍스트가 겹쳐 보이는 **캡처 아티팩트**가 난다. 실제 화면
+  판정은 `adb -s <serial> exec-out screencap -p > out.png` 프레임버퍼로 하고, CDP 는 DOM·상태·클릭에만 쓴다.
+  리뷰용으로는 sharp 로 width 420 축소본을 만들어 본다(원본 1080×2340 은 토큰만 먹는다).
+- ★**모의 API 브라우저 스윕으로 전 화면·전 버튼을 안전하게 검증한다(2026-07-30)**: ms-playwright 캐시의
+  chromium 을 `--headless=new --remote-debugging-port` 로 띄우고 `Fetch.enable` 로 **외부 요청 전부 가로채**
+  mock JSON 으로 닫으면 실계정·실서버·실기기에 영향 없이 부모/아이 세션을 만들어 버튼을 전부 누를 수 있다.
+  주의: ①`window.kakao.maps` 계측 스텁을 주입해야 지도 화면이 뜬다(JS 키 도메인 제한) ②fixture 는 서버 계약을
+  정확히 따라야 한다(`events_children[{child_id}]`, `notif-settings.quiet_hours{enabled,start_minute,end_minute,
+  updated_at,configured}` — 틀리면 화면이 정직하게 error/fail-closed 로 닫혀 오탐이 된다) ③외부 링크(스토어 등)
+  클릭으로 페이지가 앱을 떠나면 `Page.navigate` 로 절대 URL 복구가 필요하다 ④5173 포트는 다른 프로젝트가 쓸 수 있다.
+- ★**Worker 배포 자격(2026-07-30)**: `hyeni-3/.env` 의 `CLOUDFLARE_API_TOKEN` 은 D1 만 되고 Workers 배포는
+  `Authentication error 10000` 이다. 배포는 **`hyeni-1/.env.local` 의 `CLOUDFLARE_API_TOKEN` + `hyeni-3/.env` 의
+  `CLOUDFLARE_ACCOUNT_ID`** 를 프로세스 env 로 주입해서 한다. 두 값 모두 따옴표를 벗겨야 한다(`"…"` 그대로면
+  `/accounts/"id"/…` 로 요청돼 실패).
 
 - 기기(2026-07-19 최신 사용자 지시): **A17(RFKL40DP73J)만 실기기 검증기**다. 현재 부모모드 세션을
   유지한 채 `adb install -r`만 사용해 앱 데이터·계정·페어링·세션을 보존한다. 아이 역할 전용 동작은 A17
