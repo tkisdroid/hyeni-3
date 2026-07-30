@@ -10,6 +10,7 @@ import { useMarkAlertRead } from "@/queries/useNotifications";
 import { useChildLocations, useSavedPlaces } from "@/queries/useLocation";
 import { useLocationLabels } from "@/queries/useLocationLabels";
 import { parseServerTimestamp } from "@/transform/locationView";
+import { cleanAlertTitle } from "@/transform/notificationsView";
 import { placePhoneCall } from "@/lib/native/phone";
 import { childAvatarPath } from "@/lib/avatar";
 import { useEntitlement } from "@/queries/useEntitlement";
@@ -225,7 +226,7 @@ export function SosReceive() {
               </span>
               <div className="sr-banner-body">
                 <div className="sr-banner-title">
-                  {isMissedArrival ? latest.title || `${childName} 미도착 긴급 알림` : `${childName}가 SOS를 보냈어요`}
+                  {isMissedArrival ? cleanAlertTitle(latest.title) || `${childName} 미도착 긴급 알림` : `${childName}가 SOS를 보냈어요`}
                 </div>
                 <div className="sr-banner-meta">
                   {formatClock(latestAt)} · {relativeFrom(latestAt)}

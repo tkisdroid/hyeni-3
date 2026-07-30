@@ -911,9 +911,22 @@ export function ParentLocation() {
               )}
             </div>
           </div>
-          <span className={`pl-sheet__dur${isRefreshingLocation ? " pl-sheet__dur--loading" : ""}`}>
-            {locationScopeError ? "오류" : locationScopePending ? "확인 중" : isRefreshingLocation ? "확인 중" : loc ? "" : "오프라인"}
-          </span>
+          {/* 상태 칩은 말할 내용이 있을 때만 렌더한다(정상일 때 빈 알약이 보이던 문제). */}
+          {(() => {
+            const durText = locationScopeError
+              ? "오류"
+              : locationScopePending || isRefreshingLocation
+                ? "확인 중"
+                : loc
+                  ? ""
+                  : "오프라인";
+            if (!durText) return null;
+            return (
+              <span className={`pl-sheet__dur${isRefreshingLocation ? " pl-sheet__dur--loading" : ""}`}>
+                {durText}
+              </span>
+            );
+          })()}
         </div>
 
         {/* 갱신 실패 / 위치 없음 → 상태 화면으로 (잠금 시엔 위치 부재가 아니라 잠금이므로 숨김) */}
@@ -948,9 +961,14 @@ export function ParentLocation() {
         )}
 
         <div className="pl-actions">
-          <button type="button" className="pl-memo-btn" onClick={() => navigate("/parent/memo")}>
-            <MessageCircle size={20} strokeWidth={2.2} color="#fff" aria-hidden="true" />
-            메모 남기기
+          <button
+            type="button"
+            className="pl-memo-btn hy-press"
+            aria-label="메모 남기기"
+            onClick={() => navigate("/parent/memo")}
+          >
+            <MessageCircle size={22} strokeWidth={2.2} color="#fff" aria-hidden="true" />
+            <span className="pl-actions__label">메모</span>
           </button>
           {/* 경로·주변소리는 프리미엄 전용 — 하위 티어에서는 유도. 잠금(무료)에서는 숨김. */}
           {!isLocked && !locationScopePending && (
@@ -958,23 +976,26 @@ export function ParentLocation() {
               <button
                 type="button"
                 className="pl-route-btn hy-press"
-                aria-label="경로 보기"
+                aria-label="오늘 이동 경로 보기"
                 onClick={() => (premiumOpen ? navigate("/route") : upsell())}
               >
-                <Navigation size={20} strokeWidth={2.2} color="var(--blue-500)" />
+                <Navigation size={22} strokeWidth={2.2} color="var(--blue-500)" aria-hidden="true" />
+                <span className="pl-actions__label">경로</span>
               </button>
               <button
                 type="button"
-                className="pl-listen-btn"
+                className="pl-listen-btn hy-press"
                 aria-label="주변 소리 듣기"
                 onClick={() => (premiumOpen ? navigate("/remote-audio") : upsell())}
               >
                 <img src={asset("ui/menu-remote-audio.webp")} alt="" />
+                <span className="pl-actions__label">주변소리</span>
               </button>
             </>
           )}
-          <button type="button" className="pl-call-btn" aria-label="전화 걸기" onClick={callChild}>
-            <Phone size={20} strokeWidth={2.2} color="var(--mint-text)" aria-hidden="true" />
+          <button type="button" className="pl-call-btn hy-press" aria-label="아이에게 전화 걸기" onClick={callChild}>
+            <Phone size={22} strokeWidth={2.2} color="var(--mint-text)" aria-hidden="true" />
+            <span className="pl-actions__label">전화</span>
           </button>
         </div>
       </div>

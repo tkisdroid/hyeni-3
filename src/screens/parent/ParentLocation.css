@@ -526,76 +526,52 @@
   flex: none;
 }
 
-/* 액션 */
+/* 액션 — 4열 퀵액션(아이콘 + 라벨). 처음 쓰는 부모도 아이콘 뜻을 바로 안다. */
 .pl-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   margin-top: 12px;
 }
-.pl-route-btn {
-  width: 50px;
-  height: 50px;
-  border-radius: 15px;
-  background: var(--blue-soft);
+.pl-actions > button {
+  min-height: 64px;
+  border-radius: var(--radius-16);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: none;
+  gap: 4px;
   transition: transform 0.14s ease;
+  --press: 0.95;
 }
-.pl-route-btn:active {
-  transform: scale(0.94);
+.pl-actions__label {
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
+  white-space: nowrap;
+}
+.pl-route-btn {
+  background: var(--blue-soft);
+  color: var(--blue-text);
 }
 .pl-memo-btn {
-  flex: 1;
-  height: 50px;
-  border-radius: 15px;
   background: linear-gradient(120deg, var(--hy-accent-light), var(--hy-accent-deep));
   box-shadow: 0 10px 22px -8px rgba(240, 81, 143, 0.6);
-  font-size: var(--type-body);
-  line-height: var(--type-body-line-height);
-  font-weight: var(--type-body-weight);
-
   color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: transform 0.14s ease;
-}
-.pl-memo-btn:active {
-  transform: scale(0.97);
 }
 .pl-listen-btn {
-  width: 50px;
-  height: 50px;
-  border-radius: 15px;
   background: #f1ecff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.14s ease;
-}
-.pl-listen-btn:active {
-  transform: scale(0.94);
+  color: var(--lav-text);
 }
 .pl-listen-btn img {
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   object-fit: contain;
 }
 .pl-call-btn {
-  width: 50px;
-  height: 50px;
-  border-radius: 15px;
   background: #e7f8f0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.14s ease;
-}
-.pl-call-btn:active {
-  transform: scale(0.94);
+  color: var(--mint-text);
 }
 
 /* ── 티어 잠금 오버레이(무료) ───────────────────────────────────────────── */

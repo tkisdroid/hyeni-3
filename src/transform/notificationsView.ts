@@ -241,14 +241,34 @@ function groupLabel(date: Date, now: Date): string {
   return `${date.getMonth() + 1}월 ${date.getDate()}일`;
 }
 
+/**
+ * 알림 제목 정리 — 서버 카피의 선행 이모지(📍 🚶 ✅ 🕘 …)를 떼어낸다.
+ * 목록·상세는 이미 왼쪽에 3D 아이콘 타일을 두므로 제목의 이모지는 같은 뜻을 두 번 말하고,
+ * 아이콘 언어(3D webp + lucide)와도 어긋난다. 서버 문구는 그대로 두고 표시 단계에서만 정리한다.
+ */
+export function cleanAlertTitle(raw: string | null | undefined): string {
+  const text = String(raw ?? "").trim();
+  if (!text) return "";
+  // 이모지·기호(picto/dingbat/변형선택자/제로폭 결합자)로 시작하는 접두부만 제거한다.
+  const cleaned = text
+    .replace(
+      /^(?:[\u{1F000}-\u{1FAFF}\u{2190}-\u{2BFF}\u{FE0F}\u{200D}\u{20E3}\u{E0020}-\u{E007F}]|\u{23F0}|\u{2705}|\u{26A0}|\u{2757})+\s*/u,
+      "",
+    )
+    .trim();
+  return cleaned || text;
+}
+
 function toItemView(alert: ParentAlert, now: Date): AlertItemView {
+  const title = cleanAlertTitle(alert.title);
+  const detail = cleanAlertTitle(alert.message);
   return {
     id: alert.id,
     alertType: alert.alert_type || "",
     icon: iconFor(alert),
     soft: TONE_SOFT[toneFor(alert)],
-    title: alert.title || alert.message || "알림",
-    detail: alert.message || alert.title || "",
+    title: title || detail || "알림",
+    detail: detail || title || "",
     time: relativeTime(alert.created_at, now),
     unread: !alert.read,
     to: routeFor(alert),

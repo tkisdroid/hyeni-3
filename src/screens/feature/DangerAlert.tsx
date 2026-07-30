@@ -4,7 +4,7 @@ import { ChevronLeft, MapPin } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useParentAlerts, useMarkAlertRead } from "@/queries/useNotifications";
 import { useSafeBack } from "@/app/useSafeBack";
-import { isDangerAlert, relativeTime } from "@/transform/notificationsView";
+import { cleanAlertTitle, isDangerAlert, relativeTime } from "@/transform/notificationsView";
 import type { ParentAlert } from "@/lib/api/endpoints/notifications";
 import "./DangerAlert.css";
 
@@ -93,8 +93,8 @@ export function DangerAlert() {
                 </span>
                 <span className="da-hero__time">{relativeTime(latest.created_at, now)}</span>
               </div>
-              <div className="da-hero__title">{latest.title || "위험 알림"}</div>
-              {latest.message && <div className="da-hero__msg">{latest.message}</div>}
+              <div className="da-hero__title">{cleanAlertTitle(latest.title) || "위험 알림"}</div>
+              {latest.message && <div className="da-hero__msg">{cleanAlertTitle(latest.message)}</div>}
               <button
                 type="button"
                 className="da-hero__cta hy-press"
@@ -121,8 +121,8 @@ export function DangerAlert() {
                         <img className="da-item__img" src={asset(iconOf(a.alert_type))} alt="" />
                       </span>
                       <span className="da-item__main">
-                        <span className="da-item__title">{a.title || "위험 알림"}</span>
-                        {a.message && <span className="da-item__detail">{a.message}</span>}
+                        <span className="da-item__title">{cleanAlertTitle(a.title) || "위험 알림"}</span>
+                        {a.message && <span className="da-item__detail">{cleanAlertTitle(a.message)}</span>}
                       </span>
                       <span className="da-item__meta">
                         <span className="da-item__time">{relativeTime(a.created_at, now)}</span>

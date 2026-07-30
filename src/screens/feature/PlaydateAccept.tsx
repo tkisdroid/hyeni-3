@@ -111,8 +111,10 @@ export function PlaydateAccept() {
               놀이 연결됨
             </span>
             <span className="pa-active__text">
-              {active.friend_child_name ?? "친구"}
-              {active.place_name ? ` · ${active.place_name}` : ""} 에서 놀이 중이야.
+              {/* 장소를 모르면 "○○와 놀이 중이야.", 알면 "○○와 △△에서 놀이 중이야." */}
+              {`${active.friend_child_name?.trim() || "친구"}와 `}
+              {active.place_name?.trim() ? `${active.place_name.trim()}에서 ` : ""}
+              놀이 중이야.
             </span>
           </div>
         ) : null}

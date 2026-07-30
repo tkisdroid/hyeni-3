@@ -240,6 +240,10 @@
   font-weight: var(--type-title-lg-weight);
 
   color: var(--fg-primary);
+  /* "안전하게 확인 중이에 / 요" 처럼 마지막 음절만 넘어가지 않게 어절 단위로 끊는다. */
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
 .dr-hero p,

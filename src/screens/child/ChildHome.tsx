@@ -482,13 +482,19 @@ export function ChildHome() {
                   ? minutesToNext != null && minutesToNext > 0 && minutesToNext <= 120
                     ? `다음 일정 · ${minutesToNext}분 뒤`
                     : "다음 일정"
-                  : "오늘 다 끝났어"}
+                  : todayViews.length === 0
+                    ? "오늘은 쉬는 날"
+                    : "오늘 다 끝났어"}
               </span>
-              <span className="kd-next__title kd-title">{nextView ? nextView.title : "푹 쉬어도 돼"}</span>
+              <span className="kd-next__title kd-title">
+                {nextView ? nextView.title : todayViews.length === 0 ? "일정이 없어" : "푹 쉬어도 돼"}
+              </span>
               <span className="kd-next__sub">
                 {nextView
                   ? `${nextView.place ? `${nextView.place} · ` : ""}${nextView.time}`
-                  : "오늘 일정을 다 마쳤어 🎉"}
+                  : todayViews.length === 0
+                    ? "새 일정이 생기면 여기에 보여줄게 🌈"
+                    : "오늘 일정을 다 마쳤어 🎉"}
               </span>
             </span>
           </div>

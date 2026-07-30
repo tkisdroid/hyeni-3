@@ -124,10 +124,10 @@ public class LocationService extends Service {
     // 배터리 보호를 위해 2분 단위로 제한한다.
     private static final float MIN_HISTORY_DISTANCE_M = 2f;
     private static final long MAX_HISTORY_AGE_MS = 120_000L;
-    // 도로매칭(Kakao) 실패 시: 직전→실측 간 거리가 이 값 이하인 조밀 캡처는 직선이
-    // 충분히 정확하므로 실측(is_estimated=false)으로 기록한다. 초과(듬성한 갭)일 때만
-    // 직선 보간 '채움점'을 추정으로 표기. trailMath LOCATION_TRAIL_DASHED_GAP_M=150 정렬.
-    private static final float ESTIMATED_FILL_MIN_GAP_M = 150f;
+    // 도로매칭(Kakao) 호출 게이트: 직전→실측 거리가 이 값을 넘는 '듬성한 갭'에서만 매칭을 시도한다.
+    // 이보다 조밀한 캡처는 raw GPS 직선이 이미 충분히 정확하다. 2026-07-30부터 매칭이 실패해도
+    // 합성 채움점(is_estimated)을 만들지 않고 실측점만 남긴다. trailMath 150m 기준과 정렬.
+    private static final float ROUTE_MATCH_MIN_GAP_M = 150f;
     // 오프라인 버퍼 보관 한도 — 48시간 초과 점은 플러시 전 prune.
     private static final long LOCATION_BUFFER_MAX_AGE_MS = 48L * 60L * 60L * 1000L;
     // 오프라인 버퍼 줄 수 상한 — age prune 의 보조 안전장치. 플러시가 계속 실패해도
@@ -2398,15 +2398,13 @@ public class LocationService extends Service {
                                                long capturedAtMs) throws Exception {
         List<RoutePoint> points = new ArrayList<>();
         boolean hasPrevious = !Double.isNaN(lastHistoryLat) && !Double.isNaN(lastHistoryLng) && lastHistoryAtMs > 0L;
-        // estimatedFill: 큰 갭을 직선으로 메운 '추정 채움점'에만 true. 실측 GPS 점(마지막)은 항상 실측.
-        boolean estimatedFill = false;
         // 도로매칭(Kakao kakao-proxy) 네트워크 호출은 갭이 큰(>150m) 구간에서만 의미가 있다.
         // 현재 도보 도로매칭은 affiliate 권한(403)으로 실패 중이라 매칭 결과가 비어, 조밀 구간
         // (<=150m)은 아래 else 가 조밀 raw GPS 직선으로 기록한다 → 갭 게이트 적용 시 <=150m 에서
         // 무손실(어차피 매칭 결과가 없음). fix 마다 반복되던 Kakao 라운드트립(라디오 깨움)만 제거.
         // ⚠ 도로매칭이 복구되면 이 게이트가 <=150m 곡선을 직선화하므로 재검토 필요(>150m 는 영향 없음).
         if (hasPrevious
-                && distanceBetween(lastHistoryLat, lastHistoryLng, lat, lng) > ESTIMATED_FILL_MIN_GAP_M) {
+                && distanceBetween(lastHistoryLat, lastHistoryLng, lat, lng) > ROUTE_MATCH_MIN_GAP_M) {
             points.addAll(fetchWalkingRoutePoints(lastHistoryLat, lastHistoryLng, lat, lng));
         }
 
@@ -2419,16 +2417,12 @@ public class LocationService extends Service {
                 }
             }
             points = filtered;
-        } else if (hasPrevious && distanceBetween(lastHistoryLat, lastHistoryLng, lat, lng) > ESTIMATED_FILL_MIN_GAP_M) {
-            // 도로매칭 실패 + 큰 갭(>150m): 두 점 사이를 직선 보간으로 메우되 그 '채움점'들만
-            // 추정으로 표기(frontend dashed). 실측 endpoint 는 아래에서 추가되어 실측으로 남는다.
-            points.clear();
-            points.addAll(interpolateLinearPath(lastHistoryLat, lastHistoryLng, lat, lng, 12f));
-            estimatedFill = true;
         } else {
-            // 도로매칭 실패 + 조밀 캡처(<=150m): 직전→실측 직선이 충분히 정확하므로 보간 없이
-            // 실측 endpoint 만 기록한다 → 실선(estimated 아님). 무효 KAKAO 키로 매칭이 죽어도
-            // 조밀한 raw GPS 만으로 정확한 경로가 그려진다.
+            // 도로매칭 실패(또는 조밀 캡처): 실측 endpoint 만 기록한다.
+            // 2026-07-30: 갭이 큰 구간을 12m 간격 직선으로 메우던 '추정 채움점'(is_estimated=1)을
+            // 더 만들지 않는다. 채움점은 두 실측점 사이 직선 위의 합성점이라 부모 화면이 실측점을
+            // 실선으로 이으면 기하가 같고, 머문 곳·방문·출발 근거에서도 이미 제외돼 소비자가 없었다.
+            // 실측(2026-07-29 15:30~19:30): 1448행 중 1028행이 채움점 → 업로드·D1 행이 3배로 불었다.
             points.clear();
         }
 
@@ -2446,10 +2440,7 @@ public class LocationService extends Service {
             row.put("lat", point.lat);
             row.put("lng", point.lng);
             row.put("recorded_at", interpolateRecordedAt(lastHistoryAtMs, capturedAtMs, i, points.size()));
-            // 마지막 점은 실측 GPS fix → 항상 실측. 큰 갭을 메운 합성 채움점만 추정.
-            if (estimatedFill && i < lastIndex) {
-                row.put("is_estimated", true);
-            }
+            // 업로드하는 모든 점은 실측 GPS fix 또는 도로매칭 결과다(합성 채움점을 만들지 않는다).
             if (i == lastIndex && Float.isFinite(accuracy) && accuracy >= 0f) {
                 row.put("accuracy_m", accuracy);
             }
@@ -2493,29 +2484,6 @@ public class LocationService extends Service {
         double ratio = (double) (index + 1) / (double) total;
         long value = startMs + Math.round((endMs - startMs) * ratio);
         return formatIsoUtc(value);
-    }
-
-    // Phase C: Kakao 도보 API 실패/빈 응답 시의 폴백 보간 점 생성기.
-    // start - end 사이를 minSpacingM 간격으로 균등 분할. 결과는 endpoint 포함.
-    // 너무 짧은 거리는 그냥 [start, end] 만 반환.
-    private List<RoutePoint> interpolateLinearPath(double startLat, double startLng,
-                                                    double endLat, double endLng,
-                                                    float minSpacingM) {
-        List<RoutePoint> result = new ArrayList<>();
-        float total = distanceBetween(startLat, startLng, endLat, endLng);
-        if (total < minSpacingM * 1.5f) {
-            result.add(new RoutePoint(startLat, startLng));
-            result.add(new RoutePoint(endLat, endLng));
-            return result;
-        }
-        int steps = Math.max(2, Math.min(40, (int) Math.ceil(total / minSpacingM)));
-        for (int i = 0; i <= steps; i++) {
-            double t = (double) i / steps;
-            double lat = startLat + (endLat - startLat) * t;
-            double lng = startLng + (endLng - startLng) * t;
-            result.add(new RoutePoint(lat, lng));
-        }
-        return result;
     }
 
     private List<RoutePoint> fetchWalkingRoutePoints(double startLat, double startLng, double endLat, double endLng) {

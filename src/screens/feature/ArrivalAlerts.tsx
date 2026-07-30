@@ -6,6 +6,7 @@ import { useSafeBack } from "@/app/useSafeBack";
 import { useParentAlerts, useMarkAlertRead } from "@/queries/useNotifications";
 import {
   arrivalAlertTone,
+  cleanAlertTitle,
   isArrivalAlertType,
   relativeTime,
   type ArrivalAlertTone,
@@ -110,8 +111,8 @@ export function ArrivalAlerts() {
                       <img className="aa-item__img" src={asset(TONE_ICON[tone])} alt="" />
                     </span>
                     <span className="aa-item__main">
-                      <span className="aa-item__title">{a.title || "도착 알림"}</span>
-                      {a.message && <span className="aa-item__detail">{a.message}</span>}
+                      <span className="aa-item__title">{cleanAlertTitle(a.title) || "도착 알림"}</span>
+                      {a.message && <span className="aa-item__detail">{cleanAlertTitle(a.message)}</span>}
                     </span>
                     <span className="aa-item__meta">
                       <span className="aa-badge" data-tone={tone}>

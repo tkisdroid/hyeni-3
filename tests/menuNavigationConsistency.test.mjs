@@ -47,14 +47,19 @@ test("부모 위치 시트의 액션 버튼은 원시 이모지 대신 아이콘
   const css = readSource("src/screens/parent/ParentLocation.css");
   const actions = location.slice(
     location.indexOf('<div className="pl-actions">'),
-    location.indexOf("</div>", location.indexOf('className="pl-call-btn"')),
+    location.indexOf("</div>", location.indexOf('className="pl-call-btn')),
   );
 
   assert.ok(actions.length > 0, "pl-actions 블록을 찾지 못했다");
   // 원시 이모지는 시스템 폰트로 렌더돼 크기·베이스라인이 옆 아이콘과 어긋난다.
   assert.doesNotMatch(actions, /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
-  assert.match(actions, /<Navigation size=\{20\} strokeWidth=\{2\.2\}/);
+  assert.match(actions, /<Navigation size=\{22\} strokeWidth=\{2\.2\}/);
   assert.match(css, /\.pl-route-btn \{[^}]*background: var\(--blue-soft\)/);
+  // 4열 퀵액션은 아이콘마다 라벨을 함께 보여준다(처음 쓰는 부모도 뜻을 안다).
+  for (const label of ["메모", "경로", "주변소리", "전화"]) {
+    assert.match(actions, new RegExp(`<span className="pl-actions__label">${label}</span>`));
+  }
+  assert.match(css, /\.pl-actions \{[^}]*grid-template-columns: repeat\(4, 1fr\)/s);
 });
 
 test("아이콘 자리 원시 이모지 금지 — 긴급수신·캘린더·선생님설정(2026-07-11 감사 반영)", () => {
