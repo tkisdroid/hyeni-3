@@ -200,6 +200,12 @@
 .ci-regen:disabled {
   opacity: 0.55;
 }
+/* 코드가 만료되면 재발급이 유일한 다음 행동이다 — 주 CTA 로 채운다. */
+.ci-regen--primary {
+  background: var(--cta-grad-lavender);
+  color: #fff;
+  box-shadow: 0 10px 22px -8px rgba(124, 92, 225, 0.55);
+}
 
 /* ── 연결 대기 ──────────────────────────────────────────────────────────── */
 .ci-wait {

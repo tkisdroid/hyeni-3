@@ -185,13 +185,23 @@ export function ChildInvite() {
           )}
         </div>
 
-        {/* 액션 */}
+        {/* 액션 — 코드가 만료되면 복사·공유는 의미가 없으므로 잠그고, 재발급을 주 CTA 로 올린다. */}
         <div className="ci-actions">
-          <button type="button" className="ci-btn ci-btn--copy hy-press" onClick={copyCode} disabled={!pairCode}>
+          <button
+            type="button"
+            className="ci-btn ci-btn--copy hy-press"
+            onClick={copyCode}
+            disabled={!pairCode || expired}
+          >
             <Copy size={16} strokeWidth={2.4} style={{ verticalAlign: "-3px", marginRight: 4 }} />
             코드 복사
           </button>
-          <button type="button" className="ci-btn ci-btn--share hy-press" onClick={shareLink} disabled={!pairCode}>
+          <button
+            type="button"
+            className="ci-btn ci-btn--share hy-press"
+            onClick={shareLink}
+            disabled={!pairCode || expired}
+          >
             <Share2 size={16} strokeWidth={2.4} style={{ verticalAlign: "-3px", marginRight: 4 }} />
             공유하기
           </button>
@@ -199,12 +209,12 @@ export function ChildInvite() {
 
         <button
           type="button"
-          className="ci-regen hy-press"
+          className={expired ? "ci-regen ci-regen--primary hy-press" : "ci-regen hy-press"}
           onClick={regenerate}
           disabled={regen.isPending} aria-busy={regen.isPending}
         >
           <RefreshCw size={15} strokeWidth={2.4} style={{ verticalAlign: "-2px", marginRight: 4 }} />
-          {regen.isPending ? "발급 중…" : "새 코드 발급"}
+          {regen.isPending ? "발급 중…" : expired ? "새 코드 발급받기" : "새 코드 발급"}
         </button>
 
         {/* 연결 대기 상태 */}
