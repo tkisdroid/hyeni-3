@@ -134,11 +134,13 @@ export async function wasWebPushDisplayed(
 async function getRegistration(waitForReady: boolean): Promise<ServiceWorkerRegistration | null> {
   if (!isSupported()) return null;
   const current = await navigator.serviceWorker.getRegistration();
-  if (current || !waitForReady) return current ?? null;
-  return Promise.race([
+  if (!waitForReady) return current ?? null;
+  if (current?.active) return current;
+  const ready = await Promise.race([
     navigator.serviceWorker.ready,
-    new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 5_000)),
+    new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 15_000)),
   ]);
+  return ready?.active ? ready : null;
 }
 
 function postContext(
@@ -285,6 +287,15 @@ export async function ensureWebPushSubscription(
   context: WebPushSessionContext,
 ): Promise<WebPushSubscriptionResult> {
   if (!isSupported()) return { ok: false, reason: "unsupported" };
+
+  // iPhone 홈 화면 PWA는 사용자 탭에 직접 이어진 호출에서만 알림 권한을 요청할 수 있다.
+  // 네트워크·세션 장벽 await보다 먼저 requestPermission()을 호출해 transient activation을 보존한다.
+  const permissionRequest = Notification.permission === "default"
+    ? Notification.requestPermission()
+    : Promise.resolve(Notification.permission);
+  const permission = await permissionRequest;
+  if (permission !== "granted") return { ok: false, reason: "permission_denied" };
+
   const permit = await acquirePushRegistrationPermit();
   let createdSubscription: PushSubscription | null = null;
   try {
@@ -294,12 +305,6 @@ export async function ensureWebPushSubscription(
       .catch(() => ({ configured: false, publicKey: null }));
     if (permit.signal.aborted) return { ok: false, reason: "context_sync_failed" };
     if (!config.configured || !config.publicKey) return { ok: false, reason: "not_configured" };
-
-    const permission = Notification.permission === "default"
-      ? await Notification.requestPermission()
-      : Notification.permission;
-    if (permit.signal.aborted) return { ok: false, reason: "context_sync_failed" };
-    if (permission !== "granted") return { ok: false, reason: "permission_denied" };
 
     const registration = await getRegistration(true);
     if (permit.signal.aborted) return { ok: false, reason: "context_sync_failed" };

@@ -61,3 +61,15 @@ test("iPhone Safari에서 웹 푸시가 없으면 홈 화면 앱 설치 방법�
   assert.match(view, /Safari 공유 버튼/);
   assert.match(view, /홈 화면에 추가/);
 });
+
+test("iPhone 웹 푸시는 사용자 탭에서 권한을 먼저 요청하고 active Worker만 구독한다", () => {
+  const webPush = read("src/lib/webPush.ts");
+  const ensureStart = webPush.indexOf("export async function ensureWebPushSubscription");
+  const permissionCall = webPush.indexOf("Notification.requestPermission()", ensureStart);
+  const firstAwait = webPush.indexOf("await ", ensureStart);
+
+  assert.ok(ensureStart >= 0 && permissionCall > ensureStart);
+  assert.ok(permissionCall < firstAwait, "iPhone 권한 요청은 첫 await보다 먼저 호출해야 합니다");
+  assert.match(webPush, /if \(current\?\.active\) return current/);
+  assert.match(webPush, /return ready\?\.active \? ready : null/);
+});

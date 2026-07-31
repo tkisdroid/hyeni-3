@@ -704,8 +704,9 @@
 - **2026-07-31 정본 검증 조합 = 부모 iPhone 홈 화면 PWA + 아이 Android 네이티브 앱.**
   위치 즉시 요청·기기 상태·소리 울리기·주변 소리·메시지·장소/알림 설정은 부모의 Capacitor 여부로 막지 않고
   Worker API→FCM→아이 Android로 전달한다. 주변 소리는 아이 캡처만 Android 네이티브이고, 부모 제어·WebSocket
-  수신·재생은 PWA 공용이다. iPhone 오디오는 사용자 탭 안에서 AudioContext를 먼저 열며, 웹 푸시가 없는 일반
-  Safari 탭에는 홈 화면 추가 방법을 안내한다. PWA Service Worker의 `includeAssets`·manifest 아이콘은 Workbox
+  수신·재생은 PWA 공용이다. iPhone 오디오는 사용자 탭 안에서 AudioContext를 먼저 연다. 웹 푸시 권한도 첫
+  비동기 작업보다 먼저 사용자 탭에서 요청하고 active Service Worker가 확인된 뒤에만 구독하며, 웹 푸시가 없는
+  일반 Safari 탭에는 홈 화면 추가 방법을 안내한다. PWA Service Worker의 `includeAssets`·manifest 아이콘은 Workbox
   glob과 중복하지 않으며 `scripts/verify-route-bundle.mjs`가 precache URL 중복을 빌드 실패로 차단한다.
   위치 설정은 부모 iPhone 권한이 아니라 활성 아이 `device_health`를
   보여준다. Android OS 권한·배터리 예외는 원격 부여할 수 없어 아이 기기에서 1회 허용해야 하고, Google Play

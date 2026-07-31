@@ -57,7 +57,8 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   **부모=iPhone 홈 화면 PWA, 아이=Android 네이티브 앱**이다. 위치 즉시 요청·기기 상태·소리 울리기·주변 소리·
   메시지·장소/알림 설정은 부모 기기의 Capacitor 여부로 막지 않고 Worker API→FCM→아이 Android 경로를 사용한다.
   주변 소리는 아이 캡처만 Android 네이티브이며 부모 제어·WebSocket 수신·재생은 PWA 공용이다. iPhone 오디오는
-  사용자 탭 안에서 AudioContext를 먼저 열고, 웹 푸시 미지원 Safari 탭에는 홈 화면 추가 방법을 안내한다.
+  사용자 탭 안에서 AudioContext를 먼저 연다. iPhone 웹 푸시 권한도 첫 비동기 작업보다 먼저 사용자 탭에서 요청하고
+  active Service Worker가 확인된 뒤에만 구독하며, 미지원 Safari 탭에는 홈 화면 추가 방법을 안내한다.
   PWA Service Worker는 `includeAssets`·manifest 아이콘과 Workbox glob URL이 겹치지 않아야 하며,
   `scripts/verify-route-bundle.mjs`가 precache URL 중복을 빌드 실패로 차단한다.
   위치 설정은 부모 iPhone 권한을 요청하지 않고 활성 아이의 `device_health`를 표시한다. Android OS 권한·배터리
