@@ -24,6 +24,7 @@ import android.os.BatteryManager;
 import android.os.Build;
 import android.os.PowerManager;
 import android.os.Process;
+import android.os.SystemClock;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
@@ -37,11 +38,14 @@ import org.json.JSONObject;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.TimeZone;
 
 import okhttp3.MediaType;
@@ -63,6 +67,65 @@ final class DeviceStatusReporter {
     // 상수로 직접 명시해 API < 28 컴파일과 순수 함수 단위 테스트(Android 클래스 비의존)를 모두 가능하게 한다.
     static final int EVENT_SCREEN_INTERACTIVE = 15;
     static final int EVENT_SCREEN_NON_INTERACTIVE = 16;
+    // OEM 이름이 아니라 Android OS 표면의 역할명과 정확한 패키지 세그먼트로 판별한다.
+    // 새 제조사에서도 동작하면서 launcherpro 같은 부분 문자열 오탐은 피한다.
+    private static final Set<String> SYSTEM_SURFACE_PACKAGES =
+        Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            "android",
+            "com.android.bluetooth",
+            "com.android.externalstorage",
+            "com.android.nfc",
+            "com.android.networkstack",
+            "com.android.phone",
+            "com.android.providers.media",
+            "com.android.shell",
+            "com.android.webview",
+            "com.google.android.gms",
+            "com.google.android.networkstack",
+            "com.google.android.webview"
+        )));
+    private static final Set<String> SYSTEM_SURFACE_PACKAGE_SEGMENTS =
+        Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            "aod",
+            "aodservice",
+            "chooser",
+            "devicecare",
+            "documentsui",
+            "home",
+            "ime",
+            "inputmethod",
+            "intentresolver",
+            "keyguard",
+            "keyboard",
+            "launcher",
+            "lockscreen",
+            "managedprovisioning",
+            "nexuslauncher",
+            "packageinstaller",
+            "permissioncontroller",
+            "provision",
+            "provisioning",
+            "quickstep",
+            "recents",
+            "resolver",
+            "securitycenter",
+            "settings",
+            "setupwizard",
+            "smartmanager",
+            "systemmanager",
+            "systemui",
+            "trebuchet",
+            "wallpaperpicker"
+        )));
+    private static final String[] NUMBERED_SYSTEM_SURFACE_SEGMENTS = {
+        "home",
+        "launcher",
+        "wallpaperpicker"
+    };
+    private static final long HOME_PACKAGES_CACHE_TTL_MS = 5 * 60 * 1000L;
+    private static final Object HOME_PACKAGES_CACHE_LOCK = new Object();
+    private static volatile Set<String> homePackagesCache;
+    private static volatile long homePackagesCacheAtElapsedMs;
 
     private DeviceStatusReporter() {}
 
@@ -307,6 +370,7 @@ final class DeviceStatusReporter {
         PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         boolean interactive = pm != null && pm.isInteractive();
         String recentApp = "";
+        String recentAppLabel = "";
         String usagePermission = "unavailable";
         JSONArray appUsage = new JSONArray();
 
@@ -324,7 +388,11 @@ final class DeviceStatusReporter {
                     if (event.getEventType() == UsageEvents.Event.ACTIVITY_RESUMED && event.getPackageName() != null) {
                         rawRecentApp = event.getPackageName();
                         if (!isSystemSurfacePackage(context, event.getPackageName())) {
-                            recentApp = event.getPackageName();
+                            String candidateLabel = resolveAppLabel(context, event.getPackageName());
+                            if (hasHumanReadableAppLabel(event.getPackageName(), candidateLabel)) {
+                                recentApp = event.getPackageName();
+                                recentAppLabel = candidateLabel;
+                            }
                         }
                     }
                 }
@@ -336,8 +404,13 @@ final class DeviceStatusReporter {
             );
         }
 
-        return new UsageSnapshot(interactive, recentApp,
-            resolveAppLabel(context, recentApp), usagePermission, appUsage);
+        return new UsageSnapshot(
+            interactive,
+            recentApp,
+            recentAppLabel,
+            usagePermission,
+            appUsage
+        );
     }
 
     /**
@@ -376,8 +449,6 @@ final class DeviceStatusReporter {
      * 최근 앱/앱 사용 목록·비율 분모에서 제외한다(TK 지시 2026-07-11).
      * 화면시간(deviceScreenOnMs)은 물리적 스크린온이라 그대로 둔다.
      */
-    private static volatile java.util.Set<String> homePackagesCache;
-
     static boolean isSystemSurfacePackage(Context context, String pkg) {
         if (isBlank(pkg)) return true;
         if (isExplicitSystemSurfacePackage(pkg)) return true;
@@ -396,14 +467,33 @@ final class DeviceStatusReporter {
     }
 
     static boolean isExplicitSystemSurfacePackage(String pkg) {
-        return "com.android.settings".equals(pkg)
-            || "com.android.systemui".equals(pkg)
-            || "com.google.android.permissioncontroller".equals(pkg)
-            || "com.android.permissioncontroller".equals(pkg)
-            || "com.google.android.packageinstaller".equals(pkg)
-            || "com.android.packageinstaller".equals(pkg)
-            || "com.sec.android.app.launcher".equals(pkg)
-            || "com.motorola.launcher.secondarydisplay".equals(pkg);
+        if (isBlank(pkg)) return false;
+        String packageName = pkg.trim().toLowerCase(Locale.ROOT);
+        if (SYSTEM_SURFACE_PACKAGES.contains(packageName)) return true;
+        for (String segment : packageName.split("\\.")) {
+            if (SYSTEM_SURFACE_PACKAGE_SEGMENTS.contains(segment)
+                    || isNumberedSystemSurfaceSegment(segment)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isNumberedSystemSurfaceSegment(String segment) {
+        for (String prefix : NUMBERED_SYSTEM_SURFACE_SEGMENTS) {
+            if (!segment.startsWith(prefix)) continue;
+            String suffix = segment.substring(prefix.length());
+            if (suffix.isEmpty()) return true;
+            boolean allDigits = true;
+            for (int i = 0; i < suffix.length(); i++) {
+                if (!Character.isDigit(suffix.charAt(i))) {
+                    allDigits = false;
+                    break;
+                }
+            }
+            if (allDigits) return true;
+        }
+        return false;
     }
 
     static boolean shouldExcludeNonLaunchableSystemApp(
@@ -424,13 +514,35 @@ final class DeviceStatusReporter {
             : "requires_permission";
     }
 
-    private static java.util.Set<String> homePackages(Context context) {
-        java.util.Set<String> cached = homePackagesCache;
-        if (cached != null) return cached;
-        java.util.HashSet<String> out = new java.util.HashSet<>();
+    private static Set<String> homePackages(Context context) {
+        long now = SystemClock.elapsedRealtime();
+        Set<String> cached = homePackagesCache;
+        if (cached != null
+                && now >= homePackagesCacheAtElapsedMs
+                && now - homePackagesCacheAtElapsedMs < HOME_PACKAGES_CACHE_TTL_MS) {
+            return cached;
+        }
+
+        synchronized (HOME_PACKAGES_CACHE_LOCK) {
+            cached = homePackagesCache;
+            if (cached != null
+                    && now >= homePackagesCacheAtElapsedMs
+                    && now - homePackagesCacheAtElapsedMs < HOME_PACKAGES_CACHE_TTL_MS) {
+                return cached;
+            }
+            HashSet<String> out = new HashSet<>();
+            addHomePackages(context, out, Intent.CATEGORY_HOME);
+            addHomePackages(context, out, "android.intent.category.SECONDARY_HOME");
+            Set<String> next = Collections.unmodifiableSet(out);
+            homePackagesCache = next;
+            homePackagesCacheAtElapsedMs = now;
+            return next;
+        }
+    }
+
+    private static void addHomePackages(Context context, Set<String> out, String category) {
         try {
-            android.content.Intent home = new android.content.Intent(android.content.Intent.ACTION_MAIN)
-                .addCategory(android.content.Intent.CATEGORY_HOME);
+            Intent home = new Intent(Intent.ACTION_MAIN).addCategory(category);
             for (android.content.pm.ResolveInfo info :
                     context.getPackageManager().queryIntentActivities(home, 0)) {
                 if (info != null && info.activityInfo != null && info.activityInfo.packageName != null) {
@@ -438,10 +550,8 @@ final class DeviceStatusReporter {
                 }
             }
         } catch (Exception ignored) {
-            // 런처 목록을 못 읽어도 하드코딩 목록이 방어한다.
+            // 한 카테고리 조회가 실패해도 다른 HOME 신호와 범용 패키지 분류를 계속 사용한다.
         }
-        homePackagesCache = out;
-        return out;
     }
 
     // package-accessible — LocationPlugin(WebView 경로)도 동일한 top-N 앱 사용량을
@@ -459,10 +569,12 @@ final class DeviceStatusReporter {
                 if (isSystemSurfacePackage(context, stat.getPackageName())) continue;
                 long usageMs = stat.getTotalTimeInForeground();
                 if (usageMs <= 0L) continue;
+                String appLabel = resolveAppLabel(context, stat.getPackageName());
+                if (!hasHumanReadableAppLabel(stat.getPackageName(), appLabel)) continue;
                 long lastTimeUsed = stat.getLastTimeUsed();
                 rows.add(new AppUsageRow(
                     stat.getPackageName(),
-                    resolveAppLabel(context, stat.getPackageName()),
+                    appLabel,
                     usageMs,
                     lastTimeUsed
                 ));
@@ -510,6 +622,11 @@ final class DeviceStatusReporter {
                 + " — falling back to package name");
         }
         return packageName;
+    }
+
+    static boolean hasHumanReadableAppLabel(String packageName, String label) {
+        if (isBlank(packageName) || isBlank(label)) return false;
+        return !packageName.trim().equalsIgnoreCase(label.trim());
     }
 
     /**

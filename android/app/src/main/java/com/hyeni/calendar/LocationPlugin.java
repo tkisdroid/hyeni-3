@@ -269,13 +269,21 @@ public class LocationPlugin extends Plugin {
                         events.getNextEvent(event);
                         if (event.getEventType() == UsageEvents.Event.ACTIVITY_RESUMED && event.getPackageName() != null
                             && !DeviceStatusReporter.isSystemSurfacePackage(getContext(), event.getPackageName())) {
-                            recentApp = event.getPackageName();
+                            String candidateLabel = DeviceStatusReporter.resolveAppLabel(
+                                getContext(),
+                                event.getPackageName()
+                            );
+                            if (DeviceStatusReporter.hasHumanReadableAppLabel(
+                                    event.getPackageName(),
+                                    candidateLabel)) {
+                                recentApp = event.getPackageName();
+                                recentAppLabel = candidateLabel;
+                            }
                         }
                     }
                 }
                 // FCM 경로(DeviceStatusReporter)와 동일하게 오늘 하루 top-N 앱 사용량(이름+시간)을 채운다.
                 appUsage = DeviceStatusReporter.readAppUsage(getContext(), usm, DeviceStatusReporter.startOfTodayMillis(), end);
-                recentAppLabel = DeviceStatusReporter.resolveAppLabel(getContext(), recentApp);
                 // 필터로 recentApp 이 비어도 권한이 없는 게 아니다 — AppOps 로 정확 판정.
                 usagePermission = DeviceStatusReporter.isUsageAccessGranted(getContext()) ? "granted" : "requires_permission";
             }

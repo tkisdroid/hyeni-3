@@ -131,11 +131,36 @@ public class DeviceStatusReporterTest {
     public void explicitSystemSurfacePackage_doesNotMatchUserPackageKeyword() {
         assertTrue(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.android.systemui"));
         assertTrue(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.google.android.packageinstaller"));
-        assertTrue(DeviceStatusReporter.isExplicitSystemSurfacePackage(
-            "com.motorola.launcher.secondarydisplay"
-        ));
+        assertTrue(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.motorola.launcher.secondarydisplay"));
+        assertTrue(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.google.android.apps.nexuslauncher"));
+        assertTrue(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.miui.home"));
+        assertTrue(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.huawei.android.launcher"));
+        assertTrue(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.bbk.launcher2"));
+        assertTrue(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.oplus.systemui"));
+        assertTrue(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.samsung.android.app.aodservice"));
+        assertTrue(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.google.android.inputmethod.latin"));
+        assertTrue(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.miui.packageinstaller"));
+        assertTrue(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.google.android.setupwizard"));
         assertFalse(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.example.launcherpro"));
-        assertFalse(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.example.packageinstaller.tools"));
+        assertFalse(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.example.homeschool"));
+        assertFalse(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.example.keyboardtrainer"));
+        assertFalse(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.example.settingsguide"));
+        assertFalse(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.example.packageinstallertools"));
+        assertFalse(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.sec.android.app.camera"));
+        assertFalse(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.sec.android.app.sbrowser"));
+        assertFalse(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.samsung.android.messaging"));
+        assertFalse(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.skt.prod.dialer"));
+    }
+
+    @Test
+    public void appLabel_requiresHumanReadableNameInsteadOfRawPackage() {
+        assertTrue(DeviceStatusReporter.hasHumanReadableAppLabel("com.skt.prod.dialer", "에이닷 전화"));
+        assertFalse(DeviceStatusReporter.hasHumanReadableAppLabel(
+            "com.vendor.edgepanel.overlay",
+            "com.vendor.edgepanel.overlay"
+        ));
+        assertFalse(DeviceStatusReporter.hasHumanReadableAppLabel("com.vendor.service", " "));
+        assertFalse(DeviceStatusReporter.hasHumanReadableAppLabel("", "앱"));
     }
 
     @Test

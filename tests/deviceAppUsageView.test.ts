@@ -47,7 +47,7 @@ test("시스템 자녀 보호 기능은 공백 변형과 영문 표시명 모두
   assert.equal(englishView.recentAppLabel, null);
 });
 
-test("명시된 시스템 표면은 오늘 많이 쓴 앱과 최다 사용 앱에서 모두 제외한다", () => {
+test("여러 제조사의 시스템 표면은 오늘 많이 쓴 앱과 최다 사용 앱에서 모두 제외한다", () => {
   const view = buildDeviceAppUsageView({
     recentApp: "com.android.systemui",
     appUsage: [
@@ -56,6 +56,15 @@ test("명시된 시스템 표면은 오늘 많이 쓴 앱과 최다 사용 앱�
       { name: "권한 관리자", packageName: "com.google.android.permissioncontroller", usageMs: 160 * 60000 },
       { name: "패키지 설치 프로그램", packageName: "com.google.android.packageinstaller", usageMs: 150 * 60000 },
       { name: "One UI 홈", packageName: "com.sec.android.app.launcher", usageMs: 140 * 60000 },
+      { name: "Pixel Launcher", packageName: "com.google.android.apps.nexuslauncher", usageMs: 139 * 60000 },
+      { name: "MIUI Home", packageName: "com.miui.home", usageMs: 138 * 60000 },
+      { name: "Huawei Home", packageName: "com.huawei.android.launcher", usageMs: 137 * 60000 },
+      { name: "vivo Launcher", packageName: "com.bbk.launcher2", usageMs: 136 * 60000 },
+      { name: "ColorOS System UI", packageName: "com.oplus.systemui", usageMs: 135 * 60000 },
+      { name: "Samsung AOD", packageName: "com.samsung.android.app.aodservice", usageMs: 134 * 60000 },
+      { name: "Gboard", packageName: "com.google.android.inputmethod.latin", usageMs: 133 * 60000 },
+      { name: "MIUI 설치 관리자", packageName: "com.miui.packageinstaller", usageMs: 132 * 60000 },
+      { name: "Android 설정 도우미", packageName: "com.google.android.setupwizard", usageMs: 131 * 60000 },
       { name: "시스템 자녀 보호 기능", packageName: null, usageMs: 130 * 60000 },
       { name: "System parental controls", packageName: null, usageMs: 120 * 60000 },
       { name: "유튜브", packageName: "com.google.android.youtube", usageMs: 30 * 60000 },
@@ -65,6 +74,52 @@ test("명시된 시스템 표면은 오늘 많이 쓴 앱과 최다 사용 앱�
   assert.equal(view.recentAppLabel, null);
   assert.deepEqual(view.topApps.map((app) => app.name), ["유튜브"]);
   assert.equal(view.mostUsedApp?.name, "유튜브");
+});
+
+test("정상 앱과 실행 가능한 기본 앱은 시스템 필터 오탐으로 숨기지 않는다", () => {
+  const view = buildDeviceAppUsageView({
+    recentApp: "Home School",
+    appUsage: [
+      { name: "Launcher Pro", packageName: "com.example.launcherpro", usageMs: 80 * 60000 },
+      { name: "Home School", packageName: "com.example.homeschool", usageMs: 70 * 60000 },
+      { name: "Keyboard Trainer", packageName: "com.example.keyboardtrainer", usageMs: 60 * 60000 },
+      { name: "Settings Guide", packageName: "com.example.settingsguide", usageMs: 50 * 60000 },
+      { name: "카메라", packageName: "com.sec.android.app.camera", usageMs: 40 * 60000 },
+      { name: "삼성 인터넷", packageName: "com.sec.android.app.sbrowser", usageMs: 30 * 60000 },
+      { name: "메시지", packageName: "com.samsung.android.messaging", usageMs: 20 * 60000 },
+      { name: "에이닷 전화", packageName: "com.skt.prod.dialer", usageMs: 10 * 60000 },
+    ],
+  }, 8);
+
+  assert.deepEqual(view.topApps.map((app) => app.name), [
+    "Launcher Pro",
+    "Home School",
+    "Keyboard Trainer",
+    "Settings Guide",
+    "카메라",
+    "삼성 인터넷",
+    "메시지",
+    "에이닷 전화",
+  ]);
+  assert.equal(view.recentAppLabel, "Home School");
+});
+
+test("앱 이름을 확인하지 못한 원시 패키지 문자열은 사용자 앱으로 표시하지 않는다", () => {
+  const view = buildDeviceAppUsageView({
+    recentApp: "com.vendor.edgepanel.overlay",
+    appUsage: [
+      {
+        name: "com.vendor.edgepanel.overlay",
+        packageName: "com.vendor.edgepanel.overlay",
+        usageMs: 90 * 60000,
+      },
+      { name: "에이닷 전화", packageName: "com.skt.prod.dialer", usageMs: 10 * 60000 },
+    ],
+  });
+
+  assert.equal(view.recentAppLabel, null);
+  assert.deepEqual(view.topApps.map((app) => app.name), ["에이닷 전화"]);
+  assert.equal(view.mostUsedApp?.timeLabel, "10분");
 });
 
 test("razr 실측 payload는 보조 화면 런처를 숨기고 실제 앱명과 사용량을 유지한다", () => {
@@ -164,4 +219,15 @@ test("빈 목록 문구는 Usage Access 허용 여부로 '권한 필요'와 '쓴
   const report = readSource("src/screens/feature/DailySafetyReport.tsx");
   assert.match(report, /appUsagePermissionGranted\s*\?\s*"혜니캘린더 외에 오늘 쓴 앱이 없어요\."/);
   assert.match(report, /사용정보 접근 권한을 켜면 많이 쓴 앱이 표시돼요\./);
+});
+
+test("Android 패키지 가시성은 일반 앱·기본 홈·보조 화면 홈을 모두 조회한다", () => {
+  const manifest = readSource("android/app/src/main/AndroidManifest.xml");
+  assert.match(manifest, /android\.intent\.category\.LAUNCHER/);
+  assert.match(manifest, /android\.intent\.category\.HOME/);
+  assert.match(manifest, /android\.intent\.category\.SECONDARY_HOME/);
+  assert.doesNotMatch(
+    manifest,
+    /<uses-permission[^>]+android\.permission\.QUERY_ALL_PACKAGES/,
+  );
 });

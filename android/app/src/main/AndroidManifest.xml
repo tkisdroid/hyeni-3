@@ -42,13 +42,21 @@
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
 
-    <!-- 최근 실행 앱을 패키지명이 아닌 앱 이름으로 표시하기 위해, 런처에
-         아이콘이 있는 앱의 라벨을 PackageManager 로 조회할 수 있게 한다.
-         QUERY_ALL_PACKAGES 같은 민감 권한 없이 가시성을 확보한다. -->
+    <!-- 최근 실행 앱을 패키지명이 아닌 앱 이름으로 표시하고 제조사별 시스템 홈을
+         제외하기 위해 일반 런처·기본 홈·보조 화면 홈을 PackageManager 로 조회한다.
+         QUERY_ALL_PACKAGES 같은 민감 권한 없이 필요한 범위만 가시성을 확보한다. -->
     <queries>
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.SECONDARY_HOME" />
         </intent>
     </queries>
 

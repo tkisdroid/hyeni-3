@@ -66,21 +66,86 @@ function cleanPercent(value: number | null | undefined): number | null {
 // 구버전 아이 기기 리포트에도 적용되도록 서버/네이티브가 아니라 표시 계층에서 거른다.
 const OWN_APP_PACKAGE = "com.hyeni.calendar";
 const OWN_APP_NAMES = new Set(["혜니캘린더", "hyeni calendar", "hyenicalendar"]);
-const SYSTEM_SURFACE_NAMES = new Set(["시스템자녀보호기능", "systemparentalcontrols"]);
-const SYSTEM_SURFACE_PACKAGES = new Set([
-  "com.android.settings",
-  "com.android.systemui",
-  "com.google.android.permissioncontroller",
-  "com.android.permissioncontroller",
-  "com.google.android.packageinstaller",
-  "com.android.packageinstaller",
-  "com.sec.android.app.launcher",
-  "com.motorola.launcher.secondarydisplay",
+const SYSTEM_SURFACE_NAMES = new Set([
+  "시스템자녀보호기능",
+  "systemparentalcontrols",
+  "시스템ui",
+  "systemui",
+  "설정",
+  "settings",
+  "권한관리자",
+  "permissioncontroller",
+  "패키지설치프로그램",
+  "packageinstaller",
+  "설정마법사",
+  "setupwizard",
 ]);
+// 제조사 패키지를 끝없이 나열하지 않는다. Android OS 표면의 역할명과 정확한
+// 패키지 세그먼트만 판별해 새 제조사에서도 동작하고 launcherpro 같은 앱은 보존한다.
+const SYSTEM_SURFACE_PACKAGES = new Set([
+  "android",
+  "com.android.bluetooth",
+  "com.android.externalstorage",
+  "com.android.nfc",
+  "com.android.networkstack",
+  "com.android.phone",
+  "com.android.providers.media",
+  "com.android.shell",
+  "com.android.webview",
+  "com.google.android.gms",
+  "com.google.android.networkstack",
+  "com.google.android.webview",
+]);
+const SYSTEM_SURFACE_PACKAGE_SEGMENTS = new Set([
+  "aod",
+  "aodservice",
+  "chooser",
+  "devicecare",
+  "documentsui",
+  "home",
+  "ime",
+  "inputmethod",
+  "intentresolver",
+  "keyguard",
+  "keyboard",
+  "launcher",
+  "lockscreen",
+  "managedprovisioning",
+  "nexuslauncher",
+  "packageinstaller",
+  "permissioncontroller",
+  "provision",
+  "provisioning",
+  "quickstep",
+  "recents",
+  "resolver",
+  "securitycenter",
+  "settings",
+  "setupwizard",
+  "smartmanager",
+  "systemmanager",
+  "systemui",
+  "trebuchet",
+  "wallpaperpicker",
+]);
+const NUMBERED_SYSTEM_SURFACE_SEGMENTS = ["home", "launcher", "wallpaperpicker"] as const;
+
+function isNumberedSystemSurfaceSegment(segment: string): boolean {
+  return NUMBERED_SYSTEM_SURFACE_SEGMENTS.some((prefix) => {
+    if (!segment.startsWith(prefix)) return false;
+    const suffix = segment.slice(prefix.length);
+    return suffix.length === 0 || /^\d+$/.test(suffix);
+  });
+}
 
 function isSystemSurfacePackage(value: string | null | undefined): boolean {
-  const packageName = canonicalAppText(value);
-  return SYSTEM_SURFACE_PACKAGES.has(packageName);
+  const packageName = normalizeAppText(value);
+  if (!packageName) return false;
+  if (SYSTEM_SURFACE_PACKAGES.has(packageName)) return true;
+  return packageName
+    .split(".")
+    .some((segment) => SYSTEM_SURFACE_PACKAGE_SEGMENTS.has(segment)
+      || isNumberedSystemSurfaceSegment(segment));
 }
 
 function isSystemSurfaceName(value: string | null | undefined): boolean {
@@ -93,13 +158,20 @@ function isPackageLikeAppText(value: string | null | undefined): boolean {
 
 function isSystemRecentApp(value: string | null | undefined): boolean {
   return isSystemSurfaceName(value)
-    || (isPackageLikeAppText(value) && isSystemSurfacePackage(value));
+    || isPackageLikeAppText(value);
+}
+
+function isUnresolvedPackageLabel(row: DeviceAppUsageInput): boolean {
+  if (!isPackageLikeAppText(row.name)) return false;
+  const packageName = normalizeAppText(row.packageName);
+  return !packageName || normalizeAppText(row.name) === packageName;
 }
 
 function isSystemSurfaceRow(row: DeviceAppUsageInput): boolean {
   return isSystemSurfaceName(row.name)
     || isSystemSurfacePackage(row.packageName)
-    || (isPackageLikeAppText(row.name) && isSystemSurfacePackage(row.name));
+    || isSystemSurfacePackage(row.name)
+    || isUnresolvedPackageLabel(row);
 }
 
 function isOwnAppRow(row: DeviceAppUsageInput): boolean {
