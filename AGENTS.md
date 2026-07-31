@@ -588,6 +588,17 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   `ROUTE_MATCH_MIN_GAP_M`). 과거 행은 남으므로 클라의 `isInterpolatedFillPoint` 필터는 유지한다.
   회귀=`tests/nativeLocationTrailRows.test.mjs`.
 
+- ★**표기·기본값 단일 출처(2026-07-30)**: 전화번호는 `transform/phoneFormat.formatPhoneDisplay` 하나만 쓴다
+  (계정 화면만 하이픈 없이 보이던 불일치 수정 — 화면별 로컬 포맷터 복제 금지, dirty 판정도 포맷 기준 비교).
+  지도 선택 화면의 기본 중심은 `transform/mapCenter.resolveMapCenter`로 **현재 위치 > 집 저장장소 >
+  아이 마지막 위치 > 서울** 순서다(서울시청 고정 기본값 금지). 좌표 파싱은 `Number(null)===0` 함정을 막아
+  typeof 가드로 무효값을 걸러낸다. 회귀=`tests/formattingAndMapCenter.test.ts`.
+- ★**정직한 빈 응답(2026-07-30)**: 서버가 성공했지만 본문이 비면 대답한 척하지 않는다. 아이 AI 대화의
+  `res.reply` 빈 문자열은 "지금은 대답을 못 받았어. 잠시 뒤에 다시 말 걸어줘!"로 강등하고 신고 대상에서 뺀다
+  (고정 응답 문구 재도입 금지). 주변 소리 기록의 길이 0초 세션은 "청취 없이 종료", 그 외는 "N초 청취"로 적는다.
+- ★**출발 알림 톤(2026-07-30)**: 도착=민트 "도착", 출발=라벤더 "출발", 확인 필요(앰버)는 미도착·지연 계열만이다.
+  정상 이동인 출발에 경고 아이콘·"확인 필요" 배지를 쓰지 않는다. `arrivalAlertTone`이 단일 출처다.
+
 ## 실기기 검증 치트시트
 
 - ★**CDP 스크린샷은 디자인 판정용이 아니다(2026-07-30)**: Android WebView 의 `backdrop-filter`·`filter`

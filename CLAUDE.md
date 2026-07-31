@@ -621,6 +621,13 @@
   소비자가 없는데 업로드·D1 행만 3배로 불렸다. 과거 행 때문에 클라 필터(`isInterpolatedFillPoint`)는 유지한다.
   회귀=`tests/nativeLocationTrailRows.test.mjs`.
 
+- ★표기·기본값 단일 출처(2026-07-30): 전화번호는 `transform/phoneFormat`, 지도 선택 화면 기본 중심은
+  `transform/mapCenter`(현재 위치 > 집 > 아이 마지막 위치 > 서울)만 쓴다. 화면별 로컬 포맷터·서울 고정 기본값 금지.
+  좌표는 `Number(null)===0` 함정을 typeof 가드로 막는다. 회귀=`tests/formattingAndMapCenter.test.ts`.
+- ★정직한 빈 응답(2026-07-30): 아이 AI 대화의 빈 `reply` 는 고정 응답으로 채우지 않고 "지금은 대답을 못 받았어…"로
+  강등하며 신고 대상에서 뺀다. 주변 소리 기록의 0초 세션은 "청취 없이 종료", 그 외는 "N초 청취".
+- ★출발 알림 톤(2026-07-30): 도착=민트, 출발=라벤더, 앰버(확인 필요)는 미도착·지연만. `arrivalAlertTone` 단일 출처.
+
 ### J. 실기기 검증 치트시트 (함정 포함)
 - ★**CDP 스크린샷은 디자인 판정용이 아니다(2026-07-30)**: WebView 가 `backdrop-filter`·`filter` 레이어를
   합성하지 못해 히어로 카드가 흐릿하게/겹쳐 보이는 캡처 아티팩트가 난다. 실제 화면 판정은
