@@ -20,8 +20,10 @@ test("권한 복구 화면은 이유·설정 경로·핵심 행동만 짧게 안
   assert.doesNotMatch(source, /휴대폰 설정 → 앱 → 혜니캘린더 → 권한 에서 허용으로 바꿔 주세요/);
 });
 
-test("위치·알림 설정의 실제 거부 상태는 짧은 권한 복구 화면으로 연결된다", () => {
-  assert.match(locationSettings, /navigate\("\/perm-denied",\s*\{ state: \{ kind: "loc" \} \}\)/);
+test("권한 복구 화면은 실제 권한을 사용하는 기기에서만 연결된다", () => {
+  assert.doesNotMatch(locationSettings, /navigate\("\/perm-denied",\s*\{ state: \{ kind: "loc" \} \}\)/);
+  assert.match(locationSettings, /deviceLocationHealthView\(activeChild\?\.device_health\)/);
+  assert.match(locationSettings, /아이 기기의 권한·배터리 예외는 아이 앱에서 직접 허용해야 해요/);
   assert.match(childLocation, /navigate\("\/perm-denied",\s*\{ state: \{ kind: "loc" \} \}\)/);
   assert.match(notificationSettings, /navigate\("\/perm-denied",\s*\{ state: \{ kind: "noti" \} \}\)/);
 });

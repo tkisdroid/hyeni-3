@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Bell, ChevronLeft, FileClock, Mic, Phone, Smartphone, Timer, VolumeX } from "lucide-react";
+import { Bell, ChevronLeft, FileClock, Mic, Phone, Timer, VolumeX } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
@@ -10,12 +10,12 @@ import { useChildLocations, useSavedPlaces } from "@/queries/useLocation";
 import { useLocationLabels } from "@/queries/useLocationLabels";
 import { placePhoneCall } from "@/lib/native/phone";
 import {
-  isRemoteListenNativeSupported,
   isRemoteListenAllowed,
   openRemoteListenSession,
   closeRemoteListenSession,
   type RemoteListenSession,
 } from "@/lib/native/ambient";
+import { isNativePlatform } from "@/lib/native/plugins";
 import { useRequestRemoteListen, useStopRemoteListen } from "@/queries/useRemote";
 import { useRemoteListenSessionStatus } from "@/queries/useRemoteAudit";
 import { openFamilySocket, type FamilySocket } from "@/realtime/familySocket";
@@ -110,16 +110,12 @@ export function RemoteAudio() {
   const locationLabel = useLocationLabels(childLoc ? [childLoc] : [], places);
   const childPlace = childLoc ? locationLabel(childLoc) : "위치 확인 중";
 
-  // 전화 대상: 본인 외 보호자(공동보호자) 우선, 없으면 첫 보호자. 번호 없으면 안내만.
-  const callTarget =
-    (family?.members ?? [])
-      .filter((m) => m.role === "parent" && m.phone)
-      .find((m) => m.user_id && m.user_id !== userId) ??
-    (family?.members ?? []).find((m) => m.role === "parent" && m.phone) ??
-    null;
+  // 부모가 상황을 확인한 직후 바로 연락할 수 있도록 현재 청취 대상 아이에게 전화한다.
+  // iPhone PWA에서는 placePhoneCall의 tel: 폴백으로 시스템 전화 화면을 연다.
+  const callTarget = childMember?.phone?.trim()
+    ? { name: childName, phone: childMember.phone.trim() }
+    : null;
 
-  // 원격 청취는 안드로이드 네이티브 앱 전용. 웹(PWA/아이폰)에선 안내만 표시.
-  const [native] = useState(isRemoteListenNativeSupported);
   const [listening, setListening] = useState(false);
   const [muted, setMuted] = useState(false);
   const [waitingHint, setWaitingHint] = useState(false);
@@ -321,11 +317,23 @@ export function RemoteAudio() {
     startInFlightRef.current = true;
     endingRef.current = false;
     setStarting(true);
+    let preparedPlayer: RemoteAudioPlayer | null = null;
+    let keepPreparedPlayer = false;
     try {
       if (!familyId || !userId || !childUserId) {
         show("대상 아이와 가족 정보를 확인한 뒤 다시 시도해 주세요.", "⚠️");
         return;
       }
+
+      // iPhone Safari는 사용자 탭이 끝난 뒤 새 오디오 재생을 막을 수 있다.
+      // 첫 네트워크 await 전에 AudioContext를 열고, 아이에게서 WAV가 도착할 때 같은 플레이어를 재사용한다.
+      preparedPlayer = new RemoteAudioPlayer({
+        preferWebAudioForWav: !isNativePlatform(),
+      });
+      preparedPlayer.start();
+      playerRef.current?.stop();
+      playerRef.current = preparedPlayer;
+
       const allowed = await isRemoteListenAllowed(familyId);
       if (!mountedRef.current) return;
       if (!allowed) {
@@ -405,11 +413,8 @@ export function RemoteAudio() {
         show("연결된 아이 기기를 찾지 못했어요. 아이 앱이 설치되어 있고 로그인되어 있는지 확인해 주세요.", "⚠️");
         return;
       }
-      // 오디오 수신 시작: 플레이어 준비 + broadcast(audio_chunk) 구독.
+      // 오디오 수신 시작: 사용자 탭에서 준비한 플레이어 + broadcast(audio_chunk) 구독.
       // 아이 네이티브가 보낸 WAV 청크를 FamilyRoom 이 fan-out → 여기서 디코드·재생한다.
-      const player = new RemoteAudioPlayer();
-      player.start();
-      playerRef.current = player;
       audioSocketRef.current = openFamilySocket(
         familyId,
         () => getApiAccessToken(),
@@ -465,7 +470,12 @@ export function RemoteAudio() {
       setActiveRequestId(requestId);
       setClockMs(Date.now());
       setListening(true);
+      keepPreparedPlayer = true;
     } finally {
+      if (!keepPreparedPlayer && preparedPlayer && playerRef.current === preparedPlayer) {
+        preparedPlayer.stop();
+        playerRef.current = null;
+      }
       startInFlightRef.current = false;
       if (mountedRef.current) setStarting(false);
     }
@@ -479,13 +489,13 @@ export function RemoteAudio() {
       return next;
     });
   };
-  // 보호자에게 실제 발신(placePhoneCall). 번호 미등록이면 정직하게 안내.
-  const callGuardian = () => {
+  // 청취 대상 아이에게 실제 발신(placePhoneCall). 번호 미등록이면 정직하게 안내.
+  const callChild = () => {
     if (!callTarget?.phone) {
-      show("등록된 보호자 전화번호가 없어요", "📞");
+      show(`${childName}의 전화번호가 등록되어 있지 않아요`, "📞");
       return;
     }
-    show(`${callTarget.name || "보호자"}에게 전화를 거는 중…`, "📞");
+    show(`${callTarget.name}에게 전화를 거는 중…`, "📞");
     void placePhoneCall(callTarget.phone).then((r) => {
       if (!r.ok) show("전화를 걸 수 없어요. 전화 앱을 확인해 주세요", "⚠️");
     });
@@ -607,31 +617,24 @@ export function RemoteAudio() {
           </button>
         </div>
 
-        {native ? (
-          <div className="ra-start-wrap">
-            <div className="ra-start-note hy-explain">
-              <span className="hy-explain__lines">
-                <span className="hy-explain__line">위급할 때만 사용해 주세요.</span>
-                <span className="hy-explain__line">아이 기기에 알림이 뜨고 곧바로 연결돼요.</span>
-              </span>
-            </div>
-            <button
-              type="button"
-              className="ra-start hy-press"
-              onClick={() => void startListen()}
-              disabled={starting || requestListen.isPending || !childUserId || !remoteAudioDataReady}
-              aria-busy={starting || requestListen.isPending}
-            >
-              <Mic size={20} strokeWidth={2.2} color="#fff" />
-              {starting || requestListen.isPending ? "연결 요청 중" : "듣기 시작"}
-            </button>
+        <div className="ra-start-wrap">
+          <div className="ra-start-note hy-explain">
+            <span className="hy-explain__lines">
+              <span className="hy-explain__line">위급할 때만 사용해 주세요.</span>
+              <span className="hy-explain__line">아이 안드로이드 기기에 알림이 뜨고 곧바로 연결돼요.</span>
+            </span>
           </div>
-        ) : (
-          <div className="ra-webnote hy-explain">
-            <Smartphone size={18} strokeWidth={2.2} color="#6d4e9c" />
-            주변 소리 듣기는 안드로이드 앱에서 지원돼요
-          </div>
-        )}
+          <button
+            type="button"
+            className="ra-start hy-press"
+            onClick={() => void startListen()}
+            disabled={starting || requestListen.isPending || !childUserId || !remoteAudioDataReady}
+            aria-busy={starting || requestListen.isPending}
+          >
+            <Mic size={20} strokeWidth={2.2} color="#fff" />
+            {starting || requestListen.isPending ? "연결 요청 중" : "듣기 시작"}
+          </button>
+        </div>
       </div>
 
       {/* 듣는 중 오버레이 */}
@@ -688,8 +691,8 @@ export function RemoteAudio() {
             <button
               type="button"
               className="ra-ctrl-call hy-press"
-              aria-label="보호자에게 전화"
-              onClick={callGuardian}
+              aria-label={`${childName}에게 전화`}
+              onClick={callChild}
             >
               <Phone size={24} strokeWidth={2.2} color="#fff" />
             </button>

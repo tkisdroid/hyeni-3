@@ -19,6 +19,15 @@ type ManagedAudio = {
 
 type StartResolver = (ok: boolean) => void;
 
+export interface RemoteAudioPlayerOptions {
+  /**
+   * iPhone PWA처럼 지연 생성한 HTMLAudioElement의 autoplay가 차단되는 환경에서는
+   * 사용자 탭에서 미리 연 AudioContext로 WAV를 재생한다.
+   * Android WebView는 미디어 볼륨 경로 안정성을 위해 기존 <audio> 방식을 유지한다.
+   */
+  preferWebAudioForWav?: boolean;
+}
+
 function base64ToBytes(base64: string): Uint8Array {
   const binary = atob(base64);
   const len = binary.length;
@@ -45,6 +54,7 @@ function looksLikeWav(bytes: Uint8Array, mimeType?: string): boolean {
 }
 
 export class RemoteAudioPlayer {
+  private readonly preferWebAudioForWav: boolean;
   private ctx: AudioContext | null = null;
   private gain: GainNode | null = null;
   private nextTime = 0;
@@ -57,7 +67,11 @@ export class RemoteAudioPlayer {
   /** 재생한 청크 수(디버그·상태 표시용). */
   public playedChunks = 0;
 
-  /** 재생 세션 시작 — WAV 는 <audio>, 비-WAV 폴백은 AudioContext 를 사용한다. */
+  constructor(options: RemoteAudioPlayerOptions = {}) {
+    this.preferWebAudioForWav = options.preferWebAudioForWav === true;
+  }
+
+  /** 재생 세션 시작 — Android WAV는 <audio>, iPhone PWA WAV와 비-WAV는 AudioContext를 우선한다. */
   start(): void {
     this.stop();
     this.closed = false;
@@ -73,13 +87,20 @@ export class RemoteAudioPlayer {
       console.warn("[remoteAudio] AudioContext 미지원 — WAV <audio> 재생만 사용");
       return;
     }
-    this.ctx = new Ctor();
-    this.gain = this.ctx.createGain();
-    this.gain.gain.value = this.muted ? 0 : 1;
-    this.gain.connect(this.ctx.destination);
-    this.nextTime = 0;
-    // 일부 WebView 는 사용자 제스처 이후에도 suspended 로 시작 → 명시적 resume.
-    void this.ctx.resume?.().catch(() => {});
+    try {
+      this.ctx = new Ctor();
+      this.gain = this.ctx.createGain();
+      this.gain.gain.value = this.muted ? 0 : 1;
+      this.gain.connect(this.ctx.destination);
+      this.nextTime = 0;
+      // iPhone은 첫 사용자 탭 안에서 AudioContext를 열어야 이후 도착한 WAV도 재생할 수 있다.
+      // 일부 WebView도 suspended로 시작하므로 같은 시점에 명시적으로 resume한다.
+      void this.ctx.resume?.().catch(() => {});
+    } catch (error) {
+      console.warn("[remoteAudio] AudioContext 준비 실패 — WAV <audio> 재생만 사용:", error);
+      this.ctx = null;
+      this.gain = null;
+    }
   }
 
   private async ensureRunning(): Promise<boolean> {
@@ -135,6 +156,10 @@ export class RemoteAudioPlayer {
     if (this.closed || generation !== this.generation) return false;
     const bytes = base64ToBytes(base64);
     if (looksLikeWav(bytes, mimeType)) {
+      if (this.preferWebAudioForWav) {
+        const played = await this.playWithWebAudio(bytes, generation, resolveStarted);
+        if (played) return true;
+      }
       return this.playWithAudioElement(bytes, "audio/wav", generation, resolveStarted);
     }
 

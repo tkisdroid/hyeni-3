@@ -2026,7 +2026,6 @@ const semanticSurfaceManifest = [
     ["src/screens/teacher/TeacherReleaseGate.css", "trg-notice", "card"],
     ["src/screens/teacher/TeacherTimetable.css", "tt-note", "card"],
     ["src/screens/feature/Subscription.css", "sub-note", "card"],
-    ["src/screens/feature/RemoteAudio.css", "ra-webnote", "card"],
     ["src/screens/feature/FriendPlay.css", "fp-waiting", "card"],
     ["src/screens/feature/FriendPlay.css", "fp-note", "card"],
     ["src/screens/feature/PlaydateAccept.css", "pa-active", "card"],

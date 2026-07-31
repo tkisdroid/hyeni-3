@@ -14,7 +14,7 @@
 import { API_BASE } from "@/config/env";
 import { apiGet, apiPost, apiPatch } from "@/lib/api/client";
 import { getApiAccessToken } from "@/lib/api/session";
-import { getNativePlugin, isNativePlatform } from "./plugins";
+import { getNativePlugin } from "./plugins";
 
 /** 원격 청취 기본 제한 시간(초). 위급 시 1분 청취. (hyeni-1 remoteAudio.js) */
 export const REMOTE_AUDIO_DEFAULT_DURATION_SEC = 60;
@@ -42,11 +42,6 @@ interface AmbientListenPlugin {
 /** AmbientListen 플러그인 핸들(웹/비네이티브면 null). */
 function getAmbientPlugin(): AmbientListenPlugin | null {
   return getNativePlugin<AmbientListenPlugin>("AmbientListen");
-}
-
-/** 원격 청취(주변 소리)가 이 기기의 네이티브에서 지원되는지. 웹(PWA)이면 false. */
-export function isRemoteListenNativeSupported(): boolean {
-  return isNativePlatform();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

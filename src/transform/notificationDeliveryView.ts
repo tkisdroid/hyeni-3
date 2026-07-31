@@ -24,6 +24,10 @@ export interface WebPushDeliveryView {
   accountRegistrationLabel: string;
 }
 
+export interface WebPushDeliveryEnvironment {
+  iosHomeScreenInstallRequired?: boolean;
+}
+
 function permissionLabel(permission: WebPushState["permission"]): string {
   if (permission === "granted") return "허용됨";
   if (permission === "denied") return "차단됨";
@@ -32,7 +36,10 @@ function permissionLabel(permission: WebPushState["permission"]): string {
 }
 
 /** 브라우저 권한만으로 성공을 단정하지 않고 서버 설정·실제 PushSubscription까지 함께 판정한다. */
-export function webPushDeliveryView(state: WebPushState | null): WebPushDeliveryView {
+export function webPushDeliveryView(
+  state: WebPushState | null,
+  environment: WebPushDeliveryEnvironment = {},
+): WebPushDeliveryView {
   if (!state) {
     return {
       reason: "checking",
@@ -60,6 +67,21 @@ export function webPushDeliveryView(state: WebPushState | null): WebPushDelivery
         : "확인 실패",
   };
   if (!state.supported) {
+    if (environment.iosHomeScreenInstallRequired) {
+      return {
+        reason: "unsupported",
+        ready: false,
+        canSubscribe: false,
+        canRegisterAccount: false,
+        canUnsubscribe: false,
+        title: "iPhone 홈 화면 앱에서 알림을 켜 주세요",
+        detail: "Safari 공유 버튼에서 ‘홈 화면에 추가’한 혜니캘린더를 연 뒤 웹 알림을 켜 주세요.",
+        configuredLabel: "확인 안 함",
+        permissionLabel: "홈 화면 앱 필요",
+        subscriptionLabel: "등록 전",
+        accountRegistrationLabel: "등록 전",
+      };
+    }
     return {
       reason: "unsupported",
       ready: false,

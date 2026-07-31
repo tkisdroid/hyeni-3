@@ -216,6 +216,23 @@ test("웹 푸시 미지원·VAPID 미설정·권한 차단을 각각 정직하�
   }).reason, "permission_denied");
 });
 
+test("iPhone 일반 Safari 탭의 웹 푸시 미지원은 홈 화면 설치 방법으로 안내한다", () => {
+  const view = webPushDeliveryView({
+    supported: false,
+    configured: false,
+    configCheckFailed: false,
+    permission: "unsupported",
+    subscribed: false,
+    accountRegistered: null,
+    contextSynchronized: null,
+  }, { iosHomeScreenInstallRequired: true });
+
+  assert.equal(view.reason, "unsupported");
+  assert.match(view.title, /iPhone 홈 화면 앱/);
+  assert.match(view.detail, /Safari 공유 버튼/);
+  assert.match(view.detail, /홈 화면에 추가/);
+});
+
 test("로컬 웹 구독이 있어도 현재 계정 서버 등록이 아니면 수신 가능으로 표시하지 않는다", () => {
   const wrongAccount = webPushDeliveryView({
     supported: true,

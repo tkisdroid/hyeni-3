@@ -206,28 +206,6 @@
   cursor: progress;
 }
 
-/* 웹(PWA/아이폰) 안내 — 네이티브 전용 기능이라 시작 버튼 대신 표시 */
-.ra-webnote {
-  width: 100%;
-  min-height: 58px;
-  border-radius: var(--radius-16);
-  background: rgba(167, 139, 250, 0.1);
-  box-shadow: none;
-  border: 1.5px dashed rgba(167, 139, 250, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px 16px;
-  font-size: var(--type-body-sm);
-  line-height: var(--type-body-sm-line-height);
-  font-weight: var(--type-body-sm-weight);
-
-  color: #6d4e9c;
-  text-align: center;
-
-}
-
 /* ── 듣는 중 오버레이 ───────────────────────────────────────────────────── */
 .ra-listen {
   position: absolute;

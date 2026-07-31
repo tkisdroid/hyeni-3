@@ -183,7 +183,6 @@ test("필수 설명 상자는 공통 스타일을 사용하고 긴 안전 문구
   for (const [file, className] of [
     ["src/screens/feature/NotificationSettings.tsx", "nst-safety-note"],
     ["src/screens/feature/RemoteAudio.tsx", "ra-trust-card"],
-    ["src/screens/feature/RemoteAudio.tsx", "ra-webnote"],
     ["src/screens/teacher/TeacherTimetable.tsx", "tt-note"],
   ]) {
     assertAllTagsUseExplain(file, className);

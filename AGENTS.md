@@ -53,6 +53,16 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 
 ## 아키텍처 핵심 (어기면 다자녀에서 데이터가 섞인다)
 
+- **부모 iPhone·아이 Android 정본 토폴로지(2026-07-31)**: 최종 기능 검증의 기본 조합은
+  **부모=iPhone 홈 화면 PWA, 아이=Android 네이티브 앱**이다. 위치 즉시 요청·기기 상태·소리 울리기·주변 소리·
+  메시지·장소/알림 설정은 부모 기기의 Capacitor 여부로 막지 않고 Worker API→FCM→아이 Android 경로를 사용한다.
+  주변 소리는 아이 캡처만 Android 네이티브이며 부모 제어·WebSocket 수신·재생은 PWA 공용이다. iPhone 오디오는
+  사용자 탭 안에서 AudioContext를 먼저 열고, 웹 푸시 미지원 Safari 탭에는 홈 화면 추가 방법을 안내한다.
+  PWA Service Worker는 `includeAssets`·manifest 아이콘과 Workbox glob URL이 겹치지 않아야 하며,
+  `scripts/verify-route-bundle.mjs`가 precache URL 중복을 빌드 실패로 차단한다.
+  위치 설정은 부모 iPhone 권한을 요청하지 않고 활성 아이의 `device_health`를 표시한다. Android OS 권한·배터리
+  예외는 원격 부여할 수 없으므로 아이 기기에서 1회 허용해야 한다는 한계를 숨기지 않는다. Google Play 결제·
+  소셜 계정 연결처럼 실제 네이티브 부모 앱이 필요한 항목은 자녀 원격제어 성공으로 위장하지 않고 별도 한계로 보고한다.
 - **전역 활성 아이 스위치**: `src/app/activeChild.tsx` `useActiveChild()`. 아이 전환 UI 는 **부모 홈에만**.
   다른 화면 우선순위 = 딥링크(`?child=<user_id>`·`state.childUserId/childId`) > `activeChild` >
   **첫째(children[0]) 폴백 금지**. 명시적 수신자 선택 화면(EventForm 배정·StickerSend·RemoteRing)만

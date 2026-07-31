@@ -701,6 +701,15 @@
 - **Android**: Capacitor 래핑 = 네이티브 APK. 무거운 네이티브 기능(백그라운드 위치·지오펜스·주변소리·SOS·푸시)은 여기서. 아이 기기 + 부모 기기 모두.
 - **iPhone**: 같은 앱을 Safari "홈 화면에 추가"(PWA). **부모 전용, 조회·관리만**. iOS 네이티브 기능 불필요.
 - **아이(child) 기기 = 안드로이드 전용** 전제. 부모는 안드로이드 또는 아이폰(웹).
+- **2026-07-31 정본 검증 조합 = 부모 iPhone 홈 화면 PWA + 아이 Android 네이티브 앱.**
+  위치 즉시 요청·기기 상태·소리 울리기·주변 소리·메시지·장소/알림 설정은 부모의 Capacitor 여부로 막지 않고
+  Worker API→FCM→아이 Android로 전달한다. 주변 소리는 아이 캡처만 Android 네이티브이고, 부모 제어·WebSocket
+  수신·재생은 PWA 공용이다. iPhone 오디오는 사용자 탭 안에서 AudioContext를 먼저 열며, 웹 푸시가 없는 일반
+  Safari 탭에는 홈 화면 추가 방법을 안내한다. PWA Service Worker의 `includeAssets`·manifest 아이콘은 Workbox
+  glob과 중복하지 않으며 `scripts/verify-route-bundle.mjs`가 precache URL 중복을 빌드 실패로 차단한다.
+  위치 설정은 부모 iPhone 권한이 아니라 활성 아이 `device_health`를
+  보여준다. Android OS 권한·배터리 예외는 원격 부여할 수 없어 아이 기기에서 1회 허용해야 하고, Google Play
+  결제·소셜 계정 연결처럼 부모 네이티브 앱이 필요한 항목은 자녀 원격제어 성공과 분리해 정직하게 보고한다.
 - 이유: React Native는 사파리 웹앱을 못 만들어 "아이폰=사파리 바로가기" 요구와 충돌. 웹앱+Capacitor가 디자인 1:1·코드베이스 1개·유지보수/속도 최상.
 - **iOS 기능 한계**: 주변소리 몰래듣기·타 앱 사용시간 모니터링은 iOS 정책상 불가 → 아이=안드로이드이므로 해당 없음.
 

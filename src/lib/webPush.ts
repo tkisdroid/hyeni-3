@@ -57,6 +57,27 @@ function isSupported(): boolean {
     && "Notification" in window;
 }
 
+/**
+ * iPhone/iPad의 일반 Safari 탭은 웹 푸시 수신 앱으로 등록할 수 없으므로
+ * 홈 화면 웹앱 설치 안내가 필요한지 판정한다. 이미 standalone이면 false다.
+ */
+export function isIosHomeScreenInstallRequired(): boolean {
+  if (
+    isNativePlatform()
+    || typeof window === "undefined"
+    || typeof navigator === "undefined"
+  ) {
+    return false;
+  }
+  const iosNavigator = navigator as Navigator & { standalone?: boolean };
+  const isIos = /\b(iPhone|iPad|iPod)\b/i.test(iosNavigator.userAgent)
+    || (iosNavigator.platform === "MacIntel" && iosNavigator.maxTouchPoints > 1);
+  if (!isIos) return false;
+  const standalone = iosNavigator.standalone === true
+    || window.matchMedia?.("(display-mode: standalone)").matches === true;
+  return !standalone;
+}
+
 function decodeBase64Url(value: string): ArrayBuffer {
   const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
   const padded = normalized.padEnd(normalized.length + ((4 - normalized.length % 4) % 4), "=");

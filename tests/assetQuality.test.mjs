@@ -131,7 +131,7 @@ test("장소 관리 이미지는 menu-place-manager 한 정본만 사용한다",
   assert.doesNotMatch(visual, /ui\/menu-place-manager\.webp/);
 });
 
-test("manifest 필수 PWA 아이콘은 삭제·precache 제외하지 않는다", () => {
+test("manifest 필수 PWA 아이콘은 revision 항목으로 남기고 glob 중복만 제외한다", () => {
   const viteConfig = readFileSync(resolve(rootDir, "vite.config.ts"), "utf8");
   for (const icon of [
     "apple-touch-icon.png",
@@ -142,5 +142,10 @@ test("manifest 필수 PWA 아이콘은 삭제·precache 제외하지 않는다",
   ]) {
     assert.ok(existsSync(resolve(publicDir, icon)), `${icon} 누락`);
     assert.match(viteConfig, new RegExp(icon.replaceAll(".", "\\.")), `${icon} manifest/includeAssets 누락`);
+    assert.match(
+      viteConfig,
+      new RegExp(`\\*\\*/${icon.replaceAll(".", "\\.")}`),
+      `${icon} glob 중복 제외 누락`,
+    );
   }
 });

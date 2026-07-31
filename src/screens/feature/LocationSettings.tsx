@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, MapPin, Check, Radar, BatteryCharging, History } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
+import { useActiveChild } from "@/app/activeChild";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { useLocationPreferences, useSaveLocationPreferences } from "@/queries/useLocation";
-import { isLocationTrackingSupported } from "@/lib/native/location";
+import { requestDeviceStatus } from "@/lib/api/endpoints/remote";
 import type { LocationIntervalMode, LocationPreferences } from "@/lib/api/endpoints/location";
+import { deviceLocationHealthView } from "@/transform/deviceNotificationHealth";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./LocationSettings.css";
@@ -16,11 +18,10 @@ import "./LocationSettings.css";
  *
  * 서버 위치 prefs 를 가족 단위로 저장하고, 아이 안드로이드 기기가 주기적으로 읽어
  * LocationService 측위 간격에 반영한다. localStorage 는 서버 조회 전 화면 초기값용 캐시다.
- * 위치 권한 상태만 브라우저 Permissions API 로 실제 신호를 읽어 표시한다.
+ * 권한·서비스 상태는 활성 아이의 device_health 보고를 기준으로 표시한다.
  */
 
 type UpdateInterval = LocationIntervalMode;
-type PermState = "granted" | "prompt" | "denied" | "unknown";
 type SavingAction = "background" | "battery" | `interval:${UpdateInterval}`;
 
 interface LocationPrefs {
@@ -90,17 +91,11 @@ function locationPreferencesHydrationKey(
   ]);
 }
 
-const PERM_LABEL: Record<PermState, { text: string; tone: "safe" | "caution" | "neutral" }> = {
-  granted: { text: "허용됨", tone: "safe" },
-  prompt: { text: "요청 필요", tone: "caution" },
-  denied: { text: "꺼짐", tone: "caution" },
-  unknown: { text: "확인 불가", tone: "neutral" },
-};
-
 export function LocationSettings() {
   const navigate = useNavigate();
   const { show } = useToast();
   const { familyId } = useAuth();
+  const { activeChild } = useActiveChild();
   const entitlementQuery = useEntitlement();
   const preferencesQuery = useLocationPreferences();
   const savePreferences = useSaveLocationPreferences();
@@ -108,7 +103,6 @@ export function LocationSettings() {
   const [prefs, setPrefs] = useState<LocationPrefs>(loadPrefs);
   const [hydratedFamilyId, setHydratedFamilyId] = useState<string | null>(null);
   const [hydratedPreferencesKey, setHydratedPreferencesKey] = useState<string | null>(null);
-  const [perm, setPerm] = useState<PermState>("unknown");
   const [savingAction, setSavingAction] = useState<SavingAction | null>(null);
   const saving = savingAction !== null || savePreferences.isPending;
   const currentFamilyIdRef = useRef(familyId);
@@ -137,26 +131,20 @@ export function LocationSettings() {
     await Promise.all([preferencesQuery.refetch(), entitlementQuery.refetch()]);
   };
 
-  const nativeSupported = isLocationTrackingSupported();
+  const childName = activeChild?.name?.trim() || "아이";
+  const childLocationHealth = deviceLocationHealthView(activeChild?.device_health);
+  const childLocationTone = childLocationHealth.state === "ready"
+    ? "safe"
+    : childLocationHealth.state === "attention"
+      ? "caution"
+      : "neutral";
 
-  // 브라우저 Permissions API 로 위치 권한 상태 조회(실 신호). 미지원 시 unknown 유지.
-  const refreshPermission = useCallback(() => {
-    if (!("permissions" in navigator) || !navigator.permissions?.query) {
-      setPerm("unknown");
-      return;
-    }
-    navigator.permissions
-      .query({ name: "geolocation" as PermissionName })
-      .then((statusResult) => {
-        setPerm(statusResult.state as PermState);
-        statusResult.onchange = () => setPerm(statusResult.state as PermState);
-      })
-      .catch(() => setPerm("unknown"));
-  }, []);
-
+  // 이 화면의 권한 대상은 부모 iPhone이 아니라 활성 아이 Android다.
+  // 진입 시 아이 기기에 최신 상태 보고를 요청하고, 응답은 기존 family realtime으로 반영한다.
   useEffect(() => {
-    refreshPermission();
-  }, [refreshPermission]);
+    if (!familyId || !activeChild?.user_id) return;
+    void requestDeviceStatus(familyId, activeChild.user_id);
+  }, [familyId, activeChild?.user_id]);
 
   useEffect(() => {
     setHydratedFamilyId(null);
@@ -233,31 +221,6 @@ export function LocationSettings() {
     void update(`interval:${interval}`, { interval }, "업데이트 주기를 저장했어요. 아이 기기에 곧 반영돼요", "⏱️");
   };
 
-  // 권한 요청: 웹은 getCurrentPosition 으로 OS 권한 프롬프트를 띄운다(실 동작).
-  const requestPermission = () => {
-    if (perm === "granted") return;
-    if (perm === "denied") {
-      navigate("/perm-denied", { state: { kind: "loc" } });
-      return;
-    }
-    if (!("geolocation" in navigator)) {
-      show("이 기기에서는 위치 권한을 확인할 수 없어요", "📍");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      () => {
-        refreshPermission();
-        show("위치 권한을 허용했어요", "✅");
-      },
-      () => {
-        refreshPermission();
-        show("위치 권한이 거부됐어요. 기기 설정에서 허용해 주세요", "⚠️");
-      },
-      { enableHighAccuracy: false, timeout: 8000 },
-    );
-  };
-
-  const permView = PERM_LABEL[perm];
   const retentionLabel = isPremium ? "30일 (프리미엄)" : "7일 (무료)";
 
   if (locationSettingsQueryState === "loading" || locationSettingsHydrating) {
@@ -310,28 +273,19 @@ export function LocationSettings() {
       </header>
 
       <div className="lset-body">
-        {/* 위치 권한 */}
-        <button
-          type="button"
-          className="lset-row hy-press"
-          onClick={requestPermission}
-          disabled={perm === "granted"}
-        >
+        {/* 활성 아이 Android의 실제 위치 권한·서비스 보고 상태 */}
+        <div className="lset-row" aria-live="polite">
           <span className="lset-row__icon">
             <MapPin size={18} strokeWidth={2.2} color="#2E86C1" />
           </span>
           <span className="lset-row__main">
-            <span className="lset-row__title">이 휴대폰의 위치 권한</span>
-            <span className="lset-row__sub">
-              {perm === "granted"
-                ? "이 휴대폰에서 위치를 사용할 수 있어요"
-                : perm === "unknown"
-                  ? "이 기기에서 상태를 확인할 수 없어요"
-                  : "탭하면 이 휴대폰의 권한을 요청해요"}
-            </span>
+            <span className="lset-row__title">아이 기기 위치 상태</span>
+            <span className="lset-row__sub">{childName} · {childLocationHealth.detail}</span>
           </span>
-          <span className={`lset-chip lset-chip--${permView.tone}`}>{permView.text}</span>
-        </button>
+          <span className={`lset-chip lset-chip--${childLocationTone}`}>
+            {childLocationHealth.shortLabel}
+          </span>
+        </div>
 
         {/* 백그라운드 위치 전송 */}
         <div className="lset-row">
@@ -426,11 +380,7 @@ export function LocationSettings() {
         {/* 정직 안내 — 설명은 짧게 두 줄까지만(사실은 유지, 문장만 줄임). */}
         <p className="lset-note hy-explain">
           <span className="hy-explain__lines">
-            {nativeSupported ? (
-              <span className="hy-explain__line">저장한 설정은 아이 앱이 주기적으로 확인해 반영해요.</span>
-            ) : (
-              <span className="hy-explain__line">위치 전송은 아이 안드로이드 앱에서 동작해요.</span>
-            )}
+            <span className="hy-explain__line">저장한 설정은 {childName}의 안드로이드 앱이 주기적으로 확인해 반영해요.</span>
             <span className="hy-explain__line">아이 기기의 권한·배터리 예외는 아이 앱에서 직접 허용해야 해요.</span>
           </span>
         </p>

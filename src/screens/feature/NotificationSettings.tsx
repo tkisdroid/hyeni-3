@@ -35,6 +35,7 @@ import { isNativePlatform } from "@/lib/native/plugins";
 import {
   ensureWebPushSubscription,
   getWebPushState,
+  isIosHomeScreenInstallRequired,
   unsubscribeWebPush,
   type WebPushSessionContext,
   type WebPushState,
@@ -178,7 +179,8 @@ export function NotificationSettings() {
     setQuietDraftState(resolved);
   }, []);
   const [quietSaveMessage, setQuietSaveMessage] = useState("");
-  const webDelivery = webPushDeliveryView(webPushState);
+  const iosHomeScreenInstallRequired = !nativePlatform && isIosHomeScreenInstallRequired();
+  const webDelivery = webPushDeliveryView(webPushState, { iosHomeScreenInstallRequired });
   const webPushContext = useMemo<WebPushSessionContext | null>(
     () => userId && familyId && (role === "parent" || role === "child")
       ? { userId, familyId, role }
