@@ -95,7 +95,7 @@ export function ChildLocationStatus() {
       title: "위치가 아직 안 보내지고 있어",
       desc: nativeSupported
         ? "아래 버튼을 누르면 지금 위치를 보낼 수 있어."
-        : "휴대폰 앱에서 위치가 자동으로 보내져. 지금 한번 확인해 볼래?",
+        : "휴대폰 앱에서 위치가 자동으로 보내져. 지금 한 번 확인해 볼래?",
     },
     permission: {
       kind: "permission",
@@ -140,7 +140,7 @@ export function ChildLocationStatus() {
       }
     } catch (error) {
       console.error("위치 켜기 실패:", error);
-      show("위치를 켜지 못했어. 다시 해볼래?", "⚠️");
+      show("위치를 켜지 못했어. 다시 해 볼래?", "⚠️");
     } finally {
       setWorking(false);
     }

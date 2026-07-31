@@ -97,7 +97,7 @@
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
 
-  color: var(--fg-muted);
+  color: var(--fg-secondary);
   padding: 4px 12px;
   border-radius: 999px;
   background: rgba(32, 26, 29, 0.05);
@@ -201,7 +201,9 @@
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
 
-  word-break: break-word;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 .mc-msg--peer .mc-bubble {
   border-radius: var(--radius-8) 20px 20px 20px;
@@ -353,10 +355,10 @@
 /* 입력 중 보이던 "파란 네모" 제거 — 접근성상 focus 표시는 없앨 수 없으므로(가드:
    출시 화면은 브라우저 focus outline을 제거하지 않는다) 모양과 색만 앱 톤으로 바꾼다.
    각져 보이던 원인은 이 필드에 radius 가 없어 outline 이 직사각형으로 그려진 것이다.
-   알약 안쪽에 딱 맞는 둥근 링으로 만들고 색은 accent 로 교체한다. */
+   알약 안쪽에 딱 맞는 둥근 링으로 만들고 공통 고대비 포커스 색을 사용한다. */
 .mc-input:focus,
 .mc-input:focus-visible {
-  outline-color: var(--hy-accent);
+  outline-color: var(--focus-ring-color);
   outline-width: 2px;
   outline-offset: 0;
   border-radius: 999px;
@@ -484,6 +486,10 @@
 .mc-photo-preview__save:disabled {
   opacity: 0.6;
 }
+.mc-photo-preview__save[aria-busy="true"]:disabled {
+  opacity: var(--busy-opacity);
+  cursor: progress;
+}
 
 /* 확대 무대 — 핀치/드래그를 직접 처리하므로 브라우저 기본 제스처를 끈다. */
 .mc-photo-preview__stage {
@@ -544,7 +550,6 @@
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
 
-  opacity: 0.75;
 }
 .mc-loc-addr {
   font-size: var(--type-body-sm);
@@ -568,8 +573,19 @@
 
 }
 
+.mc-root[data-child="true"] .mc-back {
+  width: var(--control-size-icon);
+  height: var(--control-size-icon);
+  min-width: var(--control-size-icon);
+  min-height: var(--control-size-icon);
+  margin: 0;
+  border-radius: var(--radius-pill);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-soft);
+}
+
 .mc-root[data-child="true"] .mc-msg--mine .mc-bubble {
-  background: linear-gradient(120deg, var(--hy-accent), var(--hy-accent-deep));
+  background: var(--cta-grad-accent);
   color: var(--bg-card);
   box-shadow: 0 10px 22px -10px rgba(240, 81, 143, 0.5);
 }
@@ -585,7 +601,7 @@
 }
 
 .mc-root[data-child="true"] .mc-send {
-  background: linear-gradient(120deg, var(--hy-accent), var(--hy-accent-deep));
+  background: var(--cta-grad-accent);
 }
 
 /* 실제 TSX 상호작용 요소의 최소 터치 영역 */

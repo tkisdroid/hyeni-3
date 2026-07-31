@@ -255,7 +255,7 @@ export interface ChildChatReply {
  */
 export async function sendChildChat(input: SendChildChatInput): Promise<ChildChatReply> {
   const message = String(input.message || "").trim();
-  if (!message) throw new Error("메시지를 입력해주세요");
+  if (!message) throw new Error("메시지를 입력해 줘");
   const characterEmoji = typeof input.characterEmoji === "string" ? input.characterEmoji.trim() : "";
   return apiPost<ChildChatReply>("/api/ai/child-chat", {
     message,
@@ -336,9 +336,9 @@ function normalizeParsedSchedule(data: VoiceParseResponse | null | undefined): P
  */
 export async function parseSchedule(input: ParseScheduleInput): Promise<ParseScheduleResult> {
   const text = String(input.text || "").trim();
-  if (!text && !input.image) throw new Error("정리할 내용을 입력해주세요");
+  if (!text && !input.image) throw new Error("정리할 내용을 입력해 주세요");
   const body = {
-    text: text || "이미지에서 일정을 추출해주세요",
+    text: text || "이미지에서 일정을 추출해 주세요",
     ...(input.image ? { image: input.image } : {}),
     mode: input.mode || "paste",
     academies: input.academies ?? [],

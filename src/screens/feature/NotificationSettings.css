@@ -150,6 +150,9 @@
   font-weight: var(--type-caption-weight);
 
   color: var(--fg-muted);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
 /* iOS 스타일 토글 스위치 */
@@ -163,7 +166,7 @@
   transition: background 0.2s ease;
 }
 .nst-switch[data-on="true"] {
-  background: var(--hy-accent);
+  background: var(--hy-accent-cta);
 }
 .nst-switch__knob {
   position: absolute;
@@ -383,7 +386,7 @@
   min-height: var(--control-min-size);
   width: 100%;
   margin-top: var(--spacing-16);
-  background: var(--hy-accent);
+  background: var(--hy-accent-cta);
   color: var(--bg-card);
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
@@ -467,6 +470,12 @@
 .nst-system-btn:disabled {
   color: var(--fg-disabled);
   background: var(--bg-press);
+}
+.nst-system-btn[aria-busy="true"]:disabled {
+  color: var(--bg-card);
+  background: var(--hy-accent-cta);
+  opacity: var(--busy-opacity);
+  cursor: progress;
 }
 .nst-system-btn--secondary {
   margin-top: -4px;

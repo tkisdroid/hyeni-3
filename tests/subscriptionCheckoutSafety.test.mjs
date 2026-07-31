@@ -23,7 +23,7 @@ test("구독 UI는 실제 Google Play offer 가격만 쓰고 확인되지 않은
   const credits = read("src/screens/feature/AiCredit.tsx");
   assert.doesNotMatch(subscription, /40% 할인|29,000|2,417원|월 2,900원으로 시작하기/);
   assert.doesNotMatch(pairing, /2,900원|아이별 월|₩[0-9,]+/);
-  assert.match(pairing, /두 번째 아이는 프리미엄에서 연결할 수 있어요/);
+  assert.match(pairing, /첫째 아이는 무료, 둘째부터는 프리미엄이에요/);
   assert.doesNotMatch(credits, /₩[0-9,]+/);
   assert.match(credits, /Google Play에서 확인/);
   assert.match(subscription, /fetchSubscriptionProductDetails/);

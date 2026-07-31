@@ -247,11 +247,9 @@ public class NotificationPlugin extends Plugin {
         boolean postPermissionGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
                 || ContextCompat.checkSelfPermission(ctx, android.Manifest.permission.POST_NOTIFICATIONS)
                 == PackageManager.PERMISSION_GRANTED;
-        boolean batteryOptimizationsIgnored = Build.VERSION.SDK_INT < Build.VERSION_CODES.M
-                || pm == null
+        boolean batteryOptimizationsIgnored = pm == null
                 || pm.isIgnoringBatteryOptimizations(ctx.getPackageName());
-        boolean powerSaveMode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
-                && pm != null
+        boolean powerSaveMode = pm != null
                 && pm.isPowerSaveMode();
         boolean backgroundRestricted = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
                 && activityManager != null
@@ -273,8 +271,7 @@ public class NotificationPlugin extends Plugin {
         boolean remoteListenChannelBlocked = remoteListenChannelImportance == NotificationManager.IMPORTANCE_NONE;
         String ringerMode = describeRingerMode(audio);
         String dndMode = describeDndMode(nm);
-        boolean dndAccess = Build.VERSION.SDK_INT < Build.VERSION_CODES.M
-                || nm == null
+        boolean dndAccess = nm == null
                 || nm.isNotificationPolicyAccessGranted();
         boolean screenInteractive = pm == null || pm.isInteractive();
         boolean keyguardLocked = keyguard != null && keyguard.isKeyguardLocked();
@@ -396,9 +393,12 @@ public class NotificationPlugin extends Plugin {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             intent = new Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT);
             intent.setData(Uri.parse("package:" + ctx.getPackageName()));
-        } else {
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
             intent.putExtra(Settings.EXTRA_APP_PACKAGE, ctx.getPackageName());
+        } else {
+            intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            intent.setData(Uri.parse("package:" + ctx.getPackageName()));
         }
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try {
@@ -568,7 +568,7 @@ public class NotificationPlugin extends Plugin {
     }
 
     private String describeDndMode(NotificationManager nm) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || nm == null) return "all";
+        if (nm == null) return "all";
         int filter = nm.getCurrentInterruptionFilter();
         if (filter == NotificationManager.INTERRUPTION_FILTER_ALL) return "all";
         if (filter == NotificationManager.INTERRUPTION_FILTER_PRIORITY) return "priority";

@@ -5,4 +5,13 @@
     <string name="package_name">com.hyeni.calendar</string>
     <string name="custom_url_scheme">com.hyeni.calendar</string>
     <string name="push_alert_default_title">혜니캘린더</string>
+    <string name="force_ring_icon" translatable="false">🚨</string>
+    <string name="force_ring_title">응급 신호</string>
+    <string name="force_ring_message_label">부모님이 남긴 메시지</string>
+    <string name="force_ring_acknowledge">✓ 확인했어요</string>
+    <string name="force_ring_footer">※ 부모님이 응급 신호로 보낸 알람이라 무음모드를 우회했어요</string>
+    <string name="force_ring_countdown">알람 자동 종료까지 %1$d초</string>
+    <string name="push_alert_icon" translatable="false">🔔</string>
+    <string name="push_alert_close">닫기</string>
+    <string name="push_alert_open_app">앱 열기</string>
 </resources>

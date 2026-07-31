@@ -21,6 +21,7 @@ import "./LocationSettings.css";
 
 type UpdateInterval = LocationIntervalMode;
 type PermState = "granted" | "prompt" | "denied" | "unknown";
+type SavingAction = "background" | "battery" | `interval:${UpdateInterval}`;
 
 interface LocationPrefs {
   background: boolean;
@@ -43,9 +44,9 @@ const INTERVALS: { id: UpdateInterval; label: string }[] = [
 ];
 
 const INTERVAL_DESC: Record<UpdateInterval, string> = {
-  live: "실시간 모드: 위치를 가장 자주 전송해 가장 신선하지만 배터리 소모가 커요.",
-  balanced: "균형 모드: 배터리와 정확도의 절충. 이동 시 자주, 정지 시 드물게 전송해요.",
-  saver: "절약 모드: 배터리를 우선해 전송 간격을 늘려요. 위치가 다소 늦게 갱신될 수 있어요.",
+  live: "위치를 자주 보내 최신 상태를 빠르게 보여주지만 배터리를 더 사용해요.",
+  balanced: "이동할 때는 자주, 멈춰 있을 때는 드물게 보내요.",
+  saver: "배터리를 아끼는 대신 위치가 조금 늦게 갱신될 수 있어요.",
 };
 
 function loadPrefs(): LocationPrefs {
@@ -108,7 +109,8 @@ export function LocationSettings() {
   const [hydratedFamilyId, setHydratedFamilyId] = useState<string | null>(null);
   const [hydratedPreferencesKey, setHydratedPreferencesKey] = useState<string | null>(null);
   const [perm, setPerm] = useState<PermState>("unknown");
-  const [saving, setSaving] = useState(false);
+  const [savingAction, setSavingAction] = useState<SavingAction | null>(null);
+  const saving = savingAction !== null || savePreferences.isPending;
   const currentFamilyIdRef = useRef(familyId);
   currentFamilyIdRef.current = familyId;
 
@@ -175,14 +177,19 @@ export function LocationSettings() {
     setHydratedPreferencesKey(serverPreferencesKey);
   }, [familyId, preferencesQuery.data, serverPreferencesKey]);
 
-  const update = async (patch: Partial<LocationPrefs>, message: string, icon: string) => {
+  const update = async (
+    action: SavingAction,
+    patch: Partial<LocationPrefs>,
+    message: string,
+    icon: string,
+  ) => {
     const updateFamilyId = familyId;
     if (!updateFamilyId || !locationSettingsDataReady || saving || savePreferences.isPending) {
       show("서버의 위치 설정을 확인한 뒤 다시 시도해 주세요", "⚠️");
       return;
     }
     const next = { ...prefs, ...patch };
-    setSaving(true);
+    setSavingAction(action);
     try {
       const saved = await savePreferences.mutateAsync({
         familyId: updateFamilyId,
@@ -209,21 +216,21 @@ export function LocationSettings() {
       console.error("위치 설정 저장 실패:", error);
       show("위치 설정 저장에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️");
     } finally {
-      setSaving(false);
+      setSavingAction(null);
     }
   };
 
   const toggleBackground = () => {
-    void update({ background: !prefs.background }, "아이 기기에 곧 반영돼요", "📍");
+    void update("background", { background: !prefs.background }, "아이 기기에 곧 반영돼요", "📍");
   };
 
   const toggleBatteryException = () => {
-    void update({ batterySaverException: !prefs.batterySaverException }, "배터리 설정 선호를 저장했어요", "🔋");
+    void update("battery", { batterySaverException: !prefs.batterySaverException }, "배터리 설정 선호를 저장했어요", "🔋");
   };
 
   const pickInterval = (interval: UpdateInterval) => {
     if (interval === prefs.interval) return;
-    void update({ interval }, "업데이트 주기를 저장했어요. 아이 기기에 곧 반영돼요", "⏱️");
+    void update(`interval:${interval}`, { interval }, "업데이트 주기를 저장했어요. 아이 기기에 곧 반영돼요", "⏱️");
   };
 
   // 권한 요청: 웹은 getCurrentPosition 으로 OS 권한 프롬프트를 띄운다(실 동작).
@@ -333,7 +340,7 @@ export function LocationSettings() {
           </span>
           <span className="lset-row__main">
             <span className="lset-row__title">백그라운드 위치 전송</span>
-            <span className="lset-row__sub">앱을 닫아도 위치를 전송해요</span>
+            <span className="lset-row__sub">앱을 닫아도 위치를 보내요</span>
           </span>
           <button
             type="button"
@@ -343,7 +350,8 @@ export function LocationSettings() {
             aria-label="백그라운드 위치 전송"
             data-on={prefs.background}
             onClick={toggleBackground}
-            disabled={saving || !locationSettingsDataReady} aria-busy={saving}
+            disabled={saving || !locationSettingsDataReady}
+            aria-busy={savingAction === "background"}
           >
             <span className="lset-toggle__knob" />
           </button>
@@ -361,8 +369,10 @@ export function LocationSettings() {
                   type="button"
                   className="lset-seg__item hy-press"
                   data-on={on}
+                  aria-pressed={on}
                   onClick={() => pickInterval(opt.id)}
-                  disabled={saving || !locationSettingsDataReady} aria-busy={saving}
+                  disabled={saving || !locationSettingsDataReady}
+                  aria-busy={savingAction === `interval:${opt.id}`}
                 >
                   {on && <Check size={13} strokeWidth={3} className="lset-seg__check" />}
                   {opt.label}
@@ -380,7 +390,7 @@ export function LocationSettings() {
           </span>
           <span className="lset-row__main">
             <span className="lset-row__title">배터리 최적화 예외</span>
-            <span className="lset-row__sub">아이 기기에서 직접 허용해야 최종 적용돼요</span>
+            <span className="lset-row__sub">아이 기기에서 직접 허용해야 적용돼요</span>
           </span>
           <button
             type="button"
@@ -390,7 +400,8 @@ export function LocationSettings() {
             aria-label="배터리 최적화 예외"
             data-on={prefs.batterySaverException}
             onClick={toggleBatteryException}
-            disabled={saving || !locationSettingsDataReady} aria-busy={saving}
+            disabled={saving || !locationSettingsDataReady}
+            aria-busy={savingAction === "battery"}
           >
             <span className="lset-toggle__knob" />
           </button>

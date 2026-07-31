@@ -186,6 +186,7 @@ export function MapPickerSheet({
                 key={p.id}
                 type="button"
                 className={`mps-saved__chip hy-press${pickedName === p.name ? " mps-saved__chip--on" : ""}`}
+                aria-pressed={pickedName === p.name}
                 onClick={() => pickSaved(p)}
               >
                 {p.is_home ? <Home size={16} strokeWidth={2.4} /> : <MapPin size={16} strokeWidth={2.4} />}

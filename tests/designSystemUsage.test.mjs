@@ -212,7 +212,7 @@ function resolvePixels(value) {
   if (!value) return null;
   const numeric = value.match(/^(-?[0-9.]+)px$/i)?.[1];
   if (numeric) return Number.parseFloat(numeric);
-  if (/^var\(--control-min-size\)$/i.test(value)) return 44;
+  if (/^var\(--control-(?:min-size|size-icon)\)$/i.test(value)) return 44;
   return null;
 }
 
@@ -1988,7 +1988,7 @@ const semanticSurfaceManifest = [
     ["src/screens/child/ChildLocationStatus.css", "cls-detail", "card"],
     ["src/screens/child/ChildSettings.css", "ks-hero", "hero"],
     ["src/screens/child/ChildSettings.css", "ks-row", "card"],
-    ["src/screens/child/ChildSettings.css", "ks-modal__card", "modal"],
+    ["src/screens/child/ChildSettings.css", "ks-help-modal__card", "modal"],
     ["src/screens/parent/ParentAccount.css", "pa-card", "card"],
     ["src/screens/parent/ParentAccount.css", "pa-action", "card"],
     ["src/screens/parent/ParentAccount.css", "pa-modal__card", "modal"],
@@ -2203,6 +2203,7 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/shared/MemoChat.css", ".mc-safety-action"],
   ["src/screens/shared/MemoChat.css", ".mc-attach"],
   ["src/screens/shared/MemoChat.css", ".mc-send"],
+  ["src/screens/shared/MemoChat.css", ".mc-root[data-child=\"true\"] .mc-back"],
   ["src/screens/shared/MemoChat.css", ".mc-root[data-child=\"true\"] .mc-quick-btn"],
   ["src/screens/child/overlays/ChildSheet.css", ".ks-cta"],
   ["src/screens/child/overlays/ChildSheet.css", ".ks-cta--soft"],
@@ -2263,7 +2264,7 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/feature/Feedback.css", ".fb-submit"],
   ["src/screens/feature/PhoneSetup.css", ".psu-back"],
   ["src/screens/feature/PhoneSetup.css", ".psu-save"],
-  ["src/screens/feature/PlaydateAccept.css", ".pa-back"],
+  ["src/screens/feature/PlaydateAccept.css", ".pa-screen .pa-back"],
   ["src/screens/feature/PlaydateAccept.css", ".pa-btn-accept"],
   ["src/screens/feature/StickerSend.css", ".ss-back"],
   ["src/screens/feature/StickerSend.css", ".ss-send"],
@@ -2306,10 +2307,10 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/child/ChildLocationStatus.css", ".cls-back"],
   ["src/screens/child/ChildLocationStatus.css", ".cls-cta"],
   ["src/screens/child/ChildSettings.css", ".ks-ask"],
-  ["src/screens/child/ChildSettings.css", ".ks-modal__x"],
+  ["src/screens/child/ChildSettings.css", ".ks-help-modal__x"],
   ["src/screens/parent/ParentAccount.css", ".pa-back"],
   ["src/screens/parent/ParentAccount.css", ".pa-save"],
-  ["src/screens/feature/DataSync.css", ".ds-back"],
+  ["src/screens/feature/DataSync.css", ".ds-root .ds-back"],
   ["src/screens/feature/DataSync.css", ".ds-sync__btn"],
   ["src/screens/feature/DataSync.css", ".ds-card__cta"],
   ["src/screens/feature/TrialLock.css", ".tl-back"],
@@ -2322,7 +2323,7 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/feature/DangerAlert.css", ".da-back"],
   ["src/screens/feature/DangerAlert.css", ".da-retry"],
   ["src/screens/feature/DangerAlert.css", ".da-hero__cta"],
-  ["src/screens/feature/DaySummary.css", ".ds-back"],
+  ["src/screens/feature/DaySummary.css", ".ds-screen .ds-back"],
   ["src/screens/feature/DailySafetyReport.css", ".dr-back"],
   ["src/screens/feature/DailySafetyReport.css", ".dr-source-error__retry"],
   ["src/screens/feature/DailySafetyReport.css", ".dr-link"],
@@ -2639,7 +2640,7 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/child/AiFriendChat.css", ".afc-bubble--me"],
   ["src/screens/onboarding/Onboarding.css", ".ob-pair-cell"],
   ["src/screens/feature/FriendPlay.css", ".fp-parent-rule span"],
-  ["src/screens/feature/PlaydateAccept.css", ".pa-note"],
+  ["src/screens/feature/PlaydateAccept.css", ".pa-screen .pa-note"],
   ["src/screens/feature/RouteView.css", ".rv-map__label"],
   ["src/components/MapPickerSheet.css", ".mps-map__hint"],
   ["src/screens/feature/DailySafetyReport.css", ".dr-progress"],

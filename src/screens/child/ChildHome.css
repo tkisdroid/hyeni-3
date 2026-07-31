@@ -24,14 +24,18 @@
   --kd-done-soft: #e7f8f0;
   --kd-go-1: #46d19b;
   --kd-go-2: #23a876;
-  --kd-card-shadow: 0 16px 36px -18px rgba(32, 26, 29, 0.24);
-  --kd-tile-shadow: 0 14px 30px -16px rgba(32, 26, 29, 0.24);
-  --kd-card-line: 1px solid rgba(32, 26, 29, 0.05);
+  --kd-card-shadow: 0 16px 36px -18px color-mix(in srgb, var(--hy-accent-text) 28%, transparent);
+  --kd-tile-shadow: 0 14px 30px -16px color-mix(in srgb, var(--hy-accent-text) 26%, transparent);
+  --kd-card-line: 1px solid color-mix(in srgb, var(--hy-accent) 20%, transparent);
   /* 지도가 화면 최상단부터 그려지므로 상태바(시계·배터리) 높이만큼 내려야 글자가 겹치지 않는다. */
   --kd-safe: env(safe-area-inset-top, 0px);
 
   min-height: 100%;
-  background: linear-gradient(180deg, #eaf6ff 0%, var(--bg-body) 70%);
+  background: linear-gradient(
+    180deg,
+    var(--hy-accent-soft) 0%,
+    color-mix(in srgb, var(--hy-accent-soft) 34%, var(--bg-body)) 70%
+  );
 }
 
 .kd-title {
@@ -54,7 +58,12 @@
   padding-top: var(--kd-safe);
   overflow: hidden;
   border-radius: 0 0 var(--radius-20) var(--radius-20);
-  background: linear-gradient(180deg, var(--kd-sky-1) 0%, var(--kd-sky-2) 52%, var(--kd-sky-3) 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--hy-accent-light) 62%, var(--kd-sky-1)) 0%,
+    color-mix(in srgb, var(--hy-accent-soft) 68%, var(--kd-sky-2)) 52%,
+    color-mix(in srgb, var(--hy-accent-soft) 42%, var(--kd-sky-3)) 100%
+  );
   box-shadow: var(--shadow-floating);
 }
 
@@ -384,6 +393,9 @@
   color: var(--kd-bubble);
 
   white-space: pre-line;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
   text-align: center;
 }
 .kd-hyeni__mascot {
@@ -405,7 +417,11 @@
 }
 
 .kd-card {
-  background: var(--bg-card);
+  background: linear-gradient(
+    145deg,
+    var(--bg-card) 72%,
+    color-mix(in srgb, var(--hy-accent-soft) 48%, var(--bg-card))
+  );
   border-radius: var(--radius-16);
   padding: 16px;
   border: var(--kd-card-line);
@@ -485,9 +501,10 @@
 .kd-next__cta {
   margin-top: 16px;
   width: 100%;
-  height: 54px;
+  height: var(--control-height-primary);
+  flex: none;
   border-radius: var(--radius-20);
-  background: linear-gradient(120deg, var(--kd-go-1), var(--kd-go-2));
+  background: var(--cta-grad-mint);
   box-shadow: 0 12px 26px -10px rgba(35, 168, 118, 0.55);
   display: flex;
   align-items: center;
@@ -570,7 +587,7 @@
   --press: 0.84;
 }
 .kd-prep__check[data-done="true"] {
-  background: linear-gradient(120deg, var(--hy-accent), var(--hy-accent-deep));
+  background: var(--hy-accent-cta);
   border-color: transparent;
 }
 .kd-prep__icon {
@@ -732,7 +749,7 @@
   height: 26px;
   padding: 0 8px;
   border-radius: var(--radius-12);
-  background: var(--hy-accent);
+  background: var(--hy-accent-cta);
   color: var(--bg-card);
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);
@@ -795,7 +812,11 @@
 .kd-tile {
   position: relative;
   text-align: left;
-  background: var(--bg-card);
+  background: linear-gradient(
+    145deg,
+    var(--bg-card) 72%,
+    color-mix(in srgb, var(--hy-accent-soft) 46%, var(--bg-card))
+  );
   border-radius: var(--radius-16);
   padding: 12px;
   border: var(--kd-card-line);
@@ -811,7 +832,13 @@
   object-fit: contain;
 }
 .kd-tile__title {
-  display: block;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
   font-size: var(--type-body-lg);
   line-height: var(--type-body-lg-line-height);
   font-weight: var(--type-body-lg-weight);
@@ -838,7 +865,7 @@
   height: 26px;
   padding: 0 8px;
   border-radius: 999px;
-  background: var(--hy-accent-deep);
+  background: var(--hy-accent-cta);
   color: var(--bg-card);
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
@@ -1076,7 +1103,7 @@
   gap: 8px;
   height: 50px;
   border-radius: 16px;
-  background: var(--bg-card);
+  background: color-mix(in srgb, var(--hy-accent-soft) 30%, var(--bg-card));
   border: var(--kd-card-line);
   box-shadow: var(--kd-tile-shadow);
   font-size: var(--type-body-sm);

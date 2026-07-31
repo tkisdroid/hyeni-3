@@ -648,6 +648,7 @@ export function EventForm() {
                     key={m.id}
                     type="button"
                     className="ef-chip hy-press"
+                    aria-pressed={active}
                     style={
                       active
                         ? {
@@ -735,6 +736,7 @@ export function EventForm() {
                   key={d.minutes}
                   type="button"
                   className="ef-chip hy-press"
+                  aria-pressed={active}
                   style={
                     active
                       ? {
@@ -769,6 +771,7 @@ export function EventForm() {
                   key={c.id}
                   type="button"
                   className="ef-chip hy-press"
+                  aria-pressed={active}
                   style={
                     active
                       ? { background: c.soft, color: c.color, border: `1.5px solid ${c.color}` }
@@ -802,6 +805,7 @@ export function EventForm() {
                     key={p.id}
                     type="button"
                     className="ef-chip hy-press"
+                    aria-pressed={active}
                     style={
                       active
                         ? {
@@ -967,6 +971,7 @@ export function EventForm() {
                   key={p.label}
                   type="button"
                   className="ef-chip hy-press"
+                  aria-pressed={active}
                   style={
                     active
                       ? {

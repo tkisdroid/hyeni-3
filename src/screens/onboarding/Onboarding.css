@@ -134,7 +134,8 @@
 /* 공통 CTA */
 .ob-cta {
   width: 100%;
-  height: 56px;
+  height: var(--control-height-primary);
+  flex: none;
   border-radius: 16px;
   font-size: var(--type-body-lg);
   line-height: var(--type-body-lg-line-height);
@@ -149,11 +150,11 @@
   box-shadow: 0 14px 28px -10px rgba(240, 81, 143, 0.6);
 }
 .ob-cta--green {
-  background: linear-gradient(120deg, #46d19b, #23a876);
+  background: var(--cta-grad-mint);
   box-shadow: 0 16px 32px -12px rgba(35, 168, 118, 0.55);
 }
 .ob-cta--lav {
-  background: linear-gradient(120deg, #b79dfb, #8b6bec);
+  background: var(--cta-grad-lavender);
   box-shadow: 0 14px 28px -10px rgba(124, 92, 225, 0.6);
 }
 
@@ -439,7 +440,8 @@
   gap: 12px;
 }
 .ob-social {
-  height: 56px;
+  height: var(--control-height-secondary);
+  flex: none;
   border-radius: 16px;
   display: flex;
   align-items: center;
@@ -464,11 +466,11 @@
   box-shadow: 0 6px 16px rgba(32, 26, 29, 0.05);
   gap: 8px;
 }
-/* 네이버 브랜드 가이드: 그린 #03C75A + 흰색 로고·문구(브랜드 색은 토큰화 대상 아님). */
+/* 네이버 인지색을 유지하되 흰 로고·문구가 AA를 만족하는 접근성용 딥 그린. */
 .ob-social--naver {
-  background: #03c75a;
+  background: #00843c;
   color: #fff;
-  box-shadow: 0 10px 24px -10px rgba(3, 199, 90, 0.7);
+  box-shadow: 0 10px 24px -10px rgba(0, 132, 60, 0.55);
 }
 .ob-divider {
   display: flex;
@@ -511,7 +513,8 @@
 
 }
 .ob-loginbtn {
-  height: 54px;
+  height: var(--control-height-primary);
+  flex: none;
   border-radius: var(--radius-16);
   background: var(--cta-grad-accent);
   box-shadow: 0 14px 28px -10px rgba(240, 81, 143, 0.6);
@@ -593,8 +596,8 @@
   color: var(--bg-card);
 }
 .ob-survey-card--on .ob-survey-check {
-  border-color: var(--hy-accent);
-  background: var(--hy-accent);
+  border-color: var(--hy-accent-cta);
+  background: var(--hy-accent-cta);
 }
 .ob-survey-main {
   flex: 1;
@@ -990,7 +993,7 @@
 
 }
 .ob-consent-primary {
-  background: var(--mint-600);
+  background: var(--mint-cta);
   color: var(--bg-card);
 }
 .ob-consent-secondary {

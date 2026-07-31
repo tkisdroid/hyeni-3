@@ -182,7 +182,7 @@ public class ForceRingActivity extends AppCompatActivity {
                     stopForAutoTimeout();
                     return;
                 }
-                countdownText.setText("알람 자동 종료까지 " + secondsLeft + "초");
+                countdownText.setText(getString(R.string.force_ring_countdown, secondsLeft));
                 secondsLeft--;
                 countdownHandler.postDelayed(this, 1000);
             }

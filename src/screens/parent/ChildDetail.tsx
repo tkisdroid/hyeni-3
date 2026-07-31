@@ -14,6 +14,7 @@ import { mapFamilyToView } from "@/transform/familyView";
 import { todayDateKey, parseAppDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { formatFreshness } from "@/transform/locationView";
+import { hasJongseong } from "@/transform/adventureMap";
 import { Loading } from "@/components/ui/Loading";
 import "./ChildDetail.css";
 
@@ -194,7 +195,7 @@ export function ChildDetail() {
     }
     try {
       await unpair.mutateAsync(childUserId);
-      show(`${name}을(를) 가족에서 삭제했어요`, "🗑️");
+      show(`${name}${hasJongseong(name) ? "을" : "를"} 가족에서 삭제했어요`, "🗑️");
       navigate(-1);
     } catch (e) {
       show(e instanceof Error ? e.message : "삭제에 실패했어요", "⚠️");
@@ -371,7 +372,8 @@ export function ChildDetail() {
                 type="button"
                 className="cd-confirm__cancel hy-press"
                 onClick={() => setConfirmDelete(false)}
-                disabled={unpair.isPending} aria-busy={unpair.isPending}
+                disabled={unpair.isPending}
+                data-progress-owner="confirm-action"
               >
                 취소
               </button>

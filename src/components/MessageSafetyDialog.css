@@ -195,6 +195,12 @@
 .msd-block:disabled,
 .msd-close:disabled {
   opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.msd-report[aria-busy="true"]:disabled,
+.msd-block[aria-busy="true"]:disabled {
+  opacity: var(--busy-opacity);
   cursor: progress;
 }
 

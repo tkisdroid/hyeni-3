@@ -203,7 +203,7 @@ export function AiFriendSetup() {
           aria-label="뒤로"
           onClick={() => navigate(-1)}
         >
-          <ChevronLeft size={22} strokeWidth={2.2} color="#6D4E9C" />
+          <ChevronLeft size={22} strokeWidth={2.2} color="var(--hy-accent-text)" />
         </button>
         <span className="afs-title">내 AI 친구</span>
       </header>

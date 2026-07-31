@@ -171,11 +171,11 @@
   opacity: 0.5;
 }
 .ci-btn--copy {
-  background: #fde7f1;
-  color: #b0477a;
+  background: var(--rose-soft);
+  color: var(--rose-text);
 }
 .ci-btn--share {
-  background: linear-gradient(120deg, #b79dfb, #8b6bec);
+  background: var(--cta-grad-lavender);
   color: #fff;
   box-shadow: 0 10px 22px -10px rgba(139, 107, 236, 0.7);
 }

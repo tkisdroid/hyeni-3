@@ -13,7 +13,7 @@ function readSource(relativePath) {
 test("SOS 는 3초 홀드 안내를 반말로 명확히 말한다(시안 2a)", () => {
   const childSos = readSource("src/screens/child/ChildSos.tsx");
 
-  assert.match(childSos, /꾹 눌러서 도와줘!/);
+  assert.match(childSos, /꾹 눌러서 도와 줘!/);
   assert.match(childSos, /3초 꾹/);
   assert.match(childSos, /찾은 <b>내 위치<\/b>도 함께 담을게/);
   // 존댓말 금지(아이 모드) — 시안의 "알려요/놀라요"를 반말로 고쳤다.

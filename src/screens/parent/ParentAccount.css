@@ -88,7 +88,7 @@
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
 
-  color: #6d6d8a;
+  color: var(--fg-secondary);
 }
 
 /* ── 그룹(라벨 + 카드) ────────────────────────────────────────────────────── */

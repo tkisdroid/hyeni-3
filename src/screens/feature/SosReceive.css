@@ -118,7 +118,7 @@
   gap: 4px;
   padding: 8px 12px;
   border-radius: var(--radius-pill);
-  background: var(--danger-500);
+  background: var(--danger-cta);
   color: #fff;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
@@ -134,7 +134,7 @@
   gap: 12px;
   padding: 12px 16px;
   border-radius: var(--radius-20);
-  background: var(--danger-500);
+  background: var(--danger-cta);
   color: #fff;
   box-shadow: var(--shadow-floating);
   animation: hy-soft 1.4s ease-in-out infinite;
@@ -166,14 +166,14 @@
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
 
-  opacity: 0.9;
   font-variant-numeric: tabular-nums;
 }
 .sr-banner-chip {
   flex: none;
   padding: 4px 8px;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.22);
+  background: var(--bg-card);
+  color: var(--fg-primary);
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -258,7 +258,7 @@
   opacity: 0.55;
 }
 .sr-act--call {
-  background: var(--danger-500);
+  background: var(--danger-cta);
   color: #fff;
   box-shadow: 0 12px 24px -12px rgba(229, 72, 77, 0.6);
 }
@@ -289,11 +289,11 @@
      리본처럼 보였다(TK 제보의 실체). 압축 금지. */
   flex: none;
   margin-top: 4px;
-  height: 56px;
+  height: var(--control-height-primary);
   border-radius: var(--radius-lg);
   /* 흰 라벨이므로 두 stop 모두 4.5:1 을 넘는 채움을 쓴다
      (이전 mint-400 stop 은 1.9:1 이라 위급 화면의 확인 버튼이 가장 안 읽혔다). */
-  background: linear-gradient(120deg, var(--mint-cta), var(--mint-text));
+  background: var(--cta-grad-mint);
   box-shadow: 0 12px 26px -10px rgba(35, 168, 118, 0.55);
   color: #fff;
   display: inline-flex;

@@ -118,10 +118,10 @@ export function ChildInvite() {
     if (clip?.writeText) {
       clip.writeText(text).then(
         () => show("연결 링크를 복사했어요", "🔗"),
-        () => show(`코드 ${pairCode} 를 직접 전달해 주세요`, "✏️"),
+        () => show(`코드 ${pairCode}를 직접 전달해 주세요`, "✏️"),
       );
     } else {
-      show(`코드 ${pairCode} 를 직접 전달해 주세요`, "✏️");
+      show(`코드 ${pairCode}를 직접 전달해 주세요`, "✏️");
     }
   };
 

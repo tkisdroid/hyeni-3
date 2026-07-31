@@ -19,7 +19,7 @@ test("저장된 AI assistant 메시지는 즉시 신고할 수 있고 로컬 인
   assert.match(ai, /이 답변 신고/);
   assert.match(ai, /useReportAiMessage/);
   assert.match(endpoint, /\/api\/ai\/messages\/\$\{encodeURIComponent\(messageId\)\}\/report/);
-  assert.match(ai, /알려줘서 고마워\. 이 답변은 다시 확인할게\./);
+  assert.match(ai, /알려 줘서 고마워\. 이 답변은 다시 확인할게\./);
 });
 
 test("가족 메모 상대 메시지에는 앱 내 신고·차단 동선과 차단 해제가 있다", () => {

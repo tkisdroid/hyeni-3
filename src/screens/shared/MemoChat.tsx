@@ -189,18 +189,30 @@ export function MemoChat() {
     try {
       const result = await saveImageToDevice(url);
       if (result.ok) {
-        show(result.target === "gallery" ? "사진첩에 저장했어요." : "사진을 내려받았어요.");
+        show(
+          result.target === "gallery"
+            ? (isChildSession ? "사진첩에 저장했어." : "사진첩에 저장했어요.")
+            : (isChildSession ? "사진을 내려받았어." : "사진을 내려받았어요."),
+        );
       } else if (result.reason === "permission_denied") {
-        show("저장하려면 기기 설정에서 저장 권한을 허용해 주세요.");
+        show(
+          isChildSession
+            ? "저장하려면 기기 설정에서 저장 권한을 허용해 줘."
+            : "저장하려면 기기 설정에서 저장 권한을 허용해 주세요.",
+        );
       } else if (result.reason === "unsupported") {
-        show("이 기기에서는 저장을 지원하지 않아요.");
+        show(isChildSession ? "이 기기에서는 저장할 수 없어." : "이 기기에서는 저장을 지원하지 않아요.");
       } else {
-        show("사진을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
+        show(
+          isChildSession
+            ? "사진을 저장하지 못했어. 잠시 후 다시 해 줘."
+            : "사진을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.",
+        );
       }
     } finally {
       setSavingPhoto(false);
     }
-  }, [previewImagePath, savingPhoto, show]);
+  }, [isChildSession, previewImagePath, savingPhoto, show]);
   // 신고·차단은 상대 메시지를 길게 누르면 열린다(버튼을 매 메시지에 띄우지 않기 위해).
   // 내 메시지와 발신자를 알 수 없는 레거시 행은 신고 대상이 아니므로 길게 누르기를 붙이지 않는다.
   const bindLongPressSafety = useLongPress<ThreadMsg>((m) => setSafetyTarget(m));
@@ -271,7 +283,7 @@ export function MemoChat() {
 
   const handleSend = () => {
     if (!scopeChild) {
-      show("대화 대상 아이를 확인할 수 없어요", "⚠️");
+      show(isChildSession ? "내 대화 정보를 확인할 수 없어" : "대화 대상 아이를 확인할 수 없어요", "⚠️");
       return;
     }
     const text = draft.trim();
@@ -689,9 +701,10 @@ export function MemoChat() {
                   className="mc-photo-preview__save hy-press"
                   onClick={() => void savePreviewPhoto()}
                   disabled={savingPhoto}
+                  aria-busy={savingPhoto}
                 >
                   <Download size={16} strokeWidth={2.2} aria-hidden="true" />
-                  {savingPhoto ? "저장 중" : "저장"}
+                  {savingPhoto ? "저장 중…" : "저장"}
                 </button>
                 <button
                   type="button"
@@ -724,7 +737,13 @@ export function MemoChat() {
               />
             </div>
             <p className="mc-photo-preview__hint">
-              {photoZoom.isZoomed ? "끌어서 옮기고, 두 번 탭하면 원래 크기로 돌아가요" : "두 손가락으로 벌리거나 두 번 탭하면 확대돼요"}
+              {photoZoom.isZoomed
+                ? (isChildSession
+                    ? "끌어서 옮기고, 두 번 탭하면 원래 크기로 돌아가"
+                    : "끌어서 옮기고, 두 번 탭하면 원래 크기로 돌아가요")
+                : (isChildSession
+                    ? "두 손가락으로 벌리거나 두 번 탭하면 확대돼"
+                    : "두 손가락으로 벌리거나 두 번 탭하면 확대돼요")}
             </p>
           </div>
         </div>

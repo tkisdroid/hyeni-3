@@ -415,7 +415,7 @@
   color: var(--fg-primary);
 }
 .cd-confirm__delete {
-  background: var(--danger-500);
+  background: var(--danger-cta);
   color: #fff;
 }
 .cd-confirm__delete:disabled,

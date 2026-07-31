@@ -140,11 +140,7 @@ public final class NotificationScheduleManager {
             return;
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, fireAt, pi);
-        } else {
-            am.set(AlarmManager.RTC_WAKEUP, fireAt, pi);
-        }
+        am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, fireAt, pi);
     }
 
     private static PendingIntent buildPendingIntent(Context context, JSONObject item, int flags) {
@@ -174,10 +170,7 @@ public final class NotificationScheduleManager {
     }
 
     private static SharedPreferences getPrefs(Context context) {
-        Context storageContext = context;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            storageContext = context.createDeviceProtectedStorageContext();
-        }
+        Context storageContext = context.createDeviceProtectedStorageContext();
         return storageContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     }
 

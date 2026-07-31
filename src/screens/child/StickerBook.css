@@ -142,7 +142,7 @@
   right: 8px;
   padding: 4px 8px;
   border-radius: 999px;
-  background: var(--hy-accent-deep);
+  background: var(--hy-accent-cta);
   color: var(--bg-card);
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);

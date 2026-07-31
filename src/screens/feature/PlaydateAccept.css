@@ -19,7 +19,7 @@
   background: linear-gradient(180deg, rgba(253, 244, 241, 0.9) 60%, rgba(253, 244, 241, 0));
   backdrop-filter: blur(8px);
 }
-.pa-back {
+.pa-screen .pa-back {
   /* 원형 뒤로가기도 최소 조작 영역 44px(실측 42px). */
   width: var(--control-min-size);
   height: var(--control-min-size);
@@ -42,7 +42,7 @@
 }
 
 /* ── 스크롤 콘텐츠 ──────────────────────────────────────────────────────── */
-.pa-content {
+.pa-screen .pa-content {
   padding: 4px 20px calc(40px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
@@ -55,6 +55,9 @@
   font-weight: var(--type-body-sm-weight);
 
   color: var(--fg-muted);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 
 }
 .pa-intro b {
@@ -62,7 +65,7 @@
 }
 
 /* ── 요청 카드 ──────────────────────────────────────────────────────────── */
-.pa-card {
+.pa-screen .pa-card {
   animation: hy-fadein 0.3s ease both;
   padding: 16px;
 }
@@ -130,7 +133,7 @@
 }
 
 /* ── 아이 메모 말풍선 ───────────────────────────────────────────────────── */
-.pa-note {
+.pa-screen .pa-note {
   margin-top: 12px;
   padding: 12px 12px;
   border-radius: var(--radius-16) var(--radius-16) var(--radius-16) var(--radius-8);
@@ -164,12 +167,16 @@
 .pa-btn-accept {
   height: 50px;
   border-radius: var(--radius-16);
-  background: linear-gradient(120deg, #46d19b, #23a876);
+  background: var(--cta-grad-mint);
   box-shadow: 0 12px 24px -10px rgba(35, 168, 118, 0.55);
   color: #fff;
   font-size: var(--type-body);
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-8);
 
   --press: 0.97;
 }

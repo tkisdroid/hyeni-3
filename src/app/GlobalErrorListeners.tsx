@@ -7,18 +7,21 @@
  */
 import { useEffect } from "react";
 import { announceFallbackToast, isNoiseError } from "@/lib/globalToast";
-
-const FALLBACK_TEXT = "앗, 문제가 생겼어요. 다시 한번 시도해 주세요";
+import { useAuth } from "@/auth/AuthContext";
 
 export function GlobalErrorListeners() {
+  const { role } = useAuth();
   useEffect(() => {
+    const fallbackText = role === "child"
+      ? "앗, 문제가 생겼어. 다시 한 번 해 줘"
+      : "앗, 문제가 생겼어요. 다시 한 번 시도해 주세요";
     const onError = (e: ErrorEvent) => {
       if (isNoiseError(e.error ?? e.message)) return;
-      announceFallbackToast(FALLBACK_TEXT, "⚠️");
+      announceFallbackToast(fallbackText, "⚠️");
     };
     const onRejection = (e: PromiseRejectionEvent) => {
       if (isNoiseError(e.reason)) return;
-      announceFallbackToast(FALLBACK_TEXT, "⚠️");
+      announceFallbackToast(fallbackText, "⚠️");
     };
     window.addEventListener("error", onError);
     window.addEventListener("unhandledrejection", onRejection);
@@ -26,6 +29,6 @@ export function GlobalErrorListeners() {
       window.removeEventListener("error", onError);
       window.removeEventListener("unhandledrejection", onRejection);
     };
-  }, []);
+  }, [role]);
   return null;
 }

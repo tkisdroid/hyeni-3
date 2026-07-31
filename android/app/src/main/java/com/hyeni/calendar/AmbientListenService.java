@@ -883,11 +883,7 @@ public class AmbientListenService extends Service {
 
     private void removeForegroundNotification() {
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                stopForeground(Service.STOP_FOREGROUND_REMOVE);
-            } else {
-                stopForeground(true);
-            }
+            stopForeground(Service.STOP_FOREGROUND_REMOVE);
         } catch (Exception error) {
             Log.w(TAG, "Foreground notification removal failed", error);
         }

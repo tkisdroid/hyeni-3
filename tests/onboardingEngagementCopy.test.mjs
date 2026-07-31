@@ -9,7 +9,7 @@ const source = readFileSync(resolve(rootDir, "src/screens/onboarding/Onboarding.
 
 test("가입 전 설문은 첫 단계에서 20% 진행률로 시작한다", () => {
   assert.match(source, /type Step = .*"survey"/);
-  assert.match(source, /가입 전에 한 가지만 알려주세요/);
+  assert.match(source, /가입 전에 한 가지만 알려 주세요/);
   assert.match(source, /percent=\{20\}/);
 });
 

@@ -2,7 +2,7 @@
 
 .cs-root {
   min-height: 100%;
-  background: linear-gradient(160deg, #ff8ba3 0%, #f04770 78%);
+  background: var(--cta-grad-danger);
   color: var(--bg-card);
 }
 
@@ -50,9 +50,11 @@
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
 
-  color: rgba(255, 255, 255, 0.92);
+  color: #fff;
   text-align: center;
-
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 .cs-desc b {
   font-weight: 900;
@@ -62,11 +64,11 @@
   width: min(100%, 360px);
   margin-top: 12px;
   padding: 12px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  border: 1px solid color-mix(in srgb, var(--danger-500) 24%, transparent);
   border-radius: var(--radius-16);
-  background: rgba(255, 255, 255, 0.16);
+  background: var(--danger-soft);
   box-shadow: none;
-  color: var(--bg-card);
+  color: var(--danger-text);
   text-align: center;
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
@@ -162,12 +164,12 @@
   height: 44px;
   padding: 0 16px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--bg-card);
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);
   font-weight: var(--type-body-sm-weight);
 
-  color: var(--bg-card);
+  color: var(--danger-text);
 }
 
 .cs-foot {
@@ -177,8 +179,11 @@
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
 
-  color: rgba(255, 255, 255, 0.85);
+  color: #fff;
   text-align: center;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
 /* 보낸 뒤 / 보내는 중 / 실패 */
@@ -211,7 +216,7 @@
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
 
-  color: rgba(255, 255, 255, 0.92);
+  color: #fff;
   text-align: center;
 
 }
@@ -288,12 +293,12 @@
   height: 48px;
   padding: 0 20px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--bg-card);
   font-size: var(--type-body);
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
 
-  color: var(--bg-card);
+  color: var(--danger-text);
 }
 
 .cs-spinner {

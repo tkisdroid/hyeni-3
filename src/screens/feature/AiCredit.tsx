@@ -32,6 +32,8 @@ type CreditPack = {
   ring: string;
 };
 
+type SettingsSaveAction = "ai-toggle" | "limit-decrease" | "limit-increase" | "advanced" | null;
+
 const CREDIT_PACKS: CreditPack[] = [
   {
     id: "p30",
@@ -94,6 +96,7 @@ export function AiCredit() {
     await Promise.all([creditQuery.refetch(), friendSettingsQuery.refetch()]);
   };
   const saveSettings = useSaveAiFriendSettings();
+  const [settingsSaveAction, setSettingsSaveAction] = useState<SettingsSaveAction>(null);
   const aiEnabled = friendSettings?.ai_enabled ?? false;
   const dailyLimit = friendSettings?.daily_limit ?? 5;
   const [forbiddenTopicsText, setForbiddenTopicsText] = useState("");
@@ -131,11 +134,13 @@ export function AiCredit() {
 
   const toggleAiEnabled = () => {
     if (!aiCreditDataReady || !childUserId || saveSettings.isPending) return;
+    setSettingsSaveAction("ai-toggle");
     saveSettings.mutate(
       { childUserId, patch: { ai_enabled: !aiEnabled } },
       {
         onSuccess: () => show(!aiEnabled ? "AI 친구를 켰어요" : "AI 친구를 껐어요", "🤖"),
         onError: () => show("설정 저장에 실패했어요", "⚠️"),
+        onSettled: () => setSettingsSaveAction(null),
       },
     );
   };
@@ -151,11 +156,13 @@ export function AiCredit() {
       allowScheduleActions,
       allowContactActions,
     });
+    setSettingsSaveAction("advanced");
     saveSettings.mutate(
       { childUserId, patch: { ai_enabled: aiEnabled, daily_limit: dailyLimit, ...patch } },
       {
         onSuccess: () => show("AI 친구 상세 설정을 저장했어요", "🤖"),
         onError: () => show("설정 저장에 실패했어요", "⚠️"),
+        onSettled: () => setSettingsSaveAction(null),
       },
     );
   };
@@ -163,11 +170,19 @@ export function AiCredit() {
     if (!aiCreditDataReady || !childUserId || saveSettings.isPending) return;
     const next = Math.min(100, Math.max(1, dailyLimit + delta));
     if (next === dailyLimit) return;
+    setSettingsSaveAction(delta < 0 ? "limit-decrease" : "limit-increase");
     saveSettings.mutate(
       { childUserId, patch: { daily_limit: next } },
-      { onError: () => show("설정 저장에 실패했어요", "⚠️") },
+      {
+        onError: () => show("설정 저장에 실패했어요", "⚠️"),
+        onSettled: () => setSettingsSaveAction(null),
+      },
     );
   };
+  const aiToggleSaving = saveSettings.isPending && settingsSaveAction === "ai-toggle";
+  const limitDecreaseSaving = saveSettings.isPending && settingsSaveAction === "limit-decrease";
+  const limitIncreaseSaving = saveSettings.isPending && settingsSaveAction === "limit-increase";
+  const advancedSettingsSaving = saveSettings.isPending && settingsSaveAction === "advanced";
 
   // 결제 가능 여부(네이티브 Android 만 true). 웹(PWA)에서는 결제 버튼을 비활성화한다.
   const billingAvailable = isBillingAvailable();
@@ -318,7 +333,7 @@ export function AiCredit() {
       <div className="hy-content ac-content">
         {aiCreditDataEmpty && (
           <div className="sqs-inline-empty">
-            아직 크레딧 또는 AI 친구 설정 기록이 없어요. 현재 안전한 기본값부터 시작할 수 있어요.
+            아직 크레딧 또는 AI 친구 설정 기록이 없어요. 안전한 기본 설정으로 시작할 수 있어요.
           </div>
         )}
         {/* 잔액 히어로 */}
@@ -334,16 +349,16 @@ export function AiCredit() {
           </div>
           <div className="ac-hero__badge">
             <Sparkles size={13} strokeWidth={2.2} aria-hidden="true" />
-            AI가 아이의 일정, 안전을 도와줘요
+            AI가 아이의 일정·안전 대화를 도와요
           </div>
         </div>
 
         {/* 안내 */}
         <div className="ac-note hy-explain">
           <span className="ac-note__emoji"><MessageCircle size={15} strokeWidth={2.2} /></span>
-          <span className="hy-explain__lines">
-            <span className="hy-explain__line">AI가 아이의 일정·안전 대화를 도울 때 크레딧 1회가 사용돼요.</span>
-            <span className="hy-explain__line">부모님이 충전해 주세요.</span>
+            <span className="hy-explain__lines">
+              <span className="hy-explain__line">AI가 아이의 일정·안전 대화를 도울 때 크레딧 1회가 사용돼요.</span>
+              <span className="hy-explain__line">필요할 때 충전해 주세요.</span>
           </span>
         </div>
 
@@ -368,6 +383,7 @@ export function AiCredit() {
                   className="ac-buy hy-press"
                   onClick={() => buy(p)}
                   disabled={!billingAvailable || busyPack !== null}
+                  aria-busy={busyPack === p.id}
                   aria-label={`${p.backendAmount}회 가격 Google Play에서 확인`}
                 >
                   {!billingAvailable ? "앱에서 결제" : busyPack === p.id ? "결제 중…" : "가격 확인"}
@@ -392,8 +408,9 @@ export function AiCredit() {
             aria-label="AI 친구 대화 허용"
             aria-pressed={aiEnabled}
             onClick={toggleAiEnabled}
-            disabled={saveSettings.isPending || !childUserId} aria-busy={saveSettings.isPending}
-            style={{ background: aiEnabled ? "var(--hy-accent)" : "var(--line-soft)" }}
+            disabled={saveSettings.isPending || !childUserId}
+            aria-busy={aiToggleSaving}
+            style={{ background: aiEnabled ? "var(--hy-accent-cta)" : "var(--line-soft)" }}
           >
             <span className="ac-toggle__knob" style={{ left: aiEnabled ? 22 : 2 }} />
           </button>
@@ -411,7 +428,8 @@ export function AiCredit() {
                 className="ac-limit__btn hy-press"
                 aria-label="한도 줄이기"
                 onClick={() => changeDailyLimit(-5)}
-                disabled={saveSettings.isPending} aria-busy={saveSettings.isPending}
+                disabled={saveSettings.isPending}
+                aria-busy={limitDecreaseSaving}
               >
                 −
               </button>
@@ -421,7 +439,8 @@ export function AiCredit() {
                 className="ac-limit__btn hy-press"
                 aria-label="한도 늘리기"
                 onClick={() => changeDailyLimit(5)}
-                disabled={saveSettings.isPending} aria-busy={saveSettings.isPending}
+                disabled={saveSettings.isPending}
+                aria-busy={limitIncreaseSaving}
               >
                 +
               </button>
@@ -461,8 +480,9 @@ export function AiCredit() {
               aria-label="선제 대화"
               aria-pressed={proactiveEnabled}
               onClick={() => setProactiveEnabled((v) => !v)}
-              disabled={!advancedSettingsReady || saveSettings.isPending} aria-busy={saveSettings.isPending}
-              style={{ background: proactiveEnabled ? "var(--hy-accent)" : "var(--line-soft)" }}
+              disabled={!advancedSettingsReady || saveSettings.isPending}
+              data-progress-owner="advanced-save"
+              style={{ background: proactiveEnabled ? "var(--hy-accent-cta)" : "var(--line-soft)" }}
             >
               <span className="ac-toggle__knob" style={{ left: proactiveEnabled ? 22 : 2 }} />
             </button>
@@ -514,7 +534,7 @@ export function AiCredit() {
           <div className="ac-control-row">
             <span className="ac-control-row__main">
               <span className="ac-control-row__title">일정 조작 허용</span>
-              <span className="ac-control-row__sub">AI가 아이 일정 조회·추가·수정을 도울 수 있어요</span>
+              <span className="ac-control-row__sub">아이 일정의 조회·추가·수정을 도와요</span>
             </span>
             <button
               type="button"
@@ -522,8 +542,9 @@ export function AiCredit() {
               aria-label="일정 조작 허용"
               aria-pressed={allowScheduleActions}
               onClick={() => setAllowScheduleActions((v) => !v)}
-              disabled={!advancedSettingsReady || saveSettings.isPending} aria-busy={saveSettings.isPending}
-              style={{ background: allowScheduleActions ? "var(--hy-accent)" : "var(--line-soft)" }}
+              disabled={!advancedSettingsReady || saveSettings.isPending}
+              data-progress-owner="advanced-save"
+              style={{ background: allowScheduleActions ? "var(--hy-accent-cta)" : "var(--line-soft)" }}
             >
               <span className="ac-toggle__knob" style={{ left: allowScheduleActions ? 22 : 2 }} />
             </button>
@@ -532,7 +553,7 @@ export function AiCredit() {
           <div className="ac-control-row">
             <span className="ac-control-row__main">
               <span className="ac-control-row__title">연락 동작 허용</span>
-              <span className="ac-control-row__sub">AI가 부모에게 전화·메시지 요청을 도울 수 있어요</span>
+              <span className="ac-control-row__sub">부모님께 전화·메시지 요청을 도와요</span>
             </span>
             <button
               type="button"
@@ -540,8 +561,9 @@ export function AiCredit() {
               aria-label="연락 동작 허용"
               aria-pressed={allowContactActions}
               onClick={() => setAllowContactActions((v) => !v)}
-              disabled={!advancedSettingsReady || saveSettings.isPending} aria-busy={saveSettings.isPending}
-              style={{ background: allowContactActions ? "var(--hy-accent)" : "var(--line-soft)" }}
+              disabled={!advancedSettingsReady || saveSettings.isPending}
+              data-progress-owner="advanced-save"
+              style={{ background: allowContactActions ? "var(--hy-accent-cta)" : "var(--line-soft)" }}
             >
               <span className="ac-toggle__knob" style={{ left: allowContactActions ? 22 : 2 }} />
             </button>
@@ -551,9 +573,10 @@ export function AiCredit() {
             type="button"
             className="ac-save-detail hy-press"
             onClick={saveAdvancedSettings}
-            disabled={!advancedSettingsReady || saveSettings.isPending} aria-busy={saveSettings.isPending}
+            disabled={!advancedSettingsReady || saveSettings.isPending}
+            aria-busy={advancedSettingsSaving}
           >
-            {saveSettings.isPending ? "저장 중…" : "상세 설정 저장"}
+            {advancedSettingsSaving ? "저장 중…" : "상세 설정 저장"}
           </button>
         </section>
 
@@ -578,7 +601,7 @@ export function AiCredit() {
               });
             }}
             disabled={!childUserId}
-            style={{ background: lowCreditAlert ? "var(--hy-accent)" : "var(--line-soft)" }}
+            style={{ background: lowCreditAlert ? "var(--hy-accent-cta)" : "var(--line-soft)" }}
           >
             <span className="ac-toggle__knob" style={{ left: lowCreditAlert ? 22 : 2 }} />
           </button>

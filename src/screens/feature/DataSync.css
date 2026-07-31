@@ -15,7 +15,7 @@
   background: rgba(251, 247, 244, 0.94);
   backdrop-filter: blur(10px);
 }
-.ds-back {
+.ds-root .ds-back {
   width: 42px;
   height: 42px;
   border-radius: 50%;
@@ -36,7 +36,7 @@
   color: var(--fg-primary);
 }
 
-.ds-content {
+.ds-root .ds-content {
   padding: 4px 20px calc(120px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
@@ -106,7 +106,8 @@
 .ds-sync__btn {
   margin-top: 16px;
   width: 100%;
-  height: 46px;
+  height: var(--control-height-secondary);
+  flex: none;
   border-radius: var(--radius-16);
   background: #fff;
   color: #0e6f64;
@@ -167,6 +168,9 @@
   font-weight: var(--type-caption-weight);
 
   color: var(--fg-muted);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 /* 카드 안 보조 버튼 — 13px 흰 글자는 파스텔 채움 위 2.76:1 이라 읽히지 않았다.
    주요 CTA 가 아니므로 soft 채움 + 진한 브랜드 라벨(보조 등급)로 내린다. */
@@ -204,9 +208,9 @@
 }
 
 /* 실제 TSX 상호작용 요소의 최소 터치 영역 */
-.ds-back {
+.ds-root .ds-back {
   min-height: var(--control-min-size);
 }
-.ds-back {
+.ds-root .ds-back {
   min-width: var(--control-min-size);
 }

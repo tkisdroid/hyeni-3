@@ -268,7 +268,7 @@
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
 
-  color: var(--gold-600);
+  color: var(--gold-text);
 }
 
 /* ── 가족 초대 카드 ─────────────────────────────────────────────────────── */
@@ -310,6 +310,9 @@
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 
   color: var(--lav-text);
 }
@@ -472,7 +475,9 @@
   font-weight: var(--type-label-weight);
 
   color: var(--fg-muted);
-
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
 /* 실제 TSX 상호작용 요소의 최소 터치 영역 */

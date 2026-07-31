@@ -548,7 +548,7 @@ export function RemoteAudio() {
         screenTitle="주변 소리 듣기"
         state="empty"
         heading="연결된 아이가 없어요"
-        description="아이를 연결한 뒤, 아이가 직접 허용하면 주변 소리를 들을 수 있어요."
+        description="아이를 연결하면 위급할 때 주변 소리를 들을 수 있어요. 듣는 동안 아이 화면에 계속 표시돼요."
         onBack={() => navigate(-1)}
         onRetry={() => navigate("/child-invite")}
         retryLabel="아이 연결하기"

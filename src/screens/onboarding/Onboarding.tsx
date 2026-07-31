@@ -90,7 +90,7 @@ const SURVEY_OPTIONS = [
   { id: "schedule", title: "일정 관리", sub: "학교·학원·준비물을 놓치지 않기" },
   { id: "location", title: "실시간 위치", sub: "아이 위치와 이동 경로 확인" },
   { id: "arrival", title: "등하원·학원 도착 알림", sub: "도착·이탈 소식을 바로 받기" },
-  { id: "safety", title: "SOS 안전 알림", sub: "급할 때 부모님에게 빠르게 알리기" },
+  { id: "safety", title: "SOS 안전 알림", sub: "급할 때 부모님께 빠르게 알리기" },
   { id: "ai", title: "AI 하루 요약", sub: "일정과 안전 기록을 쉽게 정리하기" },
 ] as const;
 
@@ -609,7 +609,13 @@ function RoleStep({
       </div>
 
       <div className="ob-role-list">
-        <button type="button" className="ob-role-card ob-role-card--parent hy-press" onClick={onParent} disabled={busy} aria-busy={busy}>
+        <button
+          type="button"
+          className="ob-role-card ob-role-card--parent hy-press"
+          onClick={onParent}
+          disabled={busy}
+          data-progress-owner="child-start"
+        >
           <span className="ob-role-ic ob-role-ic--parent">
             <img
               className="ob-role-img"
@@ -626,7 +632,13 @@ function RoleStep({
           <ChevronRight size={22} strokeWidth={2.4} color="#C9BFC4" />
         </button>
 
-        <button type="button" className="ob-role-card ob-role-card--child hy-press" onClick={onChild} disabled={busy} aria-busy={busy}>
+        <button
+          type="button"
+          className="ob-role-card ob-role-card--child hy-press"
+          onClick={onChild}
+          disabled={busy}
+          aria-busy={childStarting}
+        >
           <span className="ob-role-ic ob-role-ic--child">
             <img
               className="ob-role-img ob-role-img--child"
@@ -646,7 +658,13 @@ function RoleStep({
         </button>
 
         {TEACHER_MODE_ENABLED && (
-          <button type="button" className="ob-role-card ob-role-card--teacher hy-press" onClick={onTeacher} disabled={busy} aria-busy={busy}>
+          <button
+            type="button"
+            className="ob-role-card ob-role-card--teacher hy-press"
+            onClick={onTeacher}
+            disabled={busy}
+            data-progress-owner="child-start"
+          >
             <span className="ob-role-ic ob-role-ic--teacher">
               <img
                 className="ob-role-img"
@@ -686,7 +704,7 @@ function TeacherStep({ onBack, onSave, show }: { onBack: () => void; onSave: () 
 
   const save = () => {
     if (!school.trim() || !klass.trim()) {
-      show("학교와 반 이름을 입력해주세요", "✏️");
+      show("학교와 반 이름을 입력해 주세요", "✏️");
       return;
     }
     show(`${school} · ${klass} 등록은 선생님 연동(예정) 후 활성화돼요`, "🎓");
@@ -848,17 +866,17 @@ function LoginStep({
       </div>
 
       <div className="ob-login-social">
-        <button type="button" className="ob-social ob-social--kakao hy-press" onClick={() => social("kakao")} disabled={busy} aria-busy={busy}>
+        <button type="button" className="ob-social ob-social--kakao hy-press hy-busy-quiet" onClick={() => social("kakao")} disabled={busy} aria-busy={busy && pendingAction === "kakao"}>
           <KakaoIcon />
           <BusyLabel busy={busy && pendingAction === "kakao"} idle="카카오로 계속하기" pending="카카오 로그인 중…" />
         </button>
-        <button type="button" className="ob-social ob-social--google hy-press" onClick={() => social("google")} disabled={busy} aria-busy={busy}>
+        <button type="button" className="ob-social ob-social--google hy-press hy-busy-quiet" onClick={() => social("google")} disabled={busy} aria-busy={busy && pendingAction === "google"}>
           <GoogleIcon />
           <BusyLabel busy={busy && pendingAction === "google"} idle="Google로 계속하기" pending="Google 로그인 중…" />
         </button>
         {/* 네이버 키가 없으면 버튼 자체를 숨긴다 — 누르면 실패하는 버튼을 보여주지 않는다. */}
         {hasNaverClientId && (
-          <button type="button" className="ob-social ob-social--naver hy-press" onClick={() => social("naver")} disabled={busy} aria-busy={busy}>
+          <button type="button" className="ob-social ob-social--naver hy-press hy-busy-quiet" onClick={() => social("naver")} disabled={busy} aria-busy={busy && pendingAction === "naver"}>
             <NaverIcon />
             <BusyLabel busy={busy && pendingAction === "naver"} idle="네이버로 계속하기" pending="네이버 로그인 중…" />
           </button>
@@ -915,7 +933,7 @@ function LoginStep({
             </p>
           )}
         </div>
-        <button type="button" className="ob-loginbtn hy-press" onClick={loginIdPw} disabled={busy} aria-busy={busy}>
+        <button type="button" className="ob-loginbtn hy-press hy-busy-quiet" onClick={loginIdPw} disabled={busy} aria-busy={busy && pendingAction === "id"}>
           <BusyLabel busy={busy && pendingAction === "id"} idle="로그인" pending="로그인 중…" />
         </button>
       </div>
@@ -926,7 +944,8 @@ function LoginStep({
           type="button"
           className="ob-link"
           onClick={onSignup}
-          disabled={busy || commitBoundaryActive} aria-busy={busy}
+          disabled={busy || commitBoundaryActive}
+          data-progress-owner="login-action"
         >
           회원가입
         </button>
@@ -953,9 +972,9 @@ function SurveyStep({
       <BackButton onBack={onBack} />
       <SignupProgress percent={20} label="1/5 관심 기능" />
       <div className="ob-survey-head">
-        <div className="ob-signup-title">가입 전에 한 가지만 알려주세요</div>
+        <div className="ob-signup-title">가입 전에 한 가지만 알려 주세요</div>
         <div className="ob-sub">
-          우리 아이에게 가장 필요한 기능을 골라주세요.
+          우리 아이에게 가장 필요한 기능을 골라 주세요.
           <br />
           복수 선택할 수 있어요.
         </div>
@@ -1079,7 +1098,7 @@ function SignupStep({
         <SignupProgress percent={60} label="3/5 휴대폰 인증" />
         <div className="ob-signup-head">
           <div className="ob-signup-title">인증번호 확인</div>
-          <div className="ob-sub">{pending?.phoneStorage} 로 보낸 6자리를 입력해주세요</div>
+          <div className="ob-sub">{pending?.phoneStorage}로 보낸 6자리를 입력해 주세요</div>
         </div>
         <div className="ob-signup-form">
           <Field label="인증번호">
@@ -1094,7 +1113,13 @@ function SignupStep({
             />
           </Field>
         </div>
-        <button type="button" className="ob-cta ob-cta--accent hy-press" onClick={verify} disabled={busy} aria-busy={busy}>
+        <button
+          type="button"
+          className="ob-cta ob-cta--accent hy-press hy-busy-quiet"
+          onClick={verify}
+          disabled={busy}
+          aria-busy={busy && isAsyncActionTokenFor(pendingSignupAction, "verify")}
+        >
           <BusyLabel
             busy={busy && isAsyncActionTokenFor(pendingSignupAction, "verify")}
             idle="인증하고 가입 완료"
@@ -1104,7 +1129,13 @@ function SignupStep({
         {/* 재전송은 requestPhoneSignupCode 를 다시 호출(실 전송) */}
         <div className="ob-login-foot">
           인증번호를 못 받으셨나요?{" "}
-          <button type="button" className="ob-link" onClick={requestCode} disabled={busy} aria-busy={busy}>
+          <button
+            type="button"
+            className="ob-link hy-busy-quiet"
+            onClick={requestCode}
+            disabled={busy}
+            aria-busy={busy && isAsyncActionTokenFor(pendingSignupAction, "request-code")}
+          >
             <BusyLabel
               busy={busy && isAsyncActionTokenFor(pendingSignupAction, "request-code")}
               idle="재전송"
@@ -1127,7 +1158,7 @@ function SignupStep({
 
       <div className="ob-signup-form">
         <Field label="이름">
-          <input className="ob-input" aria-label="이름" placeholder="이름을 입력해주세요" value={name} onChange={(e) => setName(e.target.value)} />
+          <input className="ob-input" aria-label="이름" placeholder="이름을 입력해 주세요" value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
         <Field label="아이디">
           <input className="ob-input" aria-label="아이디" placeholder="영문 소문자·숫자 4자 이상" autoCapitalize="none" value={loginId} onChange={(e) => setLoginId(e.target.value)} />
@@ -1153,7 +1184,7 @@ function SignupStep({
                   fontWeight: 700,
                   fontSize: "var(--type-body-sm)",
                   border: gender === g.value ? "none" : "1.5px solid var(--line-strong)",
-                  background: gender === g.value ? "var(--hy-accent)" : "#fff",
+                  background: gender === g.value ? "var(--hy-accent-cta)" : "#fff",
                   color: gender === g.value ? "#fff" : "var(--fg-body)",
                 }}
               >
@@ -1170,7 +1201,13 @@ function SignupStep({
         </Field>
       </div>
 
-      <button type="button" className="ob-cta ob-cta--accent hy-press" onClick={requestCode} disabled={busy} aria-busy={busy}>
+      <button
+        type="button"
+        className="ob-cta ob-cta--accent hy-press hy-busy-quiet"
+        onClick={requestCode}
+        disabled={busy}
+        aria-busy={busy && isAsyncActionTokenFor(pendingSignupAction, "request-code")}
+      >
         <BusyLabel
           busy={busy && isAsyncActionTokenFor(pendingSignupAction, "request-code")}
           idle="인증번호 받기"
@@ -1194,10 +1231,20 @@ function ConnectStep({
   busy: boolean;
   progressPercent?: number | null;
   onBack: () => void;
-  onNewFamily: () => void;
-  onJoin: () => void;
-  onChildDevice: () => void;
+  onNewFamily: () => void | Promise<void>;
+  onJoin: () => void | Promise<void>;
+  onChildDevice: () => void | Promise<void>;
 }) {
+  const [pendingAction, setPendingAction] = useState<"new-family" | "join" | "child-device" | null>(null);
+  const runAction = (
+    action: Exclude<typeof pendingAction, null>,
+    callback: () => void | Promise<void>,
+  ) => {
+    if (busy || pendingAction) return;
+    setPendingAction(action);
+    void Promise.resolve().then(callback).finally(() => setPendingAction(null));
+  };
+
   return (
     <div className="ob-step ob-connect">
       <BackButton onBack={onBack} />
@@ -1209,7 +1256,13 @@ function ConnectStep({
       </div>
 
       <div className="ob-connect-list">
-        <button type="button" className="ob-connect-card hy-press" onClick={onNewFamily} disabled={busy} aria-busy={busy}>
+        <button
+          type="button"
+          className="ob-connect-card hy-press"
+          onClick={() => runAction("new-family", onNewFamily)}
+          disabled={busy}
+          aria-busy={pendingAction === "new-family"}
+        >
           <img className="ob-connect-ic" src={asset("ui/place-home.webp")} alt="" />
           <span className="ob-connect-main">
             <span className="ob-connect-name">새 가족 만들기</span>
@@ -1218,7 +1271,13 @@ function ConnectStep({
           <ChevronRight size={20} strokeWidth={2.4} color="#C9BFC4" />
         </button>
 
-        <button type="button" className="ob-connect-card hy-press" onClick={onJoin} disabled={busy} aria-busy={busy}>
+        <button
+          type="button"
+          className="ob-connect-card hy-press"
+          onClick={() => runAction("join", onJoin)}
+          disabled={busy}
+          aria-busy={pendingAction === "join"}
+        >
           <img className="ob-connect-ic" src={asset("ui/friend-pair.webp")} alt="" />
           <span className="ob-connect-main">
             <span className="ob-connect-name">기존 가족에 합류</span>
@@ -1227,7 +1286,13 @@ function ConnectStep({
           <ChevronRight size={20} strokeWidth={2.4} color="#C9BFC4" />
         </button>
 
-        <button type="button" className="ob-connect-card ob-connect-card--child hy-press" onClick={onChildDevice} disabled={busy} aria-busy={busy}>
+        <button
+          type="button"
+          className="ob-connect-card ob-connect-card--child hy-press"
+          onClick={() => runAction("child-device", onChildDevice)}
+          disabled={busy}
+          aria-busy={pendingAction === "child-device"}
+        >
           <img className="ob-connect-ic" src={asset(DEFAULT_CHILD_AVATAR)} alt="" />
           <span className="ob-connect-main">
             <span className="ob-connect-name" style={{ color: "#6D4E9C" }}>아이 기기인가요?</span>
@@ -1273,7 +1338,7 @@ function PairingStep({
     const code = normalizePairCodeInput(rawCode ?? raw);
     if (!code) {
       show(
-        rawCode != null ? "유효한 QR 코드를 찾지 못했어요" : "연결 코드를 확인해주세요 (KID-XXXXXXXX)",
+        rawCode != null ? "유효한 QR 코드를 찾지 못했어요" : "연결 코드를 확인해 주세요 (KID-XXXXXXXX)",
         "🔢",
       );
       return;
@@ -1302,7 +1367,7 @@ function PairingStep({
       <BackButton onBack={onBack} dark />
       <div className="ob-pair-head">
         <div className="ob-pair-title">부모님 연결 코드를 입력하세요</div>
-        <div className="ob-pair-sub">부모 앱 · 가족 · 연결 코드에서 QR·코드를 볼 수 있어요</div>
+        <div className="ob-pair-sub">부모 앱의 가족 &gt; 연결 코드에서 QR 코드와 연결 코드를 볼 수 있어요</div>
       </div>
 
       {/* 탭하면 실제 카메라 스캐너 오버레이(BarcodeDetector)가 열린다. */}
@@ -1311,7 +1376,8 @@ function PairingStep({
         className="ob-qr hy-press"
         aria-label="카메라로 QR 스캔"
         onClick={() => setShowScanner(true)}
-        disabled={busy} aria-busy={busy}
+        disabled={busy}
+        data-progress-owner="pair-submit"
       >
         <span className="ob-qr-corner ob-qr-corner--tl" />
         <span className="ob-qr-corner ob-qr-corner--tr" />
@@ -1338,7 +1404,8 @@ function PairingStep({
         type="button"
         className="ob-cta ob-cta--accent hy-press"
         onClick={() => void submit()}
-        disabled={busy} aria-busy={busy}
+        disabled={busy}
+        aria-busy={busy}
       >
         {busy ? "연결 중…" : "코드로 연결하기"}
       </button>
@@ -1403,28 +1470,40 @@ function PermsStep({
   const requestForeground = async () => {
     if (permissionBusy) return;
     setPermissionBusy(true);
-    const result = await requestForegroundLocationPermission();
-    setPermissionBusy(false);
-    if (result.granted) {
+    try {
+      const result = await requestForegroundLocationPermission();
+      if (result.granted) {
+        setLocationUnsupported(false);
+        setLocationStage("backgroundEducation");
+        return;
+      }
+      setLocationUnsupported(!result.supported);
+      setLocationStage("foregroundDenied");
+    } catch {
       setLocationUnsupported(false);
-      setLocationStage("backgroundEducation");
-      return;
+      setLocationStage("foregroundDenied");
+    } finally {
+      setPermissionBusy(false);
     }
-    setLocationUnsupported(!result.supported);
-    setLocationStage("foregroundDenied");
   };
 
   const requestBackground = async () => {
     if (permissionBusy) return;
     setPermissionBusy(true);
-    const result = await requestBackgroundLocationPermission();
-    setPermissionBusy(false);
-    if (result.granted) {
-      onDone();
-      return;
+    try {
+      const result = await requestBackgroundLocationPermission();
+      if (result.granted) {
+        onDone();
+        return;
+      }
+      setLocationUnsupported(!result.supported);
+      setLocationStage("backgroundDenied");
+    } catch {
+      setLocationUnsupported(false);
+      setLocationStage("backgroundDenied");
+    } finally {
+      setPermissionBusy(false);
     }
-    setLocationUnsupported(!result.supported);
-    setLocationStage("backgroundDenied");
   };
 
   return (
@@ -1475,17 +1554,17 @@ function PermsStep({
                     혜니캘린더는 아이가 앱을 닫거나 사용하지 않을 때도 위치를 수집해 연결된 보호자에게 공유합니다.
                   </p>
                   <p>
-                    위치는 실시간 위치·오늘 경로와 집·학교·학원 도착·출발, 일정 미도착, 위험장소 알림에 사용됩니다.
+                    위치는 실시간 위치·오늘 경로와 집·학교·학원 도착·출발, 일정 미도착, 위험구역 알림에 사용됩니다.
                   </p>
                   <p>
                     위치 수집 중에는 Android의 지속 알림이 표시되며, 아이 기기의 위치 설정에서 언제든지 권한을 끌 수 있습니다.
                   </p>
                 </div>
                 <div className="ob-consent-dialog__actions">
-                  <button ref={consentSecondaryRef} type="button" className="ob-consent-secondary hy-press" onClick={onDone} disabled={permissionBusy}>
+                  <button ref={consentSecondaryRef} type="button" className="ob-consent-secondary hy-press" onClick={onDone} disabled={permissionBusy} data-progress-owner="permission-request">
                     나중에
                   </button>
-                  <button type="button" className="ob-consent-primary hy-press" onClick={() => void requestForeground()} disabled={permissionBusy}>
+                  <button type="button" className="ob-consent-primary hy-press" onClick={() => void requestForeground()} disabled={permissionBusy} aria-busy={permissionBusy}>
                     {permissionBusy ? "권한 확인 중…" : "동의하고 계속"}
                   </button>
                 </div>
@@ -1498,15 +1577,15 @@ function PermsStep({
                 <h2 ref={consentStageTitleRef} id={consentTitleId} tabIndex={-1}>위치를 ‘항상 허용’으로 선택해 주세요</h2>
                 <div id={consentDescriptionId} className="ob-consent-dialog__copy">
                   <p>
-                    다음 Android 위치 권한 화면에서 ‘항상 허용’을 선택해야 앱을 닫은 뒤에도 도착·출발과 위험장소 알림이 이어집니다.
+                    다음 Android 위치 권한 화면에서 ‘항상 허용’을 선택해야 앱을 닫은 뒤에도 도착·출발과 위험구역 알림이 이어집니다.
                   </p>
                   <p>허용하지 않아도 앱은 사용할 수 있으며, 아이 설정에서 나중에 다시 켤 수 있습니다.</p>
                 </div>
                 <div className="ob-consent-dialog__actions">
-                  <button ref={consentSecondaryRef} type="button" className="ob-consent-secondary hy-press" onClick={onDone} disabled={permissionBusy}>
+                  <button ref={consentSecondaryRef} type="button" className="ob-consent-secondary hy-press" onClick={onDone} disabled={permissionBusy} data-progress-owner="permission-request">
                     나중에
                   </button>
-                  <button type="button" className="ob-consent-primary hy-press" onClick={() => void requestBackground()} disabled={permissionBusy}>
+                  <button type="button" className="ob-consent-primary hy-press" onClick={() => void requestBackground()} disabled={permissionBusy} aria-busy={permissionBusy}>
                     {permissionBusy ? "설정 확인 중…" : "‘항상 허용’ 설정 열기"}
                   </button>
                 </div>
@@ -1528,7 +1607,7 @@ function PermsStep({
                   <p>앱은 계속 사용할 수 있고, 아이 설정에서 언제든지 다시 설정할 수 있습니다.</p>
                 </div>
                 <div className="ob-consent-dialog__actions">
-                  <button ref={consentSecondaryRef} type="button" className="ob-consent-secondary hy-press" onClick={onDone} disabled={permissionBusy}>
+                  <button ref={consentSecondaryRef} type="button" className="ob-consent-secondary hy-press" onClick={onDone} disabled={permissionBusy} data-progress-owner="permission-request">
                     권한 없이 시작
                   </button>
                   {!locationUnsupported && (
@@ -1537,6 +1616,7 @@ function PermsStep({
                       className="ob-consent-primary hy-press"
                       onClick={() => void (locationStage === "foregroundDenied" ? requestForeground() : requestBackground())}
                       disabled={permissionBusy}
+                      aria-busy={permissionBusy}
                     >
                       {permissionBusy ? "권한 확인 중…" : "다시 설정"}
                     </button>

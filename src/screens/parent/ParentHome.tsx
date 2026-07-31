@@ -703,7 +703,7 @@ export function ParentHome() {
                   <img src={asset("ui/lock-open-3d.webp")} alt="" />
                 </span>
                 <span style={{ minWidth: 0 }}>
-                  <span className="ph-metric__k">잠금해제</span>
+                  <span className="ph-metric__k">잠금 해제</span>
                   <span className="ph-metric__v">{deviceStatus.unlockCountLabel}</span>
                 </span>
               </div>
@@ -740,7 +740,7 @@ export function ParentHome() {
               </div>
               <div className="ph-recent-head">
                 <b>오늘 많이 쓴 앱</b>
-                <span>{deviceStatus.topApps.length > 0 ? "사용시간" : "—"}</span>
+                <span>{deviceStatus.topApps.length > 0 ? "사용 시간" : "—"}</span>
               </div>
               {deviceStatus.topApps.length > 0 ? (
                 <div className="ph-recent-list">
@@ -840,7 +840,7 @@ export function ParentHome() {
                     aria-label="완료 토글"
                     onClick={() => togglePrep(s)}
                     style={{
-                      background: s.done ? "var(--hy-accent)" : "var(--bg-card)",
+                      background: s.done ? "var(--hy-accent-cta)" : "var(--bg-card)",
                       border: s.done ? "none" : "2px solid var(--line-strong)",
                     }}
                   >
@@ -878,7 +878,7 @@ export function ParentHome() {
           </span>
           <span className="ph-memo__main">
             <span className="ph-memo__from">아이와 대화하기</span>
-            <span className="ph-memo__text">{childName}에게 메시지를 보내보세요</span>
+            <span className="ph-memo__text">{childName}에게 메시지를 보내 보세요</span>
             <span className="ph-memo__time">메모 · 실시간</span>
           </span>
           <ChevronRight size={20} strokeWidth={2.4} color="var(--fg-disabled)" style={{ flex: "none" }} />

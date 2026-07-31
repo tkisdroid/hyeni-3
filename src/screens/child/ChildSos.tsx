@@ -62,7 +62,7 @@ export function ChildSos() {
       show(`${label} 전화번호가 없어`, "📞");
       return;
     }
-    show(`${label}한테 전화 거는 중...`, "📞");
+    show(`${label}한테 전화 거는 중…`, "📞");
     void placePhoneCall(number).then((r) => {
       if (!r.ok) show("전화를 걸 수 없어. 전화 앱을 확인해 줘", "⚠️");
     });
@@ -268,11 +268,13 @@ export function ChildSos() {
         </button>
 
         <img className="cs-shield" src={asset("ui/sos-shield.webp")} alt="" />
-        <div className="cs-title">꾹 눌러서 도와줘!</div>
+        <div className="cs-title">꾹 눌러서 도와 줘!</div>
         <div className="cs-desc">
-          동그라미를 <b>3초</b> 동안 누르고 있으면
+          동그라미를 <b>3초</b> 동안 누르면
           <br />
-          엄마·아빠에게 SOS를 보내고 찾은 <b>내 위치</b>도 함께 담을게
+          엄마·아빠에게 SOS를 보내고,
+          <br />
+          찾은 <b>내 위치</b>도 함께 담을게
         </div>
 
         {sosFamilyQueryState === "loading" && (
@@ -338,7 +340,7 @@ export function ChildSos() {
           </button>
         )}
 
-        <div className="cs-foot">장난으로 누르면 엄마·아빠가 깜짝 놀랄 수 있어 🙏</div>
+        <div className="cs-foot">장난으로 누르면 엄마·아빠가 깜짝 놀랄 수 있어</div>
       </div>
     </div>
   );

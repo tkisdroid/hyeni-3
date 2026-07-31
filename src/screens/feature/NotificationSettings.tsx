@@ -84,7 +84,7 @@ const SAFETY_TOGGLES: ToggleDef[] = [
     Icon: MapPin,
     tone: "blue",
     label: "일반 위치 알림",
-    sub: "도착·이탈 같은 일반 위치 소식을 알려드려요",
+    sub: "도착·이탈 같은 위치 소식을 알려드려요",
   },
   {
     key: "registeredPlaceEnabled",
@@ -160,7 +160,10 @@ export function NotificationSettings() {
   const [delivery, setDelivery] = useState<NotificationDeliveryState | null>(null);
   const [webPushState, setWebPushState] = useState<WebPushState | null>(null);
   const [webPushLoadError, setWebPushLoadError] = useState(false);
-  const [deliveryBusy, setDeliveryBusy] = useState(false);
+  const [deliveryAction, setDeliveryAction] = useState<
+    "permission" | "full-screen" | "web-register" | "web-unsubscribe" | null
+  >(null);
+  const deliveryBusy = deliveryAction !== null;
   const [quietDraft, setQuietDraftState] = useState<NotificationQuietHoursTargetDraft>(
     () => createQuietHoursDraft(userId ?? ""),
   );
@@ -477,27 +480,33 @@ export function NotificationSettings() {
       navigate("/perm-denied", { state: { kind: "noti" } });
       return;
     }
-    setDeliveryBusy(true);
-    const next = await requestOrOpenPermission("noti");
-    await refreshDelivery();
-    setDeliveryBusy(false);
-    if (next.granted) show("이 기기에서 알림을 표시할 수 있어요");
+    setDeliveryAction("permission");
+    try {
+      const next = await requestOrOpenPermission("noti");
+      await refreshDelivery();
+      if (next.granted) show("이 기기에서 알림을 표시할 수 있어요");
+    } catch (error) {
+      console.error("[notification-settings] 알림 권한 설정 확인 실패:", error);
+      show("알림 설정을 확인하지 못했어요. 잠시 후 다시 시도해 주세요");
+    } finally {
+      setDeliveryAction(null);
+    }
   };
 
   const openFullScreenSettings = async () => {
     if (deliveryBusy) return;
-    setDeliveryBusy(true);
+    setDeliveryAction("full-screen");
     try {
       const opened = await openFullScreenIntentSettings();
-      if (!opened) show("잠금화면 전체 표시 설정을 열지 못했어요. 휴대폰 앱 설정에서 확인해 주세요");
+      if (!opened) show("잠금 화면 전체 표시 설정을 열지 못했어요. 휴대폰 앱 설정에서 확인해 주세요");
     } finally {
-      setDeliveryBusy(false);
+      setDeliveryAction(null);
     }
   };
 
   const changeWebPushSubscription = async (action: "register" | "unsubscribe") => {
     if (deliveryBusy || nativePlatform) return;
-    setDeliveryBusy(true);
+    setDeliveryAction(action === "register" ? "web-register" : "web-unsubscribe");
     try {
       if (action === "unsubscribe") {
         const removed = await unsubscribeWebPush();
@@ -533,7 +542,7 @@ export function NotificationSettings() {
       console.error("[notification-settings] 웹 푸시 구독 변경 실패:", error);
       show("웹 알림 설정을 바꾸지 못했어요. 잠시 후 다시 시도해 주세요");
     } finally {
-      setDeliveryBusy(false);
+      setDeliveryAction(null);
     }
   };
 
@@ -825,21 +834,22 @@ export function NotificationSettings() {
                       className="nst-system-btn hy-press"
                       onClick={openDeliverySettings}
                       disabled={deliveryBusy}
+                      aria-busy={deliveryAction === "permission"}
                     >
-                      {deliveryBusy ? "확인 중…" : "휴대폰 알림 설정 확인"}
+                      {deliveryAction === "permission" ? "확인 중…" : "휴대폰 알림 설정 확인"}
                     </button>
                     <div
                       className="nst-capability"
                       data-state={delivery?.fullScreenIntentAllowed === true ? "ready" : "attention"}
                     >
-                      <span className="nst-capability__title">잠금화면 전체 표시</span>
+                      <span className="nst-capability__title">잠금 화면 전체 표시</span>
                       <span className="nst-capability__detail">
                         {delivery === null
                           ? "전체 화면 긴급 알림 상태를 확인하고 있어요"
                           : delivery.fullScreenIntentAllowed === true
-                            ? "긴급 상황에서 잠금화면 전체 화면으로 표시할 수 있어요"
+                            ? "긴급 상황에서 잠금 화면 전체로 표시할 수 있어요"
                             : delivery.fullScreenIntentAllowed === false
-                              ? "전체 화면이 꺼져 있어 긴급 알림은 heads-up 팝업으로만 표시돼요"
+                              ? "전체 화면이 꺼져 있어 긴급 알림은 화면 상단 팝업으로만 표시돼요"
                               : "이 기기에서는 전체 화면 긴급 알림 상태를 확인하지 못했어요"}
                       </span>
                     </div>
@@ -849,8 +859,9 @@ export function NotificationSettings() {
                         className="nst-system-btn nst-system-btn--secondary hy-press"
                         onClick={openFullScreenSettings}
                         disabled={deliveryBusy}
+                        aria-busy={deliveryAction === "full-screen"}
                       >
-                        잠금화면 전체 표시 설정
+                        {deliveryAction === "full-screen" ? "설정 여는 중…" : "잠금 화면 전체 표시 설정"}
                       </button>
                     )}
                     {role === "child" && (
@@ -875,8 +886,9 @@ export function NotificationSettings() {
                         className="nst-system-btn hy-press"
                         onClick={() => void changeWebPushSubscription("register")}
                         disabled={deliveryBusy}
+                        aria-busy={deliveryAction === "web-register"}
                       >
-                        {deliveryBusy
+                        {deliveryAction === "web-register"
                           ? "처리 중…"
                           : webDelivery.ready
                             ? "현재 계정 알림 등록 확인"
@@ -889,8 +901,9 @@ export function NotificationSettings() {
                         className="nst-system-btn nst-system-btn--secondary hy-press"
                         onClick={() => void changeWebPushSubscription("unsubscribe")}
                         disabled={deliveryBusy}
+                        aria-busy={deliveryAction === "web-unsubscribe"}
                       >
-                        이 기기의 웹 알림 끄기
+                        {deliveryAction === "web-unsubscribe" ? "끄는 중…" : "이 기기의 웹 알림 끄기"}
                       </button>
                     )}
                   </>

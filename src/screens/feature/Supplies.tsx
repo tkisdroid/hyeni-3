@@ -71,6 +71,8 @@ export function Supplies() {
   // 이름변경 중인 항목 id + 입력값.
   const [editId, setEditId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
+  const [pendingUpsertAction, setPendingUpsertAction] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const prepList = supplies.filter((s) => s.kind !== "hw");
   const hwList = supplies.filter((s) => s.kind === "hw");
@@ -87,7 +89,7 @@ export function Supplies() {
         kind: item.kind ?? "prep",
         child_user_id: targetChildId,
       },
-      { onError: () => show(isChild ? "안 됐어. 다시 눌러볼래?" : "반영에 실패했어요", "⚠️") },
+      { onError: () => show(isChild ? "안 됐어. 다시 눌러 볼래?" : "반영에 실패했어요", "⚠️") },
     );
   };
 
@@ -98,11 +100,14 @@ export function Supplies() {
       show(isChild ? "내 정보를 아직 찾지 못했어" : "가족에 등록된 아이가 없어요", "🎒");
       return;
     }
+    const actionKey = `add:${kind}`;
+    setPendingUpsertAction(actionKey);
     upsert.mutate(
       { date_key: dateKey, label, done: false, kind, child_user_id: targetChildId },
       {
         onSuccess: clear,
-        onError: () => show(isChild ? "추가하지 못했어. 다시 해볼래?" : "추가하지 못했어요", "⚠️"),
+        onError: () => show(isChild ? "추가하지 못했어. 다시 해 볼래?" : "추가하지 못했어요", "⚠️"),
+        onSettled: () => setPendingUpsertAction((current) => (current === actionKey ? null : current)),
       },
     );
   };
@@ -126,6 +131,8 @@ export function Supplies() {
       cancelEdit();
       return;
     }
+    const actionKey = `edit:${item.id ?? ""}`;
+    setPendingUpsertAction(actionKey);
     upsert.mutate(
       {
         id: item.id,
@@ -137,15 +144,19 @@ export function Supplies() {
       },
       {
         onSuccess: cancelEdit,
-        onError: () => show(isChild ? "못 바꿨어. 다시 해볼래?" : "이름을 바꾸지 못했어요", "⚠️"),
+        onError: () => show(isChild ? "못 바꿨어. 다시 해 볼래?" : "이름을 바꾸지 못했어요", "⚠️"),
+        onSettled: () => setPendingUpsertAction((current) => (current === actionKey ? null : current)),
       },
     );
   };
   const del = (item: DailySupply) => {
     if (remove.isPending || !targetChildId || item.child_user_id !== targetChildId) return;
     if (editId === item.id) cancelEdit();
+    const itemId = item.id ?? null;
+    setPendingDeleteId(itemId);
     remove.mutate(item, {
-      onError: () => show(isChild ? "못 지웠어. 다시 해볼래?" : "삭제하지 못했어요", "⚠️"),
+      onError: () => show(isChild ? "못 지웠어. 다시 해 볼래?" : "삭제하지 못했어요", "⚠️"),
+      onSettled: () => setPendingDeleteId((current) => (current === itemId ? null : current)),
     });
   };
 
@@ -252,7 +263,8 @@ export function Supplies() {
                         className="sup-iconbtn hy-press"
                         aria-label="이름 변경 저장"
                         onClick={() => commitEdit(s)}
-                        disabled={upsert.isPending || !editDraft.trim()} aria-busy={upsert.isPending}
+                        disabled={upsert.isPending || !editDraft.trim()}
+                        aria-busy={upsert.isPending && pendingUpsertAction === `edit:${s.id ?? ""}`}
                       >
                         <Check size={16} strokeWidth={2.6} color="var(--hy-accent-text)" />
                       </button>
@@ -273,7 +285,7 @@ export function Supplies() {
                         aria-label="완료 토글"
                         onClick={() => toggle(s)}
                         style={{
-                          background: s.done ? "var(--hy-accent)" : "#fff",
+                          background: s.done ? "var(--hy-accent-cta)" : "#fff",
                           border: s.done ? "none" : "2px solid var(--line-strong)",
                         }}
                       >
@@ -303,7 +315,8 @@ export function Supplies() {
                         className="sup-iconbtn hy-press"
                         aria-label="삭제"
                         onClick={() => del(s)}
-                        disabled={remove.isPending} aria-busy={remove.isPending}
+                        disabled={remove.isPending}
+                        aria-busy={remove.isPending && pendingDeleteId === s.id}
                       >
                         <Trash2 size={15} strokeWidth={2.2} color="#E5484D" />
                       </button>
@@ -328,7 +341,8 @@ export function Supplies() {
                   className="sup-add__btn hy-press"
                   aria-label={`${sec.heading} 추가 확인`}
                   onClick={() => add(sec.kind, sec.draft, () => sec.setDraft(""))}
-                  disabled={upsert.isPending || !sec.draft.trim()} aria-busy={upsert.isPending}
+                  disabled={upsert.isPending || !sec.draft.trim()}
+                  aria-busy={upsert.isPending && pendingUpsertAction === `add:${sec.kind}`}
                 >
                   <Plus size={18} strokeWidth={2.6} color="#fff" />
                 </button>

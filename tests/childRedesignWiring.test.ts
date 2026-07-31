@@ -50,7 +50,8 @@ test("가방 챙기기 — 체크·편집·추가·삭제가 전부 서버에 �
   assert.match(home, /const toggleSupply[\s\S]{0,400}upsert\.mutate/);
   assert.match(home, /const commitDraft = async[\s\S]{0,500}upsert\.mutateAsync/);
   assert.match(home, /const addSupply[\s\S]{0,500}upsert\.mutate/);
-  assert.match(home, /remove\.mutate\(s, \{ onError/);
+  assert.match(home, /const deleteSupply = \(item: DailySupply\)[\s\S]{0,500}remove\.mutate\(item/);
+  assert.match(home, /onClick=\{\(\) => deleteSupply\(s\)\}/);
   // 완료하면 폭죽. 편집 중에는 띄우지 않는다(정리하다 계속 터지면 방해).
   assert.match(home, /if \(nowDone && !editMode\)[\s\S]{0,120}setCelebrate/);
 });
@@ -156,7 +157,7 @@ test("AI 친구 캐릭터·이름 설정 진입점이 유지된다", () => {
   assert.match(home, /navigate\("\/child\/ai-friend-setup"\)/); // 이름 미설정 시
   assert.match(aiChat, /navigate\("\/child\/ai-friend-setup"\)/); // 헤더 설정 버튼
   assert.match(home, /const aiEnabled = aiFriend\.data\?\.ai_enabled !== false/);
-  assert.match(home, /if \(!aiEnabled\)[\s\S]{0,160}부모님이 켜줘야 해/);
+  assert.match(home, /if \(!aiEnabled\)[\s\S]{0,160}부모님이 켜 줘야 해/);
 });
 
 test("MemoChat 의 사진·위치 공유 컴포저가 살아 있다", () => {

@@ -494,6 +494,10 @@
 .dr-link:disabled {
   opacity: 0.55;
 }
+.dr-link[aria-busy="true"]:disabled {
+  opacity: var(--busy-opacity);
+  cursor: progress;
+}
 
 .dr-scope-error {
   display: grid;
@@ -1167,7 +1171,7 @@
   flex: none;
   padding: 12px 12px;
   border-radius: var(--radius-lg);
-  background: linear-gradient(120deg, var(--lav-300), var(--lav-500));
+  background: var(--cta-grad-lavender);
   color: var(--bg-card);
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);

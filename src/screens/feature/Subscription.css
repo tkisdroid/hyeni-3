@@ -31,6 +31,9 @@
 
   letter-spacing: -0.01em;
   color: var(--fg-primary);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
 /* ── 스크롤 본문 (하단 탭바 여백 포함) ─────────────────────────────────── */
@@ -113,9 +116,12 @@
   font-weight: var(--type-label-weight);
 
   color: var(--gold-text);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 .sub-active__check {
-  color: var(--gold-600);
+  color: var(--gold-text);
 }
 
 /* ── 플랜 선택 ─────────────────────────────────────────────────────────── */
@@ -150,12 +156,12 @@
   left: 20px;
   padding: 4px 12px;
   border-radius: 999px;
-  background: linear-gradient(120deg, #ff9ec4, #f0518f);
+  background: var(--rose-soft);
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
 
-  color: #fff;
+  color: var(--rose-text);
   box-shadow: 0 6px 14px -4px rgba(240, 81, 143, 0.6);
 }
 .sub-plan__info {
@@ -241,10 +247,13 @@
   font-weight: var(--type-caption-weight);
 
   color: var(--fg-muted);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 .sub-benefit__check {
   flex: none;
-  color: var(--gold-600);
+  color: var(--gold-text);
 }
 
 /* ── 안내 문구 ─────────────────────────────────────────────────────────── */
@@ -266,9 +275,10 @@
 .sub-cta {
   margin-top: 20px;
   width: 100%;
-  height: 58px;
+  height: var(--control-height-primary);
+  flex: none;
   border-radius: var(--radius-16);
-  background: linear-gradient(120deg, #ffb443, #f0518f);
+  background: var(--cta-grad-accent);
   box-shadow: 0 16px 32px -12px rgba(240, 81, 143, 0.6);
   font-size: var(--type-title);
   line-height: var(--type-title-line-height);

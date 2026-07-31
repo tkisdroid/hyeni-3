@@ -62,6 +62,7 @@ export function KakaoMap({
   centerLevel = null,
   recenterKey = 0,
   className,
+  tone = "formal",
 }: {
   child?: MapChild | null;
   zones?: MapZone[];
@@ -86,6 +87,7 @@ export function KakaoMap({
   /** 값이 바뀌면 center 가 같은 좌표여도 강제로 재이동(현재 위치 버튼 등). */
   recenterKey?: number;
   className?: string;
+  tone?: "formal" | "child";
 }) {
   const ref = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -329,8 +331,12 @@ export function KakaoMap({
   if (failed) {
     return (
       <div className={[className, "km-error"].filter(Boolean).join(" ")} role="status">
-        <strong className="km-error__title">지도를 불러오지 못했어요</strong>
-        <span className="km-error__detail">인터넷 연결을 확인한 뒤 다시 시도해 주세요</span>
+        <strong className="km-error__title">
+          {tone === "child" ? "지도를 불러오지 못했어" : "지도를 불러오지 못했어요"}
+        </strong>
+        <span className="km-error__detail">
+          {tone === "child" ? "인터넷 연결을 확인한 뒤 다시 해 줘" : "인터넷 연결을 확인한 뒤 다시 시도해 주세요"}
+        </span>
         <button
           type="button"
           className="km-error__retry hy-press"

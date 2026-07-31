@@ -50,21 +50,25 @@ export function TeacherStudents() {
 
   // ── 출석 기록(출석·하교·결석) ──
   const setAttendance = useSetAttendance();
-  const [savingId, setSavingId] = useState<string | null>(null);
+  const [savingAttendance, setSavingAttendance] = useState<{
+    childMemberId: string;
+    status: (typeof ATTEND_ACTIONS)[number]["status"];
+  } | null>(null);
 
   const saveAttendance = (s: StudentView, status: (typeof ATTEND_ACTIONS)[number]["status"]) => {
-    if (s.status === status && savingId !== s.childMemberId) {
+    if (s.status === status && savingAttendance?.childMemberId !== s.childMemberId) {
       // 이미 같은 상태면 재저장 불필요.
       return;
     }
-    setSavingId(s.childMemberId);
+    if (setAttendance.isPending) return;
+    setSavingAttendance({ childMemberId: s.childMemberId, status });
     setAttendance.mutate(
       { childMemberId: s.childMemberId, dateKey: todayIso, status, scheduleId: null },
       {
         onSuccess: () => show(`${s.name} 참석 상태를 저장했어요`, "✅"),
         onError: (err) =>
           show(err instanceof Error ? err.message : "참석 상태를 저장하지 못했어요", "⚠️"),
-        onSettled: () => setSavingId(null),
+        onSettled: () => setSavingAttendance(null),
       },
     );
   };
@@ -221,7 +225,6 @@ export function TeacherStudents() {
                 </div>
               )}
               {visibleStudents.map((s) => {
-                const saving = savingId === s.childMemberId;
                 return (
                   <div key={s.id} className="ts-row">
                     <div className="ts-row__top">
@@ -242,14 +245,18 @@ export function TeacherStudents() {
                     <div className="ts-attend" role="group" aria-label={`${s.name} 출결`}>
                       {ATTEND_ACTIONS.map((a) => {
                         const active = s.status === a.status;
+                        const savingThisAction = savingAttendance?.childMemberId === s.childMemberId
+                          && savingAttendance.status === a.status;
                         return (
                           <button
                             key={a.status}
                             type="button"
                             className={`ts-attend__btn${active ? " ts-attend__btn--on" : ""} hy-press`}
                             data-status={a.status}
+                            aria-pressed={active}
                             onClick={() => saveAttendance(s, a.status)}
-                            disabled={saving} aria-busy={saving}
+                            disabled={setAttendance.isPending}
+                            aria-busy={savingThisAction}
                           >
                             {a.label}
                           </button>
@@ -293,7 +300,8 @@ export function TeacherStudents() {
                 className="ts-sheet__x hy-press"
                 aria-label="닫기"
                 onClick={() => setInviteOpen(false)}
-                disabled={requestPairing.isPending} aria-busy={requestPairing.isPending}
+                disabled={requestPairing.isPending}
+                data-progress-owner="sheet-submit"
               >
                 <X size={20} strokeWidth={2.4} color="#6D6469" />
               </button>

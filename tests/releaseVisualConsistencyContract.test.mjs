@@ -47,7 +47,10 @@ test("제목·연결 상태·삭제 모달의 의미 아이콘은 Lucide로 고�
   }
   assert.doesNotMatch(childHome, /🎒\s*가방 챙기기|💬\s*지금 상태 보내기|🎨\s*내 색깔 고르기/);
 
-  assert.match(childSettings, /function connectionLabel[\s\S]*:\s*\{ Icon: LucideIcon; text: string \}/);
+  assert.match(
+    childSettings,
+    /function connectionLabel[\s\S]*:\s*\{ Icon: LucideIcon; text: string; tone: "connected" \| "pending" \}/,
+  );
   assert.match(childSettings, /<conn\.Icon size=\{16\} strokeWidth=\{2\.2\}/);
   assert.doesNotMatch(childSettings, /conn\.emoji|emoji:\s*"(?:👩|👨|👪|🔗)/);
 

@@ -72,7 +72,7 @@ export function ChildShell() {
   const { accent } = useAccent();
   useWarmKakaoMaps();
   return (
-    <div className="hy-app" data-accent={accent}>
+    <div className="hy-app" data-role="child" data-accent={accent}>
       <div className="hy-screen hy-screen--dock">
         <Outlet />
       </div>

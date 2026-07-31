@@ -127,8 +127,8 @@ test("14px 이하 중간톤 텍스트 후보는 기본 밝은 표면에서 AA �
 });
 
 test("리뷰에서 확인된 작은 보조 문구는 배경에 맞는 접근 가능한 의미 토큰을 사용한다", () => {
-  assert.match(aiFriendSetupCss, /\.afs-preview__tone\s*\{[^}]*color:\s*var\(--lav-text\)/s);
-  assert.match(aiFriendSetupCss, /\.afs-trait-hint\s*\{[^}]*color:\s*var\(--lav-text\)/s);
+  assert.match(aiFriendSetupCss, /\.afs-preview__tone\s*\{[^}]*color:\s*var\(--hy-accent-text\)/s);
+  assert.match(aiFriendSetupCss, /\.afs-trait-hint\s*\{[^}]*color:\s*var\(--hy-accent-text\)/s);
   assert.match(parentAccountCss, /\.pa-uid\s*\{[^}]*color:\s*var\(--fg-muted\)/s);
   assert.match(onboardingCss, /\.ob-teacher-sub\s*\{[^}]*color:\s*var\(--mint-text\)/s);
 });
@@ -144,8 +144,8 @@ test("dialog의 textarea focus-visible은 전역 focus 토큰보다 약한 색�
   );
 });
 
-test("일반 disabled와 진행 중 busy는 서로 다른 의미 토큰을 사용한다", () => {
-  assert.match(tokens, /--busy-opacity:\s*0\.78;/);
+test("일반 disabled는 흐리게, 진행 중 busy는 활성 CTA 대비를 유지한다", () => {
+  assert.match(tokens, /--busy-opacity:\s*1;/);
   assert.match(onboardingCss, /\.ob-back:disabled\s*\{[^}]*opacity:\s*var\(--disabled-opacity\)[^}]*cursor:\s*not-allowed/s);
   assert.match(eventFormCss, /\.ef-save:disabled\s*\{[^}]*opacity:\s*var\(--disabled-opacity\)[^}]*cursor:\s*not-allowed/s);
   assert.match(eventFormCss, /\.ef-save\[aria-busy="true"\]:disabled\s*\{[^}]*opacity:\s*var\(--busy-opacity\)[^}]*cursor:\s*progress/s);
@@ -170,11 +170,12 @@ test("busy 상태는 실제 버튼의 aria-busy와 중복 실행 차단 조건�
   assert.match(aiSchedule, /className="ais-confirm hy-press"[\s\S]{0,170}disabled=\{!canParse \|\| parseM\.isPending\}[\s\S]{0,80}aria-busy=\{parseM\.isPending\}/);
   assert.match(remoteAudio, /className="ra-start hy-press"[\s\S]{0,220}disabled=\{starting \|\| requestListen\.isPending \|\| !childUserId \|\| !remoteAudioDataReady\}[\s\S]{0,120}aria-busy=\{starting \|\| requestListen\.isPending\}/);
   assert.match(remoteRing, /className="rr-cta hy-press"[\s\S]{0,180}disabled=\{!quotaAllowed \|\| !targetChild \|\| ringing \|\| trigger\.isPending\}[\s\S]{0,120}aria-busy=\{ringing \|\| trigger\.isPending\}/);
+  assert.match(remoteRing, /className="rr-modal-confirm hy-press"[\s\S]{0,180}disabled=\{trigger\.isPending\}[\s\S]{0,120}aria-busy=\{trigger\.isPending\}/);
   assert.match(remoteRing, /ringing \|\| trigger\.isPending \? "울리는 중…" : "지금 울리기"/);
 });
 
 test("공통 아이콘 버튼과 문서는 현재 제품의 실제 액션·아이콘 언어를 반영한다", () => {
-  assert.match(components, /\.hy-iconbtn\s*\{[^}]*min-width:\s*var\(--control-min-size\)[^}]*min-height:\s*var\(--control-min-size\)[^}]*flex:\s*none/s);
+  assert.match(components, /\.hy-iconbtn\s*\{[^}]*min-width:\s*var\(--control-size-icon\)[^}]*min-height:\s*var\(--control-size-icon\)[^}]*flex:\s*none/s);
   assert.doesNotMatch(componentSpec, /## 2\.[^\n]*(?:하트|꾹)|Heart "kkuk"/);
   assert.match(componentSpec, /스티커/);
   assert.match(readme, /기능·hero[^\n]*검증된 3D[^\n]*텍스트 행·utility[^\n]*Lucide/);

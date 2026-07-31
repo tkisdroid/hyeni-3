@@ -22,12 +22,12 @@ const STICKERS: ReadonlyArray<Sticker> = [
   { id: "brave", img: "sticker/brave.webp", label: "용감해요", emoji: "🙌" },
   { id: "study", img: "sticker/study.webp", label: "공부왕", emoji: "📚" },
   { id: "self", img: "sticker/self.webp", label: "스스로", emoji: "👍" },
-  { id: "ready", img: "sticker/ready.webp", label: "준비완료", emoji: "✅" },
-  { id: "early", img: "sticker/early.webp", label: "일찍왔어", emoji: "🌟" },
+  { id: "ready", img: "sticker/ready.webp", label: "준비 완료", emoji: "✅" },
+  { id: "early", img: "sticker/early.webp", label: "일찍 왔어", emoji: "🌟" },
   { id: "friend", img: "sticker/friend.webp", label: "사이좋게", emoji: "💛" },
   { id: "play", img: "sticker/play.webp", label: "신나게", emoji: "🧸" },
   { id: "sports", img: "sticker/sports.webp", label: "운동왕", emoji: "🎾" },
-  { id: "rest", img: "sticker/rest.webp", label: "푹쉬어요", emoji: "🌙" },
+  { id: "rest", img: "sticker/rest.webp", label: "푹 쉬어요", emoji: "🌙" },
 ];
 
 /** photo_url(원격 http)은 그대로, 로컬 캐릭터 키는 asset()으로 해석. */
@@ -108,7 +108,7 @@ export function StickerSend() {
       },
       {
         onSuccess: () => {
-          show(`${childName}에게 '${picked.label}' 스티커를 보냈어요`, "💌");
+          show(`${childName}에게 ‘${picked.label}’ 스티커를 보냈어요`, "💌");
           setMessage("");
         },
         onError: () => show("스티커를 보내지 못했어요", "⚠️"),

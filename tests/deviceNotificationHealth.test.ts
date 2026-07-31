@@ -32,7 +32,7 @@ test("최근 기기 보고와 아이 일정 알림 설정이 모두 켜져야 �
   assert.doesNotMatch(view.label, /수신 정상/);
 });
 
-test("전체화면 특별 접근이 꺼지면 일반 알림이 켜져 있어도 heads-up 강등을 주의로 표시한다", () => {
+test("전체 화면 특별 접근이 꺼지면 일반 알림이 켜져 있어도 화면 상단 팝업 강등을 주의로 표시한다", () => {
   const view = deviceNotificationHealthView({
     updatedAt: RECENT_REPORT,
     postPermissionGranted: true,
@@ -45,7 +45,7 @@ test("전체화면 특별 접근이 꺼지면 일반 알림이 켜져 있어도 
 
   assert.equal(view.state, "attention");
   assert.equal(view.label, "긴급 알림 전체 화면 확인 필요");
-  assert.match(view.detail, /heads-up/);
+  assert.match(view.detail, /화면 상단 팝업/);
 });
 
 test("주변 소리 요청 채널이 꺼지면 부모 건강상태에서 별도 주의로 표시한다", () => {

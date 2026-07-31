@@ -190,7 +190,7 @@ export function DataSync() {
           <div className="ds-card__main">
             <div className="ds-card__title">내 데이터 다운로드</div>
             <div className="ds-card__desc">
-              일정 · 저장한 장소 · 위험구역 · 학원 정보를 JSON 파일로 내려받아요.
+              일정·장소·위험구역·학원 정보를 JSON 파일로 저장해요.
             </div>
           </div>
           <button

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, MapPin, Check } from "lucide-react";
+import { ChevronLeft, MapPin, Check, PartyPopper } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import {
@@ -9,6 +9,7 @@ import {
   useDeclinePlaydateInvite,
 } from "@/queries/usePlaydate";
 import type { PlaydateInvite } from "@/lib/api/endpoints/playdate";
+import { hasJongseong } from "@/transform/adventureMap";
 import { useSafeBack } from "@/app/useSafeBack";
 import { Loading } from "@/components/ui/Loading";
 import "./PlaydateAccept.css";
@@ -42,7 +43,7 @@ function expiresLabel(expiresAt: string | null): string | null {
 export function PlaydateAccept() {
   const goBack = useSafeBack("/child/home");
   const { show } = useToast();
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const [busyAction, setBusyAction] = useState<{ inviteId: string; action: "accept" | "decline" } | null>(null);
 
   const pendingQ = usePendingPlaydateInvites();
   const activeQ = useActivePlaydateSession();
@@ -60,7 +61,7 @@ export function PlaydateAccept() {
   };
 
   const onAccept = async (invite: PlaydateInvite) => {
-    setBusyId(invite.id);
+    setBusyAction({ inviteId: invite.id, action: "accept" });
     try {
       await accept.mutateAsync(invite.id);
       show("놀이 약속이 연결됐어!", "🎈");
@@ -68,12 +69,12 @@ export function PlaydateAccept() {
     } catch (e) {
       show(friendlyError(e), "🎈");
     } finally {
-      setBusyId(null);
+      setBusyAction(null);
     }
   };
 
   const onDecline = async (invite: PlaydateInvite) => {
-    setBusyId(invite.id);
+    setBusyAction({ inviteId: invite.id, action: "decline" });
     try {
       await decline.mutateAsync(invite.id);
       show("요청을 거절했어.", "🎈");
@@ -81,7 +82,7 @@ export function PlaydateAccept() {
     } catch (e) {
       show(friendlyError(e), "🎈");
     } finally {
-      setBusyId(null);
+      setBusyAction(null);
     }
   };
 
@@ -113,7 +114,9 @@ export function PlaydateAccept() {
             </span>
             <span className="pa-active__text">
               {/* 장소를 모르면 "○○와 놀이 중이야.", 알면 "○○와 △△에서 놀이 중이야." */}
-              {`${active.friend_child_name?.trim() || "친구"}와 `}
+              {`${active.friend_child_name?.trim() || "친구"}${
+                hasJongseong(active.friend_child_name?.trim() || "친구") ? "과" : "와"
+              } `}
               {active.place_name?.trim() ? `${active.place_name.trim()}에서 ` : ""}
               놀이 중이야.
             </span>
@@ -143,7 +146,10 @@ export function PlaydateAccept() {
         ) : (
           incoming.map((r, i) => {
             const expires = expiresLabel(r.expires_at);
-            const busy = busyId === r.id;
+            const friendName = r.friend_child_name?.trim() || "친구";
+            const busy = busyAction?.inviteId === r.id;
+            const accepting = busy && busyAction.action === "accept";
+            const declining = busy && busyAction.action === "decline";
             return (
               <div key={r.id} className="hy-card pa-card">
                 <div className="pa-card__head">
@@ -157,7 +163,7 @@ export function PlaydateAccept() {
                   </span>
                   <span className="pa-who">
                     <span className="pa-who__name">
-                      {r.friend_child_name ?? "친구"} 친구
+                      {friendName} 친구
                     </span>
                     <span className="pa-who__when">
                       지금 · 근처 친구{expires ? ` · ${expires}` : ""}
@@ -170,24 +176,29 @@ export function PlaydateAccept() {
                   {r.place_name ?? "현재 장소"}
                 </div>
 
-                <div className="pa-note">“{r.friend_child_name ?? "친구"}(이)랑 같이 놀고 싶어!”</div>
+                <div className="pa-note">
+                  “{friendName}{hasJongseong(friendName) ? "이랑" : "랑"} 같이 놀고 싶어!”
+                </div>
 
                 <div className="pa-actions">
                   <button
                     type="button"
                     className="pa-btn-decline hy-press"
                     onClick={() => onDecline(r)}
-                    disabled={busy} aria-busy={busy}
+                    disabled={busy}
+                    aria-busy={declining}
                   >
-                    거절
+                    거절하기
                   </button>
                   <button
                     type="button"
                     className="pa-btn-accept hy-press"
                     onClick={() => onAccept(r)}
-                    disabled={busy} aria-busy={busy}
+                    disabled={busy}
+                    aria-busy={accepting}
                   >
-                    🎈 {busy ? "처리 중…" : "수락하기"}
+                    <PartyPopper size={18} strokeWidth={2.2} aria-hidden="true" />
+                    {accepting ? "처리 중…" : "수락하기"}
                   </button>
                 </div>
               </div>

@@ -272,7 +272,7 @@ export function AiSchedule() {
     }
     const t = text.trim();
     if (!t) {
-      show("정리할 내용을 입력해주세요", "✏️");
+      show("정리할 내용을 입력해 주세요", "✏️");
       return;
     }
     await runParse(t);
@@ -407,15 +407,15 @@ export function AiSchedule() {
             </div>
             <div className="ais-listening">
               {listening
-                ? "듣는 중… 지금 말해보세요"
+                ? "듣는 중… 지금 말해 보세요"
                 : text
                   ? "인식된 내용이에요 · 아래에서 정리해요"
-                  : "마이크를 누르고 말해보세요"}
+                  : "마이크를 누르고 말해 보세요"}
             </div>
             {text ? (
               <div className="ais-bubble ais-bubble--said">“{text}”</div>
             ) : (
-              <div className="ais-bubble">예) “내일 오후 4시에 태권도 일정 추가해줘”</div>
+              <div className="ais-bubble">예) “내일 오후 4시에 태권도 일정 추가해 줘”</div>
             )}
             <div className="ais-hint hy-explain">
               <span className="ais-hint__ico"><Mic size={15} strokeWidth={2.2} /></span>
@@ -431,7 +431,7 @@ export function AiSchedule() {
               <textarea
                 className="ais-textarea"
                 aria-label="정리할 일정 내용"
-                placeholder="예) 다음 주 화요일 4시 태권도와 목요일 5시 미술학원 추가해줘"
+                placeholder="예) 다음 주 화요일 4시 태권도와 목요일 5시 미술학원 추가해 줘"
                 value={text}
                 onChange={(e) => onTextChange(e.target.value)}
               />
@@ -556,7 +556,7 @@ export function AiSchedule() {
             aria-busy={createM.isPending}
           >
             <Check size={20} strokeWidth={2.4} color="#fff" />
-            {createM.isPending ? "추가하는 중..." : "이대로 추가하기"}
+            {createM.isPending ? "추가하는 중…" : "이대로 추가하기"}
           </button>
         ) : (
           <button
@@ -569,8 +569,8 @@ export function AiSchedule() {
             <Sparkles size={20} strokeWidth={2.4} color="#fff" />
             {parseM.isPending
               ? tab === "image"
-                ? "찾는 중..."
-                : "정리하는 중..."
+                ? "찾는 중…"
+                : "정리하는 중…"
               : tab === "image"
                 ? "일정 찾기"
                 : "AI로 정리하기"}

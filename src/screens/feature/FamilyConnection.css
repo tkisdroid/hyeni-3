@@ -106,9 +106,6 @@
   box-shadow: var(--shadow-soft);
   border: 1px solid var(--line-card);
 }
-.fc-device--pending {
-  opacity: 0.82;
-}
 .fc-device__avatar {
   width: 46px;
   height: 46px;

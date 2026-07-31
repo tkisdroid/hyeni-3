@@ -138,7 +138,7 @@ export function ParentFamily() {
               <div className="pf-label">아이</div>
               <div className="pf-children">
                 {view.children.length === 0 && (
-                  <div className="pf-children__empty">아직 연결된 아이가 없어요. 아이 추가로 연결을 시작해 주세요.</div>
+                  <div className="pf-children__empty">아직 연결된 아이가 없어요. ‘아이 추가’를 눌러 연결을 시작해 주세요.</div>
                 )}
                 {view.children.map((c) => (
                   <button
@@ -184,7 +184,7 @@ export function ParentFamily() {
                     className="pf-add pf-add--locked hy-press"
                     onClick={() => navigate("/subscription")}
                   >
-                    <Lock size={17} strokeWidth={2.4} color="var(--gold-600)" />
+                    <Lock size={17} strokeWidth={2.4} color="var(--gold-text)" />
                     <span className="pf-add__lock">
                       <span className="pf-add__lock-title">
                         {addLockMessage}
@@ -262,7 +262,7 @@ export function ParentFamily() {
                   </div>
                 </div>
                 <div className="pf-paircode__hint">
-                  아이가 연결 해제됐거나 선생님이 학생을 추가할 때, 이 코드·QR로 다시 연결해요.
+                  아이 연결이 끊겼거나 선생님이 학생을 추가할 때 이 코드나 QR로 다시 연결해요.
                 </div>
               </div>
             </section>

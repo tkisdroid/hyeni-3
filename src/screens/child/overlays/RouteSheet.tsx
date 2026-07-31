@@ -7,6 +7,8 @@
  *
  * 아래 그림(횡단보도·정류장·놀이터)은 장식이며 실제 경로와 무관하다.
  */
+import { useEffect, useState } from "react";
+import { Home, Map, Navigation } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useWalkingRoute } from "@/queries/useRoute";
 import type { RoutePoint } from "@/lib/api/endpoints/route";
@@ -49,9 +51,14 @@ export function RouteSheet({
   sending,
 }: RouteSheetProps) {
   const route = useWalkingRoute(open ? origin : null, open ? destination : null);
+  const [pendingAction, setPendingAction] = useState<"depart" | "arrive" | null>(null);
   const data = route.data ?? null;
   const steps = (data?.guides ?? []).filter((g) => g.text.trim()).slice(0, 3);
   const estimated = !!data && !data.durationSec;
+
+  useEffect(() => {
+    if (!open || !sending) setPendingAction(null);
+  }, [open, sending]);
 
   return (
     <ChildSheet open={open} onClose={onClose} label={`${destinationName} 가는 길`}>
@@ -88,13 +95,13 @@ export function RouteSheet({
         <div className="ks-empty">
           이 일정에 장소가 아직 없어.
           <br />
-          지도에서 같이 찾아볼까?
+          지도에서 같이 찾아 볼까?
         </div>
       ) : !origin ? (
         <div className="ks-empty">
           지금 네가 어디 있는지 아직 몰라.
           <br />
-          잠깐 있다가 다시 눌러볼래?
+          잠깐 있다가 다시 눌러 볼래?
         </div>
       ) : route.isLoading ? (
         <div className="ks-empty">가는 길을 찾는 중이야… 🗺️</div>
@@ -125,14 +132,35 @@ export function RouteSheet({
         </div>
       )}
 
-      <button type="button" className="ks-cta ks-cta--go hy-press" onClick={onDepart} disabled={sending} aria-busy={sending}>
-        출발할게! 🏃
+      <button
+        type="button"
+        className="ks-cta ks-cta--go hy-press"
+        onClick={() => {
+          setPendingAction("depart");
+          onDepart();
+        }}
+        disabled={sending}
+        aria-busy={sending && pendingAction === "depart"}
+      >
+        <Navigation size={20} strokeWidth={2.2} aria-hidden="true" />
+        출발할게!
       </button>
-      <button type="button" className="ks-cta ks-cta--soft hy-press" onClick={onArrive} disabled={sending} aria-busy={sending}>
-        도착했다고 알리기 🏠
+      <button
+        type="button"
+        className="ks-cta ks-cta--soft hy-press"
+        onClick={() => {
+          setPendingAction("arrive");
+          onArrive();
+        }}
+        disabled={sending}
+        aria-busy={sending && pendingAction === "arrive"}
+      >
+        <Home size={19} strokeWidth={2.2} aria-hidden="true" />
+        도착했다고 알리기
       </button>
       <button type="button" className="ks-cta ks-cta--ghost hy-press" onClick={onOpenMap}>
-        지도로 자세히 보기 🗺️
+        <Map size={19} strokeWidth={2.2} aria-hidden="true" />
+        지도로 자세히 보기
       </button>
     </ChildSheet>
   );

@@ -395,7 +395,8 @@ export function ParentSettings() {
                 type="button"
                 className="ps-modal__btn ps-modal__btn--ghost hy-press"
                 onClick={() => setConfirmDelete(false)}
-                disabled={deleteAccount.isPending} aria-busy={deleteAccount.isPending}
+                disabled={deleteAccount.isPending}
+                data-progress-owner="confirm-action"
               >
                 취소
               </button>

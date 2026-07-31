@@ -183,9 +183,10 @@
 .fp-cta {
   margin-top: 20px;
   width: 100%;
-  height: 56px;
+  height: var(--control-height-primary);
+  flex: none;
   border-radius: var(--radius-20);
-  background: linear-gradient(120deg, #ffb443, #f0518f);
+  background: var(--cta-grad-accent);
   box-shadow: 0 16px 32px -12px rgba(240, 81, 143, 0.55);
   font-size: var(--type-body-lg);
   line-height: var(--type-body-lg-line-height);
@@ -211,7 +212,7 @@
   border-radius: var(--radius-16);
   background: rgba(255, 180, 67, 0.16);
   box-shadow: none;
-  color: #a5661a;
+  color: var(--gold-text);
   font-size: var(--type-body);
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
@@ -292,6 +293,9 @@
   font-weight: var(--type-caption-weight);
 
   color: var(--fg-muted);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 
 }
 .fp-setting__switch {
@@ -345,6 +349,9 @@
   font-weight: var(--type-label-weight);
 
   color: var(--fg-tertiary);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 .fp-parent-rule + .fp-parent-rule {
   margin-top: 12px;
@@ -413,7 +420,8 @@
 .fp-end {
   margin-top: 20px;
   width: 100%;
-  height: 54px;
+  height: var(--control-height-primary);
+  flex: none;
   border-radius: 16px;
   background: #f3eef0;
   color: #6d6469;

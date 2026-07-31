@@ -13,6 +13,7 @@ import {
 } from "@/queries/usePlaydate";
 import type { PlaydateCandidate } from "@/lib/api/endpoints/playdate";
 import { playdateCandidateNotice } from "@/transform/playdateNotice";
+import { hasJongseong } from "@/transform/adventureMap";
 import { useSafeBack } from "@/app/useSafeBack";
 import { Loading } from "@/components/ui/Loading";
 import "./FriendPlay.css";
@@ -129,10 +130,10 @@ export function FriendPlay() {
         const first = results.find((r) => r.status === "rejected") as
           | PromiseRejectedResult
           | undefined;
-        show(errMsg(first?.reason) || "보내기에 실패했어. 다시 해볼까?", "😢");
+        show(errMsg(first?.reason) || "보내기에 실패했어. 다시 해 볼까?", "😢");
       }
     } catch (e) {
-      show(errMsg(e) || "보내기에 실패했어. 다시 해볼까?", "😢");
+      show(errMsg(e) || "보내기에 실패했어. 다시 해 볼까?", "😢");
     }
   };
 
@@ -190,7 +191,7 @@ export function FriendPlay() {
             <div className="fp-hero__sub">
               아이 기기에서 친구놀이 요청을 보낼 수 있어요.
               <br />
-              부모님이 허용 조건을 먼저 정해 주세요.
+              허용 조건을 먼저 정해 주세요.
             </div>
           </div>
 
@@ -208,7 +209,7 @@ export function FriendPlay() {
               <span className="fp-setting__title">친구놀이 요청 허용</span>
               <span className="fp-setting__sub">
                 {playdateEnabled
-                  ? "아이가 안전한 장소에서 근처 친구에게 요청할 수 있어요"
+                  ? "안전한 곳에서 근처 친구에게 요청해요"
                   : "아이 화면에서 친구찾기와 요청 보내기가 꺼져요"}
               </span>
             </span>
@@ -225,11 +226,11 @@ export function FriendPlay() {
             </div>
             <div className="fp-parent-rule">
               <span>2</span>
-              아이가 위험 구역 밖에 있고, 현재 위치가 확인될 때만 요청할 수 있어요.
+              아이가 위험구역 밖에 있고, 현재 위치가 확인될 때만 요청할 수 있어요.
             </div>
             <div className="fp-parent-rule">
               <span>3</span>
-              진행 중인 친구놀이는 부모님이 언제든 종료할 수 있어요.
+              진행 중인 친구놀이는 언제든 종료할 수 있어요.
             </div>
           </div>
 
@@ -286,7 +287,8 @@ export function FriendPlay() {
           <div className="fp-hero__sub">
             {active ? (
               <>
-                {active.friend_child_name ?? "친구"}(이)랑 만났어.
+                {active.friend_child_name ?? "친구"}
+                {hasJongseong(active.friend_child_name ?? "친구") ? "이랑" : "랑"} 만났어.
                 <br />
                 다 놀았으면 아래에서 알려줘!
               </>
@@ -294,7 +296,7 @@ export function FriendPlay() {
               <>
                 가까이 있는 친구에게
                 <br />
-                같이 놀자고 살짝 보내볼까?
+                같이 놀자고 살짝 보내 볼까?
               </>
             )}
           </div>

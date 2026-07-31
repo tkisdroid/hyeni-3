@@ -8,7 +8,8 @@
 /* ── 대기 화면 ──────────────────────────────────────────────────────────── */
 .ra-idle {
   min-height: 100%;
-  padding: 48px 20px 120px;
+  padding: calc(48px + env(safe-area-inset-top, 0px)) 20px
+    calc(120px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   background: radial-gradient(120% 46% at 50% 0%, #efe8ff 0%, rgba(239, 232, 255, 0) 55%),
@@ -179,9 +180,10 @@
 
 .ra-start {
   width: 100%;
-  height: 58px;
+  height: var(--control-height-primary);
+  flex: none;
   border-radius: var(--radius-20);
-  background: linear-gradient(120deg, #b79dfb, #8b6bec);
+  background: var(--cta-grad-lavender);
   box-shadow: 0 16px 32px -12px rgba(124, 92, 225, 0.6);
   font-size: var(--type-title);
   line-height: var(--type-title-line-height);
@@ -234,7 +236,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 72px 32px calc(40px + env(safe-area-inset-bottom, 0px));
+  padding: calc(72px + env(safe-area-inset-top, 0px)) 32px
+    calc(40px + env(safe-area-inset-bottom, 0px));
   background: radial-gradient(circle at 50% 34%, #2a2140, #14100f);
   animation: hy-fadein 0.25s ease forwards;
 }
@@ -287,7 +290,7 @@
   width: 128px;
   height: 128px;
   border-radius: 50%;
-  background: radial-gradient(circle at 50% 40%, #ff6b84, #e23050);
+  background: radial-gradient(circle at 50% 40%, var(--danger-cta), var(--danger-text));
   box-shadow: 0 20px 40px -10px rgba(226, 48, 80, 0.6);
   display: flex;
   align-items: center;
@@ -315,7 +318,7 @@
   background: rgba(167, 139, 250, 0.18);
 }
 .ra-listen[data-receiving="false"] .ra-pulse-core {
-  background: radial-gradient(circle at 50% 40%, #b79dfb, #8b6bec);
+  background: radial-gradient(circle at 50% 40%, var(--lav-600), var(--lav-text));
   box-shadow: 0 20px 40px -10px rgba(124, 92, 225, 0.48);
 }
 .ra-listen[data-receiving="false"] .ra-bar {
@@ -406,7 +409,7 @@
   width: 58px;
   height: 58px;
   border-radius: 50%;
-  background: rgba(49, 196, 141, 0.9);
+  background: var(--mint-cta);
   display: flex;
   align-items: center;
   justify-content: center;

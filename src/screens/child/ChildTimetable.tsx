@@ -47,7 +47,7 @@ export function ChildTimetableList({
           </span>
           {r.done && (
             <span className="kd-tt__done" aria-label="다녀왔어">
-              <Check size={16} strokeWidth={3.2} color="var(--mint-500)" />
+              <Check size={16} strokeWidth={3.2} color="var(--mint-text)" />
             </span>
           )}
           {r.next && <span className="kd-tt__next">다음이야!</span>}

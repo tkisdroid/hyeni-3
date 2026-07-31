@@ -121,6 +121,9 @@
   font-weight: var(--type-label-weight);
 
   color: var(--fg-muted);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
 .raa-section {

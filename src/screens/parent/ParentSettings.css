@@ -168,7 +168,7 @@
   transition: background 0.2s ease;
 }
 .ps-switch[data-on="true"] {
-  background: var(--hy-accent);
+  background: var(--hy-accent-cta);
 }
 .ps-switch__knob {
   position: absolute;
@@ -436,7 +436,7 @@
   color: var(--fg-secondary);
 }
 .ps-modal__btn--danger {
-  background: var(--danger-500);
+  background: var(--danger-cta);
   color: #fff;
 }
 .ps-modal__btn:disabled {

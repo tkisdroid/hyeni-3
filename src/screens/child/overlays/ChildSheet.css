@@ -125,9 +125,10 @@
 .ks-cta {
   margin-top: 16px;
   width: 100%;
-  height: 56px;
+  height: var(--control-height-primary);
+  flex: none;
   border-radius: var(--radius-20);
-  background: linear-gradient(120deg, var(--hy-accent), var(--hy-accent-deep));
+  background: var(--cta-grad-accent);
   box-shadow: 0 14px 28px -10px rgba(240, 81, 143, 0.5);
   font-family: Jua, var(--font-sans);
 
@@ -136,13 +137,17 @@
   font-weight: var(--type-title-weight);
 
   color: var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-8);
   --press: 0.97;
 }
 .ks-cta:disabled {
   opacity: 0.55;
 }
 .ks-cta--go {
-  background: linear-gradient(120deg, #46d19b, #23a876);
+  background: var(--cta-grad-mint);
   box-shadow: 0 14px 28px -10px rgba(35, 168, 118, 0.55);
 }
 .ks-cta--soft {
@@ -358,7 +363,7 @@
   flex: none;
 }
 .ks-friend[aria-pressed="true"] .ks-friend__check {
-  background: linear-gradient(120deg, var(--hy-accent), var(--hy-accent-deep));
+  background: var(--hy-accent-cta);
 }
 .ks-friend-list {
   margin-top: 16px;

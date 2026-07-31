@@ -55,13 +55,13 @@
   overflow: hidden;
   border-radius: var(--radius-20);
   padding: 20px;
-  background: linear-gradient(135deg, #5fd6a6 0%, #23a876 100%);
+  background: var(--cta-grad-mint);
   box-shadow: var(--shadow-floating);
 }
 .th-hero__sheen {
   position: absolute;
   inset: 0;
-  background: radial-gradient(80% 120% at 85% 8%, rgba(255, 255, 255, 0.28), transparent 60%);
+  background: radial-gradient(80% 120% at 85% 8%, rgba(8, 118, 83, 0.24), transparent 60%);
 }
 .th-hero__school {
   position: relative;
@@ -69,7 +69,7 @@
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
 
-  color: rgba(255, 255, 255, 0.92);
+  color: #fff;
 }
 .th-hero__name {
   position: relative;
@@ -89,7 +89,7 @@
   gap: 8px;
   padding: 8px 12px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.22);
+  background: var(--mint-text);
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
@@ -152,7 +152,7 @@
 
 /* ── 출석 현황 ──────────────────────────────────────────────────────────── */
 .th-viewall {
-  color: #23a876;
+  color: var(--mint-text);
 }
 .th-students {
   padding: 8px;
@@ -303,7 +303,7 @@
   margin-top: 8px;
   padding: 12px 24px;
   border-radius: 16px;
-  background: linear-gradient(120deg, #5fd6a6, #23a876);
+  background: var(--cta-grad-mint);
   box-shadow: 0 14px 28px -14px rgba(35, 168, 118, 0.6);
   font-size: var(--type-body);
   line-height: var(--type-body-line-height);
@@ -402,10 +402,11 @@
 }
 .th-sheet__send {
   width: 100%;
-  height: 54px;
+  height: var(--control-height-primary);
+  flex: none;
   border-radius: 16px;
   margin-top: 4px;
-  background: linear-gradient(120deg, #5fd6a6, #23a876);
+  background: var(--cta-grad-mint);
   box-shadow: 0 14px 30px -14px rgba(35, 168, 118, 0.6);
   font-size: var(--type-body-lg);
   line-height: var(--type-body-lg-line-height);

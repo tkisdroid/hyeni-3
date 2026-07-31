@@ -46,6 +46,9 @@
   --blue-soft: #E6F2FB;
   --blue-500: #2E86C1;
   --blue-text: #2E6DA4;
+  /* 흰 라벨을 올리는 정보 CTA — 두 stop 모두 4.5:1 이상. */
+  --blue-cta: #2E6DA4;
+  --blue-cta-deep: #245984;
 
   /* ── Status · Danger (SOS·위험구역) ── */
   --danger-soft: #FFECEE;
@@ -206,10 +209,13 @@
 
   /* ── Interaction ── */
   --control-min-size: 44px;
+  --control-height-primary: 52px;
+  --control-height-secondary: 48px;
+  --control-size-icon: 44px;
   --focus-ring-width: 3px;
   --focus-ring-color: var(--blue-500);
   --disabled-opacity: 0.48;
-  --busy-opacity: 0.78;
+  --busy-opacity: 1;
 
   /* ── Elevation ── */
   --shadow-soft: 0 2px 8px rgba(32, 26, 29, 0.08);
@@ -249,6 +255,8 @@
   --cta-grad-accent: linear-gradient(120deg, var(--hy-accent-cta), var(--hy-accent-text));
   --cta-grad-danger: linear-gradient(120deg, var(--danger-cta), var(--danger-text));
   --cta-grad-lavender: linear-gradient(120deg, var(--lav-600), var(--lav-text));
+  --cta-grad-mint: linear-gradient(120deg, var(--mint-cta), var(--mint-text));
+  --cta-grad-info: linear-gradient(120deg, var(--blue-cta), var(--blue-cta-deep));
 }
 
 /* 아이 테마색 스위칭 — 앱 루트에 data-accent 부여.

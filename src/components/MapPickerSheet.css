@@ -126,7 +126,7 @@
 }
 .mps-sel svg {
   flex: none;
-  color: var(--hy-accent);
+  color: var(--hy-accent-text);
 }
 .mps-sel__text {
   min-width: 0;

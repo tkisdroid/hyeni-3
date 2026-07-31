@@ -9,7 +9,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/force_ring_bg"
     android:padding="24dp"
     android:gravity="center_horizontal">
 
@@ -17,7 +16,7 @@
       android:id="@+id/icon_emoji"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
-      android:text="🚨"
+      android:text="@string/force_ring_icon"
       android:textSize="64sp"
       android:layout_marginTop="48dp" />
 
@@ -25,7 +24,7 @@
       android:id="@+id/title_text"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
-      android:text="응급 신호"
+      android:text="@string/force_ring_title"
       android:textColor="@color/force_ring_fg"
       android:textSize="28sp"
       android:textStyle="bold"
@@ -62,7 +61,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="부모님이 남긴 메시지"
+        android:text="@string/force_ring_message_label"
         android:textColor="@color/force_ring_card_label"
         android:fontFamily="sans-serif-medium"
         android:textSize="13sp" />
@@ -93,7 +92,7 @@
       android:id="@+id/btn_ack"
       android:layout_width="match_parent"
       android:layout_height="72dp"
-      android:text="✓ 확인했어요"
+      android:text="@string/force_ring_acknowledge"
       android:textColor="@color/force_ring_btn_text"
       android:textSize="22sp"
       android:textStyle="bold"
@@ -106,7 +105,7 @@
       android:id="@+id/footer_text"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
-      android:text="※ 부모님이 응급 신호로 보낸 알람이라 무음모드를 우회했어요"
+      android:text="@string/force_ring_footer"
       android:textColor="@color/force_ring_fg_dim"
       android:gravity="center"
       android:textSize="12sp"

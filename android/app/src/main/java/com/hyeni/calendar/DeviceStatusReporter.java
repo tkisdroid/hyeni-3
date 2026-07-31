@@ -28,6 +28,7 @@ import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 
 import org.json.JSONArray;
@@ -176,11 +177,9 @@ final class DeviceStatusReporter {
             || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
             == PackageManager.PERMISSION_GRANTED;
         boolean requiredChannelsEnabled = NotificationHelper.areRequiredDeliveryChannelsEnabled(nm);
-        boolean batteryOptimizationsIgnored = Build.VERSION.SDK_INT < Build.VERSION_CODES.M
-            || pm == null
+        boolean batteryOptimizationsIgnored = pm == null
             || pm.isIgnoringBatteryOptimizations(context.getPackageName());
-        boolean powerSaveMode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
-            && pm != null
+        boolean powerSaveMode = pm != null
             && pm.isPowerSaveMode();
         boolean backgroundRestricted = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
             && activityManager != null
@@ -202,8 +201,7 @@ final class DeviceStatusReporter {
         String deviceInstallId = getOrCreateDeviceInstallId(prefs);
         String ringerMode = describeRingerMode(audio);
         String dndMode = describeDndMode(nm);
-        boolean dndAccess = Build.VERSION.SDK_INT < Build.VERSION_CODES.M
-            || nm == null
+        boolean dndAccess = nm == null
             || nm.isNotificationPolicyAccessGranted();
         boolean keyguardLocked = keyguard != null && keyguard.isKeyguardLocked();
 
@@ -312,32 +310,30 @@ final class DeviceStatusReporter {
         String usagePermission = "unavailable";
         JSONArray appUsage = new JSONArray();
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            UsageStatsManager usm = (UsageStatsManager) context.getSystemService(Context.USAGE_STATS_SERVICE);
-            if (usm != null) {
-                long end = System.currentTimeMillis();
-                long start = end - 10 * 60 * 1000L;
-                appUsage = readAppUsage(context, usm, startOfTodayMillis(), end);
-                String rawRecentApp = "";
-                UsageEvents events = usm.queryEvents(start, end);
-                if (events != null) {
-                    UsageEvents.Event event = new UsageEvents.Event();
-                    while (events.hasNextEvent()) {
-                        events.getNextEvent(event);
-                        if (event.getEventType() == UsageEvents.Event.ACTIVITY_RESUMED && event.getPackageName() != null) {
-                            rawRecentApp = event.getPackageName();
-                            if (!isSystemSurfacePackage(context, event.getPackageName())) {
-                                recentApp = event.getPackageName();
-                            }
+        UsageStatsManager usm = (UsageStatsManager) context.getSystemService(Context.USAGE_STATS_SERVICE);
+        if (usm != null) {
+            long end = System.currentTimeMillis();
+            long start = end - 10 * 60 * 1000L;
+            appUsage = readAppUsage(context, usm, startOfTodayMillis(), end);
+            String rawRecentApp = "";
+            UsageEvents events = usm.queryEvents(start, end);
+            if (events != null) {
+                UsageEvents.Event event = new UsageEvents.Event();
+                while (events.hasNextEvent()) {
+                    events.getNextEvent(event);
+                    if (event.getEventType() == UsageEvents.Event.ACTIVITY_RESUMED && event.getPackageName() != null) {
+                        rawRecentApp = event.getPackageName();
+                        if (!isSystemSurfacePackage(context, event.getPackageName())) {
+                            recentApp = event.getPackageName();
                         }
                     }
                 }
-                usagePermission = resolveUsagePermission(
-                    isUsageAccessGranted(context),
-                    !rawRecentApp.isEmpty(),
-                    appUsage.length() > 0
-                );
             }
+            usagePermission = resolveUsagePermission(
+                isUsageAccessGranted(context),
+                !rawRecentApp.isEmpty(),
+                appUsage.length() > 0
+            );
         }
 
         return new UsageSnapshot(interactive, recentApp,
@@ -370,6 +366,7 @@ final class DeviceStatusReporter {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.P)
     static boolean isKeyguardHiddenEvent(int eventType) {
         return eventType == UsageEvents.Event.KEYGUARD_HIDDEN;
     }
@@ -655,7 +652,7 @@ final class DeviceStatusReporter {
     }
 
     private static String describeDndMode(@Nullable NotificationManager nm) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || nm == null) return "all";
+        if (nm == null) return "all";
         int filter = nm.getCurrentInterruptionFilter();
         if (filter == NotificationManager.INTERRUPTION_FILTER_ALL) return "all";
         if (filter == NotificationManager.INTERRUPTION_FILTER_PRIORITY) return "priority";

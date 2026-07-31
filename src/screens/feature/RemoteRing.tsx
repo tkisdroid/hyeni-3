@@ -205,23 +205,29 @@ export function RemoteRing() {
   };
 
   const confirmRing = async () => {
-    setShowConfirm(false);
-    if (!ringDataReady || !quotaAllowed || !targetChild?.user_id) return;
-    const res = await trigger.mutateAsync({ targetChildUserId: targetChild.user_id, message: "" });
-    if (res.error) {
-      if (res.error === "force_ring_quota_exceeded") show("오늘 소리 울리기 횟수를 다 썼어요", "🔕");
-      else if (res.error === "force_ring_already_active") show("이미 벨이 울리고 있어요", "🔔");
-      else show("소리를 울리지 못했어요", "⚠️");
+    if (!ringDataReady || !quotaAllowed || !targetChild?.user_id) {
+      setShowConfirm(false);
       return;
     }
-    // 발사는 됐으나 아이 기기에 닿지 못한 경우(오프라인/토큰없음) — 정직 안내.
-    if (res.delivered === false) {
-      show("아이 기기에 닿지 않았어요. 잠시 후 다시 시도해 주세요", "⚠️");
-      return;
+    try {
+      const res = await trigger.mutateAsync({ targetChildUserId: targetChild.user_id, message: "" });
+      if (res.error) {
+        if (res.error === "force_ring_quota_exceeded") show("오늘 소리 울리기 횟수를 다 썼어요", "🔕");
+        else if (res.error === "force_ring_already_active") show("이미 벨이 울리고 있어요", "🔔");
+        else show("소리를 울리지 못했어요", "⚠️");
+        return;
+      }
+      // 발사는 됐으나 아이 기기에 닿지 못한 경우(오프라인/토큰없음) — 정직 안내.
+      if (res.delivered === false) {
+        show("아이 기기에 닿지 않았어요. 잠시 후 다시 시도해 주세요", "⚠️");
+        return;
+      }
+      autoStopAtRef.current = Date.now() + durationSec * 1000;
+      setNowMs(Date.now());
+      show(`${childName} 기기에서 벨이 울려요`, "🔔");
+    } finally {
+      setShowConfirm(false);
     }
-    autoStopAtRef.current = Date.now() + durationSec * 1000;
-    setNowMs(Date.now());
-    show(`${childName} 기기에서 벨이 울려요`, "🔔");
   };
 
   const onStop = () => {
@@ -313,6 +319,7 @@ export function RemoteRing() {
                   key={c.id}
                   type="button"
                   className={`rr-childchip hy-press${targetChild?.id === c.id ? " rr-childchip--active" : ""}`}
+                  aria-pressed={targetChild?.id === c.id}
                   onClick={() => setTargetId(c.user_id ?? null)}
                 >
                   {c.name || "아이"}
@@ -327,6 +334,7 @@ export function RemoteRing() {
                 key={sec}
                 type="button"
                 className={`rr-chip hy-press${durationSec === sec ? " rr-chip--active" : ""}`}
+                aria-pressed={durationSec === sec}
                 onClick={() => setDurationSec(sec)}
               >
                 {durationLabel(sec)}
@@ -394,7 +402,8 @@ export function RemoteRing() {
                 type="button"
                 className="rr-modal-cancel hy-press"
                 onClick={() => setShowConfirm(false)}
-                disabled={trigger.isPending} aria-busy={trigger.isPending}
+                disabled={trigger.isPending}
+                data-progress-owner="confirm-action"
               >
                 취소
               </button>
@@ -402,6 +411,8 @@ export function RemoteRing() {
                 type="button"
                 className="rr-modal-confirm hy-press"
                 onClick={() => void confirmRing()}
+                disabled={trigger.isPending}
+                aria-busy={trigger.isPending}
               >
                 지금 울리기
               </button>

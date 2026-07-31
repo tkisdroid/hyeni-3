@@ -186,7 +186,7 @@ export function Subscription() {
     if (view.isTrial && view.trialDaysLeft != null) {
       return `무료 체험 ${view.trialDaysLeft}일 남았어요`;
     }
-    if (view.periodEnd) return `${formatPeriodEnd(view.periodEnd)}까지 이용할 수 있어요`;
+    if (view.periodEnd) return `${formatPeriodEnd(view.periodEnd)}까지 이용 가능해요`;
     return "프리미엄 혜택을 모두 이용 중이에요";
   })();
 
@@ -297,7 +297,7 @@ export function Subscription() {
               onClick={() => setPlan("month")}
             >
               <div className="sub-plan__info">
-                <div className="sub-plan__name">프리미엄 월구독</div>
+                <div className="sub-plan__name">프리미엄 월간 구독</div>
                 <div className="sub-plan__meta">
                   {monthlyOffer?.hasSevenDayTrial ? "7일 무료 체험 후 자동 갱신" : "Google Play 구독 · 언제든 해지 가능"}
                 </div>
@@ -352,7 +352,7 @@ export function Subscription() {
                     >
                       <span className="sub-table__col-name">{getTierLabel(t)}</span>
                       {t === TIERS.PREMIUM && (
-                        <span className="sub-table__col-price">{monthlyOffer?.displayPrice ?? "Play 가격 확인"}</span>
+                        <span className="sub-table__col-price">{monthlyOffer?.displayPrice ?? "가격 확인"}</span>
                       )}
                       {t === tier && <span className="sub-table__col-badge">현재</span>}
                     </th>

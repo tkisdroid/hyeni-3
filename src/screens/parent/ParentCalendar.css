@@ -319,7 +319,7 @@
 }
 .pc-event__child--warn {
   background: var(--cream-soft);
-  color: #9A6D0E;
+  color: var(--gold-text);
 }
 .pc-event__title {
   display: block;
@@ -554,7 +554,7 @@
 }
 .pc-btn--danger {
   flex: 1;
-  background: #e5484d;
+  background: var(--danger-cta);
   color: #fff;
 }
 .pc-btn:disabled {

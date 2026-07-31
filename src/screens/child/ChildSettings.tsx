@@ -45,14 +45,16 @@ function ageFrom(bd: string | null | undefined, now: Date): number | null {
 }
 
 // 부모 연결 문구(반말) — 성별 기반.
-function connectionLabel(parents: { gender?: string | null }[]): { Icon: LucideIcon; text: string } {
+function connectionLabel(
+  parents: { gender?: string | null }[],
+): { Icon: LucideIcon; text: string; tone: "connected" | "pending" } {
   const hasMom = parents.some((p) => p.gender === "mom");
   const hasDad = parents.some((p) => p.gender === "dad");
-  if (hasMom && hasDad) return { Icon: Users, text: "엄마·아빠와 연결됐어" };
-  if (hasMom) return { Icon: UserRound, text: "엄마와 연결됐어" };
-  if (hasDad) return { Icon: UserRound, text: "아빠와 연결됐어" };
-  if (parents.length) return { Icon: Users, text: "가족과 연결됐어" };
-  return { Icon: Link2, text: "아직 연결 대기 중이야" };
+  if (hasMom && hasDad) return { Icon: Users, text: "엄마·아빠와 연결됐어", tone: "connected" };
+  if (hasMom) return { Icon: UserRound, text: "엄마와 연결됐어", tone: "connected" };
+  if (hasDad) return { Icon: UserRound, text: "아빠와 연결됐어", tone: "connected" };
+  if (parents.length) return { Icon: Users, text: "가족과 연결됐어", tone: "connected" };
+  return { Icon: Link2, text: "아직 연결 대기 중이야", tone: "pending" };
 }
 
 function avatarSrc(path: string): string {
@@ -62,7 +64,7 @@ function avatarSrc(path: string): string {
 // 부모에게 부탁할 수 있는 잠금 메뉴(요청형).
 const REQUEST_ITEMS: Array<{ menu: SettingRequestMenu; Icon: LucideIcon; title: string; sub: string }> = [
   { menu: "sound", Icon: Bell, title: "소리·진동 바꾸기", sub: "부모님이 정하는 항목이야" },
-  { menu: "character", Icon: Cat, title: "캐릭터 바꾸기", sub: "부모님한테 부탁해볼 수 있어" },
+  { menu: "character", Icon: Cat, title: "캐릭터 바꾸기", sub: "부모님한테 부탁해 볼 수 있어" },
 ];
 
 /**
@@ -94,6 +96,7 @@ export function ChildSettings() {
   };
 
   const [requested, setRequested] = useState<Record<string, boolean>>({});
+  const [pendingRequestMenu, setPendingRequestMenu] = useState<SettingRequestMenu | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [locationStatus, setLocationStatus] = useState<LocationTrackingStatus | null>(null);
   const helpTitleId = useId();
@@ -154,15 +157,15 @@ export function ChildSettings() {
   const locationView = (() => {
     switch (locationStatus) {
       case "on":
-        return { sub: "이 기기에서 위치를 보내고 있어", chip: "켜짐" };
+        return { sub: "이 기기에서 위치를 보내고 있어", chip: "켜짐", tone: "positive" as const };
       case "off":
-        return { sub: "이 기기의 위치 보내기가 꺼져 있어", chip: "꺼짐" };
+        return { sub: "이 기기의 위치 보내기가 꺼져 있어", chip: "꺼짐", tone: "caution" as const };
       case "unsupported":
-        return { sub: "이 기기에서는 위치 상태를 확인할 수 없어", chip: "확인 불가" };
+        return { sub: "위치 상태를 확인할 수 없어", chip: "확인 불가", tone: "caution" as const };
       case "error":
-        return { sub: "위치 상태를 확인하지 못했어", chip: "오류" };
+        return { sub: "위치 상태를 확인하지 못했어", chip: "오류", tone: "danger" as const };
       default:
-        return { sub: "이 기기의 위치 상태를 확인하고 있어", chip: "확인 중" };
+        return { sub: "이 기기의 위치 상태를 확인하고 있어", chip: "확인 중", tone: "neutral" as const };
     }
   })();
 
@@ -173,7 +176,7 @@ export function ChildSettings() {
       { ...notifSettings, childEnabled: nextEnabled },
       {
         onSuccess: () => show(nextEnabled ? "일정 알림을 켰어" : "일정 알림을 껐어", "🔔"),
-        onError: () => show("알림 설정을 저장하지 못했어. 다시 해줘", "⚠️"),
+        onError: () => show("알림 설정을 저장하지 못했어. 다시 해 줘", "⚠️"),
       },
     );
   };
@@ -185,14 +188,16 @@ export function ChildSettings() {
       show(`조금만 기다렸다 다시 해줘 (${cd.remainingSec}초)`, "⏳");
       return;
     }
+    setPendingRequestMenu(menu);
     request.mutate(
       { menu, childName: myName },
       {
         onSuccess: () => {
           setRequested((prev) => ({ ...prev, [menu]: true }));
-          show(`${title.replace(" 바꾸기", "")} 바꿔달라고 엄마 아빠한테 말했어!`, "💌");
+          show(`${title.replace(" 바꾸기", "")} 바꿔 달라고 엄마·아빠한테 말했어!`, "💌");
         },
         onError: (e) => show(e instanceof Error ? e.message : "부탁을 못 보냈어. 잠시 뒤에 다시 해줘", "⚠️"),
+        onSettled: () => setPendingRequestMenu((current) => (current === menu ? null : current)),
       },
     );
   };
@@ -270,7 +275,7 @@ export function ChildSettings() {
               {myName}
               {age != null && <span className="ks-hero__age"> · {age}살</span>}
             </div>
-            <span className="ks-hero__chip">
+            <span className={`ks-hero__chip ks-hero__chip--${conn.tone}`}>
               <conn.Icon size={16} strokeWidth={2.2} aria-hidden="true" />
               {conn.text}
             </span>
@@ -280,7 +285,7 @@ export function ChildSettings() {
         {/* 부모가 정한 항목(읽기 전용) */}
         <section className="ks-sec">
           <div className="ks-label">부모님이 정한 거</div>
-          <div className="ks-row ks-row--locked">
+          <div className={`ks-row ks-row--locked ks-row--location-${locationView.tone}`}>
             <span className="ks-row__icon">
               <MapPin size={18} strokeWidth={2.2} />
             </span>
@@ -288,7 +293,7 @@ export function ChildSettings() {
               <span className="ks-row__title">위치 알려주기</span>
               <span className="ks-row__sub">{locationView.sub}</span>
             </span>
-            <span className="ks-onchip">{locationView.chip}</span>
+            <span className={`ks-onchip ks-onchip--${locationView.tone}`}>{locationView.chip}</span>
           </div>
 
           <div className="ks-row ks-row--locked ks-row--quiet">
@@ -337,14 +342,15 @@ export function ChildSettings() {
               type="button"
               className="ks-row hy-press"
               onClick={() => askParent(item.menu, item.title)}
-              disabled={request.isPending} aria-busy={request.isPending}
+              disabled={request.isPending}
+              aria-busy={request.isPending && pendingRequestMenu === item.menu}
             >
               <span className="ks-row__icon">
                 <item.Icon size={18} strokeWidth={2.2} />
               </span>
               <span className="ks-row__main">
                 <span className="ks-row__title">{item.title}</span>
-                <span className="ks-row__sub">{requested[item.menu] ? "부탁했어! 답을 기다려보자" : item.sub}</span>
+                <span className="ks-row__sub">{requested[item.menu] ? "부탁했어! 답을 기다려 보자" : item.sub}</span>
               </span>
               <span className="ks-ask">{requested[item.menu] ? "완료" : "부탁"}</span>
             </button>
@@ -366,17 +372,17 @@ export function ChildSettings() {
       {helpOpen && (
         <div
           ref={helpDialogRef}
-          className="ks-modal"
+          className="ks-help-modal"
           role="dialog"
           aria-modal="true"
           aria-labelledby={helpTitleId}
           aria-describedby={helpDescriptionId}
         >
-          <button type="button" className="ks-modal__scrim" tabIndex={-1} aria-label="닫기" onClick={() => setHelpOpen(false)} />
-          <div className="ks-modal__card">
-            <div className="ks-modal__head">
-              <span id={helpTitleId} className="ks-modal__title">도움말</span>
-              <button ref={helpCloseRef} type="button" className="ks-modal__x hy-press" aria-label="닫기" onClick={() => setHelpOpen(false)}>
+          <button type="button" className="ks-help-modal__scrim" tabIndex={-1} aria-label="닫기" onClick={() => setHelpOpen(false)} />
+          <div className="ks-help-modal__card">
+            <div className="ks-help-modal__head">
+              <span id={helpTitleId} className="ks-help-modal__title">도움말</span>
+              <button ref={helpCloseRef} type="button" className="ks-help-modal__x hy-press" aria-label="닫기" onClick={() => setHelpOpen(false)}>
                 <X size={20} strokeWidth={2.4} />
               </button>
             </div>
@@ -392,14 +398,14 @@ export function ChildSettings() {
                 <span className="ks-help-item__emoji"><Bell size={18} strokeWidth={2.2} /></span>
                 <span className="hy-explain__lines">
                   <b className="hy-explain__line">알림</b>
-                  <small className="hy-explain__line">내 일정 알림을 켜고 끌 수 있어. 중요한 안전 알림은 부모님에게 계속 가.</small>
+                  <small className="hy-explain__line">내 일정 알림을 켜고 끌 수 있어. 중요한 안전 알림은 부모님께 계속 가.</small>
                 </span>
               </div>
               <div className="ks-help-item hy-explain">
                 <span className="ks-help-item__emoji"><Mail size={18} strokeWidth={2.2} /></span>
                 <span className="hy-explain__lines">
                   <b className="hy-explain__line">부모님한테 부탁하기</b>
-                  <small className="hy-explain__line">캐릭터나 소리를 바꾸고 싶을 때 부모님에게 요청을 보낼 수 있어.</small>
+                  <small className="hy-explain__line">캐릭터나 소리를 바꾸고 싶을 때 부모님께 요청을 보낼 수 있어.</small>
                 </span>
               </div>
             </div>

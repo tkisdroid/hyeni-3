@@ -3,7 +3,7 @@
  * BarcodeDetector(Android WebView/Chrome 내장) + getUserMedia(후면 카메라).
  * 권한 흐름: 네이티브 CameraPermissionPlugin > 브라우저 permissions > getUserMedia 오류.
  * 미지원 기기(BarcodeDetector 없음)는 정직하게 안내 → 코드 직접 입력으로 유도.
- * 아이 온보딩에서 쓰므로 문구는 반말(아이 모드 규칙).
+ * 아이 연결 단계는 페어링 안내 규칙에 맞춰 존댓말을 사용한다.
  */
 import { useEffect, useId, useRef, useState } from "react";
 import { Camera } from "lucide-react";
@@ -20,7 +20,7 @@ interface BarcodeDetectorLike {
 }
 type BarcodeDetectorCtor = new (opts: { formats: string[] }) => BarcodeDetectorLike;
 
-const PERMISSION_MSG = "카메라를 쓰려면 허용이 필요해. 허용한 뒤 다시 해줘.";
+const PERMISSION_MSG = "카메라를 사용하려면 권한이 필요해요. 허용한 뒤 다시 시도해 주세요.";
 
 function isPermissionDenied(err: unknown): boolean {
   const e = err as { name?: string; message?: string } | null;
@@ -110,13 +110,13 @@ export function QrScanner({
       }
 
       if (!navigator.mediaDevices?.getUserMedia) {
-        setError("이 기기에서는 카메라를 사용할 수 없어. 코드를 직접 입력해줘.");
+        setError("이 기기에서는 카메라를 사용할 수 없어요. 코드를 직접 입력해 주세요.");
         setLoading(false);
         return;
       }
       const Detector = (window as unknown as { BarcodeDetector?: BarcodeDetectorCtor }).BarcodeDetector;
       if (typeof Detector !== "function") {
-        setError("이 기기에서는 QR 스캔을 할 수 없어. 코드를 직접 입력해줘.");
+        setError("이 기기에서는 QR 스캔을 할 수 없어요. 코드를 직접 입력해 주세요.");
         setLoading(false);
         return;
       }
@@ -144,7 +144,7 @@ export function QrScanner({
         console.error("QR 스캐너 시작 실패:", err);
         const denied = isPermissionDenied(err);
         setPermissionDenied(denied);
-        setError(denied ? PERMISSION_MSG : "카메라를 열 수 없어. 잠시 후 다시 해줘.");
+        setError(denied ? PERMISSION_MSG : "카메라를 열 수 없어요. 잠시 후 다시 시도해 주세요.");
         setLoading(false);
       }
     };
@@ -180,8 +180,8 @@ export function QrScanner({
           {loading && <div className="qrs-loading">{loadingLabel}</div>}
         </div>
         <div className="qrs-guide">
-          <div className="qrs-guide-title">부모님 화면의 QR 코드를 비춰줘</div>
-          <div id={descriptionId} className="qrs-guide-sub">QR을 인식하면 코드 입력 없이 바로 연결돼</div>
+          <div className="qrs-guide-title">부모님 화면의 QR 코드를 비춰 주세요</div>
+          <div id={descriptionId} className="qrs-guide-sub">QR을 인식하면 코드를 입력하지 않아도 바로 연결돼요</div>
           {error && <div className="qrs-error">{error}</div>}
           {permissionDenied && (
             <div className="qrs-actions">

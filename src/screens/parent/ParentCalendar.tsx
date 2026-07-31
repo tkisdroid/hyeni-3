@@ -369,6 +369,7 @@ export function ParentCalendar() {
               const raw = rawById.get(e.id);
               const swipeSide = openSwipe?.id === e.id ? openSwipe.side : null;
               const confirmSwipeDelete = confirmSwipeDeleteId === e.id;
+              const swipeDeletePending = deleteEvent.isPending && deleteEvent.variables === e.id;
               return (
                 <div key={e.id} className="pc-event">
                   <div className="pc-event__rail">
@@ -401,9 +402,10 @@ export function ParentCalendar() {
                             type="button"
                             className="pc-swipe__action pc-swipe__action--delete hy-press"
                             onClick={() => deleteEventById(e.id)}
-                            disabled={deleteEvent.isPending} aria-busy={deleteEvent.isPending}
+                            disabled={deleteEvent.isPending}
+                            aria-busy={swipeDeletePending}
                           >
-                            {deleteEvent.isPending ? "삭제 중" : "삭제"}
+                            {swipeDeletePending ? "삭제 중" : "삭제"}
                           </button>
                         </>
                       ) : (
@@ -455,7 +457,7 @@ export function ParentCalendar() {
           <div className="pc-empty">
             <img src={asset("cat/other.webp")} alt="" />
             <div className="pc-empty__title">이 날은 일정이 없어요</div>
-            <div className="pc-empty__sub">+ 버튼으로 새 일정을 더해보세요</div>
+            <div className="pc-empty__sub">+ 버튼으로 새 일정을 더해 보세요</div>
           </div>
         )}
       </div>
@@ -548,7 +550,8 @@ export function ParentCalendar() {
                     type="button"
                     className="pc-btn pc-btn--ghost hy-press"
                     onClick={() => setConfirmDelete(false)}
-                    disabled={deleteEvent.isPending} aria-busy={deleteEvent.isPending}
+                    disabled={deleteEvent.isPending}
+                    data-progress-owner="confirm-action"
                   >
                     취소
                   </button>

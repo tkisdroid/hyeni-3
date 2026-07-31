@@ -22,22 +22,37 @@ function homeHashForSession(): string {
   return "#/parent/home";
 }
 
+function isChildSession(): boolean {
+  try {
+    const raw = window.localStorage.getItem("hyeni-api-session-v1");
+    return raw ? JSON.parse(raw)?.user?.role === "child" : false;
+  } catch {
+    return false;
+  }
+}
+
 function ErrorFallback({ error }: { error: unknown }) {
+  const childTone = isChildSession();
   const retry = () => window.location.reload();
   const goHome = () => {
     window.location.hash = homeHashForSession();
     window.location.reload();
   };
-  const detail =
-    error instanceof Error ? error.message : typeof error === "string" ? error : "";
+  const detail = import.meta.env.DEV
+    ? error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : ""
+    : "";
   return (
     <div className="hy-crash" role="alert">
       <img className="hy-crash__img" src={asset("mascot/thinking.webp")} alt="" />
-      <div className="hy-crash__title">앗, 화면이 잠깐 멈췄어요</div>
+      <div className="hy-crash__title">{childTone ? "앗, 화면이 잠깐 멈췄어" : "앗, 화면이 잠깐 멈췄어요"}</div>
       <div className="hy-crash__sub">
-        걱정하지 마세요. 데이터는 안전해요.
+        {childTone ? "걱정하지 마. 저장한 내용은 안전해." : "걱정하지 마세요. 저장한 내용은 안전해요."}
         <br />
-        아래 버튼으로 다시 열 수 있어요.
+        {childTone ? "아래 버튼으로 다시 열 수 있어." : "아래 버튼으로 다시 열 수 있어요."}
       </div>
       <button type="button" className="hy-crash__btn hy-press" onClick={goHome}>
         홈으로 가기

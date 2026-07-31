@@ -20,11 +20,8 @@
     <color name="alert_body">#C7C7CC</color>
 
     <!-- 헤더 악센트: 채도 약간 낮춘 핑크 계열, soft 는 카드 위 옅은 틴트 -->
-    <color name="alert_accent_emergency">#E86B95</color>
     <color name="alert_accent_emergency_soft">#3A2630</color>
-    <color name="alert_accent_kkuk">#F779A8</color>
     <color name="alert_accent_kkuk_soft">#3A2630</color>
-    <color name="alert_accent_normal">#F779A8</color>
     <color name="alert_accent_normal_soft">#3A2630</color>
 
     <!-- 주 버튼: 핑크 유지(악센트), 텍스트 흰색 -->

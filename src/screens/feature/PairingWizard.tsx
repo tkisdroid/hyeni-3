@@ -290,7 +290,7 @@ export function PairingWizard() {
                 ? "가족과 구독 정보를 확인한 뒤 아이 연결을 진행해 주세요."
                 : noSlots
                 ? childLimitMessage
-                : "아이 1명은 무료예요. 두 번째 아이는 프리미엄에서 연결할 수 있어요."}
+                : "첫째 아이는 무료, 둘째부터는 프리미엄이에요."}
             </p>
           </>
         )}
@@ -298,7 +298,7 @@ export function PairingWizard() {
         {/* ── STEP 2 : 아이 정보(사진 + 이름 + 생년월일) ── */}
         {step === 2 && (
           <>
-            <div className="pw-lead">아이 사진과 정보를 알려주세요</div>
+            <div className="pw-lead">아이 사진과 정보를 알려 주세요</div>
             {children.map((child, i) => (
               <div key={i} className="pw-childcard">
                 <div className="pw-childcard__head">아이 {i + 1}</div>

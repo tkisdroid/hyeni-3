@@ -8,7 +8,7 @@
  * 친구놀이가 꺼져 있거나 위치를 모르면 서버가 soft error 를 준다 → 반말 안내로 정직하게 강등.
  */
 import { useEffect, useState } from "react";
-import { Check } from "lucide-react";
+import { Check, Send } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useCreatePlaydateInvite, usePlaydateCandidates } from "@/queries/usePlaydate";
 import type { PlaydateCandidate } from "@/lib/api/endpoints/playdate";
@@ -43,7 +43,7 @@ export function PlaydateSheet({ open, onClose, onError }: PlaydateSheetProps) {
     if (!selected || createInvite.isPending) return;
     createInvite.mutate(selected, {
       onSuccess: () => setSent(true),
-      onError: () => onError("놀자고 보내지 못했어. 다시 해볼래?"),
+      onError: () => onError("놀자고 보내지 못했어. 다시 해 볼래?"),
     });
   };
 
@@ -123,7 +123,8 @@ export function PlaydateSheet({ open, onClose, onError }: PlaydateSheetProps) {
                 onClick={send}
                 disabled={!selected || createInvite.isPending} aria-busy={createInvite.isPending}
               >
-                {createInvite.isPending ? "보내는 중…" : "같이 놀자고 보내기 💌"}
+                <Send size={19} strokeWidth={2.2} aria-hidden="true" />
+                {createInvite.isPending ? "보내는 중…" : "같이 놀자고 보내기"}
               </button>
             </>
           )}

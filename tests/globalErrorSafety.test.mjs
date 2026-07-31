@@ -27,6 +27,11 @@ test("라우터 전체가 errorElement 로 감싸이고 루트 바운더리가 �
   assert.match(boundary, /getDerivedStateFromError/);
   assert.match(boundary, /useRouteError/);
   assert.match(boundary, /hy-crash/);
+  assert.match(
+    boundary,
+    /const detail = import\.meta\.env\.DEV/,
+    "프로덕션 복구 화면에는 영문 번들·네트워크 오류 원문을 노출하지 않습니다",
+  );
 
   const css = read("src/styles/components.css");
   assert.match(css, /\.hy-crash \{/);
@@ -74,11 +79,11 @@ test("온보딩 아이 역할 이미지는 얼굴 크기를 유지하면서 상�
 
 test("친구놀이 하드 에러는 '친구 없음'으로 위장하지 않는다(razr Red 재현 2026-07-11)", async () => {
   const { playdateCandidateNotice } = await import("../src/transform/playdateNotice.ts");
-  assert.equal(playdateCandidateNotice(undefined, true, true), "친구 목록을 불러오지 못했어. 다시 해볼래?");
+  assert.equal(playdateCandidateNotice(undefined, true, true), "친구 목록을 불러오지 못했어. 다시 해 볼래?");
   assert.equal(playdateCandidateNotice(undefined, true, false), "근처에 놀 수 있는 친구가 아직 없어. 조금 있다 다시 볼까?");
   assert.equal(playdateCandidateNotice("forbidden", true, false), "지금은 친구를 찾을 수 없어.");
   // 하드 에러가 soft error 보다 우선(soft 는 200 응답이라 동시에 오지 않지만 방어)
-  assert.equal(playdateCandidateNotice("forbidden", true, true), "친구 목록을 불러오지 못했어. 다시 해볼래?");
+  assert.equal(playdateCandidateNotice("forbidden", true, true), "친구 목록을 불러오지 못했어. 다시 해 볼래?");
 
   const sheet = readFileSync(new URL("../src/screens/child/overlays/PlaydateSheet.tsx", import.meta.url), "utf8");
   assert.match(sheet, /candidatesQuery\.isError/);

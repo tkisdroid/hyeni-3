@@ -35,7 +35,7 @@
   border-radius: var(--radius-20);
   padding: 20px 20px 20px;
   overflow: hidden;
-  background: linear-gradient(135deg, var(--hy-accent-light) 0%, var(--hy-accent) 52%, var(--hy-accent-deep) 100%);
+  background: var(--cta-grad-accent);
   box-shadow: var(--shadow-floating);
   transition: transform 0.16s ease;
 }
@@ -91,7 +91,7 @@
 }
 .ph-hero__title em {
   font-style: normal;
-  color: #fff0be;
+  color: #fff;
 }
 .ph-hero__live {
   position: relative;
@@ -103,7 +103,7 @@
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
 
-  color: rgba(255, 255, 255, 0.95);
+  color: #fff;
 }
 .ph-live-dot {
   position: relative;

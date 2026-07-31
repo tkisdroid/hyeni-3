@@ -113,6 +113,7 @@ export function MessageSafetyDialog<TReason extends string>({
           aria-label={tone === "child" ? "닫기" : "창 닫기"}
           onClick={onClose}
           disabled={pending}
+          data-progress-owner="dialog-action"
         >
           <X size={21} strokeWidth={2.3} />
         </button>
@@ -161,8 +162,9 @@ export function MessageSafetyDialog<TReason extends string>({
           className="msd-report hy-press"
           onClick={() => void submitReport()}
           disabled={pending}
+          aria-busy={action === "report"}
         >
-          {action === "report" ? (tone === "child" ? "보내는 중…" : "신고하는 중…") : (tone === "child" ? "이 내용 신고하기" : "이 메시지 신고")}
+          {action === "report" ? (tone === "child" ? "보내는 중…" : "신고하는 중…") : (tone === "child" ? "이 내용 신고하기" : "이 메시지 신고하기")}
         </button>
 
         {onBlock && blockLabel && (
@@ -176,8 +178,9 @@ export function MessageSafetyDialog<TReason extends string>({
               className="msd-block hy-press"
               onClick={() => void submitBlock()}
               disabled={pending}
+              aria-busy={action === "block"}
             >
-              {action === "block" ? (tone === "child" ? "차단 중…" : "차단하는 중…") : (tone === "child" ? "차단" : "차단하기")}
+              {action === "block" ? (tone === "child" ? "차단 중…" : "차단하는 중…") : "차단하기"}
             </button>
           </div>
         )}

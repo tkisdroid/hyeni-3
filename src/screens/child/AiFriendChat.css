@@ -1,4 +1,4 @@
-/* AI 친구 대화 — 시안 2a(보라 톤). 캐릭터는 아이가 고른 동물(AiFriendSetup) 그대로 쓴다. */
+/* AI 친구 대화 — 아이가 고른 강조색을 대화 환경 전체에 연결한다. */
 
 /* 앱 프레임 높이에 딱 맞추고 메시지 목록만 스크롤한다(페이지 전체 스크롤 금지). */
 .afc {
@@ -7,7 +7,11 @@
   animation: hy-fadein 0.35s ease forwards;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(180deg, #f3eeff 0%, var(--bg-body) 40%);
+  background: linear-gradient(
+    180deg,
+    var(--hy-accent-soft) 0%,
+    color-mix(in srgb, var(--hy-accent-soft) 32%, var(--bg-body)) 40%
+  );
 }
 
 /* 상태바 아래에서 시작(아이 화면은 TopBar 가 없다). */
@@ -23,7 +27,7 @@
   height: 42px;
   border-radius: 50%;
   background: var(--bg-card);
-  box-shadow: 0 6px 14px -6px rgba(32, 26, 29, 0.14);
+  box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--hy-accent-text) 24%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -56,7 +60,7 @@
   line-height: var(--type-title-lg-line-height);
   font-weight: var(--type-title-lg-weight);
 
-  color: #43356b;
+  color: var(--hy-accent-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -66,7 +70,7 @@
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
 
-  color: var(--lav-text);
+  color: var(--hy-accent-text);
 }
 .afc-credits {
   flex: none;
@@ -76,12 +80,12 @@
   padding: 8px 12px;
   border-radius: 999px;
   background: var(--bg-card);
-  box-shadow: 0 6px 14px -6px rgba(124, 92, 225, 0.25);
+  box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--hy-accent-text) 28%, transparent);
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
 
-  color: var(--lav-text);
+  color: var(--hy-accent-text);
 }
 
 .afc-msgs {
@@ -113,7 +117,7 @@
   min-height: 44px;
   border: 0;
   border-radius: 12px;
-  background: var(--lav-text);
+  background: var(--hy-accent-cta);
   color: #fff;
   font: inherit;
 }
@@ -143,7 +147,9 @@
   font-weight: var(--type-body-lg-weight);
 
   white-space: pre-wrap;
-  word-break: break-word;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 .afc-bubble-stack {
   max-width: 78%;
@@ -176,15 +182,15 @@
   animation: afc-pop 0.3s ease forwards;
   background: var(--bg-card);
   border-radius: 20px 20px 20px var(--radius-8);
-  box-shadow: 0 10px 24px -12px rgba(124, 92, 225, 0.4);
+  box-shadow: 0 10px 24px -12px color-mix(in srgb, var(--hy-accent-text) 40%, transparent);
   font-weight: 600;
   color: #3a3050;
 }
 .afc-bubble--me {
-  background: linear-gradient(120deg, #b79dfb, #8b6bec);
+  background: var(--cta-grad-accent);
   color: var(--bg-card);
   border-radius: 20px 20px var(--radius-8) 20px;
-  box-shadow: 0 10px 22px -10px rgba(124, 92, 225, 0.5);
+  box-shadow: 0 10px 22px -10px color-mix(in srgb, var(--hy-accent-text) 50%, transparent);
   font-weight: 700;
   animation: afc-pop 0.3s ease forwards;
 }
@@ -198,7 +204,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #b79dfb;
+  background: var(--hy-accent);
   animation: afc-typing 1s ease-in-out infinite;
 }
 .afc-typing span:nth-child(2) {
@@ -224,9 +230,10 @@
   height: 42px;
   padding: 0 16px;
   border-radius: 999px;
-  background: var(--bg-card);
-  box-shadow: 0 6px 14px -8px rgba(124, 92, 225, 0.4);
-  color: var(--lav-text);
+  background: color-mix(in srgb, var(--hy-accent-soft) 58%, var(--bg-card));
+  border: 1px solid color-mix(in srgb, var(--hy-accent) 20%, transparent);
+  box-shadow: 0 6px 14px -8px color-mix(in srgb, var(--hy-accent-text) 34%, transparent);
+  color: var(--hy-accent-text);
   font-size: var(--type-body);
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
@@ -256,15 +263,15 @@
 
   color: var(--fg-primary);
 
-  box-shadow: 0 8px 20px -10px rgba(124, 92, 225, 0.3);
+  box-shadow: 0 8px 20px -10px color-mix(in srgb, var(--hy-accent-text) 28%, transparent);
 }
 .afc-send {
   flex: none;
   height: 52px;
   padding: 0 16px;
   border-radius: var(--radius-20);
-  background: linear-gradient(120deg, #b79dfb, #8b6bec);
-  box-shadow: 0 12px 24px -10px rgba(124, 92, 225, 0.55);
+  background: var(--cta-grad-accent);
+  box-shadow: 0 12px 24px -10px color-mix(in srgb, var(--hy-accent-text) 54%, transparent);
   font-family: Jua, var(--font-sans);
 
   font-size: var(--type-body-lg);

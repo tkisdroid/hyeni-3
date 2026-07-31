@@ -86,6 +86,7 @@ export function TeacherReleaseGate() {
             className="trg-primary hy-press"
             onClick={() => void handleLogout()}
             disabled={busyAction !== null}
+            aria-busy={busyAction === "logout"}
           >
             <LogOut size={19} strokeWidth={2.2} aria-hidden="true" />
             {busyAction === "logout" ? "로그아웃 중…" : "로그아웃하고 다른 계정으로 시작"}
@@ -95,6 +96,7 @@ export function TeacherReleaseGate() {
             className="trg-danger hy-press"
             onClick={() => setConfirmDelete(true)}
             disabled={busyAction !== null}
+            data-progress-owner="account-action"
           >
             <Trash2 size={18} strokeWidth={2.2} aria-hidden="true" />
             회원 탈퇴
@@ -139,6 +141,7 @@ export function TeacherReleaseGate() {
                 className="trg-dialog__cancel hy-press"
                 onClick={() => setConfirmDelete(false)}
                 disabled={busyAction !== null}
+                data-progress-owner="delete-action"
               >
                 취소
               </button>
@@ -147,6 +150,7 @@ export function TeacherReleaseGate() {
                 className="trg-dialog__delete hy-press"
                 onClick={() => void handleDelete()}
                 disabled={busyAction !== null}
+                aria-busy={busyAction === "delete"}
               >
                 {busyAction === "delete" ? "삭제 중…" : "탈퇴하기"}
               </button>

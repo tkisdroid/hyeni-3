@@ -52,7 +52,7 @@
   color: var(--fg-muted);
 }
 .tt-meta__count {
-  color: #23a876;
+  color: var(--mint-text);
 }
 
 /* ── 주간 날짜 스트립 ───────────────────────────────────────────────────── */
@@ -88,16 +88,16 @@
   font-variant-numeric: tabular-nums;
 }
 .tt-day-chip--today .tt-day-chip__dow {
-  color: #23a876;
+  color: var(--mint-text);
 }
 .tt-day-chip--on {
-  background: linear-gradient(135deg, #5fd6a6 0%, #23a876 100%);
-  border-color: transparent;
+  background: var(--mint-soft);
+  border-color: var(--mint-line);
   box-shadow: 0 12px 22px -12px rgba(35, 168, 118, 0.6);
 }
 .tt-day-chip--on .tt-day-chip__dow,
 .tt-day-chip--on .tt-day-chip__num {
-  color: #fff;
+  color: var(--mint-text);
 }
 
 /* ── 선택일 반 일정 카드 ────────────────────────────────────────────────── */

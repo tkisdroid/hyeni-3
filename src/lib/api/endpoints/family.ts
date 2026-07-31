@@ -254,7 +254,7 @@ function cleanOptional(value: string | null | undefined): string | undefined {
 /** 아이가 KID 페어링 코드로 가족 합류. 익명→child 세션 재발급. family_id 반환. */
 export async function joinFamily(pairCode: string, options?: string | JoinFamilyOptions): Promise<string | null> {
   const code = String(pairCode || "").toUpperCase().trim();
-  if (!code) throw new Error("연결 코드를 입력해주세요");
+  if (!code) throw new Error("연결 코드를 입력해 주세요");
   const opts: JoinFamilyOptions =
     typeof options === "string" ? { childName: options } : options ?? {};
   const payload: Record<string, unknown> = {
@@ -277,7 +277,7 @@ export async function joinFamily(pairCode: string, options?: string | JoinFamily
 /** 보조 보호자(co-parent) 합류. 세션 재발급. family_id 반환. */
 export async function joinFamilyAsParent(pairCode: string, parentName?: string): Promise<string> {
   const code = String(pairCode || "").toUpperCase().trim();
-  if (!code) throw new Error("연결 코드를 입력해주세요");
+  if (!code) throw new Error("연결 코드를 입력해 주세요");
   const data = await apiPost<SessionResponse>("/api/family/join-as-parent", { pairCode: code, name: parentName || "부모" });
   adoptSession(data);
   if (!data.family_id) throw new Error("연결 코드를 찾지 못했습니다");
@@ -380,7 +380,7 @@ export async function setChildProfile(
   },
 ): Promise<void> {
   const name = fields.name.trim();
-  if (!name) throw new Error("이름을 입력해주세요");
+  if (!name) throw new Error("이름을 입력해 주세요");
   const colorHex =
     fields.colorHex && fields.colorHex.trim()
       ? fields.colorHex.trim()

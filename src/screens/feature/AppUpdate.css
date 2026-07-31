@@ -59,9 +59,10 @@
 .au-cta {
   margin-top: 24px;
   width: 100%;
-  height: 54px;
+  height: var(--control-height-primary);
+  flex: none;
   border-radius: 16px;
-  background: linear-gradient(120deg, var(--hy-accent-light, #f779a8), var(--hy-accent-deep, #e23f7e));
+  background: var(--cta-grad-accent);
   color: #fff;
   font-size: var(--type-body-lg);
   line-height: var(--type-body-lg-line-height);

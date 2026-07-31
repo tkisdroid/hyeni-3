@@ -339,7 +339,7 @@ public final class ParentPendingRecoveryWorker extends Worker {
     }
 
     private boolean isSystemNotificationPresent(String tag) {
-        if (isBlank(tag) || Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return false;
+        if (isBlank(tag)) return false;
         NotificationManager manager = appContext.getSystemService(NotificationManager.class);
         if (manager == null) return false;
         try {

@@ -41,7 +41,7 @@ export function PlaceManager() {
 
   const handleDeleteZone = (id: string, name: string) => {
     deleteZone.mutate(id, {
-      onSuccess: () => show(`‘${name}’ 위험 구역을 삭제했어요`, "🗑️"),
+      onSuccess: () => show(`‘${name}’ 위험구역을 삭제했어요`, "🗑️"),
       onError: () => show("삭제에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️"),
     });
   };
@@ -109,7 +109,8 @@ export function PlaceManager() {
                   className="pm-item__del hy-press"
                   aria-label={`${p.name} 삭제`}
                   onClick={() => handleDeletePlace(p.id, p.name)}
-                  disabled={deletePlace.isPending} aria-busy={deletePlace.isPending}
+                  disabled={deletePlace.isPending}
+                  aria-busy={deletePlace.isPending && deletePlace.variables === p.id}
                 >
                   <Trash2 size={18} strokeWidth={2.2} color="#8B7E84" />
                 </button>
@@ -119,12 +120,12 @@ export function PlaceManager() {
           </div>
         </div>
 
-        {/* 위험 구역 */}
+        {/* 위험구역 */}
         <div>
           <div className="pm-danger-head">
             <div className="pm-label pm-label--danger">
               <TriangleAlert size={16} strokeWidth={2.2} aria-hidden="true" />
-              위험 구역
+              위험구역
             </div>
             <button
               type="button"
@@ -135,14 +136,14 @@ export function PlaceManager() {
             </button>
           </div>
           <div className="pm-list">
-            {zonesLoading && <Loading label="위험 구역을 불러오는 중" size={6} />}
+            {zonesLoading && <Loading label="위험구역을 불러오는 중" size={6} />}
             {zonesError && !zonesLoading && (
               <div className="pm-danger__addr" style={{ padding: 16 }} role="alert">
-                위험 구역을 불러오지 못했어요. <button type="button" className="hy-section-action hy-press" onClick={() => void retryPlaces()}>다시 시도</button>
+                위험구역을 불러오지 못했어요. <button type="button" className="hy-section-action hy-press" onClick={() => void retryPlaces()}>다시 시도</button>
               </div>
             )}
             {!zonesLoading && !zonesError && zones.length === 0 && (
-              <div className="pm-danger__addr" style={{ padding: 16 }}>등록된 위험 구역이 없어요</div>
+              <div className="pm-danger__addr" style={{ padding: 16 }}>등록된 위험구역이 없어요</div>
             )}
             {!zonesLoading && !zonesError && zones.map((z) => (
               <div key={z.id} className="pm-danger">
@@ -164,7 +165,8 @@ export function PlaceManager() {
                   className="pm-danger__del hy-press"
                   aria-label={`${z.name} 삭제`}
                   onClick={() => handleDeleteZone(z.id, z.name)}
-                  disabled={deleteZone.isPending} aria-busy={deleteZone.isPending}
+                  disabled={deleteZone.isPending}
+                  aria-busy={deleteZone.isPending && deleteZone.variables === z.id}
                 >
                   <Trash2 size={18} strokeWidth={2.2} color="#C0334C" />
                 </button>

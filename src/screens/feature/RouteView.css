@@ -190,8 +190,8 @@
   flex: none;
 }
 .rv-step__num--pink {
-  background: #fde7f1;
-  color: #b0477a;
+  background: var(--rose-soft);
+  color: var(--rose-text);
 }
 .rv-step__num--mint {
   background: #e7f8f0;
@@ -208,9 +208,10 @@
 /* ── 안내 시작 버튼 ─────────────────────────────────────────────────────── */
 .rv-start {
   width: 100%;
-  height: 56px;
+  height: var(--control-height-primary);
+  flex: none;
   border-radius: var(--radius-16);
-  background: linear-gradient(120deg, #46d19b, #23a876);
+  background: var(--cta-grad-mint);
   box-shadow: 0 16px 32px -12px rgba(35, 168, 118, 0.55);
   font-size: var(--type-body-lg);
   line-height: var(--type-body-lg-line-height);
@@ -314,7 +315,7 @@
   height: 48px;
   padding: 0 24px;
   border-radius: 16px;
-  background: linear-gradient(120deg, #46d19b, #23a876);
+  background: var(--cta-grad-mint);
   box-shadow: 0 14px 30px -14px rgba(35, 168, 118, 0.6);
   font-size: var(--type-body);
   line-height: var(--type-body-line-height);

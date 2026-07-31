@@ -57,7 +57,7 @@ function planLabelFor(isPremium: boolean, isTrial: boolean, productId: string | 
   if (isTrial) return "프리미엄 무료 체험";
   const pid = (productId || "").toLowerCase();
   if (pid.includes("year") || pid.includes("annual")) return "프리미엄 연간 구독";
-  if (pid.includes("month")) return "프리미엄 월구독";
+  if (pid.includes("month")) return "프리미엄 월간 구독";
   return "프리미엄 구독";
 }
 

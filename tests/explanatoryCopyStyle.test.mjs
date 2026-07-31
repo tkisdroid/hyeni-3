@@ -161,7 +161,7 @@ test("다문장 설명 다섯 곳은 조건과 문구를 유지한 채 문장별
   );
   assertSentenceLines(aiCredit.block, [
     "AI가 아이의 일정·안전 대화를 도울 때 크레딧 1회가 사용돼요.",
-    "부모님이 충전해 주세요.",
+    "필요할 때 충전해 주세요.",
   ]);
 
   const teacherNotice = explanationBlock(

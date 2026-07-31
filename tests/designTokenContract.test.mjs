@@ -92,20 +92,22 @@ test("보조 글자와 placeholder는 카드·앱 배경에서 WCAG AA 대비를
   }
 });
 
-test("전역 본문·focus·placeholder·disabled 상태가 의미 토큰을 공유한다", () => {
+test("전역 본문·focus·placeholder·disabled·busy 상태가 의미 토큰을 공유한다", () => {
   assert.match(globalCss, /body\s*\{[^}]*line-height:\s*var\(--type-body-line-height\)/s);
   assert.match(globalCss, /:focus-visible\s*\{[^}]*outline:\s*var\(--focus-ring-width\) solid var\(--focus-ring-color\)/s);
   assert.match(globalCss, /::placeholder[^}]*color:\s*var\(--fg-placeholder\)/s);
   assert.match(globalCss, /:disabled[^}]*cursor:\s*not-allowed/s);
   assert.match(globalCss, /\[aria-disabled="true"\][^}]*opacity:\s*var\(--disabled-opacity\)/s);
+  assert.match(globalCss, /\[aria-busy="true"\][^}]*opacity:\s*var\(--busy-opacity\)\s*!important[^}]*cursor:\s*progress\s*!important/s);
 });
 
 test("공통 버튼·카드·로더는 44px와 절제된 카드 언어를 사용한다", () => {
-  assert.match(components, /\.hy-iconbtn\s*\{[^}]*width:\s*var\(--control-min-size\)[^}]*height:\s*var\(--control-min-size\)/s);
+  assert.match(components, /\.hy-iconbtn\s*\{[^}]*width:\s*var\(--control-size-icon\)[^}]*height:\s*var\(--control-size-icon\)/s);
   assert.match(components, /\.hy-btn\s*\{[^}]*min-width:\s*var\(--control-min-size\)[^}]*min-height:\s*var\(--control-min-size\)/s);
   assert.match(components, /\.hy-card\s*\{[^}]*border-radius:\s*var\(--radius-16\)[^}]*box-shadow:\s*none/s);
   assert.match(components, /\.hy-loading\s*\{[^}]*gap:\s*var\(--spacing-8\)/s);
   assert.equal(customProperty(tokens, "--control-min-size"), "44px");
+  assert.equal(customProperty(tokens, "--control-size-icon"), "44px");
 });
 
 test("실제 로더 모듈은 공통 간격·타이포 토큰을 덮어쓰지 않는다", () => {

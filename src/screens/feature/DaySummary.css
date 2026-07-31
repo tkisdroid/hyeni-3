@@ -19,9 +19,9 @@
   background: linear-gradient(180deg, rgba(253, 244, 241, 0.9) 60%, rgba(253, 244, 241, 0));
   backdrop-filter: blur(8px);
 }
-.ds-back {
-  width: 42px;
-  height: 42px;
+.ds-screen .ds-back {
+  width: var(--control-min-size);
+  height: var(--control-min-size);
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 4px 12px rgba(32, 26, 29, 0.06);
@@ -40,7 +40,7 @@
 }
 
 /* ── 콘텐츠 ────────────────────────────────────────────────────────────────── */
-.ds-content {
+.ds-screen .ds-content {
   gap: 12px;
 }
 
@@ -78,7 +78,7 @@
   letter-spacing: -0.01em;
 }
 .ds-hero--caution .ds-hero__status {
-  color: #9a6a12;
+  color: var(--gold-text);
 }
 .ds-hero__date {
   margin-top: 4px;
@@ -89,7 +89,7 @@
   color: var(--lav-text);
 }
 .ds-hero--caution .ds-hero__date {
-  color: #b48a3d;
+  color: var(--gold-text);
 }
 
 /* ── 근거 행 ───────────────────────────────────────────────────────────────── */
@@ -245,7 +245,7 @@
   margin-top: 8px;
   padding: 12px 20px;
   border-radius: var(--radius-16);
-  background: linear-gradient(120deg, #b79dfb, #8b6bec);
+  background: var(--cta-grad-lavender);
   color: #fff;
   font-size: var(--type-body);
   line-height: var(--type-body-line-height);

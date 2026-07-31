@@ -78,6 +78,11 @@ textarea::placeholder {
   cursor: not-allowed;
 }
 
+:where(button, [role="button"], input, textarea, select)[aria-busy="true"] {
+  opacity: var(--busy-opacity) !important;
+  cursor: progress !important;
+}
+
 img {
   -webkit-user-drag: none;
   user-select: none;
@@ -118,6 +123,10 @@ body :where(a, button, input, textarea, select, [tabindex]):focus-visible {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.hy-app[data-role="child"] {
+  background: color-mix(in srgb, var(--hy-accent-soft) 52%, var(--bg-app));
 }
 
 @media (min-width: 480px) {

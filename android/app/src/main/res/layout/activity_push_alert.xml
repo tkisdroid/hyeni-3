@@ -38,7 +38,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="🔔"
+                android:text="@string/push_alert_icon"
                 android:textSize="36sp" />
         </FrameLayout>
 
@@ -78,7 +78,7 @@
                 android:background="@drawable/alert_btn_secondary"
                 android:fontFamily="sans-serif-medium"
                 android:gravity="center"
-                android:text="닫기"
+                android:text="@string/push_alert_close"
                 android:textColor="@color/btn_secondary_text"
                 android:textSize="16sp" />
 
@@ -91,7 +91,7 @@
                 android:background="@drawable/alert_btn_primary"
                 android:fontFamily="sans-serif-medium"
                 android:gravity="center"
-                android:text="앱 열기"
+                android:text="@string/push_alert_open_app"
                 android:textColor="@color/btn_primary_text"
                 android:textSize="16sp"
                 android:textStyle="bold" />

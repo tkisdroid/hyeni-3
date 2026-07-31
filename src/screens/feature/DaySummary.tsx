@@ -18,6 +18,7 @@ import { useDaySummary, useGenerateDaySummary } from "@/queries/useAi";
 import type { DaySummarySignals, DaySummaryResult } from "@/lib/api/endpoints/ai";
 import { formatTimeLabel } from "@/transform/scheduleView";
 import { todayDateKey, dateKeyToDateInputValue, parseAppDateKey } from "@/transform/dateKey";
+import { hasJongseong } from "@/transform/adventureMap";
 import { Loading } from "@/components/ui/Loading";
 import "./DaySummary.css";
 
@@ -227,7 +228,8 @@ export function DaySummary() {
             </div>
             <div className="ds-panel__title">특별한 기록이 없어요</div>
             <div className="ds-panel__desc">
-              {dateLabel}은(는) 조용히 지나갔어요. 일정이나 활동이 쌓이면 요약이 만들어져요.
+              {dateLabel}{hasJongseong(dateLabel) ? "은" : "는"} 조용히 지나갔어요. 일정이나 활동이
+              쌓이면 요약이 만들어져요.
             </div>
           </div>
         ) : isLoading ? (

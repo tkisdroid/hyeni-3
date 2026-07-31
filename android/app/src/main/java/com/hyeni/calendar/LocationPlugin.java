@@ -258,28 +258,26 @@ public class LocationPlugin extends Plugin {
             String recentAppLabel = "";
             String usagePermission = "unavailable";
             org.json.JSONArray appUsage = new org.json.JSONArray();
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                UsageStatsManager usm = (UsageStatsManager) getContext().getSystemService(android.content.Context.USAGE_STATS_SERVICE);
-                if (usm != null) {
-                    long end = System.currentTimeMillis();
-                    long start = end - 10 * 60 * 1000L;
-                    UsageEvents events = usm.queryEvents(start, end);
-                    if (events != null) {
-                        UsageEvents.Event event = new UsageEvents.Event();
-                        while (events.hasNextEvent()) {
-                            events.getNextEvent(event);
-                            if (event.getEventType() == UsageEvents.Event.ACTIVITY_RESUMED && event.getPackageName() != null
-                                && !DeviceStatusReporter.isSystemSurfacePackage(getContext(), event.getPackageName())) {
-                                recentApp = event.getPackageName();
-                            }
+            UsageStatsManager usm = (UsageStatsManager) getContext().getSystemService(android.content.Context.USAGE_STATS_SERVICE);
+            if (usm != null) {
+                long end = System.currentTimeMillis();
+                long start = end - 10 * 60 * 1000L;
+                UsageEvents events = usm.queryEvents(start, end);
+                if (events != null) {
+                    UsageEvents.Event event = new UsageEvents.Event();
+                    while (events.hasNextEvent()) {
+                        events.getNextEvent(event);
+                        if (event.getEventType() == UsageEvents.Event.ACTIVITY_RESUMED && event.getPackageName() != null
+                            && !DeviceStatusReporter.isSystemSurfacePackage(getContext(), event.getPackageName())) {
+                            recentApp = event.getPackageName();
                         }
                     }
-                    // FCM 경로(DeviceStatusReporter)와 동일하게 오늘 하루 top-N 앱 사용량(이름+시간)을 채운다.
-                    appUsage = DeviceStatusReporter.readAppUsage(getContext(), usm, DeviceStatusReporter.startOfTodayMillis(), end);
-                    recentAppLabel = DeviceStatusReporter.resolveAppLabel(getContext(), recentApp);
-                    // 필터로 recentApp 이 비어도 권한이 없는 게 아니다 — AppOps 로 정확 판정.
-                    usagePermission = DeviceStatusReporter.isUsageAccessGranted(getContext()) ? "granted" : "requires_permission";
                 }
+                // FCM 경로(DeviceStatusReporter)와 동일하게 오늘 하루 top-N 앱 사용량(이름+시간)을 채운다.
+                appUsage = DeviceStatusReporter.readAppUsage(getContext(), usm, DeviceStatusReporter.startOfTodayMillis(), end);
+                recentAppLabel = DeviceStatusReporter.resolveAppLabel(getContext(), recentApp);
+                // 필터로 recentApp 이 비어도 권한이 없는 게 아니다 — AppOps 로 정확 판정.
+                usagePermission = DeviceStatusReporter.isUsageAccessGranted(getContext()) ? "granted" : "requires_permission";
             }
             result.put("recentAppPackage", recentApp);
             int unlockCount = DeviceStatusReporter.readUnlockCountToday(getContext());
@@ -800,6 +798,10 @@ public class LocationPlugin extends Plugin {
 
     @PermissionCallback
     private void onAlwaysOnBackgroundResult(PluginCall call) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            call.resolve(new JSObject().put("granted", true).put("step", "complete"));
+            return;
+        }
         boolean granted = ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_BACKGROUND_LOCATION)
                 == PackageManager.PERMISSION_GRANTED;
         if (granted) {

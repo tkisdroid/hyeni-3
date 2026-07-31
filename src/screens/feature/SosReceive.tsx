@@ -16,6 +16,7 @@ import { childAvatarPath } from "@/lib/avatar";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { TIERS, locationModeFor } from "@/transform/tierPolicy";
 import { resolveLocationTrustCopy } from "@/transform/locationTrustCopy";
+import { hasJongseong } from "@/transform/adventureMap";
 import { Loading } from "@/components/ui/Loading";
 import "./SosReceive.css";
 
@@ -227,7 +228,9 @@ export function SosReceive() {
               </span>
               <div className="sr-banner-body">
                 <div className="sr-banner-title">
-                  {isMissedArrival ? cleanAlertTitle(latest.title) || `${childName} 미도착 긴급 알림` : `${childName}가 SOS를 보냈어요`}
+                  {isMissedArrival
+                    ? cleanAlertTitle(latest.title) || `${childName} 미도착 긴급 알림`
+                    : `${childName}${hasJongseong(childName) ? "이" : "가"} SOS를 보냈어요`}
                 </div>
                 <div className="sr-banner-meta">
                   {formatClock(latestAt)} · {relativeFrom(latestAt)}

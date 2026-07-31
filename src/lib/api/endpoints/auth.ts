@@ -95,7 +95,7 @@ export async function anonymousLogin(): Promise<AuthResult> {
     false,
   );
   if (!data?.user) {
-    throw new Error("아이 모드 준비에 실패했어. 잠시 후 다시 시도해줘!");
+    throw new Error("아이 모드 준비에 실패했어. 잠시 후 다시 시도해 줘!");
   }
   adoptAuthResult(data);
   return data;
@@ -407,7 +407,7 @@ export async function finishOAuthLogin(input: {
     || context.provider !== input.provider
     || !input.state
     || context.state !== input.state) {
-    throw new Error("로그인 인증 정보가 어긋났어요. 보안을 위해 처음부터 다시 해주세요!");
+    throw new Error("로그인 인증 정보가 어긋났어요. 보안을 위해 처음부터 다시 해 주세요!");
   }
 
   const data = await apiRequest<AuthResult>(
@@ -487,7 +487,7 @@ export async function linkOAuthAccount(input: {
     || context.provider !== input.provider
     || !input.state
     || context.state !== input.state) {
-    throw new Error("로그인 인증 정보가 어긋났어요. 보안을 위해 처음부터 다시 해주세요!");
+    throw new Error("로그인 인증 정보가 어긋났어요. 보안을 위해 처음부터 다시 해 주세요!");
   }
 
   return apiRequest(`/api/auth/oauth/${input.provider}/link`, {

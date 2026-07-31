@@ -329,7 +329,7 @@ export function DailySafetyReport() {
         id: "device-signal",
         label: "기기 리포트",
         value: device.freshnessLabel,
-        detail: device.hasData ? `잠금해제 ${device.unlockCountLabel}` : "아이 앱 연결 후 표시",
+        detail: device.hasData ? `잠금 해제 ${device.unlockCountLabel}` : "아이 앱 연결 후 표시",
         tone: device.safetyLabel === "양호" ? "blue" : "cream",
         icon: <img src={asset("ui/battery.webp")} alt="" loading="lazy" decoding="async" />,
       },
@@ -749,7 +749,13 @@ export function DailySafetyReport() {
                   <b>기기 상태</b>
                   <small>배터리, 네트워크, 앱 사용 흐름</small>
                 </span>
-                <button type="button" className="dr-link hy-press" onClick={() => void refreshDevice()} disabled={refreshingDevice}>
+                <button
+                  type="button"
+                  className="dr-link hy-press"
+                  onClick={() => void refreshDevice()}
+                  disabled={refreshingDevice}
+                  aria-busy={refreshingDevice}
+                >
                   <RefreshCw size={14} strokeWidth={2.2} />
                   {refreshingDevice ? "요청 중" : "새로고침"}
                 </button>
@@ -762,7 +768,7 @@ export function DailySafetyReport() {
                 </div>
                 <div>
                   <img src={asset("ui/lock-open-3d.webp")} alt="" loading="lazy" decoding="async" />
-                  <span>잠금해제</span>
+                  <span>잠금 해제</span>
                   <b>{device.unlockCountLabel}</b>
                 </div>
                 <div>

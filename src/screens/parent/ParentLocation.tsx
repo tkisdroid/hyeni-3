@@ -242,7 +242,7 @@ export function ParentLocation() {
     return Math.max(1, Math.round((now.getTime() - d.getTime()) / 60000));
   }, [loc, now]);
 
-  // ── 보기 모드: 실시간 위치 ↔ 오늘 이동경로(프리미엄) ──────────────────────
+  // ── 보기 모드: 실시간 위치 ↔ 오늘 이동 경로(프리미엄) ─────────────────────
   const [view, setView] = useState<"live" | "history">(requestedView);
   useEffect(() => {
     setView(requestedView);
@@ -621,10 +621,9 @@ export function ParentLocation() {
           <div className="pl-lock__ring">
             <img src={asset("ui/lock-3d.webp")} alt="" className="pl-lock__icon" />
           </div>
-          <div className="pl-lock__title">오늘 이동경로는 프리미엄이에요</div>
+          <div className="pl-lock__title">오늘 이동 경로는 프리미엄이에요</div>
           <div className="pl-lock__sub">
-            아이가 오늘 어디를 다녀왔는지 이동 경로로 확인할 수 있어요.
-            <br />
+            아이가 오늘 어디를 다녀왔는지 이동 경로로 확인할 수 있어요.{" "}
             프리미엄을 시작하면 오늘 경로가 열려요.
           </div>
           <button
@@ -663,7 +662,7 @@ export function ParentLocation() {
         >
           <div className="pl-lock__ring">
             {locationScopeError ? (
-              <AlertTriangle size={30} strokeWidth={2.2} color="var(--gold-600)" />
+              <AlertTriangle size={30} strokeWidth={2.2} color="var(--gold-text)" />
             ) : (
               <RefreshCw size={30} strokeWidth={2.2} color="var(--blue-500)" className="pl-lock__spin" />
             )}
@@ -673,7 +672,7 @@ export function ParentLocation() {
           </div>
           <div className="pl-lock__sub">
             {locationScopeError ? "구독 상태를 확인하지 못했어요." : "구독 상태를 확인하고 있어요."}
-            <br />
+            {" "}
             {locationScopeError
               ? "인터넷 연결을 확인한 뒤 다시 시도해 주세요."
               : "확인되면 볼 수 있는 위치 범위를 표시해 드려요."}
@@ -745,8 +744,7 @@ export function ParentLocation() {
           </div>
           <div className="pl-lock__title">실시간 위치는 프리미엄이에요</div>
           <div className="pl-lock__sub">
-            무료 플랜에서는 아이 위치를 볼 수 없어요.
-            <br />
+            무료 플랜에서는 아이 위치를 볼 수 없어요.{" "}
             프리미엄을 시작하면 지금 위치를 실시간으로 확인할 수 있어요.
           </div>
           <button
@@ -955,7 +953,7 @@ export function ParentLocation() {
             className="pl-upsell hy-press"
             onClick={() => navigate("/subscription")}
           >
-            <Crown size={16} strokeWidth={2.2} color="var(--gold-600)" />
+            <Crown size={16} strokeWidth={2.2} color="var(--gold-text)" />
             프리미엄으로 실시간 위치 보기
           </button>
         )}

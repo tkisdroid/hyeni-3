@@ -80,10 +80,10 @@
 
 .hy-iconbtn {
   position: relative;
-  width: var(--control-min-size);
-  height: var(--control-min-size);
-  min-width: var(--control-min-size);
-  min-height: var(--control-min-size);
+  width: var(--control-size-icon);
+  height: var(--control-size-icon);
+  min-width: var(--control-size-icon);
+  min-height: var(--control-size-icon);
   flex: none;
   border-radius: var(--radius-pill);
   background: var(--bg-card);
@@ -294,7 +294,7 @@
 }
 .hy-tab[data-active="true"] .hy-tab__icon {
   background: var(--hy-accent-soft);
-  color: var(--hy-accent-deep);
+  color: var(--hy-accent-text);
   animation: hy-tab-pop 0.32s var(--easing-cheer);
 }
 @keyframes hy-tab-pop {

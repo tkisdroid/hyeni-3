@@ -356,7 +356,8 @@ export function TeacherNotice() {
                 type="button"
                 className="tn-attach hy-press"
                 onClick={() => fileRef.current?.click()}
-                disabled={uploading || publish.isPending || attachments.length >= MAX_ATTACHMENTS} aria-busy={uploading || publish.isPending}
+                disabled={uploading || publish.isPending || attachments.length >= MAX_ATTACHMENTS}
+                aria-busy={uploading}
               >
                 <span className="tn-attach__icon">
                   <Paperclip size={18} strokeWidth={2} color="#8B7E84" />
@@ -432,6 +433,7 @@ export function TeacherNotice() {
               className="tn-send hy-press"
               onClick={() => void handleSend()}
               disabled={!canSend}
+              aria-busy={publish.isPending}
             >
               {uploading
                 ? "첨부 올리는 중…"

@@ -466,8 +466,8 @@ test("Android 전체화면 특별 접근은 일반 알림 권한과 분리해 �
 
   assert.match(permissions, /export async function openFullScreenIntentSettings/);
   assert.match(permissions, /plugin\.openFullScreenIntentSettings\?\.\(\)/);
-  assert.match(screen, /전체 화면이 꺼져 있어 긴급 알림은 heads-up 팝업으로만 표시돼요/);
-  assert.match(screen, /잠금화면 전체 표시 설정/);
+  assert.match(screen, /전체 화면이 꺼져 있어 긴급 알림은 화면 상단 팝업으로만 표시돼요/);
+  assert.match(screen, /잠금 화면 전체 표시 설정/);
   assert.match(screen, /onClick=\{openFullScreenSettings\}/);
   assert.doesNotMatch(screen, /useEffect\([\s\S]{0,400}openFullScreenIntentSettings/);
 });

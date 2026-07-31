@@ -27,8 +27,8 @@ test("대화 문구는 부모=존댓말, 아이=반말로 분리된다", () => {
   const parent = resolveMemoChatCopy("parent");
   const child = resolveMemoChatCopy("child");
 
-  assert.equal(parent.empty, "아직 나눈 대화가 없어요. 먼저 인사를 건네보세요 💌");
-  assert.equal(child.empty, "아직 나눈 대화가 없어. 먼저 인사해볼까? 💌");
+  assert.equal(parent.empty, "아직 나눈 대화가 없어요. 먼저 인사를 건네 보세요 💌");
+  assert.equal(child.empty, "아직 나눈 대화가 없어. 먼저 인사해 볼까? 💌");
   assert.notEqual(parent.sendFailed, child.sendFailed);
   assert.notEqual(parent.inputPlaceholder, child.inputPlaceholder);
 
@@ -47,7 +47,7 @@ test("MemoChat 은 하드코딩 문구 대신 role 별 copy 를 쓴다", () => {
     '"메시지를 입력해 주세요"',
     '"메시지 전송에 실패했어요"',
     '"새 대화를 시작해요"',
-    '"메시지를 입력하세요..."',
+    '"메시지를 입력하세요…"',
   ]) {
     assert.ok(!src.includes(hardcoded), `하드코딩 문구가 남아 있다: ${hardcoded}`);
   }

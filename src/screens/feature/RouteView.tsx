@@ -282,7 +282,7 @@ export function RouteView() {
         : "부모 홈에서 아이를 선택한 뒤 다시 시도해 주세요."
       : nextEvent
         ? isChild
-          ? "다음 일정의 장소를 아직 못 찾았어.\n부모님께 지도로 장소를 정해달라고 해줘."
+          ? "다음 일정의 장소를 아직 못 찾았어.\n부모님께 지도로 장소를 정해 달라고 해 줘."
           : "다음 일정의 장소를 아직 찾지 못했어요.\n일정에서 지도 위치를 지정해 주세요."
         : isChild
           ? "오늘 남은 일정이 없어.\n일정이 생기면 길을 알려줄게."
@@ -300,7 +300,7 @@ export function RouteView() {
         if (!win) {
           show(
             isChild
-              ? "지도를 못 열었어. 팝업 차단을 확인해줘"
+              ? "지도를 못 열었어. 팝업 차단을 확인해 줘"
               : "지도를 열지 못했어요. 팝업 차단을 확인해 주세요",
             "🧭",
           );
@@ -400,6 +400,7 @@ export function RouteView() {
               <div className="rv-map-wrap">
                 <KakaoMap
                   className="rv-map"
+                  tone={isChild ? "child" : "formal"}
                   child={originChild}
                   route={routeState === "ready" ? routePoints : []}
                   destination={destMarker}

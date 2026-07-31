@@ -66,7 +66,7 @@ test("ID·소셜·가입 확인 버튼은 중복 실행을 막은 채 BusyLabel�
   assert.match(onboarding, /idle="네이버로 계속하기" pending="네이버 로그인 중…"/);
   assert.match(onboarding, /idle="인증하고 가입 완료"[\s\S]{0,80}pending="가입 확인 중…"/);
   assert.match(onboarding, /onClick=\{loginIdPw\} disabled=\{busy\}/);
-  assert.match(onboarding, /onClick=\{verify\} disabled=\{busy\}/);
+  assert.match(onboarding, /onClick=\{verify\}\s+disabled=\{busy\}/);
 });
 
 test("로그인 요청 중에는 뒤로가기를 잠가 취소된 요청의 busy가 역할 화면에 남지 않는다", () => {

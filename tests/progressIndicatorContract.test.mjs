@@ -19,7 +19,7 @@ const TSX = execSync("git ls-files src", { encoding: "utf8" })
   .split(/\r?\n/).filter((f) => f.endsWith(".tsx"));
 
 /** 진행 상태를 뜻하는 식별자. disabled 식에 이게 있으면 '작업 중'이 표현돼야 한다. */
-const PENDING = /(isPending|isFetching|isLoading|\bbusy\b|\bsaving\b|\bsending\b|\bstarting\b|\bringing\b|\bretrying\b|\bsubmitting\b|\buploading\b|\bdeleting\b|\bworking\b|\brefreshing\b|\blocating\b)/i;
+const PENDING = /(isPending|isFetching|isLoading|[A-Za-z]*(?:busy|pending|saving|sending|starting|ringing|retrying|submitting|uploading|deleting|working|refreshing|locating)[A-Za-z]*)/i;
 
 /** `<button` 위치에서 여는 태그가 끝나는 '>' 인덱스. 중괄호·인용을 인식한다
  *  (onClick={() => ...} 의 화살표 '>' 에서 끊기면 안 된다). */
@@ -86,6 +86,8 @@ test("진행 중 비활성되는 버튼은 모두 aria-busy 를 켠다(정적 �
     const src = readFileSync(file, "utf8");
     for (const tag of buttonTags(src)) {
       if (/aria-busy=/.test(tag)) continue;
+      // 진행 표시는 실행 버튼이 소유하고, 취소·닫기·형제 설정만 잠기는 경우를 명시한다.
+      if (/data-progress-owner=/.test(tag)) continue;
       const at = tag.indexOf("disabled={");
       if (at < 0) continue;
       if (!PENDING.test(tag.slice(at))) continue;
@@ -122,7 +124,7 @@ test("자기 스피너를 그리는 버튼은 hy-busy-quiet 로 공용 링과 �
 
 test("표시자는 한 버튼에 하나만 — 자체 스피너를 그리면 공용 링을 끈다", () => {
   // aria-busy 가 붙은 버튼이 안쪽에 자기 스피너까지 그리면 회전체가 두 개 보인다.
-  const SPINNER = /(spin|Spin)\b|__ring|animate-spin/;
+  const SPINNER = /(spin|Spin)\b|__ring|animate-spin|<BusyLabel\b/;
   const offenders = [];
   for (const file of TSX) {
     const src = readFileSync(file, "utf8");

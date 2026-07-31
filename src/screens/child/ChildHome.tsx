@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Backpack, Check, MapPin, MessageCircle, Palette, Settings2, X } from "lucide-react";
+import { Backpack, Check, MapPin, MessageCircle, Navigation, Palette, Settings2, X } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAccent } from "@/app/accent";
@@ -23,6 +23,7 @@ import { buildAdventureMap, timeLabelToMinutes, type AdventureEventInput } from 
 import { buildStickerBook, readSeenStickers } from "@/transform/stickerBook";
 import { resolveEventVisualAsset } from "@/transform/placeVisual";
 import { CHILD_ACCENTS } from "@/transform/childAccent";
+import { resolveAiFriendDisplayName } from "@/transform/aiFriendName";
 import { Loading } from "@/components/ui/Loading";
 import {
   latestParentMemoText,
@@ -154,6 +155,8 @@ export function ChildHome() {
   // 이름 입력은 비제어(defaultValue) — 타이핑마다 리렌더하지 않도록 ref 에 모아 두고 커밋 시점에만 저장한다.
   const draftsRef = useRef<Record<string, string>>({});
   const [celebrate, setCelebrate] = useState<{ icon: string; sub: string } | null>(null);
+  const [pendingSupplyAdd, setPendingSupplyAdd] = useState<"prep" | "hw" | null>(null);
+  const [pendingSupplyDeleteId, setPendingSupplyDeleteId] = useState<string | null>(null);
 
   const toggleSupply = (item: DailySupply) => {
     const nowDone = !item.done;
@@ -171,11 +174,11 @@ export function ChildHome() {
           if (nowDone && !editMode) {
             setCelebrate({
               icon: CELEBRATE_ICON[item.kind ?? "prep"] ?? "sticker/ready.webp",
-              sub: `'${item.label}' 챙기기 완료!`,
+              sub: `‘${item.label}’ 챙기기 완료!`,
             });
           }
         },
-        onError: () => show("안 됐어. 다시 눌러볼래?", "⚠️"),
+        onError: () => show("안 됐어. 다시 눌러 볼래?", "⚠️"),
       },
     );
   };
@@ -202,7 +205,7 @@ export function ChildHome() {
         child_user_id: item.child_user_id ?? null,
       });
     } catch {
-      show("못 바꿨어. 다시 해볼래?", "⚠️");
+      show("못 바꿨어. 다시 해 볼래?", "⚠️");
     }
   };
 
@@ -214,10 +217,11 @@ export function ChildHome() {
 
   const addSupply = (kind: "prep" | "hw") => {
     if (!myMember) {
-      show("내 정보를 아직 못 찾았어. 잠시 후 다시 해볼래?", "⚠️");
+      show("내 정보를 아직 못 찾았어. 잠시 후 다시 해 볼래?", "⚠️");
       return;
     }
     if (upsert.isPending) return;
+    setPendingSupplyAdd(kind);
     upsert.mutate(
       {
         date_key: todayKey,
@@ -226,8 +230,21 @@ export function ChildHome() {
         kind,
         child_user_id: myMember.id,
       },
-      { onError: () => show("추가하지 못했어. 다시 해볼래?", "⚠️") },
+      {
+        onError: () => show("추가하지 못했어. 다시 해 볼래?", "⚠️"),
+        onSettled: () => setPendingSupplyAdd((current) => (current === kind ? null : current)),
+      },
     );
+  };
+
+  const deleteSupply = (item: DailySupply) => {
+    if (remove.isPending) return;
+    const itemId = item.id ?? null;
+    setPendingSupplyDeleteId(itemId);
+    remove.mutate(item, {
+      onError: () => show("못 지웠어. 다시 해 볼래?", "⚠️"),
+      onSettled: () => setPendingSupplyDeleteId((current) => (current === itemId ? null : current)),
+    });
   };
 
   // ── 스티커 ───────────────────────────────────────────────────────────
@@ -252,26 +269,33 @@ export function ChildHome() {
   // ── 부모님 대화 ──────────────────────────────────────────────────────
   const memoThread = useMemoThread(memoDateKeys, myMember?.id ?? null);
   const sendMemo = useSendMemo();
+  const [pendingQuickStatus, setPendingQuickStatus] = useState<QuickStatusActionId | null>(null);
   const parentNote = latestParentMemoText(memoThread.data);
   const unreadCount = unreadParentMemoCount(memoThread.data, userId);
 
-  const sendQuickStatus = (actionId: QuickStatusActionId) => {
+  const sendQuickStatus = (actionId: QuickStatusActionId, source: "quick-grid" | "route" = "quick-grid") => {
     if (!myMember?.id || sendMemo.isPending) return;
+    setPendingQuickStatus(source === "quick-grid" ? actionId : null);
     sendMemo.mutate(buildQuickStatusMemo(actionId, myMember.id, todayKey), {
       onSuccess: () => show("가족 메시지에 남겼어", "💬"),
-      onError: () => show("보내지 못했어. 잠시 후 다시 해줘", "⚠️"),
+      onError: () => show("보내지 못했어. 잠시 후 다시 해 줘", "⚠️"),
+      onSettled: () => setPendingQuickStatus((current) => (current === actionId ? null : current)),
     });
   };
 
   // ── AI 친구 ──────────────────────────────────────────────────────────
   const aiEnabled = aiFriend.data?.ai_enabled !== false;
   const aiRemaining = remainingAiChats(aiFriend.data?.daily_limit, aiUsage.data?.count ?? 0);
+  const aiFriendSavedName = aiFriend.data?.ai_friend_name?.trim() ?? "";
+  const aiFriendDisplayName = aiFriendSavedName
+    ? resolveAiFriendDisplayName({ savedName: aiFriendSavedName, childName })
+    : null;
   const openAiFriend = () => {
     if (!aiEnabled) {
-      show("AI 친구는 부모님이 켜줘야 해. 부탁해봐! 🙏", "🤖");
+      show("AI 친구는 부모님이 켜 줘야 해. 부탁해 봐! 🙏", "🤖");
       return;
     }
-    if (!aiFriend.data?.ai_friend_name?.trim()) {
+    if (!aiFriendSavedName) {
       navigate("/child/ai-friend-setup");
       return;
     }
@@ -313,12 +337,12 @@ export function ChildHome() {
 
   const departNow = () => {
     setRouteOpen(false);
-    if (myMember?.id) sendQuickStatus("departed");
+    if (myMember?.id) sendQuickStatus("departed", "route");
     show("좋아! 도착하면 알려줘 🧡", "🏃");
   };
   const arriveNow = () => {
     setRouteOpen(false);
-    sendQuickStatus("arrived");
+    sendQuickStatus("arrived", "route");
   };
 
   const callTargets = useMemo<CallTarget[]>(() => {
@@ -340,7 +364,7 @@ export function ChildHome() {
     (target: CallTarget) => {
       if (!target.phone) return;
       setCallOpen(false);
-      show(`${target.label}한테 전화 거는 중...`, "📞");
+      show(`${target.label}한테 전화 거는 중…`, "📞");
       void placePhoneCall(target.phone).then((r) => {
         if (!r.ok) show("전화를 걸 수 없어. 전화 앱을 확인해 줘", "⚠️");
       });
@@ -504,7 +528,8 @@ export function ChildHome() {
           </div>
           {nextView && (
             <button type="button" className="kd-next__cta kd-title hy-press" onClick={openRoute}>
-              길찾기 출발! 🚀
+              <Navigation size={20} strokeWidth={2.2} aria-hidden="true" />
+              길찾기 출발!
             </button>
           )}
         </div>
@@ -575,8 +600,9 @@ export function ChildHome() {
                         type="button"
                         className="kd-prep__del hy-press"
                         aria-label={`${s.label} 지우기`}
-                        onClick={() => remove.mutate(s, { onError: () => show("못 지웠어. 다시 해볼래?", "⚠️") })}
-                        disabled={remove.isPending} aria-busy={remove.isPending}
+                        onClick={() => deleteSupply(s)}
+                        disabled={remove.isPending}
+                        aria-busy={remove.isPending && pendingSupplyDeleteId === s.id}
                       >
                         <X size={16} strokeWidth={2.4} color="var(--danger-500)" />
                       </button>
@@ -599,7 +625,8 @@ export function ChildHome() {
                   type="button"
                   className="kd-prep__add kd-prep__add--prep hy-press"
                   onClick={() => addSupply("prep")}
-                  disabled={upsert.isPending} aria-busy={upsert.isPending}
+                  disabled={upsert.isPending}
+                  aria-busy={upsert.isPending && pendingSupplyAdd === "prep"}
                 >
                   + 준비물
                 </button>
@@ -607,7 +634,8 @@ export function ChildHome() {
                   type="button"
                   className="kd-prep__add kd-prep__add--hw hy-press"
                   onClick={() => addSupply("hw")}
-                  disabled={upsert.isPending} aria-busy={upsert.isPending}
+                  disabled={upsert.isPending}
+                  aria-busy={upsert.isPending && pendingSupplyAdd === "hw"}
                 >
                   + 숙제
                 </button>
@@ -645,15 +673,17 @@ export function ChildHome() {
             </button>
 
             <button type="button" className="kd-tile kd-tile--bob hy-press" onClick={openAiFriend}>
-              <img src={asset("mascot/wave.webp")} alt="" />
+              <img src={asset("ui/ai-robot.webp")} alt="" />
               <span>
-                <span className="kd-tile__title">혜니랑 말하기</span>
+                <span className="kd-tile__title">
+                  {aiFriendDisplayName ? `${aiFriendDisplayName} 만나러 가기` : "AI 친구 만나기"}
+                </span>
                 <span className="kd-tile__sub">
                   {!aiEnabled
                     ? "부모님이 켜주면 놀 수 있어"
                     : aiRemaining != null
                       ? `💬 ${aiRemaining}번 남았어`
-                      : "오늘 얘기해볼까?"}
+                      : "오늘 얘기해 볼까?"}
                 </span>
               </span>
             </button>
@@ -671,7 +701,7 @@ export function ChildHome() {
               <span>
                 <span className="kd-tile__title">부모님 전화</span>
                 <span className="kd-tile__sub">
-                  {callTargets.length > 0 ? callTargets.map((t) => t.label).join(" · ") : "번호를 등록해 달라고 하자"}
+                  {callTargets.length > 0 ? "가족에게 바로 전화하기" : "번호를 등록해 달라고 하자"}
                 </span>
               </span>
             </button>
@@ -694,7 +724,8 @@ export function ChildHome() {
                 type="button"
                 className="kd-status__btn hy-press"
                 onClick={() => sendQuickStatus(action.id)}
-                disabled={sendMemo.isPending || !myMember} aria-busy={sendMemo.isPending}
+                disabled={sendMemo.isPending || !myMember}
+                aria-busy={sendMemo.isPending && pendingQuickStatus === action.id}
               >
                 <img src={asset(QUICK_STATUS_ICONS[action.id])} alt="" />
                 <span>{action.label}</span>

@@ -29,12 +29,9 @@
 
     <!-- 헤더 악센트 (아이콘 배지 배경)
          emergency = rose-deep (응급 허용 영역) / kkuk = brand-rose -->
-    <color name="alert_accent_emergency">#D94F7F</color>
     <color name="alert_accent_emergency_soft">#FFE2EC</color>
-    <color name="alert_accent_kkuk">#F779A8</color>
     <color name="alert_accent_kkuk_soft">#FFE2EC</color>
     <!-- 일반/null 톤: rose-soft 카드, brand-rose 악센트 -->
-    <color name="alert_accent_normal">#F779A8</color>
     <color name="alert_accent_normal_soft">#FFE2EC</color>
 
     <!-- 주 버튼: 웹 .btn-primary 그라데이션 미러 (brand-rose → rose-deep) / 텍스트 흰 bold -->

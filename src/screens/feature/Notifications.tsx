@@ -166,6 +166,7 @@ export function Notifications() {
               key={k}
               type="button"
               className={`nc-filter hy-press${filter === k ? " nc-filter--active" : ""}`}
+              aria-pressed={filter === k}
               onClick={() => setFilter(k)}
             >
               {FILTER_LABEL[k]}

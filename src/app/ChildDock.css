@@ -12,7 +12,11 @@
   align-items: center;
   gap: 8px;
   z-index: 30;
-  background: linear-gradient(180deg, rgba(251, 247, 244, 0), rgba(251, 247, 244, 0.96) 42%);
+  background: linear-gradient(
+    180deg,
+    transparent,
+    color-mix(in srgb, var(--hy-accent-soft) 38%, var(--bg-app)) 42%
+  );
   pointer-events: none;
 }
 .kdock > * {
@@ -22,8 +26,9 @@
 .kdock__bar {
   flex: 1;
   height: 66px;
-  background: rgba(255, 255, 255, 0.94);
+  background: color-mix(in srgb, var(--hy-accent-soft) 16%, rgba(255, 255, 255, 0.94));
   backdrop-filter: blur(8px);
+  border: 1px solid color-mix(in srgb, var(--hy-accent) 18%, transparent);
   border-radius: 999px;
   box-shadow: var(--shadow-floating);
   display: flex;
@@ -61,7 +66,7 @@
   height: 18px;
   padding: 0 4px;
   border-radius: 999px;
-  background: var(--hy-accent-deep);
+  background: var(--hy-accent-cta);
   color: var(--bg-card);
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
@@ -76,7 +81,7 @@
   width: 66px;
   height: 66px;
   border-radius: 50%;
-  background: linear-gradient(140deg, #ff8ba3, #f04770);
+  background: var(--cta-grad-danger);
   box-shadow: var(--shadow-rose);
   display: flex;
   flex-direction: column;

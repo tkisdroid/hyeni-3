@@ -9,12 +9,12 @@ export function playdateCandidateNotice(
   loadFailed = false,
 ): string | null {
   // 하드 에러(네트워크/5xx)는 "친구 없음"과 다르다 — 없다고 단정하면 거짓 안내가 된다.
-  if (loadFailed) return "친구 목록을 불러오지 못했어. 다시 해볼래?";
+  if (loadFailed) return "친구 목록을 불러오지 못했어. 다시 해 볼래?";
   switch (error) {
     case "playdate_not_enabled":
-      return "지금은 친구놀이가 꺼져 있어. 부모님한테 켜달라고 하자!";
+      return "지금은 친구놀이가 꺼져 있어. 부모님한테 켜 달라고 하자!";
     case "current_location_unavailable":
-      return "아직 네 위치를 못 찾았어. 잠깐 있다가 다시 해볼까?";
+      return "아직 네 위치를 못 찾았어. 잠깐 있다가 다시 해 볼까?";
     case "in_danger_zone":
       return "지금 있는 곳에선 친구를 찾을 수 없어.";
     case "forbidden":

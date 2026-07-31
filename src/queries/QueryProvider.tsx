@@ -8,6 +8,7 @@ import { isApiError } from "@/lib/api/errors";
 import { announceFallbackToast, isNoiseError } from "@/lib/globalToast";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { shouldRefetchOnWindowFocus } from "@/queries/nativeQueryResume";
+import { deriveAuthState } from "@/auth/AuthContext";
 
 /** 4xx(클라 오류: 401 만료·404 미배포·403 등)는 재시도 무의미 → 즉시 실패. */
 function shouldRetry(failureCount: number, error: unknown): boolean {
@@ -28,7 +29,12 @@ const mutationCache = new MutationCache({
     if (mutation.options.meta?.silentError === true) return;
     if (isNoiseError(error)) return;
     console.error("[mutation-fallback]", error);
-    announceFallbackToast("방금 작업이 저장되지 않았어요. 다시 시도해 주세요", "⚠️");
+    announceFallbackToast(
+      deriveAuthState().role === "child"
+        ? "방금 한 일이 저장되지 않았어. 다시 해 줘"
+        : "방금 작업이 저장되지 않았어요. 다시 시도해 주세요",
+      "⚠️",
+    );
   },
 });
 

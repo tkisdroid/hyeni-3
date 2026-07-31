@@ -8,7 +8,8 @@
 /* ── 대기 화면 ──────────────────────────────────────────────────────────── */
 .rr-idle {
   min-height: 100%;
-  padding: 56px 24px calc(24px + env(safe-area-inset-bottom, 0px));
+  padding: calc(56px + env(safe-area-inset-top, 0px)) 24px
+    calc(24px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   background: radial-gradient(120% 46% at 50% 0%, #ffe9d6 0%, rgba(255, 233, 214, 0) 55%),
@@ -175,9 +176,9 @@
   --press: 0.94;
 }
 .rr-childchip--active {
-  background: var(--gold-600);
-  border-color: var(--gold-600);
-  color: #fff;
+  background: var(--cream-soft);
+  border-color: var(--gold-400);
+  color: var(--gold-text);
 }
 
 .rr-chips {
@@ -203,8 +204,8 @@
   --press: 0.94;
 }
 .rr-chip--active {
-  background: rgba(245, 158, 66, 0.16);
-  border-color: rgba(245, 158, 66, 0.55);
+  background: var(--cream-soft);
+  border-color: var(--gold-400);
   color: var(--gold-text);
 }
 
@@ -238,9 +239,10 @@
 
 .rr-cta {
   width: 100%;
-  height: 58px;
+  height: var(--control-height-primary);
+  flex: none;
   border-radius: var(--radius-xl);
-  background: linear-gradient(120deg, #f0518f, #e5484d);
+  background: var(--cta-grad-danger);
   box-shadow: 0 16px 32px -12px rgba(229, 72, 77, 0.6);
   font-size: var(--type-title);
   line-height: var(--type-title-line-height);
@@ -260,7 +262,7 @@
   cursor: not-allowed;
 }
 .rr-cta[aria-busy="true"]:disabled {
-  background: linear-gradient(135deg, var(--danger-strong), #e5484d);
+  background: var(--cta-grad-danger);
   opacity: var(--busy-opacity);
   cursor: progress;
 }
@@ -328,19 +330,19 @@
   flex: 1;
   height: 50px;
   border-radius: var(--radius-lg);
-  background: var(--fg-disabled);
+  background: var(--bg-body);
   font-size: var(--type-body);
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
 
-  color: #fff;
+  color: var(--fg-secondary);
   --press: 0.96;
 }
 .rr-modal-confirm {
   flex: 1.4;
   height: 50px;
   border-radius: var(--radius-lg);
-  background: linear-gradient(120deg, #f0518f, #e5484d);
+  background: var(--cta-grad-danger);
   font-size: var(--type-body);
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
@@ -358,7 +360,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 72px 32px calc(40px + env(safe-area-inset-bottom, 0px));
+  padding: calc(72px + env(safe-area-inset-top, 0px)) 32px
+    calc(40px + env(safe-area-inset-bottom, 0px));
   background: radial-gradient(circle at 50% 34%, #3a1720, #17100f);
   animation: hy-fadein 0.25s ease forwards;
 }
@@ -410,7 +413,7 @@
   width: 128px;
   height: 128px;
   border-radius: 50%;
-  background: radial-gradient(circle at 50% 40%, #ff6b84, #e5484d);
+  background: radial-gradient(circle at 50% 40%, var(--danger-cta), var(--danger-text));
   box-shadow: 0 20px 40px -10px rgba(229, 72, 77, 0.6);
   display: flex;
   align-items: center;
@@ -463,7 +466,7 @@
   line-height: var(--type-body-lg-line-height);
   font-weight: var(--type-body-lg-weight);
 
-  color: var(--danger-500);
+  color: var(--danger-text);
   box-shadow: 0 14px 30px -8px rgba(255, 255, 255, 0.35);
   --press: 0.95;
 }
@@ -474,7 +477,7 @@
   width: 22px;
   height: 22px;
   border-radius: var(--radius-8);
-  background: var(--danger-500);
+  background: var(--danger-text);
 }
 
 /* 실제 TSX 상호작용 요소의 최소 터치 영역 */

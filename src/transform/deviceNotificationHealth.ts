@@ -120,7 +120,7 @@ export function deviceNotificationHealthView(
       state: "attention",
       label: "긴급 알림 전체 화면 확인 필요",
       shortLabel: "알림 확인 필요",
-      detail: "마지막 보고에서 잠금화면 전체 표시가 꺼져 있어 긴급 알림이 heads-up 팝업으로만 표시돼요.",
+      detail: "마지막 보고에서 잠금 화면 전체 표시가 꺼져 있어 긴급 알림이 화면 상단 팝업으로만 표시돼요.",
     };
   }
   if (health?.remoteListenChannelEnabled === false) {
@@ -176,7 +176,7 @@ export function deviceNotificationHealthView(
       state: "ready",
       label: "알림 표시 설정 정상",
       shortLabel: "알림 정상",
-      detail: "최근 보고 기준으로 알림 권한·필수 채널·잠금화면 전체 표시·요청 채널과 일정 알림 설정이 켜져 있어요.",
+      detail: "최근 보고 기준으로 알림 권한·필수 채널·잠금 화면 전체 표시·요청 채널과 일정 알림 설정이 켜져 있어요.",
     };
   }
   return {

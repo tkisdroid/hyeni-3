@@ -34,6 +34,7 @@
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowBackground">@color/force_ring_bg</item>
         <!-- 풀-블리드 빨강 정체성: status/nav bar 도 force_ring_bg 토큰에 맞춤
              (라이트/다크 분기는 colors.xml/values-night 에서 처리) -->
         <item name="android:statusBarColor">@color/force_ring_bg</item>

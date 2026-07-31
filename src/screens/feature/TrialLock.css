@@ -62,11 +62,11 @@
   color: #fff;
 }
 .tl-hero--trial {
-  background: linear-gradient(135deg, #f76ba6, #a78bfa);
+  background: var(--cta-grad-lavender);
   box-shadow: var(--shadow-floating);
 }
 .tl-hero--active {
-  background: linear-gradient(135deg, #f5a524, #f76ba6);
+  background: var(--cta-grad-accent);
   box-shadow: var(--shadow-floating);
 }
 .tl-hero__badge {
@@ -85,7 +85,7 @@
   font-weight: var(--type-body-sm-weight);
 
   letter-spacing: 0.02em;
-  opacity: 0.95;
+  color: #fff;
 }
 .tl-hero__title {
   margin-top: 4px;
@@ -101,7 +101,7 @@
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
 
-  opacity: 0.9;
+  color: #fff;
 }
 
 /* ── 잠금(무료/만료) ──────────────────────────────────────────────────────── */
@@ -190,7 +190,8 @@
 /* ── CTA ──────────────────────────────────────────────────────────────────── */
 /* 주요 CTA — 흰 라벨이 AA 를 넘도록 채움은 --hy-accent-cta, 라벨은 18px/700. */
 .tl-cta {
-  height: 56px;
+  height: var(--control-height-primary);
+  flex: none;
   border-radius: var(--radius-16);
   background: var(--hy-accent-cta);
   color: #fff;

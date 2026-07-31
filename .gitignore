@@ -62,6 +62,10 @@ __pycache__/
 # 로컬 검증 산출물·임시 파일 (커밋 제외)
 test-results/
 tmp_s25_check/
+tmp-design-*/
+tmp-sweep/
+tmp-ui-*/
+scripts/tmp-*.mjs
 
 # output 스크린샷/렌더 산출물 — store-screenshots(기존 추적)만 예외로 유지
 output/

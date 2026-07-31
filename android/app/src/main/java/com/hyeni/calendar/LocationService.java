@@ -3680,7 +3680,7 @@ public class LocationService extends Service {
     // 서버가 비긴급 푸시에 붙인 notification 블록을 백그라운드에서 시스템이 직접
     // 표시한 경우를 잡아내 폴링 중복 게시를 막는다. SDK 23+ 에서만 동작(이전은 false).
     private boolean isSystemNotificationPresent(String tag) {
-        if (isBlank(tag) || Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return false;
+        if (isBlank(tag)) return false;
         NotificationManager manager = getSystemService(NotificationManager.class);
         if (manager == null) return false;
         try {
@@ -3904,11 +3904,7 @@ public class LocationService extends Service {
             AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
             if (am != null) {
                 long triggerAt = System.currentTimeMillis() + 5000; // restart in 5 seconds
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi);
-                } else {
-                    am.set(AlarmManager.RTC_WAKEUP, triggerAt, pi);
-                }
+                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi);
                 Log.i(TAG, "AlarmManager inexact restart requested after 5 seconds");
             }
         } catch (Exception e) {
@@ -3958,11 +3954,7 @@ public class LocationService extends Service {
             if (am == null) return;
             long triggerAt = System.currentTimeMillis() + HEARTBEAT_INTERVAL_MS;
             PendingIntent pi = heartbeatPendingIntent();
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi);
-            } else {
-                am.set(AlarmManager.RTC_WAKEUP, triggerAt, pi);
-            }
+            am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi);
         } catch (Exception e) {
             Log.e(TAG, "Failed to schedule heartbeat: " + e.getMessage());
         }

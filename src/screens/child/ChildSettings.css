@@ -98,6 +98,10 @@
   font-weight: var(--type-caption-weight);
 
 }
+.ks-hero__chip--pending {
+  background: var(--cream-soft);
+  color: var(--gold-text);
+}
 
 /* ── 섹션 ───────────────────────────────────────────────────────────────── */
 .ks-sec {
@@ -131,6 +135,30 @@
 .ks-row--locked {
   background: linear-gradient(135deg, var(--mint-soft), #fff);
   border-color: var(--mint-line);
+}
+.ks-row--location-caution {
+  background: linear-gradient(135deg, var(--cream-soft), #fff);
+  border-color: var(--gold-400);
+}
+.ks-row--location-danger {
+  background: linear-gradient(135deg, var(--danger-soft), #fff);
+  border-color: color-mix(in srgb, var(--danger-500) 32%, transparent);
+}
+.ks-row--location-neutral {
+  background: linear-gradient(135deg, var(--bg-chip-idle), #fff);
+  border-color: var(--line-soft);
+}
+.ks-row--location-caution .ks-row__icon {
+  background: var(--cream-soft);
+  color: var(--gold-text);
+}
+.ks-row--location-danger .ks-row__icon {
+  background: var(--danger-soft);
+  color: var(--danger-text);
+}
+.ks-row--location-neutral .ks-row__icon {
+  background: var(--bg-chip-idle);
+  color: var(--fg-muted);
 }
 .ks-row--quiet .ks-row__icon {
   background: var(--cream-soft);
@@ -191,6 +219,21 @@
   font-weight: var(--type-caption-weight);
 
 }
+.ks-onchip--caution {
+  background: var(--cream-soft);
+  color: var(--gold-text);
+  box-shadow: inset 0 0 0 1px var(--gold-400);
+}
+.ks-onchip--danger {
+  background: var(--danger-soft);
+  color: var(--danger-text);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger-500) 32%, transparent);
+}
+.ks-onchip--neutral {
+  background: var(--bg-chip-idle);
+  color: var(--fg-muted);
+  box-shadow: inset 0 0 0 1px var(--line-soft);
+}
 .ks-ask {
   flex: none;
   padding: 8px 16px;
@@ -212,7 +255,7 @@
   transition: background 0.16s ease;
 }
 .ks-toggle.on {
-  background: var(--hy-accent);
+  background: var(--hy-accent-cta);
 }
 .ks-toggle__knob {
   position: absolute;
@@ -234,7 +277,7 @@
 }
 
 /* ── 도움말 시트 ───────────────────────────────────────────────────────── */
-.ks-modal {
+.ks-help-modal {
   position: fixed;
   inset: 0;
   z-index: 120;
@@ -242,13 +285,13 @@
   align-items: flex-end;
   justify-content: center;
 }
-.ks-modal__scrim {
+.ks-help-modal__scrim {
   position: absolute;
   inset: 0;
   background: rgba(32, 26, 29, 0.36);
   border: none;
 }
-.ks-modal__card {
+.ks-help-modal__card {
   position: relative;
   width: 100%;
   max-width: 430px;
@@ -259,20 +302,20 @@
   padding: 16px;
   animation: hy-slide-up 0.22s ease forwards;
 }
-.ks-modal__head {
+.ks-help-modal__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
-.ks-modal__title {
+.ks-help-modal__title {
   font-size: var(--type-title);
   line-height: var(--type-title-line-height);
   font-weight: var(--type-title-weight);
 
   color: var(--fg-primary);
 }
-.ks-modal__x {
+.ks-help-modal__x {
   width: 38px;
   height: 38px;
   border-radius: 50%;
@@ -338,9 +381,9 @@
 }
 
 /* 실제 TSX 상호작용 요소의 최소 터치 영역 */
-.ks-modal__x {
+.ks-help-modal__x {
   min-height: var(--control-min-size);
 }
-.ks-modal__x {
+.ks-help-modal__x {
   min-width: var(--control-min-size);
 }

@@ -9,6 +9,7 @@ import { useMyFamily, useUnpairChild } from "@/queries/useFamily";
 import { useChildLocations } from "@/queries/useLocation";
 import { mapFamilyToView } from "@/transform/familyView";
 import { formatFreshness } from "@/transform/locationView";
+import { hasJongseong } from "@/transform/adventureMap";
 import { Loading } from "@/components/ui/Loading";
 import "./FamilyConnection.css";
 
@@ -94,7 +95,7 @@ export function FamilyConnection() {
     if (!confirm || unpair.isPending) return;
     unpair.mutate(confirm.userId, {
       onSuccess: () => {
-        show(`${confirm.name} 연결을 해제했어요`, "🔗");
+        show(`‘${confirm.name}’ 기기 연결을 해제했어요`, "🔗");
         setConfirm(null);
       },
       onError: (e) => show(e instanceof Error ? e.message : "연결 해제에 실패했어요", "⚠️"),
@@ -136,7 +137,7 @@ export function FamilyConnection() {
                   {connected.length === 0
                     ? "아직 연결된 아이가 없어요"
                     : connected.length === 1
-                      ? `${connected[0].name || "아이"}와 연결 완료!`
+                      ? `${connected[0].name || "아이"}${hasJongseong(connected[0].name || "아이") ? "과" : "와"} 연결 완료!`
                       : `아이 ${connected.length}명과 연결됨`}
                 </div>
                 <div className="fc-hero__sub">
@@ -275,7 +276,7 @@ export function FamilyConnection() {
             onClick={() => !unpair.isPending && setConfirm(null)}
           />
           <div className="fc-modal__card">
-            <div id={confirmTitleId} className="fc-modal__title">{confirm.name} 연결을 해제할까요?</div>
+            <div id={confirmTitleId} className="fc-modal__title">‘{confirm.name}’ 기기 연결을 해제할까요?</div>
             <div id={confirmDescriptionId} className="fc-modal__body">
               연결을 해제하면 이 아이의 위치·알림 연동이 중단되고, 아이 기기의 연결이 풀려요.
               다시 연결하려면 연결 코드가 필요해요.
@@ -286,7 +287,8 @@ export function FamilyConnection() {
                 type="button"
                 className="fc-modal__btn fc-modal__btn--ghost hy-press"
                 onClick={() => setConfirm(null)}
-                disabled={unpair.isPending} aria-busy={unpair.isPending}
+                disabled={unpair.isPending}
+                data-progress-owner="confirm-action"
               >
                 취소
               </button>

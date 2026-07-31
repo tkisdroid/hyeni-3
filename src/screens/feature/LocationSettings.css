@@ -95,6 +95,9 @@ button.lset-row:disabled {
   font-weight: var(--type-caption-weight);
 
   color: var(--fg-tertiary);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
 /* ── 상태 칩 ────────────────────────────────────────────────────────────── */
@@ -208,6 +211,9 @@ button.lset-row:disabled {
   font-weight: var(--type-caption-weight);
 
   color: var(--fg-tertiary);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
 /* ── 정직 안내 ──────────────────────────────────────────────────────────── */

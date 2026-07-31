@@ -183,7 +183,8 @@
    채움을 --hy-accent-cta 로, 라벨을 18px/700 로 올려 큰 글씨 기준(3.0)을 넘긴다. */
 .cls-cta {
   width: 100%;
-  height: 56px;
+  height: var(--control-height-primary);
+  flex: none;
   border-radius: var(--radius-16);
   background: var(--hy-accent-cta, var(--mint-cta));
   box-shadow: 0 14px 30px -12px rgba(35, 168, 118, 0.5);

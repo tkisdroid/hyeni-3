@@ -343,7 +343,7 @@
   flex: none;
   padding: 12px 12px;
   border-radius: var(--radius-lg);
-  background: linear-gradient(120deg, var(--lav-300), var(--lav-500));
+  background: var(--cta-grad-lavender);
   box-shadow: var(--shadow-lavender);
   color: var(--bg-card);
   font-size: var(--type-label);
@@ -362,7 +362,6 @@
 .wr-preview__item {
   padding: var(--space-4);
   min-height: 116px;
-  opacity: 0.72;
 }
 
 /* 원래 스켈레톤 막대였던 자리 — 실제 아이콘이 들어오면서 26px 가 10px 밖으로 삐져나왔다.

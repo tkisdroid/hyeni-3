@@ -622,13 +622,16 @@
   font-weight: var(--type-label-weight);
 
   color: var(--fg-tertiary);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 .pl-lock__cta {
   margin-top: 4px;
   height: 52px;
   padding: 0 24px;
   border-radius: 16px;
-  background: linear-gradient(120deg, #ffb443, #f0518f);
+  background: var(--cta-grad-accent);
   box-shadow: 0 14px 30px -12px rgba(240, 81, 143, 0.6);
   font-size: var(--type-body-lg);
   line-height: var(--type-body-lg-line-height);
@@ -643,7 +646,7 @@
   margin-top: 4px;
   padding: 0 20px;
   border-radius: 16px;
-  background: linear-gradient(120deg, #4fb2e8, #2e86c1);
+  background: var(--cta-grad-info);
   box-shadow: 0 14px 30px -12px rgba(46, 134, 193, 0.55);
   color: #fff;
   font-size: var(--type-body);
@@ -968,7 +971,7 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: #A78BFA;
+  background: var(--lav-600);
   color: #fff;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
@@ -979,7 +982,7 @@
   justify-content: center;
 }
 .pl-stay--on .pl-stay__num {
-  background: #7C3AED;
+  background: var(--lav-text);
 }
 .pl-stay__body {
   flex: 1;
