@@ -402,7 +402,8 @@ final class DeviceStatusReporter {
             || "com.android.permissioncontroller".equals(pkg)
             || "com.google.android.packageinstaller".equals(pkg)
             || "com.android.packageinstaller".equals(pkg)
-            || "com.sec.android.app.launcher".equals(pkg);
+            || "com.sec.android.app.launcher".equals(pkg)
+            || "com.motorola.launcher.secondarydisplay".equals(pkg);
     }
 
     static boolean shouldExcludeNonLaunchableSystemApp(

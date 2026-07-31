@@ -131,6 +131,9 @@ public class DeviceStatusReporterTest {
     public void explicitSystemSurfacePackage_doesNotMatchUserPackageKeyword() {
         assertTrue(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.android.systemui"));
         assertTrue(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.google.android.packageinstaller"));
+        assertTrue(DeviceStatusReporter.isExplicitSystemSurfacePackage(
+            "com.motorola.launcher.secondarydisplay"
+        ));
         assertFalse(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.example.launcherpro"));
         assertFalse(DeviceStatusReporter.isExplicitSystemSurfacePackage("com.example.packageinstaller.tools"));
     }

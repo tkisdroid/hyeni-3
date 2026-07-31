@@ -75,6 +75,7 @@ const SYSTEM_SURFACE_PACKAGES = new Set([
   "com.google.android.packageinstaller",
   "com.android.packageinstaller",
   "com.sec.android.app.launcher",
+  "com.motorola.launcher.secondarydisplay",
 ]);
 
 function isSystemSurfacePackage(value: string | null | undefined): boolean {

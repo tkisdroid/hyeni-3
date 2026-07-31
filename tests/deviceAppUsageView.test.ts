@@ -67,6 +67,32 @@ test("명시된 시스템 표면은 오늘 많이 쓴 앱과 최다 사용 앱�
   assert.equal(view.mostUsedApp?.name, "유튜브");
 });
 
+test("razr 실측 payload는 보조 화면 런처를 숨기고 실제 앱명과 사용량을 유지한다", () => {
+  const view = buildDeviceAppUsageView({
+    recentApp: "최근 사용한 앱 없음",
+    appUsage: [
+      { name: "혜니캘린더", packageName: "com.hyeni.calendar", usageMs: 808_975, percent: 49 },
+      { name: "혜니캘린더", packageName: "com.hyeni.calendar", usageMs: 712_586, percent: 43 },
+      { name: "에이닷 전화", packageName: "com.skt.prod.dialer", usageMs: 140_495, percent: 8 },
+      {
+        name: "com.motorola.launcher.secondarydisplay",
+        packageName: "com.motorola.launcher.secondarydisplay",
+        usageMs: 1_132,
+        percent: 0,
+      },
+    ],
+  });
+
+  assert.deepEqual(view.topApps.map((app) => ({
+    name: app.name,
+    timeLabel: app.timeLabel,
+  })), [
+    { name: "에이닷 전화", timeLabel: "2분" },
+  ]);
+  assert.equal(view.mostUsedApp?.name, "에이닷 전화");
+  assert.equal(view.mostUsedApp?.timeLabel, "2분");
+});
+
 test("Launcher Pro처럼 시스템 키워드가 포함된 정상 표시명은 최근·상위·최다 사용에 유지한다", () => {
   const view = buildDeviceAppUsageView({
     recentApp: "Launcher Pro",
