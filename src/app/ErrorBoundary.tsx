@@ -6,9 +6,10 @@
  * - RootErrorBoundary: 라우터 밖(프로바이더 등)에서 터진 에러의 최후 방어.
  * 둘 다 같은 ErrorFallback UI 를 쓴다. 복구는 상태를 확실히 비우는 새로고침 기반.
  */
-import { Component, type ReactNode } from "react";
+import { Component, useEffect, type ReactNode } from "react";
 import { useRouteError } from "react-router-dom";
 import { asset } from "@/lib/assets";
+import { recordFeedbackDiagnostic } from "@/lib/feedbackDiagnostics";
 
 function homeHashForSession(): string {
   try {
@@ -38,6 +39,10 @@ function ErrorFallback({ error }: { error: unknown }) {
     window.location.hash = homeHashForSession();
     window.location.reload();
   };
+  const reportProblem = () => {
+    window.location.hash = "#/feedback";
+    window.location.reload();
+  };
   const detail = import.meta.env.DEV
     ? error instanceof Error
       ? error.message
@@ -60,6 +65,9 @@ function ErrorFallback({ error }: { error: unknown }) {
       <button type="button" className="hy-crash__ghost hy-press" onClick={retry}>
         이 화면 다시 열기
       </button>
+      <button type="button" className="hy-crash__ghost hy-press" onClick={reportProblem}>
+        {childTone ? "문제 알려주기" : "문제 신고하기"}
+      </button>
       {detail && <div className="hy-crash__detail">{detail.slice(0, 120)}</div>}
     </div>
   );
@@ -68,8 +76,11 @@ function ErrorFallback({ error }: { error: unknown }) {
 /** react-router errorElement 용 — 라우트 렌더 에러를 받아 복구 화면을 그린다. */
 export function RouteErrorScreen() {
   const error = useRouteError();
-  // 화면에는 부드럽게, 로그(logcat/CDP)에는 원인 그대로 — 진단 가능성 유지.
-  console.error("[route-error]", error);
+  useEffect(() => {
+    // 화면에는 부드럽게, 로그(logcat/CDP)에는 원인 그대로 — 진단 가능성 유지.
+    recordFeedbackDiagnostic({ kind: "render", error });
+    console.error("[route-error]", error);
+  }, [error]);
   return <ErrorFallback error={error} />;
 }
 
@@ -84,6 +95,7 @@ export class RootErrorBoundary extends Component<{ children: ReactNode }, Bounda
   }
 
   componentDidCatch(error: unknown) {
+    recordFeedbackDiagnostic({ kind: "render", error });
     console.error("[root-error]", error);
   }
 

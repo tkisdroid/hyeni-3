@@ -282,6 +282,12 @@
   `queued` 202다. `queued`는 D1 운영 대기열 접수이며 이메일 자동 재전송 약속이 아니므로 운영 모니터링·수동 처리 절차와
   앱 문구를 이에 맞춘다. 운영에는 `db/feedback-delivery-safety.sql`을 Worker보다 먼저 적용한다. 회귀=앱/Worker
   `tests/feedbackDeliverySafety.test.mjs`.
+  **문제 진단 확장(2026-07-31)**: 부모·아이·선생님 설정과 렌더 크래시 화면에서 `/feedback`으로 바로 진입한다.
+  문제 신고·사용 문의·기능 제안과 선택 카테고리, 한 개 설명만 요구하며 평점 입력은 접수를 막지 않는다. 사용자가
+  `진단 정보 함께 보내기`를 끌 수 있고, 포함 시 앱 버전·실행 환경·현재 화면과 최근 24시간의 정규화된 오류를 최대
+  12건만 `device_info/error_logs/current_screen`에 저장한다. 대화·좌표·사진·비밀번호·로그인/구매 토큰과 원문 오류는
+  진단에 넣지 않는다. Worker는 허용 필드를 재검증하고 requestId만 포함한 구조화 운영 로그를 남긴다.
+  운영 조회·대응 절차 정본=`docs/feedback-operations.md`, 회귀=`tests/feedbackDiagnostics.test.ts`.
 - **선생님 모드 출시 차단(2026-07-14)**: v1.2.0 프로덕션은 `TEACHER_MODE_ENABLED=import.meta.env.DEV`로만 열림을
   결정한다. 온보딩 역할 카드에서 선생님을 숨기고 `/teacher/*`는 준비 안내 gate로 닫으며, 기존 teacher 세션에는 gate 안에서
   로그아웃·회원 탈퇴·약관·개인정보처리방침 동선을 유지한다. 준비물은 부모·아이 역할만 허용한다. 환경변수로 production을

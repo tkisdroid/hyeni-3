@@ -11,6 +11,7 @@ import { adoptNativeLocationSessionTokens, syncNativeLocationToken } from "@/lib
 import { getAuthDeviceInstallId } from "@/lib/native/deviceIdentity";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { ApiError } from "./errors";
+import { recordFeedbackDiagnostic } from "@/lib/feedbackDiagnostics";
 import {
   acquirePendingChildPhotoUploadRequest,
   clearPendingChildPhotoUploadRequest,
@@ -111,11 +112,23 @@ export async function apiRequest<T = unknown>(
   opts: FetchOptions = {},
   allowRetry = true,
 ): Promise<T> {
-  let res = await doFetch(path, opts);
+  const method = opts.method ?? "GET";
+  let res: Response;
+  try {
+    res = await doFetch(path, opts);
+  } catch (error) {
+    recordFeedbackDiagnostic({ kind: "api", error, method, path });
+    throw error;
+  }
   if (res.status === 401 && allowRetry) {
     const result = await refreshAccess();
     if (result === "ok") {
-      res = await doFetch(path, opts);
+      try {
+        res = await doFetch(path, opts);
+      } catch (error) {
+        recordFeedbackDiagnostic({ kind: "api", error, method, path });
+        throw error;
+      }
       // refresh 자체가 성공했다면 세션은 유효하다. 개별 endpoint의 후속 401까지 전역
       // 로그아웃으로 확대하지 않고 ApiError로 표면화해 해당 요청만 실패시킨다.
     } else if (result === "rejected") {
@@ -134,6 +147,13 @@ export async function apiRequest<T = unknown>(
     } catch {
       /* non-json body */
     }
+    recordFeedbackDiagnostic({
+      kind: "api",
+      error: detail || `http_${res.status}`,
+      status: res.status,
+      method,
+      path,
+    });
     throw new ApiError(detail || `API ${res.status}`, res.status);
   }
   // 204 No Content(void RPC) — 빈 본문 파싱 없이 null 단락.

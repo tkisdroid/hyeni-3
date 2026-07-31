@@ -9,6 +9,7 @@ import { announceFallbackToast, isNoiseError } from "@/lib/globalToast";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { shouldRefetchOnWindowFocus } from "@/queries/nativeQueryResume";
 import { deriveAuthState } from "@/auth/AuthContext";
+import { recordFeedbackDiagnostic } from "@/lib/feedbackDiagnostics";
 
 /** 4xx(클라 오류: 401 만료·404 미배포·403 등)는 재시도 무의미 → 즉시 실패. */
 function shouldRetry(failureCount: number, error: unknown): boolean {
@@ -28,6 +29,7 @@ const mutationCache = new MutationCache({
     if (mutation.options.onError) return;
     if (mutation.options.meta?.silentError === true) return;
     if (isNoiseError(error)) return;
+    recordFeedbackDiagnostic({ kind: "mutation", error });
     console.error("[mutation-fallback]", error);
     announceFallbackToast(
       deriveAuthState().role === "child"

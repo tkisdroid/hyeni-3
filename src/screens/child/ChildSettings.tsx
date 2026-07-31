@@ -9,6 +9,7 @@ import {
   Link2,
   Mail,
   MapPin,
+  MessageCircleQuestion,
   UserRound,
   Users,
   X,
@@ -365,6 +366,15 @@ export function ChildSettings() {
           <span className="ks-row__main">
             <span className="ks-row__title">도움말</span>
             <span className="ks-row__sub">위치·알림·부탁하기를 알려줄게</span>
+          </span>
+        </button>
+        <button type="button" className="ks-row hy-press" onClick={() => navigate("/feedback")}>
+          <span className="ks-row__icon">
+            <MessageCircleQuestion size={18} strokeWidth={2.2} />
+          </span>
+          <span className="ks-row__main">
+            <span className="ks-row__title">문제 알려주기</span>
+            <span className="ks-row__sub">안 되거나 불편한 걸 바로 보낼 수 있어</span>
           </span>
         </button>
       </div>

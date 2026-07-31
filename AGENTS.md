@@ -220,6 +220,11 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   `sent`, 미설정·실패는 `queued` 202다. `queued`는 D1 운영 대기열에 안전하게 접수됐다는 뜻이지 이메일 자동 재전송을
   약속하지 않는다. 운영자는 대기열을 모니터링·처리하고 앱도 두 상태를 다른 문구로 표시한다. 운영에는
   `db/feedback-delivery-safety.sql`을 Worker보다 먼저 적용한다.
+  2026-07-31부터 모든 역할의 설정과 크래시 화면에서 문제 신고·사용 문의·기능 제안을 바로 접수한다. 진단 첨부는
+  사용자가 끌 수 있고, 앱 버전·실행 환경·현재 화면·최근 24시간 정규화 오류 최대 12건만 기존
+  `device_info/error_logs/current_screen`에 저장한다. 대화·위치 좌표·사진·비밀번호·로그인/구매 토큰·원문 오류는
+  진단에 포함하지 않으며 Worker도 허용 필드만 재조립한다. 구조화 Worker 로그는 requestId만 상관키로 사용한다.
+  운영 정본=`docs/feedback-operations.md`, 회귀=`tests/feedbackDeliverySafety.test.mjs`·`tests/feedbackDiagnostics.test.ts`.
 - **선생님 모드 출시 차단(2026-07-14)**: v1.2.0 프로덕션은 미완성 선생님 가입·반 연동을 심사 화면에 노출하지 않는다.
   `TEACHER_MODE_ENABLED`는 `import.meta.env.DEV`만 정본으로 사용하고 환경변수 우회를 두지 않는다. 프로덕션 온보딩은
   선생님 역할 카드를 숨기며 `/teacher/*`는 준비 안내 gate로 닫는다. 기존 teacher 세션도 gate에서 로그아웃·회원 탈퇴·

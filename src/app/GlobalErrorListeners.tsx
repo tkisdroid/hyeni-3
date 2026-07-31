@@ -8,19 +8,32 @@
 import { useEffect } from "react";
 import { announceFallbackToast, isNoiseError } from "@/lib/globalToast";
 import { useAuth } from "@/auth/AuthContext";
+import {
+  recordFeedbackDiagnostic,
+  startFeedbackScreenTracking,
+} from "@/lib/feedbackDiagnostics";
 
 export function GlobalErrorListeners() {
   const { role } = useAuth();
+  useEffect(() => startFeedbackScreenTracking(), []);
   useEffect(() => {
     const fallbackText = role === "child"
       ? "앗, 문제가 생겼어. 다시 한 번 해 줘"
       : "앗, 문제가 생겼어요. 다시 한 번 시도해 주세요";
     const onError = (e: ErrorEvent) => {
       if (isNoiseError(e.error ?? e.message)) return;
+      recordFeedbackDiagnostic({
+        kind: "runtime",
+        error: e.error ?? e.message,
+        sourceFile: e.filename,
+        sourceLine: e.lineno,
+        sourceColumn: e.colno,
+      });
       announceFallbackToast(fallbackText, "⚠️");
     };
     const onRejection = (e: PromiseRejectionEvent) => {
       if (isNoiseError(e.reason)) return;
+      recordFeedbackDiagnostic({ kind: "rejection", error: e.reason });
       announceFallbackToast(fallbackText, "⚠️");
     };
     window.addEventListener("error", onError);

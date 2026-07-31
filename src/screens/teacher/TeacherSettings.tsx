@@ -1,6 +1,6 @@
 import { useId, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, ChevronLeft, ChevronRight, Lock, LogOut, MessageCircle, Trash2, TriangleAlert } from "lucide-react";
+import { Bell, ChevronLeft, ChevronRight, Lock, LogOut, MessageCircleQuestion, Trash2, TriangleAlert } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
@@ -195,8 +195,8 @@ export function TeacherSettings() {
               <ChevronRight className="ps-nav__chev" size={18} strokeWidth={2.4} color="#C9BFC4" />
             </button>
             <button type="button" className="ps-account hy-press" onClick={() => navigate("/feedback")}>
-              <span className="ps-account__chip" data-tone="blue"><MessageCircle size={18} strokeWidth={2.3} /></span>
-              <span className="ps-account__label">도움말 · 피드백</span>
+              <span className="ps-account__chip" data-tone="blue"><MessageCircleQuestion size={18} strokeWidth={2.3} /></span>
+              <span className="ps-account__label">문제 신고 · 문의</span>
               <ChevronRight className="ps-nav__chev" size={18} strokeWidth={2.4} color="#C9BFC4" />
             </button>
             <button type="button" className="ps-account hy-press" onClick={() => void handleLogout()}>

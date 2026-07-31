@@ -438,9 +438,14 @@ test("활성 토글·선택 하트·진행 중 CTA는 밝은 테마에서도 경
     /\?\s*"var\(--hy-accent\)"\s*:\s*"var\(--line-soft\)"/,
   );
 
-  const feedback = readSource("src/screens/feature/Feedback.tsx");
-  assert.match(feedback, /color=\{on \? "var\(--hy-accent-cta\)" : "var\(--line-strong\)"\}/);
-  assert.match(feedback, /fill=\{on \? "var\(--hy-accent-cta\)" : "none"\}/);
+  const feedback = readSource("src/screens/feature/Feedback.css");
+  const selectedFeedbackKind = exactRule(
+    "src/screens/feature/Feedback.css",
+    '.fb-kind[data-selected="true"]',
+  );
+  assert.equal(selectedFeedbackKind.get("background"), "var(--hy-accent-soft)");
+  assert.equal(selectedFeedbackKind.get("color"), "var(--hy-accent-text)");
+  assert.doesNotMatch(feedback, /background:\s*var\(--hy-accent\)[\s\S]{0,100}color:\s*(?:white|#fff)/i);
 
   const remoteRingBusy = exactRule(
     "src/screens/feature/RemoteRing.css",

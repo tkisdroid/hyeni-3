@@ -38,7 +38,8 @@
 | 앱 정보·성능 | 배터리, 네트워크, 알림·권한 상태, 오류 진단 | 아이 기기 상태 보고 또는 사용자가 피드백을 보낸 경우 | 기기 상태·피드백에 저장 | 앱 기능, 보안, 문제 해결 | `device_health`, `user_feedback` |
 | 기기 또는 기타 ID | 앱 설치 ID, FCM 토큰, 세션 인스턴스 ID | 설치·로그인·푸시 등록 시 | 기기 바인딩, 푸시 라우팅, 로그아웃 안전 처리 | 앱 기능, 보안, 사기 방지 | `deviceInstallId`, `fcm_tokens`, session nonce |
 | 금융 정보 | 구매 내역·구독 상태 | Google Play 구독을 구매·복원한 경우 | 구매 검증·엔타이틀먼트·원장에 저장. 구매 토큰은 문서·진단에 노출하지 않음 | 앱 기능, 계정 관리, 사기 방지 | Google Play verify, subscription tables |
-| 개인 정보/사용자 콘텐츠 | 기능 제안의 `senderName`, `senderEmail`, `senderRole`, `senderUserId`, `familyId`, `content`, `appOrigin` | 사용자가 기능 제안을 제출한 경우 | Worker가 Resend 이메일 본문·회신 주소로 전송. Resend 보관·2차 이용은 계약 증거 전 미확정 | 사용자 지원 | `routes/feedback.ts` |
+| 개인 정보/사용자 콘텐츠 | 문제 신고·문의·기능 제안의 작성 내용과 서버 정본 계정·가족 정보 | 사용자가 피드백을 제출한 경우 | D1에 먼저 내구 저장하고 설정 시 Resend 이메일 본문·회신 주소로 전송. Resend 보관·2차 이용은 계약 증거 전 미확정 | 사용자 지원 | `user_feedback`, `routes/feedback.ts` |
+| 앱 정보·성능 | 사용자가 선택한 앱 버전·실행 환경·현재 화면·최근 24시간 정규화 오류 최대 12건 | 사용자가 피드백에서 `진단 정보 함께 보내기`를 켠 경우 | D1 `device_info/error_logs/current_screen`에 저장. 대화·좌표·사진·비밀번호·로그인/구매 토큰·원문 오류 제외 | 문제 해결, 앱 품질 개선 | `user_feedback`, `feedbackDiagnostics.ts` |
 | 개인 정보 | 전화번호와 6자리 OTP | 전화 가입 또는 OAuth 전화 계정 연결 인증을 요청한 경우 | OTP 원문은 NCP SENS 문자 내용으로 전송하고 서버에는 검증용 해시와 만료 정보를 저장 | 계정 관리, 보안 | `lib/ncpSens.ts`, `phone_otp` |
 | 위치 | 도보 경로의 출발·도착 좌표 | 사용자가 도보 경로를 요청했고 카카오 또는 폴백 경로 조회가 필요한 경우 | Kakao Mobility와 공개 OSRM을 동시에 조회하며 좌표를 5자리 반올림한 경로 캐시 키와 결과를 최대 7일 보관 | 앱 기능 | `routes/kakao.ts`, `edge_cache` |
 

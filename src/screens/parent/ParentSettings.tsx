@@ -344,7 +344,7 @@ export function ParentSettings() {
           <div className="ps-list">
             {([
               { id: "privacy", Icon: ShieldCheck, tone: "neutral", label: "개인정보 처리방침", onClick: openPrivacy, chevron: true },
-              { id: "feedback", Icon: MessageCircleQuestion, tone: "blue", label: "도움말 · 피드백", onClick: () => navigate("/feedback"), chevron: true },
+              { id: "feedback", Icon: MessageCircleQuestion, tone: "blue", label: "문제 신고 · 문의", onClick: () => navigate("/feedback"), chevron: true },
               { id: "logout", Icon: LogOut, tone: "danger", label: "로그아웃", onClick: () => void handleLogout() },
               { id: "delete", Icon: AlertTriangle, tone: "danger", label: "회원 탈퇴", onClick: () => setConfirmDelete(true), danger: true },
             ] satisfies AccountRow[]).map((r) => (

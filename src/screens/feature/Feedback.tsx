@@ -1,281 +1,329 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, ChevronLeft, Heart } from "lucide-react";
+import {
+  Bug,
+  ChevronLeft,
+  CircleHelp,
+  Lightbulb,
+  Paperclip,
+  ShieldCheck,
+  type LucideIcon,
+} from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
-import { createFeedbackRequestId } from "@/lib/api/endpoints/feedback";
+import {
+  createFeedbackRequestId,
+  type FeedbackCategory,
+  type FeedbackKind,
+} from "@/lib/api/endpoints/feedback";
+import {
+  clearFeedbackDiagnostics,
+  collectFeedbackDiagnostics,
+} from "@/lib/feedbackDiagnostics";
 import { useSendFeedback } from "@/queries/useFeedback";
 import "./Feedback.css";
 
-/** 별점(하트) — 1~5. */
-const STARS = [1, 2, 3, 4, 5] as const;
-/** 만족도 척도 라벨(1~5). 하트만 있으면 무엇을 고르는지 알 수 없다. */
-const FORMAL_RATING_LABELS = ["별로예요", "아쉬워요", "보통이에요", "좋아요", "아주 좋아요"] as const;
-const CHILD_RATING_LABELS = ["별로야", "아쉬워", "보통이야", "좋아", "아주 좋아"] as const;
+interface FeedbackTypeOption {
+  id: FeedbackKind;
+  Icon: LucideIcon;
+  label: string;
+  childLabel: string;
+  detail: string;
+  childDetail: string;
+}
 
-/** 피드백 카테고리(단일 선택 토글). */
-const CATEGORIES = [
-  { id: "cal", label: "캘린더" },
-  { id: "safe", label: "위치·안전" },
-  { id: "design", label: "디자인" },
-  { id: "etc", label: "기타" },
+const FEEDBACK_TYPES: readonly FeedbackTypeOption[] = [
+  {
+    id: "problem",
+    Icon: Bug,
+    label: "문제가 있어요",
+    childLabel: "문제가 있어",
+    detail: "작동하지 않거나 불편한 점",
+    childDetail: "안 되거나 불편한 점",
+  },
+  {
+    id: "question",
+    Icon: CircleHelp,
+    label: "사용 방법 문의",
+    childLabel: "사용 방법 질문",
+    detail: "설정이나 기능 사용 방법",
+    childDetail: "설정이나 기능 쓰는 방법",
+  },
+  {
+    id: "suggestion",
+    Icon: Lightbulb,
+    label: "기능 제안",
+    childLabel: "아이디어 보내기",
+    detail: "새 기능이나 개선 아이디어",
+    childDetail: "새 기능이나 개선 아이디어",
+  },
 ] as const;
 
-/** 카테고리 id → 라벨(전송 content 에 함께 실어 보낸다). */
-const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
-  CATEGORIES.map((c) => [c.id, c.label] as const),
-);
+const CATEGORIES: ReadonlyArray<{ id: FeedbackCategory; label: string; childLabel: string }> = [
+  { id: "location_safety", label: "위치·안전", childLabel: "위치·안전" },
+  { id: "notification", label: "알림", childLabel: "알림" },
+  { id: "calendar", label: "일정", childLabel: "일정" },
+  { id: "chat_ai", label: "대화·AI", childLabel: "대화·AI" },
+  { id: "account", label: "계정·결제", childLabel: "계정" },
+  { id: "design", label: "화면·디자인", childLabel: "화면" },
+  { id: "other", label: "기타", childLabel: "기타" },
+];
 
-/** 화면에서 선택해 실제 피드백 본문에 포함할 관심 기능 후보. */
-const IDEAS = [
-  { id: "grocery", label: "가족 공유 장보기 리스트" },
-  { id: "sibling", label: "형제자매 일정 한눈에 보기" },
-  { id: "shuttle", label: "학원 차량 도착 알림" },
-] as const;
+const FORMAL_PLACEHOLDER: Record<FeedbackKind, string> = {
+  problem: "무엇을 누른 뒤 어떤 일이 생겼는지 적어 주세요.\n예: 위치를 눌렀는데 최신 위치가 보이지 않았어요.",
+  question: "궁금한 기능과 확인하고 싶은 내용을 적어 주세요.",
+  suggestion: "있으면 좋을 기능이나 더 편해졌으면 하는 점을 적어 주세요.",
+};
+
+const CHILD_PLACEHOLDER: Record<FeedbackKind, string> = {
+  problem: "무엇을 눌렀고 어떤 문제가 생겼는지 적어 줘.\n예: 알림을 눌렀는데 화면이 안 열렸어.",
+  question: "궁금한 기능이나 알고 싶은 걸 적어 줘.",
+  suggestion: "있으면 좋을 기능이나 더 편해졌으면 하는 걸 적어 줘.",
+};
 
 export function Feedback() {
   const navigate = useNavigate();
   const { show } = useToast();
   const { familyId, role } = useAuth();
   const childTone = role === "child";
-  const ratingLabels = childTone ? CHILD_RATING_LABELS : FORMAL_RATING_LABELS;
   const sendFeedback = useSendFeedback();
   const [requestId] = useState(createFeedbackRequestId);
-
-  const [rating, setRating] = useState(0);
-  const [cat, setCat] = useState<string | null>(null);
+  const [feedbackKind, setFeedbackKind] = useState<FeedbackKind>("problem");
+  const [category, setCategory] = useState<FeedbackCategory | null>(null);
   const [text, setText] = useState("");
-  const [selectedIdeas, setSelectedIdeas] = useState<Record<string, boolean>>({});
+  const [includeDiagnostics, setIncludeDiagnostics] = useState(true);
+  const [preparing, setPreparing] = useState(false);
+  const submitting = preparing || sendFeedback.isPending;
+  const placeholder = childTone
+    ? CHILD_PLACEHOLDER[feedbackKind]
+    : FORMAL_PLACEHOLDER[feedbackKind];
+  const returnRoute = role === "child"
+    ? "/child/settings"
+    : role === "teacher"
+      ? "/teacher/settings"
+      : "/parent/settings";
 
-  const toggleIdea = (id: string) => {
-    const turningOn = !selectedIdeas[id];
-    setSelectedIdeas((current) => ({ ...current, [id]: !current[id] }));
-    show(
-      turningOn
-        ? childTone ? "선택한 기능을 의견에 함께 담았어" : "선택한 기능을 의견에 함께 담았어요"
-        : childTone ? "관심 기능 선택을 취소했어" : "관심 기능 선택을 취소했어요",
-      "💡",
-    );
-  };
-
-  // 실 전송(POST /api/feedback). 별점·카테고리는 content 에 함께 실어 보낸다.
-  const submit = () => {
-    if (sendFeedback.isPending) return;
-    if (rating === 0) {
-      show(childTone ? "만족도를 먼저 골라 줘" : "만족도를 먼저 선택해 주세요", "⭐");
+  const submit = async () => {
+    if (submitting) return;
+    const content = text.trim();
+    if (!content) {
+      show(
+        childTone ? "어떤 일이 있었는지 적어 줘" : "어떤 일이 있었는지 적어 주세요",
+        "✍️",
+      );
       return;
     }
-    const trimmed = text.trim();
-    if (!trimmed) {
-      show(childTone ? "의견을 적어 줘" : "의견 내용을 적어 주세요", "✍️");
-      return;
-    }
-    const catLabel = cat ? CATEGORY_LABEL[cat] : null;
-    const header = `[만족도 ${rating}/5]${catLabel ? ` · ${catLabel}` : ""}`;
-    const selectedIdeaLabels = IDEAS.filter((idea) => selectedIdeas[idea.id]).map(
-      (idea) => idea.label,
-    );
-    const ideaSection = selectedIdeaLabels.length > 0
-      ? `\n\n[관심 기능]\n- ${selectedIdeaLabels.join("\n- ")}`
-      : "";
-    const content = `${header}\n\n${trimmed}${ideaSection}`;
 
-    sendFeedback.mutate(
-      {
+    setPreparing(true);
+    try {
+      const diagnostics = includeDiagnostics ? await collectFeedbackDiagnostics() : null;
+      const result = await sendFeedback.mutateAsync({
         requestId,
+        feedbackKind,
+        category,
         content,
         familyId: familyId ?? null,
         appOrigin: typeof window !== "undefined" ? window.location.origin : "",
-      },
-      {
-        onSuccess: (result) => {
-          show(
-            result.status === "sent"
-              ? childTone ? "소중한 의견을 전달했어. 고마워!" : "소중한 의견을 전달했어요. 고마워요!"
-              : childTone
-                ? "의견을 안전하게 접수했어. 운영 대기열에 보관했어."
-                : "의견을 안전하게 접수했어요. 운영 대기열에 보관했어요.",
-            "💌",
-          );
-          navigate(-1);
-        },
-        onError: (error) => {
-          show(
-            error.message === "feedback_rate_limited"
-              ? childTone
-                ? "짧은 시간에 의견을 많이 보냈어. 한 시간 뒤 다시 해 줘."
-                : "짧은 시간에 의견을 많이 보내셨어요. 한 시간 뒤 다시 시도해 주세요."
-              : childTone
-                ? "접수하지 못했어. 잠시 후 다시 해 줘."
-                : "접수하지 못했어요. 잠시 후 다시 시도해 주세요.",
-            "⚠️",
-          );
-        },
-      },
-    );
+        diagnostics,
+      });
+      if (includeDiagnostics) clearFeedbackDiagnostics();
+      show(
+        result.status === "sent"
+          ? childTone
+            ? "내용을 전달했어. 확인하고 더 좋게 고칠게!"
+            : "내용을 전달했어요. 확인하고 개선할게요."
+          : childTone
+            ? "내용을 안전하게 접수했어. 운영 대기열에 보관했어."
+            : "내용을 안전하게 접수했어요. 운영 대기열에 보관했어요.",
+        "💌",
+      );
+      navigate(returnRoute, { replace: true });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      show(
+        message === "feedback_rate_limited"
+          ? childTone
+            ? "짧은 시간에 여러 번 보냈어. 한 시간 뒤 다시 해 줘."
+            : "짧은 시간에 여러 번 보내셨어요. 한 시간 뒤 다시 시도해 주세요."
+          : childTone
+            ? "접수하지 못했어. 내용을 남겨 두었으니 잠시 후 다시 보내 줘."
+            : "접수하지 못했어요. 작성한 내용은 그대로 두었으니 잠시 후 다시 시도해 주세요.",
+        "⚠️",
+      );
+    } finally {
+      setPreparing(false);
+    }
   };
 
   return (
     <div className="fb-screen">
-      {/* 헤더 (sticky · 뒤로가기) */}
-      <div className="fb-header">
+      <header className="fb-header">
         <button
           type="button"
           className="fb-back hy-press"
-          aria-label="뒤로"
+          aria-label={childTone ? "뒤로 가기" : "이전 화면으로 돌아가기"}
           onClick={() => navigate(-1)}
         >
-          <ChevronLeft size={22} strokeWidth={2.2} color="var(--fg-secondary)" />
+          <ChevronLeft size={22} strokeWidth={2.2} aria-hidden="true" />
         </button>
-        <span className="fb-header__title">피드백 보내기</span>
-      </div>
+        <h1 className="fb-header__title">
+          {childTone ? "문제 알려주기" : "문제 신고 · 문의"}
+        </h1>
+      </header>
 
-      <div className="fb-body">
-        {/* 인트로 */}
+      <main className="fb-body">
         <div className="fb-intro">
-          <img className="fb-intro__mascot" src={asset("mascot/wave.webp")} alt="" />
+          <img className="fb-intro__mascot" src={asset("mascot/thinking.webp")} alt="" />
           <div>
-            <div className="fb-intro__title">혜니를 더 좋게</div>
-            <div className="fb-intro__sub">
-              {childTone ? "네 의견이 다음 업데이트를 만들어" : "여러분의 의견이 다음 업데이트를 만들어요"}
+            <div className="fb-intro__title">
+              {childTone ? "불편했던 걸 알려 줘" : "불편한 점을 바로 알려 주세요"}
             </div>
+            <p className="fb-intro__sub">
+              {childTone
+                ? "설명과 앱 상태를 같이 보내 빠르게 확인할게."
+                : "설명과 앱 상태를 함께 보내 빠르게 확인할게요."}
+            </p>
           </div>
         </div>
 
-        {/* 만족도 */}
-        <div className="fb-satis">
-          <div className="fb-satis__title">{childTone ? "얼마나 마음에 들어?" : "얼마나 만족하세요?"}</div>
-          <div className="fb-stars">
-            {STARS.map((n) => {
-              const on = rating >= n;
+        <section className="fb-satis" aria-labelledby="feedback-type-title">
+          <h2 id="feedback-type-title" className="fb-section-title">
+            {childTone ? "무엇을 알려 줄 거야?" : "어떤 도움이 필요하세요?"}
+          </h2>
+          <div className="fb-kind-grid">
+            {FEEDBACK_TYPES.map((option) => {
+              const selected = feedbackKind === option.id;
               return (
                 <button
-                  key={n}
+                  key={option.id}
                   type="button"
-                  className="fb-star hy-press"
-                  aria-label={`${n}점 · ${ratingLabels[n - 1]}`}
-                  aria-pressed={rating === n}
-                  onClick={() => setRating(n)}
+                  className="fb-kind hy-press"
+                  data-selected={selected ? "true" : "false"}
+                  aria-pressed={selected}
+                  onClick={() => setFeedbackKind(option.id)}
                 >
-                  <Heart
-                    size={30}
-                    strokeWidth={2.2}
-                    color={on ? "var(--hy-accent-cta)" : "var(--line-strong)"}
-                    fill={on ? "var(--hy-accent-cta)" : "none"}
-                    aria-hidden="true"
-                  />
+                  <span className="fb-kind__icon" aria-hidden="true">
+                    <option.Icon size={20} strokeWidth={2.2} />
+                  </span>
+                  <span className="fb-kind__copy">
+                    <strong>{childTone ? option.childLabel : option.label}</strong>
+                    <small>{childTone ? option.childDetail : option.detail}</small>
+                  </span>
                 </button>
               );
             })}
           </div>
-          {/* 척도를 말로 알려준다 — 하트만 있으면 무엇을 고르는지 첫 사용자가 모른다. */}
-          <div className="fb-satis__scale" aria-hidden="true">
-            <span>{ratingLabels[0]}</span>
-            <span className="fb-satis__picked">{rating > 0 ? ratingLabels[rating - 1] : ""}</span>
-            <span>{ratingLabels[ratingLabels.length - 1]}</span>
-          </div>
-        </div>
+        </section>
 
-        {/* 카테고리 */}
-        <div className="fb-cats">
-          <div className="fb-cats__label">{childTone ? "어떤 기능에 대한 의견이야?" : "무엇에 대한 의견인가요?"}</div>
+        <section className="fb-cats" aria-labelledby="feedback-category-title">
+          <div className="fb-section-head">
+            <h2 id="feedback-category-title" className="fb-section-title">
+              {childTone ? "어느 기능에서 그랬어?" : "어느 기능에 관한 내용인가요?"}
+            </h2>
+            <span>선택 사항</span>
+          </div>
           <div className="fb-cats__row">
-            {CATEGORIES.map((c) => {
-              const on = cat === c.id;
+            {CATEGORIES.map((option) => {
+              const selected = category === option.id;
               return (
                 <button
-                  key={c.id}
+                  key={option.id}
                   type="button"
                   className="fb-cat hy-press"
-                  style={{
-                    background: on ? "var(--hy-accent-soft)" : "var(--bg-chip-idle)",
-                    color: on ? "var(--hy-accent-text)" : "var(--fg-tertiary)",
-                    boxShadow: on ? "inset 0 0 0 1.5px var(--hy-accent)" : "none",
-                  }}
-                  aria-pressed={on}
-                  onClick={() => setCat((prev) => (prev === c.id ? null : c.id))}
+                  data-selected={selected ? "true" : "false"}
+                  aria-pressed={selected}
+                  onClick={() => setCategory((current) => (
+                    current === option.id ? null : option.id
+                  ))}
                 >
-                  {c.label}
+                  {childTone ? option.childLabel : option.label}
                 </button>
               );
             })}
           </div>
-        </div>
+        </section>
 
-        {/* 자유 입력 */}
-        <div className="fb-textwrap">
-          <textarea
-            className="fb-textarea"
-            aria-label="피드백 내용"
-            placeholder={childTone
-              ? "자유롭게 알려 줘. 필요한 기능도 말해 줘!"
-              : "자유롭게 알려 주세요. 필요한 기능도 제안해 주세요!"}
-            value={text}
-            maxLength={3000}
-            onChange={(e) => setText(e.target.value)}
-          />
-        </div>
-
-        {/* 관심 기능 선택 — 집계 수를 만들지 않고 실제 피드백 본문에 포함한다. */}
-        <div className="fb-ideas">
-          <div className="fb-ideas__head">
-            <span className="fb-ideas__title">관심 있는 기능</span>
-            <span className="fb-ideas__sort">선택 사항</span>
+        <section className="fb-message" aria-labelledby="feedback-message-title">
+          <div className="fb-section-head">
+            <label id="feedback-message-title" className="fb-section-title" htmlFor="feedback-content">
+              {childTone ? "어떤 일이 있었어?" : "어떤 일이 있었나요?"}
+            </label>
+            <span>{text.length}/3000</span>
           </div>
-          <div className="fb-ideas__sort">
+          <div className="fb-textwrap">
+            <textarea
+              id="feedback-content"
+              className="fb-textarea"
+              placeholder={placeholder}
+              value={text}
+              maxLength={3000}
+              onChange={(event) => setText(event.target.value)}
+            />
+          </div>
+          <p className="fb-message__hint">
             {childTone
-              ? "관심 있는 기능을 고르면 의견에 함께 적어 보내"
-              : "관심 있는 기능을 선택하면 의견에 함께 적어 보내요"}
+              ? "전화번호나 비밀번호는 적지 않아도 돼."
+              : "전화번호·비밀번호·결제 정보는 적지 않아도 확인할 수 있어요."}
+          </p>
+        </section>
+
+        <section className="fb-ideas" aria-labelledby="feedback-diagnostic-title">
+          <div className="fb-section-head">
+            <h2 id="feedback-diagnostic-title" className="fb-section-title">
+              {childTone ? "앱 상태 같이 보내기" : "진단 정보 함께 보내기"}
+            </h2>
+            <span>권장</span>
           </div>
           <div className="fb-ideas__card">
-            {IDEAS.map((i) => {
-              const on = !!selectedIdeas[i.id];
-              return (
-                <div key={i.id} className="fb-idea">
-                  <span className="fb-idea__main">
-                    <span className="fb-idea__label">{i.label}</span>
-                  </span>
-                  <button
-                    type="button"
-                    className="fb-vote hy-press"
-                    aria-pressed={on}
-                    style={
-                      on
-                        ? {
-                            // 파스텔 채움 위 흰 글자는 2.76:1 이라 쓰지 않는다 — soft 채움 + 진한 라벨(4.6:1).
-                            background: "var(--hy-accent-soft)",
-                            color: "var(--hy-accent-text)",
-                            border: "1.5px solid var(--hy-accent)",
-                          }
-                        : {
-                            background: "transparent",
-                            color: "var(--hy-accent-text)",
-                            border: "1.5px solid var(--line-strong)",
-                          }
-                    }
-                    onClick={() => toggleIdea(i.id)}
-                  >
-                    {on && <Check size={16} strokeWidth={2.4} aria-hidden="true" />}
-                    {on ? (childTone ? "골랐어" : "선택됨") : (childTone ? "관심 있어" : "관심 있어요")}
-                  </button>
-                </div>
-              );
-            })}
+            <div className="fb-diagnostic">
+              <span className="fb-diagnostic__icon" aria-hidden="true">
+                <ShieldCheck size={22} strokeWidth={2.2} />
+              </span>
+              <span className="fb-diagnostic__copy">
+                <strong>{childTone ? "문제를 더 빨리 찾을 수 있어" : "문제 확인이 더 빨라져요"}</strong>
+                <small>
+                  앱 버전·기기·화면, 최근 오류 최대 12건
+                </small>
+              </span>
+              <button
+                type="button"
+                className="fb-diagnostic__toggle hy-press"
+                data-selected={includeDiagnostics ? "true" : "false"}
+                aria-pressed={includeDiagnostics}
+                onClick={() => setIncludeDiagnostics((current) => !current)}
+              >
+                {includeDiagnostics ? "포함" : "제외"}
+              </button>
+            </div>
+            <div className="fb-diagnostic__privacy">
+              <Paperclip size={16} strokeWidth={2.2} aria-hidden="true" />
+              <span>
+                {childTone
+                  ? "진단 정보에는 대화 내용·위치 좌표·사진·비밀번호·로그인 토큰을 넣지 않아."
+                  : "진단 정보에는 대화 내용·위치 좌표·사진·비밀번호·로그인 토큰을 포함하지 않아요."}
+              </span>
+            </div>
           </div>
-        </div>
+        </section>
 
-        {/* 전송 */}
         <button
           type="button"
           className="fb-submit hy-press"
-          onClick={submit}
-          disabled={sendFeedback.isPending} aria-busy={sendFeedback.isPending}
+          onClick={() => void submit()}
+          disabled={submitting}
+          aria-busy={submitting}
         >
           <img className="fb-submit__icon" src={asset("ui/chat-heart.webp")} alt="" />
-          {sendFeedback.isPending ? "보내는 중…" : "피드백 보내기"}
+          {submitting
+            ? childTone ? "보내는 중…" : "안전하게 보내는 중…"
+            : feedbackKind === "problem"
+              ? childTone ? "문제 알려주기" : "문제 내용 보내기"
+              : feedbackKind === "question"
+                ? childTone ? "질문 보내기" : "문의 보내기"
+                : childTone ? "아이디어 보내기" : "제안 보내기"}
         </button>
-      </div>
+      </main>
     </div>
   );
 }
