@@ -681,14 +681,14 @@ public class LocationService extends Service {
                     .put("source", source)
                     .put("name", name)
                     .put("lat", lat).put("lng", lng);
-                // 장소별 알림 반경(location JSON, 30~300 클램프). 없으면 학교류 기본 100m —
-                // 학교 부지는 넓어 핀 반경 30m 로는 교문 도착이 수 분 늦게 잡힌다(서버 parity).
+                // 장소별 알림 반경(location JSON, 30~300 클램프). 없으면 이름 기반 기본값 —
+                // 학교 100m, 조부모댁 등 가족 주거지 150m(서버 parity).
                 double radius = loc.optDouble("alertRadiusM", loc.optDouble("alert_radius_m", Double.NaN));
                 Double resolved = null;
                 if (!Double.isNaN(radius) && radius > 0) {
                     resolved = Math.min(300.0, Math.max(30.0, radius));
-                } else if (name.matches(".*(학교|초등|중학교|고등학교|유치원|어린이집).*")) {
-                    resolved = 100.0;
+                } else {
+                    resolved = GeofenceStateMachine.defaultRegisteredPlaceRadiusM(name);
                 }
                 if (resolved != null) p.put("alertRadiusM", (double) resolved);
                 out.add(p);

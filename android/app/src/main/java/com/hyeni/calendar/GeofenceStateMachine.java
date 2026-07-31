@@ -61,6 +61,21 @@ final class GeofenceStateMachine {
     }
 
     /**
+     * 명시 반경이 없는 레거시 등록장소의 이름 기반 기본값.
+     * 서버 shared/registeredPlaceGeofence.js 와 반드시 같은 값을 유지한다.
+     */
+    static Double defaultRegisteredPlaceRadiusM(String name) {
+        String normalized = name == null ? "" : name;
+        if (normalized.matches(".*(학교|초등|중학교|고등학교|유치원|어린이집).*")) {
+            return 100.0;
+        }
+        if (normalized.matches(".*(할머니|할아버지|조부모|외가|친가).*")) {
+            return 150.0;
+        }
+        return null;
+    }
+
+    /**
      * 타이머 전용 재평가에서 마지막 fix 를 신뢰하는 최대 나이 —
      * shared/registeredPlaceGeofence.js 의 REGISTERED_PLACE_TIMER_FIX_FRESH_MS 와 동일.
      */

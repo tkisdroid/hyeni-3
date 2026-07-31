@@ -205,6 +205,27 @@ public class GeofenceStateMachineTest {
     }
 
     @Test
+    public void grandmotherHomeDefaultRadius_coversLegacyPinOffset() {
+        assertEquals(Double.valueOf(100.0), GeofenceStateMachine.defaultRegisteredPlaceRadiusM("OO초등학교"));
+        assertEquals(Double.valueOf(150.0), GeofenceStateMachine.defaultRegisteredPlaceRadiusM("할머니댁"));
+        assertEquals(Double.valueOf(150.0), GeofenceStateMachine.defaultRegisteredPlaceRadiusM("외할아버지 집"));
+        assertEquals(null, GeofenceStateMachine.defaultRegisteredPlaceRadiusM("피아노 학원"));
+
+        double lat101 = PLACE_LAT + 101.0 / 111_000.0;
+        TransitionResult result = GeofenceStateMachine.evaluateTransition(
+                GeofenceState.INITIAL,
+                lat101,
+                PLACE_LNG,
+                18.0,
+                0L,
+                PLACE_LAT,
+                PLACE_LNG,
+                GeofenceStateMachine.defaultRegisteredPlaceRadiusM("할머니댁"),
+                CFG);
+        assertEquals(Action.PENDING_DWELL, result.action);
+    }
+
+    @Test
     public void hysteresis_betweenEntryAndExit_staysInside() {
         // a point 40m away: inside exit(50) when already in, but outside entry(30) when out
         double lat40 = PLACE_LAT + 40.0 / 111_000.0;

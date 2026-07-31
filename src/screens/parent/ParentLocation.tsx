@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   MouseEvent as ReactMouseEvent,
   PointerEvent as ReactPointerEvent,
@@ -138,7 +138,7 @@ export function ParentLocation() {
   const navigate = useNavigate();
   const { show } = useToast();
   const { familyId } = useAuth();
-  const { data: locations, refetch, isFetching, isError } = useChildLocations();
+  const { data: locations, refetch, isFetching, isFetched, isError } = useChildLocations();
   const { data: zones } = useDangerZones();
   const { data: places } = useSavedPlaces();
   const { data: events } = useEvents();
@@ -189,14 +189,29 @@ export function ParentLocation() {
   const loc = canShowLocation ? cachedLoc : null;
   const [refreshState, setRefreshState] = useState<LocationRefreshState>("idle");
   const refreshSeq = useRef(0);
+  const refreshMounted = useRef(false);
+  const refreshTargetKey =
+    familyId && selected?.user_id ? `${familyId}:${selected.user_id}` : null;
+  const refreshTargetKeyRef = useRef<string | null>(refreshTargetKey);
+  const autoRefreshKeyRef = useRef<string | null>(null);
   const isRefreshingLocation = refreshState !== "idle";
+
   useEffect(() => {
-    refreshSeq.current += 1;
-    setRefreshState("idle");
+    refreshMounted.current = true;
     return () => {
       refreshSeq.current += 1;
+      autoRefreshKeyRef.current = null;
+      refreshMounted.current = false;
     };
-  }, [selected?.user_id]);
+  }, []);
+
+  useEffect(() => {
+    if (refreshTargetKeyRef.current === refreshTargetKey) return;
+    refreshTargetKeyRef.current = refreshTargetKey;
+    autoRefreshKeyRef.current = null;
+    refreshSeq.current += 1;
+    setRefreshState("idle");
+  }, [refreshTargetKey]);
 
   const fresh = loc ? formatFreshness(loc.updated_at, now) : null;
   const accuracyM = loc?.accuracy_m != null && Number.isFinite(Number(loc.accuracy_m))
@@ -534,8 +549,8 @@ export function ParentLocation() {
     .filter((p) => typeof p.location?.lat === "number" && typeof p.location?.lng === "number")
     .map((p) => ({ lat: p.location.lat, lng: p.location.lng, name: p.name, isHome: p.is_home }));
 
-  // 새로고침 — 실제 리페치 결과에 따라 정직하게 안내(거짓 성공 금지).
-  const refresh = async () => {
+  // 수동·화면 진입 새로고침의 단일 흐름. 서버 updated_at이 실제 증가해야 성공으로 본다.
+  const refreshLocation = useCallback(async (announceSuccess: boolean) => {
     if (!canShowHistory || isFetching || isRefreshingLocation) return;
     if (!familyId || !selected?.user_id) {
       show("아이 기기 정보가 없어 위치 요청을 보내지 못했어요", "⚠️");
@@ -548,7 +563,7 @@ export function ParentLocation() {
     setRefreshState("requesting");
     try {
       const requested = await requestLocationRefresh(familyId, targetUserId);
-      if (refreshSeq.current !== requestSeq) return;
+      if (!refreshMounted.current || refreshSeq.current !== requestSeq) return;
       if (!requested.ok) {
         show("아이 기기에 위치 요청을 보내지 못했어요", "⚠️");
         return;
@@ -559,11 +574,11 @@ export function ParentLocation() {
         before,
         targetUserId,
         refetch,
-        isCancelled: () => refreshSeq.current !== requestSeq,
+        isCancelled: () => !refreshMounted.current || refreshSeq.current !== requestSeq,
       });
       if (outcome === "cancelled") return;
       if (outcome === "updated") {
-        show("실시간 위치를 새로고침했어요", "📍");
+        if (announceSuccess) show("실시간 위치를 새로고침했어요", "📍");
         return;
       }
       if (outcome === "error") {
@@ -575,8 +590,47 @@ export function ParentLocation() {
       show("위치 갱신에 실패했어요", "⚠️");
       return;
     } finally {
-      if (refreshSeq.current === requestSeq) setRefreshState("idle");
+      if (refreshMounted.current && refreshSeq.current === requestSeq) {
+        setRefreshState("idle");
+      }
     }
+  }, [
+    canShowHistory,
+    familyId,
+    isFetching,
+    isRefreshingLocation,
+    loc,
+    refetch,
+    selected?.user_id,
+    show,
+  ]);
+
+  // 부모가 위치 탭을 열면, 최초 위치 목록 조회로 비교 기준을 확보한 직후 활성 아이에게
+  // request_location을 한 번 보낸다. 기존 좌표는 즉시 지도에 유지하고 새 fix가 오면 교체한다.
+  useEffect(() => {
+    if (
+      activeView !== "live"
+      || !canShowHistory
+      || !refreshTargetKey
+      || !isFetched
+      || isFetching
+      || isRefreshingLocation
+    ) return;
+    if (autoRefreshKeyRef.current === refreshTargetKey) return;
+    autoRefreshKeyRef.current = refreshTargetKey;
+    void refreshLocation(false);
+  }, [
+    activeView,
+    canShowHistory,
+    isFetched,
+    isFetching,
+    isRefreshingLocation,
+    refreshLocation,
+    refreshTargetKey,
+  ]);
+
+  const refresh = () => {
+    void refreshLocation(true);
   };
 
   // 지도에 표시된 아이에게 전화. 번호 미등록이면 안내만.

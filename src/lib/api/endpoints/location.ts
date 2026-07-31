@@ -57,7 +57,7 @@ export interface SavedPlaceLocation {
   address?: string;
   kakao_place_id?: string | null;
   category?: "home" | "academy" | "frequent" | string;
-  /** 도착/출발 알림 반경 m(30~300). 없으면 기본 30m(학교류 이름은 서버·네이티브가 100m 적용). */
+  /** 도착/출발 알림 반경 m(30~300). 없으면 기본 30m(학교 100m·조부모댁 등 가족 주거지 150m 자동 적용). */
   alertRadiusM?: number;
 }
 

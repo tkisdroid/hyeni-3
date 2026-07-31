@@ -24,6 +24,17 @@ test("실시간 위치 요청 중에는 대기 상태를 화면에 표시하고 
   assert.match(source, /지도와 장소명은 마지막으로 확인된 위치예요/);
 });
 
+test("부모가 실시간 위치 화면에 들어오면 활성 아이 위치를 한 번 자동 요청한다", () => {
+  assert.match(source, /isFetched/);
+  assert.match(source, /const autoRefreshKeyRef = useRef<string \| null>\(null\)/);
+  assert.match(
+    source,
+    /if \(\s*activeView !== "live"\s*\|\|\s*!canShowHistory\s*\|\|\s*!refreshTargetKey\s*\|\|\s*!isFetched\s*\|\|\s*isFetching\s*\|\|\s*isRefreshingLocation\s*\)\s*return;/s,
+  );
+  assert.match(source, /autoRefreshKeyRef\.current = refreshTargetKey/);
+  assert.match(source, /void refreshLocation\(false\)/);
+});
+
 test("오래된 위치는 현재 장소가 아니라 마지막 확인 장소로 표시한다", () => {
   assert.match(source, /fresh\?\.status === "stale"/);
   assert.match(source, /마지막 확인: \$\{curPlace\}/);
