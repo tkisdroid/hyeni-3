@@ -96,6 +96,12 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   회귀=`tests/deviceNotificationHealth.test.ts`.
   안전지표의 `잠금해제`는 Android `UsageEvents.Event.KEYGUARD_HIDDEN`의 오늘 누적값만 표시한다.
   `SCREEN_INTERACTIVE`(알림 등으로 화면만 켜짐)는 절대 포함하지 않으며, Usage Access 없음·API 28 미만·미보고는 `0회`로 표시한다.
+  안전지표의 `많이 쓴 앱`은 특정 제조사 패키지 예외 목록으로 처리하지 않는다. Android는 `LAUNCHER`·`HOME`·
+  `SECONDARY_HOME` 가시성, 정확한 OS 표면 패키지 세그먼트, `ApplicationInfo`의 system/updated-system 및 실행 가능성,
+  실제 앱 라벨 해석 성공을 함께 판정한다. 런처·설정·System UI·키보드·설치/권한/잠금/AOD 같은 OS 표면과
+  원시 패키지 문자열은 수집·표시에서 제외하되, 카메라·브라우저·메시지·전화처럼 실행 가능한 실제 앱은 제조사
+  기본 탑재 여부와 무관하게 유지한다. `QUERY_ALL_PACKAGES`는 추가하지 않으며 네이티브와 구버전 payload 표시 필터의
+  회귀는 `DeviceStatusReporterTest`·`tests/deviceAppUsageView.test.ts`에서 함께 보호한다.
   등록장소 도착/출발(saved_places+academies)은 네이티브 `LocationService`와 Worker
   `registered-place-geofence-check`가 같은 상태머신으로 처리한다. 20m 이내 중복 장소는 `saved_place` 우선으로
   1개만 평가하고, 진입은 3분 이상 체류해야 도착으로 승격한다(학원가 통과/중복 알림 방지).

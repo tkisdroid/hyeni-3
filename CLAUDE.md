@@ -863,6 +863,7 @@ hyeni-3/
   - **크로스 E2E**: 아이→부모 메모 WS 라운드트립(전송·수신·정리), AI 텍스트 파싱→저장→D1 확인→정리(date_key 0-index 정상), AI 친구 실 LLM 응답. 알림 실발사는 야간 자제 — 대신 서버의 위치미갱신→재연결 부모 알림이 이날 새벽 실작동(00:25/00:35)한 것을 실증.
   - **검증 함정 추가**: 재설치 후 CDP 포워딩 PID 갱신 필수 · razr 스크린샷 `-d 4630947043778501762` · cp949 콘솔은 python stdout utf-8 래핑 · Cloudflare가 기본 UA(python-urllib)를 403 차단 — 커스텀 UA 필요.
   - **안전지표 잠금해제(2026-07-11)**: 부모 홈·안심리포트의 기존 `충전` 슬롯을 오늘의 `잠금해제` 횟수로 교체한다. Android `DeviceStatusReporter`는 Usage Access가 있을 때 `UsageEvents.Event.KEYGUARD_HIDDEN`만 세므로 알림 등으로 화면만 켜진 `SCREEN_INTERACTIVE`는 집계하지 않는다. Usage Access 없음·API 28 미만·미보고는 `0회`로 표시한다.
+  - **안전지표 앱 사용량의 제조사 독립 필터(2026-07-31)**: 특정 Motorola/Samsung 패키지를 계속 추가하는 방식은 금지한다. `AndroidManifest.xml`은 민감한 `QUERY_ALL_PACKAGES` 없이 `LAUNCHER`·`HOME`·`SECONDARY_HOME`만 조회 가능하게 하고, `DeviceStatusReporter`는 홈 역할 + 정확한 OS 표면 패키지 세그먼트 + system/updated-system이면서 실행 불가능한 구성요소 + 실제 앱 라벨 해석 실패를 함께 제외한다. 웹 표시 필터는 구버전 payload에도 같은 역할 규칙을 적용하고 원시 패키지 문자열을 앱 이름으로 노출하지 않는다. Pixel·Samsung·Motorola·Xiaomi·Huawei·vivo·OPPO 계열 표면 회귀와 `launcherpro`/카메라/브라우저/메시지/전화 오탐 방지는 `tests/deviceAppUsageView.test.ts`·Android `DeviceStatusReporterTest`에서 고정한다.
 
 ### 전체 라우트 맵 (전부 도달 가능)
 ```
