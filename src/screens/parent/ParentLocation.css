@@ -284,7 +284,7 @@
   display: grid;
   grid-template-columns: 28px 1fr;
   align-items: center;
-  gap: 4px 8px;
+  gap: 8px;
   padding: 12px 12px;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-20);
@@ -293,7 +293,6 @@
   box-shadow: 0 12px 28px rgba(32, 26, 29, 0.12);
 }
 .pl-refreshing__spinner {
-  grid-row: 1 / span 2;
   width: 24px;
   height: 24px;
   border-radius: 50%;
@@ -308,14 +307,6 @@
 
   color: var(--fg-primary);
 }
-.pl-refreshing__sub {
-  font-size: var(--type-caption);
-  line-height: var(--type-caption-line-height);
-  font-weight: var(--type-caption-weight);
-
-  color: var(--fg-muted);
-}
-
 /* ── 아이 칩(다자녀 전환) ───────────────────────────────────────────────── */
 .pl-chips {
   position: absolute;
@@ -671,7 +662,7 @@
   }
 }
 
-/* ── 지연 배지(리뷰 티어) ───────────────────────────────────────────────── */
+/* ── 위치 상태 배지(기존 혜택 호환 포함) ────────────────────────────────── */
 .pl-sheet__zone--locked {
   color: var(--mint-text);
 }
@@ -687,7 +678,7 @@
   color: var(--gold-text);
 }
 
-/* ── 프리미엄 유도 행(리뷰 티어) ────────────────────────────────────────── */
+/* ── 프리미엄 유도 행(Free·기존 혜택 공통) ──────────────────────────────── */
 .pl-upsell {
   display: flex;
   align-items: center;
@@ -734,6 +725,57 @@
   box-shadow: 0 4px 12px -2px rgba(8, 118, 83, 0.5);
 }
 
+/* ── 이동 기록 날짜 선택(Premium 최근 30일 · Free 오늘 고정) ─────────────── */
+.pl-history-day {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 64px);
+  left: 16px;
+  right: 16px;
+  z-index: 23;
+  display: grid;
+  grid-template-columns: var(--control-min-size) minmax(0, 1fr) var(--control-min-size);
+  align-items: center;
+  gap: 4px;
+  min-height: var(--control-min-size);
+  padding: 4px;
+  border-radius: var(--radius-16);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-floating);
+}
+.pl-history-day__nav {
+  width: var(--control-min-size);
+  height: var(--control-min-size);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-12);
+  color: var(--fg-primary);
+  --press: 0.94;
+}
+.pl-history-day__nav:disabled {
+  color: var(--fg-tertiary);
+  cursor: default;
+}
+.pl-history-day__input {
+  width: 100%;
+  min-width: 0;
+  height: var(--control-min-size);
+  border: 0;
+  border-radius: var(--radius-12);
+  background: var(--bg-page);
+  color: var(--fg-primary);
+  font: inherit;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+  text-align: center;
+  color-scheme: light;
+}
+.pl-history-day[data-premium="false"] .pl-history-day__input {
+  color: var(--gold-text);
+}
+
 /* ── 오늘경로 상태 메시지(로딩·실패·빈) ────────────────────────────────── */
 .pl-histmsg {
   position: absolute;
@@ -771,7 +813,7 @@
   position: absolute;
   left: 16px;
   right: 16px;
-  top: 108px;
+  top: calc(env(safe-area-inset-top, 0px) + 120px);
   z-index: 24;
   padding: 12px 12px 8px;
   border-radius: var(--radius-20);

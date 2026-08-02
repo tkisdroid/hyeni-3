@@ -4,9 +4,11 @@ import type {
   PointerEvent as ReactPointerEvent,
   TouchEvent as ReactTouchEvent,
 } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router";
 import {
   AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
   Crown,
   MapPin,
   MessageCircle,
@@ -31,7 +33,6 @@ import { useLocationLabels } from "@/queries/useLocationLabels";
 import { useEntitlement } from "@/queries/useEntitlement";
 import {
   formatFreshness,
-  parseServerTimestamp,
   distanceMeters,
 } from "@/transform/locationView";
 import {
@@ -42,13 +43,21 @@ import {
   formatClockHM,
   type StayPoint,
 } from "@/transform/stayPoints";
-import { TIERS, locationModeFor } from "@/transform/tierPolicy";
-import { parseAppDateKey } from "@/transform/dateKey";
+import { TIERS, historyDaysFor, locationModeFor } from "@/transform/tierPolicy";
+import {
+  addDaysToDateKey,
+  dateInputValueToDateKey,
+  dateKeyToDateInputValue,
+  parseAppDateKey,
+} from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import {
+  clampHistoryDayKey,
   clampHistoryOffsetMinute,
   getHistoryDayKey,
+  getHistoryDayKeyRange,
   getHistoryDayWindow,
+  getHistoryDayWindowForKey,
 } from "@/transform/locationHistoryWindow";
 import { placePhoneCall } from "@/lib/native/phone";
 import { requestLocationRefresh } from "@/lib/api/endpoints/remote";
@@ -59,10 +68,16 @@ import {
   resolveScrubWhereLabel,
 } from "@/transform/locationHistoryScrub";
 import type { CalendarEvent } from "@/lib/api/endpoints/schedule";
+import { PremiumUpsell } from "@/components/PremiumUpsell";
+import type { PremiumUpsellSource } from "@/transform/premiumUpsell";
+import {
+  browserPremiumReturnIntentStorage,
+  savePremiumReturnIntent,
+} from "@/transform/premiumReturnIntent";
 import "./ParentLocation.css";
 
 function avatarSrc(path: string): string {
-  return path.startsWith("http") ? path : asset(path);
+  return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
 }
 
 const SCHEDULE_STAY_RADIUS_M = 220;
@@ -143,6 +158,7 @@ export function ParentLocation() {
   const { data: places } = useSavedPlaces();
   const { data: events } = useEvents();
   const entitlement = useEntitlement();
+  const [searchParams] = useSearchParams();
 
   // 위치 데이터는 조회 범위가 확정된 뒤에만 연다. 엔타이틀먼트 오류 때도
   // TanStack 캐시의 정확한 좌표·경로가 잠깐 노출되지 않도록 fail-closed 한다.
@@ -151,14 +167,38 @@ export function ParentLocation() {
   const locationScopeError = entitlement.isError;
   const locationScopePending = entitlement.isError || !tierKnown;
   const canShowLocation = !locationScopePending && mode !== "locked";
-  const canShowHistory = !locationScopePending && mode === "realtime";
+  const canShowHistory = canShowLocation;
   const isLocked = !locationScopePending && mode === "locked";
-  const isDelayed = canShowLocation && mode === "delayed";
-  const premiumOpen = canShowHistory;
+  const isStandard = canShowLocation && mode === "standard";
+  const premiumOpen = !locationScopePending && mode === "realtime";
 
   const now = useMemo(() => new Date(), [locations]);
-  const historyWindow = useMemo(() => getHistoryDayWindow(now), [now]);
-  const historyDayKey = useMemo(() => getHistoryDayKey(now), [now]);
+  const historyTodayKey = useMemo(() => getHistoryDayKey(now), [now]);
+  const premiumHistoryDays = historyDaysFor(TIERS.PREMIUM);
+  const premiumHistoryRange = useMemo(
+    () => getHistoryDayKeyRange(now, premiumHistoryDays),
+    [now, premiumHistoryDays],
+  );
+  const requestedHistoryDayKey = dateInputValueToDateKey(searchParams.get("date") ?? "");
+  const [rawHistoryDayKey, setRawHistoryDayKey] = useState(
+    () => requestedHistoryDayKey ?? historyTodayKey,
+  );
+  // Free/reviewed는 URL이나 이전 상태에 과거 날짜가 남아 있어도 서버 요청 전에 오늘로 고정한다.
+  const historyDayKey = premiumOpen
+    ? clampHistoryDayKey(rawHistoryDayKey, now, premiumHistoryDays)
+    : historyTodayKey;
+  const historyWindow = useMemo(
+    () => getHistoryDayWindowForKey(historyDayKey, now) ?? getHistoryDayWindow(now),
+    [historyDayKey, now],
+  );
+  const historyMinDateValue = dateKeyToDateInputValue(premiumHistoryRange.minDateKey);
+  const historyMaxDateValue = dateKeyToDateInputValue(premiumHistoryRange.maxDateKey);
+  const historyDateValue = dateKeyToDateInputValue(historyDayKey);
+  const historyDayLabel = useMemo(() => {
+    if (historyDayKey === historyTodayKey) return "오늘";
+    const date = parseAppDateKey(historyDayKey);
+    return date?.toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" }) ?? "선택한 날";
+  }, [historyDayKey, historyTodayKey]);
   const historyMaxOffsetMinute = historyWindow.maxOffsetMinutes;
   // null = 최신 따라가기(기본). 숫자 = 부모가 직접 고른 시각.
   // 위치 폴링(30초)마다 `now` 가 갱신돼도 부모가 고른 시각을 최신으로 되돌리지 않는다.
@@ -169,7 +209,6 @@ export function ParentLocation() {
   // 대상 아이 = 전역 활성 아이(스위치는 부모 홈에서만 — 이 화면엔 전환 UI 없음).
   // 예외: 알림/SOS/도착에서 `?child=<user_id>` 로 진입하면 그 아이를 우선(위급 아이 — 안전 규칙).
   const { activeChild, childMembers } = useActiveChild();
-  const [searchParams] = useSearchParams();
   const childParam = searchParams.get("child");
   const requestedView: "live" | "history" =
     searchParams.get("view") === "history" ? "history" : "live";
@@ -188,6 +227,8 @@ export function ParentLocation() {
     : null;
   const loc = canShowLocation ? cachedLoc : null;
   const [refreshState, setRefreshState] = useState<LocationRefreshState>("idle");
+  const [upsellSource, setUpsellSource] = useState<PremiumUpsellSource | null>(null);
+  const [historyUpsellDayKey, setHistoryUpsellDayKey] = useState<string | null>(null);
   const refreshSeq = useRef(0);
   const refreshMounted = useRef(false);
   const refreshTargetKey =
@@ -239,47 +280,35 @@ export function ParentLocation() {
     : isLocked
     ? "안전 기능은 계속 쓸 수 있어요"
     : isRefreshingLocation
-      ? "아이 기기에 요청을 보냈어요 · 새 위치를 기다리는 중"
+      ? "위치 요청을 보냈어요"
       : isLowAccuracy
         ? `정확도가 낮아요 · 오차 약 ${accuracyM}m · ${fresh?.label ?? "확인 시각 없음"}`
         : `${fresh?.label ?? "위치 정보 없음"}${accuracyM != null ? ` · 오차 약 ${accuracyM}m` : ""}`;
-  const refreshOverlayTitle =
-    refreshState === "requesting" ? "아이 기기에 위치 요청을 보내는 중" : "새 위치를 기다리는 중";
-  const refreshOverlaySub = loc
-    ? "지도와 장소명은 마지막으로 확인된 위치예요."
-    : "아이 기기에서 첫 위치 신호가 오면 바로 바뀌어요.";
+  // 진행 단계를 나눠 설명하지 않는다 — 항상 간단한 한 줄만 보여준다(2026-08-02 TK 지시).
+  const refreshOverlayTitle = "위치 요청을 보냈어요";
 
-  // 리뷰(지연) 티어 배지용 지연 분(마지막 픽스 기준). 타임스탬프 미상이면 null.
-  const delayMin = useMemo(() => {
-    if (!loc) return null;
-    const d = parseServerTimestamp(loc.updated_at);
-    if (!d) return null;
-    return Math.max(1, Math.round((now.getTime() - d.getTime()) / 60000));
-  }, [loc, now]);
-
-  // ── 보기 모드: 실시간 위치 ↔ 오늘 이동 경로(프리미엄) ─────────────────────
+  // ── 보기 모드: 최근/실시간 위치 ↔ 오늘 이동 경로 ─────────────────────
   const [view, setView] = useState<"live" | "history">(requestedView);
   useEffect(() => {
     setView(requestedView);
   }, [requestedView]);
-  // 무료(잠금)·조회 범위 미확정에서는 경로 캐시를 렌더링하지 않는다.
+  // 조회 범위 미확정에서는 경로 캐시를 렌더링하지 않는다.
   const activeView: "live" | "history" = isLocked || locationScopePending ? "live" : view;
   // 보기 전환·아이 전환에서만 최신 따라가기로 돌아간다(폴링으로 되돌리지 않는다).
   useEffect(() => {
     setScrubOffsetMinute(null);
-  }, [activeView, selected?.id]);
+  }, [activeView, historyDayKey, selected?.id]);
 
-  // 오늘경로는 오전 8시를 하루 시작으로 본다. 새벽(00~07시)은 전날 경로에 이어 붙인다.
-  // 끝시각은 하루 창의 끝(시작+24h)으로 고정한다 — `now` 를 그대로 쓰면 30초 폴링마다 쿼리 키가
-  // 바뀌어 하루치 이력을 매번 새로 받고 슬라이더도 최신으로 튀었다.
+  // 선택일 경로는 오전 8시부터 다음 날 오전 8시까지 24시간으로 고정한다.
+  // 오늘의 끝도 queryEnd로 고정해 30초 폴링마다 쿼리 키가 바뀌지 않게 한다.
   const historyRange = useMemo(() => {
     return {
       start: historyWindow.start.toISOString(),
-      end: new Date(historyWindow.startMs + 24 * 60 * 60 * 1000).toISOString(),
+      end: historyWindow.queryEnd.toISOString(),
     };
   }, [historyWindow]);
 
-  // 오늘경로는 조회 범위가 확정된 프리미엄 부모만 요청한다.
+  // 오늘 경로는 조회 범위가 확정된 모든 부모에게 제공한다.
   // 쿼리 키가 고정됐으므로 신선도는 화면이 열려 있는 동안의 배경 폴링(60초)으로 유지한다.
   const historyEnabled = activeView === "history" && canShowHistory;
   const {
@@ -321,7 +350,7 @@ export function ParentLocation() {
     () => detectStayPoints(toTimedPoints(visibleHistory, selected?.user_id ?? null)),
     [visibleHistory, selected?.user_id],
   );
-  const selectedTodayEvents = useMemo(
+  const selectedHistoryEvents = useMemo(
     () =>
       filterEventsForChild(
         (events ?? []).filter((event) => event.date_key === historyDayKey),
@@ -330,8 +359,8 @@ export function ParentLocation() {
     [events, historyDayKey, selected?.id],
   );
   const stayLabels = useMemo(
-    () => stayPoints.map((s) => scheduleStayLabel(s, selectedTodayEvents) ?? stayPlaceLabel(s, places)),
-    [stayPoints, selectedTodayEvents, places],
+    () => stayPoints.map((s) => scheduleStayLabel(s, selectedHistoryEvents) ?? stayPlaceLabel(s, places)),
+    [stayPoints, selectedHistoryEvents, places],
   );
   const visibleStayPoints = useMemo(
     () => stayPoints.filter((s) => s.arrivalMs <= scrubMs),
@@ -339,7 +368,7 @@ export function ParentLocation() {
   );
   const scheduleMapPlaces = useMemo<MapPlace[]>(
     () =>
-      selectedTodayEvents
+      selectedHistoryEvents
         .map((event) => {
           const point = eventPoint(event);
           if (!point) return null;
@@ -350,7 +379,7 @@ export function ParentLocation() {
           };
         })
         .filter((p): p is MapPlace => p !== null),
-    [selectedTodayEvents],
+    [selectedHistoryEvents],
   );
   const historyPlaces = useMemo(
     () => [...trailStart, ...scheduleMapPlaces],
@@ -405,6 +434,33 @@ export function ParentLocation() {
         : null,
     [historyChildPoint, childName, childAvatar],
   );
+
+  const selectHistoryDay = (requestedDateKey: string): void => {
+    const nextDateKey = clampHistoryDayKey(requestedDateKey, now, premiumHistoryDays);
+    if (!premiumOpen) {
+      if (requestedDateKey !== historyTodayKey) {
+        setHistoryUpsellDayKey(nextDateKey);
+        setUpsellSource("location_history");
+      }
+      return;
+    }
+    if (nextDateKey === historyDayKey) return;
+    setRawHistoryDayKey(nextDateKey);
+    setScrubOffsetMinute(null);
+    setSelectedStayIdx(null);
+    setStaysCollapsed(false);
+  };
+
+  const selectPreviousHistoryDay = (): void => {
+    selectHistoryDay(addDaysToDateKey(historyDayKey, -1));
+  };
+
+  const selectNextHistoryDay = (): void => {
+    selectHistoryDay(addDaysToDateKey(historyDayKey, 1));
+  };
+
+  const historyAtMin = historyDayKey === premiumHistoryRange.minDateKey;
+  const historyAtMax = historyDayKey === premiumHistoryRange.maxDateKey;
 
   // 시간대별 경로 조작 — 하단 '오늘 머문 곳' 시트를 접어 그 시각 위치를 가리지 않게 하고,
   // 목록 강조를 해제해 슬라이더가 지도 중심을 잡게 한다.
@@ -527,17 +583,10 @@ export function ParentLocation() {
     e.stopPropagation();
   };
 
-  const histLocked = activeView === "history" && !premiumOpen;
-  const histLoading = activeView === "history" && premiumOpen && historyFetching && timedTrail.length === 0;
-  const histErrored = activeView === "history" && premiumOpen && historyError && timedTrail.length === 0;
+  const histLoading = activeView === "history" && canShowHistory && historyFetching && timedTrail.length === 0;
+  const histErrored = activeView === "history" && canShowHistory && historyError && timedTrail.length === 0;
   const histEmpty =
-    activeView === "history" && premiumOpen && !historyFetching && !historyError && timedTrail.length === 0;
-
-  // 프리미엄 유도(실시간·경로·주변소리 등 잠긴 액션 탭 시).
-  const upsell = () => {
-    show("실시간 위치·경로는 프리미엄 기능이에요", "👑");
-    navigate("/subscription");
-  };
+    activeView === "history" && canShowHistory && !historyFetching && !historyError && timedTrail.length === 0;
 
   const mapZones: MapZone[] = (zones ?? []).map((z) => ({
     lat: z.lat,
@@ -551,7 +600,7 @@ export function ParentLocation() {
 
   // 수동·화면 진입 새로고침의 단일 흐름. 서버 updated_at이 실제 증가해야 성공으로 본다.
   const refreshLocation = useCallback(async (announceSuccess: boolean) => {
-    if (!canShowHistory || isFetching || isRefreshingLocation) return;
+    if (!canShowLocation || isFetching || isRefreshingLocation) return;
     if (!familyId || !selected?.user_id) {
       show("아이 기기 정보가 없어 위치 요청을 보내지 못했어요", "⚠️");
       return;
@@ -565,6 +614,10 @@ export function ParentLocation() {
       const requested = await requestLocationRefresh(familyId, targetUserId);
       if (!refreshMounted.current || refreshSeq.current !== requestSeq) return;
       if (!requested.ok) {
+        if (announceSuccess && requested.status === 429) {
+          setUpsellSource("location_request");
+          return;
+        }
         show("아이 기기에 위치 요청을 보내지 못했어요", "⚠️");
         return;
       }
@@ -578,7 +631,7 @@ export function ParentLocation() {
       });
       if (outcome === "cancelled") return;
       if (outcome === "updated") {
-        if (announceSuccess) show("실시간 위치를 새로고침했어요", "📍");
+        if (announceSuccess) show("아이의 새 위치를 확인했어요", "📍");
         return;
       }
       if (outcome === "error") {
@@ -595,7 +648,7 @@ export function ParentLocation() {
       }
     }
   }, [
-    canShowHistory,
+    canShowLocation,
     familyId,
     isFetching,
     isRefreshingLocation,
@@ -605,12 +658,13 @@ export function ParentLocation() {
     show,
   ]);
 
-  // 부모가 위치 탭을 열면, 최초 위치 목록 조회로 비교 기준을 확보한 직후 활성 아이에게
-  // request_location을 한 번 보낸다. 기존 좌표는 즉시 지도에 유지하고 새 fix가 오면 교체한다.
+  // Premium만 화면 진입 시 즉시 위치를 요청한다. Free는 아이 기기의 약 10분 자동 보고를
+  // 그대로 표시하며, 사용자가 갱신 버튼을 누른 경우에만 하루 5회 수동 요청을 사용한다.
   useEffect(() => {
     if (
       activeView !== "live"
-      || !canShowHistory
+      || !canShowLocation
+      || !premiumOpen
       || !refreshTargetKey
       || !isFetched
       || isFetching
@@ -621,10 +675,11 @@ export function ParentLocation() {
     void refreshLocation(false);
   }, [
     activeView,
-    canShowHistory,
+    canShowLocation,
     isFetched,
     isFetching,
     isRefreshingLocation,
+    premiumOpen,
     refreshLocation,
     refreshTargetKey,
   ]);
@@ -669,36 +724,15 @@ export function ParentLocation() {
         />
       )}
 
-      {/* 오늘경로 — 프리미엄 잠금(무료/리뷰). 지도를 흐리게 덮고 프리미엄 유도. */}
-      {histLocked && (
-        <div className="pl-lock">
-          <div className="pl-lock__ring">
-            <img src={asset("ui/lock-3d.webp")} alt="" className="pl-lock__icon" />
-          </div>
-          <div className="pl-lock__title">오늘 이동 경로는 프리미엄이에요</div>
-          <div className="pl-lock__sub">
-            아이가 오늘 어디를 다녀왔는지 이동 경로로 확인할 수 있어요.{" "}
-            프리미엄을 시작하면 오늘 경로가 열려요.
-          </div>
-          <button
-            type="button"
-            className="pl-lock__cta hy-press"
-            onClick={() => navigate("/subscription")}
-          >
-            프리미엄 시작하기
-          </button>
-        </div>
-      )}
-
-      {/* 오늘경로 — 로딩/실패/빈 상태(프리미엄, 정직 안내). */}
+      {/* 이동 기록 — Free는 오늘, Premium은 최근 30일 중 선택일을 표시한다. */}
       {(histLoading || histErrored || histEmpty) && (
         <div className={`pl-histmsg${histErrored ? " pl-histmsg--error" : ""}`} role={histErrored ? "alert" : "status"}>
           <span>
             {histErrored
               ? "이동 기록을 불러오지 못했어요"
               : histLoading
-                ? "오늘 이동 기록을 불러오는 중…"
-                : "오늘 이동 기록이 아직 없어요"}
+                ? `${historyDayLabel} 이동 기록을 불러오는 중…`
+                : `${historyDayLabel} 이동 기록이 아직 없어요`}
           </span>
           {histErrored && (
             <button type="button" className="pl-lock__retry hy-press hy-busy-quiet" onClick={() => void refetchHistory()}>
@@ -749,10 +783,10 @@ export function ParentLocation() {
         </div>
       )}
 
-      {activeView === "history" && premiumOpen && !histLocked && timedTrail.length > 0 && (
+      {activeView === "history" && canShowHistory && timedTrail.length > 0 && (
         <div className="pl-scrub">
           <div className="pl-scrub__head">
-            <span className="pl-scrub__label">시간대별 경로</span>
+            <span className="pl-scrub__label">{historyDayLabel} 시간대별 경로</span>
             <button
               type="button"
               className="pl-scrub__latest hy-press"
@@ -773,7 +807,7 @@ export function ParentLocation() {
             max={historyMaxOffsetMinute}
             value={effectiveScrubOffsetMinute}
             onChange={(e) => moveScrubTo(Number(e.target.value))}
-            aria-label="오늘 경로 시간 선택"
+            aria-label={`${historyDayLabel} 경로 시간 선택`}
             aria-valuetext={`${formatClockHM(scrubMs)} · ${scrubWhere}`}
           />
           <div className="pl-scrub__ticks" aria-hidden="true">
@@ -798,8 +832,8 @@ export function ParentLocation() {
           </div>
           <div className="pl-lock__title">실시간 위치는 프리미엄이에요</div>
           <div className="pl-lock__sub">
-            무료 플랜에서는 아이 위치를 볼 수 없어요.{" "}
-            프리미엄을 시작하면 지금 위치를 실시간으로 확인할 수 있어요.
+            무료 플랜은 약 10분 간격으로 최근 위치와 오늘 경로를 볼 수 있어요.{" "}
+            프리미엄은 지금 위치와 최근 30일 이동 기록을 확인할 수 있어요.
           </div>
           <button
             type="button"
@@ -825,7 +859,7 @@ export function ParentLocation() {
                 setSelectedStayIdx(null);
               }}
             >
-              실시간
+              {isStandard ? "최근 위치" : "실시간"}
             </button>
             <button
               type="button"
@@ -834,17 +868,17 @@ export function ParentLocation() {
               className={`pl-viewtog__btn hy-press${activeView === "history" ? " pl-viewtog__btn--on" : ""}`}
               onClick={() => setView("history")}
             >
-              오늘 경로
+              {premiumOpen ? "이동 기록" : "오늘 경로"}
             </button>
           </div>
           {activeView === "live" && (
             <button
               type="button"
-              className={`pl-refresh${isRefreshingLocation ? " pl-refresh--loading" : ""}`}
-              aria-label={isDelayed ? "실시간 새로고침은 프리미엄" : isRefreshingLocation ? refreshOverlayTitle : "새로고침"}
+              className={`pl-refresh hy-busy-quiet${isRefreshingLocation ? " pl-refresh--loading" : ""}`}
+              aria-label={isRefreshingLocation ? refreshOverlayTitle : "지금 위치 요청"}
               aria-busy={isRefreshingLocation}
               onClick={refresh}
-              disabled={isFetching || isDelayed || isRefreshingLocation}
+              disabled={isFetching || isRefreshingLocation}
             >
               <RefreshCw size={20} strokeWidth={2.2} color="var(--fg-muted)" aria-hidden="true" />
             </button>
@@ -852,11 +886,50 @@ export function ParentLocation() {
         </div>
       )}
 
+      {!isLocked && !locationScopePending && activeView === "history" && (
+        <div
+          className="pl-history-day"
+          role="group"
+          aria-label={premiumOpen ? "최근 30일 이동 기록 날짜 선택" : "무료 오늘 이동 기록"}
+          data-premium={premiumOpen}
+        >
+          <button
+            type="button"
+            className="pl-history-day__nav hy-press"
+            aria-label={premiumOpen ? "이전 날짜" : "이전 날짜 보기 (프리미엄)"}
+            onClick={selectPreviousHistoryDay}
+            disabled={premiumOpen && historyAtMin}
+          >
+            <ChevronLeft size={20} strokeWidth={2.4} aria-hidden="true" />
+          </button>
+          <input
+            className="pl-history-day__input"
+            type="date"
+            aria-label="이동 기록 날짜"
+            value={historyDateValue}
+            min={historyMinDateValue}
+            max={historyMaxDateValue}
+            onChange={(event) => {
+              const nextDateKey = dateInputValueToDateKey(event.currentTarget.value);
+              if (nextDateKey) selectHistoryDay(nextDateKey);
+            }}
+          />
+          <button
+            type="button"
+            className="pl-history-day__nav hy-press"
+            aria-label="다음 날짜"
+            onClick={selectNextHistoryDay}
+            disabled={historyAtMax}
+          >
+            <ChevronRight size={20} strokeWidth={2.4} aria-hidden="true" />
+          </button>
+        </div>
+      )}
+
       {!isLocked && !locationScopePending && activeView === "live" && isRefreshingLocation && (
         <div className="pl-refreshing" role="status" aria-live="polite">
           <span className="pl-refreshing__spinner" aria-hidden="true" />
           <span className="pl-refreshing__title">{refreshOverlayTitle}</span>
-          <span className="pl-refreshing__sub">{refreshOverlaySub}</span>
         </div>
       )}
 
@@ -874,7 +947,7 @@ export function ParentLocation() {
       )}
 
       {/* 하단 — 오늘 경로(스테이포인트 목록) */}
-      {activeView === "history" && premiumOpen && stayPoints.length > 0 && (
+      {activeView === "history" && canShowHistory && stayPoints.length > 0 && (
         <>
         <div
           className={`pl-sheet pl-stays${staysCollapsed ? " pl-stays--collapsed" : ""}`}
@@ -892,7 +965,7 @@ export function ParentLocation() {
             className="pl-stays__grip"
             role="button"
             tabIndex={0}
-            aria-label={staysCollapsed ? "오늘 머문 곳 펼치기" : "오늘 머문 곳 접기"}
+            aria-label={staysCollapsed ? `${historyDayLabel} 머문 곳 펼치기` : `${historyDayLabel} 머문 곳 접기`}
             onClick={() => setStaysCollapsed((v) => !v)}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
@@ -904,7 +977,7 @@ export function ParentLocation() {
             <div className="pl-sheet__handle" />
           </div>
           <div className="pl-stays__head">
-            <span className="pl-stays__title">오늘 머문 곳</span>
+            <span className="pl-stays__title">{historyDayLabel} 머문 곳</span>
             <span className="pl-stays__count">{visibleStayPoints.length}/{stayPoints.length}곳</span>
           </div>
           <div className="pl-stays__list">
@@ -937,14 +1010,14 @@ export function ParentLocation() {
             className="pl-stays-reopen hy-press"
             onClick={() => setStaysCollapsed(false)}
           >
-            오늘 머문 곳 {visibleStayPoints.length}곳
+            {historyDayLabel} 머문 곳 {visibleStayPoints.length}곳
           </button>
         )}
         </>
       )}
 
       {/* 하단 상세 카드 — 실시간(또는 경로에 스테이포인트가 없을 때) */}
-      {!(activeView === "history" && premiumOpen && stayPoints.length > 0) && (
+      {!(activeView === "history" && canShowHistory && stayPoints.length > 0) && (
       <div className="pl-sheet">
         <div className="pl-sheet__handle" />
         <div className="pl-sheet__head">
@@ -958,9 +1031,7 @@ export function ParentLocation() {
             >
               <span className="pl-sheet__zone-dot" />
               {sheetZoneText}
-              {isDelayed && delayMin != null && (
-                <span className="pl-delay-badge">약 {delayMin}분 지연</span>
-              )}
+              {isStandard && <span className="pl-delay-badge">약 10분 간격 자동 확인</span>}
             </div>
           </div>
           {/* 상태 칩은 말할 내용이 있을 때만 렌더한다(정상일 때 빈 알약이 보이던 문제). */}
@@ -1000,15 +1071,18 @@ export function ParentLocation() {
           </button>
         )}
 
-        {/* 리뷰(지연) 티어 — 실시간 전환 유도 */}
-        {isDelayed && (
+        {/* Free — 최근 위치를 유지하면서 실시간·30일 이력 가치를 안내한다. */}
+        {isStandard && (
           <button
             type="button"
             className="pl-upsell hy-press"
-            onClick={() => navigate("/subscription")}
+            onClick={() => {
+              setHistoryUpsellDayKey(null);
+              setUpsellSource("location_history");
+            }}
           >
             <Crown size={16} strokeWidth={2.2} color="var(--gold-text)" />
-            프리미엄으로 실시간 위치 보기
+            실시간 위치와 30일 이동 기록 보기
           </button>
         )}
 
@@ -1022,14 +1096,14 @@ export function ParentLocation() {
             <MessageCircle size={22} strokeWidth={2.2} color="#fff" aria-hidden="true" />
             <span className="pl-actions__label">메모</span>
           </button>
-          {/* 경로·주변소리는 프리미엄 전용 — 하위 티어에서는 유도. 잠금(무료)에서는 숨김. */}
+          {/* 길찾기는 모든 티어에서 열고, 주변 소리는 대상 화면의 고지형 Premium gate를 사용한다. */}
           {!isLocked && !locationScopePending && (
             <>
               <button
                 type="button"
                 className="pl-route-btn hy-press"
-                aria-label="오늘 이동 경로 보기"
-                onClick={() => (premiumOpen ? navigate("/route") : upsell())}
+                aria-label="다음 일정 길찾기"
+                onClick={() => navigate("/route")}
               >
                 <Navigation size={22} strokeWidth={2.2} color="var(--blue-500)" aria-hidden="true" />
                 <span className="pl-actions__label">경로</span>
@@ -1038,7 +1112,7 @@ export function ParentLocation() {
                 type="button"
                 className="pl-listen-btn hy-press"
                 aria-label="주변 소리 듣기"
-                onClick={() => (premiumOpen ? navigate("/remote-audio") : upsell())}
+                onClick={() => navigate("/remote-audio")}
               >
                 <img src={asset("ui/menu-remote-audio.webp")} alt="" />
                 <span className="pl-actions__label">주변소리</span>
@@ -1051,6 +1125,39 @@ export function ParentLocation() {
           </button>
         </div>
       </div>
+      )}
+      {upsellSource && (
+        <PremiumUpsell
+          open
+          source={upsellSource}
+          tier={entitlement.tier}
+          returnTo={(() => {
+            const params = new URLSearchParams();
+            if (childParam) params.set("child", childParam);
+            if (upsellSource === "location_history") {
+              params.set("view", "history");
+              if (historyUpsellDayKey) {
+                params.set("date", dateKeyToDateInputValue(historyUpsellDayKey));
+              }
+            }
+            const query = params.toString();
+            return `/parent/location${query ? `?${query}` : ""}`;
+          })()}
+          onClose={() => {
+            setUpsellSource(null);
+            setHistoryUpsellDayKey(null);
+          }}
+          onUpgrade={({ source, feature, returnTo }) => {
+            const storage = browserPremiumReturnIntentStorage();
+            const saved = storage && returnTo
+              ? savePremiumReturnIntent(storage, { source, feature, returnTo })
+              : false;
+            if (!saved) throw new Error("결제 후 위치 화면으로 돌아올 경로를 안전하게 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+            setUpsellSource(null);
+            setHistoryUpsellDayKey(null);
+            navigate("/subscription");
+          }}
+        />
       )}
     </div>
   );

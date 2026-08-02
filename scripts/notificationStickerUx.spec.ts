@@ -6,11 +6,11 @@ const androidLocation = readFileSync(
   "utf8",
 );
 const serverGeofence = readFileSync(
-  "C:/Users/TK/Desktop/hyeni-1/worker/shared/registeredPlaceGeofence.js",
+  "C:/Users/TK/Desktop/hyeni-3/worker/shared/registeredPlaceGeofence.js",
   "utf8",
 );
 const arbitraryArrival = readFileSync(
-  "C:/Users/TK/Desktop/hyeni-1/worker/lib/arrivalDetect.ts",
+  "C:/Users/TK/Desktop/hyeni-3/worker/lib/arrivalDetect.ts",
   "utf8",
 );
 const realtime = readFileSync("src/queries/useFamilyRealtime.ts", "utf8");

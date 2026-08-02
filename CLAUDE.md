@@ -11,6 +11,16 @@
 **1~10단계 전부 완료**(전 화면 실데이터·다자녀·AI 친구·알림 3종·릴리즈 게이트) — 실기기 3대 운용 중.
 **현 국면 = 실사용 안정화**: TK 가 실기기로 쓰며 제보하는 버그·개선을 즉시 수정·검증·배포.
 
+**★단일 저장소(2026-08-02)**: Cloudflare Worker(`worker/`)와 D1 스키마(`cloudflare/`)가 이 저장소로 이관됐다.
+**hyeni-1 은 폐기 예정이며 어떤 코드·테스트·CI·런북도 그 경로에 의존하지 않는다.** 상세는 §6.
+
+**현재 AI 런타임(2026-08-02)**: Worker의 활성 OpenAI 호출 4개(아이 채팅·일정 텍스트/사진 파싱·하루 요약·아이 모니터)는
+중앙 `worker/lib/openai.ts`의 `gpt-5.6-luna`만 사용한다. 기존 Chat Completions 응답 계약을 유지하고
+`reasoning_effort: "none"`·`max_completion_tokens`·사용자 원문이 아닌 SHA-256 `safety_identifier`를 적용한다.
+로컬 AI Gateway text/JSON/image canary는 3/3 통과했지만 감사 과정에서 당시 API 키 원문이 내부 도구 로그에 노출됐으므로,
+운영 전 기존 키 폐기·새 키 발급/secret 반영·canary 재실행이 필수다. 현재 프로덕션 Worker는 아직 구버전이므로 Luna 전환 완료로
+간주하지 않는다. 기존 `docs/plans/2026-07-31-pricing-tier-benchmark.md`의 gpt-4o-mini 원가 가정은 역사 스냅샷으로만 보존한다.
+
 ---
 
 ## 0.5 작업 원칙 — 어떤 모델이든 이 방식으로 (이 프로젝트에서 실증된 사고방식)
@@ -40,11 +50,10 @@
    이후 서버에서 OSRM 합성으로 인앱 복원 — 클라 계약 보존 / 기기 미리포트 → "—"와 대기 문구, 가짜 숫자 금지)
 
 ### E. 실사용 보호가 기능보다 우선
-- **2026-07-19 최신 사용자 지시 기준 이번 최종 실기기 검증은 A17(RFKL40DP73J) 한 대에서만 수행한다.**
-  A17의 현재 부모모드 세션을 유지하고 `adb install -r`로 앱 데이터·계정·페어링·세션을 그대로 보존한다.
-  아이 역할 전용 동작은 A17 계측 테스트와 브라우저 역할 검증으로 확인하며 실제 계정의 로그아웃·역할 전환·
-  재페어링은 하지 않는다. razr는 연결 해제·미조작, S25는 검증 제외 상태이며 다시 명시적으로 허용받기 전에는
-  설치·실행·로그·세션 조회를 포함한 어떤 adb 접근도 하지 않는다. refresh 토큰은 출력·복사·회전하지 않는다.
+- **2026-08-02 최신 사용자 지시 기준 최종 실기기 검증은 A17(RFKL40DP73J) 부모와 razr(ZY22H9VTQD) 아이만 수행한다.**
+  두 기기 모두 `adb install -r`로 앱 데이터·계정·페어링·세션을 보존하고 실제 계정 로그아웃·역할 전환·재페어링을
+  하지 않는다. S25는 검증 제외 상태이며 다시 명시적으로 허용받기 전에는 설치·실행·로그·세션 조회를 포함한 어떤
+  adb 접근도 하지 않는다. refresh 토큰은 출력·복사·회전하지 않는다.
 - 파괴적 작업 전 **안전 불변식부터 확인**(예: 아이 페어링 전 프리미엄 캡=2 확인으로 razr 밀림 0 보장).
 - 테스트로 만든 데이터·바꾼 설정은 **반드시 원복/삭제**(이벤트·메모·SOS·notification_settings…).
 - 라이브 앱 refresh 토큰은 절대 조작하지 않는다(access 만 읽기 — 회전시키면 세션 파괴).
@@ -61,7 +70,7 @@
   `worker/db/notification-quiet-hours.sql` 적용·PRAGMA 확인 → Worker 배포 → Pages/Android 배포다.
 
 ### F. 재사용 우선 · 서버 무변경 해법 선호
-- hyeni-1 서버·인프라를 먼저 뒤진다(재구축 금지). 스키마를 늘리기 전에 기존 계약으로 풀 수 있는지 본다.
+- 기존 서버·인프라(`worker/`)를 먼저 뒤진다(재구축 금지). 스키마를 늘리기 전에 기존 계약으로 풀 수 있는지 본다.
   (예: 채팅 사진 = child-photos R2 재사용 + content 마커 `[[img:key]]`/`[[loc:lat,lng|주소]]` — 서버 무변경 /
    AI 친구 = 서버 완비 확인 후 클라 배선만)
 - 식별자 오귀속 방지: 준비물 `DailySupply.child_user_id`는 이름과 달리 member id다. 부모 세션에서 대상 아이가
@@ -246,6 +255,21 @@
   하지 않는다. `CATEGORY_CALL`·`setSilent`·`VISIBILITY_SECRET`·DND 우회는 금지. 서버 승인 증표 1회 소비, 세션 nonce·
   가족·대상 일치 검사, 마이크 권한, 1분 상한, 캡처 중 포그라운드 알림, 감사 기록은 유지한다. 부모 문구도 "아이가 허용해야
   시작"이 아니라 "아이가 누르지 않아도 연결되고 듣는 동안 아이 화면에 계속 표시된다"로 맞춘다.
+- ★원격 제어 수신·네이티브 가로 화면(2026-08-02 TK 실기기 제보): Android `NotificationTargetPolicy`는 모든 FCM에
+  `familyId`·`targetUserId`를 필수로 검사하고 `targetRole`이 있으면 역할까지 일치시킨다. 공용 fanout을 우회하는 force-ring
+  시작·정지·5분 경과 직접 payload에도 세 필드를 각각 child/child/parent 대상으로 넣는다. FCM API 200/`delivered_at`은 기기
+  처리 증거가 아니므로 `acknowledged_at`까지 본다. 주변소리는 `RemoteListenRequestStore.markNotificationShown`을 `notify()`보다
+  먼저 commit하고 게시 실패 때 pending 예약만 되돌려 full-screen Activity와의 레이스를 막는다. 앱이 foreground면 안내 알림 뒤
+  `RemoteListenActivity`를 직접 열되 마이크는 서버 승인 증표 뒤에만 켠다. targetSdk 35+에서는 full-screen `PendingIntent`
+  생성자가 background Activity start 권한을 명시해야 하므로 주변소리·SOS/emergency·force-ring 전체화면 경로는
+  `UrgentActivityPendingIntent`를 공용 사용한다(SDK 34/35=`ALLOWED`, SDK 36+=`ALLOW_ALWAYS`). Android 13+ 잠금 해제 background에서는
+  full-screen intent가 heads-up으로 강등될 수 있으므로 무조건 자동 실행으로 단정하지 않는다. SOS 3초 홀드는 pointer capture로
+  미세 이동과 눌림 scale의 `pointerleave` 취소를 막고, 부모 긴급 알림은 같은 `requestHash`를 `event_id`로 보내 각 8초 상한·
+  최대 2회로 일시적 네트워크/408/425/429/5xx만 재시도한다. Capacitor는 `<html data-hy-native>`를 표시하고 native에서 `.hy-app`·고정 오버레이의
+  448px 제한과 바깥 배경/radius/shadow를 해제해 가로 전폭을 쓴다. 회귀=Worker `tests/forceRingTargetPayload.test.mjs` + 앱
+  `tests/remoteListenConsentSafety.test.mjs`·`tests/childSosCopy.test.mjs`·`tests/mobileViewportCss.test.mjs` + Android
+  `UrgentActivityPendingIntentTest`. 로컬 앱 전체 1231개, production build/PWA 검증, Android unit+assemble+lint, Worker 대상 payload
+  3개+typecheck는 통과했다. Worker/Pages 배포·A17/razr E2E는 두 기기 미연결로 미완료다.
 - ★주변소리 세션 조기 종료(2026-07-22 TK 제보 "1분 안 됐는데 1분 지나 종료" 실사고): 부모 화면이 시작
   ~4.5초 만에 "1분이 지나 듣기를 종료했어요"로 닫혔다. 원인은 서버가 아니라 **클라 파싱 버그** —
   `src/lib/api/endpoints/remoteAudit.ts`의 `finiteMs`가 `Number(null)===0`을 유한값으로 통과시켜, 미동의·미종료
@@ -288,7 +312,7 @@
   12건만 `device_info/error_logs/current_screen`에 저장한다. 대화·좌표·사진·비밀번호·로그인/구매 토큰과 원문 오류는
   진단에 넣지 않는다. Worker는 허용 필드를 재검증하고 requestId만 포함한 구조화 운영 로그를 남긴다.
   운영 조회·대응 절차 정본=`docs/feedback-operations.md`, 회귀=`tests/feedbackDiagnostics.test.ts`.
-- **선생님 모드 출시 차단(2026-07-14)**: v1.2.0 프로덕션은 `TEACHER_MODE_ENABLED=import.meta.env.DEV`로만 열림을
+- **선생님 모드 출시 차단(2026-07-14, v1.3.0 유지)**: v1.3.0 프로덕션은 `TEACHER_MODE_ENABLED=import.meta.env.DEV`로만 열림을
   결정한다. 온보딩 역할 카드에서 선생님을 숨기고 `/teacher/*`는 준비 안내 gate로 닫으며, 기존 teacher 세션에는 gate 안에서
   로그아웃·회원 탈퇴·약관·개인정보처리방침 동선을 유지한다. 준비물은 부모·아이 역할만 허용한다. 환경변수로 production을
   우회하지 않는다. 회귀=`tests/teacherProductionGate.test.mjs`.
@@ -425,18 +449,34 @@
   서버가 반환한 저장 행은 `commitSentMemoReply`로 family/date_key/child_id가 맞는 `qk.memoReplies` 캐시에 즉시 합치고,
   정본 `invalidateQueries`는 백그라운드로 실행해 전송 완료를 막지 않는다. 검증은 D1 저장·pending/FCM ACK·양방향 WS·
   상대 열람 후 `read_by`와 발신 화면 `읽음` 갱신까지 교차 확인한다.
-- 리뷰 보상 티어: `/api/review-rewards`는 부모 전용 계약이다. 아이/선생님 세션에서 엔타이틀먼트가 필요해도
-  서버 호출을 하지 말고 reviewed=false로 확정한다. 아이 화면 CDP 로그에 403이 남으면 실패로 보고
-  `resolveReviewRewardQueryScope` 규칙을 먼저 확인한다.
-- 스토어 방문 혜택·위치 티어(2026-07-13): 부모 무료 화면의 CTA는 "스토어 방문 혜택 받기"이며 평점·리뷰 작성의
-  대가처럼 안내하지 않는다. 지급은 서버 `store_visit` 계약과 부모 본인 가족 검증을 통과한 경우에만 확정한다. 위치 조회는
-  서버가 `locked|delayed|realtime`으로 판정한다. 무료 부모는 빈 위치, reviewed 부모는 서버 현재 시각 기준 정확히 15분 이전의
-  `location_history` 실측점 중 최신값, 프리미엄 부모는 현재 위치를 받는다. cutoff 이전 점이 없으면 현재점을 대신 노출하지 않는다.
-  아이 세션은 본인 위치만 조회하고, 경로 이력은 프리미엄 부모만, 위치 인시던트는 티어와 무관하게 부모만 조회한다.
+- 스토어 방문 혜택 grandfather(2026-08-01): 신규 지급은 종료했다. `/api/review-rewards` GET은 부모 세션에서
+  기존 `family_review_rewards` 행만 읽고, POST claim은 부모 본인 가족을 확인한 뒤
+  `410 review_reward_program_ended`로 닫으며 INSERT·UPDATE·DELETE하지 않는다. 이번 정책 전환에서 기존 행을 삭제하지
+  않고, `reviewed`는 이미 받은 장소 한도를 유지하기 위한 숨은 내부 호환 상태일 뿐 사용자 노출 상품 티어가 아니다.
+  클라이언트 `useReviewReward`도 조회 전용이며 아이/선생님 세션은 호출하지 않고 reviewed=false로 확정한다. 부모 설정은
+  신규 지급 CTA를 노출하지 않고 무료 가족에는 종료 안내, 기존 혜택 가족에는 유지 안내만 표시한다.
+- 구독 상품 정본(2026-08-01): 초기 출시는 사용자에게 `Free`와 `Premium` 두 단계만 보여주며 가격은
+  **월 4,900원·연 39,000원**으로 고정한다. 일정·메모·스티커는 모든 티어에서 무제한이고 준비물·숙제는
+  모든 티어에서 아이별 하루 각각 8개다. Free는 아이 1명, 약 10분 간격 위치,
+  최근 24시간 즉시 위치 요청 5회, 오늘 위치 이력, 저장 장소 2곳, 위험구역 1곳, 소리 울리기 1회,
+  AI 친구 하루 5회와 AI 일정 정리 하루 5회를 제공한다. Premium은 아이 2명, 실시간 위치와 즉시 요청 무제한, 최근 30일 이력,
+  저장 장소·위험구역 무제한, 소리 울리기 최근 24시간 10회, AI 친구 하루 20회, AI 일정 정리 제한 없음, 위치 끊김·미등록 체류 자동 알림,
+  AI 하루 요약·주간 리포트·학원 시간표 자동 정리·투명한 1분 주변 소리를 제공한다. SOS·긴급 알림은 티어와 무관하게
+  항상 무료다. `reviewed`는 기존 혜택 보존용 내부 상태일 뿐 비교표·결제 상품·사용자 티어로 노출하지 않는다.
+  비교표 값은 `src/transform/tierPolicy.ts`에서만 파생하고, 기능 잠금은 사용자가 시도한 기능명·정확한 차이·구독 CTA와
+  원래 화면으로 돌아갈 `returnTo`를 함께 전달한다. 서버 엔타이틀먼트가 확인되지 않으면 Free로 추정하지 않고 결제와
+  민감 기능을 fail-closed하며, Google Play 가격은 결제 직전 `formattedPrice`, iPhone PWA는 서버 catalog를 정본으로 쓴다.
+- 위치 티어(2026-08-01): 위치 조회는 서버가 `locked|standard|realtime`으로 판정한다. Free와 기존 reviewed 부모는
+  10분 버킷 이전의 아이별 최신 실측 위치를 측정시각·정확도와 함께 받고, 부모가 누른 즉시 위치 요청은 rolling 24시간
+  5회까지 실제 새 fix를 5분 확인 창에서 바로 표시한다. Premium 부모는 현재 위치와 즉시 요청 무제한을 받는다.
+  Free/reviewed 이력은 Asia/Seoul 오전 8시 기준 오늘 범위, Premium은 서버 현재시각 이전 최근 30일로 clamp하며 범위 밖 요청은
+  빈 결과로 닫는다. 아이 세션은 활성 상태인 본인 최신 위치만 조회하고, 위치 인시던트는 티어와 무관하게 부모만 조회한다.
   엔타이틀먼트 DB 판정 실패는 최신 위치를 열지 않고 `503 location_entitlement_unavailable`로 닫는다.
 - 구독 결제 정본(2026-07-13): Google Play가 현재 계정에 eligible 하다고 반환한 정확한 7일 무료 offer만 표시·구매하고,
   결제 직전 재조회한 `offerToken`·`offerId`를 네이티브와 Worker까지 그대로 전달한다. 가격은 Play `formattedPrice` 정본만
-  표시한다. `trial`은 미래 `trial_ends_at`, `active/grace/cancelled`는 미래 `current_period_end`가 있을 때만 프리미엄이며,
+  표시한다. 신규 결제는 월 4,900원·연 39,000원만 승인한다. 2026-08-01 00:00 KST 이전 시작의 월 2,900원·연 27,840원
+  기존 구독은 복원·RTDN 재검증에서만 grandfather하고 신규 verify와 전환 시각 이후 시작 구독은 과거 가격을 거부한다.
+  base plan ID의 숫자는 가격 정본이 아니다. `trial`은 미래 `trial_ends_at`, `active/grace/cancelled`는 미래 `current_period_end`가 있을 때만 프리미엄이며,
   해지는 이미 결제한 종료일까지 유지한다. Google Play 직접 검증이 결제 정본이며 RTDN도 notification type만 믿지 않고
   `purchases.subscriptionsv2.get`으로 재검증한다. RTDN은 Google OIDC·audience·push service-account email을 모두 검증하고,
   additive D1 schema를 먼저 적용해야 한다. 설정 누락은 `503` fail-closed가 정상이다. Qonversion은 비활성·비정본 보조
@@ -444,6 +484,16 @@
   진단은 response code/debug message와 미조회 product id/type/status만 다루고 purchase/order token을 로그나 응답 진단에
   포함하지 않는다. Play 구매는 SHA-256 obfuscated family/parent id를 서버에서 대조하고, 부모 foreground에서 6시간 제한으로
   기존 구독을 재검증해 자동갱신 종료일을 갱신한다. AI 크레딧은 event claim·잔액·원장을 D1 batch로 원자 확정한다.
+- 프리미엄 퍼널 최소수집 계약(2026-08-01): 클라이언트는 고정 행동 이벤트에 UUID·앱 버전·발생 시각만 붙여 20건씩 보내고,
+  실패는 제품 흐름과 분리된 메모리 100건 큐에서 다음 기록 때만 재시도한다(브라우저 저장소·세션 refresh 금지). Worker는
+  active parent의 현재 가족을 서버에서 정본화하고 `PREMIUM_FUNNEL_HASH_SECRET` HMAC-SHA256 가족 가명키만 저장한다.
+  D1 `premium_funnel_events`에는 원시 user/family·위치·이름·주소·메모/AI 원문·email/phone·가격·토큰·자유 JSON 컬럼이 없다.
+  첫 위치·신규 첫 도착은 `first_location|first_arrival` source만 전송하고 좌표·주소·alert id는 보내지 않는다. Google Play는
+  재검증 전후 정본 상태로 확인된 신규 체험·최초 활성·실제 기간 연장·revoke만 서버에서 기록하며 raw purchase/order 값은
+  퍼널 멱등키에도 넣지 않는다.
+  `entitlement_activated|trial_start|renewal|refund`는 결제 서버의 fail-soft helper 전용이며 클라이언트 API는 거부한다.
+  UUID 멱등, 가족당 600건/시간, 16KiB payload, 20건 batch, -7일/+10분 시각 편차와 서버 `received_at`을 적용하고 hourly cron이
+  180일 지난 이벤트를 멱등 삭제한다. 운영 순서는 `worker/db/premium-funnel.sql` → secret 설정 → Worker 배포·readback이다.
 - 출시 AAB 신선도(2026-07-13): 체크리스트의 서명 AAB는 최신 앱 커밋 이후 다시 빌드하고 서명·해시·mtime을 확인한
   경우에만 준비 완료로 표시한다. 과거 AAB가 디스크에 존재한다는 이유만으로 업로드하지 않는다. 서명 비밀번호는 사용자만
   입력하며 에이전트가 자격 파일을 읽어 자동 서명하지 않는다.
@@ -655,14 +705,14 @@
   `Page.navigate` + `Page.reload` 후 **BootSplash 1.6초 게이트를 지나고** API 응답(mock 지연 3초) 전 창(≈2.4초)에서 읽는다.
   ⑥**"움직이는 요소가 있다"로 진행 표시자를 판정하면 안 된다** — 화면 진입 페이드(`hy-rise-in`)·마스코트 부유가
   전부 걸려 42/42 통과처럼 보인다. 진행 맥락(`[aria-busy]`·`[role=status]`·skel/loading/spin 클래스) 안의 애니메이션만 센다.
-- ★**Worker 배포 자격(2026-07-30)**: `hyeni-3/.env` 토큰은 D1 전용이라 배포가 `Authentication error 10000` 이다.
-  `hyeni-1/.env.local` 의 `CLOUDFLARE_API_TOKEN` + `hyeni-3/.env` 의 `CLOUDFLARE_ACCOUNT_ID` 를 따옴표를 벗겨
-  프로세스 env 로 주입해 배포한다.
-- **현재 기기 역할(2026-07-19 최신 사용자 지시)**: A17(RFKL40DP73J)만 실기기 검증기다.
-  현재 부모모드 세션을 유지한 채 `adb install -r`로 세션을 보존한다. 아이 역할 전용 동작은 A17 계측 테스트와
-  브라우저 역할 검증으로 확인하고 실제 계정의 로그아웃·역할 전환·재페어링은 하지 않는다. razr는 연결 해제·
-  미조작, S25는 검증 제외 상태이며 다시 명시적으로 허용받기 전에는 설치·실행·로그·세션 조회를 포함한 어떤
-  adb 접근도 하지 않는다.
+- ★**Worker 배포 자격(2026-08-02 갱신)**: 저장소 루트 `.env` 의 토큰은 **D1 전용**이라 그대로 배포하면
+  `Authentication error 10000` 이다. 배포 권한 토큰은 `worker/.env` 의 `CLOUDFLARE_API_TOKEN` 이고
+  같은 파일의 `CLOUDFLARE_ACCOUNT_ID` 와 함께 따옴표를 벗겨 프로세스 env 로 주입한다.
+  두 파일 모두 gitignore 되며 값을 출력·커밋하지 않는다. 배포는 `npm run deploy:worker`(= `cd worker && wrangler deploy`).
+- **현재 기기 역할(2026-08-01 최신 사용자 지시)**: A17(RFKL40DP73J)은 부모, razr(ZY22H9VTQD)는 아이 역할로
+  `adb install -r` 설치와 역할별 읽기 전용 실행 검증을 수행한다. 두 기기의 앱 데이터·계정·페어링·세션을 보존하고
+  실제 계정 로그아웃·역할 전환·재페어링·SOS·소리 울리기·주변 소리 실행은 하지 않는다. S25는 검증 제외 상태이며
+  다시 명시적으로 허용받기 전에는 설치·실행·로그·세션 조회를 포함한 어떤 adb 접근도 하지 않는다.
 - **기기 역할 확인**: 역할은 세션별로 바뀐 이력이 있으므로, 과거 단계 기록보다 최신 사용자 지시/goal을 우선한다.
   완료 선언 전에는 CDP로 WebView 세션(`hyeni-api-session-v1`)의 role/familyId와 실제 화면을 함께 확인하고,
   지시한 역할과 다르면 해당 실기기 검증은 미검증/차단으로 분리 보고한다.
@@ -687,8 +737,15 @@
   다른 프로젝트 dev 서버가 살아 있을 수 있다 — hyeni-3 는 `--port 5199 --strictPort` 처럼 명시 포트로 띄울 것.
 - **D1/Worker**: 시간 검증은 백데이트 트리거(예: `anchor_since` 6분 전 + upsert 1회, cron 은 이벤트를 target 분에 생성) ·
   `wrangler tail --format json` 을 파일로 받아 파이썬 파싱 · 컬럼명 추측 금지 — `pragma_table_info` 먼저.
-  Worker 전체 Node 테스트는 Worker 하위가 아니라 부모 저장소 `C:\Users\TK\Desktop\hyeni-1`에서
-  `node --test worker/tests/*.test.mjs`로 실행한다(Vite root 오인식 방지).
+  ★Worker 전체 Node 테스트는 **이 저장소 루트**에서 `npm run test:worker`
+  (= `node --test worker/tests/*.test.mjs`)로 실행한다. 타입은 `npm run typecheck:worker`.
+  ★**worker 테스트는 Vite 를 쓰지 않는다(2026-08-02 이관)**: 예전엔 `createServer()` + `ssrLoadModule` 로
+  TS 를 로드했는데, 앱 저장소 루트에서 모듈 그래프를 SSR 변환하느라 **파일 하나에 3분 이상** 걸리고
+  60초 `transport invoke timed out` 으로 실패했다. Node 24 는 같은 모듈을 **0.1초**에 로드한다.
+  worker 소스는 wrangler(esbuild)가 번들하므로 상대 import 에 확장자가 없어 Node ESM 이 바로 못 읽는데,
+  `worker/tests/helpers/tsModuleResolve.mjs` 를 **정적 import 첫 줄에** 넣으면 resolve 훅이 확장자를 보완한다
+  (소스·배포 산출물 무변경). 새 worker 테스트도 `vite` 를 도입하지 말고 이 훅 + `await import("../lib/x.ts")` 를 쓴다.
+  실측: 1,159 테스트 3.3초 전부 통과(이전 Vite 방식은 7개 실패).
   ★ `wrangler tail --format json` 출력은 **pretty-print** 라 줄 단위(JSONL) 파싱하면 0건으로 보인다 —
   `json.JSONDecoder().raw_decode` 로 스트림 파싱할 것. CDP `Runtime.consoleAPICalled` 의 Error 인자는
   `value` 가 아니라 `description` 에 들어온다(둘 다 읽지 않으면 오류를 못 세고 "0회"로 오판).
@@ -747,7 +804,14 @@ hyeni-3/
     lib/assets.ts                asset("ui/x.webp") 헬퍼 (BASE_URL 접두)
     data/mock.ts                 부모홈 목업(+ 각 화면은 자체 목업/.data.ts)
     screens/  parent/* child/* teacher/* shared/MemoChat feature/* onboarding/Onboarding · Placeholder
+  worker/                        ★백엔드 정본(Cloudflare Worker) — 2026-08-02 hyeni-1 에서 이관
+    index.ts · wrangler.toml · tsconfig.json · types.ts
+    routes/ · lib/ · cron/ · shared/ · middleware/ · realtime/ · db/(운영 migration SQL) · ops/(운영 런북)
+    tests/                       node --test 전용(Vite 미사용) · helpers/tsModuleResolve.mjs 가 TS 확장자 해석
+    .env · .dev.vars             gitignore(비밀) · .dev.vars.example 만 커밋
+  cloudflare/  schema_d1.sql     ★D1 정본 스키마(+ 이전용 python 스크립트)
   scripts/  port-screens.workflow.js · wire-nav.workflow.js   (재사용 가능한 워크플로우)
+            wf-*.workflow.js     ← 과거 1회성 대량 이식 기록(hyeni-1 소스를 읽던 도구, 재실행 불가)
   design-system/  tokens(css/ts/json) · spec(IA·COMPONENTS) · brand   ← 디자인 기준
   혜니캘린더 리디자인.dc.html      ← 시안 원본(각 화면 섹션의 인라인 style = 디자인 기준). 오프라인.html = 렌더본
   assets/(원본) · hyeni-port/(참고 컴포넌트)                ← 참고용, 앱 번들 아님
@@ -893,14 +957,20 @@ hyeni-3/
 기본 진입 = /parent/home (App.tsx index redirect)
 ```
 
-## 6. 다음 할 일 — 3단계 백엔드 연동 (상세)
+## 6. 백엔드 — 이 저장소의 `worker/` 가 정본 (2026-08-02 이관 완료)
 
-**백엔드는 hyeni-1의 Cloudflare Worker를 그대로 재사용** (재구축 금지).
+**Cloudflare Worker·D1 스키마가 이 저장소 안으로 들어왔다. hyeni-1 은 더 이상 필요 없다.**
 - API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` (`.env` VITE_API_BASE)
-- 참고 소스: `C:\Users\TK\Desktop\hyeni-1`
-  - API 클라이언트: `src/lib/api/client.js`
-  - 기능 모듈 ~110개: `src/lib/*.js` (auth, childrenContext, memoRealtime, sync, entitlement, subscriptionBilling, 등)
-  - env: `hyeni-1/.env.example` (Kakao 지도/REST, Naver 로그인, Qonversion+Google Play 결제)
+- Worker 소스: `worker/`(routes·lib·cron·shared·db·ops·tests), 설정 `worker/wrangler.toml`
+- D1 정본 스키마: `cloudflare/schema_d1.sql`
+- 비밀: `worker/.env`(배포 자격·외부 키) · `worker/.dev.vars`(로컬 JWT 키) — 둘 다 gitignore.
+  커밋되는 건 `worker/.dev.vars.example` 뿐이다.
+- 명령: `npm run test:worker` · `npm run typecheck:worker` · `npm run deploy:worker`
+- worker 의존성(`hono`·`jose`·`bcryptjs`·`wrangler`·`@cloudflare/workers-types`)은 루트 `package.json` devDependencies 에 있다.
+- CI 는 같은 저장소·같은 커밋에서 앱과 Worker 를 함께 검증한다(`.github/workflows/worker-quality.yml`).
+  과거 교차 저장소 변수 `HYENI_WORKER_REPOSITORY`·`HYENI_APP_REPOSITORY`·`HYENI_CROSS_REPO_TOKEN` 은 폐지됐다.
+
+### 3단계 이력 (완료)
 
 **권장 진행 순서**:
 1. `src/lib/api/client.ts` — hyeni-1의 client.js를 TS로 이관(fetch 래퍼 + 에러 처리).

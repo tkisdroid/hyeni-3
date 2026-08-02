@@ -1,0 +1,230 @@
+name: 출시 후보 검증
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: hyeni-3-release-candidate-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  app-quality:
+    name: 앱 타입·테스트·빌드·감사·Pages provenance
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VITE_KAKAO_APP_KEY: ${{ secrets.VITE_KAKAO_APP_KEY }}
+    defaults:
+      run:
+        working-directory: hyeni-3
+    steps:
+      - name: 앱 저장소 받기
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          path: hyeni-3
+          persist-credentials: false
+
+      # Worker는 같은 저장소의 worker/ 디렉터리가 정본이다(과거 hyeni-1 sibling checkout 폐지).
+      - name: 앱·Worker 실제 HEAD 검증
+        shell: bash
+        env:
+          EXPECTED_APP_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          actual_app_sha="$(git rev-parse HEAD)"
+          if [ "${actual_app_sha,,}" != "${EXPECTED_APP_SHA,,}" ]; then
+            echo "앱 checkout HEAD가 workflow source SHA와 다릅니다." >&2
+            exit 1
+          fi
+          if [ ! -f worker/wrangler.toml ]; then
+            echo "worker/wrangler.toml이 없습니다 — Worker 정본은 이 저장소의 worker/ 디렉터리입니다." >&2
+            exit 1
+          fi
+          echo "APP_SOURCE_SHA=$actual_app_sha" >> "$GITHUB_ENV"
+          echo "WORKER_SOURCE_SHA=$actual_app_sha" >> "$GITHUB_ENV"
+
+      - name: Node.js 설정
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.22.0
+          cache: npm
+          cache-dependency-path: hyeni-3/package-lock.json
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: 출시 필수 공개 키 확인
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$VITE_KAKAO_APP_KEY" ]; then
+            echo "VITE_KAKAO_APP_KEY GitHub Actions secret이 필요합니다." >&2
+            exit 1
+          fi
+
+      - name: 타입·전체 테스트·프로덕션 빌드
+        id: app-verify
+        run: npm run verify
+
+      - name: 의존성 보안 감사
+        id: dependency-audit
+        run: npm audit --audit-level=high
+
+      - name: 격리 브라우저 전 화면 QA
+        id: browser-qa
+        run: >-
+          npm run qa:browser --
+          --out-dir "artifacts/release-evidence/browser-qa/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+
+      - name: PWA 설치·오프라인·업데이트 런타임 QA
+        if: ${{ always() && steps.app-verify.outcome == 'success' && steps.dependency-audit.outcome == 'success' && !cancelled() }}
+        run: >-
+          npm run qa:pwa-runtime --
+          --out-dir "artifacts/release-evidence/pwa-runtime-qa/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+
+      - name: 브라우저·PWA QA 증거 업로드
+        if: ${{ always() && steps.app-verify.outcome == 'success' && steps.dependency-audit.outcome == 'success' && !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: hyeni-ui-qa-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            hyeni-3/artifacts/release-evidence/browser-qa/**
+            hyeni-3/artifacts/release-evidence/pwa-runtime-qa/**
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Pages dist provenance 생성
+        run: |
+          node scripts/create-pages-provenance.mjs \
+            --out artifacts/release-evidence/pages-dist-provenance.json \
+            --expected-source-sha "$APP_SOURCE_SHA" \
+            --ci-run-id "$GITHUB_RUN_ID" \
+            --ci-run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --repository "$GITHUB_REPOSITORY"
+
+      - name: 검증된 Pages dist·provenance 업로드
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: hyeni-pages-dist-${{ github.sha }}
+          path: |
+            hyeni-3/dist/**
+            hyeni-3/artifacts/release-evidence/pages-dist-provenance.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30
+
+  android-debug:
+    name: Android unit·lint·APK·bundletool 증거
+    needs: app-quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: hyeni-3
+    env:
+      VITE_KAKAO_APP_KEY: ${{ secrets.VITE_KAKAO_APP_KEY }}
+      BUNDLETOOL_VERSION: "1.18.1"
+      BUNDLETOOL_SHA256: "675786493983787ffa11550bdb7c0715679a44e1643f3ff980a529e9c822595c"
+    steps:
+      - name: 앱 저장소 받기
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          path: hyeni-3
+          persist-credentials: false
+
+      - name: 앱 실제 HEAD 검증
+        shell: bash
+        env:
+          EXPECTED_APP_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          actual_app_sha="$(git rev-parse HEAD)"
+          if [ "${actual_app_sha,,}" != "${EXPECTED_APP_SHA,,}" ]; then
+            echo "앱 checkout HEAD가 workflow source SHA와 다릅니다." >&2
+            exit 1
+          fi
+          echo "APP_SOURCE_SHA=$actual_app_sha" >> "$GITHUB_ENV"
+
+      - name: Node.js 설정
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.22.0
+          cache: npm
+          cache-dependency-path: hyeni-3/package-lock.json
+
+      - name: JDK 설정
+        uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07 # v4.9.0
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Android SDK 설정
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
+        with:
+          packages: "platforms;android-36 build-tools;36.0.0 platform-tools ndk;27.1.12297006"
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: 출시 필수 공개 키 확인
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$VITE_KAKAO_APP_KEY" ]; then
+            echo "VITE_KAKAO_APP_KEY GitHub Actions secret이 필요합니다." >&2
+            exit 1
+          fi
+
+      - name: 웹 번들·Capacitor 동기화
+        run: |
+          npm run build
+          npx cap sync android
+
+      - name: Android 검증 빌드
+        working-directory: hyeni-3/android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug bundleDebug
+
+      - name: 공식 bundletool 고정본 검증
+        shell: bash
+        run: |
+          set -euo pipefail
+          bundletool_path="$RUNNER_TEMP/bundletool-all-$BUNDLETOOL_VERSION.jar"
+          curl --fail --silent --show-error --location \
+            "https://github.com/google/bundletool/releases/download/$BUNDLETOOL_VERSION/bundletool-all-$BUNDLETOOL_VERSION.jar" \
+            --output "$bundletool_path"
+          echo "$BUNDLETOOL_SHA256  $bundletool_path" | sha256sum --check --strict
+          echo "BUNDLETOOL_JAR=$bundletool_path" >> "$GITHUB_ENV"
+
+      - name: debug AAB bundletool machine evidence 생성
+        run: |
+          node scripts/create-aab-evidence.mjs \
+            --aab android/app/build/outputs/bundle/debug/app-debug.aab \
+            --bundletool-jar "$BUNDLETOOL_JAR" \
+            --zipalign "$ANDROID_HOME/build-tools/36.0.0/zipalign" \
+            --readelf "$ANDROID_HOME/ndk/27.1.12297006/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf" \
+            --build-type debug \
+            --expected-source-sha "$APP_SOURCE_SHA" \
+            --out artifacts/release-evidence/android-debug-aab-evidence.json \
+            --verification-log-out artifacts/release-evidence/android-debug-aab-verification.txt
+
+      - name: 디버그 Android 산출물·bundletool 증거 업로드
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: hyeni-3-debug-android-${{ github.sha }}
+          path: |
+            hyeni-3/android/app/build/outputs/apk/debug/app-debug.apk
+            hyeni-3/android/app/build/outputs/bundle/debug/app-debug.aab
+            hyeni-3/artifacts/release-evidence/android-debug-aab-evidence.json
+            hyeni-3/artifacts/release-evidence/android-debug-aab-verification.txt
+          if-no-files-found: error
+          retention-days: 14

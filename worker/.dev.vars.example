@@ -1,0 +1,6 @@
+# ES256 JWT 키 (JWK JSON 한 줄). 실제 값은 .dev.vars에 (gitignore됨).
+# 생성:
+#   cd worker
+#   node --input-type=module -e "import {generateKeyPair,exportJWK} from 'jose'; const {publicKey,privateKey}=await generateKeyPair('ES256',{extractable:true}); const fs=await import('fs'); fs.writeFileSync('.dev.vars','JWT_PRIVATE_KEY='+JSON.stringify(await exportJWK(privateKey))+'\nJWT_PUBLIC_KEY='+JSON.stringify(await exportJWK(publicKey))+'\n');"
+JWT_PRIVATE_KEY=
+JWT_PUBLIC_KEY=

@@ -7,7 +7,7 @@ assert.ok(existsSync(identityPath), "아이 재연결용 기기 식별 힌트 �
 const identity = readFileSync(identityPath, "utf8");
 const familyApi = readFileSync("src/lib/api/endpoints/family.ts", "utf8");
 const onboarding = readFileSync("src/screens/onboarding/Onboarding.tsx", "utf8");
-const workerFamily = readFileSync("C:/Users/TK/Desktop/hyeni-1/worker/routes/family.ts", "utf8");
+const workerFamily = readFileSync("C:/Users/TK/Desktop/hyeni-3/worker/routes/family.ts", "utf8");
 
 assert.match(identity, /readChildDeviceIdentityHint/);
 assert.match(identity, /deviceInstallId/);

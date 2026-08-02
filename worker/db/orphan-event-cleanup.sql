@@ -1,0 +1,94 @@
+-- Orphan-event cleanup for the active-child event-isolation fix (2026-07-01).
+--
+-- WHY: supersede (/join Path C) and unpair (/unpair) NEVER delete `events`; they
+-- only flip family_members.is_active=0 (supersede) or delete the member + its
+-- events_children links (unpair). So a removed/superseded child's events survive as
+-- either (a) links pointing at an is_active=0 member, or (b) fully unlinked orphans.
+-- The cron used to re-attribute those to the sole active child (혜니 -> 아이2 leak).
+--
+-- The WORKER fix (worker/routes/push-notify.ts) already stops the alerts at runtime
+-- (an event only alerts if is_family_event OR it links an is_active=1 child — the exact
+-- parent-UI rule). This file is OPTIONAL tidy-up: it (A) drops truly dangling links and
+-- (B) — opt-in, per family — deletes the leftover orphan events so they also disappear
+-- from the parent's own full calendar.
+--
+-- ORDER: run AFTER family-members-is-active.sql (needs is_active). Idempotent.
+-- Prod run (per statement, recommended so you can eyeball each):
+--   cd worker && npx wrangler d1 execute hyeni-calendar --remote --command "<one statement>"
+-- Or the safe body as a file:
+--   cd worker && npx wrangler d1 execute hyeni-calendar --remote --file db/orphan-event-cleanup.sql
+
+-- ════════════════════════════════════════════════════════════════════════════════
+-- STEP 0 — read-only diagnostics (copy/paste each; NOTHING is modified) ───────────
+-- ════════════════════════════════════════════════════════════════════════════════
+--
+-- 0a. Did the is_active column ship at all? (0 = migration NOT applied → run
+--     family-members-is-active.sql first; the worker gates are no-ops without it.)
+--   SELECT COUNT(*) AS has_is_active FROM pragma_table_info('family_members') WHERE name='is_active';
+--
+-- 0b. Did the active-cleanup run? (all 1s = cleanup NOT run yet or no duplicates.)
+--   SELECT is_active, COUNT(*) AS n FROM family_members WHERE role='child' GROUP BY is_active;
+--
+-- 0c. This family's members (혜니 vs 아이2) — confirm exactly ONE active per slot:
+--   SELECT id, user_id, name, role, is_active, created_at
+--     FROM family_members WHERE family_id='<FAMILY_ID>' ORDER BY role, is_active DESC, name;
+--
+-- 0d. The "피아노" row — is it family? linked? to an active member? created by whom?
+--   SELECT e.id, e.title, e.date_key, e.time, e.is_family_event,
+--          (e.location IS NOT NULL) AS has_location, e.created_by,
+--          ec.child_id AS linked_member_id, fm.name AS linked_name, fm.is_active AS linked_active
+--     FROM events e
+--     LEFT JOIN events_children ec ON ec.event_id=e.id
+--     LEFT JOIN family_members fm ON fm.id=ec.child_id
+--    WHERE e.family_id='<FAMILY_ID>' AND e.title LIKE '%피아노%';
+--   -- linked_member_id NULL      -> orphan (LEAK 1): no link at all
+--   -- linked_active   = 0        -> linked only to a superseded member (LEAK 5)
+--   -- is_family_event = 1        -> family event (LEAK 2)  [should still show in UI!]
+--
+-- 0e. Full leak-candidate list per family — every non-family event with ZERO active
+--     child links (exactly the set the worker now silences AND cleanup B deletes):
+--   SELECT e.family_id, e.id, e.title, e.date_key, e.time,
+--          (e.location IS NOT NULL) AS has_location,
+--          (SELECT COUNT(*) FROM events_children ec WHERE ec.event_id=e.id) AS links,
+--          (SELECT COUNT(*) FROM events_children ec JOIN family_members fm
+--             ON fm.id=ec.child_id WHERE ec.event_id=e.id AND fm.role='child' AND fm.is_active=1)
+--            AS active_links
+--     FROM events e
+--    WHERE e.is_family_event=0
+--    GROUP BY e.id HAVING active_links=0
+--    ORDER BY e.family_id, e.date_key, e.time;
+
+-- ════════════════════════════════════════════════════════════════════════════════
+-- STEP A — SAFE, all-families, idempotent: drop DANGLING event links only.
+-- Deletes events_children rows whose child_id references NO family_members row
+-- (true FK orphans). It intentionally does NOT touch links to is_active=0 members,
+-- so a returning device (/join Path A reactivates the SAME member row) keeps its
+-- historical event linkage. This is the only always-safe write here.
+-- ════════════════════════════════════════════════════════════════════════════════
+DELETE FROM events_children
+ WHERE child_id NOT IN (SELECT id FROM family_members);
+
+-- ════════════════════════════════════════════════════════════════════════════════
+-- STEP B — OPT-IN, DESTRUCTIVE, per-family: delete leftover orphan events.
+-- Removes non-family events that link ZERO active children (orphans of a removed /
+-- superseded child). Scope to ONE family and eyeball STEP 0e first. This also
+-- deletes their remaining events_children rows (child FK links) for tidiness.
+--
+-- CAVEAT: if an event links only a *superseded* (is_active=0, still-present) member
+-- who may later RE-PAIR via Path A, deleting it loses that event on reconnect. Prefer
+-- leaving those (the worker already silences them) unless you're sure the child is gone.
+--
+-- Uncomment, replace <FAMILY_ID>, and run per family:
+--
+-- DELETE FROM events_children WHERE event_id IN (
+--   SELECT e.id FROM events e
+--    WHERE e.family_id='<FAMILY_ID>' AND e.is_family_event=0
+--      AND NOT EXISTS (
+--        SELECT 1 FROM events_children ec JOIN family_members fm ON fm.id=ec.child_id
+--         WHERE ec.event_id=e.id AND fm.role='child' AND fm.is_active=1)
+-- );
+-- DELETE FROM events
+--  WHERE family_id='<FAMILY_ID>' AND is_family_event=0
+--    AND NOT EXISTS (
+--      SELECT 1 FROM events_children ec JOIN family_members fm ON fm.id=ec.child_id
+--       WHERE ec.event_id=events.id AND fm.role='child' AND fm.is_active=1);

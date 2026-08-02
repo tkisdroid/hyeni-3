@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { AlertTriangle, Bell, Settings, ChevronRight, Check, MapPin, Smartphone, Mic, Keyboard, Image as ImageIcon, RefreshCw } from "lucide-react";
+import { useNavigate } from "react-router";
+import { AlertTriangle, Bell, Settings, ChevronRight, Check, MapPin, Smartphone, Mic, Keyboard, Image as ImageIcon, CalendarDays, RefreshCw } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
@@ -29,12 +29,24 @@ import { nearestPlace, EXACT_SAVED_PLACE_LABEL_RADIUS_M } from "@/transform/loca
 import { useEntitlement } from "@/queries/useEntitlement";
 import { TIERS, locationModeFor } from "@/transform/tierPolicy";
 import { resolveLocationTrustCopy } from "@/transform/locationTrustCopy";
+import { PremiumUpsell } from "@/components/PremiumUpsell";
+import {
+  browserPremiumValueMomentStorage,
+  findNewSuccessfulArrival,
+  markPremiumValueMomentOffered,
+  wasPremiumValueMomentOffered,
+  type PremiumValueMomentSource,
+} from "@/transform/premiumValueMoment";
+import {
+  browserPremiumReturnIntentStorage,
+  savePremiumReturnIntent,
+} from "@/transform/premiumReturnIntent";
 import "./ParentHome.css";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
 
 function avatarSrc(path: string): string {
-  return path.startsWith("http") ? path : asset(path);
+  return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
 }
 
 const SCHEDULE_PLACE_RADIUS_M = 150;
@@ -171,6 +183,61 @@ export function ParentHome() {
   const activeHeroLocation = activeChild?.user_id
     ? (locationsForDisplay ?? []).find((location) => location.user_id === activeChild.user_id) ?? null
     : null;
+  const [valueUpsellSource, setValueUpsellSource] = useState<PremiumValueMomentSource | null>(null);
+  const alertsBaselineRef = useRef<Set<string> | null>(null);
+  const locationBaselineRef = useRef<boolean | null>(null);
+  const valueMomentOfferedRef = useRef(false);
+
+  useEffect(() => {
+    alertsBaselineRef.current = null;
+    locationBaselineRef.current = null;
+    valueMomentOfferedRef.current = false;
+    setValueUpsellSource(null);
+  }, [familyId]);
+
+  // 초기 조회에 이미 있던 과거 위치는 제안 사유로 쓰지 않는다. 현재 홈 세션에서
+  // 실제 첫 위치가 0→1로 바뀐 Free 가족에게만 한 번 보여준다.
+  useEffect(() => {
+    if (!familyId || entitlement.tier === TIERS.UNKNOWN || !locationsQuery.isSuccess) return;
+    const hasLocation = (locationsForDisplay ?? []).length > 0;
+    if (locationBaselineRef.current === null) {
+      locationBaselineRef.current = hasLocation;
+      return;
+    }
+    const becameAvailable = !locationBaselineRef.current && hasLocation;
+    locationBaselineRef.current = hasLocation;
+    if (!becameAvailable || entitlement.tier === TIERS.PREMIUM || valueMomentOfferedRef.current) return;
+    const storage = browserPremiumValueMomentStorage();
+    if (wasPremiumValueMomentOffered(storage, familyId)) {
+      valueMomentOfferedRef.current = true;
+      return;
+    }
+    valueMomentOfferedRef.current = true;
+    markPremiumValueMomentOffered(storage, familyId);
+    setValueUpsellSource("first_location");
+  }, [entitlement.tier, familyId, locationsForDisplay, locationsQuery.isSuccess]);
+
+  // 알림 첫 로드는 baseline으로만 기억한다. 이후 realtime refetch로 들어온 신규 실측
+  // 도착(arrived/place_arrived)만 가치 순간으로 인정해 과거 알림 기반 재노출을 막는다.
+  useEffect(() => {
+    if (!familyId || entitlement.tier === TIERS.UNKNOWN || !alertsQuery.isSuccess) return;
+    const currentAlerts = alertsQuery.data ?? [];
+    if (alertsBaselineRef.current === null) {
+      alertsBaselineRef.current = new Set(currentAlerts.map((alert) => alert.id));
+      return;
+    }
+    const arrival = findNewSuccessfulArrival(currentAlerts, alertsBaselineRef.current);
+    alertsBaselineRef.current = new Set(currentAlerts.map((alert) => alert.id));
+    if (!arrival || entitlement.tier === TIERS.PREMIUM || valueMomentOfferedRef.current) return;
+    const storage = browserPremiumValueMomentStorage();
+    if (wasPremiumValueMomentOffered(storage, familyId)) {
+      valueMomentOfferedRef.current = true;
+      return;
+    }
+    valueMomentOfferedRef.current = true;
+    markPremiumValueMomentOffered(storage, familyId);
+    setValueUpsellSource("first_arrival");
+  }, [alertsQuery.data, alertsQuery.isSuccess, entitlement.tier, familyId]);
   const heroLocationCopy = resolveLocationTrustCopy({
     mode: locationMode,
     modeKnown: !locationScopeUnavailable,
@@ -529,6 +596,9 @@ export function ParentHome() {
             <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=image")}>
               <ImageIcon size={15} strokeWidth={2.4} /> 알림장
             </button>
+            <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?mode=academy&tab=image")}>
+              <CalendarDays size={15} strokeWidth={2.4} /> 학원표
+            </button>
           </div>
         </div>
 
@@ -686,7 +756,7 @@ export function ParentHome() {
                 </span>
                 <span style={{ minWidth: 0 }}>
                   <span className="ph-metric__k">배터리</span>
-                  <span className="ph-metric__v big">{deviceStatus.batteryLabel}</span>
+                  <span className="ph-metric__v">{deviceStatus.batteryLabel}</span>
                 </span>
               </div>
               <div className="ph-metric">
@@ -919,6 +989,24 @@ export function ParentHome() {
           </div>
         </section>
       </div>
+      {valueUpsellSource && (
+        <PremiumUpsell
+          open
+          source={valueUpsellSource}
+          tier={entitlement.tier}
+          returnTo="/parent/home"
+          onClose={() => setValueUpsellSource(null)}
+          onUpgrade={({ source, feature, returnTo }) => {
+            const storage = browserPremiumReturnIntentStorage();
+            const saved = storage && returnTo
+              ? savePremiumReturnIntent(storage, { source, feature, returnTo })
+              : false;
+            if (!saved) throw new Error("결제 후 돌아올 화면을 안전하게 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+            setValueUpsellSource(null);
+            navigate("/subscription");
+          }}
+        />
+      )}
     </div>
   );
 }

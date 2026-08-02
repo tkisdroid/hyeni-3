@@ -7,7 +7,8 @@
 ## 프로젝트 한 줄
 
 혜니캘린더 = 가족 일정 공유 + 부모·자녀 위치/안전 앱. **웹앱(PWA) 단일 코드베이스 +
-Android 만 Capacitor 래핑**. 백엔드는 **hyeni-1 의 Cloudflare Worker 를 그대로 재사용(재구축 금지)**.
+Android 만 Capacitor 래핑**. 백엔드 Cloudflare Worker 는 **이 저장소 `worker/` 가 정본**이다(재구축 금지,
+2026-08-02 hyeni-1 에서 이관 — 이제 hyeni-3 만으로 앱·Worker·D1 전체가 동작한다).
 1~10단계 전부 완료 — 현 국면은 **실사용 안정화**(TK 가 실기기 3대로 쓰며 제보 → 즉시 수정·검증·배포).
 
 ## 언어·말투 (절대 규칙)
@@ -29,20 +30,19 @@ npm run build      # 완료 기준 = exit 0
 # 웹 배포: ★ hyeni-3/.env 의 CLOUDFLARE_API_TOKEN(Workers/D1 전용, Pages 권한 없음)을 wrangler 가
 #   자동 로드해 OAuth 를 덮어쓴다 → .env 가 없는 디렉터리에서 실행할 것.
 #   (cd <임시디렉터리> && npx wrangler pages deploy C:/Users/TK/Desktop/hyeni-3/dist \n#      --project-name=hyeni-calendar --branch=main --commit-dirty=true)
-# Worker(백엔드, C:\Users\TK\Desktop\hyeni-1\worker): npx tsc --noEmit && npx wrangler deploy
-# Worker 전체 Node 테스트는 Vite root 오인식을 피하려고 부모 저장소에서 실행:
-#   (cd C:\Users\TK\Desktop\hyeni-1 && node --test worker/tests/*.test.mjs)
+# Worker(백엔드, 이 저장소 worker/): npm run typecheck:worker && npm run test:worker && npm run deploy:worker
+#   worker 테스트는 Vite 를 쓰지 않는다(Node 24 네이티브 TS + tsModuleResolve 훅) — 1,159개 약 3초.
 ```
 
 API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: https://hyeni-calendar.pages.dev
 
 ## 절대 안전 규칙
 
-1. **실사용 기기 보호**: 2026-07-19 최신 사용자 지시 기준 이번 최종 실기기 검증은
-   **A17(RFKL40DP73J) 한 대에서만** 수행한다. A17은 현재 부모모드 세션을 유지하고 `adb install -r`로
-   앱 데이터·계정·페어링·세션을 보존한다. 아이 역할 전용 동작은 A17 계측 테스트와 브라우저 역할 검증으로 확인하며,
-   실제 계정 로그아웃·역할 전환·재페어링을 하지 않는다. **razr는 연결 해제·미조작**, **S25는 검증 제외** 상태이며
-   다시 명시적으로 허용받기 전에는 설치·실행·로그·세션 조회를 포함한 어떤 adb 접근도 하지 않는다.
+1. **실사용 기기 보호**: 2026-08-02 최신 사용자 지시 기준 이번 최종 실기기 검증은
+   **A17(RFKL40DP73J) 부모와 razr(ZY22H9VTQD) 아이만** 수행한다. 두 기기 모두 현재 역할·세션을 유지하고
+   `adb install -r`로 앱 데이터·계정·페어링·세션을 보존한다. 실제 계정 로그아웃·역할 전환·재페어링을 하지 않는다.
+   **S25는 검증 제외** 상태이며 다시 명시적으로 허용받기 전에는 설치·실행·로그·세션 조회를 포함한 어떤 adb 접근도
+   하지 않는다.
    refresh 토큰은 출력·복사·회전하지 않는다.
 2. **라이브 refresh 토큰 조작 금지** — 회전시키면 앱 세션이 파괴된다. access 토큰만 읽기.
    2026-07-10부터 refresh 체인은 **기기 바인딩**(device_install_id 스탬핑) — 외부에서 토큰 사본으로 회전 시도하면 401이 정상이다.
@@ -144,19 +144,25 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 - **안심리포트·스티커 진입점(2026-07-09)**: 부모 홈에서 `/daily-report`는 바로가기의 "안심리포트"로만 진입한다.
   기존 상단 하트/`꾹` 스티커 UI는 재도입하지 말고, 상단 액션은 명확한 "스티커" 전송 버튼으로 유지한다.
   이 규칙은 부모 홈 스티커 접근성 정리이며, 아이 모드 긴급 SOS 안전 동선과 혼동하지 않는다.
-- **리뷰 보상 티어(2026-07-08)**: `/api/review-rewards`는 부모 전용 서버 계약이다. 아이/선생님 세션에서
-  엔타이틀먼트가 필요해도 이 API를 호출하지 말고 reviewed=false로 확정한다. 아이 화면 CDP 로그에 403 네트워크 오류가
-  남으면 실패로 보고 `resolveReviewRewardQueryScope` 규칙을 확인한다.
-- **스토어 방문 혜택·위치 티어(2026-07-13)**: 부모 무료 화면의 CTA는 "스토어 방문 혜택 받기"이며 평점·리뷰 작성의
-  대가처럼 안내하지 않는다. 지급은 서버 `store_visit` 계약과 부모 본인 가족 검증을 통과한 경우에만 확정한다. 위치 조회는
-  서버가 `locked|delayed|realtime`으로 판정한다. 무료 부모는 빈 위치, reviewed 부모는 서버 현재 시각 기준 정확히 15분 이전의
-  `location_history` 실측점 중 최신값, 프리미엄 부모는 현재 위치를 받는다. cutoff 이전 점이 없으면 현재점을 대신 노출하지 않는다.
-  아이 세션은 본인 위치만 조회하고, 경로 이력은 프리미엄 부모만, 위치 인시던트는 티어와 무관하게 부모만 조회한다.
+- **스토어 방문 혜택 grandfather(2026-08-01)**: 신규 지급은 종료했다. `/api/review-rewards` GET은 부모 세션에서
+  기존 `family_review_rewards` 행만 읽고, POST claim은 부모 본인 가족을 확인한 뒤
+  `410 review_reward_program_ended`로 닫으며 INSERT·UPDATE·DELETE하지 않는다. 이번 정책 전환에서 기존 행을 삭제하지
+  않고, `reviewed`는 이미 받은 장소 한도를 유지하기 위한 숨은 내부 호환 상태일 뿐 사용자 노출 상품 티어가 아니다.
+  클라이언트 `useReviewReward`도 조회 전용이며 아이/선생님 세션은 호출하지 않고 reviewed=false로 확정한다. 부모 설정은
+  신규 지급 CTA를 노출하지 않고 무료 가족에는 종료 안내, 기존 혜택 가족에는 유지 안내만 표시한다.
+- **위치 티어(2026-08-01)**: 위치 조회는 서버가 `locked|standard|realtime`으로 판정한다. Free와 기존
+  reviewed 부모는 10분 버킷 이전의 아이별 최신 실측 위치를 측정시각·정확도와 함께 받고, 부모가 누른 즉시 위치 요청은
+  rolling 24시간 5회까지 실제 새 fix를 5분 확인 창에서 바로 표시한다. Premium 부모는 현재 위치와 즉시 요청 무제한을 받는다.
+  Free/reviewed 이력은 Asia/Seoul 오전 8시 기준 오늘 범위, Premium은 서버 현재시각 이전 최근 30일로 clamp하며 범위 밖 요청은
+  빈 결과로 닫는다. 아이 세션은 활성 상태인 본인 최신 위치만 조회하고, 위치 인시던트는 티어와 무관하게 부모만 조회한다.
   엔타이틀먼트 DB 판정 실패는 최신 위치를 열지 않고 `503 location_entitlement_unavailable`로 닫는다.
 - **구독 결제 정본(2026-07-13)**: 7일 무료 체험은 Google Play가 현재 계정에 eligible 하다고 반환한 offer 중
   무료 pricing phase가 정확히 7일인 경우에만 표시·구매한다. 결제 직전에 상품을 다시 조회하고 그 `offerToken`·`offerId`를
   네이티브 결제와 Worker 검증까지 그대로 전달하며, 가격은 Play `formattedPrice`만 표시한다. `trial`은 미래
   `trial_ends_at`, `active/grace/cancelled`는 미래 `current_period_end`가 있을 때만 프리미엄이다(해지는 결제 종료일까지 유지).
+  신규 Google 결제는 월 4,900원·연 39,000원만 서버가 승인한다. 가격 전환일인 2026-08-01 00:00 KST 이전에 시작된
+  월 2,900원·연 27,840원 기존 구독은 복원·RTDN 재검증에서만 grandfather하며, 신규 verify와 전환 시각 이후 시작 구독은
+  과거 가격을 거부한다. base plan ID의 숫자는 가격 정본이 아니다.
   BillingFlow에는 가족·부모 식별자의 SHA-256 값을 obfuscated account/profile id로 넣고 Worker가 Play 응답과 대조한다.
   부모 앱 시작·foreground에서는 6시간 제한으로 기존 `PURCHASED` 구독을 서버 재검증해 자동갱신 종료일을 동기화한다.
   AI 크레딧은 purchase event claim·잔액·원장을 한 D1 batch로 확정하고 consume 실패 재시도에서 중복 가산하지 않는다.
@@ -165,6 +171,19 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   `503` fail-closed가 정상이다. Qonversion은 비활성·비정본 보조 route이며 health는 secret이 없으면
   `configured:false, accepting:false, primaryProvider:false`를 반환한다. Billing 상품 조회 진단은 response code/debug message와
   미조회 product id/type/status만 다루고 purchase/order token을 로그나 응답 진단에 포함하지 않는다.
+- **프리미엄 퍼널 최소수집 계약(2026-08-01)**: 클라이언트는 고정 allowlist 이벤트에 UUID `event_id`·앱 버전·발생 시각만
+  붙여 최대 20건씩 전송하고, 실패한 요청은 브라우저 저장소 없이 메모리 100건 큐에서 다음 기록 때만 재시도한다. 분석 실패가
+  안전 기능·업셀·결제를 실패시키거나 세션 refresh를 일으키면 안 된다. Worker `/api/premium-funnel/events`는 현재 active parent의
+  정본 가족을 서버에서 결정하고 `PREMIUM_FUNNEL_HASH_SECRET` HMAC-SHA256 가족 가명키만 D1에 저장한다. 원시 user/family,
+  위치·이름·주소·메모/AI 원문·email/phone·가격·auth/purchase/order token·자유 JSON은 컬럼 자체가 없다.
+  첫 실측 위치·같은 세션 신규 도착의 가치 순간을 `first_location|first_arrival` source 문자열로만 구분하며 좌표·주소·alert id를
+  싣지 않는다. Google Play는 재검증 전후 정본 상태가 확정한 신규 체험·최초 활성·실제 기간 연장·revoke만 각각
+  `trial_start|entitlement_activated|renewal|refund`로 기록하고, SHA-256 purchase token hash로 만든 결정적 HMAC UUID만 사용한다.
+  클라이언트 이벤트는 행동 관측만 허용하고 `entitlement_activated|trial_start|renewal|refund`는 검증된 결제 서버 경로의
+  fail-soft helper에서만 기록한다.
+  `event_id`는 멱등이고 가족별 시간당 600건, payload 16KiB·batch 20건, 발생 시각 -7일/+10분을 제한하며 서버 `received_at`을
+  별도 저장한다. `0 * * * *` cron은 180일 지난 이벤트를 멱등 삭제한다. 운영에는 `worker/db/premium-funnel.sql` 적용과
+  secret 설정을 Worker 배포 전에 완료하며, 미설정 `503 configured:false`는 분석만 닫고 제품 흐름은 계속한다.
 - **출시 AAB 신선도(2026-07-13)**: 체크리스트의 서명 AAB는 최신 앱 커밋 이후 다시 빌드하고 서명·해시·mtime을 확인한
   경우에만 준비 완료로 표시한다. 과거 AAB가 디스크에 존재한다는 이유만으로 업로드하지 않는다. 서명 비밀번호는 사용자만
   입력하며 에이전트가 자격 파일을 읽어 자동 서명하지 않는다.
@@ -189,6 +208,23 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   시간을 줄이지 않는다. FCM·pending 수신만으로 마이크를 시작하지 않는다(반드시 `RemoteListenActivity` 경유). 익명 realtime
   broadcast와 클라이언트 WebSocket relay는 금지하며, stop은 같은 requestId·아이·session nonce를 확인하고 감사 행을
   닫기 전에 전송한다. 감사 종료 시각·길이·종료 사유는 서버가 확정한다.
+- ★원격 제어 수신·네이티브 가로 화면(2026-08-02 TK 실기기 제보): Android `NotificationTargetPolicy`는 모든 FCM에
+  `familyId`·`targetUserId`를 필수로 검사하고 `targetRole`이 있으면 역할까지 일치시킨다. 따라서 공용 fanout을 우회하는
+  force-ring 시작·정지·5분 경과 직접 payload에도 세 필드를 각각 child/child/parent 대상으로 넣어야 한다. FCM API 200과
+  `delivered_at`은 기기 처리 증거가 아니며 `acknowledged_at`까지 교차 확인한다. 주변소리는 full-screen Activity가 알림 게시와
+  경합하지 않도록 `RemoteListenRequestStore.markNotificationShown`을 `notify()`보다 먼저 commit하고, 게시 실패 때 pending 예약만
+  되돌린다. 앱이 foreground면 안내 알림 게시 뒤 `RemoteListenActivity`를 직접 열되 마이크는 기존 서버 승인 증표 뒤에만 켠다.
+  targetSdk 35+에서는 full-screen `PendingIntent` 생성자가 background Activity start 권한을 명시해야 하므로 주변소리·SOS/
+  emergency·force-ring 전체화면 경로는 `UrgentActivityPendingIntent`를 공용 사용한다(SDK 34/35=`ALLOWED`, SDK 36+=
+  `ALLOW_ALWAYS`). Android 13+에서 잠금 해제된 background 앱의 full-screen intent는 heads-up으로 강등될 수 있어 무조건 자동
+  실행으로 단정하지 않는다. SOS 3초 홀드는 pointer capture로 미세 이동·눌림 scale에 의한 `pointerleave` 취소를 막고,
+  부모 긴급 알림은 같은 `requestHash`를 `event_id`로 보내 각 8초 상한·최대 2회로 일시적 네트워크/408/425/429/5xx만 재시도한다.
+  Capacitor 진입점은
+  `<html data-hy-native>`를 표시하고 native에서는 `.hy-app`·고정 오버레이의 448px 폰 프레임, 바깥 배경, radius/shadow를 해제해
+  가로 화면을 전폭으로 쓴다. 회귀=`tests/forceRingTargetPayload.test.mjs`(Worker)·`tests/remoteListenConsentSafety.test.mjs`·
+  `tests/childSosCopy.test.mjs`·`tests/mobileViewportCss.test.mjs`와 Android `UrgentActivityPendingIntentTest`. 로컬 앱 전체 1231개,
+  production build/PWA 검증, Android unit+assemble+lint, Worker 대상 payload 3개+typecheck는 통과했다. Worker/Pages 배포 및
+  A17·razr E2E는 두 기기 미연결로 미완료다.
 - ★주변소리 세션 조기 종료(2026-07-22 실사고): 부모 화면이 시작 ~4.5초 만에 "1분이 지나 듣기를 종료했어요"로
   닫혔다. 근본 원인은 클라 파싱 버그 — `src/lib/api/endpoints/remoteAudit.ts`의 `finiteMs`가 `Number(null)===0`을
   유한값으로 통과시켜 미동의 세션의 `ended_at_ms`(서버 JSON null)를 0으로 만들었고, 타이밍 resolver의
@@ -225,7 +261,7 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   `device_info/error_logs/current_screen`에 저장한다. 대화·위치 좌표·사진·비밀번호·로그인/구매 토큰·원문 오류는
   진단에 포함하지 않으며 Worker도 허용 필드만 재조립한다. 구조화 Worker 로그는 requestId만 상관키로 사용한다.
   운영 정본=`docs/feedback-operations.md`, 회귀=`tests/feedbackDeliverySafety.test.mjs`·`tests/feedbackDiagnostics.test.ts`.
-- **선생님 모드 출시 차단(2026-07-14)**: v1.2.0 프로덕션은 미완성 선생님 가입·반 연동을 심사 화면에 노출하지 않는다.
+- **선생님 모드 출시 차단(2026-07-14, v1.3.0 유지)**: v1.3.0 프로덕션은 미완성 선생님 가입·반 연동을 심사 화면에 노출하지 않는다.
   `TEACHER_MODE_ENABLED`는 `import.meta.env.DEV`만 정본으로 사용하고 환경변수 우회를 두지 않는다. 프로덕션 온보딩은
   선생님 역할 카드를 숨기며 `/teacher/*`는 준비 안내 gate로 닫는다. 기존 teacher 세션도 gate에서 로그아웃·회원 탈퇴·
   이용약관·개인정보처리방침에 접근할 수 있어야 한다. 부모·아이 공용 준비물은 `RequireAnyRole(parent|child)` 아래에 두어
@@ -513,7 +549,7 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 2. **제보는 재현부터**: 코드 추측 수정 금지 — 실기기/실데이터로 증상 재현해 진짜 원인 특정.
 3. **근본 원인 + 다중 방어**: 레이스·유실 계열은 서버+클라 양쪽에 방어를 겹친다.
 4. **정직한 강등**: 외부 의존 실패 시 가짜 데이터 금지 — 명시적 폴백("직선 553m 쯤"+외부 앱 버튼 등).
-5. **재사용 우선**: hyeni-1 서버/인프라 먼저 조사, 서버 무변경 해법 선호.
+5. **재사용 우선**: 기존 서버/인프라(`worker/`) 먼저 조사, 서버 무변경 해법 선호.
 6. **오케스트레이션**: 넓은 탐색·감사=병렬 에이전트+적대 검증(CONFIRMED 만 수정) /
    정밀 수정·아키텍처=단일 컨텍스트 인라인.
 7. **보고**: 결론 먼저 한 줄 → 검증 표 → 리스크·미해결·사용자 몫 정직 고지. "될 것입니다" 금지,
@@ -650,16 +686,15 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   새 화면은 `aria-busy={<진행 식>}` 만 정확히 켜면 된다(`disabled` 식에서 **진행 항만** 골라야 한다 — 유효성 항까지
   넣으면 그냥 못 누르는 버튼이 '작업 중'으로 잘못 알려진다). 자기 스피너를 그리는 버튼은 `hy-busy-quiet` 로 제외한다.
   가드=`tests/progressIndicatorContract.test.mjs`.
-- ★**Worker 배포 자격(2026-07-30)**: `hyeni-3/.env` 의 `CLOUDFLARE_API_TOKEN` 은 D1 만 되고 Workers 배포는
-  `Authentication error 10000` 이다. 배포는 **`hyeni-1/.env.local` 의 `CLOUDFLARE_API_TOKEN` + `hyeni-3/.env` 의
-  `CLOUDFLARE_ACCOUNT_ID`** 를 프로세스 env 로 주입해서 한다. 두 값 모두 따옴표를 벗겨야 한다(`"…"` 그대로면
-  `/accounts/"id"/…` 로 요청돼 실패).
+- ★**Worker 배포 자격(2026-08-02 갱신)**: 루트 `.env` 의 `CLOUDFLARE_API_TOKEN` 은 D1 전용이라 Workers 배포가
+  `Authentication error 10000` 이다. 배포 권한 토큰과 계정 ID 는 **`worker/.env`** 에 있고 두 값 모두 따옴표를
+  벗겨 프로세스 env 로 주입해야 한다(`"…"` 그대로면 `/accounts/"id"/…` 로 요청돼 실패).
+  `worker/.env`·`worker/.dev.vars` 는 gitignore 이며 값을 출력·커밋하지 않는다.
 
-- 기기(2026-07-19 최신 사용자 지시): **A17(RFKL40DP73J)만 실기기 검증기**다. 현재 부모모드 세션을
-  유지한 채 `adb install -r`만 사용해 앱 데이터·계정·페어링·세션을 보존한다. 아이 역할 전용 동작은 A17
-  계측 테스트와 브라우저 역할 검증으로 확인하고 실제 계정의 로그아웃·역할 전환·재페어링은 하지 않는다.
-  **razr는 연결 해제·미조작**, **S25는 검증 제외**이며 다시 명시적으로 허용받기 전에는 설치·실행·로그·
-  세션 조회를 포함한 어떤 adb 접근도 하지 않는다.
+- 기기(2026-08-02 최신 사용자 지시): **A17(RFKL40DP73J)은 부모, razr(ZY22H9VTQD)는 아이 실기기 검증기**다.
+  두 기기 모두 현재 역할·세션을 유지하고 `adb install -r`로 앱 데이터·계정·페어링·세션을 보존한다. 실제
+  로그아웃·역할 전환·재페어링을 하지 않는다. **S25는 검증 제외**이며 다시 명시적으로 허용받기 전에는
+  설치·실행·로그·세션 조회를 포함한 어떤 adb 접근도 하지 않는다.
 - 기기 역할은 세션별로 바뀐 이력이 있으므로, 문서의 과거 단계 기록보다 **최신 사용자 지시/goal**을 우선한다.
   단, 완료 선언 전에는 CDP로 WebView 세션(`hyeni-api-session-v1`)의 role/familyId와 실제 화면을 다시 확인하고,
   지시한 역할과 다르면 해당 실기기 검증은 미검증/차단으로 분리 보고한다.

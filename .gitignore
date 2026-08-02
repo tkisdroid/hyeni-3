@@ -12,6 +12,8 @@ dev-dist
 # env
 .env
 .env.*.local
+# Worker 로컬 시크릿 (wrangler dev) — .dev.vars.example 만 커밋
+.dev.vars
 
 # editor / os
 .DS_Store
@@ -65,9 +67,21 @@ tmp_s25_check/
 tmp-design-*/
 tmp-sweep/
 tmp-ui-*/
+tmp-verify-*/
 scripts/tmp-*.mjs
+.lighthouse-profile*/
+.playwright-mcp/
+.wrangler/
+browser-*.png
+artifacts/**/lighthouse-profile-*/
+artifacts/release-evidence/
+artifacts/release-records/
 
-# output 스크린샷/렌더 산출물 — store-screenshots(기존 추적)만 예외로 유지
-output/
-!output/store-screenshots/
-!output/store-screenshots/**
+# output 스크린샷/렌더 산출물 — 개인정보 없는 생성 자산만 예외로 유지
+output/*
+!output/store-safe-assets-v1/
+!output/store-safe-assets-v1/**
+!output/store-ui-candidates-v1/
+!output/store-ui-candidates-v1/**
+!output/store-listing-assets-v1/
+!output/store-listing-assets-v1/**

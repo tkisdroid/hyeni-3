@@ -1,0 +1,77 @@
+name: Worker 출시 후보 검증
+
+# Worker 정본은 이 저장소의 worker/ 디렉터리다(과거 hyeni-1 sibling checkout 폐지).
+# 앱과 Worker가 같은 커밋에서 함께 검증되므로 교차 저장소 SHA 고정이 필요 없다.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "worker/**"
+      - "cloudflare/schema_d1.sql"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/worker-quality.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "worker/**"
+      - "cloudflare/schema_d1.sql"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/worker-quality.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: hyeni-worker-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: 타입·전체 테스트·감사·배포 번들 검증
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: 저장소 받기
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: 실제 HEAD 검증
+        shell: bash
+        env:
+          EXPECTED_SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          actual_sha="$(git rev-parse HEAD)"
+          if [ "${actual_sha,,}" != "${EXPECTED_SOURCE_SHA,,}" ]; then
+            echo "checkout HEAD가 workflow source SHA와 다릅니다." >&2
+            exit 1
+          fi
+          echo "WORKER_SOURCE_SHA=$actual_sha" >> "$GITHUB_ENV"
+
+      - name: Node.js 설정
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.22.0
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: Worker 타입 검사
+        working-directory: worker
+        run: npx tsc --noEmit
+
+      - name: Worker 전체 테스트
+        run: node --test worker/tests/*.test.mjs
+
+      - name: Worker 배포 번들·설정 검증
+        working-directory: worker
+        run: npx wrangler deploy --dry-run --outdir "$RUNNER_TEMP/hyeni-worker-dry-run"
+
+      - name: 의존성 보안 감사
+        run: npm audit --audit-level=high

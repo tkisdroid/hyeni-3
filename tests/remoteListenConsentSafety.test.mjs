@@ -7,7 +7,7 @@ const read = (path) => {
   return existsSync(url) ? readFileSync(url, "utf8") : "";
 };
 
-test("원격청취 FCM은 일반 동의 알림만 게시하고 화면·마이크를 자동 시작하지 않는다", () => {
+test("원격청취 FCM 수신부는 공용 안내 경로만 호출하고 화면·마이크를 직접 시작하지 않는다", () => {
   const fcm = read("android/app/src/main/java/com/hyeni/calendar/MyFirebaseMessagingService.java");
   const remoteBlock = fcm.slice(
     fcm.indexOf('if ("remote_listen".equals(type))'),
@@ -23,7 +23,7 @@ test("원격청취 FCM은 일반 동의 알림만 게시하고 화면·마이크
   assert.doesNotMatch(fcm, /private boolean startAmbientListenService\(/);
 });
 
-test("pending 원격청취도 동의 알림만 게시하고 직접 캡처·Activity 자동 실행을 하지 않는다", () => {
+test("pending 수신부도 공용 안내 경로만 호출하고 직접 캡처·Activity 실행을 하지 않는다", () => {
   const service = read("android/app/src/main/java/com/hyeni/calendar/LocationService.java");
   const remoteBlock = service.slice(
     service.indexOf('if ("remote_listen".equals(type))'),
@@ -61,6 +61,9 @@ test("위급 주변소리 알림은 잠금화면까지 닿는 전체화면 인�
     helper.indexOf("public static int stableRequestCode"),
   );
   assert.match(channelBody, /IMPORTANCE_HIGH/);
+  assert.match(channelBody, /주변 소리 알림/);
+  assert.match(channelBody, /아이 화면과 알림에 표시/);
+  assert.doesNotMatch(channelBody, /동의 요청|직접 허용|확인과 수락/);
   assert.doesNotMatch(channelBody, /setBypassDnd\(true\)/);
   assert.doesNotMatch(channelBody, /setSound\(null/);
 });
@@ -173,19 +176,55 @@ test("동의 API 401은 현재 세션을 보존해 한 번만 갱신·재시도�
   assert.doesNotMatch(client, /remove\("accessToken"\)|remove\("refreshToken"\)/);
 });
 
-test("동의 처리 중 화면 회전으로 Activity가 재생성되지 않도록 세로 방향을 고정한다", () => {
+test("Android 16 회전을 허용하면서 동의 처리 중 Activity 재생성을 막는다", () => {
   const manifest = read("android/app/src/main/AndroidManifest.xml");
+  const mainActivity = manifest.match(
+    /<activity(?=[^>]*android:name="\.MainActivity")[^>]*>/s,
+  )?.[0] ?? "";
   const remoteActivity = manifest.match(
     /<activity(?=[^>]*android:name="\.RemoteListenActivity")[^>]*\/>/s,
   )?.[0] ?? "";
 
-  assert.match(remoteActivity, /android:screenOrientation="portrait"/);
+  assert.notEqual(mainActivity, "");
+  assert.notEqual(remoteActivity, "");
+  assert.doesNotMatch(mainActivity, /android:screenOrientation=/);
+  assert.doesNotMatch(remoteActivity, /android:screenOrientation=/);
+  assert.match(mainActivity, /android:configChanges="[^"]*orientation[^"]*screenSize[^"]*"/);
+  assert.match(remoteActivity, /android:configChanges="[^"]*orientation[^"]*screenSize[^"]*"/);
+});
+
+test("위급 주변소리 요청은 Activity보다 먼저 저장하고 보이는 앱에서만 연결 화면을 직접 연다", () => {
+  const notification = read("android/app/src/main/java/com/hyeni/calendar/RemoteListenNotification.java");
+  const storeIndex = notification.indexOf("RemoteListenRequestStore.markNotificationShown(");
+  const notifyIndex = notification.indexOf("manager.notify(notificationId, notification)");
+
+  assert.ok(storeIndex >= 0 && notifyIndex > storeIndex, "full-screen Activity보다 요청 상태를 먼저 저장해야 합니다");
+  assert.match(
+    notification,
+    /MainActivity\.isAppForegroundForMicrophone\(\)[\s\S]*context\.startActivity\(launchIntent\)/,
+  );
+  assert.match(notification, /catch \(RuntimeException error\) \{\s*RemoteListenRequestStore\.discardPendingNotification/s);
+  assert.doesNotMatch(notification, /startForegroundService|startService/);
+});
+
+test("Android 15+ 긴급 전체화면 PendingIntent는 creator BAL 권한을 명시한다", () => {
+  const factory = read("android/app/src/main/java/com/hyeni/calendar/UrgentActivityPendingIntent.java");
+  const notification = read("android/app/src/main/java/com/hyeni/calendar/RemoteListenNotification.java");
+  const helper = read("android/app/src/main/java/com/hyeni/calendar/NotificationHelper.java");
+  const fcm = read("android/app/src/main/java/com/hyeni/calendar/MyFirebaseMessagingService.java");
+
+  assert.match(factory, /setPendingIntentCreatorBackgroundActivityStartMode/);
+  assert.match(factory, /MODE_BACKGROUND_ACTIVITY_START_ALLOW_ALWAYS/);
+  assert.match(factory, /MODE_BACKGROUND_ACTIVITY_START_ALLOWED/);
+  assert.match(notification, /UrgentActivityPendingIntent\.getActivity\(/);
+  assert.match(helper, /UrgentActivityPendingIntent\.getActivity\(/);
+  assert.match(fcm, /UrgentActivityPendingIntent\.getActivity\(/);
 });
 
 test("동의 전 access JWT 수명을 확인하고 오디오 전송 실패를 서버 감사 상태에 반영한다", () => {
   const client = read("android/app/src/main/java/com/hyeni/calendar/RemoteListenConsentClient.java");
   const service = read("android/app/src/main/java/com/hyeni/calendar/AmbientListenService.java");
-  const security = read("../hyeni-1/worker/lib/remoteListenSecurity.ts");
+  const security = read("worker/lib/remoteListenSecurity.ts");
 
   assert.match(client, /requiresRefreshForCapture/);
   assert.match(client, /CAPTURE_AUTH_SAFETY_MS/);

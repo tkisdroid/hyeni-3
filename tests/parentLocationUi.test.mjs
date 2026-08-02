@@ -21,15 +21,19 @@ test("실시간 위치 요청 중에는 대기 상태를 화면에 표시하고 
   assert.match(refreshWaitSource, /while \(now\(\) < deadline\)/);
   assert.match(source, /return \(\) => \{\s*refreshSeq\.current \+= 1;/s);
   assert.match(source, /className="pl-refreshing"/);
-  assert.match(source, /지도와 장소명은 마지막으로 확인된 위치예요/);
+  // 진행 안내는 간단한 한 줄만 쓴다 — 단계별 설명과 부제는 재도입 금지(2026-08-02 TK 지시).
+  assert.match(source, /const refreshOverlayTitle = "위치 요청을 보냈어요"/);
+  assert.doesNotMatch(source, /refreshOverlaySub|새 위치를 기다리는 중|위치 요청을 보내는 중/);
+  // 새로고침 버튼은 자체 회전 아이콘이 있으므로 전역 aria-busy 스피너를 끈다(아이콘 2개 방지).
+  assert.match(source, /className=\{`pl-refresh hy-busy-quiet\$\{/);
 });
 
-test("부모가 실시간 위치 화면에 들어오면 활성 아이 위치를 한 번 자동 요청한다", () => {
+test("부모 위치 화면 자동 요청은 Premium에서만 실행해 Free 수동 5회를 소모하지 않는다", () => {
   assert.match(source, /isFetched/);
   assert.match(source, /const autoRefreshKeyRef = useRef<string \| null>\(null\)/);
   assert.match(
     source,
-    /if \(\s*activeView !== "live"\s*\|\|\s*!canShowHistory\s*\|\|\s*!refreshTargetKey\s*\|\|\s*!isFetched\s*\|\|\s*isFetching\s*\|\|\s*isRefreshingLocation\s*\)\s*return;/s,
+    /if \(\s*activeView !== "live"\s*\|\|\s*!canShowLocation\s*\|\|\s*!premiumOpen\s*\|\|\s*!refreshTargetKey\s*\|\|\s*!isFetched\s*\|\|\s*isFetching\s*\|\|\s*isRefreshingLocation\s*\)\s*return;/s,
   );
   assert.match(source, /autoRefreshKeyRef\.current = refreshTargetKey/);
   assert.match(source, /void refreshLocation\(false\)/);

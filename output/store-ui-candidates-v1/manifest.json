@@ -1,0 +1,110 @@
+{
+  "generatedAt": "2026-08-02T15:32:55.153Z",
+  "source": "local-production-dist-with-static-demo-session",
+  "sourceDist": {
+    "fileCount": 414,
+    "sha256": "64d6dfb6a3f5001775081638fa7dcbfcbe4290b45e61197fc4ddfbb7efe272db"
+  },
+  "uploadStatus": "candidate_requires_policy_and_visual_review",
+  "files": [
+    {
+      "file": "01-parent-home-ui.png",
+      "route": "parent/home",
+      "role": "parent",
+      "tier": "premium",
+      "semanticSelector": ".ph-hero",
+      "expectedTexts": [
+        "데모 자녀의 오늘",
+        "오늘의 일정"
+      ]
+    },
+    {
+      "file": "02-family-calendar-ui.png",
+      "route": "parent/calendar",
+      "role": "parent",
+      "tier": "free",
+      "semanticSelector": ".pc-events .pc-event__card",
+      "expectedTexts": [
+        "가족 일정",
+        "방과 후 일정"
+      ]
+    },
+    {
+      "file": "03-family-memo-ui.png",
+      "route": "parent/memo",
+      "role": "parent",
+      "tier": "free",
+      "semanticSelector": ".mc-root .mc-bubble",
+      "expectedTexts": [
+        "데모 자녀",
+        "오늘 가족 일정을 확인해 주세요.",
+        "조심히 와 💛"
+      ]
+    },
+    {
+      "file": "04-daily-safety-report-ui.png",
+      "route": "daily-report",
+      "role": "parent",
+      "tier": "premium",
+      "semanticSelector": ".dr-root .dr-overview",
+      "expectedTexts": [
+        "오늘의 안심 리포트",
+        "데모 자녀 · 오늘"
+      ]
+    },
+    {
+      "file": "05-weekly-family-report-ui.png",
+      "route": "weekly-report",
+      "role": "parent",
+      "tier": "premium",
+      "semanticSelector": ".wr-root .wr-metrics",
+      "expectedTexts": [
+        "주간 가족 리포트",
+        "데모 자녀"
+      ]
+    },
+    {
+      "file": "06-child-home-ui.png",
+      "route": "child/home",
+      "role": "child",
+      "tier": "free",
+      "semanticSelector": ".kd-root .kd-node",
+      "expectedTexts": [
+        "데모 자녀의 오늘",
+        "가족 일정"
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "01-parent-home-ui.png",
+      "bytes": 576560,
+      "sha256": "449e771843e4f552894163c56a2341e16c16719e5ea8a6ad301b3e13f651f7af"
+    },
+    {
+      "file": "02-family-calendar-ui.png",
+      "bytes": 187036,
+      "sha256": "67bd603b3896b23ad491a8015bd441e315c4489a559badc480d6a303e56d4705"
+    },
+    {
+      "file": "03-family-memo-ui.png",
+      "bytes": 228174,
+      "sha256": "64283ded79021b043eb298b5bf3a46f6cc31a4f212833e2ee9f094744d08633d"
+    },
+    {
+      "file": "04-daily-safety-report-ui.png",
+      "bytes": 398715,
+      "sha256": "eb3dcb4b30f4b56a2bde2ff13f3fb86c03eb60caad1da8628018af012eaa0a63"
+    },
+    {
+      "file": "05-weekly-family-report-ui.png",
+      "bytes": 263974,
+      "sha256": "89c309180776c24f77b8208398150ba82cddc3f4197cd1894704a7ef60ff9131"
+    },
+    {
+      "file": "06-child-home-ui.png",
+      "bytes": 638780,
+      "sha256": "27925682b75f00ceb0e0aef3589589e7894221f6af6bb80a0b52f0812733ecfb"
+    }
+  ]
+}

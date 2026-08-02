@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const workerStickers = readFileSync(
-  "C:/Users/TK/Desktop/hyeni-1/worker/routes/stickers.ts",
+  "C:/Users/TK/Desktop/hyeni-3/worker/routes/stickers.ts",
   "utf8",
 );
 const fcmService = readFileSync(

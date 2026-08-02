@@ -1,0 +1,59 @@
+-- 인증 테이블 — GoTrue(auth.users/auth.identities) 대체.
+-- 기존 uuid와 bcrypt 해시를 보존해 데이터 FK 정합성과 비밀번호 로그인을 유지.
+
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,              -- 기존 auth.users.id (uuid) 보존
+  phone TEXT,                       -- 인증형 전화번호 (GoTrue 저장 형식)
+  email TEXT,
+  encrypted_password TEXT,          -- GoTrue bcrypt 해시 그대로
+  is_anonymous INTEGER NOT NULL DEFAULT 0,
+  raw_user_meta_data TEXT,          -- login_id/name/gender/birthdate JSON
+  created_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+CREATE TABLE IF NOT EXISTS auth_identities (
+  id TEXT,
+  user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,           -- phone/kakao/google/naver
+  provider_id TEXT NOT NULL,        -- 제공자 측 식별자
+  identity_data TEXT,
+  created_at TEXT,
+  PRIMARY KEY (provider, provider_id)
+);
+CREATE INDEX IF NOT EXISTS idx_auth_identities_user ON auth_identities(user_id);
+
+CREATE TABLE IF NOT EXISTS oauth_state_transactions (
+  state_hash TEXT PRIMARY KEY,
+  transaction_secret_hash TEXT NOT NULL,
+  provider TEXT NOT NULL CHECK (provider IN ('kakao', 'google', 'naver')),
+  client_kind TEXT NOT NULL CHECK (client_kind IN ('native', 'web')),
+  redirect_target TEXT NOT NULL,
+  flow_mode TEXT NOT NULL CHECK (flow_mode IN ('login', 'link')),
+  user_id TEXT,
+  authorization_code_hash TEXT,
+  callback_received_at TEXT,
+  consumed_at TEXT,
+  created_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  CHECK (
+    (flow_mode = 'link' AND user_id IS NOT NULL)
+    OR (flow_mode = 'login' AND user_id IS NULL)
+  )
+);
+CREATE INDEX IF NOT EXISTS idx_oauth_state_expiry
+  ON oauth_state_transactions(expires_at, consumed_at);
+
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+  token TEXT PRIMARY KEY,           -- 불투명 랜덤 토큰
+  user_id TEXT NOT NULL,
+  family_id TEXT,
+  device_id TEXT,
+  issued_at TEXT,
+  expires_at TEXT,
+  revoked INTEGER NOT NULL DEFAULT 0,
+  rotated_to TEXT,
+  rotated_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_refresh_user ON refresh_tokens(user_id);

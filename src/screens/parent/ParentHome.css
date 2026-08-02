@@ -331,7 +331,7 @@
 }
 .ph-ai__grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-top: 16px;
 }
@@ -687,6 +687,7 @@
 
   color: var(--fg-muted);
 }
+/* 안전지표 4칸은 같은 타입 단계를 쓴다 — 배터리만 키우면 한 칸만 굵어 보인다. */
 .ph-metric__v {
   display: block;
   font-size: var(--type-body);
@@ -694,12 +695,6 @@
   font-weight: var(--type-body-weight);
 
   color: var(--fg-primary);
-}
-.ph-metric__v.big {
-  font-size: var(--type-title);
-  line-height: var(--type-title-line-height);
-  font-weight: var(--type-title-weight);
-
   font-variant-numeric: tabular-nums;
 }
 .ph-safety__divider {

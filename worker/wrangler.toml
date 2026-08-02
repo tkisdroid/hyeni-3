@@ -1,0 +1,86 @@
+# 혜니캘린더 백엔드 Worker (Supabase → Cloudflare 이전)
+# M0+M1: D1. M3: DO(Realtime) 추가. KV(OTP)/R2(사진) 바인딩은 해당 마일스톤에서 추가.
+name = "hyeni-calendar-api"
+main = "index.ts"
+compatibility_date = "2026-06-27"
+compatibility_flags = ["nodejs_compat"]
+
+# 초기 출시 동안 결제·권리·cron 실패를 전수 확인한다. 트래픽 증가 후 표본률을 낮출 때는
+# 출시 운영 기록에 변경 근거를 남기고, 결제 관련 5xx·예외는 별도 구조화 로그로 계속 전수 수집한다.
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+# Fetch invocation log에는 요청 URL이 포함된다. Realtime·비공개 객체 인증 정보를 URL로
+# 보내지 않더라도 향후 capability 값이 관측 저장소에 남지 않도록 invocation URL 수집은 끈다.
+# 아래 custom console 로그는 계속 100% 저장해 결제·환불·cron 실패 관측성을 유지한다.
+[observability.logs]
+enabled = true
+invocation_logs = false
+head_sampling_rate = 1
+
+[version_metadata]
+binding = "CF_VERSION_METADATA"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "hyeni-calendar"
+database_id = "c08f9b89-3418-443e-9946-e6b2c68cfc4c"
+
+# P1-storage: child-photos(Supabase Storage private bucket) → R2.
+# 업로드/조회는 routes/storage.ts(Worker proxy)가 토큰+가족 격리 게이트로 중계 — presigned 미사용.
+# 로컬(`wrangler dev --local`)은 .wrangler/state 에 R2 를 시뮬레이션한다.
+# ⚠️ prod 배포 전 버킷 선생성 필요: `wrangler r2 bucket create child-photos`.
+# ⚠️ 기존 사진(Supabase Storage)→R2 데이터 복사는 별도 사용자 스크립트(이번 범위 밖).
+[[r2_buckets]]
+binding = "PHOTOS"
+bucket_name = "child-photos"
+# preview_bucket_name 제거(R2 점검 I-5): prod 와 동일 버킷이면 `wrangler dev --remote` preview 가
+# prod 객체를 직접 read/write 할 위험. 로컬 dev(--local)는 R2 를 시뮬레이션하므로 불필요.
+
+# M3 Realtime — FamilyRoom Durable Object (idFromName(familyId), WebSocket Hibernation).
+# write 라우트가 변경을 /notify 로 통지 → DO 가 구독 클라에 broadcast (postgres_changes 대체).
+[[durable_objects.bindings]]
+name = "FAMILY_ROOM"
+class_name = "FamilyRoom"
+
+# 선생님 Realtime — TeacherRoom Durable Object (idFromName(teacherId), WebSocket Hibernation).
+# teacher_notification_batches 는 teacher_id 키(가족 무관)라 FamilyRoom 으로 격리 불가 → 전용 룸.
+# cron teacher-notification-batch 가 묶음 INSERT 를 /notify 로 통지 → 구독 선생님 클라에 fan-out.
+[[durable_objects.bindings]]
+name = "TEACHER_ROOM"
+class_name = "TeacherRoom"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["FamilyRoom"]
+
+# DO migration 규칙: 새 클래스는 새 tag 로만 추가(v1 미파괴). TeacherRoom 도입.
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["TeacherRoom"]
+
+# OpenAI 직접 호출은 Cloudflare 엣지 출구 IP의 OpenAI 지역차단
+# (403 unsupported_country_region_territory)에 걸린다 → AI Gateway(openai 엔드포인트)로 우회.
+# 미설정 시 lib/openai.ts 가 api.openai.com 직접으로 fallback(안전).
+[vars]
+OPENAI_BASE_URL = "https://gateway.ai.cloudflare.com/v1/e0e6ad13899508a76975d40b23d0bd26/hyeni-ai/openai"
+
+# M4-B/M5 cron — pg_cron 잡을 Cron Triggers 로.
+# ⚠️ 1차 배포는 cron 비활성(Supabase pg_cron 과 split-brain 회피).
+# 2차 컷오버(Supabase freeze + 클라 플립) 시 아래 배열로 교체.
+# crons = ["* * * * *", "*/2 * * * *", "1-59/2 * * * *", "*/4 * * * *", "*/3 * * * *", "*/5 * * * *", "*/10 * * * *", "0,5,10,15,20,25,30,35,40,45,50,55 * * * *"]
+[triggers]
+# Free의 cron trigger 5개 한도와도 호환되는 5키 구성 — worker/index.ts CRON 맵과 1:1 일치.
+# 8핸들러를 5스케줄로 그룹핑(danger→*/2, staleness/stay→*/5)한다. 다만 위치 확인자료를
+# 포함한 상용 출시는 README의 D1 쓰기·용량 근거에 따라 Workers Paid 확인이 필수다.
+crons = ["* * * * *", "*/2 * * * *", "*/5 * * * *", "*/10 * * * *", "0,5,10,15,20,25,30,35,40,45,50,55 * * * *"]
+# Secrets (wrangler secret put):
+#   JWT_PRIVATE_KEY  — ES256 서명 개인키 (PKCS8 PEM)
+#   JWT_PUBLIC_KEY   — ES256 검증 공개키 (SPKI PEM)
+#   PREMIUM_FUNNEL_HASH_SECRET — 퍼널 family 가명키 HMAC 전용 32바이트 이상 secret
+#   LOCATION_AUDIT_CURSOR_SECRET — 위치 확인자료 감사 cursor HMAC 전용 32바이트 이상 secret
+#   TOSS_PAYMENTS_CLIENT_KEY — Toss Payments test/live client key(PWA 결제창 전용)
+#   TOSS_PAYMENTS_SECRET_KEY — Toss Payments test/live secret key(서버 API 전용)
+#   WEB_BILLING_KEY_ENCRYPTION_SECRET — 빌링키 AES-256-GCM 암호화용 32바이트 base64 secret
+#   TOSS_AI_CREDIT_30_AMOUNT_KRW / 80 / 200 — 보고서 가격 확정 뒤 승인한 팩만 양의 정수 KRW로 설정
