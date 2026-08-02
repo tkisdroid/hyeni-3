@@ -16,8 +16,9 @@ public class AmbientListenPlugin extends Plugin {
     @PluginMethod
     public void start(PluginCall call) {
         // WebView/JS가 마이크 권한이나 서비스를 직접 시작하지 못하게 한다.
-        // 유일한 시작 경로는 RemoteListenNotification을 연 아이가
-        // RemoteListenActivity에서 매 요청 직접 허용하는 흐름이다.
+        // 유일한 시작 경로는 서버 승인 증표를 확인한 RemoteListenActivity다.
+        // Activity는 아이 탭을 요구하지 않지만 실행 화면과 알림을 숨기지 않는다.
+        // reject code의 child_consent 문자열은 구버전 JS 호환을 위해 유지한다.
         call.reject("remote_listen_requires_child_consent_notification");
     }
 
@@ -42,8 +43,11 @@ public class AmbientListenPlugin extends Plugin {
         intent.putExtra(AmbientListenService.EXTRA_REQUEST_ID, requestId);
         intent.putExtra(AmbientListenService.EXTRA_TARGET_USER_ID, targetUserId);
         intent.putExtra(AmbientListenService.EXTRA_SESSION_NONCE, sessionNonce);
-        getContext().startService(intent);
-        call.resolve(new JSObject().put("status", "stopped"));
+        ServiceStopDispatch.Outcome outcome = ServiceStopDispatch.deliver(
+            () -> getContext().startService(intent),
+            () -> getContext().stopService(intent)
+        );
+        call.resolve(new JSObject().put("status", outcome.status()));
     }
 
     private String clean(String value) {

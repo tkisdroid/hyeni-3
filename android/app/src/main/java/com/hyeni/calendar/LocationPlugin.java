@@ -302,17 +302,20 @@ public class LocationPlugin extends Plugin {
 
     @PluginMethod
     public void stopService(PluginCall call) {
+        SharedPreferences prefs = getContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         boolean clearSession = Boolean.TRUE.equals(call.getBoolean("clearSession"));
         if (clearSession) {
-            SessionTokenStore.clear(
-                getContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                call.getString("sessionNonce", "")
-            );
+            SessionTokenStore.clear(prefs, call.getString("sessionNonce", ""));
         }
+        // STOP 전달이 백그라운드 제한으로 막혀도 서비스가 스스로 멈추도록 먼저 끈다.
+        SessionTokenStore.setServiceEnabled(prefs, false);
         Intent intent = new Intent(getContext(), LocationService.class);
         intent.setAction("STOP");
-        getContext().startService(intent);
-        call.resolve(new JSObject().put("status", "stopped"));
+        ServiceStopDispatch.Outcome outcome = ServiceStopDispatch.deliver(
+            () -> getContext().startService(intent),
+            () -> getContext().stopService(intent)
+        );
+        call.resolve(new JSObject().put("status", outcome.status()));
     }
 
     @PluginMethod
