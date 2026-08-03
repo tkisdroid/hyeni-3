@@ -190,7 +190,7 @@ test("필수 설명 상자는 공통 스타일을 사용하고 긴 안전 문구
 
   assert.match(
     notification,
-    /className="hy-explain__lines"[\s\S]*?className="hy-explain__line">위험·SOS·미도착 알림은 항상 전달 대상으로 처리돼요\.<\/span>[\s\S]*?className="hy-explain__line">위 토글은 일반 위치 소식에만 적용돼요\.<\/span>/,
+    /className="hy-explain__lines"[\s\S]*?className="hy-explain__line">위험·SOS·미도착 알림은 항상 전달 대상으로 처리돼요\.<\/span>[\s\S]*?className="hy-explain__line">위 토글은 부모가 받는 일반 위치 소식에만 적용돼요\.<\/span>/,
   );
   assert.match(
     locationStatus,

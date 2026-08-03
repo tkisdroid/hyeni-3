@@ -9,33 +9,46 @@ try {
   if (error?.code !== "ERR_MODULE_NOT_FOUND") throw error;
 }
 
-test("도착과 위험 사건은 아이 말투의 별도 알림으로 변환한다", () => {
+test("위험 구역 사건만 아이 말투의 별도 알림으로 변환한다", () => {
   assert.equal(typeof childSafety.childSafetyNotificationForAlert, "function");
-  assert.deepEqual(childSafety.childSafetyNotificationForAlert("place_arrived"), {
-    title: "도착했어!",
-    message: "도착이 확인됐어.",
-    urgent: false,
-    ttlMs: 2 * 60 * 60_000,
-  });
-  assert.deepEqual(childSafety.childSafetyNotificationForAlert("place_left"), {
-    title: "출발했어!",
-    message: "등록한 장소에서 출발한 것이 확인됐어.",
-    urgent: false,
-    ttlMs: 2 * 60 * 60_000,
-  });
-  assert.deepEqual(childSafety.childSafetyNotificationForAlert("unregistered_stay_left"), {
-    title: "머물던 곳에서 출발했어",
-    message: "위치 기록에서 출발한 것이 확인됐어.",
-    urgent: false,
-    ttlMs: 2 * 60 * 60_000,
-  });
   assert.deepEqual(childSafety.childSafetyNotificationForAlert("danger_enter"), {
     title: "위험 구역이야",
     message: "안전한 곳으로 이동하고 부모님께 연락해.",
     urgent: true,
     ttlMs: 15 * 60_000,
   });
+  assert.deepEqual(childSafety.childSafetyNotificationForAlert("danger_zone"), {
+    title: "위험 구역이야",
+    message: "안전한 곳으로 이동하고 부모님께 연락해.",
+    urgent: true,
+    ttlMs: 15 * 60_000,
+  });
+  assert.deepEqual(childSafety.childSafetyNotificationForAlert("danger_exit"), {
+    title: "위험 구역에서 벗어났어",
+    message: "지금 위치를 부모님께도 알려드렸어.",
+    urgent: false,
+    ttlMs: 2 * 60 * 60_000,
+  });
   assert.equal(childSafety.childSafetyNotificationForAlert("low_battery"), null);
+});
+
+// 아이가 알림 때문에 휴대폰을 더 보게 되므로 일상 이동은 아이에게 보내지 않는다
+// (2026-08-03 보호자 결정). 부모 알림은 그대로 간다.
+test("도착·출발 같은 일상 이동은 아이에게 알리지 않는다", () => {
+  for (const alertType of [
+    "arrived",
+    "late_arrived",
+    "place_arrived",
+    "place_left",
+    "unregistered_stay_left",
+    "unregistered_stay_arrived",
+  ]) {
+    assert.equal(
+      childSafety.childSafetyNotificationForAlert(alertType),
+      null,
+      `${alertType}는 아이에게 보내지 않아야 합니다`,
+    );
+  }
 });
 
 test("child_safety는 명시한 활성 아이 한 명에게만 FCM·pending을 만든다", () => {

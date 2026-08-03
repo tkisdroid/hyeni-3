@@ -238,6 +238,15 @@
   Android는 실제 provider 시각과 `accuracy_m`만 이력에 올리고, 근접 일정 증거용 고정밀 fix는 3분 간격으로 제한해 배터리를 보호한다.
   일반 위치·이력 업로드는 인증 caller 본인+현재 가족의 활성 child만 허용하고, 머문 곳/경로 방문 증거는 추정점·정확도 미보고·75m 초과점을 제외한다.
   스키마 의존성=`events.series_id`, `location_history.accuracy_m`, `idx_push_sent_event_notif`.
+- ★**아이 알림은 위험·긴급만(2026-08-03 보호자 결정)**: 도착·출발 같은 **일상 이동 알림을 아이에게 보내지 않는다**.
+  하루에 여러 번 울려서 아이가 오히려 휴대폰을 더 자주 보게 됐다는 실사용 제보가 근거다. 아이 수신 대상은
+  위험 구역 진입(`danger_zone`·`danger_enter`·`danger_entry`, urgent)과 해제(`danger_exit`), 그리고 SOS/emergency 뿐이다.
+  `worker/lib/childSafetyNotification.ts`의 `childSafetyNotificationForAlert`가 **단일 판정점**이며 여기서 `null`을
+  돌려주면 `sendChildSafetyNotification`이 성공으로 끝나 **부모 발송 경로는 전혀 영향받지 않는다**(부모는 그대로 다 받는다).
+  ⚠️ `arrived`·`late_arrived`·`place_arrived`·`place_left`·`unregistered_stay_*`를 이 목록에 다시 넣지 말 것.
+  아이 설정 화면의 "위치·안전" 토글 3개(일반 위치·등록 장소·친구놀이)는 전부 부모 알림에만 적용되므로
+  아이 role 에서는 토글을 숨기고 사실만 안내한다(빈 약속 금지). 회귀=`tests/childEverydayMovementAlerts.test.mjs`·
+  Worker `tests/childSafetyNotifications.test.mjs`.
 - **알림 전달·원격청취 보안 계약(2026-07-14)**: 즉시 알림은 네트워크 발송 전에 수신자별
   `pending_notifications`를 만들고 실제 네이티브 표시/Web Push 표시 ACK 전에는 delivered로 완료하지 않는다.
   targetless 레거시 행은 일반 사용자가 조회·ACK하지 못한다. 일정·도착·위험·메모는 활성 가족 구성원과 정확한
