@@ -32,7 +32,7 @@ const premiumFunnelMigration = await readFile(
   new URL("../db/premium-funnel.sql", import.meta.url),
   "utf8",
 );
-const { isReleaseDatabaseReady } = await import(
+const { isReleaseDatabaseReady, DATABASE_READINESS_STATEMENTS } = await import(
   pathToFileURL(resolve(workerDir, "lib/healthReadiness.ts")).href
 );
 const workerEntry = (await import(pathToFileURL(resolve(workerDir, "index.ts")).href)).default;
@@ -398,5 +398,20 @@ test("스키마 누락과 DB 조회 장애는 민감 정보 없이 서로 다른
     assert.deepEqual(logged, [["[health] D1 readiness query failed"]]);
   } finally {
     console.error = originalConsoleError;
+  }
+});
+
+// D1은 SQLITE_MAX_EXPR_DEPTH를 100으로 낮춰 놓았다. 계약을 한 문장에 AND로 모두 이으면
+// "Expression tree is too large (maximum depth 100)"로 실패해 /api/health가 항상 503이 된다
+// (2026-08-03 실사고 — 로컬 SQLite는 기본 1000이라 통과해서 배포 전까지 드러나지 않았다).
+test("스키마 준비 검사는 D1 표현식 깊이 한계 안에서 여러 문장으로 나눠 실행한다", () => {
+  assert.ok(Array.isArray(DATABASE_READINESS_STATEMENTS));
+  assert.ok(DATABASE_READINESS_STATEMENTS.length > 1, "한 문장에 모두 넣으면 D1이 거부한다");
+  for (const statement of DATABASE_READINESS_STATEMENTS) {
+    const andDepth = (statement.match(/\bAND\b/g) ?? []).length;
+    assert.ok(
+      andDepth < 90,
+      `문장 하나의 AND가 ${andDepth}개다 — D1 depth 100 한계에 닿는다`,
+    );
   }
 });

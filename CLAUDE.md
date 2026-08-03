@@ -744,6 +744,20 @@
   정확한 모바일 렌더는 `--remote-debugging-port` + CDP `Emulation.setDeviceMetricsOverride(390x844)` +
   `Page.captureScreenshot` 로. 임시 `--user-data-dir` 필수(기본 프로필 오염 방지). ⚠️ localhost:5173 은
   다른 프로젝트 dev 서버가 살아 있을 수 있다 — hyeni-3 는 `--port 5199 --strictPort` 처럼 명시 포트로 띄울 것.
+- ★**D1 표현식 깊이 100 제한(2026-08-03 실사고)**: D1 은 `SQLITE_MAX_EXPR_DEPTH` 를 **100** 으로 낮춰 놓았다
+  (로컬 `node:sqlite` 는 기본 1000). 조건을 `AND`/`OR` 로 길게 이으면 이진 트리 깊이가 넘쳐
+  `Expression tree is too large (maximum depth 100): SQLITE_ERROR` 로 **쿼리 자체가 실패**한다.
+  실제로 `/api/health` 의 스키마 준비 검사가 98개 계약을 한 문장에 AND 로 이어 배포 직후 **항상 503** 이었고,
+  로컬 테스트는 전부 통과해 배포 전까지 드러나지 않았다. 조건이 많은 검사는 **여러 문장으로 쪼개
+  순차 실행**하고(early-exit 이득도 있다) 청크당 `AND` 수를 넉넉히 낮게 잡는다.
+  가드=`worker/tests/healthReadiness.test.mjs` 의 AND 개수 상한 검사.
+- ★**배포 전 스키마 선행 확인(2026-08-03)**: wrangler 는 워킹트리를 배포하므로, 오래 미배포된 Worker 를 올리면
+  그 사이 추가된 `worker/db/*.sql` migration 이 **한꺼번에 필요**해진다. 배포 전에 `worker/db/*.sql` 이 만드는
+  테이블·인덱스·컬럼을 프로덕션 `sqlite_master` 와 대조하고 **migration 을 먼저 적용**한다(런북의 migration-first).
+  특히 `location_confirmation_records` 가 없으면 `parent-alerts` 가 도착·출발·위험구역·미도착 알림을
+  `503 location_confirmation_unavailable` 로 **전부 중단**한다. `web-billing.sql`·`web-ai-credit-billing.sql` 은
+  후속 `-refunds`·`-financial-retention` 을 **이미 포함한 통합본**이라 새로 만든 DB 에 후속 파일을 또 적용하면
+  `duplicate column name` 으로 실패한다(실패해도 D1 이 롤백하므로 안전 — 통합본이면 건너뛴다).
 - **D1/Worker**: 시간 검증은 백데이트 트리거(예: `anchor_since` 6분 전 + upsert 1회, cron 은 이벤트를 target 분에 생성) ·
   `wrangler tail --format json` 을 파일로 받아 파이썬 파싱 · 컬럼명 추측 금지 — `pragma_table_info` 먼저.
   ★Worker 전체 Node 테스트는 **이 저장소 루트**에서 `npm run test:worker`

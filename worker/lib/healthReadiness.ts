@@ -654,21 +654,51 @@ const triggerContractChecks = REQUIRED_SCHEMA_TRIGGER_CONTRACTS.map((contract) =
   )`;
 });
 
-const DATABASE_READINESS_SQL = `
-WITH normalized_schema AS (
+const NORMALIZED_SCHEMA_CTE = `WITH normalized_schema AS (
   SELECT type,name,tbl_name,${normalizedSchemaSqlExpression("sql")} AS normalized_sql
     FROM sqlite_master
    WHERE name IN (${criticalSchemaNames.map(sqlLiteral).join(",")})
-)
-SELECT CASE WHEN
-  (SELECT COUNT(*) FROM sqlite_master WHERE ${objectPredicates.join(" OR ")})=${REQUIRED_SCHEMA_OBJECTS.length}
-  AND ${columnChecks.join(" AND ")}
-  AND ${tableContractChecks.join(" AND ")}
-  AND ${indexContractChecks.join(" AND ")}
-  AND ${triggerContractChecks.join(" AND ")}
-THEN 1 ELSE 0 END AS ready`;
+)`;
+
+/**
+ * 계약 검사를 한 문장에 다 넣으면 SQLite가 거부한다.
+ *
+ * 전부 `AND`로 이으면 이진 표현식 트리 깊이가 100을 넘어
+ * `Expression tree is too large (maximum depth 100)`로 실패한다(운영 `/api/health` 503 실사고).
+ * 그래서 계약을 청크로 나눠 각각 독립 문장으로 확인하고 JS에서 결합한다.
+ * 청크 하나의 `AND` 개수를 넉넉히 낮춰 잡아 계약이 늘어도 한계에 닿지 않게 한다.
+ */
+const READINESS_CHECK_CHUNK_SIZE = 12;
+
+function chunk<T>(items: readonly T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
+}
+
+const contractChecks: readonly string[] = [
+  ...columnChecks,
+  ...tableContractChecks,
+  ...indexContractChecks,
+  ...triggerContractChecks,
+];
+
+/** 스키마 준비 여부를 확인하는 독립 문장들. 모두 ready=1 이어야 준비 완료다. */
+export const DATABASE_READINESS_STATEMENTS: readonly string[] = [
+  `SELECT CASE WHEN (SELECT COUNT(*) FROM sqlite_master WHERE ${objectPredicates.join(" OR ")})`
+    + `=${REQUIRED_SCHEMA_OBJECTS.length} THEN 1 ELSE 0 END AS ready`,
+  ...chunk(contractChecks, READINESS_CHECK_CHUNK_SIZE).map(
+    (group) => `${NORMALIZED_SCHEMA_CTE}
+SELECT CASE WHEN ${group.join("\n  AND ")} THEN 1 ELSE 0 END AS ready`,
+  ),
+];
 
 export async function isReleaseDatabaseReady(db: D1Database): Promise<boolean> {
-  const row = await db.prepare(DATABASE_READINESS_SQL).first<{ ready: number }>();
-  return Number(row?.ready ?? 0) === 1;
+  for (const statement of DATABASE_READINESS_STATEMENTS) {
+    const row = await db.prepare(statement).first<{ ready: number }>();
+    if (Number(row?.ready ?? 0) !== 1) return false;
+  }
+  return true;
 }
