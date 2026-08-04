@@ -1,4 +1,5 @@
 {
-  "minimumSupportedVersion": "1.2.0",
-  "latestVersion": "1.2.0"
+  "minimumSupportedVersion": "1.3.0",
+  "latestVersion": "1.3.0",
+  "blockingUpdate": false
 }

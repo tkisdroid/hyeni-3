@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router";
 import { Sparkles } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { openExternal } from "@/lib/native/browser";
@@ -8,7 +8,10 @@ import "./AppUpdate.css";
 
 const STORE_URL = "https://play.google.com/store/apps/details?id=com.hyeni.calendar";
 
-/** C-14 앱 업데이트 안내. 권장(나중에 가능) 기본. forced 쿼리일 때 '나중에'를 숨긴다. */
+/**
+ * C-14 앱 업데이트 안내. 기본은 권장이며 '나중에'로 닫고 기존 버전을 계속 쓸 수 있다.
+ * forced 쿼리는 운영자가 정책에서 blockingUpdate를 켠 예외 상황에만 전달된다.
+ */
 export function AppUpdate() {
   const navigate = useNavigate();
   const { search } = useLocation();
@@ -37,7 +40,13 @@ export function AppUpdate() {
         <div className="au-sub">
           {childTone ? "안전·위치 기능이 더 좋아졌어." : "안전·위치 기능이 개선됐어요."}
           <br />
-          {childTone ? "최신 버전으로 업데이트해 줘." : "최신 버전으로 업데이트해 주세요."}
+          {forced
+            ? (childTone
+              ? "이번 버전은 꼭 업데이트해야 계속 쓸 수 있어."
+              : "이번 버전은 업데이트해야 계속 사용할 수 있어요.")
+            : (childTone
+              ? "지금 하지 않아도 계속 쓸 수 있어."
+              : "지금 하지 않아도 계속 사용할 수 있어요.")}
         </div>
         <button type="button" className="au-cta hy-press" onClick={update}>
           지금 업데이트

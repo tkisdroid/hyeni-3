@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-08-02T15:32:55.153Z",
+  "generatedAt": "2026-08-04T05:37:21.614Z",
   "source": "local-production-dist-with-static-demo-session",
   "sourceDist": {
     "fileCount": 414,
-    "sha256": "64d6dfb6a3f5001775081638fa7dcbfcbe4290b45e61197fc4ddfbb7efe272db"
+    "sha256": "db31b6d8b8b2a37ddf0d75951bb833f9af77d19b229931150790fd142e7a4d1a"
   },
   "uploadStatus": "candidate_requires_policy_and_visual_review",
   "files": [
@@ -78,33 +78,33 @@
   "artifacts": [
     {
       "file": "01-parent-home-ui.png",
-      "bytes": 576560,
-      "sha256": "449e771843e4f552894163c56a2341e16c16719e5ea8a6ad301b3e13f651f7af"
+      "bytes": 575949,
+      "sha256": "989e103f0ed799721c3b2e47eba6b72280068023c74c44806dde71848d21eb67"
     },
     {
       "file": "02-family-calendar-ui.png",
-      "bytes": 187036,
-      "sha256": "67bd603b3896b23ad491a8015bd441e315c4489a559badc480d6a303e56d4705"
+      "bytes": 186630,
+      "sha256": "c07338405f0588ff51bb504990994fccc1170e5c168af997fff81b7a6b1af7a5"
     },
     {
       "file": "03-family-memo-ui.png",
-      "bytes": 228174,
-      "sha256": "64283ded79021b043eb298b5bf3a46f6cc31a4f212833e2ee9f094744d08633d"
+      "bytes": 227157,
+      "sha256": "1981434673b871e1000f801196ce35a0c7fd0f8878317bb416e33e73def0f301"
     },
     {
       "file": "04-daily-safety-report-ui.png",
-      "bytes": 398715,
-      "sha256": "eb3dcb4b30f4b56a2bde2ff13f3fb86c03eb60caad1da8628018af012eaa0a63"
+      "bytes": 398406,
+      "sha256": "d7af176f4c734b27cfea8865c4105a85b0c29e6dafa73d609582dacaeab2a074"
     },
     {
       "file": "05-weekly-family-report-ui.png",
-      "bytes": 263974,
-      "sha256": "89c309180776c24f77b8208398150ba82cddc3f4197cd1894704a7ef60ff9131"
+      "bytes": 263572,
+      "sha256": "2b64d36a47cff2070bea688c3899ef95e63942494b7379170835735377e52088"
     },
     {
       "file": "06-child-home-ui.png",
-      "bytes": 638780,
-      "sha256": "27925682b75f00ceb0e0aef3589589e7894221f6af6bb80a0b52f0812733ecfb"
+      "bytes": 648720,
+      "sha256": "d00a44ddafe91635af3a3aa6537918afe2bba82fa2fb51084b3dcbdf19e02bcc"
     }
   ]
 }

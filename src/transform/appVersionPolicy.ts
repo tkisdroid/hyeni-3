@@ -1,6 +1,17 @@
 export interface AppVersionPolicy {
   minimumSupportedVersion: string;
   latestVersion: string;
+  /**
+   * 구버전 사용을 실제로 차단할지 여부. 기본은 차단하지 않는다(2026-08-04 보호자 결정).
+   *
+   * 업데이트가 나왔다는 이유만으로 앱을 잠그면 사용자가 그 순간 아무것도 못 한다.
+   * 위치·SOS 같은 안전 기능이 걸린 앱에서 그건 업데이트보다 큰 손해다. 그래서
+   * `minimumSupportedVersion` 미만이어도 기본은 안내만 하고 계속 쓸 수 있게 둔다.
+   *
+   * 서버 계약이 깨져 구버전이 오작동하는 경우처럼 정말 막아야 할 때만 운영자가
+   * 이 값을 `true`로 올려 잠근다. 즉 차단은 버전 숫자가 아니라 명시적 의사결정이다.
+   */
+  blockingUpdate?: boolean;
 }
 
 export type AppUpdateDecision =
@@ -36,7 +47,11 @@ export function resolveAppUpdateDecision(
 ): AppUpdateDecision | null {
   try {
     if (compareAppVersions(policy.minimumSupportedVersion, policy.latestVersion) > 0) return null;
-    if (compareAppVersions(currentVersion, policy.minimumSupportedVersion) < 0) {
+    // 차단은 운영자가 blockingUpdate로 명시할 때만 한다 — 버전이 낮다는 이유만으로 잠그지 않는다.
+    if (
+      policy.blockingUpdate === true
+      && compareAppVersions(currentVersion, policy.minimumSupportedVersion) < 0
+    ) {
       return { kind: "forced", targetVersion: policy.latestVersion };
     }
     if (compareAppVersions(currentVersion, policy.latestVersion) < 0) {

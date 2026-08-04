@@ -18,10 +18,40 @@ test("버전 비교는 숫자 구성요소를 기준으로 처리한다", () => 
   assert.equal(compareAppVersions("2.0", "2.0.1"), -1);
 });
 
-test("최소 지원 버전보다 낮으면 강제 업데이트로 판정한다", () => {
+// 업데이트가 나왔다는 이유만으로 앱을 잠그면 위치·SOS까지 함께 막힌다. 차단은
+// 운영자가 blockingUpdate로 명시할 때만 한다(2026-08-04 보호자 결정).
+test("최소 지원 버전보다 낮아도 기본은 기존 버전을 계속 쓸 수 있다", () => {
   assert.deepEqual(
     resolveAppUpdateDecision("1.2.0", { minimumSupportedVersion: "1.3.0", latestVersion: "1.4.0" }),
+    { kind: "optional", targetVersion: "1.4.0" },
+  );
+  assert.deepEqual(
+    resolveAppUpdateDecision("1.2.0", {
+      minimumSupportedVersion: "1.3.0",
+      latestVersion: "1.4.0",
+      blockingUpdate: false,
+    }),
+    { kind: "optional", targetVersion: "1.4.0" },
+  );
+});
+
+test("운영자가 blockingUpdate를 켠 경우에만 강제 업데이트로 판정한다", () => {
+  assert.deepEqual(
+    resolveAppUpdateDecision("1.2.0", {
+      minimumSupportedVersion: "1.3.0",
+      latestVersion: "1.4.0",
+      blockingUpdate: true,
+    }),
     { kind: "forced", targetVersion: "1.4.0" },
+  );
+  // 차단을 켜도 지원 범위 안이면 권장에 머문다.
+  assert.deepEqual(
+    resolveAppUpdateDecision("1.3.0", {
+      minimumSupportedVersion: "1.3.0",
+      latestVersion: "1.4.0",
+      blockingUpdate: true,
+    }),
+    { kind: "optional", targetVersion: "1.4.0" },
   );
 });
 
@@ -122,4 +152,23 @@ test("화면 렌더 오류가 나도 앱 버전 게이트는 상위 route에서 
     app,
     /element:\s*<AppRouteServices\s*\/>\s*,\s*errorElement:/,
   );
+});
+
+test("배포되는 정책 파일은 구버전 사용을 차단하지 않는다", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const policy = JSON.parse(
+    await readFile(new URL("../public/app-version.json", import.meta.url), "utf8"),
+  );
+  assert.equal(policy.blockingUpdate, false, "기본 배포 정책은 앱을 잠그지 않는다");
+});
+
+test("업데이트 화면은 차단이 아닐 때 계속 사용할 수 있다고 알리고 나중에를 제공한다", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const screen = await readFile(
+    new URL("../src/screens/feature/AppUpdate.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(screen, /지금 하지 않아도 계속 사용할 수 있어요/);
+  assert.match(screen, /지금 하지 않아도 계속 쓸 수 있어/);
+  assert.match(screen, /\{!forced && \(/);
 });
