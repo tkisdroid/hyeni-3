@@ -289,12 +289,9 @@ if (-not $postSyncGit.Clean -or $postSyncGit.Head -ne $gitState.Head) {
 }
 
 Write-Host '2/6 서명 값은 화면에 표시하거나 파일에 저장하지 않습니다.'
-$keyAlias = Read-Host '업로드 키 별칭'
-if ([string]::IsNullOrWhiteSpace($keyAlias)) {
-    throw '업로드 키 별칭이 필요합니다.'
-}
 $keystorePasswordSecure = Read-Host '키스토어 비밀번호' -AsSecureString
-$keyPasswordSecure = Read-Host '키 비밀번호' -AsSecureString
+$keyPasswordSecure = $null
+$keyAlias = $null
 
 $originalGradleState = if (Test-Path -LiteralPath $gradleProperties -PathType Leaf) {
     Get-Utf8TextState -Path $gradleProperties
@@ -308,24 +305,54 @@ $plainKeyPassword = $null
 
 try {
     $plainKeystorePassword = Convert-SecureStringToPlainText -Value $keystorePasswordSecure
-    $plainKeyPassword = Convert-SecureStringToPlainText -Value $keyPasswordSecure
-    if ([string]::IsNullOrEmpty($plainKeystorePassword) -or [string]::IsNullOrEmpty($plainKeyPassword)) {
-        throw '빈 서명 비밀번호는 허용하지 않습니다.'
+    if ([string]::IsNullOrEmpty($plainKeystorePassword)) {
+        throw '빈 키스토어 비밀번호는 허용하지 않습니다.'
     }
 
     Clear-SigningEnvironment
     $env:HYENI_KEYSTORE = $selectedKeystore
     $env:HYENI_KEYSTORE_PASSWORD = $plainKeystorePassword
-    $env:HYENI_KEY_ALIAS = $keyAlias.Trim()
-    $env:HYENI_KEY_PASSWORD = $plainKeyPassword
 
     $keytool = (Get-Command keytool.exe -ErrorAction Stop).Source
-    & $keytool '-J-Duser.language=en' '-J-Duser.country=US' '-list' `
-        '-keystore' $selectedKeystore '-storepass:env' 'HYENI_KEYSTORE_PASSWORD' `
-        '-alias' $env:HYENI_KEY_ALIAS *> $null
-    if ($LASTEXITCODE -ne 0) {
-        throw '키스토어 비밀번호 또는 키 별칭을 확인하지 못했습니다.'
+    $keytoolLines = @(& $keytool '-J-Duser.language=en' '-J-Duser.country=US' '-list' '-v' `
+        '-keystore' $selectedKeystore '-storepass:env' 'HYENI_KEYSTORE_PASSWORD' 2>&1)
+    $keytoolExitCode = $LASTEXITCODE
+    $keytoolOutput = ($keytoolLines | Out-String)
+    if ($keytoolExitCode -ne 0) {
+        if ($keytoolOutput -match '(?i)(password was incorrect|keystore was tampered with|password verification failed|failed to decrypt)') {
+            throw '키스토어 비밀번호가 일치하지 않습니다.'
+        }
+        throw '키스토어를 열지 못했습니다. 키스토어 파일 형식과 손상 여부를 확인해 주세요.'
     }
+
+    $privateKeyAliases = @(
+        [regex]::Matches(
+            $keytoolOutput,
+            '(?ms)^Alias name:\s*(?<alias>[^\r\n]+)\r?\n.*?^Entry type:\s*PrivateKeyEntry\s*$'
+        ) | ForEach-Object { $_.Groups['alias'].Value.Trim() } | Sort-Object -Unique
+    )
+    if ($privateKeyAliases.Count -eq 0) {
+        throw '키스토어에 서명 가능한 PrivateKeyEntry가 없습니다.'
+    }
+    if ($privateKeyAliases.Count -eq 1) {
+        $keyAlias = $privateKeyAliases[0]
+        Write-Host "업로드 키 별칭을 키스토어에서 확인했습니다: $keyAlias"
+    } else {
+        Write-Host "서명 가능한 키 별칭: $($privateKeyAliases -join ', ')"
+        $requestedAlias = (Read-Host '사용할 업로드 키 별칭').Trim()
+        $keyAlias = $privateKeyAliases | Where-Object { $_ -ieq $requestedAlias } | Select-Object -First 1
+        if ([string]::IsNullOrWhiteSpace($keyAlias)) {
+            throw '입력한 별칭은 키스토어의 PrivateKeyEntry가 아닙니다.'
+        }
+    }
+
+    $keyPasswordSecure = Read-Host '키 비밀번호' -AsSecureString
+    $plainKeyPassword = Convert-SecureStringToPlainText -Value $keyPasswordSecure
+    if ([string]::IsNullOrEmpty($plainKeyPassword)) {
+        throw '빈 키 비밀번호는 허용하지 않습니다.'
+    }
+    $env:HYENI_KEY_ALIAS = $keyAlias
+    $env:HYENI_KEY_PASSWORD = $plainKeyPassword
 
     Write-Host '3/6 입력값 검증 후 Gradle의 평문 서명 property를 제거합니다.'
     if ($null -ne $originalGradleState -and $forbiddenProperties.Count -gt 0) {

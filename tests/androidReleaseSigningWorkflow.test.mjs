@@ -11,6 +11,19 @@ test("release 서명 스크립트는 비밀번호를 명령행 인자로 받지 
   assert.match(source, /Read-Host '키 비밀번호' -AsSecureString/);
 });
 
+test("키스토어 비밀번호를 먼저 확인하고 단일 PrivateKeyEntry 별칭을 자동 선택한다", () => {
+  assert.match(source, /'-list' '-v'/);
+  assert.match(source, /Entry type:\\s\*PrivateKeyEntry/);
+  assert.match(source, /\$privateKeyAliases\.Count -eq 1/);
+  assert.match(source, /\$keyAlias = \$privateKeyAliases\[0\]/);
+});
+
+test("키스토어 비밀번호·파일 형식·다중 별칭 오류를 구분한다", () => {
+  assert.match(source, /키스토어 비밀번호가 일치하지 않습니다/);
+  assert.match(source, /키스토어 파일 형식과 손상 여부/);
+  assert.match(source, /입력한 별칭은 키스토어의 PrivateKeyEntry가 아닙니다/);
+});
+
 test("release 서명 스크립트는 네 평문 Gradle property만 제거한다", () => {
   for (const name of [
     "HYENI_KEYSTORE",

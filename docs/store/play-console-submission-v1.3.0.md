@@ -121,7 +121,7 @@ IARC 질문에는 다음 실제 기능을 숨기지 않고 답한다.
 
 ## 6. 출시 전 남은 외부 작업
 
-- 저장소 루트의 별도 비공개 PowerShell에서 `./scripts/build-android-release.ps1`을 실행하고 키 별칭·비밀번호를 프롬프트에 직접 입력
+- 저장소 루트의 별도 비공개 PowerShell에서 `./scripts/build-android-release.ps1`을 실행하고 비밀번호를 프롬프트에 직접 입력. `PrivateKeyEntry`가 하나면 별칭은 자동 선택하고 여러 개일 때만 사용자에게 선택 요청
 - 스크립트가 입력값을 확인한 뒤 사용자 Gradle 설정의 `HYENI_KEYSTORE`, `HYENI_KEYSTORE_PASSWORD`, `HYENI_KEY_ALIAS`, `HYENI_KEY_PASSWORD` 네 평문 property를 제거
 - release 빌드 성공 뒤 `android/keystore/hyeni-upload-credentials.txt`를 지우고, 실패하면 Gradle properties를 원복
 - 새 AAB의 `jarsigner`, 승인 업로드 인증서, SHA-256, mtime, schema v4 16KB 정적 증거를 자동 확인
