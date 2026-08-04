@@ -1,8 +1,8 @@
 # Play 출시 체크리스트 — 혜니캘린더 v1.3.0(versionCode 5)
 
-## 현재 판정 (2026-08-02)
+## 현재 판정 (2026-08-04)
 
-**제출 차단.** v1.3.0 현재 작업 트리의 앱 1,231/1,231·Worker 1,159/1,159·legacy 2,208/2,208, Android 172/172 강제 재실행과 각 typecheck·dry-run·lint/build/audit, 최종 dist와 일치하는 schema v4 debug AAB 증거, production bundle·PWA runtime QA는 통과했다. `artifacts/release-evidence/release-record-20260802-final-local-hold-v5.json`은 `HOLD`·`humanApprovalRequired=true`·blocker 27건으로 외부 증거 부재를 정확히 차단한다. Worker의 활성 OpenAI 호출 4개는 `gpt-5.6-luna`로 단일화했고 업데이트된 `.env` 키의 live canary 4/4도 통과했다. 현재 exact debug APK SHA-256 `62b66ce643e38c77074e30c7fa992c48d9ea70a56a8e720a8fff9c94c8e05873`은 A17과 razr 모두 `adb start-server` 후 `device not found`여서 설치·버전·화면·Network를 검증하지 못했다. 이전 `f0c697…` 후보의 설치·A17 부모 UI 통과·razr 잠금 차단 결과는 역사 기록일 뿐 현재 후보 증거가 아니다. S25는 미조작했다. WebKit smoke PASS는 실제 iPhone 증거가 아니며 WebKit offline reload는 Playwright 엔진 오류로 미검증이다. debug AAB는 Play 업로드할 수 없다. 이전 OpenAI 키의 Dashboard 폐기와 production Worker secret 교체·readback, 신규 Worker+D1 선행 배포·readback, current exact APK의 A17·razr 재검증, clean exact SHA 교차 CI·Pages provenance·승인 인증서 서명 release AAB, 운영 계약·Console·실결제 E2E가 끝날 때까지 HOLD다.
+**제출 차단.** 2026-08-04 로컬 재검증에서 앱 1,237/1,237·Worker 1,161/1,161, Android 175/175 강제 재실행과 typecheck·production build·Capacitor sync·lint·assembleDebug·bundleDebug·Worker dry-run을 통과했다. `npm audit`에서 확인된 `hono`·`undici` 취약 버전은 호환 가능한 최소 버전으로 올렸고 현재 moderate 이상 취약점은 0건이다. 실제 UI 스크린샷 후보 6장도 최신 production dist에서 재생성해 기술·육안 검토했지만 정책 책임자 승인을 의미하지 않으므로 `playUploadApproved=false`를 유지한다. Console 복사용 정본은 `docs/store/play-console-submission-v1.3.0.md`다. 최신 승인 인증서 서명 release AAB, Play App Signing 인증서 기반 App Links, Console 설문·심사 영상·계정, 운영 배포·실결제·A17/razr 최종 E2E가 끝날 때까지 `HOLD`다. 2026-07-10 기존 release AAB와 모든 debug 산출물은 업로드하지 않는다.
 
 v1.2.0의 테스트·APK·A17 부모·razr 아이 결과는 역사 기록으로만 보존하며 v1.3.0 완료 증거로 재사용하지 않는다. 당시 precache 320개·entry 472,252 bytes와 debug APK SHA-256 `246A1513CA9D9951D7857654B538398A9D175605F097331EAADDE2DBA2D243F5`도 역사 증거이며 현재 후보 승인값이 아니다.
 

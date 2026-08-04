@@ -174,6 +174,7 @@ export function PremiumUpsell({
           aria-label="프리미엄 안내 닫기"
           onClick={onClose}
           disabled={busy}
+          aria-busy={busy}
         >
           <X size={21} strokeWidth={2.3} aria-hidden="true" />
         </button>
@@ -212,6 +213,7 @@ export function PremiumUpsell({
             onClose();
           }}
           disabled={busy}
+          aria-busy={busy}
         >
           {content.continueLabel}
         </button>

@@ -132,6 +132,7 @@ export function ReferralRewardPanel({
             aria-label="닫기"
             onClick={onClose}
             disabled={busy}
+            aria-busy={busy}
           >
             <X size={20} aria-hidden="true" />
           </button>
