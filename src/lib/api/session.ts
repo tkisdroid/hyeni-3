@@ -10,6 +10,7 @@
 import { API_BASE } from "@/config/env";
 import { resolveSessionInstanceId } from "@/transform/sessionInstance";
 import { mergeApiUserWithTokenUser } from "@/transform/sessionUserMerge";
+import { clearPrivateObjectUrlCache } from "./privateObjectUrlCache";
 
 export interface ApiUser {
   id: string;
@@ -164,6 +165,7 @@ function restoreSessionFromStorage(): void {
 restoreSessionFromStorage();
 
 export function setApiTokens({ access, refresh }: TokenPair = {}): void {
+  const previousSessionInstanceId = sessionInstanceId;
   if (access !== undefined) {
     sessionInstanceId = resolveSessionInstanceId({
       currentAccessToken: accessToken,
@@ -172,6 +174,13 @@ export function setApiTokens({ access, refresh }: TokenPair = {}): void {
       createInstanceId: createSessionInstanceId,
     });
     accessToken = access;
+  }
+  if (
+    previousSessionInstanceId
+    && sessionInstanceId
+    && previousSessionInstanceId !== sessionInstanceId
+  ) {
+    clearPrivateObjectUrlCache();
   }
   if (refresh !== undefined) refreshToken = refresh;
   currentUser = mergeApiUserWithAccessToken(currentUser, accessToken);
@@ -222,6 +231,7 @@ export function getApiSession(): ApiSession | null {
 
 /** 로그아웃 — 메모리 세션/사용자 제거 후 영속화 콜백 알림. */
 export function clearApiSession(): void {
+  clearPrivateObjectUrlCache();
   accessToken = null;
   refreshToken = null;
   currentUser = null;

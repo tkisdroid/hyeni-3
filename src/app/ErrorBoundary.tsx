@@ -7,7 +7,7 @@
  * 둘 다 같은 ErrorFallback UI 를 쓴다. 복구는 상태를 확실히 비우는 새로고침 기반.
  */
 import { Component, useEffect, type ReactNode } from "react";
-import { useRouteError } from "react-router-dom";
+import { useRouteError } from "react-router";
 import { asset } from "@/lib/assets";
 import { recordFeedbackDiagnostic } from "@/lib/feedbackDiagnostics";
 

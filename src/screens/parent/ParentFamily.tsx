@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Battery, ChevronLeft, ChevronRight, Copy, Link2, Lock, Plus, QrCode as QrIcon, Smartphone, UserPlus } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useMyFamily } from "@/queries/useFamily";
@@ -9,16 +9,22 @@ import { useLocationLabels } from "@/queries/useLocationLabels";
 import { useAuth } from "@/auth/AuthContext";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { mapFamilyToView } from "@/transform/familyView";
-import { TIERS, FEATURES, canAddChild, lockMessageFor } from "@/transform/tierPolicy";
+import { FEATURES, lockMessageFor } from "@/transform/tierPolicy";
+import { resolveChildAddGate } from "@/transform/secondChildGate";
+import {
+  browserPremiumReturnIntentStorage,
+  savePremiumReturnIntent,
+} from "@/transform/premiumReturnIntent";
 import { QrCode } from "@/components/ui/QrCode";
+import { PremiumUpsell } from "@/components/PremiumUpsell";
 import { buildPairLink } from "@/transform/pairLink";
 import { useSafeBack } from "@/app/useSafeBack";
 import { Loading } from "@/components/ui/Loading";
 import "./ParentFamily.css";
 
-// 자녀 사진은 proxy URL(http…), 기본 아바타는 asset 경로.
+// 자녀 사진은 인증 fetch로 만든 blob URL, 기본 아바타는 asset 경로.
 function avatarSrc(path: string): string {
-  return path.startsWith("http") ? path : asset(path);
+  return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
 }
 
 export function ParentFamily() {
@@ -30,7 +36,9 @@ export function ParentFamily() {
   const { data: locations } = useChildLocations();
   const { data: places } = useSavedPlaces();
   const locationLabel = useLocationLabels(locations, places);
-  const { tier } = useEntitlement();
+  const entitlementQuery = useEntitlement();
+  const { tier, ready } = entitlementQuery;
+  const [upsellOpen, setUpsellOpen] = useState(false);
 
   const view = useMemo(
     () => mapFamilyToView(family?.members ?? [], userId),
@@ -44,11 +52,19 @@ export function ParentFamily() {
     return map;
   }, [locations, locationLabel]);
 
-  // 아이 추가 게이트: 티어 확정(unknown 아님) + 상한 도달 시에만 잠금(R9 — 미확정이면 잠그지 않음).
-  const addLocked = tier !== TIERS.UNKNOWN && !canAddChild(tier, view.children.length);
-  const addLockMessage =
-    tier === TIERS.PREMIUM && addLocked
-      ? "프리미엄은 아이 2명까지 연결할 수 있어요"
+  // /family/mine은 비활성 자녀를 제외하므로 view.children.length가 현재 활성 자녀 수의 정본이다.
+  const addDecision = resolveChildAddGate({
+    ready,
+    isError: entitlementQuery.isError,
+    tier,
+    activeChildCount: view.children.length,
+    requestedChildCount: 1,
+  });
+  const addLocked = addDecision.status !== "allowed";
+  const addLockMessage = addDecision.status === "limit_reached"
+    ? "프리미엄은 아이 2명까지 연결할 수 있어요"
+    : addDecision.status === "unavailable"
+      ? "구독 상태를 확인한 뒤 아이를 추가할 수 있어요"
       : lockMessageFor(FEATURES.MULTI_CHILD);
 
   // 연결 코드 + QR 딥링크(아이 재연결·선생님 학생추가 시 이 코드로 다시 연결).
@@ -56,12 +72,23 @@ export function ParentFamily() {
   const pairLink = useMemo(() => (pairCode ? buildPairLink(pairCode) : ""), [pairCode]);
 
   const invite = () => {
-    if (addLocked) {
-      show(addLockMessage, "🔒");
-      navigate("/subscription");
+    navigate("/child-invite");
+  };
+  const addChild = () => {
+    if (addDecision.status === "allowed") {
+      navigate("/pairing-wizard");
       return;
     }
-    navigate("/child-invite");
+    if (addDecision.status === "premium_required") {
+      setUpsellOpen(true);
+      return;
+    }
+    show(
+      addDecision.status === "limit_reached"
+        ? "프리미엄은 아이 2명까지 연결할 수 있어요"
+        : "구독 상태를 확인하지 못해 아이 추가를 진행하지 않아요. 잠시 후 다시 시도해 주세요",
+      addDecision.status === "unavailable" ? "⏳" : "🔒",
+    );
   };
   const copyCode = () => {
     if (!pairCode) return;
@@ -182,21 +209,25 @@ export function ParentFamily() {
                   <button
                     type="button"
                     className="pf-add pf-add--locked hy-press"
-                    onClick={() => navigate("/subscription")}
+                    onClick={addChild}
                   >
                     <Lock size={17} strokeWidth={2.4} color="var(--gold-text)" />
                     <span className="pf-add__lock">
                       <span className="pf-add__lock-title">
                         {addLockMessage}
                       </span>
-                      <span className="pf-add__lock-sub">프리미엄으로 전환하기</span>
+                      <span className="pf-add__lock-sub">
+                        {addDecision.status === "premium_required"
+                          ? "프리미엄 혜택 확인하기"
+                          : "현재 연결 한도를 확인해 주세요"}
+                      </span>
                     </span>
                   </button>
                 ) : (
                   <button
                     type="button"
                     className="pf-add hy-press"
-                    onClick={() => navigate("/pairing-wizard")}
+                    onClick={addChild}
                   >
                     <Plus size={19} strokeWidth={2.4} color="#B0477A" />
                     아이 추가하기
@@ -288,6 +319,22 @@ export function ParentFamily() {
           </>
         )}
       </div>
+      <PremiumUpsell
+        open={upsellOpen}
+        source="second_child"
+        tier={tier}
+        returnTo="/pairing-wizard"
+        onClose={() => setUpsellOpen(false)}
+        onUpgrade={({ source, feature, returnTo }) => {
+          const storage = browserPremiumReturnIntentStorage();
+          const saved = storage && returnTo
+            ? savePremiumReturnIntent(storage, { source, feature, returnTo })
+            : false;
+          if (!saved) throw new Error("아이 연결 복귀 경로를 안전하게 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+          setUpsellOpen(false);
+          navigate("/subscription");
+        }}
+      />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useId, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { ChevronLeft, KeyRound, LogOut, ShieldAlert, Trash2 } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { formatPhoneDisplay } from "@/transform/phoneFormat";
@@ -12,6 +12,7 @@ import { useUpdateProfile } from "@/queries/useFamily";
 import { SocialLinks } from "./SocialLinks";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import { Loading } from "@/components/ui/Loading";
+import { usePwaUpdateCriticalSection } from "@/lib/usePwaUpdateCriticalSection";
 import "./ParentAccount.css";
 
 /** P-30 계정·프로필 — 프로필 편집·로그인 정보·로그아웃·회원 탈퇴. */
@@ -40,6 +41,7 @@ export function ParentAccount() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
+  const [logoutBusy, setLogoutBusy] = useState(false);
   const deleteTitleId = useId();
   const deleteDescriptionId = useId();
   const passwordTitleId = useId();
@@ -84,6 +86,16 @@ export function ParentAccount() {
     || phone.trim() !== formatPhoneDisplay(me?.phone ?? "")
   );
   const accountReady = !isLoading && !accountIsError && account !== null;
+  usePwaUpdateCriticalSection(
+    dirty
+    || updateProfile.isPending
+    || changePassword.isPending
+    || deleteAccount.isPending
+    || logoutBusy
+    || currentPassword.length > 0
+    || newPassword.length > 0
+    || newPasswordConfirm.length > 0,
+  );
 
   const saveProfile = () => {
     if (!accountReady) {
@@ -114,6 +126,7 @@ export function ParentAccount() {
   const handleLogout = async () => {
     if (logoutBusyRef.current) return; // 이중 탭 가드
     logoutBusyRef.current = true;
+    setLogoutBusy(true);
     try {
       await logout();
       show("로그아웃되었어요", "👋");
@@ -123,6 +136,7 @@ export function ParentAccount() {
       show("로그아웃에 실패했어요. 다시 시도해 주세요", "⚠️");
     } finally {
       logoutBusyRef.current = false;
+      setLogoutBusy(false);
     }
   };
 
@@ -302,11 +316,17 @@ export function ParentAccount() {
 
         {/* 계정 액션 */}
         <div className="pa-group">
-          <button type="button" className="pa-action hy-press" onClick={() => void handleLogout()}>
+          <button
+            type="button"
+            className="pa-action hy-press"
+            onClick={() => void handleLogout()}
+            disabled={logoutBusy}
+            aria-busy={logoutBusy}
+          >
             <span className="pa-action__ic pa-action__ic--neutral">
               <LogOut size={18} strokeWidth={2.2} />
             </span>
-            <span className="pa-action__label">로그아웃</span>
+            <span className="pa-action__label">{logoutBusy ? "로그아웃 중…" : "로그아웃"}</span>
           </button>
 
           <button

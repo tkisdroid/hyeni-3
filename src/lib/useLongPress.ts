@@ -84,6 +84,8 @@ export function useLongPress<T>(
       onClick: (event: ReactMouseEvent) => {
         if (firedRef.current) {
           firedRef.current = false;
+          // 합성 click을 별도 동작과 조합하는 소비처도 long-press 뒤 부수 효과를 실행하지 않게 알린다.
+          event.preventDefault();
           return;
         }
         onClick?.(event);

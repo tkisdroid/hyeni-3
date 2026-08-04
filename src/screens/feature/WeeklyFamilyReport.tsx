@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router";
 import { AlertTriangle, ChevronLeft, RefreshCw } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { Loading } from "@/components/ui/Loading";
+import { PremiumUpsell } from "@/components/PremiumUpsell";
 import { useActiveChild } from "@/app/activeChild";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { useEvents, useDailySupplies } from "@/queries/useSchedule";
@@ -11,7 +12,16 @@ import { useParentAlerts } from "@/queries/useNotifications";
 import { FEATURES, canUse, lockMessageFor } from "@/transform/tierPolicy";
 import { parseAppDateKey } from "@/transform/dateKey";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
-import { buildRecentWeekDateKeys, summarizeWeeklyReport } from "@/transform/weeklyReportView";
+import {
+  buildRecentWeekDateKeys,
+  resolveWeeklyReportReturnChildId,
+  summarizeWeeklyReport,
+  weeklyReportTeaser,
+} from "@/transform/weeklyReportView";
+import {
+  browserPremiumReturnIntentStorage,
+  savePremiumReturnIntent,
+} from "@/transform/premiumReturnIntent";
 import { useMessage } from "@/i18n/useMessage";
 import "./WeeklyFamilyReport.css";
 
@@ -27,12 +37,30 @@ function rangeLabel(keys: readonly string[]): string {
   return first && last ? `${first} - ${last}` : "최근 7일";
 }
 
+interface WeeklyReportRouteState {
+  premiumReturnSource?: string;
+  premiumEntitlementConfirmed?: boolean;
+  premiumReturnDraft?: unknown;
+}
+
 export function WeeklyFamilyReport() {
   const navigate = useNavigate();
+  const routeState = (useLocation().state ?? null) as WeeklyReportRouteState | null;
   const msg = useMessage();
-  const { activeChild, familyLoading } = useActiveChild();
+  const { activeChild, childMembers, familyLoading, setActiveChildId } = useActiveChild();
   const { ready, tier } = useEntitlement();
   const [now] = useState(() => new Date());
+  const [upsellOpen, setUpsellOpen] = useState(false);
+  const restoredChildId = routeState?.premiumReturnSource === "weekly_report"
+    && routeState.premiumEntitlementConfirmed === true
+    ? resolveWeeklyReportReturnChildId(routeState.premiumReturnDraft, childMembers)
+    : null;
+
+  useEffect(() => {
+    if (restoredChildId && restoredChildId !== activeChild?.id) {
+      setActiveChildId(restoredChildId);
+    }
+  }, [activeChild?.id, restoredChildId, setActiveChildId]);
   const weekDateKeys = useMemo(() => buildRecentWeekDateKeys(now), [now]);
   const eventsQuery = useEvents();
   const suppliesQuery = useDailySupplies();
@@ -47,7 +75,6 @@ export function WeeklyFamilyReport() {
     { isLoading: alertsQuery.isLoading, isError: alertsQuery.isError },
   ]);
   const summary = useMemo(() => {
-    if (!allowed) return null;
     if (queryState !== "ready") return null;
     return summarizeWeeklyReport({
       childMemberId: activeChild?.id ?? null,
@@ -61,7 +88,6 @@ export function WeeklyFamilyReport() {
   }, [
     activeChild?.id,
     activeChild?.user_id,
-    allowed,
     alertsQuery.data,
     eventsQuery.data,
     memoThread.data,
@@ -123,29 +149,42 @@ export function WeeklyFamilyReport() {
               </section>
             ) : !allowed ? (
               <>
+                <section className="hy-card wr-section">
+                  <div className="wr-section__head">
+                    <img className="wr-metric__ic" src={asset("ui/star-medal.webp")} alt="" />
+                    <b>무료 한 줄 요약</b>
+                  </div>
+                  {queryState === "error" ? (
+                    <div className="wr-emptyline">이번 주 기록을 확인하지 못했어요. 잠시 후 다시 확인해 주세요.</div>
+                  ) : queryState === "loading" ? (
+                    <Loading label="이번 주 기록을 정리하는 중" />
+                  ) : summary ? (
+                    <div className="wr-emptyline">{weeklyReportTeaser(summary, activeChild.name || "우리 아이")}</div>
+                  ) : null}
+                </section>
                 <section className="hy-card wr-lock">
                   <img className="wr-lock__icon" src={asset("ui/lock-3d.webp")} alt="" />
                   <div>
                     <b>{lockMessageFor(FEATURES.WEEKLY_REPORT)}</b>
                     <p>일정과 SOS는 무료로 시작하고, 더 자세한 주간 흐름은 프리미엄에서 확인하세요.</p>
                   </div>
-                  <button type="button" className="wr-primary hy-press" onClick={() => navigate("/subscription")}>
+                  <button type="button" className="wr-primary hy-press" onClick={() => setUpsellOpen(true)}>
                     프리미엄 보기
                   </button>
                 </section>
                 <section className="wr-preview">
                   {[
-                    { label: "이번 주 일정 흐름", icon: "ui/calendar-heart.webp" },
-                    { label: "자주 머문 장소", icon: "ui/pin-heart.webp" },
-                    { label: "안전 알림 요약", icon: "ui/bell.webp" },
-                    { label: "AI 요약", icon: "ui/ai-robot.webp" },
+                    { label: "이번 주 일정", icon: "ui/calendar-heart.webp" },
+                    { label: "준비물 체크", icon: "cat/study.webp" },
+                    { label: "대화 메시지", icon: "ui/chat-heart.webp" },
+                    { label: "안전 알림", icon: "ui/bell.webp" },
                   ].map(({ label, icon }) => (
                     <div key={label} className="hy-card wr-preview__item">
                       <span>
                         <img src={asset(icon)} alt="" style={{ width: 24, height: 24, objectFit: "contain" }} />
                       </span>
                       <b>{label}</b>
-                      <small>프리미엄에서 기록이 쌓이면 보여드려요</small>
+                      <small>프리미엄 전체 리포트에서 실제 기록을 집계해요</small>
                     </div>
                   ))}
                 </section>
@@ -236,7 +275,7 @@ export function WeeklyFamilyReport() {
                     </div>
                   ) : (
                     <div className="wr-emptyline">
-                      아직 분석할 기록이 부족해요. 일정과 위치 기록이 쌓이면 주간 흐름을 보여드려요.
+                      아직 분석할 기록이 부족해요. 일정·준비물·대화·안전 알림 기록이 쌓이면 주간 흐름을 보여드려요.
                     </div>
                   )}
                 </section>
@@ -245,6 +284,29 @@ export function WeeklyFamilyReport() {
           </>
         )}
       </div>
+      <PremiumUpsell
+        open={upsellOpen}
+        source="weekly_report"
+        tier={tier}
+        returnTo="/weekly-report"
+        onClose={() => setUpsellOpen(false)}
+        onUpgrade={({ source, feature, returnTo }) => {
+          const storage = browserPremiumReturnIntentStorage();
+          const saved = storage && returnTo
+            ? savePremiumReturnIntent(storage, {
+                source,
+                feature,
+                returnTo,
+                draft: {
+                  childMemberId: activeChild?.id ?? null,
+                  childUserId: activeChild?.user_id ?? null,
+                },
+              })
+            : false;
+          if (!saved) throw new Error("현재 아이 선택을 안전하게 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+          navigate("/subscription");
+        }}
+      />
     </div>
   );
 }

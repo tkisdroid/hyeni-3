@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router";
 import { Check, ChevronLeft, Home, Map as MapIcon, MapPin } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
@@ -13,7 +13,6 @@ import { useMyFamily } from "@/queries/useFamily";
 import { useSavedPlaces } from "@/queries/useLocation";
 import { useAddEventSupplies, useEvents, useSaveEventsWithChildrenBatch } from "@/queries/useSchedule";
 import { parseSupplyLabelInput } from "@/transform/eventSupplies";
-import { useEntitlement } from "@/queries/useEntitlement";
 import {
   notifOverrideToReminderSelection,
   reminderSelectionToNotifOverride,
@@ -42,7 +41,6 @@ import {
   resolveSeriesEditTargets,
   type SeriesEditScope,
 } from "@/transform/eventSeries";
-import { scheduleLimitFor, TIERS } from "@/transform/tierPolicy";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./EventForm.css";
 
@@ -162,7 +160,7 @@ function nextHalfHourTime(now: Date = new Date()): string {
 }
 
 function avatarSrc(path: string): string {
-  return path.startsWith("http") ? path : asset(path);
+  return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
 }
 
 export function EventForm() {
@@ -185,32 +183,26 @@ export function EventForm() {
   const savedPlaces = savedPlacesQuery.data ?? [];
 
   const eventsQuery = useEvents();
-  const entitlementQuery = useEntitlement();
-  const { tier } = entitlementQuery;
   const eventFormQueryState = resolveQueryTruthState([
     { isLoading: familyQuery.isLoading, isError: familyQuery.isError },
     { isLoading: savedPlacesQuery.isLoading, isError: savedPlacesQuery.isError },
     { isLoading: eventsQuery.isLoading, isError: eventsQuery.isError },
-    { isLoading: entitlementQuery.isLoading, isError: entitlementQuery.isError },
   ]);
   const eventFormDataMissing = eventFormQueryState === "ready" && (
     !familyQuery.data
     || savedPlacesQuery.data === undefined
     || eventsQuery.data === undefined
-    || tier === TIERS.UNKNOWN
   );
   const eventFormDataReady = eventFormQueryState === "ready" && !eventFormDataMissing;
   const eventFormRefetching =
     familyQuery.isFetching
     || savedPlacesQuery.isFetching
-    || eventsQuery.isFetching
-    || entitlementQuery.isFetching;
+    || eventsQuery.isFetching;
   const retryEventForm = async (): Promise<void> => {
     await Promise.all([
       familyQuery.refetch(),
       savedPlacesQuery.refetch(),
       eventsQuery.refetch(),
-      entitlementQuery.refetch(),
     ]);
   };
   const saveEvents = useSaveEventsWithChildrenBatch();
@@ -449,14 +441,6 @@ export function EventForm() {
     };
 
     const keys = mode === "create" ? buildOccurrenceDateKeys(dateKey, repeat, repeatWeekdayList) : [];
-    if (mode === "create") {
-      const limit = scheduleLimitFor(tier);
-      const currentCount = eventsQuery.data?.length ?? 0;
-      if (currentCount + keys.length > limit) {
-        show(`현재 플랜에서는 일정 ${limit}개까지 저장할 수 있어요`, "👑");
-        return;
-      }
-    }
 
     if (mode === "edit" && editing && !scope) {
       const sourceEvents = uniqueEventsById([...(eventsQuery.data ?? []), editing]);

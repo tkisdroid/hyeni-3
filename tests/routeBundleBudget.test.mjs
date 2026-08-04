@@ -4,7 +4,10 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
-import { inspectRouteEntryBundle } from "../scripts/lib/routeBundleBudget.mjs";
+import {
+  inspectRouteEntryBundle,
+  inspectRouteEntryStyles,
+} from "../scripts/lib/routeBundleBudget.mjs";
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -40,6 +43,33 @@ test("entry가 500KB 경계 이상이면 실패한다", () => withDistFixture((d
   assert.throws(
     () => inspectRouteEntryBundle({ distDir, limitBytes: 500_000 }),
     /500000.*미만/,
+  );
+}));
+
+test("production HTML의 초기 stylesheet는 40KB 미만이어야 한다", () => withDistFixture((distDir) => {
+  mkdirSync(join(distDir, "assets"));
+  writeFileSync(
+    join(distDir, "index.html"),
+    '<link rel="stylesheet" href="./assets/index-fixture.css">',
+  );
+  writeFileSync(join(distDir, "assets", "index-fixture.css"), Buffer.alloc(39_999, 1));
+  assert.deepEqual(inspectRouteEntryStyles({ distDir, limitBytes: 40_000 }), {
+    entryFile: "assets/index-fixture.css",
+    bytes: 39_999,
+    limitBytes: 40_000,
+  });
+}));
+
+test("초기 stylesheet가 40KB 경계 이상이면 실패한다", () => withDistFixture((distDir) => {
+  mkdirSync(join(distDir, "assets"));
+  writeFileSync(
+    join(distDir, "index.html"),
+    '<link rel="stylesheet" href="./assets/index-fixture.css">',
+  );
+  writeFileSync(join(distDir, "assets", "index-fixture.css"), Buffer.alloc(40_000, 1));
+  assert.throws(
+    () => inspectRouteEntryStyles({ distDir, limitBytes: 40_000 }),
+    /40000.*미만/,
   );
 }));
 

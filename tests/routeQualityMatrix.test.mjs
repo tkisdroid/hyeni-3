@@ -42,7 +42,10 @@ const routeQualityMatrix = [
   route("parent/calendar", "ParentCalendar", "src/screens/parent/ParentCalendar.tsx", "parent", "all", "query", queryStates(/isLoading \? \(/, /isError \? \(/, /selEvents\.length > 0/, /selEvents\.map/, /void refetchEvents\(\)/), "shell", "parent-formal"),
   route("parent/location", "ParentLocation", "src/screens/parent/ParentLocation.tsx", "parent", "all", "query", queryStates(/histLoading/, /histErrored/, /histEmpty/, /timedTrail\.length > 0/, /void refetchHistory\(\)/), "shell", "parent-formal"),
   route("parent/memo", "MemoChat", "src/screens/shared/MemoChat.tsx", "parent", "all", "query", queryStates(/thread\.isLoading/, /thread\.isError/, /showEmpty/, /messages\.map/, /void thread\.refetch\(\)/), "safe", "role-aware"),
-  route("parent/settings", "ParentSettings", "src/screens/parent/ParentSettings.tsx", "parent", "all", "hybrid", queryStates(/settingsQueryState === "loading"/, /settingsQueryState === "error"/, /settingsDataEmpty/, /settingsRows\.map/, /void retryParentSettings\(\)/), "shell", "parent-formal"),
+  route("parent/settings", "ParentSettings", "src/screens/parent/ParentSettings.tsx", "parent", "all", "hybrid", [
+    queryStatesAt("src/screens/parent/ParentSettings.tsx", /settingsQueryState === "loading"/, /settingsQueryState === "error"/, /settingsDataEmpty/, /settingsRows\.map/, /void retryParentSettings\(\)/),
+    queryStatesAt("src/components/ReferralRewardPanel.tsx", /statusQuery\.isLoading/, /statusQuery\.isError/, /eligibleChildren\.length === 0/, /status \? \(/, /void statusQuery\.refetch\(\)/),
+  ], "shell", "parent-formal"),
 
   route("child/home", "ChildHome", "src/screens/child/ChildHome.tsx", "child", "all", "query", [
     queryStatesAt("src/screens/child/ChildHome.tsx", /homeLoading/, /homeError/, /adventure\.nodes\.length === 0/, /adventure\.nodes\.map/, /void retryHomeData\(\)/),
@@ -67,7 +70,7 @@ const routeQualityMatrix = [
   route("place-manager", "PlaceManager", "src/screens/feature/PlaceManager.tsx", "parent", "all", "query", queryStates(/placesLoading/, /placesError/, /places\.length === 0/, /places\.map/, /void retryPlaces\(\)/), "screen", "parent-formal"),
   route("friend-play", "FriendPlay", "src/screens/feature/FriendPlay.tsx", "parent", "all", "query", queryStates(/parentPlaydateLoading/, /parentPlaydateError/, /현재 진행 중인 친구놀이가 없어요/, /active \? \(/, /void retryParentPlaydate\(\)/), "safe", "parent-formal"),
   route("ai-schedule", "AiSchedule", "src/screens/feature/AiSchedule.tsx", "parent", "all", "hybrid", queryStates(/aiScheduleQueryState === "loading"/, /aiScheduleQueryState === "error"/, /existingEvents\.data\?\.length === 0/, /className="ais-confirm hy-press"/, /void retryAiSchedule\(\)/), "screen", "parent-formal"),
-  route("ai-credit", "AiCredit", "src/screens/feature/AiCredit.tsx", "parent", "all", "hybrid", queryStates(/aiCreditQueryState === "loading"/, /aiCreditQueryState === "error"/, /!childUserId|aiCreditDataEmpty/, /CREDIT_PACKS\.map/, /void retryAiCredit\(\)/), "screen", "parent-formal"),
+  route("ai-credit", "AiCredit", "src/screens/feature/AiCredit.tsx", "parent", "all", "hybrid", queryStates(/aiCreditQueryState === "loading"/, /aiCreditQueryState === "error"/, /!childUserId|aiCreditDataEmpty/, /availablePacks\.map/, /void retryAiCredit\(\)/), "screen", "parent-formal"),
   route("phone-setup", "PhoneSetup", "src/screens/feature/PhoneSetup.tsx", "parent", "all", "hybrid", queryStates(/phoneQueryState === "loading"/, /phoneQueryState === "error"/, /family && parents\.length === 0/, /parents\.map/, /void retryPhoneSetup\(\)/), "screen", "parent-formal"),
   route("sticker-send", "StickerSend", "src/screens/feature/StickerSend.tsx", "parent", "all", "hybrid", queryStates(/stickerQueryState === "loading"/, /stickerQueryState === "error"/, /children\.length === 0/, /STICKERS\.map/, /void retryStickerSend\(\)/), "screen", "parent-formal"),
   route("profile-edit", "ProfileEdit", "src/screens/feature/ProfileEdit.tsx", "parent", "all", "hybrid", queryStates(/profileQueryState === "loading"/, /profileQueryState === "error"/, /!member/, /member &&/, /void retryProfileEdit\(\)/), "screen", "parent-formal"),

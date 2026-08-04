@@ -1,5 +1,6 @@
 package com.hyeni.calendar;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 
@@ -88,6 +89,22 @@ final class RemoteListenRequestStore {
         SharedPreferences prefs = prefs(context);
         return clean(requestId).equals(prefs.getString(prefix + "requestId", ""))
             && !prefs.getString(prefix + "state", "").isEmpty();
+    }
+
+    @SuppressLint("ApplySharedPref")
+    static synchronized void discardPendingNotification(Context context, @Nullable String requestId) {
+        if (context == null || isBlank(requestId)) return;
+        SharedPreferences prefs = prefs(context);
+        String prefix = prefixFor(requestId);
+        if (!clean(requestId).equals(prefs.getString(prefix + "requestId", ""))
+                || !STATE_PENDING.equals(prefs.getString(prefix + "state", ""))) {
+            return;
+        }
+        SharedPreferences.Editor editor = prefs.edit();
+        for (String key : prefs.getAll().keySet()) {
+            if (key.startsWith(prefix)) editor.remove(key);
+        }
+        editor.commit();
     }
 
     static synchronized PendingStatus inspectPending(

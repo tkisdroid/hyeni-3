@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router";
 import { ChevronLeft, MapPin } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useParentAlerts, useMarkAlertRead } from "@/queries/useNotifications";

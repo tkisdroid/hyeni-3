@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 
 import {
   buildRecentWeekDateKeys,
+  resolveWeeklyReportReturnChildId,
   summarizeWeeklyReport,
+  weeklyReportTeaser,
 } from "../src/transform/weeklyReportView.ts";
 import { FEATURES, TIERS, canUse, lockMessageFor } from "../src/transform/tierPolicy.ts";
 
@@ -117,4 +119,49 @@ test("주간 리포트는 활성 아이 데이터와 가족 공유 일정만 집
   assert.equal(summary.memoCount, 1);
   assert.equal(summary.alertCount, 1);
   assert.equal(summary.busiestDay?.dateKey, "2026-6-1");
+});
+
+test("무료 한 줄 요약은 실제 집계값만 사용하고 빈 기록도 정직하게 표시한다", () => {
+  assert.equal(
+    weeklyReportTeaser({
+      eventCount: 3,
+      supplyTotal: 2,
+      supplyDone: 1,
+      memoCount: 4,
+      alertCount: 0,
+      busiestDay: null,
+      hasEnoughData: true,
+    }, "혜니"),
+    "혜니의 이번 주에는 일정 3개가 있었고 준비물 1/2개를 챙겼어요.",
+  );
+  assert.equal(
+    weeklyReportTeaser({
+      eventCount: 0,
+      supplyTotal: 0,
+      supplyDone: 0,
+      memoCount: 0,
+      alertCount: 0,
+      busiestDay: null,
+      hasEnoughData: false,
+    }, "혜니"),
+    "혜니의 이번 주 기록이 아직 없어요.",
+  );
+});
+
+test("결제 복귀 아이는 현재 가족의 id와 user_id가 모두 일치할 때만 복원한다", () => {
+  const children = [
+    { id: "member-1", user_id: "user-1" },
+    { id: "member-2", user_id: "user-2" },
+  ];
+
+  assert.equal(resolveWeeklyReportReturnChildId({
+    childMemberId: "member-2",
+    childUserId: "user-2",
+  }, children), "member-2");
+  assert.equal(resolveWeeklyReportReturnChildId({
+    childMemberId: "member-2",
+    childUserId: "user-1",
+  }, children), null);
+  assert.equal(resolveWeeklyReportReturnChildId({ childMemberId: "member-3" }, children), null);
+  assert.equal(resolveWeeklyReportReturnChildId(null, children), null);
 });

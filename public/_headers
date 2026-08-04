@@ -1,3 +1,13 @@
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://dapi.kakao.com https://t1.daumcdn.net https://*.daumcdn.net https://js.tosspayments.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://hyeni-calendar-api.tkisdroid.workers.dev wss://hyeni-calendar-api.tkisdroid.workers.dev https://*.kakao.com https://*.daum.net https://*.daumcdn.net https://*.tosspayments.com; font-src 'self' data:; media-src 'self' blob:; worker-src 'self' blob:; frame-src https://*.tosspayments.com; child-src 'self' blob: https://*.tosspayments.com; object-src 'none'; base-uri 'self'; form-action 'self' https://*.tosspayments.com; frame-ancestors 'none'; manifest-src 'self'; upgrade-insecure-requests
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  X-XSS-Protection: 0
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(self), microphone=(self), geolocation=(self)
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
+
 /app-version.json
   Access-Control-Allow-Origin: *
   Cache-Control: no-store

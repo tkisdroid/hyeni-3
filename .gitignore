@@ -74,6 +74,9 @@ scripts/tmp-*.mjs
 .wrangler/
 browser-*.png
 artifacts/**/lighthouse-profile-*/
+# QA 임시 산출물 — 브라우저 프로필·DOCX 검수 캡처는 커밋하지 않는다.
+artifacts/lighthouse-chrome-profile-*/
+artifacts/docx-final-qa-*/
 artifacts/release-evidence/
 artifacts/release-records/
 

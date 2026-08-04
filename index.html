@@ -2,10 +2,13 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
+    <!-- 결제 redirect query(authKey/paymentKey)가 초기 asset Referer로 재전파되지 않게 한다. -->
+    <meta name="referrer" content="no-referrer" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
+    <meta name="description" content="가족 일정과 준비물, 자녀 위치와 안전 알림을 함께 확인하는 혜니캘린더" />
     <meta name="theme-color" content="#FBF7F4" />
     <meta name="color-scheme" content="light" />
 
@@ -17,6 +20,7 @@
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png" />
     <link rel="icon" href="./favicon-32x32.png" />
+    <link rel="preload" as="image" href="/assets/mascot/wave.webp" type="image/webp" fetchpriority="high" />
 
     <title>혜니캘린더</title>
     <!-- 지도 첫 진입 지연 줄이기: DNS+TLS 를 미리 맺어 둔다(SDK·타일이 다른 호스트에서 온다). -->
@@ -25,9 +29,18 @@
     <link rel="preconnect" href="https://mts.daumcdn.net" crossorigin />
     <link rel="dns-prefetch" href="https://dapi.kakao.com" />
     <link rel="dns-prefetch" href="https://mts.daumcdn.net" />
+    <style>
+      .boot-shell{min-height:100dvh;display:grid;place-content:center;gap:14px;padding:24px;text-align:center;background:#fbf7f4;color:#241f22;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif}.boot-shell__mark{width:64px;height:64px;margin:auto;border-radius:22px;background:linear-gradient(135deg,#fbd8e7,#eee5ff);box-shadow:0 12px 28px rgba(183,66,118,.16);display:grid;place-items:center;color:#c43775;font-size:30px}.boot-shell__name{font-size:24px;line-height:1.3;font-weight:800}.boot-shell__status{color:#766d72;font-size:15px;line-height:1.5}@media(prefers-reduced-motion:no-preference){.boot-shell__mark{animation:boot-pulse 1.1s ease-in-out infinite alternate}@keyframes boot-pulse{to{transform:scale(1.04)}}}
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="boot-shell" role="status" aria-live="polite" aria-label="혜니캘린더를 여는 중">
+        <span class="boot-shell__mark" aria-hidden="true">♥</span>
+        <strong class="boot-shell__name">혜니캘린더</strong>
+        <span class="boot-shell__status">가족 일정을 불러오는 중…</span>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

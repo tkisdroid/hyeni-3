@@ -405,6 +405,15 @@
   inset: 0;
 }
 
+/* Kakao SDK가 삽입하는 지도 출처 링크의 기본 너비는 32px이다.
+   로고의 시각 크기는 유지하고 투명한 가로 hit area만 모바일 최소값으로 넓힌다. */
+.km-canvas a[href^="http://map.kakao.com"],
+.km-canvas a[href^="https://map.kakao.com"] {
+  min-width: var(--control-min-size) !important;
+  min-height: var(--control-min-size) !important;
+  box-sizing: border-box;
+}
+
 .km-skeleton {
   position: absolute;
   inset: 0;

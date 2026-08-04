@@ -15,11 +15,14 @@
 import { getNativePlugin, isNativePlatform } from "./plugins";
 import { apiPost } from "@/lib/api/client";
 import { getApiUser } from "@/lib/api/session";
-import type {
-  BillingProductDetails,
-  SubscriptionOfferSelection,
+import {
+  hasExpectedLaunchSubscriptionPrice,
+  selectSubscriptionOffer,
+  type BillingProductDetails,
+  type SubscriptionOfferSelection,
 } from "@/transform/subscriptionOffer";
 import { querySubscriptionProductWithDiagnostics } from "@/transform/billingProductDiagnostics";
+import { validateAiCreditGrantImpact } from "@/transform/aiCreditGrant";
 import type {
   BillingProductsQueryResult,
   SubscriptionProductQueryResult,
@@ -28,6 +31,9 @@ import type {
 export const GOOGLE_PLAY_PACKAGE_NAME = "com.hyeni.calendar";
 const PLUGIN_NAME = "GooglePlayBilling";
 const VERIFY_PATH = "/api/billing/google-play-verify";
+const PREFLIGHT_PATH = "/api/billing/google-play-preflight";
+const PREFLIGHT_RELEASE_PATH = "/api/billing/google-play-preflight/release";
+const TRIAL_ELIGIBILITY_PATH = "/api/billing/google-play-trial-eligibility";
 
 /** 프리미엄 구독 상품(단일). 월/연은 basePlanId 로 구분한다. */
 export const SUBSCRIPTION_PRODUCT_ID = "hyeni_premium";
@@ -118,6 +124,8 @@ export interface VerifyResponse {
   entitlement?: { status?: string } | null;
   status?: string;
   creditStatus?: unknown;
+  debtApplied?: number;
+  availableCreditsAdded?: number;
 }
 
 // ── 에러 매핑(Capacitor reject code → 한국어 메시지) ──────────────────
@@ -217,6 +225,59 @@ async function verifyPurchase(body: Record<string, unknown>): Promise<VerifyResp
   return data;
 }
 
+interface GooglePlayPreflightResponse {
+  ok?: boolean;
+  reservationRef?: string;
+  trialEligible?: boolean;
+  expiresAt?: string;
+}
+
+function validPreflightResponse(
+  value: GooglePlayPreflightResponse,
+): value is Required<GooglePlayPreflightResponse> {
+  const expiresAtMs = Date.parse(value.expiresAt ?? "");
+  return value.ok === true
+    && /^google-play-preflight:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.reservationRef ?? "")
+    && typeof value.trialEligible === "boolean"
+    && Number.isFinite(expiresAtMs)
+    && expiresAtMs > Date.now();
+}
+
+/** 화면의 7일 체험 문구를 가족 단위 평생 1회 정본과 맞춥니다. */
+export async function fetchGooglePlayTrialEligibility(familyId: string): Promise<boolean> {
+  if (!familyId) throw new Error("가족 연결 후 다시 시도해 주세요.");
+  const response = await apiPost<GooglePlayPreflightResponse>(TRIAL_ELIGIBILITY_PATH, { familyId });
+  if (response.ok !== true || typeof response.trialEligible !== "boolean") {
+    throw new Error("무료 체험 가능 여부를 확인하지 못했어요.");
+  }
+  return response.trialEligible;
+}
+
+async function reserveGooglePlaySubscription(
+  familyId: string,
+  basePlanId: string,
+): Promise<Required<GooglePlayPreflightResponse>> {
+  const response = await apiPost<GooglePlayPreflightResponse>(PREFLIGHT_PATH, {
+    familyId,
+    basePlanId,
+  });
+  if (!validPreflightResponse(response)) {
+    throw new Error("구독 결제 준비 상태를 확인하지 못했어요.");
+  }
+  return response;
+}
+
+async function releaseGooglePlaySubscriptionReservation(
+  familyId: string,
+  reservationRef: string,
+): Promise<void> {
+  try {
+    await apiPost(PREFLIGHT_RELEASE_PATH, { familyId, reservationRef });
+  } catch {
+    // 정확한 lease만 15분 뒤 서버가 회수하므로 원래 Billing 오류를 덮지 않습니다.
+  }
+}
+
 // ── 공개 API: 구독 ───────────────────────────────────────────────────
 
 export interface SubscriptionPurchaseInput {
@@ -225,6 +286,8 @@ export interface SubscriptionPurchaseInput {
   basePlanId?: string;
   /** queryProducts가 현재 계정에 eligible 하다고 확인한 정확한 offer. */
   selectedOffer?: SubscriptionOfferSelection | null;
+  /** 결제 직전 ProductDetails. 체험 비대상일 때 같은 base plan의 paid offer를 고릅니다. */
+  productDetails?: BillingProductDetails | null;
 }
 
 export interface SubscriptionPurchaseResult {
@@ -246,6 +309,7 @@ export async function launchSubscriptionPurchase({
   familyId,
   basePlanId = MONTHLY_BASE_PLAN_ID,
   selectedOffer = null,
+  productDetails = null,
 }: SubscriptionPurchaseInput): Promise<SubscriptionPurchaseResult> {
   if (!familyId) throw new Error("가족 연결 후 다시 시도해 주세요.");
   if (!selectedOffer) {
@@ -257,18 +321,30 @@ export async function launchSubscriptionPurchase({
   const parentId = getApiUser()?.id ?? "";
   if (!parentId) throw new Error("부모 계정을 확인하지 못했어요. 다시 로그인해 주세요.");
   const plugin = requirePlugin();
+  const preflight = await reserveGooglePlaySubscription(familyId, basePlanId);
+  // 화면 조회와 무관하게 결제 직전 서버의 가족 단위 체험 판정을 정본으로 다시 선택합니다.
+  // 체험 조회 응답 순서가 뒤바뀌어도 대상 가족은 7일 오퍼를 놓치지 않고,
+  // 이미 체험한 가족은 Play가 남긴 trial offer를 실행하지 않습니다.
+  const purchaseOffer = selectSubscriptionOffer(productDetails, basePlanId, {
+    allowTrial: preflight.trialEligible,
+  });
+  if (!purchaseOffer || !hasExpectedLaunchSubscriptionPrice(purchaseOffer)) {
+    await releaseGooglePlaySubscriptionReservation(familyId, preflight.reservationRef);
+    throw new Error("Google Play 출시 가격이 월 4,900원·연 39,000원과 일치하지 않아요.");
+  }
 
   let result: PurchaseResult;
   try {
     result = await plugin.purchaseSubscription({
       productId: SUBSCRIPTION_PRODUCT_ID,
       basePlanId,
-      offerToken: selectedOffer?.offerToken ?? "",
-      offerId: selectedOffer?.offerId ?? "",
+      offerToken: purchaseOffer.offerToken,
+      offerId: purchaseOffer.offerId ?? "",
       accountId: familyId,
       profileId: parentId,
     });
   } catch (error) {
+    await releaseGooglePlaySubscriptionReservation(familyId, preflight.reservationRef);
     throw billingError(error, "구독을 시작하지 못했어요.");
   }
 
@@ -281,8 +357,9 @@ export async function launchSubscriptionPurchase({
     productType: "subscription",
     productId: SUBSCRIPTION_PRODUCT_ID,
     basePlanId,
-    offerToken: selectedOffer?.offerToken ?? null,
-    offerId: selectedOffer?.offerId ?? null,
+    offerToken: purchaseOffer.offerToken,
+    offerId: purchaseOffer.offerId,
+    providerReservationRef: preflight.reservationRef,
     purchaseToken: purchase.purchaseToken,
     orderId: purchase.orderId,
     purchase,
@@ -322,6 +399,8 @@ export interface CreditPurchaseResult {
   purchase: NormalizedPurchase;
   verification: VerifyResponse;
   creditStatus: unknown;
+  debtApplied: number;
+  availableCreditsAdded: number;
 }
 
 /** 크레딧 개수 → 인앱 productId. 미지원 개수는 명확히 throw(잘못된 결제 방지). */
@@ -376,6 +455,8 @@ export async function launchCreditPurchase({
     purchase,
   });
 
+  const grantImpact = validateAiCreditGrantImpact(verification, amount);
+
   // 소비성 상품 — 서버가 지시하면 consume 해야 재구매가 가능해진다.
   if (verification.needsClientConsume) {
     await plugin.consumePurchase({ purchaseToken: purchase.purchaseToken });
@@ -388,6 +469,7 @@ export async function launchCreditPurchase({
     purchase,
     verification,
     creditStatus: verification.creditStatus ?? null,
+    ...grantImpact,
   };
 }
 

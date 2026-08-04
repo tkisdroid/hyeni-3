@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { ChevronLeft } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
@@ -30,9 +30,9 @@ const STICKERS: ReadonlyArray<Sticker> = [
   { id: "rest", img: "sticker/rest.webp", label: "푹 쉬어요", emoji: "🌙" },
 ];
 
-/** photo_url(원격 http)은 그대로, 로컬 캐릭터 키는 asset()으로 해석. */
+/** photo_url(http/blob)은 그대로, 로컬 캐릭터 키는 asset()으로 해석. */
 function avatarSrc(path: string): string {
-  return path.startsWith("http") ? path : asset(path);
+  return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
 }
 
 /** 부모: 상황별 칭찬 스티커 + 한마디를 골라 아이에게 전송(다자녀 시 대상 선택). */

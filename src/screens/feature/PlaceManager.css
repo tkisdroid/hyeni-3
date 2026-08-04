@@ -236,6 +236,20 @@
 
   color: var(--fg-muted);
 }
+.pm-alert-state {
+  margin-top: 4px;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  color: var(--fg-muted);
+  overflow-wrap: anywhere;
+}
+.pm-alert-state[data-state="active"] {
+  color: var(--mint-text);
+}
+.pm-alert-state[data-state="premium_required"] {
+  color: var(--lav-text);
+}
 .pm-item__edit {
   width: 34px;
   height: 34px;

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { Backpack, Check, MapPin, MessageCircle, Navigation, Palette, Settings2, X } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
@@ -11,7 +11,7 @@ import { useEvents, useDailySupplies, useUpsertDailySupply, useDeleteDailySupply
 import { useSavedPlaces, useChildLocations } from "@/queries/useLocation";
 import { useStickerSummary, useReceivedStickers } from "@/queries/useStickers";
 import { useMemoThread, useSendMemo } from "@/queries/useMemo";
-import { useAiFriendPublicSettings, useAiUsageToday } from "@/queries/useAi";
+import { useAiCreditPublicStatus, useAiFriendPublicSettings } from "@/queries/useAi";
 import { placePhoneCall } from "@/lib/native/phone";
 import type { DailySupply, CalendarEvent } from "@/lib/api/endpoints/schedule";
 import type { RoutePoint } from "@/lib/api/endpoints/route";
@@ -24,10 +24,14 @@ import { buildStickerBook, readSeenStickers } from "@/transform/stickerBook";
 import { resolveEventVisualAsset } from "@/transform/placeVisual";
 import { CHILD_ACCENTS } from "@/transform/childAccent";
 import { resolveAiFriendDisplayName } from "@/transform/aiFriendName";
+import {
+  MAX_SUPPLY_ITEMS_PER_KIND,
+  dailySupplyLimitMessage,
+  isDailySupplyLimitError,
+} from "@/transform/eventSupplies";
 import { Loading } from "@/components/ui/Loading";
 import {
   latestParentMemoText,
-  remainingAiChats,
   resolveChildDestination,
   unreadParentMemoCount,
 } from "@/transform/childHomeData";
@@ -37,6 +41,7 @@ import { RouteSheet } from "./overlays/RouteSheet";
 import { PlaydateSheet } from "./overlays/PlaydateSheet";
 import { CallSheet, type CallTarget } from "./overlays/CallSheet";
 import { Celebrate } from "./overlays/Celebrate";
+import "@/styles/jua.css";
 import "./ChildHome.css";
 
 /** 원탭 상태 버튼의 3D 아이콘 — status/*.webp 는 흰 배경 불투명이라 쓰지 않는다. */
@@ -80,7 +85,7 @@ export function ChildHome() {
   const { data: stickerSummary } = useStickerSummary();
   const receivedStickers = useReceivedStickers(userId);
   const aiFriend = useAiFriendPublicSettings(userId);
-  const aiUsage = useAiUsageToday(userId);
+  const aiCreditStatus = useAiCreditPublicStatus(userId);
   const homeLoading = familyQuery.isLoading || eventsQuery.isLoading || placesQuery.isLoading;
   const homeError = familyQuery.isError || eventsQuery.isError || placesQuery.isError;
   const retryHomeData = async () => {
@@ -149,6 +154,8 @@ export function ChildHome() {
   const upsert = useUpsertDailySupply();
   const remove = useDeleteDailySupply();
   const prepDone = supplies.filter((s) => s.done).length;
+  const prepItemCount = supplies.filter((s) => s.kind !== "hw").length;
+  const homeworkItemCount = supplies.filter((s) => s.kind === "hw").length;
   const prepPct = supplies.length ? Math.round((prepDone / supplies.length) * 100) : 0;
 
   const [editMode, setEditMode] = useState(false);
@@ -221,6 +228,11 @@ export function ChildHome() {
       return;
     }
     if (upsert.isPending) return;
+    const itemCount = kind === "hw" ? homeworkItemCount : prepItemCount;
+    if (itemCount >= MAX_SUPPLY_ITEMS_PER_KIND) {
+      show(dailySupplyLimitMessage(kind, true), "🎒");
+      return;
+    }
     setPendingSupplyAdd(kind);
     upsert.mutate(
       {
@@ -231,7 +243,12 @@ export function ChildHome() {
         child_user_id: myMember.id,
       },
       {
-        onError: () => show("추가하지 못했어. 다시 해 볼래?", "⚠️"),
+        onError: (error) => show(
+          isDailySupplyLimitError(error)
+            ? dailySupplyLimitMessage(kind, true)
+            : "추가하지 못했어. 다시 해 볼래?",
+          isDailySupplyLimitError(error) ? "🎒" : "⚠️",
+        ),
         onSettled: () => setPendingSupplyAdd((current) => (current === kind ? null : current)),
       },
     );
@@ -285,7 +302,8 @@ export function ChildHome() {
 
   // ── AI 친구 ──────────────────────────────────────────────────────────
   const aiEnabled = aiFriend.data?.ai_enabled !== false;
-  const aiRemaining = remainingAiChats(aiFriend.data?.daily_limit, aiUsage.data?.count ?? 0);
+  // 포함분·구매분·부모 상한을 모두 반영한 Worker 정본만 숫자로 보여 준다.
+  const aiRemaining = aiCreditStatus.data?.availableRemaining ?? null;
   const aiFriendSavedName = aiFriend.data?.ai_friend_name?.trim() ?? "";
   const aiFriendDisplayName = aiFriendSavedName
     ? resolveAiFriendDisplayName({ savedName: aiFriendSavedName, childName })
@@ -625,19 +643,25 @@ export function ChildHome() {
                   type="button"
                   className="kd-prep__add kd-prep__add--prep hy-press"
                   onClick={() => addSupply("prep")}
-                  disabled={upsert.isPending}
+                  disabled={upsert.isPending || prepItemCount >= MAX_SUPPLY_ITEMS_PER_KIND}
+                  aria-label={prepItemCount >= MAX_SUPPLY_ITEMS_PER_KIND
+                    ? `준비물은 하루 ${MAX_SUPPLY_ITEMS_PER_KIND}개까지 등록할 수 있어`
+                    : "준비물 추가"}
                   aria-busy={upsert.isPending && pendingSupplyAdd === "prep"}
                 >
-                  + 준비물
+                  {prepItemCount >= MAX_SUPPLY_ITEMS_PER_KIND ? `준비물 ${prepItemCount}/${MAX_SUPPLY_ITEMS_PER_KIND}` : "+ 준비물"}
                 </button>
                 <button
                   type="button"
                   className="kd-prep__add kd-prep__add--hw hy-press"
                   onClick={() => addSupply("hw")}
-                  disabled={upsert.isPending}
+                  disabled={upsert.isPending || homeworkItemCount >= MAX_SUPPLY_ITEMS_PER_KIND}
+                  aria-label={homeworkItemCount >= MAX_SUPPLY_ITEMS_PER_KIND
+                    ? `숙제는 하루 ${MAX_SUPPLY_ITEMS_PER_KIND}개까지 등록할 수 있어`
+                    : "숙제 추가"}
                   aria-busy={upsert.isPending && pendingSupplyAdd === "hw"}
                 >
-                  + 숙제
+                  {homeworkItemCount >= MAX_SUPPLY_ITEMS_PER_KIND ? `숙제 ${homeworkItemCount}/${MAX_SUPPLY_ITEMS_PER_KIND}` : "+ 숙제"}
                 </button>
               </div>
             )}

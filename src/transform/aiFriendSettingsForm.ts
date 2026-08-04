@@ -20,6 +20,17 @@ export interface AiFriendControlPatch {
   allow_contact_actions: boolean;
 }
 
+export interface AiFriendControlSource {
+  forbidden_topics?: string[] | null;
+  proactive_enabled?: boolean | null;
+  proactive_start_time?: string | null;
+  proactive_end_time?: string | null;
+  quiet_hours_start?: string | null;
+  quiet_hours_end?: string | null;
+  allow_schedule_actions?: boolean | null;
+  allow_contact_actions?: boolean | null;
+}
+
 export function parseAiTopicText(value: string): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
@@ -58,4 +69,31 @@ export function buildAiFriendControlPatch(form: AiFriendControlForm): AiFriendCo
     allow_schedule_actions: form.allowScheduleActions,
     allow_contact_actions: form.allowContactActions,
   };
+}
+
+/** 화면 초깃값과 같은 의미의 정규화된 입력은 미저장 변경으로 취급하지 않는다. */
+export function isAiFriendControlFormDirty(
+  form: AiFriendControlForm,
+  source: AiFriendControlSource | null | undefined,
+): boolean {
+  const draft = buildAiFriendControlPatch(form);
+  const saved = buildAiFriendControlPatch({
+    forbiddenTopicsText: aiTopicsToText(source?.forbidden_topics),
+    proactiveEnabled: source?.proactive_enabled ?? false,
+    proactiveStartTime: source?.proactive_start_time ?? "08:00",
+    proactiveEndTime: source?.proactive_end_time ?? "20:00",
+    quietHoursStart: source?.quiet_hours_start ?? "21:00",
+    quietHoursEnd: source?.quiet_hours_end ?? "07:00",
+    allowScheduleActions: source?.allow_schedule_actions ?? true,
+    allowContactActions: source?.allow_contact_actions ?? true,
+  });
+  return draft.proactive_enabled !== saved.proactive_enabled
+    || draft.proactive_start_time !== saved.proactive_start_time
+    || draft.proactive_end_time !== saved.proactive_end_time
+    || draft.quiet_hours_start !== saved.quiet_hours_start
+    || draft.quiet_hours_end !== saved.quiet_hours_end
+    || draft.allow_schedule_actions !== saved.allow_schedule_actions
+    || draft.allow_contact_actions !== saved.allow_contact_actions
+    || draft.forbidden_topics.length !== saved.forbidden_topics.length
+    || draft.forbidden_topics.some((topic, index) => topic !== saved.forbidden_topics[index]);
 }

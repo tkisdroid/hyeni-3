@@ -4,6 +4,10 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import {
+  expectedReleasePermissionNames,
+  inspectAndroidManifestPolicy,
+} from "../scripts/android-manifest-policy.mjs";
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const androidDir = resolve(rootDir, "android");
@@ -17,7 +21,7 @@ function receiverBlock(manifest, className) {
   return receivers.find((receiver) => receiver.includes(`android:name="${className}"`)) ?? "";
 }
 
-test("출시 manifest 병합 뒤에도 부팅·종료 receiver는 외부 앱에 노출되지 않는다", { timeout: 300_000 }, () => {
+test("출시 manifest 병합 뒤 receiver·민감 권한·자녀 모니터링 선언을 고정 검증한다", { timeout: 300_000 }, () => {
   const isWindows = process.platform === "win32";
   const gradleCommand = isWindows ? (process.env.ComSpec ?? "cmd.exe") : "./gradlew";
   // NoDefaultCurrentDirectoryInExePath=1 환경에서는 경로 접두어 없는 현재 디렉터리
@@ -49,4 +53,17 @@ test("출시 manifest 병합 뒤에도 부팅·종료 receiver는 외부 앱에 
   assert.notEqual(shutdownReceiver, "", "병합 manifest에 ShutdownReceiver가 있어야 합니다");
   assert.match(bootReceiver, /android:exported="false"/);
   assert.match(shutdownReceiver, /android:exported="false"/);
+
+  const manifestPolicy = inspectAndroidManifestPolicy(mergedManifest, "com.hyeni.calendar");
+  assert.equal(manifestPolicy.permissionCount, 24);
+  assert.deepEqual(
+    manifestPolicy.permissionNames,
+    expectedReleasePermissionNames("com.hyeni.calendar"),
+  );
+  assert.equal(manifestPolicy.monitoringTool, "child_monitoring");
+  assert.equal(manifestPolicy.legacyStorageMaxSdkVersion, 28);
+  assert.doesNotMatch(
+    mergedManifest,
+    /android\.permission\.(?:QUERY_ALL_PACKAGES|READ_MEDIA_IMAGES|READ_MEDIA_VIDEO|SYSTEM_ALERT_WINDOW|SCHEDULE_EXACT_ALARM|USE_EXACT_ALARM|REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)/,
+  );
 });

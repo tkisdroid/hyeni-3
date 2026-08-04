@@ -3,7 +3,7 @@
  * 온보딩(setup/join)과 가족 화면(mine/profile/pair-code)이 공용.
  * join/join-as-parent 는 서버가 세션을 재발급하므로 applyApiSession + setApiUser 필수.
  */
-import { apiGet, apiPost, apiPatch, childPhotoProxyUrl } from "../client";
+import { apiGet, apiPost, apiPatch } from "../client";
 import {
   applyApiSession,
   getApiSessionInstanceId,
@@ -15,6 +15,7 @@ import {
 import { normalizePhoneForStorage } from "@/transform/phone";
 import { reconcileApiUserWithFamilyMine } from "@/transform/sessionFamilySync";
 import { requestWithSessionOwnership } from "@/auth/sessionRequestOwnership";
+import { getPlatform, isNativePlatform } from "@/lib/native/plugins";
 
 /**
  * 아이 기기 상태(웹 수집 부분집합). 서버 family_members.device_health(jsonb)에 저장.
@@ -135,28 +136,6 @@ function adoptSession(data: SessionResponse): void {
   if (data.user) setApiUser(data.user);
 }
 
-// photo_url(raw 경로/URL) → R2 proxy URL 로 재합성.
-function enrichPhotos(members: FamilyMember[]): FamilyMember[] {
-  return members.map((m) => {
-    if (!m.photo_url) return m;
-    const proxied = childPhotoProxyUrl(extractPhotoPath(m.photo_url));
-    return proxied ? { ...m, photo_url: proxied } : m;
-  });
-}
-
-function extractPhotoPath(urlOrPath: string): string | null {
-  const m = urlOrPath.match(/\/(?:storage\/v1\/object\/(?:public|sign)|api\/storage)\/child-photos\/([^?]+)/);
-  if (m) {
-    try {
-      return decodeURIComponent(m[1]);
-    } catch {
-      return m[1];
-    }
-  }
-  if (urlOrPath.startsWith("http")) return null;
-  return urlOrPath;
-}
-
 /** 현재 user 의 가족 정보. 비로그인/가족없음이면 null. */
 export async function getMyFamily(): Promise<FamilyInfo | null> {
   const data = await requestWithSessionOwnership(
@@ -182,7 +161,8 @@ export async function getMyFamily(): Promise<FamilyInfo | null> {
     familyId: data.familyId,
     pairCode: data.pairCode ?? null,
     pairCodeExpiresAt: data.pairCodeExpiresAt ? new Date(data.pairCodeExpiresAt) : null,
-    members: enrichPhotos(data.members || []),
+    // 가족 정본은 사진 다운로드와 독립적으로 즉시 반환한다. private 사진은 useMyFamily가 별도 lease로 합성한다.
+    members: data.members || [],
     myRole: data.myRole ?? null,
     myName: data.myName ?? "",
     parentName: data.parentName ?? "",
@@ -199,6 +179,7 @@ export interface SetupFamilyInput {
   children?: Array<{ name: string; birthdate?: string; color_hex?: string; photo_url?: string }>;
   parentPhone?: string;
   parentGender?: string;
+  referralCode?: string;
 }
 
 /**
@@ -235,6 +216,7 @@ export async function setupFamily(input: SetupFamilyInput): Promise<{ id: string
     children: input.children ?? [],
     parentPhone,
     parentGender: input.parentGender ?? "",
+    referralCode: input.referralCode?.trim() || undefined,
   });
 }
 
@@ -267,6 +249,7 @@ export async function joinFamily(pairCode: string, options?: string | JoinFamily
   const previousFamilyId = cleanOptional(opts.previousFamilyId);
   if (deviceLabel) payload.device_label = deviceLabel;
   if (deviceInstallId) payload.device_install_id = deviceInstallId;
+  if (isNativePlatform() && getPlatform() === "android") payload.device_platform = "android";
   if (previousUserId) payload.previous_user_id = previousUserId;
   if (previousFamilyId) payload.previous_family_id = previousFamilyId;
   const data = await apiPost<SessionResponse>("/api/family/join", payload);

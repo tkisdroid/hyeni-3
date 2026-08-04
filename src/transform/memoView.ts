@@ -16,7 +16,7 @@ export interface ThreadMsg {
   dayStamp: string;
   /** 리치 메시지 종류 — content 의 [[img:]]·[[loc:]] 마커에서 파생(기본 text). */
   kind: "text" | "image" | "location";
-  /** kind=image: R2 키(child-photos 버킷). 표시 시 childPhotoProxyUrl 로 조립. */
+  /** kind=image: R2 키(child-photos 버킷). 표시 시 인증 fetch 후 blob URL로 조립. */
   imagePath?: string;
   /** kind=location: 좌표 + 주소 라벨. */
   location?: { lat: number; lng: number; address: string };

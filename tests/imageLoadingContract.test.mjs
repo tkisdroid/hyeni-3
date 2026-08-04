@@ -20,19 +20,22 @@ function imageTagForExpression(body, expression) {
   return new RegExp(`<img\\b(?=[^>]*\\bsrc=\\{${escaped}\\})[^>]*>`, "s").exec(body)?.[0] ?? "";
 }
 
-test("대화 목록의 네트워크 프로필·첨부 이미지는 지연 로드와 비동기 디코딩을 쓴다", () => {
+test("대화 목록은 아바타를 지연하고 private 첨부는 viewport lease로 요청 범위를 제한한다", () => {
   const memo = source("src/screens/shared/MemoChat.tsx");
-  const imageTags = [
-    /<img\s+src=\{sender\?\.avatar \?\? peer\.avatar\}[^>]*>/,
-    /<img\s+src=\{childPhotoProxyUrl\(m\.imagePath\) \?\? undefined\}[^>]*>/,
-    /<img\s+src=\{childPhotoProxyUrl\(previewImagePath\) \?\? undefined\}[^>]*>/,
-  ];
+  const avatar = /<img\s+src=\{sender\?\.avatar \?\? peer\.avatar\}[^>]*>/s.exec(memo)?.[0] ?? "";
+  assert.match(avatar, /loading="lazy"/);
+  assert.match(avatar, /decoding="async"/);
 
-  for (const pattern of imageTags) {
-    const tag = pattern.exec(memo)?.[0] ?? "";
-    assert.match(tag, /loading="lazy"/, `lazy 누락: ${pattern}`);
-    assert.match(tag, /decoding="async"/, `async decoding 누락: ${pattern}`);
-  }
+  assert.match(
+    memo,
+    /<MemoImageBubble\s+path=\{m\.imagePath\}\s+press=\{imagePress\}\s+isChildSession=\{isChildSession\}\s+onOpen=\{\(\) => setPreviewImagePath\(m\.imagePath \?\? null\)\}\s+\/>/,
+  );
+  assert.match(memo, /new IntersectionObserver\(/);
+  assert.match(memo, /rootMargin: "360px 0px"/);
+  const privateImage = /<img\s+src=\{photo\.url\}[^>]*alt="공유한 사진"[^>]*>/s.exec(memo)?.[0] ?? "";
+  const previewImage = /<img\s+src=\{previewImage\.url\}[^>]*>/s.exec(memo)?.[0] ?? "";
+  assert.match(privateImage, /decoding="async"/);
+  assert.match(previewImage, /decoding="async"/);
 });
 
 test("대화 첫 화면 헤더 아바타는 즉시 요청하고 비동기 디코딩을 쓴다", () => {

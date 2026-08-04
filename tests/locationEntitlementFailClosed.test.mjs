@@ -10,7 +10,8 @@ test("부모 위치 화면은 엔타이틀먼트 미확정·오류에서 캐시 
   assert.match(source, /const entitlement = useEntitlement\(\)/);
   assert.match(source, /const locationScopePending = entitlement\.isError \|\| !tierKnown/);
   assert.match(source, /const canShowLocation = !locationScopePending && mode !== "locked"/);
-  assert.match(source, /const canShowHistory = !locationScopePending && mode === "realtime"/);
+  assert.match(source, /const canShowHistory = canShowLocation/);
+  assert.match(source, /const premiumOpen = !locationScopePending && mode === "realtime"/);
   assert.match(source, /const loc = canShowLocation \? cachedLoc : null/);
   assert.match(source, /isLocked \|\| locationScopePending \? "live" : view/);
   assert.match(source, /조회 범위 확인 중/);

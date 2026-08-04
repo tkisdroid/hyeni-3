@@ -11,7 +11,7 @@ export interface MapChild {
   lat: number;
   lng: number;
   name: string;
-  avatar: string; // asset 경로 또는 URL
+  avatar: string; // asset 경로 또는 http/blob URL
   tone?: "normal" | "danger";
 }
 export interface MapZone {
@@ -28,7 +28,7 @@ export interface MapPlace {
 }
 
 function src(path: string): string {
-  return path.startsWith("http") ? path : asset(path);
+  return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
 }
 
 export interface LatLngPoint {

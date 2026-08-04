@@ -2,7 +2,7 @@
  * role 가드. 미인증→/onboarding, role 불일치→해당 role 홈으로.
  * (라우터 삽입은 Slice 2.)
  */
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet } from "react-router";
 import { useAuth } from "./AuthContext";
 import { needsOnboarding, homePathForRole } from "./guards";
 import type { AuthRole } from "./AuthContext";

@@ -68,9 +68,13 @@ export const qk = {
   // 구독·엔타이틀먼트
   entitlement: (familyId: string) => ["entitlement", familyId] as const,
   reviewReward: (familyId: string) => ["reviewReward", familyId] as const,
+  referrals: (familyId: string) => ["referrals", familyId] as const,
 
   // AI
   aiCredits: (familyId: string) => ["aiCredits", familyId] as const,
+  webAiCreditCatalog: (familyId: string) => ["aiCredits", familyId, "webCatalog"] as const,
+  aiCreditPublicStatus: (familyId: string, childUserId: string) =>
+    ["aiCredits", familyId, "publicStatus", childUserId] as const,
   aiMessages: (childUserId: string) => ["aiMessages", childUserId] as const,
   aiUsageToday: (familyId: string, childUserId: string) => ["aiUsageToday", familyId, childUserId] as const,
 
@@ -84,4 +88,5 @@ export const qk = {
   // 운영자(관리자) — 계정 단위라 familyId 를 키에 넣지 않는다.
   adminStatus: ["admin", "me"] as const,
   adminAiPrompt: ["admin", "aiPrompt"] as const,
+  adminCommerceControls: ["admin", "commerceControls"] as const,
 } as const;

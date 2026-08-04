@@ -18,7 +18,7 @@ test("오늘 머문 곳 시트는 드래그 다운으로 접히고 pointer captu
 });
 
 test("오늘 경로 시간대 바는 오전 8시 기준 윈도우를 사용하고 아이 칩을 숨긴다", () => {
-  assert.match(source, /getHistoryDayWindow\(now\)/);
+  assert.match(source, /getHistoryDayWindowForKey\(historyDayKey, now\)/);
   assert.match(source, /formatClockHM\(historyWindow\.startMs\)/);
   assert.match(source, /activeView === "live" && selected/);
   assert.doesNotMatch(source, /activeView === "history" && selected &&/);

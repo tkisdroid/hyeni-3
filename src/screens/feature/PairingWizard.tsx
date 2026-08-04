@@ -1,12 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { ChevronLeft, Camera } from "lucide-react";
 import { useToast } from "@/app/toast";
+import { PremiumUpsell } from "@/components/PremiumUpsell";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { useMyFamily, useRegeneratePairCode, useCreateChildren } from "@/queries/useFamily";
 import { useEntitlement } from "@/queries/useEntitlement";
-import { FEATURES, TIERS, tierFrom, maxChildrenFor, lockMessageFor } from "@/transform/tierPolicy";
+import { FEATURES, TIERS, lockMessageFor } from "@/transform/tierPolicy";
+import { resolveChildAddGate, type ChildAddGateDecision } from "@/transform/secondChildGate";
+import {
+  browserPremiumReturnIntentStorage,
+  savePremiumReturnIntent,
+} from "@/transform/premiumReturnIntent";
 import { validateChildDraftRequirements } from "@/transform/childProfileRequirements";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import { resizeImageFileSafe } from "@/lib/imageResize";
@@ -54,7 +60,7 @@ export function PairingWizard() {
 
   // 티어 상한(ready=false → unknown → 보수적으로 1명).
   const entitlementQuery = useEntitlement();
-  const { ready, isPremium } = entitlementQuery;
+  const { ready, tier } = entitlementQuery;
   const pairingQueryState = resolveQueryTruthState([
     { isLoading: familyQuery.isLoading, isError: familyQuery.isError },
     { isLoading: entitlementQuery.isLoading, isError: entitlementQuery.isError },
@@ -64,14 +70,21 @@ export function PairingWizard() {
   const retryPairingWizard = async (): Promise<void> => {
     await Promise.all([familyQuery.refetch(), entitlementQuery.refetch()]);
   };
-  const tier = tierFrom({ ready, isPremium });
-  const maxChildren = maxChildrenFor(tier);
-  const gatesReady = pairingQueryState === "ready" && ready && !!family;
+  const gatesReady = pairingQueryState === "ready" && ready && !entitlementQuery.isError && !!family;
+  // /family/mine은 비활성 자녀를 제외하므로 여기서 센 child 행은 모두 활성 자녀다.
   const existingChildCount = useMemo(
     () => (family?.members ?? []).filter((m) => m.role === "child").length,
     [family],
   );
-  const remainingSlots = gatesReady ? Math.max(0, maxChildren - existingChildCount) : maxChildren;
+  const resolveAddition = (requestedChildCount: number) => resolveChildAddGate({
+    ready: gatesReady,
+    isError: entitlementQuery.isError || familyQuery.isError,
+    tier,
+    activeChildCount: existingChildCount,
+    requestedChildCount,
+  });
+  const currentAddDecision = resolveAddition(1);
+  const remainingSlots = currentAddDecision.remainingSlots;
   const noSlots = gatesReady && remainingSlots <= 0;
   const gateMessage = "가족·구독 정보를 확인 중이에요. 잠시 후 다시 시도해 주세요";
   const childLimitMessage =
@@ -83,6 +96,7 @@ export function PairingWizard() {
   const [count, setCount] = useState(1);
   const [children, setChildren] = useState<ChildDraft[]>([emptyChild()]);
   const [processingIndex, setProcessingIndex] = useState<number | null>(null);
+  const [upsellOpen, setUpsellOpen] = useState(false);
   const todayStr = useMemo(() => toDateInputValue(new Date()), []);
   const fileRefs = useRef<Array<HTMLInputElement | null>>([]);
 
@@ -93,15 +107,22 @@ export function PairingWizard() {
     setChildren((list) => (list.length > safeMax ? list.slice(0, safeMax) : list));
   }, [remainingSlots]);
 
+  const handleBlockedAddition = (decision: ChildAddGateDecision): boolean => {
+    if (decision.status === "allowed") return true;
+    if (decision.status === "premium_required") {
+      setUpsellOpen(true);
+      return false;
+    }
+    show(
+      decision.status === "limit_reached" ? childLimitMessage : gateMessage,
+      decision.status === "unavailable" ? "⏳" : "🔒",
+    );
+    return false;
+  };
+
   const selectCount = (n: number) => {
-    if (!gatesReady && n > maxChildren) {
-      show(gateMessage, "⏳");
-      return;
-    }
-    if (noSlots || n > remainingSlots) {
-      show(gatesReady ? childLimitMessage : gateMessage, "🔒");
-      return;
-    }
+    const addDecision = resolveAddition(n);
+    if (!handleBlockedAddition(addDecision)) return;
     setCount(n);
     setChildren((prev) => Array.from({ length: n }, (_, i) => prev[i] ?? emptyChild()));
   };
@@ -136,15 +157,8 @@ export function PairingWizard() {
 
   const next = () => {
     if (step === 1) {
-      if (!gatesReady) {
-        show(gateMessage, "⏳");
-        return;
-      }
-      if (noSlots) {
-        show(childLimitMessage, "🔒");
-        navigate("/subscription");
-        return;
-      }
+      const addDecision = resolveAddition(count);
+      if (!handleBlockedAddition(addDecision)) return;
       setStep(2);
     }
     else if (step === 2) {
@@ -169,10 +183,8 @@ export function PairingWizard() {
 
   const makeCode = () => {
     if (busy) return;
-    if (!gatesReady) {
-      show(gateMessage, "⏳");
-      return;
-    }
+    const addDecision = resolveAddition(children.length);
+    if (!handleBlockedAddition(addDecision)) return;
     const required = validateChildDraftRequirements(children);
     if (!required.ok) {
       show(required.message, "🎂");
@@ -184,11 +196,6 @@ export function PairingWizard() {
       name: child.name,
       birthdate: child.birthdate,
     }));
-    if (existingChildCount + children.length > maxChildren) {
-      show(childLimitMessage, "🔒");
-      navigate("/subscription");
-      return;
-    }
     // 주 보호자면 아이 placeholder(사진·이름)를 서버에 먼저 생성한 뒤 코드를 발급한다.
     const canCreate = !!family?.isPrimaryParent && !!family.familyId;
     if (!canCreate) {
@@ -270,7 +277,8 @@ export function PairingWizard() {
             <div className="pw-lead">몇 명을 연결할까요?</div>
             <div className="pw-count-grid">
               {COUNTS.map((n) => {
-                const locked = !gatesReady ? n > maxChildren : noSlots || n > remainingSlots;
+                const optionDecision = resolveAddition(n);
+                const locked = optionDecision.status !== "allowed";
                 return (
                   <button
                     key={n}
@@ -280,7 +288,15 @@ export function PairingWizard() {
                     aria-disabled={locked}
                   >
                     <span className="pw-count__n">{n}</span>
-                    <span className="pw-count__u">{locked ? (!gatesReady ? "확인 중" : "프리미엄") : "명"}</span>
+                    <span className="pw-count__u">
+                      {optionDecision.status === "unavailable"
+                        ? "확인 중"
+                        : optionDecision.status === "premium_required"
+                          ? "프리미엄"
+                          : optionDecision.status === "limit_reached"
+                            ? "최대"
+                            : "명"}
+                    </span>
                   </button>
                 );
               })}
@@ -412,6 +428,22 @@ export function PairingWizard() {
           </button>
         )}
       </div>
+      <PremiumUpsell
+        open={upsellOpen}
+        source="second_child"
+        tier={tier}
+        returnTo="/pairing-wizard"
+        onClose={() => setUpsellOpen(false)}
+        onUpgrade={({ source, feature, returnTo }) => {
+          const storage = browserPremiumReturnIntentStorage();
+          const saved = storage && returnTo
+            ? savePremiumReturnIntent(storage, { source, feature, returnTo })
+            : false;
+          if (!saved) throw new Error("아이 연결 복귀 경로를 안전하게 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+          setUpsellOpen(false);
+          navigate("/subscription");
+        }}
+      />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useId, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { ChevronLeft, ChevronRight, UserPlus, Link2Off, Wifi } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { DEFAULT_CHILD_AVATAR } from "@/lib/avatar";
@@ -13,9 +13,9 @@ import { hasJongseong } from "@/transform/adventureMap";
 import { Loading } from "@/components/ui/Loading";
 import "./FamilyConnection.css";
 
-// 자녀 사진은 proxy URL(http…), 기본 아바타는 asset 경로.
+// 자녀 사진은 인증 fetch로 만든 blob URL, 기본 아바타는 asset 경로.
 function avatarSrc(path: string): string {
-  return path.startsWith("http") ? path : asset(path);
+  return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
 }
 
 interface UnpairTarget {

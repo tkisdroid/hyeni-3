@@ -2,24 +2,34 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [packageJson, vite, gradle, parentSettings, teacherSettings] = await Promise.all([
+const [packageJson, versionPolicy, vite, gradle, androidManifest, parentSettings, teacherSettings, teacherGate] = await Promise.all([
   readFile(new URL("../package.json", import.meta.url), "utf8").then(JSON.parse),
+  readFile(new URL("../public/app-version.json", import.meta.url), "utf8").then(JSON.parse),
   readFile(new URL("../vite.config.ts", import.meta.url), "utf8"),
   readFile(new URL("../android/app/build.gradle", import.meta.url), "utf8"),
+  readFile(new URL("../android/app/src/main/AndroidManifest.xml", import.meta.url), "utf8"),
   readFile(new URL("../src/screens/parent/ParentSettings.tsx", import.meta.url), "utf8"),
   readFile(new URL("../src/screens/teacher/TeacherSettings.tsx", import.meta.url), "utf8"),
+  readFile(new URL("../src/screens/teacher/TeacherReleaseGate.tsx", import.meta.url), "utf8"),
 ]);
 
 test("웹과 Android 표시 버전은 package.json을 단일 정본으로 사용한다", () => {
-  assert.equal(packageJson.version, "1.2.0");
+  assert.equal(packageJson.version, "1.3.0");
+  assert.equal(versionPolicy.minimumSupportedVersion, packageJson.version);
+  assert.equal(versionPolicy.latestVersion, packageJson.version);
   assert.match(vite, /__APP_VERSION__:\s*JSON\.stringify\(packageMetadata\.version\)/);
   assert.match(gradle, /hyeniPackageVersion = new JsonSlurper\(\)\.parse\(file\('\.\.\/\.\.\/package\.json'\)\)\.version/);
   assert.match(gradle, /versionName hyeniPackageVersion/);
+  assert.match(gradle, /manifestPlaceholders = \[hyeniReleaseSourceSha: hyeniReleaseSourceSha\]/);
+  assert.match(gradle, /릴리즈 산출물은 clean 앱 worktree에서만 만들 수 있습니다/);
+  assert.match(androidManifest, /com\.hyeni\.calendar\.RELEASE_SOURCE_SHA/);
+  assert.match(androidManifest, /android:value="\$\{hyeniReleaseSourceSha\}"/);
   assert.match(parentSettings, /v\{APP_VERSION\}/);
   assert.match(teacherSettings, /v\{APP_VERSION\}/);
+  assert.match(teacherGate, /v\{APP_VERSION\}/);
   assert.doesNotMatch(`${parentSettings}\n${teacherSettings}`, /v2\.0\.0/);
 });
 
-test("새 출시 산출물은 오래된 versionCode 3을 재사용하지 않는다", () => {
-  assert.match(gradle, /versionCode 4/);
+test("새 보안 계약 출시 산출물은 구 후보 versionCode 4를 재사용하지 않는다", () => {
+  assert.match(gradle, /versionCode 5/);
 });

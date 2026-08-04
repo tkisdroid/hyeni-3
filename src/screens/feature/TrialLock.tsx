@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { ChevronLeft, Crown, Gift } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useEntitlement } from "@/queries/useEntitlement";
@@ -7,7 +7,7 @@ import "./TrialLock.css";
 
 // 페이월 혜택 아이콘 — 3D 에셋(구독 화면과 동일 시각 언어).
 const PREMIUM_PERKS = [
-  { icon: "ui/pin-heart.webp", label: "실시간 위치 · 이동 경로 확인" },
+  { icon: "ui/pin-heart.webp", label: "실시간 위치 · 30일 이동 기록" },
   { icon: "ui/ai-robot.webp", label: "AI 하루 요약 · 주간 가족 리포트" },
   { icon: "ui/menu-child-tracker.webp", label: "두 아이 · 일정과 장소 넉넉하게" },
 ] as const;
@@ -104,14 +104,14 @@ export function TrialLock() {
               {view?.status === "expired" ? "체험이 종료되었어요" : "프리미엄 기능이에요"}
             </div>
             <div className="tl-lock__sub">
-              프리미엄을 시작하면 실시간 위치·이동 경로·AI 상세 기능을 쓸 수 있어요.
+              프리미엄을 시작하면 실시간 위치·30일 이동 기록·AI 상세 기능을 쓸 수 있어요.
               <br />
               SOS와 긴급 안전 알림은 무료로 계속 제공돼요.
             </div>
             {reviewed && (
               <div className="tl-lock__reviewed">
                 <Gift size={14} strokeWidth={2.2} aria-hidden="true" />
-                스토어 방문 혜택 적용 중 · 일정·장소를 3개까지 쓰고 있어요
+                기존 스토어 방문 혜택 유지 중 · 장소를 3개까지 저장할 수 있어요
               </div>
             )}
           </div>

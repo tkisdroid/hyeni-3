@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { useAuth } from "@/auth/AuthContext";
 import { homePathForRole } from "@/auth/guards";
 import { resolveSafeBackTarget } from "./safeBack";

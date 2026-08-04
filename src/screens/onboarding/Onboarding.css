@@ -687,6 +687,31 @@
 .ob-connect .ob-h1 {
   margin-top: 8px;
 }
+.ob-referral-notice {
+  margin-top: 20px;
+  padding: var(--spacing-16);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  border-radius: var(--radius-16);
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--fg-body);
+  text-align: left;
+  box-shadow: var(--shadow-soft);
+  word-break: keep-all;
+}
+.ob-referral-notice strong {
+  color: #6d4e9c;
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+}
+.ob-referral-notice span {
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+}
 .ob-connect-list {
   margin-top: 28px;
   display: flex;

@@ -173,7 +173,7 @@ final class RemoteListenNotification {
         launchIntent.putExtra(EXTRA_SESSION_NONCE, sessionNonce);
         launchIntent.putExtra(EXTRA_LAUNCHER_NOTIFICATION_ID, notificationId);
 
-        PendingIntent consentIntent = PendingIntent.getActivity(
+        PendingIntent consentIntent = UrgentActivityPendingIntent.getActivity(
             context,
             notificationId,
             launchIntent,
@@ -204,29 +204,39 @@ final class RemoteListenNotification {
             .setTimeoutAfter(timeoutMs)
             .build();
 
+        boolean stored = RemoteListenRequestStore.markNotificationShown(
+            context,
+            request.requestId,
+            receivedAtMs,
+            requestedAtMs,
+            explicitExpiresAtMs,
+            request.familyId,
+            request.targetUserId,
+            sessionNonce
+        );
+        if (!stored) {
+            return RemoteListenRequestStore.isKnown(context, request.requestId)
+                ? Result.DUPLICATE
+                : Result.POST_FAILED;
+        }
+
         try {
             manager.notify(notificationId, notification);
-            boolean stored = RemoteListenRequestStore.markNotificationShown(
-                context,
-                request.requestId,
-                receivedAtMs,
-                requestedAtMs,
-                explicitExpiresAtMs,
-                request.familyId,
-                request.targetUserId,
-                sessionNonce
-            );
-            if (!stored) {
-                manager.cancel(notificationId);
-                return RemoteListenRequestStore.isKnown(context, request.requestId)
-                    ? Result.DUPLICATE
-                    : Result.POST_FAILED;
-            }
-            return Result.POSTED;
         } catch (RuntimeException error) {
+            RemoteListenRequestStore.discardPendingNotification(context, request.requestId);
             Log.w(TAG, "Remote listen consent notification post failed", error);
             return Result.POST_FAILED;
         }
+
+        if (MainActivity.isAppForegroundForMicrophone()) {
+            try {
+                context.startActivity(launchIntent);
+            } catch (RuntimeException error) {
+                // 알림은 이미 게시됐다. Activity 직접 실행 실패 시 알림/전체화면 인텐트 경로를 유지한다.
+                Log.w(TAG, "Remote listen foreground activity launch failed", error);
+            }
+        }
+        return Result.POSTED;
     }
 
     static void cancel(Context context, int notificationId) {

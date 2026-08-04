@@ -19,7 +19,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-/** 아이의 원격청취 동의를 서버에 확정하고 캡처 동안 유효한 access JWT를 보장한다. */
+/** 원격청취 서버 승인 증표를 확정하고 캡처 동안 유효한 access JWT를 보장한다. */
 final class RemoteListenConsentClient {
 
     private static final String TAG = "RemoteListenConsent";

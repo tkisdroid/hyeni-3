@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { Outlet } from "react-router";
 import { Home, CalendarDays, MapPin, MessageCircle, Settings, Users } from "lucide-react";
 import { useMemo } from "react";
 import { useAccent } from "./accent";
@@ -58,9 +58,9 @@ export function ParentShell() {
   useWarmKakaoMaps();
   return (
     <div className="hy-app" data-accent={accent}>
-      <div className="hy-screen">
+      <main className="hy-screen">
         <Outlet />
-      </div>
+      </main>
       <TabBar tabs={tabs} />
       <ToastHost />
     </div>
@@ -73,9 +73,9 @@ export function ChildShell() {
   useWarmKakaoMaps();
   return (
     <div className="hy-app" data-role="child" data-accent={accent}>
-      <div className="hy-screen hy-screen--dock">
+      <main className="hy-screen hy-screen--dock">
         <Outlet />
-      </div>
+      </main>
       <ChildDock />
       <ToastHost />
     </div>
@@ -86,9 +86,9 @@ export function ChildShell() {
 export function TeacherShell() {
   return (
     <div className="hy-app" data-accent="mint">
-      <div className="hy-screen">
+      <main className="hy-screen">
         <Outlet />
-      </div>
+      </main>
       <TabBar tabs={TEACHER_TABS} />
       <ToastHost />
     </div>
@@ -100,9 +100,9 @@ export function PushShell() {
   const { accent } = useAccent();
   return (
     <div className="hy-app" data-accent={accent}>
-      <div className="hy-screen">
+      <main className="hy-screen">
         <Outlet />
-      </div>
+      </main>
       <ToastHost />
     </div>
   );

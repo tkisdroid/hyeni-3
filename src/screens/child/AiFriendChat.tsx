@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { usePwaUpdateCriticalSection } from "@/lib/usePwaUpdateCriticalSection";
+import { useLocation, useNavigate } from "react-router";
 import { ChevronLeft, Flag, MessageCircle, Settings } from "lucide-react";
 import { useLongPress, type LongPressHandlers } from "@/lib/useLongPress";
 import { asset } from "@/lib/assets";
@@ -7,14 +8,22 @@ import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "@/queries/useFamily";
 import { useEvents, useDailySupplies } from "@/queries/useSchedule";
 import { useSavedPlaces } from "@/queries/useLocation";
-import { useAiMessages, useAiFriendPublicSettings, useAiUsageToday, useSendChildChat } from "@/queries/useAi";
-import { remainingAiChats } from "@/transform/childHomeData";
+import {
+  useAiCreditPublicStatus,
+  useAiMessages,
+  useAiFriendPublicSettings,
+  useSendChildChat,
+} from "@/queries/useAi";
 import { messagesToBubbles, type ChatBubble } from "@/transform/aiView";
 import { groupEventsByDateKey, PAST_TAGS } from "@/transform/scheduleView";
 import { todayDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { isApiError } from "@/lib/api/errors";
 import { resolveAiFriendDisplayName } from "@/transform/aiFriendName";
+import {
+  resolveAiLimitExhaustionReason,
+  type AiCreditPublicStatus,
+} from "@/transform/aiCreditPublicStatus";
 import { hasJongseong } from "@/transform/adventureMap";
 import { useToast } from "@/app/toast";
 import { useSafeBack } from "@/app/useSafeBack";
@@ -28,6 +37,7 @@ import {
   personaFor,
   readSelectedCharacter,
 } from "./AiFriendSetup";
+import "@/styles/jua.css";
 import "./AiFriendChat.css";
 
 const BASE_SUGGESTIONS = ["오늘 뭐 하고 놀까?", "심심해 😪", "재밌는 얘기 해줘"];
@@ -41,11 +51,22 @@ const AI_REPORT_REASONS: readonly ReportReasonOption<AiContentReportReason>[] = 
 ];
 
 // 전송 실패 코드(Worker 가 비-2xx { error } 로 응답 → ApiError.message)를 아이 톤(반말) 안내로.
-function friendlyError(err: unknown): string {
+function friendlyError(err: unknown, status: AiCreditPublicStatus | null): string {
   const code = isApiError(err) ? err.message : "";
   switch (code) {
-    case "daily_limit_reached":
-      return "오늘 이야기는 다 했어! 내일 또 만나자 💜";
+    case "daily_limit_reached": {
+      const reason = resolveAiLimitExhaustionReason(status);
+      if (reason === "parent_safety_limit") {
+        return "부모님이 정한 오늘 대화 횟수를 다 썼어! 내일 또 만나자 💜";
+      }
+      if (reason === "free_included_limit") {
+        return "무료로 오늘 5번 다 이야기했어! 더 이야기하고 싶으면 부모님께 프리미엄을 부탁해 줘 💜";
+      }
+      if (reason === "premium_allowance_limit") {
+        return "오늘 이야기할 수 있는 횟수를 다 썼어! 더 필요하면 부모님께 알려줘 💜";
+      }
+      return "오늘 이야기할 수 있는 횟수를 다 썼어! 부모님께 알려줘 💜";
+    }
     case "feature_disabled":
       return "나 지금 잠깐 쉬는 중이야. 부모님께 켜 달라고 부탁해 줘 🙏";
     case "not_child":
@@ -135,20 +156,23 @@ export function AiFriendChat() {
   const messagesData = useMemo(() => messagesQuery.data ?? [], [messagesQuery.data]);
   const chatLoading = messagesQuery.isLoading;
   const chatError = messagesQuery.isError;
-  const aiUsage = useAiUsageToday(userId);
+  const aiCreditStatus = useAiCreditPublicStatus(userId);
   const sendChat = useSendChildChat();
   const reportAiMessage = useReportAiMessage();
-  // 남은 대화 횟수: 첫 진입엔 usage/today + daily_limit 로 계산하고(부모 전용 balance 는 호출 금지),
-  // 전송 뒤에는 서버가 준 remaining 으로 갱신한다.
+  // 공개 상태는 포함분·구매분·부모 상한을 합친 서버 정본이고, 전송 성공값도 같은 캐시에 반영된다.
   const [remaining, setRemaining] = useState<number | null>(null);
-  const shownRemaining =
-    remaining ?? remainingAiChats(publicSettings?.daily_limit, aiUsage.data?.count ?? 0);
+  const shownRemaining = remaining ?? aiCreditStatus.data?.availableRemaining ?? null;
+
+  useEffect(() => {
+    setRemaining(aiCreditStatus.data?.availableRemaining ?? null);
+  }, [userId, aiCreditStatus.data?.availableRemaining]);
 
   const [messages, setMessages] = useState<ChatBubble[]>([]);
   const [seeded, setSeeded] = useState(false);
   const [input, setInput] = useState("");
   const [pendingSendSource, setPendingSendSource] = useState<string | null>(null);
   const [reportTarget, setReportTarget] = useState<ChatBubble | null>(null);
+  usePwaUpdateCriticalSection(input.trim().length > 0 || sendChat.isPending);
   // 신고는 AI 답변을 길게 눌러 연다(버블마다 버튼을 띄우지 않기 위해).
   // 신고 대상이 아닌 말풍선(내 메시지·로컬 인사)에는 핸들러를 붙이지 않는다.
   const bindLongPressReport = useLongPress<ChatBubble>((m) => setReportTarget(m));
@@ -199,7 +223,13 @@ export function AiFriendChat() {
       { message: text, characterEmoji: character },
       {
         onSuccess: (res) => {
-          if (typeof res.remaining === "number") setRemaining(res.remaining);
+          if (
+            typeof res.remaining === "number"
+            && Number.isSafeInteger(res.remaining)
+            && res.remaining >= 0
+          ) {
+            setRemaining(res.remaining);
+          }
           const reply = String(res.reply ?? "").trim();
           setMessages((prev) => [
             ...prev,
@@ -219,7 +249,11 @@ export function AiFriendChat() {
           ]);
         },
         onError: (err) => {
-          setMessages((prev) => [...prev, { id: `${base}-ai`, role: "ai", text: friendlyError(err) }]);
+          setMessages((prev) => [...prev, {
+            id: `${base}-ai`,
+            role: "ai",
+            text: friendlyError(err, aiCreditStatus.data ?? null),
+          }]);
         },
         onSettled: () => setPendingSendSource((current) => (current === source ? null : current)),
       },

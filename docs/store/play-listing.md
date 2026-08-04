@@ -1,11 +1,13 @@
-# Play Store 등록정보 — 혜니캘린더 (v1.2.0 / versionCode 4)
+# Play Store 등록정보 — 혜니캘린더 (v1.3.0 / versionCode 5)
 
 ## 기본 정보
 
 - **앱 이름(30자 이내)**: 혜니캘린더 - 우리 가족 일정과 아이 안전
   - 대안(짧게): 혜니캘린더 — 가족 일정·아이 안전
 - **패키지**: `com.hyeni.calendar`
-- **카테고리**: 육아 또는 라이프스타일 중 실제 포지셔닝에 맞게 선택
+- **앱 유형·카테고리**: 앱 · 육아(Parenting)
+- **기본 언어·초기 배포 지역**: 한국어(대한민국) · 대한민국
+- **개발자 웹사이트**: https://hyeni-calendar.pages.dev
 - **공개 지원 이메일**: `mail@hyenicalendar.com`
   - 개인정보처리방침의 연락처와 동일하게 유지하고 출시 전 송수신 테스트
 - **개인정보처리방침 URL**: https://hyeni-calendar-api.tkisdroid.workers.dev/privacy
@@ -50,14 +52,17 @@
 · 대화 횟수·시간대·금지 주제를 보호자가 관리해요
 
 🎧 주변 소리 듣기 (프리미엄, 아이 Android 기기)
-· 보호자가 요청하면 아이 기기에 요청 내용이 표시돼요
-· 아이가 해당 요청을 직접 허용한 경우에만 최대 1분 동안 실행돼요
-· 실행 중 지속 알림과 중지 동작이 제공되고, 요청·시작·종료 기록이 남아요
+· 위급 상황 확인을 위해 보호자가 요청하면 아이가 따로 누르지 않아도 최대 1분 동안 연결돼요
+· 듣는 동안 아이 화면과 잠금 화면 알림에 계속 표시되고, 알림에서 바로 멈출 수 있어요
+· 요청·시작·종료 기록은 남지만 주변 소리 음성 내용은 장기 저장하지 않아요
 
 👑 혜니 프리미엄
-· 실시간 위치, 위치 이력, 다자녀 관리, 주변 소리 듣기, AI 하루 요약, 주간 리포트
+· Free는 AI 친구를 기본 하루 5회, Premium은 기본 하루 20회 이용해요
+· AI 일정 정리는 Free 하루 5회, Premium은 횟수 제한 없이 이용하며 직접 일정 추가와 기존 일정 관리는 두 플랜 모두 제한 없어요
+· 보호자가 더 낮게 정한 AI 대화 안전 상한은 요금제 기본 제공량과 별도로 우선 적용돼요
+· Premium은 실시간 위치와 최근 30일 위치 이력, 다자녀 관리, 주변 소리 듣기, AI 하루 요약, 주간 리포트를 제공해요
 · 기본 안전 기능(SOS·긴급 알림)은 구독 여부와 관계없이 사용할 수 있어요
-· 가격과 무료 체험 제공 여부는 Google Play 결제 화면에서 최종 확인해 주세요
+· 월 4,900원 또는 연 39,000원이며, 무료 체험 제공 여부와 실제 청구 조건은 Google Play 결제 화면에서 최종 확인해 주세요
 
 🔐 자녀 보호 목적의 모니터링을 투명하게 안내합니다
 · 아이 기기의 위치와, 사용정보 접근을 허용한 뒤 자동 확인되는 최근 많이 사용한 앱 최대 5개의 앱 식별자·사용 시간·최근 사용 시각은 가족 안전 기능에 사용돼요
@@ -75,7 +80,7 @@
 - 위치·알림·SOS를 “항상”, “무조건”, “즉시”, “절대 놓치지 않음”으로 보장하지 않는다.
 - 미도착은 오래되거나 정확도가 낮은 위치를 근거로 단정하지 않는 현재 동작과 맞춰 설명한다.
 - SOS·기본 안전 알림을 프리미엄 혜택처럼 표현하지 않는다.
-- 주변 소리 듣기는 아이의 매 요청 허용, 최대 1분, 지속 알림, 감사 기록을 함께 설명한다.
+- 주변 소리 듣기는 아이 탭 없는 자동 연결, 최대 1분, 아이 화면·잠금 화면 지속 고지, 중지 동작, 감사 기록을 함께 설명한다.
 - AI 결과는 사용자가 확인해야 하며 의료·법률·긴급 서비스의 판단처럼 표현하지 않는다.
 - 공개 지원 이메일과 개인정보처리방침의 개인정보 담당 연락처를 동일하게 유지한다.
 - AI 답변 신고는 앱 내 사유 선택·실패 재시도·중복 방지와 서버 소유권 검증·D1 영속 저장까지 구현되어 자동 회귀 테스트를 통과해야 한다. 실제 아이 화면과 운영 큐 E2E 증거가 없으면 제출 차단을 유지한다.
@@ -83,7 +88,7 @@
 
 ## 선생님 모드 출시 결정
 
-- **v1.2.0 결정:** 현재 스토어 등록정보와 심사 자료는 보호자·아이 기능만 다루므로 선생님 모드는 Play 제출 빌드에서 `production gate`로 비활성화한다. gate가 구현·검증되지 않은 상태에서는 제출을 차단한다.
+- **v1.3.0 결정:** 현재 스토어 등록정보와 심사 자료는 보호자·아이 기능만 다루므로 선생님 모드는 Play 제출 빌드에서 `production gate`로 비활성화한다. gate가 구현·검증되지 않은 상태에서는 제출을 차단한다.
 - 선생님 모드를 정식 출시 범위로 바꾸려면 등록정보·Data Safety·개인정보처리방침에 반·학생 연결, 알림장·첨부, 출결·시간표 처리를 추가하고 반복 사용 가능한 심사 계정과 역할별 E2E 증거를 먼저 준비한다.
 
 ## 그래픽 자산
@@ -91,8 +96,31 @@
 - 앱 아이콘: 512×512, Play Console이 허용하는 32-bit PNG. 실제 업로드 전 파일 모드·알파 요구사항을 Console에서 재확인
 - 피처 그래픽: 1024×500, JPEG 또는 24-bit 불투명 PNG
 - 휴대전화 스크린샷: 1080×1920 권장, JPEG 또는 불투명 PNG 4~8장
-- 현재 `output/store-screenshots/` 초안은 업로드 금지. 실제 아이 사진·이름·위치·학교·학원·초대 코드·QR이 없는 데모 가족으로 다시 촬영
-- 스크린샷 촬영 뒤 이미지 메타데이터와 알림창·상태바에 남은 전화번호·계정·위치 정보도 확인
+- **개인정보 없는 대표 자산 후보:** `node scripts/create-safe-store-listing-graphics.mjs`로 폐기 대상 실기기 캡처를 읽지 않는 새 아이콘·피처 그래픽을 생성한다.
+  - `output/store-listing-assets-v1/play-icon-512.png`
+  - `output/store-listing-assets-v1/play-feature-graphic-1024x500.png`
+- 대표 자산 검증: `node --test tests/safeStoreListingGraphics.test.mjs`. 아이콘 512×512 32-bit PNG alpha·1MiB 이하, 피처 그래픽 1024×500 24-bit PNG no-alpha, 개인정보 메타데이터 부재를 확인한다.
+- **내부 creative draft(자동 업로드 금지):** `node scripts/create-safe-store-assets.mjs`로 생성한 다음 1080×1920 불투명 PNG 6장은 카피·색상·구성 검토에만 사용한다. 실제 앱 UI 캡처가 아니므로 Play 스크린샷 정본으로 분류하거나 그대로 업로드하지 않는다.
+  - `output/store-safe-assets-v1/01-family-day-demo.png`
+  - `output/store-safe-assets-v1/02-free-core-demo.png`
+  - `output/store-safe-assets-v1/03-location-tiers-demo.png`
+  - `output/store-safe-assets-v1/04-free-safety-demo.png`
+  - `output/store-safe-assets-v1/05-premium-insights-demo.png`
+  - `output/store-safe-assets-v1/06-premium-price-demo.png`
+- 위 draft는 사용자 데이터·API·실기기 캡처를 읽지 않는 합성 데모이며, 현재 코드의 Free/Premium 정책과 월 4,900원·연 39,000원 가격이 다르면 생성 단계에서 실패한다.
+- `06-premium-price-demo.png`는 가격·프로모션 정보를 담은 내부 검토 시안이며 **Play 스크린샷 후보에서 제외**한다.
+- draft 검증 명령: `node --test tests/safeStoreAssets.test.mjs`. 치수·24-bit RGB·불투명·텍스트/EXIF 메타데이터 부재·개인정보 금지 문구를 확인하는 검사이며 Play 정책 적합성을 대신하지 않는다.
+- **출시 게이트:** 최신 production build를 합성 데모 세션으로 실행해 실제 인앱 UI 1080×1920 불투명 PNG 4~8장을 별도로 캡처한다. 캡처에는 가격·프로모션 강조나 과도한 추가 문구를 넣지 않고, 실제 기능 범위와 일치하는지 정책·육안 검토를 마친 뒤에만 Play Console 업로드 정본으로 승격한다. 이 검토 전에는 그래픽 자산 항목을 완료 처리하지 않는다.
+- 실제 UI 후보 생성: `npm run build` 후 `node scripts/create-safe-store-ui-candidates.mjs`. 외부 API·실계정·실기기를 사용하지 않고 production `dist`와 정적 `데모 보호자`·`데모 자녀` 세션으로 아래 실제 앱 라우트를 캡처한다.
+  - `output/store-ui-candidates-v1/01-parent-home-ui.png`
+  - `output/store-ui-candidates-v1/02-family-calendar-ui.png`
+  - `output/store-ui-candidates-v1/03-family-memo-ui.png`
+  - `output/store-ui-candidates-v1/04-daily-safety-report-ui.png`
+  - `output/store-ui-candidates-v1/05-weekly-family-report-ui.png`
+  - `output/store-ui-candidates-v1/06-child-home-ui.png`
+- 2026-08-02 현재 local production `dist` 414파일·tree SHA-256 `21fd847bd3b5e64d71beaa329155d3273ac8d5bfdaa2dc87b24d63356dd6c1e5`·`index.html` SHA-256 `c4a51f17136795d0eba64467c77d965614cf5964381b78d1796072be3d8b616a`에서 6장을 다시 생성했다. `manifest.json`은 원본 dist와 각 PNG의 SHA-256·크기를 고정하고, `technical-review.json`은 1080×1920·불투명 RGB·메타데이터 없음·개인정보 패턴 없음·예상 밖 잘림 없음·실제 기능 일치와 `TECHNICAL_REVIEW_PASSED`를 기록한다. 기술 검토는 통과했지만 `playUploadApproved=false`이며 정책 책임자의 Play Console 최종 승인을 대신하지 않는다.
+- 후보 검증: `node --test tests/safeStoreUiCandidates.test.mjs`. 이 결과도 `manifest.json`의 `candidate_requires_policy_and_visual_review` 상태이며 자동 업로드하지 않는다.
+- **기존 `output/store-screenshots/`의 2026-07-10 실기기 초안은 열람·수정·재사용·업로드하지 않는다.** 실제 아이 사진·이름·위치·학교·학원·초대 코드·QR이 포함됐을 가능성이 있는 폐기 대상 초안이다.
 
 ## 권한·정책 선언 메모
 
@@ -100,12 +128,12 @@
 |---|---|
 | `ACCESS_BACKGROUND_LOCATION` | 하나의 핵심 위치 기능은 “아이 기기가 앱 밖에 있어도 보호자에게 위치를 공유해 가족 안전 기능을 제공”으로 설명. prominent disclosure에는 현재 위치, 경로, 도착·출발, 미도착, 위험 장소 사용을 모두 표시하고 실제 영상 제출 |
 | `FOREGROUND_SERVICE_LOCATION` | 위치 추적 실행 이유, 사용자가 보는 지속 알림·고유 아이콘, 중단될 때 위치·도착 기능이 제한되는 영향, 실제 기능 영상 |
-| `FOREGROUND_SERVICE_MICROPHONE` | 아이가 요청별로 허용한 최대 1분 주변 소리 세션, 지속 알림·중지 동작, 중단 영향과 실제 영상 |
+| `FOREGROUND_SERVICE_MICROPHONE` | 서버 승인 증표를 1회 소비한 `RemoteListenActivity`가 준비되면 아이 탭 없이 자동 연결되는 최대 1분 세션, 아이 화면·지속 알림·중지 동작·감사 기록, 중단 영향과 실제 영상 |
 | FGS `specialUse` | `emergency_parental_alert` 사용 목적, 사용자에게 보이는 알림, 지연·중단 영향, 실제 동작 영상 |
 | `USE_FULL_SCREEN_INTENT` | 이 앱은 전화·알람 앱이 아님. 자동 허용 대상으로 오인하지 않고 사용자 특별 접근 권한이 없을 때 heads-up 알림으로 강등되는 흐름을 검증 |
 | `PACKAGE_USAGE_STATS` | 자녀 보호 목적의 앱 사용 시간 확인. 아이 기기에서 설명한 뒤 사용자가 Android 설정에서 직접 허용 |
-| `RECORD_AUDIO` | 부모 요청만으로 시작하지 않으며 아이가 매 요청을 직접 허용한 경우에만 실행 |
-| `CALL_PHONE` | **v1.2.0 코드 결정은 유지.** 아이가 SOS 화면에서 보호자 전화 버튼을 명시적으로 눌렀을 때 권한이 있으면 `ACTION_CALL`, 거부·실패하면 `ACTION_DIAL`로 강등한다. 통화기록은 읽지 않는다. 아이 기기 허용·거부 E2E와 심사 설명 증거가 없으면 제출 차단 |
+| `RECORD_AUDIO` | FCM·pending 수신만으로 시작하지 않으며 서버 승인 증표·세션 nonce·가족·대상 일치를 확인한 `RemoteListenActivity`에서만 실행. 준비되면 아이 탭 없이 자동 연결하되 아이 화면·알림 고지와 1분 상한을 유지 |
+| `CALL_PHONE` | **v1.3.0 코드 결정은 유지.** 아이가 SOS 화면에서 보호자 전화 버튼을 명시적으로 눌렀을 때 권한이 있으면 `ACTION_CALL`, 거부·실패하면 `ACTION_DIAL`로 강등한다. 통화기록은 읽지 않는다. 아이 기기 허용·거부 E2E와 심사 설명 증거가 없으면 제출 차단 |
 | `isMonitoringTool=child_monitoring` | 자녀 보호 목적을 스토어 설명에 공개하고, 위치·사용정보 모니터링 중 지속 알림과 고유 아이콘이 보이는지 확인 |
 
 ## 대상 연령 결정

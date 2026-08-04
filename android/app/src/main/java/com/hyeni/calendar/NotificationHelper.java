@@ -50,8 +50,9 @@ public final class NotificationHelper {
     public static final String CHANNEL_CHILD_MESSAGE = "hyeni_child_message_v2_private";
     // 원격 듣기(주변 소리) 채널 단일 소스. MyFirebaseMessagingService / LocationService /
     // NotificationPlugin / DeviceStatusReporter 가 모두 이 상수를 참조해 ID 드리프트를 막는다.
-    // v6_consent: 원격청취는 아이가 알림을 직접 열고 매 요청 수락해야 한다.
-    // 기존 무음/full-screen/DND 우회 채널은 immutable이므로 새 ID로 분리한다.
+    // v6_consent는 이전 출시에서 만든 호환 ID다. 현재는 서버 승인 증표를 확인한
+    // Activity가 아이 탭 없이 연결하되 화면·알림에 실행 사실을 계속 고지한다.
+    // 기존 무음/full-screen/DND 우회 채널은 immutable이므로 이 ID를 유지한다.
     public static final String CHANNEL_REMOTE_LISTEN = "hyeni_remote_listen_v6_consent";
 
     private static final String DEDUPE_PREFS_NAME = "hyeni_notification_dedupe";
@@ -279,11 +280,11 @@ public final class NotificationHelper {
         target.setBypassDnd(previous.canBypassDnd());
     }
 
-    /** 아이가 직접 확인해야 하는 원격청취 요청용 일반 high-priority 채널. */
+    /** 위급 주변소리 실행 사실을 잠금화면에도 알리는 high-priority 채널. */
     public static void ensureRemoteListenConsentChannel(Context context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
         NotificationManager nm = context.getSystemService(NotificationManager.class);
-        if (nm == null || nm.getNotificationChannel(CHANNEL_REMOTE_LISTEN) != null) return;
+        if (nm == null) return;
 
         Uri sound = Uri.parse(
             "android.resource://" + context.getPackageName() + "/" + R.raw.hyeni_notification
@@ -294,10 +295,10 @@ public final class NotificationHelper {
             .build();
         NotificationChannel channel = new NotificationChannel(
             CHANNEL_REMOTE_LISTEN,
-            "주변 소리 동의 요청",
+            "주변 소리 알림",
             NotificationManager.IMPORTANCE_HIGH
         );
-        channel.setDescription("아이의 확인과 수락이 필요한 주변 소리 공유 요청");
+        channel.setDescription("위급 주변 소리 듣기가 진행될 때 아이 화면과 알림에 표시됩니다.");
         channel.enableVibration(true);
         channel.setVibrationPattern(new long[]{0, 180, 100, 180});
         channel.setSound(sound, audioAttr);
@@ -621,7 +622,7 @@ public final class NotificationHelper {
         if (validatedRoute != null) {
             alertIntent.putExtra("route", validatedRoute);
         }
-        PendingIntent fullScreenPi = PendingIntent.getActivity(
+        PendingIntent fullScreenPi = UrgentActivityPendingIntent.getActivity(
                 context,
                 requestCode + 10_000,
                 alertIntent,

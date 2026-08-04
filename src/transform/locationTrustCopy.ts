@@ -8,7 +8,7 @@ export interface LocationTrustCopy {
 
 export type LocationTrustLoadState = "ready" | "loading" | "error";
 
-/** 위치 티어와 GPS fix 신선도를 함께 반영해 현재·지연·과거 위치를 구분한다. */
+/** 위치 티어와 GPS fix 신선도를 함께 반영해 실시간·최근·과거 위치를 구분한다. */
 export function resolveLocationTrustCopy(input: {
   mode: LocationMode;
   modeKnown: boolean;
@@ -43,24 +43,20 @@ export function resolveLocationTrustCopy(input: {
     if (input.loadState === "error") {
       return { badge: "위치 조회 실패", detail: "새 위치를 불러오지 못했어요" };
     }
-    if (input.mode === "delayed") {
-      return { badge: "공개할 지연 위치 없음", detail: "15분 이전 위치가 아직 없어요" };
-    }
     return { badge: "위치 신호 대기", detail: "아이 기기의 새 위치 신호를 기다리고 있어요" };
   }
 
   const fresh = formatFreshness(input.updatedAt, input.now ?? new Date());
-  if (input.loadState === "error") {
-    if (input.mode === "delayed") {
-      return {
-        badge: "15분 지연 위치",
-        detail: `새 공개 위치 조회 실패 · 마지막 공개 위치 ${fresh.label}`,
-      };
-    }
-    return { badge: "마지막 확인 위치", detail: `새 위치 조회 실패 · ${fresh.label}` };
+  if (input.mode === "standard") {
+    return {
+      badge: "최근 위치",
+      detail: input.loadState === "error"
+        ? `새 위치 조회 실패 · ${fresh.label} 확인 · 약 10분 간격 자동 확인`
+        : `${fresh.label} 확인 · 약 10분 간격 자동 확인`,
+    };
   }
-  if (input.mode === "delayed") {
-    return { badge: "15분 지연 위치", detail: `마지막 공개 위치 · ${fresh.label}` };
+  if (input.loadState === "error") {
+    return { badge: "마지막 확인 위치", detail: `새 위치 조회 실패 · ${fresh.label}` };
   }
   if (fresh.status === "live") {
     return { badge: "현재 위치", detail: "방금 갱신" };

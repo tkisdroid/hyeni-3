@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { ChevronLeft, RefreshCw, Download, Trash2, Users } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/app/toast";

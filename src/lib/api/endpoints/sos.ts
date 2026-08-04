@@ -12,9 +12,11 @@
  *    컴포넌트 마운트·타 effect·타이머 단독으로는 절대 호출 금지.
  */
 import { apiPost } from "../client";
+import { isApiError } from "../errors";
 
 /** 알림함/부모 오버레이에 뜨는 SOS 제목(hyeni-1 동일 문안). */
 const SOS_TITLE = "🆘 도와줘요!";
+const SOS_ALERT_ATTEMPT_TIMEOUT_MS = 8_000;
 
 export interface SendSosInput {
   familyId: string;
@@ -24,6 +26,8 @@ export interface SendSosInput {
   lat?: number | null;
   /** 자녀 현재 경도. 없으면(null) 위치 단계 skip. */
   lng?: number | null;
+  /** GeolocationPosition.timestamp(epoch ms). 현재 위치와 이력에 같은 fix 시각을 사용한다. */
+  capturedAtMs?: number | null;
   /** sos_events.receiver_user_ids 용 부모 user_id 목록. */
   parentUserIds?: string[];
   /** 알림 메시지에 쓸 자녀 이름(없으면 "아이"). */
@@ -44,6 +48,32 @@ function makeRequestHash(childUserId: string): string {
   return `${childUserId}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
 }
 
+function isRetryableSosDeliveryError(error: unknown): boolean {
+  if (!isApiError(error)) return true;
+  return error.status === 408
+    || error.status === 425
+    || error.status === 429
+    || error.status >= 500;
+}
+
+async function postParentSosAlert(body: Record<string, unknown>): Promise<void> {
+  let firstError: unknown = null;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), SOS_ALERT_ATTEMPT_TIMEOUT_MS);
+    try {
+      await apiPost("/api/parent-alerts", body, { signal: controller.signal });
+      return;
+    } catch (error) {
+      if (attempt > 0 || !isRetryableSosDeliveryError(error)) throw error;
+      firstError = error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+  throw firstError;
+}
+
 /**
  * 1단계: 자녀 현재위치 즉시 갱신(멱등 upsert) + 이력 1행.
  * hyeni-1 saveChildLocation/saveLocationHistory 를 그대로 이관(rest-shim-rpc 계약).
@@ -54,16 +84,23 @@ async function upsertChildLocation(
   familyId: string,
   lat: number,
   lng: number,
+  capturedAtMs: number | null,
 ): Promise<boolean> {
   try {
+    const recordedAt = new Date(
+      capturedAtMs != null && Number.isFinite(capturedAtMs) && capturedAtMs > 0
+        ? capturedAtMs
+        : Date.now(),
+    ).toISOString();
     await apiPost("/rest/v1/rpc/upsert_child_location", {
       p_user_id: childUserId,
       p_family_id: familyId,
       p_lat: lat,
       p_lng: lng,
+      p_recorded_at: recordedAt,
     });
     await apiPost("/rest/v1/rpc/record_location_history_rows", {
-      p_rows: [{ user_id: childUserId, family_id: familyId, lat, lng }],
+      p_rows: [{ user_id: childUserId, family_id: familyId, lat, lng, recorded_at: recordedAt }],
     });
     return true;
   } catch (err) {
@@ -77,7 +114,7 @@ async function upsertChildLocation(
  * 실제 부모 긴급 알림을 유발하므로 호출은 사용자 액션에서만.
  */
 export async function sendSos(input: SendSosInput): Promise<SendSosResult> {
-  const { familyId, childUserId, lat, lng, parentUserIds = [], childName } = input;
+  const { familyId, childUserId, lat, lng, capturedAtMs = null, parentUserIds = [], childName } = input;
   if (!familyId || !childUserId) {
     return { locationSent: false, alertSent: false, auditSent: false };
   }
@@ -92,19 +129,20 @@ export async function sendSos(input: SendSosInput): Promise<SendSosResult> {
     Number.isFinite(lat) &&
     Number.isFinite(lng);
   const locationPromise: Promise<boolean> = hasPosition
-    ? upsertChildLocation(childUserId, familyId, lat as number, lng as number)
+    ? upsertChildLocation(childUserId, familyId, lat as number, lng as number, capturedAtMs)
     : Promise.resolve(false);
 
   // 2단계: parent_alerts(sos) — "sos"는 서버 URGENT_TYPES → 부모 전체화면 오버레이. 최우선 신호.
   let alertSent = false;
   try {
-    await apiPost("/api/parent-alerts", {
+    await postParentSosAlert({
       family_id: familyId,
       alert_type: "sos",
       title: SOS_TITLE,
       message,
       severity: "urgent",
-      event_id: null,
+      // 응답 유실·일시적 5xx 때 같은 요청을 한 번 재시도해도 부모 알림은 1건만 생성된다.
+      event_id: requestHash,
       // 다자녀 가정에서 어느 자녀의 SOS 인지 알림함에 표시되도록 발신 자녀 user_id 를 채운다.
       child_user_id: childUserId,
     });

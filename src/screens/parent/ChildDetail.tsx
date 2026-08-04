@@ -1,5 +1,5 @@
 import { useId, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router";
 import { ChevronLeft, ChevronRight, Pencil, Smartphone, Trash2, AlertTriangle } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
@@ -18,9 +18,9 @@ import { hasJongseong } from "@/transform/adventureMap";
 import { Loading } from "@/components/ui/Loading";
 import "./ChildDetail.css";
 
-// 자녀 사진은 proxy URL(http…), 기본 아바타는 asset 경로.
+// 자녀 사진은 인증 fetch로 만든 blob URL, 기본 아바타는 asset 경로.
 function avatarSrc(path: string): string {
-  return path.startsWith("http") ? path : asset(path);
+  return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
 }
 
 const ORDINAL: Record<number, string> = { 1: "첫째", 2: "둘째", 3: "셋째", 4: "넷째" };

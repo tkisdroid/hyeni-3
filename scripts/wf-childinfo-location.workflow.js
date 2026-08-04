@@ -42,13 +42,13 @@ const TASKS = [
   {
     name: 'walking-trail-parity',
     prompt: [
-      '## 담당: 길찾기 도보 논리 + 오늘 이동경로(프리미엄) + 위치수집 hyeni-1 정렬',
+      '## 담당: 길찾기 도보 논리 + 위치 이력 티어 정책 + 위치수집 hyeni-1 정렬',
       '### 소유 파일: src/screens/feature/RouteView.tsx(+css), src/screens/parent/ParentLocation.tsx(+css), src/queries/useLocation.ts, src/queries/useRoute.ts, src/lib/api/endpoints/location.ts, src/lib/native/location.ts',
       '### hyeni-1 참조: ' + H1 + '/src/lib/walkingRoute.js, ' + H1 + '/src/lib/routeParsers.js, ' + H1 + '/src/lib/locationTrailDisplay.js, ' + H1 + '/src/lib/trailMath.js, ' + H1 + '/src/lib/nativeLocationService.js, ' + H1 + '/src/lib/locationConstants.js, ' + H1 + '/src/lib/effectiveLocation.js, ' + H1 + '/worker/routes/location.ts(history)',
       '### 할 일',
       '1) **길찾기 도보 논리(RouteView)**: 도착지(destination)는 **다음 일정의 장소만** 사용한다. 다음 일정이 없거나 장소가 없으면 → 저장장소(학교 등)로 직선 폴백 금지, 대신 **정직한 빈 상태**("오늘 남은 일정이 없어 안내할 곳이 없어요" + 홈으로) 표시. pickDestination 을 next-event-only 로 고치고 없으면 null 반환.',
       '2) **반드시 도보**: useWalkingRoute(/api/kakao/walking-directions) 결과가 있으면 그 폴리라인만 그린다. 실패/빈 결과면 **직선(straight) 그리지 말 것** — "도보 경로를 불러오는 중…"(로딩) 또는 "도보 경로를 찾지 못했어요 · 다시 시도"(재시도 버튼) 로 대체. isApprox 직선 근사 경로 제거. (거리/시간 표기도 직선 근사면 감춤.)',
-      '3) **오늘 이동경로(부모, 프리미엄)**: ParentLocation 에 "오늘 이동경로" 보기 추가 — @/transform/tierPolicy 로 프리미엄 게이트(무료/리뷰는 잠금 안내). useLocationHistory(오늘 0시~현재 ISO)로 위치 이력을 받아 KakaoMap(@/components/KakaoMap)에 **이동 경로 폴리라인 + 출발/현재 마커**를 깔끔하게 표시(hyeni-1 locationTrailDisplay/trailMath 규칙 참조: 과도한 점 다운샘플·체류 표시). 토글로 실시간위치↔오늘경로 전환. 데이터 없으면 "오늘 이동 기록이 아직 없어요".',
+      '3) **위치 이력 티어 정책(부모)**: @/transform/tierPolicy 와 @/transform/locationHistoryWindow 을 정본으로 유지한다. Free와 내부 reviewed 호환 상태는 오늘 이력을 제공하고, Premium은 최근 30일 중 날짜를 선택할 수 있다. Free가 과거 날짜를 요청하면 오늘로 fail-closed하고 현재 작성값을 보존한 상황형 Premium 안내를 표시한다. useLocationHistory의 Asia/Seoul 범위로 실측 이력을 받아 KakaoMap(@/components/KakaoMap)에 **이동 경로 폴리라인 + 출발/현재 마커**를 표시한다(hyeni-1 locationTrailDisplay/trailMath 규칙 참조: 과도한 점 다운샘플·체류 표시). 데이터가 없으면 선택 날짜에 맞는 정직한 빈 상태를 표시한다.',
       '4) **위치수집 hyeni-1 정렬(lib/native/location.ts)**: startLocationTracking 이 넘기는 옵션(주기·정확도·거리필터 등)을 hyeni-1 nativeLocationService.js/locationConstants.js 값과 동일하게 맞춘다. requestImmediateLocation 등 hyeni-1 계약과 파라미터명 일치 확인(LocationPlugin.java 계약 유지).',
       '### 주의: KakaoMap 컴포넌트 API 는 기존 ParentLocation/RouteView 사용법을 Read 해 그대로. 폴리라인 그리기는 컴포넌트가 지원하는 방식으로(없으면 지도 인스턴스에 kakao.maps.Polyline 직접). 빌드 금지.',
     ].join('\n'),

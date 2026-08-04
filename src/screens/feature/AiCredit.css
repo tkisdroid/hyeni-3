@@ -137,6 +137,59 @@
   font-size: 15px;
 }
 
+.ac-premium-callout {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--hy-accent-soft);
+  border-radius: var(--radius-16);
+  background: linear-gradient(135deg, var(--hy-accent-soft), var(--bg-card));
+  box-shadow: var(--shadow-soft);
+}
+.ac-premium-callout > div {
+  flex: 1;
+  min-width: 0;
+}
+.ac-premium-callout strong {
+  display: block;
+  color: var(--fg-primary);
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+  word-break: keep-all;
+}
+.ac-premium-callout p {
+  margin: 4px 0 0;
+  color: var(--fg-muted);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  word-break: keep-all;
+}
+.ac-premium-callout__cta,
+.ac-limit-default {
+  min-height: var(--control-min-size);
+  border-radius: var(--radius-12);
+  background: var(--hy-accent-cta);
+  color: var(--bg-card);
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+}
+.ac-premium-callout__cta {
+  flex: none;
+  padding: 0 16px;
+}
+.ac-limit-wrap {
+  display: grid;
+  gap: 8px;
+}
+.ac-limit-default {
+  justify-self: end;
+  padding: 0 16px;
+}
+
 /* ── 충전팩 ─────────────────────────────────────────────────────────────── */
 .ac-packs__label {
   font-size: var(--type-label);
@@ -501,6 +554,13 @@
 }
 
 @media (max-width: 360px) {
+  .ac-premium-callout {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .ac-premium-callout__cta {
+    width: 100%;
+  }
   .ac-time-grid {
     grid-template-columns: 1fr;
   }

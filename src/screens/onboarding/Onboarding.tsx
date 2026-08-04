@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { Camera, Check, ChevronLeft, ChevronRight, Link2 } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { DEFAULT_CHILD_AVATAR } from "@/lib/avatar";
@@ -50,6 +50,7 @@ import { TEACHER_MODE_ENABLED } from "@/config/releaseFeatures";
 import type { OAuthProvider } from "@/transform/oauthProvider";
 import { normalizePairCodeInput } from "@/transform/pairCode";
 import { readPairParam, clearPairParam } from "@/transform/pairLink";
+import { clearReferralParam, readReferralParam } from "@/transform/referralLink";
 import { resolveAuthenticatedOnboardingRedirect } from "@/transform/onboardingRedirect";
 import {
   requestBackgroundLocationPermission,
@@ -126,6 +127,8 @@ export function Onboarding() {
   const [signupName, setSignupName] = useState<string | null>(null);
   // QR 딥링크(?pair=)로 진입 시 아이 코드 프리필.
   const [pairPrefill, setPairPrefill] = useState<string | null>(null);
+  // 친구 초대 ref는 가족 생성 성공 전까지 유지해 로그인·가입 단계를 지나도 귀속한다.
+  const [referralPrefill] = useState<string | null>(() => readReferralParam());
   const oauthLoginPromiseRef = useRef<ReturnType<typeof finishOAuthLogin> | null>(null);
   const oauthExternalBusyRef = useRef(false);
   const [oauthExternalBusy, setOAuthExternalBusy] = useState(false);
@@ -204,7 +207,10 @@ export function Onboarding() {
       hasPairParam: !!readPairParam(),
       authTransitionActive: authTransitionActive,
     });
-    if (redirect) navigate(redirect, { replace: true });
+    if (redirect) {
+      if (authFamilyId && readReferralParam()) clearReferralParam();
+      navigate(redirect, { replace: true });
+    }
   }, [authRole, authFamilyId, authTransitionActive, navigate]);
 
   // OAuth/외부 브라우저에서 복귀 시 busy 잠금 자동 해제 — stuck 방지.
@@ -302,6 +308,7 @@ export function Onboarding() {
         setStep("connect");
         return;
       }
+      clearReferralParam();
       navigate("/parent/home");
     } catch {
       throw new Error("가족 정보를 확인하지 못했어요. 다시 시도해 주세요.");
@@ -448,12 +455,17 @@ export function Onboarding() {
         <ConnectStep
           busy={busy}
           progressPercent={signupFlowStarted ? 80 : null}
+          referralCode={referralPrefill}
           onBack={() => setStep("role")}
           onNewFamily={async () => {
             if (busy) return;
             setBusy(true);
             try {
-              await setupFamily({ parentName: (signupName ?? "").trim() || parentNameFromUser(user) });
+              await setupFamily({
+                parentName: (signupName ?? "").trim() || parentNameFromUser(user),
+                referralCode: referralPrefill ?? undefined,
+              });
+              clearReferralParam();
               syncFromSession();
               setStep("perms");
             } catch (e) {
@@ -1223,6 +1235,7 @@ function SignupStep({
 function ConnectStep({
   busy,
   progressPercent,
+  referralCode,
   onBack,
   onNewFamily,
   onJoin,
@@ -1230,6 +1243,7 @@ function ConnectStep({
 }: {
   busy: boolean;
   progressPercent?: number | null;
+  referralCode?: string | null;
   onBack: () => void;
   onNewFamily: () => void | Promise<void>;
   onJoin: () => void | Promise<void>;
@@ -1254,6 +1268,13 @@ function ConnectStep({
         <div className="ob-h1">가족을 연결해요</div>
         <div className="ob-sub">엄마·아빠·아이가 함께 쓰는 가족 앱</div>
       </div>
+
+      {referralCode && (
+        <div className="ob-referral-notice" role="status">
+          <strong>친구 초대 코드가 적용돼요</strong>
+          <span>새 가족을 만든 뒤 3일이 지나고, 처음 위치 연결 뒤 48시간 동안 최신 상태가 유지되면 두 가족 모두 AI 대화 10회를 받아요.</span>
+        </div>
+      )}
 
       <div className="ob-connect-list">
         <button

@@ -1,6 +1,6 @@
 import { useId, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { ChevronLeft, ChevronRight, Plus, Clock, MapPin, Bell, Pencil, Trash2, StickyNote } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";

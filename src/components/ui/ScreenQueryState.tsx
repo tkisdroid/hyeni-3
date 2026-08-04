@@ -42,7 +42,7 @@ export function ScreenQueryState({
         <span className="sqs-header-spacer" aria-hidden="true" />
       </header>
 
-      <main
+      <section
         className={`sqs-card sqs-card--${state}`}
         role={state === "error" ? "alert" : undefined}
         aria-live={state === "error" ? "assertive" : "polite"}
@@ -70,7 +70,7 @@ export function ScreenQueryState({
             {retrying ? retryingLabel : retryLabel}
           </button>
         )}
-      </main>
+      </section>
     </div>
   );
 }

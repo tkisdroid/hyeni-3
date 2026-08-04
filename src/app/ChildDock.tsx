@@ -4,7 +4,7 @@
  * SOS 는 탭이 아니라 별도 버튼이다: 누르면 SOS 화면으로 가고, 실제 발사는 그 화면에서
  * 3초 홀드해야 한다(오발사 방지). 대화 탭 배지는 아직 안 읽은 부모님 메시지 수.
  */
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router";
 import { asset } from "@/lib/assets";
 import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "@/queries/useFamily";

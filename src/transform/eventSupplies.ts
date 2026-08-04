@@ -13,6 +13,16 @@ import type { SupplyItem } from "../lib/api/endpoints/schedule.ts";
 // 단일 출처 상수 — 순수 모듈에 두어 node 테스트가 endpoints 체인 없이 import 한다.
 export const MAX_SUPPLY_ITEMS_PER_KIND = 8;
 export const MAX_SUPPLY_LABEL_LEN = 20;
+export const DAILY_SUPPLY_LIMIT_ERROR = "daily_supply_limit_exceeded";
+
+export function dailySupplyLimitMessage(kind: "prep" | "hw", isChild: boolean): string {
+  const subject = kind === "hw" ? "숙제는" : "준비물은";
+  return `${subject} 하루 ${MAX_SUPPLY_ITEMS_PER_KIND}개까지 등록할 수 있어${isChild ? "" : "요"}`;
+}
+
+export function isDailySupplyLimitError(error: unknown): boolean {
+  return error instanceof Error && error.message === DAILY_SUPPLY_LIMIT_ERROR;
+}
 
 /** 자유 입력("실내화, 물통") → 정리된 라벨 배열. */
 export function parseSupplyLabelInput(input: string): string[] {

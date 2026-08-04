@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useNavigate } from "react-router";
 import { Check, ChevronLeft } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
@@ -10,6 +10,7 @@ import { useMyFamily } from "@/queries/useFamily";
 import { placePhoneCall } from "@/lib/native/phone";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
+import "@/styles/jua.css";
 import "./ChildSos.css";
 
 type Phase = "idle" | "sending" | "sent" | "error";
@@ -48,7 +49,7 @@ export function ChildSos() {
   const holding = useRef(false);
   const rafRef = useRef<number | null>(null);
   const startRef = useRef(0);
-  const posRef = useRef<{ lat: number; lng: number } | null>(null);
+  const posRef = useRef<{ lat: number; lng: number; capturedAtMs: number } | null>(null);
   const sentRef = useRef(false);
 
   const parents = family?.members.filter((m) => m.role === "parent") ?? [];
@@ -74,7 +75,11 @@ export function ChildSos() {
     if (typeof navigator === "undefined" || !("geolocation" in navigator)) return;
     navigator.geolocation.getCurrentPosition(
       (p) => {
-        posRef.current = { lat: p.coords.latitude, lng: p.coords.longitude };
+        posRef.current = {
+          lat: p.coords.latitude,
+          lng: p.coords.longitude,
+          capturedAtMs: p.timestamp,
+        };
       },
       () => {
         posRef.current = null;
@@ -89,7 +94,11 @@ export function ChildSos() {
     sentRef.current = true;
     setPhase("sending");
     sos.mutate(
-      { lat: posRef.current?.lat ?? null, lng: posRef.current?.lng ?? null },
+      {
+        lat: posRef.current?.lat ?? null,
+        lng: posRef.current?.lng ?? null,
+        capturedAtMs: posRef.current?.capturedAtMs ?? null,
+      },
       {
         onSuccess: (result) => setPhase(result.alertSent ? "sent" : "error"),
         onError: () => setPhase("error"),
@@ -134,6 +143,19 @@ export function ChildSos() {
     if (armed) return; // 키보드로 시작한 진행은 포인터 이탈로 취소되지 않는다.
     stopTick();
     setProgress(0);
+  };
+
+  const beginPointerHold = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (phase !== "idle" || holding.current) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    beginHold();
+  };
+
+  const endPointerHold = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    endHold();
   };
 
   const cancelArmed = () => {
@@ -311,10 +333,9 @@ export function ChildSos() {
             className="cs-hold hy-press"
             aria-label="SOS — 3초 누르고 있기"
             style={{ background: ringBg }}
-            onPointerDown={beginHold}
-            onPointerUp={endHold}
-            onPointerLeave={endHold}
-            onPointerCancel={endHold}
+            onPointerDown={beginPointerHold}
+            onPointerUp={endPointerHold}
+            onPointerCancel={endPointerHold}
             onClick={(e) => {
               // 키보드(Enter/Space)·스크린리더 활성화는 detail === 0 → 손을 뗄 수 없으므로
               // 3초 자동 진행으로 대신하고 취소 버튼을 띄운다(누르기 어려운 아이도 쓸 수 있게).

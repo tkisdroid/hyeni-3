@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router";
 import { ChevronLeft, Camera } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
@@ -130,8 +130,11 @@ export function ProfileEdit() {
   const isPrimary = family?.isPrimaryParent ?? false;
   const busy = uploadPhoto.isPending || saveProfile.isPending;
   const age = ageFromBirthdate(birthday, now); // 폼의 현재 생일로 즉시 계산.
-  // 미리보기: 방금 고른 사진 > 저장된 사진(proxy URL) > 없음(카메라 placeholder).
-  const savedPhoto = member?.photo_url && member.photo_url.startsWith("http") ? member.photo_url : null;
+  // 미리보기: 방금 고른 사진 > 저장된 사진(blob URL) > 없음(카메라 placeholder).
+  const savedPhoto = member?.photo_url
+    && (member.photo_url.startsWith("http") || member.photo_url.startsWith("blob:"))
+    ? member.photo_url
+    : null;
   const previewSrc = pickedDataUrl ?? savedPhoto;
   const retryProfileEdit = async (): Promise<void> => {
     await familyQuery.refetch();

@@ -36,14 +36,14 @@ test("30초 위치 폴링이 부모가 고른 시각과 접어 둔 시트를 되
   // 슬라이더 값: null = 최신 따라가기. 폴링으로 now 가 바뀌어도 선택 시각을 유지한다.
   assert.match(screen, /useState<number \| null>\(null\)/);
   assert.doesNotMatch(screen, /if \(activeView === "history"\) setScrubOffsetMinute\(historyMaxOffsetMinute\)/);
-  assert.match(screen, /setScrubOffsetMinute\(null\);\s*\}, \[activeView, selected\?\.id\]\)/s);
+  assert.match(screen, /setScrubOffsetMinute\(null\);\s*\}, \[activeView, historyDayKey, selected\?\.id\]\)/s);
   // 시트 자동 펼침은 보기 전환에서만(머문 곳 수 변화로 다시 펼치지 않는다).
   assert.match(screen, /setStaysCollapsed\(false\);\s*\}, \[activeView\]\)/s);
   assert.doesNotMatch(screen, /\[activeView, stayPoints\.length\]/);
 });
 
-test("오늘 경로 조회 범위는 하루 창으로 고정하고 신선도는 배경 폴링으로 유지한다", () => {
-  assert.match(screen, /end: new Date\(historyWindow\.startMs \+ 24 \* 60 \* 60 \* 1000\)\.toISOString\(\)/);
+test("선택한 날짜의 경로 조회 범위는 하루 창으로 고정하고 신선도는 배경 폴링으로 유지한다", () => {
+  assert.match(screen, /end: historyWindow\.queryEnd\.toISOString\(\)/);
   assert.match(screen, /useLocationHistory\(historyRange\.start, historyRange\.end, historyEnabled, 60_000\)/);
   assert.match(queries, /refetchIntervalMs\?: number/);
   assert.match(queries, /refetchInterval: refetchIntervalMs && refetchIntervalMs > 0 \? refetchIntervalMs : undefined/);

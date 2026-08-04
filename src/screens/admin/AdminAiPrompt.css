@@ -1,4 +1,4 @@
-/* 운영자 전용 — 아이 AI 친구 전역 지침 (숨은 라우트). */
+/* 운영자 전용 — 신규 결제 제어와 아이 AI 친구 전역 지침 (숨은 라우트). */
 
 .aap-root {
   display: flex;
@@ -34,6 +34,53 @@
   color: var(--fg-primary);
 }
 
+.aap-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-16);
+  background: var(--bg-card);
+}
+.aap-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.aap-section-head h2,
+.aap-section-head p {
+  margin: 0;
+}
+.aap-section-head h2 {
+  color: var(--fg-primary);
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+}
+.aap-section-head p {
+  margin-top: 2px;
+  color: var(--fg-muted);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+}
+.aap-badge {
+  flex: none;
+  padding: 4px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--mint-soft);
+  color: var(--mint-text);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-label-weight);
+}
+.aap-badge--off {
+  background: var(--cream-soft);
+  color: var(--gold-text);
+}
+
 .aap-state {
   margin: 0;
   display: flex;
@@ -47,6 +94,10 @@
 .aap-state--denied,
 .aap-state--error {
   color: var(--fg-primary);
+}
+.aap-state--stack {
+  align-items: flex-start;
+  flex-direction: column;
 }
 .aap-retry {
   min-height: var(--control-min-size);
@@ -76,6 +127,137 @@
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
+}
+
+.aap-commerce-note {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border-radius: var(--radius-16);
+  background: var(--mint-soft);
+  color: var(--mint-text);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+}
+.aap-commerce-note strong {
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+}
+.aap-commerce-unconfigured {
+  margin: 0;
+  padding: 12px;
+  border-radius: var(--radius-16);
+  background: var(--cream-soft);
+  color: var(--gold-text);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+}
+.aap-commerce-fields {
+  display: grid;
+  gap: 14px;
+}
+.aap-commerce-field {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.aap-commerce-field legend {
+  margin-bottom: 8px;
+  padding: 0;
+  color: var(--fg-primary);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+}
+.aap-commerce-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.aap-commerce-option {
+  min-height: var(--control-min-size);
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: var(--fg-primary);
+  cursor: pointer;
+}
+.aap-commerce-option:has(input:checked) {
+  border-color: var(--lav-500);
+  background: var(--lav-soft);
+}
+.aap-commerce-option input {
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  flex: none;
+  accent-color: var(--lav-600);
+}
+.aap-commerce-option input:focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+.aap-commerce-option span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+.aap-commerce-option strong {
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+}
+.aap-commerce-option small {
+  color: var(--fg-muted);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+}
+.aap-commerce-field:disabled .aap-commerce-option {
+  cursor: default;
+}
+.aap-commerce-save {
+  min-height: 48px;
+  padding: 12px 16px;
+  border-radius: var(--radius-16);
+  background: var(--cta-grad-accent);
+  color: #fff;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+  --press: 0.96;
+}
+.aap-commerce-save:disabled:not([aria-busy="true"]) {
+  opacity: 0.55;
+}
+.aap-commerce-save[aria-busy="true"] {
+  opacity: 1;
+}
+.aap-feedback {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+}
+.aap-feedback--success {
+  background: var(--mint-soft);
+  color: var(--mint-text);
+}
+.aap-feedback--error {
+  background: var(--danger-soft);
+  color: var(--danger-text);
 }
 
 .aap-label {
@@ -137,4 +319,18 @@
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
+}
+
+@media (max-width: 360px) {
+  .aap-section {
+    padding: 14px;
+  }
+
+  .aap-section-head {
+    flex-direction: column;
+  }
+
+  .aap-commerce-options {
+    grid-template-columns: 1fr;
+  }
 }

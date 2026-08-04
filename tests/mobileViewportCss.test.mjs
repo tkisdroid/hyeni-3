@@ -75,10 +75,11 @@ test("부모 오늘경로의 오늘 머문 곳 시트는 접힘 transform이 she
   assert.match(css, /\.pl-stays--collapsed\s*\{[^}]*transform:\s*translateY\(calc\(100% \+ 28px\)\)/s);
 });
 
-test("부모 오늘경로의 시간대별 경로는 아이 배지 제거 후 위쪽에 붙는다", () => {
+test("부모 이동 기록의 시간대별 경로는 날짜 선택기 아래 안전영역에 배치된다", () => {
   const css = readCss("src/screens/parent/ParentLocation.css");
 
-  assert.match(css, /\.pl-scrub\s*\{[^}]*top:\s*108px/s);
+  assert.match(css, /\.pl-history-day\s*\{[^}]*top:\s*calc\(env\(safe-area-inset-top, 0px\) \+ 64px\)/s);
+  assert.match(css, /\.pl-scrub\s*\{[^}]*top:\s*calc\(env\(safe-area-inset-top, 0px\) \+ 120px\)/s);
 });
 
 test("아이 화면은 TopBar 가 없으므로 각자 상단 안전영역을 챙긴다(상태바 겹침 금지)", () => {
@@ -119,4 +120,16 @@ test("아이 하단 독은 내비게이션 바 영역까지 배경을 덮는다(
   // 페이드 영역이 클릭을 먹지 않도록.
   assert.match(dock, /\.kdock\s*\{[^}]*pointer-events: none/s);
   assert.match(dock, /\.kdock > \*\s*\{\s*pointer-events: auto/s);
+});
+
+test("Capacitor 네이티브 앱은 가로 폭에서도 데스크톱 폰 프레임과 좌우 여백을 만들지 않는다", () => {
+  const entry = readCss("src/main.tsx");
+  const global = readCss("src/styles/global.css");
+
+  assert.match(entry, /document\.documentElement\.toggleAttribute\("data-hy-native",\s*isNativePlatform\(\)\)/);
+  assert.match(global, /html\[data-hy-native\]\s+body\s*\{[^}]*background:\s*var\(--bg-body\)/s);
+  assert.match(global, /html\[data-hy-native\]\s+\.hy-app\s*\{[^}]*max-width:\s*none/s);
+  assert.match(global, /html\[data-hy-native\]\s+\.hy-app\s*\{[^}]*margin:\s*0/s);
+  assert.match(global, /html\[data-hy-native\]\s+\.hy-app\s*\{[^}]*border-radius:\s*0/s);
+  assert.match(global, /html\[data-hy-native\]\s+:is\([^)]*\.mps-sheet[^)]*\.ofb-root[^)]*\.ks-layer[^)]*\.pc-sheet-root[^)]*\)\s*\{[^}]*max-width:\s*none/s);
 });

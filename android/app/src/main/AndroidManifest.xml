@@ -74,6 +74,11 @@
             android:name="isMonitoringTool"
             android:value="child_monitoring" />
 
+        <!-- bundletool 기반 출시 provenance 전용 값. 앱 UI·로그·네트워크에는 노출하지 않는다. -->
+        <meta-data
+            android:name="com.hyeni.calendar.RELEASE_SOURCE_SHA"
+            android:value="${hyeniReleaseSourceSha}" />
+
         <!-- Motorola razr 커버 디스플레이 접힘 상태에서도 원격 듣기 브리지 Activity 를 띄운다. -->
         <meta-data
             android:name="com.motorola.allow_activities_on_small_external_display"
@@ -98,7 +103,6 @@
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
-            android:screenOrientation="portrait"
             android:exported="true">
 
             <intent-filter>
@@ -134,11 +138,11 @@
         <!-- 위급 주변소리: 부모 요청을 아이 탭 없이 곧바로 연결한다. 잠금·꺼짐 화면에서도
              전체화면 인텐트가 떠야 하므로 showWhenLocked/turnScreenOn 을 함께 선언한다. -->
         <activity
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density"
             android:name=".RemoteListenActivity"
             android:excludeFromRecents="true"
             android:exported="false"
             android:launchMode="singleTop"
-            android:screenOrientation="portrait"
             android:showWhenLocked="true"
             android:theme="@style/AppTheme.Alert"
             android:turnScreenOn="true"

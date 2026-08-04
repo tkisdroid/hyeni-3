@@ -1,0 +1,9 @@
+# 혜니캘린더
+
+혜니캘린더는 가족 일정, 준비물, 자녀 위치와 안전 알림을 함께 관리하는 가족용 서비스입니다.
+
+## 공개 문서
+
+- [이용약관](https://hyeni-calendar-api.tkisdroid.workers.dev/terms)
+- [개인정보처리방침](https://hyeni-calendar-api.tkisdroid.workers.dev/privacy)
+- [데이터 삭제 안내](https://hyeni-calendar-api.tkisdroid.workers.dev/data-deletion)
