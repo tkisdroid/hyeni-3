@@ -10,7 +10,13 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $androidRoot = Join-Path $repoRoot 'android'
 $gradleWrapper = Join-Path $androidRoot 'gradlew.bat'
-$defaultKeystore = Join-Path $androidRoot 'keystore\hyeni-upload.jks'
+$projectKeystore = Join-Path $androidRoot 'keystore\hyeni-upload.jks'
+$legacyUploadKeystoreCandidate = Join-Path $env:USERPROFILE 'keys\hyeni-upload.jks'
+$defaultKeystore = if (Test-Path -LiteralPath $legacyUploadKeystoreCandidate -PathType Leaf) {
+    $legacyUploadKeystoreCandidate
+} else {
+    $projectKeystore
+}
 $gradleProperties = Join-Path $env:USERPROFILE '.gradle\gradle.properties'
 $legacyCredentialFile = Join-Path $androidRoot 'keystore\hyeni-upload-credentials.txt'
 $releaseAab = Join-Path $androidRoot 'app\build\outputs\bundle\release\app-release.aab'
@@ -18,7 +24,7 @@ $evidenceRoot = Join-Path $repoRoot 'artifacts\release-evidence'
 $bundletoolPath = Join-Path $evidenceRoot 'release-tools\bundletool-all-1.18.1.jar'
 $bundletoolUrl = 'https://github.com/google/bundletool/releases/download/1.18.1/bundletool-all-1.18.1.jar'
 $bundletoolSha256 = '675786493983787ffa11550bdb7c0715679a44e1643f3ff980a529e9c822595c'
-$uploadCertificateSha256 = '63e5246e21e4ec4df27b597749c6da12749592b20e342ef8272a3b7b5fc8cc5f'
+$playExpectedUploadCertificateSha1 = '76:86:58:1B:14:7A:22:36:9B:E8:69:56:66:07:D6:15:2F:5D:38:98'
 $signingVariableNames = @(
     'HYENI_KEYSTORE',
     'HYENI_KEYSTORE_PASSWORD',
@@ -117,6 +123,36 @@ function Convert-SecureStringToPlainText {
             [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer)
         }
     }
+}
+
+function Get-CertificateFingerprint {
+    param(
+        [Parameter(Mandatory)][string]$KeytoolOutput,
+        [Parameter(Mandatory)][ValidateSet('SHA1', 'SHA256')][string]$Algorithm
+    )
+
+    $match = [regex]::Match(
+        $KeytoolOutput,
+        "(?im)^\s*${Algorithm}:\s*(?<fingerprint>[0-9A-F:]+)\s*$"
+    )
+    if (-not $match.Success) {
+        throw "선택한 키의 $Algorithm 인증서 지문을 확인하지 못했습니다."
+    }
+    return $match.Groups['fingerprint'].Value.ToUpperInvariant()
+}
+
+function Get-NormalizedFingerprint {
+    param(
+        [Parameter(Mandatory)][string]$Fingerprint,
+        [Parameter(Mandatory)][ValidateSet(40, 64)][int]$ExpectedLength,
+        [Parameter(Mandatory)][string]$Label
+    )
+
+    $normalized = ($Fingerprint -replace '[^0-9A-Fa-f]', '').ToUpperInvariant()
+    if ($normalized -notmatch "^[0-9A-F]{$ExpectedLength}$") {
+        throw "$Label 인증서 지문 형식이 올바르지 않습니다."
+    }
+    return $normalized
 }
 
 function Invoke-External {
@@ -251,6 +287,7 @@ $preflight = [ordered]@{
     worktreeClean = $gitState.Clean
     keystorePath = $selectedKeystore
     keystorePresent = Test-Path -LiteralPath $selectedKeystore -PathType Leaf
+    playExpectedUploadCertificateSha1 = $playExpectedUploadCertificateSha1
     forbiddenGradlePropertyNames = $forbiddenProperties
     legacyCredentialFilePresent = Test-Path -LiteralPath $legacyCredentialFile -PathType Leaf
     releaseAabPath = $releaseAab
@@ -302,6 +339,8 @@ $gradlePropertiesSanitized = $false
 $releaseBuildSucceeded = $false
 $plainKeystorePassword = $null
 $plainKeyPassword = $null
+$selectedCertificateSha1 = $null
+$uploadCertificateSha256 = $null
 
 try {
     $plainKeystorePassword = Convert-SecureStringToPlainText -Value $keystorePasswordSecure
@@ -345,6 +384,28 @@ try {
             throw '입력한 별칭은 키스토어의 PrivateKeyEntry가 아닙니다.'
         }
     }
+
+    $selectedAliasLines = @(& $keytool '-J-Duser.language=en' '-J-Duser.country=US' '-list' '-v' `
+        '-keystore' $selectedKeystore '-storepass:env' 'HYENI_KEYSTORE_PASSWORD' `
+        '-alias' $keyAlias 2>&1)
+    if ($LASTEXITCODE -ne 0) {
+        throw '선택한 업로드 키의 인증서를 확인하지 못했습니다.'
+    }
+    $selectedAliasOutput = ($selectedAliasLines | Out-String)
+    $selectedCertificateSha1 = Get-CertificateFingerprint `
+        -KeytoolOutput $selectedAliasOutput -Algorithm 'SHA1'
+    $selectedCertificateSha256 = Get-CertificateFingerprint `
+        -KeytoolOutput $selectedAliasOutput -Algorithm 'SHA256'
+    $normalizedExpectedSha1 = Get-NormalizedFingerprint `
+        -Fingerprint $playExpectedUploadCertificateSha1 -ExpectedLength 40 -Label 'Play Console 요구 SHA-1'
+    $normalizedSelectedSha1 = Get-NormalizedFingerprint `
+        -Fingerprint $selectedCertificateSha1 -ExpectedLength 40 -Label '선택한 키 SHA-1'
+    if ($normalizedSelectedSha1 -ne $normalizedExpectedSha1) {
+        throw "선택한 키는 Play Console에 등록된 업로드 키가 아닙니다. Play 요구 SHA-1: $playExpectedUploadCertificateSha1 / 선택 키 SHA-1: $selectedCertificateSha1. 이 키로 AAB를 만들지 않습니다."
+    }
+    $uploadCertificateSha256 = (Get-NormalizedFingerprint `
+        -Fingerprint $selectedCertificateSha256 -ExpectedLength 64 -Label '선택한 키 SHA-256').ToLowerInvariant()
+    Write-Host "Play Console 업로드 키 SHA-1 일치를 확인했습니다: $selectedCertificateSha1"
 
     $keyPasswordSecure = Read-Host '키 비밀번호' -AsSecureString
     $plainKeyPassword = Convert-SecureStringToPlainText -Value $keyPasswordSecure
@@ -451,7 +512,7 @@ try {
     )
     [System.IO.File]::WriteAllText(
         (Join-Path $uploadRoot 'UPLOAD-INSTRUCTIONS.txt'),
-        "Google Play Console 업로드 대상은 $([System.IO.Path]::GetFileName($uploadAab)) 파일 하나입니다.`nZIP 파일과 debug AAB는 업로드하지 마세요.`nsource commit: $($gitState.Head)`nSHA-256: $aabSha256`nPlay App Signing의 앱 서명 키 SHA-256 확인 후 assetlinks.json 교체가 별도로 필요합니다.`n",
+        "Google Play Console 업로드 대상은 $([System.IO.Path]::GetFileName($uploadAab)) 파일 하나입니다.`nZIP 파일과 debug AAB는 업로드하지 마세요.`nsource commit: $($gitState.Head)`nAAB SHA-256: $aabSha256`n업로드 인증서 SHA-1: $selectedCertificateSha1`n업로드 인증서 SHA-256: $uploadCertificateSha256`nPlay App Signing의 앱 서명 키 SHA-256 확인 후 assetlinks.json 교체가 별도로 필요합니다.`n",
         $utf8
     )
 
@@ -489,6 +550,8 @@ try {
     Clear-ReleaseEvidenceEnvironment
     $plainKeystorePassword = $null
     $plainKeyPassword = $null
+    $selectedCertificateSha1 = $null
+    $uploadCertificateSha256 = $null
     $keystorePasswordSecure = $null
     $keyPasswordSecure = $null
 

@@ -24,6 +24,29 @@ test("키스토어 비밀번호·파일 형식·다중 별칭 오류를 구분�
   assert.match(source, /입력한 별칭은 키스토어의 PrivateKeyEntry가 아닙니다/);
 });
 
+test("Play Console이 요구한 업로드 인증서 SHA-1과 일치하기 전에는 빌드하지 않는다", () => {
+  assert.match(
+    source,
+    /76:86:58:1B:14:7A:22:36:9B:E8:69:56:66:07:D6:15:2F:5D:38:98/,
+  );
+  assert.match(source, /Get-CertificateFingerprint/);
+  assert.match(source, /Get-NormalizedFingerprint/);
+  assert.match(source, /Play Console에 등록된 업로드 키가 아닙니다/);
+
+  const guardIndex = source.indexOf("if ($normalizedSelectedSha1 -ne $normalizedExpectedSha1)");
+  const keyPasswordIndex = source.indexOf("Read-Host '키 비밀번호' -AsSecureString");
+  const buildIndex = source.indexOf("':app:bundleRelease'");
+  assert.ok(guardIndex > 0);
+  assert.ok(keyPasswordIndex > guardIndex);
+  assert.ok(buildIndex > keyPasswordIndex);
+});
+
+test("기존 사용자 keys 폴더의 업로드 키 후보를 우선하되 인자로 덮어쓸 수 있다", () => {
+  assert.match(source, /Join-Path \$env:USERPROFILE 'keys\\hyeni-upload\.jks'/);
+  assert.match(source, /\[string\]\$KeystorePath/);
+  assert.match(source, /\$selectedKeystore = if \(\[string\]::IsNullOrWhiteSpace\(\$KeystorePath\)\)/);
+});
+
 test("release 서명 스크립트는 네 평문 Gradle property만 제거한다", () => {
   for (const name of [
     "HYENI_KEYSTORE",
@@ -55,6 +78,7 @@ test("release 서명 스크립트는 기존 AAB를 보관하고 clean source만 
 test("release AAB는 승인 인증서와 16KB 조건을 모두 검증한다", () => {
   assert.match(source, /--build-type release/);
   assert.match(source, /--expected-certificate-sha256 \$uploadCertificateSha256/);
+  assert.doesNotMatch(source, /63e5246e21e4ec4df27b597749c6da12749592b20e342ef8272a3b7b5fc8cc5f/i);
   assert.match(source, /expectedCertificateMatched/);
   assert.match(source, /bundleConfigPageAlignment16Kb/);
   assert.match(source, /universalApkZipAligned16Kb/);
