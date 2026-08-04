@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [switch]$PreflightOnly,
-    [string]$KeystorePath
+    [string]$KeystorePath,
+    [string]$PlayUploadCertificatePath
 )
 
 Set-StrictMode -Version Latest
@@ -11,20 +12,24 @@ $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $androidRoot = Join-Path $repoRoot 'android'
 $gradleWrapper = Join-Path $androidRoot 'gradlew.bat'
 $projectKeystore = Join-Path $androidRoot 'keystore\hyeni-upload.jks'
+$vaultUploadKeystoreCandidate = Join-Path $env:USERPROFILE 'keys\hyeni-calendar\android-signing\private\hyeni-upload-reset-candidate-20260804.jks'
 $legacyUploadKeystoreCandidate = Join-Path $env:USERPROFILE 'keys\hyeni-upload.jks'
-$defaultKeystore = if (Test-Path -LiteralPath $legacyUploadKeystoreCandidate -PathType Leaf) {
+$defaultKeystore = @(
+    $vaultUploadKeystoreCandidate,
+    $projectKeystore,
     $legacyUploadKeystoreCandidate
-} else {
-    $projectKeystore
+) | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
+if ([string]::IsNullOrWhiteSpace($defaultKeystore)) {
+    $defaultKeystore = $projectKeystore
 }
 $gradleProperties = Join-Path $env:USERPROFILE '.gradle\gradle.properties'
 $legacyCredentialFile = Join-Path $androidRoot 'keystore\hyeni-upload-credentials.txt'
 $releaseAab = Join-Path $androidRoot 'app\build\outputs\bundle\release\app-release.aab'
 $evidenceRoot = Join-Path $repoRoot 'artifacts\release-evidence'
+$defaultPlayUploadCertificate = Join-Path $evidenceRoot 'play-console-certificates-20260804\upload_cert.der'
 $bundletoolPath = Join-Path $evidenceRoot 'release-tools\bundletool-all-1.18.1.jar'
 $bundletoolUrl = 'https://github.com/google/bundletool/releases/download/1.18.1/bundletool-all-1.18.1.jar'
 $bundletoolSha256 = '675786493983787ffa11550bdb7c0715679a44e1643f3ff980a529e9c822595c'
-$playExpectedUploadCertificateSha1 = '76:86:58:1B:14:7A:22:36:9B:E8:69:56:66:07:D6:15:2F:5D:38:98'
 $signingVariableNames = @(
     'HYENI_KEYSTORE',
     'HYENI_KEYSTORE_PASSWORD',
@@ -279,6 +284,30 @@ $selectedKeystore = if ([string]::IsNullOrWhiteSpace($KeystorePath)) {
 } else {
     [System.IO.Path]::GetFullPath($KeystorePath)
 }
+$selectedPlayUploadCertificate = if ([string]::IsNullOrWhiteSpace($PlayUploadCertificatePath)) {
+    $defaultPlayUploadCertificate
+} else {
+    [System.IO.Path]::GetFullPath($PlayUploadCertificatePath)
+}
+$playUploadCertificatePresent = Test-Path -LiteralPath $selectedPlayUploadCertificate -PathType Leaf
+$playExpectedUploadCertificateSha1 = $null
+if ($playUploadCertificatePresent) {
+    $playUploadCertificate = $null
+    try {
+        $playUploadCertificate = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new(
+            $selectedPlayUploadCertificate
+        )
+        $playExpectedUploadCertificateSha1 = @(
+            $playUploadCertificate.GetCertHash() | ForEach-Object { $_.ToString('X2') }
+        ) -join ':'
+    } catch {
+        throw "Play 업로드 인증서 파일을 읽지 못했습니다: $selectedPlayUploadCertificate"
+    } finally {
+        if ($null -ne $playUploadCertificate) {
+            $playUploadCertificate.Dispose()
+        }
+    }
+}
 
 $gitState = Get-GitState
 $forbiddenProperties = @(Get-ForbiddenSigningProperties)
@@ -287,6 +316,8 @@ $preflight = [ordered]@{
     worktreeClean = $gitState.Clean
     keystorePath = $selectedKeystore
     keystorePresent = Test-Path -LiteralPath $selectedKeystore -PathType Leaf
+    playUploadCertificatePath = $selectedPlayUploadCertificate
+    playUploadCertificatePresent = $playUploadCertificatePresent
     playExpectedUploadCertificateSha1 = $playExpectedUploadCertificateSha1
     forbiddenGradlePropertyNames = $forbiddenProperties
     legacyCredentialFilePresent = Test-Path -LiteralPath $legacyCredentialFile -PathType Leaf
@@ -295,7 +326,7 @@ $preflight = [ordered]@{
 
 if ($PreflightOnly) {
     [pscustomobject]$preflight | ConvertTo-Json -Depth 3
-    if (-not $gitState.Clean -or -not $preflight.keystorePresent) {
+    if (-not $gitState.Clean -or -not $preflight.keystorePresent -or -not $playUploadCertificatePresent) {
         exit 2
     }
     exit 0
@@ -306,6 +337,9 @@ if (-not $gitState.Clean) {
 }
 if (-not $preflight.keystorePresent) {
     throw "업로드 키스토어가 없습니다: $selectedKeystore"
+}
+if (-not $playUploadCertificatePresent) {
+    throw "Play Console에서 받은 업로드 인증서가 없습니다: $selectedPlayUploadCertificate"
 }
 if (-not (Test-Path -LiteralPath $gradleWrapper -PathType Leaf)) {
     throw "Gradle wrapper가 없습니다: $gradleWrapper"
