@@ -110,14 +110,14 @@ IARC 질문에는 다음 실제 기능을 숨기지 않고 답한다.
 
 ## 5. App Links와 서명
 
-`public/.well-known/assetlinks.json`의 현재 지문은 개발용 debug 인증서다. 다음 순서를 지킨다.
+Play Console에서 받은 `deployment_cert.der`를 직접 파싱해 앱 서명 키 SHA-256
+`98:09:2B:A4:B5:E1:BB:6D:97:8E:D8:75:29:4A:B3:1B:66:06:8E:8A:9F:6A:46:F9:3D:45:BD:CC:F2:8E:64:4F`를 확인했고,
+`public/.well-known/assetlinks.json`의 개발용 debug 지문을 이 값으로 교체했다. 다음 순서를 지킨다.
 
-1. 최신 소스에서 승인된 업로드 키로 release AAB를 만든다.
-2. AAB를 Play Console에 업로드하고 Play App Signing을 활성화하거나 현재 설정을 확인한다.
-3. **앱 서명 키 인증서**의 SHA-256을 Console에서 복사한다. 업로드 인증서 SHA-256을 대신 쓰지 않는다.
-4. `public/.well-known/assetlinks.json`을 앱 서명 키 지문으로 교체한다.
-5. production build와 Pages 배포 후 `https://hyeni-calendar.pages.dev/.well-known/assetlinks.json`의 HTTPS 200·콘텐츠·캐시를 확인한다.
-6. Play가 서명한 설치본에서 `https://hyeni-calendar.pages.dev/oauth/callback` App Link 검증과 소셜 로그인 복귀를 확인한다.
+1. production build와 Pages 배포 후 `https://hyeni-calendar.pages.dev/.well-known/assetlinks.json`의 HTTPS 200·콘텐츠·캐시를 확인한다.
+2. 별도 업로드 키 재설정을 완료한 뒤 승인된 업로드 키로 최신 source commit의 release AAB를 만든다.
+3. Play가 서명한 내부 테스트 설치본에서 `https://hyeni-calendar.pages.dev/oauth/callback` App Link 검증과 소셜 로그인 복귀를 확인한다.
+4. 업로드 키를 재설정해도 `assetlinks.json`은 업로드 인증서가 아니라 위 Google Play 앱 서명 키 SHA-256을 계속 사용한다.
 
 ## 6. 출시 전 남은 외부 작업
 
@@ -126,7 +126,7 @@ IARC 질문에는 다음 실제 기능을 숨기지 않고 답한다.
 - release 빌드 성공 뒤 `android/keystore/hyeni-upload-credentials.txt`를 지우고, 실패하면 Gradle properties를 원복
 - 새 AAB의 `jarsigner`, 승인 업로드 인증서, SHA-256, mtime, schema v4 16KB 정적 증거를 자동 확인
 - Play Console에서 `versionCode 5` 미사용 여부 확인. 이미 사용됐다면 코드와 모든 제출 문서를 함께 올려 재빌드
-- Play App Signing 앱 서명 인증서 지문으로 `assetlinks.json` 교체·Pages 배포·App Link E2E
+- Play App Signing 앱 서명 인증서 지문의 로컬 반영은 완료. Pages 배포·내부 테스트 설치본 App Link E2E는 미완료
 - 심사 전용 보호자·아이 계정과 라이선스 테스터를 Console에 직접 입력
 - 대상 연령·Families·IARC·Data Safety·백그라운드 위치·FGS·FSI 선언과 심사 영상 승인
 - Google Play 상품 가격, 무료 체험 eligibility, 구매·복원·해지·환불·RTDN 실결제 E2E

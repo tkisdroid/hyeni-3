@@ -269,7 +269,7 @@ try {
 - 업로드 인증서가 기존 업로드 키와 동일
 - SHA-256, 파일 크기, mtime 기록
 - `scripts/create-aab-evidence.mjs` schema v4가 source dist, post-sync Android public, bundletool universal APK public의 raw hash·파일 수와 정규화 투영을 비교해 일치
-- 루트 0바이트 `cordova.js`·`cordova_plugins.js` 2개 외 Capacitor 추가 파일 0, AAPT 제외는 이름·338 bytes·SHA-256 `4DBCBB7FDB0CCEC050BCE5FA9FE40862285847CCA393150BC5809DA1705E2E75`가 고정된 `.well-known/assetlinks.json` 1개만 허용
+- 루트 0바이트 `cordova.js`·`cordova_plugins.js` 2개 외 Capacitor 추가 파일 0, AAPT 제외는 이름·334 bytes·SHA-256 `08F44ACEDADBF0348C3C35B7DB1FA273B49637F5645821F1D6D674468FD5C4B8`가 고정된 `.well-known/assetlinks.json` 1개만 허용
 - archive entry가 모두 안전하고 portable 이름 충돌·중복·feature module web asset이 없으며 AAB·dist·Android public이 검증 시작/종료 사이 바뀌지 않음
 - `scripts/create-release-record.mjs`가 source dist와 embedded 투영을 current `dist` 및 같은 Pages artifact provenance와 다시 대조해 일치
 - bundletool merged manifest가 manifest policy v1의 승인 권한 정확히 24개, `<meta-data android:name="isMonitoringTool" android:value="child_monitoring">`, `WRITE_EXTERNAL_STORAGE maxSdkVersion=28`을 모두 만족하며 권한 추가·누락·중복·`uses-permission-sdk-*` 우회를 fail-closed
