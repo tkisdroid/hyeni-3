@@ -2,7 +2,7 @@
 
 ## 현재 판정 (2026-08-04)
 
-**제출 차단.** 2026-08-04 로컬 재검증에서 앱 1,237/1,237·Worker 1,161/1,161, Android 175/175 강제 재실행과 typecheck·production build·Capacitor sync·lint·assembleDebug·bundleDebug·Worker dry-run을 통과했다. `npm audit`에서 확인된 `hono`·`undici` 취약 버전은 호환 가능한 최소 버전으로 올렸고 현재 moderate 이상 취약점은 0건이다. 실제 UI 스크린샷 후보 6장도 최신 production dist에서 재생성해 기술·육안 검토했지만 정책 책임자 승인을 의미하지 않으므로 `playUploadApproved=false`를 유지한다. Console 복사용 정본은 `docs/store/play-console-submission-v1.3.0.md`다. 최신 승인 인증서 서명 release AAB, Play App Signing 인증서 기반 App Links, Console 설문·심사 영상·계정, 운영 배포·실결제·A17/razr 최종 E2E가 끝날 때까지 `HOLD`다. 2026-07-10 기존 release AAB와 모든 debug 산출물은 업로드하지 않는다.
+**제출 차단.** 2026-08-04 로컬 재검증에서 앱 1,244/1,244·Worker 1,161/1,161, Android 175/175 강제 재실행과 typecheck·production build·Capacitor sync·lint·assembleDebug·bundleDebug·Worker dry-run을 통과했다. `npm audit`에서 확인된 `hono`·`undici` 취약 버전은 호환 가능한 최소 버전으로 올렸고 현재 moderate 이상 취약점은 0건이다. 실제 UI 스크린샷 후보 6장도 최신 production dist에서 재생성해 기술·육안 검토했지만 정책 책임자 승인을 의미하지 않으므로 `playUploadApproved=false`를 유지한다. Console 복사용 정본은 `docs/store/play-console-submission-v1.3.0.md`다. 서명 값은 `scripts/build-android-release.ps1`의 보안 프롬프트로만 받고, 성공 시 평문 설정 제거·release AAB·승인 인증서·16KB 증거·Play 업로드 폴더 생성을 한 흐름으로 수행한다. 최신 승인 인증서 서명 release AAB, Play App Signing 인증서 기반 App Links, Console 설문·심사 영상·계정, 운영 배포·실결제·A17/razr 최종 E2E가 끝날 때까지 `HOLD`다. 2026-07-10 기존 release AAB와 모든 debug 산출물은 업로드하지 않는다.
 
 v1.2.0의 테스트·APK·A17 부모·razr 아이 결과는 역사 기록으로만 보존하며 v1.3.0 완료 증거로 재사용하지 않는다. 당시 precache 320개·entry 472,252 bytes와 debug APK SHA-256 `246A1513CA9D9951D7857654B538398A9D175605F097331EAADDE2DBA2D243F5`도 역사 증거이며 현재 후보 승인값이 아니다.
 
