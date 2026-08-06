@@ -71,18 +71,18 @@ export function LocationJourneyPanel({
       >
         <span className="pl-journey__toggle-copy">
           <strong>{dayLabel} 이동 기록</strong>
-          <span>{recordedRangeLabel ?? copy ?? `${stayCount}곳에 머물렀어요`}</span>
+          <span>{copy ?? recordedRangeLabel ?? `${stayCount}곳에 머물렀어요`}</span>
         </span>
         <ChevronDown className="pl-journey__toggle-icon" size={22} strokeWidth={2.3} aria-hidden="true" />
       </button>
 
       <div id="location-journey-panel-body" className="pl-journey__body" hidden={!expanded}>
         {copy && (
-          <div className={`pl-journey__state pl-journey__state--${state}`} role={state === "error" ? "alert" : "status"}>
+          <div className={`pl-journey__state pl-journey__status pl-journey__state--${state}`} role={state === "error" ? "alert" : "status"}>
             <MapPin size={22} strokeWidth={2.2} aria-hidden="true" />
             <div>
               <strong>{copy}</strong>
-              {state === "empty" && <p>위치 권한과 아이 기기의 인터넷 연결을 확인해 주세요.</p>}
+              {state === "empty" && <p>아직 이 날의 위치 확인 기록이 남지 않았어요.</p>}
               {state === "moving_only" && <p>아래 시간 막대로 이동 위치를 확인할 수 있어요.</p>}
               {state === "error" && <p>인터넷 연결을 확인한 뒤 다시 시도해 주세요.</p>}
             </div>
@@ -92,6 +92,14 @@ export function LocationJourneyPanel({
                 다시 불러오기
               </button>
             )}
+          </div>
+        )}
+
+        {state === "loading" && (
+          <div className="pl-journey__skeleton" aria-hidden="true">
+            <span className="pl-journey__skeleton-row pl-journey__skeleton-row--label" />
+            <span className="pl-journey__skeleton-row pl-journey__skeleton-row--range" />
+            <span className="pl-journey__skeleton-row pl-journey__skeleton-row--stay" />
           </div>
         )}
 
@@ -148,7 +156,7 @@ export function LocationJourneyPanel({
                 <li key={stay.id} className={stay.selected ? "is-selected" : undefined}>
                   <button
                     type="button"
-                    className="pl-journey__stay hy-press"
+                    className={`pl-journey__stay hy-press${stay.selected ? " pl-journey__stay--selected" : ""}`}
                     aria-pressed={stay.selected}
                     onClick={() => onSelectStay(index)}
                   >

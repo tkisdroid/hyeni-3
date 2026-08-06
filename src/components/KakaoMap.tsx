@@ -216,11 +216,12 @@ export function KakaoMap({
           overlaysRef.current.push(marker);
         }
 
+        const rootStyle = getComputedStyle(document.documentElement);
+
         // 경로 폴리라인 — 전 구간 실선 하나로 그린다.
         // 소비 화면이 실측점만 넘기므로(직선 보간 채움점 제외) 선의 기하는 그대로이고,
         // 끊긴 점선 때문에 이동이 '기록 안 됨'처럼 보이던 오해만 없앤다.
         if (route && route.length >= 2) {
-          const rootStyle = getComputedStyle(document.documentElement);
           const routeColor = rootStyle.getPropertyValue("--mint-500").trim();
           const polyline = new maps.Polyline({
             path: route.map((p) => new maps.LatLng(p.lat, p.lng)),
@@ -241,7 +242,7 @@ export function KakaoMap({
             const link = new maps.Polyline({
               path,
               strokeWeight: 3,
-              strokeColor: "#A78BFA",
+              strokeColor: rootStyle.getPropertyValue("--mint-400").trim(),
               strokeOpacity: 0.8,
               strokeStyle: "solid",
             });
@@ -250,12 +251,13 @@ export function KakaoMap({
           }
           for (const s of stays) {
             const el = document.createElement("div");
-            const accent = s.active ? "#7C3AED" : "#A78BFA";
+            const stayColor = rootStyle.getPropertyValue(s.active ? "--mint-600" : "--mint-400").trim();
+            const stayShadow = s.active ? "rgba(8,118,83,.44)" : "rgba(49,196,141,.34)";
             el.style.cssText = "transform:translateY(-4px);text-align:center;white-space:nowrap;pointer-events:none";
             const stayChip = document.createElement("div");
             stayChip.style.cssText =
               "display:inline-flex;align-items:center;gap:4px;padding:3px 9px 3px 5px;border-radius:999px;" +
-              `background:${accent};color:#fff;box-shadow:0 4px 12px rgba(124,58,237,.4);font-size:11.5px;font-weight:800;` +
+              `background:${stayColor};color:#fff;box-shadow:0 4px 12px ${stayShadow};font-size:11.5px;font-weight:800;` +
               (s.active ? "outline:2px solid #fff;" : "");
             const orderText = document.createElement("span");
             orderText.style.cssText =
