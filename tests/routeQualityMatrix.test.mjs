@@ -40,7 +40,10 @@ const route = (
 const routeQualityMatrix = [
   route("parent/home", "ParentHome", "src/screens/parent/ParentHome.tsx", "parent", "all", "query", queryStates(/eventsQuery\.isLoading/, /eventsQuery\.isError/, /todayEvents\.length === 0/, /todayEvents\.map/, /void handleRefresh\(\)/), "shell", "parent-formal"),
   route("parent/calendar", "ParentCalendar", "src/screens/parent/ParentCalendar.tsx", "parent", "all", "query", queryStates(/isLoading \? \(/, /isError \? \(/, /selEvents\.length > 0/, /selEvents\.map/, /void refetchEvents\(\)/), "shell", "parent-formal"),
-  route("parent/location", "ParentLocation", "src/screens/parent/ParentLocation.tsx", "parent", "all", "query", queryStates(/histLoading/, /histErrored/, /histEmpty/, /timedTrail\.length > 0/, /void refetchHistory\(\)/), "shell", "parent-formal"),
+  route("parent/location", "ParentLocation", "src/screens/parent/ParentLocation.tsx", "parent", "all", "query", [
+    queryStatesAt("src/screens/parent/ParentLocation.tsx", /isFetching: historyFetching/, /isError: historyError/, /pointCount: timedTrail\.length/, /<LocationJourneyPanel/, /onRetry=\{\(\) => void refetchHistory\(\)\}/),
+    queryStatesAt("src/screens/parent/LocationJourneyPanel.tsx", /loading: "이동 기록을 불러오는 중…"/, /error: "이동 기록을 불러오지 못했어요"/, /empty: "이 날은 확인된 이동 기록이 없어요"/, /state === "ready"/, /onClick=\{onRetry\}/),
+  ], "shell", "parent-formal"),
   route("parent/memo", "MemoChat", "src/screens/shared/MemoChat.tsx", "parent", "all", "query", queryStates(/thread\.isLoading/, /thread\.isError/, /showEmpty/, /messages\.map/, /void thread\.refetch\(\)/), "safe", "role-aware"),
   route("parent/settings", "ParentSettings", "src/screens/parent/ParentSettings.tsx", "parent", "all", "hybrid", [
     queryStatesAt("src/screens/parent/ParentSettings.tsx", /settingsQueryState === "loading"/, /settingsQueryState === "error"/, /settingsDataEmpty/, /settingsRows\.map/, /void retryParentSettings\(\)/),
