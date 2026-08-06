@@ -6,6 +6,10 @@ import { useEffect, useRef, useState } from "react";
 import { loadKakaoMaps } from "@/lib/kakaoMap";
 import { asset } from "@/lib/assets";
 import type { LocationRoutePoint } from "@/transform/locationRoute";
+import {
+  normalizeMapViewportPadding,
+  type MapViewportPadding,
+} from "@/transform/mapViewportPadding";
 
 export interface MapChild {
   lat: number;
@@ -61,6 +65,7 @@ export function KakaoMap({
   center = null,
   centerLevel = null,
   recenterKey = 0,
+  viewportPadding,
   className,
   tone = "formal",
 }: {
@@ -86,6 +91,8 @@ export function KakaoMap({
   centerLevel?: number | null;
   /** 값이 바뀌면 center 가 같은 좌표여도 강제로 재이동(현재 위치 버튼 등). */
   recenterKey?: number;
+  /** 자동 bounds 맞춤 시 상단 도구막대와 패널을 피하기 위한 화면 안쪽 여백. */
+  viewportPadding?: Partial<MapViewportPadding>;
   className?: string;
   tone?: "formal" | "child";
 }) {
@@ -106,6 +113,7 @@ export function KakaoMap({
   const [retryKey, setRetryKey] = useState(0);
   // 지도가 그려지기 전엔 흰 사각형 대신 부드러운 자리표시자를 보여준다(체감 지연 감소).
   const [ready, setReady] = useState(false);
+  const fitPadding = normalizeMapViewportPadding(viewportPadding);
 
   useEffect(() => {
     onPickRef.current = onPick;
@@ -302,13 +310,27 @@ export function KakaoMap({
           route.forEach((p) => bounds.extend(new maps.LatLng(p.lat, p.lng)));
           if (destination) bounds.extend(new maps.LatLng(destination.lat, destination.lng));
           if (child) bounds.extend(new maps.LatLng(child.lat, child.lng));
-          mapRef.current.setBounds(bounds);
+          mapRef.current.setBounds(
+            bounds,
+            fitPadding.top,
+            fitPadding.right,
+            fitPadding.bottom,
+            fitPadding.left,
+          );
         } else if (!center && stays && stays.length > 0) {
           // 스테이포인트 전체가 보이도록 bounds. 단 명시적 center(목록 항목 선택)면 그 지점 우선.
           const bounds = new maps.LatLngBounds();
           stays.forEach((s) => bounds.extend(new maps.LatLng(s.lat, s.lng)));
           if (stays.length === 1) mapRef.current.setCenter(new maps.LatLng(stays[0].lat, stays[0].lng));
-          else mapRef.current.setBounds(bounds);
+          else {
+            mapRef.current.setBounds(
+              bounds,
+              fitPadding.top,
+              fitPadding.right,
+              fitPadding.bottom,
+              fitPadding.left,
+            );
+          }
         }
       })
       .catch(() => {
@@ -317,7 +339,23 @@ export function KakaoMap({
     return () => {
       cancelled = true;
     };
-  }, [child, zones, places, route, stays, destination, picked, center, centerLevel, recenterKey, retryKey]);
+  }, [
+    child,
+    zones,
+    places,
+    route,
+    stays,
+    destination,
+    picked,
+    center,
+    centerLevel,
+    recenterKey,
+    viewportPadding?.top,
+    viewportPadding?.right,
+    viewportPadding?.bottom,
+    viewportPadding?.left,
+    retryKey,
+  ]);
 
   // 언마운트 시 ResizeObserver 해제.
   useEffect(
