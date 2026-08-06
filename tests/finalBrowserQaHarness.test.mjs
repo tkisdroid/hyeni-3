@@ -43,6 +43,10 @@ test("최종 브라우저 QA는 부모·아이 출시 화면과 핵심 전환 �
   assert.match(source, /hyeni:premium-return-intent:v1/);
   assert.match(source, /저장됨 · 프리미엄에서 알림 대상/);
   assert.match(source, /혜니캘린더 v1\.3\.0/);
+  assert.match(source, /parent\/location\?view=history/);
+  assert.match(source, /parent-location-history-interaction/);
+  assert.match(source, /locationHistoryAfterReplay\.followsLatest !== "false"/);
+  assert.match(source, /locationHistoryLatest\.followsLatest !== "true"/);
 });
 
 test("최종 브라우저 QA는 출시 품질 결함을 JSON과 스크린샷 증거로 남긴다", () => {
@@ -52,6 +56,7 @@ test("최종 브라우저 QA는 출시 품질 결함을 JSON과 스크린샷 증
   assert.match(source, /smallTargets/);
   assert.match(source, /overflowX/);
   assert.match(source, /Page\.captureScreenshot/);
+  assert.match(source, /parent-location-history\.png/);
   assert.match(source, /buildFingerprint/);
   assert.match(source, /createHash\("sha256"\)/);
   assert.match(source, /report\.json/);

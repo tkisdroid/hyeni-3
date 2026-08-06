@@ -390,10 +390,17 @@ function mockApi(pathname, scenario) {
   }
   if (pathname === "/api/review-rewards") return { reviewed: false, rewarded: false };
   if (pathname === "/api/location/children") return [{ user_id: CHILD_ID, ...SCHOOL, updated_at: new Date().toISOString(), accuracy_m: 8 }];
-  if (pathname === "/api/location/history") return [
-    { user_id: CHILD_ID, ...HOME, recorded_at: new Date(Date.now() - 60 * 60_000).toISOString(), accuracy_m: 12, is_estimated: 0 },
-    { user_id: CHILD_ID, ...SCHOOL, recorded_at: new Date().toISOString(), accuracy_m: 8, is_estimated: 0 },
-  ];
+  if (pathname === "/api/location/history") {
+    const now = Date.now();
+    return [
+      { user_id: CHILD_ID, ...HOME, recorded_at: new Date(now - 100 * 60_000).toISOString(), accuracy_m: 12, is_estimated: 0 },
+      { user_id: CHILD_ID, lat: HOME.lat + 0.00004, lng: HOME.lng + 0.00003, recorded_at: new Date(now - 85 * 60_000).toISOString(), accuracy_m: 10, is_estimated: 0 },
+      { user_id: CHILD_ID, lat: 37.2972, lng: 127.1112, recorded_at: new Date(now - 75 * 60_000).toISOString(), accuracy_m: 14, is_estimated: 0 },
+      { user_id: CHILD_ID, ...SCHOOL, recorded_at: new Date(now - 65 * 60_000).toISOString(), accuracy_m: 9, is_estimated: 0 },
+      { user_id: CHILD_ID, lat: SCHOOL.lat + 0.00003, lng: SCHOOL.lng - 0.00002, recorded_at: new Date(now - 45 * 60_000).toISOString(), accuracy_m: 8, is_estimated: 0 },
+      { user_id: CHILD_ID, lat: SCHOOL.lat - 0.00002, lng: SCHOOL.lng + 0.00002, recorded_at: new Date(now - 5 * 60_000).toISOString(), accuracy_m: 8, is_estimated: 0 },
+    ];
+  }
   if (pathname === "/api/location-prefs") return { family_id: FAMILY_ID, interval_mode: "balanced", background_enabled: true };
   if (pathname === "/api/daily-supplies") return [{ family_id: FAMILY_ID, child_user_id: CHILD_MEMBER_ID, date_key: todayDateKey(), prep: [{ id: "qa-supply-1", text: "준비물 확인", done: false }], homework: [] }];
   if (pathname === "/api/stickers/summary") return [{ user_id: CHILD_ID, sticker_type: "praise", count: 2 }];
@@ -907,6 +914,101 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       if (row.problems.length > 0) report.problems.push({ scope: "parent-route", route, problems: row.problems });
       process.stdout.write(`${row.problems.length ? "FAIL" : "OK  "} parent ${route}\n`);
     }
+
+    const locationHistory = await navigate(
+      { role: "parent", tier: "premium", catalogMode: "valid", overLimit: false },
+      "parent/location?view=history",
+    );
+    const locationHistoryFacts = await cdp.evaluate(`(() => {
+      const panel = document.querySelector(".pl-journey");
+      const toggle = document.querySelector(".pl-journey__toggle");
+      const stays = [...document.querySelectorAll(".pl-journey__stay")];
+      const text = (panel?.innerText || "").replace(/\\s+/g, " ").trim();
+      return {
+        hash: location.hash,
+        panelVisible: Boolean(panel),
+        expanded: toggle?.getAttribute("aria-expanded"),
+        stayCount: stays.length,
+        stayTexts: stays.map((stay) => (stay.textContent || "").replace(/\\s+/g, " ").trim()),
+        hasToolbar: Boolean(document.querySelector(".pl-history-toolbar")),
+        hasReplay: Boolean(document.querySelector(".pl-journey__replay")),
+        text,
+      };
+    })()`);
+    if (
+      locationHistoryFacts.hash !== "#/parent/location?view=history"
+      || !locationHistoryFacts.panelVisible
+      || locationHistoryFacts.expanded !== "true"
+      || locationHistoryFacts.stayCount !== 2
+      || !locationHistoryFacts.hasToolbar
+      || !locationHistoryFacts.hasReplay
+      || !locationHistoryFacts.text.includes("머문 곳")
+      || !locationHistoryFacts.stayTexts.some((text) => text.includes("우리 집"))
+      || !locationHistoryFacts.stayTexts.some((text) => text.includes("데모 학교"))
+      || rowProblems(locationHistory).length > 0
+    ) {
+      report.problems.push({
+        scope: "parent-location-history",
+        facts: locationHistoryFacts,
+        routeProblems: rowProblems(locationHistory),
+      });
+    }
+    report.screenshots.push(await screenshot(cdp, freshOutputDir, "parent-location-history.png"));
+
+    await clickSelector(cdp, ".pl-journey__toggle");
+    await wait(200);
+    const locationHistoryCollapsed = await cdp.evaluate(`(() => ({
+      expanded: document.querySelector(".pl-journey__toggle")?.getAttribute("aria-expanded"),
+      bodyHidden: Boolean(document.querySelector(".pl-journey__body")?.hidden),
+    }))()`);
+    await clickSelector(cdp, ".pl-journey__toggle");
+    await wait(200);
+    const locationHistoryReplay = await cdp.evaluate(`(() => {
+      const range = document.querySelector(".pl-journey__range");
+      if (!(range instanceof HTMLInputElement)) return { moved: false, followsLatest: null };
+      const nextValue = String(Math.max(0, Number(range.max) - 90));
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+      setter?.call(range, nextValue);
+      range.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText" }));
+      range.dispatchEvent(new Event("change", { bubbles: true }));
+      return {
+        moved: range.value === nextValue,
+        followsLatest: document.querySelector(".pl-journey__follow")?.getAttribute("aria-pressed"),
+      };
+    })()`);
+    await wait(200);
+    const locationHistoryAfterReplay = await cdp.evaluate(`(() => ({
+      followsLatest: document.querySelector(".pl-journey__follow")?.getAttribute("aria-pressed"),
+    }))()`);
+    await clickSelector(cdp, ".pl-journey__follow");
+    await wait(200);
+    const locationHistoryLatest = await cdp.evaluate(`(() => ({
+      followsLatest: document.querySelector(".pl-journey__follow")?.getAttribute("aria-pressed"),
+    }))()`);
+    if (
+      locationHistoryCollapsed.expanded !== "false"
+      || !locationHistoryCollapsed.bodyHidden
+      || !locationHistoryReplay.moved
+      || locationHistoryAfterReplay.followsLatest !== "false"
+      || locationHistoryLatest.followsLatest !== "true"
+    ) {
+      report.problems.push({
+        scope: "parent-location-history-interaction",
+        facts: {
+          collapsed: locationHistoryCollapsed,
+          replay: locationHistoryReplay,
+          afterReplay: locationHistoryAfterReplay,
+          latest: locationHistoryLatest,
+        },
+      });
+    }
+    report.focused.parentLocationHistory = {
+      ...locationHistoryFacts,
+      collapsed: locationHistoryCollapsed,
+      replay: locationHistoryReplay,
+      afterReplay: locationHistoryAfterReplay,
+      latest: locationHistoryLatest,
+    };
 
     for (const route of CHILD_BROWSER_QA_ROUTES) {
       const row = await navigate({ role: "child", tier: "free", catalogMode: "valid", overLimit: false }, route);
