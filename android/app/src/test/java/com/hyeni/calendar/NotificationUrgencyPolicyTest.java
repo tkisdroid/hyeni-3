@@ -14,11 +14,33 @@ public class NotificationUrgencyPolicyTest {
     }
 
     @Test
-    public void emergencyNotArrivedAndSosStayUrgent() {
-        assertTrue(NotificationUrgencyPolicy.isEmergency(
+    public void notArrivedNeverUsesFullScreenButSosStaysUrgent() {
+        assertFalse(NotificationUrgencyPolicy.isEmergency(
             "parent_alert", "true", "emergency", "not_arrived"
         ));
+        assertFalse(NotificationUrgencyPolicy.isEmergency(
+            "parent_alert", "true", "emergency", "missed_arrival"
+        ));
         assertTrue(NotificationUrgencyPolicy.isEmergency("sos", "false", "info", ""));
+    }
+
+    @Test
+    public void scheduleAndMemoNeverUseFullScreenEvenWithUrgentPayload() {
+        assertFalse(NotificationUrgencyPolicy.isEmergency(
+            "schedule", "true", "emergency", ""
+        ));
+        assertFalse(NotificationUrgencyPolicy.isEmergency(
+            "schedule_reminder", "true", "emergency", ""
+        ));
+        assertFalse(NotificationUrgencyPolicy.isEmergency(
+            "event_reminder", "true", "emergency", ""
+        ));
+        assertFalse(NotificationUrgencyPolicy.isEmergency(
+            "new_memo", "true", "emergency", ""
+        ));
+        assertFalse(NotificationUrgencyPolicy.isEmergency(
+            "memo", "true", "emergency", ""
+        ));
     }
 
     @Test

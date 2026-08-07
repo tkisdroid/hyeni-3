@@ -18,6 +18,7 @@ const EMERGENCY_ALERT_TYPES = new Set(["sos", "emergency", "not_arrived", "misse
 export interface SosPosition {
   lat?: number | null;
   lng?: number | null;
+  capturedAtMs?: number | null;
 }
 
 /**
@@ -43,6 +44,7 @@ export function useSendSos() {
         childUserId: userId ?? "",
         lat: pos.lat ?? null,
         lng: pos.lng ?? null,
+        capturedAtMs: pos.capturedAtMs ?? null,
         parentUserIds,
         childName: me?.name,
       });

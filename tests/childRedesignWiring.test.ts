@@ -94,8 +94,10 @@ test("부모 대화는 실서버 스레드다 — 시안의 1초 자동응답 �
 test("AI 친구는 실 LLM 이다 — 정해진 응답 순환 금지", () => {
   assert.ok(!code(aiChat).includes("AI_REPLIES"), "시안의 고정 응답 배열 반입 금지");
   assert.match(aiChat, /useSendChildChat/);
-  // 남은 횟수는 부모 전용 balance 가 아니라 usage/today + daily_limit 로 계산한다.
-  assert.match(aiChat, /remainingAiChats\(publicSettings\?\.daily_limit, aiUsage\.data\?\.count \?\? 0\)/);
+  // 남은 횟수는 포함분·구매분·부모 상한을 합친 parent-or-self 공개 상태를 사용한다.
+  assert.match(aiChat, /useAiCreditPublicStatus\(userId\)/);
+  assert.match(aiChat, /aiCreditStatus\.data\?\.availableRemaining/);
+  assert.ok(!code(aiChat).includes("useAiUsageToday"), "부모 한도만으로 잔여 횟수를 재계산하면 안 된다");
   assert.ok(!code(aiChat).includes("useAiCredits"), "아이 세션은 크레딧 잔액 API(부모 전용 403)를 부르지 않는다");
 });
 

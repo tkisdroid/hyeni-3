@@ -39,7 +39,7 @@ const CONTRACT = [
   "  - 미사용 변수/파라미터/import 금지 (noUnusedLocals, noUnusedParameters)",
   "  - 인라인 style 객체에 '--커스텀' 프로퍼티 넣지 마라(타입에러). press 는 className 'hy-press' 로만.",
   "  - 모든 <button> 에 type=\"button\"",
-  "  - react-router-dom v7 의 useNavigate 사용. '@/…' 경로 별칭 사용 가능(= src/).",
+  "  - react-router v8 의 useNavigate 사용. '@/…' 경로 별칭 사용 가능(= src/).",
   "  - 새 공통 컴포넌트 파일을 만들지 마라. 화면 내부에서 해결하고 기존 공통(TopBar, SectionHeader, .hy-* 클래스)만 재사용.",
   "",
   "■ 공통 클래스 요약(상세는 components.css): .hy-app .hy-screen | .hy-topbar(.__brand .__logo .__title .__actions) .hy-iconbtn(.__dot) | .hy-content | .hy-section-head .hy-section-icon .hy-section-title .hy-section-action | .hy-card | .hy-chip(.--mint .__pulse) | .hy-press(+ --press) | .hy-toast | .hy-placeholder",

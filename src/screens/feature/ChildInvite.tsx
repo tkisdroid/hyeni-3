@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { ChevronLeft, RefreshCw, Share2, Copy } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";

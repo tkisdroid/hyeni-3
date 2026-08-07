@@ -1,4 +1,5 @@
 import { apiGet, apiPut } from "../client";
+import { ApiError } from "../errors";
 
 /**
  * 운영자(관리자) 전용 API.
@@ -17,6 +18,51 @@ export interface AdminAiPrompt {
   maxLength: number;
 }
 
+export interface AdminCommerceControlValues {
+  webSubscriptionNewCheckoutsEnabled: boolean;
+  webAiCreditNewCheckoutsEnabled: boolean;
+}
+
+export interface AdminCommerceControls extends AdminCommerceControlValues {
+  configured: boolean;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+export function parseAdminCommerceControlValuesResponse(
+  value: unknown,
+): AdminCommerceControlValues {
+  const record = asRecord(value);
+  if (
+    record === null ||
+    typeof record.webSubscriptionNewCheckoutsEnabled !== "boolean" ||
+    typeof record.webAiCreditNewCheckoutsEnabled !== "boolean"
+  ) {
+    throw new ApiError("invalid_admin_commerce_controls_response", 502);
+  }
+
+  return {
+    webSubscriptionNewCheckoutsEnabled: record.webSubscriptionNewCheckoutsEnabled,
+    webAiCreditNewCheckoutsEnabled: record.webAiCreditNewCheckoutsEnabled,
+  };
+}
+
+export function parseAdminCommerceControlsResponse(value: unknown): AdminCommerceControls {
+  const record = asRecord(value);
+  if (record === null || typeof record.configured !== "boolean") {
+    throw new ApiError("invalid_admin_commerce_controls_response", 502);
+  }
+
+  return {
+    ...parseAdminCommerceControlValuesResponse(record),
+    configured: record.configured,
+  };
+}
+
 export function fetchAdminStatus(): Promise<AdminStatus> {
   return apiGet<AdminStatus>("/api/admin/me");
 }
@@ -27,4 +73,16 @@ export function fetchAdminAiPrompt(): Promise<AdminAiPrompt> {
 
 export function saveAdminAiPrompt(prompt: string): Promise<AdminAiPrompt> {
   return apiPut<AdminAiPrompt>("/api/admin/ai-prompt", { prompt });
+}
+
+export async function fetchAdminCommerceControls(): Promise<AdminCommerceControls> {
+  const response = await apiGet<unknown>("/api/admin/commerce-controls");
+  return parseAdminCommerceControlsResponse(response);
+}
+
+export async function saveAdminCommerceControls(
+  controls: AdminCommerceControlValues,
+): Promise<AdminCommerceControlValues> {
+  const response = await apiPut<unknown>("/api/admin/commerce-controls", controls);
+  return parseAdminCommerceControlValuesResponse(response);
 }

@@ -40,6 +40,9 @@ export interface DangerZone {
   zone_type: string; // "custom" 등
   alert_on_entry?: boolean;
   alert_on_exit?: boolean;
+  /** 서버가 현재 가족 티어와 안정적 순서로 확정한 알림 대상 자격. */
+  tier_alert_active?: boolean;
+  tier_alert_inactive_reason?: "premium_required" | null;
   created_at?: string;
 }
 
@@ -69,6 +72,9 @@ export interface SavedPlace {
   is_home?: boolean;
   is_playdate_safe?: boolean;
   public_place_id?: string | null;
+  /** 서버가 현재 가족 티어와 안정적 순서로 확정한 알림 대상 자격. */
+  tier_alert_active?: boolean;
+  tier_alert_inactive_reason?: "premium_required" | null;
 }
 
 export type LocationIntervalMode = "live" | "balanced" | "saver";

@@ -1,5 +1,5 @@
-import { useId, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useId, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router";
 import {
   AlertTriangle,
   Bell,
@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Crown,
   DatabaseZap,
+  Gift,
   LogOut,
   MapPin,
   MessageCircleQuestion,
@@ -19,18 +20,13 @@ import {
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
+import { ReferralRewardPanel } from "@/components/ReferralRewardPanel";
 import { APP_VERSION } from "@/config/version";
 import { useAuth } from "@/auth/AuthContext";
 import { useEntitlement } from "@/queries/useEntitlement";
-import { useClaimReviewReward } from "@/queries/useReviewReward";
 import { useAccount, useDeleteAccount } from "@/queries/useAccount";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import { openExternal } from "@/lib/native/browser";
-import {
-  openGooglePlayReviewListing,
-  runReviewRewardClaimFlow,
-  type ReviewRewardClaimFlowResult,
-} from "@/lib/native/review";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { PRIVACY_POLICY_URL } from "@/lib/api/endpoints/account";
 import { getTierLabel, TIERS } from "@/transform/tierPolicy";
@@ -99,6 +95,7 @@ export function ParentSettings() {
   const { account, me, providerLabel } = accountQuery;
   const deleteAccount = useDeleteAccount();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [referralOpen, setReferralOpen] = useState(false);
   const deleteTitleId = useId();
   const deleteDescriptionId = useId();
   const deleteCancelRef = useRef<HTMLButtonElement>(null);
@@ -121,9 +118,20 @@ export function ParentSettings() {
   const retryParentSettings = async (): Promise<void> => {
     await Promise.all([accountQuery.refetch(), entitlementQuery.refetch()]);
   };
-  const reviewRewardClaim = useClaimReviewReward({ ready, tier });
-  const showReviewRewardCta = ready && tier === TIERS.FREE;
-  const reviewRewardClaimInFlightRef = useRef<Promise<ReviewRewardClaimFlowResult> | null>(null);
+  const reviewRewardNotice = !ready
+    ? null
+    : tier === TIERS.REVIEWED
+      ? "기존에 받은 스토어 방문 혜택은 그대로 유지돼요"
+      : tier === TIERS.FREE
+        ? "스토어 방문 혜택의 신규 지급은 종료되었어요"
+        : null;
+  const referralEligibleChildren = useMemo(() => (
+    (account?.members ?? []).flatMap((member) => (
+      member.role === "child" && member.user_id
+        ? [{ userId: member.user_id, name: member.name?.trim() || "아이" }]
+        : []
+    ))
+  ), [account?.members]);
 
   const displayName = account?.myName || "보호자";
   const roleLabel = account?.isCoParent ? "공동 보호자" : "보호자";
@@ -160,33 +168,6 @@ export function ParentSettings() {
       return;
     }
     window.open(PRIVACY_POLICY_URL, "_blank", "noopener");
-  };
-
-  const handleReviewRewardClaim = () => {
-    if (
-      !showReviewRewardCta ||
-      !reviewRewardClaim.canClaim ||
-      reviewRewardClaim.isPending ||
-      reviewRewardClaimInFlightRef.current
-    ) {
-      return;
-    }
-
-    void runReviewRewardClaimFlow(
-      reviewRewardClaimInFlightRef,
-      () => reviewRewardClaim.mutateAsync(),
-      () => show("일정과 장소를 각각 3개까지 쓰는 혜택을 적용했어요", "🎁"),
-      () => openGooglePlayReviewListing(openExternal),
-    )
-      .then((result) => {
-        if (result.storeOpened) return;
-        console.error("Google Play 열기 실패:", result.storeError);
-        show("혜택은 적용됐지만 Google Play를 열지 못했어요", "⚠️");
-      })
-      .catch((error) => {
-        console.error("스토어 방문 혜택 적용 실패:", error);
-        show("혜택을 적용하지 못했어요. 잠시 후 다시 시도해 주세요", "⚠️");
-      });
   };
 
   const handleDelete = () => {
@@ -300,19 +281,22 @@ export function ParentSettings() {
                 {chevronIcon}
               </button>
             ))}
-            {showReviewRewardCta && (
+            {account?.isPrimaryParent && (
               <button
                 type="button"
                 className="ps-nav hy-press"
-                onClick={handleReviewRewardClaim}
-                disabled={reviewRewardClaim.isPending || reviewRewardClaimInFlightRef.current !== null} aria-busy={reviewRewardClaim.isPending}
+                onClick={() => setReferralOpen(true)}
               >
-                <SettingsIcon Icon={Star} tone="gold" />
-                <span className="ps-nav__label">
-                  {reviewRewardClaim.isPending ? "혜택 적용 중…" : "스토어 방문 혜택 받기"}
-                </span>
+                <SettingsIcon Icon={Gift} tone="gold" />
+                <span className="ps-nav__label">친구 초대 · 서로 AI 대화 10회</span>
                 {chevronIcon}
               </button>
+            )}
+            {reviewRewardNotice && (
+              <div className="ps-nav" role="status">
+                <SettingsIcon Icon={Star} tone="gold" />
+                <span className="ps-nav__label">{reviewRewardNotice}</span>
+              </div>
             )}
           </div>
         </div>
@@ -361,6 +345,12 @@ export function ParentSettings() {
 
         <div className="ps-version">혜니캘린더 v{APP_VERSION} · 함께 보는 우리 가족 일정</div>
       </div>
+
+      <ReferralRewardPanel
+        open={referralOpen && account?.isPrimaryParent === true}
+        onClose={() => setReferralOpen(false)}
+        eligibleChildren={referralEligibleChildren}
+      />
 
       {/* 회원 탈퇴 확인 모달 */}
       {deleteDialogVisible && (

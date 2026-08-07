@@ -7,7 +7,6 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/auth/AuthContext";
 import { shouldInterruptForUrgentAlert } from "@/transform/urgentAlert";
-import { getApiAccessToken } from "@/lib/api/session";
 import { openFamilySocket, type FamilyMessage } from "@/realtime/familySocket";
 import { qk } from "./keys";
 
@@ -98,7 +97,6 @@ export function useFamilyRealtime(): void {
     if (status !== "authenticated" || !familyId) return;
     const socket = openFamilySocket(
       familyId,
-      () => getApiAccessToken(),
       (msg) => {
         for (const key of keysForMessage(msg, familyId, userId)) {
           qc.invalidateQueries({ queryKey: key });

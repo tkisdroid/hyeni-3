@@ -233,6 +233,25 @@ test("iPhone 일반 Safari 탭의 웹 푸시 미지원은 홈 화면 설치 방�
   assert.match(view.detail, /홈 화면에 추가/);
 });
 
+test("iPhone 일반 Safari 탭은 기능 감지가 지원으로 보여도 홈 화면 설치를 먼저 안내한다", () => {
+  const view = webPushDeliveryView({
+    supported: true,
+    configured: true,
+    configCheckFailed: false,
+    permission: "default",
+    subscribed: false,
+    accountRegistered: false,
+    contextSynchronized: true,
+  }, { iosHomeScreenInstallRequired: true });
+
+  assert.equal(view.reason, "unsupported");
+  assert.equal(view.ready, false);
+  assert.equal(view.canSubscribe, false);
+  assert.equal(view.canRegisterAccount, false);
+  assert.match(view.title, /iPhone 홈 화면 앱/);
+  assert.match(view.detail, /홈 화면에 추가/);
+});
+
 test("로컬 웹 구독이 있어도 현재 계정 서버 등록이 아니면 수신 가능으로 표시하지 않는다", () => {
   const wrongAccount = webPushDeliveryView({
     supported: true,

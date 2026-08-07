@@ -6,16 +6,26 @@ import { fileURLToPath } from "node:url";
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const source = readFileSync(resolve(rootDir, "src/screens/feature/AiSchedule.tsx"), "utf8");
+const queries = readFileSync(resolve(rootDir, "src/queries/useAi.ts"), "utf8");
 
 test("AI 일정 사진 탭은 크레딧과 서버 전송 사실을 짧게 안내한다", () => {
   assert.match(source, /크레딧이 사용될 수 있어요/);
   assert.match(source, /사진은 일정 후보를 찾기 위해 서버로 전송돼요/);
 });
 
-test("AI 일정 실패와 저장 한도 문구는 다음 행동을 안내한다", () => {
+test("AI 일정 실패는 다음 행동을 안내하고 Free 일정 개수 제한을 두지 않는다", () => {
   assert.match(source, /날짜와 시간이 잘 보이게 다시 찍어 주세요/);
   assert.match(source, /날짜와 시간을 조금 더 자세히 적어 주세요/);
-  assert.match(source, /스토어 방문 혜택을 받으면 3개, 프리미엄에서는 무제한/);
+  assert.doesNotMatch(source, /현재 플랜에서는 일정|일정 1개까지|일정 3개까지/);
+});
+
+test("AI 일정 Free 일 5회 소진은 원시 오류 대신 상황형 업셀과 무료 대안을 안내한다", () => {
+  assert.match(source, /e\.status === 429 && e\.message === "daily_limit_reached"/);
+  assert.doesNotMatch(source, /show\("오늘 무료 AI 일정 정리 5회를 모두 사용했어요/);
+  assert.match(source, /source="ai_schedule_limit"/);
+  assert.match(source, /returnTo=\{`\/ai-schedule\?tab=\$\{tab\}`\}/);
+  assert.match(source, /savePremiumReturnIntent/);
+  assert.match(queries, /useParseSchedule[\s\S]*meta:\s*\{\s*silentError:\s*true\s*\}/);
 });
 
 test("AI 일정 결과는 저장 후 캘린더 수정 가능성을 안내한다", () => {

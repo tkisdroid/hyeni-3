@@ -1,16 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router";
 import { ChevronLeft } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { KakaoMap } from "@/components/KakaoMap";
+import { PremiumUpsell } from "@/components/PremiumUpsell";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { loadKakaoMaps } from "@/lib/kakaoMap";
 import { hasKakaoKey } from "@/config/env";
 import { useChildLocations, useCreateDangerZone, useDangerZones, useSavedPlaces, useUpdateDangerZone } from "@/queries/useLocation";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { resolveMapCenter } from "@/transform/mapCenter";
-import { TIERS } from "@/transform/tierPolicy";
+import { dangerZoneLimitFor, TIERS } from "@/transform/tierPolicy";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
+import {
+  browserPremiumReturnIntentStorage,
+  clearPremiumReturnIntent,
+  loadPremiumReturnIntent,
+  savePremiumReturnIntent,
+} from "@/transform/premiumReturnIntent";
 import { ApiError } from "@/lib/api/errors";
 import type { DangerZone } from "@/lib/api/endpoints/location";
 import "./DangerZoneForm.css";
@@ -18,6 +25,21 @@ import "./DangerZoneForm.css";
 interface LatLng {
   lat: number;
   lng: number;
+}
+
+interface DangerZoneDraft {
+  name: string;
+  address: string;
+  radius: number;
+  picked: LatLng | null;
+  center: LatLng | null;
+  entryAlert: boolean;
+  exitAlert: boolean;
+}
+
+interface DangerZoneRouteState {
+  zone?: DangerZone;
+  premiumReturnDraft?: unknown;
 }
 
 /** 반경 범위(m) — 지오펜스 판정에 쓰는 안전 반경.
@@ -28,12 +50,53 @@ const RADIUS_MAX = 1000;
 const RADIUS_STEP = 10;
 const RADIUS_DEFAULT = 50;
 
+function validLatLng(value: unknown): LatLng | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  const lat = Number(row.lat);
+  const lng = Number(row.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    return null;
+  }
+  return { lat, lng };
+}
+
+function parseDangerZoneDraft(value: unknown): DangerZoneDraft | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  const radius = Number(row.radius);
+  if (!Number.isFinite(radius) || radius < RADIUS_MIN || radius > RADIUS_MAX || radius % RADIUS_STEP !== 0) {
+    return null;
+  }
+  if (typeof row.entryAlert !== "boolean" || typeof row.exitAlert !== "boolean") return null;
+  return {
+    name: typeof row.name === "string" ? row.name.slice(0, 100) : "",
+    address: typeof row.address === "string" ? row.address.slice(0, 300) : "",
+    radius,
+    picked: row.picked == null ? null : validLatLng(row.picked),
+    center: row.center == null ? null : validLatLng(row.center),
+    entryAlert: row.entryAlert,
+    exitAlert: row.exitAlert,
+  };
+}
+
+function restoredDangerZoneDraft(routeDraft: unknown): DangerZoneDraft | null {
+  const fromRoute = parseDangerZoneDraft(routeDraft);
+  if (fromRoute) return fromRoute;
+  const storage = browserPremiumReturnIntentStorage();
+  const intent = storage ? loadPremiumReturnIntent(storage) : null;
+  if (!intent || intent.source !== "danger_zone" || intent.returnTo !== "/danger-zone-form") return null;
+  return parseDangerZoneDraft(intent.draft);
+}
+
 /** P-17 위험구역 추가·편집. 지도 핀으로 중심 선택 + 반경 슬라이더 + 진입/이탈 알림 토글. */
 export function DangerZoneForm() {
   const navigate = useNavigate();
   const { show } = useToast();
-  const routeState = (useLocation().state ?? null) as { zone?: DangerZone } | null;
+  const routeState = (useLocation().state ?? null) as DangerZoneRouteState | null;
   const editing = routeState?.zone ?? null;
+  const [initialDraft] = useState(() => editing ? null : restoredDangerZoneDraft(routeState?.premiumReturnDraft));
+  const [upsellOpen, setUpsellOpen] = useState(false);
 
   const createZone = useCreateDangerZone();
   const updateZone = useUpdateDangerZone();
@@ -51,14 +114,14 @@ export function DangerZoneForm() {
     await Promise.all([zonesQuery.refetch(), entitlementQuery.refetch()]);
   };
 
-  const [name, setName] = useState(editing?.name ?? "");
-  const [address, setAddress] = useState("");
-  const [radius, setRadius] = useState(editing?.radius_m ?? RADIUS_DEFAULT);
+  const [name, setName] = useState(editing?.name ?? initialDraft?.name ?? "");
+  const [address, setAddress] = useState(initialDraft?.address ?? "");
+  const [radius, setRadius] = useState(editing?.radius_m ?? initialDraft?.radius ?? RADIUS_DEFAULT);
   const [picked, setPicked] = useState<LatLng | null>(
-    editing ? { lat: editing.lat, lng: editing.lng } : null,
+    editing ? { lat: editing.lat, lng: editing.lng } : initialDraft?.picked ?? null,
   );
   const [center, setCenter] = useState<LatLng | null>(
-    editing ? { lat: editing.lat, lng: editing.lng } : null,
+    editing ? { lat: editing.lat, lng: editing.lng } : initialDraft?.center ?? null,
   );
   // 지도 기본 중심: 편집 좌표 > 집 > 아이 마지막 위치 > 서울(서울 밖 가족 배려).
   const savedPlacesQuery = useSavedPlaces();
@@ -71,8 +134,8 @@ export function DangerZoneForm() {
     }),
     [center, savedPlacesQuery.data, childLocationsQuery.data],
   );
-  const [entryAlert, setEntryAlert] = useState(editing?.alert_on_entry ?? true);
-  const [exitAlert, setExitAlert] = useState(editing?.alert_on_exit ?? false);
+  const [entryAlert, setEntryAlert] = useState(editing?.alert_on_entry ?? initialDraft?.entryAlert ?? true);
+  const [exitAlert, setExitAlert] = useState(editing?.alert_on_exit ?? initialDraft?.exitAlert ?? false);
 
   // Kakao Geocoder(주소↔좌표) — 키 미설정이면 로드 실패해도 화면은 동작.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -154,8 +217,9 @@ export function DangerZoneForm() {
       show("구역 이름을 입력해 주세요", "✏️");
       return;
     }
-    if (!editing && tier !== TIERS.PREMIUM && zones.length >= 1) {
-      show("위험구역을 여러 개 쓰려면 프리미엄이 필요해요", "👑");
+    const limit = dangerZoneLimitFor(tier);
+    if (!editing && zones.length >= limit) {
+      setUpsellOpen(true);
       return;
     }
     const payload = {
@@ -169,6 +233,8 @@ export function DangerZoneForm() {
     };
     const handlers = {
       onSuccess: () => {
+        const storage = browserPremiumReturnIntentStorage();
+        if (storage) clearPremiumReturnIntent(storage);
         show(editing ? "위험구역을 수정했어요" : "위험구역을 추가했어요", "🛡️");
         navigate(-1);
       },
@@ -333,6 +399,26 @@ export function DangerZoneForm() {
           {saving ? "저장 중…" : editing ? "구역 수정하기" : "구역 저장하기"}
         </button>
       </div>
+      <PremiumUpsell
+        open={upsellOpen}
+        source="danger_zone"
+        tier={tier}
+        returnTo="/danger-zone-form"
+        onClose={() => setUpsellOpen(false)}
+        onUpgrade={({ source, feature, returnTo }) => {
+          const storage = browserPremiumReturnIntentStorage();
+          const saved = storage && returnTo
+            ? savePremiumReturnIntent(storage, {
+                source,
+                feature,
+                returnTo,
+                draft: { name, address, radius, picked, center, entryAlert, exitAlert },
+              })
+            : false;
+          if (!saved) throw new Error("작성 중인 위험구역을 안전하게 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+          navigate("/subscription");
+        }}
+      />
     </div>
   );
 }

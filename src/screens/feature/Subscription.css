@@ -87,6 +87,7 @@
   height: 46px;
   border-radius: var(--radius-16);
   background: #fff;
+  box-shadow: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -305,6 +306,66 @@
 
   color: var(--fg-muted);
 
+}
+
+.sub-web-unavailable {
+  margin-top: var(--spacing-16);
+  padding: var(--spacing-12) var(--spacing-16);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-16);
+  background: #fff;
+  box-shadow: none;
+  color: var(--fg-muted);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+  word-break: keep-all;
+}
+
+.sub-cancel {
+  margin-top: var(--spacing-16);
+  padding: 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-16);
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+.sub-cancel h2 {
+  margin: 0;
+  color: var(--fg-primary);
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+}
+.sub-cancel p {
+  margin: 8px 0 0;
+  color: var(--fg-muted);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+  word-break: keep-all;
+}
+.sub-cancel__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: var(--spacing-16);
+}
+.sub-cancel__actions button {
+  min-height: 44px;
+  padding: var(--spacing-12);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-12);
+  background: var(--bg-chip-idle);
+  color: var(--fg-body);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+}
+.sub-cancel__actions button:last-child {
+  border-color: rgba(181, 55, 77, 0.24);
+  background: var(--rose-soft);
+  color: var(--rose-text);
 }
 
 /* ── 플랜 비교표 (S-02) ─────────────────────────────────────────────────── */

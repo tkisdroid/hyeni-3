@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router";
 import { Bell, ChevronLeft, FileClock, Mic, Phone, Timer, VolumeX } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useActiveChild } from "@/app/activeChild";
+import { PremiumUpsell } from "@/components/PremiumUpsell";
 import { useMyFamily } from "@/queries/useFamily";
+import { useEntitlement } from "@/queries/useEntitlement";
 import { useChildLocations, useSavedPlaces } from "@/queries/useLocation";
 import { useLocationLabels } from "@/queries/useLocationLabels";
 import { placePhoneCall } from "@/lib/native/phone";
@@ -19,11 +21,16 @@ import { isNativePlatform } from "@/lib/native/plugins";
 import { useRequestRemoteListen, useStopRemoteListen } from "@/queries/useRemote";
 import { useRemoteListenSessionStatus } from "@/queries/useRemoteAudit";
 import { openFamilySocket, type FamilySocket } from "@/realtime/familySocket";
-import { getApiAccessToken } from "@/lib/api/session";
 import { RemoteAudioPlayer } from "@/lib/remoteAudioPlayer";
 import { resolveRemoteListenSessionTiming } from "@/transform/remoteListenSessionTiming";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
+import { canUse, FEATURES, TIERS } from "@/transform/tierPolicy";
+import {
+  browserPremiumReturnIntentStorage,
+  savePremiumReturnIntent,
+} from "@/transform/premiumReturnIntent";
+import { usePwaUpdateCriticalSection } from "@/lib/usePwaUpdateCriticalSection";
 import "./RemoteAudio.css";
 
 /** 듣기 제한 시간(초) · 위급 시 1분 청취. */
@@ -69,6 +76,7 @@ export function RemoteAudio() {
   const familyQuery = useMyFamily();
   const locationsQuery = useChildLocations();
   const placesQuery = useSavedPlaces();
+  const entitlementQuery = useEntitlement();
   const family = familyQuery.data;
   const locations = locationsQuery.data;
   const places = placesQuery.data;
@@ -76,32 +84,44 @@ export function RemoteAudio() {
     { isLoading: familyQuery.isLoading, isError: familyQuery.isError },
     { isLoading: locationsQuery.isLoading, isError: locationsQuery.isError },
     { isLoading: placesQuery.isLoading, isError: placesQuery.isError },
+    { isLoading: entitlementQuery.isLoading, isError: entitlementQuery.isError },
   ]);
   const remoteAudioDataMissing = remoteAudioQueryState === "ready" && (
-    !family || locations === undefined || places === undefined
+    !family || locations === undefined || places === undefined || entitlementQuery.tier === TIERS.UNKNOWN
   );
   const remoteAudioDataReady = remoteAudioQueryState === "ready" && !remoteAudioDataMissing;
   const remoteAudioRefetching =
-    familyQuery.isFetching || locationsQuery.isFetching || placesQuery.isFetching;
+    familyQuery.isFetching || locationsQuery.isFetching || placesQuery.isFetching || entitlementQuery.isFetching;
   const retryRemoteAudio = async (): Promise<void> => {
     await Promise.all([
       familyQuery.refetch(),
       locationsQuery.refetch(),
       placesQuery.refetch(),
+      entitlementQuery.refetch(),
     ]);
   };
+  const remoteAudioAllowed = entitlementQuery.ready
+    && canUse(entitlementQuery.tier, FEATURES.REMOTE_AUDIO);
 
   // 대상 아이 = 진입 시 지정(state.childUserId, 아이 상세에서 전달) > 전역 활성 아이.
   // 첫 아이 하드코딩 제거 — 다자녀에서 엉뚱한(기기 없는) 아이를 듣던 오연결 차단.
   const { activeChild, childMembers } = useActiveChild();
-  const routeState = (useLocation().state ?? null) as { childUserId?: string } | null;
+  const routeState = (useLocation().state ?? null) as {
+    childUserId?: string;
+    premiumReturnDraft?: unknown;
+  } | null;
+  const returnDraft = routeState?.premiumReturnDraft && typeof routeState.premiumReturnDraft === "object"
+    ? routeState.premiumReturnDraft as Record<string, unknown>
+    : null;
+  const returnChildUserId = typeof returnDraft?.childUserId === "string" ? returnDraft.childUserId : undefined;
+  const routeChildUserId = routeState?.childUserId ?? returnChildUserId;
   const childMember = useMemo(() => {
-    if (routeState?.childUserId) {
-      const target = childMembers.find((m) => m.user_id === routeState.childUserId);
+    if (routeChildUserId) {
+      const target = childMembers.find((m) => m.user_id === routeChildUserId);
       if (target) return target;
     }
     return activeChild;
-  }, [routeState, childMembers, activeChild]);
+  }, [routeChildUserId, childMembers, activeChild]);
   const childName = childMember?.name || "아이";
   // 위치는 대상 아이 것만(타 아이 위치 폴백 금지 — 오노출 방지).
   const childLoc = childMember?.user_id
@@ -117,9 +137,12 @@ export function RemoteAudio() {
     : null;
 
   const [listening, setListening] = useState(false);
+  const [upsellOpen, setUpsellOpen] = useState(false);
   const [muted, setMuted] = useState(false);
   const [waitingHint, setWaitingHint] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [ending, setEnding] = useState(false);
+  usePwaUpdateCriticalSection(starting || listening || ending);
   const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
   const [localRequestStartedAtMs, setLocalRequestStartedAtMs] = useState<number | null>(null);
   const [clockMs, setClockMs] = useState(() => Date.now());
@@ -193,6 +216,7 @@ export function RemoteAudio() {
   endListenRef.current = (reason: string) => {
     if (endingRef.current) return;
     endingRef.current = true;
+    setEnding(true);
     setListening(false);
     setReceiving(false);
     setWaitingHint(false);
@@ -215,7 +239,14 @@ export function RemoteAudio() {
     sessionRef.current = null;
     requestIdRef.current = null;
     targetChildUserIdRef.current = null;
-    void stopThenCloseRef.current(session, targetChildUserId, requestId, reason);
+    void stopThenCloseRef.current(session, targetChildUserId, requestId, reason)
+      .catch((error: unknown) => {
+        console.error("주변 소리 종료 확인 실패:", error);
+      })
+      .finally(() => {
+        endingRef.current = false;
+        if (mountedRef.current) setEnding(false);
+      });
   };
 
   useEffect(() => {
@@ -300,7 +331,9 @@ export function RemoteAudio() {
         sessionRef.current = null;
         requestIdRef.current = null;
         targetChildUserIdRef.current = null;
-        void stopThenCloseRef.current(s, targetChildUserId, requestId, "unmount");
+        void stopThenCloseRef.current(s, targetChildUserId, requestId, "unmount").catch(
+          (error: unknown) => console.error("주변 소리 화면 종료 정리 실패:", error),
+        );
       };
     },
     [],
@@ -309,9 +342,13 @@ export function RemoteAudio() {
   // 듣기 시작: 킬 스위치 확인 → audit 세션 선기록 → 아이 기기 캡처 명령 → 오버레이.
   // 감사 기록을 만들 수 없으면 마이크 명령도 보내지 않는다(투명성 fail-closed).
   const startListen = async () => {
-    if (startInFlightRef.current || requestIdRef.current) return;
+    if (startInFlightRef.current || requestIdRef.current || endingRef.current) return;
     if (!remoteAudioDataReady) {
       show("아이와 위치 정보를 확인한 뒤 다시 시도해 주세요.", "⚠️");
+      return;
+    }
+    if (!remoteAudioAllowed) {
+      setUpsellOpen(true);
       return;
     }
     startInFlightRef.current = true;
@@ -417,7 +454,6 @@ export function RemoteAudio() {
       // 아이 네이티브가 보낸 WAV 청크를 FamilyRoom 이 fan-out → 여기서 디코드·재생한다.
       audioSocketRef.current = openFamilySocket(
         familyId,
-        () => getApiAccessToken(),
         (msg) => {
           if (msg.kind !== "broadcast" || msg.event !== "audio_chunk") return;
           const payload = msg.payload as
@@ -628,11 +664,11 @@ export function RemoteAudio() {
             type="button"
             className="ra-start hy-press"
             onClick={() => void startListen()}
-            disabled={starting || requestListen.isPending || !childUserId || !remoteAudioDataReady}
-            aria-busy={starting || requestListen.isPending}
+            disabled={ending || starting || requestListen.isPending || !childUserId || !remoteAudioDataReady}
+            aria-busy={ending || starting || requestListen.isPending}
           >
             <Mic size={20} strokeWidth={2.2} color="#fff" />
-            {starting || requestListen.isPending ? "연결 요청 중" : "듣기 시작"}
+            {ending ? "종료 확인 중" : starting || requestListen.isPending ? "연결 요청 중" : "듣기 시작"}
           </button>
         </div>
       </div>
@@ -701,6 +737,26 @@ export function RemoteAudio() {
           <div className="ra-listen-foot">{listenFoot}</div>
         </div>
       )}
+      <PremiumUpsell
+        open={upsellOpen}
+        source="remote_audio"
+        tier={entitlementQuery.tier}
+        returnTo="/remote-audio"
+        onClose={() => setUpsellOpen(false)}
+        onUpgrade={({ source, feature, returnTo }) => {
+          const storage = browserPremiumReturnIntentStorage();
+          const saved = storage && returnTo
+            ? savePremiumReturnIntent(storage, {
+                source,
+                feature,
+                returnTo,
+                draft: { childUserId },
+              })
+            : false;
+          if (!saved) throw new Error("청취 대상을 안전하게 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+          navigate("/subscription");
+        }}
+      />
     </div>
   );
 }

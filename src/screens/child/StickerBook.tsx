@@ -18,6 +18,7 @@ import {
   type StickerSlot,
 } from "@/transform/stickerBook";
 import { StickerDetail } from "./overlays/StickerDetail";
+import "@/styles/jua.css";
 import "./StickerBook.css";
 
 /** 이번 주에 받은 스티커 개수(배지). */

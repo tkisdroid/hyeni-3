@@ -9,7 +9,7 @@
 - 데이터를 수집하나요? **예**
 - 데이터를 제3자와 공유하나요? **미확정**
   - 가족 구성원에게 사용자가 의도한 범위로 보여 주는 행위와 데이터 판매는 현재 코드에서 확인되지 않는다.
-  - Cloudflare, Firebase/FCM, Google Play, Google/Kakao/Naver OAuth, OpenAI, Kakao 지도·모빌리티, 공개 OSRM, Resend, NCP SENS 및 단말·브라우저의 음성 인식 제공자가 기능 제공 과정에서 데이터를 처리할 수 있다.
+  - Cloudflare, Firebase/FCM, Google Play, Toss Payments, Google/Kakao/Naver OAuth, OpenAI, Kakao 지도·모빌리티, 공개 OSRM, Resend, NCP SENS 및 단말·브라우저의 음성 인식 제공자가 기능 제공 과정에서 데이터를 처리할 수 있다.
   - 각 업체가 개발자 지시에 따라서만 처리하는 서비스 제공자 예외에 해당하는지는 계약·DPA, 제품 설정, 보관·삭제 기간 및 2차 이용 조건의 서면 증거를 확인해 데이터 유형별로 판단한다.
 - 전송 중 암호화하나요? **예** — 공개 API와 실시간 채널은 HTTPS/WSS를 사용한다. 출시 빌드에서 평문 endpoint가 없는지 최종 확인한다.
 - 삭제 요청 수단을 제공하나요? **예, 공개 상태 재확인 필요** — 앱 내 회원 탈퇴와 `https://hyeni-calendar-api.tkisdroid.workers.dev/data-deletion`을 사용한다. 제출 직전 로그인 없이 안내를 읽을 수 있고 URL이 HTTPS 200인지 확인한다.
@@ -28,7 +28,7 @@
 | 개인 정보 | 생년월일 | 보호자가 입력한 경우 | 구성원 프로필에 저장 | 앱 기능, AI 맥락 | `family_members.birthdate` |
 | 개인 정보/위치 | 저장 장소·주소 | 보호자가 장소·일정 위치를 등록한 경우 | 저장 장소·일정과 함께 보관 | 위치·도착·일정 기능 | `saved_places`, `academies`, event location |
 | 사진·동영상 | 프로필·가족 메시지 사진, AI 일정 분석 사진 | 사용자가 사진을 선택한 경우 | 기능별 R2 저장 또는 AI 분석 전송 | 앱 기능, 사용자 간 소통 | R2 `child-photos`, AI image input |
-| 오디오 | 주변 소리 실시간 음성 | 부모 요청 후 아이가 해당 세션을 직접 허용한 경우 | 실시간 전송 중 일시 처리, 음성 본문 장기 저장 안 함. 세션 메타데이터는 감사 목적으로 저장 | 가족 안전 기능, 오남용 방지 | `AmbientListenService`, remote-listen session |
+| 오디오 | 주변 소리 실시간 음성 | 부모 요청 뒤 서버 승인 증표를 받은 `RemoteListenActivity`가 준비되어 자동 연결된 경우. 아이 화면·알림에 듣는 중임을 계속 표시 | 최대 1분 실시간 전송 중 일시 처리, 음성 본문 장기 저장 안 함. 세션 메타데이터는 감사 목적으로 저장 | 가족 안전 기능, 오남용 방지 | `RemoteListenActivity`, `AmbientListenService`, remote-listen session |
 | 오디오 | AI 일정 음성 입력 | 사용자가 음성 입력을 실행한 경우 | Android `SpeechRecognizer` 또는 Web Speech가 음성을 처리하고 앱은 인식 텍스트를 서버로 보냄 | 앱 기능 | `src/lib/native/speech.ts`, `SpeechPlugin.java` |
 | 메시지/기타 UGC | 가족 메모, 빠른 상태, 공유 위치·사진 참조 | 가족 구성원이 전송한 경우 | 가족·아이 스레드에 저장 | 앱 기능, 사용자 간 소통 | `memo_replies` |
 | 메시지/기타 UGC | 아이가 AI 친구에 입력한 프롬프트·대화와 assistant 답변 | 아이가 AI 친구를 사용한 경우 | 가족·아이 범위의 대화로 D1에 저장되고 AI 답변 생성을 위해 OpenAI가 처리할 수 있음 | 앱 기능, 안전, 사용자 지원 | `ai_chat_messages`, OpenAI API |
@@ -37,7 +37,7 @@
 | 앱 활동 | 상위 5개 앱의 앱 사용 시간·최근 사용 시각, 잠금 해제·앱 상호작용 지표 | 아이 기기에서 사용정보 접근을 허용한 경우 앱이 자동 보고 | 기기 상태·안심 지표로 전송·저장 | 앱 기능 | `DeviceStatusReporter`, `device_health` |
 | 앱 정보·성능 | 배터리, 네트워크, 알림·권한 상태, 오류 진단 | 아이 기기 상태 보고 또는 사용자가 피드백을 보낸 경우 | 기기 상태·피드백에 저장 | 앱 기능, 보안, 문제 해결 | `device_health`, `user_feedback` |
 | 기기 또는 기타 ID | 앱 설치 ID, FCM 토큰, 세션 인스턴스 ID | 설치·로그인·푸시 등록 시 | 기기 바인딩, 푸시 라우팅, 로그아웃 안전 처리 | 앱 기능, 보안, 사기 방지 | `deviceInstallId`, `fcm_tokens`, session nonce |
-| 금융 정보 | 구매 내역·구독 상태 | Google Play 구독을 구매·복원한 경우 | 구매 검증·엔타이틀먼트·원장에 저장. 구매 토큰은 문서·진단에 노출하지 않음 | 앱 기능, 계정 관리, 사기 방지 | Google Play verify, subscription tables |
+| 금융 정보 | 구매 내역·구독 상태 | Google Play 구독을 구매·복원하거나 iPhone 홈 화면 PWA에서 Toss 구독·AI 크레딧 결제를 진행한 경우 | 결제 검증·엔타이틀먼트·금융 원장에 저장. 카드정보와 auth key는 저장하지 않고 billing key는 암호화, payment key·purchase token은 해시로 보관한다. Toss가 후속 결제·조회에 요구하는 서버 난수 `customerKey`는 운영 주문에만 보관하고 로그·진단·계정 삭제 후 분리 금융 정본에서는 제외 | 앱 기능, 계정 관리, 사기 방지 | Google Play verify, Toss verify, subscription·web billing tables |
 | 개인 정보/사용자 콘텐츠 | 문제 신고·문의·기능 제안의 작성 내용과 서버 정본 계정·가족 정보 | 사용자가 피드백을 제출한 경우 | D1에 먼저 내구 저장하고 설정 시 Resend 이메일 본문·회신 주소로 전송. Resend 보관·2차 이용은 계약 증거 전 미확정 | 사용자 지원 | `user_feedback`, `routes/feedback.ts` |
 | 앱 정보·성능 | 사용자가 선택한 앱 버전·실행 환경·현재 화면·최근 24시간 정규화 오류 최대 12건 | 사용자가 피드백에서 `진단 정보 함께 보내기`를 켠 경우 | D1 `device_info/error_logs/current_screen`에 저장. 대화·좌표·사진·비밀번호·로그인/구매 토큰·원문 오류 제외 | 문제 해결, 앱 품질 개선 | `user_feedback`, `feedbackDiagnostics.ts` |
 | 개인 정보 | 전화번호와 6자리 OTP | 전화 가입 또는 OAuth 전화 계정 연결 인증을 요청한 경우 | OTP 원문은 NCP SENS 문자 내용으로 전송하고 서버에는 검증용 해시와 만료 정보를 저장 | 계정 관리, 보안 | `lib/ncpSens.ts`, `phone_otp` |
@@ -59,6 +59,7 @@ Android `SpeechRecognizer`와 브라우저 Web Speech는 사용 중인 OS·브�
 | Cloudflare Worker·D1·R2·AI Gateway | 계정, 가족 관계, 위치, 메시지, 일정, 사진, 알림·기기 상태, 로그, AI 요청 | 계약·DPA, 리전, 보관·삭제, AI Gateway 로그, 개발자 지시 외 2차 이용 여부 |
 | Firebase Cloud Messaging | FCM 토큰, 알림 제목·본문·유형·대상·라우팅 식별자 | payload 최소화, 보관·삭제, 2차 이용, 서비스 제공자 조건 |
 | Google Play Billing·Android Publisher API·RTDN | product/base plan/offer, purchase token, order·구독 상태, 난독화 account/profile ID | 결제·RTDN 계약, 보관·삭제, 2차 이용, Developer API 설정 |
+| Toss Payments | PWA 구독·AI 크레딧 주문 금액·통화·상태, 사용자 정보를 포함하지 않는 서버 난수 customer key, 암호화 전 billing key, payment key. 카드번호·유효기간·CVC는 Worker가 받지 않음 | 자동결제 계약, live/test 설정, 암호화·키 폐기, customer key 운영 보관·삭제, 환불·금융 보존, 국외 이전·2차 이용, 서비스 제공자 조건 |
 | Google OAuth | 인가·토큰 교환, provider ID, email·email_verified, name, picture | OAuth 동의 화면, scope, 프로필 보관·삭제, 2차 이용 |
 | Kakao OAuth | 인가·토큰 교환, provider ID, email·검증 여부, nickname, profile image | OAuth 동의항목, 프로필 보관·삭제, 2차 이용 |
 | Naver OAuth | 인가·토큰 교환, provider ID, email, name/nickname, profile_image | OAuth 동의항목, 프로필 보관·삭제, 2차 이용 |
@@ -82,7 +83,7 @@ Android `SpeechRecognizer`와 브라우저 Web Speech는 사용 중인 OS·브�
 
 - 아이 계정은 보호자의 가족 연결 절차로 생성·연결하며, 아이가 독립적으로 보호자 권한을 만들 수 없다.
 - 아이 위치·일정·메시지는 현재 가족의 권한 있는 구성원에게만 표시하도록 서버에서 검증한다.
-- 주변 소리 듣기는 FCM 수신만으로 마이크를 시작하지 않는다. 아이가 매 요청을 직접 허용한 뒤 최대 1분 실행하며 지속 알림, 중지 동작, 감사 기록을 제공한다.
+- 주변 소리 듣기는 FCM·pending 수신만으로 마이크를 시작하지 않는다. 서버 승인 증표·세션 nonce·가족·대상 일치를 확인한 `RemoteListenActivity`가 준비되면 아이 탭 없이 자동 연결하되, 최대 1분 동안 아이 화면과 지속 알림에 듣는 중임을 숨기지 않고 중지 동작과 감사 기록을 제공한다.
 - 정확한 위치와 사용정보는 자녀 보호 기능에 필요한 범위로 제한하고, 권한을 끄는 방법과 기능 제한을 아이·보호자에게 설명한다.
 - 아이 모드를 아동이 실제 사용하므로 심사를 피하기 위한 성인 전용 대상 연령 선택은 금지한다.
 - 정밀·백그라운드 위치를 유지하는 현재 앱을 아동 전용으로 제출하는 선택은 금지한다.

@@ -50,6 +50,82 @@
   align-items: center;
 }
 
+.ais-academy-intro {
+  width: 100%;
+  margin-bottom: 12px;
+  padding: var(--spacing-16);
+  border: 1px solid rgba(124, 92, 225, 0.16);
+  border-radius: var(--radius-16);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: none;
+  color: var(--fg-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+}
+.ais-academy-intro strong {
+  color: var(--lav-text);
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+}
+
+.ais-academy-lock {
+  min-height: calc(100dvh - 86px);
+  justify-content: center;
+  text-align: center;
+}
+.ais-academy-lock__icon {
+  width: 58px;
+  height: 58px;
+  margin-bottom: 16px;
+  border-radius: 50%;
+  background: var(--lav-soft);
+  color: var(--lav-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ais-academy-lock h1 {
+  margin: 0;
+  color: var(--fg-primary);
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+}
+.ais-academy-lock p {
+  max-width: 34rem;
+  margin: var(--spacing-12) 0 0;
+  color: var(--fg-secondary);
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+}
+.ais-academy-lock__premium {
+  margin-top: var(--spacing-16);
+  padding: var(--spacing-16);
+  border-radius: var(--radius-16);
+  background: rgba(124, 92, 225, 0.08);
+  box-shadow: none;
+  color: var(--lav-text);
+}
+.ais-academy-lock .ais-confirm {
+  margin-top: 24px;
+}
+.ais-academy-free {
+  width: 100%;
+  min-height: var(--control-min-size);
+  margin-top: 8px;
+  border-radius: var(--radius-16);
+  color: var(--fg-secondary);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+}
+
 /* ── 입력 방식 탭 ───────────────────────────────────────────────────────── */
 .ais-tabs {
   width: 100%;

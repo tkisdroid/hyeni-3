@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { ChevronLeft } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useSafeBack } from "@/app/useSafeBack";

@@ -1,7 +1,7 @@
 /**
  * 자녀 사진 업로드 엔드포인트.
  * 흐름: 이미지 바이트를 R2(Worker proxy)에 신규 업로드한 뒤, 서버가 발급한 저장 경로(raw path)를 photo_url 로
- *       family_members 에 기록한다. 표시용 proxy URL 변환은 getMyFamily 의 enrichPhotos 담당이라
+ *       family_members 에 기록한다. 표시용 blob URL 변환은 useMyFamily의 비동기 lease가 담당하므로
  *       저장은 항상 raw 경로로 한다.
  *
  * 백엔드 계약(hyeni-1 Worker):

@@ -13,7 +13,11 @@ import { announceFallbackToast } from "@/lib/globalToast";
 import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "./useFamily";
 import { resolveDailySupplyChildMemberId } from "@/transform/dailySupplyScope";
-import { mergeSupplyLabels } from "@/transform/eventSupplies";
+import {
+  DAILY_SUPPLY_LIMIT_ERROR,
+  MAX_SUPPLY_ITEMS_PER_KIND,
+  mergeSupplyLabels,
+} from "@/transform/eventSupplies";
 import {
   fetchEvents,
   fetchDailySupplies,
@@ -183,6 +187,9 @@ export function useUpsertDailySupply() {
             it.id === parsed.itemId ? { ...it, label: row.label ?? it.label, done: !!row.done } : it,
           );
         } else {
+          if (list.length >= MAX_SUPPLY_ITEMS_PER_KIND) {
+            throw new Error(DAILY_SUPPLY_LIMIT_ERROR);
+          }
           nextList = [
             ...list,
             { id: parsed?.itemId ?? newSupplyItemId(), label: row.label ?? "", done: !!row.done },

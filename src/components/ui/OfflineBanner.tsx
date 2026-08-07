@@ -31,8 +31,8 @@ export function OfflineBanner() {
       <WifiOff size={16} strokeWidth={2.4} />
       <span className="ofb-text">
         {role === "child"
-          ? "오프라인 상태야 · 저장한 내용은 연결되면 동기화돼"
-          : "오프라인 상태예요 · 저장한 내용은 연결되면 동기화돼요"}
+          ? "오프라인 상태야 · 연결 후 다시 시도해 줘"
+          : "오프라인 상태예요 · 연결 후 다시 시도해 주세요"}
       </span>
     </div>
   );

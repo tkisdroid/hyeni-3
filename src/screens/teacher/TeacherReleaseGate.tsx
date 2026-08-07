@@ -1,9 +1,10 @@
 import { useId, useRef, useState } from "react";
 import { BookOpenCheck, FileText, LogOut, ShieldCheck, Trash2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
+import { APP_VERSION } from "@/config/version";
 import {
   PRIVACY_POLICY_URL,
   TERMS_OF_SERVICE_URL,
@@ -63,12 +64,12 @@ export function TeacherReleaseGate() {
   };
 
   return (
-    <main className="trg-screen">
+    <div className="trg-screen">
       <section className="trg-card" aria-labelledby="teacher-release-title">
         <div className="trg-icon" aria-hidden="true">
           <BookOpenCheck size={34} strokeWidth={2.1} />
         </div>
-        <p className="trg-eyebrow">혜니캘린더 v1.2.0</p>
+        <p className="trg-eyebrow">혜니캘린더 v{APP_VERSION}</p>
         <h1 id="teacher-release-title">선생님 모드는 준비 중이에요</h1>
         <p className="trg-copy">
           현재 출시 버전은 보호자와 아이 기능을 먼저 제공합니다. 반·학생 정보의 심사와
@@ -158,6 +159,6 @@ export function TeacherReleaseGate() {
           </div>
         </div>
       )}
-    </main>
+    </div>
   );
 }

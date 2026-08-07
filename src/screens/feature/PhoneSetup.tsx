@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { ChevronLeft, Lock } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";

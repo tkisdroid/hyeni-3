@@ -2,13 +2,8 @@
    혜니캘린더 — 전역 스타일 (리셋 · 프레임 · 폰트 · 모션)
    ==========================================================================*/
 
-@font-face {
-  font-family: "Pretendard Variable";
-  font-weight: 45 920;
-  font-style: normal;
-  font-display: swap;
-  src: url("/fonts/PretendardVariable.woff2") format("woff2-variations");
-}
+/* 2MB 단일 Pretendard 웹폰트는 첫 화면 이미지와 대역폭을 경쟁하므로 로드하지 않는다.
+   tokens.css의 플랫폼별 한글 시스템 폰트 스택이 전체 글리프와 가중치를 담당한다. */
 
 *,
 *::before,
@@ -136,6 +131,23 @@ body :where(a, button, input, textarea, select, [tabindex]):focus-visible {
     border-radius: 44px;
     box-shadow: 0 50px 90px -30px rgba(40, 20, 32, 0.4), 0 20px 40px -20px rgba(40, 20, 32, 0.25);
   }
+}
+
+/* Capacitor WebView는 가로 폭이 넓어져도 데스크톱 폰 목업이 아니다. */
+html[data-hy-native] body {
+  background: var(--bg-body);
+}
+
+html[data-hy-native] .hy-app {
+  max-width: none;
+  height: 100dvh;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+html[data-hy-native] :is(.mps-sheet, .ofb-root, .ks-layer, .ks-celebrate, .pc-sheet-root) {
+  max-width: none;
 }
 
 /* 스크롤 영역 (라우팅되는 화면) */

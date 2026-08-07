@@ -23,6 +23,7 @@ PRESET_NAME = "compact_reference_guide"
 HEADER_TEMPLATE = "editorial_cover"
 CONTENT_WIDTH_DXA = 9360
 TABLE_INDENT_DXA = 120
+TABLE_ROW_KEEP_TOGETHER_MAX_CHARS = 180
 
 BLUE = "2E74B5"
 NAVY = "203748"
@@ -540,6 +541,12 @@ def add_cover(doc: Document, metadata: GuideMetadata) -> None:
     doc.add_page_break()
 
 
+def should_keep_table_row_together(row_index: int, values: list[str]) -> bool:
+    if row_index == 0:
+        return True
+    return sum(len(value.strip()) for value in values) <= TABLE_ROW_KEEP_TOGETHER_MAX_CHARS
+
+
 def add_table(doc: Document, rows: list[list[str]]) -> None:
     if not rows:
         return
@@ -550,7 +557,7 @@ def add_table(doc: Document, rows: list[list[str]]) -> None:
 
     for row_index, values in enumerate(rows):
         row_props = table.rows[row_index]._tr.get_or_add_trPr()
-        if row_props.find(qn("w:cantSplit")) is None:
+        if should_keep_table_row_together(row_index, values) and row_props.find(qn("w:cantSplit")) is None:
             row_props.append(OxmlElement("w:cantSplit"))
         for column_index in range(column_count):
             cell = table.cell(row_index, column_index)

@@ -12,7 +12,7 @@
  * - 부모/선생님 로그인 + 가족 미생성(가족 설정 단계)
  */
 import { useSyncExternalStore, type ReactNode } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate } from "react-router";
 import { useAuth } from "./AuthContext";
 import { homePathForRole } from "./guards";
 import {

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router";
 import { ChevronLeft, Check, Plus, Pencil, Trash2, X } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
@@ -10,6 +10,11 @@ import { useDailySupplies, useUpsertDailySupply, useDeleteDailySupply } from "@/
 import type { DailySupply } from "@/lib/api/endpoints/schedule";
 import { parseAppDateKey, todayDateKey } from "@/transform/dateKey";
 import { resolveDailySupplyChildMemberId } from "@/transform/dailySupplyScope";
+import {
+  MAX_SUPPLY_ITEMS_PER_KIND,
+  dailySupplyLimitMessage,
+  isDailySupplyLimitError,
+} from "@/transform/eventSupplies";
 import "./Supplies.css";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
@@ -100,13 +105,23 @@ export function Supplies() {
       show(isChild ? "내 정보를 아직 찾지 못했어" : "가족에 등록된 아이가 없어요", "🎒");
       return;
     }
+    const list = kind === "hw" ? hwList : prepList;
+    if (list.length >= MAX_SUPPLY_ITEMS_PER_KIND) {
+      show(dailySupplyLimitMessage(kind, isChild), "🎒");
+      return;
+    }
     const actionKey = `add:${kind}`;
     setPendingUpsertAction(actionKey);
     upsert.mutate(
       { date_key: dateKey, label, done: false, kind, child_user_id: targetChildId },
       {
         onSuccess: clear,
-        onError: () => show(isChild ? "추가하지 못했어. 다시 해 볼래?" : "추가하지 못했어요", "⚠️"),
+        onError: (error) => show(
+          isDailySupplyLimitError(error)
+            ? dailySupplyLimitMessage(kind, isChild)
+            : isChild ? "추가하지 못했어. 다시 해 볼래?" : "추가하지 못했어요",
+          isDailySupplyLimitError(error) ? "🎒" : "⚠️",
+        ),
         onSettled: () => setPendingUpsertAction((current) => (current === actionKey ? null : current)),
       },
     );
@@ -238,7 +253,7 @@ export function Supplies() {
           <section key={sec.kind} className="sup-section">
             <div className="sup-section__head">
               <span className="sup-section__title">{sec.heading}</span>
-              <span className="sup-section__count">{sec.list.length}</span>
+              <span className="sup-section__count">{sec.list.length}/{MAX_SUPPLY_ITEMS_PER_KIND}</span>
             </div>
             <div className="sup-card">
               {sec.list.length === 0 ? (
@@ -329,8 +344,13 @@ export function Supplies() {
                 <input
                   className="sup-add__input"
                   value={sec.draft}
-                  placeholder={sec.placeholder}
+                  placeholder={sec.list.length >= MAX_SUPPLY_ITEMS_PER_KIND
+                    ? isChild
+                      ? `하루 ${MAX_SUPPLY_ITEMS_PER_KIND}개까지 등록할 수 있어`
+                      : `하루 ${MAX_SUPPLY_ITEMS_PER_KIND}개까지 등록할 수 있어요`
+                    : sec.placeholder}
                   aria-label={`${sec.heading} 추가`}
+                  disabled={sec.list.length >= MAX_SUPPLY_ITEMS_PER_KIND}
                   onChange={(e) => sec.setDraft(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") add(sec.kind, sec.draft, () => sec.setDraft(""));
@@ -341,7 +361,7 @@ export function Supplies() {
                   className="sup-add__btn hy-press"
                   aria-label={`${sec.heading} 추가 확인`}
                   onClick={() => add(sec.kind, sec.draft, () => sec.setDraft(""))}
-                  disabled={upsert.isPending || !sec.draft.trim()}
+                  disabled={upsert.isPending || !sec.draft.trim() || sec.list.length >= MAX_SUPPLY_ITEMS_PER_KIND}
                   aria-busy={upsert.isPending && pendingUpsertAction === `add:${sec.kind}`}
                 >
                   <Plus size={18} strokeWidth={2.6} color="#fff" />

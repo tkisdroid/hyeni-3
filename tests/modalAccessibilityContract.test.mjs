@@ -6,11 +6,12 @@ import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const memoChatPath = "src/screens/shared/MemoChat.tsx";
 const expectedDialogCounts = new Map([
   ["src/components/MapPickerSheet.tsx", 1],
   ["src/components/MessageSafetyDialog.tsx", 1],
+  ["src/components/PremiumUpsell.tsx", 1],
   ["src/components/QrScanner.tsx", 1],
+  ["src/components/ReferralRewardPanel.tsx", 1],
   ["src/screens/child/ChildSettings.tsx", 1],
   ["src/screens/child/overlays/ChildSheet.tsx", 2],
   ["src/screens/feature/FamilyConnection.tsx", 1],
@@ -21,6 +22,7 @@ const expectedDialogCounts = new Map([
   ["src/screens/parent/ParentAccount.tsx", 2],
   ["src/screens/parent/ParentCalendar.tsx", 1],
   ["src/screens/parent/ParentSettings.tsx", 1],
+  ["src/screens/shared/MemoChat.tsx", 1],
   ["src/screens/teacher/TeacherHome.tsx", 2],
   ["src/screens/teacher/TeacherReleaseGate.tsx", 1],
   ["src/screens/teacher/TeacherSettings.tsx", 1],
@@ -81,11 +83,10 @@ function descendantButtonsWithClass(node, className) {
   return buttons;
 }
 
-test("MemoChat을 제외한 모든 dialog를 전수 목록으로 고정한다", () => {
+test("모든 dialog를 전수 목록으로 고정한다", () => {
   const actual = new Map();
   for (const absolute of tsxFiles(resolve(root, "src"))) {
     const path = normalizedPath(absolute);
-    if (path === memoChatPath) continue;
     const count = dialogsIn(absolute).dialogs.length;
     if (count > 0) actual.set(path, count);
   }
@@ -123,7 +124,6 @@ test("dialog의 투명 scrim은 Tab 순서에 들어오지 않는다", () => {
   let scrimCount = 0;
   for (const absolute of tsxFiles(resolve(root, "src"))) {
     const relativePath = normalizedPath(absolute);
-    if (relativePath === memoChatPath) continue;
     const source = readFileSync(absolute, "utf8");
     const tags = source.match(/<button\b[^>]*className="[^"]*(?:scrim|ks-dim)[^"]*"[^>]*>/gs) ?? [];
     scrimCount += tags.length;
@@ -131,7 +131,7 @@ test("dialog의 투명 scrim은 Tab 순서에 들어오지 않는다", () => {
       if (!/tabIndex=\{-1\}/.test(tag)) violations.push(relativePath);
     }
   }
-  assert.equal(scrimCount, 12, "dialog scrim 전수 목록이 바뀌면 접근성 계약도 갱신해야 합니다");
+  assert.equal(scrimCount, 13, "dialog scrim 전수 목록이 바뀌면 접근성 계약도 갱신해야 합니다");
   assert.deepEqual(violations, [], `Tab 순서에 남은 투명 scrim:\n${violations.join("\n")}`);
 });
 

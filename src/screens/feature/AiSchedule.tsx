@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router";
 import { Camera, ChevronLeft, Check, Sparkles, Mic, Keyboard, Image as ImageIcon, type LucideIcon } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { resolveEventVisualAsset } from "@/transform/placeVisual";
@@ -8,18 +8,24 @@ import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useParseSchedule } from "@/queries/useAi";
 import { useEvents, useSaveEventsWithChildrenBatch } from "@/queries/useSchedule";
-import { useEntitlement } from "@/queries/useEntitlement";
 import { useActiveChild } from "@/app/activeChild";
 import {
   buildAiScheduleDrafts,
   buildAiScheduleSaveInputs,
   type AiScheduleDraft,
 } from "@/transform/aiScheduleDraft";
-import { scheduleLimitFor, TIERS } from "@/transform/tierPolicy";
 import { ApiError } from "@/lib/api/errors";
 import { cancelSpeechCapture, captureSpeech, isSpeechCaptureSupported } from "@/lib/native/speech";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
+import { useEntitlement } from "@/queries/useEntitlement";
+import { canUse, FEATURES } from "@/transform/tierPolicy";
+import { PremiumUpsell } from "@/components/PremiumUpsell";
+import {
+  browserPremiumReturnIntentStorage,
+  savePremiumReturnIntent,
+} from "@/transform/premiumReturnIntent";
+import { MAX_SUPPLY_ITEMS_PER_KIND } from "@/transform/eventSupplies";
 import "./AiSchedule.css";
 
 type TabKey = "voice" | "text" | "image";
@@ -53,16 +59,6 @@ function currentDateParts(): { year: number; month: number; day: number } {
   return { year: now.getFullYear(), month: now.getMonth(), day: now.getDate() };
 }
 
-function scheduleLimitMessage(tier: string, limit: number): string {
-  if (tier === TIERS.FREE) {
-    return "무료 플랜에서는 일정 1개까지 저장할 수 있어요. 스토어 방문 혜택을 받으면 3개, 프리미엄에서는 무제한으로 저장할 수 있어요.";
-  }
-  if (tier === TIERS.REVIEWED) {
-    return "스토어 방문 혜택으로 일정 3개까지 저장할 수 있어요. 프리미엄에서는 무제한으로 저장할 수 있어요.";
-  }
-  return `현재 플랜에서는 일정 ${limit}개까지 저장할 수 있어요`;
-}
-
 export function AiSchedule() {
   const navigate = useNavigate();
   const { show } = useToast();
@@ -70,25 +66,30 @@ export function AiSchedule() {
   const parseM = useParseSchedule();
   const createM = useSaveEventsWithChildrenBatch();
   const { activeChild } = useActiveChild();
+  const [searchParams] = useSearchParams();
+  const academyMode = searchParams.get("mode") === "academy";
+  const entitlement = useEntitlement();
+  const academyAllowed = entitlement.ready && canUse(entitlement.tier, FEATURES.ACADEMY_SCHEDULE);
   const existingEvents = useEvents();
-  const entitlementQuery = useEntitlement();
-  const { tier } = entitlementQuery;
   const aiScheduleQueryState = resolveQueryTruthState([
     { isLoading: existingEvents.isLoading, isError: existingEvents.isError },
-    { isLoading: entitlementQuery.isLoading, isError: entitlementQuery.isError },
+    {
+      isLoading: academyMode && entitlement.isLoading,
+      isError: academyMode && entitlement.isError,
+    },
   ]);
-  const aiScheduleDataMissing = aiScheduleQueryState === "ready" && (
-    existingEvents.data === undefined || tier === TIERS.UNKNOWN
-  );
+  const aiScheduleDataMissing = aiScheduleQueryState === "ready" && existingEvents.data === undefined;
   const aiScheduleDataReady = aiScheduleQueryState === "ready" && !aiScheduleDataMissing;
   const aiScheduleDataEmpty = aiScheduleDataReady && existingEvents.data?.length === 0;
-  const aiScheduleRefetching = existingEvents.isFetching || entitlementQuery.isFetching;
+  const aiScheduleRefetching = existingEvents.isFetching;
   const retryAiSchedule = async (): Promise<void> => {
-    await Promise.all([existingEvents.refetch(), entitlementQuery.refetch()]);
+    await Promise.all([
+      existingEvents.refetch(),
+      ...(academyMode ? [entitlement.refetch()] : []),
+    ]);
   };
 
   // 진입 탭 — 부모 홈 "AI로 일정 추가"의 음성/텍스트/알림장 버튼이 ?tab= 으로 지정한다.
-  const [searchParams] = useSearchParams();
   const requestedTab = searchParams.get("tab");
   const [tab, setTab] = useState<TabKey>(
     requestedTab === "text" || requestedTab === "image" || requestedTab === "voice" ? requestedTab : "voice",
@@ -106,8 +107,16 @@ export function AiSchedule() {
   const [drafts, setDrafts] = useState<AiScheduleDraft[] | null>(null);
   // 음성 인식 진행 중 여부.
   const [listening, setListening] = useState(false);
+  const [academyUpsellOpen, setAcademyUpsellOpen] = useState(false);
+  const [scheduleLimitUpsellOpen, setScheduleLimitUpsellOpen] = useState(false);
   // 숨긴 파일 입력 — 업로드 버튼 onClick 에서 트리거(직접 노출하지 않음).
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (academyMode && entitlement.ready && !academyAllowed) {
+      setAcademyUpsellOpen(true);
+    }
+  }, [academyAllowed, academyMode, entitlement.ready]);
 
   // ── 마이크 오발동 방어(2026-07-14 TK 제보 "진입 시 마이크 자동실행") ──
   // 홈 버튼 탭이 화면 전환 직후 같은 좌표의 큰 마이크 버튼에 고스트 클릭으로 떨어지면
@@ -172,7 +181,7 @@ export function AiSchedule() {
   // ── AI 정리(파싱) 코어 — 텍스트/알림장 사진 공통. 사용자 버튼 onClick 에서만 호출 ──
   const runParse = async (payloadText: string, image?: string) => {
     if (!aiScheduleDataReady) {
-      show("현재 일정과 이용 상태를 확인한 뒤 다시 시도해 주세요.", "⚠️");
+      show("일정 정보를 확인한 뒤 다시 시도해 주세요.", "⚠️");
       return;
     }
     if (status !== "authenticated") {
@@ -184,6 +193,7 @@ export function AiSchedule() {
         text: payloadText,
         ...(image ? { image } : {}),
         mode: "paste",
+        feature: academyMode ? "academy_schedule" : undefined,
         currentDate: cd,
       });
       if (result.events.length === 0) {
@@ -210,6 +220,17 @@ export function AiSchedule() {
       setDrafts(prepared.drafts);
     } catch (e) {
       setDrafts(null);
+      if (!academyMode && e instanceof ApiError && e.status === 429 && e.message === "daily_limit_reached") {
+        await entitlement.refetch().catch(() => undefined);
+        setScheduleLimitUpsellOpen(true);
+        return;
+      }
+      if (academyMode && e instanceof ApiError && e.message === "premium_required") {
+        await entitlement.refetch().catch(() => undefined);
+        setAcademyUpsellOpen(true);
+        show("프리미엄 구독 상태를 다시 확인해 주세요.", "⚠️");
+        return;
+      }
       show(
         e instanceof ApiError
           ? e.message
@@ -226,7 +247,7 @@ export function AiSchedule() {
   const startVoice = async () => {
     if (!micArmedRef.current || listening || parseM.isPending) return;
     if (!aiScheduleDataReady) {
-      show("현재 일정과 이용 상태를 확인한 뒤 다시 시도해 주세요.", "⚠️");
+      show("일정 정보를 확인한 뒤 다시 시도해 주세요.", "⚠️");
       return;
     }
     if (status !== "authenticated") {
@@ -282,7 +303,7 @@ export function AiSchedule() {
   const handleConfirm = async () => {
     if (!drafts || drafts.length === 0) return;
     if (!aiScheduleDataReady) {
-      show("일정 개수와 이용 상태를 확인한 뒤 다시 시도해 주세요.", "⚠️");
+      show("일정 정보를 확인한 뒤 다시 시도해 주세요.", "⚠️");
       return;
     }
     if (status !== "authenticated" || !familyId) {
@@ -293,15 +314,8 @@ export function AiSchedule() {
       show("일정을 넣을 아이를 먼저 선택해 주세요", "⚠️");
       return;
     }
-    const currentEvents = existingEvents.data;
-    if (!currentEvents || tier === TIERS.UNKNOWN) {
-      show("일정 개수와 이용 상태를 확인한 뒤 다시 시도해 주세요.", "⚠️");
-      return;
-    }
-    const limit = scheduleLimitFor(tier);
-    const currentCount = currentEvents.length;
-    if (currentCount + drafts.length > limit) {
-      show(scheduleLimitMessage(tier, limit), "👑");
+    if (!existingEvents.data) {
+      show("일정 정보를 확인한 뒤 다시 시도해 주세요.", "⚠️");
       return;
     }
     try {
@@ -324,10 +338,10 @@ export function AiSchedule() {
   if (aiScheduleQueryState === "loading") {
     return (
       <ScreenQueryState
-        screenTitle="AI로 일정 추가"
+        screenTitle={academyMode ? "학원 시간표 정리" : "AI로 일정 추가"}
         state="loading"
-        heading="일정과 이용 상태를 확인하고 있어요"
-        description="현재 일정 개수와 저장 가능한 범위를 안전하게 확인하는 중이에요."
+        heading="일정 정보를 확인하고 있어요"
+        description="가족 일정과 저장 준비 상태를 안전하게 확인하는 중이에요."
         onBack={() => navigate(-1)}
       />
     );
@@ -336,7 +350,7 @@ export function AiSchedule() {
   if (aiScheduleQueryState === "error" || aiScheduleDataMissing) {
     return (
       <ScreenQueryState
-        screenTitle="AI로 일정 추가"
+        screenTitle={academyMode ? "학원 시간표 정리" : "AI로 일정 추가"}
         state="error"
         heading="일정 추가 조건을 확인하지 못했어요"
         description="확인되지 않은 상태에서 AI 처리나 일정 저장이 시작되지 않도록 잠시 닫았어요."
@@ -344,6 +358,65 @@ export function AiSchedule() {
         onRetry={() => void retryAiSchedule()}
         retrying={aiScheduleRefetching}
       />
+    );
+  }
+
+  if (academyMode && !academyAllowed) {
+    const academyReturnTo = "/ai-schedule?mode=academy&tab=image";
+    return (
+      <div className="ais-wrap">
+        <header className="ais-header">
+          <button
+            type="button"
+            className="ais-back hy-press"
+            aria-label="뒤로"
+            onClick={() => navigate(-1)}
+          >
+            <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
+          </button>
+          <span className="ais-title">학원 시간표 정리</span>
+        </header>
+        <section className="ais-body ais-academy-lock">
+          <div className="ais-academy-lock__icon" aria-hidden="true">
+            <Sparkles size={28} strokeWidth={2.2} />
+          </div>
+          <h1>학원 시간표를 한 번에 정리해 보세요</h1>
+          <p>직접 일정 추가와 기존 일정 관리는 무료에서도 제한 없이 사용할 수 있어요. 준비물과 숙제는 모든 플랜에서 아이별 하루 각각 {MAX_SUPPLY_ITEMS_PER_KIND}개까지 저장할 수 있어요.</p>
+          <p className="ais-academy-lock__premium">
+            프리미엄에서는 학원 시간표 사진을 여러 일정으로 정리하고, 저장 장소의 위치 흐름과 함께 관리할 수 있어요.
+          </p>
+          <button
+            type="button"
+            className="ais-confirm hy-press"
+            onClick={() => setAcademyUpsellOpen(true)}
+          >
+            프리미엄으로 학원표 정리하기
+          </button>
+          <button
+            type="button"
+            className="ais-academy-free hy-press"
+            onClick={() => navigate("/ai-schedule?tab=text", { replace: true })}
+          >
+            무료로 일반 일정 추가하기
+          </button>
+        </section>
+        <PremiumUpsell
+          open={academyUpsellOpen}
+          source="academy_schedule"
+          tier={entitlement.tier}
+          returnTo={academyReturnTo}
+          onClose={() => setAcademyUpsellOpen(false)}
+          onUpgrade={({ source, feature, returnTo }) => {
+            const storage = browserPremiumReturnIntentStorage();
+            const saved = storage && returnTo
+              ? savePremiumReturnIntent(storage, { source, feature, returnTo })
+              : false;
+            if (!saved) throw new Error("결제 후 학원 시간표 화면으로 돌아올 경로를 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+            setAcademyUpsellOpen(false);
+            navigate("/subscription");
+          }}
+        />
+      </div>
     );
   }
 
@@ -358,10 +431,16 @@ export function AiSchedule() {
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
         </button>
-        <span className="ais-title">AI로 일정 추가</span>
+        <span className="ais-title">{academyMode ? "학원 시간표 정리" : "AI로 일정 추가"}</span>
       </header>
 
       <div className="ais-body">
+        {academyMode && (
+          <div className="ais-academy-intro">
+            <strong>학원 시간표 자동 정리</strong>
+            <span>주간 시간표나 학원 안내문을 올리면 여러 일정을 한 번에 확인해 캘린더에 저장해요.</span>
+          </div>
+        )}
         {aiScheduleDataEmpty && (
           <div className="sqs-inline-empty">
             아직 등록된 일정이 없어요. 아래에서 첫 일정을 정리해 보세요.
@@ -455,8 +534,14 @@ export function AiSchedule() {
               onChange={handleImageSelect}
             />
             <div className="ais-mode-intro">
-              <div className="ais-mode-intro__title">가정통신문 사진으로 일정 찾기</div>
-              <p>가정통신문, 알림장, 학원 안내문, 준비물 사진에서 날짜와 시간을 찾아드려요.</p>
+              <div className="ais-mode-intro__title">
+                {academyMode ? "학원 시간표 사진으로 일정 찾기" : "가정통신문 사진으로 일정 찾기"}
+              </div>
+              <p>
+                {academyMode
+                  ? "주간 시간표나 학원 안내문에서 날짜와 시간을 찾아 여러 일정 후보로 정리해 드려요."
+                  : "가정통신문, 알림장, 학원 안내문, 준비물 사진에서 날짜와 시간을 찾아드려요."}
+              </p>
             </div>
             {imagePreview ? (
               <div className="ais-preview">
@@ -577,6 +662,22 @@ export function AiSchedule() {
           </button>
         )}
       </div>
+      <PremiumUpsell
+        open={scheduleLimitUpsellOpen}
+        source="ai_schedule_limit"
+        tier={entitlement.tier}
+        returnTo={`/ai-schedule?tab=${tab}`}
+        onClose={() => setScheduleLimitUpsellOpen(false)}
+        onUpgrade={({ source, feature, returnTo }) => {
+          const storage = browserPremiumReturnIntentStorage();
+          const saved = storage && returnTo
+            ? savePremiumReturnIntent(storage, { source, feature, returnTo })
+            : false;
+          if (!saved) throw new Error("결제 후 AI 일정 정리 화면으로 돌아올 경로를 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+          setScheduleLimitUpsellOpen(false);
+          navigate("/subscription");
+        }}
+      />
     </div>
   );
 }

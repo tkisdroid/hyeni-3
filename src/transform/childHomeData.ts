@@ -7,9 +7,9 @@ import type { SavedPlace } from "@/lib/api/endpoints/location";
 /**
  * 오늘 AI 친구와 몇 번 더 얘기할 수 있는가.
  *
- * 아이 세션은 `/api/ai/credits/balance` 를 부를 수 없다(부모 전용 403).
- * 대신 `/api/ai/usage/today`(parent-or-self)의 사용 횟수와 부모가 정한 `daily_limit` 으로 계산한다.
- * 둘 중 하나라도 모르면 숫자를 지어내지 말고 null(=표시하지 않음).
+ * 과거 원시 사용량 화면을 위한 순수 계산이다. 현재 홈·채팅은 구매분과 부모 상한까지 반영한
+ * `/api/ai/credits/public-status`의 `available_remaining`을 직접 사용한다.
+ * 이 함수를 쓰는 호환 경로도 둘 중 하나라도 모르면 숫자를 지어내지 않고 null을 반환한다.
  */
 export function remainingAiChats(
   dailyLimit: number | null | undefined,

@@ -27,6 +27,11 @@ import {
   clearApiSession,
   type ApiUser,
 } from "./session";
+import {
+  acquirePrivateObjectUrl,
+  type PrivateObjectUrlLease,
+} from "./privateObjectUrlCache";
+import { validatePrivateObjectPath } from "@/transform/childPhotoPath";
 
 type FetchOptions = RequestInit;
 
@@ -165,8 +170,16 @@ export function apiGet<T = unknown>(path: string): Promise<T> {
   return apiRequest<T>(path);
 }
 
-export function apiPost<T = unknown>(path: string, body?: unknown): Promise<T> {
-  return apiRequest<T>(path, { method: "POST", body: JSON.stringify(body ?? {}) });
+export function apiPost<T = unknown>(
+  path: string,
+  body?: unknown,
+  options: Pick<RequestInit, "signal"> = {},
+): Promise<T> {
+  return apiRequest<T>(path, {
+    method: "POST",
+    body: JSON.stringify(body ?? {}),
+    signal: options.signal,
+  });
 }
 
 export function apiPut<T = unknown>(path: string, body?: unknown): Promise<T> {
@@ -257,15 +270,83 @@ export async function apiUploadChildPhoto(input: ChildPhotoUploadInput): Promise
   }
 }
 
-/**
- * 자녀 사진 조회용 proxy URL 합성(서버 왕복 없음).
- * <img src> 는 Authorization 헤더를 못 실으므로 단기 access token 을 쿼리로 싣는다.
- */
-export function childPhotoProxyUrl(path: string | null | undefined): string | null {
-  if (!path) return null;
-  const accessToken = getApiAccessToken();
-  const q = accessToken ? `?token=${encodeURIComponent(accessToken)}` : "";
-  return API_BASE + "/api/storage/child-photos/" + encodeChildPhotoKey(path) + q;
+const PRIVATE_OBJECT_TIMEOUT_MS = 15_000;
+
+function assertPrivateObjectRequestActive(signal: AbortSignal): void {
+  if (signal.aborted) throw new ApiError("private_object_cancelled", 499);
+}
+
+async function fetchPrivateObjectUrl(
+  apiPath: string,
+  leaseSignal: AbortSignal,
+): Promise<string> {
+  const controller = new AbortController();
+  const abortForRetiredLease = () => controller.abort();
+  if (leaseSignal.aborted) controller.abort();
+  else leaseSignal.addEventListener("abort", abortForRetiredLease, { once: true });
+
+  let timedOut = false;
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+      reject(new ApiError("private_object_timeout", 504));
+    }, PRIVATE_OBJECT_TIMEOUT_MS);
+  });
+  const request = async (): Promise<string> => {
+    assertPrivateObjectRequestActive(controller.signal);
+    const options = {
+      headers: { Accept: "image/*,application/pdf" },
+      signal: controller.signal,
+      cache: "no-store" as const,
+    };
+    let response = await doFetch(apiPath, options);
+    if (response.status === 401) {
+      assertPrivateObjectRequestActive(controller.signal);
+      const refreshResult = await refreshAccess();
+      assertPrivateObjectRequestActive(controller.signal);
+      if (refreshResult === "ok") {
+        response = await doFetch(apiPath, options);
+      } else if (refreshResult === "rejected") {
+        clearApiSession();
+      }
+    }
+    assertPrivateObjectRequestActive(controller.signal);
+    if (!response.ok) throw new ApiError(`private_object_${response.status}`, response.status);
+    const blob = await response.blob();
+    assertPrivateObjectRequestActive(controller.signal);
+    if (blob.size <= 0) throw new ApiError("private_object_empty", 502);
+    return URL.createObjectURL(blob);
+  };
+  const requestPromise = request();
+  // timeout 뒤에도 fetch 구현이 abort를 무시하고 URL을 만들면 cache까지 도달하지 않으므로 여기서 회수한다.
+  void requestPromise.then((url) => {
+    if (timedOut) URL.revokeObjectURL(url);
+  }, () => undefined);
+
+  try {
+    return await Promise.race([requestPromise, timeout]);
+  } catch (error) {
+    if (timedOut) throw new ApiError("private_object_timeout", 504);
+    throw error;
+  } finally {
+    if (timeoutId !== null) clearTimeout(timeoutId);
+    leaseSignal.removeEventListener("abort", abortForRetiredLease);
+  }
+}
+
+/** 자녀 사진은 Authorization fetch로 받은 뒤 수명 제한 lease의 로컬 blob URL로만 표시한다. */
+export function acquireChildPhotoObjectUrl(
+  path: string | null | undefined,
+): PrivateObjectUrlLease | null {
+  const normalized = validatePrivateObjectPath(path);
+  if (!normalized) return null;
+  const apiPath = "/api/storage/child-photos/" + encodeChildPhotoKey(normalized);
+  return acquirePrivateObjectUrl(
+    `child:${normalized}`,
+    (signal) => fetchPrivateObjectUrl(apiPath, signal),
+  );
 }
 
 function teacherNoticeRelativeKey(path: string): string {
@@ -290,10 +371,15 @@ export async function apiUploadTeacherNoticeFile(
   );
 }
 
-/** 선생님 알림장 첨부 조회용 proxy URL. */
-export function teacherNoticeFileProxyUrl(path: string | null | undefined): string | null {
-  if (!path) return null;
-  const accessToken = getApiAccessToken();
-  const q = accessToken ? `?token=${encodeURIComponent(accessToken)}` : "";
-  return API_BASE + "/api/storage/teacher-notices/" + encodeStorageKey(teacherNoticeRelativeKey(path)) + q;
+/** 선생님 알림장 첨부도 Authorization fetch 후 수명 제한 lease로만 노출한다. */
+export function acquireTeacherNoticeFileObjectUrl(
+  path: string | null | undefined,
+): PrivateObjectUrlLease | null {
+  const relativePath = validatePrivateObjectPath(teacherNoticeRelativeKey(path ?? ""));
+  if (!relativePath) return null;
+  const apiPath = "/api/storage/teacher-notices/" + encodeStorageKey(relativePath);
+  return acquirePrivateObjectUrl(
+    `teacher:${relativePath}`,
+    (signal) => fetchPrivateObjectUrl(apiPath, signal),
+  );
 }

@@ -1,6 +1,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePwaUpdateCriticalSection } from "@/lib/usePwaUpdateCriticalSection";
 import type { MouseEvent as ReactMouseEvent } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router";
 import { ChevronLeft, Send, Image as ImageIcon, MapPin, ShieldAlert, Download } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
@@ -21,7 +22,7 @@ import {
 import { resolveMemoQuickReplies } from "@/transform/memoQuickReplies";
 import { resolveMemoChatCopy } from "@/transform/memoChatCopy";
 import { useRecentDateKeys } from "@/app/useRecentDateKeys";
-import { apiUploadChildPhoto, childPhotoProxyUrl } from "@/lib/api/client";
+import { apiUploadChildPhoto, acquireChildPhotoObjectUrl } from "@/lib/api/client";
 import { resizeImageFileSafe, dataUrlToBlob } from "@/lib/imageResize";
 import { loadKakaoMaps } from "@/lib/kakaoMap";
 import { openExternal } from "@/lib/native/browser";
@@ -38,6 +39,7 @@ import {
 } from "@/queries/useContentSafety";
 import type { MemoContentReportReason } from "@/lib/api/endpoints/contentSafety";
 import { Loading } from "@/components/ui/Loading";
+import "@/styles/jua.css";
 import "./MemoChat.css";
 
 const MEMO_REPORT_REASONS: readonly ReportReasonOption<MemoContentReportReason>[] = [
@@ -56,9 +58,168 @@ const CHILD_MEMO_REPORT_REASONS: readonly ReportReasonOption<MemoContentReportRe
   { value: "other", label: "다른 이유가 있어" },
 ];
 
-/** photo_url(원격 http)은 그대로, 로컬 캐릭터 키는 asset()으로 해석. */
+/** photo_url(http/blob)은 그대로, 로컬 캐릭터 키는 asset()으로 해석. */
 function avatarSrc(path: string): string {
-  return path.startsWith("http") ? path : asset(path);
+  return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
+}
+
+type ChildPhotoLoadState =
+  | { path: string | null; status: "idle" | "loading" | "error"; url: null }
+  | { path: string; status: "ready"; url: string };
+
+interface ActiveChildPhotoLease {
+  url: string | null;
+  release(): void;
+}
+
+function verifyPrivateImageDecode(image: HTMLImageElement, onFailure: () => void): void {
+  if (typeof image.decode !== "function") return;
+  try {
+    void image.decode().catch(onFailure);
+  } catch {
+    onFailure();
+  }
+}
+
+function useChildPhotoUrl(path: string | null, enabled = true) {
+  const [attempt, setAttempt] = useState(0);
+  const [state, setState] = useState<ChildPhotoLoadState>({ path: null, status: "idle", url: null });
+  const activeLeaseRef = useRef<ActiveChildPhotoLease | null>(null);
+  useEffect(() => {
+    if (!path || !enabled) {
+      setState({ path, status: "idle", url: null });
+      return;
+    }
+    const lease = acquireChildPhotoObjectUrl(path);
+    if (!lease) {
+      setState({ path, status: "error", url: null });
+      return;
+    }
+    const activeLease: ActiveChildPhotoLease = {
+      url: null,
+      release: () => lease.release(),
+    };
+    activeLeaseRef.current = activeLease;
+    let active = true;
+    setState({ path, status: "loading", url: null });
+    void lease.url
+      .then((next) => {
+        if (!active) return;
+        if (!next) {
+          if (activeLeaseRef.current === activeLease) activeLeaseRef.current = null;
+          activeLease.release();
+          setState({ path, status: "error", url: null });
+          return;
+        }
+        activeLease.url = next;
+        setState({ path, status: "ready", url: next });
+      })
+      .catch(() => {
+        if (activeLeaseRef.current === activeLease) activeLeaseRef.current = null;
+        activeLease.release();
+        if (active) setState({ path, status: "error", url: null });
+      });
+    return () => {
+      active = false;
+      if (activeLeaseRef.current === activeLease) activeLeaseRef.current = null;
+      activeLease.release();
+    };
+  }, [attempt, enabled, path]);
+
+  const visibleState: ChildPhotoLoadState = enabled && state.path === path
+    ? state
+    : { path, status: "idle", url: null };
+  const retry = useCallback(() => setAttempt((value) => value + 1), []);
+  const markError = useCallback((failedUrl: string) => {
+    const activeLease = activeLeaseRef.current;
+    if (!activeLease || activeLease.url !== failedUrl) return;
+    activeLeaseRef.current = null;
+    activeLease.release();
+    setState((current) => (
+      current.status === "ready" && current.url === failedUrl
+        ? { path: current.path, status: "error", url: null }
+        : current
+    ));
+  }, []);
+  return { ...visibleState, retry, markError };
+}
+
+function MemoImageBubble({
+  path,
+  press,
+  isChildSession,
+  onOpen,
+}: {
+  path: string;
+  press: LongPressHandlers;
+  isChildSession: boolean;
+  onOpen: () => void;
+}) {
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [nearby, setNearby] = useState(false);
+  const photo = useChildPhotoUrl(path, nearby);
+
+  useEffect(() => {
+    const button = buttonRef.current;
+    setNearby(false);
+    if (!button) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setNearby(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => setNearby(entry?.isIntersecting === true),
+      { rootMargin: "360px 0px" },
+    );
+    observer.observe(button);
+    return () => observer.disconnect();
+  }, [path]);
+
+  return (
+    <button
+      ref={buttonRef}
+      type="button"
+      className="mc-bubble mc-bubble--img hy-press"
+      aria-label={photo.status === "error" ? "공유한 사진 다시 불러오기" : "공유한 사진 크게 보기"}
+      aria-busy={photo.status === "loading"}
+      onClick={(event) => {
+        press.onClick?.(event);
+        if (event.defaultPrevented) return;
+        if (photo.status === "error") {
+          photo.retry();
+          return;
+        }
+        if (photo.status === "ready") onOpen();
+      }}
+      onPointerDown={press.onPointerDown}
+      onPointerMove={press.onPointerMove}
+      onPointerUp={press.onPointerUp}
+      onPointerCancel={press.onPointerCancel}
+      onPointerLeave={press.onPointerLeave}
+      onContextMenu={press.onContextMenu}
+    >
+      {photo.status === "ready" ? (
+        <img
+          src={photo.url}
+          alt="공유한 사진"
+          decoding="async"
+          onLoad={(event) => verifyPrivateImageDecode(
+            event.currentTarget,
+            () => photo.markError(photo.url),
+          )}
+          onError={() => photo.markError(photo.url)}
+        />
+      ) : (
+        <span className={`mc-private-photo-status mc-private-photo-status--${photo.status}`} role="status">
+          {photo.status === "error"
+            ? (isChildSession
+                ? "사진을 불러오지 못했어. 눌러서 다시 시도해 줘."
+                : "사진을 불러오지 못했어요. 눌러서 다시 시도해 주세요.")
+            : "사진 불러오는 중…"}
+        </span>
+      )}
+    </button>
+  );
 }
 
 
@@ -169,10 +330,15 @@ export function MemoChat() {
   const [draft, setDraft] = useState("");
   const [safetyTarget, setSafetyTarget] = useState<ThreadMsg | null>(null);
   const [previewImagePath, setPreviewImagePath] = useState<string | null>(null);
+  const previewImage = useChildPhotoUrl(previewImagePath);
+  const previewImageUrl = previewImage.status === "ready" ? previewImage.url : null;
+  const previewGestureReady = previewImage.status === "ready";
   const [savingPhoto, setSavingPhoto] = useState(false);
+  const previewCloseButtonRef = useRef<HTMLButtonElement>(null);
   const previewDialogRef = useDialogFocusLifecycle<HTMLDivElement>({
     open: previewImagePath !== null,
     onClose: () => setPreviewImagePath(null),
+    initialFocusRef: previewCloseButtonRef,
   });
   const photoZoom = usePinchZoom();
   // 사진을 닫을 때 확대 상태를 초기화한다(다음 사진에 이전 배율이 남지 않게).
@@ -183,11 +349,10 @@ export function MemoChat() {
   }, [previewImagePath, resetPhotoZoom]);
 
   const savePreviewPhoto = useCallback(async () => {
-    const url = childPhotoProxyUrl(previewImagePath);
-    if (!url || savingPhoto) return;
+    if (!previewImageUrl || savingPhoto) return;
     setSavingPhoto(true);
     try {
-      const result = await saveImageToDevice(url);
+      const result = await saveImageToDevice(previewImageUrl);
       if (result.ok) {
         show(
           result.target === "gallery"
@@ -212,7 +377,7 @@ export function MemoChat() {
     } finally {
       setSavingPhoto(false);
     }
-  }, [isChildSession, previewImagePath, savingPhoto, show]);
+  }, [isChildSession, previewImageUrl, savingPhoto, show]);
   // 신고·차단은 상대 메시지를 길게 누르면 열린다(버튼을 매 메시지에 띄우지 않기 위해).
   // 내 메시지와 발신자를 알 수 없는 레거시 행은 신고 대상이 아니므로 길게 누르기를 붙이지 않는다.
   const bindLongPressSafety = useLongPress<ThreadMsg>((m) => setSafetyTarget(m));
@@ -305,6 +470,9 @@ export function MemoChat() {
   // ── 사진 전송: 파일 선택 → 리사이즈 → R2 업로드(가족 격리 버킷) → [[img:]] 메시지 ──
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [sharing, setSharing] = useState<"" | "image" | "location">("");
+  usePwaUpdateCriticalSection(
+    draft.trim().length > 0 || savingPhoto || sharing !== "" || sendMemo.isPending,
+  );
   const onPickImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = ""; // 같은 파일 재선택 허용
@@ -540,9 +708,7 @@ export function MemoChat() {
           const newDay = !!m.dayStamp && m.dayStamp !== messages[i - 1]?.dayStamp;
           // 상대 메시지는 길게 눌러 신고를 연다. JSX spread 는 디자인 시스템 정적 분석이
           // 해석하지 못하므로 핸들러를 하나씩 연결한다.
-          const imagePress = bindSafetyPress(m, () => {
-            if (m.imagePath) setPreviewImagePath(m.imagePath);
-          });
+          const imagePress = bindSafetyPress(m);
           const locationPress = bindSafetyPress(m, () => openLocation(m));
           const textPress = bindSafetyPress(m);
           return (
@@ -561,24 +727,12 @@ export function MemoChat() {
               <div className="mc-bubble-wrap">
                 {m.showMeta && senderDiffers && <div className="mc-sender">{sender.name}</div>}
                 {m.kind === "image" && m.imagePath ? (
-                  <button
-                    type="button"
-                    className="mc-bubble mc-bubble--img hy-press"
-                    onClick={imagePress.onClick}
-                    onPointerDown={imagePress.onPointerDown}
-                    onPointerMove={imagePress.onPointerMove}
-                    onPointerUp={imagePress.onPointerUp}
-                    onPointerCancel={imagePress.onPointerCancel}
-                    onPointerLeave={imagePress.onPointerLeave}
-                    onContextMenu={imagePress.onContextMenu}
-                  >
-                    <img
-                      src={childPhotoProxyUrl(m.imagePath) ?? undefined}
-                      alt="공유한 사진"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </button>
+                  <MemoImageBubble
+                    path={m.imagePath}
+                    press={imagePress}
+                    isChildSession={isChildSession}
+                    onOpen={() => setPreviewImagePath(m.imagePath ?? null)}
+                  />
                 ) : m.kind === "location" && m.location ? (
                   <button
                     type="button"
@@ -688,6 +842,7 @@ export function MemoChat() {
           role="dialog"
           aria-modal="true"
           aria-labelledby="mc-photo-preview-title"
+          aria-describedby="mc-photo-preview-description"
           onClick={(event) => {
             if (event.currentTarget === event.target) setPreviewImagePath(null);
           }}
@@ -700,43 +855,66 @@ export function MemoChat() {
                   type="button"
                   className="mc-photo-preview__save hy-press"
                   onClick={() => void savePreviewPhoto()}
-                  disabled={savingPhoto}
+                  disabled={savingPhoto || !previewImageUrl}
                   aria-busy={savingPhoto}
                 >
                   <Download size={16} strokeWidth={2.2} aria-hidden="true" />
                   {savingPhoto ? "저장 중…" : "저장"}
                 </button>
                 <button
+                  ref={previewCloseButtonRef}
                   type="button"
                   className="mc-photo-preview__close hy-press"
                   onClick={() => setPreviewImagePath(null)}
-                  autoFocus
                 >
                   닫기
                 </button>
               </div>
             </div>
+            <p id="mc-photo-preview-description" className="mc-photo-preview__description">
+              {isChildSession
+                ? "사진을 확대하거나 기기에 저장할 수 있어."
+                : "사진을 확대하거나 기기에 저장할 수 있어요."}
+            </p>
             {/* 손가락 두 개로 확대·축소, 두 번 탭으로 확대 토글, 확대 상태에서 끌어 이동. */}
             <div
               ref={photoZoom.containerRef}
               className="mc-photo-preview__stage"
-              onPointerDown={photoZoom.handlers.onPointerDown}
-              onPointerMove={photoZoom.handlers.onPointerMove}
-              onPointerUp={photoZoom.handlers.onPointerUp}
-              onPointerCancel={photoZoom.handlers.onPointerCancel}
+              data-ready={previewGestureReady ? "true" : undefined}
+              onPointerDown={previewGestureReady ? photoZoom.handlers.onPointerDown : undefined}
+              onPointerMove={previewGestureReady ? photoZoom.handlers.onPointerMove : undefined}
+              onPointerUp={previewGestureReady ? photoZoom.handlers.onPointerUp : undefined}
+              onPointerCancel={previewGestureReady ? photoZoom.handlers.onPointerCancel : undefined}
             >
-              <img
-                src={childPhotoProxyUrl(previewImagePath) ?? undefined}
-                alt="공유한 사진 크게 보기"
-                loading="lazy"
-                decoding="async"
-                draggable={false}
-                style={{
-                  transform: `translate(${photoZoom.transform.x}px, ${photoZoom.transform.y}px) scale(${photoZoom.transform.scale})`,
-                }}
-              />
+              {previewImage.status === "ready" ? (
+                <img
+                  src={previewImage.url}
+                  alt="공유한 사진 크게 보기"
+                  decoding="async"
+                  draggable={false}
+                  onLoad={(event) => verifyPrivateImageDecode(
+                    event.currentTarget,
+                    () => previewImage.markError(previewImage.url),
+                  )}
+                  onError={() => previewImage.markError(previewImage.url)}
+                  style={{
+                    transform: `translate(${photoZoom.transform.x}px, ${photoZoom.transform.y}px) scale(${photoZoom.transform.scale})`,
+                  }}
+                />
+              ) : previewImage.status === "error" ? (
+                <div className="mc-photo-preview__status" role="alert">
+                  <span>{isChildSession ? "사진을 불러오지 못했어." : "사진을 불러오지 못했어요."}</span>
+                  <button type="button" className="hy-section-action hy-press" onClick={previewImage.retry}>
+                    {isChildSession ? "다시 불러오기" : "다시 시도"}
+                  </button>
+                </div>
+              ) : (
+                <div className="mc-photo-preview__status" role="status">
+                  <Loading label={isChildSession ? "사진 불러오는 중" : "사진을 불러오는 중이에요"} size={6} />
+                </div>
+              )}
             </div>
-            <p className="mc-photo-preview__hint">
+            {previewImage.status === "ready" && <p className="mc-photo-preview__hint">
               {photoZoom.isZoomed
                 ? (isChildSession
                     ? "끌어서 옮기고, 두 번 탭하면 원래 크기로 돌아가"
@@ -744,7 +922,7 @@ export function MemoChat() {
                 : (isChildSession
                     ? "두 손가락으로 벌리거나 두 번 탭하면 확대돼"
                     : "두 손가락으로 벌리거나 두 번 탭하면 확대돼요")}
-            </p>
+            </p>}
           </div>
         </div>
       )}

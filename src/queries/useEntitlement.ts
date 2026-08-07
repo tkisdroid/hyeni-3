@@ -11,7 +11,10 @@ import { useQuery } from "@tanstack/react-query";
 import { qk } from "./keys";
 import { useAuth } from "@/auth/AuthContext";
 import { fetchEntitlement } from "@/lib/api/endpoints/subscription";
-import { deriveEntitlement, type EntitlementView } from "@/transform/entitlement";
+import {
+  resolveEntitlementResponse,
+  type EntitlementView,
+} from "@/transform/entitlement";
 import { useReviewReward } from "./useReviewReward";
 import { tierFrom, TIERS, type Tier } from "@/transform/tierPolicy";
 
@@ -39,7 +42,7 @@ export interface UseEntitlementResult {
   refetch: () => Promise<void>;
 }
 
-/** 현재 가족의 엔타이틀먼트(/api/entitlement + /api/review-rewards). 프리미엄·리뷰 티어 판정. */
+/** 현재 가족의 엔타이틀먼트. effective 정본을 쓰고 구버전 Worker에서만 리뷰 조회를 합성한다. */
 export function useEntitlement(): UseEntitlementResult {
   const { familyId, status } = useAuth();
   const query = useQuery({
@@ -47,35 +50,42 @@ export function useEntitlement(): UseEntitlementResult {
     queryFn: () => fetchEntitlement(familyId as string),
     enabled: status === "authenticated" && !!familyId,
   });
-  const review = useReviewReward();
+  const resolution = query.data !== undefined
+    ? resolveEntitlementResponse(query.data)
+    : null;
+  const hasResolution = resolution !== null;
+  const legacyReviewRequired = hasResolution
+    && resolution.contract === "legacy"
+    && resolution.view?.isPremium === false;
+  const review = useReviewReward({ enabled: legacyReviewRequired });
 
-  // data(캐시 포함)가 있을 때만 프리미엄을 확정한다. refetch 가 실패해도 TanStack 이 마지막
-  // 성공값을 유지하므로 프리미엄이 free 로 강등되지 않는다(R9).
-  const view = query.data ? deriveEntitlement(query.data) : null;
+  // effective가 있으면 raw와 review-rewards를 다시 합성하지 않는다. 필드가 아예 없는
+  // 구버전 Worker의 무료 응답만 별도 review 조회로 grandfather 한도를 복원한다.
+  const resolutionInvalid = hasResolution && resolution.contract === "invalid";
+  const view = resolutionInvalid ? null : resolution?.view ?? null;
   const entReady = view !== null;
-  const isPremium = view ? view.isPremium : false;
-
-  // tier 확정 조건:
-  //  - 프리미엄이면 리뷰 여부와 무관하게 premium 이므로 리뷰 조회를 기다리지 않는다.
-  //  - 비프리미엄이면 free/reviewed 구분에 리뷰 조회가 필요하나, review-rewards 는 서버가
-  //    대부분 graceful(rewarded=false)이므로 조회가 영구 실패(isError)해도 reviewed=false 로
-  //    안전 확정한다(그렇지 않으면 tier 가 unknown 에 갇혀 free 게이트가 앱 전역에서 미확정).
-  //    R9: 프리미엄 강등은 여전히 없음 — entReady=false 일 때만 unknown.
-  const reviewSettled = review.ready || review.isError;
-  const tierReady = entReady && (isPremium || reviewSettled);
-  const tier = tierFrom({ ready: tierReady, isPremium, reviewed: review.rewarded });
+  const isPremium = entReady && view.isPremium;
+  const effectiveGrandfathered = hasResolution
+    && resolution.contract === "effective"
+    && resolution.hasGrandfatheredReviewLimits;
+  const reviewed = effectiveGrandfathered || (legacyReviewRequired && review.rewarded);
+  // 구버전 review 조회도 실패 시 free로 추정하지 않고 unknown으로 닫는다.
+  const tierReady = entReady && (!legacyReviewRequired || review.ready);
+  const tier = tierFrom({ ready: tierReady, isPremium, reviewed });
+  const reviewError = legacyReviewRequired && review.isError;
 
   return {
-    ready: entReady,
+    ready: tierReady,
     isPremium,
     reviewed: tier === TIERS.REVIEWED,
     tier,
-    view,
-    isLoading: query.isLoading,
-    isError: query.isError,
-    isFetching: query.isFetching,
+    view: tierReady ? view : null,
+    isLoading: query.isLoading || (legacyReviewRequired && review.isLoading),
+    isError: query.isError || resolutionInvalid || reviewError,
+    isFetching: query.isFetching || (legacyReviewRequired && review.isFetching),
     refetch: async () => {
       await query.refetch();
+      if (legacyReviewRequired) await review.refetch();
     },
   };
 }

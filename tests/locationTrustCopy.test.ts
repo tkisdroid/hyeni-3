@@ -16,15 +16,16 @@ test("프리미엄의 90초 이내 위치만 현재 위치로 안내한다", () 
   );
 });
 
-test("지연 또는 오래된 좌표를 실시간으로 단정하지 않는다", () => {
-  const delayed = resolveLocationTrustCopy({
-    mode: "delayed",
+test("무료 최근 위치 또는 오래된 좌표를 실시간으로 단정하지 않는다", () => {
+  const standard = resolveLocationTrustCopy({
+    mode: "standard",
     modeKnown: true,
-    updatedAt: "2026-07-14T05:44:00.000Z",
+    updatedAt: "2026-07-14T05:54:00.000Z",
     now,
   });
-  assert.equal(delayed.badge, "15분 지연 위치");
-  assert.match(delayed.detail, /마지막 공개 위치/);
+  assert.equal(standard.badge, "최근 위치");
+  assert.match(standard.detail, /약 10분 간격 자동 확인/);
+  assert.doesNotMatch(`${standard.badge} ${standard.detail}`, /현재 위치|실시간/);
 
   const stale = resolveLocationTrustCopy({
     mode: "realtime",
@@ -78,7 +79,7 @@ test("무료 잠금은 좌표·로딩·오류보다 먼저 위치 조회 제한�
   }
 });
 
-test("위치 조회 로딩·오류·신호 대기·지연 위치 없음은 서로 다른 문구로 안내한다", () => {
+test("위치 조회 로딩·오류·신호 대기는 서로 다른 문구로 안내한다", () => {
   assert.deepEqual(
     resolveLocationTrustCopy({
       mode: "realtime",
@@ -104,9 +105,22 @@ test("위치 조회 로딩·오류·신호 대기·지연 위치 없음은 서�
     { badge: "위치 신호 대기", detail: "아이 기기의 새 위치 신호를 기다리고 있어요" },
   );
   assert.deepEqual(
-    resolveLocationTrustCopy({ mode: "delayed", modeKnown: true, updatedAt: null, now }),
-    { badge: "공개할 지연 위치 없음", detail: "15분 이전 위치가 아직 없어요" },
+    resolveLocationTrustCopy({ mode: "standard", modeKnown: true, updatedAt: null, now }),
+    { badge: "위치 신호 대기", detail: "아이 기기의 새 위치 신호를 기다리고 있어요" },
   );
+});
+
+test("무료 최근 위치 조회 실패는 마지막 측정 시각과 자동 확인 간격을 함께 알린다", () => {
+  const copy = resolveLocationTrustCopy({
+    mode: "standard",
+    modeKnown: true,
+    updatedAt: "2026-07-14T05:55:00.000Z",
+    loadState: "error",
+    now,
+  });
+  assert.equal(copy.badge, "최근 위치");
+  assert.match(copy.detail, /5분 전 확인/);
+  assert.match(copy.detail, /약 10분 간격 자동 확인/);
 });
 
 test("기존 좌표가 있을 때 새 조회 실패는 마지막 확인 위치와 실패를 함께 알린다", () => {

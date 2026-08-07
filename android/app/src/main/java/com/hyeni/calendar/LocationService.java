@@ -584,7 +584,7 @@ public class LocationService extends Service {
     private static final long PLACE_STATE_TTL_MS = 6L * 60 * 60_000L;
     private static final String PLACE_STATE_PREFIX = "place_geo_";
     private final java.util.List<org.json.JSONObject> cachedPlaces = new java.util.ArrayList<>(); // canonical {placeKey,name,source,lat,lng}
-    private volatile boolean placeAlertsEnabled = false; // premium && registered_place_alerts_enabled
+    private volatile boolean placeAlertsEnabled = false; // registered_place_alerts_enabled
     private volatile String cachedChildName = ""; // family_members.name (부모 알림 카피용, M2)
     private static final long PLACE_FIX_FRESH_MS = 15 * 60_000L; // 서버 GEOFENCE_FIX_FRESH_MS parity (M1)
     private long placeRefreshAtMs = 0L;
@@ -632,45 +632,81 @@ public class LocationService extends Service {
         }
     }
 
-    // saved_places + academies fetch + 게이트(premium·설정) 갱신. 백그라운드 Thread.
+    // saved_places + Premium academies fetch + 가족 설정 게이트 갱신. 백그라운드 Thread.
     private void refreshPlacesAndGates() {
-        if (isBlank(familyId) || isBlank(supabaseUrl)) return;
+        if (isBlank(familyId) || isBlank(supabaseUrl)) {
+            disablePlaceAlertsAndClearCache();
+            return;
+        }
         final String base = supabaseUrl.replaceAll("/+$", "");
+        // master switch 정본을 새로 확인하기 전에는 이전 true/cache를 사용하지 않는다.
+        placeAlertsEnabled = false;
         try {
-            // 게이트: 프리미엄(trial/active/grace) && families.registered_place_alerts_enabled != false
-            boolean premium = false;
-            org.json.JSONArray subs = httpGetArray(base + "/rest/v1/family_subscription?family_id=eq." + familyId + "&select=status");
-            for (int i = 0; subs != null && i < subs.length(); i++) {
-                String st = subs.getJSONObject(i).optString("status", "");
-                if ("trial".equals(st) || "active".equals(st) || "grace".equals(st)) { premium = true; break; }
-            }
-            boolean settingOn = true;
+            // 가족 설정은 전체 등록장소 알림의 master switch다. 티어 대상은 각 저장 장소의
+            // 서버 계산 필드로 판정한다. 조회 실패·누락·중복·타입 불일치는 false로 닫는다.
             org.json.JSONArray fam = httpGetArray(base + "/rest/v1/families?id=eq." + familyId + "&select=registered_place_alerts_enabled");
-            if (fam != null && fam.length() > 0 && fam.getJSONObject(0).has("registered_place_alerts_enabled")) {
-                settingOn = fam.getJSONObject(0).optBoolean("registered_place_alerts_enabled", true);
+            placeAlertsEnabled = TierAlertTargetPolicy.isServerRegisteredPlaceAlertsEnabled(fam);
+            if (!placeAlertsEnabled) {
+                disablePlaceAlertsAndClearCache();
+                return;
             }
-            placeAlertsEnabled = premium && settingOn;
-            if (!placeAlertsEnabled) { synchronized (cachedPlaces) { cachedPlaces.clear(); } return; }
 
             // M2: 부모 알림 카피용 자녀 표시명 (없으면 childDisplayName 이 "아이" 폴백)
             org.json.JSONArray me = httpGetArray(base + "/rest/v1/family_members?family_id=eq." + familyId + "&user_id=eq." + userId + "&select=name");
             if (me != null && me.length() > 0) cachedChildName = me.getJSONObject(0).optString("name", "");
 
+            // 학원은 Premium 전용이다. 정본 entitlement 조회 실패·누락·불일치는 false 로
+            // 닫아 403과 불필요한 refresh 회전을 피하고, 과거 Premium 학원 캐시도 아래
+            // 정본 교체에서 반드시 제거한다.
+            org.json.JSONObject entitlement = httpGetObject(
+                base + "/api/entitlement?family_id=" + familyId
+            );
+            boolean premium = TierAlertTargetPolicy.isServerPremiumEntitlement(entitlement);
+
             java.util.List<org.json.JSONObject> next = new java.util.ArrayList<>();
-            collectPlaces(next, base + "/rest/v1/saved_places?family_id=eq." + familyId + "&select=id,name,location", "saved_place");
-            collectPlaces(next, base + "/rest/v1/academies?family_id=eq." + familyId + "&select=id,name,location", "academy");
+            collectPlaces(
+                next,
+                base + "/rest/v1/saved_places?family_id=eq." + familyId
+                    + "&select=id,name,location,tier_alert_active,tier_alert_inactive_reason"
+                    + "&order=created_at.asc,id.asc",
+                "saved_place",
+                true
+            );
+            if (premium) {
+                collectPlaces(
+                    next,
+                    base + "/rest/v1/academies?family_id=eq." + familyId + "&select=id,name,location",
+                    "academy",
+                    false
+                );
+            }
             next = canonicalizePlaceJson(next);
+            // 네트워크/정본 실패 때 예전 장소를 유지하면 삭제됐거나 티어 한도를 벗어난
+            // 장소가 계속 알림을 만들 수 있다. 가용성보다 오알림 방지를 우선해 매번
+            // 현재 성공 응답만으로 전체 교체하며, 실패한 소스의 stale 캐시는 남기지 않는다.
             synchronized (cachedPlaces) { cachedPlaces.clear(); cachedPlaces.addAll(next); }
         } catch (Exception e) {
+            disablePlaceAlertsAndClearCache();
             Log.w(TAG, "refreshPlacesAndGates failed", e);
         }
     }
 
-    private void collectPlaces(java.util.List<org.json.JSONObject> out, String url, String source) {
+    private void disablePlaceAlertsAndClearCache() {
+        placeAlertsEnabled = false;
+        synchronized (cachedPlaces) { cachedPlaces.clear(); }
+    }
+
+    private void collectPlaces(
+        java.util.List<org.json.JSONObject> out,
+        String url,
+        String source,
+        boolean requireServerAlertTarget
+    ) {
         try {
             org.json.JSONArray arr = httpGetArray(url);
             for (int i = 0; arr != null && i < arr.length(); i++) {
                 org.json.JSONObject r = arr.getJSONObject(i);
+                if (requireServerAlertTarget && !TierAlertTargetPolicy.isServerAlertTarget(r)) continue;
                 org.json.JSONObject loc = r.optJSONObject("location");
                 if (loc == null) continue;
                 double lat = loc.optDouble("lat", Double.NaN), lng = loc.optDouble("lng", Double.NaN);
@@ -749,6 +785,27 @@ public class LocationService extends Service {
             resp.close();
             return new org.json.JSONArray(b);
         } catch (Exception e) { Log.w(TAG, "httpGetArray failed: " + url, e); return null; }
+    }
+
+    @Nullable
+    private org.json.JSONObject httpGetObject(String url) {
+        String bearer = (accessToken != null && !accessToken.isEmpty()) ? accessToken : supabaseKey;
+        try {
+            Request req = new Request.Builder().url(url)
+                .header("apikey", supabaseKey).header("Authorization", "Bearer " + bearer).get().build();
+            Response resp = httpClient.newCall(req).execute();
+            if (resp.code() == 401 || resp.code() == 403) {
+                resp.close();
+                String renewed = networkRefreshAccessToken();
+                if (renewed == null || renewed.isEmpty()) return null;
+                resp = httpClient.newCall(new Request.Builder().url(url)
+                    .header("apikey", supabaseKey).header("Authorization", "Bearer " + renewed).get().build()).execute();
+            }
+            if (!resp.isSuccessful()) { resp.close(); return null; }
+            String body = resp.body() != null ? resp.body().string() : "{}";
+            resp.close();
+            return new org.json.JSONObject(body);
+        } catch (Exception e) { Log.w(TAG, "httpGetObject failed: " + url, e); return null; }
     }
 
     @Nullable

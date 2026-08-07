@@ -1,11 +1,21 @@
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router";
 import { ChevronLeft, Plus, Trash2, TriangleAlert } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
+import { PremiumUpsell } from "@/components/PremiumUpsell";
 import { useSavedPlaces, useDangerZones, useDeleteDangerZone, useDeleteSavedPlace } from "@/queries/useLocation";
 import { useEntitlement } from "@/queries/useEntitlement";
+import {
+  browserPremiumReturnIntentStorage,
+  savePremiumReturnIntent,
+} from "@/transform/premiumReturnIntent";
 import { placeLimitFor, TIERS } from "@/transform/tierPolicy";
 import { resolvePlaceVisual } from "@/transform/placeVisual";
+import {
+  parseTierAlertActivation,
+  tierAlertActivationLabel,
+} from "@/transform/tierAlertActivation";
 import { Loading } from "@/components/ui/Loading";
 import "./PlaceManager.css";
 
@@ -23,6 +33,7 @@ export function PlaceManager() {
   const deleteZone = useDeleteDangerZone();
   const deletePlace = useDeleteSavedPlace();
   const { tier } = useEntitlement();
+  const [upsellOpen, setUpsellOpen] = useState(false);
   const retryPlaces = async () => {
     await Promise.all([placesQuery.refetch(), zonesQuery.refetch()]);
   };
@@ -32,7 +43,7 @@ export function PlaceManager() {
       const limit = placeLimitFor(tier);
       const count = places.length;
       if (count >= limit) {
-        show(`현재 플랜에서는 장소 ${limit}개까지 저장할 수 있어요`, "👑");
+        setUpsellOpen(true);
         return;
       }
     }
@@ -91,6 +102,7 @@ export function PlaceManager() {
             )}
             {!placesLoading && !placesError && places.map((p) => {
               const visual = resolvePlaceVisual(p);
+              const alertState = parseTierAlertActivation(p);
               return (
               <div key={p.id} className="pm-item">
                 <span className="pm-item__icon" data-tone={visual.tone}>
@@ -102,6 +114,9 @@ export function PlaceManager() {
                     <span className="pm-item__badge">{visual.label}</span>
                   </div>
                   <div className="pm-item__addr">{p.location?.address ?? "주소 미등록"}</div>
+                  <div className="pm-alert-state" data-state={alertState}>
+                    {tierAlertActivationLabel(alertState)}
+                  </div>
                 </div>
                 {/* 편집(프리필) 미지원 — 빈 등록폼 오인 방지로 편집은 비노출. 삭제만 제공. */}
                 <button
@@ -145,7 +160,9 @@ export function PlaceManager() {
             {!zonesLoading && !zonesError && zones.length === 0 && (
               <div className="pm-danger__addr" style={{ padding: 16 }}>등록된 위험구역이 없어요</div>
             )}
-            {!zonesLoading && !zonesError && zones.map((z) => (
+            {!zonesLoading && !zonesError && zones.map((z) => {
+              const alertState = parseTierAlertActivation(z);
+              return (
               <div key={z.id} className="pm-danger">
                 <button
                   type="button"
@@ -158,6 +175,9 @@ export function PlaceManager() {
                   <div className="pm-danger__main">
                     <div className="pm-danger__name">{z.name}</div>
                     <div className="pm-danger__addr">반경 {z.radius_m}m · 접근 시 알림</div>
+                    <div className="pm-alert-state" data-state={alertState}>
+                      {tierAlertActivationLabel(alertState)}
+                    </div>
                   </div>
                 </button>
                 <button
@@ -171,10 +191,28 @@ export function PlaceManager() {
                   <Trash2 size={18} strokeWidth={2.2} color="#C0334C" />
                 </button>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
+      <PremiumUpsell
+        open={upsellOpen}
+        source="saved_place"
+        tier={tier}
+        usage={{ used: places.length, limit: placeLimitFor(tier) }}
+        returnTo="/place-form"
+        onClose={() => setUpsellOpen(false)}
+        onUpgrade={({ source, feature, returnTo }) => {
+          const storage = browserPremiumReturnIntentStorage();
+          const saved = storage && returnTo
+            ? savePremiumReturnIntent(storage, { source, feature, returnTo })
+            : false;
+          if (!saved) throw new Error("결제 후 장소 등록 화면으로 돌아올 경로를 안전하게 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+          setUpsellOpen(false);
+          navigate("/subscription");
+        }}
+      />
     </div>
   );
 }

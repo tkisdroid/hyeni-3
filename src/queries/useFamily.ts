@@ -2,6 +2,7 @@
  * 가족 도메인 TanStack Query 훅.
  * 컴포넌트는 이 훅만 import(endpoints/family 직접 호출 금지).
  */
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { qk } from "./keys";
 import { useAuth } from "@/auth/AuthContext";
@@ -21,6 +22,104 @@ import {
   setupChildrenWithPhotos,
   type DraftChildWithPhoto,
 } from "@/lib/api/endpoints/childPhoto";
+import { acquireChildPhotoObjectUrl } from "@/lib/api/client";
+import { extractPrivateChildPhotoPath } from "@/transform/childPhotoPath";
+import type { FamilyInfo } from "@/lib/api/endpoints/family";
+
+interface FamilyPhotoRequest {
+  memberId: string;
+  path: string;
+}
+
+interface FamilyPhotoState {
+  signature: string;
+  urls: ReadonlyMap<string, string>;
+}
+
+const FAMILY_PHOTO_RETRY_DELAYS_MS = [750, 2_000, 5_000] as const;
+
+function useResolvedFamilyPhotos(family: FamilyInfo | null | undefined): FamilyInfo | null | undefined {
+  const requests = useMemo<FamilyPhotoRequest[]>(() => (family?.members ?? []).flatMap((member) => {
+    const path = extractPrivateChildPhotoPath(member.photo_url);
+    return path ? [{ memberId: member.id, path }] : [];
+  }), [family?.members]);
+  const signature = useMemo(
+    () => JSON.stringify(requests.map(({ memberId, path }) => [memberId, path])),
+    [requests],
+  );
+  const [photoState, setPhotoState] = useState<FamilyPhotoState>({
+    signature: "",
+    urls: new Map(),
+  });
+
+  useEffect(() => {
+    let active = true;
+    const leases = new Set<NonNullable<ReturnType<typeof acquireChildPhotoObjectUrl>>>();
+    const retryTimers = new Set<ReturnType<typeof setTimeout>>();
+    setPhotoState({ signature, urls: new Map() });
+
+    function scheduleRetry(request: FamilyPhotoRequest, retryIndex: number): void {
+      if (!active || retryIndex >= FAMILY_PHOTO_RETRY_DELAYS_MS.length) return;
+      const timer = setTimeout(() => {
+        retryTimers.delete(timer);
+        runAttempt(request, retryIndex + 1);
+      }, FAMILY_PHOTO_RETRY_DELAYS_MS[retryIndex]);
+      retryTimers.add(timer);
+    }
+
+    function runAttempt(request: FamilyPhotoRequest, retryIndex: number): void {
+      if (!active) return;
+      const lease = acquireChildPhotoObjectUrl(request.path);
+      if (!lease) return;
+      leases.add(lease);
+      void lease.url
+        .then((url) => {
+          if (!active || !url) {
+            leases.delete(lease);
+            lease.release();
+            return;
+          }
+          setPhotoState((current) => {
+            if (current.signature !== signature) return current;
+            const urls = new Map(current.urls);
+            urls.set(request.memberId, url);
+            return { signature, urls };
+          });
+        })
+        .catch(() => {
+          leases.delete(lease);
+          lease.release();
+          // 일시 오류는 제한된 backoff로 복구하되 가족·역할·안전 데이터 로딩은 실패시키지 않는다.
+          scheduleRetry(request, retryIndex);
+        });
+    }
+
+    for (const request of requests) runAttempt(request, 0);
+
+    return () => {
+      active = false;
+      for (const timer of retryTimers) clearTimeout(timer);
+      retryTimers.clear();
+      for (const lease of leases) lease.release();
+      leases.clear();
+    };
+  // signature가 같으면 family poll로 받은 새 객체에도 같은 lease를 유지한다.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signature]);
+
+  return useMemo(() => {
+    if (!family) return family;
+    const urls = photoState.signature === signature ? photoState.urls : new Map<string, string>();
+    return {
+      ...family,
+      members: family.members.map((member) => {
+        const privatePath = extractPrivateChildPhotoPath(member.photo_url);
+        if (!privatePath) return member;
+        return { ...member, photo_url: urls.get(member.id) ?? null };
+      }),
+    };
+  }, [family, photoState, signature]);
+}
 
 /**
  * 현재 사용자의 가족 정보(/api/family/mine).
@@ -28,12 +127,14 @@ import {
  */
 export function useMyFamily(opts?: { pollMs?: number }) {
   const { familyId, status } = useAuth();
-  return useQuery({
+  const query = useQuery({
     queryKey: qk.family(familyId),
     queryFn: getMyFamily,
     enabled: status === "authenticated",
     refetchInterval: opts?.pollMs && opts.pollMs > 0 ? opts.pollMs : false,
   });
+  const data = useResolvedFamilyPhotos(query.data);
+  return { ...query, data };
 }
 
 /** 본인 프로필(이름/전화/캐릭터) 수정 → 가족 캐시 무효화. */
@@ -105,7 +206,7 @@ export function useSetChildProfile() {
   });
 }
 
-/** 아이 사진 업로드(주 보호자만) → 가족 캐시 무효화(표시용 proxy URL 재합성). */
+/** 아이 사진 업로드(주 보호자만) → 가족 캐시 무효화(표시용 blob URL 재합성). */
 export function useUploadChildPhoto() {
   const qc = useQueryClient();
   const { familyId } = useAuth();

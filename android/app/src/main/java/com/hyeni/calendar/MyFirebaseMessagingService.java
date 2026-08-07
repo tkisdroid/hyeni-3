@@ -210,8 +210,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             return;
         }
 
-        // 주변소리 공유는 일반 알림만 게시한다. 마이크 시작은 아이가 알림을 열고
-        // 매 요청 직접 허용한 뒤 RemoteListenActivity에서만 수행한다.
+        // 주변소리 FCM은 안내 알림만 게시한다. 마이크 시작은 FCM만으로 수행하지 않고
+        // 서버 승인 증표를 확인한 RemoteListenActivity에서만 수행한다.
         if ("remote_listen".equals(type)) {
             SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
             if (!shouldHandleChildCommand(prefs)) {
@@ -581,7 +581,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 | Intent.FLAG_ACTIVITY_CLEAR_TOP
                 | Intent.FLAG_ACTIVITY_NO_HISTORY);
 
-        PendingIntent fullScreenPI = PendingIntent.getActivity(
+        PendingIntent fullScreenPI = UrgentActivityPendingIntent.getActivity(
                 this,
                 ForceRingService.NOTIF_ID,
                 activityIntent,

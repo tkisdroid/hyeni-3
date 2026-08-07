@@ -127,7 +127,8 @@ test("운영 문서는 알림 조용한 시간 정본과 배포 순서를 보존
   assert.match(docs, /SOS[^\n]*미도착[^\n]*위험구역/);
   assert.match(docs, /kkuk[^\n]*(일반|억제)/);
   assert.match(docs, /notification-quiet-hours\.sql[^\n]*Worker[^\n]*(이전|전에)/);
-  assert.match(docs, /A17[^\n]*(단독|한 대)/);
-  assert.match(docs, /razr[^\n]*(연결 해제|미조작)/);
+  assert.match(docs, /A17[^\n]*(부모|parent)/i);
+  assert.match(docs, /razr[^\n]*(아이|child)/i);
+  assert.match(docs, /adb install -r[^\n]*(읽기 전용|역할별)/);
   assert.match(docs, /S25[^\n]*(제외|미조작)/);
 });

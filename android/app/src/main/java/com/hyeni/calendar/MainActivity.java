@@ -225,8 +225,8 @@ public class MainActivity extends BridgeActivity {
     private void handleRemoteListen(Intent intent) {
         if (intent == null || !intent.getBooleanExtra("remoteListen", false)) return;
         // 구버전 full-screen 인텐트는 마이크를 시작하거나 권한을 요청하지 않는다.
-        // 현재 경로는 RemoteListenNotification → RemoteListenActivity의 명시적
-        // 세션별 동의만 허용한다.
+        // 현재 경로는 RemoteListenNotification → RemoteListenActivity에서
+        // 서버 승인 증표·세션 일치를 확인한 실행만 허용한다.
         intent.removeExtra("remoteListen");
         Log.w("MainActivity", "Legacy remote listen auto-start intent ignored");
     }

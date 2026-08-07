@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { ChevronLeft, Home, Map, MapPin, Navigation, RotateCw } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { childAvatarPath } from "@/lib/avatar";

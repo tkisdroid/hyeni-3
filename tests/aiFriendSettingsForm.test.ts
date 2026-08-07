@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   buildAiFriendControlPatch,
+  isAiFriendControlFormDirty,
   normalizeAiControlTime,
   parseAiTopicText,
 } from "../src/transform/aiFriendSettingsForm.ts";
@@ -39,4 +40,27 @@ test("시간 입력은 HH:MM 형식만 허용하고 잘못된 값은 안전한 �
   assert.equal(normalizeAiControlTime("9:5", "08:00"), "08:00");
   assert.equal(normalizeAiControlTime("24:00", "08:00"), "08:00");
   assert.equal(normalizeAiControlTime("09:05", "08:00"), "09:05");
+});
+
+test("AI 상세 설정은 서버 기본값과 같으면 깨끗하고 의미 있는 입력 변경만 dirty로 판정한다", () => {
+  const form = {
+    forbiddenTopicsText: "게임\n게임",
+    proactiveEnabled: false,
+    proactiveStartTime: "08:00",
+    proactiveEndTime: "20:00",
+    quietHoursStart: "21:00",
+    quietHoursEnd: "07:00",
+    allowScheduleActions: true,
+    allowContactActions: true,
+  };
+
+  assert.equal(isAiFriendControlFormDirty(form, { forbidden_topics: ["게임"] }), false);
+  assert.equal(
+    isAiFriendControlFormDirty({ ...form, quietHoursStart: "22:00" }, { forbidden_topics: ["게임"] }),
+    true,
+  );
+  assert.equal(
+    isAiFriendControlFormDirty({ ...form, allowContactActions: false }, { forbidden_topics: ["게임"] }),
+    true,
+  );
 });

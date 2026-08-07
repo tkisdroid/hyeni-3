@@ -56,6 +56,22 @@ export function webPushDeliveryView(
     };
   }
 
+  if (environment.iosHomeScreenInstallRequired) {
+    return {
+      reason: "unsupported",
+      ready: false,
+      canSubscribe: false,
+      canRegisterAccount: false,
+      canUnsubscribe: false,
+      title: "iPhone 홈 화면 앱에서 알림을 켜 주세요",
+      detail: "Safari 공유 버튼에서 ‘홈 화면에 추가’한 혜니캘린더를 연 뒤 웹 알림을 켜 주세요.",
+      configuredLabel: "확인 안 함",
+      permissionLabel: "홈 화면 앱 필요",
+      subscriptionLabel: "등록 전",
+      accountRegistrationLabel: "등록 전",
+    };
+  }
+
   const labels = {
     configuredLabel: state.configured ? "설정됨" : "설정 필요",
     permissionLabel: permissionLabel(state.permission),
@@ -67,21 +83,6 @@ export function webPushDeliveryView(
         : "확인 실패",
   };
   if (!state.supported) {
-    if (environment.iosHomeScreenInstallRequired) {
-      return {
-        reason: "unsupported",
-        ready: false,
-        canSubscribe: false,
-        canRegisterAccount: false,
-        canUnsubscribe: false,
-        title: "iPhone 홈 화면 앱에서 알림을 켜 주세요",
-        detail: "Safari 공유 버튼에서 ‘홈 화면에 추가’한 혜니캘린더를 연 뒤 웹 알림을 켜 주세요.",
-        configuredLabel: "확인 안 함",
-        permissionLabel: "홈 화면 앱 필요",
-        subscriptionLabel: "등록 전",
-        accountRegistrationLabel: "등록 전",
-      };
-    }
     return {
       reason: "unsupported",
       ready: false,

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import {
   Bug,
   ChevronLeft,
@@ -172,7 +172,7 @@ export function Feedback() {
         </h1>
       </header>
 
-      <main className="fb-body">
+      <section className="fb-body">
         <div className="fb-intro">
           <img className="fb-intro__mascot" src={asset("mascot/thinking.webp")} alt="" />
           <div>
@@ -323,7 +323,7 @@ export function Feedback() {
                 ? childTone ? "질문 보내기" : "문의 보내기"
                 : childTone ? "아이디어 보내기" : "제안 보내기"}
         </button>
-      </main>
+      </section>
     </div>
   );
 }

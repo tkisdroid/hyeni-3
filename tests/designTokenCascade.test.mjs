@@ -168,8 +168,8 @@ test("busy 상태는 실제 버튼의 aria-busy와 중복 실행 차단 조건�
   assert.match(aiSchedule, /className=\{listening[\s\S]{0,220}disabled=\{parseM\.isPending\}[\s\S]{0,100}aria-busy=\{parseM\.isPending\}/);
   assert.match(aiSchedule, /className="ais-confirm hy-press"[\s\S]{0,150}disabled=\{createM\.isPending\}[\s\S]{0,80}aria-busy=\{createM\.isPending\}/);
   assert.match(aiSchedule, /className="ais-confirm hy-press"[\s\S]{0,170}disabled=\{!canParse \|\| parseM\.isPending\}[\s\S]{0,80}aria-busy=\{parseM\.isPending\}/);
-  assert.match(remoteAudio, /className="ra-start hy-press"[\s\S]{0,220}disabled=\{starting \|\| requestListen\.isPending \|\| !childUserId \|\| !remoteAudioDataReady\}[\s\S]{0,120}aria-busy=\{starting \|\| requestListen\.isPending\}/);
-  assert.match(remoteRing, /className="rr-cta hy-press"[\s\S]{0,180}disabled=\{!quotaAllowed \|\| !targetChild \|\| ringing \|\| trigger\.isPending\}[\s\S]{0,120}aria-busy=\{ringing \|\| trigger\.isPending\}/);
+  assert.match(remoteAudio, /className="ra-start hy-press"[\s\S]{0,260}disabled=\{ending \|\| starting \|\| requestListen\.isPending \|\| !childUserId \|\| !remoteAudioDataReady\}[\s\S]{0,140}aria-busy=\{ending \|\| starting \|\| requestListen\.isPending\}/);
+  assert.match(remoteRing, /className="rr-cta hy-press"[\s\S]{0,200}disabled=\{!ringDataReady \|\| !targetChild\?\.user_id \|\| ringing \|\| trigger\.isPending\}[\s\S]{0,120}aria-busy=\{ringing \|\| trigger\.isPending\}/);
   assert.match(remoteRing, /className="rr-modal-confirm hy-press"[\s\S]{0,180}disabled=\{trigger\.isPending\}[\s\S]{0,120}aria-busy=\{trigger\.isPending\}/);
   assert.match(remoteRing, /ringing \|\| trigger\.isPending \? "울리는 중…" : "지금 울리기"/);
 });

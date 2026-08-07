@@ -10,6 +10,7 @@ import { qk } from "./keys";
 import { useAuth } from "@/auth/AuthContext";
 import {
   fetchAiCredits,
+  fetchAiCreditPublicStatus,
   fetchAiCreditLedger,
   fetchAiMessages,
   sendChildChat,
@@ -27,8 +28,14 @@ import {
   type DaySummaryResult,
   type DaySummaryClientSignals,
   type AiFriendSettings,
+  type AiCreditPublicStatus,
   fetchAiUsageToday,
 } from "@/lib/api/endpoints/ai";
+import { fetchWebAiCreditCatalog } from "@/lib/api/endpoints/webBilling";
+import {
+  validateWebAiCreditCatalog,
+  type WebAiCreditCatalog,
+} from "@/transform/webAiCreditBilling";
 
 /**
  * 자녀 AI 크레딧 잔액/상태.
@@ -44,9 +51,33 @@ export function useAiCredits(childUserId?: string | null) {
   });
 }
 
+/** 부모와 아이 본인이 함께 읽는 서버 계산 AI 대화 가능 횟수. */
+export function useAiCreditPublicStatus(childUserId?: string | null) {
+  const { familyId, status } = useAuth();
+  return useQuery({
+    queryKey: qk.aiCreditPublicStatus(familyId ?? "", childUserId ?? ""),
+    queryFn: () => fetchAiCreditPublicStatus(familyId as string, childUserId as string),
+    enabled: status === "authenticated" && !!familyId && !!childUserId,
+    staleTime: 30_000,
+  });
+}
+
+/** PWA 일회성 결제용 서버 확정 카탈로그. Android에서는 네트워크 요청을 열지 않는다. */
+export function useWebAiCreditCatalog(enabled = true) {
+  const { familyId, status } = useAuth();
+  return useQuery<WebAiCreditCatalog>({
+    queryKey: qk.webAiCreditCatalog(familyId ?? ""),
+    queryFn: async () => validateWebAiCreditCatalog(
+      await fetchWebAiCreditCatalog(familyId as string),
+    ),
+    enabled: enabled && status === "authenticated" && !!familyId,
+    staleTime: 60_000,
+  });
+}
+
 /**
- * 오늘 AI 대화 사용 횟수(아이 본인도 호출 가능).
- * 남은 횟수는 `remainingAiChats(daily_limit, count)` 로 계산한다 — 서버가 남은 값을 직접 주지 않는다.
+ * 오늘 AI 대화 원시 사용 횟수(과거 화면 호환용).
+ * 대화 가능한 실제 잔여 횟수는 `useAiCreditPublicStatus`를 사용한다.
  */
 export function useAiUsageToday(childUserId?: string | null) {
   const { familyId, status } = useAuth();
@@ -92,9 +123,22 @@ export function useSendChildChat() {
   const { familyId, userId } = useAuth();
   return useMutation<ChildChatReply, unknown, SendChildChatInput>({
     mutationFn: (input: SendChildChatInput) => sendChildChat(input),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: qk.aiCredits(familyId ?? "") });
-      if (userId) qc.invalidateQueries({ queryKey: qk.aiMessages(userId) });
+    onSuccess: (result) => {
+      const nextRemaining = result.remaining;
+      if (
+        familyId
+        && userId
+        && typeof nextRemaining === "number"
+        && Number.isSafeInteger(nextRemaining)
+        && nextRemaining >= 0
+      ) {
+        qc.setQueryData<AiCreditPublicStatus>(
+          qk.aiCreditPublicStatus(familyId, userId),
+          (current) => current ? { ...current, availableRemaining: nextRemaining } : current,
+        );
+      }
+      void qc.invalidateQueries({ queryKey: qk.aiCredits(familyId ?? "") });
+      if (userId) void qc.invalidateQueries({ queryKey: qk.aiMessages(userId) });
     },
   });
 }
@@ -107,6 +151,8 @@ export function useSendChildChat() {
  */
 export function useParseSchedule() {
   return useMutation<ParseScheduleResult, unknown, ParseScheduleInput>({
+    // AiSchedule가 quota·Premium·파싱·네트워크 오류를 모두 구체적으로 안내한다.
+    meta: { silentError: true },
     mutationFn: (input: ParseScheduleInput) => parseSchedule(input),
   });
 }

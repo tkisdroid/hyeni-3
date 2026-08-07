@@ -23,7 +23,8 @@ test("사진 업로드는 client key PUT 대신 목적·대상을 포함한 서�
 
 test("사진 업로드는 공통 apiRequest의 401 single-flight refresh와 응답 경로 검증을 재사용한다", () => {
   const start = client.indexOf("export async function apiUploadChildPhoto");
-  const end = client.indexOf("export function childPhotoProxyUrl", start);
+  const end = client.indexOf("async function fetchPrivateObjectUrl", start);
+  assert.ok(start >= 0 && end > start, "사진 업로드 함수 경계를 찾지 못했습니다");
   const uploadFunction = client.slice(start, end);
   assert.match(uploadFunction, /apiRequest<\{ path: string \}>/);
   assert.doesNotMatch(uploadFunction, /\bfetch\(/);

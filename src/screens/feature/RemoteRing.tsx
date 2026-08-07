@@ -1,11 +1,12 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router";
 import { AlertTriangle, Bell, Check, ChevronLeft, RefreshCw } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { useActiveChild } from "@/app/activeChild";
 import { Loading } from "@/components/ui/Loading";
+import { PremiumUpsell } from "@/components/PremiumUpsell";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import { useMyFamily } from "@/queries/useFamily";
 import {
@@ -16,15 +17,46 @@ import {
   useStopForceRing,
 } from "@/queries/useRemote";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
+import {
+  browserPremiumReturnIntentStorage,
+  loadPremiumReturnIntent,
+  savePremiumReturnIntent,
+} from "@/transform/premiumReturnIntent";
+import { TIERS } from "@/transform/tierPolicy";
 import "./RemoteRing.css";
 
 /** 선택 가능한 벨소리 지속(초). 아이 기기 알람을 이 시간 뒤 자동 정지한다. */
 const DURATIONS = [15, 30, 60] as const;
+type RingDuration = (typeof DURATIONS)[number];
+
+interface RemoteRingDraft {
+  childUserId: string;
+  durationSec: RingDuration;
+}
+
+function parseRemoteRingDraft(value: unknown): RemoteRingDraft | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const row = value as Record<string, unknown>;
+  const childUserId = typeof row.childUserId === "string" ? row.childUserId.trim() : "";
+  const durationSec = Number(row.durationSec);
+  if (!childUserId || childUserId.length > 200) return null;
+  if (!DURATIONS.includes(durationSec as RingDuration)) return null;
+  return { childUserId, durationSec: durationSec as RingDuration };
+}
+
+function restoredRemoteRingDraft(routeDraft: unknown): RemoteRingDraft | null {
+  const fromRoute = parseRemoteRingDraft(routeDraft);
+  if (fromRoute) return fromRoute;
+  const storage = browserPremiumReturnIntentStorage();
+  const intent = storage ? loadPremiumReturnIntent(storage) : null;
+  if (!intent || intent.source !== "remote_ring" || intent.returnTo !== "/remote-ring") return null;
+  return parseRemoteRingDraft(intent.draft);
+}
 
 const pad2 = (n: number): string => String(n).padStart(2, "0");
 
 function avatarSrc(path: string): string {
-  return path.startsWith("http") ? path : asset(path);
+  return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
 }
 
 /** ISO 시각 → 상대시간 라벨(방금/N분/N시간/N일 전). */
@@ -83,7 +115,9 @@ export function RemoteRing() {
   const children = useMemo(
     () =>
       (family?.members ?? [])
-        .filter((m) => m.role === "child")
+        .filter(
+          (m) => m.role === "child" && typeof m.user_id === "string" && m.user_id.trim().length > 0,
+        )
         .sort((a, b) => (a.child_order ?? 99) - (b.child_order ?? 99)),
     [family],
   );
@@ -91,22 +125,28 @@ export function RemoteRing() {
   // 초기 대상 = 진입 시 지정(state.childUserId) > 전역 활성 아이 > 첫 아이.
   // 명시 선택 칩은 발사 대상 지정이 본질이라 유지 — 기본값만 활성 아이로(형제 오발사 방지).
   const { activeChild } = useActiveChild();
-  const routeState = (useLocation().state ?? null) as { childUserId?: string } | null;
+  const routeState = (useLocation().state ?? null) as {
+    childUserId?: string;
+    premiumReturnDraft?: unknown;
+  } | null;
+  const [initialDraft] = useState(() => restoredRemoteRingDraft(routeState?.premiumReturnDraft));
+  const routeChildUserId = routeState?.childUserId ?? initialDraft?.childUserId;
   const [targetId, setTargetId] = useState<string | null>(null);
   const targetChild = useMemo(
     () =>
       children.find((c) => c.user_id === targetId) ??
-      (routeState?.childUserId
-        ? children.find((c) => c.user_id === routeState.childUserId)
+      (routeChildUserId
+        ? children.find((c) => c.user_id === routeChildUserId)
         : undefined) ??
       children.find((c) => c.id === activeChild?.id) ??
       children[0] ??
       null,
-    [children, targetId, routeState, activeChild],
+    [children, targetId, routeChildUserId, activeChild],
   );
 
-  const [durationSec, setDurationSec] = useState<number>(30);
+  const [durationSec, setDurationSec] = useState<number>(initialDraft?.durationSec ?? 30);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [upsellOpen, setUpsellOpen] = useState(false);
   const confirmTitleId = useId();
   const confirmDescriptionId = useId();
   const confirmCancelRef = useRef<HTMLButtonElement>(null);
@@ -193,12 +233,16 @@ export function RemoteRing() {
       show("소리 울리기 정보를 다시 확인해 주세요", "⚠️");
       return;
     }
-    if (!targetChild) {
-      show("연결된 아이가 없어요", "🔔");
+    if (!targetChild?.user_id) {
+      show("아이 앱 연결을 확인해 주세요", "🔔");
       return;
     }
     if (!quotaAllowed) {
-      show("오늘 소리 울리기 횟수를 다 썼어요", "🔕");
+      if (quota?.tier === "premium") {
+        show("최근 24시간 소리 울리기 10회를 모두 사용했어요", "🔕");
+      } else {
+        setUpsellOpen(true);
+      }
       return;
     }
     setShowConfirm(true);
@@ -212,7 +256,7 @@ export function RemoteRing() {
     try {
       const res = await trigger.mutateAsync({ targetChildUserId: targetChild.user_id, message: "" });
       if (res.error) {
-        if (res.error === "force_ring_quota_exceeded") show("오늘 소리 울리기 횟수를 다 썼어요", "🔕");
+        if (res.error === "force_ring_quota_exceeded") show("최근 24시간 소리 울리기 횟수를 다 썼어요", "🔕");
         else if (res.error === "force_ring_already_active") show("이미 벨이 울리고 있어요", "🔔");
         else show("소리를 울리지 못했어요", "⚠️");
         return;
@@ -260,7 +304,7 @@ export function RemoteRing() {
           <section className="rr-query-state rr-query-state--error" role="alert" aria-live="assertive">
             <AlertTriangle size={24} strokeWidth={2.4} aria-hidden="true" />
             <b>소리 울리기 정보를 불러오지 못했어요</b>
-            <p>연결된 아이와 오늘 사용 횟수를 다시 확인해 주세요.</p>
+            <p>연결된 아이와 최근 24시간 사용 횟수를 다시 확인해 주세요.</p>
             <button
               type="button"
               className="rr-query-retry hy-press"
@@ -347,8 +391,8 @@ export function RemoteRing() {
             <div className={`rr-quota${quotaAllowed ? "" : " rr-quota--empty"}`}>
               <span className="rr-quota-tier">{tierLabel}</span>
               {quotaAllowed
-                ? `오늘 ${quota.used}/${quota.quota}회 사용`
-                : "오늘 사용 횟수를 다 썼어요"}
+                ? `최근 24시간 ${quota.used}/${quota.quota}회 사용`
+                : "최근 24시간 사용 횟수를 다 썼어요"}
             </div>
           )}
         </div>
@@ -356,7 +400,7 @@ export function RemoteRing() {
         <button
           type="button"
           className="rr-cta hy-press"
-          disabled={!quotaAllowed || !targetChild || ringing || trigger.isPending}
+          disabled={!ringDataReady || !targetChild?.user_id || ringing || trigger.isPending}
           aria-busy={ringing || trigger.isPending}
           onClick={onRingClick}
         >
@@ -450,6 +494,26 @@ export function RemoteRing() {
           </button>
         </div>
       )}
+      <PremiumUpsell
+        open={upsellOpen}
+        source="remote_ring"
+        tier={quota?.tier === "premium" ? TIERS.PREMIUM : quota ? TIERS.FREE : TIERS.UNKNOWN}
+        returnTo="/remote-ring"
+        onClose={() => setUpsellOpen(false)}
+        onUpgrade={({ source, feature, returnTo }) => {
+          const storage = browserPremiumReturnIntentStorage();
+          const saved = storage && returnTo
+            ? savePremiumReturnIntent(storage, {
+                source,
+                feature,
+                returnTo,
+                draft: { childUserId: targetChild?.user_id ?? null, durationSec },
+              })
+            : false;
+          if (!saved) throw new Error("선택한 아이와 벨 시간을 안전하게 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+          navigate("/subscription");
+        }}
+      />
     </div>
   );
 }

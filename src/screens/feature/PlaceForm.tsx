@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router";
 import { ChevronLeft, LocateFixed } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { KakaoMap } from "@/components/KakaoMap";
+import { PremiumUpsell } from "@/components/PremiumUpsell";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { loadKakaoMaps } from "@/lib/kakaoMap";
 import { hasKakaoKey } from "@/config/env";
@@ -11,6 +12,12 @@ import { useEntitlement } from "@/queries/useEntitlement";
 import { resolveMapCenter } from "@/transform/mapCenter";
 import { placeLimitFor, TIERS } from "@/transform/tierPolicy";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
+import {
+  browserPremiumReturnIntentStorage,
+  clearPremiumReturnIntent,
+  loadPremiumReturnIntent,
+  savePremiumReturnIntent,
+} from "@/transform/premiumReturnIntent";
 import { ApiError } from "@/lib/api/errors";
 import "./PlaceForm.css";
 
@@ -30,18 +37,66 @@ interface LatLng {
   lng: number;
 }
 
+interface PlaceFormDraft {
+  placeName: string;
+  address: string;
+  placeType: PlaceTypeId;
+  alertRadius: number;
+  picked: LatLng | null;
+  center: LatLng | null;
+}
+
+function validLatLng(value: unknown): LatLng | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  const lat = Number(row.lat);
+  const lng = Number(row.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    return null;
+  }
+  return { lat, lng };
+}
+
+function parsePlaceFormDraft(value: unknown): PlaceFormDraft | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  const placeType = row.placeType;
+  const alertRadius = Number(row.alertRadius);
+  if (placeType !== "home" && placeType !== "academy" && placeType !== "frequent") return null;
+  if (alertRadius !== 30 && alertRadius !== 100 && alertRadius !== 150) return null;
+  return {
+    placeName: typeof row.placeName === "string" ? row.placeName.slice(0, 100) : "",
+    address: typeof row.address === "string" ? row.address.slice(0, 300) : "",
+    placeType,
+    alertRadius,
+    picked: row.picked == null ? null : validLatLng(row.picked),
+    center: row.center == null ? null : validLatLng(row.center),
+  };
+}
+
+function restoredPlaceFormDraft(routeDraft: unknown): PlaceFormDraft | null {
+  const fromRoute = parsePlaceFormDraft(routeDraft);
+  if (fromRoute) return fromRoute;
+  const storage = browserPremiumReturnIntentStorage();
+  const intent = storage ? loadPremiumReturnIntent(storage) : null;
+  if (!intent || intent.source !== "saved_place" || intent.returnTo !== "/place-form") return null;
+  return parsePlaceFormDraft(intent.draft);
+}
+
 // 미선택 칩 — EventForm 과 같은 토큰 정본(3.38:1 → 4.98:1).
 const IDLE_BG = "var(--bg-chip-idle)";
 const IDLE_COLOR = "var(--fg-tertiary)";
 
 export function PlaceForm() {
   const navigate = useNavigate();
+  const routeState = (useLocation().state ?? null) as { premiumReturnDraft?: unknown } | null;
   const { show } = useToast();
   const createPlace = useCreateSavedPlace();
   const placesQuery = useSavedPlaces();
   const entitlementQuery = useEntitlement();
   const { tier } = entitlementQuery;
   const places = placesQuery.data ?? [];
+  const limit = placeLimitFor(tier);
   const placeFormQueryState = resolveQueryTruthState([
     { isLoading: placesQuery.isLoading, isError: placesQuery.isError },
     { isLoading: entitlementQuery.isLoading, isError: entitlementQuery.isError },
@@ -53,19 +108,21 @@ export function PlaceForm() {
   };
   // 지도 기본 중심: 현재 위치 > 집 > 아이 마지막 위치 > 서울(서울 밖 가족이 매번 지도를 끌던 문제).
   const childLocationsQuery = useChildLocations();
+  const [initialDraft] = useState(() => restoredPlaceFormDraft(routeState?.premiumReturnDraft));
+  const [upsellOpen, setUpsellOpen] = useState(false);
 
-  const [placeName, setPlaceName] = useState("");
-  const [address, setAddress] = useState("");
-  const [placeType, setPlaceType] = useState<PlaceTypeId>("academy");
+  const [placeName, setPlaceName] = useState(initialDraft?.placeName ?? "");
+  const [address, setAddress] = useState(initialDraft?.address ?? "");
+  const [placeType, setPlaceType] = useState<PlaceTypeId>(initialDraft?.placeType ?? "academy");
   // 도착/출발 알림 반경(m) — 기본 30(정밀). 학교류는 저장 안 해도 서버가 100m 기본 적용.
-  const [alertRadius, setAlertRadius] = useState<number>(30);
+  const [alertRadius, setAlertRadius] = useState<number>(initialDraft?.alertRadius ?? 30);
   const ALERT_RADII = [
     { value: 30, label: "기본 30m" },
     { value: 100, label: "넓게 100m" },
     { value: 150, label: "아주 넓게 150m" },
   ] as const;
-  const [picked, setPicked] = useState<LatLng | null>(null);
-  const [center, setCenter] = useState<LatLng | null>(null);
+  const [picked, setPicked] = useState<LatLng | null>(initialDraft?.picked ?? null);
+  const [center, setCenter] = useState<LatLng | null>(initialDraft?.center ?? null);
   const mapCenter = useMemo(
     () => resolveMapCenter({
       current: center,
@@ -220,9 +277,8 @@ export function PlaceForm() {
       show("장소 이름을 입력해 주세요", "✏️");
       return;
     }
-    const limit = placeLimitFor(tier);
     if (places.length >= limit) {
-      show(`현재 플랜에서는 장소 ${limit}개까지 저장할 수 있어요`, "👑");
+      setUpsellOpen(true);
       return;
     }
     createPlace.mutate(
@@ -240,6 +296,8 @@ export function PlaceForm() {
       },
       {
         onSuccess: () => {
+          const storage = browserPremiumReturnIntentStorage();
+          if (storage) clearPremiumReturnIntent(storage);
           show(`‘${name}’ 장소를 저장했어요`, "📍");
           navigate(-1);
         },
@@ -429,6 +487,27 @@ export function PlaceForm() {
           {createPlace.isPending ? "저장 중…" : "저장하기"}
         </button>
       </div>
+      <PremiumUpsell
+        open={upsellOpen}
+        source="saved_place"
+        tier={tier}
+        usage={{ used: places.length, limit }}
+        returnTo="/place-form"
+        onClose={() => setUpsellOpen(false)}
+        onUpgrade={({ source, feature, returnTo }) => {
+          const storage = browserPremiumReturnIntentStorage();
+          const saved = storage && returnTo
+            ? savePremiumReturnIntent(storage, {
+                source,
+                feature,
+                returnTo,
+                draft: { placeName, address, placeType, alertRadius, picked, center },
+              })
+            : false;
+          if (!saved) throw new Error("작성 중인 장소를 안전하게 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+          navigate("/subscription");
+        }}
+      />
     </div>
   );
 }

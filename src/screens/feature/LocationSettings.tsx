@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight, MapPin, Check, Radar, BatteryCharging, History } from "lucide-react";
+import { useLocation, useNavigate } from "react-router";
+import { ChevronLeft, ChevronRight, MapPin, Check, Radar, BatteryCharging, History, Crown } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useActiveChild } from "@/app/activeChild";
@@ -10,7 +10,13 @@ import { requestDeviceStatus } from "@/lib/api/endpoints/remote";
 import type { LocationIntervalMode, LocationPreferences } from "@/lib/api/endpoints/location";
 import { deviceLocationHealthView } from "@/transform/deviceNotificationHealth";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
+import { PremiumUpsell } from "@/components/PremiumUpsell";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
+import {
+  browserPremiumReturnIntentStorage,
+  savePremiumReturnIntent,
+} from "@/transform/premiumReturnIntent";
+import { TIERS } from "@/transform/tierPolicy";
 import "./LocationSettings.css";
 
 /**
@@ -22,12 +28,18 @@ import "./LocationSettings.css";
  */
 
 type UpdateInterval = LocationIntervalMode;
-type SavingAction = "background" | "battery" | `interval:${UpdateInterval}`;
+type SavingAction = "background" | "battery" | "return-live" | `interval:${UpdateInterval}`;
 
 interface LocationPrefs {
   background: boolean;
   interval: UpdateInterval;
   batterySaverException: boolean;
+}
+
+interface LocationSettingsRouteState {
+  premiumReturnSource?: string;
+  premiumEntitlementConfirmed?: boolean;
+  premiumReturnDraft?: unknown;
 }
 
 const PREFS_KEY = "hy.locationPrefs.v1";
@@ -49,6 +61,16 @@ const INTERVAL_DESC: Record<UpdateInterval, string> = {
   balanced: "이동할 때는 자주, 멈춰 있을 때는 드물게 보내요.",
   saver: "배터리를 아끼는 대신 위치가 조금 늦게 갱신될 수 있어요.",
 };
+
+function restoredLiveIntervalIntent(state: LocationSettingsRouteState | null): boolean {
+  if (
+    state?.premiumReturnSource !== "location_live_interval"
+    || state.premiumEntitlementConfirmed !== true
+    || !state.premiumReturnDraft
+    || typeof state.premiumReturnDraft !== "object"
+  ) return false;
+  return (state.premiumReturnDraft as Record<string, unknown>).interval === "live";
+}
 
 function loadPrefs(): LocationPrefs {
   try {
@@ -93,17 +115,23 @@ function locationPreferencesHydrationKey(
 
 export function LocationSettings() {
   const navigate = useNavigate();
+  const routeState = (useLocation().state ?? null) as LocationSettingsRouteState | null;
   const { show } = useToast();
   const { familyId } = useAuth();
   const { activeChild } = useActiveChild();
   const entitlementQuery = useEntitlement();
   const preferencesQuery = useLocationPreferences();
   const savePreferences = useSaveLocationPreferences();
-  const { isPremium } = entitlementQuery;
+  const { isPremium, tier } = entitlementQuery;
   const [prefs, setPrefs] = useState<LocationPrefs>(loadPrefs);
   const [hydratedFamilyId, setHydratedFamilyId] = useState<string | null>(null);
   const [hydratedPreferencesKey, setHydratedPreferencesKey] = useState<string | null>(null);
   const [savingAction, setSavingAction] = useState<SavingAction | null>(null);
+  const [liveUpsellOpen, setLiveUpsellOpen] = useState(false);
+  const [historyUpsellOpen, setHistoryUpsellOpen] = useState(false);
+  const [restoredInterval, setRestoredInterval] = useState<UpdateInterval | null>(
+    () => restoredLiveIntervalIntent(routeState) ? "live" : null,
+  );
   const saving = savingAction !== null || savePreferences.isPending;
   const currentFamilyIdRef = useRef(familyId);
   currentFamilyIdRef.current = familyId;
@@ -127,6 +155,8 @@ export function LocationSettings() {
     && !locationSettingsDataMissing
     && !locationSettingsDataReady;
   const locationSettingsRefetching = preferencesQuery.isFetching || entitlementQuery.isFetching;
+  const pendingInterval = tier === TIERS.PREMIUM ? restoredInterval : null;
+  const selectedInterval = pendingInterval ?? prefs.interval;
   const retryLocationSettings = async (): Promise<void> => {
     await Promise.all([preferencesQuery.refetch(), entitlementQuery.refetch()]);
   };
@@ -161,6 +191,7 @@ export function LocationSettings() {
     };
     setPrefs(next);
     savePrefs(next);
+    setRestoredInterval((current) => current === next.interval ? null : current);
     setHydratedFamilyId(familyId);
     setHydratedPreferencesKey(serverPreferencesKey);
   }, [familyId, preferencesQuery.data, serverPreferencesKey]);
@@ -170,11 +201,11 @@ export function LocationSettings() {
     patch: Partial<LocationPrefs>,
     message: string,
     icon: string,
-  ) => {
+  ): Promise<boolean> => {
     const updateFamilyId = familyId;
     if (!updateFamilyId || !locationSettingsDataReady || saving || savePreferences.isPending) {
       show("서버의 위치 설정을 확인한 뒤 다시 시도해 주세요", "⚠️");
-      return;
+      return false;
     }
     const next = { ...prefs, ...patch };
     setSavingAction(action);
@@ -187,7 +218,7 @@ export function LocationSettings() {
           battery_saver_exception: next.batterySaverException,
         },
       });
-      if (currentFamilyIdRef.current !== updateFamilyId) return;
+      if (currentFamilyIdRef.current !== updateFamilyId) return false;
       const savedPreferencesKey = locationPreferencesHydrationKey(updateFamilyId, saved);
       if (!savedPreferencesKey) throw new Error("저장된 위치 설정의 가족 범위가 일치하지 않아요");
       const confirmed: LocationPrefs = {
@@ -200,9 +231,11 @@ export function LocationSettings() {
       setHydratedPreferencesKey(savedPreferencesKey);
       savePrefs(confirmed);
       show(message, icon);
+      return true;
     } catch (error) {
       console.error("위치 설정 저장 실패:", error);
       show("위치 설정 저장에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️");
+      return false;
     } finally {
       setSavingAction(null);
     }
@@ -217,11 +250,32 @@ export function LocationSettings() {
   };
 
   const pickInterval = (interval: UpdateInterval) => {
-    if (interval === prefs.interval) return;
+    if (interval === selectedInterval) return;
+    if (interval === "live" && tier !== TIERS.PREMIUM) {
+      setLiveUpsellOpen(true);
+      return;
+    }
+    setRestoredInterval(null);
     void update(`interval:${interval}`, { interval }, "업데이트 주기를 저장했어요. 아이 기기에 곧 반영돼요", "⏱️");
   };
 
-  const retentionLabel = isPremium ? "30일 (프리미엄)" : "7일 (무료)";
+  const savePendingInterval = async (): Promise<void> => {
+    if (pendingInterval !== "live") return;
+    const saved = await update("return-live", { interval: "live" }, "실시간 모드를 저장했어요. 아이 기기에 곧 반영돼요", "⏱️");
+    if (saved) setRestoredInterval(null);
+  };
+
+  const openLocationHistory = (): void => {
+    if (tier === TIERS.PREMIUM) {
+      navigate("/parent/location?view=history");
+      return;
+    }
+    setHistoryUpsellOpen(true);
+  };
+
+  const retentionLabel = isPremium
+    ? "최근 30일 (프리미엄 조회 범위)"
+    : "오늘 (무료 조회 범위)";
 
   if (locationSettingsQueryState === "loading" || locationSettingsHydrating) {
     return (
@@ -316,7 +370,7 @@ export function LocationSettings() {
           <div className="lset-flabel">업데이트 주기</div>
           <div className="lset-seg">
             {INTERVALS.map((opt) => {
-              const on = prefs.interval === opt.id;
+              const on = selectedInterval === opt.id;
               return (
                 <button
                   key={opt.id}
@@ -324,18 +378,39 @@ export function LocationSettings() {
                   className="lset-seg__item hy-press"
                   data-on={on}
                   aria-pressed={on}
+                  aria-label={opt.id === "live" ? "실시간 위치 전송 (프리미엄)" : opt.label}
                   onClick={() => pickInterval(opt.id)}
                   disabled={saving || !locationSettingsDataReady}
                   aria-busy={savingAction === `interval:${opt.id}`}
                 >
                   {on && <Check size={13} strokeWidth={3} className="lset-seg__check" />}
                   {opt.label}
+                  {opt.id === "live" && <Crown size={13} strokeWidth={2.3} aria-hidden="true" />}
                 </button>
               );
             })}
           </div>
-          <p className="lset-desc">{INTERVAL_DESC[prefs.interval]}</p>
+          <p className="lset-desc">{INTERVAL_DESC[selectedInterval]}</p>
         </div>
+
+        {pendingInterval === "live" && prefs.interval !== "live" && (
+          <button
+            type="button"
+            className="lset-row hy-press"
+            onClick={() => void savePendingInterval()}
+            disabled={saving || !locationSettingsDataReady}
+            aria-busy={savingAction === "return-live"}
+          >
+            <span className="lset-row__icon">
+              <Radar size={18} strokeWidth={2.2} color="#2E86C1" />
+            </span>
+            <span className="lset-row__main">
+              <span className="lset-row__title">실시간 모드 저장하기</span>
+              <span className="lset-row__sub">결제 전 선택을 복원했어요. 아직 저장되지 않았어요.</span>
+            </span>
+            <ChevronRight size={18} strokeWidth={2.2} color="var(--fg-tertiary)" />
+          </button>
+        )}
 
         {/* 배터리 최적화 예외 */}
         <div className="lset-row">
@@ -361,17 +436,17 @@ export function LocationSettings() {
           </button>
         </div>
 
-        {/* 위치 히스토리 보관 */}
+        {/* 위치 기록 조회 범위 */}
         <button
           type="button"
           className="lset-row hy-press"
-          onClick={() => navigate("/subscription")}
+          onClick={openLocationHistory}
         >
           <span className="lset-row__icon">
             <History size={18} strokeWidth={2.2} color="#2E86C1" />
           </span>
           <span className="lset-row__main">
-            <span className="lset-row__title">위치 히스토리 보관</span>
+            <span className="lset-row__title">위치 기록 조회 범위</span>
             <span className="lset-row__sub">{retentionLabel}</span>
           </span>
           <ChevronRight size={18} strokeWidth={2.2} color="var(--fg-tertiary)" />
@@ -385,6 +460,41 @@ export function LocationSettings() {
           </span>
         </p>
       </div>
+      <PremiumUpsell
+        open={liveUpsellOpen}
+        source="location_live_interval"
+        tier={tier}
+        returnTo="/location-settings"
+        onClose={() => setLiveUpsellOpen(false)}
+        onUpgrade={({ source, feature, returnTo }) => {
+          const storage = browserPremiumReturnIntentStorage();
+          const saved = storage && returnTo
+            ? savePremiumReturnIntent(storage, {
+                source,
+                feature,
+                returnTo,
+                draft: { interval: "live" },
+              })
+            : false;
+          if (!saved) throw new Error("선택한 위치 주기를 안전하게 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+          navigate("/subscription");
+        }}
+      />
+      <PremiumUpsell
+        open={historyUpsellOpen}
+        source="location_history"
+        tier={tier}
+        returnTo="/parent/location?view=history"
+        onClose={() => setHistoryUpsellOpen(false)}
+        onUpgrade={({ source, feature, returnTo }) => {
+          const storage = browserPremiumReturnIntentStorage();
+          const saved = storage && returnTo
+            ? savePremiumReturnIntent(storage, { source, feature, returnTo })
+            : false;
+          if (!saved) throw new Error("결제 후 위치 기록으로 돌아올 경로를 안전하게 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+          navigate("/subscription");
+        }}
+      />
     </div>
   );
 }

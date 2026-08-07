@@ -1,6 +1,6 @@
 export const meta = {
   name: 'wf-tier-photo-color',
-  description: '구독 티어 게이팅 + 아이 사진 등록 + 색상 설정 제거(3 에이전트)',
+  description: 'Free/Premium 구독 게이팅 + 아이 사진 등록 + 색상 설정 제거(3 에이전트)',
   phases: [{ title: 'Build', detail: '티어/사진/색상 병렬' }],
 }
 
@@ -20,12 +20,12 @@ const H1 = 'C:/Users/TK/Desktop/hyeni-1'
 
 const POLICY = [
   '## 확정 구독 티어 정책(단일 소스: src/transform/tierPolicy.ts — 이미 존재, import 해서 사용. 수정 금지)',
-  '- 아이 등록: 무료 1명 / 리뷰 1명 / 프리미엄 2명. (maxChildrenFor, canAddChild)',
-  '- 위치: 무료=잠금 / 리뷰=지연 / 프리미엄=실시간. (locationModeFor→"locked"|"delayed"|"realtime", isLocationVisible, isRealtimeLocation)',
-  '- 일정/장소: 1 / 3 / 무제한. (scheduleLimitFor, placeLimitFor)',
+  '- 아이 등록: 무료·기존 혜택 1명 / 프리미엄 2명. (maxChildrenFor, canAddChild)',
+  '- 위치: 무료·기존 혜택=최신 실측 위치 / 프리미엄=실시간. (locationModeFor→"locked"|"standard"|"realtime", isLocationVisible, isRealtimeLocation)',
+  '- 일정·메모·스티커는 전 티어 무제한. 준비물·숙제는 전 티어 아이별 하루 각각 8개. 장소는 무료 2곳 / 기존 혜택 3곳 / 프리미엄 무제한. (scheduleLimitFor, placeLimitFor)',
   '- 프리미엄 전용: 실시간위치·주변소리·AI하루요약·학원시간표·다중위험구역·이동경로연장·다자녀. (canUse(tier, FEATURES.X))',
   '- 안전(SOS·위험구역 안전알림)은 티어 무관 항상 동작.',
-  '- 가격: 프리미엄 월 2,900원(아이별 구독). 리뷰=앱 리뷰 보상.',
+  '- 가격: 프리미엄 월 4,900원·연 39,000원(가족 단위). reviewed는 이미 지급된 스토어 방문 혜택의 숨은 호환 상태이며 신규 지급·상품 노출 금지.',
   '- 티어 판정: tierFrom({ ready, isPremium, reviewed }) → "unknown"|"free"|"reviewed"|"premium". ready=false면 unknown(게이트/강등 금지 — R9).',
   '- getTierLabel, lockMessageFor 제공.',
 ].join('\n')
@@ -52,10 +52,10 @@ const TASKS = [
       '### 소유 파일: src/queries/useEntitlement.ts, src/transform/entitlement.ts, src/lib/api/endpoints/subscription.ts, (신규)src/lib/api/endpoints/reviewReward.ts, (신규)src/queries/useReviewReward.ts, src/screens/feature/Subscription.tsx(+css), src/screens/feature/TrialLock.tsx(+css), src/screens/parent/ParentFamily.tsx(+css), src/screens/parent/ParentLocation.tsx(+css)',
       '### hyeni-1 참조: ' + H1 + '/worker/routes/review-rewards.ts, ' + H1 + '/src/lib/tierPolicy.js, ' + H1 + '/src/lib/effectiveLocation.js, ' + H1 + '/src/components/parent/FamilyScreen.jsx(maxChildren), ' + H1 + '/src/lib/paywallCopy.js',
       '### 할 일',
-      '1) **리뷰 티어 포팅**: reviewReward.ts = GET /api/review-rewards?familyId= → { rewarded:boolean }. useReviewReward 훅. entitlement 파생에 reviewed 반영해 useEntitlement 가 tier 를 노출하도록 확장(tier = tierFrom({ready, isPremium, reviewed})). useEntitlement 결과에 tier·reviewed 추가(기존 ready/isPremium/view 유지).',
+      '1) **기존 혜택 무손실 호환**: reviewReward.ts = GET /api/review-rewards?familyId= → { rewarded:boolean }. 기존 지급 행만 읽고 신규 claim은 410으로 닫는다. useEntitlement 결과에 내부 tier·reviewed를 유지하되 사용자 상품 라벨은 Free/Premium만 표시한다.',
       '2) **아이 추가 게이트(ParentFamily)**: 현재 아이 수 >= maxChildrenFor(tier) 면 "아이 추가하기"를 잠금 처리 — lockMessageFor(FEATURES.MULTI_CHILD) 안내 + /subscription 으로 유도(pairing-wizard 로 안 감). 여유 있으면 정상 진입. ready=false면 잠금 UI 금지.',
-      '3) **위치 게이트(ParentLocation)**: locationModeFor(tier) 적용 — "locked"(무료): 지도/마커를 흐리게+잠금 오버레이("실시간 위치는 프리미엄" + /subscription CTA), 단 SOS/위험구역 안전 액션은 유지. "delayed"(리뷰): 위치 표시하되 "약 N분 지연" 배지 + 실시간 새로고침 비활성(effectiveLocation 개념). "realtime"(프리미엄): 기존대로. ready=false면 잠금 표시 금지(로딩).',
-      '4) **플랜 비교표(Subscription S-02)**: 무료/리뷰/프리미엄 3열 비교표 — 아이수(1/1/2)·위치(잠금/지연/실시간)·일정(1/3/무제한)·장소(1/3/무제한)·주변소리·AI하루요약·SOS(전부✓). 월 2,900원 명시. 현재 tier 하이라이트.',
+      '3) **위치 게이트(ParentLocation)**: locationModeFor(tier) 적용 — "standard"(무료·기존 혜택)는 최신 실측 위치·측정시각·정확도를 표시하고 수동 요청/당일 이력 한도를 적용한다. "realtime"(프리미엄)은 실시간·30일 이력을 제공한다. SOS/긴급 안전 액션은 항상 유지하고 ready=false면 Premium 권리를 fail-closed하되 장애 재시도를 보여준다.',
+      '4) **플랜 비교표(Subscription S-02)**: Free/Premium 2열만 표시 — 아이수(1/2)·위치(약 10분/실시간)·수동 요청(최근 24시간 5회/무제한)·이력(오늘/30일)·일정·메모·스티커(모두 무제한)·준비물·숙제(모두 아이별 하루 각각 8개)·장소(2/무제한)·위험구역(1/무제한)·소리 울리기(1/10)·AI(5/20)·주변소리·AI하루요약·SOS(모두✓). 월 4,900원·연 39,000원 명시.',
       '5) **TrialLock**: tier/ready 로 잠금 상태 정리.',
     ].join('\n'),
   },

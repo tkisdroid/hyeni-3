@@ -5,7 +5,12 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { mergeSupplyLabels, parseSupplyLabelInput } from "../src/transform/eventSupplies.ts";
+import {
+  MAX_SUPPLY_ITEMS_PER_KIND,
+  dailySupplyLimitMessage,
+  mergeSupplyLabels,
+  parseSupplyLabelInput,
+} from "../src/transform/eventSupplies.ts";
 import type { SupplyItem } from "../src/lib/api/endpoints/schedule.ts";
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
@@ -30,7 +35,12 @@ test("병합은 기존 항목(공백·대소문자 무시)을 중복 추가하�
   assert.equal(items[0], existing[0], "기존 항목 객체는 변형하지 않는다");
 });
 
-test("하루 8개 상한을 넘는 라벨은 조용히 버리지 않고 dropped 로 집계한다", () => {
+test("아이별 하루 한 종류 8개 상한은 병합과 준비물·숙제 인코딩에 각각 적용된다", () => {
+  assert.equal(MAX_SUPPLY_ITEMS_PER_KIND, 8);
+  assert.equal(dailySupplyLimitMessage("prep", false), "준비물은 하루 8개까지 등록할 수 있어요");
+  assert.equal(dailySupplyLimitMessage("hw", false), "숙제는 하루 8개까지 등록할 수 있어요");
+  assert.equal(dailySupplyLimitMessage("prep", true), "준비물은 하루 8개까지 등록할 수 있어");
+  assert.equal(dailySupplyLimitMessage("hw", true), "숙제는 하루 8개까지 등록할 수 있어");
   const existing: SupplyItem[] = Array.from({ length: 7 }, (_, i) => ({
     id: `e${i}`, label: `기존${i}`, done: false,
   }));
@@ -38,6 +48,23 @@ test("하루 8개 상한을 넘는 라벨은 조용히 버리지 않고 dropped 
   assert.equal(items.length, 8);
   assert.equal(added, 1);
   assert.equal(dropped, 2);
+
+  const scheduleEndpoint = read("src/lib/api/endpoints/schedule.ts");
+  const hook = read("src/queries/useSchedule.ts");
+  const suppliesScreen = read("src/screens/feature/Supplies.tsx");
+  const childHome = read("src/screens/child/ChildHome.tsx");
+  assert.match(scheduleEndpoint, /const MAX_ITEMS_PER_KIND = MAX_SUPPLY_ITEMS_PER_KIND/);
+  assert.match(scheduleEndpoint, /items\.slice\(0, MAX_ITEMS_PER_KIND\)/);
+  assert.match(scheduleEndpoint, /emit\("prep", decodeSupplyItems\(row\.supplies\)\)/);
+  assert.match(scheduleEndpoint, /emit\("hw", decodeSupplyItems\(row\.homework\)\)/);
+  assert.match(hook, /list\.length >= MAX_SUPPLY_ITEMS_PER_KIND/);
+  assert.match(hook, /throw new Error\(DAILY_SUPPLY_LIMIT_ERROR\)/);
+  assert.match(suppliesScreen, /list\.length >= MAX_SUPPLY_ITEMS_PER_KIND/);
+  assert.match(suppliesScreen, /dailySupplyLimitMessage\(kind, isChild\)/);
+  assert.match(childHome, /itemCount >= MAX_SUPPLY_ITEMS_PER_KIND/);
+  assert.match(childHome, /dailySupplyLimitMessage\(kind, true\)/);
+  assert.match(childHome, /prepItemCount >= MAX_SUPPLY_ITEMS_PER_KIND/);
+  assert.match(childHome, /homeworkItemCount >= MAX_SUPPLY_ITEMS_PER_KIND/);
 });
 
 test("EventForm 은 저장 시 배정 아이·occurrence 날짜 전체에 준비물을 담는다(폴백 금지)", () => {

@@ -5,6 +5,23 @@ import java.util.Locale
 
 def hyeniPackageVersion = new JsonSlurper().parse(file('../../package.json')).version.toString()
 
+def hyeniGitOutput = { arguments ->
+    try {
+        def process = (["git"] + arguments).execute(null, rootProject.projectDir.parentFile)
+        def stdout = process.inputStream.getText("UTF-8").trim()
+        def stderr = process.errorStream.getText("UTF-8")
+        def exitCode = process.waitFor()
+        return exitCode == 0 ? stdout : null
+    } catch (Exception ignored) {
+        return null
+    }
+}
+
+def hyeniGitHead = hyeniGitOutput(["rev-parse", "HEAD"])
+def hyeniGitStatus = hyeniGitOutput(["status", "--porcelain=v1", "--untracked-files=all"])
+def hyeniGitHeadIsValid = hyeniGitHead != null && hyeniGitHead ==~ /(?i)[0-9a-f]{40}/
+def hyeniReleaseSourceSha = hyeniGitHeadIsValid ? hyeniGitHead.toLowerCase(Locale.ROOT) : "unavailable"
+
 def isHyeniReleaseArtifactTask = { task ->
     if (task.project.path != project.path) return false
     def taskName = task.name.toLowerCase(Locale.ROOT)
@@ -57,6 +74,12 @@ gradle.taskGraph.whenReady { graph ->
             "릴리즈 서명 환경변수가 누락되었습니다: ${missingHyeniSigningVariables.join(", ")}"
         )
     }
+    if (!hyeniGitHeadIsValid) {
+        throw new GradleException("릴리즈 AAB에 넣을 앱 Git commit SHA를 확인할 수 없습니다.")
+    }
+    if (hyeniGitStatus == null || !hyeniGitStatus.isEmpty()) {
+        throw new GradleException("릴리즈 산출물은 clean 앱 worktree에서만 만들 수 있습니다.")
+    }
 }
 
 def hyeniKeystorePath = hyeniSigningValues["HYENI_KEYSTORE"]
@@ -72,8 +95,9 @@ android {
         applicationId "com.hyeni.calendar"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 4
+        versionCode 5
         versionName hyeniPackageVersion
+        manifestPlaceholders = [hyeniReleaseSourceSha: hyeniReleaseSourceSha]
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

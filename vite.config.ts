@@ -25,7 +25,8 @@ export default defineConfig({
       strategies: "injectManifest",
       srcDir: "src",
       filename: "sw.ts",
-      registerType: "autoUpdate",
+      // 새 Worker는 받되 결제·원격청취·미저장 편집이 끝난 뒤에만 활성화한다.
+      registerType: "prompt",
       includeAssets: ["apple-touch-icon.png", "favicon-32x32.png", "assets/logo.webp"],
       manifest: {
         name: "혜니캘린더",

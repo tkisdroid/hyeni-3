@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   TRAIL_JITTER_M,
   buildTrailPoints,
+  findStayIndexAtMs,
   resolveHistoryMapCenter,
   resolveScrubWhereLabel,
 } from "../src/transform/locationHistoryScrub.ts";
@@ -121,4 +122,17 @@ test("고른 시각 설명은 머문 곳 창·이동 중·기록 없음을 정�
   // 마지막 기록 이후 시각을 골라도 "이동 중"으로 단정하지 않고 마지막 확인 상태를 말한다.
   assert.equal(label(9_000, 6_000), "머문 장소");
   assert.equal(label(9_000, 1_500), "집");
+});
+
+test("선택 시각이 포함된 머문 곳 인덱스를 경계까지 포함해 찾는다", () => {
+  const stays = [
+    { arrivalMs: 1_000, departureMs: 2_000 },
+    { arrivalMs: 5_000, departureMs: 6_000 },
+  ];
+
+  assert.equal(findStayIndexAtMs(stays, 1_000), 0);
+  assert.equal(findStayIndexAtMs(stays, 2_000), 0);
+  assert.equal(findStayIndexAtMs(stays, 5_500), 1);
+  assert.equal(findStayIndexAtMs(stays, 3_000), null);
+  assert.equal(findStayIndexAtMs(stays, Number.NaN), null);
 });

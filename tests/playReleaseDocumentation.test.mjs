@@ -4,12 +4,14 @@ import test from "node:test";
 
 const read = (path) => readFile(new URL(path, import.meta.url), "utf8");
 
-const [dataSafety, checklist, listing, guide, generator] = await Promise.all([
+const [dataSafety, checklist, listing, guide, generator, readiness, releaseRunbook] = await Promise.all([
   read("../docs/store/play-data-safety.md"),
   read("../docs/store/play-release-checklist.md"),
   read("../docs/store/play-listing.md"),
   read("../docs/release/혜니캘린더_Google_Play_출시_가이드북_2026-07-14.md"),
   read("../scripts/create-play-release-guide.py"),
+  read("../docs/reports/2026-08-01-pricing-launch-readiness.md"),
+  read("../docs/release/release-day-rollback-runbook.md"),
 ]);
 
 test("데이터 보안 답안은 외부 처리와 전체 데이터 범주를 제출 전 확인 항목으로 남긴다", () => {
@@ -101,6 +103,109 @@ test("모든 Play 트랙·결제·CALL_PHONE·증거 등급을 독립 출시 게
   for (const evidenceClass of ["코드 증거", "자동 테스트 증거", "실기기 증거", "운영 증거", "Console 증거", "계약 증거"]) {
     assert.match(checklist, new RegExp(evidenceClass));
   }
+  assert.match(checklist, /광고 없음으로 선언/);
+  assert.match(checklist, /(?:광고 SDK[^\n]*최종 AAB|최종 AAB[^\n]*광고 SDK)/);
+  assert.match(checklist, /Health apps 선언/);
+  assert.match(checklist, /Financial features 선언/);
+  assert.match(checklist, /rewards, points, other incentives/);
+  assert.match(checklist, /Government apps 선언/);
+  assert.match(checklist, /News apps 선언/);
+  for (const source of [checklist, guide, readiness]) {
+    assert.match(source, /일정(?:·반복 일정)?·메모·스티커[^\n]*무제한/);
+    assert.match(source, /준비물·숙제[^\n]*아이별 하루[^\n]*8개/);
+    assert.doesNotMatch(source, /일정·준비물·메모·스티커[^\n]*무제한/);
+  }
+  assert.match(checklist, /Toss Payments[^\n]*주문번호·금액·통화·결제 상태/);
+  assert.match(guide, /Toss Payments[^\n]*주문번호·금액·통화·상태/);
+
+  const manifestStart = checklist.indexOf("## 2026-08-01 Worker migration-first manifest");
+  const manifestEnd = checklist.indexOf("## 서명 자격정보 안전 정리", manifestStart);
+  assert.ok(manifestStart >= 0 && manifestEnd > manifestStart, "Worker migration manifest 범위가 필요합니다");
+  const migrationManifest = checklist.slice(manifestStart, manifestEnd);
+  for (const migration of [
+    "ai-credit-balance-uniqueness.sql",
+    "premium-funnel.sql",
+    "premium-funnel-ai-schedule-limit.sql",
+    "family-lifecycle-funnel.sql",
+    "revenue-cost-ledger.sql",
+    "location-confirmation-records.sql",
+    "location-history-ingest-quota.sql",
+    "location-history-retention.sql",
+    "web-billing.sql",
+    "web-billing-key-revocation.sql",
+    "google-play-family-trial-claim.sql",
+    "web-billing-refunds.sql",
+    "web-billing-financial-retention.sql",
+    "web-ai-credit-billing.sql",
+    "web-ai-credit-financial-retention.sql",
+    "referral-rewards-v2.sql",
+    "google-play-rtdn-schema.sql",
+    "google-play-credit-debt-disclosure.sql",
+  ]) {
+    assert.match(migrationManifest, new RegExp(migration.replace(/[.]/g, "\\.")));
+  }
+  for (const orderedMigrations of [
+    ["premium-funnel.sql", "family-lifecycle-funnel.sql", "revenue-cost-ledger.sql"],
+    ["location-confirmation-records.sql", "location-history-ingest-quota.sql", "location-history-retention.sql"],
+    [
+      "web-billing-key-revocation.sql",
+      "google-play-family-trial-claim.sql",
+      "web-billing-refunds.sql",
+      "web-billing-financial-retention.sql",
+    ],
+    ["google-play-rtdn-schema.sql", "google-play-credit-debt-disclosure.sql"],
+  ]) {
+    let previousIndex = -1;
+    for (const migration of orderedMigrations) {
+      const currentIndex = migrationManifest.indexOf(migration);
+      assert.ok(currentIndex > previousIndex, `${migration}의 migration 순서가 잘못됐습니다`);
+      previousIndex = currentIndex;
+    }
+  }
+  assert.match(migrationManifest, /refund_status[^\n]*customer_key[^\n]*중단/);
+  assert.match(migrationManifest, /idx_referral_completions_v2_ready/);
+  assert.match(migrationManifest, /trg_referral_location_evidence_snapshot/);
+  for (const source of [migrationManifest, releaseRunbook]) {
+    assert.match(source, /worker\/db\/premium-funnel-ai-schedule-limit\.sql/);
+    assert.match(source, /premium_funnel_events[^\n]*기존|기존[^\n]*premium_funnel_events/);
+    assert.match(source, /has_ai_schedule_limit_source[^\n]*0[\s\S]{0,240}정확히 1회/);
+    assert.match(source, /has_ai_schedule_limit_source[^\n]*1[\s\S]{0,240}(?:필수|요구|확인|HOLD)/);
+  }
+  const sourceFlagReadIndex = releaseRunbook.indexOf("$hasAiScheduleLimitSource =");
+  const bookmarkCaptureIndex = releaseRunbook.indexOf("$d1BookmarkJson =", sourceFlagReadIndex);
+  const finalReleaseFlagGateIndex = releaseRunbook.indexOf(
+    "if ($hasAiScheduleLimitSource -ne 1)",
+    bookmarkCaptureIndex,
+  );
+  assert.ok(sourceFlagReadIndex >= 0, "AI 일정 source flag readback이 필요합니다");
+  assert.ok(bookmarkCaptureIndex > sourceFlagReadIndex, "pre-migration bookmark를 source flag 뒤에 캡처해야 합니다");
+  assert.ok(
+    finalReleaseFlagGateIndex > bookmarkCaptureIndex,
+    "flag=0 복구 bookmark를 먼저 캡처한 뒤 final release record를 차단해야 합니다",
+  );
+  const preMigrationCapture = releaseRunbook.slice(sourceFlagReadIndex, bookmarkCaptureIndex);
+  assert.match(preMigrationCapture, /@\(0, 1\) -notcontains \$hasAiScheduleLimitSource/);
+  assert.doesNotMatch(preMigrationCapture, /\$hasAiScheduleLimitSource -ne 1/);
+  assert.match(checklist, /Workers Paid/);
+  assert.match(checklist, /LOCATION_AUDIT_CURSOR_SECRET[^\n]*32바이트[^\n]*HMAC/);
+  assert.match(checklist, /payload·서명 변조[^\n]*400/);
+  assert.match(checklist, /worker\/ops\/location-confirmation-capacity\.sql/);
+  assert.match(checklist, /50%[^\n]*70%[^\n]*85%/);
+  assert.match(checklist, /\{ records, hasMore, nextCursor \}/);
+  assert.match(checklist, /v1\.2\.0[^\n]*역사 기록/);
+  assert.match(checklist, /precache 320개[^\n]*entry 472,252 bytes[^\n]*역사 증거/);
+  assert.match(checklist, /격리 Free 브라우저[^\n]*저장 장소 2\/2[^\n]*Free\/Premium[^\n]*\/place-form/);
+  assert.match(checklist, /246A1513CA9D9951D7857654B538398A9D175605F097331EAADDE2DBA2D243F5/);
+  assert.doesNotMatch(checklist, /- \[x\][^\n]*(?:1,072\/1,072|246A1513|razr[^\n]*install -r)/);
+  assert.match(checklist, /현재 실기기 승인 범위[^\n]*A17 부모[^\n]*razr 아이[^\n]*두 대/);
+  assert.match(checklist, /S25[^\n]*완전 무조작/);
+  assert.doesNotMatch(checklist, /A17[^\n]*한 대만 승인 범위/);
+  assert.match(checklist, /client-release-inventory\.json/);
+  assert.match(checklist, /compatibility_cutover_approved/);
+  assert.match(checklist, /minimumSupportedVersion=1\.3\.0/);
+  assert.match(checklist, /registerType: prompt/);
+  assert.match(checklist, /결제·AI 크레딧 대사·주변소리·미저장 편집 중에는 reload가 보류/);
+  assert.match(readiness, /미확정이거나 실패하면 Free로 추정하지 않고[^\n]*unknown[^\n]*fail-closed/);
 });
 
 test("출시 체크리스트는 AI·UGC 코드 완료와 실제 E2E 출시 게이트를 분리한다", () => {
@@ -108,6 +213,17 @@ test("출시 체크리스트는 AI·UGC 코드 완료와 실제 E2E 출시 게�
     assert.match(checklist, new RegExp(`- \\[x\\][^\\n]*${gate} 코드`));
     assert.match(checklist, new RegExp(`- \\[ \\][^\\n]*${gate} E2E`));
   }
+  for (const source of [checklist, guide, readiness]) {
+    assert.match(source, /gpt-5\.6-luna/);
+    assert.match(source, /노출[^\n]*OpenAI 키[^\n]*(?:폐기|회전)/);
+    assert.match(
+      source,
+      /(?:새 키|새 Worker secret|production Worker secret)[^\n]*(?:canary|Luna|교체|readback)/,
+    );
+  }
+  assert.match(checklist, /활성 OpenAI 호출 4개/);
+  assert.match(checklist, /(?:Gateway[^\n]*canary 3\/3|live canary 4\/4)/);
+  assert.match(readiness, /실제 사용자 AI는 아직 Luna 전환 완료 상태가 아니다/);
   assert.match(checklist, /제출 차단/);
 });
 
@@ -160,6 +276,9 @@ test("스토어 문안은 전달을 보장하지 않고 개인정보 없는 자�
   assert.match(listing, /기기 권한·네트워크·배터리 상태/);
   assert.match(listing, /자녀 보호 목적의 모니터링/);
   assert.match(listing, /mail@hyenicalendar\.com/);
+  assert.match(listing, /앱 · 육아\(Parenting\)/);
+  assert.match(listing, /한국어\(대한민국\)[^\n]*대한민국/);
+  assert.match(listing, /https:\/\/hyeni-calendar\.pages\.dev/);
   assert.match(listing, /AI 답변 신고[^\n]*제출 차단/);
   assert.match(listing, /메모 신고·사용자 차단[^\n]*제출 차단/);
 });
@@ -222,6 +341,19 @@ test("가이드 생성기는 compact_reference_guide의 고정 지오메트리�
   assert.doesNotMatch(generator, /OUTPUT = ROOT/);
   assert.doesNotMatch(generator, /2026-07-14/);
   assert.match(generator, /sys\.stdout\.reconfigure\(encoding="utf-8"\)/);
+});
+
+test("가이드 생성기는 짧은 표 행만 페이지 분할을 막고 장문 본문 행은 분할을 허용한다", () => {
+  assert.match(generator, /TABLE_ROW_KEEP_TOGETHER_MAX_CHARS = 180/);
+  assert.match(
+    generator,
+    /def should_keep_table_row_together\(row_index: int, values: list\[str\]\) -> bool:\s+if row_index == 0:\s+return True\s+return sum\(len\(value\.strip\(\)\) for value in values\) <= TABLE_ROW_KEEP_TOGETHER_MAX_CHARS/,
+  );
+  assert.match(
+    generator,
+    /if should_keep_table_row_together\(row_index, values\) and row_props\.find\(qn\("w:cantSplit"\)\) is None:/,
+  );
+  assert.equal((generator.match(/OxmlElement\("w:cantSplit"\)/g) ?? []).length, 1);
 });
 
 test("가이드 생성기는 짝수 페이지에도 독립 머리글과 바닥글을 넣는다", () => {

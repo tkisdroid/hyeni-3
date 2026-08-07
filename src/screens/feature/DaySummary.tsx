@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router";
 import {
   CalendarDays,
   ChevronLeft,
@@ -12,13 +12,20 @@ import {
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useActiveChild } from "@/app/activeChild";
+import { PremiumUpsell } from "@/components/PremiumUpsell";
 import { useMyFamily } from "@/queries/useFamily";
 import { useEvents } from "@/queries/useSchedule";
 import { useDaySummary, useGenerateDaySummary } from "@/queries/useAi";
+import { useEntitlement } from "@/queries/useEntitlement";
 import type { DaySummarySignals, DaySummaryResult } from "@/lib/api/endpoints/ai";
 import { formatTimeLabel } from "@/transform/scheduleView";
 import { todayDateKey, dateKeyToDateInputValue, parseAppDateKey } from "@/transform/dateKey";
 import { hasJongseong } from "@/transform/adventureMap";
+import { canUse, FEATURES } from "@/transform/tierPolicy";
+import {
+  browserPremiumReturnIntentStorage,
+  savePremiumReturnIntent,
+} from "@/transform/premiumReturnIntent";
 import { Loading } from "@/components/ui/Loading";
 import "./DaySummary.css";
 
@@ -76,7 +83,19 @@ export function DaySummary() {
   const location = useLocation();
   const { show } = useToast();
 
-  const state = (location.state ?? {}) as { childUserId?: string; childName?: string; dateKey?: string };
+  const state = (location.state ?? {}) as {
+    childUserId?: string;
+    childName?: string;
+    dateKey?: string;
+    premiumReturnDraft?: unknown;
+  };
+  const returnDraft = state.premiumReturnDraft && typeof state.premiumReturnDraft === "object"
+    ? state.premiumReturnDraft as Record<string, unknown>
+    : null;
+  const requestedChildUserId = state.childUserId
+    ?? (typeof returnDraft?.childUserId === "string" ? returnDraft.childUserId : undefined);
+  const requestedDateKey = state.dateKey
+    ?? (typeof returnDraft?.dateKey === "string" ? returnDraft.dateKey : undefined);
 
   // 크레딧·요약은 자녀별. state(딥링크) > 전역 활성 아이. state uid 가 현재 가족에 없으면
   // stale uid 로 생성하지 않도록 활성 아이로 폴백(첫 아이 하드코딩 제거 — AI 생성 오귀속 방지).
@@ -84,14 +103,14 @@ export function DaySummary() {
   const { activeChild: globalActive, familyLoading } = useActiveChild();
   const children = (family?.members ?? []).filter((m) => m.role === "child");
   const targetChild =
-    (state.childUserId ? children.find((m) => m.user_id === state.childUserId) : undefined) ??
+    (requestedChildUserId ? children.find((m) => m.user_id === requestedChildUserId) : undefined) ??
     globalActive ??
     null;
   const childUserId = targetChild?.user_id ?? null;
   const childName = targetChild?.name ?? state.childName ?? "우리 아이";
 
   // 앱 date_key(0-index 월) → ISO "YYYY-MM-DD"(서버 계약). 기본 = 오늘.
-  const appDateKey = state.dateKey ?? todayDateKey();
+  const appDateKey = requestedDateKey && parseAppDateKey(requestedDateKey) ? requestedDateKey : todayDateKey();
   const isoDateKey = dateKeyToDateInputValue(appDateKey);
   const dateLabel = useMemo(() => {
     const d = parseAppDateKey(appDateKey);
@@ -108,7 +127,9 @@ export function DaySummary() {
     return dayEvents.length > 0 ? { events: dayEvents } : undefined;
   }, [events, appDateKey]);
 
-  const summaryQuery = useDaySummary(childUserId, isoDateKey);
+  const entitlement = useEntitlement();
+  const allowed = entitlement.ready && canUse(entitlement.tier, FEATURES.AI_ANALYSIS);
+  const summaryQuery = useDaySummary(allowed ? childUserId : null, isoDateKey);
   const cached = summaryQuery.data;
   const isLoading = summaryQuery.isLoading;
   const isError = summaryQuery.isError;
@@ -117,10 +138,11 @@ export function DaySummary() {
   };
   const generate = useGenerateDaySummary();
   const [generated, setGenerated] = useState<DaySummaryResult | null>(null);
+  const [upsellOpen, setUpsellOpen] = useState(false);
 
   const summary = generated?.summary ?? cached?.summary ?? "";
   const signals = generated?.signals ?? cached?.signals ?? null;
-  const premiumLocked = generated ? !generated.premium : false;
+  const premiumLocked = (entitlement.ready && !allowed) || (generated ? !generated.premium : false);
   const isEmpty = generated ? generated.empty : false;
   const hasSummary = !!summary && !premiumLocked && !isEmpty;
 
@@ -128,13 +150,21 @@ export function DaySummary() {
   const caution = isCautionDay(signals);
 
   const onGenerate = () => {
+    if (!allowed) {
+      setUpsellOpen(true);
+      return;
+    }
     if (!childUserId || !isoDateKey || generate.isPending) return;
     generate.mutate(
       { childUserId, isoDateKey, clientSignals },
       {
         onSuccess: (res) => {
+          if (!res.premium) {
+            setGenerated(null);
+            setUpsellOpen(true);
+            return;
+          }
           setGenerated(res);
-          if (!res.premium) show("프리미엄에서 하루 요약을 볼 수 있어요", "💜");
         },
         onError: () => show("요약을 만들지 못했어요. 잠시 후 다시 시도해 주세요", "💜"),
       },
@@ -163,6 +193,21 @@ export function DaySummary() {
             <div className="ds-panel__title">연결된 아이가 없어요</div>
             <div className="ds-panel__desc">아이를 연결하면 AI 하루 요약을 볼 수 있어요.</div>
           </div>
+        ) : !entitlement.ready && entitlement.isError ? (
+          <div className="ds-panel" role="alert">
+            <div className="ds-panel__art">
+              <img src={asset("mascot/diary.webp")} alt="" />
+            </div>
+            <div className="ds-panel__title">구독 상태를 확인하지 못했어요</div>
+            <div className="ds-panel__desc">확인되지 않은 상태에서는 AI 요약을 조회하거나 만들지 않아요.</div>
+            <button type="button" className="ds-panel__cta hy-press" onClick={() => void entitlement.refetch()}>
+              다시 확인하기
+            </button>
+          </div>
+        ) : !entitlement.ready ? (
+          <div className="ds-panel">
+            <Loading label="구독 상태를 확인하는 중" />
+          </div>
         ) : isError ? (
           <div className="ds-panel" role="alert">
             <div className="ds-panel__art">
@@ -183,7 +228,7 @@ export function DaySummary() {
             <div className="ds-panel__desc">
               구독하시면 매일 AI가 정리한 {childName}의 하루 요약을 받아보실 수 있어요.
             </div>
-            <button type="button" className="ds-panel__cta hy-press" onClick={() => navigate("/subscription")}>
+            <button type="button" className="ds-panel__cta hy-press" onClick={() => setUpsellOpen(true)}>
               프리미엄 보기
             </button>
           </div>
@@ -263,6 +308,26 @@ export function DaySummary() {
           </div>
         )}
       </div>
+      <PremiumUpsell
+        open={upsellOpen}
+        source="ai_daily_summary"
+        tier={entitlement.tier}
+        returnTo="/day-summary"
+        onClose={() => setUpsellOpen(false)}
+        onUpgrade={({ source, feature, returnTo }) => {
+          const storage = browserPremiumReturnIntentStorage();
+          const saved = storage && returnTo
+            ? savePremiumReturnIntent(storage, {
+                source,
+                feature,
+                returnTo,
+                draft: { childUserId, dateKey: appDateKey },
+              })
+            : false;
+          if (!saved) throw new Error("요약 대상과 날짜를 안전하게 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+          navigate("/subscription");
+        }}
+      />
     </div>
   );
 }

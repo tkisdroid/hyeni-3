@@ -29,6 +29,38 @@ export interface WeeklyReportSummary {
   hasEnoughData: boolean;
 }
 
+interface WeeklyReportChildRef {
+  id: string;
+  user_id?: string | null;
+}
+
+/** 결제 전에 고른 아이가 현재 가족에 그대로 있을 때만 선택을 복원한다. */
+export function resolveWeeklyReportReturnChildId(
+  draft: unknown,
+  children: readonly WeeklyReportChildRef[],
+): string | null {
+  if (!draft || typeof draft !== "object" || Array.isArray(draft)) return null;
+  const value = draft as Record<string, unknown>;
+  if (typeof value.childMemberId !== "string" || typeof value.childUserId !== "string") return null;
+  const matched = children.find(
+    (child) => child.id === value.childMemberId && child.user_id === value.childUserId,
+  );
+  return matched?.id ?? null;
+}
+
+export function weeklyReportTeaser(summary: WeeklyReportSummary, childName: string): string {
+  const name = childName.trim() || "우리 아이";
+  if (!summary.hasEnoughData) return `${name}의 이번 주 기록이 아직 없어요.`;
+  if (summary.alertCount > 0) {
+    return `${name}의 이번 주에는 일정 ${summary.eventCount}개와 안전 알림 ${summary.alertCount}건이 기록됐어요.`;
+  }
+  if (summary.supplyTotal > 0) {
+    return `${name}의 이번 주에는 일정 ${summary.eventCount}개가 있었고 준비물 ${summary.supplyDone}/${summary.supplyTotal}개를 챙겼어요.`;
+  }
+  if (summary.eventCount > 0) return `${name}의 이번 주에는 일정 ${summary.eventCount}개가 있었어요.`;
+  return `${name}의 이번 주에는 가족 메시지 ${summary.memoCount}개가 오갔어요.`;
+}
+
 export function buildRecentWeekDateKeys(now: Date = new Date()): string[] {
   return Array.from({ length: 7 }, (_, index) => {
     const offset = index - 6;

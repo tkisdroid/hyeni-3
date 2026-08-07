@@ -1,16 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type {
-  MouseEvent as ReactMouseEvent,
-  PointerEvent as ReactPointerEvent,
-  TouchEvent as ReactTouchEvent,
-} from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import {
   AlertTriangle,
-  ChevronLeft,
-  ChevronRight,
   Crown,
-  MapPin,
   MessageCircle,
   Navigation,
   Phone,
@@ -64,6 +56,7 @@ import { requestLocationRefresh } from "@/lib/api/endpoints/remote";
 import { waitForNewChildLocation } from "@/transform/locationRefreshWait";
 import {
   buildTrailPoints,
+  findStayIndexAtMs,
   resolveHistoryMapCenter,
   resolveScrubWhereLabel,
 } from "@/transform/locationHistoryScrub";
@@ -74,6 +67,16 @@ import {
   browserPremiumReturnIntentStorage,
   savePremiumReturnIntent,
 } from "@/transform/premiumReturnIntent";
+import {
+  getJourneyRecordedRange,
+  resolveJourneyContentState,
+} from "@/transform/locationJourneyView";
+import { LocationHistoryToolbar } from "@/screens/parent/LocationHistoryToolbar";
+import {
+  LocationJourneyPanel,
+  type StayTimelineItem,
+} from "@/screens/parent/LocationJourneyPanel";
+import { useHistoryMapViewportPadding } from "@/screens/parent/useHistoryMapViewportPadding";
 import "./ParentLocation.css";
 
 function avatarSrc(path: string): string {
@@ -82,9 +85,6 @@ function avatarSrc(path: string): string {
 
 const SCHEDULE_STAY_RADIUS_M = 220;
 const MIN_SCHEDULE_STAY_OVERLAP_MS = 10 * 60 * 1000;
-const STAYS_DRAG_TOGGLE_PX = 42;
-const STAYS_DRAG_CLICK_GUARD_PX = 8;
-const STAYS_DRAG_CLICK_GUARD_MS = 650;
 // 시간대·머문 곳 포커스 시 확대 단계(Kakao level — 작을수록 확대). 하루 전체 bounds 로 멀어진
 // 화면에서도 그 시각 위치가 보이도록 동네 축척까지만 당긴다(이미 더 확대돼 있으면 그대로 둔다).
 const HISTORY_FOCUS_MAP_LEVEL = 4;
@@ -203,8 +203,9 @@ export function ParentLocation() {
   // null = 최신 따라가기(기본). 숫자 = 부모가 직접 고른 시각.
   // 위치 폴링(30초)마다 `now` 가 갱신돼도 부모가 고른 시각을 최신으로 되돌리지 않는다.
   const [scrubOffsetMinute, setScrubOffsetMinute] = useState<number | null>(null);
-  // 슬라이더를 움직일 때마다 값을 올려 같은 좌표라도 지도 중심을 다시 맞춘다.
-  const [scrubFocusKey, setScrubFocusKey] = useState(0);
+  // 지도 중심은 연속 드래그가 멈춘 뒤에만 갱신한다. 시각·마커 표시는 즉시 움직이되
+  // 같은 장소에 setCenter→panBy를 반복해 지도가 떨리는 현상을 막는다.
+  const [settledScrubOffsetMinute, setSettledScrubOffsetMinute] = useState<number | null>(null);
 
   // 대상 아이 = 전역 활성 아이(스위치는 부모 홈에서만 — 이 화면엔 전환 UI 없음).
   // 예외: 알림/SOS/도착에서 `?child=<user_id>` 로 진입하면 그 아이를 우선(위급 아이 — 안전 규칙).
@@ -328,6 +329,20 @@ export function ParentLocation() {
     ? historyMaxOffsetMinute
     : clampHistoryOffsetMinute(scrubOffsetMinute, historyMaxOffsetMinute);
   const scrubMs = historyWindow.startMs + effectiveScrubOffsetMinute * 60_000;
+  const mapFocusOffsetMinute = followsLatest
+    ? null
+    : settledScrubOffsetMinute ?? historyMaxOffsetMinute;
+  const mapFocusMs =
+    mapFocusOffsetMinute == null
+      ? null
+      : historyWindow.startMs + mapFocusOffsetMinute * 60_000;
+  const settledScrubChildPoint = useMemo(() => {
+    if (mapFocusMs == null) return null;
+    for (let index = timedTrail.length - 1; index >= 0; index -= 1) {
+      if (timedTrail[index].ms <= mapFocusMs) return timedTrail[index];
+    }
+    return null;
+  }, [mapFocusMs, timedTrail]);
   const visibleTrail = useMemo(
     () => timedTrail.filter((p) => p.ms <= scrubMs),
     [scrubMs, timedTrail],
@@ -337,7 +352,8 @@ export function ParentLocation() {
     [visibleTrail],
   );
   const scrubChildPoint = visibleTrail.length > 0 ? visibleTrail[visibleTrail.length - 1] : null;
-  const historyChildPoint = scrubChildPoint ?? (loc ? { lat: loc.lat, lng: loc.lng } : null);
+  const historyChildPoint =
+    scrubChildPoint ?? (followsLatest && loc ? { lat: loc.lat, lng: loc.lng } : null);
   // 출발 마커(첫 위치). 현재 마커는 지도의 child 아바타 오버레이가 담당.
   // 매 렌더 새 배열을 만들면 지도 오버레이가 통째로 다시 그려지므로 메모이즈한다.
   const trailStart = useMemo<MapPlace[]>(
@@ -387,23 +403,63 @@ export function ParentLocation() {
   );
   // 목록에서 선택한 스테이포인트(지도 포커스 + 강조).
   const [selectedStayIdx, setSelectedStayIdx] = useState<number | null>(null);
-  const [staysCollapsed, setStaysCollapsed] = useState(false);
-  const staysDragStart = useRef<number | null>(null);
-  const staysDragLast = useRef<number | null>(null);
-  const staysDragged = useRef(false);
-  const staysDragClickGuardUntil = useRef(0);
-  // 아이 전환(전역 스위치·?child=) 시 선택 초기화 — 다른 아이의 스테이가 강조 잔존하지 않게.
+  const [historyPanelExpanded, setHistoryPanelExpanded] = useState(true);
+  const [historyWideLayout, setHistoryWideLayout] = useState(false);
+  const historyToolbarRef = useRef<HTMLElement | null>(null);
+  const historyPanelRef = useRef<HTMLElement | null>(null);
+  const historyMapPadding = useHistoryMapViewportPadding({
+    enabled: historyEnabled && Boolean(selected),
+    wideLayout: historyWideLayout,
+    toolbarRef: historyToolbarRef,
+    panelRef: historyPanelRef,
+  });
+  const [settledHistoryMapPadding, setSettledHistoryMapPadding] = useState(historyMapPadding);
+
+  // 연속 입력 중에는 좌표뿐 아니라 패널 높이로 계산한 지도 여백도 고정한다. 두 값을 같은
+  // debounce 콜백에서 확정해야 KakaoMap의 setCenter→panBy가 마지막에 한 번만 실행된다.
+  useEffect(() => {
+    if (scrubOffsetMinute == null) {
+      setSettledScrubOffsetMinute(null);
+      setSettledHistoryMapPadding(historyMapPadding);
+      return;
+    }
+    const nextOffsetMinute = clampHistoryOffsetMinute(
+      scrubOffsetMinute,
+      historyMaxOffsetMinute,
+    );
+    const timer = window.setTimeout(() => {
+      setSettledScrubOffsetMinute(nextOffsetMinute);
+      setSettledHistoryMapPadding(historyMapPadding);
+    }, 160);
+    return () => window.clearTimeout(timer);
+  }, [historyMapPadding, historyMaxOffsetMinute, scrubOffsetMinute]);
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 720px) and (orientation: landscape)");
+    const sync = () => setHistoryWideLayout(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
+  // 아이·날짜·보기 전환에서만 선택을 초기화하고 패널을 펼친다.
+  // 60초 이력 폴링과 시간 막대 조작은 사용자가 정한 패널 상태를 바꾸지 않는다.
   useEffect(() => {
     setSelectedStayIdx(null);
-    setStaysCollapsed(false);
-  }, [selected?.id]);
-  // 보기 전환 시에만 시트를 다시 펼친다. 이력이 갱신될 때마다(머문 곳 수 변화) 펼치면
-  // 부모가 시간대를 보려고 접어 둔 시트가 폴링 때문에 다시 지도를 가린다.
-  useEffect(() => {
-    setStaysCollapsed(false);
-  }, [activeView]);
-  const activeStayIdx =
+    setHistoryPanelExpanded(true);
+  }, [activeView, historyDayKey, selected?.id]);
+  const scrubStayIdx = scrubChildPoint
+    ? findStayIndexAtMs(stayPoints, Math.min(scrubMs, scrubChildPoint.ms))
+    : null;
+  const manuallySelectedStayIdx =
     selectedStayIdx != null && selectedStayIdx < visibleStayPoints.length ? selectedStayIdx : null;
+  const activeStayIdx = manuallySelectedStayIdx ?? scrubStayIdx;
+  const settledScrubStayIdx = settledScrubChildPoint
+    ? findStayIndexAtMs(
+        stayPoints,
+        Math.min(mapFocusMs ?? settledScrubChildPoint.ms, settledScrubChildPoint.ms),
+      )
+    : null;
   // 지도용 스테이 마커(순번·체류시간·장소명·강조).
   const mapStays = useMemo<MapStay[]>(
     () =>
@@ -418,21 +474,37 @@ export function ParentLocation() {
     [visibleStayPoints, stayLabels, activeStayIdx],
   );
   // 목록 항목 선택 시 지도 중심을 그 스테이포인트로.
-  const stayCenter =
-    activeStayIdx != null ? { lat: visibleStayPoints[activeStayIdx].lat, lng: visibleStayPoints[activeStayIdx].lng } : null;
+  const stayCenter = manuallySelectedStayIdx != null
+    ? {
+        lat: visibleStayPoints[manuallySelectedStayIdx].lat,
+        lng: visibleStayPoints[manuallySelectedStayIdx].lng,
+      }
+    : settledScrubStayIdx != null
+      ? { lat: stayPoints[settledScrubStayIdx].lat, lng: stayPoints[settledScrubStayIdx].lng }
+      : null;
   // 부모가 시간대를 고르면 그 시각의 마지막 확인 위치를 지도 중심으로 잡는다.
   // 최신 따라가기 상태에서는 center 가 null 이라 하루 경로 전체가 보이는 bounds 를 유지한다.
   const historyCenter = useMemo(
-    () => resolveHistoryMapCenter({ followsLatest, stayCenter, scrubChildPoint }),
-    [followsLatest, stayCenter, scrubChildPoint],
+    () => resolveHistoryMapCenter({
+      followsLatest,
+      stayCenter,
+      scrubChildPoint: settledScrubChildPoint,
+    }),
+    [followsLatest, settledScrubChildPoint, stayCenter],
   );
   // 지도 아바타 좌표(중심과 분리 — 머문 곳을 선택해도 아이는 실제 이력점에 남는다).
   const historyChildMarker = useMemo(
     () =>
       historyChildPoint
-        ? { lat: historyChildPoint.lat, lng: historyChildPoint.lng, name: childName, avatar: childAvatar }
+        ? {
+            lat: historyChildPoint.lat,
+            lng: historyChildPoint.lng,
+            name: childName,
+            avatar: childAvatar,
+            caption: followsLatest ? undefined : formatClockHM(scrubMs),
+          }
         : null,
-    [historyChildPoint, childName, childAvatar],
+    [historyChildPoint, childName, childAvatar, followsLatest, scrubMs],
   );
 
   const selectHistoryDay = (requestedDateKey: string): void => {
@@ -448,7 +520,7 @@ export function ParentLocation() {
     setRawHistoryDayKey(nextDateKey);
     setScrubOffsetMinute(null);
     setSelectedStayIdx(null);
-    setStaysCollapsed(false);
+    setHistoryPanelExpanded(true);
   };
 
   const selectPreviousHistoryDay = (): void => {
@@ -462,19 +534,16 @@ export function ParentLocation() {
   const historyAtMin = historyDayKey === premiumHistoryRange.minDateKey;
   const historyAtMax = historyDayKey === premiumHistoryRange.maxDateKey;
 
-  // 시간대별 경로 조작 — 하단 '오늘 머문 곳' 시트를 접어 그 시각 위치를 가리지 않게 하고,
-  // 목록 강조를 해제해 슬라이더가 지도 중심을 잡게 한다.
+  // 시간대별 경로 조작 — 수동 목록 선택을 해제해 고른 시각의 머문 곳을 자동 강조한다.
+  // 드래그 도중 패널 높이를 바꾸면 지도 가시 영역도 바뀌어 한 번 더 흔들리므로 펼침 상태는 유지한다.
   const moveScrubTo = (rawValue: number) => {
     setScrubOffsetMinute(clampHistoryOffsetMinute(rawValue, historyMaxOffsetMinute));
     setSelectedStayIdx(null);
-    setStaysCollapsed(true);
-    setScrubFocusKey((key) => key + 1);
   };
 
   const followLatestAgain = () => {
     setScrubOffsetMinute(null);
     setSelectedStayIdx(null);
-    setScrubFocusKey((key) => key + 1);
   };
 
   // 고른 시각에 아이가 어디였는지 — 머문 곳 창 안이면 그 장소명, 아니면 이동 중.
@@ -484,110 +553,28 @@ export function ParentLocation() {
     scrubMs,
     lastPointMs: scrubChildPoint?.ms ?? null,
   });
-
-  const markStaysDragged = () => {
-    staysDragged.current = true;
-    staysDragClickGuardUntil.current = Date.now() + STAYS_DRAG_CLICK_GUARD_MS;
-  };
-
-  const beginStaysDrag = (clientY: number) => {
-    staysDragStart.current = clientY;
-    staysDragLast.current = clientY;
-    staysDragged.current = false;
-  };
-
-  const updateStaysDrag = (clientY: number) => {
-    const startY = staysDragStart.current;
-    if (startY == null) return;
-    staysDragLast.current = clientY;
-    const dy = clientY - startY;
-    if (Math.abs(dy) > STAYS_DRAG_CLICK_GUARD_PX) {
-      markStaysDragged();
-    }
-    if (dy >= STAYS_DRAG_TOGGLE_PX) {
-      setStaysCollapsed(true);
-      staysDragStart.current = null;
-      staysDragLast.current = null;
-    } else if (dy <= -STAYS_DRAG_TOGGLE_PX) {
-      setStaysCollapsed(false);
-      staysDragStart.current = null;
-      staysDragLast.current = null;
-    }
-  };
-
-  const finishStaysDrag = () => {
-    const startY = staysDragStart.current;
-    const lastY = staysDragLast.current;
-    if (startY != null && lastY != null) {
-      const dy = lastY - startY;
-      if (dy >= STAYS_DRAG_TOGGLE_PX) {
-        setStaysCollapsed(true);
-        markStaysDragged();
-      } else if (dy <= -STAYS_DRAG_TOGGLE_PX) {
-        setStaysCollapsed(false);
-        markStaysDragged();
-      } else if (Math.abs(dy) > STAYS_DRAG_CLICK_GUARD_PX) {
-        markStaysDragged();
-      }
-    }
-    staysDragStart.current = null;
-    staysDragLast.current = null;
-  };
-
-  const cancelStaysDrag = () => {
-    staysDragStart.current = null;
-    staysDragLast.current = null;
-  };
-
-  const onStaysPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    beginStaysDrag(e.clientY);
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {
-      // 일부 합성/비표준 pointer 이벤트에서는 active pointer 가 없어 실패할 수 있다.
-    }
-  };
-
-  const onStaysPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    updateStaysDrag(e.clientY);
-  };
-
-  const onStaysPointerUp = () => {
-    finishStaysDrag();
-  };
-
-  const onStaysPointerCancel = () => {
-    cancelStaysDrag();
-  };
-
-  const onStaysTouchStart = (e: ReactTouchEvent<HTMLDivElement>) => {
-    if (e.touches.length !== 1) return;
-    beginStaysDrag(e.touches[0].clientY);
-  };
-
-  const onStaysTouchMove = (e: ReactTouchEvent<HTMLDivElement>) => {
-    if (e.touches.length !== 1) return;
-    updateStaysDrag(e.touches[0].clientY);
-  };
-
-  const onStaysTouchEnd = () => {
-    finishStaysDrag();
-  };
-
-  const onStaysClickCapture = (e: ReactMouseEvent<HTMLDivElement>) => {
-    if (!staysDragged.current) return;
-    const shouldGuard = Date.now() <= staysDragClickGuardUntil.current;
-    staysDragged.current = false;
-    if (!shouldGuard) return;
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const histLoading = activeView === "history" && canShowHistory && historyFetching && timedTrail.length === 0;
-  const histErrored = activeView === "history" && canShowHistory && historyError && timedTrail.length === 0;
-  const histEmpty =
-    activeView === "history" && canShowHistory && !historyFetching && !historyError && timedTrail.length === 0;
-
+  const journeyRange = useMemo(() => getJourneyRecordedRange(timedTrail), [timedTrail]);
+  const journeyState = resolveJourneyContentState({
+    isFetching: historyFetching,
+    isError: historyError,
+    pointCount: timedTrail.length,
+    stayCount: stayPoints.length,
+  });
+  const journeyRangeLabel = journeyRange
+    ? `${formatClockHM(journeyRange.startMs)}–${formatClockHM(journeyRange.endMs)}`
+    : null;
+  const journeyStayItems = useMemo<StayTimelineItem[]>(
+    () =>
+      visibleStayPoints.map((stay, index) => ({
+        id: `${stay.arrivalMs}-${index}`,
+        order: index + 1,
+        placeLabel: stayLabels[index] ?? "확인되지 않은 장소",
+        timeLabel: `${formatClockHM(stay.arrivalMs)}–${formatClockHM(stay.departureMs)}`,
+        dwellLabel: formatDwell(stay.dwellMs),
+        selected: index === activeStayIdx,
+      })),
+    [activeStayIdx, stayLabels, visibleStayPoints],
+  );
   const mapZones: MapZone[] = (zones ?? []).map((z) => ({
     lat: z.lat,
     lng: z.lng,
@@ -712,8 +699,8 @@ export function ParentLocation() {
           stays={mapStays}
           center={historyCenter}
           centerLevel={HISTORY_FOCUS_MAP_LEVEL}
-          recenterKey={scrubFocusKey}
           places={historyPlaces}
+          viewportPadding={settledHistoryMapPadding}
         />
       ) : (
         <KakaoMap
@@ -722,24 +709,6 @@ export function ParentLocation() {
           zones={mapZones}
           places={mapPlaces}
         />
-      )}
-
-      {/* 이동 기록 — Free는 오늘, Premium은 최근 30일 중 선택일을 표시한다. */}
-      {(histLoading || histErrored || histEmpty) && (
-        <div className={`pl-histmsg${histErrored ? " pl-histmsg--error" : ""}`} role={histErrored ? "alert" : "status"}>
-          <span>
-            {histErrored
-              ? "이동 기록을 불러오지 못했어요"
-              : histLoading
-                ? `${historyDayLabel} 이동 기록을 불러오는 중…`
-                : `${historyDayLabel} 이동 기록이 아직 없어요`}
-          </span>
-          {histErrored && (
-            <button type="button" className="pl-lock__retry hy-press hy-busy-quiet" onClick={() => void refetchHistory()}>
-              다시 시도
-            </button>
-          )}
-        </div>
       )}
 
       {locationScopePending && (
@@ -780,47 +749,6 @@ export function ParentLocation() {
               {entitlement.isFetching ? "다시 확인 중…" : "다시 시도"}
             </button>
           )}
-        </div>
-      )}
-
-      {activeView === "history" && canShowHistory && timedTrail.length > 0 && (
-        <div className="pl-scrub">
-          <div className="pl-scrub__head">
-            <span className="pl-scrub__label">{historyDayLabel} 시간대별 경로</span>
-            <button
-              type="button"
-              className="pl-scrub__latest hy-press"
-              onClick={followLatestAgain}
-              disabled={followsLatest}
-            >
-              {followsLatest ? "최신" : "최신으로"}
-            </button>
-            <span className="pl-scrub__moment">
-              <strong>{formatClockHM(scrubMs)}</strong>
-              <span className="pl-scrub__where">{scrubWhere}</span>
-            </span>
-          </div>
-          <input
-            className="pl-scrub__range"
-            type="range"
-            min={0}
-            max={historyMaxOffsetMinute}
-            value={effectiveScrubOffsetMinute}
-            onChange={(e) => moveScrubTo(Number(e.target.value))}
-            aria-label={`${historyDayLabel} 경로 시간 선택`}
-            aria-valuetext={`${formatClockHM(scrubMs)} · ${scrubWhere}`}
-          />
-          <div className="pl-scrub__ticks" aria-hidden="true">
-            <span>{formatClockHM(historyWindow.startMs)}</span>
-            <span>{formatClockHM(historyWindow.endMs)}</span>
-          </div>
-          <div className="pl-scrub__legend">
-            <span><i className="pl-scrub__line" /> 이동선</span>
-            <span><i className="pl-scrub__dot" /> 머문 곳</span>
-            {scheduleMapPlaces.length > 0 && (
-              <span><MapPin size={16} strokeWidth={2.2} aria-hidden="true" /> 일정</span>
-            )}
-          </div>
         </div>
       )}
 
@@ -886,138 +814,81 @@ export function ParentLocation() {
         </div>
       )}
 
-      {!isLocked && !locationScopePending && activeView === "history" && (
-        <div
-          className="pl-history-day"
-          role="group"
-          aria-label={premiumOpen ? "최근 30일 이동 기록 날짜 선택" : "무료 오늘 이동 기록"}
-          data-premium={premiumOpen}
-        >
-          <button
-            type="button"
-            className="pl-history-day__nav hy-press"
-            aria-label={premiumOpen ? "이전 날짜" : "이전 날짜 보기 (프리미엄)"}
-            onClick={selectPreviousHistoryDay}
-            disabled={premiumOpen && historyAtMin}
-          >
-            <ChevronLeft size={20} strokeWidth={2.4} aria-hidden="true" />
-          </button>
-          <input
-            className="pl-history-day__input"
-            type="date"
-            aria-label="이동 기록 날짜"
-            value={historyDateValue}
-            min={historyMinDateValue}
-            max={historyMaxDateValue}
-            onChange={(event) => {
-              const nextDateKey = dateInputValueToDateKey(event.currentTarget.value);
-              if (nextDateKey) selectHistoryDay(nextDateKey);
-            }}
-          />
-          <button
-            type="button"
-            className="pl-history-day__nav hy-press"
-            aria-label="다음 날짜"
-            onClick={selectNextHistoryDay}
-            disabled={historyAtMax}
-          >
-            <ChevronRight size={20} strokeWidth={2.4} aria-hidden="true" />
-          </button>
-        </div>
-      )}
-
-      {!isLocked && !locationScopePending && activeView === "live" && isRefreshingLocation && (
-        <div className="pl-refreshing" role="status" aria-live="polite">
-          <span className="pl-refreshing__spinner" aria-hidden="true" />
-          <span className="pl-refreshing__title">{refreshOverlayTitle}</span>
-        </div>
+      {!isLocked && !locationScopePending && activeView === "history" && selected && (
+        <LocationHistoryToolbar
+          containerRef={historyToolbarRef}
+          childName={selected.name || "아이"}
+          childAvatarSrc={avatarSrc(childAvatarPath(selected.photo_url))}
+          dayLabel={historyDayLabel}
+          dateValue={historyDateValue}
+          minDateValue={historyMinDateValue}
+          maxDateValue={historyMaxDateValue}
+          premiumOpen={premiumOpen}
+          previousDisabled={premiumOpen && historyAtMin}
+          nextDisabled={historyAtMax}
+          onPrevious={selectPreviousHistoryDay}
+          onNext={selectNextHistoryDay}
+          onDateChange={(value) => {
+            const nextDateKey = dateInputValueToDateKey(value);
+            if (nextDateKey) selectHistoryDay(nextDateKey);
+          }}
+        />
       )}
 
       {/* 아이 표시 배지 — 실시간에서만 현재 보는 아이를 명시한다. */}
       {!isLocked && !locationScopePending && activeView === "live" && selected && (
         <div className="pl-chips">
-          <div className="pl-chip pl-chip--active" aria-label={`현재 ${selected.name || "아이"} 위치 보기`}>
+          <div
+            className="pl-chip pl-chip--active"
+            data-refreshing={isRefreshingLocation ? "true" : "false"}
+            aria-label={`현재 ${selected.name || "아이"} 위치 보기`}
+          >
             <span className="pl-chip__avatar">
               <img className="hy-network-avatar" src={avatarSrc(childAvatarPath(selected.photo_url))} alt="" loading="eager" decoding="async" />
             </span>
-            <span className="pl-chip__name">{selected.name || "아이"}</span>
-            <span className="pl-chip__dot" />
+            <span className="pl-chip__main">
+              <span className="pl-chip__name">{selected.name || "아이"}</span>
+              {isRefreshingLocation && (
+                <span className="pl-chip__status" role="status" aria-live="polite">
+                  {refreshOverlayTitle}
+                </span>
+              )}
+            </span>
+            {isRefreshingLocation ? (
+              <span className="pl-chip__spinner" aria-hidden="true" />
+            ) : (
+              <span className="pl-chip__dot" />
+            )}
           </div>
         </div>
       )}
 
-      {/* 하단 — 오늘 경로(스테이포인트 목록) */}
-      {activeView === "history" && canShowHistory && stayPoints.length > 0 && (
-        <>
-        <div
-          className={`pl-sheet pl-stays${staysCollapsed ? " pl-stays--collapsed" : ""}`}
-          onPointerDown={onStaysPointerDown}
-          onPointerMove={onStaysPointerMove}
-          onPointerUp={onStaysPointerUp}
-          onPointerCancel={onStaysPointerCancel}
-          onTouchStart={onStaysTouchStart}
-          onTouchMove={onStaysTouchMove}
-          onTouchEnd={onStaysTouchEnd}
-          onTouchCancel={cancelStaysDrag}
-          onClickCapture={onStaysClickCapture}
-        >
-          <div
-            className="pl-stays__grip"
-            role="button"
-            tabIndex={0}
-            aria-label={staysCollapsed ? `${historyDayLabel} 머문 곳 펼치기` : `${historyDayLabel} 머문 곳 접기`}
-            onClick={() => setStaysCollapsed((v) => !v)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                setStaysCollapsed((v) => !v);
-              }
-            }}
-          >
-            <div className="pl-sheet__handle" />
-          </div>
-          <div className="pl-stays__head">
-            <span className="pl-stays__title">{historyDayLabel} 머문 곳</span>
-            <span className="pl-stays__count">{visibleStayPoints.length}/{stayPoints.length}곳</span>
-          </div>
-          <div className="pl-stays__list">
-            {visibleStayPoints.map((s, i) => {
-              const place = stayLabels[i];
-              const on = i === activeStayIdx;
-              return (
-                <button
-                  key={`${s.arrivalMs}-${i}`}
-                  type="button"
-                  className={`pl-stay hy-press${on ? " pl-stay--on" : ""}`}
-                  onClick={() => setSelectedStayIdx(on ? null : i)}
-                >
-                  <span className="pl-stay__num">{i + 1}</span>
-                  <span className="pl-stay__body">
-                    <span className="pl-stay__place">{place ?? "머문 장소"}</span>
-                    <span className="pl-stay__time">
-                      {formatClockHM(s.arrivalMs)}–{formatClockHM(s.departureMs)}
-                    </span>
-                  </span>
-                  <span className="pl-stay__dwell">{formatDwell(s.dwellMs)}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-        {staysCollapsed && (
-          <button
-            type="button"
-            className="pl-stays-reopen hy-press"
-            onClick={() => setStaysCollapsed(false)}
-          >
-            {historyDayLabel} 머문 곳 {visibleStayPoints.length}곳
-          </button>
-        )}
-        </>
+      {/* 오늘 경로는 로딩·오류·빈 기록·이동만 상태에서도 같은 타임라인 자리를 유지한다. */}
+      {activeView === "history" && canShowHistory && (
+        <LocationJourneyPanel
+          containerRef={historyPanelRef}
+          childName={childName}
+          dayLabel={historyDayLabel}
+          state={journeyState}
+          expanded={historyPanelExpanded}
+          recordedRangeLabel={journeyRangeLabel}
+          stayCount={visibleStayPoints.length}
+          currentTimeLabel={formatClockHM(scrubMs)}
+          currentWhere={scrubWhere}
+          sliderMax={historyMaxOffsetMinute}
+          sliderValue={effectiveScrubOffsetMinute}
+          followsLatest={followsLatest}
+          stays={journeyStayItems}
+          onToggleExpanded={() => setHistoryPanelExpanded((value) => !value)}
+          onSliderChange={moveScrubTo}
+          onFollowLatest={followLatestAgain}
+          onSelectStay={(index) => setSelectedStayIdx(activeStayIdx === index ? null : index)}
+          onRetry={() => void refetchHistory()}
+        />
       )}
 
-      {/* 하단 상세 카드 — 실시간(또는 경로에 스테이포인트가 없을 때) */}
-      {!(activeView === "history" && canShowHistory && stayPoints.length > 0) && (
+      {/* 하단 상세 카드는 실시간 보기에서만 표시한다. */}
+      {activeView === "live" && (
       <div className="pl-sheet">
         <div className="pl-sheet__handle" />
         <div className="pl-sheet__head">

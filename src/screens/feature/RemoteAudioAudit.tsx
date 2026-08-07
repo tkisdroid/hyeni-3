@@ -1,5 +1,5 @@
 import { AlertTriangle, ChevronLeft, FileClock, RefreshCw, ShieldCheck } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { useRemoteListenAudit } from "@/queries/useRemoteAudit";
 import type { RemoteListenAuditRecord } from "@/lib/api/endpoints/remoteAudit";
 import "./RemoteAudioAudit.css";

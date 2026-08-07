@@ -1,5 +1,7 @@
 import { Suspense, useEffect, useState, type ReactElement } from "react";
-import { createHashRouter, Navigate, Outlet, RouterProvider } from "react-router-dom";
+import { useIsMutating } from "@tanstack/react-query";
+import { createHashRouter, Navigate, Outlet, useLocation } from "react-router";
+import { RouterProvider } from "react-router/dom";
 import { ParentShell, ChildShell, TeacherShell, PushShell } from "./AppShell";
 import { Splash } from "@/screens/Splash";
 import { AccentProvider } from "./accent";
@@ -19,6 +21,7 @@ import { RootErrorBoundary, RouteErrorScreen } from "./ErrorBoundary";
 import { GlobalErrorListeners } from "./GlobalErrorListeners";
 import { lazyScreen } from "./lazyScreen";
 import { AppVersionGate } from "./AppVersionGate";
+import { usePwaUpdateCriticalSection } from "@/lib/usePwaUpdateCriticalSection";
 
 // Provider·shell·오류 경계는 즉시 로드하고 사용자 화면만 route 단위로 분리한다.
 const ParentHome = lazyScreen(() => import("@/screens/parent/ParentHome"), "ParentHome");
@@ -85,7 +88,33 @@ function routeElement(element: ReactElement): ReactElement {
   return <Suspense fallback={<RouteLoading />}>{element}</Suspense>;
 }
 
+/** 자동 업데이트로 입력 중인 초안이 사라지면 안 되는 편집 전용 화면. */
+const PWA_DRAFT_PROTECTED_ROUTES = new Set([
+  "/onboarding",
+  "/ai-schedule",
+  "/phone-setup",
+  "/sticker-send",
+  "/profile-edit",
+  "/place-form",
+  "/event-form",
+  "/danger-zone-form",
+  "/pairing-wizard",
+  "/location-settings",
+  "/remote-ring",
+  "/child/sos",
+  "/child/ai-friend-setup",
+  "/feedback",
+  "/supplies",
+  "/teacher/notice",
+]);
+
 function AppRouteServices() {
+  const location = useLocation();
+  const activeMutationCount = useIsMutating();
+  usePwaUpdateCriticalSection(
+    activeMutationCount > 0 || PWA_DRAFT_PROTECTED_ROUTES.has(location.pathname),
+  );
+
   return (
     <>
       <AppVersionGate />
@@ -220,7 +249,7 @@ const router = createHashRouter([
         ],
       },
 
-      // 선생님 전용 푸시/상세 — v1.2.0 프로덕션에서는 위 teacher/* gate가 먼저 막는다.
+      // 선생님 전용 푸시/상세 — v1.3.0 프로덕션에서는 위 teacher/* gate가 먼저 막는다.
       ...(TEACHER_MODE_ENABLED ? [{
         element: <RequireRole role="teacher" />,
         children: [
@@ -275,8 +304,8 @@ function RealtimeBridge() {
 // 페이드아웃 후 제거. 같은 세션의 새로고침/재마운트에는 다시 띄우지 않는다
 // (스플래시가 매번 떠서 "로딩 화면"처럼 보이던 문제 — TK 제보 2026-07-06).
 // 데이터 로딩 표시는 각 화면의 소형 로더(components/ui/Loading)가 담당한다.
-const SPLASH_SHOW_MS = 1600;
-const SPLASH_FADE_MS = 300;
+const SPLASH_SHOW_MS = 600;
+const SPLASH_FADE_MS = 180;
 const SPLASH_SEEN_KEY = "hy_splash_seen";
 
 function splashAlreadySeen(): boolean {

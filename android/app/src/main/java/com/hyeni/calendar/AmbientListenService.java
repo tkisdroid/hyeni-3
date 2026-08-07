@@ -962,7 +962,7 @@ public class AmbientListenService extends Service {
                 "주변 소리 공유 상태",
                 NotificationManager.IMPORTANCE_LOW
             );
-            channel.setDescription("아이가 직접 허용한 주변 소리 공유가 진행되는 동안 표시됩니다.");
+            channel.setDescription("위급 주변 소리 공유가 진행되는 동안 아이 화면과 알림에 표시됩니다.");
             channel.setShowBadge(false);
             nm.createNotificationChannel(channel);
         }

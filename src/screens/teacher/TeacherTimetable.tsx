@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { Plus, MapPin, Copy, CalendarDays } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";

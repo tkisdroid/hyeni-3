@@ -41,6 +41,8 @@ import {
   browserPremiumReturnIntentStorage,
   savePremiumReturnIntent,
 } from "@/transform/premiumReturnIntent";
+import { resolveParentHomeSubscriptionCard } from "@/transform/parentHomeSubscriptionCard";
+import { resolveParentHomeDeviceFinder } from "@/transform/parentHomeShortcut";
 import "./ParentHome.css";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
@@ -120,7 +122,7 @@ const shortcutRoutes: Record<string, string> = {
   "장소관리": "/place-manager",
   "주변소리": "/remote-audio",
   "안심리포트": "/daily-report",
-  "구독": "/subscription",
+  "아이 기기 찾기": "/remote-ring",
   "알림": "/notifications",
 };
 
@@ -179,6 +181,23 @@ export function ParentHome() {
 
   // 활성 아이(전역 스위치) — 홈 카드 탭으로만 전환. 안전지표·오늘일정·준비물이 이 아이 기준.
   const { activeChild, setActiveChildId } = useActiveChild();
+  const subscriptionCard = resolveParentHomeSubscriptionCard({
+    ready: entitlement.ready,
+    isError: entitlement.isError,
+    isPremium: entitlement.isPremium,
+    planLabel: entitlement.view?.planLabel ?? null,
+    isTrial: entitlement.view?.isTrial ?? false,
+    trialDaysLeft: entitlement.view?.trialDaysLeft ?? null,
+    periodEnd: entitlement.view?.periodEnd ?? null,
+  });
+  const openShortcut = (label: string) => {
+    if (label === "아이 기기 찾기") {
+      const destination = resolveParentHomeDeviceFinder(activeChild?.user_id);
+      navigate(destination.to, { state: destination.state });
+      return;
+    }
+    navigate(shortcutRoutes[label]);
+  };
   const childNotifSettingsQuery = useChildNotifSettingsStatus(activeChild?.user_id);
   const activeHeroLocation = activeChild?.user_id
     ? (locationsForDisplay ?? []).find((location) => location.user_id === activeChild.user_id) ?? null
@@ -971,7 +990,7 @@ export function ParentHome() {
                   type="button"
                   className="ph-shortcut hy-press"
                   onPointerDown={s.label === "위치추적" ? () => void loadKakaoMaps().catch(() => undefined) : undefined}
-                  onClick={() => navigate(shortcutRoutes[s.label])}
+                  onClick={() => openShortcut(s.label)}
                 >
                   <span
                     className="ph-shortcut__icon"
@@ -988,6 +1007,27 @@ export function ParentHome() {
             })}
           </div>
         </section>
+
+        <button
+          type="button"
+          className="hy-card ph-subscription hy-press"
+          data-tone={subscriptionCard.tone}
+          aria-busy={!entitlement.ready && !entitlement.isError}
+          onClick={() => navigate("/subscription")}
+        >
+          <span className="ph-subscription__icon">
+            <img src={asset("ui/menu-subscription.webp")} alt="" />
+          </span>
+          <span className="ph-subscription__main">
+            <span className="ph-subscription__title">{subscriptionCard.title}</span>
+            <span className="ph-subscription__description">{subscriptionCard.description}</span>
+            <span className="ph-subscription__meta">{subscriptionCard.meta}</span>
+          </span>
+          <span className="ph-subscription__action" aria-hidden="true">
+            {subscriptionCard.actionLabel}
+            <ChevronRight size={16} strokeWidth={2.6} />
+          </span>
+        </button>
       </div>
       {valueUpsellSource && (
         <PremiumUpsell

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { useLocation as useRouterLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation as useRouterLocation, useNavigate, useSearchParams } from "react-router";
 import { ChevronLeft, RefreshCw, Check, AlertTriangle, MapPin, Lock } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";

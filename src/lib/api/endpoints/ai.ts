@@ -6,9 +6,14 @@
  * ⚠️ 전송(sendChildChat)은 크레딧을 소모하는 쓰기다. 반드시 사용자 액션(버튼)에서만 호출.
  */
 import { apiGet, apiPost, apiPatch } from "../client";
+import {
+  aiIncludedDailyLimitForExplicitTier,
+  normalizeAiCreditPublicStatusPayload,
+  type AiCreditPublicStatus,
+} from "@/transform/aiCreditPublicStatus";
 
-// 프리미엄 기본 일일 포함 크레딧(hyeni-1 premiumPolicy 기준값). 서버가 값을 주면 그 값을 우선한다.
-const PREMIUM_AI_DAILY_INCLUDED_CREDITS = 5;
+export { normalizeAiCreditPublicStatusPayload };
+export type { AiCreditPublicStatus };
 
 /** KST 기준 오늘(YYYY-MM-DD). child-chat usageDate·잔액 리셋 판정에 사용. */
 function todayDateKST(): string {
@@ -46,6 +51,8 @@ export interface AiCreditStatus {
   dailyIncludedRemaining: number;
   /** 남은 구매 크레딧 잔액(충전으로 늘어나는 값). */
   purchasedCredits: number;
+  /** 환불 뒤 이미 사용해 다음 충전에서 먼저 상계할 횟수. 부모에게만 노출한다. */
+  purchasedCreditDebt: number;
   /** 누적 구매 총합(원장 합산). */
   totalPurchased: number;
   /** KST 일일 리셋 기준일. */
@@ -65,6 +72,7 @@ export interface AiCreditBalanceRow {
   daily_included_used?: number | null;
   daily_reset_date?: string | null;
   purchased_credits?: number | null;
+  purchased_credit_debt?: number | null;
   parent_daily_used?: number | null;
   parent_daily_limit?: number | null;
   available_remaining?: number | null;
@@ -78,19 +86,35 @@ interface AiCreditBalanceResponse {
 // raw 잔액 row → 정규화 상태. daily_reset_date 가 오늘이 아니면 used=0 으로 본다(리셋 미반영 방지).
 function normalizeCreditRow(row: AiCreditBalanceRow | null | undefined, today: string): AiCreditStatus | null {
   if (!row) return null;
-  const dailyIncludedLimit = Math.max(0, numberOr(row.daily_included_limit, PREMIUM_AI_DAILY_INCLUDED_CREDITS));
+  const isPremium = typeof row.is_premium === "boolean" ? row.is_premium : null;
+  if (isPremium == null) return null;
+  const tierFallback = aiIncludedDailyLimitForExplicitTier(isPremium);
+  if (tierFallback == null) return null;
+  const serverLimit = typeof row.daily_included_limit === "number"
+    && Number.isSafeInteger(row.daily_included_limit)
+    && row.daily_included_limit >= 0
+    ? row.daily_included_limit
+    : null;
+  const dailyIncludedLimit = serverLimit ?? tierFallback;
   const rawUsed = row.daily_reset_date === today ? Math.max(0, numberOr(row.daily_included_used, 0)) : 0;
   const dailyIncludedUsed = Math.min(rawUsed, dailyIncludedLimit);
   const parentDailyUsed = row.parent_daily_used == null ? null : Math.max(0, numberOr(row.parent_daily_used, 0));
   const parentDailyLimit = row.parent_daily_limit == null ? null : Math.max(0, numberOr(row.parent_daily_limit, 0));
   const availableRemaining =
     row.available_remaining == null ? null : Math.max(0, numberOr(row.available_remaining, 0));
+  const rawPurchased = numberOr(row.purchased_credits, 0);
+  const purchasedCreditDebt = Math.max(
+    0,
+    -rawPurchased,
+    numberOr(row.purchased_credit_debt, 0),
+  );
   return {
-    isPremium: !!row.is_premium,
+    isPremium,
     dailyIncludedLimit,
     dailyIncludedUsed,
     dailyIncludedRemaining: Math.max(0, dailyIncludedLimit - dailyIncludedUsed),
-    purchasedCredits: Math.max(0, numberOr(row.purchased_credits, 0)),
+    purchasedCredits: Math.max(0, rawPurchased),
+    purchasedCreditDebt,
     totalPurchased: 0, // fetchAiCredits 에서 ledger 합산으로 덮어씀
     dailyResetDate: today, // 리셋 기준일은 항상 KST 오늘로 정규화
     parentDailyUsed,
@@ -108,6 +132,19 @@ export async function fetchAiCredits(familyId: string, childUserId: string): Pro
   const status = normalizeCreditRow(data?.balance, today);
   if (!status) return null;
   return { ...status, totalPurchased: Math.max(status.purchasedCredits, numberOr(data?.totalPurchased, 0)) };
+}
+
+/** 부모와 아이 본인이 함께 읽는 실제 AI 대화 가능 횟수. */
+export async function fetchAiCreditPublicStatus(
+  familyId: string,
+  childUserId: string,
+): Promise<AiCreditPublicStatus> {
+  const payload = await apiGet<unknown>(
+    `/api/ai/credits/public-status${aiQuery({ familyId, childUserId })}`,
+  );
+  const status = normalizeAiCreditPublicStatusPayload(payload);
+  if (!status) throw new Error("invalid_ai_credit_public_status");
+  return status;
 }
 
 // ── 크레딧 원장(ledger) ────────────────────────────────────────────────────
@@ -275,6 +312,8 @@ export interface ParseScheduleInput {
   /** 알림장 사진 base64 data URI. 텍스트 전용이면 생략. */
   image?: string;
   mode?: "paste" | "voice";
+  /** 학원 시간표 전용 Premium 자동 정리 요청. 일반 일정 정리는 생략한다. */
+  feature?: "academy_schedule";
   academies?: { name: string; category?: string }[];
   todayEvents?: { id: string; title: string; time: string | null; memo: string }[];
   currentDate: { year: number; month: number; day: number };
@@ -341,6 +380,7 @@ export async function parseSchedule(input: ParseScheduleInput): Promise<ParseSch
     text: text || "이미지에서 일정을 추출해 주세요",
     ...(input.image ? { image: input.image } : {}),
     mode: input.mode || "paste",
+    ...(input.feature ? { feature: input.feature } : {}),
     academies: input.academies ?? [],
     todayEvents: input.todayEvents ?? [],
     currentDate: input.currentDate,
@@ -495,15 +535,15 @@ export async function fetchAiFriendSettings(
   );
 }
 
-/** 오늘 AI 대화 사용량(GET /usage/today · 부모/자녀 본인). 오늘 기록이 없으면 null. */
+/** 오늘 AI 대화 원시 사용량(GET /usage/today · 부모/자녀 본인). 오늘 기록이 없으면 null. */
 export interface AiUsageToday {
   count: number;
   usage_date: string;
 }
 
 /**
- * 아이 세션도 호출 가능한 유일한 사용량 소스.
- * `/credits/balance` 는 부모 전용(403)이라 아이 화면에서는 절대 부르지 않는다.
+ * 과거 화면 호환용 원시 카운트다. 실제 남은 횟수 표시는 포함분·구매분·부모 상한을 합친
+ * `fetchAiCreditPublicStatus`를 사용한다.
  */
 export async function fetchAiUsageToday(
   familyId: string,

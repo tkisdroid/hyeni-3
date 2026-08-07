@@ -55,7 +55,6 @@ const ALLOWED_ROUTES = {
 
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
-self.skipWaiting();
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
@@ -138,6 +137,14 @@ function messageContext(data: unknown): PushContext | null | undefined {
 }
 
 self.addEventListener("message", (event) => {
+  if (
+    event.data
+    && typeof event.data === "object"
+    && (event.data as { type?: unknown }).type === "SKIP_WAITING"
+  ) {
+    event.waitUntil(self.skipWaiting());
+    return;
+  }
   const context = messageContext(event.data);
   if (context === undefined) return;
   const replyPort = event.ports[0];

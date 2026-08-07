@@ -7,7 +7,7 @@ export const meta = {
 const ROOT = "C:/Users/TK/Desktop/hyeni-3";
 
 const ROUTE_MAP = [
-  "전체 라우트 (react-router-dom useNavigate 로 이동):",
+  "전체 라우트 (react-router useNavigate 로 이동):",
   "  부모 탭: /parent/home  /parent/calendar  /parent/location  /parent/memo  /parent/settings",
   "  아이 탭: /child/home  /child/sticker  /child/memo",
   "  선생님:  /teacher/home  /teacher/students",
@@ -25,7 +25,7 @@ const CONTRACT = [
   "■ 작업 규칙:",
   "  1) 배정된 파일을 Read 로 정독한다.",
   "  2) '다른 화면으로 이동'이 자연스러운 액션(바로가기, 리스트 행, CTA, 아이콘 버튼 등)의 핸들러를 useNavigate() 의 navigate('/경로') 로 교체한다.",
-  "  3) react-router-dom 의 useNavigate 를 import 하고 컴포넌트 상단에서 const navigate = useNavigate(); 로 준비(이미 있으면 재사용).",
+  "  3) react-router 의 useNavigate 를 import 하고 컴포넌트 상단에서 const navigate = useNavigate(); 로 준비(이미 있으면 재사용).",
   "  4) 아래 '이 화면 배선 지침'의 매핑을 우선 따른다. 지침에 없지만 명백히 특정 화면으로 가는 액션도 라우트 맵에서 골라 배선한다.",
   "  5) 이동이 아닌 액션은 그대로 둔다: 전화걸기·결제·로그아웃·삭제·토글·폼 제출·좋아요·하트(꾹) 등은 기존 토스트/로컬 동작 유지(백엔드/네이티브 이후 단계).",
   "  6) UI 마크업·스타일·레이아웃·목업 데이터·기타 로직은 절대 바꾸지 마라. 오직 핸들러의 동작만 교체.",
