@@ -1023,7 +1023,10 @@ export function ParentHome() {
             <span className="ph-subscription__description">{subscriptionCard.description}</span>
             <span className="ph-subscription__meta">{subscriptionCard.meta}</span>
           </span>
-          <ChevronRight className="ph-subscription__chevron" size={20} strokeWidth={2.4} aria-hidden="true" />
+          <span className="ph-subscription__action" aria-hidden="true">
+            {subscriptionCard.actionLabel}
+            <ChevronRight size={16} strokeWidth={2.6} />
+          </span>
         </button>
       </div>
       {valueUpsellSource && (

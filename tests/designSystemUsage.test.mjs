@@ -2131,6 +2131,7 @@ const nonSurfacePaintManifest = new Set([
   // 기존 버튼과 액션 컨트롤 — exact path + selector만 허용
   ["src/screens/parent/ParentHome.css", ".ph-stickerbtn"],
   ["src/screens/parent/ParentHome.css", ".ph-location-error__retry"],
+  ["src/screens/parent/ParentHome.css", ".ph-subscription__action"],
   ["src/screens/parent/ParentLocation.css", ".pl-lock__cta"],
   ["src/screens/parent/ParentLocation.css", ".pl-lock__retry"],
   ["src/screens/parent/ParentLocation.css", ".pl-viewtog"],

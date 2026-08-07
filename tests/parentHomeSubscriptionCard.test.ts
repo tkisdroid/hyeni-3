@@ -16,6 +16,7 @@ test("무료 가족은 프리미엄 혜택을 확인하는 카드로 안내한�
     description: "실시간 위치와 더 넉넉한 가족 기능을 확인해 보세요",
     meta: "현재 무료 플랜",
     tone: "benefits",
+    actionLabel: "혜택 보기",
   });
 });
 
@@ -33,6 +34,7 @@ test("프리미엄 가족은 구독 상품과 이용 종료일을 관리 카드�
     description: "프리미엄 월간 구독",
     meta: "2026년 10월 1일까지 이용",
     tone: "manage",
+    actionLabel: "관리하기",
   });
 });
 
@@ -50,6 +52,7 @@ test("무료 체험 중인 가족은 남은 일수를 우선 표시한다", () =
     description: "프리미엄 무료 체험",
     meta: "무료 체험 3일 남음",
     tone: "manage",
+    actionLabel: "관리하기",
   });
 });
 
@@ -78,12 +81,14 @@ test("엔타이틀먼트 미확정과 오류는 무료 플랜으로 강등하지
     description: "이용 상태를 확인하고 있어요",
     meta: "확인 후 정확한 정보를 보여드릴게요",
     tone: "neutral",
+    actionLabel: "확인하기",
   });
   assert.deepEqual(failed, {
     title: "구독 정보",
     description: "이용 상태를 확인하지 못했어요",
     meta: "구독 화면에서 다시 확인할 수 있어요",
     tone: "neutral",
+    actionLabel: "확인하기",
   });
   assert.notEqual(loading.title, "구독 시 혜택");
   assert.notEqual(failed.meta, "현재 무료 플랜");

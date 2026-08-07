@@ -15,6 +15,7 @@ export interface ParentHomeSubscriptionCardView {
   description: string;
   meta: string;
   tone: ParentHomeSubscriptionCardTone;
+  actionLabel: "혜택 보기" | "관리하기" | "확인하기";
 }
 
 function formatPeriodEnd(periodEnd: Date | null): string | null {
@@ -56,6 +57,7 @@ export function resolveParentHomeSubscriptionCard(
         ? "구독 화면에서 다시 확인할 수 있어요"
         : "확인 후 정확한 정보를 보여드릴게요",
       tone: "neutral",
+      actionLabel: "확인하기",
     };
   }
 
@@ -65,6 +67,7 @@ export function resolveParentHomeSubscriptionCard(
       description: "실시간 위치와 더 넉넉한 가족 기능을 확인해 보세요",
       meta: "현재 무료 플랜",
       tone: "benefits",
+      actionLabel: "혜택 보기",
     };
   }
 
@@ -73,5 +76,6 @@ export function resolveParentHomeSubscriptionCard(
     description: input.planLabel?.trim() || "프리미엄 구독",
     meta: premiumMeta(input),
     tone: "manage",
+    actionLabel: "관리하기",
   };
 }
