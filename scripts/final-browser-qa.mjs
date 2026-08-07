@@ -919,10 +919,13 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       const shortcutGrid = document.querySelector(".ph-shortcuts");
       const shortcutButtons = [...document.querySelectorAll(".ph-shortcut")];
       const subscription = document.querySelector(".ph-subscription");
+      const subscriptionAction = subscription?.querySelector(".ph-subscription__action");
       const memo = document.querySelector(".ph-memo");
       const shortcutRect = shortcutGrid?.getBoundingClientRect();
       const subscriptionRect = subscription?.getBoundingClientRect();
+      const subscriptionActionRect = subscriptionAction?.getBoundingClientRect();
       const memoRect = memo?.getBoundingClientRect();
+      const subscriptionStyle = subscription ? getComputedStyle(subscription) : null;
       const rowCounts = Object.values(shortcutButtons.reduce((rows, button) => {
         const top = String(Math.round(button.getBoundingClientRect().top));
         rows[top] = (rows[top] || 0) + 1;
@@ -934,9 +937,18 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
         columnCount: shortcutGrid ? getComputedStyle(shortcutGrid).gridTemplateColumns.split(" ").length : 0,
         rowCounts,
         subscriptionTitle: subscription?.querySelector(".ph-subscription__title")?.textContent?.trim() || "",
+        subscriptionAction: subscriptionAction?.textContent?.trim() || "",
         subscriptionTone: subscription?.getAttribute("data-tone"),
         subscriptionTag: subscription?.tagName || null,
         subscriptionHeight: Math.round(subscriptionRect?.height || 0),
+        subscriptionActionHeight: Math.round(subscriptionActionRect?.height || 0),
+        subscriptionHasGradient: Boolean(subscriptionStyle?.backgroundImage.includes("gradient")),
+        subscriptionActionInside: Boolean(
+          subscriptionRect
+          && subscriptionActionRect
+          && subscriptionActionRect.left >= subscriptionRect.left
+          && subscriptionActionRect.right <= subscriptionRect.right
+        ),
         isSubscriptionBelowGrid: Boolean(shortcutRect && subscriptionRect && subscriptionRect.top >= shortcutRect.bottom),
         alignsWithMemo: Boolean(subscriptionRect && memoRect && Math.abs(subscriptionRect.width - memoRect.width) <= 2),
         overflowX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -958,9 +970,13 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       || parentHomeFreeFacts.columnCount !== 4
       || JSON.stringify(parentHomeFreeFacts.rowCounts) !== JSON.stringify([4, 4])
       || parentHomeFreeFacts.subscriptionTitle !== "구독 시 혜택"
+      || parentHomeFreeFacts.subscriptionAction !== "혜택 보기"
       || parentHomeFreeFacts.subscriptionTone !== "benefits"
       || parentHomeFreeFacts.subscriptionTag !== "BUTTON"
-      || parentHomeFreeFacts.subscriptionHeight < 80
+      || parentHomeFreeFacts.subscriptionHeight < 100
+      || parentHomeFreeFacts.subscriptionActionHeight < 36
+      || !parentHomeFreeFacts.subscriptionHasGradient
+      || !parentHomeFreeFacts.subscriptionActionInside
       || !parentHomeFreeFacts.isSubscriptionBelowGrid
       || !parentHomeFreeFacts.alignsWithMemo
       || parentHomeFreeFacts.overflowX > 0
@@ -1015,9 +1031,13 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     const parentHomePremiumFacts = await inspectParentHomeShortcuts();
     if (
       parentHomePremiumFacts.subscriptionTitle !== "구독 관리"
+      || parentHomePremiumFacts.subscriptionAction !== "관리하기"
       || parentHomePremiumFacts.subscriptionTone !== "manage"
       || parentHomePremiumFacts.subscriptionTag !== "BUTTON"
-      || parentHomePremiumFacts.subscriptionHeight < 80
+      || parentHomePremiumFacts.subscriptionHeight < 100
+      || parentHomePremiumFacts.subscriptionActionHeight < 36
+      || !parentHomePremiumFacts.subscriptionHasGradient
+      || !parentHomePremiumFacts.subscriptionActionInside
       || !parentHomePremiumFacts.isSubscriptionBelowGrid
       || !parentHomePremiumFacts.alignsWithMemo
       || parentHomePremiumFacts.overflowX > 0

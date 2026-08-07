@@ -52,6 +52,9 @@ test("최종 브라우저 QA는 부모·아이 출시 화면과 핵심 전환 �
   assert.match(source, /아이 기기 찾기/);
   assert.match(source, /구독 시 혜택/);
   assert.match(source, /구독 관리/);
+  assert.match(source, /subscriptionAction/);
+  assert.match(source, /subscriptionHasGradient/);
+  assert.match(source, /subscriptionActionHeight/);
   assert.match(source, /history\.state\?\.usr\?\.childUserId/);
 });
 
