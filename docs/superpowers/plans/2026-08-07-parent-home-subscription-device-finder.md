@@ -131,29 +131,34 @@ git commit -m "부모 홈 구독 카드 상태를 분리한다"
 ### Task 2: 부모 홈 바로가기와 가로형 구독 카드
 
 **Files:**
+- Create: `src/transform/parentHomeShortcut.ts`
 - Modify: `src/data/mock.ts`
 - Modify: `src/screens/parent/ParentHome.tsx`
 - Modify: `src/screens/parent/ParentHome.css`
 - Modify: `tests/menuNavigationConsistency.test.mjs`
-- Create: `tests/parentHomeSubscriptionEntry.test.mjs`
+- Create: `tests/parentHomeShortcut.test.ts`
 
 **Interfaces:**
 - Consumes: `resolveParentHomeSubscriptionCard(...)`, `activeChild?.user_id`, 기존 `shortcuts`
-- Produces: `/remote-ring` 진입 route state와 `.ph-subscription` 가로 카드
+- Produces: `resolveParentHomeDeviceFinder(childUserId): { to: "/remote-ring"; state: { childUserId: string | undefined } }`와 `.ph-subscription` 가로 카드
 
 - [ ] **Step 1: 실패하는 홈 계약 테스트 작성**
 
 ```js
 assert.deepEqual(labels, ["AI 일정", "위치추적", "친구놀이", "장소관리", "주변소리", "안심리포트", "아이 기기 찾기", "알림"]);
-assert.match(home, /navigate\("\/remote-ring", \{ state: \{ childUserId: activeChild\?\.user_id \?\? undefined \} \}\)/);
-assert.match(home, /className="hy-card ph-subscription hy-press"/);
-assert.match(home, /subscriptionCard\.title/);
-assert.match(home, /navigate\("\/subscription"\)/);
+assert.deepEqual(resolveParentHomeDeviceFinder("child-user-1"), {
+  to: "/remote-ring",
+  state: { childUserId: "child-user-1" },
+});
+assert.deepEqual(resolveParentHomeDeviceFinder(null), {
+  to: "/remote-ring",
+  state: { childUserId: undefined },
+});
 ```
 
 - [ ] **Step 2: RED 확인**
 
-Run: `node --test tests/menuNavigationConsistency.test.mjs tests/parentHomeSubscriptionEntry.test.mjs`
+Run: `node --test --experimental-strip-types tests/menuNavigationConsistency.test.mjs tests/parentHomeShortcut.test.ts`
 
 Expected: 기존 `구독` 바로가기와 구독 카드 부재 때문에 FAIL
 
@@ -172,7 +177,8 @@ const subscriptionCard = resolveParentHomeSubscriptionCard({
 
 const openShortcut = (label: string) => {
   if (label === "아이 기기 찾기") {
-    navigate("/remote-ring", { state: { childUserId: activeChild?.user_id ?? undefined } });
+    const destination = resolveParentHomeDeviceFinder(activeChild?.user_id);
+    navigate(destination.to, { state: destination.state });
     return;
   }
   navigate(shortcutRoutes[label]);
@@ -183,14 +189,14 @@ const openShortcut = (label: string) => {
 
 - [ ] **Step 4: GREEN 및 관련 계약 확인**
 
-Run: `node --test --experimental-strip-types tests/parentHomeSubscriptionCard.test.ts tests/menuNavigationConsistency.test.mjs tests/parentHomeSubscriptionEntry.test.mjs tests/parentHomeReportEntry.test.mjs tests/pressFeedbackCoverage.test.mjs tests/colorContrastAndRadius.test.mjs`
+Run: `node --test --experimental-strip-types tests/parentHomeSubscriptionCard.test.ts tests/parentHomeShortcut.test.ts tests/menuNavigationConsistency.test.mjs tests/parentHomeReportEntry.test.mjs tests/pressFeedbackCoverage.test.mjs tests/colorContrastAndRadius.test.mjs`
 
 Expected: 전부 PASS
 
 - [ ] **Step 5: 커밋**
 
 ```bash
-git add src/data/mock.ts src/screens/parent/ParentHome.tsx src/screens/parent/ParentHome.css tests/menuNavigationConsistency.test.mjs tests/parentHomeSubscriptionEntry.test.mjs
+git add src/transform/parentHomeShortcut.ts src/data/mock.ts src/screens/parent/ParentHome.tsx src/screens/parent/ParentHome.css tests/menuNavigationConsistency.test.mjs tests/parentHomeShortcut.test.ts
 git commit -m "부모 홈에 아이 기기 찾기와 구독 카드를 배치한다"
 ```
 
@@ -216,7 +222,7 @@ Run: `npm run typecheck`
 
 Run: `npm run build`
 
-Run: `node --test --experimental-strip-types tests/parentHomeSubscriptionCard.test.ts tests/menuNavigationConsistency.test.mjs tests/parentHomeSubscriptionEntry.test.mjs tests/parentHomeReportEntry.test.mjs tests/pressFeedbackCoverage.test.mjs tests/colorContrastAndRadius.test.mjs`
+Run: `node --test --experimental-strip-types tests/parentHomeSubscriptionCard.test.ts tests/parentHomeShortcut.test.ts tests/menuNavigationConsistency.test.mjs tests/parentHomeReportEntry.test.mjs tests/pressFeedbackCoverage.test.mjs tests/colorContrastAndRadius.test.mjs`
 
 Expected: 모두 exit 0
 
