@@ -1,4 +1,5 @@
 import { ChevronDown, Clock3, LocateFixed, MapPin, RefreshCw } from "lucide-react";
+import type { Ref } from "react";
 import type { JourneyContentState } from "@/transform/locationJourneyView";
 
 export interface StayTimelineItem {
@@ -11,6 +12,7 @@ export interface StayTimelineItem {
 }
 
 export interface LocationJourneyPanelProps {
+  containerRef?: Ref<HTMLElement>;
   childName: string;
   dayLabel: string;
   state: JourneyContentState;
@@ -39,6 +41,7 @@ const stateCopy = {
 } as const;
 
 export function LocationJourneyPanel({
+  containerRef,
   childName,
   dayLabel,
   state,
@@ -73,7 +76,11 @@ export function LocationJourneyPanel({
   );
 
   return (
-    <section className={`pl-journey${expanded ? " pl-journey--expanded" : ""}`} aria-label={`${childName}의 ${dayLabel} 이동 타임라인`}>
+    <section
+      ref={containerRef}
+      className={`pl-journey${expanded ? " pl-journey--expanded" : ""}`}
+      aria-label={`${childName}의 ${dayLabel} 이동 타임라인`}
+    >
       {hasStayDetails ? (
         <button
           type="button"

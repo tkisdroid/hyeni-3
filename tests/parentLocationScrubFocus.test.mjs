@@ -12,11 +12,11 @@ const css = read("src/screens/parent/ParentLocation.css");
 const map = read("src/components/KakaoMap.tsx");
 const queries = read("src/queries/useLocation.ts");
 
-test("시간대별 경로를 움직이면 패널을 유지하고 그 시각 위치를 지도 중심으로 잡는다", () => {
+test("시간대별 경로를 움직이면 시간 막대는 유지하고 머문 곳 상세를 접는다", () => {
   const move = screen.slice(screen.indexOf("const moveScrubTo"), screen.indexOf("const followLatestAgain"));
   assert.match(move, /setScrubOffsetMinute\(clampHistoryOffsetMinute\(rawValue, historyMaxOffsetMinute\)\)/);
   assert.match(move, /setSelectedStayIdx\(null\)/);
-  assert.doesNotMatch(move, /setHistoryPanelExpanded\(false\)/);
+  assert.match(move, /setHistoryPanelExpanded\(false\)/);
   assert.match(move, /setScrubFocusKey\(\(key\) => key \+ 1\)/);
 
   assert.match(screen, /onSliderChange=\{moveScrubTo\}/);
@@ -54,6 +54,17 @@ test("고른 시각에 아이가 어디였는지 화면과 접근성 이름에 �
   assert.match(screen, /currentWhere=\{scrubWhere\}/);
   assert.match(screen, /currentTimeLabel=\{formatClockHM\(scrubMs\)\}/);
   assert.match(screen, /caption: followsLatest \? undefined : formatClockHM\(scrubMs\)/);
+  assert.match(screen, /const historyChildPoint =\s*scrubChildPoint \?\? \(followsLatest && loc/s);
+});
+
+test("고른 시각의 머문 곳을 자동 강조하고 실제 DOM 여백으로 지도를 보정한다", () => {
+  assert.match(screen, /const scrubStayIdx = scrubChildPoint/);
+  assert.match(screen, /findStayIndexAtMs\(stayPoints, Math\.min\(scrubMs, scrubChildPoint\.ms\)\)/);
+  assert.match(screen, /const activeStayIdx = manuallySelectedStayIdx \?\? scrubStayIdx/);
+  assert.match(screen, /useHistoryMapViewportPadding\(\{/);
+  assert.match(screen, /containerRef=\{historyToolbarRef\}/);
+  assert.match(screen, /containerRef=\{historyPanelRef\}/);
+  assert.doesNotMatch(screen, /bottom: historyPanelExpanded \? 392 : 112/);
 });
 
 test("KakaoMap 은 명시적 center 를 bounds 로 덮지 않고 자녀 마커를 실제 좌표에 그린다", () => {

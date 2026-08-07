@@ -7,12 +7,16 @@ import { fileURLToPath } from "node:url";
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const source = readFileSync(resolve(rootDir, "src/screens/parent/ParentLocation.tsx"), "utf8");
 const css = readFileSync(resolve(rootDir, "src/screens/parent/ParentLocation.css"), "utf8");
+const journey = readFileSync(resolve(rootDir, "src/screens/parent/LocationJourneyPanel.tsx"), "utf8");
 
 test("오늘 경로 패널은 드래그 없이 명시적 버튼으로 펼치고 접는다", () => {
   assert.match(source, /const \[historyPanelExpanded, setHistoryPanelExpanded\] = useState\(true\)/);
   assert.match(source, /onToggleExpanded=\{\(\) => setHistoryPanelExpanded\(\(value\) => !value\)\}/);
   assert.doesNotMatch(source, /setPointerCapture|STAYS_DRAG_|onStaysPointer|onStaysTouch/);
   assert.match(source, /<LocationJourneyPanel/);
+  assert.match(journey, /className="pl-journey__range"/);
+  assert.match(journey, /id="location-journey-stays"[^>]*hidden=\{!expanded\}/s);
+  assert.doesNotMatch(journey, /className="pl-journey__body"[^>]*hidden/);
   assert.match(css, /\.pl-journey__toggle\s*\{[^}]*min-height:\s*var\(--control-min-size\)/s);
 });
 

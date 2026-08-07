@@ -1,6 +1,8 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import type { Ref } from "react";
 
 export interface LocationHistoryToolbarProps {
+  containerRef?: Ref<HTMLElement>;
   childName: string;
   childAvatarSrc: string;
   dayLabel: string;
@@ -16,6 +18,7 @@ export interface LocationHistoryToolbarProps {
 }
 
 export function LocationHistoryToolbar({
+  containerRef,
   childName,
   childAvatarSrc,
   dayLabel,
@@ -31,6 +34,7 @@ export function LocationHistoryToolbar({
 }: LocationHistoryToolbarProps) {
   return (
     <section
+      ref={containerRef}
       className="pl-history-toolbar"
       aria-label={`${childName}의 이동 기록 날짜`}
       data-history-access={premiumOpen ? "premium" : "today"}

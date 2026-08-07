@@ -1144,28 +1144,71 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       const markerBadge = (Array.isArray(window.__hyQaOverlayContents) ? window.__hyQaOverlayContents : [])
         .map((content) => content?.querySelector?.(".km-child-marker__time")?.textContent?.trim() || null)
         .find(Boolean) || null;
+      const range = document.querySelector(".pl-journey__range");
+      const rangeRect = range?.getBoundingClientRect();
       return {
+        expanded: document.querySelector(".pl-journey__toggle")?.getAttribute("aria-expanded"),
+        staysHidden: Boolean(document.querySelector("#location-journey-stays")?.hidden),
+        replayVisible: Boolean(rangeRect && rangeRect.width > 0 && rangeRect.height >= 44),
+        rangeEnabled: range instanceof HTMLInputElement && !range.disabled,
         followsLatest: document.querySelector(".pl-journey__follow")?.getAttribute("aria-pressed"),
+        selectedStayCount: document.querySelectorAll(".pl-journey__stay--selected").length,
         selectedTime,
         markerBadge,
         lastPan: panCalls.at(-1) || null,
+      };
+    })()`);
+    const locationHistorySecondReplay = await cdp.evaluate(`(() => {
+      const range = document.querySelector(".pl-journey__range");
+      if (!(range instanceof HTMLInputElement)) return { moved: false };
+      const nextValue = String(Math.max(0, Number(range.max) - 20));
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+      setter?.call(range, nextValue);
+      range.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText" }));
+      range.dispatchEvent(new Event("change", { bubbles: true }));
+      return { moved: range.value === nextValue };
+    })()`);
+    await wait(200);
+    const locationHistoryAfterSecondReplay = await cdp.evaluate(`(() => {
+      const selectedTime = document.querySelector(".pl-journey__replay-head strong")?.textContent?.trim() || null;
+      const markerBadge = (Array.isArray(window.__hyQaOverlayContents) ? window.__hyQaOverlayContents : [])
+        .map((content) => content?.querySelector?.(".km-child-marker__time")?.textContent?.trim() || null)
+        .find(Boolean) || null;
+      return {
+        selectedTime,
+        markerBadge,
+        selectedStayCount: document.querySelectorAll(".pl-journey__stay--selected").length,
       };
     })()`);
     await clickSelector(cdp, ".pl-journey__follow");
     await wait(200);
     const locationHistoryLatest = await cdp.evaluate(`(() => ({
       followsLatest: document.querySelector(".pl-journey__follow")?.getAttribute("aria-pressed"),
+      markerBadge: (Array.isArray(window.__hyQaOverlayContents) ? window.__hyQaOverlayContents : [])
+        .map((content) => content?.querySelector?.(".km-child-marker__time")?.textContent?.trim() || null)
+        .find(Boolean) || null,
     }))()`);
     if (
       locationHistoryCollapsed.expanded !== "false"
       || !locationHistoryCollapsed.staysHidden
       || !locationHistoryCollapsed.replayVisible
       || !locationHistoryReplay.moved
+      || locationHistoryAfterReplay.expanded !== "false"
+      || !locationHistoryAfterReplay.staysHidden
+      || !locationHistoryAfterReplay.replayVisible
+      || !locationHistoryAfterReplay.rangeEnabled
       || locationHistoryAfterReplay.followsLatest !== "false"
+      || locationHistoryAfterReplay.selectedStayCount !== 1
       || !locationHistoryAfterReplay.selectedTime
       || locationHistoryAfterReplay.markerBadge !== locationHistoryAfterReplay.selectedTime
       || !(locationHistoryAfterReplay.lastPan?.y > 0)
+      || !locationHistorySecondReplay.moved
+      || !locationHistoryAfterSecondReplay.selectedTime
+      || locationHistoryAfterSecondReplay.selectedTime === locationHistoryAfterReplay.selectedTime
+      || locationHistoryAfterSecondReplay.markerBadge !== locationHistoryAfterSecondReplay.selectedTime
+      || locationHistoryAfterSecondReplay.selectedStayCount !== 1
       || locationHistoryLatest.followsLatest !== "true"
+      || locationHistoryLatest.markerBadge !== null
     ) {
       report.problems.push({
         scope: "parent-location-history-interaction",
@@ -1173,6 +1216,8 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
           collapsed: locationHistoryCollapsed,
           replay: locationHistoryReplay,
           afterReplay: locationHistoryAfterReplay,
+          secondReplay: locationHistorySecondReplay,
+          afterSecondReplay: locationHistoryAfterSecondReplay,
           latest: locationHistoryLatest,
         },
       });
@@ -1182,6 +1227,8 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       collapsed: locationHistoryCollapsed,
       replay: locationHistoryReplay,
       afterReplay: locationHistoryAfterReplay,
+      secondReplay: locationHistorySecondReplay,
+      afterSecondReplay: locationHistoryAfterSecondReplay,
       latest: locationHistoryLatest,
     };
 

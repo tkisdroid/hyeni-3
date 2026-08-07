@@ -56,6 +56,7 @@ import { requestLocationRefresh } from "@/lib/api/endpoints/remote";
 import { waitForNewChildLocation } from "@/transform/locationRefreshWait";
 import {
   buildTrailPoints,
+  findStayIndexAtMs,
   resolveHistoryMapCenter,
   resolveScrubWhereLabel,
 } from "@/transform/locationHistoryScrub";
@@ -75,6 +76,7 @@ import {
   LocationJourneyPanel,
   type StayTimelineItem,
 } from "@/screens/parent/LocationJourneyPanel";
+import { useHistoryMapViewportPadding } from "@/screens/parent/useHistoryMapViewportPadding";
 import "./ParentLocation.css";
 
 function avatarSrc(path: string): string {
@@ -335,7 +337,8 @@ export function ParentLocation() {
     [visibleTrail],
   );
   const scrubChildPoint = visibleTrail.length > 0 ? visibleTrail[visibleTrail.length - 1] : null;
-  const historyChildPoint = scrubChildPoint ?? (loc ? { lat: loc.lat, lng: loc.lng } : null);
+  const historyChildPoint =
+    scrubChildPoint ?? (followsLatest && loc ? { lat: loc.lat, lng: loc.lng } : null);
   // 출발 마커(첫 위치). 현재 마커는 지도의 child 아바타 오버레이가 담당.
   // 매 렌더 새 배열을 만들면 지도 오버레이가 통째로 다시 그려지므로 메모이즈한다.
   const trailStart = useMemo<MapPlace[]>(
@@ -387,6 +390,14 @@ export function ParentLocation() {
   const [selectedStayIdx, setSelectedStayIdx] = useState<number | null>(null);
   const [historyPanelExpanded, setHistoryPanelExpanded] = useState(true);
   const [historyWideLayout, setHistoryWideLayout] = useState(false);
+  const historyToolbarRef = useRef<HTMLElement | null>(null);
+  const historyPanelRef = useRef<HTMLElement | null>(null);
+  const historyMapPadding = useHistoryMapViewportPadding({
+    enabled: historyEnabled && Boolean(selected),
+    wideLayout: historyWideLayout,
+    toolbarRef: historyToolbarRef,
+    panelRef: historyPanelRef,
+  });
 
   useEffect(() => {
     const media = window.matchMedia("(min-width: 720px) and (orientation: landscape)");
@@ -402,8 +413,12 @@ export function ParentLocation() {
     setSelectedStayIdx(null);
     setHistoryPanelExpanded(true);
   }, [activeView, historyDayKey, selected?.id]);
-  const activeStayIdx =
+  const scrubStayIdx = scrubChildPoint
+    ? findStayIndexAtMs(stayPoints, Math.min(scrubMs, scrubChildPoint.ms))
+    : null;
+  const manuallySelectedStayIdx =
     selectedStayIdx != null && selectedStayIdx < visibleStayPoints.length ? selectedStayIdx : null;
+  const activeStayIdx = manuallySelectedStayIdx ?? scrubStayIdx;
   // 지도용 스테이 마커(순번·체류시간·장소명·강조).
   const mapStays = useMemo<MapStay[]>(
     () =>
@@ -468,11 +483,12 @@ export function ParentLocation() {
   const historyAtMin = historyDayKey === premiumHistoryRange.minDateKey;
   const historyAtMax = historyDayKey === premiumHistoryRange.maxDateKey;
 
-  // 시간대별 경로 조작 — 목록 강조를 해제해 슬라이더가 지도 중심을 잡게 한다.
-  // 패널은 그대로 유지해 시각과 장소의 연결 문맥이 사라지지 않게 한다.
+  // 시간대별 경로 조작 — 수동 목록 선택을 해제해 고른 시각의 머문 곳을 자동 강조한다.
+  // 시간 탐색 카드는 남기고 머문 곳 상세만 접어 지도와 고른 시각을 동시에 보이게 한다.
   const moveScrubTo = (rawValue: number) => {
     setScrubOffsetMinute(clampHistoryOffsetMinute(rawValue, historyMaxOffsetMinute));
     setSelectedStayIdx(null);
+    setHistoryPanelExpanded(false);
     setScrubFocusKey((key) => key + 1);
   };
 
@@ -511,14 +527,6 @@ export function ParentLocation() {
       })),
     [activeStayIdx, stayLabels, visibleStayPoints],
   );
-  const historyMapPadding = useMemo(
-    () =>
-      historyWideLayout
-        ? { top: 76, right: 24, bottom: 24, left: historyPanelExpanded ? 424 : 112 }
-        : { top: 176, right: 24, bottom: historyPanelExpanded ? 392 : 112, left: 24 },
-    [historyPanelExpanded, historyWideLayout],
-  );
-
   const mapZones: MapZone[] = (zones ?? []).map((z) => ({
     lat: z.lat,
     lng: z.lng,
@@ -761,6 +769,7 @@ export function ParentLocation() {
 
       {!isLocked && !locationScopePending && activeView === "history" && selected && (
         <LocationHistoryToolbar
+          containerRef={historyToolbarRef}
           childName={selected.name || "아이"}
           childAvatarSrc={avatarSrc(childAvatarPath(selected.photo_url))}
           dayLabel={historyDayLabel}
@@ -810,6 +819,7 @@ export function ParentLocation() {
       {/* 오늘 경로는 로딩·오류·빈 기록·이동만 상태에서도 같은 타임라인 자리를 유지한다. */}
       {activeView === "history" && canShowHistory && (
         <LocationJourneyPanel
+          containerRef={historyPanelRef}
           childName={childName}
           dayLabel={historyDayLabel}
           state={journeyState}
