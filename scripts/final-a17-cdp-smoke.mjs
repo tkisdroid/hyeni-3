@@ -332,9 +332,20 @@ const sessionCheck = await evaluate(`(async () => {
   }
 })()`);
 
+const parentHomeShortcutLabels = [
+  "AI 일정", "위치추적", "친구놀이", "장소관리",
+  "주변소리", "안심리포트", "아이 기기 찾기", "알림",
+];
+
 const routesByRole = {
   parent: [
-    { name: "부모 홈", hash: "#/parent/home", selector: ".ph-hero" },
+    {
+      name: "부모 홈",
+      hash: "#/parent/home",
+      selector: ".ph-hero",
+      requiredPhrases: ["아이 기기 찾기"],
+      checksParentHome: true,
+    },
     { name: "일정", hash: "#/parent/calendar", selector: ".pc-body" },
     { name: "위치", hash: "#/parent/location", selector: ".pl-root", requiresMap: true },
     { name: "오늘 경로", hash: "#/parent/location?view=history", selector: ".pl-root", requiresMap: true },
@@ -444,6 +455,27 @@ for (const route of routes) {
     const phrases = ${JSON.stringify(errorPhrases)}.filter((phrase) => text.includes(phrase));
     const missingRequiredPhrases = ${JSON.stringify(route.requiredPhrases ?? [])}
       .filter((phrase) => !text.includes(phrase));
+    const parentHomeFacts = ${route.checksParentHome === true} ? (() => {
+      const shortcutLabels = [...document.querySelectorAll(".ph-shortcut__label")]
+        .map((label) => label.textContent?.trim() || "");
+      const subscription = document.querySelector(".ph-subscription");
+      const subscriptionTitle = subscription?.querySelector(".ph-subscription__title")?.textContent?.trim() || "";
+      const subscriptionTone = subscription?.getAttribute("data-tone") || "";
+      const subscriptionStateConsistent = (
+        (subscriptionTone === "benefits" && subscriptionTitle === "구독 시 혜택")
+        || (subscriptionTone === "manage" && subscriptionTitle === "구독 관리")
+        || (subscriptionTone === "neutral" && subscriptionTitle === "구독 정보")
+      );
+      return {
+        shortcutLabels,
+        subscriptionTitle,
+        subscriptionTone,
+        subscriptionStateConsistent,
+        valid: JSON.stringify(shortcutLabels) === ${JSON.stringify(JSON.stringify(parentHomeShortcutLabels))}
+          && isElementVisible(subscription)
+          && subscriptionStateConsistent,
+      };
+    })() : null;
     return {
       hash: location.hash,
       visible: requiredSelectorVisible,
@@ -475,6 +507,7 @@ for (const route of routes) {
       textLength: text.trim().length,
       errorPhrases: phrases,
       missingRequiredPhrases,
+      parentHome: parentHomeFacts,
       horizontalOverflowPx: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
       viewport: { width: innerWidth, height: innerHeight },
       busyCount: document.querySelectorAll("[aria-busy='true']").length,
@@ -536,6 +569,7 @@ const failed = (
     || route.textLength === 0
     || route.errorPhrases.length > 0
     || route.missingRequiredPhrases.length > 0
+    || route.parentHome?.valid === false
     || route.horizontalOverflowPx > 1
     || route.busyCount > 0
     || route.smallControlCount > 0

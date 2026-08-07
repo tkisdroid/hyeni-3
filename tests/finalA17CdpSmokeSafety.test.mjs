@@ -77,6 +77,10 @@ test("A17 CDP 최종 점검은 부모 주요 화면과 지도 실패를 모두 �
   assert.match(source, /horizontalOverflowPx/);
   assert.match(source, /newConsoleOrRuntimeErrors/);
   assert.match(source, /requiredPhrases: \["플랜 비교", "무료", "프리미엄", "SOS · 긴급 알림"\]/);
+  assert.match(source, /requiredPhrases: \["아이 기기 찾기"\]/);
+  assert.match(source, /parentHomeFacts/);
+  assert.match(source, /subscriptionStateConsistent/);
+  assert.match(source, /parentHome\?\.valid === false/);
 });
 
 test("CDP 핵심 화면 범위는 명시적으로만 구독을 분리하고 전체 검증이 기본값이다", () => {

@@ -915,6 +915,133 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       process.stdout.write(`${row.problems.length ? "FAIL" : "OK  "} parent ${route}\n`);
     }
 
+    const inspectParentHomeShortcuts = () => cdp.evaluate(`(() => {
+      const shortcutGrid = document.querySelector(".ph-shortcuts");
+      const shortcutButtons = [...document.querySelectorAll(".ph-shortcut")];
+      const subscription = document.querySelector(".ph-subscription");
+      const memo = document.querySelector(".ph-memo");
+      const shortcutRect = shortcutGrid?.getBoundingClientRect();
+      const subscriptionRect = subscription?.getBoundingClientRect();
+      const memoRect = memo?.getBoundingClientRect();
+      const rowCounts = Object.values(shortcutButtons.reduce((rows, button) => {
+        const top = String(Math.round(button.getBoundingClientRect().top));
+        rows[top] = (rows[top] || 0) + 1;
+        return rows;
+      }, {}));
+      return {
+        labels: shortcutButtons.map((button) => button.querySelector(".ph-shortcut__label")?.textContent?.trim() || ""),
+        shortcutCount: shortcutButtons.length,
+        columnCount: shortcutGrid ? getComputedStyle(shortcutGrid).gridTemplateColumns.split(" ").length : 0,
+        rowCounts,
+        subscriptionTitle: subscription?.querySelector(".ph-subscription__title")?.textContent?.trim() || "",
+        subscriptionTone: subscription?.getAttribute("data-tone"),
+        subscriptionTag: subscription?.tagName || null,
+        subscriptionHeight: Math.round(subscriptionRect?.height || 0),
+        isSubscriptionBelowGrid: Boolean(shortcutRect && subscriptionRect && subscriptionRect.top >= shortcutRect.bottom),
+        alignsWithMemo: Boolean(subscriptionRect && memoRect && Math.abs(subscriptionRect.width - memoRect.width) <= 2),
+        overflowX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      };
+    })()`);
+    const expectedParentHomeShortcuts = [
+      "AI 일정", "위치추적", "친구놀이", "장소관리",
+      "주변소리", "안심리포트", "아이 기기 찾기", "알림",
+    ];
+
+    const parentHomeFree = await navigate(
+      { role: "parent", tier: "free", catalogMode: "valid", overLimit: false },
+      "parent/home",
+    );
+    const parentHomeFreeFacts = await inspectParentHomeShortcuts();
+    if (
+      JSON.stringify(parentHomeFreeFacts.labels) !== JSON.stringify(expectedParentHomeShortcuts)
+      || parentHomeFreeFacts.shortcutCount !== 8
+      || parentHomeFreeFacts.columnCount !== 4
+      || JSON.stringify(parentHomeFreeFacts.rowCounts) !== JSON.stringify([4, 4])
+      || parentHomeFreeFacts.subscriptionTitle !== "구독 시 혜택"
+      || parentHomeFreeFacts.subscriptionTone !== "benefits"
+      || parentHomeFreeFacts.subscriptionTag !== "BUTTON"
+      || parentHomeFreeFacts.subscriptionHeight < 80
+      || !parentHomeFreeFacts.isSubscriptionBelowGrid
+      || !parentHomeFreeFacts.alignsWithMemo
+      || parentHomeFreeFacts.overflowX > 0
+      || rowProblems(parentHomeFree).length > 0
+    ) {
+      report.problems.push({
+        scope: "parent-home-shortcuts-free",
+        facts: parentHomeFreeFacts,
+        routeProblems: rowProblems(parentHomeFree),
+      });
+    }
+    await cdp.evaluate(`(() => {
+      document.querySelector(".ph-shortcuts")?.scrollIntoView({ block: "start" });
+      window.scrollBy(0, -96);
+      return true;
+    })()`);
+    await wait(250);
+    report.screenshots.push(await screenshot(cdp, freshOutputDir, "parent-home-shortcuts-free.png"));
+
+    await cdp.evaluate(`(() => {
+      const target = [...document.querySelectorAll(".ph-shortcut")]
+        .find((button) => button.textContent?.includes("아이 기기 찾기"));
+      if (!(target instanceof HTMLButtonElement)) return false;
+      target.click();
+      return true;
+    })()`);
+    await wait(3_200);
+    const deviceFinderFacts = await cdp.evaluate(`(() => ({
+      hash: location.hash,
+      routedChildUserId: history.state?.usr?.childUserId ?? null,
+      targetReady: document.querySelector(".rr-cta") instanceof HTMLButtonElement
+        && !document.querySelector(".rr-cta").disabled,
+      hasTargetQuestion: Boolean(document.querySelector(".rr-title")?.textContent?.includes("기기에서 벨을 울릴까요?")),
+      confirmationOpen: Boolean(document.querySelector(".rr-modal")),
+      ringing: Boolean(document.querySelector(".rr-ring")),
+    }))()`);
+    if (
+      deviceFinderFacts.hash !== "#/remote-ring"
+      || deviceFinderFacts.routedChildUserId !== CHILD_ID
+      || !deviceFinderFacts.targetReady
+      || !deviceFinderFacts.hasTargetQuestion
+      || deviceFinderFacts.confirmationOpen
+      || deviceFinderFacts.ringing
+    ) {
+      report.problems.push({ scope: "parent-home-device-finder-entry", facts: deviceFinderFacts });
+    }
+
+    const parentHomePremium = await navigate(
+      { role: "parent", tier: "premium", catalogMode: "valid", overLimit: false },
+      "parent/home",
+    );
+    const parentHomePremiumFacts = await inspectParentHomeShortcuts();
+    if (
+      parentHomePremiumFacts.subscriptionTitle !== "구독 관리"
+      || parentHomePremiumFacts.subscriptionTone !== "manage"
+      || parentHomePremiumFacts.subscriptionTag !== "BUTTON"
+      || parentHomePremiumFacts.subscriptionHeight < 80
+      || !parentHomePremiumFacts.isSubscriptionBelowGrid
+      || !parentHomePremiumFacts.alignsWithMemo
+      || parentHomePremiumFacts.overflowX > 0
+      || rowProblems(parentHomePremium).length > 0
+    ) {
+      report.problems.push({
+        scope: "parent-home-shortcuts-premium",
+        facts: parentHomePremiumFacts,
+        routeProblems: rowProblems(parentHomePremium),
+      });
+    }
+    report.focused.parentHomeShortcuts = {
+      free: parentHomeFreeFacts,
+      premium: parentHomePremiumFacts,
+      deviceFinderEntry: deviceFinderFacts,
+    };
+    await cdp.evaluate(`(() => {
+      document.querySelector(".ph-shortcuts")?.scrollIntoView({ block: "start" });
+      window.scrollBy(0, -96);
+      return true;
+    })()`);
+    await wait(250);
+    report.screenshots.push(await screenshot(cdp, freshOutputDir, "parent-home-shortcuts-premium.png"));
+
     const locationHistory = await navigate(
       { role: "parent", tier: "premium", catalogMode: "valid", overLimit: false },
       "parent/location?view=history",

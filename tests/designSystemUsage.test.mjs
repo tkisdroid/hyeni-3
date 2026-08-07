@@ -2535,6 +2535,7 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/parent/ParentHome.css", ".ph-child__online"],
   ["src/screens/parent/ParentHome.css", ".ph-recent-row__icon"],
   ["src/screens/parent/ParentHome.css", ".ph-memo__icon"],
+  ["src/screens/parent/ParentHome.css", ".ph-subscription__icon"],
   ["src/screens/parent/ParentCalendar.css", ".pc-sheet__handle"],
   ["src/screens/parent/ParentLocation.css", ".pl-blob-1"],
   ["src/screens/parent/ParentLocation.css", ".pl-blob-2"],
