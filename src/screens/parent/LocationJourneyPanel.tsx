@@ -59,24 +59,36 @@ export function LocationJourneyPanel({
 }: LocationJourneyPanelProps) {
   const copy = stateCopy[state];
   const replayAvailable = state === "moving_only" || state === "ready";
+  const hasStayDetails = state === "ready";
+  const headerContent = (
+    <>
+      <span className="pl-journey__toggle-copy">
+        <strong>{dayLabel} 이동 기록</strong>
+        <span>{copy ?? recordedRangeLabel ?? `${stayCount}곳에 머물렀어요`}</span>
+      </span>
+      {hasStayDetails && (
+        <ChevronDown className="pl-journey__toggle-icon" size={22} strokeWidth={2.3} aria-hidden="true" />
+      )}
+    </>
+  );
 
   return (
     <section className={`pl-journey${expanded ? " pl-journey--expanded" : ""}`} aria-label={`${childName}의 ${dayLabel} 이동 타임라인`}>
-      <button
-        type="button"
-        className="pl-journey__toggle hy-press"
-        aria-expanded={expanded}
-        aria-controls="location-journey-panel-body"
-        onClick={onToggleExpanded}
-      >
-        <span className="pl-journey__toggle-copy">
-          <strong>{dayLabel} 이동 기록</strong>
-          <span>{copy ?? recordedRangeLabel ?? `${stayCount}곳에 머물렀어요`}</span>
-        </span>
-        <ChevronDown className="pl-journey__toggle-icon" size={22} strokeWidth={2.3} aria-hidden="true" />
-      </button>
+      {hasStayDetails ? (
+        <button
+          type="button"
+          className="pl-journey__toggle hy-press"
+          aria-expanded={expanded}
+          aria-controls="location-journey-stays"
+          onClick={onToggleExpanded}
+        >
+          {headerContent}
+        </button>
+      ) : (
+        <div className="pl-journey__toggle">{headerContent}</div>
+      )}
 
-      <div id="location-journey-panel-body" className="pl-journey__body" hidden={!expanded}>
+      <div className="pl-journey__body">
         {copy && (
           <div className={`pl-journey__state pl-journey__status pl-journey__state--${state}`} role={state === "error" ? "alert" : "status"}>
             <MapPin size={22} strokeWidth={2.2} aria-hidden="true" />
@@ -146,7 +158,7 @@ export function LocationJourneyPanel({
         )}
 
         {state === "ready" && (
-          <div className="pl-journey__stays">
+          <div id="location-journey-stays" className="pl-journey__stays" hidden={!expanded}>
             <div className="pl-journey__section-head">
               <strong>머문 곳</strong>
               <span>{stayCount}곳</span>

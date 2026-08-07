@@ -1104,10 +1104,16 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
 
     await clickSelector(cdp, ".pl-journey__toggle");
     await wait(200);
-    const locationHistoryCollapsed = await cdp.evaluate(`(() => ({
-      expanded: document.querySelector(".pl-journey__toggle")?.getAttribute("aria-expanded"),
-      bodyHidden: Boolean(document.querySelector(".pl-journey__body")?.hidden),
-    }))()`);
+    const locationHistoryCollapsed = await cdp.evaluate(`(() => {
+      const range = document.querySelector(".pl-journey__range");
+      const stays = document.querySelector("#location-journey-stays");
+      const rect = range?.getBoundingClientRect();
+      return {
+        expanded: document.querySelector(".pl-journey__toggle")?.getAttribute("aria-expanded"),
+        staysHidden: Boolean(stays?.hidden),
+        replayVisible: Boolean(rect && rect.width > 0 && rect.height >= 44),
+      };
+    })()`);
     await clickSelector(cdp, ".pl-journey__toggle");
     await wait(200);
     const locationHistoryReplay = await cdp.evaluate(`(() => {
@@ -1134,7 +1140,8 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     }))()`);
     if (
       locationHistoryCollapsed.expanded !== "false"
-      || !locationHistoryCollapsed.bodyHidden
+      || !locationHistoryCollapsed.staysHidden
+      || !locationHistoryCollapsed.replayVisible
       || !locationHistoryReplay.moved
       || locationHistoryAfterReplay.followsLatest !== "false"
       || locationHistoryLatest.followsLatest !== "true"

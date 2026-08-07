@@ -1054,6 +1054,9 @@
 .pl-journey__stays {
   padding: 0 16px;
 }
+.pl-journey__stays[hidden] {
+  display: none;
+}
 .pl-journey__section-head {
   display: flex;
   align-items: center;
