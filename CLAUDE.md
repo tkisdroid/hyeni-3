@@ -549,6 +549,14 @@
   index SHA-256 `e126019f135fbfc938e17a3f9ef0a56b91d3d3164283905ba818dd3c6910bfae` 및 entry JS/CSS 해시가 같고,
   CSP·`Referrer-Policy: no-referrer`·`X-Content-Type-Options: nosniff`, manifest·SW·assetlinks가 모두 정상이다.
   exact dist의 격리 브라우저 부모 42/42·아이 14/14와 PWA install·offline·안전 업데이트도 문제 0건이다. Worker/D1은 변경·배포하지 않았다.
+  같은 날 이동기록 가시성·드래그 떨림 수정 앱 커밋 `d6c9b24`의 exact dist를 production deployment
+  `10bb824e-54c9-4686-ab6b-d987c343159e`(`https://10bb824e.hyeni-calendar.pages.dev`)로 추가 배포했다.
+  고정 URL과 `hyeni-calendar.pages.dev`의 index SHA-256은 로컬 `e30d70101ed12fde2ff3c127ff40903ddb39122db809797ba68743804a4ff152`와
+  같고 entry `assets/index-DNVmEhWH.js`·위치 청크 `assets/ParentLocation-2ElKRDyp.js`도 바이트 일치한다. CSP·referrer·nosniff,
+  manifest·SW·assetlinks 200을 다시 확인했다. exact dist 브라우저 부모 42/42·아이 14/14, PWA 런타임 문제 0건이며,
+  A17 `adb install -r` 데이터 보존 설치(APK SHA-256 `0f1efedc00f8cd06713ad421f044b15438035cadc8e8250803ca0591d3ac0273`) 뒤
+  1.2초 실물 슬라이더 드래그에서 `panBy` 1회·선택 시각/마커 배지 일치·가시 영역 내 마커를 확인했다. 검증 시작 이후
+  A17 Java/native crash·ANR은 각각 0건이고 Worker/D1은 변경·배포하지 않았다.
 - OAuth 딥링크 인가코드는 1회용(2026-07-10 실기기 규명): Capacitor `App.getLaunchUrl()`은 실행 인텐트를 계속
   반환하고(휘발되지 않음) `appUrlOpen`도 같은 인텐트를 전달해, 콜드 스타트에서 같은 code 가 2~3회 교환됐다.
   구글은 코드 재사용을 감지하면 그 코드로 발급한 토큰을 전부 무효화하므로 로그인이 통째로 실패하고,
