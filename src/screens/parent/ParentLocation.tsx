@@ -430,9 +430,15 @@ export function ParentLocation() {
   const historyChildMarker = useMemo(
     () =>
       historyChildPoint
-        ? { lat: historyChildPoint.lat, lng: historyChildPoint.lng, name: childName, avatar: childAvatar }
+        ? {
+            lat: historyChildPoint.lat,
+            lng: historyChildPoint.lng,
+            name: childName,
+            avatar: childAvatar,
+            caption: followsLatest ? undefined : formatClockHM(scrubMs),
+          }
         : null,
-    [historyChildPoint, childName, childAvatar],
+    [historyChildPoint, childName, childAvatar, followsLatest, scrubMs],
   );
 
   const selectHistoryDay = (requestedDateKey: string): void => {

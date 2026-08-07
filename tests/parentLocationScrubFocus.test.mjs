@@ -53,12 +53,17 @@ test("고른 시각에 아이가 어디였는지 화면과 접근성 이름에 �
   assert.match(screen, /lastPointMs: scrubChildPoint\?\.ms \?\? null/);
   assert.match(screen, /currentWhere=\{scrubWhere\}/);
   assert.match(screen, /currentTimeLabel=\{formatClockHM\(scrubMs\)\}/);
+  assert.match(screen, /caption: followsLatest \? undefined : formatClockHM\(scrubMs\)/);
 });
 
 test("KakaoMap 은 명시적 center 를 bounds 로 덮지 않고 자녀 마커를 실제 좌표에 그린다", () => {
   assert.match(map, /if \(!center && route && route\.length >= 2\)/);
   assert.match(map, /\} else if \(!center && stays && stays\.length > 0\)/);
   assert.match(map, /position: new maps\.LatLng\(child\.lat, child\.lng\)/);
+  assert.match(map, /getMapFocusPanOffset\(fitPadding\)/);
+  assert.match(map, /mapRef\.current\.panBy\(focusPan\.x, focusPan\.y\)/);
+  assert.match(map, /className = "km-child-marker__time"/);
+  assert.match(map, /zIndex: child\.caption \? 40 : 10/);
   // 포커스 확대는 더 넓게 보고 있을 때만(사용자 확대 존중).
   assert.match(map, /if \(mapRef\.current\.getLevel\(\) > centerLevel\) mapRef\.current\.setLevel\(centerLevel\)/);
 });

@@ -622,8 +622,16 @@ function newDocumentScript() {
 
       class LatLng { constructor(lat, lng) { this.lat = lat; this.lng = lng; } getLat() { return this.lat; } getLng() { return this.lng; } }
       class LatLngBounds { constructor() { this.points = []; } extend(point) { this.points.push(point); } }
-      class Map { constructor(element, options = {}) { this.element = element; this.center = options.center || new LatLng(0, 0); this.level = options.level || 4; } setCenter(center) { this.center = center; } getCenter() { return this.center; } setLevel(level) { this.level = level; } getLevel() { return this.level; } setBounds() {} relayout() {} }
-      class Overlay { constructor(options = {}) { Object.assign(this, options); } setMap() {} }
+      window.__hyQaMapPanCalls = [];
+      window.__hyQaOverlayContents = [];
+      class Map { constructor(element, options = {}) { this.element = element; this.center = options.center || new LatLng(0, 0); this.level = options.level || 4; } setCenter(center) { this.center = center; } getCenter() { return this.center; } setLevel(level) { this.level = level; } getLevel() { return this.level; } setBounds() {} panBy(x, y) { window.__hyQaMapPanCalls.push({ x, y }); } relayout() {} }
+      class Overlay {
+        constructor(options = {}) { Object.assign(this, options); }
+        setMap(map) {
+          window.__hyQaOverlayContents = window.__hyQaOverlayContents.filter((content) => content !== this.content);
+          if (map && this.content instanceof HTMLElement) window.__hyQaOverlayContents.push(this.content);
+        }
+      }
       class Geocoder {
         coord2Address(_lng, _lat, callback) { callback([{ road_address: { address_name: "경기도 데모시 가족로 1" }, address: { address_name: "경기도 데모시 가족동" } }], "OK"); }
         addressSearch(_query, callback) { callback([{ x: String(${SCHOOL.lng}), y: String(${SCHOOL.lat}) }], "OK"); }
@@ -1130,9 +1138,19 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       };
     })()`);
     await wait(200);
-    const locationHistoryAfterReplay = await cdp.evaluate(`(() => ({
-      followsLatest: document.querySelector(".pl-journey__follow")?.getAttribute("aria-pressed"),
-    }))()`);
+    const locationHistoryAfterReplay = await cdp.evaluate(`(() => {
+      const selectedTime = document.querySelector(".pl-journey__replay-head strong")?.textContent?.trim() || null;
+      const panCalls = Array.isArray(window.__hyQaMapPanCalls) ? window.__hyQaMapPanCalls : [];
+      const markerBadge = (Array.isArray(window.__hyQaOverlayContents) ? window.__hyQaOverlayContents : [])
+        .map((content) => content?.querySelector?.(".km-child-marker__time")?.textContent?.trim() || null)
+        .find(Boolean) || null;
+      return {
+        followsLatest: document.querySelector(".pl-journey__follow")?.getAttribute("aria-pressed"),
+        selectedTime,
+        markerBadge,
+        lastPan: panCalls.at(-1) || null,
+      };
+    })()`);
     await clickSelector(cdp, ".pl-journey__follow");
     await wait(200);
     const locationHistoryLatest = await cdp.evaluate(`(() => ({
@@ -1144,6 +1162,9 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       || !locationHistoryCollapsed.replayVisible
       || !locationHistoryReplay.moved
       || locationHistoryAfterReplay.followsLatest !== "false"
+      || !locationHistoryAfterReplay.selectedTime
+      || locationHistoryAfterReplay.markerBadge !== locationHistoryAfterReplay.selectedTime
+      || !(locationHistoryAfterReplay.lastPan?.y > 0)
       || locationHistoryLatest.followsLatest !== "true"
     ) {
       report.problems.push({
