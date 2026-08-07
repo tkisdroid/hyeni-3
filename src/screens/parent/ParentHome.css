@@ -1079,6 +1079,78 @@
   color: #554c50;
   text-align: center;
 }
+
+/* ── 구독 상태 카드 ─────────────────────────────────────────────────────── */
+.ph-subscription {
+  width: 100%;
+  min-height: 80px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  --press: 0.985;
+}
+.ph-subscription__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  background: var(--lav-soft);
+}
+.ph-subscription[data-tone="manage"] .ph-subscription__icon {
+  background: var(--mint-soft);
+}
+.ph-subscription[data-tone="neutral"] .ph-subscription__icon {
+  background: var(--bg-chip-idle);
+}
+.ph-subscription__icon img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+.ph-subscription__main {
+  flex: 1;
+  min-width: 0;
+}
+.ph-subscription__title,
+.ph-subscription__description,
+.ph-subscription__meta {
+  display: block;
+}
+.ph-subscription__title {
+  color: var(--lav-text);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+}
+.ph-subscription[data-tone="manage"] .ph-subscription__title {
+  color: var(--mint-text);
+}
+.ph-subscription[data-tone="neutral"] .ph-subscription__title {
+  color: var(--fg-tertiary);
+}
+.ph-subscription__description {
+  margin-top: 4px;
+  color: var(--fg-primary);
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+}
+.ph-subscription__meta {
+  margin-top: 4px;
+  color: var(--fg-muted);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+}
+.ph-subscription__chevron {
+  flex: none;
+  color: var(--fg-disabled);
+}
 .ph-location-chip {
   color: var(--gold-text);
   background: var(--cream-soft);

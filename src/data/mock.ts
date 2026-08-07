@@ -93,6 +93,6 @@ export const shortcuts: Shortcut[] = [
   { id: "sc4", label: "장소관리", icon: "ui/menu-place-manager.webp", soft: "var(--mint-soft)", shadow: "color-mix(in srgb, var(--mint-600) 16%, transparent)" },
   { id: "sc5", label: "주변소리", icon: "ui/menu-remote-audio.webp", soft: "var(--rose-soft)", shadow: "color-mix(in srgb, var(--rose-600) 16%, transparent)" },
   { id: "sc6", label: "안심리포트", icon: "ui/shield-heart.webp", soft: "var(--mint-soft)", shadow: "color-mix(in srgb, var(--mint-600) 16%, transparent)" },
-  { id: "sc7", label: "구독", icon: "ui/menu-subscription.webp", soft: "var(--lav-soft)", shadow: "color-mix(in srgb, var(--lav-600) 16%, transparent)" },
+  { id: "sc7", label: "아이 기기 찾기", icon: "ui/phone-lavender.webp", soft: "var(--lav-soft)", shadow: "color-mix(in srgb, var(--lav-600) 16%, transparent)" },
   { id: "sc8", label: "알림", icon: "ui/bell.webp", soft: "var(--blue-soft)", shadow: "color-mix(in srgb, var(--blue-500) 16%, transparent)" },
 ];
