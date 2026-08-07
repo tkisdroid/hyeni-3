@@ -80,6 +80,9 @@ test("A17 CDP 최종 점검은 부모 주요 화면과 지도 실패를 모두 �
   assert.match(source, /requiredPhrases: \["아이 기기 찾기"\]/);
   assert.match(source, /parentHomeFacts/);
   assert.match(source, /subscriptionStateConsistent/);
+  assert.match(source, /subscriptionActionConsistent/);
+  assert.match(source, /subscriptionHasGradient/);
+  assert.match(source, /subscriptionActionHeight/);
   assert.match(source, /parentHome\?\.valid === false/);
 });
 

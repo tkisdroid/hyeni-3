@@ -459,21 +459,43 @@ for (const route of routes) {
       const shortcutLabels = [...document.querySelectorAll(".ph-shortcut__label")]
         .map((label) => label.textContent?.trim() || "");
       const subscription = document.querySelector(".ph-subscription");
+      const subscriptionAction = subscription?.querySelector(".ph-subscription__action");
       const subscriptionTitle = subscription?.querySelector(".ph-subscription__title")?.textContent?.trim() || "";
+      const subscriptionActionText = subscriptionAction?.textContent?.trim() || "";
       const subscriptionTone = subscription?.getAttribute("data-tone") || "";
+      const subscriptionRect = subscription?.getBoundingClientRect();
+      const subscriptionActionRect = subscriptionAction?.getBoundingClientRect();
       const subscriptionStateConsistent = (
         (subscriptionTone === "benefits" && subscriptionTitle === "구독 시 혜택")
         || (subscriptionTone === "manage" && subscriptionTitle === "구독 관리")
         || (subscriptionTone === "neutral" && subscriptionTitle === "구독 정보")
       );
+      const subscriptionActionConsistent = (
+        (subscriptionTone === "benefits" && subscriptionActionText === "혜택 보기")
+        || (subscriptionTone === "manage" && subscriptionActionText === "관리하기")
+        || (subscriptionTone === "neutral" && subscriptionActionText === "확인하기")
+      );
+      const subscriptionHasGradient = subscription
+        ? getComputedStyle(subscription).backgroundImage.includes("gradient")
+        : false;
+      const subscriptionActionHeight = Math.round(subscriptionActionRect?.height ?? 0);
       return {
         shortcutLabels,
         subscriptionTitle,
+        subscriptionActionText,
         subscriptionTone,
         subscriptionStateConsistent,
+        subscriptionActionConsistent,
+        subscriptionHasGradient,
+        subscriptionHeight: Math.round(subscriptionRect?.height ?? 0),
+        subscriptionActionHeight,
         valid: JSON.stringify(shortcutLabels) === ${JSON.stringify(JSON.stringify(parentHomeShortcutLabels))}
           && isElementVisible(subscription)
-          && subscriptionStateConsistent,
+          && subscriptionStateConsistent
+          && subscriptionActionConsistent
+          && (subscriptionTone === "neutral" || subscriptionHasGradient)
+          && (subscriptionRect?.height ?? 0) >= 100
+          && subscriptionActionHeight >= 36,
       };
     })() : null;
     return {
