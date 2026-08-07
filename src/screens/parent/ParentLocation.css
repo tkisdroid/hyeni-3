@@ -273,40 +273,6 @@
   animation: hy-spin 0.9s linear infinite;
 }
 
-/* ── 실시간 위치 요청 진행 상태 ───────────────────────────────────────── */
-.pl-refreshing {
-  position: absolute;
-  top: calc(env(safe-area-inset-top, 0px) + 72px);
-  left: 50%;
-  z-index: 24;
-  width: min(calc(100% - 32px), 320px);
-  transform: translateX(-50%);
-  display: grid;
-  grid-template-columns: 28px 1fr;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 12px;
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius-20);
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 12px 28px rgba(32, 26, 29, 0.12);
-}
-.pl-refreshing__spinner {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 3px solid var(--mint-line);
-  border-top-color: var(--mint-600);
-  animation: hy-spin 0.9s linear infinite;
-}
-.pl-refreshing__title {
-  font-size: var(--type-label);
-  line-height: var(--type-label-line-height);
-  font-weight: var(--type-label-weight);
-
-  color: var(--fg-primary);
-}
 /* ── 아이 칩(다자녀 전환) ───────────────────────────────────────────────── */
 .pl-chips {
   position: absolute;
@@ -322,6 +288,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  max-width: 100%;
   padding: 8px 12px 8px 8px;
   border-radius: 999px;
   background: #fff;
@@ -331,6 +298,10 @@
 }
 .pl-chip--active {
   border-color: #31c48d;
+}
+.pl-chip[data-refreshing="true"] {
+  width: min(100%, 278px);
+  border-color: var(--mint-line);
 }
 .pl-chip__avatar {
   width: 26px;
@@ -346,18 +317,46 @@
   height: 22px;
   object-fit: contain;
 }
+.pl-chip__main {
+  min-width: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
 .pl-chip__name {
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
 
   color: #b0477a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pl-chip__status {
+  color: var(--fg-muted);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .pl-chip__dot {
+  flex: none;
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: #31c48d;
+}
+.pl-chip__spinner {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--mint-line);
+  border-top-color: var(--mint-600);
+  border-radius: 50%;
+  animation: hy-spin 0.9s linear infinite;
 }
 
 /* ── 하단 상세 카드 ─────────────────────────────────────────────────────── */
@@ -1200,6 +1199,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .pl-chip__spinner,
   .pl-history-toolbar,
   .pl-journey,
   .pl-journey__stay,

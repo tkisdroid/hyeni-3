@@ -773,22 +773,30 @@ export function ParentLocation() {
         />
       )}
 
-      {!isLocked && !locationScopePending && activeView === "live" && isRefreshingLocation && (
-        <div className="pl-refreshing" role="status" aria-live="polite">
-          <span className="pl-refreshing__spinner" aria-hidden="true" />
-          <span className="pl-refreshing__title">{refreshOverlayTitle}</span>
-        </div>
-      )}
-
       {/* 아이 표시 배지 — 실시간에서만 현재 보는 아이를 명시한다. */}
       {!isLocked && !locationScopePending && activeView === "live" && selected && (
         <div className="pl-chips">
-          <div className="pl-chip pl-chip--active" aria-label={`현재 ${selected.name || "아이"} 위치 보기`}>
+          <div
+            className="pl-chip pl-chip--active"
+            data-refreshing={isRefreshingLocation ? "true" : "false"}
+            aria-label={`현재 ${selected.name || "아이"} 위치 보기`}
+          >
             <span className="pl-chip__avatar">
               <img className="hy-network-avatar" src={avatarSrc(childAvatarPath(selected.photo_url))} alt="" loading="eager" decoding="async" />
             </span>
-            <span className="pl-chip__name">{selected.name || "아이"}</span>
-            <span className="pl-chip__dot" />
+            <span className="pl-chip__main">
+              <span className="pl-chip__name">{selected.name || "아이"}</span>
+              {isRefreshingLocation && (
+                <span className="pl-chip__status" role="status" aria-live="polite">
+                  {refreshOverlayTitle}
+                </span>
+              )}
+            </span>
+            {isRefreshingLocation ? (
+              <span className="pl-chip__spinner" aria-hidden="true" />
+            ) : (
+              <span className="pl-chip__dot" />
+            )}
           </div>
         </div>
       )}
