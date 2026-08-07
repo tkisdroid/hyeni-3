@@ -11,19 +11,31 @@ const screen = read("src/screens/parent/ParentLocation.tsx");
 const css = read("src/screens/parent/ParentLocation.css");
 const map = read("src/components/KakaoMap.tsx");
 const queries = read("src/queries/useLocation.ts");
+const journey = read("src/screens/parent/LocationJourneyPanel.tsx");
 
-test("시간대별 경로를 움직이면 시간 막대는 유지하고 머문 곳 상세를 접는다", () => {
+test("시간대별 경로를 움직여도 패널 높이는 유지해 지도를 흔들지 않는다", () => {
   const move = screen.slice(screen.indexOf("const moveScrubTo"), screen.indexOf("const followLatestAgain"));
   assert.match(move, /setScrubOffsetMinute\(clampHistoryOffsetMinute\(rawValue, historyMaxOffsetMinute\)\)/);
   assert.match(move, /setSelectedStayIdx\(null\)/);
-  assert.match(move, /setHistoryPanelExpanded\(false\)/);
-  assert.match(move, /setScrubFocusKey\(\(key\) => key \+ 1\)/);
+  assert.doesNotMatch(move, /setHistoryPanelExpanded/);
+  assert.doesNotMatch(move, /setScrubFocusKey/);
 
   assert.match(screen, /onSliderChange=\{moveScrubTo\}/);
-  assert.match(screen, /resolveHistoryMapCenter\(\{ followsLatest, stayCenter, scrubChildPoint \}\)/);
+  assert.match(screen, /resolveHistoryMapCenter\(\{\s*followsLatest,\s*stayCenter,\s*scrubChildPoint: settledScrubChildPoint,/s);
   assert.match(screen, /center=\{historyCenter\}/);
   assert.match(screen, /centerLevel=\{HISTORY_FOCUS_MAP_LEVEL\}/);
-  assert.match(screen, /recenterKey=\{scrubFocusKey\}/);
+  assert.doesNotMatch(screen, /recenterKey=\{scrubFocusKey\}/);
+});
+
+test("시간 막대를 연속으로 끄는 동안 지도 중심은 고정하고 멈춘 뒤 한 번만 맞춘다", () => {
+  assert.match(screen, /const \[settledScrubOffsetMinute, setSettledScrubOffsetMinute\] = useState<number \| null>\(null\)/);
+  assert.match(screen, /const \[settledHistoryMapPadding, setSettledHistoryMapPadding\] = useState\(historyMapPadding\)/);
+  assert.match(screen, /window\.setTimeout\(\(\) => \{\s*setSettledScrubOffsetMinute\(nextOffsetMinute\);\s*setSettledHistoryMapPadding\(historyMapPadding\);\s*\}, 160\)/s);
+  assert.match(screen, /const mapFocusOffsetMinute = followsLatest/);
+  assert.match(screen, /settledScrubOffsetMinute \?\? historyMaxOffsetMinute/);
+  assert.match(screen, /viewportPadding=\{settledHistoryMapPadding\}/);
+  assert.doesNotMatch(screen, /onSliderStart=\{beginScrub\}/);
+  assert.doesNotMatch(journey, /onPointerDown=\{onSliderStart\}/);
 });
 
 test("최신 따라가기 상태에서는 지도 중심을 비워 하루 경로 전체를 보여준다", () => {

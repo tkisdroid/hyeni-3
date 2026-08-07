@@ -1180,6 +1180,32 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
         selectedStayCount: document.querySelectorAll(".pl-journey__stay--selected").length,
       };
     })()`);
+    const rapidPanCountBefore = await cdp.evaluate(`Array.isArray(window.__hyQaMapPanCalls) ? window.__hyQaMapPanCalls.length : 0`);
+    let rapidMoved = true;
+    for (const delta of [75, 65, 55, 45, 35]) {
+      const moved = await cdp.evaluate(`(() => {
+        const range = document.querySelector(".pl-journey__range");
+        if (!(range instanceof HTMLInputElement)) return false;
+        const value = Math.max(0, Number(range.max) - ${delta});
+        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+        setter?.call(range, String(value));
+        range.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText" }));
+        range.dispatchEvent(new Event("change", { bubbles: true }));
+        return range.value === String(value);
+      })()`);
+      rapidMoved &&= moved;
+      await wait(25);
+    }
+    await wait(260);
+    const rapidReplayFacts = await cdp.evaluate(`(() => {
+      const panCount = (Array.isArray(window.__hyQaMapPanCalls) ? window.__hyQaMapPanCalls.length : 0) - ${rapidPanCountBefore};
+      const selectedTime = document.querySelector(".pl-journey__replay-head strong")?.textContent?.trim() || null;
+      const markerBadge = (Array.isArray(window.__hyQaOverlayContents) ? window.__hyQaOverlayContents : [])
+        .map((content) => content?.querySelector?.(".km-child-marker__time")?.textContent?.trim() || null)
+        .find(Boolean) || null;
+      return { panCount, selectedTime, markerBadge };
+    })()`);
+    const locationHistoryRapidReplay = { moved: rapidMoved, ...rapidReplayFacts };
     await clickSelector(cdp, ".pl-journey__follow");
     await wait(200);
     const locationHistoryLatest = await cdp.evaluate(`(() => ({
@@ -1193,8 +1219,8 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       || !locationHistoryCollapsed.staysHidden
       || !locationHistoryCollapsed.replayVisible
       || !locationHistoryReplay.moved
-      || locationHistoryAfterReplay.expanded !== "false"
-      || !locationHistoryAfterReplay.staysHidden
+      || locationHistoryAfterReplay.expanded !== "true"
+      || locationHistoryAfterReplay.staysHidden
       || !locationHistoryAfterReplay.replayVisible
       || !locationHistoryAfterReplay.rangeEnabled
       || locationHistoryAfterReplay.followsLatest !== "false"
@@ -1207,6 +1233,10 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       || locationHistoryAfterSecondReplay.selectedTime === locationHistoryAfterReplay.selectedTime
       || locationHistoryAfterSecondReplay.markerBadge !== locationHistoryAfterSecondReplay.selectedTime
       || locationHistoryAfterSecondReplay.selectedStayCount !== 1
+      || !locationHistoryRapidReplay.moved
+      || !(locationHistoryRapidReplay.panCount <= 1)
+      || !locationHistoryRapidReplay.selectedTime
+      || locationHistoryRapidReplay.markerBadge !== locationHistoryRapidReplay.selectedTime
       || locationHistoryLatest.followsLatest !== "true"
       || locationHistoryLatest.markerBadge !== null
     ) {
@@ -1218,6 +1248,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
           afterReplay: locationHistoryAfterReplay,
           secondReplay: locationHistorySecondReplay,
           afterSecondReplay: locationHistoryAfterSecondReplay,
+          rapidReplay: locationHistoryRapidReplay,
           latest: locationHistoryLatest,
         },
       });
@@ -1229,6 +1260,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       afterReplay: locationHistoryAfterReplay,
       secondReplay: locationHistorySecondReplay,
       afterSecondReplay: locationHistoryAfterSecondReplay,
+      rapidReplay: locationHistoryRapidReplay,
       latest: locationHistoryLatest,
     };
 

@@ -23,5 +23,5 @@ test("타임라인 패널은 드래그 없이 명시적으로 펼치고 모든 �
   assert.match(panel, /이 날은 확인된 이동 기록이 없어요/);
   assert.match(panel, /role=\{state === "error" \? "alert" : "status"\}/);
   assert.match(panel, /aria-valuetext=\{`\$\{currentTimeLabel\} · \$\{currentWhere\}`\}/);
-  assert.doesNotMatch(panel, /onPointer|onTouch|setPointerCapture/);
+  assert.doesNotMatch(panel, /onPointerDown|onPointerMove|onPointerUp|onTouchMove|onTouchEnd|setPointerCapture/);
 });
