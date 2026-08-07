@@ -535,6 +535,11 @@
   프로필을 가리지 않는다. 구독 가로 카드는 Free의 보라–핑크 `혜택 보기`, Premium의 민트 `관리하기`, 미확정의 중립
   `확인하기` CTA로 상태를 분명히 하고, 확인되지 않은 할인·긴급성 문구는 만들지 않는다. 회귀는
   `tests/parentLocationUi.test.mjs`·`tests/parentHomeSubscriptionCard.test.ts`와 격리 브라우저/A17 CDP 하니스가 보호한다.
+  2026-08-07 Pages production에는 앱 source `1925ab1`, deployment `b5a80284-8a05-4637-bad1-9d4f368b94a1`로 배포했다
+  (직전 rollback 기준 `827855b3-876d-4d35-af6a-ad3f25dc0669`). 고정 배포 URL과 `hyeni-calendar.pages.dev`가 local dist와
+  index SHA-256 `e126019f135fbfc938e17a3f9ef0a56b91d3d3164283905ba818dd3c6910bfae` 및 entry JS/CSS 해시가 같고,
+  CSP·`Referrer-Policy: no-referrer`·`X-Content-Type-Options: nosniff`, manifest·SW·assetlinks가 모두 정상이다.
+  exact dist의 격리 브라우저 부모 42/42·아이 14/14와 PWA install·offline·안전 업데이트도 문제 0건이다. Worker/D1은 변경·배포하지 않았다.
 - OAuth 딥링크 인가코드는 1회용(2026-07-10 실기기 규명): Capacitor `App.getLaunchUrl()`은 실행 인텐트를 계속
   반환하고(휘발되지 않음) `appUrlOpen`도 같은 인텐트를 전달해, 콜드 스타트에서 같은 code 가 2~3회 교환됐다.
   구글은 코드 재사용을 감지하면 그 코드로 발급한 토큰을 전부 무효화하므로 로그인이 통째로 실패하고,
