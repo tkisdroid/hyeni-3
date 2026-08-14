@@ -187,6 +187,8 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 - **출시 AAB 신선도(2026-07-13)**: 체크리스트의 서명 AAB는 최신 앱 커밋 이후 다시 빌드하고 서명·해시·mtime을 확인한
   경우에만 준비 완료로 표시한다. 과거 AAB가 디스크에 존재한다는 이유만으로 업로드하지 않는다. 서명 비밀번호는 사용자만
   입력하며 에이전트가 자격 파일을 읽어 자동 서명하지 않는다.
+  릴리즈 스크립트는 worktree의 `android/local.properties`를 전제로 하지 않고 Android SDK를 먼저 탐색해
+  `ANDROID_SDK_ROOT`·`ANDROID_HOME`을 설정한 뒤 build·Capacitor sync·Gradle release를 실행한다.
 - **출시 전 신뢰 UX 문구 가드(2026-07-07)**: 안전은 무료, 상세 안심은 프리미엄이라는 경계가 흔들리면 안 된다.
   구독·원격청취·AI 일정 문구는 `tests/subscriptionTrustCopy.test.mjs`, `tests/remoteAudioTrustCopy.test.mjs`,
   `tests/aiScheduleUxCopy.test.mjs`로 회귀 보호한다. SOS·긴급 알림을 프리미엄 혜택처럼 쓰지 말고,

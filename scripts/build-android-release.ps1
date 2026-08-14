@@ -345,6 +345,10 @@ if (-not (Test-Path -LiteralPath $gradleWrapper -PathType Leaf)) {
     throw "Gradle wrapper가 없습니다: $gradleWrapper"
 }
 
+$sdkRoot = Get-AndroidSdkRoot
+$env:ANDROID_SDK_ROOT = $sdkRoot
+$env:ANDROID_HOME = $sdkRoot
+
 Write-Host '1/6 production 웹 번들을 만들고 Android에 동기화합니다.'
 Push-Location $repoRoot
 try {
@@ -479,7 +483,6 @@ try {
 
     Write-Host '6/6 서명·manifest·16KB 정렬 증거와 업로드 폴더를 만듭니다.'
     Ensure-Bundletool
-    $sdkRoot = Get-AndroidSdkRoot
     $zipalign = Find-LatestTool -Parent (Join-Path $sdkRoot 'build-tools') `
         -RelativeToolPath 'zipalign.exe' -Label 'zipalign'
     $readelf = Find-LatestTool -Parent (Join-Path $sdkRoot 'ndk') `

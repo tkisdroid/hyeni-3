@@ -81,6 +81,21 @@ test("release 서명 스크립트는 기존 AAB를 보관하고 clean source만 
   assert.doesNotMatch(source, /Remove-Item[\s\S]{0,120}app-release\.aab/i);
 });
 
+test("release 서명 스크립트는 Android SDK를 빌드 전에 찾아 Gradle 환경에 전달한다", () => {
+  const sdkResolveIndex = source.indexOf("$sdkRoot = Get-AndroidSdkRoot");
+  const webBuildIndex = source.indexOf("& npm.cmd run build");
+  const releaseBuildIndex = source.indexOf("':app:bundleRelease'");
+
+  assert.ok(sdkResolveIndex > 0);
+  assert.ok(sdkResolveIndex < webBuildIndex);
+  assert.ok(sdkResolveIndex < releaseBuildIndex);
+
+  const sdkSetup = source.slice(sdkResolveIndex, webBuildIndex);
+  assert.match(sdkSetup, /\$env:ANDROID_SDK_ROOT = \$sdkRoot/);
+  assert.match(sdkSetup, /\$env:ANDROID_HOME = \$sdkRoot/);
+  assert.equal(source.match(/\$sdkRoot = Get-AndroidSdkRoot/g)?.length, 1);
+});
+
 test("release AAB는 승인 인증서와 16KB 조건을 모두 검증한다", () => {
   assert.match(source, /--build-type release/);
   assert.match(source, /--expected-certificate-sha256 \$uploadCertificateSha256/);

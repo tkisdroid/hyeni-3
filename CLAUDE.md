@@ -507,6 +507,8 @@
 - 출시 AAB 신선도(2026-07-13): 체크리스트의 서명 AAB는 최신 앱 커밋 이후 다시 빌드하고 서명·해시·mtime을 확인한
   경우에만 준비 완료로 표시한다. 과거 AAB가 디스크에 존재한다는 이유만으로 업로드하지 않는다. 서명 비밀번호는 사용자만
   입력하며 에이전트가 자격 파일을 읽어 자동 서명하지 않는다.
+  릴리즈 스크립트는 worktree의 `android/local.properties`를 전제로 하지 않고 Android SDK를 먼저 탐색해
+  `ANDROID_SDK_ROOT`·`ANDROID_HOME`을 설정한 뒤 build·Capacitor sync·Gradle release를 실행한다.
 - 설정/가입/오늘경로 안정화(2026-07-08, 이동기록 UI 2026-08-07 갱신): 부모 `/friend-play`는 아이 요청 UI가 아니라 가족 친구놀이 허용 설정이다.
   장소 관리는 서버/AI 생성 없이 `resolvePlaceVisual` 정적 asset 매핑으로 장소명에 맞는 이미지를 고른다.
   가입 전 설문은 progress 20%에서 시작하고 복수 선택만 수집한다. 부모 오늘경로는 오전 8시를 하루 시작으로,
