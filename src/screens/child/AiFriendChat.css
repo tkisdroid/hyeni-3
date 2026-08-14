@@ -46,9 +46,6 @@
   object-fit: contain;
   animation: afc-bob 3s ease-in-out infinite;
 }
-.afc-online {
-  display: none;
-}
 .afc-head-main {
   flex: 1;
   min-width: 0;
@@ -64,13 +61,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.afc-head-status {
-  font-size: var(--type-caption);
-  line-height: var(--type-caption-line-height);
-  font-weight: var(--type-caption-weight);
-
-  color: var(--hy-accent-text);
 }
 .afc-credits {
   flex: none;
