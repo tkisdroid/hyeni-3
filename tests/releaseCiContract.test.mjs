@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
 const APPROVED_ACTION_SHAS = Object.freeze({
@@ -83,6 +84,13 @@ test("출시 후보 CI는 앱 전체 검증과 Android unit·lint·APK를 모두
   );
   assert.match(appQuality, /chmod \+x android\/gradlew[\s\S]*?npm run verify/);
   assert.match(appQuality, /출시 필수 공개 키 확인[\s\S]*?npm run verify/);
+  assert.match(
+    execFileSync("git", ["ls-files", "-s", "--", "android/gradlew"], {
+      cwd: new URL("..", import.meta.url),
+      encoding: "utf8",
+    }),
+    /^100755 /,
+  );
 
   const aabEvidence = readFileSync(
     new URL("../scripts/create-aab-evidence.mjs", import.meta.url),
