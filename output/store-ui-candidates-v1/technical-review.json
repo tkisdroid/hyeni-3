@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
   "artifactKind": "hyeni-store-ui-technical-review",
-  "reviewedAt": "2026-08-14T13:33:40.124Z",
+  "reviewedAt": "2026-08-14T14:25:04.558Z",
   "sourceManifest": {
     "path": "manifest.json",
-    "sha256": "8dfa88baa28acdcadf3e97bd5c93478d49c87ce73929689f21d94e29b21e283e"
+    "sha256": "cb328b1612234ccba5382f6f9f3de0c820ba67ad5822f3f89028fb411318bf2b"
   },
   "sourceDist": {
     "fileCount": 415,
-    "sha256": "3e8b04aa2da5c66e501918f20eb9f639201f68ebaee1ade022ae4cc39a10fd36"
+    "sha256": "c60663c92e26d19ab2569245235955745d982cde1d08663fd24326efd360d585"
   },
   "verdict": "TECHNICAL_REVIEW_PASSED",
   "playUploadApproved": false,
@@ -24,8 +24,8 @@
   "artifacts": [
     {
       "file": "01-parent-home-ui.png",
-      "bytes": 575846,
-      "sha256": "c698302fcc84df3f7c5125ec77f7c16eb3bdfd988409ba90291010581b004b9e"
+      "bytes": 573522,
+      "sha256": "8dae8d8aad8dc07f6c0bea92c978949adfcb99a76920c6d512b5b68a7e4197da"
     },
     {
       "file": "02-family-calendar-ui.png",
@@ -34,13 +34,13 @@
     },
     {
       "file": "03-family-memo-ui.png",
-      "bytes": 228643,
-      "sha256": "b80f703f436e79e963cbc131bfacc5a4f0138712851ef819da0e856148890d4c"
+      "bytes": 226582,
+      "sha256": "11191fe4ef7a430e8bcc00fbf5347bc88576781a092ee8e5a292f03eddfc65b8"
     },
     {
       "file": "04-daily-safety-report-ui.png",
-      "bytes": 397323,
-      "sha256": "ab4138f0758ad687519e6ab9e56d28afe950a5eac403c4daa931f48f1d3d8b11"
+      "bytes": 397096,
+      "sha256": "d4e84b3e608fac5e4580e1bab4907575f9ccb8b2da9bbcbf71dcb43ec001ffa3"
     },
     {
       "file": "05-weekly-family-report-ui.png",
@@ -49,8 +49,8 @@
     },
     {
       "file": "06-child-home-ui.png",
-      "bytes": 649466,
-      "sha256": "c6ea2f27738d54f4c424f0548b7ec0b47127e8bf9587dbd7b02fa7c7d911d515"
+      "bytes": 649124,
+      "sha256": "0d1d200a0d008db09202aef1e01678d042a612eb5a756a438d8c7f553adede02"
     }
   ]
 }

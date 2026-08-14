@@ -191,6 +191,25 @@ test("실제 UI 후보 PNG 6장은 1080×1920 불투명 RGB이며 개인정보 �
   }
 });
 
+test("production dist로 복사되는 공개 텍스트 파일은 모든 OS에서 LF로 고정한다", async () => {
+  const publicTextFiles = [
+    "public/.well-known/assetlinks.json",
+    "public/_headers",
+    "public/app-version.json",
+    "public/fonts/jua/OFL.txt",
+    "public/llms.txt",
+    "public/robots.txt",
+  ];
+  const attributes = await readFile(resolve(ROOT_DIR, ".gitattributes"), "utf8");
+  assert.match(attributes, /^\* text=auto eol=lf$/m);
+  assert.match(attributes, /^\*\.bat text eol=crlf$/m);
+  assert.match(attributes, /^\*\.cmd text eol=crlf$/m);
+  for (const relativePath of publicTextFiles) {
+    assert.match(attributes, new RegExp(`^${relativePath.replaceAll(".", "\\.")} text eol=lf$`, "m"));
+    assert.doesNotMatch(await readFile(resolve(ROOT_DIR, relativePath), "utf8"), /\r/);
+  }
+});
+
 test("실제 UI 후보 manifest는 자동 업로드가 아닌 정책·육안 검토 대기 상태다", async () => {
   const manifestPath = resolve(SAFE_STORE_UI_CANDIDATE_DIR, "manifest.json");
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"));

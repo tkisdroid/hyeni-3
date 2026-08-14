@@ -81,6 +81,7 @@ test("출시 후보 CI는 앱 전체 검증과 Android unit·lint·APK를 모두
     appQuality,
     /actions\/setup-java@[a-f0-9]{40}[\s\S]*?android-actions\/setup-android@[a-f0-9]{40}[\s\S]*?npm run verify/,
   );
+  assert.match(appQuality, /chmod \+x android\/gradlew[\s\S]*?npm run verify/);
   assert.match(appQuality, /출시 필수 공개 키 확인[\s\S]*?npm run verify/);
 
   const aabEvidence = readFileSync(

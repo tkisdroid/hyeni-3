@@ -76,6 +76,9 @@ jobs:
       - name: 의존성 설치
         run: npm ci
 
+      - name: Gradle 실행 권한 준비
+        run: chmod +x android/gradlew
+
       - name: 출시 필수 공개 키 확인
         shell: bash
         run: |
