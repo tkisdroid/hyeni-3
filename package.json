@@ -15,7 +15,7 @@
     "test:worker": "node --test worker/tests/*.test.mjs",
     "typecheck:worker": "tsc -p worker --noEmit",
     "deploy:worker": "cd worker && wrangler deploy",
-    "verify": "npm run typecheck && npm test && npm run build",
+    "verify": "npm run typecheck && npm run build && npm test",
     "verify:production:web-push": "node scripts/verify-production-web-push-secrets.mjs",
     "verify:route-bundle": "node scripts/verify-route-bundle.mjs",
     "qa:browser": "node scripts/final-browser-qa.mjs",

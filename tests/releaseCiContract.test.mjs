@@ -42,9 +42,7 @@ test("출시 후보 CI는 앱 전체 검증과 Android unit·lint·APK를 모두
   const workflow = readFileSync(new URL("../.github/workflows/release-candidate.yml", import.meta.url), "utf8");
 
   assert.equal(pkg.scripts.test, "node --test tests/*.test.*");
-  assert.match(pkg.scripts.verify, /typecheck/);
-  assert.match(pkg.scripts.verify, /npm test/);
-  assert.match(pkg.scripts.verify, /npm run build/);
+  assert.equal(pkg.scripts.verify, "npm run typecheck && npm run build && npm test");
   assert.equal(pkg.scripts["qa:browser"], "node scripts/final-browser-qa.mjs");
   assert.equal(pkg.scripts["qa:pwa-runtime"], "node scripts/pwa-runtime-qa.mjs");
   assert.match(workflow, /npm run verify/);
@@ -78,6 +76,10 @@ test("출시 후보 CI는 앱 전체 검증과 Android unit·lint·APK를 모두
   assert.match(
     appQuality,
     /VITE_KAKAO_APP_KEY:\s*\$\{\{ vars\.VITE_KAKAO_APP_KEY \|\| secrets\.VITE_KAKAO_APP_KEY \}\}/,
+  );
+  assert.match(
+    appQuality,
+    /actions\/setup-java@[a-f0-9]{40}[\s\S]*?android-actions\/setup-android@[a-f0-9]{40}[\s\S]*?npm run verify/,
   );
   assert.match(appQuality, /출시 필수 공개 키 확인[\s\S]*?npm run verify/);
 
