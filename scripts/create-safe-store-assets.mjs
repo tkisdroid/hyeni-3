@@ -464,16 +464,17 @@ export async function verifyStoreAssetSourceContracts() {
   }
 }
 
-export async function generateSafeStoreAssets() {
+export async function generateSafeStoreAssets({ outputDir = SAFE_STORE_CREATIVE_DRAFT_DIR } = {}) {
   await verifyStoreAssetSourceContracts();
-  await mkdir(SAFE_STORE_CREATIVE_DRAFT_DIR, { recursive: true });
+  const targetDir = resolve(outputDir);
+  await mkdir(targetDir, { recursive: true });
 
   const generated = [];
   for (const asset of SAFE_STORE_ASSETS) {
     const render = RENDERERS[asset.kind];
     if (!render) throw new Error(`지원하지 않는 스토어 자산 유형: ${asset.kind}`);
     const svg = render(asset);
-    const outputPath = resolve(SAFE_STORE_CREATIVE_DRAFT_DIR, asset.file);
+    const outputPath = resolve(targetDir, asset.file);
     await sharp(Buffer.from(svg))
       .flatten({ background: COLORS.app })
       .removeAlpha()

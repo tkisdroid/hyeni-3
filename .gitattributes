@@ -1,0 +1,13 @@
+# 빌드 입력은 OS와 무관하게 동일한 byte stream을 사용한다.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Vite가 변환 없이 dist로 복사하는 공개 텍스트 파일은 OS와 무관하게 동일한
+# byte stream을 유지한다. 스토어 UI 후보와 Pages provenance 해시의 정본이다.
+public/.well-known/assetlinks.json text eol=lf
+public/_headers text eol=lf
+public/app-version.json text eol=lf
+public/fonts/jua/OFL.txt text eol=lf
+public/llms.txt text eol=lf
+public/robots.txt text eol=lf

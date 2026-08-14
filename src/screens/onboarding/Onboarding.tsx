@@ -606,7 +606,6 @@ function RoleStep({
   return (
     <div className="ob-step ob-role">
       <div className="ob-role-head">
-        <span className="ob-role-badge">함께 보는 우리 가족</span>
         <div className="ob-role-logo">
           <img
             src={asset("mascot/wave.webp")}

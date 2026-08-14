@@ -170,20 +170,8 @@
 .ob-role-head {
   text-align: center;
 }
-.ob-role-badge {
-  display: inline-block;
-  font-size: var(--type-caption);
-  line-height: var(--type-caption-line-height);
-  font-weight: var(--type-caption-weight);
-
-  letter-spacing: 0.04em;
-  color: #b0477a;
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: rgba(247, 121, 168, 0.12);
-}
 .ob-role-logo {
-  margin: 20px auto 0;
+  margin: 0 auto;
   width: 92px;
   height: 92px;
   border-radius: var(--radius-24);

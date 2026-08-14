@@ -20,7 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      VITE_KAKAO_APP_KEY: ${{ secrets.VITE_KAKAO_APP_KEY }}
+      # VITE_ 값은 클라이언트 번들에 공개된다. Actions variable을 정본으로 쓰되
+      # 기존 저장소 secret 설정도 무중단 호환한다.
+      VITE_KAKAO_APP_KEY: ${{ vars.VITE_KAKAO_APP_KEY || secrets.VITE_KAKAO_APP_KEY }}
     defaults:
       run:
         working-directory: hyeni-3
@@ -57,15 +59,32 @@ jobs:
           cache: npm
           cache-dependency-path: hyeni-3/package-lock.json
 
+      # 전체 앱 테스트에는 release merged manifest를 실제 생성하는 보안 검증이
+      # 포함되므로 app-quality job도 Android toolchain을 먼저 준비한다.
+      - name: JDK 설정
+        uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07 # v4.9.0
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Android SDK 설정
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
+        with:
+          packages: "platforms;android-36 build-tools;36.0.0 platform-tools ndk;27.1.12297006"
+
       - name: 의존성 설치
         run: npm ci
+
+      - name: Gradle 실행 권한 준비
+        run: chmod +x android/gradlew
 
       - name: 출시 필수 공개 키 확인
         shell: bash
         run: |
           set -euo pipefail
           if [ -z "$VITE_KAKAO_APP_KEY" ]; then
-            echo "VITE_KAKAO_APP_KEY GitHub Actions secret이 필요합니다." >&2
+            echo "VITE_KAKAO_APP_KEY GitHub Actions variable 또는 secret이 필요합니다." >&2
             exit 1
           fi
 
@@ -129,7 +148,7 @@ jobs:
       run:
         working-directory: hyeni-3
     env:
-      VITE_KAKAO_APP_KEY: ${{ secrets.VITE_KAKAO_APP_KEY }}
+      VITE_KAKAO_APP_KEY: ${{ vars.VITE_KAKAO_APP_KEY || secrets.VITE_KAKAO_APP_KEY }}
       BUNDLETOOL_VERSION: "1.18.1"
       BUNDLETOOL_SHA256: "675786493983787ffa11550bdb7c0715679a44e1643f3ff980a529e9c822595c"
     steps:
@@ -179,7 +198,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "$VITE_KAKAO_APP_KEY" ]; then
-            echo "VITE_KAKAO_APP_KEY GitHub Actions secret이 필요합니다." >&2
+            echo "VITE_KAKAO_APP_KEY GitHub Actions variable 또는 secret이 필요합니다." >&2
             exit 1
           fi
 

@@ -17,12 +17,24 @@ function withServiceWorker(source, run) {
 
 test("PWA precache 검증은 고유 URL 목록을 통과시킨다", () => {
   withServiceWorker(
-    'precache([{"revision":"a","url":"index.html"},{"revision":null,"url":"assets/app-123.js"}]);',
+    'precache([{"revision":null,"url":"assets/app-123.js"},{"revision":"a","url":"index.html"}]);',
     (distDir) => {
       assert.deepEqual(inspectPwaPrecacheManifest({ distDir }), {
         swFile: "sw.js",
         entries: 2,
       });
+    },
+  );
+});
+
+test("PWA precache 검증은 OS별로 달라질 수 있는 URL 순서를 빌드에서 차단한다", () => {
+  withServiceWorker(
+    'precache([{"revision":null,"url":"assets/webBilling.js"},{"revision":null,"url":"assets/WeeklyFamilyReport.js"}]);',
+    (distDir) => {
+      assert.throws(
+        () => inspectPwaPrecacheManifest({ distDir }),
+        /URL 순서가 결정적이지 않습니다/,
+      );
     },
   );
 });

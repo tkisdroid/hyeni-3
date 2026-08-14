@@ -606,7 +606,8 @@ function newDocumentScript() {
       const role = new URL(location.href).searchParams.get("qaRole") || "parent";
       const sessions = ${JSON.stringify(sessions)};
       try {
-        localStorage.setItem("hyeni-api-session-v1", JSON.stringify(sessions[role] || sessions.parent));
+        if (role === "public") localStorage.removeItem("hyeni-api-session-v1");
+        else localStorage.setItem("hyeni-api-session-v1", JSON.stringify(sessions[role] || sessions.parent));
         localStorage.setItem("hyeni-active-child-v1", JSON.stringify({ ${JSON.stringify(FAMILY_ID)}: ${JSON.stringify(CHILD_MEMBER_ID)} }));
       } catch {}
 
@@ -914,6 +915,27 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       problems: [],
       screenshots: [],
     };
+
+    const onboarding = await navigate(
+      { role: "public", tier: "free", catalogMode: "valid", overLimit: false },
+      "onboarding",
+    );
+    const onboardingAntiSlopFacts = await cdp.evaluate(`(() => ({
+      badgePresent: Boolean(document.querySelector(".ob-role-badge")),
+      subtitle: document.querySelector(".ob-role-sub")?.textContent?.trim() || "",
+    }))()`);
+    if (
+      onboardingAntiSlopFacts.badgePresent
+      || onboardingAntiSlopFacts.subtitle !== "함께 보는 우리 가족 일정"
+      || rowProblems(onboarding).length > 0
+    ) {
+      report.problems.push({
+        scope: "onboarding-decorative-badge",
+        facts: onboardingAntiSlopFacts,
+        routeProblems: rowProblems(onboarding),
+      });
+    }
+    report.focused.antiSlop = { onboarding: onboardingAntiSlopFacts };
 
     for (const route of PARENT_BROWSER_QA_ROUTES) {
       const row = await navigate({ role: "parent", tier: "free", catalogMode: "valid", overLimit: route === "place-manager" }, route);
@@ -1302,6 +1324,46 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       if (row.problems.length > 0) report.problems.push({ scope: "child-route", route, problems: row.problems });
       process.stdout.write(`${row.problems.length ? "FAIL" : "OK  "} child  ${route}\n`);
     }
+
+    const aiFriend = await navigate(
+      { role: "child", tier: "free", catalogMode: "valid", overLimit: false },
+      "child/ai-friend",
+    );
+    const aiFriendAntiSlopFacts = await cdp.evaluate(`(() => ({
+      decorativeStatusPresent: Boolean(document.querySelector(".afc-head-status")),
+      decorativeOnlineDotPresent: Boolean(document.querySelector(".afc-online")),
+    }))()`);
+    if (
+      aiFriendAntiSlopFacts.decorativeStatusPresent
+      || aiFriendAntiSlopFacts.decorativeOnlineDotPresent
+      || rowProblems(aiFriend).length > 0
+    ) {
+      report.problems.push({
+        scope: "ai-friend-decorative-status",
+        facts: aiFriendAntiSlopFacts,
+        routeProblems: rowProblems(aiFriend),
+      });
+    }
+    report.focused.antiSlop.aiFriend = aiFriendAntiSlopFacts;
+
+    const parentSettings = await navigate(
+      { role: "parent", tier: "free", catalogMode: "valid", overLimit: false },
+      "parent/settings",
+    );
+    const parentSettingsAntiSlopFacts = await cdp.evaluate(`(() => ({
+      versionText: document.querySelector(".ps-version")?.textContent?.trim() || "",
+    }))()`);
+    if (
+      !/^혜니캘린더 v\S+$/.test(parentSettingsAntiSlopFacts.versionText)
+      || rowProblems(parentSettings).length > 0
+    ) {
+      report.problems.push({
+        scope: "settings-decorative-tagline",
+        facts: parentSettingsAntiSlopFacts,
+        routeProblems: rowProblems(parentSettings),
+      });
+    }
+    report.focused.antiSlop.parentSettings = parentSettingsAntiSlopFacts;
 
     const subscription = await navigate({ role: "parent", tier: "free", catalogMode: "valid", overLimit: false }, "subscription");
     const subscriptionFacts = await cdp.evaluate(`(() => {
