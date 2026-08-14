@@ -27,6 +27,7 @@ test("Kakao SDK 는 앱이 한가할 때 미리 받아 둔다", () => {
 
 test("Kakao SDK 초기화가 한 번 실패해도 다음 사용자 시도에서 다시 불러올 수 있다", () => {
   const loader = read("src/lib/kakaoMap.ts");
+  assert.match(loader, /retryKakaoMapLoad/);
   assert.match(loader, /\.catch\(\(error: unknown\) => \{/);
   assert.match(loader, /loadPromise = null;\s*throw error;/s);
 
