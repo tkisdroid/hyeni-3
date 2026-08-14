@@ -20,7 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      VITE_KAKAO_APP_KEY: ${{ secrets.VITE_KAKAO_APP_KEY }}
+      # VITE_ 값은 클라이언트 번들에 공개된다. Actions variable을 정본으로 쓰되
+      # 기존 저장소 secret 설정도 무중단 호환한다.
+      VITE_KAKAO_APP_KEY: ${{ vars.VITE_KAKAO_APP_KEY || secrets.VITE_KAKAO_APP_KEY }}
     defaults:
       run:
         working-directory: hyeni-3
@@ -65,7 +67,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "$VITE_KAKAO_APP_KEY" ]; then
-            echo "VITE_KAKAO_APP_KEY GitHub Actions secret이 필요합니다." >&2
+            echo "VITE_KAKAO_APP_KEY GitHub Actions variable 또는 secret이 필요합니다." >&2
             exit 1
           fi
 
@@ -129,7 +131,7 @@ jobs:
       run:
         working-directory: hyeni-3
     env:
-      VITE_KAKAO_APP_KEY: ${{ secrets.VITE_KAKAO_APP_KEY }}
+      VITE_KAKAO_APP_KEY: ${{ vars.VITE_KAKAO_APP_KEY || secrets.VITE_KAKAO_APP_KEY }}
       BUNDLETOOL_VERSION: "1.18.1"
       BUNDLETOOL_SHA256: "675786493983787ffa11550bdb7c0715679a44e1643f3ff980a529e9c822595c"
     steps:
@@ -179,7 +181,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "$VITE_KAKAO_APP_KEY" ]; then
-            echo "VITE_KAKAO_APP_KEY GitHub Actions secret이 필요합니다." >&2
+            echo "VITE_KAKAO_APP_KEY GitHub Actions variable 또는 secret이 필요합니다." >&2
             exit 1
           fi
 

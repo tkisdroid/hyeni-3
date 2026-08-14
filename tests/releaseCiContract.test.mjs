@@ -68,8 +68,17 @@ test("출시 후보 CI는 앱 전체 검증과 Android unit·lint·APK를 모두
   assert.match(workflow, /--readelf/);
   assert.doesNotMatch(workflow, /continue-on-error:\s*true/);
 
+  const publicKeyBindings = workflow.match(
+    /VITE_KAKAO_APP_KEY:\s*\$\{\{ vars\.VITE_KAKAO_APP_KEY \|\| secrets\.VITE_KAKAO_APP_KEY \}\}/g,
+  ) ?? [];
+  assert.equal(publicKeyBindings.length, 2, "두 CI job 모두 공개 Kakao JS 키를 variable 우선으로 받아야 합니다.");
+  assert.match(workflow, /GitHub Actions variable 또는 secret이 필요합니다\./);
+
   const appQuality = workflow.match(/\n  app-quality:[\s\S]*?\n  android-debug:/)?.[0] ?? "";
-  assert.match(appQuality, /VITE_KAKAO_APP_KEY:\s*\$\{\{ secrets\.VITE_KAKAO_APP_KEY \}\}/);
+  assert.match(
+    appQuality,
+    /VITE_KAKAO_APP_KEY:\s*\$\{\{ vars\.VITE_KAKAO_APP_KEY \|\| secrets\.VITE_KAKAO_APP_KEY \}\}/,
+  );
   assert.match(appQuality, /출시 필수 공개 키 확인[\s\S]*?npm run verify/);
 
   const aabEvidence = readFileSync(
