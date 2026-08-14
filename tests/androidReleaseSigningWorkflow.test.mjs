@@ -96,6 +96,47 @@ test("release 서명 스크립트는 Android SDK를 빌드 전에 찾아 Gradle 
   assert.equal(source.match(/\$sdkRoot = Get-AndroidSdkRoot/g)?.length, 1);
 });
 
+test("연결 worktree release 빌드는 정본 .env의 Kakao 공개 키만 값 노출 없이 전달한다", () => {
+  assert.match(source, /Get-RequiredViteKakaoKeyState/);
+  assert.match(source, /--git-common-dir/);
+  assert.match(source, /VITE_KAKAO_APP_KEY/);
+  assert.match(source, /viteKakaoKeyConfigured/);
+  assert.match(source, /viteKakaoKeySource/);
+  assert.doesNotMatch(source, /\$envCandidates \| Sort-Object/);
+
+  const currentEnvIndex = source.indexOf("$envCandidates = @((Join-Path $repoRoot '.env'))");
+  const primaryEnvIndex = source.indexOf("$envCandidates += Join-Path $primaryWorktreeRoot '.env'");
+  assert.ok(currentEnvIndex > 0);
+  assert.ok(currentEnvIndex < primaryEnvIndex);
+
+  const resolveIndex = source.indexOf("$viteKakaoKeyState = Get-RequiredViteKakaoKeyState");
+  const webBuildIndex = source.indexOf("& npm.cmd run build");
+  assert.ok(resolveIndex > 0);
+  assert.ok(resolveIndex < webBuildIndex);
+
+  const buildSetup = source.slice(resolveIndex, webBuildIndex);
+  assert.match(buildSetup, /\$env:VITE_KAKAO_APP_KEY = \$viteKakaoKeyState\.Value/);
+  assert.doesNotMatch(source, /Write-(?:Host|Output)[^\n]*\$viteKakaoKeyState\.Value/);
+  assert.match(source, /Restore-ViteKakaoKeyEnvironment/);
+});
+
+test("release 증거 도구는 웹 빌드와 비밀번호 입력 전에 모두 확인한다", () => {
+  const webBuildIndex = source.indexOf("& npm.cmd run build");
+  const passwordIndex = source.indexOf("Read-Host '키스토어 비밀번호' -AsSecureString");
+  const bundletoolIndex = source.indexOf("Ensure-Bundletool");
+  const zipalignIndex = source.indexOf("$zipalign = Find-LatestTool");
+  const readelfIndex = source.indexOf("$readelf = Find-LatestTool");
+
+  for (const index of [bundletoolIndex, zipalignIndex, readelfIndex]) {
+    assert.ok(index > 0);
+    assert.ok(index < webBuildIndex);
+    assert.ok(index < passwordIndex);
+  }
+  assert.equal(source.match(/Ensure-Bundletool/g)?.length, 2); // 함수 선언 + 호출
+  assert.equal(source.match(/\$zipalign = Find-LatestTool/g)?.length, 1);
+  assert.equal(source.match(/\$readelf = Find-LatestTool/g)?.length, 1);
+});
+
 test("release AAB는 승인 인증서와 16KB 조건을 모두 검증한다", () => {
   assert.match(source, /--build-type release/);
   assert.match(source, /--expected-certificate-sha256 \$uploadCertificateSha256/);

@@ -192,6 +192,106 @@ function Get-GitState {
     }
 }
 
+function Get-DotEnvValue {
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [Parameter(Mandatory)][string]$Name
+    )
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        return $null
+    }
+
+    $escapedName = [regex]::Escape($Name)
+    foreach ($line in [System.IO.File]::ReadLines($Path)) {
+        $match = [regex]::Match($line, "^\s*(?:export\s+)?${escapedName}\s*=\s*(?<value>.*)\s*$")
+        if (-not $match.Success) {
+            continue
+        }
+
+        $value = $match.Groups['value'].Value.Trim()
+        if ($value.Length -ge 2 -and (
+            ($value.StartsWith('"') -and $value.EndsWith('"')) `
+            -or ($value.StartsWith("'") -and $value.EndsWith("'"))
+        )) {
+            $value = $value.Substring(1, $value.Length - 2)
+        } else {
+            $value = [regex]::Replace($value, '\s+#.*$', '').Trim()
+        }
+        return $value
+    }
+    return $null
+}
+
+function Get-RequiredViteKakaoKeyState {
+    $processValue = [Environment]::GetEnvironmentVariable('VITE_KAKAO_APP_KEY', 'Process')
+    if (-not [string]::IsNullOrWhiteSpace($processValue)) {
+        return [pscustomobject]@{
+            Configured = $true
+            Source = 'process-environment'
+            Value = $processValue.Trim()
+        }
+    }
+
+    $gitCommonDir = $null
+    Push-Location $repoRoot
+    try {
+        $gitCommonDir = (& git rev-parse --path-format=absolute --git-common-dir 2>$null | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0) {
+            $gitCommonDir = $null
+        }
+    } finally {
+        Pop-Location
+    }
+
+    $envCandidates = @((Join-Path $repoRoot '.env'))
+    if (-not [string]::IsNullOrWhiteSpace($gitCommonDir)) {
+        $primaryWorktreeRoot = Split-Path -Parent ([System.IO.Path]::GetFullPath($gitCommonDir))
+        $envCandidates += Join-Path $primaryWorktreeRoot '.env'
+    }
+
+    $seenEnvCandidates = @{}
+    foreach ($candidate in $envCandidates) {
+        $fullCandidate = [System.IO.Path]::GetFullPath($candidate)
+        if ($seenEnvCandidates.ContainsKey($fullCandidate)) {
+            continue
+        }
+        $seenEnvCandidates[$fullCandidate] = $true
+
+        $value = Get-DotEnvValue -Path $fullCandidate -Name 'VITE_KAKAO_APP_KEY'
+        if (-not [string]::IsNullOrWhiteSpace($value)) {
+            return [pscustomobject]@{
+                Configured = $true
+                Source = if ($fullCandidate -eq [System.IO.Path]::GetFullPath((Join-Path $repoRoot '.env'))) {
+                    'current-worktree-env'
+                } else {
+                    'primary-worktree-env'
+                }
+                Value = $value.Trim()
+            }
+        }
+    }
+
+    return [pscustomobject]@{
+        Configured = $false
+        Source = 'missing'
+        Value = $null
+    }
+}
+
+function Restore-ViteKakaoKeyEnvironment {
+    param(
+        [Parameter(Mandatory)][bool]$HadOriginalValue,
+        [AllowNull()][string]$OriginalValue
+    )
+
+    if ($HadOriginalValue) {
+        [Environment]::SetEnvironmentVariable('VITE_KAKAO_APP_KEY', $OriginalValue, 'Process')
+    } else {
+        Remove-Item -LiteralPath 'Env:VITE_KAKAO_APP_KEY' -ErrorAction SilentlyContinue
+    }
+}
+
 function Get-AndroidSdkRoot {
     $candidates = @(
         $env:ANDROID_SDK_ROOT,
@@ -310,6 +410,7 @@ if ($playUploadCertificatePresent) {
 }
 
 $gitState = Get-GitState
+$viteKakaoKeyState = Get-RequiredViteKakaoKeyState
 $forbiddenProperties = @(Get-ForbiddenSigningProperties)
 $preflight = [ordered]@{
     sourceCommit = $gitState.Head
@@ -321,12 +422,17 @@ $preflight = [ordered]@{
     playExpectedUploadCertificateSha1 = $playExpectedUploadCertificateSha1
     forbiddenGradlePropertyNames = $forbiddenProperties
     legacyCredentialFilePresent = Test-Path -LiteralPath $legacyCredentialFile -PathType Leaf
+    viteKakaoKeyConfigured = $viteKakaoKeyState.Configured
+    viteKakaoKeySource = $viteKakaoKeyState.Source
     releaseAabPath = $releaseAab
 }
 
 if ($PreflightOnly) {
     [pscustomobject]$preflight | ConvertTo-Json -Depth 3
-    if (-not $gitState.Clean -or -not $preflight.keystorePresent -or -not $playUploadCertificatePresent) {
+    if (-not $gitState.Clean `
+        -or -not $preflight.keystorePresent `
+        -or -not $playUploadCertificatePresent `
+        -or -not $viteKakaoKeyState.Configured) {
         exit 2
     }
     exit 0
@@ -341,6 +447,9 @@ if (-not $preflight.keystorePresent) {
 if (-not $playUploadCertificatePresent) {
     throw "Play Console에서 받은 업로드 인증서가 없습니다: $selectedPlayUploadCertificate"
 }
+if (-not $viteKakaoKeyState.Configured) {
+    throw 'production release에 필요한 VITE_KAKAO_APP_KEY를 현재 또는 기본 worktree의 .env에서 찾지 못했습니다.'
+}
 if (-not (Test-Path -LiteralPath $gradleWrapper -PathType Leaf)) {
     throw "Gradle wrapper가 없습니다: $gradleWrapper"
 }
@@ -348,14 +457,26 @@ if (-not (Test-Path -LiteralPath $gradleWrapper -PathType Leaf)) {
 $sdkRoot = Get-AndroidSdkRoot
 $env:ANDROID_SDK_ROOT = $sdkRoot
 $env:ANDROID_HOME = $sdkRoot
+$zipalign = Find-LatestTool -Parent (Join-Path $sdkRoot 'build-tools') `
+    -RelativeToolPath 'zipalign.exe' -Label 'zipalign'
+$readelf = Find-LatestTool -Parent (Join-Path $sdkRoot 'ndk') `
+    -RelativeToolPath 'toolchains\llvm\prebuilt\windows-x86_64\bin\llvm-readelf.exe' `
+    -Label 'llvm-readelf'
+Ensure-Bundletool
 
 Write-Host '1/6 production 웹 번들을 만들고 Android에 동기화합니다.'
+$originalViteKakaoKey = [Environment]::GetEnvironmentVariable('VITE_KAKAO_APP_KEY', 'Process')
+$hadOriginalViteKakaoKey = $null -ne $originalViteKakaoKey
+$env:VITE_KAKAO_APP_KEY = $viteKakaoKeyState.Value
 Push-Location $repoRoot
 try {
     Invoke-External -Command { & npm.cmd run build } -FailureMessage 'production 웹 빌드 실패' | Out-Null
     Invoke-External -Command { & npx.cmd cap sync android } -FailureMessage 'Capacitor Android 동기화 실패' | Out-Null
 } finally {
     Pop-Location
+    Restore-ViteKakaoKeyEnvironment `
+        -HadOriginalValue $hadOriginalViteKakaoKey `
+        -OriginalValue $originalViteKakaoKey
 }
 
 $postSyncGit = Get-GitState
@@ -482,13 +603,6 @@ try {
     Clear-LegacyCredentialFile
 
     Write-Host '6/6 서명·manifest·16KB 정렬 증거와 업로드 폴더를 만듭니다.'
-    Ensure-Bundletool
-    $zipalign = Find-LatestTool -Parent (Join-Path $sdkRoot 'build-tools') `
-        -RelativeToolPath 'zipalign.exe' -Label 'zipalign'
-    $readelf = Find-LatestTool -Parent (Join-Path $sdkRoot 'ndk') `
-        -RelativeToolPath 'toolchains\llvm\prebuilt\windows-x86_64\bin\llvm-readelf.exe' `
-        -Label 'llvm-readelf'
-
     $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
     $shortSha = $gitState.Head.Substring(0, 7)
     $evidencePath = Join-Path $evidenceRoot "android-release-aab-evidence-$timestamp-$shortSha.json"
