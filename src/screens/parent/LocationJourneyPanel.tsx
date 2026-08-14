@@ -21,6 +21,7 @@ export interface LocationJourneyPanelProps {
   stayCount: number;
   currentTimeLabel: string;
   currentWhere: string;
+  sliderMin: number;
   sliderMax: number;
   sliderValue: number;
   followsLatest: boolean;
@@ -50,6 +51,7 @@ export function LocationJourneyPanel({
   stayCount,
   currentTimeLabel,
   currentWhere,
+  sliderMin,
   sliderMax,
   sliderValue,
   followsLatest,
@@ -148,11 +150,11 @@ export function LocationJourneyPanel({
             <input
               className="pl-journey__range"
               type="range"
-              min={0}
+              min={sliderMin}
               max={sliderMax}
-              step={1}
+              step="any"
               value={sliderValue}
-              disabled={sliderMax <= 0}
+              disabled={sliderMax <= sliderMin}
               aria-label={`${childName}의 이동 시간 따라보기`}
               aria-valuetext={`${currentTimeLabel} · ${currentWhere}`}
               onChange={(event) => onSliderChange(Number(event.currentTarget.value))}

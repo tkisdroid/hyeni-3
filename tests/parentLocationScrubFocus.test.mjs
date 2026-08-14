@@ -15,7 +15,7 @@ const journey = read("src/screens/parent/LocationJourneyPanel.tsx");
 
 test("시간대별 경로를 움직여도 패널 높이는 유지해 지도를 흔들지 않는다", () => {
   const move = screen.slice(screen.indexOf("const moveScrubTo"), screen.indexOf("const followLatestAgain"));
-  assert.match(move, /setScrubOffsetMinute\(clampHistoryOffsetMinute\(rawValue, historyMaxOffsetMinute\)\)/);
+  assert.match(move, /setScrubTimeMs\(clampJourneyScrubMs\(rawValue, journeyRange\)\)/);
   assert.match(move, /setSelectedStayIdx\(null\)/);
   assert.doesNotMatch(move, /setHistoryPanelExpanded/);
   assert.doesNotMatch(move, /setScrubFocusKey/);
@@ -28,26 +28,26 @@ test("시간대별 경로를 움직여도 패널 높이는 유지해 지도를 �
 });
 
 test("시간 막대를 연속으로 끄는 동안 지도 중심은 고정하고 멈춘 뒤 한 번만 맞춘다", () => {
-  assert.match(screen, /const \[settledScrubOffsetMinute, setSettledScrubOffsetMinute\] = useState<number \| null>\(null\)/);
+  assert.match(screen, /const \[settledScrubTimeMs, setSettledScrubTimeMs\] = useState<number \| null>\(null\)/);
   assert.match(screen, /const \[settledHistoryMapPadding, setSettledHistoryMapPadding\] = useState\(historyMapPadding\)/);
-  assert.match(screen, /window\.setTimeout\(\(\) => \{\s*setSettledScrubOffsetMinute\(nextOffsetMinute\);\s*setSettledHistoryMapPadding\(historyMapPadding\);\s*\}, 160\)/s);
-  assert.match(screen, /const mapFocusOffsetMinute = followsLatest/);
-  assert.match(screen, /settledScrubOffsetMinute \?\? historyMaxOffsetMinute/);
+  assert.match(screen, /window\.setTimeout\(\(\) => \{\s*setSettledScrubTimeMs\(nextScrubTimeMs\);\s*setSettledHistoryMapPadding\(historyMapPadding\);\s*\}, 160\)/s);
+  assert.match(screen, /const mapFocusMs = followsLatest/);
+  assert.match(screen, /settledScrubTimeMs \?\? journeyRange\?\.endMs \?\? historyWindow\.endMs/);
   assert.match(screen, /viewportPadding=\{settledHistoryMapPadding\}/);
   assert.doesNotMatch(screen, /onSliderStart=\{beginScrub\}/);
   assert.doesNotMatch(journey, /onPointerDown=\{onSliderStart\}/);
 });
 
 test("최신 따라가기 상태에서는 지도 중심을 비워 하루 경로 전체를 보여준다", () => {
-  assert.match(screen, /const followsLatest = scrubOffsetMinute == null;/);
+  assert.match(screen, /const followsLatest = scrubTimeMs == null;/);
   assert.match(screen, /onFollowLatest=\{followLatestAgain\}/);
 });
 
 test("30초 위치 폴링이 부모가 고른 시각과 접어 둔 시트를 되돌리지 않는다", () => {
   // 슬라이더 값: null = 최신 따라가기. 폴링으로 now 가 바뀌어도 선택 시각을 유지한다.
   assert.match(screen, /useState<number \| null>\(null\)/);
-  assert.doesNotMatch(screen, /if \(activeView === "history"\) setScrubOffsetMinute\(historyMaxOffsetMinute\)/);
-  assert.match(screen, /setScrubOffsetMinute\(null\);\s*\}, \[activeView, historyDayKey, selected\?\.id\]\)/s);
+  assert.doesNotMatch(screen, /if \(activeView === "history"\) setScrubTimeMs\(/);
+  assert.match(screen, /setScrubTimeMs\(null\);\s*\}, \[activeView, historyDayKey, selected\?\.id\]\)/s);
   // 패널 자동 펼침은 보기 전환에서만(머문 곳 수 변화로 다시 펼치지 않는다).
   assert.match(screen, /setHistoryPanelExpanded\(true\);\s*\}, \[activeView, historyDayKey, selected\?\.id\]\)/s);
   assert.doesNotMatch(screen, /\[activeView, stayPoints\.length\]/);

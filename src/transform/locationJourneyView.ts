@@ -14,6 +14,15 @@ export function getJourneyRecordedRange(
   return startMs == null || endMs == null ? null : { startMs, endMs };
 }
 
+/** 사용자가 고른 시각을 실제 위치 기록이 존재하는 구간 안으로 제한한다. */
+export function clampJourneyScrubMs(
+  value: number,
+  range: JourneyRecordedRange,
+): number {
+  if (!Number.isFinite(value)) return range.endMs;
+  return Math.min(range.endMs, Math.max(range.startMs, value));
+}
+
 export function resolveJourneyContentState(input: {
   isFetching: boolean;
   isError: boolean;

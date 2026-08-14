@@ -45,7 +45,6 @@ import {
 import { filterEventsForChild } from "@/transform/eventScope";
 import {
   clampHistoryDayKey,
-  clampHistoryOffsetMinute,
   getHistoryDayKey,
   getHistoryDayKeyRange,
   getHistoryDayWindow,
@@ -68,6 +67,7 @@ import {
   savePremiumReturnIntent,
 } from "@/transform/premiumReturnIntent";
 import {
+  clampJourneyScrubMs,
   getJourneyRecordedRange,
   resolveJourneyContentState,
 } from "@/transform/locationJourneyView";
@@ -199,13 +199,12 @@ export function ParentLocation() {
     const date = parseAppDateKey(historyDayKey);
     return date?.toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" }) ?? "선택한 날";
   }, [historyDayKey, historyTodayKey]);
-  const historyMaxOffsetMinute = historyWindow.maxOffsetMinutes;
-  // null = 최신 따라가기(기본). 숫자 = 부모가 직접 고른 시각.
+  // null = 최신 따라가기(기본). 숫자 = 부모가 직접 고른 실제 기록 시각(ms).
   // 위치 폴링(30초)마다 `now` 가 갱신돼도 부모가 고른 시각을 최신으로 되돌리지 않는다.
-  const [scrubOffsetMinute, setScrubOffsetMinute] = useState<number | null>(null);
+  const [scrubTimeMs, setScrubTimeMs] = useState<number | null>(null);
   // 지도 중심은 연속 드래그가 멈춘 뒤에만 갱신한다. 시각·마커 표시는 즉시 움직이되
   // 같은 장소에 setCenter→panBy를 반복해 지도가 떨리는 현상을 막는다.
-  const [settledScrubOffsetMinute, setSettledScrubOffsetMinute] = useState<number | null>(null);
+  const [settledScrubTimeMs, setSettledScrubTimeMs] = useState<number | null>(null);
 
   // 대상 아이 = 전역 활성 아이(스위치는 부모 홈에서만 — 이 화면엔 전환 UI 없음).
   // 예외: 알림/SOS/도착에서 `?child=<user_id>` 로 진입하면 그 아이를 우선(위급 아이 — 안전 규칙).
@@ -297,7 +296,7 @@ export function ParentLocation() {
   const activeView: "live" | "history" = isLocked || locationScopePending ? "live" : view;
   // 보기 전환·아이 전환에서만 최신 따라가기로 돌아간다(폴링으로 되돌리지 않는다).
   useEffect(() => {
-    setScrubOffsetMinute(null);
+    setScrubTimeMs(null);
   }, [activeView, historyDayKey, selected?.id]);
 
   // 선택일 경로는 오전 8시부터 다음 날 오전 8시까지 24시간으로 고정한다.
@@ -332,24 +331,15 @@ export function ParentLocation() {
     () => getJourneyRecordedRange(timedHistoryPoints),
     [timedHistoryPoints],
   );
-  const latestHistoryOffsetMinute = journeyRange
-    ? clampHistoryOffsetMinute(
-        Math.floor((journeyRange.endMs - historyWindow.startMs) / 60_000),
-        historyMaxOffsetMinute,
-      )
-    : historyMaxOffsetMinute;
-  const followsLatest = scrubOffsetMinute == null;
-  const effectiveScrubOffsetMinute = followsLatest
-    ? latestHistoryOffsetMinute
-    : clampHistoryOffsetMinute(scrubOffsetMinute, historyMaxOffsetMinute);
-  const scrubMs = historyWindow.startMs + effectiveScrubOffsetMinute * 60_000;
-  const mapFocusOffsetMinute = followsLatest
+  const followsLatest = scrubTimeMs == null;
+  const scrubMs = journeyRange
+    ? followsLatest
+      ? journeyRange.endMs
+      : clampJourneyScrubMs(scrubTimeMs, journeyRange)
+    : historyWindow.endMs;
+  const mapFocusMs = followsLatest
     ? null
-    : settledScrubOffsetMinute ?? historyMaxOffsetMinute;
-  const mapFocusMs =
-    mapFocusOffsetMinute == null
-      ? null
-      : historyWindow.startMs + mapFocusOffsetMinute * 60_000;
+    : settledScrubTimeMs ?? journeyRange?.endMs ?? historyWindow.endMs;
   const settledScrubChildPoint = useMemo(() => {
     if (mapFocusMs == null) return null;
     for (let index = timedTrail.length - 1; index >= 0; index -= 1) {
@@ -438,21 +428,20 @@ export function ParentLocation() {
   // 연속 입력 중에는 좌표뿐 아니라 패널 높이로 계산한 지도 여백도 고정한다. 두 값을 같은
   // debounce 콜백에서 확정해야 KakaoMap의 setCenter→panBy가 마지막에 한 번만 실행된다.
   useEffect(() => {
-    if (scrubOffsetMinute == null) {
-      setSettledScrubOffsetMinute(null);
+    if (scrubTimeMs == null) {
+      setSettledScrubTimeMs(null);
       setSettledHistoryMapPadding(historyMapPadding);
       return;
     }
-    const nextOffsetMinute = clampHistoryOffsetMinute(
-      scrubOffsetMinute,
-      historyMaxOffsetMinute,
-    );
+    const nextScrubTimeMs = journeyRange
+      ? clampJourneyScrubMs(scrubTimeMs, journeyRange)
+      : historyWindow.endMs;
     const timer = window.setTimeout(() => {
-      setSettledScrubOffsetMinute(nextOffsetMinute);
+      setSettledScrubTimeMs(nextScrubTimeMs);
       setSettledHistoryMapPadding(historyMapPadding);
     }, 160);
     return () => window.clearTimeout(timer);
-  }, [historyMapPadding, historyMaxOffsetMinute, scrubOffsetMinute]);
+  }, [historyMapPadding, historyWindow.endMs, journeyRange, scrubTimeMs]);
 
   useEffect(() => {
     const media = window.matchMedia("(min-width: 720px) and (orientation: landscape)");
@@ -538,7 +527,7 @@ export function ParentLocation() {
     }
     if (nextDateKey === historyDayKey) return;
     setRawHistoryDayKey(nextDateKey);
-    setScrubOffsetMinute(null);
+    setScrubTimeMs(null);
     setSelectedStayIdx(null);
     setHistoryPanelExpanded(true);
   };
@@ -557,12 +546,13 @@ export function ParentLocation() {
   // 시간대별 경로 조작 — 수동 목록 선택을 해제해 고른 시각의 머문 곳을 자동 강조한다.
   // 드래그 도중 패널 높이를 바꾸면 지도 가시 영역도 바뀌어 한 번 더 흔들리므로 펼침 상태는 유지한다.
   const moveScrubTo = (rawValue: number) => {
-    setScrubOffsetMinute(clampHistoryOffsetMinute(rawValue, historyMaxOffsetMinute));
+    if (!journeyRange) return;
+    setScrubTimeMs(clampJourneyScrubMs(rawValue, journeyRange));
     setSelectedStayIdx(null);
   };
 
   const followLatestAgain = () => {
-    setScrubOffsetMinute(null);
+    setScrubTimeMs(null);
     setSelectedStayIdx(null);
   };
 
@@ -894,8 +884,9 @@ export function ParentLocation() {
           stayCount={visibleStayPoints.length}
           currentTimeLabel={formatClockHM(scrubMs)}
           currentWhere={scrubWhere}
-          sliderMax={historyMaxOffsetMinute}
-          sliderValue={effectiveScrubOffsetMinute}
+          sliderMin={journeyRange?.startMs ?? 0}
+          sliderMax={journeyRange?.endMs ?? 0}
+          sliderValue={scrubMs}
           followsLatest={followsLatest}
           stays={journeyStayItems}
           onToggleExpanded={() => setHistoryPanelExpanded((value) => !value)}

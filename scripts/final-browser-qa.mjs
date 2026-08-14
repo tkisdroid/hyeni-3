@@ -1082,7 +1082,18 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       const eyebrow = document.querySelector(".pl-journey__eyebrow")?.textContent?.trim() || "";
       const selectedTime = document.querySelector(".pl-journey__replay-head strong")?.textContent?.trim() || "";
       const recordedRange = document.querySelector(".pl-journey__range-label")?.textContent?.trim() || "";
+      const recordedStart = recordedRange.split("–").at(0)?.trim() || "";
       const recordedEnd = recordedRange.split("–").at(-1)?.trim() || "";
+      const range = document.querySelector(".pl-journey__range");
+      const formatRangeClock = (value) => {
+        const date = new Date(Number(value));
+        if (Number.isNaN(date.getTime())) return "";
+        return String(date.getHours()).padStart(2, "0")
+          + ":"
+          + String(date.getMinutes()).padStart(2, "0");
+      };
+      const sliderStart = range instanceof HTMLInputElement ? formatRangeClock(range.min) : "";
+      const sliderEnd = range instanceof HTMLInputElement ? formatRangeClock(range.max) : "";
       return {
         hash: location.hash,
         panelVisible: Boolean(panel),
@@ -1094,6 +1105,14 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
         eyebrow,
         selectedTime,
         recordedRange,
+        sliderStart,
+        sliderEnd,
+        sliderBoundsAligned: Boolean(
+          recordedStart
+          && recordedEnd
+          && sliderStart === recordedStart
+          && sliderEnd === recordedEnd
+        ),
         latestAligned: Boolean(selectedTime && selectedTime === recordedEnd),
         text,
       };
@@ -1107,6 +1126,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       || !locationHistoryFacts.hasReplay
       || locationHistoryFacts.eyebrow !== "최신 기록"
       || !locationHistoryFacts.latestAligned
+      || !locationHistoryFacts.sliderBoundsAligned
       || !locationHistoryFacts.text.includes("머문 곳")
       || !locationHistoryFacts.stayTexts.some((text) => text.includes("우리 집"))
       || !locationHistoryFacts.stayTexts.some((text) => text.includes("데모 학교"))
@@ -1121,7 +1141,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     report.screenshots.push(await screenshot(cdp, freshOutputDir, "parent-location-history.png"));
 
     await clickSelector(cdp, ".pl-journey__toggle");
-    await wait(200);
+    await wait(360);
     const locationHistoryCollapsed = await cdp.evaluate(`(() => {
       const range = document.querySelector(".pl-journey__range");
       const stays = document.querySelector("#location-journey-stays");
@@ -1133,11 +1153,11 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       };
     })()`);
     await clickSelector(cdp, ".pl-journey__toggle");
-    await wait(200);
+    await wait(360);
     const locationHistoryReplay = await cdp.evaluate(`(() => {
       const range = document.querySelector(".pl-journey__range");
       if (!(range instanceof HTMLInputElement)) return { moved: false, followsLatest: null };
-      const nextValue = String(Math.max(0, Number(range.max) - 90));
+      const nextValue = String(Math.max(Number(range.min), Number(range.max) - 90 * 60_000));
       const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
       setter?.call(range, nextValue);
       range.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText" }));
@@ -1147,7 +1167,8 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
         followsLatest: document.querySelector(".pl-journey__follow")?.getAttribute("aria-pressed"),
       };
     })()`);
-    await wait(200);
+    // 160ms 지도 포커스 debounce 뒤 React 렌더와 Kakao overlay 재생성까지 기다린다.
+    await wait(360);
     const locationHistoryAfterReplay = await cdp.evaluate(`(() => {
       const selectedTime = document.querySelector(".pl-journey__replay-head strong")?.textContent?.trim() || null;
       const panCalls = Array.isArray(window.__hyQaMapPanCalls) ? window.__hyQaMapPanCalls : [];
@@ -1171,14 +1192,14 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     const locationHistorySecondReplay = await cdp.evaluate(`(() => {
       const range = document.querySelector(".pl-journey__range");
       if (!(range instanceof HTMLInputElement)) return { moved: false };
-      const nextValue = String(Math.max(0, Number(range.max) - 20));
+      const nextValue = String(Math.max(Number(range.min), Number(range.max) - 20 * 60_000));
       const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
       setter?.call(range, nextValue);
       range.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText" }));
       range.dispatchEvent(new Event("change", { bubbles: true }));
       return { moved: range.value === nextValue };
     })()`);
-    await wait(200);
+    await wait(360);
     const locationHistoryAfterSecondReplay = await cdp.evaluate(`(() => {
       const selectedTime = document.querySelector(".pl-journey__replay-head strong")?.textContent?.trim() || null;
       const markerBadge = (Array.isArray(window.__hyQaOverlayContents) ? window.__hyQaOverlayContents : [])
@@ -1196,7 +1217,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       const moved = await cdp.evaluate(`(() => {
         const range = document.querySelector(".pl-journey__range");
         if (!(range instanceof HTMLInputElement)) return false;
-        const value = Math.max(0, Number(range.max) - ${delta});
+        const value = Math.max(Number(range.min), Number(range.max) - ${delta} * 60_000);
         const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
         setter?.call(range, String(value));
         range.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText" }));
@@ -1206,7 +1227,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       rapidMoved &&= moved;
       await wait(25);
     }
-    await wait(260);
+    await wait(360);
     const rapidReplayFacts = await cdp.evaluate(`(() => {
       const panCount = (Array.isArray(window.__hyQaMapPanCalls) ? window.__hyQaMapPanCalls.length : 0) - ${rapidPanCountBefore};
       const selectedTime = document.querySelector(".pl-journey__replay-head strong")?.textContent?.trim() || null;
