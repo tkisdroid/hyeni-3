@@ -89,3 +89,5 @@ output/*
 !output/store-ui-candidates-v1/**
 !output/store-listing-assets-v1/
 !output/store-listing-assets-v1/**
+!output/play-store-final-v1/
+!output/play-store-final-v1/**

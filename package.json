@@ -23,6 +23,7 @@
     "release:pages-provenance": "node scripts/create-pages-provenance.mjs",
     "release:aab-evidence": "node scripts/create-aab-evidence.mjs",
     "release:record": "node scripts/create-release-record.mjs",
+    "release:play-store-assets": "node scripts/create-play-store-final-assets.mjs",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit"
   },

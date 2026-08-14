@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-14T18:27:30.668Z",
+  "source": "local-production-ui-with-static-demo-data",
+  "sourceUiManifestSha256": "cb328b1612234ccba5382f6f9f3de0c820ba67ad5822f3f89028fb411318bf2b",
+  "sourceIconSha256": "eb1206cb871e2071f7956d543aaaf50c8fb074d2686522415d9594631824f134",
+  "listingStyle": "flat-brand-header-with-full-bleed-actual-app-ui",
+  "screenshots": [
+    {
+      "file": "01-parent-home.png",
+      "source": "01-parent-home-ui.png",
+      "headline": "오늘 일정과 아이 상태를 한눈에",
+      "description": "가족 일정, 최근 위치, 알림을 홈에서 바로 확인하세요.",
+      "alt": "오늘 일정과 아이 안전 상태를 확인하는 보호자 홈"
+    },
+    {
+      "file": "02-family-calendar.png",
+      "source": "02-family-calendar-ui.png",
+      "headline": "가족 일정을 한 달에 담아요",
+      "description": "누가 언제 무엇을 하는지, 일정과 준비물을 함께 봅니다.",
+      "alt": "가족 일정을 월간으로 확인하는 가족 캘린더"
+    },
+    {
+      "file": "03-family-conversation.png",
+      "source": "03-family-memo-ui.png",
+      "headline": "‘어디야?’ 대신 대화 한 번",
+      "description": "아이별 대화에서 메시지, 사진, 위치를 나눌 수 있어요.",
+      "alt": "보호자와 아이가 메시지와 위치를 나누는 가족 대화"
+    },
+    {
+      "file": "04-daily-safety-report.png",
+      "source": "04-daily-safety-report-ui.png",
+      "headline": "하루의 안전 신호를 모아 봐요",
+      "description": "최근 위치, 일정, 준비물, 기기 상태를 한 화면에 정리합니다.",
+      "alt": "아이의 하루 안전 정보를 보여 주는 안심 리포트"
+    },
+    {
+      "file": "05-weekly-family-report.png",
+      "source": "05-weekly-family-report-ui.png",
+      "headline": "한 주 흐름을 짧게 정리해요",
+      "description": "가족 일정과 대화 기록을 주간 리포트로 확인하세요.",
+      "alt": "가족의 한 주 일정과 대화를 요약한 주간 리포트"
+    },
+    {
+      "file": "06-child-home-sos.png",
+      "source": "06-child-home-ui.png",
+      "headline": "아이도 쉽게, 일정과 SOS",
+      "description": "오늘 할 일을 보고, 필요할 때 SOS를 3초 눌러 알려요.",
+      "alt": "오늘 일정과 SOS 버튼을 쉽게 사용할 수 있는 아이 홈"
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "play-icon-512.png",
+      "kind": "icon",
+      "bytes": 106504,
+      "sha256": "3f76eaf78ad9ccbef067140bb6bb9a57a818353a68a5faf11c1c640a4bbfc899"
+    },
+    {
+      "file": "play-feature-graphic-1024x500.png",
+      "kind": "featureGraphic",
+      "bytes": 153248,
+      "sha256": "3e1a0d1c5ff527cde2571b7071de97a383b99f2126d0bc35458e37c1b90efdf4"
+    },
+    {
+      "file": "01-parent-home.png",
+      "kind": "phoneScreenshot",
+      "bytes": 571462,
+      "sha256": "a0511b44411e9f4b2b1a422c17b8e4559b26b5189073920f1142448f5ed3378c"
+    },
+    {
+      "file": "02-family-calendar.png",
+      "kind": "phoneScreenshot",
+      "bytes": 254354,
+      "sha256": "d97c7032cbdcac9e4738a9566deb040b97ba2b695b081e97acecde72f11b1387"
+    },
+    {
+      "file": "03-family-conversation.png",
+      "kind": "phoneScreenshot",
+      "bytes": 304742,
+      "sha256": "22fefac8b9f871a656439f6ad2b0999eb656ec7358e2d8d6692ba74781f002c4"
+    },
+    {
+      "file": "04-daily-safety-report.png",
+      "kind": "phoneScreenshot",
+      "bytes": 558543,
+      "sha256": "a7069d9ecef3f15fa07689fe4ca7cd82ae416d21004a7242998b08ecaed614ca"
+    },
+    {
+      "file": "05-weekly-family-report.png",
+      "kind": "phoneScreenshot",
+      "bytes": 345860,
+      "sha256": "f387364ba8251421b43a8580506fbce03488038255f8d11ba454bd7bf72a5dcb"
+    },
+    {
+      "file": "06-child-home-sos.png",
+      "kind": "phoneScreenshot",
+      "bytes": 631558,
+      "sha256": "d0a1b6ed407794a0379f19066ca30dc8b01cfaf86e536b55e9d57bab05629702"
+    }
+  ]
+}

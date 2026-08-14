@@ -27,5 +27,7 @@ test("output에서는 개인정보 없는 생성 스토어 자산만 새 파일 
   assert.match(gitignore, /^!output\/store-ui-candidates-v1\/\*\*$/m);
   assert.match(gitignore, /^!output\/store-listing-assets-v1\/$/m);
   assert.match(gitignore, /^!output\/store-listing-assets-v1\/\*\*$/m);
+  assert.match(gitignore, /^!output\/play-store-final-v1\/$/m);
+  assert.match(gitignore, /^!output\/play-store-final-v1\/\*\*$/m);
   assert.doesNotMatch(gitignore, /^output\/$/m);
 });

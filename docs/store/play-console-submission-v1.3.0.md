@@ -1,12 +1,12 @@
 # Google Play Console 제출 패키지 — 혜니캘린더 v1.3.0
 
-기준일: 2026-08-04
+기준일: 2026-08-15
 
 패키지: `com.hyeni.calendar`
 
 버전: `versionName 1.3.0` / `versionCode 5`
 
-현재 판정: **HOLD — 로컬 산출물은 준비됐지만 서명·Console·운영·실기기 게이트가 남아 있음**
+현재 판정: **Play Console 등록 진행 중 — 최신 서명 AAB와 등록정보는 준비됐고 심사 계정·정책 시연 영상 입력이 남아 있음**
 
 이 문서는 Play Console에 입력할 값과 아직 사람이 확인해야 하는 값을 분리한 제출 정본이다. 비밀번호, 심사 계정 자격 증명, 구매·인증 토큰은 저장소나 출시 패키지에 기록하지 않는다.
 
@@ -25,7 +25,7 @@
 | 데이터 삭제 안내 | https://hyeni-calendar-api.tkisdroid.workers.dev/data-deletion |
 | 앱 내 구매 | 예 — Google Play 정기 결제 |
 
-짧은 설명과 자세한 설명은 `docs/store/play-listing.md`의 코드 블록을 그대로 사용한다. 가격은 Play 결제 화면에서 월 4,900원·연 39,000원인지 확인된 경우에만 현재 문안을 유지한다.
+짧은 설명과 자세한 설명은 `docs/store/play-listing.md`의 코드 블록을 그대로 사용한다. 등록정보에는 가격·할인·무료 프로모션을 넣지 않고 실제 가격과 체험 조건은 Google Play 결제 화면에서만 보여 준다.
 
 ### 새로운 기능
 
@@ -39,20 +39,20 @@
 
 ## 2. 그래픽 자산
 
-다음 파일만 업로드 후보로 사용한다. `output/store-screenshots/`와 `output/store-safe-assets-v1/`은 업로드하지 않는다.
+다음 `output/play-store-final-v1/` 파일만 업로드 정본으로 사용한다. `output/store-screenshots/`, `output/store-safe-assets-v1/`, `output/store-listing-assets-v1/`, `output/store-ui-candidates-v1/`은 직접 업로드하지 않는다.
 
 | 용도 | 파일 | 대체 텍스트 |
 |---|---|---|
-| 앱 아이콘 | `output/store-listing-assets-v1/play-icon-512.png` | 혜니캘린더의 하트 모양 가족 일정 앱 아이콘 |
-| 피처 그래픽 | `output/store-listing-assets-v1/play-feature-graphic-1024x500.png` | 가족 일정과 아이 안전을 함께 관리하는 혜니캘린더 |
-| 휴대전화 1 | `output/store-ui-candidates-v1/01-parent-home-ui.png` | 오늘 일정과 아이 안전 상태를 확인하는 보호자 홈 |
-| 휴대전화 2 | `output/store-ui-candidates-v1/02-family-calendar-ui.png` | 가족 일정을 월간으로 확인하는 가족 캘린더 |
-| 휴대전화 3 | `output/store-ui-candidates-v1/03-family-memo-ui.png` | 보호자와 아이가 메시지를 나누는 가족 대화 |
-| 휴대전화 4 | `output/store-ui-candidates-v1/04-daily-safety-report-ui.png` | 아이의 하루 안전 정보를 보여 주는 안심리포트 |
-| 휴대전화 5 | `output/store-ui-candidates-v1/05-weekly-family-report-ui.png` | 가족의 한 주 일정과 안전 정보를 요약한 주간 리포트 |
-| 휴대전화 6 | `output/store-ui-candidates-v1/06-child-home-ui.png` | 일정과 SOS를 쉽게 사용할 수 있는 아이 홈 |
+| 앱 아이콘 | `output/play-store-final-v1/play-icon-512.png` | 실제 Android 설치 아이콘과 같은 혜니캘린더 앱 아이콘 |
+| 피처 그래픽 | `output/play-store-final-v1/play-feature-graphic-1024x500.png` | 가족 일정과 아이 안전을 한 곳에서 관리하는 혜니캘린더 |
+| 휴대전화 1 | `output/play-store-final-v1/01-parent-home.png` | 오늘 일정과 아이 안전 상태를 확인하는 보호자 홈 |
+| 휴대전화 2 | `output/play-store-final-v1/02-family-calendar.png` | 가족 일정을 월간으로 확인하는 가족 캘린더 |
+| 휴대전화 3 | `output/play-store-final-v1/03-family-conversation.png` | 보호자와 아이가 메시지와 위치를 나누는 가족 대화 |
+| 휴대전화 4 | `output/play-store-final-v1/04-daily-safety-report.png` | 아이의 하루 안전 정보를 보여 주는 안심 리포트 |
+| 휴대전화 5 | `output/play-store-final-v1/05-weekly-family-report.png` | 가족의 한 주 일정과 대화를 요약한 주간 리포트 |
+| 휴대전화 6 | `output/play-store-final-v1/06-child-home-sos.png` | 오늘 일정과 SOS 버튼을 쉽게 사용할 수 있는 아이 홈 |
 
-기술 검사는 1080×1920, 불투명 RGB, 개인정보 패턴·텍스트 메타데이터 없음으로 통과했다. `output/store-ui-candidates-v1/technical-review.json`의 `playUploadApproved=false`는 유지한다. 실제 Console 업로드 전 정책 책임자가 여섯 장을 육안 승인해야 한다.
+기술 검사는 1080×1920, 불투명 RGB, 개인정보 패턴·텍스트 메타데이터 없음으로 통과해야 한다. 여섯 장을 육안 검토한 뒤 `output/play-store-final-v1/technical-review.json`의 `playUploadApproved=true`를 확인한 경우에만 Console에 업로드한다.
 
 ## 3. 앱 액세스
 
@@ -119,19 +119,87 @@ Play Console에서 받은 `deployment_cert.der`를 직접 파싱해 앱 서명 �
 3. Play가 서명한 내부 테스트 설치본에서 `https://hyeni-calendar.pages.dev/oauth/callback` App Link 검증과 소셜 로그인 복귀를 확인한다.
 4. 업로드 키를 재설정해도 `assetlinks.json`은 업로드 인증서가 아니라 위 Google Play 앱 서명 키 SHA-256을 계속 사용한다.
 
-## 6. 출시 전 남은 외부 작업
+## 6. 2026-08-15 Play Console 등록 현황
 
-- 저장소 루트의 별도 비공개 PowerShell에서 `./scripts/build-android-release.ps1`을 실행하고 비밀번호를 프롬프트에 직접 입력. `PrivateKeyEntry`가 하나면 별칭은 자동 선택하고 여러 개일 때만 사용자에게 선택 요청
-- 스크립트가 입력값을 확인한 뒤 사용자 Gradle 설정의 `HYENI_KEYSTORE`, `HYENI_KEYSTORE_PASSWORD`, `HYENI_KEY_ALIAS`, `HYENI_KEY_PASSWORD` 네 평문 property를 제거
-- release 빌드 성공 뒤 `android/keystore/hyeni-upload-credentials.txt`를 지우고, 실패하면 Gradle properties를 원복
-- 새 AAB의 `jarsigner`, 승인 업로드 인증서, SHA-256, mtime, schema v4 16KB 정적 증거를 자동 확인
-- Play Console에서 `versionCode 5` 미사용 여부 확인. 이미 사용됐다면 코드와 모든 제출 문서를 함께 올려 재빌드
-- Play App Signing 앱 서명 인증서 지문의 로컬 반영은 완료. Pages 배포·내부 테스트 설치본 App Link E2E는 미완료
-- 심사 전용 보호자·아이 계정과 라이선스 테스터를 Console에 직접 입력
-- 대상 연령·Families·IARC·Data Safety·백그라운드 위치·FGS·FSI 선언과 심사 영상 승인
-- Google Play 상품 가격, 무료 체험 eligibility, 구매·복원·해지·환불·RTDN 실결제 E2E
-- 필요한 D1 migration·secret을 승인된 변경 창에서 선행 적용하고 Worker·Pages 배포 후 readback
-- A17 보호자와 razr 아이에만 `adb install -r`로 최종 설치·권한·알림·위치·결제·crash/ANR 검증. S25는 접근하지 않음
-- 단계적 출시와 첫 60분 오류율·ANR·crash·알림 대기열 모니터링, 중단·rollback 책임자 확정
+완료된 항목:
 
-위 항목이 하나라도 확인되지 않으면 제출 상태는 `HOLD`다. 로컬 debug APK/AAB나 2026-07-10의 기존 release AAB는 Play 업로드 파일로 사용하지 않는다.
+- 승인된 업로드 키로 서명한 `versionCode 5` AAB를 Play에 업로드했다. Play가 읽은 값은 `versionName 1.3.0`, 최소 API 24, target SDK 36이며 프로덕션 임시 버전 이름은 `혜니캘린더 1.3.0 (5)`다.
+- 스토어 제목, 46자 짧은 설명, 1,731자 자세한 설명, Android 설치 아이콘과 같은 Play 아이콘, 피처 그래픽, 실제 production UI 기반 휴대전화 스크린샷 6장을 등록했다.
+- 프로덕션 출시 초안에 AAB와 한국어 출시 노트를 넣고 2단계 미리보기까지 진행했다.
+- 구독 `hyeni_premium`의 월간 `monthly-2900`은 KRW 4,900, 연간 `annual-27840`은 KRW 39,000으로 활성 상태다. 두 base plan의 `trial-7d`는 한국 신규 구독자에게 `P7D` 무료 체험으로 활성 상태이며 범위는 `anySubscriptionInApp`이다.
+- 개인정보처리방침, Data Safety, 콘텐츠 등급, 타겟층 만 9세 이상, 광고 없음, 건강 앱, 금융 기능, 정부 앱, 전체 화면 인텐트 선언은 Console의 조치됨 상태다.
+- 출시 미리보기의 차단 오류는 백그라운드 위치 선언과 Foreground Service 선언 두 건으로 확정했다.
+
+비차단 경고 두 건:
+
+- R8/ProGuard 가독화 파일 없음: release 설정이 `minifyEnabled false`이므로 생성되는 `mapping.txt`가 없어 현재 빌드에는 해당 파일을 업로드하지 않는다.
+- 네이티브 디버그 기호 없음: AAB의 서드파티 네이티브 라이브러리에 대응하는 별도 기호 산출물이 없으며 Play가 경고로만 분류한다. 이번 AAB를 다시 서명하지 않고 유지한다.
+
+## 7. 제출 직전 필요한 실제 정보
+
+### 7.1 심사 전용 로그인 정보
+
+현재 저장된 “특수한 액세스 권한 없이 모든 기능 사용 가능” 선언은 실제 로그인·구독 구조와 맞지 않으므로 제출 전에 반드시 **제한된 부분 있음**으로 바꾼다. 비밀번호는 사용자만 Console에 직접 입력한다.
+
+- 만료되지 않는 심사 전용 보호자 계정
+- 심사 전용 아이가 이미 같은 가족에 연결된 상태
+- 프리미엄 기능 전체 접근 가능
+- 2단계 인증, 일회용 PIN, 위치 제한 없음
+- 실제 사용자 이름·일정·위치가 아닌 데모 데이터만 포함
+
+영문 심사 안내 500자:
+
+```text
+Sign in with the provided parent review account. A demo child is already paired. From Parent Home, review the family calendar, child location and route history, Today Safety Report, notifications, family chat, subscription, and Settings. Teacher mode is not included in this release. Location, alerts, ambient sound, and device status require the paired Android child device to be online with permissions granted. The demo account has premium access; do not create a new family or start a free trial.
+```
+
+계정과 비밀번호를 입력한 뒤 “프리미엄 또는 유료 콘텐츠를 포함하여 전체 액세스 권한을 제공” 체크박스를 선택하고 세부정보를 추가한다.
+
+### 7.2 정책 시연 영상 2개
+
+Google은 URL 형식만이 아니라 실제 제출 앱의 권한 안내, 백그라운드 동작, 사용자에게 보이는 지속 알림을 확인하므로 정적 화면이나 합성 영상으로 대체하지 않는다. 실기기 E2E를 생략한다는 사용자 범위를 유지하는 동안에는 에이전트가 사실에 맞는 영상을 대신 만들 수 없다. 개인정보가 없는 심사 전용 계정으로 촬영하고 YouTube 미등록 공개 링크를 사용한다.
+
+백그라운드 위치 앱 목적:
+
+```text
+혜니캘린더는 가족 일정 공유와 자녀 안전 확인을 위한 앱입니다. 보호자는 가족 일정과 준비물을 관리하고, 연결된 자녀의 현재 위치·이동 경로·등록 장소 도착·출발을 확인하며 SOS와 안전 알림을 받을 수 있습니다. 자녀 앱은 화면이 꺼져 있거나 다른 앱을 사용하는 동안에도 위치를 업데이트해 보호자가 등하교와 귀가 상황을 확인할 수 있게 합니다.
+```
+
+백그라운드 위치 단일 핵심 기능:
+
+```text
+자녀 위치·이동 경로 및 등록 장소 도착·출발 알림입니다. 아이 모드에서 기능 활성화 전 “앱을 사용하지 않을 때도 위치를 수집해 보호자에게 공유한다”는 별도 안내를 표시하고, 사용자가 동의한 뒤 Android의 항상 허용 권한 화면으로 이동합니다. 화면이 꺼지거나 앱이 백그라운드여도 위치를 수집해 보호자 지도와 안전 알림을 갱신합니다.
+```
+
+영상 A, 백그라운드 위치와 지오펜싱, 권장 30초 이내:
+
+1. 아이 모드에서 백그라운드 수집을 명시한 prominent disclosure를 보여 준다.
+2. 동의 버튼을 누르고 Android의 위치 권한과 항상 허용 설정을 보여 준다.
+3. 앱을 백그라운드로 보내 위치 공유 지속 알림이 보이는 상태를 보여 준다.
+4. 보호자 화면에서 아이의 최신 위치와 이동 경로가 갱신되는 모습을 보여 준다.
+5. 등록 장소 도착·출발 알림이 보호자에게 보이는 모습을 보여 준다.
+
+영상 B, 마이크와 `emergency_parental_alert`, 권장 60초 이내:
+
+1. 보호자가 위급 주변 소리를 시작하고 아이 화면·잠금 화면·지속 알림에 청취 중임이 표시되는 모습을 보여 준다.
+2. 최대 1분 상한과 아이 알림의 중지 동작을 보여 준다.
+3. 보호자가 응급 신호 소리 울리기를 시작하고 아이 기기의 명확한 전체 화면 또는 heads-up 알림과 지속 알림을 보여 준다.
+4. 아이 확인, 보호자 중지 또는 설정 시간 종료로 서비스가 끝나는 모습을 보여 준다.
+
+Console URL 매핑:
+
+| 입력란 | 링크 |
+|---|---|
+| 백그라운드 위치 선언 | 영상 A |
+| FGS 사용자 시작 위치 공유 | 영상 A |
+| FGS 지오펜싱 | 영상 A |
+| FGS 백그라운드 오디오 입력 | 영상 B |
+| FGS 특수 용도 기타 | 영상 B |
+
+특수 용도 권한 사용 설명:
+
+```text
+보호자가 연결된 아이 기기에 응급 신호를 보내면 FCM 명령을 받은 아이 앱이 즉시 포그라운드 서비스와 명확한 지속 알림을 시작해 소리를 재생합니다. 아이가 확인하거나 보호자가 중지하거나 설정 시간이 끝나면 종료합니다. 응급 신호는 도착 후 바로 알려야 하므로 작업을 미루거나 일시중지할 수 없고, 서비스가 중단되면 아이가 신호를 놓칠 수 있습니다.
+```
+
+두 영상 링크와 심사 계정이 저장되면 프로덕션 미리보기의 오류 두 건을 다시 검사한다. 오류가 없어지면 출시 초안을 저장하고 게시 개요의 **검토를 위해 앱 전송** 버튼만 최종 사용자 동작으로 남긴다.

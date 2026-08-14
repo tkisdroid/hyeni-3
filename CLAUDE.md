@@ -21,6 +21,17 @@
 운영 전 기존 키 폐기·새 키 발급/secret 반영·canary 재실행이 필수다. 현재 프로덕션 Worker는 아직 구버전이므로 Luna 전환 완료로
 간주하지 않는다. 기존 `docs/plans/2026-07-31-pricing-tier-benchmark.md`의 gpt-4o-mini 원가 가정은 역사 스냅샷으로만 보존한다.
 
+**현재 Google Play 출시 상태(2026-08-15)**: 승인된 업로드 키로 서명한 v1.3.0/versionCode 5 AAB가 Play에 올라가 있고,
+프로덕션 `혜니캘린더 1.3.0 (5)` 임시 버전은 2단계 미리보기까지 준비됐다. 한국어 등록정보와 Android 설치 아이콘에 맞춘
+Play 아이콘, 피처 그래픽, 실제 production UI 기반 스크린샷 6장을 API 편집 세션으로 교체·readback했다. 구독
+`hyeni_premium`은 월 KRW 4,900·연 KRW 39,000, 두 base plan의 신규 구독자 7일 무료 체험(`P7D`,
+`anySubscriptionInApp`)이 모두 ACTIVE다. Play 자동 검사의 차단 오류는 ①백그라운드 위치 선언용 실제 YouTube 영상
+②FGS location/microphone/specialUse 실제 영상뿐이다. 앱 액세스 선언은 현재 “제한 없음”으로 저장돼 실제 로그인 구조와
+불일치하므로 제출 전 반복 가능한 프리미엄 심사 전용 부모 계정·연결된 데모 아이를 사용해 “제한 있음”으로 고쳐야 한다.
+비밀번호는 사용자만 Console에 직접 입력한다. 정확한 문구·영상 shot list·URL 매핑은
+`docs/store/play-console-submission-v1.3.0.md` §7이 정본이다. 실제 기기 E2E는 사용자 지시로 이번 출시 등록 작업에서 생략하며,
+이를 합성 영상으로 위장하지 않는다.
+
 ---
 
 ## 0.5 작업 원칙 — 어떤 모델이든 이 방식으로 (이 프로젝트에서 실증된 사고방식)

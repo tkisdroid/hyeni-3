@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-08-14T18:27:30.668Z",
+  "verdict": "TECHNICAL_REVIEW_PASSED",
+  "playUploadApproved": true,
+  "reviewAuthority": "user-delegated-ai-visual-review",
+  "checks": {
+    "actualProductionUiSources": true,
+    "staticDemoDataOnly": true,
+    "sourceTechnicalReviewPassed": true,
+    "exactPlayDimensions": true,
+    "opaqueScreenshotsAndFeatureGraphic": true,
+    "metadataFree": true,
+    "pricingOrPromotionOverlayAbsent": true,
+    "decorativeBadgesAndOrdinalMarkersAbsent": true
+  }
+}

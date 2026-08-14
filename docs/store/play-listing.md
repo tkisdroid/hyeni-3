@@ -16,60 +16,57 @@
 ## 짧은 설명 (80자 이내)
 
 ```text
-가족 일정 공유와 아이 위치·안전 확인을 하나로. 도착 알림, SOS, AI 일정 등록까지.
+가족 캘린더와 아이 위치를 한눈에. 도착·출발 알림, SOS, AI 일정 정리까지.
 ```
 
 ## 자세한 설명 (4000자 이내)
 
 ```text
-혜니캘린더는 가족의 일정과 아이의 안전 정보를 함께 확인하는 가족 앱입니다.
+가족 일정과 아이의 하루를 한 화면에서 확인하세요. 혜니캘린더는 캘린더, 준비물, 가족 대화, 아이 위치와 안전 알림을 연결해 바쁜 순간에도 필요한 정보를 빠르게 찾도록 돕습니다. 아이는 오늘 할 일을 보고 가족에게 상태를 알리거나 SOS를 보낼 수 있습니다.
 
-📅 함께 보는 가족 일정
-· 아이별 일정을 캘린더에서 한눈에 확인해요
-· 말하거나 쓰거나 알림장 사진을 선택하면 AI가 일정 후보를 정리하고, 사용자가 확인해 저장해요
+가족 일정과 준비물
+· 아이별 일정을 가족 캘린더에서 함께 확인해요
+· 말하거나 쓰거나 알림장 사진을 선택하면 AI가 일정 후보를 정리하고, 사용자가 확인한 뒤 저장해요
 · 준비물과 숙제 체크리스트로 등교 준비를 챙겨요
 
-📍 아이 안전 확인 (아이 Android 기기 연결 시)
-· 아이가 위치 권한과 공유 기능을 켠 경우 현재 위치와 오늘 이동 흐름을 확인해요
-· 집·학교·학원 도착과 출발을 알림으로 받을 수 있어요
-· 일정 시간의 위치가 확인되지 않으면 보호자가 다시 확인할 수 있도록 알려드려요
-· 위험 장소를 등록하면 진입이 감지될 때 알림을 받을 수 있어요
+아이 위치와 이동 기록 (아이 Android 기기 연결 시)
+· 아이가 위치 권한과 공유 기능을 켜면 현재 위치와 오늘 이동 흐름을 확인해요
+· 집, 학교, 학원 도착과 출발을 알림으로 받을 수 있어요
+· 일정 시간 위치가 확인되지 않거나 위험 장소 진입이 감지되면 보호자가 다시 확인할 수 있도록 알려드려요
 
-위치와 알림은 기기 권한·네트워크·배터리 상태, GPS 정확도와 운영체제 설정에 따라 늦거나 제공되지 않을 수 있습니다. 중요한 상황에서는 아이에게 직접 연락하고 112·119 등 공공 긴급 서비스를 이용해 주세요.
-
-🆘 SOS와 기본 안전 알림은 무료
+SOS와 기본 안전 알림
 · 아이가 SOS 버튼을 3초 누르면 부모 기기로 위치와 긴급 신호 전송을 시도해요
-· 화면이 꺼져 있어도 기기 설정이 허용하면 전체 화면으로, 그렇지 않으면 높은 중요도의 알림으로 알려드려요
+· 기기 설정이 허용하면 전체 화면으로, 그렇지 않으면 높은 중요도의 알림으로 알려드려요
+· SOS와 긴급 알림은 구독 여부와 관계없이 사용할 수 있어요
 
-💬 가족 소통
-· 아이별 가족 대화에서 메시지·사진·위치를 공유해요
-· 아이는 버튼 한 번으로 “도착했어”, “데리러 와줘” 같은 상태를 보낼 수 있어요
+아이별 가족 대화
+· 메시지, 사진, 위치를 아이별 대화에서 나눠요
+· 아이는 “도착했어”, “데리러 와줘” 같은 상태를 빠르게 보낼 수 있어요
 · 칭찬 스티커로 아이의 하루를 응원해요
 
-🤖 AI 친구와 AI 일정
+AI 친구와 AI 일정 정리
 · 부모가 허용한 범위에서 아이의 일정과 준비물을 참고해 AI 친구가 답해요
-· AI 답변은 부정확하거나 불편할 수 있으며, 중요한 내용은 보호자가 다시 확인해야 해요
-· 대화 횟수·시간대·금지 주제를 보호자가 관리해요
+· 대화 횟수, 시간대, 금지 주제를 보호자가 관리해요
+· AI 답변과 일정 후보는 부정확할 수 있으므로 중요한 내용은 보호자가 다시 확인해요
 
-🎧 주변 소리 듣기 (프리미엄, 아이 Android 기기)
+혜니 프리미엄
+· 실시간 위치와 최근 30일 이동 기록, 다자녀 관리, 주변 소리 듣기, AI 하루 요약, 주간 리포트를 이용할 수 있어요
+· AI 친구와 AI 일정 정리의 이용 한도가 늘어나요
+· 이용 가능한 체험, 현재 가격과 갱신 조건은 Google Play 결제 화면에서 확인할 수 있어요
+
+주변 소리 듣기 (프리미엄, 아이 Android 기기)
 · 위급 상황 확인을 위해 보호자가 요청하면 아이가 따로 누르지 않아도 최대 1분 동안 연결돼요
-· 듣는 동안 아이 화면과 잠금 화면 알림에 계속 표시되고, 알림에서 바로 멈출 수 있어요
-· 요청·시작·종료 기록은 남지만 주변 소리 음성 내용은 장기 저장하지 않아요
+· 듣는 동안 아이 화면과 잠금 화면 알림에 계속 표시되고, 알림에서 멈출 수 있어요
+· 요청, 시작, 종료 기록은 남지만 주변 소리 음성 내용은 장기 저장하지 않아요
 
-👑 혜니 프리미엄
-· Free는 AI 친구를 기본 하루 5회, Premium은 기본 하루 20회 이용해요
-· AI 일정 정리는 Free 하루 5회, Premium은 횟수 제한 없이 이용하며 직접 일정 추가와 기존 일정 관리는 두 플랜 모두 제한 없어요
-· 보호자가 더 낮게 정한 AI 대화 안전 상한은 요금제 기본 제공량과 별도로 우선 적용돼요
-· Premium은 실시간 위치와 최근 30일 위치 이력, 다자녀 관리, 주변 소리 듣기, AI 하루 요약, 주간 리포트를 제공해요
-· 기본 안전 기능(SOS·긴급 알림)은 구독 여부와 관계없이 사용할 수 있어요
-· 월 4,900원 또는 연 39,000원이며, 무료 체험 제공 여부와 실제 청구 조건은 Google Play 결제 화면에서 최종 확인해 주세요
-
-🔐 자녀 보호 목적의 모니터링을 투명하게 안내합니다
+자녀 보호 목적의 모니터링과 투명한 안내
 · 아이 기기의 위치와, 사용정보 접근을 허용한 뒤 자동 확인되는 최근 많이 사용한 앱 최대 5개의 앱 식별자·사용 시간·최근 사용 시각은 가족 안전 기능에 사용돼요
 · 백그라운드 위치 또는 주변 소리 기능이 실행되는 동안 Android 지속 알림이 표시돼요
 · 보호자와 아이는 앱 또는 Android 설정에서 권한과 기능을 끌 수 있어요
 
-혜니캘린더는 광고를 표시하지 않으며 위치·가족 데이터를 판매하지 않습니다.
+위치와 알림은 기기 권한·네트워크·배터리 상태, GPS 정확도와 운영체제 설정에 따라 늦거나 제공되지 않을 수 있습니다. 중요한 상황에서는 아이에게 직접 연락하고 112·119 등 공공 긴급 서비스를 이용해 주세요.
+
+혜니캘린더는 광고를 표시하지 않으며 위치와 가족 데이터를 판매하지 않습니다.
 개인정보처리방침: https://hyeni-calendar-api.tkisdroid.workers.dev/privacy
 데이터 삭제 안내: https://hyeni-calendar-api.tkisdroid.workers.dev/data-deletion
 문의: mail@hyenicalendar.com
@@ -96,10 +93,21 @@
 - 앱 아이콘: 512×512, Play Console이 허용하는 32-bit PNG. 실제 업로드 전 파일 모드·알파 요구사항을 Console에서 재확인
 - 피처 그래픽: 1024×500, JPEG 또는 24-bit 불투명 PNG
 - 휴대전화 스크린샷: 1080×1920 권장, JPEG 또는 불투명 PNG 4~8장
-- **개인정보 없는 대표 자산 후보:** `node scripts/create-safe-store-listing-graphics.mjs`로 폐기 대상 실기기 캡처를 읽지 않는 새 아이콘·피처 그래픽을 생성한다.
+- **Play Console 업로드 정본:** `npm run release:play-store-assets`로 실제 production UI 데모 캡처와 Android 설치 아이콘에 맞춘 최종 자산을 생성한다. 육안 검토 뒤 `node scripts/create-play-store-final-assets.mjs --approve-after-visual-review`로 승인 기록을 고정한다.
+  - `output/play-store-final-v1/play-icon-512.png`
+  - `output/play-store-final-v1/play-feature-graphic-1024x500.png`
+  - `output/play-store-final-v1/01-parent-home.png`
+  - `output/play-store-final-v1/02-family-calendar.png`
+  - `output/play-store-final-v1/03-family-conversation.png`
+  - `output/play-store-final-v1/04-daily-safety-report.png`
+  - `output/play-store-final-v1/05-weekly-family-report.png`
+  - `output/play-store-final-v1/06-child-home-sos.png`
+- 최종 자산은 기기 프레임, 장식용 배지·순번, 가격·무료 프로모션 오버레이를 사용하지 않는다. 실제 앱 화면을 83% 이상 보여 주고 브랜드 로즈 색상과 단일 서체 계층만 사용한다.
+- 최종 검증: `node --test tests/playStoreFinalAssets.test.mjs`. 8개 이미지의 크기·alpha·메타데이터, 설치 아이콘 픽셀 일치, 실제 UI 원본 hash와 프로모션 문구 부재를 확인한다.
+- **구버전 대표 자산 후보:** `node scripts/create-safe-store-listing-graphics.mjs`로 만든 아래 두 파일은 생성기 회귀 검증용으로만 유지하고 Play Console에는 업로드하지 않는다.
   - `output/store-listing-assets-v1/play-icon-512.png`
   - `output/store-listing-assets-v1/play-feature-graphic-1024x500.png`
-- 대표 자산 검증: `node --test tests/safeStoreListingGraphics.test.mjs`. 아이콘 512×512 32-bit PNG alpha·1MiB 이하, 피처 그래픽 1024×500 24-bit PNG no-alpha, 개인정보 메타데이터 부재를 확인한다.
+- 구버전 대표 자산 검증: `node --test tests/safeStoreListingGraphics.test.mjs`.
 - **내부 creative draft(자동 업로드 금지):** `node scripts/create-safe-store-assets.mjs`로 생성한 다음 1080×1920 불투명 PNG 6장은 카피·색상·구성 검토에만 사용한다. 실제 앱 UI 캡처가 아니므로 Play 스크린샷 정본으로 분류하거나 그대로 업로드하지 않는다.
   - `output/store-safe-assets-v1/01-family-day-demo.png`
   - `output/store-safe-assets-v1/02-free-core-demo.png`
@@ -110,7 +118,7 @@
 - 위 draft는 사용자 데이터·API·실기기 캡처를 읽지 않는 합성 데모이며, 현재 코드의 Free/Premium 정책과 월 4,900원·연 39,000원 가격이 다르면 생성 단계에서 실패한다.
 - `06-premium-price-demo.png`는 가격·프로모션 정보를 담은 내부 검토 시안이며 **Play 스크린샷 후보에서 제외**한다.
 - draft 검증 명령: `node --test tests/safeStoreAssets.test.mjs`. 치수·24-bit RGB·불투명·텍스트/EXIF 메타데이터 부재·개인정보 금지 문구를 확인하는 검사이며 Play 정책 적합성을 대신하지 않는다.
-- **출시 게이트:** 최신 production build를 합성 데모 세션으로 실행해 실제 인앱 UI 1080×1920 불투명 PNG 4~8장을 별도로 캡처한다. 캡처에는 가격·프로모션 강조나 과도한 추가 문구를 넣지 않고, 실제 기능 범위와 일치하는지 정책·육안 검토를 마친 뒤에만 Play Console 업로드 정본으로 승격한다. 이 검토 전에는 그래픽 자산 항목을 완료 처리하지 않는다.
+- **출시 게이트:** 최신 production build를 합성 데모 세션으로 실행해 실제 인앱 UI 1080×1920 불투명 PNG 4~8장을 별도로 캡처한다. 가격·프로모션 강조나 과도한 추가 문구를 넣지 않고, 실제 기능 범위와 일치하는지 정책·육안 검토를 마친 뒤 `output/play-store-final-v1` 정본으로 승격한다.
 - 실제 UI 후보 생성: `npm run build` 후 `node scripts/create-safe-store-ui-candidates.mjs`. 외부 API·실계정·실기기를 사용하지 않고 production `dist`와 정적 `데모 보호자`·`데모 자녀` 세션으로 아래 실제 앱 라우트를 캡처한다.
   - `output/store-ui-candidates-v1/01-parent-home-ui.png`
   - `output/store-ui-candidates-v1/02-family-calendar-ui.png`
@@ -118,7 +126,7 @@
   - `output/store-ui-candidates-v1/04-daily-safety-report-ui.png`
   - `output/store-ui-candidates-v1/05-weekly-family-report-ui.png`
   - `output/store-ui-candidates-v1/06-child-home-ui.png`
-- 2026-08-02 현재 local production `dist` 414파일·tree SHA-256 `21fd847bd3b5e64d71beaa329155d3273ac8d5bfdaa2dc87b24d63356dd6c1e5`·`index.html` SHA-256 `c4a51f17136795d0eba64467c77d965614cf5964381b78d1796072be3d8b616a`에서 6장을 다시 생성했다. `manifest.json`은 원본 dist와 각 PNG의 SHA-256·크기를 고정하고, `technical-review.json`은 1080×1920·불투명 RGB·메타데이터 없음·개인정보 패턴 없음·예상 밖 잘림 없음·실제 기능 일치와 `TECHNICAL_REVIEW_PASSED`를 기록한다. 기술 검토는 통과했지만 `playUploadApproved=false`이며 정책 책임자의 Play Console 최종 승인을 대신하지 않는다.
+- 후보 `manifest.json`은 원본 dist와 각 PNG의 SHA-256·크기를 고정하고, `technical-review.json`은 1080×1920·불투명 RGB·메타데이터 없음·개인정보 패턴 없음·예상 밖 잘림 없음·실제 기능 일치와 `TECHNICAL_REVIEW_PASSED`를 기록한다. 후보의 `playUploadApproved=false`는 유지하고 최종 승인 상태는 `output/play-store-final-v1/technical-review.json`에서만 관리한다.
 - 후보 검증: `node --test tests/safeStoreUiCandidates.test.mjs`. 이 결과도 `manifest.json`의 `candidate_requires_policy_and_visual_review` 상태이며 자동 업로드하지 않는다.
 - **기존 `output/store-screenshots/`의 2026-07-10 실기기 초안은 열람·수정·재사용·업로드하지 않는다.** 실제 아이 사진·이름·위치·학교·학원·초대 코드·QR이 포함됐을 가능성이 있는 폐기 대상 초안이다.
 
