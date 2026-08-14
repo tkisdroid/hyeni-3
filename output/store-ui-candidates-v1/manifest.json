@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-08-14T05:35:07.304Z",
+  "generatedAt": "2026-08-14T06:28:56.939Z",
   "source": "local-production-dist-with-static-demo-session",
   "sourceDist": {
     "fileCount": 415,
-    "sha256": "a01a8d5d4b780d437be36acae17f8928070f761626c32e02729e43089ee463d7"
+    "sha256": "2c47a6616476d797ea87f224c8a8d38dddba1a6ce9c6984b8a9efae6067688ba"
   },
   "uploadStatus": "candidate_requires_policy_and_visual_review",
   "files": [
@@ -78,8 +78,8 @@
   "artifacts": [
     {
       "file": "01-parent-home-ui.png",
-      "bytes": 574174,
-      "sha256": "d27e33d9855d7c91c81e3fe3a676b37841a684868e7223212a8cb852a6d1412a"
+      "bytes": 574738,
+      "sha256": "f91ed17de87d81d2201ec3b412fcf2f55e1a77e65d3aff2560d82a6c8c4d960d"
     },
     {
       "file": "02-family-calendar-ui.png",
@@ -88,13 +88,13 @@
     },
     {
       "file": "03-family-memo-ui.png",
-      "bytes": 227728,
-      "sha256": "0e47154a6ee7c5df4dd1f2d1454d5d0af8f52b1627537d9ac2084192febee2ca"
+      "bytes": 227390,
+      "sha256": "cfd0d8df00050fd4bd0480481f98954123df87ea6ac6c5da80fc563fc890d560"
     },
     {
       "file": "04-daily-safety-report-ui.png",
-      "bytes": 398719,
-      "sha256": "5f287ddf050dd106c5ca2646a637eb28b98651bb48f4b3e4a50474bb15e17017"
+      "bytes": 399075,
+      "sha256": "d4b54489eeddeeaf7fe824da1c367267106aa5ec76cc421f8437589d1dbf6ff2"
     },
     {
       "file": "05-weekly-family-report-ui.png",
@@ -103,8 +103,8 @@
     },
     {
       "file": "06-child-home-ui.png",
-      "bytes": 648791,
-      "sha256": "83895589af216dbbbf1145161ac240e8df03e59e2c63d4f06b44f233d8ff986d"
+      "bytes": 649938,
+      "sha256": "d707a5a1a70d7c5db3f78a56f41d30c68c9094b6782450a8edc8a754ce4be4be"
     }
   ]
 }

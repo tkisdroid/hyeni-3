@@ -1164,7 +1164,7 @@ function SignupStep({
       <BackButton onBack={onBack} disabled={busy} />
       <SignupProgress percent={40} label="2/5 계정 만들기" />
       <div className="ob-signup-head">
-        <div className="ob-signup-title">혜니 가족 시작하기</div>
+        <div className="ob-signup-title">우리 가족 만들기</div>
         <div className="ob-sub">부모님 계정을 만들어요</div>
       </div>
 
