@@ -73,17 +73,18 @@ const FEATURE_SVG = `
   </g>
 </svg>`;
 
-export async function generateSafeStoreListingGraphics() {
-  await mkdir(SAFE_STORE_LISTING_GRAPHICS_DIR, { recursive: true });
+export async function generateSafeStoreListingGraphics({ outputDir = SAFE_STORE_LISTING_GRAPHICS_DIR } = {}) {
+  const targetDir = resolve(outputDir);
+  await mkdir(targetDir, { recursive: true });
 
-  const iconPath = resolve(SAFE_STORE_LISTING_GRAPHICS_DIR, "play-icon-512.png");
+  const iconPath = resolve(targetDir, "play-icon-512.png");
   await sharp(Buffer.from(ICON_SVG))
     .flatten({ background: "#F7B8D2" })
     .ensureAlpha(1)
     .png({ compressionLevel: 9, adaptiveFiltering: true, palette: false, effort: 10 })
     .toFile(iconPath);
 
-  const featurePath = resolve(SAFE_STORE_LISTING_GRAPHICS_DIR, "play-feature-graphic-1024x500.png");
+  const featurePath = resolve(targetDir, "play-feature-graphic-1024x500.png");
   await sharp(Buffer.from(FEATURE_SVG))
     .flatten({ background: "#FFF1F6" })
     .removeAlpha()

@@ -91,6 +91,14 @@ test("출시 후보 CI는 앱 전체 검증과 Android unit·lint·APK를 모두
     }),
     /^100755 /,
   );
+  assert.match(readFileSync(new URL("../.gitignore", import.meta.url), "utf8"), /^\*\.tsbuildinfo$/m);
+  assert.equal(
+    execFileSync("git", ["ls-files", "*.tsbuildinfo"], {
+      cwd: new URL("..", import.meta.url),
+      encoding: "utf8",
+    }).trim(),
+    "",
+  );
 
   const aabEvidence = readFileSync(
     new URL("../scripts/create-aab-evidence.mjs", import.meta.url),
