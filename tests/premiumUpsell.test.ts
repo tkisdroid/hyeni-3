@@ -5,7 +5,8 @@ import { resolvePremiumUpsell } from "../src/transform/premiumUpsell.ts";
 
 test("상황형 업셀은 한도와 기존 데이터 보존을 정확히 안내한다", () => {
   const place = resolvePremiumUpsell("saved_place");
-  assert.equal(place.usageLabel, "2/2 사용");
+  assert.match(place.title, /무료 알림 대상 2개/);
+  assert.equal(place.usageLabel, "알림 2/2 사용");
   assert.match(place.description, /등록한 장소는 삭제되지 않/);
   assert.match(place.description, /무료 플랜 알림 대상은 생성 순 2개까지/);
   assert.match(place.description, /나머지는 프리미엄에서 다시 알림 대상/);
@@ -14,10 +15,15 @@ test("상황형 업셀은 한도와 기존 데이터 보존을 정확히 안내�
   assert.equal(place.continueLabel, "무료로 계속 쓰기");
 
   const grandfatheredPlace = resolvePremiumUpsell("saved_place", { used: 3, limit: 3 });
-  assert.match(grandfatheredPlace.title, /저장 장소 3개/);
-  assert.equal(grandfatheredPlace.usageLabel, "3/3 사용");
+  assert.match(grandfatheredPlace.title, /무료 알림 대상 3개/);
+  assert.equal(grandfatheredPlace.usageLabel, "알림 3/3 사용");
   assert.match(grandfatheredPlace.description, /현재 플랜 알림 대상은 생성 순 3개까지/);
   assert.doesNotMatch(`${grandfatheredPlace.title} ${grandfatheredPlace.usageLabel}`, /2\/2|2개/);
+
+  const overLimitPlace = resolvePremiumUpsell("saved_place", { used: 3, limit: 2 });
+  assert.match(overLimitPlace.title, /무료 알림 대상 2개/);
+  assert.equal(overLimitPlace.usageLabel, "알림 2/2 · 저장 3개");
+  assert.doesNotMatch(overLimitPlace.usageLabel ?? "", /3\/2/);
 
   const child = resolvePremiumUpsell("second_child");
   assert.match(child.description, /첫째 아이의 연결과 데이터는 그대로 유지/);

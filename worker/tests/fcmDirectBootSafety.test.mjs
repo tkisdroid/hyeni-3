@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 
 const fcm = readFileSync(new URL("../lib/fcm.ts", import.meta.url), "utf8");
 const manifest = readFileSync(
-  new URL("../../../hyeni-3/android/app/src/main/AndroidManifest.xml", import.meta.url),
+  new URL("../../android/app/src/main/AndroidManifest.xml", import.meta.url),
   "utf8",
 );
 

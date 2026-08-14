@@ -1079,6 +1079,10 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       const toggle = document.querySelector(".pl-journey__toggle");
       const stays = [...document.querySelectorAll(".pl-journey__stay")];
       const text = (panel?.innerText || "").replace(/\\s+/g, " ").trim();
+      const eyebrow = document.querySelector(".pl-journey__eyebrow")?.textContent?.trim() || "";
+      const selectedTime = document.querySelector(".pl-journey__replay-head strong")?.textContent?.trim() || "";
+      const recordedRange = document.querySelector(".pl-journey__range-label")?.textContent?.trim() || "";
+      const recordedEnd = recordedRange.split("–").at(-1)?.trim() || "";
       return {
         hash: location.hash,
         panelVisible: Boolean(panel),
@@ -1087,6 +1091,10 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
         stayTexts: stays.map((stay) => (stay.textContent || "").replace(/\\s+/g, " ").trim()),
         hasToolbar: Boolean(document.querySelector(".pl-history-toolbar")),
         hasReplay: Boolean(document.querySelector(".pl-journey__replay")),
+        eyebrow,
+        selectedTime,
+        recordedRange,
+        latestAligned: Boolean(selectedTime && selectedTime === recordedEnd),
         text,
       };
     })()`);
@@ -1097,6 +1105,8 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       || locationHistoryFacts.stayCount !== 2
       || !locationHistoryFacts.hasToolbar
       || !locationHistoryFacts.hasReplay
+      || locationHistoryFacts.eyebrow !== "최신 기록"
+      || !locationHistoryFacts.latestAligned
       || !locationHistoryFacts.text.includes("머문 곳")
       || !locationHistoryFacts.stayTexts.some((text) => text.includes("우리 집"))
       || !locationHistoryFacts.stayTexts.some((text) => text.includes("데모 학교"))
@@ -1423,7 +1433,9 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       return {
         open: Boolean(dialog),
         text,
-        hasExactLimit: text.includes("저장 장소 2개를 모두 사용했어요") && text.includes("3/2 사용"),
+        hasExactLimit: text.includes("무료 알림 대상 2개를 모두 사용했어요")
+          && text.includes("알림 2/2 · 저장 3개")
+          && !text.includes("3/2 사용"),
         hasContinue: text.includes("무료로 계속 쓰기"),
         hasUpgrade: text.includes("장소 계속 추가하기"),
       };

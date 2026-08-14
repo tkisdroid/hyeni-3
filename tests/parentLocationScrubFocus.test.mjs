@@ -62,7 +62,7 @@ test("선택한 날짜의 경로 조회 범위는 하루 창으로 고정하고 
 
 test("고른 시각에 아이가 어디였는지 화면과 접근성 이름에 함께 알린다", () => {
   assert.match(screen, /const scrubWhere = resolveScrubWhereLabel\(\{/);
-  assert.match(screen, /lastPointMs: scrubChildPoint\?\.ms \?\? null/);
+  assert.match(screen, /lastPointMs: scrubEvidencePoint\?\.ms \?\? null/);
   assert.match(screen, /currentWhere=\{scrubWhere\}/);
   assert.match(screen, /currentTimeLabel=\{formatClockHM\(scrubMs\)\}/);
   assert.match(screen, /caption: followsLatest \? undefined : formatClockHM\(scrubMs\)/);

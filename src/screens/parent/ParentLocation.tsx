@@ -320,13 +320,27 @@ export function ParentLocation() {
   } = useLocationHistory(historyRange.start, historyRange.end, historyEnabled, 60_000);
   const visibleHistory = canShowHistory ? history : undefined;
 
+  const timedHistoryPoints = useMemo(
+    () => toTimedPoints(visibleHistory, selected?.user_id ?? null),
+    [visibleHistory, selected?.user_id],
+  );
   const timedTrail = useMemo(
     () => buildTrailPoints(visibleHistory, selected?.user_id ?? null),
     [visibleHistory, selected?.user_id],
   );
+  const journeyRange = useMemo(
+    () => getJourneyRecordedRange(timedHistoryPoints),
+    [timedHistoryPoints],
+  );
+  const latestHistoryOffsetMinute = journeyRange
+    ? clampHistoryOffsetMinute(
+        Math.floor((journeyRange.endMs - historyWindow.startMs) / 60_000),
+        historyMaxOffsetMinute,
+      )
+    : historyMaxOffsetMinute;
   const followsLatest = scrubOffsetMinute == null;
   const effectiveScrubOffsetMinute = followsLatest
-    ? historyMaxOffsetMinute
+    ? latestHistoryOffsetMinute
     : clampHistoryOffsetMinute(scrubOffsetMinute, historyMaxOffsetMinute);
   const scrubMs = historyWindow.startMs + effectiveScrubOffsetMinute * 60_000;
   const mapFocusOffsetMinute = followsLatest
@@ -347,6 +361,12 @@ export function ParentLocation() {
     () => timedTrail.filter((p) => p.ms <= scrubMs),
     [scrubMs, timedTrail],
   );
+  const scrubEvidencePoint = useMemo(() => {
+    for (let index = timedHistoryPoints.length - 1; index >= 0; index -= 1) {
+      if (timedHistoryPoints[index].ms <= scrubMs) return timedHistoryPoints[index];
+    }
+    return null;
+  }, [scrubMs, timedHistoryPoints]);
   const trail = useMemo(
     () => visibleTrail.map((p) => ({ lat: p.lat, lng: p.lng })),
     [visibleTrail],
@@ -363,8 +383,8 @@ export function ParentLocation() {
 
   // ── 스테이포인트: 하루 이력에서 GPS 노이즈를 걸러 머무른 장소 + 체류시간을 검출. ──
   const stayPoints = useMemo<StayPoint[]>(
-    () => detectStayPoints(toTimedPoints(visibleHistory, selected?.user_id ?? null)),
-    [visibleHistory, selected?.user_id],
+    () => detectStayPoints(timedHistoryPoints),
+    [timedHistoryPoints],
   );
   const selectedHistoryEvents = useMemo(
     () =>
@@ -551,13 +571,12 @@ export function ParentLocation() {
     stays: stayPoints,
     stayLabels,
     scrubMs,
-    lastPointMs: scrubChildPoint?.ms ?? null,
+    lastPointMs: scrubEvidencePoint?.ms ?? null,
   });
-  const journeyRange = useMemo(() => getJourneyRecordedRange(timedTrail), [timedTrail]);
   const journeyState = resolveJourneyContentState({
     isFetching: historyFetching,
     isError: historyError,
-    pointCount: timedTrail.length,
+    pointCount: timedHistoryPoints.length,
     stayCount: stayPoints.length,
   });
   const journeyRangeLabel = journeyRange

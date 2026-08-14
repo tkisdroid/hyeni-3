@@ -984,11 +984,11 @@ function SurveyStep({
       <BackButton onBack={onBack} />
       <SignupProgress percent={20} label="1/5 관심 기능" />
       <div className="ob-survey-head">
-        <div className="ob-signup-title">가입 전에 한 가지만 알려 주세요</div>
+        <div className="ob-signup-title">가입 전에 필요한 기능을 알려 주세요</div>
         <div className="ob-sub">
-          우리 아이에게 가장 필요한 기능을 골라 주세요.
+          우리 아이에게 필요한 기능을 골라 주세요.
           <br />
-          복수 선택할 수 있어요.
+          여러 개 선택할 수 있어요. 선택하지 않아도 계속할 수 있어요.
         </div>
       </div>
 
@@ -1016,7 +1016,7 @@ function SurveyStep({
       </div>
 
       <button type="button" className="ob-cta ob-cta--accent hy-press" onClick={onNext}>
-        다음
+        {selected.length > 0 ? "다음" : "선택 안 하고 계속"}
       </button>
     </div>
   );

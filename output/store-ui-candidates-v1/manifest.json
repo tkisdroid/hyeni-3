@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-08-04T06:10:15.256Z",
+  "generatedAt": "2026-08-14T04:39:17.059Z",
   "source": "local-production-dist-with-static-demo-session",
   "sourceDist": {
-    "fileCount": 414,
-    "sha256": "69f6499788005675e0c40881773fccdc3a68336ea8f14eaa4322f1ca296c223e"
+    "fileCount": 415,
+    "sha256": "b75a532a8707996a029791c3ff9ebb22b1608a87d2260c15893033059b4cf9e6"
   },
   "uploadStatus": "candidate_requires_policy_and_visual_review",
   "files": [
@@ -78,33 +78,33 @@
   "artifacts": [
     {
       "file": "01-parent-home-ui.png",
-      "bytes": 575590,
-      "sha256": "5dcbd4d5ca8b5faef8c85eccd9023cc8da7820ab080b1b89151d584503ac8adf"
+      "bytes": 574174,
+      "sha256": "d27e33d9855d7c91c81e3fe3a676b37841a684868e7223212a8cb852a6d1412a"
     },
     {
       "file": "02-family-calendar-ui.png",
-      "bytes": 186630,
-      "sha256": "c07338405f0588ff51bb504990994fccc1170e5c168af997fff81b7a6b1af7a5"
+      "bytes": 186444,
+      "sha256": "b93843861301ba147219a18ebe241be744b6076dc3bdd00386faa33797ecc6b7"
     },
     {
       "file": "03-family-memo-ui.png",
-      "bytes": 227572,
-      "sha256": "f60456b3c2dd7e8d66823333dfcc74d03ee439ad06bdc733107fcb7af65b863c"
+      "bytes": 227081,
+      "sha256": "1556a521c383293f7d97e7085e5016e36fdc3803ad8b37d18e22f4978a473fba"
     },
     {
       "file": "04-daily-safety-report-ui.png",
-      "bytes": 398524,
-      "sha256": "11f5076f4e18c07423f7ddf9a878001e78af5d9f4167ea2784c8372d524627a1"
+      "bytes": 399331,
+      "sha256": "15228318c6d5d45e4821c48487083a2be3ed39222ed63e1d0d899c468f9e7ca2"
     },
     {
       "file": "05-weekly-family-report-ui.png",
-      "bytes": 263572,
-      "sha256": "2b64d36a47cff2070bea688c3899ef95e63942494b7379170835735377e52088"
+      "bytes": 262854,
+      "sha256": "74604ea9e55000d168bbbf90ad0f70213f87a1db8fef95711312c449e3bc7bb1"
     },
     {
       "file": "06-child-home-ui.png",
-      "bytes": 650628,
-      "sha256": "eb8e0d797c3dbec7afb20927dbb37c1ec6ab12508f60b5e0d41c73d8fdeab8d4"
+      "bytes": 640328,
+      "sha256": "0051af135a507efa62275d6afb8f1120bad33093af07d2bfc99a06ae27fa374b"
     }
   ]
 }

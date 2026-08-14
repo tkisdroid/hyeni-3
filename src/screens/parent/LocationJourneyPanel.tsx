@@ -126,7 +126,9 @@ export function LocationJourneyPanel({
           <div className="pl-journey__replay">
             <div className="pl-journey__replay-head">
               <div>
-                <span className="pl-journey__eyebrow">선택한 시각</span>
+                <span className="pl-journey__eyebrow">
+                  {followsLatest ? "최신 기록" : "선택한 시각"}
+                </span>
                 <strong>{currentTimeLabel}</strong>
               </div>
               <button

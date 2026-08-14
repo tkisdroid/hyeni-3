@@ -23,7 +23,12 @@ test("오늘 경로 패널은 드래그 없이 명시적 버튼으로 펼치고 
 test("오늘 경로는 오전 8시 기준 윈도우와 아이·날짜 도구막대를 함께 사용한다", () => {
   assert.match(source, /getHistoryDayWindowForKey\(historyDayKey, now\)/);
   assert.match(source, /sliderMax=\{historyMaxOffsetMinute\}/);
-  assert.match(source, /getJourneyRecordedRange\(timedTrail\)/);
+  assert.match(source, /const timedHistoryPoints = useMemo\(/);
+  assert.match(source, /getJourneyRecordedRange\(timedHistoryPoints\)/);
+  assert.doesNotMatch(source, /getJourneyRecordedRange\(timedTrail\)/);
+  assert.match(source, /followsLatest\s*\? latestHistoryOffsetMinute/);
+  assert.match(source, /lastPointMs: scrubEvidencePoint\?\.ms \?\? null/);
+  assert.match(journey, /followsLatest \? "최신 기록" : "선택한 시각"/);
   assert.match(source, /<LocationHistoryToolbar/);
   assert.match(source, /childName=\{selected\.name \|\| "아이"\}/);
 });
