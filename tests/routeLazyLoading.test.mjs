@@ -165,6 +165,18 @@ test("namespace가 있는 routeElement의 첫 JSX 인자에서 화면을 읽는�
   );
 });
 
+test("단일 인자 routeElement도 같은 라우트 정본으로 읽는다", () => {
+  const singleArgumentRoute = app.replace(
+    'routeElement(<ParentHome />, PARENT_NAMESPACES)',
+    "routeElement(<ParentHome />)",
+  );
+  assert.notEqual(singleArgumentRoute, app, "단일 인자 fixture가 원본을 바꿔야 합니다.");
+  assert.deepEqual(
+    parseAppRouteContract(singleArgumentRoute).routes.find(({ path }) => path === "parent/home"),
+    route("parent/home", "ParentHome", "parent"),
+  );
+});
+
 test("routeElement의 지원 계약 밖 인자 형태를 거부한다", () => {
   assert.throws(
     () => parseAppRouteContract(app.replace(
