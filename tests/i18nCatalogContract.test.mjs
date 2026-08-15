@@ -209,3 +209,25 @@ test("검증 오류는 locale 영향을 받지 않는 code-point 순서로 정�
     );
   });
 });
+
+test("generator는 Unicode ID를 code-point 순서로 catalog와 messageIds에 쓴다", async () => {
+  await withFixture(async (fixtureRoot) => {
+    await writeValidFixture(fixtureRoot, {
+      core: { "core.z": "Z", "core.á": "Accent", "core.a": "A" },
+    });
+    const result = await validateCatalogs({ rootDir: fixtureRoot });
+    assert.deepEqual(result.errors, []);
+
+    const generated = getGeneratedFiles(result);
+    const catalog = generated.get(join(fixtureRoot, "src", "i18n", "generated", "catalogs", "ko", "core.ts"));
+    const messageIds = generated.get(join(fixtureRoot, "src", "i18n", "generated", "messageIds.ts"));
+    const orderedKeys = ["\"core.a\"", "\"core.z\"", "\"core.á\""];
+
+    assert.equal(typeof catalog, "string");
+    assert.equal(typeof messageIds, "string");
+    for (const [first, second] of orderedKeys.slice(0, -1).map((key, index) => [key, orderedKeys[index + 1]])) {
+      assert.equal(catalog.indexOf(first) < catalog.indexOf(second), true);
+      assert.equal(messageIds.indexOf(first) < messageIds.indexOf(second), true);
+    }
+  });
+});
