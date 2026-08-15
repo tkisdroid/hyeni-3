@@ -137,6 +137,7 @@ export function createLocaleRuntimeCoordinator(args: {
   };
 
   const resolveReadyWaiters = () => {
+    if (activeTransition !== null && activeTransition.locale !== snapshot.locale) return;
     for (const waiter of waiters) {
       if ([...waiter.namespaces].every((namespace) => snapshot.readyNamespaces.has(namespace))) {
         waiters.delete(waiter);
@@ -319,8 +320,10 @@ export function createLocaleRuntimeCoordinator(args: {
             const namespace = missing[index];
             if (!namespace) continue;
             if (result.status === "rejected") {
-              if (stillRequired.has(namespace)) {
+              if (namespaceIsDemanded(namespace)) {
                 rejectWaitersFor(namespace, result.reason);
+              }
+              if (stillRequired.has(namespace)) {
                 failures.push(result.reason);
               }
               continue;

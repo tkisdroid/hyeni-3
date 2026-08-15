@@ -527,6 +527,39 @@ test("locale 전환의 여러 namespace 실패는 각 lease만 reject하고 재�
   reportsLease.release();
 });
 
+test("떠난 route와 transition load를 공유한 one-shot은 원래 rejection으로 한 번만 settle한다", async () => {
+  const sharedReports = deferred<LoadedNamespace>();
+  const sharedError = new Error("shared_reports_failed");
+  let vietnameseReportsCalls = 0;
+  const { runtime } = runtimeFixture(async (locale, namespace) => {
+    if (locale === "vi" && namespace === "reports") {
+      vietnameseReportsCalls += 1;
+      if (vietnameseReportsCalls === 1) return sharedReports.promise;
+      throw new Error("stale_reports_retry");
+    }
+    return loaded(locale, namespace);
+  });
+  await runtime.setLocale("ko");
+  const reportsLease = runtime.acquireNamespaceLease(["reports"]);
+  await reportsLease.ready;
+
+  const switchLocale = runtime.setLocale("vi");
+  const oneShot = runtime.ensureNamespaces(["reports"]);
+  reportsLease.release();
+  sharedReports.reject(sharedError);
+  const [switchResult, oneShotResult] = await Promise.allSettled([
+    switchLocale,
+    oneShot,
+  ]);
+  await new Promise<void>((resolve) => setImmediate(resolve));
+
+  assert.equal(switchResult.status, "fulfilled");
+  assert.equal(oneShotResult.status, "rejected");
+  assert.equal(oneShotResult.status === "rejected" && oneShotResult.reason, sharedError);
+  assert.equal(vietnameseReportsCalls, 1);
+  assert.equal(runtime.getSnapshot().loading, false);
+});
+
 test("공유 lease와 one-shot ensure 수요가 남으면 namespace job을 유지한다", async () => {
   const reportsLoad = deferred<LoadedNamespace>();
   let reportsCalls = 0;
