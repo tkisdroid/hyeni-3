@@ -189,6 +189,16 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   입력하며 에이전트가 자격 파일을 읽어 자동 서명하지 않는다.
   릴리즈 스크립트는 worktree의 `android/local.properties`를 전제로 하지 않고 Android SDK를 먼저 탐색해
   `ANDROID_SDK_ROOT`·`ANDROID_HOME`을 설정한 뒤 build·Capacitor sync·Gradle release를 실행한다.
+- **현재 Play 출시 후보(2026-08-15)**: 실제 제출 후보는 v1.3.0/**versionCode 6**이다. 위치 권한 안내가 인증 전환에
+  가려지지 않도록 gate를 유지하고, 권한이 없는 아이의 위치 화면에서도 같은 prominent disclosure를 거쳐 Android 전경→
+  백그라운드 권한을 요청한다. 위치 FGS 지속 알림은 장식 문구 대신 `위치 공유 중`과 실제 공유 대상을 표시한다.
+  오래된 `device_label`보다 최신 네이티브 `manufacturer`·`model`을 우선해 A17 부모에서 razr가
+  `motorola razr 40 ultra`로 표시됨을 확인했다. 앱 1,298/1,298, Worker 1,161/1,161, Android unit 175/175·lint·
+  assembleDebug가 통과했고, Worker version ID `c4c769c3-b4d5-4ba1-8c68-ef2ba22c742c`가 production에 배포됐다.
+  사용자가 A17·razr의 정책 영상 촬영을 허용했으며, 계정·역할·페어링을 바꾸지 않고 촬영한 개인정보 비식별·무음 최종본만
+  사용한다. YouTube 초안은 백그라운드 위치 `https://youtu.be/yTfCI3RsVE8`, FGS 위치·마이크·특수 용도
+  `https://youtu.be/cb_BFyed6uE`다. 제목·설명·일부 공개 저장, Play 선언 저장, 로그인 세부정보, 서명 AAB 업로드와
+  최종 심사 전송은 실제 완료 증거 전까지 미완료로 둔다.
 - **출시 전 신뢰 UX 문구 가드(2026-07-07)**: 안전은 무료, 상세 안심은 프리미엄이라는 경계가 흔들리면 안 된다.
   구독·원격청취·AI 일정 문구는 `tests/subscriptionTrustCopy.test.mjs`, `tests/remoteAudioTrustCopy.test.mjs`,
   `tests/aiScheduleUxCopy.test.mjs`로 회귀 보호한다. SOS·긴급 알림을 프리미엄 혜택처럼 쓰지 말고,

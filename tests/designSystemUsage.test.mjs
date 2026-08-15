@@ -1886,7 +1886,7 @@ const semanticSurfaceManifest = [
     ["src/screens/feature/AiCredit.css", "ac-pack", "card"],
     ["src/screens/feature/AiCredit.css", "ac-auto", "card"],
     ["src/screens/feature/AiCredit.css", "ac-premium-callout", "card"],
-    ["src/screens/onboarding/Onboarding.css", "ob-consent-dialog", "modal"],
+    ["src/components/ChildLocationPermissionDialog.css", "clp-dialog", "modal"],
     ["src/components/MapPickerSheet.css", "mps-sheet", "sheet"],
     ["src/components/MapPickerSheet.css", "mps-map", "media"],
     ["src/components/MessageSafetyDialog.css", "msd-dialog", "modal"],
@@ -2262,8 +2262,8 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/onboarding/Onboarding.css", ".ob-back"],
   ["src/screens/onboarding/Onboarding.css", ".ob-loginbtn"],
   ["src/screens/onboarding/Onboarding.css", ".ob-datebtn"],
-  ["src/screens/onboarding/Onboarding.css", ".ob-consent-primary"],
-  ["src/screens/onboarding/Onboarding.css", ".ob-consent-secondary"],
+  ["src/components/ChildLocationPermissionDialog.css", ".clp-primary"],
+  ["src/components/ChildLocationPermissionDialog.css", ".clp-secondary"],
   ["src/screens/feature/Subscription.css", ".sub-cta"],
   ["src/screens/feature/Subscription.css", ".sub-cancel__actions button"],
   ["src/screens/feature/Notifications.css", ".nc-retry"],
@@ -2875,7 +2875,7 @@ test("320~349px 경계에서도 달력·요일 선택과 권한 모달 행동이
   const widths = [320, 340, 341, 344, 347, 348, 349];
   const calendarPath = "src/screens/parent/ParentCalendar.css";
   const eventPath = "src/screens/parent/EventForm.css";
-  const onboardingPath = "src/screens/onboarding/Onboarding.css";
+  const permissionDialogPath = "src/components/ChildLocationPermissionDialog.css";
   const violations = [];
   for (const width of widths) {
     const calendarBody = classStyleAtWidth(calendarPath, "pc-body", width);
@@ -2897,7 +2897,7 @@ test("320~349px 경계에서도 달력·요일 선택과 권한 모달 행동이
       resolvePixels(declarationValue(weekday, "min-height")) ?? 0,
     );
 
-    const actions = classStyleAtWidth(onboardingPath, "ob-consent-dialog__actions", width);
+    const actions = classStyleAtWidth(permissionDialogPath, "clp-dialog__actions", width);
     const columns = declarationValue(actions, "grid-template-columns")?.trim();
 
     if (calendarAvailable < 7 * 44) {
@@ -2908,7 +2908,7 @@ test("320~349px 경계에서도 달력·요일 선택과 권한 모달 행동이
     }
     if (weekdayHeight < 44) violations.push(`${eventPath} ${width}px 요일 높이 ${weekdayHeight}px`);
     if (width <= 348 && columns !== "1fr") {
-      violations.push(`${onboardingPath} ${width}px 권한 버튼 열 ${columns ?? "미지정"}`);
+      violations.push(`${permissionDialogPath} ${width}px 권한 버튼 열 ${columns ?? "미지정"}`);
     }
   }
 

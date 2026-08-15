@@ -11,6 +11,7 @@ import { useEvents } from "@/queries/useSchedule";
 import { useChildLocations, useSavedPlaces } from "@/queries/useLocation";
 import { useLocationLabels } from "@/queries/useLocationLabels";
 import { mapFamilyToView } from "@/transform/familyView";
+import { resolveDeviceLabel } from "@/transform/deviceLabel";
 import { todayDateKey, parseAppDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { formatFreshness } from "@/transform/locationView";
@@ -178,7 +179,11 @@ export function ChildDetail() {
   const avatar = childView?.avatar || childAvatarPath(rawChild.photo_url);
   const soft = childView?.soft || "var(--hy-accent-soft)";
   const ordinal = rawChild.child_order ? ORDINAL[rawChild.child_order] ?? null : null;
-  const deviceLabel = rawChild.device_label?.trim() || null;
+  const deviceLabel = resolveDeviceLabel({
+    deviceLabel: rawChild.device_label,
+    manufacturer: rawChild.device_health?.manufacturer,
+    model: rawChild.device_health?.model,
+  });
   const isPrimary = familyQuery.data?.isPrimaryParent ?? false;
   const childUserId = rawChild.user_id || null;
 

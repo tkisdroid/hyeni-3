@@ -7,6 +7,7 @@ import ts from "typescript";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const expectedDialogCounts = new Map([
+  ["src/components/ChildLocationPermissionDialog.tsx", 1],
   ["src/components/MapPickerSheet.tsx", 1],
   ["src/components/MessageSafetyDialog.tsx", 1],
   ["src/components/PremiumUpsell.tsx", 1],
@@ -16,7 +17,6 @@ const expectedDialogCounts = new Map([
   ["src/screens/child/overlays/ChildSheet.tsx", 2],
   ["src/screens/feature/FamilyConnection.tsx", 1],
   ["src/screens/feature/RemoteRing.tsx", 1],
-  ["src/screens/onboarding/Onboarding.tsx", 1],
   ["src/screens/parent/ChildDetail.tsx", 1],
   ["src/screens/parent/EventForm.tsx", 1],
   ["src/screens/parent/ParentAccount.tsx", 2],

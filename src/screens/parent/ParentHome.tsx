@@ -25,6 +25,7 @@ import { useVisitVerify } from "@/queries/useVisitVerify";
 import { todayDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { deviceStatusView } from "@/transform/familyView";
+import { resolveDeviceLabel } from "@/transform/deviceLabel";
 import { nearestPlace, EXACT_SAVED_PLACE_LABEL_RADIUS_M } from "@/transform/locationView";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { TIERS, locationModeFor } from "@/transform/tierPolicy";
@@ -393,7 +394,11 @@ export function ParentHome() {
         id: kid.id,
         name: kid.name || "아이",
         avatar: childAvatarPath(kid.photo_url),
-        device: kid.device_label?.trim() || null,
+        device: resolveDeviceLabel({
+          deviceLabel: kid.device_label,
+          manufacturer: kid.device_health?.manufacturer,
+          model: kid.device_health?.model,
+        }),
         place: kidLoc ? eventPlace ?? locationLabel(kidLoc) : kidLocationCopy.badge,
         fresh: kidLocationCopy.detail,
         scheduleLabel: next?.tag === "진행 중" ? "진행 중" : "다음 일정",

@@ -8,6 +8,7 @@ import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import { useMyFamily, useUnpairChild } from "@/queries/useFamily";
 import { useChildLocations } from "@/queries/useLocation";
 import { mapFamilyToView } from "@/transform/familyView";
+import { resolveDeviceLabel } from "@/transform/deviceLabel";
 import { formatFreshness } from "@/transform/locationView";
 import { hasJongseong } from "@/transform/adventureMap";
 import { Loading } from "@/components/ui/Loading";
@@ -164,7 +165,11 @@ export function FamilyConnection() {
                         <span className="fc-device__name">{c.name || "아이"}</span>
                         <span className="fc-device__sub">
                           <Wifi size={12} strokeWidth={2.4} />
-                          {c.device_label || "연결된 기기"}
+                          {resolveDeviceLabel({
+                            deviceLabel: c.device_label,
+                            manufacturer: c.device_health?.manufacturer,
+                            model: c.device_health?.model,
+                          }) || "연결된 기기"}
                         </span>
                       </span>
                       <span className={`fc-chip fc-chip--${st.tone}`}>

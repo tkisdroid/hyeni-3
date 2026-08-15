@@ -3839,11 +3839,11 @@ public class LocationService extends Service {
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         String statusText = "parent".equals(role)
-            ? "아이와 함께하고 있어요 💕"
-            : "부모님이 함께하고 있어요 💕";
+            ? "가족 위치 확인 기능이 실행 중이에요"
+            : "보호자에게 위치를 공유하고 있어요";
 
         return new NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("혜니캘린더")
+            .setContentTitle("위치 공유 중")
             .setContentText(statusText)
             .setSmallIcon(R.drawable.ic_hyeni_notification)
             .setLargeIcon(NotificationHelper.largeIcon(this))

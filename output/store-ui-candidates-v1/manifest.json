@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-08-14T14:25:04.557Z",
+  "generatedAt": "2026-08-15T09:05:18.298Z",
   "source": "local-production-dist-with-static-demo-session",
   "sourceDist": {
-    "fileCount": 415,
-    "sha256": "c60663c92e26d19ab2569245235955745d982cde1d08663fd24326efd360d585"
+    "fileCount": 417,
+    "sha256": "aa6c305e4cf7a88e3607249ac80b242ebae479372d8ac00879abd24ae955e426"
   },
   "uploadStatus": "candidate_requires_policy_and_visual_review",
   "files": [
@@ -78,33 +78,33 @@
   "artifacts": [
     {
       "file": "01-parent-home-ui.png",
-      "bytes": 573522,
-      "sha256": "8dae8d8aad8dc07f6c0bea92c978949adfcb99a76920c6d512b5b68a7e4197da"
+      "bytes": 573905,
+      "sha256": "480ab66039f172f8a3e4df03f91cb24b10bd2bf97bdbaa1ad90879962e95e696"
     },
     {
       "file": "02-family-calendar-ui.png",
-      "bytes": 186455,
-      "sha256": "6ba43aacec06fb451c9f2c5e6d9dc8103da60b894f7487a4229041f02d53b9c6"
+      "bytes": 186616,
+      "sha256": "8ddc2476eaccf9a98482da8390d6a4dba773bb2103a8e96e9f9b0c3bb4829fa7"
     },
     {
       "file": "03-family-memo-ui.png",
-      "bytes": 226582,
-      "sha256": "11191fe4ef7a430e8bcc00fbf5347bc88576781a092ee8e5a292f03eddfc65b8"
+      "bytes": 227236,
+      "sha256": "202bb4b7f7526f33da3156690d8db44b6824483ce26eda294ab27392d484fdb4"
     },
     {
       "file": "04-daily-safety-report-ui.png",
-      "bytes": 397096,
-      "sha256": "d4e84b3e608fac5e4580e1bab4907575f9ccb8b2da9bbcbf71dcb43ec001ffa3"
+      "bytes": 397308,
+      "sha256": "4acb3757534cb2fbc7ebe63964a274857fc336c651600e678383e7e9a360c1cb"
     },
     {
       "file": "05-weekly-family-report-ui.png",
-      "bytes": 262854,
-      "sha256": "74604ea9e55000d168bbbf90ad0f70213f87a1db8fef95711312c449e3bc7bb1"
+      "bytes": 263434,
+      "sha256": "283eaf348e8b64aca42d31ec83ca3e9d2e2d6a81c6d3282f97f4b8112c64fde5"
     },
     {
       "file": "06-child-home-ui.png",
-      "bytes": 649124,
-      "sha256": "0d1d200a0d008db09202aef1e01678d042a612eb5a756a438d8c7f553adede02"
+      "bytes": 649022,
+      "sha256": "e1e770d54c8dabb70fe02b7ed719eda2cc0c1160471f4efe485b0a0f43ef9b1b"
     }
   ]
 }

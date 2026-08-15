@@ -234,3 +234,76 @@ test("마지막 token 종료 뒤에는 인증된 가족의 역할 홈 redirect�
     resetTransitions();
   }
 });
+
+test("가족 연결 성공 뒤에는 권한 안내를 마칠 때까지 인증 redirect를 보류한다", () => {
+  resetTransitions();
+  try {
+    const beginPermissionTransition = (
+      authTransition as typeof authTransition & {
+        beginOnboardingPermissionTransition?: () => {
+          complete: () => boolean;
+        };
+      }
+    ).beginOnboardingPermissionTransition;
+
+    assert.equal(typeof beginPermissionTransition, "function");
+    if (!beginPermissionTransition) return;
+
+    const permissionTransition = beginPermissionTransition();
+    assert.equal(authTransition.getOnboardingAuthTransitionSnapshot(), true);
+    assert.equal(
+      resolveAuthenticatedOnboardingRedirect({
+        role: "child",
+        familyId: "family-1",
+        hasOAuthCallback: false,
+        authTransitionActive: authTransition.getOnboardingAuthTransitionSnapshot(),
+      }),
+      null,
+    );
+
+    assert.equal(permissionTransition.complete(), true);
+    assert.equal(authTransition.getOnboardingAuthTransitionSnapshot(), false);
+    assert.equal(
+      resolveAuthenticatedOnboardingRedirect({
+        role: "child",
+        familyId: "family-1",
+        hasOAuthCallback: false,
+        authTransitionActive: authTransition.getOnboardingAuthTransitionSnapshot(),
+      }),
+      "/child/home",
+    );
+  } finally {
+    resetTransitions();
+  }
+});
+
+test("가족 연결이 실패하면 권한 안내 gate를 즉시 되돌린다", () => {
+  resetTransitions();
+  try {
+    const beginPermissionTransition = (
+      authTransition as typeof authTransition & {
+        beginOnboardingPermissionTransition: () => {
+          cancel?: () => void;
+        };
+      }
+    ).beginOnboardingPermissionTransition;
+    const permissionTransition = beginPermissionTransition();
+
+    assert.equal(typeof permissionTransition.cancel, "function");
+    if (!permissionTransition.cancel) return;
+    permissionTransition.cancel();
+
+    assert.equal(authTransition.getOnboardingAuthTransitionSnapshot(), false);
+    assert.equal(
+      resolveAuthenticatedOnboardingRedirect({
+        role: "child",
+        familyId: "family-1",
+        hasOAuthCallback: false,
+        authTransitionActive: authTransition.getOnboardingAuthTransitionSnapshot(),
+      }),
+      "/child/home",
+    );
+  } finally {
+    resetTransitions();
+  }
+});

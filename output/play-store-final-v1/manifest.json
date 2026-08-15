@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-14T18:27:30.668Z",
+  "generatedAt": "2026-08-15T09:06:03.675Z",
   "source": "local-production-ui-with-static-demo-data",
-  "sourceUiManifestSha256": "cb328b1612234ccba5382f6f9f3de0c820ba67ad5822f3f89028fb411318bf2b",
+  "sourceUiManifestSha256": "fcba8c0a3c533d49cb1c4456fc3594e6598f1e113a1bd03922686270c9787767",
   "sourceIconSha256": "eb1206cb871e2071f7956d543aaaf50c8fb074d2686522415d9594631824f134",
   "listingStyle": "flat-brand-header-with-full-bleed-actual-app-ui",
   "screenshots": [
@@ -65,38 +65,38 @@
     {
       "file": "01-parent-home.png",
       "kind": "phoneScreenshot",
-      "bytes": 571462,
-      "sha256": "a0511b44411e9f4b2b1a422c17b8e4559b26b5189073920f1142448f5ed3378c"
+      "bytes": 571566,
+      "sha256": "39d53dacaea44fb22de13dd08e5f31c396aef567cd6fe7d2d971c192859ffd6f"
     },
     {
       "file": "02-family-calendar.png",
       "kind": "phoneScreenshot",
-      "bytes": 254354,
-      "sha256": "d97c7032cbdcac9e4738a9566deb040b97ba2b695b081e97acecde72f11b1387"
+      "bytes": 254541,
+      "sha256": "7d4ae5354d888d9dda708e0e39f37bbf5b3065bf08bd44bd9acfb47487fe9280"
     },
     {
       "file": "03-family-conversation.png",
       "kind": "phoneScreenshot",
-      "bytes": 304742,
-      "sha256": "22fefac8b9f871a656439f6ad2b0999eb656ec7358e2d8d6692ba74781f002c4"
+      "bytes": 306638,
+      "sha256": "78c5ccb357f3970c4247a39b941501e8b92d748170fe707c2d5e0468a97f03e2"
     },
     {
       "file": "04-daily-safety-report.png",
       "kind": "phoneScreenshot",
-      "bytes": 558543,
-      "sha256": "a7069d9ecef3f15fa07689fe4ca7cd82ae416d21004a7242998b08ecaed614ca"
+      "bytes": 558693,
+      "sha256": "bf9c09b9295e706fc00976dec2934007aeccd654572c8ae53d425ecfe142109a"
     },
     {
       "file": "05-weekly-family-report.png",
       "kind": "phoneScreenshot",
-      "bytes": 345860,
-      "sha256": "f387364ba8251421b43a8580506fbce03488038255f8d11ba454bd7bf72a5dcb"
+      "bytes": 346474,
+      "sha256": "3673cc1f0ffbec7366b34cf5b4eda111b769f8f9537373225a31b13979d7e381"
     },
     {
       "file": "06-child-home-sos.png",
       "kind": "phoneScreenshot",
-      "bytes": 631558,
-      "sha256": "d0a1b6ed407794a0379f19066ca30dc8b01cfaf86e536b55e9d57bab05629702"
+      "bytes": 631692,
+      "sha256": "f3cdc14c790da02ebd209b644484e45e294ad2308d31bdf0618a890a171c5f5b"
     }
   ]
 }

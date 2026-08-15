@@ -6,12 +6,15 @@ import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useChildLocations } from "@/queries/useLocation";
 import { formatFreshness } from "@/transform/locationView";
+import { resolveChildLocationStatusKind } from "@/transform/locationPermissionFlow";
 import { Loading } from "@/components/ui/Loading";
+import { ChildLocationPermissionDialog } from "@/components/ChildLocationPermissionDialog";
 import {
   isLocationTrackingSupported,
   requestImmediateLocation,
   startLocationTracking,
 } from "@/lib/native/location";
+import { readPermissionState } from "@/lib/native/permissions";
 import "./ChildLocationStatus.css";
 
 /**
@@ -42,6 +45,8 @@ export function ChildLocationStatus() {
 
   const [perm, setPerm] = useState<PermState>("unknown");
   const [working, setWorking] = useState(false);
+  const [permissionChecking, setPermissionChecking] = useState(false);
+  const [permissionDialogOpen, setPermissionDialogOpen] = useState(false);
 
   const now = useMemo(() => new Date(), [locations]);
   const nativeSupported = isLocationTrackingSupported();
@@ -60,6 +65,12 @@ export function ChildLocationStatus() {
   const isFreshEnough = fresh != null && fresh.status !== "stale";
 
   const refreshPermission = useCallback(() => {
+    if (nativeSupported) {
+      readPermissionState("loc")
+        .then((state) => setPerm(state.granted ? "granted" : "denied"))
+        .catch(() => setPerm("unknown"));
+      return;
+    }
     if (!("permissions" in navigator) || !navigator.permissions?.query) {
       setPerm("unknown");
       return;
@@ -71,14 +82,17 @@ export function ChildLocationStatus() {
         statusResult.onchange = () => setPerm(statusResult.state as PermState);
       })
       .catch(() => setPerm("unknown"));
-  }, []);
+  }, [nativeSupported]);
 
   useEffect(() => {
     refreshPermission();
   }, [refreshPermission]);
 
   // 상태 판정: 최신 위치 있으면 전송중, 아니면 권한 거부→권한필요 / 그 외→꺼짐.
-  const kind: Kind = isFreshEnough ? "sending" : perm === "denied" ? "permission" : "off";
+  const kind: Kind = resolveChildLocationStatusKind({
+    freshEnough: isFreshEnough,
+    permission: perm === "prompt" ? "unknown" : perm,
+  });
 
   const views: Record<Kind, View> = {
     sending: {
@@ -116,6 +130,7 @@ export function ChildLocationStatus() {
       if (nativeSupported) {
         await requestImmediateLocation(ctx);
         await startLocationTracking(ctx);
+        refreshPermission();
         await refetch();
         show("위치를 보냈어!", "📍");
       } else if ("geolocation" in navigator) {
@@ -146,13 +161,29 @@ export function ChildLocationStatus() {
     }
   };
 
-  const busy = working || isFetching;
-  const handlePrimaryAction = () => {
-    if (view.kind === "permission") {
-      navigate("/perm-denied", { state: { kind: "loc" } });
+  const busy = working || permissionChecking || isFetching;
+  const handlePrimaryAction = async () => {
+    if (working || permissionChecking) return;
+    if (view.kind === "sending" || !nativeSupported) {
+      await turnOn();
       return;
     }
-    void turnOn();
+
+    setPermissionChecking(true);
+    try {
+      const state = await readPermissionState("loc");
+      setPerm(state.granted ? "granted" : "denied");
+      if (state.granted) await turnOn();
+      else setPermissionDialogOpen(true);
+    } finally {
+      setPermissionChecking(false);
+    }
+  };
+
+  const finishPermissionSetup = async () => {
+    setPermissionDialogOpen(false);
+    setPerm("granted");
+    await turnOn();
   };
 
   return (
@@ -207,7 +238,7 @@ export function ChildLocationStatus() {
             </div>
             <div className="cls-detail__sub">
               {view.kind === "sending"
-                ? `${fresh?.label ?? "방금 전"} 업데이트`
+                ? fresh?.label ?? "방금 업데이트"
                 : myLoc
                   ? `마지막 확인 ${fresh?.label ?? "-"}`
                   : "아직 위치를 보낸 적이 없어"}
@@ -216,12 +247,18 @@ export function ChildLocationStatus() {
         </div>
 
         {/* 켜기 / 새로고침 */}
-        <button type="button" className="cls-cta hy-press hy-busy-quiet" onClick={handlePrimaryAction} disabled={busy} aria-busy={busy}>
+        <button type="button" className="cls-cta hy-press hy-busy-quiet" onClick={() => void handlePrimaryAction()} disabled={busy} aria-busy={busy}>
           <RefreshCw size={18} strokeWidth={2.4} className={busy ? "cls-spin" : undefined} />
           {busy ? "확인 중…" : view.kind === "sending" ? "지금 새로고침" : "위치 켜기"}
         </button>
       </div>
       )}
+      <ChildLocationPermissionDialog
+        open={permissionDialogOpen}
+        copyMode="child"
+        onDismiss={() => setPermissionDialogOpen(false)}
+        onPermissionGranted={finishPermissionSetup}
+      />
     </div>
   );
 }

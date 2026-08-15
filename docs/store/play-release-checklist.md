@@ -1,17 +1,32 @@
-# Play 출시 체크리스트 — 혜니캘린더 v1.3.0(versionCode 5)
+# Play 출시 체크리스트 — 혜니캘린더 v1.3.0(versionCode 6)
 
-## 현재 판정 (2026-08-04)
+## 현재 판정 (2026-08-15)
 
-**제출 차단.** 2026-08-04 로컬 재검증에서 앱 1,246/1,246·Worker 1,161/1,161, Android 175/175 강제 재실행과 typecheck·production build·Capacitor sync·lint·assembleDebug·bundleDebug·Worker dry-run을 통과했다. `npm audit`에서 확인된 `hono`·`undici` 취약 버전은 호환 가능한 최소 버전으로 올렸고 현재 moderate 이상 취약점은 0건이다. 실제 UI 스크린샷 후보 6장도 최신 production dist에서 재생성해 기술·육안 검토했지만 정책 책임자 승인을 의미하지 않으므로 `playUploadApproved=false`를 유지한다. Console 복사용 정본은 `docs/store/play-console-submission-v1.3.0.md`다. 서명 값은 `scripts/build-android-release.ps1`의 보안 프롬프트로만 받고, 키스토어에서 단일 `PrivateKeyEntry` 별칭을 자동 선택하며, 성공 시 평문 설정 제거·release AAB·승인 인증서·16KB 증거·Play 업로드 폴더 생성을 한 흐름으로 수행한다. 최신 승인 인증서 서명 release AAB, Play App Signing 인증서 기반 App Links, Console 설문·심사 영상·계정, 운영 배포·실결제·A17/razr 최종 E2E가 끝날 때까지 `HOLD`다. 2026-07-10 기존 release AAB와 모든 debug 산출물은 업로드하지 않는다.
+**제출 직전 HOLD.** 최신 후보는 v1.3.0/versionCode 6이다. 앱 1,298/1,298·Worker 1,161/1,161·Android unit 175/175와 typecheck·production build·Capacitor sync·lint·assembleDebug가 통과했고, 최신 스토어 자산 6장도 production dist에서 다시 생성해 기술·육안 승인했다. Worker는 production에 배포했고 A17 부모에는 `adb install -r`로 세션을 보존해 부모 홈과 razr 실제 기기명 표시를 확인했다. 사용자 허용 아래 A17·razr 정책 영상 2개를 촬영·비식별·무음 처리해 YouTube 비공개 초안으로 업로드했다. 남은 출시 차단은 ①두 영상을 일부 공개로 저장 ②백그라운드 위치·FGS 선언 저장 ③로그인 세부정보를 제한 있음으로 바꾸고 재사용 가능한 심사 계정 입력 ④최신 clean commit에서 versionCode 6 서명 AAB 생성·업로드 ⑤Pages 최신 배포·검증 ⑥게시 개요 최종 심사 전송이다. 서명 값은 `scripts/build-android-release.ps1`의 보안 프롬프트로만 받고, 비밀번호는 사용자가 직접 입력한다. 기존 versionCode 5 AAB와 모든 debug 산출물은 업로드하지 않는다.
 
 v1.2.0의 테스트·APK·A17 부모·razr 아이 결과는 역사 기록으로만 보존하며 v1.3.0 완료 증거로 재사용하지 않는다. 당시 precache 320개·entry 472,252 bytes와 debug APK SHA-256 `246A1513CA9D9951D7857654B538398A9D175605F097331EAADDE2DBA2D243F5`도 역사 증거이며 현재 후보 승인값이 아니다.
+
+### 2026-08-15 versionCode 6 증분 현황
+
+- [x] 위치 권한 prominent disclosure가 온보딩 인증 전환에 가려지지 않도록 gate를 추가하고, 아이 위치 화면의 재허용 경로도 같은 공용 dialog로 통일
+- [x] 위치 FGS 지속 알림을 `위치 공유 중`과 실제 공유 대상 문구로 바꾸고 최신 네이티브 제조사·모델로 오래된 에뮬레이터 device label을 보정
+- [x] 앱 1,298/1,298, Worker 1,161/1,161, Android unit 175/175·lint·assembleDebug, production build 통과
+- [x] 최신 dist 417파일/tree SHA-256 `aa6c305e4cf7a88e3607249ac80b242ebae479372d8ac00879abd24ae955e426`에서 스토어 이미지 6장을 재생성하고 `playUploadApproved=true`로 육안 승인
+- [x] Worker version ID `c4c769c3-b4d5-4ba1-8c68-ef2ba22c742c` 배포, health 200·reverse-geocode 인증 route 401 확인
+- [x] A17 부모 최신 debug 설치·세션 보존·부모 홈·razr 실제 기기명 표시 확인. S25 완전 무조작
+- [x] A17·razr 정책 영상 촬영 허용 범위에서 개인정보·정밀 위치를 비식별하고 오디오를 제거한 최종본 2개를 YouTube 비공개 초안으로 업로드
+- [ ] YouTube 제목·설명·아동용 아님·일부 공개 저장 및 로그아웃 재생 확인
+- [ ] Play 백그라운드 위치 선언과 FGS 위치 3항목·마이크·specialUse 선언 저장
+- [ ] 로그인 세부정보를 제한 있음으로 변경하고 사용자가 재사용 가능한 심사 계정 비밀번호를 직접 입력
+- [ ] 최신 clean commit에서 승인 업로드 키로 versionCode 6 release AAB 생성·증거 검증·Play 업로드
+- [ ] 최신 Pages 배포와 assetlinks·핵심 route 확인 후 게시 개요에서 최종 심사 전송
 
 - [x] 등록정보 문안 초안: `docs/store/play-listing.md`
 - [x] Data Safety 워크시트 초안: `docs/store/play-data-safety.md`
 - [x] 출시 운영 가이드 초안: `docs/release/혜니캘린더_Google_Play_출시_가이드북_2026-07-14.md`
 - [ ] Data Safety의 전체 데이터 유형과 외부 처리업체 서비스 제공자 예외를 계약·설정 기준으로 확정
 - [ ] 공개 이용약관·개인정보처리방침·데이터 삭제 URL은 현재 HTTPS 200·한글이지만 Toss Payments·자동결제·AI 크레딧·추천·5년 금융 보존·출시 가격 문구가 없는 구버전이므로 최신 문구로 배포하고 갱신일 재확인
-- [x] 개인정보 없는 스크린샷·아이콘·피처 그래픽을 데모 데이터로 새로 제작하고 PII·메타데이터를 육안·기계 검토. 실제 UI 6장은 현재 local production dist 414파일·SHA-256 `21fd847bd3b5e64d71beaa329155d3273ac8d5bfdaa2dc87b24d63356dd6c1e5`를 `output/store-ui-candidates-v1/manifest.json`에 고정했고 `technical-review.json`은 `TECHNICAL_REVIEW_PASSED`·`playUploadApproved=false`를 명시
+- [x] 개인정보 없는 스크린샷·아이콘·피처 그래픽을 데모 데이터로 새로 제작하고 PII·메타데이터를 육안·기계 검토. 실제 UI 6장은 현재 local production dist 417파일·SHA-256 `aa6c305e4cf7a88e3607249ac80b242ebae479372d8ac00879abd24ae955e426`를 `output/store-ui-candidates-v1/manifest.json`에 고정했고 최종 `technical-review.json`은 `TECHNICAL_REVIEW_PASSED`·`playUploadApproved=true`를 명시
 - [ ] 최신 final app SHA의 clean CI에서 build→`cap sync`→승인 인증서 서명 release AAB를 새로 만들고 schema v4가 source dist, post-sync public, universal APK public의 raw hash·파일 수와 정규화 투영을 검증하는지 확인. 허용 예외는 루트 0바이트 `cordova.js`·`cordova_plugins.js`와 이름·334 bytes·SHA가 고정된 AAPT 제외 `.well-known/assetlinks.json`뿐이어야 한다. bundletool AAB manifest policy v1은 승인 권한 24개 exact allowlist, `isMonitoringTool=child_monitoring`, legacy 저장소 `maxSdkVersion=28`을 모두 확정해야 한다. release record가 같은 값과 Pages artifact provenance, package/versionName/versionCode, AAB SHA-256·mtime, `jarsigner`·승인 upload certificate, `PAGE_ALIGNMENT_16K`·`zipalign -P 16`·전체 ELF `LOAD >= 0x4000` evidence까지 연결해야 함
 - [x] 최신 local debug schema v4 evidence GREEN: source 414/`21fd84…6c1e5`, Android/embedded projection 413/`4a6af8…18d15`, cap public 416/`821819…248fa`, embedded public 415/`0f291b…5cbc`; web `matched:true`, archive 961/2/955 safe, 시작/종료 integrity 모두 true, AAB manifest policy v1 권한 24개 exact allowlist·`isMonitoringTool=child_monitoring`·legacy 저장소 `maxSdkVersion=28`, ZIP·전체 ELF 16KB 정적 검사 통과. `artifacts/release-evidence/android-debug-aab-evidence-20260802-143008.json` SHA-256 `e552dd6655d4e6a0b467cac0d0acba73f5ae9f79a410b657926e1fcd242d0c18`, verification log SHA-256 `1bd78d88dfa4cb717bf4f73d1a8bf116cb653135d01560daa9c472816f0a483f`
 - [x] local Android unit 172/172·manifest policy 33/33 강제 재실행, lint 오류 0·경고 13, assemble/bundle 통과. 경고 13건은 사용되지 않는 레거시 리소스와 기존 런처·스플래시 이미지 구성 경고다. debug APK 13,092,876 bytes·SHA-256 `62b66ce643e38c77074e30c7fa992c48d9ea70a56a8e720a8fff9c94c8e05873`, debug AAB 12,018,080 bytes·SHA-256 `eb0eb5b2288de6771c3e70cc3e5bbe7eaeb3fa62d1f85d1d2ce318748631c2c5`. debug 서명으로 Play 업로드 불가
@@ -24,13 +39,13 @@ v1.2.0의 테스트·APK·A17 부모·razr 아이 결과는 역사 기록으로�
 - [x] Worker 런타임 로그는 정적 이벤트와 allowlist된 aggregate 필드만 남기고 오류 원문·ID·payload·provider body를 기록하지 않도록 AST 회귀로 고정했다. 첫 60분은 `5xx >= 5`이면서 오류율 `> 1%`일 때만 rollback 후보이며 요청 0건은 `INCONCLUSIVE`다
 - [x] 첫 60분 큐 추세는 DB 시각과 고정 11개 count만 저장하고, 최소 3개 checkpoint에서 같은 큐가 두 구간 연속 증가할 때만 `ROLLBACK_REQUIRED`로 판정한다. ID·PII·token·원문 행은 반환·저장하지 않는다
 - [ ] 신규 Worker+D1을 `docs/release/release-day-rollback-runbook.md`의 변경 창에서 선행 배포·readback해 A17/razr의 realtime ticket 404를 먼저 닫고, 부분 배포·단독 rollback 없이 9번째/65번째 live socket 429·client backoff, razr Android native WAV+세션 검증→요청 부모 전용 수신과 미지원 WebView fail-closed 증거 확보
-- [x] local production build는 JS 479,697/500,000 bytes·초기 CSS 30,849/40,000 bytes·PWA precache 320개·중복 0으로 통과. exact dist 414파일·tree SHA-256 `21fd847bd3b5e64d71beaa329155d3273ac8d5bfdaa2dc87b24d63356dd6c1e5`, `index.html` SHA-256 `c4a51f17136795d0eba64467c77d965614cf5964381b78d1796072be3d8b616a`
+- [x] local production build는 JS 480,140/500,000 bytes·초기 CSS 30,849/40,000 bytes·PWA precache 323개·중복 0으로 통과. exact dist 417파일·tree SHA-256 `aa6c305e4cf7a88e3607249ac80b242ebae479372d8ac00879abd24ae955e426`
 - [x] 같은 exact dist의 격리 Chromium PWA runtime에서 Service Worker install·control, 실제 offline reload·uncached probe 차단, waiting Worker의 안전한 활성화·새 controller 교체·문서 reload, 앱·Service Worker 외부 요청 0, Console·HTTP·예상 밖 Network 문제 0과 임시 자원 정리를 확인. `registerType: prompt`의 중요 작업 보호형 업데이트로 결제·대사·주변 소리·mutation·미저장 입력 중 reload를 보류하고 안전한 시점의 실제 `controllerchange`에서 정확히 한 번 reload한다. 증거 `artifacts/release-evidence/pwa-runtime-qa/20260802T141931-final-21fd847/report.json`. WebKit smoke도 PASS지만 offline reload는 Playwright 엔진 오류로 미검증이며 실제 iPhone 증거가 아님
 - [ ] 위 exact dist를 final clean CI Pages archive/provenance와 연결하고 실제 iPhone Safari 홈 화면에서 재검증
 - [x] exact local dist의 격리 Free 브라우저에서 저장 장소 2/2 한도와 보존 데이터 3개 중 첫 2개 active·초과 1개 premium-required·unknown 0, 주 추가의 정확한 Free/Premium 업셀, 무료 유지·upgrade·`saved_place|saved_places` return source의 `/place-form` 복귀와 intent clear를 오류 0으로 확인
 - 이전 debug APK SHA-256 `f0c697ecc44f7fbc2443631e62bea7160c6ae436072cead433fce443fb2c1452`의 A17 설치·부모 9개 경로 통과와 razr 설치·secure keyguard/Dozing 차단 결과는 역사 기록이다. 현재 exact APK SHA-256 `62b66ce643e38c77074e30c7fa992c48d9ea70a56a8e720a8fff9c94c8e05873` 검증으로 승격하지 않는다.
-- [ ] 현재 exact APK를 A17 SM-A175N 부모에 `adb install -r`로 세션 보존 설치하고 versionCode 5/versionName 1.3.0/minSdk 24/targetSdk 36, 부모 9개 경로·Network를 재검증 — `adb start-server` 후 `device not found`로 미설치·미검증
-- [ ] 현재 exact APK를 razr motorola razr 40 ultra 아이에 `adb install -r`로 세션 보존 설치하고 versionCode 5/versionName 1.3.0/minSdk 24/targetSdk 36, 아이 8개 화면·가로 UI·Network를 재검증 — `adb start-server` 후 `device not found`로 미설치·미검증
+- [x] A17 SM-A175N 부모에 직전 exact debug APK를 `adb install -r`로 세션 보존 설치하고 부모 홈과 razr 실제 기기명 표시를 확인. 이후 아이 권한 거부 문구만 정리하고 최신 production 웹 번들을 다시 동기화해 빌드한 현재 debug APK는 13,279,364 bytes·SHA-256 `74911c1ffdee285c6fc9cb95f3bed2b0ec8ff30816935cc1c45a2405b650d96e`이며, 이 문구 변경은 A17 부모 검증 범위에 영향을 주지 않음. 전체 Network E2E 증거로 확대 해석하지 않음
+- [ ] 현재 exact APK를 razr motorola razr 40 ultra 아이에 `adb install -r`로 세션 보존 설치하고 versionCode 6/versionName 1.3.0/minSdk 24/targetSdk 36, 아이 핵심 화면·가로 UI·Network를 재검증
 - [ ] 최신 후보의 razr 잠금 해제 상태에서 아이 8개 경로와 1005×411 가로 핵심 경로의 overflow·busy·44px 미만 활성 조작부·runtime error·예상 밖 Network 오류 0을 재확인
 - [x] v1.3.0 local debug AAB의 `jarsigner`, bundle config 16KB, universal APK `zipalign -P 16`, native library 4개·LOAD 9개·최소 alignment 16,384와 artifact SHA를 schema v4 evidence에 연결. debug certificate 결과를 승인 upload certificate·서명 release AAB·실제 16KB 런타임 증거로 대체하지 않음
 - [ ] current exact APK의 실기기 Network 전체 0-error — A17·razr 모두 `device not found`로 실행하지 못했다. 이전 후보의 A17 `/api/realtime/ticket`·`/api/premium-funnel/events` 404와 razr 잠금 차단은 역사 진단으로만 보존하며, 신규 Worker+D1 선행 배포·readback 뒤 current exact APK로 동일 기기 재검증
@@ -218,7 +233,7 @@ try {
 - [ ] 앱 생성: `com.hyeni.calendar`, 한국어(대한민국), 무료 앱·인앱 구독 있음
 - [ ] Play Console의 실제 개발자 계정 유형·생성일·신원/연락처/실기기 확인 상태를 기록. 2023-11-13 이후 생성된 개인 계정이면 [Google 공식 요건](https://support.google.com/googleplay/android-developer/answer/14151465?hl=ko)에 따라 최소 12명이 연속 14일 opt-in한 비공개 테스트와 production access 승인을 완료
 - [ ] Google Play Billing로 유료 구독을 판매할 merchant account·Google payments profile을 연결하고 법적·세금 정보를 확인. [공식 결제 프로필 안내](https://support.google.com/googleplay/android-developer/answer/3092739?hl=ko)에 따라 수익 수령용 지급수단·은행 계좌 검증까지 완료
-- [ ] Play Console 내부·비공개·공개·프로덕션 전체 트랙의 후보 이전 최대 versionCode와 증거 reference를 `client-release-inventory.json`에 기록. 현재 5보다 크거나 같은 값이 있으면 versionCode를 증가한 뒤 전체 검증·서명 AAB를 다시 생성하며 이미 업로드한 versionCode를 재사용하지 않음
+- [ ] Play Console 내부·비공개·공개·프로덕션 전체 트랙의 후보 이전 최대 versionCode와 증거 reference를 `client-release-inventory.json`에 기록. 현재 6보다 크거나 같은 값이 있으면 versionCode를 증가한 뒤 전체 검증·서명 AAB를 다시 생성하며 이미 업로드한 versionCode를 재사용하지 않음
 - [ ] 기존 공개 설치 inventory가 정확히 0임을 증명하거나 `compatibility_cutover_approved` 책임자·증거를 기록. 0 증거가 없으면 v1.3.0(5)이 기존 설치 대상 계정·트랙에서 실제 설치 가능해진 뒤에만 Pages `minimumSupportedVersion=1.3.0`을 배포
 - [ ] Play App Signing 사용 후 최신 AAB를 내부 테스트 트랙에 먼저 업로드
 - [ ] 최종 서명 AAB와 Play App Bundle Explorer에서 `targetSdkVersion=36`, Play Billing Library `9.0.0`을 다시 확인하고 로컬 debug 산출물 값으로 대체하지 않음
