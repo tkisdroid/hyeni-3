@@ -1,1 +1,37 @@
-{}
+{
+  "core.action.back": {
+    "namespace": "core",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "이전 화면으로 이동하는 공용 버튼"
+  },
+  "core.action.retry": {
+    "namespace": "core",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "실패한 요청을 다시 실행하는 공용 버튼"
+  },
+  "core.brand.name": {
+    "namespace": "core",
+    "audience": "shared",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "앱 헤더와 안내 문구에 사용하는 서비스 이름"
+  },
+  "core.error.unknown": {
+    "namespace": "core",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "원문 오류나 내부 코드를 노출하지 않는 공용 오류 안내"
+  },
+  "core.state.loading": {
+    "namespace": "core",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "콘텐츠를 불러오는 동안 표시하는 공용 상태 안내"
+  }
+}

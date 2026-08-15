@@ -1,0 +1,7 @@
+{
+  "core.brand.name": "Hyeni Calendar",
+  "core.action.back": "กลับ",
+  "core.action.retry": "ลองอีกครั้ง",
+  "core.state.loading": "กำลังโหลด…",
+  "core.error.unknown": "เกิดปัญหาขึ้น โปรดลองอีกครั้งในภายหลัง"
+}

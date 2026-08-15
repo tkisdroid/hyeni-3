@@ -1,0 +1,7 @@
+{
+  "core.brand.name": "Hyeni Calendar",
+  "core.action.back": "Back",
+  "core.action.retry": "Try again",
+  "core.state.loading": "Loading…",
+  "core.error.unknown": "Something went wrong. Please try again shortly."
+}
