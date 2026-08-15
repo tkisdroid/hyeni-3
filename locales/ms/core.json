@@ -7,5 +7,6 @@
   "core.language.formal.label": "Pilih bahasa",
   "core.language.formal.description": "Sila pilih bahasa yang akan digunakan pada peranti ini.",
   "core.language.child.label": "Pilih bahasa",
-  "core.language.child.description": "Pilih bahasa yang kamu mahu guna pada peranti ini."
+  "core.language.child.description": "Pilih bahasa yang kamu mahu guna pada peranti ini.",
+  "core.time.remaining": "Baki {duration}"
 }

@@ -7,5 +7,6 @@
   "core.language.formal.label": "Language",
   "core.language.formal.description": "Choose the language to use on this device.",
   "core.language.child.label": "Pick a language",
-  "core.language.child.description": "Pick the language you want to use on this device."
+  "core.language.child.description": "Pick the language you want to use on this device.",
+  "core.time.remaining": "{duration} remaining"
 }

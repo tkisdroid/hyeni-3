@@ -7,5 +7,6 @@
   "core.language.formal.label": "Pilih bahasa",
   "core.language.formal.description": "Pilih bahasa yang akan digunakan di perangkat ini.",
   "core.language.child.label": "Pilih bahasa",
-  "core.language.child.description": "Pilih bahasa yang ingin kamu pakai di perangkat ini."
+  "core.language.child.description": "Pilih bahasa yang ingin kamu pakai di perangkat ini.",
+  "core.time.remaining": "Tersisa {duration}"
 }

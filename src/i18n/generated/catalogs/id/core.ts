@@ -7,7 +7,8 @@ const messages = {
   "core.language.child.label": "Pilih bahasa",
   "core.language.formal.description": "Pilih bahasa yang akan digunakan di perangkat ini.",
   "core.language.formal.label": "Pilih bahasa",
-  "core.state.loading": "Memuat…"
+  "core.state.loading": "Memuat…",
+  "core.time.remaining": "Tersisa {duration}"
 } as const;
 
 export default messages;

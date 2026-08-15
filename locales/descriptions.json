@@ -61,5 +61,14 @@
     "qualityTier": "B",
     "variables": {},
     "description": "기기별 언어 저장 범위를 반말로 설명하는 안내"
+  },
+  "core.time.remaining": {
+    "namespace": "core",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {
+      "duration": "string"
+    },
+    "description": "초대 코드가 만료되기까지 남은 locale 단위 시간을 방향과 함께 표시"
   }
 }

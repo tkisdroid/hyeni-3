@@ -7,7 +7,8 @@ const messages = {
   "core.language.child.label": "Chọn ngôn ngữ",
   "core.language.formal.description": "Vui lòng chọn ngôn ngữ sẽ dùng trên thiết bị này.",
   "core.language.formal.label": "Chọn ngôn ngữ",
-  "core.state.loading": "Đang tải…"
+  "core.state.loading": "Đang tải…",
+  "core.time.remaining": "Còn {duration}"
 } as const;
 
 export default messages;

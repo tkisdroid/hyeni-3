@@ -7,5 +7,6 @@
   "core.language.formal.label": "Pumili ng wika",
   "core.language.formal.description": "Piliin ang wikang gagamitin sa device na ito.",
   "core.language.child.label": "Pumili ng wika",
-  "core.language.child.description": "Piliin ang wikang gusto mong gamitin sa device na ito."
+  "core.language.child.description": "Piliin ang wikang gusto mong gamitin sa device na ito.",
+  "core.time.remaining": "{duration} ang natitira"
 }

@@ -7,7 +7,8 @@ const messages = {
   "core.language.child.label": "言語をえらぶ",
   "core.language.formal.description": "この端末で使用する言語を選択してください。",
   "core.language.formal.label": "言語を選択",
-  "core.state.loading": "読み込み中…"
+  "core.state.loading": "読み込み中…",
+  "core.time.remaining": "残り{duration}"
 } as const;
 
 export default messages;

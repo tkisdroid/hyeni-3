@@ -21,7 +21,8 @@ export const messageIds = [
   "core.language.child.label",
   "core.language.formal.description",
   "core.language.formal.label",
-  "core.state.loading"
+  "core.state.loading",
+  "core.time.remaining"
 ] as const;
 
 export type MessageId = (typeof messageIds)[number];

@@ -7,7 +7,8 @@ const messages = {
   "core.language.child.label": "Pick a language",
   "core.language.formal.description": "Choose the language to use on this device.",
   "core.language.formal.label": "Language",
-  "core.state.loading": "Loading…"
+  "core.state.loading": "Loading…",
+  "core.time.remaining": "{duration} remaining"
 } as const;
 
 export default messages;

@@ -7,5 +7,6 @@
   "core.language.formal.label": "Chọn ngôn ngữ",
   "core.language.formal.description": "Vui lòng chọn ngôn ngữ sẽ dùng trên thiết bị này.",
   "core.language.child.label": "Chọn ngôn ngữ",
-  "core.language.child.description": "Chọn ngôn ngữ em muốn dùng trên thiết bị này nhé."
+  "core.language.child.description": "Chọn ngôn ngữ em muốn dùng trên thiết bị này nhé.",
+  "core.time.remaining": "Còn {duration}"
 }

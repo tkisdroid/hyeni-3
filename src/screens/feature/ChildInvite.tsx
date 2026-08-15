@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
+import { useIntl } from "react-intl";
 import { ChevronLeft, RefreshCw, Share2, Copy } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
@@ -38,6 +39,7 @@ function useCountdown(
  */
 export function ChildInvite() {
   const { locale } = useLocale();
+  const intl = useIntl();
   const navigate = useNavigate();
   const { show } = useToast();
   // 대기 화면이므로 6초 폴링으로 아이 연결을 감지한다.
@@ -172,7 +174,12 @@ export function ChildInvite() {
           </span>
           {countdown && (
             <span className={expired ? "ci-timer ci-timer--expired" : "ci-timer"}>
-              {expired ? "만료됨" : `${countdown.text} 남음`}
+              {expired
+                ? "만료됨"
+                : intl.formatMessage(
+                    { id: "core.time.remaining" },
+                    { duration: countdown.text },
+                  )}
             </span>
           )}
         </div>

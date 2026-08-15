@@ -7,7 +7,8 @@ const messages = {
   "core.language.child.label": "选语言",
   "core.language.formal.description": "请选择这台设备要使用的语言。",
   "core.language.formal.label": "选择语言",
-  "core.state.loading": "正在加载…"
+  "core.state.loading": "正在加载…",
+  "core.time.remaining": "剩余{duration}"
 } as const;
 
 export default messages;

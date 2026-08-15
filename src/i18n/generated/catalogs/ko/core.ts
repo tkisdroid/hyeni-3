@@ -7,7 +7,8 @@ const messages = {
   "core.language.child.label": "언어 고르기",
   "core.language.formal.description": "이 기기에서 사용할 언어를 선택해 주세요.",
   "core.language.formal.label": "언어 선택",
-  "core.state.loading": "불러오는 중…"
+  "core.state.loading": "불러오는 중…",
+  "core.time.remaining": "{duration} 남음"
 } as const;
 
 export default messages;
