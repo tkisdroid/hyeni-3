@@ -12,6 +12,7 @@
  */
 import type { SupportedLocale } from "../i18n/locale.ts";
 import { formatRelativeTime } from "../i18n/format.ts";
+import { calendarDayDifferenceInTimeZone } from "./dateKey.ts";
 
 export interface StickerCatalogEntry {
   key: string;
@@ -140,20 +141,19 @@ export function stickerWhenLabel(
   earnedAtMs: number | null,
   nowMs: number,
   locale: SupportedLocale,
+  timeZone: string,
 ): string {
   if (earnedAtMs == null) return "";
-  const days = Math.floor((startOfDay(nowMs) - startOfDay(earnedAtMs)) / 86_400_000);
+  const days = Math.max(0, calendarDayDifferenceInTimeZone(
+    new Date(earnedAtMs),
+    new Date(nowMs),
+    timeZone,
+  ));
   if (days <= 0) return "오늘 받았어";
   if (days === 1) return "어제 받았어";
   if (days < 7) return `${formatRelativeTime(-days, "day", locale)}에 받았어`;
   if (days < 14) return "지난주에 받았어";
-  return `${Math.floor(days / 7)}주 전에 받았어`;
-}
-
-function startOfDay(ms: number): number {
-  const d = new Date(ms);
-  d.setHours(0, 0, 0, 0);
-  return d.getTime();
+  return `${formatRelativeTime(-Math.floor(days / 7), "week", locale)}에 받았어`;
 }
 
 /** 스티커 종류 → 확실히 아는 사실만. 보낸 사람 이름·메시지는 서버에 없으므로 지어내지 않는다. */

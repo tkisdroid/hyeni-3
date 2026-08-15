@@ -30,11 +30,11 @@ test("부모·아이 대화 표시는 최근 7일을 조회하고 자정·화면
   const chat = read("src/screens/shared/MemoChat.tsx");
   const dock = read("src/app/ChildDock.tsx");
   const childHome = read("src/screens/child/ChildHome.tsx");
-  assert.match(shell, /useRecentDateKeys\(7\)/);
-  assert.match(chat, /useRecentDateKeys\(7\)/);
-  assert.match(dock, /useRecentDateKeys\(7\)/);
+  assert.match(shell, /useRecentDateKeys\(7, LEGACY_FAMILY_TIME_ZONE\)/);
+  assert.match(chat, /useRecentDateKeys\(7, LEGACY_FAMILY_TIME_ZONE\)/);
+  assert.match(dock, /useRecentDateKeys\(7, LEGACY_FAMILY_TIME_ZONE\)/);
   assert.match(dock, /useMemoThread\(dateKeys,/);
-  assert.match(childHome, /const memoDateKeys = useRecentDateKeys\(7\)/);
+  assert.match(childHome, /const memoDateKeys = useRecentDateKeys\(7, LEGACY_FAMILY_TIME_ZONE\)/);
   assert.match(childHome, /useMemoThread\(memoDateKeys,/);
   assert.doesNotMatch(dock, /todayDateKey\(new Date\(\)\), \[\]/);
   assert.doesNotMatch(childHome, /const now = useMemo\(\(\) => new Date\(\), \[\]\)/);
@@ -43,7 +43,7 @@ test("부모·아이 대화 표시는 최근 7일을 조회하고 자정·화면
 
   const hook = read("src/app/useRecentDateKeys.ts");
   assert.match(hook, /visibilitychange/);
-  assert.match(hook, /millisecondsUntilNextLocalDay/);
+  assert.match(hook, /millisecondsUntilNextDayInTimeZone/);
   assert.match(hook, /setTimeout/);
 });
 

@@ -150,8 +150,12 @@ test("일정 4개 이하면 전부 배치하고 상태를 나눈다", () => {
 
 test("말풍선은 반말이고 남은 시간을 실제로 계산한다", () => {
   const events = [ev("c", "태권도", "16:00", false)];
-  assert.equal(buildAdventureMap(events, 15 * 60 + 15, "ko").bubble, "45분 뒤 태권도야!\n나랑 같이 가자 🎒");
-  assert.equal(buildAdventureMap([ev("s", "수영", "16:00", false)], 15 * 60 + 15, "ko").bubble.startsWith("45분 뒤 수영이야!"), true);
+  assert.equal(buildAdventureMap(events, 15 * 60 + 15, "ko").bubble, "45분 후 태권도야!\n나랑 같이 가자 🎒");
+  assert.equal(buildAdventureMap([ev("s", "수영", "16:00", false)], 15 * 60 + 15, "ko").bubble.startsWith("45분 후 수영이야!"), true);
+  assert.match(
+    buildAdventureMap([ev("e", "English", "16:00", false)], 15 * 60, "en").bubble,
+    /^in 1 hour English/,
+  );
   assert.equal(buildAdventureMap(events, 16 * 60, "ko").bubble, "지금 태권도 갈 시간이야! 🏃");
   assert.match(buildAdventureMap(events, 9 * 60, "ko").bubble, /^(?:오후|PM) 4:00에 태권도야!/);
   assert.equal(buildAdventureMap([], 9 * 60, "ko").bubble, "오늘 일정 다 끝났어! 푹 쉬어도 돼 🎈");
@@ -250,15 +254,23 @@ test("스티커 설명은 서버가 아는 사실만 말한다(보낸 사람·�
 });
 
 test("받은 날짜는 아이 말투 상대 표현", () => {
-  const now = new Date(2026, 6, 10, 9, 0, 0).getTime();
-  const dayAgo = (n: number) => new Date(2026, 6, 10 - n, 20, 0, 0).getTime();
-  assert.equal(stickerWhenLabel(now - 3600_000, now, "ko"), "오늘 받았어");
-  assert.equal(stickerWhenLabel(dayAgo(1), now, "ko"), "어제 받았어");
-  assert.match(stickerWhenLabel(dayAgo(3), now, "ko"), /^3일 전에 받았어$/);
-  assert.equal(stickerWhenLabel(dayAgo(3), now, "en"), "3 days ago에 받았어");
-  assert.equal(stickerWhenLabel(dayAgo(9), now, "ko"), "지난주에 받았어");
-  assert.equal(stickerWhenLabel(dayAgo(20), now, "ko"), "2주 전에 받았어");
-  assert.equal(stickerWhenLabel(null, now, "ko"), "");
+  const now = new Date("2026-07-10T00:00:00.000Z").getTime();
+  const dayAgo = (n: number) => now - n * 86_400_000;
+  assert.equal(stickerWhenLabel(now - 3600_000, now, "ko", "Asia/Seoul"), "오늘 받았어");
+  assert.equal(stickerWhenLabel(dayAgo(1), now, "ko", "Asia/Seoul"), "어제 받았어");
+  assert.match(stickerWhenLabel(dayAgo(3), now, "ko", "Asia/Seoul"), /^3일 전에 받았어$/);
+  assert.equal(stickerWhenLabel(dayAgo(3), now, "en", "Asia/Seoul"), "3 days ago에 받았어");
+  assert.equal(stickerWhenLabel(dayAgo(9), now, "ko", "Asia/Seoul"), "지난주에 받았어");
+  assert.equal(stickerWhenLabel(dayAgo(20), now, "ko", "Asia/Seoul"), "2주 전에 받았어");
+  assert.equal(stickerWhenLabel(dayAgo(20), now, "en", "Asia/Seoul"), "2 weeks ago에 받았어");
+  assert.equal(stickerWhenLabel(null, now, "ko", "Asia/Seoul"), "");
+});
+
+test("스티커 받은 날은 host 자정이 아니라 명시 time zone의 달력 날짜로 계산한다", () => {
+  const now = new Date("2026-07-08T07:30:00.000Z").getTime();
+  const earned = new Date("2026-07-08T06:30:00.000Z").getTime();
+
+  assert.equal(stickerWhenLabel(earned, now, "ko", "America/Los_Angeles"), "어제 받았어");
 });
 
 // ────────────────────────────── 홈 데이터 ──────────────────────────────

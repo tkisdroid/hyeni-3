@@ -85,6 +85,7 @@ import {
   formatDateTime,
   formatNumber,
   formatProviderPrice,
+  formatRelativeTime,
   LEGACY_FAMILY_TIME_ZONE,
 } from "@/i18n/format";
 import "./Subscription.css";
@@ -733,7 +734,7 @@ export function Subscription() {
   const activeSub = (() => {
     if (!view) return "";
     if (view.isTrial && view.trialDaysLeft != null) {
-      return `무료 체험 ${view.trialDaysLeft}일 남았어요`;
+      return `무료 체험 종료 · ${formatRelativeTime(view.trialDaysLeft, "day", locale)}`;
     }
     if (view.periodEnd) return `${formatPeriodEnd(view.periodEnd, locale)}까지 이용 가능해요`;
     return "프리미엄 혜택을 모두 이용 중이에요";

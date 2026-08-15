@@ -17,8 +17,8 @@ import type { DailySupply, CalendarEvent } from "@/lib/api/endpoints/schedule";
 import type { RoutePoint } from "@/lib/api/endpoints/route";
 import { groupEventsByDateKey, PAST_TAGS } from "@/transform/scheduleView";
 import { useLocale } from "@/i18n/useLocale";
-import { formatCalendarDay, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
-import { todayDateKey } from "@/transform/dateKey";
+import { formatCalendarDay, formatRelativeMinutes, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+import { dateTimeScopeInTimeZone } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { QUICK_STATUS_ACTIONS, buildQuickStatusMemo, type QuickStatusActionId } from "@/transform/quickStatusShare";
 import { buildAdventureMap, timeLabelToMinutes, type AdventureEventInput } from "@/transform/adventureMap";
@@ -72,10 +72,15 @@ export function ChildHome() {
   const { accent, setAccent } = useAccent();
   const { userId } = useAuth();
 
-  const memoDateKeys = useRecentDateKeys(7);
-  const todayKey = memoDateKeys[memoDateKeys.length - 1] ?? todayDateKey();
-  const now = useMemo(() => new Date(), [todayKey]);
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const memoDateKeys = useRecentDateKeys(7, LEGACY_FAMILY_TIME_ZONE);
+  const memoTodayKey = memoDateKeys[memoDateKeys.length - 1];
+  const now = useMemo(() => new Date(), [memoTodayKey]);
+  const dateTimeScope = useMemo(
+    () => dateTimeScopeInTimeZone(now, LEGACY_FAMILY_TIME_ZONE),
+    [now],
+  );
+  const todayKey = memoTodayKey ?? dateTimeScope.dateKey;
+  const nowMinutes = dateTimeScope.minutesSinceMidnight;
 
   const familyQuery = useMyFamily();
   const eventsQuery = useEvents();
@@ -106,7 +111,14 @@ export function ChildHome() {
   // ── 오늘 일정 ────────────────────────────────────────────────────────
   const myEvents = useMemo(() => filterEventsForChild(events ?? [], myMember?.id), [events, myMember?.id]);
   const todayViews = useMemo(
-    () => groupEventsByDateKey(myEvents, now, locale, undefined, places)[todayKey] ?? [],
+    () => groupEventsByDateKey(
+      myEvents,
+      now,
+      locale,
+      LEGACY_FAMILY_TIME_ZONE,
+      undefined,
+      places,
+    )[todayKey] ?? [],
     [locale, myEvents, now, todayKey, places],
   );
   const rawById = useMemo(() => {
@@ -535,7 +547,7 @@ export function ChildHome() {
               <span className="kd-next__badge">
                 {nextView
                   ? minutesToNext != null && minutesToNext > 0 && minutesToNext <= 120
-                    ? `다음 일정 · ${minutesToNext}분 뒤`
+                    ? `다음 일정 · ${formatRelativeMinutes(minutesToNext, "future", locale)}`
                     : "다음 일정"
                   : todayViews.length === 0
                     ? "오늘은 쉬는 날"

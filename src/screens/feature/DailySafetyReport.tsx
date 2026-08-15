@@ -188,7 +188,14 @@ export function DailySafetyReport() {
       (event) => event.date_key === todayKey,
     );
     const allowedIds = new Set(dayEvents.map((event) => event.id));
-    return (groupEventsByDateKey(eventsQuery.data ?? [], now, locale, undefined, places)[todayKey] ?? []).filter((event) =>
+    return (groupEventsByDateKey(
+      eventsQuery.data ?? [],
+      now,
+      locale,
+      LEGACY_FAMILY_TIME_ZONE,
+      undefined,
+      places,
+    )[todayKey] ?? []).filter((event) =>
       allowedIds.has(event.id),
     );
   }, [activeChild, eventsQuery.data, locale, now, places, todayKey]);

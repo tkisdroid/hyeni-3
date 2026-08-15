@@ -265,7 +265,7 @@ export function MemoChat() {
 
   // 최근 7일 date_key 스레드 — 스코프 아이 한정. 오늘만 보이던 이전 방식은
   // 어제 대화가 사라져 보이는 실사용 혼란(주간 리포트 15건 vs 빈 대화 탭)을 만들었다.
-  const dateKeys = useRecentDateKeys(7);
+  const dateKeys = useRecentDateKeys(7, LEGACY_FAMILY_TIME_ZONE);
   const thread = useMemoThread(dateKeys, scopeChild?.id ?? null);
   const sendMemo = useSendMemo();
   const markRead = useMarkRead();

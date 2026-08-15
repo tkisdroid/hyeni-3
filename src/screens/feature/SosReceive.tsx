@@ -22,22 +22,12 @@ import type { SupportedLocale } from "@/i18n/locale";
 import { useLocale } from "@/i18n/useLocale";
 import {
   formatClockWithSeconds,
-  formatRelativeTime,
+  formatPastTime,
   LEGACY_FAMILY_TIME_ZONE,
 } from "@/i18n/format";
 import "./SosReceive.css";
 
 /** ISO/Date → 상대시간(방금/N분/N시간 전). */
-function relativeFrom(d: Date | null, locale: SupportedLocale): string {
-  if (!d) return "";
-  const min = Math.floor((Date.now() - d.getTime()) / 60000);
-  if (min < 1) return "방금 전";
-  if (min < 60) return formatRelativeTime(-min, "minute", locale);
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return formatRelativeTime(-hr, "hour", locale);
-  return formatRelativeTime(-Math.floor(hr / 24), "day", locale);
-}
-
 /** Date → locale 시각. */
 function formatClock(d: Date | null, locale: SupportedLocale): string {
   if (!d) return "";
@@ -243,7 +233,7 @@ export function SosReceive() {
                     : `${childName}${hasJongseong(childName) ? "이" : "가"} SOS를 보냈어요`}
                 </div>
                 <div className="sr-banner-meta">
-                  {formatClock(latestAt, locale)} · {relativeFrom(latestAt, locale)}
+                  {formatClock(latestAt, locale)} · {latestAt ? formatPastTime(latestAt, new Date(), locale) : ""}
                 </div>
               </div>
               {latest.read && <span className="sr-banner-chip">확인 완료</span>}
@@ -324,7 +314,7 @@ export function SosReceive() {
                       <div className="sr-history-body">
                         <div className="sr-history-name">{c?.name || "아이"}</div>
                         <div className="sr-history-time">
-                          {formatClock(at, locale)} · {relativeFrom(at, locale)}
+                          {formatClock(at, locale)} · {at ? formatPastTime(at, new Date(), locale) : ""}
                         </div>
                       </div>
                       {!s.read && <span className="sr-history-dot" />}

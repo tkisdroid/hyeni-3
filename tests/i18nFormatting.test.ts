@@ -9,6 +9,7 @@ import {
   formatNumber,
   formatPastTime,
   formatProviderPrice,
+  formatRelativeMinutes,
   formatRelativeTime,
   formatWeekday,
 } from "../src/i18n/format.ts";
@@ -50,6 +51,13 @@ test("상대시간은 선택한 locale 문법으로 표시한다", () => {
   assert.equal(formatRelativeTime(-3, "minute", "id"), "3 menit yang lalu");
 });
 
+test("분 단위 상대시간은 방향과 locale을 지키고 정확한 60분을 시간으로 정규화한다", () => {
+  assert.equal(formatRelativeMinutes(45, "future", "en"), "in 45 minutes");
+  assert.equal(formatRelativeMinutes(45, "future", "ko"), "45분 후");
+  assert.equal(formatRelativeMinutes(60, "past", "en"), "1 hour ago");
+  assert.equal(formatRelativeMinutes(60, "past", "ko"), "1시간 전");
+});
+
 test("공급자 가격 문자열은 locale과 무관하게 원문 그대로 보존한다", () => {
   assert.equal(formatProviderPrice("$4.99", "en"), "$4.99");
   assert.equal(formatProviderPrice("  Rp 79.000  ", "id"), "  Rp 79.000  ");
@@ -72,6 +80,36 @@ test("잘못된 timeZone 구성 오류는 숨기지 않는다", () => {
     }),
     RangeError,
   );
+});
+
+test("날짜 값도 잘못됐더라도 모든 날짜 formatter가 timeZone 구성 오류를 먼저 드러낸다", () => {
+  const calls = [
+    () => formatDateTime("not-a-date", {
+      locale: "en" as const,
+      timeZone: "Invalid/Zone",
+      dateStyle: "medium" as const,
+    }),
+    () => formatCalendarDay("not-a-date", {
+      locale: "en" as const,
+      timeZone: "Invalid/Zone",
+      weekday: "long" as const,
+    }),
+    () => formatCalendarMonth("not-a-date", {
+      locale: "en" as const,
+      timeZone: "Invalid/Zone",
+    }),
+    () => formatWeekday("not-a-date", {
+      locale: "en" as const,
+      timeZone: "Invalid/Zone",
+      width: "short" as const,
+    }),
+    () => formatClockWithSeconds("not-a-date", {
+      locale: "en" as const,
+      timeZone: "Invalid/Zone",
+    }),
+  ];
+
+  for (const call of calls) assert.throws(call, RangeError);
 });
 
 test("달력 날짜 조립은 선택한 locale의 월·요일 순서를 사용한다", () => {
@@ -110,6 +148,19 @@ test("지난 시각은 선택한 locale의 상대시간 문법으로 표시한�
 
   assert.equal(formatPastTime("2026-07-08T03:00:00.000Z", now, "en"), "5 minutes ago");
   assert.doesNotMatch(formatPastTime("2026-07-08T03:00:00.000Z", now, "ja"), /분 전/);
+});
+
+test("1분 미만과 미래 timestamp는 방향 없는 현재 표현으로 표시한다", () => {
+  const now = new Date("2026-07-08T03:05:00.000Z");
+  const enPast = formatPastTime("2026-07-08T03:04:59.000Z", now, "en");
+  const enFuture = formatPastTime("2026-07-08T03:06:00.000Z", now, "en");
+  const koFuture = formatPastTime("2026-07-08T03:06:00.000Z", now, "ko");
+
+  assert.equal(enPast, "now");
+  assert.equal(enFuture, "now");
+  assert.equal(koFuture, "지금");
+  assert.doesNotMatch(enFuture, /\bin\b|ago/);
+  assert.doesNotMatch(koFuture, /후|전/);
 });
 
 test("초 정밀도 시각 formatter는 locale과 time zone을 지키며 초를 남긴다", () => {

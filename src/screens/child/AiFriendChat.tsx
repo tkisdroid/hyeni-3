@@ -17,7 +17,9 @@ import {
 import { messagesToBubbles, type ChatBubble } from "@/transform/aiView";
 import { groupEventsByDateKey, PAST_TAGS } from "@/transform/scheduleView";
 import { useLocale } from "@/i18n/useLocale";
-import { todayDateKey } from "@/transform/dateKey";
+import { dateToDateKeyInTimeZone } from "@/transform/dateKey";
+import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+import { useRecentDateKeys } from "@/app/useRecentDateKeys";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { isApiError } from "@/lib/api/errors";
 import { resolveAiFriendDisplayName } from "@/transform/aiFriendName";
@@ -119,13 +121,23 @@ export function AiFriendChat() {
   // 오늘 일정·준비물(내 것) — AI 가 먼저 물어보는 선제 인사와 제안칩의 컨텍스트(로컬 생성 · 크레딧 0).
   const { data: events } = useEvents();
   const { data: places } = useSavedPlaces();
-  const now = useMemo(() => new Date(), []);
-  const todayKey = useMemo(() => todayDateKey(now), [now]);
+  const recentDateKeys = useRecentDateKeys(1, LEGACY_FAMILY_TIME_ZONE);
+  const recentTodayKey = recentDateKeys[0];
+  const now = useMemo(() => new Date(), [recentTodayKey]);
+  const todayKey = recentTodayKey
+    ?? dateToDateKeyInTimeZone(now, LEGACY_FAMILY_TIME_ZONE);
   const suppliesQuery = useDailySupplies(todayKey);
   const myMemberId = family?.members.find((m) => m.role === "child" && m.user_id === userId)?.id ?? null;
   const nextEvent = useMemo(() => {
     const list =
-      groupEventsByDateKey(filterEventsForChild(events ?? [], myMemberId), now, locale, undefined, places)[todayKey] ?? [];
+      groupEventsByDateKey(
+        filterEventsForChild(events ?? [], myMemberId),
+        now,
+        locale,
+        LEGACY_FAMILY_TIME_ZONE,
+        undefined,
+        places,
+      )[todayKey] ?? [];
     return list.find((e) => !PAST_TAGS.has(e.tag)) ?? null;
   }, [events, locale, myMemberId, now, todayKey, places]);
   const pendingSupply = useMemo(() => {

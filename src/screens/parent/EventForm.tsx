@@ -22,10 +22,11 @@ import {
 import { ApiError } from "@/lib/api/errors";
 import {
   dateInputValueToDateKey,
+  dateToDateKeyInTimeZone,
   dateKeyToDateInputValue,
   parseAppDateKey,
-  todayDateKey,
 } from "@/transform/dateKey";
+import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
 import {
   buildEventLocation,
   buildOccurrenceDateKeys,
@@ -267,7 +268,7 @@ export function EventForm() {
   }, [editingNeedsAssignment, initialAssignedChildIds, mode]);
   const [dateValue, setDateValue] = useState(() => {
     if (editing) return dateKeyToDateInputValue(editing.date_key);
-    const key = nav?.dateKey ?? todayDateKey();
+    const key = nav?.dateKey ?? dateToDateKeyInTimeZone(new Date(), LEGACY_FAMILY_TIME_ZONE);
     return dateKeyToDateInputValue(key);
   });
   const [timeValue, setTimeValue] = useState(

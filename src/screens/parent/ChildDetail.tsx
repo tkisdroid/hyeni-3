@@ -11,10 +11,12 @@ import { useEvents } from "@/queries/useSchedule";
 import { useChildLocations, useSavedPlaces } from "@/queries/useLocation";
 import { useLocationLabels } from "@/queries/useLocationLabels";
 import { mapFamilyToView } from "@/transform/familyView";
-import { todayDateKey, parseAppDateKey } from "@/transform/dateKey";
+import { dateToDateKeyInTimeZone, parseAppDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { formatFreshness } from "@/transform/locationView";
 import { useLocale } from "@/i18n/useLocale";
+import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+import { useRecentDateKeys } from "@/app/useRecentDateKeys";
 import { hasJongseong } from "@/transform/adventureMap";
 import { Loading } from "@/components/ui/Loading";
 import "./ChildDetail.css";
@@ -50,7 +52,9 @@ export function ChildDetail() {
   const { show } = useToast();
   const childId = (routeLocation.state as { childId?: string } | null)?.childId ?? null;
 
-  const now = useMemo(() => new Date(), []);
+  const recentDateKeys = useRecentDateKeys(1, LEGACY_FAMILY_TIME_ZONE);
+  const recentTodayKey = recentDateKeys[0];
+  const now = useMemo(() => new Date(), [recentTodayKey]);
   const familyQuery = useMyFamily();
   const eventsQuery = useEvents();
   const locationsQuery = useChildLocations();
@@ -106,16 +110,19 @@ export function ChildDetail() {
     return filterEventsForChild(events ?? [], rawChild?.id);
   }, [events, rawChild?.id]);
   const todayCount = useMemo(() => {
-    const key = todayDateKey(now);
+    const key = recentTodayKey ?? dateToDateKeyInTimeZone(now, LEGACY_FAMILY_TIME_ZONE);
     return childEvents.filter((e) => e.date_key === key).length;
-  }, [childEvents, now]);
+  }, [childEvents, now, recentTodayKey]);
   const upcomingCount = useMemo(() => {
-    const todayMid = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const todayMid = parseAppDateKey(
+      recentTodayKey ?? dateToDateKeyInTimeZone(now, LEGACY_FAMILY_TIME_ZONE),
+    )?.getTime();
+    if (todayMid == null) return 0;
     return childEvents.filter((e) => {
       const d = parseAppDateKey(e.date_key);
       return d != null && d.getTime() > todayMid;
     }).length;
-  }, [childEvents, now]);
+  }, [childEvents, now, recentTodayKey]);
 
   // 안전 상태 — 실 위치 신선도 + 저장장소 근접.
   const loc = useMemo(() => {

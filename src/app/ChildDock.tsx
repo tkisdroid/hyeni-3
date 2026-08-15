@@ -11,6 +11,7 @@ import { useMyFamily } from "@/queries/useFamily";
 import { useMemoThread } from "@/queries/useMemo";
 import { unreadParentMemoCount } from "@/transform/childHomeData";
 import { useRecentDateKeys } from "./useRecentDateKeys";
+import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
 import "./ChildDock.css";
 
 const TABS = [
@@ -24,7 +25,7 @@ export function ChildDock() {
   const { userId } = useAuth();
   const { data: family } = useMyFamily();
   const myMember = family?.members.find((m) => m.role === "child" && m.user_id === userId) ?? null;
-  const dateKeys = useRecentDateKeys(7);
+  const dateKeys = useRecentDateKeys(7, LEGACY_FAMILY_TIME_ZONE);
   const memoThread = useMemoThread(dateKeys, myMember?.id ?? null);
   const unread = unreadParentMemoCount(memoThread.data, userId);
 

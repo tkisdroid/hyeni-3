@@ -8,7 +8,7 @@
  * 일정이 4개를 넘으면 다음 일정을 반드시 포함하도록 창을 잡는다(아이가 볼 이유가 있는 구간).
  */
 import type { SupportedLocale } from "../i18n/locale.ts";
-import { formatDateTime } from "../i18n/format.ts";
+import { formatDateTime, formatRelativeMinutes } from "../i18n/format.ts";
 
 export interface AdventureEventInput {
   id: string;
@@ -110,7 +110,9 @@ function bubbleFor(
   if (next.startMinutes == null) return `다음은 ${next.title}${josa}! 나랑 같이 가자 🎒`;
   const left = next.startMinutes - nowMinutes;
   if (left <= 0) return `지금 ${next.title} 갈 시간이야! 🏃`;
-  if (left <= 120) return `${left}분 뒤 ${next.title}${josa}!\n나랑 같이 가자 🎒`;
+  if (left <= 120) {
+    return `${formatRelativeMinutes(left, "future", locale)} ${next.title}${josa}!\n나랑 같이 가자 🎒`;
+  }
   return `${compactTime(next.startMinutes, locale)}에 ${next.title}${josa}!\n아직 시간 있어 😊`;
 }
 

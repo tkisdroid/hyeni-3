@@ -12,16 +12,23 @@ import { useSavedPlaces } from "@/queries/useLocation";
 import { eventToView, formatTimeLabel, groupEventsByDateKey } from "@/transform/scheduleView";
 import { useVisitVerify } from "@/queries/useVisitVerify";
 import { useEntitlement } from "@/queries/useEntitlement";
-import { ymdToDateKey } from "@/transform/dateKey";
+import { dateTimeScopeInTimeZone, parseAppDateKey, ymdToDateKey } from "@/transform/dateKey";
 import { locationModeFor } from "@/transform/tierPolicy";
 import { eventChildMemberIds, eventScopeLabel } from "@/transform/eventScope";
 import { notifOverrideToReminderMinutes, type CalendarEvent } from "@/lib/api/endpoints/schedule";
 import { useLocale } from "@/i18n/useLocale";
-import { formatCalendarDay, formatCalendarMonth, formatWeekday } from "@/i18n/format";
+import {
+  formatCalendarDay,
+  formatCalendarMonth,
+  formatRelativeMinutes,
+  formatWeekday,
+  LEGACY_FAMILY_TIME_ZONE,
+} from "@/i18n/format";
+import type { SupportedLocale } from "@/i18n/locale";
 
 /** 사전알림(분) → 사람이 읽는 라벨. */
-function reminderLabel(minutes: number): string {
-  return minutes >= 60 ? `${minutes / 60}시간 전 알림` : `${minutes}분 전 알림`;
+function reminderLabel(minutes: number, locale: SupportedLocale): string {
+  return `${formatRelativeMinutes(minutes, "past", locale)} 알림`;
 }
 import "./ParentCalendar.css";
 
@@ -66,10 +73,12 @@ export function ParentCalendar() {
     )),
     [locale],
   );
-  const TODAY = useMemo(
-    () => ({ year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() }),
-    [now],
-  );
+  const TODAY = useMemo(() => {
+    const date = parseAppDateKey(dateTimeScopeInTimeZone(now, LEGACY_FAMILY_TIME_ZONE).dateKey);
+    return date
+      ? { year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() }
+      : { year: 1970, month: 1, day: 1 };
+  }, [now]);
 
   const [view, setView] = useState<ViewMonth>({ year: TODAY.year, month: TODAY.month });
   const [selected, setSelected] = useState<SelDate>({ ...TODAY });
@@ -92,7 +101,14 @@ export function ParentCalendar() {
   const canVerifyVisits = !entitlement.isError && locationModeFor(entitlement.tier) === "realtime";
   const visitMap = useVisitVerify(selectedKey, events, childUserByMemberId, canVerifyVisits);
   const byKey = useMemo(
-    () => groupEventsByDateKey(events ?? [], now, locale, visitMap, savedPlaces),
+    () => groupEventsByDateKey(
+      events ?? [],
+      now,
+      locale,
+      LEGACY_FAMILY_TIME_ZONE,
+      visitMap,
+      savedPlaces,
+    ),
     [events, locale, now, visitMap, savedPlaces],
   );
   const rawById = useMemo(() => {
@@ -153,7 +169,16 @@ export function ParentCalendar() {
     dragStart.current = null;
   };
 
-  const sheetView = sheetEvent ? eventToView(sheetEvent, now, locale, visitMap, savedPlaces) : null;
+  const sheetView = sheetEvent
+    ? eventToView(
+      sheetEvent,
+      now,
+      locale,
+      LEGACY_FAMILY_TIME_ZONE,
+      visitMap,
+      savedPlaces,
+    )
+    : null;
   const sheetTimeLabel = useMemo(() => {
     if (!sheetEvent) return "";
     const start = formatTimeLabel(sheetEvent.time, locale);
@@ -544,7 +569,7 @@ export function ParentCalendar() {
               {sheetReminder != null && (
                 <div className="pc-sheet__row">
                   <Bell size={17} strokeWidth={2} color="var(--fg-muted)" />
-                  <span>{reminderLabel(sheetReminder)}</span>
+                  <span>{reminderLabel(sheetReminder, locale)}</span>
                 </div>
               )}
               {sheetEvent.memo && (

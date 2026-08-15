@@ -12,6 +12,9 @@ import type { PlaydateInvite } from "@/lib/api/endpoints/playdate";
 import { hasJongseong } from "@/transform/adventureMap";
 import { useSafeBack } from "@/app/useSafeBack";
 import { Loading } from "@/components/ui/Loading";
+import { useLocale } from "@/i18n/useLocale";
+import { formatRelativeMinutes } from "@/i18n/format";
+import type { SupportedLocale } from "@/i18n/locale";
 import "./PlaydateAccept.css";
 
 /** 친구 아바타(도메인엔 이름만 있어 index 파생). */
@@ -32,15 +35,16 @@ function friendlyError(e: unknown): string {
 }
 
 /** expires_at(ISO) → "N분 후 만료" 라벨(만료면 null). */
-function expiresLabel(expiresAt: string | null): string | null {
+function expiresLabel(expiresAt: string | null, locale: SupportedLocale): string | null {
   if (!expiresAt) return null;
   const ms = new Date(expiresAt).getTime() - Date.now();
   if (Number.isNaN(ms) || ms <= 0) return null;
   const mins = Math.max(1, Math.round(ms / 60000));
-  return `${mins}분 후 만료`;
+  return `${formatRelativeMinutes(mins, "future", locale)} 만료`;
 }
 
 export function PlaydateAccept() {
+  const { locale } = useLocale();
   const goBack = useSafeBack("/child/home");
   const { show } = useToast();
   const [busyAction, setBusyAction] = useState<{ inviteId: string; action: "accept" | "decline" } | null>(null);
@@ -145,7 +149,7 @@ export function PlaydateAccept() {
           </div>
         ) : (
           incoming.map((r, i) => {
-            const expires = expiresLabel(r.expires_at);
+            const expires = expiresLabel(r.expires_at, locale);
             const friendName = r.friend_child_name?.trim() || "친구";
             const busy = busyAction?.inviteId === r.id;
             const accepting = busy && busyAction.action === "accept";

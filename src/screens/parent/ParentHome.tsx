@@ -317,7 +317,14 @@ export function ParentHome() {
   // 오늘 일정 — 활성 아이 배정(events_children.child_id) + 가족 공유(is_family_event)만.
   // 형제에게만 배정된 일정은 활성 아이 화면에서 제외(아이별 구분 — TK 결정).
   const todayEvents = useMemo(() => {
-    const byKey = groupEventsByDateKey(events ?? [], now, locale, visitMap, places);
+    const byKey = groupEventsByDateKey(
+      events ?? [],
+      now,
+      locale,
+      LEGACY_FAMILY_TIME_ZONE,
+      visitMap,
+      places,
+    );
     const all = byKey[todayKey] ?? [];
     if (!activeChild) return [];
     const allowedIds = new Set(
@@ -338,7 +345,14 @@ export function ParentHome() {
     const kids = (family?.members ?? []).filter((m) => m.role === "child");
     const rawToday = (events ?? []).filter((e) => e.date_key === todayKey);
     // 카드별 다음 일정은 활성 아이 필터와 무관하게 "그 카드 아이" 기준으로 계산.
-    const allViews = groupEventsByDateKey(events ?? [], now, locale, undefined, places)[todayKey] ?? [];
+    const allViews = groupEventsByDateKey(
+      events ?? [],
+      now,
+      locale,
+      LEGACY_FAMILY_TIME_ZONE,
+      undefined,
+      places,
+    )[todayKey] ?? [];
     return kids.map((kid) => {
       const kidLoc = kid.user_id
         ? (locationsForDisplay ?? []).find((l) => l.user_id === kid.user_id) ?? null

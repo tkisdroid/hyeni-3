@@ -5,9 +5,13 @@
  */
 import type { CalendarEvent } from "@/lib/api/endpoints/schedule";
 import type { SavedPlace } from "@/lib/api/endpoints/location";
-import { resolveEventPlaceLabel } from "./eventPlaceLabel";
+import { resolveEventPlaceLabel } from "./eventPlaceLabel.ts";
 import { resolveEventVisualAsset } from "./placeVisual.ts";
-import { parseAppDateKey } from "./dateKey";
+import {
+  dateKeyMinuteInTimeZone,
+  dateToDateKeyInTimeZone,
+  parseAppDateKey,
+} from "./dateKey.ts";
 import type { SupportedLocale } from "../i18n/locale.ts";
 import { formatDateTime } from "../i18n/format.ts";
 
@@ -83,7 +87,12 @@ export type VisitMap = ReadonlyMap<string, "visited" | "unverified">;
 // 이벤트 날짜/시간 vs now → 진행 상태. visitMap 이 있으면 시간상 "다녀옴"을
 // 위치 검증 결과로 확정(visited=다녀옴 / unverified=확인 필요). 장소가 아예 없어
 // 맵에 없는 일정만 기존 시간 기반 "다녀옴"을 유지한다.
-function computeTag(event: CalendarEvent, now: Date, visitMap?: VisitMap): TagStyle {
+function computeTag(
+  event: CalendarEvent,
+  now: Date,
+  timeZone: string,
+  visitMap?: VisitMap,
+): TagStyle {
   const donePast = () => {
     const verdict = visitMap?.get(event.id);
     if (verdict === "unverified") return TAG_STYLES["확인 필요"];
@@ -92,17 +101,18 @@ function computeTag(event: CalendarEvent, now: Date, visitMap?: VisitMap): TagSt
   const date = parseAppDateKey(event.date_key);
   if (!date) return TAG_STYLES.예정;
   const startMin = timeToMinutes(event.time);
-  const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  const evMidnight = date.getTime();
+  const today = parseAppDateKey(dateToDateKeyInTimeZone(now, timeZone));
+  if (!today) return TAG_STYLES.예정;
   if (startMin == null) {
-    if (evMidnight < todayMidnight) return donePast();
+    if (date.getTime() < today.getTime()) return donePast();
     return TAG_STYLES.예정;
   }
 
   const endMinRaw = timeToMinutes(event.end_time) ?? startMin + 60;
   const endMin = endMinRaw <= startMin ? endMinRaw + 24 * 60 : endMinRaw;
-  const startAt = evMidnight + startMin * 60_000;
-  const endAt = evMidnight + endMin * 60_000;
+  const startAt = dateKeyMinuteInTimeZone(event.date_key, startMin, timeZone)?.getTime();
+  const endAt = dateKeyMinuteInTimeZone(event.date_key, endMin, timeZone)?.getTime();
+  if (startAt == null || endAt == null) return TAG_STYLES.예정;
   const nowAt = now.getTime();
   if (nowAt >= endAt) return donePast();
   if (nowAt >= startAt) return TAG_STYLES["진행 중"];
@@ -128,11 +138,12 @@ export function eventToView(
   event: CalendarEvent,
   now: Date,
   locale: SupportedLocale,
+  timeZone: string,
   visitMap?: VisitMap,
   places?: readonly SavedPlace[],
 ): CalEventView {
   const style = styleFor(event.category);
-  const tag = computeTag(event, now, visitMap);
+  const tag = computeTag(event, now, timeZone, visitMap);
   return {
     id: event.id,
     color: style.color,
@@ -153,6 +164,7 @@ export function groupEventsByDateKey(
   events: CalendarEvent[],
   now: Date,
   locale: SupportedLocale,
+  timeZone: string,
   visitMap?: VisitMap,
   places?: readonly SavedPlace[],
 ): Record<string, CalEventView[]> {
@@ -166,7 +178,7 @@ export function groupEventsByDateKey(
     out[key] = list
       .slice()
       .sort((a, b) => (timeToMinutes(a.time) ?? 1e9) - (timeToMinutes(b.time) ?? 1e9))
-      .map((ev) => eventToView(ev, now, locale, visitMap, places));
+      .map((ev) => eventToView(ev, now, locale, timeZone, visitMap, places));
   }
   return out;
 }

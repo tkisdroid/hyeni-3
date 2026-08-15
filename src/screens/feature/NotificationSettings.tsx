@@ -53,6 +53,8 @@ import {
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import { usePwaUpdateCriticalSection } from "@/lib/usePwaUpdateCriticalSection";
+import { useLocale } from "@/i18n/useLocale";
+import { formatRelativeMinutes } from "@/i18n/format";
 import "./NotificationSettings.css";
 
 /**
@@ -140,6 +142,7 @@ function ToggleRow({
 }
 
 export function NotificationSettings() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const { show } = useToast();
   const { userId, familyId, role } = useAuth();
@@ -644,7 +647,7 @@ export function NotificationSettings() {
                             aria-pressed={on}
                             onClick={() => toggleMinute(m)}
                           >
-                            {m === 60 ? "1시간 전" : `${m}분 전`}
+                            {formatRelativeMinutes(m, "past", locale)}
                           </button>
                         );
                       })}
