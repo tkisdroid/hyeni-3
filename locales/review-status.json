@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "namespaces": ["core", "onboarding", "parent", "child", "shared", "billing", "reports", "notifications", "android"],
+  "statuses": {
+    "ko": { "core": "draft", "onboarding": "draft", "parent": "draft", "child": "draft", "shared": "draft", "billing": "draft", "reports": "draft", "notifications": "draft", "android": "draft" },
+    "en": { "core": "draft", "onboarding": "draft", "parent": "draft", "child": "draft", "shared": "draft", "billing": "draft", "reports": "draft", "notifications": "draft", "android": "draft" },
+    "ja": { "core": "draft", "onboarding": "draft", "parent": "draft", "child": "draft", "shared": "draft", "billing": "draft", "reports": "draft", "notifications": "draft", "android": "draft" },
+    "zh-CN": { "core": "draft", "onboarding": "draft", "parent": "draft", "child": "draft", "shared": "draft", "billing": "draft", "reports": "draft", "notifications": "draft", "android": "draft" },
+    "zh-TW": { "core": "draft", "onboarding": "draft", "parent": "draft", "child": "draft", "shared": "draft", "billing": "draft", "reports": "draft", "notifications": "draft", "android": "draft" },
+    "vi": { "core": "draft", "onboarding": "draft", "parent": "draft", "child": "draft", "shared": "draft", "billing": "draft", "reports": "draft", "notifications": "draft", "android": "draft" },
+    "th": { "core": "draft", "onboarding": "draft", "parent": "draft", "child": "draft", "shared": "draft", "billing": "draft", "reports": "draft", "notifications": "draft", "android": "draft" },
+    "id": { "core": "draft", "onboarding": "draft", "parent": "draft", "child": "draft", "shared": "draft", "billing": "draft", "reports": "draft", "notifications": "draft", "android": "draft" },
+    "ms": { "core": "draft", "onboarding": "draft", "parent": "draft", "child": "draft", "shared": "draft", "billing": "draft", "reports": "draft", "notifications": "draft", "android": "draft" },
+    "fil": { "core": "draft", "onboarding": "draft", "parent": "draft", "child": "draft", "shared": "draft", "billing": "draft", "reports": "draft", "notifications": "draft", "android": "draft" }
+  }
+}
