@@ -29,14 +29,18 @@ test("아이용 위치·오류 문구는 locale별 formal 호칭을 섞지 않�
     "zh-CN": /您/,
     "zh-TW": /您/,
     vi: /Vui lòng/i,
-    th: /กรุณา|โปรด/,
+    th: /กรุณา|โปรด|คุณ/,
     id: /Silakan|Anda/,
     ms: /\bSila\b|\banda\b/i,
     fil: /Mangyaring|Pakisuri/i,
   };
   const childContext = (id) => id.endsWith(".child")
     || id.includes(".child.")
-    || /backgroundPermission|locationDisclosure|permissionDenied/.test(id);
+    || id.endsWith(".childDescription")
+    || /^onboarding\.(?:backgroundPermission|locationDisclosure|permissionDenied)\./.test(id)
+    || /^onboarding\.permissions\.(?:background|location|notifications)\.childDescription$/.test(id)
+    || /^onboarding\.permissions\.(?:subtitle|title)\.child$/.test(id)
+    || /^onboarding\.role\.child\./.test(id);
   for (const [locale, pattern] of Object.entries(forbidden)) {
     const catalog = {
       ...readCatalog(locale, "core"),
@@ -80,6 +84,11 @@ test("중국어 아이 권한 문구는 존칭을 쓰지 않고 Indonesian 보�
   const id = readCatalog("id", "onboarding");
   assert.doesNotMatch(id["onboarding.pairing.title"], /\binduk\b/i);
   assert.doesNotMatch(id["onboarding.pairing.description"], /\binduk\b/i);
+  assert.equal(id["onboarding.role.parent.title"], "Orang tua");
+
+  const th = readCatalog("th", "onboarding");
+  assert.equal(th["onboarding.field.loginId"], "ID เข้าสู่ระบบ");
+  assert.match(th["onboarding.validation.loginIdRequired"], /ID เข้าสู่ระบบ/);
 });
 
 test("Malay 아이 core 문구는 formal Sila를 사용하지 않는다", () => {

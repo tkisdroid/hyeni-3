@@ -13,6 +13,17 @@ const DISPLAY_SINKS = new Set([
   "setError",
   "setMessage",
 ]);
+const APPROVED_SANITIZERS = new Set([
+  "cleanAlertTitle",
+  "friendlyError",
+  "localizeApiError",
+  "playdateCandidateNotice",
+  "resolveNativeBillingFailureMessage",
+  "webAiCreditFailureMessage",
+  "webBillingRequestFailureMessage",
+]);
+const MEMBER_SINK_OWNERS = /(?:^|_)(?:toast|toaster|dialog|snackbar|notification)s?$/i;
+const MEMBER_SINK_METHODS = new Set(["show", "error", "alert", "confirm"]);
 
 function defaultRoot() {
   return join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -70,29 +81,73 @@ function isRawPropertyAccess(node) {
 }
 
 function isErrorNamedIdentifier(node) {
-  return ts.isIdentifier(node) && /^(?:error|err|e|failure|response)$/i.test(node.text);
+  return ts.isIdentifier(node) && /^(?:error|err|failure)$/i.test(node.text);
+}
+
+function bindingHasName(binding, name) {
+  return bindingIdentifiers(binding).some((identifier) => identifier.text === name);
+}
+
+function isErrorSourceReference(node) {
+  if (!ts.isIdentifier(node)) return false;
+  let current = node.parent;
+  while (current) {
+    if (ts.isFunctionLike(current)) {
+      const parameter = current.parameters.find((item) => bindingHasName(item.name, node.text));
+      if (parameter) return isErrorNamedIdentifier(node);
+    }
+    if (
+      ts.isCatchClause(current)
+      && current.variableDeclaration
+      && bindingHasName(current.variableDeclaration.name, node.text)
+    ) {
+      return true;
+    }
+    current = current.parent;
+  }
+  return false;
 }
 
 function expressionIsTainted(node, tainted) {
   if (!node) return false;
   if (isRawPropertyAccess(node)) return true;
-  if (ts.isIdentifier(node)) return tainted.has(node.text);
-  if (
-    ts.isCallExpression(node)
-    && ts.isIdentifier(node.expression)
-    && node.expression.text === "String"
-  ) {
-    return node.arguments.some((argument) => (
-      isErrorNamedIdentifier(argument) || expressionIsTainted(argument, tainted)
-    ));
+  if (ts.isIdentifier(node)) return tainted.has(node.text) || isErrorSourceReference(node);
+  if (ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) {
+    return expressionIsTainted(node.expression, tainted);
+  }
+  if (ts.isCallExpression(node)) {
+    if (ts.isIdentifier(node.expression) && APPROVED_SANITIZERS.has(node.expression.text)) {
+      return false;
+    }
+    return node.arguments.some((argument) => expressionIsTainted(argument, tainted))
+      || (
+        ts.isPropertyAccessExpression(node.expression)
+        && expressionIsTainted(node.expression.expression, tainted)
+      );
+  }
+  if (ts.isNewExpression(node)) {
+    return node.arguments?.some((argument) => expressionIsTainted(argument, tainted)) ?? false;
   }
   if (
     ts.isParenthesizedExpression(node)
     || ts.isAsExpression(node)
     || ts.isTypeAssertionExpression(node)
     || ts.isNonNullExpression(node)
+    || ts.isAwaitExpression(node)
   ) {
     return expressionIsTainted(node.expression, tainted);
+  }
+  if (ts.isArrowFunction(node)) return expressionIsTainted(node.body, tainted);
+  if (ts.isObjectLiteralExpression(node)) {
+    return node.properties.some((property) => {
+      if (ts.isPropertyAssignment(property)) return expressionIsTainted(property.initializer, tainted);
+      if (ts.isShorthandPropertyAssignment(property)) return expressionIsTainted(property.name, tainted);
+      if (ts.isSpreadAssignment(property)) return expressionIsTainted(property.expression, tainted);
+      return false;
+    });
+  }
+  if (ts.isArrayLiteralExpression(node)) {
+    return node.elements.some((element) => expressionIsTainted(element, tainted));
   }
   if (ts.isTemplateExpression(node)) {
     return node.templateSpans.some((span) => expressionIsTainted(span.expression, tainted));
@@ -115,6 +170,16 @@ function expressionIsTainted(node, tainted) {
     }
   }
   return false;
+}
+
+function bindingIdentifiers(name) {
+  if (ts.isIdentifier(name)) return [name];
+  const identifiers = [];
+  for (const element of name.elements) {
+    if (ts.isOmittedExpression(element)) continue;
+    identifiers.push(...bindingIdentifiers(element.name));
+  }
+  return identifiers;
 }
 
 function boundName(binding) {
@@ -173,10 +238,15 @@ function collectTaintedNames(sourceFile, stateSetters) {
       if (
         ts.isBinaryExpression(node)
         && node.operatorToken.kind === ts.SyntaxKind.EqualsToken
-        && ts.isIdentifier(node.left)
         && expressionIsTainted(node.right, tainted)
       ) {
-        add(node.left.text);
+        if (ts.isIdentifier(node.left)) add(node.left.text);
+        if (
+          (ts.isPropertyAccessExpression(node.left) || ts.isElementAccessExpression(node.left))
+          && ts.isIdentifier(node.left.expression)
+        ) {
+          add(node.left.expression.text);
+        }
       }
       if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
         const state = stateSetters.get(node.expression.text);
@@ -191,19 +261,34 @@ function collectTaintedNames(sourceFile, stateSetters) {
   return tainted;
 }
 
-function findingNodes(sourceFile, tainted, stateSetters) {
+function rootIdentifier(node) {
+  let current = node;
+  while (ts.isPropertyAccessExpression(current) || ts.isElementAccessExpression(current)) {
+    current = current.expression;
+  }
+  return ts.isIdentifier(current) ? current.text : null;
+}
+
+function isDisplayCall(node) {
+  if (ts.isIdentifier(node.expression)) return DISPLAY_SINKS.has(node.expression.text);
+  if (!ts.isPropertyAccessExpression(node.expression)) return false;
+  const owner = rootIdentifier(node.expression.expression);
+  return owner !== null
+    && MEMBER_SINK_OWNERS.test(owner)
+    && MEMBER_SINK_METHODS.has(node.expression.name.text);
+}
+
+function findingNodes(sourceFile, tainted) {
   const findings = [];
   const visit = (node) => {
     if (ts.isJsxExpression(node) && expressionIsTainted(node.expression, tainted)) {
       findings.push(node);
-    } else if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
-      const name = node.expression.text;
-      if (
-        (DISPLAY_SINKS.has(name) || stateSetters.has(name))
-        && node.arguments.some((argument) => expressionIsTainted(argument, tainted))
-      ) {
-        findings.push(node);
-      }
+    } else if (
+      ts.isCallExpression(node)
+      && isDisplayCall(node)
+      && node.arguments.some((argument) => expressionIsTainted(argument, tainted))
+    ) {
+      findings.push(node);
     } else if (
       ts.isNewExpression(node)
       && ts.isIdentifier(node.expression)
@@ -218,15 +303,6 @@ function findingNodes(sourceFile, tainted, stateSetters) {
   return findings;
 }
 
-function countAllowlistOccurrences(source, regex) {
-  let count = 0;
-  for (const line of source.split(/\r?\n/)) {
-    regex.lastIndex = 0;
-    if (regex.test(line)) count += 1;
-  }
-  return count;
-}
-
 async function main() {
   const root = parseRoot();
   const allowlist = await loadAllowlist(root);
@@ -235,16 +311,16 @@ async function main() {
     if (!entry || typeof entry.path !== "string" || typeof entry.pattern !== "string"
       || typeof entry.reason !== "string" || !ALLOWLIST_REASONS.test(entry.reason)) {
       errors.push(`invalid_allowlist_reason:${index + 1}`);
-      return { entry, regex: null, found: 0 };
+      return { entry, regex: null, used: 0 };
     }
     try {
       if (!Number.isInteger(entry.occurrences) || entry.occurrences < 1) {
         errors.push(`invalid_allowlist_occurrences:${index + 1}`);
       }
-      return { entry, regex: new RegExp(entry.pattern), found: 0 };
+      return { entry, regex: new RegExp(entry.pattern), used: 0 };
     } catch {
       errors.push(`invalid_allowlist_pattern:${index + 1}`);
-      return { entry, regex: null, found: 0 };
+      return { entry, regex: null, used: 0 };
     }
   });
 
@@ -252,12 +328,6 @@ async function main() {
     const file = slash(relative(root, path));
     const source = await readFile(path, "utf8");
     const lines = source.split(/\r?\n/);
-    for (const item of compiled) {
-      if (item.regex && item.entry.path === file) {
-        item.found = countAllowlistOccurrences(source, item.regex);
-      }
-    }
-
     const sourceFile = ts.createSourceFile(
       path,
       source,
@@ -267,24 +337,30 @@ async function main() {
     );
     const stateSetters = collectStateSetters(sourceFile);
     const tainted = collectTaintedNames(sourceFile, stateSetters);
-    for (const node of findingNodes(sourceFile, tainted, stateSetters)) {
+    for (const node of findingNodes(sourceFile, tainted)) {
       const lineIndex = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line;
       const line = lines[lineIndex] ?? "";
       const snippet = node.getText(sourceFile);
-      const allowed = compiled.some((item) => {
+      const matching = compiled.filter((item) => {
         if (!item.regex || item.entry.path !== file) return false;
-        item.regex.lastIndex = 0;
-        if (item.regex.test(line)) return true;
         item.regex.lastIndex = 0;
         return item.regex.test(snippet);
       });
-      if (!allowed) errors.push(`${file}:${lineIndex + 1}:raw_error_surface:${line.trim()}`);
+      const available = matching.find((item) => item.used < item.entry.occurrences);
+      if (available) {
+        available.used += 1;
+      } else {
+        if (matching.length > 0) {
+          errors.push(`${file}:${lineIndex + 1}:overused_allowlist:${line.trim()}`);
+        }
+        errors.push(`${file}:${lineIndex + 1}:raw_error_surface:${line.trim()}`);
+      }
     }
   }
 
   compiled.forEach((item, index) => {
-    if (item.regex && item.found !== item.entry.occurrences) {
-      errors.push(`stale_allowlist:${index + 1}:${item.entry.path}:expected_${item.entry.occurrences}:found_${item.found}`);
+    if (item.regex && item.used !== item.entry.occurrences) {
+      errors.push(`stale_allowlist:${index + 1}:${item.entry.path}:expected_${item.entry.occurrences}:used_${item.used}`);
     }
   });
   if (errors.length > 0) {

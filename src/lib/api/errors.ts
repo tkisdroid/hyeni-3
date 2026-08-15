@@ -20,6 +20,16 @@ export function normalizeApiErrorCode(value: unknown): string | null {
   return API_ERROR_CODE_PATTERN.test(code) ? code : null;
 }
 
+/** 새 Worker의 stable code를 우선하고, code 필드가 없는 구 Worker만 exact error alias로 보완한다. */
+export function apiErrorCodeFromResponseBody(body: unknown): string | null {
+  if (!body || typeof body !== "object") return null;
+  const value = body as { code?: unknown; error?: unknown };
+  if (Object.prototype.hasOwnProperty.call(value, "code")) {
+    return normalizeApiErrorCode(value.code);
+  }
+  return normalizeApiErrorCode(value.error);
+}
+
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string | null;

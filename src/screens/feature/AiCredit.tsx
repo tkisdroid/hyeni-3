@@ -25,8 +25,8 @@ import {
 } from "@/lib/api/endpoints/webBilling";
 import { isApiError } from "@/lib/api/errors";
 import { useIntl } from "react-intl";
-import { localizeApiError } from "@/i18n/apiError";
 import { BillingError } from "@/lib/native/billingError";
+import { resolveNativeBillingFailureMessage } from "@/transform/billingFailureMessage";
 import { startTossOneTimePayment } from "@/lib/webBilling";
 import { creditHeroAmount } from "@/transform/aiView";
 import {
@@ -715,7 +715,7 @@ export function AiCredit() {
       show(
         isWebBillingChannel
           ? webAiCreditFailureMessage(error)
-          : localizeApiError(error, intl, "formal"),
+          : resolveNativeBillingFailureMessage(error, intl),
         "💜",
       );
     } finally {

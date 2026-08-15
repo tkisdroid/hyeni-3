@@ -29,7 +29,10 @@ import {
   resolveWebLocale,
   type LocaleStoragePort,
 } from "./localeStorage";
-import { localeBootstrapCopy } from "./bootstrapCopy";
+import {
+  applyBootstrapDocumentLocale,
+  localeBootstrapCopy,
+} from "./bootstrapCopy";
 
 export interface LocaleContextValue {
   locale: SupportedLocale;
@@ -99,8 +102,10 @@ function updateInitialDocument(
 }
 
 function createBrowserCoordinator(): LocaleRuntimeCoordinator {
+  const initialLocale = detectInitialLocale();
+  applyBootstrapDocumentLocale(initialLocale);
   return createLocaleRuntimeCoordinator({
-    initialLocale: detectInitialLocale(),
+    initialLocale,
     load: (locale, namespace) => loadNamespaceAtomically({ locale, namespace }),
     storage: browserLocaleStorage,
     document: { update: updateInitialDocument },
@@ -145,7 +150,11 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     if (!runtime.error) return null;
     const bootstrap = localeBootstrapCopy(runtime.locale);
     return (
-      <main className="hy-content">
+      <main
+        className="hy-content"
+        lang={runtime.locale}
+        dir={localeDirection(runtime.locale)}
+      >
         <section className="hy-card" role="alert" aria-live="assertive">
           <h1>{bootstrap.title}</h1>
           <p>{bootstrap.body}</p>

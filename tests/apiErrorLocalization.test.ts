@@ -4,6 +4,7 @@ import type { IntlShape } from "react-intl";
 
 import { localizeApiError } from "../src/i18n/apiError.ts";
 import { ApiError, normalizeApiErrorCode } from "../src/lib/api/errors.ts";
+import * as apiErrors from "../src/lib/api/errors.ts";
 
 const messages: Record<string, string> = {
   "core.error.api.invalidCredentials.formal": "로그인 정보를 확인해 주세요.",
@@ -59,6 +60,16 @@ test("배포된 구버전 Worker의 알려진 pairing 문자열만 stable code a
     "pair_code_expired",
   );
   assert.equal(normalizeApiErrorCode("Invalid pair code: Bearer secret"), null);
+});
+
+test("새 클라이언트 parser는 stable body.code를 우선하고 구 Worker error를 정확 alias로 fallback한다", () => {
+  const parse = (apiErrors as Record<string, unknown>).apiErrorCodeFromResponseBody;
+  assert.equal(typeof parse, "function");
+  const fromBody = parse as (body: unknown) => string | null;
+  assert.equal(fromBody({ code: "pair_code_expired", error: "Invalid pair code" }), "pair_code_expired");
+  assert.equal(fromBody({ error: "Invalid pair code" }), "invalid_pair_code");
+  assert.equal(fromBody({ error: "만료된 연동 코드예요. 가족 관리자에게 새 코드를 받아 주세요" }), "pair_code_expired");
+  assert.equal(fromBody({ code: "UPPER_CASE", error: "서버 자유 문구 Bearer secret" }), null);
 });
 
 test("실제 signup·OTP stable code는 다시 시도 방법이 있는 구체 문구로 연결된다", () => {

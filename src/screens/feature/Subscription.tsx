@@ -34,8 +34,8 @@ import {
 } from "@/lib/api/endpoints/webBilling";
 import { startTossBillingAuthorization } from "@/lib/webBilling";
 import { useIntl } from "react-intl";
-import { localizeApiError } from "@/i18n/apiError";
 import { BillingError } from "@/lib/native/billingError";
+import { resolveNativeBillingFailureMessage } from "@/transform/billingFailureMessage";
 import { isApiError } from "@/lib/api/errors";
 import {
   buildWebBillingRedirectUrls,
@@ -680,7 +680,7 @@ export function Subscription() {
       show(
         isWebBillingChannel
           ? webBillingRequestFailureMessage(error)
-          : localizeApiError(error, intl, "formal"),
+          : resolveNativeBillingFailureMessage(error, intl),
         "👑",
       );
     } finally {

@@ -12,7 +12,7 @@ import { API_BASE } from "@/config/env";
 import { apiGet, apiPost } from "../client";
 import { ApiError } from "../errors";
 import {
-  dataExportSectionUnavailable,
+  collectDataExportSections,
   serializePublicDataExport,
   type DataExportSectionUnavailable,
 } from "@/transform/dataExport";
@@ -128,22 +128,13 @@ export async function buildFamilyDataExport(params: {
   members?: FamilyMember[];
 }): Promise<FamilyDataExport> {
   const { familyId, account = null, members = [] } = params;
-  const errors: DataExportSectionUnavailable[] = [];
   const now = new Date();
-
-  async function safe<T>(section: string, fn: () => Promise<T>): Promise<T | null> {
-    try {
-      return await fn();
-    } catch {
-      errors.push(dataExportSectionUnavailable(section));
-      return null;
-    }
-  }
-
-  const events = await safe("events", () => fetchEvents(familyId));
-  const savedPlaces = await safe("savedPlaces", () => fetchSavedPlaces(familyId));
-  const dangerZones = await safe("dangerZones", () => fetchDangerZones(familyId));
-  const academies = await safe("academies", () => fetchAcademies(familyId));
+  const collected = await collectDataExportSections({
+    events: () => fetchEvents(familyId),
+    savedPlaces: () => fetchSavedPlaces(familyId),
+    dangerZones: () => fetchDangerZones(familyId),
+    academies: () => fetchAcademies(familyId),
+  });
 
   return {
     meta: {
@@ -151,14 +142,11 @@ export async function buildFamilyDataExport(params: {
       generatedAt: now.toISOString(),
       familyId,
       note: "위치 이력과 대화 내용은 용량이 커서 이 내보내기에는 포함되지 않아요. 전체 이력이 필요하면 문의해 주세요.",
-      errors,
+      errors: collected.errors,
     },
     account,
     members,
-    events: events ?? [],
-    savedPlaces: savedPlaces ?? [],
-    dangerZones: dangerZones ?? [],
-    academies: academies ?? [],
+    ...collected.values,
   };
 }
 

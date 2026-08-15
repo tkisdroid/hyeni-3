@@ -1,4 +1,8 @@
-import type { SupportedLocale } from "./locale.ts";
+import {
+  localeDirection,
+  localizedBrandName,
+  type SupportedLocale,
+} from "./locale.ts";
 
 export interface LocaleBootstrapCopy {
   title: string;
@@ -21,4 +25,26 @@ const COPY: Readonly<Record<SupportedLocale, LocaleBootstrapCopy>> = Object.free
 
 export function localeBootstrapCopy(locale: SupportedLocale): LocaleBootstrapCopy {
   return COPY[locale];
+}
+
+export interface BootstrapDocumentTarget {
+  documentElement: { lang: string; dir: string };
+  title: string;
+  querySelector(selector: string): { setAttribute(name: string, value: string): void } | null;
+}
+
+/** core catalog을 읽기 전에도 보조 기술이 감지 locale과 안전한 브랜드 title을 사용하게 한다. */
+export function applyBootstrapDocumentLocale(
+  locale: SupportedLocale,
+  target?: BootstrapDocumentTarget,
+): void {
+  const documentTarget = target
+    ?? (typeof document === "undefined" ? undefined : document);
+  if (!documentTarget) return;
+  const brand = localizedBrandName(locale);
+  documentTarget.documentElement.lang = locale;
+  documentTarget.documentElement.dir = localeDirection(locale);
+  documentTarget.title = brand;
+  documentTarget.querySelector('meta[name="apple-mobile-web-app-title"]')
+    ?.setAttribute("content", brand);
 }

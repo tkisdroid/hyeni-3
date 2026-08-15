@@ -10,7 +10,7 @@ import { API_BASE } from "@/config/env";
 import { adoptNativeLocationSessionTokens, syncNativeLocationToken } from "@/lib/native/location";
 import { getAuthDeviceInstallId } from "@/lib/native/deviceIdentity";
 import { isNativePlatform } from "@/lib/native/plugins";
-import { ApiError, normalizeApiErrorCode } from "./errors";
+import { ApiError, apiErrorCodeFromResponseBody } from "./errors";
 import { recordFeedbackDiagnostic } from "@/lib/feedbackDiagnostics";
 import {
   acquirePendingChildPhotoUploadRequest,
@@ -147,8 +147,7 @@ export async function apiRequest<T = unknown>(
     // Worker 자유 message/raw body는 버리고 제한된 snake_case error code만 보존한다.
     let code: string | null = null;
     try {
-      const body = (await res.clone().json()) as { error?: unknown };
-      code = normalizeApiErrorCode(body?.error);
+      code = apiErrorCodeFromResponseBody(await res.clone().json());
     } catch {
       /* non-json body */
     }

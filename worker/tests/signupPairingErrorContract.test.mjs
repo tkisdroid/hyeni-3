@@ -105,7 +105,7 @@ async function post(app, env, path, body, authorizationHeader) {
   }, env);
 }
 
-test("child·공동 보호자 pairing 실패는 stable snake_case payload를 반환한다", async () => {
+test("child·공동 보호자 pairing 실패는 legacy error와 stable code를 함께 반환한다", async () => {
   const { app, env, sqlite } = setup();
   sqlite.prepare("INSERT INTO users(id,is_anonymous) VALUES ('primary-parent',0)").run();
   for (const userId of ["child-empty", "child-invalid", "child-expired", "parent-empty", "parent-invalid", "parent-expired"]) {
@@ -116,17 +116,20 @@ test("child·공동 보호자 pairing 실패는 stable snake_case payload를 반
   ).run();
 
   const cases = [
-    ["/api/family/join", {}, "invalid_pair_code", "child-empty"],
-    ["/api/family/join", { pairCode: "KID-NOTFOUND" }, "invalid_pair_code", "child-invalid"],
-    ["/api/family/join", { pairCode: "KID-EXPIRED" }, "pair_code_expired", "child-expired"],
-    ["/api/family/join-as-parent", {}, "invalid_pair_code", "parent-empty"],
-    ["/api/family/join-as-parent", { pairCode: "KID-NOTFOUND" }, "invalid_pair_code", "parent-invalid"],
-    ["/api/family/join-as-parent", { pairCode: "KID-EXPIRED" }, "pair_code_expired", "parent-expired"],
+    ["/api/family/join", {}, "연동 코드를 입력해주세요", "invalid_pair_code", "child-empty"],
+    ["/api/family/join", { pairCode: "KID-NOTFOUND" }, "Invalid pair code", "invalid_pair_code", "child-invalid"],
+    ["/api/family/join", { pairCode: "KID-EXPIRED" }, "만료된 연동 코드예요. 부모님께 새 코드를 받아 주세요", "pair_code_expired", "child-expired"],
+    ["/api/family/join-as-parent", {}, "연동 코드를 입력해주세요", "invalid_pair_code", "parent-empty"],
+    ["/api/family/join-as-parent", { pairCode: "KID-NOTFOUND" }, "Invalid pair code", "invalid_pair_code", "parent-invalid"],
+    ["/api/family/join-as-parent", { pairCode: "KID-EXPIRED" }, "만료된 연동 코드예요. 가족 관리자에게 새 코드를 받아 주세요", "pair_code_expired", "parent-expired"],
   ];
-  for (const [path, body, expected, userId] of cases) {
+  for (const [path, body, legacyError, stableCode, userId] of cases) {
     const response = await post(app, env, path, body, await authorization(userId));
     assert.equal(response.status, 400, `${path}:${userId}`);
-    assert.deepEqual(await response.json(), { error: expected }, `${path}:${userId}`);
+    const payload = await response.json();
+    assert.deepEqual(payload, { error: legacyError, code: stableCode }, `${path}:${userId}`);
+    assert.equal(payload.error || payload.message, legacyError, "구버전 parser는 기존 사용자 문구를 표시한다");
+    assert.doesNotMatch(payload.error, /^(?:invalid_pair_code|pair_code_expired)$/);
   }
 });
 

@@ -56,6 +56,31 @@ for (const fixture of [
     lines: ["const text = response['message'];", "show(text);"],
     sinkLine: 3,
   },
+  {
+    name: "일반 formatter로 감싼 message를 JSX에 렌더",
+    lines: ["return <p>{format(failure.message)}</p>;"],
+    sinkLine: 2,
+  },
+  {
+    name: "원문을 객체 state에 담은 뒤 property를 렌더",
+    lines: ["const [view, setView] = useState({ text: '' });", "setView({ text: failure.message });", "return <p>{view.text}</p>;"],
+    sinkLine: 4,
+  },
+  {
+    name: "원문을 배열에 담은 뒤 element를 렌더",
+    lines: ["const messages = [failure.message];", "return <p>{messages[0]}</p>;"],
+    sinkLine: 3,
+  },
+  {
+    name: "whole error alias를 String으로 dialog에 전달",
+    lines: ["const source = failure;", "setError(String(source));"],
+    sinkLine: 3,
+  },
+  {
+    name: "toast member sink에 message를 전달",
+    lines: ["toast.error(failure.message);"],
+    sinkLine: 2,
+  },
 ]) {
   test(`오류 surface scanner는 ${fixture.name}하는 우회를 보고한다`, () => {
     const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
@@ -74,6 +99,92 @@ for (const fixture of [
     }
   });
 }
+
+test("승인된 cleanAlertTitle sanitizer는 원문 taint를 해제한다", () => {
+  const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
+  try {
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src", "Sanitized.tsx"), [
+      "export function Sanitized({ alert }) {",
+      "  return <p>{cleanAlertTitle(alert.message)}</p>;",
+      "}",
+    ].join("\n"));
+    const result = runScanner(root);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("승인된 native billing resolver는 whole error를 catalog 문구로 바꾼다", () => {
+  const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
+  try {
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src", "Billing.tsx"), [
+      "export function Billing({ failure, intl }) {",
+      "  show(resolveNativeBillingFailureMessage(failure, intl));",
+      "}",
+    ].join("\n"));
+    const result = runScanner(root);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("allowlist는 실제 AST finding만 한 번 소비하고 같은 줄의 직접 렌더를 숨기지 않는다", () => {
+  const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
+  try {
+    mkdirSync(join(root, "src"), { recursive: true });
+    mkdirSync(join(root, "scripts", "i18n"), { recursive: true });
+    writeFileSync(join(root, "src", "Mixed.tsx"), [
+      "export function Mixed({ alert }) {",
+      "  return <>{cleanAlertTitle(alert.message)}{alert.message}</>;",
+      "}",
+    ].join("\n"));
+    writeFileSync(join(root, "scripts", "i18n", "client-error-surface-allowlist.json"), JSON.stringify([
+      {
+        path: "src/Mixed.tsx",
+        pattern: "cleanAlertTitle\\(alert\\.message\\)",
+        occurrences: 1,
+        reason: "data: 정제된 안전 알림 제목",
+      },
+    ]));
+    const result = runScanner(root);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /raw_error_surface/);
+    assert.match(result.stderr, /stale_allowlist/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("allowlist는 실제 finding의 사용 수가 선언보다 많거나 적으면 실패한다", () => {
+  for (const [name, body, occurrences, expected] of [
+    ["미사용", "recordProtocol(response.message);", 1, /stale_allowlist/],
+    ["과잉", "return <>{response.message}{response.message}</>;", 1, /raw_error_surface|overused_allowlist/],
+  ]) {
+    const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
+    try {
+      mkdirSync(join(root, "src"), { recursive: true });
+      mkdirSync(join(root, "scripts", "i18n"), { recursive: true });
+      writeFileSync(join(root, "src", "Allowlisted.tsx"), `export function Demo({ response }) { ${body} }\n`);
+      writeFileSync(join(root, "scripts", "i18n", "client-error-surface-allowlist.json"), JSON.stringify([
+        {
+          path: "src/Allowlisted.tsx",
+          pattern: "response\\.message",
+          occurrences,
+          reason: "protocol: fixture에서만 허용",
+        },
+      ]));
+      const result = runScanner(root);
+      assert.notEqual(result.status, 0, name);
+      assert.match(result.stderr, expected, name);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+});
 
 test("scanner allowlist는 migration 사유이거나 더 이상 사용되지 않으면 실패한다", () => {
   const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
