@@ -6,7 +6,7 @@
 
 버전: `versionName 1.3.0` / `versionCode 6`
 
-현재 판정: **Play Console 등록 진행 중 — versionCode 6 코드·검증·스토어 자산·정책 영상 파일·Worker 배포는 준비됐고, YouTube 일부 공개 저장·Play 정책 선언·심사 계정·서명 AAB 업로드가 남아 있음**
+현재 판정: **최종 심사 전송 직전 HOLD — versionCode 6 AAB·등록정보·지정 이미지·정책 영상·정책 선언·심사 계정·프로덕션 출시가 저장됐고, Play 빠른 검사는 감지된 차단 없이 완료돼 사용자의 최종 제출만 남음**
 
 이 문서는 Play Console에 입력할 값과 아직 사람이 확인해야 하는 값을 분리한 제출 정본이다. 비밀번호, 심사 계정 자격 증명, 구매·인증 토큰은 저장소나 출시 패키지에 기록하지 않는다.
 
@@ -39,20 +39,25 @@
 
 ## 2. 그래픽 자산
 
-다음 `output/play-store-final-v1/` 파일만 업로드 정본으로 사용한다. `output/store-screenshots/`, `output/store-safe-assets-v1/`, `output/store-listing-assets-v1/`, `output/store-ui-candidates-v1/`은 직접 업로드하지 않는다.
+2026-08-15 사용자 지시에 따라 `C:\Users\TK\Downloads\Gmail (3)`의 이미지를 Play 등록 정본으로 사용했다. 모든 업로드 뒤 Play API가 반환한 SHA-256과 표시 순서를 로컬 원본과 대조했다. 폴더에는 512×512 아이콘이 없으므로 Play 아이콘은 기존 Android 설치 아이콘을 유지했다(SHA-256 `3f76eaf78ad9ccbef067140bb6bb9a57a818353a68a5faf11c1c640a4bbfc899`).
 
-| 용도 | 파일 | 대체 텍스트 |
+| 용도 | 파일 | SHA-256 |
 |---|---|---|
-| 앱 아이콘 | `output/play-store-final-v1/play-icon-512.png` | 실제 Android 설치 아이콘과 같은 혜니캘린더 앱 아이콘 |
-| 피처 그래픽 | `output/play-store-final-v1/play-feature-graphic-1024x500.png` | 가족 일정과 아이 안전을 한 곳에서 관리하는 혜니캘린더 |
-| 휴대전화 1 | `output/play-store-final-v1/01-parent-home.png` | 오늘 일정과 아이 안전 상태를 확인하는 보호자 홈 |
-| 휴대전화 2 | `output/play-store-final-v1/02-family-calendar.png` | 가족 일정을 월간으로 확인하는 가족 캘린더 |
-| 휴대전화 3 | `output/play-store-final-v1/03-family-conversation.png` | 보호자와 아이가 메시지와 위치를 나누는 가족 대화 |
-| 휴대전화 4 | `output/play-store-final-v1/04-daily-safety-report.png` | 아이의 하루 안전 정보를 보여 주는 안심 리포트 |
-| 휴대전화 5 | `output/play-store-final-v1/05-weekly-family-report.png` | 가족의 한 주 일정과 대화를 요약한 주간 리포트 |
-| 휴대전화 6 | `output/play-store-final-v1/06-child-home-sos.png` | 오늘 일정과 SOS 버튼을 쉽게 사용할 수 있는 아이 홈 |
+| 피처 그래픽 1024×500 | `1000172576.png` | `3fa0aadce3da2e6aa1eef577dc0a92adb5402f97ce879e2a76997ca7d0916ded` |
+| 휴대전화 1 — 현재 위치 | `1000172577.png` | `e2caaf2f0f5d7c6a7dcb414751e66013cb9d616ff29b2c9fe375d7a2cc9d2f3f` |
+| 휴대전화 2 — 이동 경로 | `1000172578.png` | `7eeef73fb0bd2b3eb9f4aec6e32340448ac97b2c27ebead9262b80dba21da235` |
+| 휴대전화 3 — SOS·무료 안전 | `1000172582.png` | `c7611d57f144081e615319aa2da9e80290c24c75ddcb76ad84a63bacdf97a2f9` |
+| 휴대전화 4 — 보호자 홈·가족 캘린더 | `1000172583.png` | `3611739575bb801adca3fc5de86dd1179dedde7281099646742ed4f856766858` |
+| 휴대전화 5 — 가족 대화 | `1000172585.png` | `9737ed815144719ac8062fb53d85c3e94a92c7dd807f445810174655088857ea` |
+| 휴대전화 6 — 오늘의 안심 리포트 | `1000172586.png` | `e829ef597d2d0a5627a8fcd08d5b6c8563fb28ce2cff66c09fb6bc9e338de701` |
+| 휴대전화 7 — 아이 홈 | `1000172584.png` | `9d2c4730e3265927f8ccd9945b5d0b4dcb09c101ba18c84cfbf38e3c12ae48f5` |
+| 휴대전화 8 — 위급 주변 소리 | `1000172580.png` | `4d13bd7a720430e41e246f67f2fc92c8c04649a93c107a2e80ed7e987c9ec0d5` |
+| 7·10인치 태블릿 1 — 캘린더 | `1000172587.png` | `aa4345117f24913c65c70c9eda033aea68da4758cf83abc3fe0ca9a64e195d49` |
+| 7·10인치 태블릿 2 — 안심 리포트 | `1000172588.png` | `b08d4a457de409b07566df1e44a81fb098bff5f1d482704ef5b8812aae1b2215` |
+| 7·10인치 태블릿 3 — 주간 리포트 | `1000172589.png` | `4745c5ff714268e33e4458959ced4285552d186170be8177cfe2bf866d7e8be8` |
+| 7·10인치 태블릿 4 — 가족 대화 | `1000172590.png` | `0640b1b11332dba8f8b0c05b39eb6ae08b4755632270df55d75ee5286688f61a` |
 
-기술 검사는 1080×1920, 불투명 RGB, 개인정보 패턴·텍스트 메타데이터 없음으로 통과해야 한다. 여섯 장을 육안 검토한 뒤 `output/play-store-final-v1/technical-review.json`의 `playUploadApproved=true`를 확인한 경우에만 Console에 업로드한다.
+스크린샷 12개는 모두 1440×2560이다. `1000172579.png`는 `1000172578.png`와, `1000172581.png`는 `1000172580.png`와 바이트 단위로 같아 중복 업로드하지 않았다. 태블릿 4장은 Play의 7인치와 10인치 슬롯에 같은 순서로 각각 등록했다.
 
 ## 3. 앱 액세스
 
@@ -123,17 +128,18 @@ Play Console에서 받은 `deployment_cert.der`를 직접 파싱해 앱 서명 �
 
 완료된 항목:
 
-- 승인된 업로드 키로 서명한 `versionCode 5` AAB를 Play에 업로드했다. Play가 읽은 값은 `versionName 1.3.0`, 최소 API 24, target SDK 36이며 프로덕션 임시 버전 이름은 `혜니캘린더 1.3.0 (5)`다. 이 파일은 이전 후보의 역사 증거이며 최신 제출본으로 재사용하지 않는다.
-- 스토어 제목, 46자 짧은 설명, 1,731자 자세한 설명, Android 설치 아이콘과 같은 Play 아이콘, 피처 그래픽, 실제 production UI 기반 휴대전화 스크린샷 6장을 등록했다.
-- 프로덕션 출시 초안에 AAB와 한국어 출시 노트를 넣고 2단계 미리보기까지 진행했다.
+- clean app commit `40a32e2c18e929877e7c92970d6898619d7feedd`에서 승인된 업로드 키로 서명한 `versionCode 6` AAB를 만들었다. Play가 읽은 값은 `versionName 1.3.0`, 최소 API 24, target SDK 36이며 프로덕션 출시 이름은 `혜니캘린더 1.3.0 (6)`다. AAB는 10,539,140 bytes, SHA-256 `6b31166c7b6e141ed451a81970ed78a4a934ea1ecd8cc31addd4024f9d0dbc45`이고 증거는 `artifacts/release-evidence/android-release-aab-evidence-20260815-184739-40a32e2.json`이다.
+- 스토어 제목, 46자 짧은 설명, 1,731자 자세한 설명, 기존 Play 아이콘, 사용자 지정 피처 그래픽 1장, 휴대전화 8장, 7인치·10인치 태블릿 각 4장을 등록했다.
+- 프로덕션 출시에 versionCode 6 AAB와 한국어 출시 노트를 넣고 2단계 미리보기에서 저장했다. Publishing API readback은 release status `completed`와 versionCode 6을 반환하며, 아직 검토를 위해 제출하지 않은 변경사항이다. 게시 개요에는 **검토를 위해 변경사항 12개 제출** 버튼이 활성화됐다.
 - 구독 `hyeni_premium`의 월간 `monthly-2900`은 KRW 4,900, 연간 `annual-27840`은 KRW 39,000으로 활성 상태다. 두 base plan의 `trial-7d`는 한국 신규 구독자에게 `P7D` 무료 체험으로 활성 상태이며 범위는 `anySubscriptionInApp`이다.
 - 개인정보처리방침, Data Safety, 콘텐츠 등급, 타겟층 만 9세 이상, 광고 없음, 건강 앱, 금융 기능, 정부 앱, 전체 화면 인텐트 선언은 Console의 조치됨 상태다.
-- 출시 미리보기의 차단 오류는 백그라운드 위치 선언과 Foreground Service 선언 두 건으로 확정했다.
+- 백그라운드 위치와 Foreground Service 선언을 실제 기능·영상 URL과 일치하게 저장했고 앱 콘텐츠 개요의 `주의 필요` 항목은 0건이다.
 - 최신 후보를 `versionCode 6`으로 올렸고 production build, 앱 1,298/1,298, Worker 1,161/1,161, Android unit 175/175·lint·assembleDebug를 통과했다. 현재 debug APK는 13,279,364 bytes, SHA-256 `74911c1ffdee285c6fc9cb95f3bed2b0ec8ff30816935cc1c45a2405b650d96e`다.
 - A17 부모에 `adb install -r`로 최신 debug APK를 설치해 부모 세션이 보존된 홈과 razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 접근하지 않았다.
-- 스토어 자산은 최신 dist 417파일, tree SHA-256 `aa6c305e4cf7a88e3607249ac80b242ebae479372d8ac00879abd24ae955e426`에서 다시 생성해 기술·육안 검토 후 `playUploadApproved=true`로 고정했다.
+- 스토어 자산은 사용자 지정 폴더의 이미지로 교체하고 Play API readback의 개수·순서·SHA-256을 로컬 원본과 대조했다.
 - Worker를 version ID `c4c769c3-b4d5-4ba1-8c68-ef2ba22c742c`로 배포하고 `/api/health` 200과 인증 없는 reverse-geocode 요청 401을 확인했다.
-- 사용자가 A17·razr 정책 영상 촬영을 허용해 실제 기기 화면을 촬영했고, 개인정보·프로필·정밀 위치를 가린 무음 최종본 두 개만 YouTube 비공개 초안으로 업로드했다.
+- 사용자가 A17·razr 정책 영상 촬영을 허용해 실제 기기 화면을 촬영했고, 개인정보·프로필·정밀 위치를 가린 무음 최종본 두 개를 YouTube `아동용 아님`·`일부 공개`로 게시했다. 비로그인 외부 메타데이터 조회로 접근 가능성과 제목을 확인했다.
+- 앱 액세스를 `전체 또는 일부 기능이 제한됨`으로 저장하고, 사용자가 반복 가능한 프리미엄 보호자 심사 계정 자격 증명을 Console에 직접 입력했다. 자격 증명은 읽거나 기록하지 않았다.
 
 비차단 경고 두 건:
 
@@ -202,7 +208,7 @@ Console URL 매핑:
 | FGS 백그라운드 오디오 입력 | 영상 B — `https://youtu.be/cb_BFyed6uE` |
 | FGS 특수 용도 기타 | 영상 B — `https://youtu.be/cb_BFyed6uE` |
 
-현재 두 URL은 YouTube 비공개 초안이다. 외부 반영 확인 직후 제목·설명·`아동용 아님`·`일부 공개`를 저장하고 로그아웃 브라우저에서 링크 재생 가능 여부를 확인해야 한다.
+두 URL 모두 제목·설명·`아동용 아님`·`일부 공개`로 저장했다. 비로그인 YouTube oEmbed 조회가 각각 정확한 제목을 반환해 외부 접근 가능성을 확인했다.
 
 특수 용도 권한 사용 설명:
 
@@ -210,4 +216,4 @@ Console URL 매핑:
 보호자가 연결된 아이 기기에 응급 신호를 보내면 FCM 명령을 받은 아이 앱이 즉시 포그라운드 서비스와 명확한 지속 알림을 시작해 소리를 재생합니다. 아이가 확인하거나 보호자가 중지하거나 설정 시간이 끝나면 종료합니다. 응급 신호는 도착 후 바로 알려야 하므로 작업을 미루거나 일시중지할 수 없고, 서비스가 중단되면 아이가 신호를 놓칠 수 있습니다.
 ```
 
-두 영상 링크와 심사 계정이 저장되면 프로덕션 미리보기의 오류 두 건을 다시 검사한다. 그 전에 최신 clean commit의 versionCode 6 서명 AAB를 업로드해 versionCode 5 초안을 대체한다. 오류가 없어지면 출시 초안을 저장하고 게시 개요의 **검토를 위해 앱 전송**을 별도 최종 확인 뒤 실행한다.
+versionCode 6 서명 AAB, 두 영상 링크, 정책 선언, 심사 계정, 스토어 자산과 프로덕션 출시를 모두 저장했다. Play의 일반 문제 빠른 검사는 감지된 차단 없이 끝났고 Console은 `이제 검토를 위해 변경사항을 전송할 수 있습니다`를 표시한다. 게시 개요의 **검토를 위해 변경사항 12개 제출**은 사용자가 최종 실행한다. 에이전트는 이 마지막 제출 버튼을 누르지 않는다.

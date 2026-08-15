@@ -21,22 +21,23 @@
 운영 전 기존 키 폐기·새 키 발급/secret 반영·canary 재실행이 필수다. 현재 프로덕션 Worker는 아직 구버전이므로 Luna 전환 완료로
 간주하지 않는다. 기존 `docs/plans/2026-07-31-pricing-tier-benchmark.md`의 gpt-4o-mini 원가 가정은 역사 스냅샷으로만 보존한다.
 
-**현재 Google Play 출시 상태(2026-08-15 오후)**: Play의 기존 프로덕션 초안에는 승인된 업로드 키로 서명한
-v1.3.0/versionCode 5 AAB가 올라가 있지만, 위치 권한 안내·지속 알림 문구·실제 기기명 보정이 반영된 출시 후보는
-**versionCode 6**이다. 최신 production build, 앱 1,298/1,298, Worker 1,161/1,161, Android unit 175/175·lint·
-assembleDebug가 통과했고 A17 부모에 `adb install -r`로 설치해 세션 보존, 부모 홈, razr 실제 기기명
-`motorola razr 40 ultra` 표시를 확인했다. S25는 완전 무조작했다. 최신 production UI 기반 스토어 이미지 6장도
-dist 417파일/tree SHA-256 `aa6c305e4cf7a88e3607249ac80b242ebae479372d8ac00879abd24ae955e426`에서 재생성해
-육안 승인했다. Worker는 version ID `c4c769c3-b4d5-4ba1-8c68-ef2ba22c742c`로 배포했고 health 200과
-reverse-geocode 인증 route 401을 확인했다.
+**현재 Google Play 출시 상태(2026-08-15 오후)**: **최종 심사 전송 직전 HOLD**다. 최신 앱 source commit
+`40a32e2c18e929877e7c92970d6898619d7feedd`에서 승인된 업로드 키로 v1.3.0/versionCode 6 release AAB를 만들었고,
+SHA-256은 `6b31166c7b6e141ed451a81970ed78a4a934ea1ecd8cc31addd4024f9d0dbc45`다. 승인 인증서 일치,
+release/non-debuggable manifest, `PAGE_ALIGNMENT_16K`·ZIP·전체 ELF 16KB 정렬을 증거 JSON으로 확인한 뒤 Play 프로덕션
+초안 `혜니캘린더 1.3.0 (6)`에 업로드했다. 최신 production build, 앱 1,298/1,298, Worker 1,161/1,161,
+Android unit 175/175·lint·assembleDebug가 통과했고 A17 부모에 `adb install -r`로 설치해 세션 보존, 부모 홈,
+razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 완전 무조작했다. Worker는 version ID
+`c4c769c3-b4d5-4ba1-8c68-ef2ba22c742c`로 배포했고 health 200과 reverse-geocode 인증 route 401을 확인했다.
 
-사용자가 A17·razr 정책 영상 촬영을 명시 허용해 실제 기기 화면을 촬영했고, 개인정보·정밀 위치를 가린 무음 최종본만
-YouTube에 비공개 초안으로 업로드했다. 백그라운드 위치=`https://youtu.be/yTfCI3RsVE8`, FGS 위치·마이크·특수 용도=
-`https://youtu.be/cb_BFyed6uE`이며 제목·설명·아동용 아님·일부 공개 저장은 외부 반영 확인 전이라 아직 미완료다.
-Play 자동 검사의 남은 차단은 ①백그라운드 위치 선언 ②FGS 선언이고, 로그인 세부정보도 현재 “제한 없음”이라 실제 구조와
-불일치한다. 반복 가능한 프리미엄 심사 전용 부모 계정·연결된 데모 아이를 “제한 있음”으로 등록해야 하며 비밀번호는
-사용자만 Console에 직접 입력한다. versionCode 6 서명 AAB도 최신 clean commit에서 사용자 보안 프롬프트 입력 후 새로
-만들어야 한다. 정확한 문구·영상 URL 매핑은 `docs/store/play-console-submission-v1.3.0.md` §7이 정본이다.
+사용자가 지정한 `C:\Users\TK\Downloads\Gmail (3)`의 피처 그래픽 1장, 휴대전화 스크린샷 8장,
+7인치·10인치 태블릿 스크린샷 각 4장으로 Play 자산을 전부 교체했고 API readback의 순서·SHA-256을 로컬 원본과
+대조했다. 폴더에 512×512 아이콘이 없어 Play 아이콘만 기존 설치 아이콘을 유지했다. A17·razr 정책 영상은 개인정보·
+정밀 위치를 가린 무음 최종본으로 게시했고, 백그라운드 위치=`https://youtu.be/yTfCI3RsVE8`, FGS 위치·마이크·특수 용도=
+`https://youtu.be/cb_BFyed6uE` 모두 `아동용 아님`·`일부 공개` 저장과 비로그인 외부 접근을 확인했다. Play의 백그라운드
+위치·FGS 선언과 제한된 앱 액세스 심사 계정도 저장됐다. Play의 일반 문제 빠른 검사는 감지된 차단 없이 끝났고 게시 개요에는
+**검토를 위해 변경사항 12개 제출** 버튼이 활성화돼 있다. 최종 심사 전송 버튼은 사용자 최종 실행을 위해 누르지 않았다. 정확한 자산 순서·
+문구·영상 URL·AAB 증거는 `docs/store/play-console-submission-v1.3.0.md`가 정본이다.
 
 ---
 

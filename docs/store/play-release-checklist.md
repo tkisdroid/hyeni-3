@@ -2,7 +2,7 @@
 
 ## 현재 판정 (2026-08-15)
 
-**제출 직전 HOLD.** 최신 후보는 v1.3.0/versionCode 6이다. 앱 1,298/1,298·Worker 1,161/1,161·Android unit 175/175와 typecheck·production build·Capacitor sync·lint·assembleDebug가 통과했고, 최신 스토어 자산 6장도 production dist에서 다시 생성해 기술·육안 승인했다. Worker는 production에 배포했고 A17 부모에는 `adb install -r`로 세션을 보존해 부모 홈과 razr 실제 기기명 표시를 확인했다. 사용자 허용 아래 A17·razr 정책 영상 2개를 촬영·비식별·무음 처리해 YouTube 비공개 초안으로 업로드했다. 남은 출시 차단은 ①두 영상을 일부 공개로 저장 ②백그라운드 위치·FGS 선언 저장 ③로그인 세부정보를 제한 있음으로 바꾸고 재사용 가능한 심사 계정 입력 ④최신 clean commit에서 versionCode 6 서명 AAB 생성·업로드 ⑤Pages 최신 배포·검증 ⑥게시 개요 최종 심사 전송이다. 서명 값은 `scripts/build-android-release.ps1`의 보안 프롬프트로만 받고, 비밀번호는 사용자가 직접 입력한다. 기존 versionCode 5 AAB와 모든 debug 산출물은 업로드하지 않는다.
+**최종 심사 전송 직전 HOLD.** 최신 후보 v1.3.0/versionCode 6의 코드·테스트·Worker/Pages 배포, 승인 업로드 키 서명 AAB 생성·검증·업로드, 스토어 등록정보와 지정 이미지 교체, 일부 공개 정책 영상 2개, 백그라운드 위치·FGS 선언, 제한된 앱 액세스 심사 계정, 프로덕션 출시 저장을 마쳤다. Play의 일반 문제 빠른 검사도 감지된 차단 없이 끝났고 게시 개요에는 **검토를 위해 변경사항 12개 제출** 버튼이 활성화돼 있다. 이제 사용자가 최종 심사 전송 버튼만 누른다. 에이전트는 그 최종 버튼을 누르지 않는다. 서명 값과 심사 계정 자격 증명은 사용자만 입력했고 저장소·로그에 기록하지 않았다.
 
 v1.2.0의 테스트·APK·A17 부모·razr 아이 결과는 역사 기록으로만 보존하며 v1.3.0 완료 증거로 재사용하지 않는다. 당시 precache 320개·entry 472,252 bytes와 debug APK SHA-256 `246A1513CA9D9951D7857654B538398A9D175605F097331EAADDE2DBA2D243F5`도 역사 증거이며 현재 후보 승인값이 아니다.
 
@@ -11,23 +11,25 @@ v1.2.0의 테스트·APK·A17 부모·razr 아이 결과는 역사 기록으로�
 - [x] 위치 권한 prominent disclosure가 온보딩 인증 전환에 가려지지 않도록 gate를 추가하고, 아이 위치 화면의 재허용 경로도 같은 공용 dialog로 통일
 - [x] 위치 FGS 지속 알림을 `위치 공유 중`과 실제 공유 대상 문구로 바꾸고 최신 네이티브 제조사·모델로 오래된 에뮬레이터 device label을 보정
 - [x] 앱 1,298/1,298, Worker 1,161/1,161, Android unit 175/175·lint·assembleDebug, production build 통과
-- [x] 최신 dist 417파일/tree SHA-256 `aa6c305e4cf7a88e3607249ac80b242ebae479372d8ac00879abd24ae955e426`에서 스토어 이미지 6장을 재생성하고 `playUploadApproved=true`로 육안 승인
+- [x] 사용자 지정 폴더 `C:\Users\TK\Downloads\Gmail (3)`의 피처 그래픽 1장, 휴대전화 8장, 7인치·10인치 태블릿 각 4장으로 Play 자산을 교체하고 API readback의 순서·SHA-256을 원본과 대조. 512×512 대체 파일이 없어 Play 아이콘만 기존 설치 아이콘을 유지
 - [x] Worker version ID `c4c769c3-b4d5-4ba1-8c68-ef2ba22c742c` 배포, health 200·reverse-geocode 인증 route 401 확인
 - [x] A17 부모 최신 debug 설치·세션 보존·부모 홈·razr 실제 기기명 표시 확인. S25 완전 무조작
-- [x] A17·razr 정책 영상 촬영 허용 범위에서 개인정보·정밀 위치를 비식별하고 오디오를 제거한 최종본 2개를 YouTube 비공개 초안으로 업로드
-- [ ] YouTube 제목·설명·아동용 아님·일부 공개 저장 및 로그아웃 재생 확인
-- [ ] Play 백그라운드 위치 선언과 FGS 위치 3항목·마이크·specialUse 선언 저장
-- [ ] 로그인 세부정보를 제한 있음으로 변경하고 사용자가 재사용 가능한 심사 계정 비밀번호를 직접 입력
-- [ ] 최신 clean commit에서 승인 업로드 키로 versionCode 6 release AAB 생성·증거 검증·Play 업로드
-- [ ] 최신 Pages 배포와 assetlinks·핵심 route 확인 후 게시 개요에서 최종 심사 전송
+- [x] A17·razr 정책 영상 촬영 허용 범위에서 개인정보·정밀 위치를 비식별하고 오디오를 제거한 최종본 2개를 YouTube에 업로드
+- [x] YouTube 제목·설명·아동용 아님·일부 공개 저장 및 비로그인 외부 접근 확인
+- [x] Play 백그라운드 위치 선언과 FGS 위치 3항목·마이크·specialUse 선언 저장
+- [x] 로그인 세부정보를 제한 있음으로 변경하고 사용자가 재사용 가능한 심사 계정과 비밀번호를 Console에 직접 입력
+- [x] clean app commit `40a32e2c18e929877e7c92970d6898619d7feedd`에서 승인 업로드 키로 versionCode 6 release AAB 생성·증거 검증·Play 업로드. AAB SHA-256 `6b31166c7b6e141ed451a81970ed78a4a934ea1ecd8cc31addd4024f9d0dbc45`
+- [x] 최신 Pages 배포와 assetlinks·핵심 route 확인, 프로덕션 2단계 미리보기와 출시 저장
+- [x] Play 일반 문제 빠른 검사 완료, 감지된 차단 0건과 `이제 검토를 위해 변경사항을 전송할 수 있습니다` 표시 확인
+- [ ] 게시 개요의 **검토를 위해 변경사항 12개 제출** 버튼을 사용자가 최종 실행
 
 - [x] 등록정보 문안 초안: `docs/store/play-listing.md`
 - [x] Data Safety 워크시트 초안: `docs/store/play-data-safety.md`
 - [x] 출시 운영 가이드 초안: `docs/release/혜니캘린더_Google_Play_출시_가이드북_2026-07-14.md`
 - [ ] Data Safety의 전체 데이터 유형과 외부 처리업체 서비스 제공자 예외를 계약·설정 기준으로 확정
 - [ ] 공개 이용약관·개인정보처리방침·데이터 삭제 URL은 현재 HTTPS 200·한글이지만 Toss Payments·자동결제·AI 크레딧·추천·5년 금융 보존·출시 가격 문구가 없는 구버전이므로 최신 문구로 배포하고 갱신일 재확인
-- [x] 개인정보 없는 스크린샷·아이콘·피처 그래픽을 데모 데이터로 새로 제작하고 PII·메타데이터를 육안·기계 검토. 실제 UI 6장은 현재 local production dist 417파일·SHA-256 `aa6c305e4cf7a88e3607249ac80b242ebae479372d8ac00879abd24ae955e426`를 `output/store-ui-candidates-v1/manifest.json`에 고정했고 최종 `technical-review.json`은 `TECHNICAL_REVIEW_PASSED`·`playUploadApproved=true`를 명시
-- [ ] 최신 final app SHA의 clean CI에서 build→`cap sync`→승인 인증서 서명 release AAB를 새로 만들고 schema v4가 source dist, post-sync public, universal APK public의 raw hash·파일 수와 정규화 투영을 검증하는지 확인. 허용 예외는 루트 0바이트 `cordova.js`·`cordova_plugins.js`와 이름·334 bytes·SHA가 고정된 AAPT 제외 `.well-known/assetlinks.json`뿐이어야 한다. bundletool AAB manifest policy v1은 승인 권한 24개 exact allowlist, `isMonitoringTool=child_monitoring`, legacy 저장소 `maxSdkVersion=28`을 모두 확정해야 한다. release record가 같은 값과 Pages artifact provenance, package/versionName/versionCode, AAB SHA-256·mtime, `jarsigner`·승인 upload certificate, `PAGE_ALIGNMENT_16K`·`zipalign -P 16`·전체 ELF `LOAD >= 0x4000` evidence까지 연결해야 함
+- [x] Play 그래픽 자산은 사용자 지정 원본으로 교체하고 중복 파일 `1000172579.png`=`1000172578.png`, `1000172581.png`=`1000172580.png`를 제외했다. 업로드 순서와 전체 SHA-256은 `docs/store/play-console-submission-v1.3.0.md` §2에 고정
+- [x] final app SHA `40a32e2c18e929877e7c92970d6898619d7feedd`에서 build→`cap sync`→승인 인증서 서명 release AAB를 새로 만들고 source dist·post-sync public·universal APK public, manifest 권한 24개 exact allowlist, `isMonitoringTool=child_monitoring`, legacy 저장소 `maxSdkVersion=28`, package/versionName/versionCode, `jarsigner`·승인 upload certificate, `PAGE_ALIGNMENT_16K`·`zipalign -P 16`·전체 ELF `LOAD >= 0x4000`를 검증. 증거=`artifacts/release-evidence/android-release-aab-evidence-20260815-184739-40a32e2.json`
 - [x] 최신 local debug schema v4 evidence GREEN: source 414/`21fd84…6c1e5`, Android/embedded projection 413/`4a6af8…18d15`, cap public 416/`821819…248fa`, embedded public 415/`0f291b…5cbc`; web `matched:true`, archive 961/2/955 safe, 시작/종료 integrity 모두 true, AAB manifest policy v1 권한 24개 exact allowlist·`isMonitoringTool=child_monitoring`·legacy 저장소 `maxSdkVersion=28`, ZIP·전체 ELF 16KB 정적 검사 통과. `artifacts/release-evidence/android-debug-aab-evidence-20260802-143008.json` SHA-256 `e552dd6655d4e6a0b467cac0d0acba73f5ae9f79a410b657926e1fcd242d0c18`, verification log SHA-256 `1bd78d88dfa4cb717bf4f73d1a8bf116cb653135d01560daa9c472816f0a483f`
 - [x] local Android unit 172/172·manifest policy 33/33 강제 재실행, lint 오류 0·경고 13, assemble/bundle 통과. 경고 13건은 사용되지 않는 레거시 리소스와 기존 런처·스플래시 이미지 구성 경고다. debug APK 13,092,876 bytes·SHA-256 `62b66ce643e38c77074e30c7fa992c48d9ea70a56a8e720a8fff9c94c8e05873`, debug AAB 12,018,080 bytes·SHA-256 `eb0eb5b2288de6771c3e70cc3e5bbe7eaeb3fa62d1f85d1d2ce318748631c2c5`. debug 서명으로 Play 업로드 불가
 - [x] 활성 OpenAI 호출 4개를 중앙 `gpt-5.6-luna`·`reasoning_effort:none`·`max_completion_tokens`·SHA-256 `safety_identifier` 계약으로 전환하고 빈/비정상 응답 fail-closed를 포함한 로그 안전 계약 11/11, 업데이트된 `.env` 키의 한국어 아동 안전 text·일정 JSON·합성 한국어 알림장 PNG·하루 요약 live canary 4/4 확인. 현재 키의 비환경 파일 출현 0건
