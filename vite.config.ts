@@ -79,5 +79,21 @@ export default defineConfig({
     }),
   ],
   server: { port: 5173, host: true },
-  build: { target: "es2022", sourcemap: false },
+  build: {
+    target: "es2022",
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "i18n-runtime": [
+            "react",
+            "react-dom",
+            "react-dom/client",
+            "react-intl",
+            "intl-messageformat",
+          ],
+        },
+      },
+    },
+  },
 });
