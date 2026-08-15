@@ -8,7 +8,11 @@ import {
   type ReactNode,
 } from "react";
 import { IntlProvider } from "react-intl";
-import { loadNamespaceAtomically } from "./catalog";
+import {
+  createLocaleRuntimeCoordinator,
+  loadNamespaceAtomically,
+  type LocaleRuntimeCoordinator,
+} from "./catalog";
 import type {
   CatalogMessages,
   MessageNamespace,
@@ -28,13 +32,6 @@ export interface LocaleContextValue {
   locale: SupportedLocale;
   setLocale(locale: SupportedLocale): Promise<void>;
   ensureNamespaces(namespaces: readonly MessageNamespace[]): Promise<void>;
-  readyNamespaces: ReadonlySet<MessageNamespace>;
-  loading: boolean;
-}
-
-interface LocaleRuntimeState {
-  locale: SupportedLocale;
-  messages: CatalogMessages;
   readyNamespaces: ReadonlySet<MessageNamespace>;
   loading: boolean;
 }
@@ -83,141 +80,37 @@ function updateInitialDocument(
     ?.setAttribute("content", brand);
 }
 
-async function loadNamespaceSet(
-  locale: SupportedLocale,
-  namespaces: readonly MessageNamespace[],
-): Promise<{ messages: CatalogMessages; readyNamespaces: ReadonlySet<MessageNamespace> }> {
-  const uniqueNamespaces = [...new Set(namespaces)];
-  const loaded = await Promise.all(uniqueNamespaces.map((namespace) =>
-    loadNamespaceAtomically({ locale, namespace })
-  ));
-  return {
-    messages: Object.assign({}, ...loaded.map((result) => result.messages)),
-    readyNamespaces: new Set(uniqueNamespaces),
-  };
+function createBrowserCoordinator(): LocaleRuntimeCoordinator {
+  return createLocaleRuntimeCoordinator({
+    initialLocale: detectInitialLocale(),
+    load: (locale, namespace) => loadNamespaceAtomically({ locale, namespace }),
+    storage: browserLocaleStorage,
+    document: { update: updateInitialDocument },
+  });
 }
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
-  const initialLocaleRef = useRef<SupportedLocale | null>(null);
-  if (initialLocaleRef.current === null) {
-    initialLocaleRef.current = detectInitialLocale();
+  const coordinatorRef = useRef<LocaleRuntimeCoordinator | null>(null);
+  if (coordinatorRef.current === null) {
+    coordinatorRef.current = createBrowserCoordinator();
   }
-
-  const [runtime, setRuntime] = useState<LocaleRuntimeState>(() => ({
-    locale: initialLocaleRef.current ?? "en",
-    messages: {},
-    readyNamespaces: new Set<MessageNamespace>(),
-    loading: false,
-  }));
-  const runtimeRef = useRef(runtime);
-  const currentNamespacesRef = useRef<ReadonlySet<MessageNamespace>>(new Set(["core"]));
-  const generationRef = useRef(0);
-  const pendingCountRef = useRef(0);
-  const activeSwitchRef = useRef<Promise<void> | null>(null);
-
-  const commitRuntime = useCallback((next: LocaleRuntimeState) => {
-    runtimeRef.current = next;
-    setRuntime(next);
-  }, []);
-
-  const beginLoading = useCallback(() => {
-    pendingCountRef.current += 1;
-    if (pendingCountRef.current === 1) {
-      commitRuntime({ ...runtimeRef.current, loading: true });
-    }
-  }, [commitRuntime]);
-
-  const endLoading = useCallback(() => {
-    pendingCountRef.current = Math.max(0, pendingCountRef.current - 1);
-    if (pendingCountRef.current === 0 && runtimeRef.current.loading) {
-      commitRuntime({ ...runtimeRef.current, loading: false });
-    }
-  }, [commitRuntime]);
-
-  const setLocale = useCallback(async (locale: SupportedLocale): Promise<void> => {
-    if (
-      runtimeRef.current.locale === locale
-      && runtimeRef.current.readyNamespaces.has("core")
-      && activeSwitchRef.current === null
-    ) {
-      return;
-    }
-
-    const generation = generationRef.current + 1;
-    generationRef.current = generation;
-    beginLoading();
-
-    const switchPromise = (async () => {
-      const core = await loadNamespaceAtomically({ locale, namespace: "core" });
-      if (generation !== generationRef.current) return;
-
-      browserLocaleStorage.write(locale);
-      updateInitialDocument(locale, core.messages);
-
-      const requiredNamespaces = [...currentNamespacesRef.current];
-      const remainingNamespaces = requiredNamespaces.filter((namespace) => namespace !== "core");
-      const remaining = await loadNamespaceSet(locale, remainingNamespaces);
-      if (generation !== generationRef.current) return;
-
-      commitRuntime({
-        locale,
-        messages: { ...core.messages, ...remaining.messages },
-        readyNamespaces: new Set(["core", ...remaining.readyNamespaces]),
-        loading: true,
-      });
-    })();
-    activeSwitchRef.current = switchPromise;
-
-    try {
-      await switchPromise;
-    } finally {
-      if (activeSwitchRef.current === switchPromise) {
-        activeSwitchRef.current = null;
-      }
-      endLoading();
-    }
-  }, [beginLoading, commitRuntime, endLoading]);
-
-  const ensureNamespaces = useCallback(async (
-    namespaces: readonly MessageNamespace[],
-  ): Promise<void> => {
-    const requestedNamespaces = new Set<MessageNamespace>(["core", ...namespaces]);
-    currentNamespacesRef.current = requestedNamespaces;
-
-    const activeSwitch = activeSwitchRef.current;
-    if (activeSwitch) {
-      await activeSwitch;
-      return ensureNamespaces(namespaces);
-    }
-
-    const snapshot = runtimeRef.current;
-    const missingNamespaces = [...requestedNamespaces].filter(
-      (namespace) => !snapshot.readyNamespaces.has(namespace),
-    );
-    if (missingNamespaces.length === 0) return;
-
-    const generation = generationRef.current;
-    beginLoading();
-    try {
-      const loaded = await loadNamespaceSet(snapshot.locale, missingNamespaces);
-      if (generation !== generationRef.current) return;
-
-      const current = runtimeRef.current;
-      commitRuntime({
-        ...current,
-        messages: { ...current.messages, ...loaded.messages },
-        readyNamespaces: new Set([...current.readyNamespaces, ...loaded.readyNamespaces]),
-        loading: true,
-      });
-    } finally {
-      endLoading();
-    }
-  }, [beginLoading, commitRuntime, endLoading]);
+  const coordinator = coordinatorRef.current;
+  const [runtime, setRuntime] = useState(() => coordinator.getSnapshot());
 
   useEffect(() => {
-    void setLocale(initialLocaleRef.current ?? "en");
-  }, [setLocale]);
+    const unsubscribe = coordinator.subscribe(setRuntime);
+    void coordinator.setLocale(coordinator.getSnapshot().locale).catch(() => undefined);
+    return unsubscribe;
+  }, [coordinator]);
 
+  const setLocale = useCallback(
+    (locale: SupportedLocale) => coordinator.setLocale(locale),
+    [coordinator],
+  );
+  const ensureNamespaces = useCallback(
+    (namespaces: readonly MessageNamespace[]) => coordinator.ensureNamespaces(namespaces),
+    [coordinator],
+  );
   const value = useMemo<LocaleContextValue>(() => ({
     locale: runtime.locale,
     setLocale,
@@ -226,10 +119,29 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     loading: runtime.loading,
   }), [ensureNamespaces, runtime.locale, runtime.loading, runtime.readyNamespaces, setLocale]);
 
+  if (!runtime.readyNamespaces.has("core")) {
+    if (!runtime.error) return null;
+    return (
+      <main className="hy-content">
+        <section className="hy-card" role="alert" aria-live="assertive">
+          <h1>언어 정보를 불러오지 못했어요</h1>
+          <p>연결을 확인한 뒤 다시 시도해 주세요.</p>
+          <button
+            type="button"
+            className="hy-press"
+            onClick={() => void coordinator.retry().catch(() => undefined)}
+          >
+            다시 시도
+          </button>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <LocaleContext.Provider value={value}>
       <IntlProvider locale={runtime.locale} defaultLocale="ko" messages={runtime.messages}>
-        {runtime.readyNamespaces.has("core") ? children : null}
+        {children}
       </IntlProvider>
     </LocaleContext.Provider>
   );

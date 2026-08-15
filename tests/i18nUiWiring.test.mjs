@@ -81,3 +81,12 @@ test("locale runtime은 인증·쿼리·활성 아이 세션을 변경하지 않
   assert.doesNotMatch(provider, /clearApiSession|logout|anonymousLogin|setActiveChildId|AuthProvider|QueryProvider/);
   assert.doesNotMatch(provider, /hyeni-api-session-v1|hyeni-active-child/);
 });
+
+test("초기 catalog 실패 화면은 raw 오류 없이 사용자 retry를 연결한다", () => {
+  const provider = readSource("src/i18n/LocaleProvider.tsx");
+
+  assert.match(provider, /if \(!runtime\.readyNamespaces\.has\("core"\)\)/);
+  assert.match(provider, /role="alert"[\s\S]*언어 정보를 불러오지 못했어요/);
+  assert.match(provider, /onClick=\{\(\) => void coordinator\.retry\(\)\.catch/);
+  assert.doesNotMatch(provider, /loadError\.message|runtime\.error\.message|JSON\.stringify\(runtime\.error/);
+});
