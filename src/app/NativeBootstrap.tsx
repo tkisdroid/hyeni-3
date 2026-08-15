@@ -62,11 +62,57 @@ interface AppLocalePlugin {
   setLocale(input: { locale: SupportedLocale }): Promise<{ locale: SupportedLocale }>;
 }
 
-export async function syncNativeAppLocale(locale: SupportedLocale): Promise<void> {
-  if (!isNativePlatform()) return;
-  const plugin = getNativePlugin<AppLocalePlugin>("AppLocale");
-  if (!plugin) return;
-  await plugin.setLocale({ locale });
+function createNativeLocaleSyncScheduler(
+  writeLocale: (locale: SupportedLocale) => Promise<void>,
+  onError: () => void,
+) {
+  let pendingLocale: SupportedLocale | null = null;
+  let drainPromise: Promise<void> | null = null;
+
+  const drain = async () => {
+    try {
+      while (pendingLocale !== null) {
+        const locale = pendingLocale;
+        pendingLocale = null;
+        try {
+          await writeLocale(locale);
+        } catch {
+          onError();
+        }
+      }
+    } finally {
+      drainPromise = null;
+    }
+  };
+
+  const ensureDrain = (): Promise<void> => {
+    if (drainPromise) return drainPromise;
+    drainPromise = drain();
+    return drainPromise;
+  };
+
+  return {
+    request(locale: SupportedLocale): Promise<void> {
+      pendingLocale = locale;
+      return ensureDrain();
+    },
+  };
+}
+
+const nativeAppLocaleScheduler = createNativeLocaleSyncScheduler(
+  async (locale) => {
+    if (!isNativePlatform()) return;
+    const plugin = getNativePlugin<AppLocalePlugin>("AppLocale");
+    if (!plugin) return;
+    await plugin.setLocale({ locale });
+  },
+  () => {
+    console.warn("native_locale_sync_failed");
+  },
+);
+
+export function syncNativeAppLocale(locale: SupportedLocale): Promise<void> {
+  return nativeAppLocaleScheduler.request(locale);
 }
 
 export function NativeBootstrap() {
@@ -77,9 +123,7 @@ export function NativeBootstrap() {
   // locale runtime의 웹 전환이 끝난 뒤 Android 앱별 locale에도 알린다.
   // 플러그인이 아직 없거나 실패해도 웹 locale과 세션은 그대로 유지한다.
   useEffect(() => {
-    void syncNativeAppLocale(locale).catch(() => {
-      console.warn("native_locale_sync_failed");
-    });
+    void syncNativeAppLocale(locale);
   }, [locale]);
 
   // PWA service worker는 localStorage를 읽을 수 없으므로 현재 세션의 최소 대상 정보만
