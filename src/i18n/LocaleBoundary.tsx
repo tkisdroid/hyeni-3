@@ -10,24 +10,24 @@ export function LocaleBoundary({
   namespaces: readonly MessageNamespace[];
   children: ReactNode;
 }) {
-  const { locale, ensureNamespaces, readyNamespaces } = useLocale();
+  const { locale, readyNamespaces } = useLocale();
   const acquireNamespaceLease = useLocaleBoundaryLease();
   const [loadError, setLoadError] = useState<unknown>(null);
   const namespaceKey = namespaces.join("\u0000");
   const ready = namespaces.every((namespace) => readyNamespaces.has(namespace));
 
   useEffect(() => {
-    const releaseLease = acquireNamespaceLease(namespaces);
+    const lease = acquireNamespaceLease(namespaces);
     let active = true;
     setLoadError(null);
-    ensureNamespaces(namespaces).catch((error: unknown) => {
+    lease.ready.catch((error: unknown) => {
       if (active) setLoadError(error);
     });
     return () => {
       active = false;
-      releaseLease();
+      lease.release();
     };
-  }, [acquireNamespaceLease, ensureNamespaces, locale, namespaceKey, namespaces]);
+  }, [acquireNamespaceLease, locale, namespaceKey, namespaces]);
 
   if (loadError) throw loadError;
   return ready ? children : null;

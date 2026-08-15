@@ -34,12 +34,17 @@ export interface LocaleDocumentPort {
   update(locale: SupportedLocale, coreMessages: CatalogMessages): void;
 }
 
+export interface NamespaceLease {
+  ready: Promise<void>;
+  release(): void;
+}
+
 export interface LocaleRuntimeCoordinator {
   getSnapshot(): LocaleRuntimeSnapshot;
   subscribe(listener: (snapshot: LocaleRuntimeSnapshot) => void): () => void;
   setLocale(locale: SupportedLocale): Promise<void>;
   ensureNamespaces(namespaces: readonly MessageNamespace[]): Promise<void>;
-  acquireNamespaceLease(namespaces: readonly MessageNamespace[]): () => void;
+  acquireNamespaceLease(namespaces: readonly MessageNamespace[]): NamespaceLease;
   retry(): Promise<void>;
 }
 
@@ -92,8 +97,13 @@ export function createLocaleRuntimeCoordinator(args: {
     error: false,
   };
   const listeners = new Set<(next: LocaleRuntimeSnapshot) => void>();
+  interface NamespaceLeaseToken {
+    namespaces: ReadonlySet<MessageNamespace>;
+    released: boolean;
+  }
   const waiters = new Set<{
     namespaces: ReadonlySet<MessageNamespace>;
+    owner: NamespaceLeaseToken | null;
     resolve(): void;
     reject(error: unknown): void;
   }>();
@@ -107,8 +117,10 @@ export function createLocaleRuntimeCoordinator(args: {
     generation: number;
     locale: SupportedLocale;
     commitExternal: boolean;
+    cancelLoads: Map<MessageNamespace, () => void>;
     promise: Promise<void>;
   } | null = null;
+  const transitionLoadCancelled = Symbol("transitionLoadCancelled");
 
   const activeNamespaces = (): ReadonlySet<MessageNamespace> => new Set([
     "core",
@@ -133,13 +145,21 @@ export function createLocaleRuntimeCoordinator(args: {
     }
   };
 
+  let cancelUnusedNamespaces: (namespaces: Iterable<MessageNamespace>) => void =
+    () => undefined;
+
   const rejectWaitersFor = (namespace: MessageNamespace, error: unknown) => {
+    const affectedNamespaces = new Set<MessageNamespace>();
     for (const waiter of waiters) {
       if (waiter.namespaces.has(namespace)) {
         waiters.delete(waiter);
+        for (const affectedNamespace of waiter.namespaces) {
+          affectedNamespaces.add(affectedNamespace);
+        }
         waiter.reject(error);
       }
     }
+    cancelUnusedNamespaces(affectedNamespaces);
   };
 
   const commitExternalState = (
@@ -159,6 +179,22 @@ export function createLocaleRuntimeCoordinator(args: {
   };
 
   let schedulePendingWaiters: () => void = () => undefined;
+
+  const namespaceIsDemanded = (namespace: MessageNamespace) =>
+    activeNamespaces().has(namespace)
+    || [...waiters].some((waiter) => waiter.namespaces.has(namespace));
+
+  cancelUnusedNamespaces = (namespaces) => {
+    for (const namespace of namespaces) {
+      if (namespaceIsDemanded(namespace)) continue;
+      namespaceJobs.delete(namespace);
+      activeTransition?.cancelLoads.get(namespace)?.();
+    }
+    const loading = hasActiveWork();
+    if (snapshot.loading !== loading) {
+      emit({ ...snapshot, loading });
+    }
+  };
 
   const startNamespaceJob = (namespace: MessageNamespace) => {
     if (snapshot.readyNamespaces.has(namespace)) return;
@@ -234,12 +270,14 @@ export function createLocaleRuntimeCoordinator(args: {
     locale: SupportedLocale,
     commitExternal: boolean,
   ): Promise<void> => {
+    for (const cancel of activeTransition?.cancelLoads.values() ?? []) cancel();
     generation += 1;
     namespaceJobs.clear();
     const transition = {
       generation,
       locale,
       commitExternal,
+      cancelLoads: new Map<MessageNamespace, () => void>(),
       promise: Promise.resolve(),
     };
     activeTransition = transition;
@@ -262,24 +300,36 @@ export function createLocaleRuntimeCoordinator(args: {
             .filter((namespace) => !nextReady.has(namespace));
           if (missing.length === 0) break;
 
-          const loaded = await Promise.allSettled(missing.map((namespace) =>
-            args.load(locale, namespace)
-          ));
+          const loaded = await Promise.allSettled(missing.map((namespace) => {
+            let cancel: () => void = () => undefined;
+            const cancelled = new Promise<typeof transitionLoadCancelled>((resolve) => {
+              cancel = () => resolve(transitionLoadCancelled);
+            });
+            transition.cancelLoads.set(namespace, cancel);
+            return Promise.race([args.load(locale, namespace), cancelled]).finally(() => {
+              if (transition.cancelLoads.get(namespace) === cancel) {
+                transition.cancelLoads.delete(namespace);
+              }
+            });
+          }));
           if (transition.generation !== generation) return;
           const stillRequired = activeNamespaces();
+          const failures: unknown[] = [];
           for (const [index, result] of loaded.entries()) {
             const namespace = missing[index];
             if (!namespace) continue;
             if (result.status === "rejected") {
               if (stillRequired.has(namespace)) {
                 rejectWaitersFor(namespace, result.reason);
-                throw result.reason;
+                failures.push(result.reason);
               }
               continue;
             }
+            if (result.value === transitionLoadCancelled) continue;
             Object.assign(nextMessages, result.value.messages);
             nextReady.add(result.value.namespace);
           }
+          if (failures.length > 0) throw failures[0];
         }
 
         if (transition.generation !== generation) return;
@@ -333,6 +383,27 @@ export function createLocaleRuntimeCoordinator(args: {
     return startTransition(locale, true);
   };
 
+  const requestNamespaces = (
+    namespaces: readonly MessageNamespace[],
+    owner: NamespaceLeaseToken | null,
+  ): Promise<void> => {
+    if (owner?.released) return Promise.resolve();
+    const requestedNamespaces = new Set<MessageNamespace>(["core", ...namespaces]);
+    if (
+      (activeTransition === null || activeTransition.locale === snapshot.locale)
+      && [...requestedNamespaces]
+        .every((namespace) => snapshot.readyNamespaces.has(namespace))
+    ) {
+      return Promise.resolve();
+    }
+
+    const readyPromise = new Promise<void>((resolve, reject) => {
+      waiters.add({ namespaces: requestedNamespaces, owner, resolve, reject });
+    });
+    schedulePendingWaiters();
+    return readyPromise;
+  };
+
   return {
     getSnapshot: () => snapshot,
     subscribe(listener) {
@@ -342,37 +413,36 @@ export function createLocaleRuntimeCoordinator(args: {
       };
     },
     setLocale,
-    ensureNamespaces(namespaces) {
-      const requestedNamespaces = new Set<MessageNamespace>(["core", ...namespaces]);
-      if (
-        (activeTransition === null || activeTransition.locale === snapshot.locale)
-        && [...requestedNamespaces]
-          .every((namespace) => snapshot.readyNamespaces.has(namespace))
-      ) {
-        return Promise.resolve();
-      }
-
-      const readyPromise = new Promise<void>((resolve, reject) => {
-        waiters.add({ namespaces: requestedNamespaces, resolve, reject });
-      });
-      schedulePendingWaiters();
-      return readyPromise;
-    },
+    ensureNamespaces: (namespaces) => requestNamespaces(namespaces, null),
     acquireNamespaceLease(namespaces) {
       const leasedNamespaces = [...new Set(namespaces)]
         .filter((namespace) => namespace !== "core");
+      const token: NamespaceLeaseToken = {
+        namespaces: new Set(leasedNamespaces),
+        released: false,
+      };
       for (const namespace of leasedNamespaces) {
         leaseCounts.set(namespace, (leaseCounts.get(namespace) ?? 0) + 1);
       }
-      let released = false;
-      return () => {
-        if (released) return;
-        released = true;
-        for (const namespace of leasedNamespaces) {
-          const nextCount = (leaseCounts.get(namespace) ?? 0) - 1;
-          if (nextCount > 0) leaseCounts.set(namespace, nextCount);
-          else leaseCounts.delete(namespace);
-        }
+      const ready = requestNamespaces(namespaces, token);
+      return {
+        ready,
+        release() {
+          if (token.released) return;
+          token.released = true;
+          for (const waiter of waiters) {
+            if (waiter.owner !== token) continue;
+            waiters.delete(waiter);
+            waiter.resolve();
+          }
+          for (const namespace of leasedNamespaces) {
+            const nextCount = (leaseCounts.get(namespace) ?? 0) - 1;
+            if (nextCount > 0) leaseCounts.set(namespace, nextCount);
+            else leaseCounts.delete(namespace);
+          }
+          cancelUnusedNamespaces(token.namespaces);
+          schedulePendingWaiters();
+        },
       };
     },
     retry: () => setLocale(requestedLocale),

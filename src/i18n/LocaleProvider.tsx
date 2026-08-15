@@ -13,6 +13,7 @@ import {
   createLocaleRuntimeCoordinator,
   loadNamespaceAtomically,
   type LocaleRuntimeCoordinator,
+  type NamespaceLease,
 } from "./catalog";
 import type {
   CatalogMessages,
@@ -41,7 +42,7 @@ export const LocaleContext = createContext<LocaleContextValue | null>(null);
 
 type LocaleBoundaryLeaseContextValue = (
   namespaces: readonly MessageNamespace[],
-) => () => void;
+) => NamespaceLease;
 
 const LocaleBoundaryLeaseContext =
   createContext<LocaleBoundaryLeaseContextValue | null>(null);

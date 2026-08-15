@@ -143,9 +143,9 @@ test("비-core load 실패는 locale·messages·storage·document를 부분 변�
     );
   });
 
-  const releaseParent = runtime.acquireNamespaceLease(["parent"]);
   await runtime.setLocale("ko");
-  await runtime.ensureNamespaces(["parent"]);
+  const parentLease = runtime.acquireNamespaceLease(["parent"]);
+  await parentLease.ready;
   storageWrites.length = 0;
   documentWrites.length = 0;
   failVietnameseParent = true;
@@ -163,7 +163,7 @@ test("비-core load 실패는 locale·messages·storage·document를 부분 변�
   assert.equal(runtime.getSnapshot().messages["parent.title"], "vi parent");
   assert.deepEqual(storageWrites, ["vi"]);
   assert.deepEqual(documentWrites, [{ locale: "vi", title: "vi brand" }]);
-  releaseParent();
+  parentLease.release();
 });
 
 test("같은 locale도 required namespace가 빠진 실패 상태면 다시 load한다", async () => {
@@ -177,14 +177,14 @@ test("같은 locale도 required namespace가 빠진 실패 상태면 다시 load
   });
 
   await runtime.setLocale("ko");
-  const releaseParent = runtime.acquireNamespaceLease(["parent"]);
-  await assert.rejects(runtime.ensureNamespaces(["parent"]), /first_parent_failure/);
+  const parentLease = runtime.acquireNamespaceLease(["parent"]);
+  await assert.rejects(parentLease.ready, /first_parent_failure/);
   assert.equal(runtime.getSnapshot().readyNamespaces.has("parent"), false);
 
   await runtime.setLocale("ko");
   assert.equal(parentAttempts, 2);
   assert.equal(runtime.getSnapshot().readyNamespaces.has("parent"), true);
-  releaseParent();
+  parentLease.release();
 });
 
 test("빠른 A→B→C 전환에서 늦은 A/B 완료는 C의 외부 상태를 덮지 않는다", async () => {
@@ -255,9 +255,9 @@ test("locale 전환에 supersede된 ensure는 새 locale에서 namespace가 read
   });
   await runtime.setLocale("ko");
 
-  const releaseParent = runtime.acquireNamespaceLease(["parent"]);
+  const parentLease = runtime.acquireNamespaceLease(["parent"]);
   let ensureResolved = false;
-  const ensureParent = runtime.ensureNamespaces(["parent"]).then(() => {
+  const ensureParent = parentLease.ready.then(() => {
     ensureResolved = true;
   });
   await Promise.resolve();
@@ -273,7 +273,7 @@ test("locale 전환에 supersede된 ensure는 새 locale에서 namespace가 read
   } finally {
     oldParentLoad.resolve(loaded("ko", "parent"));
     await ensureParent;
-    releaseParent();
+    parentLease.release();
   }
 });
 
@@ -354,12 +354,13 @@ test("떠난 reports lease는 이후 parent-only locale switch preload에 남지
     if (failReports && namespace === "reports") throw new Error("reports_failed");
     return loaded(locale, namespace);
   });
-  const releaseParent = runtime.acquireNamespaceLease(["parent"]);
   await runtime.setLocale("ko");
-  const releaseReports = runtime.acquireNamespaceLease(["reports"]);
+  const parentLease = runtime.acquireNamespaceLease(["parent"]);
+  await parentLease.ready;
   failReports = true;
-  await assert.rejects(runtime.ensureNamespaces(["reports"]), /reports_failed/);
-  releaseReports();
+  const reportsLease = runtime.acquireNamespaceLease(["reports"]);
+  await assert.rejects(reportsLease.ready, /reports_failed/);
+  reportsLease.release();
   failReports = false;
   calls.length = 0;
 
@@ -368,7 +369,7 @@ test("떠난 reports lease는 이후 parent-only locale switch preload에 남지
   assert.deepEqual(calls.sort(), ["vi:core", "vi:parent"]);
   assert.equal(runtime.getSnapshot().locale, "vi");
   assert.equal(runtime.getSnapshot().readyNamespaces.has("parent"), true);
-  releaseParent();
+  parentLease.release();
 });
 
 test("같은 namespace의 중첩 lease는 마지막 release 뒤에만 비활성화된다", async () => {
@@ -377,14 +378,17 @@ test("같은 namespace의 중첩 lease는 마지막 release 뒤에만 비활성�
     calls.push(`${locale}:${namespace}`);
     return loaded(locale, namespace);
   });
-  const releaseFirst = runtime.acquireNamespaceLease(["reports"]);
-  const releaseSecond = runtime.acquireNamespaceLease(["reports"]);
-  releaseFirst();
+  await runtime.setLocale("ko");
+  const firstLease = runtime.acquireNamespaceLease(["reports"]);
+  const secondLease = runtime.acquireNamespaceLease(["reports"]);
+  await Promise.all([firstLease.ready, secondLease.ready]);
+  calls.length = 0;
+  firstLease.release();
 
   await runtime.setLocale("vi");
   assert.deepEqual(calls.sort(), ["vi:core", "vi:reports"]);
 
-  releaseSecond();
+  secondLease.release();
   calls.length = 0;
   await runtime.setLocale("th");
   assert.deepEqual(calls, ["th:core"]);
@@ -413,4 +417,140 @@ test("서로 다른 missing namespace 요청은 각 성공과 실패에만 따�
   assert.equal(reportsResult.status, "rejected");
   assert.equal(runtime.getSnapshot().readyNamespaces.has("parent"), true);
   assert.equal(runtime.getSnapshot().readyNamespaces.has("reports"), false);
+});
+
+test("settle 전 release된 route namespace는 다음 locale 전환에서 재시작하지 않는다", async () => {
+  const hungReports = deferred<LoadedNamespace>();
+  const calls: string[] = [];
+  const { runtime } = runtimeFixture(async (locale, namespace) => {
+    calls.push(`${locale}:${namespace}`);
+    if (locale === "ko" && namespace === "reports") return hungReports.promise;
+    return loaded(locale, namespace);
+  });
+  await runtime.setLocale("ko");
+
+  const reportsLease = runtime.acquireNamespaceLease(["reports"]);
+  await Promise.resolve();
+  reportsLease.release();
+  await reportsLease.ready;
+  calls.length = 0;
+
+  try {
+    await runtime.setLocale("vi");
+    assert.deepEqual(calls, ["vi:core"]);
+  } finally {
+    hungReports.resolve(loaded("ko", "reports"));
+  }
+});
+
+test("마지막 소비자가 release한 hung namespace job은 전역 loading을 해제한다", async () => {
+  const hungReports = deferred<LoadedNamespace>();
+  const { runtime } = runtimeFixture(async (locale, namespace) => {
+    if (namespace === "reports") return hungReports.promise;
+    return loaded(locale, namespace);
+  });
+  await runtime.setLocale("ko");
+
+  const reportsLease = runtime.acquireNamespaceLease(["reports"]);
+  await Promise.resolve();
+  assert.equal(runtime.getSnapshot().loading, true);
+  reportsLease.release();
+  await reportsLease.ready;
+
+  try {
+    assert.equal(runtime.getSnapshot().loading, false);
+  } finally {
+    hungReports.resolve(loaded("ko", "reports"));
+  }
+});
+
+test("locale 전환 중 release된 hung namespace load는 전환 완료를 막지 않는다", async () => {
+  const vietnameseReports = deferred<LoadedNamespace>();
+  const { runtime } = runtimeFixture(async (locale, namespace) => {
+    if (locale === "vi" && namespace === "reports") return vietnameseReports.promise;
+    return loaded(locale, namespace);
+  });
+  await runtime.setLocale("ko");
+  const reportsLease = runtime.acquireNamespaceLease(["reports"]);
+  await reportsLease.ready;
+
+  let switched = false;
+  const switchLocale = runtime.setLocale("vi").then(() => {
+    switched = true;
+  });
+  reportsLease.release();
+  await new Promise<void>((resolve) => setImmediate(resolve));
+
+  try {
+    assert.equal(switched, true);
+    assert.equal(runtime.getSnapshot().locale, "vi");
+    assert.equal(runtime.getSnapshot().readyNamespaces.has("reports"), false);
+    assert.equal(runtime.getSnapshot().loading, false);
+  } finally {
+    vietnameseReports.resolve(loaded("vi", "reports"));
+    await switchLocale;
+  }
+});
+
+test("locale 전환의 여러 namespace 실패는 각 lease만 reject하고 재예약하지 않는다", async () => {
+  const vietnameseCore = deferred<LoadedNamespace>();
+  const calls: string[] = [];
+  const { runtime } = runtimeFixture(async (locale, namespace) => {
+    calls.push(`${locale}:${namespace}`);
+    if (locale === "vi" && namespace === "core") return vietnameseCore.promise;
+    if (locale === "vi" && namespace === "parent") throw new Error("parent_failed");
+    if (locale === "vi" && namespace === "reports") throw new Error("reports_failed");
+    return loaded(locale, namespace);
+  });
+  await runtime.setLocale("ko");
+  calls.length = 0;
+
+  const switchLocale = runtime.setLocale("vi");
+  await Promise.resolve();
+  const parentLease = runtime.acquireNamespaceLease(["parent"]);
+  const reportsLease = runtime.acquireNamespaceLease(["reports"]);
+  vietnameseCore.resolve(loaded("vi", "core"));
+  const [switchResult, parentResult, reportsResult] = await Promise.allSettled([
+    switchLocale,
+    parentLease.ready,
+    reportsLease.ready,
+  ]);
+  await new Promise<void>((resolve) => setImmediate(resolve));
+
+  assert.equal(switchResult.status, "rejected");
+  assert.equal(parentResult.status, "rejected");
+  assert.match(String(parentResult.status === "rejected" && parentResult.reason), /parent_failed/);
+  assert.equal(reportsResult.status, "rejected");
+  assert.match(String(reportsResult.status === "rejected" && reportsResult.reason), /reports_failed/);
+  assert.deepEqual(calls.sort(), ["vi:core", "vi:parent", "vi:reports"]);
+  parentLease.release();
+  reportsLease.release();
+});
+
+test("공유 lease와 one-shot ensure 수요가 남으면 namespace job을 유지한다", async () => {
+  const reportsLoad = deferred<LoadedNamespace>();
+  let reportsCalls = 0;
+  const { runtime } = runtimeFixture(async (locale, namespace) => {
+    if (namespace === "reports") {
+      reportsCalls += 1;
+      return reportsLoad.promise;
+    }
+    return loaded(locale, namespace);
+  });
+  await runtime.setLocale("ko");
+
+  const firstLease = runtime.acquireNamespaceLease(["reports"]);
+  const secondLease = runtime.acquireNamespaceLease(["reports"]);
+  const oneShot = runtime.ensureNamespaces(["reports"]);
+  firstLease.release();
+  await firstLease.ready;
+  assert.equal(runtime.getSnapshot().loading, true);
+  secondLease.release();
+  await secondLease.ready;
+  assert.equal(runtime.getSnapshot().loading, true);
+
+  reportsLoad.resolve(loaded("ko", "reports"));
+  await oneShot;
+  assert.equal(reportsCalls, 1);
+  assert.equal(runtime.getSnapshot().loading, false);
 });

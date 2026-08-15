@@ -91,10 +91,11 @@ test("초기 catalog 실패 화면은 raw 오류 없이 사용자 retry를 연�
   assert.doesNotMatch(provider, /loadError\.message|runtime\.error\.message|JSON\.stringify\(runtime\.error/);
 });
 
-test("LocaleBoundary는 route lifetime 동안만 namespace lease를 유지한다", () => {
+test("LocaleBoundary는 route lifetime waiter를 lease ready/release에 연결한다", () => {
   const boundary = readSource("src/i18n/LocaleBoundary.tsx");
 
   assert.match(boundary, /useLocaleBoundaryLease\(\)/);
-  assert.match(boundary, /const releaseLease = acquireNamespaceLease\(namespaces\)/);
-  assert.match(boundary, /return \(\) => \{[\s\S]*releaseLease\(\)/);
+  assert.match(boundary, /const lease = acquireNamespaceLease\(namespaces\)/);
+  assert.match(boundary, /lease\.ready\.catch/);
+  assert.match(boundary, /return \(\) => \{[\s\S]*lease\.release\(\)/);
 });
