@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
+import { useIntl } from "react-intl";
 import { Check, Crown, X } from "lucide-react";
 import { useAuth } from "@/auth/AuthContext";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
@@ -38,6 +39,7 @@ export function PremiumUpsell({
   onClose,
   onUpgrade,
 }: PremiumUpsellProps) {
+  const intl = useIntl();
   const { familyId } = useAuth();
   const titleId = useId();
   const descriptionId = useId();
@@ -138,12 +140,8 @@ export function PremiumUpsell({
     setError("");
     try {
       await onUpgrade({ source, feature: content.feature, ...(returnTo ? { returnTo } : {}) });
-    } catch (upgradeError) {
-      setError(
-        upgradeError instanceof Error && upgradeError.message.trim()
-          ? upgradeError.message
-          : "프리미엄 화면을 열지 못했어요. 다시 시도해 주세요.",
-      );
+    } catch {
+      setError(intl.formatMessage({ id: "core.error.api.unknown.formal" }));
     } finally {
       setSubmitting(false);
     }

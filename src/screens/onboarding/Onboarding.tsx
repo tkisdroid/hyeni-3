@@ -764,7 +764,7 @@ function TeacherStep({ onBack, onSave, show }: { onBack: () => void; onSave: () 
       <div className="ob-teacher-note hy-explain">
         <span className="ob-teacher-note__ic"><Link2 size={18} strokeWidth={2.2} /></span>
         <span className="ob-teacher-note__tx hy-explain__lines">
-          <span className="hy-explain__line"><FormattedMessage id="onboarding.teacher.noteInvite" values={{ strong: (chunks) => <b>{chunks}</b> }} /></span>
+          <span className="hy-explain__line"><FormattedMessage id="onboarding.teacher.noteInvite" values={{ strong: (chunks) => <strong>{chunks}</strong> }} /></span>
           <span className="hy-explain__line">{intl.formatMessage({ id: "onboarding.teacher.noteApproval" })}</span>
           <span className="hy-explain__line">{intl.formatMessage({ id: "onboarding.teacher.notePrivacy" })}</span>
         </span>

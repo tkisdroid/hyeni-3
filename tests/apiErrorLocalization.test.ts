@@ -8,6 +8,12 @@ import { ApiError, normalizeApiErrorCode } from "../src/lib/api/errors.ts";
 const messages: Record<string, string> = {
   "core.error.api.invalidCredentials.formal": "로그인 정보를 확인해 주세요.",
   "core.error.api.invalidCredentials.child": "로그인 정보를 확인해 줘.",
+  "core.error.api.invalidPhone.formal": "휴대폰 번호를 확인해 주세요.",
+  "core.error.api.invalidLoginId.formal": "아이디 형식을 확인해 주세요.",
+  "core.error.api.loginIdTaken.formal": "이미 사용 중인 아이디예요. 다른 아이디를 입력해 주세요.",
+  "core.error.api.phoneExists.formal": "이미 가입된 휴대폰 번호예요. 로그인해 주세요.",
+  "core.error.api.otpExpired.formal": "인증번호가 만료됐어요. 새 인증번호를 받아 주세요.",
+  "core.error.api.otpMismatch.formal": "인증번호가 맞지 않아요. 다시 확인해 주세요.",
   "core.error.api.network.formal": "인터넷 연결을 확인한 뒤 다시 시도해 주세요.",
   "core.error.api.network.child": "인터넷 연결을 확인하고 다시 해 줘.",
   "core.error.api.client.formal": "요청을 처리하지 못했어요. 입력 내용을 확인해 주세요.",
@@ -43,6 +49,30 @@ test("API code는 소문자 snake_case와 최대 길이만 허용한다", () => 
   assert.equal(normalizeApiErrorCode("contains spaces"), null);
   assert.equal(normalizeApiErrorCode("x".repeat(65)), null);
   assert.equal(normalizeApiErrorCode({ code: "invalid_credentials" }), null);
+});
+
+test("배포된 구버전 Worker의 알려진 pairing 문자열만 stable code alias로 정규화한다", () => {
+  assert.equal(normalizeApiErrorCode("Invalid pair code"), "invalid_pair_code");
+  assert.equal(normalizeApiErrorCode("연동 코드를 입력해주세요"), "invalid_pair_code");
+  assert.equal(
+    normalizeApiErrorCode("만료된 연동 코드예요. 부모님께 새 코드를 받아 주세요"),
+    "pair_code_expired",
+  );
+  assert.equal(normalizeApiErrorCode("Invalid pair code: Bearer secret"), null);
+});
+
+test("실제 signup·OTP stable code는 다시 시도 방법이 있는 구체 문구로 연결된다", () => {
+  const expected = {
+    invalid_phone: "휴대폰 번호를 확인해 주세요.",
+    invalid_login_id: "아이디 형식을 확인해 주세요.",
+    login_id_taken: "이미 사용 중인 아이디예요. 다른 아이디를 입력해 주세요.",
+    phone_exists: "이미 가입된 휴대폰 번호예요. 로그인해 주세요.",
+    otp_expired: "인증번호가 만료됐어요. 새 인증번호를 받아 주세요.",
+    otp_mismatch: "인증번호가 맞지 않아요. 다시 확인해 주세요.",
+  } as const;
+  for (const [code, message] of Object.entries(expected)) {
+    assert.equal(localizeApiError(new ApiError(code, 400), intl, "formal"), message, code);
+  }
 });
 
 test("allowlist code만 구체화하고 알 수 없는 4xx·5xx는 역할별 문구로 닫는다", () => {

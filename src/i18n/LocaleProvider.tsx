@@ -29,6 +29,7 @@ import {
   resolveWebLocale,
   type LocaleStoragePort,
 } from "./localeStorage";
+import { localeBootstrapCopy } from "./bootstrapCopy";
 
 export interface LocaleContextValue {
   locale: SupportedLocale;
@@ -142,17 +143,18 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
 
   if (!runtime.readyNamespaces.has("core")) {
     if (!runtime.error) return null;
+    const bootstrap = localeBootstrapCopy(runtime.locale);
     return (
       <main className="hy-content">
         <section className="hy-card" role="alert" aria-live="assertive">
-          <h1>언어 정보를 불러오지 못했어요</h1>
-          <p>연결을 확인한 뒤 다시 시도해 주세요.</p>
+          <h1>{bootstrap.title}</h1>
+          <p>{bootstrap.body}</p>
           <button
             type="button"
             className="hy-press"
             onClick={() => void coordinator.retry().catch(() => undefined)}
           >
-            다시 시도
+            {bootstrap.retry}
           </button>
         </section>
       </main>

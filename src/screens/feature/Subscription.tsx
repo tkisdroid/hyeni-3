@@ -35,6 +35,7 @@ import {
 import { startTossBillingAuthorization } from "@/lib/webBilling";
 import { useIntl } from "react-intl";
 import { localizeApiError } from "@/i18n/apiError";
+import { BillingError } from "@/lib/native/billingError";
 import { isApiError } from "@/lib/api/errors";
 import {
   buildWebBillingRedirectUrls,
@@ -620,7 +621,7 @@ export function Subscription() {
       }
 
       if (!isBillingAvailable()) {
-        throw new Error("이 기기에서 Google Play 결제를 사용할 수 없어요.");
+        throw new BillingError("billing_unavailable");
       }
       const basePlanId = plan === "year" ? ANNUAL_BASE_PLAN_ID : MONTHLY_BASE_PLAN_ID;
       let freshProductDetails: BillingProductDetails | null;

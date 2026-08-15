@@ -86,7 +86,8 @@ test("초기 catalog 실패 화면은 raw 오류 없이 사용자 retry를 연�
   const provider = readSource("src/i18n/LocaleProvider.tsx");
 
   assert.match(provider, /if \(!runtime\.readyNamespaces\.has\("core"\)\)/);
-  assert.match(provider, /role="alert"[\s\S]*언어 정보를 불러오지 못했어요/);
+  assert.match(provider, /const bootstrap = localeBootstrapCopy\(runtime\.locale\)/);
+  assert.match(provider, /role="alert"[\s\S]*bootstrap\.title[\s\S]*bootstrap\.body[\s\S]*bootstrap\.retry/);
   assert.match(provider, /onClick=\{\(\) => void coordinator\.retry\(\)\.catch/);
   assert.doesNotMatch(provider, /loadError\.message|runtime\.error\.message|JSON\.stringify\(runtime\.error/);
 });

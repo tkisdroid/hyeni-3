@@ -1,6 +1,5 @@
 [
   { "path": "src/app/GlobalErrorListeners.tsx", "pattern": "e\\.error \\?\\? e\\.message", "occurrences": 2, "reason": "data: ErrorEvent의 브라우저 잡음 판정과 정규화 진단 입력이며 toast 문구는 catalog ID로 별도 생성" },
-  { "path": "src/lib/native/billing.ts", "pattern": "typeof e\\?\\.message === \"string\" && e\\.message\\.trim\\(\\)\\) return e\\.message", "occurrences": 1, "reason": "protocol: 네이티브 결제 bridge 오류 문자열을 기존 결제 분류기로 전달하는 경계이며 UI 직접 렌더가 아님" },
   { "path": "src/lib/native/phone.ts", "pattern": "console\\.warn\\(\"\\[placePhoneCall\\]", "occurrences": 2, "reason": "data: 전화 실행 실패의 개발자 console 진단 전용이며 사용자 UI 반환값은 안전한 status enum" },
   { "path": "src/lib/api/endpoints/ai.ts", "pattern": "data\\.message \\|\\| \"일정을 찾지 못했어요\"", "occurrences": 1, "reason": "data: 일정 파서의 사용자용 assistant content 필드이며 오류 응답이나 예외 원문이 아님" },
   { "path": "src/screens/admin/AdminAiPrompt.tsx", "pattern": "commerceFeedback\\.message", "occurrences": 2, "reason": "data: 신뢰된 로컬 commerce 검증기가 만든 운영자용 설명이며 API 오류 원문이 아님" },

@@ -45,8 +45,6 @@ function ErrorFallback() {
     window.location.hash = "#/feedback";
     window.location.reload();
   };
-  // 개발 빌드도 사용자 화면에는 원문 오류를 노출하지 않고 console/정규화 진단만 사용한다.
-  const detail = import.meta.env.DEV ? String() : String();
   return (
     <div className="hy-crash" role="alert">
       <img className="hy-crash__img" src={asset("mascot/thinking.webp")} alt="" />
@@ -65,7 +63,6 @@ function ErrorFallback() {
       <button type="button" className="hy-crash__ghost hy-press" onClick={reportProblem}>
         {intl.formatMessage({ id: childTone ? "core.action.reportProblem.child" : "core.action.reportProblem.formal" })}
       </button>
-      {detail && <div className="hy-crash__detail">{detail.slice(0, 120)}</div>}
     </div>
   );
 }

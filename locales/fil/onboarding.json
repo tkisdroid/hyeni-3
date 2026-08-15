@@ -54,7 +54,7 @@
   "onboarding.pairing.codeLabel": "Connection code ng bata",
   "onboarding.pairing.connecting": "Kumokonekta…",
   "onboarding.pairing.description": "Makikita ang QR code at connection code sa Pamilya > Connection code sa app ng magulang.",
-  "onboarding.pairing.invalidCode": "Pakisuri ang code ng koneksyon (KID-XXXXXXXXX)",
+  "onboarding.pairing.invalidCode": "Pakisuri ang connection code (KID-XXXXXXXX)",
   "onboarding.pairing.invalidQr": "Walang nakitang wastong QR code.",
   "onboarding.pairing.manualHint": "Kung hindi mo ma-scan ang QR code, ilagay na lang ang connection code.",
   "onboarding.pairing.recovery": "Kung nakakonekta na dati ang device na ito, kokonekta itong muli sa parehong account ng bata nang hindi nawawala ang mga record.",

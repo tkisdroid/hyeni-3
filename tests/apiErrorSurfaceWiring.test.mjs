@@ -35,6 +35,46 @@ test("오류 surface scanner는 JSX·toast·dialog의 원문 노출을 파일과
   }
 });
 
+for (const fixture of [
+  {
+    name: "destructure alias를 dialog에 전달",
+    lines: ["const { message: text } = response;", "show(text);"],
+    sinkLine: 3,
+  },
+  {
+    name: "optional message alias를 JSX에 렌더",
+    lines: ["const text = failure?.message;", "return <p>{text}</p>;"],
+    sinkLine: 3,
+  },
+  {
+    name: "여러 줄 optional message를 JSX에 렌더",
+    lines: ["const text = failure", "  ?.message;", "return <p>{text}</p>;"],
+    sinkLine: 4,
+  },
+  {
+    name: "bracket message alias를 dialog에 전달",
+    lines: ["const text = response['message'];", "show(text);"],
+    sinkLine: 3,
+  },
+]) {
+  test(`오류 surface scanner는 ${fixture.name}하는 우회를 보고한다`, () => {
+    const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
+    try {
+      mkdirSync(join(root, "src"), { recursive: true });
+      writeFileSync(join(root, "src", "Aliased.tsx"), [
+        "export function Aliased({ response, failure }) {",
+        ...fixture.lines.map((line) => `  ${line}`),
+        "}",
+      ].join("\n"));
+      const result = runScanner(root);
+      assert.notEqual(result.status, 0, fixture.name);
+      assert.match(result.stderr, new RegExp(`src/Aliased\\.tsx:${fixture.sinkLine}`));
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+}
+
 test("scanner allowlist는 migration 사유이거나 더 이상 사용되지 않으면 실패한다", () => {
   const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
   try {

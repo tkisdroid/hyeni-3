@@ -27,11 +27,7 @@ test("라우터 전체가 errorElement 로 감싸이고 루트 바운더리가 �
   assert.match(boundary, /getDerivedStateFromError/);
   assert.match(boundary, /useRouteError/);
   assert.match(boundary, /hy-crash/);
-  assert.match(
-    boundary,
-    /const detail = import\.meta\.env\.DEV/,
-    "프로덕션 복구 화면에는 영문 번들·네트워크 오류 원문을 노출하지 않습니다",
-  );
+  assert.doesNotMatch(boundary, /\bdetail\b|String\(error\)|error\?\.message/);
 
   const css = read("src/styles/components.css");
   assert.match(css, /\.hy-crash \{/);

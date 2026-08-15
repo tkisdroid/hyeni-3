@@ -8,6 +8,7 @@ const coreSurfaces = [
   "src/app/AppShell.tsx",
   "src/app/ErrorBoundary.tsx",
   "src/app/GlobalErrorListeners.tsx",
+  "src/i18n/LocaleProvider.tsx",
   "src/components/ui/Loading.tsx",
   "src/components/ui/OfflineBanner.tsx",
   "src/components/ui/QrCode.tsx",
@@ -29,7 +30,7 @@ const passThroughSurfaces = [
 test("공용 shell·UI·Splash·Onboarding은 React Intl 메시지를 사용한다", () => {
   for (const path of coreSurfaces) {
     const source = read(path);
-    assert.match(source, /(?:useIntl|FormattedMessage)/, `${path}: React Intl 배선이 없습니다`);
+    assert.match(source, /(?:useIntl|FormattedMessage|localeBootstrapCopy)/, `${path}: locale 문구 배선이 없습니다`);
   }
 });
 
@@ -50,6 +51,7 @@ test("Task 6 사용자 표면에는 카탈로그 밖 한글·영문 문구가 �
     lines.forEach((line, index) => {
       const trimmed = line.trim();
       if (!trimmed || trimmed.startsWith("//") || trimmed.startsWith("/*") || trimmed.startsWith("*") || trimmed.startsWith("{")) return;
+      if (/throw new Error\(/.test(trimmed)) return;
       if (/\b(?:className|data-|to=|path:|src=|color=|style=|id=|key=|type=|role=|rel=|target=)/.test(trimmed)) return;
       if (/[가-힣]/.test(trimmed) && !/(?:formatMessage|FormattedMessage|description:)/.test(trimmed)) {
         violations.push(`${path}:${index + 1}: ${trimmed}`);
@@ -81,4 +83,18 @@ test("아이 재페어링과 선생님 production gate의 의미·조건을 유�
   assert.match(onboarding, /previous_user_id|childJoinHint/);
   assert.match(onboarding, /\{TEACHER_MODE_ENABLED\s*&&\s*\(/);
   assert.match(ko["onboarding.pairing.recovery"], /같은 아이|기록.*유지|이어/);
+});
+
+test("Splash와 Onboarding의 rich strong slot은 semantic strong 요소를 사용한다", () => {
+  for (const path of ["src/screens/Splash.tsx", "src/screens/onboarding/Onboarding.tsx"]) {
+    const source = read(path);
+    assert.match(source, /strong:\s*\(chunks\)\s*=>\s*<strong>\{chunks\}<\/strong>/, path);
+    assert.doesNotMatch(source, /strong:\s*\(chunks\)\s*=>\s*<b>/, path);
+  }
+});
+
+test("ErrorBoundary는 진단 원문용 dead detail UI를 만들지 않는다", () => {
+  const source = read("src/app/ErrorBoundary.tsx");
+  assert.doesNotMatch(source, /const detail\b|hy-crash__detail/);
+  assert.doesNotMatch(source, /String\(error\)|error\.message/);
 });

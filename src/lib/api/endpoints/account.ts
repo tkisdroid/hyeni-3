@@ -11,6 +11,11 @@
 import { API_BASE } from "@/config/env";
 import { apiGet, apiPost } from "../client";
 import { ApiError } from "../errors";
+import {
+  dataExportSectionUnavailable,
+  serializePublicDataExport,
+  type DataExportSectionUnavailable,
+} from "@/transform/dataExport";
 import type { FamilyMember } from "./family";
 import { fetchEvents, fetchAcademies, type CalendarEvent, type Academy } from "./schedule";
 import { fetchSavedPlaces, fetchDangerZones, type SavedPlace, type DangerZone } from "./location";
@@ -102,7 +107,7 @@ export interface FamilyDataExport {
     generatedAt: string;
     familyId: string | null;
     note: string;
-    errors: Array<{ section: string; message: string }>;
+    errors: DataExportSectionUnavailable[];
   };
   account: { name: string; role: string } | null;
   members: FamilyMember[];
@@ -123,17 +128,14 @@ export async function buildFamilyDataExport(params: {
   members?: FamilyMember[];
 }): Promise<FamilyDataExport> {
   const { familyId, account = null, members = [] } = params;
-  const errors: Array<{ section: string; message: string }> = [];
+  const errors: DataExportSectionUnavailable[] = [];
   const now = new Date();
 
   async function safe<T>(section: string, fn: () => Promise<T>): Promise<T | null> {
     try {
       return await fn();
-    } catch (e) {
-      errors.push({
-        section,
-        message: e instanceof ApiError ? e.code ?? "export_section_failed" : "export_section_failed",
-      });
+    } catch {
+      errors.push(dataExportSectionUnavailable(section));
       return null;
     }
   }
@@ -162,5 +164,5 @@ export async function buildFamilyDataExport(params: {
 
 /** 내보내기 객체를 보기 좋은 JSON 문자열로 직렬화. */
 export function serializeDataExport(exportObj: FamilyDataExport): string {
-  return JSON.stringify(exportObj, null, 2);
+  return serializePublicDataExport(exportObj);
 }

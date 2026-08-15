@@ -139,6 +139,54 @@
     "variables": {},
     "description": "core.error.api.invalidCredentials.formal에 표시하는 사용자 안내 문구"
   },
+  "core.error.api.invalidPhone.child": {
+    "namespace": "core", "audience": "child", "qualityTier": "B", "variables": {},
+    "description": "아이에게 휴대폰 번호 형식을 다시 확인하도록 직접 안내하는 문구"
+  },
+  "core.error.api.invalidPhone.formal": {
+    "namespace": "core", "audience": "parent", "qualityTier": "B", "variables": {},
+    "description": "보호자에게 휴대폰 번호 형식을 확인하도록 정중히 안내하는 문구"
+  },
+  "core.error.api.invalidLoginId.child": {
+    "namespace": "core", "audience": "child", "qualityTier": "B", "variables": {},
+    "description": "아이에게 login ID 형식을 확인하도록 직접 안내하며 신분증·성으로 번역하지 않음"
+  },
+  "core.error.api.invalidLoginId.formal": {
+    "namespace": "core", "audience": "parent", "qualityTier": "B", "variables": {},
+    "description": "보호자에게 login ID 형식을 확인하도록 정중히 안내하며 신분증·성으로 번역하지 않음"
+  },
+  "core.error.api.loginIdTaken.child": {
+    "namespace": "core", "audience": "child", "qualityTier": "B", "variables": {},
+    "description": "이미 사용 중인 login ID 대신 다른 ID를 고르도록 아이에게 안내"
+  },
+  "core.error.api.loginIdTaken.formal": {
+    "namespace": "core", "audience": "parent", "qualityTier": "B", "variables": {},
+    "description": "이미 사용 중인 login ID 대신 다른 ID를 입력하도록 보호자에게 정중히 안내"
+  },
+  "core.error.api.phoneExists.child": {
+    "namespace": "core", "audience": "child", "qualityTier": "B", "variables": {},
+    "description": "이미 가입된 전화번호이면 새 가입 대신 로그인하도록 아이에게 안내"
+  },
+  "core.error.api.phoneExists.formal": {
+    "namespace": "core", "audience": "parent", "qualityTier": "B", "variables": {},
+    "description": "이미 가입된 전화번호이면 새 가입 대신 로그인하도록 보호자에게 정중히 안내"
+  },
+  "core.error.api.otpExpired.child": {
+    "namespace": "core", "audience": "child", "qualityTier": "B", "variables": {},
+    "description": "만료된 OTP는 새 인증번호를 받아야 함을 아이에게 직접 안내"
+  },
+  "core.error.api.otpExpired.formal": {
+    "namespace": "core", "audience": "parent", "qualityTier": "B", "variables": {},
+    "description": "만료된 OTP는 새 인증번호를 받아야 함을 보호자에게 정중히 안내"
+  },
+  "core.error.api.otpMismatch.child": {
+    "namespace": "core", "audience": "child", "qualityTier": "B", "variables": {},
+    "description": "OTP 불일치 시 입력값을 다시 확인하도록 아이에게 직접 안내"
+  },
+  "core.error.api.otpMismatch.formal": {
+    "namespace": "core", "audience": "parent", "qualityTier": "B", "variables": {},
+    "description": "OTP 불일치 시 입력값을 다시 확인하도록 보호자에게 정중히 안내"
+  },
   "core.error.api.invalidPairCode.child": {
     "namespace": "core",
     "audience": "child",
@@ -229,6 +277,38 @@
     "qualityTier": "B",
     "variables": {},
     "description": "core.error.api.weakPassword.formal에 표시하는 사용자 안내 문구"
+  },
+  "core.error.billing.canceled.child": {
+    "namespace": "core", "audience": "child", "qualityTier": "B", "variables": {},
+    "description": "Google Play 구매를 사용자가 취소했음을 실패로 과장하지 않고 아이 말투로 안내"
+  },
+  "core.error.billing.canceled.formal": {
+    "namespace": "core", "audience": "parent", "qualityTier": "B", "variables": {},
+    "description": "Google Play 구매를 사용자가 취소했음을 실패로 과장하지 않고 정중히 안내"
+  },
+  "core.error.billing.pending.child": {
+    "namespace": "core", "audience": "child", "qualityTier": "B", "variables": {},
+    "description": "Google Play 결제가 승인 대기이며 승인 후 다시 확인해야 함을 아이에게 안내"
+  },
+  "core.error.billing.pending.formal": {
+    "namespace": "core", "audience": "parent", "qualityTier": "B", "variables": {},
+    "description": "Google Play 결제가 승인 대기이며 승인 후 다시 확인해야 함을 보호자에게 정중히 안내"
+  },
+  "core.error.billing.productUnavailable.child": {
+    "namespace": "core", "audience": "child", "qualityTier": "B", "variables": {},
+    "description": "Google Play 상품 정보를 현재 불러올 수 없어 나중에 재시도하도록 아이에게 안내"
+  },
+  "core.error.billing.productUnavailable.formal": {
+    "namespace": "core", "audience": "parent", "qualityTier": "B", "variables": {},
+    "description": "Google Play 상품 정보를 현재 불러올 수 없어 나중에 재시도하도록 보호자에게 정중히 안내"
+  },
+  "core.error.billing.unavailable.child": {
+    "namespace": "core", "audience": "child", "qualityTier": "B", "variables": {},
+    "description": "현재 기기에서 Google Play 결제를 사용할 수 없음을 아이에게 안내"
+  },
+  "core.error.billing.unavailable.formal": {
+    "namespace": "core", "audience": "parent", "qualityTier": "B", "variables": {},
+    "description": "현재 기기에서 Google Play 결제를 사용할 수 없음을 보호자에게 정중히 안내"
   },
   "core.error.runtime.child": {
     "namespace": "core",

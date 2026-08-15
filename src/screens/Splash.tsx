@@ -29,7 +29,7 @@ export function Splash({ exiting = false }: { exiting?: boolean }) {
           />
         </div>
         <div className="sp-title">
-          <FormattedMessage id="core.brand.nameRich" values={{ strong: (chunks) => <b>{chunks}</b> }} />
+          <FormattedMessage id="core.brand.nameRich" values={{ strong: (chunks) => <strong>{chunks}</strong> }} />
         </div>
         <div className="sp-sub">
           <FormattedMessage id="core.splash.tagline" values={{ br: () => <br /> }} />
