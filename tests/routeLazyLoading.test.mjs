@@ -180,6 +180,26 @@ test("routeElement의 지원 계약 밖 인자 형태를 거부한다", () => {
     )),
     /routeElement.*인자/,
   );
+
+  const wrongNamespace = app.replace(
+    'routeElement(<ParentHome />, PARENT_NAMESPACES)',
+    "routeElement(<ParentHome />, NOT_A_NAMESPACE)",
+  );
+  assert.notEqual(wrongNamespace, app, "잘못된 namespace fixture가 원본을 바꿔야 합니다.");
+  assert.throws(
+    () => parseAppRouteContract(wrongNamespace),
+    /routeElement.*namespace.*인자/,
+  );
+
+  const inlineNamespace = app.replace(
+    'routeElement(<ParentHome />, PARENT_NAMESPACES)',
+    'routeElement(<ParentHome />, ["core", "parent"])',
+  );
+  assert.notEqual(inlineNamespace, app, "직접 배열 namespace fixture가 원본을 바꿔야 합니다.");
+  assert.throws(
+    () => parseAppRouteContract(inlineNamespace),
+    /routeElement.*namespace.*인자/,
+  );
 });
 
 test("지연 화면 선언 삭제를 검출한다", () => {

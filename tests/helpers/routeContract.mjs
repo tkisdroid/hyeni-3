@@ -70,6 +70,17 @@ function guardFromElement(element) {
   return undefined;
 }
 
+const ROUTE_NAMESPACE_IDENTIFIERS = new Set([
+  "ONBOARDING_NAMESPACES",
+  "PARENT_NAMESPACES",
+  "CHILD_NAMESPACES",
+  "BILLING_NAMESPACES",
+  "REPORT_NAMESPACES",
+  "PARENT_NOTIFICATION_NAMESPACES",
+  "CHILD_NOTIFICATION_NAMESPACES",
+  "SHARED_NAMESPACES",
+]);
+
 function routeComponentFromElement(element) {
   const routeElementCall = findDescendant(
     element,
@@ -80,10 +91,16 @@ function routeComponentFromElement(element) {
   if (!routeElementCall) return undefined;
 
   assert.ok(
-    routeElementCall.arguments.length === 1
-      || (routeElementCall.arguments.length === 2 && ts.isIdentifier(routeElementCall.arguments[1])),
-    "routeElement 인자는 화면 JSX와 선택적 namespace 식별자만 허용합니다.",
+    routeElementCall.arguments.length === 1 || routeElementCall.arguments.length === 2,
+    "routeElement 인자는 화면 JSX와 선택적 namespace만 허용합니다.",
   );
+  if (routeElementCall.arguments.length === 2) {
+    const namespace = routeElementCall.arguments[1];
+    assert.ok(
+      ts.isIdentifier(namespace) && ROUTE_NAMESPACE_IDENTIFIERS.has(namespace.text),
+      "routeElement namespace 인자는 지원 목록의 식별자여야 합니다.",
+    );
+  }
   const component = routeElementCall.arguments[0];
   assert.ok(
     component && ts.isJsxSelfClosingElement(component) && ts.isIdentifier(component.tagName),
