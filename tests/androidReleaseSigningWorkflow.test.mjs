@@ -43,9 +43,15 @@ test("Play Console이 요구한 업로드 인증서 SHA-1과 일치하기 전에
 
 test("중앙 키 보관함과 Play 인증서 파일을 우선하되 인자로 덮어쓸 수 있다", () => {
   assert.match(source, /keys\\hyeni-calendar\\android-signing\\private/);
+  assert.match(source, /hyeni-upload-reset-20260808\.jks/);
   assert.match(source, /Join-Path \$env:USERPROFILE 'keys\\hyeni-upload\.jks'/);
   assert.match(source, /\[string\]\$KeystorePath/);
+  assert.match(source, /play-upload-reset-20260808_certificate\.pem/);
   assert.match(source, /play-console-certificates-20260804\\upload_cert\.der/);
+  const keystoreDefaults = source.match(/\$defaultKeystore = @\(([\s\S]*?)\) \|/)?.[1] ?? "";
+  const certificateDefaults = source.match(/\$defaultPlayUploadCertificate = @\(([\s\S]*?)\) \|/)?.[1] ?? "";
+  assert.ok(keystoreDefaults.indexOf("$approvedUploadKeystore") < keystoreDefaults.indexOf("$vaultUploadKeystoreCandidate"));
+  assert.ok(certificateDefaults.indexOf("$vaultPlayUploadCertificate") < certificateDefaults.indexOf("$artifactPlayUploadCertificate"));
   assert.match(source, /\$selectedKeystore = if \(\[string\]::IsNullOrWhiteSpace\(\$KeystorePath\)\)/);
   assert.match(
     source,

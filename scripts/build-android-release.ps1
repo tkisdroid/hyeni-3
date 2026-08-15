@@ -12,9 +12,11 @@ $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $androidRoot = Join-Path $repoRoot 'android'
 $gradleWrapper = Join-Path $androidRoot 'gradlew.bat'
 $projectKeystore = Join-Path $androidRoot 'keystore\hyeni-upload.jks'
+$approvedUploadKeystore = Join-Path $env:USERPROFILE 'keys\hyeni-calendar\android-signing\private\hyeni-upload-reset-20260808.jks'
 $vaultUploadKeystoreCandidate = Join-Path $env:USERPROFILE 'keys\hyeni-calendar\android-signing\private\hyeni-upload-reset-candidate-20260804.jks'
 $legacyUploadKeystoreCandidate = Join-Path $env:USERPROFILE 'keys\hyeni-upload.jks'
 $defaultKeystore = @(
+    $approvedUploadKeystore,
     $vaultUploadKeystoreCandidate,
     $projectKeystore,
     $legacyUploadKeystoreCandidate
@@ -26,7 +28,15 @@ $gradleProperties = Join-Path $env:USERPROFILE '.gradle\gradle.properties'
 $legacyCredentialFile = Join-Path $androidRoot 'keystore\hyeni-upload-credentials.txt'
 $releaseAab = Join-Path $androidRoot 'app\build\outputs\bundle\release\app-release.aab'
 $evidenceRoot = Join-Path $repoRoot 'artifacts\release-evidence'
-$defaultPlayUploadCertificate = Join-Path $evidenceRoot 'play-console-certificates-20260804\upload_cert.der'
+$vaultPlayUploadCertificate = Join-Path $env:USERPROFILE 'keys\hyeni-calendar\android-signing\public\play-upload-reset-20260808_certificate.pem'
+$artifactPlayUploadCertificate = Join-Path $evidenceRoot 'play-console-certificates-20260804\upload_cert.der'
+$defaultPlayUploadCertificate = @(
+    $vaultPlayUploadCertificate,
+    $artifactPlayUploadCertificate
+) | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
+if ([string]::IsNullOrWhiteSpace($defaultPlayUploadCertificate)) {
+    $defaultPlayUploadCertificate = $artifactPlayUploadCertificate
+}
 $bundletoolPath = Join-Path $evidenceRoot 'release-tools\bundletool-all-1.18.1.jar'
 $bundletoolUrl = 'https://github.com/google/bundletool/releases/download/1.18.1/bundletool-all-1.18.1.jar'
 $bundletoolSha256 = '675786493983787ffa11550bdb7c0715679a44e1643f3ff980a529e9c822595c'
