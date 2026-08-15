@@ -12,7 +12,12 @@
  */
 import type { SupportedLocale } from "../i18n/locale.ts";
 import { formatRelativeTime } from "../i18n/format.ts";
-import { calendarDayDifferenceInTimeZone } from "./dateKey.ts";
+import { calendarDayDifferenceInTimeZone, dateToDateKeyInTimeZone } from "./dateKey.ts";
+
+/** 스티커 전송 payload의 date_key를 명시한 가족 시간대에서 계산한다. */
+export function stickerSendDateKey(now: Date, timeZone: string): string {
+  return dateToDateKeyInTimeZone(now, timeZone);
+}
 
 export interface StickerCatalogEntry {
   key: string;

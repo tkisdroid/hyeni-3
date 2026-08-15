@@ -147,7 +147,7 @@ test("폭죽은 2.2초 뒤 자동으로 닫힌다", () => {
 
 test("원탭 상태 공유 6버튼이 남아 있다", () => {
   assert.match(home, /QUICK_STATUS_ACTIONS\.map/);
-  assert.match(home, /buildQuickStatusMemo\(actionId, myMember\.id, todayKey\)/);
+  assert.match(home, /buildQuickStatusMemo\(actionId, myMember\.id, memoDateKey\)/);
 });
 
 test("아이가 닿아야 하는 화면(내 위치·내 설정)에 진입점이 생겼다", () => {

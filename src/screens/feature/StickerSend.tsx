@@ -7,7 +7,8 @@ import { useToast } from "@/app/toast";
 import { useMyFamily } from "@/queries/useFamily";
 import { useActiveChild } from "@/app/activeChild";
 import { useSendSticker, useStickerSummary } from "@/queries/useStickers";
-import { todayDateKey } from "@/transform/dateKey";
+import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+import { stickerSendDateKey } from "@/transform/stickerBook";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./StickerSend.css";
@@ -100,7 +101,7 @@ export function StickerSend() {
       {
         user_id: targetChild.user_id,
         event_id: `praise-${Date.now()}`,
-        date_key: todayDateKey(),
+        date_key: stickerSendDateKey(new Date(), LEGACY_FAMILY_TIME_ZONE),
         sticker_type: "praise",
         emoji: picked.emoji,
         // 스티커 전용 메시지 필드가 없어 한마디를 title 로 실제 전송(없으면 스티커 라벨).

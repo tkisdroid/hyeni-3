@@ -13,6 +13,7 @@ import {
   formatRelativeTime,
   formatWeekday,
 } from "../src/i18n/format.ts";
+import * as formatting from "../src/i18n/format.ts";
 import {
   formatMemoClock,
   memoDayStamp,
@@ -168,6 +169,36 @@ test("초 정밀도 시각 formatter는 locale과 time zone을 지키며 초를 
     locale: "en",
     timeZone: "Asia/Seoul",
   }), /12:04:07 PM/);
+});
+
+test("초대 만료 카운트다운은 일·시간·분·초 단위를 locale로 표시한다", () => {
+  const formatCountdownDuration = Reflect.get(
+    formatting,
+    "formatCountdownDuration",
+  ) as undefined | ((seconds: number, locale: string) => { text: string; expired: boolean });
+
+  assert.equal(typeof formatCountdownDuration, "function");
+  if (!formatCountdownDuration) return;
+
+  const oneDayTwoHoursEn = formatCountdownDuration(26 * 60 * 60, "en");
+  assert.equal(oneDayTwoHoursEn.expired, false);
+  assert.match(oneDayTwoHoursEn.text, /1 day/);
+  assert.match(oneDayTwoHoursEn.text, /2 hours/);
+  assert.doesNotMatch(oneDayTwoHoursEn.text, /[일시분초]/);
+
+  const oneHourFiveMinutesJa = formatCountdownDuration(65 * 60, "ja");
+  assert.equal(oneHourFiveMinutesJa.expired, false);
+  assert.match(oneHourFiveMinutesJa.text, /1.*時間/);
+  assert.match(oneHourFiveMinutesJa.text, /5.*分/);
+  assert.doesNotMatch(oneHourFiveMinutesJa.text, /시간|분/);
+
+  const underMinuteEn = formatCountdownDuration(42, "en");
+  assert.equal(underMinuteEn.expired, false);
+  assert.match(underMinuteEn.text, /42 seconds/);
+  assert.doesNotMatch(underMinuteEn.text, /초/);
+
+  assert.deepEqual(formatCountdownDuration(0, "en"), { text: "", expired: true });
+  assert.deepEqual(formatCountdownDuration(-1, "ja"), { text: "", expired: true });
 });
 
 test("메모 시각과 날짜 그룹은 호스트가 아니라 전달한 time zone을 따른다", () => {

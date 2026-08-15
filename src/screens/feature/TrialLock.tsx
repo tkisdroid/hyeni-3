@@ -5,7 +5,7 @@ import { useEntitlement } from "@/queries/useEntitlement";
 import { Loading } from "@/components/ui/Loading";
 import type { SupportedLocale } from "@/i18n/locale";
 import { useLocale } from "@/i18n/useLocale";
-import { formatDateTime, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+import { formatDateTime, formatRelativeTime, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
 import "./TrialLock.css";
 
 // 페이월 혜택 아이콘 — 3D 에셋(구독 화면과 동일 시각 언어).
@@ -65,7 +65,9 @@ export function TrialLock() {
               <Crown size={30} strokeWidth={2} color="#fff" />
             </div>
             <div className="tl-hero__dday">
-              {view.trialDaysLeft != null ? `무료 체험 D-${view.trialDaysLeft}` : "무료 체험 중"}
+              {view.trialDaysLeft != null
+                ? `무료 체험 · ${formatRelativeTime(view.trialDaysLeft, "day", locale)}`
+                : "무료 체험 중"}
             </div>
             <div className="tl-hero__title">지금 모든 프리미엄 기능을 쓰고 있어요</div>
             {view.trialEndsAt && (

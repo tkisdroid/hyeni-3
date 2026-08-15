@@ -41,6 +41,7 @@ import type { MemoContentReportReason } from "@/lib/api/endpoints/contentSafety"
 import { Loading } from "@/components/ui/Loading";
 import { useLocale } from "@/i18n/useLocale";
 import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+import { latestDateKeyOrNull } from "@/transform/dateKey";
 import "@/styles/jua.css";
 import "./MemoChat.css";
 
@@ -266,6 +267,7 @@ export function MemoChat() {
   // 최근 7일 date_key 스레드 — 스코프 아이 한정. 오늘만 보이던 이전 방식은
   // 어제 대화가 사라져 보이는 실사용 혼란(주간 리포트 15건 vs 빈 대화 탭)을 만들었다.
   const dateKeys = useRecentDateKeys(7, LEGACY_FAMILY_TIME_ZONE);
+  const memoDateKey = latestDateKeyOrNull(dateKeys);
   const thread = useMemoThread(dateKeys, scopeChild?.id ?? null);
   const sendMemo = useSendMemo();
   const markRead = useMarkRead();
@@ -455,6 +457,10 @@ export function MemoChat() {
       show(isChildSession ? "내 대화 정보를 확인할 수 없어" : "대화 대상 아이를 확인할 수 없어요", "⚠️");
       return;
     }
+    if (!memoDateKey) {
+      show(isChildSession ? "대화 날짜를 확인할 수 없어" : "대화 날짜를 확인할 수 없어요", "⚠️");
+      return;
+    }
     const text = draft.trim();
     if (!text) {
       show(copy.emptyDraft, "✏️");
@@ -463,7 +469,7 @@ export function MemoChat() {
     if (sendMemo.isPending) return;
     // childId(member id)로 아이별 스레드에 귀속 — 다른 아이 화면엔 절대 표시되지 않음.
     sendMemo.mutate(
-      { content: text, childId: scopeChild.id },
+      { content: text, dateKey: memoDateKey, childId: scopeChild.id },
       {
         onSuccess: () => setDraft(""),
         onError: () => show(copy.sendFailed, "⚠️"),
@@ -480,7 +486,7 @@ export function MemoChat() {
   const onPickImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = ""; // 같은 파일 재선택 허용
-    if (!file || !familyId || !scopeChild || sharing) return;
+    if (!file || !familyId || !scopeChild || !memoDateKey || sharing) return;
     setSharing("image");
     try {
       const dataUrl = await resizeImageFileSafe(file, { maxEdge: 1280, quality: 0.8 });
@@ -497,7 +503,7 @@ export function MemoChat() {
         contentType: imageBlob.type || "image/jpeg",
       });
       sendMemo.mutate(
-        { content: encodeImageContent(uploaded.path), childId: scopeChild.id },
+        { content: encodeImageContent(uploaded.path), dateKey: memoDateKey, childId: scopeChild.id },
         { onError: () => show(copy.imageFailed, "⚠️") },
       );
     } catch (error) {
@@ -566,7 +572,7 @@ export function MemoChat() {
     }
   };
   const shareLocation = async () => {
-    if (sharing || sendMemo.isPending || !scopeChild) return;
+    if (sharing || sendMemo.isPending || !scopeChild || !memoDateKey) return;
     setSharing("location");
     try {
       // GPS 실패 시(권한 없음 등) 서버에 기록된 내 최신 위치로 폴백(아이 세션은 백그라운드 추적 중).
@@ -581,7 +587,11 @@ export function MemoChat() {
       }
       const address = await reverseAddress(point.lat, point.lng);
       sendMemo.mutate(
-        { content: encodeLocationContent(point.lat, point.lng, address || "내 위치"), childId: scopeChild.id },
+        {
+          content: encodeLocationContent(point.lat, point.lng, address || "내 위치"),
+          dateKey: memoDateKey,
+          childId: scopeChild.id,
+        },
         { onError: () => show(copy.locationFailed, "⚠️") },
       );
     } finally {

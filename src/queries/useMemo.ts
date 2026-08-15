@@ -12,7 +12,6 @@ import {
   markReplyRead,
   type MemoReply,
 } from "@/lib/api/endpoints/memo";
-import { todayDateKey } from "@/transform/dateKey";
 import { commitSentMemoReply } from "./memoCache";
 
 /** 선택 date_key 들의 대화 스레드. childId(member id) 지정 시 그 아이 스레드만(아이별 분리). */
@@ -53,7 +52,7 @@ export function useUnreadMemoForChildren(dateKeys: string[], childIds: string[])
 
 export interface SendMemoVars {
   content: string;
-  dateKey?: string; // 기본값 = 오늘
+  dateKey: string;
   childId?: string | null;
   origin?: string;
 }
@@ -66,10 +65,11 @@ export function useSendMemo() {
     mutationFn: (vars: SendMemoVars) => {
       if (!familyId) throw new Error("가족 정보가 없어요");
       if (!userId) throw new Error("로그인이 필요해요");
+      if (!vars.dateKey) throw new Error("대화 날짜를 확인할 수 없어요");
       const userRole: "parent" | "child" = role === "child" ? "child" : "parent";
       return sendMemoReply({
         familyId,
-        dateKey: vars.dateKey ?? todayDateKey(),
+        dateKey: vars.dateKey,
         userId,
         userRole,
         content: vars.content,

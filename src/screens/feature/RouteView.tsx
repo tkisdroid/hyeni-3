@@ -15,15 +15,16 @@ import { loadKakaoMaps } from "@/lib/kakaoMap";
 import { openExternal } from "@/lib/native/browser";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { straightDistanceM, type RoutePoint } from "@/lib/api/endpoints/route";
-import type { CalendarEvent } from "@/lib/api/endpoints/schedule";
-import { parseAppDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import {
   beginRouteDestinationScope,
+  pickNextEventWithPlace,
   resolveRouteDestination,
   selectRouteDestinationForChild,
   type OwnedRouteDestination,
 } from "@/transform/routeDestinationScope";
+import { formatDurationUnit, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+import { useLocale } from "@/i18n/useLocale";
 import "./RouteView.css";
 
 // 도보 4km/h ≈ 67m/분 — 실 도보 경로의 '거리'만으로 소요시간을 보정할 때 쓴다
@@ -44,10 +45,10 @@ function distanceLabel(m: number): string {
   return `${(m / 1000).toFixed(1)}km`;
 }
 
-function durationLabel(sec: number | null): string {
+function durationLabel(sec: number | null, locale: Parameters<typeof formatDurationUnit>[2]): string {
   if (sec == null) return "도보";
   const min = Math.max(1, Math.round(sec / 60));
-  return `도보 ${min}분`;
+  return `도보 ${formatDurationUnit(min, "minute", locale)}`;
 }
 
 // 외부 지도 도보 길안내 URL(구글맵 — 웹·안드로이드 모두 좌표 기반으로 열림).
@@ -60,38 +61,8 @@ function buildKakaoToUrl(name: string, d: RoutePoint): string {
   return `https://map.kakao.com/link/to/${encodeURIComponent(name || "도착지")},${d.lat},${d.lng}`;
 }
 
-// 일정의 시작 시각(ms). date_key + time("HH:MM") 조합. 무효 시 null.
-function eventStartMs(ev: CalendarEvent): number | null {
-  const d = parseAppDateKey(ev.date_key);
-  if (!d) return null;
-  let h = 0;
-  let m = 0;
-  if (ev.time && /^\d{1,2}:\d{2}$/.test(ev.time)) {
-    const [hh, mm] = ev.time.split(":").map(Number);
-    h = hh;
-    m = mm;
-  }
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m).getTime();
-}
-
-/** 다음 일정(장소 문자열이라도 있는 것) — 좌표 유무와 무관하게 시간순 선정. */
-function pickNextEventWithPlace(
-  events: CalendarEvent[] | undefined,
-  nowMs: number,
-): CalendarEvent | null {
-  const upcoming = (events ?? [])
-    .filter(
-      (ev) =>
-        (typeof ev.location?.lat === "number" && typeof ev.location?.lng === "number") ||
-        !!ev.location?.address?.trim(),
-    )
-    .map((ev) => ({ ev, ms: eventStartMs(ev) }))
-    .filter((x): x is { ev: CalendarEvent; ms: number } => x.ms != null && x.ms >= nowMs - 60 * 60 * 1000)
-    .sort((a, b) => a.ms - b.ms);
-  return upcoming[0]?.ev ?? null;
-}
-
 export function RouteView() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const { show } = useToast();
   const { role, userId } = useAuth();
@@ -129,7 +100,10 @@ export function RouteView() {
     () => childMember ? filterEventsForChild(events ?? [], childMember.id) : [],
     [events, childMember?.id],
   );
-  const nextEvent = useMemo(() => pickNextEventWithPlace(childEvents, nowMs), [childEvents, nowMs]);
+  const nextEvent = useMemo(
+    () => pickNextEventWithPlace(childEvents, nowMs, LEGACY_FAMILY_TIME_ZONE),
+    [childEvents, nowMs],
+  );
   const [destinationState, setDestinationState] = useState<OwnedRouteDestination<DestPick> | null>(null);
   const destination = selectRouteDestinationForChild(destinationState, childMember?.id ?? null);
   useEffect(() => {
@@ -321,13 +295,17 @@ export function RouteView() {
   );
   const straightEta =
     straightM != null
-      ? `직선 ${distanceLabel(straightM)} · 걸어서 ${Math.max(1, Math.round((straightM * 1.3) / WALK_M_PER_MIN))}분쯤`
+      ? `직선 ${distanceLabel(straightM)} · 걸어서 ${formatDurationUnit(
+          Math.max(1, Math.round((straightM * 1.3) / WALK_M_PER_MIN)),
+          "minute",
+          locale,
+        )}쯤`
       : null;
 
   // 소요시간·거리 요약(실 경로만 정확 수치 노출).
   const etaText =
     routeState === "ready" && distanceM != null
-      ? `${durationLabel(durationSec)} · ${distanceLabel(distanceM)}`
+      ? `${durationLabel(durationSec, locale)} · ${distanceLabel(distanceM)}`
       : routeState === "loading"
         ? routeLoadingText
         : routeState === "error"

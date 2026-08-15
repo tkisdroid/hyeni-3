@@ -48,6 +48,8 @@ import {
   addDaysToDateKey,
   dateInputValueToDateKey,
   dateKeyToDateInputValue,
+  dateKeyEventWindowMs,
+  intervalOverlapMs,
   parseAppDateKey,
 } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
@@ -95,18 +97,6 @@ const STAYS_DRAG_CLICK_GUARD_MS = 650;
 const HISTORY_FOCUS_MAP_LEVEL = 4;
 type LocationRefreshState = "idle" | "requesting" | "waiting";
 
-function timeToMinutes(value: string | null | undefined): number | null {
-  if (!value) return null;
-  const match = /^(\d{1,2}):(\d{2})$/.exec(value.trim());
-  if (!match) return null;
-  const h = Number(match[1]);
-  const m = Number(match[2]);
-  if (!Number.isInteger(h) || !Number.isInteger(m) || h < 0 || h > 23 || m < 0 || m > 59) {
-    return null;
-  }
-  return h * 60 + m;
-}
-
 function eventPoint(event: CalendarEvent): { lat: number; lng: number } | null {
   const lat = event.location?.lat;
   const lng = event.location?.lng;
@@ -115,33 +105,23 @@ function eventPoint(event: CalendarEvent): { lat: number; lng: number } | null {
   return { lat, lng };
 }
 
-function eventWindowMs(event: CalendarEvent): { startMs: number; endMs: number } | null {
-  const date = parseAppDateKey(event.date_key);
-  const startMin = timeToMinutes(event.time);
-  if (!date || startMin == null) return null;
-  const endMinRaw = timeToMinutes(event.end_time);
-  const endMin = endMinRaw == null ? startMin + 60 : endMinRaw;
-  const base = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
-  const startMs = base + startMin * 60_000;
-  const endMs = base + (endMin <= startMin ? endMin + 24 * 60 : endMin) * 60_000;
-  return { startMs, endMs };
-}
-
 function eventLabel(event: CalendarEvent): string {
   return (event.title || event.location?.address || "일정 장소").trim();
 }
 
-function scheduleStayLabel(stay: StayPoint, events: CalendarEvent[]): string | null {
+function scheduleStayLabel(stay: StayPoint, events: CalendarEvent[], timeZone: string): string | null {
   const candidates = events
     .map((event) => {
       const point = eventPoint(event);
       if (!point) return null;
       const distance = distanceMeters(stay.lat, stay.lng, point.lat, point.lng);
       if (distance > SCHEDULE_STAY_RADIUS_M) return null;
-      const window = eventWindowMs(event);
+      const window = dateKeyEventWindowMs(event.date_key, event.time, event.end_time, timeZone);
       if (!window) return null;
-      const overlapMs =
-        Math.min(stay.departureMs, window.endMs) - Math.max(stay.arrivalMs, window.startMs);
+      const overlapMs = intervalOverlapMs(window, {
+        startMs: stay.arrivalMs,
+        endMs: stay.departureMs,
+      });
       if (overlapMs < MIN_SCHEDULE_STAY_OVERLAP_MS) return null;
       return { event, distance, overlapMs };
     })
@@ -376,7 +356,9 @@ export function ParentLocation() {
     [events, historyDayKey, selected?.id],
   );
   const stayLabels = useMemo(
-    () => stayPoints.map((s) => scheduleStayLabel(s, selectedHistoryEvents) ?? stayPlaceLabel(s, places)),
+    () => stayPoints.map((s) => (
+      scheduleStayLabel(s, selectedHistoryEvents, LEGACY_FAMILY_TIME_ZONE) ?? stayPlaceLabel(s, places)
+    )),
     [stayPoints, selectedHistoryEvents, places],
   );
   const visibleStayPoints = useMemo(

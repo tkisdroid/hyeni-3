@@ -99,7 +99,13 @@ export function ParentCalendar() {
     return map;
   }, [family]);
   const canVerifyVisits = !entitlement.isError && locationModeFor(entitlement.tier) === "realtime";
-  const visitMap = useVisitVerify(selectedKey, events, childUserByMemberId, canVerifyVisits);
+  const visitMap = useVisitVerify(
+    selectedKey,
+    LEGACY_FAMILY_TIME_ZONE,
+    events,
+    childUserByMemberId,
+    canVerifyVisits,
+  );
   const byKey = useMemo(
     () => groupEventsByDateKey(
       events ?? [],

@@ -312,7 +312,13 @@ export function ParentHome() {
 
   // 지난 일정 "다녀옴" 위치 검증 — 활성 아이 이력으로 방문 확인(미확인=확인 필요).
   const canVerifyVisits = !locationScopeUnavailable && locationMode === "realtime";
-  const visitMap = useVisitVerify(todayKey, events, activeChild?.user_id ?? null, canVerifyVisits);
+  const visitMap = useVisitVerify(
+    todayKey,
+    LEGACY_FAMILY_TIME_ZONE,
+    events,
+    activeChild?.user_id ?? null,
+    canVerifyVisits,
+  );
 
   // 오늘 일정 — 활성 아이 배정(events_children.child_id) + 가족 공유(is_family_event)만.
   // 형제에게만 배정된 일정은 활성 아이 화면에서 제외(아이별 구분 — TK 결정).

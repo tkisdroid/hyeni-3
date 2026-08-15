@@ -301,7 +301,7 @@ test("서버가 지원하는 60분 알림을 1시간 전으로 표시한다", ()
     endpoint,
     /NOTIF_MINUTE_OPTIONS:\s*readonly number\[\]\s*=\s*\[60, 30, 15, 10, 5\]/,
   );
-  assert.match(screen, /m === 60 \? "1시간 전" : `\$\{m\}분 전`/);
+  assert.match(screen, /formatRelativeMinutes\(m, "past", locale\)/);
 });
 
 test("미등록 장소 출발은 일반 위치의 도착·출발 알림으로 상세 화면에 연결한다", () => {

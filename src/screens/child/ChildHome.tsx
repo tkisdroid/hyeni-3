@@ -18,7 +18,7 @@ import type { RoutePoint } from "@/lib/api/endpoints/route";
 import { groupEventsByDateKey, PAST_TAGS } from "@/transform/scheduleView";
 import { useLocale } from "@/i18n/useLocale";
 import { formatCalendarDay, formatRelativeMinutes, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
-import { dateTimeScopeInTimeZone } from "@/transform/dateKey";
+import { dateTimeScopeInTimeZone, latestDateKeyOrNull } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { QUICK_STATUS_ACTIONS, buildQuickStatusMemo, type QuickStatusActionId } from "@/transform/quickStatusShare";
 import { buildAdventureMap, timeLabelToMinutes, type AdventureEventInput } from "@/transform/adventureMap";
@@ -73,13 +73,13 @@ export function ChildHome() {
   const { userId } = useAuth();
 
   const memoDateKeys = useRecentDateKeys(7, LEGACY_FAMILY_TIME_ZONE);
-  const memoTodayKey = memoDateKeys[memoDateKeys.length - 1];
-  const now = useMemo(() => new Date(), [memoTodayKey]);
+  const memoDateKey = latestDateKeyOrNull(memoDateKeys);
+  const now = useMemo(() => new Date(), [memoDateKey]);
   const dateTimeScope = useMemo(
     () => dateTimeScopeInTimeZone(now, LEGACY_FAMILY_TIME_ZONE),
     [now],
   );
-  const todayKey = memoTodayKey ?? dateTimeScope.dateKey;
+  const todayKey = memoDateKey ?? dateTimeScope.dateKey;
   const nowMinutes = dateTimeScope.minutesSinceMidnight;
 
   const familyQuery = useMyFamily();
@@ -309,9 +309,9 @@ export function ChildHome() {
   const unreadCount = unreadParentMemoCount(memoThread.data, userId);
 
   const sendQuickStatus = (actionId: QuickStatusActionId, source: "quick-grid" | "route" = "quick-grid") => {
-    if (!myMember?.id || sendMemo.isPending) return;
+    if (!myMember?.id || !memoDateKey || sendMemo.isPending) return;
     setPendingQuickStatus(source === "quick-grid" ? actionId : null);
-    sendMemo.mutate(buildQuickStatusMemo(actionId, myMember.id, todayKey), {
+    sendMemo.mutate(buildQuickStatusMemo(actionId, myMember.id, memoDateKey), {
       onSuccess: () => show("가족 메시지에 남겼어", "💬"),
       onError: () => show("보내지 못했어. 잠시 후 다시 해 줘", "⚠️"),
       onSettled: () => setPendingQuickStatus((current) => (current === actionId ? null : current)),

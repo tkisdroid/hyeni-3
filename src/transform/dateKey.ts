@@ -127,6 +127,15 @@ export function recentDateKeysFor(anchorDateKey: string, days: number): string[]
   ));
 }
 
+/** 조회에 실제 사용한 날짜 범위의 최신 키. 유효한 키가 없으면 전송을 닫는다. */
+export function latestDateKeyOrNull(dateKeys: readonly string[]): string | null {
+  for (let index = dateKeys.length - 1; index >= 0; index -= 1) {
+    const key = dateKeys[index];
+    if (parseAppDateKey(key)) return key;
+  }
+  return null;
+}
+
 function dateKeyWallClockInTimeZone(
   dateKey: string,
   hour: number,
@@ -171,6 +180,64 @@ export function dateKeyMinuteInTimeZone(
     minuteOfDay % 60,
     timeZone,
   );
+}
+
+/** date_key 하루의 명시 time zone 자정~익일 자정을 UTC ISO 조회 범위로 바꾼다. */
+export function dateKeyDayRangeIso(
+  dateKey: string,
+  timeZone: string,
+): { start: string; end: string } | null {
+  if (!parseAppDateKey(dateKey)) return null;
+  const start = dateKeyMinuteInTimeZone(dateKey, 0, timeZone);
+  const end = dateKeyMinuteInTimeZone(addDaysToDateKey(dateKey, 1), 0, timeZone);
+  if (!start || !end) return null;
+  return { start: start.toISOString(), end: end.toISOString() };
+}
+
+function wallClockMinutes(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const match = /^(\d{1,2}):(\d{2})$/.exec(value.trim());
+  if (!match) return null;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+  return hour * 60 + minute;
+}
+
+/** date_key와 시작/종료 벽시각을 명시 time zone의 일정 창으로 바꾼다. */
+export function dateKeyEventWindowMs(
+  dateKey: string,
+  startTime: string | null | undefined,
+  endTime: string | null | undefined,
+  timeZone: string,
+): { startMs: number; endMs: number } | null {
+  const startMinute = wallClockMinutes(startTime);
+  if (startMinute == null) return null;
+  const parsedEndMinute = wallClockMinutes(endTime);
+  const endMinute = parsedEndMinute == null ? startMinute + 60 : parsedEndMinute;
+  const normalizedEndMinute = endMinute <= startMinute ? endMinute + 24 * 60 : endMinute;
+  const start = dateKeyMinuteInTimeZone(dateKey, startMinute, timeZone);
+  const end = dateKeyMinuteInTimeZone(dateKey, normalizedEndMinute, timeZone);
+  if (!start || !end) return null;
+  return { startMs: start.getTime(), endMs: end.getTime() };
+}
+
+/** 길찾기용 일정 시작 시각. 비어 있거나 잘못된 time은 해당 날짜 자정으로 닫는다. */
+export function dateKeyEventStartMs(
+  dateKey: string,
+  startTime: string | null | undefined,
+  timeZone: string,
+): number | null {
+  const minute = wallClockMinutes(startTime) ?? 0;
+  return dateKeyMinuteInTimeZone(dateKey, minute, timeZone)?.getTime() ?? null;
+}
+
+/** 두 반열린 시간 구간의 겹침 길이. */
+export function intervalOverlapMs(
+  left: { startMs: number; endMs: number },
+  right: { startMs: number; endMs: number },
+): number {
+  return Math.max(0, Math.min(left.endMs, right.endMs) - Math.max(left.startMs, right.startMs));
 }
 
 /** 명시 time zone에서 다음 달력 날짜가 시작될 때까지 남은 시간. */

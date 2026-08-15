@@ -11,10 +11,15 @@ import {
   advanceChildInviteConnection,
   type ChildInviteConnectionState,
 } from "@/transform/childInviteConnection";
+import { useLocale } from "@/i18n/useLocale";
+import { formatCountdownDuration } from "@/i18n/format";
 import "./ChildInvite.css";
 
 /** 만료까지 남은 시간 표시 + 만료 여부. 무기한(expiresAt 없음)이면 null. */
-function useCountdown(expiresAt: Date | null): { text: string; expired: boolean } | null {
+function useCountdown(
+  expiresAt: Date | null,
+  locale: Parameters<typeof formatCountdownDuration>[1],
+): { text: string; expired: boolean } | null {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!expiresAt) return;
@@ -23,21 +28,7 @@ function useCountdown(expiresAt: Date | null): { text: string; expired: boolean 
   }, [expiresAt]);
   if (!expiresAt) return null;
   const left = Math.max(0, Math.floor((expiresAt.getTime() - now) / 1000));
-  if (left === 0) return { text: "만료됨", expired: true };
-  // 다일/다시간 만료는 mm:ss 오버플로 방지 — 큰 값은 일·시간·분 단위로.
-  if (left >= 86400) {
-    const d = Math.floor(left / 86400);
-    const h = Math.floor((left % 86400) / 3600);
-    return { text: h > 0 ? `${d}일 ${h}시간` : `${d}일`, expired: false };
-  }
-  if (left >= 3600) {
-    const h = Math.floor(left / 3600);
-    const m = Math.floor((left % 3600) / 60);
-    return { text: `${h}시간 ${m}분`, expired: false };
-  }
-  const mm = String(Math.floor(left / 60)).padStart(2, "0");
-  const ss = String(left % 60).padStart(2, "0");
-  return { text: `${mm}:${ss}`, expired: false };
+  return formatCountdownDuration(left, locale);
 }
 
 /**
@@ -46,6 +37,7 @@ function useCountdown(expiresAt: Date | null): { text: string; expired: boolean 
  * 아이 연결 감지 폴링 → 연결되면 자동으로 가족 화면으로 안내.
  */
 export function ChildInvite() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const { show } = useToast();
   // 대기 화면이므로 6초 폴링으로 아이 연결을 감지한다.
@@ -60,7 +52,7 @@ export function ChildInvite() {
 
   const pairCode = family?.pairCode ?? "";
   const expiresAt = family?.pairCodeExpiresAt ?? null;
-  const countdown = useCountdown(expiresAt);
+  const countdown = useCountdown(expiresAt, locale);
   const expired = countdown?.expired ?? false;
 
   const pairLink = useMemo(() => (pairCode ? buildPairLink(pairCode) : ""), [pairCode]);

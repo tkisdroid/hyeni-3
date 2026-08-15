@@ -47,6 +47,21 @@ test("부모·아이 대화 표시는 최근 7일을 조회하고 자정·화면
   assert.match(hook, /setTimeout/);
 });
 
+test("메모 전송은 조회한 KST 최근 범위의 마지막 date_key를 모든 전송 경로에 명시한다", () => {
+  const query = read("src/queries/useMemo.ts");
+  const chat = read("src/screens/shared/MemoChat.tsx");
+  const childHome = read("src/screens/child/ChildHome.tsx");
+
+  assert.match(query, /dateKey:\s*string/);
+  assert.doesNotMatch(query, /dateKey\?:\s*string/);
+  assert.doesNotMatch(query, /todayDateKey/);
+  assert.match(query, /if \(!vars\.dateKey\) throw new Error/);
+  assert.match(chat, /const memoDateKey = latestDateKeyOrNull\(dateKeys\)/);
+  assert.equal(chat.match(/dateKey:\s*memoDateKey/g)?.length, 3);
+  assert.match(childHome, /const memoDateKey = latestDateKeyOrNull\(memoDateKeys\)/);
+  assert.match(childHome, /buildQuickStatusMemo\(actionId, myMember\.id, memoDateKey\)/);
+});
+
 test("아이 member id가 확정되지 않으면 메모 전체 스레드를 조회하거나 전송하지 않는다", () => {
   const query = read("src/queries/useMemo.ts");
   const chat = read("src/screens/shared/MemoChat.tsx");

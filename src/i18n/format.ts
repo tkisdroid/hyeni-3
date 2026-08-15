@@ -123,6 +123,54 @@ export function formatRelativeMinutes(
   return formatRelativeTime(sign * magnitude, "minute", locale);
 }
 
+type CountdownDurationView = { text: string; expired: boolean };
+
+export function formatDurationUnit(
+  value: number,
+  unit: "day" | "hour" | "minute" | "second",
+  locale: SupportedLocale,
+): string {
+  return new Intl.NumberFormat(intlLocaleTag(locale), {
+    style: "unit",
+    unit,
+    unitDisplay: "long",
+  }).format(value);
+}
+
+/** 초대 코드처럼 짧게 갱신되는 남은 시간을 locale 단위로 조립한다. */
+export function formatCountdownDuration(
+  seconds: number,
+  locale: SupportedLocale,
+): CountdownDurationView {
+  const remaining = Math.max(0, Math.floor(seconds));
+  if (remaining === 0) return { text: "", expired: true };
+
+  const parts: string[] = [];
+  if (remaining >= 86_400) {
+    const days = Math.floor(remaining / 86_400);
+    const hours = Math.floor((remaining % 86_400) / 3_600);
+    parts.push(formatDurationUnit(days, "day", locale));
+    if (hours > 0) parts.push(formatDurationUnit(hours, "hour", locale));
+  } else if (remaining >= 3_600) {
+    const hours = Math.floor(remaining / 3_600);
+    const minutes = Math.floor((remaining % 3_600) / 60);
+    parts.push(formatDurationUnit(hours, "hour", locale));
+    parts.push(formatDurationUnit(minutes, "minute", locale));
+  } else if (remaining >= 60) {
+    const minutes = Math.floor(remaining / 60);
+    const trailingSeconds = remaining % 60;
+    parts.push(formatDurationUnit(minutes, "minute", locale));
+    if (trailingSeconds > 0) parts.push(formatDurationUnit(trailingSeconds, "second", locale));
+  } else {
+    parts.push(formatDurationUnit(remaining, "second", locale));
+  }
+
+  return {
+    text: new Intl.ListFormat(intlLocaleTag(locale), { style: "long", type: "unit" }).format(parts),
+    expired: false,
+  };
+}
+
 export function formatPastTime(
   value: Date | number | string,
   now: Date,
