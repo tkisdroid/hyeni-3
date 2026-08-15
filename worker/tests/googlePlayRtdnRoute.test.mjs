@@ -9,6 +9,8 @@ import * as googlePlay from "../lib/googlePlay.ts";
 import { claimBillingProvider } from "../lib/billingProviderReservation.ts";
 
 const NOW = new Date("2026-07-13T12:00:00.000Z");
+// 실제 실행 날짜가 기본 활성 구독 fixture를 만료시키지 않도록 먼 미래 시각을 사용한다.
+const DEFAULT_SUBSCRIPTION_EXPIRY = "2099-08-13T00:00:00.000Z";
 const PACKAGE_NAME = "com.hyeni.calendar";
 const RAW_TOKEN = "SENTINEL_RAW_PURCHASE_TOKEN";
 const LINKED_TOKEN = "SENTINEL_LINKED_PURCHASE_TOKEN";
@@ -191,7 +193,7 @@ async function playSubscription(overrides = {}) {
     },
     lineItems: [{
       productId: "hyeni_premium",
-      expiryTime: "2026-08-13T00:00:00.000Z",
+      expiryTime: DEFAULT_SUBSCRIPTION_EXPIRY,
       offerDetails: { basePlanId: "monthly-2900", offerId: "trial-7d" },
       autoRenewingPlan: {
         autoRenewEnabled: true,
