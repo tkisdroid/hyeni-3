@@ -87,8 +87,63 @@ for (const fixture of [
     sinkLine: 4,
   },
   {
+    name: "기본값이 있는 배열 destructuring assignment 뒤 렌더",
+    lines: ["let text = '';", "[text = 'fallback'] = [failure.message];", "return <p>{text}</p>;"],
+    sinkLine: 4,
+  },
+  {
+    name: "중첩 배열 destructuring assignment 뒤 렌더",
+    lines: ["let text = '';", "[[text]] = [[failure.message]];", "return <p>{text}</p>;"],
+    sinkLine: 4,
+  },
+  {
+    name: "object·array·rest 중첩 destructuring assignment 뒤 렌더",
+    lines: [
+      "let text = '', rest = {};",
+      "({ payload: [text = 'fallback'], ...rest } = { payload: [failure.message] });",
+      "return <>",
+      "  {text}",
+      "  {String(rest)}",
+      "</>;",
+    ],
+    sinkLines: [5, 6],
+  },
+  {
+    name: "배열 rest destructuring assignment 뒤 렌더",
+    lines: ["let rest = [];", "[...rest] = [failure.message];", "return <p>{rest[0]}</p>;"],
+    sinkLine: 4,
+  },
+  {
+    name: "중첩 pattern의 property·element target 뒤 렌더",
+    lines: [
+      "const view = { text: '' };",
+      "const holder = { text: '' };",
+      "[{ value: view.text }, holder['text']] = [{ value: failure.message }, failure.message];",
+      "return <>",
+      "  {view.text}",
+      "  {holder['text']}",
+      "</>;",
+    ],
+    sinkLines: [6, 7],
+  },
+  {
     name: "원문을 반환하는 zero-arg wrapper를 렌더",
     lines: ["const getText = () => failure.message;", "return <p>{getText()}</p>;"],
+    sinkLine: 3,
+  },
+  {
+    name: "원문을 반환하는 block arrow zero-arg wrapper를 렌더",
+    lines: ["const getText = () => { return failure.message; };", "return <p>{getText()}</p>;"],
+    sinkLine: 3,
+  },
+  {
+    name: "원문을 반환하는 FunctionExpression zero-arg wrapper를 렌더",
+    lines: ["const getText = function () { return failure.message; };", "return <p>{getText()}</p>;"],
+    sinkLine: 3,
+  },
+  {
+    name: "원문을 반환하는 FunctionDeclaration zero-arg wrapper를 렌더",
+    lines: ["function getText() { return failure.message; }", "return <p>{getText()}</p>;"],
     sinkLine: 3,
   },
   {
@@ -99,6 +154,16 @@ for (const fixture of [
   {
     name: "원문 callable의 element-access method 반환을 렌더",
     lines: ["const holder = { read: () => failure.message };", "return <p>{holder['read']()}</p>;"],
+    sinkLine: 3,
+  },
+  {
+    name: "원문을 반환하는 object method의 property-access 호출을 렌더",
+    lines: ["const holder = { read() { return failure.message; } };", "return <p>{holder.read()}</p>;"],
+    sinkLine: 3,
+  },
+  {
+    name: "원문을 반환하는 object method의 element-access 호출을 렌더",
+    lines: ["const holder = { read() { return failure.message; } };", "return <p>{holder['read']()}</p>;"],
     sinkLine: 3,
   },
   {
@@ -123,12 +188,52 @@ for (const fixture of [
       ].join("\n"));
       const result = runScanner(root);
       assert.notEqual(result.status, 0, fixture.name);
-      assert.match(result.stderr, new RegExp(`src/Aliased\\.tsx:${fixture.sinkLine}`));
+      for (const sinkLine of fixture.sinkLines ?? [fixture.sinkLine]) {
+        assert.match(result.stderr, new RegExp(`src/Aliased\\.tsx:${sinkLine}`), fixture.name);
+      }
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
   });
 }
+
+test("destructuring assignment의 object property key는 target binding으로 오인하지 않는다", () => {
+  const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
+  try {
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src", "SafeKey.tsx"), [
+      "export function SafeKey({ failure }) {",
+      "  let message = '고정 문구', text = '';",
+      "  ({ message: text } = { message: failure.message });",
+      "  return <p>{message}</p>;",
+      "}",
+    ].join("\n"));
+    const result = runScanner(root);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("바깥 callable은 중첩 함수의 raw return을 자신의 반환으로 오인하지 않는다", () => {
+  const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
+  try {
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src", "NestedReturn.tsx"), [
+      "export function NestedReturn({ failure }) {",
+      "  const getText = () => {",
+      "    function hidden() { return failure.message; }",
+      "    return '고정 문구';",
+      "  };",
+      "  return <p>{getText()}</p>;",
+      "}",
+    ].join("\n"));
+    const result = runScanner(root);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 test("문자 장식만 지우는 cleanAlertTitle은 오류 원문 sanitizer로 인정하지 않는다", () => {
   const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
@@ -302,6 +407,7 @@ for (const [name, mixedExpression] of [
   ["덧셈", "cleanAlertTitle(alert.message) + failure.message"],
   ["조건식", "enabled ? cleanAlertTitle(alert.message) : failure.message"],
   ["배열", "[cleanAlertTitle(alert.message), failure.message]"],
+  ["comma sequence", "(cleanAlertTitle(alert.message), failure.message)"],
 ]) {
   test(`allowlist는 ${name} 혼합 finding을 허용 도메인 표현식으로 소비하지 않는다`, () => {
     const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
@@ -332,6 +438,22 @@ for (const [name, mixedExpression] of [
     }
   });
 }
+
+test("comma sequence는 실제 반환되는 오른쪽 operand만 오류 표면 taint로 전파한다", () => {
+  const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
+  try {
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src", "CommaResult.tsx"), [
+      "export function CommaResult({ failure }) {",
+      "  return <p>{(failure.message, '고정 문구')}</p>;",
+      "}",
+    ].join("\n"));
+    const result = runScanner(root);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 test("allowlist는 실제 finding의 사용 수가 선언보다 많거나 적으면 실패한다", () => {
   for (const [name, body, occurrences, expected] of [

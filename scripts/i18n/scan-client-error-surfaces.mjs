@@ -242,6 +242,34 @@ function createBindingModel(sourceFile, file) {
   return { resolve, isApprovedSanitizer };
 }
 
+function isTrackedCallable(node) {
+  return ts.isArrowFunction(node)
+    || ts.isFunctionExpression(node)
+    || ts.isFunctionDeclaration(node)
+    || ts.isMethodDeclaration(node);
+}
+
+function callableReturnExpressions(callable) {
+  if (ts.isArrowFunction(callable) && !ts.isBlock(callable.body)) return [callable.body];
+  if (!callable.body) return [];
+  const expressions = [];
+  const visit = (node) => {
+    if (node !== callable.body && isTrackedCallable(node)) return;
+    if (ts.isReturnStatement(node)) {
+      if (node.expression) expressions.push(node.expression);
+      return;
+    }
+    node.forEachChild(visit);
+  };
+  visit(callable.body);
+  return expressions;
+}
+
+function callableReturnsTainted(callable, tainted, model) {
+  return callableReturnExpressions(callable)
+    .some((expression) => expressionIsTainted(expression, tainted, model));
+}
+
 function expressionIsTainted(node, tainted, model) {
   if (!node) return false;
   if (isRawPropertyAccess(node)) return true;
@@ -278,12 +306,15 @@ function expressionIsTainted(node, tainted, model) {
   ) {
     return expressionIsTainted(node.expression, tainted, model);
   }
-  if (ts.isArrowFunction(node)) return expressionIsTainted(node.body, tainted, model);
+  if (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) {
+    return callableReturnsTainted(node, tainted, model);
+  }
   if (ts.isObjectLiteralExpression(node)) {
     return node.properties.some((property) => {
       if (ts.isPropertyAssignment(property)) return expressionIsTainted(property.initializer, tainted, model);
       if (ts.isShorthandPropertyAssignment(property)) return expressionIsTainted(property.name, tainted, model);
       if (ts.isSpreadAssignment(property)) return expressionIsTainted(property.expression, tainted, model);
+      if (ts.isMethodDeclaration(property)) return callableReturnsTainted(property, tainted, model);
       return false;
     });
   }
@@ -298,6 +329,9 @@ function expressionIsTainted(node, tainted, model) {
       || expressionIsTainted(node.whenFalse, tainted, model);
   }
   if (ts.isBinaryExpression(node)) {
+    if (node.operatorToken.kind === ts.SyntaxKind.CommaToken) {
+      return expressionIsTainted(node.right, tainted, model);
+    }
     if (node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken) {
       return expressionIsTainted(node.right, tainted, model);
     }
@@ -349,6 +383,46 @@ function rootIdentifierNode(node) {
   return ts.isIdentifier(current) ? current : null;
 }
 
+function assignmentTargetIdentifiers(node) {
+  if (!node) return [];
+  if (ts.isIdentifier(node)) return [node];
+  if (ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) {
+    const root = rootIdentifierNode(node);
+    return root ? [root] : [];
+  }
+  if (
+    ts.isParenthesizedExpression(node)
+    || ts.isAsExpression(node)
+    || ts.isTypeAssertionExpression(node)
+    || ts.isNonNullExpression(node)
+    || ts.isSpreadElement(node)
+    || ts.isSpreadAssignment(node)
+  ) {
+    return assignmentTargetIdentifiers(node.expression);
+  }
+  if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
+    return assignmentTargetIdentifiers(node.left);
+  }
+  if (ts.isBindingElement(node)) return assignmentTargetIdentifiers(node.name);
+  if (ts.isArrayLiteralExpression(node) || ts.isArrayBindingPattern(node)) {
+    return node.elements.flatMap((element) => (
+      ts.isOmittedExpression(element) ? [] : assignmentTargetIdentifiers(element)
+    ));
+  }
+  if (ts.isObjectLiteralExpression(node)) {
+    return node.properties.flatMap((property) => {
+      if (ts.isShorthandPropertyAssignment(property)) return assignmentTargetIdentifiers(property.name);
+      if (ts.isPropertyAssignment(property)) return assignmentTargetIdentifiers(property.initializer);
+      if (ts.isSpreadAssignment(property)) return assignmentTargetIdentifiers(property.expression);
+      return [];
+    });
+  }
+  if (ts.isObjectBindingPattern(node)) {
+    return node.elements.flatMap((element) => assignmentTargetIdentifiers(element));
+  }
+  return [];
+}
+
 function collectTaintedBindings(sourceFile, stateSetters, model) {
   const tainted = new Set();
   let changed = true;
@@ -380,21 +454,18 @@ function collectTaintedBindings(sourceFile, stateSetters, model) {
         }
       }
       if (
+        ts.isFunctionDeclaration(node)
+        && node.name
+        && callableReturnsTainted(node, tainted, model)
+      ) {
+        add(model.resolve(node.name));
+      }
+      if (
         ts.isBinaryExpression(node)
         && node.operatorToken.kind === ts.SyntaxKind.EqualsToken
         && expressionIsTainted(node.right, tainted, model)
       ) {
-        if (ts.isArrayLiteralExpression(node.left)) {
-          for (const element of node.left.elements) {
-            if (ts.isOmittedExpression(element)) continue;
-            const target = ts.isSpreadElement(element) ? element.expression : element;
-            const identifier = ts.isIdentifier(target) ? target : rootIdentifierNode(target);
-            if (identifier) add(model.resolve(identifier));
-          }
-        } else {
-          const target = ts.isIdentifier(node.left) ? node.left : rootIdentifierNode(node.left);
-          if (target) add(model.resolve(target));
-        }
+        for (const target of assignmentTargetIdentifiers(node.left)) add(model.resolve(target));
       }
       if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
         const state = stateSetters.get(model.resolve(node.expression));
