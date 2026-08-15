@@ -1,6 +1,7 @@
 import {
   createContext,
   useCallback,
+  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -37,6 +38,21 @@ export interface LocaleContextValue {
 }
 
 export const LocaleContext = createContext<LocaleContextValue | null>(null);
+
+type LocaleBoundaryLeaseContextValue = (
+  namespaces: readonly MessageNamespace[],
+) => () => void;
+
+const LocaleBoundaryLeaseContext =
+  createContext<LocaleBoundaryLeaseContextValue | null>(null);
+
+export function useLocaleBoundaryLease(): LocaleBoundaryLeaseContextValue {
+  const acquireNamespaceLease = useContext(LocaleBoundaryLeaseContext);
+  if (!acquireNamespaceLease) {
+    throw new Error("useLocaleBoundaryLease는 LocaleProvider 안에서만 사용할 수 있습니다.");
+  }
+  return acquireNamespaceLease;
+}
 
 const browserLocaleStorage: LocaleStoragePort = {
   read() {
@@ -111,6 +127,10 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     (namespaces: readonly MessageNamespace[]) => coordinator.ensureNamespaces(namespaces),
     [coordinator],
   );
+  const acquireNamespaceLease = useCallback(
+    (namespaces: readonly MessageNamespace[]) => coordinator.acquireNamespaceLease(namespaces),
+    [coordinator],
+  );
   const value = useMemo<LocaleContextValue>(() => ({
     locale: runtime.locale,
     setLocale,
@@ -139,10 +159,12 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <LocaleContext.Provider value={value}>
-      <IntlProvider locale={runtime.locale} defaultLocale="ko" messages={runtime.messages}>
-        {children}
-      </IntlProvider>
-    </LocaleContext.Provider>
+    <LocaleBoundaryLeaseContext.Provider value={acquireNamespaceLease}>
+      <LocaleContext.Provider value={value}>
+        <IntlProvider locale={runtime.locale} defaultLocale="ko" messages={runtime.messages}>
+          {children}
+        </IntlProvider>
+      </LocaleContext.Provider>
+    </LocaleBoundaryLeaseContext.Provider>
   );
 }
