@@ -8,12 +8,14 @@ import { parse, TYPE } from "@formatjs/icu-messageformat-parser";
 const defaultNamespaces = [
   "core", "onboarding", "parent", "child", "shared", "billing", "reports", "notifications", "android",
 ];
-const allowedUrlPrefixes = [
+const requiredLocales = ["ko", "en", "ja", "zh-CN", "zh-TW", "vi", "th", "id", "ms", "fil"];
+const allowedUrlOrigins = new Set([
   "https://hyeni-calendar.pages.dev",
   "https://hyeni-calendar-api.tkisdroid.workers.dev",
-  "https://play.google.com/",
-  "https://support.google.com/",
-];
+  "https://play.google.com",
+  "https://support.google.com",
+]);
+const forbiddenKeys = new Set(["__proto__", "prototype", "constructor"]);
 const argumentTypes = new Set([
   TYPE.argument, TYPE.number, TYPE.date, TYPE.time, TYPE.select, TYPE.plural,
 ]);
@@ -28,7 +30,33 @@ async function readJson(path) {
 }
 
 function sortStrings(values) {
-  return [...values].sort((left, right) => left.localeCompare(right));
+  return [...values].sort(compareCodePoints);
+}
+
+function compareCodePoints(left, right) {
+  const leftPoints = Array.from(left);
+  const rightPoints = Array.from(right);
+  const length = Math.min(leftPoints.length, rightPoints.length);
+  for (let index = 0; index < length; index += 1) {
+    const difference = leftPoints[index].codePointAt(0) - rightPoints[index].codePointAt(0);
+    if (difference !== 0) return difference;
+  }
+  return leftPoints.length - rightPoints.length;
+}
+
+function isPlainObject(value) {
+  if (!value || Array.isArray(value) || typeof value !== "object") return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
+function hasExactLocaleSet(localeCodes) {
+  return localeCodes.length === requiredLocales.length
+    && requiredLocales.every((locale) => localeCodes.includes(locale));
+}
+
+function createResult(errors, values = {}) {
+  return { errors: sortStrings(new Set(errors)), ...values };
 }
 
 function collectArguments(nodes, target = new Set()) {
@@ -53,8 +81,14 @@ function parseArguments(message, errorKey, errors) {
 
 function hasForbiddenMarkup(message) {
   if (/<script\b|javascript\s*:|\son[a-z]+\s*=/i.test(message)) return true;
-  const urls = message.match(/https?:\/\/[^\s<>"']+/gi) ?? [];
-  return urls.some((url) => !allowedUrlPrefixes.some((prefix) => url.startsWith(prefix)));
+  const urls = message.match(/https?:\/\/[^\s<>"']*/gi) ?? [];
+  return urls.some((url) => {
+    try {
+      return !allowedUrlOrigins.has(new URL(url).origin);
+    } catch {
+      return true;
+    }
+  });
 }
 
 function sameValues(left, right) {
@@ -76,12 +110,37 @@ export async function validateCatalogs({ rootDir = defaultRootDir(), namespaces 
     manifest = await readJson(join(localesRoot, "manifest.json"));
     descriptions = await readJson(join(localesRoot, "descriptions.json"));
     reviewStatus = await readJson(join(localesRoot, "review-status.json"));
-  } catch (error) {
-    return { errors: [`catalog_metadata_unreadable:${error instanceof Error ? error.message : "unknown"}`] };
+  } catch {
+    return createResult(["catalog_metadata_unreadable"]);
   }
 
-  const localeCodes = manifest.locales?.map((locale) => locale.code) ?? [];
-  const sourceLocale = manifest.sourceLocale;
+  const metadataErrors = [];
+  if (!isPlainObject(manifest)) metadataErrors.push("invalid_manifest");
+  if (!isPlainObject(descriptions)) metadataErrors.push("invalid_descriptions");
+  if (!isPlainObject(reviewStatus) || !isPlainObject(reviewStatus?.statuses)) {
+    metadataErrors.push("invalid_review_status");
+  }
+  if (metadataErrors.length > 0) return createResult(metadataErrors);
+
+  if (!Array.isArray(manifest.locales)) metadataErrors.push("invalid_manifest");
+  const localeEntries = Array.isArray(manifest.locales) ? manifest.locales : [];
+  const localeCodes = [];
+  for (const locale of localeEntries) {
+    if (!isPlainObject(locale) || typeof locale.code !== "string") {
+      metadataErrors.push("invalid_locale_entry");
+      continue;
+    }
+    localeCodes.push(locale.code);
+  }
+  for (const locale of sortStrings(new Set(localeCodes))) {
+    if (!requiredLocales.includes(locale)) metadataErrors.push(`invalid_locale:${locale}`);
+    if (localeCodes.filter((code) => code === locale).length > 1) metadataErrors.push(`duplicate_locale:${locale}`);
+  }
+  if (!hasExactLocaleSet(localeCodes)) metadataErrors.push("invalid_locale_set");
+  if (manifest.sourceLocale !== "ko") metadataErrors.push("invalid_source_locale");
+  if (metadataErrors.length > 0) return createResult(metadataErrors);
+
+  const sourceLocale = "ko";
   const catalogs = new Map();
 
   for (const locale of localeCodes) {
@@ -93,6 +152,9 @@ export async function validateCatalogs({ rootDir = defaultRootDir(), namespaces 
           errors.push(`invalid_catalog:${locale}:${namespace}`);
           continue;
         }
+        for (const id of Object.keys(catalog)) {
+          if (forbiddenKeys.has(id)) errors.push(`forbidden_key:${locale}:${namespace}:${id}`);
+        }
         catalogs.set(key, catalog);
       } catch {
         errors.push(`missing_file:${locale}:${namespace}`);
@@ -102,8 +164,11 @@ export async function validateCatalogs({ rootDir = defaultRootDir(), namespaces 
 
   for (const locale of localeCodes) {
     for (const namespace of namespaces) {
-      if (reviewStatus.statuses?.[locale]?.[namespace] === undefined) {
+      const status = reviewStatus.statuses[locale]?.[namespace];
+      if (status === undefined) {
         errors.push(`missing_review_status:${locale}:${namespace}`);
+      } else if (status !== "draft") {
+        errors.push(`invalid_review_status:${locale}:${namespace}:${String(status)}`);
       }
     }
   }
@@ -167,15 +232,14 @@ export async function validateCatalogs({ rootDir = defaultRootDir(), namespaces 
     }
   }
 
-  return {
-    errors: sortStrings(errors),
+  return createResult(errors, {
     catalogs,
     descriptions,
     localeCodes,
     namespaces,
     rootDir,
     sourceLocale,
-  };
+  });
 }
 
 async function main() {

@@ -1,10 +1,25 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join, relative } from "node:path";
 import { validateCatalogs } from "./validate-catalogs.mjs";
 
 function sortObject(object) {
-  return Object.fromEntries(Object.entries(object).sort(([left], [right]) => left.localeCompare(right)));
+  return Object.fromEntries(Object.entries(object).sort(([left], [right]) => compareCodePoints(left, right)));
+}
+
+function compareCodePoints(left, right) {
+  const leftPoints = Array.from(left);
+  const rightPoints = Array.from(right);
+  const length = Math.min(leftPoints.length, rightPoints.length);
+  for (let index = 0; index < length; index += 1) {
+    const difference = leftPoints[index].codePointAt(0) - rightPoints[index].codePointAt(0);
+    if (difference !== 0) return difference;
+  }
+  return leftPoints.length - rightPoints.length;
+}
+
+function toRelativePath(rootDir, path) {
+  return relative(rootDir, path).replaceAll("\\", "/");
 }
 
 function generatedRoot(rootDir) {
@@ -20,7 +35,7 @@ function serializeMessageIds(result) {
   for (const namespace of result.namespaces) {
     ids.push(...Object.keys(result.catalogs.get(`${result.sourceLocale}:${namespace}`) ?? {}));
   }
-  ids.sort((left, right) => left.localeCompare(right));
+  ids.sort(compareCodePoints);
   return `export const messageNamespaces = ${JSON.stringify(result.namespaces, null, 2)} as const;\n\nexport type MessageNamespace = (typeof messageNamespaces)[number];\n\nexport const messageIds = ${JSON.stringify(ids, null, 2)} as const;\n\nexport type MessageId = (typeof messageIds)[number];\n\nexport type CatalogMessages = Readonly<Record<string, string>>;\n\nexport interface CatalogModule {\n  default: CatalogMessages;\n}\n`;
 }
 
@@ -60,14 +75,39 @@ export function getGeneratedFiles(result) {
 
 export async function checkGeneratedFiles(result) {
   const stale = [];
-  for (const [path, expected] of getGeneratedFiles(result)) {
+  const generated = getGeneratedFiles(result);
+  const expectedPaths = new Set([...generated.keys()].map((path) => toRelativePath(result.rootDir, path)));
+  for (const [path, expected] of generated) {
     try {
-      if (await readFile(path, "utf8") !== expected) stale.push(relative(result.rootDir, path));
+      if (await readFile(path, "utf8") !== expected) stale.push(toRelativePath(result.rootDir, path));
     } catch {
-      stale.push(relative(result.rootDir, path));
+      stale.push(toRelativePath(result.rootDir, path));
     }
   }
-  return { stale };
+  for (const path of await listGeneratedTypeScriptFiles(generatedRoot(result.rootDir), result.rootDir)) {
+    if (!expectedPaths.has(path)) stale.push(path);
+  }
+  return { stale: [...new Set(stale)].sort(compareCodePoints) };
+}
+
+async function listGeneratedTypeScriptFiles(root, rootDir) {
+  const paths = [];
+  async function walk(current) {
+    let entries;
+    try {
+      entries = await readdir(current, { withFileTypes: true });
+    } catch (error) {
+      if (error && typeof error === "object" && error.code === "ENOENT") return;
+      throw error;
+    }
+    for (const entry of entries) {
+      const path = join(current, entry.name);
+      if (entry.isDirectory()) await walk(path);
+      else if (entry.isFile() && entry.name.endsWith(".ts")) paths.push(toRelativePath(rootDir, path));
+    }
+  }
+  await walk(root);
+  return paths;
 }
 
 async function writeGeneratedFiles(result) {
