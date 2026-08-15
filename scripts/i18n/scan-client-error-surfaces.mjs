@@ -213,7 +213,22 @@ function createBindingModel(sourceFile, file) {
     return null;
   };
 
-  const approvedLocalNames = APPROVED_LOCAL_SANITIZERS.get(file);
+  const approvedLocalBindings = new Set();
+  for (const name of APPROVED_LOCAL_SANITIZERS.get(file) ?? []) {
+    const binding = rootScope.bindings.get(name);
+    if (!binding) continue;
+    const declaration = binding.declaration.parent;
+    if (
+      ts.isFunctionDeclaration(declaration)
+      || (
+        ts.isVariableDeclaration(declaration)
+        && declaration.initializer !== undefined
+        && (ts.isArrowFunction(declaration.initializer) || ts.isFunctionExpression(declaration.initializer))
+      )
+    ) {
+      approvedLocalBindings.add(binding);
+    }
+  }
   const isApprovedSanitizer = (identifier) => {
     const binding = resolve(identifier);
     if (!binding) return false;
@@ -221,14 +236,7 @@ function createBindingModel(sourceFile, file) {
       const sources = APPROVED_IMPORTED_SANITIZERS.get(binding.importedName);
       return sources?.has(binding.moduleSource) ?? false;
     }
-    if (!approvedLocalNames?.has(binding.name)) return false;
-    const declaration = binding.declaration.parent;
-    return ts.isFunctionDeclaration(declaration)
-      || (
-        ts.isVariableDeclaration(declaration)
-        && declaration.initializer !== undefined
-        && (ts.isArrowFunction(declaration.initializer) || ts.isFunctionExpression(declaration.initializer))
-      );
+    return approvedLocalBindings.has(binding);
   };
 
   return { resolve, isApprovedSanitizer };
@@ -250,7 +258,11 @@ function expressionIsTainted(node, tainted, model) {
     }
     return node.arguments.some((argument) => expressionIsTainted(argument, tainted, model))
       || (
-        ts.isPropertyAccessExpression(node.expression)
+        ts.isIdentifier(node.expression)
+        && expressionIsTainted(node.expression, tainted, model)
+      )
+      || (
+        (ts.isPropertyAccessExpression(node.expression) || ts.isElementAccessExpression(node.expression))
         && expressionIsTainted(node.expression.expression, tainted, model)
       );
   }
@@ -352,6 +364,9 @@ function collectTaintedBindings(sourceFile, stateSetters, model) {
         if (ts.isIdentifier(node.name) && expressionIsTainted(node.initializer, tainted, model)) {
           add(model.resolve(node.name));
         }
+        if (ts.isArrayBindingPattern(node.name) && expressionIsTainted(node.initializer, tainted, model)) {
+          for (const identifier of bindingIdentifiers(node.name)) add(model.resolve(identifier));
+        }
         if (ts.isObjectBindingPattern(node.name)) {
           for (const element of node.name.elements) {
             const property = element.propertyName ?? element.name;
@@ -369,8 +384,17 @@ function collectTaintedBindings(sourceFile, stateSetters, model) {
         && node.operatorToken.kind === ts.SyntaxKind.EqualsToken
         && expressionIsTainted(node.right, tainted, model)
       ) {
-        const target = ts.isIdentifier(node.left) ? node.left : rootIdentifierNode(node.left);
-        if (target) add(model.resolve(target));
+        if (ts.isArrayLiteralExpression(node.left)) {
+          for (const element of node.left.elements) {
+            if (ts.isOmittedExpression(element)) continue;
+            const target = ts.isSpreadElement(element) ? element.expression : element;
+            const identifier = ts.isIdentifier(target) ? target : rootIdentifierNode(target);
+            if (identifier) add(model.resolve(identifier));
+          }
+        } else {
+          const target = ts.isIdentifier(node.left) ? node.left : rootIdentifierNode(node.left);
+          if (target) add(model.resolve(target));
+        }
       }
       if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
         const state = stateSetters.get(model.resolve(node.expression));
@@ -431,6 +455,11 @@ function findingNodes(sourceFile, tainted, model) {
   return findings;
 }
 
+function findingSubject(node, sourceFile) {
+  const subject = ts.isJsxExpression(node) ? node.expression : node;
+  return subject?.getText(sourceFile).replace(/\s+/g, " ").trim() ?? "";
+}
+
 async function main() {
   const root = parseRoot();
   const allowlist = await loadAllowlist(root);
@@ -445,7 +474,7 @@ async function main() {
       if (!Number.isInteger(entry.occurrences) || entry.occurrences < 1) {
         errors.push(`invalid_allowlist_occurrences:${index + 1}`);
       }
-      return { entry, regex: new RegExp(entry.pattern), used: 0 };
+      return { entry, regex: new RegExp(`^(?:${entry.pattern})$`), used: 0 };
     } catch {
       errors.push(`invalid_allowlist_pattern:${index + 1}`);
       return { entry, regex: null, used: 0 };
@@ -469,7 +498,7 @@ async function main() {
     for (const node of findingNodes(sourceFile, tainted, model)) {
       const lineIndex = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line;
       const line = lines[lineIndex] ?? "";
-      const snippet = node.getText(sourceFile);
+      const snippet = findingSubject(node, sourceFile);
       const matching = compiled.filter((item) => {
         if (!item.regex || item.entry.path !== file) return false;
         item.regex.lastIndex = 0;

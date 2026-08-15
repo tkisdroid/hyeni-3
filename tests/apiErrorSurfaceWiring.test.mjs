@@ -72,6 +72,36 @@ for (const fixture of [
     sinkLine: 3,
   },
   {
+    name: "원문 배열을 직접 구조분해한 뒤 렌더",
+    lines: ["const [text] = [failure.message];", "return <p>{text}</p>;"],
+    sinkLine: 3,
+  },
+  {
+    name: "원문 배열 alias를 구조분해한 뒤 렌더",
+    lines: ["const values = [failure.message];", "const [text] = values;", "return <p>{text}</p>;"],
+    sinkLine: 4,
+  },
+  {
+    name: "원문 배열을 destructuring assignment한 뒤 렌더",
+    lines: ["let text = '';", "[text] = [failure.message];", "return <p>{text}</p>;"],
+    sinkLine: 4,
+  },
+  {
+    name: "원문을 반환하는 zero-arg wrapper를 렌더",
+    lines: ["const getText = () => failure.message;", "return <p>{getText()}</p>;"],
+    sinkLine: 3,
+  },
+  {
+    name: "원문 callable의 property-access method 반환을 렌더",
+    lines: ["const holder = { read: () => failure.message };", "return <p>{holder.read()}</p>;"],
+    sinkLine: 3,
+  },
+  {
+    name: "원문 callable의 element-access method 반환을 렌더",
+    lines: ["const holder = { read: () => failure.message };", "return <p>{holder['read']()}</p>;"],
+    sinkLine: 3,
+  },
+  {
     name: "whole error alias를 String으로 dialog에 전달",
     lines: ["const source = failure;", "setError(String(source));"],
     sinkLine: 3,
@@ -147,6 +177,26 @@ test("같은 sanitizer 이름을 로컬에서 shadow하면 원문 taint를 해�
     const result = runScanner(root);
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /src\/Shadowed\.tsx:3/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("승인 파일 안의 중첩 동명 함수는 top-level 정본 sanitizer binding을 shadow할 수 없다", () => {
+  const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
+  try {
+    const screenDir = join(root, "src", "screens", "child");
+    mkdirSync(screenDir, { recursive: true });
+    writeFileSync(join(screenDir, "AiFriendChat.tsx"), [
+      "function friendlyError(value) { return '안전한 문구'; }",
+      "export function AiFriendChat({ error }) {",
+      "  const friendlyError = (value) => value;",
+      "  return <p>{friendlyError(error.message)}</p>;",
+      "}",
+    ].join("\n"));
+    const result = runScanner(root);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /src\/screens\/child\/AiFriendChat\.tsx:4/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -247,6 +297,41 @@ test("allowlist는 실제 AST finding만 한 번 소비하고 같은 줄의 별�
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+for (const [name, mixedExpression] of [
+  ["덧셈", "cleanAlertTitle(alert.message) + failure.message"],
+  ["조건식", "enabled ? cleanAlertTitle(alert.message) : failure.message"],
+  ["배열", "[cleanAlertTitle(alert.message), failure.message]"],
+]) {
+  test(`allowlist는 ${name} 혼합 finding을 허용 도메인 표현식으로 소비하지 않는다`, () => {
+    const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
+    try {
+      mkdirSync(join(root, "src"), { recursive: true });
+      mkdirSync(join(root, "scripts", "i18n"), { recursive: true });
+      writeFileSync(join(root, "src", "Mixed.tsx"), [
+        "export function Mixed({ alert, failure, enabled }) {",
+        `  const unsafe = <p>{${mixedExpression}}</p>;`,
+        "  return <p>{cleanAlertTitle(alert.message)}</p>;",
+        "}",
+      ].join("\n"));
+      writeFileSync(join(root, "scripts", "i18n", "client-error-surface-allowlist.json"), JSON.stringify([
+        {
+          path: "src/Mixed.tsx",
+          pattern: "cleanAlertTitle\\(alert\\.message\\)",
+          occurrences: 1,
+          reason: "data: 인증된 가족의 안전 알림 본문",
+        },
+      ]));
+      const result = runScanner(root);
+      assert.notEqual(result.status, 0, name);
+      assert.match(result.stderr, /src\/Mixed\.tsx:2:raw_error_surface/, name);
+      assert.doesNotMatch(result.stderr, /src\/Mixed\.tsx:3:raw_error_surface/, name);
+      assert.doesNotMatch(result.stderr, /stale_allowlist/, name);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+}
 
 test("allowlist는 실제 finding의 사용 수가 선언보다 많거나 적으면 실패한다", () => {
   for (const [name, body, occurrences, expected] of [
