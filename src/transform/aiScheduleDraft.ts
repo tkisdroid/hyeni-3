@@ -1,8 +1,8 @@
 import type { ParsedScheduleEvent } from "../lib/api/endpoints/ai";
 import type { SaveEventInput } from "../lib/api/endpoints/schedule";
 import { dateToDateKey } from "./dateKey.ts";
-
-const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
+import type { SupportedLocale } from "../i18n/locale.ts";
+import { formatCalendarDay } from "../i18n/format.ts";
 
 const CATEGORY_EMOJI: Readonly<Record<string, string>> = {
   school: "📚",
@@ -95,6 +95,7 @@ export function buildAiScheduleDrafts(
   events: readonly ParsedScheduleEvent[],
   currentDate: { year: number; month: number; day: number },
   createId: () => string,
+  locale: SupportedLocale,
 ): AiScheduleDraftResult {
   const normalized: NormalizedDraftFields[] = [];
   for (let index = 0; index < events.length; index += 1) {
@@ -135,7 +136,10 @@ export function buildAiScheduleDrafts(
       id: createId(),
       title: event.title,
       dateKey: dateToDateKey(event.date),
-      dateLabel: `${event.date.getMonth() + 1}/${event.date.getDate()} (${WEEKDAYS[event.date.getDay()]})`,
+      dateLabel: formatCalendarDay(
+        Date.UTC(event.date.getFullYear(), event.date.getMonth(), event.date.getDate(), 12),
+        { locale, timeZone: "UTC", weekday: "short" },
+      ),
       time: event.time,
       timeLabel: event.time ?? "시간 미정",
       category: event.category,

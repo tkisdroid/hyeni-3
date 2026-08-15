@@ -22,7 +22,7 @@ import { useLocationLabels } from "@/queries/useLocationLabels";
 import type { ChildLocation } from "@/lib/api/endpoints/location";
 import { groupEventsByDateKey, PAST_TAGS, type CalEventView } from "@/transform/scheduleView";
 import { useVisitVerify } from "@/queries/useVisitVerify";
-import { todayDateKey } from "@/transform/dateKey";
+import { dateToDateKeyInTimeZone } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { deviceStatusView } from "@/transform/familyView";
 import { nearestPlace, EXACT_SAVED_PLACE_LABEL_RADIUS_M } from "@/transform/locationView";
@@ -42,9 +42,8 @@ import {
   savePremiumReturnIntent,
 } from "@/transform/premiumReturnIntent";
 import { useLocale } from "@/i18n/useLocale";
+import { formatCalendarDay, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
 import "./ParentHome.css";
-
-const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
 
 function avatarSrc(path: string): string {
   return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
@@ -136,7 +135,10 @@ export function ParentHome() {
     const id = window.setInterval(() => setNow(new Date()), 30_000);
     return () => window.clearInterval(id);
   }, []);
-  const todayKey = useMemo(() => todayDateKey(now), [now]);
+  const todayKey = useMemo(
+    () => dateToDateKeyInTimeZone(now, LEGACY_FAMILY_TIME_ZONE),
+    [now],
+  );
 
   const eventsQuery = useEvents();
   const familyQuery = useMyFamily();
@@ -316,7 +318,7 @@ export function ParentHome() {
   // 형제에게만 배정된 일정은 활성 아이 화면에서 제외(아이별 구분 — TK 결정).
   const todayEvents = useMemo(() => {
     const byKey = groupEventsByDateKey(events ?? [], now, locale, visitMap, places);
-    const all = byKey[todayDateKey(now)] ?? [];
+    const all = byKey[todayKey] ?? [];
     if (!activeChild) return [];
     const allowedIds = new Set(
       filterEventsForChild(
@@ -428,7 +430,11 @@ export function ParentHome() {
     ],
   );
 
-  const todayLabel = `${WEEKDAYS[now.getDay()]}요일 · ${now.getMonth() + 1}월 ${now.getDate()}일`;
+  const todayLabel = formatCalendarDay(now, {
+    locale,
+    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    weekday: "long",
+  });
 
   return (
     <div className="hy-rise-in">

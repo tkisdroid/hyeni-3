@@ -1,3 +1,5 @@
+import { dateToDateKeyInTimeZone } from "./dateKey.ts";
+
 export type DailyReportSourceState = "ready" | "loading" | "error";
 export type DailyReportStatus = "safe" | "attention" | "danger" | "empty" | "unavailable";
 export type FreshnessStatus = "live" | "recent" | "stale" | "unknown";
@@ -16,6 +18,7 @@ export interface DailyReportStatusInput {
   deviceSafetyLabel: string;
   deviceHasData: boolean;
   now?: Date;
+  timeZone: string;
 }
 
 export interface DailyReportStatusView {
@@ -39,22 +42,31 @@ export interface DailySupplySummary {
 const DANGER_ALERT_TYPES = new Set(["sos", "emergency", "sos_followup"]);
 const ATTENTION_ALERT_TYPES = new Set(["not_arrived", "danger_zone", "danger_zone_entry", "danger_zone_exit"]);
 
-function localDateKey(date: Date): string {
-  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+export interface DailyReportDateScope {
+  dateKey: string;
+  includesTimestamp: (value: string | null | undefined) => boolean;
 }
 
-function isToday(value: string, now: Date): boolean {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return false;
-  return localDateKey(date) === localDateKey(now);
+/** 모든 안심리포트 source가 공유하는 명시 time zone 기준일. */
+export function dailyReportDateScope(now: Date, timeZone: string): DailyReportDateScope {
+  const dateKey = dateToDateKeyInTimeZone(now, timeZone);
+  return {
+    dateKey,
+    includesTimestamp: (value) => {
+      if (!value) return false;
+      const date = new Date(value);
+      return !Number.isNaN(date.getTime())
+        && dateToDateKeyInTimeZone(date, timeZone) === dateKey;
+    },
+  };
 }
 
 function hasAlert(
   alerts: DailyReportAlertInput[],
-  now: Date,
+  scope: DailyReportDateScope,
   match: (alert: DailyReportAlertInput) => boolean,
 ): boolean {
-  return alerts.some((alert) => isToday(alert.created_at, now) && match(alert));
+  return alerts.some((alert) => scope.includesTimestamp(alert.created_at) && match(alert));
 }
 
 export function deriveDailyReportStatus(input: DailyReportStatusInput): DailyReportStatusView {
@@ -83,7 +95,8 @@ export function deriveDailyReportStatus(input: DailyReportStatusInput): DailyRep
   }
 
   const now = input.now ?? new Date();
-  const hasDanger = hasAlert(input.alerts, now, (alert) => {
+  const scope = dailyReportDateScope(now, input.timeZone);
+  const hasDanger = hasAlert(input.alerts, scope, (alert) => {
     const type = alert.alert_type.toLowerCase();
     const severity = (alert.severity ?? "").toLowerCase();
     return DANGER_ALERT_TYPES.has(type) || severity === "emergency" || severity === "critical";
@@ -96,7 +109,7 @@ export function deriveDailyReportStatus(input: DailyReportStatusInput): DailyRep
     };
   }
 
-  const hasAttentionAlert = hasAlert(input.alerts, now, (alert) => {
+  const hasAttentionAlert = hasAlert(input.alerts, scope, (alert) => {
     const type = alert.alert_type.toLowerCase();
     const severity = (alert.severity ?? "").toLowerCase();
     return ATTENTION_ALERT_TYPES.has(type) || severity === "warning" || severity === "urgent";

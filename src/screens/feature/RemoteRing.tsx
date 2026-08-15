@@ -23,6 +23,8 @@ import {
   savePremiumReturnIntent,
 } from "@/transform/premiumReturnIntent";
 import { TIERS } from "@/transform/tierPolicy";
+import { useLocale } from "@/i18n/useLocale";
+import { formatPastTime } from "@/i18n/format";
 import "./RemoteRing.css";
 
 /** 선택 가능한 벨소리 지속(초). 아이 기기 알람을 이 시간 뒤 자동 정지한다. */
@@ -59,19 +61,6 @@ function avatarSrc(path: string): string {
   return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
 }
 
-/** ISO 시각 → 상대시간 라벨(방금/N분/N시간/N일 전). */
-function relativeTime(iso: string | null | undefined): string {
-  if (!iso) return "";
-  const t = Date.parse(iso);
-  if (!Number.isFinite(t)) return "";
-  const min = Math.floor((Date.now() - t) / 60000);
-  if (min < 1) return "방금 전";
-  if (min < 60) return `${min}분 전`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}시간 전`;
-  return `${Math.floor(hr / 24)}일 전`;
-}
-
 const durationLabel = (sec: number): string => (sec >= 60 ? `${sec / 60}분` : `${sec}초`);
 
 /**
@@ -80,6 +69,7 @@ const durationLabel = (sec: number): string => (sec >= 60 ? `${sec / 60}분` : `
  * → 선택 시간 경과 시 자동 정지 or 수동 중지(force_ring_stop). 남은 횟수(quota)·최근 이력 표시.
  */
 export function RemoteRing() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const { show } = useToast();
   const familyQuery = useMyFamily();
@@ -410,7 +400,9 @@ export function RemoteRing() {
 
         {recent && (
           <div className="rr-recent">
-            최근 사용 · {relativeTime(recent.triggered_at)}
+            최근 사용 · {recent.triggered_at
+              ? formatPastTime(recent.triggered_at, new Date(), locale)
+              : "—"}
             {recentOutcome ? ` · ${recentOutcome}` : ""}
           </div>
         )}

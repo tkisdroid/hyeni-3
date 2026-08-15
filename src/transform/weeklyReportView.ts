@@ -1,6 +1,8 @@
 import {
   addDaysToDateKey,
+  dateKeyToDateInputValue,
   dateInputValueToDateKey,
+  dateToDateKeyInTimeZone,
   parseAppDateKey,
 } from "./dateKey.ts";
 import { filterEventsForChild } from "./eventScope.ts";
@@ -73,14 +75,7 @@ export function weeklyReportTeaser(
 }
 
 function dateStampInTimeZone(value: Date, timeZone: string): string {
-  const parts = new Intl.DateTimeFormat("en-CA-u-ca-gregory-nu-latn", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(value);
-  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? "";
-  return `${part("year")}-${part("month")}-${part("day")}`;
+  return dateKeyToDateInputValue(dateToDateKeyInTimeZone(value, timeZone));
 }
 
 export function buildRecentWeekDateKeys(now: Date, timeZone: string): string[] {

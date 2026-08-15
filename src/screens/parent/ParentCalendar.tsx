@@ -17,6 +17,7 @@ import { locationModeFor } from "@/transform/tierPolicy";
 import { eventChildMemberIds, eventScopeLabel } from "@/transform/eventScope";
 import { notifOverrideToReminderMinutes, type CalendarEvent } from "@/lib/api/endpoints/schedule";
 import { useLocale } from "@/i18n/useLocale";
+import { formatCalendarDay, formatCalendarMonth, formatWeekday } from "@/i18n/format";
 
 /** 사전알림(분) → 사람이 읽는 라벨. */
 function reminderLabel(minutes: number): string {
@@ -27,8 +28,6 @@ import "./ParentCalendar.css";
 type ViewMonth = { year: number; month: number };
 type SelDate = { year: number; month: number; day: number };
 type SwipeSide = "edit" | "delete";
-
-const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
 
 /** 카테고리 한국어 라벨(태그 표시용 — 색은 이벤트 뷰의 tag 색을 재사용). */
 const CATEGORY_LABELS: Record<string, string> = {
@@ -60,6 +59,13 @@ export function ParentCalendar() {
   const { show } = useToast();
   const navigate = useNavigate();
   const now = useMemo(() => new Date(), []);
+  const weekdayLabels = useMemo(
+    () => Array.from({ length: 7 }, (_, index) => formatWeekday(
+      Date.UTC(2026, 0, 4 + index, 12),
+      { locale, timeZone: "UTC", width: "short" },
+    )),
+    [locale],
+  );
   const TODAY = useMemo(
     () => ({ year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() }),
     [now],
@@ -247,8 +253,10 @@ export function ParentCalendar() {
     return map;
   }, [events, family, multiChild]);
 
-  const selDow = new Date(selected.year, selected.month - 1, selected.day).getDay();
-  const selLabel = `${selected.month}월 ${selected.day}일 ${WEEKDAYS[selDow]}요일`;
+  const selLabel = formatCalendarDay(
+    Date.UTC(selected.year, selected.month - 1, selected.day, 12),
+    { locale, timeZone: "UTC", weekday: "long" },
+  );
 
   const shiftMonth = (delta: number) =>
     setView((v) => {
@@ -264,7 +272,12 @@ export function ParentCalendar() {
       <header className="pc-header">
         <div>
           <div className="pc-year">{view.year}</div>
-          <div className="pc-month">{view.month}월</div>
+          <div className="pc-month">
+            {formatCalendarMonth(Date.UTC(view.year, view.month - 1, 1, 12), {
+              locale,
+              timeZone: "UTC",
+            })}
+          </div>
         </div>
         <div className="pc-header__nav">
           <button type="button" aria-label="이전 달" className="pc-navbtn hy-press" onClick={() => shiftMonth(-1)}>
@@ -295,8 +308,8 @@ export function ParentCalendar() {
         {/* 월간 그리드 */}
         <div className="pc-card">
           <div className="pc-weekdays">
-            {WEEKDAYS.map((w) => (
-              <div key={w} className="pc-weekday">
+            {weekdayLabels.map((w, index) => (
+              <div key={`${index}-${w}`} className="pc-weekday">
                 {w}
               </div>
             ))}

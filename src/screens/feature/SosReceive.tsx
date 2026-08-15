@@ -21,7 +21,7 @@ import { Loading } from "@/components/ui/Loading";
 import type { SupportedLocale } from "@/i18n/locale";
 import { useLocale } from "@/i18n/useLocale";
 import {
-  formatDateTime,
+  formatClockWithSeconds,
   formatRelativeTime,
   LEGACY_FAMILY_TIME_ZONE,
 } from "@/i18n/format";
@@ -41,10 +41,9 @@ function relativeFrom(d: Date | null, locale: SupportedLocale): string {
 /** Date → locale 시각. */
 function formatClock(d: Date | null, locale: SupportedLocale): string {
   if (!d) return "";
-  return formatDateTime(d, {
+  return formatClockWithSeconds(d, {
     locale,
     timeZone: LEGACY_FAMILY_TIME_ZONE,
-    timeStyle: "short",
   });
 }
 

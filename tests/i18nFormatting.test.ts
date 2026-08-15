@@ -2,10 +2,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  formatCalendarDay,
+  formatCalendarMonth,
+  formatClockWithSeconds,
   formatDateTime,
   formatNumber,
+  formatPastTime,
   formatProviderPrice,
   formatRelativeTime,
+  formatWeekday,
 } from "../src/i18n/format.ts";
 import {
   formatMemoClock,
@@ -48,6 +53,70 @@ test("상대시간은 선택한 locale 문법으로 표시한다", () => {
 test("공급자 가격 문자열은 locale과 무관하게 원문 그대로 보존한다", () => {
   assert.equal(formatProviderPrice("$4.99", "en"), "$4.99");
   assert.equal(formatProviderPrice("  Rp 79.000  ", "id"), "  Rp 79.000  ");
+});
+
+test("잘못된 날짜 값은 화면을 깨뜨리지 않고 안전 fallback을 반환한다", () => {
+  assert.equal(formatDateTime("not-a-date", {
+    locale: "en",
+    timeZone: "UTC",
+    dateStyle: "medium",
+  }), "—");
+});
+
+test("잘못된 timeZone 구성 오류는 숨기지 않는다", () => {
+  assert.throws(
+    () => formatDateTime(INSTANT, {
+      locale: "en",
+      timeZone: "Invalid/Zone",
+      dateStyle: "medium",
+    }),
+    RangeError,
+  );
+});
+
+test("달력 날짜 조립은 선택한 locale의 월·요일 순서를 사용한다", () => {
+  const instant = "2026-07-08T03:00:00.000Z";
+
+  const en = formatCalendarDay(instant, { locale: "en", timeZone: "Asia/Seoul", weekday: "long" });
+  const ja = formatCalendarDay(instant, { locale: "ja", timeZone: "Asia/Seoul", weekday: "long" });
+  assert.match(en, /Wednesday/);
+  assert.match(en, /July 8/);
+  assert.doesNotMatch(en, /월|요일/);
+  assert.match(ja, /7月8日/);
+  assert.match(ja, /水曜日/);
+});
+
+test("달력의 월·요일 단독 조각도 선택한 locale로 표시한다", () => {
+  const instant = "2026-07-08T03:00:00.000Z";
+
+  assert.equal(formatCalendarMonth(instant, {
+    locale: "en",
+    timeZone: "Asia/Seoul",
+  }), "July");
+  assert.equal(formatWeekday(instant, {
+    locale: "en",
+    timeZone: "Asia/Seoul",
+    width: "short",
+  }), "Wed");
+  assert.doesNotMatch(formatWeekday(instant, {
+    locale: "ja",
+    timeZone: "Asia/Seoul",
+    width: "short",
+  }), /수요일/);
+});
+
+test("지난 시각은 선택한 locale의 상대시간 문법으로 표시한다", () => {
+  const now = new Date("2026-07-08T03:05:00.000Z");
+
+  assert.equal(formatPastTime("2026-07-08T03:00:00.000Z", now, "en"), "5 minutes ago");
+  assert.doesNotMatch(formatPastTime("2026-07-08T03:00:00.000Z", now, "ja"), /분 전/);
+});
+
+test("초 정밀도 시각 formatter는 locale과 time zone을 지키며 초를 남긴다", () => {
+  assert.match(formatClockWithSeconds("2026-07-08T03:04:07.000Z", {
+    locale: "en",
+    timeZone: "Asia/Seoul",
+  }), /12:04:07 PM/);
 });
 
 test("메모 시각과 날짜 그룹은 호스트가 아니라 전달한 time zone을 따른다", () => {

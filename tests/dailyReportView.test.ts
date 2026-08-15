@@ -6,6 +6,31 @@ import {
   summarizeDailySupplies,
   type DailyReportAlertInput,
 } from "../src/transform/dailyReportView.ts";
+import * as dailyReportView from "../src/transform/dailyReportView.ts";
+
+test("Bangkok 22:30 instant도 모든 안심리포트 source를 같은 KST 다음 날로 묶는다", () => {
+  const resolveScope = (dailyReportView as Record<string, unknown>).dailyReportDateScope;
+  assert.equal(typeof resolveScope, "function");
+  const scope = (resolveScope as (now: Date, timeZone: string) => {
+    dateKey: string;
+    includesTimestamp: (value: string) => boolean;
+  })(new Date("2026-01-01T15:30:00.000Z"), "Asia/Seoul");
+
+  assert.equal(scope.dateKey, "2026-0-2");
+  assert.deepEqual({
+    event: "2026-0-2" === scope.dateKey,
+    supply: "2026-0-2" === scope.dateKey,
+    memo: scope.includesTimestamp("2026-01-01T15:31:00.000Z"),
+    alert: scope.includesTimestamp("2026-01-01T15:32:00.000Z"),
+    previousKstDay: scope.includesTimestamp("2026-01-01T14:59:59.000Z"),
+  }, {
+    event: true,
+    supply: true,
+    memo: true,
+    alert: true,
+    previousKstDay: false,
+  });
+});
 
 test("오늘 SOS나 긴급 알림이 있으면 위험 상태로 분류한다", () => {
   const alerts: DailyReportAlertInput[] = [
@@ -24,6 +49,7 @@ test("오늘 SOS나 긴급 알림이 있으면 위험 상태로 분류한다", (
     deviceSafetyLabel: "양호",
     deviceHasData: true,
     now: new Date("2026-07-07T12:00:00+09:00"),
+    timeZone: "Asia/Seoul",
   });
 
   assert.equal(status.status, "danger");
@@ -39,6 +65,7 @@ test("오래된 위치나 기기 미확인은 주의 상태로 분류한다", ()
     deviceSafetyLabel: "확인 중",
     deviceHasData: false,
     now: new Date("2026-07-07T12:00:00+09:00"),
+    timeZone: "Asia/Seoul",
   });
 
   assert.equal(status.status, "attention");
@@ -53,6 +80,7 @@ test("안전 데이터 조회 실패는 안전 상태로 표시하지 않는다"
     locationFreshness: "live",
     deviceSafetyLabel: "양호",
     deviceHasData: true,
+    timeZone: "Asia/Seoul",
   });
 
   assert.equal(status.status, "unavailable");
@@ -67,6 +95,7 @@ test("안전 데이터 조회 중에는 안전 판정을 내리지 않는다", (
     locationFreshness: "live",
     deviceSafetyLabel: "양호",
     deviceHasData: true,
+    timeZone: "Asia/Seoul",
   });
 
   assert.notEqual(status.status, "safe");

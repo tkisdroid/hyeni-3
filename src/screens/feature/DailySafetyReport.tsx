@@ -26,12 +26,16 @@ import { useMemoThread } from "@/queries/useMemo";
 import { useChildNotifSettingsStatus, useParentAlerts } from "@/queries/useNotifications";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { requestDeviceStatus } from "@/lib/api/endpoints/remote";
-import { todayDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { groupEventsByDateKey, PAST_TAGS } from "@/transform/scheduleView";
 import { deviceStatusView } from "@/transform/familyView";
 import { formatFreshness } from "@/transform/locationView";
-import { deriveDailyReportStatus, summarizeDailySupplies, type DailyReportAlertInput } from "@/transform/dailyReportView";
+import {
+  dailyReportDateScope,
+  deriveDailyReportStatus,
+  summarizeDailySupplies,
+  type DailyReportAlertInput,
+} from "@/transform/dailyReportView";
 import { isLocationVisible, TIERS } from "@/transform/tierPolicy";
 import { useMessage } from "@/i18n/useMessage";
 import type { SupportedLocale } from "@/i18n/locale";
@@ -59,19 +63,6 @@ function formatClock(value: Date, locale: SupportedLocale): string {
     timeZone: LEGACY_FAMILY_TIME_ZONE,
     timeStyle: "short",
   });
-}
-
-function isSameLocalDay(value: string | null | undefined, now: Date): boolean {
-  if (!value) return false;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return false;
-  const formatter = new Intl.DateTimeFormat("en-CA-u-ca-gregory-nu-latn", {
-    timeZone: LEGACY_FAMILY_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-  return formatter.format(date) === formatter.format(now);
 }
 
 function alertLabel(alert: DailyReportAlertInput): string {
@@ -119,7 +110,11 @@ export function DailySafetyReport() {
     return () => window.clearInterval(id);
   }, []);
 
-  const todayKey = useMemo(() => todayDateKey(now), [now]);
+  const reportDateScope = useMemo(
+    () => dailyReportDateScope(now, LEGACY_FAMILY_TIME_ZONE),
+    [now],
+  );
+  const todayKey = reportDateScope.dateKey;
   const eventsQuery = useEvents();
   const suppliesQuery = useDailySupplies(todayKey);
   const familyQuery = useMyFamily();
@@ -218,10 +213,11 @@ export function DailySafetyReport() {
     deviceSafetyLabel: device.safetyLabel,
     deviceHasData: device.hasData,
     now,
+    timeZone: LEGACY_FAMILY_TIME_ZONE,
   });
   const todayAlerts = useMemo(
-    () => childAlerts.filter((alert) => isSameLocalDay(alert.created_at, now)).slice(0, 3),
-    [childAlerts, now],
+    () => childAlerts.filter((alert) => reportDateScope.includesTimestamp(alert.created_at)).slice(0, 3),
+    [childAlerts, reportDateScope],
   );
   const reportTimeLabel = useMemo(() => formatClock(now, locale), [locale, now]);
   const supplyPercent = supplySummary.total > 0 ? Math.round((supplySummary.done / supplySummary.total) * 100) : 0;

@@ -10,6 +10,8 @@
  *
  * NEW 배지: 최근 7일 안에 받았고 아직 열어보지 않은 스티커. "열어봤다"는 기기 로컬에만 남는다.
  */
+import type { SupportedLocale } from "../i18n/locale.ts";
+import { formatRelativeTime } from "../i18n/format.ts";
 
 export interface StickerCatalogEntry {
   key: string;
@@ -134,12 +136,16 @@ export function buildStickerBook(
 }
 
 /** 받은 시각 → 아이 말투 상대 표현. */
-export function stickerWhenLabel(earnedAtMs: number | null, nowMs: number): string {
+export function stickerWhenLabel(
+  earnedAtMs: number | null,
+  nowMs: number,
+  locale: SupportedLocale,
+): string {
   if (earnedAtMs == null) return "";
   const days = Math.floor((startOfDay(nowMs) - startOfDay(earnedAtMs)) / 86_400_000);
   if (days <= 0) return "오늘 받았어";
   if (days === 1) return "어제 받았어";
-  if (days < 7) return `${days}일 전에 받았어`;
+  if (days < 7) return `${formatRelativeTime(-days, "day", locale)}에 받았어`;
   if (days < 14) return "지난주에 받았어";
   return `${Math.floor(days / 7)}주 전에 받았어`;
 }

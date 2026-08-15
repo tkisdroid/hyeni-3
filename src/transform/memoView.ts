@@ -5,7 +5,8 @@
  */
 import type { MemoReply } from "@/lib/api/endpoints/memo";
 import type { SupportedLocale } from "../i18n/locale.ts";
-import { formatDateTime, intlLocaleTag } from "../i18n/format.ts";
+import { formatCalendarDay, formatDateTime, formatWeekday } from "../i18n/format.ts";
+import { dateKeyToDateInputValue, dateToDateKeyInTimeZone } from "./dateKey.ts";
 
 export interface ThreadMsg {
   id: string;
@@ -60,17 +61,7 @@ export function encodeImageContent(path: string): string {
 export function memoDayStamp(iso: string, timeZone: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  const parts = new Intl.DateTimeFormat("en-CA-u-ca-gregory-nu-latn", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(d);
-  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? "";
-  const year = part("year");
-  const month = part("month");
-  const day = part("day");
-  return year && month && day ? `${year}-${month}-${day}` : "";
+  return dateKeyToDateInputValue(dateToDateKeyInTimeZone(d, timeZone));
 }
 
 /** 일자 스탬프 → 구분선 라벨. 오늘/어제는 관용 표현, 그 외 "M월 D일 요일". */
@@ -89,18 +80,10 @@ export function formatMemoDayLabel(
   const todayUtc = Date.UTC(todayY, todayM - 1, todayD);
   const dateUtc = Date.UTC(y, m - 1, d);
   const diffDays = Math.round((todayUtc - dateUtc) / 86_400_000);
-  const weekday = new Intl.DateTimeFormat(intlLocaleTag(locale), {
-    weekday: "long",
-    timeZone: "UTC",
-  }).format(date);
+  const weekday = formatWeekday(date, { locale, timeZone: "UTC", width: "long" });
   if (diffDays === 0) return `오늘 · ${weekday}`;
   if (diffDays === 1) return `어제 · ${weekday}`;
-  return new Intl.DateTimeFormat(intlLocaleTag(locale), {
-    month: "long",
-    day: "numeric",
-    weekday: "long",
-    timeZone: "UTC",
-  }).format(date);
+  return formatCalendarDay(date, { locale, timeZone: "UTC", weekday: "long" });
 }
 
 /** UTC ISO created_at → "오전/오후 h:mm"(로컬 시각). 무효 시 빈 문자열. */

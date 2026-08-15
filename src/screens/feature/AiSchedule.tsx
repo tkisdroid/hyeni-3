@@ -14,6 +14,7 @@ import {
   buildAiScheduleSaveInputs,
   type AiScheduleDraft,
 } from "@/transform/aiScheduleDraft";
+import { useLocale } from "@/i18n/useLocale";
 import { ApiError } from "@/lib/api/errors";
 import { cancelSpeechCapture, captureSpeech, isSpeechCaptureSupported } from "@/lib/native/speech";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
@@ -60,6 +61,7 @@ function currentDateParts(): { year: number; month: number; day: number } {
 }
 
 export function AiSchedule() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const { show } = useToast();
   const { status, familyId } = useAuth();
@@ -206,7 +208,7 @@ export function AiSchedule() {
         );
         return;
       }
-      const prepared = buildAiScheduleDrafts(result.events, cd, () => crypto.randomUUID());
+      const prepared = buildAiScheduleDrafts(result.events, cd, () => crypto.randomUUID(), locale);
       if (prepared.error) {
         setDrafts(null);
         const errorMessage = prepared.error.code === "invalid_title"

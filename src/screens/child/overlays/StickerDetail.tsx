@@ -8,6 +8,7 @@
 import { asset } from "@/lib/assets";
 import { stickerOriginText, stickerWhenLabel, type StickerSlot } from "@/transform/stickerBook";
 import { ChildModal } from "./ChildSheet";
+import { useLocale } from "@/i18n/useLocale";
 
 export interface StickerDetailProps {
   slot: StickerSlot | null;
@@ -16,13 +17,14 @@ export interface StickerDetailProps {
 }
 
 export function StickerDetail({ slot, nowMs, onClose }: StickerDetailProps) {
+  const { locale } = useLocale();
   if (!slot) return null;
   return (
     <ChildModal open onClose={onClose} label={`${slot.label} 스티커`}>
       <img className="ks-modal__img" src={asset(slot.img)} alt={slot.label} />
       <div className="ks-modal__label">{slot.label}</div>
       <div className="ks-modal__meta">
-        {stickerWhenLabel(slot.latestAt, nowMs)}
+        {stickerWhenLabel(slot.latestAt, nowMs, locale)}
         {slot.count > 1 ? ` · ${slot.count}개 모았어` : ""}
       </div>
       <div className="ks-modal__msg">{stickerOriginText(slot.latestType)}</div>

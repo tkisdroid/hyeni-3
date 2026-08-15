@@ -19,7 +19,7 @@ import { useDaySummary, useGenerateDaySummary } from "@/queries/useAi";
 import { useEntitlement } from "@/queries/useEntitlement";
 import type { DaySummarySignals, DaySummaryResult } from "@/lib/api/endpoints/ai";
 import { formatTimeLabel } from "@/transform/scheduleView";
-import { todayDateKey, dateKeyToDateInputValue, parseAppDateKey } from "@/transform/dateKey";
+import { dateKeyToDateInputValue, dateToDateKeyInTimeZone, parseAppDateKey } from "@/transform/dateKey";
 import { hasJongseong } from "@/transform/adventureMap";
 import { canUse, FEATURES } from "@/transform/tierPolicy";
 import {
@@ -29,6 +29,7 @@ import {
 import { Loading } from "@/components/ui/Loading";
 import type { SupportedLocale } from "@/i18n/locale";
 import { useLocale } from "@/i18n/useLocale";
+import { formatCalendarDay, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
 import "./DaySummary.css";
 
 type RowTone = "info" | "safe" | "caution";
@@ -113,12 +114,19 @@ export function DaySummary() {
   const childName = targetChild?.name ?? state.childName ?? "우리 아이";
 
   // 앱 date_key(0-index 월) → ISO "YYYY-MM-DD"(서버 계약). 기본 = 오늘.
-  const appDateKey = requestedDateKey && parseAppDateKey(requestedDateKey) ? requestedDateKey : todayDateKey();
+  const appDateKey = requestedDateKey && parseAppDateKey(requestedDateKey)
+    ? requestedDateKey
+    : dateToDateKeyInTimeZone(new Date(), LEGACY_FAMILY_TIME_ZONE);
   const isoDateKey = dateKeyToDateInputValue(appDateKey);
   const dateLabel = useMemo(() => {
     const d = parseAppDateKey(appDateKey);
-    return d ? `${d.getMonth() + 1}월 ${d.getDate()}일` : "";
-  }, [appDateKey]);
+    return d
+      ? formatCalendarDay(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 12), {
+          locale,
+          timeZone: "UTC",
+        })
+      : "";
+  }, [appDateKey, locale]);
 
   // 생성 품질 향상용 clientSignals(그날 일정). 없으면 서버가 알림·대화만으로 요약.
   const { data: events } = useEvents();

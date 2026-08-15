@@ -179,10 +179,13 @@ export function ParentLocation() {
   const premiumOpen = !locationScopePending && mode === "realtime";
 
   const now = useMemo(() => new Date(), [locations]);
-  const historyTodayKey = useMemo(() => getHistoryDayKey(now), [now]);
+  const historyTodayKey = useMemo(
+    () => getHistoryDayKey(now, LEGACY_FAMILY_TIME_ZONE),
+    [now],
+  );
   const premiumHistoryDays = historyDaysFor(TIERS.PREMIUM);
   const premiumHistoryRange = useMemo(
-    () => getHistoryDayKeyRange(now, premiumHistoryDays),
+    () => getHistoryDayKeyRange(now, premiumHistoryDays, LEGACY_FAMILY_TIME_ZONE),
     [now, premiumHistoryDays],
   );
   const requestedHistoryDayKey = dateInputValueToDateKey(searchParams.get("date") ?? "");
@@ -191,10 +194,11 @@ export function ParentLocation() {
   );
   // Free/reviewed는 URL이나 이전 상태에 과거 날짜가 남아 있어도 서버 요청 전에 오늘로 고정한다.
   const historyDayKey = premiumOpen
-    ? clampHistoryDayKey(rawHistoryDayKey, now, premiumHistoryDays)
+    ? clampHistoryDayKey(rawHistoryDayKey, now, premiumHistoryDays, LEGACY_FAMILY_TIME_ZONE)
     : historyTodayKey;
   const historyWindow = useMemo(
-    () => getHistoryDayWindowForKey(historyDayKey, now) ?? getHistoryDayWindow(now),
+    () => getHistoryDayWindowForKey(historyDayKey, now, LEGACY_FAMILY_TIME_ZONE)
+      ?? getHistoryDayWindow(now, LEGACY_FAMILY_TIME_ZONE),
     [historyDayKey, now],
   );
   const historyMinDateValue = dateKeyToDateInputValue(premiumHistoryRange.minDateKey);
@@ -312,7 +316,7 @@ export function ParentLocation() {
     setScrubOffsetMinute(null);
   }, [activeView, historyDayKey, selected?.id]);
 
-  // 선택일 경로는 오전 8시부터 다음 날 오전 8시까지 24시간으로 고정한다.
+  // 선택일 경로는 명시한 가족 시간대의 오전 8시부터 다음 날 오전 8시까지로 고정한다.
   // 오늘의 끝도 queryEnd로 고정해 30초 폴링마다 쿼리 키가 바뀌지 않게 한다.
   const historyRange = useMemo(() => {
     return {
@@ -449,7 +453,12 @@ export function ParentLocation() {
   );
 
   const selectHistoryDay = (requestedDateKey: string): void => {
-    const nextDateKey = clampHistoryDayKey(requestedDateKey, now, premiumHistoryDays);
+    const nextDateKey = clampHistoryDayKey(
+      requestedDateKey,
+      now,
+      premiumHistoryDays,
+      LEGACY_FAMILY_TIME_ZONE,
+    );
     if (!premiumOpen) {
       if (requestedDateKey !== historyTodayKey) {
         setHistoryUpsellDayKey(nextDateKey);

@@ -10,7 +10,7 @@ import { serializeDataExport } from "@/lib/api/endpoints/account";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import { useLocale } from "@/i18n/useLocale";
 import {
-  formatDateTime,
+  formatClockWithSeconds,
   formatNumber,
   LEGACY_FAMILY_TIME_ZONE,
 } from "@/i18n/format";
@@ -175,10 +175,9 @@ export function DataSync() {
             <div className="ds-sync__row">
               <span className="ds-sync__k">마지막 동기화</span>
               <span className="ds-sync__v">
-                {formatDateTime(syncedAt, {
+                {formatClockWithSeconds(syncedAt, {
                   locale,
                   timeZone: LEGACY_FAMILY_TIME_ZONE,
-                  timeStyle: "short",
                 })}
               </span>
             </div>

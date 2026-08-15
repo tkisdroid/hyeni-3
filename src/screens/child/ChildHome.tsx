@@ -17,6 +17,7 @@ import type { DailySupply, CalendarEvent } from "@/lib/api/endpoints/schedule";
 import type { RoutePoint } from "@/lib/api/endpoints/route";
 import { groupEventsByDateKey, PAST_TAGS } from "@/transform/scheduleView";
 import { useLocale } from "@/i18n/useLocale";
+import { formatCalendarDay, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
 import { todayDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { QUICK_STATUS_ACTIONS, buildQuickStatusMemo, type QuickStatusActionId } from "@/transform/quickStatusShare";
@@ -125,7 +126,10 @@ export function ChildHome() {
       })),
     [todayViews, rawById],
   );
-  const adventure = useMemo(() => buildAdventureMap(adventureInput, nowMinutes), [adventureInput, nowMinutes]);
+  const adventure = useMemo(
+    () => buildAdventureMap(adventureInput, nowMinutes, locale),
+    [adventureInput, locale, nowMinutes],
+  );
 
   const nextView = todayViews.find((v) => v.id === adventure.next?.id) ?? null;
   const nextRaw = adventure.next ? (rawById.get(adventure.next.id) ?? null) : null;
@@ -392,8 +396,11 @@ export function ChildHome() {
     [show],
   );
 
-  const dateLabel = `${now.getMonth() + 1}월 ${now.getDate()}일`;
-  const weekday = ["일", "월", "화", "수", "목", "금", "토"][now.getDay()];
+  const dateLabel = formatCalendarDay(now, {
+    locale,
+    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    weekday: "long",
+  });
 
   return (
     <div className="kd-root">
@@ -425,7 +432,7 @@ export function ChildHome() {
 
         <div className="kd-map__top">
           <span className="kd-map__date">
-            {dateLabel} {weekday}요일
+            {dateLabel}
           </span>
           <button
             type="button"
@@ -817,7 +824,7 @@ export function ChildHome() {
       <DaySheet
         open={dayOpen}
         onClose={() => setDayOpen(false)}
-        dateLabel={`${dateLabel} ${weekday}요일`}
+        dateLabel={dateLabel}
         rows={timetable}
         parentNote={parentNote}
         onOpenMemo={() => {

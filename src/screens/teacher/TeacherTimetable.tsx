@@ -8,11 +8,12 @@ import { isMissingFunction } from "@/lib/api/errors";
 import { dateToDateKey } from "@/transform/dateKey";
 import { isoDateKey } from "@/transform/teacherView";
 import type { ClassScheduleRow } from "@/lib/api/endpoints/teacher";
+import { useLocale } from "@/i18n/useLocale";
+import { formatCalendarDay } from "@/i18n/format";
 import "./TeacherTimetable.css";
 
 // 월요일 시작 요일 라벨(주간 스트립). 반 일정은 events 도메인(0-index date_key) 기준.
 const DOW_MON_FIRST = ["월", "화", "수", "목", "금", "토", "일"] as const;
-const DOW_KO = ["일", "월", "화", "수", "목", "금", "토"] as const;
 
 // events.category → 반 시간표용 한글 라벨(school/sports/hobby/other).
 const CATEGORY_LABEL: Record<string, string> = {
@@ -48,6 +49,7 @@ function sortByTime(rows: ClassScheduleRow[]): ClassScheduleRow[] {
 }
 
 export function TeacherTimetable() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const { show } = useToast();
 
@@ -80,9 +82,10 @@ export function TeacherTimetable() {
     return found ?? new Date();
   }, [weekDays, selectedKey]);
 
-  const selectedLabel = `${selectedDate.getMonth() + 1}월 ${selectedDate.getDate()}일 (${
-    DOW_KO[selectedDate.getDay()]
-  })`;
+  const selectedLabel = formatCalendarDay(
+    Date.UTC(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 12),
+    { locale, timeZone: "UTC", weekday: "short" },
+  );
 
   const scheduleQ = useClassSchedule(classId, selectedKey);
   const rows = useMemo(() => sortByTime(scheduleQ.data ?? []), [scheduleQ.data]);

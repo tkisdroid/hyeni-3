@@ -11,9 +11,9 @@ import { dateInputValueToDateKey } from "@/transform/dateKey";
 import type { TeacherNoticeAttachment } from "@/lib/api/endpoints/teacher";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
+import { useLocale } from "@/i18n/useLocale";
+import { formatCalendarDay, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
 import "./TeacherNotice.css";
-
-const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
 const MAX_ATTACHMENTS = 5;
 const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
 
@@ -31,6 +31,7 @@ function safeFileName(name: string): string {
 }
 
 export function TeacherNotice() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const location = useLocation();
   const { show } = useToast();
@@ -74,8 +75,12 @@ export function TeacherNotice() {
   const today = useMemo(() => isoDateKey(new Date()), []);
   const todayLabel = useMemo(() => {
     const now = new Date();
-    return `${now.getMonth() + 1}월 ${now.getDate()}일 ${WEEKDAYS[now.getDay()]}요일`;
-  }, []);
+    return formatCalendarDay(now, {
+      locale,
+      timeZone: LEGACY_FAMILY_TIME_ZONE,
+      weekday: "long",
+    });
+  }, [locale]);
 
   // 반 시간표 '일정 추가'에서 넘어온 날짜(state.dateInput, ISO "YYYY-MM-DD")를 반영일 초깃값으로.
   const prefillDate = useMemo(() => {

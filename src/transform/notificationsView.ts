@@ -9,9 +9,10 @@ import type { ParentAlert } from "@/lib/api/endpoints/notifications";
 import type { SupportedLocale } from "../i18n/locale.ts";
 import {
   formatDateTime,
+  formatCalendarDay,
   formatRelativeTime,
-  intlLocaleTag,
 } from "../i18n/format.ts";
+import { dateKeyToDateInputValue, dateToDateKeyInTimeZone } from "./dateKey.ts";
 
 export interface AlertItemView {
   id: string;
@@ -238,14 +239,7 @@ export function relativeTime(
 
 // 절대시각 → 명시한 시간대의 Gregorian 일자 스탬프(표시 그룹 비교 전용).
 function dayStamp(date: Date, timeZone: string): string {
-  const parts = new Intl.DateTimeFormat("en-CA-u-ca-gregory-nu-latn", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? "";
-  return `${part("year")}-${part("month")}-${part("day")}`;
+  return dateKeyToDateInputValue(dateToDateKeyInTimeZone(date, timeZone));
 }
 
 // created_at 날짜 → 그룹 라벨(오늘/어제/M월 D일).
@@ -256,11 +250,7 @@ function groupLabel(date: Date, now: Date, locale: SupportedLocale, timeZone: st
   const key = dayStamp(date, timeZone);
   if (key === today) return "오늘";
   if (key === yesterday) return "어제";
-  return new Intl.DateTimeFormat(intlLocaleTag(locale), {
-    month: "long",
-    day: "numeric",
-    timeZone,
-  }).format(date);
+  return formatCalendarDay(date, { locale, timeZone });
 }
 
 /**

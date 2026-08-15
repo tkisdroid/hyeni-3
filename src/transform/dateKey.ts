@@ -64,3 +64,18 @@ export function addDaysToDateKey(dateKey: string, days: number): string {
 export function todayDateKey(now: Date = new Date()): string {
   return dateToDateKey(now);
 }
+
+/** instant → 명시한 time zone의 앱 date_key. host time zone을 사용하지 않는다. */
+export function dateToDateKeyInTimeZone(date: Date, timeZone: string): string {
+  if (Number.isNaN(date.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en-CA-u-ca-gregory-nu-latn", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const value = (type: Intl.DateTimeFormatPartTypes) => (
+    Number(parts.find((part) => part.type === type)?.value)
+  );
+  return ymdToDateKey(value("year"), value("month"), value("day"));
+}

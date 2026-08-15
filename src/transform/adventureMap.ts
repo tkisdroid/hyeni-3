@@ -7,6 +7,8 @@
  *
  * 일정이 4개를 넘으면 다음 일정을 반드시 포함하도록 창을 잡는다(아이가 볼 이유가 있는 구간).
  */
+import type { SupportedLocale } from "../i18n/locale.ts";
+import { formatDateTime } from "../i18n/format.ts";
 
 export interface AdventureEventInput {
   id: string;
@@ -62,14 +64,16 @@ export function hasJongseong(word: string): boolean {
 }
 
 /** 분 → "4:00" (지도 pill 용 짧은 표기). */
-export function compactTime(startMinutes: number | null): string {
+export function compactTime(startMinutes: number | null, locale: SupportedLocale): string {
   if (startMinutes == null) return "";
   const h24 = Math.floor(startMinutes / 60) % 24;
   const m = startMinutes % 60;
-  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
   // 오전/오후를 빼면 아침 9시와 밤 9시가 같은 "9:00" 이 된다(앱 공통 규약 = scheduleView.formatTimeLabel).
-  const ampm = h24 < 12 ? "오전" : "오후";
-  return `${ampm} ${h12}:${String(m).padStart(2, "0")}`;
+  return formatDateTime(Date.UTC(2026, 0, 1, h24, m), {
+    locale,
+    timeZone: "UTC",
+    timeStyle: "short",
+  });
 }
 
 /** "HH:MM" → 분. 형식이 아니면 null. */
@@ -96,14 +100,18 @@ export function pickAdventureWindow(
   return events.slice(start, start + maxNodes);
 }
 
-function bubbleFor(next: AdventureEventInput | null, nowMinutes: number): string {
+function bubbleFor(
+  next: AdventureEventInput | null,
+  nowMinutes: number,
+  locale: SupportedLocale,
+): string {
   if (!next) return "오늘 일정 다 끝났어! 푹 쉬어도 돼 🎈";
   const josa = hasJongseong(next.title) ? "이야" : "야";
   if (next.startMinutes == null) return `다음은 ${next.title}${josa}! 나랑 같이 가자 🎒`;
   const left = next.startMinutes - nowMinutes;
   if (left <= 0) return `지금 ${next.title} 갈 시간이야! 🏃`;
   if (left <= 120) return `${left}분 뒤 ${next.title}${josa}!\n나랑 같이 가자 🎒`;
-  return `${compactTime(next.startMinutes)}에 ${next.title}${josa}!\n아직 시간 있어 😊`;
+  return `${compactTime(next.startMinutes, locale)}에 ${next.title}${josa}!\n아직 시간 있어 😊`;
 }
 
 /**
@@ -124,13 +132,14 @@ function clampNodeTitle(title: string, max = 8): string {
 export function buildAdventureMap(
   events: readonly AdventureEventInput[],
   nowMinutes: number,
+  locale: SupportedLocale,
 ): AdventureMap {
   const next = events.find((e) => !e.isPast) ?? null;
   const window = pickAdventureWindow(events);
   const nodes = window.map((e, i) => {
     const state: AdventureNodeState = e.isPast ? "done" : e.id === next?.id ? "next" : "todo";
     const slot = ADVENTURE_SLOTS[i] ?? ADVENTURE_SLOTS[ADVENTURE_SLOTS.length - 1];
-    const time = compactTime(e.startMinutes);
+    const time = compactTime(e.startMinutes, locale);
     const shortTitle = clampNodeTitle(e.title);
     return {
       id: e.id,
@@ -142,5 +151,5 @@ export function buildAdventureMap(
       top: slot.top,
     };
   });
-  return { nodes, next, bubble: bubbleFor(next, nowMinutes) };
+  return { nodes, next, bubble: bubbleFor(next, nowMinutes, locale) };
 }
