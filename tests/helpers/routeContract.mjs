@@ -77,13 +77,19 @@ function routeComponentFromElement(element) {
       && ts.isIdentifier(node.expression)
       && node.expression.text === "routeElement",
   );
-  if (!routeElementCall || routeElementCall.arguments.length !== 1) return undefined;
+  if (!routeElementCall) return undefined;
 
-  const component = findDescendant(
-    routeElementCall.arguments[0],
-    (node) => ts.isJsxSelfClosingElement(node) && ts.isIdentifier(node.tagName),
+  assert.ok(
+    routeElementCall.arguments.length === 1
+      || (routeElementCall.arguments.length === 2 && ts.isIdentifier(routeElementCall.arguments[1])),
+    "routeElement 인자는 화면 JSX와 선택적 namespace 식별자만 허용합니다.",
   );
-  return component?.tagName.text;
+  const component = routeElementCall.arguments[0];
+  assert.ok(
+    component && ts.isJsxSelfClosingElement(component) && ts.isIdentifier(component.tagName),
+    "routeElement의 첫 번째 인자는 식별자 JSX 화면이어야 합니다.",
+  );
+  return component.tagName.text;
 }
 
 function stringValue(node) {

@@ -158,6 +158,30 @@ test("59개 경로의 component·guard·출시 조건 정본을 AST로 고정한
   assert.doesNotThrow(() => assertAppRouteContract(app, expected));
 });
 
+test("namespace가 있는 routeElement의 첫 JSX 인자에서 화면을 읽는다", () => {
+  assert.deepEqual(
+    parseAppRouteContract(app).routes.find(({ path }) => path === "parent/home"),
+    route("parent/home", "ParentHome", "parent"),
+  );
+});
+
+test("routeElement의 지원 계약 밖 인자 형태를 거부한다", () => {
+  assert.throws(
+    () => parseAppRouteContract(app.replace(
+      'routeElement(<ParentHome />, PARENT_NAMESPACES)',
+      "routeElement()",
+    )),
+    /routeElement.*인자/,
+  );
+  assert.throws(
+    () => parseAppRouteContract(app.replace(
+      'routeElement(<ParentHome />, PARENT_NAMESPACES)',
+      "routeElement(<ParentHome />, PARENT_NAMESPACES, SHARED_NAMESPACES)",
+    )),
+    /routeElement.*인자/,
+  );
+});
+
 test("지연 화면 선언 삭제를 검출한다", () => {
   assertMutationRejected(
     (source) => source.replace(
@@ -182,7 +206,7 @@ test("지연 화면의 module 및 named export 오배선을 각각 검출한다"
 test("라우트 삭제를 검출한다", () => {
   assertMutationRejected(
     (source) => source.replace(
-      '{ path: "parent/home", element: routeElement(<ParentHome />) },',
+      '{ path: "parent/home", element: routeElement(<ParentHome />, PARENT_NAMESPACES) },',
       "",
     ),
     "라우트 삭제를 허용하면 안 됩니다.",
