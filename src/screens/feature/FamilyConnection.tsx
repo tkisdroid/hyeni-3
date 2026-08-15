@@ -9,6 +9,7 @@ import { useMyFamily, useUnpairChild } from "@/queries/useFamily";
 import { useChildLocations } from "@/queries/useLocation";
 import { mapFamilyToView } from "@/transform/familyView";
 import { formatFreshness } from "@/transform/locationView";
+import { useLocale } from "@/i18n/useLocale";
 import { hasJongseong } from "@/transform/adventureMap";
 import { Loading } from "@/components/ui/Loading";
 import "./FamilyConnection.css";
@@ -30,6 +31,7 @@ interface UnpairTarget {
  * 공동 보호자 초대(연결 코드 공유). 데이터·권한은 모두 서버 /api/family/mine 기준.
  */
 export function FamilyConnection() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const { show } = useToast();
   const now = useMemo(() => new Date(), []);
@@ -85,7 +87,7 @@ export function FamilyConnection() {
     if (!userId) return { label: "연결 대기 중", tone: "muted" };
     const loc = (locations ?? []).find((l) => l.user_id === userId);
     if (!loc) return { label: "위치 정보 없음", tone: "muted" };
-    const fresh = formatFreshness(loc.updated_at, now);
+    const fresh = formatFreshness(loc.updated_at, now, locale);
     if (fresh.status === "live") return { label: `온라인 · ${fresh.label}`, tone: "safe" };
     if (fresh.status === "recent") return { label: fresh.label, tone: "safe" };
     return { label: fresh.label, tone: "warn" };

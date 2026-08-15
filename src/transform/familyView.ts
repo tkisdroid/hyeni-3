@@ -17,6 +17,8 @@ import {
   deviceOverallSafetyLabel,
   type DeviceNotificationHealthView,
 } from "./deviceNotificationHealth";
+import type { SupportedLocale } from "../i18n/locale.ts";
+import { formatNumber } from "../i18n/format.ts";
 
 export interface ParentView {
   id: string;
@@ -116,13 +118,16 @@ export interface DeviceStatusView {
 export type DeviceRecentAppView = DeviceAppUsageItemView;
 
 // 오늘 화면 사용시간(ms) → "N시간 M분" / "N분". 없거나 0이면 null.
-function screenTimeLabelFrom(ms: number | null | undefined): string | null {
+function screenTimeLabelFrom(
+  ms: number | null | undefined,
+  locale: SupportedLocale,
+): string | null {
   if (typeof ms !== "number" || !Number.isFinite(ms) || ms <= 0) return null;
   const totalMin = Math.floor(ms / 60000);
   const h = Math.floor(totalMin / 60);
   const m = totalMin % 60;
-  if (h > 0) return `${h}시간 ${m}분`;
-  return `${m}분`;
+  if (h > 0) return `${formatNumber(h, locale)}시간 ${formatNumber(m, locale)}분`;
+  return `${formatNumber(m, locale)}분`;
 }
 
 // 저배터리 임계(주의). hyeni-1 deviceSafety 규칙과 동일.
@@ -145,7 +150,8 @@ function networkTypeLabel(networkType: string | null): string {
  */
 export function deviceStatusView(
   health: DeviceHealth | null | undefined,
-  now: Date = new Date(),
+  now: Date,
+  locale: SupportedLocale,
   childScheduleEnabled: boolean | null = null,
   childScheduleLoadState: "loading" | "error" | "ready" = "loading",
 ): DeviceStatusView {
@@ -177,7 +183,7 @@ export function deviceStatusView(
   const level = typeof health.batteryLevel === "number" ? health.batteryLevel : null;
   // 네이티브(LocationService) 리포트는 connectionType, 웹 리포트는 networkType 을 준다.
   const netType = health.connectionType ?? health.networkType;
-  const screen = screenTimeLabelFrom(health.deviceScreenOnMs);
+  const screen = screenTimeLabelFrom(health.deviceScreenOnMs, locale);
   const appUsage = buildDeviceAppUsageView(health);
   const reportAt = health.lastReportedAt ?? health.updatedAt;
   const lowBattery = level != null && level <= LOW_BATTERY_THRESHOLD;
@@ -190,7 +196,7 @@ export function deviceStatusView(
   return {
     hasData: true,
     batteryLevel: level,
-    batteryLabel: level == null ? "—" : `${level}%`,
+    batteryLabel: level == null ? "—" : `${formatNumber(level, locale)}%`,
     unlockCountLabel: unlockCountLabel(health.deviceUnlockCount),
     networkLabel: health.networkConnected ? networkTypeLabel(netType) : "오프라인",
     screenTimeLabel: screen ?? "—",
@@ -199,7 +205,7 @@ export function deviceStatusView(
     mostUsedApp: appUsage.mostUsedApp,
     topApps: appUsage.topApps,
     recentApps: appUsage.topApps,
-    freshnessLabel: reportAt ? formatFreshness(reportAt, now).label : "보고 시각 없음",
+    freshnessLabel: reportAt ? formatFreshness(reportAt, now, locale).label : "보고 시각 없음",
     safetyLabel,
     notification,
     location,

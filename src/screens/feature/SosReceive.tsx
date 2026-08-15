@@ -18,25 +18,34 @@ import { TIERS, locationModeFor } from "@/transform/tierPolicy";
 import { resolveLocationTrustCopy } from "@/transform/locationTrustCopy";
 import { hasJongseong } from "@/transform/adventureMap";
 import { Loading } from "@/components/ui/Loading";
+import type { SupportedLocale } from "@/i18n/locale";
+import { useLocale } from "@/i18n/useLocale";
+import {
+  formatDateTime,
+  formatRelativeTime,
+  LEGACY_FAMILY_TIME_ZONE,
+} from "@/i18n/format";
 import "./SosReceive.css";
 
-const pad2 = (n: number): string => String(n).padStart(2, "0");
-
 /** ISO/Date → 상대시간(방금/N분/N시간 전). */
-function relativeFrom(d: Date | null): string {
+function relativeFrom(d: Date | null, locale: SupportedLocale): string {
   if (!d) return "";
   const min = Math.floor((Date.now() - d.getTime()) / 60000);
   if (min < 1) return "방금 전";
-  if (min < 60) return `${min}분 전`;
+  if (min < 60) return formatRelativeTime(-min, "minute", locale);
   const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}시간 전`;
-  return `${Math.floor(hr / 24)}일 전`;
+  if (hr < 24) return formatRelativeTime(-hr, "hour", locale);
+  return formatRelativeTime(-Math.floor(hr / 24), "day", locale);
 }
 
-/** Date → HH:MM:SS. */
-function formatClock(d: Date | null): string {
+/** Date → locale 시각. */
+function formatClock(d: Date | null, locale: SupportedLocale): string {
   if (!d) return "";
-  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+  return formatDateTime(d, {
+    locale,
+    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    timeStyle: "short",
+  });
 }
 
 /**
@@ -47,6 +56,7 @@ function formatClock(d: Date | null): string {
  * 함께 추적한다. 액션: 전화(네이티브 다이얼)·주변소리(청취 화면)·지도 추적·확인 처리(읽음).
  */
 export function SosReceive() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const goBack = useSafeBack("/notifications");
   const [searchParams] = useSearchParams();
@@ -100,6 +110,7 @@ export function SosReceive() {
     modeKnown: locationModeKnown,
     updatedAt: childLoc?.updated_at,
     loadState: locationsLoading ? "loading" : locationsLoadError ? "error" : "ready",
+    locale,
   });
 
   const callOrRingChild = () => {
@@ -233,7 +244,7 @@ export function SosReceive() {
                     : `${childName}${hasJongseong(childName) ? "이" : "가"} SOS를 보냈어요`}
                 </div>
                 <div className="sr-banner-meta">
-                  {formatClock(latestAt)} · {relativeFrom(latestAt)}
+                  {formatClock(latestAt, locale)} · {relativeFrom(latestAt, locale)}
                 </div>
               </div>
               {latest.read && <span className="sr-banner-chip">확인 완료</span>}
@@ -314,7 +325,7 @@ export function SosReceive() {
                       <div className="sr-history-body">
                         <div className="sr-history-name">{c?.name || "아이"}</div>
                         <div className="sr-history-time">
-                          {formatClock(at)} · {relativeFrom(at)}
+                          {formatClock(at, locale)} · {relativeFrom(at, locale)}
                         </div>
                       </div>
                       {!s.read && <span className="sr-history-dot" />}

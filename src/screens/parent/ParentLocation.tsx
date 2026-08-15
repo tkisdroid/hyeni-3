@@ -74,6 +74,11 @@ import {
   browserPremiumReturnIntentStorage,
   savePremiumReturnIntent,
 } from "@/transform/premiumReturnIntent";
+import { useLocale } from "@/i18n/useLocale";
+import {
+  formatDateTime,
+  LEGACY_FAMILY_TIME_ZONE,
+} from "@/i18n/format";
 import "./ParentLocation.css";
 
 function avatarSrc(path: string): string {
@@ -150,6 +155,7 @@ function scheduleStayLabel(stay: StayPoint, events: CalendarEvent[]): string | n
  * 계산은 `transform/locationHistoryScrub` 의 순수 함수가 담당한다(실측점만 · 8m 지터 압축).
  */
 export function ParentLocation() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const { show } = useToast();
   const { familyId } = useAuth();
@@ -197,8 +203,15 @@ export function ParentLocation() {
   const historyDayLabel = useMemo(() => {
     if (historyDayKey === historyTodayKey) return "오늘";
     const date = parseAppDateKey(historyDayKey);
-    return date?.toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" }) ?? "선택한 날";
-  }, [historyDayKey, historyTodayKey]);
+    return date
+      ? formatDateTime(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 12), {
+          locale,
+          // date_key는 instant가 아니라 선택한 달력 날짜이므로 날짜 자체를 보존한다.
+          timeZone: "UTC",
+          dateStyle: "medium",
+        })
+      : "선택한 날";
+  }, [historyDayKey, historyTodayKey, locale]);
   const historyMaxOffsetMinute = historyWindow.maxOffsetMinutes;
   // null = 최신 따라가기(기본). 숫자 = 부모가 직접 고른 시각.
   // 위치 폴링(30초)마다 `now` 가 갱신돼도 부모가 고른 시각을 최신으로 되돌리지 않는다.
@@ -254,7 +267,7 @@ export function ParentLocation() {
     setRefreshState("idle");
   }, [refreshTargetKey]);
 
-  const fresh = loc ? formatFreshness(loc.updated_at, now) : null;
+  const fresh = loc ? formatFreshness(loc.updated_at, now, locale) : null;
   const accuracyM = loc?.accuracy_m != null && Number.isFinite(Number(loc.accuracy_m))
     ? Math.max(0, Math.round(Number(loc.accuracy_m)))
     : null;
@@ -411,11 +424,11 @@ export function ParentLocation() {
         lat: s.lat,
         lng: s.lng,
         order: i + 1,
-        dwellLabel: formatDwell(s.dwellMs),
+        dwellLabel: formatDwell(s.dwellMs, locale),
         placeName: stayLabels[i] ?? null,
         active: i === activeStayIdx,
       })),
-    [visibleStayPoints, stayLabels, activeStayIdx],
+    [visibleStayPoints, stayLabels, activeStayIdx, locale],
   );
   // 목록 항목 선택 시 지도 중심을 그 스테이포인트로.
   const stayCenter =
@@ -796,7 +809,7 @@ export function ParentLocation() {
               {followsLatest ? "최신" : "최신으로"}
             </button>
             <span className="pl-scrub__moment">
-              <strong>{formatClockHM(scrubMs)}</strong>
+              <strong>{formatClockHM(scrubMs, locale, LEGACY_FAMILY_TIME_ZONE)}</strong>
               <span className="pl-scrub__where">{scrubWhere}</span>
             </span>
           </div>
@@ -808,11 +821,11 @@ export function ParentLocation() {
             value={effectiveScrubOffsetMinute}
             onChange={(e) => moveScrubTo(Number(e.target.value))}
             aria-label={`${historyDayLabel} 경로 시간 선택`}
-            aria-valuetext={`${formatClockHM(scrubMs)} · ${scrubWhere}`}
+            aria-valuetext={`${formatClockHM(scrubMs, locale, LEGACY_FAMILY_TIME_ZONE)} · ${scrubWhere}`}
           />
           <div className="pl-scrub__ticks" aria-hidden="true">
-            <span>{formatClockHM(historyWindow.startMs)}</span>
-            <span>{formatClockHM(historyWindow.endMs)}</span>
+            <span>{formatClockHM(historyWindow.startMs, locale, LEGACY_FAMILY_TIME_ZONE)}</span>
+            <span>{formatClockHM(historyWindow.endMs, locale, LEGACY_FAMILY_TIME_ZONE)}</span>
           </div>
           <div className="pl-scrub__legend">
             <span><i className="pl-scrub__line" /> 이동선</span>
@@ -995,10 +1008,11 @@ export function ParentLocation() {
                   <span className="pl-stay__body">
                     <span className="pl-stay__place">{place ?? "머문 장소"}</span>
                     <span className="pl-stay__time">
-                      {formatClockHM(s.arrivalMs)}–{formatClockHM(s.departureMs)}
+                      {formatClockHM(s.arrivalMs, locale, LEGACY_FAMILY_TIME_ZONE)}–
+                      {formatClockHM(s.departureMs, locale, LEGACY_FAMILY_TIME_ZONE)}
                     </span>
                   </span>
-                  <span className="pl-stay__dwell">{formatDwell(s.dwellMs)}</span>
+                  <span className="pl-stay__dwell">{formatDwell(s.dwellMs, locale)}</span>
                 </button>
               );
             })}

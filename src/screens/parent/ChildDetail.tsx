@@ -14,6 +14,7 @@ import { mapFamilyToView } from "@/transform/familyView";
 import { todayDateKey, parseAppDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { formatFreshness } from "@/transform/locationView";
+import { useLocale } from "@/i18n/useLocale";
 import { hasJongseong } from "@/transform/adventureMap";
 import { Loading } from "@/components/ui/Loading";
 import "./ChildDetail.css";
@@ -43,6 +44,7 @@ type SafetyTone = "safe" | "warn" | "muted";
  * 데이터는 모두 실 훅(가족·일정·위치) 기반. 백엔드 부재 항목은 정직하게 처리.
  */
 export function ChildDetail() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const routeLocation = useLocation();
   const { show } = useToast();
@@ -122,7 +124,7 @@ export function ChildDetail() {
     return locs.find((l) => l.user_id === rawChild.user_id) ?? null;
   }, [locationsQuery.data, rawChild]);
   const places = placesQuery.data;
-  const fresh = loc ? formatFreshness(loc.updated_at, now) : null;
+  const fresh = loc ? formatFreshness(loc.updated_at, now, locale) : null;
   const locationLabel = useLocationLabels(loc ? [loc] : [], places);
   const placeName = loc ? locationLabel(loc) : null;
 

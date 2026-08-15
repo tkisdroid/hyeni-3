@@ -1,0 +1,63 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+
+import {
+  formatDateTime,
+  formatNumber,
+  formatProviderPrice,
+  formatRelativeTime,
+} from "../src/i18n/format.ts";
+import {
+  formatMemoClock,
+  memoDayStamp,
+} from "../src/transform/memoView.ts";
+import { relativeTime } from "../src/transform/notificationsView.ts";
+
+const INSTANT = "2026-01-01T00:00:00.000Z";
+
+test("지원 locale은 지역별 숫자 구분 기호를 사용한다", () => {
+  assert.equal(formatNumber(12_345, "en"), "12,345");
+  assert.equal(formatNumber(12_345, "id"), "12.345");
+});
+
+test("날짜·시각은 명시한 locale과 time zone에서 Gregorian 연도를 표시한다", () => {
+  const tokyo = formatDateTime(INSTANT, {
+    locale: "ja",
+    timeZone: "Asia/Tokyo",
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+  const bangkok = formatDateTime(INSTANT, {
+    locale: "th",
+    timeZone: "Asia/Bangkok",
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+
+  assert.match(tokyo, /2026/);
+  assert.match(tokyo, /9:00/);
+  assert.match(bangkok, /2026/);
+  assert.doesNotMatch(bangkok, /2569/);
+});
+
+test("상대시간은 선택한 locale 문법으로 표시한다", () => {
+  assert.equal(formatRelativeTime(-3, "minute", "en"), "3 minutes ago");
+  assert.equal(formatRelativeTime(-3, "minute", "id"), "3 menit yang lalu");
+});
+
+test("공급자 가격 문자열은 locale과 무관하게 원문 그대로 보존한다", () => {
+  assert.equal(formatProviderPrice("$4.99", "en"), "$4.99");
+  assert.equal(formatProviderPrice("  Rp 79.000  ", "id"), "  Rp 79.000  ");
+});
+
+test("메모 시각과 날짜 그룹은 호스트가 아니라 전달한 time zone을 따른다", () => {
+  const value = "2026-01-01T01:00:00.000Z";
+  assert.equal(memoDayStamp(value, "Asia/Tokyo"), "2026-01-01");
+  assert.equal(memoDayStamp(value, "America/Los_Angeles"), "2025-12-31");
+  assert.match(formatMemoClock(value, "en", "America/Los_Angeles"), /5:00 PM/);
+});
+
+test("알림의 오래된 시각도 전달한 locale과 time zone으로 표시한다", () => {
+  const now = new Date("2026-01-01T03:00:00.000Z");
+  assert.match(relativeTime("2026-01-01T01:00:00.000Z", now, "en", "America/Los_Angeles"), /5:00 PM/);
+});

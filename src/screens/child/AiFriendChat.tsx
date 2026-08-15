@@ -16,6 +16,7 @@ import {
 } from "@/queries/useAi";
 import { messagesToBubbles, type ChatBubble } from "@/transform/aiView";
 import { groupEventsByDateKey, PAST_TAGS } from "@/transform/scheduleView";
+import { useLocale } from "@/i18n/useLocale";
 import { todayDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { isApiError } from "@/lib/api/errors";
@@ -80,6 +81,7 @@ function friendlyError(err: unknown, status: AiCreditPublicStatus | null): strin
 }
 
 export function AiFriendChat() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const goBack = useSafeBack("/child/home");
   const location = useLocation();
@@ -123,9 +125,9 @@ export function AiFriendChat() {
   const myMemberId = family?.members.find((m) => m.role === "child" && m.user_id === userId)?.id ?? null;
   const nextEvent = useMemo(() => {
     const list =
-      groupEventsByDateKey(filterEventsForChild(events ?? [], myMemberId), now, undefined, places)[todayKey] ?? [];
+      groupEventsByDateKey(filterEventsForChild(events ?? [], myMemberId), now, locale, undefined, places)[todayKey] ?? [];
     return list.find((e) => !PAST_TAGS.has(e.tag)) ?? null;
-  }, [events, myMemberId, now, todayKey, places]);
+  }, [events, locale, myMemberId, now, todayKey, places]);
   const pendingSupply = useMemo(() => {
     const all = suppliesQuery.data ?? [];
     const mine = myMemberId ? all.filter((s) => s.child_user_id === myMemberId) : [];

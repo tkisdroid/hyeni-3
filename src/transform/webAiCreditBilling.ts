@@ -1,3 +1,5 @@
+import { formatNumber } from "../i18n/format.ts";
+
 export type WebAiCreditProductCode =
   | "ai-credit-30"
   | "ai-credit-80"
@@ -94,7 +96,7 @@ function validPack(value: unknown): WebAiCreditPack | null {
     || !Number.isSafeInteger(row.amount)
     || Number(row.amount) <= 0
     || typeof row.displayPrice !== "string"
-    || row.displayPrice !== `${Number(row.amount).toLocaleString("ko-KR")}원`
+    || row.displayPrice !== `${formatNumber(Number(row.amount), "ko")}원`
   ) return null;
   return {
     productCode: code,

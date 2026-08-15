@@ -13,6 +13,8 @@ import {
   type AlertItemView,
 } from "@/transform/notificationsView";
 import type { ParentAlert } from "@/lib/api/endpoints/notifications";
+import { useLocale } from "@/i18n/useLocale";
+import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
 import "./Notifications.css";
 
 /**
@@ -41,6 +43,7 @@ const FILTER_LABEL: Record<FilterKey, string> = {
 };
 
 export function Notifications() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const goBack = useSafeBack("/parent/home");
   const [searchParams] = useSearchParams();
@@ -75,7 +78,10 @@ export function Notifications() {
     () => (filter === "all" ? list : list.filter((a) => alertCategory(a.alert_type) === filter)),
     [list, filter],
   );
-  const groups = useMemo(() => mapAlertsToGroups(filteredList, now), [filteredList, now]);
+  const groups = useMemo(
+    () => mapAlertsToGroups(filteredList, now, locale, LEGACY_FAMILY_TIME_ZONE),
+    [filteredList, locale, now],
+  );
 
   useEffect(() => {
     if (!requestedAlertId) return;

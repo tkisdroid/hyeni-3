@@ -6,6 +6,7 @@ import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useChildLocations } from "@/queries/useLocation";
 import { formatFreshness } from "@/transform/locationView";
+import { useLocale } from "@/i18n/useLocale";
 import { Loading } from "@/components/ui/Loading";
 import {
   isLocationTrackingSupported,
@@ -35,6 +36,7 @@ interface View {
 }
 
 export function ChildLocationStatus() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const { show } = useToast();
   const { userId, familyId } = useAuth();
@@ -56,7 +58,7 @@ export function ChildLocationStatus() {
     await refetch();
   };
 
-  const fresh = myLoc ? formatFreshness(myLoc.updated_at, now) : null;
+  const fresh = myLoc ? formatFreshness(myLoc.updated_at, now, locale) : null;
   const isFreshEnough = fresh != null && fresh.status !== "stale";
 
   const refreshPermission = useCallback(() => {

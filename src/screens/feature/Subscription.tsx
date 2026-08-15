@@ -79,6 +79,14 @@ import {
   type Tier,
 } from "@/transform/tierPolicy";
 import { MAX_SUPPLY_ITEMS_PER_KIND } from "@/transform/eventSupplies";
+import type { SupportedLocale } from "@/i18n/locale";
+import { useLocale } from "@/i18n/useLocale";
+import {
+  formatDateTime,
+  formatNumber,
+  formatProviderPrice,
+  LEGACY_FAMILY_TIME_ZONE,
+} from "@/i18n/format";
 import "./Subscription.css";
 
 /** 프리미엄 혜택 목록 (표현 데이터 — 화면 고정). */
@@ -149,8 +157,12 @@ const GOOGLE_PLAY_FUNNEL_PROVIDER = "google_play" as const;
 const TOSS_FUNNEL_PROVIDER = "toss_payments" as const;
 
 /** 결제 주기 종료일 → "2026년 7월 4일" 형식. */
-function formatPeriodEnd(d: Date): string {
-  return d.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
+function formatPeriodEnd(d: Date, locale: SupportedLocale): string {
+  return formatDateTime(d, {
+    locale,
+    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    dateStyle: "medium",
+  });
 }
 
 function webBillingStorage(): Storage | null {
@@ -179,6 +191,7 @@ function shouldRetainWebBillingPending(error: unknown): boolean {
 
 /** 구독 · 페이월: 프리미엄 혜택 · 플랜 선택 · 결제 CTA. 실 티어로 활성 상태 표시. */
 export function Subscription() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const { show } = useToast();
   const { familyId } = useAuth();
@@ -507,11 +520,19 @@ export function Subscription() {
   });
   const selectedOffer = plan === "year" ? annualOffer : monthlyOffer;
   const annualDisplayPrice = isWebBillingChannel
-    ? webCatalog?.plans.year.displayPrice ?? "웹 결제 준비 중"
-    : annualOffer?.displayPrice ?? "Google Play에서 확인";
+    ? webCatalog?.plans.year.displayPrice
+      ? formatProviderPrice(webCatalog.plans.year.displayPrice, locale)
+      : "웹 결제 준비 중"
+    : annualOffer?.displayPrice
+      ? formatProviderPrice(annualOffer.displayPrice, locale)
+      : "Google Play에서 확인";
   const monthlyDisplayPrice = isWebBillingChannel
-    ? webCatalog?.plans.month.displayPrice ?? "웹 결제 준비 중"
-    : monthlyOffer?.displayPrice ?? "Google Play에서 확인";
+    ? webCatalog?.plans.month.displayPrice
+      ? formatProviderPrice(webCatalog.plans.month.displayPrice, locale)
+      : "웹 결제 준비 중"
+    : monthlyOffer?.displayPrice
+      ? formatProviderPrice(monthlyOffer.displayPrice, locale)
+      : "Google Play에서 확인";
   const selectedDisplayPrice = plan === "year" ? annualDisplayPrice : monthlyDisplayPrice;
   const selectedHasTrial = isWebBillingChannel
     ? webCatalog?.trialEligible === true && webCatalog.trialDays === 7
@@ -714,7 +735,7 @@ export function Subscription() {
     if (view.isTrial && view.trialDaysLeft != null) {
       return `무료 체험 ${view.trialDaysLeft}일 남았어요`;
     }
-    if (view.periodEnd) return `${formatPeriodEnd(view.periodEnd)}까지 이용 가능해요`;
+    if (view.periodEnd) return `${formatPeriodEnd(view.periodEnd, locale)}까지 이용 가능해요`;
     return "프리미엄 혜택을 모두 이용 중이에요";
   })();
 
@@ -814,7 +835,7 @@ export function Subscription() {
               onKeyDown={(event) => onPlanKeyDown(event, "year")}
             >
               <span className="sub-plan__ribbon">
-                {annualSavingsWon > 0 ? `연 ${annualSavingsWon.toLocaleString("ko-KR")}원 절약` : "연간 플랜"}
+                {annualSavingsWon > 0 ? `연 ${formatNumber(annualSavingsWon, locale)}원 절약` : "연간 플랜"}
               </span>
               <div className="sub-plan__info">
                 <div className="sub-plan__name">프리미엄 연간 구독</div>
@@ -1020,7 +1041,7 @@ export function Subscription() {
             <h2 id="sub-cancel-title">웹 구독을 해지할까요?</h2>
             <p>
               {view.periodEnd
-                ? `${formatPeriodEnd(view.periodEnd)}까지 프리미엄을 이용하고, 이후 자동결제를 중단해요.`
+                ? `${formatPeriodEnd(view.periodEnd, locale)}까지 프리미엄을 이용하고, 이후 자동결제를 중단해요.`
                 : "현재 결제 기간이 끝날 때 프리미엄 자동결제를 중단해요."}
             </p>
             <p>
@@ -1057,7 +1078,7 @@ export function Subscription() {
                   ? "무료 체험은 종료 전 이 화면에서 해지하지 않으면 선택한 웹 구독 금액으로 첫 결제돼요."
                   : "무료 체험은 종료 전 Google Play에서 취소하지 않으면 Google Play에 표시된 구독 금액으로 자동 갱신돼요."
                 : view?.status === "cancelled"
-                  ? `${view.periodEnd ? formatPeriodEnd(view.periodEnd) : "현재 이용 기간"}까지 프리미엄 혜택이 유지돼요.`
+                  ? `${view.periodEnd ? formatPeriodEnd(view.periodEnd, locale) : "현재 이용 기간"}까지 프리미엄 혜택이 유지돼요.`
                   : view?.provider === "toss_web"
                     ? "웹 구독은 이 화면에서 언제든 해지 예약할 수 있어요."
                     : "구독은 설정 > 구독 관리에서 언제든 해지할 수 있어요."}

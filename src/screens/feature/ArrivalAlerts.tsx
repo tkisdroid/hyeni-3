@@ -13,6 +13,8 @@ import {
 } from "@/transform/notificationsView";
 import type { ParentAlert } from "@/lib/api/endpoints/notifications";
 import { Loading } from "@/components/ui/Loading";
+import { useLocale } from "@/i18n/useLocale";
+import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
 import "./ArrivalAlerts.css";
 
 /**
@@ -34,6 +36,7 @@ const TONE_BADGE: Record<ArrivalAlertTone, string> = {
 };
 
 export function ArrivalAlerts() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const goBack = useSafeBack("/notifications");
   const { data, isLoading, isError, refetch } = useParentAlerts();
@@ -134,7 +137,9 @@ export function ArrivalAlerts() {
                       <span className="aa-badge" data-tone={tone}>
                         {TONE_BADGE[tone]}
                       </span>
-                      <span className="aa-item__time">{relativeTime(a.created_at, now)}</span>
+                      <span className="aa-item__time">
+                        {relativeTime(a.created_at, now, locale, LEGACY_FAMILY_TIME_ZONE)}
+                      </span>
                       {!a.read && <span className="aa-item__dot" />}
                     </span>
                   </button>

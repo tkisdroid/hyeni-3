@@ -2,6 +2,8 @@
  * 위치 표시 파생(순수). 신선도 라벨 + 가까운 저장장소.
  */
 import type { SavedPlace, ChildLocation } from "@/lib/api/endpoints/location";
+import type { SupportedLocale } from "../i18n/locale.ts";
+import { formatRelativeTime } from "../i18n/format.ts";
 
 /** 서버 타임스탬프("YYYY-MM-DD HH:MM:SS.mmm+00") → Date. */
 export function parseServerTimestamp(ts: string | null | undefined): Date | null {
@@ -17,16 +19,30 @@ export interface Freshness {
   status: "live" | "recent" | "stale";
 }
 
-export function formatFreshness(updatedAt: string | null | undefined, now: Date = new Date()): Freshness {
+export function formatFreshness(
+  updatedAt: string | null | undefined,
+  now: Date,
+  locale: SupportedLocale,
+): Freshness {
   const d = parseServerTimestamp(updatedAt);
   if (!d) return { label: "위치 정보 없음", status: "stale" };
   const diffSec = Math.max(0, Math.round((now.getTime() - d.getTime()) / 1000));
   if (diffSec < 90) return { label: "방금 업데이트", status: "live" };
   const diffMin = Math.round(diffSec / 60);
-  if (diffMin < 60) return { label: `${diffMin}분 전`, status: diffMin <= 10 ? "recent" : "stale" };
+  if (diffMin < 60) {
+    return {
+      label: formatRelativeTime(-diffMin, "minute", locale),
+      status: diffMin <= 10 ? "recent" : "stale",
+    };
+  }
   const diffHour = Math.round(diffMin / 60);
-  if (diffHour < 24) return { label: `${diffHour}시간 전`, status: "stale" };
-  return { label: `${Math.round(diffHour / 24)}일 전`, status: "stale" };
+  if (diffHour < 24) {
+    return { label: formatRelativeTime(-diffHour, "hour", locale), status: "stale" };
+  }
+  return {
+    label: formatRelativeTime(-Math.round(diffHour / 24), "day", locale),
+    status: "stale",
+  };
 }
 
 export function hasNewerLocationUpdate(

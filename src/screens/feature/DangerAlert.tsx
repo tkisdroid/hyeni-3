@@ -7,6 +7,8 @@ import { useSafeBack } from "@/app/useSafeBack";
 import { cleanAlertTitle, isDangerAlert, relativeTime } from "@/transform/notificationsView";
 import type { ParentAlert } from "@/lib/api/endpoints/notifications";
 import { Loading } from "@/components/ui/Loading";
+import { useLocale } from "@/i18n/useLocale";
+import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
 import "./DangerAlert.css";
 
 /**
@@ -23,6 +25,7 @@ function iconOf(type: string): string {
 }
 
 export function DangerAlert() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const goBack = useSafeBack("/notifications");
   const { data, isLoading, isError, refetch } = useParentAlerts();
@@ -92,7 +95,9 @@ export function DangerAlert() {
                 <span className="da-hero__icon">
                   <img className="da-hero__img" src={asset(iconOf(latest.alert_type))} alt="" />
                 </span>
-                <span className="da-hero__time">{relativeTime(latest.created_at, now)}</span>
+                <span className="da-hero__time">
+                  {relativeTime(latest.created_at, now, locale, LEGACY_FAMILY_TIME_ZONE)}
+                </span>
               </div>
               <div className="da-hero__title">{cleanAlertTitle(latest.title) || "위험 알림"}</div>
               {latest.message && <div className="da-hero__msg">{cleanAlertTitle(latest.message)}</div>}
@@ -126,7 +131,9 @@ export function DangerAlert() {
                         {a.message && <span className="da-item__detail">{cleanAlertTitle(a.message)}</span>}
                       </span>
                       <span className="da-item__meta">
-                        <span className="da-item__time">{relativeTime(a.created_at, now)}</span>
+                        <span className="da-item__time">
+                          {relativeTime(a.created_at, now, locale, LEGACY_FAMILY_TIME_ZONE)}
+                        </span>
                         {!a.read && <span className="da-item__dot" />}
                       </span>
                     </button>

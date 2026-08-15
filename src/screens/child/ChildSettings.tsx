@@ -31,6 +31,7 @@ import {
 import { isNativePlatform } from "@/lib/native/plugins";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { useLocale } from "@/i18n/useLocale";
 import { notificationQuietHoursRange } from "@/transform/notificationQuietHours";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./ChildSettings.css";
@@ -74,6 +75,7 @@ const REQUEST_ITEMS: Array<{ menu: SettingRequestMenu; Icon: LucideIcon; title: 
  * 내 정보/연결 상태·부모 잠금 항목 표시 + 잠금 해제 요청(sendChildSettingRequest).
  */
 export function ChildSettings() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const { show } = useToast();
   const now = useMemo(() => new Date(), []);
@@ -154,7 +156,7 @@ export function ChildSettings() {
   const myName = me?.name || "친구";
   const notifSettings = notifSettingsQuery.data ?? DEFAULT_NOTIF_SETTINGS;
   const notifOn = notifSettings.childEnabled;
-  const quietHoursRange = notificationQuietHoursRange(notifSettings.quietHours);
+  const quietHoursRange = notificationQuietHoursRange(notifSettings.quietHours, locale);
   const quietHoursOn = notifSettings.quietHours.enabled && quietHoursRange.length > 0;
   const locationView = (() => {
     switch (locationStatus) {

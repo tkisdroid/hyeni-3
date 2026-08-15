@@ -3,6 +3,9 @@ import { ChevronLeft, Crown, Gift } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { Loading } from "@/components/ui/Loading";
+import type { SupportedLocale } from "@/i18n/locale";
+import { useLocale } from "@/i18n/useLocale";
+import { formatDateTime, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
 import "./TrialLock.css";
 
 // 페이월 혜택 아이콘 — 3D 에셋(구독 화면과 동일 시각 언어).
@@ -12,13 +15,18 @@ const PREMIUM_PERKS = [
   { icon: "ui/menu-child-tracker.webp", label: "두 아이 · 일정과 장소 넉넉하게" },
 ] as const;
 
-function formatDate(d: Date | null): string {
+function formatDate(d: Date | null, locale: SupportedLocale): string {
   if (!d) return "";
-  return d.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
+  return formatDateTime(d, {
+    locale,
+    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    dateStyle: "medium",
+  });
 }
 
 /** S-03 체험 종료 · 잠금 — useEntitlement 기준 잠금/체험 상태 안내 + 구독 유도. */
 export function TrialLock() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const { ready, isPremium, reviewed, view, isLoading } = useEntitlement();
 
@@ -61,7 +69,7 @@ export function TrialLock() {
             </div>
             <div className="tl-hero__title">지금 모든 프리미엄 기능을 쓰고 있어요</div>
             {view.trialEndsAt && (
-              <div className="tl-hero__sub">{formatDate(view.trialEndsAt)}에 체험이 끝나요</div>
+              <div className="tl-hero__sub">{formatDate(view.trialEndsAt, locale)}에 체험이 끝나요</div>
             )}
           </div>
           <PerkList />
@@ -83,7 +91,7 @@ export function TrialLock() {
             </div>
             <div className="tl-hero__title">{view?.planLabel ?? "프리미엄 이용 중"}</div>
             {view?.periodEnd && (
-              <div className="tl-hero__sub">{formatDate(view.periodEnd)}까지 이용할 수 있어요</div>
+              <div className="tl-hero__sub">{formatDate(view.periodEnd, locale)}까지 이용할 수 있어요</div>
             )}
           </div>
           <PerkList />

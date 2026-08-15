@@ -8,18 +8,17 @@ import { useAccount, useExportFamilyData } from "@/queries/useAccount";
 import { useMyFamily } from "@/queries/useFamily";
 import { serializeDataExport } from "@/lib/api/endpoints/account";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
+import { useLocale } from "@/i18n/useLocale";
+import {
+  formatDateTime,
+  formatNumber,
+  LEGACY_FAMILY_TIME_ZONE,
+} from "@/i18n/format";
 import "./DataSync.css";
-
-function nowLabel(): string {
-  return new Date().toLocaleTimeString("ko-KR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
 
 /** P-32 데이터 · 동기화 — 동기화 상태·데이터 내보내기(JSON)·캐시 비우기. */
 export function DataSync() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const { show } = useToast();
   const qc = useQueryClient();
@@ -29,7 +28,7 @@ export function DataSync() {
   const family = familyQuery.data;
   const exportData = useExportFamilyData();
 
-  const [syncedAt, setSyncedAt] = useState<string>(nowLabel());
+  const [syncedAt, setSyncedAt] = useState(() => new Date());
 
   const members = family?.members ?? [];
   const parentCount = members.filter((m) => m.role === "parent").length;
@@ -45,12 +44,14 @@ export function DataSync() {
     await Promise.all([accountQuery.refetch(), familyQuery.refetch()]);
   };
   const countReady = !!family;
-  const formatCount = (count: number) => (countReady ? `${count}명` : familyQuery.isLoading ? "불러오는 중" : "확인 안 됨");
+  const formatCount = (count: number) => (
+    countReady ? `${formatNumber(count, locale)}명` : familyQuery.isLoading ? "불러오는 중" : "확인 안 됨"
+  );
 
   // 지금 동기화 — 전 쿼리 무효화(서버 최신값 재요청). 실제 리페치 트리거.
   const resync = () => {
     void qc.invalidateQueries();
-    setSyncedAt(nowLabel());
+    setSyncedAt(new Date());
     show("최신 데이터를 다시 불러오고 있어요", "🔄");
   };
 
@@ -90,7 +91,7 @@ export function DataSync() {
   // 캐시 비우기 — 로컬 쿼리 캐시 전체 제거(다음 조회 시 서버에서 새로 받음).
   const clearCache = () => {
     qc.clear();
-    setSyncedAt(nowLabel());
+    setSyncedAt(new Date());
     show("임시 데이터를 비웠어요", "🧹");
   };
 
@@ -173,7 +174,13 @@ export function DataSync() {
             </div>
             <div className="ds-sync__row">
               <span className="ds-sync__k">마지막 동기화</span>
-              <span className="ds-sync__v">{syncedAt}</span>
+              <span className="ds-sync__v">
+                {formatDateTime(syncedAt, {
+                  locale,
+                  timeZone: LEGACY_FAMILY_TIME_ZONE,
+                  timeStyle: "short",
+                })}
+              </span>
             </div>
           </div>
           <button type="button" className="ds-sync__btn hy-press" onClick={resync}>

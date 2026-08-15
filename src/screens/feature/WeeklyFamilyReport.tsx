@@ -23,17 +23,29 @@ import {
   savePremiumReturnIntent,
 } from "@/transform/premiumReturnIntent";
 import { useMessage } from "@/i18n/useMessage";
+import type { SupportedLocale } from "@/i18n/locale";
+import { useLocale } from "@/i18n/useLocale";
+import {
+  formatDateTime,
+  formatNumber,
+  LEGACY_FAMILY_TIME_ZONE,
+} from "@/i18n/format";
 import "./WeeklyFamilyReport.css";
 
-function dateLabel(dateKey: string): string {
+function dateLabel(dateKey: string, locale: SupportedLocale): string {
   const date = parseAppDateKey(dateKey);
   if (!date) return "기록 없음";
-  return date.toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" });
+  // date_key는 instant가 아닌 달력 날짜이므로 UTC 정오 합성값으로 날짜 자체만 지역화한다.
+  return formatDateTime(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 12), {
+    locale,
+    timeZone: "UTC",
+    dateStyle: "medium",
+  });
 }
 
-function rangeLabel(keys: readonly string[]): string {
-  const first = keys[0] ? dateLabel(keys[0]) : "";
-  const last = keys[keys.length - 1] ? dateLabel(keys[keys.length - 1]) : "";
+function rangeLabel(keys: readonly string[], locale: SupportedLocale): string {
+  const first = keys[0] ? dateLabel(keys[0], locale) : "";
+  const last = keys[keys.length - 1] ? dateLabel(keys[keys.length - 1], locale) : "";
   return first && last ? `${first} - ${last}` : "최근 7일";
 }
 
@@ -47,6 +59,7 @@ export function WeeklyFamilyReport() {
   const navigate = useNavigate();
   const routeState = (useLocation().state ?? null) as WeeklyReportRouteState | null;
   const msg = useMessage();
+  const { locale } = useLocale();
   const { activeChild, childMembers, familyLoading, setActiveChildId } = useActiveChild();
   const { ready, tier } = useEntitlement();
   const [now] = useState(() => new Date());
@@ -61,7 +74,10 @@ export function WeeklyFamilyReport() {
       setActiveChildId(restoredChildId);
     }
   }, [activeChild?.id, restoredChildId, setActiveChildId]);
-  const weekDateKeys = useMemo(() => buildRecentWeekDateKeys(now), [now]);
+  const weekDateKeys = useMemo(
+    () => buildRecentWeekDateKeys(now, LEGACY_FAMILY_TIME_ZONE),
+    [now],
+  );
   const eventsQuery = useEvents();
   const suppliesQuery = useDailySupplies();
   const memoThread = useMemoThread(weekDateKeys, activeChild?.id ?? null);
@@ -84,6 +100,7 @@ export function WeeklyFamilyReport() {
       supplies: suppliesQuery.data ?? [],
       memos: memoThread.data ?? [],
       alerts: alertsQuery.data ?? [],
+      timeZone: LEGACY_FAMILY_TIME_ZONE,
     });
   }, [
     activeChild?.id,
@@ -133,7 +150,7 @@ export function WeeklyFamilyReport() {
                 <img src={asset("ui/chart-3d.webp")} alt="" />
               </div>
               <div className="wr-hero__body">
-                <div className="wr-hero__eyebrow">{activeChild.name} · {rangeLabel(weekDateKeys)}</div>
+                <div className="wr-hero__eyebrow">{activeChild.name} · {rangeLabel(weekDateKeys, locale)}</div>
                 <h1>{allowed ? "이번 주 흐름을 정리했어요" : "이번 주 흐름을 한 번에 볼 수 있어요"}</h1>
                 <p>
                   {allowed
@@ -159,7 +176,9 @@ export function WeeklyFamilyReport() {
                   ) : queryState === "loading" ? (
                     <Loading label="이번 주 기록을 정리하는 중" />
                   ) : summary ? (
-                    <div className="wr-emptyline">{weeklyReportTeaser(summary, activeChild.name || "우리 아이")}</div>
+                    <div className="wr-emptyline">
+                      {weeklyReportTeaser(summary, activeChild.name || "우리 아이", locale)}
+                    </div>
                   ) : null}
                 </section>
                 <section className="hy-card wr-lock">
@@ -228,22 +247,22 @@ export function WeeklyFamilyReport() {
                   <div className="hy-card wr-metric">
                     <img className="wr-metric__ic" src={asset("ui/calendar-heart.webp")} alt="" />
                     <span>이번 주 일정</span>
-                    <b>{summary.eventCount}개</b>
+                    <b>{formatNumber(summary.eventCount, locale)}개</b>
                   </div>
                   <div className="hy-card wr-metric">
                     <img className="wr-metric__ic" src={asset("cat/study.webp")} alt="" />
                     <span>준비물 체크</span>
-                    <b>{summary.supplyDone}/{summary.supplyTotal}</b>
+                    <b>{formatNumber(summary.supplyDone, locale)}/{formatNumber(summary.supplyTotal, locale)}</b>
                   </div>
                   <div className="hy-card wr-metric">
                     <img className="wr-metric__ic" src={asset("ui/chat-heart.webp")} alt="" />
                     <span>대화 메시지</span>
-                    <b>{summary.memoCount}개</b>
+                    <b>{formatNumber(summary.memoCount, locale)}개</b>
                   </div>
                   <div className="hy-card wr-metric">
                     <img className="wr-metric__ic" src={asset("ui/bell.webp")} alt="" />
                     <span>안전 알림</span>
-                    <b>{summary.alertCount}개</b>
+                    <b>{formatNumber(summary.alertCount, locale)}개</b>
                   </div>
                 </section>
 
@@ -255,9 +274,9 @@ export function WeeklyFamilyReport() {
                   {summary.busiestDay ? (
                     <div className="wr-kv">
                       <span>날짜</span>
-                      <strong>{dateLabel(summary.busiestDay.dateKey)}</strong>
+                      <strong>{dateLabel(summary.busiestDay.dateKey, locale)}</strong>
                       <span>일정</span>
-                      <strong>{summary.busiestDay.eventCount}개</strong>
+                      <strong>{formatNumber(summary.busiestDay.eventCount, locale)}개</strong>
                     </div>
                   ) : (
                     <div className="wr-emptyline">이번 주 일정 기록이 아직 없어요.</div>

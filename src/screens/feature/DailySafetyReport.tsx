@@ -34,28 +34,44 @@ import { formatFreshness } from "@/transform/locationView";
 import { deriveDailyReportStatus, summarizeDailySupplies, type DailyReportAlertInput } from "@/transform/dailyReportView";
 import { isLocationVisible, TIERS } from "@/transform/tierPolicy";
 import { useMessage } from "@/i18n/useMessage";
+import type { SupportedLocale } from "@/i18n/locale";
+import { useLocale } from "@/i18n/useLocale";
+import { formatDateTime, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
 import "./DailySafetyReport.css";
 
-function formatShortTime(value: string | null | undefined): string {
+function formatShortTime(
+  value: string | null | undefined,
+  locale: SupportedLocale,
+): string {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  return formatDateTime(date, {
+    locale,
+    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    timeStyle: "short",
+  });
 }
 
-function formatClock(value: Date): string {
-  return `${String(value.getHours()).padStart(2, "0")}:${String(value.getMinutes()).padStart(2, "0")}`;
+function formatClock(value: Date, locale: SupportedLocale): string {
+  return formatDateTime(value, {
+    locale,
+    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    timeStyle: "short",
+  });
 }
 
 function isSameLocalDay(value: string | null | undefined, now: Date): boolean {
   if (!value) return false;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return false;
-  return (
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth() &&
-    date.getDate() === now.getDate()
-  );
+  const formatter = new Intl.DateTimeFormat("en-CA-u-ca-gregory-nu-latn", {
+    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  return formatter.format(date) === formatter.format(now);
 }
 
 function alertLabel(alert: DailyReportAlertInput): string {
@@ -92,6 +108,7 @@ export function DailySafetyReport() {
   const navigate = useNavigate();
   const { show } = useToast();
   const msg = useMessage();
+  const { locale } = useLocale();
   const { familyId } = useAuth();
   const { activeChild } = useActiveChild();
   const [now, setNow] = useState(() => new Date());
@@ -144,12 +161,13 @@ export function DailySafetyReport() {
     ? locationsQuery.data?.find((loc) => loc.user_id === activeChild.user_id) ?? null
     : null;
   const childLocation = canShowLocation ? cachedChildLocation : null;
-  const locationFreshness = childLocation ? formatFreshness(childLocation.updated_at, now) : null;
+  const locationFreshness = childLocation ? formatFreshness(childLocation.updated_at, now, locale) : null;
   const locationLocked = !locationScopePending && !isLocationVisible(entitlement.tier);
   const device = useMemo(
     () => deviceStatusView(
       activeChild?.device_health,
       now,
+      locale,
       childNotifSettingsQuery.data?.userId === activeChild?.user_id
         ? childNotifSettingsQuery.data?.childEnabled ?? null
         : null,
@@ -164,6 +182,7 @@ export function DailySafetyReport() {
       childNotifSettingsQuery.data,
       childNotifSettingsQuery.isError,
       childNotifSettingsQuery.isSuccess,
+      locale,
       now,
     ],
   );
@@ -174,10 +193,10 @@ export function DailySafetyReport() {
       (event) => event.date_key === todayKey,
     );
     const allowedIds = new Set(dayEvents.map((event) => event.id));
-    return (groupEventsByDateKey(eventsQuery.data ?? [], now, undefined, places)[todayKey] ?? []).filter((event) =>
+    return (groupEventsByDateKey(eventsQuery.data ?? [], now, locale, undefined, places)[todayKey] ?? []).filter((event) =>
       allowedIds.has(event.id),
     );
-  }, [activeChild, eventsQuery.data, now, places, todayKey]);
+  }, [activeChild, eventsQuery.data, locale, now, places, todayKey]);
   const nextEvent = todayEvents.find((event) => !PAST_TAGS.has(event.tag)) ?? null;
   const pastEventCount = todayEvents.filter((event) => PAST_TAGS.has(event.tag)).length;
 
@@ -204,7 +223,7 @@ export function DailySafetyReport() {
     () => childAlerts.filter((alert) => isSameLocalDay(alert.created_at, now)).slice(0, 3),
     [childAlerts, now],
   );
-  const reportTimeLabel = useMemo(() => formatClock(now), [now]);
+  const reportTimeLabel = useMemo(() => formatClock(now, locale), [locale, now]);
   const supplyPercent = supplySummary.total > 0 ? Math.round((supplySummary.done / supplySummary.total) * 100) : 0;
   const overviewCards = useMemo<ReportOverviewCard[]>(() => {
     const locationTone: ReportTone = locationScopeError
@@ -552,7 +571,7 @@ export function DailySafetyReport() {
                     <div key={`${alert.alert_type}-${alert.created_at}`} className={`dr-alert dr-tone--${alertTone(alert)}`}>
                       <BellRing size={16} strokeWidth={2.2} />
                       <span>{alertLabel(alert)}</span>
-                      <small>{formatShortTime(alert.created_at) || "시간 확인 중"}</small>
+                      <small>{formatShortTime(alert.created_at, locale) || "시간 확인 중"}</small>
                     </div>
                   ))}
                 </div>
@@ -869,7 +888,7 @@ export function DailySafetyReport() {
                       </span>
                       <span>{memo.user_role === "child" ? childName : "부모님"}</span>
                       <b>{memo.content}</b>
-                      <small>{formatShortTime(memo.created_at)}</small>
+                      <small>{formatShortTime(memo.created_at, locale)}</small>
                     </div>
                   ))}
                 </div>

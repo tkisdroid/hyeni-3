@@ -27,6 +27,8 @@ import {
   savePremiumReturnIntent,
 } from "@/transform/premiumReturnIntent";
 import { Loading } from "@/components/ui/Loading";
+import type { SupportedLocale } from "@/i18n/locale";
+import { useLocale } from "@/i18n/useLocale";
 import "./DaySummary.css";
 
 type RowTone = "info" | "safe" | "caution";
@@ -39,7 +41,7 @@ interface SummaryRow {
 }
 
 // 서버 신호(extractDaySummarySignals) → 요약 근거 행. 일정·체류·대화·안전을 종합한다.
-function buildRows(signals: DaySummarySignals | null): SummaryRow[] {
+function buildRows(signals: DaySummarySignals | null, locale: SupportedLocale): SummaryRow[] {
   if (!signals) return [];
   const rows: SummaryRow[] = [];
   (signals.events ?? []).slice(0, 4).forEach((e, i) => {
@@ -47,7 +49,7 @@ function buildRows(signals: DaySummarySignals | null): SummaryRow[] {
       key: `ev-${i}`,
       icon: CalendarDays,
       text: e.title,
-      sub: e.time ? formatTimeLabel(e.time) : undefined,
+      sub: e.time ? formatTimeLabel(e.time, locale) : undefined,
       tone: "info",
     });
   });
@@ -79,6 +81,7 @@ function isCautionDay(signals: DaySummarySignals | null): boolean {
 }
 
 export function DaySummary() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const location = useLocation();
   const { show } = useToast();
@@ -146,7 +149,7 @@ export function DaySummary() {
   const isEmpty = generated ? generated.empty : false;
   const hasSummary = !!summary && !premiumLocked && !isEmpty;
 
-  const rows = useMemo(() => buildRows(signals), [signals]);
+  const rows = useMemo(() => buildRows(signals, locale), [locale, signals]);
   const caution = isCautionDay(signals);
 
   const onGenerate = () => {

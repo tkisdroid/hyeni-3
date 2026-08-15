@@ -9,8 +9,8 @@ import {
 } from "../src/transform/weeklyReportView.ts";
 import { FEATURES, TIERS, canUse, lockMessageFor } from "../src/transform/tierPolicy.ts";
 
-test("주간 리포트는 최근 7일 date_key를 dateKey 유틸 규칙으로 만든다", () => {
-  assert.deepEqual(buildRecentWeekDateKeys(new Date("2026-07-07T12:00:00+09:00")), [
+test("주간 리포트는 최근 7일 date_key를 명시한 시간대와 dateKey 유틸 규칙으로 만든다", () => {
+  assert.deepEqual(buildRecentWeekDateKeys(new Date("2026-07-07T12:00:00+09:00"), "Asia/Seoul"), [
     "2026-6-1",
     "2026-6-2",
     "2026-6-3",
@@ -111,6 +111,7 @@ test("주간 리포트는 활성 아이 데이터와 가족 공유 일정만 집
       },
     ],
     childUserId: "child-user-1",
+    timeZone: "Asia/Seoul",
   });
 
   assert.equal(summary.eventCount, 2);
@@ -131,7 +132,7 @@ test("무료 한 줄 요약은 실제 집계값만 사용하고 빈 기록도 �
       alertCount: 0,
       busiestDay: null,
       hasEnoughData: true,
-    }, "혜니"),
+    }, "혜니", "ko"),
     "혜니의 이번 주에는 일정 3개가 있었고 준비물 1/2개를 챙겼어요.",
   );
   assert.equal(
@@ -143,7 +144,7 @@ test("무료 한 줄 요약은 실제 집계값만 사용하고 빈 기록도 �
       alertCount: 0,
       busiestDay: null,
       hasEnoughData: false,
-    }, "혜니"),
+    }, "혜니", "ko"),
     "혜니의 이번 주 기록이 아직 없어요.",
   );
 });

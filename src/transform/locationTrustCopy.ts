@@ -1,5 +1,6 @@
 import { formatFreshness } from "./locationView.ts";
 import type { LocationMode } from "./tierPolicy";
+import type { SupportedLocale } from "../i18n/locale.ts";
 
 export interface LocationTrustCopy {
   badge: string;
@@ -15,6 +16,7 @@ export function resolveLocationTrustCopy(input: {
   updatedAt: string | null | undefined;
   loadState?: LocationTrustLoadState;
   now?: Date;
+  locale: SupportedLocale;
 }): LocationTrustCopy {
   // 무료 잠금은 좌표 캐시·조회 상태보다 먼저 적용한다. 이전 프리미엄 좌표가
   // 캐시에 남아도 잠금 사용자의 현재 위치처럼 노출하지 않는다.
@@ -32,7 +34,7 @@ export function resolveLocationTrustCopy(input: {
     if (!input.updatedAt) {
       return { badge: "위치 조회 범위 확인 중", detail: "구독 상태를 확인하고 있어요" };
     }
-    const fresh = formatFreshness(input.updatedAt, input.now ?? new Date());
+    const fresh = formatFreshness(input.updatedAt, input.now ?? new Date(), input.locale);
     return { badge: "마지막 확인 위치", detail: `${fresh.label} 갱신` };
   }
 
@@ -46,7 +48,7 @@ export function resolveLocationTrustCopy(input: {
     return { badge: "위치 신호 대기", detail: "아이 기기의 새 위치 신호를 기다리고 있어요" };
   }
 
-  const fresh = formatFreshness(input.updatedAt, input.now ?? new Date());
+  const fresh = formatFreshness(input.updatedAt, input.now ?? new Date(), input.locale);
   if (input.mode === "standard") {
     return {
       badge: "최근 위치",

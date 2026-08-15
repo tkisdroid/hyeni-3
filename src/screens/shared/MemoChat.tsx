@@ -39,6 +39,8 @@ import {
 } from "@/queries/useContentSafety";
 import type { MemoContentReportReason } from "@/lib/api/endpoints/contentSafety";
 import { Loading } from "@/components/ui/Loading";
+import { useLocale } from "@/i18n/useLocale";
+import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
 import "@/styles/jua.css";
 import "./MemoChat.css";
 
@@ -224,6 +226,7 @@ function MemoImageBubble({
 
 
 export function MemoChat() {
+  const { locale } = useLocale();
   const goBack = useSafeBack();
   const { show } = useToast();
   const { userId, role, familyId } = useAuth();
@@ -310,8 +313,9 @@ export function MemoChat() {
   const replies = useMemo(() => thread.data ?? [], [thread.data]);
   // 빈 content(빈 문자열/공백뿐)는 빈 흰 말풍선이 되므로 스레드에서 제외한다.
   const messages = useMemo(
-    () => mapRepliesToThread(replies, userId).filter((m) => m.text.trim().length > 0),
-    [replies, userId],
+    () => mapRepliesToThread(replies, userId, locale, LEGACY_FAMILY_TIME_ZONE)
+      .filter((m) => m.text.trim().length > 0),
+    [locale, replies, userId],
   );
 
   // 내가 보낸 메시지 중 나 외 가족 구성원이 하나라도 읽은 것 → "읽음" 표기.
@@ -715,7 +719,7 @@ export function MemoChat() {
             <Fragment key={m.id}>
               {newDay && (
                 <div className="mc-daysep">
-                  <span>{formatMemoDayLabel(m.dayStamp)}</span>
+                  <span>{formatMemoDayLabel(m.dayStamp, new Date(), locale, LEGACY_FAMILY_TIME_ZONE)}</span>
                 </div>
               )}
               <div className={`mc-msg ${m.mine ? "mc-msg--mine" : "mc-msg--peer"}`}>

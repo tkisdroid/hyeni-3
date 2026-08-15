@@ -8,6 +8,8 @@ import type { SavedPlace } from "@/lib/api/endpoints/location";
 import { resolveEventPlaceLabel } from "./eventPlaceLabel";
 import { resolveEventVisualAsset } from "./placeVisual.ts";
 import { parseAppDateKey } from "./dateKey";
+import type { SupportedLocale } from "../i18n/locale.ts";
+import { formatDateTime } from "../i18n/format.ts";
 
 interface CategoryStyle {
   color: string;
@@ -31,12 +33,21 @@ function styleFor(category: string): CategoryStyle {
 }
 
 /** "17:30" → "오후 5:30". 빈 값이면 "하루 종일". */
-export function formatTimeLabel(time: string | null | undefined): string {
+export function formatTimeLabel(
+  time: string | null | undefined,
+  locale: SupportedLocale,
+): string {
   if (!time || !/^\d{1,2}:\d{2}$/.test(time)) return "하루 종일";
   const [h, m] = time.split(":").map(Number);
-  const ampm = h < 12 ? "오전" : "오후";
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${ampm} ${h12}:${String(m).padStart(2, "0")}`;
+  if (!Number.isInteger(h) || !Number.isInteger(m) || h < 0 || h > 23 || m < 0 || m > 59) {
+    return "하루 종일";
+  }
+  // 일정 time은 절대시각이 아닌 wall-clock 값이므로 UTC 합성 시각으로 표시만 지역화한다.
+  return formatDateTime(Date.UTC(2026, 0, 1, h, m), {
+    locale,
+    timeZone: "UTC",
+    timeStyle: "short",
+  });
 }
 
 function timeToMinutes(time: string | null | undefined): number | null {
@@ -116,6 +127,7 @@ export interface CalEventView {
 export function eventToView(
   event: CalendarEvent,
   now: Date,
+  locale: SupportedLocale,
   visitMap?: VisitMap,
   places?: readonly SavedPlace[],
 ): CalEventView {
@@ -127,7 +139,7 @@ export function eventToView(
     soft: style.soft,
     emoji: event.emoji || style.emoji,
     icon: resolveEventVisualAsset(event.title, event.category),
-    time: formatTimeLabel(event.time),
+    time: formatTimeLabel(event.time, locale),
     title: event.title || "일정",
     place: resolveEventPlaceLabel(event.location, places),
     tag: tag.tag,
@@ -140,6 +152,7 @@ export function eventToView(
 export function groupEventsByDateKey(
   events: CalendarEvent[],
   now: Date,
+  locale: SupportedLocale,
   visitMap?: VisitMap,
   places?: readonly SavedPlace[],
 ): Record<string, CalEventView[]> {
@@ -153,7 +166,7 @@ export function groupEventsByDateKey(
     out[key] = list
       .slice()
       .sort((a, b) => (timeToMinutes(a.time) ?? 1e9) - (timeToMinutes(b.time) ?? 1e9))
-      .map((ev) => eventToView(ev, now, visitMap, places));
+      .map((ev) => eventToView(ev, now, locale, visitMap, places));
   }
   return out;
 }

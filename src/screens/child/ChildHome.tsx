@@ -16,6 +16,7 @@ import { placePhoneCall } from "@/lib/native/phone";
 import type { DailySupply, CalendarEvent } from "@/lib/api/endpoints/schedule";
 import type { RoutePoint } from "@/lib/api/endpoints/route";
 import { groupEventsByDateKey, PAST_TAGS } from "@/transform/scheduleView";
+import { useLocale } from "@/i18n/useLocale";
 import { todayDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { QUICK_STATUS_ACTIONS, buildQuickStatusMemo, type QuickStatusActionId } from "@/transform/quickStatusShare";
@@ -64,6 +65,7 @@ const CELEBRATE_ICON: Record<string, string> = {
 const MAP_PATH = "M 292 78 C 250 128 152 112 126 172 C 100 236 224 244 252 306 C 278 364 168 372 128 428";
 
 export function ChildHome() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const { show } = useToast();
   const { accent, setAccent } = useAccent();
@@ -103,8 +105,8 @@ export function ChildHome() {
   // ── 오늘 일정 ────────────────────────────────────────────────────────
   const myEvents = useMemo(() => filterEventsForChild(events ?? [], myMember?.id), [events, myMember?.id]);
   const todayViews = useMemo(
-    () => groupEventsByDateKey(myEvents, now, undefined, places)[todayKey] ?? [],
-    [myEvents, now, todayKey, places],
+    () => groupEventsByDateKey(myEvents, now, locale, undefined, places)[todayKey] ?? [],
+    [locale, myEvents, now, todayKey, places],
   );
   const rawById = useMemo(() => {
     const map = new Map<string, CalendarEvent>();

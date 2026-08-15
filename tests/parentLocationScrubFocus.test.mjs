@@ -53,7 +53,7 @@ test("고른 시각에 아이가 어디였는지 화면과 접근성 이름에 �
   assert.match(screen, /const scrubWhere = resolveScrubWhereLabel\(\{/);
   assert.match(screen, /lastPointMs: scrubChildPoint\?\.ms \?\? null/);
   assert.match(screen, /className="pl-scrub__where"/);
-  assert.match(screen, /aria-valuetext=\{`\$\{formatClockHM\(scrubMs\)\} · \$\{scrubWhere\}`\}/);
+  assert.match(screen, /aria-valuetext=\{`\$\{formatClockHM\(scrubMs, locale, LEGACY_FAMILY_TIME_ZONE\)\} · \$\{scrubWhere\}`\}/);
 });
 
 test("KakaoMap 은 명시적 center 를 bounds 로 덮지 않고 자녀 마커를 실제 좌표에 그린다", () => {

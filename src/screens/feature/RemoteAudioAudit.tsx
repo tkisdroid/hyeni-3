@@ -2,6 +2,12 @@ import { AlertTriangle, ChevronLeft, FileClock, RefreshCw, ShieldCheck } from "l
 import { useNavigate } from "react-router";
 import { useRemoteListenAudit } from "@/queries/useRemoteAudit";
 import type { RemoteListenAuditRecord } from "@/lib/api/endpoints/remoteAudit";
+import type { SupportedLocale } from "@/i18n/locale";
+import { useLocale } from "@/i18n/useLocale";
+import {
+  formatDateTime,
+  LEGACY_FAMILY_TIME_ZONE,
+} from "@/i18n/format";
 import "./RemoteAudioAudit.css";
 
 function parseServerDate(value: string): Date | null {
@@ -10,15 +16,15 @@ function parseServerDate(value: string): Date | null {
   return Number.isFinite(date.getTime()) ? date : null;
 }
 
-function formatDateTime(value: string): string {
+function auditDateTime(value: string, locale: SupportedLocale): string {
   const date = parseServerDate(value);
   if (!date) return "시각 확인 불가";
-  return new Intl.DateTimeFormat("ko-KR", {
-    month: "numeric",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
+  return formatDateTime(date, {
+    locale,
+    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    dateStyle: "short",
+    timeStyle: "short",
+  });
 }
 
 function statusFor(item: RemoteListenAuditRecord): { label: string; tone: "safe" | "warning" | "info" } {
@@ -51,6 +57,7 @@ function reasonLabel(reason: string | null): string | null {
 }
 
 export function RemoteAudioAudit() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const audit = useRemoteListenAudit();
   const items = audit.data ?? [];
@@ -121,7 +128,7 @@ export function RemoteAudioAudit() {
                   <article key={item.id} className="raa-item">
                     <div className="raa-item__main">
                       <b>{item.childName} 주변 소리</b>
-                      <span>{item.initiatorName} 요청 · {formatDateTime(item.startedAt)}</span>
+                      <span>{item.initiatorName} 요청 · {auditDateTime(item.startedAt, locale)}</span>
                     </div>
                     <div className="raa-item__status">
                       <span className="raa-status" data-tone={status.tone}>{status.label}</span>

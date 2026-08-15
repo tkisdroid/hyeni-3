@@ -41,6 +41,7 @@ import {
   browserPremiumReturnIntentStorage,
   savePremiumReturnIntent,
 } from "@/transform/premiumReturnIntent";
+import { useLocale } from "@/i18n/useLocale";
 import "./ParentHome.css";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
@@ -127,6 +128,7 @@ const shortcutRoutes: Record<string, string> = {
 export function ParentHome() {
   const navigate = useNavigate();
   const { show } = useToast();
+  const { locale } = useLocale();
 
   // ── 실 데이터: 오늘 일정 + 아이 현황(가족·위치) ──
   const [now, setNow] = useState(() => new Date());
@@ -252,6 +254,7 @@ export function ParentHome() {
         ? "error"
         : "ready",
     now,
+    locale,
   });
   const heroLocationIsCurrent = heroLocationCopy.badge === "현재 위치";
 
@@ -312,7 +315,7 @@ export function ParentHome() {
   // 오늘 일정 — 활성 아이 배정(events_children.child_id) + 가족 공유(is_family_event)만.
   // 형제에게만 배정된 일정은 활성 아이 화면에서 제외(아이별 구분 — TK 결정).
   const todayEvents = useMemo(() => {
-    const byKey = groupEventsByDateKey(events ?? [], now, visitMap, places);
+    const byKey = groupEventsByDateKey(events ?? [], now, locale, visitMap, places);
     const all = byKey[todayDateKey(now)] ?? [];
     if (!activeChild) return [];
     const allowedIds = new Set(
@@ -322,7 +325,7 @@ export function ParentHome() {
       ).map((e) => e.id),
     );
     return all.filter((v) => allowedIds.has(v.id));
-  }, [events, now, todayKey, activeChild, visitMap, places]);
+  }, [events, locale, now, todayKey, activeChild, visitMap, places]);
 
   const childName = activeChild?.name || "아이"; // 히어로·상단 스티커 대상 = 활성 아이
 
@@ -333,7 +336,7 @@ export function ParentHome() {
     const kids = (family?.members ?? []).filter((m) => m.role === "child");
     const rawToday = (events ?? []).filter((e) => e.date_key === todayKey);
     // 카드별 다음 일정은 활성 아이 필터와 무관하게 "그 카드 아이" 기준으로 계산.
-    const allViews = groupEventsByDateKey(events ?? [], now, undefined, places)[todayKey] ?? [];
+    const allViews = groupEventsByDateKey(events ?? [], now, locale, undefined, places)[todayKey] ?? [];
     return kids.map((kid) => {
       const kidLoc = kid.user_id
         ? (locationsForDisplay ?? []).find((l) => l.user_id === kid.user_id) ?? null
@@ -352,6 +355,7 @@ export function ParentHome() {
             ? "error"
             : "ready",
         now,
+        locale,
       });
       const kidRaw = filterEventsForChild(rawToday, kid.id);
       const rawById = new Map(kidRaw.map((e) => [e.id, e]));
@@ -384,6 +388,7 @@ export function ParentHome() {
   }, [
     family,
     events,
+    locale,
     todayKey,
     locationsForDisplay,
     places,
@@ -403,6 +408,7 @@ export function ParentHome() {
     () => deviceStatusView(
       activeChild?.device_health,
       now,
+      locale,
       childNotifSettingsQuery.data?.userId === activeChild?.user_id
         ? childNotifSettingsQuery.data?.childEnabled ?? null
         : null,
@@ -417,6 +423,7 @@ export function ParentHome() {
       childNotifSettingsQuery.data,
       childNotifSettingsQuery.isError,
       childNotifSettingsQuery.isSuccess,
+      locale,
       now,
     ],
   );

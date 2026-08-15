@@ -16,6 +16,7 @@ import { ymdToDateKey } from "@/transform/dateKey";
 import { locationModeFor } from "@/transform/tierPolicy";
 import { eventChildMemberIds, eventScopeLabel } from "@/transform/eventScope";
 import { notifOverrideToReminderMinutes, type CalendarEvent } from "@/lib/api/endpoints/schedule";
+import { useLocale } from "@/i18n/useLocale";
 
 /** 사전알림(분) → 사람이 읽는 라벨. */
 function reminderLabel(minutes: number): string {
@@ -55,6 +56,7 @@ const buildCells = (year: number, month: number): (number | null)[] => {
 };
 
 export function ParentCalendar() {
+  const { locale } = useLocale();
   const { show } = useToast();
   const navigate = useNavigate();
   const now = useMemo(() => new Date(), []);
@@ -84,8 +86,8 @@ export function ParentCalendar() {
   const canVerifyVisits = !entitlement.isError && locationModeFor(entitlement.tier) === "realtime";
   const visitMap = useVisitVerify(selectedKey, events, childUserByMemberId, canVerifyVisits);
   const byKey = useMemo(
-    () => groupEventsByDateKey(events ?? [], now, visitMap, savedPlaces),
-    [events, now, visitMap, savedPlaces],
+    () => groupEventsByDateKey(events ?? [], now, locale, visitMap, savedPlaces),
+    [events, locale, now, visitMap, savedPlaces],
   );
   const rawById = useMemo(() => {
     const map = new Map<string, CalendarEvent>();
@@ -145,12 +147,12 @@ export function ParentCalendar() {
     dragStart.current = null;
   };
 
-  const sheetView = sheetEvent ? eventToView(sheetEvent, now, visitMap, savedPlaces) : null;
+  const sheetView = sheetEvent ? eventToView(sheetEvent, now, locale, visitMap, savedPlaces) : null;
   const sheetTimeLabel = useMemo(() => {
     if (!sheetEvent) return "";
-    const start = formatTimeLabel(sheetEvent.time);
-    return sheetEvent.end_time ? `${start} – ${formatTimeLabel(sheetEvent.end_time)}` : start;
-  }, [sheetEvent]);
+    const start = formatTimeLabel(sheetEvent.time, locale);
+    return sheetEvent.end_time ? `${start} – ${formatTimeLabel(sheetEvent.end_time, locale)}` : start;
+  }, [locale, sheetEvent]);
   const sheetChildLabel = useMemo(() => {
     if (!sheetEvent) return "";
     const names = eventChildMemberIds(sheetEvent)

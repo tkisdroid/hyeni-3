@@ -11,6 +11,7 @@ import { useLocationLabels } from "@/queries/useLocationLabels";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { requestLocationRefresh } from "@/lib/api/endpoints/remote";
 import { formatFreshness } from "@/transform/locationView";
+import { useLocale } from "@/i18n/useLocale";
 import { waitForNewChildLocation } from "@/transform/locationRefreshWait";
 import { locationModeFor, TIERS } from "@/transform/tierPolicy";
 import "./LocationStatus.css";
@@ -27,6 +28,7 @@ interface StatusView {
 
 /** P-15 위치 갱신 상태. 조회 범위·잠금·갱신중·성공·실패·권한 상태 + 마지막 known 위치 유지. */
 export function LocationStatus() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const route = useRouterLocation();
   const [searchParams] = useSearchParams();
@@ -72,7 +74,7 @@ export function LocationStatus() {
     : null;
   const loc = canShowLocation ? cachedLoc : null;
 
-  const fresh = loc ? formatFreshness(loc.updated_at, now) : null;
+  const fresh = loc ? formatFreshness(loc.updated_at, now, locale) : null;
   const accuracyM = loc?.accuracy_m != null && Number.isFinite(Number(loc.accuracy_m))
     ? Math.max(0, Math.round(Number(loc.accuracy_m)))
     : null;

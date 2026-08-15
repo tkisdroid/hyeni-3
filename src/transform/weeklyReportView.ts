@@ -1,8 +1,14 @@
-import { dateToDateKey, parseAppDateKey } from "./dateKey.ts";
+import {
+  addDaysToDateKey,
+  dateInputValueToDateKey,
+  parseAppDateKey,
+} from "./dateKey.ts";
 import { filterEventsForChild } from "./eventScope.ts";
 import type { CalendarEvent, DailySupply } from "../lib/api/endpoints/schedule.ts";
 import type { MemoReply } from "../lib/api/endpoints/memo.ts";
 import type { ParentAlert } from "../lib/api/endpoints/notifications.ts";
+import type { SupportedLocale } from "../i18n/locale.ts";
+import { formatNumber } from "../i18n/format.ts";
 
 export interface WeeklyReportInput {
   childMemberId: string | null | undefined;
@@ -12,6 +18,7 @@ export interface WeeklyReportInput {
   supplies: readonly DailySupply[];
   memos: readonly MemoReply[];
   alerts: readonly ParentAlert[];
+  timeZone: string;
 }
 
 export interface WeeklyBusiestDay {
@@ -48,35 +55,49 @@ export function resolveWeeklyReportReturnChildId(
   return matched?.id ?? null;
 }
 
-export function weeklyReportTeaser(summary: WeeklyReportSummary, childName: string): string {
+export function weeklyReportTeaser(
+  summary: WeeklyReportSummary,
+  childName: string,
+  locale: SupportedLocale,
+): string {
   const name = childName.trim() || "우리 아이";
   if (!summary.hasEnoughData) return `${name}의 이번 주 기록이 아직 없어요.`;
   if (summary.alertCount > 0) {
-    return `${name}의 이번 주에는 일정 ${summary.eventCount}개와 안전 알림 ${summary.alertCount}건이 기록됐어요.`;
+    return `${name}의 이번 주에는 일정 ${formatNumber(summary.eventCount, locale)}개와 안전 알림 ${formatNumber(summary.alertCount, locale)}건이 기록됐어요.`;
   }
   if (summary.supplyTotal > 0) {
-    return `${name}의 이번 주에는 일정 ${summary.eventCount}개가 있었고 준비물 ${summary.supplyDone}/${summary.supplyTotal}개를 챙겼어요.`;
+    return `${name}의 이번 주에는 일정 ${formatNumber(summary.eventCount, locale)}개가 있었고 준비물 ${formatNumber(summary.supplyDone, locale)}/${formatNumber(summary.supplyTotal, locale)}개를 챙겼어요.`;
   }
-  if (summary.eventCount > 0) return `${name}의 이번 주에는 일정 ${summary.eventCount}개가 있었어요.`;
-  return `${name}의 이번 주에는 가족 메시지 ${summary.memoCount}개가 오갔어요.`;
+  if (summary.eventCount > 0) return `${name}의 이번 주에는 일정 ${formatNumber(summary.eventCount, locale)}개가 있었어요.`;
+  return `${name}의 이번 주에는 가족 메시지 ${formatNumber(summary.memoCount, locale)}개가 오갔어요.`;
 }
 
-export function buildRecentWeekDateKeys(now: Date = new Date()): string[] {
-  return Array.from({ length: 7 }, (_, index) => {
-    const offset = index - 6;
-    return dateToDateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset));
-  });
+function dateStampInTimeZone(value: Date, timeZone: string): string {
+  const parts = new Intl.DateTimeFormat("en-CA-u-ca-gregory-nu-latn", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(value);
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
+export function buildRecentWeekDateKeys(now: Date, timeZone: string): string[] {
+  const todayKey = dateInputValueToDateKey(dateStampInTimeZone(now, timeZone));
+  if (!todayKey) return [];
+  return Array.from({ length: 7 }, (_, index) => addDaysToDateKey(todayKey, index - 6));
 }
 
 function dateKeySet(keys: readonly string[]): ReadonlySet<string> {
   return new Set(keys.filter((key) => !!parseAppDateKey(key)));
 }
 
-function dateKeyFromTimestamp(value: string | null | undefined): string | null {
+function dateKeyFromTimestamp(value: string | null | undefined, timeZone: string): string | null {
   if (!value) return null;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
-  return dateToDateKey(date);
+  return dateInputValueToDateKey(dateStampInTimeZone(date, timeZone));
 }
 
 export function summarizeWeeklyReport(input: WeeklyReportInput): WeeklyReportSummary {
@@ -102,7 +123,7 @@ export function summarizeWeeklyReport(input: WeeklyReportInput): WeeklyReportSum
   const childMemos = input.memos.filter((memo) => memo.child_id === input.childMemberId);
   const childAlerts = input.alerts.filter((alert) => {
     if (input.childUserId && alert.child_user_id && alert.child_user_id !== input.childUserId) return false;
-    const key = dateKeyFromTimestamp(alert.created_at);
+    const key = dateKeyFromTimestamp(alert.created_at, input.timeZone);
     return key ? keys.has(key) : false;
   });
 
