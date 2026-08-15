@@ -3,5 +3,9 @@
   "core.action.back": "Quay lại",
   "core.action.retry": "Thử lại",
   "core.state.loading": "Đang tải…",
-  "core.error.unknown": "Đã xảy ra sự cố. Vui lòng thử lại sau."
+  "core.error.unknown": "Đã xảy ra sự cố. Vui lòng thử lại sau.",
+  "core.language.formal.label": "Chọn ngôn ngữ",
+  "core.language.formal.description": "Vui lòng chọn ngôn ngữ sẽ dùng trên thiết bị này.",
+  "core.language.child.label": "Chọn ngôn ngữ",
+  "core.language.child.description": "Chọn ngôn ngữ em muốn dùng trên thiết bị này nhé."
 }

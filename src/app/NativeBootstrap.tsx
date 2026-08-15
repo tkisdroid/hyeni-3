@@ -44,6 +44,8 @@ import { syncNativeNotificationQuietHours } from "@/lib/native/notificationQuiet
 import { getApiSessionInstanceId, getApiUser } from "@/lib/api/session";
 import { DEFAULT_NOTIFICATION_QUIET_HOURS } from "@/transform/notificationQuietHours";
 import { parseServerTimestamp } from "@/transform/locationView";
+import { useLocale } from "@/i18n/useLocale";
+import type { SupportedLocale } from "@/i18n/locale";
 
 // 아이 기기 상태 리포트 주기(ms). 부모 '안전 지표'가 이 주기로 갱신된다.
 const DEVICE_REPORT_INTERVAL_MS = 120_000;
@@ -56,9 +58,29 @@ interface NativeNotificationPlugin {
   showPending(input: ParentPendingPresentation): Promise<ParentPendingDisplayResult>;
 }
 
+interface AppLocalePlugin {
+  setLocale(input: { locale: SupportedLocale }): Promise<{ locale: SupportedLocale }>;
+}
+
+export async function syncNativeAppLocale(locale: SupportedLocale): Promise<void> {
+  if (!isNativePlatform()) return;
+  const plugin = getNativePlugin<AppLocalePlugin>("AppLocale");
+  if (!plugin) return;
+  await plugin.setLocale({ locale });
+}
+
 export function NativeBootstrap() {
   const { status, userId, familyId, role, syncFromSession } = useAuth();
   const queryClient = useQueryClient();
+  const { locale } = useLocale();
+
+  // locale runtime의 웹 전환이 끝난 뒤 Android 앱별 locale에도 알린다.
+  // 플러그인이 아직 없거나 실패해도 웹 locale과 세션은 그대로 유지한다.
+  useEffect(() => {
+    void syncNativeAppLocale(locale).catch(() => {
+      console.warn("native_locale_sync_failed");
+    });
+  }, [locale]);
 
   // PWA service worker는 localStorage를 읽을 수 없으므로 현재 세션의 최소 대상 정보만
   // 별도 저장한다. 구독 권한 요청은 설정 화면의 사용자 버튼에서만 수행한다.

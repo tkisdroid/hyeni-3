@@ -21,6 +21,7 @@ import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { ReferralRewardPanel } from "@/components/ReferralRewardPanel";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import { APP_VERSION } from "@/config/version";
 import { useAuth } from "@/auth/AuthContext";
 import { useEntitlement } from "@/queries/useEntitlement";
@@ -263,6 +264,7 @@ export function ParentSettings() {
         {/* 설정 (신규 화면 배선) */}
         <div className="ps-group">
           <div className="ps-group__label">설정</div>
+          <LanguageSelector tone="formal" />
           <div className="ps-list">
             {settingsRows.map((r) => (
               <button

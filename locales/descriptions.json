@@ -33,5 +33,33 @@
     "qualityTier": "B",
     "variables": {},
     "description": "콘텐츠를 불러오는 동안 표시하는 공용 상태 안내"
+  },
+  "core.language.formal.label": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "온보딩과 부모 설정의 언어 선택기 접근성 이름"
+  },
+  "core.language.formal.description": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "기기별 언어 저장 범위를 존댓말로 설명하는 안내"
+  },
+  "core.language.child.label": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 설정의 언어 선택기 접근성 이름"
+  },
+  "core.language.child.description": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "기기별 언어 저장 범위를 반말로 설명하는 안내"
   }
 }

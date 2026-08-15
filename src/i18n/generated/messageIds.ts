@@ -17,6 +17,10 @@ export const messageIds = [
   "core.action.retry",
   "core.brand.name",
   "core.error.unknown",
+  "core.language.child.description",
+  "core.language.child.label",
+  "core.language.formal.description",
+  "core.language.formal.label",
   "core.state.loading"
 ] as const;
 

@@ -57,6 +57,7 @@ import {
   requestForegroundLocationPermission,
 } from "@/lib/native/permissions";
 import { QrScanner } from "@/components/QrScanner";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import { BusyLabel } from "@/components/ui/BusyLabel";
 import {
   PRIVACY_POLICY_URL,
@@ -621,6 +622,7 @@ function RoleStep({
       </div>
 
       <div className="ob-role-list">
+        <LanguageSelector tone="formal" />
         <button
           type="button"
           className="ob-role-card ob-role-card--parent hy-press"

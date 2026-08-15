@@ -3,5 +3,9 @@
   "core.action.back": "戻る",
   "core.action.retry": "もう一度試す",
   "core.state.loading": "読み込み中…",
-  "core.error.unknown": "問題が発生しました。しばらくしてからもう一度お試しください。"
+  "core.error.unknown": "問題が発生しました。しばらくしてからもう一度お試しください。",
+  "core.language.formal.label": "言語を選択",
+  "core.language.formal.description": "この端末で使用する言語を選択してください。",
+  "core.language.child.label": "言語をえらぶ",
+  "core.language.child.description": "この端末で使う言語をえらんでね。"
 }

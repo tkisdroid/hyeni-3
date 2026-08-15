@@ -30,6 +30,7 @@ import {
 } from "@/lib/native/location";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import { notificationQuietHoursRange } from "@/transform/notificationQuietHours";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./ChildSettings.css";
@@ -282,6 +283,11 @@ export function ChildSettings() {
             </span>
           </div>
         </div>
+
+        <section className="ks-sec">
+          <div className="ks-label">내 설정</div>
+          <LanguageSelector tone="child" />
+        </section>
 
         {/* 부모가 정한 항목(읽기 전용) */}
         <section className="ks-sec">

@@ -3,5 +3,9 @@
   "core.action.back": "Back",
   "core.action.retry": "Try again",
   "core.state.loading": "Loading…",
-  "core.error.unknown": "Something went wrong. Please try again shortly."
+  "core.error.unknown": "Something went wrong. Please try again shortly.",
+  "core.language.formal.label": "Language",
+  "core.language.formal.description": "Choose the language to use on this device.",
+  "core.language.child.label": "Pick a language",
+  "core.language.child.description": "Pick the language you want to use on this device."
 }
