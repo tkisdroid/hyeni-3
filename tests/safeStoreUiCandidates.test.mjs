@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFile, readdir, stat } from "node:fs/promises";
 import { dirname, extname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,6 +16,10 @@ import {
 import { hashDirectory, hashFile } from "../scripts/release-evidence.mjs";
 
 const ROOT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+function hashManifestWithLf(text) {
+  return createHash("sha256").update(text.replace(/\r\n?/g, "\n"), "utf8").digest("hex");
+}
 
 test("실제 UI 후보 생성기는 production dist·정적 데모 세션만 사용하고 외부 요청을 통과시키지 않는다", async () => {
   const source = await readFile(resolve(ROOT_DIR, "scripts/create-safe-store-ui-candidates.mjs"), "utf8");
@@ -193,7 +198,8 @@ test("실제 UI 후보 PNG 6장은 1080×1920 불투명 RGB이며 개인정보 �
 
 test("실제 UI 후보 manifest는 자동 업로드가 아닌 정책·육안 검토 대기 상태다", async () => {
   const manifestPath = resolve(SAFE_STORE_UI_CANDIDATE_DIR, "manifest.json");
-  const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  const manifestText = await readFile(manifestPath, "utf8");
+  const manifest = JSON.parse(manifestText);
   assert.equal(manifest.source, "local-production-dist-with-static-demo-session");
   assert.equal(typeof manifest.sourceDist?.fileCount, "number");
   assert.ok(manifest.sourceDist.fileCount > 0);
@@ -220,7 +226,7 @@ test("실제 UI 후보 manifest는 자동 업로드가 아닌 정책·육안 검
   assert.equal(review.playUploadApproved, false);
   assert.equal(review.humanPolicyApprovalRequired, true);
   assert.equal(review.sourceManifest.path, "manifest.json");
-  assert.match(review.sourceManifest.sha256, /^[a-f0-9]{64}$/);
+  assert.equal(review.sourceManifest.sha256, hashManifestWithLf(manifestText));
   assert.deepEqual(review.sourceDist, manifest.sourceDist);
   assert.deepEqual(review.artifacts, manifest.artifacts);
   assert.ok(Object.values(review.checks).every((value) => value === true));
