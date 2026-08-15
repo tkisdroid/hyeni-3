@@ -41,8 +41,13 @@ test("네이버 인가 URL도 클라이언트가 조립하지 않고 서버 응�
 
 test("온보딩 네이버 버튼은 키가 있을 때만 렌더된다", () => {
   const src = readFileSync(new URL("../src/screens/onboarding/Onboarding.tsx", import.meta.url), "utf8");
+  const koCatalog = JSON.parse(readFileSync(
+    new URL("../locales/ko/onboarding.json", import.meta.url),
+    "utf8",
+  ));
   assert.match(src, /\{hasNaverClientId && \([\s\S]{0,200}social\("naver"\)/);
-  assert.match(src, /네이버로 계속하기/);
+  assert.match(src, /id: "onboarding\.login\.naver"/);
+  assert.equal(koCatalog["onboarding.login.naver"], "네이버로 계속하기");
 });
 
 test("딥링크 파서는 단일 출처 판별을 쓴다(하드코딩 목록 금지)", () => {

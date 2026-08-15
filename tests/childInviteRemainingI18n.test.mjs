@@ -23,12 +23,12 @@ test("10개 locale의 남은 시간 메시지는 같은 duration 변수와 자�
     ko: "1 day 남음",
     en: "1 day remaining",
     ja: "残り1 day",
-    "zh-CN": "剩余1 day",
-    "zh-TW": "剩餘1 day",
-    vi: "Còn 1 day",
-    th: "เหลืออีก 1 day",
-    id: "Tersisa 1 day",
-    ms: "Baki 1 day",
+    "zh-CN": "剩余 1 day",
+    "zh-TW": "剩餘 1 day",
+    vi: "1 day còn lại",
+    th: "1 day เหลืออยู่",
+    id: "1 day tersisa",
+    ms: "1 day yang tinggal",
     fil: "1 day ang natitira",
   };
 

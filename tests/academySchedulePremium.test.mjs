@@ -20,7 +20,8 @@ test("학원 시간표 전용 모드는 Premium만 열고 일반 일정 추가 �
   assert.match(source, /feature:\s*academyMode\s*\?\s*"academy_schedule"\s*:\s*undefined/);
   assert.match(api, /feature\?:\s*"academy_schedule"/);
   assert.match(api, /\.\.\.\(input\.feature\s*\?\s*\{\s*feature:\s*input\.feature\s*\}\s*:\s*\{\}\)/s);
-  assert.match(source, /e\.message === "premium_required"[\s\S]+entitlement\.refetch\(\)[\s\S]+setAcademyUpsellOpen\(true\)/);
+  assert.match(source, /academyMode && e instanceof ApiError && e\.code === "premium_required"[\s\S]+entitlement\.refetch\(\)[\s\S]+setAcademyUpsellOpen\(true\)/);
+  assert.doesNotMatch(source, /e\.message === "premium_required"/);
   assert.match(source, /source="academy_schedule"/);
   assert.match(source, /navigate\("\/ai-schedule\?tab=text", \{ replace: true \}\)/);
   assert.match(source, /savePremiumReturnIntent/);

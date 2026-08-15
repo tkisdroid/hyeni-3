@@ -3,17 +3,28 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const source = await readFile(new URL("../src/screens/onboarding/Onboarding.tsx", import.meta.url), "utf8");
+const koOnboarding = JSON.parse(await readFile(
+  new URL("../locales/ko/onboarding.json", import.meta.url),
+  "utf8",
+));
 
 test("아이 백그라운드 위치 권한 전 눈에 띄는 별도 안내를 제공한다", () => {
   assert.match(source, /role="dialog"/);
   assert.match(source, /aria-modal="true"/);
-  assert.match(source, /아이 위치 공유 안내/);
-  assert.match(source, /앱을 닫거나 사용하지 않을 때도 위치를 수집/);
-  assert.match(source, /연결된 보호자에게 공유/);
-  assert.match(source, /집·학교·학원 도착·출발, 일정 미도착, 위험구역 알림/);
-  assert.match(source, /Android의 지속 알림이 표시/);
-  assert.match(source, /위치 설정에서 언제든지 권한을 끌 수 있습니다/);
-  assert.match(source, /동의하고 계속/);
+  for (const id of [
+    "onboarding.locationDisclosure.eyebrow",
+    "onboarding.locationDisclosure.collection",
+    "onboarding.locationDisclosure.purpose",
+    "onboarding.locationDisclosure.control",
+    "onboarding.locationDisclosure.continue",
+  ]) assert.match(source, new RegExp(`"${id.replaceAll(".", "\\.")}"`));
+  assert.equal(koOnboarding["onboarding.locationDisclosure.eyebrow"], "아이 위치 공유 안내");
+  assert.match(koOnboarding["onboarding.locationDisclosure.collection"], /앱을 닫거나 사용하지 않을 때도 위치를 수집/);
+  assert.match(koOnboarding["onboarding.locationDisclosure.collection"], /연결된 보호자에게 공유/);
+  assert.match(koOnboarding["onboarding.locationDisclosure.purpose"], /집·학교·학원 도착·출발, 일정 미도착, 위험구역 알림/);
+  assert.match(koOnboarding["onboarding.locationDisclosure.control"], /Android의 지속 알림이 표시/);
+  assert.match(koOnboarding["onboarding.locationDisclosure.control"], /위치 설정에서 언제든지 권한을 끌 수 있어/);
+  assert.equal(koOnboarding["onboarding.locationDisclosure.continue"], "동의하고 계속");
 });
 
 test("위치 안내 뒤 전경과 백그라운드 권한을 서로 다른 사용자 동작으로 요청한다", () => {
@@ -21,8 +32,10 @@ test("위치 안내 뒤 전경과 백그라운드 권한을 서로 다른 사용
   assert.match(source, /requestForegroundLocationPermission\(\)/);
   assert.match(source, /setLocationStage\("backgroundEducation"\)/);
   assert.match(source, /requestBackgroundLocationPermission\(\)/);
-  assert.match(source, /‘항상 허용’ 설정 열기/);
-  assert.match(source, /권한 없이 시작/);
+  assert.match(source, /"onboarding\.backgroundPermission\.openSettings"/);
+  assert.match(source, /"onboarding\.permissionDenied\.continueWithout"/);
+  assert.equal(koOnboarding["onboarding.backgroundPermission.openSettings"], "‘항상 허용’ 설정 열기");
+  assert.equal(koOnboarding["onboarding.permissionDenied.continueWithout"], "권한 없이 시작");
   assert.match(source, /role === "child" \? CHILD_PERM_ITEMS : GUARDIAN_PERM_ITEMS/);
 });
 

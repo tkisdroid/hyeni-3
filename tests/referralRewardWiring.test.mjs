@@ -18,10 +18,13 @@ test("가족 setup은 optional referralCode를 서버에 전달하고 온보딩 
 
 test("온보딩은 추천 귀속과 보상 조건을 숨기지 않고 KID 페어링 흐름과 분리한다", () => {
   const onboarding = read("src/screens/onboarding/Onboarding.tsx");
-  assert.match(onboarding, /친구 초대 코드가 적용돼요/);
-  assert.match(onboarding, /새 가족을 만든 뒤 3일이 지나고/);
-  assert.match(onboarding, /처음 위치 연결 뒤 48시간 동안 최신 상태가 유지되면/);
-  assert.match(onboarding, /두 가족 모두 AI 대화 10회/);
+  const koCatalog = JSON.parse(read("locales/ko/onboarding.json"));
+  assert.match(onboarding, /id: "onboarding\.connect\.referralTitle"/);
+  assert.match(onboarding, /id: "onboarding\.connect\.referralDescription"/);
+  assert.equal(koCatalog["onboarding.connect.referralTitle"], "친구 초대 코드가 적용돼요");
+  assert.match(koCatalog["onboarding.connect.referralDescription"], /새 가족을 만든 뒤 3일이 지나고/);
+  assert.match(koCatalog["onboarding.connect.referralDescription"], /처음 위치 연결 뒤 48시간 동안 최신 상태가 유지되면/);
+  assert.match(koCatalog["onboarding.connect.referralDescription"], /두 가족 모두 AI 대화 10회/);
   assert.match(onboarding, /initialCode=\{pairPrefill\}/);
   assert.match(onboarding, /referralCode=\{referralPrefill\}/);
 });

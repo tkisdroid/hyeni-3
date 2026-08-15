@@ -20,7 +20,8 @@ test("AI 일정 실패는 다음 행동을 안내하고 Free 일정 개수 제�
 });
 
 test("AI 일정 Free 일 5회 소진은 원시 오류 대신 상황형 업셀과 무료 대안을 안내한다", () => {
-  assert.match(source, /e\.status === 429 && e\.message === "daily_limit_reached"/);
+  assert.match(source, /e instanceof ApiError && e\.status === 429 && e\.code === "daily_limit_reached"/);
+  assert.doesNotMatch(source, /e\.message === "daily_limit_reached"/);
   assert.doesNotMatch(source, /show\("오늘 무료 AI 일정 정리 5회를 모두 사용했어요/);
   assert.match(source, /source="ai_schedule_limit"/);
   assert.match(source, /returnTo=\{`\/ai-schedule\?tab=\$\{tab\}`\}/);

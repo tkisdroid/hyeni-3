@@ -56,12 +56,13 @@ test("가족 조회 실패는 연결 단계로 보내지 않고 기존 로그인
   assert.ok(connectIndex >= 0 && catchIndex > connectIndex, "connect 이동은 null 성공 분기 안에 있어야 합니다");
   assert.match(
     route,
-    /catch[\s\S]*throw new Error\("가족 정보를 확인하지 못했어요\. 다시 시도해 주세요\."\)/,
+    /catch[\s\S]*throw new Error\("family_lookup_failed"\)/,
   );
   assert.match(
     onboarding,
-    /await onLoggedIn\(transitionToken\);[\s\S]{0,120}catch \(e\) \{[\s\S]{0,120}show\(errMsg\(e\), "⚠️"\)/,
+    /await onLoggedIn\(transitionToken\);[\s\S]{0,120}catch \(e\) \{[\s\S]{0,180}show\(localizeApiError\(e, intl, "formal"\), "⚠️"\)/,
   );
+  assert.doesNotMatch(onboarding, /show\([^\n]*e\.message/);
 });
 
 test("RequireGuest와 온보딩 자체 리다이렉트는 명시적 인증 전환 중 역할 홈 이동을 보류한다", () => {
@@ -126,7 +127,7 @@ test("부모 로그인에서 back·signup·인증 시작 실패로 이탈하면 
   assert.match(onboarding, /onSignup=\{\(\) => \{[\s\S]{0,200}cancelOnboardingAuthTransitions\(\)/);
   assert.match(
     onboarding,
-    /catch \(e\) \{\s*if \(!isOnboardingAuthTransitionActive\(transitionToken\)\) return;[\s\S]{0,180}show\(errMsg\(e\), "⚠️"\)[\s\S]{0,180}setBusy\(false\);[\s\S]{0,120}endOnboardingAuthTransition\(transitionToken\)/,
+    /catch \(e\) \{\s*if \(!isOnboardingAuthTransitionActive\(transitionToken\)\) return;[\s\S]{0,180}show\(localizeApiError\(e, intl, "formal"\), "⚠️"\)[\s\S]{0,180}setBusy\(false\);[\s\S]{0,120}endOnboardingAuthTransition\(transitionToken\)/,
   );
 });
 

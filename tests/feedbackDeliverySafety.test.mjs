@@ -33,6 +33,7 @@ const [
   read("src/screens/teacher/TeacherSettings.tsx"),
   read("docs/feedback-operations.md"),
 ]);
+const koCore = JSON.parse(await read("locales/ko/core.json"));
 
 test("피드백 API는 인증 세션을 쓰고 클라이언트가 주장한 발신자 PII를 보내지 않는다", () => {
   assert.match(endpoint, /requestId:\s*string/);
@@ -84,7 +85,9 @@ test("부모·아이·선생님 설정과 크래시 화면에서 피드백 화�
   assert.match(childSettings, /navigate\("\/feedback"\)[\s\S]*문제 알려주기/);
   assert.match(teacherSettings, /navigate\("\/feedback"\)[\s\S]*문제 신고 · 문의/);
   assert.match(errorBoundary, /window\.location\.hash = "#\/feedback"/);
-  assert.match(errorBoundary, /문제 신고하기/);
+  assert.match(errorBoundary, /"core\.action\.reportProblem\.child" : "core\.action\.reportProblem\.formal"/);
+  assert.equal(koCore["core.action.reportProblem.child"], "문제 알려주기");
+  assert.equal(koCore["core.action.reportProblem.formal"], "문제 신고하기");
 });
 
 test("운영 가이드는 본문을 먼저 열지 않고 requestId·오류 빈도·queued부터 확인한다", () => {

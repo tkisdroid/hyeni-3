@@ -100,7 +100,7 @@ for (const fixture of [
   });
 }
 
-test("승인된 cleanAlertTitle sanitizer는 원문 taint를 해제한다", () => {
+test("문자 장식만 지우는 cleanAlertTitle은 오류 원문 sanitizer로 인정하지 않는다", () => {
   const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
   try {
     mkdirSync(join(root, "src"), { recursive: true });
@@ -110,17 +110,19 @@ test("승인된 cleanAlertTitle sanitizer는 원문 taint를 해제한다", () =
       "}",
     ].join("\n"));
     const result = runScanner(root);
-    assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /src\/Sanitized\.tsx:2/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-test("승인된 native billing resolver는 whole error를 catalog 문구로 바꾼다", () => {
+test("승인된 모듈에서 import한 native billing resolver는 whole error를 catalog 문구로 바꾼다", () => {
   const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
   try {
     mkdirSync(join(root, "src"), { recursive: true });
     writeFileSync(join(root, "src", "Billing.tsx"), [
+      'import { resolveNativeBillingFailureMessage } from "@/transform/billingFailureMessage";',
       "export function Billing({ failure, intl }) {",
       "  show(resolveNativeBillingFailureMessage(failure, intl));",
       "}",
@@ -132,7 +134,94 @@ test("승인된 native billing resolver는 whole error를 catalog 문구로 바�
   }
 });
 
-test("allowlist는 실제 AST finding만 한 번 소비하고 같은 줄의 직접 렌더를 숨기지 않는다", () => {
+test("같은 sanitizer 이름을 로컬에서 shadow하면 원문 taint를 해제하지 않는다", () => {
+  const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
+  try {
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src", "Shadowed.tsx"), [
+      "export function Shadowed({ error }) {",
+      "  const friendlyError = (value) => value;",
+      "  return <p>{friendlyError(error.message)}</p>;",
+      "}",
+    ].join("\n"));
+    const result = runScanner(root);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /src\/Shadowed\.tsx:3/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("승인되지 않은 모듈에서 import한 sanitizer 동명 함수는 원문 taint를 해제하지 않는다", () => {
+  const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
+  try {
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src", "WrongImport.tsx"), [
+      'import { localizeApiError } from "./unsafe";',
+      "export function WrongImport({ failure, intl }) {",
+      '  return <p>{localizeApiError(failure, intl, "formal")}</p>;',
+      "}",
+    ].join("\n"));
+    const result = runScanner(root);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /src\/WrongImport\.tsx:3/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("서로 다른 lexical scope의 같은 변수명은 taint를 공유하지 않는다", () => {
+  const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
+  try {
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src", "Scoped.tsx"), [
+      "function capture(failure) {",
+      "  const text = failure.message;",
+      "  recordProtocol(text);",
+      "}",
+      "export function Safe() {",
+      '  const text = "고정 문구";',
+      "  return <p>{text}</p>;",
+      "}",
+    ].join("\n"));
+    const result = runScanner(root);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+for (const [name, lines, sinkLine] of [
+  ["element-access toast sink", ["toast['error'](failure.message);"], 2],
+  [
+    "깊은 property mutation",
+    [
+      "const view = { payload: { text: '' } };",
+      "view.payload.text = failure.message;",
+      "return <p>{view.payload.text}</p>;",
+    ],
+    4,
+  ],
+]) {
+  test(`오류 surface scanner는 ${name} 우회를 보고한다`, () => {
+    const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
+    try {
+      mkdirSync(join(root, "src"), { recursive: true });
+      writeFileSync(join(root, "src", "Bypass.tsx"), [
+        "export function Bypass({ failure }) {",
+        ...lines.map((line) => `  ${line}`),
+        "}",
+      ].join("\n"));
+      const result = runScanner(root);
+      assert.notEqual(result.status, 0, name);
+      assert.match(result.stderr, new RegExp(`src/Bypass\\.tsx:${sinkLine}`), name);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+}
+
+test("allowlist는 실제 AST finding만 한 번 소비하고 같은 줄의 별도 직접 렌더를 숨기지 않는다", () => {
   const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
   try {
     mkdirSync(join(root, "src"), { recursive: true });
@@ -153,7 +242,7 @@ test("allowlist는 실제 AST finding만 한 번 소비하고 같은 줄의 직�
     const result = runScanner(root);
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /raw_error_surface/);
-    assert.match(result.stderr, /stale_allowlist/);
+    assert.doesNotMatch(result.stderr, /stale_allowlist/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

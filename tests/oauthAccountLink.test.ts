@@ -74,7 +74,10 @@ test("OAuth 취소도 context를 검증·폐기하고 연결 화면 잠금을 �
   assert.match(auth, /const context = takeOAuthContext\(\)/);
   assert.match(deepLink, /parseOAuthCancellationUrl/);
   assert.match(deepLink, /finishOAuthCancellation/);
-  assert.match(deepLink, /const error = new Error\("소셜 로그인을 취소했어요\."\)/);
+  assert.match(deepLink, /errorCode: "oauth_cancelled"/);
+  assert.match(deepLink, /detail: \{ provider: cb\.provider, cancelled: true \}/);
+  assert.match(deepLink, /errorCode: "oauth_cancellation_failed"/);
+  assert.doesNotMatch(deepLink, /new Error\("소셜 로그인을 취소했어요/);
 });
 
 test("계정 화면 안내문이 실제 동작과 맞는다(해제 가능한데 '해당 서비스에서 관리' 금지)", () => {

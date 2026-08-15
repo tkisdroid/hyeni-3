@@ -274,7 +274,13 @@ test("공통 Suspense 전환 상태와 안정된 로더 접근성을 유지한�
   assert.match(helper, /<Suspense fallback=\{<RouteLoading \/>\}>/);
   assert.match(component, /role="status"/);
   assert.match(component, /aria-live="polite"/);
-  assert.match(component, /화면을 불러오는 중/);
+  assert.equal(
+    component.match(/intl\.formatMessage\(\{ id: "core\.state\.loadingScreen" \}\)/g)?.length,
+    2,
+    "상태 label과 화면 표시 문구가 같은 locale catalog ID를 사용해야 합니다",
+  );
+  const koCore = JSON.parse(read("locales/ko/core.json"));
+  assert.match(koCore["core.state.loadingScreen"], /화면을 불러오는 중/);
   assert.match(css, /\.route-loading\s*\{[^}]*min-height:\s*(?:var\([^;]+\)|\d+px)/s);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(css, /animation:\s*none/);

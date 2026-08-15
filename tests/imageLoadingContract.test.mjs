@@ -137,7 +137,7 @@ test("출시 화면의 동적 가족 아바타는 첫 viewport와 목록 위치�
 test("첫 viewport의 온보딩 hero와 역할 이미지는 eager 계약을 유지한다", () => {
   const onboarding = source("src/screens/onboarding/Onboarding.tsx");
   const tags = [
-    /<img\s+src=\{asset\("mascot\/wave\.webp"\)\}\s+alt="혜니캘린더"[^>]*>/,
+    /<img\s+src=\{asset\("mascot\/wave\.webp"\)\}\s+alt=\{intl\.formatMessage\(\{ id: "core\.brand\.name" \}\)\}[^>]*>/,
     /<img\s+className="ob-role-img"\s+src=\{asset\(ROLE_ICON_ASSETS\.parent\)\}[^>]*>/,
     /<img\s+className="ob-role-img ob-role-img--child"\s+src=\{asset\(ROLE_ICON_ASSETS\.child\)\}[^>]*>/,
     /<img\s+className="ob-role-img"\s+src=\{asset\(ROLE_ICON_ASSETS\.teacher\)\}[^>]*>/,
