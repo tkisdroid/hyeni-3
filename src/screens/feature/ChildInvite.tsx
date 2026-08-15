@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 import { ChevronLeft, RefreshCw, Share2, Copy } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
@@ -124,7 +125,7 @@ export function ChildInvite() {
     connectionRef.current = { ...connectionRef.current, notified: false };
     regen.mutate(undefined, {
       onSuccess: () => show("새 연결 코드를 발급했어요", "🔄"),
-      onError: (e) => show(e instanceof Error ? e.message : "재발급에 실패했어요", "⚠️"),
+      onError: (e) => show(localizeApiError(e, intl, "formal"), "⚠️"),
     });
   };
 

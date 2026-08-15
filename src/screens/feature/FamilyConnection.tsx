@@ -13,6 +13,8 @@ import { useLocale } from "@/i18n/useLocale";
 import { hasJongseong } from "@/transform/adventureMap";
 import { Loading } from "@/components/ui/Loading";
 import "./FamilyConnection.css";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 
 // 자녀 사진은 인증 fetch로 만든 blob URL, 기본 아바타는 asset 경로.
 function avatarSrc(path: string): string {
@@ -32,6 +34,7 @@ interface UnpairTarget {
  */
 export function FamilyConnection() {
   const { locale } = useLocale();
+  const intl = useIntl();
   const navigate = useNavigate();
   const { show } = useToast();
   const now = useMemo(() => new Date(), []);
@@ -100,7 +103,7 @@ export function FamilyConnection() {
         show(`‘${confirm.name}’ 기기 연결을 해제했어요`, "🔗");
         setConfirm(null);
       },
-      onError: (e) => show(e instanceof Error ? e.message : "연결 해제에 실패했어요", "⚠️"),
+      onError: (e) => show(localizeApiError(e, intl, "formal"), "⚠️"),
     });
   };
 
@@ -118,7 +121,7 @@ export function FamilyConnection() {
         {connectionError && (
           <div className="fc-state fc-state--error" role="alert">
             연결 정보를 불러오지 못했어요
-            {connectionErrorValue instanceof Error ? ` (${connectionErrorValue.message})` : ""}
+            {connectionErrorValue ? ` (${localizeApiError(connectionErrorValue, intl, "formal")})` : ""}
             <button type="button" className="fc-ghost hy-press" onClick={() => void retryFamilyConnection()}>
               다시 시도
             </button>

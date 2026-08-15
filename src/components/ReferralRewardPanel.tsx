@@ -6,6 +6,8 @@ import { useDialogFocusLifecycle } from "./useDialogFocusLifecycle";
 import { useEnsureReferralCode, useReferralStatus } from "@/queries/useReferrals";
 import { buildReferralLink } from "@/transform/referralLink";
 import "./ReferralRewardPanel.css";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 
 export interface ReferralEligibleChild {
   userId: string;
@@ -22,6 +24,7 @@ export function ReferralRewardPanel({
   eligibleChildren: readonly ReferralEligibleChild[];
 }) {
   const { show } = useToast();
+  const intl = useIntl();
   const titleId = useId();
   const descriptionId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -65,7 +68,7 @@ export function ReferralRewardPanel({
       onSuccess: (next) => {
         show(next.code ? "친구 초대 코드를 준비했어요" : "초대 상태를 갱신했어요", "🎁");
       },
-      onError: (error) => show(error.message || "초대 코드를 준비하지 못했어요", "⚠️"),
+      onError: (error) => show(localizeApiError(error, intl, "formal"), "⚠️"),
     });
   };
 

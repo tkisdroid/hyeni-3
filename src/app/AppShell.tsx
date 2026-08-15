@@ -11,14 +11,18 @@ import { useMyFamily } from "@/queries/useFamily";
 import { useUnreadMemoForChildren } from "@/queries/useMemo";
 import { useRecentDateKeys } from "./useRecentDateKeys";
 import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+import { useIntl } from "react-intl";
 
-const PARENT_TABS: TabItem[] = [
-  { to: "/parent/home", label: "홈", Icon: Home },
-  { to: "/parent/calendar", label: "캘린더", Icon: CalendarDays },
-  { to: "/parent/location", label: "위치", Icon: MapPin },
-  { to: "/parent/memo", label: "대화", Icon: MessageCircle },
-  { to: "/parent/settings", label: "설정", Icon: Settings },
-];
+function useParentTabs(): TabItem[] {
+  const intl = useIntl();
+  return useMemo(() => [
+    { to: "/parent/home", label: intl.formatMessage({ id: "core.nav.home" }), Icon: Home },
+    { to: "/parent/calendar", label: intl.formatMessage({ id: "core.nav.calendar" }), Icon: CalendarDays },
+    { to: "/parent/location", label: intl.formatMessage({ id: "core.nav.location" }), Icon: MapPin },
+    { to: "/parent/memo", label: intl.formatMessage({ id: "core.nav.chat" }), Icon: MessageCircle },
+    { to: "/parent/settings", label: intl.formatMessage({ id: "core.nav.settings" }), Icon: Settings },
+  ], [intl]);
+}
 
 /** 대화 탭 빨간 점 — 모든 아이의 실제 1:1 스레드 read_by 기준. */
 function useMemoDotTabs(baseTabs: TabItem[], memoPath: string): TabItem[] {
@@ -35,12 +39,15 @@ function useMemoDotTabs(baseTabs: TabItem[], memoPath: string): TabItem[] {
   );
 }
 
-const TEACHER_TABS: TabItem[] = [
-  { to: "/teacher/home", label: "반 홈", Icon: Home },
-  { to: "/teacher/students", label: "학생", Icon: Users },
-  { to: "/teacher/timetable", label: "시간표", Icon: CalendarDays },
-  { to: "/teacher/settings", label: "설정", Icon: Settings },
-];
+function useTeacherTabs(): TabItem[] {
+  const intl = useIntl();
+  return useMemo(() => [
+    { to: "/teacher/home", label: intl.formatMessage({ id: "core.nav.classHome" }), Icon: Home },
+    { to: "/teacher/students", label: intl.formatMessage({ id: "core.nav.students" }), Icon: Users },
+    { to: "/teacher/timetable", label: intl.formatMessage({ id: "core.nav.timetable" }), Icon: CalendarDays },
+    { to: "/teacher/settings", label: intl.formatMessage({ id: "core.nav.settings" }), Icon: Settings },
+  ], [intl]);
+}
 
 /**
  * 앱이 한가할 때 Kakao 지도 SDK 를 미리 받아 둔다.
@@ -55,7 +62,7 @@ function useWarmKakaoMaps(): void {
 /** 부모 모드 셸: 폰 프레임 + 스크롤 + 부모 탭바. */
 export function ParentShell() {
   const { accent } = useAccent();
-  const tabs = useMemoDotTabs(PARENT_TABS, "/parent/memo");
+  const tabs = useMemoDotTabs(useParentTabs(), "/parent/memo");
   useWarmKakaoMaps();
   return (
     <div className="hy-app" data-accent={accent}>
@@ -85,12 +92,13 @@ export function ChildShell() {
 
 /** 선생님 모드 셸: 강조색 민트 고정 + 선생님 탭바. */
 export function TeacherShell() {
+  const tabs = useTeacherTabs();
   return (
     <div className="hy-app" data-accent="mint">
       <main className="hy-screen">
         <Outlet />
       </main>
-      <TabBar tabs={TEACHER_TABS} />
+      <TabBar tabs={tabs} />
       <ToastHost />
     </div>
   );

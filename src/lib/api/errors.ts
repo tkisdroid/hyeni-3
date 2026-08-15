@@ -1,15 +1,26 @@
 /**
  * API 에러 타입.
- * Worker 가 보낸 한글 에러 메시지(teacher RPC 등)를 message 로 표면화하고
- * HTTP status 를 함께 실어 화면이 401/404 등을 분기할 수 있게 한다.
+ * HTTP status와 제한된 안정 code만 보존한다. Worker 자유 message·raw body는
+ * Error.message나 stack에 넣지 않아 사용자 표면으로 흐르지 않게 한다.
  */
+const API_ERROR_MESSAGE = "API request failed";
+const API_ERROR_CODE_PATTERN = /^[a-z][a-z0-9_]{0,63}$/;
+
+export function normalizeApiErrorCode(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const code = value.trim();
+  return API_ERROR_CODE_PATTERN.test(code) ? code : null;
+}
+
 export class ApiError extends Error {
   readonly status: number;
+  readonly code: string | null;
 
-  constructor(message: string, status: number) {
-    super(message);
+  constructor(code: unknown, status: number) {
+    super(API_ERROR_MESSAGE);
     this.name = "ApiError";
     this.status = status;
+    this.code = normalizeApiErrorCode(code);
   }
 }
 

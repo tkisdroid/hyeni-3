@@ -14,6 +14,7 @@
  */
 import { getNativePlugin, isNativePlatform } from "./plugins";
 import { apiPost } from "@/lib/api/client";
+import { ApiError, normalizeApiErrorCode } from "@/lib/api/errors";
 import { getApiUser } from "@/lib/api/session";
 import {
   hasExpectedLaunchSubscriptionPrice,
@@ -220,7 +221,7 @@ function normalizePurchase(purchase: RawPurchase | undefined): NormalizedPurchas
 async function verifyPurchase(body: Record<string, unknown>): Promise<VerifyResponse> {
   const data = await apiPost<VerifyResponse>(VERIFY_PATH, body);
   if (!data?.ok) {
-    throw new Error(data?.message || data?.error || "서버 구매 검증에 실패했어요.");
+    throw new ApiError(normalizeApiErrorCode(data?.error) ?? "purchase_verification_failed", 400);
   }
   return data;
 }

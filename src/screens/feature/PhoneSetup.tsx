@@ -11,6 +11,8 @@ import { formatPhoneDisplay, formatPhoneOrMissing } from "@/transform/phoneForma
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import type { FamilyMember } from "@/lib/api/endpoints/family";
 import "./PhoneSetup.css";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 
 function roleLabel(gender: string | null | undefined): string {
   if (gender === "mom") return "엄마";
@@ -28,6 +30,7 @@ function softFor(gender: string | null | undefined): string {
 
 /** 전화번호 설정: 실 보호자 목록 표시. 본인 번호만 편집(백엔드는 본인 프로필만 수정 가능). */
 export function PhoneSetup() {
+  const intl = useIntl();
   const navigate = useNavigate();
   const { show } = useToast();
   const { userId, familyId } = useAuth();
@@ -84,14 +87,14 @@ export function PhoneSetup() {
     try {
       phone = normalizePhoneForStorage(myPhone);
     } catch (e) {
-      show(e instanceof Error ? e.message : "번호를 확인해 주세요", "⚠️");
+      show(localizeApiError(e, intl, "formal"), "⚠️");
       return;
     }
     update.mutate(
       { phone },
       {
         onSuccess: () => show("전화번호를 저장했어요", "📞"),
-        onError: (e) => show(e instanceof Error ? e.message : "저장에 실패했어요", "⚠️"),
+        onError: (e) => show(localizeApiError(e, intl, "formal"), "⚠️"),
       },
     );
   };

@@ -10,6 +10,7 @@ import { Component, useEffect, type ReactNode } from "react";
 import { useRouteError } from "react-router";
 import { asset } from "@/lib/assets";
 import { recordFeedbackDiagnostic } from "@/lib/feedbackDiagnostics";
+import { useIntl } from "react-intl";
 
 function homeHashForSession(): string {
   try {
@@ -32,7 +33,8 @@ function isChildSession(): boolean {
   }
 }
 
-function ErrorFallback({ error }: { error: unknown }) {
+function ErrorFallback() {
+  const intl = useIntl();
   const childTone = isChildSession();
   const retry = () => window.location.reload();
   const goHome = () => {
@@ -43,30 +45,25 @@ function ErrorFallback({ error }: { error: unknown }) {
     window.location.hash = "#/feedback";
     window.location.reload();
   };
-  const detail = import.meta.env.DEV
-    ? error instanceof Error
-      ? error.message
-      : typeof error === "string"
-        ? error
-        : ""
-    : "";
+  // 개발 빌드도 사용자 화면에는 원문 오류를 노출하지 않고 console/정규화 진단만 사용한다.
+  const detail = import.meta.env.DEV ? String() : String();
   return (
     <div className="hy-crash" role="alert">
       <img className="hy-crash__img" src={asset("mascot/thinking.webp")} alt="" />
-      <div className="hy-crash__title">{childTone ? "앗, 화면이 잠깐 멈췄어" : "앗, 화면이 잠깐 멈췄어요"}</div>
+      <div className="hy-crash__title">{intl.formatMessage({ id: childTone ? "core.crash.title.child" : "core.crash.title.formal" })}</div>
       <div className="hy-crash__sub">
-        {childTone ? "걱정하지 마. 저장한 내용은 안전해." : "걱정하지 마세요. 저장한 내용은 안전해요."}
+        {intl.formatMessage({ id: childTone ? "core.crash.safe.child" : "core.crash.safe.formal" })}
         <br />
-        {childTone ? "아래 버튼으로 다시 열 수 있어." : "아래 버튼으로 다시 열 수 있어요."}
+        {intl.formatMessage({ id: childTone ? "core.crash.recovery.child" : "core.crash.recovery.formal" })}
       </div>
       <button type="button" className="hy-crash__btn hy-press" onClick={goHome}>
-        홈으로 가기
+        {intl.formatMessage({ id: "core.action.goHome" })}
       </button>
       <button type="button" className="hy-crash__ghost hy-press" onClick={retry}>
-        이 화면 다시 열기
+        {intl.formatMessage({ id: "core.action.reloadScreen" })}
       </button>
       <button type="button" className="hy-crash__ghost hy-press" onClick={reportProblem}>
-        {childTone ? "문제 알려주기" : "문제 신고하기"}
+        {intl.formatMessage({ id: childTone ? "core.action.reportProblem.child" : "core.action.reportProblem.formal" })}
       </button>
       {detail && <div className="hy-crash__detail">{detail.slice(0, 120)}</div>}
     </div>
@@ -81,7 +78,7 @@ export function RouteErrorScreen() {
     recordFeedbackDiagnostic({ kind: "render", error });
     console.error("[route-error]", error);
   }, [error]);
-  return <ErrorFallback error={error} />;
+  return <ErrorFallback />;
 }
 
 type BoundaryState = { error: unknown | null };
@@ -100,7 +97,7 @@ export class RootErrorBoundary extends Component<{ children: ReactNode }, Bounda
   }
 
   render() {
-    if (this.state.error != null) return <ErrorFallback error={this.state.error} />;
+    if (this.state.error != null) return <ErrorFallback />;
     return this.props.children;
   }
 }

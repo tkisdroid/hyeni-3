@@ -14,6 +14,8 @@ import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import { useLocale } from "@/i18n/useLocale";
 import { formatCalendarDay, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
 import "./TeacherNotice.css";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 const MAX_ATTACHMENTS = 5;
 const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
 
@@ -32,6 +34,7 @@ function safeFileName(name: string): string {
 
 export function TeacherNotice() {
   const { locale } = useLocale();
+  const intl = useIntl();
   const navigate = useNavigate();
   const location = useLocation();
   const { show } = useToast();
@@ -192,7 +195,7 @@ export function TeacherNotice() {
       uploadedAttachments = await uploadAttachments();
     } catch (err) {
       setUploading(false);
-      show(err instanceof Error ? err.message : "첨부 파일 업로드에 실패했어요", "⚠️");
+      show(localizeApiError(err, intl, "formal"), "⚠️");
       return;
     }
     setUploading(false);
@@ -218,7 +221,7 @@ export function TeacherNotice() {
         },
         onError: (err) => {
           show(
-            err instanceof Error ? err.message : "알림장 보내기에 실패했어요. 잠시 후 다시 시도해 주세요",
+            localizeApiError(err, intl, "formal"),
             "⚠️",
           );
         },

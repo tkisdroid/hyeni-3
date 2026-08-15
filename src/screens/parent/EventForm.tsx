@@ -19,7 +19,6 @@ import {
   type CalendarEvent,
   type EventReminderSelection,
 } from "@/lib/api/endpoints/schedule";
-import { ApiError } from "@/lib/api/errors";
 import {
   dateInputValueToDateKey,
   dateToDateKeyInTimeZone,
@@ -27,6 +26,8 @@ import {
   parseAppDateKey,
 } from "@/transform/dateKey";
 import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 import {
   buildEventLocation,
   buildOccurrenceDateKeys,
@@ -165,6 +166,7 @@ function avatarSrc(path: string): string {
 }
 
 export function EventForm() {
+  const intl = useIntl();
   const navigate = useNavigate();
   const { show } = useToast();
   const { familyId } = useAuth();
@@ -541,7 +543,7 @@ export function EventForm() {
       }
       navigate(-1);
     } catch (e) {
-      show(e instanceof ApiError ? e.message : "일정 저장에 실패했어요. 다시 시도해 주세요", "⚠️");
+      show(localizeApiError(e, intl, "formal"), "⚠️");
     } finally {
       setBusy(false);
     }

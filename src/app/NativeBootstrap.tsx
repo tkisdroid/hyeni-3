@@ -143,7 +143,7 @@ export function NativeBootstrap() {
   useEffect(() => {
     if (!isNativePlatform()) return;
     return initOAuthDeepLink((r) => {
-      if (!r.ok) console.error("OAuth 딥링크 처리 실패:", r.error);
+      if (!r.ok) console.error("OAuth 딥링크 처리 실패:", r.errorCode);
     });
   }, []);
 

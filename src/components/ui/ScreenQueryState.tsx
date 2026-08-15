@@ -1,5 +1,6 @@
 import { AlertTriangle, ChevronLeft, Inbox, LoaderCircle, RefreshCw } from "lucide-react";
 import "./ScreenQueryState.css";
+import { useIntl } from "react-intl";
 
 export type ScreenQueryStateKind = "loading" | "error" | "empty";
 
@@ -24,15 +25,18 @@ export function ScreenQueryState({
   onBack,
   onRetry,
   retrying = false,
-  retryLabel = "다시 불러오기",
-  retryingLabel = "다시 확인하고 있어요…",
+  retryLabel,
+  retryingLabel,
 }: ScreenQueryStateProps) {
+  const intl = useIntl();
+  const resolvedRetryLabel = retryLabel ?? intl.formatMessage({ id: "core.action.reload" });
+  const resolvedRetryingLabel = retryingLabel ?? intl.formatMessage({ id: "core.state.retrying" });
   const Icon = state === "loading" ? LoaderCircle : state === "error" ? AlertTriangle : Inbox;
   return (
     <div className="sqs-screen">
       <header className="sqs-header">
         {onBack ? (
-          <button type="button" className="sqs-back hy-press" aria-label="뒤로" onClick={onBack}>
+          <button type="button" className="sqs-back hy-press" aria-label={intl.formatMessage({ id: "core.action.back" })} onClick={onBack}>
             <ChevronLeft size={22} strokeWidth={2.2} aria-hidden="true" />
           </button>
         ) : (
@@ -67,7 +71,7 @@ export function ScreenQueryState({
               strokeWidth={2.4}
               aria-hidden="true"
             />
-            {retrying ? retryingLabel : retryLabel}
+            {retrying ? resolvedRetryingLabel : resolvedRetryLabel}
           </button>
         )}
       </section>

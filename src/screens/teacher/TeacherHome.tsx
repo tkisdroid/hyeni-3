@@ -16,6 +16,8 @@ import {
 import { isMissingFunction } from "@/lib/api/errors";
 import { isoDateKey, mapRosterToStudents, countPresent } from "@/transform/teacherView";
 import "./TeacherHome.css";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 
 // 홈 미리보기에 노출할 출석 카드 수(전체는 /teacher/students).
 const HOME_PREVIEW_LIMIT = 5;
@@ -31,6 +33,7 @@ const PAIRING_MESSAGES: Record<string, string> = {
 export function TeacherHome() {
   const navigate = useNavigate();
   const { show } = useToast();
+  const intl = useIntl();
 
   // 출석 조회 기준일(표준 ISO). 렌더마다 새 Date 생성 → 쿼리키 churn 방지 위해 마운트 시 고정.
   const todayIso = useMemo(() => isoDateKey(new Date()), []);
@@ -100,7 +103,7 @@ export function TeacherHome() {
           }
         },
         onError: (err) => {
-          show(err instanceof Error ? err.message : "연결 요청을 보내지 못했어요", "⚠️");
+          show(localizeApiError(err, intl, "formal"), "⚠️");
         },
       },
     );
@@ -140,7 +143,7 @@ export function TeacherHome() {
           setCreateName("");
         },
         onError: (err) => {
-          show(err instanceof Error ? err.message : "반을 만들지 못했어요", "⚠️");
+          show(localizeApiError(err, intl, "formal"), "⚠️");
         },
       },
     );

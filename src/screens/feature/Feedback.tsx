@@ -23,6 +23,7 @@ import {
 } from "@/lib/feedbackDiagnostics";
 import { useSendFeedback } from "@/queries/useFeedback";
 import "./Feedback.css";
+import { isApiError } from "@/lib/api/errors";
 
 interface FeedbackTypeOption {
   id: FeedbackKind;
@@ -140,9 +141,9 @@ export function Feedback() {
       );
       navigate(returnRoute, { replace: true });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "";
+      const code = isApiError(error) ? error.code : null;
       show(
-        message === "feedback_rate_limited"
+        code === "feedback_rate_limited"
           ? childTone
             ? "짧은 시간에 여러 번 보냈어. 한 시간 뒤 다시 해 줘."
             : "짧은 시간에 여러 번 보내셨어요. 한 시간 뒤 다시 시도해 주세요."

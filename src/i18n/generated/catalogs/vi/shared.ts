@@ -1,3 +1,11 @@
-const messages = {} as const;
+const messages = {
+  "shared.qr.enterManually": "Vui lòng nhập mã trực tiếp",
+  "shared.qr.failedLabel": "Không tạo được {label}",
+  "shared.qr.label": "mã QR",
+  "shared.sticker.arrived": "Có nhãn dán mới!",
+  "shared.sticker.defaultTitle": "Giỏi lắm",
+  "shared.sticker.receivedLabel": "Bạn nhận được nhãn dán {title}",
+  "shared.sticker.sentByParent": "Phụ huynh đã gửi cho bạn một nhãn dán khen ngợi"
+} as const;
 
 export default messages;

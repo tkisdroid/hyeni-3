@@ -13,6 +13,8 @@ import { normalizePhoneForStorage } from "@/transform/phone";
 import { formatPhoneDisplay } from "@/transform/phoneFormat";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./ProfileEdit.css";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 
 function normalizeHex(v: string | null | undefined): string | undefined {
   if (typeof v !== "string") return undefined;
@@ -53,6 +55,7 @@ function toDateFieldValue(bd: string | null | undefined): string {
  * 대상 = location.state.childId(없으면 첫 자녀). 현재값을 해당 아이 멤버에서 프리필한다.
  */
 export function ProfileEdit() {
+  const intl = useIntl();
   const navigate = useNavigate();
   const routeLocation = useLocation();
   const childId = (routeLocation.state as { childId?: string } | null)?.childId ?? null;
@@ -197,7 +200,7 @@ export function ProfileEdit() {
       try {
         phoneToSave = normalizePhoneForStorage(phone);
       } catch (e) {
-        show(e instanceof Error ? e.message : "전화번호를 확인해 주세요", "📱");
+        show(localizeApiError(e, intl, "formal"), "📱");
         return;
       }
     }
@@ -217,7 +220,7 @@ export function ProfileEdit() {
       show("저장했어요. 아이 기기에 실시간으로 반영돼요", "✅");
       navigate(-1);
     } catch (e) {
-      show(e instanceof Error ? e.message : "저장에 실패했어요", "⚠️");
+      show(localizeApiError(e, intl, "formal"), "⚠️");
     }
   };
 

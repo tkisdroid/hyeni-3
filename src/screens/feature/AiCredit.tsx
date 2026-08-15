@@ -24,6 +24,8 @@ import {
   type WebAiCreditCompletionResponse,
 } from "@/lib/api/endpoints/webBilling";
 import { isApiError } from "@/lib/api/errors";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 import { startTossOneTimePayment } from "@/lib/webBilling";
 import { creditHeroAmount } from "@/transform/aiView";
 import {
@@ -147,24 +149,24 @@ function shouldRetainWebAiCreditPending(error: unknown): boolean {
   if (error instanceof TypeError) return true;
   if (!isApiError(error)) return false;
   if (
-    error.message === "web_ai_credit_reconciliation_pending"
-    || error.message === "web_ai_credit_processing"
-    || error.message === "web_ai_credit_payment_unknown"
-    || error.message === "web_ai_credit_lookup_retry_later"
-    || error.message === "web_ai_credit_lookup_rate_limited"
+    error.code === "web_ai_credit_reconciliation_pending"
+    || error.code === "web_ai_credit_processing"
+    || error.code === "web_ai_credit_payment_unknown"
+    || error.code === "web_ai_credit_lookup_retry_later"
+    || error.code === "web_ai_credit_lookup_rate_limited"
   ) return true;
   return error.status >= 500;
 }
 
 function webAiCreditFailureMessage(error: unknown): string {
   if (isApiError(error)) {
-    if (error.message === "web_ai_credit_new_checkouts_paused") {
+    if (error.code === "web_ai_credit_new_checkouts_paused") {
       return "새 크레딧 결제를 잠시 중단했어요. 진행 중인 결제 확인은 계속할 수 있어요.";
     }
-    if (error.message === "web_ai_credit_payment_refunded") {
+    if (error.code === "web_ai_credit_payment_refunded") {
       return "결제가 전액 취소되어 크레딧을 충전하지 않았어요.";
     }
-    if (error.message === "web_ai_credit_payment_failed" || error.status === 402) {
+    if (error.code === "web_ai_credit_payment_failed" || error.status === 402) {
       return "결제가 승인되지 않았어요. 카드 정보를 확인하고 다시 시도해 주세요.";
     }
     if (error.status === 400 || error.status === 403) {
@@ -178,6 +180,7 @@ function webAiCreditFailureMessage(error: unknown): string {
 }
 
 export function AiCredit() {
+  const intl = useIntl();
   const navigate = useNavigate();
   const { show } = useToast();
   const { userId, familyId } = useAuth();
@@ -711,7 +714,7 @@ export function AiCredit() {
       show(
         isWebBillingChannel
           ? webAiCreditFailureMessage(error)
-          : error instanceof Error ? error.message : "충전에 실패했어요",
+          : localizeApiError(error, intl, "formal"),
         "💜",
       );
     } finally {

@@ -56,7 +56,7 @@ export interface OAuthDeepLinkResult {
   mode: "login" | "link";
   /** 이미 연결돼 있었는가(link 모드 전용). */
   already?: boolean;
-  error?: Error;
+  errorCode?: "oauth_exchange_failed" | "oauth_cancelled" | "oauth_cancellation_failed";
 }
 
 /** 연결 결과를 화면(설정 등)이 받을 수 있게 알린다. 딥링크 복귀 시점엔 어떤 화면인지 모른다. */
@@ -114,10 +114,9 @@ async function exchange(cb: DeepLinkCallback, onResult?: OAuthResultHandler): Pr
     return true;
   } catch (error) {
     console.error("네이티브 OAuth 콜백 처리 실패:", error);
-    const err = error instanceof Error ? error : new Error(String(error));
-    onResult?.({ ok: false, provider: cb.provider, mode, error: err });
+    onResult?.({ ok: false, provider: cb.provider, mode, errorCode: "oauth_exchange_failed" });
     if (mode === "link" && typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent(OAUTH_LINK_EVENT, { detail: { provider: cb.provider, error: err.message } }));
+      window.dispatchEvent(new CustomEvent(OAUTH_LINK_EVENT, { detail: { provider: cb.provider, failed: true } }));
     }
     return false;
   } finally {
@@ -133,20 +132,19 @@ async function cancel(
   let mode = peekOAuthFlowMode();
   try {
     mode = finishOAuthCancellation(cb);
-    const error = new Error("소셜 로그인을 취소했어요.");
-    onResult?.({ ok: false, provider: cb.provider, mode, error });
+    onResult?.({ ok: false, provider: cb.provider, mode, errorCode: "oauth_cancelled" });
     if (mode === "link" && typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent(OAUTH_LINK_EVENT, {
-        detail: { provider: cb.provider, error: error.message },
+        detail: { provider: cb.provider, cancelled: true },
       }));
     }
     return true;
   } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error));
-    onResult?.({ ok: false, provider: cb.provider, mode, error: err });
+    console.error("OAuth 취소 콜백 처리 실패:", error);
+    onResult?.({ ok: false, provider: cb.provider, mode, errorCode: "oauth_cancellation_failed" });
     if (mode === "link" && typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent(OAUTH_LINK_EVENT, {
-        detail: { provider: cb.provider, error: err.message },
+        detail: { provider: cb.provider, failed: true },
       }));
     }
     return false;

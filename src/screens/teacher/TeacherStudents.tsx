@@ -13,6 +13,8 @@ import {
 import { isMissingFunction } from "@/lib/api/errors";
 import { isoDateKey, mapRosterToStudents, type StudentView } from "@/transform/teacherView";
 import "./TeacherStudents.css";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 
 // 선생님이 기록 가능한 참석 상태(백엔드 enum 중 의미 있는 3종). '지각'은 서버 상태가 없어 미노출.
 const ATTEND_ACTIONS = [
@@ -31,6 +33,7 @@ const PAIRING_MESSAGES: Record<string, string> = {
 
 export function TeacherStudents() {
   const { show } = useToast();
+  const intl = useIntl();
 
   // 출석 태그·기록 기준일(표준 ISO). 마운트 시 고정해 쿼리키 churn 방지.
   const todayIso = useMemo(() => isoDateKey(new Date()), []);
@@ -67,7 +70,7 @@ export function TeacherStudents() {
       {
         onSuccess: () => show(`${s.name} 참석 상태를 저장했어요`, "✅"),
         onError: (err) =>
-          show(err instanceof Error ? err.message : "참석 상태를 저장하지 못했어요", "⚠️"),
+          show(localizeApiError(err, intl, "formal"), "⚠️"),
         onSettled: () => setSavingAttendance(null),
       },
     );
@@ -123,7 +126,7 @@ export function TeacherStudents() {
           }
         },
         onError: (err) => {
-          show(err instanceof Error ? err.message : "연결 요청을 보내지 못했어요", "⚠️");
+          show(localizeApiError(err, intl, "formal"), "⚠️");
         },
       },
     );

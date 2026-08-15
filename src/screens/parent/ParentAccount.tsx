@@ -14,11 +14,14 @@ import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import { Loading } from "@/components/ui/Loading";
 import { usePwaUpdateCriticalSection } from "@/lib/usePwaUpdateCriticalSection";
 import "./ParentAccount.css";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 
 /** P-30 계정·프로필 — 프로필 편집·로그인 정보·로그아웃·회원 탈퇴. */
 export function ParentAccount() {
   const navigate = useNavigate();
   const { show } = useToast();
+  const intl = useIntl();
   const qc = useQueryClient();
   const { logout, familyId, user } = useAuth();
   const {
@@ -186,7 +189,7 @@ export function ParentAccount() {
           show("비밀번호를 변경했어요", "✅");
           closePassword(true);
         },
-        onError: (e) => show(e instanceof Error ? e.message : "비밀번호 변경에 실패했어요", "⚠️"),
+        onError: (e) => show(localizeApiError(e, intl, "formal"), "⚠️"),
       },
     );
   };

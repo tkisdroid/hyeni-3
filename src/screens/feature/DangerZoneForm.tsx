@@ -18,9 +18,10 @@ import {
   loadPremiumReturnIntent,
   savePremiumReturnIntent,
 } from "@/transform/premiumReturnIntent";
-import { ApiError } from "@/lib/api/errors";
 import type { DangerZone } from "@/lib/api/endpoints/location";
 import "./DangerZoneForm.css";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 
 interface LatLng {
   lat: number;
@@ -91,6 +92,7 @@ function restoredDangerZoneDraft(routeDraft: unknown): DangerZoneDraft | null {
 
 /** P-17 위험구역 추가·편집. 지도 핀으로 중심 선택 + 반경 슬라이더 + 진입/이탈 알림 토글. */
 export function DangerZoneForm() {
+  const intl = useIntl();
   const navigate = useNavigate();
   const { show } = useToast();
   const routeState = (useLocation().state ?? null) as DangerZoneRouteState | null;
@@ -238,7 +240,7 @@ export function DangerZoneForm() {
         show(editing ? "위험구역을 수정했어요" : "위험구역을 추가했어요", "🛡️");
         navigate(-1);
       },
-      onError: (e: Error) => show(e instanceof ApiError ? e.message : "저장에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️"),
+      onError: (e: Error) => show(localizeApiError(e, intl, "formal"), "⚠️"),
     };
     if (editing?.id) {
       updateZone.mutate({ id: editing.id, zone: payload }, handlers);

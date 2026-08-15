@@ -1,1 +1,9 @@
-{}
+{
+  "shared.qr.enterManually": "请直接输入连接码",
+  "shared.qr.failedLabel": "创建 {label} 失败",
+  "shared.qr.label": "二维码",
+  "shared.sticker.arrived": "贴纸到了！",
+  "shared.sticker.defaultTitle": "真棒",
+  "shared.sticker.receivedLabel": "你收到了“{title}”贴纸",
+  "shared.sticker.sentByParent": "家长给你发来一张表扬贴纸"
+}

@@ -16,22 +16,19 @@ import { useLocale } from "@/i18n/useLocale";
 import { formatRelativeMinutes } from "@/i18n/format";
 import type { SupportedLocale } from "@/i18n/locale";
 import "./PlaydateAccept.css";
+import { isApiError } from "@/lib/api/errors";
 
 /** 친구 아바타(도메인엔 이름만 있어 index 파생). */
 const FRIEND_ANIMALS = ["animal/bear.webp", "animal/fox.webp", "animal/cat.webp", "animal/rabbit.webp"];
 
-function errMsg(e: unknown): string {
-  return e instanceof Error ? e.message : "";
-}
-
 /** 서버 에러코드 → 아이 눈높이 안내(반말). */
 function friendlyError(e: unknown): string {
-  const m = errMsg(e);
+  const m = isApiError(e) ? e.code : null;
   if (m === "forbidden") return "이 기기에서는 수락하거나 거절할 수 없어.";
   if (m === "invite_expired") return "요청이 만료됐어.";
   if (m === "invite_not_pending") return "이미 처리한 요청이야.";
   if (m === "already_active") return "이미 놀이 중인 친구야.";
-  return m || "잠시 후 다시 시도해 줘.";
+  return "잠시 후 다시 시도해 줘.";
 }
 
 /** expires_at(ISO) → "N분 후 만료" 라벨(만료면 null). */

@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 import { useNavigate } from "react-router";
 import { Camera, Check, ChevronLeft, ChevronRight, Link2 } from "lucide-react";
 import { asset } from "@/lib/assets";
@@ -74,35 +75,33 @@ import {
   type SignupPendingAction,
 } from "@/transform/asyncUiState";
 import "./Onboarding.css";
+import { localizeApiError } from "@/i18n/apiError";
 
 type Step = "role" | "teacherSetup" | "login" | "survey" | "signup" | "connect" | "pairing" | "perms";
 type Show = (text: string, emoji?: string) => void;
 
 const CHILD_PERM_ITEMS = [
-  { id: "loc", icon: "ui/pin-heart.webp", title: "위치 정보", sub: "현재 위치와 이동 경로를 보호자에게 공유해요" },
-  { id: "noti", icon: "ui/bell.webp", title: "알림", sub: "일정·부모 메시지·안전 알림을 바로 받아요" },
-  { id: "battery", icon: "ui/battery.webp", title: "백그라운드 실행", sub: "앱을 닫아도 도착·출발을 확인할 수 있게 해요" },
+  { id: "loc", icon: "ui/pin-heart.webp", titleId: "onboarding.permissions.location.title", subId: "onboarding.permissions.location.childDescription" },
+  { id: "noti", icon: "ui/bell.webp", titleId: "onboarding.permissions.notifications.title", subId: "onboarding.permissions.notifications.childDescription" },
+  { id: "battery", icon: "ui/battery.webp", titleId: "onboarding.permissions.background.title", subId: "onboarding.permissions.background.childDescription" },
 ] as const;
 
 const GUARDIAN_PERM_ITEMS = [
-  { id: "noti", icon: "ui/bell.webp", title: "알림", sub: "아이의 일정·도착·위험·메시지 알림을 받아요" },
+  { id: "noti", icon: "ui/bell.webp", titleId: "onboarding.permissions.notifications.title", subId: "onboarding.permissions.notifications.formalDescription" },
 ] as const;
 
 const SURVEY_OPTIONS = [
-  { id: "schedule", title: "일정 관리", sub: "학교·학원·준비물을 놓치지 않기" },
-  { id: "location", title: "실시간 위치", sub: "아이 위치와 이동 경로 확인" },
-  { id: "arrival", title: "등하원·학원 도착 알림", sub: "도착·이탈 소식을 바로 받기" },
-  { id: "safety", title: "SOS 안전 알림", sub: "급할 때 부모님께 빠르게 알리기" },
-  { id: "ai", title: "AI 하루 요약", sub: "일정과 안전 기록을 쉽게 정리하기" },
+  { id: "schedule", titleId: "onboarding.survey.schedule.title", subId: "onboarding.survey.schedule.description" },
+  { id: "location", titleId: "onboarding.survey.location.title", subId: "onboarding.survey.location.description" },
+  { id: "arrival", titleId: "onboarding.survey.arrival.title", subId: "onboarding.survey.arrival.description" },
+  { id: "safety", titleId: "onboarding.survey.safety.title", subId: "onboarding.survey.safety.description" },
+  { id: "ai", titleId: "onboarding.survey.ai.title", subId: "onboarding.survey.ai.description" },
 ] as const;
-
-function errMsg(e: unknown): string {
-  return e instanceof Error && e.message ? e.message : "문제가 생겼어요. 잠시 후 다시 시도해 주세요.";
-}
 
 /** 온보딩: 역할선택→로그인/가입→가족연결→페어링→권한. 실제 Worker 인증 배선. */
 export function Onboarding() {
   const navigate = useNavigate();
+  const intl = useIntl();
   const { show } = useToast();
   const { syncFromSession, user, role: authRole, familyId: authFamilyId } = useAuth();
   const authTransitionActive = useSyncExternalStore(
@@ -150,9 +149,9 @@ export function Onboarding() {
     if (cancellation) {
       try {
         finishOAuthCancellation(cancellation);
-        show("소셜 로그인을 취소했어요.", "ℹ️");
+        show(intl.formatMessage({ id: "onboarding.toast.socialCancelled" }), "ℹ️");
       } catch (e) {
-        show(errMsg(e), "⚠️");
+        show(localizeApiError(e, intl, "formal"), "⚠️");
       } finally {
         cancelOnboardingAuthTransitions();
         clearOAuthExternalBusy();
@@ -186,7 +185,7 @@ export function Onboarding() {
         clearOAuthCallbackUrl();
         if (!canApplySideEffects) return;
         clearOAuthExternalBusy();
-        show(errMsg(e), "⚠️");
+        show(localizeApiError(e, intl, "formal"), "⚠️");
         setRole("parent");
         setStep("login");
         setBusy(false);
@@ -277,7 +276,7 @@ export function Onboarding() {
         setPairMode("child");
         setStep("pairing");
       })
-      .catch((e) => show(errMsg(e), "⚠️"))
+      .catch((e) => show(localizeApiError(e, intl, "formal"), "⚠️"))
       .finally(() => {
         setBusy(false);
         setChildStarting(false);
@@ -312,7 +311,7 @@ export function Onboarding() {
       clearReferralParam();
       navigate("/parent/home");
     } catch {
-      throw new Error("가족 정보를 확인하지 못했어요. 다시 시도해 주세요.");
+      throw new Error("family_lookup_failed");
     }
   };
 
@@ -361,7 +360,7 @@ export function Onboarding() {
       syncFromSession();
       routeAfterChildSession();
     } catch (e) {
-      show(errMsg(e), "⚠️");
+      show(localizeApiError(e, intl, "formal"), "⚠️");
     } finally {
       setBusy(false);
       setChildStarting(false);
@@ -470,7 +469,7 @@ export function Onboarding() {
               syncFromSession();
               setStep("perms");
             } catch (e) {
-              show(errMsg(e), "⚠️");
+              show(localizeApiError(e, intl, "formal"), "⚠️");
             } finally {
               setBusy(false);
             }
@@ -517,11 +516,12 @@ function BackButton({
   dark?: boolean;
   disabled?: boolean;
 }) {
+  const intl = useIntl();
   return (
     <button
       type="button"
       className={dark ? "ob-back ob-back--dark hy-press" : "ob-back hy-press"}
-      aria-label="뒤로"
+      aria-label={intl.formatMessage({ id: "core.action.back" })}
       aria-disabled={disabled}
       onClick={onBack}
       disabled={disabled}
@@ -604,21 +604,22 @@ function RoleStep({
   onChild: () => void;
   onTeacher: () => void;
 }) {
+  const intl = useIntl();
   return (
     <div className="ob-step ob-role">
       <div className="ob-role-head">
-        <span className="ob-role-badge">함께 보는 우리 가족</span>
+        <span className="ob-role-badge">{intl.formatMessage({ id: "onboarding.role.badge" })}</span>
         <div className="ob-role-logo">
           <img
             src={asset("mascot/wave.webp")}
-            alt="혜니캘린더"
+            alt={intl.formatMessage({ id: "core.brand.name" })}
             loading="eager"
             decoding="async"
             fetchPriority="high"
           />
         </div>
-        <div className="ob-role-title">혜니캘린더</div>
-        <div className="ob-role-sub">함께 보는 우리 가족 일정</div>
+        <div className="ob-role-title">{intl.formatMessage({ id: "core.brand.name" })}</div>
+        <div className="ob-role-sub">{intl.formatMessage({ id: "onboarding.role.subtitle" })}</div>
       </div>
 
       <div className="ob-role-list">
@@ -640,8 +641,8 @@ function RoleStep({
             />
           </span>
           <span className="ob-role-main">
-            <span className="ob-role-name">학부모</span>
-            <span className="ob-role-desc">ID · 카카오로 로그인</span>
+            <span className="ob-role-name">{intl.formatMessage({ id: "onboarding.role.parent.title" })}</span>
+            <span className="ob-role-desc">{intl.formatMessage({ id: "onboarding.role.parent.description" })}</span>
           </span>
           <ChevronRight size={22} strokeWidth={2.4} color="#C9BFC4" />
         </button>
@@ -663,9 +664,9 @@ function RoleStep({
             />
           </span>
           <span className="ob-role-main">
-            <span className="ob-role-name" style={{ color: "#7C4B8E" }}>아이</span>
+            <span className="ob-role-name" style={{ color: "#7C4B8E" }}>{intl.formatMessage({ id: "onboarding.role.child.title" })}</span>
             <span className="ob-role-desc" style={{ color: "#A67FB0" }}>
-              {childStarting ? "준비 중…" : "부모님 코드로 시작"}
+              {intl.formatMessage({ id: childStarting ? "onboarding.role.child.starting" : "onboarding.role.child.description" })}
             </span>
           </span>
           <ChevronRight size={22} strokeWidth={2.4} color="#C6A9CF" />
@@ -689,8 +690,8 @@ function RoleStep({
               />
             </span>
             <span className="ob-role-main">
-              <span className="ob-role-name" style={{ color: "#0F7A57" }}>선생님</span>
-              <span className="ob-role-desc" style={{ color: "#5FA98A" }}>학교·반 등록하고 시작</span>
+              <span className="ob-role-name" style={{ color: "#0F7A57" }}>{intl.formatMessage({ id: "onboarding.role.teacher.title" })}</span>
+              <span className="ob-role-desc" style={{ color: "#5FA98A" }}>{intl.formatMessage({ id: "onboarding.role.teacher.description" })}</span>
             </span>
             <ChevronRight size={22} strokeWidth={2.4} color="#9AD3BE" />
           </button>
@@ -698,13 +699,13 @@ function RoleStep({
       </div>
 
       <div className="ob-role-terms">
-        계속하면
-        {" "}
-        <a href={TERMS_OF_SERVICE_URL} target="_blank" rel="noopener noreferrer">이용약관</a>
-        과
-        {" "}
-        <a href={PRIVACY_POLICY_URL} target="_blank" rel="noopener noreferrer">개인정보처리방침</a>
-        에 동의합니다.
+        <FormattedMessage
+          id="onboarding.role.legalConsent"
+          values={{
+            terms: (chunks) => <a href={TERMS_OF_SERVICE_URL} target="_blank" rel="noopener noreferrer">{chunks}</a>,
+            privacy: (chunks) => <a href={PRIVACY_POLICY_URL} target="_blank" rel="noopener noreferrer">{chunks}</a>,
+          }}
+        />
       </div>
     </div>
   );
@@ -713,15 +714,16 @@ function RoleStep({
 /* ── STEP: TEACHER SETUP (백엔드 배선은 Slice 9) ────────────────────────── */
 
 function TeacherStep({ onBack, onSave, show }: { onBack: () => void; onSave: () => void; show: Show }) {
+  const intl = useIntl();
   const [school, setSchool] = useState("");
   const [klass, setKlass] = useState("");
 
   const save = () => {
     if (!school.trim() || !klass.trim()) {
-      show("학교와 반 이름을 입력해 주세요", "✏️");
+      show(intl.formatMessage({ id: "onboarding.teacher.missingFields" }), "✏️");
       return;
     }
-    show(`${school} · ${klass} 등록은 선생님 연동(예정) 후 활성화돼요`, "🎓");
+    show(intl.formatMessage({ id: "onboarding.teacher.savedPending" }, { school, className: klass }), "🎓");
     onSave();
   };
 
@@ -732,29 +734,27 @@ function TeacherStep({ onBack, onSave, show }: { onBack: () => void; onSave: () 
         <div className="ob-teacher-logo">
           <img src={asset("cat/study.webp")} alt="" />
         </div>
-        <div className="ob-h1">우리 반 만들기</div>
+        <div className="ob-h1">{intl.formatMessage({ id: "onboarding.teacher.title" })}</div>
         <div className="ob-teacher-sub">
-          학교·반을 등록하면 부모님 전화번호로
-          <br />
-          학생을 초대해 일정을 관리할 수 있어요
+          <FormattedMessage id="onboarding.teacher.subtitle" values={{ br: () => <br /> }} />
         </div>
       </div>
 
       <div className="ob-teacher-form">
-        <Field label="학교 이름">
+        <Field label={intl.formatMessage({ id: "onboarding.teacher.schoolLabel" })}>
           <input
             className="ob-input ob-input--tall"
-            aria-label="학교 이름"
-            placeholder="예) 혜니초등학교"
+            aria-label={intl.formatMessage({ id: "onboarding.teacher.schoolLabel" })}
+            placeholder={intl.formatMessage({ id: "onboarding.teacher.schoolPlaceholder" })}
             value={school}
             onChange={(e) => setSchool(e.target.value)}
           />
         </Field>
-        <Field label="반 이름">
+        <Field label={intl.formatMessage({ id: "onboarding.teacher.classLabel" })}>
           <input
             className="ob-input ob-input--tall"
-            aria-label="반 이름"
-            placeholder="예) 3학년 햇살반"
+            aria-label={intl.formatMessage({ id: "onboarding.teacher.classLabel" })}
+            placeholder={intl.formatMessage({ id: "onboarding.teacher.classPlaceholder" })}
             value={klass}
             onChange={(e) => setKlass(e.target.value)}
           />
@@ -764,14 +764,14 @@ function TeacherStep({ onBack, onSave, show }: { onBack: () => void; onSave: () 
       <div className="ob-teacher-note hy-explain">
         <span className="ob-teacher-note__ic"><Link2 size={18} strokeWidth={2.2} /></span>
         <span className="ob-teacher-note__tx hy-explain__lines">
-          <span className="hy-explain__line">등록 후 <b>부모님 전화번호</b>로 학생을 초대해요.</span>
-          <span className="hy-explain__line">부모님이 승인하면 반 일정·알림장이 아이 캘린더에 연결됩니다.</span>
-          <span className="hy-explain__line">개인정보는 최소한만 안전하게 보관해요.</span>
+          <span className="hy-explain__line"><FormattedMessage id="onboarding.teacher.noteInvite" values={{ strong: (chunks) => <b>{chunks}</b> }} /></span>
+          <span className="hy-explain__line">{intl.formatMessage({ id: "onboarding.teacher.noteApproval" })}</span>
+          <span className="hy-explain__line">{intl.formatMessage({ id: "onboarding.teacher.notePrivacy" })}</span>
         </span>
       </div>
 
       <button type="button" className="ob-cta ob-cta--green hy-press" onClick={save}>
-        반 등록하고 시작하기
+        {intl.formatMessage({ id: "onboarding.teacher.submit" })}
       </button>
     </div>
   );
@@ -800,6 +800,7 @@ function LoginStep({
   onSignup: () => void;
   show: Show;
 }) {
+  const intl = useIntl();
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<LoginFormErrors>({});
@@ -827,7 +828,7 @@ function LoginStep({
     } catch (e) {
       if (!isOnboardingAuthTransitionActive(transitionToken)) return;
       onOAuthExternalEnd();
-      show(errMsg(e), "⚠️");
+      show(localizeApiError(e, intl, "formal"), "⚠️");
       // 키 미설정 등 설정 오류 — busy 를 풀고 정직하게 안내(버튼이 영구 잠기지 않게).
       setPendingAction(null);
       setBusy(false);
@@ -860,7 +861,7 @@ function LoginStep({
       await onLoggedIn(transitionToken);
     } catch (e) {
       if (!isOnboardingAuthTransitionActive(transitionToken)) return;
-      show(errMsg(e), "⚠️");
+      show(localizeApiError(e, intl, "formal"), "⚠️");
     } finally {
       if (isOnboardingAuthTransitionActive(transitionToken)) {
         setPendingAction(null);
@@ -875,31 +876,31 @@ function LoginStep({
       <BackButton onBack={onBack} disabled={loginNavigationLocked} />
       <div className="ob-login-head">
         <img className="ob-login-mascot" src={asset("mascot/wave.webp")} alt="" />
-        <div className="ob-h1">다시 만나 반가워요</div>
-        <div className="ob-sub">계정으로 우리 가족과 이어집니다</div>
+        <div className="ob-h1">{intl.formatMessage({ id: "onboarding.login.title" })}</div>
+        <div className="ob-sub">{intl.formatMessage({ id: "onboarding.login.subtitle" })}</div>
       </div>
 
       <div className="ob-login-social">
         <button type="button" className="ob-social ob-social--kakao hy-press hy-busy-quiet" onClick={() => social("kakao")} disabled={busy} aria-busy={busy && pendingAction === "kakao"}>
           <KakaoIcon />
-          <BusyLabel busy={busy && pendingAction === "kakao"} idle="카카오로 계속하기" pending="카카오 로그인 중…" />
+          <BusyLabel busy={busy && pendingAction === "kakao"} idle={intl.formatMessage({ id: "onboarding.login.kakao" })} pending={intl.formatMessage({ id: "onboarding.login.kakaoPending" })} />
         </button>
         <button type="button" className="ob-social ob-social--google hy-press hy-busy-quiet" onClick={() => social("google")} disabled={busy} aria-busy={busy && pendingAction === "google"}>
           <GoogleIcon />
-          <BusyLabel busy={busy && pendingAction === "google"} idle="Google로 계속하기" pending="Google 로그인 중…" />
+          <BusyLabel busy={busy && pendingAction === "google"} idle={intl.formatMessage({ id: "onboarding.login.google" })} pending={intl.formatMessage({ id: "onboarding.login.googlePending" })} />
         </button>
         {/* 네이버 키가 없으면 버튼 자체를 숨긴다 — 누르면 실패하는 버튼을 보여주지 않는다. */}
         {hasNaverClientId && (
           <button type="button" className="ob-social ob-social--naver hy-press hy-busy-quiet" onClick={() => social("naver")} disabled={busy} aria-busy={busy && pendingAction === "naver"}>
             <NaverIcon />
-            <BusyLabel busy={busy && pendingAction === "naver"} idle="네이버로 계속하기" pending="네이버 로그인 중…" />
+            <BusyLabel busy={busy && pendingAction === "naver"} idle={intl.formatMessage({ id: "onboarding.login.naver" })} pending={intl.formatMessage({ id: "onboarding.login.naverPending" })} />
           </button>
         )}
       </div>
 
       <div className="ob-divider">
         <span />
-        <em>또는 아이디로</em>
+        <em>{intl.formatMessage({ id: "onboarding.login.orId" })}</em>
         <span />
       </div>
 
@@ -908,8 +909,8 @@ function LoginStep({
           <input
             ref={loginIdInputRef}
             className="ob-input"
-            placeholder="아이디"
-            aria-label="아이디"
+            placeholder={intl.formatMessage({ id: "onboarding.field.loginId" })}
+            aria-label={intl.formatMessage({ id: "onboarding.field.loginId" })}
             aria-invalid={Boolean(errors.loginId)}
             aria-describedby={errors.loginId ? "ob-login-id-error" : undefined}
             autoComplete="username"
@@ -921,7 +922,7 @@ function LoginStep({
           />
           {errors.loginId && (
             <p id="ob-login-id-error" className="ob-field-error" role="alert">
-              {errors.loginId}
+              {intl.formatMessage({ id: "onboarding.validation.loginIdRequired" })}
             </p>
           )}
         </div>
@@ -930,8 +931,8 @@ function LoginStep({
             ref={passwordInputRef}
             className="ob-input"
             type="password"
-            placeholder="비밀번호"
-            aria-label="비밀번호"
+            placeholder={intl.formatMessage({ id: "onboarding.field.password" })}
+            aria-label={intl.formatMessage({ id: "onboarding.field.password" })}
             aria-invalid={Boolean(errors.password)}
             aria-describedby={errors.password ? "ob-login-password-error" : undefined}
             autoComplete="current-password"
@@ -943,17 +944,17 @@ function LoginStep({
           />
           {errors.password && (
             <p id="ob-login-password-error" className="ob-field-error" role="alert">
-              {errors.password}
+              {intl.formatMessage({ id: "onboarding.validation.passwordRequired" })}
             </p>
           )}
         </div>
         <button type="button" className="ob-loginbtn hy-press hy-busy-quiet" onClick={loginIdPw} disabled={busy} aria-busy={busy && pendingAction === "id"}>
-          <BusyLabel busy={busy && pendingAction === "id"} idle="로그인" pending="로그인 중…" />
+          <BusyLabel busy={busy && pendingAction === "id"} idle={intl.formatMessage({ id: "onboarding.login.submit" })} pending={intl.formatMessage({ id: "onboarding.login.pending" })} />
         </button>
       </div>
 
       <div className="ob-login-foot">
-        아직 계정이 없나요?{" "}
+        {intl.formatMessage({ id: "onboarding.login.noAccount" })}{" "}
         <button
           type="button"
           className="ob-link"
@@ -961,7 +962,7 @@ function LoginStep({
           disabled={busy || commitBoundaryActive}
           data-progress-owner="login-action"
         >
-          회원가입
+          {intl.formatMessage({ id: "onboarding.login.signup" })}
         </button>
       </div>
     </div>
@@ -981,16 +982,15 @@ function SurveyStep({
   onToggle: (id: string) => void;
   onNext: () => void;
 }) {
+  const intl = useIntl();
   return (
     <div className="ob-step ob-survey">
       <BackButton onBack={onBack} />
-      <SignupProgress percent={20} label="1/5 관심 기능" />
+      <SignupProgress percent={20} label={intl.formatMessage({ id: "onboarding.progress.survey" })} />
       <div className="ob-survey-head">
-        <div className="ob-signup-title">가입 전에 한 가지만 알려 주세요</div>
+        <div className="ob-signup-title">{intl.formatMessage({ id: "onboarding.survey.title" })}</div>
         <div className="ob-sub">
-          우리 아이에게 가장 필요한 기능을 골라 주세요.
-          <br />
-          복수 선택할 수 있어요.
+          <FormattedMessage id="onboarding.survey.subtitle" values={{ br: () => <br /> }} />
         </div>
       </div>
 
@@ -1009,8 +1009,8 @@ function SurveyStep({
                 {on && <Check size={16} strokeWidth={2.4} />}
               </span>
               <span className="ob-survey-main">
-                <span className="ob-survey-title">{option.title}</span>
-                <span className="ob-survey-sub">{option.sub}</span>
+                <span className="ob-survey-title">{intl.formatMessage({ id: option.titleId })}</span>
+                <span className="ob-survey-sub">{intl.formatMessage({ id: option.subId })}</span>
               </span>
             </button>
           );
@@ -1018,16 +1018,16 @@ function SurveyStep({
       </div>
 
       <button type="button" className="ob-cta ob-cta--accent hy-press" onClick={onNext}>
-        다음
+        {intl.formatMessage({ id: "onboarding.action.next" })}
       </button>
     </div>
   );
 }
 
 const GENDERS = [
-  { value: "mom", label: "엄마" },
-  { value: "dad", label: "아빠" },
-  { value: "guardian", label: "보호자" },
+  { value: "mom", labelId: "onboarding.guardian.mom" },
+  { value: "dad", labelId: "onboarding.guardian.dad" },
+  { value: "guardian", labelId: "onboarding.guardian.other" },
 ] as const;
 
 function SignupStep({
@@ -1043,6 +1043,7 @@ function SignupStep({
   onDone: (name: string) => void;
   show: Show;
 }) {
+  const intl = useIntl();
   const [phase, setPhase] = useState<"form" | "otp">("form");
   const [name, setName] = useState("");
   const [loginId, setLoginId] = useState("");
@@ -1078,9 +1079,9 @@ function SignupStep({
       onSuccess: (result) => {
         setPending(result);
         setPhase("otp");
-        show("인증번호를 보냈어요", "📩");
+        show(intl.formatMessage({ id: "onboarding.toast.otpSent" }), "📩");
       },
-      onError: (error) => show(errMsg(error), "⚠️"),
+      onError: (error) => show(localizeApiError(error, intl, "formal"), "⚠️"),
       onFinally: () => finishSignupAction(requestToken),
     });
   };
@@ -1097,10 +1098,10 @@ function SignupStep({
       ),
       onSuccess: (result) => {
         adoptAuthResult(result);
-        show("가입이 완료됐어요", "🎉");
+        show(intl.formatMessage({ id: "onboarding.toast.signupComplete" }), "🎉");
         onDone(name);
       },
-      onError: (error) => show(errMsg(error), "⚠️"),
+      onError: (error) => show(localizeApiError(error, intl, "formal"), "⚠️"),
       onFinally: () => finishSignupAction(requestToken),
     });
   };
@@ -1109,16 +1110,16 @@ function SignupStep({
     return (
       <div className="ob-step ob-signup">
         <BackButton onBack={() => setPhase("form")} disabled={busy} />
-        <SignupProgress percent={60} label="3/5 휴대폰 인증" />
+        <SignupProgress percent={60} label={intl.formatMessage({ id: "onboarding.progress.phone" })} />
         <div className="ob-signup-head">
-          <div className="ob-signup-title">인증번호 확인</div>
-          <div className="ob-sub">{pending?.phoneStorage}로 보낸 6자리를 입력해 주세요</div>
+          <div className="ob-signup-title">{intl.formatMessage({ id: "onboarding.signup.otpTitle" })}</div>
+          <div className="ob-sub">{intl.formatMessage({ id: "onboarding.signup.otpDescription" }, { phone: pending?.phoneStorage ?? "" })}</div>
         </div>
         <div className="ob-signup-form">
-          <Field label="인증번호">
+          <Field label={intl.formatMessage({ id: "onboarding.field.otp" })}>
             <input
               className="ob-input"
-              aria-label="인증번호"
+              aria-label={intl.formatMessage({ id: "onboarding.field.otp" })}
               inputMode="numeric"
               maxLength={6}
               placeholder="000000"
@@ -1136,13 +1137,13 @@ function SignupStep({
         >
           <BusyLabel
             busy={busy && isAsyncActionTokenFor(pendingSignupAction, "verify")}
-            idle="인증하고 가입 완료"
-            pending="가입 확인 중…"
+            idle={intl.formatMessage({ id: "onboarding.signup.verify" })}
+            pending={intl.formatMessage({ id: "onboarding.signup.verifying" })}
           />
         </button>
         {/* 재전송은 requestPhoneSignupCode 를 다시 호출(실 전송) */}
         <div className="ob-login-foot">
-          인증번호를 못 받으셨나요?{" "}
+          {intl.formatMessage({ id: "onboarding.signup.otpMissing" })}{" "}
           <button
             type="button"
             className="ob-link hy-busy-quiet"
@@ -1152,8 +1153,8 @@ function SignupStep({
           >
             <BusyLabel
               busy={busy && isAsyncActionTokenFor(pendingSignupAction, "request-code")}
-              idle="재전송"
-              pending="재전송 중…"
+              idle={intl.formatMessage({ id: "onboarding.signup.resend" })}
+              pending={intl.formatMessage({ id: "onboarding.signup.resending" })}
             />
           </button>
         </div>
@@ -1164,26 +1165,26 @@ function SignupStep({
   return (
     <div className="ob-step ob-signup">
       <BackButton onBack={onBack} disabled={busy} />
-      <SignupProgress percent={40} label="2/5 계정 만들기" />
+      <SignupProgress percent={40} label={intl.formatMessage({ id: "onboarding.progress.account" })} />
       <div className="ob-signup-head">
-        <div className="ob-signup-title">혜니 가족 시작하기</div>
-        <div className="ob-sub">부모님 계정을 만들어요</div>
+        <div className="ob-signup-title">{intl.formatMessage({ id: "onboarding.signup.title" })}</div>
+        <div className="ob-sub">{intl.formatMessage({ id: "onboarding.signup.subtitle" })}</div>
       </div>
 
       <div className="ob-signup-form">
-        <Field label="이름">
-          <input className="ob-input" aria-label="이름" placeholder="이름을 입력해 주세요" value={name} onChange={(e) => setName(e.target.value)} />
+        <Field label={intl.formatMessage({ id: "onboarding.field.name" })}>
+          <input className="ob-input" aria-label={intl.formatMessage({ id: "onboarding.field.name" })} placeholder={intl.formatMessage({ id: "onboarding.field.namePlaceholder" })} value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
-        <Field label="아이디">
-          <input className="ob-input" aria-label="아이디" placeholder="영문 소문자·숫자 4자 이상" autoCapitalize="none" value={loginId} onChange={(e) => setLoginId(e.target.value)} />
+        <Field label={intl.formatMessage({ id: "onboarding.field.loginId" })}>
+          <input className="ob-input" aria-label={intl.formatMessage({ id: "onboarding.field.loginId" })} placeholder={intl.formatMessage({ id: "onboarding.field.loginIdPlaceholder" })} autoCapitalize="none" value={loginId} onChange={(e) => setLoginId(e.target.value)} />
         </Field>
-        <Field label="비밀번호">
-          <input className="ob-input" type="password" aria-label="비밀번호" placeholder="6자 이상" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <Field label={intl.formatMessage({ id: "onboarding.field.password" })}>
+          <input className="ob-input" type="password" aria-label={intl.formatMessage({ id: "onboarding.field.password" })} placeholder={intl.formatMessage({ id: "onboarding.field.passwordPlaceholder" })} value={password} onChange={(e) => setPassword(e.target.value)} />
         </Field>
-        <Field label="비밀번호 확인">
-          <input className="ob-input" type="password" aria-label="비밀번호 확인" placeholder="비밀번호 재입력" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} />
+        <Field label={intl.formatMessage({ id: "onboarding.field.passwordConfirm" })}>
+          <input className="ob-input" type="password" aria-label={intl.formatMessage({ id: "onboarding.field.passwordConfirm" })} placeholder={intl.formatMessage({ id: "onboarding.field.passwordConfirmPlaceholder" })} value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} />
         </Field>
-        <Field label="보호자 구분">
+        <Field label={intl.formatMessage({ id: "onboarding.field.guardianType" })}>
           <div style={{ display: "flex", gap: 8 }}>
             {GENDERS.map((g) => (
               <button
@@ -1202,16 +1203,16 @@ function SignupStep({
                   color: gender === g.value ? "#fff" : "var(--fg-body)",
                 }}
               >
-                {g.label}
+                {intl.formatMessage({ id: g.labelId })}
               </button>
             ))}
           </div>
         </Field>
-        <Field label="생년월일">
-          <input className="ob-input" type="date" aria-label="생년월일" value={birthdate} onChange={(e) => setBirthdate(e.target.value)} />
+        <Field label={intl.formatMessage({ id: "onboarding.field.birthdate" })}>
+          <input className="ob-input" type="date" aria-label={intl.formatMessage({ id: "onboarding.field.birthdate" })} value={birthdate} onChange={(e) => setBirthdate(e.target.value)} />
         </Field>
-        <Field label="휴대폰 번호">
-          <input className="ob-input" inputMode="tel" aria-label="휴대폰 번호" placeholder="010-0000-0000" value={phone} onChange={(e) => setPhone(e.target.value)} />
+        <Field label={intl.formatMessage({ id: "onboarding.field.phone" })}>
+          <input className="ob-input" inputMode="tel" aria-label={intl.formatMessage({ id: "onboarding.field.phone" })} placeholder={intl.formatMessage({ id: "onboarding.field.phonePlaceholder" })} value={phone} onChange={(e) => setPhone(e.target.value)} />
         </Field>
       </div>
 
@@ -1224,8 +1225,8 @@ function SignupStep({
       >
         <BusyLabel
           busy={busy && isAsyncActionTokenFor(pendingSignupAction, "request-code")}
-          idle="인증번호 받기"
-          pending="인증번호 전송 중…"
+          idle={intl.formatMessage({ id: "onboarding.signup.requestOtp" })}
+          pending={intl.formatMessage({ id: "onboarding.signup.requestingOtp" })}
         />
       </button>
     </div>
@@ -1251,6 +1252,7 @@ function ConnectStep({
   onJoin: () => void | Promise<void>;
   onChildDevice: () => void | Promise<void>;
 }) {
+  const intl = useIntl();
   const [pendingAction, setPendingAction] = useState<"new-family" | "join" | "child-device" | null>(null);
   const runAction = (
     action: Exclude<typeof pendingAction, null>,
@@ -1264,17 +1266,17 @@ function ConnectStep({
   return (
     <div className="ob-step ob-connect">
       <BackButton onBack={onBack} />
-      {progressPercent != null && <SignupProgress percent={progressPercent} label="4/5 가족 연결" />}
+      {progressPercent != null && <SignupProgress percent={progressPercent} label={intl.formatMessage({ id: "onboarding.progress.family" })} />}
       <div className="ob-connect-head">
         <img className="ob-connect-mascot" src={asset("mascot/family.webp")} alt="" />
-        <div className="ob-h1">가족을 연결해요</div>
-        <div className="ob-sub">엄마·아빠·아이가 함께 쓰는 가족 앱</div>
+        <div className="ob-h1">{intl.formatMessage({ id: "onboarding.connect.title" })}</div>
+        <div className="ob-sub">{intl.formatMessage({ id: "onboarding.connect.subtitle" })}</div>
       </div>
 
       {referralCode && (
         <div className="ob-referral-notice" role="status">
-          <strong>친구 초대 코드가 적용돼요</strong>
-          <span>새 가족을 만든 뒤 3일이 지나고, 처음 위치 연결 뒤 48시간 동안 최신 상태가 유지되면 두 가족 모두 AI 대화 10회를 받아요.</span>
+          <strong>{intl.formatMessage({ id: "onboarding.connect.referralTitle" })}</strong>
+          <span>{intl.formatMessage({ id: "onboarding.connect.referralDescription" })}</span>
         </div>
       )}
 
@@ -1288,8 +1290,8 @@ function ConnectStep({
         >
           <img className="ob-connect-ic" src={asset("ui/place-home.webp")} alt="" />
           <span className="ob-connect-main">
-            <span className="ob-connect-name">새 가족 만들기</span>
-            <span className="ob-connect-desc">연결 코드 생성 · 배우자 &amp; 아이 초대</span>
+            <span className="ob-connect-name">{intl.formatMessage({ id: "onboarding.connect.newFamily" })}</span>
+            <span className="ob-connect-desc">{intl.formatMessage({ id: "onboarding.connect.newFamilyDescription" })}</span>
           </span>
           <ChevronRight size={20} strokeWidth={2.4} color="#C9BFC4" />
         </button>
@@ -1303,8 +1305,8 @@ function ConnectStep({
         >
           <img className="ob-connect-ic" src={asset("ui/friend-pair.webp")} alt="" />
           <span className="ob-connect-main">
-            <span className="ob-connect-name">기존 가족에 합류</span>
-            <span className="ob-connect-desc">배우자가 준 코드로 참여</span>
+            <span className="ob-connect-name">{intl.formatMessage({ id: "onboarding.connect.joinFamily" })}</span>
+            <span className="ob-connect-desc">{intl.formatMessage({ id: "onboarding.connect.joinFamilyDescription" })}</span>
           </span>
           <ChevronRight size={20} strokeWidth={2.4} color="#C9BFC4" />
         </button>
@@ -1318,8 +1320,8 @@ function ConnectStep({
         >
           <img className="ob-connect-ic" src={asset(DEFAULT_CHILD_AVATAR)} alt="" />
           <span className="ob-connect-main">
-            <span className="ob-connect-name" style={{ color: "#6D4E9C" }}>아이 기기인가요?</span>
-            <span className="ob-connect-desc" style={{ color: "#9B7FB8" }}>QR 스캔 또는 코드 입력</span>
+            <span className="ob-connect-name" style={{ color: "#6D4E9C" }}>{intl.formatMessage({ id: "onboarding.connect.childDevice" })}</span>
+            <span className="ob-connect-desc" style={{ color: "#9B7FB8" }}>{intl.formatMessage({ id: "onboarding.connect.childDeviceDescription" })}</span>
           </span>
           <ChevronRight size={20} strokeWidth={2.4} color="#B79DE0" />
         </button>
@@ -1351,6 +1353,7 @@ function PairingStep({
   show: Show;
   setBusy: (v: boolean) => void;
 }) {
+  const intl = useIntl();
   const [raw, setRaw] = useState(initialCode ?? "");
   const [showScanner, setShowScanner] = useState(false);
 
@@ -1361,7 +1364,7 @@ function PairingStep({
     const code = normalizePairCodeInput(rawCode ?? raw);
     if (!code) {
       show(
-        rawCode != null ? "유효한 QR 코드를 찾지 못했어요" : "연결 코드를 확인해 주세요 (KID-XXXXXXXX)",
+        intl.formatMessage({ id: rawCode != null ? "onboarding.pairing.invalidQr" : "onboarding.pairing.invalidCode" }),
         "🔢",
       );
       return;
@@ -1376,10 +1379,10 @@ function PairingStep({
         await joinFamilyAsParent(code);
       }
       onPaired();
-      show("가족과 연결됐어요", "🔗");
+      show(intl.formatMessage({ id: "onboarding.toast.familyConnected" }), "🔗");
       onDone();
     } catch (e) {
-      show(errMsg(e), "⚠️");
+      show(localizeApiError(e, intl, "formal"), "⚠️");
     } finally {
       setBusy(false);
     }
@@ -1389,15 +1392,16 @@ function PairingStep({
     <div className="ob-step ob-pairing">
       <BackButton onBack={onBack} dark />
       <div className="ob-pair-head">
-        <div className="ob-pair-title">부모님 연결 코드를 입력하세요</div>
-        <div className="ob-pair-sub">부모 앱의 가족 &gt; 연결 코드에서 QR 코드와 연결 코드를 볼 수 있어요</div>
+        <div className="ob-pair-title">{intl.formatMessage({ id: "onboarding.pairing.title" })}</div>
+        <div className="ob-pair-sub">{intl.formatMessage({ id: "onboarding.pairing.description" })}</div>
+        <div className="ob-pair-sub">{intl.formatMessage({ id: "onboarding.pairing.recovery" })}</div>
       </div>
 
       {/* 탭하면 실제 카메라 스캐너 오버레이(BarcodeDetector)가 열린다. */}
       <button
         type="button"
         className="ob-qr hy-press"
-        aria-label="카메라로 QR 스캔"
+        aria-label={intl.formatMessage({ id: "onboarding.pairing.scanLabel" })}
         onClick={() => setShowScanner(true)}
         disabled={busy}
         data-progress-owner="pair-submit"
@@ -1407,14 +1411,14 @@ function PairingStep({
         <span className="ob-qr-corner ob-qr-corner--bl" />
         <span className="ob-qr-corner ob-qr-corner--br" />
         <span className="ob-qr-scan" />
-        <span className="ob-qr-cta"><Camera size={16} strokeWidth={2.4} /> 탭해서 QR 스캔</span>
+        <span className="ob-qr-cta"><Camera size={16} strokeWidth={2.4} /> {intl.formatMessage({ id: "onboarding.pairing.scanAction" })}</span>
       </button>
 
-      <div className="ob-pair-hint">QR이 없다면 코드를 직접 입력</div>
+      <div className="ob-pair-hint">{intl.formatMessage({ id: "onboarding.pairing.manualHint" })}</div>
 
       <input
         className="ob-input"
-        aria-label="아이 연결 코드"
+        aria-label={intl.formatMessage({ id: "onboarding.pairing.codeLabel" })}
         placeholder="KID-XXXXXXXX"
         autoCapitalize="characters"
         autoComplete="off"
@@ -1430,7 +1434,7 @@ function PairingStep({
         disabled={busy}
         aria-busy={busy}
       >
-        {busy ? "연결 중…" : "코드로 연결하기"}
+        {intl.formatMessage({ id: busy ? "onboarding.pairing.connecting" : "onboarding.pairing.submit" })}
       </button>
 
       {showScanner && (
@@ -1457,6 +1461,7 @@ function PermsStep({
   progressPercent?: number | null;
   onDone: () => void;
 }) {
+  const intl = useIntl();
   const permissionItems = role === "child" ? CHILD_PERM_ITEMS : GUARDIAN_PERM_ITEMS;
   const [locationStage, setLocationStage] = useState<
     "idle" | "disclosure" | "backgroundEducation" | "foregroundDenied" | "backgroundDenied"
@@ -1531,11 +1536,11 @@ function PermsStep({
 
   return (
     <div className="ob-step ob-perms">
-      {progressPercent != null && <SignupProgress percent={progressPercent} label="5/5 시작 준비" />}
+      {progressPercent != null && <SignupProgress percent={progressPercent} label={intl.formatMessage({ id: "onboarding.progress.permissions" })} />}
       <div className="ob-perms-head">
         <img className="ob-perms-mascot" src={asset("mascot/wave.webp")} alt="" />
-        <div className="ob-h1">몇 가지만 허용해 주세요</div>
-        <div className="ob-sub">안전하게 지켜주기 위해 필요해요</div>
+        <div className="ob-h1">{intl.formatMessage({ id: role === "child" ? "onboarding.permissions.title.child" : "onboarding.permissions.title.formal" })}</div>
+        <div className="ob-sub">{intl.formatMessage({ id: role === "child" ? "onboarding.permissions.subtitle.child" : "onboarding.permissions.subtitle.formal" })}</div>
       </div>
 
       <div className="ob-perms-list">
@@ -1543,19 +1548,19 @@ function PermsStep({
           <div key={p.id} className="ob-perm">
             <img className="ob-perm-ic" src={asset(p.icon)} alt="" />
             <span className="ob-perm-main">
-              <span className="ob-perm-title">{p.title}</span>
-              <span className="ob-perm-sub">{p.sub}</span>
+              <span className="ob-perm-title">{intl.formatMessage({ id: p.titleId })}</span>
+              <span className="ob-perm-sub">{intl.formatMessage({ id: p.subId })}</span>
             </span>
             {/* 권한은 시작 시 실제로 요청됨 — 아직 '허용됨'이 아니므로 '예정' 배지로 정직 표기 */}
             <span className="ob-perm-check">
-              예정
+              {intl.formatMessage({ id: "onboarding.permissions.planned" })}
             </span>
           </div>
         ))}
       </div>
 
       <button type="button" className="ob-cta ob-cta--lav hy-press" onClick={start}>
-        {role === "child" ? "위치 권한 설정하고 시작하기" : "알림 설정하고 시작하기"}
+        {intl.formatMessage({ id: role === "child" ? "onboarding.permissions.startChild" : "onboarding.permissions.startFormal" })}
       </button>
 
       {locationStage !== "idle" && (
@@ -1570,25 +1575,25 @@ function PermsStep({
           >
             {locationStage === "disclosure" && (
               <>
-                <span className="ob-consent-dialog__eyebrow">아이 위치 공유 안내</span>
-                <h2 ref={consentStageTitleRef} id={consentTitleId} tabIndex={-1}>백그라운드 위치를 사용해요</h2>
+                <span className="ob-consent-dialog__eyebrow">{intl.formatMessage({ id: "onboarding.locationDisclosure.eyebrow" })}</span>
+                <h2 ref={consentStageTitleRef} id={consentTitleId} tabIndex={-1}>{intl.formatMessage({ id: "onboarding.locationDisclosure.title" })}</h2>
                 <div id={consentDescriptionId} className="ob-consent-dialog__copy">
                   <p>
-                    혜니캘린더는 아이가 앱을 닫거나 사용하지 않을 때도 위치를 수집해 연결된 보호자에게 공유합니다.
+                    {intl.formatMessage({ id: "onboarding.locationDisclosure.collection" })}
                   </p>
                   <p>
-                    위치는 실시간 위치·오늘 경로와 집·학교·학원 도착·출발, 일정 미도착, 위험구역 알림에 사용됩니다.
+                    {intl.formatMessage({ id: "onboarding.locationDisclosure.purpose" })}
                   </p>
                   <p>
-                    위치 수집 중에는 Android의 지속 알림이 표시되며, 아이 기기의 위치 설정에서 언제든지 권한을 끌 수 있습니다.
+                    {intl.formatMessage({ id: "onboarding.locationDisclosure.control" })}
                   </p>
                 </div>
                 <div className="ob-consent-dialog__actions">
                   <button ref={consentSecondaryRef} type="button" className="ob-consent-secondary hy-press" onClick={onDone} disabled={permissionBusy} data-progress-owner="permission-request">
-                    나중에
+                    {intl.formatMessage({ id: "onboarding.action.later" })}
                   </button>
                   <button type="button" className="ob-consent-primary hy-press" onClick={() => void requestForeground()} disabled={permissionBusy} aria-busy={permissionBusy}>
-                    {permissionBusy ? "권한 확인 중…" : "동의하고 계속"}
+                    {intl.formatMessage({ id: permissionBusy ? "onboarding.permissions.checking" : "onboarding.locationDisclosure.continue" })}
                   </button>
                 </div>
               </>
@@ -1596,20 +1601,20 @@ function PermsStep({
 
             {locationStage === "backgroundEducation" && (
               <>
-                <span className="ob-consent-dialog__eyebrow">마지막 위치 설정</span>
-                <h2 ref={consentStageTitleRef} id={consentTitleId} tabIndex={-1}>위치를 ‘항상 허용’으로 선택해 주세요</h2>
+                <span className="ob-consent-dialog__eyebrow">{intl.formatMessage({ id: "onboarding.backgroundPermission.eyebrow" })}</span>
+                <h2 ref={consentStageTitleRef} id={consentTitleId} tabIndex={-1}>{intl.formatMessage({ id: "onboarding.backgroundPermission.title" })}</h2>
                 <div id={consentDescriptionId} className="ob-consent-dialog__copy">
                   <p>
-                    다음 Android 위치 권한 화면에서 ‘항상 허용’을 선택해야 앱을 닫은 뒤에도 도착·출발과 위험구역 알림이 이어집니다.
+                    {intl.formatMessage({ id: "onboarding.backgroundPermission.description" })}
                   </p>
-                  <p>허용하지 않아도 앱은 사용할 수 있으며, 아이 설정에서 나중에 다시 켤 수 있습니다.</p>
+                  <p>{intl.formatMessage({ id: "onboarding.backgroundPermission.optional" })}</p>
                 </div>
                 <div className="ob-consent-dialog__actions">
                   <button ref={consentSecondaryRef} type="button" className="ob-consent-secondary hy-press" onClick={onDone} disabled={permissionBusy} data-progress-owner="permission-request">
-                    나중에
+                    {intl.formatMessage({ id: "onboarding.action.later" })}
                   </button>
                   <button type="button" className="ob-consent-primary hy-press" onClick={() => void requestBackground()} disabled={permissionBusy} aria-busy={permissionBusy}>
-                    {permissionBusy ? "설정 확인 중…" : "‘항상 허용’ 설정 열기"}
+                    {intl.formatMessage({ id: permissionBusy ? "onboarding.permissions.checkingSettings" : "onboarding.backgroundPermission.openSettings" })}
                   </button>
                 </div>
               </>
@@ -1617,21 +1622,21 @@ function PermsStep({
 
             {(locationStage === "foregroundDenied" || locationStage === "backgroundDenied") && (
               <>
-                <span className="ob-consent-dialog__eyebrow">위치 권한이 필요해요</span>
+                <span className="ob-consent-dialog__eyebrow">{intl.formatMessage({ id: "onboarding.permissionDenied.eyebrow" })}</span>
                 <h2 ref={consentStageTitleRef} id={consentTitleId} tabIndex={-1}>
-                  {locationUnsupported ? "이 기기에서는 지원하지 않아요" : "아직 위치 권한이 꺼져 있어요"}
+                  {intl.formatMessage({ id: locationUnsupported ? "onboarding.permissionDenied.unsupported" : "onboarding.permissionDenied.title" })}
                 </h2>
                 <div id={consentDescriptionId} className="ob-consent-dialog__copy">
                   <p>
                     {locationUnsupported
-                      ? "아이의 백그라운드 위치 공유는 Android 앱에서 사용할 수 있습니다."
-                      : "권한 없이 시작하면 보호자에게 현재 위치와 도착·출발 알림이 전달되지 않습니다."}
+                      ? intl.formatMessage({ id: "onboarding.permissionDenied.androidOnly" })
+                      : intl.formatMessage({ id: "onboarding.permissionDenied.consequence" })}
                   </p>
-                  <p>앱은 계속 사용할 수 있고, 아이 설정에서 언제든지 다시 설정할 수 있습니다.</p>
+                  <p>{intl.formatMessage({ id: "onboarding.permissionDenied.canContinue" })}</p>
                 </div>
                 <div className="ob-consent-dialog__actions">
                   <button ref={consentSecondaryRef} type="button" className="ob-consent-secondary hy-press" onClick={onDone} disabled={permissionBusy} data-progress-owner="permission-request">
-                    권한 없이 시작
+                    {intl.formatMessage({ id: "onboarding.permissionDenied.continueWithout" })}
                   </button>
                   {!locationUnsupported && (
                     <button
@@ -1641,7 +1646,7 @@ function PermsStep({
                       disabled={permissionBusy}
                       aria-busy={permissionBusy}
                     >
-                      {permissionBusy ? "권한 확인 중…" : "다시 설정"}
+                      {intl.formatMessage({ id: permissionBusy ? "onboarding.permissions.checking" : "onboarding.permissionDenied.retry" })}
                     </button>
                   )}
                 </div>

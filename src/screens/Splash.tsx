@@ -1,5 +1,6 @@
 import { asset } from "@/lib/assets";
 import "./Splash.css";
+import { FormattedMessage, useIntl } from "react-intl";
 
 /**
  * C-01 스플래시 — hyeni-1 "포근한 로즈" 시안 이식.
@@ -8,6 +9,7 @@ import "./Splash.css";
  * 라우팅/전환은 상위(App 부트 게이트)가 담당 — 이 컴포넌트는 표시 전용.
  */
 export function Splash({ exiting = false }: { exiting?: boolean }) {
+  const intl = useIntl();
   return (
     <div className={`sp-root${exiting ? " sp-root--exit" : ""}`} role="status" aria-live="polite">
       {/* 배경 블롭(장식) */}
@@ -20,29 +22,27 @@ export function Splash({ exiting = false }: { exiting?: boolean }) {
           <img
             className="sp-mascot"
             src={asset("mascot/wave.webp")}
-            alt="손을 흔들며 인사하는 혜니"
+            alt={intl.formatMessage({ id: "core.splash.mascotAlt" })}
             loading="eager"
             decoding="async"
             fetchPriority="high"
           />
         </div>
         <div className="sp-title">
-          혜니<b>캘린더</b>
+          <FormattedMessage id="core.brand.nameRich" values={{ strong: (chunks) => <b>{chunks}</b> }} />
         </div>
         <div className="sp-sub">
-          우리 가족의 하루를
-          <br />
-          포근하게 담아요
+          <FormattedMessage id="core.splash.tagline" values={{ br: () => <br /> }} />
         </div>
       </div>
 
-      <div className="sp-loadwrap" aria-label="불러오는 중">
+      <div className="sp-loadwrap" aria-label={intl.formatMessage({ id: "core.state.loading" })}>
         <span className="sp-dots" aria-hidden="true">
           <span className="sp-dot" />
           <span className="sp-dot" />
           <span className="sp-dot" />
         </span>
-        <span className="sp-loadtext">가족 일정을 불러오는 중</span>
+        <span className="sp-loadtext">{intl.formatMessage({ id: "core.splash.loadingFamily" })}</span>
       </div>
     </div>
   );

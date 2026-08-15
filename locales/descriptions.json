@@ -1,4 +1,1413 @@
 {
+  "core.action.goHome": {
+    "namespace": "core",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.action.goHome에 표시하는 사용자 안내 문구"
+  },
+  "core.action.reload": {
+    "namespace": "core",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.action.reload에 표시하는 사용자 안내 문구"
+  },
+  "core.action.reloadScreen": {
+    "namespace": "core",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.action.reloadScreen에 표시하는 사용자 안내 문구"
+  },
+  "core.action.reportProblem.child": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 화면에서 문제 신고 화면으로 이동하는 친근한 반말 버튼"
+  },
+  "core.action.reportProblem.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "부모·선생님 화면에서 문제 신고 화면으로 이동하는 존댓말 버튼"
+  },
+  "core.brand.nameRich": {
+    "namespace": "core",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.brand.nameRich에 표시하는 사용자 안내 문구"
+  },
+  "core.crash.recovery.child": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "렌더 오류 뒤 화면을 다시 열 수 있음을 아이에게 반말로 안내"
+  },
+  "core.crash.recovery.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "렌더 오류 뒤 화면을 다시 열 수 있음을 보호자에게 존댓말로 안내"
+  },
+  "core.crash.safe.child": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "렌더 오류가 저장 데이터 손실을 뜻하지 않음을 아이에게 안심시키는 반말 안내"
+  },
+  "core.crash.safe.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "렌더 오류가 저장 데이터 손실을 뜻하지 않음을 보호자에게 안심시키는 존댓말 안내"
+  },
+  "core.crash.title.child": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.crash.title.child에 표시하는 사용자 안내 문구"
+  },
+  "core.crash.title.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.crash.title.formal에 표시하는 사용자 안내 문구"
+  },
+  "core.error.api.client.child": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "알 수 없는 4xx에서 Worker 원문·내부 코드를 숨기고 아이에게 입력 확인을 안내"
+  },
+  "core.error.api.client.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "알 수 없는 4xx에서 Worker 원문·내부 코드를 숨기고 보호자에게 입력 확인을 안내"
+  },
+  "core.error.api.currentPasswordMismatch.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.error.api.currentPasswordMismatch.formal에 표시하는 사용자 안내 문구"
+  },
+  "core.error.api.currentPasswordRequired.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.error.api.currentPasswordRequired.formal에 표시하는 사용자 안내 문구"
+  },
+  "core.error.api.expiredPairCode.child": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.error.api.expiredPairCode.child에 표시하는 사용자 안내 문구"
+  },
+  "core.error.api.expiredPairCode.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.error.api.expiredPairCode.formal에 표시하는 사용자 안내 문구"
+  },
+  "core.error.api.invalidCredentials.child": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.error.api.invalidCredentials.child에 표시하는 사용자 안내 문구"
+  },
+  "core.error.api.invalidCredentials.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.error.api.invalidCredentials.formal에 표시하는 사용자 안내 문구"
+  },
+  "core.error.api.invalidPairCode.child": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.error.api.invalidPairCode.child에 표시하는 사용자 안내 문구"
+  },
+  "core.error.api.invalidPairCode.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.error.api.invalidPairCode.formal에 표시하는 사용자 안내 문구"
+  },
+  "core.error.api.network.child": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "네트워크 오류 원문을 숨기고 아이에게 연결 확인을 반말로 안내"
+  },
+  "core.error.api.network.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "네트워크 오류 원문을 숨기고 보호자에게 연결 확인을 존댓말로 안내"
+  },
+  "core.error.api.passwordAccountRequired.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.error.api.passwordAccountRequired.formal에 표시하는 사용자 안내 문구"
+  },
+  "core.error.api.rateLimited.child": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.error.api.rateLimited.child에 표시하는 사용자 안내 문구"
+  },
+  "core.error.api.rateLimited.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.error.api.rateLimited.formal에 표시하는 사용자 안내 문구"
+  },
+  "core.error.api.samePassword.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.error.api.samePassword.formal에 표시하는 사용자 안내 문구"
+  },
+  "core.error.api.server.child": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "알 수 없는 5xx에서 서버 원문·내부 정보를 숨기고 아이에게 재시도를 안내"
+  },
+  "core.error.api.server.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "알 수 없는 5xx에서 서버 원문·내부 정보를 숨기고 보호자에게 재시도를 안내"
+  },
+  "core.error.api.unknown.child": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "일반 Error 원문과 token을 숨긴 아이용 안전한 폴백 오류 문구"
+  },
+  "core.error.api.unknown.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "일반 Error 원문과 token을 숨긴 보호자용 안전한 폴백 오류 문구"
+  },
+  "core.error.api.weakPassword.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.error.api.weakPassword.formal에 표시하는 사용자 안내 문구"
+  },
+  "core.error.runtime.child": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.error.runtime.child에 표시하는 사용자 안내 문구"
+  },
+  "core.error.runtime.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.error.runtime.formal에 표시하는 사용자 안내 문구"
+  },
+  "core.nav.calendar": {
+    "namespace": "core",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.nav.calendar에 표시하는 사용자 안내 문구"
+  },
+  "core.nav.chat": {
+    "namespace": "core",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.nav.chat에 표시하는 사용자 안내 문구"
+  },
+  "core.nav.classHome": {
+    "namespace": "core",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.nav.classHome에 표시하는 사용자 안내 문구"
+  },
+  "core.nav.home": {
+    "namespace": "core",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.nav.home에 표시하는 사용자 안내 문구"
+  },
+  "core.nav.location": {
+    "namespace": "core",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.nav.location에 표시하는 사용자 안내 문구"
+  },
+  "core.nav.settings": {
+    "namespace": "core",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.nav.settings에 표시하는 사용자 안내 문구"
+  },
+  "core.nav.students": {
+    "namespace": "core",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.nav.students에 표시하는 사용자 안내 문구"
+  },
+  "core.nav.timetable": {
+    "namespace": "core",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.nav.timetable에 표시하는 사용자 안내 문구"
+  },
+  "core.offline.child": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.offline.child에 표시하는 사용자 안내 문구"
+  },
+  "core.offline.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.offline.formal에 표시하는 사용자 안내 문구"
+  },
+  "core.splash.loadingFamily": {
+    "namespace": "core",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.splash.loadingFamily에 표시하는 사용자 안내 문구"
+  },
+  "core.splash.mascotAlt": {
+    "namespace": "core",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.splash.mascotAlt에 표시하는 사용자 안내 문구"
+  },
+  "core.splash.tagline": {
+    "namespace": "core",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.splash.tagline에 표시하는 사용자 안내 문구"
+  },
+  "core.state.loadingScreen": {
+    "namespace": "core",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.state.loadingScreen에 표시하는 사용자 안내 문구"
+  },
+  "core.state.retrying": {
+    "namespace": "core",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "core.state.retrying에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.action.later": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.action.later에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.action.next": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.action.next에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.backgroundPermission.description": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 Android에서 ‘항상 허용’을 선택해야 앱 종료 뒤에도 도착·출발·위험구역 알림이 이어진다는 결과 안내"
+  },
+  "onboarding.backgroundPermission.eyebrow": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.backgroundPermission.eyebrow에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.backgroundPermission.openSettings": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.backgroundPermission.openSettings에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.backgroundPermission.optional": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "권한을 거부해도 앱 사용은 가능하고 아이 설정에서 나중에 다시 켤 수 있다는 반말 안내"
+  },
+  "onboarding.backgroundPermission.title": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이에게 Android 백그라운드 위치 권한의 ‘항상 허용’ 선택을 요청하는 반말 제목"
+  },
+  "onboarding.connect.childDevice": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.connect.childDevice에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.connect.childDeviceDescription": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.connect.childDeviceDescription에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.connect.joinFamily": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.connect.joinFamily에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.connect.joinFamilyDescription": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.connect.joinFamilyDescription에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.connect.newFamily": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.connect.newFamily에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.connect.newFamilyDescription": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.connect.newFamilyDescription에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.connect.referralDescription": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.connect.referralDescription에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.connect.referralTitle": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.connect.referralTitle에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.connect.subtitle": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.connect.subtitle에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.connect.title": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.connect.title에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.field.birthdate": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.field.birthdate에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.field.guardianType": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.field.guardianType에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.field.loginId": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.field.loginId에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.field.loginIdPlaceholder": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.field.loginIdPlaceholder에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.field.name": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.field.name에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.field.namePlaceholder": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.field.namePlaceholder에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.field.otp": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.field.otp에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.field.password": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.field.password에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.field.passwordConfirm": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.field.passwordConfirm에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.field.passwordConfirmPlaceholder": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.field.passwordConfirmPlaceholder에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.field.passwordPlaceholder": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.field.passwordPlaceholder에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.field.phone": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.field.phone에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.field.phonePlaceholder": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.field.phonePlaceholder에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.guardian.dad": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.guardian.dad에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.guardian.mom": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.guardian.mom에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.guardian.other": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.guardian.other에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.locationDisclosure.collection": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "앱 미사용·종료 중에도 아이 위치를 수집해 연결된 보호자에게 공유한다는 필수 고지"
+  },
+  "onboarding.locationDisclosure.continue": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.locationDisclosure.continue에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.locationDisclosure.control": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "위치 수집 중 Android 지속 알림이 보이고 기기 설정에서 언제든 권한을 끌 수 있다는 통제권 고지"
+  },
+  "onboarding.locationDisclosure.eyebrow": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.locationDisclosure.eyebrow에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.locationDisclosure.purpose": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "실시간 위치·오늘 경로·장소 출입·미도착·위험구역 알림에 위치를 사용한다는 목적 고지"
+  },
+  "onboarding.locationDisclosure.title": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.locationDisclosure.title에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.login.google": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.login.google에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.login.googlePending": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.login.googlePending에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.login.kakao": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.login.kakao에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.login.kakaoPending": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.login.kakaoPending에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.login.naver": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.login.naver에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.login.naverPending": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.login.naverPending에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.login.noAccount": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.login.noAccount에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.login.orId": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.login.orId에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.login.pending": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.login.pending에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.login.signup": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.login.signup에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.login.submit": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.login.submit에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.login.subtitle": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.login.subtitle에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.login.title": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.login.title에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.pairing.codeLabel": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.pairing.codeLabel에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.pairing.connecting": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.pairing.connecting에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.pairing.description": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.pairing.description에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.pairing.invalidCode": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.pairing.invalidCode에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.pairing.invalidQr": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.pairing.invalidQr에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.pairing.manualHint": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.pairing.manualHint에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.pairing.recovery": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "전에 연결한 기기는 같은 아이 계정과 기존 기록을 잃지 않고 재연결된다는 복구 안내"
+  },
+  "onboarding.pairing.scanAction": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.pairing.scanAction에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.pairing.scanLabel": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.pairing.scanLabel에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.pairing.submit": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.pairing.submit에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.pairing.title": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.pairing.title에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.permissionDenied.androidOnly": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.permissionDenied.androidOnly에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.permissionDenied.canContinue": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "권한을 거부해도 앱을 계속 쓰고 아이 설정에서 나중에 다시 설정할 수 있다는 반말 안내"
+  },
+  "onboarding.permissionDenied.consequence": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "위치 권한 없이 시작하면 보호자에게 현재 위치와 도착·출발 알림이 전달되지 않는다는 안전 결과 안내"
+  },
+  "onboarding.permissionDenied.continueWithout": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.permissionDenied.continueWithout에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.permissionDenied.eyebrow": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.permissionDenied.eyebrow에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.permissionDenied.retry": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.permissionDenied.retry에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.permissionDenied.title": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.permissionDenied.title에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.permissionDenied.unsupported": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.permissionDenied.unsupported에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.permissions.background.childDescription": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.permissions.background.childDescription에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.permissions.background.title": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.permissions.background.title에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.permissions.checking": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.permissions.checking에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.permissions.checkingSettings": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.permissions.checkingSettings에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.permissions.location.childDescription": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.permissions.location.childDescription에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.permissions.location.title": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.permissions.location.title에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.permissions.notifications.childDescription": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "일정·부모 메시지·안전 알림을 받는 이유를 아이에게 반말로 설명"
+  },
+  "onboarding.permissions.notifications.formalDescription": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 일정·도착·위험·메시지 알림을 받는 이유를 보호자에게 존댓말로 설명"
+  },
+  "onboarding.permissions.notifications.title": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.permissions.notifications.title에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.permissions.planned": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.permissions.planned에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.permissions.startChild": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.permissions.startChild에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.permissions.startFormal": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.permissions.startFormal에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.permissions.subtitle.child": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.permissions.subtitle.child에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.permissions.subtitle.formal": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.permissions.subtitle.formal에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.permissions.title.child": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.permissions.title.child에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.permissions.title.formal": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.permissions.title.formal에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.progress.account": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.progress.account에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.progress.family": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.progress.family에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.progress.permissions": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.progress.permissions에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.progress.phone": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.progress.phone에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.progress.survey": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.progress.survey에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.role.badge": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.role.badge에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.role.child.description": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.role.child.description에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.role.child.starting": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.role.child.starting에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.role.child.title": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.role.child.title에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.role.legalConsent": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "계속 진행 시 이용약관 terms와 개인정보처리방침 privacy rich link에 동의한다는 법적 안내"
+  },
+  "onboarding.role.parent.description": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.role.parent.description에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.role.parent.title": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.role.parent.title에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.role.subtitle": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.role.subtitle에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.role.teacher.description": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.role.teacher.description에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.role.teacher.title": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.role.teacher.title에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.signup.otpDescription": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "phone": "string"
+    },
+    "description": "onboarding.signup.otpDescription에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.signup.otpMissing": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.signup.otpMissing에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.signup.otpTitle": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.signup.otpTitle에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.signup.requestingOtp": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.signup.requestingOtp에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.signup.requestOtp": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.signup.requestOtp에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.signup.resend": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.signup.resend에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.signup.resending": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.signup.resending에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.signup.subtitle": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.signup.subtitle에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.signup.title": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.signup.title에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.signup.verify": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.signup.verify에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.signup.verifying": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.signup.verifying에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.survey.ai.description": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.survey.ai.description에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.survey.ai.title": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.survey.ai.title에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.survey.arrival.description": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.survey.arrival.description에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.survey.arrival.title": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.survey.arrival.title에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.survey.location.description": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.survey.location.description에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.survey.location.title": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.survey.location.title에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.survey.safety.description": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.survey.safety.description에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.survey.safety.title": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.survey.safety.title에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.survey.schedule.description": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.survey.schedule.description에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.survey.schedule.title": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.survey.schedule.title에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.survey.subtitle": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.survey.subtitle에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.survey.title": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.survey.title에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.teacher.classLabel": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.teacher.classLabel에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.teacher.classPlaceholder": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.teacher.classPlaceholder에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.teacher.missingFields": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.teacher.missingFields에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.teacher.noteApproval": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "부모 승인 뒤에만 반 일정·알림장이 아이 캘린더에 연결된다는 선생님용 안내"
+  },
+  "onboarding.teacher.noteInvite": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.teacher.noteInvite에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.teacher.notePrivacy": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.teacher.notePrivacy에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.teacher.savedPending": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "school": "string",
+      "className": "string"
+    },
+    "description": "학교·반 정보는 저장하되 production에서 차단된 선생님 연동 기능 공개 뒤 활성화된다는 정직한 안내"
+  },
+  "onboarding.teacher.schoolLabel": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.teacher.schoolLabel에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.teacher.schoolPlaceholder": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.teacher.schoolPlaceholder에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.teacher.submit": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.teacher.submit에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.teacher.subtitle": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.teacher.subtitle에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.teacher.title": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.teacher.title에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.toast.familyConnected": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.toast.familyConnected에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.toast.otpSent": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.toast.otpSent에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.toast.signupComplete": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.toast.signupComplete에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.toast.socialCancelled": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.toast.socialCancelled에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.validation.loginIdRequired": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.validation.loginIdRequired에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.validation.passwordRequired": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "onboarding.validation.passwordRequired에 표시하는 사용자 안내 문구"
+  },
+  "shared.qr.enterManually": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.qr.enterManually에 표시하는 사용자 안내 문구"
+  },
+  "shared.qr.failedLabel": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {
+      "label": "string"
+    },
+    "description": "shared.qr.failedLabel에 표시하는 사용자 안내 문구"
+  },
+  "shared.qr.label": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.qr.label에 표시하는 사용자 안내 문구"
+  },
+  "shared.sticker.arrived": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.sticker.arrived에 표시하는 사용자 안내 문구"
+  },
+  "shared.sticker.defaultTitle": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.sticker.defaultTitle에 표시하는 사용자 안내 문구"
+  },
+  "shared.sticker.receivedLabel": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {
+      "title": "string"
+    },
+    "description": "shared.sticker.receivedLabel에 표시하는 사용자 안내 문구"
+  },
+  "shared.sticker.sentByParent": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.sticker.sentByParent에 표시하는 사용자 안내 문구"
+  },
   "core.action.back": {
     "namespace": "core",
     "audience": "shared",

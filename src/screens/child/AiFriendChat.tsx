@@ -55,7 +55,7 @@ const AI_REPORT_REASONS: readonly ReportReasonOption<AiContentReportReason>[] = 
 
 // 전송 실패 코드(Worker 가 비-2xx { error } 로 응답 → ApiError.message)를 아이 톤(반말) 안내로.
 function friendlyError(err: unknown, status: AiCreditPublicStatus | null): string {
-  const code = isApiError(err) ? err.message : "";
+  const code = isApiError(err) ? err.code ?? "" : "";
   switch (code) {
     case "daily_limit_reached": {
       const reason = resolveAiLimitExhaustionReason(status);

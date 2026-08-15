@@ -11,6 +11,8 @@ import type { ClassScheduleRow } from "@/lib/api/endpoints/teacher";
 import { useLocale } from "@/i18n/useLocale";
 import { formatCalendarDay } from "@/i18n/format";
 import "./TeacherTimetable.css";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 
 // 월요일 시작 요일 라벨(주간 스트립). 반 일정은 events 도메인(0-index date_key) 기준.
 const DOW_MON_FIRST = ["월", "화", "수", "목", "금", "토", "일"] as const;
@@ -49,6 +51,7 @@ function sortByTime(rows: ClassScheduleRow[]): ClassScheduleRow[] {
 }
 
 export function TeacherTimetable() {
+  const intl = useIntl();
   const { locale } = useLocale();
   const navigate = useNavigate();
   const { show } = useToast();
@@ -120,7 +123,7 @@ export function TeacherTimetable() {
             show("복사할 반 일정이 없어요", "🗓️");
           }
         },
-        onError: (err) => show(err instanceof Error ? err.message : "주간 복사에 실패했어요", "⚠️"),
+        onError: (err) => show(localizeApiError(err, intl, "formal"), "⚠️"),
       },
     );
   };

@@ -17,6 +17,8 @@ import { hasJongseong } from "@/transform/adventureMap";
 import { useSafeBack } from "@/app/useSafeBack";
 import { Loading } from "@/components/ui/Loading";
 import "./FriendPlay.css";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 
 /** 친구 놀이요청 진행 단계 안내. */
 const STEPS = [
@@ -28,10 +30,6 @@ const STEPS = [
 /** 후보에 캐릭터/배경색 부여(도메인엔 이름만 있어 표현은 index 파생). */
 const FRIEND_ANIMALS = ["animal/rabbit.webp", "animal/bear.webp", "animal/fox.webp", "animal/cat.webp"];
 const FRIEND_SOFTS = ["#FDE7F1", "#E7F8F0", "#FFF3D6", "#E6F2FB"];
-
-function errMsg(e: unknown): string {
-  return e instanceof Error ? e.message : "";
-}
 
 function ParentPlaydateQueryState({
   loading,
@@ -70,6 +68,7 @@ function ParentPlaydateQueryState({
 
 export function FriendPlay() {
   const { show } = useToast();
+  const intl = useIntl();
   const { role } = useAuth();
 
   const isParent = role === "parent";
@@ -130,10 +129,10 @@ export function FriendPlay() {
         const first = results.find((r) => r.status === "rejected") as
           | PromiseRejectedResult
           | undefined;
-        show(errMsg(first?.reason) || "보내기에 실패했어. 다시 해 볼까?", "😢");
+        show(localizeApiError(first?.reason, intl, "child"), "😢");
       }
     } catch (e) {
-      show(errMsg(e) || "보내기에 실패했어. 다시 해 볼까?", "😢");
+      show(localizeApiError(e, intl, "child"), "😢");
     }
   };
 
@@ -149,7 +148,7 @@ export function FriendPlay() {
       show(
         isParent
           ? "친구놀이를 종료하지 못했어요. 다시 시도해 주세요"
-          : errMsg(e) || "종료에 실패했어.",
+          : localizeApiError(e, intl, "child"),
         "😢",
       );
     }

@@ -28,6 +28,8 @@ import {
 } from "@/transform/premiumReturnIntent";
 import { MAX_SUPPLY_ITEMS_PER_KIND } from "@/transform/eventSupplies";
 import "./AiSchedule.css";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 
 type TabKey = "voice" | "text" | "image";
 
@@ -61,6 +63,7 @@ function currentDateParts(): { year: number; month: number; day: number } {
 }
 
 export function AiSchedule() {
+  const intl = useIntl();
   const { locale } = useLocale();
   const navigate = useNavigate();
   const { show } = useToast();
@@ -222,25 +225,18 @@ export function AiSchedule() {
       setDrafts(prepared.drafts);
     } catch (e) {
       setDrafts(null);
-      if (!academyMode && e instanceof ApiError && e.status === 429 && e.message === "daily_limit_reached") {
+      if (!academyMode && e instanceof ApiError && e.status === 429 && e.code === "daily_limit_reached") {
         await entitlement.refetch().catch(() => undefined);
         setScheduleLimitUpsellOpen(true);
         return;
       }
-      if (academyMode && e instanceof ApiError && e.message === "premium_required") {
+      if (academyMode && e instanceof ApiError && e.code === "premium_required") {
         await entitlement.refetch().catch(() => undefined);
         setAcademyUpsellOpen(true);
         show("프리미엄 구독 상태를 다시 확인해 주세요.", "⚠️");
         return;
       }
-      show(
-        e instanceof ApiError
-          ? e.message
-          : image
-            ? "AI 일정 등록을 사용할 수 없어요. 잠시 후 다시 시도해 주세요."
-            : "일정 정리에 실패했어요",
-        "⚠️",
-      );
+      show(localizeApiError(e, intl, "formal"), "⚠️");
     }
   };
 
@@ -276,7 +272,7 @@ export function AiSchedule() {
       await runParse(transcript);
     } catch (e) {
       if (gen !== voiceGenRef.current) return;
-      show(e instanceof Error ? e.message : "음성 인식에 실패했어요", "⚠️");
+      show(localizeApiError(e, intl, "formal"), "⚠️");
     } finally {
       if (gen === voiceGenRef.current) setListening(false);
     }
@@ -333,7 +329,7 @@ export function AiSchedule() {
       setImagePreview(null);
       navigate(-1);
     } catch (e) {
-      show(e instanceof ApiError ? e.message : "일정 추가에 실패했어요", "⚠️");
+      show(localizeApiError(e, intl, "formal"), "⚠️");
     }
   };
 

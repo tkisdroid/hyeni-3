@@ -20,6 +20,8 @@ import { useRecentDateKeys } from "@/app/useRecentDateKeys";
 import { hasJongseong } from "@/transform/adventureMap";
 import { Loading } from "@/components/ui/Loading";
 import "./ChildDetail.css";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 
 // 자녀 사진은 인증 fetch로 만든 blob URL, 기본 아바타는 asset 경로.
 function avatarSrc(path: string): string {
@@ -46,6 +48,7 @@ type SafetyTone = "safe" | "warn" | "muted";
  * 데이터는 모두 실 훅(가족·일정·위치) 기반. 백엔드 부재 항목은 정직하게 처리.
  */
 export function ChildDetail() {
+  const intl = useIntl();
   const { locale } = useLocale();
   const navigate = useNavigate();
   const routeLocation = useLocation();
@@ -207,7 +210,7 @@ export function ChildDetail() {
       show(`${name}${hasJongseong(name) ? "을" : "를"} 가족에서 삭제했어요`, "🗑️");
       navigate(-1);
     } catch (e) {
-      show(e instanceof Error ? e.message : "삭제에 실패했어요", "⚠️");
+      show(localizeApiError(e, intl, "formal"), "⚠️");
     }
   };
 

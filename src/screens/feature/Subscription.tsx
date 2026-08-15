@@ -33,6 +33,8 @@ import {
   resolveWebBillingCheckoutSession,
 } from "@/lib/api/endpoints/webBilling";
 import { startTossBillingAuthorization } from "@/lib/webBilling";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 import { isApiError } from "@/lib/api/errors";
 import {
   buildWebBillingRedirectUrls,
@@ -183,15 +185,16 @@ function shouldRetainWebBillingPending(error: unknown): boolean {
   if (error instanceof TypeError) return true;
   if (!isApiError(error)) return false;
   if (
-    error.message === "web_billing_reconciliation_pending"
-    || error.message === "web_billing_processing"
-    || error.message === "billing_provider_reconciliation_pending"
+    error.code === "web_billing_reconciliation_pending"
+    || error.code === "web_billing_processing"
+    || error.code === "billing_provider_reconciliation_pending"
   ) return true;
   return error.status >= 500;
 }
 
 /** 구독 · 페이월: 프리미엄 혜택 · 플랜 선택 · 결제 CTA. 실 티어로 활성 상태 표시. */
 export function Subscription() {
+  const intl = useIntl();
   const { locale } = useLocale();
   const navigate = useNavigate();
   const { show } = useToast();
@@ -676,7 +679,7 @@ export function Subscription() {
       show(
         isWebBillingChannel
           ? webBillingRequestFailureMessage(error)
-          : error instanceof Error ? error.message : "구독을 시작하지 못했어요",
+          : localizeApiError(error, intl, "formal"),
         "👑",
       );
     } finally {

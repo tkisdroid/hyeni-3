@@ -17,6 +17,8 @@ import { validateChildDraftRequirements } from "@/transform/childProfileRequirem
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import { resizeImageFileSafe } from "@/lib/imageResize";
 import "./PairingWizard.css";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 
 type Step = 1 | 2 | 3;
 
@@ -50,6 +52,7 @@ function toDateInputValue(d: Date): string {
  * 아이 기기가 코드로 연결하면 이 placeholder 를 자동으로 이어받는다.
  */
 export function PairingWizard() {
+  const intl = useIntl();
   const navigate = useNavigate();
   const { show } = useToast();
   const familyQuery = useMyFamily();
@@ -177,7 +180,7 @@ export function PairingWizard() {
         show("연결 코드를 만들었어요", "🔗");
         navigate("/child-invite", { state: { pendingChildren } });
       },
-      onError: (e) => show(e instanceof Error ? e.message : "코드 생성에 실패했어요", "⚠️"),
+      onError: (e) => show(localizeApiError(e, intl, "formal"), "⚠️"),
     });
   };
 
@@ -215,7 +218,7 @@ export function PairingWizard() {
       },
       {
         onSuccess: () => issueCode(validChildren),
-        onError: (e) => show(e instanceof Error ? e.message : "아이 정보 저장에 실패했어요", "⚠️"),
+        onError: (e) => show(localizeApiError(e, intl, "formal"), "⚠️"),
       },
     );
   };

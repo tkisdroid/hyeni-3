@@ -1,1 +1,9 @@
-{}
+{
+  "shared.qr.enterManually": "請直接輸入連結碼",
+  "shared.qr.failedLabel": "無法建立 {label}",
+  "shared.qr.label": "QR 圖碼",
+  "shared.sticker.arrived": "貼紙到了！",
+  "shared.sticker.defaultTitle": "真棒",
+  "shared.sticker.receivedLabel": "你收到「{title}」貼紙了",
+  "shared.sticker.sentByParent": "家長傳來一張稱讚貼紙"
+}

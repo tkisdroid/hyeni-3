@@ -18,8 +18,9 @@ import {
   loadPremiumReturnIntent,
   savePremiumReturnIntent,
 } from "@/transform/premiumReturnIntent";
-import { ApiError } from "@/lib/api/errors";
 import "./PlaceForm.css";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 
 /** 장소 종류 — 선택 시 신호색으로 채워진다(집=민트/학원=라벤더/자주=파랑). 위험구역은 저장장소 API에 카테고리가 없어 별도 화면(위험구역 추가)에서 등록한다. */
 // 선택 칩은 신호색 soft 채움 + 같은 계열 진한 라벨 + 테두리로 알린다.
@@ -88,6 +89,7 @@ const IDLE_BG = "var(--bg-chip-idle)";
 const IDLE_COLOR = "var(--fg-tertiary)";
 
 export function PlaceForm() {
+  const intl = useIntl();
   const navigate = useNavigate();
   const routeState = (useLocation().state ?? null) as { premiumReturnDraft?: unknown } | null;
   const { show } = useToast();
@@ -301,7 +303,7 @@ export function PlaceForm() {
           show(`‘${name}’ 장소를 저장했어요`, "📍");
           navigate(-1);
         },
-        onError: (e) => show(e instanceof ApiError ? e.message : "장소 저장에 실패했어요", "⚠️"),
+        onError: (e) => show(localizeApiError(e, intl, "formal"), "⚠️"),
       },
     );
   };

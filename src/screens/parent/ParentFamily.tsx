@@ -21,6 +21,8 @@ import { buildPairLink } from "@/transform/pairLink";
 import { useSafeBack } from "@/app/useSafeBack";
 import { Loading } from "@/components/ui/Loading";
 import "./ParentFamily.css";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 
 // 자녀 사진은 인증 fetch로 만든 blob URL, 기본 아바타는 asset 경로.
 function avatarSrc(path: string): string {
@@ -31,6 +33,7 @@ export function ParentFamily() {
   const navigate = useNavigate();
   const goBack = useSafeBack("/parent/home");
   const { show } = useToast();
+  const intl = useIntl();
   const { userId } = useAuth();
   const { data: family, isLoading, isError, error, refetch: refetchFamily } = useMyFamily();
   const { data: locations } = useChildLocations();
@@ -130,7 +133,7 @@ export function ParentFamily() {
         {isError && (
           <div className="pf-state pf-state--error">
             가족 정보를 불러오지 못했어요
-            {error instanceof Error ? ` (${error.message})` : ""}
+            {` (${localizeApiError(error, intl, "formal")})`}
             <button type="button" className="hy-section-action hy-press" onClick={() => void refetchFamily()}>
               다시 시도
             </button>

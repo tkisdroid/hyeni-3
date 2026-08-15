@@ -33,6 +33,8 @@ import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLocale } from "@/i18n/useLocale";
 import { notificationQuietHoursRange } from "@/transform/notificationQuietHours";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./ChildSettings.css";
 
@@ -75,6 +77,7 @@ const REQUEST_ITEMS: Array<{ menu: SettingRequestMenu; Icon: LucideIcon; title: 
  * 내 정보/연결 상태·부모 잠금 항목 표시 + 잠금 해제 요청(sendChildSettingRequest).
  */
 export function ChildSettings() {
+  const intl = useIntl();
   const { locale } = useLocale();
   const navigate = useNavigate();
   const { show } = useToast();
@@ -200,7 +203,7 @@ export function ChildSettings() {
           setRequested((prev) => ({ ...prev, [menu]: true }));
           show(`${title.replace(" 바꾸기", "")} 바꿔 달라고 엄마·아빠한테 말했어!`, "💌");
         },
-        onError: (e) => show(e instanceof Error ? e.message : "부탁을 못 보냈어. 잠시 뒤에 다시 해줘", "⚠️"),
+        onError: (e) => show(localizeApiError(e, intl, "child"), "⚠️"),
         onSettled: () => setPendingRequestMenu((current) => (current === menu ? null : current)),
       },
     );

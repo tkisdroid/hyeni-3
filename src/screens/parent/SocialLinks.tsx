@@ -26,13 +26,16 @@ import { OAUTH_LINK_EVENT } from "@/lib/native/oauthDeepLink";
 import { isNativePlatform } from "@/lib/native/plugins";
 import type { OAuthProvider } from "@/transform/oauthProvider";
 import "./SocialLinks.css";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 
 const PROVIDER_LABEL: Record<string, string> = { kakao: "카카오", google: "Google", naver: "네이버" };
 
 interface LinkEventDetail {
   provider?: string;
   already?: boolean;
-  error?: string;
+  failed?: boolean;
+  cancelled?: boolean;
 }
 
 function linkKey(link: OAuthLink): string {
@@ -40,6 +43,7 @@ function linkKey(link: OAuthLink): string {
 }
 
 export function SocialLinks() {
+  const intl = useIntl();
   const qc = useQueryClient();
   const { show } = useToast();
   const native = isNativePlatform();
@@ -57,8 +61,12 @@ export function SocialLinks() {
     const onLinked = (event: Event) => {
       const detail = (event as CustomEvent<LinkEventDetail>).detail ?? {};
       setBusy(null);
-      if (detail.error) {
-        show(`연결하지 못했어요. ${detail.error}`);
+      if (detail.cancelled) {
+        show(intl.formatMessage({ id: "onboarding.toast.socialCancelled" }));
+        return;
+      }
+      if (detail.failed) {
+        show(intl.formatMessage({ id: "core.error.api.unknown.formal" }));
         return;
       }
       const label = PROVIDER_LABEL[detail.provider ?? ""] ?? "소셜";
@@ -67,7 +75,7 @@ export function SocialLinks() {
     };
     window.addEventListener(OAUTH_LINK_EVENT, onLinked);
     return () => window.removeEventListener(OAUTH_LINK_EVENT, onLinked);
-  }, [qc, show]);
+  }, [intl, qc, show]);
 
   const links = data?.links ?? [];
   // 남는 로그인 수단이 하나도 없으면 해제 금지(서버도 409 로 막지만 버튼부터 잠근다).
@@ -80,7 +88,7 @@ export function SocialLinks() {
       await startWorkerOAuth(provider, "link");
     } catch (error) {
       setBusy(null);
-      show(error instanceof Error ? error.message : "연결을 시작하지 못했어요.");
+      show(localizeApiError(error, intl, "formal"));
     }
   };
 
@@ -97,7 +105,7 @@ export function SocialLinks() {
       show(`${PROVIDER_LABEL[link.provider] ?? "소셜"} 연결을 해제했어요.`);
       await qc.invalidateQueries({ queryKey: qk.oauthLinks });
     } catch (error) {
-      show(error instanceof Error ? error.message : "해제하지 못했어요.");
+      show(localizeApiError(error, intl, "formal"));
     } finally {
       setBusy(null);
     }
