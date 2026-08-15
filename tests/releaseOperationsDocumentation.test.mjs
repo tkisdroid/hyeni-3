@@ -90,9 +90,13 @@ test("출시 순서는 migration-first이며 Pages·Worker·Android를 독립적
   assert.match(releaseRunbook, /production ID로[^\n]*record를 다시 만든다/);
   assert.doesNotMatch(releaseRunbook, /npx wrangler deploy --tag/);
   assert.doesNotMatch(releaseRunbook, /wrangler d1 time-travel restore[^`\n]*```/);
-  const playAvailabilityIndex = releaseRunbook.indexOf("Play v1.3.0(5) 대상 계정·트랙 설치 가능 확인");
-  const minimumPolicyIndex = releaseRunbook.indexOf("Pages\nminimumSupportedVersion 1.3.0 적용");
-  assert.ok(playAvailabilityIndex >= 0 && minimumPolicyIndex > playAvailabilityIndex);
+  const normalizedRunbook = releaseRunbook.replace(/\s+/g, " ");
+  const playAvailabilityIndex = normalizedRunbook.indexOf("Play v1.3.0(5) 대상 계정·트랙 설치 가능 확인");
+  const minimumPolicyIndex = normalizedRunbook.indexOf("Pages minimumSupportedVersion 1.3.0 적용");
+  assert.ok(
+    playAvailabilityIndex >= 0 && minimumPolicyIndex > playAvailabilityIndex,
+    "Play 후보 설치 가능 확인 뒤에만 Pages 최소 지원 버전을 적용해야 합니다",
+  );
 });
 
 test("Pages 명령은 프로젝트 env를 피하고 실제 commit과 deployment 증거를 남긴다", () => {

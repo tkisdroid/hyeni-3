@@ -79,6 +79,7 @@ artifacts/lighthouse-chrome-profile-*/
 artifacts/docx-final-qa-*/
 artifacts/release-evidence/
 artifacts/release-records/
+artifacts/global-release/
 
 # output 스크린샷/렌더 산출물 — 개인정보 없는 생성 자산만 예외로 유지
 output/*
