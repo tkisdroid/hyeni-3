@@ -266,11 +266,15 @@ function callableReturnExpressions(callable) {
 }
 
 function emptyAbstractValue() {
-  return { displayRaw: false, callables: new Set() };
+  return { displayRaw: false, mayUntrackedCallable: false, callables: new Set() };
 }
 
 function rawAbstractValue() {
-  return { displayRaw: true, callables: new Set() };
+  return { displayRaw: true, mayUntrackedCallable: false, callables: new Set() };
+}
+
+function untrackedCallableAbstractValue() {
+  return { displayRaw: false, mayUntrackedCallable: true, callables: new Set() };
 }
 
 function createAbstractAnalysis() {
@@ -282,13 +286,18 @@ function mergeAbstractValues(...values) {
   for (const value of values) {
     if (!value) continue;
     merged.displayRaw ||= value.displayRaw;
+    merged.mayUntrackedCallable ||= value.mayUntrackedCallable;
     for (const callable of value.callables) merged.callables.add(callable);
   }
   return merged;
 }
 
 function abstractValueChanged(previous, next) {
-  if (previous.displayRaw !== next.displayRaw || previous.callables.size !== next.callables.size) {
+  if (
+    previous.displayRaw !== next.displayRaw
+    || previous.mayUntrackedCallable !== next.mayUntrackedCallable
+    || previous.callables.size !== next.callables.size
+  ) {
     return true;
   }
   return [...next.callables].some((callable) => !previous.callables.has(callable));
@@ -323,6 +332,7 @@ function callableDescriptor(callable, origin, environment, analysis) {
 function callableAbstractValue(callable, context) {
   return {
     displayRaw: false,
+    mayUntrackedCallable: false,
     callables: new Set([
       callableDescriptor(callable, context.origin, context.environment, context.analysis),
     ]),
@@ -338,6 +348,16 @@ function callableDeclarationForBinding(binding) {
     return declaration;
   }
   return null;
+}
+
+function bindingMayBeUntrackedCallable(binding, resolvedValue) {
+  if (binding.kind === "import" || binding.kind === "import_namespace") return true;
+  if (abstractValueHasSignal(resolvedValue ?? emptyAbstractValue())) return false;
+  if (binding.kind === "parameter") return true;
+  const declaration = binding.declaration.parent;
+  return binding.kind === "variable"
+    && ts.isVariableDeclaration(declaration)
+    && declaration.initializer === undefined;
 }
 
 function bindCallableParameters(descriptor, argumentValues, context) {
@@ -371,13 +391,15 @@ function callableReturnValue(descriptor, argumentValues, context, invocation) {
   if (context.activeCallables.has(callable)) return emptyAbstractValue();
   const activeCallables = new Set(context.activeCallables);
   activeCallables.add(callable);
-  const environment = bindCallableParameters(descriptor, argumentValues, context);
-  const returnContext = {
+  let environment = bindCallableParameters(descriptor, argumentValues, context);
+  let returnContext = {
     ...context,
     activeCallables,
     environment,
     origin: invocation,
   };
+  environment = propagateCallableEnvironment(callable, environment, returnContext);
+  returnContext = { ...returnContext, environment };
   return mergeAbstractValues(...callableReturnExpressions(callable)
     .map((expression) => expressionAbstractValue(expression, returnContext)));
 }
@@ -406,13 +428,17 @@ function expressionAbstractValue(node, context) {
   if (isRawPropertyAccess(node)) return rawAbstractValue();
   if (ts.isIdentifier(node)) {
     const binding = context.model.resolve(node);
-    if (!binding) return emptyAbstractValue();
+    if (!binding) return untrackedCallableAbstractValue();
     const declaredCallable = callableDeclarationForBinding(binding);
+    const resolvedValue = context.environment.has(binding)
+      ? context.environment.get(binding)
+      : context.bindingValues.get(binding);
     return mergeAbstractValues(
-      context.environment.has(binding)
-        ? context.environment.get(binding)
-        : context.bindingValues.get(binding),
+      resolvedValue,
       binding.errorSource === true ? rawAbstractValue() : null,
+      bindingMayBeUntrackedCallable(binding, resolvedValue)
+        ? untrackedCallableAbstractValue()
+        : null,
       declaredCallable ? callableAbstractValue(declaredCallable, context) : null,
     );
   }
@@ -426,11 +452,12 @@ function expressionAbstractValue(node, context) {
     const callee = expressionAbstractValue(node.expression, context);
     const argumentValues = node.arguments.map((argument) => expressionAbstractValue(argument, context));
     const returned = invokeTrackedCallables(callee, argumentValues, context, node);
-    const untrackedArgumentsContainRaw = callee.callables.size === 0
+    const untrackedArgumentsContainRaw = callee.mayUntrackedCallable
       && argumentValues.some((argument) => argument.displayRaw);
     return mergeAbstractValues(
       returned,
       callee.displayRaw || untrackedArgumentsContainRaw ? rawAbstractValue() : null,
+      callee.mayUntrackedCallable ? untrackedCallableAbstractValue() : null,
     );
   }
   if (ts.isNewExpression(node)) {
@@ -602,6 +629,74 @@ function assignmentTargetIdentifiers(node) {
   return [];
 }
 
+function abstractValueHasSignal(value) {
+  return value.displayRaw || value.mayUntrackedCallable || value.callables.size > 0;
+}
+
+function propagateVariableDeclaration(declaration, context, add) {
+  const initializerValue = expressionAbstractValue(declaration.initializer, context);
+  if (ts.isIdentifier(declaration.name)) {
+    add(context.model.resolve(declaration.name), initializerValue);
+    return;
+  }
+  if (ts.isArrayBindingPattern(declaration.name)) {
+    if (!abstractValueHasSignal(initializerValue)) return;
+    for (const identifier of bindingIdentifiers(declaration.name)) {
+      add(context.model.resolve(identifier), initializerValue);
+    }
+    return;
+  }
+  if (!ts.isObjectBindingPattern(declaration.name)) return;
+  for (const element of declaration.name.elements) {
+    const property = element.propertyName ?? element.name;
+    const propertyText = ts.isIdentifier(property) || ts.isStringLiteralLike(property)
+      ? property.text
+      : "";
+    const elementValue = RAW_PROPERTIES.has(propertyText)
+      ? rawAbstractValue()
+      : initializerValue;
+    if (!abstractValueHasSignal(elementValue)) continue;
+    for (const identifier of bindingIdentifiers(element.name)) {
+      add(context.model.resolve(identifier), elementValue);
+    }
+  }
+}
+
+function propagateCallableEnvironment(callable, environment, context) {
+  if (!callable.body || !ts.isBlock(callable.body)) return environment;
+  let changed = true;
+  while (changed) {
+    changed = false;
+    const revision = context.analysis.revision;
+    const localContext = { ...context, environment };
+    const add = (binding, value) => {
+      if (!binding || !abstractValueHasSignal(value)) return;
+      if (mergeEnvironmentValue(environment, binding, value)) changed = true;
+    };
+    const visit = (node) => {
+      if (node !== callable.body && isTrackedCallable(node)) return;
+      if (ts.isVariableDeclaration(node)) {
+        propagateVariableDeclaration(node, localContext, add);
+      }
+      if (
+        ts.isBinaryExpression(node)
+        && node.operatorToken.kind === ts.SyntaxKind.EqualsToken
+      ) {
+        const rightValue = expressionAbstractValue(node.right, localContext);
+        if (abstractValueHasSignal(rightValue)) {
+          for (const target of assignmentTargetIdentifiers(node.left)) {
+            add(context.model.resolve(target), rightValue);
+          }
+        }
+      }
+      node.forEachChild(visit);
+    };
+    visit(callable.body);
+    if (context.analysis.revision !== revision) changed = true;
+  }
+  return environment;
+}
+
 function collectBindingValues(sourceFile, stateSetters, model, analysis) {
   const bindingValues = new Map();
   let changed = true;
@@ -619,35 +714,14 @@ function collectBindingValues(sourceFile, stateSetters, model, analysis) {
     };
     const visit = (node) => {
       if (ts.isVariableDeclaration(node)) {
-        const initializerValue = expressionAbstractValue(node.initializer, context);
-        if (ts.isIdentifier(node.name)) {
-          add(model.resolve(node.name), initializerValue);
-        }
-        if (ts.isArrayBindingPattern(node.name) && (
-          initializerValue.displayRaw || initializerValue.callables.size > 0
-        )) {
-          for (const identifier of bindingIdentifiers(node.name)) add(model.resolve(identifier), initializerValue);
-        }
-        if (ts.isObjectBindingPattern(node.name)) {
-          for (const element of node.name.elements) {
-            const property = element.propertyName ?? element.name;
-            const propertyText = ts.isIdentifier(property) || ts.isStringLiteralLike(property)
-              ? property.text
-              : "";
-            if (RAW_PROPERTIES.has(propertyText)) {
-              add(model.resolve(boundName(element)), rawAbstractValue());
-            } else if (initializerValue.displayRaw || initializerValue.callables.size > 0) {
-              add(model.resolve(boundName(element)), initializerValue);
-            }
-          }
-        }
+        propagateVariableDeclaration(node, context, add);
       }
       if (
         ts.isBinaryExpression(node)
         && node.operatorToken.kind === ts.SyntaxKind.EqualsToken
       ) {
         const rightValue = expressionAbstractValue(node.right, context);
-        if (rightValue.displayRaw || rightValue.callables.size > 0) {
+        if (abstractValueHasSignal(rightValue)) {
           for (const target of assignmentTargetIdentifiers(node.left)) {
             add(model.resolve(target), rightValue);
           }
@@ -668,7 +742,7 @@ function collectBindingValues(sourceFile, stateSetters, model, analysis) {
               argumentValue.displayRaw ? rawAbstractValue() : null,
             )
             : argumentValue;
-          if (stateValue.displayRaw || stateValue.callables.size > 0) add(state, stateValue);
+          if (abstractValueHasSignal(stateValue)) add(state, stateValue);
         }
       }
       node.forEachChild(visit);

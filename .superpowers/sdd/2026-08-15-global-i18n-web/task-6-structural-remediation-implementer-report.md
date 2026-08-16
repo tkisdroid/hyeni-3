@@ -100,3 +100,54 @@ compound assignment도 별도 TDD 주기로 고정했다. 해당 의미 처리�
 - descriptor는 call-site별로 분리하지만 같은 AST call-site가 반복 실행되는 런타임 값들은 하나의 단조 환경으로 합친다. 정적 게이트의 유한 수렴을 위한 보수적 선택이며 오탐 방향으로만 넓어진다.
 - destructured parameter는 property별 정밀 추적 대신 전달 aggregate를 모든 실제 binding에 합친다. property key는 제외하지만 안전한 sibling binding이 함께 taint될 수 있다.
 - 외부 구현을 알 수 없는 일반 함수가 callable 인자를 내부에서 호출하는지까지 추론하지 않는다. 기존과 같이 raw 값 인자만 보수적으로 반환 taint 처리하며, 저장소 안 tracked callable의 parameter·closure 흐름은 이번 라운드에서 직접 해석한다.
+
+## 수정 라운드 2
+
+### RED
+
+독립 재검토의 새 Important 2건을 실제 scanner subprocess로 먼저 재현했다.
+
+- 최초 명령: `node --test tests/apiErrorSurfaceWiring.test.mjs`
+- 최초 결과: 75개 중 70개 통과, 5개 실패
+- callable local binding: `identity(value)`의 `const result = value` alias 반환 누락
+- callable local fixed point: parameter assignment → local alias chain → object destructuring 반환 누락
+- returned local closure: `const reader = () => value; return reader`의 direct/stored 호출 2개 누락
+- tracked+untracked 혼합: imported formatter alias와 safe tracked arrow의 조건식 callee가 raw 인자 보수 정책을 잃음
+
+인접 untracked-only 경계도 별도 RED로 확인했다.
+
+- 미요약 component parameter `formatter(failure.message)`: 76개 중 75개 통과, 1개 실패
+- imported `createFormatter()`가 반환한 값을 저장한 뒤 `formatter(failure.message)`: 77개 중 76개 통과, 1개 실패
+
+tracked-only 함수가 raw 인자를 무시하고 안전 상수를 반환하는 fixture는 모든 RED에서 status 0을 유지했다.
+
+### 설계
+
+- callable body의 직접 `VariableDeclaration`과 simple assignment를 invocation-local environment에서 단조 fixed point로 평가하는 `propagateCallableEnvironment`를 추가했다.
+- local 순회는 다른 function/arrow/method node에서 중단해 중첩 callable body의 local 선언을 바깥 호출 환경에 합치지 않는다. 분기들은 보수적으로 합류하고 선언 순서와 관계없이 수렴할 때까지 반복한다.
+- global binding 수집과 call-local 수집이 같은 `propagateVariableDeclaration` 의미를 사용한다. identifier/array/object/destructured binding은 실제 binding identifier만 갱신하고 property key는 제외한다.
+- call-local 값은 descriptor parameter/captured environment에서 시작하며 전역 `bindingValues`에 쓰지 않는다. parameter/local assignment와 alias chain은 local map에만 단조 병합된다.
+- local arrow/function/method descriptor는 현재 invocation origin과 갱신된 local/parameter environment를 캡처한다. 따라서 local binding으로 반환된 closure도 direct/stored 호출에서 raw 값을 보존한다.
+- abstract value에 `mayUntrackedCallable`을 추가했다. import·namespace import·외부 unresolved identifier·미요약 parameter·initializer 없는 variable을 명시적 untracked 후보로 나타내고 alias/조건식/배열·객체 합류에서 OR로 보존한다.
+- tracked-only 호출은 계속 직접 return만 따른다. `mayUntrackedCallable` 후보가 포함된 호출만 raw 인자에 기존 보수 정책을 적용한다.
+- untracked 호출 결과도 다시 callable일 수 있으므로 `mayUntrackedCallable`을 다음 호출까지 보존한다. 이를 통해 외부 factory → local variable → raw 인자 호출 경로가 empty value로 사라지지 않는다.
+- 일반 data 값은 `displayRaw`로 바꾸지 않는다. unknown callable 성분은 실제 call expression에서 raw 인자와 만날 때에만 사용자 표시 raw 결과가 된다.
+
+### GREEN 검증
+
+- `node --test tests/apiErrorSurfaceWiring.test.mjs`: 77/77 통과
+- `node scripts/i18n/scan-client-error-surfaces.mjs`: 통과
+- `node scripts/i18n/build-catalogs.mjs`: 생성물 92개 생성, tracked diff 없음
+- `node scripts/i18n/validate-catalogs.mjs --check-generated`: 통과
+- `npm test`: 1,436/1,436 통과
+- `npm run test:worker`: 1,163/1,163 통과
+- `npm run typecheck`: 통과
+- `npm run typecheck:worker`: 통과
+- `npm run build`: 통과, 2,223 modules, PWA precache 415개 중복 없음
+- `git diff --check`: 통과
+
+### 잔여 위험
+
+- callable local 분석은 직접 variable declaration과 simple assignment를 보수적으로 합류한다. loop/branch 실행 조건이나 assignment overwrite를 경로별로 제거하지 않으므로 안전한 분기 값이 함께 taint될 수 있다.
+- destructured local은 aggregate 값을 각 실제 binding에 합친다. property key는 제외하지만 field-sensitive 정밀도는 의도적으로 두지 않는다.
+- untracked 호출은 외부 구현을 알 수 없어 결과도 callable일 가능성을 보존한다. 이 성분 자체는 사용자 표시 raw가 아니며, 이후 raw 인자를 받는 호출에서만 보수 finding을 만든다.

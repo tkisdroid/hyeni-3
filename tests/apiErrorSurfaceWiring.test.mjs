@@ -221,6 +221,29 @@ for (const fixture of [
     sinkLine: 3,
   },
   {
+    name: "tracked 함수의 local alias가 반환한 raw 값을 렌더",
+    lines: [
+      "function identity(value) { const result = value; return result; }",
+      "return <p>{identity(failure.message)}</p>;",
+    ],
+    sinkLine: 3,
+  },
+  {
+    name: "tracked 함수의 local assignment·alias chain·destructuring 결과를 렌더",
+    lines: [
+      "function identity(value) {",
+      "  let assigned = '';",
+      "  assigned = value;",
+      "  const first = assigned;",
+      "  const second = first;",
+      "  const { payload: result } = { payload: second };",
+      "  return result;",
+      "}",
+      "return <p>{identity(failure.message)}</p>;",
+    ],
+    sinkLine: 10,
+  },
+  {
     name: "tracked 함수가 그대로 반환한 callable을 호출해 렌더",
     lines: [
       "function pass(reader) { return reader; }",
@@ -240,6 +263,23 @@ for (const fixture of [
     name: "raw 인자를 캡처한 factory callable을 변수에 저장한 뒤 호출해 렌더",
     lines: [
       "function makeReader(value) { return () => value; }",
+      "const reader = makeReader(failure.message);",
+      "return <p>{reader()}</p>;",
+    ],
+    sinkLine: 4,
+  },
+  {
+    name: "local binding으로 반환한 factory callable을 직접 호출해 렌더",
+    lines: [
+      "function makeReader(value) { const reader = () => value; return reader; }",
+      "return <p>{makeReader(failure.message)()}</p>;",
+    ],
+    sinkLine: 3,
+  },
+  {
+    name: "local binding으로 반환한 factory callable을 저장한 뒤 호출해 렌더",
+    lines: [
+      "function makeReader(value) { const reader = () => value; return reader; }",
       "const reader = makeReader(failure.message);",
       "return <p>{reader()}</p>;",
     ],
@@ -441,6 +481,76 @@ test("서로 다른 factory call-site의 captured environment는 안전한 호�
     ].join("\n"));
     const result = runScanner(root);
     assert.equal(result.status, 0, result.stderr || result.stdout);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("tracked-only 함수가 raw 인자를 무시하고 반환한 고정 문구는 안전하다", () => {
+  const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
+  try {
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src", "TrackedSafe.tsx"), [
+      "export function TrackedSafe({ failure }) {",
+      "  function ignore(value) { return '고정 문구'; }",
+      "  return <p>{ignore(failure.message)}</p>;",
+      "}",
+    ].join("\n"));
+    const result = runScanner(root);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("tracked·untracked 후보가 섞인 callee는 raw 인자 보수 정책을 유지한다", () => {
+  const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
+  try {
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src", "MixedCallable.tsx"), [
+      "import { externalFormatter } from './external';",
+      "export function MixedCallable({ enabled, failure }) {",
+      "  const externalAlias = externalFormatter;",
+      "  const formatter = enabled ? (() => '고정 문구') : externalAlias;",
+      "  return <p>{formatter(failure.message)}</p>;",
+      "}",
+    ].join("\n"));
+    const result = runScanner(root);
+    assertRawErrorSurfaceLines(result, "src/MixedCallable.tsx", [5]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("요약되지 않은 component parameter callee는 untracked-only raw 인자 정책을 유지한다", () => {
+  const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
+  try {
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src", "ParameterFormatter.tsx"), [
+      "export function ParameterFormatter({ failure, formatter }) {",
+      "  return <p>{formatter(failure.message)}</p>;",
+      "}",
+    ].join("\n"));
+    const result = runScanner(root);
+    assertRawErrorSurfaceLines(result, "src/ParameterFormatter.tsx", [2]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("untracked factory 호출이 반환한 callable 가능성은 다음 raw 인자 호출까지 유지한다", () => {
+  const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
+  try {
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src", "ExternalFactory.tsx"), [
+      "import { createFormatter } from './external';",
+      "export function ExternalFactory({ failure }) {",
+      "  const formatter = createFormatter();",
+      "  return <p>{formatter(failure.message)}</p>;",
+      "}",
+    ].join("\n"));
+    const result = runScanner(root);
+    assertRawErrorSurfaceLines(result, "src/ExternalFactory.tsx", [4]);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
