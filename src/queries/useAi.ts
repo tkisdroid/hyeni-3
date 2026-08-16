@@ -139,6 +139,15 @@ export function useSendChildChat() {
       }
       void qc.invalidateQueries({ queryKey: qk.aiCredits(familyId ?? "") });
       if (userId) void qc.invalidateQueries({ queryKey: qk.aiMessages(userId) });
+      const toolName = result.toolResult && typeof result.toolResult === "object"
+        ? String((result.toolResult as { toolName?: unknown }).toolName || "")
+        : "";
+      if (toolName === "createSchedule" || toolName === "updateSchedule") {
+        void qc.invalidateQueries({ queryKey: qk.events(familyId ?? "") });
+      }
+      if (toolName === "createDailyItem") {
+        void qc.invalidateQueries({ queryKey: ["dailySupplies", familyId ?? ""] });
+      }
     },
   });
 }

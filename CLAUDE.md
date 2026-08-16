@@ -564,7 +564,12 @@
   ④스티커북은 12칸 도감. `stickers` 테이블에 보낸 사람·메시지 컬럼이 없으므로 상세 모달은 아는 사실만 말한다
   (받은 날짜 + `sticker_type`: praise=부모 칭찬 / early·on_time=일찍 도착). NEW=최근 7일 + 미열람(기기 로컬 저장).
   ⑤내 색깔(accent)은 서버 스키마에 컬럼이 없어 `localStorage` 가족+아이 키에만 저장한다. 부모·선생님 세션은 rose 고정.
-  ⑥아이 AI 남은 횟수는 `/api/ai/usage/today`(parent-or-self) + `daily_limit` 으로 계산한다.
+  ⑥아이 AI 남은 횟수는 `useAiCreditPublicStatus` 정본이다.
+  ★아이 AI 친구(2026-08-17): 아이 셸·푸시 화면에 3D 감정 FAB(`ChildAiFab`)가 항상 대기한다. SOS·채팅·설정 화면에서는 숨긴다.
+  표정 정본=`transform/childAiEmotion.ts`. 아이는 일정 추가·준비물/숙제 추가·내 색깔 변경을 시킬 수 있고,
+  일정 삭제와 위치/알림/안전 설정은 부모만 가능하다. 음성은 `captureSpeech`+`speakChildAiReply` 이며
+  전송은 `POST /api/ai/child-chat` 한 경로라 크레딧 차감이 유지된다.
+  회귀=`tests/childAiEmotion.test.ts`·`tests/childAiCompanionWiring.test.mjs`·Worker `tests/aiChildHelpPolicy.test.mjs`.
   `/api/ai/credits/balance` 는 부모 전용이라 아이 화면에서 호출하면 403.
   ⑦하단 독(`app/ChildDock.tsx`)의 SOS 는 화면 이동만 하고, 실제 발사는 SOS 화면에서 3초 홀드해야 한다(오발사 방지).
   ⑧Jua 폰트는 Google 서브셋 87개를 `public/fonts/jua/` 에 번들(OFL). 오프라인·네이티브에서 원격 폰트를 못 받기 때문이며,

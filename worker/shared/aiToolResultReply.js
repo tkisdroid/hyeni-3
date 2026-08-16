@@ -66,6 +66,12 @@ function failureReply(result = {}) {
     if (result.error === "invalid_schedule_time_range") {
         return "끝나는 시간은 시작 시간보다 늦어야 해. 시간을 다시 알려줘.";
     }
+    if (result.error === "daily_supply_limit_exceeded") {
+        return "오늘은 8개까지만 담을 수 있어. 하나만 빼면 더 넣을 수 있어.";
+    }
+    if (result.error === "schedule_delete_parent_only") {
+        return "일정 지우는 건 부모님만 할 수 있어. 엄마나 아빠에게 말해 줄까?";
+    }
     if (String(result.error || "").startsWith("schedule_")) {
         return "일정을 처리하지 못했어. 잠시 후 다시 해보자.";
     }
@@ -89,6 +95,22 @@ export function buildAgentPlanChildReply(plan = {}) {
         return "부모님이나 보호자에게만 연락을 도와줄 수 있어.";
     }
 
+    if (intent === "schedule_delete_parent_only") {
+        return "일정 지우는 건 부모님만 할 수 있어. 엄마나 아빠에게 말해 줄까?";
+    }
+
+    if (intent === "parent_locked_setting") {
+        return "그 설정은 부모님이 정하는 거야. 바꾸고 싶으면 엄마나 아빠에게 말해 줄까?";
+    }
+
+    if (intent === "settings_accent" && hasMissing(plan, "accent")) {
+        return "무슨 색으로 바꿀까? 핑크, 살구, 보라, 민트, 하늘, 레몬 중에 골라줘.";
+    }
+
+    if (intent === "daily_item_create" && hasMissing(plan, "label")) {
+        return plan.toolArgs?.kind === "hw" ? "어떤 숙제를 넣을까?" : "어떤 준비물을 넣을까?";
+    }
+
     if (missingArgs(plan).length === 0) return "";
 
     if (intent === "message_parent" && hasMissing(plan, "parentRole")) {
@@ -106,8 +128,8 @@ export function buildAgentPlanChildReply(plan = {}) {
         if (hasMissing(plan, "title")) return "어떤 일정인지 알려줘.";
     }
 
-    if (intent === "schedule_delete") {
-        if (hasMissing(plan, "date") || hasMissing(plan, "title")) return "언제 어떤 일정을 지울까?";
+    if (intent === "schedule_delete" || intent === "schedule_delete_parent_only") {
+        return "일정 지우는 건 부모님만 할 수 있어. 엄마나 아빠에게 말해 줄까?";
     }
 
     if (intent === "schedule_update") {
@@ -128,8 +150,16 @@ export function buildToolResultChildReply(result) {
         const time = timeRange(result.event);
         return time ? `${title} 일정을 ${time}에 추가했어.` : `${title} 일정을 추가했어.`;
     }
+    if (toolName === "createDailyItem") {
+        const kindLabel = result.kind === "hw" ? "숙제" : "준비물";
+        if (result.duplicate) return `「${text(result.label, kindLabel)}」는 이미 들어 있어.`;
+        return `「${text(result.label, kindLabel)}」 ${kindLabel}에 넣었어.`;
+    }
+    if (toolName === "setChildAccent") {
+        return `${text(result.label, "그")} 색으로 바꿔 줄게.`;
+    }
     if (toolName === "deleteSchedule") {
-        return `${text(result.event?.title, "일정")} 일정을 지울지 확인해줘.`;
+        return "일정 지우는 건 부모님만 할 수 있어. 엄마나 아빠에게 말해 줄까?";
     }
     if (toolName === "updateSchedule") {
         const title = text(result.event?.title, "일정");

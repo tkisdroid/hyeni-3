@@ -1,0 +1,67 @@
+/* 아이 모드 상시 대기 AI 친구. 독·SOS 를 가리지 않게 왼쪽 아래에 둔다. */
+.caf {
+  position: absolute;
+  left: 16px;
+  bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+  z-index: 28;
+  width: 64px;
+  height: 64px;
+  min-width: 64px;
+  min-height: 64px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-floating);
+  display: grid;
+  place-items: center;
+  --press: 0.92;
+}
+
+.hy-app:not([data-role="child"]) .caf,
+.hy-screen:not(.hy-screen--dock) .caf {
+  right: 16px;
+  left: auto;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+}
+
+.caf img {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  animation: caf-bob 3.2s ease-in-out infinite;
+}
+
+.caf-credit {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  border-radius: var(--radius-pill);
+  background: var(--hy-accent-cta);
+  color: var(--bg-card);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes caf-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caf img {
+    animation: none;
+  }
+}

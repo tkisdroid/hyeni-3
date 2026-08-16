@@ -266,10 +266,22 @@ export async function fetchAiMessages(
 
 // ── 자녀 채팅 전송(쓰기 · 크레딧 소모) ──────────────────────────────────────
 
+export interface SendChildChatConfirmedTool {
+  toolName: "sendMessageToParent" | "updateSchedule";
+  confirmationToken: string;
+  parentRole?: string;
+  message?: string;
+  scheduleId?: string;
+  title?: string;
+  changes?: Record<string, string>;
+}
+
 export interface SendChildChatInput {
   message: string;
   /** 아이가 고른 동물 캐릭터 이모지(있으면 페르소나 결정). */
   characterEmoji?: string;
+  /** 일정 수정·부모 메시지처럼 확인이 끝난 도구만 보낸다. 삭제는 보내지 않는다. */
+  confirmedTool?: SendChildChatConfirmedTool;
 }
 
 /** 전송 성공 응답. 인증/한도/크레딧 차감/저장은 Worker 가 처리한다. */
@@ -283,6 +295,9 @@ export interface ChildChatReply {
   character?: string;
   characterName?: string;
   flagged?: boolean;
+  emotion?: string | null;
+  detectedIntent?: string | null;
+  toolResult?: Record<string, unknown> | null;
 }
 
 /**
@@ -298,6 +313,7 @@ export async function sendChildChat(input: SendChildChatInput): Promise<ChildCha
     message,
     usageDate: todayDateKST(),
     ...(characterEmoji ? { characterEmoji } : {}),
+    ...(input.confirmedTool ? { confirmedTool: input.confirmedTool } : {}),
   });
 }
 
