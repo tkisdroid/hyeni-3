@@ -62,6 +62,16 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.afc-head-status {
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
+  color: var(--hy-accent-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .afc-credits {
   flex: none;
   display: inline-flex;
@@ -274,6 +284,46 @@
 .afc-send:disabled {
   opacity: 0.5;
 }
+.afc-mic,
+.afc-speak {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  border-radius: var(--radius-20);
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+  border: 1.5px solid var(--hy-accent);
+  display: grid;
+  place-items: center;
+  --press: 0.92;
+}
+.afc-mic:disabled,
+.afc-speak:disabled {
+  opacity: 0.5;
+}
+.afc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 8px 4px 44px;
+}
+.afc-action {
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: var(--radius-pill);
+  background: var(--cta-grad-accent);
+  color: var(--bg-card);
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+  --press: 0.94;
+}
+.afc-action--soft {
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+  border: 1.5px solid var(--hy-accent);
+}
 
 @keyframes afc-bob {
   0%,
@@ -319,7 +369,10 @@
 .afc-back,
 .afc-setup,
 .afc-report-link,
-.afc-chip {
+.afc-chip,
+.afc-mic,
+.afc-speak,
+.afc-action {
   min-height: var(--control-min-size);
 }
 .afc-back,

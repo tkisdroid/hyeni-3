@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePwaUpdateCriticalSection } from "@/lib/usePwaUpdateCriticalSection";
 import { useLocation, useNavigate } from "react-router";
-import { ChevronLeft, Flag, MessageCircle, Settings } from "lucide-react";
+import { ChevronLeft, Flag, MessageCircle, Mic, Settings, Volume2 } from "lucide-react";
 import { useLongPress, type LongPressHandlers } from "@/lib/useLongPress";
 import { asset } from "@/lib/assets";
+import { useAccent } from "@/app/accent";
 import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "@/queries/useFamily";
 import { useEvents, useDailySupplies } from "@/queries/useSchedule";
@@ -18,12 +19,24 @@ import { messagesToBubbles, type ChatBubble } from "@/transform/aiView";
 import { groupEventsByDateKey, PAST_TAGS } from "@/transform/scheduleView";
 import { todayDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
-import { isApiError } from "@/lib/api/errors";
 import { resolveAiFriendDisplayName } from "@/transform/aiFriendName";
+import { childAiChatFriendlyError } from "@/transform/childAiChatError";
 import {
-  resolveAiLimitExhaustionReason,
-  type AiCreditPublicStatus,
-} from "@/transform/aiCreditPublicStatus";
+  childAiEmotionAsset,
+  inferChildAiEmotion,
+  parseChildAiEmotion,
+  writeStoredChildAiEmotion,
+  type ChildAiEmotion,
+} from "@/transform/childAiEmotion";
+import {
+  isSuccessfulChildAiHelpTool,
+  parseChildAiPendingAction,
+  type ChildAiPendingAction,
+} from "@/transform/childAiHelp";
+import { cancelSpeechCapture, captureSpeech, isSpeechCaptureSupported } from "@/lib/native/speech";
+import { cancelChildAiSpeech, isChildAiSpeechSupported, speakChildAiReply } from "@/lib/native/speechSpeak";
+import { placePhoneCall } from "@/lib/native/phone";
+import type { SendChildChatInput } from "@/lib/api/endpoints/ai";
 import { hasJongseong } from "@/transform/adventureMap";
 import { useToast } from "@/app/toast";
 import { useSafeBack } from "@/app/useSafeBack";
@@ -40,7 +53,7 @@ import {
 import "@/styles/jua.css";
 import "./AiFriendChat.css";
 
-const BASE_SUGGESTIONS = ["오늘 뭐 하고 놀까?", "심심해 😪", "재밌는 얘기 해줘"];
+const BASE_SUGGESTIONS = ["오늘 뭐 하고 놀까?", "심심해", "재밌는 얘기 해줘", "준비물 추가해 줘"];
 
 const AI_REPORT_REASONS: readonly ReportReasonOption<AiContentReportReason>[] = [
   { value: "scary_or_uncomfortable", label: "무섭거나 불편해" },
@@ -50,34 +63,7 @@ const AI_REPORT_REASONS: readonly ReportReasonOption<AiContentReportReason>[] = 
   { value: "other", label: "다른 이유" },
 ];
 
-// 전송 실패 코드(Worker 가 비-2xx { error } 로 응답 → ApiError.message)를 아이 톤(반말) 안내로.
-function friendlyError(err: unknown, status: AiCreditPublicStatus | null): string {
-  const code = isApiError(err) ? err.message : "";
-  switch (code) {
-    case "daily_limit_reached": {
-      const reason = resolveAiLimitExhaustionReason(status);
-      if (reason === "parent_safety_limit") {
-        return "부모님이 정한 오늘 대화 횟수를 다 썼어! 내일 또 만나자 💜";
-      }
-      if (reason === "free_included_limit") {
-        return "무료로 오늘 5번 다 이야기했어! 더 이야기하고 싶으면 부모님께 프리미엄을 부탁해 줘 💜";
-      }
-      if (reason === "premium_allowance_limit") {
-        return "오늘 이야기할 수 있는 횟수를 다 썼어! 더 필요하면 부모님께 알려줘 💜";
-      }
-      return "오늘 이야기할 수 있는 횟수를 다 썼어! 부모님께 알려줘 💜";
-    }
-    case "feature_disabled":
-      return "나 지금 잠깐 쉬는 중이야. 부모님께 켜 달라고 부탁해 줘 🙏";
-    case "not_child":
-    case "no_family":
-      return "지금은 이야기할 수 없어. 부모님께 알려줘!";
-    case "message_too_long":
-      return "조금만 짧게 다시 말해 줄래? 😊";
-    default:
-      return "잠깐 연결이 안 됐어. 다시 말해 줄래? 💜";
-  }
-}
+
 
 export function AiFriendChat() {
   const navigate = useNavigate();
@@ -87,6 +73,7 @@ export function AiFriendChat() {
 
   // 아이 모드에서는 로그인 사용자 = 아이. childUserId = userId.
   const { familyId, userId } = useAuth();
+  const { setAccent } = useAccent();
   const { data: family } = useMyFamily();
   const { data: publicSettings } = useAiFriendPublicSettings(userId);
 
@@ -113,6 +100,8 @@ export function AiFriendChat() {
     fallbackName: persona.name,
   });
   const animalSrc = asset(`animal/${persona.animal}.webp`);
+  const speechSupported = isSpeechCaptureSupported();
+  const speakSupported = isChildAiSpeechSupported();
 
   // 오늘 일정·준비물(내 것) — AI 가 먼저 물어보는 선제 인사와 제안칩의 컨텍스트(로컬 생성 · 크레딧 0).
   const { data: events } = useEvents();
@@ -172,6 +161,12 @@ export function AiFriendChat() {
   const [input, setInput] = useState("");
   const [pendingSendSource, setPendingSendSource] = useState<string | null>(null);
   const [reportTarget, setReportTarget] = useState<ChatBubble | null>(null);
+  const [emotion, setEmotion] = useState<ChildAiEmotion>("idle");
+  const [listening, setListening] = useState(false);
+  const [pendingAction, setPendingAction] = useState<ChildAiPendingAction | null>(null);
+  const [lastReply, setLastReply] = useState("");
+  const listenGeneration = useRef(0);
+  const emotionSrc = asset(childAiEmotionAsset(emotion));
   usePwaUpdateCriticalSection(input.trim().length > 0 || sendChat.isPending);
   // 신고는 AI 답변을 길게 눌러 연다(버블마다 버튼을 띄우지 않기 위해).
   // 신고 대상이 아닌 말풍선(내 메시지·로컬 인사)에는 핸들러를 붙이지 않는다.
@@ -207,20 +202,33 @@ export function AiFriendChat() {
     // sendChat.isPending 이 바뀔 때(타이핑 인디케이터 등장/퇴장)도 맨 아래로 스크롤한다.
   }, [shown.length, sendChat.isPending]);
 
-  // 전송 = 사용자 액션(버튼·칩·Enter)에서만. 자동 실행 금지. 크레딧 소모 주의.
-  const send = (raw: string, source: string) => {
+  const rememberEmotion = (next: ChildAiEmotion) => {
+    setEmotion(next);
+    writeStoredChildAiEmotion(
+      typeof window === "undefined" ? null : window.sessionStorage,
+      familyId,
+      userId,
+      next,
+    );
+  };
+
+  // 전송 = 사용자 액션(버튼·칩·Enter·음성)에서만. 자동 실행 금지. 크레딧 소모 주의.
+  const send = (raw: string, source: string, confirmedTool?: SendChildChatInput["confirmedTool"]) => {
     const text = raw.trim();
-    if (!text || sendChat.isPending) return;
+    if (!text || sendChat.isPending || listening) return;
     // 사용자가 대화를 시작하면 로컬 상태가 정본 — 뒤늦게 도착한 서버 기록이 덮어쓰지 않게 시드 잠금.
     if (!seeded) setSeeded(true);
     const base = `${Date.now()}`;
+    cancelChildAiSpeech();
+    setPendingAction(null);
+    rememberEmotion("thinking");
     setMessages((prev) => [
       ...(prev.length > 0 ? prev : [greeting]),
       { id: `${base}-me`, role: "me", text },
     ]);
     setPendingSendSource(source);
     sendChat.mutate(
-      { message: text, characterEmoji: character },
+      { message: text, characterEmoji: character, confirmedTool },
       {
         onSuccess: (res) => {
           if (
@@ -231,28 +239,55 @@ export function AiFriendChat() {
             setRemaining(res.remaining);
           }
           const reply = String(res.reply ?? "").trim();
+          const nextEmotion = parseChildAiEmotion(
+            res.emotion,
+            inferChildAiEmotion({
+              userText: text,
+              reply,
+              intent: res.detectedIntent ?? undefined,
+              toolName: res.toolResult && typeof res.toolResult === "object"
+                ? String((res.toolResult as { toolName?: unknown }).toolName || "")
+                : undefined,
+            }),
+          );
+          rememberEmotion(nextEmotion);
+          const shownReply = reply || "지금은 대답을 못 받았어. 잠시 뒤에 다시 말 걸어줘!";
+          setLastReply(shownReply);
+          const nextAction = parseChildAiPendingAction(res.toolResult);
+          if (nextAction?.kind === "accent") {
+            setAccent(nextAction.accent);
+            setPendingAction(null);
+            const accentLabel = res.toolResult && typeof res.toolResult === "object"
+              ? String((res.toolResult as { label?: unknown }).label || "")
+              : "";
+            show(accentLabel ? `${accentLabel} 색으로 바꿨어` : "내 색깔을 바꿨어", "🎨");
+          } else {
+            setPendingAction(nextAction);
+          }
+          if (isSuccessfulChildAiHelpTool(res.toolResult)) {
+            const toolName = String((res.toolResult as { toolName?: unknown }).toolName || "");
+            if (toolName === "createSchedule") show("일정에 넣었어", "📅");
+            if (toolName === "createDailyItem") show("가방 챙기기에 넣었어", "🎒");
+          }
           setMessages((prev) => [
             ...prev,
-            reply
-              ? {
-                  id: res.assistantMessageId || `${base}-ai`,
-                  role: "ai",
-                  text: reply,
-                  reportable: !!res.assistantMessageId,
-                }
-              // 서버가 빈 답을 주면 대답한 척하지 않는다(가짜 응답 금지 — 아이는 반말 안내).
-              : {
-                  id: `${base}-ai`,
-                  role: "ai",
-                  text: "지금은 대답을 못 받았어. 잠시 뒤에 다시 말 걸어줘!",
-                },
+            {
+              id: res.assistantMessageId || `${base}-ai`,
+              role: "ai",
+              text: shownReply,
+              reportable: !!res.assistantMessageId && !!reply,
+            },
           ]);
+          if (source.startsWith("voice") && speakSupported && reply) {
+            speakChildAiReply(reply);
+          }
         },
         onError: (err) => {
+          rememberEmotion("sad");
           setMessages((prev) => [...prev, {
             id: `${base}-ai`,
             role: "ai",
-            text: friendlyError(err, aiCreditStatus.data ?? null),
+            text: childAiChatFriendlyError(err, aiCreditStatus.data ?? null),
           }]);
         },
         onSettled: () => setPendingSendSource((current) => (current === source ? null : current)),
@@ -265,6 +300,47 @@ export function AiFriendChat() {
     setInput("");
   };
 
+  const handleVoice = async () => {
+    if (sendChat.isPending || listening) return;
+    const generation = listenGeneration.current + 1;
+    listenGeneration.current = generation;
+    rememberEmotion("listening");
+    setListening(true);
+    try {
+      const transcript = await captureSpeech("ko-KR");
+      if (listenGeneration.current !== generation) return;
+      if (!transcript) {
+        rememberEmotion("pondering");
+        show("잘 못 들었어. 다시 말해 줄래?", "🎤");
+        return;
+      }
+      send(transcript, "voice");
+    } finally {
+      if (listenGeneration.current === generation) setListening(false);
+    }
+  };
+
+  const handlePendingAction = (action: ChildAiPendingAction) => {
+    if (action.kind === "accent") {
+      setAccent(action.accent);
+      setPendingAction(null);
+      rememberEmotion("celebrate");
+      show(`${action.label.replace("바꿀게", "바꿨어")}`, "🎨");
+      return;
+    }
+    if (action.kind === "call") {
+      void placePhoneCall(action.phone);
+      return;
+    }
+    send("응, 해줘", "confirm", action.tool);
+  };
+
+  useEffect(() => () => {
+    listenGeneration.current += 1;
+    cancelSpeechCapture();
+    cancelChildAiSpeech();
+  }, []);
+
   return (
     <div className="afc">
       <header className="afc-header">
@@ -276,11 +352,15 @@ export function AiFriendChat() {
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="var(--hy-accent-text)" />
         </button>
-        <div className="afc-avatar">
-          <img src={animalSrc} alt="" />
+        <div className="afc-avatar" data-emotion={emotion}>
+          <img src={emotionSrc} alt="" />
+          <span className="afc-online" />
         </div>
         <div className="afc-head-main">
           <div className="afc-head-name">{friendName}</div>
+          <div className="afc-head-status">
+            {listening ? "듣고 있어!" : sendChat.isPending ? "생각 중이야…" : "준비됐어!"}
+          </div>
         </div>
         {shownRemaining != null && (
           <span className="afc-credits">
@@ -346,10 +426,30 @@ export function AiFriendChat() {
           </>
         )}
         {/* AI 친구 응답 대기 중 — 타이핑 인디케이터(전송 진행 중임을 정직하게 표시). */}
+        {pendingAction && !sendChat.isPending && (
+          <div className="afc-actions">
+            <button
+              type="button"
+              className="afc-action hy-press"
+              onClick={() => handlePendingAction(pendingAction)}
+            >
+              {pendingAction.kind === "call" ? pendingAction.label : pendingAction.kind === "accent" ? "이 색으로 바꿀래" : pendingAction.label}
+            </button>
+            {pendingAction.kind !== "accent" && (
+              <button
+                type="button"
+                className="afc-action afc-action--soft hy-press"
+                onClick={() => setPendingAction(null)}
+              >
+                다음에
+              </button>
+            )}
+          </div>
+        )}
         {sendChat.isPending && (
           <div className="afc-row afc-row--ai">
             <div className="afc-mini">
-              <img src={animalSrc} alt="" />
+              <img src={emotionSrc} alt="" />
             </div>
             <div className="afc-bubble afc-bubble--ai afc-typing" aria-label={`${friendName}${hasJongseong(friendName) ? "이" : "가"} 생각하는 중`}>
               <span />
@@ -376,11 +476,23 @@ export function AiFriendChat() {
           ))}
         </div>
         <div className="afc-bar">
+          {speechSupported && (
+            <button
+              type="button"
+              className="afc-mic hy-press"
+              onClick={() => void handleVoice()}
+              disabled={sendChat.isPending || listening}
+              aria-busy={sendChat.isPending || listening}
+              aria-label={listening ? "듣고 있어" : "말로 하기"}
+            >
+              <Mic size={20} strokeWidth={2.2} aria-hidden="true" />
+            </button>
+          )}
           <input
             className="afc-field"
             value={input}
             aria-label={`${friendName}에게 메시지`}
-            placeholder={`${friendName}에게 말해 봐…`}
+            placeholder={listening ? "듣고 있어…" : `${friendName}에게 말해 봐…`}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.nativeEvent.isComposing) {
@@ -389,11 +501,21 @@ export function AiFriendChat() {
               }
             }}
           />
+          {speakSupported && lastReply && (
+            <button
+              type="button"
+              className="afc-speak hy-press"
+              onClick={() => speakChildAiReply(lastReply)}
+              aria-label="방금 답 다시 듣기"
+            >
+              <Volume2 size={18} strokeWidth={2.2} aria-hidden="true" />
+            </button>
+          )}
           <button
             type="button"
             className="afc-send hy-press"
             onClick={handleSend}
-            disabled={sendChat.isPending || !input.trim()}
+            disabled={sendChat.isPending || listening || !input.trim()}
             aria-busy={sendChat.isPending && pendingSendSource === "composer"}
           >
             보내기

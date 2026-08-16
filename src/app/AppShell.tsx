@@ -5,6 +5,7 @@ import { useAccent } from "./accent";
 import { useEffect } from "react";
 import { warmKakaoMaps } from "@/lib/kakaoMap";
 import { ChildDock } from "./ChildDock";
+import { ChildAiFab } from "@/components/child/ChildAiFab";
 import { TabBar, type TabItem } from "./TabBar";
 import { ToastHost } from "./toast";
 import { useMyFamily } from "@/queries/useFamily";
@@ -76,6 +77,7 @@ export function ChildShell() {
       <main className="hy-screen hy-screen--dock">
         <Outlet />
       </main>
+      <ChildAiFab />
       <ChildDock />
       <ToastHost />
     </div>
@@ -103,6 +105,7 @@ export function PushShell() {
       <main className="hy-screen">
         <Outlet />
       </main>
+      <ChildAiFab />
       <ToastHost />
     </div>
   );

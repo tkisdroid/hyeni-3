@@ -154,6 +154,7 @@ function assertAccessiblePair(background, foreground, context) {
 const AUDITED_SAME_RULES = [
   ["src/screens/child/AiFriendChat.css", ".afc-bubble--me", "var(--cta-grad-accent)"],
   ["src/screens/child/AiFriendChat.css", ".afc-send", "var(--cta-grad-accent)"],
+  ["src/screens/child/AiFriendChat.css", ".afc-action", "var(--cta-grad-accent)"],
   ["src/screens/child/AiFriendSetup.css", ".afs-cta", "var(--cta-grad-accent)"],
   ["src/screens/child/ChildSos.css", ".cs-root", "var(--cta-grad-danger)"],
   ["src/screens/feature/AiCredit.css", ".ac-buy", "var(--cta-grad-lavender)"],

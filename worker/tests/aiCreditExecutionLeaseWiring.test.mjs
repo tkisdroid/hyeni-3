@@ -12,7 +12,7 @@ test("아이 AI 채팅은 모델 호출·일정 생성 전에 자녀별 실행 l
   const route = text.indexOf('chat.post("/child-chat"');
   const acquire = text.indexOf("acquireAiCreditExecutionLease", route);
   const createSchedule = text.indexOf('agentPlan.toolName === "createSchedule"', route);
-  const openAi = text.indexOf("await fetch(openaiChatUrl", route);
+  const openAi = text.indexOf("fetch(openaiChatUrl", route);
   const finallyBlock = text.indexOf("finally", openAi);
   const release = text.indexOf("releaseAiCreditExecutionLease", finallyBlock);
 

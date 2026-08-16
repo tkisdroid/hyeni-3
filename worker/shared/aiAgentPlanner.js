@@ -327,6 +327,61 @@ function isGenericParentMessageRequest(text) {
         || /^(문자|메시지|카톡)\s*(보내|전해|말해)?\s*(줘|줄래|주라)?$/.test(text);
 }
 
+const CHILD_ACCENT_ALIASES = [
+    { key: "rose", aliases: ["핑크", "분홍", "장미", "로즈"] },
+    { key: "peach", aliases: ["살구", "복숭아", "오렌지"] },
+    { key: "lavender", aliases: ["보라", "라벤더", "퍼플"] },
+    { key: "mint", aliases: ["민트", "초록", "그린"] },
+    { key: "sky", aliases: ["하늘", "파랑", "블루"] },
+    { key: "lemon", aliases: ["레몬", "노랑", "노란"] },
+];
+
+function extractChildAccentKey(text) {
+    const compact = compactText(text);
+    const found = CHILD_ACCENT_ALIASES.find((entry) =>
+        entry.aliases.some((alias) => compact.includes(compactText(alias))),
+    );
+    return found?.key || null;
+}
+
+function isChildAccentRequest(text) {
+    return /(색깔|색|테마|강조색)/.test(text) && /(바꿔|바꾸|골라|고르|해줘|할래|하고 싶)/.test(text);
+}
+
+function isParentLockedSettingRequest(text) {
+    return /(위치|추적|알림|방해금지|조용한 시간|안전|소리 울리|주변 소리)/.test(text)
+        && /(꺼|끄|켜|바꿔|바꾸|멈춰|그만|설정)/.test(text)
+        && !isChildAccentRequest(text);
+}
+
+function extractDailyItemLabel(text) {
+    const quoted = /["'“”‘’](.+?)["'“”‘’]/.exec(text);
+    if (quoted?.[1]?.trim()) return quoted[1].trim().slice(0, 24);
+
+    const named = /(?:준비물|숙제장|숙제)\s*(?:에|을|를)?\s*(.+?)\s*(?:추가|넣어|챙겨|등록)/.exec(text);
+    if (named?.[1]?.trim()) return named[1].trim().slice(0, 24);
+
+    const cleaned = String(text || "")
+        .replace(/오늘|내일|모레|지금/g, " ")
+        .replace(/준비물|숙제장|숙제/g, " ")
+        .replace(/추가|넣어|챙겨|등록|해줘|해줄래|할래|부탁|좀/g, " ")
+        .replace(/^[에을를은는이가]\s+/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    if (!cleaned || cleaned.length > 24) return null;
+    if (/^(이거|그거|저거)$/.test(cleaned)) return null;
+    return cleaned;
+}
+
+function isDailyItemCreateRequest(text) {
+    if (!/(준비물|숙제)/.test(text)) return false;
+    return /(추가|넣어|챙겨|등록|적어|써)/.test(text) || /(해줘|해줄래|할래)/.test(text);
+}
+
+function dailyItemKindFromRequest(text) {
+    return /숙제/.test(text) && !/준비물/.test(text) ? "hw" : "prep";
+}
+
 function basePlan(overrides = {}) {
     return {
         detectedIntent: "general_chat",
@@ -619,28 +674,11 @@ export function planChildAgentAction(message, { referenceDate = new Date(), pare
 
     const pendingScheduleDelete = findPendingScheduleDelete(recentMessages, { referenceDate, parentSettings });
     if (pendingScheduleDelete && text) {
-        if (!allowScheduleActions) return parentToolDisabled("schedule", safety);
-        if (!isAllowedParentTopic(text, parentSettings, ["일정", "스케줄", "루틴", "준비물", "숙제", "학교생활", "학원", "운동"])) {
-            return parentAllowedTopicRestriction(parentSettings, safety);
-        }
-        const date = extractDate(text, referenceDate) || pendingScheduleDelete.toolArgs?.date || null;
-        const title = extractScheduleDeleteTitle(text)
-            || pendingScheduleDelete.toolArgs?.title
-            || findRecentScheduleDeleteTitle(recentMessages)
-            || null;
-        const missingArgs = [];
-        if (!date) missingArgs.push("date");
-        if (!title) missingArgs.push("title");
         return basePlan({
-            detectedIntent: "schedule_delete",
-            shouldUseTool: missingArgs.length === 0,
-            toolName: "deleteSchedule",
-            toolArgs: {
-                date,
-                title,
-            },
-            missingArgs,
-            confirmationRequired: true,
+            detectedIntent: "schedule_delete_parent_only",
+            shouldUseTool: false,
+            toolName: null,
+            toolArgs: {},
             safety,
         });
     }
@@ -779,25 +817,52 @@ export function planChildAgentAction(message, { referenceDate = new Date(), pare
     }
 
     if (/(삭제|지워|취소|없애)/.test(text) && /일정|스케줄/.test(text)) {
-        if (!allowScheduleActions) return parentToolDisabled("schedule", safety);
+        return basePlan({
+            detectedIntent: "schedule_delete_parent_only",
+            shouldUseTool: false,
+            toolName: null,
+            toolArgs: {},
+            safety,
+        });
+    }
+
+    if (isParentLockedSettingRequest(text)) {
+        return basePlan({
+            detectedIntent: "parent_locked_setting",
+            shouldUseTool: false,
+            toolName: null,
+            toolArgs: { setting: "parent_only" },
+            safety,
+        });
+    }
+
+    if (isChildAccentRequest(text)) {
+        const accent = extractChildAccentKey(text);
+        const missingArgs = accent ? [] : ["accent"];
+        return basePlan({
+            detectedIntent: "settings_accent",
+            shouldUseTool: Boolean(accent),
+            toolName: "setChildAccent",
+            toolArgs: { accent },
+            missingArgs,
+            safety,
+        });
+    }
+
+    if (isDailyItemCreateRequest(text)) {
         if (!isAllowedParentTopic(text, parentSettings, ["일정", "스케줄", "루틴", "준비물", "숙제", "학교생활", "학원", "운동"])) {
             return parentAllowedTopicRestriction(parentSettings, safety);
         }
-        const date = extractDate(text, referenceDate);
-        const title = extractScheduleDeleteTitle(text);
-        const missingArgs = [];
-        if (!date) missingArgs.push("date");
-        if (!title) missingArgs.push("title");
+        const kind = dailyItemKindFromRequest(text);
+        const label = extractDailyItemLabel(text);
+        const date = extractDate(text, referenceDate) || todayKey(referenceDate);
+        const missingArgs = label ? [] : ["label"];
         return basePlan({
-            detectedIntent: "schedule_delete",
-            shouldUseTool: missingArgs.length === 0,
-            toolName: "deleteSchedule",
-            toolArgs: {
-                date,
-                title,
-            },
+            detectedIntent: "daily_item_create",
+            shouldUseTool: Boolean(label),
+            toolName: "createDailyItem",
+            toolArgs: { kind, label, date },
             missingArgs,
-            confirmationRequired: true,
             safety,
         });
     }

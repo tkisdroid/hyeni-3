@@ -75,6 +75,8 @@ import { shouldBypassAiCreditLimit, shouldChargeForAiTurn } from "../shared/aiUs
 import { createAiToolConfirmationToken, verifyAiToolConfirmationToken } from "../shared/aiConfirmationToken.js";
 import { sanitizeAiToolResultForPrompt } from "../shared/aiToolResultPrompt.js";
 import { buildAgentPlanChildReply, buildToolResultChildReply } from "../shared/aiToolResultReply.js";
+import { mergeDailyChecklistItem, encodeDailyChecklist } from "../shared/aiDailyItemTools.js";
+import { inferChildAiEmotion } from "../shared/aiChildEmotion.js";
 import { aiMutationScopeErrorResponse, aiMutationScopeState } from "../lib/aiMutationScope";
 
 type OpenAiChatResponse = {
@@ -142,8 +144,8 @@ const SCHEDULE_AGENT_TOOLS = new Set([
   "getScheduleByDate",
   "createSchedule",
   "updateSchedule",
-  "deleteSchedule",
 ]);
+const CHILD_HELP_TOOLS = new Set(["createDailyItem", "setChildAccent"]);
 
 function isAgentToolAllowedForPrompt(
   toolName: unknown,
@@ -153,14 +155,30 @@ function isAgentToolAllowedForPrompt(
   if (!name) return false;
   if (CONTACT_AGENT_TOOLS.has(name)) return allowContactActions;
   if (SCHEDULE_AGENT_TOOLS.has(name)) return allowScheduleActions;
+  if (CHILD_HELP_TOOLS.has(name)) return true;
   return name === "notifyParent";
 }
 
-function isScheduleLookupToolResult(toolResult: any): boolean {
+function isDeterministicHelpToolResult(toolResult: any): boolean {
   if (!toolResult || typeof toolResult !== "object") return false;
   if (toolResult.ok !== true) return false;
-  return toolResult.toolName === "getTodaySchedule" || toolResult.toolName === "getScheduleByDate";
+  return (
+    toolResult.toolName === "getTodaySchedule"
+    || toolResult.toolName === "getScheduleByDate"
+    || toolResult.toolName === "createSchedule"
+    || toolResult.toolName === "createDailyItem"
+    || toolResult.toolName === "setChildAccent"
+  );
 }
+
+const CHILD_ACCENT_LABELS: Record<string, string> = {
+  rose: "핑크",
+  peach: "살구",
+  lavender: "보라",
+  mint: "민트",
+  sky: "하늘",
+  lemon: "레몬",
+};
 
 function formatFamilyMemberForPrompt(member: Record<string, unknown>): string {
   const role = String(member?.role || "").trim();
@@ -581,72 +599,9 @@ chat.post("/child-chat", requireAuth, async (c) => {
     );
   }
 
-  // ── 확인된 도구: deleteSchedule ──
+  // 일정 삭제는 부모만 가능하다. 옛 클라이언트의 확인 토큰도 실행하지 않는다.
   if (body.confirmedTool?.toolName === "deleteSchedule") {
-    if (!scheduleActionsAllowed) return c.json({ error: "schedule_actions_disabled" }, 403);
-    const scheduleId = String(body.confirmedTool.scheduleId || "").trim();
-    if (!scheduleId) return c.json({ error: "invalid_schedule_id" }, 400);
-    const confirmation = await verifyConfirmedToolPayload(
-      body.confirmedTool.confirmationToken,
-      { familyId, childUserId: userId, toolName: "deleteSchedule", scheduleId },
-      confirmSecret,
-    );
-    if (!confirmation.ok) return c.json({ error: confirmation.error }, 403);
-
-    let eventRow: Record<string, any> | null = null;
-    try {
-      eventRow = await loadSingleEvent(db, familyId, scheduleId);
-    } catch (e) {
-      console.error("[ai-child-chat] schedule delete lookup failed");
-      return c.json({ error: "schedule_lookup_failed" }, 500);
-    }
-    if (!eventRow) return c.json({ error: "schedule_not_found" }, 404);
-    if (!isChildDeletableEvent(eventRow, childMemberId)) return c.json({ error: "schedule_delete_not_allowed" }, 403);
-
-    const eventForClient = eventRowToToolEvent(eventRow);
-    const childLinks = childLinksForEvent(eventRow);
-    let deleted = false;
-    let removedForChild = false;
-
-    if (childLinks.length > 1) {
-      try {
-        await db
-          .prepare("DELETE FROM events_children WHERE event_id=? AND child_id=?")
-          .bind(scheduleId, childMemberId)
-          .run();
-      } catch (e) {
-        console.error("[ai-child-chat] schedule child unlink failed");
-        return c.json({ error: "schedule_delete_failed" }, 500);
-      }
-      removedForChild = true;
-    } else {
-      try {
-        await db.prepare("DELETE FROM events WHERE family_id=? AND id=?").bind(familyId, scheduleId).run();
-        await db.prepare("DELETE FROM events_children WHERE event_id=?").bind(scheduleId).run();
-      } catch (e) {
-        console.error("[ai-child-chat] schedule delete failed");
-        return c.json({ error: "schedule_delete_failed" }, 500);
-      }
-      deleted = true;
-      removedForChild = true;
-    }
-
-    const title = String(eventForClient.title || body.confirmedTool.title || "일정");
-    const reply = `${title} 일정을 지웠어.`;
-    const logged = await insertChatMessages(db, familyId, userId, characterEmoji, [
-      { role: "user", content: `[일정 삭제 확인] ${title}`, flagged: false },
-      { role: "assistant", content: reply, flagged: false },
-    ]);
-    if (!logged) return c.json({ error: "account_state_changed" }, 409);
-    return c.json(
-      {
-        reply,
-        toolResult: { ok: true, toolName: "deleteSchedule", event: eventForClient, deleted, removedForChild },
-        flagged: false,
-        assistantMessageId: logged.assistantMessageId,
-      },
-      200,
-    );
+    return c.json({ error: "schedule_delete_parent_only" }, 403);
   }
 
   // ── 확인된 도구: updateSchedule ──
@@ -1076,34 +1031,94 @@ chat.post("/child-chat", requireAuth, async (c) => {
     }
   }
 
-  // ── 도구: deleteSchedule(후보 탐색 → 확인 토큰) ──
-  if (agentPlan.toolName === "deleteSchedule") {
-    if (!allowScheduleActions) {
-      toolResult = { ok: false, toolName: "deleteSchedule", error: "schedule_actions_disabled" };
-    } else if (!agentPlan.shouldUseTool) {
-      toolResult = { ok: false, toolName: "deleteSchedule", error: "missing_schedule_delete_args", missingArgs: agentPlan.missingArgs };
+  // ── 도구: deleteSchedule — 아이에게는 실행하지 않고 안내만 한다 ──
+  if (agentPlan.toolName === "deleteSchedule" || agentPlan.detectedIntent === "schedule_delete_parent_only") {
+    toolResult = { ok: false, toolName: "deleteSchedule", error: "schedule_delete_parent_only" };
+  }
+
+  // ── 도구: createDailyItem ──
+  if (agentPlan.shouldUseTool && agentPlan.toolName === "createDailyItem") {
+    const kind = agentPlan.toolArgs.kind === "hw" ? "hw" : "prep";
+    const label = String(agentPlan.toolArgs.label || "").trim();
+    if (!label) {
+      toolResult = { ok: false, toolName: "createDailyItem", error: "missing_label", kind };
     } else {
       try {
         const appDateKey = toAppDateKey(String(agentPlan.toolArgs.date || contextDate));
-        const requestedTitle = String(agentPlan.toolArgs.title || "").trim();
-        const scheduleRows = await loadEventsByDateKey(db, familyId, appDateKey);
-        const candidate = scheduleRows
-          .filter((row) => isChildDeletableEvent(row, childMemberId))
-          .find((row) => scheduleTitleMatches(row.title, requestedTitle));
-        if (!candidate) {
-          toolResult = { ok: false, toolName: "deleteSchedule", error: "schedule_not_found", date: appDateKey, title: requestedTitle };
+        const existing = await db
+          .prepare(
+            "SELECT id, supplies, homework, note FROM daily_supplies WHERE family_id=? AND child_id=? AND date_key=? ORDER BY updated_at DESC LIMIT 1",
+          )
+          .bind(familyId, childMemberId, appDateKey)
+          .first<{ id: string; supplies: string | null; homework: string | null; note: string | null }>();
+        const column = kind === "hw" ? "homework" : "supplies";
+        const merged = mergeDailyChecklistItem(existing?.[column] ?? "", label);
+        if (!merged.ok) {
+          toolResult = { ok: false, toolName: "createDailyItem", error: merged.error, kind, label: merged.label };
         } else {
-          const event = eventRowToToolEvent(candidate);
-          toolResult = await addConfirmationToken(
-            { ok: true, toolName: "deleteSchedule", confirmationRequired: true, event },
-            { familyId, childUserId: userId, toolName: "deleteSchedule", scheduleId: String(event.id || "") },
-            confirmSecret,
-          );
+          const nextSupplies = kind === "prep" ? encodeDailyChecklist(merged.items) : String(existing?.supplies ?? "");
+          const nextHomework = kind === "hw" ? encodeDailyChecklist(merged.items) : String(existing?.homework ?? "");
+          const now = pgNow();
+          if (existing?.id) {
+            await db
+              .prepare("UPDATE daily_supplies SET supplies=?, homework=?, updated_by=?, updated_at=? WHERE id=?")
+              .bind(nextSupplies, nextHomework, userId, now, existing.id)
+              .run();
+          } else {
+            await db
+              .prepare(
+                `INSERT INTO daily_supplies
+                  (id, family_id, child_id, date_key, supplies, homework, note, created_by, updated_by, created_at, updated_at)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+              )
+              .bind(
+                crypto.randomUUID(),
+                familyId,
+                childMemberId,
+                appDateKey,
+                nextSupplies,
+                nextHomework,
+                "",
+                userId,
+                userId,
+                now,
+                now,
+              )
+              .run();
+          }
+          try {
+            await notifyPg(c.env, familyId, "daily_supplies", existing?.id ? "UPDATE" : "INSERT", {
+              family_id: familyId,
+              child_id: childMemberId,
+              date_key: appDateKey,
+            });
+          } catch {
+            console.error("[ai-child-chat] daily supply realtime notify failed");
+          }
+          toolResult = {
+            ok: true,
+            toolName: "createDailyItem",
+            kind,
+            label: merged.label,
+            added: merged.added,
+            duplicate: merged.duplicate === true,
+          };
         }
       } catch (e) {
-        console.error("[ai-child-chat] schedule delete candidate lookup exception");
-        toolResult = { ok: false, toolName: "deleteSchedule", error: "schedule_lookup_failed" };
+        console.error("[ai-child-chat] daily item create failed");
+        toolResult = { ok: false, toolName: "createDailyItem", error: "daily_item_create_failed", kind, label };
       }
+    }
+  }
+
+  // ── 도구: setChildAccent — 서버 스키마에 색 컬럼이 없어 클라가 이 기기만 적용한다 ──
+  if (agentPlan.shouldUseTool && agentPlan.toolName === "setChildAccent") {
+    const accent = String(agentPlan.toolArgs.accent || "");
+    const label = CHILD_ACCENT_LABELS[accent];
+    if (!label) {
+      toolResult = { ok: false, toolName: "setChildAccent", error: "invalid_accent" };
+    } else {
+      toolResult = { ok: true, toolName: "setChildAccent", accent, label };
     }
   }
 
@@ -1181,6 +1196,11 @@ chat.post("/child-chat", requireAuth, async (c) => {
               .bind(eventRow.id, childMemberId)
               .run();
             toolResult = { ok: true, toolName: "createSchedule", event: eventRowToToolEvent(eventRow) };
+            try {
+              await notifyPg(c.env, familyId, "events", "INSERT", eventRow, null);
+            } catch {
+              console.error("[ai-child-chat] schedule create realtime notify failed");
+            }
           } catch (e) {
             console.error("[ai-child-chat] schedule child link failed");
             try {
@@ -1300,7 +1320,7 @@ chat.post("/child-chat", requireAuth, async (c) => {
     const planFallbackAssistantText = buildAgentPlanChildReply(agentPlan);
     if (planFallbackAssistantText) {
       assistantText = planFallbackAssistantText;
-    } else if (isScheduleLookupToolResult(toolResult)) {
+    } else if (isDeterministicHelpToolResult(toolResult)) {
       const deterministicScheduleReply = buildToolResultChildReply(toolResult);
       if (deterministicScheduleReply) {
         assistantText = deterministicScheduleReply;
@@ -1318,24 +1338,32 @@ chat.post("/child-chat", requireAuth, async (c) => {
           }
         } else {
           openAiStartedAt = Date.now();
-          const openaiRes = await fetch(openaiChatUrl(c.env), {
+          const chatMessages = [
+            { role: "system", content: systemPrompt },
+            ...contextWindow,
+            ...(toolResult
+              ? [{ role: "system", content: `도구 실행 결과: ${JSON.stringify(sanitizeAiToolResultForPrompt(toolResult))}` }]
+              : []),
+            { role: "user", content: message },
+          ];
+          const safetyIdentifier = await openaiSafetyIdentifier(userId);
+          const lunaConfig = openaiLunaChatConfig(220);
+          const postCompletion = (includeTemperature: boolean) => fetch(openaiChatUrl(c.env), {
             method: "POST",
             headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
             signal: AbortSignal.timeout(AI_CHILD_CHAT_TIMEOUT_MS),
             body: JSON.stringify({
-              ...openaiLunaChatConfig(220),
-              messages: [
-                { role: "system", content: systemPrompt },
-                ...contextWindow,
-                ...(toolResult
-                  ? [{ role: "system", content: `도구 실행 결과: ${JSON.stringify(sanitizeAiToolResultForPrompt(toolResult))}` }]
-                  : []),
-                { role: "user", content: message },
-              ],
-              temperature: 0.7,
-              safety_identifier: await openaiSafetyIdentifier(userId),
+              ...lunaConfig,
+              messages: chatMessages,
+              ...(includeTemperature ? { temperature: 0.7 } : {}),
+              safety_identifier: safetyIdentifier,
             }),
           });
+          let openaiRes = await postCompletion(true);
+          // Luna 일부 경로가 temperature 를 거부하면 같은 프롬프트로 한 번 더 시도한다.
+          if (openaiRes.status === 400) {
+            openaiRes = await postCompletion(false);
+          }
           if (!openaiRes.ok) {
             writeOpenAiLog("error", {
               operation: "child_chat",
@@ -1577,6 +1605,12 @@ chat.post("/child-chat", requireAuth, async (c) => {
         ? { name: agentPlan.toolName, args: agentPlan.toolArgs, confirmationRequired: agentPlan.confirmationRequired }
         : null,
       toolResult,
+      emotion: inferChildAiEmotion({
+        userText: message,
+        reply: assistantText,
+        intent: agentPlan.detectedIntent,
+        toolName: toolResult && typeof toolResult === "object" ? (toolResult as { toolName?: string }).toolName : agentPlan.toolName,
+      }),
       safety: agentPlan.safety,
       flagged,
       assistantMessageId: logged.assistantMessageId,
