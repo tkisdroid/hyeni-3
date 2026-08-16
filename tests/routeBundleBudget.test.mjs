@@ -20,19 +20,27 @@ function withDistFixture(run) {
   }
 }
 
-function writeBundle(distDir, bytes) {
+function writeBundle(distDir, bytes, preloads = []) {
   mkdirSync(join(distDir, "assets"));
   writeFileSync(
     join(distDir, "index.html"),
-    '<script type="module" crossorigin src="./assets/index-fixture.js"></script>',
+    [
+      '<script type="module" crossorigin src="./assets/index-fixture.js"></script>',
+      ...preloads.map(({ file }) => `<link rel="modulepreload" href="./assets/${file}">`),
+    ].join(""),
   );
   writeFileSync(join(distDir, "assets", "index-fixture.js"), Buffer.alloc(bytes, 1));
+  for (const preload of preloads) {
+    writeFileSync(join(distDir, "assets", preload.file), Buffer.alloc(preload.bytes, 1));
+  }
 }
 
-test("production HTML이 가리키는 실제 module entry 크기를 검사한다", () => withDistFixture((distDir) => {
+test("production HTML이 가리키는 실제 초기 자체 JS 그래프 크기를 검사한다", () => withDistFixture((distDir) => {
   writeBundle(distDir, 499_999);
   assert.deepEqual(inspectRouteEntryBundle({ distDir, limitBytes: 500_000 }), {
     entryFile: "assets/index-fixture.js",
+    files: [{ file: "assets/index-fixture.js", bytes: 499_999 }],
+    excludedFiles: [],
     bytes: 499_999,
     limitBytes: 500_000,
   });
@@ -44,6 +52,25 @@ test("entry가 500KB 경계 이상이면 실패한다", () => withDistFixture((d
     () => inspectRouteEntryBundle({ distDir, limitBytes: 500_000 }),
     /500000.*미만/,
   );
+}));
+
+test("entry가 작아도 초기 자체 modulepreload를 합친 그래프가 500KB 이상이면 실패한다", () => withDistFixture((distDir) => {
+  writeBundle(distDir, 300_000, [{ file: "i18n-ko-fallback-fixture.js", bytes: 200_000 }]);
+  assert.throws(
+    () => inspectRouteEntryBundle({ distDir, limitBytes: 500_000 }),
+    /초기 자체 JS 그래프.*500000.*미만/,
+  );
+}));
+
+test("명시적인 third-party runtime preload는 자체 JS 그래프 예산에서 제외한다", () => withDistFixture((distDir) => {
+  writeBundle(distDir, 300_000, [{ file: "i18n-runtime-fixture.js", bytes: 300_000 }]);
+  const result = inspectRouteEntryBundle({ distDir, limitBytes: 500_000 });
+  assert.equal(result.bytes, 300_000);
+  assert.deepEqual(result.excludedFiles, [{
+    file: "assets/i18n-runtime-fixture.js",
+    bytes: 300_000,
+    reason: "third-party-runtime",
+  }]);
 }));
 
 test("production HTML의 초기 stylesheet는 40KB 미만이어야 한다", () => withDistFixture((distDir) => {
@@ -95,20 +122,10 @@ test("npm run build는 Vite 산출 직후 실제 번들 예산 검사를 실행�
   assert.equal(packageJson.scripts["verify:route-bundle"], "node scripts/verify-route-bundle.mjs");
 });
 
-test("defaultIntl의 한국어 fallback catalog 6개만 안정 청크로 분리한다", () => {
+test("defaultIntl은 전체 한국어 catalog를 정적으로 가져오지 않고 실제 사용 최소 생성물만 쓴다", () => {
+  const defaultIntl = readFileSync(join(rootDir, "src/i18n/defaultIntl.ts"), "utf8");
   const viteConfig = readFileSync(join(rootDir, "vite.config.ts"), "utf8");
-  const fallbackChunk = viteConfig.match(/"i18n-ko-fallback"\s*:\s*\[([\s\S]*?)\]/)?.[1];
-
-  assert.ok(fallbackChunk, "i18n-ko-fallback 청크가 필요합니다.");
-  const catalogFiles = [...fallbackChunk.matchAll(
-    /\.\/src\/i18n\/generated\/catalogs\/ko\/([^"']+)\.ts/g,
-  )].map((match) => match[1]).sort();
-  assert.deepEqual(catalogFiles, [
-    "child",
-    "core",
-    "notifications",
-    "parent",
-    "reports",
-    "shared",
-  ]);
+  assert.match(defaultIntl, /generated\/legacyKoreanMessages/);
+  assert.doesNotMatch(defaultIntl, /generated\/catalogs\/ko\//);
+  assert.doesNotMatch(viteConfig, /i18n-ko-fallback/);
 });

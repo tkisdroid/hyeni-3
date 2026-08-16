@@ -90,7 +90,7 @@ const messages = {
   "notifications.locationSettings.history.title": "Cakupan riwayat lokasi",
   "notifications.locationSettings.interval.balanced": "Seimbang",
   "notifications.locationSettings.interval.balancedDescription": "Sering mengirim saat bergerak dan lebih jarang saat diam.",
-  "notifications.locationSettings.interval.live": "Real-time",
+  "notifications.locationSettings.interval.live": "Langsung",
   "notifications.locationSettings.interval.liveDescription": "Sering mengirim lokasi agar status terbaru tampil lebih cepat, tetapi memakai lebih banyak baterai.",
   "notifications.locationSettings.interval.livePremiumAria": "Pengiriman lokasi real-time (Premium)",
   "notifications.locationSettings.interval.saver": "Hemat baterai",

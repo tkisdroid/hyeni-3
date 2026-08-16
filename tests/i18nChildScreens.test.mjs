@@ -32,11 +32,24 @@ const userFacingJsxAttributes = new Set([
   "screenTitle", "title",
 ]);
 const userFacingPropertyNames = new Set([
-  "badge", "description", "detail", "empty", "eyebrow", "label", "message", "placeholder",
-  "subtitle", "text", "title",
+  "badge", "description", "detail", "empty", "eyebrow", "greeting", "label", "message", "placeholder",
+  "species", "subtitle", "text", "title", "tone",
 ]);
 
 const literalAllowlist = [
+  ...[
+    ["property:species", "토끼"], ["property:tone", "활발하고 친근한"], ["property:greeting", "안녕! 나 통통이야. 오늘은 뭐가 궁금해?"],
+    ["property:species", "고양이"], ["property:tone", "장난스럽고 재미있는"], ["property:greeting", "야옹~ 나는 야옹이야! 오늘 재밌는 일 있었어?"],
+    ["property:species", "여우"], ["property:tone", "깜찍하고 귀여운"], ["property:greeting", "헤헤, 나는 꼬미야! 같이 얘기하자, 응?"],
+    ["property:species", "강아지"], ["property:tone", "씩씩하고 충직한"], ["property:greeting", "왈! 나는 멍이야. 내가 항상 네 편이야!"],
+    ["property:species", "곰"], ["property:tone", "포근하고 든든한"], ["property:greeting", "안녕, 나는 곰돌이야. 오늘도 잘 지냈어?"],
+    ["property:species", "판다"], ["property:tone", "평화롭고 순한"], ["property:greeting", "안녕, 나는 푸푸야. 마음이 편해지는 이야기 해줄게."],
+  ].map(([context, value]) => ({
+    path: "src/screens/child/AiFriendSetup.tsx",
+    context,
+    value,
+    reason: "Worker AI 페르소나와 일치해야 하는 비표시 정본이며 UI는 안정 key의 카탈로그 문구를 사용합니다.",
+  })),
   {
     path: "src/screens/child/StickerBook.tsx",
     context: "jsx-text",
@@ -133,12 +146,25 @@ function userFacingContext(node, text) {
   if (ts.isJsxExpression(current) && (ts.isJsxElement(parent) || ts.isJsxFragment(parent))) return "jsx-expression";
   if (ts.isCallExpression(parent)) {
     const callee = parent.expression.getText();
+    if (callee === "buildKakaoToUrl" && parent.arguments[0] === current) {
+      return `external-label:${callee}`;
+    }
     if (/^(?:show|toast|setError|alert|confirm)$/.test(callee) && parent.arguments[0] === current) {
       return `call:${callee}:argument:0`;
     }
   }
+  if (
+    ts.isBinaryExpression(parent)
+    && parent.operatorToken.kind === ts.SyntaxKind.EqualsToken
+    && parent.right === current
+    && ts.isIdentifier(parent.left)
+    && /(?:label|message|placeholder|subtitle|text|title)$/i.test(parent.left.text)
+  ) {
+    return `assignment:${parent.left.text}`;
+  }
   if (ts.isPropertyAssignment(parent)) {
     const name = ts.isIdentifier(parent.name) || ts.isStringLiteral(parent.name) ? parent.name.text : null;
+    if (name === "tone" && /^[a-z][a-z0-9_-]*$/i.test(text)) return null;
     if (name && userFacingPropertyNames.has(name)) return `property:${name}`;
   }
   if (ts.isVariableDeclaration(parent) && ts.isIdentifier(parent.name)) {
@@ -209,11 +235,35 @@ test("Task 8의 child 8개와 overlay 7개는 파일별 사용자 문구를 카�
   assert.deepEqual(failures, []);
 });
 
+test("Task 8 child inventory는 표시용 객체 필드와 대입식 우변의 문구도 탐지한다", () => {
+  const sample = `
+    const persona = {
+      species: "토끼",
+      tone: "활발하고 친근한",
+      greeting: "안녕! 같이 이야기하자",
+    };
+    let text = "";
+    text = "오늘 준비물을 같이 확인하자";
+  `;
+  const candidates = literalCandidatesFromSource("AiFriendFixture.tsx", sample);
+  const contexts = new Map(candidates.map(({ context, text }) => [text, context]));
+
+  assert.equal(contexts.get("토끼"), "property:species");
+  assert.equal(contexts.get("활발하고 친근한"), "property:tone");
+  assert.equal(contexts.get("안녕! 같이 이야기하자"), "property:greeting");
+  assert.equal(contexts.get("오늘 준비물을 같이 확인하자"), "assignment:text");
+});
+
 test("한국어 아이 핵심 문구는 친근한 반말과 3초 SOS 안전 동선을 유지한다", () => {
   const child = JSON.parse(readFileSync(resolve(rootDir, "locales/ko/child.json"), "utf8"));
+  const sos = sourceFile("src/screens/child/ChildSos.tsx").source;
   assert.equal(child["child.settings.title"], "내 설정");
-  assert.equal(child["child.sos.holdInstruction"], "3초 동안 꾹 눌러");
-  assert.equal(child["child.sos.sent"], "부모님께 긴급 알림을 보냈어");
+  assert.equal(child["child.sos.hintHold"], "3초 꾹");
+  assert.equal(child["child.sos.accepted"], "SOS를 접수했어!");
+  assert.equal(child["child.sos.notificationStarted"], "보호자에게 알림 전송을 시작했어");
+  for (const id of ["child.sos.hintHold", "child.sos.accepted", "child.sos.notificationStarted"]) {
+    assert.match(sos, new RegExp(id.replaceAll(".", "\\.")), `실제 ChildSos 배선: ${id}`);
+  }
   assert.equal(child["child.ai.emptyResponse"], "지금은 대답을 못 받았어. 잠시 뒤에 다시 말 걸어줘!");
 });
 

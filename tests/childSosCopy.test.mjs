@@ -5,6 +5,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const koChild = JSON.parse(readFileSync(resolve(rootDir, "locales/ko/child.json"), "utf8"));
 
 function readSource(relativePath) {
   return readFileSync(resolve(rootDir, relativePath), "utf8");
@@ -13,11 +14,14 @@ function readSource(relativePath) {
 test("SOS 는 3초 홀드 안내를 반말로 명확히 말한다(시안 2a)", () => {
   const childSos = readSource("src/screens/child/ChildSos.tsx");
 
-  assert.match(childSos, /꾹 눌러서 도와 줘!/);
-  assert.match(childSos, /3초 꾹/);
-  assert.match(childSos, /찾은 <b>내 위치<\/b>도 함께 담을게/);
-  // 존댓말 금지(아이 모드) — 시안의 "알려요/놀라요"를 반말로 고쳤다.
-  assert.doesNotMatch(childSos, /알려요|놀라요|갈래요/);
+  assert.match(childSos, /id: "child\.sos\.mainTitle"/);
+  assert.match(childSos, /id="child\.sos\.mainDescription"/);
+  assert.match(childSos, /id: progress > 0 \? "child\.sos\.keepHolding" : "child\.sos\.hintHold"/);
+  assert.match(koChild["child.sos.mainTitle"], /꾹 눌러서 도와 줘!/);
+  assert.match(koChild["child.sos.mainDescription"], /<strong>3초<\/strong>.*<strong>내 위치<\/strong>/);
+  assert.equal(koChild["child.sos.hintHold"], "3초 꾹");
+  assert.doesNotMatch(koChild["child.sos.mainDescription"], /알려요|놀라요|갈래요/);
+  assert.doesNotMatch(childSos, /i18n 안전 문구 불변식/);
 });
 
 test("SOS 발사 계약은 그대로다 — 3초 홀드 · 세션당 1회 · alertSent 확인", () => {
@@ -33,9 +37,16 @@ test("SOS 발사 계약은 그대로다 — 3초 홀드 · 세션당 1회 · ale
 test("서버 접수 성공을 보호자 기기 표시 완료로 단정하지 않는다", () => {
   const childSos = readSource("src/screens/child/ChildSos.tsx");
 
-  assert.match(childSos, /SOS를 접수했어!/);
-  assert.match(childSos, /보호자에게 알림 전송을 시작했어/);
-  assert.doesNotMatch(childSos, /보호자 모두에게 알림이 갔어|위치는 못 찾았지만 알림은 갔어|에게 알렸어!/);
+  assert.match(childSos, /id: "child\.sos\.accepted"/);
+  assert.match(childSos, /id: "child\.sos\.acceptedDescription"/);
+  assert.match(childSos, /id: "child\.sos\.notificationStarted"/);
+  assert.equal(koChild["child.sos.accepted"], "SOS를 접수했어!");
+  assert.match(koChild["child.sos.acceptedDescription"], /전송을 시작했어/);
+  assert.equal(koChild["child.sos.notificationStarted"], "보호자에게 알림 전송을 시작했어");
+  assert.doesNotMatch(
+    Object.values(koChild).filter((value) => typeof value === "string").join("\n"),
+    /보호자 모두에게 알림이 갔어|위치는 못 찾았지만 알림은 갔어|에게 알렸어!/,
+  );
 });
 
 test("부모 홈에는 '꾹' 스티커 UI 를 되살리지 않는다(2026-07-09 TK 결정)", () => {

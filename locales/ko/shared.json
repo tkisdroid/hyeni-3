@@ -203,6 +203,7 @@
   "shared.adventure.later.final": "{time}에 {title}이야!\n아직 시간 있어 😊",
   "shared.adventure.later.vowel": "{time}에 {title}야!\n아직 시간 있어 😊",
   "shared.routeView.childFallback": "아이",
+  "shared.routeView.destinationFallback": "도착지",
   "shared.routeView.currentLocationFallback": "현재 위치",
   "shared.routeView.destinationFallback": "목적지",
   "shared.routeView.destinationSearching": "{audience, select, child {갈 곳을 찾는 중…} parent {갈 곳을 찾는 중이에요…} other {갈 곳을 찾는 중이에요…}}",

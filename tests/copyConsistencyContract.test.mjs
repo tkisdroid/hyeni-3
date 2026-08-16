@@ -69,7 +69,8 @@ test("동적 이름의 한국어 조사는 ko 경로에서만 적용하고 AI �
   const koChild = JSON.parse(read("locales/ko/child.json"));
   const nonKoreanLocales = ["en", "ja", "zh-CN", "zh-TW", "vi", "th", "id", "ms", "fil"];
 
-  assert.match(familyConnection, /locale === "ko"[\s\S]*hasJongseong\(connected\[0\]\.name \|\| "아이"\)/);
+  assert.match(familyConnection, /resolveFamilyConnectionChildSubject\(\{[\s\S]*childName: connected\[0\]\?\.name[\s\S]*childFallback/);
+  assert.doesNotMatch(familyConnection, /connected\[0\]\.name/);
   assert.match(sosReceive, /locale === "ko" \? `\$\{childName\}\$\{hasJongseong\(childName\)/);
   assert.match(aiChat, /child\.aiChat\.messageAria[\s\S]{0,100}\{ name: friendName \}/);
   assert.match(aiChat, /child\.aiChat\.placeholder[\s\S]{0,100}\{ name: friendName \}/);

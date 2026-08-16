@@ -2,6 +2,7 @@ import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join, relative } from "node:path";
 import { validateCatalogs } from "./validate-catalogs.mjs";
+import { legacyKoreanMessageIds } from "./legacy-korean-message-ids.mjs";
 
 function sortObject(object) {
   return Object.fromEntries(Object.entries(object).sort(([left], [right]) => compareCodePoints(left, right)));
@@ -28,6 +29,17 @@ function generatedRoot(rootDir) {
 
 function serializeCatalog(catalog) {
   return `const messages = ${JSON.stringify(sortObject(catalog), null, 2)} as const;\n\nexport default messages;\n`;
+}
+
+function serializeLegacyKoreanMessages(result) {
+  const sourceMessages = Object.assign({}, ...result.namespaces.map((namespace) =>
+    result.catalogs.get(`${result.sourceLocale}:${namespace}`) ?? {}));
+  const messages = Object.fromEntries(
+    legacyKoreanMessageIds
+      .filter((id) => Object.hasOwn(sourceMessages, id))
+      .map((id) => [id, sourceMessages[id]]),
+  );
+  return serializeCatalog(messages);
 }
 
 function serializeMessageIds(result) {
@@ -62,6 +74,7 @@ export function getGeneratedFiles(result) {
   const files = new Map();
   files.set(join(root, "messageIds.ts"), serializeMessageIds(result));
   files.set(join(root, "catalogLoaders.ts"), serializeCatalogLoaders(result));
+  files.set(join(root, "legacyKoreanMessages.ts"), serializeLegacyKoreanMessages(result));
   for (const locale of result.localeCodes) {
     for (const namespace of result.namespaces) {
       files.set(

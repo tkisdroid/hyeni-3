@@ -92,16 +92,6 @@ export default defineConfig({
             "react-intl",
             "intl-messageformat",
           ],
-          // defaultIntl이 동기 fallback으로 쓰는 한국어 catalog만 entry에서 분리합니다.
-          // 동적 locale catalog까지 한 청크로 묶으면 선택하지 않은 언어도 초기 로드됩니다.
-          "i18n-ko-fallback": [
-            fileURLToPath(new URL("./src/i18n/generated/catalogs/ko/core.ts", import.meta.url)),
-            fileURLToPath(new URL("./src/i18n/generated/catalogs/ko/child.ts", import.meta.url)),
-            fileURLToPath(new URL("./src/i18n/generated/catalogs/ko/notifications.ts", import.meta.url)),
-            fileURLToPath(new URL("./src/i18n/generated/catalogs/ko/parent.ts", import.meta.url)),
-            fileURLToPath(new URL("./src/i18n/generated/catalogs/ko/reports.ts", import.meta.url)),
-            fileURLToPath(new URL("./src/i18n/generated/catalogs/ko/shared.ts", import.meta.url)),
-          ],
         },
       },
     },

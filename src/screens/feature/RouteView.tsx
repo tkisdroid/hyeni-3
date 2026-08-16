@@ -25,6 +25,7 @@ import {
   type OwnedRouteDestination,
 } from "@/transform/routeDestinationScope";
 import { formatDurationUnit, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+import { buildKakaoToUrl } from "@/transform/routeExternalUrl";
 import { useLocale } from "@/i18n/useLocale";
 import "./RouteView.css";
 
@@ -70,11 +71,6 @@ function durationLabel(
 // 외부 지도 도보 길안내 URL(구글맵 — 웹·안드로이드 모두 좌표 기반으로 열림).
 function buildWalkDirectionsUrl(o: RoutePoint, d: RoutePoint): string {
   return `https://www.google.com/maps/dir/?api=1&origin=${o.lat},${o.lng}&destination=${d.lat},${d.lng}&travelmode=walking`;
-}
-
-// 카카오맵 길찾기 링크 — 앱 설치 시 카카오맵으로 연결(도보 안내 선택 가능), 미설치 시 웹.
-function buildKakaoToUrl(name: string, d: RoutePoint): string {
-  return `https://map.kakao.com/link/to/${encodeURIComponent(name || "도착지")},${d.lat},${d.lng}`;
 }
 
 export function RouteView() {
@@ -466,7 +462,11 @@ export function RouteView() {
                   type="button"
                   className="rv-fallback__kakao hy-press"
                   onClick={() =>
-                    openExternal(buildKakaoToUrl(destination.name, destination.point)).catch(() =>
+                    openExternal(buildKakaoToUrl(
+                      destination.name,
+                      intl.formatMessage({ id: "shared.routeView.destinationFallback" }),
+                      destination.point,
+                    )).catch(() =>
                       show(intl.formatMessage({ id: "shared.routeView.kakaoOpenFailed" }, { audience }), "🗺️"),
                     )
                   }

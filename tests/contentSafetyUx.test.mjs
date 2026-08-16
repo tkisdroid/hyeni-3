@@ -18,10 +18,13 @@ const koShared = JSON.parse(await read("locales/ko/shared.json"));
 test("저장된 AI assistant 메시지는 즉시 신고할 수 있고 로컬 인사·오류는 신고하지 않는다", () => {
   assert.match(ai, /assistantMessageId/);
   assert.match(ai, /reportable:\s*!!res\.assistantMessageId/);
-  assert.match(ai, /이 답변 신고/);
+  assert.match(ai, /id: "child\.aiChat\.reportHint"/);
   assert.match(ai, /useReportAiMessage/);
   assert.match(endpoint, /\/api\/ai\/messages\/\$\{encodeURIComponent\(messageId\)\}\/report/);
-  assert.match(ai, /알려 줘서 고마워\. 이 답변은 다시 확인할게\./);
+  assert.match(ai, /id: "child\.aiChat\.report\.thanks"/);
+  assert.match(koChild["child.aiChat.reportHint"], /길게 눌러.*이 답변 신고/);
+  assert.match(koChild["child.aiChat.report.thanks"], /알려 줘서 고마워.*다시 확인/);
+  assert.doesNotMatch(ai, /신고 진입점 안내 — 한국어 계약/);
 });
 
 test("가족 메모 상대 메시지에는 앱 내 신고·차단 동선과 차단 해제가 있다", () => {

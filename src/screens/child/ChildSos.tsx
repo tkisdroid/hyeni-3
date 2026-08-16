@@ -251,7 +251,6 @@ export function ChildSos() {
       <div className="cs-root">
         <div className="cs-result">
           <img className="cs-result__img" src={asset("mascot/phone.webp")} alt="" />
-          {/* i18n 안전 문구 불변식: SOS를 접수했어! */}
           <div className="cs-result__title">{intl.formatMessage({ id: "child.sos.accepted" })}</div>
           <div className="cs-result__sub">{intl.formatMessage({ id: "child.sos.acceptedDescription" })}</div>
 
@@ -270,7 +269,6 @@ export function ChildSos() {
               <span className="cs-checks__dot">
                 <Check size={17} strokeWidth={3} color="var(--mint-500)" />
               </span>
-              {/* i18n 안전 문구 불변식: 보호자에게 알림 전송을 시작했어 */}
               <span className="cs-checks__text">{intl.formatMessage({ id: "child.sos.notificationStarted" })}</span>
             </div>
           </div>
@@ -304,7 +302,6 @@ export function ChildSos() {
         </button>
 
         <img className="cs-shield" src={asset("ui/sos-shield.webp")} alt="" />
-        {/* i18n 안전 문구 불변식: 꾹 눌러서 도와 줘! / 3초 꾹 / 찾은 <b>내 위치</b>도 함께 담을게 */}
         <div className="cs-title">{intl.formatMessage({ id: "child.sos.mainTitle" })}</div>
         <div className="cs-desc">
           <FormattedMessage

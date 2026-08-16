@@ -49,13 +49,6 @@ const WAVE_DELAYS = [
   "-0.45s", "-0.65s", "-0.25s", "-0.85s", "-0.50s",
 ] as const;
 
-/*
- * 한국어 신뢰 문구 기준:
- * 아이에게 알림이 가요
- * 아이가 누르지 않아도 연결되고, 듣는 동안 아이 화면에 계속 표시돼요
- * 1분 후 자동 종료돼요
- * 기록이 남아요
- */
 const TRUST_CARDS = [
   {
     icon: Bell,
@@ -286,7 +279,6 @@ export function RemoteAudio() {
     if (!listening) return;
     if (sessionTiming.phase === "request_expired") {
       endListenRef.current("request_timeout");
-      // 한국어 안전 계약: 아이 기기가 1분 안에 연결되지 않아 요청을 종료했어요
       show(intl.formatMessage({ id: "notifications.remoteAudio.toast" }, { state: "requestExpired" }), "⏱️");
       return;
     }
@@ -400,7 +392,6 @@ export function RemoteAudio() {
         return;
       }
       if (!auditSession.id) {
-        // 한국어 안전 계약: 청취 기록을 안전하게 남길 수 없어 시작하지 않았어요.
         show(intl.formatMessage({ id: "notifications.remoteAudio.toast" }, { state: "auditUnavailable" }), "🔒");
         return;
       }
@@ -428,7 +419,6 @@ export function RemoteAudio() {
           "command_failed",
         );
         if (!mountedRef.current) return;
-        // 한국어 실패 계약: 아이 기기가 오프라인이거나 알림을 받을 수 없어요.
         show(intl.formatMessage({ id: "notifications.remoteAudio.toast" }, { state: "deviceUnavailable" }), "⚠️");
         return;
       }
@@ -444,7 +434,6 @@ export function RemoteAudio() {
         );
         if (!mountedRef.current) return;
         if (res.status === 402) {
-          // 한국어 신뢰 계약: 주변 소리 듣기는 프리미엄에서 사용할 수 있어요. SOS와 긴급 알림은 무료로 계속 받을 수 있어요.
           show(intl.formatMessage({ id: "notifications.remoteAudio.toast" }, { state: "premiumOnly" }), "⭐");
         }
         else if (res.status === 403) show(intl.formatMessage({ id: "notifications.remoteAudio.toast" }, { state: "primaryOnly" }), "🔒");
@@ -462,7 +451,6 @@ export function RemoteAudio() {
           "no_target_device",
         );
         if (!mountedRef.current) return;
-        // 한국어 실패 계약: 아이 앱이 설치되어 있고 로그인되어 있는지 확인해 주세요.
         show(intl.formatMessage({ id: "notifications.remoteAudio.toast" }, { state: "deviceNotFound" }), "⚠️");
         return;
       }
@@ -616,7 +604,6 @@ export function RemoteAudio() {
         screenTitle={intl.formatMessage({ id: "notifications.remoteAudio.title" })}
         state="empty"
         heading={intl.formatMessage({ id: "notifications.remoteAudio.emptyTitle" })}
-        // 한국어 신뢰 계약: 아이를 연결하면 위급할 때 주변 소리를 들을 수 있어요. 듣는 동안 아이 화면에 계속 표시돼요.
         description={intl.formatMessage({ id: "notifications.remoteAudio.emptyDescription" })}
         onBack={() => navigate(-1)}
         onRetry={() => navigate("/child-invite")}
@@ -679,7 +666,6 @@ export function RemoteAudio() {
         <div className="ra-start-wrap">
           <div className="ra-start-note hy-explain">
             <span className="hy-explain__lines">
-              {/* 한국어 신뢰 계약: 위급할 때만 사용해 주세요. */}
               <span className="hy-explain__line">{intl.formatMessage({ id: "notifications.remoteAudio.emergencyOnly" })}</span>
               <span className="hy-explain__line">{intl.formatMessage({ id: "notifications.remoteAudio.fullScreenSafety" })}</span>
             </span>

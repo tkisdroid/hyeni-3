@@ -1,9 +1,26 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 const rootUrl = new URL("../", import.meta.url);
 const read = (path) => readFileSync(new URL(path, rootUrl), "utf8");
+
+test("가족 연결 아이 주어는 0명 fallback과 한국어 받침을 순수하게 계산한다", async () => {
+  const moduleUrl = new URL("src/transform/familyConnectionSubject.ts", rootUrl);
+  assert.equal(existsSync(moduleUrl), true, "가족 연결 주어 resolver가 필요합니다.");
+  const { resolveFamilyConnectionChildSubject } = await import(moduleUrl);
+  const base = {
+    locale: "ko",
+    childFallback: "아이",
+    particleConsonant: "은",
+    particleVowel: "는",
+  };
+
+  assert.equal(resolveFamilyConnectionChildSubject({ ...base, childName: undefined }), "아이는");
+  assert.equal(resolveFamilyConnectionChildSubject({ ...base, childName: "민준" }), "민준은");
+  assert.equal(resolveFamilyConnectionChildSubject({ ...base, childName: "하나" }), "하나는");
+  assert.equal(resolveFamilyConnectionChildSubject({ ...base, locale: "en", childName: "Mina" }), "Mina");
+});
 
 test("가족 연결 상태는 실제 user_id 유무와 서버 정본 역할로 분리한다", () => {
   const source = read("src/screens/feature/FamilyConnection.tsx");

@@ -21,6 +21,10 @@ const settings = read("src/screens/teacher/TeacherSettings.tsx");
 const app = read("src/app/App.tsx");
 const onboarding = read("src/screens/onboarding/Onboarding.tsx");
 const releaseFeatures = read("src/config/releaseFeatures.ts");
+const LOCALE_INDEPENDENT_TEACHER_IDS = new Set([
+  "shared.teacherReleaseGate.eyebrow",
+  "shared.teacherHome.invite.phonePlaceholder",
+]);
 
 test("선생님 production gate와 역할 카드의 DEV 전용 경계를 유지한다", () => {
   assert.match(releaseFeatures, /TEACHER_MODE_ENABLED\s*=\s*import\.meta\.env\.DEV/);
@@ -80,8 +84,7 @@ test("세 선생님 화면 문구는 10개 locale에 완전하고 영어 폴백�
       for (const id of ids) {
         assert.equal(typeof messages[id], "string", `${locale}:${id}`);
         assert.ok(messages[id].trim(), `${locale}:${id}: 빈 번역`);
-        const placeholderOnly = /^[\d\s+()\-]+$/.test(english[id]);
-        if (!placeholderOnly && !["ko", "en"].includes(locale)) {
+        if (!LOCALE_INDEPENDENT_TEACHER_IDS.has(id) && !["ko", "en"].includes(locale)) {
           assert.notEqual(messages[id], english[id], `${locale}:${id}: 영어 폴백`);
         }
         const englishVariables = [...english[id].matchAll(/\{([a-zA-Z][\w]*)\}/g)].map((match) => match[1]).sort();

@@ -8,6 +8,10 @@ import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "@/queries/useFamily";
 import { useAiFriendPublicSettings, useSetAiFriendName } from "@/queries/useAi";
 import { resolveAiFriendDisplayName } from "@/transform/aiFriendName";
+import {
+  aiFriendPersonaMessageId,
+  type AiFriendPersonaKey,
+} from "@/transform/aiFriendDisplay";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./AiFriendSetup.css";
@@ -18,6 +22,7 @@ import "./AiFriendSetup.css";
  * animal 은 public/assets/animal/*.webp 파일명 — 이미지 있는 6종만 노출한다(🐥/🐯 자산 없음).
  */
 export interface FriendPersona {
+  key: AiFriendPersonaKey;
   emoji: string;
   name: string;
   species: string;
@@ -27,12 +32,12 @@ export interface FriendPersona {
 }
 
 export const AI_FRIEND_PERSONAS: FriendPersona[] = [
-  { emoji: "🐰", name: "통통이", species: "토끼", tone: "활발하고 친근한", greeting: "안녕! 나 통통이야. 오늘은 뭐가 궁금해?", animal: "rabbit" },
-  { emoji: "🐱", name: "야옹이", species: "고양이", tone: "장난스럽고 재미있는", greeting: "야옹~ 나는 야옹이야! 오늘 재밌는 일 있었어?", animal: "cat" },
-  { emoji: "🦊", name: "꼬미", species: "여우", tone: "깜찍하고 귀여운", greeting: "헤헤, 나는 꼬미야! 같이 얘기하자, 응?", animal: "fox" },
-  { emoji: "🐶", name: "멍이", species: "강아지", tone: "씩씩하고 충직한", greeting: "왈! 나는 멍이야. 내가 항상 네 편이야!", animal: "dog" },
-  { emoji: "🐻", name: "곰돌이", species: "곰", tone: "포근하고 든든한", greeting: "안녕, 나는 곰돌이야. 오늘도 잘 지냈어?", animal: "bear" },
-  { emoji: "🐼", name: "푸푸", species: "판다", tone: "평화롭고 순한", greeting: "안녕, 나는 푸푸야. 마음이 편해지는 이야기 해줄게.", animal: "panda" },
+  { key: "rabbit", emoji: "🐰", name: "통통이", species: "토끼", tone: "활발하고 친근한", greeting: "안녕! 나 통통이야. 오늘은 뭐가 궁금해?", animal: "rabbit" },
+  { key: "cat", emoji: "🐱", name: "야옹이", species: "고양이", tone: "장난스럽고 재미있는", greeting: "야옹~ 나는 야옹이야! 오늘 재밌는 일 있었어?", animal: "cat" },
+  { key: "fox", emoji: "🦊", name: "꼬미", species: "여우", tone: "깜찍하고 귀여운", greeting: "헤헤, 나는 꼬미야! 같이 얘기하자, 응?", animal: "fox" },
+  { key: "dog", emoji: "🐶", name: "멍이", species: "강아지", tone: "씩씩하고 충직한", greeting: "왈! 나는 멍이야. 내가 항상 네 편이야!", animal: "dog" },
+  { key: "bear", emoji: "🐻", name: "곰돌이", species: "곰", tone: "포근하고 든든한", greeting: "안녕, 나는 곰돌이야. 오늘도 잘 지냈어?", animal: "bear" },
+  { key: "panda", emoji: "🐼", name: "푸푸", species: "판다", tone: "평화롭고 순한", greeting: "안녕, 나는 푸푸야. 마음이 편해지는 이야기 해줄게.", animal: "panda" },
 ];
 
 export const DEFAULT_CHARACTER = "🐰";
@@ -114,6 +119,8 @@ export function AiFriendSetup() {
   const [customName, setCustomName] = useState<string | null>(null);
 
   const persona = personaFor(selected);
+  const personaSpecies = intl.formatMessage({ id: aiFriendPersonaMessageId(persona.key, "species") });
+  const personaTone = intl.formatMessage({ id: aiFriendPersonaMessageId(persona.key, "tone") });
   const serverName = publicSettings?.ai_friend_name || "";
   const childMember = userId
     ? family?.members.find((m) => m.role === "child" && m.user_id === userId) ?? null
@@ -222,7 +229,12 @@ export function AiFriendSetup() {
             <img src={asset(`animal/${persona.animal}.webp`)} alt="" />
           </div>
           <div className="afs-preview__name">{effectiveName}</div>
-          <div className="afs-preview__tone">{persona.tone} {persona.species}</div>
+          <div className="afs-preview__tone">
+            {intl.formatMessage(
+              { id: "child.aiSetup.personaSummary" },
+              { tone: personaTone, species: personaSpecies },
+            )}
+          </div>
         </div>
 
         {/* 캐릭터 고르기 */}
@@ -256,7 +268,7 @@ export function AiFriendSetup() {
         <div className="afs-label">{intl.formatMessage({ id: "child.aiSetup.personality" })}</div>
         <div className="afs-traits">
           <span className="afs-chip afs-chip--on">
-            {persona.tone}
+            {personaTone}
             <Check size={16} strokeWidth={2.4} aria-hidden="true" />
           </span>
           <span className="afs-trait-hint">{intl.formatMessage({ id: "child.aiSetup.personalityHint" })}</span>

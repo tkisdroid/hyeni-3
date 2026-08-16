@@ -1,8 +1,10 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
-import { join, relative, resolve, sep } from "node:path";
+import { basename, join, relative, resolve, sep } from "node:path";
 
 export const ROUTE_ENTRY_LIMIT_BYTES = 500_000;
 export const ROUTE_ENTRY_STYLE_LIMIT_BYTES = 40_000;
+
+const THIRD_PARTY_INITIAL_CHUNK_PREFIXES = ["i18n-runtime-"];
 
 function attributeValue(tag, name) {
   const match = tag.match(
@@ -49,13 +51,39 @@ export function inspectRouteEntryBundle({
     throw new Error(`production module entry는 정확히 1개여야 합니다: ${moduleEntries.length}개`);
   }
 
-  const { entryFile, entryPath } = resolveEntryPath(distDir, moduleEntries[0].source);
-  if (!existsSync(entryPath)) throw new Error(`module entry 파일이 없습니다: ${entryFile}`);
-  const bytes = statSync(entryPath).size;
+  const modulePreloads = [...html.matchAll(/<link\b[^>]*>/gi)]
+    .map(([tag]) => ({
+      relations: (attributeValue(tag, "rel") ?? "").toLowerCase().split(/\s+/),
+      source: attributeValue(tag, "href"),
+    }))
+    .filter(({ relations, source }) => relations.includes("modulepreload") && source)
+    .filter(({ source }) => !/^[a-z][a-z\d+.-]*:|^\/\//i.test(source));
+
+  const entry = resolveEntryPath(distDir, moduleEntries[0].source);
+  const resolvedPreloads = modulePreloads.map(({ source }) => resolveEntryPath(distDir, source));
+  const isThirdPartyInitialChunk = (file) => THIRD_PARTY_INITIAL_CHUNK_PREFIXES.some(
+    (prefix) => basename(file).startsWith(prefix),
+  );
+  const initialSources = [
+    entry,
+    ...resolvedPreloads.filter(({ entryFile: file }) => !isThirdPartyInitialChunk(file)),
+  ];
+  const uniqueSources = [...new Map(initialSources.map((source) => [source.entryFile, source])).values()];
+  const files = uniqueSources.map(({ entryFile: file, entryPath }) => {
+    if (!existsSync(entryPath)) throw new Error(`초기 module 파일이 없습니다: ${file}`);
+    return { file, bytes: statSync(entryPath).size };
+  });
+  const bytes = files.reduce((total, file) => total + file.bytes, 0);
+  const excludedFiles = resolvedPreloads
+    .filter(({ entryFile: file }) => isThirdPartyInitialChunk(file))
+    .map(({ entryFile: file, entryPath }) => {
+      if (!existsSync(entryPath)) throw new Error(`초기 module 파일이 없습니다: ${file}`);
+      return { file, bytes: statSync(entryPath).size, reason: "third-party-runtime" };
+    });
   if (bytes >= limitBytes) {
-    throw new Error(`${entryFile}은 ${bytes}바이트입니다. ${limitBytes}바이트 미만이어야 합니다.`);
+    throw new Error(`초기 자체 JS 그래프는 ${bytes}바이트입니다. ${limitBytes}바이트 미만이어야 합니다.`);
   }
-  return { entryFile, bytes, limitBytes };
+  return { entryFile: entry.entryFile, files, excludedFiles, bytes, limitBytes };
 }
 
 export function inspectRouteEntryStyles({

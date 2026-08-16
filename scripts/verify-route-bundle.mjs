@@ -15,6 +15,12 @@ const pwa = inspectPwaPrecacheManifest({ distDir });
 console.log(
   `[번들 예산] ${result.entryFile}: ${result.bytes}/${result.limitBytes}바이트 (통과)`,
 );
+for (const file of result.files) {
+  console.log(`[초기 자체 JS] ${file.file}: ${file.bytes}바이트 (예산 포함)`);
+}
+for (const file of result.excludedFiles) {
+  console.log(`[초기 외부 JS] ${file.file}: ${file.bytes}바이트 (${file.reason}, 예산 제외)`);
+}
 console.log(
   `[초기 CSS 예산] ${styles.entryFile}: ${styles.bytes}/${styles.limitBytes}바이트 (통과)`,
 );

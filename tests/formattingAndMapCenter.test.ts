@@ -6,6 +6,8 @@ import { formatPhoneDisplay, formatPhoneOrMissing } from "../src/transform/phone
 import { homePlaceCenter, resolveMapCenter, SEOUL_CENTER } from "../src/transform/mapCenter.ts";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+const childKo = JSON.parse(read("locales/ko/child.json")) as Record<string, string>;
+const notificationsKo = JSON.parse(read("locales/ko/notifications.json")) as Record<string, string>;
 
 test("전화번호는 저장 형식과 무관하게 같은 표시로 통일된다", () => {
   // 실사용 데이터: 계정 화면만 하이픈 없이 보였다(2026-07-30 A17 확인).
@@ -69,16 +71,21 @@ test("AI 친구는 빈 응답을 대답한 척하지 않는다", () => {
   const chat = read("src/screens/child/AiFriendChat.tsx");
   assert.doesNotMatch(chat, /res\.reply \|\|/);
   assert.match(chat, /const reply = String\(res\.reply \?\? ""\)\.trim\(\);/);
-  assert.match(chat, /지금은 대답을 못 받았어/);
+  assert.match(chat, /child\.ai\.emptyResponse/);
+  assert.match(childKo["child.ai.emptyResponse"], /지금은 대답을 못 받았어/);
+  assert.doesNotMatch(chat, /지금은 대답을 못 받았어/);
   // 정직 안내 메시지는 신고 대상(서버 저장 id)이 아니다.
-  const fallbackBlock = chat.slice(chat.indexOf("지금은 대답을 못 받았어") - 200, chat.indexOf("지금은 대답을 못 받았어") + 80);
+  const fallbackIndex = chat.indexOf("child.ai.emptyResponse");
+  const fallbackBlock = chat.slice(fallbackIndex - 200, fallbackIndex + 80);
   assert.doesNotMatch(fallbackBlock, /reportable: true/);
 });
 
 test("주변 소리 기록의 0초 세션은 '청취 없이 종료'로 정확히 표기한다", () => {
   const audit = read("src/screens/feature/RemoteAudioAudit.tsx");
-  assert.match(audit, /청취 없이 종료/);
-  assert.match(audit, /\$\{durationSec\}초 청취/);
-  // 라벨 자체에 "N초 후 종료" 표기가 남아 있지 않은지(주석 인용은 허용).
+  assert.match(audit, /durationSec === 0[\s\S]*state: "noListening"/);
+  assert.match(audit, /notifications\.remoteAudio\.audit\.listened[\s\S]*duration: durationSec/);
+  assert.match(notificationsKo["notifications.remoteAudio.audit.status"], /noListening \{청취 없이 종료\}/);
+  assert.equal(notificationsKo["notifications.remoteAudio.audit.listened"], "{duration}초 청취");
+  assert.doesNotMatch(audit, /청취 없이 종료|\$\{durationSec\}초 청취/);
   assert.doesNotMatch(audit, /label: `\$\{durationSec\}초 후 종료`/);
 });

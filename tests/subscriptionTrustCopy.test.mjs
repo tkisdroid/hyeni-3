@@ -103,7 +103,7 @@ test("웹 자동결제는 국내 발급 카드 제한과 자동 갱신·해지 �
   assert.match(source, /!premiumActive && isWebBillingChannel/);
   assert.match(source, /billing\.subscription\.web\.domesticCardOnly/);
   assert.match(source, /billing\.subscription\.web\.renewal/);
-  assert.equal(koBilling["billing.subscription.web.domesticCardOnly"], "웹 자동결제는 국내 발급 카드만 지원해요.");
+  assert.match(koBilling["billing.subscription.web.domesticCardOnly"], /대한민국에서 발급된 카드만 지원/);
   assert.match(koBilling["billing.subscription.web.renewal"], /선택한 주기마다 자동 갱신/);
 });
 

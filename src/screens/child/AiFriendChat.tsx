@@ -40,12 +40,11 @@ import {
   personaFor,
   readSelectedCharacter,
 } from "./AiFriendSetup";
+import { resolveAiFriendClientGreeting } from "@/transform/aiFriendDisplay";
 import "@/styles/jua.css";
 import "./AiFriendChat.css";
 
-// 전송 실패 코드(Worker 가 비-2xx { error } 로 응답 → ApiError.message)를 아이 톤(반말) 안내로.
-// 한국어 신뢰 카피는 Free의 “무료로 오늘 5번 다 이야기했어”·“부모님께 프리미엄을 부탁해 줘”와
-// 부모 상한의 “부모님이 정한 오늘 대화 횟수를 다 썼어”를 구분한다.
+// 전송 실패 코드와 서버 한도 원인을 아이 톤의 서로 다른 catalog ID로 연결한다.
 function friendlyError(err: unknown, status: AiCreditPublicStatus | null): (intl: IntlShape) => string {
   return (intl) => {
   const code = isApiError(err) ? err.code ?? "" : "";
@@ -143,14 +142,17 @@ export function AiFriendChat() {
 
   // 선제 인사 — 준비물/일정이 있으면 AI 가 먼저 물어본다(서버 프롬프트도 같은 컨텍스트 인지).
   const greeting: ChatBubble = useMemo(() => {
-    let text = persona.greeting;
-    if (pendingSupply) {
-      text = `${persona.greeting.split("!")[0]}! 오늘 「${pendingSupply.label}」 아직 안 챙겼지? 같이 확인해 볼까? 😊`;
-    } else if (nextEvent) {
-      text = `${persona.greeting.split("!")[0]}! 오늘 ${nextEvent.time ? `${nextEvent.time} ` : ""}${nextEvent.title} 있네! 준비는 다 됐어?`;
-    }
+    const text = resolveAiFriendClientGreeting(
+      intl,
+      persona.key,
+      pendingSupply
+        ? { supplyLabel: pendingSupply.label }
+        : nextEvent
+          ? { eventTitle: nextEvent.title, eventTime: nextEvent.time }
+          : null,
+    );
     return { id: "greeting", role: "ai", text };
-  }, [persona.greeting, pendingSupply, nextEvent]);
+  }, [intl, persona.key, pendingSupply, nextEvent]);
 
   // 제안칩 — 오늘 컨텍스트가 있으면 관련 질문을 앞세운다.
   const suggestions = useMemo(() => {
@@ -261,7 +263,6 @@ export function AiFriendChat() {
                   text: reply,
                   reportable: !!res.assistantMessageId,
                 }
-              // i18n 정직 응답 불변식: 빈 응답은 "지금은 대답을 못 받았어"로 안내하고 신고 가능한 답으로 만들지 않는다.
               : {
                   id: `${base}-ai`,
                   role: "ai",
@@ -336,7 +337,6 @@ export function AiFriendChat() {
             {messagesData.length === 0 && (
               <div className="afc-query-state">{intl.formatMessage({ id: "child.aiChat.empty" })}</div>
             )}
-            {/* 신고 진입점 안내 — 한국어 계약 “이 답변 신고”, 접수 완료 “알려 줘서 고마워. 이 답변은 다시 확인할게.” */}
             <p className="afc-safety-hint">
               <Flag size={12} strokeWidth={2.2} aria-hidden="true" />
               {intl.formatMessage({ id: "child.aiChat.reportHint" })}

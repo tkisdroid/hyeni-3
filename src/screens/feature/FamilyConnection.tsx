@@ -10,7 +10,7 @@ import { useChildLocations } from "@/queries/useLocation";
 import { mapFamilyToView } from "@/transform/familyView";
 import { formatFreshness } from "@/transform/locationView";
 import { useLocale } from "@/i18n/useLocale";
-import { hasJongseong } from "@/transform/adventureMap";
+import { resolveFamilyConnectionChildSubject } from "@/transform/familyConnectionSubject";
 import { Loading } from "@/components/ui/Loading";
 import "./FamilyConnection.css";
 import { useIntl } from "react-intl";
@@ -130,14 +130,13 @@ export function FamilyConnection() {
 
   const childFallback = intl.formatMessage({ id: "parent.familyConnection.childFallback" });
   const guardianFallback = intl.formatMessage({ id: "parent.familyConnection.guardianFallback" });
-  const singleChildName = connected[0]?.name || childFallback;
-  const singleChildSubject = locale === "ko"
-    ? `${singleChildName}${
-        hasJongseong(connected[0].name || "아이")
-          ? intl.formatMessage({ id: "parent.familyConnection.particleConsonant" })
-          : intl.formatMessage({ id: "parent.familyConnection.particleVowel" })
-      }`
-    : singleChildName;
+  const singleChildSubject = resolveFamilyConnectionChildSubject({
+    childName: connected[0]?.name,
+    locale,
+    childFallback,
+    particleConsonant: intl.formatMessage({ id: "parent.familyConnection.particleConsonant" }),
+    particleVowel: intl.formatMessage({ id: "parent.familyConnection.particleVowel" }),
+  });
 
   return (
     <div className="fc-root">

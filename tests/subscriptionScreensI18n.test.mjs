@@ -53,10 +53,9 @@ test("7일 체험은 현재 가족 자격과 정확한 공급자 7일 offer가 �
 
 test("PWA 웹 결제는 Google Play 결제·복원이 아니라는 한계를 숨기지 않는다", () => {
   assert.match(subscription, /isWebBillingChannel[\s\S]*billing\.subscription\.web\.noGooglePlay/);
-  assert.equal(
-    koBilling["billing.subscription.web.noGooglePlay"],
-    "웹/PWA에서는 Google Play 결제와 구독 복원을 이용할 수 없어요. Google Play 결제는 Android 앱에서만 가능해요.",
-  );
+  assert.match(koBilling["billing.subscription.web.noGooglePlay"], /웹\/PWA.*Google Play 결제.*구독 복원/);
+  assert.match(koBilling["billing.subscription.web.noGooglePlay"], /해외 발급.*Android 앱.*Google Play/);
+  assert.match(koBilling["billing.subscription.web.noGooglePlay"], /PWA.*대한민국에서 발급된 카드/);
   assert.match(subscription, /startTossBillingAuthorization/);
   assert.match(subscription, /billing\.subscription\.web\.domesticCardOnly/);
 });

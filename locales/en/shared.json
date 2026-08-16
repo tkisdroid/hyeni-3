@@ -203,6 +203,7 @@
   "shared.adventure.later.final": "{title} is at {time}!\nThere's still time 😊",
   "shared.adventure.later.vowel": "{title} is at {time}!\nThere's still time 😊",
   "shared.routeView.childFallback": "Child",
+  "shared.routeView.destinationFallback": "Destination",
   "shared.routeView.currentLocationFallback": "Current location",
   "shared.routeView.destinationFallback": "Destination",
   "shared.routeView.destinationSearching": "{audience, select, child {Finding where you're going…} parent {Finding the destination…} other {Finding the destination…}}",

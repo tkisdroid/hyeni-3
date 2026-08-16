@@ -40,8 +40,8 @@ const userFacingJsxAttributes = new Set([
   "screenTitle", "title",
 ]);
 const userFacingPropertyNames = new Set([
-  "badge", "description", "detail", "empty", "eyebrow", "label", "message", "placeholder",
-  "subtitle", "text", "title",
+  "badge", "description", "detail", "empty", "eyebrow", "greeting", "label", "message", "placeholder",
+  "species", "subtitle", "text", "title", "tone",
 ]);
 
 // locale-neutral/domain token만 파일+문맥+값으로 허용하며 실제 사용과 근거를 함께 검증한다.
@@ -135,12 +135,25 @@ function userFacingContext(node, text) {
   if (ts.isJsxExpression(current) && (ts.isJsxElement(parent) || ts.isJsxFragment(parent))) return "jsx-expression";
   if (ts.isCallExpression(parent)) {
     const callee = parent.expression.getText();
+    if (callee === "buildKakaoToUrl" && parent.arguments[0] === current) {
+      return `external-label:${callee}`;
+    }
     if (/^(?:show|toast|setError|alert|confirm)$/.test(callee) && parent.arguments[0] === current) {
       return `call:${callee}:argument:0`;
     }
   }
+  if (
+    ts.isBinaryExpression(parent)
+    && parent.operatorToken.kind === ts.SyntaxKind.EqualsToken
+    && parent.right === current
+    && ts.isIdentifier(parent.left)
+    && /(?:label|message|placeholder|subtitle|text|title)$/i.test(parent.left.text)
+  ) {
+    return `assignment:${parent.left.text}`;
+  }
   if (ts.isPropertyAssignment(parent)) {
     const name = ts.isIdentifier(parent.name) || ts.isStringLiteral(parent.name) ? parent.name.text : null;
+    if (name === "tone" && /^[a-z][a-z0-9_-]*$/i.test(text)) return null;
     if (name && userFacingPropertyNames.has(name)) return `property:${name}`;
   }
   if (ts.isVariableDeclaration(parent) && ts.isIdentifier(parent.name)) {
@@ -233,6 +246,19 @@ test("Task 8 inventory는 상태 discriminant만 제외하고 실제 JSX 문구 
   assert.ok(values.includes("다시 시도해 주세요"), "raw JSX text 탐지를 유지해야 합니다");
 });
 
+test("Task 8 inventory는 외부 지도 URL의 사용자 표시 라벨을 탐지한다", () => {
+  const sample = `
+    function buildKakaoToUrl(label, point) {
+      return \`https://map.example/to/\${encodeURIComponent(label)},\${point.lat},\${point.lng}\`;
+    }
+    buildKakaoToUrl("도착지", { lat: 37.5, lng: 127 });
+  `;
+  const candidates = literalCandidatesFromSource("RouteViewFixture.tsx", sample);
+  const destination = candidates.find(({ text }) => text === "도착지");
+
+  assert.equal(destination?.context, "external-label:buildKakaoToUrl");
+});
+
 test("친구놀이·놀이 수락·스티커 전송 문구는 10개 locale에 완전하고 영어 폴백이 없다", () => {
   const prefixes = ["shared.friendPlay.", "shared.playdateAccept.", "shared.stickerSend."];
   const english = JSON.parse(readFileSync(resolve(rootDir, "locales/en/shared.json"), "utf8"));
@@ -311,6 +337,14 @@ test("SOS·emergency는 무료 안전 기능이고 Premium 혜택으로 분류�
 });
 
 test("위급 주변소리는 숨기지 않고 아이 화면 지속 표시·1분 상한·감사 기록을 알린다", () => {
+  const remoteAudio = sourceFile("src/screens/feature/RemoteAudio.tsx").source;
+  for (const id of [
+    "notifications.remoteAudio.visibleToChild",
+    "notifications.remoteAudio.oneMinuteLimit",
+    "notifications.remoteAudio.auditRecorded",
+    "notifications.remoteAudio.fullScreenSafety",
+  ]) assert.match(remoteAudio, new RegExp(id.replaceAll(".", "\\.")), `실제 RemoteAudio 배선: ${id}`);
+
   for (const locale of locales) {
     const catalog = JSON.parse(readFileSync(resolve(rootDir, `locales/${locale}/notifications.json`), "utf8"));
     for (const id of [
@@ -322,12 +356,20 @@ test("위급 주변소리는 숨기지 않고 아이 화면 지속 표시·1분 
       assert.equal(typeof catalog[id], "string", `${locale}:${id}`);
       assert.ok(catalog[id].trim().length > 0, `${locale}:${id}: 빈 번역`);
     }
+    assert.match(catalog["notifications.remoteAudio.toast"], /\{state,\s*select,/);
+    for (const state of ["requestExpired", "captureExpired", "auditUnavailable", "deviceUnavailable", "premiumOnly", "deviceNotFound", "other"]) {
+      assert.match(catalog["notifications.remoteAudio.toast"], new RegExp(`${state}\\s*\\{`), `${locale}: ${state} selector`);
+    }
     assert.doesNotMatch(
       Object.entries(catalog).filter(([id]) => id.startsWith("notifications.remoteAudio.")).map(([, value]) => value).join(" "),
       /(?:통화|phone call|DND|방해 금지 우회|무음으로 숨)/iu,
       `${locale}: 통화 위장·DND 우회 의미를 넣으면 안 됩니다`,
     );
   }
+  const ko = JSON.parse(readFileSync(resolve(rootDir, "locales/ko/notifications.json"), "utf8"));
+  assert.match(ko["notifications.remoteAudio.visibleToChild"], /아이가 누르지 않아도 연결.*아이 화면에 계속 표시/);
+  assert.match(ko["notifications.remoteAudio.oneMinuteLimit"], /1분 후 자동 종료/);
+  assert.match(ko["notifications.remoteAudio.auditRecorded"], /투명성.*청취 기록/);
 });
 
 test("가격은 provider formattedPrice·서버 catalog 변수만 삽입하고 고정 금액·가짜 체험을 두지 않는다", () => {

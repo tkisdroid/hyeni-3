@@ -6,6 +6,7 @@ const read = (path) => {
   const url = new URL(`../${path}`, import.meta.url);
   return existsSync(url) ? readFileSync(url, "utf8") : "";
 };
+const koNotifications = JSON.parse(read("locales/ko/notifications.json"));
 
 test("원격청취 FCM 수신부는 공용 안내 경로만 호출하고 화면·마이크를 직접 시작하지 않는다", () => {
   const fcm = read("android/app/src/main/java/com/hyeni/calendar/MyFirebaseMessagingService.java");
@@ -136,7 +137,12 @@ test("원격청취 요청·중지는 requestId·대상·60초 만료를 서버 �
   assert.match(screen, /const requestId = auditSession\.id/);
   assert.doesNotMatch(screen, /const makeRequestId/);
   assert.match(screen, /request_timeout/);
-  assert.match(screen, /아이 기기가 1분 안에 연결되지 않아 요청을 종료했어요/);
+  assert.match(screen, /sessionTiming\.phase === "request_expired"[\s\S]*state: "requestExpired"/);
+  assert.match(
+    koNotifications["notifications.remoteAudio.toast"],
+    /requestExpired \{아이 기기가 1분 안에 연결되지 않아 요청을 종료했어요\}/,
+  );
+  assert.doesNotMatch(screen, /아이 기기가 1분 안에 연결되지 않아 요청을 종료했어요/);
 });
 
 test("오디오 업로드는 access JWT만 쓰고 부모는 audit session과 대상 아이가 모두 정확한 청크만 재생한다", () => {

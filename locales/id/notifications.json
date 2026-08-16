@@ -66,7 +66,7 @@
   "notifications.locationSettings.background.title": "Pengiriman lokasi di latar belakang",
   "notifications.locationSettings.background.description": "Tetap mengirim lokasi saat aplikasi ditutup",
   "notifications.locationSettings.interval.title": "Interval pembaruan",
-  "notifications.locationSettings.interval.live": "Real-time",
+  "notifications.locationSettings.interval.live": "Langsung",
   "notifications.locationSettings.interval.balanced": "Seimbang",
   "notifications.locationSettings.interval.saver": "Hemat baterai",
   "notifications.locationSettings.interval.livePremiumAria": "Pengiriman lokasi real-time (Premium)",

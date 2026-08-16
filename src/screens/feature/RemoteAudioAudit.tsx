@@ -32,8 +32,7 @@ function statusFor(item: RemoteListenAuditRecord, intl: IntlShape): { label: str
   if (item.endedAt) {
     const durationSec = item.durationMs == null ? null : Math.max(0, Math.round(item.durationMs / 1000));
     if (durationSec == null) return { label: intl.formatMessage({ id: "notifications.remoteAudio.audit.status" }, { state: "ended" }), tone: "safe" };
-    // 0초는 "0초 후 종료"라고 쓰면 문장이 어색하고 실제로도 '듣지 못한' 세션이다.
-    // 한국어 표시 계약: 청취 없이 종료 / `${durationSec}초 청취`
+    // 0초 세션은 실제로 듣지 못한 상태로 별도 표시한다.
     if (durationSec === 0) return { label: intl.formatMessage({ id: "notifications.remoteAudio.audit.status" }, { state: "noListening" }), tone: "safe" };
     return { label: intl.formatMessage({ id: "notifications.remoteAudio.audit.listened" }, { duration: durationSec }), tone: "safe" };
   }
@@ -147,7 +146,6 @@ export function RemoteAudioAudit() {
           <div className="raa-note hy-explain">
             <span className="hy-explain__lines">
               <span className="hy-explain__line">{intl.formatMessage({ id: "notifications.remoteAudio.audit.viewOnly" })}</span>
-              {/* 한국어 안전 계약: 실시간 오디오 내용은 저장하지 않습니다. */}
               <span className="hy-explain__line">{intl.formatMessage({ id: "notifications.remoteAudio.audit.privacyDetail" })}</span>
             </span>
           </div>
