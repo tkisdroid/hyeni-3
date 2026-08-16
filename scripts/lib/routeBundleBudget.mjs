@@ -17,9 +17,13 @@ function attributeValue(tag, name) {
   return match?.[1] ?? match?.[2] ?? match?.[3];
 }
 
+function isExternalModuleSource(source) {
+  return /^[a-z][a-z\d+.-]*:/iu.test(source) || source.startsWith("//");
+}
+
 function resolveEntryPath(distDir, source) {
   const withoutQuery = source.split(/[?#]/, 1)[0].replaceAll("\\", "/");
-  if (/^[a-z][a-z\d+.-]*:/i.test(withoutQuery) || withoutQuery.startsWith("//")) {
+  if (isExternalModuleSource(withoutQuery)) {
     throw new Error(`외부 module entry는 검사할 수 없습니다: ${source}`);
   }
   const segments = withoutQuery.split("/").filter((segment) => segment && segment !== ".");
@@ -105,8 +109,11 @@ export function inspectRouteEntryBundle({
       relations: (attributeValue(tag, "rel") ?? "").toLowerCase().split(/\s+/),
       source: attributeValue(tag, "href"),
     }))
-    .filter(({ relations, source }) => relations.includes("modulepreload") && source)
-    .filter(({ source }) => !/^[a-z][a-z\d+.-]*:|^\/\//i.test(source));
+    .filter(({ relations, source }) => relations.includes("modulepreload") && source);
+  const externalPreload = modulePreloads.find(({ source }) => isExternalModuleSource(source));
+  if (externalPreload) {
+    throw new Error(`외부 modulepreload는 검사할 수 없습니다: ${externalPreload.source}`);
+  }
 
   const entry = resolveEntryPath(distDir, moduleEntries[0].source);
   const resolvedPreloads = modulePreloads.map(({ source }) => resolveEntryPath(distDir, source));

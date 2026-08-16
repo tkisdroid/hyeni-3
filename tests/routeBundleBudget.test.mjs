@@ -122,6 +122,27 @@ test("i18n-runtime 이름이어도 first-party 모듈이 섞이면 예산에 포
   );
 }));
 
+for (const source of [
+  "https://cdn.example.com/initial.js",
+  "//cdn.example.com/initial.js",
+  "data:text/javascript,export default 1",
+]) {
+  test(`외부 modulepreload ${source}는 provenance에서 제외하지 않고 fail-closed한다`, () => withDistFixture((distDir) => {
+    writeBundle(distDir, 100_000);
+    writeFileSync(
+      join(distDir, "index.html"),
+      [
+        '<script type="module" src="./assets/index-fixture.js"></script>',
+        `<link rel="modulepreload" href="${source}">`,
+      ].join(""),
+    );
+    assert.throws(
+      () => inspectRouteEntryBundle({ distDir }),
+      /외부 modulepreload는 검사할 수 없습니다/,
+    );
+  }));
+}
+
 test("provenance artifact 누락·stale·파일 tamper는 fail-closed한다", () => withDistFixture((distDir) => {
   writeBundle(distDir, 100_000, [{ file: "i18n-runtime-fixture.js", bytes: 100_000 }]);
   rmSync(join(distDir, provenanceFile));

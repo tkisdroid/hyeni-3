@@ -76,6 +76,38 @@ test("고위험 exact fixture는 이동 요약 등 리뷰 사례의 값 변조�
   assert.match(result.violations.join("\n"), /high_risk_copy:en:reports\.daily\.movementTitle/);
 });
 
+test("Task 8 Premium ID는 glossary 보호어를 직접 따르고 정본·번역값 변형을 거부한다", async () => {
+  const glossary = JSON.parse(readFileSync(resolve(rootDir, "locales/glossary.json"), "utf8"));
+  assert.equal(glossary.protectedTerms.includes("Premium"), true, "glossary가 exact Premium을 보호해야 합니다");
+
+  for (const locale of ["en", "ja", "zh-CN", "zh-TW", "vi", "th", "id", "ms", "fil"]) {
+    const billing = catalog(locale, "billing");
+    assert.equal(billing["billing.common.premium"], "Premium", `${locale}: Premium 보호어`);
+    assert.equal(billing["billing.trialLock.title"], "Premium", `${locale}: TrialLock Premium 보호어`);
+  }
+  const koreanBilling = catalog("ko", "billing");
+  assert.equal(koreanBilling["billing.common.premium"], "프리미엄");
+  assert.equal(koreanBilling["billing.trialLock.title"], "프리미엄");
+
+  const { auditTask8Locales } = await import(pathToFileURL(auditPath));
+  const removedFromGlossary = auditTask8Locales(rootDir, {
+    protectedTermsOverride: glossary.protectedTerms.filter((term) => term !== "Premium"),
+  });
+  assert.match(removedFromGlossary.violations.join("\n"), /protected_term_missing:Premium/);
+
+  const changedInGlossary = auditTask8Locales(rootDir, {
+    protectedTermsOverride: glossary.protectedTerms.map((term) => term === "Premium" ? "PREMIUM" : term),
+  });
+  assert.match(changedInGlossary.violations.join("\n"), /protected_term_missing:Premium/);
+
+  const translatedTarget = auditTask8Locales(rootDir, {
+    messageOverrides: {
+      "ja:billing:billing.common.premium": "プレミアム",
+    },
+  });
+  assert.match(translatedTarget.violations.join("\n"), /protected_term_copy:ja:billing\.common\.premium/);
+});
+
 test("비한국어 브랜드 표기는 manifest 정본 Hyeni Calendar만 사용한다", () => {
   const manifest = JSON.parse(readFileSync(resolve(rootDir, "locales/manifest.json"), "utf8"));
   for (const locale of manifest.locales.filter(({ code }) => code !== "ko")) {
@@ -106,11 +138,11 @@ test("10개 locale의 안심 리포트 핵심 문구와 Premium 명칭은 부모
   const expected = {
     ko: ["이동 요약", "혜니캘린더 외에 오늘 쓴 앱이 없어요.", "오늘 일정이 없어요.", "오늘 챙길 준비물이 없어요.", "안심 데이터 다시 시도", "프리미엄"],
     en: ["Movement summary", "Your child didn't use any apps other than Hyeni Calendar today.", "Your child has no events scheduled today.", "Your child has nothing to pack today.", "Retry safety report data", "Premium"],
-    ja: ["移動のまとめ", "今日はお子さまが Hyeni Calendar 以外のアプリを使った記録はありません。", "今日はお子さまの予定がありません。", "今日、お子さまが持っていくものはありません。", "安心レポートのデータを再読み込み", "プレミアム"],
-    "zh-CN": ["移动摘要", "孩子今天没有使用 Hyeni Calendar 以外的应用。", "孩子今天没有日程安排。", "孩子今天没有需要准备的物品。", "重试安心报告数据", "进阶版"],
-    "zh-TW": ["移動摘要", "孩子今天沒有使用 Hyeni Calendar 以外的應用程式。", "孩子今天沒有行程安排。", "孩子今天沒有需要準備的物品。", "重試安心報告資料", "進階版"],
+    ja: ["移動のまとめ", "今日はお子さまが Hyeni Calendar 以外のアプリを使った記録はありません。", "今日はお子さまの予定がありません。", "今日、お子さまが持っていくものはありません。", "安心レポートのデータを再読み込み", "Premium"],
+    "zh-CN": ["移动摘要", "孩子今天没有使用 Hyeni Calendar 以外的应用。", "孩子今天没有日程安排。", "孩子今天没有需要准备的物品。", "重试安心报告数据", "Premium"],
+    "zh-TW": ["移動摘要", "孩子今天沒有使用 Hyeni Calendar 以外的應用程式。", "孩子今天沒有行程安排。", "孩子今天沒有需要準備的物品。", "重試安心報告資料", "Premium"],
     vi: ["Tóm tắt di chuyển", "Hôm nay bé không dùng ứng dụng nào ngoài Hyeni Calendar.", "Hôm nay bé không có lịch trình nào.", "Hôm nay bé không có đồ dùng nào cần chuẩn bị.", "Thử tải lại dữ liệu báo cáo an toàn", "Premium"],
-    th: ["สรุปการเดินทาง", "วันนี้เด็กไม่ได้ใช้แอปอื่นนอกจาก Hyeni Calendar", "วันนี้เด็กไม่มีกำหนดการ", "วันนี้เด็กไม่มีของที่ต้องเตรียม", "ลองโหลดข้อมูลรายงานความปลอดภัยอีกครั้ง", "พรีเมียม"],
+    th: ["สรุปการเดินทาง", "วันนี้เด็กไม่ได้ใช้แอปอื่นนอกจาก Hyeni Calendar", "วันนี้เด็กไม่มีกำหนดการ", "วันนี้เด็กไม่มีของที่ต้องเตรียม", "ลองโหลดข้อมูลรายงานความปลอดภัยอีกครั้ง", "Premium"],
     id: ["Ringkasan pergerakan", "Hari ini anak tidak menggunakan aplikasi lain selain Hyeni Calendar.", "Anak tidak memiliki jadwal hari ini.", "Tidak ada perlengkapan yang perlu disiapkan anak hari ini.", "Coba lagi data laporan keamanan", "Premium"],
     ms: ["Ringkasan pergerakan", "Hari ini anak tidak menggunakan aplikasi lain selain Hyeni Calendar.", "Anak tiada jadual hari ini.", "Tiada barang yang perlu disediakan untuk anak hari ini.", "Cuba semula data laporan keselamatan", "Premium"],
     fil: ["Buod ng paggalaw", "Hindi gumamit ang bata ng ibang app maliban sa Hyeni Calendar ngayong araw.", "Walang iskedyul ang bata ngayong araw.", "Walang kailangang ihanda ang bata ngayong araw.", "Subukang muli ang data ng ulat sa kaligtasan", "Premium"],

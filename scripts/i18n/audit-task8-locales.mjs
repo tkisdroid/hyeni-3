@@ -27,13 +27,13 @@ export const identicalEnglishAllowlist = Object.freeze([
     "manifest 정본 브랜드와 Premium 등급명 조합입니다.",
   ),
   ...exactAllowances(
-    ["vi", "id", "ms", "fil"],
+    ALL_NON_KOREAN_NON_ENGLISH,
     "billing.common.premium",
     "Premium",
     "해당 locale에서 제품 등급명 Premium을 고유 명칭으로 유지합니다.",
   ),
   ...exactAllowances(
-    ["vi", "id", "ms", "fil"],
+    ALL_NON_KOREAN_NON_ENGLISH,
     "billing.trialLock.title",
     "Premium",
     "해당 locale에서 제품 등급명 Premium을 고유 명칭으로 유지합니다.",
@@ -117,16 +117,16 @@ const highRiskExactMessages = [
     namespace: "billing",
     id: "billing.common.premium",
     values: {
-      ko: "프리미엄", en: "Premium", ja: "プレミアム", "zh-CN": "进阶版", "zh-TW": "進階版",
-      vi: "Premium", th: "พรีเมียม", id: "Premium", ms: "Premium", fil: "Premium",
+      ko: "프리미엄", en: "Premium", ja: "Premium", "zh-CN": "Premium", "zh-TW": "Premium",
+      vi: "Premium", th: "Premium", id: "Premium", ms: "Premium", fil: "Premium",
     },
   },
   {
     namespace: "billing",
     id: "billing.trialLock.title",
     values: {
-      ko: "프리미엄", en: "Premium", ja: "プレミアム", "zh-CN": "进阶版", "zh-TW": "進階版",
-      vi: "Premium", th: "พรีเมียม", id: "Premium", ms: "Premium", fil: "Premium",
+      ko: "프리미엄", en: "Premium", ja: "Premium", "zh-CN": "Premium", "zh-TW": "Premium",
+      vi: "Premium", th: "Premium", id: "Premium", ms: "Premium", fil: "Premium",
     },
   },
 ];
@@ -212,9 +212,14 @@ export function auditTask8Locales(
   const messageOverrides = options.messageOverrides ?? {};
   const allowanceEntries = options.identicalEnglishAllowlist ?? identicalEnglishAllowlist;
   const manifest = JSON.parse(readFileSync(join(rootDir, "locales", "manifest.json"), "utf8"));
+  const glossary = JSON.parse(readFileSync(join(rootDir, "locales", "glossary.json"), "utf8"));
+  const protectedTerms = options.protectedTermsOverride ?? glossary.protectedTerms;
   const nonKoreanLocales = manifest.locales.filter(({ code }) => code !== "ko");
   const addedIds = task8MessageIds(rootDir);
   const violations = [];
+  if (!Array.isArray(protectedTerms) || !protectedTerms.includes("Premium")) {
+    violations.push("protected_term_missing:Premium");
+  }
   const allowanceLookup = new Map();
   for (const entry of allowanceEntries) {
     const key = allowanceKey(entry);
@@ -271,6 +276,14 @@ export function auditTask8Locales(
       if (value !== values[locale]) {
         violations.push(`high_risk_copy:${locale}:${id}:${value}`);
       }
+    }
+  }
+
+  for (const { code: locale } of nonKoreanLocales) {
+    const billing = readCatalog(rootDir, locale, "billing");
+    for (const id of ["billing.common.premium", "billing.trialLock.title"]) {
+      const value = readMessage(billing, locale, "billing", id, messageOverrides);
+      if (value !== "Premium") violations.push(`protected_term_copy:${locale}:${id}:${value}`);
     }
   }
 
