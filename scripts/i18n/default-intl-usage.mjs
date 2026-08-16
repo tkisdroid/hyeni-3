@@ -193,6 +193,20 @@ function resolvedAliasSymbol(symbol, checker) {
   }
 }
 
+function getIntlShapeType(context) {
+  if (Object.prototype.hasOwnProperty.call(context, "intlShapeType")) return context.intlShapeType;
+  for (const symbol of context.intlShapeSymbols) {
+    try {
+      context.intlShapeType = context.checker.getDeclaredTypeOfSymbol(symbol);
+      return context.intlShapeType;
+    } catch {
+      continue;
+    }
+  }
+  context.intlShapeType = null;
+  return null;
+}
+
 function typeIsIntlShape(typeNode, context, seenSymbols = new Set()) {
   if (!typeNode) return false;
   if (ts.isParenthesizedTypeNode(typeNode)) return typeIsIntlShape(typeNode.type, context, seenSymbols);
@@ -213,6 +227,24 @@ function typeIsIntlShape(typeNode, context, seenSymbols = new Set()) {
     && typeIsIntlShape(declaration.type, context, seenSymbols)
   ));
   seenSymbols.delete(symbol);
+  return result;
+}
+
+function typeIsIntlShapeFromType(type, context, seenTypes = new Set()) {
+  if (!type || seenTypes.has(type)) return false;
+  if ((type.flags & ts.TypeFlags.Any) !== 0 || (type.flags & ts.TypeFlags.Unknown) !== 0) return false;
+
+  seenTypes.add(type);
+  let result = false;
+  const shapeType = getIntlShapeType(context);
+  if (shapeType) {
+    try {
+      result = context.checker.isTypeAssignableTo(type, shapeType);
+    } catch {
+      result = false;
+    }
+  }
+  seenTypes.delete(type);
   return result;
 }
 
@@ -358,6 +390,54 @@ function safeFormatAliasInitializer(expression) {
   return false;
 }
 
+function getCallForwardDeclaration(call, context) {
+  const signature = context.checker.getResolvedSignature(call);
+  if (!signature || !ts.isFunctionLike(signature.declaration)) return null;
+  let declaration = signature.declaration;
+  if (!declaration.body) {
+    const symbol = context.checker.getSymbolAtLocation(call.expression);
+    const implementations = (symbol?.declarations ?? []).filter((candidate) => (
+      ts.isFunctionLike(candidate) && Boolean(candidate.body)
+    ));
+    if (implementations.length !== 1) return null;
+    if (implementations[0] === declaration) return null;
+    declaration = implementations[0];
+  }
+  return declaration;
+}
+
+function callForwardsToIntl(call, context) {
+  const signature = context.checker.getResolvedSignature(call);
+  if (!signature) return false;
+  const declaration = getCallForwardDeclaration(call, context);
+  if (!declaration) return false;
+  const declarationSource = declaration.getSourceFile();
+  const auditedTarget = declarationSource === context.sourceFile
+    || defaultIntlImports(declarationSource.fileName, declarationSource, context.targetPath).length > 0;
+  if (!auditedTarget) return false;
+  const returnType = context.checker.getReturnTypeOfSignature(signature);
+  if (!typeIsIntlShapeFromType(returnType, context)) return false;
+
+  if (call.arguments.length === 0) return false;
+  const allowed = call.arguments.some((_, argumentIndex) => (
+    callAllowsIntlForward(call, argumentIndex, context)
+  ));
+  return allowed;
+}
+
+function callMayReturnIntl(call, context) {
+  const signature = context.checker.getResolvedSignature(call);
+  if (!signature) return false;
+  const declaration = getCallForwardDeclaration(call, context);
+  if (!declaration) return false;
+  const declarationSource = declaration.getSourceFile();
+  const auditedTarget = declarationSource === context.sourceFile
+    || defaultIntlImports(declarationSource.fileName, declarationSource, context.targetPath).length > 0;
+  if (!auditedTarget) return false;
+  const returnType = context.checker.getReturnTypeOfSignature(signature);
+  return typeIsIntlShapeFromType(returnType, context);
+}
+
 function identifierProvenance(identifier, context, seenSymbols = new Set()) {
   let symbol = symbolAt(context.checker, identifier);
   if (ts.isExportSpecifier(identifier.parent)) {
@@ -433,6 +513,8 @@ function expressionProvenance(expression, context, seenSymbols = new Set()) {
     if (callee.kind === "factory") return { kind: "intl" };
     if (callee.kind === "format") return { kind: "unrelated" };
     if (relatedProvenance(callee)) return { kind: "unsupported" };
+    if (callForwardsToIntl(value, context)) return { kind: "intl" };
+    if (callMayReturnIntl(value, context)) return { kind: "unsupported" };
   }
   return { kind: "unrelated" };
 }
@@ -561,8 +643,7 @@ function callAllowsIntlForward(call, argumentIndex, context) {
   const callee = expressionProvenance(call.expression, context);
   if (callee.kind === "factory") return true;
 
-  const signature = context.checker.getResolvedSignature(call);
-  const declaration = signature?.declaration;
+  const declaration = getCallForwardDeclaration(call, context);
   if (!declaration) return false;
   const declarationSource = declaration.getSourceFile();
   const auditedTarget = declarationSource === context.sourceFile

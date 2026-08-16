@@ -260,6 +260,46 @@ test("alias-resolved IntlShape default parameter와 destructured parameter의 ID
   assert.match(result.violations.join("\n"), /missing_fallback:src\/feature\/consumer\.ts:shared\.fixture\.parameterDestructuringMissing/);
 });
 
+test("signature-only forward 선언은 trusted 전달을 fail-closed하고 실제 실행 경로에서 누락된 ID를 발견한다", async () => {
+  const result = await auditFixture([
+    'import type { IntlShape } from "react-intl";',
+    "export function typedForwarder(intl: IntlShape): IntlShape {",
+    "  return withDefaultIntl(intl);",
+    "}",
+    "export function typedOverloadForward(intl: IntlShape): IntlShape;",
+    "export function typedOverloadForward(value: any): any {",
+    "  return value;",
+    "}",
+    "export function copy(providedIntl) {",
+    "  const typed = typedForwarder(withDefaultIntl(providedIntl));",
+    "  const broken = typedOverloadForward(withDefaultIntl(providedIntl));",
+    '  typed.formatMessage({ id: "shared.fixture.concreteForwarder" });',
+    '  return broken.formatMessage({ id: "shared.fixture.overloadSignatureMissing" });',
+    "}",
+  ].join("\n"));
+
+  assert.deepEqual(result.messageIds, ["shared.fixture.concreteForwarder"]);
+  assert.match(result.violations.join("\n"), /missing_fallback:src\/feature\/consumer\.ts:shared\.fixture\.concreteForwarder/);
+  assert.match(result.violations.join("\n"), /unsupported_format_message:src\/feature\/consumer\.ts:.*overloadSignatureMissing/);
+});
+
+test("typed overload helper의 실제 구현 signature는 구현 호출을 허용한다", async () => {
+  const result = await auditFixture([
+    'import type { IntlShape } from "react-intl";',
+    "export function typedOverloadForward(intl: IntlShape): IntlShape;",
+    "export function typedOverloadForward(intl: IntlShape): IntlShape {",
+    "  return withDefaultIntl(intl);",
+    "}",
+    "export function copy(providedIntl) {",
+    "  const typed = typedOverloadForward(withDefaultIntl(providedIntl));",
+    '  return typed.formatMessage({ id: "shared.fixture.overloadConcreteMissing" });',
+    "}",
+  ].join("\n"));
+
+  assert.deepEqual(result.messageIds, ["shared.fixture.overloadConcreteMissing"]);
+  assert.match(result.violations.join("\n"), /missing_fallback:src\/feature\/consumer\.ts:shared\.fixture\.overloadConcreteMissing/);
+});
+
 test("derived formatMessage const alias의 export escape를 fail-closed한다", async () => {
   const result = await auditFixture([
     "const providedIntl = undefined;",
