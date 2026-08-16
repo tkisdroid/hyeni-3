@@ -247,6 +247,28 @@
   아이 설정 화면의 "위치·안전" 토글 3개(일반 위치·등록 장소·친구놀이)는 전부 부모 알림에만 적용되므로
   아이 role 에서는 토글을 숨기고 사실만 안내한다(빈 약속 금지). 회귀=`tests/childEverydayMovementAlerts.test.mjs`·
   Worker `tests/childSafetyNotifications.test.mjs`.
+- ★**아이모드 AI 친구 = 표정 있는 플로팅 버디 + 도구 에이전트(2026-08-17 TK 지시)**:
+  **①얼굴** — AI 진입점은 로봇/혜니 아이콘이 아니라 **표정만 읽히는 소프트 3D 이모티콘**
+  `public/assets/ai-buddy/*.webp`(9종=8감정+blink, `scripts/generate-ai-buddy-faces.mjs` 로 SVG→sharp 생성).
+  판정 정본은 `src/transform/aiBuddyEmotion.ts` 하나이고 플로팅 버튼·아이 홈 타일·대화 헤더가 **같은 표정**을 쓴다.
+  규칙: 답 대기=thinking · 안전 신호(medium/high)=caring(어떤 즐거운 단어보다 우선) · **아이가 속상하면 같이
+  슬퍼하지 않고 caring** · `ok:true && !confirmationRequired` 일 때만 excited(확인 대기 중에 해낸 표정 금지) ·
+  도구 실패=sad · 22~05시 대기=sleepy. 화면 문구는 `aiBuddyStatusLine`(반말 한 줄), `aiBuddyEmotionLabel`은 aria 전용.
+  **②플로팅 버튼** — `src/app/AiBuddyFab.tsx` 를 `ChildShell`(bottomInset 112)·`PushShell`(20)에 둬 아이 화면
+  어디서나 대기한다. 위치는 px 가 아니라 **이동 가능 영역 비율**(`src/transform/aiBuddyFabPosition.ts`)로
+  가족+아이 키에 저장해 회전·기기 변경에도 화면 밖으로 나가지 않고, 손을 떼면 가까운 좌우 가장자리에 붙는다.
+  `role !== "child"` 와 AI 친구/SOS/온보딩 경로에서는 렌더하지 않는다(부모·선생님 화면에 뜨면 오작동).
+  ⚠️ 진입 번들 예산 500KB 를 넘겨서 **lazy + Suspense 필수**(직접 import 하면 build 가 막힌다).
+  표정은 `AiBuddyMoodProvider`(App, 라우터 **위**)가 들고 있어야 대화→홈 이동에도 기분이 이어진다.
+  **③도구 에이전트** — 기존 일정/부모연락 도구에 아이 본인 설정 3종을 추가했다:
+  `updateNotificationSettings`(일정 알림 on/off·N분 전) · `updateAiFriendName` · `changeAppTheme`.
+  셋 다 LLM 을 거치지 않는 결정적 응답이라 **하루 대화 횟수를 깎지 않는다**(`aiUsagePolicy`).
+  테마는 서버 컬럼이 없어 서버가 색만 확정하고 `clientAction:"setAccent"` 로 클라가 적용한다.
+  ⚠️ **일정 삭제는 보호자 전용** — planner 는 `schedule_delete_parent_only` 로 닫고 route 는 확인 토큰이 와도
+  403 이다. `deleteSchedule` 실행 경로를 되살리지 말 것. 알림 쉬는 시간·위치/장소/친구놀이 알림은 부모 소관이라
+  `notification_settings_parent_only` 로 정직하게 거절한다(못 하는 걸 한 척 금지).
+  확인이 필요한 도구(부모 메시지·일정 변경·전화)는 클라가 **확인 카드**를 세우고 버튼에서만 `confirmedTool` 을 보낸다.
+  회귀=`tests/aiBuddyFab.test.ts`·Worker `tests/aiChildSettingsAgent.test.mjs`.
 - **알림 전달·원격청취 보안 계약(2026-07-14)**: 즉시 알림은 네트워크 발송 전에 수신자별
   `pending_notifications`를 만들고 실제 네이티브 표시/Web Push 표시 ACK 전에는 delivered로 완료하지 않는다.
   targetless 레거시 행은 일반 사용자가 조회·ACK하지 못한다. 일정·도착·위험·메모는 활성 가족 구성원과 정확한

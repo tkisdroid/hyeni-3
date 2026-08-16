@@ -13,6 +13,7 @@ import { RequireGuest } from "@/auth/RequireGuest";
 import { useFamilyRealtime } from "@/queries/useFamilyRealtime";
 import { NativeBootstrap } from "./NativeBootstrap";
 import { ActiveChildProvider } from "./activeChild";
+import { AiBuddyMoodProvider } from "./aiBuddyMood";
 import { TEACHER_MODE_ENABLED } from "@/config/releaseFeatures";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import { StickerCelebrationHost } from "@/components/ui/StickerCelebration";
@@ -347,15 +348,19 @@ export function App() {
         <NativeBootstrap />
         <ActiveChildProvider>
           <AccentProvider initial="rose">
-            <ToastProvider>
-              <GlobalErrorListeners />
-              <OfflineBanner />
-              <BootSplash />
-              <StickerCelebrationHost />
-              <RootErrorBoundary>
-                <RouterProvider router={router} />
-              </RootErrorBoundary>
-            </ToastProvider>
+            {/* AI 친구 표정은 대화 화면(PushShell)과 플로팅 버튼(ChildShell)이 함께 쓰므로
+                라우터 위에서 한 번만 들고 있어야 화면을 옮겨도 표정이 이어진다. */}
+            <AiBuddyMoodProvider>
+              <ToastProvider>
+                <GlobalErrorListeners />
+                <OfflineBanner />
+                <BootSplash />
+                <StickerCelebrationHost />
+                <RootErrorBoundary>
+                  <RouterProvider router={router} />
+                </RootErrorBoundary>
+              </ToastProvider>
+            </AiBuddyMoodProvider>
           </AccentProvider>
         </ActiveChildProvider>
       </AuthProvider>

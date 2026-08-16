@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePwaUpdateCriticalSection } from "@/lib/usePwaUpdateCriticalSection";
 import { useLocation, useNavigate } from "react-router";
-import { ChevronLeft, Flag, MessageCircle, Settings } from "lucide-react";
+import { ChevronLeft, Flag, MessageCircle, Phone, Settings } from "lucide-react";
 import { useLongPress, type LongPressHandlers } from "@/lib/useLongPress";
 import { asset } from "@/lib/assets";
 import { useAuth } from "@/auth/AuthContext";
@@ -26,6 +26,12 @@ import {
 } from "@/transform/aiCreditPublicStatus";
 import { hasJongseong } from "@/transform/adventureMap";
 import { useToast } from "@/app/toast";
+import { useAccent } from "@/app/accent";
+import { useAiBuddyMood } from "@/app/aiBuddyMood";
+import { aiBuddyEmotionLabel, aiBuddyFaceAsset, aiBuddyStatusLine } from "@/transform/aiBuddyEmotion";
+import { isAccentKey } from "@/transform/childAccent";
+import { placePhoneCall } from "@/lib/native/phone";
+import type { AiToolResult, ConfirmedAiTool } from "@/lib/api/endpoints/ai";
 import { useSafeBack } from "@/app/useSafeBack";
 import { MessageSafetyDialog, type ReportReasonOption } from "@/components/MessageSafetyDialog";
 import { useReportAiMessage } from "@/queries/useContentSafety";
@@ -41,6 +47,34 @@ import "@/styles/jua.css";
 import "./AiFriendChat.css";
 
 const BASE_SUGGESTIONS = ["오늘 뭐 하고 놀까?", "심심해 😪", "재밌는 얘기 해줘"];
+
+/** 확인 카드에 띄울 문구 — 아직 하지 않았고 아이가 눌러야 실행된다는 걸 분명히 한다. */
+function confirmCardCopy(tool: AiToolResult): { title: string; detail: string; action: string } | null {
+  if (tool.toolName === "createMessageToParent") {
+    const who = tool.displayName || "부모님";
+    return {
+      title: `${who}에게 이렇게 보낼까?`,
+      detail: tool.message ?? "",
+      action: "보내기",
+    };
+  }
+  if (tool.toolName === "updateSchedule") {
+    const title = tool.event?.title || "일정";
+    const time = tool.changes?.startTime
+      ? `${tool.changes.startTime}${tool.changes.endTime ? `~${tool.changes.endTime}` : ""}`
+      : "";
+    return {
+      title: `${title} 일정을 바꿀까?`,
+      detail: time ? `${time}로 바꿀게.` : "이 일정을 바꿀게.",
+      action: "바꾸기",
+    };
+  }
+  if (tool.toolName === "callParent") {
+    const who = tool.displayName || "부모님";
+    return { title: `${who}에게 전화할까?`, detail: "누르면 전화 앱이 열려.", action: "전화하기" };
+  }
+  return null;
+}
 
 const AI_REPORT_REASONS: readonly ReportReasonOption<AiContentReportReason>[] = [
   { value: "scary_or_uncomfortable", label: "무섭거나 불편해" },
@@ -84,6 +118,9 @@ export function AiFriendChat() {
   const goBack = useSafeBack("/child/home");
   const location = useLocation();
   const { show } = useToast();
+  const { setAccent } = useAccent();
+  // 플로팅 버튼과 같은 표정을 쓴다 — 대화하다 홈으로 나가도 친구 기분이 이어진다.
+  const { emotion, reactTo } = useAiBuddyMood();
 
   // 아이 모드에서는 로그인 사용자 = 아이. childUserId = userId.
   const { familyId, userId } = useAuth();
@@ -171,6 +208,8 @@ export function AiFriendChat() {
   const [seeded, setSeeded] = useState(false);
   const [input, setInput] = useState("");
   const [pendingSendSource, setPendingSendSource] = useState<string | null>(null);
+  // 아직 실행하지 않고 아이 확인을 기다리는 도구(부모 메시지·일정 변경·전화).
+  const [pendingTool, setPendingTool] = useState<AiToolResult | null>(null);
   const [reportTarget, setReportTarget] = useState<ChatBubble | null>(null);
   usePwaUpdateCriticalSection(input.trim().length > 0 || sendChat.isPending);
   // 신고는 AI 답변을 길게 눌러 연다(버블마다 버튼을 띄우지 않기 위해).
@@ -207,8 +246,28 @@ export function AiFriendChat() {
     // sendChat.isPending 이 바뀔 때(타이핑 인디케이터 등장/퇴장)도 맨 아래로 스크롤한다.
   }, [shown.length, sendChat.isPending]);
 
+  /**
+   * 서버가 실제로 한 일을 화면에 반영한다.
+   * · 확인이 필요한 도구는 카드로 세워 두고 아이가 누르기 전에는 실행된 척하지 않는다.
+   * · 내 색깔은 서버 컬럼이 없어 기기에서 적용한다(서버가 색만 확정해 준다).
+   */
+  const applyToolResult = useCallback(
+    (tool: AiToolResult | null | undefined) => {
+      if (!tool || tool.ok !== true) return;
+      if (tool.confirmationRequired === true) {
+        setPendingTool(tool);
+        return;
+      }
+      setPendingTool(null);
+      if (tool.toolName === "changeAppTheme" && tool.clientAction === "setAccent" && isAccentKey(tool.accent)) {
+        setAccent(tool.accent);
+      }
+    },
+    [setAccent],
+  );
+
   // 전송 = 사용자 액션(버튼·칩·Enter)에서만. 자동 실행 금지. 크레딧 소모 주의.
-  const send = (raw: string, source: string) => {
+  const send = (raw: string, source: string, confirmedTool?: ConfirmedAiTool) => {
     const text = raw.trim();
     if (!text || sendChat.isPending) return;
     // 사용자가 대화를 시작하면 로컬 상태가 정본 — 뒤늦게 도착한 서버 기록이 덮어쓰지 않게 시드 잠금.
@@ -219,8 +278,9 @@ export function AiFriendChat() {
       { id: `${base}-me`, role: "me", text },
     ]);
     setPendingSendSource(source);
+    reactTo({ phase: "thinking", childText: text });
     sendChat.mutate(
-      { message: text, characterEmoji: character },
+      { message: text, characterEmoji: character, ...(confirmedTool ? { confirmedTool } : {}) },
       {
         onSuccess: (res) => {
           if (
@@ -247,6 +307,14 @@ export function AiFriendChat() {
                   text: "지금은 대답을 못 받았어. 잠시 뒤에 다시 말 걸어줘!",
                 },
           ]);
+          applyToolResult(res.toolResult);
+          reactTo({
+            phase: "reply",
+            childText: text,
+            replyText: reply,
+            toolResult: res.toolResult ?? null,
+            safetyRiskLevel: res.safety?.riskLevel ?? null,
+          });
         },
         onError: (err) => {
           setMessages((prev) => [...prev, {
@@ -254,6 +322,7 @@ export function AiFriendChat() {
             role: "ai",
             text: friendlyError(err, aiCreditStatus.data ?? null),
           }]);
+          reactTo({ phase: "reply", childText: text, toolResult: { ok: false } });
         },
         onSettled: () => setPendingSendSource((current) => (current === source ? null : current)),
       },
@@ -263,6 +332,50 @@ export function AiFriendChat() {
   const handleSend = () => {
     send(input, "composer");
     setInput("");
+  };
+
+  /** 확인 카드의 실행 버튼 — 여기서만 서버가 실제로 부탁을 처리한다. */
+  const runPendingTool = () => {
+    const tool = pendingTool;
+    if (!tool || sendChat.isPending) return;
+
+    if (tool.toolName === "callParent") {
+      setPendingTool(null);
+      if (tool.phone) {
+        void placePhoneCall(tool.phone);
+      } else {
+        show("전화번호가 아직 없어. 부모님께 알려줘!", "☎️");
+      }
+      return;
+    }
+    if (!tool.confirmationToken) {
+      show("다시 한 번 말해 줄래?", "⚠️");
+      setPendingTool(null);
+      return;
+    }
+    const confirmed: ConfirmedAiTool | null =
+      tool.toolName === "createMessageToParent"
+        ? {
+            toolName: "sendMessageToParent",
+            confirmationToken: tool.confirmationToken,
+            parentRole: tool.parentRole,
+            message: tool.message,
+          }
+        : tool.toolName === "updateSchedule"
+          ? {
+              toolName: "updateSchedule",
+              confirmationToken: tool.confirmationToken,
+              scheduleId: tool.event?.id,
+              title: tool.event?.title,
+              changes: tool.changes,
+            }
+          : null;
+    if (!confirmed) {
+      setPendingTool(null);
+      return;
+    }
+    setPendingTool(null);
+    send("응, 그렇게 해줘", "confirm", confirmed);
   };
 
   return (
@@ -276,13 +389,14 @@ export function AiFriendChat() {
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="var(--hy-accent-text)" />
         </button>
-        <div className="afc-avatar">
-          <img src={animalSrc} alt="" />
+        {/* 지금 기분이 보이는 얼굴 — 플로팅 버튼에서 눌러 들어온 그 친구 그대로다. */}
+        <div className="afc-avatar" data-emotion={emotion}>
+          <img src={asset(aiBuddyFaceAsset(emotion))} alt={aiBuddyEmotionLabel(emotion)} />
           <span className="afc-online" />
         </div>
         <div className="afc-head-main">
           <div className="afc-head-name">{friendName}</div>
-          <div className="afc-head-status">● 이야기할 준비됐어!</div>
+          <div className="afc-head-status">● {aiBuddyStatusLine(emotion)}</div>
         </div>
         {shownRemaining != null && (
           <span className="afc-credits">
@@ -361,6 +475,39 @@ export function AiFriendChat() {
           </div>
         )}
       </div>
+
+      {/* 확인이 필요한 부탁 — 여기서 누르기 전에는 아무것도 실행되지 않았다. */}
+      {pendingTool && (() => {
+        const copy = confirmCardCopy(pendingTool);
+        if (!copy) return null;
+        return (
+          <div className="afc-confirm" role="group" aria-label="부탁 확인">
+            <div className="afc-confirm__title">{copy.title}</div>
+            {copy.detail && <div className="afc-confirm__detail">{copy.detail}</div>}
+            <div className="afc-confirm__actions">
+              <button
+                type="button"
+                className="afc-confirm__cancel hy-press"
+                onClick={() => setPendingTool(null)}
+              >
+                그만두기
+              </button>
+              <button
+                type="button"
+                className="afc-confirm__go hy-press"
+                onClick={runPendingTool}
+                disabled={sendChat.isPending}
+                aria-busy={sendChat.isPending && pendingSendSource === "confirm"}
+              >
+                {pendingTool.toolName === "callParent" && (
+                  <Phone size={16} strokeWidth={2.4} aria-hidden="true" />
+                )}
+                {copy.action}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="afc-input-wrap">
         <div className="afc-suggest">
