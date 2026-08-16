@@ -76,9 +76,10 @@ test("동적 이름 뒤 조사는 기존 받침 판정 유틸을 사용한다", 
 
 test("파생 문구도 잠금 화면·월간 구독·말줄임표 표기를 유지한다", () => {
   const notification = read("src/transform/deviceNotificationHealth.ts");
+  const koParent = JSON.parse(read("locales/ko/parent.json"));
   assert.doesNotMatch(notification, /잠금화면|heads-up/);
-  assert.match(notification, /잠금 화면/);
-  assert.match(notification, /화면 상단 팝업/);
+  assert.match(koParent["parent.device.notification.fullScreenDisabledDetail"], /잠금 화면/);
+  assert.match(koParent["parent.device.notification.fullScreenDisabledDetail"], /화면 상단 팝업/);
 
   const entitlement = read("src/transform/entitlement.ts");
   assert.match(entitlement, /프리미엄 월간 구독/);

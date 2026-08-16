@@ -1,3 +1,6 @@
+import type { IntlShape } from "react-intl";
+import { withDefaultIntl } from "../i18n/defaultIntl.ts";
+
 export interface DeviceNotificationHealthInput {
   lastReportedAt?: string | null;
   updatedAt?: string | null;
@@ -35,7 +38,7 @@ export interface DeviceNotificationHealthOptions {
   childScheduleLoadState?: "loading" | "error" | "ready";
 }
 
-export type DeviceOverallSafetyLabel = "양호" | "주의 필요" | "확인 중";
+export type DeviceOverallSafetyState = DeviceNotificationHealthState;
 
 const DEVICE_HEALTH_FRESH_MS = 10 * 60 * 1000;
 
@@ -50,28 +53,45 @@ function isRecentDeviceReport(
   return Math.max(0, now.getTime() - reportedAt) <= DEVICE_HEALTH_FRESH_MS;
 }
 
-export function deviceOverallSafetyLabel(
+export function deviceOverallSafetyState(
   lowBattery: boolean,
   notificationState: DeviceNotificationHealthState,
   locationState: DeviceNotificationHealthState,
   networkConnected: boolean | null | undefined,
-): DeviceOverallSafetyLabel {
+): DeviceOverallSafetyState {
   if (
     lowBattery
     || networkConnected === false
     || notificationState === "attention"
     || locationState === "attention"
   ) {
-    return "주의 필요";
+    return "attention";
   }
   if (
     networkConnected !== true
     || notificationState === "unknown"
     || locationState === "unknown"
   ) {
-    return "확인 중";
+    return "unknown";
   }
-  return "양호";
+  return "ready";
+}
+
+export function deviceOverallSafetyLabel(
+  lowBattery: boolean,
+  notificationState: DeviceNotificationHealthState,
+  locationState: DeviceNotificationHealthState,
+  networkConnected: boolean | null | undefined,
+  providedIntl?: IntlShape,
+): string {
+  const intl = withDefaultIntl(providedIntl);
+  const state = deviceOverallSafetyState(
+    lowBattery,
+    notificationState,
+    locationState,
+    networkConnected,
+  );
+  return intl.formatMessage({ id: `parent.device.safety.${state}` });
 }
 
 /**
@@ -81,72 +101,74 @@ export function deviceOverallSafetyLabel(
 export function deviceNotificationHealthView(
   health: DeviceNotificationHealthInput | null | undefined,
   options: DeviceNotificationHealthOptions = {},
+  providedIntl?: IntlShape,
 ): DeviceNotificationHealthView {
+  const intl = withDefaultIntl(providedIntl);
   const now = options.now ?? new Date();
   if (options.childScheduleEnabled === false) {
     return {
       state: "attention",
-      label: "일정 알림 설정 확인 필요",
-      shortLabel: "알림 확인 필요",
-      detail: "아이 앱의 일정 알림 설정이 꺼져 있어요.",
+      label: intl.formatMessage({ id: "parent.device.notification.scheduleAttentionLabel" }),
+      shortLabel: intl.formatMessage({ id: "parent.device.notification.attentionShort" }),
+      detail: intl.formatMessage({ id: "parent.device.notification.scheduleDisabledDetail" }),
     };
   }
   if (health?.postPermissionGranted === false) {
     return {
       state: "attention",
-      label: "알림 확인 필요",
-      shortLabel: "알림 확인 필요",
-      detail: "마지막 보고에서 아이 기기의 알림 권한이 꺼져 있어요.",
+      label: intl.formatMessage({ id: "parent.device.notification.attentionLabel" }),
+      shortLabel: intl.formatMessage({ id: "parent.device.notification.attentionShort" }),
+      detail: intl.formatMessage({ id: "parent.device.notification.permissionDisabledDetail" }),
     };
   }
   if (health?.notificationsEnabled === false) {
     return {
       state: "attention",
-      label: "알림 확인 필요",
-      shortLabel: "알림 확인 필요",
-      detail: "마지막 보고에서 아이 기기의 앱 알림이 꺼져 있어요.",
+      label: intl.formatMessage({ id: "parent.device.notification.attentionLabel" }),
+      shortLabel: intl.formatMessage({ id: "parent.device.notification.attentionShort" }),
+      detail: intl.formatMessage({ id: "parent.device.notification.appDisabledDetail" }),
     };
   }
   if (health?.requiredChannelsEnabled === false) {
     return {
       state: "attention",
-      label: "알림 확인 필요",
-      shortLabel: "알림 확인 필요",
-      detail: "마지막 보고에서 아이 기기의 필수 알림 채널 중 꺼진 항목이 있어요.",
+      label: intl.formatMessage({ id: "parent.device.notification.attentionLabel" }),
+      shortLabel: intl.formatMessage({ id: "parent.device.notification.attentionShort" }),
+      detail: intl.formatMessage({ id: "parent.device.notification.channelsDisabledDetail" }),
     };
   }
   if (health?.fullScreenIntentAllowed === false) {
     return {
       state: "attention",
-      label: "긴급 알림 전체 화면 확인 필요",
-      shortLabel: "알림 확인 필요",
-      detail: "마지막 보고에서 잠금 화면 전체 표시가 꺼져 있어 긴급 알림이 화면 상단 팝업으로만 표시돼요.",
+      label: intl.formatMessage({ id: "parent.device.notification.fullScreenAttentionLabel" }),
+      shortLabel: intl.formatMessage({ id: "parent.device.notification.attentionShort" }),
+      detail: intl.formatMessage({ id: "parent.device.notification.fullScreenDisabledDetail" }),
     };
   }
   if (health?.remoteListenChannelEnabled === false) {
     return {
       state: "attention",
-      label: "주변 소리 요청 알림 확인 필요",
-      shortLabel: "알림 확인 필요",
-      detail: "마지막 보고에서 아이 기기의 주변 소리 요청 알림 채널이 꺼져 있어요.",
+      label: intl.formatMessage({ id: "parent.device.notification.remoteAudioAttentionLabel" }),
+      shortLabel: intl.formatMessage({ id: "parent.device.notification.attentionShort" }),
+      detail: intl.formatMessage({ id: "parent.device.notification.remoteAudioDisabledDetail" }),
     };
   }
   if (health?.postNotif === false) {
     return {
       state: "attention",
-      label: "알림 확인 필요",
-      shortLabel: "알림 확인 필요",
-      detail: "마지막 보고에서 아이 기기의 알림 권한 또는 필수 채널이 꺼져 있어요.",
+      label: intl.formatMessage({ id: "parent.device.notification.attentionLabel" }),
+      shortLabel: intl.formatMessage({ id: "parent.device.notification.attentionShort" }),
+      detail: intl.formatMessage({ id: "parent.device.notification.permissionOrChannelDetail" }),
     };
   }
   if (!isRecentDeviceReport(health, now)) {
     return {
       state: "unknown",
-      label: "알림 상태 확인 대기",
-      shortLabel: "알림 확인 중",
+      label: intl.formatMessage({ id: "parent.device.notification.waitingLabel" }),
+      shortLabel: intl.formatMessage({ id: "parent.device.notification.checkingShort" }),
       detail: health
-        ? "아이 기기 상태가 오래돼 현재 알림 표시 가능 여부를 확인할 수 없어요. 새로고침해 주세요."
-        : "아이 기기에서 새 상태를 받으면 알림 권한과 필수 채널을 확인할 수 있어요.",
+        ? intl.formatMessage({ id: "parent.device.notification.staleDetail" })
+        : intl.formatMessage({ id: "parent.device.notification.awaitingReportDetail" }),
     };
   }
   if (
@@ -159,31 +181,31 @@ export function deviceNotificationHealthView(
     if (options.childScheduleLoadState === "error") {
       return {
         state: "unknown",
-        label: "일정 알림 설정 확인 실패",
-        shortLabel: "알림 확인 중",
-        detail: "아이 일정 알림 설정을 불러오지 못했어요. 네트워크 연결 후 다시 확인해 주세요.",
+        label: intl.formatMessage({ id: "parent.device.notification.scheduleLoadFailedLabel" }),
+        shortLabel: intl.formatMessage({ id: "parent.device.notification.checkingShort" }),
+        detail: intl.formatMessage({ id: "parent.device.notification.scheduleLoadFailedDetail" }),
       };
     }
     if (options.childScheduleEnabled !== true) {
       return {
         state: "unknown",
-        label: "일정 알림 설정 확인 중",
-        shortLabel: "알림 확인 중",
-        detail: "기기 알림 표시는 켜져 있지만 아이 일정 알림 설정을 확인 중이에요.",
+        label: intl.formatMessage({ id: "parent.device.notification.scheduleCheckingLabel" }),
+        shortLabel: intl.formatMessage({ id: "parent.device.notification.checkingShort" }),
+        detail: intl.formatMessage({ id: "parent.device.notification.scheduleCheckingDetail" }),
       };
     }
     return {
       state: "ready",
-      label: "알림 표시 설정 정상",
-      shortLabel: "알림 정상",
-      detail: "최근 보고 기준으로 알림 권한·필수 채널·잠금 화면 전체 표시·요청 채널과 일정 알림 설정이 켜져 있어요.",
+      label: intl.formatMessage({ id: "parent.device.notification.readyLabel" }),
+      shortLabel: intl.formatMessage({ id: "parent.device.notification.readyShort" }),
+      detail: intl.formatMessage({ id: "parent.device.notification.readyDetail" }),
     };
   }
   return {
     state: "unknown",
-    label: "알림 상태 확인 대기",
-    shortLabel: "알림 확인 중",
-    detail: "아이 기기의 알림 권한과 필수 채널 전체 상태를 아직 확인하지 못했어요.",
+    label: intl.formatMessage({ id: "parent.device.notification.waitingLabel" }),
+    shortLabel: intl.formatMessage({ id: "parent.device.notification.checkingShort" }),
+    detail: intl.formatMessage({ id: "parent.device.notification.partialDetail" }),
   };
 }
 
@@ -191,7 +213,9 @@ export function deviceNotificationHealthView(
 export function deviceLocationHealthView(
   health: DeviceLocationHealthInput | null | undefined,
   now: Date = new Date(),
+  providedIntl?: IntlShape,
 ): DeviceNotificationHealthView {
+  const intl = withDefaultIntl(providedIntl);
   const backgroundLocationGranted = typeof health?.backgroundLocationGranted === "boolean"
     ? health.backgroundLocationGranted
     : health?.locationOk;
@@ -199,43 +223,43 @@ export function deviceLocationHealthView(
   if (backgroundLocationGranted === false) {
     return {
       state: "attention",
-      label: "위치 권한 확인 필요",
-      shortLabel: "위치 확인 필요",
-      detail: "마지막 보고에서 아이 기기의 항상 허용 위치 권한이 꺼져 있어요.",
+      label: intl.formatMessage({ id: "parent.device.location.permissionAttentionLabel" }),
+      shortLabel: intl.formatMessage({ id: "parent.device.location.attentionShort" }),
+      detail: intl.formatMessage({ id: "parent.device.location.permissionDisabledDetail" }),
     };
   }
   if (health?.backgroundRestricted === true) {
     return {
       state: "attention",
-      label: "백그라운드 제한 확인 필요",
-      shortLabel: "위치 확인 필요",
-      detail: "마지막 보고에서 아이 기기의 백그라운드 사용이 제한되어 있어요.",
+      label: intl.formatMessage({ id: "parent.device.location.backgroundAttentionLabel" }),
+      shortLabel: intl.formatMessage({ id: "parent.device.location.attentionShort" }),
+      detail: intl.formatMessage({ id: "parent.device.location.backgroundRestrictedDetail" }),
     };
   }
   if (health?.locationServiceRunning === false) {
     return {
       state: "attention",
-      label: "위치 전송 확인 필요",
-      shortLabel: "위치 확인 필요",
-      detail: "마지막 보고에서 혜니캘린더 위치 서비스가 멈춰 있어요.",
+      label: intl.formatMessage({ id: "parent.device.location.serviceAttentionLabel" }),
+      shortLabel: intl.formatMessage({ id: "parent.device.location.attentionShort" }),
+      detail: intl.formatMessage({ id: "parent.device.location.serviceStoppedDetail" }),
     };
   }
   if (health?.networkConnected === false) {
     return {
       state: "attention",
-      label: "기기 오프라인",
-      shortLabel: "기기 오프라인",
-      detail: "마지막 보고에서 아이 기기가 오프라인이라 위치를 전송할 수 없었어요.",
+      label: intl.formatMessage({ id: "parent.device.location.offlineLabel" }),
+      shortLabel: intl.formatMessage({ id: "parent.device.location.offlineLabel" }),
+      detail: intl.formatMessage({ id: "parent.device.location.offlineDetail" }),
     };
   }
   if (!isRecentDeviceReport(health, now)) {
     return {
       state: "unknown",
-      label: "위치 상태 확인 대기",
-      shortLabel: "위치 확인 중",
+      label: intl.formatMessage({ id: "parent.device.location.waitingLabel" }),
+      shortLabel: intl.formatMessage({ id: "parent.device.location.checkingShort" }),
       detail: health
-        ? "아이 기기 상태가 오래돼 현재 위치 전송 가능 여부를 확인할 수 없어요. 새로고침해 주세요."
-        : "아이 기기에서 새 상태를 받으면 위치 권한과 전송 서비스를 확인할 수 있어요.",
+        ? intl.formatMessage({ id: "parent.device.location.staleDetail" })
+        : intl.formatMessage({ id: "parent.device.location.awaitingReportDetail" }),
     };
   }
   if (
@@ -246,15 +270,15 @@ export function deviceLocationHealthView(
   ) {
     return {
       state: "ready",
-      label: "위치 전송 설정 정상",
-      shortLabel: "위치 정상",
-      detail: "최근 보고 기준으로 항상 허용 위치 권한과 전송 서비스가 켜져 있어요.",
+      label: intl.formatMessage({ id: "parent.device.location.readyLabel" }),
+      shortLabel: intl.formatMessage({ id: "parent.device.location.readyShort" }),
+      detail: intl.formatMessage({ id: "parent.device.location.readyDetail" }),
     };
   }
   return {
     state: "unknown",
-    label: "위치 상태 확인 대기",
-    shortLabel: "위치 확인 중",
-    detail: "아이 기기의 위치 권한과 전송 서비스 전체 상태를 아직 확인하지 못했어요.",
+    label: intl.formatMessage({ id: "parent.device.location.waitingLabel" }),
+    shortLabel: intl.formatMessage({ id: "parent.device.location.checkingShort" }),
+    detail: intl.formatMessage({ id: "parent.device.location.partialDetail" }),
   };
 }

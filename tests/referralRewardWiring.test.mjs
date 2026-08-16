@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { createIntl, createIntlCache } from "react-intl";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -56,6 +57,56 @@ test("추천 화면은 양측 10회·평생 3가족·72시간·48시간 유지 �
   assert.match(panel, /pendingCount/);
   assert.match(panel, /navigator\.share/);
   assert.match(panel, /navigator\.clipboard/);
+});
+
+test("추천 공유 payload는 실제 locale 메시지를 {link}와 함께 문장 전체로 포맷한다", () => {
+  const panel = read("src/components/ReferralRewardPanel.tsx");
+  const link = "https://hyeni-calendar.pages.dev/#/onboarding?ref=FAMILY10";
+  const expectedLead = {
+    ko: /^혜니캘린더에서/,
+    en: /^Start protecting your family together with Hyeni Calendar\./,
+    ja: /^Hyeniカレンダーで/,
+    "zh-CN": /^通过Hyeni日历/,
+    "zh-TW": /^透過Hyeni日曆/,
+    vi: /^Cùng bắt đầu bảo vệ gia đình với Hyeni Calendar\./,
+    th: /^เริ่มดูแลความปลอดภัยของครอบครัวไปด้วยกันกับ Hyeni Calendar/,
+    id: /^Mulai jaga keamanan keluarga bersama Hyeni Calendar\./,
+    ms: /^Mulakan penjagaan keselamatan keluarga bersama Hyeni Calendar\./,
+    fil: /^Simulan ang pagprotekta sa pamilya kasama ang Hyeni Calendar\./,
+  };
+
+  assert.match(panel, /id: "parent\.referralRewardPanel\.shareBody"/);
+  assert.match(panel, /\{\s*link\s*:/);
+  assert.doesNotMatch(panel, /`혜니캘린더에서/);
+
+  for (const [locale, lead] of Object.entries(expectedLead)) {
+    const messages = JSON.parse(read(`locales/${locale}/parent.json`));
+    assert.equal(typeof messages["parent.referralRewardPanel.shareBody"], "string", `${locale}: 공유 본문 키 누락`);
+    const intl = createIntl({ locale, messages }, createIntlCache());
+    const payload = intl.formatMessage(
+      { id: "parent.referralRewardPanel.shareBody" },
+      { link },
+    );
+    assert.match(payload, lead, `${locale}: 공유 본문 시작 의미`);
+    assert.equal(payload.split(link).length - 1, 1, `${locale}: 링크는 정확히 한 번`);
+    assert.match(payload, /3/);
+    assert.match(payload, /48/);
+    assert.match(payload, /10/);
+    assert.equal(payload.split("\n").length, 3, `${locale}: 공유 시트 3줄 본문`);
+    if (locale !== "ko") assert.doesNotMatch(payload, /[가-힣]/, `${locale}: 한국어 혼입`);
+  }
+});
+
+test("추천 복사 실패·미지원 toast와 초대 코드 접근성 이름도 locale 메시지를 사용한다", () => {
+  const panel = read("src/components/ReferralRewardPanel.tsx");
+  for (const id of [
+    "parent.referralRewardPanel.clipboardUnsupported",
+    "parent.referralRewardPanel.clipboardFailed",
+    "parent.referralRewardPanel.inviteCodeAria",
+  ]) {
+    assert.match(panel, new RegExp(id.replaceAll(".", "\\.")), id);
+  }
+  assert.doesNotMatch(panel, /복사를 지원하지 않아요|복사하지 못했어요|친구 초대 코드 \$\{/);
 });
 
 test("클라이언트 추천 API에는 지급·qualify·claim endpoint가 없고 조회·코드 발급만 있다", () => {

@@ -189,6 +189,7 @@ export function ParentCalendar() {
       LEGACY_FAMILY_TIME_ZONE,
       visitMap,
       savedPlaces,
+      intl,
     )
     : null;
   const sheetTimeLabel = useMemo(() => {
@@ -204,7 +205,7 @@ export function ParentCalendar() {
     if (names.length) return names.join(" · ");
     return eventScopeLabel(sheetEvent, intl);
   }, [sheetEvent, family, intl]);
-  const sheetNeedsAssignment = sheetEvent ? eventScopeLabel(sheetEvent) === "배정 필요" : false;
+  const sheetNeedsAssignment = sheetEvent ? eventChildMemberIds(sheetEvent).length === 0 : false;
   const sheetReminder = useMemo(() => {
     if (!sheetEvent) return null;
     return notifOverrideToReminderMinutes(sheetEvent.notif_override);
@@ -417,8 +418,8 @@ export function ParentCalendar() {
           <div className="pc-events">
             {selEvents.map((e) => {
               const childLabel = childLabelById.get(e.id);
-              const childWarn = childLabel === "배정 필요";
               const raw = rawById.get(e.id);
+              const childWarn = raw ? eventChildMemberIds(raw).length === 0 : false;
               const swipeSide = openSwipe?.id === e.id ? openSwipe.side : null;
               const confirmSwipeDelete = confirmSwipeDeleteId === e.id;
               const swipeDeletePending = deleteEvent.isPending && deleteEvent.variables === e.id;

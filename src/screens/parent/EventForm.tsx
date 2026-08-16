@@ -1103,7 +1103,10 @@ export function EventForm() {
               {intl.formatMessage({ id: "parent.eventForm.copy067" })}
             </div>
             <p id={seriesScopeDescriptionId} className="ef-scope-desc">
-              {intl.formatMessage({ id: "parent.eventForm.copy068" })} {seriesScopePrompt.futureCount}{intl.formatMessage({ id: "parent.eventForm.copy069" })}
+              {intl.formatMessage(
+                { id: "parent.eventForm.repeatFutureNotice" },
+                { count: seriesScopePrompt.futureCount },
+              )}
             </p>
             <div className="ef-scope-actions">
               <button

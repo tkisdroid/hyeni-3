@@ -39,11 +39,9 @@ export function filterEventsForChild<T extends CalendarEvent>(
 }
 
 export function eventScopeLabel(event: CalendarEvent, providedIntl?: IntlShape): string {
-  if (providedIntl) {
-    const intl = withDefaultIntl(providedIntl);
-    if (eventIsFamilyShared(event)) return intl.formatMessage({ id: "parent.eventScope.family" });
-    return eventChildMemberIds(event).length === 0 ? intl.formatMessage({ id: "parent.eventScope.assignmentRequired" }) : "";
-  }
-  if (eventIsFamilyShared(event)) return "가족 일정";
-  return eventChildMemberIds(event).length === 0 ? "배정 필요" : "";
+  const intl = withDefaultIntl(providedIntl);
+  if (eventIsFamilyShared(event)) return intl.formatMessage({ id: "parent.eventScope.family" });
+  return eventChildMemberIds(event).length === 0
+    ? intl.formatMessage({ id: "parent.eventScope.assignmentRequired" })
+    : "";
 }

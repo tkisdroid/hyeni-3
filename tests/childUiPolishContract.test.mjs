@@ -71,7 +71,7 @@ test("아이 가족 대화의 사진 저장·확대 안내와 대상 오류는 �
     assert.equal(koShared[id], childCopy, `아이 반말 문구가 달라졌다: ${id}`);
   }
 
-  assert.match(memo, /\[isChildSession, previewImageUrl, savingPhoto, show\]/);
+  assert.match(memo, /\[intl, isChildSession, previewImageUrl, savingPhoto, show\]/);
   assert.equal(koShared["shared.memoChat.copy006"], "사진첩에 저장했어요.", "부모 존댓말 문구가 보존되지 않았다");
   assert.equal(koShared["shared.memo.photo.error.formal"], "사진을 불러오지 못했어요. 눌러서 다시 시도해 주세요.", "부모 사진 오류 존댓말 문구가 보존되지 않았다");
 });

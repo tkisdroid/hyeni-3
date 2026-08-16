@@ -295,7 +295,7 @@ export function MemoChat() {
       });
     }
     return map;
-  }, [family]);
+  }, [family, intl]);
 
   // 1:1 헤더 상대(peer). 아이가 보면 부모, 부모가 보면 스코프 아이(전역 활성 아이).
   const peer = useMemo(() => {
@@ -313,7 +313,7 @@ export function MemoChat() {
       name: scopeChild?.name || intl.formatMessage({ id: "shared.memoChat.copy004" }),
       avatar: avatarSrc(childAvatarPath(scopeChild?.photo_url)),
     };
-  }, [family, role, scopeChild]);
+  }, [family, intl, role, scopeChild]);
 
   const replies = useMemo(() => thread.data ?? [], [thread.data]);
   // 빈 content(빈 문자열/공백뿐)는 빈 흰 말풍선이 되므로 스레드에서 제외한다.
@@ -386,7 +386,7 @@ export function MemoChat() {
     } finally {
       setSavingPhoto(false);
     }
-  }, [isChildSession, previewImageUrl, savingPhoto, show]);
+  }, [intl, isChildSession, previewImageUrl, savingPhoto, show]);
   // 신고·차단은 상대 메시지를 길게 누르면 열린다(버튼을 매 메시지에 띄우지 않기 위해).
   // 내 메시지와 발신자를 알 수 없는 레거시 행은 신고 대상이 아니므로 길게 누르기를 붙이지 않는다.
   const bindLongPressSafety = useLongPress<ThreadMsg>((m) => setSafetyTarget(m));

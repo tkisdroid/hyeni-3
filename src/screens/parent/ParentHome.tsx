@@ -538,7 +538,8 @@ export function ParentHome() {
               </>
             ) : (
               <>
-                {intl.formatMessage({ id: "parent.parentHome.copy011" })} <em>{todayEvents.length}{intl.formatMessage({ id: "parent.parentHome.copy013" })}</em>
+                {intl.formatMessage({ id: "parent.parentHome.copy011" })}{" "}
+                <em>{intl.formatMessage({ id: "parent.home.todayEventCount" }, { count: todayEvents.length })}</em>
               </>
             )}
           </div>
@@ -727,7 +728,10 @@ export function ParentHome() {
                       <button
                         type="button"
                         className="ph-child__more hy-press"
-                        aria-label={`${c.name} 상세`}
+                        aria-label={intl.formatMessage(
+                          { id: "parent.home.childDetailAria" },
+                          { name: c.name },
+                        )}
                         onClick={() => {
                           setActiveChildId(c.id);
                           navigate("/child-detail", { state: { childId: c.id } });
@@ -764,7 +768,7 @@ export function ParentHome() {
             action={
               <span
                 className="hy-chip ph-safety__status"
-                data-state={deviceStatus.safetyLabel === "양호" ? "ready" : deviceStatus.safetyLabel === "주의 필요" ? "attention" : "unknown"}
+                data-state={deviceStatus.safetyState}
                 style={{ marginLeft: "auto" }}
               >
                 {safetyChildName} · {deviceStatus.safetyLabel}

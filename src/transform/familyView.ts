@@ -15,7 +15,9 @@ import {
   deviceLocationHealthView,
   deviceNotificationHealthView,
   deviceOverallSafetyLabel,
+  deviceOverallSafetyState,
   type DeviceNotificationHealthView,
+  type DeviceOverallSafetyState,
 } from "./deviceNotificationHealth";
 import type { SupportedLocale } from "../i18n/locale.ts";
 import { formatNumber } from "../i18n/format.ts";
@@ -113,7 +115,8 @@ export interface DeviceStatusView {
   topApps: DeviceRecentAppView[];
   recentApps: DeviceRecentAppView[];
   freshnessLabel: string; // "방금 업데이트" | "N분 전" | "아이 기기 연동 대기 중"
-  safetyLabel: string; // "양호" | "주의 필요" | "확인 중"
+  safetyState: DeviceOverallSafetyState;
+  safetyLabel: string;
   notification: DeviceNotificationHealthView;
   location: DeviceNotificationHealthView;
 }
@@ -123,15 +126,14 @@ export type DeviceRecentAppView = DeviceAppUsageItemView;
 // 오늘 화면 사용시간(ms) → "N시간 M분" / "N분". 없거나 0이면 null.
 function screenTimeLabelFrom(
   ms: number | null | undefined,
-  locale: SupportedLocale,
   intl: IntlShape,
 ): string | null {
   if (typeof ms !== "number" || !Number.isFinite(ms) || ms <= 0) return null;
   const totalMin = Math.floor(ms / 60000);
   const h = Math.floor(totalMin / 60);
   const m = totalMin % 60;
-  if (h > 0) return intl.formatMessage({ id: "parent.device.hoursMinutes" }, { hours: formatNumber(h, locale), minutes: formatNumber(m, locale) });
-  return intl.formatMessage({ id: "parent.device.minutes" }, { minutes: formatNumber(m, locale) });
+  if (h > 0) return intl.formatMessage({ id: "parent.device.hoursMinutes" }, { hours: h, minutes: m });
+  return intl.formatMessage({ id: "parent.device.minutes" }, { minutes: m });
 }
 
 // 저배터리 임계(주의). hyeni-1 deviceSafety 규칙과 동일.
@@ -165,14 +167,15 @@ export function deviceStatusView(
     now,
     childScheduleEnabled,
     childScheduleLoadState,
-  });
-  const location = deviceLocationHealthView(health, now);
+  }, intl);
+  const location = deviceLocationHealthView(health, now, intl);
   if (!health) {
+    const safetyState = deviceOverallSafetyState(false, notification.state, location.state, null);
     return {
       hasData: false,
       batteryLevel: null,
       batteryLabel: "—",
-      unlockCountLabel: intl.formatMessage({ id: "parent.device.unlockZero" }),
+      unlockCountLabel: unlockCountLabel(null, intl),
       networkLabel: "—",
       screenTimeLabel: "—",
       recentAppLabel: null,
@@ -181,7 +184,8 @@ export function deviceStatusView(
       topApps: [],
       recentApps: [],
       freshnessLabel: intl.formatMessage({ id: "parent.device.waiting" }),
-      safetyLabel: deviceOverallSafetyLabel(false, notification.state, location.state, null),
+      safetyState,
+      safetyLabel: deviceOverallSafetyLabel(false, notification.state, location.state, null, intl),
       notification,
       location,
     };
@@ -189,21 +193,28 @@ export function deviceStatusView(
   const level = typeof health.batteryLevel === "number" ? health.batteryLevel : null;
   // 네이티브(LocationService) 리포트는 connectionType, 웹 리포트는 networkType 을 준다.
   const netType = health.connectionType ?? health.networkType;
-  const screen = screenTimeLabelFrom(health.deviceScreenOnMs, locale, intl);
-  const appUsage = buildDeviceAppUsageView(health);
+  const screen = screenTimeLabelFrom(health.deviceScreenOnMs, intl);
+  const appUsage = buildDeviceAppUsageView(health, 3, intl);
   const reportAt = health.lastReportedAt ?? health.updatedAt;
   const lowBattery = level != null && level <= LOW_BATTERY_THRESHOLD;
-  const safetyLabel = deviceOverallSafetyLabel(
+  const safetyState = deviceOverallSafetyState(
     lowBattery,
     notification.state,
     location.state,
     health.networkConnected,
   );
+  const safetyLabel = deviceOverallSafetyLabel(
+    lowBattery,
+    notification.state,
+    location.state,
+    health.networkConnected,
+    intl,
+  );
   return {
     hasData: true,
     batteryLevel: level,
     batteryLabel: level == null ? "—" : `${formatNumber(level, locale)}%`,
-    unlockCountLabel: unlockCountLabel(health.deviceUnlockCount),
+    unlockCountLabel: unlockCountLabel(health.deviceUnlockCount, intl),
     networkLabel: health.networkConnected ? networkTypeLabel(netType, intl) : intl.formatMessage({ id: "parent.device.offline" }),
     screenTimeLabel: screen ?? "—",
     recentAppLabel: appUsage.recentAppLabel,
@@ -212,6 +223,7 @@ export function deviceStatusView(
     topApps: appUsage.topApps,
     recentApps: appUsage.topApps,
     freshnessLabel: reportAt ? formatFreshness(reportAt, now, locale, intl).label : intl.formatMessage({ id: "parent.device.noReportTime" }),
+    safetyState,
     safetyLabel,
     notification,
     location,

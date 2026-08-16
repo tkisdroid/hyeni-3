@@ -147,7 +147,9 @@ export function PremiumUpsell({
     }
   };
 
-  const ctaLabel = trialEligible ? `7일 무료로 ${content.ctaLabel}` : content.ctaLabel;
+  const ctaLabel = trialEligible
+    ? intl.formatMessage({ id: "parent.premiumUpsell.trialCta" }, { cta: content.ctaLabel })
+    : content.ctaLabel;
 
   return (
     <div

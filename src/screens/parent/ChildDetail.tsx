@@ -11,6 +11,7 @@ import { useEvents } from "@/queries/useSchedule";
 import { useChildLocations, useSavedPlaces } from "@/queries/useLocation";
 import { useLocationLabels } from "@/queries/useLocationLabels";
 import { mapFamilyToView } from "@/transform/familyView";
+import { hasJongseong } from "@/transform/adventureMap";
 import { dateToDateKeyInTimeZone, parseAppDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { formatFreshness } from "@/transform/locationView";
@@ -211,7 +212,10 @@ export function ChildDetail() {
     }
     try {
       await unpair.mutateAsync(childUserId);
-      show(intl.formatMessage({ id: "parent.childDetail.removedFromFamily" }, { name }), "🗑️");
+      show(intl.formatMessage(
+        { id: "parent.childDetail.removedFromFamily" },
+        { target: locale === "ko" ? `${name}${hasJongseong(name) ? "을" : "를"}` : name },
+      ), "🗑️");
       navigate(-1);
     } catch (e) {
       show(localizeApiError(e, intl, "formal"), "⚠️");

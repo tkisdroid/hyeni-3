@@ -73,20 +73,29 @@ export function ReferralRewardPanel({
   };
 
   const invitationText = status?.code
-    ? `혜니캘린더에서 가족 안전을 함께 시작해요.\n새 가족을 만든 뒤 3일이 지나고, 처음 위치 연결 뒤 48시간 동안 최신 위치가 확인되면 두 가족 모두 추가 AI 대화 10회를 받아요.\n${buildReferralLink(PUBLIC_WEB_BASE, status.code)}`
+    ? intl.formatMessage(
+      { id: "parent.referralRewardPanel.shareBody" },
+      { link: buildReferralLink(PUBLIC_WEB_BASE, status.code) },
+    )
     : "";
 
   const copyInvitation = async () => {
     if (!invitationText || !status?.code) return;
     if (!navigator.clipboard?.writeText) {
-      show(`복사를 지원하지 않아요 · 코드 ${status.code}`, "✏️");
+      show(intl.formatMessage(
+        { id: "parent.referralRewardPanel.clipboardUnsupported" },
+        { code: status.code },
+      ), "✏️");
       return;
     }
     try {
       await navigator.clipboard.writeText(invitationText);
       show(intl.formatMessage({ id: "parent.referralRewardPanel.copy003" }), "📋");
     } catch {
-      show(`복사하지 못했어요 · 코드 ${status.code}`, "✏️");
+      show(intl.formatMessage(
+        { id: "parent.referralRewardPanel.clipboardFailed" },
+        { code: status.code },
+      ), "✏️");
     }
   };
 
@@ -191,7 +200,13 @@ export function ReferralRewardPanel({
               </label>
 
               {status.code ? (
-                <div className="rrp__code" aria-label={`친구 초대 코드 ${status.code}`}>
+                <div
+                  className="rrp__code"
+                  aria-label={intl.formatMessage(
+                    { id: "parent.referralRewardPanel.inviteCodeAria" },
+                    { code: status.code },
+                  )}
+                >
                   {status.code}
                 </div>
               ) : (

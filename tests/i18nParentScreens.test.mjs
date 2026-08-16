@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-const parentSurfaces = [
+const parentScreens = [
   "src/screens/parent/ParentHome.tsx",
   "src/screens/parent/ParentSettings.tsx",
   "src/screens/parent/ParentAccount.tsx",
@@ -20,6 +20,43 @@ const parentSurfaces = [
   "src/screens/parent/SocialLinks.tsx",
 ];
 
+const parentComponents = [
+  "src/components/KakaoMap.tsx",
+  "src/components/MapPickerSheet.tsx",
+  "src/components/MessageSafetyDialog.tsx",
+  "src/components/PremiumUpsell.tsx",
+  "src/components/ReferralRewardPanel.tsx",
+];
+
+const parentTransforms = [
+  "src/transform/adventureMap.ts",
+  "src/transform/eventScope.ts",
+  "src/transform/familyView.ts",
+  "src/transform/locationTrustCopy.ts",
+  "src/transform/locationView.ts",
+  "src/transform/memoChatCopy.ts",
+  "src/transform/memoQuickReplies.ts",
+  "src/transform/notificationsView.ts",
+  "src/transform/placeVisual.ts",
+  "src/transform/premiumUpsell.ts",
+  "src/transform/scheduleView.ts",
+  "src/transform/tierPolicy.ts",
+];
+
+// Task 7 화면에서 familyView를 거쳐 실제 표시되는 전이 formatter도 수동 인벤토리에 포함한다.
+const parentTransitFormatters = [
+  "src/transform/deviceNotificationHealth.ts",
+  "src/transform/deviceUnlock.ts",
+  "src/transform/deviceAppUsageView.ts",
+];
+
+const parentSurfaces = [
+  ...parentScreens,
+  ...parentComponents,
+  ...parentTransforms,
+  ...parentTransitFormatters,
+];
+
 const catalogAwareContainers = new Set([
   "formatMessage",
   "FormattedMessage",
@@ -29,7 +66,13 @@ function sourceFile(path) {
   const source = readFileSync(resolve(rootDir, path), "utf8");
   return {
     source,
-    file: ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX),
+    file: ts.createSourceFile(
+      path,
+      source,
+      ts.ScriptTarget.Latest,
+      true,
+      path.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+    ),
   };
 }
 
@@ -51,9 +94,11 @@ function insideCatalogCall(node) {
   return false;
 }
 
-function userFacingLiteral(node) {
-  const text = ts.isJsxText(node) ? node.text.trim() : node.text;
+function userFacingLiteral(node, text) {
   if (!/[가-힣]/.test(text) || insideCatalogCall(node)) return null;
+
+  // 템플릿은 변수 선언·toast·aria 어디에 있든 번역 누락이 되기 쉬워 모두 사용자 문구로 본다.
+  if (ts.isTemplateExpression(node) || ts.isNoSubstitutionTemplateLiteral(node)) return text;
 
   if (ts.isJsxText(node)) return text;
   const parent = node.parent;
@@ -101,11 +146,22 @@ function firstLiteralViolation(path) {
   let violation = null;
   const visit = (node) => {
     if (violation) return;
-    if (ts.isStringLiteralLike(node) || ts.isJsxText(node)) {
-      const text = userFacingLiteral(node);
-      if (text) {
+    if (ts.isTemplateExpression(node)) {
+      const text = [node.head.text, ...node.templateSpans.map((span) => span.literal.text)]
+        .join(" ")
+        .trim();
+      const exposed = userFacingLiteral(node, text);
+      if (exposed) {
         const line = file.getLineAndCharacterOfPosition(node.getStart(file)).line + 1;
-        violation = `${path}:${line}: ${text.replace(/\s+/g, " ")}`;
+        violation = `${path}:${line}: ${exposed.replace(/\s+/g, " ")}`;
+        return;
+      }
+    } else if (ts.isStringLiteralLike(node) || ts.isJsxText(node)) {
+      const text = ts.isJsxText(node) ? node.text.trim() : node.text;
+      const exposed = userFacingLiteral(node, text);
+      if (exposed) {
+        const line = file.getLineAndCharacterOfPosition(node.getStart(file)).line + 1;
+        violation = `${path}:${line}: ${exposed.replace(/\s+/g, " ")}`;
         return;
       }
     }
@@ -115,11 +171,11 @@ function firstLiteralViolation(path) {
   return { source, violation };
 }
 
-test("부모 화면과 공용 대화는 파일별 사용자 문구를 React Intl 카탈로그로 이관한다", () => {
+test("Task 7의 10개 화면·5개 컴포넌트·12개 transform·전이 formatter는 사용자 문구를 카탈로그로 이관한다", () => {
   const failures = [];
   for (const path of parentSurfaces) {
     const { source, violation } = firstLiteralViolation(path);
-    if (!/(?:useIntl|FormattedMessage)/.test(source)) {
+    if (!/(?:useIntl|FormattedMessage|IntlShape|withDefaultIntl)/.test(source)) {
       failures.push(`${path}: React Intl 문구 배선이 없습니다`);
     }
     if (violation) failures.push(violation);
