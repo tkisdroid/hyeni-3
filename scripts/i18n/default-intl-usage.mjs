@@ -168,35 +168,82 @@ function isFactoryCall(expression, context) {
     && context.factorySymbols.has(symbolAt(context.checker, unwrapExpression(value.expression)));
 }
 
-function isTrustedIntlExpression(expression, context, seenSymbols = new Set()) {
-  const value = unwrapExpression(expression);
-  if (isFactoryCall(value, context)) return true;
-  if (!ts.isIdentifier(value)) return false;
-
-  const symbol = symbolAt(context.checker, value);
-  if (!symbol || seenSymbols.has(symbol)) return false;
-  if (context.intlObjectSymbols.has(symbol) || symbolIsIntlShapeParameter(symbol, context)) return true;
-
-  const resolution = variableResolution(value, context.checker);
-  if (resolution.kind !== "const") return false;
-  seenSymbols.add(symbol);
-  const trusted = isTrustedIntlExpression(resolution.initializer, context, seenSymbols);
-  seenSymbols.delete(symbol);
-  return trusted;
-}
-
-function isPotentialIntlExpression(expression, context) {
-  const value = unwrapExpression(expression);
-  if (isTrustedIntlExpression(value, context)) return true;
-  if (!ts.isIdentifier(value)) return false;
-  const resolution = variableResolution(value, context.checker);
-  return resolution.kind === "mutable"
-    && isTrustedIntlExpression(resolution.initializer, context);
-}
-
 function propertyNameText(name) {
   if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) return name.text;
   return null;
+}
+
+function exactStringValue(expression, context, seenSymbols = new Set()) {
+  const value = unwrapExpression(expression);
+  if (ts.isStringLiteralLike(value)) return { kind: "resolved", value: value.text };
+  if (!ts.isIdentifier(value)) return { kind: "unsupported" };
+
+  const resolution = variableResolution(value, context.checker);
+  if (resolution.kind !== "const" || seenSymbols.has(resolution.symbol)) return { kind: "unsupported" };
+  seenSymbols.add(resolution.symbol);
+  const result = exactStringValue(resolution.initializer, context, seenSymbols);
+  seenSymbols.delete(resolution.symbol);
+  return result;
+}
+
+function intlExpressionSource(expression, context, seenSymbols = new Set()) {
+  const value = unwrapExpression(expression);
+  if (isFactoryCall(value, context)) return { kind: "supported" };
+  if (ts.isConditionalExpression(value)) {
+    const whenTrue = intlExpressionSource(value.whenTrue, context, seenSymbols);
+    const whenFalse = intlExpressionSource(value.whenFalse, context, seenSymbols);
+    if (whenTrue.kind === "unrelated" && whenFalse.kind === "unrelated") return { kind: "unrelated" };
+    return whenTrue.kind === "supported" && whenFalse.kind === "supported"
+      ? { kind: "supported" }
+      : { kind: "unsupported" };
+  }
+  if (!ts.isIdentifier(value)) return { kind: "unrelated" };
+
+  const symbol = symbolAt(context.checker, value);
+  if (!symbol || seenSymbols.has(symbol)) return { kind: "unrelated" };
+  if (context.intlObjectSymbols.has(symbol) || symbolIsIntlShapeParameter(symbol, context)) {
+    return { kind: "supported" };
+  }
+
+  const resolution = variableResolution(value, context.checker);
+  if (resolution.kind !== "const" && resolution.kind !== "mutable") return { kind: "unrelated" };
+  seenSymbols.add(symbol);
+  const source = intlExpressionSource(resolution.initializer, context, seenSymbols);
+  seenSymbols.delete(symbol);
+  if (source.kind === "unrelated") return source;
+  return resolution.kind === "const" && source.kind === "supported"
+    ? source
+    : { kind: "unsupported" };
+}
+
+function memberAccessName(expression, context) {
+  const value = unwrapExpression(expression);
+  if (ts.isPropertyAccessExpression(value)) return { kind: "resolved", value: value.name.text };
+  if (ts.isElementAccessExpression(value) && value.argumentExpression) {
+    return exactStringValue(value.argumentExpression, context);
+  }
+  return null;
+}
+
+function memberFormatSource(expression, context) {
+  const value = unwrapExpression(expression);
+  if (!ts.isPropertyAccessExpression(value) && !ts.isElementAccessExpression(value)) return null;
+
+  const intlSource = intlExpressionSource(value.expression, context);
+  if (intlSource.kind === "unrelated") return { kind: "unrelated" };
+  const name = memberAccessName(value, context);
+  if (!name || name.kind !== "resolved") return { kind: "unsupported" };
+  if (name.value !== "formatMessage") return { kind: "unrelated" };
+  return intlSource.kind === "supported"
+    ? { kind: "supported" }
+    : { kind: "unsupported" };
+}
+
+function bindingElementPropertyName(element, context) {
+  const propertyName = element.propertyName ?? element.name;
+  if (ts.isComputedPropertyName(propertyName)) return exactStringValue(propertyName.expression, context);
+  const value = propertyNameText(propertyName);
+  return value === null ? { kind: "unsupported" } : { kind: "resolved", value };
 }
 
 function bindingElementFormatSource(identifier, context) {
@@ -205,59 +252,66 @@ function bindingElementFormatSource(identifier, context) {
   if (declarations.length !== 1 || !ts.isBindingElement(declarations[0])) return null;
   const element = declarations[0];
   if (!ts.isObjectBindingPattern(element.parent)) return null;
-  const propertyName = element.propertyName ?? element.name;
-  if (!ts.isIdentifier(element.name) || propertyNameText(propertyName) !== "formatMessage") return null;
   const declaration = element.parent.parent;
   if (!ts.isVariableDeclaration(declaration) || !declaration.initializer) return null;
-  const related = isPotentialIntlExpression(declaration.initializer, context);
-  if (!related) return { kind: "unrelated" };
-  const supported = isConstDeclaration(declaration)
+  const intlSource = intlExpressionSource(declaration.initializer, context);
+  if (intlSource.kind === "unrelated") return { kind: "unrelated" };
+  const propertyName = bindingElementPropertyName(element, context);
+  if (propertyName.kind !== "resolved") return { kind: "unsupported" };
+  if (propertyName.value !== "formatMessage") return { kind: "unrelated" };
+  const supported = intlSource.kind === "supported"
+    && isConstDeclaration(declaration)
     && !element.dotDotDotToken
-    && !ts.isComputedPropertyName(propertyName);
+    && !element.initializer
+    && ts.isIdentifier(element.name);
   return { kind: supported ? "supported" : "unsupported" };
 }
 
-function memberFormatSource(expression, context) {
-  const value = unwrapExpression(expression);
-  if (
-    ts.isPropertyAccessExpression(value)
-    && value.name.text === "formatMessage"
-  ) {
-    if (isTrustedIntlExpression(value.expression, context)) return { kind: "supported" };
-    if (isPotentialIntlExpression(value.expression, context)) return { kind: "unsupported" };
+function helperCallSource(call, context, seenSymbols = new Set()) {
+  const callee = unwrapExpression(call.expression);
+  if (!ts.isPropertyAccessExpression(callee) && !ts.isElementAccessExpression(callee)) {
     return { kind: "unrelated" };
   }
-  if (
-    ts.isElementAccessExpression(value)
-    && value.argumentExpression
-    && ts.isStringLiteralLike(unwrapExpression(value.argumentExpression))
-    && unwrapExpression(value.argumentExpression).text === "formatMessage"
-  ) {
-    return isPotentialIntlExpression(value.expression, context)
-      ? { kind: "unsupported" }
-      : { kind: "unrelated" };
+  const target = formatReferenceSource(callee.expression, context, seenSymbols);
+  if (target.kind === "unrelated") return target;
+  const helperName = memberAccessName(callee, context);
+  if (helperName?.kind === "resolved" && !["call", "apply", "bind"].includes(helperName.value)) {
+    return { kind: "unrelated" };
   }
-  return null;
+  return { kind: "unsupported" };
 }
 
-function identifierFormatSource(identifier, context) {
+function identifierFormatSource(identifier, context, seenSymbols = new Set()) {
   const binding = bindingElementFormatSource(identifier, context);
   if (binding) return binding;
 
   const resolution = variableResolution(identifier, context.checker);
   if (resolution.kind !== "const" && resolution.kind !== "mutable") return { kind: "unrelated" };
-  const member = memberFormatSource(resolution.initializer, context);
-  return member && member.kind !== "unrelated"
-    ? { kind: "unsupported" }
-    : { kind: "unrelated" };
+  if (seenSymbols.has(resolution.symbol)) return { kind: "unrelated" };
+  seenSymbols.add(resolution.symbol);
+  const source = formatReferenceSource(resolution.initializer, context, seenSymbols);
+  seenSymbols.delete(resolution.symbol);
+  if (source.kind === "unrelated") return source;
+  if (resolution.kind === "mutable") return { kind: "unsupported" };
+  return ts.isIdentifier(unwrapExpression(resolution.initializer))
+    ? source
+    : { kind: "unsupported" };
+}
+
+function formatReferenceSource(expression, context, seenSymbols = new Set()) {
+  const value = unwrapExpression(expression);
+  const member = memberFormatSource(value, context);
+  if (member) return member;
+  if (ts.isIdentifier(value)) return identifierFormatSource(value, context, seenSymbols);
+  if (ts.isCallExpression(value)) return helperCallSource(value, context, seenSymbols);
+  return { kind: "unrelated" };
 }
 
 function classifyFormatMessageCall(call, context) {
   const callee = unwrapExpression(call.expression);
-  const member = memberFormatSource(callee, context);
-  if (member) return member;
-  if (ts.isIdentifier(callee)) return identifierFormatSource(callee, context);
-  return { kind: "unrelated" };
+  const reference = formatReferenceSource(callee, context);
+  if (reference.kind !== "unrelated") return reference;
+  return helperCallSource(call, context);
 }
 
 function constInitializerForAlias(identifier, context, seenSymbols) {
@@ -318,6 +372,76 @@ function compactNodeText(node, sourceFile) {
   return node.getText(sourceFile).replace(/\s+/gu, " ").trim();
 }
 
+function outerWrappedExpression(node) {
+  let current = node;
+  while (
+    current.parent
+    && (
+      ts.isParenthesizedExpression(current.parent)
+      || ts.isAsExpression(current.parent)
+      || ts.isTypeAssertionExpression(current.parent)
+      || ts.isNonNullExpression(current.parent)
+    )
+    && current.parent.expression === current
+  ) {
+    current = current.parent;
+  }
+  return current;
+}
+
+function isDeclarationIdentifier(identifier) {
+  const parent = identifier.parent;
+  return (
+    (ts.isVariableDeclaration(parent) && parent.name === identifier)
+    || (ts.isBindingElement(parent) && parent.name === identifier)
+    || (ts.isParameter(parent) && parent.name === identifier)
+    || (ts.isFunctionDeclaration(parent) && parent.name === identifier)
+    || (ts.isFunctionExpression(parent) && parent.name === identifier)
+    || (ts.isClassDeclaration(parent) && parent.name === identifier)
+    || (ts.isClassExpression(parent) && parent.name === identifier)
+    || ts.isImportSpecifier(parent)
+    || ts.isImportClause(parent)
+    || ts.isNamespaceImport(parent)
+    || ts.isExportSpecifier(parent)
+  );
+}
+
+function isHandledFormatReferenceUse(node, context) {
+  if (ts.isIdentifier(node) && isDeclarationIdentifier(node)) return true;
+  const expression = outerWrappedExpression(node);
+  const parent = expression.parent;
+  if (!parent) return false;
+
+  if (ts.isCallExpression(parent) && parent.expression === expression) return true;
+
+  if (
+    (ts.isPropertyAccessExpression(parent) || ts.isElementAccessExpression(parent))
+    && parent.expression === expression
+    && ts.isCallExpression(parent.parent)
+    && parent.parent.expression === parent
+  ) {
+    const helperName = memberAccessName(parent, context);
+    if (helperName?.kind !== "resolved" || ["call", "apply", "bind"].includes(helperName.value)) {
+      return true;
+    }
+  }
+
+  if (
+    ts.isIdentifier(node)
+    && ts.isVariableDeclaration(parent)
+    && parent.initializer === expression
+    && isConstDeclaration(parent)
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function isFormatReferenceCandidate(node) {
+  return ts.isIdentifier(node) || ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node);
+}
+
 function messageIdExpressions(sourceFile, context) {
   const expressions = [];
   const unsupportedCalls = [];
@@ -331,6 +455,12 @@ function messageIdExpressions(sourceFile, context) {
         const resolved = descriptor ? resolveDescriptor(descriptor, context) : { kind: "unsupported" };
         if (resolved.kind === "resolved") expressions.push(resolved.expression);
         else unsupportedCalls.push(compactNodeText(node, sourceFile));
+      }
+    }
+    if (isFormatReferenceCandidate(node) && !isHandledFormatReferenceUse(node, context)) {
+      const reference = formatReferenceSource(node, context);
+      if (reference.kind !== "unrelated") {
+        unsupportedCalls.push(compactNodeText(outerWrappedExpression(node), sourceFile));
       }
     }
     ts.forEachChild(node, visit);

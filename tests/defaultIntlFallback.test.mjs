@@ -137,7 +137,14 @@ test("mutable·computed·spread·ambiguous descriptor와 미지원 method alias�
     '  mutatedDescriptor.id = "shared.fixture.afterMutation";',
     "  intl.formatMessage(mutatedDescriptor);",
     "  const fm = intl.formatMessage;",
-    '  return fm({ id: "shared.fixture.methodAlias" });',
+    '  fm({ id: "shared.fixture.methodAlias" });',
+    "  let { formatMessage: mutableFm } = intl;",
+    '  mutableFm({ id: "shared.fixture.mutableDestructured" });',
+    "  const { formatMessage: stableFm } = intl;",
+    "  let mutableAlias = stableFm;",
+    '  mutableAlias({ id: "shared.fixture.mutableAlias" });',
+    '  let mutableMethodName = "formatMessage";',
+    '  return intl[mutableMethodName]({ id: "shared.fixture.mutableComputed" });',
     "}",
   ].join("\n"));
 
@@ -149,6 +156,100 @@ test("mutable·computed·spread·ambiguous descriptor와 미지원 method alias�
   assert.match(violations, /unsupported_format_message:src\/feature\/consumer\.ts:.*ambiguousDescriptor/);
   assert.match(violations, /unsupported_format_message:src\/feature\/consumer\.ts:.*mutatedDescriptor/);
   assert.match(violations, /unsupported_format_message:src\/feature\/consumer\.ts:.*fm\(/);
+  assert.match(violations, /unsupported_format_message:src\/feature\/consumer\.ts:.*mutableFm\(/);
+  assert.match(violations, /unsupported_format_message:src\/feature\/consumer\.ts:.*mutableAlias\(/);
+  assert.match(violations, /unsupported_format_message:src\/feature\/consumer\.ts:.*mutableMethodName/);
+});
+
+test("trusted formatMessage의 call·apply·bind 경로를 조용히 무시하지 않는다", async () => {
+  const result = await auditFixture([
+    "export function copy(providedIntl) {",
+    "  const intl = withDefaultIntl(providedIntl);",
+    '  intl.formatMessage.call(intl, { id: "shared.fixture.callMissing" });',
+    '  intl.formatMessage.apply(intl, [{ id: "shared.fixture.applyMissing" }]);',
+    '  intl.formatMessage.bind(intl)({ id: "shared.fixture.inlineBoundMissing" });',
+    "  const bound = intl.formatMessage.bind(intl);",
+    '  return bound({ id: "shared.fixture.boundMissing" });',
+    "}",
+  ].join("\n"));
+
+  const violations = result.violations.join("\n");
+  assert.match(violations, /unsupported_format_message:src\/feature\/consumer\.ts:.*\.call\(/);
+  assert.match(violations, /unsupported_format_message:src\/feature\/consumer\.ts:.*\.apply\(/);
+  assert.match(violations, /unsupported_format_message:src\/feature\/consumer\.ts:.*\.bind\(/);
+  assert.match(violations, /unsupported_format_message:src\/feature\/consumer\.ts:.*bound\(/);
+});
+
+test("destructured const alias chain과 exact const computed key의 누락 ID를 수집한다", async () => {
+  const result = await auditFixture([
+    "export function copy(providedIntl) {",
+    "  const intl = withDefaultIntl(providedIntl);",
+    "  const { formatMessage: fm } = intl;",
+    "  const alias = fm;",
+    '  alias({ id: "shared.fixture.aliasMissing" });',
+    '  const methodName = "formatMessage" as const;',
+    '  return intl[methodName]({ id: "shared.fixture.computedMissing" });',
+    "}",
+  ].join("\n"));
+
+  assert.deepEqual(result.messageIds, [
+    "shared.fixture.aliasMissing",
+    "shared.fixture.computedMissing",
+  ]);
+  assert.match(result.violations.join("\n"), /missing_fallback:src\/feature\/consumer\.ts:shared\.fixture\.aliasMissing/);
+  assert.match(result.violations.join("\n"), /missing_fallback:src\/feature\/consumer\.ts:shared\.fixture\.computedMissing/);
+});
+
+test("trusted formatMessage reference의 callback·return·배열·객체 escape를 fail-closed한다", async () => {
+  const result = await auditFixture([
+    "function consume(value) { return value; }",
+    "export function callbackEscape(providedIntl) {",
+    "  const callbackIntl = withDefaultIntl(providedIntl);",
+    "  return consume(callbackIntl.formatMessage);",
+    "}",
+    "export function returnEscape(providedIntl) {",
+    "  const returnIntl = withDefaultIntl(providedIntl);",
+    "  return returnIntl.formatMessage;",
+    "}",
+    "export function arrayEscape(providedIntl) {",
+    "  const arrayIntl = withDefaultIntl(providedIntl);",
+    "  return [arrayIntl.formatMessage];",
+    "}",
+    "export function objectEscape(providedIntl) {",
+    "  const objectIntl = withDefaultIntl(providedIntl);",
+    "  return { formatter: objectIntl.formatMessage };",
+    "}",
+  ].join("\n"));
+
+  const violations = result.violations.join("\n");
+  assert.match(violations, /unsupported_format_message:src\/feature\/consumer\.ts:.*callbackIntl\.formatMessage/);
+  assert.match(violations, /unsupported_format_message:src\/feature\/consumer\.ts:.*returnIntl\.formatMessage/);
+  assert.match(violations, /unsupported_format_message:src\/feature\/consumer\.ts:.*arrayIntl\.formatMessage/);
+  assert.match(violations, /unsupported_format_message:src\/feature\/consumer\.ts:.*objectIntl\.formatMessage/);
+});
+
+test("unrelated 객체의 call·apply·bind·alias·computed·escape는 감사 대상이 아니다", async () => {
+  const result = await auditFixture([
+    "function consume(value) { return value; }",
+    "const unrelated = { formatMessage(descriptor) { return descriptor.id; } };",
+    'unrelated.formatMessage.call(unrelated, { id: "shared.fixture.unrelatedCall" });',
+    'unrelated.formatMessage.apply(unrelated, [{ id: "shared.fixture.unrelatedApply" }]);',
+    "const unrelatedBound = unrelated.formatMessage.bind(unrelated);",
+    'unrelatedBound({ id: "shared.fixture.unrelatedBound" });',
+    "const { formatMessage: unrelatedFm } = unrelated;",
+    "const unrelatedAlias = unrelatedFm;",
+    'unrelatedAlias({ id: "shared.fixture.unrelatedAlias" });',
+    'const methodName = "formatMessage" as const;',
+    'unrelated[methodName]({ id: "shared.fixture.unrelatedComputed" });',
+    "consume(unrelated.formatMessage);",
+    "export const unrelatedEscapes = [unrelated.formatMessage, { formatter: unrelated.formatMessage }];",
+    "const cycleA = cycleB;",
+    "const cycleB = cycleA;",
+    'cycleA({ id: "shared.fixture.unrelatedCycle" });',
+  ].join("\n"));
+
+  assert.deepEqual(result.messageIds, []);
+  assert.deepEqual(result.violations, []);
 });
 
 test("동적 ID 예외는 importer·pattern·exact IDs·근거가 필요하고 미소비 예외를 거부한다", async () => {
