@@ -16,7 +16,23 @@ async function auditFixture(source, fallbackIds = []) {
   try {
     mkdirSync(join(fixtureRoot, "src", "i18n"), { recursive: true });
     mkdirSync(join(fixtureRoot, "src", "feature"), { recursive: true });
-    writeFileSync(join(fixtureRoot, "src", "i18n", "defaultIntl.ts"), "export const withDefaultIntl = (value) => value;\n");
+    writeFileSync(
+      join(fixtureRoot, "src", "i18n", "defaultIntl.ts"),
+      [
+        "export const defaultKoreanIntl = { formatMessage: (descriptor) => descriptor.id };",
+        "export const withDefaultIntl = (value) => value ?? defaultKoreanIntl;",
+      ].join("\n"),
+    );
+    writeFileSync(
+      join(fixtureRoot, "src", "react-intl.d.ts"),
+      [
+        'declare module "react-intl" {',
+        "  export interface IntlShape {",
+        "    formatMessage(descriptor: { id: string }): string;",
+        "  }",
+        "}",
+      ].join("\n"),
+    );
     writeFileSync(
       join(fixtureRoot, "src", "feature", "consumer.ts"),
       `import { withDefaultIntl } from "../i18n/defaultIntl.ts";\n${source}\n`,
@@ -198,6 +214,208 @@ test("destructured const alias chain과 exact const computed key의 누락 ID를
   ]);
   assert.match(result.violations.join("\n"), /missing_fallback:src\/feature\/consumer\.ts:shared\.fixture\.aliasMissing/);
   assert.match(result.violations.join("\n"), /missing_fallback:src\/feature\/consumer\.ts:shared\.fixture\.computedMissing/);
+});
+
+test("defaultIntl namespace factory와 singleton의 누락 ID를 수집한다", async () => {
+  const result = await auditFixture([
+    'import * as defaults from "../i18n/defaultIntl.ts";',
+    "export function copy(providedIntl) {",
+    "  const intl = defaults.withDefaultIntl(providedIntl);",
+    '  intl.formatMessage({ id: "shared.fixture.namespaceFactoryMissing" });',
+    '  return defaults.defaultKoreanIntl.formatMessage({ id: "shared.fixture.namespaceSingletonMissing" });',
+    "}",
+  ].join("\n"));
+
+  assert.deepEqual(result.messageIds, [
+    "shared.fixture.namespaceFactoryMissing",
+    "shared.fixture.namespaceSingletonMissing",
+  ]);
+  assert.match(result.violations.join("\n"), /missing_fallback:src\/feature\/consumer\.ts:shared\.fixture\.namespaceFactoryMissing/);
+  assert.match(result.violations.join("\n"), /missing_fallback:src\/feature\/consumer\.ts:shared\.fixture\.namespaceSingletonMissing/);
+});
+
+test("alias-resolved IntlShape default parameter와 destructured parameter의 ID를 수집한다", async () => {
+  const result = await auditFixture([
+    'import type { IntlShape } from "react-intl";',
+    "type IntlAlias = IntlShape;",
+    "export function byAlias(",
+    "  providedIntl: IntlShape,",
+    "  intl: IntlAlias = withDefaultIntl(providedIntl),",
+    ") {",
+    '  return intl.formatMessage({ id: "shared.fixture.aliasParameterMissing" });',
+    "}",
+    "export function byDestructuring(",
+    "  providedIntl: IntlShape,",
+    "  { formatMessage }: IntlShape = withDefaultIntl(providedIntl),",
+    ") {",
+    '  return formatMessage({ id: "shared.fixture.parameterDestructuringMissing" });',
+    "}",
+  ].join("\n"));
+
+  assert.deepEqual(result.messageIds, [
+    "shared.fixture.aliasParameterMissing",
+    "shared.fixture.parameterDestructuringMissing",
+  ]);
+  assert.match(result.violations.join("\n"), /missing_fallback:src\/feature\/consumer\.ts:shared\.fixture\.aliasParameterMissing/);
+  assert.match(result.violations.join("\n"), /missing_fallback:src\/feature\/consumer\.ts:shared\.fixture\.parameterDestructuringMissing/);
+});
+
+test("derived formatMessage const alias의 export escape를 fail-closed한다", async () => {
+  const result = await auditFixture([
+    "const providedIntl = undefined;",
+    "const intl = withDefaultIntl(providedIntl);",
+    "const { formatMessage: fm } = intl;",
+    "const alias = fm;",
+    "export { alias };",
+    "const { formatMessage } = intl;",
+    "export const formatter = formatMessage;",
+  ].join("\n"));
+
+  const violations = result.violations.join("\n");
+  assert.match(violations, /unsupported_format_message:src\/feature\/consumer\.ts:.*alias/);
+  assert.match(violations, /unsupported_format_message:src\/feature\/consumer\.ts:.*formatter/);
+});
+
+test("assignment destructuring으로 파생된 formatMessage를 unrelated로 잃지 않는다", async () => {
+  const result = await auditFixture([
+    "export function copy(providedIntl) {",
+    "  const intl = withDefaultIntl(providedIntl);",
+    "  let fm;",
+    "  ({ formatMessage: fm } = intl);",
+    '  return fm({ id: "shared.fixture.assignmentMissing" });',
+    "}",
+  ].join("\n"));
+
+  assert.match(
+    result.violations.join("\n"),
+    /unsupported_format_message:src\/feature\/consumer\.ts:.*(?:formatMessage: fm|fm\()/,
+  );
+});
+
+test("defaultIntl root와 derived intl object의 module·wrapper escape를 fail-closed한다", async () => {
+  const result = await auditFixture([
+    'export { defaultKoreanIntl as forwardedIntl } from "../i18n/defaultIntl.ts";',
+    "export { withDefaultIntl };",
+    "function consume(value) { return value; }",
+    "export function returnFactory() { return withDefaultIntl; }",
+    "export function callbackFactory() { return consume(withDefaultIntl); }",
+    "export function returnIntl(providedIntl) {",
+    "  const intl = withDefaultIntl(providedIntl);",
+    "  return intl;",
+    "}",
+    "export const intlContainer = [withDefaultIntl(undefined)];",
+  ].join("\n"));
+
+  const violations = result.violations.join("\n");
+  assert.match(violations, /unsupported_format_message:src\/feature\/consumer\.ts:.*forwardedIntl/);
+  assert.match(violations, /unsupported_format_message:src\/feature\/consumer\.ts:.*withDefaultIntl/);
+  assert.match(violations, /unsupported_format_message:src\/feature\/consumer\.ts:.*returnIntl/);
+  assert.match(violations, /unsupported_format_message:src\/feature\/consumer\.ts:.*intlContainer/);
+});
+
+test("unrelated namespace·object·type alias·assignment·alias cycle은 위반이 아니다", async () => {
+  const result = await auditFixture([
+    "const unrelatedDefaults = {",
+    "  withDefaultIntl: (value) => value,",
+    "  defaultKoreanIntl: { formatMessage: (descriptor) => descriptor.id },",
+    "};",
+    "const unrelatedIntl = unrelatedDefaults.withDefaultIntl(unrelatedDefaults.defaultKoreanIntl);",
+    'unrelatedIntl.formatMessage({ id: "shared.fixture.unrelatedNamespace" });',
+    "type UnrelatedIntlAlias = { formatMessage(descriptor: { id: string }): string };",
+    "function unrelatedParameter(",
+    "  { formatMessage }: UnrelatedIntlAlias = unrelatedDefaults.defaultKoreanIntl,",
+    ") {",
+    '  return formatMessage({ id: "shared.fixture.unrelatedParameter" });',
+    "}",
+    "const { formatMessage: unrelatedFm } = unrelatedIntl;",
+    "const unrelatedAlias = unrelatedFm;",
+    "export { unrelatedAlias };",
+    "let unrelatedAssigned;",
+    "({ formatMessage: unrelatedAssigned } = unrelatedIntl);",
+    'unrelatedAssigned({ id: "shared.fixture.unrelatedAssignment" });',
+    "const cycleA = cycleB;",
+    "const cycleB = cycleA;",
+    'cycleA({ id: "shared.fixture.unrelatedCycle" });',
+    "type TypeCycleA = TypeCycleB;",
+    "type TypeCycleB = TypeCycleA;",
+    "void unrelatedParameter;",
+  ].join("\n"));
+
+  assert.deepEqual(result.messageIds, []);
+  assert.deepEqual(result.violations, []);
+});
+
+test("양쪽 root를 가진 conditional intl·format const alias는 ID를 끝까지 수집한다", async () => {
+  const result = await auditFixture([
+    "export function copy(providedIntl, condition) {",
+    "  const leftIntl = withDefaultIntl(providedIntl);",
+    "  const rightIntl = withDefaultIntl(providedIntl);",
+    "  const intl = condition ? leftIntl : rightIntl;",
+    '  intl.formatMessage({ id: "shared.fixture.conditionalIntlMissing" });',
+    "  const { formatMessage: leftFormat } = leftIntl;",
+    "  const { formatMessage: rightFormat } = rightIntl;",
+    "  const format = condition ? leftFormat : rightFormat;",
+    '  return format({ id: "shared.fixture.conditionalFormatMissing" });',
+    "}",
+  ].join("\n"));
+
+  assert.deepEqual(result.messageIds, [
+    "shared.fixture.conditionalFormatMissing",
+    "shared.fixture.conditionalIntlMissing",
+  ]);
+  assert.match(result.violations.join("\n"), /missing_fallback:src\/feature\/consumer\.ts:shared\.fixture\.conditionalFormatMissing/);
+  assert.match(result.violations.join("\n"), /missing_fallback:src\/feature\/consumer\.ts:shared\.fixture\.conditionalIntlMissing/);
+});
+
+test("factory·intl object의 mutable·callback·export·container·property write를 fail-closed한다", async () => {
+  const result = await auditFixture([
+    'import type { IntlShape } from "react-intl";',
+    'import { defaultKoreanIntl } from "../i18n/defaultIntl.ts";',
+    "function consume(value) { return value; }",
+    "let mutableFactory = withDefaultIntl;",
+    "let mutableIntl = withDefaultIntl(undefined);",
+    "const stableIntl = withDefaultIntl(undefined);",
+    "consume(stableIntl);",
+    "export const exportedIntl = stableIntl;",
+    "const holder = { stableIntl, factory: withDefaultIntl, singleton: defaultKoreanIntl };",
+    "stableIntl.formatMessage = (descriptor) => descriptor.id;",
+    "export function parameterWrite(intl: IntlShape) {",
+    "  intl = defaultKoreanIntl;",
+    '  return intl.formatMessage({ id: "shared.fixture.parameterWrite" });',
+    "}",
+    "void mutableFactory;",
+    "void mutableIntl;",
+    "void holder;",
+  ].join("\n"));
+
+  const violations = result.violations.join("\n");
+  for (const marker of [
+    "mutableFactory",
+    "mutableIntl",
+    "consume(stableIntl)",
+    "exportedIntl",
+    "holder",
+    "stableIntl.formatMessage",
+    "parameterWrite",
+  ]) {
+    assert.match(violations, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")));
+  }
+});
+
+test("defaultIntl default import·export-all·unknown namespace member를 명시적으로 거부한다", async () => {
+  const result = await auditFixture([
+    'import defaultsDefault from "../i18n/defaultIntl.ts";',
+    'import * as defaults from "../i18n/defaultIntl.ts";',
+    'export * from "../i18n/defaultIntl.ts";',
+    "const dynamicKey = Math.random() > 0.5 ? \"withDefaultIntl\" : \"defaultKoreanIntl\";",
+    "void defaultsDefault;",
+    "void defaults[dynamicKey];",
+  ].join("\n"));
+
+  const violations = result.violations.join("\n");
+  assert.match(violations, /unsupported_format_message:src\/feature\/consumer\.ts:import defaultsDefault/);
+  assert.match(violations, /unsupported_format_message:src\/feature\/consumer\.ts:export \*/);
+  assert.match(violations, /unsupported_format_message:src\/feature\/consumer\.ts:defaults\[dynamicKey\]/);
 });
 
 test("trusted formatMessage reference의 callback·return·배열·객체 escape를 fail-closed한다", async () => {
