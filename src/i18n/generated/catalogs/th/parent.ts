@@ -494,7 +494,6 @@ const messages = {
   "parent.place.taekwondo": "เทควันโด",
   "parent.premiumUpsell.copy001": "ปิดคำแนะนำแบบพรีเมียม",
   "parent.premiumUpsell.copy002": "กำลังเปิดหน้าจอพรีเมียม...",
-  "parent.premiumUpsell.copy003": "เขียนต่อไปได้ฟรี",
   "parent.premiumUpsell.trialCta": "ลองใช้ {cta} ฟรี 7 วัน",
   "parent.referralRewardPanel.clipboardFailed": "คัดลอกไม่สำเร็จ · รหัส {code}",
   "parent.referralRewardPanel.clipboardUnsupported": "อุปกรณ์ไม่รองรับการคัดลอก · รหัส {code}",

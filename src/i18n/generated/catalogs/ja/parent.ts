@@ -494,7 +494,6 @@ const messages = {
   "parent.place.taekwondo": "テコンドー",
   "parent.premiumUpsell.copy001": "プレミアムガイドを閉じる",
   "parent.premiumUpsell.copy002": "プレミアム画面を開いています…",
-  "parent.premiumUpsell.copy003": "無料で書き続ける",
   "parent.premiumUpsell.trialCta": "{cta}を7日間無料で試す",
   "parent.referralRewardPanel.clipboardFailed": "コピーできませんでした · コード {code}",
   "parent.referralRewardPanel.clipboardUnsupported": "コピーに対応していません · コード {code}",

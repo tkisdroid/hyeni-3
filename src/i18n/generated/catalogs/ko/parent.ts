@@ -494,7 +494,6 @@ const messages = {
   "parent.place.taekwondo": "태권도",
   "parent.premiumUpsell.copy001": "프리미엄 안내 닫기",
   "parent.premiumUpsell.copy002": "프리미엄 화면 여는 중…",
-  "parent.premiumUpsell.copy003": "무료로 계속 쓰기",
   "parent.premiumUpsell.trialCta": "7일 무료로 {cta}",
   "parent.referralRewardPanel.clipboardFailed": "복사하지 못했어요 · 코드 {code}",
   "parent.referralRewardPanel.clipboardUnsupported": "복사를 지원하지 않아요 · 코드 {code}",

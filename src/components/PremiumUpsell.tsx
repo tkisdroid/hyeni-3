@@ -203,7 +203,7 @@ export function PremiumUpsell({
         <button
           type="button"
           className="pu-continue hy-press"
-          aria-label={intl.formatMessage({ id: "parent.premiumUpsell.copy003" })}
+          aria-label={content.continueLabel}
           onClick={() => {
             recordPremiumFunnelEvent({
               event: "paywall_continue_free",

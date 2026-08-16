@@ -4755,13 +4755,6 @@
     "variables": {},
     "description": "parent.premiumUpsell.copy002에 표시하는 사용자 안내 문구"
   },
-  "parent.premiumUpsell.copy003": {
-    "namespace": "parent",
-    "audience": "parent",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "parent.premiumUpsell.copy003에 표시하는 사용자 안내 문구"
-  },
   "parent.referralRewardPanel.copy001": {
     "namespace": "parent",
     "audience": "parent",

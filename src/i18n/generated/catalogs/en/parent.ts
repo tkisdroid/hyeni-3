@@ -494,7 +494,6 @@ const messages = {
   "parent.place.taekwondo": "taekwondo",
   "parent.premiumUpsell.copy001": "Close Premium Guide",
   "parent.premiumUpsell.copy002": "Opening premium screen...",
-  "parent.premiumUpsell.copy003": "Keep writing for free",
   "parent.premiumUpsell.trialCta": "Try {cta} free for 7 days",
   "parent.referralRewardPanel.clipboardFailed": "Could not copy · Code {code}",
   "parent.referralRewardPanel.clipboardUnsupported": "Copying is not supported · Code {code}",

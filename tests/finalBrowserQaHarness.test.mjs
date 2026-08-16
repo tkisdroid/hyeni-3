@@ -31,7 +31,7 @@ test("최종 브라우저 QA는 부모·아이 출시 화면과 핵심 전환 �
   assert.match(source, /월 4,900원/);
   assert.match(source, /연 39,000원/);
   assert.match(source, /결제 시작을 잠시 닫았어요/);
-  assert.match(source, /무료로 계속 쓰기/);
+  assert.match(source, /무료 플랜으로 계속 사용하기/);
   assert.match(source, /AI 일정 정리/);
   assert.match(source, /ai_schedule_limit/);
   assert.match(source, /daily_limit_reached/);

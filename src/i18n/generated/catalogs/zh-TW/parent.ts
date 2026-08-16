@@ -494,7 +494,6 @@ const messages = {
   "parent.place.taekwondo": "跆拳道",
   "parent.premiumUpsell.copy001": "關閉高級指南",
   "parent.premiumUpsell.copy002": "開啟高級螢幕...",
-  "parent.premiumUpsell.copy003": "繼續免費寫作",
   "parent.premiumUpsell.trialCta": "免費試用{cta} 7天",
   "parent.referralRewardPanel.clipboardFailed": "複製失敗 · 邀請碼 {code}",
   "parent.referralRewardPanel.clipboardUnsupported": "不支援複製 · 邀請碼 {code}",

@@ -10,7 +10,11 @@ import {
 } from "../src/transform/deviceNotificationHealth.ts";
 import { unlockCountLabel } from "../src/transform/deviceUnlock.ts";
 import * as eventScope from "../src/transform/eventScope.ts";
-import { resolvePremiumUpsell, type PremiumUpsellContent } from "../src/transform/premiumUpsell.ts";
+import {
+  resolvePremiumUpsell,
+  type PremiumUpsellContent,
+  type PremiumUpsellSource,
+} from "../src/transform/premiumUpsell.ts";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 const messages = JSON.parse(read("locales/en/parent.json"));
@@ -121,7 +125,7 @@ test("ParentCalendar 목록·시트·CTA는 같은 미배정 의미 helper를 �
   assert.doesNotMatch(calendar, /=== "배정 필요"/);
 });
 
-test("PremiumUpsell continueLabel은 모든 locale에서 글쓰기가 아닌 Free 플랜 계속 사용을 안내한다", () => {
+test("글쓰기와 무관한 모든 Premium source는 10개 locale의 Free 계속 사용 문구를 접근성 정본으로 공유한다", () => {
   const expected = {
     ko: "무료 플랜으로 계속 사용하기",
     en: "Continue with Free",
@@ -134,19 +138,48 @@ test("PremiumUpsell continueLabel은 모든 locale에서 글쓰기가 아닌 Fre
     ms: "Teruskan dengan pelan percuma",
     fil: "Magpatuloy sa libreng plano",
   } as const;
+  const sources: PremiumUpsellSource[] = [
+    "second_child",
+    "saved_place",
+    "danger_zone",
+    "location_request",
+    "location_history",
+    "location_live_interval",
+    "remote_ring",
+    "remote_audio",
+    "ai_friend_limit",
+    "ai_schedule_limit",
+    "ai_daily_summary",
+    "weekly_report",
+    "academy_schedule",
+    "first_location",
+    "first_arrival",
+  ];
   const values: string[] = [];
   for (const [locale, want] of Object.entries(expected)) {
     const localeMessages = JSON.parse(read(`locales/${locale}/parent.json`));
     const localeIntl = createIntl({ locale, messages: localeMessages }, createIntlCache()) as IntlShape;
-    const actual = resolvePremiumUpsell("remote_audio", undefined, localeIntl).continueLabel;
-    assert.equal(actual, want, locale);
-    assert.doesNotMatch(actual, /writing|write|写作|寫作|書|เขียน|menulis|viết|sumulat/i, `${locale}: 글쓰기 오역`);
-    values.push(actual);
+    for (const source of sources) {
+      const actual = resolvePremiumUpsell(source, undefined, localeIntl).continueLabel;
+      assert.equal(actual, want, `${locale}:${source}`);
+      assert.doesNotMatch(
+        actual,
+        /writing|write|写作|寫作|書|เขียน|menulis|viết|sumulat/i,
+        `${locale}:${source}: 글쓰기 오역`,
+      );
+    }
+    values.push(resolvePremiumUpsell("remote_audio", undefined, localeIntl).continueLabel);
   }
 
   const premiumUpsell = read("src/transform/premiumUpsell.ts");
+  const premiumUpsellComponent = read("src/components/PremiumUpsell.tsx");
   assert.match(premiumUpsell, /continueLabel:\s*string;/);
   assert.doesNotMatch(premiumUpsell, /as PremiumUpsellContent\["continueLabel"\]/);
+  assert.match(
+    premiumUpsellComponent,
+    /className="pu-continue hy-press"[\s\S]*?aria-label=\{content\.continueLabel\}/,
+    "10개 locale의 continueLabel이 실제 버튼 접근성 이름에도 사용돼야 합니다",
+  );
   const assignable: PremiumUpsellContent["continueLabel"] = "Continue with Free";
   assert.equal(assignable, values[1]);
 });
