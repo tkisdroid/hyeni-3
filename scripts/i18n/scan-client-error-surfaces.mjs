@@ -265,86 +265,162 @@ function callableReturnExpressions(callable) {
   return expressions;
 }
 
-function callableReturnsTainted(callable, tainted, model) {
-  return callableReturnExpressions(callable)
-    .some((expression) => expressionIsTainted(expression, tainted, model));
+function emptyAbstractValue() {
+  return { displayRaw: false, callables: new Set() };
 }
 
-function expressionIsTainted(node, tainted, model) {
-  if (!node) return false;
-  if (isRawPropertyAccess(node)) return true;
-  if (ts.isIdentifier(node)) {
-    const binding = model.resolve(node);
-    return binding !== null && (tainted.has(binding) || binding.errorSource === true);
+function rawAbstractValue() {
+  return { displayRaw: true, callables: new Set() };
+}
+
+function callableAbstractValue(callable) {
+  return { displayRaw: false, callables: new Set([callable]) };
+}
+
+function mergeAbstractValues(...values) {
+  const merged = emptyAbstractValue();
+  for (const value of values) {
+    if (!value) continue;
+    merged.displayRaw ||= value.displayRaw;
+    for (const callable of value.callables) merged.callables.add(callable);
   }
-  if (ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) {
-    return expressionIsTainted(node.expression, tainted, model);
+  return merged;
+}
+
+function abstractValueChanged(previous, next) {
+  if (previous.displayRaw !== next.displayRaw || previous.callables.size !== next.callables.size) {
+    return true;
   }
-  if (ts.isCallExpression(node)) {
-    if (ts.isIdentifier(node.expression) && model.isApprovedSanitizer(node.expression)) {
-      return false;
-    }
-    return node.arguments.some((argument) => expressionIsTainted(argument, tainted, model))
-      || (
-        ts.isIdentifier(node.expression)
-        && expressionIsTainted(node.expression, tainted, model)
-      )
-      || (
-        (ts.isPropertyAccessExpression(node.expression) || ts.isElementAccessExpression(node.expression))
-        && expressionIsTainted(node.expression.expression, tainted, model)
-      );
-  }
-  if (ts.isNewExpression(node)) {
-    return node.arguments?.some((argument) => expressionIsTainted(argument, tainted, model)) ?? false;
-  }
+  return [...next.callables].some((callable) => !previous.callables.has(callable));
+}
+
+function callableReturnValue(callable, bindingValues, model, activeCallables) {
+  if (activeCallables.has(callable)) return emptyAbstractValue();
+  const nextActive = new Set(activeCallables);
+  nextActive.add(callable);
+  return mergeAbstractValues(...callableReturnExpressions(callable)
+    .map((expression) => expressionAbstractValue(expression, bindingValues, model, nextActive)));
+}
+
+function transparentExpression(node) {
   if (
     ts.isParenthesizedExpression(node)
     || ts.isAsExpression(node)
     || ts.isTypeAssertionExpression(node)
     || ts.isNonNullExpression(node)
+    || ts.isSatisfiesExpression(node)
     || ts.isAwaitExpression(node)
   ) {
-    return expressionIsTainted(node.expression, tainted, model);
+    return node.expression;
+  }
+  return null;
+}
+
+function expressionAbstractValue(node, bindingValues, model, activeCallables = new Set()) {
+  if (!node) return emptyAbstractValue();
+  if (isRawPropertyAccess(node)) return rawAbstractValue();
+  if (ts.isIdentifier(node)) {
+    const binding = model.resolve(node);
+    if (!binding) return emptyAbstractValue();
+    return mergeAbstractValues(
+      bindingValues.get(binding),
+      binding.errorSource === true ? rawAbstractValue() : null,
+    );
+  }
+  if (ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) {
+    return expressionAbstractValue(node.expression, bindingValues, model, activeCallables);
+  }
+  if (ts.isCallExpression(node)) {
+    if (ts.isIdentifier(node.expression) && model.isApprovedSanitizer(node.expression)) {
+      return emptyAbstractValue();
+    }
+    const callee = expressionAbstractValue(node.expression, bindingValues, model, activeCallables);
+    const returned = mergeAbstractValues(...[...callee.callables]
+      .map((callable) => callableReturnValue(callable, bindingValues, model, activeCallables)));
+    const argumentsContainRaw = node.arguments.some((argument) => (
+      expressionAbstractValue(argument, bindingValues, model, activeCallables).displayRaw
+    ));
+    return mergeAbstractValues(
+      returned,
+      callee.displayRaw || argumentsContainRaw ? rawAbstractValue() : null,
+    );
+  }
+  if (ts.isNewExpression(node)) {
+    const argumentsContainRaw = node.arguments?.some((argument) => (
+      expressionAbstractValue(argument, bindingValues, model, activeCallables).displayRaw
+    )) ?? false;
+    return argumentsContainRaw ? rawAbstractValue() : emptyAbstractValue();
+  }
+  const transparent = transparentExpression(node);
+  if (transparent) {
+    return expressionAbstractValue(transparent, bindingValues, model, activeCallables);
   }
   if (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) {
-    return callableReturnsTainted(node, tainted, model);
+    return callableAbstractValue(node);
   }
   if (ts.isObjectLiteralExpression(node)) {
-    return node.properties.some((property) => {
-      if (ts.isPropertyAssignment(property)) return expressionIsTainted(property.initializer, tainted, model);
-      if (ts.isShorthandPropertyAssignment(property)) return expressionIsTainted(property.name, tainted, model);
-      if (ts.isSpreadAssignment(property)) return expressionIsTainted(property.expression, tainted, model);
-      if (ts.isMethodDeclaration(property)) return callableReturnsTainted(property, tainted, model);
-      return false;
-    });
+    return mergeAbstractValues(...node.properties.map((property) => {
+      if (ts.isPropertyAssignment(property)) {
+        return expressionAbstractValue(property.initializer, bindingValues, model, activeCallables);
+      }
+      if (ts.isShorthandPropertyAssignment(property)) {
+        return expressionAbstractValue(property.name, bindingValues, model, activeCallables);
+      }
+      if (ts.isSpreadAssignment(property)) {
+        return expressionAbstractValue(property.expression, bindingValues, model, activeCallables);
+      }
+      if (ts.isMethodDeclaration(property)) return callableAbstractValue(property);
+      return emptyAbstractValue();
+    }));
   }
   if (ts.isArrayLiteralExpression(node)) {
-    return node.elements.some((element) => expressionIsTainted(element, tainted, model));
+    return mergeAbstractValues(...node.elements.map((element) => (
+      expressionAbstractValue(element, bindingValues, model, activeCallables)
+    )));
   }
   if (ts.isTemplateExpression(node)) {
-    return node.templateSpans.some((span) => expressionIsTainted(span.expression, tainted, model));
+    const containsRaw = node.templateSpans.some((span) => (
+      expressionAbstractValue(span.expression, bindingValues, model, activeCallables).displayRaw
+    ));
+    return containsRaw ? rawAbstractValue() : emptyAbstractValue();
   }
   if (ts.isConditionalExpression(node)) {
-    return expressionIsTainted(node.whenTrue, tainted, model)
-      || expressionIsTainted(node.whenFalse, tainted, model);
+    return mergeAbstractValues(
+      expressionAbstractValue(node.whenTrue, bindingValues, model, activeCallables),
+      expressionAbstractValue(node.whenFalse, bindingValues, model, activeCallables),
+    );
   }
   if (ts.isBinaryExpression(node)) {
-    if (node.operatorToken.kind === ts.SyntaxKind.CommaToken) {
-      return expressionIsTainted(node.right, tainted, model);
+    const operator = node.operatorToken.kind;
+    if (operator === ts.SyntaxKind.CommaToken || operator === ts.SyntaxKind.EqualsToken) {
+      return expressionAbstractValue(node.right, bindingValues, model, activeCallables);
     }
-    if (node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken) {
-      return expressionIsTainted(node.right, tainted, model);
+    if (operator === ts.SyntaxKind.AmpersandAmpersandToken) {
+      return expressionAbstractValue(node.right, bindingValues, model, activeCallables);
     }
     if (
-      node.operatorToken.kind === ts.SyntaxKind.BarBarToken
-      || node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken
-      || node.operatorToken.kind === ts.SyntaxKind.PlusToken
+      operator === ts.SyntaxKind.BarBarToken
+      || operator === ts.SyntaxKind.QuestionQuestionToken
+      || operator === ts.SyntaxKind.AmpersandAmpersandEqualsToken
+      || operator === ts.SyntaxKind.BarBarEqualsToken
+      || operator === ts.SyntaxKind.QuestionQuestionEqualsToken
     ) {
-      return expressionIsTainted(node.left, tainted, model)
-        || expressionIsTainted(node.right, tainted, model);
+      return mergeAbstractValues(
+        expressionAbstractValue(node.left, bindingValues, model, activeCallables),
+        expressionAbstractValue(node.right, bindingValues, model, activeCallables),
+      );
+    }
+    if (operator === ts.SyntaxKind.PlusToken || operator === ts.SyntaxKind.PlusEqualsToken) {
+      const containsRaw = expressionAbstractValue(node.left, bindingValues, model, activeCallables).displayRaw
+        || expressionAbstractValue(node.right, bindingValues, model, activeCallables).displayRaw;
+      return containsRaw ? rawAbstractValue() : emptyAbstractValue();
     }
   }
-  return false;
+  return emptyAbstractValue();
+}
+
+function expressionIsTainted(node, bindingValues, model) {
+  return expressionAbstractValue(node, bindingValues, model).displayRaw;
 }
 
 function boundName(binding) {
@@ -375,10 +451,19 @@ function collectStateSetters(sourceFile, model) {
   return setters;
 }
 
-function rootIdentifierNode(node) {
+function accessChainRoot(node) {
   let current = node;
-  while (ts.isPropertyAccessExpression(current) || ts.isElementAccessExpression(current)) {
-    current = current.expression;
+  while (current) {
+    if (ts.isPropertyAccessExpression(current) || ts.isElementAccessExpression(current)) {
+      current = current.expression;
+      continue;
+    }
+    const transparent = transparentExpression(current);
+    if (transparent) {
+      current = transparent;
+      continue;
+    }
+    break;
   }
   return ts.isIdentifier(current) ? current : null;
 }
@@ -387,17 +472,12 @@ function assignmentTargetIdentifiers(node) {
   if (!node) return [];
   if (ts.isIdentifier(node)) return [node];
   if (ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) {
-    const root = rootIdentifierNode(node);
+    const root = accessChainRoot(node);
     return root ? [root] : [];
   }
-  if (
-    ts.isParenthesizedExpression(node)
-    || ts.isAsExpression(node)
-    || ts.isTypeAssertionExpression(node)
-    || ts.isNonNullExpression(node)
-    || ts.isSpreadElement(node)
-    || ts.isSpreadAssignment(node)
-  ) {
+  const transparent = transparentExpression(node);
+  if (transparent) return assignmentTargetIdentifiers(transparent);
+  if (ts.isSpreadElement(node) || ts.isSpreadAssignment(node)) {
     return assignmentTargetIdentifiers(node.expression);
   }
   if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
@@ -423,23 +503,29 @@ function assignmentTargetIdentifiers(node) {
   return [];
 }
 
-function collectTaintedBindings(sourceFile, stateSetters, model) {
-  const tainted = new Set();
+function collectBindingValues(sourceFile, stateSetters, model) {
+  const bindingValues = new Map();
   let changed = true;
   while (changed) {
     changed = false;
-    const add = (binding) => {
-      if (!binding || tainted.has(binding)) return;
-      tainted.add(binding);
+    const add = (binding, value) => {
+      if (!binding) return;
+      const previous = bindingValues.get(binding) ?? emptyAbstractValue();
+      const next = mergeAbstractValues(previous, value);
+      if (!abstractValueChanged(previous, next)) return;
+      bindingValues.set(binding, next);
       changed = true;
     };
     const visit = (node) => {
       if (ts.isVariableDeclaration(node)) {
-        if (ts.isIdentifier(node.name) && expressionIsTainted(node.initializer, tainted, model)) {
-          add(model.resolve(node.name));
+        const initializerValue = expressionAbstractValue(node.initializer, bindingValues, model);
+        if (ts.isIdentifier(node.name)) {
+          add(model.resolve(node.name), initializerValue);
         }
-        if (ts.isArrayBindingPattern(node.name) && expressionIsTainted(node.initializer, tainted, model)) {
-          for (const identifier of bindingIdentifiers(node.name)) add(model.resolve(identifier));
+        if (ts.isArrayBindingPattern(node.name) && (
+          initializerValue.displayRaw || initializerValue.callables.size > 0
+        )) {
+          for (const identifier of bindingIdentifiers(node.name)) add(model.resolve(identifier), initializerValue);
         }
         if (ts.isObjectBindingPattern(node.name)) {
           for (const element of node.name.elements) {
@@ -447,41 +533,46 @@ function collectTaintedBindings(sourceFile, stateSetters, model) {
             const propertyText = ts.isIdentifier(property) || ts.isStringLiteralLike(property)
               ? property.text
               : "";
-            if (RAW_PROPERTIES.has(propertyText) || expressionIsTainted(node.initializer, tainted, model)) {
-              add(model.resolve(boundName(element)));
+            if (RAW_PROPERTIES.has(propertyText)) {
+              add(model.resolve(boundName(element)), rawAbstractValue());
+            } else if (initializerValue.displayRaw || initializerValue.callables.size > 0) {
+              add(model.resolve(boundName(element)), initializerValue);
             }
           }
         }
       }
-      if (
-        ts.isFunctionDeclaration(node)
-        && node.name
-        && callableReturnsTainted(node, tainted, model)
-      ) {
-        add(model.resolve(node.name));
+      if (ts.isFunctionDeclaration(node) && node.name) {
+        add(model.resolve(node.name), callableAbstractValue(node));
       }
       if (
         ts.isBinaryExpression(node)
         && node.operatorToken.kind === ts.SyntaxKind.EqualsToken
-        && expressionIsTainted(node.right, tainted, model)
       ) {
-        for (const target of assignmentTargetIdentifiers(node.left)) add(model.resolve(target));
+        const rightValue = expressionAbstractValue(node.right, bindingValues, model);
+        if (rightValue.displayRaw || rightValue.callables.size > 0) {
+          for (const target of assignmentTargetIdentifiers(node.left)) {
+            add(model.resolve(target), rightValue);
+          }
+        }
       }
       if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
         const state = stateSetters.get(model.resolve(node.expression));
-        if (state && node.arguments.some((argument) => expressionIsTainted(argument, tainted, model))) {
-          add(state);
+        if (state) {
+          const argumentValue = mergeAbstractValues(...node.arguments.map((argument) => (
+            expressionAbstractValue(argument, bindingValues, model)
+          )));
+          if (argumentValue.displayRaw || argumentValue.callables.size > 0) add(state, argumentValue);
         }
       }
       node.forEachChild(visit);
     };
     visit(sourceFile);
   }
-  return tainted;
+  return bindingValues;
 }
 
 function rootIdentifier(node) {
-  return rootIdentifierNode(node)?.text ?? null;
+  return accessChainRoot(node)?.text ?? null;
 }
 
 function isDisplayCall(node) {
@@ -501,22 +592,22 @@ function isDisplayCall(node) {
     && MEMBER_SINK_METHODS.has(method);
 }
 
-function findingNodes(sourceFile, tainted, model) {
+function findingNodes(sourceFile, bindingValues, model) {
   const findings = [];
   const visit = (node) => {
-    if (ts.isJsxExpression(node) && expressionIsTainted(node.expression, tainted, model)) {
+    if (ts.isJsxExpression(node) && expressionIsTainted(node.expression, bindingValues, model)) {
       findings.push(node);
     } else if (
       ts.isCallExpression(node)
       && isDisplayCall(node)
-      && node.arguments.some((argument) => expressionIsTainted(argument, tainted, model))
+      && node.arguments.some((argument) => expressionIsTainted(argument, bindingValues, model))
     ) {
       findings.push(node);
     } else if (
       ts.isNewExpression(node)
       && ts.isIdentifier(node.expression)
       && node.expression.text === "Error"
-      && node.arguments?.some((argument) => expressionIsTainted(argument, tainted, model))
+      && node.arguments?.some((argument) => expressionIsTainted(argument, bindingValues, model))
     ) {
       findings.push(node);
     }
@@ -565,8 +656,8 @@ async function main() {
     );
     const model = createBindingModel(sourceFile, file);
     const stateSetters = collectStateSetters(sourceFile, model);
-    const tainted = collectTaintedBindings(sourceFile, stateSetters, model);
-    for (const node of findingNodes(sourceFile, tainted, model)) {
+    const bindingValues = collectBindingValues(sourceFile, stateSetters, model);
+    for (const node of findingNodes(sourceFile, bindingValues, model)) {
       const lineIndex = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line;
       const line = lines[lineIndex] ?? "";
       const snippet = findingSubject(node, sourceFile);

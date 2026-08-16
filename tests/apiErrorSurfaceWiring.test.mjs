@@ -12,6 +12,29 @@ function runScanner(root) {
   return spawnSync(process.execPath, [scanner, "--root", root], { encoding: "utf8" });
 }
 
+function rawErrorSurfaceRecords(stderr) {
+  return stderr
+    .split(/\r?\n/)
+    .map((line) => /^(.*):(\d+):raw_error_surface:(.*)$/.exec(line))
+    .filter((match) => match !== null)
+    .map((match) => ({
+      path: match[1],
+      line: Number(match[2]),
+      snippet: match[3],
+    }));
+}
+
+function assertRawErrorSurfaceLines(result, path, expectedLines, message) {
+  assert.notEqual(result.status, 0, message);
+  const records = rawErrorSurfaceRecords(result.stderr);
+  assert.equal(records.length, expectedLines.length, message);
+  assert.deepEqual(
+    records.map((record) => ({ path: record.path, line: record.line })),
+    expectedLines.map((line) => ({ path, line })),
+    message,
+  );
+}
+
 test("오류 surface scanner는 JSX·toast·dialog의 원문 노출을 파일과 행으로 보고한다", () => {
   const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
   try {
@@ -25,11 +48,7 @@ test("오류 surface scanner는 JSX·toast·dialog의 원문 노출을 파일과
       "}",
     ].join("\n"));
     const result = runScanner(root);
-    assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /src\/Unsafe\.tsx:2/);
-    assert.match(result.stderr, /src\/Unsafe\.tsx:3/);
-    assert.match(result.stderr, /src\/Unsafe\.tsx:4/);
-    assert.match(result.stderr, /src\/Unsafe\.tsx:5/);
+    assertRawErrorSurfaceLines(result, "src/Unsafe.tsx", [2, 3, 4, 5]);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -127,6 +146,33 @@ for (const fixture of [
     sinkLines: [6, 7],
   },
   {
+    name: "as wrapper receiver의 property target 뒤 렌더",
+    lines: [
+      "const view = { text: '' };",
+      "(view as { text: string }).text = failure.message;",
+      "return <p>{view.text}</p>;",
+    ],
+    sinkLine: 4,
+  },
+  {
+    name: "as wrapper receiver의 element target 뒤 렌더",
+    lines: [
+      "const holder = { text: '' };",
+      "(holder as Record<string, string>)['text'] = failure.message;",
+      "return <p>{holder['text']}</p>;",
+    ],
+    sinkLine: 4,
+  },
+  {
+    name: "non-null receiver의 property target 뒤 렌더",
+    lines: [
+      "const view = { text: '' };",
+      "view!.text = failure.message;",
+      "return <p>{view.text}</p>;",
+    ],
+    sinkLine: 4,
+  },
+  {
     name: "원문을 반환하는 zero-arg wrapper를 렌더",
     lines: ["const getText = () => failure.message;", "return <p>{getText()}</p>;"],
     sinkLine: 3,
@@ -145,6 +191,26 @@ for (const fixture of [
     name: "원문을 반환하는 FunctionDeclaration zero-arg wrapper를 렌더",
     lines: ["function getText() { return failure.message; }", "return <p>{getText()}</p>;"],
     sinkLine: 3,
+  },
+  {
+    name: "parenthesized arrow IIFE의 반환값을 렌더",
+    lines: ["return <p>{(() => failure.message)()}</p>;"],
+    sinkLine: 2,
+  },
+  {
+    name: "parenthesized FunctionExpression IIFE의 반환값을 렌더",
+    lines: ["return <p>{(function () { return failure.message; })()}</p>;"],
+    sinkLine: 2,
+  },
+  {
+    name: "as wrapper arrow IIFE의 반환값을 렌더",
+    lines: ["return <p>{((() => failure.message) as () => string)()}</p>;"],
+    sinkLine: 2,
+  },
+  {
+    name: "non-null wrapper arrow IIFE의 반환값을 렌더",
+    lines: ["return <p>{((() => failure.message)!)()}</p>;"],
+    sinkLine: 2,
   },
   {
     name: "원문 callable의 property-access method 반환을 렌더",
@@ -176,6 +242,36 @@ for (const fixture of [
     lines: ["toast.error(failure.message);"],
     sinkLine: 2,
   },
+  {
+    name: "simple assignment expression 결과를 JSX에 렌더",
+    lines: ["let text = '';", "return <p>{(text = failure.message)}</p>;"],
+    sinkLine: 3,
+  },
+  {
+    name: "simple assignment expression 결과를 display sink에 전달",
+    lines: ["let text = '';", "show(text = failure.message);"],
+    sinkLine: 3,
+  },
+  {
+    name: "문자열 compound assignment 결과를 JSX에 렌더",
+    lines: ["let text = '';", "return <p>{(text += failure.message)}</p>;"],
+    sinkLine: 3,
+  },
+  {
+    name: "AND compound assignment 결과를 JSX에 렌더",
+    lines: ["let text = '기존';", "return <p>{(text &&= failure.message)}</p>;"],
+    sinkLine: 3,
+  },
+  {
+    name: "OR compound assignment 결과를 JSX에 렌더",
+    lines: ["let text = '';", "return <p>{(text ||= failure.message)}</p>;"],
+    sinkLine: 3,
+  },
+  {
+    name: "nullish compound assignment 결과를 JSX에 렌더",
+    lines: ["let text = null;", "return <p>{(text ??= failure.message)}</p>;"],
+    sinkLine: 3,
+  },
 ]) {
   test(`오류 surface scanner는 ${fixture.name}하는 우회를 보고한다`, () => {
     const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
@@ -187,10 +283,12 @@ for (const fixture of [
         "}",
       ].join("\n"));
       const result = runScanner(root);
-      assert.notEqual(result.status, 0, fixture.name);
-      for (const sinkLine of fixture.sinkLines ?? [fixture.sinkLine]) {
-        assert.match(result.stderr, new RegExp(`src/Aliased\\.tsx:${sinkLine}`), fixture.name);
-      }
+      assertRawErrorSurfaceLines(
+        result,
+        "src/Aliased.tsx",
+        fixture.sinkLines ?? [fixture.sinkLine],
+        fixture.name,
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -230,6 +328,44 @@ test("바깥 callable은 중첩 함수의 raw return을 자신의 반환으로 �
     ].join("\n"));
     const result = runScanner(root);
     assert.equal(result.status, 0, result.stderr || result.stdout);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("raw 값을 반환하는 함수 객체를 반환해도 함수 이름 표시는 오류 원문이 아니다", () => {
+  const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
+  try {
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src", "CallableName.tsx"), [
+      "export function CallableName({ failure }) {",
+      "  function makeReader() {",
+      "    return function read() { return failure.message; };",
+      "  }",
+      "  return <p>{makeReader().name}</p>;",
+      "}",
+    ].join("\n"));
+    const result = runScanner(root);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("바깥 callable은 중첩 IIFE의 실제 raw 반환값을 직접 반환으로 전파한다", () => {
+  const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
+  try {
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src", "NestedIife.tsx"), [
+      "export function NestedIife({ failure }) {",
+      "  function getText() {",
+      "    return (() => failure.message)();",
+      "  }",
+      "  return <p>{getText()}</p>;",
+      "}",
+    ].join("\n"));
+    const result = runScanner(root);
+    assertRawErrorSurfaceLines(result, "src/NestedIife.tsx", [5]);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -446,6 +582,23 @@ test("comma sequence는 실제 반환되는 오른쪽 operand만 오류 표면 t
     writeFileSync(join(root, "src", "CommaResult.tsx"), [
       "export function CommaResult({ failure }) {",
       "  return <p>{(failure.message, '고정 문구')}</p>;",
+      "}",
+    ].join("\n"));
+    const result = runScanner(root);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("비교와 산술 assignment 결과는 오류 원문 문자열로 broad-taint하지 않는다", () => {
+  const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
+  try {
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src", "BooleanResult.tsx"), [
+      "export function BooleanResult({ failure }) {",
+      "  let count = 1;",
+      "  return <>{failure.message === 'known'}{(count -= failure.message)}</>;",
       "}",
     ].join("\n"));
     const result = runScanner(root);
