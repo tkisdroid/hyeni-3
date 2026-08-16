@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { createIntl, createIntlCache } from "react-intl";
+import { localizedBrandName } from "../src/i18n/locale.ts";
 
 const readCatalog = (locale, namespace) => JSON.parse(readFileSync(
   new URL(`../locales/${locale}/${namespace}.json`, import.meta.url),
@@ -154,6 +155,76 @@ test("부모 홈 일정 수와 반복 수정 안내는 count를 포함한 완전
   for (const locale of allLocales) {
     assert.equal(formatParent(locale, "parent.home.todayEventCount", { count: 3 }), expectedCount[locale], locale);
     assert.equal(formatParent(locale, "parent.eventForm.repeatFutureNotice", { count: 3 }), expectedRepeat[locale], locale);
+  }
+});
+
+test("폐기한 일정 문장 조각과 동물 오역은 정본·설명·생성 inventory에 남지 않는다", () => {
+  const removedIds = [
+    "parent.parentHome.copy013",
+    "parent.eventForm.copy068",
+    "parent.eventForm.copy069",
+  ];
+  const descriptions = JSON.parse(readFileSync(new URL("../locales/descriptions.json", import.meta.url), "utf8"));
+  const messageIds = readFileSync(new URL("../src/i18n/generated/messageIds.ts", import.meta.url), "utf8");
+  const animalPollution = /\bdog\b|犬|狗|\bchó\b|สุนัข|\banjing\b|\baso\b/i;
+
+  for (const locale of allLocales) {
+    const source = readCatalog(locale, "parent");
+    const generated = readFileSync(new URL(`../src/i18n/generated/catalogs/${locale}/parent.ts`, import.meta.url), "utf8");
+    for (const id of removedIds) {
+      assert.equal(Object.hasOwn(source, id), false, `${locale}:${id}: locale 정본에서 제거`);
+      assert.doesNotMatch(generated, new RegExp(id.replaceAll(".", "\\.")), `${locale}:${id}: 생성 catalog에서 제거`);
+    }
+    assert.doesNotMatch(JSON.stringify(source), animalPollution, `${locale}: locale 정본 동물 오역`);
+    assert.doesNotMatch(generated, animalPollution, `${locale}: 생성 catalog 동물 오역`);
+  }
+  for (const id of removedIds) {
+    assert.equal(Object.hasOwn(descriptions, id), false, `${id}: descriptions에서 제거`);
+    assert.doesNotMatch(messageIds, new RegExp(id.replaceAll(".", "\\.")), `${id}: message inventory에서 제거`);
+  }
+});
+
+test("영어 반복 일정 안내는 0·1·2·3 경계에서 문장 전체의 수와 문법을 맞춘다", () => {
+  const expected = {
+    0: "There are 0 future events in this series. Choose which events to update.",
+    1: "There is 1 future event in this series. Choose which event to update.",
+    2: "There are 2 future events in this series. Choose which events to update.",
+    3: "There are 3 future events in this series. Choose which events to update.",
+  };
+  for (const [count, sentence] of Object.entries(expected)) {
+    assert.equal(formatParent("en", "parent.eventForm.repeatFutureNotice", { count: Number(count) }), sentence);
+  }
+});
+
+test("반복 일정 안내는 10개 locale에서 count placeholder와 실제 숫자를 보존한다", () => {
+  for (const locale of allLocales) {
+    const source = readCatalog(locale, "parent")["parent.eventForm.repeatFutureNotice"];
+    assert.match(source, /\{count(?:,|\})/, `${locale}: count placeholder`);
+    for (const count of [0, 1, 2, 3]) {
+      const sentence = formatParent(locale, "parent.eventForm.repeatFutureNotice", { count });
+      assert.match(sentence, new RegExp(String(count)), `${locale}:${count}: 숫자 보존`);
+      assert.doesNotMatch(sentence, /\{count|\}/, `${locale}:${count}: ICU 잔재`);
+      assert.ok(sentence.trim().length > String(count).length + 12, `${locale}:${count}: 완전한 안내 문장`);
+    }
+  }
+});
+
+test("비한국어 referral과 위치 서비스 문구는 공통 브랜드 정본을 그대로 쓴다", () => {
+  const brandMessageIds = [
+    "parent.settings.version",
+    "parent.parentHome.copy046",
+    "parent.parentSettings.copy025",
+    "parent.referralRewardPanel.copy004",
+    "parent.referralRewardPanel.shareBody",
+    "parent.device.location.serviceStoppedDetail",
+  ];
+  for (const locale of foreignLocales) {
+    const brand = localizedBrandName(locale);
+    assert.equal(brand, "Hyeni Calendar", `${locale}: 공통 브랜드 정본`);
+    const parent = readCatalog(locale, "parent");
+    for (const id of brandMessageIds) {
+      assert.match(parent[id], new RegExp(brand), `${locale}:${id}`);
+    }
   }
 });
 

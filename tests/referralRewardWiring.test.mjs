@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createIntl, createIntlCache } from "react-intl";
+import { localizedBrandName } from "../src/i18n/locale.ts";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -62,24 +63,13 @@ test("추천 화면은 양측 10회·평생 3가족·72시간·48시간 유지 �
 test("추천 공유 payload는 실제 locale 메시지를 {link}와 함께 문장 전체로 포맷한다", () => {
   const panel = read("src/components/ReferralRewardPanel.tsx");
   const link = "https://hyeni-calendar.pages.dev/#/onboarding?ref=FAMILY10";
-  const expectedLead = {
-    ko: /^혜니캘린더에서/,
-    en: /^Start protecting your family together with Hyeni Calendar\./,
-    ja: /^Hyeniカレンダーで/,
-    "zh-CN": /^通过Hyeni日历/,
-    "zh-TW": /^透過Hyeni日曆/,
-    vi: /^Cùng bắt đầu bảo vệ gia đình với Hyeni Calendar\./,
-    th: /^เริ่มดูแลความปลอดภัยของครอบครัวไปด้วยกันกับ Hyeni Calendar/,
-    id: /^Mulai jaga keamanan keluarga bersama Hyeni Calendar\./,
-    ms: /^Mulakan penjagaan keselamatan keluarga bersama Hyeni Calendar\./,
-    fil: /^Simulan ang pagprotekta sa pamilya kasama ang Hyeni Calendar\./,
-  };
+  const locales = ["ko", "en", "ja", "zh-CN", "zh-TW", "vi", "th", "id", "ms", "fil"];
 
   assert.match(panel, /id: "parent\.referralRewardPanel\.shareBody"/);
   assert.match(panel, /\{\s*link\s*:/);
   assert.doesNotMatch(panel, /`혜니캘린더에서/);
 
-  for (const [locale, lead] of Object.entries(expectedLead)) {
+  for (const locale of locales) {
     const messages = JSON.parse(read(`locales/${locale}/parent.json`));
     assert.equal(typeof messages["parent.referralRewardPanel.shareBody"], "string", `${locale}: 공유 본문 키 누락`);
     const intl = createIntl({ locale, messages }, createIntlCache());
@@ -87,7 +77,8 @@ test("추천 공유 payload는 실제 locale 메시지를 {link}와 함께 문�
       { id: "parent.referralRewardPanel.shareBody" },
       { link },
     );
-    assert.match(payload, lead, `${locale}: 공유 본문 시작 의미`);
+    const brand = localizedBrandName(locale);
+    assert.equal(payload.split(brand).length - 1, 1, `${locale}: 공통 브랜드 정본은 정확히 한 번`);
     assert.equal(payload.split(link).length - 1, 1, `${locale}: 링크는 정확히 한 번`);
     assert.match(payload, /3/);
     assert.match(payload, /48/);

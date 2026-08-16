@@ -62,6 +62,48 @@ const catalogAwareContainers = new Set([
   "FormattedMessage",
 ]);
 
+const userFacingJsxAttributes = new Set([
+  "aria-label",
+  "alt",
+  "description",
+  "heading",
+  "label",
+  "placeholder",
+  "retryLabel",
+  "screenTitle",
+  "title",
+]);
+
+const userFacingPropertyNames = new Set([
+  "badge",
+  "description",
+  "detail",
+  "empty",
+  "eyebrow",
+  "label",
+  "message",
+  "placeholder",
+  "subtitle",
+  "text",
+  "title",
+]);
+
+// locale-neutral 사용자 표면만 파일+AST 문맥+값으로 좁게 허용한다. 각 예외는 실제 사용자 의미를 설명한다.
+const literalAllowlist = [
+  {
+    path: "src/components/MessageSafetyDialog.tsx",
+    context: "jsx-text",
+    value: "/500",
+    reason: "상세 신고 입력의 고정 최대 글자 수를 현재 길이 뒤에 표시하는 locale-neutral 카운터입니다.",
+  },
+  ...["Wi-Fi", "2G", "3G", "4G", "5G"].map((value) => ({
+    path: "src/transform/familyView.ts",
+    context: "return:networkTypeLabel",
+    value,
+    reason: "Android 기기 보고의 국제 표준 네트워크 세대 표기이며 번역하지 않습니다.",
+  })),
+];
+
 function sourceFile(path) {
   const source = readFileSync(resolve(rootDir, path), "utf8");
   return {
@@ -94,82 +136,146 @@ function insideCatalogCall(node) {
   return false;
 }
 
-function userFacingLiteral(node, text) {
-  if (!/[가-힣]/.test(text) || insideCatalogCall(node)) return null;
-
-  // 템플릿은 변수 선언·toast·aria 어디에 있든 번역 누락이 되기 쉬워 모두 사용자 문구로 본다.
-  if (ts.isTemplateExpression(node) || ts.isNoSubstitutionTemplateLiteral(node)) return text;
-
-  if (ts.isJsxText(node)) return text;
-  const parent = node.parent;
-  if (ts.isJsxAttribute(parent)) {
-    return [
-      "aria-label",
-      "alt",
-      "description",
-      "heading",
-      "label",
-      "placeholder",
-      "retryLabel",
-      "screenTitle",
-      "title",
-    ].includes(parent.name.getText())
-      ? text
-      : null;
-  }
-  if (ts.isCallExpression(parent)) {
-    const callee = parent.expression.getText();
-    if (/^(?:show|setError|alert|confirm)$/.test(callee)) return text;
-  }
-  if (ts.isPropertyAssignment(parent) && ts.isIdentifier(parent.name)) {
-    if (/^(?:badge|description|detail|empty|eyebrow|label|message|placeholder|subtitle|title)$/.test(parent.name.text)) {
-      return text;
+function enclosingFunctionName(node) {
+  let current = node.parent;
+  while (current) {
+    if (ts.isFunctionDeclaration(current) && current.name) return current.name.text;
+    if (
+      (ts.isArrowFunction(current) || ts.isFunctionExpression(current))
+      && ts.isVariableDeclaration(current.parent)
+      && ts.isIdentifier(current.parent.name)
+    ) {
+      return current.parent.name.text;
     }
-  }
-  if (
-    ts.isConditionalExpression(parent)
-    || ts.isReturnStatement(parent)
-    || (ts.isBinaryExpression(parent) && [
-      ts.SyntaxKind.BarBarToken,
-      ts.SyntaxKind.QuestionQuestionToken,
-      ts.SyntaxKind.PlusToken,
-    ].includes(parent.operatorToken.kind))
-    || ts.isTemplateExpression(parent)
-  ) {
-    return text;
+    current = current.parent;
   }
   return null;
 }
 
-function firstLiteralViolation(path) {
-  const { source, file } = sourceFile(path);
-  let violation = null;
+function userFacingContext(node, text) {
+  if (insideCatalogCall(node) || !/[\p{L}\p{N}]/u.test(text)) return null;
+  if (/^(?:parent|shared|notifications)\.[A-Za-z0-9_.${}-]+$/.test(text)) return null;
+
+  if (ts.isJsxText(node)) return "jsx-text";
+  const parent = node.parent;
+  if (ts.isJsxAttribute(parent)) {
+    const name = parent.name.getText();
+    return userFacingJsxAttributes.has(name) ? `jsx-attribute:${name}` : null;
+  }
+  if (ts.isCallExpression(parent)) {
+    const callee = parent.expression.getText();
+    if (/^(?:show|setError|alert|confirm)$/.test(callee) && parent.arguments[0] === node) {
+      return `call:${callee}:argument:0`;
+    }
+  }
+  if (ts.isPropertyAssignment(parent)) {
+    const name = ts.isIdentifier(parent.name) || ts.isStringLiteral(parent.name) ? parent.name.text : null;
+    if (name && userFacingPropertyNames.has(name)) {
+      return `property:${name}`;
+    }
+  }
+  if (ts.isVariableDeclaration(parent) && ts.isIdentifier(parent.name)) {
+    if (/(?:label|message|placeholder|subtitle|text|title)$/i.test(parent.name.text)) {
+      return `variable:${parent.name.text}`;
+    }
+  }
+  const functionName = enclosingFunctionName(node);
+  if (functionName && /(?:label|copy|description|message|placeholder|text|title|view)$/i.test(functionName)) {
+    let current = node;
+    let eligible = true;
+    while (current.parent && !ts.isReturnStatement(current.parent)) {
+      current = current.parent;
+      if (
+        ts.isCallExpression(current)
+        || ts.isPropertyAssignment(current)
+        || (ts.isBinaryExpression(current) && ![
+          ts.SyntaxKind.BarBarToken,
+          ts.SyntaxKind.QuestionQuestionToken,
+          ts.SyntaxKind.PlusToken,
+        ].includes(current.operatorToken.kind))
+      ) {
+        eligible = false;
+        break;
+      }
+    }
+    if (eligible && current.parent && ts.isReturnStatement(current.parent)) return `return:${functionName}`;
+  }
+  return null;
+}
+
+function allowlistedLiteral(path, context, text) {
+  return literalAllowlist.find((entry) => (
+    entry.path === path && entry.context === context && entry.value === text
+  )) ?? null;
+}
+
+function literalCandidatesFromSource(path, source) {
+  const file = ts.createSourceFile(
+    path,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    path.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+  );
+  const candidates = [];
   const visit = (node) => {
-    if (violation) return;
     if (ts.isTemplateExpression(node)) {
       const text = [node.head.text, ...node.templateSpans.map((span) => span.literal.text)]
         .join(" ")
         .trim();
-      const exposed = userFacingLiteral(node, text);
-      if (exposed) {
+      const context = userFacingContext(node, text);
+      if (context) {
         const line = file.getLineAndCharacterOfPosition(node.getStart(file)).line + 1;
-        violation = `${path}:${line}: ${exposed.replace(/\s+/g, " ")}`;
-        return;
+        candidates.push({ path, line, context, text });
       }
     } else if (ts.isStringLiteralLike(node) || ts.isJsxText(node)) {
       const text = ts.isJsxText(node) ? node.text.trim() : node.text;
-      const exposed = userFacingLiteral(node, text);
-      if (exposed) {
+      const context = userFacingContext(node, text);
+      if (context) {
         const line = file.getLineAndCharacterOfPosition(node.getStart(file)).line + 1;
-        violation = `${path}:${line}: ${exposed.replace(/\s+/g, " ")}`;
-        return;
+        candidates.push({ path, line, context, text });
       }
     }
     ts.forEachChild(node, visit);
   };
   visit(file);
-  return { source, violation };
+  return candidates;
 }
+
+function firstLiteralViolationFromSource(path, source) {
+  const violation = literalCandidatesFromSource(path, source)
+    .find(({ context, text }) => !allowlistedLiteral(path, context, text));
+  return violation
+    ? `${path}:${violation.line} [${violation.context}]: ${violation.text.replace(/\s+/g, " ")}`
+    : null;
+}
+
+function firstLiteralViolation(path) {
+  const { source } = sourceFile(path);
+  return { source, violation: firstLiteralViolationFromSource(path, source) };
+}
+
+test("사용자 노출 AST 문맥은 한글이 없어도 영어와 숫자-only literal을 탐지한다", () => {
+  assert.match(
+    firstLiteralViolationFromSource("fixture.tsx", 'export const View = () => <button aria-label="Open details" />;') ?? "",
+    /Open details/,
+  );
+  assert.match(
+    firstLiteralViolationFromSource("fixture.tsx", 'export const View = () => <input placeholder="010-0000-0000" />;') ?? "",
+    /010-0000-0000/,
+  );
+});
+
+test("사용자 literal exact allowlist는 파일·문맥·값·근거가 모두 있고 실제 사용된다", () => {
+  for (const entry of literalAllowlist) {
+    assert.ok(entry.reason.length >= 12, `${entry.path}:${entry.value}: 예외 근거가 필요합니다`);
+    const source = sourceFile(entry.path).source;
+    const used = literalCandidatesFromSource(entry.path, source).some((candidate) => (
+      candidate.context === entry.context && candidate.text === entry.value
+    ));
+    assert.equal(used, true, `${entry.path} [${entry.context}] ${entry.value}: 미사용 allowlist`);
+  }
+});
 
 test("Task 7의 10개 화면·5개 컴포넌트·12개 transform·전이 formatter는 사용자 문구를 카탈로그로 이관한다", () => {
   const failures = [];
@@ -181,6 +287,19 @@ test("Task 7의 10개 화면·5개 컴포넌트·12개 transform·전이 formatt
     if (violation) failures.push(violation);
   }
   assert.deepEqual(failures, []);
+});
+
+test("부모 계정 전화번호 placeholder는 locale catalog를 사용한다", () => {
+  const account = sourceFile("src/screens/parent/ParentAccount.tsx").source;
+  assert.match(account, /placeholder=\{intl\.formatMessage\(\{ id: "parent\.parentAccount\.phonePlaceholder" \}\)\}/);
+  for (const locale of ["ko", "en", "ja", "zh-CN", "zh-TW", "vi", "th", "id", "ms", "fil"]) {
+    const parent = JSON.parse(readFileSync(resolve(rootDir, `locales/${locale}/parent.json`), "utf8"));
+    assert.equal(
+      parent["parent.parentAccount.phonePlaceholder"],
+      locale === "ko" ? "010-0000-0000" : "+00 000 000 0000",
+      `${locale}: 전화번호 placeholder`,
+    );
+  }
 });
 
 test("부모·공용 문구 namespace는 10개 locale에서 같은 비어 있지 않은 ID를 제공한다", () => {

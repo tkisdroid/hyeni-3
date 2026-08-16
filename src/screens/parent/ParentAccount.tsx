@@ -276,7 +276,7 @@ export function ParentAccount() {
                 className="pa-input"
                 value={phone}
                 onChange={(e) => setPhone(formatPhoneDisplay(e.target.value))}
-                placeholder="010-0000-0000"
+                placeholder={intl.formatMessage({ id: "parent.parentAccount.phonePlaceholder" })}
                 inputMode="tel"
                 disabled={isLoading}
               />

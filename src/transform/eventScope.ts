@@ -21,6 +21,10 @@ export function eventIsFamilyShared(event: CalendarEvent): boolean {
   return event.is_family_event === true;
 }
 
+export function eventNeedsChildAssignment(event: CalendarEvent): boolean {
+  return !eventIsFamilyShared(event) && eventChildMemberIds(event).length === 0;
+}
+
 export function eventAppliesToChild(
   event: CalendarEvent,
   childMemberId: string | null | undefined,
@@ -41,7 +45,7 @@ export function filterEventsForChild<T extends CalendarEvent>(
 export function eventScopeLabel(event: CalendarEvent, providedIntl?: IntlShape): string {
   const intl = withDefaultIntl(providedIntl);
   if (eventIsFamilyShared(event)) return intl.formatMessage({ id: "parent.eventScope.family" });
-  return eventChildMemberIds(event).length === 0
+  return eventNeedsChildAssignment(event)
     ? intl.formatMessage({ id: "parent.eventScope.assignmentRequired" })
     : "";
 }

@@ -27,7 +27,7 @@ export interface PremiumUpsellContent {
   premiumValue: string;
   usageLabel: string | null;
   ctaLabel: string;
-  continueLabel: "무료로 계속 쓰기";
+  continueLabel: string;
 }
 
 export interface PremiumUpsellUsage {
@@ -76,6 +76,6 @@ export function resolvePremiumUpsell(
         ? intl.formatMessage({ id: `parent.upsell.${source}.usageLabel` })
         : null,
     ctaLabel: intl.formatMessage({ id: `parent.upsell.${source}.ctaLabel` }),
-    continueLabel: intl.formatMessage({ id: "parent.upsell.continue" }) as PremiumUpsellContent["continueLabel"],
+    continueLabel: intl.formatMessage({ id: "parent.upsell.continue" }),
   };
 }

@@ -9,6 +9,8 @@ import {
   deviceNotificationHealthView,
 } from "../src/transform/deviceNotificationHealth.ts";
 import { unlockCountLabel } from "../src/transform/deviceUnlock.ts";
+import * as eventScope from "../src/transform/eventScope.ts";
+import { resolvePremiumUpsell, type PremiumUpsellContent } from "../src/transform/premiumUpsell.ts";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 const messages = JSON.parse(read("locales/en/parent.json"));
@@ -90,10 +92,49 @@ test("MemoChat은 가족 데이터가 같아도 intl만 바뀌면 이름·상대
   assert.match(memo, /const savePreviewPhoto = useCallback\([\s\S]*?\}, \[intl, isChildSession, previewImageUrl, savingPhoto, show\]\);/);
 });
 
-test("ParentCalendar은 현재 intl을 일정 view에 전달하고 미배정 경고를 의미 데이터로 판정한다", () => {
+test("가족 공유와 자녀 연결 상태는 공용 helper에서 미배정 의미를 정확히 판정한다", () => {
+  const event = (isFamily: boolean, childIds: string[]) => ({
+    id: crypto.randomUUID(),
+    family_id: "family-1",
+    title: "일정",
+    date_key: "2026-7-16",
+    start_time: "09:00",
+    end_time: "10:00",
+    is_family_event: isFamily,
+    events_children: childIds.map((child_id) => ({ child_id })),
+  });
+  const needsAssignment = (eventScope as typeof eventScope & {
+    eventNeedsChildAssignment?: (value: ReturnType<typeof event>) => boolean;
+  }).eventNeedsChildAssignment;
+
+  assert.equal(typeof needsAssignment, "function", "공용 미배정 의미 helper가 필요합니다");
+  assert.equal(needsAssignment?.(event(true, [])), false, "가족 공유 일정은 자녀 link가 없어도 정상입니다");
+  assert.equal(needsAssignment?.(event(false, [])), true, "비공유 일정에 자녀 link가 없으면 미배정입니다");
+  assert.equal(needsAssignment?.(event(false, ["child-member-1"])), false, "자녀 link가 있으면 배정 완료입니다");
+});
+
+test("ParentCalendar 목록·시트·CTA는 같은 미배정 의미 helper를 사용한다", () => {
   const calendar = read("src/screens/parent/ParentCalendar.tsx");
   assert.match(calendar, /eventToView\([\s\S]*?savedPlaces,\s*intl,\s*\)/);
-  assert.match(calendar, /const sheetNeedsAssignment = sheetEvent \? eventChildMemberIds\(sheetEvent\)\.length === 0 : false/);
-  assert.match(calendar, /const childWarn = raw \? eventChildMemberIds\(raw\)\.length === 0 : false/);
+  assert.match(calendar, /eventNeedsChildAssignment\(sheetEvent\)/);
+  assert.match(calendar, /eventNeedsChildAssignment\(raw\)/);
   assert.doesNotMatch(calendar, /=== "배정 필요"/);
+});
+
+test("PremiumUpsell continueLabel은 locale 결과를 보존하는 일반 string 계약이다", () => {
+  const koMessages = JSON.parse(read("locales/ko/parent.json"));
+  const enMessages = JSON.parse(read("locales/en/parent.json"));
+  const koIntl = createIntl({ locale: "ko", messages: koMessages }, createIntlCache()) as IntlShape;
+  const enIntl = createIntl({ locale: "en", messages: enMessages }, createIntlCache()) as IntlShape;
+  const values: string[] = [
+    resolvePremiumUpsell("remote_audio", undefined, koIntl).continueLabel,
+    resolvePremiumUpsell("remote_audio", undefined, enIntl).continueLabel,
+  ];
+  assert.deepEqual(values, ["무료로 계속 쓰기", "Keep writing for free"]);
+
+  const premiumUpsell = read("src/transform/premiumUpsell.ts");
+  assert.match(premiumUpsell, /continueLabel:\s*string;/);
+  assert.doesNotMatch(premiumUpsell, /as PremiumUpsellContent\["continueLabel"\]/);
+  const assignable: PremiumUpsellContent["continueLabel"] = "Keep writing for free";
+  assert.equal(assignable, values[1]);
 });

@@ -15,7 +15,7 @@ import { useVisitVerify } from "@/queries/useVisitVerify";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { dateTimeScopeInTimeZone, parseAppDateKey, ymdToDateKey } from "@/transform/dateKey";
 import { locationModeFor } from "@/transform/tierPolicy";
-import { eventChildMemberIds, eventScopeLabel } from "@/transform/eventScope";
+import { eventChildMemberIds, eventNeedsChildAssignment, eventScopeLabel } from "@/transform/eventScope";
 import { notifOverrideToReminderMinutes, type CalendarEvent } from "@/lib/api/endpoints/schedule";
 import { useLocale } from "@/i18n/useLocale";
 import {
@@ -205,7 +205,7 @@ export function ParentCalendar() {
     if (names.length) return names.join(" · ");
     return eventScopeLabel(sheetEvent, intl);
   }, [sheetEvent, family, intl]);
-  const sheetNeedsAssignment = sheetEvent ? eventChildMemberIds(sheetEvent).length === 0 : false;
+  const sheetNeedsAssignment = sheetEvent ? eventNeedsChildAssignment(sheetEvent) : false;
   const sheetReminder = useMemo(() => {
     if (!sheetEvent) return null;
     return notifOverrideToReminderMinutes(sheetEvent.notif_override);
@@ -419,7 +419,7 @@ export function ParentCalendar() {
             {selEvents.map((e) => {
               const childLabel = childLabelById.get(e.id);
               const raw = rawById.get(e.id);
-              const childWarn = raw ? eventChildMemberIds(raw).length === 0 : false;
+              const childWarn = raw ? eventNeedsChildAssignment(raw) : false;
               const swipeSide = openSwipe?.id === e.id ? openSwipe.side : null;
               const confirmSwipeDelete = confirmSwipeDeleteId === e.id;
               const swipeDeletePending = deleteEvent.isPending && deleteEvent.variables === e.id;
