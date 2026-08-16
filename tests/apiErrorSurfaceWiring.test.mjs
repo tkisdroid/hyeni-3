@@ -213,6 +213,55 @@ for (const fixture of [
     sinkLine: 2,
   },
   {
+    name: "callable 인자를 호출하는 tracked 함수의 반환값을 렌더",
+    lines: [
+      "function invoke(reader) { return reader(); }",
+      "return <p>{invoke(() => failure.message)}</p>;",
+    ],
+    sinkLine: 3,
+  },
+  {
+    name: "tracked 함수가 그대로 반환한 callable을 호출해 렌더",
+    lines: [
+      "function pass(reader) { return reader; }",
+      "return <p>{pass(() => failure.message)()}</p>;",
+    ],
+    sinkLine: 3,
+  },
+  {
+    name: "raw 인자를 캡처한 factory callable을 직접 호출해 렌더",
+    lines: [
+      "function makeReader(value) { return () => value; }",
+      "return <p>{makeReader(failure.message)()}</p>;",
+    ],
+    sinkLine: 3,
+  },
+  {
+    name: "raw 인자를 캡처한 factory callable을 변수에 저장한 뒤 호출해 렌더",
+    lines: [
+      "function makeReader(value) { return () => value; }",
+      "const reader = makeReader(failure.message);",
+      "return <p>{reader()}</p>;",
+    ],
+    sinkLine: 4,
+  },
+  {
+    name: "default·rest·destructured parameter로 전달된 callable을 호출해 렌더",
+    lines: [
+      "const reader = '고정 문구';",
+      "function invokeDefault(candidate = () => failure.message) { return candidate(); }",
+      "function invokeRest(...candidates) { return candidates[0](); }",
+      "function invokeDestructured({ reader: selected }) { return selected(); }",
+      "return <>",
+      "  {invokeDefault()}",
+      "  {invokeRest(() => failure.message)}",
+      "  {invokeDestructured({ reader: () => failure.message })}",
+      "  {reader}",
+      "</>;",
+    ],
+    sinkLines: [7, 8, 9],
+  },
+  {
     name: "원문 callable의 property-access method 반환을 렌더",
     lines: ["const holder = { read: () => failure.message };", "return <p>{holder.read()}</p>;"],
     sinkLine: 3,
@@ -271,6 +320,15 @@ for (const fixture of [
     name: "nullish compound assignment 결과를 JSX에 렌더",
     lines: ["let text = null;", "return <p>{(text ??= failure.message)}</p>;"],
     sinkLine: 3,
+  },
+  {
+    name: "React state functional updater의 raw 반환값을 렌더",
+    lines: [
+      "const [text, setText] = useState('');",
+      "setText(() => failure.message);",
+      "return <p>{text}</p>;",
+    ],
+    sinkLine: 4,
   },
 ]) {
   test(`오류 surface scanner는 ${fixture.name}하는 우회를 보고한다`, () => {
@@ -343,6 +401,42 @@ test("raw 값을 반환하는 함수 객체를 반환해도 함수 이름 표시
       "    return function read() { return failure.message; };",
       "  }",
       "  return <p>{makeReader().name}</p>;",
+      "}",
+    ].join("\n"));
+    const result = runScanner(root);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("raw 인자를 캡처한 factory 반환 함수의 이름 표시는 오류 원문이 아니다", () => {
+  const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
+  try {
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src", "CapturedCallableName.tsx"), [
+      "export function CapturedCallableName({ failure }) {",
+      "  function makeReader(value) { return () => value; }",
+      "  return <p>{makeReader(failure.message).name}</p>;",
+      "}",
+    ].join("\n"));
+    const result = runScanner(root);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("서로 다른 factory call-site의 captured environment는 안전한 호출을 오염시키지 않는다", () => {
+  const root = mkdtempSync(join(tmpdir(), "hyeni-error-scan-"));
+  try {
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src", "CallSiteIsolation.tsx"), [
+      "export function CallSiteIsolation({ failure }) {",
+      "  function makeReader(value) { return () => value; }",
+      "  const unsafe = makeReader(failure.message);",
+      "  recordProtocol(unsafe());",
+      "  return <p>{makeReader('고정 문구')()}</p>;",
       "}",
     ].join("\n"));
     const result = runScanner(root);
