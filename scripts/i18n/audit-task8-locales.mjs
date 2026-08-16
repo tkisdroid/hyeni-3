@@ -7,21 +7,129 @@ const TASK8_BASELINE = "4fc8b55";
 const TASK8_NAMESPACES = ["billing", "child", "notifications", "parent", "reports", "shared"];
 const ALL_NAMESPACES = ["billing", "child", "core", "notifications", "onboarding", "parent", "reports", "shared"];
 
-const identicalEnglishAllowlist = new Map([
-  ["billing.aiCredit.providerPrice", "결제 공급자가 반환한 가격 변수 전용 메시지"],
-  ["billing.aiCredit.serverCatalogPrice", "서버 가격 변수 전용 메시지"],
-  ["billing.subscription.providerPrice", "결제 공급자가 반환한 가격 변수 전용 메시지"],
-  ["billing.subscription.serverCatalogPrice", "서버 가격 변수 전용 메시지"],
-  ["billing.subscription.provider.googlePlay", "Google Play 보호 상표"],
-  ["billing.subscription.hero.title", "manifest 정본 브랜드와 Premium 보호 용어 조합"],
-  ["billing.common.premium", "manifest glossary의 Premium 보호 용어"],
-  ["billing.trialLock.title", "manifest glossary의 Premium 보호 용어"],
-  ["child.aiSetup.personaSummary", "번역된 두 변수의 중립적 표시 순서"],
-  ["child.aiPersona.panda.species", "각 locale에서 통용되는 panda 차용어"],
-  ["child.home.hyeniAlt", "브랜드가 아닌 혜니 마스코트 고유 이름"],
-  ["child.sos.title", "국제 긴급 신호 SOS 보호 용어"],
-  ["shared.teacherReleaseGate.eyebrow", "manifest 정본 브랜드와 버전 변수만 표시"],
+function exactAllowances(locales, id, value, reason) {
+  return locales.map((locale) => ({ locale, id, value, reason }));
+}
+
+const ALL_NON_KOREAN_NON_ENGLISH = ["ja", "zh-CN", "zh-TW", "vi", "th", "id", "ms", "fil"];
+
+export const identicalEnglishAllowlist = Object.freeze([
+  ...exactAllowances(
+    ALL_NON_KOREAN_NON_ENGLISH,
+    "billing.subscription.provider.googlePlay",
+    "Google Play",
+    "Google Play 보호 상표는 번역하지 않습니다.",
+  ),
+  ...exactAllowances(
+    ALL_NON_KOREAN_NON_ENGLISH,
+    "billing.subscription.hero.title",
+    "Hyeni Calendar Premium",
+    "manifest 정본 브랜드와 Premium 등급명 조합입니다.",
+  ),
+  ...exactAllowances(
+    ["vi", "id", "ms", "fil"],
+    "billing.common.premium",
+    "Premium",
+    "해당 locale에서 제품 등급명 Premium을 고유 명칭으로 유지합니다.",
+  ),
+  ...exactAllowances(
+    ["vi", "id", "ms", "fil"],
+    "billing.trialLock.title",
+    "Premium",
+    "해당 locale에서 제품 등급명 Premium을 고유 명칭으로 유지합니다.",
+  ),
+  ...exactAllowances(
+    ["id", "ms", "fil"],
+    "child.aiPersona.panda.species",
+    "panda",
+    "해당 locale에서 panda 차용어 표기가 영어와 같습니다.",
+  ),
+  ...exactAllowances(
+    ["zh-CN", "zh-TW", "vi", "th", "id", "ms", "fil"],
+    "child.home.hyeniAlt",
+    "Hyeni",
+    "혜니 마스코트의 고유 이름 대체 텍스트입니다.",
+  ),
+  ...exactAllowances(
+    ALL_NON_KOREAN_NON_ENGLISH,
+    "child.sos.title",
+    "SOS",
+    "국제 긴급 신호 SOS 표기를 유지합니다.",
+  ),
+  ...exactAllowances(
+    ALL_NON_KOREAN_NON_ENGLISH,
+    "shared.teacherReleaseGate.eyebrow",
+    "Hyeni Calendar v{version}",
+    "manifest 정본 브랜드와 버전 변수만 표시합니다.",
+  ),
 ]);
+
+const highRiskExactMessages = [
+  {
+    namespace: "reports",
+    id: "reports.daily.movementTitle",
+    values: {
+      ko: "이동 요약", en: "Movement summary", ja: "移動のまとめ", "zh-CN": "移动摘要", "zh-TW": "移動摘要",
+      vi: "Tóm tắt di chuyển", th: "สรุปการเดินทาง", id: "Ringkasan pergerakan", ms: "Ringkasan pergerakan", fil: "Buod ng paggalaw",
+    },
+  },
+  {
+    namespace: "reports",
+    id: "reports.daily.noOtherApps",
+    values: {
+      ko: "혜니캘린더 외에 오늘 쓴 앱이 없어요.", en: "Your child didn't use any apps other than Hyeni Calendar today.",
+      ja: "今日はお子さまが Hyeni Calendar 以外のアプリを使った記録はありません。", "zh-CN": "孩子今天没有使用 Hyeni Calendar 以外的应用。",
+      "zh-TW": "孩子今天沒有使用 Hyeni Calendar 以外的應用程式。", vi: "Hôm nay bé không dùng ứng dụng nào ngoài Hyeni Calendar.",
+      th: "วันนี้เด็กไม่ได้ใช้แอปอื่นนอกจาก Hyeni Calendar", id: "Hari ini anak tidak menggunakan aplikasi lain selain Hyeni Calendar.",
+      ms: "Hari ini anak tidak menggunakan aplikasi lain selain Hyeni Calendar.", fil: "Hindi gumamit ang bata ng ibang app maliban sa Hyeni Calendar ngayong araw.",
+    },
+  },
+  {
+    namespace: "reports",
+    id: "reports.daily.noScheduleToday",
+    values: {
+      ko: "오늘 일정이 없어요.", en: "Your child has no events scheduled today.", ja: "今日はお子さまの予定がありません。",
+      "zh-CN": "孩子今天没有日程安排。", "zh-TW": "孩子今天沒有行程安排。", vi: "Hôm nay bé không có lịch trình nào.",
+      th: "วันนี้เด็กไม่มีกำหนดการ", id: "Anak tidak memiliki jadwal hari ini.", ms: "Anak tiada jadual hari ini.", fil: "Walang iskedyul ang bata ngayong araw.",
+    },
+  },
+  {
+    namespace: "reports",
+    id: "reports.daily.noSuppliesToday",
+    values: {
+      ko: "오늘 챙길 준비물이 없어요.", en: "Your child has nothing to pack today.", ja: "今日、お子さまが持っていくものはありません。",
+      "zh-CN": "孩子今天没有需要准备的物品。", "zh-TW": "孩子今天沒有需要準備的物品。", vi: "Hôm nay bé không có đồ dùng nào cần chuẩn bị.",
+      th: "วันนี้เด็กไม่มีของที่ต้องเตรียม", id: "Tidak ada perlengkapan yang perlu disiapkan anak hari ini.",
+      ms: "Tiada barang yang perlu disediakan untuk anak hari ini.", fil: "Walang kailangang ihanda ang bata ngayong araw.",
+    },
+  },
+  {
+    namespace: "reports",
+    id: "reports.daily.sourceRetryAria",
+    values: {
+      ko: "안심 데이터 다시 시도", en: "Retry safety report data", ja: "安心レポートのデータを再読み込み",
+      "zh-CN": "重试安心报告数据", "zh-TW": "重試安心報告資料", vi: "Thử tải lại dữ liệu báo cáo an toàn",
+      th: "ลองโหลดข้อมูลรายงานความปลอดภัยอีกครั้ง", id: "Coba lagi data laporan keamanan",
+      ms: "Cuba semula data laporan keselamatan", fil: "Subukang muli ang data ng ulat sa kaligtasan",
+    },
+  },
+  {
+    namespace: "billing",
+    id: "billing.common.premium",
+    values: {
+      ko: "프리미엄", en: "Premium", ja: "プレミアム", "zh-CN": "进阶版", "zh-TW": "進階版",
+      vi: "Premium", th: "พรีเมียม", id: "Premium", ms: "Premium", fil: "Premium",
+    },
+  },
+  {
+    namespace: "billing",
+    id: "billing.trialLock.title",
+    values: {
+      ko: "프리미엄", en: "Premium", ja: "プレミアム", "zh-CN": "进阶版", "zh-TW": "進階版",
+      vi: "Premium", th: "พรีเมียม", id: "Premium", ms: "Premium", fil: "Premium",
+    },
+  },
+];
 
 const simplifiedToTraditional = new Map(Object.entries({
   "仅": "僅", "听": "聽", "后": "後", "会": "會", "钟": "鐘", "离": "離", "开": "開",
@@ -51,6 +159,15 @@ const invalidBrandVariant = /(?:ヘニー?カレンダー|Hyeni(?:日历|日曆|
 
 function readCatalog(rootDir, locale, namespace) {
   return JSON.parse(readFileSync(join(rootDir, "locales", locale, `${namespace}.json`), "utf8"));
+}
+
+function readMessage(catalog, locale, namespace, id, messageOverrides) {
+  const overrideKey = `${locale}:${namespace}:${id}`;
+  return Object.hasOwn(messageOverrides, overrideKey) ? messageOverrides[overrideKey] : catalog[id];
+}
+
+function allowanceKey({ locale, id, value }) {
+  return `${locale}\u0000${id}\u0000${value}`;
 }
 
 function readBaselineCatalog(rootDir, namespace) {
@@ -88,11 +205,26 @@ function task8MessageIds(rootDir) {
   return result;
 }
 
-export function auditTask8Locales(rootDir = resolve(fileURLToPath(new URL("../..", import.meta.url)))) {
+export function auditTask8Locales(
+  rootDir = resolve(fileURLToPath(new URL("../..", import.meta.url))),
+  options = {},
+) {
+  const messageOverrides = options.messageOverrides ?? {};
+  const allowanceEntries = options.identicalEnglishAllowlist ?? identicalEnglishAllowlist;
   const manifest = JSON.parse(readFileSync(join(rootDir, "locales", "manifest.json"), "utf8"));
   const nonKoreanLocales = manifest.locales.filter(({ code }) => code !== "ko");
   const addedIds = task8MessageIds(rootDir);
   const violations = [];
+  const allowanceLookup = new Map();
+  for (const entry of allowanceEntries) {
+    const key = allowanceKey(entry);
+    if (allowanceLookup.has(key)) {
+      violations.push(`duplicate_english_allowance:${entry.locale}:${entry.id}:${entry.value}`);
+    } else {
+      allowanceLookup.set(key, entry);
+    }
+  }
+  const consumedAllowances = new Set();
   let auditedMessageCount = 0;
 
   for (const [namespace, ids] of addedIds) {
@@ -101,9 +233,13 @@ export function auditTask8Locales(rootDir = resolve(fileURLToPath(new URL("../..
       const catalog = readCatalog(rootDir, locale, namespace);
       for (const id of ids) {
         auditedMessageCount += 1;
-        const value = catalog[id];
-        if (locale !== "en" && normalizeCopy(value) === normalizeCopy(english[id])) {
-          if (!identicalEnglishAllowlist.has(id) && !isVariableOrTechnicalLayout(value)) {
+        const value = readMessage(catalog, locale, namespace, id, messageOverrides);
+        const englishValue = readMessage(english, "en", namespace, id, messageOverrides);
+        if (locale !== "en" && normalizeCopy(value) === normalizeCopy(englishValue)) {
+          const exactAllowanceKey = allowanceKey({ locale, id, value });
+          if (allowanceLookup.has(exactAllowanceKey)) {
+            consumedAllowances.add(exactAllowanceKey);
+          } else if (!isVariableOrTechnicalLayout(value)) {
             violations.push(`english_fallback:${locale}:${id}:${value}`);
           }
         }
@@ -121,11 +257,29 @@ export function auditTask8Locales(rootDir = resolve(fileURLToPath(new URL("../..
     }
   }
 
+  for (const entry of allowanceEntries) {
+    const key = allowanceKey(entry);
+    if (!consumedAllowances.has(key)) {
+      violations.push(`stale_english_allowance:${entry.locale}:${entry.id}:${entry.value}`);
+    }
+  }
+
+  for (const { namespace, id, values } of highRiskExactMessages) {
+    for (const { code: locale } of manifest.locales) {
+      const catalog = readCatalog(rootDir, locale, namespace);
+      const value = readMessage(catalog, locale, namespace, id, messageOverrides);
+      if (value !== values[locale]) {
+        violations.push(`high_risk_copy:${locale}:${id}:${value}`);
+      }
+    }
+  }
+
   for (const namespace of ALL_NAMESPACES) {
     const korean = readCatalog(rootDir, "ko", namespace);
     for (const { code: locale, brandName } of nonKoreanLocales) {
       const catalog = readCatalog(rootDir, locale, namespace);
-      for (const [id, value] of Object.entries(catalog)) {
+      for (const id of Object.keys(catalog)) {
+        const value = readMessage(catalog, locale, namespace, id, messageOverrides);
         if (id === "billing.subscription.hero.title" && value !== `${brandName} Premium`) {
           violations.push(`brand_title:${locale}:${id}:${value}`);
         }
@@ -137,7 +291,12 @@ export function auditTask8Locales(rootDir = resolve(fileURLToPath(new URL("../..
     }
   }
 
-  return { auditedMessageCount, violations: [...new Set(violations)].sort() };
+  return {
+    auditedMessageCount,
+    allowlistEntries: allowanceEntries.length,
+    consumedAllowlistEntries: consumedAllowances.size,
+    violations: [...new Set(violations)].sort(),
+  };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

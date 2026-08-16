@@ -1,131 +1,6 @@
-// Intl 주입 없이 호출되는 레거시 순수 transform의 동기 한국어 fallback ID만 둡니다.
-// 화면 카탈로그 전체를 추가하면 초기 번들에 다시 포함되므로, 새 호출자는 실제 사용 ID를 명시해야 합니다.
-const STATIC_MESSAGE_IDS = [
-  "child.playdate.notice.dangerZone",
-  "child.playdate.notice.disabled",
-  "child.playdate.notice.empty",
-  "child.playdate.notice.forbidden",
-  "child.playdate.notice.loadFailed",
-  "child.playdate.notice.noLocation",
-  "notifications.fallback.title",
-  "notifications.group.earlier",
-  "notifications.group.today",
-  "notifications.group.yesterday",
-  "notifications.place.alert.active",
-  "notifications.place.alert.premiumRequired",
-  "notifications.place.alert.unknown",
-  "notifications.time.justNow",
-  "parent.aiSchedule.timeUnknown",
-  "parent.device.connected",
-  "parent.device.hours",
-  "parent.device.hoursMinutes",
-  "parent.device.location.attentionShort",
-  "parent.device.location.awaitingReportDetail",
-  "parent.device.location.backgroundAttentionLabel",
-  "parent.device.location.backgroundRestrictedDetail",
-  "parent.device.location.checkingShort",
-  "parent.device.location.offlineDetail",
-  "parent.device.location.offlineLabel",
-  "parent.device.location.partialDetail",
-  "parent.device.location.permissionAttentionLabel",
-  "parent.device.location.permissionDisabledDetail",
-  "parent.device.location.readyDetail",
-  "parent.device.location.readyLabel",
-  "parent.device.location.readyShort",
-  "parent.device.location.serviceAttentionLabel",
-  "parent.device.location.serviceStoppedDetail",
-  "parent.device.location.staleDetail",
-  "parent.device.location.waitingLabel",
-  "parent.device.minutes",
-  "parent.device.noReportTime",
-  "parent.device.notification.appDisabledDetail",
-  "parent.device.notification.attentionLabel",
-  "parent.device.notification.attentionShort",
-  "parent.device.notification.awaitingReportDetail",
-  "parent.device.notification.channelsDisabledDetail",
-  "parent.device.notification.checkingShort",
-  "parent.device.notification.fullScreenAttentionLabel",
-  "parent.device.notification.fullScreenDisabledDetail",
-  "parent.device.notification.partialDetail",
-  "parent.device.notification.permissionDisabledDetail",
-  "parent.device.notification.permissionOrChannelDetail",
-  "parent.device.notification.readyDetail",
-  "parent.device.notification.readyLabel",
-  "parent.device.notification.readyShort",
-  "parent.device.notification.remoteAudioAttentionLabel",
-  "parent.device.notification.remoteAudioDisabledDetail",
-  "parent.device.notification.scheduleAttentionLabel",
-  "parent.device.notification.scheduleCheckingDetail",
-  "parent.device.notification.scheduleCheckingLabel",
-  "parent.device.notification.scheduleDisabledDetail",
-  "parent.device.notification.scheduleLoadFailedDetail",
-  "parent.device.notification.scheduleLoadFailedLabel",
-  "parent.device.notification.staleDetail",
-  "parent.device.notification.waitingLabel",
-  "parent.device.offline",
-  "parent.device.unlockCount",
-  "parent.device.waiting",
-  "parent.eventScope.assignmentRequired",
-  "parent.eventScope.family",
-  "parent.family.child",
-  "parent.family.role.dad",
-  "parent.family.role.mom",
-  "parent.family.role.parent",
-  "parent.location.addressLoading",
-  "parent.location.justUpdated",
-  "parent.location.noInformation",
-  "parent.locationTrust.current",
-  "parent.locationTrust.failed",
-  "parent.locationTrust.failedDetail",
-  "parent.locationTrust.hidden",
-  "parent.locationTrust.justUpdated",
-  "parent.locationTrust.lastLocation",
-  "parent.locationTrust.latestFailed",
-  "parent.locationTrust.loading",
-  "parent.locationTrust.loadingDetail",
-  "parent.locationTrust.recent",
-  "parent.locationTrust.refresh",
-  "parent.locationTrust.restricted",
-  "parent.locationTrust.scopeFailed",
-  "parent.locationTrust.scopeLoading",
-  "parent.locationTrust.standard",
-  "parent.locationTrust.standardFailed",
-  "parent.locationTrust.subscriptionLoading",
-  "parent.locationTrust.updated",
-  "parent.locationTrust.waiting",
-  "parent.locationTrust.waitingDetail",
-  "parent.place.frequent",
-  "parent.place.home",
-  "parent.schedule.allDay",
-  "parent.schedule.event",
-  "parent.tier.checking",
-  "parent.tier.free",
-  "parent.tier.lock.aiAnalysis",
-  "parent.tier.lock.default",
-  "parent.tier.lock.multiChild",
-  "parent.tier.lock.realtimeLocation",
-  "parent.tier.lock.remoteAudio",
-  "parent.tier.lock.weeklyReport",
-  "parent.tier.premium",
-  "parent.upsell.continue",
-  "parent.upsell.dynamicUsage",
-  "parent.upsell.saved_place.dynamicDescription",
-  "parent.upsell.saved_place.dynamicTitle",
-  "reports.weekly.childFallback",
-  "reports.weekly.teaser.alerts",
-  "reports.weekly.teaser.empty",
-  "reports.weekly.teaser.events",
-  "reports.weekly.teaser.memos",
-  "reports.weekly.teaser.supplies",
-  "shared.adventure.complete",
-  "shared.adventure.now",
-];
-
-const ADVENTURE_IDS = ["next", "soon", "later"]
-  .flatMap((phase) => ["final", "vowel"].map((particle) => `shared.adventure.${phase}.${particle}`));
-
-const DEVICE_SAFETY_IDS = ["ready", "attention", "unknown"]
-  .map((state) => `parent.device.safety.${state}`);
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { auditDefaultIntlUsage } from "./default-intl-usage.mjs";
 
 const MEMO_COPY_FIELDS = [
   "noConversation",
@@ -142,8 +17,11 @@ const MEMO_COPY_FIELDS = [
 ];
 const MEMO_COPY_IDS = MEMO_COPY_FIELDS.flatMap((field) =>
   ["child", "formal"].map((tone) => `shared.memo.copy.${field}.${tone}`));
-const MEMO_QUICK_IDS = ["parent", "child"].flatMap((sender) =>
-  [1, 2, 3, 4, 5].map((index) => `shared.memo.quick.${sender}.${index}`));
+
+const MEMO_QUICK_PARENT_IDS = [1, 2, 3, 4, 5]
+  .map((index) => `shared.memo.quick.parent.${index}`);
+const MEMO_QUICK_CHILD_IDS = [1, 2, 3, 4, 5]
+  .map((index) => `shared.memo.quick.child.${index}`);
 
 const PLACE_LABEL_IDS = [
   "taekwondo",
@@ -183,9 +61,7 @@ const PREMIUM_UPSELL_SOURCES = [
   "first_location",
   "first_arrival",
 ];
-const PREMIUM_UPSELL_IDS = PREMIUM_UPSELL_SOURCES.flatMap((source) =>
-  ["title", "description", "premiumValue", "ctaLabel"].map((field) => `parent.upsell.${source}.${field}`));
-const PREMIUM_UPSELL_USAGE_IDS = [
+const PREMIUM_UPSELL_USAGE_SOURCES = [
   "second_child",
   "saved_place",
   "danger_zone",
@@ -193,19 +69,69 @@ const PREMIUM_UPSELL_USAGE_IDS = [
   "remote_ring",
   "ai_friend_limit",
   "ai_schedule_limit",
-].map((source) => `parent.upsell.${source}.usageLabel`);
+];
 
-const SCHEDULE_TAG_IDS = ["ongoing", "visited", "verify", "upcoming"]
-  .map((tag) => `parent.schedule.tag.${tag}`);
+export const defaultIntlDynamicUsages = Object.freeze([
+  {
+    importer: "src/transform/deviceNotificationHealth.ts",
+    pattern: "`parent.device.safety.${state}`",
+    ids: ["ready", "attention", "unknown"].map((state) => `parent.device.safety.${state}`),
+    reason: "기기 안전 상태 union의 세 값만 message ID에 사용할 수 있습니다.",
+  },
+  {
+    importer: "src/transform/memoChatCopy.ts",
+    pattern: "`shared.memo.copy.${field}.${tone}`",
+    ids: MEMO_COPY_IDS,
+    reason: "메모 copy field와 child/formal tone의 닫힌 곱집합입니다.",
+  },
+  {
+    importer: "src/transform/memoQuickReplies.ts",
+    pattern: "`shared.memo.quick.parent.${index}`",
+    ids: MEMO_QUICK_PARENT_IDS,
+    reason: "부모 빠른 답장 인덱스는 1~5로 고정됩니다.",
+  },
+  {
+    importer: "src/transform/memoQuickReplies.ts",
+    pattern: "`shared.memo.quick.child.${index}`",
+    ids: MEMO_QUICK_CHILD_IDS,
+    reason: "아이 빠른 답장 인덱스는 1~5로 고정됩니다.",
+  },
+  {
+    importer: "src/transform/memoQuickReplies.ts",
+    pattern: "`shared.memo.quick.${sender}.${index}`",
+    ids: [...MEMO_QUICK_PARENT_IDS, ...MEMO_QUICK_CHILD_IDS],
+    reason: "sender는 parent/child이고 인덱스는 1~5인 닫힌 조합입니다.",
+  },
+  {
+    importer: "src/transform/placeVisual.ts",
+    pattern: "match.labelId",
+    ids: PLACE_LABEL_IDS,
+    reason: "장소 시각 매핑 표의 labelId 후보를 exact 목록으로 제한합니다.",
+  },
+  ...["title", "description", "premiumValue", "ctaLabel"].map((field) => ({
+    importer: "src/transform/premiumUpsell.ts",
+    pattern: `\`parent.upsell.\${source}.${field}\``,
+    ids: PREMIUM_UPSELL_SOURCES.map((source) => `parent.upsell.${source}.${field}`),
+    reason: `Premium upsell source union의 ${field} message ID 목록입니다.`,
+  })),
+  {
+    importer: "src/transform/premiumUpsell.ts",
+    pattern: "`parent.upsell.${source}.usageLabel`",
+    ids: PREMIUM_UPSELL_USAGE_SOURCES.map((source) => `parent.upsell.${source}.usageLabel`),
+    reason: "사용량 표시가 있는 Premium upsell source만 포함합니다.",
+  },
+  {
+    importer: "src/transform/scheduleView.ts",
+    pattern: '`parent.schedule.tag.${tag.tag === "진행 중" ? "ongoing" : tag.tag === "다녀옴" ? "visited" : tag.tag === "확인 필요" ? "verify" : "upcoming"}`',
+    ids: ["ongoing", "visited", "verify", "upcoming"].map((tag) => `parent.schedule.tag.${tag}`),
+    reason: "일정 상태 태그의 네 분기만 message ID로 선택합니다.",
+  },
+]);
 
-export const legacyKoreanMessageIds = [...new Set([
-  ...STATIC_MESSAGE_IDS,
-  ...ADVENTURE_IDS,
-  ...DEVICE_SAFETY_IDS,
-  ...MEMO_COPY_IDS,
-  ...MEMO_QUICK_IDS,
-  ...PLACE_LABEL_IDS,
-  ...PREMIUM_UPSELL_IDS,
-  ...PREMIUM_UPSELL_USAGE_IDS,
-  ...SCHEDULE_TAG_IDS,
-])].sort();
+const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const discoveredUsage = auditDefaultIntlUsage({ rootDir, dynamicUsages: defaultIntlDynamicUsages });
+if (discoveredUsage.violations.length > 0) {
+  throw new Error(discoveredUsage.violations.join("\n"));
+}
+
+export const legacyKoreanMessageIds = discoveredUsage.messageIds;

@@ -3,6 +3,9 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { fileURLToPath, URL } from "node:url";
 import { readFileSync } from "node:fs";
+import { initialChunkProvenancePlugin } from "./scripts/vite/initialChunkProvenancePlugin.mjs";
+
+const rootDir = fileURLToPath(new URL(".", import.meta.url));
 
 const packageMetadata = JSON.parse(
   readFileSync(fileURLToPath(new URL("./package.json", import.meta.url)), "utf8"),
@@ -77,6 +80,7 @@ export default defineConfig({
       },
       devOptions: { enabled: false },
     }),
+    initialChunkProvenancePlugin({ rootDir }),
   ],
   server: { port: 5173, host: true },
   build: {

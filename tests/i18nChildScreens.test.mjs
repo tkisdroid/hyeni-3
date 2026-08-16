@@ -54,17 +54,20 @@ const literalAllowlist = [
     path: "src/screens/child/StickerBook.tsx",
     context: "jsx-text",
     value: "NEW",
+    reason: "스티커 도감의 짧은 상태 배지는 국제적으로 통용되는 NEW 표기를 유지합니다.",
   },
-  {
+  ...["connected", "pending", "positive", "caution", "danger", "neutral"].map((value) => ({
     path: "src/screens/child/ChildSettings.tsx",
-    context: "return:connectionLabel",
-    value: "connected",
-  },
-  {
-    path: "src/screens/child/ChildSettings.tsx",
-    context: "return:connectionLabel",
-    value: "pending",
-  },
+    context: "property:tone",
+    value,
+    reason: "CSS 상태색을 선택하는 내부 tone token이며 사용자에게 문구로 표시되지 않습니다.",
+  })),
+  ...["mint", "caution"].map((value) => ({
+    path: "src/screens/child/ChildLocationStatus.tsx",
+    context: "property:tone",
+    value,
+    reason: "위치 상태 카드의 CSS 색상을 선택하는 내부 tone token입니다.",
+  })),
 ];
 
 function sourceFile(path) {
@@ -164,7 +167,6 @@ function userFacingContext(node, text) {
   }
   if (ts.isPropertyAssignment(parent)) {
     const name = ts.isIdentifier(parent.name) || ts.isStringLiteral(parent.name) ? parent.name.text : null;
-    if (name === "tone" && /^[a-z][a-z0-9_-]*$/i.test(text)) return null;
     if (name && userFacingPropertyNames.has(name)) return `property:${name}`;
   }
   if (ts.isVariableDeclaration(parent) && ts.isIdentifier(parent.name)) {
@@ -252,6 +254,35 @@ test("Task 8 child inventory는 표시용 객체 필드와 대입식 우변의 �
   assert.equal(contexts.get("활발하고 친근한"), "property:tone");
   assert.equal(contexts.get("안녕! 같이 이야기하자"), "property:greeting");
   assert.equal(contexts.get("오늘 준비물을 같이 확인하자"), "assignment:text");
+});
+
+test("child literal 예외는 path·context·value·reason이 정확하고 실제 후보에서 소비된다", () => {
+  const candidates = childSurfaces.flatMap((path) => {
+    const { source } = sourceFile(path);
+    return literalCandidatesFromSource(path, source);
+  });
+  const keys = literalAllowlist.map(({ path, context, value }) => `${path}\u0000${context}\u0000${value}`);
+  assert.equal(new Set(keys).size, keys.length, "중복 literal 예외가 없어야 합니다");
+  for (const entry of literalAllowlist) {
+    assert.deepEqual(Object.keys(entry).sort(), ["context", "path", "reason", "value"]);
+    assert.ok(entry.reason.trim(), `${entry.path}:${entry.context}:${entry.value}: 근거`);
+    assert.ok(
+      candidates.some(({ path, context, text }) => (
+        path === entry.path && context === entry.context && text === entry.value
+      )),
+      `${entry.path}:${entry.context}:${entry.value}: stale literal 예외`,
+    );
+  }
+});
+
+test("tone은 실제 내부 token만 예외로 두고 표시 문구 friendly를 탐지한다", () => {
+  const candidates = literalCandidatesFromSource("ToneFixture.tsx", `
+    const displayCopy = { tone: "friendly" };
+  `);
+  assert.deepEqual(
+    candidates.map(({ context, text }) => ({ context, text })),
+    [{ context: "property:tone", text: "friendly" }],
+  );
 });
 
 test("한국어 아이 핵심 문구는 친근한 반말과 3초 SOS 안전 동선을 유지한다", () => {

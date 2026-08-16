@@ -1,10 +1,14 @@
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync, statSync } from "node:fs";
-import { basename, join, relative, resolve, sep } from "node:path";
+import { join, relative, resolve, sep } from "node:path";
+import {
+  INITIAL_CHUNK_PROVENANCE_FILE,
+  classifyInitialChunkModules,
+  serializeInitialChunkProvenanceRecords,
+} from "./initialChunkProvenance.mjs";
 
 export const ROUTE_ENTRY_LIMIT_BYTES = 500_000;
 export const ROUTE_ENTRY_STYLE_LIMIT_BYTES = 40_000;
-
-const THIRD_PARTY_INITIAL_CHUNK_PREFIXES = ["i18n-runtime-"];
 
 function attributeValue(tag, name) {
   const match = tag.match(
@@ -28,6 +32,51 @@ function resolveEntryPath(distDir, source) {
     throw new Error(`dist 내부 module entry 경로가 아닙니다: ${source}`);
   }
   return { entryFile, entryPath };
+}
+
+function readInitialChunkProvenance(distDir, resolvedPreloads) {
+  const provenancePath = join(distDir, INITIAL_CHUNK_PROVENANCE_FILE);
+  if (!existsSync(provenancePath)) {
+    throw new Error(`초기 chunk provenance artifact가 없습니다: ${INITIAL_CHUNK_PROVENANCE_FILE}`);
+  }
+
+  const raw = readFileSync(provenancePath, "utf8");
+  let artifact;
+  try {
+    artifact = JSON.parse(raw);
+    if (artifact?.schemaVersion !== 1 || !Array.isArray(artifact.chunks)) throw new Error("schema");
+    if (raw !== serializeInitialChunkProvenanceRecords(artifact.chunks)) throw new Error("canonical");
+  } catch {
+    throw new Error("초기 chunk provenance artifact 구조 또는 결정적 직렬화가 변조되었습니다.");
+  }
+
+  const preloadFiles = new Set(resolvedPreloads.map(({ entryFile }) => entryFile));
+  const records = new Map();
+  for (const record of artifact.chunks) {
+    if (records.has(record.file)) throw new Error(`중복 provenance chunk입니다: ${record.file}`);
+    if (!preloadFiles.has(record.file)) throw new Error(`stale provenance chunk가 초기 preload에 없습니다: ${record.file}`);
+
+    const { entryFile, entryPath } = resolveEntryPath(distDir, record.file);
+    if (entryFile !== record.file || !existsSync(entryPath)) {
+      throw new Error(`provenance chunk 파일이 없습니다: ${record.file}`);
+    }
+    const content = readFileSync(entryPath);
+    if (content.byteLength !== record.bytes) {
+      throw new Error(`provenance chunk 크기가 다릅니다: ${record.file}`);
+    }
+    const digest = createHash("sha256").update(content).digest("hex");
+    if (digest !== record.sha256) throw new Error(`provenance chunk 해시가 다릅니다: ${record.file}`);
+
+    const expectedClassification = classifyInitialChunkModules(record.modules);
+    if (
+      record.classification !== expectedClassification.classification
+      || record.reason !== expectedClassification.reason
+    ) {
+      throw new Error(`provenance module 분류가 허용 목록과 다릅니다: ${record.file}`);
+    }
+    records.set(record.file, record);
+  }
+  return records;
 }
 
 export function inspectRouteEntryBundle({
@@ -61,8 +110,9 @@ export function inspectRouteEntryBundle({
 
   const entry = resolveEntryPath(distDir, moduleEntries[0].source);
   const resolvedPreloads = modulePreloads.map(({ source }) => resolveEntryPath(distDir, source));
-  const isThirdPartyInitialChunk = (file) => THIRD_PARTY_INITIAL_CHUNK_PREFIXES.some(
-    (prefix) => basename(file).startsWith(prefix),
+  const provenance = readInitialChunkProvenance(distDir, resolvedPreloads);
+  const isThirdPartyInitialChunk = (file) => (
+    provenance.get(file)?.classification === "third-party-runtime"
   );
   const initialSources = [
     entry,
