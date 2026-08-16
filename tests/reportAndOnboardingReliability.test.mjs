@@ -9,6 +9,9 @@ const [weeklyReport, onboarding, requireGuest, authEndpoint, familyEndpoint] = a
   readFile(new URL("../src/lib/api/endpoints/auth.ts", import.meta.url), "utf8"),
   readFile(new URL("../src/lib/api/endpoints/family.ts", import.meta.url), "utf8"),
 ]);
+const koReports = JSON.parse(
+  await readFile(new URL("../locales/ko/reports.json", import.meta.url), "utf8"),
+);
 
 test("주간 리포트는 네 조회의 오류를 로딩보다 먼저 분기한다", () => {
   assert.match(weeklyReport, /resolveQueryTruthState/);
@@ -28,7 +31,8 @@ test("주간 리포트는 ready에서만 집계하고 오류 카드에서 네 �
     weeklyReport,
     /const summary = useMemo\([\s\S]*if \(queryState !== "ready"\) return null;[\s\S]*summarizeWeeklyReport\(/,
   );
-  assert.match(weeklyReport, /주간 리포트를 불러오지 못했어요/);
+  assert.match(weeklyReport, /reports\.weekly\.errorTitle/);
+  assert.equal(koReports["reports.weekly.errorTitle"], "주간 리포트를 불러오지 못했어요");
   assert.match(
     weeklyReport,
     /Promise\.all\(\[\s*eventsQuery\.refetch\(\),\s*suppliesQuery\.refetch\(\),\s*memoThread\.refetch\(\),\s*alertsQuery\.refetch\(\),?\s*\]\)/,

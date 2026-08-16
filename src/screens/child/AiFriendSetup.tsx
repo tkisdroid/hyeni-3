@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Check, ChevronLeft } from "lucide-react";
+import { useIntl } from "react-intl";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
@@ -81,6 +82,7 @@ export function writeSelectedCharacter(
 const MAX_NAME_LEN = 30;
 
 export function AiFriendSetup() {
+  const intl = useIntl();
   const navigate = useNavigate();
   const { show } = useToast();
 
@@ -130,7 +132,7 @@ export function AiFriendSetup() {
 
   const save = () => {
     if (!aiFriendSetupDataReady || !childMember || !familyId || !userId || setNameMutation.isPending) {
-      show("내 가족과 AI 친구 설정을 확인한 뒤 다시 해줘", "⚠️");
+      show(intl.formatMessage({ id: "child.aiSetup.notReady" }), "⚠️");
       return;
     }
     writeSelectedCharacter(familyId, userId, selected);
@@ -143,7 +145,7 @@ export function AiFriendSetup() {
       setNameMutation.mutate(finalName, {
         onSuccess: () => goChat(),
         onError: () => {
-          show("이름은 저장 못 했지만 대화는 할 수 있어!", "💜");
+          show(intl.formatMessage({ id: "child.aiSetup.nameSaveFailed" }), "💜");
           goChat();
         },
       });
@@ -155,10 +157,10 @@ export function AiFriendSetup() {
   if (aiFriendSetupQueryState === "loading") {
     return (
       <ScreenQueryState
-        screenTitle="내 AI 친구"
+        screenTitle={intl.formatMessage({ id: "child.aiSetup.title" })}
         state="loading"
-        heading="내 AI 친구를 불러오고 있어"
-        description="저장한 이름과 가족 연결을 확인하는 중이야."
+        heading={intl.formatMessage({ id: "child.aiSetup.loading.title" })}
+        description={intl.formatMessage({ id: "child.aiSetup.loading.description" })}
         onBack={() => navigate(-1)}
       />
     );
@@ -167,15 +169,15 @@ export function AiFriendSetup() {
   if (aiFriendSetupQueryState === "error" || aiFriendSetupDataMissing) {
     return (
       <ScreenQueryState
-        screenTitle="내 AI 친구"
+        screenTitle={intl.formatMessage({ id: "child.aiSetup.title" })}
         state="error"
-        heading="AI 친구 설정을 불러오지 못했어"
-        description="저장한 이름을 덮어쓰지 않도록 잠깐 닫았어. 다시 확인해 줘."
+        heading={intl.formatMessage({ id: "child.aiSetup.loadError.title" })}
+        description={intl.formatMessage({ id: "child.aiSetup.loadError.description" })}
         onBack={() => navigate(-1)}
         onRetry={() => void retryAiFriendSetup()}
         retrying={aiFriendSetupRefetching}
-        retryLabel="다시 확인하기"
-        retryingLabel="다시 확인하고 있어…"
+        retryLabel={intl.formatMessage({ id: "child.action.checkAgain" })}
+        retryingLabel={intl.formatMessage({ id: "child.action.checkingAgain" })}
       />
     );
   }
@@ -183,13 +185,13 @@ export function AiFriendSetup() {
   if (!childMember) {
     return (
       <ScreenQueryState
-        screenTitle="내 AI 친구"
+        screenTitle={intl.formatMessage({ id: "child.aiSetup.title" })}
         state="empty"
-        heading="내 가족 연결을 찾지 못했어"
-        description="부모님과 다시 연결하면 AI 친구를 고를 수 있어."
+        heading={intl.formatMessage({ id: "child.familyConnection.missing" })}
+        description={intl.formatMessage({ id: "child.aiSetup.familyMissingDescription" })}
         onBack={() => navigate(-1)}
         onRetry={() => navigate("/onboarding")}
-        retryLabel="연결 화면으로 가기"
+        retryLabel={intl.formatMessage({ id: "child.action.goToConnection" })}
       />
     );
   }
@@ -200,18 +202,18 @@ export function AiFriendSetup() {
         <button
           type="button"
           className="afs-back hy-press"
-          aria-label="뒤로"
+          aria-label={intl.formatMessage({ id: "child.action.back" })}
           onClick={() => navigate(-1)}
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="var(--hy-accent-text)" />
         </button>
-        <span className="afs-title">내 AI 친구</span>
+        <span className="afs-title">{intl.formatMessage({ id: "child.aiSetup.title" })}</span>
       </header>
 
       <div className="afs-body">
         {aiFriendSetupDataEmpty && (
           <div className="sqs-inline-empty">
-            아직 저장한 AI 친구 이름이 없어. 마음에 드는 친구부터 골라 봐.
+            {intl.formatMessage({ id: "child.aiSetup.empty" })}
           </div>
         )}
         {/* 선택한 친구 미리보기 */}
@@ -224,7 +226,7 @@ export function AiFriendSetup() {
         </div>
 
         {/* 캐릭터 고르기 */}
-        <div className="afs-label">친구 고르기</div>
+        <div className="afs-label">{intl.formatMessage({ id: "child.aiSetup.chooseFriend" })}</div>
         <div className="afs-grid">
           {AI_FRIEND_PERSONAS.map((p) => (
             <button
@@ -240,24 +242,24 @@ export function AiFriendSetup() {
         </div>
 
         {/* 이름 짓기 */}
-        <div className="afs-label">이름 짓기</div>
+        <div className="afs-label">{intl.formatMessage({ id: "child.aiSetup.nameFriend" })}</div>
         <input
           className="afs-name-field"
           value={effectiveName}
-          aria-label="AI 친구 이름"
+          aria-label={intl.formatMessage({ id: "child.aiSetup.nameAria" })}
           maxLength={MAX_NAME_LEN}
           placeholder={persona.name}
           onChange={(e) => setCustomName(e.target.value)}
         />
 
         {/* 성격 · 말투(친구를 고르면 정해져) */}
-        <div className="afs-label">성격 · 말투</div>
+        <div className="afs-label">{intl.formatMessage({ id: "child.aiSetup.personality" })}</div>
         <div className="afs-traits">
           <span className="afs-chip afs-chip--on">
             {persona.tone}
             <Check size={16} strokeWidth={2.4} aria-hidden="true" />
           </span>
-          <span className="afs-trait-hint">친구를 고르면 성격이 정해져</span>
+          <span className="afs-trait-hint">{intl.formatMessage({ id: "child.aiSetup.personalityHint" })}</span>
         </div>
 
         <button
@@ -266,7 +268,9 @@ export function AiFriendSetup() {
           onClick={save}
           disabled={setNameMutation.isPending} aria-busy={setNameMutation.isPending}
         >
-          {setNameMutation.isPending ? "저장 중…" : "저장하고 대화하기"}
+          {intl.formatMessage({
+            id: setNameMutation.isPending ? "child.action.saving" : "child.aiSetup.saveAndChat",
+          })}
         </button>
       </div>
     </div>

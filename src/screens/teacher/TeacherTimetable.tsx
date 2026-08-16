@@ -14,15 +14,12 @@ import "./TeacherTimetable.css";
 import { useIntl } from "react-intl";
 import { localizeApiError } from "@/i18n/apiError";
 
-// 월요일 시작 요일 라벨(주간 스트립). 반 일정은 events 도메인(0-index date_key) 기준.
-const DOW_MON_FIRST = ["월", "화", "수", "목", "금", "토", "일"] as const;
-
-// events.category → 반 시간표용 한글 라벨(school/sports/hobby/other).
-const CATEGORY_LABEL: Record<string, string> = {
-  school: "수업",
-  sports: "운동",
-  hobby: "취미",
-  other: "기타",
+// events.category → 반 시간표용 안내 문구 ID(school/sports/hobby/other).
+const CATEGORY_MESSAGE_IDS: Record<string, string> = {
+  school: "shared.teacherTimetable.category.school",
+  sports: "shared.teacherTimetable.category.sports",
+  hobby: "shared.teacherTimetable.category.hobby",
+  other: "shared.teacherTimetable.category.other",
 };
 
 // "HH:MM" → 자정 기준 분(정수). 형식 어긋나면 null(시간 미정).
@@ -59,7 +56,8 @@ export function TeacherTimetable() {
   const classesQ = useTeacherClasses();
   const firstClass = classesQ.data?.[0] ?? null;
   const classId = firstClass?.classId ?? null;
-  const className = firstClass?.className ?? "우리 반";
+  const className = firstClass?.className
+    ?? intl.formatMessage({ id: "shared.teacherTimetable.classFallback" });
 
   const rosterQ = useRoster(classId);
   const studentCount = rosterQ.data?.length ?? 0;
@@ -102,7 +100,7 @@ export function TeacherTimetable() {
   // 선택 날짜(ISO 입력값)를 넘겨 알림장 반영일을 미리 채운다.
   const goAddSchedule = () => {
     if (!classId) {
-      show("먼저 반을 만들고 학생을 연결해 주세요", "🧑‍🏫");
+      show(intl.formatMessage({ id: "shared.teacherTimetable.add.needClass" }), "🧑‍🏫");
       return;
     }
     navigate("/teacher/notice", { state: { dateInput: isoDateKey(selectedDate) } });
@@ -115,12 +113,21 @@ export function TeacherTimetable() {
       {
         onSuccess: (res) => {
           if (res.copied > 0) {
-            const skipped = res.skipped > 0 ? ` · 중복 ${res.skipped}건 제외` : "";
-            show(`다음 주로 ${res.copied}건 복사했어요${skipped}`, "🗓️");
+            show(
+              intl.formatMessage(
+                {
+                  id: res.skipped > 0
+                    ? "shared.teacherTimetable.copy.successWithSkipped"
+                    : "shared.teacherTimetable.copy.success",
+                },
+                { copied: res.copied, skipped: res.skipped },
+              ),
+              "🗓️",
+            );
           } else if (res.sourceCount > 0) {
-            show("이미 다음 주에 같은 일정이 있어요", "🗓️");
+            show(intl.formatMessage({ id: "shared.teacherTimetable.copy.duplicate" }), "🗓️");
           } else {
-            show("복사할 반 일정이 없어요", "🗓️");
+            show(intl.formatMessage({ id: "shared.teacherTimetable.copy.empty" }), "🗓️");
           }
         },
         onError: (err) => show(localizeApiError(err, intl, "formal"), "⚠️"),
@@ -131,26 +138,38 @@ export function TeacherTimetable() {
   return (
     <div className="hy-rise-in">
       <header className="tt-topbar">
-        <span className="tt-topbar__title">주간 시간표</span>
+        <span className="tt-topbar__title">
+          {intl.formatMessage({ id: "shared.teacherTimetable.title" })}
+        </span>
         <button type="button" className="tt-add hy-press" onClick={goAddSchedule}>
           <Plus size={15} strokeWidth={2.6} />
-          일정 추가
+          {intl.formatMessage({ id: "shared.teacherTimetable.add.action" })}
         </button>
       </header>
 
       <div className="tt-body">
-        {loading && <div className="tt-empty tt-empty--soft">반 정보를 불러오는 중…</div>}
+        {loading && (
+          <div className="tt-empty tt-empty--soft">
+            {intl.formatMessage({ id: "shared.teacherTimetable.loading" })}
+          </div>
+        )}
 
         {notReady && (
           <div className="tt-empty">
             <span className="tt-empty__emoji"><img src={asset("mascot/teacher-glasses.webp")} alt="" style={{ width: 48, height: 48, objectFit: "contain", borderRadius: 12 }} /></span>
             <span className="tt-empty__title">
-              {genuineError ? "잠시 후 다시 시도해 주세요" : "연결된 반이 없어요"}
+              {intl.formatMessage({
+                id: genuineError
+                  ? "shared.teacherTimetable.empty.error.heading"
+                  : "shared.teacherTimetable.empty.class.heading",
+              })}
             </span>
             <span className="tt-empty__sub">
-              {genuineError
-                ? "반 정보를 불러오지 못했어요."
-                : "홈에서 반을 만들고 학생을 연결하면 반 시간표가 여기에 표시돼요."}
+              {intl.formatMessage({
+                id: genuineError
+                  ? "shared.teacherTimetable.empty.error.description"
+                  : "shared.teacherTimetable.empty.class.description",
+              })}
             </span>
           </div>
         )}
@@ -158,15 +177,28 @@ export function TeacherTimetable() {
         {!loading && !notReady && (
           <>
             <div className="tt-meta">
-              {className} · 학생 <span className="tt-meta__count">{studentCount}명</span>
+              {className} · <span className="tt-meta__count">
+                {intl.formatMessage(
+                  { id: "shared.teacherTimetable.meta.students" },
+                  { count: studentCount },
+                )}
+              </span>
             </div>
 
             {/* 주간 날짜 스트립 — 요일을 눌러 그날의 반 일정을 본다(실데이터). */}
-            <div className="tt-week" role="tablist" aria-label="요일 선택">
-              {weekDays.map((d, i) => {
+            <div
+              className="tt-week"
+              role="tablist"
+              aria-label={intl.formatMessage({ id: "shared.teacherTimetable.week.aria" })}
+            >
+              {weekDays.map((d) => {
                 const key = dateToDateKey(d);
                 const active = key === selectedKey;
                 const isToday = key === todayKey;
+                const weekdayLabel = formatCalendarDay(
+                  Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 12),
+                  { locale, timeZone: "UTC", weekday: "short" },
+                );
                 return (
                   <button
                     key={key}
@@ -178,7 +210,7 @@ export function TeacherTimetable() {
                     }`}
                     onClick={() => setSelectedKey(key)}
                   >
-                    <span className="tt-day-chip__dow">{DOW_MON_FIRST[i]}</span>
+                    <span className="tt-day-chip__dow">{weekdayLabel}</span>
                     <span className="tt-day-chip__num">{d.getDate()}</span>
                   </button>
                 );
@@ -187,29 +219,35 @@ export function TeacherTimetable() {
 
             {/* 선택한 날의 반 일정 */}
             <div className="hy-card tt-day-card">
-              <div className="tt-day-head">{selectedLabel} 반 일정</div>
+              <div className="tt-day-head">
+                {selectedLabel}{intl.formatMessage({ id: "shared.teacherTimetable.day.scheduleSuffix" })}
+              </div>
 
               {scheduleQ.isLoading ? (
-                <div className="tt-day-state">반 일정을 불러오는 중…</div>
+                <div className="tt-day-state">
+                  {intl.formatMessage({ id: "shared.teacherTimetable.schedule.loading" })}
+                </div>
               ) : scheduleQ.isError ? (
                 <div className="tt-day-state tt-day-state--err">
-                  반 일정을 불러오지 못했어요.
+                  {intl.formatMessage({ id: "shared.teacherTimetable.schedule.error" })}
                   <button
                     type="button"
                     className="tt-retry hy-press"
                     onClick={() => scheduleQ.refetch()}
                   >
-                    다시 시도
+                    {intl.formatMessage({ id: "shared.teacherTimetable.schedule.retry" })}
                   </button>
                 </div>
               ) : rows.length === 0 ? (
-                <div className="tt-day-state">이 날은 등록된 반 일정이 없어요</div>
+                <div className="tt-day-state">
+                  {intl.formatMessage({ id: "shared.teacherTimetable.schedule.empty" })}
+                </div>
               ) : (
                 <ul className="tt-list">
                   {rows.map((row) => (
                     <li key={row.eventId} className="tt-item">
                       <span className="tt-item__time">
-                        {row.time ?? "시간 미정"}
+                        {row.time ?? intl.formatMessage({ id: "shared.teacherTimetable.schedule.timeUnknown" })}
                         {row.time && row.endTime ? (
                           <span className="tt-item__end">~{row.endTime}</span>
                         ) : null}
@@ -228,7 +266,9 @@ export function TeacherTimetable() {
                       </span>
                       {row.category ? (
                         <span className="tt-item__cat">
-                          {CATEGORY_LABEL[row.category] ?? row.category}
+                          {CATEGORY_MESSAGE_IDS[row.category]
+                            ? intl.formatMessage({ id: CATEGORY_MESSAGE_IDS[row.category] })
+                            : row.category}
                         </span>
                       ) : null}
                     </li>
@@ -241,9 +281,13 @@ export function TeacherTimetable() {
             <div className="tt-note hy-explain">
               <span className="tt-note__ico"><CalendarDays size={15} strokeWidth={2.2} /></span>
               <span className="hy-explain__lines">
-                <span className="hy-explain__line">반 일정은 아이별 캘린더에서 모여요.</span>
                 <span className="hy-explain__line">
-                  새 일정은 <b>‘일정 추가’(알림장)</b>로 보내면 학부모 캘린더에 함께 반영돼요.
+                  {intl.formatMessage({ id: "shared.teacherTimetable.note.summary" })}
+                </span>
+                <span className="hy-explain__line">
+                  {intl.formatMessage({ id: "shared.teacherTimetable.note.beforeAction" })}
+                  <b>{intl.formatMessage({ id: "shared.teacherTimetable.note.action" })}</b>
+                  {intl.formatMessage({ id: "shared.teacherTimetable.note.afterAction" })}
                 </span>
               </span>
               <button
@@ -253,7 +297,9 @@ export function TeacherTimetable() {
                 disabled={copyWeek.isPending} aria-busy={copyWeek.isPending}
               >
                 <Copy size={14} strokeWidth={2.4} />
-                {copyWeek.isPending ? "복사 중" : "다음 주로 복사"}
+                {copyWeek.isPending
+                  ? intl.formatMessage({ id: "shared.teacherTimetable.copy.pending" })
+                  : intl.formatMessage({ id: "shared.teacherTimetable.copy.action" })}
               </button>
             </div>
           </>

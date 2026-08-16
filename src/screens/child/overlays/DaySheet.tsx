@@ -6,6 +6,7 @@
  * (없으면 배너 자체를 감춘다). 아이 홈에서 부모 소식을 놓치지 않게 하려는 자리이기도 하다.
  */
 import { asset } from "@/lib/assets";
+import { useIntl } from "react-intl";
 import { ChildSheet } from "./ChildSheet";
 import type { ChildTimetableRow } from "../ChildTimetable";
 import { ChildTimetableList } from "../ChildTimetable";
@@ -21,18 +22,19 @@ export interface DaySheetProps {
 }
 
 export function DaySheet({ open, onClose, dateLabel, rows, parentNote, onOpenMemo }: DaySheetProps) {
+  const intl = useIntl();
   return (
-    <ChildSheet open={open} onClose={onClose} label="오늘 시간표">
+    <ChildSheet open={open} onClose={onClose} label={intl.formatMessage({ id: "child.day.title" })}>
       <div className="ks-head">
         <img src={asset("ui/calendar-heart.webp")} alt="" />
-        <span className="ks-head__title">오늘 시간표</span>
+        <span className="ks-head__title">{intl.formatMessage({ id: "child.day.title" })}</span>
         <span className="ks-head__badge">{dateLabel}</span>
       </div>
 
       {parentNote && (
         <button type="button" className="ks-day__notice hy-press" onClick={onOpenMemo}>
           <img src={asset("ui/megaphone.webp")} alt="" />
-          <span>부모님 · {parentNote}</span>
+          <span>{intl.formatMessage({ id: "child.day.parentNote" }, { note: parentNote })}</span>
         </button>
       )}
 
@@ -41,7 +43,7 @@ export function DaySheet({ open, onClose, dateLabel, rows, parentNote, onOpenMem
       </div>
 
       <button type="button" className="ks-cta ks-cta--ghost hy-press" onClick={onClose}>
-        알겠어!
+        {intl.formatMessage({ id: "child.action.gotIt" })}
       </button>
     </ChildSheet>
   );

@@ -89,11 +89,11 @@ export function PairingWizard() {
   const currentAddDecision = resolveAddition(1);
   const remainingSlots = currentAddDecision.remainingSlots;
   const noSlots = gatesReady && remainingSlots <= 0;
-  const gateMessage = "가족·구독 정보를 확인 중이에요. 잠시 후 다시 시도해 주세요";
+  const gateMessage = intl.formatMessage({ id: "parent.pairingWizard.gateMessage" });
   const childLimitMessage =
     tier === TIERS.PREMIUM
-      ? "프리미엄은 아이 2명까지 연결할 수 있어요"
-      : lockMessageFor(FEATURES.MULTI_CHILD);
+      ? intl.formatMessage({ id: "parent.pairingWizard.premiumLimit" })
+      : lockMessageFor(FEATURES.MULTI_CHILD, intl);
 
   const [step, setStep] = useState<Step>(1);
   const [count, setCount] = useState(1);
@@ -141,7 +141,7 @@ export function PairingWizard() {
     try {
       const dataUrl = await resizeImageFileSafe(file, { maxEdge: 1280, quality: 0.8 });
       if (!dataUrl) {
-        show("사진을 불러오지 못했어요", "⚠️");
+        show(intl.formatMessage({ id: "parent.pairingWizard.photoError" }), "⚠️");
         return;
       }
       updateChild(index, { photoDataUrl: dataUrl });
@@ -152,6 +152,19 @@ export function PairingWizard() {
 
   const childRequirements = useMemo(() => validateChildDraftRequirements(children), [children]);
   const childInfoReady = childRequirements.ok;
+  const requirementMessage = (
+    result: Exclude<ReturnType<typeof validateChildDraftRequirements>, { ok: true }>,
+  ): string => {
+    const childNumber = intl.formatNumber(result.index + 1);
+    return intl.formatMessage(
+      {
+        id: children[result.index]?.name.trim()
+          ? "parent.pairingWizard.missingBirthdate"
+          : "parent.pairingWizard.missingName",
+      },
+      { childNumber },
+    );
+  };
 
   const back = () => {
     if (step === 1) navigate(-1);
@@ -166,7 +179,7 @@ export function PairingWizard() {
     }
     else if (step === 2) {
       if (!childRequirements.ok) {
-        show(childRequirements.message, "🎂");
+        show(requirementMessage(childRequirements), "🎂");
         return;
       }
       setStep(3);
@@ -177,7 +190,7 @@ export function PairingWizard() {
   const issueCode = (pendingChildren = children) => {
     regen.mutate(undefined, {
       onSuccess: () => {
-        show("연결 코드를 만들었어요", "🔗");
+        show(intl.formatMessage({ id: "parent.pairingWizard.codeCreated" }), "🔗");
         navigate("/child-invite", { state: { pendingChildren } });
       },
       onError: (e) => show(localizeApiError(e, intl, "formal"), "⚠️"),
@@ -190,7 +203,7 @@ export function PairingWizard() {
     if (!handleBlockedAddition(addDecision)) return;
     const required = validateChildDraftRequirements(children);
     if (!required.ok) {
-      show(required.message, "🎂");
+      show(requirementMessage(required), "🎂");
       setStep(2);
       return;
     }
@@ -207,7 +220,10 @@ export function PairingWizard() {
     }
     createChildren.mutate(
       {
-        parentName: family?.myName || family?.parentName || "부모",
+        parentName:
+          family?.myName ||
+          family?.parentName ||
+          intl.formatMessage({ id: "parent.pairingWizard.parentFallback" }),
         plannedChildCount: existingChildCount + validChildren.length,
         startOrder: existingChildCount,
         children: validChildren.map((c) => ({
@@ -226,10 +242,10 @@ export function PairingWizard() {
   if (pairingQueryState === "loading") {
     return (
       <ScreenQueryState
-        screenTitle="아이 연결"
+        screenTitle={intl.formatMessage({ id: "parent.pairingWizard.screenTitle" })}
         state="loading"
-        heading="연결 가능 인원을 확인하고 있어요"
-        description="현재 가족과 구독 한도를 불러오는 중이에요."
+        heading={intl.formatMessage({ id: "parent.pairingWizard.loadingHeading" })}
+        description={intl.formatMessage({ id: "parent.pairingWizard.loadingDescription" })}
         onBack={() => navigate(-1)}
       />
     );
@@ -238,10 +254,10 @@ export function PairingWizard() {
   if (pairingQueryState === "error" || pairingDataMissing) {
     return (
       <ScreenQueryState
-        screenTitle="아이 연결"
+        screenTitle={intl.formatMessage({ id: "parent.pairingWizard.screenTitle" })}
         state="error"
-        heading="아이 연결 정보를 확인하지 못했어요"
-        description="기존 아이가 밀리지 않도록 연결 한도가 확인될 때까지 진행하지 않아요."
+        heading={intl.formatMessage({ id: "parent.pairingWizard.errorHeading" })}
+        description={intl.formatMessage({ id: "parent.pairingWizard.errorDescription" })}
         onBack={() => navigate(-1)}
         onRetry={() => void retryPairingWizard()}
         retrying={pairingRefetching}
@@ -252,16 +268,23 @@ export function PairingWizard() {
   return (
     <div className="pw-root">
       <header className="pw-header">
-        <button type="button" className="hy-iconbtn hy-press pw-back" aria-label="뒤로" onClick={back}>
+        <button
+          type="button"
+          className="hy-iconbtn hy-press pw-back"
+          aria-label={intl.formatMessage({ id: "parent.pairingWizard.back" })}
+          onClick={back}
+        >
           <ChevronLeft size={22} strokeWidth={2.2} />
         </button>
-        <span className="pw-title">아이 연결</span>
+        <span className="pw-title">
+          {intl.formatMessage({ id: "parent.pairingWizard.screenTitle" })}
+        </span>
       </header>
 
       <div className="pw-content">
         {existingChildCount === 0 && (
           <div className="sqs-inline-empty">
-            <span>아직 연결된 아이가 없어요. 첫 아이 정보를 차례로 입력해 주세요.</span>
+            <span>{intl.formatMessage({ id: "parent.pairingWizard.empty" })}</span>
           </div>
         )}
         {/* 진행 표시 */}
@@ -271,13 +294,29 @@ export function PairingWizard() {
           ))}
         </div>
         <div className="pw-steplabel">
-          {step} / 3 · {step === 1 ? "아이 수" : step === 2 ? "아이 정보" : "연결 코드"}
+          {intl.formatMessage(
+            { id: "parent.pairingWizard.stepLabel" },
+            {
+              step: intl.formatNumber(step),
+              total: intl.formatNumber(3),
+              title: intl.formatMessage({
+                id:
+                  step === 1
+                    ? "parent.pairingWizard.stepCount"
+                    : step === 2
+                      ? "parent.pairingWizard.stepInfo"
+                      : "parent.pairingWizard.stepCode",
+              }),
+            },
+          )}
         </div>
 
         {/* ── STEP 1 : 아이 수 ── */}
         {step === 1 && (
           <>
-            <div className="pw-lead">몇 명을 연결할까요?</div>
+            <div className="pw-lead">
+              {intl.formatMessage({ id: "parent.pairingWizard.countLead" })}
+            </div>
             <div className="pw-count-grid">
               {COUNTS.map((n) => {
                 const optionDecision = resolveAddition(n);
@@ -290,15 +329,15 @@ export function PairingWizard() {
                     onClick={() => selectCount(n)}
                     aria-disabled={locked}
                   >
-                    <span className="pw-count__n">{n}</span>
+                    <span className="pw-count__n">{intl.formatNumber(n)}</span>
                     <span className="pw-count__u">
                       {optionDecision.status === "unavailable"
-                        ? "확인 중"
+                        ? intl.formatMessage({ id: "parent.pairingWizard.checking" })
                         : optionDecision.status === "premium_required"
-                          ? "프리미엄"
+                          ? intl.formatMessage({ id: "parent.pairingWizard.statusPremium" })
                           : optionDecision.status === "limit_reached"
-                            ? "최대"
-                            : "명"}
+                            ? intl.formatMessage({ id: "parent.pairingWizard.statusMax" })
+                            : intl.formatMessage({ id: "parent.pairingWizard.unitChild" })}
                     </span>
                   </button>
                 );
@@ -306,10 +345,10 @@ export function PairingWizard() {
             </div>
             <p className="pw-note hy-explain">
               {!gatesReady
-                ? "가족과 구독 정보를 확인한 뒤 아이 연결을 진행해 주세요."
+                ? intl.formatMessage({ id: "parent.pairingWizard.gateNote" })
                 : noSlots
                 ? childLimitMessage
-                : "첫째 아이는 무료, 둘째부터는 프리미엄이에요."}
+                : intl.formatMessage({ id: "parent.pairingWizard.firstFree" })}
             </p>
           </>
         )}
@@ -317,10 +356,17 @@ export function PairingWizard() {
         {/* ── STEP 2 : 아이 정보(사진 + 이름 + 생년월일) ── */}
         {step === 2 && (
           <>
-            <div className="pw-lead">아이 사진과 정보를 알려 주세요</div>
+            <div className="pw-lead">
+              {intl.formatMessage({ id: "parent.pairingWizard.infoLead" })}
+            </div>
             {children.map((child, i) => (
               <div key={i} className="pw-childcard">
-                <div className="pw-childcard__head">아이 {i + 1}</div>
+                <div className="pw-childcard__head">
+                  {intl.formatMessage(
+                    { id: "parent.pairingWizard.childLabel" },
+                    { number: intl.formatNumber(i + 1) },
+                  )}
+                </div>
 
                 <div className="pw-photorow">
                   <button
@@ -328,7 +374,7 @@ export function PairingWizard() {
                     className="pw-photo hy-press"
                     onClick={() => fileRefs.current[i]?.click()}
                     disabled={processingIndex === i}
-                    aria-label="사진 선택"
+                    aria-label={intl.formatMessage({ id: "parent.pairingWizard.photoAria" })}
                   >
                     {child.photoDataUrl ? (
                       <img src={child.photoDataUrl} alt="" />
@@ -351,18 +397,22 @@ export function PairingWizard() {
                     onChange={(e) => onPick(i, e)}
                   />
                   <label className="pw-field pw-photorow__field">
-                    <span className="pw-flabel">이름 *</span>
+                    <span className="pw-flabel">
+                      {intl.formatMessage({ id: "parent.pairingWizard.nameLabel" })}
+                    </span>
                     <input
                       className="pw-input"
                       value={child.name}
                       onChange={(e) => updateChild(i, { name: e.target.value })}
-                      placeholder="이름"
+                      placeholder={intl.formatMessage({ id: "parent.pairingWizard.namePlaceholder" })}
                       maxLength={20}
                     />
                   </label>
                 </div>
                 <label className="pw-field">
-                  <span className="pw-flabel">생년월일 *</span>
+                  <span className="pw-flabel">
+                    {intl.formatMessage({ id: "parent.pairingWizard.birthdateLabel" })}
+                  </span>
                   <input
                     className="pw-input pw-input--date"
                     type="date"
@@ -374,7 +424,7 @@ export function PairingWizard() {
               </div>
             ))}
             <p className="pw-note hy-explain">
-              생년월일은 AI 친구가 아이 나이에 맞게 말하도록 꼭 필요해요. 사진은 연결 후에도 추가할 수 있어요.
+              {intl.formatMessage({ id: "parent.pairingWizard.birthdateNote" })}
             </p>
           </>
         )}
@@ -382,7 +432,9 @@ export function PairingWizard() {
         {/* ── STEP 3 : 연결 코드 만들기 ── */}
         {step === 3 && (
           <>
-            <div className="pw-lead">연결 코드를 만들어요</div>
+            <div className="pw-lead">
+              {intl.formatMessage({ id: "parent.pairingWizard.codeLead" })}
+            </div>
             <div className="pw-summary">
               {children.map((child, i) => (
                 <div key={i} className="pw-summary__row">
@@ -394,7 +446,10 @@ export function PairingWizard() {
                     </span>
                   )}
                   <span className="pw-summary__name">
-                    {child.name.trim() || `아이 ${i + 1}`}
+                    {child.name.trim() || intl.formatMessage(
+                      { id: "parent.pairingWizard.childFallback" },
+                      { number: intl.formatNumber(i + 1) },
+                    )}
                     <small>{child.birthdate}</small>
                   </span>
                 </div>
@@ -404,14 +459,22 @@ export function PairingWizard() {
               {family?.isPrimaryParent
                 ? (
                   <span className="hy-explain__lines">
-                    <span className="hy-explain__line">연결 코드를 만들면 아이 정보(사진·이름·생년월일·테마색)가 저장돼요.</span>
-                    <span className="hy-explain__line">아이 기기에서 코드를 입력하면 이 정보를 이어받아 연결돼요.</span>
+                    <span className="hy-explain__line">
+                      {intl.formatMessage({ id: "parent.pairingWizard.primarySaveLine" })}
+                    </span>
+                    <span className="hy-explain__line">
+                      {intl.formatMessage({ id: "parent.pairingWizard.primaryInheritLine" })}
+                    </span>
                   </span>
                 )
                 : (
                   <span className="hy-explain__lines">
-                    <span className="hy-explain__line">주 보호자만 아이 정보를 서버에 저장할 수 있어요.</span>
-                    <span className="hy-explain__line">지금 만든 정보는 초대 화면에 미리보기로 전달돼요.</span>
+                    <span className="hy-explain__line">
+                      {intl.formatMessage({ id: "parent.pairingWizard.secondarySaveLine" })}
+                    </span>
+                    <span className="hy-explain__line">
+                      {intl.formatMessage({ id: "parent.pairingWizard.secondaryPreviewLine" })}
+                    </span>
                   </span>
                 )}
             </p>
@@ -423,11 +486,19 @@ export function PairingWizard() {
       <div className="pw-footer">
         {step < 3 ? (
           <button type="button" className="pw-cta hy-press" onClick={next} disabled={step === 2 && !childInfoReady}>
-            {step === 1 ? "다음" : "다음 · 연결 코드 만들기"}
+            {intl.formatMessage({
+              id: step === 1
+                ? "parent.pairingWizard.next"
+                : "parent.pairingWizard.nextCode",
+            })}
           </button>
         ) : (
           <button type="button" className="pw-cta hy-press" onClick={makeCode} disabled={busy} aria-busy={busy}>
-            {busy ? "코드 만드는 중…" : "연결 코드 만들기"}
+            {intl.formatMessage({
+              id: busy
+                ? "parent.pairingWizard.creating"
+                : "parent.pairingWizard.create",
+            })}
           </button>
         )}
       </div>
@@ -442,7 +513,9 @@ export function PairingWizard() {
           const saved = storage && returnTo
             ? savePremiumReturnIntent(storage, { source, feature, returnTo })
             : false;
-          if (!saved) throw new Error("아이 연결 복귀 경로를 안전하게 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+          if (!saved) {
+            throw new Error(intl.formatMessage({ id: "parent.family.returnIntentFailed" }));
+          }
           setUpsellOpen(false);
           navigate("/subscription");
         }}

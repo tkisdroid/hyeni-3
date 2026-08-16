@@ -54,11 +54,13 @@ test("PWA 결제 미확정·조회 냉각 응답은 pending을 보존하고 같�
 
 test("PWA 환불 사용분은 구매 전 팩별 상계량과 완료 뒤 실제 사용 가능 증가분을 숨김없이 표시한다", () => {
   const screen = read("src/screens/feature/AiCredit.tsx");
+  const koBilling = JSON.parse(read("locales/ko/billing.json"));
   const api = read("src/lib/api/endpoints/webBilling.ts");
   const balanceApi = read("src/lib/api/endpoints/ai.ts");
   assert.match(screen, /purchasedCreditDebt/);
   assert.match(screen, /resolveWebAiCreditDebtImpact/);
-  assert.match(screen, /환불된 크레딧을 이미 사용한/);
+  assert.match(screen, /billing\.aiCredit\.packs\.debtNotice/);
+  assert.match(koBilling["billing.aiCredit.packs.debtNotice"], /환불된 크레딧을 이미 사용한/);
   assert.match(screen, /result\.debtApplied/);
   assert.match(screen, /result\.availableCreditsAdded/);
   assert.match(api, /debtApplied:\s*number/);

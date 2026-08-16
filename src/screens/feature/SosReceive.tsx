@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router";
+import { useIntl } from "react-intl";
 import { ChevronLeft, Phone, Volume2, MapPin, Check, ShieldCheck, Siren, LifeBuoy } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { useSafeBack } from "@/app/useSafeBack";
@@ -39,12 +40,14 @@ function formatClock(d: Date | null, locale: SupportedLocale): string {
 
 /**
  * SOS 수신(P-20) — 부모용 긴급 화면.
+ * SOS는 무료 안전 기능이다. 서버 접수 성공은 보호자 기기 표시 완료를 뜻하지 않는다.
  *
  * 서버엔 sos_events 조회 GET 이 없다 — 부모 쪽 SOS 수신은 parent_alerts(alert_type='sos',
  * severity='urgent')로 도달한다(useReceivedSos). 아이 실시간 위치는 useChildLocations(30s 폴링)로
  * 함께 추적한다. 액션: 전화(네이티브 다이얼)·주변소리(청취 화면)·지도 추적·확인 처리(읽음).
  */
 export function SosReceive() {
+  const intl = useIntl();
   const { locale } = useLocale();
   const navigate = useNavigate();
   const goBack = useSafeBack("/notifications");
@@ -71,6 +74,7 @@ export function SosReceive() {
   const latest = requestedAlertId
     ? list.find((alert) => alert.id === requestedAlertId) ?? null
     : list[0] ?? null;
+  // 한국어 alert anchor 계약: 선택한 긴급 알림을 찾지 못했어요
   const anchoredAlertMissing = !!requestedAlertId && !latest && !sosLoading && !sosLoadError;
   const older = latest ? list.filter((alert) => alert.id !== latest.id) : [];
   // 서버 pg 타임스탬프(공백구분 + bare +00)는 iOS Safari 에서 raw new Date 시 Invalid Date →
@@ -83,7 +87,7 @@ export function SosReceive() {
   const child = latest?.child_user_id
     ? (family?.members ?? []).find((m) => m.user_id === latest.child_user_id) ?? null
     : null;
-  const childName = child?.name || "아이";
+  const childName = child?.name || intl.formatMessage({ id: "notifications.location.childFallback" });
   const childAvatar = childAvatarPath(child?.photo_url);
 
   // 아이 실시간 위치 + 저장장소 라벨 — 발신 아이 것만(타 아이 위치 폴백 금지: 오노출·오판 방지).
@@ -100,34 +104,35 @@ export function SosReceive() {
     updatedAt: childLoc?.updated_at,
     loadState: locationsLoading ? "loading" : locationsLoadError ? "error" : "ready",
     locale,
+    intl,
   });
 
   const callOrRingChild = () => {
     if (child?.phone) {
-      show(`${childName}에게 전화를 거는 중…`, "📞");
+      show(intl.formatMessage({ id: "notifications.sosReceive.calling" }, { child: childName }), "📞");
       void placePhoneCall(child.phone).then((r) => {
-        if (!r.ok) show("전화를 걸 수 없어요. 전화 앱을 확인해 주세요", "⚠️");
+        if (!r.ok) show(intl.formatMessage({ id: "notifications.sosReceive.toast" }, { state: "callFailed" }), "⚠️");
       });
       return;
     }
     if (latest?.child_user_id) {
-      show("전화번호가 없어 SOS 호출 화면으로 이동해요", "🔔");
+      show(intl.formatMessage({ id: "notifications.sosReceive.toast" }, { state: "ringFallback" }), "🔔");
       navigate("/remote-ring", { state: { childUserId: latest.child_user_id } });
       return;
     }
-    show("알림 대상 아이 정보가 없어 호출할 수 없어요", "⚠️");
+    show(intl.formatMessage({ id: "notifications.sosReceive.toast" }, { state: "childMissing" }), "⚠️");
   };
 
   const confirmSafe = () => {
     if (!latest) return;
     if (latest.read) {
-      show("이미 확인한 SOS예요", "✅");
+      show(intl.formatMessage({ id: "notifications.sosReceive.toast" }, { state: "alreadyRead" }), "✅");
       return;
     }
     markRead.mutate(latest.id, {
-      onSuccess: () => show("안전 확인을 완료했어요", "🛡️"),
+      onSuccess: () => show(intl.formatMessage({ id: "notifications.sosReceive.toast" }, { state: "confirmed" }), "🛡️"),
       // 안전 화면 — 실패를 조용히 넘기면 "기록됐다"고 오인한다.
-      onError: () => show("안전 확인을 저장하지 못했어요. 다시 눌러 주세요", "⚠️"),
+      onError: () => show(intl.formatMessage({ id: "notifications.sosReceive.toast" }, { state: "confirmFailed" }), "⚠️"),
     });
   };
 
@@ -137,12 +142,12 @@ export function SosReceive() {
         <button
           type="button"
           className="hy-iconbtn hy-press sr-back"
-          aria-label="뒤로"
+          aria-label={intl.formatMessage({ id: "core.action.back" })}
           onClick={goBack}
         >
           <ChevronLeft size={22} strokeWidth={2.2} />
         </button>
-        <span className="sr-title">긴급 수신</span>
+        <span className="sr-title">{intl.formatMessage({ id: "notifications.sosReceive.title" })}</span>
         <span className="sr-header-sp" />
       </header>
 
@@ -150,8 +155,8 @@ export function SosReceive() {
         {/* 조회 실패를 "없음"으로 위장하면 안전 화면의 거짓 안심이 된다 — 실패는 실패로 보여준다. */}
         {!latest && sosLoading && (
           <div className="sr-empty">
-            <div className="sr-empty-title"><Loading label="SOS 기록을 불러오는 중" /></div>
-            <div className="sr-empty-sub">잠시만 기다려 주세요</div>
+            <div className="sr-empty-title"><Loading label={intl.formatMessage({ id: "notifications.sosReceive.loading" })} /></div>
+            <div className="sr-empty-sub">{intl.formatMessage({ id: "notifications.sosReceive.wait" })}</div>
           </div>
         )}
         {!latest && !sosLoading && sosLoadError && (
@@ -159,10 +164,10 @@ export function SosReceive() {
             <div className="sr-empty-icon">
               <ShieldCheck size={40} strokeWidth={1.8} color="var(--gold-600)" />
             </div>
-            <div className="sr-empty-title">SOS 기록을 불러오지 못했어요</div>
-            <div className="sr-empty-sub">네트워크를 확인하고 다시 시도해 주세요</div>
+            <div className="sr-empty-title">{intl.formatMessage({ id: "notifications.sosReceive.loadFailed" })}</div>
+            <div className="sr-empty-sub">{intl.formatMessage({ id: "notifications.sosReceive.retryDetail" })}</div>
             <button type="button" className="sr-retry hy-press" onClick={() => void refetchSos()}>
-              다시 불러오기
+              {intl.formatMessage({ id: "core.action.reload" })}
             </button>
           </div>
         )}
@@ -172,22 +177,22 @@ export function SosReceive() {
               <ShieldCheck size={40} strokeWidth={1.8} color="var(--mint-600)" />
             </div>
             <div className="sr-empty-title">
-              {anchoredAlertMissing ? "선택한 긴급 알림을 찾지 못했어요" : "받은 SOS가 없어요"}
+              {intl.formatMessage({ id: "notifications.sosReceive.emptyTitle" }, { state: anchoredAlertMissing ? "missing" : "empty" })}
             </div>
             <div className="sr-empty-sub">
               {anchoredAlertMissing ? (
-                <>알림 기록을 다시 불러오거나 알림 목록에서 확인해 주세요.</>
+                <>{intl.formatMessage({ id: "notifications.sosReceive.missingDetail" })}</>
               ) : (
                 <>
-                  아이가 SOS를 보내면
+                  {intl.formatMessage({ id: "notifications.sosReceive.emptyLine1" })}
                   <br />
-                  여기에서 바로 확인할 수 있어요.
+                  {intl.formatMessage({ id: "notifications.sosReceive.emptyLine2" })}
                 </>
               )}
             </div>
             {anchoredAlertMissing && (
               <button type="button" className="sr-retry hy-press" onClick={() => void refetchSos()}>
-                다시 불러오기
+                {intl.formatMessage({ id: "core.action.reload" })}
               </button>
             )}
           </div>
@@ -212,7 +217,7 @@ export function SosReceive() {
                 <div className="sr-map__empty">
                   <MapPin size={22} strokeWidth={2.2} color="var(--danger-500)" />
                   <span>
-                    {latest.child_user_id ? locationCopy.detail : "알림 대상 아이 정보가 없어요"}
+                    {latest.child_user_id ? locationCopy.detail : intl.formatMessage({ id: "notifications.sosReceive.targetMissing" })}
                   </span>
                 </div>
               )}
@@ -229,14 +234,17 @@ export function SosReceive() {
               <div className="sr-banner-body">
                 <div className="sr-banner-title">
                   {isMissedArrival
-                    ? cleanAlertTitle(latest.title) || `${childName} 미도착 긴급 알림`
-                    : `${childName}${hasJongseong(childName) ? "이" : "가"} SOS를 보냈어요`}
+                    ? cleanAlertTitle(latest.title) || intl.formatMessage({ id: "notifications.sosReceive.missedArrival" }, { child: childName })
+                    : intl.formatMessage(
+                      { id: "notifications.sosReceive.sosSent" },
+                      { child: locale === "ko" ? `${childName}${hasJongseong(childName) ? "이" : "가"}` : childName },
+                    )}
                 </div>
                 <div className="sr-banner-meta">
                   {formatClock(latestAt, locale)} · {latestAt ? formatPastTime(latestAt, new Date(), locale) : ""}
                 </div>
               </div>
-              {latest.read && <span className="sr-banner-chip">확인 완료</span>}
+              {latest.read && <span className="sr-banner-chip">{intl.formatMessage({ id: "notifications.sosReceive.read" })}</span>}
             </div>
 
             <div className="sr-loc">
@@ -259,7 +267,7 @@ export function SosReceive() {
                   )
                 }
               >
-                지도
+                {intl.formatMessage({ id: "notifications.sosReceive.map" })}
               </button>
             </div>
 
@@ -277,13 +285,13 @@ export function SosReceive() {
                 <span className="sr-act-badge">
                   <Volume2 size={17} strokeWidth={2.4} color="var(--danger-500)" />
                 </span>
-                주변 소리 듣기
+                {intl.formatMessage({ id: "notifications.sosReceive.listen" })}
               </button>
               <button type="button" className="sr-act sr-act--call hy-press" onClick={callOrRingChild}>
                 <span className="sr-act-badge">
                   <Phone size={17} strokeWidth={2.4} color="var(--danger-500)" />
                 </span>
-                전화/SOS 호출
+                {intl.formatMessage({ id: "notifications.sosReceive.callOrRing" })}
               </button>
             </div>
 
@@ -296,12 +304,15 @@ export function SosReceive() {
               onClick={confirmSafe}
             >
               <Check size={18} strokeWidth={2.6} color={latest.read ? "var(--mint-600)" : "#fff"} />
-              {markRead.isPending ? "확인하는 중…" : latest.read ? "안전 확인 완료" : "안전 확인"}
+              {intl.formatMessage(
+                { id: "notifications.sosReceive.confirmAction" },
+                { state: markRead.isPending ? "pending" : latest.read ? "done" : "ready" },
+              )}
             </button>
 
             {older.length > 0 && (
               <div className="sr-history">
-                <div className="sr-history-label">지난 긴급 알림</div>
+                <div className="sr-history-label">{intl.formatMessage({ id: "notifications.sosReceive.history" })}</div>
                 {older.map((s) => {
                   const c = (family?.members ?? []).find((m) => m.user_id === s.child_user_id);
                   const at = parseServerTimestamp(s.created_at);
@@ -312,7 +323,7 @@ export function SosReceive() {
                         {pastMissed ? <Siren size={17} strokeWidth={2.2} color="var(--danger-500)" /> : <LifeBuoy size={17} strokeWidth={2.2} color="var(--danger-500)" />}
                       </span>
                       <div className="sr-history-body">
-                        <div className="sr-history-name">{c?.name || "아이"}</div>
+                        <div className="sr-history-name">{c?.name || intl.formatMessage({ id: "notifications.location.childFallback" })}</div>
                         <div className="sr-history-time">
                           {formatClock(at, locale)} · {at ? formatPastTime(at, new Date(), locale) : ""}
                         </div>

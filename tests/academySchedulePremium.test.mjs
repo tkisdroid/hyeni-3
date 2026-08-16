@@ -17,6 +17,7 @@ test("부모 홈은 일반 AI 일정과 별도로 학원 시간표 Premium 진�
 test("학원 시간표 전용 모드는 Premium만 열고 일반 일정 추가 경로는 Free로 남긴다", () => {
   const source = read("src/screens/feature/AiSchedule.tsx");
   const api = read("src/lib/api/endpoints/ai.ts");
+  const koParent = JSON.parse(read("locales/ko/parent.json"));
   assert.match(source, /searchParams\.get\("mode"\) === "academy"/);
   assert.match(source, /canUse\(entitlement\.tier, FEATURES\.ACADEMY_SCHEDULE\)/);
   assert.match(source, /feature:\s*academyMode\s*\?\s*"academy_schedule"\s*:\s*undefined/);
@@ -27,5 +28,7 @@ test("학원 시간표 전용 모드는 Premium만 열고 일반 일정 추가 �
   assert.match(source, /source="academy_schedule"/);
   assert.match(source, /navigate\("\/ai-schedule\?tab=text", \{ replace: true \}\)/);
   assert.match(source, /savePremiumReturnIntent/);
-  assert.match(source, /academyMode \? "학원 시간표 정리" : "AI로 일정 추가"/);
+  assert.match(source, /academyMode[\s\S]+parent\.aiSchedule\.academyScreenTitle[\s\S]+parent\.aiSchedule\.screenTitle/);
+  assert.equal(koParent["parent.aiSchedule.academyScreenTitle"], "학원 시간표 정리");
+  assert.equal(koParent["parent.aiSchedule.screenTitle"], "AI로 일정 추가");
 });

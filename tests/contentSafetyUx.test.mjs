@@ -12,6 +12,7 @@ const dialogFocusStack = await read("src/components/dialogFocusStack.ts");
 const endpoint = await read("src/lib/api/endpoints/contentSafety.ts");
 const queries = await read("src/queries/useContentSafety.ts");
 const childHome = await read("src/screens/child/ChildHome.tsx");
+const koChild = JSON.parse(await read("locales/ko/child.json"));
 const koShared = JSON.parse(await read("locales/ko/shared.json"));
 
 test("저장된 AI assistant 메시지는 즉시 신고할 수 있고 로컬 인사·오류는 신고하지 않는다", () => {
@@ -58,6 +59,10 @@ test("차단 API는 가족 연결이나 안전 알림 API를 변경하지 않고
 });
 
 test("빠른 상태는 차단될 수 있는 가족 메시지 저장을 실제 수신처럼 단정하지 않는다", () => {
-  assert.match(childHome, /가족 메시지에 남겼어/);
-  assert.doesNotMatch(childHome, /부모님께 보냈어/);
+  assert.match(
+    childHome,
+    /onSuccess:\s*\(\) => show\(intl\.formatMessage\(\{ id: "child\.home\.quickStatus\.sent" \}\)/,
+  );
+  assert.equal(koChild["child.home.quickStatus.sent"], "가족 메시지에 남겼어");
+  assert.doesNotMatch(koChild["child.home.quickStatus.sent"], /부모님께 보냈어/);
 });

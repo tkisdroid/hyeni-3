@@ -62,15 +62,26 @@ test("공용 오류·권한·업데이트·피드백 UI는 아이 말투 분기�
   }
 });
 
-test("동적 이름 뒤 조사는 기존 받침 판정 유틸을 사용한다", () => {
-  const cases = [
-    ["src/screens/feature/FamilyConnection.tsx", /hasJongseong\(connected\[0\]\.name \|\| "아이"\)/],
-    ["src/screens/feature/SosReceive.tsx", /hasJongseong\(childName\)/],
-    ["src/screens/child/AiFriendChat.tsx", /hasJongseong\(friendName\)/],
-  ];
+test("동적 이름의 한국어 조사는 ko 경로에서만 적용하고 AI 대화는 locale 카탈로그가 문장을 완성한다", () => {
+  const familyConnection = read("src/screens/feature/FamilyConnection.tsx");
+  const sosReceive = read("src/screens/feature/SosReceive.tsx");
+  const aiChat = read("src/screens/child/AiFriendChat.tsx");
+  const koChild = JSON.parse(read("locales/ko/child.json"));
+  const nonKoreanLocales = ["en", "ja", "zh-CN", "zh-TW", "vi", "th", "id", "ms", "fil"];
 
-  for (const [path, pattern] of cases) {
-    assert.match(read(path), pattern, `${path}의 동적 조사 선택이 고정되면 안 돼요`);
+  assert.match(familyConnection, /locale === "ko"[\s\S]*hasJongseong\(connected\[0\]\.name \|\| "아이"\)/);
+  assert.match(sosReceive, /locale === "ko" \? `\$\{childName\}\$\{hasJongseong\(childName\)/);
+  assert.match(aiChat, /child\.aiChat\.messageAria[\s\S]{0,100}\{ name: friendName \}/);
+  assert.match(aiChat, /child\.aiChat\.placeholder[\s\S]{0,100}\{ name: friendName \}/);
+  assert.doesNotMatch(aiChat, /hasJongseong\(friendName\)/);
+  assert.equal(koChild["child.aiChat.messageAria"], "{name}에게 메시지");
+  assert.equal(koChild["child.aiChat.placeholder"], "{name}에게 말해 봐…");
+
+  for (const locale of nonKoreanLocales) {
+    const catalog = JSON.parse(read(`locales/${locale}/child.json`));
+    for (const id of ["child.aiChat.messageAria", "child.aiChat.placeholder"]) {
+      assert.doesNotMatch(catalog[id], /\{name\}(?:이|가|을|를|은|는|과|와|에게)/, `${locale}:${id}`);
+    }
   }
 });
 

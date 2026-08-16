@@ -87,11 +87,29 @@ export function FamilyConnection() {
   };
 
   const statusFor = (userId: string | null): { label: string; tone: "safe" | "warn" | "muted" } => {
-    if (!userId) return { label: "연결 대기 중", tone: "muted" };
+    if (!userId) {
+      return {
+        label: intl.formatMessage({ id: "parent.familyConnection.statusPending" }),
+        tone: "muted",
+      };
+    }
     const loc = (locations ?? []).find((l) => l.user_id === userId);
-    if (!loc) return { label: "위치 정보 없음", tone: "muted" };
-    const fresh = formatFreshness(loc.updated_at, now, locale);
-    if (fresh.status === "live") return { label: `온라인 · ${fresh.label}`, tone: "safe" };
+    if (!loc) {
+      return {
+        label: intl.formatMessage({ id: "parent.familyConnection.statusNoLocation" }),
+        tone: "muted",
+      };
+    }
+    const fresh = formatFreshness(loc.updated_at, now, locale, intl);
+    if (fresh.status === "live") {
+      return {
+        label: intl.formatMessage(
+          { id: "parent.familyConnection.statusOnline" },
+          { freshness: fresh.label },
+        ),
+        tone: "safe",
+      };
+    }
     if (fresh.status === "recent") return { label: fresh.label, tone: "safe" };
     return { label: fresh.label, tone: "warn" };
   };
@@ -100,30 +118,55 @@ export function FamilyConnection() {
     if (!confirm || unpair.isPending) return;
     unpair.mutate(confirm.userId, {
       onSuccess: () => {
-        show(`‘${confirm.name}’ 기기 연결을 해제했어요`, "🔗");
+        show(intl.formatMessage(
+          { id: "parent.familyConnection.unpaired" },
+          { childName: confirm.name },
+        ), "🔗");
         setConfirm(null);
       },
       onError: (e) => show(localizeApiError(e, intl, "formal"), "⚠️"),
     });
   };
 
+  const childFallback = intl.formatMessage({ id: "parent.familyConnection.childFallback" });
+  const guardianFallback = intl.formatMessage({ id: "parent.familyConnection.guardianFallback" });
+  const singleChildName = connected[0]?.name || childFallback;
+  const singleChildSubject = locale === "ko"
+    ? `${singleChildName}${
+        hasJongseong(connected[0].name || "아이")
+          ? intl.formatMessage({ id: "parent.familyConnection.particleConsonant" })
+          : intl.formatMessage({ id: "parent.familyConnection.particleVowel" })
+      }`
+    : singleChildName;
+
   return (
     <div className="fc-root">
       <header className="fc-header">
-        <button type="button" className="hy-iconbtn hy-press fc-back" aria-label="뒤로" onClick={() => navigate(-1)}>
+        <button
+          type="button"
+          className="hy-iconbtn hy-press fc-back"
+          aria-label={intl.formatMessage({ id: "parent.familyConnection.back" })}
+          onClick={() => navigate(-1)}
+        >
           <ChevronLeft size={22} strokeWidth={2.2} />
         </button>
-        <span className="fc-title">연결 상태</span>
+        <span className="fc-title">
+          {intl.formatMessage({ id: "parent.familyConnection.screenTitle" })}
+        </span>
       </header>
 
       <div className="fc-content">
-        {connectionLoading && !connectionError && <div className="fc-state"><Loading label="연결 정보를 불러오는 중" /></div>}
+        {connectionLoading && !connectionError && (
+          <div className="fc-state">
+            <Loading label={intl.formatMessage({ id: "parent.familyConnection.loading" })} />
+          </div>
+        )}
         {connectionError && (
           <div className="fc-state fc-state--error" role="alert">
-            연결 정보를 불러오지 못했어요
+            {intl.formatMessage({ id: "parent.familyConnection.loadError" })}
             {connectionErrorValue ? ` (${localizeApiError(connectionErrorValue, intl, "formal")})` : ""}
             <button type="button" className="fc-ghost hy-press" onClick={() => void retryFamilyConnection()}>
-              다시 시도
+              {intl.formatMessage({ id: "parent.familyConnection.retry" })}
             </button>
           </div>
         )}
@@ -140,15 +183,21 @@ export function FamilyConnection() {
               <div className="fc-hero__main">
                 <div className="fc-hero__title">
                   {connected.length === 0
-                    ? "아직 연결된 아이가 없어요"
+                    ? intl.formatMessage({ id: "parent.familyConnection.heroEmpty" })
                     : connected.length === 1
-                      ? `${connected[0].name || "아이"}${hasJongseong(connected[0].name || "아이") ? "과" : "와"} 연결 완료!`
-                      : `아이 ${connected.length}명과 연결됨`}
+                      ? intl.formatMessage(
+                          { id: "parent.familyConnection.heroOne" },
+                          { childName: singleChildSubject },
+                        )
+                      : intl.formatMessage(
+                          { id: "parent.familyConnection.heroMany" },
+                          { count: intl.formatNumber(connected.length) },
+                        )}
                 </div>
                 <div className="fc-hero__sub">
                   {connected.length
-                    ? "아이 기기와 실시간으로 연결돼 있어요"
-                    : "연결 코드로 아이 기기를 연결해 주세요"}
+                    ? intl.formatMessage({ id: "parent.familyConnection.heroConnectedSub" })
+                    : intl.formatMessage({ id: "parent.familyConnection.heroEmptySub" })}
                 </div>
               </div>
             </div>
@@ -156,7 +205,9 @@ export function FamilyConnection() {
             {/* 연결된 아이 기기 */}
             {connected.length > 0 && (
               <section className="fc-sec">
-                <div className="fc-label">연결된 기기</div>
+                <div className="fc-label">
+                  {intl.formatMessage({ id: "parent.familyConnection.connectedDevices" })}
+                </div>
                 {connected.map((c) => {
                   const { avatar, soft } = avatarFor(c.id);
                   const st = statusFor(c.user_id);
@@ -166,10 +217,10 @@ export function FamilyConnection() {
                         <img className="hy-network-avatar" src={avatarSrc(avatar)} alt="" loading="lazy" decoding="async" />
                       </span>
                       <span className="fc-device__main">
-                        <span className="fc-device__name">{c.name || "아이"}</span>
+                        <span className="fc-device__name">{c.name || childFallback}</span>
                         <span className="fc-device__sub">
                           <Wifi size={12} strokeWidth={2.4} />
-                          {c.device_label || "연결된 기기"}
+                          {c.device_label || intl.formatMessage({ id: "parent.familyConnection.deviceFallback" })}
                         </span>
                       </span>
                       <span className={`fc-chip fc-chip--${st.tone}`}>
@@ -185,27 +236,33 @@ export function FamilyConnection() {
             {/* 대기 중(미청구 placeholder) */}
             {pending.length > 0 && (
               <section className="fc-sec">
-                <div className="fc-label">연결 대기 중</div>
+                <div className="fc-label">
+                  {intl.formatMessage({ id: "parent.familyConnection.pendingTitle" })}
+                </div>
                 {pending.map((c) => (
                   <div key={c.id} className="fc-device fc-device--pending">
                     <span className="fc-device__avatar fc-device__avatar--muted">
                       <img className="hy-network-avatar" src={avatarSrc(avatarFor(c.id).avatar)} alt="" loading="lazy" decoding="async" />
                     </span>
                     <span className="fc-device__main">
-                      <span className="fc-device__name">{c.name || "아이"}</span>
-                      <span className="fc-device__sub">아이 기기에서 연결 코드를 입력하면 연결돼요</span>
+                      <span className="fc-device__name">{c.name || childFallback}</span>
+                      <span className="fc-device__sub">
+                        {intl.formatMessage({ id: "parent.familyConnection.pendingDescription" })}
+                      </span>
                     </span>
                   </div>
                 ))}
                 <button type="button" className="fc-ghost hy-press" onClick={() => navigate("/child-invite")}>
-                  연결 코드 보기
+                  {intl.formatMessage({ id: "parent.familyConnection.viewCode" })}
                 </button>
               </section>
             )}
 
             {/* 공동 보호자 */}
             <section className="fc-sec">
-              <div className="fc-label">공동 보호자</div>
+              <div className="fc-label">
+                {intl.formatMessage({ id: "parent.familyConnection.coParents" })}
+              </div>
               {coParents.length > 0 ? (
                 coParents.map((p) => (
                   <div key={p.id} className="fc-device">
@@ -213,12 +270,14 @@ export function FamilyConnection() {
                       <img src={asset(p.gender === "dad" ? "family/dad.webp" : "family/mom.webp")} alt="" />
                     </span>
                     <span className="fc-device__main">
-                      <span className="fc-device__name">{p.name || "보호자"}</span>
-                      <span className="fc-device__sub">공동 보호자로 연결됨</span>
+                      <span className="fc-device__name">{p.name || guardianFallback}</span>
+                      <span className="fc-device__sub">
+                        {intl.formatMessage({ id: "parent.familyConnection.coParentConnected" })}
+                      </span>
                     </span>
                     <span className="fc-chip fc-chip--safe">
                       <span className="fc-chip__dot" />
-                      연결됨
+                      {intl.formatMessage({ id: "parent.familyConnection.connectedStatus" })}
                     </span>
                   </div>
                 ))
@@ -228,8 +287,12 @@ export function FamilyConnection() {
                     <UserPlus size={20} strokeWidth={2.2} />
                   </span>
                   <span className="fc-invite__main">
-                    <span className="fc-invite__title">공동 보호자 초대하기</span>
-                    <span className="fc-invite__sub">연결 코드를 공유해 배우자를 연결해요</span>
+                    <span className="fc-invite__title">
+                      {intl.formatMessage({ id: "parent.familyConnection.inviteCoParent" })}
+                    </span>
+                    <span className="fc-invite__sub">
+                      {intl.formatMessage({ id: "parent.familyConnection.inviteCoParentDescription" })}
+                    </span>
                   </span>
                   <ChevronRight size={20} strokeWidth={2.4} color="var(--fg-disabled)" />
                 </button>
@@ -239,7 +302,9 @@ export function FamilyConnection() {
             {/* 연결 해제 */}
             {connected.length > 0 && (
               <section className="fc-sec">
-                <div className="fc-label">연결 해제</div>
+                <div className="fc-label">
+                  {intl.formatMessage({ id: "parent.familyConnection.unpairSection" })}
+                </div>
                 {isPrimary ? (
                   connected.map((c) => (
                     <button
@@ -247,15 +312,20 @@ export function FamilyConnection() {
                       type="button"
                       className="fc-unpair hy-press"
                       onClick={() =>
-                        setConfirm({ memberId: c.id, userId: c.user_id as string, name: c.name || "아이" })
+                        setConfirm({ memberId: c.id, userId: c.user_id as string, name: c.name || childFallback })
                       }
                     >
                       <Link2Off size={18} strokeWidth={2.2} />
-                      {c.name || "아이"} 연결 해제
+                      {intl.formatMessage(
+                        { id: "parent.familyConnection.unpairAction" },
+                        { childName: c.name || childFallback },
+                      )}
                     </button>
                   ))
                 ) : (
-                  <p className="fc-note hy-explain">주 보호자만 아이 연결을 해제할 수 있어요.</p>
+                  <p className="fc-note hy-explain">
+                    {intl.formatMessage({ id: "parent.familyConnection.primaryOnly" })}
+                  </p>
                 )}
               </section>
             )}
@@ -277,14 +347,20 @@ export function FamilyConnection() {
             type="button"
             className="fc-modal__scrim"
             tabIndex={-1}
-            aria-label="닫기"
+            aria-label={intl.formatMessage({ id: "parent.familyConnection.close" })}
             onClick={() => !unpair.isPending && setConfirm(null)}
           />
           <div className="fc-modal__card">
-            <div id={confirmTitleId} className="fc-modal__title">‘{confirm.name}’ 기기 연결을 해제할까요?</div>
+            <div id={confirmTitleId} className="fc-modal__title">
+              {intl.formatMessage(
+                { id: "parent.familyConnection.unpairConfirmTitle" },
+                { childName: confirm.name },
+              )}
+            </div>
             <div id={confirmDescriptionId} className="fc-modal__body">
-              연결을 해제하면 이 아이의 위치·알림 연동이 중단되고, 아이 기기의 연결이 풀려요.
-              다시 연결하려면 연결 코드가 필요해요.
+              {intl.formatMessage({ id: "parent.familyConnection.unpairDescription1" })}
+              {" "}
+              {intl.formatMessage({ id: "parent.familyConnection.unpairDescription2" })}
             </div>
             <div className="fc-modal__actions">
               <button
@@ -295,7 +371,7 @@ export function FamilyConnection() {
                 disabled={unpair.isPending}
                 data-progress-owner="confirm-action"
               >
-                취소
+                {intl.formatMessage({ id: "parent.familyConnection.cancel" })}
               </button>
               <button
                 type="button"
@@ -303,7 +379,11 @@ export function FamilyConnection() {
                 onClick={doUnpair}
                 disabled={unpair.isPending} aria-busy={unpair.isPending}
               >
-                {unpair.isPending ? "해제 중…" : "연결 해제"}
+                {intl.formatMessage({
+                  id: unpair.isPending
+                    ? "parent.familyConnection.unpairing"
+                    : "parent.familyConnection.unpair",
+                })}
               </button>
             </div>
           </div>

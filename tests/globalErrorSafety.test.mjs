@@ -83,7 +83,12 @@ test("친구놀이 하드 에러는 '친구 없음'으로 위장하지 않는다
 
   const sheet = readFileSync(new URL("../src/screens/child/overlays/PlaydateSheet.tsx", import.meta.url), "utf8");
   assert.match(sheet, /candidatesQuery\.isError/);
-  assert.match(sheet, /다시 찾기/);
+  assert.match(sheet, /onClick=\{\(\) => void candidatesQuery\.refetch\(\)\}/);
+  assert.match(sheet, /intl\.formatMessage\(\{ id: "child\.playdate\.retry" \}\)/);
+  const koChild = JSON.parse(
+    readFileSync(new URL("../locales/ko/child.json", import.meta.url), "utf8"),
+  );
+  assert.equal(koChild["child.playdate.retry"], "다시 찾기");
   const fp = readFileSync(new URL("../src/screens/feature/FriendPlay.tsx", import.meta.url), "utf8");
   assert.match(fp, /candidatesQ\.isError/);
 });

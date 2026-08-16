@@ -34,18 +34,25 @@ test("작은 유틸리티 아이콘은 16·18·20·22px와 2.2·2.4 stroke 척�
 
 test("제목·연결 상태·삭제 모달의 의미 아이콘은 Lucide로 고정한다", () => {
   const childHome = source("src/screens/child/ChildHome.tsx");
+  const koChild = JSON.parse(source("locales/ko/child.json"));
   const childSettings = source("src/screens/child/ChildSettings.tsx");
   const parentSettings = source("src/screens/parent/ParentSettings.tsx");
   const teacherSettings = source("src/screens/teacher/TeacherSettings.tsx");
 
-  for (const [Icon, label] of [
-    ["Backpack", "가방 챙기기"],
-    ["MessageCircle", "지금 상태 보내기"],
-    ["Palette", "내 색깔 고르기"],
+  for (const [Icon, messageId, koreanLabel] of [
+    ["Backpack", "child.home.packBag", "가방 챙기기"],
+    ["MessageCircle", "child.home.sendStatus", "지금 상태 보내기"],
+    ["Palette", "child.home.chooseColor", "내 색깔 고르기"],
   ]) {
-    assert.match(childHome, new RegExp(`<${Icon} size=\\{20\\} strokeWidth=\\{2\\.2\\}[^>]*\\/>\\s*${label}`));
+    assert.match(
+      childHome,
+      new RegExp(
+        `<span className="kd-title kd-title--icon"[^>]*>\\s*<${Icon} size=\\{20\\} strokeWidth=\\{2\\.2\\} aria-hidden="true" \\/>\\s*\\{intl\\.formatMessage\\(\\{ id: "${messageId}" \\}\\)\\}`,
+      ),
+    );
+    assert.equal(koChild[messageId], koreanLabel);
   }
-  assert.doesNotMatch(childHome, /🎒\s*가방 챙기기|💬\s*지금 상태 보내기|🎨\s*내 색깔 고르기/);
+  assert.doesNotMatch(childHome, /(?:🎒|💬|🎨)\s*\{intl\.formatMessage\(\{ id: "child\.home\.(?:packBag|sendStatus|chooseColor)"/);
 
   assert.match(
     childSettings,

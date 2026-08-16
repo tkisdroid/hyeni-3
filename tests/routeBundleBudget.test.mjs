@@ -94,3 +94,21 @@ test("npm run build는 Vite 산출 직후 실제 번들 예산 검사를 실행�
   );
   assert.equal(packageJson.scripts["verify:route-bundle"], "node scripts/verify-route-bundle.mjs");
 });
+
+test("defaultIntl의 한국어 fallback catalog 6개만 안정 청크로 분리한다", () => {
+  const viteConfig = readFileSync(join(rootDir, "vite.config.ts"), "utf8");
+  const fallbackChunk = viteConfig.match(/"i18n-ko-fallback"\s*:\s*\[([\s\S]*?)\]/)?.[1];
+
+  assert.ok(fallbackChunk, "i18n-ko-fallback 청크가 필요합니다.");
+  const catalogFiles = [...fallbackChunk.matchAll(
+    /\.\/src\/i18n\/generated\/catalogs\/ko\/([^"']+)\.ts/g,
+  )].map((match) => match[1]).sort();
+  assert.deepEqual(catalogFiles, [
+    "child",
+    "core",
+    "notifications",
+    "parent",
+    "reports",
+    "shared",
+  ]);
+});

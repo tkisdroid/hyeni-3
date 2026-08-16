@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePwaUpdateCriticalSection } from "@/lib/usePwaUpdateCriticalSection";
 import { useLocation, useNavigate } from "react-router";
 import { ChevronLeft, Flag, MessageCircle, Settings } from "lucide-react";
+import { useIntl, type IntlShape } from "react-intl";
 import { useLongPress, type LongPressHandlers } from "@/lib/useLongPress";
 import { asset } from "@/lib/assets";
 import { useAuth } from "@/auth/AuthContext";
@@ -27,7 +28,6 @@ import {
   resolveAiLimitExhaustionReason,
   type AiCreditPublicStatus,
 } from "@/transform/aiCreditPublicStatus";
-import { hasJongseong } from "@/transform/adventureMap";
 import { useToast } from "@/app/toast";
 import { useSafeBack } from "@/app/useSafeBack";
 import { MessageSafetyDialog, type ReportReasonOption } from "@/components/MessageSafetyDialog";
@@ -43,46 +43,41 @@ import {
 import "@/styles/jua.css";
 import "./AiFriendChat.css";
 
-const BASE_SUGGESTIONS = ["오늘 뭐 하고 놀까?", "심심해 😪", "재밌는 얘기 해줘"];
-
-const AI_REPORT_REASONS: readonly ReportReasonOption<AiContentReportReason>[] = [
-  { value: "scary_or_uncomfortable", label: "무섭거나 불편해" },
-  { value: "abusive_language", label: "나쁜 말" },
-  { value: "asks_personal_info", label: "개인정보를 물어봐" },
-  { value: "inaccurate", label: "사실과 달라" },
-  { value: "other", label: "다른 이유" },
-];
-
 // 전송 실패 코드(Worker 가 비-2xx { error } 로 응답 → ApiError.message)를 아이 톤(반말) 안내로.
-function friendlyError(err: unknown, status: AiCreditPublicStatus | null): string {
+// 한국어 신뢰 카피는 Free의 “무료로 오늘 5번 다 이야기했어”·“부모님께 프리미엄을 부탁해 줘”와
+// 부모 상한의 “부모님이 정한 오늘 대화 횟수를 다 썼어”를 구분한다.
+function friendlyError(err: unknown, status: AiCreditPublicStatus | null): (intl: IntlShape) => string {
+  return (intl) => {
   const code = isApiError(err) ? err.code ?? "" : "";
   switch (code) {
     case "daily_limit_reached": {
       const reason = resolveAiLimitExhaustionReason(status);
       if (reason === "parent_safety_limit") {
-        return "부모님이 정한 오늘 대화 횟수를 다 썼어! 내일 또 만나자 💜";
+        return intl.formatMessage({ id: "child.aiChat.limit.parent" });
       }
       if (reason === "free_included_limit") {
-        return "무료로 오늘 5번 다 이야기했어! 더 이야기하고 싶으면 부모님께 프리미엄을 부탁해 줘 💜";
+        return intl.formatMessage({ id: "child.aiChat.limit.free" });
       }
       if (reason === "premium_allowance_limit") {
-        return "오늘 이야기할 수 있는 횟수를 다 썼어! 더 필요하면 부모님께 알려줘 💜";
+        return intl.formatMessage({ id: "child.aiChat.limit.premium" });
       }
-      return "오늘 이야기할 수 있는 횟수를 다 썼어! 부모님께 알려줘 💜";
+      return intl.formatMessage({ id: "child.aiChat.limit.default" });
     }
     case "feature_disabled":
-      return "나 지금 잠깐 쉬는 중이야. 부모님께 켜 달라고 부탁해 줘 🙏";
+      return intl.formatMessage({ id: "child.aiChat.featureDisabled" });
     case "not_child":
     case "no_family":
-      return "지금은 이야기할 수 없어. 부모님께 알려줘!";
+      return intl.formatMessage({ id: "child.aiChat.unavailable" });
     case "message_too_long":
-      return "조금만 짧게 다시 말해 줄래? 😊";
+      return intl.formatMessage({ id: "child.aiChat.tooLong" });
     default:
-      return "잠깐 연결이 안 됐어. 다시 말해 줄래? 💜";
+      return intl.formatMessage({ id: "child.aiChat.connectionFailed" });
   }
+  };
 }
 
 export function AiFriendChat() {
+  const intl = useIntl();
   const { locale } = useLocale();
   const navigate = useNavigate();
   const goBack = useSafeBack("/child/home");
@@ -160,11 +155,23 @@ export function AiFriendChat() {
   // 제안칩 — 오늘 컨텍스트가 있으면 관련 질문을 앞세운다.
   const suggestions = useMemo(() => {
     const out: string[] = [];
-    if (nextEvent) out.push("오늘 일정 알려줘");
-    if (pendingSupply) out.push("준비물 뭐 챙겨야 해?");
-    out.push(...BASE_SUGGESTIONS);
+    if (nextEvent) out.push(intl.formatMessage({ id: "child.aiChat.suggestion.schedule" }));
+    if (pendingSupply) out.push(intl.formatMessage({ id: "child.aiChat.suggestion.supplies" }));
+    out.push(
+      intl.formatMessage({ id: "child.aiChat.suggestion.play" }),
+      intl.formatMessage({ id: "child.aiChat.suggestion.bored" }),
+      intl.formatMessage({ id: "child.aiChat.suggestion.story" }),
+    );
     return out.slice(0, 4);
-  }, [nextEvent, pendingSupply]);
+  }, [intl, nextEvent, pendingSupply]);
+
+  const reportReasons = useMemo<readonly ReportReasonOption<AiContentReportReason>[]>(() => [
+    { value: "scary_or_uncomfortable", label: intl.formatMessage({ id: "child.aiChat.report.scary" }) },
+    { value: "abusive_language", label: intl.formatMessage({ id: "child.aiChat.report.abusive" }) },
+    { value: "asks_personal_info", label: intl.formatMessage({ id: "child.aiChat.report.personalInfo" }) },
+    { value: "inaccurate", label: intl.formatMessage({ id: "child.aiChat.report.inaccurate" }) },
+    { value: "other", label: intl.formatMessage({ id: "child.aiChat.report.other" }) },
+  ], [intl]);
 
   const messagesQuery = useAiMessages(userId);
   const messagesData = useMemo(() => messagesQuery.data ?? [], [messagesQuery.data]);
@@ -254,11 +261,11 @@ export function AiFriendChat() {
                   text: reply,
                   reportable: !!res.assistantMessageId,
                 }
-              // 서버가 빈 답을 주면 대답한 척하지 않는다(가짜 응답 금지 — 아이는 반말 안내).
+              // i18n 정직 응답 불변식: 빈 응답은 "지금은 대답을 못 받았어"로 안내하고 신고 가능한 답으로 만들지 않는다.
               : {
                   id: `${base}-ai`,
                   role: "ai",
-                  text: "지금은 대답을 못 받았어. 잠시 뒤에 다시 말 걸어줘!",
+                  text: intl.formatMessage({ id: "child.ai.emptyResponse" }),
                 },
           ]);
         },
@@ -266,7 +273,7 @@ export function AiFriendChat() {
           setMessages((prev) => [...prev, {
             id: `${base}-ai`,
             role: "ai",
-            text: friendlyError(err, aiCreditStatus.data ?? null),
+            text: friendlyError(err, aiCreditStatus.data ?? null)(intl),
           }]);
         },
         onSettled: () => setPendingSendSource((current) => (current === source ? null : current)),
@@ -285,7 +292,7 @@ export function AiFriendChat() {
         <button
           type="button"
           className="afc-back hy-press"
-          aria-label="뒤로"
+          aria-label={intl.formatMessage({ id: "child.action.back" })}
           onClick={goBack}
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="var(--hy-accent-text)" />
@@ -296,18 +303,18 @@ export function AiFriendChat() {
         </div>
         <div className="afc-head-main">
           <div className="afc-head-name">{friendName}</div>
-          <div className="afc-head-status">● 이야기할 준비됐어!</div>
+          <div className="afc-head-status">{intl.formatMessage({ id: "child.aiChat.ready" })}</div>
         </div>
         {shownRemaining != null && (
           <span className="afc-credits">
             <MessageCircle size={14} strokeWidth={2.2} aria-hidden="true" />
-            {shownRemaining}번 남았어
+            {intl.formatMessage({ id: "child.aiChat.remaining" }, { count: shownRemaining })}
           </span>
         )}
         <button
           type="button"
           className="afc-setup hy-press"
-          aria-label="AI 친구 바꾸기"
+          aria-label={intl.formatMessage({ id: "child.aiChat.changeFriend" })}
           onClick={() => navigate("/child/ai-friend-setup")}
         >
           <Settings size={20} strokeWidth={2.2} color="var(--hy-accent-text)" />
@@ -316,21 +323,23 @@ export function AiFriendChat() {
 
       <div ref={messagesRef} className="afc-msgs">
         {chatLoading ? (
-          <div className="afc-query-state"><Loading label="지난 이야기를 불러오는 중이야" size={6} /></div>
+          <div className="afc-query-state"><Loading label={intl.formatMessage({ id: "child.aiChat.loading" })} size={6} /></div>
         ) : chatError ? (
           <div className="afc-query-state" role="alert">
-            <span>지난 이야기를 못 불러왔어.</span>
-            <button type="button" className="hy-press" onClick={() => void retryChat()}>다시 불러오기</button>
+            <span>{intl.formatMessage({ id: "child.aiChat.loadError" })}</span>
+            <button type="button" className="hy-press" onClick={() => void retryChat()}>
+              {intl.formatMessage({ id: "child.action.reload" })}
+            </button>
           </div>
         ) : (
           <>
             {messagesData.length === 0 && (
-              <div className="afc-query-state">아직 나눈 이야기가 없어. 먼저 말을 걸어봐!</div>
+              <div className="afc-query-state">{intl.formatMessage({ id: "child.aiChat.empty" })}</div>
             )}
-            {/* 신고 진입점 안내 — 답변마다 버튼을 띄우는 대신 길게 누르기로 옮겼다. */}
+            {/* 신고 진입점 안내 — 한국어 계약 “이 답변 신고”, 접수 완료 “알려 줘서 고마워. 이 답변은 다시 확인할게.” */}
             <p className="afc-safety-hint">
               <Flag size={12} strokeWidth={2.2} aria-hidden="true" />
-              마음에 걸리는 답이 있으면 길게 눌러 「이 답변 신고」를 해줘.
+              {intl.formatMessage({ id: "child.aiChat.reportHint" })}
             </p>
             {shown.map((m) => {
               // JSX spread 는 디자인 시스템 정적 분석이 해석하지 못해 하나씩 연결한다.
@@ -367,7 +376,10 @@ export function AiFriendChat() {
             <div className="afc-mini">
               <img src={animalSrc} alt="" />
             </div>
-            <div className="afc-bubble afc-bubble--ai afc-typing" aria-label={`${friendName}${hasJongseong(friendName) ? "이" : "가"} 생각하는 중`}>
+            <div
+              className="afc-bubble afc-bubble--ai afc-typing"
+              aria-label={intl.formatMessage({ id: "child.aiChat.thinking" }, { name: friendName })}
+            >
               <span />
               <span />
               <span />
@@ -395,8 +407,8 @@ export function AiFriendChat() {
           <input
             className="afc-field"
             value={input}
-            aria-label={`${friendName}에게 메시지`}
-            placeholder={`${friendName}에게 말해 봐…`}
+            aria-label={intl.formatMessage({ id: "child.aiChat.messageAria" }, { name: friendName })}
+            placeholder={intl.formatMessage({ id: "child.aiChat.placeholder" }, { name: friendName })}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.nativeEvent.isComposing) {
@@ -412,7 +424,7 @@ export function AiFriendChat() {
             disabled={sendChat.isPending || !input.trim()}
             aria-busy={sendChat.isPending && pendingSendSource === "composer"}
           >
-            보내기
+            {intl.formatMessage({ id: "child.action.send" })}
           </button>
         </div>
       </div>
@@ -420,14 +432,14 @@ export function AiFriendChat() {
       <MessageSafetyDialog
         open={!!reportTarget}
         tone="child"
-        title="이 답변을 알려줄래?"
-        description="불편하거나 이상한 답변은 앱 안에서 바로 신고할 수 있어."
-        reasons={AI_REPORT_REASONS}
+        title={intl.formatMessage({ id: "child.aiChat.report.title" })}
+        description={intl.formatMessage({ id: "child.aiChat.report.description" })}
+        reasons={reportReasons}
         onClose={() => setReportTarget(null)}
         onReport={async (reason, detail) => {
           if (!reportTarget?.id) throw new Error("report_target_missing");
           await reportAiMessage.mutateAsync({ messageId: reportTarget.id, reason, detail });
-          show("알려 줘서 고마워. 이 답변은 다시 확인할게.", "🛡️");
+          show(intl.formatMessage({ id: "child.aiChat.report.thanks" }), "🛡️");
         }}
       />
     </div>

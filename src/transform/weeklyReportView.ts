@@ -10,7 +10,8 @@ import type { CalendarEvent, DailySupply } from "../lib/api/endpoints/schedule.t
 import type { MemoReply } from "../lib/api/endpoints/memo.ts";
 import type { ParentAlert } from "../lib/api/endpoints/notifications.ts";
 import type { SupportedLocale } from "../i18n/locale.ts";
-import { formatNumber } from "../i18n/format.ts";
+import type { IntlShape } from "react-intl";
+import { withDefaultIntl } from "../i18n/defaultIntl.ts";
 
 export interface WeeklyReportInput {
   childMemberId: string | null | undefined;
@@ -60,18 +61,41 @@ export function resolveWeeklyReportReturnChildId(
 export function weeklyReportTeaser(
   summary: WeeklyReportSummary,
   childName: string,
-  locale: SupportedLocale,
+  _locale: SupportedLocale,
+  providedIntl?: IntlShape,
 ): string {
-  const name = childName.trim() || "우리 아이";
-  if (!summary.hasEnoughData) return `${name}의 이번 주 기록이 아직 없어요.`;
+  const intl = withDefaultIntl(providedIntl);
+  const name = childName.trim() || intl.formatMessage({ id: "reports.weekly.childFallback" });
+  if (!summary.hasEnoughData) {
+    return intl.formatMessage({ id: "reports.weekly.teaser.empty" }, { childName: name });
+  }
   if (summary.alertCount > 0) {
-    return `${name}의 이번 주에는 일정 ${formatNumber(summary.eventCount, locale)}개와 안전 알림 ${formatNumber(summary.alertCount, locale)}건이 기록됐어요.`;
+    return intl.formatMessage(
+      { id: "reports.weekly.teaser.alerts" },
+      { childName: name, eventCount: summary.eventCount, alertCount: summary.alertCount },
+    );
   }
   if (summary.supplyTotal > 0) {
-    return `${name}의 이번 주에는 일정 ${formatNumber(summary.eventCount, locale)}개가 있었고 준비물 ${formatNumber(summary.supplyDone, locale)}/${formatNumber(summary.supplyTotal, locale)}개를 챙겼어요.`;
+    return intl.formatMessage(
+      { id: "reports.weekly.teaser.supplies" },
+      {
+        childName: name,
+        eventCount: summary.eventCount,
+        supplyDone: summary.supplyDone,
+        supplyTotal: summary.supplyTotal,
+      },
+    );
   }
-  if (summary.eventCount > 0) return `${name}의 이번 주에는 일정 ${formatNumber(summary.eventCount, locale)}개가 있었어요.`;
-  return `${name}의 이번 주에는 가족 메시지 ${formatNumber(summary.memoCount, locale)}개가 오갔어요.`;
+  if (summary.eventCount > 0) {
+    return intl.formatMessage(
+      { id: "reports.weekly.teaser.events" },
+      { childName: name, eventCount: summary.eventCount },
+    );
+  }
+  return intl.formatMessage(
+    { id: "reports.weekly.teaser.memos" },
+    { childName: name, memoCount: summary.memoCount },
+  );
 }
 
 function dateStampInTimeZone(value: Date, timeZone: string): string {

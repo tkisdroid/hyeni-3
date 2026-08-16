@@ -26,9 +26,9 @@ import { localizeApiError } from "@/i18n/apiError";
 // 선택 칩은 신호색 soft 채움 + 같은 계열 진한 라벨 + 테두리로 알린다.
 // 이전에는 채도 높은 채움(#31C48D 등)에 흰 글자라 2.2~2.7:1 로 읽히지 않았다.
 const PLACE_TYPES = [
-  { id: "home", label: "집", activeBg: "var(--mint-soft)", activeColor: "var(--mint-text)", activeLine: "var(--mint-500)" },
-  { id: "academy", label: "학원", activeBg: "var(--lav-soft)", activeColor: "var(--lav-text)", activeLine: "var(--lav-400)" },
-  { id: "frequent", label: "자주", activeBg: "var(--blue-soft)", activeColor: "var(--blue-text)", activeLine: "var(--blue-500)" },
+  { id: "home", labelId: "notifications.placeForm.type.home", activeBg: "var(--mint-soft)", activeColor: "var(--mint-text)", activeLine: "var(--mint-500)" },
+  { id: "academy", labelId: "notifications.placeForm.type.academy", activeBg: "var(--lav-soft)", activeColor: "var(--lav-text)", activeLine: "var(--lav-400)" },
+  { id: "frequent", labelId: "notifications.placeForm.type.frequent", activeBg: "var(--blue-soft)", activeColor: "var(--blue-text)", activeLine: "var(--blue-500)" },
 ] as const;
 
 type PlaceTypeId = (typeof PLACE_TYPES)[number]["id"];
@@ -119,9 +119,9 @@ export function PlaceForm() {
   // 도착/출발 알림 반경(m) — 기본 30(정밀). 학교류는 저장 안 해도 서버가 100m 기본 적용.
   const [alertRadius, setAlertRadius] = useState<number>(initialDraft?.alertRadius ?? 30);
   const ALERT_RADII = [
-    { value: 30, label: "기본 30m" },
-    { value: 100, label: "넓게 100m" },
-    { value: 150, label: "아주 넓게 150m" },
+    { value: 30, labelId: "notifications.placeForm.radius.default" },
+    { value: 100, labelId: "notifications.placeForm.radius.wide" },
+    { value: 150, labelId: "notifications.placeForm.radius.extraWide" },
   ] as const;
   const [picked, setPicked] = useState<LatLng | null>(initialDraft?.picked ?? null);
   const [center, setCenter] = useState<LatLng | null>(initialDraft?.center ?? null);
@@ -159,7 +159,7 @@ export function PlaceForm() {
   const [locating, setLocating] = useState(false);
   const locateMe = () => {
     if (!navigator.geolocation) {
-      show("이 기기에서 위치를 사용할 수 없어요", "📍");
+      show(intl.formatMessage({ id: "notifications.placeForm.locationUnavailable" }), "📍");
       return;
     }
     setLocating(true);
@@ -171,7 +171,7 @@ export function PlaceForm() {
       },
       () => {
         setLocating(false);
-        show("현재 위치를 가져오지 못했어요", "📍");
+        show(intl.formatMessage({ id: "notifications.placeForm.currentLocationFailed" }), "📍");
       },
       { enableHighAccuracy: true, timeout: 5000, maximumAge: 10_000 },
     );
@@ -241,7 +241,7 @@ export function PlaceForm() {
     const query = address.trim();
     if (!query) return;
     if (!geocoder) {
-      show("주소 검색을 사용할 수 없어요", "🔍");
+      show(intl.formatMessage({ id: "notifications.placeForm.addressSearchUnavailable" }), "🔍");
       return;
     }
     geocoder.addressSearch(
@@ -254,7 +254,7 @@ export function PlaceForm() {
           setPicked({ lat, lng });
           setCenter({ lat, lng });
         } else {
-          show("주소를 찾지 못했어요", "🔍");
+          show(intl.formatMessage({ id: "notifications.placeForm.addressNotFound" }), "🔍");
         }
       },
     );
@@ -263,20 +263,24 @@ export function PlaceForm() {
   // 저장 — 사용자 onClick 에서만 실행. 이름·선택 위치 검증 후 useCreateSavedPlace 호출.
   const savePlace = () => {
     if (placeFormQueryState !== "ready" || tier === TIERS.UNKNOWN) {
-      show("장소 한도를 확인한 뒤 다시 시도해 주세요", "⚠️");
+      show(intl.formatMessage({ id: "notifications.placeForm.checkLimitFirst" }), "⚠️");
       return;
     }
     if (!picked) {
       // 지도 미설정(키 없음)이면 위치를 고를 수 없으니 정직하게 안내.
       show(
-        hasKakaoKey ? "지도를 눌러 위치를 선택해 주세요" : "지도 설정 전이라 위치를 저장할 수 없어요",
+        intl.formatMessage({
+          id: hasKakaoKey
+            ? "notifications.placeForm.selectOnMap"
+            : "notifications.placeForm.mapNotConfiguredSave",
+        }),
         "📍",
       );
       return;
     }
     const name = placeName.trim();
     if (!name) {
-      show("장소 이름을 입력해 주세요", "✏️");
+      show(intl.formatMessage({ id: "notifications.placeForm.nameRequired" }), "✏️");
       return;
     }
     if (places.length >= limit) {
@@ -300,7 +304,7 @@ export function PlaceForm() {
         onSuccess: () => {
           const storage = browserPremiumReturnIntentStorage();
           if (storage) clearPremiumReturnIntent(storage);
-          show(`‘${name}’ 장소를 저장했어요`, "📍");
+          show(intl.formatMessage({ id: "notifications.placeForm.saved" }, { name }), "📍");
           navigate(-1);
         },
         onError: (e) => show(localizeApiError(e, intl, "formal"), "⚠️"),
@@ -311,10 +315,10 @@ export function PlaceForm() {
   if (placeFormQueryState === "loading") {
     return (
       <ScreenQueryState
-        screenTitle="장소 등록"
+        screenTitle={intl.formatMessage({ id: "notifications.placeForm.title" })}
         state="loading"
-        heading="장소 정보를 확인하고 있어요"
-        description="저장된 장소 수와 현재 이용 한도를 불러오는 중이에요."
+        heading={intl.formatMessage({ id: "notifications.placeForm.loading.title" })}
+        description={intl.formatMessage({ id: "notifications.placeForm.loading.description" })}
         onBack={() => navigate(-1)}
       />
     );
@@ -323,10 +327,10 @@ export function PlaceForm() {
   if (placeFormQueryState === "error" || placeFormDataMissing) {
     return (
       <ScreenQueryState
-        screenTitle="장소 등록"
+        screenTitle={intl.formatMessage({ id: "notifications.placeForm.title" })}
         state="error"
-        heading="장소 등록 정보를 확인하지 못했어요"
-        description="저장 한도가 확인되기 전에는 새 장소를 저장하지 않아요."
+        heading={intl.formatMessage({ id: "notifications.placeForm.error.title" })}
+        description={intl.formatMessage({ id: "notifications.placeForm.error.description" })}
         onBack={() => navigate(-1)}
         onRetry={() => void retryPlaceForm()}
         retrying={placeFormRefetching}
@@ -340,18 +344,18 @@ export function PlaceForm() {
         <button
           type="button"
           className="pf-back hy-press"
-          aria-label="뒤로"
+          aria-label={intl.formatMessage({ id: "notifications.action.back" })}
           onClick={() => navigate(-1)}
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
         </button>
-        <span className="pf-title">장소 등록</span>
+        <span className="pf-title">{intl.formatMessage({ id: "notifications.placeForm.title" })}</span>
       </header>
 
       <div className="pf-body">
         {places.length === 0 && (
           <div className="sqs-inline-empty">
-            <span>아직 저장한 장소가 없어요. 첫 장소를 정확한 위치로 등록해 보세요.</span>
+            <span>{intl.formatMessage({ id: "notifications.placeForm.firstPlace" })}</span>
           </div>
         )}
         {/* 지도 — 눌러서 위치 선택(선택 좌표에 마커) */}
@@ -365,14 +369,18 @@ export function PlaceForm() {
           />
           {!picked && (
             <span className="pf-map__hint">
-              {hasKakaoKey ? "지도를 눌러 위치를 선택하세요" : "지도 기능 설정 전이에요"}
+              {intl.formatMessage({
+                id: hasKakaoKey
+                  ? "notifications.placeForm.mapHint"
+                  : "notifications.placeForm.mapNotConfigured",
+              })}
             </span>
           )}
           {/* 현재 위치로 빠른 이동(우측 하단) */}
           <button
             type="button"
             className={`pf-map-locate hy-press${locating ? " pf-map-locate--busy" : ""}`}
-            aria-label="현재 위치로 이동"
+            aria-label={intl.formatMessage({ id: "notifications.placeForm.moveToCurrent" })}
             onClick={locateMe}
             disabled={locating} aria-busy={locating}
           >
@@ -383,7 +391,7 @@ export function PlaceForm() {
         <div
           className="pf-map-handle"
           role="separator"
-          aria-label="지도 크기 조절"
+          aria-label={intl.formatMessage({ id: "notifications.placeForm.resizeMap" })}
           onPointerDown={onHandleDown}
           onPointerMove={onHandleMove}
           onPointerUp={onHandleUp}
@@ -394,22 +402,22 @@ export function PlaceForm() {
 
         {/* 장소 이름 */}
         <div>
-          <div className="pf-label">장소 이름</div>
+          <div className="pf-label">{intl.formatMessage({ id: "notifications.placeForm.name" })}</div>
           <input
             className="pf-input"
-            aria-label="장소 이름"
+            aria-label={intl.formatMessage({ id: "notifications.placeForm.name" })}
             value={placeName}
             onChange={(e) => setPlaceName(e.target.value)}
-            placeholder="예) 피아노 학원"
+            placeholder={intl.formatMessage({ id: "notifications.placeForm.namePlaceholder" })}
           />
         </div>
 
         {/* 주소 */}
         <div>
-          <div className="pf-label">주소</div>
+          <div className="pf-label">{intl.formatMessage({ id: "notifications.placeForm.address" })}</div>
           <input
             className="pf-input"
-            aria-label="주소"
+            aria-label={intl.formatMessage({ id: "notifications.placeForm.address" })}
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             onKeyDown={(e) => {
@@ -418,13 +426,13 @@ export function PlaceForm() {
                 searchAddress();
               }
             }}
-            placeholder="주소 검색"
+            placeholder={intl.formatMessage({ id: "notifications.placeForm.addressPlaceholder" })}
           />
         </div>
 
         {/* 종류 */}
         <div>
-          <div className="pf-label pf-label--types">종류</div>
+          <div className="pf-label pf-label--types">{intl.formatMessage({ id: "notifications.placeForm.type" })}</div>
           <div className="pf-types">
             {PLACE_TYPES.map((t) => {
               const active = placeType === t.id;
@@ -440,21 +448,21 @@ export function PlaceForm() {
                   }}
                   onClick={() => setPlaceType(t.id)}
                 >
-                  {t.label}
+                  {intl.formatMessage({ id: t.labelId })}
                 </button>
               );
             })}
           </div>
           {/* 위험구역은 저장장소가 아니라 지오펜스라 별도 경로에서 등록(오인 방지). */}
           <div className="pf-label" style={{ marginTop: 12, marginBottom: 0 }}>
-            위험구역은 지도의 위험구역 추가에서 등록해요.
+            {intl.formatMessage({ id: "notifications.placeForm.dangerZoneSeparate" })}
           </div>
         </div>
 
         {/* 알림 반경 — 도착/출발 판정 반경(location JSON alertRadiusM, 서버·네이티브 지오펜스 공용).
             학교처럼 부지가 넓은 곳은 넓게 잡아야 교문 도착이 제때 잡힌다. */}
         <div>
-          <div className="pf-label pf-label--types">도착 알림 반경</div>
+          <div className="pf-label pf-label--types">{intl.formatMessage({ id: "notifications.placeForm.arrivalRadius" })}</div>
           <div className="pf-types">
             {ALERT_RADII.map((r) => {
               const active = alertRadius === r.value;
@@ -469,13 +477,13 @@ export function PlaceForm() {
                   }}
                   onClick={() => setAlertRadius(r.value)}
                 >
-                  {r.label}
+                  {intl.formatMessage({ id: r.labelId })}
                 </button>
               );
             })}
           </div>
           <div className="pf-label" style={{ marginTop: 12, marginBottom: 0 }}>
-            학교·놀이터처럼 넓은 곳은 ‘넓게’를 추천해요.
+            {intl.formatMessage({ id: "notifications.placeForm.wideRecommendation" })}
           </div>
         </div>
 
@@ -486,7 +494,11 @@ export function PlaceForm() {
           onClick={savePlace}
           disabled={createPlace.isPending} aria-busy={createPlace.isPending}
         >
-          {createPlace.isPending ? "저장 중…" : "저장하기"}
+          {intl.formatMessage({
+            id: createPlace.isPending
+              ? "notifications.placeForm.saving"
+              : "notifications.placeForm.save",
+          })}
         </button>
       </div>
       <PremiumUpsell
@@ -506,7 +518,7 @@ export function PlaceForm() {
                 draft: { placeName, address, placeType, alertRadius, picked, center },
               })
             : false;
-          if (!saved) throw new Error("작성 중인 장소를 안전하게 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+          if (!saved) throw new Error(intl.formatMessage({ id: "notifications.placeForm.draftSaveFailed" }));
           navigate("/subscription");
         }}
       />

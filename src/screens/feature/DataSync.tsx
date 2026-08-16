@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { ChevronLeft, RefreshCw, Download, Trash2, Users } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/app/toast";
+import { useIntl } from "react-intl";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { useAccount, useExportFamilyData } from "@/queries/useAccount";
 import { useMyFamily } from "@/queries/useFamily";
@@ -11,13 +12,13 @@ import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import { useLocale } from "@/i18n/useLocale";
 import {
   formatClockWithSeconds,
-  formatNumber,
   LEGACY_FAMILY_TIME_ZONE,
 } from "@/i18n/format";
 import "./DataSync.css";
 
 /** P-32 데이터 · 동기화 — 동기화 상태·데이터 내보내기(JSON)·캐시 비우기. */
 export function DataSync() {
+  const intl = useIntl();
   const { locale } = useLocale();
   const navigate = useNavigate();
   const { show } = useToast();
@@ -28,7 +29,8 @@ export function DataSync() {
   const family = familyQuery.data;
   const exportData = useExportFamilyData();
 
-  const [syncedAt, setSyncedAt] = useState(() => new Date());
+  const [syncedAt, setSyncedAt] = useState<Date | null>(() => new Date());
+  const [resyncing, setResyncing] = useState(false);
 
   const members = family?.members ?? [];
   const parentCount = members.filter((m) => m.role === "parent").length;
@@ -39,20 +41,48 @@ export function DataSync() {
     { isLoading: familyQuery.isLoading, isError: familyQuery.isError },
   ]);
   const dataSyncEmpty = dataSyncQueryState === "ready" && (!account || !family || members.length === 0);
-  const dataSyncRefetching = accountQuery.isFetching || familyQuery.isFetching;
+  const dataSyncRefetching = accountQuery.isFetching || familyQuery.isFetching || resyncing;
   const retryDataSync = async (): Promise<void> => {
     await Promise.all([accountQuery.refetch(), familyQuery.refetch()]);
   };
   const countReady = !!family;
   const formatCount = (count: number) => (
-    countReady ? `${formatNumber(count, locale)}명` : familyQuery.isLoading ? "불러오는 중" : "확인 안 됨"
+    countReady
+      ? intl.formatMessage({ id: "parent.dataSync.memberCount" }, { count })
+      : familyQuery.isLoading
+        ? intl.formatMessage({ id: "parent.dataSync.value.loading" })
+        : intl.formatMessage({ id: "parent.dataSync.value.unavailable" })
   );
+  const formattedSyncedAt = syncedAt
+    ? formatClockWithSeconds(syncedAt, {
+        locale,
+        timeZone: LEGACY_FAMILY_TIME_ZONE,
+      })
+    : intl.formatMessage({ id: "parent.dataSync.value.unavailable" });
 
   // 지금 동기화 — 전 쿼리 무효화(서버 최신값 재요청). 실제 리페치 트리거.
-  const resync = () => {
-    void qc.invalidateQueries();
-    setSyncedAt(new Date());
-    show("최신 데이터를 다시 불러오고 있어요", "🔄");
+  const resync = async (): Promise<void> => {
+    if (resyncing) return;
+    setResyncing(true);
+    show(intl.formatMessage({ id: "parent.dataSync.resync.started" }), "🔄");
+    try {
+      await qc.invalidateQueries();
+      const [accountResult, familyResult] = await Promise.all([
+        accountQuery.refetch(),
+        familyQuery.refetch(),
+      ]);
+      if (accountResult.isError || familyResult.isError) {
+        show(intl.formatMessage({ id: "parent.dataSync.resync.failed" }), "⚠️");
+        return;
+      }
+      setSyncedAt(new Date());
+      show(intl.formatMessage({ id: "parent.dataSync.resync.success" }), "✅");
+    } catch (error) {
+      console.error("data_sync_failed", error);
+      show(intl.formatMessage({ id: "parent.dataSync.resync.failed" }), "⚠️");
+    } finally {
+      setResyncing(false);
+    }
   };
 
   // 내 데이터 다운로드 — 실 가족 데이터를 집계해 JSON 파일로 저장(데이터 이동권).
@@ -73,17 +103,22 @@ export function DataSync() {
           URL.revokeObjectURL(url);
           const errCount = result.meta.errors.length;
           show(
-            errCount > 0 ? `내보내기 완료 · 일부 항목 제외(${errCount})` : "데이터를 내려받았어요",
+            errCount > 0
+              ? intl.formatMessage(
+                  { id: "parent.dataSync.export.partial" },
+                  { errorCount: errCount },
+                )
+              : intl.formatMessage({ id: "parent.dataSync.export.success" }),
             "📦",
           );
         } catch (e) {
-          console.error("데이터 파일 저장 실패:", e);
-          show("파일 저장에 실패했어요", "⚠️");
+          console.error("data_export_file_save_failed", e);
+          show(intl.formatMessage({ id: "parent.dataSync.export.fileFailure" }), "⚠️");
         }
       },
       onError: (e) => {
-        console.error("데이터 내보내기 실패:", e);
-        show("데이터를 모으지 못했어요. 잠시 후 다시 시도해 주세요", "⚠️");
+        console.error("data_export_failed", e);
+        show(intl.formatMessage({ id: "parent.dataSync.export.failure" }), "⚠️");
       },
     });
   };
@@ -91,17 +126,17 @@ export function DataSync() {
   // 캐시 비우기 — 로컬 쿼리 캐시 전체 제거(다음 조회 시 서버에서 새로 받음).
   const clearCache = () => {
     qc.clear();
-    setSyncedAt(new Date());
-    show("임시 데이터를 비웠어요", "🧹");
+    setSyncedAt(null);
+    show(intl.formatMessage({ id: "parent.dataSync.cache.cleared" }), "🧹");
   };
 
   if (dataSyncQueryState === "loading") {
     return (
       <ScreenQueryState
-        screenTitle="데이터 · 동기화"
+        screenTitle={intl.formatMessage({ id: "parent.dataSync.title" })}
         state="loading"
-        heading="가족 데이터를 확인하고 있어요"
-        description="내보낼 계정과 가족 범위를 불러오는 중이에요."
+        heading={intl.formatMessage({ id: "parent.dataSync.loading.heading" })}
+        description={intl.formatMessage({ id: "parent.dataSync.loading.description" })}
         onBack={() => navigate(-1)}
       />
     );
@@ -110,10 +145,10 @@ export function DataSync() {
   if (dataSyncQueryState === "error") {
     return (
       <ScreenQueryState
-        screenTitle="데이터 · 동기화"
+        screenTitle={intl.formatMessage({ id: "parent.dataSync.title" })}
         state="error"
-        heading="동기화 정보를 불러오지 못했어요"
-        description="불완전한 파일을 만들지 않도록 내보내기를 잠시 닫았어요."
+        heading={intl.formatMessage({ id: "parent.dataSync.error.heading" })}
+        description={intl.formatMessage({ id: "parent.dataSync.error.description" })}
         onBack={() => navigate(-1)}
         onRetry={() => void retryDataSync()}
         retrying={dataSyncRefetching}
@@ -124,14 +159,14 @@ export function DataSync() {
   if (dataSyncEmpty) {
     return (
       <ScreenQueryState
-        screenTitle="데이터 · 동기화"
+        screenTitle={intl.formatMessage({ id: "parent.dataSync.title" })}
         state="empty"
-        heading="내보낼 가족 정보가 없어요"
-        description="계정과 가족 연결 상태를 다시 확인해 주세요."
+        heading={intl.formatMessage({ id: "parent.dataSync.empty.heading" })}
+        description={intl.formatMessage({ id: "parent.dataSync.empty.description" })}
         onBack={() => navigate(-1)}
         onRetry={() => void retryDataSync()}
         retrying={dataSyncRefetching}
-        retryLabel="연결 상태 다시 확인"
+        retryLabel={intl.formatMessage({ id: "parent.dataSync.empty.retry" })}
       />
     );
   }
@@ -142,12 +177,12 @@ export function DataSync() {
         <button
           type="button"
           className="ds-back hy-press"
-          aria-label="뒤로"
+          aria-label={intl.formatMessage({ id: "core.action.back" })}
           onClick={() => navigate(-1)}
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="var(--fg-secondary)" />
         </button>
-        <span className="ds-head-title">데이터 · 동기화</span>
+        <span className="ds-head-title">{intl.formatMessage({ id: "parent.dataSync.title" })}</span>
       </header>
 
       <div className="ds-content">
@@ -155,36 +190,49 @@ export function DataSync() {
         <div className="ds-sync">
           <div className="ds-sync__top">
             <span className="ds-sync__dot" />
-            <span className="ds-sync__state">실시간 동기화 켜짐</span>
+            <span className="ds-sync__state">
+              {resyncing
+                ? intl.formatMessage({ id: "parent.dataSync.sync.refreshing" })
+                : intl.formatMessage({ id: "parent.dataSync.sync.ready" })}
+            </span>
           </div>
           <div className="ds-sync__rows">
             <div className="ds-sync__row">
               <span className="ds-sync__k">
-                <Users size={14} strokeWidth={2.3} /> 가족 구성원
+                <Users size={14} strokeWidth={2.3} />
+                {intl.formatMessage({ id: "parent.dataSync.familyMembers" })}
               </span>
               <span className="ds-sync__v">{formatCount(memberCount)}</span>
             </div>
             <div className="ds-sync__row">
-              <span className="ds-sync__k">부모</span>
+              <span className="ds-sync__k">{intl.formatMessage({ id: "parent.dataSync.parents" })}</span>
               <span className="ds-sync__v">{formatCount(parentCount)}</span>
             </div>
             <div className="ds-sync__row">
-              <span className="ds-sync__k">관리 중인 아이</span>
+              <span className="ds-sync__k">{intl.formatMessage({ id: "parent.dataSync.children" })}</span>
               <span className="ds-sync__v">{formatCount(childCount)}</span>
             </div>
             <div className="ds-sync__row">
-              <span className="ds-sync__k">마지막 동기화</span>
+              <span className="ds-sync__k">{intl.formatMessage({ id: "parent.dataSync.lastChecked" })}</span>
               <span className="ds-sync__v">
-                {formatClockWithSeconds(syncedAt, {
-                  locale,
-                  timeZone: LEGACY_FAMILY_TIME_ZONE,
-                })}
+                {intl.formatMessage(
+                  { id: "parent.dataSync.lastCheckedValue" },
+                  { time: formattedSyncedAt },
+                )}
               </span>
             </div>
           </div>
-          <button type="button" className="ds-sync__btn hy-press" onClick={resync}>
+          <button
+            type="button"
+            className="ds-sync__btn hy-press"
+            onClick={() => void resync()}
+            disabled={resyncing}
+            aria-busy={resyncing}
+          >
             <RefreshCw size={16} strokeWidth={2.4} />
-            지금 동기화
+            {resyncing
+              ? intl.formatMessage({ id: "parent.dataSync.resync.buttonPending" })
+              : intl.formatMessage({ id: "parent.dataSync.resync.button" })}
           </button>
         </div>
 
@@ -194,9 +242,9 @@ export function DataSync() {
             <Download size={20} strokeWidth={2.2} />
           </div>
           <div className="ds-card__main">
-            <div className="ds-card__title">내 데이터 다운로드</div>
+            <div className="ds-card__title">{intl.formatMessage({ id: "parent.dataSync.export.title" })}</div>
             <div className="ds-card__desc">
-              일정·장소·위험구역·학원 정보를 JSON 파일로 저장해요.
+              {intl.formatMessage({ id: "parent.dataSync.export.description" })}
             </div>
           </div>
           <button
@@ -205,10 +253,14 @@ export function DataSync() {
             onClick={exportJson}
             disabled={exportData.isPending || !account} aria-busy={exportData.isPending}
           >
-            {exportData.isPending ? "모으는 중…" : "내보내기"}
+            {exportData.isPending
+              ? intl.formatMessage({ id: "parent.dataSync.export.pending" })
+              : intl.formatMessage({ id: "parent.dataSync.export.button" })}
           </button>
         </div>
-        <div className="ds-note hy-explain">위치 이력과 대화 내용은 용량이 커서 이 파일에는 포함되지 않아요.</div>
+        <div className="ds-note hy-explain">
+          {intl.formatMessage({ id: "parent.dataSync.export.excluded" })}
+        </div>
 
         {/* 캐시 비우기 */}
         <div className="ds-card">
@@ -216,13 +268,13 @@ export function DataSync() {
             <Trash2 size={20} strokeWidth={2.2} />
           </div>
           <div className="ds-card__main">
-            <div className="ds-card__title">임시 데이터 비우기</div>
+            <div className="ds-card__title">{intl.formatMessage({ id: "parent.dataSync.cache.title" })}</div>
             <div className="ds-card__desc">
-              저장된 캐시를 지워요. 계정·가족 데이터는 서버에 그대로 남아요.
+              {intl.formatMessage({ id: "parent.dataSync.cache.description" })}
             </div>
           </div>
           <button type="button" className="ds-card__cta ds-card__cta--ghost hy-press" onClick={clearCache}>
-            비우기
+            {intl.formatMessage({ id: "parent.dataSync.cache.button" })}
           </button>
         </div>
       </div>

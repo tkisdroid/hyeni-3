@@ -47,3 +47,12 @@ test("10개 locale의 남은 시간 메시지는 같은 duration 변수와 자�
     );
   }
 });
+
+test("아이 초대의 페어링 코드는 번역 원문이나 로그가 아니라 ICU 변수로만 전달한다", () => {
+  const source = read("src/screens/feature/ChildInvite.tsx");
+
+  assert.match(source, /parent\.childInvite\.copyUnsupported[\s\S]{0,160}pairCode/);
+  assert.match(source, /parent\.childInvite\.shareText[\s\S]{0,220}pairCode[\s\S]{0,120}pairLink/);
+  assert.match(source, /parent\.childInvite\.shareFallback[\s\S]{0,160}pairCode/);
+  assert.doesNotMatch(source, /console\.(?:log|info|warn|error)\([^)]*pairCode/s);
+});

@@ -22,12 +22,20 @@ test("부모 위치 화면은 엔타이틀먼트 미확정·오류에서 캐시 
 
 test("안심 리포트는 위치 조회 범위 확인 중에 캐시 장소·신선도를 노출하지 않는다", () => {
   const source = read("src/screens/feature/DailySafetyReport.tsx");
+  const koReports = JSON.parse(read("locales/ko/reports.json"));
 
   assert.match(source, /const locationScopePending = entitlement\.isError \|\| entitlement\.tier === TIERS\.UNKNOWN/);
   assert.match(source, /const canShowLocation = !locationScopePending && isLocationVisible\(entitlement\.tier\)/);
   assert.match(source, /const childLocation = canShowLocation \? cachedChildLocation : null/);
-  assert.match(source, /조회 범위 확인 중/);
-  assert.match(source, /locationScopePending \? \"구독 상태를 확인하고 있어요\"/);
+  assert.match(source, /reports\.daily\.scopeLoading/);
+  assert.match(source, /reports\.daily\.scopePendingDescription/);
+  assert.match(source, /reports\.daily\.subscriptionChecking/);
+  assert.equal(koReports["reports.daily.scopeLoading"], "위치 조회 범위 확인 중");
+  assert.equal(
+    koReports["reports.daily.scopePendingDescription"],
+    "위치 조회 범위 확인 중 · 구독 상태를 확인하고 있어요.",
+  );
+  assert.equal(koReports["reports.daily.subscriptionChecking"], "구독 상태를 확인하고 있어요");
   assert.doesNotMatch(source, /const locationLocked = entitlement\.ready &&/);
 });
 
@@ -77,6 +85,7 @@ test("엔타이틀먼트 503은 영구 확인 중이 아니라 실패와 다시 
   const report = read("src/screens/feature/DailySafetyReport.tsx");
   const home = read("src/screens/parent/ParentHome.tsx");
   const koParent = JSON.parse(read("locales/ko/parent.json"));
+  const koReports = JSON.parse(read("locales/ko/reports.json"));
 
   assert.match(hook, /isFetching: boolean/);
   assert.match(hook, /refetch: \(\) => Promise<void>/);
@@ -91,7 +100,8 @@ test("엔타이틀먼트 503은 영구 확인 중이 아니라 실패와 다시 
   assert.match(status, /위치 조회 범위를 확인하지 못했어요/);
   assert.match(status, /entitlement\.refetch/);
   assert.match(report, /const locationScopeError = entitlement\.isError/);
-  assert.match(report, /위치 조회 범위 확인 실패/);
+  assert.match(report, /reports\.daily\.scopeFailed/);
+  assert.equal(koReports["reports.daily.scopeFailed"], "위치 조회 범위 확인 실패");
   assert.match(report, /entitlement\.refetch/);
   assert.match(home, /const locationScopeError = entitlement\.isError/);
   assert.match(home, /parent\.parentHome\.copy014/);

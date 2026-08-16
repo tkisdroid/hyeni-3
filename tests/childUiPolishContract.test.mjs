@@ -28,11 +28,16 @@ test("아이 설정 도움말은 공용 ChildSheet의 ks-modal 전역 클래스�
 test("아이 설정의 연결·위치 상태는 의미에 맞는 tone을 쓰고 긴 확인 불가 문구를 줄인다", () => {
   const settings = readSource("src/screens/child/ChildSettings.tsx");
   const css = readSource("src/screens/child/ChildSettings.css");
+  const koChild = JSON.parse(readSource("locales/ko/child.json"));
 
   assert.match(settings, /tone: "connected" \| "pending"/);
   assert.match(settings, /ks-hero__chip--\$\{conn\.tone\}/);
-  assert.ok(settings.includes('sub: "위치 상태를 확인할 수 없어"'));
-  assert.ok(!settings.includes('sub: "이 기기에서는 위치 상태를 확인할 수 없어"'));
+  assert.match(
+    settings,
+    /case "unsupported":[\s\S]{0,220}child\.settings\.location\.unsupported[\s\S]{0,180}child\.state\.unavailable[\s\S]{0,100}tone: "caution"/,
+  );
+  assert.equal(koChild["child.settings.location.unsupported"], "위치 상태를 확인할 수 없어");
+  assert.notEqual(koChild["child.settings.location.unsupported"], "이 기기에서는 위치 상태를 확인할 수 없어");
 
   for (const tone of ["positive", "caution", "danger", "neutral"]) {
     assert.ok(settings.includes(`tone: "${tone}" as const`), `위치 ${tone} tone이 없다`);
@@ -82,31 +87,45 @@ test("아이 주요 CTA는 원시 이모지 대신 같은 크기 체계의 Lucid
   const playdate = readSource("src/screens/child/overlays/PlaydateSheet.tsx");
   const route = readSource("src/screens/child/overlays/RouteSheet.tsx");
   const sos = readSource("src/screens/child/ChildSos.tsx");
+  const koChild = JSON.parse(readSource("locales/ko/child.json"));
+  const koShared = JSON.parse(readSource("locales/ko/shared.json"));
 
   assert.doesNotMatch(home, /길찾기 출발!\s*🚀/u);
-  assert.match(home, /<Navigation size=\{20\} strokeWidth=\{2\.2\}[^>]*\/>[\s\S]{0,80}길찾기 출발!/);
+  assert.match(home, /<Navigation size=\{20\} strokeWidth=\{2\.2\}[^>]*\/>[\s\S]{0,120}child\.home\.startRoute/);
+  assert.equal(koChild["child.home.startRoute"], "길찾기 출발!");
 
   assert.doesNotMatch(accept, /🎈\s*\{accepting/u);
-  assert.match(accept, /<PartyPopper size=\{18\} strokeWidth=\{2\.2\}[^>]*\/>[\s\S]{0,80}수락하기/);
+  assert.match(accept, /<PartyPopper size=\{18\} strokeWidth=\{2\.2\}[^>]*\/>[\s\S]{0,120}shared\.playdateAccept\.accept/);
+  assert.equal(koShared["shared.playdateAccept.accept"], "수락하기");
 
   assert.doesNotMatch(playdate, /같이 놀자고 보내기 💌/u);
-  assert.match(playdate, /<Send size=\{19\} strokeWidth=\{2\.2\}[^>]*\/>[\s\S]{0,120}같이 놀자고 보내기/);
+  assert.match(playdate, /<Send size=\{19\} strokeWidth=\{2\.2\}[^>]*\/>[\s\S]{0,220}child\.playdate\.send/);
+  assert.equal(koChild["child.playdate.send"], "같이 놀자고 보내기");
 
   for (const rawLabel of ["출발할게! 🏃", "도착했다고 알리기 🏠", "지도로 자세히 보기 🗺️"]) {
     assert.ok(!route.includes(rawLabel), `RouteSheet CTA에 원시 이모지가 남았다: ${rawLabel}`);
   }
-  assert.match(route, /<Navigation size=\{20\}[\s\S]{0,100}출발할게!/);
-  assert.match(route, /<Home size=\{19\}[\s\S]{0,100}도착했다고 알리기/);
-  assert.match(route, /<Map size=\{19\}[\s\S]{0,100}지도로 자세히 보기/);
+  assert.match(route, /<Navigation size=\{20\}[\s\S]{0,140}child\.route\.depart/);
+  assert.match(route, /<Home size=\{19\}[\s\S]{0,140}child\.route\.arrive/);
+  assert.match(route, /<Map size=\{19\}[\s\S]{0,140}child\.route\.openMap/);
+  assert.equal(koChild["child.route.depart"], "출발할게!");
+  assert.equal(koChild["child.route.arrive"], "도착했다고 알리기");
+  assert.equal(koChild["child.route.openMap"], "지도로 자세히 보기");
   assert.doesNotMatch(sos, /🙏/u);
 });
 
 test("아이 홈의 AI 친구 진입점은 채팅 화면과 같은 저장 이름을 표시한다", () => {
   const home = readSource("src/screens/child/ChildHome.tsx");
+  const koChild = JSON.parse(readSource("locales/ko/child.json"));
 
   assert.match(home, /import \{ resolveAiFriendDisplayName \} from "@\/transform\/aiFriendName"/);
   assert.match(home, /const aiFriendDisplayName = aiFriendSavedName[\s\S]{0,180}resolveAiFriendDisplayName/);
-  assert.match(home, /aiFriendDisplayName \? `\$\{aiFriendDisplayName\} 만나러 가기` : "AI 친구 만나기"/);
+  assert.match(
+    home,
+    /aiFriendDisplayName[\s\S]{0,180}child\.home\.meetAiNamed[\s\S]{0,120}name: aiFriendDisplayName[\s\S]{0,180}child\.home\.meetAi/,
+  );
+  assert.equal(koChild["child.home.meetAiNamed"], "{name} 만나러 가기");
+  assert.equal(koChild["child.home.meetAi"], "AI 친구 만나기");
   assert.ok(home.includes('asset("ui/ai-robot.webp")'));
   assert.doesNotMatch(home, /혜니랑 말하기/);
 });

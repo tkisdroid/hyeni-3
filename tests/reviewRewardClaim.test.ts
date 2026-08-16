@@ -42,7 +42,12 @@ test("부모 설정은 신규 지급 CTA를 제거하고 종료·기존 혜택 �
 
 test("기존 reviewed 가족 안내는 신규 지급으로 오해되지 않게 유지 상태로 표현한다", () => {
   const trialLock = read("src/screens/feature/TrialLock.tsx");
-  assert.match(trialLock, /기존 스토어 방문 혜택 유지 중 · 장소를 3개까지 저장할 수 있어요/);
-  assert.doesNotMatch(trialLock, /혜택 유지 중 · 일정/);
-  assert.doesNotMatch(trialLock, /스토어 방문 혜택 적용 중/);
+  const koBilling = JSON.parse(read("locales/ko/billing.json")) as Record<string, string>;
+  assert.match(trialLock, /billing\.trialLock\.reviewed/);
+  assert.equal(
+    koBilling["billing.trialLock.reviewed"],
+    "기존 스토어 방문 혜택 유지 중 · 장소를 3개까지 저장할 수 있어요",
+  );
+  assert.doesNotMatch(koBilling["billing.trialLock.reviewed"], /혜택 유지 중 · 일정/);
+  assert.doesNotMatch(koBilling["billing.trialLock.reviewed"], /스토어 방문 혜택 적용 중/);
 });

@@ -4,6 +4,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { createIntl, createIntlCache } from "react-intl";
 
 import {
   MAX_SUPPLY_ITEMS_PER_KIND,
@@ -53,6 +54,8 @@ test("아이별 하루 한 종류 8개 상한은 병합과 준비물·숙제 인
   const hook = read("src/queries/useSchedule.ts");
   const suppliesScreen = read("src/screens/feature/Supplies.tsx");
   const childHome = read("src/screens/child/ChildHome.tsx");
+  const koShared = JSON.parse(read("locales/ko/shared.json")) as Record<string, string>;
+  const intl = createIntl({ locale: "ko", messages: koShared }, createIntlCache());
   assert.match(scheduleEndpoint, /const MAX_ITEMS_PER_KIND = MAX_SUPPLY_ITEMS_PER_KIND/);
   assert.match(scheduleEndpoint, /items\.slice\(0, MAX_ITEMS_PER_KIND\)/);
   assert.match(scheduleEndpoint, /emit\("prep", decodeSupplyItems\(row\.supplies\)\)/);
@@ -60,7 +63,34 @@ test("아이별 하루 한 종류 8개 상한은 병합과 준비물·숙제 인
   assert.match(hook, /list\.length >= MAX_SUPPLY_ITEMS_PER_KIND/);
   assert.match(hook, /throw new Error\(DAILY_SUPPLY_LIMIT_ERROR\)/);
   assert.match(suppliesScreen, /list\.length >= MAX_SUPPLY_ITEMS_PER_KIND/);
-  assert.match(suppliesScreen, /dailySupplyLimitMessage\(kind, isChild\)/);
+  assert.match(
+    suppliesScreen,
+    /kind === "hw" \? "shared\.supplies\.limitHomework" : "shared\.supplies\.limitPrep"/,
+  );
+  assert.match(
+    suppliesScreen,
+    /if \(list\.length >= MAX_SUPPLY_ITEMS_PER_KIND\) \{\s*show\(limitMessage\(kind\), "🎒"\)/,
+  );
+  assert.match(
+    suppliesScreen,
+    /isDailySupplyLimitError\(error\)\s*\? limitMessage\(kind\)/,
+  );
+  assert.equal(
+    intl.formatMessage({ id: "shared.supplies.limitPrep" }, { audience: "parent", max: 8 }),
+    "준비물은 하루 8개까지 등록할 수 있어요",
+  );
+  assert.equal(
+    intl.formatMessage({ id: "shared.supplies.limitPrep" }, { audience: "child", max: 8 }),
+    "준비물은 하루 8개까지 등록할 수 있어",
+  );
+  assert.equal(
+    intl.formatMessage({ id: "shared.supplies.limitHomework" }, { audience: "parent", max: 8 }),
+    "숙제는 하루 8개까지 등록할 수 있어요",
+  );
+  assert.equal(
+    intl.formatMessage({ id: "shared.supplies.limitHomework" }, { audience: "child", max: 8 }),
+    "숙제는 하루 8개까지 등록할 수 있어",
+  );
   assert.match(childHome, /itemCount >= MAX_SUPPLY_ITEMS_PER_KIND/);
   assert.match(childHome, /dailySupplyLimitMessage\(kind, true\)/);
   assert.match(childHome, /prepItemCount >= MAX_SUPPLY_ITEMS_PER_KIND/);

@@ -79,7 +79,12 @@ test("장소 저장과 아이 연결 CTA는 공용 primary 높이를 유지한�
 
 test("아이 연결 요금 안내는 390px에서 마지막 어절만 고립되지 않도록 짧게 유지한다", () => {
   const source = readFileSync(resolve(rootDir, "src/screens/feature/PairingWizard.tsx"), "utf8");
+  const koParent = JSON.parse(readFileSync(resolve(rootDir, "locales/ko/parent.json"), "utf8"));
 
-  assert.ok(source.includes("첫째 아이는 무료, 둘째부터는 프리미엄이에요."));
-  assert.ok(!source.includes("아이 1명은 무료예요. 두 번째 아이는 프리미엄에서 연결할 수 있어요."));
+  assert.ok(source.includes("parent.pairingWizard.firstFree"));
+  assert.equal(koParent["parent.pairingWizard.firstFree"], "첫째 아이는 무료, 둘째부터는 프리미엄이에요.");
+  assert.notEqual(
+    koParent["parent.pairingWizard.firstFree"],
+    "아이 1명은 무료예요. 두 번째 아이는 프리미엄에서 연결할 수 있어요.",
+  );
 });

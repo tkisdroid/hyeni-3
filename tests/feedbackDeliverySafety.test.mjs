@@ -35,6 +35,8 @@ const [
 ]);
 const koCore = JSON.parse(await read("locales/ko/core.json"));
 const koParent = JSON.parse(await read("locales/ko/parent.json"));
+const koChild = JSON.parse(await read("locales/ko/child.json"));
+const koShared = JSON.parse(await read("locales/ko/shared.json"));
 
 test("피드백 API는 인증 세션을 쓰고 클라이언트가 주장한 발신자 PII를 보내지 않는다", () => {
   assert.match(endpoint, /requestId:\s*string/);
@@ -63,8 +65,10 @@ test("문제 신고는 한 번 만든 requestId와 입력 내용을 실패 재�
   assert.match(screen, /const \[feedbackKind, setFeedbackKind\] = useState<FeedbackKind>\("problem"\)/);
   assert.match(screen, /requestId,\s*\n\s*feedbackKind,\s*\n\s*category,\s*\n\s*content/);
   assert.match(screen, /result\.status === "sent"/);
-  assert.match(screen, /내용을 전달했어요/);
-  assert.match(screen, /내용을 안전하게 접수했어요\. 운영 대기열에 보관했어요/);
+  assert.match(screen, /shared\.feedback\.result\.sent\.formal/);
+  assert.match(screen, /shared\.feedback\.result\.queued\.formal/);
+  assert.equal(koShared["shared.feedback.result.sent.formal"], "내용을 전달했어요. 확인하고 개선할게요.");
+  assert.equal(koShared["shared.feedback.result.queued.formal"], "내용을 안전하게 접수했어요. 운영 대기열에 보관했어요.");
   assert.match(screen, /maxLength=\{3000\}/);
   assert.doesNotMatch(screen, /setText\(""\)|senderUserId|senderRole|senderName|senderEmail/);
   assert.doesNotMatch(screen, /rating|required.*평점|votes:\s*(?:128|94|67)|명이 원해요/);
@@ -74,7 +78,11 @@ test("진단 첨부는 명시적으로 끌 수 있고 성공 접수 뒤에만 �
   assert.match(screen, /const \[includeDiagnostics, setIncludeDiagnostics\] = useState\(true\)/);
   assert.match(screen, /includeDiagnostics \? await collectFeedbackDiagnostics\(\) : null/);
   assert.match(screen, /if \(includeDiagnostics\) clearFeedbackDiagnostics\(\)/);
-  assert.match(screen, /진단 정보에는 대화 내용·위치 좌표·사진·비밀번호·로그인 토큰을 포함하지 않아요/);
+  assert.match(screen, /shared\.feedback\.diagnostics\.privacy\.formal/);
+  assert.equal(
+    koShared["shared.feedback.diagnostics.privacy.formal"],
+    "대화 내용·위치 좌표·사진·비밀번호·로그인·구매·주문 토큰과 오류 원문은 포함하지 않아요.",
+  );
   assert.match(diagnostics, /FEEDBACK_DIAGNOSTIC_EVENT_LIMIT/);
   assert.match(diagnosticTransform, /FEEDBACK_DIAGNOSTIC_EVENT_LIMIT = 12/);
   assert.match(diagnosticTransform, /FEEDBACK_DIAGNOSTIC_MAX_AGE_MS = 24 \* 60 \* 60 \* 1000/);
@@ -84,8 +92,10 @@ test("진단 첨부는 명시적으로 끌 수 있고 성공 접수 뒤에만 �
 test("부모·아이·선생님 설정과 크래시 화면에서 피드백 화면으로 바로 갈 수 있다", () => {
   assert.match(parentSettings, /label:\s*intl\.formatMessage\(\{ id: "parent\.parentSettings\.copy022" \}\)[\s\S]*navigate\("\/feedback"\)/);
   assert.equal(koParent["parent.parentSettings.copy022"], "문제 신고 · 문의");
-  assert.match(childSettings, /navigate\("\/feedback"\)[\s\S]*문제 알려주기/);
-  assert.match(teacherSettings, /navigate\("\/feedback"\)[\s\S]*문제 신고 · 문의/);
+  assert.match(childSettings, /navigate\("\/feedback"\)[\s\S]*child\.settings\.feedback\.title/);
+  assert.equal(koChild["child.settings.feedback.title"], "문제 알려주기");
+  assert.match(teacherSettings, /navigate\("\/feedback"\)[\s\S]*shared\.teacherSettings\.feedback/);
+  assert.equal(koShared["shared.teacherSettings.feedback"], "문제 신고 · 문의");
   assert.match(errorBoundary, /window\.location\.hash = "#\/feedback"/);
   assert.match(errorBoundary, /"core\.action\.reportProblem\.child" : "core\.action\.reportProblem\.formal"/);
   assert.equal(koCore["core.action.reportProblem.child"], "문제 알려주기");

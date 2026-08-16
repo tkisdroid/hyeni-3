@@ -3,6 +3,8 @@ import type { SaveEventInput } from "../lib/api/endpoints/schedule";
 import { dateToDateKey } from "./dateKey.ts";
 import type { SupportedLocale } from "../i18n/locale.ts";
 import { formatCalendarDay } from "../i18n/format.ts";
+import type { IntlShape } from "react-intl";
+import { withDefaultIntl } from "../i18n/defaultIntl.ts";
 
 const CATEGORY_EMOJI: Readonly<Record<string, string>> = {
   school: "📚",
@@ -96,7 +98,9 @@ export function buildAiScheduleDrafts(
   currentDate: { year: number; month: number; day: number },
   createId: () => string,
   locale: SupportedLocale,
+  providedIntl?: IntlShape,
 ): AiScheduleDraftResult {
+  const intl = withDefaultIntl(providedIntl);
   const normalized: NormalizedDraftFields[] = [];
   for (let index = 0; index < events.length; index += 1) {
     const event = events[index];
@@ -141,7 +145,7 @@ export function buildAiScheduleDrafts(
         { locale, timeZone: "UTC", weekday: "short" },
       ),
       time: event.time,
-      timeLabel: event.time ?? "시간 미정",
+      timeLabel: event.time ?? intl.formatMessage({ id: "parent.aiSchedule.timeUnknown" }),
       category: event.category,
       memo: event.memo,
     })),

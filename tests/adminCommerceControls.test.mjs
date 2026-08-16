@@ -40,15 +40,25 @@ test("운영 결제 제어 query는 전용 키를 쓰고 두 값을 한 mutation
 
 test("운영 화면은 두 결제 채널을 명시 선택한 뒤 한 번에 저장하고 fail-closed 상태를 구분한다", () => {
   const screen = source("src/screens/admin/AdminAiPrompt.tsx");
+  const koShared = JSON.parse(source("locales/ko/shared.json"));
 
-  assert.match(screen, /신규 결제 운영 제어/);
-  assert.match(screen, /웹 구독 신규 결제/);
-  assert.match(screen, /웹 AI 크레딧 신규 결제/);
-  assert.match(screen, /운영 기본은 중지/);
-  assert.match(screen, /설정이 아직 만들어지지 않아 신규 결제가 안전하게 중지되어 있습니다/);
-  assert.match(screen, /운영 제어 저장소 오류\(503\)/);
-  assert.match(screen, /기존 주문의 완료·대사·해지·환불은 계속 처리됩니다/);
-  assert.match(screen, /두 설정을 한 번에 저장/);
+  const copyContract = {
+    "shared.adminAiPrompt.commerce.title": "신규 결제 운영 제어",
+    "shared.adminAiPrompt.commerce.subscription.legend": "웹 구독 신규 결제",
+    "shared.adminAiPrompt.commerce.credit.legend": "웹 AI 크레딧 신규 결제",
+    "shared.adminAiPrompt.commerce.note.heading": "운영 기본은 중지입니다.",
+    "shared.adminAiPrompt.commerce.unconfigured":
+      "설정이 아직 만들어지지 않아 신규 결제가 안전하게 중지되어 있습니다. 두 항목을 확인한 뒤 함께 저장해 주세요.",
+    "shared.adminAiPrompt.commerce.error.storage":
+      "운영 제어 저장소 오류(503)로 현재 값을 확인하지 못했습니다. 서버는 신규 결제를 안전하게 중지합니다.",
+    "shared.adminAiPrompt.commerce.note.description":
+      "migration·readback·외부 결제 E2E를 모두 확인한 뒤에만 허용해 주세요. 기존 주문의 완료·대사·해지·환불은 계속 처리됩니다.",
+    "shared.adminAiPrompt.commerce.save.action": "두 설정을 한 번에 저장",
+  };
+  for (const [id, korean] of Object.entries(copyContract)) {
+    assert.match(screen, new RegExp(id.replaceAll(".", "\\.")), `${id} Intl 배선이 필요합니다`);
+    assert.equal(koShared[id], korean, `${id} fail-closed 의미를 유지해야 합니다`);
+  }
   assert.match(screen, /saveCommerceControls\.mutateAsync\(\{/);
   assert.match(screen, /webSubscriptionNewCheckoutsEnabled:\s*subscriptionEnabled/);
   assert.match(screen, /webAiCreditNewCheckoutsEnabled:\s*aiCreditEnabled/);

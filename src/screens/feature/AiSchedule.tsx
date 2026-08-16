@@ -14,6 +14,7 @@ import {
   buildAiScheduleSaveInputs,
   type AiScheduleDraft,
 } from "@/transform/aiScheduleDraft";
+import type { SupportedLocale } from "@/i18n/locale";
 import { useLocale } from "@/i18n/useLocale";
 import { ApiError } from "@/lib/api/errors";
 import { cancelSpeechCapture, captureSpeech, isSpeechCaptureSupported } from "@/lib/native/speech";
@@ -34,10 +35,10 @@ import { localizeApiError } from "@/i18n/apiError";
 type TabKey = "voice" | "text" | "image";
 
 // 탭 아이콘 — 유니코드 이모지 대신 lucide 라인 아이콘(비싼 심플함 유지).
-const AI_TABS: ReadonlyArray<{ key: TabKey; Icon: LucideIcon; label: string }> = [
-  { key: "voice", Icon: Mic, label: "음성" },
-  { key: "text", Icon: Keyboard, label: "텍스트" },
-  { key: "image", Icon: ImageIcon, label: "사진" },
+const AI_TABS: ReadonlyArray<{ key: TabKey; Icon: LucideIcon; messageId: string }> = [
+  { key: "voice", Icon: Mic, messageId: "parent.aiSchedule.tabVoice" },
+  { key: "text", Icon: Keyboard, messageId: "parent.aiSchedule.tabText" },
+  { key: "image", Icon: ImageIcon, messageId: "parent.aiSchedule.tabImage" },
 ];
 
 /** 음성 파형 막대 — 20개, 물결처럼 어긋난 delay. */
@@ -47,13 +48,26 @@ const WAVE_BARS = Array.from({ length: 20 }, (_, i) => ({
 }));
 
 /** 카테고리(school/sports/...) → 결과 카드 라벨(hyeni-1 CATS 기준). */
-const CAT_LABEL: Record<string, string> = {
-  school: "학교·공부",
-  sports: "운동",
-  hobby: "취미",
-  family: "가족",
-  friend: "친구",
-  other: "기타",
+const CAT_MESSAGE_ID: Record<string, string> = {
+  school: "parent.aiSchedule.categorySchool",
+  sports: "parent.aiSchedule.categorySports",
+  hobby: "parent.aiSchedule.categoryHobby",
+  family: "parent.aiSchedule.categoryFamily",
+  friend: "parent.aiSchedule.categoryFriend",
+  other: "parent.aiSchedule.categoryOther",
+};
+
+const SPEECH_LOCALE: Record<SupportedLocale, string> = {
+  ko: "ko-KR",
+  en: "en-US",
+  ja: "ja-JP",
+  "zh-CN": "zh-CN",
+  "zh-TW": "zh-TW",
+  vi: "vi-VN",
+  th: "th-TH",
+  id: "id-ID",
+  ms: "ms-MY",
+  fil: "fil-PH",
 };
 
 /** 오늘 기준 currentDate(month 는 0-indexed — voice-parse 상대 날짜 해석용). */
@@ -154,6 +168,11 @@ export function AiSchedule() {
   const events = drafts ?? [];
   const hasResult = events.length > 0;
   const count = events.length;
+  const screenTitle = intl.formatMessage({
+    id: academyMode
+      ? "parent.aiSchedule.academyScreenTitle"
+      : "parent.aiSchedule.screenTitle",
+  });
   // 정리하기 가능 여부 — 알림장 탭은 사진 선택 시, 텍스트·음성 탭은 인식/입력된 내용이 있을 때.
   const canParse = tab === "image" ? imagePreview !== null : text.trim().length > 0;
 
@@ -173,24 +192,24 @@ export function AiSchedule() {
     reader.onload = () => {
       const dataUrl = typeof reader.result === "string" ? reader.result : null;
       if (!dataUrl) {
-        show("사진을 불러오지 못했어요", "⚠️");
+        show(intl.formatMessage({ id: "parent.aiSchedule.photoLoadError" }), "⚠️");
         return;
       }
       setImagePreview(dataUrl);
       setDrafts(null); // 새 사진 → 이전 인식 결과 무효화.
     };
-    reader.onerror = () => show("사진을 불러오지 못했어요", "⚠️");
+    reader.onerror = () => show(intl.formatMessage({ id: "parent.aiSchedule.photoLoadError" }), "⚠️");
     reader.readAsDataURL(file);
   };
 
   // ── AI 정리(파싱) 코어 — 텍스트/알림장 사진 공통. 사용자 버튼 onClick 에서만 호출 ──
   const runParse = async (payloadText: string, image?: string) => {
     if (!aiScheduleDataReady) {
-      show("일정 정보를 확인한 뒤 다시 시도해 주세요.", "⚠️");
+      show(intl.formatMessage({ id: "parent.aiSchedule.dataNotReady" }), "⚠️");
       return;
     }
     if (status !== "authenticated") {
-      show("로그인이 필요해요", "🔒");
+      show(intl.formatMessage({ id: "parent.aiSchedule.loginRequired" }), "🔒");
       return;
     }
     try {
@@ -204,21 +223,28 @@ export function AiSchedule() {
       if (result.events.length === 0) {
         setDrafts(null);
         show(
-          image
-            ? "사진에서 일정을 찾지 못했어요. 날짜와 시간이 잘 보이게 다시 찍어 주세요."
-            : "일정을 찾지 못했어요. 날짜와 시간을 조금 더 자세히 적어 주세요.",
+          intl.formatMessage({
+            id: image
+              ? "parent.aiSchedule.noImageEvents"
+              : "parent.aiSchedule.noTextEvents",
+          }),
           "🤔",
         );
         return;
       }
-      const prepared = buildAiScheduleDrafts(result.events, cd, () => crypto.randomUUID(), locale);
+      const prepared = buildAiScheduleDrafts(result.events, cd, () => crypto.randomUUID(), locale, intl);
       if (prepared.error) {
         setDrafts(null);
-        const errorMessage = prepared.error.code === "invalid_title"
-          ? `AI가 ‘${prepared.error.title}’의 일정 이름을 읽지 못했어요. 이름을 포함해 다시 정리해 주세요.`
-          : prepared.error.code === "invalid_date"
-            ? `AI가 ‘${prepared.error.title}’ 일정의 날짜를 잘못 읽었어요. 날짜를 확인해 다시 정리해 주세요.`
-            : `AI가 ‘${prepared.error.title}’ 일정의 시간을 잘못 읽었어요. 0시부터 23시 59분 사이로 다시 적어 주세요.`;
+        const errorMessage = intl.formatMessage(
+          {
+            id: prepared.error.code === "invalid_title"
+              ? "parent.aiSchedule.invalidTitle"
+              : prepared.error.code === "invalid_date"
+                ? "parent.aiSchedule.invalidDate"
+                : "parent.aiSchedule.invalidTime",
+          },
+          { title: prepared.error.title },
+        );
         show(errorMessage, "⚠️");
         return;
       }
@@ -233,7 +259,7 @@ export function AiSchedule() {
       if (academyMode && e instanceof ApiError && e.code === "premium_required") {
         await entitlement.refetch().catch(() => undefined);
         setAcademyUpsellOpen(true);
-        show("프리미엄 구독 상태를 다시 확인해 주세요.", "⚠️");
+        show(intl.formatMessage({ id: "parent.aiSchedule.premiumRecheck" }), "⚠️");
         return;
       }
       show(localizeApiError(e, intl, "formal"), "⚠️");
@@ -245,15 +271,15 @@ export function AiSchedule() {
   const startVoice = async () => {
     if (!micArmedRef.current || listening || parseM.isPending) return;
     if (!aiScheduleDataReady) {
-      show("일정 정보를 확인한 뒤 다시 시도해 주세요.", "⚠️");
+      show(intl.formatMessage({ id: "parent.aiSchedule.dataNotReady" }), "⚠️");
       return;
     }
     if (status !== "authenticated") {
-      show("로그인이 필요해요", "🔒");
+      show(intl.formatMessage({ id: "parent.aiSchedule.loginRequired" }), "🔒");
       return;
     }
     if (!isSpeechCaptureSupported()) {
-      show("이 기기는 음성 인식을 지원하지 않아요. 텍스트로 입력해 주세요.", "🎤");
+      show(intl.formatMessage({ id: "parent.aiSchedule.speechUnsupported" }), "🎤");
       setTab("text");
       return;
     }
@@ -261,10 +287,10 @@ export function AiSchedule() {
     setListening(true);
     setDrafts(null);
     try {
-      const transcript = await captureSpeech("ko-KR");
+      const transcript = await captureSpeech(SPEECH_LOCALE[locale]);
       if (gen !== voiceGenRef.current) return; // 탭 전환·이탈로 취소된 인식 — 결과·토스트 무시
       if (!transcript) {
-        show("음성을 인식하지 못했어요. 다시 말해 주세요.", "🎤");
+        show(intl.formatMessage({ id: "parent.aiSchedule.speechEmpty" }), "🎤");
         return;
       }
       setText(transcript);
@@ -282,7 +308,7 @@ export function AiSchedule() {
   const handleParse = async () => {
     if (tab === "image") {
       if (!imagePreview) {
-        show("먼저 사진을 선택해 주세요", "📸");
+        show(intl.formatMessage({ id: "parent.aiSchedule.selectPhotoFirst" }), "📸");
         return;
       }
       // 가정통신문 사진 → voice-parse(image) 엔드포인트로 실제 파싱.
@@ -291,7 +317,7 @@ export function AiSchedule() {
     }
     const t = text.trim();
     if (!t) {
-      show("정리할 내용을 입력해 주세요", "✏️");
+      show(intl.formatMessage({ id: "parent.aiSchedule.enterContent" }), "✏️");
       return;
     }
     await runParse(t);
@@ -301,27 +327,33 @@ export function AiSchedule() {
   const handleConfirm = async () => {
     if (!drafts || drafts.length === 0) return;
     if (!aiScheduleDataReady) {
-      show("일정 정보를 확인한 뒤 다시 시도해 주세요.", "⚠️");
+      show(intl.formatMessage({ id: "parent.aiSchedule.dataNotReady" }), "⚠️");
       return;
     }
     if (status !== "authenticated" || !familyId) {
-      show("로그인이 필요해요", "🔒");
+      show(intl.formatMessage({ id: "parent.aiSchedule.loginRequired" }), "🔒");
       return;
     }
     if (!activeChild) {
-      show("일정을 넣을 아이를 먼저 선택해 주세요", "⚠️");
+      show(intl.formatMessage({ id: "parent.aiSchedule.selectChildFirst" }), "⚠️");
       return;
     }
     if (!existingEvents.data) {
-      show("일정 정보를 확인한 뒤 다시 시도해 주세요.", "⚠️");
+      show(intl.formatMessage({ id: "parent.aiSchedule.dataNotReady" }), "⚠️");
       return;
     }
     try {
       await createM.mutateAsync(buildAiScheduleSaveInputs(drafts, familyId, activeChild.id));
       show(
         drafts.length > 1
-          ? `${drafts.length}건의 일정을 캘린더에 추가했어요`
-          : `‘${drafts[0]?.title ?? "일정"}’ 일정을 캘린더에 추가했어요`,
+          ? intl.formatMessage(
+              { id: "parent.aiSchedule.savedMany" },
+              { count: intl.formatNumber(drafts.length) },
+            )
+          : intl.formatMessage(
+              { id: "parent.aiSchedule.savedOne" },
+              { title: drafts[0]?.title ?? "" },
+            ),
         "✅",
       );
       setDrafts(null);
@@ -336,10 +368,10 @@ export function AiSchedule() {
   if (aiScheduleQueryState === "loading") {
     return (
       <ScreenQueryState
-        screenTitle={academyMode ? "학원 시간표 정리" : "AI로 일정 추가"}
+        screenTitle={screenTitle}
         state="loading"
-        heading="일정 정보를 확인하고 있어요"
-        description="가족 일정과 저장 준비 상태를 안전하게 확인하는 중이에요."
+        heading={intl.formatMessage({ id: "parent.aiSchedule.loadingHeading" })}
+        description={intl.formatMessage({ id: "parent.aiSchedule.loadingDescription" })}
         onBack={() => navigate(-1)}
       />
     );
@@ -348,10 +380,10 @@ export function AiSchedule() {
   if (aiScheduleQueryState === "error" || aiScheduleDataMissing) {
     return (
       <ScreenQueryState
-        screenTitle={academyMode ? "학원 시간표 정리" : "AI로 일정 추가"}
+        screenTitle={screenTitle}
         state="error"
-        heading="일정 추가 조건을 확인하지 못했어요"
-        description="확인되지 않은 상태에서 AI 처리나 일정 저장이 시작되지 않도록 잠시 닫았어요."
+        heading={intl.formatMessage({ id: "parent.aiSchedule.errorHeading" })}
+        description={intl.formatMessage({ id: "parent.aiSchedule.errorDescription" })}
         onBack={() => navigate(-1)}
         onRetry={() => void retryAiSchedule()}
         retrying={aiScheduleRefetching}
@@ -367,35 +399,40 @@ export function AiSchedule() {
           <button
             type="button"
             className="ais-back hy-press"
-            aria-label="뒤로"
+            aria-label={intl.formatMessage({ id: "parent.aiSchedule.back" })}
             onClick={() => navigate(-1)}
           >
             <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
           </button>
-          <span className="ais-title">학원 시간표 정리</span>
+          <span className="ais-title">{screenTitle}</span>
         </header>
         <section className="ais-body ais-academy-lock">
           <div className="ais-academy-lock__icon" aria-hidden="true">
             <Sparkles size={28} strokeWidth={2.2} />
           </div>
-          <h1>학원 시간표를 한 번에 정리해 보세요</h1>
-          <p>직접 일정 추가와 기존 일정 관리는 무료에서도 제한 없이 사용할 수 있어요. 준비물과 숙제는 모든 플랜에서 아이별 하루 각각 {MAX_SUPPLY_ITEMS_PER_KIND}개까지 저장할 수 있어요.</p>
+          <h1>{intl.formatMessage({ id: "parent.aiSchedule.academyLockTitle" })}</h1>
+          <p>
+            {intl.formatMessage(
+              { id: "parent.aiSchedule.supplyLimit" },
+              { limit: intl.formatNumber(MAX_SUPPLY_ITEMS_PER_KIND) },
+            )}
+          </p>
           <p className="ais-academy-lock__premium">
-            프리미엄에서는 학원 시간표 사진을 여러 일정으로 정리하고, 저장 장소의 위치 흐름과 함께 관리할 수 있어요.
+            {intl.formatMessage({ id: "parent.aiSchedule.academyPremiumDescription" })}
           </p>
           <button
             type="button"
             className="ais-confirm hy-press"
             onClick={() => setAcademyUpsellOpen(true)}
           >
-            프리미엄으로 학원표 정리하기
+            {intl.formatMessage({ id: "parent.aiSchedule.academyPremiumCta" })}
           </button>
           <button
             type="button"
             className="ais-academy-free hy-press"
             onClick={() => navigate("/ai-schedule?tab=text", { replace: true })}
           >
-            무료로 일반 일정 추가하기
+            {intl.formatMessage({ id: "parent.aiSchedule.freeScheduleCta" })}
           </button>
         </section>
         <PremiumUpsell
@@ -409,7 +446,9 @@ export function AiSchedule() {
             const saved = storage && returnTo
               ? savePremiumReturnIntent(storage, { source, feature, returnTo })
               : false;
-            if (!saved) throw new Error("결제 후 학원 시간표 화면으로 돌아올 경로를 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+            if (!saved) {
+              throw new Error(intl.formatMessage({ id: "parent.aiSchedule.academyReturnFailed" }));
+            }
             setAcademyUpsellOpen(false);
             navigate("/subscription");
           }}
@@ -424,24 +463,24 @@ export function AiSchedule() {
         <button
           type="button"
           className="ais-back hy-press"
-          aria-label="뒤로"
+          aria-label={intl.formatMessage({ id: "parent.aiSchedule.back" })}
           onClick={() => navigate(-1)}
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
         </button>
-        <span className="ais-title">{academyMode ? "학원 시간표 정리" : "AI로 일정 추가"}</span>
+        <span className="ais-title">{screenTitle}</span>
       </header>
 
       <div className="ais-body">
         {academyMode && (
           <div className="ais-academy-intro">
-            <strong>학원 시간표 자동 정리</strong>
-            <span>주간 시간표나 학원 안내문을 올리면 여러 일정을 한 번에 확인해 캘린더에 저장해요.</span>
+            <strong>{intl.formatMessage({ id: "parent.aiSchedule.academyIntroTitle" })}</strong>
+            <span>{intl.formatMessage({ id: "parent.aiSchedule.academyIntroDescription" })}</span>
           </div>
         )}
         {aiScheduleDataEmpty && (
           <div className="sqs-inline-empty">
-            아직 등록된 일정이 없어요. 아래에서 첫 일정을 정리해 보세요.
+            {intl.formatMessage({ id: "parent.aiSchedule.empty" })}
           </div>
         )}
         {/* 입력 방식 탭 */}
@@ -457,7 +496,7 @@ export function AiSchedule() {
               <span className="ais-tab__emoji">
                 <t.Icon size={15} strokeWidth={2.4} />
               </span>
-              {t.label}
+              {intl.formatMessage({ id: t.messageId })}
             </button>
           ))}
         </div>
@@ -471,7 +510,13 @@ export function AiSchedule() {
               onClick={startVoice}
               disabled={parseM.isPending}
               aria-busy={parseM.isPending}
-              aria-label={parseM.isPending ? "일정 정리 중" : listening ? "듣는 중" : "말하기 시작"}
+              aria-label={intl.formatMessage({
+                id: parseM.isPending
+                  ? "parent.aiSchedule.voiceParsingAria"
+                  : listening
+                    ? "parent.aiSchedule.voiceListeningAria"
+                    : "parent.aiSchedule.voiceStartAria",
+              })}
             >
               <span className="ais-mic__ring" />
               <span className="ais-mic__inner" />
@@ -484,19 +529,21 @@ export function AiSchedule() {
             </div>
             <div className="ais-listening">
               {listening
-                ? "듣는 중… 지금 말해 보세요"
+                ? intl.formatMessage({ id: "parent.aiSchedule.listening" })
                 : text
-                  ? "인식된 내용이에요 · 아래에서 정리해요"
-                  : "마이크를 누르고 말해 보세요"}
+                  ? intl.formatMessage({ id: "parent.aiSchedule.transcriptReady" })
+                  : intl.formatMessage({ id: "parent.aiSchedule.voicePrompt" })}
             </div>
             {text ? (
               <div className="ais-bubble ais-bubble--said">“{text}”</div>
             ) : (
-              <div className="ais-bubble">예) “내일 오후 4시에 태권도 일정 추가해 줘”</div>
+              <div className="ais-bubble">
+                {intl.formatMessage({ id: "parent.aiSchedule.voiceExample" })}
+              </div>
             )}
             <div className="ais-hint hy-explain">
               <span className="ais-hint__ico"><Mic size={15} strokeWidth={2.2} /></span>
-              말한 내용에서 추가할 일정의 날짜와 시간을 정리해요
+              {intl.formatMessage({ id: "parent.aiSchedule.voiceHint" })}
             </div>
           </div>
         )}
@@ -507,15 +554,15 @@ export function AiSchedule() {
             <div className="ais-textbox">
               <textarea
                 className="ais-textarea"
-                aria-label="정리할 일정 내용"
-                placeholder="예) 다음 주 화요일 4시 태권도와 목요일 5시 미술학원 추가해 줘"
+                aria-label={intl.formatMessage({ id: "parent.aiSchedule.textAria" })}
+                placeholder={intl.formatMessage({ id: "parent.aiSchedule.textPlaceholder" })}
                 value={text}
                 onChange={(e) => onTextChange(e.target.value)}
               />
             </div>
             <div className="ais-hint hy-explain">
               <span className="ais-hint__ico"><Sparkles size={15} strokeWidth={2.2} /></span>
-              자유롭게 적으면 AI가 추가할 일정의 날짜와 시간을 정리해요
+              {intl.formatMessage({ id: "parent.aiSchedule.textHint" })}
             </div>
           </div>
         )}
@@ -533,23 +580,31 @@ export function AiSchedule() {
             />
             <div className="ais-mode-intro">
               <div className="ais-mode-intro__title">
-                {academyMode ? "학원 시간표 사진으로 일정 찾기" : "가정통신문 사진으로 일정 찾기"}
+                {intl.formatMessage({
+                  id: academyMode
+                    ? "parent.aiSchedule.academyImageTitle"
+                    : "parent.aiSchedule.noticeImageTitle",
+                })}
               </div>
               <p>
                 {academyMode
-                  ? "주간 시간표나 학원 안내문에서 날짜와 시간을 찾아 여러 일정 후보로 정리해 드려요."
-                  : "가정통신문, 알림장, 학원 안내문, 준비물 사진에서 날짜와 시간을 찾아드려요."}
+                  ? intl.formatMessage({ id: "parent.aiSchedule.academyImageDescription" })
+                  : intl.formatMessage({ id: "parent.aiSchedule.noticeImageDescription" })}
               </p>
             </div>
             {imagePreview ? (
               <div className="ais-preview">
-                <img className="ais-preview__img" src={imagePreview} alt="선택한 가정통신문 사진" />
+                <img
+                  className="ais-preview__img"
+                  src={imagePreview}
+                  alt={intl.formatMessage({ id: "parent.aiSchedule.selectedImageAlt" })}
+                />
                 <button
                   type="button"
                   className="ais-preview__change hy-press"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  다른 사진 선택
+                  {intl.formatMessage({ id: "parent.aiSchedule.changePhoto" })}
                 </button>
               </div>
             ) : (
@@ -562,17 +617,27 @@ export function AiSchedule() {
                   <img src={asset("cat/study.webp")} alt="" />
                 </span>
                 <span className="ais-upload__text">
-                  <span className="ais-upload__title">사진 선택</span>
-                  <span className="ais-upload__sub">가정통신문 · 알림장 · 학원 안내문</span>
+                  <span className="ais-upload__title">
+                    {intl.formatMessage({ id: "parent.aiSchedule.selectPhoto" })}
+                  </span>
+                  <span className="ais-upload__sub">
+                    {intl.formatMessage({ id: "parent.aiSchedule.photoKinds" })}
+                  </span>
                 </span>
               </button>
             )}
             <div className="ais-hint hy-explain">
               <span className="ais-hint__ico"><Camera size={15} strokeWidth={2.2} /></span>
               <span className="hy-explain__lines">
-                <span className="hy-explain__line">AI가 사진에서 일정을 찾습니다.</span>
-                <span className="hy-explain__line">크레딧이 사용될 수 있어요.</span>
-                <span className="hy-explain__line">사진은 일정 후보를 찾기 위해 서버로 전송돼요.</span>
+                <span className="hy-explain__line">
+                  {intl.formatMessage({ id: "parent.aiSchedule.imageSearch" })}
+                </span>
+                <span className="hy-explain__line">
+                  {intl.formatMessage({ id: "parent.aiSchedule.imageCredit" })}
+                </span>
+                <span className="hy-explain__line">
+                  {intl.formatMessage({ id: "parent.aiSchedule.imageServer" })}
+                </span>
               </span>
             </div>
           </div>
@@ -585,8 +650,11 @@ export function AiSchedule() {
               <span className="ais-reslabel__badge"><Sparkles size={13} strokeWidth={2.2} color="var(--lav-text)" /></span>
               <span className="ais-reslabel__text">
                 {count > 1
-                  ? `AI 인식 결과 · ${count}건을 모두 확인해 주세요`
-                  : "AI 인식 결과 · 내용을 확인해 주세요"}
+                  ? intl.formatMessage(
+                      { id: "parent.aiSchedule.resultMany" },
+                      { count: intl.formatNumber(count) },
+                    )
+                  : intl.formatMessage({ id: "parent.aiSchedule.resultOne" })}
               </span>
             </div>
 
@@ -600,31 +668,51 @@ export function AiSchedule() {
                     />
                   </span>
                   <span className="ais-result__info">
-                    <span className="ais-result__k">일정</span>
+                    <span className="ais-result__k">
+                      {intl.formatMessage({ id: "parent.aiSchedule.eventLabel" })}
+                    </span>
                     <span className="ais-result__v ais-result__v--lg">{draft.title}</span>
                   </span>
                 </div>
                 <div className="ais-result__hr" />
                 <div className="ais-result__grid">
                   <div className="ais-result__cell">
-                    <span className="ais-result__k">날짜</span>
+                    <span className="ais-result__k">
+                      {intl.formatMessage({ id: "parent.aiSchedule.dateLabel" })}
+                    </span>
                     <span className="ais-result__v">{draft.dateLabel}</span>
                   </div>
                   <div className="ais-result__cell">
-                    <span className="ais-result__k">시간</span>
+                    <span className="ais-result__k">
+                      {intl.formatMessage({ id: "parent.aiSchedule.timeLabel" })}
+                    </span>
                     <span className="ais-result__v">{draft.timeLabel}</span>
                   </div>
                   <div className="ais-result__cell">
-                    <span className="ais-result__k">분류</span>
-                    <span className="ais-result__v">{CAT_LABEL[draft.category] || CAT_LABEL.other}</span>
+                    <span className="ais-result__k">
+                      {intl.formatMessage({ id: "parent.aiSchedule.categoryLabel" })}
+                    </span>
+                    <span className="ais-result__v">
+                      {intl.formatMessage({
+                        id: CAT_MESSAGE_ID[draft.category] || CAT_MESSAGE_ID.other,
+                      })}
+                    </span>
                   </div>
                 </div>
               </div>
             ))}
             <div className="ais-edit-note hy-explain">
               {activeChild
-                ? `${count}건 모두 ${activeChild.name || "선택한 아이"}에게 저장돼요. 추가한 뒤 캘린더에서 수정할 수 있어요.`
-                : "저장할 아이를 먼저 선택해 주세요."}
+                ? intl.formatMessage(
+                    { id: "parent.aiSchedule.assignedChild" },
+                    {
+                      count: intl.formatNumber(count),
+                      childName: activeChild.name || intl.formatMessage({
+                        id: "parent.aiSchedule.selectedChildFallback",
+                      }),
+                    },
+                  )
+                : intl.formatMessage({ id: "parent.aiSchedule.selectChildNote" })}
             </div>
           </>
         )}
@@ -639,7 +727,11 @@ export function AiSchedule() {
             aria-busy={createM.isPending}
           >
             <Check size={20} strokeWidth={2.4} color="#fff" />
-            {createM.isPending ? "추가하는 중…" : "이대로 추가하기"}
+            {intl.formatMessage({
+              id: createM.isPending
+                ? "parent.aiSchedule.saving"
+                : "parent.aiSchedule.confirm",
+            })}
           </button>
         ) : (
           <button
@@ -652,11 +744,11 @@ export function AiSchedule() {
             <Sparkles size={20} strokeWidth={2.4} color="#fff" />
             {parseM.isPending
               ? tab === "image"
-                ? "찾는 중…"
-                : "정리하는 중…"
+                ? intl.formatMessage({ id: "parent.aiSchedule.searching" })
+                : intl.formatMessage({ id: "parent.aiSchedule.parsing" })
               : tab === "image"
-                ? "일정 찾기"
-                : "AI로 정리하기"}
+                ? intl.formatMessage({ id: "parent.aiSchedule.search" })
+                : intl.formatMessage({ id: "parent.aiSchedule.parse" })}
           </button>
         )}
       </div>
@@ -671,7 +763,9 @@ export function AiSchedule() {
           const saved = storage && returnTo
             ? savePremiumReturnIntent(storage, { source, feature, returnTo })
             : false;
-          if (!saved) throw new Error("결제 후 AI 일정 정리 화면으로 돌아올 경로를 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+          if (!saved) {
+            throw new Error(intl.formatMessage({ id: "parent.aiSchedule.returnFailed" }));
+          }
           setScheduleLimitUpsellOpen(false);
           navigate("/subscription");
         }}

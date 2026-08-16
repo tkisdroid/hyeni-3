@@ -52,7 +52,7 @@ function toDateFieldValue(bd: string | null | undefined): string {
  * 프로필 편집 (P-03 → 편집). 대상 아이(location.state.childId)의 전 정보를 실제 저장한다.
  * - 사진: 파일 선택 → 리사이즈 → R2 업로드(주 보호자만).
  * - 이름·생일·전화: 서버 member/profile(주 보호자만). 저장 시 notifyPg 로 아이 기기 실시간 반영.
- * 대상 = location.state.childId(없으면 첫 자녀). 현재값을 해당 아이 멤버에서 프리필한다.
+ * 대상 = location.state.childId > 전역 활성 아이. 둘 다 없으면 닫고 첫 자녀로 대체하지 않는다.
  */
 export function ProfileEdit() {
   const intl = useIntl();
@@ -148,18 +148,18 @@ export function ProfileEdit() {
     e.target.value = ""; // 같은 파일 재선택 허용
     if (!file) return;
     if (!profileFormReady) {
-      show("현재 아이의 프로필을 불러온 뒤 다시 시도해 주세요", "⚠️");
+      show(intl.formatMessage({ id: "parent.profileEdit.error.notReady" }), "⚠️");
       return;
     }
     if (!isPrimary) {
-      show("주 보호자만 사진을 바꿀 수 있어요", "🔒");
+      show(intl.formatMessage({ id: "parent.profileEdit.error.primaryPhotoOnly" }), "🔒");
       return;
     }
     setProcessing(true);
     try {
       const dataUrl = await resizeImageFileSafe(file, { maxEdge: 1280, quality: 0.8 });
       if (!dataUrl) {
-        show("사진을 불러오지 못했어요", "⚠️");
+        show(intl.formatMessage({ id: "parent.profileEdit.error.photoLoad" }), "⚠️");
         return;
       }
       setPickedDataUrl(dataUrl);
@@ -171,26 +171,30 @@ export function ProfileEdit() {
   const onSave = async () => {
     if (busy) return;
     if (!profileFormReady) {
-      show("현재 아이의 프로필을 불러온 뒤 다시 시도해 주세요", "⚠️");
+      show(intl.formatMessage({ id: "parent.profileEdit.error.notReady" }), "⚠️");
       return;
     }
     if (!member) {
-      show("아이 정보를 찾지 못했어요", "⚠️");
+      show(intl.formatMessage({ id: "parent.profileEdit.error.childMissing" }), "⚠️");
       return;
     }
     if (!name.trim()) {
-      show("이름을 입력해 주세요", "✏️");
+      show(intl.formatMessage({ id: "parent.profileEdit.error.nameRequired" }), "✏️");
       return;
     }
     if (!isPrimary) {
-      show("주 보호자만 아이 프로필을 수정할 수 있어요", "🔒");
+      show(intl.formatMessage({ id: "parent.profileEdit.error.primaryEditOnly" }), "🔒");
       return;
     }
 
     // 생일은 AI 친구의 연령대 맞춤 답변 기준이라 부모 화면에서는 비워서 저장하지 않는다.
     const birthdateToSave = normalizeRequiredChildBirthdate(birthday);
     if (!birthdateToSave) {
-      show(birthday.trim() ? "생일을 올바르게 입력해 주세요" : "생일을 입력해 주세요", "🎂");
+      show(intl.formatMessage({
+        id: birthday.trim()
+          ? "parent.profileEdit.error.birthdateInvalid"
+          : "parent.profileEdit.error.birthdateRequired",
+      }), "🎂");
       return;
     }
 
@@ -217,7 +221,7 @@ export function ProfileEdit() {
         birthdate: birthdateToSave,
         phone: phoneToSave,
       });
-      show("저장했어요. 아이 기기에 실시간으로 반영돼요", "✅");
+      show(intl.formatMessage({ id: "parent.profileEdit.saved" }), "✅");
       navigate(-1);
     } catch (e) {
       show(localizeApiError(e, intl, "formal"), "⚠️");
@@ -227,10 +231,10 @@ export function ProfileEdit() {
   if (profileQueryState === "loading" || profileFormHydrating) {
     return (
       <ScreenQueryState
-        screenTitle="프로필 편집"
+        screenTitle={intl.formatMessage({ id: "parent.profileEdit.screenTitle" })}
         state="loading"
-        heading="아이 정보를 불러오고 있어요"
-        description="수정할 아이의 최신 프로필을 확인하는 중이에요."
+        heading={intl.formatMessage({ id: "parent.profileEdit.loading.heading" })}
+        description={intl.formatMessage({ id: "parent.profileEdit.loading.description" })}
         onBack={() => navigate(-1)}
       />
     );
@@ -239,10 +243,10 @@ export function ProfileEdit() {
   if (profileQueryState === "error") {
     return (
       <ScreenQueryState
-        screenTitle="프로필 편집"
+        screenTitle={intl.formatMessage({ id: "parent.profileEdit.screenTitle" })}
         state="error"
-        heading="아이 정보를 불러오지 못했어요"
-        description="기존 프로필을 확인하지 못한 상태에서는 덮어쓰지 않아요."
+        heading={intl.formatMessage({ id: "parent.profileEdit.loadError.heading" })}
+        description={intl.formatMessage({ id: "parent.profileEdit.loadError.description" })}
         onBack={() => navigate(-1)}
         onRetry={() => void retryProfileEdit()}
         retrying={familyQuery.isFetching}
@@ -253,14 +257,14 @@ export function ProfileEdit() {
   if (!member) {
     return (
       <ScreenQueryState
-        screenTitle="프로필 편집"
+        screenTitle={intl.formatMessage({ id: "parent.profileEdit.screenTitle" })}
         state="empty"
-        heading="수정할 아이를 찾지 못했어요"
-        description="아이 선택 상태나 가족 연결을 다시 확인해 주세요."
+        heading={intl.formatMessage({ id: "parent.profileEdit.empty.heading" })}
+        description={intl.formatMessage({ id: "parent.profileEdit.empty.description" })}
         onBack={() => navigate(-1)}
         onRetry={() => void retryProfileEdit()}
         retrying={familyQuery.isFetching}
-        retryLabel="아이 정보 다시 확인"
+        retryLabel={intl.formatMessage({ id: "parent.profileEdit.empty.retry" })}
       />
     );
   }
@@ -268,10 +272,17 @@ export function ProfileEdit() {
   return (
     <div className="pe-root">
       <header className="pe-header">
-        <button type="button" className="hy-iconbtn hy-press pe-back" aria-label="뒤로" onClick={() => navigate(-1)}>
+        <button
+          type="button"
+          className="hy-iconbtn hy-press pe-back"
+          aria-label={intl.formatMessage({ id: "parent.profileEdit.back" })}
+          onClick={() => navigate(-1)}
+        >
           <ChevronLeft size={22} strokeWidth={2.2} />
         </button>
-        <span className="pe-title">프로필 편집</span>
+        <span className="pe-title">
+          {intl.formatMessage({ id: "parent.profileEdit.screenTitle" })}
+        </span>
       </header>
 
       <div className="pe-content">
@@ -284,14 +295,14 @@ export function ProfileEdit() {
                 className="pe-photo hy-press"
                 onClick={() => fileRef.current?.click()}
                 disabled={!profileFormReady || !isPrimary || processing}
-                aria-label="사진 선택"
+                aria-label={intl.formatMessage({ id: "parent.profileEdit.photo.select" })}
               >
                 {previewSrc ? (
                   <img src={previewSrc} alt="" loading="eager" decoding="async" />
                 ) : (
                   <span className="pe-photo__empty">
                     <Camera size={30} strokeWidth={2} />
-                    <span>사진 추가</span>
+                    <span>{intl.formatMessage({ id: "parent.profileEdit.photo.add" })}</span>
                   </span>
                 )}
                 <span className="pe-photo__edit" aria-hidden="true">
@@ -299,19 +310,27 @@ export function ProfileEdit() {
                 </span>
               </button>
               <input ref={fileRef} type="file" accept="image/*" hidden disabled={!profileFormReady} onChange={onPickFile} />
-              <div className="pe-photo-name">{name.trim() || member.name || "아이"}</div>
-              <p className="pe-hint hy-explain">{processing ? "사진 처리 중…" : "얼굴이 잘 보이는 사진이 좋아요."}</p>
+              <div className="pe-photo-name">
+                {name.trim() || member.name || intl.formatMessage({ id: "parent.profileEdit.childFallback" })}
+              </div>
+              <p className="pe-hint hy-explain">
+                {processing
+                  ? intl.formatMessage({ id: "parent.profileEdit.photo.processing" })
+                  : intl.formatMessage({ id: "parent.profileEdit.photo.hint" })}
+              </p>
             </div>
 
             {/* 이름 */}
             <div className="pe-field">
-              <div className="pe-label pe-label--sm">이름</div>
+              <div className="pe-label pe-label--sm">
+                {intl.formatMessage({ id: "parent.profileEdit.name.label" })}
+              </div>
               <input
                 className="pe-input"
-                aria-label="이름"
+                aria-label={intl.formatMessage({ id: "parent.profileEdit.name.label" })}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="이름"
+                placeholder={intl.formatMessage({ id: "parent.profileEdit.name.placeholder" })}
                 maxLength={20}
                 disabled={!profileFormReady || !isPrimary}
               />
@@ -320,39 +339,53 @@ export function ProfileEdit() {
             {/* 생일(input type=date) + 나이 자동표시 */}
             <div className="pe-field">
               <div className="pe-label pe-label--sm pe-label--row">
-                <span>생일 *</span>
-                {age != null && <span className="pe-age">만 {age}세</span>}
+                <span>{intl.formatMessage({ id: "parent.profileEdit.birthdate.label" })}</span>
+                {age != null && (
+                  <span className="pe-age">
+                    {intl.formatMessage({ id: "parent.profileEdit.age" }, { age })}
+                  </span>
+                )}
               </div>
               <input
                 className="pe-input pe-input--date"
                 type="date"
-                aria-label="생일"
+                aria-label={intl.formatMessage({ id: "parent.profileEdit.birthdate.aria" })}
                 value={birthday}
                 max={todayStr}
                 onChange={(e) => setBirthday(e.target.value)}
                 disabled={!profileFormReady || !isPrimary}
               />
-              <p className="pe-hint hy-explain">AI 친구가 아이 나이에 맞게 말하도록 꼭 필요해요.</p>
+              <p className="pe-hint hy-explain">
+                {intl.formatMessage({ id: "parent.profileEdit.birthdate.hint" })}
+              </p>
             </div>
 
             {/* 전화번호 */}
             <div className="pe-field">
-              <div className="pe-label pe-label--sm">전화번호</div>
+              <div className="pe-label pe-label--sm">
+                {intl.formatMessage({ id: "parent.profileEdit.phone.label" })}
+              </div>
               <input
                 className="pe-input"
                 type="tel"
-                aria-label="전화번호"
+                aria-label={intl.formatMessage({ id: "parent.profileEdit.phone.label" })}
                 inputMode="tel"
                 value={phone}
                 onChange={(e) => setPhone(formatPhoneDisplay(e.target.value))}
-                placeholder="010-0000-0000"
+                placeholder={intl.formatMessage({ id: "parent.profileEdit.phone.placeholder" })}
                 maxLength={13}
                 disabled={!profileFormReady || !isPrimary}
               />
-              <p className="pe-hint hy-explain">아이 기기가 없어도 연락할 번호예요.</p>
+              <p className="pe-hint hy-explain">
+                {intl.formatMessage({ id: "parent.profileEdit.phone.hint" })}
+              </p>
             </div>
 
-            {!isPrimary && <p className="pe-hint pe-hint--warn">주 보호자만 아이 프로필을 저장할 수 있어요.</p>}
+            {!isPrimary && (
+              <p className="pe-hint pe-hint--warn">
+                {intl.formatMessage({ id: "parent.profileEdit.primaryWarning" })}
+              </p>
+            )}
 
             <button
               type="button"
@@ -360,10 +393,14 @@ export function ProfileEdit() {
               onClick={onSave}
               disabled={!profileFormReady || busy || !isPrimary} aria-busy={busy}
             >
-              {busy ? "저장 중…" : "저장하기"}
+              {busy
+                ? intl.formatMessage({ id: "parent.profileEdit.save.pending" })
+                : intl.formatMessage({ id: "parent.profileEdit.save.button" })}
             </button>
             {isPrimary && (
-              <p className="pe-hint pe-hint--center hy-explain">변경한 내용은 아이 기기에 실시간으로 반영돼요.</p>
+              <p className="pe-hint pe-hint--center hy-explain">
+                {intl.formatMessage({ id: "parent.profileEdit.realtimeHint" })}
+              </p>
             )}
           </>
         )}

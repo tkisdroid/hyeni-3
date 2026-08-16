@@ -16,6 +16,7 @@ export interface DailyReportStatusInput {
   alerts: DailyReportAlertInput[];
   locationFreshness: FreshnessStatus;
   deviceSafetyLabel: string;
+  deviceSafetyState?: "ready" | "attention" | "unknown";
   deviceHasData: boolean;
   now?: Date;
   timeZone: string;
@@ -114,7 +115,10 @@ export function deriveDailyReportStatus(input: DailyReportStatusInput): DailyRep
     const severity = (alert.severity ?? "").toLowerCase();
     return ATTENTION_ALERT_TYPES.has(type) || severity === "warning" || severity === "urgent";
   });
-  const needsDeviceCheck = !input.deviceHasData || input.deviceSafetyLabel === "주의 필요";
+  const needsDeviceCheck = !input.deviceHasData
+    || (input.deviceSafetyState
+      ? input.deviceSafetyState !== "ready"
+      : input.deviceSafetyLabel === "주의 필요");
   const needsLocationCheck = input.locationFreshness === "stale" || input.locationFreshness === "unknown";
   if (hasAttentionAlert || needsDeviceCheck || needsLocationCheck) {
     return {

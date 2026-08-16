@@ -9,6 +9,7 @@
  */
 import { useEffect, useState } from "react";
 import { Check, Send } from "lucide-react";
+import { useIntl } from "react-intl";
 import { asset } from "@/lib/assets";
 import { useCreatePlaydateInvite, usePlaydateCandidates } from "@/queries/usePlaydate";
 import type { PlaydateCandidate } from "@/lib/api/endpoints/playdate";
@@ -22,6 +23,7 @@ export interface PlaydateSheetProps {
 }
 
 export function PlaydateSheet({ open, onClose, onError }: PlaydateSheetProps) {
+  const intl = useIntl();
   const candidatesQuery = usePlaydateCandidates(open);
   const createInvite = useCreatePlaydateInvite();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -36,42 +38,47 @@ export function PlaydateSheet({ open, onClose, onError }: PlaydateSheetProps) {
   }, [open]);
 
   const candidates: PlaydateCandidate[] = candidatesQuery.data?.candidates ?? [];
-  const notice = playdateCandidateNotice(candidatesQuery.data?.error, candidates.length === 0, candidatesQuery.isError);
+  const notice = playdateCandidateNotice(
+    candidatesQuery.data?.error,
+    candidates.length === 0,
+    candidatesQuery.isError,
+    intl,
+  );
   const selected = candidates.find((c) => c.child_user_id === selectedId) ?? candidates[0] ?? null;
 
   const send = () => {
     if (!selected || createInvite.isPending) return;
     createInvite.mutate(selected, {
       onSuccess: () => setSent(true),
-      onError: () => onError("놀자고 보내지 못했어. 다시 해 볼래?"),
+      onError: () => onError(intl.formatMessage({ id: "child.playdate.sendError" })),
     });
   };
 
   return (
-    <ChildSheet open={open} onClose={onClose} label="친구랑 놀기">
+    <ChildSheet open={open} onClose={onClose} label={intl.formatMessage({ id: "child.playdate.title" })}>
       {sent ? (
         <div className="ks-done">
           <img src={asset("mascot/cheer.webp")} alt="" />
-          <div className="ks-done__title">놀자고 보냈어!</div>
+          <div className="ks-done__title">{intl.formatMessage({ id: "child.playdate.sent" })}</div>
           <div className="ks-done__sub">
-            부모님이 확인하고 허락하면
+            {intl.formatMessage({ id: "child.playdate.sentPermission" })}
             <br />
-            바로 알려줄게 😊
+            {intl.formatMessage({ id: "child.playdate.sentFollowUp" })}
           </div>
           <button type="button" className="ks-cta ks-cta--ghost hy-press" onClick={onClose}>
-            알겠어!
+            {intl.formatMessage({ id: "child.action.gotIt" })}
           </button>
         </div>
       ) : (
         <>
           <div className="ks-head">
             <img src={asset("ui/menu-friend-playdate.webp")} alt="" />
-            <span className="ks-head__title">누구랑 놀까?</span>
+            <span className="ks-head__title">{intl.formatMessage({ id: "child.playdate.prompt" })}</span>
           </div>
-          <div className="ks-sub">근처에 있는 친구에게 놀자고 보낼 수 있어</div>
+          <div className="ks-sub">{intl.formatMessage({ id: "child.playdate.description" })}</div>
 
           {candidatesQuery.isLoading ? (
-            <div className="ks-empty">근처 친구를 찾는 중이야… 🔎</div>
+            <div className="ks-empty">{intl.formatMessage({ id: "child.playdate.loading" })}</div>
           ) : notice ? (
             <div className="ks-empty">
               {notice}
@@ -81,7 +88,7 @@ export function PlaydateSheet({ open, onClose, onError }: PlaydateSheetProps) {
                   className="ks-retry hy-press"
                   onClick={() => void candidatesQuery.refetch()}
                 >
-                  다시 찾기
+                  {intl.formatMessage({ id: "child.playdate.retry" })}
                 </button>
               )}
             </div>
@@ -102,8 +109,10 @@ export function PlaydateSheet({ open, onClose, onError }: PlaydateSheetProps) {
                         <img src={asset(friendAvatar(c.child_user_id))} alt="" />
                       </span>
                       <span className="ks-friend__main">
-                        <span className="ks-friend__name">{c.child_name || "친구"}</span>
-                        <span className="ks-friend__sub">근처에 있어</span>
+                        <span className="ks-friend__name">
+                          {c.child_name || intl.formatMessage({ id: "child.playdate.friendFallback" })}
+                        </span>
+                        <span className="ks-friend__sub">{intl.formatMessage({ id: "child.playdate.nearby" })}</span>
                       </span>
                       <span className="ks-friend__check">
                         <Check
@@ -124,7 +133,9 @@ export function PlaydateSheet({ open, onClose, onError }: PlaydateSheetProps) {
                 disabled={!selected || createInvite.isPending} aria-busy={createInvite.isPending}
               >
                 <Send size={19} strokeWidth={2.2} aria-hidden="true" />
-                {createInvite.isPending ? "보내는 중…" : "같이 놀자고 보내기"}
+                {createInvite.isPending
+                  ? intl.formatMessage({ id: "child.playdate.sending" })
+                  : intl.formatMessage({ id: "child.playdate.send" })}
               </button>
             </>
           )}

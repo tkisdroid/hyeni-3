@@ -33,6 +33,7 @@ const remoteAudioCss = readSource("src/screens/feature/RemoteAudio.css");
 const remoteAudio = readSource("src/screens/feature/RemoteAudio.tsx");
 const remoteRingCss = readSource("src/screens/feature/RemoteRing.css");
 const remoteRing = readSource("src/screens/feature/RemoteRing.tsx");
+const koNotifications = JSON.parse(readSource("locales/ko/notifications.json"));
 const componentSpec = readSource("design-system/spec/COMPONENTS.md");
 const readme = readSource("design-system/README.md");
 
@@ -171,7 +172,14 @@ test("busy 상태는 실제 버튼의 aria-busy와 중복 실행 차단 조건�
   assert.match(remoteAudio, /className="ra-start hy-press"[\s\S]{0,260}disabled=\{ending \|\| starting \|\| requestListen\.isPending \|\| !childUserId \|\| !remoteAudioDataReady\}[\s\S]{0,140}aria-busy=\{ending \|\| starting \|\| requestListen\.isPending\}/);
   assert.match(remoteRing, /className="rr-cta hy-press"[\s\S]{0,200}disabled=\{!ringDataReady \|\| !targetChild\?\.user_id \|\| ringing \|\| trigger\.isPending\}[\s\S]{0,120}aria-busy=\{ringing \|\| trigger\.isPending\}/);
   assert.match(remoteRing, /className="rr-modal-confirm hy-press"[\s\S]{0,180}disabled=\{trigger\.isPending\}[\s\S]{0,120}aria-busy=\{trigger\.isPending\}/);
-  assert.match(remoteRing, /ringing \|\| trigger\.isPending \? "울리는 중…" : "지금 울리기"/);
+  assert.match(
+    remoteRing,
+    /intl\.formatMessage\(\{ id: "notifications\.remoteRing\.action" \}, \{ state: ringing \|\| trigger\.isPending \? "ringing" : "ready" \}\)/,
+  );
+  assert.equal(
+    koNotifications["notifications.remoteRing.action"],
+    "{state, select, ringing {울리는 중…} other {지금 울리기}}",
+  );
 });
 
 test("공통 아이콘 버튼과 문서는 현재 제품의 실제 액션·아이콘 언어를 반영한다", () => {

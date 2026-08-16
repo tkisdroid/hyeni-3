@@ -7,6 +7,10 @@ const koOnboarding = JSON.parse(await readFile(
   new URL("../locales/ko/onboarding.json", import.meta.url),
   "utf8",
 ));
+const koShared = JSON.parse(await readFile(
+  new URL("../locales/ko/shared.json", import.meta.url),
+  "utf8",
+));
 
 test("아이 백그라운드 위치 권한 전 눈에 띄는 별도 안내를 제공한다", () => {
   assert.match(source, /role="dialog"/);
@@ -73,5 +77,9 @@ test("위치 서비스는 배터리 예외 화면을 자동으로 띄우지 않�
   assert.match(notificationPluginSource, /public void openBatteryOptimizationSettings/);
   assert.doesNotMatch(notificationPluginSource, /ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS/);
   assert.match(notificationPluginSource, /ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS/);
-  assert.match(permissionScreenSource, /혜니캘린더 → 제한 없음\(또는 최적화 안 함\)/);
+  assert.match(permissionScreenSource, /shared\.permDenied\.steps\.batteryNative/);
+  assert.equal(
+    koShared["shared.permDenied.steps.batteryNative"],
+    "혜니캘린더 → 제한 없음(또는 최적화 안 함)",
+  );
 });

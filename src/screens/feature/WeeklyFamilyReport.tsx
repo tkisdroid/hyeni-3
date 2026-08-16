@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
+import { useIntl, type IntlShape } from "react-intl";
 import { AlertTriangle, ChevronLeft, RefreshCw } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { Loading } from "@/components/ui/Loading";
@@ -9,7 +10,7 @@ import { useEntitlement } from "@/queries/useEntitlement";
 import { useEvents, useDailySupplies } from "@/queries/useSchedule";
 import { useMemoThread } from "@/queries/useMemo";
 import { useParentAlerts } from "@/queries/useNotifications";
-import { FEATURES, canUse, lockMessageFor } from "@/transform/tierPolicy";
+import { FEATURES, canUse } from "@/transform/tierPolicy";
 import { parseAppDateKey } from "@/transform/dateKey";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import {
@@ -22,7 +23,6 @@ import {
   browserPremiumReturnIntentStorage,
   savePremiumReturnIntent,
 } from "@/transform/premiumReturnIntent";
-import { useMessage } from "@/i18n/useMessage";
 import type { SupportedLocale } from "@/i18n/locale";
 import { useLocale } from "@/i18n/useLocale";
 import {
@@ -32,21 +32,25 @@ import {
 } from "@/i18n/format";
 import "./WeeklyFamilyReport.css";
 
-function dateLabel(dateKey: string, locale: SupportedLocale): string {
+const REPORT_DATE_STYLE = "medium" as const;
+
+function dateLabel(dateKey: string, locale: SupportedLocale, intl: IntlShape): string {
   const date = parseAppDateKey(dateKey);
-  if (!date) return "기록 없음";
-  // date_key는 instant가 아닌 달력 날짜이므로 UTC 정오 합성값으로 날짜 자체만 지역화한다.
+  if (!date) return intl.formatMessage({ id: "reports.weekly.noRecord" });
+  // date_key는 instant가 아닌 달력 날짜이므로 정오 합성값으로 날짜 자체만 지역화한다.
   return formatDateTime(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 12), {
     locale,
-    timeZone: "UTC",
-    dateStyle: "medium",
+    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    dateStyle: REPORT_DATE_STYLE,
   });
 }
 
-function rangeLabel(keys: readonly string[], locale: SupportedLocale): string {
-  const first = keys[0] ? dateLabel(keys[0], locale) : "";
-  const last = keys[keys.length - 1] ? dateLabel(keys[keys.length - 1], locale) : "";
-  return first && last ? `${first} - ${last}` : "최근 7일";
+function rangeLabel(keys: readonly string[], locale: SupportedLocale, intl: IntlShape): string {
+  const first = keys[0] ? dateLabel(keys[0], locale, intl) : "";
+  const last = keys[keys.length - 1] ? dateLabel(keys[keys.length - 1], locale, intl) : "";
+  return first && last
+    ? intl.formatMessage({ id: "reports.weekly.range" }, { first, last })
+    : intl.formatMessage({ id: "reports.weekly.recentDays" }, { count: 7 });
 }
 
 interface WeeklyReportRouteState {
@@ -56,9 +60,9 @@ interface WeeklyReportRouteState {
 }
 
 export function WeeklyFamilyReport() {
+  const intl = useIntl();
   const navigate = useNavigate();
   const routeState = (useLocation().state ?? null) as WeeklyReportRouteState | null;
-  const msg = useMessage();
   const { locale } = useLocale();
   const { activeChild, childMembers, familyLoading, setActiveChildId } = useActiveChild();
   const { ready, tier } = useEntitlement();
@@ -118,29 +122,34 @@ export function WeeklyFamilyReport() {
   return (
     <div className="wr-root">
       <header className="wr-header">
-        <button type="button" className="wr-back hy-press" aria-label="뒤로" onClick={() => navigate(-1)}>
+        <button
+          type="button"
+          className="wr-back hy-press"
+          aria-label={intl.formatMessage({ id: "reports.weekly.back" })}
+          onClick={() => navigate(-1)}
+        >
           <ChevronLeft size={22} strokeWidth={2.2} />
         </button>
         <div className="wr-head-main">
-          <div className="wr-title">{msg.weeklyReportTitle}</div>
-          <div className="wr-subtitle">{msg.weeklyReportSubtitle}</div>
+          <div className="wr-title">{intl.formatMessage({ id: "reports.weekly.title" })}</div>
+          <div className="wr-subtitle">{intl.formatMessage({ id: "reports.weekly.subtitle" })}</div>
         </div>
       </header>
 
       <div className="wr-content">
         {!activeChild && familyLoading ? (
           <section className="hy-card wr-empty">
-            <Loading label="가족 정보를 불러오는 중" />
+            <Loading label={intl.formatMessage({ id: "reports.weekly.familyLoading" })} />
           </section>
         ) : !activeChild ? (
           <section className="hy-card wr-empty">
             <div className="wr-empty__icon">
               <img src={asset("ui/chart-3d.webp")} alt="" />
             </div>
-            <b>선택된 아이가 없어요</b>
-            <p>부모 홈에서 아이를 선택하면 주간 흐름을 확인할 수 있어요.</p>
+            <b>{intl.formatMessage({ id: "reports.weekly.noChildTitle" })}</b>
+            <p>{intl.formatMessage({ id: "reports.weekly.noChildDescription" })}</p>
             <button type="button" className="wr-primary hy-press" onClick={() => navigate("/parent/home")}>
-              부모 홈으로 가기
+              {intl.formatMessage({ id: "reports.weekly.goParentHome" })}
             </button>
           </section>
         ) : (
@@ -150,60 +159,75 @@ export function WeeklyFamilyReport() {
                 <img src={asset("ui/chart-3d.webp")} alt="" />
               </div>
               <div className="wr-hero__body">
-                <div className="wr-hero__eyebrow">{activeChild.name} · {rangeLabel(weekDateKeys, locale)}</div>
-                <h1>{allowed ? "이번 주 흐름을 정리했어요" : "이번 주 흐름을 한 번에 볼 수 있어요"}</h1>
+                <div className="wr-hero__eyebrow">
+                  {intl.formatMessage(
+                    { id: "reports.weekly.heroEyebrow" },
+                    { childName: activeChild.name, range: rangeLabel(weekDateKeys, locale, intl) },
+                  )}
+                </div>
+                <h1>
+                  {intl.formatMessage({
+                    id: allowed ? "reports.weekly.heroAllowed" : "reports.weekly.heroLocked",
+                  })}
+                </h1>
                 <p>
-                  {allowed
-                    ? "기존 가족 기록을 한데 모았어요."
-                    : "주간 가족 리포트는 프리미엄에서 제공됩니다."}
+                  {intl.formatMessage({
+                    id: allowed
+                      ? "reports.weekly.heroAllowedDescription"
+                      : "reports.weekly.heroLockedDescription",
+                  })}
                 </p>
               </div>
             </section>
 
             {!ready ? (
               <section className="hy-card wr-section">
-                <div className="wr-emptyline">구독 상태를 확인하고 있어요.</div>
+                <div className="wr-emptyline">
+                  {intl.formatMessage({ id: "reports.weekly.subscriptionChecking" })}
+                </div>
               </section>
             ) : !allowed ? (
               <>
                 <section className="hy-card wr-section">
                   <div className="wr-section__head">
                     <img className="wr-metric__ic" src={asset("ui/star-medal.webp")} alt="" />
-                    <b>무료 한 줄 요약</b>
+                    <b>{intl.formatMessage({ id: "reports.weekly.freeTeaserTitle" })}</b>
                   </div>
                   {queryState === "error" ? (
-                    <div className="wr-emptyline">이번 주 기록을 확인하지 못했어요. 잠시 후 다시 확인해 주세요.</div>
+                    <div className="wr-emptyline">
+                      {intl.formatMessage({ id: "reports.weekly.teaserError" })}
+                    </div>
                   ) : queryState === "loading" ? (
-                    <Loading label="이번 주 기록을 정리하는 중" />
+                    <Loading label={intl.formatMessage({ id: "reports.weekly.teaserLoading" })} />
                   ) : summary ? (
                     <div className="wr-emptyline">
-                      {weeklyReportTeaser(summary, activeChild.name || "우리 아이", locale)}
+                      {weeklyReportTeaser(summary, activeChild.name ?? "", locale, intl)}
                     </div>
                   ) : null}
                 </section>
                 <section className="hy-card wr-lock">
                   <img className="wr-lock__icon" src={asset("ui/lock-3d.webp")} alt="" />
                   <div>
-                    <b>{lockMessageFor(FEATURES.WEEKLY_REPORT)}</b>
-                    <p>일정과 SOS는 무료로 시작하고, 더 자세한 주간 흐름은 프리미엄에서 확인하세요.</p>
+                    <b>{intl.formatMessage({ id: "reports.weekly.lockTitle" })}</b>
+                    <p>{intl.formatMessage({ id: "reports.weekly.lockDescription" })}</p>
                   </div>
                   <button type="button" className="wr-primary hy-press" onClick={() => setUpsellOpen(true)}>
-                    프리미엄 보기
+                    {intl.formatMessage({ id: "reports.weekly.premiumCta" })}
                   </button>
                 </section>
                 <section className="wr-preview">
                   {[
-                    { label: "이번 주 일정", icon: "ui/calendar-heart.webp" },
-                    { label: "준비물 체크", icon: "cat/study.webp" },
-                    { label: "대화 메시지", icon: "ui/chat-heart.webp" },
-                    { label: "안전 알림", icon: "ui/bell.webp" },
-                  ].map(({ label, icon }) => (
-                    <div key={label} className="hy-card wr-preview__item">
+                    { id: "schedule", labelId: "reports.weekly.schedule", icon: "ui/calendar-heart.webp" },
+                    { id: "supplies", labelId: "reports.weekly.supplies", icon: "cat/study.webp" },
+                    { id: "memos", labelId: "reports.weekly.memos", icon: "ui/chat-heart.webp" },
+                    { id: "alerts", labelId: "reports.weekly.alerts", icon: "ui/bell.webp" },
+                  ].map(({ id, labelId, icon }) => (
+                    <div key={id} className="hy-card wr-preview__item">
                       <span>
                         <img src={asset(icon)} alt="" style={{ width: 24, height: 24, objectFit: "contain" }} />
                       </span>
-                      <b>{label}</b>
-                      <small>프리미엄 전체 리포트에서 실제 기록을 집계해요</small>
+                      <b>{intl.formatMessage({ id: labelId })}</b>
+                      <small>{intl.formatMessage({ id: "reports.weekly.previewDescription" })}</small>
                     </div>
                   ))}
                 </section>
@@ -213,11 +237,11 @@ export function WeeklyFamilyReport() {
                 <span className="wr-state__icon" aria-hidden="true">
                   <AlertTriangle size={25} strokeWidth={2.3} />
                 </span>
-                <b>주간 리포트를 불러오지 못했어요</b>
-                <p>일정, 준비물, 대화, 안전 알림을 다시 확인해 주세요.</p>
+                <b>{intl.formatMessage({ id: "reports.weekly.errorTitle" })}</b>
+                <p>{intl.formatMessage({ id: "reports.weekly.errorDescription" })}</p>
                 <button
                   type="button"
-                  className="wr-state__retry hy-press"
+                  className="wr-state__retry hy-press hy-busy-quiet"
                   onClick={() =>
                     void Promise.all([
                       eventsQuery.refetch(),
@@ -227,6 +251,7 @@ export function WeeklyFamilyReport() {
                     ])
                   }
                   disabled={refetching}
+                  aria-busy={refetching}
                 >
                   <RefreshCw
                     size={17}
@@ -234,67 +259,99 @@ export function WeeklyFamilyReport() {
                     className={refetching ? "wr-spin" : undefined}
                     aria-hidden="true"
                   />
-                  {refetching ? "다시 확인하고 있어요…" : "다시 불러오기"}
+                  {refetching
+                    ? intl.formatMessage({ id: "reports.weekly.retrying" })
+                    : intl.formatMessage({ id: "reports.weekly.retry" })}
                 </button>
               </section>
             ) : queryState === "loading" ? (
               <section className="hy-card wr-state" aria-busy="true">
-                <Loading label="주간 리포트를 불러오는 중" />
+                <Loading label={intl.formatMessage({ id: "reports.weekly.loading" })} />
               </section>
             ) : summary ? (
               <>
                 <section className="wr-metrics">
                   <div className="hy-card wr-metric">
                     <img className="wr-metric__ic" src={asset("ui/calendar-heart.webp")} alt="" />
-                    <span>이번 주 일정</span>
-                    <b>{formatNumber(summary.eventCount, locale)}개</b>
+                    <span>{intl.formatMessage({ id: "reports.weekly.schedule" })}</span>
+                    <b>
+                      {intl.formatMessage(
+                        { id: "reports.weekly.metricCount" },
+                        { count: formatNumber(summary.eventCount, locale) },
+                      )}
+                    </b>
                   </div>
                   <div className="hy-card wr-metric">
                     <img className="wr-metric__ic" src={asset("cat/study.webp")} alt="" />
-                    <span>준비물 체크</span>
-                    <b>{formatNumber(summary.supplyDone, locale)}/{formatNumber(summary.supplyTotal, locale)}</b>
+                    <span>{intl.formatMessage({ id: "reports.weekly.supplies" })}</span>
+                    <b>
+                      {intl.formatMessage(
+                        { id: "reports.weekly.metricRatio" },
+                        {
+                          done: formatNumber(summary.supplyDone, locale),
+                          total: formatNumber(summary.supplyTotal, locale),
+                        },
+                      )}
+                    </b>
                   </div>
                   <div className="hy-card wr-metric">
                     <img className="wr-metric__ic" src={asset("ui/chat-heart.webp")} alt="" />
-                    <span>대화 메시지</span>
-                    <b>{formatNumber(summary.memoCount, locale)}개</b>
+                    <span>{intl.formatMessage({ id: "reports.weekly.memos" })}</span>
+                    <b>
+                      {intl.formatMessage(
+                        { id: "reports.weekly.metricCount" },
+                        { count: formatNumber(summary.memoCount, locale) },
+                      )}
+                    </b>
                   </div>
                   <div className="hy-card wr-metric">
                     <img className="wr-metric__ic" src={asset("ui/bell.webp")} alt="" />
-                    <span>안전 알림</span>
-                    <b>{formatNumber(summary.alertCount, locale)}개</b>
+                    <span>{intl.formatMessage({ id: "reports.weekly.alerts" })}</span>
+                    <b>
+                      {intl.formatMessage(
+                        { id: "reports.weekly.metricCount" },
+                        { count: formatNumber(summary.alertCount, locale) },
+                      )}
+                    </b>
                   </div>
                 </section>
 
                 <section className="hy-card wr-section">
                   <div className="wr-section__head">
                     <img className="wr-metric__ic" src={asset("ui/star-medal.webp")} alt="" />
-                    <b>가장 바빴던 날</b>
+                    <b>{intl.formatMessage({ id: "reports.weekly.busiestTitle" })}</b>
                   </div>
                   {summary.busiestDay ? (
                     <div className="wr-kv">
-                      <span>날짜</span>
-                      <strong>{dateLabel(summary.busiestDay.dateKey, locale)}</strong>
-                      <span>일정</span>
-                      <strong>{formatNumber(summary.busiestDay.eventCount, locale)}개</strong>
+                      <span>{intl.formatMessage({ id: "reports.weekly.date" })}</span>
+                      <strong>{dateLabel(summary.busiestDay.dateKey, locale, intl)}</strong>
+                      <span>{intl.formatMessage({ id: "reports.weekly.events" })}</span>
+                      <strong>
+                        {intl.formatMessage(
+                          { id: "reports.weekly.metricCount" },
+                          { count: formatNumber(summary.busiestDay.eventCount, locale) },
+                        )}
+                      </strong>
                     </div>
                   ) : (
-                    <div className="wr-emptyline">이번 주 일정 기록이 아직 없어요.</div>
+                    <div className="wr-emptyline">
+                      {intl.formatMessage({ id: "reports.weekly.noScheduleRecords" })}
+                    </div>
                   )}
                 </section>
 
                 <section className="hy-card wr-section">
                   <div className="wr-section__head">
                     <img className="wr-metric__ic" src={asset("ui/crown.webp")} alt="" />
-                    <b>데이터 상태</b>
+                    <b>{intl.formatMessage({ id: "reports.weekly.dataStatus" })}</b>
                   </div>
                   {summary.hasEnoughData ? (
                     <div className="wr-emptyline">
-                      일정·준비물·대화·안전 알림만 집계해요. 머문 곳 집계는 준비 중이에요.
+                      {intl.formatMessage({ id: "reports.weekly.dataReadyDescription" })}
                     </div>
                   ) : (
                     <div className="wr-emptyline">
-                      아직 분석할 기록이 부족해요. 일정·준비물·대화·안전 알림 기록이 쌓이면 주간 흐름을 보여드려요.
+                      {intl.formatMessage({ id: "reports.weekly.dataEmptyDescription" })}
                     </div>
                   )}
                 </section>
@@ -322,7 +379,9 @@ export function WeeklyFamilyReport() {
                 },
               })
             : false;
-          if (!saved) throw new Error("현재 아이 선택을 안전하게 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+          if (!saved) {
+            throw new Error(intl.formatMessage({ id: "reports.weekly.returnIntentFailed" }));
+          }
           navigate("/subscription");
         }}
       />
