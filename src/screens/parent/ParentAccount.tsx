@@ -272,14 +272,19 @@ export function ParentAccount() {
             <div className="pa-divider" />
             <label className="pa-field">
               <span className="pa-field__k">{intl.formatMessage({ id: "parent.parentAccount.copy015" })}</span>
-              <input
-                className="pa-input"
-                value={phone}
-                onChange={(e) => setPhone(formatPhoneDisplay(e.target.value))}
-                placeholder={intl.formatMessage({ id: "parent.parentAccount.phonePlaceholder" })}
-                inputMode="tel"
-                disabled={isLoading}
-              />
+              <span className="pa-field__control">
+                <input
+                  className="pa-input"
+                  value={phone}
+                  onChange={(e) => setPhone(formatPhoneDisplay(e.target.value))}
+                  placeholder={intl.formatMessage({ id: "parent.parentAccount.phonePlaceholder" })}
+                  inputMode="tel"
+                  disabled={isLoading}
+                />
+                <span className="pa-field__help">
+                  {intl.formatMessage({ id: "parent.parentAccount.phoneKoreanOnlyHelp" })}
+                </span>
+              </span>
             </label>
           </div>
           <button

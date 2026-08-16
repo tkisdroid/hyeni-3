@@ -91,6 +91,12 @@ const userFacingPropertyNames = new Set([
 // locale-neutral 사용자 표면만 파일+AST 문맥+값으로 좁게 허용한다. 각 예외는 실제 사용자 의미를 설명한다.
 const literalAllowlist = [
   {
+    path: "src/screens/parent/ParentHome.tsx",
+    context: "jsx-expression",
+    value: "99+",
+    reason: "알림 바로가기의 실제 미읽음 개수를 99에서 제한해 표시하는 locale-neutral 숫자 상한입니다.",
+  },
+  {
     path: "src/components/MessageSafetyDialog.tsx",
     context: "jsx-text",
     value: "/500",
@@ -152,19 +158,64 @@ function enclosingFunctionName(node) {
   return null;
 }
 
+function displayWrapperParent(node) {
+  const parent = node.parent;
+  if (!parent) return null;
+  if (
+    (ts.isParenthesizedExpression(parent) && parent.expression === node)
+    || (ts.isJsxExpression(parent) && parent.expression === node)
+    || (ts.isAsExpression(parent) && parent.expression === node)
+    || (ts.isTypeAssertionExpression(parent) && parent.expression === node)
+    || (ts.isNonNullExpression(parent) && parent.expression === node)
+  ) {
+    return parent;
+  }
+  if (
+    ts.isConditionalExpression(parent)
+    && (parent.whenTrue === node || parent.whenFalse === node)
+  ) {
+    return parent;
+  }
+  if (
+    ts.isBinaryExpression(parent)
+    && [
+      ts.SyntaxKind.AmpersandAmpersandToken,
+      ts.SyntaxKind.BarBarToken,
+      ts.SyntaxKind.QuestionQuestionToken,
+      ts.SyntaxKind.PlusToken,
+    ].includes(parent.operatorToken.kind)
+    && (parent.left === node || parent.right === node)
+  ) {
+    return parent;
+  }
+  return null;
+}
+
 function userFacingContext(node, text) {
   if (insideCatalogCall(node) || !/[\p{L}\p{N}]/u.test(text)) return null;
   if (/^(?:parent|shared|notifications)\.[A-Za-z0-9_.${}-]+$/.test(text)) return null;
 
   if (ts.isJsxText(node)) return "jsx-text";
-  const parent = node.parent;
+  let current = node;
+  let wrapper = displayWrapperParent(current);
+  while (wrapper) {
+    current = wrapper;
+    wrapper = displayWrapperParent(current);
+  }
+  const parent = current.parent;
   if (ts.isJsxAttribute(parent)) {
     const name = parent.name.getText();
     return userFacingJsxAttributes.has(name) ? `jsx-attribute:${name}` : null;
   }
+  if (
+    ts.isJsxExpression(current)
+    && (ts.isJsxElement(parent) || ts.isJsxFragment(parent))
+  ) {
+    return "jsx-expression";
+  }
   if (ts.isCallExpression(parent)) {
     const callee = parent.expression.getText();
-    if (/^(?:show|setError|alert|confirm)$/.test(callee) && parent.arguments[0] === node) {
+    if (/^(?:show|toast|setError|alert|confirm)$/.test(callee) && parent.arguments[0] === current) {
       return `call:${callee}:argument:0`;
     }
   }
@@ -181,7 +232,7 @@ function userFacingContext(node, text) {
   }
   const functionName = enclosingFunctionName(node);
   if (functionName && /(?:label|copy|description|message|placeholder|text|title|view)$/i.test(functionName)) {
-    let current = node;
+    current = node;
     let eligible = true;
     while (current.parent && !ts.isReturnStatement(current.parent)) {
       current = current.parent;
@@ -266,6 +317,44 @@ test("사용자 노출 AST 문맥은 한글이 없어도 영어와 숫자-only l
   );
 });
 
+test("사용자 노출 AST 문맥은 JSX와 표시 함수 안의 조건식 wrapper를 거슬러 탐지한다", () => {
+  assert.match(
+    firstLiteralViolationFromSource(
+      "fixture.tsx",
+      'export const View = ({ condition, value }) => <span>{condition ? "99+" : value}</span>;',
+    ) ?? "",
+    /\[jsx-expression\]: 99\+/,
+  );
+  assert.match(
+    firstLiteralViolationFromSource(
+      "fixture.ts",
+      'export const save = (condition) => show(condition ? "Failed" : "Saved");',
+    ) ?? "",
+    /\[call:show:argument:0\]: Failed/,
+  );
+  assert.match(
+    firstLiteralViolationFromSource(
+      "fixture.tsx",
+      'export const View = ({ condition }) => <button title={condition && ("Open details")} />;',
+    ) ?? "",
+    /\[jsx-attribute:title\]: Open details/,
+  );
+  assert.match(
+    firstLiteralViolationFromSource(
+      "fixture.ts",
+      'export const save = (condition) => toast(condition || "Saved");',
+    ) ?? "",
+    /\[call:toast:argument:0\]: Saved/,
+  );
+  assert.match(
+    firstLiteralViolationFromSource(
+      "fixture.ts",
+      'export const view = (condition) => ({ label: condition ? "Ready" : "Waiting" });',
+    ) ?? "",
+    /\[property:label\]: Ready/,
+  );
+});
+
 test("사용자 literal exact allowlist는 파일·문맥·값·근거가 모두 있고 실제 사용된다", () => {
   for (const entry of literalAllowlist) {
     assert.ok(entry.reason.length >= 12, `${entry.path}:${entry.value}: 예외 근거가 필요합니다`);
@@ -289,16 +378,19 @@ test("Task 7의 10개 화면·5개 컴포넌트·12개 transform·전이 formatt
   assert.deepEqual(failures, []);
 });
 
-test("부모 계정 전화번호 placeholder는 locale catalog를 사용한다", () => {
+test("부모 계정 전화번호는 KR-only placeholder와 locale 한계 안내를 사용한다", () => {
   const account = sourceFile("src/screens/parent/ParentAccount.tsx").source;
   assert.match(account, /placeholder=\{intl\.formatMessage\(\{ id: "parent\.parentAccount\.phonePlaceholder" \}\)\}/);
+  assert.match(account, /intl\.formatMessage\(\{ id: "parent\.parentAccount\.phoneKoreanOnlyHelp" \}\)/);
   for (const locale of ["ko", "en", "ja", "zh-CN", "zh-TW", "vi", "th", "id", "ms", "fil"]) {
     const parent = JSON.parse(readFileSync(resolve(rootDir, `locales/${locale}/parent.json`), "utf8"));
     assert.equal(
       parent["parent.parentAccount.phonePlaceholder"],
-      locale === "ko" ? "010-0000-0000" : "+00 000 000 0000",
+      "010-0000-0000",
       `${locale}: 전화번호 placeholder`,
     );
+    assert.equal(typeof parent["parent.parentAccount.phoneKoreanOnlyHelp"], "string", `${locale}: 전화번호 한계 안내`);
+    assert.ok(parent["parent.parentAccount.phoneKoreanOnlyHelp"].trim().length > 0, `${locale}: 전화번호 한계 안내가 비었습니다`);
   }
 });
 

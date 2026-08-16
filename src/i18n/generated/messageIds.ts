@@ -526,6 +526,7 @@ export const messageIds = [
   "parent.parentAccount.copy029",
   "parent.parentAccount.copy030",
   "parent.parentAccount.copy031",
+  "parent.parentAccount.phoneKoreanOnlyHelp",
   "parent.parentAccount.phonePlaceholder",
   "parent.parentCalendar.copy001",
   "parent.parentCalendar.copy002",

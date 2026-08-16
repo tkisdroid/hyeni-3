@@ -121,20 +121,57 @@ test("ParentCalendar 목록·시트·CTA는 같은 미배정 의미 helper를 �
   assert.doesNotMatch(calendar, /=== "배정 필요"/);
 });
 
-test("PremiumUpsell continueLabel은 locale 결과를 보존하는 일반 string 계약이다", () => {
-  const koMessages = JSON.parse(read("locales/ko/parent.json"));
-  const enMessages = JSON.parse(read("locales/en/parent.json"));
-  const koIntl = createIntl({ locale: "ko", messages: koMessages }, createIntlCache()) as IntlShape;
-  const enIntl = createIntl({ locale: "en", messages: enMessages }, createIntlCache()) as IntlShape;
-  const values: string[] = [
-    resolvePremiumUpsell("remote_audio", undefined, koIntl).continueLabel,
-    resolvePremiumUpsell("remote_audio", undefined, enIntl).continueLabel,
-  ];
-  assert.deepEqual(values, ["무료로 계속 쓰기", "Keep writing for free"]);
+test("PremiumUpsell continueLabel은 모든 locale에서 글쓰기가 아닌 Free 플랜 계속 사용을 안내한다", () => {
+  const expected = {
+    ko: "무료 플랜으로 계속 사용하기",
+    en: "Continue with Free",
+    ja: "無料プランで続ける",
+    "zh-CN": "继续使用免费版",
+    "zh-TW": "繼續使用免費版",
+    vi: "Tiếp tục sử dụng gói miễn phí",
+    th: "ใช้งานแผนฟรีต่อ",
+    id: "Lanjutkan dengan paket gratis",
+    ms: "Teruskan dengan pelan percuma",
+    fil: "Magpatuloy sa libreng plano",
+  } as const;
+  const values: string[] = [];
+  for (const [locale, want] of Object.entries(expected)) {
+    const localeMessages = JSON.parse(read(`locales/${locale}/parent.json`));
+    const localeIntl = createIntl({ locale, messages: localeMessages }, createIntlCache()) as IntlShape;
+    const actual = resolvePremiumUpsell("remote_audio", undefined, localeIntl).continueLabel;
+    assert.equal(actual, want, locale);
+    assert.doesNotMatch(actual, /writing|write|写作|寫作|書|เขียน|menulis|viết|sumulat/i, `${locale}: 글쓰기 오역`);
+    values.push(actual);
+  }
 
   const premiumUpsell = read("src/transform/premiumUpsell.ts");
   assert.match(premiumUpsell, /continueLabel:\s*string;/);
   assert.doesNotMatch(premiumUpsell, /as PremiumUpsellContent\["continueLabel"\]/);
-  const assignable: PremiumUpsellContent["continueLabel"] = "Keep writing for free";
+  const assignable: PremiumUpsellContent["continueLabel"] = "Continue with Free";
   assert.equal(assignable, values[1]);
+});
+
+test("ParentAccount 전화 입력은 10개 locale에서 실제 KR formatter 계약과 한계 안내를 표시한다", () => {
+  const expectedHelp = {
+    ko: "현재는 한국 휴대폰 번호만 지원합니다.",
+    en: "Currently, only Korean mobile phone numbers are supported.",
+    ja: "現在は韓国の携帯電話番号のみ対応しています。",
+    "zh-CN": "目前仅支持韩国手机号码。",
+    "zh-TW": "目前僅支援韓國手機號碼。",
+    vi: "Hiện tại chỉ hỗ trợ số điện thoại di động Hàn Quốc.",
+    th: "ขณะนี้รองรับเฉพาะหมายเลขโทรศัพท์มือถือของเกาหลีใต้เท่านั้น",
+    id: "Saat ini hanya nomor ponsel Korea Selatan yang didukung.",
+    ms: "Buat masa ini, hanya nombor telefon bimbit Korea Selatan disokong.",
+    fil: "Sa ngayon, mga numero ng mobile phone sa South Korea lamang ang sinusuportahan.",
+  } as const;
+  for (const [locale, help] of Object.entries(expectedHelp)) {
+    const localeMessages = JSON.parse(read(`locales/${locale}/parent.json`));
+    const localeIntl = createIntl({ locale, messages: localeMessages }, createIntlCache()) as IntlShape;
+    assert.equal(localeIntl.formatMessage({ id: "parent.parentAccount.phonePlaceholder" }), "010-0000-0000", locale);
+    assert.equal(localeIntl.formatMessage({ id: "parent.parentAccount.phoneKoreanOnlyHelp" }), help, locale);
+  }
+
+  const account = read("src/screens/parent/ParentAccount.tsx");
+  assert.match(account, /formatPhoneDisplay\(e\.target\.value\)/);
+  assert.match(account, /parent\.parentAccount\.phoneKoreanOnlyHelp/);
 });

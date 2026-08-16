@@ -11,7 +11,7 @@ test("상황형 업셀은 한도와 기존 데이터 보존을 정확히 안내�
   assert.match(place.description, /나머지는 프리미엄에서 다시 알림 대상/);
   assert.match(place.premiumValue, /제한 없이 추가/);
   assert.equal(place.ctaLabel, "장소 계속 추가하기");
-  assert.equal(place.continueLabel, "무료로 계속 쓰기");
+  assert.equal(place.continueLabel, "무료 플랜으로 계속 사용하기");
 
   const grandfatheredPlace = resolvePremiumUpsell("saved_place", { used: 3, limit: 3 });
   assert.match(grandfatheredPlace.title, /저장 장소 3개/);

@@ -132,6 +132,12 @@
 
   color: var(--fg-secondary);
 }
+.pa-field__control {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
 .pa-input {
   flex: 1;
   min-width: 0;
@@ -142,6 +148,16 @@
   font-weight: var(--type-body-weight);
 
   color: var(--fg-primary);
+  text-align: right;
+}
+.pa-field__control .pa-input {
+  width: 100%;
+}
+.pa-field__help {
+  color: var(--fg-tertiary);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
   text-align: right;
 }
 .pa-input::placeholder {
