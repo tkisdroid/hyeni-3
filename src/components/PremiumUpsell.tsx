@@ -50,7 +50,7 @@ export function PremiumUpsell({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [trialEligible, setTrialEligible] = useState(false);
-  const content = resolvePremiumUpsell(source, usage);
+  const content = resolvePremiumUpsell(source, usage, intl);
   const busy = externallyBusy || submitting;
   const funnelTier: PremiumFunnelTier = tier === TIERS.PREMIUM
     ? "premium"
@@ -169,7 +169,7 @@ export function PremiumUpsell({
         <button
           type="button"
           className="pu-close hy-press"
-          aria-label="프리미엄 안내 닫기"
+          aria-label={intl.formatMessage({ id: "parent.premiumUpsell.copy001" })}
           onClick={onClose}
           disabled={busy}
           aria-busy={busy}
@@ -196,12 +196,12 @@ export function PremiumUpsell({
           disabled={busy}
           aria-busy={busy}
         >
-          {busy ? "프리미엄 화면 여는 중…" : ctaLabel}
+          {busy ? intl.formatMessage({ id: "parent.premiumUpsell.copy002" }) : ctaLabel}
         </button>
         <button
           type="button"
           className="pu-continue hy-press"
-          aria-label="무료로 계속 쓰기"
+          aria-label={intl.formatMessage({ id: "parent.premiumUpsell.copy003" })}
           onClick={() => {
             recordPremiumFunnelEvent({
               event: "paywall_continue_free",

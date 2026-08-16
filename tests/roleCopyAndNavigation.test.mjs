@@ -31,8 +31,10 @@ test("푸시·상세 화면은 공통 safe back을 쓰고 무조건 navigate(-1)
 
 test("뒤로가기가 없던 가족 화면도 부모 홈 fallback이 있는 버튼을 제공한다", () => {
   const source = read("src/screens/parent/ParentFamily.tsx");
+  const koParent = JSON.parse(read("locales/ko/parent.json"));
   assert.match(source, /useSafeBack\("\/parent\/home"\)/);
-  assert.match(source, /aria-label="뒤로"/);
+  assert.match(source, /aria-label=\{intl\.formatMessage\(\{ id: "parent\.parentSettings\.copy017" \}\)\}/);
+  assert.equal(koParent["parent.parentSettings.copy017"], "뒤로");
   assert.match(source, /onClick=\{goBack\}/);
 });
 

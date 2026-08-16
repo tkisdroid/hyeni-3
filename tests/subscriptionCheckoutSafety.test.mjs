@@ -73,7 +73,7 @@ test("부모 설정은 리뷰 혜택을 무료로 오표기하지 않고 합성 
   const settings = read("src/screens/parent/ParentSettings.tsx");
   assert.match(settings, /const entitlementQuery = useEntitlement\(\)/);
   assert.match(settings, /const \{ ready, tier \} = entitlementQuery/);
-  assert.match(settings, /getTierLabel\(tier\)/);
+  assert.match(settings, /getTierLabel\(tier, intl\)/);
   assert.doesNotMatch(settings, /\{view\.tierLabel\}/);
 });
 

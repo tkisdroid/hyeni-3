@@ -1,1 +1,8 @@
-{}
+{
+  "notifications.status.loading": "Menyemak status pemberitahuan",
+  "notifications.time.justNow": "Sebentar tadi",
+  "notifications.group.today": "Hari ini",
+  "notifications.group.yesterday": "Semalam",
+  "notifications.group.earlier": "Terdahulu",
+  "notifications.fallback.title": "Pemberitahuan"
+}

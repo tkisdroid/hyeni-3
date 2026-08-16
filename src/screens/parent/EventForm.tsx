@@ -59,12 +59,12 @@ interface FormNavState {
 
 /** 카테고리(색/이모지는 transform/scheduleView 의 CATEGORY_STYLE 과 동일 규칙). */
 const CATEGORIES = [
-  { id: "school", label: "학교", emoji: "📚", color: "var(--cat-school-text)", soft: "var(--cat-school-soft)" },
-  { id: "sports", label: "운동", emoji: "⚽", color: "var(--cat-sports-text)", soft: "var(--cat-sports-soft)" },
-  { id: "hobby", label: "취미", emoji: "🎨", color: "var(--cat-hobby-text)", soft: "var(--cat-hobby-soft)" },
-  { id: "family", label: "가족", emoji: "👨‍👩‍👧", color: "var(--hy-accent-text)", soft: "var(--hy-accent-soft)" },
-  { id: "friend", label: "친구", emoji: "👫", color: "var(--cat-friend-text)", soft: "var(--cat-friend-soft)" },
-  { id: "other", label: "기타", emoji: "🌟", color: "var(--cat-other-text)", soft: "var(--cat-other-soft)" },
+  { id: "school", labelId: "parent.category.school", emoji: "📚", color: "var(--cat-school-text)", soft: "var(--cat-school-soft)" },
+  { id: "sports", labelId: "parent.category.sports", emoji: "⚽", color: "var(--cat-sports-text)", soft: "var(--cat-sports-soft)" },
+  { id: "hobby", labelId: "parent.category.hobby", emoji: "🎨", color: "var(--cat-hobby-text)", soft: "var(--cat-hobby-soft)" },
+  { id: "family", labelId: "parent.category.family", emoji: "👨‍👩‍👧", color: "var(--hy-accent-text)", soft: "var(--hy-accent-soft)" },
+  { id: "friend", labelId: "parent.category.friend", emoji: "👫", color: "var(--cat-friend-text)", soft: "var(--cat-friend-soft)" },
+  { id: "other", labelId: "parent.category.other", emoji: "🌟", color: "var(--cat-other-text)", soft: "var(--cat-other-soft)" },
 ] as const;
 
 // 카테고리 칩 3D 아이콘 — 장소관리·일정 카드와 같은 단일 출처(placeVisual)를 쓴다.
@@ -73,21 +73,39 @@ const CATEGORY_ICONS = EVENT_CATEGORY_ASSETS;
 
 const REPEATS: RepeatMode[] = ["없음", "매일", "매주", "매월", "요일"];
 
-const PREALARMS: Array<{ label: string; minutes: EventReminderSelection }> = [
-  { label: "기본 설정", minutes: "default" },
-  { label: "알림 없음", minutes: "none" },
-  { label: "10분 전", minutes: 10 },
-  { label: "30분 전", minutes: 30 },
-  { label: "1시간 전", minutes: 60 },
+const PREALARMS: Array<{ labelId: string; minutes: EventReminderSelection }> = [
+  { labelId: "parent.eventForm.reminderDefault", minutes: "default" },
+  { labelId: "parent.eventForm.reminderNone", minutes: "none" },
+  { labelId: "parent.eventForm.reminder10", minutes: 10 },
+  { labelId: "parent.eventForm.reminder30", minutes: 30 },
+  { labelId: "parent.eventForm.reminder60", minutes: 60 },
 ];
 
-const DURATION_OPTIONS: Array<{ label: string; minutes: number }> = [
-  { label: "30분", minutes: 30 },
-  { label: "1시간", minutes: 60 },
-  { label: "1시간 30분", minutes: 90 },
-  { label: "2시간", minutes: 120 },
-  { label: "3시간", minutes: 180 },
+const DURATION_OPTIONS: Array<{ labelId: string; minutes: number }> = [
+  { labelId: "parent.duration.minutes30", minutes: 30 },
+  { labelId: "parent.duration.hour1", minutes: 60 },
+  { labelId: "parent.duration.hour1Minutes30", minutes: 90 },
+  { labelId: "parent.duration.hours2", minutes: 120 },
+  { labelId: "parent.duration.hours3", minutes: 180 },
 ];
+
+const REPEAT_LABEL_IDS: Record<RepeatMode, string> = {
+  "없음": "parent.repeat.none",
+  "매일": "parent.repeat.daily",
+  "매주": "parent.repeat.weekly",
+  "매월": "parent.repeat.monthly",
+  "요일": "parent.eventForm.copy044",
+};
+
+const WEEKDAY_LABEL_IDS: Record<WeekdayIndex, string> = {
+  0: "parent.weekday.sun",
+  1: "parent.weekday.mon",
+  2: "parent.weekday.tue",
+  3: "parent.weekday.wed",
+  4: "parent.weekday.thu",
+  5: "parent.weekday.fri",
+  6: "parent.weekday.sat",
+};
 
 // 미선택 칩 — 토큰 정본을 쓴다. 하드코딩 #8B7E84/#F3EEF1 은 3.38:1 이라
 // 고를 수 있는 칩이 비활성처럼 보였다(--fg-tertiary 조합은 4.98:1).
@@ -386,30 +404,30 @@ export function EventForm() {
   const handleSave = async (scope?: SeriesEditScope) => {
     if (busy) return;
     if (!eventFormDataReady) {
-      show("일정 저장에 필요한 정보를 다시 확인해 주세요", "⚠️");
+      show(intl.formatMessage({ id: "parent.eventForm.copy001" }), "⚠️");
       return;
     }
     const trimmedTitle = title.trim();
     if (!trimmedTitle) {
-      show("일정 제목을 입력해 주세요", "✏️");
+      show(intl.formatMessage({ id: "parent.eventForm.copy002" }), "✏️");
       return;
     }
     if (!allDay && !timeValue) {
-      show("시간을 선택해 주세요", "🕒");
+      show(intl.formatMessage({ id: "parent.eventForm.copy003" }), "🕒");
       return;
     }
     const dateKey = dateInputValueToDateKey(dateValue);
     if (!dateKey) {
-      show("날짜를 확인해 주세요", "📅");
+      show(intl.formatMessage({ id: "parent.eventForm.copy004" }), "📅");
       return;
     }
     if (!familyId) {
-      show("가족 정보를 불러오지 못했어요", "⚠️");
+      show(intl.formatMessage({ id: "parent.eventForm.copy005" }), "⚠️");
       return;
     }
     const repeatWeekdayList = Array.from(repeatWeekdays);
     if (mode === "create" && repeat === "요일" && repeatWeekdayList.length === 0) {
-      show("반복할 요일을 선택해 주세요", "📅");
+      show(intl.formatMessage({ id: "parent.eventForm.copy006" }), "📅");
       return;
     }
 
@@ -417,17 +435,17 @@ export function EventForm() {
     const childIds = Array.from(selectedChildIds);
     const unknownChildId = childIds.find((id) => !children.some((child) => child.id === id));
     if (unknownChildId) {
-      show("선택한 아이 정보를 확인하지 못했어요. 다시 선택해 주세요", "🧒");
+      show(intl.formatMessage({ id: "parent.eventForm.copy007" }), "🧒");
       return;
     }
     const startMin = allDay ? null : timeToMinutes(timeValue);
     if ((!allDay && startMin == null) || durationMin <= 0) {
-      show("시간을 확인해 주세요", "🕒");
+      show(intl.formatMessage({ id: "parent.eventForm.copy008" }), "🕒");
       return;
     }
     const endTimeValue = startMin == null ? "" : minutesToTimeValue(startMin + durationMin);
     if (editingNeedsAssignment && childIds.length === 0) {
-      show("배정할 아이를 선택해 주세요", "🧒");
+      show(intl.formatMessage({ id: "parent.eventForm.copy009" }), "🧒");
       return;
     }
     const familyAll = !editingNeedsAssignment && childIds.length === 0;
@@ -475,9 +493,9 @@ export function EventForm() {
     // 일정 저장은 성공했고 준비물만 문제면, 저장을 되돌리지 않고 정직하게 안내한다.
     const composeSaveToast = (base: string, res: { added: number; dropped: number; failedRows: number } | null) => {
       if (!res) return base;
-      if (res.failedRows > 0) return `${base} · 준비물 일부는 저장하지 못했어요`;
-      if (res.dropped > 0) return `${base} · 준비물은 하루 8개까지만 담았어요`;
-      if (res.added > 0) return `${base} · 준비물도 가방에 담았어요`;
+      if (res.failedRows > 0) return intl.formatMessage({ id: "parent.eventForm.suppliesPartiallyFailed" }, { base });
+      if (res.dropped > 0) return intl.formatMessage({ id: "parent.eventForm.suppliesLimited" }, { base });
+      if (res.added > 0) return intl.formatMessage({ id: "parent.eventForm.suppliesAdded" }, { base });
       return base;
     };
     try {
@@ -504,8 +522,8 @@ export function EventForm() {
         show(
           composeSaveToast(
             targets.length > 1
-              ? `이 일정과 이후 반복 일정 ${targets.length - 1}개를 수정했어요`
-              : "일정을 수정했어요",
+              ? intl.formatMessage({ id: "parent.eventForm.seriesUpdated" }, { count: targets.length - 1 })
+              : intl.formatMessage({ id: "parent.eventForm.copy010" }),
             supplyRes,
           ),
           "🗓️",
@@ -537,7 +555,7 @@ export function EventForm() {
         // 반복 일정이면 회차 날짜마다 그 날 준비물이 필요하므로 occurrence 전체에 담는다.
         const supplyRes = await applyEventSupplies(keys);
         show(
-          composeSaveToast(keys.length > 1 ? `${keys.length}개 일정을 저장했어요` : "일정을 저장했어요", supplyRes),
+          composeSaveToast(keys.length > 1 ? intl.formatMessage({ id: "parent.eventForm.eventsSaved" }, { count: keys.length }) : intl.formatMessage({ id: "parent.eventForm.copy011" }), supplyRes),
           "🗓️",
         );
       }
@@ -552,10 +570,10 @@ export function EventForm() {
   if (eventFormQueryState === "loading") {
     return (
       <ScreenQueryState
-        screenTitle={mode === "edit" ? "일정 수정" : "새 일정"}
+        screenTitle={mode === "edit" ? intl.formatMessage({ id: "parent.eventForm.copy012" }) : intl.formatMessage({ id: "parent.eventForm.copy013" })}
         state="loading"
-        heading="일정 정보를 불러오고 있어요"
-        description="가족, 장소, 기존 일정과 이용 한도를 확인하는 중이에요."
+        heading={intl.formatMessage({ id: "parent.eventForm.copy014" })}
+        description={intl.formatMessage({ id: "parent.eventForm.copy015" })}
         onBack={() => navigate(-1)}
       />
     );
@@ -564,10 +582,10 @@ export function EventForm() {
   if (eventFormQueryState === "error" || eventFormDataMissing) {
     return (
       <ScreenQueryState
-        screenTitle={mode === "edit" ? "일정 수정" : "새 일정"}
+        screenTitle={mode === "edit" ? intl.formatMessage({ id: "parent.eventForm.copy012" }) : intl.formatMessage({ id: "parent.eventForm.copy013" })}
         state="error"
-        heading="일정 정보를 모두 확인하지 못했어요"
-        description="일부 데이터가 빠진 상태로 저장하지 않도록 폼을 잠시 닫았어요."
+        heading={intl.formatMessage({ id: "parent.eventForm.copy016" })}
+        description={intl.formatMessage({ id: "parent.eventForm.copy017" })}
         onBack={() => navigate(-1)}
         onRetry={() => void retryEventForm()}
         retrying={eventFormRefetching}
@@ -578,14 +596,14 @@ export function EventForm() {
   if (children.length === 0) {
     return (
       <ScreenQueryState
-        screenTitle={mode === "edit" ? "일정 수정" : "새 일정"}
+        screenTitle={mode === "edit" ? intl.formatMessage({ id: "parent.eventForm.copy012" }) : intl.formatMessage({ id: "parent.eventForm.copy013" })}
         state="empty"
-        heading="일정을 배정할 아이가 없어요"
-        description="아이를 연결한 뒤 가족 일정을 등록할 수 있어요."
+        heading={intl.formatMessage({ id: "parent.eventForm.copy018" })}
+        description={intl.formatMessage({ id: "parent.eventForm.copy019" })}
         onBack={() => navigate(-1)}
         onRetry={() => void retryEventForm()}
         retrying={eventFormRefetching}
-        retryLabel="가족 정보 다시 확인"
+        retryLabel={intl.formatMessage({ id: "parent.eventForm.copy020" })}
       />
     );
   }
@@ -596,36 +614,36 @@ export function EventForm() {
         <button
           type="button"
           className="ef-back hy-press"
-          aria-label="뒤로"
+          aria-label={intl.formatMessage({ id: "parent.parentSettings.copy017" })}
           onClick={() => navigate(-1)}
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
         </button>
-        <span className="ef-title">{mode === "edit" ? "일정 수정" : "새 일정"}</span>
+        <span className="ef-title">{mode === "edit" ? intl.formatMessage({ id: "parent.eventForm.copy012" }) : intl.formatMessage({ id: "parent.eventForm.copy013" })}</span>
       </header>
 
       <div className="ef-body">
         {/* 제목 */}
         <div>
-          <div className="ef-label">제목</div>
+          <div className="ef-label">{intl.formatMessage({ id: "parent.eventForm.copy021" })}</div>
           <input
             className="ef-input"
-            aria-label="일정 제목"
+            aria-label={intl.formatMessage({ id: "parent.eventForm.copy022" })}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="예) 피아노 학원"
+            placeholder={intl.formatMessage({ id: "parent.eventForm.copy023" })}
           />
         </div>
 
         {/* 아이(다중 배정) — 서버 events_children 에 실제 저장 */}
         <div>
-          <div className="ef-label">아이</div>
+          <div className="ef-label">{intl.formatMessage({ id: "parent.parentHome.copy004" })}</div>
           {familyQuery.isLoading ? (
-            <div className="ef-empty-note">가족 정보를 불러오고 있어요</div>
+            <div className="ef-empty-note">{intl.formatMessage({ id: "parent.eventForm.copy024" })}</div>
           ) : familyQuery.isError ? (
-            <div className="ef-empty-note">가족 정보를 불러오지 못했어요. 뒤로 갔다 다시 열어 주세요</div>
+            <div className="ef-empty-note">{intl.formatMessage({ id: "parent.eventForm.copy025" })}</div>
           ) : children.length === 0 ? (
-            <div className="ef-empty-note">가족에 등록된 아이가 없어요</div>
+            <div className="ef-empty-note">{intl.formatMessage({ id: "parent.eventForm.copy026" })}</div>
           ) : (
             <div className="ef-chips">
               {children.map((m) => {
@@ -656,7 +674,7 @@ export function EventForm() {
                         decoding="async"
                       />
                     </span>
-                    {m.name || "아이"}
+                    {m.name || intl.formatMessage({ id: "parent.parentHome.copy004" })}
                     {active && <Check size={16} strokeWidth={2.4} aria-hidden="true" />}
                   </button>
                 );
@@ -665,16 +683,16 @@ export function EventForm() {
           )}
           <div className="ef-note hy-explain">
             {editingNeedsAssignment
-              ? "이 일정은 배정이 빠져 있어요. 아이를 선택해야 저장돼요"
+              ? intl.formatMessage({ id: "parent.eventForm.copy027" })
               : selectedChildIds.size === 0
-              ? "아무도 선택하지 않으면 가족 공유 일정으로 모든 아이에게 보여요"
-              : "여러 아이를 함께 배정할 수 있어요"}
+              ? intl.formatMessage({ id: "parent.eventForm.copy028" })
+              : intl.formatMessage({ id: "parent.eventForm.copy029" })}
           </div>
         </div>
 
         {/* 날짜 · 시간 */}
         <div>
-          <div className="ef-label">날짜 · 시간</div>
+          <div className="ef-label">{intl.formatMessage({ id: "parent.eventForm.copy030" })}</div>
           <div className="ef-chips">
             <button
               type="button"
@@ -691,21 +709,21 @@ export function EventForm() {
                   : { background: IDLE_BG, color: IDLE_COLOR, border: "1.5px solid transparent" }
               }
             >
-              하루 종일
+              {intl.formatMessage({ id: "parent.eventForm.copy031" })}
             </button>
           </div>
           <div className="ef-row">
             <input
               type="date"
               className="ef-input ef-input--date"
-              aria-label="일정 날짜"
+              aria-label={intl.formatMessage({ id: "parent.eventForm.copy032" })}
               value={dateValue}
               onChange={(e) => setDateValue(e.target.value)}
             />
             <input
               type="time"
               className="ef-input ef-input--time"
-              aria-label="일정 시작 시간"
+              aria-label={intl.formatMessage({ id: "parent.eventForm.copy033" })}
               value={timeValue}
               onChange={(e) => setTimeValue(e.target.value)}
               disabled={allDay}
@@ -714,7 +732,7 @@ export function EventForm() {
         </div>
 
         {!allDay && <div>
-          <div className="ef-label">지속시간</div>
+          <div className="ef-label">{intl.formatMessage({ id: "parent.eventForm.copy034" })}</div>
           <div className="ef-chips">
             {DURATION_OPTIONS.map((d) => {
               const active = durationMin === d.minutes;
@@ -735,21 +753,21 @@ export function EventForm() {
                   }
                   onClick={() => setDurationMin(d.minutes)}
                 >
-                  {d.label}
+                  {intl.formatMessage({ id: d.labelId })}
                 </button>
               );
             })}
           </div>
           {timeValue && (
             <div className="ef-note hy-explain">
-              종료 {minutesToTimeValue((timeToMinutes(timeValue) ?? 0) + durationMin)}
+              {intl.formatMessage({ id: "parent.eventForm.copy035" })} {minutesToTimeValue((timeToMinutes(timeValue) ?? 0) + durationMin)}
             </div>
           )}
         </div>}
 
         {/* 카테고리 */}
         <div>
-          <div className="ef-label">카테고리</div>
+          <div className="ef-label">{intl.formatMessage({ id: "parent.eventForm.copy036" })}</div>
           <div className="ef-chips">
             {CATEGORIES.map((c) => {
               const active = category === c.id;
@@ -771,7 +789,7 @@ export function EventForm() {
                     alt=""
                     style={{ width: 20, height: 20, objectFit: "contain", verticalAlign: -4, marginRight: 4 }}
                   />
-                  {c.label}
+                  {intl.formatMessage({ id: c.labelId })}
                 </button>
               );
             })}
@@ -781,7 +799,7 @@ export function EventForm() {
         {/* 장소 — 저장장소 빠른 선택(좌표 포함) + 지도에서 지정 + 직접 입력.
             저장은 event.location = { address, lat?, lng? }. */}
         <div>
-          <div className="ef-label">장소</div>
+          <div className="ef-label">{intl.formatMessage({ id: "parent.eventForm.copy037" })}</div>
           {savedPlaces.length > 0 && (
             <div className="ef-chips" style={{ marginBottom: 8 }}>
               {savedPlaces.map((p) => {
@@ -823,12 +841,12 @@ export function EventForm() {
             <div className="ef-place-field">
               <input
                 className="ef-input"
-                aria-label="일정 장소"
+                aria-label={intl.formatMessage({ id: "parent.home.schedulePlace" })}
                 value={place}
                 onFocus={() => setPlaceSuggestionsOpen(true)}
                 onBlur={() => window.setTimeout(() => setPlaceSuggestionsOpen(false), 120)}
                 onChange={(e) => handlePlaceChange(e.target.value)}
-                placeholder="예) 피아노 학원"
+                placeholder={intl.formatMessage({ id: "parent.eventForm.copy023" })}
                 aria-autocomplete="list"
                 aria-expanded={showPlaceSuggestions}
               />
@@ -836,7 +854,7 @@ export function EventForm() {
                 <div
                   className="ef-place-suggestions"
                   role="listbox"
-                  aria-label="저장된 장소 검색 결과"
+                  aria-label={intl.formatMessage({ id: "parent.eventForm.copy038" })}
                 >
                   {placeSuggestions.map((p) => (
                     <button
@@ -865,18 +883,18 @@ export function EventForm() {
             <button
               type="button"
               className="ef-mapbtn hy-press"
-              aria-label="지도에서 장소 지정"
+              aria-label={intl.formatMessage({ id: "parent.eventForm.copy039" })}
               onClick={() => setShowMapPicker(true)}
             >
               <MapIcon size={17} strokeWidth={2.2} />
-              지도
+              {intl.formatMessage({ id: "parent.eventForm.copy040" })}
             </button>
           </div>
           {placeCoord ? (
-            <div className="ef-note hy-explain">📍 지도 위치가 함께 저장돼요</div>
+            <div className="ef-note hy-explain">{intl.formatMessage({ id: "parent.eventForm.copy041" })}</div>
           ) : place.trim() ? (
             <div className="ef-note hy-explain">
-              좌표가 없어 도착·미도착 알림은 동작하지 않아요. 저장된 장소나 지도에서 선택해 주세요
+              {intl.formatMessage({ id: "parent.eventForm.copy042" })}
             </div>
           ) : null}
         </div>
@@ -884,7 +902,7 @@ export function EventForm() {
         {/* 반복 — 생성 시에만(서버는 반복 컬럼이 없어 발생일마다 별도 일정으로 저장) */}
         {mode === "create" ? (
           <div>
-            <div className="ef-label">반복</div>
+            <div className="ef-label">{intl.formatMessage({ id: "parent.eventForm.copy043" })}</div>
             <div className="ef-chips">
               {REPEATS.map((r) => {
                 const active = repeat === r;
@@ -904,13 +922,13 @@ export function EventForm() {
                     }
                     onClick={() => handleRepeatSelect(r)}
                   >
-                    {r === "요일" ? "요일 선택" : r}
+                    {intl.formatMessage({ id: REPEAT_LABEL_IDS[r] })}
                   </button>
                 );
               })}
             </div>
             {repeat === "요일" && (
-              <div className="ef-weekdays" role="group" aria-label="반복 요일">
+              <div className="ef-weekdays" role="group" aria-label={intl.formatMessage({ id: "parent.eventForm.copy045" })}>
                 {WEEKDAY_OPTIONS.map((day) => {
                   const active = repeatWeekdays.has(day.value);
                   return (
@@ -921,7 +939,7 @@ export function EventForm() {
                       aria-pressed={active}
                       onClick={() => toggleRepeatWeekday(day.value)}
                     >
-                      {day.label}
+                      {intl.formatMessage({ id: WEEKDAY_LABEL_IDS[day.value] })}
                     </button>
                   );
                 })}
@@ -930,32 +948,32 @@ export function EventForm() {
             {repeat !== "없음" && (
               <div className="ef-note hy-explain">
                 {repeat === "매일"
-                  ? "오늘부터 14일간"
+                  ? intl.formatMessage({ id: "parent.eventForm.copy046" })
                   : repeat === "매주"
-                    ? "이 요일로 8주간"
+                    ? intl.formatMessage({ id: "parent.eventForm.copy047" })
                     : repeat === "요일"
-                      ? "선택한 요일로 8주간"
-                      : "이 날짜로 6개월간"}{" "}
-                일정이 만들어져요
+                      ? intl.formatMessage({ id: "parent.eventForm.copy048" })
+                      : intl.formatMessage({ id: "parent.eventForm.copy049" })}{" "}
+                {intl.formatMessage({ id: "parent.eventForm.copy050" })}
               </div>
             )}
           </div>
         ) : (
           <div>
-            <div className="ef-label">반복</div>
-            <div className="ef-note hy-explain">반복은 새 일정에서만 설정할 수 있어요</div>
+            <div className="ef-label">{intl.formatMessage({ id: "parent.eventForm.copy043" })}</div>
+            <div className="ef-note hy-explain">{intl.formatMessage({ id: "parent.eventForm.copy051" })}</div>
           </div>
         )}
 
         {/* 사전 알림 — notif_override 로 실제 저장 */}
         <div>
-          <div className="ef-label">사전 알림</div>
+          <div className="ef-label">{intl.formatMessage({ id: "parent.eventForm.copy052" })}</div>
           <div className="ef-chips">
             {PREALARMS.map((p) => {
               const active = prealarm === p.minutes;
               return (
                 <button
-                  key={p.label}
+                  key={p.labelId}
                   type="button"
                   className="ef-chip hy-press"
                   aria-pressed={active}
@@ -970,20 +988,20 @@ export function EventForm() {
                   }
                   onClick={() => setPrealarm(p.minutes)}
                 >
-                  {p.label}
+                  {intl.formatMessage({ id: p.labelId })}
                 </button>
               );
             })}
           </div>
           {prealarm === "default" && (
-            <div className="ef-note hy-explain">알림 설정에서 고른 시간을 사용해요</div>
+            <div className="ef-note hy-explain">{intl.formatMessage({ id: "parent.eventForm.copy053" })}</div>
           )}
-          {prealarm === "none" && <div className="ef-note hy-explain">이 일정의 사전 알림을 보내지 않아요</div>}
+          {prealarm === "none" && <div className="ef-note hy-explain">{intl.formatMessage({ id: "parent.eventForm.copy054" })}</div>}
         </div>
 
         {/* 준비물 — 저장하면 배정 아이의 '가방 챙기기'(daily_supplies)에 함께 담긴다 */}
         <div>
-          <div className="ef-label">준비물</div>
+          <div className="ef-label">{intl.formatMessage({ id: "parent.eventForm.copy055" })}</div>
           <div className="ef-supply-row">
             <input
               className="ef-input"
@@ -995,8 +1013,8 @@ export function EventForm() {
                   addSupplyChips();
                 }
               }}
-              placeholder="예) 실내화, 물통 (쉼표로 여러 개)"
-              aria-label="준비물 입력"
+              placeholder={intl.formatMessage({ id: "parent.eventForm.copy056" })}
+              aria-label={intl.formatMessage({ id: "parent.eventForm.copy057" })}
             />
             <button
               type="button"
@@ -1004,7 +1022,7 @@ export function EventForm() {
               onClick={addSupplyChips}
               disabled={supplyInput.trim().length === 0}
             >
-              추가
+              {intl.formatMessage({ id: "parent.eventForm.copy058" })}
             </button>
           </div>
           {supplyLabels.length > 0 && (
@@ -1014,7 +1032,7 @@ export function EventForm() {
                   key={label}
                   type="button"
                   className="ef-supply-chip hy-press"
-                  aria-label={`준비물 ${label} 빼기`}
+                  aria-label={intl.formatMessage({ id: "parent.eventForm.removeSupply" }, { label })}
                   onClick={() => removeSupplyChip(label)}
                 >
                   {label}
@@ -1023,18 +1041,18 @@ export function EventForm() {
               ))}
             </div>
           )}
-          <div className="ef-note hy-explain">저장하면 아이 홈 ‘가방 챙기기’와 부모 홈 준비물에 실시간으로 담겨요</div>
+          <div className="ef-note hy-explain">{intl.formatMessage({ id: "parent.eventForm.copy059" })}</div>
         </div>
 
         {/* 메모 */}
         <div>
-          <div className="ef-label">메모</div>
+          <div className="ef-label">{intl.formatMessage({ id: "parent.eventForm.copy060" })}</div>
           <textarea
             className="ef-textarea"
-            aria-label="일정 메모"
+            aria-label={intl.formatMessage({ id: "parent.eventForm.copy061" })}
             value={memo}
             onChange={(e) => setMemo(e.target.value)}
-            placeholder="예) 선생님께 전달할 내용"
+            placeholder={intl.formatMessage({ id: "parent.eventForm.copy062" })}
             rows={3}
           />
         </div>
@@ -1048,12 +1066,12 @@ export function EventForm() {
           aria-busy={busy}
         >
           {busy
-            ? "저장 중…"
+            ? intl.formatMessage({ id: "parent.parentAccount.copy016" })
             : editingNeedsAssignment
-              ? "배정 저장"
+              ? intl.formatMessage({ id: "parent.eventForm.copy063" })
               : mode === "edit"
-                ? "수정 저장"
-                : "일정 저장"}
+                ? intl.formatMessage({ id: "parent.eventForm.copy064" })
+                : intl.formatMessage({ id: "parent.eventForm.copy065" })}
         </button>
       </div>
 
@@ -1065,7 +1083,7 @@ export function EventForm() {
           onClose={() => setShowMapPicker(false)}
           onConfirm={(sel) => {
             setPlaceCoord({ lat: sel.lat, lng: sel.lng });
-            setPlace(sel.name ?? (sel.address || place.trim() || "지도에서 선택한 위치"));
+            setPlace(sel.name ?? (sel.address || place.trim() || intl.formatMessage({ id: "parent.eventForm.copy066" })));
             setShowMapPicker(false);
           }}
         />
@@ -1082,11 +1100,10 @@ export function EventForm() {
             aria-describedby={seriesScopeDescriptionId}
           >
             <div id={seriesScopeTitleId} className="ef-scope-title">
-              반복 일정 수정
+              {intl.formatMessage({ id: "parent.eventForm.copy067" })}
             </div>
             <p id={seriesScopeDescriptionId} className="ef-scope-desc">
-              같은 반복으로 이어지는 이후 일정 {seriesScopePrompt.futureCount}개가 있어요. 수정 범위를
-              선택해 주세요.
+              {intl.formatMessage({ id: "parent.eventForm.copy068" })} {seriesScopePrompt.futureCount}{intl.formatMessage({ id: "parent.eventForm.copy069" })}
             </p>
             <div className="ef-scope-actions">
               <button
@@ -1095,7 +1112,7 @@ export function EventForm() {
                 onClick={() => void handleSave("single")}
                 disabled={busy} aria-busy={busy}
               >
-                이 일정만 수정
+                {intl.formatMessage({ id: "parent.eventForm.copy070" })}
               </button>
               <button
                 type="button"
@@ -1103,7 +1120,7 @@ export function EventForm() {
                 onClick={() => void handleSave("future")}
                 disabled={busy} aria-busy={busy}
               >
-                이후 반복 일정도 수정
+                {intl.formatMessage({ id: "parent.eventForm.copy071" })}
               </button>
               <button
                 ref={seriesScopeCancelRef}
@@ -1112,7 +1129,7 @@ export function EventForm() {
                 onClick={() => setSeriesScopePrompt(null)}
                 disabled={busy} aria-busy={busy}
               >
-                취소
+                {intl.formatMessage({ id: "parent.parentSettings.copy031" })}
               </button>
             </div>
           </section>

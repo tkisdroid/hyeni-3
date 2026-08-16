@@ -1,3 +1,4 @@
+import { useIntl } from "react-intl";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePwaUpdateCriticalSection } from "@/lib/usePwaUpdateCriticalSection";
 import type { MouseEvent as ReactMouseEvent } from "react";
@@ -45,21 +46,21 @@ import { latestDateKeyOrNull } from "@/transform/dateKey";
 import "@/styles/jua.css";
 import "./MemoChat.css";
 
-const MEMO_REPORT_REASONS: readonly ReportReasonOption<MemoContentReportReason>[] = [
-  { value: "harassment", label: "괴롭히거나 불편하게 해요" },
-  { value: "sexual_or_violent", label: "성적이거나 폭력적인 내용이에요" },
-  { value: "personal_info", label: "개인정보를 요구하거나 노출해요" },
-  { value: "illegal_or_dangerous", label: "불법이거나 위험한 내용이에요" },
-  { value: "other", label: "다른 이유가 있어요" },
-];
+const MEMO_REPORT_REASONS = [
+  { value: "harassment", labelId: "shared.memo.report.harassment.formal" },
+  { value: "sexual_or_violent", labelId: "shared.memo.report.sexualOrViolent.formal" },
+  { value: "personal_info", labelId: "shared.memo.report.personalInfo.formal" },
+  { value: "illegal_or_dangerous", labelId: "shared.memo.report.illegalOrDangerous.formal" },
+  { value: "other", labelId: "shared.memo.report.other.formal" },
+] as const;
 
-const CHILD_MEMO_REPORT_REASONS: readonly ReportReasonOption<MemoContentReportReason>[] = [
-  { value: "harassment", label: "괴롭히거나 불편하게 해" },
-  { value: "sexual_or_violent", label: "성적이거나 폭력적인 내용이야" },
-  { value: "personal_info", label: "개인정보를 요구하거나 보여줘" },
-  { value: "illegal_or_dangerous", label: "불법이거나 위험한 내용이야" },
-  { value: "other", label: "다른 이유가 있어" },
-];
+const CHILD_MEMO_REPORT_REASONS = [
+  { value: "harassment", labelId: "shared.memo.report.harassment.child" },
+  { value: "sexual_or_violent", labelId: "shared.memo.report.sexualOrViolent.child" },
+  { value: "personal_info", labelId: "shared.memo.report.personalInfo.child" },
+  { value: "illegal_or_dangerous", labelId: "shared.memo.report.illegalOrDangerous.child" },
+  { value: "other", labelId: "shared.memo.report.other.child" },
+] as const;
 
 /** photo_url(http/blob)은 그대로, 로컬 캐릭터 키는 asset()으로 해석. */
 function avatarSrc(path: string): string {
@@ -158,6 +159,7 @@ function MemoImageBubble({
   isChildSession: boolean;
   onOpen: () => void;
 }) {
+  const intl = useIntl();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [nearby, setNearby] = useState(false);
   const photo = useChildPhotoUrl(path, nearby);
@@ -183,7 +185,7 @@ function MemoImageBubble({
       ref={buttonRef}
       type="button"
       className="mc-bubble mc-bubble--img hy-press"
-      aria-label={photo.status === "error" ? "공유한 사진 다시 불러오기" : "공유한 사진 크게 보기"}
+      aria-label={intl.formatMessage({ id: photo.status === "error" ? "shared.memo.photo.retry" : "shared.memo.photo.open" })}
       aria-busy={photo.status === "loading"}
       onClick={(event) => {
         press.onClick?.(event);
@@ -204,7 +206,7 @@ function MemoImageBubble({
       {photo.status === "ready" ? (
         <img
           src={photo.url}
-          alt="공유한 사진"
+          alt={intl.formatMessage({ id: "shared.memo.photo.alt" })}
           decoding="async"
           onLoad={(event) => verifyPrivateImageDecode(
             event.currentTarget,
@@ -216,9 +218,9 @@ function MemoImageBubble({
         <span className={`mc-private-photo-status mc-private-photo-status--${photo.status}`} role="status">
           {photo.status === "error"
             ? (isChildSession
-                ? "사진을 불러오지 못했어. 눌러서 다시 시도해 줘."
-                : "사진을 불러오지 못했어요. 눌러서 다시 시도해 주세요.")
-            : "사진 불러오는 중…"}
+                ? intl.formatMessage({ id: "shared.memo.photo.error.child" })
+                : intl.formatMessage({ id: "shared.memo.photo.error.formal" }))
+            : intl.formatMessage({ id: "shared.memo.photo.loading" })}
         </span>
       )}
     </button>
@@ -227,6 +229,7 @@ function MemoImageBubble({
 
 
 export function MemoChat() {
+  const intl = useIntl();
   const { locale } = useLocale();
   const goBack = useSafeBack();
   const { show } = useToast();
@@ -286,7 +289,7 @@ export function MemoChat() {
       if (!m.user_id) continue;
       const fallback = m.role === "parent" ? "family/mom.webp" : childAvatarPath(m.photo_url);
       map.set(m.user_id, {
-        name: m.name || (m.role === "parent" ? "보호자" : "아이"),
+        name: m.name || (m.role === "parent" ? intl.formatMessage({ id: "shared.memoChat.copy001" }) : intl.formatMessage({ id: "shared.memoChat.copy002" })),
         avatar: avatarSrc(m.role === "parent" ? (m.photo_url || fallback) : fallback),
         role: m.role,
       });
@@ -301,13 +304,13 @@ export function MemoChat() {
       const parent = members.find((m) => m.role === "parent") ?? null;
       return {
         userId: parent?.user_id ?? null,
-        name: parent?.name || "엄마·아빠",
+        name: parent?.name || intl.formatMessage({ id: "shared.memoChat.copy003" }),
         avatar: avatarSrc(parent?.photo_url || "animal/bear.webp"),
       };
     }
     return {
       userId: scopeChild?.user_id ?? null,
-      name: scopeChild?.name || "우리 아이",
+      name: scopeChild?.name || intl.formatMessage({ id: "shared.memoChat.copy004" }),
       avatar: avatarSrc(childAvatarPath(scopeChild?.photo_url)),
     };
   }, [family, role, scopeChild]);
@@ -362,22 +365,22 @@ export function MemoChat() {
       if (result.ok) {
         show(
           result.target === "gallery"
-            ? (isChildSession ? "사진첩에 저장했어." : "사진첩에 저장했어요.")
-            : (isChildSession ? "사진을 내려받았어." : "사진을 내려받았어요."),
+            ? (isChildSession ? intl.formatMessage({ id: "shared.memoChat.copy005" }) : intl.formatMessage({ id: "shared.memoChat.copy006" }))
+            : (isChildSession ? intl.formatMessage({ id: "shared.memoChat.copy007" }) : intl.formatMessage({ id: "shared.memoChat.copy008" })),
         );
       } else if (result.reason === "permission_denied") {
         show(
           isChildSession
-            ? "저장하려면 기기 설정에서 저장 권한을 허용해 줘."
-            : "저장하려면 기기 설정에서 저장 권한을 허용해 주세요.",
+            ? intl.formatMessage({ id: "shared.memoChat.copy009" })
+            : intl.formatMessage({ id: "shared.memoChat.copy010" }),
         );
       } else if (result.reason === "unsupported") {
-        show(isChildSession ? "이 기기에서는 저장할 수 없어." : "이 기기에서는 저장을 지원하지 않아요.");
+        show(isChildSession ? intl.formatMessage({ id: "shared.memoChat.copy011" }) : intl.formatMessage({ id: "shared.memoChat.copy012" }));
       } else {
         show(
           isChildSession
-            ? "사진을 저장하지 못했어. 잠시 후 다시 해 줘."
-            : "사진을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.",
+            ? intl.formatMessage({ id: "shared.memoChat.copy013" })
+            : intl.formatMessage({ id: "shared.memoChat.copy014" }),
         );
       }
     } finally {
@@ -398,8 +401,8 @@ export function MemoChat() {
   const lastMessageId = messages[messages.length - 1]?.id ?? "";
   // 빠른 답장·안내 문구는 보내는 사람에 따라 다르다 — 아이 화면에 부모 문구("숙제는 했어?")나
   // 존댓말 안내가 뜨면 안 된다(말투 규칙: 아이 모드 = 반말).
-  const quickReplies = useMemo(() => resolveMemoQuickReplies(role), [role]);
-  const copy = useMemo(() => resolveMemoChatCopy(role), [role]);
+  const quickReplies = useMemo(() => resolveMemoQuickReplies(role, intl), [role, intl]);
+  const copy = useMemo(() => resolveMemoChatCopy(role, intl), [role, intl]);
   const blockedUserIds = useMemo(
     () => new Set(memoBlocks.data?.blockedUserIds ?? []),
     [memoBlocks.data?.blockedUserIds],
@@ -454,11 +457,11 @@ export function MemoChat() {
 
   const handleSend = () => {
     if (!scopeChild) {
-      show(isChildSession ? "내 대화 정보를 확인할 수 없어" : "대화 대상 아이를 확인할 수 없어요", "⚠️");
+      show(isChildSession ? intl.formatMessage({ id: "shared.memoChat.copy015" }) : intl.formatMessage({ id: "shared.memoChat.copy016" }), "⚠️");
       return;
     }
     if (!memoDateKey) {
-      show(isChildSession ? "대화 날짜를 확인할 수 없어" : "대화 날짜를 확인할 수 없어요", "⚠️");
+      show(isChildSession ? intl.formatMessage({ id: "shared.memoChat.copy017" }) : intl.formatMessage({ id: "shared.memoChat.copy018" }), "⚠️");
       return;
     }
     const text = draft.trim();
@@ -588,7 +591,7 @@ export function MemoChat() {
       const address = await reverseAddress(point.lat, point.lng);
       sendMemo.mutate(
         {
-          content: encodeLocationContent(point.lat, point.lng, address || "내 위치"),
+          content: encodeLocationContent(point.lat, point.lng, address || intl.formatMessage({ id: "shared.memoChat.copy019" })),
           dateKey: memoDateKey,
           childId: scopeChild.id,
         },
@@ -602,9 +605,9 @@ export function MemoChat() {
   // 위치 버블 탭 → 카카오맵에서 그 지점 열기.
   const openLocation = (m: ThreadMsg) => {
     if (!m.location) return;
-    const name = encodeURIComponent(m.location.address || "공유한 위치");
+    const name = encodeURIComponent(m.location.address || intl.formatMessage({ id: "shared.memoChat.copy020" }));
     openExternal(`https://map.kakao.com/link/map/${name},${m.location.lat},${m.location.lng}`).catch(() =>
-      show(isChildSession ? "지도를 열 수 없어" : "지도를 열 수 없어요", "🗺️"),
+      show(isChildSession ? intl.formatMessage({ id: "shared.memoChat.copy021" }) : intl.formatMessage({ id: "shared.memoChat.copy022" }), "🗺️"),
     );
   };
 
@@ -612,7 +615,7 @@ export function MemoChat() {
   const showEmpty = !!scopeChild && !thread.isLoading && !thread.isError && !hasMessages;
   // 실시간 프레즌스 데이터가 없으므로 "온라인" 대신 최근 대화 시각으로 정직하게 표기.
   const statusLabel = hasMessages
-    ? `최근 대화 · ${messages[messages.length - 1].time}`
+    ? intl.formatMessage({ id: "shared.memo.latestActivity" }, { time: messages[messages.length - 1].time })
     : copy.noConversation;
 
   return (
@@ -622,7 +625,7 @@ export function MemoChat() {
         <button
           type="button"
           className="mc-back hy-press"
-          aria-label="뒤로"
+          aria-label={intl.formatMessage({ id: "shared.memoChat.copy023" })}
           onClick={goBack}
         >
           <ChevronLeft size={24} strokeWidth={2.4} />
@@ -645,7 +648,7 @@ export function MemoChat() {
           <div className="mc-blocked-banner" role="status">
             <ShieldAlert size={18} strokeWidth={2.2} aria-hidden="true" />
             <div>
-              <strong>{isChildSession ? "차단한 메시지는 숨겼어" : "차단한 사용자의 메시지를 숨겼어요"}</strong>
+              <strong>{isChildSession ? intl.formatMessage({ id: "shared.memoChat.copy024" }) : intl.formatMessage({ id: "shared.memoChat.copy025" })}</strong>
               <div className="mc-blocked-list">
                 {blockedMembers.map(({ id, member }) => (
                   <button
@@ -655,11 +658,14 @@ export function MemoChat() {
                     disabled={unblockMemoUser.isPending} aria-busy={unblockMemoUser.isPending}
                     onClick={() => {
                       void unblockMemoUser.mutateAsync(id)
-                        .then(() => show(isChildSession ? `${member?.name ?? "상대"} 메시지를 다시 볼 수 있어.` : `${member?.name ?? "상대"}님의 차단을 해제했어요.`, "🛡️"))
-                        .catch(() => show(isChildSession ? "차단을 풀지 못했어. 다시 눌러줘." : "차단을 해제하지 못했어요.", "⚠️"));
+                        .then(() => show(intl.formatMessage(
+                          { id: isChildSession ? "shared.memo.unblocked.child" : "shared.memo.unblocked.formal" },
+                          { name: member?.name ?? intl.formatMessage({ id: isChildSession ? "shared.memoChat.copy026" : "shared.memoChat.copy027" }) },
+                        ), "🛡️"))
+                        .catch(() => show(isChildSession ? intl.formatMessage({ id: "shared.memoChat.copy028" }) : intl.formatMessage({ id: "shared.memoChat.copy029" }), "⚠️"));
                     }}
                   >
-                    {member?.name ?? "보호자"} · 차단 해제
+                    {member?.name ?? intl.formatMessage({ id: "shared.memoChat.copy030" })} {intl.formatMessage({ id: "shared.memoChat.copy031" })}
                   </button>
                 ))}
               </div>
@@ -680,20 +686,20 @@ export function MemoChat() {
           <div className="mc-daysep mc-daysep--error" role="alert">
             <span>{copy.loadError}</span>
             <button type="button" className="hy-section-action hy-press" onClick={() => void refetchFamily()}>
-              {isChildSession ? "다시 불러오기" : "다시 시도"}
+              {isChildSession ? intl.formatMessage({ id: "shared.memoChat.copy032" }) : intl.formatMessage({ id: "shared.memoChat.copy033" })}
             </button>
           </div>
         )}
         {explicitChildMissing && (
           <div className="mc-daysep">
-            <span>알림이 가리킨 아이 대화를 찾을 수 없어요</span>
+            <span>{intl.formatMessage({ id: "shared.memoChat.copy034" })}</span>
           </div>
         )}
         {thread.isError && (
           <div className="mc-daysep mc-daysep--error">
             <span>{copy.loadError}</span>
             <button type="button" className="hy-section-action hy-press" onClick={() => void thread.refetch()}>
-              {isChildSession ? "다시 불러오기" : "다시 시도"}
+              {isChildSession ? intl.formatMessage({ id: "shared.memoChat.copy035" }) : intl.formatMessage({ id: "shared.memoChat.copy036" })}
             </button>
           </div>
         )}
@@ -709,8 +715,8 @@ export function MemoChat() {
           <p className="mc-safety-hint">
             <ShieldAlert size={12} strokeWidth={2.2} aria-hidden="true" />
             {isChildSession
-              ? "받은 메시지를 길게 누르면 신고·차단할 수 있어."
-              : "받은 메시지를 길게 누르면 신고·차단할 수 있어요."}
+              ? intl.formatMessage({ id: "shared.memoChat.copy037" })
+              : intl.formatMessage({ id: "shared.memoChat.copy038" })}
           </p>
         )}
 
@@ -761,8 +767,8 @@ export function MemoChat() {
                   >
                     <span className="mc-loc-ic"><MapPin size={22} strokeWidth={2.2} /></span>
                     <span className="mc-loc-main">
-                      <span className="mc-loc-title">위치 공유</span>
-                      <span className="mc-loc-addr">{m.location.address || "지도에서 보기"}</span>
+                      <span className="mc-loc-title">{intl.formatMessage({ id: "shared.memoChat.copy039" })}</span>
+                      <span className="mc-loc-addr">{m.location.address || intl.formatMessage({ id: "shared.memoChat.copy040" })}</span>
                     </span>
                   </button>
                 ) : (
@@ -779,7 +785,7 @@ export function MemoChat() {
                   </div>
                 )}
                 <div className="mc-time">{m.time}</div>
-                {m.mine && readByPeer.has(m.id) && <div className="mc-read">읽음</div>}
+                {m.mine && readByPeer.has(m.id) && <div className="mc-read">{intl.formatMessage({ id: "shared.memoChat.copy041" })}</div>}
 
               </div>
               </div>
@@ -809,7 +815,7 @@ export function MemoChat() {
           <button
             type="button"
             className="mc-attach hy-press"
-            aria-label="사진 보내기"
+            aria-label={intl.formatMessage({ id: "shared.memoChat.copy042" })}
             onClick={() => fileRef.current?.click()}
             disabled={sharing !== "" || !scopeChild}
           >
@@ -819,7 +825,7 @@ export function MemoChat() {
           <button
             type="button"
             className="mc-attach hy-press"
-            aria-label="위치 보내기"
+            aria-label={intl.formatMessage({ id: "shared.memoChat.copy043" })}
             onClick={() => void shareLocation()}
             disabled={sharing !== "" || !scopeChild}
           >
@@ -840,7 +846,7 @@ export function MemoChat() {
           <button
             type="button"
             className={`mc-send hy-press${sendMemo.isPending ? " mc-send--sending" : ""}`}
-            aria-label={sendMemo.isPending ? "보내는 중" : "보내기"}
+            aria-label={sendMemo.isPending ? intl.formatMessage({ id: "shared.memoChat.copy044" }) : intl.formatMessage({ id: "shared.memoChat.copy045" })}
             onClick={handleSend}
             disabled={sendMemo.isPending || !scopeChild} aria-busy={sendMemo.isPending}
           >
@@ -863,7 +869,7 @@ export function MemoChat() {
         >
           <div className="mc-photo-preview__panel">
             <div className="mc-photo-preview__header">
-              <h2 id="mc-photo-preview-title">공유한 사진</h2>
+              <h2 id="mc-photo-preview-title">{intl.formatMessage({ id: "shared.memoChat.copy046" })}</h2>
               <div className="mc-photo-preview__actions">
                 <button
                   type="button"
@@ -873,7 +879,7 @@ export function MemoChat() {
                   aria-busy={savingPhoto}
                 >
                   <Download size={16} strokeWidth={2.2} aria-hidden="true" />
-                  {savingPhoto ? "저장 중…" : "저장"}
+                  {savingPhoto ? intl.formatMessage({ id: "shared.memoChat.copy047" }) : intl.formatMessage({ id: "shared.memoChat.copy048" })}
                 </button>
                 <button
                   ref={previewCloseButtonRef}
@@ -881,14 +887,14 @@ export function MemoChat() {
                   className="mc-photo-preview__close hy-press"
                   onClick={() => setPreviewImagePath(null)}
                 >
-                  닫기
+                  {intl.formatMessage({ id: "shared.memoChat.copy049" })}
                 </button>
               </div>
             </div>
             <p id="mc-photo-preview-description" className="mc-photo-preview__description">
               {isChildSession
-                ? "사진을 확대하거나 기기에 저장할 수 있어."
-                : "사진을 확대하거나 기기에 저장할 수 있어요."}
+                ? intl.formatMessage({ id: "shared.memoChat.copy050" })
+                : intl.formatMessage({ id: "shared.memoChat.copy051" })}
             </p>
             {/* 손가락 두 개로 확대·축소, 두 번 탭으로 확대 토글, 확대 상태에서 끌어 이동. */}
             <div
@@ -903,7 +909,7 @@ export function MemoChat() {
               {previewImage.status === "ready" ? (
                 <img
                   src={previewImage.url}
-                  alt="공유한 사진 크게 보기"
+                  alt={intl.formatMessage({ id: "shared.memoChat.copy052" })}
                   decoding="async"
                   draggable={false}
                   onLoad={(event) => verifyPrivateImageDecode(
@@ -917,25 +923,25 @@ export function MemoChat() {
                 />
               ) : previewImage.status === "error" ? (
                 <div className="mc-photo-preview__status" role="alert">
-                  <span>{isChildSession ? "사진을 불러오지 못했어." : "사진을 불러오지 못했어요."}</span>
+                  <span>{isChildSession ? intl.formatMessage({ id: "shared.memoChat.copy053" }) : intl.formatMessage({ id: "shared.memoChat.copy054" })}</span>
                   <button type="button" className="hy-section-action hy-press" onClick={previewImage.retry}>
-                    {isChildSession ? "다시 불러오기" : "다시 시도"}
+                    {isChildSession ? intl.formatMessage({ id: "shared.memoChat.copy055" }) : intl.formatMessage({ id: "shared.memoChat.copy056" })}
                   </button>
                 </div>
               ) : (
                 <div className="mc-photo-preview__status" role="status">
-                  <Loading label={isChildSession ? "사진 불러오는 중" : "사진을 불러오는 중이에요"} size={6} />
+                  <Loading label={isChildSession ? intl.formatMessage({ id: "shared.memoChat.copy057" }) : intl.formatMessage({ id: "shared.memoChat.copy058" })} size={6} />
                 </div>
               )}
             </div>
             {previewImage.status === "ready" && <p className="mc-photo-preview__hint">
               {photoZoom.isZoomed
                 ? (isChildSession
-                    ? "끌어서 옮기고, 두 번 탭하면 원래 크기로 돌아가"
-                    : "끌어서 옮기고, 두 번 탭하면 원래 크기로 돌아가요")
+                    ? intl.formatMessage({ id: "shared.memoChat.copy059" })
+                    : intl.formatMessage({ id: "shared.memoChat.copy060" }))
                 : (isChildSession
-                    ? "두 손가락으로 벌리거나 두 번 탭하면 확대돼"
-                    : "두 손가락으로 벌리거나 두 번 탭하면 확대돼요")}
+                    ? intl.formatMessage({ id: "shared.memoChat.copy061" })
+                    : intl.formatMessage({ id: "shared.memoChat.copy062" }))}
             </p>}
           </div>
         </div>
@@ -944,33 +950,39 @@ export function MemoChat() {
       <MessageSafetyDialog
         open={!!safetyTarget}
         tone={isChildSession ? "child" : "parent"}
-        title={isChildSession ? "이 메시지가 불편했어?" : "메시지 신고 및 차단"}
+        title={isChildSession ? intl.formatMessage({ id: "shared.memoChat.copy063" }) : intl.formatMessage({ id: "shared.memoChat.copy064" })}
         description={isChildSession
-          ? "신고하면 운영자가 확인해. 부모님께 자동으로 전달되지는 않아."
-          : "신고 내용은 운영 검토 큐에 안전하게 저장돼요."}
-        reasons={isChildSession ? CHILD_MEMO_REPORT_REASONS : MEMO_REPORT_REASONS}
+          ? intl.formatMessage({ id: "shared.memoChat.copy065" })
+          : intl.formatMessage({ id: "shared.memoChat.copy066" })}
+        reasons={(isChildSession ? CHILD_MEMO_REPORT_REASONS : MEMO_REPORT_REASONS).map(({ value, labelId }): ReportReasonOption<MemoContentReportReason> => ({
+          value,
+          label: intl.formatMessage({ id: labelId }),
+        }))}
         onClose={() => setSafetyTarget(null)}
         onReport={async (reason, detail) => {
           if (!safetyTarget?.id) throw new Error("report_target_missing");
           await reportMemoReply.mutateAsync({ replyId: safetyTarget.id, reason, detail });
           show(
-            isChildSession ? "알려줘서 고마워. 운영자가 확인할게." : "신고를 접수했어요. 운영자가 확인할게요.",
+            isChildSession ? intl.formatMessage({ id: "shared.memoChat.copy067" }) : intl.formatMessage({ id: "shared.memoChat.copy068" }),
             "🛡️",
           );
         }}
         blockLabel={safetyTarget?.senderUserId && !blockedUserIds.has(safetyTarget.senderUserId)
-          ? (isChildSession ? `${safetySender?.name ?? "이 사람"} 메시지 차단` : `${safetySender?.name ?? "이 사용자"}님의 메시지 차단`)
+          ? intl.formatMessage(
+              { id: isChildSession ? "shared.memo.blockTitle.child" : "shared.memo.blockTitle.formal" },
+              { name: safetySender?.name ?? intl.formatMessage({ id: isChildSession ? "shared.memoChat.copy069" : "shared.memoChat.copy070" }) },
+            )
           : undefined}
         blockDescription={isChildSession
-          ? "메시지만 서로 안 보여. SOS와 안전 알림은 그대로 받아."
-          : "가족 연결·위치·SOS·안전 알림은 유지되고 메모만 서로 보이지 않아요."}
+          ? intl.formatMessage({ id: "shared.memoChat.copy071" })
+          : intl.formatMessage({ id: "shared.memoChat.copy072" })}
         onBlock={safetyTarget?.senderUserId && !blockedUserIds.has(safetyTarget.senderUserId)
           ? async () => {
               const targetUserId = safetyTarget.senderUserId;
               if (!targetUserId) throw new Error("block_target_missing");
               await blockMemoUser.mutateAsync(targetUserId);
               show(
-                isChildSession ? "이 사람 메시지를 차단했어. 안전 알림은 계속 와." : "메시지를 차단했어요. 안전 알림은 계속 전달돼요.",
+                isChildSession ? intl.formatMessage({ id: "shared.memoChat.copy073" }) : intl.formatMessage({ id: "shared.memoChat.copy074" }),
                 "🛡️",
               );
             }

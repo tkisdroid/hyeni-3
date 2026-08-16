@@ -140,51 +140,87 @@
     "description": "core.error.api.invalidCredentials.formal에 표시하는 사용자 안내 문구"
   },
   "core.error.api.invalidPhone.child": {
-    "namespace": "core", "audience": "child", "qualityTier": "B", "variables": {},
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
     "description": "아이에게 휴대폰 번호 형식을 다시 확인하도록 직접 안내하는 문구"
   },
   "core.error.api.invalidPhone.formal": {
-    "namespace": "core", "audience": "parent", "qualityTier": "B", "variables": {},
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
     "description": "보호자에게 휴대폰 번호 형식을 확인하도록 정중히 안내하는 문구"
   },
   "core.error.api.invalidLoginId.child": {
-    "namespace": "core", "audience": "child", "qualityTier": "B", "variables": {},
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
     "description": "아이에게 login ID 형식을 확인하도록 직접 안내하며 신분증·성으로 번역하지 않음"
   },
   "core.error.api.invalidLoginId.formal": {
-    "namespace": "core", "audience": "parent", "qualityTier": "B", "variables": {},
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
     "description": "보호자에게 login ID 형식을 확인하도록 정중히 안내하며 신분증·성으로 번역하지 않음"
   },
   "core.error.api.loginIdTaken.child": {
-    "namespace": "core", "audience": "child", "qualityTier": "B", "variables": {},
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
     "description": "이미 사용 중인 login ID 대신 다른 ID를 고르도록 아이에게 안내"
   },
   "core.error.api.loginIdTaken.formal": {
-    "namespace": "core", "audience": "parent", "qualityTier": "B", "variables": {},
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
     "description": "이미 사용 중인 login ID 대신 다른 ID를 입력하도록 보호자에게 정중히 안내"
   },
   "core.error.api.phoneExists.child": {
-    "namespace": "core", "audience": "child", "qualityTier": "B", "variables": {},
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
     "description": "이미 가입된 전화번호이면 새 가입 대신 로그인하도록 아이에게 안내"
   },
   "core.error.api.phoneExists.formal": {
-    "namespace": "core", "audience": "parent", "qualityTier": "B", "variables": {},
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
     "description": "이미 가입된 전화번호이면 새 가입 대신 로그인하도록 보호자에게 정중히 안내"
   },
   "core.error.api.otpExpired.child": {
-    "namespace": "core", "audience": "child", "qualityTier": "B", "variables": {},
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
     "description": "만료된 OTP는 새 인증번호를 받아야 함을 아이에게 직접 안내"
   },
   "core.error.api.otpExpired.formal": {
-    "namespace": "core", "audience": "parent", "qualityTier": "B", "variables": {},
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
     "description": "만료된 OTP는 새 인증번호를 받아야 함을 보호자에게 정중히 안내"
   },
   "core.error.api.otpMismatch.child": {
-    "namespace": "core", "audience": "child", "qualityTier": "B", "variables": {},
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
     "description": "OTP 불일치 시 입력값을 다시 확인하도록 아이에게 직접 안내"
   },
   "core.error.api.otpMismatch.formal": {
-    "namespace": "core", "audience": "parent", "qualityTier": "B", "variables": {},
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
     "description": "OTP 불일치 시 입력값을 다시 확인하도록 보호자에게 정중히 안내"
   },
   "core.error.api.invalidPairCode.child": {
@@ -279,35 +315,59 @@
     "description": "core.error.api.weakPassword.formal에 표시하는 사용자 안내 문구"
   },
   "core.error.billing.canceled.child": {
-    "namespace": "core", "audience": "child", "qualityTier": "B", "variables": {},
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
     "description": "Google Play 구매를 사용자가 취소했음을 실패로 과장하지 않고 아이 말투로 안내"
   },
   "core.error.billing.canceled.formal": {
-    "namespace": "core", "audience": "parent", "qualityTier": "B", "variables": {},
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
     "description": "Google Play 구매를 사용자가 취소했음을 실패로 과장하지 않고 정중히 안내"
   },
   "core.error.billing.pending.child": {
-    "namespace": "core", "audience": "child", "qualityTier": "B", "variables": {},
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
     "description": "Google Play 결제가 승인 대기이며 승인 후 다시 확인해야 함을 아이에게 안내"
   },
   "core.error.billing.pending.formal": {
-    "namespace": "core", "audience": "parent", "qualityTier": "B", "variables": {},
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
     "description": "Google Play 결제가 승인 대기이며 승인 후 다시 확인해야 함을 보호자에게 정중히 안내"
   },
   "core.error.billing.productUnavailable.child": {
-    "namespace": "core", "audience": "child", "qualityTier": "B", "variables": {},
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
     "description": "Google Play 상품 정보를 현재 불러올 수 없어 나중에 재시도하도록 아이에게 안내"
   },
   "core.error.billing.productUnavailable.formal": {
-    "namespace": "core", "audience": "parent", "qualityTier": "B", "variables": {},
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
     "description": "Google Play 상품 정보를 현재 불러올 수 없어 나중에 재시도하도록 보호자에게 정중히 안내"
   },
   "core.error.billing.unavailable.child": {
-    "namespace": "core", "audience": "child", "qualityTier": "B", "variables": {},
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
     "description": "현재 기기에서 Google Play 결제를 사용할 수 없음을 아이에게 안내"
   },
   "core.error.billing.unavailable.formal": {
-    "namespace": "core", "audience": "parent", "qualityTier": "B", "variables": {},
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
     "description": "현재 기기에서 Google Play 결제를 사용할 수 없음을 보호자에게 정중히 안내"
   },
   "core.error.runtime.child": {
@@ -1559,5 +1619,5577 @@
       "duration": "string"
     },
     "description": "초대 코드가 만료되기까지 남은 locale 단위 시간을 방향과 함께 표시"
+  },
+  "parent.home.schedulePlace": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.home.schedulePlace에 표시하는 사용자 안내 문구"
+  },
+  "parent.home.nearPlace": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "place": "string"
+    },
+    "description": "parent.home.nearPlace에 표시하는 사용자 안내 문구"
+  },
+  "parent.settings.account": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.settings.account에 표시하는 사용자 안내 문구"
+  },
+  "parent.settings.notifications": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.settings.notifications에 표시하는 사용자 안내 문구"
+  },
+  "parent.settings.location": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.settings.location에 표시하는 사용자 안내 문구"
+  },
+  "parent.settings.dataSync": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.settings.dataSync에 표시하는 사용자 안내 문구"
+  },
+  "parent.settings.subscription": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.settings.subscription에 표시하는 사용자 안내 문구"
+  },
+  "parent.settings.children": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.settings.children에 표시하는 사용자 안내 문구"
+  },
+  "parent.settings.places": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.settings.places에 표시하는 사용자 안내 문구"
+  },
+  "parent.settings.playdates": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.settings.playdates에 표시하는 사용자 안내 문구"
+  },
+  "parent.settings.remoteAudio": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.settings.remoteAudio에 표시하는 사용자 안내 문구"
+  },
+  "parent.settings.remoteAudioAudit": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.settings.remoteAudioAudit에 표시하는 사용자 안내 문구"
+  },
+  "parent.settings.stickers": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.settings.stickers에 표시하는 사용자 안내 문구"
+  },
+  "parent.settings.aiCredits": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.settings.aiCredits에 표시하는 사용자 안내 문구"
+  },
+  "parent.settings.version": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "version": "string"
+    },
+    "description": "parent.settings.version에 표시하는 사용자 안내 문구"
+  },
+  "parent.account.id": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "accountId": "string"
+    },
+    "description": "parent.account.id에 표시하는 사용자 안내 문구"
+  },
+  "parent.home.sendStickerTo": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "childName": "string"
+    },
+    "description": "parent.home.sendStickerTo에 표시하는 사용자 안내 문구"
+  },
+  "parent.home.todayForChild": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "childName": "string"
+    },
+    "description": "parent.home.todayForChild에 표시하는 사용자 안내 문구"
+  },
+  "parent.home.sendMessageTo": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "childName": "string"
+    },
+    "description": "parent.home.sendMessageTo에 표시하는 사용자 안내 문구"
+  },
+  "parent.home.shortcut.aiSchedule": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.home.shortcut.aiSchedule에 표시하는 사용자 안내 문구"
+  },
+  "parent.home.shortcut.location": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.home.shortcut.location에 표시하는 사용자 안내 문구"
+  },
+  "parent.home.shortcut.playdate": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.home.shortcut.playdate에 표시하는 사용자 안내 문구"
+  },
+  "parent.home.shortcut.places": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.home.shortcut.places에 표시하는 사용자 안내 문구"
+  },
+  "parent.home.shortcut.remoteAudio": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.home.shortcut.remoteAudio에 표시하는 사용자 안내 문구"
+  },
+  "parent.home.shortcut.safetyReport": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.home.shortcut.safetyReport에 표시하는 사용자 안내 문구"
+  },
+  "parent.home.shortcut.subscription": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.home.shortcut.subscription에 표시하는 사용자 안내 문구"
+  },
+  "parent.home.shortcut.notifications": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.home.shortcut.notifications에 표시하는 사용자 안내 문구"
+  },
+  "parent.home.shortcut.unknown": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.home.shortcut.unknown에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy001": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy001에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy002": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy002에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy003": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy003에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy004": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy004에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy005": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy005에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy006": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy006에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy007": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy007에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy008": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy008에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy009": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy009에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy010": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy010에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy011": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy011에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy012": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy012에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy013": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy013에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy014": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy014에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy015": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy015에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy016": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy016에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy017": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy017에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy018": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy018에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy019": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy019에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy020": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy020에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy021": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy021에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy022": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy022에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy023": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy023에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy024": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy024에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy025": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy025에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy026": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy026에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy027": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy027에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy028": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy028에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy029": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy029에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy030": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy030에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy031": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy031에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy032": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy032에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy033": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy033에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy034": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy034에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy035": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy035에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy036": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy036에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy037": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy037에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy038": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy038에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy039": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy039에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy040": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy040에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy041": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy041에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy042": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy042에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy043": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy043에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy044": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy044에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy045": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy045에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy046": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy046에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy047": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy047에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy048": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy048에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy049": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy049에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy050": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy050에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy051": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy051에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy052": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy052에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy053": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy053에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy054": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy054에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy055": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy055에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy056": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy056에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy057": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy057에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy058": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy058에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy059": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy059에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentHome.copy060": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentHome.copy060에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy001": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy001에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy002": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy002에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy003": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy003에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy004": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy004에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy005": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy005에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy006": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy006에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy007": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy007에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy008": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy008에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy009": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy009에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy010": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy010에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy011": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy011에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy012": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy012에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy013": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy013에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy014": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy014에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy015": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy015에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy016": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy016에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy017": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy017에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy018": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy018에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy019": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy019에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy020": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy020에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy021": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy021에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy022": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy022에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy023": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy023에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy024": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy024에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy025": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy025에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy026": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy026에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy027": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy027에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy028": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy028에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy029": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy029에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy030": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy030에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy031": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy031에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy032": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy032에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentSettings.copy033": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentSettings.copy033에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy001": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy001에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy002": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy002에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy003": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy003에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy004": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy004에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy005": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy005에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy006": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy006에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy007": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy007에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy008": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy008에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy009": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy009에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy010": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy010에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy011": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy011에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy012": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy012에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy013": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy013에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy014": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy014에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy015": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy015에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy016": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy016에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy017": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy017에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy018": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy018에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy019": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy019에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy020": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy020에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy021": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy021에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy022": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy022에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy023": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy023에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy024": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy024에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy025": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy025에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy026": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy026에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy027": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy027에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy028": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy028에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy029": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy029에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy030": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy030에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentAccount.copy031": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentAccount.copy031에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentCalendar.copy001": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentCalendar.copy001에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentCalendar.copy002": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentCalendar.copy002에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentCalendar.copy003": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentCalendar.copy003에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentCalendar.copy004": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentCalendar.copy004에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentCalendar.copy005": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentCalendar.copy005에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentCalendar.copy006": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentCalendar.copy006에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentCalendar.copy007": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentCalendar.copy007에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentCalendar.copy008": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentCalendar.copy008에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentCalendar.copy009": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentCalendar.copy009에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentCalendar.copy010": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentCalendar.copy010에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentCalendar.copy011": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentCalendar.copy011에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentCalendar.copy012": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentCalendar.copy012에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentCalendar.copy013": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentCalendar.copy013에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentCalendar.copy014": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentCalendar.copy014에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy001": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy001에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy002": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy002에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy003": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy003에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy004": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy004에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy005": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy005에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy006": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy006에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy007": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy007에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy008": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy008에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy009": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy009에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy010": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy010에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy011": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy011에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy012": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy012에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy013": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy013에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy014": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy014에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy015": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy015에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy016": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy016에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy017": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy017에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy018": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy018에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy019": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy019에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy020": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy020에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy021": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy021에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy022": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy022에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy023": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy023에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy024": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy024에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy025": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy025에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy026": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy026에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy027": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy027에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy028": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy028에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy029": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy029에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy030": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy030에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy031": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy031에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy032": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy032에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy033": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy033에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy034": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy034에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy035": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy035에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy036": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy036에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy037": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy037에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy038": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy038에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy039": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy039에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy040": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy040에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy041": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy041에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy042": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy042에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy043": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy043에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy044": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy044에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy045": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy045에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy046": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy046에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy047": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy047에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy048": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy048에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy049": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy049에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy050": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy050에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy051": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy051에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy052": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy052에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy053": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy053에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy054": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy054에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy055": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy055에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy056": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy056에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy057": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy057에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy058": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy058에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy059": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy059에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy060": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy060에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy061": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy061에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy062": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy062에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy063": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy063에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy064": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy064에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy065": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy065에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy066": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy066에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy067": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy067에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy068": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy068에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy069": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy069에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy070": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy070에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.copy071": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.copy071에 표시하는 사용자 안내 문구"
+  },
+  "parent.category.school": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.category.school에 표시하는 사용자 안내 문구"
+  },
+  "parent.category.sports": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.category.sports에 표시하는 사용자 안내 문구"
+  },
+  "parent.category.hobby": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.category.hobby에 표시하는 사용자 안내 문구"
+  },
+  "parent.category.family": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.category.family에 표시하는 사용자 안내 문구"
+  },
+  "parent.category.friend": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.category.friend에 표시하는 사용자 안내 문구"
+  },
+  "parent.category.other": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.category.other에 표시하는 사용자 안내 문구"
+  },
+  "parent.duration.minutes30": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.duration.minutes30에 표시하는 사용자 안내 문구"
+  },
+  "parent.duration.hour1": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.duration.hour1에 표시하는 사용자 안내 문구"
+  },
+  "parent.duration.hour1Minutes30": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.duration.hour1Minutes30에 표시하는 사용자 안내 문구"
+  },
+  "parent.duration.hours2": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.duration.hours2에 표시하는 사용자 안내 문구"
+  },
+  "parent.duration.hours3": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.duration.hours3에 표시하는 사용자 안내 문구"
+  },
+  "parent.repeat.none": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.repeat.none에 표시하는 사용자 안내 문구"
+  },
+  "parent.repeat.daily": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.repeat.daily에 표시하는 사용자 안내 문구"
+  },
+  "parent.repeat.weekly": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.repeat.weekly에 표시하는 사용자 안내 문구"
+  },
+  "parent.repeat.monthly": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.repeat.monthly에 표시하는 사용자 안내 문구"
+  },
+  "parent.weekday.sun": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.weekday.sun에 표시하는 사용자 안내 문구"
+  },
+  "parent.weekday.mon": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.weekday.mon에 표시하는 사용자 안내 문구"
+  },
+  "parent.weekday.tue": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.weekday.tue에 표시하는 사용자 안내 문구"
+  },
+  "parent.weekday.wed": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.weekday.wed에 표시하는 사용자 안내 문구"
+  },
+  "parent.weekday.thu": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.weekday.thu에 표시하는 사용자 안내 문구"
+  },
+  "parent.weekday.fri": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.weekday.fri에 표시하는 사용자 안내 문구"
+  },
+  "parent.weekday.sat": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.weekday.sat에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.reminderDefault": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.reminderDefault에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.reminderNone": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.reminderNone에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.reminder10": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.reminder10에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.reminder30": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.reminder30에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.reminder60": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventForm.reminder60에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.suppliesPartiallyFailed": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "base": "string"
+    },
+    "description": "parent.eventForm.suppliesPartiallyFailed에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.suppliesLimited": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "base": "string"
+    },
+    "description": "parent.eventForm.suppliesLimited에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.suppliesAdded": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "base": "string"
+    },
+    "description": "parent.eventForm.suppliesAdded에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.seriesUpdated": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "count": "string"
+    },
+    "description": "parent.eventForm.seriesUpdated에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.eventsSaved": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "count": "string"
+    },
+    "description": "parent.eventForm.eventsSaved에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventForm.removeSupply": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "label": "string"
+    },
+    "description": "parent.eventForm.removeSupply에 표시하는 사용자 안내 문구"
+  },
+  "parent.calendar.reminderLabel": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "time": "string"
+    },
+    "description": "parent.calendar.reminderLabel에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy001": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy001에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy002": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy002에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy003": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy003에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy004": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy004에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy005": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy005에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy006": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy006에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy007": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy007에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy008": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy008에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy009": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy009에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy010": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy010에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy011": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy011에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy012": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy012에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy013": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy013에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy014": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy014에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy015": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy015에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy016": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy016에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy017": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy017에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy018": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy018에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy019": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy019에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy020": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy020에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy021": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy021에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy022": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy022에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy023": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy023에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy024": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy024에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy025": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy025에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy026": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy026에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy027": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy027에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy028": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy028에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy029": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy029에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy030": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy030에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy031": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy031에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy032": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy032에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy033": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy033에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy034": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy034에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy035": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy035에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy036": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy036에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy037": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy037에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy038": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy038에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy039": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy039에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy040": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy040에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy041": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy041에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy042": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy042에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy043": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy043에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy044": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy044에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy045": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy045에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy046": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy046에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy047": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy047에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy048": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy048에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy049": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy049에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy050": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy050에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy051": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy051에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy052": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy052에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy053": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy053에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy054": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy054에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy055": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy055에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy056": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy056에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentLocation.copy057": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentLocation.copy057에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.copy001": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.copy001에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.copy002": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.copy002에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.copy003": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.copy003에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.copy004": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.copy004에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.copy005": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.copy005에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.copy006": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.copy006에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.copy007": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.copy007에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.copy008": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.copy008에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.copy009": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.copy009에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.copy010": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.copy010에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.copy011": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.copy011에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.copy012": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.copy012에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.copy013": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.copy013에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.copy014": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.copy014에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.copy015": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.copy015에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.copy016": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.copy016에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.copy017": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.copy017에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.copy018": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.copy018에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.copy019": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.copy019에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.copy020": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.copy020에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.copy021": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.copy021에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.copy022": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.copy022에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.copy023": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.copy023에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentFamily.copy001": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentFamily.copy001에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentFamily.copy002": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentFamily.copy002에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentFamily.copy003": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentFamily.copy003에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentFamily.copy004": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentFamily.copy004에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentFamily.copy005": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentFamily.copy005에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentFamily.copy006": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentFamily.copy006에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentFamily.copy007": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentFamily.copy007에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentFamily.copy008": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentFamily.copy008에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentFamily.copy009": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentFamily.copy009에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentFamily.copy010": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentFamily.copy010에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentFamily.copy011": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentFamily.copy011에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentFamily.copy012": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentFamily.copy012에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentFamily.copy013": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentFamily.copy013에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentFamily.copy014": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentFamily.copy014에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentFamily.copy015": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentFamily.copy015에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentFamily.copy016": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentFamily.copy016에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentFamily.copy017": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentFamily.copy017에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentFamily.copy018": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentFamily.copy018에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentFamily.copy019": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentFamily.copy019에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentFamily.copy020": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentFamily.copy020에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentFamily.copy021": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentFamily.copy021에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentFamily.copy022": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentFamily.copy022에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentFamily.copy023": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentFamily.copy023에 표시하는 사용자 안내 문구"
+  },
+  "parent.parentFamily.copy024": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.parentFamily.copy024에 표시하는 사용자 안내 문구"
+  },
+  "parent.ordinal.first": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.ordinal.first에 표시하는 사용자 안내 문구"
+  },
+  "parent.ordinal.second": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.ordinal.second에 표시하는 사용자 안내 문구"
+  },
+  "parent.ordinal.third": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.ordinal.third에 표시하는 사용자 안내 문구"
+  },
+  "parent.ordinal.fourth": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.ordinal.fourth에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.liveLocation": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.liveLocation에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.calendar": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.calendar에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.chat": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.chat에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.sticker": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.childDetail.sticker에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.safeAtPlace": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "place": "string"
+    },
+    "description": "parent.childDetail.safeAtPlace에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.placeFreshness": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "place": "string",
+      "freshness": "string"
+    },
+    "description": "parent.childDetail.placeFreshness에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.locationFreshness": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "freshness": "string"
+    },
+    "description": "parent.childDetail.locationFreshness에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.removedFromFamily": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "name": "string"
+    },
+    "description": "parent.childDetail.removedFromFamily에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.ordinalChild": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "ordinal": "string"
+    },
+    "description": "parent.childDetail.ordinalChild에 표시하는 사용자 안내 문구"
+  },
+  "parent.childDetail.eventCount": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "count": "string"
+    },
+    "description": "parent.childDetail.eventCount에 표시하는 사용자 안내 문구"
+  },
+  "parent.location.scopeFailedForChild": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "childName": "string"
+    },
+    "description": "parent.location.scopeFailedForChild에 표시하는 사용자 안내 문구"
+  },
+  "parent.location.scopeLoadingForChild": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "childName": "string"
+    },
+    "description": "parent.location.scopeLoadingForChild에 표시하는 사용자 안내 문구"
+  },
+  "parent.location.refreshingForChild": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "childName": "string"
+    },
+    "description": "parent.location.refreshingForChild에 표시하는 사용자 안내 문구"
+  },
+  "parent.location.lastSeenAt": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "childName": "string",
+      "place": "string"
+    },
+    "description": "parent.location.lastSeenAt에 표시하는 사용자 안내 문구"
+  },
+  "parent.location.childAtPlace": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "childName": "string",
+      "place": "string"
+    },
+    "description": "parent.location.childAtPlace에 표시하는 사용자 안내 문구"
+  },
+  "parent.location.lowAccuracy": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "accuracy": "string",
+      "freshness": "string"
+    },
+    "description": "parent.location.lowAccuracy에 표시하는 사용자 안내 문구"
+  },
+  "parent.location.freshnessAccuracy": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "freshness": "string",
+      "accuracy": "string"
+    },
+    "description": "parent.location.freshnessAccuracy에 표시하는 사용자 안내 문구"
+  },
+  "parent.location.requestSent": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.location.requestSent에 표시하는 사용자 안내 문구"
+  },
+  "parent.location.noPhone": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "childName": "string"
+    },
+    "description": "parent.location.noPhone에 표시하는 사용자 안내 문구"
+  },
+  "parent.location.calling": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "childName": "string"
+    },
+    "description": "parent.location.calling에 표시하는 사용자 안내 문구"
+  },
+  "parent.location.historyLoading": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "day": "string"
+    },
+    "description": "parent.location.historyLoading에 표시하는 사용자 안내 문구"
+  },
+  "parent.location.historyEmpty": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "day": "string"
+    },
+    "description": "parent.location.historyEmpty에 표시하는 사용자 안내 문구"
+  },
+  "parent.location.routeTimeSelect": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "day": "string"
+    },
+    "description": "parent.location.routeTimeSelect에 표시하는 사용자 안내 문구"
+  },
+  "parent.location.currentChildLocation": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "childName": "string"
+    },
+    "description": "parent.location.currentChildLocation에 표시하는 사용자 안내 문구"
+  },
+  "parent.location.expandStays": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "day": "string"
+    },
+    "description": "parent.location.expandStays에 표시하는 사용자 안내 문구"
+  },
+  "parent.location.collapseStays": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "day": "string"
+    },
+    "description": "parent.location.collapseStays에 표시하는 사용자 안내 문구"
+  },
+  "parent.location.returnIntentFailed": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.location.returnIntentFailed에 표시하는 사용자 안내 문구"
+  },
+  "parent.family.copyUnsupported": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "code": "string"
+    },
+    "description": "parent.family.copyUnsupported에 표시하는 사용자 안내 문구"
+  },
+  "parent.family.copyFailed": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "code": "string"
+    },
+    "description": "parent.family.copyFailed에 표시하는 사용자 안내 문구"
+  },
+  "parent.family.returnIntentFailed": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.family.returnIntentFailed에 표시하는 사용자 안내 문구"
+  },
+  "parent.location.departure": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.location.departure에 표시하는 사용자 안내 문구"
+  },
+  "parent.socialLinks.copy001": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.socialLinks.copy001에 표시하는 사용자 안내 문구"
+  },
+  "parent.socialLinks.copy002": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.socialLinks.copy002에 표시하는 사용자 안내 문구"
+  },
+  "parent.socialLinks.copy003": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.socialLinks.copy003에 표시하는 사용자 안내 문구"
+  },
+  "parent.socialLinks.copy004": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.socialLinks.copy004에 표시하는 사용자 안내 문구"
+  },
+  "parent.socialLinks.copy005": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.socialLinks.copy005에 표시하는 사용자 안내 문구"
+  },
+  "parent.socialLinks.copy006": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.socialLinks.copy006에 표시하는 사용자 안내 문구"
+  },
+  "parent.socialLinks.copy007": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.socialLinks.copy007에 표시하는 사용자 안내 문구"
+  },
+  "parent.socialLinks.copy008": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.socialLinks.copy008에 표시하는 사용자 안내 문구"
+  },
+  "parent.socialLinks.copy009": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.socialLinks.copy009에 표시하는 사용자 안내 문구"
+  },
+  "parent.socialLinks.copy010": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.socialLinks.copy010에 표시하는 사용자 안내 문구"
+  },
+  "parent.socialLinks.copy011": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.socialLinks.copy011에 표시하는 사용자 안내 문구"
+  },
+  "parent.socialLinks.copy012": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.socialLinks.copy012에 표시하는 사용자 안내 문구"
+  },
+  "parent.socialLinks.copy013": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.socialLinks.copy013에 표시하는 사용자 안내 문구"
+  },
+  "parent.socialLinks.copy014": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.socialLinks.copy014에 표시하는 사용자 안내 문구"
+  },
+  "parent.socialLinks.copy015": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.socialLinks.copy015에 표시하는 사용자 안내 문구"
+  },
+  "parent.socialLinks.copy016": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.socialLinks.copy016에 표시하는 사용자 안내 문구"
+  },
+  "parent.socialLinks.copy017": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.socialLinks.copy017에 표시하는 사용자 안내 문구"
+  },
+  "parent.socialLinks.copy018": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.socialLinks.copy018에 표시하는 사용자 안내 문구"
+  },
+  "parent.socialLinks.copy019": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.socialLinks.copy019에 표시하는 사용자 안내 문구"
+  },
+  "parent.socialLinks.copy020": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.socialLinks.copy020에 표시하는 사용자 안내 문구"
+  },
+  "parent.socialLinks.copy021": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.socialLinks.copy021에 표시하는 사용자 안내 문구"
+  },
+  "parent.social.alreadyLinked": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "provider": "string"
+    },
+    "description": "parent.social.alreadyLinked에 표시하는 사용자 안내 문구"
+  },
+  "parent.social.linked": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "provider": "string"
+    },
+    "description": "parent.social.linked에 표시하는 사용자 안내 문구"
+  },
+  "parent.social.unlinked": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "provider": "string"
+    },
+    "description": "parent.social.unlinked에 표시하는 사용자 안내 문구"
+  },
+  "parent.mapPickerSheet.copy001": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.mapPickerSheet.copy001에 표시하는 사용자 안내 문구"
+  },
+  "parent.mapPickerSheet.copy002": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.mapPickerSheet.copy002에 표시하는 사용자 안내 문구"
+  },
+  "parent.mapPickerSheet.copy003": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.mapPickerSheet.copy003에 표시하는 사용자 안내 문구"
+  },
+  "parent.premiumUpsell.copy001": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.premiumUpsell.copy001에 표시하는 사용자 안내 문구"
+  },
+  "parent.premiumUpsell.copy002": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.premiumUpsell.copy002에 표시하는 사용자 안내 문구"
+  },
+  "parent.premiumUpsell.copy003": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.premiumUpsell.copy003에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy001": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy001에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy002": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy002에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy003": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy003에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy004": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy004에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy005": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy005에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy006": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy006에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy007": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy007에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy008": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy008에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy009": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy009에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy010": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy010에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy011": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy011에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy012": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy012에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy013": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy013에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy014": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy014에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy015": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy015에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy016": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy016에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy017": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy017에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy018": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy018에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy019": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy019에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy020": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy020에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy021": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy021에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy022": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy022에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy023": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy023에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy024": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy024에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy025": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy025에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy026": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy026에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy027": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy027에 표시하는 사용자 안내 문구"
+  },
+  "parent.referralRewardPanel.copy028": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.referralRewardPanel.copy028에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy001": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy001에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy002": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy002에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy003": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy003에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy004": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy004에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy005": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy005에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy006": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy006에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy007": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy007에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy008": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy008에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy009": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy009에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy010": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy010에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy011": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy011에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy012": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy012에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy013": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy013에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy014": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy014에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy015": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy015에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy016": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy016에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy017": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy017에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy018": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy018에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy019": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy019에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy020": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy020에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy021": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy021에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy022": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy022에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy023": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy023에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy024": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy024에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy025": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy025에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy026": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy026에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy027": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy027에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy028": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy028에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy029": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy029에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy030": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy030에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy031": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy031에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy032": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy032에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy033": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy033에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy034": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy034에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy035": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy035에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy036": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy036에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy037": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy037에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy038": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy038에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy039": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy039에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy040": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy040에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy041": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy041에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy042": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy042에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy043": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy043에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy044": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy044에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy045": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy045에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy046": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy046에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy047": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy047에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy048": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy048에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy049": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy049에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy050": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy050에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy051": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy051에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy052": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy052에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy053": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy053에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy054": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy054에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy055": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy055에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy056": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy056에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy057": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy057에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy058": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy058에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy059": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy059에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy060": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy060에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy061": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy061에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy062": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy062에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy063": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy063에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy064": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy064에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy065": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy065에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy066": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy066에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy067": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy067에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy068": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy068에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy069": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy069에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy070": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy070에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy071": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy071에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy072": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy072에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy073": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy073에 표시하는 사용자 안내 문구"
+  },
+  "shared.memoChat.copy074": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memoChat.copy074에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.report.harassment.formal": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.report.harassment.formal에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.report.sexualOrViolent.formal": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.report.sexualOrViolent.formal에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.report.personalInfo.formal": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.report.personalInfo.formal에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.report.illegalOrDangerous.formal": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.report.illegalOrDangerous.formal에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.report.other.formal": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.report.other.formal에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.report.harassment.child": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.report.harassment.child에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.report.sexualOrViolent.child": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.report.sexualOrViolent.child에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.report.personalInfo.child": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.report.personalInfo.child에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.report.illegalOrDangerous.child": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.report.illegalOrDangerous.child에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.report.other.child": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.report.other.child에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.photo.retry": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.photo.retry에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.photo.open": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.photo.open에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.photo.alt": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.photo.alt에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.photo.error.child": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.photo.error.child에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.photo.error.formal": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.photo.error.formal에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.photo.loading": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.photo.loading에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.latestActivity": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {
+      "time": "string"
+    },
+    "description": "shared.memo.latestActivity에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.unblocked.child": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {
+      "name": "string"
+    },
+    "description": "shared.memo.unblocked.child에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.unblocked.formal": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {
+      "name": "string"
+    },
+    "description": "shared.memo.unblocked.formal에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.blockTitle.child": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {
+      "name": "string"
+    },
+    "description": "shared.memo.blockTitle.child에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.blockTitle.formal": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {
+      "name": "string"
+    },
+    "description": "shared.memo.blockTitle.formal에 표시하는 사용자 안내 문구"
+  },
+  "shared.kakaoMap.copy001": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.kakaoMap.copy001에 표시하는 사용자 안내 문구"
+  },
+  "shared.kakaoMap.copy002": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.kakaoMap.copy002에 표시하는 사용자 안내 문구"
+  },
+  "shared.kakaoMap.copy003": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.kakaoMap.copy003에 표시하는 사용자 안내 문구"
+  },
+  "shared.kakaoMap.copy004": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.kakaoMap.copy004에 표시하는 사용자 안내 문구"
+  },
+  "shared.kakaoMap.copy005": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.kakaoMap.copy005에 표시하는 사용자 안내 문구"
+  },
+  "shared.messageSafetyDialog.copy001": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.messageSafetyDialog.copy001에 표시하는 사용자 안내 문구"
+  },
+  "shared.messageSafetyDialog.copy002": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.messageSafetyDialog.copy002에 표시하는 사용자 안내 문구"
+  },
+  "shared.messageSafetyDialog.copy003": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.messageSafetyDialog.copy003에 표시하는 사용자 안내 문구"
+  },
+  "shared.messageSafetyDialog.copy004": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.messageSafetyDialog.copy004에 표시하는 사용자 안내 문구"
+  },
+  "shared.messageSafetyDialog.copy005": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.messageSafetyDialog.copy005에 표시하는 사용자 안내 문구"
+  },
+  "shared.messageSafetyDialog.copy006": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.messageSafetyDialog.copy006에 표시하는 사용자 안내 문구"
+  },
+  "shared.messageSafetyDialog.copy007": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.messageSafetyDialog.copy007에 표시하는 사용자 안내 문구"
+  },
+  "shared.messageSafetyDialog.copy008": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.messageSafetyDialog.copy008에 표시하는 사용자 안내 문구"
+  },
+  "shared.messageSafetyDialog.copy009": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.messageSafetyDialog.copy009에 표시하는 사용자 안내 문구"
+  },
+  "shared.messageSafetyDialog.copy010": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.messageSafetyDialog.copy010에 표시하는 사용자 안내 문구"
+  },
+  "shared.messageSafetyDialog.copy011": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.messageSafetyDialog.copy011에 표시하는 사용자 안내 문구"
+  },
+  "shared.messageSafetyDialog.copy012": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.messageSafetyDialog.copy012에 표시하는 사용자 안내 문구"
+  },
+  "shared.messageSafetyDialog.copy013": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.messageSafetyDialog.copy013에 표시하는 사용자 안내 문구"
+  },
+  "shared.messageSafetyDialog.copy014": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.messageSafetyDialog.copy014에 표시하는 사용자 안내 문구"
+  },
+  "shared.messageSafetyDialog.copy015": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.messageSafetyDialog.copy015에 표시하는 사용자 안내 문구"
+  },
+  "shared.messageSafetyDialog.copy016": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.messageSafetyDialog.copy016에 표시하는 사용자 안내 문구"
+  },
+  "shared.messageSafetyDialog.copy017": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.messageSafetyDialog.copy017에 표시하는 사용자 안내 문구"
+  },
+  "shared.messageSafetyDialog.copy018": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.messageSafetyDialog.copy018에 표시하는 사용자 안내 문구"
+  },
+  "shared.messageSafetyDialog.copy019": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.messageSafetyDialog.copy019에 표시하는 사용자 안내 문구"
+  },
+  "shared.messageSafetyDialog.copy020": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.messageSafetyDialog.copy020에 표시하는 사용자 안내 문구"
+  },
+  "shared.messageSafetyDialog.copy021": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.messageSafetyDialog.copy021에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.copy.noConversation.formal": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.copy.noConversation.formal에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.copy.loading.formal": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.copy.loading.formal에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.copy.loadError.formal": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.copy.loadError.formal에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.copy.empty.formal": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.copy.empty.formal에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.copy.inputPlaceholder.formal": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.copy.inputPlaceholder.formal에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.copy.emptyDraft.formal": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.copy.emptyDraft.formal에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.copy.sendFailed.formal": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.copy.sendFailed.formal에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.copy.imageFailed.formal": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.copy.imageFailed.formal에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.copy.imageLoadFailed.formal": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.copy.imageLoadFailed.formal에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.copy.locationFailed.formal": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.copy.locationFailed.formal에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.copy.locationUnavailable.formal": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.copy.locationUnavailable.formal에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.copy.noConversation.child": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.copy.noConversation.child에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.copy.loading.child": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.copy.loading.child에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.copy.loadError.child": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.copy.loadError.child에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.copy.empty.child": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.copy.empty.child에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.copy.inputPlaceholder.child": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.copy.inputPlaceholder.child에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.copy.emptyDraft.child": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.copy.emptyDraft.child에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.copy.sendFailed.child": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.copy.sendFailed.child에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.copy.imageFailed.child": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.copy.imageFailed.child에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.copy.imageLoadFailed.child": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.copy.imageLoadFailed.child에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.copy.locationFailed.child": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.copy.locationFailed.child에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.copy.locationUnavailable.child": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.copy.locationUnavailable.child에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.quick.parent.1": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.quick.parent.1에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.quick.parent.2": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.quick.parent.2에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.quick.parent.3": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.quick.parent.3에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.quick.parent.4": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.quick.parent.4에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.quick.parent.5": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.quick.parent.5에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.quick.child.1": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.quick.child.1에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.quick.child.2": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.quick.child.2에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.quick.child.3": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.quick.child.3에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.quick.child.4": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.quick.child.4에 표시하는 사용자 안내 문구"
+  },
+  "shared.memo.quick.child.5": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.memo.quick.child.5에 표시하는 사용자 안내 문구"
+  },
+  "notifications.status.loading": {
+    "namespace": "notifications",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "notifications.status.loading에 표시하는 사용자 안내 문구"
+  },
+  "parent.location.noInformation": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.location.noInformation에 표시하는 사용자 안내 문구"
+  },
+  "parent.location.justUpdated": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.location.justUpdated에 표시하는 사용자 안내 문구"
+  },
+  "parent.location.addressLoading": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.location.addressLoading에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventScope.family": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventScope.family에 표시하는 사용자 안내 문구"
+  },
+  "parent.eventScope.assignmentRequired": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.eventScope.assignmentRequired에 표시하는 사용자 안내 문구"
+  },
+  "parent.tier.premium": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.tier.premium에 표시하는 사용자 안내 문구"
+  },
+  "parent.tier.checking": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.tier.checking에 표시하는 사용자 안내 문구"
+  },
+  "parent.tier.free": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.tier.free에 표시하는 사용자 안내 문구"
+  },
+  "parent.tier.lock.multiChild": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.tier.lock.multiChild에 표시하는 사용자 안내 문구"
+  },
+  "parent.tier.lock.realtimeLocation": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.tier.lock.realtimeLocation에 표시하는 사용자 안내 문구"
+  },
+  "parent.tier.lock.remoteAudio": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.tier.lock.remoteAudio에 표시하는 사용자 안내 문구"
+  },
+  "parent.tier.lock.aiAnalysis": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.tier.lock.aiAnalysis에 표시하는 사용자 안내 문구"
+  },
+  "parent.tier.lock.weeklyReport": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.tier.lock.weeklyReport에 표시하는 사용자 안내 문구"
+  },
+  "parent.tier.lock.default": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.tier.lock.default에 표시하는 사용자 안내 문구"
+  },
+  "parent.family.role.mom": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.family.role.mom에 표시하는 사용자 안내 문구"
+  },
+  "parent.family.role.dad": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.family.role.dad에 표시하는 사용자 안내 문구"
+  },
+  "parent.family.role.parent": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.family.role.parent에 표시하는 사용자 안내 문구"
+  },
+  "parent.family.child": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.family.child에 표시하는 사용자 안내 문구"
+  },
+  "parent.device.hoursMinutes": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "hours": "string",
+      "minutes": "string"
+    },
+    "description": "parent.device.hoursMinutes에 표시하는 사용자 안내 문구"
+  },
+  "parent.device.minutes": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "minutes": "string"
+    },
+    "description": "parent.device.minutes에 표시하는 사용자 안내 문구"
+  },
+  "parent.device.connected": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.device.connected에 표시하는 사용자 안내 문구"
+  },
+  "parent.device.unlockZero": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.device.unlockZero에 표시하는 사용자 안내 문구"
+  },
+  "parent.device.waiting": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.device.waiting에 표시하는 사용자 안내 문구"
+  },
+  "parent.device.offline": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.device.offline에 표시하는 사용자 안내 문구"
+  },
+  "parent.device.noReportTime": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.device.noReportTime에 표시하는 사용자 안내 문구"
+  },
+  "parent.locationTrust.restricted": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.locationTrust.restricted에 표시하는 사용자 안내 문구"
+  },
+  "parent.locationTrust.hidden": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.locationTrust.hidden에 표시하는 사용자 안내 문구"
+  },
+  "parent.locationTrust.scopeFailed": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.locationTrust.scopeFailed에 표시하는 사용자 안내 문구"
+  },
+  "parent.locationTrust.refresh": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.locationTrust.refresh에 표시하는 사용자 안내 문구"
+  },
+  "parent.locationTrust.scopeLoading": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.locationTrust.scopeLoading에 표시하는 사용자 안내 문구"
+  },
+  "parent.locationTrust.subscriptionLoading": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.locationTrust.subscriptionLoading에 표시하는 사용자 안내 문구"
+  },
+  "parent.locationTrust.lastLocation": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.locationTrust.lastLocation에 표시하는 사용자 안내 문구"
+  },
+  "parent.locationTrust.updated": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "freshness": "string"
+    },
+    "description": "parent.locationTrust.updated에 표시하는 사용자 안내 문구"
+  },
+  "parent.locationTrust.loading": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.locationTrust.loading에 표시하는 사용자 안내 문구"
+  },
+  "parent.locationTrust.loadingDetail": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.locationTrust.loadingDetail에 표시하는 사용자 안내 문구"
+  },
+  "parent.locationTrust.failed": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.locationTrust.failed에 표시하는 사용자 안내 문구"
+  },
+  "parent.locationTrust.failedDetail": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.locationTrust.failedDetail에 표시하는 사용자 안내 문구"
+  },
+  "parent.locationTrust.waiting": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.locationTrust.waiting에 표시하는 사용자 안내 문구"
+  },
+  "parent.locationTrust.waitingDetail": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.locationTrust.waitingDetail에 표시하는 사용자 안내 문구"
+  },
+  "parent.locationTrust.recent": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.locationTrust.recent에 표시하는 사용자 안내 문구"
+  },
+  "parent.locationTrust.standardFailed": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "freshness": "string"
+    },
+    "description": "parent.locationTrust.standardFailed에 표시하는 사용자 안내 문구"
+  },
+  "parent.locationTrust.standard": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "freshness": "string"
+    },
+    "description": "parent.locationTrust.standard에 표시하는 사용자 안내 문구"
+  },
+  "parent.locationTrust.latestFailed": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "freshness": "string"
+    },
+    "description": "parent.locationTrust.latestFailed에 표시하는 사용자 안내 문구"
+  },
+  "parent.locationTrust.current": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.locationTrust.current에 표시하는 사용자 안내 문구"
+  },
+  "parent.locationTrust.justUpdated": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.locationTrust.justUpdated에 표시하는 사용자 안내 문구"
+  },
+  "parent.schedule.allDay": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.schedule.allDay에 표시하는 사용자 안내 문구"
+  },
+  "parent.schedule.event": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.schedule.event에 표시하는 사용자 안내 문구"
+  },
+  "parent.schedule.tag.upcoming": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.schedule.tag.upcoming에 표시하는 사용자 안내 문구"
+  },
+  "parent.schedule.tag.ongoing": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.schedule.tag.ongoing에 표시하는 사용자 안내 문구"
+  },
+  "parent.schedule.tag.visited": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.schedule.tag.visited에 표시하는 사용자 안내 문구"
+  },
+  "parent.schedule.tag.verify": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.schedule.tag.verify에 표시하는 사용자 안내 문구"
+  },
+  "parent.place.taekwondo": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.place.taekwondo에 표시하는 사용자 안내 문구"
+  },
+  "parent.place.piano": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.place.piano에 표시하는 사용자 안내 문구"
+  },
+  "parent.place.swim": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.place.swim에 표시하는 사용자 안내 문구"
+  },
+  "parent.place.soccer": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.place.soccer에 표시하는 사용자 안내 문구"
+  },
+  "parent.place.art": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.place.art에 표시하는 사용자 안내 문구"
+  },
+  "parent.place.music": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.place.music에 표시하는 사용자 안내 문구"
+  },
+  "parent.place.school": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.place.school에 표시하는 사용자 안내 문구"
+  },
+  "parent.place.study": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.place.study에 표시하는 사용자 안내 문구"
+  },
+  "parent.place.sports": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.place.sports에 표시하는 사용자 안내 문구"
+  },
+  "parent.place.play": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.place.play에 표시하는 사용자 안내 문구"
+  },
+  "parent.place.family": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.place.family에 표시하는 사용자 안내 문구"
+  },
+  "parent.place.hobby": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.place.hobby에 표시하는 사용자 안내 문구"
+  },
+  "parent.place.church": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.place.church에 표시하는 사용자 안내 문구"
+  },
+  "parent.place.apartment": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.place.apartment에 표시하는 사용자 안내 문구"
+  },
+  "parent.place.park": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.place.park에 표시하는 사용자 안내 문구"
+  },
+  "parent.place.mart": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.place.mart에 표시하는 사용자 안내 문구"
+  },
+  "parent.place.hospital": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.place.hospital에 표시하는 사용자 안내 문구"
+  },
+  "parent.place.library": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.place.library에 표시하는 사용자 안내 문구"
+  },
+  "parent.place.home": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.place.home에 표시하는 사용자 안내 문구"
+  },
+  "parent.place.frequent": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.place.frequent에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.second_child.title": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.second_child.title에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.second_child.description": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.second_child.description에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.second_child.premiumValue": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.second_child.premiumValue에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.second_child.usageLabel": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.second_child.usageLabel에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.second_child.ctaLabel": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.second_child.ctaLabel에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.saved_place.title": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.saved_place.title에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.saved_place.description": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.saved_place.description에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.saved_place.premiumValue": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.saved_place.premiumValue에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.saved_place.usageLabel": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.saved_place.usageLabel에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.saved_place.ctaLabel": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.saved_place.ctaLabel에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.danger_zone.title": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.danger_zone.title에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.danger_zone.description": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.danger_zone.description에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.danger_zone.premiumValue": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.danger_zone.premiumValue에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.danger_zone.usageLabel": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.danger_zone.usageLabel에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.danger_zone.ctaLabel": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.danger_zone.ctaLabel에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.location_request.title": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.location_request.title에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.location_request.description": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.location_request.description에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.location_request.premiumValue": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.location_request.premiumValue에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.location_request.usageLabel": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.location_request.usageLabel에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.location_request.ctaLabel": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.location_request.ctaLabel에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.location_history.title": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.location_history.title에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.location_history.description": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.location_history.description에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.location_history.premiumValue": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.location_history.premiumValue에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.location_history.ctaLabel": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.location_history.ctaLabel에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.location_live_interval.title": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.location_live_interval.title에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.location_live_interval.description": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.location_live_interval.description에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.location_live_interval.premiumValue": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.location_live_interval.premiumValue에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.location_live_interval.ctaLabel": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.location_live_interval.ctaLabel에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.remote_ring.title": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.remote_ring.title에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.remote_ring.description": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.remote_ring.description에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.remote_ring.premiumValue": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.remote_ring.premiumValue에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.remote_ring.usageLabel": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.remote_ring.usageLabel에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.remote_ring.ctaLabel": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.remote_ring.ctaLabel에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.remote_audio.title": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.remote_audio.title에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.remote_audio.description": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.remote_audio.description에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.remote_audio.premiumValue": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.remote_audio.premiumValue에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.remote_audio.ctaLabel": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.remote_audio.ctaLabel에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.ai_friend_limit.title": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.ai_friend_limit.title에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.ai_friend_limit.description": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.ai_friend_limit.description에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.ai_friend_limit.premiumValue": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.ai_friend_limit.premiumValue에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.ai_friend_limit.usageLabel": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.ai_friend_limit.usageLabel에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.ai_friend_limit.ctaLabel": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.ai_friend_limit.ctaLabel에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.ai_schedule_limit.title": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.ai_schedule_limit.title에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.ai_schedule_limit.description": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.ai_schedule_limit.description에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.ai_schedule_limit.premiumValue": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.ai_schedule_limit.premiumValue에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.ai_schedule_limit.usageLabel": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.ai_schedule_limit.usageLabel에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.ai_schedule_limit.ctaLabel": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.ai_schedule_limit.ctaLabel에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.ai_daily_summary.title": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.ai_daily_summary.title에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.ai_daily_summary.description": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.ai_daily_summary.description에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.ai_daily_summary.premiumValue": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.ai_daily_summary.premiumValue에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.ai_daily_summary.ctaLabel": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.ai_daily_summary.ctaLabel에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.weekly_report.title": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.weekly_report.title에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.weekly_report.description": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.weekly_report.description에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.weekly_report.premiumValue": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.weekly_report.premiumValue에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.weekly_report.ctaLabel": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.weekly_report.ctaLabel에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.academy_schedule.title": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.academy_schedule.title에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.academy_schedule.description": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "limit": "string"
+    },
+    "description": "parent.upsell.academy_schedule.description에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.academy_schedule.premiumValue": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.academy_schedule.premiumValue에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.academy_schedule.ctaLabel": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.academy_schedule.ctaLabel에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.first_location.title": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.first_location.title에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.first_location.description": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.first_location.description에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.first_location.premiumValue": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.first_location.premiumValue에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.first_location.ctaLabel": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.first_location.ctaLabel에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.first_arrival.title": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.first_arrival.title에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.first_arrival.description": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.first_arrival.description에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.first_arrival.premiumValue": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.first_arrival.premiumValue에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.first_arrival.ctaLabel": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.first_arrival.ctaLabel에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.continue": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "parent.upsell.continue에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.saved_place.dynamicTitle": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "limit": "string"
+    },
+    "description": "parent.upsell.saved_place.dynamicTitle에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.saved_place.dynamicDescription": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "limit": "string"
+    },
+    "description": "parent.upsell.saved_place.dynamicDescription에 표시하는 사용자 안내 문구"
+  },
+  "parent.upsell.dynamicUsage": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "used": "string",
+      "limit": "string"
+    },
+    "description": "parent.upsell.dynamicUsage에 표시하는 사용자 안내 문구"
+  },
+  "shared.adventure.complete": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "shared.adventure.complete에 표시하는 사용자 안내 문구"
+  },
+  "shared.adventure.next.final": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {
+      "title": "string"
+    },
+    "description": "shared.adventure.next.final에 표시하는 사용자 안내 문구"
+  },
+  "shared.adventure.next.vowel": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {
+      "title": "string"
+    },
+    "description": "shared.adventure.next.vowel에 표시하는 사용자 안내 문구"
+  },
+  "shared.adventure.now": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {
+      "title": "string"
+    },
+    "description": "shared.adventure.now에 표시하는 사용자 안내 문구"
+  },
+  "shared.adventure.soon.final": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {
+      "relativeTime": "string",
+      "title": "string"
+    },
+    "description": "shared.adventure.soon.final에 표시하는 사용자 안내 문구"
+  },
+  "shared.adventure.soon.vowel": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {
+      "relativeTime": "string",
+      "title": "string"
+    },
+    "description": "shared.adventure.soon.vowel에 표시하는 사용자 안내 문구"
+  },
+  "shared.adventure.later.final": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {
+      "time": "string",
+      "title": "string"
+    },
+    "description": "shared.adventure.later.final에 표시하는 사용자 안내 문구"
+  },
+  "shared.adventure.later.vowel": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {
+      "time": "string",
+      "title": "string"
+    },
+    "description": "shared.adventure.later.vowel에 표시하는 사용자 안내 문구"
+  },
+  "notifications.time.justNow": {
+    "namespace": "notifications",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "notifications.time.justNow에 표시하는 사용자 안내 문구"
+  },
+  "notifications.group.today": {
+    "namespace": "notifications",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "notifications.group.today에 표시하는 사용자 안내 문구"
+  },
+  "notifications.group.yesterday": {
+    "namespace": "notifications",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "notifications.group.yesterday에 표시하는 사용자 안내 문구"
+  },
+  "notifications.group.earlier": {
+    "namespace": "notifications",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "notifications.group.earlier에 표시하는 사용자 안내 문구"
+  },
+  "notifications.fallback.title": {
+    "namespace": "notifications",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "notifications.fallback.title에 표시하는 사용자 안내 문구"
   }
 }

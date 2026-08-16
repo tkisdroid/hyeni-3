@@ -8,6 +8,7 @@ const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const source = readFileSync(resolve(rootDir, "src/screens/feature/Subscription.tsx"), "utf8");
 const locationSource = readFileSync(resolve(rootDir, "src/screens/parent/ParentLocation.tsx"), "utf8");
 const trialLockSource = readFileSync(resolve(rootDir, "src/screens/feature/TrialLock.tsx"), "utf8");
+const koParent = JSON.parse(readFileSync(resolve(rootDir, "locales/ko/parent.json"), "utf8"));
 
 test("구독 화면은 SOS와 긴급 안전 알림을 무료 안전 기능으로 안내한다", () => {
   assert.doesNotMatch(source, /SOS 긴급 알림 우선 전송/);
@@ -92,8 +93,10 @@ test("연간 구독은 확정 출시가의 월 환산 3,250원을 함께 보여�
 
 test("무료 위치 안내는 약 10분 최근 위치와 오늘 경로를 숨긴다고 잘못 말하지 않는다", () => {
   assert.doesNotMatch(locationSource, /무료 플랜에서는 아이 위치를 볼 수 없어요/);
-  assert.match(locationSource, /무료 플랜은 약 10분 간격으로 최근 위치와 오늘 경로/);
-  assert.match(locationSource, /프리미엄은 지금 위치와 최근 30일 이동 기록/);
+  assert.match(locationSource, /parent\.parentLocation\.copy029/);
+  assert.match(locationSource, /parent\.parentLocation\.copy030/);
+  assert.match(koParent["parent.parentLocation.copy029"], /무료 플랜은 약 10분 간격으로 최근 위치와 오늘 경로/);
+  assert.match(koParent["parent.parentLocation.copy030"], /프리미엄은 지금 위치와 최근 30일 이동 기록/);
   assert.doesNotMatch(trialLockSource, /실시간 위치·이동 경로·AI 상세 기능/);
   assert.match(trialLockSource, /실시간 위치·30일 이동 기록·AI 상세 기능/);
 });

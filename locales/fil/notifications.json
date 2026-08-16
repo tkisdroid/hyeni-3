@@ -1,1 +1,8 @@
-{}
+{
+  "notifications.status.loading": "Sinusuri ang status ng notification",
+  "notifications.time.justNow": "Ngayon lang",
+  "notifications.group.today": "Ngayon",
+  "notifications.group.yesterday": "Kahapon",
+  "notifications.group.earlier": "Mas maaga",
+  "notifications.fallback.title": "Notification"
+}

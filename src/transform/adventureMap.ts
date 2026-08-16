@@ -9,6 +9,8 @@
  */
 import type { SupportedLocale } from "../i18n/locale.ts";
 import { formatDateTime, formatRelativeMinutes } from "../i18n/format.ts";
+import type { IntlShape } from "react-intl";
+import { withDefaultIntl } from "../i18n/defaultIntl.ts";
 
 export interface AdventureEventInput {
   id: string;
@@ -104,16 +106,17 @@ function bubbleFor(
   next: AdventureEventInput | null,
   nowMinutes: number,
   locale: SupportedLocale,
+  intl: IntlShape,
 ): string {
-  if (!next) return "오늘 일정 다 끝났어! 푹 쉬어도 돼 🎈";
-  const josa = hasJongseong(next.title) ? "이야" : "야";
-  if (next.startMinutes == null) return `다음은 ${next.title}${josa}! 나랑 같이 가자 🎒`;
+  if (!next) return intl.formatMessage({ id: "shared.adventure.complete" });
+  const final = hasJongseong(next.title);
+  if (next.startMinutes == null) return intl.formatMessage({ id: final ? "shared.adventure.next.final" : "shared.adventure.next.vowel" }, { title: next.title });
   const left = next.startMinutes - nowMinutes;
-  if (left <= 0) return `지금 ${next.title} 갈 시간이야! 🏃`;
+  if (left <= 0) return intl.formatMessage({ id: "shared.adventure.now" }, { title: next.title });
   if (left <= 120) {
-    return `${formatRelativeMinutes(left, "future", locale)} ${next.title}${josa}!\n나랑 같이 가자 🎒`;
+    return intl.formatMessage({ id: final ? "shared.adventure.soon.final" : "shared.adventure.soon.vowel" }, { relativeTime: formatRelativeMinutes(left, "future", locale), title: next.title });
   }
-  return `${compactTime(next.startMinutes, locale)}에 ${next.title}${josa}!\n아직 시간 있어 😊`;
+  return intl.formatMessage({ id: final ? "shared.adventure.later.final" : "shared.adventure.later.vowel" }, { time: compactTime(next.startMinutes, locale), title: next.title });
 }
 
 /**
@@ -135,7 +138,9 @@ export function buildAdventureMap(
   events: readonly AdventureEventInput[],
   nowMinutes: number,
   locale: SupportedLocale,
+  providedIntl?: IntlShape,
 ): AdventureMap {
+  const intl = withDefaultIntl(providedIntl);
   const next = events.find((e) => !e.isPast) ?? null;
   const window = pickAdventureWindow(events);
   const nodes = window.map((e, i) => {
@@ -153,5 +158,5 @@ export function buildAdventureMap(
       top: slot.top,
     };
   });
-  return { nodes, next, bubble: bubbleFor(next, nowMinutes, locale) };
+  return { nodes, next, bubble: bubbleFor(next, nowMinutes, locale, intl) };
 }

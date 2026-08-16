@@ -1,1 +1,8 @@
-{}
+{
+  "notifications.status.loading": "檢查通知狀態",
+  "notifications.time.justNow": "剛剛",
+  "notifications.group.today": "今天",
+  "notifications.group.yesterday": "昨天",
+  "notifications.group.earlier": "更早",
+  "notifications.fallback.title": "通知"
+}

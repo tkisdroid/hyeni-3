@@ -1,3 +1,4 @@
+import { useIntl, type IntlShape } from "react-intl";
 import { useId, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useNavigate } from "react-router";
@@ -27,8 +28,11 @@ import {
 import type { SupportedLocale } from "@/i18n/locale";
 
 /** 사전알림(분) → 사람이 읽는 라벨. */
-function reminderLabel(minutes: number, locale: SupportedLocale): string {
-  return `${formatRelativeMinutes(minutes, "past", locale)} 알림`;
+function reminderLabel(minutes: number, locale: SupportedLocale, intl: IntlShape): string {
+  return intl.formatMessage(
+    { id: "parent.calendar.reminderLabel" },
+    { time: formatRelativeMinutes(minutes, "past", locale) },
+  );
 }
 import "./ParentCalendar.css";
 
@@ -37,13 +41,13 @@ type SelDate = { year: number; month: number; day: number };
 type SwipeSide = "edit" | "delete";
 
 /** 카테고리 한국어 라벨(태그 표시용 — 색은 이벤트 뷰의 tag 색을 재사용). */
-const CATEGORY_LABELS: Record<string, string> = {
-  school: "학교",
-  sports: "운동",
-  hobby: "취미",
-  family: "가족",
-  friend: "친구",
-  other: "기타",
+const CATEGORY_LABEL_IDS: Record<string, string> = {
+  school: "parent.category.school",
+  sports: "parent.category.sports",
+  hobby: "parent.category.hobby",
+  family: "parent.category.family",
+  friend: "parent.category.friend",
+  other: "parent.category.other",
 };
 
 /** 주말 신호색: 일요일 레드, 토요일 파랑, 평일 본문색.
@@ -62,6 +66,7 @@ const buildCells = (year: number, month: number): (number | null)[] => {
 };
 
 export function ParentCalendar() {
+  const intl = useIntl();
   const { locale } = useLocale();
   const { show } = useToast();
   const navigate = useNavigate();
@@ -114,8 +119,9 @@ export function ParentCalendar() {
       LEGACY_FAMILY_TIME_ZONE,
       visitMap,
       savedPlaces,
+      intl,
     ),
-    [events, locale, now, visitMap, savedPlaces],
+    [events, locale, now, visitMap, savedPlaces, intl],
   );
   const rawById = useMemo(() => {
     const map = new Map<string, CalendarEvent>();
@@ -187,17 +193,17 @@ export function ParentCalendar() {
     : null;
   const sheetTimeLabel = useMemo(() => {
     if (!sheetEvent) return "";
-    const start = formatTimeLabel(sheetEvent.time, locale);
-    return sheetEvent.end_time ? `${start} – ${formatTimeLabel(sheetEvent.end_time, locale)}` : start;
-  }, [locale, sheetEvent]);
+    const start = formatTimeLabel(sheetEvent.time, locale, intl);
+    return sheetEvent.end_time ? `${start} – ${formatTimeLabel(sheetEvent.end_time, locale, intl)}` : start;
+  }, [locale, sheetEvent, intl]);
   const sheetChildLabel = useMemo(() => {
     if (!sheetEvent) return "";
     const names = eventChildMemberIds(sheetEvent)
       .map((id) => family?.members.find((m) => m.id === id)?.name)
       .filter((n): n is string => !!n);
     if (names.length) return names.join(" · ");
-    return eventScopeLabel(sheetEvent);
-  }, [sheetEvent, family]);
+    return eventScopeLabel(sheetEvent, intl);
+  }, [sheetEvent, family, intl]);
   const sheetNeedsAssignment = sheetEvent ? eventScopeLabel(sheetEvent) === "배정 필요" : false;
   const sheetReminder = useMemo(() => {
     if (!sheetEvent) return null;
@@ -217,12 +223,12 @@ export function ParentCalendar() {
     if (deleteEvent.isPending) return;
     deleteEvent.mutate(id, {
       onSuccess: () => {
-        show("일정을 삭제했어요", "🗑️");
+        show(intl.formatMessage({ id: "parent.parentCalendar.copy001" }), "🗑️");
         setOpenSwipe(null);
         setConfirmSwipeDeleteId(null);
         if (closeAfter) closeSheet();
       },
-      onError: () => show("삭제에 실패했어요. 다시 시도해 주세요", "⚠️"),
+      onError: () => show(intl.formatMessage({ id: "parent.parentCalendar.copy002" }), "⚠️"),
     });
   };
   const handleDelete = () => {
@@ -277,12 +283,12 @@ export function ParentCalendar() {
         if (multiChild) map.set(e.id, names.join("·"));
       }
       else {
-        const label = eventScopeLabel(e);
+        const label = eventScopeLabel(e, intl);
         if (label) map.set(e.id, label);
       }
     }
     return map;
-  }, [events, family, multiChild]);
+  }, [events, family, multiChild, intl]);
 
   const selLabel = formatCalendarDay(
     Date.UTC(selected.year, selected.month - 1, selected.day, 12),
@@ -311,15 +317,15 @@ export function ParentCalendar() {
           </div>
         </div>
         <div className="pc-header__nav">
-          <button type="button" aria-label="이전 달" className="pc-navbtn hy-press" onClick={() => shiftMonth(-1)}>
+          <button type="button" aria-label={intl.formatMessage({ id: "parent.parentCalendar.copy003" })} className="pc-navbtn hy-press" onClick={() => shiftMonth(-1)}>
             <ChevronLeft size={18} strokeWidth={2.4} color="#6D6469" />
           </button>
-          <button type="button" aria-label="다음 달" className="pc-navbtn hy-press" onClick={() => shiftMonth(1)}>
+          <button type="button" aria-label={intl.formatMessage({ id: "parent.parentCalendar.copy004" })} className="pc-navbtn hy-press" onClick={() => shiftMonth(1)}>
             <ChevronRight size={18} strokeWidth={2.4} color="#6D6469" />
           </button>
           <button
             type="button"
-            aria-label="일정 추가"
+            aria-label={intl.formatMessage({ id: "parent.parentCalendar.copy005" })}
             className="pc-addbtn hy-press"
             onClick={() =>
               navigate("/event-form", {
@@ -392,19 +398,19 @@ export function ParentCalendar() {
         {/* 선택일 헤더 */}
         <div className="pc-sel">
           <span className="pc-sel__label">{selLabel}</span>
-          {selIsToday && <span className="pc-today-badge">오늘</span>}
+          {selIsToday && <span className="pc-today-badge">{intl.formatMessage({ id: "parent.parentCalendar.copy006" })}</span>}
         </div>
 
         {/* 선택일 일정 */}
         {isLoading ? (
           <div className="pc-empty">
-            <Loading label="일정을 불러오는 중" />
+            <Loading label={intl.formatMessage({ id: "parent.parentHome.copy020" })} />
           </div>
         ) : isError ? (
           <div className="pc-empty">
-            <div className="pc-empty__title">일정을 불러오지 못했어요</div>
+            <div className="pc-empty__title">{intl.formatMessage({ id: "parent.parentHome.copy021" })}</div>
             <button type="button" className="hy-section-action hy-press" onClick={() => void refetchEvents()}>
-              다시 시도
+              {intl.formatMessage({ id: "parent.parentHome.copy017" })}
             </button>
           </div>
         ) : selEvents.length > 0 ? (
@@ -431,7 +437,7 @@ export function ParentCalendar() {
                         disabled={!raw}
                       >
                         <Pencil size={16} strokeWidth={2.2} />
-                        수정
+                        {intl.formatMessage({ id: "parent.parentCalendar.copy007" })}
                       </button>
                     </div>
                     <div className="pc-swipe__actions pc-swipe__actions--right" aria-hidden={swipeSide !== "delete"}>
@@ -442,7 +448,7 @@ export function ParentCalendar() {
                             className="pc-swipe__action pc-swipe__action--cancel hy-press"
                             onClick={() => setConfirmSwipeDeleteId(null)}
                           >
-                            취소
+                            {intl.formatMessage({ id: "parent.parentSettings.copy031" })}
                           </button>
                           <button
                             type="button"
@@ -451,7 +457,7 @@ export function ParentCalendar() {
                             disabled={deleteEvent.isPending}
                             aria-busy={swipeDeletePending}
                           >
-                            {swipeDeletePending ? "삭제 중" : "삭제"}
+                            {swipeDeletePending ? intl.formatMessage({ id: "parent.parentCalendar.copy008" }) : intl.formatMessage({ id: "parent.parentCalendar.copy009" })}
                           </button>
                         </>
                       ) : (
@@ -461,7 +467,7 @@ export function ParentCalendar() {
                           onClick={() => setConfirmSwipeDeleteId(e.id)}
                         >
                           <Trash2 size={16} strokeWidth={2.2} />
-                          삭제
+                          {intl.formatMessage({ id: "parent.parentCalendar.copy009" })}
                         </button>
                       )}
                     </div>
@@ -491,7 +497,7 @@ export function ParentCalendar() {
                         {e.place && <span className="pc-event__place">{e.place}</span>}
                       </span>
                       <span className="pc-event__tag" style={{ color: e.tagText, background: e.tagBg }}>
-                        {e.tag}
+                        {e.tagLabel}
                       </span>
                     </button>
                   </div>
@@ -502,8 +508,8 @@ export function ParentCalendar() {
         ) : (
           <div className="pc-empty">
             <img src={asset("cat/other.webp")} alt="" />
-            <div className="pc-empty__title">이 날은 일정이 없어요</div>
-            <div className="pc-empty__sub">+ 버튼으로 새 일정을 더해 보세요</div>
+            <div className="pc-empty__title">{intl.formatMessage({ id: "parent.parentCalendar.copy010" })}</div>
+            <div className="pc-empty__sub">{intl.formatMessage({ id: "parent.parentCalendar.copy011" })}</div>
           </div>
         )}
       </div>
@@ -522,7 +528,7 @@ export function ParentCalendar() {
             type="button"
             className="pc-scrim"
             tabIndex={-1}
-            aria-label="닫기"
+            aria-label={intl.formatMessage({ id: "parent.parentSettings.copy027" })}
             onClick={() => !deleteEvent.isPending && closeSheet()}
           />
           <div
@@ -557,7 +563,7 @@ export function ParentCalendar() {
                 className="pc-sheet__tag"
                 style={{ color: sheetView.tagText, background: sheetView.tagBg }}
               >
-                {CATEGORY_LABELS[sheetEvent.category] ?? "기타"}
+                {intl.formatMessage({ id: CATEGORY_LABEL_IDS[sheetEvent.category] ?? "parent.category.other" })}
               </span>
             </div>
 
@@ -575,7 +581,7 @@ export function ParentCalendar() {
               {sheetReminder != null && (
                 <div className="pc-sheet__row">
                   <Bell size={17} strokeWidth={2} color="var(--fg-muted)" />
-                  <span>{reminderLabel(sheetReminder, locale)}</span>
+                  <span>{reminderLabel(sheetReminder, locale, intl)}</span>
                 </div>
               )}
               {sheetEvent.memo && (
@@ -590,7 +596,7 @@ export function ParentCalendar() {
 
             {confirmDelete ? (
               <div className="pc-sheet__confirm">
-                <div className="pc-sheet__confirm-text">이 일정을 삭제할까요?</div>
+                <div className="pc-sheet__confirm-text">{intl.formatMessage({ id: "parent.parentCalendar.copy013" })}</div>
                 <div className="pc-sheet__actions">
                   <button
                     type="button"
@@ -599,7 +605,7 @@ export function ParentCalendar() {
                     disabled={deleteEvent.isPending}
                     data-progress-owner="confirm-action"
                   >
-                    취소
+                    {intl.formatMessage({ id: "parent.parentSettings.copy031" })}
                   </button>
                   <button
                     type="button"
@@ -607,7 +613,7 @@ export function ParentCalendar() {
                     onClick={handleDelete}
                     disabled={deleteEvent.isPending} aria-busy={deleteEvent.isPending}
                   >
-                    {deleteEvent.isPending ? "삭제 중…" : "삭제"}
+                    {deleteEvent.isPending ? intl.formatMessage({ id: "parent.parentSettings.copy032" }) : intl.formatMessage({ id: "parent.parentCalendar.copy009" })}
                   </button>
                 </div>
               </div>
@@ -618,14 +624,14 @@ export function ParentCalendar() {
                   className="pc-btn pc-btn--ghost hy-press"
                   onClick={() => setConfirmDelete(true)}
                 >
-                  <Trash2 size={16} strokeWidth={2.2} /> 삭제
+                  <Trash2 size={16} strokeWidth={2.2} /> {intl.formatMessage({ id: "parent.parentCalendar.copy009" })}
                 </button>
                 <button
                   type="button"
                   className="pc-btn pc-btn--primary hy-press"
                   onClick={handleEdit}
                 >
-                  <Pencil size={16} strokeWidth={2.2} /> {sheetNeedsAssignment ? "배정하기" : "수정"}
+                  <Pencil size={16} strokeWidth={2.2} /> {sheetNeedsAssignment ? intl.formatMessage({ id: "parent.parentCalendar.copy014" }) : intl.formatMessage({ id: "parent.parentCalendar.copy007" })}
                 </button>
               </div>
             )}

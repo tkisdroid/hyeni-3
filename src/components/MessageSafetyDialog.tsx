@@ -1,3 +1,4 @@
+import { useIntl } from "react-intl";
 import { useEffect, useId, useRef, useState } from "react";
 import { Ban, Flag, X } from "lucide-react";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
@@ -33,6 +34,7 @@ export function MessageSafetyDialog<TReason extends string>({
   blockDescription,
   onBlock,
 }: MessageSafetyDialogProps<TReason>) {
+  const intl = useIntl();
   const titleId = useId();
   const descriptionId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -60,7 +62,7 @@ export function MessageSafetyDialog<TReason extends string>({
 
   const submitReport = async () => {
     if (!reason || pending) {
-      if (!reason) setError(tone === "child" ? "왜 신고하는지 하나 골라줘." : "신고 사유를 선택해 주세요.");
+      if (!reason) setError(tone === "child" ? intl.formatMessage({ id: "shared.messageSafetyDialog.copy001" }) : intl.formatMessage({ id: "shared.messageSafetyDialog.copy002" }));
       return;
     }
     setAction("report");
@@ -69,7 +71,7 @@ export function MessageSafetyDialog<TReason extends string>({
       await onReport(reason, detail);
       onClose();
     } catch {
-      setError(tone === "child" ? "지금은 신고를 보내지 못했어. 다시 눌러줘." : "신고를 보내지 못했어요. 다시 시도해 주세요.");
+      setError(tone === "child" ? intl.formatMessage({ id: "shared.messageSafetyDialog.copy003" }) : intl.formatMessage({ id: "shared.messageSafetyDialog.copy004" }));
     } finally {
       setAction(null);
     }
@@ -84,7 +86,7 @@ export function MessageSafetyDialog<TReason extends string>({
       // 차단 뒤에도 이 dialog를 유지한다. 메시지가 목록에서 즉시 숨겨져도 사용자는
       // 같은 콘텐츠 신고를 이어서 완료하거나 직접 닫을 수 있어야 한다.
     } catch {
-      setError(tone === "child" ? "지금은 차단하지 못했어. 다시 눌러줘." : "차단하지 못했어요. 다시 시도해 주세요.");
+      setError(tone === "child" ? intl.formatMessage({ id: "shared.messageSafetyDialog.copy005" }) : intl.formatMessage({ id: "shared.messageSafetyDialog.copy006" }));
     } finally {
       setAction(null);
     }
@@ -110,7 +112,7 @@ export function MessageSafetyDialog<TReason extends string>({
           ref={closeRef}
           type="button"
           className="msd-close hy-press"
-          aria-label={tone === "child" ? "닫기" : "창 닫기"}
+          aria-label={tone === "child" ? intl.formatMessage({ id: "shared.messageSafetyDialog.copy007" }) : intl.formatMessage({ id: "shared.messageSafetyDialog.copy008" })}
           onClick={onClose}
           disabled={pending}
           data-progress-owner="dialog-action"
@@ -127,7 +129,7 @@ export function MessageSafetyDialog<TReason extends string>({
         </div>
 
         <fieldset className="msd-reasons" disabled={pending}>
-          <legend>{tone === "child" ? "왜 불편했어?" : "신고 사유"}</legend>
+          <legend>{tone === "child" ? intl.formatMessage({ id: "shared.messageSafetyDialog.copy009" }) : intl.formatMessage({ id: "shared.messageSafetyDialog.copy010" })}</legend>
           {reasons.map((option) => (
             <label key={option.value} className="msd-reason">
               <input
@@ -143,13 +145,13 @@ export function MessageSafetyDialog<TReason extends string>({
         </fieldset>
 
         <label className="msd-detail">
-          <span>{tone === "child" ? "더 알려주고 싶으면 적어줘 (선택)" : "추가 설명 (선택)"}</span>
+          <span>{tone === "child" ? intl.formatMessage({ id: "shared.messageSafetyDialog.copy011" }) : intl.formatMessage({ id: "shared.messageSafetyDialog.copy012" })}</span>
           <textarea
             value={detail}
             maxLength={500}
             rows={3}
             disabled={pending}
-            placeholder={tone === "child" ? "어떤 점이 불편했는지 적어줘" : "검토에 필요한 내용을 적어 주세요"}
+            placeholder={tone === "child" ? intl.formatMessage({ id: "shared.messageSafetyDialog.copy013" }) : intl.formatMessage({ id: "shared.messageSafetyDialog.copy014" })}
             onChange={(event) => setDetail(event.target.value)}
           />
           <small>{detail.length}/500</small>
@@ -164,7 +166,7 @@ export function MessageSafetyDialog<TReason extends string>({
           disabled={pending}
           aria-busy={action === "report"}
         >
-          {action === "report" ? (tone === "child" ? "보내는 중…" : "신고하는 중…") : (tone === "child" ? "이 내용 신고하기" : "이 메시지 신고하기")}
+          {action === "report" ? (tone === "child" ? intl.formatMessage({ id: "shared.messageSafetyDialog.copy015" }) : intl.formatMessage({ id: "shared.messageSafetyDialog.copy016" })) : (tone === "child" ? intl.formatMessage({ id: "shared.messageSafetyDialog.copy017" }) : intl.formatMessage({ id: "shared.messageSafetyDialog.copy018" }))}
         </button>
 
         {onBlock && blockLabel && (
@@ -180,7 +182,7 @@ export function MessageSafetyDialog<TReason extends string>({
               disabled={pending}
               aria-busy={action === "block"}
             >
-              {action === "block" ? (tone === "child" ? "차단 중…" : "차단하는 중…") : "차단하기"}
+              {action === "block" ? (tone === "child" ? intl.formatMessage({ id: "shared.messageSafetyDialog.copy019" }) : intl.formatMessage({ id: "shared.messageSafetyDialog.copy020" })) : intl.formatMessage({ id: "shared.messageSafetyDialog.copy021" })}
             </button>
           </div>
         )}

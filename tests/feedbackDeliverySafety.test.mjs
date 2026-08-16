@@ -34,6 +34,7 @@ const [
   read("docs/feedback-operations.md"),
 ]);
 const koCore = JSON.parse(await read("locales/ko/core.json"));
+const koParent = JSON.parse(await read("locales/ko/parent.json"));
 
 test("피드백 API는 인증 세션을 쓰고 클라이언트가 주장한 발신자 PII를 보내지 않는다", () => {
   assert.match(endpoint, /requestId:\s*string/);
@@ -81,7 +82,8 @@ test("진단 첨부는 명시적으로 끌 수 있고 성공 접수 뒤에만 �
 });
 
 test("부모·아이·선생님 설정과 크래시 화면에서 피드백 화면으로 바로 갈 수 있다", () => {
-  assert.match(parentSettings, /label:\s*"문제 신고 · 문의"[\s\S]*navigate\("\/feedback"\)/);
+  assert.match(parentSettings, /label:\s*intl\.formatMessage\(\{ id: "parent\.parentSettings\.copy022" \}\)[\s\S]*navigate\("\/feedback"\)/);
+  assert.equal(koParent["parent.parentSettings.copy022"], "문제 신고 · 문의");
   assert.match(childSettings, /navigate\("\/feedback"\)[\s\S]*문제 알려주기/);
   assert.match(teacherSettings, /navigate\("\/feedback"\)[\s\S]*문제 신고 · 문의/);
   assert.match(errorBoundary, /window\.location\.hash = "#\/feedback"/);

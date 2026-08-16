@@ -31,19 +31,28 @@ test("온보딩은 추천 귀속과 보상 조건을 숨기지 않고 KID 페어
 
 test("부모 설정은 기존 스토어 혜택을 보존하면서 주 보호자에게 친구 초대 진입점을 제공한다", () => {
   const settings = read("src/screens/parent/ParentSettings.tsx");
-  assert.match(settings, /기존에 받은 스토어 방문 혜택은 그대로 유지돼요/);
-  assert.match(settings, /친구 초대 · 서로 AI 대화 10회/);
+  const koParent = JSON.parse(read("locales/ko/parent.json"));
+  assert.match(settings, /parent\.parentSettings\.copy001/);
+  assert.match(settings, /parent\.parentSettings\.copy018/);
+  assert.equal(koParent["parent.parentSettings.copy001"], "기존에 받은 스토어 방문 혜택은 그대로 유지돼요");
+  assert.equal(koParent["parent.parentSettings.copy018"], "친구 초대 · 서로 AI 대화 10회");
   assert.match(settings, /account\?\.isPrimaryParent/);
   assert.match(settings, /<ReferralRewardPanel/);
 });
 
 test("추천 화면은 양측 10회·평생 3가족·72시간·48시간 유지 조건과 정확한 진행 상태를 보여준다", () => {
   const panel = read("src/components/ReferralRewardPanel.tsx");
-  assert.match(panel, /두 가족 모두 추가 AI 대화 10회/);
-  assert.match(panel, /평생 최대 3가족/);
-  assert.match(panel, /72시간/);
-  assert.match(panel, /48시간 뒤에도 최신 위치/);
-  assert.match(panel, /성공 \{status\.successfulCount\}\/\{status\.successCap\}/);
+  const koParent = JSON.parse(read("locales/ko/parent.json"));
+  for (const [id, expected] of Object.entries({
+    "parent.referralRewardPanel.copy009": /두 가족 모두 추가 AI 대화 10회/,
+    "parent.referralRewardPanel.copy010": /평생 최대 3가족/,
+    "parent.referralRewardPanel.copy013": /72시간/,
+    "parent.referralRewardPanel.copy012": /48시간 뒤에도 최신 위치/,
+  })) {
+    assert.match(panel, new RegExp(id.replaceAll(".", "\\.")));
+    assert.match(koParent[id], expected);
+  }
+  assert.match(panel, /status\.successfulCount\}\/\{status\.successCap/);
   assert.match(panel, /pendingCount/);
   assert.match(panel, /navigator\.share/);
   assert.match(panel, /navigator\.clipboard/);

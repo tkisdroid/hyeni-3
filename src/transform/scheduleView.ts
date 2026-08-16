@@ -14,6 +14,8 @@ import {
 } from "./dateKey.ts";
 import type { SupportedLocale } from "../i18n/locale.ts";
 import { formatDateTime } from "../i18n/format.ts";
+import type { IntlShape } from "react-intl";
+import { withDefaultIntl } from "../i18n/defaultIntl.ts";
 
 interface CategoryStyle {
   color: string;
@@ -40,11 +42,13 @@ function styleFor(category: string): CategoryStyle {
 export function formatTimeLabel(
   time: string | null | undefined,
   locale: SupportedLocale,
+  providedIntl?: IntlShape,
 ): string {
-  if (!time || !/^\d{1,2}:\d{2}$/.test(time)) return "하루 종일";
+  const intl = withDefaultIntl(providedIntl);
+  if (!time || !/^\d{1,2}:\d{2}$/.test(time)) return intl.formatMessage({ id: "parent.schedule.allDay" });
   const [h, m] = time.split(":").map(Number);
   if (!Number.isInteger(h) || !Number.isInteger(m) || h < 0 || h > 23 || m < 0 || m > 59) {
-    return "하루 종일";
+    return intl.formatMessage({ id: "parent.schedule.allDay" });
   }
   // 일정 time은 절대시각이 아닌 wall-clock 값이므로 UTC 합성 시각으로 표시만 지역화한다.
   return formatDateTime(Date.UTC(2026, 0, 1, h, m), {
@@ -130,6 +134,7 @@ export interface CalEventView {
   title: string;
   place: string;
   tag: ScheduleTagKind;
+  tagLabel: string;
   tagText: string;
   tagBg: string;
 }
@@ -141,7 +146,9 @@ export function eventToView(
   timeZone: string,
   visitMap?: VisitMap,
   places?: readonly SavedPlace[],
+  providedIntl?: IntlShape,
 ): CalEventView {
+  const intl = withDefaultIntl(providedIntl);
   const style = styleFor(event.category);
   const tag = computeTag(event, now, timeZone, visitMap);
   return {
@@ -150,10 +157,11 @@ export function eventToView(
     soft: style.soft,
     emoji: event.emoji || style.emoji,
     icon: resolveEventVisualAsset(event.title, event.category),
-    time: formatTimeLabel(event.time, locale),
-    title: event.title || "일정",
+    time: formatTimeLabel(event.time, locale, intl),
+    title: event.title || intl.formatMessage({ id: "parent.schedule.event" }),
     place: resolveEventPlaceLabel(event.location, places),
     tag: tag.tag,
+    tagLabel: intl.formatMessage({ id: `parent.schedule.tag.${tag.tag === "진행 중" ? "ongoing" : tag.tag === "다녀옴" ? "visited" : tag.tag === "확인 필요" ? "verify" : "upcoming"}` }),
     tagText: tag.tagText,
     tagBg: tag.tagBg,
   };
@@ -167,6 +175,7 @@ export function groupEventsByDateKey(
   timeZone: string,
   visitMap?: VisitMap,
   places?: readonly SavedPlace[],
+  providedIntl?: IntlShape,
 ): Record<string, CalEventView[]> {
   const byKey: Record<string, CalendarEvent[]> = {};
   for (const ev of events) {
@@ -178,7 +187,7 @@ export function groupEventsByDateKey(
     out[key] = list
       .slice()
       .sort((a, b) => (timeToMinutes(a.time) ?? 1e9) - (timeToMinutes(b.time) ?? 1e9))
-      .map((ev) => eventToView(ev, now, locale, timeZone, visitMap, places));
+      .map((ev) => eventToView(ev, now, locale, timeZone, visitMap, places, providedIntl));
   }
   return out;
 }

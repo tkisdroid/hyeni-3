@@ -19,6 +19,8 @@ import {
 } from "./deviceNotificationHealth";
 import type { SupportedLocale } from "../i18n/locale.ts";
 import { formatNumber } from "../i18n/format.ts";
+import type { IntlShape } from "react-intl";
+import { withDefaultIntl } from "../i18n/defaultIntl.ts";
 
 export interface ParentView {
   id: string;
@@ -44,10 +46,10 @@ export interface ChildView {
 
 const CHILD_SOFTS = ["#FDE7F1", "#E6F2FB", "#E7F8F0", "#FDF0DA"];
 
-function parentRoleLabel(gender: string | null | undefined): string {
-  if (gender === "mom") return "엄마 · 보호자";
-  if (gender === "dad") return "아빠 · 보호자";
-  return "보호자";
+function parentRoleLabel(gender: string | null | undefined, intl: IntlShape): string {
+  if (gender === "mom") return intl.formatMessage({ id: "parent.family.role.mom" });
+  if (gender === "dad") return intl.formatMessage({ id: "parent.family.role.dad" });
+  return intl.formatMessage({ id: "parent.family.role.parent" });
 }
 
 function parentAvatar(gender: string | null | undefined): string {
@@ -61,13 +63,14 @@ export interface FamilyView {
 }
 
 /** members → {parents, children}. currentUserId 로 "나" 표시. */
-export function mapFamilyToView(members: FamilyMember[], currentUserId: string | null): FamilyView {
+export function mapFamilyToView(members: FamilyMember[], currentUserId: string | null, providedIntl?: IntlShape): FamilyView {
+  const intl = withDefaultIntl(providedIntl);
   const parents: ParentView[] = members
     .filter((m) => m.role === "parent")
     .map((m) => ({
       id: m.id,
-      name: m.name || "보호자",
-      roleLabel: parentRoleLabel(m.gender),
+      name: m.name || intl.formatMessage({ id: "parent.family.role.parent" }),
+      roleLabel: parentRoleLabel(m.gender, intl),
       avatar: parentAvatar(m.gender),
       isMe: !!currentUserId && m.user_id === currentUserId,
     }));
@@ -78,7 +81,7 @@ export function mapFamilyToView(members: FamilyMember[], currentUserId: string |
 
   const children: ChildView[] = childMembers.map((m, i) => ({
     id: m.id,
-    name: m.name || "아이",
+    name: m.name || intl.formatMessage({ id: "parent.family.child" }),
     info: "",
     avatar: childAvatarPath(m.photo_url),
     soft: CHILD_SOFTS[i % CHILD_SOFTS.length],
@@ -121,27 +124,28 @@ export type DeviceRecentAppView = DeviceAppUsageItemView;
 function screenTimeLabelFrom(
   ms: number | null | undefined,
   locale: SupportedLocale,
+  intl: IntlShape,
 ): string | null {
   if (typeof ms !== "number" || !Number.isFinite(ms) || ms <= 0) return null;
   const totalMin = Math.floor(ms / 60000);
   const h = Math.floor(totalMin / 60);
   const m = totalMin % 60;
-  if (h > 0) return `${formatNumber(h, locale)}시간 ${formatNumber(m, locale)}분`;
-  return `${formatNumber(m, locale)}분`;
+  if (h > 0) return intl.formatMessage({ id: "parent.device.hoursMinutes" }, { hours: formatNumber(h, locale), minutes: formatNumber(m, locale) });
+  return intl.formatMessage({ id: "parent.device.minutes" }, { minutes: formatNumber(m, locale) });
 }
 
 // 저배터리 임계(주의). hyeni-1 deviceSafety 규칙과 동일.
 const LOW_BATTERY_THRESHOLD = 15;
 
 // connection.effectiveType → 사람이 읽는 네트워크 라벨.
-function networkTypeLabel(networkType: string | null): string {
+function networkTypeLabel(networkType: string | null, intl: IntlShape): string {
   const t = (networkType || "").trim().toLowerCase();
   if (t === "wifi" || t === "wi-fi" || t === "wlan") return "Wi-Fi";
   if (t === "slow-2g" || t === "2g") return "2G";
   if (t === "3g") return "3G";
   if (t === "4g") return "4G";
   if (t === "5g") return "5G";
-  return "연결됨";
+  return intl.formatMessage({ id: "parent.device.connected" });
 }
 
 /**
@@ -154,7 +158,9 @@ export function deviceStatusView(
   locale: SupportedLocale,
   childScheduleEnabled: boolean | null = null,
   childScheduleLoadState: "loading" | "error" | "ready" = "loading",
+  providedIntl?: IntlShape,
 ): DeviceStatusView {
+  const intl = withDefaultIntl(providedIntl);
   const notification = deviceNotificationHealthView(health, {
     now,
     childScheduleEnabled,
@@ -166,7 +172,7 @@ export function deviceStatusView(
       hasData: false,
       batteryLevel: null,
       batteryLabel: "—",
-      unlockCountLabel: "0회",
+      unlockCountLabel: intl.formatMessage({ id: "parent.device.unlockZero" }),
       networkLabel: "—",
       screenTimeLabel: "—",
       recentAppLabel: null,
@@ -174,7 +180,7 @@ export function deviceStatusView(
       mostUsedApp: null,
       topApps: [],
       recentApps: [],
-      freshnessLabel: "아이 기기 연동 대기 중",
+      freshnessLabel: intl.formatMessage({ id: "parent.device.waiting" }),
       safetyLabel: deviceOverallSafetyLabel(false, notification.state, location.state, null),
       notification,
       location,
@@ -183,7 +189,7 @@ export function deviceStatusView(
   const level = typeof health.batteryLevel === "number" ? health.batteryLevel : null;
   // 네이티브(LocationService) 리포트는 connectionType, 웹 리포트는 networkType 을 준다.
   const netType = health.connectionType ?? health.networkType;
-  const screen = screenTimeLabelFrom(health.deviceScreenOnMs, locale);
+  const screen = screenTimeLabelFrom(health.deviceScreenOnMs, locale, intl);
   const appUsage = buildDeviceAppUsageView(health);
   const reportAt = health.lastReportedAt ?? health.updatedAt;
   const lowBattery = level != null && level <= LOW_BATTERY_THRESHOLD;
@@ -198,14 +204,14 @@ export function deviceStatusView(
     batteryLevel: level,
     batteryLabel: level == null ? "—" : `${formatNumber(level, locale)}%`,
     unlockCountLabel: unlockCountLabel(health.deviceUnlockCount),
-    networkLabel: health.networkConnected ? networkTypeLabel(netType) : "오프라인",
+    networkLabel: health.networkConnected ? networkTypeLabel(netType, intl) : intl.formatMessage({ id: "parent.device.offline" }),
     screenTimeLabel: screen ?? "—",
     recentAppLabel: appUsage.recentAppLabel,
     appUsagePermissionGranted: health.usagePermission === "granted",
     mostUsedApp: appUsage.mostUsedApp,
     topApps: appUsage.topApps,
     recentApps: appUsage.topApps,
-    freshnessLabel: reportAt ? formatFreshness(reportAt, now, locale).label : "보고 시각 없음",
+    freshnessLabel: reportAt ? formatFreshness(reportAt, now, locale, intl).label : intl.formatMessage({ id: "parent.device.noReportTime" }),
     safetyLabel,
     notification,
     location,

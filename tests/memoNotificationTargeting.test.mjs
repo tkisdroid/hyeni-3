@@ -6,13 +6,15 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf
 
 test("부모 메모 화면은 유효하지 않은 명시적 child를 활성 아이로 대체하지 않는다", () => {
   const source = read("src/screens/shared/MemoChat.tsx");
+  const koShared = JSON.parse(read("locales/ko/shared.json"));
   assert.match(source, /useSearchParams/);
   assert.match(source, /searchParams\.get\("child"\)/);
   assert.match(source, /m\.id === childHint \|\| m\.user_id === childHint/);
   assert.match(source, /if \(childHint\)[\s\S]{0,300}return hintedChild;/);
   assert.doesNotMatch(source, /return hintedChild \?\? activeChild/);
   assert.match(source, /explicitChildMissing/);
-  assert.match(source, /대화 대상 아이를 확인할 수 없어요/);
+  assert.match(source, /shared\.memoChat\.copy016/);
+  assert.equal(koShared["shared.memoChat.copy016"], "대화 대상 아이를 확인할 수 없어요");
 });
 
 test("부모 대화 탭 점은 parent_alert가 아니라 실제 아이별 memo read_by에서 계산한다", () => {
@@ -66,7 +68,7 @@ test("아이 member id가 확정되지 않으면 메모 전체 스레드를 조�
   const query = read("src/queries/useMemo.ts");
   const chat = read("src/screens/shared/MemoChat.tsx");
   assert.match(query, /enabled:[\s\S]{0,160}!!childId/);
-  assert.match(chat, /if \(!scopeChild\)[\s\S]{0,120}대화 대상 아이를 확인할 수 없어요/);
+  assert.match(chat, /if \(!scopeChild\)[\s\S]{0,180}shared\.memoChat\.copy016/);
   assert.match(chat, /disabled=\{[^}]*!scopeChild/);
 });
 

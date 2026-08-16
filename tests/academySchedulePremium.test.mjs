@@ -7,8 +7,10 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf
 test("부모 홈은 일반 AI 일정과 별도로 학원 시간표 Premium 진입점을 제공한다", () => {
   const home = read("src/screens/parent/ParentHome.tsx");
   const css = read("src/screens/parent/ParentHome.css");
+  const koParent = JSON.parse(read("locales/ko/parent.json"));
   assert.match(home, /navigate\("\/ai-schedule\?mode=academy&tab=image"\)/);
-  assert.match(home, />\s*학원표\s*</);
+  assert.match(home, /parent\.parentHome\.copy028/);
+  assert.equal(koParent["parent.parentHome.copy028"], "학원표");
   assert.match(css, /\.ph-ai__grid\s*\{[^}]*grid-template-columns:\s*1fr 1fr/s);
 });
 

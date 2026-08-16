@@ -8,6 +8,7 @@ const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const readSource = (path) => readFileSync(resolve(rootDir, path), "utf8");
 
 const components = readSource("src/styles/components.css");
+const koParent = JSON.parse(readSource("locales/ko/parent.json"));
 
 function cssBlock(source, selector) {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -129,16 +130,21 @@ test("다문장 설명 다섯 곳은 조건과 문구를 유지한 채 문장별
   const socialLinks = explanationBlock(
     "src/screens/parent/SocialLinks.tsx",
     "pa-note hy-explain",
-    "계정을 바꾸려면 새 계정을 먼저 연결한 뒤 예전 계정을 해제하세요.",
+    "parent.socialLinks.copy017",
   );
   assert.match(socialLinks.block, /\{native\s*\?\s*canUnlink\s*\?/);
-  assertSentenceLines(socialLinks.block, [
-    "계정을 바꾸려면 새 계정을 먼저 연결한 뒤 예전 계정을 해제하세요.",
-    "해제해도 가족·일정 데이터는 그대로예요.",
-    "지금은 이 소셜 계정이 유일한 로그인 수단이라 해제할 수 없어요.",
-    "다른 로그인 방법을 먼저 추가해 주세요.",
-    "소셜 계정 연결은 안드로이드 앱에서 할 수 있어요.",
-  ], 3);
+  const socialCopy = {
+    "parent.socialLinks.copy017": "계정을 바꾸려면 새 계정을 먼저 연결한 뒤 예전 계정을 해제하세요.",
+    "parent.socialLinks.copy018": "해제해도 가족·일정 데이터는 그대로예요.",
+    "parent.socialLinks.copy019": "지금은 이 소셜 계정이 유일한 로그인 수단이라 해제할 수 없어요.",
+    "parent.socialLinks.copy020": "다른 로그인 방법을 먼저 추가해 주세요.",
+    "parent.socialLinks.copy021": "소셜 계정 연결은 안드로이드 앱에서 할 수 있어요.",
+  };
+  assert.equal((socialLinks.block.match(/className="hy-explain__lines"/g) ?? []).length, 3);
+  for (const [id, expected] of Object.entries(socialCopy)) {
+    assert.match(socialLinks.block, new RegExp(`className="hy-explain__line"[\\s\\S]{0,120}${id.replaceAll(".", "\\.")}`));
+    assert.equal(koParent[id], expected);
+  }
 
   const pairingWizard = explanationBlock(
     "src/screens/feature/PairingWizard.tsx",

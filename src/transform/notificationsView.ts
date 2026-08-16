@@ -13,6 +13,8 @@ import {
   formatRelativeTime,
 } from "../i18n/format.ts";
 import { dateKeyToDateInputValue, dateToDateKeyInTimeZone } from "./dateKey.ts";
+import type { IntlShape } from "react-intl";
+import { withDefaultIntl } from "../i18n/defaultIntl.ts";
 
 export interface AlertItemView {
   id: string;
@@ -226,11 +228,13 @@ export function relativeTime(
   now: Date,
   locale: SupportedLocale,
   timeZone: string,
+  providedIntl?: IntlShape,
 ): string {
+  const intl = withDefaultIntl(providedIntl);
   const ms = Date.parse(iso || "");
   if (!Number.isFinite(ms)) return "";
   const diff = now.getTime() - ms;
-  if (diff >= 0 && diff < MINUTE_MS) return "방금";
+  if (diff >= 0 && diff < MINUTE_MS) return intl.formatMessage({ id: "notifications.time.justNow" });
   if (diff >= 0 && diff < HOUR_MS) {
     return formatRelativeTime(-Math.floor(diff / MINUTE_MS), "minute", locale);
   }
@@ -243,13 +247,13 @@ function dayStamp(date: Date, timeZone: string): string {
 }
 
 // created_at 날짜 → 그룹 라벨(오늘/어제/M월 D일).
-function groupLabel(date: Date, now: Date, locale: SupportedLocale, timeZone: string): string {
+function groupLabel(date: Date, now: Date, locale: SupportedLocale, timeZone: string, intl: IntlShape): string {
   const today = dayStamp(now, timeZone);
   const [year, month, day] = today.split("-").map(Number);
   const yesterday = new Date(Date.UTC(year, month - 1, day - 1)).toISOString().slice(0, 10);
   const key = dayStamp(date, timeZone);
-  if (key === today) return "오늘";
-  if (key === yesterday) return "어제";
+  if (key === today) return intl.formatMessage({ id: "notifications.group.today" });
+  if (key === yesterday) return intl.formatMessage({ id: "notifications.group.yesterday" });
   return formatCalendarDay(date, { locale, timeZone });
 }
 
@@ -276,6 +280,7 @@ function toItemView(
   now: Date,
   locale: SupportedLocale,
   timeZone: string,
+  intl: IntlShape,
 ): AlertItemView {
   const title = cleanAlertTitle(alert.title);
   const detail = cleanAlertTitle(alert.message);
@@ -284,9 +289,9 @@ function toItemView(
     alertType: alert.alert_type || "",
     icon: iconFor(alert),
     soft: TONE_SOFT[toneFor(alert)],
-    title: title || detail || "알림",
+    title: title || detail || intl.formatMessage({ id: "notifications.fallback.title" }),
     detail: detail || title || "",
-    time: relativeTime(alert.created_at, now, locale, timeZone),
+    time: relativeTime(alert.created_at, now, locale, timeZone, intl),
     unread: !alert.read,
     to: routeFor(alert),
     childUserId: alert.child_user_id ?? null,
@@ -300,7 +305,9 @@ export function mapAlertsToGroups(
   now: Date,
   locale: SupportedLocale,
   timeZone: string,
+  providedIntl?: IntlShape,
 ): AlertGroupView[] {
+  const intl = withDefaultIntl(providedIntl);
   const sorted = [...alerts].sort(
     (a, b) => (Date.parse(b.created_at || "") || 0) - (Date.parse(a.created_at || "") || 0),
   );
@@ -308,14 +315,14 @@ export function mapAlertsToGroups(
   const byLabel = new Map<string, AlertGroupView>();
   for (const alert of sorted) {
     const ms = Date.parse(alert.created_at || "");
-    const label = Number.isFinite(ms) ? groupLabel(new Date(ms), now, locale, timeZone) : "이전";
+    const label = Number.isFinite(ms) ? groupLabel(new Date(ms), now, locale, timeZone, intl) : intl.formatMessage({ id: "notifications.group.earlier" });
     let group = byLabel.get(label);
     if (!group) {
       group = { group: label, items: [] };
       byLabel.set(label, group);
       groups.push(group);
     }
-    group.items.push(toItemView(alert, now, locale, timeZone));
+    group.items.push(toItemView(alert, now, locale, timeZone, intl));
   }
   return groups;
 }

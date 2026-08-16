@@ -17,7 +17,6 @@ import { formatFreshness } from "@/transform/locationView";
 import { useLocale } from "@/i18n/useLocale";
 import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
 import { useRecentDateKeys } from "@/app/useRecentDateKeys";
-import { hasJongseong } from "@/transform/adventureMap";
 import { Loading } from "@/components/ui/Loading";
 import "./ChildDetail.css";
 import { useIntl } from "react-intl";
@@ -28,15 +27,20 @@ function avatarSrc(path: string): string {
   return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
 }
 
-const ORDINAL: Record<number, string> = { 1: "첫째", 2: "둘째", 3: "셋째", 4: "넷째" };
+const ORDINAL_IDS: Record<number, string> = {
+  1: "parent.ordinal.first",
+  2: "parent.ordinal.second",
+  3: "parent.ordinal.third",
+  4: "parent.ordinal.fourth",
+};
 
 // 바로가기 CTA 정의(라벨·3D 아이콘·경로). 첫 항목만 강조(민트).
 // 유니코드 이모지 대신 3D 에셋 — 앱 공통 시각 언어(구독·홈과 동일).
-const QUICK_ACTIONS: Array<{ icon: string; label: string; to: string; primary?: boolean }> = [
-  { icon: "ui/pin-heart.webp", label: "실시간 위치", to: "/parent/location", primary: true },
-  { icon: "ui/calendar-heart.webp", label: "캘린더", to: "/parent/calendar" },
-  { icon: "ui/chat-heart.webp", label: "채팅", to: "/parent/memo" },
-  { icon: "ui/star-medal.webp", label: "스티커", to: "/sticker-send" },
+const QUICK_ACTIONS: Array<{ icon: string; labelId: string; to: string; primary?: boolean }> = [
+  { icon: "ui/pin-heart.webp", labelId: "parent.childDetail.liveLocation", to: "/parent/location", primary: true },
+  { icon: "ui/calendar-heart.webp", labelId: "parent.childDetail.calendar", to: "/parent/calendar" },
+  { icon: "ui/chat-heart.webp", labelId: "parent.childDetail.chat", to: "/parent/memo" },
+  { icon: "ui/star-medal.webp", labelId: "parent.childDetail.sticker", to: "/sticker-send" },
 ];
 
 type SafetyTone = "safe" | "warn" | "muted";
@@ -102,9 +106,9 @@ export function ChildDetail() {
   });
 
   const childView = useMemo(() => {
-    const view = mapFamilyToView(members, null);
+    const view = mapFamilyToView(members, null, intl);
     return view.children.find((c) => c.id === rawChild?.id) ?? null;
-  }, [members, rawChild]);
+  }, [members, rawChild, intl]);
 
   // 오늘/다가오는 일정 — 이 아이 배정(events_children) + 가족 공유(is_family_event)만 집계.
   // (가족 전체를 세면 두 아이 상세가 항상 같은 수 — 아이별 구분 원칙 위반.)
@@ -134,31 +138,31 @@ export function ChildDetail() {
     return locs.find((l) => l.user_id === rawChild.user_id) ?? null;
   }, [locationsQuery.data, rawChild]);
   const places = placesQuery.data;
-  const fresh = loc ? formatFreshness(loc.updated_at, now, locale) : null;
+  const fresh = loc ? formatFreshness(loc.updated_at, now, locale, intl) : null;
   const locationLabel = useLocationLabels(loc ? [loc] : [], places);
   const placeName = loc ? locationLabel(loc) : null;
 
   const safety = useMemo<{ label: string; tone: SafetyTone }>(() => {
-    if (!rawChild?.user_id) return { label: "연결 대기 중", tone: "muted" };
-    if (!fresh) return { label: "위치 정보 없음", tone: "muted" };
+    if (!rawChild?.user_id) return { label: intl.formatMessage({ id: "parent.childDetail.copy001" }), tone: "muted" };
+    if (!fresh) return { label: intl.formatMessage({ id: "parent.parentLocation.copy008" }), tone: "muted" };
     if (fresh.status === "live") {
-      return { label: placeName ? `안전 · ${placeName}` : "실시간 추적 중", tone: "safe" };
+      return { label: placeName ? intl.formatMessage({ id: "parent.childDetail.safeAtPlace" }, { place: placeName }) : intl.formatMessage({ id: "parent.childDetail.copy002" }), tone: "safe" };
     }
     if (fresh.status === "recent") {
-      return { label: placeName ? `${placeName} · ${fresh.label}` : fresh.label, tone: "safe" };
+      return { label: placeName ? intl.formatMessage({ id: "parent.childDetail.placeFreshness" }, { place: placeName, freshness: fresh.label }) : fresh.label, tone: "safe" };
     }
-    return { label: `위치 ${fresh.label}`, tone: "warn" };
-  }, [rawChild, fresh, placeName]);
+    return { label: intl.formatMessage({ id: "parent.childDetail.locationFreshness" }, { freshness: fresh.label }), tone: "warn" };
+  }, [rawChild, fresh, placeName, intl]);
 
   // ── 로딩/빈 상태 ──
   if (detailError) {
     return (
       <div className="cd-root">
-        <Header title="아이 상세" onBack={() => navigate(-1)} onEdit={null} />
+        <Header title={intl.formatMessage({ id: "parent.childDetail.copy003" })} onBack={() => navigate(-1)} onEdit={null} />
         <div className="cd-state" role="alert">
-          아이 정보를 불러오지 못했어요
+          {intl.formatMessage({ id: "parent.childDetail.copy004" })}
           <button type="button" className="cd-state__btn hy-press" onClick={() => void retryChildDetail()}>
-            다시 시도
+            {intl.formatMessage({ id: "parent.parentHome.copy017" })}
           </button>
         </div>
       </div>
@@ -167,29 +171,29 @@ export function ChildDetail() {
   if (detailLoading) {
     return (
       <div className="cd-root">
-        <Header title="아이 상세" onBack={() => navigate(-1)} onEdit={null} />
-        <div className="cd-state"><Loading label="아이 정보를 불러오는 중" /></div>
+        <Header title={intl.formatMessage({ id: "parent.childDetail.copy003" })} onBack={() => navigate(-1)} onEdit={null} />
+        <div className="cd-state"><Loading label={intl.formatMessage({ id: "parent.childDetail.copy005" })} /></div>
       </div>
     );
   }
   if (!rawChild) {
     return (
       <div className="cd-root">
-        <Header title="아이 상세" onBack={() => navigate(-1)} onEdit={null} />
+        <Header title={intl.formatMessage({ id: "parent.childDetail.copy003" })} onBack={() => navigate(-1)} onEdit={null} />
         <div className="cd-state">
-          아이를 찾지 못했어요
+          {intl.formatMessage({ id: "parent.childDetail.copy006" })}
           <button type="button" className="cd-state__btn hy-press" onClick={() => navigate(-1)}>
-            돌아가기
+            {intl.formatMessage({ id: "parent.childDetail.copy007" })}
           </button>
         </div>
       </div>
     );
   }
 
-  const name = childView?.name || rawChild.name || "아이";
+  const name = childView?.name || rawChild.name || intl.formatMessage({ id: "parent.parentHome.copy004" });
   const avatar = childView?.avatar || childAvatarPath(rawChild.photo_url);
   const soft = childView?.soft || "var(--hy-accent-soft)";
-  const ordinal = rawChild.child_order ? ORDINAL[rawChild.child_order] ?? null : null;
+  const ordinalId = rawChild.child_order ? ORDINAL_IDS[rawChild.child_order] ?? null : null;
   const deviceLabel = rawChild.device_label?.trim() || null;
   const isPrimary = familyQuery.data?.isPrimaryParent ?? false;
   const childUserId = rawChild.user_id || null;
@@ -198,16 +202,16 @@ export function ChildDetail() {
   const onDelete = async () => {
     if (unpair.isPending) return;
     if (!isPrimary) {
-      show("주 보호자만 아이를 삭제할 수 있어요", "🔒");
+      show(intl.formatMessage({ id: "parent.childDetail.copy008" }), "🔒");
       return;
     }
     if (!childUserId) {
-      show("아직 기기가 연결되지 않은 아이예요", "⚠️");
+      show(intl.formatMessage({ id: "parent.childDetail.copy009" }), "⚠️");
       return;
     }
     try {
       await unpair.mutateAsync(childUserId);
-      show(`${name}${hasJongseong(name) ? "을" : "를"} 가족에서 삭제했어요`, "🗑️");
+      show(intl.formatMessage({ id: "parent.childDetail.removedFromFamily" }, { name }), "🗑️");
       navigate(-1);
     } catch (e) {
       show(localizeApiError(e, intl, "formal"), "⚠️");
@@ -230,10 +234,10 @@ export function ChildDetail() {
           </span>
           <div className="cd-hero__main">
             <div className="cd-hero__name">{name}</div>
-            {ordinal && <div className="cd-hero__sub">{ordinal} 아이</div>}
+            {ordinalId && <div className="cd-hero__sub">{intl.formatMessage({ id: "parent.childDetail.ordinalChild" }, { ordinal: intl.formatMessage({ id: ordinalId }) })}</div>}
             <div className="cd-hero__device">
               <Smartphone size={13} strokeWidth={2.2} />
-              {deviceLabel ?? "기기 연결 대기 중"}
+              {deviceLabel ?? intl.formatMessage({ id: "parent.parentHome.copy032" })}
             </div>
             <span className={`cd-safety cd-safety--${safety.tone}`}>
               <span className="cd-safety__dot" />
@@ -245,15 +249,15 @@ export function ChildDetail() {
         {/* 오늘 요약 */}
         <div className="cd-stats">
           <div className="cd-stat">
-            <span className="cd-stat__k">오늘 일정</span>
+            <span className="cd-stat__k">{intl.formatMessage({ id: "parent.childDetail.copy012" })}</span>
             <span className="cd-stat__v">
-              {eventsQuery.isLoading ? "…" : `${todayCount}건`}
+              {eventsQuery.isLoading ? "…" : intl.formatMessage({ id: "parent.childDetail.eventCount" }, { count: todayCount })}
             </span>
           </div>
           <div className="cd-stat">
-            <span className="cd-stat__k">다가오는 일정</span>
+            <span className="cd-stat__k">{intl.formatMessage({ id: "parent.childDetail.copy013" })}</span>
             <span className="cd-stat__v">
-              {eventsQuery.isLoading ? "…" : `${upcomingCount}건`}
+              {eventsQuery.isLoading ? "…" : intl.formatMessage({ id: "parent.childDetail.eventCount" }, { count: upcomingCount })}
             </span>
           </div>
         </div>
@@ -262,7 +266,7 @@ export function ChildDetail() {
         <div className="cd-actions">
           {QUICK_ACTIONS.map((a) => (
             <button
-              key={a.label}
+              key={a.labelId}
               type="button"
               className={a.primary ? "cd-action cd-action--primary hy-press" : "cd-action hy-press"}
               onClick={() => {
@@ -273,7 +277,7 @@ export function ChildDetail() {
               <span className="cd-action__emoji">
                 <img src={asset(a.icon)} alt="" style={{ width: 24, height: 24, objectFit: "contain" }} />
               </span>
-              {a.label}
+              {intl.formatMessage({ id: a.labelId })}
             </button>
           ))}
         </div>
@@ -291,8 +295,8 @@ export function ChildDetail() {
             <img src={asset("ui/menu-remote-audio.webp")} alt="" style={{ width: 24, height: 24, objectFit: "contain" }} />
           </span>
           <span className="cd-row__main">
-            <span className="cd-row__title">주변소리</span>
-            <span className="cd-row__sub">긴급 상황에만 사용해요</span>
+            <span className="cd-row__title">{intl.formatMessage({ id: "parent.home.shortcut.remoteAudio" })}</span>
+            <span className="cd-row__sub">{intl.formatMessage({ id: "parent.childDetail.copy014" })}</span>
           </span>
           <ChevronRight size={20} strokeWidth={2.4} color="var(--fg-disabled)" />
         </button>
@@ -310,8 +314,8 @@ export function ChildDetail() {
             <img src={asset("ui/bell.webp")} alt="" style={{ width: 24, height: 24, objectFit: "contain" }} />
           </span>
           <span className="cd-row__main">
-            <span className="cd-row__title">소리 울리기</span>
-            <span className="cd-row__sub">무음이어도 최대 볼륨으로 울려요</span>
+            <span className="cd-row__title">{intl.formatMessage({ id: "parent.childDetail.copy015" })}</span>
+            <span className="cd-row__sub">{intl.formatMessage({ id: "parent.childDetail.copy016" })}</span>
           </span>
           <ChevronRight size={20} strokeWidth={2.4} color="var(--fg-disabled)" />
         </button>
@@ -326,8 +330,8 @@ export function ChildDetail() {
             <img src={asset("animal/bear.webp")} alt="" style={{ width: 24, height: 24, objectFit: "contain" }} />
           </span>
           <span className="cd-row__main">
-            <span className="cd-row__title">프로필 편집</span>
-            <span className="cd-row__sub">이름·캐릭터·색상 바꾸기</span>
+            <span className="cd-row__title">{intl.formatMessage({ id: "parent.childDetail.copy017" })}</span>
+            <span className="cd-row__sub">{intl.formatMessage({ id: "parent.childDetail.copy018" })}</span>
           </span>
           <ChevronRight size={20} strokeWidth={2.4} color="var(--fg-disabled)" />
         </button>
@@ -343,8 +347,8 @@ export function ChildDetail() {
               <Trash2 size={20} strokeWidth={2.2} />
             </span>
             <span className="cd-danger__main">
-              <span className="cd-danger__title">가족에서 삭제</span>
-              <span className="cd-danger__sub">대화·공유 사진·위치 기록·연결을 모두 지워요</span>
+              <span className="cd-danger__title">{intl.formatMessage({ id: "parent.childDetail.copy019" })}</span>
+              <span className="cd-danger__sub">{intl.formatMessage({ id: "parent.childDetail.copy020" })}</span>
             </span>
           </button>
         )}
@@ -364,7 +368,7 @@ export function ChildDetail() {
             type="button"
             className="cd-confirm__scrim"
             tabIndex={-1}
-            aria-label="닫기"
+            aria-label={intl.formatMessage({ id: "parent.parentSettings.copy027" })}
             onClick={() => {
               if (!unpair.isPending) setConfirmDelete(false);
             }}
@@ -373,10 +377,9 @@ export function ChildDetail() {
             <span className="cd-confirm__icon">
               <AlertTriangle size={26} strokeWidth={2.2} />
             </span>
-            <div id={deleteTitleId} className="cd-confirm__title">{name} 삭제할까요?</div>
+            <div id={deleteTitleId} className="cd-confirm__title">{name} {intl.formatMessage({ id: "parent.childDetail.copy021" })}</div>
             <p id={deleteDescriptionId} className="cd-confirm__desc">
-              가족에서 완전히 삭제돼요. 대화와 공유 사진, 위치 기록과 연결이 모두 영구 삭제되어
-              되돌릴 수 없어요. 다시 함께하려면 연결 코드로 새로 연결하면 돼요.
+              {intl.formatMessage({ id: "parent.childDetail.copy022" })}
             </p>
             <div className="cd-confirm__btns">
               <button
@@ -387,7 +390,7 @@ export function ChildDetail() {
                 disabled={unpair.isPending}
                 data-progress-owner="confirm-action"
               >
-                취소
+                {intl.formatMessage({ id: "parent.parentSettings.copy031" })}
               </button>
               <button
                 type="button"
@@ -395,7 +398,7 @@ export function ChildDetail() {
                 onClick={onDelete}
                 disabled={unpair.isPending} aria-busy={unpair.isPending}
               >
-                {unpair.isPending ? "삭제 중…" : "삭제하기"}
+                {unpair.isPending ? intl.formatMessage({ id: "parent.parentSettings.copy032" }) : intl.formatMessage({ id: "parent.childDetail.copy023" })}
               </button>
             </div>
           </div>
@@ -415,9 +418,10 @@ function Header({
   onBack: () => void;
   onEdit: (() => void) | null;
 }) {
+  const intl = useIntl();
   return (
     <header className="cd-header">
-      <button type="button" className="hy-iconbtn hy-press cd-back" aria-label="뒤로" onClick={onBack}>
+      <button type="button" className="hy-iconbtn hy-press cd-back" aria-label={intl.formatMessage({ id: "parent.parentSettings.copy017" })} onClick={onBack}>
         <ChevronLeft size={22} strokeWidth={2.2} />
       </button>
       <span className="cd-htitle">{title}</span>
@@ -425,7 +429,7 @@ function Header({
         <button
           type="button"
           className="hy-iconbtn hy-press cd-edit"
-          aria-label="프로필 편집"
+          aria-label={intl.formatMessage({ id: "parent.childDetail.copy017" })}
           onClick={onEdit}
         >
           <Pencil size={20} strokeWidth={2} />

@@ -32,9 +32,10 @@ test("대화 목록은 아바타를 지연하고 private 첨부는 viewport leas
   );
   assert.match(memo, /new IntersectionObserver\(/);
   assert.match(memo, /rootMargin: "360px 0px"/);
-  const privateImage = /<img\s+src=\{photo\.url\}[^>]*alt="공유한 사진"[^>]*>/s.exec(memo)?.[0] ?? "";
+  const privateImage = /<img\s+src=\{photo\.url\}[^>]*>/s.exec(memo)?.[0] ?? "";
   const previewImage = /<img\s+src=\{previewImage\.url\}[^>]*>/s.exec(memo)?.[0] ?? "";
   assert.match(privateImage, /decoding="async"/);
+  assert.match(privateImage, /alt=\{intl\.formatMessage\(\{ id: "shared\.memo\.photo\.alt" \}\)\}/);
   assert.match(previewImage, /decoding="async"/);
 });
 

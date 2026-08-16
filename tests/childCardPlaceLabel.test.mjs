@@ -15,7 +15,9 @@ const home = readFileSync(resolve(rootDir, "src/screens/parent/ParentHome.tsx"),
 
 test("일정 장소 라벨은 거리와 함께 판정된다", () => {
   assert.match(home, /function schedulePlaceHit\(/);
-  assert.match(home, /\{ label: `\$\{eventTitleForPlace\(hit\.raw, hit\.view\)\} 근처`, distanceM: hit\.distance \}/);
+  assert.match(home, /id: "parent\.home\.nearPlace"/);
+  assert.match(home, /place: eventTitleForPlace\(hit\.raw, hit\.view, intl\)/);
+  assert.match(home, /distanceM: hit\.distance/);
 });
 
 test("등록 장소가 더 가깝거나 동률이면 일정 장소 라벨을 쓰지 않는다", () => {

@@ -69,8 +69,11 @@ export function SocialLinks() {
         show(intl.formatMessage({ id: "core.error.api.unknown.formal" }));
         return;
       }
-      const label = PROVIDER_LABEL[detail.provider ?? ""] ?? "소셜";
-      show(detail.already ? `이미 연결된 ${label} 계정이에요.` : `${label} 계정을 연결했어요.`);
+      const label = PROVIDER_LABEL[detail.provider ?? ""] ?? intl.formatMessage({ id: "parent.socialLinks.copy001" });
+      show(intl.formatMessage(
+        { id: detail.already ? "parent.social.alreadyLinked" : "parent.social.linked" },
+        { provider: label },
+      ));
       void qc.invalidateQueries({ queryKey: qk.oauthLinks });
     };
     window.addEventListener(OAUTH_LINK_EVENT, onLinked);
@@ -102,7 +105,10 @@ export function SocialLinks() {
     setBusy(key);
     try {
       await unlinkOAuthAccount({ provider: link.provider, providerId: link.providerId });
-      show(`${PROVIDER_LABEL[link.provider] ?? "소셜"} 연결을 해제했어요.`);
+      show(intl.formatMessage(
+        { id: "parent.social.unlinked" },
+        { provider: PROVIDER_LABEL[link.provider] ?? intl.formatMessage({ id: "parent.socialLinks.copy001" }) },
+      ));
       await qc.invalidateQueries({ queryKey: qk.oauthLinks });
     } catch (error) {
       show(localizeApiError(error, intl, "formal"));
@@ -113,29 +119,29 @@ export function SocialLinks() {
 
   return (
     <div className="pa-group">
-      <div className="pa-group__label">소셜 로그인 연결</div>
+      <div className="pa-group__label">{intl.formatMessage({ id: "parent.socialLinks.copy002" })}</div>
 
       <div className="pa-card">
         {native && isLoading && (
-          <div className="sl-state" aria-busy="true">연결된 계정을 확인하고 있어요.</div>
+          <div className="sl-state" aria-busy="true">{intl.formatMessage({ id: "parent.socialLinks.copy003" })}</div>
         )}
 
         {native && isError && (
           <div className="sl-state sl-state--error" role="alert" aria-live="assertive">
-            <span>소셜 계정 연결 정보를 불러오지 못했어요.</span>
+            <span>{intl.formatMessage({ id: "parent.socialLinks.copy004" })}</span>
             <button
               type="button"
               className="sl-retry hy-press"
               onClick={() => void refetch()}
               disabled={isFetching} aria-busy={isFetching}
             >
-              {isFetching ? "다시 확인 중…" : "다시 불러오기"}
+              {isFetching ? intl.formatMessage({ id: "parent.parentLocation.copy022" }) : intl.formatMessage({ id: "parent.socialLinks.copy005" })}
             </button>
           </div>
         )}
 
         {native && !isLoading && !isError && links.length === 0 && (
-          <div className="sl-empty">아직 연결된 소셜 계정이 없어요.</div>
+          <div className="sl-empty">{intl.formatMessage({ id: "parent.socialLinks.copy006" })}</div>
         )}
 
         {!isError && links.map((link, index) => {
@@ -148,7 +154,7 @@ export function SocialLinks() {
                 <span className="sl-acct">
                   <Link2 size={15} strokeWidth={2.2} color="var(--fg-faint)" />
                   <span className="sl-acct__name">{PROVIDER_LABEL[link.provider] ?? link.provider}</span>
-                  <span className="sl-acct__email">{link.email || "계정 연결됨"}</span>
+                  <span className="sl-acct__email">{link.email || intl.formatMessage({ id: "parent.socialLinks.copy007" })}</span>
                 </span>
                 <button
                   type="button"
@@ -156,7 +162,7 @@ export function SocialLinks() {
                   disabled={!canUnlink || busy === key} aria-busy={busy === key}
                   onClick={() => void unlink(link)}
                 >
-                  {busy === key ? "해제 중…" : isConfirming ? "정말 해제할까요?" : "해제"}
+                  {busy === key ? intl.formatMessage({ id: "parent.socialLinks.copy008" }) : isConfirming ? intl.formatMessage({ id: "parent.socialLinks.copy009" }) : intl.formatMessage({ id: "parent.socialLinks.copy010" })}
                 </button>
               </div>
             </div>
@@ -175,10 +181,10 @@ export function SocialLinks() {
                 onClick={() => startLink(provider)}
               >
                 <span className="pa-row__k">
-                  {PROVIDER_LABEL[provider]} 계정 {hasAny ? "추가" : "연결"}
+                  {PROVIDER_LABEL[provider]} {intl.formatMessage({ id: "parent.socialLinks.copy011" })} {hasAny ? intl.formatMessage({ id: "parent.eventForm.copy058" }) : intl.formatMessage({ id: "parent.socialLinks.copy012" })}
                 </span>
                 <span className="pa-row__hint">
-                  {!native ? "앱에서" : busy === provider ? "연결 중…" : hasAny ? "다른 계정 연결" : "연결하기"}
+                  {!native ? intl.formatMessage({ id: "parent.socialLinks.copy013" }) : busy === provider ? intl.formatMessage({ id: "parent.socialLinks.copy014" }) : hasAny ? intl.formatMessage({ id: "parent.socialLinks.copy015" }) : intl.formatMessage({ id: "parent.socialLinks.copy016" })}
                 </span>
               </button>
             </div>
@@ -191,19 +197,19 @@ export function SocialLinks() {
           ? canUnlink
             ? (
               <span className="hy-explain__lines">
-                <span className="hy-explain__line">계정을 바꾸려면 새 계정을 먼저 연결한 뒤 예전 계정을 해제하세요.</span>
-                <span className="hy-explain__line">해제해도 가족·일정 데이터는 그대로예요.</span>
+                <span className="hy-explain__line">{intl.formatMessage({ id: "parent.socialLinks.copy017" })}</span>
+                <span className="hy-explain__line">{intl.formatMessage({ id: "parent.socialLinks.copy018" })}</span>
               </span>
             )
             : (
               <span className="hy-explain__lines">
-                <span className="hy-explain__line">지금은 이 소셜 계정이 유일한 로그인 수단이라 해제할 수 없어요.</span>
-                <span className="hy-explain__line">다른 로그인 방법을 먼저 추가해 주세요.</span>
+                <span className="hy-explain__line">{intl.formatMessage({ id: "parent.socialLinks.copy019" })}</span>
+                <span className="hy-explain__line">{intl.formatMessage({ id: "parent.socialLinks.copy020" })}</span>
               </span>
             )
           : (
             <span className="hy-explain__lines">
-              <span className="hy-explain__line">소셜 계정 연결은 안드로이드 앱에서 할 수 있어요.</span>
+              <span className="hy-explain__line">{intl.formatMessage({ id: "parent.socialLinks.copy021" })}</span>
             </span>
           )}
       </div>

@@ -32,7 +32,7 @@ test("아이용 위치·오류 문구는 locale별 formal 호칭을 섞지 않�
     th: /กรุณา|โปรด|คุณ/,
     id: /Silakan|Anda/,
     ms: /\bSila\b|\banda\b/i,
-    fil: /Mangyaring|Pakisuri/i,
+    fil: /Mangyaring|Paki(?:suri|lagay|subukan)/i,
   };
   const childContext = (id) => id.endsWith(".child")
     || id.includes(".child.")
@@ -49,6 +49,23 @@ test("아이용 위치·오류 문구는 locale별 formal 호칭을 섞지 않�
     };
     for (const [id, value] of Object.entries(catalog)) {
       if (childContext(id)) assert.doesNotMatch(value, pattern, `${locale}:${id}`);
+    }
+  }
+});
+
+test("가족 대화의 child와 parent 문구는 모든 locale에서 별도 key와 톤을 유지한다", () => {
+  const pairs = [
+    ["shared.memo.copy.empty.child", "shared.memo.copy.empty.formal"],
+    ["shared.memo.copy.inputPlaceholder.child", "shared.memo.copy.inputPlaceholder.formal"],
+    ["shared.memo.copy.sendFailed.child", "shared.memo.copy.sendFailed.formal"],
+    ["shared.memo.photo.error.child", "shared.memo.photo.error.formal"],
+  ];
+  for (const locale of foreignLocales) {
+    const shared = readCatalog(locale, "shared");
+    for (const [childId, formalId] of pairs) {
+      assert.equal(typeof shared[childId], "string", `${locale}:${childId}`);
+      assert.equal(typeof shared[formalId], "string", `${locale}:${formalId}`);
+      assert.notEqual(shared[childId], shared[formalId], `${locale}: child/formal 문구가 같으면 안 됩니다`);
     }
   }
 });

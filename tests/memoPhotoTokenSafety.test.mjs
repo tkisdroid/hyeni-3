@@ -42,6 +42,7 @@ const longPressSource = readFileSync(
   new URL("../src/lib/useLongPress.ts", import.meta.url),
   "utf8",
 );
+const koShared = JSON.parse(readFileSync(new URL("../locales/ko/shared.json", import.meta.url), "utf8"));
 
 test("비공개 사진은 JWT query URL 없이 Authorization fetch와 blob URL로 표시한다", () => {
   assert.doesNotMatch(clientSource, /childPhotoProxyUrl|teacherNoticeFileProxyUrl|\?token=/);
@@ -68,8 +69,10 @@ test("비공개 사진은 JWT query URL 없이 Authorization fetch와 blob URL�
   assert.match(memoSource, /saveImageToDevice\(previewImageUrl\)/);
   assert.match(memoSource, /IntersectionObserver/);
   assert.match(memoSource, /lease\.release\(\)/);
-  assert.match(memoSource, /사진을 불러오지 못했어요/);
-  assert.match(memoSource, /사진을 불러오지 못했어\. 눌러서 다시 시도해 줘\./);
+  assert.match(memoSource, /shared\.memoChat\.copy054/);
+  assert.match(memoSource, /shared\.memo\.photo\.error\.child/);
+  assert.equal(koShared["shared.memoChat.copy054"], "사진을 불러오지 못했어요.");
+  assert.equal(koShared["shared.memo.photo.error.child"], "사진을 불러오지 못했어. 눌러서 다시 시도해 줘.");
   assert.match(memoSource, /isChildSession=\{isChildSession\}/);
   assert.match(memoSource, /if \(event\.defaultPrevented\) return/);
   assert.match(longPressSource, /if \(firedRef\.current\)[\s\S]*?event\.preventDefault\(\)/);

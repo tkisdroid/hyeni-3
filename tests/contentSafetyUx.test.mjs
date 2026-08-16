@@ -12,6 +12,7 @@ const dialogFocusStack = await read("src/components/dialogFocusStack.ts");
 const endpoint = await read("src/lib/api/endpoints/contentSafety.ts");
 const queries = await read("src/queries/useContentSafety.ts");
 const childHome = await read("src/screens/child/ChildHome.tsx");
+const koShared = JSON.parse(await read("locales/ko/shared.json"));
 
 test("저장된 AI assistant 메시지는 즉시 신고할 수 있고 로컬 인사·오류는 신고하지 않는다", () => {
   assert.match(ai, /assistantMessageId/);
@@ -23,14 +24,17 @@ test("저장된 AI assistant 메시지는 즉시 신고할 수 있고 로컬 인
 });
 
 test("가족 메모 상대 메시지에는 앱 내 신고·차단 동선과 차단 해제가 있다", () => {
-  assert.match(memo, /신고·차단/);
+  assert.match(memo, /shared\.memoChat\.copy03[78]/);
+  assert.match(koShared["shared.memoChat.copy038"], /신고·차단/);
   assert.match(memo, /useReportMemoReply/);
   assert.match(memo, /useBlockMemoUser/);
   assert.match(memo, /useUnblockMemoUser/);
-  assert.match(memo, /차단 해제/);
+  assert.match(memo, /shared\.memoChat\.copy031/);
+  assert.match(koShared["shared.memoChat.copy031"], /차단 해제/);
   assert.match(queries, /invalidateQueries/);
   assert.doesNotMatch(memo, /\.filter\(\(item\) => item\.member !== null\)/);
-  assert.match(memo, /member\?\.name \?\? "보호자"/);
+  assert.match(memo, /member\?\.name \?\? intl\.formatMessage/);
+  assert.equal(koShared["shared.memoChat.copy030"], "보호자");
 });
 
 test("신고 dialog는 키보드·스크린리더·실패 재시도를 지원하고 아이 톤을 분리한다", () => {

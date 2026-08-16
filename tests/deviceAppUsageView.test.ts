@@ -213,8 +213,11 @@ test("빈 목록 문구는 Usage Access 허용 여부로 '권한 필요'와 '쓴
   assert.match(familyView, /appUsagePermissionGranted: health\.usagePermission === "granted"/);
 
   const home = readSource("src/screens/parent/ParentHome.tsx");
-  assert.match(home, /appUsagePermissionGranted\s*\?\s*"혜니캘린더 외에 오늘 쓴 앱이 없어요"/);
-  assert.match(home, /아이 기기 설정 > 사용정보 접근 허용을 켜면 표시돼요/);
+  const koParent = JSON.parse(readSource("locales/ko/parent.json"));
+  assert.match(home, /appUsagePermissionGranted[\s\S]{0,180}parent\.parentHome\.copy046/);
+  assert.match(home, /parent\.parentHome\.copy047/);
+  assert.equal(koParent["parent.parentHome.copy046"], "혜니캘린더 외에 오늘 쓴 앱이 없어요");
+  assert.equal(koParent["parent.parentHome.copy047"], "아이 기기 설정 > 사용정보 접근 허용을 켜면 표시돼요");
 
   const report = readSource("src/screens/feature/DailySafetyReport.tsx");
   assert.match(report, /appUsagePermissionGranted\s*\?\s*"혜니캘린더 외에 오늘 쓴 앱이 없어요\."/);

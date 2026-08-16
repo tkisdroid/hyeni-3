@@ -19,8 +19,8 @@ test("Free 화면 진입은 수동 위치 요청 횟수를 소모하지 않고 �
   const source = read("src/screens/parent/ParentLocation.tsx");
 
   assert.match(source, /if \([\s\S]*!premiumOpen[\s\S]*\) return;[\s\S]*void refreshLocation\(false\)/);
-  assert.match(source, /aria-label="다음 일정 길찾기"[\s\S]*onClick=\{\(\) => navigate\("\/route"\)\}/);
-  assert.match(source, /aria-label="주변 소리 듣기"[\s\S]*onClick=\{\(\) => navigate\("\/remote-audio"\)\}/);
+  assert.match(source, /parent\.parentLocation\.copy053[\s\S]*onClick=\{\(\) => navigate\("\/route"\)\}/);
+  assert.match(source, /parent\.parentLocation\.copy055[\s\S]*onClick=\{\(\) => navigate\("\/remote-audio"\)\}/);
 });
 
 test("위치 설정은 보관기간을 오해시키지 않고 실제 티어 조회 범위를 표시한다", () => {
@@ -53,5 +53,5 @@ test("Premium 위치 기록은 최근 30일 날짜를 고르고 Free의 과거 �
   assert.match(source, /queryEnd\.toISOString\(\)/);
   assert.match(source, /if \(!premiumOpen\)[\s\S]{0,180}setHistoryUpsellDayKey\([\s\S]{0,120}setUpsellSource\("location_history"\)/);
   assert.match(source, /premiumOpen[\s\S]{0,120}rawHistoryDayKey[\s\S]{0,120}historyTodayKey/);
-  assert.match(source, /aria-label="이동 기록 날짜"/);
+  assert.match(source, /aria-label=\{intl\.formatMessage\(\{ id: "parent\.parentLocation\.copy042" \}\)\}/);
 });

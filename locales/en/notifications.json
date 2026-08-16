@@ -1,1 +1,8 @@
-{}
+{
+  "notifications.status.loading": "Checking notification status",
+  "notifications.time.justNow": "Just now",
+  "notifications.group.today": "Today",
+  "notifications.group.yesterday": "Yesterday",
+  "notifications.group.earlier": "Earlier",
+  "notifications.fallback.title": "Notification"
+}

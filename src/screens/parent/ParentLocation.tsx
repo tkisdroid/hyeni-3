@@ -1,3 +1,4 @@
+import { useIntl, type IntlShape } from "react-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   MouseEvent as ReactMouseEvent,
@@ -105,11 +106,11 @@ function eventPoint(event: CalendarEvent): { lat: number; lng: number } | null {
   return { lat, lng };
 }
 
-function eventLabel(event: CalendarEvent): string {
-  return (event.title || event.location?.address || "일정 장소").trim();
+function eventLabel(event: CalendarEvent, intl: IntlShape): string {
+  return (event.title || event.location?.address || intl.formatMessage({ id: "parent.home.schedulePlace" })).trim();
 }
 
-function scheduleStayLabel(stay: StayPoint, events: CalendarEvent[], timeZone: string): string | null {
+function scheduleStayLabel(stay: StayPoint, events: CalendarEvent[], timeZone: string, intl: IntlShape): string | null {
   const candidates = events
     .map((event) => {
       const point = eventPoint(event);
@@ -127,7 +128,7 @@ function scheduleStayLabel(stay: StayPoint, events: CalendarEvent[], timeZone: s
     })
     .filter((row): row is { event: CalendarEvent; distance: number; overlapMs: number } => row !== null)
     .sort((a, b) => b.overlapMs - a.overlapMs || a.distance - b.distance);
-  return candidates[0] ? eventLabel(candidates[0].event) : null;
+  return candidates[0] ? eventLabel(candidates[0].event, intl) : null;
 }
 
 /**
@@ -135,6 +136,7 @@ function scheduleStayLabel(stay: StayPoint, events: CalendarEvent[], timeZone: s
  * 계산은 `transform/locationHistoryScrub` 의 순수 함수가 담당한다(실측점만 · 8m 지터 압축).
  */
 export function ParentLocation() {
+  const intl = useIntl();
   const { locale } = useLocale();
   const navigate = useNavigate();
   const { show } = useToast();
@@ -185,7 +187,7 @@ export function ParentLocation() {
   const historyMaxDateValue = dateKeyToDateInputValue(premiumHistoryRange.maxDateKey);
   const historyDateValue = dateKeyToDateInputValue(historyDayKey);
   const historyDayLabel = useMemo(() => {
-    if (historyDayKey === historyTodayKey) return "오늘";
+    if (historyDayKey === historyTodayKey) return intl.formatMessage({ id: "parent.parentCalendar.copy006" });
     const date = parseAppDateKey(historyDayKey);
     return date
       ? formatDateTime(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 12), {
@@ -194,7 +196,7 @@ export function ParentLocation() {
           timeZone: "UTC",
           dateStyle: "medium",
         })
-      : "선택한 날";
+      : intl.formatMessage({ id: "parent.parentLocation.copy001" });
   }, [historyDayKey, historyTodayKey, locale]);
   const historyMaxOffsetMinute = historyWindow.maxOffsetMinutes;
   // null = 최신 따라가기(기본). 숫자 = 부모가 직접 고른 시각.
@@ -218,7 +220,7 @@ export function ParentLocation() {
   }, [childParam, childMembers, activeChild]);
 
   const childAvatar = childAvatarPath(selected?.photo_url);
-  const childName = selected?.name || "아이";
+  const childName = selected?.name || intl.formatMessage({ id: "parent.parentHome.copy004" });
   const cachedLoc = selected?.user_id
     ? locations?.find((l) => l.user_id === selected.user_id) ?? null
     : null;
@@ -251,38 +253,40 @@ export function ParentLocation() {
     setRefreshState("idle");
   }, [refreshTargetKey]);
 
-  const fresh = loc ? formatFreshness(loc.updated_at, now, locale) : null;
+  const fresh = loc ? formatFreshness(loc.updated_at, now, locale, intl) : null;
   const accuracyM = loc?.accuracy_m != null && Number.isFinite(Number(loc.accuracy_m))
     ? Math.max(0, Math.round(Number(loc.accuracy_m)))
     : null;
   const isLowAccuracy = accuracyM != null && accuracyM > 150;
   const locationLabel = useLocationLabels(loc ? [loc] : [], places);
-  const curPlace = loc ? locationLabel(loc) : "위치 확인 중";
+  const curPlace = loc ? locationLabel(loc) : intl.formatMessage({ id: "parent.parentLocation.copy002" });
   const isStaleLocation = !!loc && fresh?.status === "stale";
   const sheetName = locationScopeError
-    ? `${childName} · 위치 조회 범위 확인 실패`
+    ? intl.formatMessage({ id: "parent.location.scopeFailedForChild" }, { childName })
     : locationScopePending
-    ? `${childName} · 조회 범위 확인 중`
+    ? intl.formatMessage({ id: "parent.location.scopeLoadingForChild" }, { childName })
     : isLocked
     ? childName
     : isRefreshingLocation
-      ? `${childName} 위치 확인 중`
+      ? intl.formatMessage({ id: "parent.location.refreshingForChild" }, { childName })
       : isStaleLocation
-        ? `${childName} · 마지막 확인: ${curPlace}`
-        : `${childName} · ${curPlace}`;
+        ? intl.formatMessage({ id: "parent.location.lastSeenAt" }, { childName, place: curPlace })
+        : intl.formatMessage({ id: "parent.location.childAtPlace" }, { childName, place: curPlace });
   const sheetZoneText = locationScopeError
-    ? "구독 상태를 확인하지 못했어요"
+    ? intl.formatMessage({ id: "parent.parentLocation.copy003" })
     : locationScopePending
-    ? "구독 상태를 확인하고 있어요"
+    ? intl.formatMessage({ id: "parent.parentLocation.copy004" })
     : isLocked
-    ? "안전 기능은 계속 쓸 수 있어요"
+    ? intl.formatMessage({ id: "parent.parentLocation.copy005" })
     : isRefreshingLocation
-      ? "위치 요청을 보냈어요"
+      ? intl.formatMessage({ id: "parent.parentLocation.copy006" })
       : isLowAccuracy
-        ? `정확도가 낮아요 · 오차 약 ${accuracyM}m · ${fresh?.label ?? "확인 시각 없음"}`
-        : `${fresh?.label ?? "위치 정보 없음"}${accuracyM != null ? ` · 오차 약 ${accuracyM}m` : ""}`;
+        ? intl.formatMessage({ id: "parent.location.lowAccuracy" }, { accuracy: accuracyM, freshness: fresh?.label ?? intl.formatMessage({ id: "parent.parentLocation.copy007" }) })
+        : accuracyM != null
+          ? intl.formatMessage({ id: "parent.location.freshnessAccuracy" }, { freshness: fresh?.label ?? intl.formatMessage({ id: "parent.parentLocation.copy008" }), accuracy: accuracyM })
+          : fresh?.label ?? intl.formatMessage({ id: "parent.parentLocation.copy008" });
   // 진행 단계를 나눠 설명하지 않는다 — 항상 간단한 한 줄만 보여준다(2026-08-02 TK 지시).
-  const refreshOverlayTitle = "위치 요청을 보냈어요";
+  const refreshOverlayTitle = intl.formatMessage({ id: "parent.location.requestSent" });
 
   // ── 보기 모드: 최근/실시간 위치 ↔ 오늘 이동 경로 ─────────────────────
   const [view, setView] = useState<"live" | "history">(requestedView);
@@ -338,8 +342,8 @@ export function ParentLocation() {
   // 출발 마커(첫 위치). 현재 마커는 지도의 child 아바타 오버레이가 담당.
   // 매 렌더 새 배열을 만들면 지도 오버레이가 통째로 다시 그려지므로 메모이즈한다.
   const trailStart = useMemo<MapPlace[]>(
-    () => (trail.length ? [{ lat: trail[0].lat, lng: trail[0].lng, name: "출발" }] : []),
-    [trail],
+    () => (trail.length ? [{ lat: trail[0].lat, lng: trail[0].lng, name: intl.formatMessage({ id: "parent.location.departure" }) }] : []),
+    [trail, intl],
   );
 
   // ── 스테이포인트: 하루 이력에서 GPS 노이즈를 걸러 머무른 장소 + 체류시간을 검출. ──
@@ -357,9 +361,9 @@ export function ParentLocation() {
   );
   const stayLabels = useMemo(
     () => stayPoints.map((s) => (
-      scheduleStayLabel(s, selectedHistoryEvents, LEGACY_FAMILY_TIME_ZONE) ?? stayPlaceLabel(s, places)
+      scheduleStayLabel(s, selectedHistoryEvents, LEGACY_FAMILY_TIME_ZONE, intl) ?? stayPlaceLabel(s, places)
     )),
-    [stayPoints, selectedHistoryEvents, places],
+    [stayPoints, selectedHistoryEvents, places, intl],
   );
   const visibleStayPoints = useMemo(
     () => stayPoints.filter((s) => s.arrivalMs <= scrubMs),
@@ -374,11 +378,11 @@ export function ParentLocation() {
           return {
             lat: point.lat,
             lng: point.lng,
-            name: `${event.time || ""} ${eventLabel(event)}`.trim(),
+            name: `${event.time || ""} ${eventLabel(event, intl)}`.trim(),
           };
         })
         .filter((p): p is MapPlace => p !== null),
-    [selectedHistoryEvents],
+    [selectedHistoryEvents, intl],
   );
   const historyPlaces = useMemo(
     () => [...trailStart, ...scheduleMapPlaces],
@@ -606,7 +610,7 @@ export function ParentLocation() {
   const refreshLocation = useCallback(async (announceSuccess: boolean) => {
     if (!canShowLocation || isFetching || isRefreshingLocation) return;
     if (!familyId || !selected?.user_id) {
-      show("아이 기기 정보가 없어 위치 요청을 보내지 못했어요", "⚠️");
+      show(intl.formatMessage({ id: "parent.parentLocation.copy009" }), "⚠️");
       return;
     }
     const requestSeq = refreshSeq.current + 1;
@@ -622,7 +626,7 @@ export function ParentLocation() {
           setUpsellSource("location_request");
           return;
         }
-        show("아이 기기에 위치 요청을 보내지 못했어요", "⚠️");
+        show(intl.formatMessage({ id: "parent.parentLocation.copy010" }), "⚠️");
         return;
       }
       setRefreshState("waiting");
@@ -635,16 +639,16 @@ export function ParentLocation() {
       });
       if (outcome === "cancelled") return;
       if (outcome === "updated") {
-        if (announceSuccess) show("아이의 새 위치를 확인했어요", "📍");
+        if (announceSuccess) show(intl.formatMessage({ id: "parent.parentLocation.copy011" }), "📍");
         return;
       }
       if (outcome === "error") {
-        show("위치 갱신 결과를 확인하지 못했어요", "⚠️");
+        show(intl.formatMessage({ id: "parent.parentLocation.copy012" }), "⚠️");
         return;
       }
-      show("아이 기기에 요청은 보냈지만 아직 새 위치가 도착하지 않았어요", "⚠️");
+      show(intl.formatMessage({ id: "parent.parentLocation.copy013" }), "⚠️");
     } catch {
-      show("위치 갱신에 실패했어요", "⚠️");
+      show(intl.formatMessage({ id: "parent.parentLocation.copy014" }), "⚠️");
       return;
     } finally {
       if (refreshMounted.current && refreshSeq.current === requestSeq) {
@@ -696,12 +700,12 @@ export function ParentLocation() {
   const callChild = () => {
     const number = selected?.phone;
     if (!number) {
-      show(`${childName} 전화번호가 없어요`, "📞");
+      show(intl.formatMessage({ id: "parent.location.noPhone" }, { childName }), "📞");
       return;
     }
-    show(`${childName}에게 전화를 거는 중…`, "📞");
+    show(intl.formatMessage({ id: "parent.location.calling" }, { childName }), "📞");
     void placePhoneCall(number).then((r) => {
-      if (!r.ok) show("전화를 걸 수 없어요. 전화 앱을 확인해 주세요", "⚠️");
+      if (!r.ok) show(intl.formatMessage({ id: "parent.parentLocation.copy015" }), "⚠️");
     });
   };
 
@@ -733,14 +737,14 @@ export function ParentLocation() {
         <div className={`pl-histmsg${histErrored ? " pl-histmsg--error" : ""}`} role={histErrored ? "alert" : "status"}>
           <span>
             {histErrored
-              ? "이동 기록을 불러오지 못했어요"
+              ? intl.formatMessage({ id: "parent.parentLocation.copy016" })
               : histLoading
-                ? `${historyDayLabel} 이동 기록을 불러오는 중…`
-                : `${historyDayLabel} 이동 기록이 아직 없어요`}
+                ? intl.formatMessage({ id: "parent.location.historyLoading" }, { day: historyDayLabel })
+                : intl.formatMessage({ id: "parent.location.historyEmpty" }, { day: historyDayLabel })}
           </span>
           {histErrored && (
             <button type="button" className="pl-lock__retry hy-press hy-busy-quiet" onClick={() => void refetchHistory()}>
-              다시 시도
+              {intl.formatMessage({ id: "parent.parentHome.copy017" })}
             </button>
           )}
         </div>
@@ -760,14 +764,14 @@ export function ParentLocation() {
             )}
           </div>
           <div className="pl-lock__title">
-            {locationScopeError ? "위치 조회 범위 확인 실패" : "조회 범위 확인 중"}
+            {locationScopeError ? intl.formatMessage({ id: "parent.parentHome.copy014" }) : intl.formatMessage({ id: "parent.parentLocation.copy017" })}
           </div>
           <div className="pl-lock__sub">
-            {locationScopeError ? "구독 상태를 확인하지 못했어요." : "구독 상태를 확인하고 있어요."}
+            {locationScopeError ? intl.formatMessage({ id: "parent.parentLocation.copy018" }) : intl.formatMessage({ id: "parent.parentLocation.copy019" })}
             {" "}
             {locationScopeError
-              ? "인터넷 연결을 확인한 뒤 다시 시도해 주세요."
-              : "확인되면 볼 수 있는 위치 범위를 표시해 드려요."}
+              ? intl.formatMessage({ id: "parent.parentLocation.copy020" })
+              : intl.formatMessage({ id: "parent.parentLocation.copy021" })}
           </div>
           {locationScopeError && (
             <button
@@ -781,7 +785,7 @@ export function ParentLocation() {
                 strokeWidth={2.4}
                 className={entitlement.isFetching ? "pl-lock__spin" : undefined}
               />
-              {entitlement.isFetching ? "다시 확인 중…" : "다시 시도"}
+              {entitlement.isFetching ? intl.formatMessage({ id: "parent.parentLocation.copy022" }) : intl.formatMessage({ id: "parent.parentHome.copy017" })}
             </button>
           )}
         </div>
@@ -790,14 +794,14 @@ export function ParentLocation() {
       {activeView === "history" && canShowHistory && timedTrail.length > 0 && (
         <div className="pl-scrub">
           <div className="pl-scrub__head">
-            <span className="pl-scrub__label">{historyDayLabel} 시간대별 경로</span>
+            <span className="pl-scrub__label">{historyDayLabel} {intl.formatMessage({ id: "parent.parentLocation.copy023" })}</span>
             <button
               type="button"
               className="pl-scrub__latest hy-press"
               onClick={followLatestAgain}
               disabled={followsLatest}
             >
-              {followsLatest ? "최신" : "최신으로"}
+              {followsLatest ? intl.formatMessage({ id: "parent.parentLocation.copy024" }) : intl.formatMessage({ id: "parent.parentLocation.copy025" })}
             </button>
             <span className="pl-scrub__moment">
               <strong>{formatClockHM(scrubMs, locale, LEGACY_FAMILY_TIME_ZONE)}</strong>
@@ -811,7 +815,7 @@ export function ParentLocation() {
             max={historyMaxOffsetMinute}
             value={effectiveScrubOffsetMinute}
             onChange={(e) => moveScrubTo(Number(e.target.value))}
-            aria-label={`${historyDayLabel} 경로 시간 선택`}
+            aria-label={intl.formatMessage({ id: "parent.location.routeTimeSelect" }, { day: historyDayLabel })}
             aria-valuetext={`${formatClockHM(scrubMs, locale, LEGACY_FAMILY_TIME_ZONE)} · ${scrubWhere}`}
           />
           <div className="pl-scrub__ticks" aria-hidden="true">
@@ -819,10 +823,10 @@ export function ParentLocation() {
             <span>{formatClockHM(historyWindow.endMs, locale, LEGACY_FAMILY_TIME_ZONE)}</span>
           </div>
           <div className="pl-scrub__legend">
-            <span><i className="pl-scrub__line" /> 이동선</span>
-            <span><i className="pl-scrub__dot" /> 머문 곳</span>
+            <span><i className="pl-scrub__line" /> {intl.formatMessage({ id: "parent.parentLocation.copy026" })}</span>
+            <span><i className="pl-scrub__dot" /> {intl.formatMessage({ id: "parent.parentLocation.copy027" })}</span>
             {scheduleMapPlaces.length > 0 && (
-              <span><MapPin size={16} strokeWidth={2.2} aria-hidden="true" /> 일정</span>
+              <span><MapPin size={16} strokeWidth={2.2} aria-hidden="true" /> {intl.formatMessage({ id: "parent.parentHome.copy011" })}</span>
             )}
           </div>
         </div>
@@ -834,17 +838,17 @@ export function ParentLocation() {
           <div className="pl-lock__ring">
             <img src={asset("ui/lock-3d.webp")} alt="" className="pl-lock__icon" />
           </div>
-          <div className="pl-lock__title">실시간 위치는 프리미엄이에요</div>
+          <div className="pl-lock__title">{intl.formatMessage({ id: "parent.parentLocation.copy028" })}</div>
           <div className="pl-lock__sub">
-            무료 플랜은 약 10분 간격으로 최근 위치와 오늘 경로를 볼 수 있어요.{" "}
-            프리미엄은 지금 위치와 최근 30일 이동 기록을 확인할 수 있어요.
+            {intl.formatMessage({ id: "parent.parentLocation.copy029" })}{" "}
+            {intl.formatMessage({ id: "parent.parentLocation.copy030" })}
           </div>
           <button
             type="button"
             className="pl-lock__cta hy-press"
             onClick={() => navigate("/subscription")}
           >
-            프리미엄 시작하기
+            {intl.formatMessage({ id: "parent.parentLocation.copy031" })}
           </button>
         </div>
       )}
@@ -852,7 +856,7 @@ export function ParentLocation() {
       {/* 상단 오버레이(잠금 시 숨김) — 보기 토글 + (실시간에서만) 새로고침 */}
       {!isLocked && !locationScopePending && (
         <div className="pl-top">
-          <div className="pl-viewtog" role="tablist" aria-label="위치 보기 전환">
+          <div className="pl-viewtog" role="tablist" aria-label={intl.formatMessage({ id: "parent.parentLocation.copy032" })}>
             <button
               type="button"
               role="tab"
@@ -863,7 +867,7 @@ export function ParentLocation() {
                 setSelectedStayIdx(null);
               }}
             >
-              {isStandard ? "최근 위치" : "실시간"}
+              {isStandard ? intl.formatMessage({ id: "parent.parentLocation.copy033" }) : intl.formatMessage({ id: "parent.parentLocation.copy034" })}
             </button>
             <button
               type="button"
@@ -872,14 +876,14 @@ export function ParentLocation() {
               className={`pl-viewtog__btn hy-press${activeView === "history" ? " pl-viewtog__btn--on" : ""}`}
               onClick={() => setView("history")}
             >
-              {premiumOpen ? "이동 기록" : "오늘 경로"}
+              {premiumOpen ? intl.formatMessage({ id: "parent.parentLocation.copy035" }) : intl.formatMessage({ id: "parent.parentLocation.copy036" })}
             </button>
           </div>
           {activeView === "live" && (
             <button
               type="button"
               className={`pl-refresh hy-busy-quiet${isRefreshingLocation ? " pl-refresh--loading" : ""}`}
-              aria-label={isRefreshingLocation ? refreshOverlayTitle : "지금 위치 요청"}
+              aria-label={isRefreshingLocation ? refreshOverlayTitle : intl.formatMessage({ id: "parent.parentLocation.copy037" })}
               aria-busy={isRefreshingLocation}
               onClick={refresh}
               disabled={isFetching || isRefreshingLocation}
@@ -894,13 +898,13 @@ export function ParentLocation() {
         <div
           className="pl-history-day"
           role="group"
-          aria-label={premiumOpen ? "최근 30일 이동 기록 날짜 선택" : "무료 오늘 이동 기록"}
+          aria-label={premiumOpen ? intl.formatMessage({ id: "parent.parentLocation.copy038" }) : intl.formatMessage({ id: "parent.parentLocation.copy039" })}
           data-premium={premiumOpen}
         >
           <button
             type="button"
             className="pl-history-day__nav hy-press"
-            aria-label={premiumOpen ? "이전 날짜" : "이전 날짜 보기 (프리미엄)"}
+            aria-label={premiumOpen ? intl.formatMessage({ id: "parent.parentLocation.copy040" }) : intl.formatMessage({ id: "parent.parentLocation.copy041" })}
             onClick={selectPreviousHistoryDay}
             disabled={premiumOpen && historyAtMin}
           >
@@ -909,7 +913,7 @@ export function ParentLocation() {
           <input
             className="pl-history-day__input"
             type="date"
-            aria-label="이동 기록 날짜"
+            aria-label={intl.formatMessage({ id: "parent.parentLocation.copy042" })}
             value={historyDateValue}
             min={historyMinDateValue}
             max={historyMaxDateValue}
@@ -921,7 +925,7 @@ export function ParentLocation() {
           <button
             type="button"
             className="pl-history-day__nav hy-press"
-            aria-label="다음 날짜"
+            aria-label={intl.formatMessage({ id: "parent.parentLocation.copy043" })}
             onClick={selectNextHistoryDay}
             disabled={historyAtMax}
           >
@@ -940,11 +944,11 @@ export function ParentLocation() {
       {/* 아이 표시 배지 — 실시간에서만 현재 보는 아이를 명시한다. */}
       {!isLocked && !locationScopePending && activeView === "live" && selected && (
         <div className="pl-chips">
-          <div className="pl-chip pl-chip--active" aria-label={`현재 ${selected.name || "아이"} 위치 보기`}>
+          <div className="pl-chip pl-chip--active" aria-label={intl.formatMessage({ id: "parent.location.currentChildLocation" }, { childName: selected.name || intl.formatMessage({ id: "parent.parentHome.copy004" }) })}>
             <span className="pl-chip__avatar">
               <img className="hy-network-avatar" src={avatarSrc(childAvatarPath(selected.photo_url))} alt="" loading="eager" decoding="async" />
             </span>
-            <span className="pl-chip__name">{selected.name || "아이"}</span>
+            <span className="pl-chip__name">{selected.name || intl.formatMessage({ id: "parent.parentHome.copy004" })}</span>
             <span className="pl-chip__dot" />
           </div>
         </div>
@@ -969,7 +973,7 @@ export function ParentLocation() {
             className="pl-stays__grip"
             role="button"
             tabIndex={0}
-            aria-label={staysCollapsed ? `${historyDayLabel} 머문 곳 펼치기` : `${historyDayLabel} 머문 곳 접기`}
+            aria-label={intl.formatMessage({ id: staysCollapsed ? "parent.location.expandStays" : "parent.location.collapseStays" }, { day: historyDayLabel })}
             onClick={() => setStaysCollapsed((v) => !v)}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
@@ -981,8 +985,8 @@ export function ParentLocation() {
             <div className="pl-sheet__handle" />
           </div>
           <div className="pl-stays__head">
-            <span className="pl-stays__title">{historyDayLabel} 머문 곳</span>
-            <span className="pl-stays__count">{visibleStayPoints.length}/{stayPoints.length}곳</span>
+            <span className="pl-stays__title">{historyDayLabel} {intl.formatMessage({ id: "parent.parentLocation.copy027" })}</span>
+            <span className="pl-stays__count">{visibleStayPoints.length}/{stayPoints.length}{intl.formatMessage({ id: "parent.parentLocation.copy044" })}</span>
           </div>
           <div className="pl-stays__list">
             {visibleStayPoints.map((s, i) => {
@@ -997,7 +1001,7 @@ export function ParentLocation() {
                 >
                   <span className="pl-stay__num">{i + 1}</span>
                   <span className="pl-stay__body">
-                    <span className="pl-stay__place">{place ?? "머문 장소"}</span>
+                    <span className="pl-stay__place">{place ?? intl.formatMessage({ id: "parent.parentLocation.copy045" })}</span>
                     <span className="pl-stay__time">
                       {formatClockHM(s.arrivalMs, locale, LEGACY_FAMILY_TIME_ZONE)}–
                       {formatClockHM(s.departureMs, locale, LEGACY_FAMILY_TIME_ZONE)}
@@ -1015,7 +1019,7 @@ export function ParentLocation() {
             className="pl-stays-reopen hy-press"
             onClick={() => setStaysCollapsed(false)}
           >
-            {historyDayLabel} 머문 곳 {visibleStayPoints.length}곳
+            {historyDayLabel} {intl.formatMessage({ id: "parent.parentLocation.copy027" })} {visibleStayPoints.length}{intl.formatMessage({ id: "parent.parentLocation.copy044" })}
           </button>
         )}
         </>
@@ -1036,18 +1040,18 @@ export function ParentLocation() {
             >
               <span className="pl-sheet__zone-dot" />
               {sheetZoneText}
-              {isStandard && <span className="pl-delay-badge">약 10분 간격 자동 확인</span>}
+              {isStandard && <span className="pl-delay-badge">{intl.formatMessage({ id: "parent.parentLocation.copy046" })}</span>}
             </div>
           </div>
           {/* 상태 칩은 말할 내용이 있을 때만 렌더한다(정상일 때 빈 알약이 보이던 문제). */}
           {(() => {
             const durText = locationScopeError
-              ? "오류"
+              ? intl.formatMessage({ id: "parent.parentLocation.copy047" })
               : locationScopePending || isRefreshingLocation
-                ? "확인 중"
+                ? intl.formatMessage({ id: "parent.parentHome.copy033" })
                 : loc
                   ? ""
-                  : "오프라인";
+                  : intl.formatMessage({ id: "parent.parentLocation.copy048" });
             if (!durText) return null;
             return (
               <span className={`pl-sheet__dur${isRefreshingLocation ? " pl-sheet__dur--loading" : ""}`}>
@@ -1072,7 +1076,7 @@ export function ParentLocation() {
             }
           >
             <span className="pl-status__dot" />
-            {isError ? "위치 갱신에 실패했어요 · 상태 확인" : "위치 정보가 없어요 · 상태 확인"}
+            {isError ? intl.formatMessage({ id: "parent.parentLocation.copy049" }) : intl.formatMessage({ id: "parent.parentLocation.copy050" })}
           </button>
         )}
 
@@ -1087,7 +1091,7 @@ export function ParentLocation() {
             }}
           >
             <Crown size={16} strokeWidth={2.2} color="var(--gold-text)" />
-            실시간 위치와 30일 이동 기록 보기
+            {intl.formatMessage({ id: "parent.parentLocation.copy051" })}
           </button>
         )}
 
@@ -1095,11 +1099,11 @@ export function ParentLocation() {
           <button
             type="button"
             className="pl-memo-btn hy-press"
-            aria-label="메모 남기기"
+            aria-label={intl.formatMessage({ id: "parent.parentLocation.copy052" })}
             onClick={() => navigate("/parent/memo")}
           >
             <MessageCircle size={22} strokeWidth={2.2} color="#fff" aria-hidden="true" />
-            <span className="pl-actions__label">메모</span>
+            <span className="pl-actions__label">{intl.formatMessage({ id: "parent.eventForm.copy060" })}</span>
           </button>
           {/* 길찾기는 모든 티어에서 열고, 주변 소리는 대상 화면의 고지형 Premium gate를 사용한다. */}
           {!isLocked && !locationScopePending && (
@@ -1107,26 +1111,26 @@ export function ParentLocation() {
               <button
                 type="button"
                 className="pl-route-btn hy-press"
-                aria-label="다음 일정 길찾기"
+                aria-label={intl.formatMessage({ id: "parent.parentLocation.copy053" })}
                 onClick={() => navigate("/route")}
               >
                 <Navigation size={22} strokeWidth={2.2} color="var(--blue-500)" aria-hidden="true" />
-                <span className="pl-actions__label">경로</span>
+                <span className="pl-actions__label">{intl.formatMessage({ id: "parent.parentLocation.copy054" })}</span>
               </button>
               <button
                 type="button"
                 className="pl-listen-btn hy-press"
-                aria-label="주변 소리 듣기"
+                aria-label={intl.formatMessage({ id: "parent.parentLocation.copy055" })}
                 onClick={() => navigate("/remote-audio")}
               >
                 <img src={asset("ui/menu-remote-audio.webp")} alt="" />
-                <span className="pl-actions__label">주변소리</span>
+                <span className="pl-actions__label">{intl.formatMessage({ id: "parent.home.shortcut.remoteAudio" })}</span>
               </button>
             </>
           )}
-          <button type="button" className="pl-call-btn hy-press" aria-label="아이에게 전화 걸기" onClick={callChild}>
+          <button type="button" className="pl-call-btn hy-press" aria-label={intl.formatMessage({ id: "parent.parentLocation.copy056" })} onClick={callChild}>
             <Phone size={22} strokeWidth={2.2} color="var(--mint-text)" aria-hidden="true" />
-            <span className="pl-actions__label">전화</span>
+            <span className="pl-actions__label">{intl.formatMessage({ id: "parent.parentLocation.copy057" })}</span>
           </button>
         </div>
       </div>
@@ -1157,7 +1161,7 @@ export function ParentLocation() {
             const saved = storage && returnTo
               ? savePremiumReturnIntent(storage, { source, feature, returnTo })
               : false;
-            if (!saved) throw new Error("결제 후 위치 화면으로 돌아올 경로를 안전하게 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+            if (!saved) throw new Error(intl.formatMessage({ id: "parent.location.returnIntentFailed" }));
             setUpsellSource(null);
             setHistoryUpsellDayKey(null);
             navigate("/subscription");

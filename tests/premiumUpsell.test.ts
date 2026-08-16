@@ -84,6 +84,7 @@ test("위치·리포트·AI·주변소리 업셀은 Free에서 유지되는 가�
 test("PremiumUpsell 컴포넌트는 기존 dialog 생명주기와 Android back을 사용한다", () => {
   const source = readFileSync(new URL("../src/components/PremiumUpsell.tsx", import.meta.url), "utf8");
   const css = readFileSync(new URL("../src/components/PremiumUpsell.css", import.meta.url), "utf8");
+  const koParent = JSON.parse(readFileSync(new URL("../locales/ko/parent.json", import.meta.url), "utf8"));
 
   assert.match(source, /useDialogFocusLifecycle/);
   assert.match(source, /role="dialog"/);
@@ -91,9 +92,10 @@ test("PremiumUpsell 컴포넌트는 기존 dialog 생명주기와 Android back�
   assert.match(source, /aria-labelledby=\{titleId\}/);
   assert.match(source, /aria-describedby=\{descriptionId\}/);
   assert.match(source, /App\.addListener\("backButton"/);
-  assert.match(source, /무료로 계속 쓰기/);
+  assert.match(source, /parent\.premiumUpsell\.copy003/);
+  assert.equal(koParent["parent.premiumUpsell.copy003"], "무료로 계속 쓰기");
   assert.match(source, /aria-busy=\{busy\}/);
-  assert.match(source, /resolvePremiumUpsell\(source, usage\)/);
+  assert.match(source, /resolvePremiumUpsell\(source, usage, intl\)/);
   assert.match(source, /fetchWebBillingCatalog\(familyId\)/);
   assert.match(source, /catalog\.trialEligible === true && catalog\.trialDays === 7/);
   assert.match(source, /getPlatform\(\) !== "web"/);

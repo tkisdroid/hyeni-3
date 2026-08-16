@@ -53,8 +53,10 @@ test("부모·연결 화면의 긴 한국어 문구는 의미 단위 줄바꿈�
 test("가족 연결과 위치 잠금 안내는 강제 줄바꿈 없이 폭에 맞춰 흐른다", () => {
   const family = readFileSync(resolve(rootDir, "src/screens/parent/ParentFamily.tsx"), "utf8");
   const location = readFileSync(resolve(rootDir, "src/screens/parent/ParentLocation.tsx"), "utf8");
+  const koParent = JSON.parse(readFileSync(resolve(rootDir, "locales/ko/parent.json"), "utf8"));
 
-  assert.ok(family.includes("이 코드나 QR로 다시 연결해요."));
+  assert.ok(family.includes("parent.parentFamily.copy022"));
+  assert.match(koParent["parent.parentFamily.copy022"], /이 코드나 QR로 다시 연결해요\./);
   assert.doesNotMatch(location, /<br\s*\/?>/);
 });
 

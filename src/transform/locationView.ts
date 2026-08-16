@@ -4,6 +4,8 @@
 import type { SavedPlace, ChildLocation } from "@/lib/api/endpoints/location";
 import type { SupportedLocale } from "../i18n/locale.ts";
 import { formatRelativeTime } from "../i18n/format.ts";
+import type { IntlShape } from "react-intl";
+import { withDefaultIntl } from "../i18n/defaultIntl.ts";
 
 /** 서버 타임스탬프("YYYY-MM-DD HH:MM:SS.mmm+00") → Date. */
 export function parseServerTimestamp(ts: string | null | undefined): Date | null {
@@ -23,11 +25,13 @@ export function formatFreshness(
   updatedAt: string | null | undefined,
   now: Date,
   locale: SupportedLocale,
+  providedIntl?: IntlShape,
 ): Freshness {
+  const intl = withDefaultIntl(providedIntl);
   const d = parseServerTimestamp(updatedAt);
-  if (!d) return { label: "위치 정보 없음", status: "stale" };
+  if (!d) return { label: intl.formatMessage({ id: "parent.location.noInformation" }), status: "stale" };
   const diffSec = Math.max(0, Math.round((now.getTime() - d.getTime()) / 1000));
-  if (diffSec < 90) return { label: "방금 업데이트", status: "live" };
+  if (diffSec < 90) return { label: intl.formatMessage({ id: "parent.location.justUpdated" }), status: "live" };
   const diffMin = Math.round(diffSec / 60);
   if (diffMin < 60) {
     return {
@@ -106,14 +110,14 @@ export function exactSavedPlaceLabel(
 }
 
 /** 주소 조회가 아직 끝나지 않았을 때의 사용자용 fallback. 좌표는 기본 UI에 노출하지 않는다. */
-export function coordinateLabel(loc: ChildLocation): string {
+export function coordinateLabel(loc: ChildLocation, providedIntl?: IntlShape): string {
   void loc;
-  return "주소 확인 중";
+  return withDefaultIntl(providedIntl).formatMessage({ id: "parent.location.addressLoading" });
 }
 
 /** 자녀 위치 → 현위치 라벨: 좁은 반경의 저장장소명, 아니면 주소 조회 대기. */
-export function placeLabel(loc: ChildLocation, places: SavedPlace[]): string {
+export function placeLabel(loc: ChildLocation, places: SavedPlace[], providedIntl?: IntlShape): string {
   const place = exactSavedPlaceLabel(loc, places);
   if (place) return place;
-  return coordinateLabel(loc);
+  return coordinateLabel(loc, providedIntl);
 }

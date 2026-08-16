@@ -85,10 +85,14 @@ test("파생 문구도 잠금 화면·월간 구독·말줄임표 표기를 유�
   assert.doesNotMatch(entitlement, /프리미엄 월구독/);
 
   const memo = read("src/transform/memoChatCopy.ts");
+  const koShared = JSON.parse(read("locales/ko/shared.json"));
   assert.doesNotMatch(memo, /메시지를 입력(?:하세요|해 줘)\.\.\./);
-  assert.match(memo, /메시지를 입력하세요…/);
-  assert.match(memo, /메시지를 입력해 줘…/);
+  assert.equal(koShared["shared.memo.copy.inputPlaceholder.formal"], "메시지를 입력하세요…");
+  assert.equal(koShared["shared.memo.copy.inputPlaceholder.child"], "메시지를 입력해 줘…");
+  assert.match(memo, /shared\.memo\.copy\.\$\{field\}\.\$\{tone\}/);
 
   const memoScreen = read("src/screens/shared/MemoChat.tsx");
-  assert.match(memoScreen, /savingPhoto \? "저장 중…" : "저장"/);
+  assert.match(memoScreen, /savingPhoto \? intl\.formatMessage\(\{ id: "shared\.memoChat\.copy047" \}\) : intl\.formatMessage\(\{ id: "shared\.memoChat\.copy048" \}\)/);
+  assert.equal(koShared["shared.memoChat.copy047"], "저장 중…");
+  assert.equal(koShared["shared.memoChat.copy048"], "저장");
 });
