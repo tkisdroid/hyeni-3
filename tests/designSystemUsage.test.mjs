@@ -2145,6 +2145,7 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/child/AiFriendChat.css", ".afc-send"],
   ["src/screens/child/AiFriendChat.css", ".afc-confirm__cancel"],
   ["src/screens/child/AiFriendChat.css", ".afc-confirm__go"],
+  ["src/screens/child/AiFriendChat.css", ".afc-credit-ask"],
   ["src/screens/teacher/TeacherHome.css", ".th-empty__cta"],
   ["src/screens/feature/RemoteAudio.css", ".ra-audit-link"],
   ["src/screens/feature/Notifications.css", ".nc-filter"],

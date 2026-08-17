@@ -435,3 +435,29 @@
 .afc-confirm__go:disabled {
   opacity: 0.5;
 }
+
+/* 오늘 대화를 다 썼을 때 말풍선 아래 붙는 "부모님께 부탁하기".
+   설명만 하고 길을 안 주면 아이가 할 수 있는 게 없어서, 그 자리에서 바로 부탁하게 한다.
+   보조 버튼 규격(soft 채움 + accent 라벨 + 테두리)이라 안내 말풍선을 압도하지 않는다. */
+.afc-credit-ask {
+  align-self: flex-start;
+  margin-top: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1.5px solid var(--hy-accent);
+  border-radius: var(--radius-pill);
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+  font-family: Jua, var(--font-sans);
+
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
+  --press: 0.94;
+}
+.afc-credit-ask:disabled {
+  border-color: var(--line-soft);
+  background: var(--bg-chip-idle);
+  color: var(--fg-tertiary);
+}

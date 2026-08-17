@@ -7,6 +7,7 @@ import { useLongPress, type LongPressHandlers } from "@/lib/useLongPress";
 import { asset } from "@/lib/assets";
 import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "@/queries/useFamily";
+import { sendAiCreditRequest } from "@/lib/api/endpoints/family";
 import { useEvents, useDailySupplies } from "@/queries/useSchedule";
 import { useSavedPlaces } from "@/queries/useLocation";
 import {
@@ -252,6 +253,8 @@ export function AiFriendChat() {
   // 아직 실행하지 않고 아이 확인을 기다리는 도구(부모 메시지·일정 변경·전화).
   const [pendingTool, setPendingTool] = useState<AiToolResult | null>(null);
   const [reportTarget, setReportTarget] = useState<ChatBubble | null>(null);
+  // 부모에게 충전을 부탁하는 중/부탁 완료 — 버튼 상태를 정직하게 나눈다.
+  const [creditRequest, setCreditRequest] = useState<"idle" | "sending" | "sent">("idle");
   usePwaUpdateCriticalSection(input.trim().length > 0 || sendChat.isPending);
   // 신고는 AI 답변을 길게 눌러 연다(버블마다 버튼을 띄우지 않기 위해).
   // 신고 대상이 아닌 말풍선(내 메시지·로컬 인사)에는 핸들러를 붙이지 않는다.
@@ -357,10 +360,13 @@ export function AiFriendChat() {
           });
         },
         onError: (err) => {
+          const limitReached = isApiError(err) && err.code === "daily_limit_reached";
           setMessages((prev) => [...prev, {
             id: `${base}-ai`,
             role: "ai",
             text: friendlyError(err, aiCreditStatus.data ?? null)(intl),
+            // 다 쓴 게 원인일 때만 부탁 버튼을 붙인다(연결 실패에 붙이면 엉뚱한 길이다).
+            creditExhausted: limitReached,
           }]);
           reactTo({ phase: "reply", childText: text, toolResult: { ok: false } });
         },
@@ -372,6 +378,31 @@ export function AiFriendChat() {
   const handleSend = () => {
     send(input, "composer");
     setInput("");
+  };
+
+  /**
+   * 오늘 대화를 다 썼을 때 부모에게 바로 부탁한다.
+   * 서버가 소진 여부를 다시 판정하고 문구도 서버가 만든다 — 여기서는 요청만 보낸다.
+   */
+  const requestParentCredit = () => {
+    if (creditRequest !== "idle" || !familyId || !userId) return;
+    setCreditRequest("sending");
+    void sendAiCreditRequest({ familyId, childUserId: userId })
+      .then((result) => {
+        setCreditRequest("sent");
+        show(
+          intl.formatMessage({
+            id: result.duplicate
+              ? "child.aiChat.creditRequest.already"
+              : "child.aiChat.creditRequest.sent",
+          }),
+          "💌",
+        );
+      })
+      .catch(() => {
+        setCreditRequest("idle");
+        show(intl.formatMessage({ id: "child.aiChat.creditRequest.failed" }), "⚠️");
+      });
   };
 
   /** 확인 카드의 실행 버튼 — 여기서만 서버가 실제로 부탁을 처리한다. */
@@ -494,7 +525,21 @@ export function AiFriendChat() {
                   >
                     {m.text}
                   </div>
-
+                  {m.creditExhausted && (
+                    <button
+                      type="button"
+                      className="afc-credit-ask hy-press"
+                      onClick={requestParentCredit}
+                      disabled={creditRequest !== "idle"}
+                      aria-busy={creditRequest === "sending"}
+                    >
+                      {intl.formatMessage({
+                        id: creditRequest === "sent"
+                          ? "child.aiChat.creditRequest.done"
+                          : "child.aiChat.creditRequest.action",
+                      })}
+                    </button>
+                  )}
                 </div>
               </div>
               );

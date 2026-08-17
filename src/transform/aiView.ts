@@ -22,6 +22,11 @@ export interface ChatBubble {
   role: ChatBubbleRole;
   text: string;
   reportable?: boolean;
+  /**
+   * 오늘 대화를 다 써서 막힌 말풍선. 아이가 그 자리에서 부모에게 부탁할 수 있게
+   * 말풍선 아래 버튼을 붙인다(설명만 하고 길을 안 주면 아이가 할 수 있는 게 없다).
+   */
+  creditExhausted?: boolean;
 }
 
 /** 도메인 메시지 → 말풍선. assistant → ai, 그 외(user) → me. */

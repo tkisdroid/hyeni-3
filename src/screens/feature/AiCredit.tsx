@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { BellRing, Bot, ChevronLeft, Hash, MessageCircle, Sparkles } from "lucide-react";
 import { asset } from "@/lib/assets";
@@ -202,9 +202,17 @@ export function AiCredit() {
   const [webReconciliationPending, setWebReconciliationPending] = useState(false);
 
   // 크레딧은 자녀별 — 전역 활성 아이(홈 스위치) 기준. 스위치 전환 시 대상 아이도 함께 바뀐다.
-  const { activeChild, familyLoading } = useActiveChild();
-  const childUserId = activeChild?.user_id ?? null;
-  const childName = activeChild?.name || intl.formatMessage({ id: "billing.aiCredit.fallbackChild" });
+  const [searchParams] = useSearchParams();
+  const { activeChild, childMembers, familyLoading } = useActiveChild();
+  // 아이가 보낸 충전 요청 알림에서 오면 그 아이가 대상이다(다자녀 오귀속 방지).
+  // 딥링크가 현재 가족의 활성 아이를 가리킬 때만 채택하고, 아니면 활성 아이를 쓴다.
+  const requestedChildUserId = searchParams.get("child")?.trim() || null;
+  const requestedChild = requestedChildUserId
+    ? childMembers.find((m) => m.user_id === requestedChildUserId) ?? null
+    : null;
+  const targetChild = requestedChild ?? activeChild;
+  const childUserId = targetChild?.user_id ?? null;
+  const childName = targetChild?.name || intl.formatMessage({ id: "billing.aiCredit.fallbackChild" });
 
   const creditQuery = useAiCredits(childUserId);
   const creditStatus = creditQuery.data;

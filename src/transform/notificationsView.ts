@@ -144,6 +144,8 @@ export function alertRoute(type: string): string | null {
     return "/parent/location";
   }
   if (normalized.startsWith("memo") || normalized.startsWith("sticker")) return "/parent/memo";
+  // 아이가 AI 대화를 다 써서 부탁한 요청 — 충전·하루 한도를 그 자리에서 바꿀 수 있는 화면으로.
+  if (normalized === "ai_credit_request") return "/ai-credit";
   if (normalized === "schedule_suggestion") return "/event-form";
   if (normalized.startsWith("event")) return "/parent/calendar";
   return null;

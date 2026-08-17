@@ -233,7 +233,7 @@ export function ChildLocationPermissionDialog({
                 {copy.withoutPermission}
               </button>
               {!locationUnsupported && (
-                <button type="button" className="clp-primary hy-press" onClick={retry} disabled={permissionBusy}>
+                <button type="button" className="clp-primary hy-press" onClick={retry} disabled={permissionBusy} aria-busy={permissionBusy}>
                   {copy.retry}
                 </button>
               )}

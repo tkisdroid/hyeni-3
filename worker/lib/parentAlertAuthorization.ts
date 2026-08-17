@@ -4,6 +4,9 @@ const CHILD_WRITABLE_ALERT_TYPES = new Set([
   "place_left",
   "low_battery",
   "child_setting_request",
+  // 아이가 AI 대화 횟수를 다 썼을 때 부모에게 보내는 충전·한도 요청.
+  // 제목·본문·소진 여부는 Worker 가 다시 판정하므로 본문 내용을 신뢰하지 않는다.
+  "ai_credit_request",
 ]);
 
 // 이 알림들은 일정·위치·정확도·시간창을 Worker가 함께 검증한 뒤 내부 저장 경로로만

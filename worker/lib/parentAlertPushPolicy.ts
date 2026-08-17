@@ -4,6 +4,9 @@ const PARENT_PUSH_ALERT_TYPES = new Set([
   "place_arrived", "place_left",
   "low_battery",
   "danger_zone", "danger_enter", "danger_entry", "danger_exit",
+  // 아이가 AI 대화 횟수를 다 써서 부모에게 직접 부탁한 요청.
+  // 앱을 열어 두지 않은 부모에게도 닿아야 아이가 기다리지 않는다.
+  "ai_credit_request",
 ]);
 
 const DANGER_ENTRY_ALERT_TYPES = new Set([
@@ -18,10 +21,15 @@ export function resolveParentAlertPushType(
 ): {
   type: "sos" | "parent_alert";
   urgent: boolean;
-  route: "/sos-receive" | "/notifications";
+  route: "/sos-receive" | "/notifications" | "/ai-credit";
 } | null {
   if (!PARENT_PUSH_ALERT_TYPES.has(alertType)) return null;
   const normalizedSeverity = severity.trim().toLowerCase();
+  // 크레딧 요청은 알림함을 거치지 않고 충전·한도 화면으로 바로 보낸다.
+  // 부모가 알림을 탭한 순간이 아이를 다시 이야기하게 해 줄 수 있는 시점이다.
+  if (alertType === "ai_credit_request") {
+    return { type: "parent_alert", urgent: false, route: "/ai-credit" };
+  }
   const isSos = alertType === "sos" || alertType === "emergency" || alertType === "sos_followup";
   const urgent = alertType === "danger_exit"
     ? false

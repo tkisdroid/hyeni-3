@@ -2066,6 +2066,41 @@
     "variables": {},
     "description": "AI 대화 네트워크 실패 안내"
   },
+  "child.aiChat.creditRequest.action": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "AI 대화 소진 말풍선 아래 부모 요청 버튼 라벨"
+  },
+  "child.aiChat.creditRequest.already": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "최근에 이미 요청해 새 알림을 만들지 않았을 때의 토스트"
+  },
+  "child.aiChat.creditRequest.done": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "부모 요청을 이미 보낸 뒤의 버튼 라벨"
+  },
+  "child.aiChat.creditRequest.failed": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "부모 요청 전송이 실패했을 때의 토스트"
+  },
+  "child.aiChat.creditRequest.sent": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "부모에게 충전 요청을 보냈을 때의 토스트"
+  },
   "child.aiChat.empty": {
     "namespace": "child",
     "audience": "child",
