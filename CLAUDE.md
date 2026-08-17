@@ -304,6 +304,18 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   ⚠️ 추론을 켜면 추론 토큰이 예산을 먹어 **빈 응답 → 실패 강등**이 되므로 600 미만 예산은 함수가 막는다.
   회귀=`tests/aiBuddyFab.test.ts`·`tests/eventCompanionPrompt.test.ts`·Worker
   `tests/aiChildSettingsAgent.test.mjs`·`tests/aiChildMemoryDepth.test.mjs`·`tests/openAiLunaContract.test.mjs`.
+- ★**AI 실패 안내는 하나로·정직하게(2026-08-17 TK 제보 실사고)**: 아이가 채팅을 보내면 말풍선에
+  "잠깐 연결이 안됐어"가 뜨고 **동시에** 하단에 "방금 한 일이 저장되지 않았어" 토스트가 겹쳤다.
+  ①**중복 원인** — `QueryProvider` MutationCache 폴백은 `mutation.options.onError` 만 본다.
+  콜사이트 `mutate(vars, { onError })` 는 **폴백을 막지 못한다**. 화면이 자기 문구를 책임지는 mutation 은
+  훅 정의에 `meta: { silentError: true }` 를 달아야 한다(`useSendChildChat`). 말풍선은 토스트가 아니라
+  `markToastShown()` 도 안 찍히므로 450ms 양보 규칙으로도 안 막힌다.
+  ②**정직성 원인** — 진짜 원인은 OpenAI **크레딧 소진**(429 `credit_balance_exhausted`)인데 "연결" 탓으로
+  안내했다. 429 는 `ai_provider_busy`(503)로 분리해 내려보내고 아이에게는 "지금은 내가 대답을 못 해"로 말한다.
+  ⚠️ 진단 교훈: `writeOpenAiLog` 에 `providerErrorCode`(짧은 enum 만, 48자·`[a-z0-9_.-]` 검증)를 남기기 전에는
+  429 가 분당 한도인지 잔액인지 알 수 없어 엉뚱한 곳(토큰 예산)을 먼저 되돌렸다. 상태 코드만으로 단정하지 말 것.
+  ⚠️ 아이 대화 `reasoningEffort:"low"`·예산 900 은 이 사고 조사 중 되돌렸다(429 원인 아님). 다시 올리려면
+  실제 TPM·잔액을 먼저 확인한다. 회귀=`tests/aiChatFailureUx.test.ts`.
 - **알림 전달·원격청취 보안 계약(2026-07-14)**: 즉시 알림은 네트워크 발송 전에 수신자별
   `pending_notifications`를 만들고 실제 네이티브 표시/Web Push 표시 ACK 전에는 delivered로 완료하지 않는다.
   targetless 레거시 행은 일반 사용자가 조회·ACK하지 못한다. 일정·도착·위험·메모는 활성 가족 구성원과 정확한
