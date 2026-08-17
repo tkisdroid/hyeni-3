@@ -772,6 +772,13 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   `Authentication error 10000` 이다. 배포 권한 토큰과 계정 ID 는 **`worker/.env`** 에 있고 두 값 모두 따옴표를
   벗겨 프로세스 env 로 주입해야 한다(`"…"` 그대로면 `/accounts/"id"/…` 로 요청돼 실패).
   `worker/.env`·`worker/.dev.vars` 는 gitignore 이며 값을 출력·커밋하지 않는다.
+  ★**Pages 배포도 같은 `worker/.env` 토큰을 쓴다(2026-08-17)**: `%APPDATA%/xdg.config/.wrangler` 의 OAuth 는
+  만료돼 `wrangler pages deploy` 가 "Not logged in" 으로 끝난다(비대화형이라 `wrangler login` 불가).
+  `worker/.env` 의 토큰에는 Pages 권한이 있으므로 **저장소 밖 디렉터리**에서 그 토큰을 주입해 실행한다
+  (저장소 안에서는 루트 `.env` 의 D1 전용 토큰이 자동 로드돼 실패한다).
+  ★**배포 전 migration 선행 확인(런북)**: `worker/db/*.sql` 이 만드는 테이블·인덱스·`ADD COLUMN` 을 프로덕션
+  `sqlite_master`·`pragma_table_info` 와 대조한다. D1 은 `UNION ALL` 항 수 제한이 있어(5개 이상 실패) 테이블별로
+  나눠 조회하고, `--json` 실패 응답은 `[` 로 시작하지 않으니 stderr 를 버리면 "컬럼 누락" 오진이 난다.
 
 - 기기(2026-08-02 최신 사용자 지시): **A17(RFKL40DP73J)은 부모, razr(ZY22H9VTQD)는 아이 실기기 검증기**다.
   두 기기 모두 현재 역할·세션을 유지하고 `adb install -r`로 앱 데이터·계정·페어링·세션을 보존한다. 실제

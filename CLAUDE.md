@@ -11,6 +11,17 @@
 **1~10단계 전부 완료**(전 화면 실데이터·다자녀·AI 친구·알림 3종·릴리즈 게이트) — 실기기 3대 운용 중.
 **현 국면 = 실사용 안정화**: TK 가 실기기로 쓰며 제보하는 버그·개선을 즉시 수정·검증·배포.
 
+**현재 배포 상태(2026-08-17 저녁)**: 앱 커밋 `1a313d9` 기준으로 Worker·Pages를 함께 배포했다.
+Worker version ID `59191d7e-efd5-4f4b-afb9-5d5819941668`(health 200, `/api/family/member/photo` 미인증 401),
+Pages 배포 `https://0f411410.hyeni-calendar.pages.dev` — 고정 URL과 `hyeni-calendar.pages.dev`의 index SHA-256
+`f1d9c7c88dcf9fb3d30f94c029a475ec047d57d5cfbdffda45225c7ea36ee382`가 로컬 dist와 같고 entry
+`assets/index-m9ofkan_.js`·`assets/index-DMy0b23w.css`도 바이트 일치, CSP·`Referrer-Policy: no-referrer`·nosniff·
+manifest·sw.js·assetlinks 200을 확인했다. 배포 전 migration 선행 확인 결과 `worker/db/*.sql`의 테이블 44·인덱스 96·
+추가 컬럼 59가 프로덕션에 모두 존재해 추가 적용은 없었다. 배포 후 실기기(A17)에서 `parent_profile` 업로드가
+남의 멤버 대상은 403 `forbidden`, 본인 멤버 대상은 본문 검증까지 진행(4바이트 더미라 415)함을 확인했고
+quota·journal 행이 0건이라 아무것도 저장되지 않았다. ⚠️ Pages 배포 자격은 OAuth가 만료돼 있어
+`worker/.env`의 `CLOUDFLARE_API_TOKEN`(Pages 권한 포함)을 저장소 밖 디렉터리에서 주입해 사용했다.
+
 **★단일 저장소(2026-08-02)**: Cloudflare Worker(`worker/`)와 D1 스키마(`cloudflare/`)가 이 저장소로 이관됐다.
 **hyeni-1 은 폐기 예정이며 어떤 코드·테스트·CI·런북도 그 경로에 의존하지 않는다.** 상세는 §6.
 
@@ -891,6 +902,11 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   정확한 모바일 렌더는 `--remote-debugging-port` + CDP `Emulation.setDeviceMetricsOverride(390x844)` +
   `Page.captureScreenshot` 로. 임시 `--user-data-dir` 필수(기본 프로필 오염 방지). ⚠️ localhost:5173 은
   다른 프로젝트 dev 서버가 살아 있을 수 있다 — hyeni-3 는 `--port 5199 --strictPort` 처럼 명시 포트로 띄울 것.
+- ★**D1 compound SELECT 항 수 제한(2026-08-17)**: `UNION ALL` 을 5~6개 이상 이으면
+  `too many terms in compound SELECT: SQLITE_ERROR [code 7500]` 로 쿼리 자체가 실패한다(로컬 SQLite 는 통과).
+  스키마 점검처럼 여러 테이블을 훑을 때는 4개 이하로 쪼개거나 테이블별로 따로 실행한다.
+  wrangler `d1 execute --json` 실패 응답은 `[` 로 시작하지 않으므로 `indexOf("[")` 파싱이 조용히 0건을 만든다 —
+  stderr 를 버리지 말고 실패를 먼저 확인할 것(실제로 "컬럼 35개 누락"이라는 오진을 만들었다).
 - ★**D1 표현식 깊이 100 제한(2026-08-03 실사고)**: D1 은 `SQLITE_MAX_EXPR_DEPTH` 를 **100** 으로 낮춰 놓았다
   (로컬 `node:sqlite` 는 기본 1000). 조건을 `AND`/`OR` 로 길게 이으면 이진 트리 깊이가 넘쳐
   `Expression tree is too large (maximum depth 100): SQLITE_ERROR` 로 **쿼리 자체가 실패**한다.
