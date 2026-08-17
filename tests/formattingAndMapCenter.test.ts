@@ -70,7 +70,9 @@ test("장소·위험구역 등록 지도는 공용 중심 폴백을 쓴다", () 
 test("AI 친구는 빈 응답을 대답한 척하지 않는다", () => {
   const chat = read("src/screens/child/AiFriendChat.tsx");
   assert.doesNotMatch(chat, /res\.reply \|\|/);
-  assert.match(chat, /const reply = String\(res\.reply \?\? ""\)\.trim\(\);/);
+  // 마크다운 강조를 벗기더라도 빈 응답 판정은 그대로다(?? "" + trim 뒤 빈 문자열).
+  assert.match(chat, /String\(res\.reply \?\? ""\)\.trim\(\)/);
+  assert.match(chat, /stripChatMarkdownEmphasis\(String\(res\.reply \?\? ""\)\.trim\(\)\)/);
   assert.match(chat, /child\.ai\.emptyResponse/);
   assert.match(childKo["child.ai.emptyResponse"], /지금은 대답을 못 받았어/);
   assert.doesNotMatch(chat, /지금은 대답을 못 받았어/);

@@ -29,13 +29,32 @@ export interface ChatBubble {
   creditExhausted?: boolean;
 }
 
+/**
+ * AI 답변의 마크다운 강조를 지운다.
+ *
+ * 말풍선은 `white-space: pre-wrap` 인 순수 텍스트라 마크다운을 해석하지 않는다.
+ * 그래서 모델이 `**축구 연습**` 처럼 답하면 아이 화면에 별표가 그대로 보인다
+ * (2026-08-17 실측: "혜니는 **레고**를 좋아한다고 말해줬어"). 아이에게 별표는 아무 뜻도 없다.
+ *
+ * 강조 기호만 벗기고 글자는 그대로 둔다. 수식·곱셈처럼 짝이 맞지 않는 별표는 건드리지 않는다.
+ */
+export function stripChatMarkdownEmphasis(text: string): string {
+  if (typeof text !== "string" || !text) return "";
+  return text
+    .replace(/\*\*\*(?=\S)([\s\S]*?\S)\*\*\*/g, "$1")
+    .replace(/\*\*(?=\S)([\s\S]*?\S)\*\*/g, "$1")
+    .replace(/(^|[\s(])\*(?=\S)([^*\n]*?\S)\*(?=[\s).,!?]|$)/g, "$1$2")
+    .replace(/(^|[\s(])__(?=\S)([\s\S]*?\S)__(?=[\s).,!?]|$)/g, "$1$2");
+}
+
 /** 도메인 메시지 → 말풍선. assistant → ai, 그 외(user) → me. */
 export function messageToBubble(message: AiChatMessage): ChatBubble {
+  const isAssistant = message.role === "assistant";
   return {
     id: message.id,
-    role: message.role === "assistant" ? "ai" : "me",
-    text: message.content,
-    reportable: message.role === "assistant",
+    role: isAssistant ? "ai" : "me",
+    text: isAssistant ? stripChatMarkdownEmphasis(message.content) : message.content,
+    reportable: isAssistant,
   };
 }
 

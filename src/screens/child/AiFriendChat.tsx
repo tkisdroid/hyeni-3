@@ -16,7 +16,7 @@ import {
   useAiFriendPublicSettings,
   useSendChildChat,
 } from "@/queries/useAi";
-import { messagesToBubbles, type ChatBubble } from "@/transform/aiView";
+import { messagesToBubbles, stripChatMarkdownEmphasis, type ChatBubble } from "@/transform/aiView";
 import { groupEventsByDateKey, PAST_TAGS } from "@/transform/scheduleView";
 import { useLocale } from "@/i18n/useLocale";
 import { dateToDateKeyInTimeZone } from "@/transform/dateKey";
@@ -334,7 +334,8 @@ export function AiFriendChat() {
           ) {
             setRemaining(res.remaining);
           }
-          const reply = String(res.reply ?? "").trim();
+          // 말풍선은 순수 텍스트라 마크다운을 해석하지 않는다 — 별표가 그대로 보이지 않게 벗긴다.
+          const reply = stripChatMarkdownEmphasis(String(res.reply ?? "").trim());
           setMessages((prev) => [
             ...prev,
             reply

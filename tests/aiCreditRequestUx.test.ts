@@ -61,3 +61,33 @@ test("부탁 문구는 10개 locale 에 모두 있고 아이 말투를 지킨다
     assert.doesNotMatch(ko[id], /습니다|하세요|해요\.?$/, `${id} 가 존댓말이다`);
   }
 });
+
+test("AI 답변의 마크다운 강조는 아이에게 별표로 보이지 않는다", async () => {
+  const { stripChatMarkdownEmphasis, messageToBubble } = await import("../src/transform/aiView.ts");
+  // 실측 사례(2026-08-17): 말풍선이 pre-wrap 순수 텍스트라 별표가 그대로 보였다.
+  assert.equal(
+    stripChatMarkdownEmphasis("혜니는 **레고**를 좋아한다고 말해줬어!"),
+    "혜니는 레고를 좋아한다고 말해줬어!",
+  );
+  assert.equal(
+    stripChatMarkdownEmphasis("내일 오후 4시에 **축구 연습** 일정을 추가했어! ⚽"),
+    "내일 오후 4시에 축구 연습 일정을 추가했어! ⚽",
+  );
+  assert.equal(stripChatMarkdownEmphasis("*정말* 잘했어"), "정말 잘했어");
+  assert.equal(stripChatMarkdownEmphasis("***대단해***"), "대단해");
+  assert.equal(stripChatMarkdownEmphasis("__굉장해__"), "굉장해");
+  // 짝이 안 맞는 별표는 글자를 지우지 않는다(곱셈·강조 아님).
+  assert.equal(stripChatMarkdownEmphasis("2 * 3 은 6이야"), "2 * 3 은 6이야");
+  assert.equal(stripChatMarkdownEmphasis("별표 * 하나"), "별표 * 하나");
+  assert.equal(stripChatMarkdownEmphasis(""), "");
+
+  // 저장된 과거 대화도 같은 규칙으로 표시한다(아이 입력은 건드리지 않는다).
+  assert.equal(
+    messageToBubble({ id: "1", role: "assistant", content: "**좋아**" } as never).text,
+    "좋아",
+  );
+  assert.equal(
+    messageToBubble({ id: "2", role: "user", content: "**내가 쓴 별표**" } as never).text,
+    "**내가 쓴 별표**",
+  );
+});
