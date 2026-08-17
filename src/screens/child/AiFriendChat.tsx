@@ -278,11 +278,9 @@ export function AiFriendChat() {
         </button>
         <div className="afc-avatar">
           <img src={animalSrc} alt="" />
-          <span className="afc-online" />
         </div>
         <div className="afc-head-main">
           <div className="afc-head-name">{friendName}</div>
-          <div className="afc-head-status">● 이야기할 준비됐어!</div>
         </div>
         {shownRemaining != null && (
           <span className="afc-credits">

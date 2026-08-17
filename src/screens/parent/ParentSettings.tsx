@@ -343,7 +343,7 @@ export function ParentSettings() {
           </div>
         </div>
 
-        <div className="ps-version">혜니캘린더 v{APP_VERSION} · 함께 보는 우리 가족 일정</div>
+        <div className="ps-version">혜니캘린더 v{APP_VERSION}</div>
       </div>
 
       <ReferralRewardPanel

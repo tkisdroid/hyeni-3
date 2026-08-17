@@ -30,6 +30,6 @@ test("웹과 Android 표시 버전은 package.json을 단일 정본으로 사용
   assert.doesNotMatch(`${parentSettings}\n${teacherSettings}`, /v2\.0\.0/);
 });
 
-test("새 보안 계약 출시 산출물은 구 후보 versionCode 4를 재사용하지 않는다", () => {
-  assert.match(gradle, /versionCode 5/);
+test("Play에 이미 올라간 versionCode 5를 새 출시 산출물이 재사용하지 않는다", () => {
+  assert.match(gradle, /versionCode 6/);
 });

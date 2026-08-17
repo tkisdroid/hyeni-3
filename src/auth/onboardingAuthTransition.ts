@@ -22,6 +22,34 @@ export function beginOnboardingAuthTransition(): OnboardingAuthTransitionToken {
   return token;
 }
 
+export interface OnboardingPermissionTransition {
+  /** 권한 안내를 끝내고 역할 홈으로 이동할 때 gate를 해제한다. */
+  complete(): boolean;
+  /** 가족 연결·생성 실패 또는 화면 이탈 시 gate를 되돌린다. */
+  cancel(): void;
+}
+
+/**
+ * 가족 연결로 인증 상태가 먼저 확정돼도 권한 안내가 건너뛰어지지 않게 하는 전환 gate.
+ * 성공 시 권한 안내가 끝날 때까지 유지하고, 실패 시 즉시 취소한다.
+ */
+export function beginOnboardingPermissionTransition(): OnboardingPermissionTransition {
+  const token = beginOnboardingAuthTransition();
+  let settled = false;
+  return {
+    complete: () => {
+      if (settled) return false;
+      settled = true;
+      return completeOnboardingAuthTransitionsThrough(token);
+    },
+    cancel: () => {
+      if (settled) return;
+      settled = true;
+      endOnboardingAuthTransition(token);
+    },
+  };
+}
+
 export function endOnboardingAuthTransition(token: OnboardingAuthTransitionToken): void {
   // 세션 채택 뒤에는 가족 판정이 끝나기 전 cleanup/back으로 gate를 풀 수 없다.
   if (committedTokens.has(token)) return;

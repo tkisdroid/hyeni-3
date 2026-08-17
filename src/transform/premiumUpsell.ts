@@ -46,10 +46,10 @@ const CONTENT: Record<PremiumUpsellSource, Omit<PremiumUpsellContent, "source" |
   },
   saved_place: {
     feature: "saved_places",
-    title: "저장 장소 2개를 모두 사용했어요",
+    title: "무료 알림 대상 2개를 모두 사용했어요",
     description: "등록한 장소는 삭제되지 않아요. 무료 플랜 알림 대상은 생성 순 2개까지이며, 나머지는 프리미엄에서 다시 알림 대상이 돼요.",
     premiumValue: "프리미엄에서는 장소와 도착·출발 알림을 제한 없이 추가할 수 있어요.",
-    usageLabel: "2/2 사용",
+    usageLabel: "알림 2/2 사용",
     ctaLabel: "장소 계속 추가하기",
   },
   danger_zone: {
@@ -175,9 +175,11 @@ export function resolvePremiumUpsell(
     ...CONTENT[source],
     ...(savedPlaceUsage
       ? {
-          title: `저장 장소 ${savedPlaceUsage.limit}개를 모두 사용했어요`,
+          title: `무료 알림 대상 ${savedPlaceUsage.limit}개를 모두 사용했어요`,
           description: `등록한 장소는 삭제되지 않아요. 현재 플랜 알림 대상은 생성 순 ${savedPlaceUsage.limit}개까지이며, 나머지는 프리미엄에서 다시 알림 대상이 돼요.`,
-          usageLabel: `${savedPlaceUsage.used}/${savedPlaceUsage.limit} 사용`,
+          usageLabel: savedPlaceUsage.used > savedPlaceUsage.limit
+            ? `알림 ${savedPlaceUsage.limit}/${savedPlaceUsage.limit} · 저장 ${savedPlaceUsage.used}개`
+            : `알림 ${savedPlaceUsage.used}/${savedPlaceUsage.limit} 사용`,
         }
       : {}),
     continueLabel: CONTINUE_LABEL,

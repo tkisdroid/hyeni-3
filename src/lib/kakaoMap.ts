@@ -4,6 +4,7 @@
  * 키(VITE_KAKAO_APP_KEY)는 config/env 경유. 미설정/미인증이면 reject → 화면이 폴백.
  */
 import { KAKAO_APP_KEY, hasKakaoKey } from "@/config/env";
+import { retryKakaoMapLoad } from "@/transform/kakaoMapRetry";
 
 // SDK 는 window.kakao 에 주입(외부 untyped 전역).
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -16,6 +17,7 @@ export type KakaoMaps = any;
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 let loadPromise: Promise<KakaoMaps> | null = null;
+const KAKAO_RETRY_DELAY_MS = 300;
 
 /**
  * SDK 를 미리 받아 둔다(앱이 한가할 때).
@@ -32,9 +34,7 @@ export function warmKakaoMaps(): void {
   else window.setTimeout(start, 1200);
 }
 
-export function loadKakaoMaps(): Promise<KakaoMaps> {
-  if (!hasKakaoKey) return Promise.reject(new Error("Kakao 지도 키가 설정되지 않았어요"));
-  if (typeof window === "undefined") return Promise.reject(new Error("브라우저 환경이 아니에요"));
+function loadKakaoMapsOnce(): Promise<KakaoMaps> {
   if (window.kakao?.maps) return Promise.resolve(window.kakao.maps);
   if (loadPromise) return loadPromise;
 
@@ -46,10 +46,12 @@ export function loadKakaoMaps(): Promise<KakaoMaps> {
       try {
         window.kakao.maps.load(() => resolve(window.kakao.maps));
       } catch (e) {
+        script.remove();
         reject(e instanceof Error ? e : new Error("Kakao 지도 초기화 실패"));
       }
     };
     script.onerror = () => {
+      script.remove();
       loadPromise = null; // 재시도 허용
       reject(new Error("Kakao 지도를 불러오지 못했어요"));
     };
@@ -61,4 +63,14 @@ export function loadKakaoMaps(): Promise<KakaoMaps> {
     throw error;
   });
   return loadPromise;
+}
+
+export function loadKakaoMaps(): Promise<KakaoMaps> {
+  if (!hasKakaoKey) return Promise.reject(new Error("Kakao 지도 키가 설정되지 않았어요"));
+  if (typeof window === "undefined") return Promise.reject(new Error("브라우저 환경이 아니에요"));
+
+  return retryKakaoMapLoad(
+    loadKakaoMapsOnce,
+    () => new Promise<void>((resolve) => window.setTimeout(resolve, KAKAO_RETRY_DELAY_MS)),
+  );
 }

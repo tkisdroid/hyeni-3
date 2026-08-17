@@ -17,6 +17,7 @@ import {
   deviceOverallSafetyLabel,
   type DeviceNotificationHealthView,
 } from "./deviceNotificationHealth";
+import { resolveDeviceLabel } from "./deviceLabel";
 
 export interface ParentView {
   id: string;
@@ -82,7 +83,11 @@ export function mapFamilyToView(members: FamilyMember[], currentUserId: string |
     soft: CHILD_SOFTS[i % CHILD_SOFTS.length],
     battery: m.device_health?.batteryLevel ?? null, // 아이 기기 리포트 반영(미리포트=null)
     place: null,
-    deviceLabel: m.device_label?.trim() || null, // 아이 기기 자기-리포트(미리포트=null)
+    deviceLabel: resolveDeviceLabel({
+      deviceLabel: m.device_label,
+      manufacturer: m.device_health?.manufacturer,
+      model: m.device_health?.model,
+    }),
     userId: m.user_id || null,
   }));
 

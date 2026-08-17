@@ -15,7 +15,9 @@ test("지도 오버레이는 아이 이름과 체류 문구를 HTML 문자열로
   assert.doesNotMatch(source, /\.innerHTML\s*=/);
   assert.match(source, /document\.createElement\("img"\)/);
   assert.match(source, /avatarImage\.alt\s*=\s*child\.name/);
-  assert.match(source, /content\.replaceChildren\(avatarImage\)/);
+  assert.match(source, /avatarFrame\.replaceChildren\(avatarImage\)/);
+  assert.match(source, /content\.append\(avatarFrame\)/);
+  assert.match(source, /timeBadge\.textContent\s*=\s*child\.caption/);
   assert.match(source, /dwellText\.textContent\s*=\s*s\.dwellLabel/);
 });
 

@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router";
 import { Camera, Check, ChevronLeft, ChevronRight, Link2 } from "lucide-react";
@@ -6,10 +6,11 @@ import { asset } from "@/lib/assets";
 import { DEFAULT_CHILD_AVATAR } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { deriveAuthState, useAuth } from "@/auth/AuthContext";
-import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
+import { ChildLocationPermissionDialog } from "@/components/ChildLocationPermissionDialog";
 import { homePathForRole } from "@/auth/guards";
 import {
   beginOnboardingAuthTransition,
+  beginOnboardingPermissionTransition,
   cancelOnboardingAuthTransitions,
   commitOnboardingAuthResult,
   completeOnboardingAuthTransitionsThrough,
@@ -19,6 +20,7 @@ import {
   isOnboardingAuthTransitionActive,
   subscribeOnboardingAuthTransition,
   type OnboardingAuthTransitionToken,
+  type OnboardingPermissionTransition,
 } from "@/auth/onboardingAuthTransition";
 import { adoptNativeLocationSessionTokens } from "@/lib/native/location";
 import { readChildDeviceIdentityHint } from "@/lib/native/deviceIdentity";
@@ -52,10 +54,6 @@ import { normalizePairCodeInput } from "@/transform/pairCode";
 import { readPairParam, clearPairParam } from "@/transform/pairLink";
 import { clearReferralParam, readReferralParam } from "@/transform/referralLink";
 import { resolveAuthenticatedOnboardingRedirect } from "@/transform/onboardingRedirect";
-import {
-  requestBackgroundLocationPermission,
-  requestForegroundLocationPermission,
-} from "@/lib/native/permissions";
 import { QrScanner } from "@/components/QrScanner";
 import { BusyLabel } from "@/components/ui/BusyLabel";
 import {
@@ -122,6 +120,7 @@ export function Onboarding() {
   const [childJoinHint, setChildJoinHint] = useState<JoinFamilyOptions | null>(null);
   const [signupFlowStarted, setSignupFlowStarted] = useState(false);
   const [surveyChoices, setSurveyChoices] = useState<string[]>([]);
+  const permissionTransitionRef = useRef<OnboardingPermissionTransition | null>(null);
   // 전화 OTP 가입 시 입력한 이름 — 가입 직후 세션 user_metadata 가 비어 parentNameFromUser 가
   // "부모"로 깨지므로, 이 이름을 setupFamily(새 가족)의 parentName 으로 우선 사용한다.
   const [signupName, setSignupName] = useState<string | null>(null);
@@ -142,6 +141,33 @@ export function Onboarding() {
     oauthExternalBusyRef.current = false;
     setOAuthExternalBusy(false);
   };
+
+  const beginPermissionTransition = () => {
+    permissionTransitionRef.current?.cancel();
+    permissionTransitionRef.current = beginOnboardingPermissionTransition();
+  };
+
+  const cancelPermissionTransition = () => {
+    const transition = permissionTransitionRef.current;
+    permissionTransitionRef.current = null;
+    transition?.cancel();
+  };
+
+  const finishPermissionSetup = () => {
+    const destination = homePathForRole(
+      role === "parent" ? "parent" : role === "child" ? "child" : "teacher",
+    );
+    const transition = permissionTransitionRef.current;
+    permissionTransitionRef.current = null;
+    navigate(destination);
+    transition?.complete();
+  };
+
+  useEffect(() => () => {
+    const transition = permissionTransitionRef.current;
+    permissionTransitionRef.current = null;
+    transition?.cancel();
+  }, []);
 
   // OAuth 콜백(?code&state) 감지 → 세션 교환 → 라우팅. (guard가 미인증을 여기로 보냄)
   useEffect(() => {
@@ -460,6 +486,7 @@ export function Onboarding() {
           onNewFamily={async () => {
             if (busy) return;
             setBusy(true);
+            beginPermissionTransition();
             try {
               await setupFamily({
                 parentName: (signupName ?? "").trim() || parentNameFromUser(user),
@@ -469,6 +496,7 @@ export function Onboarding() {
               syncFromSession();
               setStep("perms");
             } catch (e) {
+              cancelPermissionTransition();
               show(errMsg(e), "⚠️");
             } finally {
               setBusy(false);
@@ -490,6 +518,8 @@ export function Onboarding() {
           onBack={() => setStep(role === "child" ? "role" : "connect")}
           onDone={() => setStep("perms")}
           onPaired={syncFromSession}
+          onPermissionTransitionStart={beginPermissionTransition}
+          onPermissionTransitionCancel={cancelPermissionTransition}
           show={show}
           setBusy={setBusy}
         />
@@ -498,7 +528,7 @@ export function Onboarding() {
         <PermsStep
           role={role}
           progressPercent={signupFlowStarted ? 100 : null}
-          onDone={() => navigate(homePathForRole(role === "parent" ? "parent" : role === "child" ? "child" : "teacher"))}
+          onDone={finishPermissionSetup}
         />
       )}
     </div>
@@ -606,7 +636,6 @@ function RoleStep({
   return (
     <div className="ob-step ob-role">
       <div className="ob-role-head">
-        <span className="ob-role-badge">함께 보는 우리 가족</span>
         <div className="ob-role-logo">
           <img
             src={asset("mascot/wave.webp")}
@@ -984,11 +1013,11 @@ function SurveyStep({
       <BackButton onBack={onBack} />
       <SignupProgress percent={20} label="1/5 관심 기능" />
       <div className="ob-survey-head">
-        <div className="ob-signup-title">가입 전에 한 가지만 알려 주세요</div>
+        <div className="ob-signup-title">가입 전에 필요한 기능을 알려 주세요</div>
         <div className="ob-sub">
-          우리 아이에게 가장 필요한 기능을 골라 주세요.
+          우리 아이에게 필요한 기능을 골라 주세요.
           <br />
-          복수 선택할 수 있어요.
+          여러 개 선택할 수 있어요. 선택하지 않아도 계속할 수 있어요.
         </div>
       </div>
 
@@ -1016,7 +1045,7 @@ function SurveyStep({
       </div>
 
       <button type="button" className="ob-cta ob-cta--accent hy-press" onClick={onNext}>
-        다음
+        {selected.length > 0 ? "다음" : "선택 안 하고 계속"}
       </button>
     </div>
   );
@@ -1164,7 +1193,7 @@ function SignupStep({
       <BackButton onBack={onBack} disabled={busy} />
       <SignupProgress percent={40} label="2/5 계정 만들기" />
       <div className="ob-signup-head">
-        <div className="ob-signup-title">혜니 가족 시작하기</div>
+        <div className="ob-signup-title">우리 가족 만들기</div>
         <div className="ob-sub">부모님 계정을 만들어요</div>
       </div>
 
@@ -1336,6 +1365,8 @@ function PairingStep({
   onBack,
   onDone,
   onPaired,
+  onPermissionTransitionStart,
+  onPermissionTransitionCancel,
   show,
   setBusy,
 }: {
@@ -1346,6 +1377,8 @@ function PairingStep({
   onBack: () => void;
   onDone: () => void;
   onPaired: () => void;
+  onPermissionTransitionStart: () => void;
+  onPermissionTransitionCancel: () => void;
   show: Show;
   setBusy: (v: boolean) => void;
 }) {
@@ -1366,17 +1399,23 @@ function PairingStep({
     }
     setRaw(code);
     setBusy(true);
+    let permissionTransitionStarted = false;
     try {
       if (mode === "child") {
         const nextHint = await readChildDeviceIdentityHint();
+        onPermissionTransitionStart();
+        permissionTransitionStarted = true;
         await joinFamily(code, childJoinHint ?? nextHint);
       } else {
+        onPermissionTransitionStart();
+        permissionTransitionStarted = true;
         await joinFamilyAsParent(code);
       }
       onPaired();
       show("가족과 연결됐어요", "🔗");
       onDone();
     } catch (e) {
+      if (permissionTransitionStarted) onPermissionTransitionCancel();
       show(errMsg(e), "⚠️");
     } finally {
       setBusy(false);
@@ -1456,75 +1495,19 @@ function PermsStep({
   onDone: () => void;
 }) {
   const permissionItems = role === "child" ? CHILD_PERM_ITEMS : GUARDIAN_PERM_ITEMS;
-  const [locationStage, setLocationStage] = useState<
-    "idle" | "disclosure" | "backgroundEducation" | "foregroundDenied" | "backgroundDenied"
-  >("idle");
-  const [permissionBusy, setPermissionBusy] = useState(false);
-  const [locationUnsupported, setLocationUnsupported] = useState(false);
-  const consentTitleId = useId();
-  const consentDescriptionId = useId();
-  const consentStageTitleRef = useRef<HTMLHeadingElement>(null);
-  const consentSecondaryRef = useRef<HTMLButtonElement>(null);
-  const previousLocationStageRef = useRef(locationStage);
-  const consentDialogRef = useDialogFocusLifecycle<HTMLElement>({
-    open: locationStage !== "idle",
-    onClose: onDone,
-    initialFocusRef: consentSecondaryRef,
-    canClose: () => !permissionBusy,
-  });
-
-  useEffect(() => {
-    const previousLocationStage = previousLocationStageRef.current;
-    previousLocationStageRef.current = locationStage;
-    if (previousLocationStage === "idle" || locationStage === "idle") return;
-    consentStageTitleRef.current?.focus({ preventScroll: true });
-  }, [locationStage]);
+  const [locationDialogOpen, setLocationDialogOpen] = useState(false);
 
   const start = () => {
     if (role !== "child") {
       onDone();
       return;
     }
-    setLocationStage("disclosure");
+    setLocationDialogOpen(true);
   };
 
-  const requestForeground = async () => {
-    if (permissionBusy) return;
-    setPermissionBusy(true);
-    try {
-      const result = await requestForegroundLocationPermission();
-      if (result.granted) {
-        setLocationUnsupported(false);
-        setLocationStage("backgroundEducation");
-        return;
-      }
-      setLocationUnsupported(!result.supported);
-      setLocationStage("foregroundDenied");
-    } catch {
-      setLocationUnsupported(false);
-      setLocationStage("foregroundDenied");
-    } finally {
-      setPermissionBusy(false);
-    }
-  };
-
-  const requestBackground = async () => {
-    if (permissionBusy) return;
-    setPermissionBusy(true);
-    try {
-      const result = await requestBackgroundLocationPermission();
-      if (result.granted) {
-        onDone();
-        return;
-      }
-      setLocationUnsupported(!result.supported);
-      setLocationStage("backgroundDenied");
-    } catch {
-      setLocationUnsupported(false);
-      setLocationStage("backgroundDenied");
-    } finally {
-      setPermissionBusy(false);
-    }
+  const finishLocationSetup = () => {
+    setLocationDialogOpen(false);
+    onDone();
   };
 
   return (
@@ -1556,98 +1539,12 @@ function PermsStep({
         {role === "child" ? "위치 권한 설정하고 시작하기" : "알림 설정하고 시작하기"}
       </button>
 
-      {locationStage !== "idle" && (
-        <div className="ob-consent-overlay">
-          <section
-            ref={consentDialogRef}
-            className="ob-consent-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={consentTitleId}
-            aria-describedby={consentDescriptionId}
-          >
-            {locationStage === "disclosure" && (
-              <>
-                <span className="ob-consent-dialog__eyebrow">아이 위치 공유 안내</span>
-                <h2 ref={consentStageTitleRef} id={consentTitleId} tabIndex={-1}>백그라운드 위치를 사용해요</h2>
-                <div id={consentDescriptionId} className="ob-consent-dialog__copy">
-                  <p>
-                    혜니캘린더는 아이가 앱을 닫거나 사용하지 않을 때도 위치를 수집해 연결된 보호자에게 공유합니다.
-                  </p>
-                  <p>
-                    위치는 실시간 위치·오늘 경로와 집·학교·학원 도착·출발, 일정 미도착, 위험구역 알림에 사용됩니다.
-                  </p>
-                  <p>
-                    위치 수집 중에는 Android의 지속 알림이 표시되며, 아이 기기의 위치 설정에서 언제든지 권한을 끌 수 있습니다.
-                  </p>
-                </div>
-                <div className="ob-consent-dialog__actions">
-                  <button ref={consentSecondaryRef} type="button" className="ob-consent-secondary hy-press" onClick={onDone} disabled={permissionBusy} data-progress-owner="permission-request">
-                    나중에
-                  </button>
-                  <button type="button" className="ob-consent-primary hy-press" onClick={() => void requestForeground()} disabled={permissionBusy} aria-busy={permissionBusy}>
-                    {permissionBusy ? "권한 확인 중…" : "동의하고 계속"}
-                  </button>
-                </div>
-              </>
-            )}
-
-            {locationStage === "backgroundEducation" && (
-              <>
-                <span className="ob-consent-dialog__eyebrow">마지막 위치 설정</span>
-                <h2 ref={consentStageTitleRef} id={consentTitleId} tabIndex={-1}>위치를 ‘항상 허용’으로 선택해 주세요</h2>
-                <div id={consentDescriptionId} className="ob-consent-dialog__copy">
-                  <p>
-                    다음 Android 위치 권한 화면에서 ‘항상 허용’을 선택해야 앱을 닫은 뒤에도 도착·출발과 위험구역 알림이 이어집니다.
-                  </p>
-                  <p>허용하지 않아도 앱은 사용할 수 있으며, 아이 설정에서 나중에 다시 켤 수 있습니다.</p>
-                </div>
-                <div className="ob-consent-dialog__actions">
-                  <button ref={consentSecondaryRef} type="button" className="ob-consent-secondary hy-press" onClick={onDone} disabled={permissionBusy} data-progress-owner="permission-request">
-                    나중에
-                  </button>
-                  <button type="button" className="ob-consent-primary hy-press" onClick={() => void requestBackground()} disabled={permissionBusy} aria-busy={permissionBusy}>
-                    {permissionBusy ? "설정 확인 중…" : "‘항상 허용’ 설정 열기"}
-                  </button>
-                </div>
-              </>
-            )}
-
-            {(locationStage === "foregroundDenied" || locationStage === "backgroundDenied") && (
-              <>
-                <span className="ob-consent-dialog__eyebrow">위치 권한이 필요해요</span>
-                <h2 ref={consentStageTitleRef} id={consentTitleId} tabIndex={-1}>
-                  {locationUnsupported ? "이 기기에서는 지원하지 않아요" : "아직 위치 권한이 꺼져 있어요"}
-                </h2>
-                <div id={consentDescriptionId} className="ob-consent-dialog__copy">
-                  <p>
-                    {locationUnsupported
-                      ? "아이의 백그라운드 위치 공유는 Android 앱에서 사용할 수 있습니다."
-                      : "권한 없이 시작하면 보호자에게 현재 위치와 도착·출발 알림이 전달되지 않습니다."}
-                  </p>
-                  <p>앱은 계속 사용할 수 있고, 아이 설정에서 언제든지 다시 설정할 수 있습니다.</p>
-                </div>
-                <div className="ob-consent-dialog__actions">
-                  <button ref={consentSecondaryRef} type="button" className="ob-consent-secondary hy-press" onClick={onDone} disabled={permissionBusy} data-progress-owner="permission-request">
-                    권한 없이 시작
-                  </button>
-                  {!locationUnsupported && (
-                    <button
-                      type="button"
-                      className="ob-consent-primary hy-press"
-                      onClick={() => void (locationStage === "foregroundDenied" ? requestForeground() : requestBackground())}
-                      disabled={permissionBusy}
-                      aria-busy={permissionBusy}
-                    >
-                      {permissionBusy ? "권한 확인 중…" : "다시 설정"}
-                    </button>
-                  )}
-                </div>
-              </>
-            )}
-          </section>
-        </div>
-      )}
+      <ChildLocationPermissionDialog
+        open={locationDialogOpen}
+        copyMode="formal"
+        onDismiss={finishLocationSetup}
+        onPermissionGranted={finishLocationSetup}
+      />
     </div>
   );
 }

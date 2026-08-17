@@ -24,6 +24,8 @@ test("권한 복구 화면은 실제 권한을 사용하는 기기에서만 연�
   assert.doesNotMatch(locationSettings, /navigate\("\/perm-denied",\s*\{ state: \{ kind: "loc" \} \}\)/);
   assert.match(locationSettings, /deviceLocationHealthView\(activeChild\?\.device_health\)/);
   assert.match(locationSettings, /아이 기기의 권한·배터리 예외는 아이 앱에서 직접 허용해야 해요/);
-  assert.match(childLocation, /navigate\("\/perm-denied",\s*\{ state: \{ kind: "loc" \} \}\)/);
+  assert.doesNotMatch(childLocation, /navigate\("\/perm-denied",\s*\{ state: \{ kind: "loc" \} \}\)/);
+  assert.match(childLocation, /readPermissionState\("loc"\)/);
+  assert.match(childLocation, /<ChildLocationPermissionDialog[\s\S]*copyMode="child"/);
   assert.match(notificationSettings, /navigate\("\/perm-denied",\s*\{ state: \{ kind: "noti" \} \}\)/);
 });

@@ -187,6 +187,18 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 - **출시 AAB 신선도(2026-07-13)**: 체크리스트의 서명 AAB는 최신 앱 커밋 이후 다시 빌드하고 서명·해시·mtime을 확인한
   경우에만 준비 완료로 표시한다. 과거 AAB가 디스크에 존재한다는 이유만으로 업로드하지 않는다. 서명 비밀번호는 사용자만
   입력하며 에이전트가 자격 파일을 읽어 자동 서명하지 않는다.
+  릴리즈 스크립트는 worktree의 `android/local.properties`를 전제로 하지 않고 Android SDK를 먼저 탐색해
+  `ANDROID_SDK_ROOT`·`ANDROID_HOME`을 설정한 뒤 build·Capacitor sync·Gradle release를 실행한다.
+- **현재 Play 출시 후보(2026-08-15)**: 실제 제출 후보는 v1.3.0/**versionCode 6**이다. 위치 권한 안내가 인증 전환에
+  가려지지 않도록 gate를 유지하고, 권한이 없는 아이의 위치 화면에서도 같은 prominent disclosure를 거쳐 Android 전경→
+  백그라운드 권한을 요청한다. 위치 FGS 지속 알림은 장식 문구 대신 `위치 공유 중`과 실제 공유 대상을 표시한다.
+  오래된 `device_label`보다 최신 네이티브 `manufacturer`·`model`을 우선해 A17 부모에서 razr가
+  `motorola razr 40 ultra`로 표시됨을 확인했다. 앱 1,298/1,298, Worker 1,161/1,161, Android unit 175/175·lint·
+  assembleDebug가 통과했고, Worker version ID `c4c769c3-b4d5-4ba1-8c68-ef2ba22c742c`가 production에 배포됐다.
+  사용자가 A17·razr의 정책 영상 촬영을 허용했으며, 계정·역할·페어링을 바꾸지 않고 촬영한 개인정보 비식별·무음 최종본만
+  사용한다. YouTube 초안은 백그라운드 위치 `https://youtu.be/yTfCI3RsVE8`, FGS 위치·마이크·특수 용도
+  `https://youtu.be/cb_BFyed6uE`다. 제목·설명·일부 공개 저장, Play 선언 저장, 로그인 세부정보, 서명 AAB 업로드와
+  최종 심사 전송은 실제 완료 증거 전까지 미완료로 둔다.
 - **출시 전 신뢰 UX 문구 가드(2026-07-07)**: 안전은 무료, 상세 안심은 프리미엄이라는 경계가 흔들리면 안 된다.
   구독·원격청취·AI 일정 문구는 `tests/subscriptionTrustCopy.test.mjs`, `tests/remoteAudioTrustCopy.test.mjs`,
   `tests/aiScheduleUxCopy.test.mjs`로 회귀 보호한다. SOS·긴급 알림을 프리미엄 혜택처럼 쓰지 말고,
@@ -349,8 +361,9 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   JVM 단위 테스트로 고정한다. 회귀=`tests/notificationLargeIcon.test.mjs`·`NotificationLargeIconLayoutTest`.
 - **오늘 경로 시각 포커스(2026-07-29)**: 이동선 실선화 계약은 위치 신뢰 항목에 있다. 여기에 더해 지도 중심과 아이 마커
   좌표는 독립이다 — 머문 곳을 선택하면 지도만 옮기고 아바타는 실제 이력 좌표에 남는다. 기본은 최신 따라가기
-  (슬라이더 값 `null`)이고 조회창은 하루 시작+24h로 고정해, 30초 위치 폴링이 부모가 고른 시각과 접어 둔 시트를
-  되돌리지 않는다. 신선도는 배경 폴링으로만 유지한다. 회귀=`tests/parentLocationScrubFocus.test.mjs`.
+  (슬라이더 값 `null`)이고 조회창은 하루 시작+24h로 고정해, 30초 위치 폴링이 부모가 고른 시각과 접어 둔 머문 곳 상세를
+  되돌리지 않는다. 신선도는 배경 폴링으로만 유지한다. 명시적 과거 시각은 현재 위치로 대체하지 않고 실제 이력점만
+  마커로 표시한다. 회귀=`tests/parentLocationScrubFocus.test.mjs`.
 - **눌림 피드백(2026-07-29)**: 실제 버튼은 `hy-press`(전체 축소) 또는 자기 클래스의 `:active` 반응 중 하나를 반드시
   갖는다. 토글 스위치는 트랙이 흔들려 보이지 않게 노브만 `scale(0.9)`로 누르고, 문장 안 글자 버튼은 크기를 바꾸지 않고
   opacity로만 알린다. 보이지 않는 닫기용 스크림은 의도적으로 제외한다. 회귀=`tests/pressFeedbackCoverage.test.mjs`.
@@ -452,30 +465,39 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   없을 때 기본 `SystemBars` safe-area CSS 주입이 콘솔 오류를 낸다. `postinstall`의
   `scripts/patch-capacitor-systembars.mjs`가 DOM 준비 전 주입을 건너뛰게 패치하므로, 의존성 재설치 후에는
   반드시 `npm install` 또는 해당 스크립트를 실행한 뒤 Android 빌드를 검증한다.
-- **설정/가입/오늘경로 안정화(2026-07-08)**: 부모 `/friend-play`는 아이 요청 UI가 아니라 가족 친구놀이 허용 설정을
+- **설정/가입/오늘경로 안정화(2026-07-08, 이동기록 UI 2026-08-07 갱신)**: 부모 `/friend-play`는 아이 요청 UI가 아니라 가족 친구놀이 허용 설정을
   보여준다. 장소 관리는 서버/AI 생성 없이 `resolvePlaceVisual`의 정적 asset 매핑으로 장소명에 맞는 이미지를 고른다.
   가입 전 설문은 진행률 20%에서 시작하고 복수 선택만 수집한다. 부모 오늘경로는 오전 8시를 하루 시작으로 보며,
-  00~07시는 전날 경로에 포함한다. 경로 로딩 중에는 서울 기본점보다 현재 위치를 우선 표시하고, "오늘 머문 곳"
-  시트는 손잡이뿐 아니라 목록 영역 드래그 다운으로도 완전히 접히고 다시 열기 버튼으로 복귀하는지 검증한다.
-  "오늘 머문 곳"은 `.pl-sheet` 공통 `hy-sheetup` 애니메이션 transform이 접힘 transform을 덮지 않도록
-  `.pl-stays`에서 animation을 끄고, S25 WebView computed transform까지 확인한다. 오늘경로에서는 상단 아이 배지를
-  숨기고 시간대별 경로 UI만 남긴다.
+  00~07시는 전날 경로에 포함한다. 최신 따라가기의 경로 로딩 중에는 서울 기본점보다 현재 위치를 우선 표시할 수 있지만,
+  부모가 과거 시각을 고른 뒤에는 실측 이력점이 없으면 현재 위치로 대체하지 않는다. 이동기록 카드는 드래그하지 않고
+  명시적 버튼으로 머문 곳 상세만 펼치고 접으며 시간 막대는 항상 남긴다. 오늘경로에서는 상단 아이 배지를 숨기고
+  시간대별 경로 UI만 남긴다.
   로컬 mock 검증 시 현재 시각이 08시 전이면 mock 이력도 `/api/location/history`의 `start` 파라미터 기준으로 만든다.
-- ★**시간대별 경로 조작 정본(2026-07-29 TK 제보)**: 슬라이더로 시각을 옮기면 ①하단 "오늘 머문 곳" 시트를 자동으로
-  접어 지도를 열고(다시 열기 pill 유지) ②그 시각의 마지막 확인 위치를 지도 중심(`center`)으로 잡고 ③하루 전체 축척으로
+- ★**시간대별 경로 조작 정본(2026-08-07 TK 제보)**: 슬라이더로 시각을 옮기면 ①시각·장소·시간 막대가 있는 탐색 카드와
+  사용자가 정한 머문 곳 펼침 상태를 그대로 유지하며 ②그 시각의 마지막 확인 위치를 지도 중심(`center`)으로 잡고
+  해당 머문 곳을 자동 강조하고 ③하루 전체 축척으로
   멀어져 있으면 `centerLevel=4`까지만 당긴다(이미 더 확대한 화면은 유지 — 확대 방향 보정만). `KakaoMap`은 명시적
-  `center`가 있으면 `setBounds`로 덮지 않으며, 자녀 아바타는 `center`가 아니라 자기 좌표에 그린다(머문 곳 선택 시 분리).
-  슬라이더 상태는 `null`=최신 따라가기이고 30초 위치 폴링(`now` 갱신)으로 부모가 고른 시각·접어 둔 시트를 되돌리지 않는다.
+  `center`가 있으면 `setBounds`로 덮지 않는다. toolbar/panel의 실제 DOM rect를 `ResizeObserver`로 재서
+  `viewportPadding`을 만들고 `setCenter` 뒤 `panBy`해 아이 마커를 두 오버레이 사이의 가시 지도 중앙에 둔다.
+  자녀 아바타는 `center`가 아니라 자기 실측 좌표에 그리고, 과거 탐색 중에는 선택 시각 배지를 붙여 머문 곳 마커보다 위에 둔다.
+  연속 드래그의 시각·경로·아바타·배지는 입력마다 즉시 갱신하되 지도 중심 좌표와 실제 DOM 여백은 160ms 동안 함께 고정하고,
+  입력이 멈춘 뒤 같은 렌더에서 한 번만 확정한다. 슬라이더 입력마다 `recenterKey`나 `setCenter→panBy`를 실행하거나 드래그 시작에
+  머문 곳을 자동으로 접어 패널 높이를 바꾸면 지도가 떨리므로 금지한다.
+  슬라이더 상태는 `null`=최신 따라가기이고 30초 위치 폴링(`now` 갱신)으로 부모가 고른 시각·접어 둔 상세를 되돌리지 않는다.
   `/api/location/history` 쿼리 키의 끝시각은 하루 창 끝(시작+24h)으로 고정하고 신선도는 화면이 열려 있는 동안의
   60초 배경 폴링으로 유지한다(끝시각에 `now`를 넣으면 키가 매번 바뀌어 하루치를 다시 받고 슬라이더가 최신으로 튄다).
-  헤더는 `시각 · 위치`(머문 곳 이름/이동 중/기록 없음)와 "최신으로" 버튼을 보여주고, 판정 시각은 마지막 기록 시각으로
-  clamp 해 기록이 끊긴 뒤를 "이동 중"으로 단정하지 않는다. 머문 곳 시트 여백은 `12/16/20px`(손잡이 4/8, 헤더 하단 12,
-  목록 gap 12). 회귀=`tests/parentLocationScrubFocus.test.mjs`·`tests/locationHistoryScrub.test.ts`.
+  탐색 카드는 선택 시각과 위치(머문 곳 이름/이동 중/기록 없음), "최신 위치" 버튼을 보여주고 판정 시각은 마지막 기록
+  시각으로 clamp 해 기록이 끊긴 뒤를 "이동 중"으로 단정하지 않는다. 선택 시각 이전에 실측점이 없으면 현재 위치를 대신
+  그리지 않으며 "기록 없음"으로 닫는다. 최신 위치로 돌아가면 시각 배지를 제거하고 하루 경로 전체 bounds를 복원한다.
+  회귀=`tests/parentLocationScrubFocus.test.mjs`·`tests/locationHistoryScrub.test.ts`·
+  `tests/mapViewportPadding.test.ts`·`tests/locationJourneyPanelContract.test.mjs`.
   로컬 검증 팁: Kakao JS 키는 도메인 제한이 있어 로컬 하니스에서 실 SDK가 로드되지 않으므로, `window.kakao.maps`
   계측 스텁(Polyline/Map 호출 기록)을 주입해 선 스타일·`setCenter/setLevel/setBounds` 결정을 확인한다. 5173 포트는
   다른 프로젝트가 쓸 수 있으니 preview 포트를 따로 잡고, mock 이력은 08시 하루 창(자정 이후=전날 08시) 기준으로 만든다.
-- **메뉴·페어링 안정화(2026-07-09)**: 부모 홈 바로가기는 `AI 일정 → 위치추적 → 친구놀이 → 장소관리 → 주변소리 →
-  안심리포트 → 구독 → 알림` 순서와 실제 라우트를 회귀 테스트로 고정한다. 부모 설정 메뉴는 emoji 칩 대신
+- **메뉴·페어링 안정화(2026-08-07)**: 부모 홈 바로가기는 `AI 일정 → 위치추적 → 친구놀이 → 장소관리 → 주변소리 →
+  안심리포트 → 아이 기기 찾기 → 알림` 순서와 실제 라우트를 회귀 테스트로 고정한다. `아이 기기 찾기`는 활성 아이
+  `user_id`를 `/remote-ring`에 명시한다. 구독은 그리드 아래 가로 카드로 분리하고 Free·reviewed는 `구독 시 혜택`,
+  Premium은 `구독 관리`, 미확정·오류는 `구독 정보`로 표시해 Free로 추정하지 않는다. 부모 설정 메뉴는 emoji 칩 대신
   lucide/image 아이콘 + `data-tone` 토큰 색상만 사용한다. 페어링 위저드는 `/api/family/mine`과 엔타이틀먼트가
   모두 확정되기 전 2명 선택과 코드 생성을 막고, 코드 생성 직전에도 현재 티어의 아이 수 상한을 다시 검사한다.
 - **OAuth 딥링크 1회 소비(2026-07-10)**: 인가코드는 1회용인데 Capacitor `App.getLaunchUrl()` 이 실행 인텐트를
@@ -562,6 +584,10 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 
 ## 디자인 규칙 (2026-07-10)
 
+- ★**장식성 마이크로 배지 금지(2026-08-14)**: 주변 제목·설명을 반복하거나 클릭되지 않는데 작은 버튼처럼 보이는
+  pill/eyebrow는 렌더하지 않는다. 배지는 실제 상태·읽지 않은 수·현재 선택·티어·날짜처럼 사용자가 판단에 쓰는 정보에만
+  허용한다. 온보딩 상단 `함께 보는 우리 가족` 배지, AI 친구의 가짜 온라인 점·`이야기할 준비됐어!`, 설정 버전 뒤
+  장식 슬로건은 재도입하지 않는다. 가드=`scripts/final-browser-qa.mjs`의 `antiSlop` 집중 검증.
 - ★**색상 대비 3단 체계(2026-07-30 검수)**: 파스텔 팔레트 위 **흰 글자는 어떤 테마색에서도 AA 를 만족할 수 없다**
   (`--hy-accent` 1.4~2.8:1 · `--hy-accent-deep` 3.34:1). WCAG 큰 글씨 완화(3:1)는 굵은 글씨라도 **18.66px 이상**에만
   적용되므로 18px/700 버튼에도 4.5:1 이 걸린다. ①주요 CTA = `--hy-accent-cta`(테마별 딥 톤) · 그라디언트는

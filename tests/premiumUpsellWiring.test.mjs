@@ -137,7 +137,10 @@ test("무료 AI 하루 요약은 조회·생성 전에 업셀로 닫는다", () 
 test("무료 AI 일정 5회 소진은 원시 429를 노출하지 않고 상황형 업셀과 복귀 경로를 연다", () => {
   const source = read("src/screens/feature/AiSchedule.tsx");
   const quotaGate = source.indexOf('e.status === 429 && e.message === "daily_limit_reached"');
-  const genericToast = source.indexOf('e instanceof ApiError\n          ? e.message', quotaGate);
+  const genericToastOffset = source
+    .slice(quotaGate)
+    .search(/show\(\s*e instanceof ApiError\s*\?\s*e\.message/);
+  const genericToast = genericToastOffset < 0 ? -1 : quotaGate + genericToastOffset;
   assert.ok(quotaGate >= 0 && genericToast > quotaGate);
   assert.match(source.slice(quotaGate, genericToast), /setScheduleLimitUpsellOpen\(true\)[\s\S]*return/);
   assert.match(source, /source="ai_schedule_limit"/);

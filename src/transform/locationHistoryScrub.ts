@@ -27,6 +27,15 @@ export interface StayWindowLike {
   departureMs: number;
 }
 
+export function findStayIndexAtMs(
+  stays: readonly StayWindowLike[],
+  atMs: number,
+): number | null {
+  if (!Number.isFinite(atMs)) return null;
+  const index = stays.findIndex((stay) => stay.arrivalMs <= atMs && atMs <= stay.departureMs);
+  return index >= 0 ? index : null;
+}
+
 /**
  * 하루 위치 이력 → 이동선 좌표(시간순).
  * 선택 자녀만 · 8m 이내 인접 중복 제거 · 직선 보간 채움점(`is_estimated`) 제외.
@@ -88,7 +97,7 @@ export function resolveScrubWhereLabel(input: {
 }): string {
   if (input.lastPointMs == null) return "기록 없음";
   const at = Math.min(input.scrubMs, input.lastPointMs);
-  const index = input.stays.findIndex((s) => s.arrivalMs <= at && at <= s.departureMs);
-  if (index < 0) return "이동 중";
+  const index = findStayIndexAtMs(input.stays, at);
+  if (index == null) return "이동 중";
   return input.stayLabels[index] ?? "머문 장소";
 }

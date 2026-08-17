@@ -46,12 +46,13 @@ test("위치 설정의 기록 범위 행은 Premium은 실제 기록으로, Free
 
 test("Premium 위치 기록은 최근 30일 날짜를 고르고 Free의 과거 선택은 오늘로 고정한 채 업셀한다", () => {
   const source = read("src/screens/parent/ParentLocation.tsx");
+  const toolbar = read("src/screens/parent/LocationHistoryToolbar.tsx");
 
-  assert.match(source, /type="date"/);
+  assert.match(toolbar, /type="date"/);
   assert.match(source, /historyDaysFor\(TIERS\.PREMIUM\)/);
   assert.match(source, /getHistoryDayWindowForKey/);
   assert.match(source, /queryEnd\.toISOString\(\)/);
   assert.match(source, /if \(!premiumOpen\)[\s\S]{0,180}setHistoryUpsellDayKey\([\s\S]{0,120}setUpsellSource\("location_history"\)/);
   assert.match(source, /premiumOpen[\s\S]{0,120}rawHistoryDayKey[\s\S]{0,120}historyTodayKey/);
-  assert.match(source, /aria-label="이동 기록 날짜"/);
+  assert.match(toolbar, /aria-label="이동 기록 날짜 선택"/);
 });

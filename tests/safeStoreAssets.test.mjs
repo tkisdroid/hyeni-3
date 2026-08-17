@@ -1,14 +1,14 @@
-import test, { before } from "node:test";
+import test, { after, before } from "node:test";
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
-import { dirname, extname, resolve } from "node:path";
+import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 import {
   generateSafeStoreAssets,
   SAFE_DEMO_FOOTER,
   SAFE_STORE_ASSETS,
-  SAFE_STORE_CREATIVE_DRAFT_DIR,
   STORE_ASSET_HEIGHT,
   STORE_ASSET_WIDTH,
   verifyStoreAssetSourceContracts,
@@ -16,6 +16,7 @@ import {
 
 const ROOT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const FORBIDDEN_METADATA_CHUNKS = new Set(["eXIf", "iTXt", "tEXt", "zTXt"]);
+let generatedAssetDir;
 
 function collectStrings(value, output = []) {
   if (typeof value === "string") output.push(value);
@@ -41,7 +42,12 @@ function pngChunkTypes(buffer) {
 }
 
 before(async () => {
-  await generateSafeStoreAssets();
+  generatedAssetDir = await mkdtemp(join(tmpdir(), "hyeni-safe-store-assets-test-"));
+  await generateSafeStoreAssets({ outputDir: generatedAssetDir });
+});
+
+after(async () => {
+  if (generatedAssetDir) await rm(generatedAssetDir, { recursive: true, force: true });
 });
 
 test("스토어 자산 생성은 현재 가격·티어 코드 정본과 연결된다", async () => {
@@ -77,14 +83,14 @@ test("합성 문구에는 개인정보·연락처·좌표·초대 정보가 없�
 });
 
 test("내부 creative draft 폴더에는 1080×1920 불투명 24-bit PNG 6장만 있다", async () => {
-  const names = (await readdir(SAFE_STORE_CREATIVE_DRAFT_DIR)).sort();
+  const names = (await readdir(generatedAssetDir)).sort();
   const expected = SAFE_STORE_ASSETS.map((asset) => asset.file).sort();
   assert.deepEqual(names, expected);
   assert.ok(names.length >= 4 && names.length <= 8);
 
   for (const name of names) {
     assert.equal(extname(name), ".png");
-    const file = resolve(SAFE_STORE_CREATIVE_DRAFT_DIR, name);
+    const file = resolve(generatedAssetDir, name);
     const metadata = await sharp(file).metadata();
     assert.equal(metadata.format, "png", `${name} format`);
     assert.equal(metadata.width, STORE_ASSET_WIDTH, `${name} width`);
@@ -98,7 +104,7 @@ test("내부 creative draft 폴더에는 1080×1920 불투명 24-bit PNG 6장만
 
 test("생성 PNG는 개인정보를 담을 수 있는 텍스트·EXIF 메타데이터가 없고 시각 내용이 비어 있지 않다", async () => {
   for (const asset of SAFE_STORE_ASSETS) {
-    const file = resolve(SAFE_STORE_CREATIVE_DRAFT_DIR, asset.file);
+    const file = resolve(generatedAssetDir, asset.file);
     const [buffer, metadata, stats] = await Promise.all([
       readFile(file),
       sharp(file).metadata(),

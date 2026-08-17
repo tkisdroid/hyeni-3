@@ -91,7 +91,7 @@ test("출시 순서는 migration-first이며 Pages·Worker·Android를 독립적
   assert.doesNotMatch(releaseRunbook, /npx wrangler deploy --tag/);
   assert.doesNotMatch(releaseRunbook, /wrangler d1 time-travel restore[^`\n]*```/);
   const playAvailabilityIndex = releaseRunbook.indexOf("Play v1.3.0(5) 대상 계정·트랙 설치 가능 확인");
-  const minimumPolicyIndex = releaseRunbook.indexOf("Pages\nminimumSupportedVersion 1.3.0 적용");
+  const minimumPolicyIndex = releaseRunbook.search(/Pages\r?\nminimumSupportedVersion 1\.3\.0 적용/);
   assert.ok(playAvailabilityIndex >= 0 && minimumPolicyIndex > playAvailabilityIndex);
 });
 

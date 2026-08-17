@@ -1,17 +1,18 @@
-import test, { before } from "node:test";
+import test, { after, before } from "node:test";
 import assert from "node:assert/strict";
-import { readFile, readdir, stat } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { mkdtemp, readFile, readdir, rm, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 import {
   generateSafeStoreListingGraphics,
   SAFE_STORE_LISTING_GRAPHICS,
-  SAFE_STORE_LISTING_GRAPHICS_DIR,
 } from "../scripts/create-safe-store-listing-graphics.mjs";
 
 const ROOT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const FORBIDDEN_METADATA_CHUNKS = new Set(["eXIf", "iTXt", "tEXt", "zTXt"]);
+let generatedGraphicsDir;
 
 function pngChunkTypes(buffer) {
   assert.equal(buffer.subarray(0, 8).toString("hex"), "89504e470d0a1a0a", "PNG 시그니처");
@@ -29,7 +30,12 @@ function pngChunkTypes(buffer) {
 }
 
 before(async () => {
-  await generateSafeStoreListingGraphics();
+  generatedGraphicsDir = await mkdtemp(join(tmpdir(), "hyeni-store-listing-test-"));
+  await generateSafeStoreListingGraphics({ outputDir: generatedGraphicsDir });
+});
+
+after(async () => {
+  if (generatedGraphicsDir) await rm(generatedGraphicsDir, { recursive: true, force: true });
 });
 
 test("스토어 대표 자산 생성기는 폐기 대상 실기기 캡처와 외부 데이터를 읽지 않는다", async () => {
@@ -41,7 +47,7 @@ test("스토어 대표 자산 생성기는 폐기 대상 실기기 캡처와 외
 });
 
 test("Play 앱 아이콘은 512×512 32-bit PNG alpha와 1MiB 상한을 지킨다", async () => {
-  const file = resolve(SAFE_STORE_LISTING_GRAPHICS_DIR, "play-icon-512.png");
+  const file = resolve(generatedGraphicsDir, "play-icon-512.png");
   const [metadata, stats, fileStats] = await Promise.all([
     sharp(file).metadata(),
     sharp(file).stats(),
@@ -61,7 +67,7 @@ test("Play 앱 아이콘은 512×512 32-bit PNG alpha와 1MiB 상한을 지킨�
 });
 
 test("Play 피처 그래픽은 1024×500 24-bit PNG이며 alpha가 없다", async () => {
-  const file = resolve(SAFE_STORE_LISTING_GRAPHICS_DIR, "play-feature-graphic-1024x500.png");
+  const file = resolve(generatedGraphicsDir, "play-feature-graphic-1024x500.png");
   const [metadata, stats] = await Promise.all([sharp(file).metadata(), sharp(file).stats()]);
   assert.equal(metadata.format, "png");
   assert.equal(metadata.width, 1024);
@@ -76,10 +82,10 @@ test("Play 피처 그래픽은 1024×500 24-bit PNG이며 alpha가 없다", asyn
 });
 
 test("대표 자산 폴더는 승인 후보 2개만 포함하고 개인정보 메타데이터 chunk가 없다", async () => {
-  const names = (await readdir(SAFE_STORE_LISTING_GRAPHICS_DIR)).sort();
+  const names = (await readdir(generatedGraphicsDir)).sort();
   assert.deepEqual(names, SAFE_STORE_LISTING_GRAPHICS.map((asset) => asset.file).sort());
   for (const name of names) {
-    const buffer = await readFile(resolve(SAFE_STORE_LISTING_GRAPHICS_DIR, name));
+    const buffer = await readFile(resolve(generatedGraphicsDir, name));
     for (const type of pngChunkTypes(buffer)) {
       assert.equal(FORBIDDEN_METADATA_CHUNKS.has(type), false, `${name} 금지 metadata chunk ${type}`);
     }

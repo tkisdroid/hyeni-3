@@ -390,10 +390,17 @@ function mockApi(pathname, scenario) {
   }
   if (pathname === "/api/review-rewards") return { reviewed: false, rewarded: false };
   if (pathname === "/api/location/children") return [{ user_id: CHILD_ID, ...SCHOOL, updated_at: new Date().toISOString(), accuracy_m: 8 }];
-  if (pathname === "/api/location/history") return [
-    { user_id: CHILD_ID, ...HOME, recorded_at: new Date(Date.now() - 60 * 60_000).toISOString(), accuracy_m: 12, is_estimated: 0 },
-    { user_id: CHILD_ID, ...SCHOOL, recorded_at: new Date().toISOString(), accuracy_m: 8, is_estimated: 0 },
-  ];
+  if (pathname === "/api/location/history") {
+    const now = Date.now();
+    return [
+      { user_id: CHILD_ID, ...HOME, recorded_at: new Date(now - 100 * 60_000).toISOString(), accuracy_m: 12, is_estimated: 0 },
+      { user_id: CHILD_ID, lat: HOME.lat + 0.00004, lng: HOME.lng + 0.00003, recorded_at: new Date(now - 85 * 60_000).toISOString(), accuracy_m: 10, is_estimated: 0 },
+      { user_id: CHILD_ID, lat: 37.2972, lng: 127.1112, recorded_at: new Date(now - 75 * 60_000).toISOString(), accuracy_m: 14, is_estimated: 0 },
+      { user_id: CHILD_ID, ...SCHOOL, recorded_at: new Date(now - 65 * 60_000).toISOString(), accuracy_m: 9, is_estimated: 0 },
+      { user_id: CHILD_ID, lat: SCHOOL.lat + 0.00003, lng: SCHOOL.lng - 0.00002, recorded_at: new Date(now - 45 * 60_000).toISOString(), accuracy_m: 8, is_estimated: 0 },
+      { user_id: CHILD_ID, lat: SCHOOL.lat - 0.00002, lng: SCHOOL.lng + 0.00002, recorded_at: new Date(now - 5 * 60_000).toISOString(), accuracy_m: 8, is_estimated: 0 },
+    ];
+  }
   if (pathname === "/api/location-prefs") return { family_id: FAMILY_ID, interval_mode: "balanced", background_enabled: true };
   if (pathname === "/api/daily-supplies") return [{ family_id: FAMILY_ID, child_user_id: CHILD_MEMBER_ID, date_key: todayDateKey(), prep: [{ id: "qa-supply-1", text: "준비물 확인", done: false }], homework: [] }];
   if (pathname === "/api/stickers/summary") return [{ user_id: CHILD_ID, sticker_type: "praise", count: 2 }];
@@ -599,7 +606,8 @@ function newDocumentScript() {
       const role = new URL(location.href).searchParams.get("qaRole") || "parent";
       const sessions = ${JSON.stringify(sessions)};
       try {
-        localStorage.setItem("hyeni-api-session-v1", JSON.stringify(sessions[role] || sessions.parent));
+        if (role === "public") localStorage.removeItem("hyeni-api-session-v1");
+        else localStorage.setItem("hyeni-api-session-v1", JSON.stringify(sessions[role] || sessions.parent));
         localStorage.setItem("hyeni-active-child-v1", JSON.stringify({ ${JSON.stringify(FAMILY_ID)}: ${JSON.stringify(CHILD_MEMBER_ID)} }));
       } catch {}
 
@@ -615,8 +623,16 @@ function newDocumentScript() {
 
       class LatLng { constructor(lat, lng) { this.lat = lat; this.lng = lng; } getLat() { return this.lat; } getLng() { return this.lng; } }
       class LatLngBounds { constructor() { this.points = []; } extend(point) { this.points.push(point); } }
-      class Map { constructor(element, options = {}) { this.element = element; this.center = options.center || new LatLng(0, 0); this.level = options.level || 4; } setCenter(center) { this.center = center; } getCenter() { return this.center; } setLevel(level) { this.level = level; } getLevel() { return this.level; } setBounds() {} relayout() {} }
-      class Overlay { constructor(options = {}) { Object.assign(this, options); } setMap() {} }
+      window.__hyQaMapPanCalls = [];
+      window.__hyQaOverlayContents = [];
+      class Map { constructor(element, options = {}) { this.element = element; this.center = options.center || new LatLng(0, 0); this.level = options.level || 4; } setCenter(center) { this.center = center; } getCenter() { return this.center; } setLevel(level) { this.level = level; } getLevel() { return this.level; } setBounds() {} panBy(x, y) { window.__hyQaMapPanCalls.push({ x, y }); } relayout() {} }
+      class Overlay {
+        constructor(options = {}) { Object.assign(this, options); }
+        setMap(map) {
+          window.__hyQaOverlayContents = window.__hyQaOverlayContents.filter((content) => content !== this.content);
+          if (map && this.content instanceof HTMLElement) window.__hyQaOverlayContents.push(this.content);
+        }
+      }
       class Geocoder {
         coord2Address(_lng, _lat, callback) { callback([{ road_address: { address_name: "경기도 데모시 가족로 1" }, address: { address_name: "경기도 데모시 가족동" } }], "OK"); }
         addressSearch(_query, callback) { callback([{ x: String(${SCHOOL.lng}), y: String(${SCHOOL.lat}) }], "OK"); }
@@ -900,6 +916,27 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       screenshots: [],
     };
 
+    const onboarding = await navigate(
+      { role: "public", tier: "free", catalogMode: "valid", overLimit: false },
+      "onboarding",
+    );
+    const onboardingAntiSlopFacts = await cdp.evaluate(`(() => ({
+      badgePresent: Boolean(document.querySelector(".ob-role-badge")),
+      subtitle: document.querySelector(".ob-role-sub")?.textContent?.trim() || "",
+    }))()`);
+    if (
+      onboardingAntiSlopFacts.badgePresent
+      || onboardingAntiSlopFacts.subtitle !== "함께 보는 우리 가족 일정"
+      || rowProblems(onboarding).length > 0
+    ) {
+      report.problems.push({
+        scope: "onboarding-decorative-badge",
+        facts: onboardingAntiSlopFacts,
+        routeProblems: rowProblems(onboarding),
+      });
+    }
+    report.focused.antiSlop = { onboarding: onboardingAntiSlopFacts };
+
     for (const route of PARENT_BROWSER_QA_ROUTES) {
       const row = await navigate({ role: "parent", tier: "free", catalogMode: "valid", overLimit: route === "place-manager" }, route);
       row.problems = rowProblems(row);
@@ -908,6 +945,378 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       process.stdout.write(`${row.problems.length ? "FAIL" : "OK  "} parent ${route}\n`);
     }
 
+    const inspectParentHomeShortcuts = () => cdp.evaluate(`(() => {
+      const shortcutGrid = document.querySelector(".ph-shortcuts");
+      const shortcutButtons = [...document.querySelectorAll(".ph-shortcut")];
+      const subscription = document.querySelector(".ph-subscription");
+      const subscriptionAction = subscription?.querySelector(".ph-subscription__action");
+      const memo = document.querySelector(".ph-memo");
+      const shortcutRect = shortcutGrid?.getBoundingClientRect();
+      const subscriptionRect = subscription?.getBoundingClientRect();
+      const subscriptionActionRect = subscriptionAction?.getBoundingClientRect();
+      const memoRect = memo?.getBoundingClientRect();
+      const subscriptionStyle = subscription ? getComputedStyle(subscription) : null;
+      const rowCounts = Object.values(shortcutButtons.reduce((rows, button) => {
+        const top = String(Math.round(button.getBoundingClientRect().top));
+        rows[top] = (rows[top] || 0) + 1;
+        return rows;
+      }, {}));
+      return {
+        labels: shortcutButtons.map((button) => button.querySelector(".ph-shortcut__label")?.textContent?.trim() || ""),
+        shortcutCount: shortcutButtons.length,
+        columnCount: shortcutGrid ? getComputedStyle(shortcutGrid).gridTemplateColumns.split(" ").length : 0,
+        rowCounts,
+        subscriptionTitle: subscription?.querySelector(".ph-subscription__title")?.textContent?.trim() || "",
+        subscriptionAction: subscriptionAction?.textContent?.trim() || "",
+        subscriptionTone: subscription?.getAttribute("data-tone"),
+        subscriptionTag: subscription?.tagName || null,
+        subscriptionHeight: Math.round(subscriptionRect?.height || 0),
+        subscriptionActionHeight: Math.round(subscriptionActionRect?.height || 0),
+        subscriptionHasGradient: Boolean(subscriptionStyle?.backgroundImage.includes("gradient")),
+        subscriptionActionInside: Boolean(
+          subscriptionRect
+          && subscriptionActionRect
+          && subscriptionActionRect.left >= subscriptionRect.left
+          && subscriptionActionRect.right <= subscriptionRect.right
+        ),
+        isSubscriptionBelowGrid: Boolean(shortcutRect && subscriptionRect && subscriptionRect.top >= shortcutRect.bottom),
+        alignsWithMemo: Boolean(subscriptionRect && memoRect && Math.abs(subscriptionRect.width - memoRect.width) <= 2),
+        overflowX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      };
+    })()`);
+    const expectedParentHomeShortcuts = [
+      "AI 일정", "위치추적", "친구놀이", "장소관리",
+      "주변소리", "안심리포트", "아이 기기 찾기", "알림",
+    ];
+
+    const parentHomeFree = await navigate(
+      { role: "parent", tier: "free", catalogMode: "valid", overLimit: false },
+      "parent/home",
+    );
+    const parentHomeFreeFacts = await inspectParentHomeShortcuts();
+    if (
+      JSON.stringify(parentHomeFreeFacts.labels) !== JSON.stringify(expectedParentHomeShortcuts)
+      || parentHomeFreeFacts.shortcutCount !== 8
+      || parentHomeFreeFacts.columnCount !== 4
+      || JSON.stringify(parentHomeFreeFacts.rowCounts) !== JSON.stringify([4, 4])
+      || parentHomeFreeFacts.subscriptionTitle !== "구독 시 혜택"
+      || parentHomeFreeFacts.subscriptionAction !== "혜택 보기"
+      || parentHomeFreeFacts.subscriptionTone !== "benefits"
+      || parentHomeFreeFacts.subscriptionTag !== "BUTTON"
+      || parentHomeFreeFacts.subscriptionHeight < 100
+      || parentHomeFreeFacts.subscriptionActionHeight < 36
+      || !parentHomeFreeFacts.subscriptionHasGradient
+      || !parentHomeFreeFacts.subscriptionActionInside
+      || !parentHomeFreeFacts.isSubscriptionBelowGrid
+      || !parentHomeFreeFacts.alignsWithMemo
+      || parentHomeFreeFacts.overflowX > 0
+      || rowProblems(parentHomeFree).length > 0
+    ) {
+      report.problems.push({
+        scope: "parent-home-shortcuts-free",
+        facts: parentHomeFreeFacts,
+        routeProblems: rowProblems(parentHomeFree),
+      });
+    }
+    await cdp.evaluate(`(() => {
+      document.querySelector(".ph-shortcuts")?.scrollIntoView({ block: "start" });
+      window.scrollBy(0, -96);
+      return true;
+    })()`);
+    await wait(250);
+    report.screenshots.push(await screenshot(cdp, freshOutputDir, "parent-home-shortcuts-free.png"));
+
+    await cdp.evaluate(`(() => {
+      const target = [...document.querySelectorAll(".ph-shortcut")]
+        .find((button) => button.textContent?.includes("아이 기기 찾기"));
+      if (!(target instanceof HTMLButtonElement)) return false;
+      target.click();
+      return true;
+    })()`);
+    await wait(3_200);
+    const deviceFinderFacts = await cdp.evaluate(`(() => ({
+      hash: location.hash,
+      routedChildUserId: history.state?.usr?.childUserId ?? null,
+      targetReady: document.querySelector(".rr-cta") instanceof HTMLButtonElement
+        && !document.querySelector(".rr-cta").disabled,
+      hasTargetQuestion: Boolean(document.querySelector(".rr-title")?.textContent?.includes("기기에서 벨을 울릴까요?")),
+      confirmationOpen: Boolean(document.querySelector(".rr-modal")),
+      ringing: Boolean(document.querySelector(".rr-ring")),
+    }))()`);
+    if (
+      deviceFinderFacts.hash !== "#/remote-ring"
+      || deviceFinderFacts.routedChildUserId !== CHILD_ID
+      || !deviceFinderFacts.targetReady
+      || !deviceFinderFacts.hasTargetQuestion
+      || deviceFinderFacts.confirmationOpen
+      || deviceFinderFacts.ringing
+    ) {
+      report.problems.push({ scope: "parent-home-device-finder-entry", facts: deviceFinderFacts });
+    }
+
+    const parentHomePremium = await navigate(
+      { role: "parent", tier: "premium", catalogMode: "valid", overLimit: false },
+      "parent/home",
+    );
+    const parentHomePremiumFacts = await inspectParentHomeShortcuts();
+    if (
+      parentHomePremiumFacts.subscriptionTitle !== "구독 관리"
+      || parentHomePremiumFacts.subscriptionAction !== "관리하기"
+      || parentHomePremiumFacts.subscriptionTone !== "manage"
+      || parentHomePremiumFacts.subscriptionTag !== "BUTTON"
+      || parentHomePremiumFacts.subscriptionHeight < 100
+      || parentHomePremiumFacts.subscriptionActionHeight < 36
+      || !parentHomePremiumFacts.subscriptionHasGradient
+      || !parentHomePremiumFacts.subscriptionActionInside
+      || !parentHomePremiumFacts.isSubscriptionBelowGrid
+      || !parentHomePremiumFacts.alignsWithMemo
+      || parentHomePremiumFacts.overflowX > 0
+      || rowProblems(parentHomePremium).length > 0
+    ) {
+      report.problems.push({
+        scope: "parent-home-shortcuts-premium",
+        facts: parentHomePremiumFacts,
+        routeProblems: rowProblems(parentHomePremium),
+      });
+    }
+    report.focused.parentHomeShortcuts = {
+      free: parentHomeFreeFacts,
+      premium: parentHomePremiumFacts,
+      deviceFinderEntry: deviceFinderFacts,
+    };
+    await cdp.evaluate(`(() => {
+      document.querySelector(".ph-shortcuts")?.scrollIntoView({ block: "start" });
+      window.scrollBy(0, -96);
+      return true;
+    })()`);
+    await wait(250);
+    report.screenshots.push(await screenshot(cdp, freshOutputDir, "parent-home-shortcuts-premium.png"));
+
+    const locationHistory = await navigate(
+      { role: "parent", tier: "premium", catalogMode: "valid", overLimit: false },
+      "parent/location?view=history",
+    );
+    const locationHistoryFacts = await cdp.evaluate(`(() => {
+      const panel = document.querySelector(".pl-journey");
+      const toggle = document.querySelector(".pl-journey__toggle");
+      const stays = [...document.querySelectorAll(".pl-journey__stay")];
+      const text = (panel?.innerText || "").replace(/\\s+/g, " ").trim();
+      const eyebrow = document.querySelector(".pl-journey__eyebrow")?.textContent?.trim() || "";
+      const selectedTime = document.querySelector(".pl-journey__replay-head strong")?.textContent?.trim() || "";
+      const recordedRange = document.querySelector(".pl-journey__range-label")?.textContent?.trim() || "";
+      const recordedStart = recordedRange.split("–").at(0)?.trim() || "";
+      const recordedEnd = recordedRange.split("–").at(-1)?.trim() || "";
+      const range = document.querySelector(".pl-journey__range");
+      const formatRangeClock = (value) => {
+        const date = new Date(Number(value));
+        if (Number.isNaN(date.getTime())) return "";
+        return String(date.getHours()).padStart(2, "0")
+          + ":"
+          + String(date.getMinutes()).padStart(2, "0");
+      };
+      const sliderStart = range instanceof HTMLInputElement ? formatRangeClock(range.min) : "";
+      const sliderEnd = range instanceof HTMLInputElement ? formatRangeClock(range.max) : "";
+      return {
+        hash: location.hash,
+        panelVisible: Boolean(panel),
+        expanded: toggle?.getAttribute("aria-expanded"),
+        stayCount: stays.length,
+        stayTexts: stays.map((stay) => (stay.textContent || "").replace(/\\s+/g, " ").trim()),
+        hasToolbar: Boolean(document.querySelector(".pl-history-toolbar")),
+        hasReplay: Boolean(document.querySelector(".pl-journey__replay")),
+        eyebrow,
+        selectedTime,
+        recordedRange,
+        sliderStart,
+        sliderEnd,
+        sliderBoundsAligned: Boolean(
+          recordedStart
+          && recordedEnd
+          && sliderStart === recordedStart
+          && sliderEnd === recordedEnd
+        ),
+        latestAligned: Boolean(selectedTime && selectedTime === recordedEnd),
+        text,
+      };
+    })()`);
+    if (
+      locationHistoryFacts.hash !== "#/parent/location?view=history"
+      || !locationHistoryFacts.panelVisible
+      || locationHistoryFacts.expanded !== "true"
+      || locationHistoryFacts.stayCount !== 2
+      || !locationHistoryFacts.hasToolbar
+      || !locationHistoryFacts.hasReplay
+      || locationHistoryFacts.eyebrow !== "최신 기록"
+      || !locationHistoryFacts.latestAligned
+      || !locationHistoryFacts.sliderBoundsAligned
+      || !locationHistoryFacts.text.includes("머문 곳")
+      || !locationHistoryFacts.stayTexts.some((text) => text.includes("우리 집"))
+      || !locationHistoryFacts.stayTexts.some((text) => text.includes("데모 학교"))
+      || rowProblems(locationHistory).length > 0
+    ) {
+      report.problems.push({
+        scope: "parent-location-history",
+        facts: locationHistoryFacts,
+        routeProblems: rowProblems(locationHistory),
+      });
+    }
+    report.screenshots.push(await screenshot(cdp, freshOutputDir, "parent-location-history.png"));
+
+    await clickSelector(cdp, ".pl-journey__toggle");
+    await wait(360);
+    const locationHistoryCollapsed = await cdp.evaluate(`(() => {
+      const range = document.querySelector(".pl-journey__range");
+      const stays = document.querySelector("#location-journey-stays");
+      const rect = range?.getBoundingClientRect();
+      return {
+        expanded: document.querySelector(".pl-journey__toggle")?.getAttribute("aria-expanded"),
+        staysHidden: Boolean(stays?.hidden),
+        replayVisible: Boolean(rect && rect.width > 0 && rect.height >= 44),
+      };
+    })()`);
+    await clickSelector(cdp, ".pl-journey__toggle");
+    await wait(360);
+    const locationHistoryReplay = await cdp.evaluate(`(() => {
+      const range = document.querySelector(".pl-journey__range");
+      if (!(range instanceof HTMLInputElement)) return { moved: false, followsLatest: null };
+      const nextValue = String(Math.max(Number(range.min), Number(range.max) - 90 * 60_000));
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+      setter?.call(range, nextValue);
+      range.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText" }));
+      range.dispatchEvent(new Event("change", { bubbles: true }));
+      return {
+        moved: range.value === nextValue,
+        followsLatest: document.querySelector(".pl-journey__follow")?.getAttribute("aria-pressed"),
+      };
+    })()`);
+    // 160ms 지도 포커스 debounce 뒤 React 렌더와 Kakao overlay 재생성까지 기다린다.
+    await wait(360);
+    const locationHistoryAfterReplay = await cdp.evaluate(`(() => {
+      const selectedTime = document.querySelector(".pl-journey__replay-head strong")?.textContent?.trim() || null;
+      const panCalls = Array.isArray(window.__hyQaMapPanCalls) ? window.__hyQaMapPanCalls : [];
+      const markerBadge = (Array.isArray(window.__hyQaOverlayContents) ? window.__hyQaOverlayContents : [])
+        .map((content) => content?.querySelector?.(".km-child-marker__time")?.textContent?.trim() || null)
+        .find(Boolean) || null;
+      const range = document.querySelector(".pl-journey__range");
+      const rangeRect = range?.getBoundingClientRect();
+      return {
+        expanded: document.querySelector(".pl-journey__toggle")?.getAttribute("aria-expanded"),
+        staysHidden: Boolean(document.querySelector("#location-journey-stays")?.hidden),
+        replayVisible: Boolean(rangeRect && rangeRect.width > 0 && rangeRect.height >= 44),
+        rangeEnabled: range instanceof HTMLInputElement && !range.disabled,
+        followsLatest: document.querySelector(".pl-journey__follow")?.getAttribute("aria-pressed"),
+        selectedStayCount: document.querySelectorAll(".pl-journey__stay--selected").length,
+        selectedTime,
+        markerBadge,
+        lastPan: panCalls.at(-1) || null,
+      };
+    })()`);
+    const locationHistorySecondReplay = await cdp.evaluate(`(() => {
+      const range = document.querySelector(".pl-journey__range");
+      if (!(range instanceof HTMLInputElement)) return { moved: false };
+      const nextValue = String(Math.max(Number(range.min), Number(range.max) - 20 * 60_000));
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+      setter?.call(range, nextValue);
+      range.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText" }));
+      range.dispatchEvent(new Event("change", { bubbles: true }));
+      return { moved: range.value === nextValue };
+    })()`);
+    await wait(360);
+    const locationHistoryAfterSecondReplay = await cdp.evaluate(`(() => {
+      const selectedTime = document.querySelector(".pl-journey__replay-head strong")?.textContent?.trim() || null;
+      const markerBadge = (Array.isArray(window.__hyQaOverlayContents) ? window.__hyQaOverlayContents : [])
+        .map((content) => content?.querySelector?.(".km-child-marker__time")?.textContent?.trim() || null)
+        .find(Boolean) || null;
+      return {
+        selectedTime,
+        markerBadge,
+        selectedStayCount: document.querySelectorAll(".pl-journey__stay--selected").length,
+      };
+    })()`);
+    const rapidPanCountBefore = await cdp.evaluate(`Array.isArray(window.__hyQaMapPanCalls) ? window.__hyQaMapPanCalls.length : 0`);
+    let rapidMoved = true;
+    for (const delta of [75, 65, 55, 45, 35]) {
+      const moved = await cdp.evaluate(`(() => {
+        const range = document.querySelector(".pl-journey__range");
+        if (!(range instanceof HTMLInputElement)) return false;
+        const value = Math.max(Number(range.min), Number(range.max) - ${delta} * 60_000);
+        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+        setter?.call(range, String(value));
+        range.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText" }));
+        range.dispatchEvent(new Event("change", { bubbles: true }));
+        return range.value === String(value);
+      })()`);
+      rapidMoved &&= moved;
+      await wait(25);
+    }
+    await wait(360);
+    const rapidReplayFacts = await cdp.evaluate(`(() => {
+      const panCount = (Array.isArray(window.__hyQaMapPanCalls) ? window.__hyQaMapPanCalls.length : 0) - ${rapidPanCountBefore};
+      const selectedTime = document.querySelector(".pl-journey__replay-head strong")?.textContent?.trim() || null;
+      const markerBadge = (Array.isArray(window.__hyQaOverlayContents) ? window.__hyQaOverlayContents : [])
+        .map((content) => content?.querySelector?.(".km-child-marker__time")?.textContent?.trim() || null)
+        .find(Boolean) || null;
+      return { panCount, selectedTime, markerBadge };
+    })()`);
+    const locationHistoryRapidReplay = { moved: rapidMoved, ...rapidReplayFacts };
+    await clickSelector(cdp, ".pl-journey__follow");
+    await wait(200);
+    const locationHistoryLatest = await cdp.evaluate(`(() => ({
+      followsLatest: document.querySelector(".pl-journey__follow")?.getAttribute("aria-pressed"),
+      markerBadge: (Array.isArray(window.__hyQaOverlayContents) ? window.__hyQaOverlayContents : [])
+        .map((content) => content?.querySelector?.(".km-child-marker__time")?.textContent?.trim() || null)
+        .find(Boolean) || null,
+    }))()`);
+    if (
+      locationHistoryCollapsed.expanded !== "false"
+      || !locationHistoryCollapsed.staysHidden
+      || !locationHistoryCollapsed.replayVisible
+      || !locationHistoryReplay.moved
+      || locationHistoryAfterReplay.expanded !== "true"
+      || locationHistoryAfterReplay.staysHidden
+      || !locationHistoryAfterReplay.replayVisible
+      || !locationHistoryAfterReplay.rangeEnabled
+      || locationHistoryAfterReplay.followsLatest !== "false"
+      || locationHistoryAfterReplay.selectedStayCount !== 1
+      || !locationHistoryAfterReplay.selectedTime
+      || locationHistoryAfterReplay.markerBadge !== locationHistoryAfterReplay.selectedTime
+      || !(locationHistoryAfterReplay.lastPan?.y > 0)
+      || !locationHistorySecondReplay.moved
+      || !locationHistoryAfterSecondReplay.selectedTime
+      || locationHistoryAfterSecondReplay.selectedTime === locationHistoryAfterReplay.selectedTime
+      || locationHistoryAfterSecondReplay.markerBadge !== locationHistoryAfterSecondReplay.selectedTime
+      || locationHistoryAfterSecondReplay.selectedStayCount !== 1
+      || !locationHistoryRapidReplay.moved
+      || !(locationHistoryRapidReplay.panCount <= 1)
+      || !locationHistoryRapidReplay.selectedTime
+      || locationHistoryRapidReplay.markerBadge !== locationHistoryRapidReplay.selectedTime
+      || locationHistoryLatest.followsLatest !== "true"
+      || locationHistoryLatest.markerBadge !== null
+    ) {
+      report.problems.push({
+        scope: "parent-location-history-interaction",
+        facts: {
+          collapsed: locationHistoryCollapsed,
+          replay: locationHistoryReplay,
+          afterReplay: locationHistoryAfterReplay,
+          secondReplay: locationHistorySecondReplay,
+          afterSecondReplay: locationHistoryAfterSecondReplay,
+          rapidReplay: locationHistoryRapidReplay,
+          latest: locationHistoryLatest,
+        },
+      });
+    }
+    report.focused.parentLocationHistory = {
+      ...locationHistoryFacts,
+      collapsed: locationHistoryCollapsed,
+      replay: locationHistoryReplay,
+      afterReplay: locationHistoryAfterReplay,
+      secondReplay: locationHistorySecondReplay,
+      afterSecondReplay: locationHistoryAfterSecondReplay,
+      rapidReplay: locationHistoryRapidReplay,
+      latest: locationHistoryLatest,
+    };
+
     for (const route of CHILD_BROWSER_QA_ROUTES) {
       const row = await navigate({ role: "child", tier: "free", catalogMode: "valid", overLimit: false }, route);
       row.problems = rowProblems(row);
@@ -915,6 +1324,46 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       if (row.problems.length > 0) report.problems.push({ scope: "child-route", route, problems: row.problems });
       process.stdout.write(`${row.problems.length ? "FAIL" : "OK  "} child  ${route}\n`);
     }
+
+    const aiFriend = await navigate(
+      { role: "child", tier: "free", catalogMode: "valid", overLimit: false },
+      "child/ai-friend",
+    );
+    const aiFriendAntiSlopFacts = await cdp.evaluate(`(() => ({
+      decorativeStatusPresent: Boolean(document.querySelector(".afc-head-status")),
+      decorativeOnlineDotPresent: Boolean(document.querySelector(".afc-online")),
+    }))()`);
+    if (
+      aiFriendAntiSlopFacts.decorativeStatusPresent
+      || aiFriendAntiSlopFacts.decorativeOnlineDotPresent
+      || rowProblems(aiFriend).length > 0
+    ) {
+      report.problems.push({
+        scope: "ai-friend-decorative-status",
+        facts: aiFriendAntiSlopFacts,
+        routeProblems: rowProblems(aiFriend),
+      });
+    }
+    report.focused.antiSlop.aiFriend = aiFriendAntiSlopFacts;
+
+    const parentSettings = await navigate(
+      { role: "parent", tier: "free", catalogMode: "valid", overLimit: false },
+      "parent/settings",
+    );
+    const parentSettingsAntiSlopFacts = await cdp.evaluate(`(() => ({
+      versionText: document.querySelector(".ps-version")?.textContent?.trim() || "",
+    }))()`);
+    if (
+      !/^혜니캘린더 v\S+$/.test(parentSettingsAntiSlopFacts.versionText)
+      || rowProblems(parentSettings).length > 0
+    ) {
+      report.problems.push({
+        scope: "settings-decorative-tagline",
+        facts: parentSettingsAntiSlopFacts,
+        routeProblems: rowProblems(parentSettings),
+      });
+    }
+    report.focused.antiSlop.parentSettings = parentSettingsAntiSlopFacts;
 
     const subscription = await navigate({ role: "parent", tier: "free", catalogMode: "valid", overLimit: false }, "subscription");
     const subscriptionFacts = await cdp.evaluate(`(() => {
@@ -1067,7 +1516,9 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       return {
         open: Boolean(dialog),
         text,
-        hasExactLimit: text.includes("저장 장소 2개를 모두 사용했어요") && text.includes("3/2 사용"),
+        hasExactLimit: text.includes("무료 알림 대상 2개를 모두 사용했어요")
+          && text.includes("알림 2/2 · 저장 3개")
+          && !text.includes("3/2 사용"),
         hasContinue: text.includes("무료로 계속 쓰기"),
         hasUpgrade: text.includes("장소 계속 추가하기"),
       };

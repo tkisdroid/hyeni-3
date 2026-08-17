@@ -493,8 +493,8 @@ test("단색 CTA와 선택 상태도 전경색에 맞는 AA 전용 토큰을 쓴
       "#fff",
     ],
     [
-      "src/screens/onboarding/Onboarding.css",
-      ".ob-consent-primary",
+      "src/components/ChildLocationPermissionDialog.css",
+      ".clp-primary",
       "var(--mint-cta)",
       "var(--bg-card)",
     ],
@@ -575,8 +575,8 @@ test("단색 CTA와 선택 상태도 전경색에 맞는 AA 전용 토큰을 쓴
     ],
     [
       "src/screens/parent/ParentLocation.css",
-      ".pl-stay__num",
-      "var(--lav-600)",
+      ".pl-journey__order",
+      "var(--mint-cta)",
       "#fff",
     ],
     [
@@ -657,9 +657,9 @@ test("단색 CTA와 선택 상태도 전경색에 맞는 AA 전용 토큰을 쓴
 
   const activeStayBackground = exactRule(
     "src/screens/parent/ParentLocation.css",
-    ".pl-stay--on .pl-stay__num",
+    ".pl-journey__stay--selected .pl-journey__order",
   ).get("background");
-  assert.equal(activeStayBackground, "var(--lav-text)");
+  assert.equal(activeStayBackground, "var(--mint-text)");
   assertAccessiblePair(activeStayBackground, "#fff", "ParentLocation active stay number");
 
   const remoteSquareBackground = exactRule(
