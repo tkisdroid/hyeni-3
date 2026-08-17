@@ -48,9 +48,18 @@ export const queryClient = new QueryClient({
       gcTime: 5 * 60_000, // 5min 후 미사용 캐시 수거
       retry: shouldRetry,
       refetchOnWindowFocus: shouldRefetchOnWindowFocus(isNativePlatform()),
+      // ★2026-08-17 실사고: 아이 길찾기가 "지도에서 길을 볼까?"에서 영원히 멈췄다.
+      // 기본 networkMode("online")는 재시도 직전에 onlineManager 를 보는데, Capacitor
+      // WebView 에서는 이 값이 실제 연결과 어긋난 채 굳는다(실측: navigator.onLine=true,
+      // 서버 응답 502 를 두 번 받았는데도 fetchStatus="paused", failureCount=1 고정).
+      // 그러면 status 가 error 로 가지 못해 화면이 실패도 로딩도 아닌 상태에 갇히고,
+      // 재시도 버튼조차 뜨지 않는다. 우리는 오프라인을 OfflineBanner 와 화면별 정직한
+      // 오류 상태로 이미 다루므로, 조회는 항상 시도하고 실패는 실패로 보이게 한다.
+      networkMode: "always",
     },
     mutations: {
       retry: false,
+      networkMode: "always",
     },
   },
 });

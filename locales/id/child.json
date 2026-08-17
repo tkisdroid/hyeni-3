@@ -279,6 +279,7 @@
   "child.route.openMapAfterError": "Kamu bisa melihatnya langsung di peta!",
   "child.route.retry": "Cari lagi",
   "child.route.stepDistance": " · {distance, number} m",
+  "child.route.straightLine": "Jaraknya {distance, number}m garis lurus, jalan kaki sekitar {minutes, number} menit.",
   "child.route.title": "Rute ke {destination}",
   "child.route.tryLater": "Mau menekan lagi sebentar nanti?",
   "child.route.walkingMinutes": "{minutes, number} menit berjalan kaki",

@@ -443,6 +443,7 @@ const messages = {
   "shared.routeView.stepStart": "{audience, select, child {ออกเดินทาง · เริ่มจาก {place}} parent {ออกเดินทาง · เริ่มจาก {place}} other {ออกเดินทาง · เริ่มจาก {place}}}",
   "shared.routeView.stepWalk": "{audience, select, child {เดินตามเส้นทางประมาณ {distance}} parent {โปรดเดินตามเส้นทางประมาณ {distance}} other {โปรดเดินตามเส้นทางประมาณ {distance}}}",
   "shared.routeView.straightEstimate": "ระยะเส้นตรง {distance} · เดินประมาณ {duration}",
+  "shared.routeView.straightLine": "{audience, select, child {เส้นตรง {distance, number} ม. · เดินราว {minutes, number} นาที} other {ระยะเส้นตรง {distance, number} ม. · เดินราว {minutes, number} นาที}}",
   "shared.routeView.walkDuration": "เดิน {duration}",
   "shared.routeView.walkOnly": "เดิน",
   "shared.routeView.walkingRouteTag": "เส้นทางเดิน",

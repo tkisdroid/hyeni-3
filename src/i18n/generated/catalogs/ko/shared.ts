@@ -443,6 +443,7 @@ const messages = {
   "shared.routeView.stepStart": "{audience, select, child {출발 · {place}에서 시작해} parent {출발 · {place}에서 시작해요} other {출발 · {place}에서 시작해요}}",
   "shared.routeView.stepWalk": "{audience, select, child {길을 따라 약 {distance} 걸어가} parent {길을 따라 약 {distance} 걸어가세요} other {길을 따라 약 {distance} 걸어가세요}}",
   "shared.routeView.straightEstimate": "직선 {distance} · 걸어서 {duration}쯤",
+  "shared.routeView.straightLine": "{audience, select, child {직선으로 {distance, number}m · 걸어서 {minutes, number}분쯤} other {직선거리 {distance, number}m · 도보 약 {minutes, number}분}}",
   "shared.routeView.walkDuration": "도보 {duration}",
   "shared.routeView.walkOnly": "도보",
   "shared.routeView.walkingRouteTag": "도보 경로",

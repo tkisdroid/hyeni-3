@@ -32,6 +32,8 @@ export interface Env {
   ADMIN_USER_IDS?: string;
   /** AI 친구 대화 한도·차감을 적용하지 않을 가족의 소유 부모 계정 목록(fail-closed). */
   AI_UNLIMITED_OWNER_IDS?: string;
+  /** OpenRouteService 도보 경로 키. 없으면 ORS 호출을 건너뛴다(설정 누락이 오류가 되지 않게). */
+  ORS_API_KEY?: string;
   OPENAI_API_KEY?: string;
   OPENAI_BASE_URL?: string; // Cloudflare AI Gateway openai 엔드포인트(OpenAI 지역차단 우회). 미설정 시 api.openai.com 직접.
   ANTHROPIC_API_KEY?: string;

@@ -279,6 +279,7 @@ const messages = {
   "child.route.openMapAfterError": "Puwede mo itong tingnan mismo sa mapa!",
   "child.route.retry": "Maghanap ulit",
   "child.route.stepDistance": " · {distance, number} m",
+  "child.route.straightLine": "{distance, number}m ang layo sa tuwid na linya, mga {minutes, number} minutong lakad.",
   "child.route.title": "Ruta papunta sa {destination}",
   "child.route.tryLater": "Pindutin ulit maya-maya?",
   "child.route.walkingMinutes": "{minutes, number} minuto sa paglalakad",

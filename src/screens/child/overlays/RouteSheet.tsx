@@ -12,6 +12,7 @@ import { Home, Map, Navigation } from "lucide-react";
 import { useIntl } from "react-intl";
 import { asset } from "@/lib/assets";
 import { useWalkingRoute } from "@/queries/useRoute";
+import { straightLineHint } from "@/transform/straightLineRoute";
 import type { RoutePoint } from "@/lib/api/endpoints/route";
 import { ChildSheet } from "./ChildSheet";
 
@@ -57,10 +58,32 @@ export function RouteSheet({
   const data = route.data ?? null;
   const steps = (data?.guides ?? []).filter((g) => g.text.trim()).slice(0, 3);
   const estimated = !!data && !data.durationSec;
+  // 상류 라우팅이 죽었을 때 쓸 직선 거리(경로가 아니라 참고값이다).
+  const straight = straightLineHint(origin, destination);
 
   useEffect(() => {
     if (!open || !sending) setPendingAction(null);
   }, [open, sending]);
+
+  // 길 안내를 못 받은 모든 경우(오류·중단·빈 응답)를 한 화면으로 닫는다.
+  // 예전에는 오류일 때만 안내하고 그 밖에는 "지도에서 길을 볼까?"라는 막다른 문구를 띄웠는데,
+  // 실제로는 조회가 실패해도 그 문구에 머물러 아이가 아무 정보도 못 받았다(2026-08-17 실사고).
+  // 좌표는 둘 다 있으니 직선 거리만이라도 정직하게 알려주고, 실제 길은 아래 지도 버튼으로 넘긴다.
+  const routeUnavailable = (
+    <div className="ks-empty">
+      {straight
+        ? intl.formatMessage(
+            { id: "child.route.straightLine" },
+            { distance: straight.distanceM, minutes: straight.minutes },
+          )
+        : intl.formatMessage({ id: "child.route.error" })}
+      <br />
+      {intl.formatMessage({ id: "child.route.openMapAfterError" })}
+      <button type="button" className="ks-retry hy-press" onClick={() => void route.refetch()}>
+        {intl.formatMessage({ id: "child.route.retry" })}
+      </button>
+    </div>
+  );
 
   return (
     <ChildSheet
@@ -117,14 +140,7 @@ export function RouteSheet({
       ) : route.isLoading ? (
         <div className="ks-empty">{intl.formatMessage({ id: "child.route.loading" })}</div>
       ) : route.isError ? (
-        <div className="ks-empty">
-          {intl.formatMessage({ id: "child.route.error" })}
-          <br />
-          {intl.formatMessage({ id: "child.route.openMapAfterError" })}
-          <button type="button" className="ks-retry hy-press" onClick={() => void route.refetch()}>
-            {intl.formatMessage({ id: "child.route.retry" })}
-          </button>
-        </div>
+        routeUnavailable
       ) : steps.length > 0 ? (
         <div className="ks-route__steps">
           {steps.map((s, i) => (
@@ -139,12 +155,12 @@ export function RouteSheet({
             </div>
           ))}
         </div>
-      ) : (
+      ) : data ? (
         <div className="ks-empty">
-          {data
-            ? intl.formatMessage({ id: "child.route.distancePrompt" }, { distance: data.distanceM })
-            : intl.formatMessage({ id: "child.route.mapPrompt" })}
+          {intl.formatMessage({ id: "child.route.distancePrompt" }, { distance: data.distanceM })}
         </div>
+      ) : (
+        routeUnavailable
       )}
 
       <button

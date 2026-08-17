@@ -443,6 +443,7 @@ const messages = {
   "shared.routeView.stepStart": "{audience, select, child {Alis · Magsimula sa {place}} parent {Alis · Magsimula sa {place}} other {Alis · Magsimula sa {place}}}",
   "shared.routeView.stepWalk": "{audience, select, child {Sundan ang ruta nang humigit-kumulang {distance}} parent {Pakisundan ang ruta nang humigit-kumulang {distance}} other {Pakisundan ang ruta nang humigit-kumulang {distance}}}",
   "shared.routeView.straightEstimate": "Tuwirang layo {distance} · humigit-kumulang {duration} na lakad",
+  "shared.routeView.straightLine": "{audience, select, child {Tuwid na linya {distance, number}m · mga {minutes, number} minutong lakad} other {Tuwid na linya {distance, number}m · mga {minutes, number} minutong lakad}}",
   "shared.routeView.walkDuration": "{duration} na lakad",
   "shared.routeView.walkOnly": "Lakad",
   "shared.routeView.walkingRouteTag": "Lakarang ruta",

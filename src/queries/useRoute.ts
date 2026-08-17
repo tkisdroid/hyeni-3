@@ -12,9 +12,13 @@ import {
   type WalkingRoute,
 } from "@/lib/api/endpoints/route";
 
-// 좌표를 쿼리키 문자열로(소수 5자리 ≈ 1m 해상도 — 잦은 미세 변화로 캐시가 깨지지 않게).
+// 좌표를 쿼리키 문자열로.
+// ⚠️ 소수 5자리(≈1m)는 GPS 지터를 그대로 통과시킨다 — 실측(2026-08-17)에서 출발 좌표가
+// 37.33228 → 37.33224 로 흔들리며 **매번 새 쿼리**가 생겼고, 각 쿼리가 따로 실패해
+// 화면이 계속 처음 상태로 되돌아갔다. 도보 경로는 10m 차이로 달라지지 않으므로
+// 4자리(≈11m)로 묶어 같은 구간을 한 쿼리로 본다(서버 캐시 키와도 결이 같다).
 function coordKey(p: RoutePoint | null): string {
-  return p ? `${p.lat.toFixed(5)},${p.lng.toFixed(5)}` : "";
+  return p ? `${p.lat.toFixed(4)},${p.lng.toFixed(4)}` : "";
 }
 
 /** 출발→도착 도보 경로. 좌표 중 하나라도 없으면 비활성. */

@@ -279,6 +279,7 @@ const messages = {
   "child.route.openMapAfterError": "地図で直接見られるよ！",
   "child.route.retry": "もう一度探す",
   "child.route.stepDistance": " · {distance, number}m",
+  "child.route.straightLine": "ちょくせんで{distance, number}mだよ。あるいて{minutes, number}分くらい。",
   "child.route.title": "{destination}への道",
   "child.route.tryLater": "少ししてからもう一度押してみる？",
   "child.route.walkingMinutes": "歩いて{minutes, number}分",

@@ -3888,6 +3888,16 @@
     },
     "description": "도보 안내 단계별 거리 접미 문구"
   },
+  "child.route.straightLine": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {
+      "distance": "number",
+      "minutes": "number"
+    },
+    "description": "도보 경로를 못 받았을 때 아이에게 알리는 직선 거리·도보 환산 시간"
+  },
   "child.route.title": {
     "namespace": "child",
     "audience": "child",
@@ -20875,6 +20885,17 @@
       "duration": "string"
     },
     "description": "실 도보 경로 실패 시 직선거리임을 명시하는 정직한 추정치"
+  },
+  "shared.routeView.straightLine": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "A",
+    "variables": {
+      "audience": "select",
+      "distance": "number",
+      "minutes": "number"
+    },
+    "description": "길찾기 화면에서 경로 실패 시 표시하는 직선 거리·도보 환산 시간"
   },
   "shared.routeView.walkDuration": {
     "namespace": "shared",

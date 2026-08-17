@@ -279,6 +279,7 @@ const messages = {
   "child.route.openMapAfterError": "You can check it directly on the map!",
   "child.route.retry": "Find again",
   "child.route.stepDistance": " · {distance, number} m",
+  "child.route.straightLine": "It's {distance, number}m away in a straight line — about {minutes, number} min on foot.",
   "child.route.title": "Route to {destination}",
   "child.route.tryLater": "Want to try again in a little while?",
   "child.route.walkingMinutes": "{minutes, number} min on foot",

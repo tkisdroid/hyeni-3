@@ -12,14 +12,22 @@ import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import { requireAuth } from "../middleware/auth";
 import { cacheGet, cachePut, coordKey } from "../lib/edgeCache";
+import { writeOperationalLog } from "../lib/safeOperationalLog";
 
 const kakao = new Hono<{ Bindings: Env; Variables: Vars }>();
 
 const KAKAO_WALKING_URL =
   "https://apis-navi.kakaomobility.com/affiliate/walking/v1/directions";
 
-// FOSSGIS 공개 OSRM(도보 프로필). 키 불필요·경량 사용 전제(트래픽 커지면 자체 호스팅/제휴 전환).
+// FOSSGIS 공개 OSRM(도보 프로필). 키 불필요.
+// ⚠️ 2026-08-17 실사고: 이 데모 서버가 Cloudflare Workers 대역을 **403 으로 차단**한다.
+// 같은 URL·헤더가 로컬 호스트에서는 200 인데 Worker 에서만 403 이라 IP 차단이 확실하다
+// (FOSSGIS 이용 정책상 데모 서버의 상용 트래픽은 허용되지 않는다). User-Agent 로는 안 풀린다.
+// 그래서 아래 ORS 를 1순위 폴백으로 두고, OSRM 은 언젠가 풀릴 때를 위한 최후 시도로만 남긴다.
 const OSRM_FOOT_URL = "https://routing.openstreetmap.de/routed-foot/route/v1/foot";
+// OpenRouteService 도보 프로필 — 무료 키(하루 2,000건)로 API 사용이 허용된 서비스다.
+// ORS_API_KEY 가 없으면 호출 자체를 건너뛴다(설정 누락이 오류가 되지 않게).
+const ORS_FOOT_URL = "https://api.openrouteservice.org/v2/directions/foot-walking/geojson";
 const KAKAO_COORD2ADDRESS_URL = "https://dapi.kakao.com/v2/local/geo/coord2address.json";
 
 // ── 상류 응답 캐시 ────────────────────────────────────────────────────────
@@ -30,6 +38,7 @@ const WALK_CACHE_TTL_SEC = 60 * 60 * 24 * 7; // 7일
 // 공개 OSRM(FOSSGIS)은 가끔 수 초씩 늦는다. 무한정 기다리면 아이 화면이 멈추므로 끊는다.
 const KAKAO_TIMEOUT_MS = 2500;
 const OSRM_TIMEOUT_MS = 4000;
+const ORS_TIMEOUT_MS = 4000;
 const GEOCODE_CACHE_TTL_SEC = 60 * 60 * 24 * 30; // 30일
 
 /** 카카오 도보(제휴 전용) 호출. 실패·비제휴면 null. */
@@ -57,9 +66,14 @@ async function fetchKakaoWalkingRoute(
       // 상류가 매달리면 사용자 화면이 통째로 멈춘다 — 짧게 끊고 폴백에 맡긴다.
       signal: AbortSignal.timeout(KAKAO_TIMEOUT_MS),
     });
-    if (!resp.ok) return null;
+    if (!resp.ok) {
+      // 제휴 미승인은 403 이 정상이다. 그 외 코드는 키·쿼터 문제일 수 있어 구분해 남긴다.
+      writeOperationalLog("error", "walking_route_kakao_failed", { provider: "kakao", status: resp.status });
+      return null;
+    }
     return (await resp.json()) as Record<string, unknown>;
   } catch {
+    writeOperationalLog("error", "walking_route_kakao_network_failed", { provider: "kakao" });
     return null;
   }
 }
@@ -144,11 +158,132 @@ async function fetchOsrmFootRoute(
       headers: { accept: "application/json" },
       signal: AbortSignal.timeout(OSRM_TIMEOUT_MS),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      // 상태 코드를 남기지 않으면 "왜 길을 못 찾는지"를 영영 모른다(2026-08-17 실사고).
+      // 좌표·응답 본문은 남기지 않는다(아이 위치가 로그로 새면 안 된다).
+      writeOperationalLog("error", "walking_route_osrm_failed", { status: res.status });
+      return null;
+    }
     const data = (await res.json()) as Parameters<typeof osrmToKakaoShape>[0] & { code?: string };
-    if (data.code !== "Ok") return null;
+    if (data.code !== "Ok") {
+      writeOperationalLog("error", "walking_route_osrm_no_route");
+      return null;
+    }
     return osrmToKakaoShape(data);
   } catch {
+    writeOperationalLog("error", "walking_route_osrm_network_failed");
+    return null;
+  }
+}
+
+// ── OpenRouteService(도보) ───────────────────────────────────────────────
+// FOSSGIS OSRM 이 Workers 대역을 막아 인앱 길 안내가 통째로 죽었다(2026-08-17).
+// ORS 는 무료 키로 API 사용이 허용된 서비스라 Workers 에서도 정상 응답한다.
+//
+// ORS instruction type(정수) → 아이 눈높이 한국어. OSRM 어휘와 같은 톤을 쓴다.
+const ORS_TYPE_KO: Record<number, string> = {
+  0: "왼쪽으로 꺾어",
+  1: "오른쪽으로 꺾어",
+  2: "왼쪽으로 크게 꺾어",
+  3: "오른쪽으로 크게 꺾어",
+  4: "왼쪽 방향으로 가",
+  5: "오른쪽 방향으로 가",
+  6: "쭉 직진해",
+  7: "회전교차로로 들어가",
+  8: "회전교차로에서 나와",
+  9: "뒤로 돌아서 가",
+  10: "도착 지점이야",
+  11: "출발",
+  12: "왼쪽 길로 가",
+  13: "오른쪽 길로 가",
+};
+
+interface OrsStep {
+  distance?: number;
+  type?: number;
+  name?: string;
+}
+
+function orsGuideText(step: OrsStep): string {
+  const rawName = (step.name ?? "").trim();
+  // ORS 는 이름 없는 길을 "-" 로 준다 — 그대로 읽으면 "-에서 왼쪽으로 꺾어"가 된다.
+  const name = rawName === "-" ? "" : rawName;
+  const type = typeof step.type === "number" ? step.type : -1;
+  if (type === 11) return name ? `${name}에서 출발` : "출발";
+  if (type === 10) return "도착 지점이야";
+  const turn = ORS_TYPE_KO[type] ?? "계속 가";
+  if (type === 6) return name ? `${name} 따라 쭉 가` : turn;
+  return name ? `${name}에서 ${turn}` : turn;
+}
+
+/** ORS GeoJSON 응답 → Kakao walking 응답 형태(클라 parseWalkingDirections 가 그대로 파싱). */
+function orsToKakaoShape(ors: {
+  features?: Array<{
+    geometry?: { coordinates?: [number, number][] };
+    properties?: {
+      summary?: { distance?: number; duration?: number };
+      segments?: Array<{ steps?: OrsStep[] }>;
+    };
+  }>;
+}): Record<string, unknown> | null {
+  const feature = ors.features?.[0];
+  const coords = feature?.geometry?.coordinates ?? [];
+  if (!feature || coords.length < 2) return null;
+  const vertexes: number[] = [];
+  for (const [lng, lat] of coords) vertexes.push(lng, lat);
+  const steps = feature.properties?.segments?.[0]?.steps ?? [];
+  const guides = steps
+    .map((s) => ({ guidance: orsGuideText(s), distance: Math.round(s.distance ?? 0) }))
+    .filter((g) => g.guidance);
+  const summary = feature.properties?.summary ?? {};
+  return {
+    routes: [
+      {
+        result_code: 0,
+        result_message: "ok(ors-foot)",
+        summary: {
+          distance: Math.round(summary.distance ?? 0),
+          duration: Math.round(summary.duration ?? 0),
+        },
+        sections: [{ roads: [{ vertexes }], guides }],
+      },
+    ],
+  };
+}
+
+/** ORS 도보 경로 조회. 키가 없거나 실패하면 null(호출부가 다음 폴백으로 넘어간다). */
+async function fetchOrsFootRoute(
+  apiKey: string,
+  origin: { lat: number; lng: number },
+  destination: { lat: number; lng: number },
+): Promise<Record<string, unknown> | null> {
+  if (!apiKey) return null;
+  try {
+    const res = await fetch(ORS_FOOT_URL, {
+      method: "POST",
+      headers: {
+        authorization: apiKey,
+        "content-type": "application/json",
+        accept: "application/geo+json",
+      },
+      body: JSON.stringify({
+        coordinates: [
+          [origin.lng, origin.lat],
+          [destination.lng, destination.lat],
+        ],
+        instructions: true,
+        language: "ko",
+      }),
+      signal: AbortSignal.timeout(ORS_TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      // 좌표·응답 본문은 남기지 않는다(아이 위치가 로그로 새면 안 된다).
+      writeOperationalLog("error", "walking_route_ors_failed", { status: res.status });
+      return null;
+    }
+    return orsToKakaoShape(await res.json() as Parameters<typeof orsToKakaoShape>[0]);
+  } catch {
+    writeOperationalLog("error", "walking_route_ors_network_failed");
     return null;
   }
 }
@@ -266,12 +401,14 @@ kakao.post("/walking-directions", requireAuth, async (c) => {
   // 카카오(제휴 전용, 현재 403)와 OSRM 폴백을 **동시에** 부른다.
   // 순차로 부르면 카카오가 실패할 걸 알면서도 그 왕복을 다 기다린 뒤 OSRM 을 시작해 2초가 넘었다.
   // 제휴가 승인되면 카카오 응답이 이기므로 코드를 되돌릴 필요가 없다.
-  const [kakaoRoute, osrmRoute] = await Promise.all([
+  const [kakaoRoute, orsRoute, osrmRoute] = await Promise.all([
     fetchKakaoWalkingRoute(key, origin, destination),
+    fetchOrsFootRoute(c.env.ORS_API_KEY || "", origin, destination),
     fetchOsrmFootRoute(origin, destination),
   ]);
 
-  const payload = kakaoRoute ?? osrmRoute;
+  // 우선순위: 카카오(제휴 승인 시) → ORS(무료 키) → OSRM(공개 데모, 현재 Workers 차단).
+  const payload = kakaoRoute ?? orsRoute ?? osrmRoute;
   if (payload) {
     cachePut(c.executionCtx, c.env.DB, cacheKey, payload, WALK_CACHE_TTL_SEC);
     return c.json(payload, 200);

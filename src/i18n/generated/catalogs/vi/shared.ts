@@ -443,6 +443,7 @@ const messages = {
   "shared.routeView.stepStart": "{audience, select, child {Xuất phát · Bắt đầu từ {place}} parent {Xuất phát · Bắt đầu từ {place}} other {Xuất phát · Bắt đầu từ {place}}}",
   "shared.routeView.stepWalk": "{audience, select, child {Đi theo đường khoảng {distance}} parent {Vui lòng đi theo đường khoảng {distance}} other {Vui lòng đi theo đường khoảng {distance}}}",
   "shared.routeView.straightEstimate": "Đường thẳng {distance} · đi bộ khoảng {duration}",
+  "shared.routeView.straightLine": "{audience, select, child {Đường thẳng {distance, number}m · đi bộ khoảng {minutes, number} phút} other {Đường thẳng {distance, number}m · đi bộ khoảng {minutes, number} phút}}",
   "shared.routeView.walkDuration": "Đi bộ {duration}",
   "shared.routeView.walkOnly": "Đi bộ",
   "shared.routeView.walkingRouteTag": "Đường đi bộ",

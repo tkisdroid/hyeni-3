@@ -443,6 +443,7 @@ const messages = {
   "shared.routeView.stepStart": "{audience, select, child {Mula · Bertolak dari {place}} parent {Mula · Bertolak dari {place}} other {Mula · Bertolak dari {place}}}",
   "shared.routeView.stepWalk": "{audience, select, child {Ikut laluan kira-kira {distance}} parent {Sila ikut laluan kira-kira {distance}} other {Sila ikut laluan kira-kira {distance}}}",
   "shared.routeView.straightEstimate": "Garis lurus {distance} · kira-kira {duration} berjalan kaki",
+  "shared.routeView.straightLine": "{audience, select, child {Garis lurus {distance, number}m · berjalan kira-kira {minutes, number} minit} other {Garis lurus {distance, number}m · berjalan kira-kira {minutes, number} minit}}",
   "shared.routeView.walkDuration": "Berjalan kaki {duration}",
   "shared.routeView.walkOnly": "Berjalan kaki",
   "shared.routeView.walkingRouteTag": "Laluan berjalan kaki",

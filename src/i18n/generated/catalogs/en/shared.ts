@@ -443,6 +443,7 @@ const messages = {
   "shared.routeView.stepStart": "{audience, select, child {Start · Leave from {place}} parent {Start · Leave from {place}} other {Start · Leave from {place}}}",
   "shared.routeView.stepWalk": "{audience, select, child {Follow the route for about {distance}} parent {Please follow the route for about {distance}} other {Please follow the route for about {distance}}}",
   "shared.routeView.straightEstimate": "{distance} straight-line · about {duration} on foot",
+  "shared.routeView.straightLine": "{audience, select, child {{distance, number}m straight line · about {minutes, number} min walk} other {Straight-line {distance, number}m · about {minutes, number} min walk}}",
   "shared.routeView.walkDuration": "{duration} walk",
   "shared.routeView.walkOnly": "Walking",
   "shared.routeView.walkingRouteTag": "Walking route",

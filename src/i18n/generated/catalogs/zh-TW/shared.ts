@@ -443,6 +443,7 @@ const messages = {
   "shared.routeView.stepStart": "{audience, select, child {出發 · 從{place}開始} parent {出發 · 從{place}開始} other {出發 · 從{place}開始}}",
   "shared.routeView.stepWalk": "{audience, select, child {沿路線走約{distance}} parent {請沿路線步行約{distance}} other {請沿路線步行約{distance}}}",
   "shared.routeView.straightEstimate": "直線距離{distance} · 步行約{duration}",
+  "shared.routeView.straightLine": "{audience, select, child {直線{distance, number}公尺 · 走路約{minutes, number}分鐘} other {直線距離{distance, number}公尺 · 步行約{minutes, number}分鐘}}",
   "shared.routeView.walkDuration": "步行{duration}",
   "shared.routeView.walkOnly": "步行",
   "shared.routeView.walkingRouteTag": "步行路線",

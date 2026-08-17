@@ -279,6 +279,7 @@
   "child.route.openMapAfterError": "可以直接在地圖上查看！",
   "child.route.retry": "重新尋找",
   "child.route.stepDistance": " · {distance, number}公尺",
+  "child.route.straightLine": "直線距離{distance, number}公尺，走路大約{minutes, number}分鐘。",
   "child.route.title": "前往{destination}的路線",
   "child.route.tryLater": "過一會兒再按一次好嗎？",
   "child.route.walkingMinutes": "步行{minutes, number}分鐘",

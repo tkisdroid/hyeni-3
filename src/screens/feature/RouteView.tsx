@@ -13,6 +13,7 @@ import { useLocationLabels } from "@/queries/useLocationLabels";
 import { useEvents } from "@/queries/useSchedule";
 import { useWalkingRoute } from "@/queries/useRoute";
 import { loadKakaoMaps } from "@/lib/kakaoMap";
+import { straightLineHint } from "@/transform/straightLineRoute";
 import { openExternal } from "@/lib/native/browser";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { straightDistanceM, type RoutePoint } from "@/lib/api/endpoints/route";
@@ -266,6 +267,8 @@ export function RouteView() {
   const routeLoadingText = intl.formatMessage({ id: "shared.routeView.routeLoading" }, { audience });
   // 한국어 역할별 재시도 계약: 길을 못 찾았어 · 다시 시도 / 길을 찾지 못했어요 · 다시 시도
   const routeRetryText = intl.formatMessage({ id: "shared.routeView.routeRetry" }, { audience });
+  // 상류 라우팅이 죽었을 때 쓸 직선 거리(경로가 아니라 참고값이다).
+  const straight = straightLineHint(origin, destination?.point ?? null);
   const locationPendingText = intl.formatMessage(
     { id: "shared.routeView.locationPending" },
     { audience, childName },
@@ -455,6 +458,15 @@ export function RouteView() {
             {/* 인앱 도보 경로 불가(제휴 API 필요) — 카카오맵 앱의 상세 도보 안내로 연결(정직한 강등). */}
             {routeState === "error" && destination && (
               <div className="rv-fallback">
+                {/* 경로를 못 받아도 좌표는 있다 — 직선 거리만이라도 정직하게 알린다(경로 아님을 명시). */}
+                {straight && (
+                  <span className="rv-fallback__msg">
+                    {intl.formatMessage(
+                      { id: "shared.routeView.straightLine" },
+                      { audience, distance: straight.distanceM, minutes: straight.minutes },
+                    )}
+                  </span>
+                )}
                 <span className="rv-fallback__msg">
                   {intl.formatMessage({ id: "shared.routeView.fallbackDescription" }, { audience })}
                 </span>

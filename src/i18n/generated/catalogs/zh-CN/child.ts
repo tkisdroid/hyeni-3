@@ -279,6 +279,7 @@ const messages = {
   "child.route.openMapAfterError": "可以直接在地图上查看！",
   "child.route.retry": "重新寻找",
   "child.route.stepDistance": " · {distance, number}米",
+  "child.route.straightLine": "直线距离{distance, number}米，走路大约{minutes, number}分钟。",
   "child.route.title": "去{destination}的路线",
   "child.route.tryLater": "过一会儿再点一次好吗？",
   "child.route.walkingMinutes": "步行{minutes, number}分钟",

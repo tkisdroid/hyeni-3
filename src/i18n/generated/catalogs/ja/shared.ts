@@ -443,6 +443,7 @@ const messages = {
   "shared.routeView.stepStart": "{audience, select, child {出発 · {place}から始めよう} parent {出発 · {place}から始めます} other {出発 · {place}から始めます}}",
   "shared.routeView.stepWalk": "{audience, select, child {道に沿って約{distance}歩こう} parent {道に沿って約{distance}お進みください} other {道に沿って約{distance}お進みください}}",
   "shared.routeView.straightEstimate": "直線{distance} · 徒歩で約{duration}",
+  "shared.routeView.straightLine": "{audience, select, child {ちょくせん{distance, number}m · あるいて{minutes, number}分くらい} other {直線距離{distance, number}m · 徒歩約{minutes, number}分}}",
   "shared.routeView.walkDuration": "徒歩{duration}",
   "shared.routeView.walkOnly": "徒歩",
   "shared.routeView.walkingRouteTag": "徒歩ルート",

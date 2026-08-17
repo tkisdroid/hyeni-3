@@ -279,6 +279,7 @@ const messages = {
   "child.route.openMapAfterError": "지도에서 직접 볼 수 있어!",
   "child.route.retry": "다시 찾기",
   "child.route.stepDistance": " · {distance, number}m",
+  "child.route.straightLine": "직선으로 {distance, number}m 떨어져 있어. 걸어서 {minutes, number}분쯤이야.",
   "child.route.title": "{destination} 가는 길",
   "child.route.tryLater": "잠깐 있다가 다시 눌러 볼래?",
   "child.route.walkingMinutes": "걸어서 {minutes, number}분",

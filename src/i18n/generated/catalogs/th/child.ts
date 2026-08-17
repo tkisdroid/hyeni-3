@@ -279,6 +279,7 @@ const messages = {
   "child.route.openMapAfterError": "ดูจากแผนที่โดยตรงได้นะ!",
   "child.route.retry": "ค้นหาอีกครั้ง",
   "child.route.stepDistance": " · {distance, number} ม.",
+  "child.route.straightLine": "ห่างเป็นเส้นตรง {distance, number} เมตร เดินราว {minutes, number} นาที",
   "child.route.title": "เส้นทางไป {destination}",
   "child.route.tryLater": "รอสักครู่แล้วลองกดอีกครั้งไหม?",
   "child.route.walkingMinutes": "เดิน {minutes, number} นาที",
