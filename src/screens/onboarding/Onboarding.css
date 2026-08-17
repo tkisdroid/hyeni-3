@@ -700,6 +700,20 @@
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
 }
+.ob-referral-notice .ob-input {
+  margin-top: var(--spacing-8);
+}
+.ob-referral-hint {
+  margin-top: var(--spacing-8);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+  color: var(--fg-muted);
+  word-break: keep-all;
+}
+.ob-input[aria-invalid="true"] + .ob-referral-hint {
+  color: var(--rose-text);
+}
 .ob-connect-list {
   margin-top: 28px;
   display: flex;

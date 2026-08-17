@@ -12,6 +12,8 @@ test("가족 setup은 optional referralCode를 서버에 전달하고 온보딩 
   assert.match(familyEndpoint, /referralCode\?: string/);
   assert.match(familyEndpoint, /referralCode:\s*input\.referralCode/);
   assert.match(onboarding, /readReferralParam\(\)/);
+  assert.match(onboarding, /ReferralCodeField/);
+  assert.match(onboarding, /onboarding\.field\.referralCode/);
   assert.match(onboarding, /setupFamily\(\{[\s\S]{0,180}referralCode:/);
   const setupAt = onboarding.indexOf("await setupFamily");
   const clearAt = onboarding.indexOf("clearReferralParam()", setupAt);
@@ -76,8 +78,13 @@ test("추천 화면은 보상과 조건을 한 줄씩만 보여주고 초대 가
 
   assert.match(panel, /parent\.referralRewardPanel\.copy019/);
   assert.match(panel, /parent\.referralRewardPanel\.pending/);
-  assert.match(panel, /navigator\.share/);
+  assert.match(panel, /sharePlainContent/);
   assert.match(panel, /navigator\.clipboard/);
+  const share = read("src/lib/native/share.ts");
+  assert.match(share, /navigator\.share/);
+  assert.match(share, /ShareSheet/);
+  assert.match(read("src/lib/native/referralDeepLink.ts"), /initReferralDeepLink/);
+  assert.match(read("android/app/src/main/AndroidManifest.xml"), /android:pathPrefix="\/invite"/);
 });
 
 test("부모 홈은 친구 초대를 한 줄 카드로 눈에 띄게 보여준다", () => {
@@ -108,7 +115,7 @@ test("보상 크레딧 표시 기본값은 서버 정책 상수와 같다", () =
 
 test("추천 공유 payload는 실제 locale 메시지를 {link}와 함께 문장 전체로 포맷한다", () => {
   const panel = read("src/components/ReferralRewardPanel.tsx");
-  const link = "https://hyeni-calendar.pages.dev/#/onboarding?ref=FAMILY10";
+  const link = "https://hyeni-calendar.pages.dev/?ref=FAMILY10";
   const locales = ["ko", "en", "ja", "zh-CN", "zh-TW", "vi", "th", "id", "ms", "fil"];
 
   assert.match(panel, /id: "parent\.referralRewardPanel\.shareBody"/);

@@ -5,6 +5,7 @@ import { PUBLIC_WEB_BASE } from "@/config/env";
 import { useDialogFocusLifecycle } from "./useDialogFocusLifecycle";
 import { useEnsureReferralCode, useReferralStatus } from "@/queries/useReferrals";
 import { buildReferralLink } from "@/transform/referralLink";
+import { sharePlainContent } from "@/lib/native/share";
 import { referralRewardCredits } from "@/transform/referralReward";
 import "./ReferralRewardPanel.css";
 import { useIntl } from "react-intl";
@@ -104,16 +105,21 @@ export function ReferralRewardPanel({
 
   const shareInvitation = async () => {
     if (!invitationText || !status?.code) return;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: intl.formatMessage({ id: "parent.referralRewardPanel.copy004" }), text: invitationText });
-        return;
-      } catch {
-        // 공유 시트 취소는 실패로 알리지 않는다.
-        return;
-      }
+    const result = await sharePlainContent({
+      title: intl.formatMessage({ id: "parent.referralRewardPanel.copy004" }),
+      text: invitationText,
+      url: buildReferralLink(PUBLIC_WEB_BASE, status.code),
+    });
+    if (result === "copied") {
+      show(intl.formatMessage({ id: "parent.referralRewardPanel.copy003" }), "📋");
+      return;
     }
-    await copyInvitation();
+    if (result === "unavailable") {
+      show(intl.formatMessage(
+        { id: "parent.referralRewardPanel.clipboardFailed" },
+        { code: status.code },
+      ), "✏️");
+    }
   };
 
   return (

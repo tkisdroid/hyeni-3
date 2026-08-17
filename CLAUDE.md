@@ -557,8 +557,14 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   먼저 DROP 하고 마지막에 다시 CREATE** 해야 한다(안 그러면 `error in trigger ...: no such table` 로 전체 롤백된다).
   지급액은 상수가 아니라 **완료 행에 기록된 `reward_credits`** 를 쓴다 — 정책이 바뀌어도 귀속 시점에 약속한 금액을
   지킨다. 진입점은 부모 홈 구독 카드 아래 한 줄 카드(주 보호자만)와 설정 행 두 곳이고, 문구는 보상 한 줄 + 조건
-  한 줄만 남겼다(단계 설명·법률 문단·상한 안내는 재도입 금지). 회귀=`worker/tests/referralRewardsV2.test.mjs`·
-  `tests/referralRewardWiring.test.mjs`.
+  한 줄만 남겼다(단계 설명·법률 문단·상한 안내는 재도입 금지).
+  ★공유 링크는 `https://hyeni-calendar.pages.dev/?ref=HYENI-…` 다. `#/onboarding?ref=` 해시는
+  카카오톡·라인에서 잘리므로 쓰지 않는다. `/invite?ref=` 도 읽지만, Pages rewrite 전에는
+  루트 쿼리를 공유한다. 「친구에게 공유」는 시스템 공유 시트(`sharePlainContent` +
+  Android `ShareSheet`)로 카카오톡·라인·Gmail을 고른다. 가입·가족 연결 화면에 초대 링크/코드를 붙여 넣는
+  칸이 있고, 새 가족을 만들 때만 `setupFamily.referralCode` 로 귀속한다(기존 가족 합류·아이 페어링은 대상 아님).
+  네이티브는 App Link `/invite` 와 Play 설치 추천을 `initReferralDeepLink` 가 localStorage에 영속한다.
+  회귀=`worker/tests/referralRewardsV2.test.mjs`·`tests/referralRewardWiring.test.mjs`·`tests/referralReward.test.ts`.
 - ★**언어 선택 위치(2026-08-17 TK 지시)**: 부모 설정에서 언어는 **계정 프로필 카드 바로 아래 한 줄**(`ps-language`)이고
   현재 언어를 값으로 보여 주며 그 줄을 눌러 펼쳐서 고른다(`aria-expanded`, 모달 아님). 펼침 안에서는
   `<LanguageSelector tone="formal" compact />` 가 제목·설명을 화면에서 감춰(`hy-language__text--quiet`) 같은 말을

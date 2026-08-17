@@ -8247,6 +8247,13 @@
     },
     "description": "온보딩 추천 코드 안내: 보상 조건 한 줄"
   },
+  "onboarding.connect.referralInvalid": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "온보딩에서 초대 코드 형식이 아닐 때"
+  },
   "onboarding.connect.referralTitle": {
     "namespace": "onboarding",
     "audience": "parent",
@@ -8358,6 +8365,27 @@
     "qualityTier": "B",
     "variables": {},
     "description": "onboarding.field.phonePlaceholder에 표시하는 사용자 안내 문구"
+  },
+  "onboarding.field.referralCode": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "가입·가족 연결 화면의 친구 초대 코드 필드 제목"
+  },
+  "onboarding.field.referralCodeHint": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "초대 코드는 선택이며 새 가족 만들기에만 적용된다는 안내"
+  },
+  "onboarding.field.referralCodePlaceholder": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "초대 링크 또는 HYENI 코드를 붙여 넣는 칸 안내"
   },
   "onboarding.guardian.dad": {
     "namespace": "onboarding",

@@ -8,6 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/auth/AuthContext";
 import { getNativePlugin, isNativePlatform } from "@/lib/native/plugins";
 import { initOAuthDeepLink } from "@/lib/native/oauthDeepLink";
+import { initReferralDeepLink } from "@/lib/native/referralDeepLink";
 import { initPush, disposePush } from "@/lib/native/push";
 import {
   adoptNativeLocationSessionTokens,
@@ -145,6 +146,12 @@ export function NativeBootstrap() {
     return initOAuthDeepLink((r) => {
       if (!r.ok) console.error("OAuth 딥링크 처리 실패:", r.errorCode);
     });
+  }, []);
+
+  // 친구 초대 App Link·Play 설치 추천은 OAuth 와 분리해 코드만 영속한다.
+  useEffect(() => {
+    if (!isNativePlatform()) return;
+    return initReferralDeepLink();
   }, []);
 
   // Android WebView 포그라운드 조회 복구 — 브라우저 visibilitychange가 오지 않아도

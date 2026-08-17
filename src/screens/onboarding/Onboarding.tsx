@@ -53,7 +53,13 @@ import { TEACHER_MODE_ENABLED } from "@/config/releaseFeatures";
 import type { OAuthProvider } from "@/transform/oauthProvider";
 import { normalizePairCodeInput } from "@/transform/pairCode";
 import { readPairParam, clearPairParam } from "@/transform/pairLink";
-import { clearReferralParam, readReferralParam } from "@/transform/referralLink";
+import {
+  REFERRAL_CODE_EVENT,
+  clearReferralParam,
+  extractReferralCodeFromInput,
+  persistReferralCode,
+  readReferralParam,
+} from "@/transform/referralLink";
 import { REFERRAL_REWARD_CREDITS_DISPLAY } from "@/transform/referralReward";
 import { resolveAuthenticatedOnboardingRedirect } from "@/transform/onboardingRedirect";
 import { QrScanner } from "@/components/QrScanner";
@@ -128,10 +134,43 @@ export function Onboarding() {
   // QR 딥링크(?pair=)로 진입 시 아이 코드 프리필.
   const [pairPrefill, setPairPrefill] = useState<string | null>(null);
   // 친구 초대 ref는 가족 생성 성공 전까지 유지해 로그인·가입 단계를 지나도 귀속한다.
-  const [referralPrefill] = useState<string | null>(() => readReferralParam());
+  const [referralPrefill, setReferralPrefill] = useState<string | null>(() => readReferralParam());
+  const [referralDraft, setReferralDraft] = useState(() => readReferralParam() ?? "");
   const oauthLoginPromiseRef = useRef<ReturnType<typeof finishOAuthLogin> | null>(null);
   const oauthExternalBusyRef = useRef(false);
   const [oauthExternalBusy, setOAuthExternalBusy] = useState(false);
+
+  const applyReferralDraft = (raw: string) => {
+    setReferralDraft(raw);
+    const code = extractReferralCodeFromInput(raw);
+    if (code) {
+      persistReferralCode(code);
+      setReferralPrefill(code);
+      return;
+    }
+    clearReferralParam();
+    setReferralPrefill(null);
+  };
+
+  useEffect(() => {
+    const syncStored = () => {
+      const code = readReferralParam();
+      if (!code) return;
+      setReferralPrefill(code);
+      setReferralDraft((current) => current || code);
+    };
+    const onStored = (event: Event) => {
+      const code = extractReferralCodeFromInput(
+        (event as CustomEvent<{ code?: string }>).detail?.code,
+      );
+      if (!code) return;
+      setReferralPrefill(code);
+      setReferralDraft(code);
+    };
+    syncStored();
+    window.addEventListener(REFERRAL_CODE_EVENT, onStored);
+    return () => window.removeEventListener(REFERRAL_CODE_EVENT, onStored);
+  }, []);
 
   const markOAuthExternalBusy = () => {
     oauthExternalBusyRef.current = true;
@@ -470,6 +509,8 @@ export function Onboarding() {
         <SignupStep
           busy={busy}
           setBusy={setBusy}
+          referralDraft={referralDraft}
+          onReferralDraftChange={applyReferralDraft}
           onBack={back}
           onDone={(name) => {
             setSignupName(name);
@@ -483,6 +524,8 @@ export function Onboarding() {
           busy={busy}
           progressPercent={signupFlowStarted ? 80 : null}
           referralCode={referralPrefill}
+          referralDraft={referralDraft}
+          onReferralDraftChange={applyReferralDraft}
           onBack={() => setStep("role")}
           onNewFamily={async () => {
             if (busy) return;
@@ -567,6 +610,45 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
     <div>
       <div className="ob-label">{label}</div>
       {children}
+    </div>
+  );
+}
+
+function ReferralCodeField({
+  value,
+  onChange,
+  disabled,
+  hideLabel = false,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+  hideLabel?: boolean;
+}) {
+  const intl = useIntl();
+  const applied = extractReferralCodeFromInput(value);
+  const invalid = value.trim().length > 0 && !applied;
+  const label = intl.formatMessage({ id: "onboarding.field.referralCode" });
+  return (
+    <div>
+      {hideLabel ? null : <div className="ob-label">{label}</div>}
+      <input
+        className="ob-input"
+        aria-label={label}
+        aria-invalid={invalid}
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        placeholder={intl.formatMessage({ id: "onboarding.field.referralCodePlaceholder" })}
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      <p className="ob-referral-hint">
+        {invalid
+          ? intl.formatMessage({ id: "onboarding.connect.referralInvalid" })
+          : intl.formatMessage({ id: "onboarding.field.referralCodeHint" })}
+      </p>
     </div>
   );
 }
@@ -1066,12 +1148,16 @@ const GENDERS = [
 function SignupStep({
   busy,
   setBusy,
+  referralDraft,
+  onReferralDraftChange,
   onBack,
   onDone,
   show,
 }: {
   busy: boolean;
   setBusy: (v: boolean) => void;
+  referralDraft: string;
+  onReferralDraftChange: (value: string) => void;
   onBack: () => void;
   onDone: (name: string) => void;
   show: Show;
@@ -1247,6 +1333,11 @@ function SignupStep({
         <Field label={intl.formatMessage({ id: "onboarding.field.phone" })}>
           <input className="ob-input" inputMode="tel" aria-label={intl.formatMessage({ id: "onboarding.field.phone" })} placeholder={intl.formatMessage({ id: "onboarding.field.phonePlaceholder" })} value={phone} onChange={(e) => setPhone(e.target.value)} />
         </Field>
+        <ReferralCodeField
+          value={referralDraft}
+          onChange={onReferralDraftChange}
+          disabled={busy}
+        />
       </div>
 
       <button
@@ -1272,6 +1363,8 @@ function ConnectStep({
   busy,
   progressPercent,
   referralCode,
+  referralDraft,
+  onReferralDraftChange,
   onBack,
   onNewFamily,
   onJoin,
@@ -1280,6 +1373,8 @@ function ConnectStep({
   busy: boolean;
   progressPercent?: number | null;
   referralCode?: string | null;
+  referralDraft: string;
+  onReferralDraftChange: (value: string) => void;
   onBack: () => void;
   onNewFamily: () => void | Promise<void>;
   onJoin: () => void | Promise<void>;
@@ -1306,17 +1401,27 @@ function ConnectStep({
         <div className="ob-sub">{intl.formatMessage({ id: "onboarding.connect.subtitle" })}</div>
       </div>
 
-      {referralCode && (
-        <div className="ob-referral-notice" role="status">
-          <strong>{intl.formatMessage({ id: "onboarding.connect.referralTitle" })}</strong>
-          <span>
-            {intl.formatMessage(
+      <div className="ob-referral-notice" role="status">
+        <strong>
+          {referralCode
+            ? intl.formatMessage({ id: "onboarding.connect.referralTitle" })
+            : intl.formatMessage({ id: "onboarding.field.referralCode" })}
+        </strong>
+        <span>
+          {referralCode
+            ? intl.formatMessage(
               { id: "onboarding.connect.referralDescription" },
               { count: REFERRAL_REWARD_CREDITS_DISPLAY },
-            )}
-          </span>
-        </div>
-      )}
+            )
+            : intl.formatMessage({ id: "onboarding.field.referralCodeHint" })}
+        </span>
+        <ReferralCodeField
+          value={referralDraft}
+          onChange={onReferralDraftChange}
+          disabled={busy}
+          hideLabel
+        />
+      </div>
 
       <div className="ob-connect-list">
         <button

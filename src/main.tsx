@@ -7,6 +7,7 @@ import "./styles/components.css";
 import { App } from "./app/App";
 import { LocaleProvider } from "./i18n/LocaleProvider";
 import { isNativePlatform } from "./lib/native/plugins";
+import { rememberReferralFromCurrentLocation } from "./transform/referralLink";
 import {
   activatePwaUpdateAndWaitForControllerChange,
   observePwaControllerChanges,
@@ -16,6 +17,7 @@ import {
 } from "./lib/pwaUpdateCoordinator";
 
 document.documentElement.toggleAttribute("data-hy-native", isNativePlatform());
+rememberReferralFromCurrentLocation();
 
 const serviceWorkerContainer = "serviceWorker" in navigator
   ? navigator.serviceWorker
