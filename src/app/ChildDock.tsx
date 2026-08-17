@@ -4,8 +4,10 @@
  * SOS 는 탭이 아니라 별도 버튼이다: 누르면 SOS 화면으로 가고, 실제 발사는 그 화면에서
  * 3초 홀드해야 한다(오발사 방지). 대화 탭 배지는 아직 안 읽은 부모님 메시지 수.
  */
+import { useEffect } from "react";
 import { NavLink, useNavigate } from "react-router";
 import { asset } from "@/lib/assets";
+import { preloadRoute, preloadRoutesWhenIdle } from "./routePreload";
 import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "@/queries/useFamily";
 import { useMemoThread } from "@/queries/useMemo";
@@ -29,17 +31,32 @@ export function ChildDock() {
   const memoThread = useMemoThread(dateKeys, myMember?.id ?? null);
   const unread = unreadParentMemoCount(memoThread.data, userId);
 
+  // 아이가 곧 누를 화면(대화·스티커·SOS)을 한가할 때 미리 받아 첫 진입에서 화면이 비지 않게 한다.
+  useEffect(() => preloadRoutesWhenIdle([...TABS.map((tab) => tab.to), "/child/sos"]), []);
+
   return (
     <nav className="kdock" aria-label="아이 메뉴">
       <div className="kdock__bar">
         {TABS.map((tab) => (
-          <NavLink key={tab.to} to={tab.to} className="kdock__tab hy-press" aria-label={tab.label}>
+          <NavLink
+            key={tab.to}
+            to={tab.to}
+            className="kdock__tab hy-press"
+            aria-label={tab.label}
+            onPointerDown={() => preloadRoute(tab.to)}
+          >
             {tab.to === "/child/memo" && unread > 0 && <span className="kdock__badge">{unread}</span>}
             <img src={asset(tab.icon)} alt="" />
           </NavLink>
         ))}
       </div>
-      <button type="button" className="kdock__sos hy-press" aria-label="도움 요청" onClick={() => navigate("/child/sos")}>
+      <button
+        type="button"
+        className="kdock__sos hy-press"
+        aria-label="도움 요청"
+        onPointerDown={() => preloadRoute("/child/sos")}
+        onClick={() => navigate("/child/sos")}
+      >
         <img src={asset("ui/sos-shield.webp")} alt="" />
         <span>SOS</span>
       </button>

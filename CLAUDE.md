@@ -905,6 +905,18 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   강등하며 신고 대상에서 뺀다. 주변 소리 기록의 0초 세션은 "청취 없이 종료", 그 외는 "N초 청취".
 - ★출발 알림 톤(2026-07-30): 도착=민트, 출발=라벤더, 앰버(확인 필요)는 미도착·지연만. `arrivalAlertTone` 단일 출처.
 
+- ★**화면이 "한 번씩 리프레시"되는 두 원인(2026-08-18 TK 제보)**: ①**새 버전 적용 새로고침** — 새 빌드를 깔면
+  Service Worker 가 몇 초 뒤 활성화되고 `main.tsx` 가 `window.location.reload()` 한다. 부팅 중이 아니라 사용자가
+  이미 화면을 보고 있을 때 실행되면 "대화·설정 화면에서 갑자기 새로고침"으로 읽힌다. 이제 `pwaReloadTiming`
+  (`canReloadForPwaUpdateNow`)이 **네이티브에서는 `document.visibilityState === "hidden"` 일 때만** 새로고침하고,
+  보고 있는 중이면 실패로 돌려 coordinator 가 보류한다. `visibilitychange` 는 visible/hidden **양쪽** 모두
+  재시도해야 백그라운드 전환 순간에 조용히 적용된다. 웹·PWA 는 기존대로 즉시 적용(브라우저 탭에서는 자연스럽다).
+  ②**첫 진입 청크 로딩** — 화면은 route 단위 lazy 청크라 처음 들어갈 때 `RouteLoading`("화면을 불러오는 중")이
+  한 번 지나간다. `src/app/routePreload.ts` 등록소에 App 이 경로→`screen.preload` 를 등록하고 탭바·아이 독이
+  `preloadRoutesWhenIdle`(idle)+`onPointerDown`(즉시)으로 미리 받는다. `lazyScreen` 은 `preload()` 를 노출하며
+  **실패한 promise 를 캐시하지 않는다**(캐시하면 실제 이동도 영영 실패한다). `LocaleBoundary` 도 문구 로딩 중
+  `null`(빈 화면) 대신 `RouteLoading` 을 렌더한다. 회귀=`tests/routePreload.test.ts`.
+
 ### J. 실기기 검증 치트시트 (함정 포함)
 - ★**`adb install -r` 직후 WebView 는 옛 번들을 보여 준다(2026-08-18 실측)**: PWA Service Worker 가 이전 빌드를
   precache 해 뒀기 때문에, 설치가 Success 여도 화면은 **직전 번들**이다(그때 새 자산 20종을 넣었는데

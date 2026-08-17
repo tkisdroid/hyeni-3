@@ -719,6 +719,13 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 
 ## 실기기 검증 치트시트
 
+- ★**화면이 "한 번씩 리프레시"되는 두 원인(2026-08-18 TK 제보)**: ①새 빌드를 깔면 Service Worker 가 몇 초 뒤
+  활성화되며 `main.tsx` 가 `location.reload()` 한다 — 부팅 중이 아니라 사용 중에 걸리면 화면이 튕긴 것처럼 보인다.
+  `canReloadForPwaUpdateNow`(`src/lib/pwaReloadTiming.ts`)가 네이티브에서는 `hidden` 일 때만 새로고침하고 사용 중이면
+  보류한다. `visibilitychange` 는 visible/hidden 양쪽 다 재시도해야 백그라운드 전환에 조용히 적용된다. 웹·PWA 는 즉시.
+  ②화면은 route 단위 lazy 청크라 첫 진입에 `RouteLoading` 이 지나간다 — `src/app/routePreload.ts` 등록소 +
+  탭바·아이 독의 idle/pointerdown 프리로드로 없앴다. `lazyScreen.preload()` 는 실패한 promise 를 캐시하지 않는다.
+  `LocaleBoundary` 는 문구 로딩 중 빈 화면 대신 `RouteLoading` 을 렌더한다. 회귀=`tests/routePreload.test.ts`.
 - ★**`adb install -r` 직후 WebView 는 옛 번들을 보여 준다(2026-08-18 실측)**: PWA Service Worker 가 이전 빌드를
   precache 했기 때문에 설치가 Success 여도 화면은 직전 번들이다(새 자산 20종을 넣었는데 구 경로·구 개수가 나와
   "빌드가 안 들어갔다"고 오판했다). ①먼저 APK 안에 새 자산이 있는지 확인한다(zip 열거로 `assets/public/...`)

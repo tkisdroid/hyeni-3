@@ -15,6 +15,7 @@ import {
   queuePwaUpdateAction,
   retryPendingPwaUpdate,
 } from "./lib/pwaUpdateCoordinator";
+import { canReloadForPwaUpdateNow } from "./lib/pwaReloadTiming";
 
 document.documentElement.toggleAttribute("data-hy-native", isNativePlatform());
 rememberReferralFromCurrentLocation();
@@ -23,9 +24,24 @@ const serviceWorkerContainer = "serviceWorker" in navigator
   ? navigator.serviceWorker
   : null;
 
+/**
+ * 새 버전 적용 새로고침. 네이티브 앱에서 보고 있는 화면을 스스로 새로고침하면
+ * 앱이 튕긴 것처럼 보이므로(2026-08-18 TK 제보) 백그라운드로 갈 때까지 미룬다.
+ * 실패로 돌려주면 coordinator 가 보류했다가 다음 신호에 다시 시도한다.
+ */
+function reloadForPwaUpdate(): void {
+  if (!canReloadForPwaUpdateNow({
+    native: isNativePlatform(),
+    visibility: document.visibilityState,
+  })) {
+    throw new Error("앱 사용 중 — 백그라운드에서 적용");
+  }
+  window.location.reload();
+}
+
 if (serviceWorkerContainer) {
   observePwaControllerChanges(serviceWorkerContainer, () => {
-    queuePwaUpdateAction("reload", () => window.location.reload());
+    queuePwaUpdateAction("reload", reloadForPwaUpdate);
   });
 }
 
@@ -51,14 +67,14 @@ applyWaitingServiceWorker = registerSW({
     queuePwaUpdateAction("activate", activateWaitingServiceWorker);
   },
   onNeedReload: () => {
-    queuePwaUpdateAction("reload", () => window.location.reload());
+    queuePwaUpdateAction("reload", reloadForPwaUpdate);
   },
 });
 
 window.addEventListener("online", retryPendingPwaUpdate);
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") retryPendingPwaUpdate();
-});
+// 화면을 다시 볼 때뿐 아니라 백그라운드로 갈 때도 다시 시도한다 — 미뤄 둔 새로고침은
+// 사용자가 보고 있지 않은 그 순간에 조용히 적용해야 한다.
+document.addEventListener("visibilitychange", retryPendingPwaUpdate);
 
 const root = document.getElementById("root");
 if (!root) throw new Error("#root 엘리먼트를 찾을 수 없습니다.");

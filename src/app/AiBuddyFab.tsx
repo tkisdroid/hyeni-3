@@ -4,6 +4,7 @@ import { useAuth } from "@/auth/AuthContext";
 import { asset } from "@/lib/assets";
 import { useAiFriendPublicSettings } from "@/queries/useAi";
 import { useAiBuddyMood } from "./aiBuddyMood";
+import { preloadRoute } from "./routePreload";
 import {
   AI_BUDDY_BLINK_DURATION_MS,
   AI_BUDDY_BLINK_FACE,
@@ -266,6 +267,9 @@ function AiBuddyFabButton({ bottomInset }: AiBuddyFabProps) {
     setDragging(true);
     setTapped(true);
     setWanderLine(null);
+    // 누르는 순간 대화 화면을 미리 받아 둔다 — 손을 뗐을 때 빈 화면이 스치지 않게.
+    preloadRoute("/child/ai-friend");
+    preloadRoute("/child/ai-friend-setup");
   };
 
   const onPointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {

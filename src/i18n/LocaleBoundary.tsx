@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { RouteLoading } from "@/components/ui/RouteLoading";
 import type { MessageNamespace } from "./generated/messageIds";
 import { useLocaleBoundaryLease } from "./LocaleProvider";
 import { useLocale } from "./useLocale";
@@ -30,5 +31,7 @@ export function LocaleBoundary({
   }, [acquireNamespaceLease, locale, namespaceKey, namespaces]);
 
   if (loadError) throw loadError;
-  return ready ? children : null;
+  // 문구를 받는 동안 빈 화면을 두면 "앱이 새로고침됐다"로 읽힌다(2026-08-18 TK 제보) —
+  // 청크 로딩과 같은 표시를 써서 "불러오는 중"임을 알린다. core 문구는 boot 에서 이미 준비된다.
+  return ready ? children : <RouteLoading />;
 }

@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router";
 import type { LucideIcon } from "lucide-react";
+import { preloadRoute, preloadRoutesWhenIdle } from "./routePreload";
 
 export type TabItem = {
   to: string;
@@ -13,6 +15,10 @@ export function TabBar({ tabs }: { tabs: TabItem[] }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
+  // 탭은 곧 누를 목적지다 — 한가할 때 미리 받아 두면 첫 진입에서 화면이 한 번 비지 않는다.
+  const tabPathKey = tabs.map((tab) => tab.to).join("|");
+  useEffect(() => preloadRoutesWhenIdle(tabPathKey.split("|")), [tabPathKey]);
+
   return (
     <nav className="hy-tabbar" aria-label="주 메뉴">
       <div className="hy-tabbar__inner">
@@ -25,6 +31,7 @@ export function TabBar({ tabs }: { tabs: TabItem[] }) {
               className="hy-tab hy-press"
               data-active={active}
               aria-current={active ? "page" : undefined}
+              onPointerDown={() => preloadRoute(t.to)}
               onClick={() => navigate(t.to)}
             >
               <span className="hy-tab__icon">

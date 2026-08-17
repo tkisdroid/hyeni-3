@@ -61,7 +61,9 @@ test("PWA 새 버전은 critical section 뒤 controller 교체를 확인하고 r
   assert.match(main, /onNeedRefresh:\s*\(\)\s*=>\s*\{\s*queuePwaUpdateAction\("activate"/);
   assert.match(main, /pwaUpdateCoordinatorState\(\)\.criticalSectionCount > 0/);
   assert.match(main, /activatePwaUpdateAndWaitForControllerChange/);
-  assert.match(main, /queuePwaUpdateAction\("reload", \(\) => window\.location\.reload\(\)\)/);
+  // 네이티브에서는 보고 있는 화면을 새로고침하지 않고 백그라운드로 갈 때 적용한다(2026-08-18).
+  assert.match(main, /queuePwaUpdateAction\("reload", reloadForPwaUpdate\)/);
+  assert.match(main, /function reloadForPwaUpdate\(\)[\s\S]{0,320}window\.location\.reload\(\)/);
   assert.match(coordinator, /catch \{[\s\S]*pendingActions\.set\(key, action\)/);
   assert.match(coordinator, /window|online|visibilitychange|retryPendingPwaUpdate/);
 });

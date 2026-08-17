@@ -21,6 +21,7 @@ import { RouteLoading } from "@/components/ui/RouteLoading";
 import { RootErrorBoundary, RouteErrorScreen } from "./ErrorBoundary";
 import { GlobalErrorListeners } from "./GlobalErrorListeners";
 import { lazyScreen } from "./lazyScreen";
+import { registerRoutePreload } from "./routePreload";
 import { AppVersionGate } from "./AppVersionGate";
 import { usePwaUpdateCriticalSection } from "@/lib/usePwaUpdateCriticalSection";
 import { LocaleBoundary } from "@/i18n/LocaleBoundary";
@@ -86,6 +87,33 @@ const RemoteRing = lazyScreen(() => import("@/screens/feature/RemoteRing"), "Rem
 const SosReceive = lazyScreen(() => import("@/screens/feature/SosReceive"), "SosReceive");
 const AppUpdate = lazyScreen(() => import("@/screens/feature/AppUpdate"), "AppUpdate");
 const PermDenied = lazyScreen(() => import("@/screens/feature/PermDenied"), "PermDenied");
+
+/**
+ * 탭·독처럼 곧 누를 목적지는 미리 받아 둔다(2026-08-18 TK 제보).
+ * 화면 청크는 route 단위라 처음 들어갈 때 "화면을 불러오는 중"이 한 번 지나가는데,
+ * 대화·설정처럼 매일 쓰는 화면에서는 그게 "앱이 새로고침됐다"로 읽힌다.
+ * 경로 문자열은 아래 라우터 정의와 같아야 한다(`tests/routePreload.test.ts` 가 대조한다).
+ */
+for (const [path, screen] of [
+  ["/parent/home", ParentHome],
+  ["/parent/calendar", ParentCalendar],
+  ["/parent/location", ParentLocation],
+  ["/parent/memo", MemoChat],
+  ["/parent/settings", ParentSettings],
+  ["/child/home", ChildHome],
+  ["/child/sticker", StickerBook],
+  ["/child/memo", MemoChat],
+  ["/child/sos", ChildSos],
+  ["/child/settings", ChildSettings],
+  ["/child/ai-friend", AiFriendChat],
+  ["/child/ai-friend-setup", AiFriendSetup],
+  ["/teacher/home", TeacherHome],
+  ["/teacher/students", TeacherStudents],
+  ["/teacher/timetable", TeacherTimetable],
+  ["/teacher/settings", TeacherSettings],
+] as const) {
+  registerRoutePreload(path, screen.preload);
+}
 
 const ONBOARDING_NAMESPACES = ["core", "onboarding", "shared"] as const;
 const PARENT_NAMESPACES = ["core", "parent", "shared"] as const;
