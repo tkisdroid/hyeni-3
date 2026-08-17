@@ -137,6 +137,22 @@ export function formatDurationUnit(
   }).format(value);
 }
 
+/**
+ * 한 줄에 여러 칸을 나란히 놓는 칩용 짧은 기간("30분", "30 min").
+ * long 형태는 영어에서 "30 minutes"처럼 길어져 한 줄에 들어가지 않는다.
+ */
+export function formatDurationUnitShort(
+  value: number,
+  unit: "day" | "hour" | "minute" | "second",
+  locale: SupportedLocale,
+): string {
+  return new Intl.NumberFormat(intlLocaleTag(locale), {
+    style: "unit",
+    unit,
+    unitDisplay: "short",
+  }).format(value);
+}
+
 /** 초대 코드처럼 짧게 갱신되는 남은 시간을 locale 단위로 조립한다. */
 export function formatCountdownDuration(
   seconds: number,

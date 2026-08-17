@@ -54,7 +54,7 @@ import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import { usePwaUpdateCriticalSection } from "@/lib/usePwaUpdateCriticalSection";
 import { useLocale } from "@/i18n/useLocale";
-import { formatRelativeMinutes } from "@/i18n/format";
+import { formatDurationUnitShort, formatRelativeMinutes } from "@/i18n/format";
 import { useIntl } from "react-intl";
 import "./NotificationSettings.css";
 
@@ -744,18 +744,24 @@ export function NotificationSettings() {
                     <div className="nst-minutes__label">
                       {intl.formatMessage({ id: "notifications.settings.advanceTime" })}
                     </div>
+                    {/* 5칸을 한 줄에 고정한다 — 칩에는 짧은 기간만 쓰고("30분") 보조기술에는
+                        "30분 전"을 그대로 읽어 준다. 라벨이 이미 '사전 알림 시간'이라 뜻이 흐려지지 않는다. */}
                     <div className="nst-minutes__row">
                       {NOTIF_MINUTE_OPTIONS.map((m) => {
                         const on = draft.minutesBefore.includes(m);
+                        const duration = m % 60 === 0
+                          ? formatDurationUnitShort(m / 60, "hour", locale)
+                          : formatDurationUnitShort(m, "minute", locale);
                         return (
                           <button
                             key={m}
                             type="button"
                             className={`nst-minute hy-press${on ? " nst-minute--on" : ""}`}
                             aria-pressed={on}
+                            aria-label={formatRelativeMinutes(m, "past", locale)}
                             onClick={() => toggleMinute(m)}
                           >
-                            {formatRelativeMinutes(m, "past", locale)}
+                            {duration}
                           </button>
                         );
                       })}
