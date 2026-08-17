@@ -8,6 +8,7 @@ const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const source = readFileSync(resolve(rootDir, "src/screens/parent/ParentLocation.tsx"), "utf8");
 const css = readFileSync(resolve(rootDir, "src/screens/parent/ParentLocation.css"), "utf8");
 const refreshWaitSource = readFileSync(resolve(rootDir, "src/transform/locationRefreshWait.ts"), "utf8");
+const koParent = JSON.parse(readFileSync(resolve(rootDir, "locales/ko/parent.json"), "utf8"));
 
 test("부모 위치 화면의 아이 표시 배지는 조회 범위가 확정된 실시간 탭에서만 보인다", () => {
   assert.match(source, /!isLocked && !locationScopePending && activeView === "live" && selected && \(/);

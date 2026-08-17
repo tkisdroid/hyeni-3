@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useIntl } from "react-intl";
 import type { Ref } from "react";
 
 export interface LocationHistoryToolbarProps {
@@ -32,11 +33,12 @@ export function LocationHistoryToolbar({
   onNext,
   onDateChange,
 }: LocationHistoryToolbarProps) {
+  const intl = useIntl();
   return (
     <section
       ref={containerRef}
       className="pl-history-toolbar"
-      aria-label={`${childName}의 이동 기록 날짜`}
+      aria-label={intl.formatMessage({ id: "parent.location.history.dayAria" }, { childName })}
       data-history-access={premiumOpen ? "premium" : "today"}
     >
       <div className="pl-history-toolbar__child">
@@ -54,7 +56,7 @@ export function LocationHistoryToolbar({
         <button
           type="button"
           className="pl-history-toolbar__date-button hy-press"
-          aria-label="이전 날짜 이동 기록"
+          aria-label={intl.formatMessage({ id: "parent.location.history.prevDay" })}
           disabled={previousDisabled}
           onClick={onPrevious}
         >
@@ -64,7 +66,7 @@ export function LocationHistoryToolbar({
           <span className="pl-history-toolbar__day">{dayLabel}</span>
           <input
             type="date"
-            aria-label="이동 기록 날짜 선택"
+            aria-label={intl.formatMessage({ id: "parent.location.history.pickDay" })}
             value={dateValue}
             min={minDateValue}
             max={maxDateValue}
@@ -74,7 +76,7 @@ export function LocationHistoryToolbar({
         <button
           type="button"
           className="pl-history-toolbar__date-button hy-press"
-          aria-label="다음 날짜 이동 기록"
+          aria-label={intl.formatMessage({ id: "parent.location.history.nextDay" })}
           disabled={nextDisabled}
           onClick={onNext}
         >

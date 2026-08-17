@@ -1,4 +1,5 @@
 const messages = {
+  "onboarding.action.continueWithoutSelecting": "Magpatuloy nang hindi pumili",
   "onboarding.action.later": "Mamaya",
   "onboarding.action.next": "Susunod",
   "onboarding.backgroundPermission.description": "Sa susunod na screen ng pahintulot sa lokasyon sa Android, piliin ang ‘Payagan sa lahat ng oras’ para patuloy na gumana ang mga alerto sa pagdating, pag-alis, at mapanganib na lugar kahit nakasara ang app.",

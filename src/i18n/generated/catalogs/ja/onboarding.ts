@@ -1,4 +1,5 @@
 const messages = {
+  "onboarding.action.continueWithoutSelecting": "選ばずに続ける",
   "onboarding.action.later": "後で",
   "onboarding.action.next": "次へ",
   "onboarding.backgroundPermission.description": "次のAndroidの位置情報権限画面で「常に許可」を選ぶと、アプリを閉じた後も到着・出発や危険エリアのお知らせが届くよ。",

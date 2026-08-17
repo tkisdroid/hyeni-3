@@ -1,4 +1,5 @@
 const messages = {
+  "onboarding.action.continueWithoutSelecting": "Tiếp tục mà không chọn",
   "onboarding.action.later": "Sau đó",
   "onboarding.action.next": "Tiếp theo",
   "onboarding.backgroundPermission.description": "Trên màn hình quyền vị trí Android tiếp theo, hãy chọn ‘Luôn cho phép’ để thông báo đến, rời đi và vùng nguy hiểm vẫn hoạt động khi đóng ứng dụng.",

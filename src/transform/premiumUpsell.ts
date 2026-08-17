@@ -71,7 +71,10 @@ export function resolvePremiumUpsell(
       : intl.formatMessage({ id: `parent.upsell.${source}.description` }, values),
     premiumValue: intl.formatMessage({ id: `parent.upsell.${source}.premiumValue` }),
     usageLabel: savedPlaceUsage
-      ? intl.formatMessage({ id: "parent.upsell.dynamicUsage" }, { used: savedPlaceUsage.used, limit: savedPlaceUsage.limit })
+      // 한도를 넘긴 기존 데이터는 "3/2 사용" 처럼 말이 안 되는 표기를 만들지 않는다.
+      ? savedPlaceUsage.used > savedPlaceUsage.limit
+        ? intl.formatMessage({ id: "parent.upsell.overLimitUsage" }, { used: savedPlaceUsage.used, limit: savedPlaceUsage.limit })
+        : intl.formatMessage({ id: "parent.upsell.dynamicUsage" }, { used: savedPlaceUsage.used, limit: savedPlaceUsage.limit })
       : SOURCES_WITH_USAGE.has(source)
         ? intl.formatMessage({ id: `parent.upsell.${source}.usageLabel` })
         : null,

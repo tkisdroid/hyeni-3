@@ -5,6 +5,7 @@ import test from "node:test";
 const onboardingSource = await readFile(new URL("../src/screens/onboarding/Onboarding.tsx", import.meta.url), "utf8");
 const dialogSource = await readFile(new URL("../src/components/ChildLocationPermissionDialog.tsx", import.meta.url), "utf8");
 const childLocationSource = await readFile(new URL("../src/screens/child/ChildLocationStatus.tsx", import.meta.url), "utf8");
+const koShared = JSON.parse(await readFile(new URL("../locales/ko/shared.json", import.meta.url), "utf8"));
 
 test("아이 백그라운드 위치 권한 전 눈에 띄는 별도 안내를 제공한다", () => {
   assert.match(dialogSource, /role="dialog"/);

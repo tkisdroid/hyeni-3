@@ -1,4 +1,5 @@
 const messages = {
+  "onboarding.action.continueWithoutSelecting": "Teruskan tanpa memilih",
   "onboarding.action.later": "Nanti",
   "onboarding.action.next": "Seterusnya",
   "onboarding.backgroundPermission.description": "Pada skrin kebenaran lokasi Android seterusnya, pilih ‘Benarkan sepanjang masa’ supaya pemberitahuan tiba, bertolak dan zon bahaya terus berfungsi apabila aplikasi ditutup.",

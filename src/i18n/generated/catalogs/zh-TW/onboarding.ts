@@ -1,4 +1,5 @@
 const messages = {
+  "onboarding.action.continueWithoutSelecting": "不選擇，繼續",
   "onboarding.action.later": "之後",
   "onboarding.action.next": "下一步",
   "onboarding.backgroundPermission.description": "請在接下來的 Android 位置權限畫面選擇「一律允許」。這樣即使關閉應用程式，也能繼續傳送抵達、離開和危險區域提醒。",

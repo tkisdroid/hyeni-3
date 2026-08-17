@@ -64,8 +64,8 @@ test("고른 시각에 아이가 어디였는지 화면과 접근성 이름에 �
   assert.match(screen, /const scrubWhere = resolveScrubWhereLabel\(\{/);
   assert.match(screen, /lastPointMs: scrubEvidencePoint\?\.ms \?\? null/);
   assert.match(screen, /currentWhere=\{scrubWhere\}/);
-  assert.match(screen, /currentTimeLabel=\{formatClockHM\(scrubMs\)\}/);
-  assert.match(screen, /caption: followsLatest \? undefined : formatClockHM\(scrubMs\)/);
+  assert.match(screen, /currentTimeLabel=\{formatClockHM\(scrubMs, locale, LEGACY_FAMILY_TIME_ZONE\)\}/);
+  assert.match(screen, /caption: followsLatest \? undefined : formatClockHM\(scrubMs, locale, LEGACY_FAMILY_TIME_ZONE\)/);
   assert.match(screen, /const historyChildPoint =\s*scrubChildPoint \?\? \(followsLatest && loc/s);
 });
 

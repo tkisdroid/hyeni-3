@@ -1,4 +1,5 @@
 const messages = {
+  "onboarding.action.continueWithoutSelecting": "선택 안 하고 계속",
   "onboarding.action.later": "나중에",
   "onboarding.action.next": "다음",
   "onboarding.backgroundPermission.description": "다음 Android 위치 권한 화면에서 ‘항상 허용’을 선택해야 앱을 닫은 뒤에도 도착·출발과 위험구역 알림이 이어져.",

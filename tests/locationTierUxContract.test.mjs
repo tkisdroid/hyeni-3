@@ -54,5 +54,5 @@ test("Premium 위치 기록은 최근 30일 날짜를 고르고 Free의 과거 �
   assert.match(source, /queryEnd\.toISOString\(\)/);
   assert.match(source, /if \(!premiumOpen\)[\s\S]{0,180}setHistoryUpsellDayKey\([\s\S]{0,120}setUpsellSource\("location_history"\)/);
   assert.match(source, /premiumOpen[\s\S]{0,120}rawHistoryDayKey[\s\S]{0,120}historyTodayKey/);
-  assert.match(toolbar, /aria-label="이동 기록 날짜 선택"/);
+  assert.match(toolbar, /parent.location.history.pickDay/);
 });

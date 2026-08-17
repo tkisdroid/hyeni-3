@@ -1,4 +1,5 @@
 const messages = {
+  "onboarding.action.continueWithoutSelecting": "Lanjut tanpa memilih",
   "onboarding.action.later": "Nanti",
   "onboarding.action.next": "Berikutnya",
   "onboarding.backgroundPermission.description": "Di layar izin lokasi Android berikutnya, pilih ‘Izinkan sepanjang waktu’ agar notifikasi tiba, berangkat, dan zona bahaya tetap berfungsi saat aplikasi ditutup.",

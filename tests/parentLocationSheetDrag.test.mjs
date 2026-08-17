@@ -21,7 +21,7 @@ test("오늘 경로 패널은 드래그 없이 명시적 버튼으로 펼치고 
 });
 
 test("오늘 경로는 오전 8시 기준 윈도우와 아이·날짜 도구막대를 함께 사용한다", () => {
-  assert.match(source, /getHistoryDayWindowForKey\(historyDayKey, now\)/);
+  assert.match(source, /getHistoryDayWindowForKey\(historyDayKey, now, LEGACY_FAMILY_TIME_ZONE\)/);
   assert.match(source, /sliderMin=\{journeyRange\?\.startMs \?\? 0\}/);
   assert.match(source, /sliderMax=\{journeyRange\?\.endMs \?\? 0\}/);
   assert.match(source, /const timedHistoryPoints = useMemo\(/);
@@ -30,7 +30,7 @@ test("오늘 경로는 오전 8시 기준 윈도우와 아이·날짜 도구막�
   assert.match(source, /followsLatest\s*\? journeyRange\.endMs/);
   assert.match(source, /sliderValue=\{scrubMs\}/);
   assert.match(source, /lastPointMs: scrubEvidencePoint\?\.ms \?\? null/);
-  assert.match(journey, /followsLatest \? "최신 기록" : "선택한 시각"/);
+  assert.match(journey, /followsLatest \? "parent.location.history.latest" : "parent.location.history.selectedTime"/);
   assert.match(source, /<LocationHistoryToolbar/);
-  assert.match(source, /childName=\{selected\.name \|\| "아이"\}/);
+  assert.match(source, /childName=\{selected\.name \|\| intl\.formatMessage\(\{ id: "parent\.location\.childFallback" \}\)\}/);
 });

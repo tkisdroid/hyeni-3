@@ -1,4 +1,5 @@
 const messages = {
+  "onboarding.action.continueWithoutSelecting": "ข้ามไปก่อน",
   "onboarding.action.later": "ภายหลัง",
   "onboarding.action.next": "ต่อไป",
   "onboarding.backgroundPermission.description": "ในหน้าสิทธิ์เข้าถึงตำแหน่งของ Android ถัดไป ให้เลือก ‘อนุญาตตลอดเวลา’ เพื่อให้การแจ้งเตือนเมื่อมาถึง ออกเดินทาง และเข้าเขตอันตรายยังทำงานเมื่อปิดแอป",

@@ -45,7 +45,8 @@ async function auditFixture(source, fallbackIds = []) {
 
 test("동기 한국어 fallback 생성물은 명시한 actual-use ID와 정확히 일치한다", () => {
   assert.deepEqual(Object.keys(legacyKoreanMessages).sort(), legacyKoreanMessageIds);
-  assert.equal(legacyKoreanMessageIds.length, 248);
+  // 병합에서 업셀 한도 초과 표기(parent.upsell.overLimitUsage)가 추가됐다.
+  assert.equal(legacyKoreanMessageIds.length, 249);
 });
 
 test("src 전체 AST에서 defaultIntl importer와 정적·분류된 동적 ID를 자동 감사한다", async () => {

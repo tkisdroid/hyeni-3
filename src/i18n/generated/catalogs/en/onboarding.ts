@@ -1,4 +1,5 @@
 const messages = {
+  "onboarding.action.continueWithoutSelecting": "Continue without choosing",
   "onboarding.action.later": "Later",
   "onboarding.action.next": "Next",
   "onboarding.backgroundPermission.description": "On the next Android location permission screen, choose ‘Allow all the time’ so arrival, departure, and danger-zone alerts keep working when the app is closed.",

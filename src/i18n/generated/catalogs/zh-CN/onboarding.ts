@@ -1,4 +1,5 @@
 const messages = {
+  "onboarding.action.continueWithoutSelecting": "不选择，继续",
   "onboarding.action.later": "之后",
   "onboarding.action.next": "下一步",
   "onboarding.backgroundPermission.description": "请在接下来的 Android 位置权限页面选择“始终允许”。这样即使关闭应用，也能继续发送到达、离开和危险区域提醒。",

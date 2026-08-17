@@ -1,5 +1,6 @@
 import { ChevronDown, Clock3, LocateFixed, MapPin, RefreshCw } from "lucide-react";
 import type { Ref } from "react";
+import { useIntl } from "react-intl";
 import type { JourneyContentState } from "@/transform/locationJourneyView";
 
 export interface StayTimelineItem {
@@ -33,11 +34,11 @@ export interface LocationJourneyPanelProps {
   onRetry: () => void;
 }
 
-const stateCopy = {
-  loading: "이동 기록을 불러오는 중…",
-  error: "이동 기록을 불러오지 못했어요",
-  empty: "이 날은 확인된 이동 기록이 없어요",
-  moving_only: "8분 이상 머문 것으로 확인된 장소가 없어요",
+const stateCopyId = {
+  loading: "parent.location.history.loadingShort",
+  error: "parent.parentLocation.copy016",
+  empty: "parent.location.history.emptyDay",
+  moving_only: "parent.location.history.noStay",
   ready: null,
 } as const;
 
@@ -62,14 +63,16 @@ export function LocationJourneyPanel({
   onSelectStay,
   onRetry,
 }: LocationJourneyPanelProps) {
-  const copy = stateCopy[state];
+  const intl = useIntl();
+  const copyId = stateCopyId[state];
+  const copy = copyId ? intl.formatMessage({ id: copyId }) : null;
   const replayAvailable = state === "moving_only" || state === "ready";
   const hasStayDetails = state === "ready";
   const headerContent = (
     <>
       <span className="pl-journey__toggle-copy">
-        <strong>{dayLabel} 이동 기록</strong>
-        <span>{copy ?? recordedRangeLabel ?? `${stayCount}곳에 머물렀어요`}</span>
+        <strong>{intl.formatMessage({ id: "parent.location.history.heading" }, { day: dayLabel })}</strong>
+        <span>{copy ?? recordedRangeLabel ?? intl.formatMessage({ id: "parent.location.history.stayCount" }, { count: stayCount })}</span>
       </span>
       {hasStayDetails && (
         <ChevronDown className="pl-journey__toggle-icon" size={22} strokeWidth={2.3} aria-hidden="true" />
@@ -81,7 +84,7 @@ export function LocationJourneyPanel({
     <section
       ref={containerRef}
       className={`pl-journey${expanded ? " pl-journey--expanded" : ""}`}
-      aria-label={`${childName}의 ${dayLabel} 이동 타임라인`}
+      aria-label={intl.formatMessage({ id: "parent.location.history.timelineAria" }, { childName, dayLabel })}
     >
       {hasStayDetails ? (
         <button
@@ -103,14 +106,14 @@ export function LocationJourneyPanel({
             <MapPin size={22} strokeWidth={2.2} aria-hidden="true" />
             <div>
               <strong>{copy}</strong>
-              {state === "empty" && <p>아직 이 날의 위치 확인 기록이 남지 않았어요.</p>}
-              {state === "moving_only" && <p>아래 시간 막대로 이동 위치를 확인할 수 있어요.</p>}
-              {state === "error" && <p>인터넷 연결을 확인한 뒤 다시 시도해 주세요.</p>}
+              {state === "empty" && <p>{intl.formatMessage({ id: "parent.location.history.emptyHint" })}</p>}
+              {state === "moving_only" && <p>{intl.formatMessage({ id: "parent.location.history.movingHint" })}</p>}
+              {state === "error" && <p>{intl.formatMessage({ id: "core.error.api.network.formal" })}</p>}
             </div>
             {state === "error" && (
               <button type="button" className="pl-journey__retry hy-press" onClick={onRetry}>
                 <RefreshCw size={17} strokeWidth={2.3} aria-hidden="true" />
-                다시 불러오기
+                {intl.formatMessage({ id: "parent.location.history.reload" })}
               </button>
             )}
           </div>
@@ -129,7 +132,7 @@ export function LocationJourneyPanel({
             <div className="pl-journey__replay-head">
               <div>
                 <span className="pl-journey__eyebrow">
-                  {followsLatest ? "최신 기록" : "선택한 시각"}
+                  {intl.formatMessage({ id: followsLatest ? "parent.location.history.latest" : "parent.location.history.selectedTime" })}
                 </span>
                 <strong>{currentTimeLabel}</strong>
               </div>
@@ -140,7 +143,7 @@ export function LocationJourneyPanel({
                 onClick={onFollowLatest}
               >
                 <LocateFixed size={17} strokeWidth={2.3} aria-hidden="true" />
-                최신 위치
+                {intl.formatMessage({ id: "parent.location.history.latestPoint" })}
               </button>
             </div>
             <p className="pl-journey__where">
@@ -155,7 +158,7 @@ export function LocationJourneyPanel({
               step="any"
               value={sliderValue}
               disabled={sliderMax <= sliderMin}
-              aria-label={`${childName}의 이동 시간 따라보기`}
+              aria-label={intl.formatMessage({ id: "parent.location.history.scrubAria" }, { childName })}
               aria-valuetext={`${currentTimeLabel} · ${currentWhere}`}
               onChange={(event) => onSliderChange(Number(event.currentTarget.value))}
             />
@@ -171,8 +174,8 @@ export function LocationJourneyPanel({
         {state === "ready" && (
           <div id="location-journey-stays" className="pl-journey__stays" hidden={!expanded}>
             <div className="pl-journey__section-head">
-              <strong>머문 곳</strong>
-              <span>{stayCount}곳</span>
+              <strong>{intl.formatMessage({ id: "parent.parentLocation.copy027" })}</strong>
+              <span>{intl.formatMessage({ id: "parent.location.history.stayCountShort" }, { count: stayCount })}</span>
             </div>
             <ol className="pl-journey__timeline">
               {stays.map((stay, index) => (

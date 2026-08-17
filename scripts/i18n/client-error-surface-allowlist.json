@@ -1,5 +1,26 @@
 [
-  { "path": "src/screens/feature/AiSchedule.tsx", "pattern": "show\\(errorMessage,\\s*\"⚠️\"\\)", "occurrences": 1, "reason": "data: 순수 일정 파서가 allowlist code와 로컬 제목에서 만든 사용자 수정 안내" },
-  { "path": "src/screens/feature/ArrivalAlerts.tsx", "pattern": "cleanAlertTitle\\(a\\.message\\)", "occurrences": 1, "reason": "data: 인증된 가족의 도착 알림 본문 데이터이며 네트워크·예외 오류 원문이 아님" },
-  { "path": "src/screens/feature/DangerAlert.tsx", "pattern": "cleanAlertTitle\\((?:latest|a)\\.message\\)", "occurrences": 2, "reason": "data: 인증된 가족의 위험 알림 본문 데이터이며 네트워크·예외 오류 원문이 아님" }
+  {
+    "path": "src/screens/child/AiFriendChat.tsx",
+    "pattern": "copy.(?:title|detail|action)",
+    "occurrences": 3,
+    "reason": "data: 확인 카드 문구는 confirmCardCopy 가 catalog ID 로 만든 값과 아이가 직접 쓴 부모 메시지이며 서버 오류 원문이 아님"
+  },
+  {
+    "path": "src/screens/feature/AiSchedule.tsx",
+    "pattern": "show\\(errorMessage,\\s*\"⚠️\"\\)",
+    "occurrences": 1,
+    "reason": "data: 순수 일정 파서가 allowlist code와 로컬 제목에서 만든 사용자 수정 안내"
+  },
+  {
+    "path": "src/screens/feature/ArrivalAlerts.tsx",
+    "pattern": "cleanAlertTitle\\(a\\.message\\)",
+    "occurrences": 1,
+    "reason": "data: 인증된 가족의 도착 알림 본문 데이터이며 네트워크·예외 오류 원문이 아님"
+  },
+  {
+    "path": "src/screens/feature/DangerAlert.tsx",
+    "pattern": "cleanAlertTitle\\((?:latest|a)\\.message\\)",
+    "occurrences": 2,
+    "reason": "data: 인증된 가족의 위험 알림 본문 데이터이며 네트워크·예외 오류 원문이 아님"
+  }
 ]
