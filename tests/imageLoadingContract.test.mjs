@@ -32,9 +32,10 @@ test("대화 목록은 아바타를 지연하고 private 첨부는 viewport leas
   );
   assert.match(memo, /new IntersectionObserver\(/);
   assert.match(memo, /rootMargin: "360px 0px"/);
-  const privateImage = /<img\s+src=\{photo\.url\}[^>]*alt="공유한 사진"[^>]*>/s.exec(memo)?.[0] ?? "";
+  const privateImage = /<img\s+src=\{photo\.url\}[^>]*>/s.exec(memo)?.[0] ?? "";
   const previewImage = /<img\s+src=\{previewImage\.url\}[^>]*>/s.exec(memo)?.[0] ?? "";
   assert.match(privateImage, /decoding="async"/);
+  assert.match(privateImage, /alt=\{intl\.formatMessage\(\{ id: "shared\.memo\.photo\.alt" \}\)\}/);
   assert.match(previewImage, /decoding="async"/);
 });
 
@@ -137,7 +138,7 @@ test("출시 화면의 동적 가족 아바타는 첫 viewport와 목록 위치�
 test("첫 viewport의 온보딩 hero와 역할 이미지는 eager 계약을 유지한다", () => {
   const onboarding = source("src/screens/onboarding/Onboarding.tsx");
   const tags = [
-    /<img\s+src=\{asset\("mascot\/wave\.webp"\)\}\s+alt="혜니캘린더"[^>]*>/,
+    /<img\s+src=\{asset\("mascot\/wave\.webp"\)\}\s+alt=\{intl\.formatMessage\(\{ id: "core\.brand\.name" \}\)\}[^>]*>/,
     /<img\s+className="ob-role-img"\s+src=\{asset\(ROLE_ICON_ASSETS\.parent\)\}[^>]*>/,
     /<img\s+className="ob-role-img ob-role-img--child"\s+src=\{asset\(ROLE_ICON_ASSETS\.child\)\}[^>]*>/,
     /<img\s+className="ob-role-img"\s+src=\{asset\(ROLE_ICON_ASSETS\.teacher\)\}[^>]*>/,

@@ -27,11 +27,7 @@ test("라우터 전체가 errorElement 로 감싸이고 루트 바운더리가 �
   assert.match(boundary, /getDerivedStateFromError/);
   assert.match(boundary, /useRouteError/);
   assert.match(boundary, /hy-crash/);
-  assert.match(
-    boundary,
-    /const detail = import\.meta\.env\.DEV/,
-    "프로덕션 복구 화면에는 영문 번들·네트워크 오류 원문을 노출하지 않습니다",
-  );
+  assert.doesNotMatch(boundary, /\bdetail\b|String\(error\)|error\?\.message/);
 
   const css = read("src/styles/components.css");
   assert.match(css, /\.hy-crash \{/);
@@ -87,7 +83,12 @@ test("친구놀이 하드 에러는 '친구 없음'으로 위장하지 않는다
 
   const sheet = readFileSync(new URL("../src/screens/child/overlays/PlaydateSheet.tsx", import.meta.url), "utf8");
   assert.match(sheet, /candidatesQuery\.isError/);
-  assert.match(sheet, /다시 찾기/);
+  assert.match(sheet, /onClick=\{\(\) => void candidatesQuery\.refetch\(\)\}/);
+  assert.match(sheet, /intl\.formatMessage\(\{ id: "child\.playdate\.retry" \}\)/);
+  const koChild = JSON.parse(
+    readFileSync(new URL("../locales/ko/child.json", import.meta.url), "utf8"),
+  );
+  assert.equal(koChild["child.playdate.retry"], "다시 찾기");
   const fp = readFileSync(new URL("../src/screens/feature/FriendPlay.tsx", import.meta.url), "utf8");
   assert.match(fp, /candidatesQ\.isError/);
 });

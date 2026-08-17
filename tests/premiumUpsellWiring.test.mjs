@@ -108,15 +108,25 @@ test("무료 주변소리는 감사 세션·기기 명령 전에 상황형 업�
 
 test("무료 주간 리포트는 실제 한 줄 요약 뒤 전체 리포트 업셀을 연다", () => {
   const source = read("src/screens/feature/WeeklyFamilyReport.tsx");
+  const koReports = JSON.parse(read("locales/ko/reports.json"));
   assert.match(source, /weeklyReportTeaser\(summary/);
   assert.match(source, /setUpsellOpen\(true\)/);
   assert.match(source, /source="weekly_report"/);
   assert.match(source, /savePremiumReturnIntent/);
-  assert.match(source, /무료 한 줄 요약/);
-  assert.match(source, /이번 주 일정/);
-  assert.match(source, /준비물 체크/);
-  assert.match(source, /대화 메시지/);
-  assert.match(source, /안전 알림/);
+  assert.match(source, /reports\.weekly\.freeTeaserTitle/);
+  assert.match(source, /reports\.weekly\.schedule/);
+  assert.match(source, /reports\.weekly\.supplies/);
+  assert.match(source, /reports\.weekly\.memos/);
+  assert.match(source, /reports\.weekly\.alerts/);
+  assert.equal(koReports["reports.weekly.freeTeaserTitle"], "무료 한 줄 요약");
+  assert.equal(koReports["reports.weekly.schedule"], "이번 주 일정");
+  assert.equal(koReports["reports.weekly.supplies"], "준비물 체크");
+  assert.equal(koReports["reports.weekly.memos"], "대화 메시지");
+  assert.equal(koReports["reports.weekly.alerts"], "안전 알림");
+  assert.equal(
+    koReports["reports.weekly.dataReadyDescription"],
+    "일정·준비물·대화·안전 알림만 집계해요. 머문 곳 집계는 준비 중이에요.",
+  );
   assert.doesNotMatch(source, /자주 머문 장소/);
   assert.doesNotMatch(source, /프리미엄에서 기록이 쌓이면 보여드려요/);
   assert.match(source, /resolveWeeklyReportReturnChildId/);
@@ -136,13 +146,12 @@ test("무료 AI 하루 요약은 조회·생성 전에 업셀로 닫는다", () 
 
 test("무료 AI 일정 5회 소진은 원시 429를 노출하지 않고 상황형 업셀과 복귀 경로를 연다", () => {
   const source = read("src/screens/feature/AiSchedule.tsx");
-  const quotaGate = source.indexOf('e.status === 429 && e.message === "daily_limit_reached"');
-  const genericToastOffset = source
-    .slice(quotaGate)
-    .search(/show\(\s*e instanceof ApiError\s*\?\s*e\.message/);
-  const genericToast = genericToastOffset < 0 ? -1 : quotaGate + genericToastOffset;
-  assert.ok(quotaGate >= 0 && genericToast > quotaGate);
-  assert.match(source.slice(quotaGate, genericToast), /setScheduleLimitUpsellOpen\(true\)[\s\S]*return/);
+  const normalized = source.replace(/\s+/g, " ");
+  const quotaGate = normalized.indexOf('e instanceof ApiError && e.status === 429 && e.code === "daily_limit_reached"');
+  const genericToast = normalized.indexOf('show(localizeApiError(e, intl, "formal"), "⚠️")', quotaGate);
+  assert.ok(quotaGate >= 0 && genericToast > quotaGate, "429 업셀 분기는 일반 오류 표시보다 먼저여야 합니다");
+  assert.match(normalized.slice(quotaGate, genericToast), /setScheduleLimitUpsellOpen\(true\);.*return;/);
+  assert.doesNotMatch(source, /e\.message === "daily_limit_reached"|show\([^\n]*e\.message/);
   assert.match(source, /source="ai_schedule_limit"/);
   assert.match(source, /returnTo=\{`\/ai-schedule\?tab=\$\{tab\}`\}/);
   assert.match(source, /savePremiumReturnIntent/);

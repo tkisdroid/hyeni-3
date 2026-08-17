@@ -165,10 +165,22 @@ const SOURCE_CONTRACTS = Object.freeze([
     path: "src/screens/feature/Subscription.tsx",
     patterns: [
       /COMPARE_COLS:\s*readonly Tier\[\]\s*=\s*\[TIERS\.FREE,\s*TIERS\.PREMIUM\]/,
-      /label:\s*"일정·메모·스티커"[^\n]+"무제한"/,
-      /label:\s*"준비물·숙제"[^\n]+아이별 하루 각각/,
-      /label:\s*"SOS · 긴급 알림"[^\n]+safe:\s*true/,
-      /label:\s*"주변 소리 듣기"[^\n]+"최대 1분"/,
+      /message\("billing\.subscription\.compare\.memoSticker"\)[^\n]+message\("billing\.subscription\.compare\.unlimited"\)/,
+      /message\("billing\.subscription\.compare\.supplies"\)[^\n]+MAX_SUPPLY_ITEMS_PER_KIND/,
+      /message\("billing\.subscription\.compare\.sos"\)[^\n]+safe:\s*true/,
+      /message\("billing\.subscription\.compare\.remoteAudio"\)[^\n]+FEATURES\.REMOTE_AUDIO[^\n]+message\("billing\.subscription\.compare\.maxMinute"\)/,
+    ],
+  },
+  {
+    path: "locales/ko/billing.json",
+    patterns: [
+      /"billing\.subscription\.compare\.memoSticker":\s*"일정·메모·스티커"/,
+      /"billing\.subscription\.compare\.unlimited":\s*"무제한"/,
+      /"billing\.subscription\.compare\.supplies":\s*"준비물·숙제"/,
+      /"billing\.subscription\.compare\.suppliesLimit":\s*"아이별 하루 각각 \{count, number\}개"/,
+      /"billing\.subscription\.compare\.sos":\s*"SOS · 긴급 알림"/,
+      /"billing\.subscription\.compare\.remoteAudio":\s*"주변 소리 듣기"/,
+      /"billing\.subscription\.compare\.maxMinute":\s*"최대 1분"/,
     ],
   },
   {

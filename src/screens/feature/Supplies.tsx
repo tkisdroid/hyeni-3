@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
+import { useIntl } from "react-intl";
 import { ChevronLeft, Check, Plus, Pencil, Trash2, X } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
@@ -8,16 +9,15 @@ import { useMyFamily } from "@/queries/useFamily";
 import { useActiveChild } from "@/app/activeChild";
 import { useDailySupplies, useUpsertDailySupply, useDeleteDailySupply } from "@/queries/useSchedule";
 import type { DailySupply } from "@/lib/api/endpoints/schedule";
-import { parseAppDateKey, todayDateKey } from "@/transform/dateKey";
+import { dateToDateKeyInTimeZone, parseAppDateKey } from "@/transform/dateKey";
 import { resolveDailySupplyChildMemberId } from "@/transform/dailySupplyScope";
 import {
   MAX_SUPPLY_ITEMS_PER_KIND,
-  dailySupplyLimitMessage,
   isDailySupplyLimitError,
 } from "@/transform/eventSupplies";
+import { useLocale } from "@/i18n/useLocale";
+import { formatCalendarDay, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
 import "./Supplies.css";
-
-const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
 
 /**
  * 숙제·준비물(P-13). 부모·아이 공용 — role 로 말투 분기(부모 존댓말/아이 반말).
@@ -25,21 +25,30 @@ const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
  * 서버에 반영. 서버 daily_supplies 는 (family, child, date) 당 1행이라 대상 아이를 하나 정한다.
  */
 export function Supplies() {
+  const intl = useIntl();
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const location = useLocation();
   const { show } = useToast();
   const { role, userId } = useAuth();
   const isChild = role === "child";
+  const audience = isChild ? "child" : "parent";
 
   const dateKey = useMemo(() => {
     const fromState = (location.state as { dateKey?: string } | null)?.dateKey;
-    return typeof fromState === "string" && fromState ? fromState : todayDateKey();
+    return typeof fromState === "string" && fromState
+      ? fromState
+      : dateToDateKeyInTimeZone(new Date(), LEGACY_FAMILY_TIME_ZONE);
   }, [location.state]);
 
   const dateLabel = useMemo(() => {
     const d = parseAppDateKey(dateKey) ?? new Date();
-    return `${d.getMonth() + 1}월 ${d.getDate()}일 (${WEEKDAYS[d.getDay()]})`;
-  }, [dateKey]);
+    return formatCalendarDay(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 12), {
+      locale,
+      timeZone: "UTC",
+      weekday: "short",
+    });
+  }, [dateKey, locale]);
 
   const familyQuery = useMyFamily();
   const family = familyQuery.data;
@@ -82,6 +91,10 @@ export function Supplies() {
   const prepList = supplies.filter((s) => s.kind !== "hw");
   const hwList = supplies.filter((s) => s.kind === "hw");
   const doneCount = supplies.filter((s) => s.done).length;
+  const limitMessage = (kind: "prep" | "hw") => intl.formatMessage(
+    { id: kind === "hw" ? "shared.supplies.limitHomework" : "shared.supplies.limitPrep" },
+    { audience, max: MAX_SUPPLY_ITEMS_PER_KIND },
+  );
 
   const toggle = (item: DailySupply) => {
     if (editId || !targetChildId || item.child_user_id !== targetChildId) return;
@@ -94,7 +107,12 @@ export function Supplies() {
         kind: item.kind ?? "prep",
         child_user_id: targetChildId,
       },
-      { onError: () => show(isChild ? "안 됐어. 다시 눌러 볼래?" : "반영에 실패했어요", "⚠️") },
+      {
+        onError: () => show(
+          intl.formatMessage({ id: "shared.supplies.toggleError" }, { audience }),
+          "⚠️",
+        ),
+      },
     );
   };
 
@@ -102,12 +120,12 @@ export function Supplies() {
     const label = draft.trim();
     if (!label || upsert.isPending) return;
     if (!targetChildId) {
-      show(isChild ? "내 정보를 아직 찾지 못했어" : "가족에 등록된 아이가 없어요", "🎒");
+      show(intl.formatMessage({ id: "shared.supplies.addNoTarget" }, { audience }), "🎒");
       return;
     }
     const list = kind === "hw" ? hwList : prepList;
     if (list.length >= MAX_SUPPLY_ITEMS_PER_KIND) {
-      show(dailySupplyLimitMessage(kind, isChild), "🎒");
+      show(limitMessage(kind), "🎒");
       return;
     }
     const actionKey = `add:${kind}`;
@@ -118,8 +136,8 @@ export function Supplies() {
         onSuccess: clear,
         onError: (error) => show(
           isDailySupplyLimitError(error)
-            ? dailySupplyLimitMessage(kind, isChild)
-            : isChild ? "추가하지 못했어. 다시 해 볼래?" : "추가하지 못했어요",
+            ? limitMessage(kind)
+            : intl.formatMessage({ id: "shared.supplies.addError" }, { audience }),
           isDailySupplyLimitError(error) ? "🎒" : "⚠️",
         ),
         onSettled: () => setPendingUpsertAction((current) => (current === actionKey ? null : current)),
@@ -159,7 +177,10 @@ export function Supplies() {
       },
       {
         onSuccess: cancelEdit,
-        onError: () => show(isChild ? "못 바꿨어. 다시 해 볼래?" : "이름을 바꾸지 못했어요", "⚠️"),
+        onError: () => show(
+          intl.formatMessage({ id: "shared.supplies.editError" }, { audience }),
+          "⚠️",
+        ),
         onSettled: () => setPendingUpsertAction((current) => (current === actionKey ? null : current)),
       },
     );
@@ -170,7 +191,10 @@ export function Supplies() {
     const itemId = item.id ?? null;
     setPendingDeleteId(itemId);
     remove.mutate(item, {
-      onError: () => show(isChild ? "못 지웠어. 다시 해 볼래?" : "삭제하지 못했어요", "⚠️"),
+      onError: () => show(
+        intl.formatMessage({ id: "shared.supplies.deleteError" }, { audience }),
+        "⚠️",
+      ),
       onSettled: () => setPendingDeleteId((current) => (current === itemId ? null : current)),
     });
   };
@@ -178,31 +202,36 @@ export function Supplies() {
   const sections = [
     {
       kind: "prep" as const,
-      heading: "준비물",
+      heading: intl.formatMessage({ id: "shared.supplies.prepHeading" }),
       list: prepList,
       draft: prepDraft,
       setDraft: setPrepDraft,
-      placeholder: isChild ? "뭘 챙겨야 해?" : "준비물을 입력하세요",
+      placeholder: intl.formatMessage({ id: "shared.supplies.prepPlaceholder" }, { audience }),
     },
     {
       kind: "hw" as const,
-      heading: "숙제",
+      heading: intl.formatMessage({ id: "shared.supplies.homeworkHeading" }),
       list: hwList,
       draft: hwDraft,
       setDraft: setHwDraft,
-      placeholder: isChild ? "무슨 숙제야?" : "숙제를 입력하세요",
+      placeholder: intl.formatMessage({ id: "shared.supplies.homeworkPlaceholder" }, { audience }),
     },
   ];
 
-  const emptyText = isChild ? "아직 없어 🎒" : "등록된 항목이 없어요";
+  const emptyText = intl.formatMessage({ id: "shared.supplies.empty" }, { audience });
 
   return (
     <div className="sup-screen">
       <div className="sup-header">
-        <button type="button" className="sup-back hy-press" aria-label="뒤로" onClick={() => navigate(-1)}>
+        <button
+          type="button"
+          className="sup-back hy-press"
+          aria-label={intl.formatMessage({ id: "core.action.back" })}
+          onClick={() => navigate(-1)}
+        >
           <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
         </button>
-        <span className="sup-title">숙제 · 준비물</span>
+        <span className="sup-title">{intl.formatMessage({ id: "shared.supplies.screenTitle" })}</span>
         <span className="sup-date">{dateLabel}</span>
       </div>
 
@@ -210,15 +239,24 @@ export function Supplies() {
         <div className="sup-intro">
           <img className="sup-intro__img" src={asset("cat/study.webp")} alt="" />
           <div>
-            <div className="sup-intro__title">{isChild ? "오늘 챙길 것" : "오늘 준비물·숙제"}</div>
+            <div className="sup-intro__title">
+              {intl.formatMessage({ id: "shared.supplies.introTitle" }, { audience })}
+            </div>
             <div className="sup-intro__sub">
               {isLoading
-                ? "불러오는 중…"
+                ? intl.formatMessage({ id: "shared.supplies.loadingShort" })
                 : isError
-                  ? isChild ? "정보를 불러오지 못했어" : "정보를 불러오지 못했어요"
+                  ? intl.formatMessage({ id: "shared.supplies.loadErrorShort" }, { audience })
                   : !targetChildId
-                    ? isChild ? "내 가족 정보를 확인해 줘" : "준비물을 볼 아이를 선택해 주세요"
-                : `${targetChildName ? targetChildName + " · " : ""}${supplies.length}개 중 ${doneCount}개 완료`}
+                    ? intl.formatMessage({ id: "shared.supplies.noTargetShort" }, { audience })
+                    : intl.formatMessage(
+                        {
+                          id: targetChildName
+                            ? "shared.supplies.summaryWithChild"
+                            : "shared.supplies.summary",
+                        },
+                        { childName: targetChildName, total: supplies.length, done: doneCount },
+                      )}
             </div>
           </div>
         </div>
@@ -226,27 +264,25 @@ export function Supplies() {
         {isLoading ? (
           <div className="sup-status sup-status--loading" role="status">
             <span className="sup-status__spinner" aria-hidden="true" />
-            <strong>준비물을 불러오는 중…</strong>
+            <strong>{intl.formatMessage({ id: "shared.supplies.loading" })}</strong>
           </div>
         ) : isError ? (
           <div className="sup-status sup-status--error" role="alert">
-            <strong>{isChild ? "준비물을 불러오지 못했어" : "준비물을 불러오지 못했어요"}</strong>
-            <span>{isChild ? "잠시 후 다시 확인해 줘." : "잠시 후 다시 확인해 주세요."}</span>
+            <strong>{intl.formatMessage({ id: "shared.supplies.loadErrorTitle" }, { audience })}</strong>
+            <span>{intl.formatMessage({ id: "shared.supplies.loadErrorDescription" }, { audience })}</span>
             <button
               type="button"
               className="sup-status__retry hy-press"
               onClick={() => void Promise.all([familyQuery.refetch(), suppliesQuery.refetch()])}
             >
-              다시 시도
+              {intl.formatMessage({ id: "core.action.retry" })}
             </button>
           </div>
         ) : !targetChildId ? (
           <div className="sup-status sup-status--no-target">
-            <strong>{isChild ? "내 정보를 찾지 못했어" : "준비물을 볼 아이를 선택할 수 없어요"}</strong>
+            <strong>{intl.formatMessage({ id: "shared.supplies.noTargetTitle" }, { audience })}</strong>
             <span>
-              {isChild
-                ? "가족 연결을 확인한 뒤 다시 들어와 줘."
-                : "부모 홈에서 아이를 선택한 뒤 다시 시도해 주세요."}
+              {intl.formatMessage({ id: "shared.supplies.noTargetDescription" }, { audience })}
             </span>
           </div>
         ) : sections.map((sec) => (
@@ -266,7 +302,7 @@ export function Supplies() {
                         className="sup-edit-input"
                         value={editDraft}
                         autoFocus
-                        aria-label="항목 이름 변경"
+                        aria-label={intl.formatMessage({ id: "shared.supplies.editInputAria" })}
                         onChange={(e) => setEditDraft(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") commitEdit(s);
@@ -276,7 +312,7 @@ export function Supplies() {
                       <button
                         type="button"
                         className="sup-iconbtn hy-press"
-                        aria-label="이름 변경 저장"
+                        aria-label={intl.formatMessage({ id: "shared.supplies.editSaveAria" })}
                         onClick={() => commitEdit(s)}
                         disabled={upsert.isPending || !editDraft.trim()}
                         aria-busy={upsert.isPending && pendingUpsertAction === `edit:${s.id ?? ""}`}
@@ -286,7 +322,7 @@ export function Supplies() {
                       <button
                         type="button"
                         className="sup-iconbtn hy-press"
-                        aria-label="이름 변경 취소"
+                        aria-label={intl.formatMessage({ id: "shared.supplies.editCancelAria" })}
                         onClick={cancelEdit}
                       >
                         <X size={16} strokeWidth={2.4} color="#E5484D" />
@@ -297,7 +333,7 @@ export function Supplies() {
                       <button
                         type="button"
                         className="sup-check hy-press"
-                        aria-label="완료 토글"
+                        aria-label={intl.formatMessage({ id: "shared.supplies.toggleAria" })}
                         onClick={() => toggle(s)}
                         style={{
                           background: s.done ? "var(--hy-accent-cta)" : "#fff",
@@ -320,7 +356,7 @@ export function Supplies() {
                       <button
                         type="button"
                         className="sup-iconbtn hy-press"
-                        aria-label="이름 변경"
+                        aria-label={intl.formatMessage({ id: "shared.supplies.editAria" })}
                         onClick={() => startEdit(s)}
                       >
                         <Pencil size={15} strokeWidth={2.2} color="var(--fg-faint)" />
@@ -328,7 +364,7 @@ export function Supplies() {
                       <button
                         type="button"
                         className="sup-iconbtn hy-press"
-                        aria-label="삭제"
+                        aria-label={intl.formatMessage({ id: "shared.supplies.deleteAria" })}
                         onClick={() => del(s)}
                         disabled={remove.isPending}
                         aria-busy={remove.isPending && pendingDeleteId === s.id}
@@ -345,11 +381,15 @@ export function Supplies() {
                   className="sup-add__input"
                   value={sec.draft}
                   placeholder={sec.list.length >= MAX_SUPPLY_ITEMS_PER_KIND
-                    ? isChild
-                      ? `하루 ${MAX_SUPPLY_ITEMS_PER_KIND}개까지 등록할 수 있어`
-                      : `하루 ${MAX_SUPPLY_ITEMS_PER_KIND}개까지 등록할 수 있어요`
+                    ? intl.formatMessage(
+                        { id: "shared.supplies.limitPlaceholder" },
+                        { audience, max: MAX_SUPPLY_ITEMS_PER_KIND },
+                      )
                     : sec.placeholder}
-                  aria-label={`${sec.heading} 추가`}
+                  aria-label={intl.formatMessage(
+                    { id: "shared.supplies.addAria" },
+                    { item: sec.heading },
+                  )}
                   disabled={sec.list.length >= MAX_SUPPLY_ITEMS_PER_KIND}
                   onChange={(e) => sec.setDraft(e.target.value)}
                   onKeyDown={(e) => {
@@ -359,7 +399,10 @@ export function Supplies() {
                 <button
                   type="button"
                   className="sup-add__btn hy-press"
-                  aria-label={`${sec.heading} 추가 확인`}
+                  aria-label={intl.formatMessage(
+                    { id: "shared.supplies.addConfirmAria" },
+                    { item: sec.heading },
+                  )}
                   onClick={() => add(sec.kind, sec.draft, () => sec.setDraft(""))}
                   disabled={upsert.isPending || !sec.draft.trim() || sec.list.length >= MAX_SUPPLY_ITEMS_PER_KIND}
                   aria-busy={upsert.isPending && pendingUpsertAction === `add:${sec.kind}`}

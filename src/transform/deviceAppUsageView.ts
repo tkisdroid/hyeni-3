@@ -1,3 +1,6 @@
+import type { IntlShape } from "react-intl";
+import { withDefaultIntl } from "../i18n/defaultIntl.ts";
+
 export interface DeviceAppUsageInput {
   name?: string | null;
   packageName?: string | null;
@@ -25,14 +28,19 @@ export interface DeviceAppUsageView {
   topApps: DeviceAppUsageItemView[];
 }
 
-function appUsageTimeLabelFrom(ms: number | null | undefined): string | null {
+function appUsageTimeLabelFrom(
+  ms: number | null | undefined,
+  intl: IntlShape,
+): string | null {
   if (typeof ms !== "number" || !Number.isFinite(ms) || ms <= 0) return null;
   const totalMin = Math.max(1, Math.round(ms / 60000));
   const h = Math.floor(totalMin / 60);
   const m = totalMin % 60;
-  if (h > 0 && m > 0) return `${h}시간 ${m}분`;
-  if (h > 0) return `${h}시간`;
-  return `${m}분`;
+  if (h > 0 && m > 0) {
+    return intl.formatMessage({ id: "parent.device.hoursMinutes" }, { hours: h, minutes: m });
+  }
+  if (h > 0) return intl.formatMessage({ id: "parent.device.hours" }, { hours: h });
+  return intl.formatMessage({ id: "parent.device.minutes" }, { minutes: m });
 }
 
 function normalizeAppText(value: string | null | undefined): string {
@@ -182,7 +190,9 @@ function isOwnAppRow(row: DeviceAppUsageInput): boolean {
 export function buildDeviceAppUsageView(
   health: DeviceAppUsageHealthInput,
   maxRows = 3,
+  providedIntl?: IntlShape,
 ): DeviceAppUsageView {
+  const intl = withDefaultIntl(providedIntl);
   const recent = cleanRecentAppLabel(health.recentApp);
   const rows = Array.isArray(health.appUsage) ? health.appUsage : [];
   const visibleRows = rows.filter((row) => !isOwnAppRow(row) && !isSystemSurfaceRow(row));
@@ -191,7 +201,7 @@ export function buildDeviceAppUsageView(
     .map((row, index) => {
       const name = (row.name || row.packageName || "").trim();
       const usageMs = typeof row.usageMs === "number" && Number.isFinite(row.usageMs) ? row.usageMs : 0;
-      const timeLabel = appUsageTimeLabelFrom(usageMs);
+      const timeLabel = appUsageTimeLabelFrom(usageMs, intl);
       if (!name || !timeLabel) return null;
       const packageName = (row.packageName || "").trim();
       return {

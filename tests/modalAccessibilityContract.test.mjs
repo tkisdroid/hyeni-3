@@ -54,6 +54,13 @@ function stringAttribute(opening, name) {
     : null;
 }
 
+function expressionAttributeText(opening, name) {
+  const found = attribute(opening, name);
+  return found?.initializer && ts.isJsxExpression(found.initializer)
+    ? found.initializer.expression?.getText() ?? null
+    : null;
+}
+
 function dialogsIn(absolute) {
   const source = readFileSync(absolute, "utf8");
   const sourceFile = ts.createSourceFile(absolute, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
@@ -139,18 +146,24 @@ test("공용 아이 sheet와 modal은 항상 44px 이상의 명시적 닫기 버
   const path = "src/screens/child/overlays/ChildSheet.tsx";
   const absolute = resolve(root, path);
   const { dialogs, source } = dialogsIn(absolute);
+  const koChild = JSON.parse(readFileSync(resolve(root, "locales/ko/child.json"), "utf8"));
   assert.equal(dialogs.length, 2);
   for (const { opening } of dialogs) {
     const dialog = opening.parent;
     const closeButtons = descendantButtonsWithClass(dialog, "ks-dialog-close");
     assert.equal(closeButtons.length, 1, "ChildSheet와 ChildModal 각각에 닫기 버튼이 하나씩 있어야 합니다");
     const closeButton = closeButtons[0];
-    assert.equal(stringAttribute(closeButton, "aria-label"), "닫기");
+    assert.match(
+      expressionAttributeText(closeButton, "aria-label") ?? "",
+      /^intl\.formatMessage\(\{\s*id:\s*"child\.action\.close"\s*\}\)$/,
+    );
     assert.ok(attribute(closeButton, "onClick"), "닫기 버튼은 실제 onClose 동작을 연결해야 합니다");
     assert.ok(attribute(closeButton, "ref"), "닫기 버튼은 초기 focus 대상을 연결해야 합니다");
     assert.equal(attribute(closeButton, "tabIndex"), undefined, "닫기 버튼은 Tab 순서에서 빠지면 안 됩니다");
   }
   assert.equal((source.match(/initialFocusRef:\s*closeRef/g) ?? []).length, 2);
+  assert.equal((source.match(/const intl = useIntl\(\)/g) ?? []).length, 2);
+  assert.equal(koChild["child.action.close"], "닫기");
 
   const css = readFileSync(resolve(root, "src/screens/child/overlays/ChildSheet.css"), "utf8");
   const closeRule = /\.ks-dialog-close\s*\{([^}]*)\}/.exec(css)?.[1] ?? "";

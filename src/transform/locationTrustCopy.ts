@@ -1,5 +1,8 @@
 import { formatFreshness } from "./locationView.ts";
 import type { LocationMode } from "./tierPolicy";
+import type { SupportedLocale } from "../i18n/locale.ts";
+import type { IntlShape } from "react-intl";
+import { withDefaultIntl } from "../i18n/defaultIntl.ts";
 
 export interface LocationTrustCopy {
   badge: string;
@@ -15,51 +18,54 @@ export function resolveLocationTrustCopy(input: {
   updatedAt: string | null | undefined;
   loadState?: LocationTrustLoadState;
   now?: Date;
+  locale: SupportedLocale;
+  intl?: IntlShape;
 }): LocationTrustCopy {
+  const intl = withDefaultIntl(input.intl);
   // 무료 잠금은 좌표 캐시·조회 상태보다 먼저 적용한다. 이전 프리미엄 좌표가
   // 캐시에 남아도 잠금 사용자의 현재 위치처럼 노출하지 않는다.
   if (input.modeKnown && input.mode === "locked") {
-    return { badge: "위치 조회 제한", detail: "현재 위치는 표시되지 않아요" };
+    return { badge: intl.formatMessage({ id: "parent.locationTrust.restricted" }), detail: intl.formatMessage({ id: "parent.locationTrust.hidden" }) };
   }
 
   if (!input.modeKnown) {
     if (input.loadState === "error") {
       return {
-        badge: "위치 조회 범위 확인 실패",
-        detail: "새로고침해서 다시 확인해 주세요",
+        badge: intl.formatMessage({ id: "parent.locationTrust.scopeFailed" }),
+        detail: intl.formatMessage({ id: "parent.locationTrust.refresh" }),
       };
     }
     if (!input.updatedAt) {
-      return { badge: "위치 조회 범위 확인 중", detail: "구독 상태를 확인하고 있어요" };
+      return { badge: intl.formatMessage({ id: "parent.locationTrust.scopeLoading" }), detail: intl.formatMessage({ id: "parent.locationTrust.subscriptionLoading" }) };
     }
-    const fresh = formatFreshness(input.updatedAt, input.now ?? new Date());
-    return { badge: "마지막 확인 위치", detail: `${fresh.label} 갱신` };
+    const fresh = formatFreshness(input.updatedAt, input.now ?? new Date(), input.locale, intl);
+    return { badge: intl.formatMessage({ id: "parent.locationTrust.lastLocation" }), detail: intl.formatMessage({ id: "parent.locationTrust.updated" }, { freshness: fresh.label }) };
   }
 
   if (!input.updatedAt) {
     if (input.loadState === "loading") {
-      return { badge: "위치 불러오는 중", detail: "위치 정보를 불러오고 있어요" };
+      return { badge: intl.formatMessage({ id: "parent.locationTrust.loading" }), detail: intl.formatMessage({ id: "parent.locationTrust.loadingDetail" }) };
     }
     if (input.loadState === "error") {
-      return { badge: "위치 조회 실패", detail: "새 위치를 불러오지 못했어요" };
+      return { badge: intl.formatMessage({ id: "parent.locationTrust.failed" }), detail: intl.formatMessage({ id: "parent.locationTrust.failedDetail" }) };
     }
-    return { badge: "위치 신호 대기", detail: "아이 기기의 새 위치 신호를 기다리고 있어요" };
+    return { badge: intl.formatMessage({ id: "parent.locationTrust.waiting" }), detail: intl.formatMessage({ id: "parent.locationTrust.waitingDetail" }) };
   }
 
-  const fresh = formatFreshness(input.updatedAt, input.now ?? new Date());
+  const fresh = formatFreshness(input.updatedAt, input.now ?? new Date(), input.locale, intl);
   if (input.mode === "standard") {
     return {
-      badge: "최근 위치",
+      badge: intl.formatMessage({ id: "parent.locationTrust.recent" }),
       detail: input.loadState === "error"
-        ? `새 위치 조회 실패 · ${fresh.label} 확인 · 약 10분 간격 자동 확인`
-        : `${fresh.label} 확인 · 약 10분 간격 자동 확인`,
+        ? intl.formatMessage({ id: "parent.locationTrust.standardFailed" }, { freshness: fresh.label })
+        : intl.formatMessage({ id: "parent.locationTrust.standard" }, { freshness: fresh.label }),
     };
   }
   if (input.loadState === "error") {
-    return { badge: "마지막 확인 위치", detail: `새 위치 조회 실패 · ${fresh.label}` };
+    return { badge: intl.formatMessage({ id: "parent.locationTrust.lastLocation" }), detail: intl.formatMessage({ id: "parent.locationTrust.latestFailed" }, { freshness: fresh.label }) };
   }
   if (fresh.status === "live") {
-    return { badge: "현재 위치", detail: "방금 갱신" };
+    return { badge: intl.formatMessage({ id: "parent.locationTrust.current" }), detail: intl.formatMessage({ id: "parent.locationTrust.justUpdated" }) };
   }
-  return { badge: "마지막 확인 위치", detail: `${fresh.label} 갱신` };
+  return { badge: intl.formatMessage({ id: "parent.locationTrust.lastLocation" }), detail: intl.formatMessage({ id: "parent.locationTrust.updated" }, { freshness: fresh.label }) };
 }

@@ -8,6 +8,7 @@
  */
 import { useId, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
+import { useIntl } from "react-intl";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import "./ChildSheet.css";
 
@@ -23,6 +24,7 @@ export interface ChildSheetProps {
 
 /** 아래에서 올라오는 바텀시트. */
 export function ChildSheet({ open, onClose, label, description, children }: ChildSheetProps) {
+  const intl = useIntl();
   const titleId = useId();
   const descriptionId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -42,12 +44,26 @@ export function ChildSheet({ open, onClose, label, description, children }: Chil
       aria-describedby={descriptionId}
     >
       <span id={titleId} className="ks-dialog-a11y">{label}</span>
-      <span id={descriptionId} className="ks-dialog-a11y">{description ?? `${label} 창이 열렸어.`}</span>
-      <button type="button" className="ks-dim" tabIndex={-1} aria-label="닫기" onClick={onClose} />
+      <span id={descriptionId} className="ks-dialog-a11y">
+        {description ?? intl.formatMessage({ id: "child.dialog.opened" }, { label })}
+      </span>
+      <button
+        type="button"
+        className="ks-dim"
+        tabIndex={-1}
+        aria-label={intl.formatMessage({ id: "child.action.close" })}
+        onClick={onClose}
+      />
       <div className="ks-sheet">
         <div className="ks-dialog-toolbar">
           <div className="ks-handle" aria-hidden="true" />
-          <button ref={closeRef} type="button" className="ks-dialog-close hy-press" aria-label="닫기" onClick={onClose}>
+          <button
+            ref={closeRef}
+            type="button"
+            className="ks-dialog-close hy-press"
+            aria-label={intl.formatMessage({ id: "child.action.close" })}
+            onClick={onClose}
+          >
             <X size={20} strokeWidth={2.4} aria-hidden="true" />
           </button>
         </div>
@@ -59,6 +75,7 @@ export function ChildSheet({ open, onClose, label, description, children }: Chil
 
 /** 화면 가운데 뜨는 모달(스티커 상세 등). */
 export function ChildModal({ open, onClose, label, description, children }: ChildSheetProps) {
+  const intl = useIntl();
   const titleId = useId();
   const descriptionId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -78,11 +95,25 @@ export function ChildModal({ open, onClose, label, description, children }: Chil
       aria-describedby={descriptionId}
     >
       <span id={titleId} className="ks-dialog-a11y">{label}</span>
-      <span id={descriptionId} className="ks-dialog-a11y">{description ?? `${label} 창이 열렸어.`}</span>
-      <button type="button" className="ks-dim ks-dim--strong" tabIndex={-1} aria-label="닫기" onClick={onClose} />
+      <span id={descriptionId} className="ks-dialog-a11y">
+        {description ?? intl.formatMessage({ id: "child.dialog.opened" }, { label })}
+      </span>
+      <button
+        type="button"
+        className="ks-dim ks-dim--strong"
+        tabIndex={-1}
+        aria-label={intl.formatMessage({ id: "child.action.close" })}
+        onClick={onClose}
+      />
       <div className="ks-modal">
         <div className="ks-dialog-toolbar ks-dialog-toolbar--modal">
-          <button ref={closeRef} type="button" className="ks-dialog-close hy-press" aria-label="닫기" onClick={onClose}>
+          <button
+            ref={closeRef}
+            type="button"
+            className="ks-dialog-close hy-press"
+            aria-label={intl.formatMessage({ id: "child.action.close" })}
+            onClick={onClose}
+          >
             <X size={20} strokeWidth={2.4} aria-hidden="true" />
           </button>
         </div>

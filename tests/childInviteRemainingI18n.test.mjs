@@ -1,0 +1,58 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import test from "node:test";
+import { IntlMessageFormat } from "intl-messageformat";
+
+const rootUrl = new URL("../", import.meta.url);
+const read = (path) => readFileSync(new URL(path, rootUrl), "utf8");
+const locales = ["ko", "en", "ja", "zh-CN", "zh-TW", "vi", "th", "id", "ms", "fil"];
+
+test("아이 초대의 남은 시간 방향은 core ICU 메시지로 표시한다", () => {
+  const source = read("src/screens/feature/ChildInvite.tsx");
+
+  assert.match(source, /useIntl\(\)/);
+  assert.match(
+    source,
+    /formatMessage\(\s*\{\s*id:\s*"core\.time\.remaining"\s*\},\s*\{\s*duration:\s*countdown\.text\s*\},?\s*\)/s,
+  );
+  assert.doesNotMatch(source, /`\$\{countdown\.text\}\s*남음`/);
+});
+
+test("10개 locale의 남은 시간 메시지는 같은 duration 변수와 자연스러운 방향을 사용한다", () => {
+  const expected = {
+    ko: "1 day 남음",
+    en: "1 day remaining",
+    ja: "残り1 day",
+    "zh-CN": "剩余 1 day",
+    "zh-TW": "剩餘 1 day",
+    vi: "1 day còn lại",
+    th: "1 day เหลืออยู่",
+    id: "1 day tersisa",
+    ms: "1 day yang tinggal",
+    fil: "1 day ang natitira",
+  };
+
+  for (const locale of locales) {
+    const catalog = JSON.parse(read(`locales/${locale}/core.json`));
+    const message = catalog["core.time.remaining"];
+    assert.equal(typeof message, "string", `${locale} core.time.remaining 누락`);
+    assert.deepEqual(
+      [...message.matchAll(/\{\s*([A-Za-z][\w]*)/g)].map((match) => match[1]),
+      ["duration"],
+      `${locale} ICU 변수 계약`,
+    );
+    assert.equal(
+      new IntlMessageFormat(message, locale).format({ duration: "1 day" }),
+      expected[locale],
+    );
+  }
+});
+
+test("아이 초대의 페어링 코드는 번역 원문이나 로그가 아니라 ICU 변수로만 전달한다", () => {
+  const source = read("src/screens/feature/ChildInvite.tsx");
+
+  assert.match(source, /parent\.childInvite\.copyUnsupported[\s\S]{0,160}pairCode/);
+  assert.match(source, /parent\.childInvite\.shareText[\s\S]{0,220}pairCode[\s\S]{0,120}pairLink/);
+  assert.match(source, /parent\.childInvite\.shareFallback[\s\S]{0,160}pairCode/);
+  assert.doesNotMatch(source, /console\.(?:log|info|warn|error)\([^)]*pairCode/s);
+});

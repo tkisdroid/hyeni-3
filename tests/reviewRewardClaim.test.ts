@@ -25,15 +25,29 @@ test("useReviewReward는 기존 family_review_rewards 조회만 수행한다", (
 
 test("부모 설정은 신규 지급 CTA를 제거하고 종료·기존 혜택 유지 문구를 구분한다", () => {
   const settings = read("src/screens/parent/ParentSettings.tsx");
-  assert.match(settings, /스토어 방문 혜택의 신규 지급은 종료되었어요/);
-  assert.match(settings, /기존에 받은 스토어 방문 혜택은 그대로 유지돼요/);
+  const koParent = JSON.parse(read("locales/ko/parent.json")) as Record<string, string>;
+  assert.equal(
+    koParent["parent.parentSettings.copy002"],
+    "스토어 방문 혜택의 신규 지급은 종료되었어요",
+  );
+  assert.equal(
+    koParent["parent.parentSettings.copy001"],
+    "기존에 받은 스토어 방문 혜택은 그대로 유지돼요",
+  );
+  assert.match(settings, /parent\.parentSettings\.copy002/);
+  assert.match(settings, /parent\.parentSettings\.copy001/);
   assert.doesNotMatch(settings, /스토어 방문 혜택 받기/);
   assert.doesNotMatch(settings, /useClaimReviewReward|runReviewRewardClaimFlow|openGooglePlayReviewListing/);
 });
 
 test("기존 reviewed 가족 안내는 신규 지급으로 오해되지 않게 유지 상태로 표현한다", () => {
   const trialLock = read("src/screens/feature/TrialLock.tsx");
-  assert.match(trialLock, /기존 스토어 방문 혜택 유지 중 · 장소를 3개까지 저장할 수 있어요/);
-  assert.doesNotMatch(trialLock, /혜택 유지 중 · 일정/);
-  assert.doesNotMatch(trialLock, /스토어 방문 혜택 적용 중/);
+  const koBilling = JSON.parse(read("locales/ko/billing.json")) as Record<string, string>;
+  assert.match(trialLock, /billing\.trialLock\.reviewed/);
+  assert.equal(
+    koBilling["billing.trialLock.reviewed"],
+    "기존 스토어 방문 혜택 유지 중 · 장소를 3개까지 저장할 수 있어요",
+  );
+  assert.doesNotMatch(koBilling["billing.trialLock.reviewed"], /혜택 유지 중 · 일정/);
+  assert.doesNotMatch(koBilling["billing.trialLock.reviewed"], /스토어 방문 혜택 적용 중/);
 });

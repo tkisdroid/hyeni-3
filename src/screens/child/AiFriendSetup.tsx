@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Check, ChevronLeft } from "lucide-react";
+import { useIntl } from "react-intl";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
@@ -8,6 +9,10 @@ import { useMyFamily } from "@/queries/useFamily";
 import { useAiFriendPublicSettings, useSetAiFriendName } from "@/queries/useAi";
 import { resolveAiFriendDisplayName } from "@/transform/aiFriendName";
 import { aiBuddyFaceAsset } from "@/transform/aiBuddyEmotion";
+import {
+  aiFriendPersonaMessageId,
+  type AiFriendPersonaKey,
+} from "@/transform/aiFriendDisplay";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./AiFriendSetup.css";
@@ -18,6 +23,7 @@ import "./AiFriendSetup.css";
  * animal 은 public/assets/animal/*.webp 파일명 — 이미지 있는 6종만 노출한다(🐥/🐯 자산 없음).
  */
 export interface FriendPersona {
+  key: AiFriendPersonaKey;
   emoji: string;
   name: string;
   species: string;
@@ -27,12 +33,12 @@ export interface FriendPersona {
 }
 
 export const AI_FRIEND_PERSONAS: FriendPersona[] = [
-  { emoji: "🐰", name: "통통이", species: "토끼", tone: "활발하고 친근한", greeting: "안녕! 나 통통이야. 오늘은 뭐가 궁금해?", animal: "rabbit" },
-  { emoji: "🐱", name: "야옹이", species: "고양이", tone: "장난스럽고 재미있는", greeting: "야옹~ 나는 야옹이야! 오늘 재밌는 일 있었어?", animal: "cat" },
-  { emoji: "🦊", name: "꼬미", species: "여우", tone: "깜찍하고 귀여운", greeting: "헤헤, 나는 꼬미야! 같이 얘기하자, 응?", animal: "fox" },
-  { emoji: "🐶", name: "멍이", species: "강아지", tone: "씩씩하고 충직한", greeting: "왈! 나는 멍이야. 내가 항상 네 편이야!", animal: "dog" },
-  { emoji: "🐻", name: "곰돌이", species: "곰", tone: "포근하고 든든한", greeting: "안녕, 나는 곰돌이야. 오늘도 잘 지냈어?", animal: "bear" },
-  { emoji: "🐼", name: "푸푸", species: "판다", tone: "평화롭고 순한", greeting: "안녕, 나는 푸푸야. 마음이 편해지는 이야기 해줄게.", animal: "panda" },
+  { key: "rabbit", emoji: "🐰", name: "통통이", species: "토끼", tone: "활발하고 친근한", greeting: "안녕! 나 통통이야. 오늘은 뭐가 궁금해?", animal: "rabbit" },
+  { key: "cat", emoji: "🐱", name: "야옹이", species: "고양이", tone: "장난스럽고 재미있는", greeting: "야옹~ 나는 야옹이야! 오늘 재밌는 일 있었어?", animal: "cat" },
+  { key: "fox", emoji: "🦊", name: "꼬미", species: "여우", tone: "깜찍하고 귀여운", greeting: "헤헤, 나는 꼬미야! 같이 얘기하자, 응?", animal: "fox" },
+  { key: "dog", emoji: "🐶", name: "멍이", species: "강아지", tone: "씩씩하고 충직한", greeting: "왈! 나는 멍이야. 내가 항상 네 편이야!", animal: "dog" },
+  { key: "bear", emoji: "🐻", name: "곰돌이", species: "곰", tone: "포근하고 든든한", greeting: "안녕, 나는 곰돌이야. 오늘도 잘 지냈어?", animal: "bear" },
+  { key: "panda", emoji: "🐼", name: "푸푸", species: "판다", tone: "평화롭고 순한", greeting: "안녕, 나는 푸푸야. 마음이 편해지는 이야기 해줄게.", animal: "panda" },
 ];
 
 export const DEFAULT_CHARACTER = "🐰";
@@ -82,6 +88,7 @@ export function writeSelectedCharacter(
 const MAX_NAME_LEN = 30;
 
 export function AiFriendSetup() {
+  const intl = useIntl();
   const navigate = useNavigate();
   const { show } = useToast();
 
@@ -113,6 +120,8 @@ export function AiFriendSetup() {
   const [customName, setCustomName] = useState<string | null>(null);
 
   const persona = personaFor(selected);
+  const personaSpecies = intl.formatMessage({ id: aiFriendPersonaMessageId(persona.key, "species") });
+  const personaTone = intl.formatMessage({ id: aiFriendPersonaMessageId(persona.key, "tone") });
   const serverName = publicSettings?.ai_friend_name || "";
   const childMember = userId
     ? family?.members.find((m) => m.role === "child" && m.user_id === userId) ?? null
@@ -131,7 +140,7 @@ export function AiFriendSetup() {
 
   const save = () => {
     if (!aiFriendSetupDataReady || !childMember || !familyId || !userId || setNameMutation.isPending) {
-      show("내 가족과 AI 친구 설정을 확인한 뒤 다시 해줘", "⚠️");
+      show(intl.formatMessage({ id: "child.aiSetup.notReady" }), "⚠️");
       return;
     }
     writeSelectedCharacter(familyId, userId, selected);
@@ -144,7 +153,7 @@ export function AiFriendSetup() {
       setNameMutation.mutate(finalName, {
         onSuccess: () => goChat(),
         onError: () => {
-          show("이름은 저장 못 했지만 대화는 할 수 있어!", "💜");
+          show(intl.formatMessage({ id: "child.aiSetup.nameSaveFailed" }), "💜");
           goChat();
         },
       });
@@ -156,10 +165,10 @@ export function AiFriendSetup() {
   if (aiFriendSetupQueryState === "loading") {
     return (
       <ScreenQueryState
-        screenTitle="내 AI 친구"
+        screenTitle={intl.formatMessage({ id: "child.aiSetup.title" })}
         state="loading"
-        heading="내 AI 친구를 불러오고 있어"
-        description="저장한 이름과 가족 연결을 확인하는 중이야."
+        heading={intl.formatMessage({ id: "child.aiSetup.loading.title" })}
+        description={intl.formatMessage({ id: "child.aiSetup.loading.description" })}
         onBack={() => navigate(-1)}
       />
     );
@@ -168,15 +177,15 @@ export function AiFriendSetup() {
   if (aiFriendSetupQueryState === "error" || aiFriendSetupDataMissing) {
     return (
       <ScreenQueryState
-        screenTitle="내 AI 친구"
+        screenTitle={intl.formatMessage({ id: "child.aiSetup.title" })}
         state="error"
-        heading="AI 친구 설정을 불러오지 못했어"
-        description="저장한 이름을 덮어쓰지 않도록 잠깐 닫았어. 다시 확인해 줘."
+        heading={intl.formatMessage({ id: "child.aiSetup.loadError.title" })}
+        description={intl.formatMessage({ id: "child.aiSetup.loadError.description" })}
         onBack={() => navigate(-1)}
         onRetry={() => void retryAiFriendSetup()}
         retrying={aiFriendSetupRefetching}
-        retryLabel="다시 확인하기"
-        retryingLabel="다시 확인하고 있어…"
+        retryLabel={intl.formatMessage({ id: "child.action.checkAgain" })}
+        retryingLabel={intl.formatMessage({ id: "child.action.checkingAgain" })}
       />
     );
   }
@@ -184,13 +193,13 @@ export function AiFriendSetup() {
   if (!childMember) {
     return (
       <ScreenQueryState
-        screenTitle="내 AI 친구"
+        screenTitle={intl.formatMessage({ id: "child.aiSetup.title" })}
         state="empty"
-        heading="내 가족 연결을 찾지 못했어"
-        description="부모님과 다시 연결하면 AI 친구를 고를 수 있어."
+        heading={intl.formatMessage({ id: "child.familyConnection.missing" })}
+        description={intl.formatMessage({ id: "child.aiSetup.familyMissingDescription" })}
         onBack={() => navigate(-1)}
         onRetry={() => navigate("/onboarding")}
-        retryLabel="연결 화면으로 가기"
+        retryLabel={intl.formatMessage({ id: "child.action.goToConnection" })}
       />
     );
   }
@@ -201,20 +210,21 @@ export function AiFriendSetup() {
         <button
           type="button"
           className="afs-back hy-press"
-          aria-label="뒤로"
+          aria-label={intl.formatMessage({ id: "child.action.back" })}
           onClick={() => navigate(-1)}
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="var(--hy-accent-text)" />
         </button>
-        <span className="afs-title">내 AI 친구</span>
+        <span className="afs-title">{intl.formatMessage({ id: "child.aiSetup.title" })}</span>
       </header>
 
       <div className="afs-body">
         {aiFriendSetupDataEmpty && (
           <div className="sqs-inline-empty">
-            아직 저장한 AI 친구 이름이 없어. 마음에 드는 친구부터 골라 봐.
+            {intl.formatMessage({ id: "child.aiSetup.empty" })}
           </div>
         )}
+        {/* 선택한 친구 미리보기 */}
         {/* 내 AI 친구 얼굴 — 플로팅 버튼·대화 화면과 같은 얼굴 하나를 쓴다.
             동물 그림을 얼굴로 쓰면 대화에 들어갔을 때 친구가 둘처럼 보인다. */}
         <div className="afs-preview">
@@ -222,11 +232,16 @@ export function AiFriendSetup() {
             <img src={asset(aiBuddyFaceAsset("happy"))} alt="" />
           </div>
           <div className="afs-preview__name">{effectiveName}</div>
-          <div className="afs-preview__tone">{persona.tone} 말투</div>
+          <div className="afs-preview__tone">
+            {intl.formatMessage(
+              { id: "child.aiSetup.personaSummary" },
+              { tone: personaTone, species: personaSpecies },
+            )}
+          </div>
         </div>
 
-        {/* 동물 카드는 얼굴이 아니라 성격을 고르는 카드다. */}
-        <div className="afs-label">성격 고르기</div>
+        {/* 캐릭터 고르기 */}
+        <div className="afs-label">{intl.formatMessage({ id: "child.aiSetup.chooseFriend" })}</div>
         <div className="afs-grid">
           {AI_FRIEND_PERSONAS.map((p) => (
             <button
@@ -242,24 +257,24 @@ export function AiFriendSetup() {
         </div>
 
         {/* 이름 짓기 */}
-        <div className="afs-label">이름 짓기</div>
+        <div className="afs-label">{intl.formatMessage({ id: "child.aiSetup.nameFriend" })}</div>
         <input
           className="afs-name-field"
           value={effectiveName}
-          aria-label="AI 친구 이름"
+          aria-label={intl.formatMessage({ id: "child.aiSetup.nameAria" })}
           maxLength={MAX_NAME_LEN}
           placeholder={persona.name}
           onChange={(e) => setCustomName(e.target.value)}
         />
 
-        {/* 고른 성격이 어떤 말투인지 확인만 시켜 준다(위 "성격 고르기"와 중복 라벨 금지). */}
-        <div className="afs-label">이 친구 말투</div>
+        {/* 성격 · 말투(친구를 고르면 정해져) */}
+        <div className="afs-label">{intl.formatMessage({ id: "child.aiSetup.personality" })}</div>
         <div className="afs-traits">
           <span className="afs-chip afs-chip--on">
-            {persona.tone}
+            {personaTone}
             <Check size={16} strokeWidth={2.4} aria-hidden="true" />
           </span>
-          <span className="afs-trait-hint">성격을 고르면 말투가 정해져</span>
+          <span className="afs-trait-hint">{intl.formatMessage({ id: "child.aiSetup.personalityHint" })}</span>
         </div>
 
         <button
@@ -268,7 +283,9 @@ export function AiFriendSetup() {
           onClick={save}
           disabled={setNameMutation.isPending} aria-busy={setNameMutation.isPending}
         >
-          {setNameMutation.isPending ? "저장 중…" : "저장하고 대화하기"}
+          {intl.formatMessage({
+            id: setNameMutation.isPending ? "child.action.saving" : "child.aiSetup.saveAndChat",
+          })}
         </button>
       </div>
     </div>

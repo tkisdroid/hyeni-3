@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useIntl } from "react-intl";
 import { useLocation, useNavigate } from "react-router";
 import { MapPin, Bell, BatteryCharging, Mic } from "lucide-react";
 import type { ReactNode } from "react";
@@ -13,44 +14,58 @@ import {
 import "./PermDenied.css";
 
 // 아이콘 색은 토큰 사용(하드코딩 hex 금지 — 온보딩 신뢰 순간의 화면).
-const COPY: Record<PermissionKind, { icon: ReactNode; title: string; sub: string }> = {
-  loc: {
-    icon: <MapPin size={24} strokeWidth={2.2} color="var(--blue-500)" />,
-    title: "위치 권한이 필요해요",
-    sub: "아이 위치와 도착·출발 알림에 사용해요.",
-  },
-  noti: {
-    icon: <Bell size={24} strokeWidth={2.2} color="var(--gold-text)" />,
-    title: "알림 권한이 필요해요",
-    sub: "일정·도착·안전 소식을 알려드려요.",
-  },
-  battery: {
-    icon: <BatteryCharging size={24} strokeWidth={2.2} color="var(--mint-text)" />,
-    title: "백그라운드 실행이 필요해요",
-    sub: "앱을 닫아도 위치 알림이 이어지도록 설정해 주세요.",
-  },
-  mic: {
-    icon: <Mic size={24} strokeWidth={2.2} color="var(--lav-500)" />,
-    title: "마이크 권한이 필요해요",
-    sub: "주변 소리 듣기를 사용할 때 필요해요.",
-  },
+const PERMISSION_ICONS: Record<PermissionKind, ReactNode> = {
+  loc: <MapPin size={24} strokeWidth={2.2} color="var(--blue-500)" />,
+  noti: <Bell size={24} strokeWidth={2.2} color="var(--gold-text)" />,
+  battery: <BatteryCharging size={24} strokeWidth={2.2} color="var(--mint-text)" />,
+  mic: <Mic size={24} strokeWidth={2.2} color="var(--lav-500)" />,
 };
 
-const CHILD_COPY: Record<PermissionKind, { title: string; sub: string }> = {
-  loc: { title: "위치 권한이 필요해", sub: "내 위치와 도착·출발 알림에 사용해." },
-  noti: { title: "알림 권한이 필요해", sub: "일정·도착·안전 소식을 알려 줘." },
-  battery: { title: "백그라운드 실행이 필요해", sub: "앱을 닫아도 위치 알림이 이어지도록 설정해 줘." },
-  mic: { title: "마이크 권한이 필요해", sub: "주변 소리 듣기를 사용할 때 필요해." },
+const PERMISSION_COPY_IDS: Record<PermissionKind, {
+  childTitle: string;
+  formalTitle: string;
+  childDescription: string;
+  formalDescription: string;
+}> = {
+  loc: {
+    childTitle: "shared.permDenied.loc.title.child",
+    formalTitle: "shared.permDenied.loc.title.formal",
+    childDescription: "shared.permDenied.loc.description.child",
+    formalDescription: "shared.permDenied.loc.description.formal",
+  },
+  noti: {
+    childTitle: "shared.permDenied.notification.title.child",
+    formalTitle: "shared.permDenied.notification.title.formal",
+    childDescription: "shared.permDenied.notification.description.child",
+    formalDescription: "shared.permDenied.notification.description.formal",
+  },
+  battery: {
+    childTitle: "shared.permDenied.battery.title.child",
+    formalTitle: "shared.permDenied.battery.title.formal",
+    childDescription: "shared.permDenied.battery.description.child",
+    formalDescription: "shared.permDenied.battery.description.formal",
+  },
+  mic: {
+    childTitle: "shared.permDenied.microphone.title.child",
+    formalTitle: "shared.permDenied.microphone.title.formal",
+    childDescription: "shared.permDenied.microphone.description.child",
+    formalDescription: "shared.permDenied.microphone.description.formal",
+  },
 };
 
 /** C-15 권한 없음(재요청). OS 설정에서 허용 안내 + 복귀 시 자동 재확인. */
 export function PermDenied() {
+  const intl = useIntl();
   const navigate = useNavigate();
   const { role } = useAuth();
   const { state } = useLocation();
   const kind: PermissionKind = (state as { kind?: PermissionKind } | null)?.kind ?? "loc";
-  const c = COPY[kind];
-  const childCopy = role === "child" ? CHILD_COPY[kind] : null;
+  const childTone = role === "child";
+  const copyIds = PERMISSION_COPY_IDS[kind];
+  const nativePlatform = isNativePlatform();
+  const message = (childId: string, formalId: string): string => intl.formatMessage({
+    id: childTone ? childId : formalId,
+  });
   const [permission, setPermission] = useState<PermissionState | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -76,7 +91,7 @@ export function PermDenied() {
     };
     void check();
     document.addEventListener("visibilitychange", onVisibility);
-    if (isNativePlatform()) {
+    if (nativePlatform) {
       void import("@capacitor/app")
         .then(async ({ App }) => {
           const listener = await App.addListener("appStateChange", (next) => {
@@ -94,7 +109,7 @@ export function PermDenied() {
       document.removeEventListener("visibilitychange", onVisibility);
       void appListener?.remove();
     };
-  }, [kind, navigate]);
+  }, [kind, nativePlatform, navigate]);
 
   const requestAccess = async () => {
     if (busy) return;
@@ -110,20 +125,46 @@ export function PermDenied() {
 
   return (
     <div className="pd-root">
-      <div className="pd-card">
-        <span className="pd-icon">{c.icon}</span>
-        <div className="pd-title">{childCopy?.title ?? c.title}</div>
-        <div className="pd-sub">{childCopy?.sub ?? c.sub}</div>
-        <div className="pd-steps">
-          {kind === "battery" && isNativePlatform()
-            ? "혜니캘린더 → 제한 없음(또는 최적화 안 함)"
-            : isNativePlatform()
-            ? "설정 → 앱 → 혜니캘린더 → 권한"
-            : "주소창 자물쇠 → 사이트 설정 → 허용"}
+      <div
+        className="pd-card"
+        aria-label={message(
+          "shared.permDenied.screenLabel.child",
+          "shared.permDenied.screenLabel.formal",
+        )}
+      >
+        <span className="pd-icon">{PERMISSION_ICONS[kind]}</span>
+        <div className="pd-title">
+          {message(copyIds.childTitle, copyIds.formalTitle)}
         </div>
-        {permission?.supported === false && !isNativePlatform() && (
+        <div className="pd-sub">
+          {message(copyIds.childDescription, copyIds.formalDescription)}
+        </div>
+        <div className="pd-steps">
+          {intl.formatMessage({
+            id: kind === "battery" && nativePlatform
+              ? "shared.permDenied.steps.batteryNative"
+              : nativePlatform
+                ? "shared.permDenied.steps.permissionNative"
+                : "shared.permDenied.steps.web",
+          })}
+        </div>
+        <div className="pd-steps">
+          {nativePlatform
+            ? message(
+                "shared.permDenied.limit.native.child",
+                "shared.permDenied.limit.native.formal",
+              )
+            : message(
+                "shared.permDenied.limit.web.child",
+                "shared.permDenied.limit.web.formal",
+              )}
+        </div>
+        {permission?.supported === false && !nativePlatform && (
           <div className="pd-steps">
-            {role === "child" ? "이 브라우저에서는 자동 확인이 어려워." : "이 브라우저에서는 자동 확인이 어려워요."}
+            {message(
+              "shared.permDenied.unsupportedBrowser.child",
+              "shared.permDenied.unsupportedBrowser.formal",
+            )}
           </div>
         )}
         <button
@@ -132,10 +173,26 @@ export function PermDenied() {
           onClick={requestAccess}
           disabled={busy} aria-busy={busy}
         >
-          {busy ? "확인 중…" : isNativePlatform() ? "설정 열기" : "권한 요청"}
+          {busy
+            ? message(
+                "shared.permDenied.action.checking.child",
+                "shared.permDenied.action.checking.formal",
+              )
+            : nativePlatform
+              ? message(
+                  "shared.permDenied.action.openSettings.child",
+                  "shared.permDenied.action.openSettings.formal",
+                )
+              : message(
+                  "shared.permDenied.action.request.child",
+                  "shared.permDenied.action.request.formal",
+                )}
         </button>
         <button type="button" className="pd-recheck hy-press" onClick={() => void recheck()}>
-          다시 확인
+          {message(
+            "shared.permDenied.action.recheck.child",
+            "shared.permDenied.action.recheck.formal",
+          )}
         </button>
       </div>
     </div>

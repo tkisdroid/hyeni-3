@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
+import { useIntl } from "react-intl";
 import { Bell, ChevronLeft, FileClock, Mic, Phone, Timer, VolumeX } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
@@ -51,18 +52,18 @@ const WAVE_DELAYS = [
 const TRUST_CARDS = [
   {
     icon: Bell,
-    title: "아이에게 알림이 가요",
-    text: "위급 확인이라 아이가 누르지 않아도 연결되고, 듣는 동안 아이 화면에 계속 표시돼요.",
+    titleId: "notifications.remoteAudio.visibleToChildTitle",
+    textId: "notifications.remoteAudio.visibleToChild",
   },
   {
     icon: Timer,
-    title: "1분 후 자동 종료돼요",
-    text: "위급 상황 확인을 위한 짧은 청취만 지원해요.",
+    titleId: "notifications.remoteAudio.oneMinuteLimit",
+    textId: "notifications.remoteAudio.oneMinuteDetail",
   },
   {
     icon: FileClock,
-    title: "기록이 남아요",
-    text: "가족의 안전과 투명성을 위해 청취 기록을 남겨요.",
+    titleId: "notifications.remoteAudio.auditTitle",
+    textId: "notifications.remoteAudio.auditRecorded",
   },
 ] as const;
 
@@ -70,6 +71,7 @@ const pad2 = (n: number): string => String(n).padStart(2, "0");
 
 /** 주변소리: 대기 화면 → '듣는 중' 오버레이(웨이브) 토글. */
 export function RemoteAudio() {
+  const intl = useIntl();
   const navigate = useNavigate();
   const { show } = useToast();
   const { familyId, userId } = useAuth();
@@ -122,13 +124,15 @@ export function RemoteAudio() {
     }
     return activeChild;
   }, [routeChildUserId, childMembers, activeChild]);
-  const childName = childMember?.name || "아이";
+  const childName = childMember?.name || intl.formatMessage({ id: "notifications.location.childFallback" });
   // 위치는 대상 아이 것만(타 아이 위치 폴백 금지 — 오노출 방지).
   const childLoc = childMember?.user_id
     ? locations?.find((l) => l.user_id === childMember.user_id) ?? null
     : null;
   const locationLabel = useLocationLabels(childLoc ? [childLoc] : [], places);
-  const childPlace = childLoc ? locationLabel(childLoc) : "위치 확인 중";
+  const childPlace = childLoc
+    ? locationLabel(childLoc)
+    : intl.formatMessage({ id: "notifications.remoteAudio.locationChecking" });
 
   // 부모가 상황을 확인한 직후 바로 연락할 수 있도록 현재 청취 대상 아이에게 전화한다.
   // iPhone PWA에서는 placePhoneCall의 tel: 폴백으로 시스템 전화 화면을 연다.
@@ -275,28 +279,28 @@ export function RemoteAudio() {
     if (!listening) return;
     if (sessionTiming.phase === "request_expired") {
       endListenRef.current("request_timeout");
-      show("아이 기기가 1분 안에 연결되지 않아 요청을 종료했어요", "⏱️");
+      show(intl.formatMessage({ id: "notifications.remoteAudio.toast" }, { state: "requestExpired" }), "⏱️");
       return;
     }
     if (sessionTiming.phase === "capture_expired") {
       endListenRef.current("timeout");
-      show("1분이 지나 듣기를 종료했어요", "⏱️");
+      show(intl.formatMessage({ id: "notifications.remoteAudio.toast" }, { state: "captureExpired" }), "⏱️");
       return;
     }
     if (sessionTiming.phase === "ended") {
       const reason = sessionStatus?.endReason ?? "timeout";
       endListenRef.current(reason);
       if (reason === "audio_auth_failed") {
-        show("아이 기기의 로그인 확인이 필요해 소리 공유가 중단됐어요", "🔒");
+        show(intl.formatMessage({ id: "notifications.remoteAudio.toast" }, { state: "authFailed" }), "🔒");
       } else if (reason === "audio_upload_failed") {
-        show("소리 연결이 끊겨 듣기를 안전하게 종료했어요", "⚠️");
+        show(intl.formatMessage({ id: "notifications.remoteAudio.toast" }, { state: "uploadFailed" }), "⚠️");
       } else if (reason === "request_timeout") {
-        show("아이 기기가 1분 안에 연결되지 않아 요청을 종료했어요", "⏱️");
+        show(intl.formatMessage({ id: "notifications.remoteAudio.toast" }, { state: "requestExpired" }), "⏱️");
       } else if (reason === "timeout") {
-        show("1분이 지나 듣기를 종료했어요", "⏱️");
+        show(intl.formatMessage({ id: "notifications.remoteAudio.toast" }, { state: "captureExpired" }), "⏱️");
       }
     }
-  }, [listening, sessionStatus?.endReason, sessionTiming.phase, show]);
+  }, [intl, listening, sessionStatus?.endReason, sessionTiming.phase, show]);
 
   // 청크 전송이 끊겼는데 과거 청크만으로 LIVE가 계속 보이지 않도록 즉시 연결 상태를 내린다.
   useEffect(() => {
@@ -344,7 +348,7 @@ export function RemoteAudio() {
   const startListen = async () => {
     if (startInFlightRef.current || requestIdRef.current || endingRef.current) return;
     if (!remoteAudioDataReady) {
-      show("아이와 위치 정보를 확인한 뒤 다시 시도해 주세요.", "⚠️");
+      show(intl.formatMessage({ id: "notifications.remoteAudio.toast" }, { state: "dataNotReady" }), "⚠️");
       return;
     }
     if (!remoteAudioAllowed) {
@@ -358,7 +362,7 @@ export function RemoteAudio() {
     let keepPreparedPlayer = false;
     try {
       if (!familyId || !userId || !childUserId) {
-        show("대상 아이와 가족 정보를 확인한 뒤 다시 시도해 주세요.", "⚠️");
+        show(intl.formatMessage({ id: "notifications.remoteAudio.toast" }, { state: "targetMissing" }), "⚠️");
         return;
       }
 
@@ -374,7 +378,7 @@ export function RemoteAudio() {
       const allowed = await isRemoteListenAllowed(familyId);
       if (!mountedRef.current) return;
       if (!allowed) {
-        show("가족 설정에서 원격 청취가 꺼져 있어요", "🔕");
+        show(intl.formatMessage({ id: "notifications.remoteAudio.toast" }, { state: "disabled" }), "🔕");
         return;
       }
       seenChunksRef.current.clear();
@@ -388,7 +392,7 @@ export function RemoteAudio() {
         return;
       }
       if (!auditSession.id) {
-        show("청취 기록을 안전하게 남길 수 없어 시작하지 않았어요. 잠시 후 다시 시도해 주세요.", "🔒");
+        show(intl.formatMessage({ id: "notifications.remoteAudio.toast" }, { state: "auditUnavailable" }), "🔒");
         return;
       }
       const requestId = auditSession.id;
@@ -415,7 +419,7 @@ export function RemoteAudio() {
           "command_failed",
         );
         if (!mountedRef.current) return;
-        show("아이 기기가 오프라인이거나 알림을 받을 수 없어요. 잠시 후 다시 시도해 주세요.", "⚠️");
+        show(intl.formatMessage({ id: "notifications.remoteAudio.toast" }, { state: "deviceUnavailable" }), "⚠️");
         return;
       }
       if (!res.ok) {
@@ -430,10 +434,10 @@ export function RemoteAudio() {
         );
         if (!mountedRef.current) return;
         if (res.status === 402) {
-          show("주변 소리 듣기는 프리미엄에서 사용할 수 있어요. SOS와 긴급 알림은 무료로 계속 받을 수 있어요.", "⭐");
+          show(intl.formatMessage({ id: "notifications.remoteAudio.toast" }, { state: "premiumOnly" }), "⭐");
         }
-        else if (res.status === 403) show("주 보호자만 원격 청취를 시작할 수 있어요", "🔒");
-        else show("아이 기기가 오프라인이거나 알림을 받을 수 없어요. 잠시 후 다시 시도해 주세요.", "⚠️");
+        else if (res.status === 403) show(intl.formatMessage({ id: "notifications.remoteAudio.toast" }, { state: "primaryOnly" }), "🔒");
+        else show(intl.formatMessage({ id: "notifications.remoteAudio.toast" }, { state: "deviceUnavailable" }), "⚠️");
         return;
       }
       if (res.total === 0) {
@@ -447,7 +451,7 @@ export function RemoteAudio() {
           "no_target_device",
         );
         if (!mountedRef.current) return;
-        show("연결된 아이 기기를 찾지 못했어요. 아이 앱이 설치되어 있고 로그인되어 있는지 확인해 주세요.", "⚠️");
+        show(intl.formatMessage({ id: "notifications.remoteAudio.toast" }, { state: "deviceNotFound" }), "⚠️");
         return;
       }
       // 오디오 수신 시작: 사용자 탭에서 준비한 플레이어 + broadcast(audio_chunk) 구독.
@@ -521,19 +525,22 @@ export function RemoteAudio() {
     setMuted((m) => {
       const next = !m;
       playerRef.current?.setMuted(next);
-      show(next ? "소리를 음소거했어요" : "음소거를 해제했어요", next ? "🔇" : "🔊");
+      show(
+        intl.formatMessage({ id: "notifications.remoteAudio.toast" }, { state: next ? "muted" : "unmuted" }),
+        next ? "🔇" : "🔊",
+      );
       return next;
     });
   };
   // 청취 대상 아이에게 실제 발신(placePhoneCall). 번호 미등록이면 정직하게 안내.
   const callChild = () => {
     if (!callTarget?.phone) {
-      show(`${childName}의 전화번호가 등록되어 있지 않아요`, "📞");
+      show(intl.formatMessage({ id: "notifications.remoteAudio.phoneMissing" }, { child: childName }), "📞");
       return;
     }
-    show(`${callTarget.name}에게 전화를 거는 중…`, "📞");
+    show(intl.formatMessage({ id: "notifications.remoteAudio.calling" }, { child: callTarget.name }), "📞");
     void placePhoneCall(callTarget.phone).then((r) => {
-      if (!r.ok) show("전화를 걸 수 없어요. 전화 앱을 확인해 주세요", "⚠️");
+      if (!r.ok) show(intl.formatMessage({ id: "notifications.remoteAudio.toast" }, { state: "callFailed" }), "⚠️");
     });
   };
 
@@ -543,32 +550,35 @@ export function RemoteAudio() {
     ? `${pad2(Math.floor(remaining / 60))}:${pad2(remaining % 60)}`
     : "--:--";
   const listenEyebrow = receiving
-    ? "주변 소리 듣는 중"
+    ? intl.formatMessage({ id: "notifications.remoteAudio.listenEyebrow" }, { state: "receiving" })
     : consentConfirmed
-      ? "기기 확인 · 소리 연결 중"
+      ? intl.formatMessage({ id: "notifications.remoteAudio.listenEyebrow" }, { state: "confirmed" })
     : waitingHint
-      ? "응답 기다리는 중"
-      : "아이 기기 연결 중";
-  const liveLabel = receiving ? "LIVE" : consentConfirmed ? "확인됨" : waitingHint ? "대기" : "연결 중";
+      ? intl.formatMessage({ id: "notifications.remoteAudio.listenEyebrow" }, { state: "waiting" })
+      : intl.formatMessage({ id: "notifications.remoteAudio.listenEyebrow" }, { state: "connecting" });
+  const liveLabel = intl.formatMessage(
+    { id: "notifications.remoteAudio.liveLabel" },
+    { state: receiving ? "receiving" : consentConfirmed ? "confirmed" : waitingHint ? "waiting" : "connecting" },
+  );
   const listenFoot = receiving
-    ? "소리가 연결됐어요"
+    ? intl.formatMessage({ id: "notifications.remoteAudio.listenFoot" }, { state: "receiving" })
     : consentConfirmed
-      ? "아이 기기를 확인했어요. 소리를 연결하고 있어요"
+      ? intl.formatMessage({ id: "notifications.remoteAudio.listenFoot" }, { state: "confirmed" })
     : waitingHint
       ? sessionStatusQuery.isError
-        ? "아이 응답과 서버 상태를 다시 확인하고 있어요"
-        : "아이 기기 응답 대기"
-      : "아이 기기에서 소리를 여는 중이에요";
+        ? intl.formatMessage({ id: "notifications.remoteAudio.listenFoot" }, { state: "rechecking" })
+        : intl.formatMessage({ id: "notifications.remoteAudio.listenFoot" }, { state: "waiting" })
+      : intl.formatMessage({ id: "notifications.remoteAudio.listenFoot" }, { state: "connecting" });
 
   // 청취가 시작된 뒤의 일시적 재조회 실패는 중지 동선을 가리지 않는다.
   // 대기 상태에서는 대상·위치·가족 정본이 모두 확인된 경우에만 원격 청취를 연다.
   if (!listening && remoteAudioQueryState === "loading") {
     return (
       <ScreenQueryState
-        screenTitle="주변 소리 듣기"
+        screenTitle={intl.formatMessage({ id: "notifications.remoteAudio.title" })}
         state="loading"
-        heading="아이 연결 정보를 확인하고 있어요"
-        description="청취 대상과 현재 위치 정보를 안전하게 확인하는 중이에요."
+        heading={intl.formatMessage({ id: "notifications.remoteAudio.loadingTitle" })}
+        description={intl.formatMessage({ id: "notifications.remoteAudio.loadingDescription" })}
         onBack={() => navigate(-1)}
       />
     );
@@ -577,10 +587,10 @@ export function RemoteAudio() {
   if (!listening && (remoteAudioQueryState === "error" || remoteAudioDataMissing)) {
     return (
       <ScreenQueryState
-        screenTitle="주변 소리 듣기"
+        screenTitle={intl.formatMessage({ id: "notifications.remoteAudio.title" })}
         state="error"
-        heading="주변 소리 정보를 확인하지 못했어요"
-        description="확인되지 않은 아이에게 요청이 가지 않도록 시작 기능을 닫았어요."
+        heading={intl.formatMessage({ id: "notifications.remoteAudio.errorTitle" })}
+        description={intl.formatMessage({ id: "notifications.remoteAudio.errorDescription" })}
         onBack={() => navigate(-1)}
         onRetry={() => void retryRemoteAudio()}
         retrying={remoteAudioRefetching}
@@ -591,13 +601,13 @@ export function RemoteAudio() {
   if (!listening && childMembers.length === 0) {
     return (
       <ScreenQueryState
-        screenTitle="주변 소리 듣기"
+        screenTitle={intl.formatMessage({ id: "notifications.remoteAudio.title" })}
         state="empty"
-        heading="연결된 아이가 없어요"
-        description="아이를 연결하면 위급할 때 주변 소리를 들을 수 있어요. 듣는 동안 아이 화면에 계속 표시돼요."
+        heading={intl.formatMessage({ id: "notifications.remoteAudio.emptyTitle" })}
+        description={intl.formatMessage({ id: "notifications.remoteAudio.emptyDescription" })}
         onBack={() => navigate(-1)}
         onRetry={() => navigate("/child-invite")}
-        retryLabel="아이 연결하기"
+        retryLabel={intl.formatMessage({ id: "notifications.remoteAudio.connectChild" })}
       />
     );
   }
@@ -609,7 +619,7 @@ export function RemoteAudio() {
         <button
           type="button"
           className="ra-back hy-press"
-          aria-label="뒤로"
+          aria-label={intl.formatMessage({ id: "core.action.back" })}
           onClick={() => navigate(-1)}
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
@@ -621,23 +631,23 @@ export function RemoteAudio() {
             <span className="ra-halo-ring2" />
             <img className="ra-halo-img" src={asset("ui/menu-remote-audio.webp")} alt="" />
           </div>
-          <div className="ra-title">{childName} 주변 소리 듣기</div>
+          <div className="ra-title">{intl.formatMessage({ id: "notifications.remoteAudio.childTitle" }, { child: childName })}</div>
           <div className="ra-sub">
-            위급할 때 아이 주변 소리를
+            {intl.formatMessage({ id: "notifications.remoteAudio.subtitleLine1" })}
             <br />
-            1분 동안 들을 수 있어요
+            {intl.formatMessage({ id: "notifications.remoteAudio.subtitleLine2" })}
           </div>
           <div className="ra-trust-grid">
             {TRUST_CARDS.map((item) => {
               const TrustIcon = item.icon;
               return (
-                <div key={item.title} className="ra-trust-card hy-explain">
+                <div key={item.titleId} className="ra-trust-card hy-explain">
                   <span className="ra-trust-card__icon" aria-hidden="true">
                     <TrustIcon size={20} strokeWidth={2.2} />
                   </span>
                   <span className="ra-trust-card__body hy-explain__lines">
-                    <span className="ra-trust-card__title hy-explain__line">{item.title}</span>
-                    <span className="ra-trust-card__text hy-explain__line">{item.text}</span>
+                    <span className="ra-trust-card__title hy-explain__line">{intl.formatMessage({ id: item.titleId })}</span>
+                    <span className="ra-trust-card__text hy-explain__line">{intl.formatMessage({ id: item.textId })}</span>
                   </span>
                 </div>
               );
@@ -649,15 +659,15 @@ export function RemoteAudio() {
             onClick={() => navigate("/remote-audio-audit")}
           >
             <FileClock size={18} strokeWidth={2.2} />
-            청취 기록 보기
+            {intl.formatMessage({ id: "notifications.remoteAudio.viewAudit" })}
           </button>
         </div>
 
         <div className="ra-start-wrap">
           <div className="ra-start-note hy-explain">
             <span className="hy-explain__lines">
-              <span className="hy-explain__line">위급할 때만 사용해 주세요.</span>
-              <span className="hy-explain__line">아이 안드로이드 기기에 알림이 뜨고 곧바로 연결돼요.</span>
+              <span className="hy-explain__line">{intl.formatMessage({ id: "notifications.remoteAudio.emergencyOnly" })}</span>
+              <span className="hy-explain__line">{intl.formatMessage({ id: "notifications.remoteAudio.fullScreenSafety" })}</span>
             </span>
           </div>
           <button
@@ -668,7 +678,10 @@ export function RemoteAudio() {
             aria-busy={ending || starting || requestListen.isPending}
           >
             <Mic size={20} strokeWidth={2.2} color="#fff" />
-            {ending ? "종료 확인 중" : starting || requestListen.isPending ? "연결 요청 중" : "듣기 시작"}
+            {intl.formatMessage(
+              { id: "notifications.remoteAudio.startAction" },
+              { state: ending ? "ending" : starting || requestListen.isPending ? "starting" : "ready" },
+            )}
           </button>
         </div>
       </div>
@@ -709,7 +722,10 @@ export function RemoteAudio() {
             <button
               type="button"
               className="ra-ctrl-mute hy-press"
-              aria-label={muted ? "음소거 해제" : "음소거"}
+              aria-label={intl.formatMessage(
+                { id: "notifications.remoteAudio.muteAction" },
+                { state: muted ? "unmute" : "mute" },
+              )}
               aria-pressed={muted}
               data-muted={muted}
               onClick={toggleMute}
@@ -719,7 +735,7 @@ export function RemoteAudio() {
             <button
               type="button"
               className="ra-ctrl-stop hy-press"
-              aria-label="종료"
+              aria-label={intl.formatMessage({ id: "notifications.remoteAudio.stop" })}
               onClick={stopListen}
             >
               <span className="ra-stop-square" />
@@ -727,7 +743,7 @@ export function RemoteAudio() {
             <button
               type="button"
               className="ra-ctrl-call hy-press"
-              aria-label={`${childName}에게 전화`}
+              aria-label={intl.formatMessage({ id: "notifications.remoteAudio.callChild" }, { child: childName })}
               onClick={callChild}
             >
               <Phone size={24} strokeWidth={2.2} color="#fff" />
@@ -753,7 +769,7 @@ export function RemoteAudio() {
                 draft: { childUserId },
               })
             : false;
-          if (!saved) throw new Error("청취 대상을 안전하게 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+          if (!saved) throw new Error(intl.formatMessage({ id: "notifications.remoteAudio.toast" }, { state: "targetSaveFailed" }));
           navigate("/subscription");
         }}
       />

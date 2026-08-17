@@ -5,6 +5,7 @@
  * `prefers-reduced-motion` 에서는 CSS 가 조각을 숨기고 애니메이션을 끈다(움직임 없이 문구만).
  */
 import { useEffect, useMemo } from "react";
+import { useIntl } from "react-intl";
 import { asset } from "@/lib/assets";
 import "./ChildSheet.css";
 
@@ -20,6 +21,7 @@ export interface CelebrateProps {
 }
 
 export function Celebrate({ icon, sub, onClose }: CelebrateProps) {
+  const intl = useIntl();
   const pieces = useMemo(
     () =>
       Array.from({ length: 16 }, (_, i) => ({
@@ -44,7 +46,12 @@ export function Celebrate({ icon, sub, onClose }: CelebrateProps) {
 
   return (
     <div className="ks-celebrate" role="status" aria-live="polite">
-      <button type="button" className="ks-celebrate__dim" aria-label="닫기" onClick={onClose} />
+      <button
+        type="button"
+        className="ks-celebrate__dim"
+        aria-label={intl.formatMessage({ id: "child.action.close" })}
+        onClick={onClose}
+      />
       {pieces.map((p, i) => (
         <span
           key={i}
@@ -62,7 +69,7 @@ export function Celebrate({ icon, sub, onClose }: CelebrateProps) {
       ))}
       <div className="ks-celebrate__box">
         <img className="ks-celebrate__img" src={asset(icon)} alt="" />
-        <div className="ks-celebrate__title">참 잘했어!</div>
+        <div className="ks-celebrate__title">{intl.formatMessage({ id: "child.celebrate.title" })}</div>
         <div className="ks-celebrate__sub">{sub}</div>
       </div>
     </div>

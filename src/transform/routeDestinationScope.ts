@@ -1,3 +1,6 @@
+import type { CalendarEvent } from "../lib/api/endpoints/schedule.ts";
+import { dateKeyEventStartMs } from "./dateKey.ts";
+
 /**
  * 길찾기 목적지 state는 반드시 계산 대상 아이 member id와 함께 보관한다.
  * 현재 아이와 owner가 다르면 이전 아이의 목적지를 한 프레임도 노출하지 않는다.
@@ -6,6 +9,26 @@ export interface OwnedRouteDestination<T> {
   ownerChildMemberId: string;
   /** undefined=해석 중, null=목적지 없음, T=해석 완료. */
   value: T | null | undefined;
+}
+
+/** 장소가 있는 일정 중 현재 시각 기준 다음 목적지를 가족 time zone 벽시각으로 고른다. */
+export function pickNextEventWithPlace(
+  events: CalendarEvent[] | undefined,
+  nowMs: number,
+  timeZone: string,
+): CalendarEvent | null {
+  const upcoming = (events ?? [])
+    .filter(
+      (event) =>
+        (typeof event.location?.lat === "number" && typeof event.location?.lng === "number")
+        || !!event.location?.address?.trim(),
+    )
+    .map((event) => ({ event, ms: dateKeyEventStartMs(event.date_key, event.time, timeZone) }))
+    .filter((row): row is { event: CalendarEvent; ms: number } => (
+      row.ms != null && row.ms >= nowMs - 60 * 60 * 1000
+    ))
+    .sort((a, b) => a.ms - b.ms);
+  return upcoming[0]?.event ?? null;
 }
 
 export function beginRouteDestinationScope<T>(

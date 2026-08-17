@@ -11,6 +11,11 @@
 import { API_BASE } from "@/config/env";
 import { apiGet, apiPost } from "../client";
 import { ApiError } from "../errors";
+import {
+  collectDataExportSections,
+  serializePublicDataExport,
+  type DataExportSectionUnavailable,
+} from "@/transform/dataExport";
 import type { FamilyMember } from "./family";
 import { fetchEvents, fetchAcademies, type CalendarEvent, type Academy } from "./schedule";
 import { fetchSavedPlaces, fetchDangerZones, type SavedPlace, type DangerZone } from "./location";
@@ -76,22 +81,6 @@ export async function setChildTheme(
   });
 }
 
-function passwordErrorMessage(error: unknown): string {
-  if (!(error instanceof ApiError)) return "비밀번호 변경에 실패했어요";
-  switch (error.message) {
-    case "weak_password":
-      return "새 비밀번호는 6자 이상이어야 해요";
-    case "same_password":
-      return "새 비밀번호가 현재 비밀번호와 같아요";
-    case "password_account_required":
-      return "비밀번호가 있는 계정에서만 변경할 수 있어요";
-    case "current_password_mismatch":
-      return "현재 비밀번호가 맞지 않아요";
-    default:
-      return error.message || "비밀번호 변경에 실패했어요";
-  }
-}
-
 /** 현재 비밀번호 확인 후 새 비밀번호 저장. */
 export async function changePassword(input: {
   currentPassword: string;
@@ -99,13 +88,9 @@ export async function changePassword(input: {
 }): Promise<void> {
   const currentPassword = input.currentPassword;
   const newPassword = input.newPassword;
-  if (!currentPassword) throw new Error("현재 비밀번호를 입력해 주세요");
-  if (newPassword.length < 6) throw new Error("새 비밀번호는 6자 이상이어야 해요");
-  try {
-    await apiPost("/auth/change-password", { currentPassword, newPassword });
-  } catch (error) {
-    throw new Error(passwordErrorMessage(error));
-  }
+  if (!currentPassword) throw new ApiError("current_password_required", 400);
+  if (newPassword.length < 6) throw new ApiError("weak_password", 400);
+  await apiPost("/auth/change-password", { currentPassword, newPassword });
 }
 
 // ── legal(약관 / 개인정보) — Worker 루트 공개 HTML ─────────────────────────
@@ -122,7 +107,7 @@ export interface FamilyDataExport {
     generatedAt: string;
     familyId: string | null;
     note: string;
-    errors: Array<{ section: string; message: string }>;
+    errors: DataExportSectionUnavailable[];
   };
   account: { name: string; role: string } | null;
   members: FamilyMember[];
@@ -143,22 +128,13 @@ export async function buildFamilyDataExport(params: {
   members?: FamilyMember[];
 }): Promise<FamilyDataExport> {
   const { familyId, account = null, members = [] } = params;
-  const errors: Array<{ section: string; message: string }> = [];
   const now = new Date();
-
-  async function safe<T>(section: string, fn: () => Promise<T>): Promise<T | null> {
-    try {
-      return await fn();
-    } catch (e) {
-      errors.push({ section, message: String((e as Error)?.message ?? e) });
-      return null;
-    }
-  }
-
-  const events = await safe("events", () => fetchEvents(familyId));
-  const savedPlaces = await safe("savedPlaces", () => fetchSavedPlaces(familyId));
-  const dangerZones = await safe("dangerZones", () => fetchDangerZones(familyId));
-  const academies = await safe("academies", () => fetchAcademies(familyId));
+  const collected = await collectDataExportSections({
+    events: () => fetchEvents(familyId),
+    savedPlaces: () => fetchSavedPlaces(familyId),
+    dangerZones: () => fetchDangerZones(familyId),
+    academies: () => fetchAcademies(familyId),
+  });
 
   return {
     meta: {
@@ -166,18 +142,15 @@ export async function buildFamilyDataExport(params: {
       generatedAt: now.toISOString(),
       familyId,
       note: "위치 이력과 대화 내용은 용량이 커서 이 내보내기에는 포함되지 않아요. 전체 이력이 필요하면 문의해 주세요.",
-      errors,
+      errors: collected.errors,
     },
     account,
     members,
-    events: events ?? [],
-    savedPlaces: savedPlaces ?? [],
-    dangerZones: dangerZones ?? [],
-    academies: academies ?? [],
+    ...collected.values,
   };
 }
 
 /** 내보내기 객체를 보기 좋은 JSON 문자열로 직렬화. */
 export function serializeDataExport(exportObj: FamilyDataExport): string {
-  return JSON.stringify(exportObj, null, 2);
+  return serializePublicDataExport(exportObj);
 }

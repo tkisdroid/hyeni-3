@@ -7,6 +7,9 @@ import { useSafeBack } from "@/app/useSafeBack";
 import { cleanAlertTitle, isDangerAlert, relativeTime } from "@/transform/notificationsView";
 import type { ParentAlert } from "@/lib/api/endpoints/notifications";
 import { Loading } from "@/components/ui/Loading";
+import { useLocale } from "@/i18n/useLocale";
+import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+import { useIntl } from "react-intl";
 import "./DangerAlert.css";
 
 /**
@@ -23,6 +26,8 @@ function iconOf(type: string): string {
 }
 
 export function DangerAlert() {
+  const intl = useIntl();
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const goBack = useSafeBack("/notifications");
   const { data, isLoading, isError, refetch } = useParentAlerts();
@@ -56,22 +61,26 @@ export function DangerAlert() {
         <button
           type="button"
           className="da-back hy-press"
-          aria-label="뒤로"
+          aria-label={intl.formatMessage({ id: "notifications.action.back" })}
           onClick={goBack}
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="var(--fg-secondary)" />
         </button>
-        <span className="da-title">위험 알림</span>
+        <span className="da-title">{intl.formatMessage({ id: "notifications.danger.title" })}</span>
       </header>
 
       <div className="da-body">
-        {isLoading && <div className="da-state"><Loading label="알림을 불러오는 중" /></div>}
+        {isLoading && (
+          <div className="da-state">
+            <Loading label={intl.formatMessage({ id: "notifications.danger.loading" })} />
+          </div>
+        )}
 
         {isError && !isLoading && (
           <div className="da-state">
-            <span>알림을 불러오지 못했어요</span>
+            <span>{intl.formatMessage({ id: "notifications.danger.loadFailed" })}</span>
             <button type="button" className="da-retry hy-press" onClick={() => refetch()}>
-              다시 시도
+              {intl.formatMessage({ id: "notifications.action.retry" })}
             </button>
           </div>
         )}
@@ -79,8 +88,12 @@ export function DangerAlert() {
         {!isLoading && !isError && !latest && (
           <div className="da-safe">
             <img className="da-safe__img" src={asset("ui/shield-heart.webp")} alt="" />
-            <div className="da-safe__title">최근 위험 알림이 없어요</div>
-            <div className="da-safe__sub">최근 알림 목록에 기록된 위험 알림이 없어요.</div>
+            <div className="da-safe__title">
+              {intl.formatMessage({ id: "notifications.danger.empty.title" })}
+            </div>
+            <div className="da-safe__sub">
+              {intl.formatMessage({ id: "notifications.danger.empty.description" })}
+            </div>
           </div>
         )}
 
@@ -92,9 +105,13 @@ export function DangerAlert() {
                 <span className="da-hero__icon">
                   <img className="da-hero__img" src={asset(iconOf(latest.alert_type))} alt="" />
                 </span>
-                <span className="da-hero__time">{relativeTime(latest.created_at, now)}</span>
+                <span className="da-hero__time">
+                  {relativeTime(latest.created_at, now, locale, LEGACY_FAMILY_TIME_ZONE)}
+                </span>
               </div>
-              <div className="da-hero__title">{cleanAlertTitle(latest.title) || "위험 알림"}</div>
+              <div className="da-hero__title">
+                {cleanAlertTitle(latest.title) || intl.formatMessage({ id: "notifications.danger.title" })}
+              </div>
               {latest.message && <div className="da-hero__msg">{cleanAlertTitle(latest.message)}</div>}
               <button
                 type="button"
@@ -102,14 +119,16 @@ export function DangerAlert() {
                 onClick={() => openMap(latest)}
               >
                 <MapPin size={18} strokeWidth={2.4} />
-                위치 확인하기
+                {intl.formatMessage({ id: "notifications.danger.checkLocation" })}
               </button>
             </div>
 
             {/* 과거 위험 알림 이력 */}
             {rest.length > 0 && (
               <div className="da-group">
-                <div className="da-group__label">지난 위험 알림</div>
+                <div className="da-group__label">
+                  {intl.formatMessage({ id: "notifications.danger.history" })}
+                </div>
                 <div className="da-list">
                   {rest.map((a) => (
                     <button
@@ -122,11 +141,15 @@ export function DangerAlert() {
                         <img className="da-item__img" src={asset(iconOf(a.alert_type))} alt="" />
                       </span>
                       <span className="da-item__main">
-                        <span className="da-item__title">{cleanAlertTitle(a.title) || "위험 알림"}</span>
+                        <span className="da-item__title">
+                          {cleanAlertTitle(a.title) || intl.formatMessage({ id: "notifications.danger.title" })}
+                        </span>
                         {a.message && <span className="da-item__detail">{cleanAlertTitle(a.message)}</span>}
                       </span>
                       <span className="da-item__meta">
-                        <span className="da-item__time">{relativeTime(a.created_at, now)}</span>
+                        <span className="da-item__time">
+                          {relativeTime(a.created_at, now, locale, LEGACY_FAMILY_TIME_ZONE)}
+                        </span>
                         {!a.read && <span className="da-item__dot" />}
                       </span>
                     </button>

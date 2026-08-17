@@ -6,13 +6,15 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf
 
 test("부모 메모 화면은 유효하지 않은 명시적 child를 활성 아이로 대체하지 않는다", () => {
   const source = read("src/screens/shared/MemoChat.tsx");
+  const koShared = JSON.parse(read("locales/ko/shared.json"));
   assert.match(source, /useSearchParams/);
   assert.match(source, /searchParams\.get\("child"\)/);
   assert.match(source, /m\.id === childHint \|\| m\.user_id === childHint/);
   assert.match(source, /if \(childHint\)[\s\S]{0,300}return hintedChild;/);
   assert.doesNotMatch(source, /return hintedChild \?\? activeChild/);
   assert.match(source, /explicitChildMissing/);
-  assert.match(source, /대화 대상 아이를 확인할 수 없어요/);
+  assert.match(source, /shared\.memoChat\.copy016/);
+  assert.equal(koShared["shared.memoChat.copy016"], "대화 대상 아이를 확인할 수 없어요");
 });
 
 test("부모 대화 탭 점은 parent_alert가 아니라 실제 아이별 memo read_by에서 계산한다", () => {
@@ -30,11 +32,11 @@ test("부모·아이 대화 표시는 최근 7일을 조회하고 자정·화면
   const chat = read("src/screens/shared/MemoChat.tsx");
   const dock = read("src/app/ChildDock.tsx");
   const childHome = read("src/screens/child/ChildHome.tsx");
-  assert.match(shell, /useRecentDateKeys\(7\)/);
-  assert.match(chat, /useRecentDateKeys\(7\)/);
-  assert.match(dock, /useRecentDateKeys\(7\)/);
+  assert.match(shell, /useRecentDateKeys\(7, LEGACY_FAMILY_TIME_ZONE\)/);
+  assert.match(chat, /useRecentDateKeys\(7, LEGACY_FAMILY_TIME_ZONE\)/);
+  assert.match(dock, /useRecentDateKeys\(7, LEGACY_FAMILY_TIME_ZONE\)/);
   assert.match(dock, /useMemoThread\(dateKeys,/);
-  assert.match(childHome, /const memoDateKeys = useRecentDateKeys\(7\)/);
+  assert.match(childHome, /const memoDateKeys = useRecentDateKeys\(7, LEGACY_FAMILY_TIME_ZONE\)/);
   assert.match(childHome, /useMemoThread\(memoDateKeys,/);
   assert.doesNotMatch(dock, /todayDateKey\(new Date\(\)\), \[\]/);
   assert.doesNotMatch(childHome, /const now = useMemo\(\(\) => new Date\(\), \[\]\)/);
@@ -43,15 +45,30 @@ test("부모·아이 대화 표시는 최근 7일을 조회하고 자정·화면
 
   const hook = read("src/app/useRecentDateKeys.ts");
   assert.match(hook, /visibilitychange/);
-  assert.match(hook, /millisecondsUntilNextLocalDay/);
+  assert.match(hook, /millisecondsUntilNextDayInTimeZone/);
   assert.match(hook, /setTimeout/);
+});
+
+test("메모 전송은 조회한 KST 최근 범위의 마지막 date_key를 모든 전송 경로에 명시한다", () => {
+  const query = read("src/queries/useMemo.ts");
+  const chat = read("src/screens/shared/MemoChat.tsx");
+  const childHome = read("src/screens/child/ChildHome.tsx");
+
+  assert.match(query, /dateKey:\s*string/);
+  assert.doesNotMatch(query, /dateKey\?:\s*string/);
+  assert.doesNotMatch(query, /todayDateKey/);
+  assert.match(query, /if \(!vars\.dateKey\) throw new Error/);
+  assert.match(chat, /const memoDateKey = latestDateKeyOrNull\(dateKeys\)/);
+  assert.equal(chat.match(/dateKey:\s*memoDateKey/g)?.length, 3);
+  assert.match(childHome, /const memoDateKey = latestDateKeyOrNull\(memoDateKeys\)/);
+  assert.match(childHome, /buildQuickStatusMemo\(actionId, myMember\.id, memoDateKey\)/);
 });
 
 test("아이 member id가 확정되지 않으면 메모 전체 스레드를 조회하거나 전송하지 않는다", () => {
   const query = read("src/queries/useMemo.ts");
   const chat = read("src/screens/shared/MemoChat.tsx");
   assert.match(query, /enabled:[\s\S]{0,160}!!childId/);
-  assert.match(chat, /if \(!scopeChild\)[\s\S]{0,120}대화 대상 아이를 확인할 수 없어요/);
+  assert.match(chat, /if \(!scopeChild\)[\s\S]{0,180}shared\.memoChat\.copy016/);
   assert.match(chat, /disabled=\{[^}]*!scopeChild/);
 });
 

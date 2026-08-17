@@ -16,6 +16,8 @@ import { distanceMeters, parseServerTimestamp } from "./locationView";
 import { isReliableLocationEvidence } from "./locationAccuracy";
 import type { LocationHistoryPoint } from "@/lib/api/endpoints/location";
 import type { SavedPlace } from "@/lib/api/endpoints/location";
+import type { SupportedLocale } from "../i18n/locale.ts";
+import { formatDateTime, formatNumber } from "../i18n/format.ts";
 
 export interface StayPoint {
   /** 클러스터 중심 좌표(머무른 장소). */
@@ -136,19 +138,25 @@ function mergeAdjacent(stays: StayPoint[], mergeWithinM: number): StayPoint[] {
 }
 
 /** 체류 시간(ms) → "1시간 20분" / "35분" 표기. */
-export function formatDwell(ms: number): string {
+export function formatDwell(ms: number, locale: SupportedLocale): string {
   const totalMin = Math.max(1, Math.round(ms / 60000));
   const h = Math.floor(totalMin / 60);
   const m = totalMin % 60;
-  if (h > 0) return m > 0 ? `${h}시간 ${m}분` : `${h}시간`;
-  return `${m}분`;
+  if (h > 0) {
+    return m > 0
+      ? `${formatNumber(h, locale)}시간 ${formatNumber(m, locale)}분`
+      : `${formatNumber(h, locale)}시간`;
+  }
+  return `${formatNumber(m, locale)}분`;
 }
 
 /** epoch ms → "HH:MM"(24h). */
-export function formatClockHM(ms: number): string {
-  const d = new Date(ms);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+export function formatClockHM(
+  ms: number,
+  locale: SupportedLocale,
+  timeZone: string,
+): string {
+  return formatDateTime(ms, { locale, timeZone, timeStyle: "short" });
 }
 
 /** 스테이포인트에서 가장 가까운 저장장소 이름(반경 200m 이내). 없으면 null. */

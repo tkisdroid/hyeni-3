@@ -6,6 +6,8 @@ import { useDialogFocusLifecycle } from "./useDialogFocusLifecycle";
 import { useEnsureReferralCode, useReferralStatus } from "@/queries/useReferrals";
 import { buildReferralLink } from "@/transform/referralLink";
 import "./ReferralRewardPanel.css";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 
 export interface ReferralEligibleChild {
   userId: string;
@@ -22,6 +24,7 @@ export function ReferralRewardPanel({
   eligibleChildren: readonly ReferralEligibleChild[];
 }) {
   const { show } = useToast();
+  const intl = useIntl();
   const titleId = useId();
   const descriptionId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -63,27 +66,36 @@ export function ReferralRewardPanel({
     if (!selectedChild || busy) return;
     ensureCode.mutate(selectedChild, {
       onSuccess: (next) => {
-        show(next.code ? "친구 초대 코드를 준비했어요" : "초대 상태를 갱신했어요", "🎁");
+        show(next.code ? intl.formatMessage({ id: "parent.referralRewardPanel.copy001" }) : intl.formatMessage({ id: "parent.referralRewardPanel.copy002" }), "🎁");
       },
-      onError: (error) => show(error.message || "초대 코드를 준비하지 못했어요", "⚠️"),
+      onError: (error) => show(localizeApiError(error, intl, "formal"), "⚠️"),
     });
   };
 
   const invitationText = status?.code
-    ? `혜니캘린더에서 가족 안전을 함께 시작해요.\n새 가족을 만든 뒤 3일이 지나고, 처음 위치 연결 뒤 48시간 동안 최신 위치가 확인되면 두 가족 모두 추가 AI 대화 10회를 받아요.\n${buildReferralLink(PUBLIC_WEB_BASE, status.code)}`
+    ? intl.formatMessage(
+      { id: "parent.referralRewardPanel.shareBody" },
+      { link: buildReferralLink(PUBLIC_WEB_BASE, status.code) },
+    )
     : "";
 
   const copyInvitation = async () => {
     if (!invitationText || !status?.code) return;
     if (!navigator.clipboard?.writeText) {
-      show(`복사를 지원하지 않아요 · 코드 ${status.code}`, "✏️");
+      show(intl.formatMessage(
+        { id: "parent.referralRewardPanel.clipboardUnsupported" },
+        { code: status.code },
+      ), "✏️");
       return;
     }
     try {
       await navigator.clipboard.writeText(invitationText);
-      show("친구 초대 링크를 복사했어요", "📋");
+      show(intl.formatMessage({ id: "parent.referralRewardPanel.copy003" }), "📋");
     } catch {
-      show(`복사하지 못했어요 · 코드 ${status.code}`, "✏️");
+      show(intl.formatMessage(
+        { id: "parent.referralRewardPanel.clipboardFailed" },
+        { code: status.code },
+      ), "✏️");
     }
   };
 
@@ -91,7 +103,7 @@ export function ReferralRewardPanel({
     if (!invitationText || !status?.code) return;
     if (navigator.share) {
       try {
-        await navigator.share({ title: "혜니캘린더 친구 초대", text: invitationText });
+        await navigator.share({ title: intl.formatMessage({ id: "parent.referralRewardPanel.copy004" }), text: invitationText });
         return;
       } catch {
         // 공유 시트 취소는 실패로 알리지 않는다.
@@ -107,7 +119,7 @@ export function ReferralRewardPanel({
         type="button"
         className="rrp__scrim"
         tabIndex={-1}
-        aria-label="친구 초대 닫기"
+        aria-label={intl.formatMessage({ id: "parent.referralRewardPanel.copy005" })}
         onClick={() => !busy && onClose()}
       />
       <div
@@ -122,14 +134,14 @@ export function ReferralRewardPanel({
         <header className="rrp__header">
           <span className="rrp__header-icon" aria-hidden="true"><Gift size={22} /></span>
           <div className="rrp__header-copy">
-            <h2 id={titleId}>친구 가족 초대</h2>
-            <p id={descriptionId}>함께 시작하면 두 가족 모두 추가 AI 대화 10회를 받아요.</p>
+            <h2 id={titleId}>{intl.formatMessage({ id: "parent.referralRewardPanel.copy006" })}</h2>
+            <p id={descriptionId}>{intl.formatMessage({ id: "parent.referralRewardPanel.copy007" })}</p>
           </div>
           <button
             ref={closeRef}
             type="button"
             className="rrp__close hy-press"
-            aria-label="닫기"
+            aria-label={intl.formatMessage({ id: "parent.parentSettings.copy027" })}
             onClick={onClose}
             disabled={busy}
             aria-busy={busy}
@@ -139,39 +151,39 @@ export function ReferralRewardPanel({
         </header>
 
         <div className="rrp__body">
-          <section className="rrp__policy" aria-label="친구 초대 보상 조건">
-            <div className="rrp__reward">두 가족 모두 추가 AI 대화 10회</div>
-            <p>초대한 가족은 평생 최대 3가족까지 보상을 받을 수 있어요.</p>
+          <section className="rrp__policy" aria-label={intl.formatMessage({ id: "parent.referralRewardPanel.copy008" })}>
+            <div className="rrp__reward">{intl.formatMessage({ id: "parent.referralRewardPanel.copy009" })}</div>
+            <p>{intl.formatMessage({ id: "parent.referralRewardPanel.copy010" })}</p>
             <ol>
-              <li>친구가 이 링크로 처음 새 가족을 만들어요.</li>
-              <li>아이 위치를 처음 연결하고, 48시간 뒤에도 최신 위치가 확인돼요.</li>
-              <li>가족을 만든 뒤 72시간이 지나면 서버가 자동으로 지급해요.</li>
+              <li>{intl.formatMessage({ id: "parent.referralRewardPanel.copy011" })}</li>
+              <li>{intl.formatMessage({ id: "parent.referralRewardPanel.copy012" })}</li>
+              <li>{intl.formatMessage({ id: "parent.referralRewardPanel.copy013" })}</li>
             </ol>
-            <small>추천 기록에는 위치 좌표·주소를 저장하지 않아요. Free와 Premium 기능 구분과 월 4,900원·연 39,000원 가격은 바뀌지 않아요.</small>
+            <small>{intl.formatMessage({ id: "parent.referralRewardPanel.copy014" })}</small>
           </section>
 
           {statusQuery.isLoading ? (
-            <div className="rrp__state" role="status">초대 상태를 불러오고 있어요…</div>
+            <div className="rrp__state" role="status">{intl.formatMessage({ id: "parent.referralRewardPanel.copy015" })}</div>
           ) : statusQuery.isError ? (
             <div className="rrp__state" role="alert">
-              <span>초대 상태를 불러오지 못했어요.</span>
+              <span>{intl.formatMessage({ id: "parent.referralRewardPanel.copy016" })}</span>
               <button type="button" className="rrp__retry hy-press" onClick={() => void statusQuery.refetch()}>
-                <RefreshCw size={17} aria-hidden="true" /> 다시 시도
+                <RefreshCw size={17} aria-hidden="true" /> {intl.formatMessage({ id: "parent.parentHome.copy017" })}
               </button>
             </div>
           ) : eligibleChildren.length === 0 ? (
             <div className="rrp__state" role="status">
-              아이 기기를 연결한 뒤 친구 초대 코드를 만들 수 있어요.
+              {intl.formatMessage({ id: "parent.referralRewardPanel.copy017" })}
             </div>
           ) : status ? (
             <>
-              <section className="rrp__progress" aria-label="친구 초대 진행 상태">
-                <span><CheckCircle2 size={18} aria-hidden="true" /> 성공 {status.successfulCount}/{status.successCap}</span>
-                <span>확인 중 {status.pendingCount}가족</span>
+              <section className="rrp__progress" aria-label={intl.formatMessage({ id: "parent.referralRewardPanel.copy018" })}>
+                <span><CheckCircle2 size={18} aria-hidden="true" /> {intl.formatMessage({ id: "parent.referralRewardPanel.copy019" })} {status.successfulCount}/{status.successCap}</span>
+                <span>{intl.formatMessage({ id: "parent.parentHome.copy033" })} {status.pendingCount}{intl.formatMessage({ id: "parent.category.family" })}</span>
               </section>
 
               <label className="rrp__field" htmlFor="referral-reward-child">
-                <span>초대 보상을 받을 아이</span>
+                <span>{intl.formatMessage({ id: "parent.referralRewardPanel.copy020" })}</span>
                 <select
                   id="referral-reward-child"
                   value={selectedChild}
@@ -188,11 +200,17 @@ export function ReferralRewardPanel({
               </label>
 
               {status.code ? (
-                <div className="rrp__code" aria-label={`친구 초대 코드 ${status.code}`}>
+                <div
+                  className="rrp__code"
+                  aria-label={intl.formatMessage(
+                    { id: "parent.referralRewardPanel.inviteCodeAria" },
+                    { code: status.code },
+                  )}
+                >
                   {status.code}
                 </div>
               ) : (
-                <div className="rrp__code rrp__code--empty">코드를 먼저 만들어 주세요</div>
+                <div className="rrp__code rrp__code--empty">{intl.formatMessage({ id: "parent.referralRewardPanel.copy021" })}</div>
               )}
 
               {status.rewardChildUserId !== selectedChild || !status.code ? (
@@ -203,7 +221,7 @@ export function ReferralRewardPanel({
                   disabled={!selectedChild || busy || !status.canInvite}
                   aria-busy={busy}
                 >
-                  {busy ? "준비 중…" : status.code ? "받을 아이 변경하기" : "초대 코드 만들기"}
+                  {busy ? intl.formatMessage({ id: "parent.referralRewardPanel.copy022" }) : status.code ? intl.formatMessage({ id: "parent.referralRewardPanel.copy023" }) : intl.formatMessage({ id: "parent.referralRewardPanel.copy024" })}
                 </button>
               ) : null}
 
@@ -214,7 +232,7 @@ export function ReferralRewardPanel({
                   onClick={() => void copyInvitation()}
                   disabled={!status.code || !status.canInvite}
                 >
-                  <Copy size={18} aria-hidden="true" /> 링크 복사
+                  <Copy size={18} aria-hidden="true" /> {intl.formatMessage({ id: "parent.referralRewardPanel.copy025" })}
                 </button>
                 <button
                   type="button"
@@ -222,15 +240,15 @@ export function ReferralRewardPanel({
                   onClick={() => void shareInvitation()}
                   disabled={!status.code || !status.canInvite}
                 >
-                  <Share2 size={18} aria-hidden="true" /> 친구에게 공유
+                  <Share2 size={18} aria-hidden="true" /> {intl.formatMessage({ id: "parent.referralRewardPanel.copy026" })}
                 </button>
               </div>
               {!status.canInvite && (
-                <p className="rrp__complete" role="status">세 가족 초대 보상을 모두 받았어요. 고마워요!</p>
+                <p className="rrp__complete" role="status">{intl.formatMessage({ id: "parent.referralRewardPanel.copy027" })}</p>
               )}
             </>
           ) : (
-            <div className="rrp__state" role="status">표시할 초대 상태가 없어요.</div>
+            <div className="rrp__state" role="status">{intl.formatMessage({ id: "parent.referralRewardPanel.copy028" })}</div>
           )}
         </div>
       </div>

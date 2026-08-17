@@ -15,6 +15,7 @@ const loadingCss = readOptional("../src/components/ui/Loading.css");
 const globalCss = readOptional("../src/styles/global.css");
 const dangerZone = readOptional("../src/screens/feature/DangerZoneForm.tsx");
 const authEndpoint = readOptional("../src/lib/api/endpoints/auth.ts");
+const koOnboarding = JSON.parse(readOptional("../locales/ko/onboarding.json"));
 
 test("로그인 오류는 각 입력과 연결되고 첫 오류 필드로 초점을 옮긴다", () => {
   assert.match(onboarding, /validateLoginForm/);
@@ -60,11 +61,17 @@ test("BusyLabel은 장식 스피너를 숨기고 진행 문구를 보조기기�
 
 test("ID·소셜·가입 확인 버튼은 중복 실행을 막은 채 BusyLabel을 사용한다", () => {
   assert.match(onboarding, /import \{ BusyLabel \} from "@\/components\/ui\/BusyLabel"/);
-  assert.match(onboarding, /idle="로그인" pending="로그인 중…"/);
-  assert.match(onboarding, /idle="카카오로 계속하기" pending="카카오 로그인 중…"/);
-  assert.match(onboarding, /idle="Google로 계속하기" pending="Google 로그인 중…"/);
-  assert.match(onboarding, /idle="네이버로 계속하기" pending="네이버 로그인 중…"/);
-  assert.match(onboarding, /idle="인증하고 가입 완료"[\s\S]{0,80}pending="가입 확인 중…"/);
+  for (const [idleId, pendingId, idleText, pendingText] of [
+    ["onboarding.login.submit", "onboarding.login.pending", "로그인", "로그인 중…"],
+    ["onboarding.login.kakao", "onboarding.login.kakaoPending", "카카오로 계속하기", "카카오 로그인 중…"],
+    ["onboarding.login.google", "onboarding.login.googlePending", "Google로 계속하기", "Google 로그인 중…"],
+    ["onboarding.login.naver", "onboarding.login.naverPending", "네이버로 계속하기", "네이버 로그인 중…"],
+    ["onboarding.signup.verify", "onboarding.signup.verifying", "인증하고 가입 완료", "가입 확인 중…"],
+  ]) {
+    assert.match(onboarding, new RegExp(`idle=\\{intl\\.formatMessage\\(\\{ id: "${idleId.replaceAll(".", "\\.")}" \\}\\)\\}[\\s\\S]{0,120}pending=\\{intl\\.formatMessage\\(\\{ id: "${pendingId.replaceAll(".", "\\.")}" \\}\\)\\}`));
+    assert.equal(koOnboarding[idleId], idleText);
+    assert.equal(koOnboarding[pendingId], pendingText);
+  }
   assert.match(onboarding, /onClick=\{loginIdPw\} disabled=\{busy\}/);
   assert.match(onboarding, /onClick=\{verify\}\s+disabled=\{busy\}/);
 });
@@ -95,9 +102,9 @@ test("가입 발송·재전송·완료 확인은 각자 소유한 진행 문구�
   assert.equal((signup.match(/runOwnedAsyncAction\(\{/g) ?? []).length, 2);
   assert.match(signup, /<BackButton onBack=\{\(\) => setPhase\("form"\)\} disabled=\{busy\} \/>/);
   assert.match(signup, /<BackButton onBack=\{onBack\} disabled=\{busy\} \/>/);
-  assert.match(signup, /idle="인증번호 받기"[\s\S]{0,80}pending="인증번호 전송 중…"/);
-  assert.match(signup, /idle="재전송"[\s\S]{0,80}pending="재전송 중…"/);
-  assert.match(signup, /idle="인증하고 가입 완료"[\s\S]{0,80}pending="가입 확인 중…"/);
+  assert.match(signup, /id: "onboarding\.signup\.requestOtp"[\s\S]{0,120}id: "onboarding\.signup\.requestingOtp"/);
+  assert.match(signup, /id: "onboarding\.signup\.resend"[\s\S]{0,120}id: "onboarding\.signup\.resending"/);
+  assert.match(signup, /id: "onboarding\.signup\.verify"[\s\S]{0,120}id: "onboarding\.signup\.verifying"/);
   assert.match(signup, /isAsyncActionTokenFor\(pendingSignupAction, "request-code"\)/);
   assert.match(signup, /isAsyncActionTokenFor\(pendingSignupAction, "verify"\)/);
 });
@@ -107,9 +114,11 @@ test("가입 성공·오류·finally와 세션 채택은 모두 고유 request t
   const end = onboarding.indexOf("/* ── STEP: CONNECT", start);
   const signup = onboarding.slice(start, end);
 
-  assert.match(signup, /runOwnedAsyncAction\(\{[\s\S]*token: requestToken[\s\S]*onSuccess: \(result\) => \{[\s\S]*setPending\(result\)[\s\S]*setPhase\("otp"\)[\s\S]*show\("인증번호를 보냈어요"/);
-  assert.match(signup, /verifyPhoneSignupCode\([\s\S]*\{ sessionAdoption: "deferred" \}[\s\S]*onSuccess: \(result\) => \{[\s\S]*adoptAuthResult\(result\)[\s\S]*show\("가입이 완료됐어요"[\s\S]*onDone\(name\)/);
-  assert.equal((signup.match(/onError: \(error\) => show\(errMsg\(error\), "⚠️"\)/g) ?? []).length, 2);
+  assert.match(signup, /runOwnedAsyncAction\(\{[\s\S]*token: requestToken[\s\S]*onSuccess: \(result\) => \{[\s\S]*setPending\(result\)[\s\S]*setPhase\("otp"\)[\s\S]*show\(intl\.formatMessage\(\{ id: "onboarding\.toast\.otpSent" \}\)/);
+  assert.match(signup, /verifyPhoneSignupCode\([\s\S]*\{ sessionAdoption: "deferred" \}[\s\S]*onSuccess: \(result\) => \{[\s\S]*adoptAuthResult\(result\)[\s\S]*show\(intl\.formatMessage\(\{ id: "onboarding\.toast\.signupComplete" \}\)[\s\S]*onDone\(name\)/);
+  assert.equal((signup.match(/onError: \(error\) => show\(localizeApiError\(error, intl, "formal"\), "⚠️"\)/g) ?? []).length, 2);
+  assert.equal(koOnboarding["onboarding.toast.otpSent"], "인증번호를 보냈어요");
+  assert.equal(koOnboarding["onboarding.toast.signupComplete"], "가입이 완료됐어요");
   assert.equal((signup.match(/onFinally: \(\) => finishSignupAction\(requestToken\)/g) ?? []).length, 2);
 });
 

@@ -118,10 +118,11 @@ export function tierFrom(input: { ready?: boolean; isPremium?: boolean; reviewed
   return TIERS.FREE;
 }
 
-export function getTierLabel(tier: Tier): string {
-  if (tier === TIERS.PREMIUM) return "프리미엄";
-  if (tier === TIERS.UNKNOWN) return "확인 중";
-  return "무료";
+export function getTierLabel(tier: Tier, providedIntl?: IntlShape): string {
+  const intl = withDefaultIntl(providedIntl);
+  if (tier === TIERS.PREMIUM) return intl.formatMessage({ id: "parent.tier.premium" });
+  if (tier === TIERS.UNKNOWN) return intl.formatMessage({ id: "parent.tier.checking" });
+  return intl.formatMessage({ id: "parent.tier.free" });
 }
 
 /** 새 아이 연결 상한. unknown/미확정이면 보수적으로 1. */
@@ -197,19 +198,22 @@ export function isRealtimeLocation(tier: Tier): boolean {
 }
 
 /** 프리미엄 유도 문구(기능 잠금 시). */
-export function lockMessageFor(feature: Feature): string {
+export function lockMessageFor(feature: Feature, providedIntl?: IntlShape): string {
+  const intl = withDefaultIntl(providedIntl);
   switch (feature) {
     case FEATURES.MULTI_CHILD:
-      return "두 번째 아이를 추가하려면 프리미엄을 시작해 주세요";
+      return intl.formatMessage({ id: "parent.tier.lock.multiChild" });
     case FEATURES.REALTIME_LOCATION:
-      return "실시간 위치는 프리미엄에서 볼 수 있어요";
+      return intl.formatMessage({ id: "parent.tier.lock.realtimeLocation" });
     case FEATURES.REMOTE_AUDIO:
-      return "주변 소리 듣기는 프리미엄 기능이에요";
+      return intl.formatMessage({ id: "parent.tier.lock.remoteAudio" });
     case FEATURES.AI_ANALYSIS:
-      return "AI 하루 요약은 프리미엄 기능이에요";
+      return intl.formatMessage({ id: "parent.tier.lock.aiAnalysis" });
     case FEATURES.WEEKLY_REPORT:
-      return "주간 리포트는 프리미엄에서 사용할 수 있어요";
+      return intl.formatMessage({ id: "parent.tier.lock.weeklyReport" });
     default:
-      return "프리미엄에서 열리는 기능이에요";
+      return intl.formatMessage({ id: "parent.tier.lock.default" });
   }
 }
+import type { IntlShape } from "react-intl";
+import { withDefaultIntl } from "../i18n/defaultIntl.ts";

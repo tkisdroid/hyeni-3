@@ -12,25 +12,33 @@ const dialogFocusStack = await read("src/components/dialogFocusStack.ts");
 const endpoint = await read("src/lib/api/endpoints/contentSafety.ts");
 const queries = await read("src/queries/useContentSafety.ts");
 const childHome = await read("src/screens/child/ChildHome.tsx");
+const koChild = JSON.parse(await read("locales/ko/child.json"));
+const koShared = JSON.parse(await read("locales/ko/shared.json"));
 
 test("저장된 AI assistant 메시지는 즉시 신고할 수 있고 로컬 인사·오류는 신고하지 않는다", () => {
   assert.match(ai, /assistantMessageId/);
   assert.match(ai, /reportable:\s*!!res\.assistantMessageId/);
-  assert.match(ai, /이 답변 신고/);
+  assert.match(ai, /id: "child\.aiChat\.reportHint"/);
   assert.match(ai, /useReportAiMessage/);
   assert.match(endpoint, /\/api\/ai\/messages\/\$\{encodeURIComponent\(messageId\)\}\/report/);
-  assert.match(ai, /알려 줘서 고마워\. 이 답변은 다시 확인할게\./);
+  assert.match(ai, /id: "child\.aiChat\.report\.thanks"/);
+  assert.match(koChild["child.aiChat.reportHint"], /길게 눌러.*이 답변 신고/);
+  assert.match(koChild["child.aiChat.report.thanks"], /알려 줘서 고마워.*다시 확인/);
+  assert.doesNotMatch(ai, /신고 진입점 안내 — 한국어 계약/);
 });
 
 test("가족 메모 상대 메시지에는 앱 내 신고·차단 동선과 차단 해제가 있다", () => {
-  assert.match(memo, /신고·차단/);
+  assert.match(memo, /shared\.memoChat\.copy03[78]/);
+  assert.match(koShared["shared.memoChat.copy038"], /신고·차단/);
   assert.match(memo, /useReportMemoReply/);
   assert.match(memo, /useBlockMemoUser/);
   assert.match(memo, /useUnblockMemoUser/);
-  assert.match(memo, /차단 해제/);
+  assert.match(memo, /shared\.memoChat\.copy031/);
+  assert.match(koShared["shared.memoChat.copy031"], /차단 해제/);
   assert.match(queries, /invalidateQueries/);
   assert.doesNotMatch(memo, /\.filter\(\(item\) => item\.member !== null\)/);
-  assert.match(memo, /member\?\.name \?\? "보호자"/);
+  assert.match(memo, /member\?\.name \?\? intl\.formatMessage/);
+  assert.equal(koShared["shared.memoChat.copy030"], "보호자");
 });
 
 test("신고 dialog는 키보드·스크린리더·실패 재시도를 지원하고 아이 톤을 분리한다", () => {
@@ -54,6 +62,10 @@ test("차단 API는 가족 연결이나 안전 알림 API를 변경하지 않고
 });
 
 test("빠른 상태는 차단될 수 있는 가족 메시지 저장을 실제 수신처럼 단정하지 않는다", () => {
-  assert.match(childHome, /가족 메시지에 남겼어/);
-  assert.doesNotMatch(childHome, /부모님께 보냈어/);
+  assert.match(
+    childHome,
+    /onSuccess:\s*\(\) => show\(intl\.formatMessage\(\{ id: "child\.home\.quickStatus\.sent" \}\)/,
+  );
+  assert.equal(koChild["child.home.quickStatus.sent"], "가족 메시지에 남겼어");
+  assert.doesNotMatch(koChild["child.home.quickStatus.sent"], /부모님께 보냈어/);
 });

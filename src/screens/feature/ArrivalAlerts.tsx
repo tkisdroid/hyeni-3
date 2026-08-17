@@ -13,6 +13,9 @@ import {
 } from "@/transform/notificationsView";
 import type { ParentAlert } from "@/lib/api/endpoints/notifications";
 import { Loading } from "@/components/ui/Loading";
+import { useLocale } from "@/i18n/useLocale";
+import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+import { useIntl } from "react-intl";
 import "./ArrivalAlerts.css";
 
 /**
@@ -27,13 +30,15 @@ const TONE_ICON: Record<ArrivalAlertTone, string> = {
   pending: "ui/warning.webp",
 };
 
-const TONE_BADGE: Record<ArrivalAlertTone, string> = {
-  arrived: "도착",
-  left: "출발",
-  pending: "확인 필요",
+const TONE_BADGE_ID: Record<ArrivalAlertTone, string> = {
+  arrived: "notifications.arrival.badge.arrived",
+  left: "notifications.arrival.badge.left",
+  pending: "notifications.arrival.badge.pending",
 };
 
 export function ArrivalAlerts() {
+  const intl = useIntl();
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const goBack = useSafeBack("/notifications");
   const { data, isLoading, isError, refetch } = useParentAlerts();
@@ -74,22 +79,26 @@ export function ArrivalAlerts() {
         <button
           type="button"
           className="aa-back hy-press"
-          aria-label="뒤로"
+          aria-label={intl.formatMessage({ id: "notifications.action.back" })}
           onClick={goBack}
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="var(--fg-secondary)" />
         </button>
-        <span className="aa-title">도착 알림</span>
+        <span className="aa-title">{intl.formatMessage({ id: "notifications.arrival.title" })}</span>
       </header>
 
       <div className="aa-body">
-        {isLoading && <div className="aa-state"><Loading label="알림을 불러오는 중" /></div>}
+        {isLoading && (
+          <div className="aa-state">
+            <Loading label={intl.formatMessage({ id: "notifications.arrival.loading" })} />
+          </div>
+        )}
 
         {isError && !isLoading && (
           <div className="aa-state">
-            <span>알림을 불러오지 못했어요</span>
+            <span>{intl.formatMessage({ id: "notifications.arrival.loadFailed" })}</span>
             <button type="button" className="aa-retry hy-press" onClick={() => refetch()}>
-              다시 시도
+              {intl.formatMessage({ id: "notifications.action.retry" })}
             </button>
           </div>
         )}
@@ -97,19 +106,29 @@ export function ArrivalAlerts() {
         {!isLoading && !isError && list.length === 0 && (
           <div className="aa-empty">
             <img className="aa-empty__img" src={asset("ui/pin-heart.webp")} alt="" />
-            <div className="aa-empty__title">아직 도착 알림이 없어요</div>
-            <div className="aa-empty__sub">아이가 장소에 도착하면 여기에 표시돼요</div>
+            <div className="aa-empty__title">
+              {intl.formatMessage({ id: "notifications.arrival.empty.title" })}
+            </div>
+            <div className="aa-empty__sub">
+              {intl.formatMessage({ id: "notifications.arrival.empty.description" })}
+            </div>
           </div>
         )}
 
         {!isLoading && !isError && list.length > 0 && (
           <>
             <div className="aa-summary">
-              오늘까지 도착 <b>{arrivedCount}</b>건 · 출발 <b>{leftCount}</b>건
+              {intl.formatMessage(
+                { id: "notifications.arrival.summary" },
+                { arrivedCount, leftCount },
+              )}
               {pendingCount > 0 ? (
                 <>
-                  {" · 확인 필요 "}
-                  <b>{pendingCount}</b>건
+                  {" · "}
+                  {intl.formatMessage(
+                    { id: "notifications.arrival.summary.pending" },
+                    { pendingCount },
+                  )}
                 </>
               ) : null}
             </div>
@@ -127,14 +146,18 @@ export function ArrivalAlerts() {
                       <img className="aa-item__img" src={asset(TONE_ICON[tone])} alt="" />
                     </span>
                     <span className="aa-item__main">
-                      <span className="aa-item__title">{cleanAlertTitle(a.title) || "도착 알림"}</span>
+                      <span className="aa-item__title">
+                        {cleanAlertTitle(a.title) || intl.formatMessage({ id: "notifications.arrival.title" })}
+                      </span>
                       {a.message && <span className="aa-item__detail">{cleanAlertTitle(a.message)}</span>}
                     </span>
                     <span className="aa-item__meta">
                       <span className="aa-badge" data-tone={tone}>
-                        {TONE_BADGE[tone]}
+                        {intl.formatMessage({ id: TONE_BADGE_ID[tone] })}
                       </span>
-                      <span className="aa-item__time">{relativeTime(a.created_at, now)}</span>
+                      <span className="aa-item__time">
+                        {relativeTime(a.created_at, now, locale, LEGACY_FAMILY_TIME_ZONE)}
+                      </span>
                       {!a.read && <span className="aa-item__dot" />}
                     </span>
                   </button>

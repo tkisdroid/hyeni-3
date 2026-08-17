@@ -62,33 +62,50 @@ test("공용 오류·권한·업데이트·피드백 UI는 아이 말투 분기�
   }
 });
 
-test("동적 이름 뒤 조사는 기존 받침 판정 유틸을 사용한다", () => {
-  const cases = [
-    ["src/screens/feature/FamilyConnection.tsx", /hasJongseong\(connected\[0\]\.name \|\| "아이"\)/],
-    ["src/screens/feature/SosReceive.tsx", /hasJongseong\(childName\)/],
-    ["src/screens/child/AiFriendChat.tsx", /hasJongseong\(friendName\)/],
-  ];
+test("동적 이름의 한국어 조사는 ko 경로에서만 적용하고 AI 대화는 locale 카탈로그가 문장을 완성한다", () => {
+  const familyConnection = read("src/screens/feature/FamilyConnection.tsx");
+  const sosReceive = read("src/screens/feature/SosReceive.tsx");
+  const aiChat = read("src/screens/child/AiFriendChat.tsx");
+  const koChild = JSON.parse(read("locales/ko/child.json"));
+  const nonKoreanLocales = ["en", "ja", "zh-CN", "zh-TW", "vi", "th", "id", "ms", "fil"];
 
-  for (const [path, pattern] of cases) {
-    assert.match(read(path), pattern, `${path}의 동적 조사 선택이 고정되면 안 돼요`);
+  assert.match(familyConnection, /resolveFamilyConnectionChildSubject\(\{[\s\S]*childName: connected\[0\]\?\.name[\s\S]*childFallback/);
+  assert.doesNotMatch(familyConnection, /connected\[0\]\.name/);
+  assert.match(sosReceive, /locale === "ko" \? `\$\{childName\}\$\{hasJongseong\(childName\)/);
+  assert.match(aiChat, /child\.aiChat\.messageAria[\s\S]{0,100}\{ name: friendName \}/);
+  assert.match(aiChat, /child\.aiChat\.placeholder[\s\S]{0,100}\{ name: friendName \}/);
+  assert.doesNotMatch(aiChat, /hasJongseong\(friendName\)/);
+  assert.equal(koChild["child.aiChat.messageAria"], "{name}에게 메시지");
+  assert.equal(koChild["child.aiChat.placeholder"], "{name}에게 말해 봐…");
+
+  for (const locale of nonKoreanLocales) {
+    const catalog = JSON.parse(read(`locales/${locale}/child.json`));
+    for (const id of ["child.aiChat.messageAria", "child.aiChat.placeholder"]) {
+      assert.doesNotMatch(catalog[id], /\{name\}(?:이|가|을|를|은|는|과|와|에게)/, `${locale}:${id}`);
+    }
   }
 });
 
 test("파생 문구도 잠금 화면·월간 구독·말줄임표 표기를 유지한다", () => {
   const notification = read("src/transform/deviceNotificationHealth.ts");
+  const koParent = JSON.parse(read("locales/ko/parent.json"));
   assert.doesNotMatch(notification, /잠금화면|heads-up/);
-  assert.match(notification, /잠금 화면/);
-  assert.match(notification, /화면 상단 팝업/);
+  assert.match(koParent["parent.device.notification.fullScreenDisabledDetail"], /잠금 화면/);
+  assert.match(koParent["parent.device.notification.fullScreenDisabledDetail"], /화면 상단 팝업/);
 
   const entitlement = read("src/transform/entitlement.ts");
   assert.match(entitlement, /프리미엄 월간 구독/);
   assert.doesNotMatch(entitlement, /프리미엄 월구독/);
 
   const memo = read("src/transform/memoChatCopy.ts");
+  const koShared = JSON.parse(read("locales/ko/shared.json"));
   assert.doesNotMatch(memo, /메시지를 입력(?:하세요|해 줘)\.\.\./);
-  assert.match(memo, /메시지를 입력하세요…/);
-  assert.match(memo, /메시지를 입력해 줘…/);
+  assert.equal(koShared["shared.memo.copy.inputPlaceholder.formal"], "메시지를 입력하세요…");
+  assert.equal(koShared["shared.memo.copy.inputPlaceholder.child"], "메시지를 입력해 줘…");
+  assert.match(memo, /shared\.memo\.copy\.\$\{field\}\.\$\{tone\}/);
 
   const memoScreen = read("src/screens/shared/MemoChat.tsx");
-  assert.match(memoScreen, /savingPhoto \? "저장 중…" : "저장"/);
+  assert.match(memoScreen, /savingPhoto \? intl\.formatMessage\(\{ id: "shared\.memoChat\.copy047" \}\) : intl\.formatMessage\(\{ id: "shared\.memoChat\.copy048" \}\)/);
+  assert.equal(koShared["shared.memoChat.copy047"], "저장 중…");
+  assert.equal(koShared["shared.memoChat.copy048"], "저장");
 });

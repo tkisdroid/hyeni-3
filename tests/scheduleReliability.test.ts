@@ -41,9 +41,11 @@ test("월말 반복 일정은 다음 달 말일로 보정하고 달을 건너뛰
 
 test("일정 폼은 서버 기본 알림과 알림 없음의 의미를 혼동하지 않는다", () => {
   const src = readFileSync(new URL("../src/screens/parent/EventForm.tsx", import.meta.url), "utf8");
-  assert.match(src, /label:\s*"기본 설정"/);
-  assert.match(src, /알림 설정에서 고른 시간을 사용해요/);
-  assert.doesNotMatch(src, /label:\s*"없음",\s*minutes:\s*null/);
+  const koParent = JSON.parse(readFileSync(new URL("../locales/ko/parent.json", import.meta.url), "utf8")) as Record<string, string>;
+  assert.equal(koParent["parent.eventForm.reminderDefault"], "기본 설정");
+  assert.equal(koParent["parent.eventForm.copy053"], "알림 설정에서 고른 시간을 사용해요");
+  assert.match(src, /labelId:\s*"parent\.eventForm\.reminderDefault",\s*minutes:\s*"default"/);
+  assert.match(src, /labelId:\s*"parent\.eventForm\.reminderNone",\s*minutes:\s*"none"/);
 });
 
 test("반복 일정 저장은 여러 개의 독립 요청이 아니라 서버 원자 배치 API를 사용한다", () => {

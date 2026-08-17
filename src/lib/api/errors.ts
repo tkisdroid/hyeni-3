@@ -1,15 +1,44 @@
 /**
  * API 에러 타입.
- * Worker 가 보낸 한글 에러 메시지(teacher RPC 등)를 message 로 표면화하고
- * HTTP status 를 함께 실어 화면이 401/404 등을 분기할 수 있게 한다.
+ * HTTP status와 제한된 안정 code만 보존한다. Worker 자유 message·raw body는
+ * Error.message나 stack에 넣지 않아 사용자 표면으로 흐르지 않게 한다.
  */
+const API_ERROR_MESSAGE = "API request failed";
+const API_ERROR_CODE_PATTERN = /^[a-z][a-z0-9_]{0,63}$/;
+const LEGACY_API_ERROR_ALIASES: Readonly<Record<string, string>> = Object.freeze({
+  "Invalid pair code": "invalid_pair_code",
+  "연동 코드를 입력해주세요": "invalid_pair_code",
+  "만료된 연동 코드예요. 부모님께 새 코드를 받아 주세요": "pair_code_expired",
+  "만료된 연동 코드예요. 가족 관리자에게 새 코드를 받아 주세요": "pair_code_expired",
+});
+
+export function normalizeApiErrorCode(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const code = value.trim();
+  const legacyAlias = LEGACY_API_ERROR_ALIASES[code];
+  if (legacyAlias) return legacyAlias;
+  return API_ERROR_CODE_PATTERN.test(code) ? code : null;
+}
+
+/** 새 Worker의 stable code를 우선하고, code 필드가 없는 구 Worker만 exact error alias로 보완한다. */
+export function apiErrorCodeFromResponseBody(body: unknown): string | null {
+  if (!body || typeof body !== "object") return null;
+  const value = body as { code?: unknown; error?: unknown };
+  if (Object.prototype.hasOwnProperty.call(value, "code")) {
+    return normalizeApiErrorCode(value.code);
+  }
+  return normalizeApiErrorCode(value.error);
+}
+
 export class ApiError extends Error {
   readonly status: number;
+  readonly code: string | null;
 
-  constructor(message: string, status: number) {
-    super(message);
+  constructor(code: unknown, status: number) {
+    super(API_ERROR_MESSAGE);
     this.name = "ApiError";
     this.status = status;
+    this.code = normalizeApiErrorCode(code);
   }
 }
 

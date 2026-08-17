@@ -29,7 +29,9 @@ test("PWA 7일 체험 문구는 서버 catalog이 true·7일을 동시에 확정
   assert.match(screen, /webCatalog\?\.trialEligible === true && webCatalog\.trialDays === 7/);
   assert.match(endpoint, /trialExpected:\s*boolean/);
   assert.match(transform, /record\.trialEligible \? record\.trialDays !== 7 : record\.trialDays !== 0/);
-  assert.match(screen, /지금은 청구하지 않고, 정확히 7일 후/);
+  assert.match(screen, /billing\.subscription\.web\.firstCharge/);
+  const koBilling = JSON.parse(read("locales/ko/billing.json"));
+  assert.match(koBilling["billing.subscription.web.firstCharge"], /지금은 청구하지 않고, 정확히 7일 후/);
 });
 
 test("웹 결제 복귀는 authKey를 주소에서 지운 뒤 pending 또는 서버 세션을 대조해 완료한다", () => {
@@ -53,7 +55,7 @@ test("결제 응답 유실은 pending을 보존하고 authKey 없이 같은 주�
   assert.match(screen, /webReconcileAttemptRef\.current\s*>=\s*6/);
   assert.match(screen, /authKey:\s*""/);
   assert.match(screen, /24 \* 60 \* 60_000/);
-  assert.match(screen, /결제 결과 다시 확인/);
+  assert.match(screen, /billing\.subscription\.cta\.reconcile/);
 });
 
 test("Android 채널은 Google Play 가격을 재조회·검증하고 웹 결제 CTA로 우회하지 않는다", () => {
@@ -68,6 +70,6 @@ test("Toss 웹 구독은 기간말 해지 예약을 앱 안에서 처리하고 P
   const screen = read("src/screens/feature/Subscription.tsx");
   assert.match(screen, /view\?\.provider === "toss_web"/);
   assert.match(screen, /cancelWebBillingSubscription/);
-  assert.match(screen, /구독 해지 예약/);
+  assert.match(screen, /billing\.subscription\.cancel\.confirm/);
   assert.match(screen, /play\.google\.com\/store\/account\/subscriptions/);
 });

@@ -1,24 +1,34 @@
 import { useNavigate } from "react-router";
+import { useIntl, type IntlShape } from "react-intl";
 import { ChevronLeft, Crown, Gift } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { Loading } from "@/components/ui/Loading";
+import type { SupportedLocale } from "@/i18n/locale";
+import { useLocale } from "@/i18n/useLocale";
+import { formatDateTime, formatRelativeTime, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
 import "./TrialLock.css";
 
-// 페이월 혜택 아이콘 — 3D 에셋(구독 화면과 동일 시각 언어).
 const PREMIUM_PERKS = [
-  { icon: "ui/pin-heart.webp", label: "실시간 위치 · 30일 이동 기록" },
-  { icon: "ui/ai-robot.webp", label: "AI 하루 요약 · 주간 가족 리포트" },
-  { icon: "ui/menu-child-tracker.webp", label: "두 아이 · 일정과 장소 넉넉하게" },
+  { icon: "ui/pin-heart.webp", id: "location" },
+  { icon: "ui/ai-robot.webp", id: "ai" },
+  { icon: "ui/menu-child-tracker.webp", id: "children" },
 ] as const;
+const TRIAL_LOCK_DATE_STYLE = "medium" as const;
 
-function formatDate(d: Date | null): string {
+function formatDate(d: Date | null, locale: SupportedLocale): string {
   if (!d) return "";
-  return d.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
+  return formatDateTime(d, {
+    locale,
+    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    dateStyle: TRIAL_LOCK_DATE_STYLE,
+  });
 }
 
 /** S-03 체험 종료 · 잠금 — useEntitlement 기준 잠금/체험 상태 안내 + 구독 유도. */
 export function TrialLock() {
+  const intl = useIntl();
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const { ready, isPremium, reviewed, view, isLoading } = useEntitlement();
 
@@ -30,12 +40,12 @@ export function TrialLock() {
         <button
           type="button"
           className="tl-back hy-press"
-          aria-label="뒤로"
+          aria-label={intl.formatMessage({ id: "billing.common.back" })}
           onClick={() => navigate(-1)}
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="var(--fg-secondary)" />
         </button>
-        <span className="tl-head-title">프리미엄</span>
+        <span className="tl-head-title">{intl.formatMessage({ id: "billing.trialLock.title" })}</span>
       </header>
 
       {/* 티어 미확정: 잠금/무료 단정 금지(R9) — 중립 로딩만. */}
@@ -43,8 +53,8 @@ export function TrialLock() {
         <div className="tl-content">
           <div className="tl-loading">
             {isLoading
-              ? <Loading label="구독 상태를 확인하고 있어요" />
-              : "구독 상태를 불러오지 못했어요."}
+              ? <Loading label={intl.formatMessage({ id: "billing.trialLock.loading" })} />
+              : intl.formatMessage({ id: "billing.trialLock.loadFailed" })}
           </div>
         </div>
       )}
@@ -57,19 +67,31 @@ export function TrialLock() {
               <Crown size={30} strokeWidth={2} color="#fff" />
             </div>
             <div className="tl-hero__dday">
-              {view.trialDaysLeft != null ? `무료 체험 D-${view.trialDaysLeft}` : "무료 체험 중"}
+              {view.trialDaysLeft != null
+                ? intl.formatMessage(
+                    { id: "billing.trialLock.trialRemaining" },
+                    { remaining: formatRelativeTime(view.trialDaysLeft, "day", locale) },
+                  )
+                : intl.formatMessage({ id: "billing.trialLock.trialActive" })}
             </div>
-            <div className="tl-hero__title">지금 모든 프리미엄 기능을 쓰고 있어요</div>
+            <div className="tl-hero__title">
+              {intl.formatMessage({ id: "billing.trialLock.premiumActive" })}
+            </div>
             {view.trialEndsAt && (
-              <div className="tl-hero__sub">{formatDate(view.trialEndsAt)}에 체험이 끝나요</div>
+              <div className="tl-hero__sub">
+                {intl.formatMessage(
+                  { id: "billing.trialLock.trialEnds" },
+                  { date: formatDate(view.trialEndsAt, locale) },
+                )}
+              </div>
             )}
           </div>
-          <PerkList />
+          <PerkList intl={intl} />
           <button type="button" className="tl-cta hy-press" onClick={goSubscribe}>
-            체험 끝나기 전에 계속 이용하기
+            {intl.formatMessage({ id: "billing.trialLock.continueTrial" })}
           </button>
           <button type="button" className="tl-ghost hy-press" onClick={() => navigate(-1)}>
-            나중에 할게요
+            {intl.formatMessage({ id: "billing.trialLock.later" })}
           </button>
         </div>
       )}
@@ -81,14 +103,21 @@ export function TrialLock() {
             <div className="tl-hero__badge">
               <Crown size={30} strokeWidth={2} color="#fff" />
             </div>
-            <div className="tl-hero__title">{view?.planLabel ?? "프리미엄 이용 중"}</div>
+            <div className="tl-hero__title">
+              {intl.formatMessage({ id: "billing.trialLock.active" })}
+            </div>
             {view?.periodEnd && (
-              <div className="tl-hero__sub">{formatDate(view.periodEnd)}까지 이용할 수 있어요</div>
+              <div className="tl-hero__sub">
+                {intl.formatMessage(
+                  { id: "billing.trialLock.activeUntil" },
+                  { date: formatDate(view.periodEnd, locale) },
+                )}
+              </div>
             )}
           </div>
-          <PerkList />
+          <PerkList intl={intl} />
           <button type="button" className="tl-ghost hy-press" onClick={() => navigate(-1)}>
-            돌아가기
+            {intl.formatMessage({ id: "billing.trialLock.back" })}
           </button>
         </div>
       )}
@@ -101,26 +130,28 @@ export function TrialLock() {
               <img src={asset("ui/crown.webp")} alt="" style={{ width: 44, height: 44, objectFit: "contain" }} />
             </div>
             <div className="tl-lock__title">
-              {view?.status === "expired" ? "체험이 종료되었어요" : "프리미엄 기능이에요"}
+              {view?.status === "expired"
+                ? intl.formatMessage({ id: "billing.trialLock.expired" })
+                : intl.formatMessage({ id: "billing.trialLock.feature" })}
             </div>
             <div className="tl-lock__sub">
-              프리미엄을 시작하면 실시간 위치·30일 이동 기록·AI 상세 기능을 쓸 수 있어요.
+              {intl.formatMessage({ id: "billing.trialLock.unlockDescription" })}
               <br />
-              SOS와 긴급 안전 알림은 무료로 계속 제공돼요.
+              {intl.formatMessage({ id: "billing.trialLock.safetyFree" })}
             </div>
             {reviewed && (
               <div className="tl-lock__reviewed">
                 <Gift size={14} strokeWidth={2.2} aria-hidden="true" />
-                기존 스토어 방문 혜택 유지 중 · 장소를 3개까지 저장할 수 있어요
+                {intl.formatMessage({ id: "billing.trialLock.reviewed" })}
               </div>
             )}
           </div>
-          <PerkList />
+          <PerkList intl={intl} />
           <button type="button" className="tl-cta hy-press" onClick={goSubscribe}>
-            프리미엄 시작하기
+            {intl.formatMessage({ id: "billing.trialLock.start" })}
           </button>
           <button type="button" className="tl-ghost hy-press" onClick={() => navigate(-1)}>
-            무료로 계속 쓰기
+            {intl.formatMessage({ id: "billing.trialLock.freeContinue" })}
           </button>
         </div>
       )}
@@ -128,15 +159,17 @@ export function TrialLock() {
   );
 }
 
-function PerkList() {
+function PerkList({ intl }: { intl: IntlShape }) {
   return (
     <div className="tl-perks">
       {PREMIUM_PERKS.map((p) => (
-        <div key={p.label} className="tl-perk">
+        <div key={p.id} className="tl-perk">
           <span className="tl-perk__ic">
             <img src={asset(p.icon)} alt="" style={{ width: 22, height: 22, objectFit: "contain" }} />
           </span>
-          <span className="tl-perk__label">{p.label}</span>
+          <span className="tl-perk__label">
+            {intl.formatMessage({ id: `billing.trialLock.perk.${p.id}` })}
+          </span>
         </div>
       ))}
     </div>

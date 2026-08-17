@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 import { ChevronLeft, RefreshCw, Share2, Copy } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
@@ -11,10 +13,15 @@ import {
   advanceChildInviteConnection,
   type ChildInviteConnectionState,
 } from "@/transform/childInviteConnection";
+import { useLocale } from "@/i18n/useLocale";
+import { formatCountdownDuration } from "@/i18n/format";
 import "./ChildInvite.css";
 
 /** 만료까지 남은 시간 표시 + 만료 여부. 무기한(expiresAt 없음)이면 null. */
-function useCountdown(expiresAt: Date | null): { text: string; expired: boolean } | null {
+function useCountdown(
+  expiresAt: Date | null,
+  locale: Parameters<typeof formatCountdownDuration>[1],
+): { text: string; expired: boolean } | null {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!expiresAt) return;
@@ -23,21 +30,7 @@ function useCountdown(expiresAt: Date | null): { text: string; expired: boolean 
   }, [expiresAt]);
   if (!expiresAt) return null;
   const left = Math.max(0, Math.floor((expiresAt.getTime() - now) / 1000));
-  if (left === 0) return { text: "만료됨", expired: true };
-  // 다일/다시간 만료는 mm:ss 오버플로 방지 — 큰 값은 일·시간·분 단위로.
-  if (left >= 86400) {
-    const d = Math.floor(left / 86400);
-    const h = Math.floor((left % 86400) / 3600);
-    return { text: h > 0 ? `${d}일 ${h}시간` : `${d}일`, expired: false };
-  }
-  if (left >= 3600) {
-    const h = Math.floor(left / 3600);
-    const m = Math.floor((left % 3600) / 60);
-    return { text: `${h}시간 ${m}분`, expired: false };
-  }
-  const mm = String(Math.floor(left / 60)).padStart(2, "0");
-  const ss = String(left % 60).padStart(2, "0");
-  return { text: `${mm}:${ss}`, expired: false };
+  return formatCountdownDuration(left, locale);
 }
 
 /**
@@ -46,6 +39,8 @@ function useCountdown(expiresAt: Date | null): { text: string; expired: boolean 
  * 아이 연결 감지 폴링 → 연결되면 자동으로 가족 화면으로 안내.
  */
 export function ChildInvite() {
+  const { locale } = useLocale();
+  const intl = useIntl();
   const navigate = useNavigate();
   const { show } = useToast();
   // 대기 화면이므로 6초 폴링으로 아이 연결을 감지한다.
@@ -60,7 +55,7 @@ export function ChildInvite() {
 
   const pairCode = family?.pairCode ?? "";
   const expiresAt = family?.pairCodeExpiresAt ?? null;
-  const countdown = useCountdown(expiresAt);
+  const countdown = useCountdown(expiresAt, locale);
   const expired = countdown?.expired ?? false;
 
   const pairLink = useMemo(() => (pairCode ? buildPairLink(pairCode) : ""), [pairCode]);
@@ -82,7 +77,7 @@ export function ChildInvite() {
     const result = advanceChildInviteConnection(connectionRef.current, { status, childUids });
     connectionRef.current = result.state;
     if (result.newChildUid) {
-      show("아이가 연결됐어요! 🎉", "🔗");
+      show(intl.formatMessage({ id: "parent.childInvite.connected" }), "🔗");
       const t = setTimeout(() => navigate("/parent/family"), 1200);
       return () => clearTimeout(t);
     }
@@ -92,22 +87,34 @@ export function ChildInvite() {
     if (!pairCode) return;
     const clip = navigator.clipboard;
     if (!clip?.writeText) {
-      show(`복사를 지원하지 않아요 · 코드 ${pairCode}`, "✏️");
+      show(intl.formatMessage(
+        { id: "parent.childInvite.copyUnsupported" },
+        { pairCode },
+      ), "✏️");
       return;
     }
     clip.writeText(pairCode).then(
-      () => show("연결 코드를 복사했어요", "📋"),
-      () => show(`복사를 못 했어요 · 코드 ${pairCode}`, "✏️"),
+      () => show(intl.formatMessage({ id: "parent.childInvite.copied" }), "📋"),
+      () => show(intl.formatMessage(
+        { id: "parent.childInvite.copyFailed" },
+        { pairCode },
+      ), "✏️"),
     );
   };
 
   const shareLink = async () => {
     if (!pairCode) return;
-    const text = `혜니캘린더 아이 연결\n연결 코드: ${pairCode}\n${pairLink}`;
+    const text = intl.formatMessage(
+      { id: "parent.childInvite.shareText" },
+      { pairCode, pairLink },
+    );
     // Web Share API 우선(모바일 네이티브 공유 시트). 미지원 시 링크 복사로 대체.
     if (navigator.share) {
       try {
-        await navigator.share({ title: "혜니캘린더 아이 연결", text });
+        await navigator.share({
+          title: intl.formatMessage({ id: "parent.childInvite.shareTitle" }),
+          text,
+        });
         return;
       } catch {
         // 사용자가 공유 취소 → 조용히 종료(성공 단언 금지).
@@ -117,11 +124,17 @@ export function ChildInvite() {
     const clip = navigator.clipboard;
     if (clip?.writeText) {
       clip.writeText(text).then(
-        () => show("연결 링크를 복사했어요", "🔗"),
-        () => show(`코드 ${pairCode}를 직접 전달해 주세요`, "✏️"),
+        () => show(intl.formatMessage({ id: "parent.childInvite.linkCopied" }), "🔗"),
+        () => show(intl.formatMessage(
+          { id: "parent.childInvite.shareFallback" },
+          { pairCode },
+        ), "✏️"),
       );
     } else {
-      show(`코드 ${pairCode}를 직접 전달해 주세요`, "✏️");
+      show(intl.formatMessage(
+        { id: "parent.childInvite.shareFallback" },
+        { pairCode },
+      ), "✏️");
     }
   };
 
@@ -129,46 +142,65 @@ export function ChildInvite() {
     if (regen.isPending) return;
     connectionRef.current = { ...connectionRef.current, notified: false };
     regen.mutate(undefined, {
-      onSuccess: () => show("새 연결 코드를 발급했어요", "🔄"),
-      onError: (e) => show(e instanceof Error ? e.message : "재발급에 실패했어요", "⚠️"),
+      onSuccess: () => show(intl.formatMessage({ id: "parent.childInvite.regenerated" }), "🔄"),
+      onError: (e) => show(localizeApiError(e, intl, "formal"), "⚠️"),
     });
   };
 
   return (
     <div className="ci-screen">
       <div className="ci-header">
-        <button type="button" className="ci-back hy-press" aria-label="뒤로" onClick={() => navigate(-1)}>
+        <button
+          type="button"
+          className="ci-back hy-press"
+          aria-label={intl.formatMessage({ id: "parent.childInvite.back" })}
+          onClick={() => navigate(-1)}
+        >
           <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
         </button>
-        <span className="ci-title">아이 초대</span>
+        <span className="ci-title">
+          {intl.formatMessage({ id: "parent.childInvite.screenTitle" })}
+        </span>
       </div>
 
       <div className="ci-content">
-        <div className="ci-headline">아이 기기에서 스캔</div>
+        <div className="ci-headline">
+          {intl.formatMessage({ id: "parent.childInvite.headline" })}
+        </div>
         <div className="ci-lead">
-          아이 휴대폰 카메라로 QR을 찍거나
+          {intl.formatMessage({ id: "parent.childInvite.lead1" })}
           <br />
-          아래 코드를 직접 입력하면 연결돼요
+          {intl.formatMessage({ id: "parent.childInvite.lead2" })}
         </div>
 
         {/* QR 카드 */}
         <div className="ci-qr-card">
           {isLoading ? (
-            <div className="ci-qr-skeleton">불러오는 중…</div>
+            <div className="ci-qr-skeleton">
+              {intl.formatMessage({ id: "parent.childInvite.loading" })}
+            </div>
           ) : isError ? (
             <div className="ci-qr-skeleton ci-qr-skeleton--error" role="alert">
-              <span>연결 코드를 불러오지 못했어요</span>
+              <span>{intl.formatMessage({ id: "parent.childInvite.loadError" })}</span>
               <button type="button" className="ci-regen hy-press" onClick={() => void refetchFamily()}>
-                다시 시도
+                {intl.formatMessage({ id: "parent.childInvite.retry" })}
               </button>
             </div>
           ) : pairLink && !expired ? (
-            <QrCode value={pairLink} size={212} label="아이 연결 QR 코드" />
+            <QrCode
+              value={pairLink}
+              size={212}
+              label={intl.formatMessage({ id: "parent.childInvite.qrLabel" })}
+            />
           ) : !pairCode ? (
-            <div className="ci-qr-skeleton" role="status">사용할 수 있는 연결 코드가 없어요</div>
+            <div className="ci-qr-skeleton" role="status">
+              {intl.formatMessage({ id: "parent.childInvite.noCode" })}
+            </div>
           ) : (
             <div className="ci-qr-skeleton">
-              코드가 만료됐어요{"\n"}새 코드를 발급해 주세요
+              {intl.formatMessage({ id: "parent.childInvite.expiredLine1" })}
+              {"\n"}
+              {intl.formatMessage({ id: "parent.childInvite.expiredLine2" })}
             </div>
           )}
         </div>
@@ -176,11 +208,18 @@ export function ChildInvite() {
         {/* 코드 + 만료 타이머 */}
         <div className="ci-code-row">
           <span className={expired ? "ci-code ci-code--expired" : "ci-code"}>
-            {isLoading ? "불러오는 중…" : pairCode || "코드 없음"}
+            {isLoading
+              ? intl.formatMessage({ id: "parent.childInvite.loading" })
+              : pairCode || intl.formatMessage({ id: "parent.childInvite.codeNone" })}
           </span>
           {countdown && (
             <span className={expired ? "ci-timer ci-timer--expired" : "ci-timer"}>
-              {expired ? "만료됨" : `${countdown.text} 남음`}
+              {expired
+                ? intl.formatMessage({ id: "parent.childInvite.expiredStatus" })
+                : intl.formatMessage(
+                    { id: "core.time.remaining" },
+                    { duration: countdown.text },
+                  )}
             </span>
           )}
         </div>
@@ -194,7 +233,7 @@ export function ChildInvite() {
             disabled={!pairCode || expired}
           >
             <Copy size={16} strokeWidth={2.4} style={{ verticalAlign: "-3px", marginRight: 4 }} />
-            코드 복사
+            {intl.formatMessage({ id: "parent.childInvite.copyAction" })}
           </button>
           <button
             type="button"
@@ -203,7 +242,7 @@ export function ChildInvite() {
             disabled={!pairCode || expired}
           >
             <Share2 size={16} strokeWidth={2.4} style={{ verticalAlign: "-3px", marginRight: 4 }} />
-            공유하기
+            {intl.formatMessage({ id: "parent.childInvite.shareAction" })}
           </button>
         </div>
 
@@ -214,13 +253,19 @@ export function ChildInvite() {
           disabled={regen.isPending} aria-busy={regen.isPending}
         >
           <RefreshCw size={15} strokeWidth={2.4} style={{ verticalAlign: "-2px", marginRight: 4 }} />
-          {regen.isPending ? "발급 중…" : expired ? "새 코드 발급받기" : "새 코드 발급"}
+          {intl.formatMessage({
+            id: regen.isPending
+              ? "parent.childInvite.issuing"
+              : expired
+                ? "parent.childInvite.issueExpired"
+                : "parent.childInvite.issue",
+          })}
         </button>
 
         {/* 연결 대기 상태 */}
         <div className="ci-wait">
           <span className="ci-wait__dot" />
-          아이가 연결되면 자동으로 넘어가요
+          {intl.formatMessage({ id: "parent.childInvite.waiting" })}
         </div>
 
         <img className="ci-mascot" src={asset("mascot/phone.webp")} alt="" />

@@ -1,3 +1,5 @@
+import { isApiError } from "../lib/api/errors.ts";
+
 export type WebBillingPlan = "month" | "year";
 
 export const WEB_BILLING_AMOUNTS: Readonly<Record<WebBillingPlan, number>> = Object.freeze({
@@ -27,6 +29,13 @@ const SAFE_FAILURE_CODES = new Set([
   "INVALID_CARD_EXPIRATION",
   "INVALID_STOPPED_CARD",
   "NOT_SUPPORTED_METHOD",
+]);
+
+// 이 두 코드는 Worker 응답이 아니라 Subscription 화면이 직접 만드는 고정 sentinel이다.
+// 그 밖의 Error.message는 결제사/SDK 원문일 수 있으므로 절대 상태 코드로 해석하지 않는다.
+const LOCAL_WEB_BILLING_FAILURE_CODES = new Set([
+  "web_billing_not_configured",
+  "web_billing_session_storage_unavailable",
 ]);
 
 export type WebBillingRedirect =
@@ -272,9 +281,11 @@ export function webBillingFailureMessage(code: string): string {
 }
 
 export function webBillingRequestFailureMessage(error: unknown): string {
-  const code = error && typeof error === "object" && "message" in error
-    ? String((error as { message?: unknown }).message ?? "")
-    : "";
+  const code = isApiError(error)
+    ? error.code ?? ""
+    : error instanceof Error && LOCAL_WEB_BILLING_FAILURE_CODES.has(error.message)
+      ? error.message
+      : "";
   if (code === "web_subscription_new_checkouts_paused") {
     return "새 구독 결제를 잠시 중단했어요. 기존 결제 확인과 해지는 계속 이용할 수 있어요.";
   }

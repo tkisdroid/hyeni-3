@@ -747,7 +747,7 @@ family.post("/join", requireAuth, async (c) => {
   const userId = user.sub;
   const body = await c.req.json<Record<string, unknown>>();
   const raw = String(body.pairCode ?? body.pair_code ?? "").trim();
-  if (!raw) return c.json({ error: "연동 코드를 입력해주세요" }, 400);
+  if (!raw) return c.json({ error: "연동 코드를 입력해주세요", code: "invalid_pair_code" }, 400);
   const pairCode = raw.toUpperCase();
   const reqName = typeof body.name === "string" ? body.name.trim() : "";
   const name = reqName || "아이";
@@ -767,9 +767,12 @@ family.post("/join", requireAuth, async (c) => {
   )
     .bind(pairCode)
     .first<{ id: string; pair_code_expires_at: string | null }>();
-  if (!fam) return c.json({ error: "Invalid pair code" }, 400);
+  if (!fam) return c.json({ error: "Invalid pair code", code: "invalid_pair_code" }, 400);
   if (fam.pair_code_expires_at && pgToMs(fam.pair_code_expires_at) < Date.now()) {
-    return c.json({ error: "만료된 연동 코드예요. 부모님께 새 코드를 받아 주세요" }, 400);
+    return c.json({
+      error: "만료된 연동 코드예요. 부모님께 새 코드를 받아 주세요",
+      code: "pair_code_expired",
+    }, 400);
   }
   const familyId = fam.id;
   const initialDeletionState = await accountDeletionMutationState(c.env.DB, {
@@ -1198,7 +1201,7 @@ family.post("/join-as-parent", requireAuth, async (c) => {
   const userId = user.sub;
   const body = await c.req.json<Record<string, unknown>>();
   const raw = String(body.pairCode ?? body.pair_code ?? "").trim();
-  if (!raw) return c.json({ error: "연동 코드를 입력해주세요" }, 400);
+  if (!raw) return c.json({ error: "연동 코드를 입력해주세요", code: "invalid_pair_code" }, 400);
   const pairCode = raw.toUpperCase();
   const reqName = typeof body.name === "string" ? body.name.trim() : "";
   const parentName = reqName || "부모";
@@ -1212,12 +1215,15 @@ family.post("/join-as-parent", requireAuth, async (c) => {
   )
     .bind(pairCode)
     .first<{ id: string; parent_id: string; pair_code_expires_at: string | null }>();
-  if (!fam) return c.json({ error: "Invalid pair code" }, 400);
+  if (!fam) return c.json({ error: "Invalid pair code", code: "invalid_pair_code" }, 400);
   if (fam.parent_id === userId) {
     return c.json({ error: "이미 이 가족의 주 보호자입니다" }, 400);
   }
   if (fam.pair_code_expires_at && pgToMs(fam.pair_code_expires_at) < Date.now()) {
-    return c.json({ error: "만료된 연동 코드예요. 가족 관리자에게 새 코드를 받아 주세요" }, 400);
+    return c.json({
+      error: "만료된 연동 코드예요. 가족 관리자에게 새 코드를 받아 주세요",
+      code: "pair_code_expired",
+    }, 400);
   }
   const familyId = fam.id;
   const initialDeletionState = await accountDeletionMutationState(c.env.DB, {

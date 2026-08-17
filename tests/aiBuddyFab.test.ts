@@ -198,7 +198,8 @@ test("대화 화면은 확인 카드에서만 도구를 실행하고 같은 표�
   // 확인이 필요한 도구는 카드로 세워 두고, 실행은 버튼에서만 한다.
   assert.match(chat, /confirmationRequired === true[\s\S]{0,120}setPendingTool\(tool\)/);
   assert.match(chat, /onClick=\{runPendingTool\}/);
-  assert.match(chat, /send\("응, 그렇게 해줘", "confirm", confirmed\)/);
+  // 확인 문구도 10개 언어 카탈로그를 쓴다(글로벌 버전 병합).
+  assert.match(chat, /send\(\s*intl\.formatMessage\(\{ id: "child\.aiChat\.confirm\.yes" \}\),\s*"confirm",\s*confirmed,?\s*\)/);
   // 내 색깔은 서버 컬럼이 없어 기기에서 적용한다.
   assert.match(chat, /clientAction === "setAccent"[\s\S]{0,80}setAccent\(tool\.accent\)/);
 });

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { WifiOff } from "lucide-react";
 import { useAuth } from "@/auth/AuthContext";
 import "./OfflineBanner.css";
+import { useIntl } from "react-intl";
 
 /**
  * C-13 오프라인 배너. 네트워크가 끊기면 상단에 지속 배너로 알린다.
@@ -9,6 +10,7 @@ import "./OfflineBanner.css";
  */
 export function OfflineBanner() {
   const { role } = useAuth();
+  const intl = useIntl();
   const [online, setOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine,
   );
@@ -30,9 +32,7 @@ export function OfflineBanner() {
     <div className="ofb-root" role="status">
       <WifiOff size={16} strokeWidth={2.4} />
       <span className="ofb-text">
-        {role === "child"
-          ? "오프라인 상태야 · 연결 후 다시 시도해 줘"
-          : "오프라인 상태예요 · 연결 후 다시 시도해 주세요"}
+        {intl.formatMessage({ id: role === "child" ? "core.offline.child" : "core.offline.formal" })}
       </span>
     </div>
   );

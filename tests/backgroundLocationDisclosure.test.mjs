@@ -77,7 +77,11 @@ test("위치 서비스는 배터리 예외 화면을 자동으로 띄우지 않�
   assert.match(notificationPluginSource, /public void openBatteryOptimizationSettings/);
   assert.doesNotMatch(notificationPluginSource, /ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS/);
   assert.match(notificationPluginSource, /ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS/);
-  assert.match(permissionScreenSource, /혜니캘린더 → 제한 없음\(또는 최적화 안 함\)/);
+  assert.match(permissionScreenSource, /shared\.permDenied\.steps\.batteryNative/);
+  assert.equal(
+    koShared["shared.permDenied.steps.batteryNative"],
+    "혜니캘린더 → 제한 없음(또는 최적화 안 함)",
+  );
 });
 
 test("위치 포그라운드 서비스 알림은 위치 공유 사실을 명확히 표시한다", () => {

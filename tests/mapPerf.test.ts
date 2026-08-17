@@ -32,10 +32,13 @@ test("Kakao SDK 초기화가 한 번 실패해도 다음 사용자 시도에서 
   assert.match(loader, /loadPromise = null;\s*throw error;/s);
 
   const map = read("src/components/KakaoMap.tsx");
+  const koShared = JSON.parse(read("locales/ko/shared.json"));
   assert.match(map, /const \[retryKey, setRetryKey\] = useState\(0\)/);
   assert.match(map, /setRetryKey\(\(value\) => value \+ 1\)/);
-  assert.match(map, /지도 다시 불러오기/);
-  assert.match(map, /인터넷 연결을 확인한 뒤 다시 시도해 주세요/);
+  assert.match(map, /shared\.kakaoMap\.copy005/);
+  assert.match(map, /shared\.kakaoMap\.copy004/);
+  assert.equal(koShared["shared.kakaoMap.copy005"], "지도 다시 불러오기");
+  assert.equal(koShared["shared.kakaoMap.copy004"], "인터넷 연결을 확인한 뒤 다시 시도해 주세요");
 });
 
 test("지도가 그려지기 전에는 흰 사각형 대신 자리표시자를 보여준다", () => {

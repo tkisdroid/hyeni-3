@@ -23,6 +23,8 @@ import { GlobalErrorListeners } from "./GlobalErrorListeners";
 import { lazyScreen } from "./lazyScreen";
 import { AppVersionGate } from "./AppVersionGate";
 import { usePwaUpdateCriticalSection } from "@/lib/usePwaUpdateCriticalSection";
+import { LocaleBoundary } from "@/i18n/LocaleBoundary";
+import type { MessageNamespace } from "@/i18n/generated/messageIds";
 
 // Provider·shell·오류 경계는 즉시 로드하고 사용자 화면만 route 단위로 분리한다.
 const ParentHome = lazyScreen(() => import("@/screens/parent/ParentHome"), "ParentHome");
@@ -85,8 +87,24 @@ const SosReceive = lazyScreen(() => import("@/screens/feature/SosReceive"), "Sos
 const AppUpdate = lazyScreen(() => import("@/screens/feature/AppUpdate"), "AppUpdate");
 const PermDenied = lazyScreen(() => import("@/screens/feature/PermDenied"), "PermDenied");
 
-function routeElement(element: ReactElement): ReactElement {
-  return <Suspense fallback={<RouteLoading />}>{element}</Suspense>;
+const ONBOARDING_NAMESPACES = ["core", "onboarding", "shared"] as const;
+const PARENT_NAMESPACES = ["core", "parent", "shared"] as const;
+const CHILD_NAMESPACES = ["core", "child", "shared"] as const;
+const BILLING_NAMESPACES = ["core", "billing", "shared"] as const;
+const REPORT_NAMESPACES = ["core", "reports", "parent", "shared"] as const;
+const PARENT_NOTIFICATION_NAMESPACES = ["core", "notifications", "parent", "shared"] as const;
+const CHILD_NOTIFICATION_NAMESPACES = ["core", "notifications", "child", "shared"] as const;
+const SHARED_NAMESPACES = ["core", "shared"] as const;
+
+function routeElement(
+  element: ReactElement,
+  namespaces: readonly MessageNamespace[] = ["core"],
+): ReactElement {
+  return (
+    <Suspense fallback={<RouteLoading />}>
+      <LocaleBoundary namespaces={namespaces}>{element}</LocaleBoundary>
+    </Suspense>
+  );
 }
 
 /** 자동 업데이트로 입력 중인 초안이 사라지면 안 되는 편집 전용 화면. */
@@ -141,11 +159,11 @@ const router = createHashRouter([
       {
         element: <ParentShell />,
         children: [
-          { path: "parent/home", element: routeElement(<ParentHome />) },
-          { path: "parent/calendar", element: routeElement(<ParentCalendar />) },
-          { path: "parent/location", element: routeElement(<ParentLocation />) },
-          { path: "parent/memo", element: routeElement(<MemoChat />) },
-          { path: "parent/settings", element: routeElement(<ParentSettings />) },
+          { path: "parent/home", element: routeElement(<ParentHome />, PARENT_NAMESPACES) },
+          { path: "parent/calendar", element: routeElement(<ParentCalendar />, PARENT_NAMESPACES) },
+          { path: "parent/location", element: routeElement(<ParentLocation />, PARENT_NAMESPACES) },
+          { path: "parent/memo", element: routeElement(<MemoChat />, PARENT_NAMESPACES) },
+          { path: "parent/settings", element: routeElement(<ParentSettings />, PARENT_NAMESPACES) },
         ],
       },
     ],
@@ -158,9 +176,9 @@ const router = createHashRouter([
       {
         element: <ChildShell />,
         children: [
-          { path: "child/home", element: routeElement(<ChildHome />) },
-          { path: "child/sticker", element: routeElement(<StickerBook />) },
-          { path: "child/memo", element: routeElement(<MemoChat />) },
+          { path: "child/home", element: routeElement(<ChildHome />, CHILD_NAMESPACES) },
+          { path: "child/sticker", element: routeElement(<StickerBook />, CHILD_NAMESPACES) },
+          { path: "child/memo", element: routeElement(<MemoChat />, CHILD_NAMESPACES) },
         ],
       },
     ],
@@ -173,14 +191,14 @@ const router = createHashRouter([
       {
         element: <TeacherShell />,
         children: [
-          { path: "teacher/home", element: routeElement(<TeacherHome />) },
-          { path: "teacher/students", element: routeElement(<TeacherStudents />) },
-          { path: "teacher/timetable", element: routeElement(<TeacherTimetable />) },
-          { path: "teacher/settings", element: routeElement(<TeacherSettings />) },
+          { path: "teacher/home", element: routeElement(<TeacherHome />, SHARED_NAMESPACES) },
+          { path: "teacher/students", element: routeElement(<TeacherStudents />, SHARED_NAMESPACES) },
+          { path: "teacher/timetable", element: routeElement(<TeacherTimetable />, SHARED_NAMESPACES) },
+          { path: "teacher/settings", element: routeElement(<TeacherSettings />, SHARED_NAMESPACES) },
         ],
       },
     ] : [
-      { path: "teacher/*", element: routeElement(<TeacherReleaseGate />) },
+      { path: "teacher/*", element: routeElement(<TeacherReleaseGate />, SHARED_NAMESPACES) },
     ],
   },
 
@@ -194,7 +212,7 @@ const router = createHashRouter([
         path: "onboarding",
         element: (
           <RequireGuest>
-            {routeElement(<Onboarding />)}
+            {routeElement(<Onboarding />, ONBOARDING_NAMESPACES)}
           </RequireGuest>
         ),
       },
@@ -202,38 +220,38 @@ const router = createHashRouter([
       {
         element: <RequireRole role="parent" />,
         children: [
-          { path: "parent/family", element: routeElement(<ParentFamily />) },
-          { path: "subscription", element: routeElement(<Subscription />) },
-          { path: "trial-lock", element: routeElement(<TrialLock />) },
-          { path: "notifications", element: routeElement(<Notifications />) },
-          { path: "remote-audio", element: routeElement(<RemoteAudio />) },
-          { path: "place-manager", element: routeElement(<PlaceManager />) },
-          { path: "friend-play", element: routeElement(<FriendPlay />) },
-          { path: "ai-schedule", element: routeElement(<AiSchedule />) },
-          { path: "ai-credit", element: routeElement(<AiCredit />) },
-          { path: "phone-setup", element: routeElement(<PhoneSetup />) },
-          { path: "sticker-send", element: routeElement(<StickerSend />) },
-          { path: "profile-edit", element: routeElement(<ProfileEdit />) },
-          { path: "place-form", element: routeElement(<PlaceForm />) },
-          { path: "child-invite", element: routeElement(<ChildInvite />) },
-          { path: "event-form", element: routeElement(<EventForm />) },
-          { path: "danger-zone-form", element: routeElement(<DangerZoneForm />) },
-          { path: "location-status", element: routeElement(<LocationStatus />) },
-          { path: "child-detail", element: routeElement(<ChildDetail />) },
-          { path: "pairing-wizard", element: routeElement(<PairingWizard />) },
-          { path: "family-connection", element: routeElement(<FamilyConnection />) },
-          { path: "location-settings", element: routeElement(<LocationSettings />) },
-          { path: "account", element: routeElement(<ParentAccount />) },
-          { path: "data-sync", element: routeElement(<DataSync />) },
-          { path: "notification-settings", element: routeElement(<NotificationSettings />) },
-          { path: "arrival-alerts", element: routeElement(<ArrivalAlerts />) },
-          { path: "danger-alert", element: routeElement(<DangerAlert />) },
-          { path: "day-summary", element: routeElement(<DaySummary />) },
-          { path: "daily-report", element: routeElement(<DailySafetyReport />) },
-          { path: "weekly-report", element: routeElement(<WeeklyFamilyReport />) },
-          { path: "remote-audio-audit", element: routeElement(<RemoteAudioAudit />) },
-          { path: "remote-ring", element: routeElement(<RemoteRing />) },
-          { path: "sos-receive", element: routeElement(<SosReceive />) },
+          { path: "parent/family", element: routeElement(<ParentFamily />, PARENT_NAMESPACES) },
+          { path: "subscription", element: routeElement(<Subscription />, BILLING_NAMESPACES) },
+          { path: "trial-lock", element: routeElement(<TrialLock />, BILLING_NAMESPACES) },
+          { path: "notifications", element: routeElement(<Notifications />, PARENT_NOTIFICATION_NAMESPACES) },
+          { path: "remote-audio", element: routeElement(<RemoteAudio />, PARENT_NOTIFICATION_NAMESPACES) },
+          { path: "place-manager", element: routeElement(<PlaceManager />, PARENT_NAMESPACES) },
+          { path: "friend-play", element: routeElement(<FriendPlay />, PARENT_NAMESPACES) },
+          { path: "ai-schedule", element: routeElement(<AiSchedule />, PARENT_NAMESPACES) },
+          { path: "ai-credit", element: routeElement(<AiCredit />, BILLING_NAMESPACES) },
+          { path: "phone-setup", element: routeElement(<PhoneSetup />, PARENT_NAMESPACES) },
+          { path: "sticker-send", element: routeElement(<StickerSend />, PARENT_NAMESPACES) },
+          { path: "profile-edit", element: routeElement(<ProfileEdit />, PARENT_NAMESPACES) },
+          { path: "place-form", element: routeElement(<PlaceForm />, PARENT_NAMESPACES) },
+          { path: "child-invite", element: routeElement(<ChildInvite />, PARENT_NAMESPACES) },
+          { path: "event-form", element: routeElement(<EventForm />, PARENT_NAMESPACES) },
+          { path: "danger-zone-form", element: routeElement(<DangerZoneForm />, PARENT_NOTIFICATION_NAMESPACES) },
+          { path: "location-status", element: routeElement(<LocationStatus />, PARENT_NAMESPACES) },
+          { path: "child-detail", element: routeElement(<ChildDetail />, PARENT_NAMESPACES) },
+          { path: "pairing-wizard", element: routeElement(<PairingWizard />, PARENT_NAMESPACES) },
+          { path: "family-connection", element: routeElement(<FamilyConnection />, PARENT_NAMESPACES) },
+          { path: "location-settings", element: routeElement(<LocationSettings />, PARENT_NAMESPACES) },
+          { path: "account", element: routeElement(<ParentAccount />, PARENT_NAMESPACES) },
+          { path: "data-sync", element: routeElement(<DataSync />, PARENT_NAMESPACES) },
+          { path: "notification-settings", element: routeElement(<NotificationSettings />, PARENT_NOTIFICATION_NAMESPACES) },
+          { path: "arrival-alerts", element: routeElement(<ArrivalAlerts />, PARENT_NOTIFICATION_NAMESPACES) },
+          { path: "danger-alert", element: routeElement(<DangerAlert />, PARENT_NOTIFICATION_NAMESPACES) },
+          { path: "day-summary", element: routeElement(<DaySummary />, REPORT_NAMESPACES) },
+          { path: "daily-report", element: routeElement(<DailySafetyReport />, REPORT_NAMESPACES) },
+          { path: "weekly-report", element: routeElement(<WeeklyFamilyReport />, REPORT_NAMESPACES) },
+          { path: "remote-audio-audit", element: routeElement(<RemoteAudioAudit />, PARENT_NOTIFICATION_NAMESPACES) },
+          { path: "remote-ring", element: routeElement(<RemoteRing />, PARENT_NOTIFICATION_NAMESPACES) },
+          { path: "sos-receive", element: routeElement(<SosReceive />, PARENT_NOTIFICATION_NAMESPACES) },
         ],
       },
 
@@ -241,12 +259,12 @@ const router = createHashRouter([
       {
         element: <RequireRole role="child" />,
         children: [
-          { path: "child/sos", element: routeElement(<ChildSos />) },
-          { path: "child/ai-friend", element: routeElement(<AiFriendChat />) },
-          { path: "child/location-status", element: routeElement(<ChildLocationStatus />) },
-          { path: "child/settings", element: routeElement(<ChildSettings />) },
-          { path: "child/ai-friend-setup", element: routeElement(<AiFriendSetup />) },
-          { path: "playdate-accept", element: routeElement(<PlaydateAccept />) },
+          { path: "child/sos", element: routeElement(<ChildSos />, CHILD_NOTIFICATION_NAMESPACES) },
+          { path: "child/ai-friend", element: routeElement(<AiFriendChat />, CHILD_NAMESPACES) },
+          { path: "child/location-status", element: routeElement(<ChildLocationStatus />, CHILD_NAMESPACES) },
+          { path: "child/settings", element: routeElement(<ChildSettings />, CHILD_NAMESPACES) },
+          { path: "child/ai-friend-setup", element: routeElement(<AiFriendSetup />, CHILD_NAMESPACES) },
+          { path: "playdate-accept", element: routeElement(<PlaydateAccept />, CHILD_NAMESPACES) },
         ],
       },
 
@@ -254,7 +272,7 @@ const router = createHashRouter([
       ...(TEACHER_MODE_ENABLED ? [{
         element: <RequireRole role="teacher" />,
         children: [
-          { path: "teacher/notice", element: routeElement(<TeacherNotice />) },
+          { path: "teacher/notice", element: routeElement(<TeacherNotice />, SHARED_NAMESPACES) },
         ],
       }] : []),
 
@@ -262,8 +280,8 @@ const router = createHashRouter([
       {
         element: <RequireAuthenticated />,
         children: [
-          { path: "feedback", element: routeElement(<Feedback />) },
-          { path: "admin/ai-prompt", element: routeElement(<AdminAiPrompt />) },
+          { path: "feedback", element: routeElement(<Feedback />, SHARED_NAMESPACES) },
+          { path: "admin/ai-prompt", element: routeElement(<AdminAiPrompt />, SHARED_NAMESPACES) },
         ],
       },
 
@@ -271,13 +289,13 @@ const router = createHashRouter([
       {
         element: <RequireAnyRole roles={["parent", "child"]} />,
         children: [
-          { path: "supplies", element: routeElement(<Supplies />) },
-          { path: "route", element: routeElement(<RouteView />) },
+          { path: "supplies", element: routeElement(<Supplies />, SHARED_NAMESPACES) },
+          { path: "route", element: routeElement(<RouteView />, SHARED_NAMESPACES) },
         ],
       },
       // 앱레벨 골격 화면
-      { path: "app-update", element: routeElement(<AppUpdate />) },
-      { path: "perm-denied", element: routeElement(<PermDenied />) },
+      { path: "app-update", element: routeElement(<AppUpdate />, SHARED_NAMESPACES) },
+      { path: "perm-denied", element: routeElement(<PermDenied />, SHARED_NAMESPACES) },
     ],
   },
 

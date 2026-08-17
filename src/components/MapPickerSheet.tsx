@@ -1,3 +1,4 @@
+import { useIntl } from "react-intl";
 /**
  * 지도 장소 피커 시트 — 일정 등록/수정에서 장소를 지도로 지정(TK 요구).
  * 현재 위치(geolocation) 기준으로 지도를 열고, 지도를 탭해 좌표 선택 + 역지오코딩으로
@@ -35,6 +36,7 @@ export function MapPickerSheet({
   onConfirm: (sel: PickedPlace) => void;
   onClose: () => void;
 }) {
+  const intl = useIntl();
   const [picked, setPicked] = useState<{ lat: number; lng: number } | null>(initial ?? null);
   const [address, setAddress] = useState("");
   const [pickedName, setPickedName] = useState<string | null>(null);
@@ -147,7 +149,7 @@ export function MapPickerSheet({
     });
   };
 
-  const selectionLabel = pickedName || address || (picked ? "지도에서 선택한 위치" : "");
+  const selectionLabel = pickedName || address || (picked ? intl.formatMessage({ id: "parent.eventForm.copy066" }) : "");
 
   return (
     <div
@@ -163,20 +165,20 @@ export function MapPickerSheet({
         type="button"
         className="mps-scrim"
         tabIndex={-1}
-        aria-label="닫기"
+        aria-label={intl.formatMessage({ id: "parent.parentSettings.copy027" })}
         onClick={onClose}
       />
       <div className="mps-sheet">
         <div className="mps-head">
-          <span id={titleId} className="mps-title">지도에서 장소 지정</span>
-          <button ref={closeRef} type="button" className="mps-close hy-press" aria-label="닫기" onClick={onClose}>
+          <span id={titleId} className="mps-title">{intl.formatMessage({ id: "parent.eventForm.copy039" })}</span>
+          <button ref={closeRef} type="button" className="mps-close hy-press" aria-label={intl.formatMessage({ id: "parent.parentSettings.copy027" })} onClick={onClose}>
             <X size={20} strokeWidth={2.2} />
           </button>
         </div>
 
         <div className="mps-map">
           <KakaoMap className="mps-map__canvas" center={center} picked={picked} onPick={handlePick} places={mapPlaces} />
-          {!picked && <span className="mps-map__hint">지도를 눌러 위치를 선택하세요</span>}
+          {!picked && <span className="mps-map__hint">{intl.formatMessage({ id: "parent.mapPickerSheet.copy001" })}</span>}
         </div>
 
         {savedPlaces.length > 0 && (
@@ -199,10 +201,10 @@ export function MapPickerSheet({
         <div className="mps-foot">
           <span className="mps-sel">
             <MapPin size={16} strokeWidth={2.2} />
-            <span id={descriptionId} className="mps-sel__text">{selectionLabel || "위치를 선택해 주세요"}</span>
+            <span id={descriptionId} className="mps-sel__text">{selectionLabel || intl.formatMessage({ id: "parent.mapPickerSheet.copy002" })}</span>
           </span>
           <button type="button" className="mps-confirm hy-press" onClick={confirm} disabled={!picked}>
-            이 위치로 지정
+            {intl.formatMessage({ id: "parent.mapPickerSheet.copy003" })}
           </button>
         </div>
       </div>

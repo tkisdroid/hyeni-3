@@ -9,12 +9,10 @@ import assert from "node:assert/strict";
 
 import {
   buildEventCompanionGreeting,
-  eventCompanionGoLine,
   eventCompanionSuggestions,
   EVENT_COMPANION_KEYWORDS,
   resolveEventCompanionKind,
 } from "../src/transform/eventCompanionPrompt.ts";
-import { buildAdventureMap } from "../src/transform/adventureMap.ts";
 import {
   EVENT_COMPANION_KEYWORDS as WORKER_KEYWORDS,
   buildEventCompanionHints,
@@ -64,20 +62,8 @@ test("시간을 모르면 시간을 지어내지 않는다", () => {
   assert.doesNotMatch(greeting, /\d{1,2}:\d{2}/);
 });
 
-test("아이 홈 말풍선도 일정 성격을 따른다", () => {
-  const birthday = buildAdventureMap(
-    [{ id: "e1", title: "수호 생일 챙기기", icon: "x.webp", startMinutes: 660, isPast: false }],
-    600,
-  );
-  assert.match(birthday.bubble, /축하/);
-  assert.doesNotMatch(birthday.bubble, /같이 가자/);
-
-  const lesson = buildAdventureMap(
-    [{ id: "e2", title: "태권도 학원", icon: "x.webp", startMinutes: 660, isPast: false }],
-    600,
-  );
-  assert.match(lesson.bubble, /같이 가자/);
-});
+// 아이 홈 말풍선은 글로벌 i18n 카탈로그(shared.adventure.*)가 정본이 되어
+// 성격별 꼬리말을 쓰지 않는다. 성격 판정은 서버 프롬프트 힌트에서 계속 쓰인다.
 
 test("클라이언트와 Worker의 성격 키워드 표는 항상 같다", () => {
   assert.deepEqual(

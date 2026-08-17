@@ -1,0 +1,5 @@
+[
+  { "path": "src/screens/feature/AiSchedule.tsx", "pattern": "show\\(errorMessage,\\s*\"⚠️\"\\)", "occurrences": 1, "reason": "data: 순수 일정 파서가 allowlist code와 로컬 제목에서 만든 사용자 수정 안내" },
+  { "path": "src/screens/feature/ArrivalAlerts.tsx", "pattern": "cleanAlertTitle\\(a\\.message\\)", "occurrences": 1, "reason": "data: 인증된 가족의 도착 알림 본문 데이터이며 네트워크·예외 오류 원문이 아님" },
+  { "path": "src/screens/feature/DangerAlert.tsx", "pattern": "cleanAlertTitle\\((?:latest|a)\\.message\\)", "occurrences": 2, "reason": "data: 인증된 가족의 위험 알림 본문 데이터이며 네트워크·예외 오류 원문이 아님" }
+]

@@ -5,6 +5,7 @@ import "./styles/tokens.css";
 import "./styles/global.css";
 import "./styles/components.css";
 import { App } from "./app/App";
+import { LocaleProvider } from "./i18n/LocaleProvider";
 import { isNativePlatform } from "./lib/native/plugins";
 import {
   activatePwaUpdateAndWaitForControllerChange,
@@ -62,6 +63,8 @@ if (!root) throw new Error("#root 엘리먼트를 찾을 수 없습니다.");
 
 createRoot(root).render(
   <StrictMode>
-    <App />
+    <LocaleProvider>
+      <App />
+    </LocaleProvider>
   </StrictMode>,
 );

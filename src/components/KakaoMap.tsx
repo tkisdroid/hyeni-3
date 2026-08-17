@@ -1,3 +1,4 @@
+import { useIntl } from "react-intl";
 /**
  * Kakao 지도 컴포넌트. 자녀 마커(아바타 오버레이) + 위험구역(원) + 저장장소(마커).
  * SDK 로드 실패(키 미인증 등) 시 스타일 폴백으로 대체.
@@ -99,6 +100,7 @@ export function KakaoMap({
   className?: string;
   tone?: "formal" | "child";
 }) {
+  const intl = useIntl();
   const ref = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapRef = useRef<any>(null);
@@ -407,10 +409,10 @@ export function KakaoMap({
     return (
       <div className={[className, "km-error"].filter(Boolean).join(" ")} role="status">
         <strong className="km-error__title">
-          {tone === "child" ? "지도를 불러오지 못했어" : "지도를 불러오지 못했어요"}
+          {tone === "child" ? intl.formatMessage({ id: "shared.kakaoMap.copy001" }) : intl.formatMessage({ id: "shared.kakaoMap.copy002" })}
         </strong>
         <span className="km-error__detail">
-          {tone === "child" ? "인터넷 연결을 확인한 뒤 다시 해 줘" : "인터넷 연결을 확인한 뒤 다시 시도해 주세요"}
+          {tone === "child" ? intl.formatMessage({ id: "shared.kakaoMap.copy003" }) : intl.formatMessage({ id: "shared.kakaoMap.copy004" })}
         </span>
         <button
           type="button"
@@ -421,7 +423,7 @@ export function KakaoMap({
             setRetryKey((value) => value + 1);
           }}
         >
-          지도 다시 불러오기
+          {intl.formatMessage({ id: "shared.kakaoMap.copy005" })}
         </button>
       </div>
     );

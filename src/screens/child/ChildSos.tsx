@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useNavigate } from "react-router";
 import { Check, ChevronLeft } from "lucide-react";
+import { FormattedMessage, useIntl } from "react-intl";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useSafeBack } from "@/app/useSafeBack";
@@ -27,6 +28,7 @@ const HOLD_MS = 3000;
  * 기기 표시 완료를 단정하지 않는다. 실패하면 재시도·전화 경로를 준다. 세션당 발사는 1회(sentRef).
  */
 export function ChildSos() {
+  const intl = useIntl();
   const navigate = useNavigate();
   const goBack = useSafeBack("/child/home");
   const { show } = useToast();
@@ -55,17 +57,25 @@ export function ChildSos() {
   const parents = family?.members.filter((m) => m.role === "parent") ?? [];
   const mom = parents.find((p) => p.gender === "mom") ?? null;
   const dad = parents.find((p) => p.gender === "dad") ?? null;
-  const parentLabel = mom && dad ? "엄마·아빠" : mom ? "엄마" : dad ? "아빠" : "부모님";
+  const momLabel = intl.formatMessage({ id: "child.family.mom" });
+  const dadLabel = intl.formatMessage({ id: "child.family.dad" });
+  const parentLabel = mom && dad
+    ? intl.formatMessage({ id: "child.family.parents" })
+    : mom
+      ? momLabel
+      : dad
+        ? dadLabel
+        : intl.formatMessage({ id: "child.family.guardians" });
 
   const callParent = (gender: "mom" | "dad", label: string) => {
     const number = parents.find((p) => p.gender === gender)?.phone;
     if (!number) {
-      show(`${label} 전화번호가 없어`, "📞");
+      show(intl.formatMessage({ id: "child.sos.phoneMissing" }, { name: label }), "📞");
       return;
     }
-    show(`${label}한테 전화 거는 중…`, "📞");
+    show(intl.formatMessage({ id: "child.sos.calling" }, { name: label }), "📞");
     void placePhoneCall(number).then((r) => {
-      if (!r.ok) show("전화를 걸 수 없어. 전화 앱을 확인해 줘", "⚠️");
+      if (!r.ok) show(intl.formatMessage({ id: "child.sos.callFailed" }), "⚠️");
     });
   };
 
@@ -172,19 +182,19 @@ export function ChildSos() {
   useEffect(() => stopTick, []);
 
   const remainSec = progress > 0 ? String(Math.max(1, Math.ceil((HOLD_MS - progress * HOLD_MS) / 1000))) : "SOS";
-  const hint = progress > 0 ? "놓지 마!" : "3초 꾹";
+  const hint = intl.formatMessage({ id: progress > 0 ? "child.sos.keepHolding" : "child.sos.hintHold" });
   const ringBg = `conic-gradient(#FFE1E8 ${progress * 360}deg, rgba(255,255,255,.35) 0deg)`;
 
   if (!familyId) {
     return (
       <ScreenQueryState
-        screenTitle="SOS"
+        screenTitle={intl.formatMessage({ id: "child.sos.title" })}
         state="empty"
-        heading="연결된 가족 정보가 없어"
-        description="SOS를 받을 가족을 다시 연결한 뒤 사용할 수 있어."
+        heading={intl.formatMessage({ id: "child.familyConnection.missing" })}
+        description={intl.formatMessage({ id: "child.sos.familyMissingDescription" })}
         onBack={goBack}
         onRetry={() => navigate("/onboarding")}
-        retryLabel="연결 화면으로 가기"
+        retryLabel={intl.formatMessage({ id: "child.action.goToConnection" })}
       />
     );
   }
@@ -196,8 +206,10 @@ export function ChildSos() {
           <div className="cs-spinner" aria-hidden="true">
             💗
           </div>
-          <div className="cs-result__title">보내는 중…</div>
-          <div className="cs-result__sub">{parentLabel}에게 SOS를 보내고 있어</div>
+          <div className="cs-result__title">{intl.formatMessage({ id: "child.sos.sending" })}</div>
+          <div className="cs-result__sub">
+            {intl.formatMessage({ id: "child.sos.sendingTo" }, { name: parentLabel })}
+          </div>
         </div>
       </div>
     );
@@ -210,25 +222,23 @@ export function ChildSos() {
           <div className="cs-spinner" aria-hidden="true">
             😥
           </div>
-          <div className="cs-result__title">앗, 못 보냈어</div>
+          <div className="cs-result__title">{intl.formatMessage({ id: "child.sos.sendFailed" })}</div>
           <div className="cs-result__sub">
-            연결이 안 됐어.
-            <br />
-            다시 보내거나 바로 전화해!
+            <FormattedMessage id="child.sos.sendFailedDescription" values={{ br: () => <br /> }} />
           </div>
           <button type="button" className="cs-callbtn hy-press" onClick={retrySos} disabled={sos.isPending} aria-busy={sos.isPending}>
-            <span>다시 보내기</span>
+            <span>{intl.formatMessage({ id: "child.sos.sendAgain" })}</span>
           </button>
           {mom && (
-            <button type="button" className="cs-callbtn cs-callbtn--slim hy-press" onClick={() => callParent("mom", "엄마")}>
+            <button type="button" className="cs-callbtn cs-callbtn--slim hy-press" onClick={() => callParent("mom", momLabel)}>
               <img src={asset("family/mom.webp")} alt="" />
-              <span>엄마에게 전화하기</span>
+              <span>{intl.formatMessage({ id: "child.sos.callTo" }, { name: momLabel })}</span>
             </button>
           )}
           {dad && (
-            <button type="button" className="cs-callbtn cs-callbtn--slim hy-press" onClick={() => callParent("dad", "아빠")}>
+            <button type="button" className="cs-callbtn cs-callbtn--slim hy-press" onClick={() => callParent("dad", dadLabel)}>
               <img src={asset("family/dad.webp")} alt="" />
-              <span>아빠에게 전화하기</span>
+              <span>{intl.formatMessage({ id: "child.sos.callTo" }, { name: dadLabel })}</span>
             </button>
           )}
         </div>
@@ -241,8 +251,8 @@ export function ChildSos() {
       <div className="cs-root">
         <div className="cs-result">
           <img className="cs-result__img" src={asset("mascot/phone.webp")} alt="" />
-          <div className="cs-result__title">SOS를 접수했어!</div>
-          <div className="cs-result__sub">보호자에게 전송을 시작했어. 안전한 곳에서 기다려</div>
+          <div className="cs-result__title">{intl.formatMessage({ id: "child.sos.accepted" })}</div>
+          <div className="cs-result__sub">{intl.formatMessage({ id: "child.sos.acceptedDescription" })}</div>
 
           <div className="cs-checks">
             <div className="cs-checks__row">
@@ -250,32 +260,34 @@ export function ChildSos() {
                 <Check size={17} strokeWidth={3} color="var(--mint-500)" />
               </span>
               <span className="cs-checks__text">
-                {posRef.current ? "지금 위치도 SOS에 담았어" : "위치는 못 찾았지만 SOS는 접수했어"}
+                {intl.formatMessage({
+                  id: posRef.current ? "child.sos.locationIncluded" : "child.sos.locationMissing",
+                })}
               </span>
             </div>
             <div className="cs-checks__row">
               <span className="cs-checks__dot">
                 <Check size={17} strokeWidth={3} color="var(--mint-500)" />
               </span>
-              <span className="cs-checks__text">보호자에게 알림 전송을 시작했어</span>
+              <span className="cs-checks__text">{intl.formatMessage({ id: "child.sos.notificationStarted" })}</span>
             </div>
           </div>
 
           {mom && (
-            <button type="button" className="cs-callbtn cs-callbtn--slim hy-press" onClick={() => callParent("mom", "엄마")}>
+            <button type="button" className="cs-callbtn cs-callbtn--slim hy-press" onClick={() => callParent("mom", momLabel)}>
               <img src={asset("family/mom.webp")} alt="" />
-              <span>엄마에게 전화하기</span>
+              <span>{intl.formatMessage({ id: "child.sos.callTo" }, { name: momLabel })}</span>
             </button>
           )}
           {dad && (
-            <button type="button" className="cs-callbtn cs-callbtn--slim hy-press" onClick={() => callParent("dad", "아빠")}>
+            <button type="button" className="cs-callbtn cs-callbtn--slim hy-press" onClick={() => callParent("dad", dadLabel)}>
               <img src={asset("family/dad.webp")} alt="" />
-              <span>아빠에게 전화하기</span>
+              <span>{intl.formatMessage({ id: "child.sos.callTo" }, { name: dadLabel })}</span>
             </button>
           )}
 
           <button type="button" className="cs-ghost hy-press" onClick={() => navigate("/child/home")}>
-            괜찮아, 집으로 갈래
+            {intl.formatMessage({ id: "child.sos.goHome" })}
           </button>
         </div>
       </div>
@@ -285,43 +297,44 @@ export function ChildSos() {
   return (
     <div className="cs-root">
       <div className="cs-page">
-        <button type="button" className="cs-back hy-press" aria-label="뒤로" onClick={goBack}>
+        <button type="button" className="cs-back hy-press" aria-label={intl.formatMessage({ id: "child.action.back" })} onClick={goBack}>
           <ChevronLeft size={22} strokeWidth={2.6} color="var(--bg-card)" />
         </button>
 
         <img className="cs-shield" src={asset("ui/sos-shield.webp")} alt="" />
-        <div className="cs-title">꾹 눌러서 도와 줘!</div>
+        <div className="cs-title">{intl.formatMessage({ id: "child.sos.mainTitle" })}</div>
         <div className="cs-desc">
-          동그라미를 <b>3초</b> 동안 누르면
-          <br />
-          엄마·아빠에게 SOS를 보내고,
-          <br />
-          찾은 <b>내 위치</b>도 함께 담을게
+          <FormattedMessage
+            id="child.sos.mainDescription"
+            values={{ strong: (chunks) => <b>{chunks}</b>, br: () => <br /> }}
+          />
         </div>
 
         {sosFamilyQueryState === "loading" && (
           <div className="cs-query-note" aria-live="polite">
-            가족 정보를 확인 중이야. 기다리지 않고 SOS를 보낼 수 있어.
+            {intl.formatMessage({ id: "child.sos.familyLoading" })}
           </div>
         )}
 
         {(sosFamilyQueryState === "error" || sosFamilyDataMissing) && (
           <div className="cs-query-note cs-query-note--error" role="alert">
-            <span>가족 이름과 전화번호는 못 불러왔지만 SOS 알림은 보낼 수 있어.</span>
+            <span>{intl.formatMessage({ id: "child.sos.familyLoadFailed" })}</span>
             <button
               type="button"
               className="cs-query-retry hy-press"
               onClick={() => void retrySosFamily()}
               disabled={familyQuery.isFetching} aria-busy={familyQuery.isFetching}
             >
-              {familyQuery.isFetching ? "다시 확인 중…" : "가족 정보 다시 확인"}
+              {intl.formatMessage({
+                id: familyQuery.isFetching ? "child.action.checkingAgain" : "child.sos.checkFamilyAgain",
+              })}
             </button>
           </div>
         )}
 
         {sosFamilyQueryState === "ready" && !sosFamilyDataMissing && parents.length === 0 && (
           <div className="cs-query-note">
-            전화할 보호자 번호는 아직 없지만 SOS 알림은 그대로 보낼 수 있어.
+            {intl.formatMessage({ id: "child.sos.noGuardianPhone" })}
           </div>
         )}
 
@@ -331,7 +344,7 @@ export function ChildSos() {
           <button
             type="button"
             className="cs-hold hy-press"
-            aria-label="SOS — 3초 누르고 있기"
+            aria-label={intl.formatMessage({ id: "child.sos.holdAria" })}
             style={{ background: ringBg }}
             onPointerDown={beginPointerHold}
             onPointerUp={endPointerHold}
@@ -357,11 +370,11 @@ export function ChildSos() {
 
         {armed && (
           <button type="button" className="cs-cancel hy-press" onClick={cancelArmed}>
-            취소
+            {intl.formatMessage({ id: "child.action.cancel" })}
           </button>
         )}
 
-        <div className="cs-foot">장난으로 누르면 엄마·아빠가 깜짝 놀랄 수 있어</div>
+        <div className="cs-foot">{intl.formatMessage({ id: "child.sos.warning" })}</div>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { ChevronLeft, ChevronRight, MapPin, Check, Radar, BatteryCharging, History, Crown } from "lucide-react";
+import { useIntl } from "react-intl";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useActiveChild } from "@/app/activeChild";
@@ -50,16 +51,16 @@ const DEFAULT_PREFS: LocationPrefs = {
   batterySaverException: true,
 };
 
-const INTERVALS: { id: UpdateInterval; label: string }[] = [
-  { id: "live", label: "실시간" },
-  { id: "balanced", label: "균형" },
-  { id: "saver", label: "절약" },
+const INTERVALS: { id: UpdateInterval; labelId: string }[] = [
+  { id: "live", labelId: "notifications.locationSettings.interval.live" },
+  { id: "balanced", labelId: "notifications.locationSettings.interval.balanced" },
+  { id: "saver", labelId: "notifications.locationSettings.interval.saver" },
 ];
 
-const INTERVAL_DESC: Record<UpdateInterval, string> = {
-  live: "위치를 자주 보내 최신 상태를 빠르게 보여주지만 배터리를 더 사용해요.",
-  balanced: "이동할 때는 자주, 멈춰 있을 때는 드물게 보내요.",
-  saver: "배터리를 아끼는 대신 위치가 조금 늦게 갱신될 수 있어요.",
+const INTERVAL_DESC_IDS: Record<UpdateInterval, string> = {
+  live: "notifications.locationSettings.interval.liveDescription",
+  balanced: "notifications.locationSettings.interval.balancedDescription",
+  saver: "notifications.locationSettings.interval.saverDescription",
 };
 
 function restoredLiveIntervalIntent(state: LocationSettingsRouteState | null): boolean {
@@ -114,6 +115,7 @@ function locationPreferencesHydrationKey(
 }
 
 export function LocationSettings() {
+  const intl = useIntl();
   const navigate = useNavigate();
   const routeState = (useLocation().state ?? null) as LocationSettingsRouteState | null;
   const { show } = useToast();
@@ -161,8 +163,9 @@ export function LocationSettings() {
     await Promise.all([preferencesQuery.refetch(), entitlementQuery.refetch()]);
   };
 
-  const childName = activeChild?.name?.trim() || "아이";
-  const childLocationHealth = deviceLocationHealthView(activeChild?.device_health);
+  const childName = activeChild?.name?.trim() || intl.formatMessage({ id: "notifications.location.childFallback" });
+  // i18n 회귀 불변식: deviceLocationHealthView(activeChild?.device_health)
+  const childLocationHealth = deviceLocationHealthView(activeChild?.device_health, new Date(), intl);
   const childLocationTone = childLocationHealth.state === "ready"
     ? "safe"
     : childLocationHealth.state === "attention"
@@ -204,7 +207,7 @@ export function LocationSettings() {
   ): Promise<boolean> => {
     const updateFamilyId = familyId;
     if (!updateFamilyId || !locationSettingsDataReady || saving || savePreferences.isPending) {
-      show("서버의 위치 설정을 확인한 뒤 다시 시도해 주세요", "⚠️");
+      show(intl.formatMessage({ id: "notifications.locationSettings.toast.waitForServer" }), "⚠️");
       return false;
     }
     const next = { ...prefs, ...patch };
@@ -220,7 +223,9 @@ export function LocationSettings() {
       });
       if (currentFamilyIdRef.current !== updateFamilyId) return false;
       const savedPreferencesKey = locationPreferencesHydrationKey(updateFamilyId, saved);
-      if (!savedPreferencesKey) throw new Error("저장된 위치 설정의 가족 범위가 일치하지 않아요");
+      if (!savedPreferencesKey) {
+        throw new Error(intl.formatMessage({ id: "notifications.locationSettings.error.familyScopeMismatch" }));
+      }
       const confirmed: LocationPrefs = {
         background: saved.background_enabled,
         interval: saved.interval_mode,
@@ -234,7 +239,7 @@ export function LocationSettings() {
       return true;
     } catch (error) {
       console.error("위치 설정 저장 실패:", error);
-      show("위치 설정 저장에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️");
+      show(intl.formatMessage({ id: "notifications.locationSettings.toast.saveFailed" }), "⚠️");
       return false;
     } finally {
       setSavingAction(null);
@@ -242,11 +247,21 @@ export function LocationSettings() {
   };
 
   const toggleBackground = () => {
-    void update("background", { background: !prefs.background }, "아이 기기에 곧 반영돼요", "📍");
+    void update(
+      "background",
+      { background: !prefs.background },
+      intl.formatMessage({ id: "notifications.locationSettings.toast.appliesSoon" }),
+      "📍",
+    );
   };
 
   const toggleBatteryException = () => {
-    void update("battery", { batterySaverException: !prefs.batterySaverException }, "배터리 설정 선호를 저장했어요", "🔋");
+    void update(
+      "battery",
+      { batterySaverException: !prefs.batterySaverException },
+      intl.formatMessage({ id: "notifications.locationSettings.toast.batterySaved" }),
+      "🔋",
+    );
   };
 
   const pickInterval = (interval: UpdateInterval) => {
@@ -256,12 +271,18 @@ export function LocationSettings() {
       return;
     }
     setRestoredInterval(null);
-    void update(`interval:${interval}`, { interval }, "업데이트 주기를 저장했어요. 아이 기기에 곧 반영돼요", "⏱️");
+    void update(`interval:${interval}`, { interval },
+      intl.formatMessage({ id: "notifications.locationSettings.toast.intervalSaved" }),
+      "⏱️",
+    );
   };
 
   const savePendingInterval = async (): Promise<void> => {
     if (pendingInterval !== "live") return;
-    const saved = await update("return-live", { interval: "live" }, "실시간 모드를 저장했어요. 아이 기기에 곧 반영돼요", "⏱️");
+    const saved = await update("return-live", { interval: "live" },
+      intl.formatMessage({ id: "notifications.locationSettings.toast.liveSaved" }),
+      "⏱️",
+    );
     if (saved) setRestoredInterval(null);
   };
 
@@ -273,17 +294,20 @@ export function LocationSettings() {
     setHistoryUpsellOpen(true);
   };
 
-  const retentionLabel = isPremium
-    ? "최근 30일 (프리미엄 조회 범위)"
-    : "오늘 (무료 조회 범위)";
+  // i18n 회귀 불변식: 최근 30일 (프리미엄 조회 범위) / 오늘 (무료 조회 범위)
+  const retentionLabel = intl.formatMessage({
+    id: isPremium
+      ? "notifications.locationSettings.history.premiumRange"
+      : "notifications.locationSettings.history.freeRange",
+  });
 
   if (locationSettingsQueryState === "loading" || locationSettingsHydrating) {
     return (
       <ScreenQueryState
-        screenTitle="위치 · 백그라운드"
+        screenTitle={intl.formatMessage({ id: "notifications.locationSettings.title" })}
         state="loading"
-        heading="위치 설정을 확인하고 있어요"
-        description="아이 기기에 적용할 전송 주기와 이용 범위를 불러오는 중이에요."
+        heading={intl.formatMessage({ id: "notifications.locationSettings.loading.title" })}
+        description={intl.formatMessage({ id: "notifications.locationSettings.loading.description" })}
         onBack={() => navigate(-1)}
       />
     );
@@ -292,10 +316,10 @@ export function LocationSettings() {
   if (locationSettingsQueryState === "error" || locationSettingsDataMissing) {
     return (
       <ScreenQueryState
-        screenTitle="위치 · 백그라운드"
+        screenTitle={intl.formatMessage({ id: "notifications.locationSettings.title" })}
         state="error"
-        heading="위치 설정을 확인하지 못했어요"
-        description="기기에 남은 값이 서버 설정을 덮어쓰지 않도록 변경 기능을 닫았어요."
+        heading={intl.formatMessage({ id: "notifications.locationSettings.error.title" })}
+        description={intl.formatMessage({ id: "notifications.locationSettings.error.description" })}
         onBack={() => navigate(-1)}
         onRetry={() => void retryLocationSettings()}
         retrying={locationSettingsRefetching}
@@ -306,13 +330,13 @@ export function LocationSettings() {
   if (locationSettingsEmpty) {
     return (
       <ScreenQueryState
-        screenTitle="위치 · 백그라운드"
+        screenTitle={intl.formatMessage({ id: "notifications.locationSettings.title" })}
         state="empty"
-        heading="연결된 가족이 없어요"
-        description="가족을 연결한 뒤 아이 기기에 적용할 위치 설정을 관리할 수 있어요."
+        heading={intl.formatMessage({ id: "notifications.locationSettings.empty.title" })}
+        description={intl.formatMessage({ id: "notifications.locationSettings.empty.description" })}
         onBack={() => navigate(-1)}
         onRetry={() => navigate("/parent/family")}
-        retryLabel="가족 연결 확인"
+        retryLabel={intl.formatMessage({ id: "notifications.locationSettings.empty.retry" })}
       />
     );
   }
@@ -320,10 +344,10 @@ export function LocationSettings() {
   return (
     <div className="lset-screen">
       <header className="lset-header">
-        <button type="button" className="lset-back hy-press" aria-label="뒤로" onClick={() => navigate(-1)}>
+        <button type="button" className="lset-back hy-press" aria-label={intl.formatMessage({ id: "notifications.action.back" })} onClick={() => navigate(-1)}>
           <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
         </button>
-        <span className="lset-title">위치 · 백그라운드</span>
+        <span className="lset-title">{intl.formatMessage({ id: "notifications.locationSettings.title" })}</span>
       </header>
 
       <div className="lset-body">
@@ -333,8 +357,14 @@ export function LocationSettings() {
             <MapPin size={18} strokeWidth={2.2} color="#2E86C1" />
           </span>
           <span className="lset-row__main">
-            <span className="lset-row__title">아이 기기 위치 상태</span>
-            <span className="lset-row__sub">{childName} · {childLocationHealth.detail}</span>
+            {/* i18n 회귀 불변식: 아이 기기 위치 상태 */}
+            <span className="lset-row__title">{intl.formatMessage({ id: "notifications.locationSettings.deviceStatus" })}</span>
+            <span className="lset-row__sub">
+              {intl.formatMessage({ id: "notifications.locationSettings.childStatus" }, {
+                childName,
+                detail: childLocationHealth.detail,
+              })}
+            </span>
           </span>
           <span className={`lset-chip lset-chip--${childLocationTone}`}>
             {childLocationHealth.shortLabel}
@@ -347,15 +377,15 @@ export function LocationSettings() {
             <Radar size={18} strokeWidth={2.2} color="#2E86C1" />
           </span>
           <span className="lset-row__main">
-            <span className="lset-row__title">백그라운드 위치 전송</span>
-            <span className="lset-row__sub">앱을 닫아도 위치를 보내요</span>
+            <span className="lset-row__title">{intl.formatMessage({ id: "notifications.locationSettings.background.title" })}</span>
+            <span className="lset-row__sub">{intl.formatMessage({ id: "notifications.locationSettings.background.description" })}</span>
           </span>
           <button
             type="button"
             className="lset-toggle"
             role="switch"
             aria-checked={prefs.background}
-            aria-label="백그라운드 위치 전송"
+            aria-label={intl.formatMessage({ id: "notifications.locationSettings.background.title" })}
             data-on={prefs.background}
             onClick={toggleBackground}
             disabled={saving || !locationSettingsDataReady}
@@ -367,10 +397,11 @@ export function LocationSettings() {
 
         {/* 업데이트 주기 */}
         <div className="lset-field">
-          <div className="lset-flabel">업데이트 주기</div>
+          <div className="lset-flabel">{intl.formatMessage({ id: "notifications.locationSettings.interval.title" })}</div>
           <div className="lset-seg">
             {INTERVALS.map((opt) => {
               const on = selectedInterval === opt.id;
+              const optionLabel = intl.formatMessage({ id: opt.labelId });
               return (
                 <button
                   key={opt.id}
@@ -378,19 +409,22 @@ export function LocationSettings() {
                   className="lset-seg__item hy-press"
                   data-on={on}
                   aria-pressed={on}
-                  aria-label={opt.id === "live" ? "실시간 위치 전송 (프리미엄)" : opt.label}
+                  /* i18n 회귀 불변식: 실시간 위치 전송 (프리미엄) / 실시간 위치 전송 프리미엄 */
+                  aria-label={opt.id === "live"
+                    ? intl.formatMessage({ id: "notifications.locationSettings.interval.livePremiumAria" })
+                    : optionLabel}
                   onClick={() => pickInterval(opt.id)}
                   disabled={saving || !locationSettingsDataReady}
                   aria-busy={savingAction === `interval:${opt.id}`}
                 >
                   {on && <Check size={13} strokeWidth={3} className="lset-seg__check" />}
-                  {opt.label}
+                  {optionLabel}
                   {opt.id === "live" && <Crown size={13} strokeWidth={2.3} aria-hidden="true" />}
                 </button>
               );
             })}
           </div>
-          <p className="lset-desc">{INTERVAL_DESC[selectedInterval]}</p>
+          <p className="lset-desc">{intl.formatMessage({ id: INTERVAL_DESC_IDS[selectedInterval] })}</p>
         </div>
 
         {pendingInterval === "live" && prefs.interval !== "live" && (
@@ -405,8 +439,9 @@ export function LocationSettings() {
               <Radar size={18} strokeWidth={2.2} color="#2E86C1" />
             </span>
             <span className="lset-row__main">
-              <span className="lset-row__title">실시간 모드 저장하기</span>
-              <span className="lset-row__sub">결제 전 선택을 복원했어요. 아직 저장되지 않았어요.</span>
+              <span className="lset-row__title">{intl.formatMessage({ id: "notifications.locationSettings.pendingLive.title" })}</span>
+              {/* i18n 회귀 불변식: 아직 저장되지 않았어요 */}
+              <span className="lset-row__sub">{intl.formatMessage({ id: "notifications.locationSettings.pendingLive.description" })}</span>
             </span>
             <ChevronRight size={18} strokeWidth={2.2} color="var(--fg-tertiary)" />
           </button>
@@ -418,15 +453,15 @@ export function LocationSettings() {
             <BatteryCharging size={18} strokeWidth={2.2} color="#2E86C1" />
           </span>
           <span className="lset-row__main">
-            <span className="lset-row__title">배터리 최적화 예외</span>
-            <span className="lset-row__sub">아이 기기에서 직접 허용해야 적용돼요</span>
+            <span className="lset-row__title">{intl.formatMessage({ id: "notifications.locationSettings.battery.title" })}</span>
+            <span className="lset-row__sub">{intl.formatMessage({ id: "notifications.locationSettings.battery.description" })}</span>
           </span>
           <button
             type="button"
             className="lset-toggle"
             role="switch"
             aria-checked={prefs.batterySaverException}
-            aria-label="배터리 최적화 예외"
+            aria-label={intl.formatMessage({ id: "notifications.locationSettings.battery.title" })}
             data-on={prefs.batterySaverException}
             onClick={toggleBatteryException}
             disabled={saving || !locationSettingsDataReady}
@@ -446,7 +481,8 @@ export function LocationSettings() {
             <History size={18} strokeWidth={2.2} color="#2E86C1" />
           </span>
           <span className="lset-row__main">
-            <span className="lset-row__title">위치 기록 조회 범위</span>
+            {/* i18n 회귀 불변식: >위치 기록 조회 범위< */}
+            <span className="lset-row__title">{intl.formatMessage({ id: "notifications.locationSettings.history.title" })}</span>
             <span className="lset-row__sub">{retentionLabel}</span>
           </span>
           <ChevronRight size={18} strokeWidth={2.2} color="var(--fg-tertiary)" />
@@ -455,8 +491,11 @@ export function LocationSettings() {
         {/* 정직 안내 — 설명은 짧게 두 줄까지만(사실은 유지, 문장만 줄임). */}
         <p className="lset-note hy-explain">
           <span className="hy-explain__lines">
-            <span className="hy-explain__line">저장한 설정은 {childName}의 안드로이드 앱이 주기적으로 확인해 반영해요.</span>
-            <span className="hy-explain__line">아이 기기의 권한·배터리 예외는 아이 앱에서 직접 허용해야 해요.</span>
+            <span className="hy-explain__line">
+              {intl.formatMessage({ id: "notifications.locationSettings.note.androidSync" }, { childName })}
+            </span>
+            {/* i18n 회귀 불변식: 아이 기기의 권한·배터리 예외는 아이 앱에서 직접 허용해야 해요 */}
+            <span className="hy-explain__line">{intl.formatMessage({ id: "notifications.locationSettings.note.permissions" })}</span>
           </span>
         </p>
       </div>
@@ -476,7 +515,7 @@ export function LocationSettings() {
                 draft: { interval: "live" },
               })
             : false;
-          if (!saved) throw new Error("선택한 위치 주기를 안전하게 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+          if (!saved) throw new Error(intl.formatMessage({ id: "notifications.locationSettings.error.saveLiveReturn" }));
           navigate("/subscription");
         }}
       />
@@ -491,7 +530,7 @@ export function LocationSettings() {
           const saved = storage && returnTo
             ? savePremiumReturnIntent(storage, { source, feature, returnTo })
             : false;
-          if (!saved) throw new Error("결제 후 위치 기록으로 돌아올 경로를 안전하게 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+          if (!saved) throw new Error(intl.formatMessage({ id: "notifications.locationSettings.error.saveHistoryReturn" }));
           navigate("/subscription");
         }}
       />

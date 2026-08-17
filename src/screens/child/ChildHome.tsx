@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { Backpack, Check, MapPin, MessageCircle, Navigation, Palette, Settings2, X } from "lucide-react";
+import { useIntl } from "react-intl";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAccent } from "@/app/accent";
@@ -16,7 +17,9 @@ import { placePhoneCall } from "@/lib/native/phone";
 import type { DailySupply, CalendarEvent } from "@/lib/api/endpoints/schedule";
 import type { RoutePoint } from "@/lib/api/endpoints/route";
 import { groupEventsByDateKey, PAST_TAGS } from "@/transform/scheduleView";
-import { todayDateKey } from "@/transform/dateKey";
+import { useLocale } from "@/i18n/useLocale";
+import { formatCalendarDay, formatRelativeMinutes, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+import { dateTimeScopeInTimeZone, latestDateKeyOrNull } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { QUICK_STATUS_ACTIONS, buildQuickStatusMemo, type QuickStatusActionId } from "@/transform/quickStatusShare";
 import { buildAdventureMap, timeLabelToMinutes, type AdventureEventInput } from "@/transform/adventureMap";
@@ -66,15 +69,22 @@ const CELEBRATE_ICON: Record<string, string> = {
 const MAP_PATH = "M 292 78 C 250 128 152 112 126 172 C 100 236 224 244 252 306 C 278 364 168 372 128 428";
 
 export function ChildHome() {
+  const intl = useIntl();
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const { show } = useToast();
   const { accent, setAccent } = useAccent();
   const { userId } = useAuth();
 
-  const memoDateKeys = useRecentDateKeys(7);
-  const todayKey = memoDateKeys[memoDateKeys.length - 1] ?? todayDateKey();
-  const now = useMemo(() => new Date(), [todayKey]);
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const memoDateKeys = useRecentDateKeys(7, LEGACY_FAMILY_TIME_ZONE);
+  const memoDateKey = latestDateKeyOrNull(memoDateKeys);
+  const now = useMemo(() => new Date(), [memoDateKey]);
+  const dateTimeScope = useMemo(
+    () => dateTimeScopeInTimeZone(now, LEGACY_FAMILY_TIME_ZONE),
+    [now],
+  );
+  const todayKey = memoDateKey ?? dateTimeScope.dateKey;
+  const nowMinutes = dateTimeScope.minutesSinceMidnight;
 
   const familyQuery = useMyFamily();
   const eventsQuery = useEvents();
@@ -102,13 +112,20 @@ export function ChildHome() {
   };
 
   const myMember = family?.members.find((m) => m.role === "child" && m.user_id === userId) ?? null;
-  const childName = myMember?.name || "친구";
+  const childName = myMember?.name || intl.formatMessage({ id: "child.fallback.friend" });
 
   // ── 오늘 일정 ────────────────────────────────────────────────────────
   const myEvents = useMemo(() => filterEventsForChild(events ?? [], myMember?.id), [events, myMember?.id]);
   const todayViews = useMemo(
-    () => groupEventsByDateKey(myEvents, now, undefined, places)[todayKey] ?? [],
-    [myEvents, now, todayKey, places],
+    () => groupEventsByDateKey(
+      myEvents,
+      now,
+      locale,
+      LEGACY_FAMILY_TIME_ZONE,
+      undefined,
+      places,
+    )[todayKey] ?? [],
+    [locale, myEvents, now, todayKey, places],
   );
   const rawById = useMemo(() => {
     const map = new Map<string, CalendarEvent>();
@@ -127,7 +144,10 @@ export function ChildHome() {
       })),
     [todayViews, rawById],
   );
-  const adventure = useMemo(() => buildAdventureMap(adventureInput, nowMinutes), [adventureInput, nowMinutes]);
+  const adventure = useMemo(
+    () => buildAdventureMap(adventureInput, nowMinutes, locale),
+    [adventureInput, locale, nowMinutes],
+  );
 
   const nextView = todayViews.find((v) => v.id === adventure.next?.id) ?? null;
   const nextRaw = adventure.next ? (rawById.get(adventure.next.id) ?? null) : null;
@@ -185,11 +205,11 @@ export function ChildHome() {
           if (nowDone && !editMode) {
             setCelebrate({
               icon: CELEBRATE_ICON[item.kind ?? "prep"] ?? "sticker/ready.webp",
-              sub: `‘${item.label}’ 챙기기 완료!`,
+              sub: intl.formatMessage({ id: "child.home.supply.completed" }, { label: item.label }),
             });
           }
         },
-        onError: () => show("안 됐어. 다시 눌러 볼래?", "⚠️"),
+        onError: () => show(intl.formatMessage({ id: "child.home.supply.toggleFailed" }), "⚠️"),
       },
     );
   };
@@ -216,7 +236,7 @@ export function ChildHome() {
         child_user_id: item.child_user_id ?? null,
       });
     } catch {
-      show("못 바꿨어. 다시 해 볼래?", "⚠️");
+      show(intl.formatMessage({ id: "child.home.supply.renameFailed" }), "⚠️");
     }
   };
 
@@ -228,7 +248,7 @@ export function ChildHome() {
 
   const addSupply = (kind: "prep" | "hw") => {
     if (!myMember) {
-      show("내 정보를 아직 못 찾았어. 잠시 후 다시 해 볼래?", "⚠️");
+      show(intl.formatMessage({ id: "child.home.infoMissing" }), "⚠️");
       return;
     }
     if (upsert.isPending) return;
@@ -241,7 +261,7 @@ export function ChildHome() {
     upsert.mutate(
       {
         date_key: todayKey,
-        label: kind === "hw" ? "새 숙제" : "새 준비물",
+        label: intl.formatMessage({ id: kind === "hw" ? "child.home.supply.newHomework" : "child.home.supply.newPrep" }),
         done: false,
         kind,
         child_user_id: myMember.id,
@@ -250,7 +270,7 @@ export function ChildHome() {
         onError: (error) => show(
           isDailySupplyLimitError(error)
             ? dailySupplyLimitMessage(kind, true)
-            : "추가하지 못했어. 다시 해 볼래?",
+            : intl.formatMessage({ id: "child.home.supply.addFailed" }),
           isDailySupplyLimitError(error) ? "🎒" : "⚠️",
         ),
         onSettled: () => setPendingSupplyAdd((current) => (current === kind ? null : current)),
@@ -263,7 +283,7 @@ export function ChildHome() {
     const itemId = item.id ?? null;
     setPendingSupplyDeleteId(itemId);
     remove.mutate(item, {
-      onError: () => show("못 지웠어. 다시 해 볼래?", "⚠️"),
+      onError: () => show(intl.formatMessage({ id: "child.home.supply.deleteFailed" }), "⚠️"),
       onSettled: () => setPendingSupplyDeleteId((current) => (current === itemId ? null : current)),
     });
   };
@@ -295,11 +315,11 @@ export function ChildHome() {
   const unreadCount = unreadParentMemoCount(memoThread.data, userId);
 
   const sendQuickStatus = (actionId: QuickStatusActionId, source: "quick-grid" | "route" = "quick-grid") => {
-    if (!myMember?.id || sendMemo.isPending) return;
+    if (!myMember?.id || !memoDateKey || sendMemo.isPending) return;
     setPendingQuickStatus(source === "quick-grid" ? actionId : null);
-    sendMemo.mutate(buildQuickStatusMemo(actionId, myMember.id, todayKey), {
-      onSuccess: () => show("가족 메시지에 남겼어", "💬"),
-      onError: () => show("보내지 못했어. 잠시 후 다시 해 줘", "⚠️"),
+    sendMemo.mutate(buildQuickStatusMemo(actionId, myMember.id, memoDateKey), {
+      onSuccess: () => show(intl.formatMessage({ id: "child.home.quickStatus.sent" }), "💬"),
+      onError: () => show(intl.formatMessage({ id: "child.home.quickStatus.failed" }), "⚠️"),
       onSettled: () => setPendingQuickStatus((current) => (current === actionId ? null : current)),
     });
   };
@@ -314,7 +334,8 @@ export function ChildHome() {
     : null;
   const openAiFriend = () => {
     if (!aiEnabled) {
-      show("AI 친구는 부모님이 켜 줘야 해. 부탁해 봐! 🙏", "🤖");
+      // i18n 이후에도 이 분기는 반드시 부모 설정 요청을 안내한다: 부모님이 켜 줘야 해.
+      show(intl.formatMessage({ id: "child.home.aiDisabled" }), "🤖");
       return;
     }
     if (!aiFriendSavedName) {
@@ -351,7 +372,7 @@ export function ChildHome() {
 
   const openRoute = () => {
     if (!adventure.next) {
-      show("오늘 갈 곳은 다 다녀왔어 🎉", "🗺️");
+      show(intl.formatMessage({ id: "child.home.routeDone" }), "🗺️");
       return;
     }
     setRouteOpen(true);
@@ -360,7 +381,7 @@ export function ChildHome() {
   const departNow = () => {
     setRouteOpen(false);
     if (myMember?.id) sendQuickStatus("departed", "route");
-    show("좋아! 도착하면 알려줘 🧡", "🏃");
+    show(intl.formatMessage({ id: "child.home.departed" }), "🏃");
   };
   const arriveNow = () => {
     setRouteOpen(false);
@@ -373,29 +394,32 @@ export function ChildHome() {
     const out: CallTarget[] = [];
     const mom = pick("mom");
     const dad = pick("dad");
-    if (mom) out.push({ gender: "mom", label: "엄마", phone: mom.phone ?? null });
-    if (dad) out.push({ gender: "dad", label: "아빠", phone: dad.phone ?? null });
+    if (mom) out.push({ gender: "mom", label: intl.formatMessage({ id: "child.family.mom" }), phone: mom.phone ?? null });
+    if (dad) out.push({ gender: "dad", label: intl.formatMessage({ id: "child.family.dad" }), phone: dad.phone ?? null });
     // 성별이 없는 보호자만 있는 가족: 첫 보호자를 엄마 슬롯으로 보여준다(번호가 있어야 표시).
     if (out.length === 0 && parents[0]?.phone) {
-      out.push({ gender: "mom", label: parents[0].name || "보호자", phone: parents[0].phone });
+      out.push({ gender: "mom", label: parents[0].name || intl.formatMessage({ id: "child.family.guardian" }), phone: parents[0].phone });
     }
     return out;
-  }, [family?.members]);
+  }, [family?.members, intl]);
 
   const callParent = useCallback(
     (target: CallTarget) => {
       if (!target.phone) return;
       setCallOpen(false);
-      show(`${target.label}한테 전화 거는 중…`, "📞");
+      show(intl.formatMessage({ id: "child.home.calling" }, { name: target.label }), "📞");
       void placePhoneCall(target.phone).then((r) => {
-        if (!r.ok) show("전화를 걸 수 없어. 전화 앱을 확인해 줘", "⚠️");
+        if (!r.ok) show(intl.formatMessage({ id: "child.home.callFailed" }), "⚠️");
       });
     },
-    [show],
+    [intl, show],
   );
 
-  const dateLabel = `${now.getMonth() + 1}월 ${now.getDate()}일`;
-  const weekday = ["일", "월", "화", "수", "목", "금", "토"][now.getDay()];
+  const dateLabel = formatCalendarDay(now, {
+    locale,
+    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    weekday: "long",
+  });
 
   return (
     <div className="kd-root">
@@ -427,39 +451,47 @@ export function ChildHome() {
 
         <div className="kd-map__top">
           <span className="kd-map__date">
-            {dateLabel} {weekday}요일
+            {dateLabel}
           </span>
           <button
+            /* i18n 회귀 불변식: aria-label="내 스티커북" → navigate("/child/sticker") */
             type="button"
             className="kd-map__chip kd-map__chip--first hy-press"
-            aria-label="내 스티커북"
+            aria-label={intl.formatMessage({ id: "child.stickerBook.title" })}
             onClick={() => navigate("/child/sticker")}
           >
             <img src={asset("ui/crown.webp")} alt="" />
             <span className="kd-map__chip-count">{totalStickers}</span>
           </button>
           <button
+            /* i18n 회귀 불변식: aria-label="오늘 시간표" → setDayOpen(true) */
             type="button"
             className="kd-map__chip hy-press"
-            aria-label="오늘 시간표"
+            aria-label={intl.formatMessage({ id: "child.home.todayTimetable" })}
             onClick={() => setDayOpen(true)}
           >
             <img src={asset("ui/calendar-heart.webp")} alt="" />
-            <span className="kd-map__chip-label">시간표{todayViews.length > 0 ? ` ${todayViews.length}` : ""}</span>
+            <span className="kd-map__chip-label">
+              {intl.formatMessage({ id: "child.home.timetableCount" }, { count: todayViews.length })}
+            </span>
           </button>
         </div>
 
-        <div className="kd-map__headline kd-title">{childName}의 오늘</div>
+        <div className="kd-map__headline kd-title">
+          {intl.formatMessage({ id: "child.home.todayFor" }, { name: childName })}
+        </div>
 
         {homeLoading ? (
-          <div className="kd-map__query-state"><Loading label="오늘 모험을 불러오는 중이야" size={6} /></div>
+          <div className="kd-map__query-state"><Loading label={intl.formatMessage({ id: "child.home.loading" })} size={6} /></div>
         ) : homeError ? (
           <div className="kd-map__query-state" role="alert">
-            <span>오늘 모험을 못 불러왔어.</span>
-            <button type="button" className="hy-press" onClick={() => void retryHomeData()}>다시 불러오기</button>
+            <span>{intl.formatMessage({ id: "child.home.loadError" })}</span>
+            <button type="button" className="hy-press" onClick={() => void retryHomeData()}>
+              {intl.formatMessage({ id: "child.action.reload" })}
+            </button>
           </div>
         ) : adventure.nodes.length === 0 ? (
-          <div className="kd-map__query-state" role="status">오늘은 등록된 일정이 없어. 신나게 시작해 볼까?</div>
+          <div className="kd-map__query-state" role="status">{intl.formatMessage({ id: "child.home.noEvents" })}</div>
         ) : (
           adventure.nodes.map((node) => (
             <button
@@ -467,7 +499,10 @@ export function ChildHome() {
               type="button"
               className={`kd-node kd-node--${node.state} hy-press`}
               style={{ left: `${node.leftPct}%`, top: node.top }}
-              aria-label={`${node.title} ${node.state === "next" ? "· 길찾기" : "· 시간표 보기"}`}
+              aria-label={intl.formatMessage(
+                { id: node.state === "next" ? "child.home.nodeRouteAria" : "child.home.nodeTimetableAria" },
+                { title: node.title },
+              )}
               onClick={() => (node.state === "next" ? openRoute() : setDayOpen(true))}
             >
               <span className="kd-node__disc">
@@ -491,10 +526,12 @@ export function ChildHome() {
           type="button"
           className="kd-hyeni hy-press"
           onClick={() => (adventure.next ? openRoute() : setDayOpen(true))}
-          aria-label={adventure.next ? "다음 일정 길찾기" : "오늘 시간표 보기"}
+          aria-label={intl.formatMessage({
+            id: adventure.next ? "child.home.nextRouteAria" : "child.home.todayTimetableAria",
+          })}
         >
           <span className="kd-hyeni__bubble">{adventure.bubble}</span>
-          <img className="kd-hyeni__mascot" src={asset("mascot/wave.webp")} alt="혜니" />
+          <img className="kd-hyeni__mascot" src={asset("mascot/wave.webp")} alt={intl.formatMessage({ id: "child.home.hyeniAlt" })} />
         </button>
       </div>
 
@@ -504,17 +541,22 @@ export function ChildHome() {
             눈에 잘 안 띄어서, 안 읽은 메시지가 있으면 본문 맨 위에 크게 세운다. */}
         {unreadCount > 0 && (
           <button
+            /* i18n 회귀 불변식: className="kd-memo-banner hy-press" → navigate("/child/memo") */
             type="button"
             className="kd-memo-banner hy-press"
-            aria-label={`부모님 메시지 ${unreadCount}개 확인하기`}
+            aria-label={intl.formatMessage({ id: "child.home.parentMessagesAria" }, { count: unreadCount })}
             onClick={() => navigate("/child/memo")}
           >
             <img src={asset("ui/chat-heart.webp")} alt="" />
             <span className="kd-memo-banner__main">
               <span className="kd-memo-banner__title">
-                부모님 메시지 {unreadCount}개가 기다리고 있어!
+                {/* i18n 회귀 불변식: 부모님 메시지 {unreadCount}개가 기다리고 있어! */}
+                {intl.formatMessage({ id: "child.home.parentMessagesWaiting" }, { count: unreadCount })}
               </span>
-              <span className="kd-memo-banner__sub">{parentNote ?? "지금 열어봐 💌"}</span>
+              <span className="kd-memo-banner__sub">
+                {/* i18n 회귀 불변식: {parentNote ?? "지금 열어봐 💌"} */}
+                {parentNote ?? intl.formatMessage({ id: "child.home.openNow" })}
+              </span>
             </span>
             <span className="kd-memo-banner__badge">{unreadCount}</span>
           </button>
@@ -530,28 +572,36 @@ export function ChildHome() {
               <span className="kd-next__badge">
                 {nextView
                   ? minutesToNext != null && minutesToNext > 0 && minutesToNext <= 120
-                    ? `다음 일정 · ${minutesToNext}분 뒤`
-                    : "다음 일정"
+                    ? intl.formatMessage(
+                        { id: "child.home.nextEventWithTime" },
+                        { relative: formatRelativeMinutes(minutesToNext, "future", locale) },
+                      )
+                    : intl.formatMessage({ id: "child.home.nextEvent" })
                   : todayViews.length === 0
-                    ? "오늘은 쉬는 날"
-                    : "오늘 다 끝났어"}
+                    ? intl.formatMessage({ id: "child.home.restDay" })
+                    : intl.formatMessage({ id: "child.home.allDone" })}
               </span>
               <span className="kd-next__title kd-title">
-                {nextView ? nextView.title : todayViews.length === 0 ? "일정이 없어" : "푹 쉬어도 돼"}
+                {nextView
+                  ? nextView.title
+                  : intl.formatMessage({ id: todayViews.length === 0 ? "child.home.noSchedule" : "child.home.restWell" })}
               </span>
               <span className="kd-next__sub">
                 {nextView
-                  ? `${nextView.place ? `${nextView.place} · ` : ""}${nextView.time}`
+                  ? intl.formatMessage(
+                      { id: nextView.place ? "child.home.eventPlaceTime" : "child.home.eventTime" },
+                      { place: nextView.place, time: nextView.time },
+                    )
                   : todayViews.length === 0
-                    ? "새 일정이 생기면 여기에 보여줄게 🌈"
-                    : "오늘 일정을 다 마쳤어 🎉"}
+                    ? intl.formatMessage({ id: "child.home.futureEventsHere" })
+                    : intl.formatMessage({ id: "child.home.finishedToday" })}
               </span>
             </span>
           </div>
           {nextView && (
             <button type="button" className="kd-next__cta kd-title hy-press" onClick={openRoute}>
               <Navigation size={20} strokeWidth={2.2} aria-hidden="true" />
-              길찾기 출발!
+              {intl.formatMessage({ id: "child.home.startRoute" })}
             </button>
           )}
         </div>
@@ -561,7 +611,7 @@ export function ChildHome() {
           <div className="kd-prep__head">
             <span className="kd-title kd-title--icon" style={{ fontSize: "var(--type-title-lg)" }}>
               <Backpack size={20} strokeWidth={2.2} aria-hidden="true" />
-              가방 챙기기
+              {intl.formatMessage({ id: "child.home.packBag" })}
             </span>
             <span className="kd-prep__count">
               {prepDone}/{supplies.length}
@@ -572,7 +622,10 @@ export function ChildHome() {
               className="kd-prep__edit hy-press"
               onClick={() => (editMode ? void finishEdit() : setEditMode(true))}
             >
-              {editMode ? "완료" : supplies.length === 0 ? "추가" : "편집"}
+              {/* i18n 회귀 불변식: supplies.length === 0 ? "추가" : "편집" */}
+              {intl.formatMessage({
+                id: editMode ? "child.state.done" : supplies.length === 0 ? "child.action.add" : "child.action.edit",
+              })}
             </button>
           </div>
 
@@ -582,16 +635,16 @@ export function ChildHome() {
 
           <div className="kd-prep__list">
             {suppliesQuery.isLoading ? (
-              <div className="kd-prep__empty">챙길 걸 불러오는 중…</div>
+              <div className="kd-prep__empty">{intl.formatMessage({ id: "child.home.supply.loading" })}</div>
             ) : supplies.length === 0 && !editMode ? (
-              <div className="kd-prep__empty">아직 챙길 게 없어 🎒</div>
+              <div className="kd-prep__empty">{intl.formatMessage({ id: "child.home.supply.empty" })}</div>
             ) : (
               supplies.map((s) => (
                 <div key={s.id} className="kd-prep__row">
                   <button
                     type="button"
                     className="kd-prep__check hy-press"
-                    aria-label={`${s.label} 완료 체크`}
+                    aria-label={intl.formatMessage({ id: "child.home.supply.checkAria" }, { label: s.label })}
                     aria-pressed={s.done}
                     data-done={s.done}
                     onClick={() => toggleSupply(s)}
@@ -609,7 +662,7 @@ export function ChildHome() {
                       <input
                         className="kd-prep__input"
                         defaultValue={s.label}
-                        aria-label="항목 이름"
+                        aria-label={intl.formatMessage({ id: "child.home.supply.nameAria" })}
                         onChange={(e) => {
                           draftsRef.current[s.id ?? ""] = e.target.value;
                         }}
@@ -621,7 +674,7 @@ export function ChildHome() {
                       <button
                         type="button"
                         className="kd-prep__del hy-press"
-                        aria-label={`${s.label} 지우기`}
+                        aria-label={intl.formatMessage({ id: "child.home.supply.deleteAria" }, { label: s.label })}
                         onClick={() => deleteSupply(s)}
                         disabled={remove.isPending}
                         aria-busy={remove.isPending && pendingSupplyDeleteId === s.id}
@@ -634,7 +687,7 @@ export function ChildHome() {
                       <span className="kd-prep__text" data-done={s.done}>
                         {s.label}
                       </span>
-                      {s.kind === "hw" && <span className="kd-prep__kind">숙제</span>}
+                      {s.kind === "hw" && <span className="kd-prep__kind">{intl.formatMessage({ id: "child.home.homework" })}</span>}
                     </button>
                   )}
                 </div>
@@ -649,11 +702,16 @@ export function ChildHome() {
                   onClick={() => addSupply("prep")}
                   disabled={upsert.isPending || prepItemCount >= MAX_SUPPLY_ITEMS_PER_KIND}
                   aria-label={prepItemCount >= MAX_SUPPLY_ITEMS_PER_KIND
-                    ? `준비물은 하루 ${MAX_SUPPLY_ITEMS_PER_KIND}개까지 등록할 수 있어`
-                    : "준비물 추가"}
+                    ? intl.formatMessage({ id: "child.home.supply.prepLimitAria" }, { count: MAX_SUPPLY_ITEMS_PER_KIND })
+                    : intl.formatMessage({ id: "child.home.supply.addPrepAria" })}
                   aria-busy={upsert.isPending && pendingSupplyAdd === "prep"}
                 >
-                  {prepItemCount >= MAX_SUPPLY_ITEMS_PER_KIND ? `준비물 ${prepItemCount}/${MAX_SUPPLY_ITEMS_PER_KIND}` : "+ 준비물"}
+                  {prepItemCount >= MAX_SUPPLY_ITEMS_PER_KIND
+                    ? intl.formatMessage(
+                        { id: "child.home.supply.prepCount" },
+                        { count: prepItemCount, limit: MAX_SUPPLY_ITEMS_PER_KIND },
+                      )
+                    : intl.formatMessage({ id: "child.home.supply.addPrep" })}
                 </button>
                 <button
                   type="button"
@@ -661,11 +719,16 @@ export function ChildHome() {
                   onClick={() => addSupply("hw")}
                   disabled={upsert.isPending || homeworkItemCount >= MAX_SUPPLY_ITEMS_PER_KIND}
                   aria-label={homeworkItemCount >= MAX_SUPPLY_ITEMS_PER_KIND
-                    ? `숙제는 하루 ${MAX_SUPPLY_ITEMS_PER_KIND}개까지 등록할 수 있어`
-                    : "숙제 추가"}
+                    ? intl.formatMessage({ id: "child.home.supply.homeworkLimitAria" }, { count: MAX_SUPPLY_ITEMS_PER_KIND })
+                    : intl.formatMessage({ id: "child.home.supply.addHomeworkAria" })}
                   aria-busy={upsert.isPending && pendingSupplyAdd === "hw"}
                 >
-                  {homeworkItemCount >= MAX_SUPPLY_ITEMS_PER_KIND ? `숙제 ${homeworkItemCount}/${MAX_SUPPLY_ITEMS_PER_KIND}` : "+ 숙제"}
+                  {homeworkItemCount >= MAX_SUPPLY_ITEMS_PER_KIND
+                    ? intl.formatMessage(
+                        { id: "child.home.supply.homeworkCount" },
+                        { count: homeworkItemCount, limit: MAX_SUPPLY_ITEMS_PER_KIND },
+                      )
+                    : intl.formatMessage({ id: "child.home.supply.addHomework" })}
                 </button>
               </div>
             )}
@@ -679,24 +742,26 @@ export function ChildHome() {
             <span className="kd-sticker-banner__main">
               <span className="kd-sticker-banner__title">
                 {book.newCount > 0
-                  ? `"${newestSlot.label}" 스티커가 새로 왔어!`
-                  : `"${newestSlot.label}" 스티커를 받았어`}
+                  ? intl.formatMessage({ id: "child.home.sticker.new" }, { label: newestSlot.label })
+                  : intl.formatMessage({ id: "child.home.sticker.received" }, { label: newestSlot.label })}
               </span>
-              <span className="kd-sticker-banner__sub">스티커북에서 열어봐 💝</span>
+              <span className="kd-sticker-banner__sub">{intl.formatMessage({ id: "child.home.sticker.openBook" })}</span>
             </span>
           </button>
         )}
 
         {/* ── 바로 할 수 있어 ───────────────────────────────────────── */}
         <section>
-          <div className="kd-sec-title kd-title">바로 할 수 있어</div>
+          <div className="kd-sec-title kd-title">{intl.formatMessage({ id: "child.home.quickActions" })}</div>
           <div className="kd-tiles">
             <button type="button" className="kd-tile hy-press" onClick={() => navigate("/child/memo")}>
               {unreadCount > 0 && <span className="kd-tile__badge">{unreadCount}</span>}
               <img src={asset("ui/chat-heart.webp")} alt="" />
               <span>
-                <span className="kd-tile__title">부모님과 이야기</span>
-                <span className="kd-tile__sub">{parentNote ?? "오늘 있었던 일을 들려줘"}</span>
+                <span className="kd-tile__title">{intl.formatMessage({ id: "child.home.talkToParents" })}</span>
+                <span className="kd-tile__sub">
+                  {parentNote ?? intl.formatMessage({ id: "child.home.tellToday" })}
+                </span>
               </span>
             </button>
 
@@ -705,14 +770,16 @@ export function ChildHome() {
               <img src={asset(aiBuddyFaceAsset(aiTileEmotion))} alt="" />
               <span>
                 <span className="kd-tile__title">
-                  {aiFriendDisplayName ? `${aiFriendDisplayName} 만나러 가기` : "AI 친구 만나기"}
+                  {aiFriendDisplayName
+                    ? intl.formatMessage({ id: "child.home.meetAiNamed" }, { name: aiFriendDisplayName })
+                    : intl.formatMessage({ id: "child.home.meetAi" })}
                 </span>
                 <span className="kd-tile__sub">
                   {!aiEnabled
-                    ? "부모님이 켜주면 놀 수 있어"
+                    ? intl.formatMessage({ id: "child.home.aiNeedsParent" })
                     : aiRemaining != null
-                      ? `💬 ${aiRemaining}번 남았어`
-                      : "오늘 얘기해 볼까?"}
+                      ? intl.formatMessage({ id: "child.home.aiRemaining" }, { count: aiRemaining })
+                      : intl.formatMessage({ id: "child.home.talkToday" })}
                 </span>
               </span>
             </button>
@@ -720,17 +787,19 @@ export function ChildHome() {
             <button type="button" className="kd-tile hy-press" onClick={() => setPlaydateOpen(true)}>
               <img src={asset("ui/menu-friend-playdate.webp")} alt="" />
               <span>
-                <span className="kd-tile__title">친구랑 놀기</span>
-                <span className="kd-tile__sub">같이 놀 친구 찾기</span>
+                <span className="kd-tile__title">{intl.formatMessage({ id: "child.home.playWithFriend" })}</span>
+                <span className="kd-tile__sub">{intl.formatMessage({ id: "child.home.findFriend" })}</span>
               </span>
             </button>
 
             <button type="button" className="kd-tile hy-press" onClick={() => setCallOpen(true)}>
               <img src={asset("ui/phone-lavender.webp")} alt="" />
               <span>
-                <span className="kd-tile__title">부모님 전화</span>
+                <span className="kd-tile__title">{intl.formatMessage({ id: "child.call.title" })}</span>
                 <span className="kd-tile__sub">
-                  {callTargets.length > 0 ? "가족에게 바로 전화하기" : "번호를 등록해 달라고 하자"}
+                  {intl.formatMessage({
+                    id: callTargets.length > 0 ? "child.home.callFamily" : "child.home.askRegisterPhone",
+                  })}
                 </span>
               </span>
             </button>
@@ -742,9 +811,9 @@ export function ChildHome() {
           <div className="kd-status__head">
             <span className="kd-title kd-title--icon" style={{ fontSize: "var(--type-title-lg)" }}>
               <MessageCircle size={20} strokeWidth={2.2} aria-hidden="true" />
-              지금 상태 보내기
+              {intl.formatMessage({ id: "child.home.sendStatus" })}
             </span>
-            <span className="kd-status__sub">누르면 바로 알려줄게</span>
+            <span className="kd-status__sub">{intl.formatMessage({ id: "child.home.sendStatusHint" })}</span>
           </div>
           <div className="kd-status__grid">
             {QUICK_STATUS_ACTIONS.map((action) => (
@@ -757,7 +826,7 @@ export function ChildHome() {
                 aria-busy={sendMemo.isPending && pendingQuickStatus === action.id}
               >
                 <img src={asset(QUICK_STATUS_ICONS[action.id])} alt="" />
-                <span>{action.label}</span>
+                <span>{intl.formatMessage({ id: `child.home.quickStatus.${action.id}` })}</span>
               </button>
             ))}
           </div>
@@ -768,7 +837,7 @@ export function ChildHome() {
           <div className="kd-tt__head">
             <img src={asset("ui/calendar-heart.webp")} alt="" />
             <span className="kd-title" style={{ fontSize: "var(--type-title-lg)" }}>
-              오늘 시간표
+              {intl.formatMessage({ id: "child.home.todayTimetable" })}
             </span>
             <span className="kd-tt__date">{dateLabel}</span>
           </div>
@@ -780,38 +849,43 @@ export function ChildHome() {
           <div className="kd-color__head">
             <span className="kd-title kd-title--icon" style={{ fontSize: "var(--type-title-lg)" }}>
               <Palette size={20} strokeWidth={2.2} aria-hidden="true" />
-              내 색깔 고르기
+              {intl.formatMessage({ id: "child.home.chooseColor" })}
             </span>
-            <span className="kd-color__hint">앱 색이 바뀌어</span>
+            <span className="kd-color__hint">{intl.formatMessage({ id: "child.home.colorHint" })}</span>
           </div>
           <div className="kd-color__row">
-            {CHILD_ACCENTS.map((c) => (
+            {CHILD_ACCENTS.map((c) => {
+              const accentLabel = intl.formatMessage({ id: `child.home.accent.${c.key}` });
+              return (
               <button
                 key={c.key}
                 type="button"
                 className="kd-color__btn hy-press"
-                aria-label={c.label}
+                aria-label={accentLabel}
                 aria-pressed={accent === c.key}
                 style={{ color: c.color }}
                 onClick={() => {
                   setAccent(c.key);
-                  show(`${c.label} 색으로 바꿨어!`, "🎨");
+                  show(intl.formatMessage({ id: "child.home.colorChanged" }, { color: accentLabel }), "🎨");
                 }}
               >
                 <span className="kd-color__dot" />
-                <span className="kd-color__label">{c.label}</span>
+                <span className="kd-color__label">{accentLabel}</span>
               </button>
-            ))}
+              );
+            })}
           </div>
         </div>
 
         {/* ── 내 위치 · 내 설정(시안엔 없지만 아이가 닿아야 하는 화면) ── */}
         <div className="kd-more">
           <button type="button" className="kd-more__btn hy-press" onClick={() => navigate("/child/location-status")}>
-            <MapPin size={22} strokeWidth={2.4} color="var(--hy-accent-deep)" />내 위치
+            <MapPin size={22} strokeWidth={2.4} color="var(--hy-accent-deep)" />
+            {intl.formatMessage({ id: "child.location.title" })}
           </button>
           <button type="button" className="kd-more__btn hy-press" onClick={() => navigate("/child/settings")}>
-            <Settings2 size={22} strokeWidth={2.4} color="var(--fg-muted)" />내 설정
+            <Settings2 size={22} strokeWidth={2.4} color="var(--fg-muted)" />
+            {intl.formatMessage({ id: "child.settings.title" })}
           </button>
         </div>
       </div>
@@ -820,7 +894,7 @@ export function ChildHome() {
       <DaySheet
         open={dayOpen}
         onClose={() => setDayOpen(false)}
-        dateLabel={`${dateLabel} ${weekday}요일`}
+        dateLabel={dateLabel}
         rows={timetable}
         parentNote={parentNote}
         onOpenMemo={() => {
@@ -832,7 +906,7 @@ export function ChildHome() {
       <RouteSheet
         open={routeOpen}
         onClose={() => setRouteOpen(false)}
-        destinationName={destination?.name ?? nextView?.title ?? "다음 일정"}
+        destinationName={destination?.name ?? nextView?.title ?? intl.formatMessage({ id: "child.home.nextEvent" })}
         icon={nextView?.icon ?? "ui/pin-heart.webp"}
         origin={origin}
         destination={destination?.point ?? null}

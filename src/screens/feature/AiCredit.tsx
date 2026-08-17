@@ -24,6 +24,9 @@ import {
   type WebAiCreditCompletionResponse,
 } from "@/lib/api/endpoints/webBilling";
 import { isApiError } from "@/lib/api/errors";
+import { useIntl, type IntlShape } from "react-intl";
+import { BillingError } from "@/lib/native/billingError";
+import { resolveNativeBillingFailureMessage } from "@/transform/billingFailureMessage";
 import { startTossOneTimePayment } from "@/lib/webBilling";
 import { creditHeroAmount } from "@/transform/aiView";
 import {
@@ -68,8 +71,8 @@ type CreditPack = {
    * 이전엔 디자인 팩(30/100/300)을 별도 amt 로 표기해 실지급수(80/200)와 어긋났었다.
    */
   backendAmount: number;
-  tag?: string;
-  per: string;
+  tagId?: string;
+  descriptionId: string;
   ring: string;
   webPack?: WebAiCreditPack;
 };
@@ -80,38 +83,38 @@ const CREDIT_PACKS: CreditPack[] = [
   {
     id: "p30",
     backendAmount: 30,
-    per: "가볍게 시작하기 좋아요",
+    descriptionId: "billing.aiCredit.pack.p30.description",
     ring: "1px solid rgba(32,26,29,.06)",
   },
   {
     id: "p80",
     backendAmount: 80,
-    tag: "인기",
-    per: "한 달 넉넉하게 써요",
+    tagId: "billing.aiCredit.pack.p80.tag",
+    descriptionId: "billing.aiCredit.pack.p80.description",
     ring: "2px solid #B79DFB",
   },
   {
     id: "p200",
     backendAmount: 200,
-    tag: "최대 혜택",
-    per: "가장 넉넉한 크레딧",
+    tagId: "billing.aiCredit.pack.p200.tag",
+    descriptionId: "billing.aiCredit.pack.p200.description",
     ring: "1px solid rgba(32,26,29,.06)",
   },
 ];
 
-const CREDIT_PACK_PRESENTATION: Readonly<Record<30 | 80 | 200, Pick<CreditPack, "tag" | "per" | "ring">>> = {
+const CREDIT_PACK_PRESENTATION: Readonly<Record<30 | 80 | 200, Pick<CreditPack, "tagId" | "descriptionId" | "ring">>> = {
   30: {
-    per: "가볍게 시작하기 좋아요",
+    descriptionId: "billing.aiCredit.pack.p30.description",
     ring: "1px solid rgba(32,26,29,.06)",
   },
   80: {
-    tag: "인기",
-    per: "한 달 넉넉하게 써요",
+    tagId: "billing.aiCredit.pack.p80.tag",
+    descriptionId: "billing.aiCredit.pack.p80.description",
     ring: "2px solid #B79DFB",
   },
   200: {
-    tag: "최대 혜택",
-    per: "가장 넉넉한 크레딧",
+    tagId: "billing.aiCredit.pack.p200.tag",
+    descriptionId: "billing.aiCredit.pack.p200.description",
     ring: "1px solid rgba(32,26,29,.06)",
   },
 };
@@ -147,37 +150,38 @@ function shouldRetainWebAiCreditPending(error: unknown): boolean {
   if (error instanceof TypeError) return true;
   if (!isApiError(error)) return false;
   if (
-    error.message === "web_ai_credit_reconciliation_pending"
-    || error.message === "web_ai_credit_processing"
-    || error.message === "web_ai_credit_payment_unknown"
-    || error.message === "web_ai_credit_lookup_retry_later"
-    || error.message === "web_ai_credit_lookup_rate_limited"
+    error.code === "web_ai_credit_reconciliation_pending"
+    || error.code === "web_ai_credit_processing"
+    || error.code === "web_ai_credit_payment_unknown"
+    || error.code === "web_ai_credit_lookup_retry_later"
+    || error.code === "web_ai_credit_lookup_rate_limited"
   ) return true;
   return error.status >= 500;
 }
 
-function webAiCreditFailureMessage(error: unknown): string {
+function webAiCreditFailureMessage(error: unknown, intl: IntlShape): string {
   if (isApiError(error)) {
-    if (error.message === "web_ai_credit_new_checkouts_paused") {
-      return "새 크레딧 결제를 잠시 중단했어요. 진행 중인 결제 확인은 계속할 수 있어요.";
+    if (error.code === "web_ai_credit_new_checkouts_paused") {
+      return intl.formatMessage({ id: "billing.aiCredit.failure.paused" });
     }
-    if (error.message === "web_ai_credit_payment_refunded") {
-      return "결제가 전액 취소되어 크레딧을 충전하지 않았어요.";
+    if (error.code === "web_ai_credit_payment_refunded") {
+      return intl.formatMessage({ id: "billing.aiCredit.failure.refunded" });
     }
-    if (error.message === "web_ai_credit_payment_failed" || error.status === 402) {
-      return "결제가 승인되지 않았어요. 카드 정보를 확인하고 다시 시도해 주세요.";
+    if (error.code === "web_ai_credit_payment_failed" || error.status === 402) {
+      return intl.formatMessage({ id: "billing.aiCredit.failure.declined" });
     }
     if (error.status === 400 || error.status === 403) {
-      return "주문 정보가 현재 가족·아이 정보와 일치하지 않아 충전하지 않았어요.";
+      return intl.formatMessage({ id: "billing.aiCredit.failure.mismatch" });
     }
   }
   if (error instanceof Error && error.message === "web_billing_session_storage_unavailable") {
-    return "이 브라우저에서는 안전한 결제 복귀 정보를 저장할 수 없어요.";
+    return intl.formatMessage({ id: "billing.aiCredit.failure.storage" });
   }
-  return "결제를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.";
+  return intl.formatMessage({ id: "billing.aiCredit.failure.generic" });
 }
 
 export function AiCredit() {
+  const intl = useIntl();
   const navigate = useNavigate();
   const { show } = useToast();
   const { userId, familyId } = useAuth();
@@ -200,7 +204,7 @@ export function AiCredit() {
   // 크레딧은 자녀별 — 전역 활성 아이(홈 스위치) 기준. 스위치 전환 시 대상 아이도 함께 바뀐다.
   const { activeChild, familyLoading } = useActiveChild();
   const childUserId = activeChild?.user_id ?? null;
-  const childName = activeChild?.name || "우리 아이";
+  const childName = activeChild?.name || intl.formatMessage({ id: "billing.aiCredit.fallbackChild" });
 
   const creditQuery = useAiCredits(childUserId);
   const creditStatus = creditQuery.data;
@@ -302,8 +306,10 @@ export function AiCredit() {
     saveSettings.mutate(
       { childUserId, patch: { ai_enabled: !aiEnabled, ...initialDailyLimitPatch } },
       {
-        onSuccess: () => show(!aiEnabled ? "AI 친구를 켰어요" : "AI 친구를 껐어요", "🤖"),
-        onError: () => show("설정 저장에 실패했어요", "⚠️"),
+        onSuccess: () => show(intl.formatMessage({
+          id: !aiEnabled ? "billing.aiCredit.toast.enabled" : "billing.aiCredit.toast.disabled",
+        }), "🤖"),
+        onError: () => show(intl.formatMessage({ id: "billing.aiCredit.toast.saveFailed" }), "⚠️"),
         onSettled: () => setSettingsSaveAction(null),
       },
     );
@@ -324,8 +330,8 @@ export function AiCredit() {
     saveSettings.mutate(
       { childUserId, patch: { ai_enabled: aiEnabled, daily_limit: dailyLimit, ...patch } },
       {
-        onSuccess: () => show("AI 친구 상세 설정을 저장했어요", "🤖"),
-        onError: () => show("설정 저장에 실패했어요", "⚠️"),
+        onSuccess: () => show(intl.formatMessage({ id: "billing.aiCredit.toast.detailSaved" }), "🤖"),
+        onError: () => show(intl.formatMessage({ id: "billing.aiCredit.toast.saveFailed" }), "⚠️"),
         onSettled: () => setSettingsSaveAction(null),
       },
     );
@@ -338,7 +344,7 @@ export function AiCredit() {
     saveSettings.mutate(
       { childUserId, patch: { daily_limit: next } },
       {
-        onError: () => show("설정 저장에 실패했어요", "⚠️"),
+        onError: () => show(intl.formatMessage({ id: "billing.aiCredit.toast.saveFailed" }), "⚠️"),
         onSettled: () => setSettingsSaveAction(null),
       },
     );
@@ -375,6 +381,18 @@ export function AiCredit() {
       webPack: pack,
     }));
   }, [isWebBillingChannel, webCatalog]);
+  const localizeCreditPrice = (displayPrice: string): string => {
+    const providerPrice = displayPrice;
+    return isWebBillingChannel
+      ? intl.formatMessage(
+          { id: "billing.aiCredit.serverCatalogPrice" },
+          { catalogPrice: providerPrice },
+        )
+      : intl.formatMessage(
+          { id: "billing.aiCredit.providerPrice" },
+          { formattedPrice: providerPrice },
+        );
+  };
   const lowCreditKey = useMemo(
     () => (childUserId ? `hyeni-low-credit-alert:${childUserId}` : ""),
     [childUserId],
@@ -412,8 +430,11 @@ export function AiCredit() {
     } catch {
       /* 알림 중복 방지만 실패해도 토스트는 정상 표시 */
     }
-    show(`${childName} 크레딧이 ${heroAmount}회 남았어요`, "💜");
-  }, [childName, childUserId, heroAmount, lowCreditAlert, show]);
+    show(intl.formatMessage(
+      { id: "billing.aiCredit.lowAlert.toast" },
+      { childName, count: heroAmount },
+    ), "💜");
+  }, [childName, childUserId, heroAmount, intl, lowCreditAlert, show]);
 
   const finishWebAiCredit = useCallback(async (input: {
     pending: PendingWebAiCreditCheckout;
@@ -463,8 +484,14 @@ export function AiCredit() {
         ]);
         show(
           result.debtApplied > 0
-            ? `${result.debtApplied}회는 환불 사용분에 상계하고 ${result.availableCreditsAdded}회를 사용할 수 있어요`
-            : `${input.pending.credits}회를 충전했어요`,
+            ? intl.formatMessage(
+                { id: "billing.aiCredit.purchase.debtApplied" },
+                { debtApplied: result.debtApplied, available: result.availableCreditsAdded },
+              )
+            : intl.formatMessage(
+                { id: "billing.aiCredit.purchase.charged" },
+                { count: input.pending.credits },
+              ),
           "💜",
         );
         return;
@@ -473,7 +500,7 @@ export function AiCredit() {
       setWebReconciliationPending(true);
       if (!webPendingToastShownRef.current) {
         webPendingToastShownRef.current = true;
-        show("결제 승인 결과를 확인하고 있어요. 같은 주문을 안전하게 다시 확인할 수 있어요.", "💜");
+        show(intl.formatMessage({ id: "billing.aiCredit.purchase.pending" }), "💜");
       }
     } catch (error) {
       if (shouldRetainWebAiCreditPending(error)) {
@@ -487,19 +514,19 @@ export function AiCredit() {
         setWebReconciliationPending(true);
         if (!webPendingToastShownRef.current) {
           webPendingToastShownRef.current = true;
-          show("결제 승인 결과를 확인하고 있어요. 같은 주문을 안전하게 다시 확인할 수 있어요.", "💜");
+          show(intl.formatMessage({ id: "billing.aiCredit.purchase.pending" }), "💜");
         }
       } else {
         if (input.storage) clearPendingWebAiCreditCheckout(input.storage);
         setWebReconciliationPending(false);
         webPendingToastShownRef.current = false;
-        show(webAiCreditFailureMessage(error), "💜");
+        show(webAiCreditFailureMessage(error, intl), "💜");
       }
     } finally {
       webCompletionInFlightRef.current = false;
       setBusyPack(null);
     }
-  }, [qc, show]);
+  }, [intl, qc, show]);
 
   useEffect(() => {
     if (billingRedirect.kind === "none" || billingRedirectScrubbedRef.current) return;
@@ -526,8 +553,8 @@ export function AiCredit() {
         || billingRedirect.code === "PAY_PROCESS_ABORTED";
       show(
         canceled
-          ? "결제를 취소했어요. 크레딧은 충전되지 않았어요."
-          : "결제가 승인되지 않았어요. 카드 정보를 확인하고 다시 시도해 주세요.",
+          ? intl.formatMessage({ id: "billing.aiCredit.purchase.canceled" })
+          : intl.formatMessage({ id: "billing.aiCredit.failure.declined" }),
         "💜",
       );
       return;
@@ -544,7 +571,7 @@ export function AiCredit() {
     if (billingRedirect.kind === "invalid") {
       if (!currentPending) {
         setWebReconciliationPending(!!pending);
-        show("안전한 주문 정보를 확인하지 못해 크레딧을 충전하지 않았어요.", "💜");
+        show(intl.formatMessage({ id: "billing.aiCredit.purchase.invalidOrder" }), "💜");
         return;
       }
       setWebReconciliationPending(true);
@@ -554,7 +581,7 @@ export function AiCredit() {
 
     if (pending && !currentPending) {
       setWebReconciliationPending(true);
-      show("현재 가족·아이의 주문 정보와 일치하지 않아 크레딧을 충전하지 않았어요.", "💜");
+      show(intl.formatMessage({ id: "billing.aiCredit.purchase.familyMismatch" }), "💜");
       return;
     }
     if (currentPending) {
@@ -563,7 +590,7 @@ export function AiCredit() {
         || currentPending.amount !== billingRedirect.amount
       ) {
         setWebReconciliationPending(true);
-        show("결제 결과가 시작한 주문과 일치하지 않아 자동 충전을 중단했어요.", "💜");
+        show(intl.formatMessage({ id: "billing.aiCredit.purchase.resultMismatch" }), "💜");
         return;
       }
       void finishWebAiCredit({ pending: currentPending, storage, payment: billingRedirect });
@@ -593,10 +620,10 @@ export function AiCredit() {
         if (storage) clearPendingWebAiCreditCheckout(storage);
         setWebReconciliationPending(false);
         webPendingToastShownRef.current = false;
-        show("안전한 주문 정보를 확인하지 못해 크레딧을 충전하지 않았어요.", "💜");
+        show(intl.formatMessage({ id: "billing.aiCredit.purchase.invalidOrder" }), "💜");
       }
     })();
-  }, [billingRedirect, childUserId, familyId, finishWebAiCredit, show]);
+  }, [billingRedirect, childUserId, familyId, finishWebAiCredit, intl, show]);
 
   useEffect(() => {
     if (!isWebBillingChannel || billingRedirect.kind !== "none" || !familyId || !childUserId) return;
@@ -628,7 +655,7 @@ export function AiCredit() {
       || pending.childUserId !== childUserId
     ) {
       setWebReconciliationPending(false);
-      show("다시 확인할 결제 주문이 없어요.", "💜");
+      show(intl.formatMessage({ id: "billing.aiCredit.purchase.noPending" }), "💜");
       return;
     }
     void finishWebAiCredit({ pending, storage });
@@ -638,11 +665,11 @@ export function AiCredit() {
   // Android는 Google Play, PWA는 서버 확정 카탈로그의 Toss 일회성 결제를 사용한다.
   const buy = async (p: CreditPack) => {
     if (!aiCreditDataReady) {
-      show("크레딧과 아이 설정을 확인한 뒤 다시 시도해 주세요.", "⚠️");
+      show(intl.formatMessage({ id: "billing.aiCredit.purchase.notReady" }), "⚠️");
       return;
     }
     if (!familyId || !childUserId) {
-      show("충전할 아이를 먼저 연결해 주세요", "💜");
+      show(intl.formatMessage({ id: "billing.aiCredit.purchase.childRequired" }), "💜");
       return;
     }
     if (isWebBillingChannel && webReconciliationPending) {
@@ -688,7 +715,7 @@ export function AiCredit() {
       }
 
       if (!isBillingAvailable()) {
-        throw new Error("이 기기에서 Google Play 결제를 사용할 수 없어요.");
+        throw new BillingError("billing_unavailable");
       }
       const purchase = await launchCreditPurchase({
         familyId,
@@ -703,15 +730,21 @@ export function AiCredit() {
       ]);
       show(
         purchase.debtApplied > 0
-          ? `${purchase.debtApplied}회는 환불 사용분에 상계하고 ${purchase.availableCreditsAdded}회를 사용할 수 있어요`
-          : `${p.backendAmount}회를 충전했어요`,
+          ? intl.formatMessage(
+              { id: "billing.aiCredit.purchase.debtApplied" },
+              { debtApplied: purchase.debtApplied, available: purchase.availableCreditsAdded },
+            )
+          : intl.formatMessage(
+              { id: "billing.aiCredit.purchase.charged" },
+              { count: p.backendAmount },
+            ),
         "💜",
       );
     } catch (error) {
       show(
         isWebBillingChannel
-          ? webAiCreditFailureMessage(error)
-          : error instanceof Error ? error.message : "충전에 실패했어요",
+          ? webAiCreditFailureMessage(error, intl)
+          : resolveNativeBillingFailureMessage(error, intl),
         "💜",
       );
     } finally {
@@ -722,10 +755,10 @@ export function AiCredit() {
   if (!childUserId && familyLoading) {
     return (
       <ScreenQueryState
-        screenTitle="AI 크레딧"
+        screenTitle={intl.formatMessage({ id: "billing.aiCredit.title" })}
         state="loading"
-        heading="가족 정보를 불러오는 중이에요"
-        description="연결된 아이를 확인하고 있어요."
+        heading={intl.formatMessage({ id: "billing.aiCredit.state.familyLoadingTitle" })}
+        description={intl.formatMessage({ id: "billing.aiCredit.state.familyLoadingDescription" })}
         onBack={() => navigate(-1)}
       />
     );
@@ -734,13 +767,13 @@ export function AiCredit() {
   if (!childUserId) {
     return (
       <ScreenQueryState
-        screenTitle="AI 크레딧"
+        screenTitle={intl.formatMessage({ id: "billing.aiCredit.title" })}
         state="empty"
-        heading="연결된 아이가 없어요"
-        description="AI 크레딧을 확인하거나 충전하려면 먼저 아이를 연결해 주세요."
+        heading={intl.formatMessage({ id: "billing.aiCredit.state.noChildTitle" })}
+        description={intl.formatMessage({ id: "billing.aiCredit.state.noChildDescription" })}
         onBack={() => navigate(-1)}
         onRetry={() => navigate("/child-invite")}
-        retryLabel="아이 연결하기"
+        retryLabel={intl.formatMessage({ id: "billing.aiCredit.state.connectChild" })}
       />
     );
   }
@@ -748,10 +781,10 @@ export function AiCredit() {
   if (aiCreditQueryState === "loading") {
     return (
       <ScreenQueryState
-        screenTitle="AI 크레딧"
+        screenTitle={intl.formatMessage({ id: "billing.aiCredit.title" })}
         state="loading"
-        heading="크레딧과 아이 설정을 확인하고 있어요"
-        description="잔액과 AI 친구 설정을 안전하게 불러오는 중이에요."
+        heading={intl.formatMessage({ id: "billing.aiCredit.state.loadingTitle" })}
+        description={intl.formatMessage({ id: "billing.aiCredit.state.loadingDescription" })}
         onBack={() => navigate(-1)}
       />
     );
@@ -760,10 +793,10 @@ export function AiCredit() {
   if (aiCreditQueryState === "error" || aiCreditDataMissing) {
     return (
       <ScreenQueryState
-        screenTitle="AI 크레딧"
+        screenTitle={intl.formatMessage({ id: "billing.aiCredit.title" })}
         state="error"
-        heading="AI 크레딧 정보를 확인하지 못했어요"
-        description="확인되지 않은 잔액으로 결제하거나 설정을 바꾸지 않도록 잠시 닫았어요."
+        heading={intl.formatMessage({ id: "billing.aiCredit.state.errorTitle" })}
+        description={intl.formatMessage({ id: "billing.aiCredit.state.errorDescription" })}
         onBack={() => navigate(-1)}
         onRetry={() => void retryAiCredit()}
         retrying={aiCreditRefetching}
@@ -778,18 +811,18 @@ export function AiCredit() {
         <button
           type="button"
           className="ac-back hy-press"
-          aria-label="뒤로"
+          aria-label={intl.formatMessage({ id: "billing.common.back" })}
           onClick={() => navigate(-1)}
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
         </button>
-        <span className="ac-title">AI 크레딧</span>
+        <span className="ac-title">{intl.formatMessage({ id: "billing.aiCredit.title" })}</span>
       </div>
 
       <div className="hy-content ac-content">
         {aiCreditDataEmpty && (
           <div className="sqs-inline-empty">
-            아직 크레딧 또는 AI 친구 설정 기록이 없어요. 안전한 기본 설정으로 시작할 수 있어요.
+            {intl.formatMessage({ id: "billing.aiCredit.state.empty" })}
           </div>
         )}
         {/* 잔액 히어로 */}
@@ -798,14 +831,19 @@ export function AiCredit() {
           <span className="ac-hero__mascot">
             <img src={asset("mascot/wave.webp")} alt="" />
           </span>
-          <div className="ac-hero__label">{childName}의 남은 크레딧</div>
+          <div className="ac-hero__label">
+            {intl.formatMessage({ id: "billing.aiCredit.hero.remaining" }, { childName })}
+          </div>
           <div className="ac-hero__amount">
-            <span className="ac-hero__num">{heroAmount != null ? heroAmount : "—"}</span>
-            <span className="ac-hero__unit">회</span>
+            <span className="ac-hero__num">
+              {heroAmount != null
+                ? intl.formatMessage({ id: "billing.aiCredit.hero.count" }, { count: heroAmount })
+                : "—"}
+            </span>
           </div>
           <div className="ac-hero__badge">
             <Sparkles size={13} strokeWidth={2.2} aria-hidden="true" />
-            AI가 아이의 일정·안전 대화를 도와요
+            {intl.formatMessage({ id: "billing.aiCredit.hero.badge" })}
           </div>
         </div>
 
@@ -813,22 +851,29 @@ export function AiCredit() {
         <div className="ac-note hy-explain">
           <span className="ac-note__emoji"><MessageCircle size={15} strokeWidth={2.2} /></span>
             <span className="hy-explain__lines">
-              <span className="hy-explain__line">AI가 아이의 일정·안전 대화를 도울 때 크레딧 1회가 사용돼요.</span>
-              <span className="hy-explain__line">필요할 때 충전해 주세요.</span>
+              <span className="hy-explain__line">{intl.formatMessage({ id: "billing.aiCredit.creditUse" })}</span>
+              <span className="hy-explain__line">{intl.formatMessage({ id: "billing.aiCredit.topUpHint" })}</span>
           </span>
         </div>
 
         {/* 충전팩 */}
         <div>
-          <div className="ac-packs__label">크레딧 충전</div>
+          <div className="ac-packs__label">{intl.formatMessage({ id: "billing.aiCredit.packs.title" })}</div>
+          <div className="sqs-inline-empty">
+            {intl.formatMessage({
+              id: isWebBillingChannel
+                ? "billing.aiCredit.web.noGooglePlay"
+                : "billing.aiCredit.native.providerNotice",
+            })}
+          </div>
           {isWebBillingChannel && webCatalogQuery.isLoading && (
             <div className="sqs-inline-empty" role="status">
-              결제 가능한 크레딧 팩과 가격을 확인하고 있어요.
+              {intl.formatMessage({ id: "billing.aiCredit.packs.catalogLoading" })}
             </div>
           )}
           {isWebBillingChannel && webCatalogQuery.isError && (
             <div className="sqs-inline-empty" role="status">
-              확정 가격을 확인하지 못해 결제 팩을 잠시 숨겼어요. 크레딧 잔액과 무료 기능은 그대로 이용할 수 있어요.
+              {intl.formatMessage({ id: "billing.aiCredit.packs.catalogError" })}
             </div>
           )}
           {isWebBillingChannel
@@ -836,13 +881,15 @@ export function AiCredit() {
             && !webCatalogQuery.isError
             && (!webCatalog?.configured || webCatalog.packs.length === 0) && (
             <div className="sqs-inline-empty" role="status">
-              AI 크레딧 팩 가격을 확정하고 있어요. 가격이 준비된 팩만 이 화면에 표시됩니다.
+              {intl.formatMessage({ id: "billing.aiCredit.packs.catalogUnavailable" })}
             </div>
           )}
           {(creditStatus?.purchasedCreditDebt ?? 0) > 0 && (
             <div className="sqs-inline-empty" role="status">
-              환불된 크레딧을 이미 사용한 {creditStatus?.purchasedCreditDebt}회는 다음 충전에서 먼저 상계돼요.
-              팩마다 실제로 늘어나는 사용 가능 횟수를 확인해 주세요.
+              {intl.formatMessage(
+                { id: "billing.aiCredit.packs.debtNotice" },
+                { count: creditStatus?.purchasedCreditDebt },
+              )}
             </div>
           )}
           <div className="ac-packs__list">
@@ -858,15 +905,29 @@ export function AiCredit() {
                 </span>
                 <span className="ac-pack__main">
                   <span className="ac-pack__amt-row">
-                    <span className="ac-pack__amt">{p.backendAmount}회</span>
-                    {p.tag && <span className="ac-pack__tag">{p.tag}</span>}
+                    <span className="ac-pack__amt">
+                      {intl.formatMessage({ id: "billing.aiCredit.packs.amount" }, { count: p.backendAmount })}
+                    </span>
+                    {p.tagId && (
+                      <span className="ac-pack__tag">{intl.formatMessage({ id: p.tagId })}</span>
+                    )}
                   </span>
-                  <span className="ac-pack__per">{p.per}</span>
+                  <span className="ac-pack__per">{intl.formatMessage({ id: p.descriptionId })}</span>
                   {debtImpact.debtApplied > 0 && (
                     <span className="ac-pack__per">
                       {debtImpact.availableCreditsAdded > 0
-                        ? `이번 ${p.backendAmount}회 중 ${debtImpact.debtApplied}회 상계 · ${debtImpact.availableCreditsAdded}회 사용 가능`
-                        : `이번 ${p.backendAmount}회 전부 상계 · 남은 상계분 ${debtImpact.remainingDebt}회`}
+                        ? intl.formatMessage(
+                            { id: "billing.aiCredit.packs.debtPartial" },
+                            {
+                              total: p.backendAmount,
+                              debtApplied: debtImpact.debtApplied,
+                              available: debtImpact.availableCreditsAdded,
+                            },
+                          )
+                        : intl.formatMessage(
+                            { id: "billing.aiCredit.packs.debtFull" },
+                            { total: p.backendAmount, remainingDebt: debtImpact.remainingDebt },
+                          )}
                     </span>
                   )}
                 </span>
@@ -881,14 +942,29 @@ export function AiCredit() {
                   }
                   aria-busy={busyPack === p.id}
                   aria-label={isWebBillingChannel
-                    ? `${p.backendAmount}회 ${p.webPack?.displayPrice ?? "가격 확인"} 결제`
-                    : `${p.backendAmount}회 가격 Google Play에서 확인`}
+                    ? intl.formatMessage(
+                        { id: "billing.aiCredit.packs.webAria" },
+                        {
+                          count: p.backendAmount,
+                          price: p.webPack?.displayPrice
+                            ? localizeCreditPrice(p.webPack.displayPrice)
+                            : intl.formatMessage({ id: "billing.aiCredit.packs.pricePending" }),
+                        },
+                      )
+                    : intl.formatMessage(
+                        { id: "billing.aiCredit.packs.nativeAria" },
+                        { count: p.backendAmount },
+                      )}
                 >
                   {busyPack === p.id
-                    ? "확인 중…"
+                    ? intl.formatMessage({ id: "billing.aiCredit.packs.checking" })
                     : isWebBillingChannel
-                      ? p.webPack?.displayPrice ?? "가격 확인"
-                      : isBillingAvailable() ? "가격 확인" : "결제 불가"}
+                      ? p.webPack?.displayPrice
+                        ? localizeCreditPrice(p.webPack.displayPrice)
+                        : intl.formatMessage({ id: "billing.aiCredit.packs.pricePending" })
+                      : isBillingAvailable()
+                        ? intl.formatMessage({ id: "billing.aiCredit.packs.pricePending" })
+                        : intl.formatMessage({ id: "billing.aiCredit.packs.unavailable" })}
                 </button>
                 </div>
               );
@@ -896,7 +972,7 @@ export function AiCredit() {
           </div>
           {isWebBillingChannel && webReconciliationPending && (
             <div className="sqs-inline-empty" role="status">
-              <span>이전 결제의 승인 결과를 확인하고 있어요.</span>{" "}
+              <span>{intl.formatMessage({ id: "billing.aiCredit.packs.previousPending" })}</span>{" "}
               <button
                 type="button"
                 className="ac-buy hy-press"
@@ -904,26 +980,36 @@ export function AiCredit() {
                 disabled={busyPack !== null}
                 aria-busy={busyPack !== null}
               >
-                결제 결과 다시 확인
+                {intl.formatMessage({ id: "billing.aiCredit.packs.retry" })}
               </button>
             </div>
           )}
         </div>
 
         {commercialIsPremium === false && (
-          <section className="ac-premium-callout" aria-label="AI 친구 프리미엄 안내">
+          <section
+            className="ac-premium-callout"
+            aria-label={intl.formatMessage({ id: "billing.aiCredit.premium.aria" })}
+          >
             <div>
-              <strong>{freeLimitExhaustionReason === "free_included_limit" ? "오늘 무료 5회를 모두 사용했어요" : "무료 하루 5회 · 프리미엄 하루 20회"}</strong>
+              <strong>{intl.formatMessage({
+                id: freeLimitExhaustionReason === "free_included_limit"
+                  ? "billing.aiCredit.premium.exhausted"
+                  : "billing.aiCredit.premium.comparison",
+              })}</strong>
               <p>{freeLimitExhaustionReason === "parent_safety_limit"
-                ? `현재 부모 설정은 하루 ${publicStatus?.parentDailyLimit ?? 0}회예요. 아래에서 안전 상한을 조정할 수 있어요.`
-                : "프리미엄은 아이별 AI 친구 대화를 하루 20회 기본 제공해요. 추가 크레딧 팩과는 별도예요."}</p>
+                ? intl.formatMessage(
+                    { id: "billing.aiCredit.premium.parentLimit" },
+                    { count: publicStatus?.parentDailyLimit ?? 0 },
+                  )
+                : intl.formatMessage({ id: "billing.aiCredit.premium.benefit" })}</p>
             </div>
             <button
               type="button"
               className="ac-premium-callout__cta hy-press"
               onClick={() => setAiLimitUpsellOpen(true)}
             >
-              하루 20회로 늘리기
+              {intl.formatMessage({ id: "billing.aiCredit.premium.cta" })}
             </button>
           </section>
         )}
@@ -932,19 +1018,22 @@ export function AiCredit() {
         <div className="ac-auto">
           <span className="ac-auto__icon"><Bot size={20} strokeWidth={2.2} color="var(--mint-text)" /></span>
           <span className="ac-auto__main">
-            <span className="ac-auto__title">AI 친구 대화 허용</span>
+            <span className="ac-auto__title">{intl.formatMessage({ id: "billing.aiCredit.settings.aiToggleTitle" })}</span>
             <span className="ac-auto__sub">
               {aiEnabled
                 ? dailyLimit != null
-                  ? `켜짐 · 하루 ${dailyLimit}회까지`
-                  : "켜짐 · 하루 한도 확인 중"
-                : "꺼짐 · 아이가 AI 친구와 대화할 수 없어요"}
+                  ? intl.formatMessage(
+                      { id: "billing.aiCredit.settings.enabledLimit" },
+                      { count: dailyLimit },
+                    )
+                  : intl.formatMessage({ id: "billing.aiCredit.settings.enabledPending" })
+                : intl.formatMessage({ id: "billing.aiCredit.settings.disabled" })}
             </span>
           </span>
           <button
             type="button"
             className="ac-toggle"
-            aria-label="AI 친구 대화 허용"
+            aria-label={intl.formatMessage({ id: "billing.aiCredit.settings.aiToggleTitle" })}
             aria-pressed={aiEnabled}
             onClick={toggleAiEnabled}
             disabled={saveSettings.isPending || !childUserId}
@@ -959,14 +1048,14 @@ export function AiCredit() {
           <div className="ac-auto" style={{ marginTop: -4 }}>
             <span className="ac-auto__icon"><Hash size={20} strokeWidth={2.2} color="var(--mint-text)" /></span>
             <span className="ac-auto__main">
-              <span className="ac-auto__title">하루 대화 한도</span>
-              <span className="ac-auto__sub">무료 포함분 기준 · 초과분은 크레딧 사용</span>
+              <span className="ac-auto__title">{intl.formatMessage({ id: "billing.aiCredit.settings.dailyLimitTitle" })}</span>
+              <span className="ac-auto__sub">{intl.formatMessage({ id: "billing.aiCredit.settings.dailyLimitDescription" })}</span>
             </span>
             <span className="ac-limit">
               <button
                 type="button"
                 className="ac-limit__btn hy-press"
-                aria-label="한도 줄이기"
+                aria-label={intl.formatMessage({ id: "billing.aiCredit.settings.decrease" })}
                 onClick={() => changeDailyLimit(-5)}
                 disabled={saveSettings.isPending}
                 aria-busy={limitDecreaseSaving}
@@ -977,7 +1066,7 @@ export function AiCredit() {
               <button
                 type="button"
                 className="ac-limit__btn hy-press"
-                aria-label="한도 늘리기"
+                aria-label={intl.formatMessage({ id: "billing.aiCredit.settings.increase" })}
                 onClick={() => changeDailyLimit(5)}
                 disabled={saveSettings.isPending}
                 aria-busy={limitIncreaseSaving}
@@ -994,7 +1083,7 @@ export function AiCredit() {
               disabled={saveSettings.isPending}
               aria-busy={limitIncreaseSaving}
             >
-              Premium 기본 20회로 설정
+              {intl.formatMessage({ id: "billing.aiCredit.settings.premiumDefault" })}
             </button>
           )}
           </div>
@@ -1003,33 +1092,37 @@ export function AiCredit() {
         <section className="ac-detail" aria-busy={!advancedSettingsReady}>
           <div className="ac-detail__head">
             <div>
-              <div className="ac-detail__title">AI 친구 상세 제어</div>
-              <div className="ac-detail__sub">{childName}에게 적용되는 부모 설정이에요</div>
+              <div className="ac-detail__title">{intl.formatMessage({ id: "billing.aiCredit.detail.title" })}</div>
+              <div className="ac-detail__sub">
+                {intl.formatMessage({ id: "billing.aiCredit.detail.description" }, { childName })}
+              </div>
             </div>
           </div>
 
           <label className="ac-field">
-            <span className="ac-field__label">금지 주제</span>
+            <span className="ac-field__label">{intl.formatMessage({ id: "billing.aiCredit.detail.forbiddenLabel" })}</span>
             <textarea
               className="ac-textarea"
               value={forbiddenTopicsText}
               onChange={(e) => setForbiddenTopicsText(e.target.value)}
-              placeholder="예: 게임 결제, 모르는 사람, 무서운 이야기"
+              placeholder={intl.formatMessage({ id: "billing.aiCredit.detail.forbiddenPlaceholder" })}
               rows={3}
               disabled={!advancedSettingsReady || saveSettings.isPending}
             />
-            <span className="ac-field__hint hy-explain">쉼표나 줄바꿈으로 여러 주제를 입력할 수 있어요.</span>
+            <span className="ac-field__hint hy-explain">
+              {intl.formatMessage({ id: "billing.aiCredit.detail.forbiddenHint" })}
+            </span>
           </label>
 
           <div className="ac-control-row">
             <span className="ac-control-row__main">
-              <span className="ac-control-row__title">선제 대화</span>
-              <span className="ac-control-row__sub">일정이나 안내가 있을 때 먼저 말을 걸어요</span>
+              <span className="ac-control-row__title">{intl.formatMessage({ id: "billing.aiCredit.detail.proactiveTitle" })}</span>
+              <span className="ac-control-row__sub">{intl.formatMessage({ id: "billing.aiCredit.detail.proactiveDescription" })}</span>
             </span>
             <button
               type="button"
               className="ac-toggle"
-              aria-label="선제 대화"
+              aria-label={intl.formatMessage({ id: "billing.aiCredit.detail.proactiveTitle" })}
               aria-pressed={proactiveEnabled}
               onClick={() => setProactiveEnabled((v) => !v)}
               disabled={!advancedSettingsReady || saveSettings.isPending}
@@ -1042,7 +1135,7 @@ export function AiCredit() {
 
           <div className="ac-time-grid">
             <label className="ac-field">
-              <span className="ac-field__label">선제 대화 시작</span>
+              <span className="ac-field__label">{intl.formatMessage({ id: "billing.aiCredit.detail.proactiveStart" })}</span>
               <input
                 className="ac-time"
                 type="time"
@@ -1052,7 +1145,7 @@ export function AiCredit() {
               />
             </label>
             <label className="ac-field">
-              <span className="ac-field__label">선제 대화 종료</span>
+              <span className="ac-field__label">{intl.formatMessage({ id: "billing.aiCredit.detail.proactiveEnd" })}</span>
               <input
                 className="ac-time"
                 type="time"
@@ -1062,7 +1155,7 @@ export function AiCredit() {
               />
             </label>
             <label className="ac-field">
-              <span className="ac-field__label">조용한 시간 시작</span>
+              <span className="ac-field__label">{intl.formatMessage({ id: "billing.aiCredit.detail.quietStart" })}</span>
               <input
                 className="ac-time"
                 type="time"
@@ -1072,7 +1165,7 @@ export function AiCredit() {
               />
             </label>
             <label className="ac-field">
-              <span className="ac-field__label">조용한 시간 종료</span>
+              <span className="ac-field__label">{intl.formatMessage({ id: "billing.aiCredit.detail.quietEnd" })}</span>
               <input
                 className="ac-time"
                 type="time"
@@ -1085,13 +1178,13 @@ export function AiCredit() {
 
           <div className="ac-control-row">
             <span className="ac-control-row__main">
-              <span className="ac-control-row__title">일정 조작 허용</span>
-              <span className="ac-control-row__sub">아이 일정의 조회·추가·수정을 도와요</span>
+              <span className="ac-control-row__title">{intl.formatMessage({ id: "billing.aiCredit.detail.scheduleTitle" })}</span>
+              <span className="ac-control-row__sub">{intl.formatMessage({ id: "billing.aiCredit.detail.scheduleDescription" })}</span>
             </span>
             <button
               type="button"
               className="ac-toggle"
-              aria-label="일정 조작 허용"
+              aria-label={intl.formatMessage({ id: "billing.aiCredit.detail.scheduleTitle" })}
               aria-pressed={allowScheduleActions}
               onClick={() => setAllowScheduleActions((v) => !v)}
               disabled={!advancedSettingsReady || saveSettings.isPending}
@@ -1104,13 +1197,13 @@ export function AiCredit() {
 
           <div className="ac-control-row">
             <span className="ac-control-row__main">
-              <span className="ac-control-row__title">연락 동작 허용</span>
-              <span className="ac-control-row__sub">부모님께 전화·메시지 요청을 도와요</span>
+              <span className="ac-control-row__title">{intl.formatMessage({ id: "billing.aiCredit.detail.contactTitle" })}</span>
+              <span className="ac-control-row__sub">{intl.formatMessage({ id: "billing.aiCredit.detail.contactDescription" })}</span>
             </span>
             <button
               type="button"
               className="ac-toggle"
-              aria-label="연락 동작 허용"
+              aria-label={intl.formatMessage({ id: "billing.aiCredit.detail.contactTitle" })}
               aria-pressed={allowContactActions}
               onClick={() => setAllowContactActions((v) => !v)}
               disabled={!advancedSettingsReady || saveSettings.isPending}
@@ -1128,7 +1221,9 @@ export function AiCredit() {
             disabled={!advancedSettingsReady || saveSettings.isPending}
             aria-busy={advancedSettingsSaving}
           >
-            {advancedSettingsSaving ? "저장 중…" : "상세 설정 저장"}
+            {advancedSettingsSaving
+              ? intl.formatMessage({ id: "billing.aiCredit.detail.saving" })
+              : intl.formatMessage({ id: "billing.aiCredit.detail.save" })}
           </button>
         </section>
 
@@ -1136,19 +1231,25 @@ export function AiCredit() {
         <div className="ac-auto">
           <span className="ac-auto__icon"><BellRing size={20} strokeWidth={2.2} color="var(--mint-text)" /></span>
           <span className="ac-auto__main">
-            <span className="ac-auto__title">잔액 부족 알림</span>
+            <span className="ac-auto__title">{intl.formatMessage({ id: "billing.aiCredit.lowAlert.title" })}</span>
             <span className="ac-auto__sub">
-              {lowCreditAlert ? "3회 이하가 되면 이 화면에서 알려드려요" : "크레딧이 부족할 때 확인할 수 있어요"}
+              {intl.formatMessage({
+                id: lowCreditAlert
+                  ? "billing.aiCredit.lowAlert.enabledDescription"
+                  : "billing.aiCredit.lowAlert.disabledDescription",
+              })}
             </span>
           </span>
           <button
             type="button"
             className="ac-toggle"
-            aria-label="잔액 부족 알림"
+            aria-label={intl.formatMessage({ id: "billing.aiCredit.lowAlert.title" })}
             aria-pressed={lowCreditAlert}
             onClick={() => {
               setLowCreditAlert((v) => {
-                show(!v ? "잔액 부족 알림을 켰어요" : "잔액 부족 알림을 껐어요", "🔔");
+                show(intl.formatMessage({
+                  id: !v ? "billing.aiCredit.lowAlert.enabledToast" : "billing.aiCredit.lowAlert.disabledToast",
+                }), "🔔");
                 return !v;
               });
             }}
@@ -1160,7 +1261,7 @@ export function AiCredit() {
         </div>
 
         <div className="ac-footer">
-          사용하지 않은 크레딧은 차감되지 않아요 · 안전한 대화를 위해 대화 내용은 요약만 보관돼요
+          {intl.formatMessage({ id: "billing.aiCredit.footer" })}
         </div>
       </div>
       <PremiumUpsell
@@ -1174,7 +1275,7 @@ export function AiCredit() {
           const saved = storage && returnTo
             ? savePremiumReturnIntent(storage, { source, feature, returnTo })
             : false;
-          if (!saved) throw new Error("AI 친구 화면으로 돌아올 경로를 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+          if (!saved) throw new Error(intl.formatMessage({ id: "billing.aiCredit.returnError" }));
           setAiLimitUpsellOpen(false);
           navigate("/subscription");
         }}

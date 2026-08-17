@@ -1,5 +1,6 @@
 import { useId, useRef, useState } from "react";
 import { useNavigate } from "react-router";
+import { useIntl } from "react-intl";
 import { Bell, ChevronLeft, ChevronRight, Lock, LogOut, MessageCircleQuestion, Trash2, TriangleAlert } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
@@ -18,13 +19,14 @@ import "../parent/ParentSettings.css";
 
 /** 선생님 반 관리 네비게이션 행. */
 const CLASS_ROWS = [
-  { id: "timetable", icon: "cat/study.webp", label: "반 시간표", route: "/teacher/timetable" },
-  { id: "students", icon: "family/son.webp", label: "학생 관리", route: "/teacher/students" },
-  { id: "notice", icon: "ui/megaphone.webp", label: "알림장 보내기", route: "/teacher/notice" },
+  { id: "timetable", icon: "cat/study.webp", labelId: "shared.teacherSettings.classRow.timetable", route: "/teacher/timetable" },
+  { id: "students", icon: "family/son.webp", labelId: "shared.teacherSettings.classRow.students", route: "/teacher/students" },
+  { id: "notice", icon: "ui/megaphone.webp", labelId: "shared.teacherSettings.classRow.notice", route: "/teacher/notice" },
 ] as const;
 
 /** T-04 선생님 설정 — 프로필 + 반 관리 + 알림 + 약관·계정. */
 export function TeacherSettings() {
+  const intl = useIntl();
   const navigate = useNavigate();
   const { show } = useToast();
   const { logout } = useAuth();
@@ -54,8 +56,10 @@ export function TeacherSettings() {
     await Promise.all([accountQuery.refetch(), classesQ.refetch()]);
   };
 
-  const displayName = account?.myName || "선생님";
-  const className = classesQ.data?.[0]?.className ?? "연결된 반 없음";
+  const displayName = account?.myName
+    || intl.formatMessage({ id: "shared.teacherSettings.nameFallback" });
+  const className = classesQ.data?.[0]?.className
+    ?? intl.formatMessage({ id: "shared.teacherSettings.classFallback" });
 
   const logoutBusyRef = useRef(false);
   const handleLogout = async () => {
@@ -66,7 +70,7 @@ export function TeacherSettings() {
       navigate("/onboarding");
     } catch (e) {
       console.error("로그아웃 실패:", e);
-      show("로그아웃에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️");
+      show(intl.formatMessage({ id: "shared.teacherSettings.logout.error" }), "⚠️");
     } finally {
       logoutBusyRef.current = false;
     }
@@ -75,29 +79,32 @@ export function TeacherSettings() {
   const handleDelete = () => {
     deleteAccount.mutate(undefined, {
       onSuccess: () => {
-        show("계정이 삭제되었어요", "🗑️");
+        show(intl.formatMessage({ id: "shared.teacherSettings.delete.success" }), "🗑️");
         navigate("/onboarding");
       },
       onError: (e) => {
         console.error("계정 삭제 실패:", e);
-        show("계정 삭제에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️");
+        show(intl.formatMessage({ id: "shared.teacherSettings.delete.error" }), "⚠️");
       },
     });
   };
 
   const openPrivacy = () => {
     if (isNativePlatform())
-      openExternal(PRIVACY_POLICY_URL).catch(() => show("브라우저를 열 수 없어요", "⚠️"));
+      openExternal(PRIVACY_POLICY_URL).catch(() => show(
+        intl.formatMessage({ id: "shared.teacherSettings.privacy.error" }),
+        "⚠️",
+      ));
     else window.open(PRIVACY_POLICY_URL, "_blank", "noopener");
   };
 
   if (teacherSettingsQueryState === "loading") {
     return (
       <ScreenQueryState
-        screenTitle="선생님 설정"
+        screenTitle={intl.formatMessage({ id: "shared.teacherSettings.screenTitle" })}
         state="loading"
-        heading="설정을 불러오고 있어요"
-        description="계정과 연결된 반을 확인하는 중이에요."
+        heading={intl.formatMessage({ id: "shared.teacherSettings.loading.heading" })}
+        description={intl.formatMessage({ id: "shared.teacherSettings.loading.description" })}
         onBack={() => navigate(-1)}
       />
     );
@@ -106,10 +113,10 @@ export function TeacherSettings() {
   if (teacherSettingsQueryState === "error" || teacherSettingsDataMissing) {
     return (
       <ScreenQueryState
-        screenTitle="선생님 설정"
+        screenTitle={intl.formatMessage({ id: "shared.teacherSettings.screenTitle" })}
         state="error"
-        heading="설정을 불러오지 못했어요"
-        description="계정과 반 정보를 다시 확인해 주세요."
+        heading={intl.formatMessage({ id: "shared.teacherSettings.error.heading" })}
+        description={intl.formatMessage({ id: "shared.teacherSettings.error.description" })}
         onBack={() => navigate(-1)}
         onRetry={() => void retryTeacherSettings()}
         retrying={teacherSettingsRefetching}
@@ -120,18 +127,25 @@ export function TeacherSettings() {
   return (
     <div className="hy-rise-in">
       <header className="ps-head">
-        <button type="button" className="ps-back hy-press" aria-label="뒤로" onClick={() => navigate(-1)}>
+        <button
+          type="button"
+          className="ps-back hy-press"
+          aria-label={intl.formatMessage({ id: "shared.teacherSettings.back" })}
+          onClick={() => navigate(-1)}
+        >
           <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
         </button>
-        <span className="ps-head-title">설정</span>
+        <span className="ps-head-title">
+          {intl.formatMessage({ id: "shared.teacherSettings.title" })}
+        </span>
       </header>
 
       <div className="ps-content">
         {noTeacherClasses && (
           <div className="sqs-inline-empty">
-            <span>아직 연결된 반이 없어요. 반을 만든 뒤 시간표와 학생 관리를 시작할 수 있어요.</span>
+            <span>{intl.formatMessage({ id: "shared.teacherSettings.empty.description" })}</span>
             <button type="button" className="hy-press" onClick={() => void retryTeacherSettings()}>
-              다시 확인하기
+              {intl.formatMessage({ id: "shared.teacherSettings.empty.retry" })}
             </button>
           </div>
         )}
@@ -141,7 +155,9 @@ export function TeacherSettings() {
             <img src={asset("cat/study.webp")} alt="" />
           </div>
           <div className="ps-profile__info">
-            <div className="ps-profile__name">{displayName} 선생님</div>
+            <div className="ps-profile__name">
+              {displayName} · {intl.formatMessage({ id: "shared.teacherSettings.profileName" })}
+            </div>
             <div className="ps-profile__meta">
               {providerLabel} · {className}
             </div>
@@ -150,7 +166,9 @@ export function TeacherSettings() {
 
         {/* 반 관리 */}
         <div className="ps-group">
-          <div className="ps-group__label">반 관리</div>
+          <div className="ps-group__label">
+            {intl.formatMessage({ id: "shared.teacherSettings.group.class" })}
+          </div>
           <div className="ps-list">
             {CLASS_ROWS.map((r) => (
               <button
@@ -162,7 +180,9 @@ export function TeacherSettings() {
                 <span className="ps-feature__icon">
                   <img src={asset(r.icon)} alt="" />
                 </span>
-                <span className="ps-feature__label">{r.label}</span>
+                <span className="ps-feature__label">
+                  {intl.formatMessage({ id: r.labelId })}
+                </span>
                 <ChevronRight className="ps-feature__chev" size={18} strokeWidth={2.4} color="#C9BFC4" />
               </button>
             ))}
@@ -171,7 +191,9 @@ export function TeacherSettings() {
 
         {/* 설정 */}
         <div className="ps-group">
-          <div className="ps-group__label">설정</div>
+          <div className="ps-group__label">
+            {intl.formatMessage({ id: "shared.teacherSettings.group.settings" })}
+          </div>
           <div className="ps-list">
             <button
               type="button"
@@ -179,7 +201,9 @@ export function TeacherSettings() {
               onClick={() => navigate("/notification-settings")}
             >
               <span className="ps-nav__chip" data-tone="rose"><Bell size={18} strokeWidth={2.3} /></span>
-              <span className="ps-nav__label">알림 설정</span>
+              <span className="ps-nav__label">
+                {intl.formatMessage({ id: "shared.teacherSettings.notification" })}
+              </span>
               <ChevronRight className="ps-nav__chev" size={18} strokeWidth={2.4} color="#C9BFC4" />
             </button>
           </div>
@@ -187,32 +211,45 @@ export function TeacherSettings() {
 
         {/* 약관 · 계정 */}
         <div className="ps-group">
-          <div className="ps-group__label">약관 · 계정</div>
+          <div className="ps-group__label">
+            {intl.formatMessage({ id: "shared.teacherSettings.group.legalAccount" })}
+          </div>
           <div className="ps-list">
             <button type="button" className="ps-account hy-press" onClick={openPrivacy}>
               <span className="ps-account__chip" data-tone="neutral"><Lock size={18} strokeWidth={2.3} /></span>
-              <span className="ps-account__label">개인정보 처리방침</span>
+              <span className="ps-account__label">
+                {intl.formatMessage({ id: "shared.teacherSettings.privacy" })}
+              </span>
               <ChevronRight className="ps-nav__chev" size={18} strokeWidth={2.4} color="#C9BFC4" />
             </button>
             <button type="button" className="ps-account hy-press" onClick={() => navigate("/feedback")}>
               <span className="ps-account__chip" data-tone="blue"><MessageCircleQuestion size={18} strokeWidth={2.3} /></span>
-              <span className="ps-account__label">문제 신고 · 문의</span>
+              <span className="ps-account__label">
+                {intl.formatMessage({ id: "shared.teacherSettings.feedback" })}
+              </span>
               <ChevronRight className="ps-nav__chev" size={18} strokeWidth={2.4} color="#C9BFC4" />
             </button>
             <button type="button" className="ps-account hy-press" onClick={() => void handleLogout()}>
               <span className="ps-account__chip" data-tone="danger"><LogOut size={18} strokeWidth={2.3} /></span>
-              <span className="ps-account__label">로그아웃</span>
+              <span className="ps-account__label">
+                {intl.formatMessage({ id: "shared.teacherSettings.logout.action" })}
+              </span>
             </button>
             <button type="button" className="ps-account hy-press" onClick={() => setConfirmDelete(true)}>
               <span className="ps-account__chip" data-tone="danger"><TriangleAlert size={18} strokeWidth={2.3} /></span>
               <span className="ps-account__label" style={{ color: "var(--danger-text)" }}>
-                회원 탈퇴
+                {intl.formatMessage({ id: "shared.teacherSettings.delete.action" })}
               </span>
             </button>
           </div>
         </div>
 
-        <div className="ps-version">혜니캘린더 v{APP_VERSION} · 선생님 모드</div>
+        <div className="ps-version">
+          {intl.formatMessage(
+            { id: "shared.teacherSettings.version" },
+            { version: APP_VERSION },
+          )}
+        </div>
       </div>
 
       {/* 회원 탈퇴 확인 모달 */}
@@ -229,16 +266,18 @@ export function TeacherSettings() {
             type="button"
             className="ps-modal__scrim"
             tabIndex={-1}
-            aria-label="닫기"
+            aria-label={intl.formatMessage({ id: "shared.teacherSettings.delete.close" })}
             onClick={() => !deleteAccount.isPending && setConfirmDelete(false)}
           />
           <div className="ps-modal__card">
             <div className="ps-modal__emoji" aria-hidden="true">
               <Trash2 size={24} strokeWidth={2.2} />
             </div>
-            <div id={deleteTitleId} className="ps-modal__title">정말 탈퇴하시겠어요?</div>
+            <div id={deleteTitleId} className="ps-modal__title">
+              {intl.formatMessage({ id: "shared.teacherSettings.delete.dialogTitle" })}
+            </div>
             <p id={deleteDescriptionId} className="ps-modal__body">
-              내 선생님 계정과 만든 반·학생 연결 정보가 삭제돼요. 복구할 수 없어요.
+              {intl.formatMessage({ id: "shared.teacherSettings.delete.dialogDescription" })}
             </p>
             <div className="ps-modal__btns">
               <button
@@ -249,7 +288,7 @@ export function TeacherSettings() {
                 disabled={deleteAccount.isPending}
                 data-progress-owner="confirm-action"
               >
-                취소
+                {intl.formatMessage({ id: "shared.teacherSettings.delete.cancel" })}
               </button>
               <button
                 type="button"
@@ -257,7 +296,9 @@ export function TeacherSettings() {
                 onClick={handleDelete}
                 disabled={deleteAccount.isPending} aria-busy={deleteAccount.isPending}
               >
-                {deleteAccount.isPending ? "삭제 중…" : "탈퇴하기"}
+                {deleteAccount.isPending
+                  ? intl.formatMessage({ id: "shared.teacherSettings.delete.pending" })
+                  : intl.formatMessage({ id: "shared.teacherSettings.delete.confirm" })}
               </button>
             </div>
           </div>

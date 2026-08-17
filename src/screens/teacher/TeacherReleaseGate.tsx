@@ -1,5 +1,6 @@
 import { useId, useRef, useState } from "react";
 import { BookOpenCheck, FileText, LogOut, ShieldCheck, Trash2 } from "lucide-react";
+import { useIntl } from "react-intl";
 import { useNavigate } from "react-router";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
@@ -15,6 +16,7 @@ import "./TeacherReleaseGate.css";
 type BusyAction = "logout" | "delete" | null;
 
 export function TeacherReleaseGate() {
+  const intl = useIntl();
   const navigate = useNavigate();
   const { show } = useToast();
   const { logout, deleteAccount } = useAuth();
@@ -37,7 +39,7 @@ export function TeacherReleaseGate() {
       await logout();
       navigate("/onboarding", { replace: true });
     } catch {
-      show("로그아웃하지 못했어요. 네트워크를 확인하고 다시 시도해 주세요.", "⚠️");
+      show(intl.formatMessage({ id: "shared.teacherReleaseGate.error.logout" }), "⚠️");
       setBusyAction(null);
     }
   };
@@ -47,10 +49,10 @@ export function TeacherReleaseGate() {
     setBusyAction("delete");
     try {
       await deleteAccount();
-      show("선생님 계정이 삭제되었어요.", "🗑️");
+      show(intl.formatMessage({ id: "shared.teacherReleaseGate.delete.success" }), "🗑️");
       navigate("/onboarding", { replace: true });
     } catch {
-      show("계정을 삭제하지 못했어요. 잠시 후 다시 시도해 주세요.", "⚠️");
+      show(intl.formatMessage({ id: "shared.teacherReleaseGate.delete.error" }), "⚠️");
       setBusyAction(null);
     }
   };
@@ -59,7 +61,7 @@ export function TeacherReleaseGate() {
     try {
       await openExternal(url);
     } catch {
-      show("문서를 열 수 없어요. 네트워크와 기본 브라우저를 확인해 주세요.", "⚠️");
+      show(intl.formatMessage({ id: "shared.teacherReleaseGate.legal.error" }), "⚠️");
     }
   };
 
@@ -69,16 +71,22 @@ export function TeacherReleaseGate() {
         <div className="trg-icon" aria-hidden="true">
           <BookOpenCheck size={34} strokeWidth={2.1} />
         </div>
-        <p className="trg-eyebrow">혜니캘린더 v{APP_VERSION}</p>
-        <h1 id="teacher-release-title">선생님 모드는 준비 중이에요</h1>
+        <p className="trg-eyebrow">
+          {intl.formatMessage(
+            { id: "shared.teacherReleaseGate.eyebrow" },
+            { version: APP_VERSION },
+          )}
+        </p>
+        <h1 id="teacher-release-title">
+          {intl.formatMessage({ id: "shared.teacherReleaseGate.title" })}
+        </h1>
         <p className="trg-copy">
-          현재 출시 버전은 보호자와 아이 기능을 먼저 제공합니다. 반·학생 정보의 심사와
-          개인정보 보호 준비가 끝나면 선생님 기능을 안전하게 다시 열겠습니다.
+          {intl.formatMessage({ id: "shared.teacherReleaseGate.description" })}
         </p>
 
         <div className="trg-notice hy-explain">
           <ShieldCheck size={20} strokeWidth={2.2} aria-hidden="true" />
-          <span>기존 계정은 유지되며, 원하시면 아래에서 로그아웃하거나 탈퇴할 수 있습니다.</span>
+          <span>{intl.formatMessage({ id: "shared.teacherReleaseGate.notice" })}</span>
         </div>
 
         <div className="trg-actions">
@@ -90,7 +98,9 @@ export function TeacherReleaseGate() {
             aria-busy={busyAction === "logout"}
           >
             <LogOut size={19} strokeWidth={2.2} aria-hidden="true" />
-            {busyAction === "logout" ? "로그아웃 중…" : "로그아웃하고 다른 계정으로 시작"}
+            {busyAction === "logout"
+              ? intl.formatMessage({ id: "shared.teacherReleaseGate.logout.pending" })
+              : intl.formatMessage({ id: "shared.teacherReleaseGate.logout.action" })}
           </button>
           <button
             type="button"
@@ -100,18 +110,21 @@ export function TeacherReleaseGate() {
             data-progress-owner="account-action"
           >
             <Trash2 size={18} strokeWidth={2.2} aria-hidden="true" />
-            회원 탈퇴
+            {intl.formatMessage({ id: "shared.teacherReleaseGate.delete.action" })}
           </button>
         </div>
 
-        <nav className="trg-legal" aria-label="법적 문서">
+        <nav
+          className="trg-legal"
+          aria-label={intl.formatMessage({ id: "shared.teacherReleaseGate.legal.label" })}
+        >
           <button type="button" onClick={() => void openLegal(TERMS_OF_SERVICE_URL)}>
             <FileText size={16} aria-hidden="true" />
-            이용약관
+            {intl.formatMessage({ id: "shared.teacherReleaseGate.legal.terms" })}
           </button>
           <button type="button" onClick={() => void openLegal(PRIVACY_POLICY_URL)}>
             <FileText size={16} aria-hidden="true" />
-            개인정보 처리방침
+            {intl.formatMessage({ id: "shared.teacherReleaseGate.legal.privacy" })}
           </button>
         </nav>
       </section>
@@ -129,12 +142,16 @@ export function TeacherReleaseGate() {
             type="button"
             className="trg-dialog__scrim"
             tabIndex={-1}
-            aria-label="회원 탈퇴 확인 닫기"
+            aria-label={intl.formatMessage({ id: "shared.teacherReleaseGate.delete.close" })}
             onClick={() => !busyAction && setConfirmDelete(false)}
           />
           <div className="trg-dialog__card">
-            <h2 id={deleteTitleId}>선생님 계정을 삭제할까요?</h2>
-            <p id={deleteDescriptionId}>내 계정과 내가 만든 반·학생 연결 정보는 삭제되며 복구할 수 없습니다.</p>
+            <h2 id={deleteTitleId}>
+              {intl.formatMessage({ id: "shared.teacherReleaseGate.delete.dialogTitle" })}
+            </h2>
+            <p id={deleteDescriptionId}>
+              {intl.formatMessage({ id: "shared.teacherReleaseGate.delete.dialogDescription" })}
+            </p>
             <div className="trg-dialog__actions">
               <button
                 ref={deleteCancelRef}
@@ -144,7 +161,7 @@ export function TeacherReleaseGate() {
                 disabled={busyAction !== null}
                 data-progress-owner="delete-action"
               >
-                취소
+                {intl.formatMessage({ id: "shared.teacherReleaseGate.delete.cancel" })}
               </button>
               <button
                 type="button"
@@ -153,7 +170,9 @@ export function TeacherReleaseGate() {
                 disabled={busyAction !== null}
                 aria-busy={busyAction === "delete"}
               >
-                {busyAction === "delete" ? "삭제 중…" : "탈퇴하기"}
+                {busyAction === "delete"
+                  ? intl.formatMessage({ id: "shared.teacherReleaseGate.delete.pending" })
+                  : intl.formatMessage({ id: "shared.teacherReleaseGate.delete.confirm" })}
               </button>
             </div>
           </div>

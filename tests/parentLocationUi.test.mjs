@@ -22,7 +22,8 @@ test("실시간 위치 요청 중에는 대기 상태를 화면에 표시하고 
   assert.match(refreshWaitSource, /while \(now\(\) < deadline\)/);
   assert.match(source, /return \(\) => \{\s*refreshSeq\.current \+= 1;/s);
   // 진행 안내는 간단한 한 줄만 쓴다 — 단계별 설명과 부제는 재도입 금지(2026-08-02 TK 지시).
-  assert.match(source, /const refreshOverlayTitle = "위치 요청을 보냈어요"/);
+  assert.equal(koParent["parent.location.requestSent"], "위치 요청을 보냈어요");
+  assert.match(source, /const refreshOverlayTitle = intl\.formatMessage\(\{ id: "parent\.location\.requestSent" \}\)/);
   assert.doesNotMatch(source, /refreshOverlaySub|새 위치를 기다리는 중|위치 요청을 보내는 중/);
   // 새로고침 버튼은 자체 회전 아이콘이 있으므로 전역 aria-busy 스피너를 끈다(아이콘 2개 방지).
   assert.match(source, /className=\{`pl-refresh hy-busy-quiet\$\{/);
@@ -55,6 +56,7 @@ test("부모 위치 화면 자동 요청은 Premium에서만 실행해 Free 수�
 
 test("오래된 위치는 현재 장소가 아니라 마지막 확인 장소로 표시한다", () => {
   assert.match(source, /fresh\?\.status === "stale"/);
-  assert.match(source, /마지막 확인: \$\{curPlace\}/);
+  assert.match(koParent["parent.location.lastSeenAt"], /마지막 확인: \{place\}/);
+  assert.match(source, /parent\.location\.lastSeenAt/);
   assert.match(source, /pl-sheet__zone--stale/);
 });

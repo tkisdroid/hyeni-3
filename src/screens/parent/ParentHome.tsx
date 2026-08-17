@@ -1,3 +1,4 @@
+import { useIntl, type IntlShape } from "react-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { AlertTriangle, Bell, Settings, ChevronRight, Check, MapPin, Smartphone, Mic, Keyboard, Image as ImageIcon, CalendarDays, RefreshCw } from "lucide-react";
@@ -22,7 +23,7 @@ import { useLocationLabels } from "@/queries/useLocationLabels";
 import type { ChildLocation } from "@/lib/api/endpoints/location";
 import { groupEventsByDateKey, PAST_TAGS, type CalEventView } from "@/transform/scheduleView";
 import { useVisitVerify } from "@/queries/useVisitVerify";
-import { todayDateKey } from "@/transform/dateKey";
+import { dateToDateKeyInTimeZone } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { deviceStatusView } from "@/transform/familyView";
 import { resolveDeviceLabel } from "@/transform/deviceLabel";
@@ -44,9 +45,9 @@ import {
 } from "@/transform/premiumReturnIntent";
 import { resolveParentHomeSubscriptionCard } from "@/transform/parentHomeSubscriptionCard";
 import { resolveParentHomeDeviceFinder } from "@/transform/parentHomeShortcut";
+import { useLocale } from "@/i18n/useLocale";
+import { formatCalendarDay, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
 import "./ParentHome.css";
-
-const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
 
 function avatarSrc(path: string): string {
   return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
@@ -67,10 +68,10 @@ function eventLocationPoint(event: CalendarEvent): { lat: number; lng: number } 
   return { lat, lng };
 }
 
-function eventTitleForPlace(event: CalendarEvent, view: CalEventView): string {
+function eventTitleForPlace(event: CalendarEvent, view: CalEventView, intl: IntlShape): string {
   const title = (event.title || view.title || "").trim();
   if (title) return title;
-  return (event.location?.address || "일정 장소").trim();
+  return (event.location?.address || intl.formatMessage({ id: "parent.home.schedulePlace" })).trim();
 }
 
 function distanceM(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -87,6 +88,7 @@ function distanceM(lat1: number, lng1: number, lat2: number, lng2: number): numb
 function schedulePlaceHit(
   loc: ChildLocation,
   events: ChildScheduleEvent[],
+  intl: IntlShape,
 ): { label: string; distanceM: number } | null {
   const hits = events
     .map(({ raw, view }) => {
@@ -113,7 +115,13 @@ function schedulePlaceHit(
     });
   const hit = hits[0];
   if (!hit) return null;
-  return { label: `${eventTitleForPlace(hit.raw, hit.view)} 근처`, distanceM: hit.distance };
+  return {
+    label: intl.formatMessage(
+      { id: "parent.home.nearPlace" },
+      { place: eventTitleForPlace(hit.raw, hit.view, intl) },
+    ),
+    distanceM: hit.distance,
+  };
 }
 
 const shortcutRoutes: Record<string, string> = {
@@ -127,9 +135,22 @@ const shortcutRoutes: Record<string, string> = {
   "알림": "/notifications",
 };
 
+const shortcutLabelIds: Readonly<Record<string, string>> = {
+  sc1: "parent.home.shortcut.aiSchedule",
+  sc2: "parent.home.shortcut.location",
+  sc3: "parent.home.shortcut.playdate",
+  sc4: "parent.home.shortcut.places",
+  sc5: "parent.home.shortcut.remoteAudio",
+  sc6: "parent.home.shortcut.safetyReport",
+  sc7: "parent.home.shortcut.subscription",
+  sc8: "parent.home.shortcut.notifications",
+};
+
 export function ParentHome() {
+  const intl = useIntl();
   const navigate = useNavigate();
   const { show } = useToast();
+  const { locale } = useLocale();
 
   // ── 실 데이터: 오늘 일정 + 아이 현황(가족·위치) ──
   const [now, setNow] = useState(() => new Date());
@@ -137,7 +158,10 @@ export function ParentHome() {
     const id = window.setInterval(() => setNow(new Date()), 30_000);
     return () => window.clearInterval(id);
   }, []);
-  const todayKey = useMemo(() => todayDateKey(now), [now]);
+  const todayKey = useMemo(
+    () => dateToDateKeyInTimeZone(now, LEGACY_FAMILY_TIME_ZONE),
+    [now],
+  );
 
   const eventsQuery = useEvents();
   const familyQuery = useMyFamily();
@@ -272,8 +296,10 @@ export function ParentHome() {
         ? "error"
         : "ready",
     now,
+    locale,
+    intl,
   });
-  const heroLocationIsCurrent = heroLocationCopy.badge === "현재 위치";
+  const heroLocationIsCurrent = heroLocationCopy.badge === intl.formatMessage({ id: "parent.locationTrust.current" });
 
   // 준비물·숙제: 오늘 date_key 의 daily-supplies 실데이터 + 체크 토글(서버 업서트).
   // 서버 응답은 모든 아이가 섞여 있으므로 활성 아이(activeChild.id = child_user_id)만 필터.
@@ -294,7 +320,7 @@ export function ParentHome() {
         kind: item.kind ?? "prep",
         child_user_id: item.child_user_id ?? null,
       },
-      { onError: () => show("반영에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️") },
+      { onError: () => show(intl.formatMessage({ id: "parent.parentHome.copy001" }), "⚠️") },
     );
 
   // '지금 갱신': 실제 쿼리 리페치 후 결과에 따라 정직하게 토스트(거짓 성공 금지).
@@ -313,13 +339,13 @@ export function ParentHome() {
         suppliesQuery.refetch(),
       ]);
       if (results.some((r) => r.isError)) {
-        show("갱신에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️");
+        show(intl.formatMessage({ id: "parent.parentHome.copy002" }), "⚠️");
       } else {
-        show("최신 정보로 갱신했어요", "✅");
+        show(intl.formatMessage({ id: "parent.parentHome.copy003" }), "✅");
       }
     } catch (error) {
       console.error("아이 현황 갱신 실패:", error);
-      show("갱신에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️");
+      show(intl.formatMessage({ id: "parent.parentHome.copy002" }), "⚠️");
     } finally {
       setRefreshing(false);
     }
@@ -327,13 +353,27 @@ export function ParentHome() {
 
   // 지난 일정 "다녀옴" 위치 검증 — 활성 아이 이력으로 방문 확인(미확인=확인 필요).
   const canVerifyVisits = !locationScopeUnavailable && locationMode === "realtime";
-  const visitMap = useVisitVerify(todayKey, events, activeChild?.user_id ?? null, canVerifyVisits);
+  const visitMap = useVisitVerify(
+    todayKey,
+    LEGACY_FAMILY_TIME_ZONE,
+    events,
+    activeChild?.user_id ?? null,
+    canVerifyVisits,
+  );
 
   // 오늘 일정 — 활성 아이 배정(events_children.child_id) + 가족 공유(is_family_event)만.
   // 형제에게만 배정된 일정은 활성 아이 화면에서 제외(아이별 구분 — TK 결정).
   const todayEvents = useMemo(() => {
-    const byKey = groupEventsByDateKey(events ?? [], now, visitMap, places);
-    const all = byKey[todayDateKey(now)] ?? [];
+    const byKey = groupEventsByDateKey(
+      events ?? [],
+      now,
+      locale,
+      LEGACY_FAMILY_TIME_ZONE,
+      visitMap,
+      places,
+      intl,
+    );
+    const all = byKey[todayKey] ?? [];
     if (!activeChild) return [];
     const allowedIds = new Set(
       filterEventsForChild(
@@ -342,9 +382,9 @@ export function ParentHome() {
       ).map((e) => e.id),
     );
     return all.filter((v) => allowedIds.has(v.id));
-  }, [events, now, todayKey, activeChild, visitMap, places]);
+  }, [events, locale, now, todayKey, activeChild, visitMap, places, intl]);
 
-  const childName = activeChild?.name || "아이"; // 히어로·상단 스티커 대상 = 활성 아이
+  const childName = activeChild?.name || intl.formatMessage({ id: "parent.parentHome.copy004" }); // 히어로·상단 스티커 대상 = 활성 아이
 
   // 아이별 현황 카드 — 등록된 모든 아이를 각각 위치·기기·다음 일정과 함께 표시(다자녀 = 둘 다).
   // 위치는 각 아이 user_id 로 매칭(폴백 없음 → 없으면 정직하게 "위치 정보 없음"). 다음 일정은
@@ -353,7 +393,15 @@ export function ParentHome() {
     const kids = (family?.members ?? []).filter((m) => m.role === "child");
     const rawToday = (events ?? []).filter((e) => e.date_key === todayKey);
     // 카드별 다음 일정은 활성 아이 필터와 무관하게 "그 카드 아이" 기준으로 계산.
-    const allViews = groupEventsByDateKey(events ?? [], now, undefined, places)[todayKey] ?? [];
+    const allViews = groupEventsByDateKey(
+      events ?? [],
+      now,
+      locale,
+      LEGACY_FAMILY_TIME_ZONE,
+      undefined,
+      places,
+      intl,
+    )[todayKey] ?? [];
     return kids.map((kid) => {
       const kidLoc = kid.user_id
         ? (locationsForDisplay ?? []).find((l) => l.user_id === kid.user_id) ?? null
@@ -372,6 +420,8 @@ export function ParentHome() {
             ? "error"
             : "ready",
         now,
+        locale,
+        intl,
       });
       const kidRaw = filterEventsForChild(rawToday, kid.id);
       const rawById = new Map(kidRaw.map((e) => [e.id, e]));
@@ -384,7 +434,7 @@ export function ParentHome() {
       const next = kidEvents.find(({ view }) => !PAST_TAGS.has(view.tag))?.view ?? null;
       // 일정 장소 라벨은 등록 장소보다 "더 가까울 때만" 이긴다(2026-07-14 TK 제보:
       // 학교가 더 가까운데 다음 일정인 피아노 학원 근처로 표시됨). 동률이면 등록 장소명.
-      const eventHit = kidLoc ? schedulePlaceHit(kidLoc, kidEvents) : null;
+      const eventHit = kidLoc ? schedulePlaceHit(kidLoc, kidEvents, intl) : null;
       const savedHit = kidLoc ? nearestPlace(kidLoc, places ?? []) : null;
       const savedNearby = savedHit && savedHit.distanceM <= EXACT_SAVED_PLACE_LABEL_RADIUS_M ? savedHit : null;
       const eventPlace = eventHit && (!savedNearby || eventHit.distanceM < savedNearby.distanceM)
@@ -392,7 +442,7 @@ export function ParentHome() {
         : null;
       return {
         id: kid.id,
-        name: kid.name || "아이",
+        name: kid.name || intl.formatMessage({ id: "parent.parentHome.copy004" }),
         avatar: childAvatarPath(kid.photo_url),
         device: resolveDeviceLabel({
           deviceLabel: kid.device_label,
@@ -401,13 +451,14 @@ export function ParentHome() {
         }),
         place: kidLoc ? eventPlace ?? locationLabel(kidLoc) : kidLocationCopy.badge,
         fresh: kidLocationCopy.detail,
-        scheduleLabel: next?.tag === "진행 중" ? "진행 중" : "다음 일정",
+        scheduleLabel: next?.tag === "진행 중" ? intl.formatMessage({ id: "parent.parentHome.copy005" }) : intl.formatMessage({ id: "parent.parentHome.copy006" }),
         next,
       };
     });
   }, [
     family,
     events,
+    locale,
     todayKey,
     locationsForDisplay,
     places,
@@ -419,14 +470,16 @@ export function ParentHome() {
     locationsQuery.isLoading,
     locationsQuery.isError,
     locationLabel,
+    intl,
   ]);
 
   // 안전 지표 = 활성 아이의 기기 리포트(스위치 전환 시 함께 전환).
-  const safetyChildName = activeChild?.name || "아이";
+  const safetyChildName = activeChild?.name || intl.formatMessage({ id: "parent.parentHome.copy004" });
   const deviceStatus = useMemo(
     () => deviceStatusView(
       activeChild?.device_health,
       now,
+      locale,
       childNotifSettingsQuery.data?.userId === activeChild?.user_id
         ? childNotifSettingsQuery.data?.childEnabled ?? null
         : null,
@@ -435,17 +488,24 @@ export function ParentHome() {
         : childNotifSettingsQuery.isSuccess
           ? "ready"
           : "loading",
+      intl,
     ),
     [
       activeChild,
       childNotifSettingsQuery.data,
       childNotifSettingsQuery.isError,
       childNotifSettingsQuery.isSuccess,
+      locale,
       now,
+      intl,
     ],
   );
 
-  const todayLabel = `${WEEKDAYS[now.getDay()]}요일 · ${now.getMonth() + 1}월 ${now.getDate()}일`;
+  const todayLabel = formatCalendarDay(now, {
+    locale,
+    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    weekday: "long",
+  });
 
   return (
     <div className="hy-rise-in">
@@ -455,16 +515,19 @@ export function ParentHome() {
             <button
               type="button"
               className="ph-stickerbtn hy-press"
-              aria-label={`${childName}에게 칭찬 스티커 보내기`}
+              aria-label={intl.formatMessage(
+                { id: "parent.home.sendStickerTo" },
+                { childName },
+              )}
               onClick={() => navigate("/sticker-send")}
             >
               <img src={asset("ui/menu-sticker.webp")} alt="" />
-              <span>스티커</span>
+              <span>{intl.formatMessage({ id: "parent.parentHome.copy007" })}</span>
             </button>
             <button
               type="button"
               className="hy-iconbtn hy-press"
-              aria-label="알림"
+              aria-label={intl.formatMessage({ id: "parent.parentHome.copy008" })}
               onClick={() => navigate("/notifications")}
             >
               <Bell size={21} strokeWidth={1.9} />
@@ -473,7 +536,7 @@ export function ParentHome() {
             <button
               type="button"
               className="hy-iconbtn hy-press"
-              aria-label="설정"
+              aria-label={intl.formatMessage({ id: "parent.parentHome.copy009" })}
               onClick={() => navigate("/parent/settings")}
             >
               <Settings size={21} strokeWidth={1.9} />
@@ -491,15 +554,16 @@ export function ParentHome() {
           </span>
           <span className="ph-hero__badge">{todayLabel}</span>
           <div className="ph-hero__title">
-            {childName}의 오늘,
+            {intl.formatMessage({ id: "parent.home.todayForChild" }, { childName })}
             <br />
             {eventsQuery.isLoading ? (
               <>
-                일정 <em>불러오는 중</em>
+                {intl.formatMessage({ id: "parent.parentHome.copy011" })} <em>{intl.formatMessage({ id: "parent.parentHome.copy012" })}</em>
               </>
             ) : (
               <>
-                일정 <em>{todayEvents.length}개</em>
+                {intl.formatMessage({ id: "parent.parentHome.copy011" })}{" "}
+                <em>{intl.formatMessage({ id: "parent.home.todayEventCount" }, { count: todayEvents.length })}</em>
               </>
             )}
           </div>
@@ -520,8 +584,8 @@ export function ParentHome() {
           <div className="ph-location-error" role="alert" aria-live="assertive">
             <AlertTriangle size={20} strokeWidth={2.2} aria-hidden="true" />
             <span>
-              <b>위치 조회 범위 확인 실패</b>
-              <small>구독 상태를 확인하지 못했어요. 인터넷 연결을 확인한 뒤 다시 시도해 주세요.</small>
+              <b>{intl.formatMessage({ id: "parent.parentHome.copy014" })}</b>
+              <small>{intl.formatMessage({ id: "parent.parentHome.copy015" })}</small>
             </span>
             <button
               type="button"
@@ -534,7 +598,7 @@ export function ParentHome() {
                 strokeWidth={2.4}
                 className={entitlement.isFetching ? "ph-location-error__spin" : undefined}
               />
-              {entitlement.isFetching ? "확인 중…" : "다시 시도"}
+              {entitlement.isFetching ? intl.formatMessage({ id: "parent.parentHome.copy016" }) : intl.formatMessage({ id: "parent.parentHome.copy017" })}
             </button>
           </div>
         )}
@@ -544,20 +608,20 @@ export function ParentHome() {
           <SectionHeader
             iconBg="var(--rose-soft)"
             icon={<img src={asset("ui/calendar-heart.webp")} alt="" />}
-            title="오늘의 일정"
+            title={intl.formatMessage({ id: "parent.parentHome.copy018" })}
             action={
               <button
                 type="button"
                 className="hy-section-action"
                 onClick={() => navigate("/parent/calendar")}
               >
-                전체보기 <ChevronRight size={14} strokeWidth={2.4} />
+                {intl.formatMessage({ id: "parent.parentHome.copy019" })} <ChevronRight size={14} strokeWidth={2.4} />
               </button>
             }
           />
           <div className="hy-card ph-sched">
             {eventsQuery.isLoading ? (
-              <div className="ph-sched-skel" role="status" aria-label="일정을 불러오는 중">
+              <div className="ph-sched-skel" role="status" aria-label={intl.formatMessage({ id: "parent.parentHome.copy020" })}>
                 <span className="hy-skel hy-skel--avatar" aria-hidden="true" />
                 <span className="hy-skel-lines" aria-hidden="true">
                   <span className="hy-skel hy-skel--line hy-skel--line-lg" />
@@ -566,14 +630,14 @@ export function ParentHome() {
               </div>
             ) : eventsQuery.isError ? (
               <div className="ph-sched-row" style={{ justifyContent: "center", gap: 8 }} role="alert">
-                <span>일정을 불러오지 못했어요</span>
+                <span>{intl.formatMessage({ id: "parent.parentHome.copy021" })}</span>
                 <button type="button" className="hy-section-action hy-press" onClick={() => void handleRefresh()}>
-                  다시 시도
+                  {intl.formatMessage({ id: "parent.parentHome.copy017" })}
                 </button>
               </div>
             ) : todayEvents.length === 0 ? (
               <div className="ph-sched-row" style={{ color: "var(--fg-muted)", fontSize: "var(--type-body-sm)", fontWeight: 600, justifyContent: "center" }}>
-                오늘은 일정이 없어요
+                {intl.formatMessage({ id: "parent.parentHome.copy022" })}
               </div>
             ) : (
               todayEvents.map((e) => (
@@ -591,7 +655,7 @@ export function ParentHome() {
                     <span className="ph-sched-sub">{e.time}{e.place ? ` · ${e.place}` : ""}</span>
                   </span>
                   <span className="ph-sched-tag" style={{ color: e.tagText, background: e.tagBg }}>
-                    {e.tag}
+                    {e.tagLabel}
                   </span>
                 </button>
               ))
@@ -606,22 +670,22 @@ export function ParentHome() {
               <img src={asset("ui/mic-lavender.webp")} alt="" />
             </span>
             <span style={{ flex: 1, minWidth: 0 }}>
-              <span className="ph-ai__title">AI로 일정 추가</span>
-              <span className="ph-ai__sub">말하거나, 쓰거나, 알림장 사진 한 장으로</span>
+              <span className="ph-ai__title">{intl.formatMessage({ id: "parent.parentHome.copy023" })}</span>
+              <span className="ph-ai__sub">{intl.formatMessage({ id: "parent.parentHome.copy024" })}</span>
             </span>
           </div>
           <div className="ph-ai__grid">
             <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=voice")}>
-              <Mic size={15} strokeWidth={2.4} /> 음성
+              <Mic size={15} strokeWidth={2.4} /> {intl.formatMessage({ id: "parent.parentHome.copy025" })}
             </button>
             <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=text")}>
-              <Keyboard size={15} strokeWidth={2.4} /> 텍스트
+              <Keyboard size={15} strokeWidth={2.4} /> {intl.formatMessage({ id: "parent.parentHome.copy026" })}
             </button>
             <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=image")}>
-              <ImageIcon size={15} strokeWidth={2.4} /> 알림장
+              <ImageIcon size={15} strokeWidth={2.4} /> {intl.formatMessage({ id: "parent.parentHome.copy027" })}
             </button>
             <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?mode=academy&tab=image")}>
-              <CalendarDays size={15} strokeWidth={2.4} /> 학원표
+              <CalendarDays size={15} strokeWidth={2.4} /> {intl.formatMessage({ id: "parent.parentHome.copy028" })}
             </button>
           </div>
         </div>
@@ -631,7 +695,7 @@ export function ParentHome() {
           <SectionHeader
             iconBg="var(--mint-soft)"
             icon={<img src={asset("ui/pin-heart.webp")} alt="" />}
-            title="아이 현황"
+            title={intl.formatMessage({ id: "parent.parentHome.copy029" })}
             action={
               <span
                 className="hy-chip ph-location-chip"
@@ -646,7 +710,7 @@ export function ParentHome() {
           {childCards.length === 0 ? (
             <div className="hy-card ph-child">
               <div className="ph-child__foot">
-                <span className="ph-child__next">아직 연결된 아이가 없어요</span>
+                <span className="ph-child__next">{intl.formatMessage({ id: "parent.parentHome.copy030" })}</span>
               </div>
             </div>
           ) : (
@@ -656,7 +720,7 @@ export function ParentHome() {
                 return (
                   <div key={c.id} className={`hy-card ph-child${active ? " ph-child--active" : ""}`}>
                     {/* 활성 표시는 카드 우상단 코너 배지(이름 행에 넣으면 줄바꿈 유발) */}
-                    {active && <span className="ph-child__now">보는 중</span>}
+                    {active && <span className="ph-child__now">{intl.formatMessage({ id: "parent.parentHome.copy031" })}</span>}
                     {/* 카드 탭 = 아이 스위치(전역). 상세는 우측 화살표로. */}
                     <div className="ph-child__rowwrap">
                       <button
@@ -675,7 +739,7 @@ export function ParentHome() {
                             <span className="ph-child__device">
                               <Smartphone size={12} strokeWidth={2.2} />
                               <span className="ph-child__device-label">
-                                {c.device ?? "기기 연결 대기 중"}
+                                {c.device ?? intl.formatMessage({ id: "parent.parentHome.copy032" })}
                               </span>
                             </span>
                           </span>
@@ -688,7 +752,10 @@ export function ParentHome() {
                       <button
                         type="button"
                         className="ph-child__more hy-press"
-                        aria-label={`${c.name} 상세`}
+                        aria-label={intl.formatMessage(
+                          { id: "parent.home.childDetailAria" },
+                          { name: c.name },
+                        )}
                         onClick={() => {
                           setActiveChildId(c.id);
                           navigate("/child-detail", { state: { childId: c.id } });
@@ -702,10 +769,10 @@ export function ParentHome() {
                         {c.scheduleLabel} ·{" "}
                         <b>
                           {eventsQuery.isLoading
-                            ? "확인 중"
+                            ? intl.formatMessage({ id: "parent.parentHome.copy033" })
                             : c.next
                               ? `${c.next.title} ${c.next.time}`
-                              : "없음"}
+                              : intl.formatMessage({ id: "parent.parentHome.copy034" })}
                         </b>
                       </span>
                     </div>
@@ -721,11 +788,11 @@ export function ParentHome() {
           <SectionHeader
             iconBg="var(--lav-soft)"
             icon={<img src={asset("ui/shield-heart.webp")} alt="" />}
-            title="안전 지표"
+            title={intl.formatMessage({ id: "parent.parentHome.copy035" })}
             action={
               <span
                 className="hy-chip ph-safety__status"
-                data-state={deviceStatus.safetyLabel === "양호" ? "ready" : deviceStatus.safetyLabel === "주의 필요" ? "attention" : "unknown"}
+                data-state={deviceStatus.safetyState}
                 style={{ marginLeft: "auto" }}
               >
                 {safetyChildName} · {deviceStatus.safetyLabel}
@@ -735,7 +802,7 @@ export function ParentHome() {
           <div className="hy-card ph-safety">
             {!deviceStatus.hasData && (
               <div className="ph-safety__pending">
-                아이 기기가 아직 상태를 보내지 않았어요. 아이 앱이 연결되면 실시간으로 표시돼요.
+                {intl.formatMessage({ id: "parent.parentHome.copy036" })}
               </div>
             )}
             {/* 정상/확인 중은 컴팩트 칩 한 줄, 조치 필요(attention)만 상세 안내 박스 */}
@@ -779,7 +846,7 @@ export function ParentHome() {
                   <img src={asset("ui/battery.webp")} alt="" />
                 </span>
                 <span style={{ minWidth: 0 }}>
-                  <span className="ph-metric__k">배터리</span>
+                  <span className="ph-metric__k">{intl.formatMessage({ id: "parent.parentHome.copy037" })}</span>
                   <span className="ph-metric__v">{deviceStatus.batteryLabel}</span>
                 </span>
               </div>
@@ -788,7 +855,7 @@ export function ParentHome() {
                   <img src={asset("ui/clock-3d.webp")} alt="" />
                 </span>
                 <span style={{ minWidth: 0 }}>
-                  <span className="ph-metric__k">화면시간</span>
+                  <span className="ph-metric__k">{intl.formatMessage({ id: "parent.parentHome.copy038" })}</span>
                   <span className="ph-metric__v">{deviceStatus.screenTimeLabel}</span>
                 </span>
               </div>
@@ -797,7 +864,7 @@ export function ParentHome() {
                   <img src={asset("ui/lock-open-3d.webp")} alt="" />
                 </span>
                 <span style={{ minWidth: 0 }}>
-                  <span className="ph-metric__k">잠금 해제</span>
+                  <span className="ph-metric__k">{intl.formatMessage({ id: "parent.parentHome.copy039" })}</span>
                   <span className="ph-metric__v">{deviceStatus.unlockCountLabel}</span>
                 </span>
               </div>
@@ -806,7 +873,7 @@ export function ParentHome() {
                   <img src={asset("ui/wifi-3d.webp")} alt="" />
                 </span>
                 <span style={{ minWidth: 0 }}>
-                  <span className="ph-metric__k">네트워크</span>
+                  <span className="ph-metric__k">{intl.formatMessage({ id: "parent.parentHome.copy040" })}</span>
                   <span className="ph-metric__v">{deviceStatus.networkLabel}</span>
                 </span>
               </div>
@@ -815,13 +882,13 @@ export function ParentHome() {
             <div className="ph-safety__divider">
               <div className="ph-app-summary">
                 <div className="ph-app-summary__item">
-                  <span className="ph-app-summary__k">최근 실행</span>
+                  <span className="ph-app-summary__k">{intl.formatMessage({ id: "parent.parentHome.copy041" })}</span>
                   <span className="ph-app-summary__v">
                     {deviceStatus.recentAppLabel ?? "—"}
                   </span>
                 </div>
                 <div className="ph-app-summary__item">
-                  <span className="ph-app-summary__k">가장 많이 사용</span>
+                  <span className="ph-app-summary__k">{intl.formatMessage({ id: "parent.parentHome.copy042" })}</span>
                   {deviceStatus.mostUsedApp ? (
                     <span className="ph-app-summary__v">
                       {deviceStatus.mostUsedApp.name}
@@ -833,8 +900,8 @@ export function ParentHome() {
                 </div>
               </div>
               <div className="ph-recent-head">
-                <b>오늘 많이 쓴 앱</b>
-                <span>{deviceStatus.topApps.length > 0 ? "사용 시간" : "—"}</span>
+                <b>{intl.formatMessage({ id: "parent.parentHome.copy043" })}</b>
+                <span>{deviceStatus.topApps.length > 0 ? intl.formatMessage({ id: "parent.parentHome.copy044" }) : "—"}</span>
               </div>
               {deviceStatus.topApps.length > 0 ? (
                 <div className="ph-recent-list">
@@ -846,7 +913,7 @@ export function ParentHome() {
                       <span className="ph-recent-row__main">
                         <span className="ph-recent-row__name">{app.name}</span>
                         {app.isLatest && (
-                          <span className="ph-recent-row__badge">최근 실행</span>
+                          <span className="ph-recent-row__badge">{intl.formatMessage({ id: "parent.parentHome.copy041" })}</span>
                         )}
                       </span>
                       <span className="ph-recent-row__time">{app.timeLabel}</span>
@@ -856,10 +923,10 @@ export function ParentHome() {
               ) : (
                 <div className="ph-recent-empty">
                   {!deviceStatus.hasData
-                    ? "아이 기기가 연동되면 표시돼요"
+                    ? intl.formatMessage({ id: "parent.parentHome.copy045" })
                     : deviceStatus.appUsagePermissionGranted
-                      ? "혜니캘린더 외에 오늘 쓴 앱이 없어요"
-                      : "아이 기기 설정 > 사용정보 접근 허용을 켜면 표시돼요"}
+                      ? intl.formatMessage({ id: "parent.parentHome.copy046" })
+                      : intl.formatMessage({ id: "parent.parentHome.copy047" })}
                 </div>
               )}
             </div>
@@ -872,7 +939,7 @@ export function ParentHome() {
                 onClick={handleRefresh}
                 disabled={refreshing} aria-busy={refreshing}
               >
-                {refreshing ? "갱신 중…" : "지금 갱신"}
+                {refreshing ? intl.formatMessage({ id: "parent.parentHome.copy048" }) : intl.formatMessage({ id: "parent.parentHome.copy049" })}
               </button>
             </div>
           </div>
@@ -883,7 +950,7 @@ export function ParentHome() {
           <SectionHeader
             iconBg="var(--cream-soft)"
             icon={<img src={asset("cat/study.webp")} alt="" />}
-            title="준비물 · 숙제"
+            title={intl.formatMessage({ id: "parent.parentHome.copy050" })}
             action={
               <>
                 <span className="ph-prep-count">
@@ -898,7 +965,7 @@ export function ParentHome() {
                     })
                   }
                 >
-                  편집
+                  {intl.formatMessage({ id: "parent.parentHome.copy051" })}
                 </button>
               </>
             }
@@ -909,13 +976,13 @@ export function ParentHome() {
                 className="ph-prep-row"
                 style={{ justifyContent: "center" }}
               >
-                <Loading label="준비물을 불러오는 중" />
+                <Loading label={intl.formatMessage({ id: "parent.parentHome.copy052" })} />
               </div>
             ) : suppliesQuery.isError ? (
               <div className="ph-prep-row" style={{ justifyContent: "center", gap: 8 }} role="alert">
-                <span>준비물을 불러오지 못했어요</span>
+                <span>{intl.formatMessage({ id: "parent.parentHome.copy053" })}</span>
                 <button type="button" className="hy-section-action hy-press" onClick={() => void handleRefresh()}>
-                  다시 시도
+                  {intl.formatMessage({ id: "parent.parentHome.copy017" })}
                 </button>
               </div>
             ) : prep.length === 0 ? (
@@ -923,7 +990,7 @@ export function ParentHome() {
                 className="ph-prep-row"
                 style={{ color: "var(--fg-muted)", fontSize: "var(--type-body-sm)", fontWeight: 600, justifyContent: "center" }}
               >
-                오늘은 준비물·숙제가 없어요
+                {intl.formatMessage({ id: "parent.parentHome.copy054" })}
               </div>
             ) : (
               prep.map((s) => (
@@ -931,7 +998,7 @@ export function ParentHome() {
                   <button
                     type="button"
                     className="ph-prep-check hy-press"
-                    aria-label="완료 토글"
+                    aria-label={intl.formatMessage({ id: "parent.parentHome.copy055" })}
                     onClick={() => togglePrep(s)}
                     style={{
                       background: s.done ? "var(--hy-accent-cta)" : "var(--bg-card)",
@@ -946,7 +1013,7 @@ export function ParentHome() {
                         className="ph-prep-kind"
                         style={{ color: "var(--lav-text)", background: "var(--lav-soft2)" }}
                       >
-                        숙제
+                        {intl.formatMessage({ id: "parent.parentHome.copy056" })}
                       </span>
                     )}
                     <span
@@ -971,9 +1038,11 @@ export function ParentHome() {
             <img src={asset("ui/chat-heart.webp")} alt="" />
           </span>
           <span className="ph-memo__main">
-            <span className="ph-memo__from">아이와 대화하기</span>
-            <span className="ph-memo__text">{childName}에게 메시지를 보내 보세요</span>
-            <span className="ph-memo__time">메모 · 실시간</span>
+            <span className="ph-memo__from">{intl.formatMessage({ id: "parent.parentHome.copy057" })}</span>
+            <span className="ph-memo__text">
+              {intl.formatMessage({ id: "parent.home.sendMessageTo" }, { childName })}
+            </span>
+            <span className="ph-memo__time">{intl.formatMessage({ id: "parent.parentHome.copy059" })}</span>
           </span>
           <ChevronRight size={20} strokeWidth={2.4} color="var(--fg-disabled)" style={{ flex: "none" }} />
         </button>
@@ -983,7 +1052,7 @@ export function ParentHome() {
           <SectionHeader
             iconBg="var(--lav-soft)"
             icon={<img src={asset("ui/sparkle.webp")} alt="" />}
-            title="바로가기"
+            title={intl.formatMessage({ id: "parent.parentHome.copy060" })}
           />
           <div className="ph-shortcuts">
             {shortcuts.map((s) => {
@@ -1006,7 +1075,9 @@ export function ParentHome() {
                       <span className="ph-shortcut__badge">{badge > 99 ? "99+" : badge}</span>
                     )}
                   </span>
-                  <span className="ph-shortcut__label">{s.label}</span>
+                  <span className="ph-shortcut__label">
+                    {intl.formatMessage({ id: shortcutLabelIds[s.id] ?? "parent.home.shortcut.unknown" })}
+                  </span>
                 </button>
               );
             })}

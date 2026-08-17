@@ -21,19 +21,33 @@ test("구독 UI는 채널별 공급자 가격만 쓰고 확인되지 않은 가�
   const subscription = read("src/screens/feature/Subscription.tsx");
   const pairing = read("src/screens/feature/PairingWizard.tsx");
   const credits = read("src/screens/feature/AiCredit.tsx");
+  const koParent = JSON.parse(read("locales/ko/parent.json"));
+  const koBilling = JSON.parse(read("locales/ko/billing.json"));
   assert.doesNotMatch(subscription, /40% 할인|29,000|2,417원|월 2,900원으로 시작하기/);
   assert.doesNotMatch(pairing, /2,900원|아이별 월|₩[0-9,]+/);
-  assert.match(pairing, /첫째 아이는 무료, 둘째부터는 프리미엄이에요/);
+  assert.match(pairing, /parent\.pairingWizard\.firstFree/);
+  assert.equal(koParent["parent.pairingWizard.firstFree"], "첫째 아이는 무료, 둘째부터는 프리미엄이에요.");
   assert.doesNotMatch(credits, /₩[0-9,]+/);
-  assert.match(credits, /Google Play에서 확인/);
+  assert.match(credits, /billing\.aiCredit\.native\.providerNotice/);
+  assert.match(credits, /billing\.aiCredit\.providerPrice/);
+  assert.match(credits, /billing\.aiCredit\.serverCatalogPrice/);
+  assert.equal(
+    koBilling["billing.aiCredit.native.providerNotice"],
+    "Android 앱에서는 Google Play가 실제 가격과 결제 가능 여부를 확인해요.",
+  );
+  assert.equal(koBilling["billing.aiCredit.providerPrice"], "{formattedPrice}");
+  assert.equal(koBilling["billing.aiCredit.serverCatalogPrice"], "{catalogPrice}");
   assert.match(subscription, /fetchSubscriptionProductDetails/);
   assert.match(subscription, /fetchWebBillingCatalog/);
   assert.match(subscription, /validateWebBillingCatalog/);
   assert.match(subscription, /selectedDisplayPrice/);
   assert.match(subscription, /selectedHasTrial/);
   assert.match(subscription, /hasExpectedLaunchSubscriptionPrice/);
-  assert.match(subscription, /결제 정보 등록 후 7일 동안 무료/);
-  assert.match(subscription, /Google Play에서 체험 종료 전에 취소/);
+  assert.match(subscription, /billing\.subscription\.trial\.googleFree/);
+  assert.match(subscription, /billing\.subscription\.trial\.googleCancel/);
+  assert.match(koBilling["billing.subscription.trial.googleFree"], /결제 정보 등록 후 7일 동안 무료/);
+  assert.match(koBilling["billing.subscription.trial.googleCancel"], /Google Play에서 체험 종료 전에 취소/);
+  assert.doesNotMatch(subscription, /(?:₩|\bKRW\b|\d[\d,]*원|월 환산)/);
 });
 
 test("네이티브 결제는 조회한 offerToken과 offerId를 그대로 구매·서버 검증에 전달한다", () => {
@@ -64,16 +78,18 @@ test("네이티브 결제는 조회한 offerToken과 offerId를 그대로 구매
 
 test("체험 종료 화면은 무료 안전 기능을 프리미엄 혜택으로 판매하지 않는다", () => {
   const trial = read("src/screens/feature/TrialLock.tsx");
+  const koBilling = JSON.parse(read("locales/ko/billing.json"));
   assert.doesNotMatch(trial, /도착 · 위험구역 · 안전 알림 전체/);
   assert.doesNotMatch(trial, /위치·안전·AI 기능을 모두 다시/);
-  assert.match(trial, /SOS와 긴급 안전 알림은 무료로 계속 제공/);
+  assert.match(trial, /billing\.trialLock\.safetyFree/);
+  assert.match(koBilling["billing.trialLock.safetyFree"], /SOS와 긴급 안전 알림은 무료로 계속 제공/);
 });
 
 test("부모 설정은 리뷰 혜택을 무료로 오표기하지 않고 합성 tier 라벨을 쓴다", () => {
   const settings = read("src/screens/parent/ParentSettings.tsx");
   assert.match(settings, /const entitlementQuery = useEntitlement\(\)/);
   assert.match(settings, /const \{ ready, tier \} = entitlementQuery/);
-  assert.match(settings, /getTierLabel\(tier\)/);
+  assert.match(settings, /getTierLabel\(tier, intl\)/);
   assert.doesNotMatch(settings, /\{view\.tierLabel\}/);
 });
 

@@ -26,7 +26,9 @@ test("프로덕션 라우트와 역할 선택은 선생님 기능 대신 출시 
 
 test("기존 선생님 세션은 막힌 화면에서도 로그아웃·회원 탈퇴·법적 문서에 접근할 수 있다", () => {
   const gate = readSource("src/screens/teacher/TeacherReleaseGate.tsx");
-  assert.match(gate, /선생님 모드는 준비 중이에요/);
+  const koShared = JSON.parse(readSource("locales/ko/shared.json"));
+  assert.match(gate, /shared\.teacherReleaseGate\.title/);
+  assert.equal(koShared["shared.teacherReleaseGate.title"], "선생님 모드는 준비 중이에요");
   assert.match(gate, /logout\(\)/);
   assert.match(gate, /deleteAccount\(\)/);
   assert.match(gate, /PRIVACY_POLICY_URL/);

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { ChevronLeft, Plus, Trash2, TriangleAlert } from "lucide-react";
+import { useIntl } from "react-intl";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { PremiumUpsell } from "@/components/PremiumUpsell";
@@ -20,6 +21,7 @@ import { Loading } from "@/components/ui/Loading";
 import "./PlaceManager.css";
 
 export function PlaceManager() {
+  const intl = useIntl();
   const navigate = useNavigate();
   const { show } = useToast();
   const placesQuery = useSavedPlaces();
@@ -52,26 +54,26 @@ export function PlaceManager() {
 
   const handleDeleteZone = (id: string, name: string) => {
     deleteZone.mutate(id, {
-      onSuccess: () => show(`‘${name}’ 위험구역을 삭제했어요`, "🗑️"),
-      onError: () => show("삭제에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️"),
+      onSuccess: () => show(intl.formatMessage({ id: "notifications.placeManager.zoneDeleted" }, { name }), "🗑️"),
+      onError: () => show(intl.formatMessage({ id: "notifications.placeManager.deleteFailed" }), "⚠️"),
     });
   };
 
   const handleDeletePlace = (id: string, name: string) => {
     deletePlace.mutate(id, {
-      onSuccess: () => show(`‘${name}’ 장소를 삭제했어요`, "🗑️"),
-      onError: () => show("삭제에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️"),
+      onSuccess: () => show(intl.formatMessage({ id: "notifications.placeManager.placeDeleted" }, { name }), "🗑️"),
+      onError: () => show(intl.formatMessage({ id: "notifications.placeManager.deleteFailed" }), "⚠️"),
     });
   };
 
   return (
     <div className="pm-screen">
       <div className="pm-header">
-        <button type="button" className="pm-back hy-press" aria-label="뒤로" onClick={() => navigate(-1)}>
+        <button type="button" className="pm-back hy-press" aria-label={intl.formatMessage({ id: "notifications.action.back" })} onClick={() => navigate(-1)}>
           <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
         </button>
-        <span className="pm-title">장소 관리</span>
-        <button type="button" className="pm-add hy-press" aria-label="장소 추가" onClick={handleAddPlace}>
+        <span className="pm-title">{intl.formatMessage({ id: "notifications.placeManager.title" })}</span>
+        <button type="button" className="pm-add hy-press" aria-label={intl.formatMessage({ id: "notifications.placeManager.addPlace" })} onClick={handleAddPlace}>
           <Plus size={20} strokeWidth={2.4} color="#fff" />
         </button>
       </div>
@@ -89,19 +91,24 @@ export function PlaceManager() {
 
         {/* 저장한 장소 */}
         <div>
-          <div className="pm-label pm-label--saved">저장한 장소</div>
+          <div className="pm-label pm-label--saved">{intl.formatMessage({ id: "notifications.placeManager.savedPlaces" })}</div>
           <div className="pm-list">
-            {placesLoading && <Loading label="저장한 장소를 불러오는 중" size={6} />}
+            {placesLoading && <Loading label={intl.formatMessage({ id: "notifications.placeManager.savedPlacesLoading" })} size={6} />}
             {placesError && !placesLoading && (
               <div className="pm-item__addr" style={{ padding: 16 }} role="alert">
-                장소를 불러오지 못했어요. <button type="button" className="hy-section-action hy-press" onClick={() => void retryPlaces()}>다시 시도</button>
+                {intl.formatMessage({ id: "notifications.placeManager.savedPlacesError" })}{" "}
+                <button type="button" className="hy-section-action hy-press" onClick={() => void retryPlaces()}>
+                  {intl.formatMessage({ id: "notifications.action.retry" })}
+                </button>
               </div>
             )}
             {!placesLoading && !placesError && places.length === 0 && (
-              <div className="pm-item__addr" style={{ padding: 16 }}>저장한 장소가 없어요</div>
+              <div className="pm-item__addr" style={{ padding: 16 }}>
+                {intl.formatMessage({ id: "notifications.placeManager.savedPlacesEmpty" })}
+              </div>
             )}
             {!placesLoading && !placesError && places.map((p) => {
-              const visual = resolvePlaceVisual(p);
+              const visual = resolvePlaceVisual(p, intl);
               const alertState = parseTierAlertActivation(p);
               return (
               <div key={p.id} className="pm-item">
@@ -113,16 +120,18 @@ export function PlaceManager() {
                     <span>{p.name}</span>
                     <span className="pm-item__badge">{visual.label}</span>
                   </div>
-                  <div className="pm-item__addr">{p.location?.address ?? "주소 미등록"}</div>
+                  <div className="pm-item__addr">
+                    {p.location?.address ?? intl.formatMessage({ id: "notifications.placeManager.addressMissing" })}
+                  </div>
                   <div className="pm-alert-state" data-state={alertState}>
-                    {tierAlertActivationLabel(alertState)}
+                    {tierAlertActivationLabel(alertState, intl)}
                   </div>
                 </div>
                 {/* 편집(프리필) 미지원 — 빈 등록폼 오인 방지로 편집은 비노출. 삭제만 제공. */}
                 <button
                   type="button"
                   className="pm-item__del hy-press"
-                  aria-label={`${p.name} 삭제`}
+                  aria-label={intl.formatMessage({ id: "notifications.placeManager.deleteAria" }, { name: p.name })}
                   onClick={() => handleDeletePlace(p.id, p.name)}
                   disabled={deletePlace.isPending}
                   aria-busy={deletePlace.isPending && deletePlace.variables === p.id}
@@ -140,25 +149,30 @@ export function PlaceManager() {
           <div className="pm-danger-head">
             <div className="pm-label pm-label--danger">
               <TriangleAlert size={16} strokeWidth={2.2} aria-hidden="true" />
-              위험구역
+              {intl.formatMessage({ id: "notifications.placeManager.dangerZones" })}
             </div>
             <button
               type="button"
               className="pm-zone-add hy-press"
               onClick={() => navigate("/danger-zone-form")}
             >
-              + 구역
+              {intl.formatMessage({ id: "notifications.placeManager.addZone" })}
             </button>
           </div>
           <div className="pm-list">
-            {zonesLoading && <Loading label="위험구역을 불러오는 중" size={6} />}
+            {zonesLoading && <Loading label={intl.formatMessage({ id: "notifications.placeManager.dangerZonesLoading" })} size={6} />}
             {zonesError && !zonesLoading && (
               <div className="pm-danger__addr" style={{ padding: 16 }} role="alert">
-                위험구역을 불러오지 못했어요. <button type="button" className="hy-section-action hy-press" onClick={() => void retryPlaces()}>다시 시도</button>
+                {intl.formatMessage({ id: "notifications.placeManager.dangerZonesError" })}{" "}
+                <button type="button" className="hy-section-action hy-press" onClick={() => void retryPlaces()}>
+                  {intl.formatMessage({ id: "notifications.action.retry" })}
+                </button>
               </div>
             )}
             {!zonesLoading && !zonesError && zones.length === 0 && (
-              <div className="pm-danger__addr" style={{ padding: 16 }}>등록된 위험구역이 없어요</div>
+              <div className="pm-danger__addr" style={{ padding: 16 }}>
+                {intl.formatMessage({ id: "notifications.placeManager.dangerZonesEmpty" })}
+              </div>
             )}
             {!zonesLoading && !zonesError && zones.map((z) => {
               const alertState = parseTierAlertActivation(z);
@@ -174,16 +188,18 @@ export function PlaceManager() {
                   </span>
                   <div className="pm-danger__main">
                     <div className="pm-danger__name">{z.name}</div>
-                    <div className="pm-danger__addr">반경 {z.radius_m}m · 접근 시 알림</div>
+                    <div className="pm-danger__addr">
+                      {intl.formatMessage({ id: "notifications.placeManager.zoneRadius" }, { radius: z.radius_m })}
+                    </div>
                     <div className="pm-alert-state" data-state={alertState}>
-                      {tierAlertActivationLabel(alertState)}
+                      {tierAlertActivationLabel(alertState, intl)}
                     </div>
                   </div>
                 </button>
                 <button
                   type="button"
                   className="pm-danger__del hy-press"
-                  aria-label={`${z.name} 삭제`}
+                  aria-label={intl.formatMessage({ id: "notifications.placeManager.deleteAria" }, { name: z.name })}
                   onClick={() => handleDeleteZone(z.id, z.name)}
                   disabled={deleteZone.isPending}
                   aria-busy={deleteZone.isPending && deleteZone.variables === z.id}
@@ -208,7 +224,7 @@ export function PlaceManager() {
           const saved = storage && returnTo
             ? savePremiumReturnIntent(storage, { source, feature, returnTo })
             : false;
-          if (!saved) throw new Error("결제 후 장소 등록 화면으로 돌아올 경로를 안전하게 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+          if (!saved) throw new Error(intl.formatMessage({ id: "notifications.placeManager.returnPathFailed" }));
           setUpsellOpen(false);
           navigate("/subscription");
         }}

@@ -70,6 +70,17 @@ function guardFromElement(element) {
   return undefined;
 }
 
+const ROUTE_NAMESPACE_IDENTIFIERS = new Set([
+  "ONBOARDING_NAMESPACES",
+  "PARENT_NAMESPACES",
+  "CHILD_NAMESPACES",
+  "BILLING_NAMESPACES",
+  "REPORT_NAMESPACES",
+  "PARENT_NOTIFICATION_NAMESPACES",
+  "CHILD_NOTIFICATION_NAMESPACES",
+  "SHARED_NAMESPACES",
+]);
+
 function routeComponentFromElement(element) {
   const routeElementCall = findDescendant(
     element,
@@ -77,13 +88,25 @@ function routeComponentFromElement(element) {
       && ts.isIdentifier(node.expression)
       && node.expression.text === "routeElement",
   );
-  if (!routeElementCall || routeElementCall.arguments.length !== 1) return undefined;
+  if (!routeElementCall) return undefined;
 
-  const component = findDescendant(
-    routeElementCall.arguments[0],
-    (node) => ts.isJsxSelfClosingElement(node) && ts.isIdentifier(node.tagName),
+  assert.ok(
+    routeElementCall.arguments.length === 1 || routeElementCall.arguments.length === 2,
+    "routeElement 인자는 화면 JSX와 선택적 namespace만 허용합니다.",
   );
-  return component?.tagName.text;
+  if (routeElementCall.arguments.length === 2) {
+    const namespace = routeElementCall.arguments[1];
+    assert.ok(
+      ts.isIdentifier(namespace) && ROUTE_NAMESPACE_IDENTIFIERS.has(namespace.text),
+      "routeElement namespace 인자는 지원 목록의 식별자여야 합니다.",
+    );
+  }
+  const component = routeElementCall.arguments[0];
+  assert.ok(
+    component && ts.isJsxSelfClosingElement(component) && ts.isIdentifier(component.tagName),
+    "routeElement의 첫 번째 인자는 식별자 JSX 화면이어야 합니다.",
+  );
+  return component.tagName.text;
 }
 
 function stringValue(node) {

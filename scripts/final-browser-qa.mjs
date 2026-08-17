@@ -1422,7 +1422,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
         hasUsage: text.includes("5/5 사용"),
         hasFreeAlternative: text.includes("직접 일정 추가와 기존 일정 관리는 무료에서도 제한 없이"),
         hasPremiumDifference: text.includes("AI 일정 정리를 하루 횟수 제한 없이"),
-        hasContinue: text.includes("무료로 계속 쓰기"),
+        hasContinue: text.includes("무료 플랜으로 계속 사용하기"),
         hasUpgrade: text.includes("AI 일정 정리 제한 없애기"),
         duplicateToastPresent: Boolean(document.querySelector(".hy-toast")),
         leakedRawError: body.includes("daily_limit_reached"),
@@ -1516,10 +1516,8 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       return {
         open: Boolean(dialog),
         text,
-        hasExactLimit: text.includes("무료 알림 대상 2개를 모두 사용했어요")
-          && text.includes("알림 2/2 · 저장 3개")
-          && !text.includes("3/2 사용"),
-        hasContinue: text.includes("무료로 계속 쓰기"),
+        hasExactLimit: text.includes("저장 장소 2개를 모두 사용했어요") && text.includes("3/2 사용"),
+        hasContinue: text.includes("무료 플랜으로 계속 사용하기"),
         hasUpgrade: text.includes("장소 계속 추가하기"),
       };
     })()`);

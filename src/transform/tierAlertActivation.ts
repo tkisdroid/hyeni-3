@@ -1,3 +1,6 @@
+import type { IntlShape } from "react-intl";
+import { withDefaultIntl } from "../i18n/defaultIntl.ts";
+
 export type TierAlertActivationState = "active" | "premium_required" | "unknown";
 
 interface TierAlertActivationPayload {
@@ -22,13 +25,17 @@ export function parseTierAlertActivation(value: unknown): TierAlertActivationSta
   return "unknown";
 }
 
-export function tierAlertActivationLabel(state: TierAlertActivationState): string {
+export function tierAlertActivationLabel(
+  state: TierAlertActivationState,
+  providedIntl?: IntlShape,
+): string {
+  const intl = withDefaultIntl(providedIntl);
   switch (state) {
     case "active":
-      return "플랜 한도 안 · 알림 설정 가능";
+      return intl.formatMessage({ id: "notifications.place.alert.active" });
     case "premium_required":
-      return "저장됨 · 프리미엄에서 알림 대상";
+      return intl.formatMessage({ id: "notifications.place.alert.premiumRequired" });
     default:
-      return "플랜 알림 대상 확인 필요";
+      return intl.formatMessage({ id: "notifications.place.alert.unknown" });
   }
 }

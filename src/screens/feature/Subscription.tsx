@@ -33,6 +33,9 @@ import {
   resolveWebBillingCheckoutSession,
 } from "@/lib/api/endpoints/webBilling";
 import { startTossBillingAuthorization } from "@/lib/webBilling";
+import { useIntl, type IntlShape } from "react-intl";
+import { BillingError } from "@/lib/native/billingError";
+import { resolveNativeBillingFailureMessage } from "@/transform/billingFailureMessage";
 import { isApiError } from "@/lib/api/errors";
 import {
   buildWebBillingRedirectUrls,
@@ -44,7 +47,6 @@ import {
   validateWebBillingCatalog,
   validateWebBillingCheckoutSession,
   validateRecoveredWebBillingCheckoutSession,
-  webBillingAnnualSavings,
   webBillingFailureMessage,
   webBillingRequestFailureMessage,
   type WebBillingCatalog,
@@ -79,40 +81,52 @@ import {
   type Tier,
 } from "@/transform/tierPolicy";
 import { MAX_SUPPLY_ITEMS_PER_KIND } from "@/transform/eventSupplies";
+import type { SupportedLocale } from "@/i18n/locale";
+import { useLocale } from "@/i18n/useLocale";
+import {
+  formatDateTime,
+  formatProviderPrice,
+  formatRelativeTime,
+  LEGACY_FAMILY_TIME_ZONE,
+} from "@/i18n/format";
 import "./Subscription.css";
 
-/** 프리미엄 혜택 목록 (표현 데이터 — 화면 고정). */
 const BENEFITS = [
-  { icon: "ui/pin-heart.webp", t: "실시간 위치 확인", s: "아이의 현재 위치와 이동 흐름을 더 빠르게 확인해요" },
-  { icon: "ui/menu-child-tracker.webp", t: "다자녀 안심 관리", s: "두 아이까지 일정과 위치를 함께 관리해요" },
-  { icon: "ui/ai-robot.webp", t: "AI 하루 요약", s: "일정·위치·안전 기록을 AI가 정리해 드려요" },
-  { icon: "ui/menu-remote-audio.webp", t: "주변 소리 듣기", s: "위급할 때 1분 동안 아이 주변 상황을 확인해요" },
-  { icon: "ui/shield-heart.webp", t: "장소·위험구역 무제한", s: "필요한 안심 장소와 위험구역을 제한 없이 등록해요" },
+  { icon: "ui/pin-heart.webp", id: "location" },
+  { icon: "ui/menu-child-tracker.webp", id: "children" },
+  { icon: "ui/ai-robot.webp", id: "ai" },
+  { icon: "ui/menu-remote-audio.webp", id: "remoteAudio" },
+  { icon: "ui/shield-heart.webp", id: "places" },
 ] as const;
 
 // ── 플랜 비교표(S-02) — 티어별 값은 tierPolicy, 준비물 저장 상한은 eventSupplies에서 파생 ──
 const COMPARE_COLS: readonly Tier[] = [TIERS.FREE, TIERS.PREMIUM];
 const YES = "✓";
 const NO = "—";
-const EXISTING_CHILD_DOWNGRADE_NOTICE = "이미 연결된 아이는 구독이 끝나도 자동으로 해제하거나 숨기지 않아요.";
-const DOWNGRADE_LIMIT_NOTICE = "구독 중 이미 저장한 한도 초과 장소·위험구역은 삭제되지 않고 관리할 수 있지만, 프리미엄을 다시 시작하기 전까지 알림 대상에서 제외돼요.";
+const BILLING_DATE_STYLE = "medium" as const;
 
-function limitLabel(n: number): string {
-  return n === Infinity ? "무제한" : `${n}개`;
+function limitLabel(n: number, intl: IntlShape): string {
+  return n === Infinity
+    ? intl.formatMessage({ id: "billing.subscription.compare.unlimited" })
+    : intl.formatMessage({ id: "billing.subscription.compare.itemCount" }, { count: n });
 }
-function locationLabel(t: Tier): string {
+function locationLabel(t: Tier, intl: IntlShape): string {
   const mode = locationModeFor(t);
-  if (mode === "realtime") return "실시간";
-  if (mode === "standard") return "약 10분 간격 최신 실측";
-  return "잠금";
+  if (mode === "realtime") return intl.formatMessage({ id: "billing.subscription.compare.locationRealtime" });
+  if (mode === "standard") return intl.formatMessage({ id: "billing.subscription.compare.locationStandard" });
+  return intl.formatMessage({ id: "billing.subscription.compare.locationLocked" });
 }
 
-function dailyLimitLabel(n: number): string {
-  return n === Infinity ? "제한 없음" : `하루 ${n}회`;
+function dailyLimitLabel(n: number, intl: IntlShape): string {
+  return n === Infinity
+    ? intl.formatMessage({ id: "billing.subscription.compare.noLimit" })
+    : intl.formatMessage({ id: "billing.subscription.compare.dailyLimit" }, { count: n });
 }
 
-function rolling24LimitLabel(n: number): string {
-  return n === Infinity ? "최근 24시간 제한 없음" : `최근 24시간 ${n}회`;
+function rolling24LimitLabel(n: number, intl: IntlShape): string {
+  return n === Infinity
+    ? intl.formatMessage({ id: "billing.subscription.compare.rollingNoLimit" })
+    : intl.formatMessage({ id: "billing.subscription.compare.rollingLimit" }, { count: n });
 }
 
 interface CompareRow {
@@ -123,34 +137,41 @@ interface CompareRow {
   /** 안전 기능(티어 무관 항상 제공) — 초록 강조. */
   safe?: boolean;
 }
-const COMPARE_ROWS: readonly CompareRow[] = [
-  { label: "새 아이 연결 상한", cell: (t) => `${maxChildrenFor(t)}명` },
-  { label: "일정·메모·스티커", cell: () => "무제한" },
-  { label: "준비물·숙제", cell: () => `아이별 하루 각각 ${MAX_SUPPLY_ITEMS_PER_KIND}개` },
-  { label: "위치 보기", cell: (t) => locationLabel(t) },
-  { label: "지금 위치 요청", cell: (t) => rolling24LimitLabel(manualLocationRequestDailyLimitFor(t)) },
-  { label: "위치 이력", cell: (t) => (historyDaysFor(t) === 1 ? "오전 8시 기준 현재 안심일" : `최근 ${historyDaysFor(t)}일`) },
-  { label: "장소·도착/출발 알림", cell: (t) => limitLabel(placeLimitFor(t)), reviewedCell: "기존 혜택 3개" },
-  { label: "위험구역", cell: (t) => limitLabel(dangerZoneLimitFor(t)) },
-  { label: "소리 울리기", cell: (t) => rolling24LimitLabel(forceRingDailyLimitFor(t)) },
-  { label: "AI 친구 기본 제공", cell: (t) => dailyLimitLabel(aiFriendDailyBaseFor(t)) },
-  { label: "AI 일정 정리", cell: (t) => dailyLimitLabel(aiScheduleDailyLimitFor(t)) },
-  { label: "오늘의 안심 리포트", cell: () => "제공" },
-  { label: "주변 소리 듣기", cell: (t) => (canUse(t, FEATURES.REMOTE_AUDIO) ? "최대 1분" : NO) },
-  { label: "위치 끊김·미등록 체류", cell: (t) => (canUse(t, FEATURES.SAFETY_INSIGHTS) ? "자동 알림" : "수동 확인") },
-  { label: "AI 하루 요약", cell: (t) => (canUse(t, FEATURES.AI_ANALYSIS) ? YES : NO) },
-  { label: "주간 가족 리포트", cell: (t) => (canUse(t, FEATURES.WEEKLY_REPORT) ? "전체 보기" : "한 줄 미리보기") },
-  { label: "학원 시간표 자동 정리", cell: (t) => (canUse(t, FEATURES.ACADEMY_SCHEDULE) ? YES : NO) },
-  { label: "SOS · 긴급 알림", cell: () => YES, safe: true },
-];
+function compareRows(intl: IntlShape): readonly CompareRow[] {
+  const message = (id: string) => intl.formatMessage({ id });
+  return [
+    { label: message("billing.subscription.compare.childLimit"), cell: (t) => intl.formatMessage({ id: "billing.subscription.compare.children" }, { count: maxChildrenFor(t) }) },
+    { label: message("billing.subscription.compare.memoSticker"), cell: () => message("billing.subscription.compare.unlimited") },
+    { label: message("billing.subscription.compare.supplies"), cell: () => intl.formatMessage({ id: "billing.subscription.compare.suppliesLimit" }, { count: MAX_SUPPLY_ITEMS_PER_KIND }) },
+    { label: message("billing.subscription.compare.location"), cell: (t) => locationLabel(t, intl) },
+    { label: message("billing.subscription.compare.manualLocation"), cell: (t) => rolling24LimitLabel(manualLocationRequestDailyLimitFor(t), intl) },
+    { label: message("billing.subscription.compare.history"), cell: (t) => (historyDaysFor(t) === 1 ? message("billing.subscription.compare.currentSafetyDay") : intl.formatMessage({ id: "billing.subscription.compare.recentDays" }, { count: historyDaysFor(t) })) },
+    { label: message("billing.subscription.compare.places"), cell: (t) => limitLabel(placeLimitFor(t), intl), reviewedCell: intl.formatMessage({ id: "billing.subscription.compare.reviewedPlaces" }, { count: 3 }) },
+    { label: message("billing.subscription.compare.dangerZone"), cell: (t) => limitLabel(dangerZoneLimitFor(t), intl) },
+    { label: message("billing.subscription.compare.ring"), cell: (t) => rolling24LimitLabel(forceRingDailyLimitFor(t), intl) },
+    { label: message("billing.subscription.compare.aiFriend"), cell: (t) => dailyLimitLabel(aiFriendDailyBaseFor(t), intl) },
+    { label: message("billing.subscription.compare.aiSchedule"), cell: (t) => dailyLimitLabel(aiScheduleDailyLimitFor(t), intl) },
+    { label: message("billing.subscription.compare.safetyReport"), cell: () => message("billing.subscription.compare.provided") },
+    { label: message("billing.subscription.compare.remoteAudio"), cell: (t) => (canUse(t, FEATURES.REMOTE_AUDIO) ? message("billing.subscription.compare.maxMinute") : NO) },
+    { label: message("billing.subscription.compare.safetyInsights"), cell: (t) => (canUse(t, FEATURES.SAFETY_INSIGHTS) ? message("billing.subscription.compare.autoAlert") : message("billing.subscription.compare.manualCheck")) },
+    { label: message("billing.subscription.compare.aiDailySummary"), cell: (t) => (canUse(t, FEATURES.AI_ANALYSIS) ? YES : NO) },
+    { label: message("billing.subscription.compare.weeklyReport"), cell: (t) => (canUse(t, FEATURES.WEEKLY_REPORT) ? message("billing.subscription.compare.weeklyFull") : message("billing.subscription.compare.weeklyPreview")) },
+    { label: message("billing.subscription.compare.academySchedule"), cell: (t) => (canUse(t, FEATURES.ACADEMY_SCHEDULE) ? YES : NO) },
+    { label: message("billing.subscription.compare.sos"), cell: () => YES, safe: true },
+  ];
+}
 
 type Plan = WebBillingPlan;
 const GOOGLE_PLAY_FUNNEL_PROVIDER = "google_play" as const;
 const TOSS_FUNNEL_PROVIDER = "toss_payments" as const;
 
 /** 결제 주기 종료일 → "2026년 7월 4일" 형식. */
-function formatPeriodEnd(d: Date): string {
-  return d.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
+function formatPeriodEnd(d: Date, locale: SupportedLocale): string {
+  return formatDateTime(d, {
+    locale,
+    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    dateStyle: BILLING_DATE_STYLE,
+  });
 }
 
 function webBillingStorage(): Storage | null {
@@ -170,15 +191,17 @@ function shouldRetainWebBillingPending(error: unknown): boolean {
   if (error instanceof TypeError) return true;
   if (!isApiError(error)) return false;
   if (
-    error.message === "web_billing_reconciliation_pending"
-    || error.message === "web_billing_processing"
-    || error.message === "billing_provider_reconciliation_pending"
+    error.code === "web_billing_reconciliation_pending"
+    || error.code === "web_billing_processing"
+    || error.code === "billing_provider_reconciliation_pending"
   ) return true;
   return error.status >= 500;
 }
 
 /** 구독 · 페이월: 프리미엄 혜택 · 플랜 선택 · 결제 CTA. 실 티어로 활성 상태 표시. */
 export function Subscription() {
+  const intl = useIntl();
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const { show } = useToast();
   const { familyId } = useAuth();
@@ -205,6 +228,13 @@ export function Subscription() {
   const entitlementQuery = useEntitlement();
   const { ready, isPremium, view, tier } = entitlementQuery;
   const comparisonTier = tier === TIERS.REVIEWED ? TIERS.FREE : tier;
+  const localizedCompareRows = compareRows(intl);
+  const existingChildDowngradeNotice = intl.formatMessage({
+    id: "billing.subscription.downgrade.existingChild",
+  });
+  const downgradeLimitNotice = intl.formatMessage({
+    id: "billing.subscription.downgrade.limit",
+  });
   const subscriptionQueryState = resolveQueryTruthState([
     { isLoading: entitlementQuery.isLoading, isError: entitlementQuery.isError },
   ]);
@@ -282,8 +312,8 @@ export function Subscription() {
       await qc.invalidateQueries({ queryKey: qk.entitlement(input.familyId) });
       show(
         completed.status === "trial"
-          ? "7일 무료 체험을 시작했어요"
-          : "프리미엄 구독을 시작했어요",
+          ? intl.formatMessage({ id: "billing.subscription.purchase.trialStarted" })
+          : intl.formatMessage({ id: "billing.subscription.purchase.started" }),
         "👑",
       );
     } catch (error) {
@@ -301,7 +331,7 @@ export function Subscription() {
         setWebReconciliationPending(true);
         if (!webPendingToastShownRef.current) {
           webPendingToastShownRef.current = true;
-          show("결제 승인 결과를 확인하고 있어요. 중복 결제 없이 같은 주문을 다시 확인합니다.", "👑");
+          show(intl.formatMessage({ id: "billing.subscription.purchase.reconciling" }), "👑");
         }
         scheduleWebReconciliation();
         return;
@@ -322,7 +352,7 @@ export function Subscription() {
       webCompletionInFlightRef.current = false;
       setBusy(false);
     }
-  }, [qc, scheduleWebReconciliation, show]);
+  }, [intl, qc, scheduleWebReconciliation, show]);
 
   useEffect(() => {
     if (subscriptionViewRecordedRef.current) return;
@@ -395,7 +425,7 @@ export function Subscription() {
       show(
         billingRedirect.kind === "fail"
           ? webBillingFailureMessage(billingRedirect.code)
-          : "결제 인증 결과를 확인하지 못했어요. 다시 시도해 주세요.",
+          : intl.formatMessage({ id: "billing.subscription.purchase.redirectInvalid" }),
         "👑",
       );
       return;
@@ -431,10 +461,10 @@ export function Subscription() {
           provider: TOSS_FUNNEL_PROVIDER,
           error_code: "verification_failed",
         });
-        show("결제 인증 세션을 확인하지 못했어요. 다시 시작해 주세요.", "👑");
+        show(intl.formatMessage({ id: "billing.subscription.purchase.sessionInvalid" }), "👑");
       }
     })();
-  }, [billingRedirect, familyId, finishWebBilling, show]);
+  }, [billingRedirect, familyId, finishWebBilling, intl, show]);
 
   useEffect(() => {
     if (!isWebBillingChannel || !familyId) return;
@@ -506,25 +536,36 @@ export function Subscription() {
     allowTrial: playTrialEligible === true,
   });
   const selectedOffer = plan === "year" ? annualOffer : monthlyOffer;
+  const localizeDisplayPrice = (displayPrice: string): string => {
+    const providerPrice = formatProviderPrice(displayPrice, locale);
+    return isWebBillingChannel
+      ? intl.formatMessage(
+          { id: "billing.subscription.serverCatalogPrice" },
+          { catalogPrice: providerPrice },
+        )
+      : intl.formatMessage(
+          { id: "billing.subscription.providerPrice" },
+          { formattedPrice: providerPrice },
+        );
+  };
   const annualDisplayPrice = isWebBillingChannel
-    ? webCatalog?.plans.year.displayPrice ?? "웹 결제 준비 중"
-    : annualOffer?.displayPrice ?? "Google Play에서 확인";
+    ? webCatalog?.plans.year.displayPrice
+      ? localizeDisplayPrice(webCatalog.plans.year.displayPrice)
+      : intl.formatMessage({ id: "billing.subscription.web.pending" })
+    : annualOffer?.displayPrice
+      ? localizeDisplayPrice(annualOffer.displayPrice)
+      : intl.formatMessage({ id: "billing.subscription.google.pending" });
   const monthlyDisplayPrice = isWebBillingChannel
-    ? webCatalog?.plans.month.displayPrice ?? "웹 결제 준비 중"
-    : monthlyOffer?.displayPrice ?? "Google Play에서 확인";
+    ? webCatalog?.plans.month.displayPrice
+      ? localizeDisplayPrice(webCatalog.plans.month.displayPrice)
+      : intl.formatMessage({ id: "billing.subscription.web.pending" })
+    : monthlyOffer?.displayPrice
+      ? localizeDisplayPrice(monthlyOffer.displayPrice)
+      : intl.formatMessage({ id: "billing.subscription.google.pending" });
   const selectedDisplayPrice = plan === "year" ? annualDisplayPrice : monthlyDisplayPrice;
   const selectedHasTrial = isWebBillingChannel
     ? webCatalog?.trialEligible === true && webCatalog.trialDays === 7
     : playTrialEligible === true && selectedOffer?.hasSevenDayTrial === true;
-  const annualSavingsWon = isWebBillingChannel && webCatalog
-    ? webBillingAnnualSavings(webCatalog)
-    : hasExpectedLaunchSubscriptionPrice(monthlyOffer)
-      && hasExpectedLaunchSubscriptionPrice(annualOffer)
-      ? Math.max(
-        0,
-        Math.round(((monthlyOffer?.priceAmountMicros ?? 0) * 12 - (annualOffer?.priceAmountMicros ?? 0)) / 1_000_000),
-      )
-      : 0;
 
   useEffect(() => {
     if (!premiumActive || !returnIntent) return;
@@ -545,7 +586,7 @@ export function Subscription() {
   // 두 경로 모두 사용자 버튼 onClick에서만 시작하고 서로의 결제창으로 우회하지 않는다.
   const purchase = async () => {
     if (!familyId) {
-      show("가족 연결 후 다시 시도해 주세요", "👑");
+      show(intl.formatMessage({ id: "billing.subscription.purchase.familyRequired" }), "👑");
       return;
     }
     if (busy) return;
@@ -595,7 +636,7 @@ export function Subscription() {
       }
 
       if (!isBillingAvailable()) {
-        throw new Error("이 기기에서 Google Play 결제를 사용할 수 없어요.");
+        throw new BillingError("billing_unavailable");
       }
       const basePlanId = plan === "year" ? ANNUAL_BASE_PLAN_ID : MONTHLY_BASE_PLAN_ID;
       let freshProductDetails: BillingProductDetails | null;
@@ -618,10 +659,10 @@ export function Subscription() {
         allowTrial: playTrialEligible === true,
       });
       if (!freshSelectedOffer) {
-        throw new Error("Google Play 구독 조건을 확인하지 못했어요. 잠시 후 다시 시도해 주세요.");
+        throw new Error("play_subscription_offer_unavailable");
       }
       if (!hasExpectedLaunchSubscriptionPrice(freshSelectedOffer)) {
-        throw new Error("Google Play 출시 가격이 월 4,900원·연 39,000원과 일치하지 않아요.");
+        throw new Error("play_subscription_price_mismatch");
       }
       setProductDetails(freshProductDetails);
       const result = await launchSubscriptionPurchase({
@@ -639,7 +680,12 @@ export function Subscription() {
       });
       // 구독 성공 → 엔타이틀먼트 캐시 무효화로 활성 배너를 갱신한다.
       await qc.invalidateQueries({ queryKey: qk.entitlement(familyId) });
-      show(result.isTrial ? "7일 무료 체험을 시작했어요" : "프리미엄 구독을 시작했어요", "👑");
+      show(
+        result.isTrial
+          ? intl.formatMessage({ id: "billing.subscription.purchase.trialStarted" })
+          : intl.formatMessage({ id: "billing.subscription.purchase.started" }),
+        "👑",
+      );
     } catch (error) {
       if (!checkoutSucceeded) {
         if (pendingStorage) clearPendingWebBilling(pendingStorage);
@@ -654,7 +700,7 @@ export function Subscription() {
       show(
         isWebBillingChannel
           ? webBillingRequestFailureMessage(error)
-          : error instanceof Error ? error.message : "구독을 시작하지 못했어요",
+          : resolveNativeBillingFailureMessage(error, intl),
         "👑",
       );
     } finally {
@@ -681,7 +727,7 @@ export function Subscription() {
       await openExternal(url);
     } catch (error) {
       console.error("구독 관리 열기 실패:", error);
-      show("구독 관리 화면을 열지 못했어요", "⚠️");
+      show(intl.formatMessage({ id: "billing.subscription.purchase.manageFailed" }), "⚠️");
     }
   };
 
@@ -692,7 +738,7 @@ export function Subscription() {
       await cancelWebBillingSubscription({ familyId });
       await qc.invalidateQueries({ queryKey: qk.entitlement(familyId) });
       setCancelConfirmOpen(false);
-      show("현재 이용 기간이 끝날 때 구독이 해지되도록 예약했어요", "👑");
+      show(intl.formatMessage({ id: "billing.subscription.purchase.cancelScheduled" }), "👑");
     } catch (error) {
       show(webBillingRequestFailureMessage(error), "👑");
     } finally {
@@ -703,28 +749,39 @@ export function Subscription() {
   // ready && isPremium 일 때만 활성 배너 노출. 조회 실패/미확정(ready=false)에서는
   // 무료로 강등하지 않고 기본 페이월(중립)만 보여준다(R9).
   const purchaseLabel = webReconciliationPending
-    ? "결제 결과 다시 확인"
+    ? intl.formatMessage({ id: "billing.subscription.cta.reconcile" })
     : selectedHasTrial
-      ? "결제 정보 등록하고 7일 무료 체험"
-      : `${selectedDisplayPrice} · 시작하기`;
+      ? intl.formatMessage({ id: "billing.subscription.cta.trial" })
+      : intl.formatMessage(
+          { id: "billing.subscription.cta.start" },
+          { price: selectedDisplayPrice },
+        );
 
   // 활성 배너 보조 문구(체험 남은 일수 → 결제 주기 종료 → 기본).
   const activeSub = (() => {
     if (!view) return "";
     if (view.isTrial && view.trialDaysLeft != null) {
-      return `무료 체험 ${view.trialDaysLeft}일 남았어요`;
+      return intl.formatMessage(
+        { id: "billing.subscription.trial.remaining" },
+        { remaining: formatRelativeTime(view.trialDaysLeft, "day", locale) },
+      );
     }
-    if (view.periodEnd) return `${formatPeriodEnd(view.periodEnd)}까지 이용 가능해요`;
-    return "프리미엄 혜택을 모두 이용 중이에요";
+    if (view.periodEnd) {
+      return intl.formatMessage(
+        { id: "billing.subscription.activeUntil" },
+        { date: formatPeriodEnd(view.periodEnd, locale) },
+      );
+    }
+    return intl.formatMessage({ id: "billing.subscription.activeDefault" });
   })();
 
   if (subscriptionQueryState === "loading") {
     return (
       <ScreenQueryState
-        screenTitle="프리미엄 구독"
+        screenTitle={intl.formatMessage({ id: "billing.subscription.title" })}
         state="loading"
-        heading="구독 상태를 확인하고 있어요"
-        description="현재 이용 중인 혜택과 결제 가능 상태를 안전하게 확인하는 중이에요."
+        heading={intl.formatMessage({ id: "billing.subscription.state.loadingTitle" })}
+        description={intl.formatMessage({ id: "billing.subscription.state.loadingDescription" })}
         onBack={() => navigate(-1)}
       />
     );
@@ -733,10 +790,10 @@ export function Subscription() {
   if (subscriptionQueryState === "error") {
     return (
       <ScreenQueryState
-        screenTitle="프리미엄 구독"
+        screenTitle={intl.formatMessage({ id: "billing.subscription.title" })}
         state="error"
-        heading="구독 상태를 확인하지 못했어요"
-        description="확인되지 않은 상태에서 결제를 진행하지 않도록 잠시 닫았어요."
+        heading={intl.formatMessage({ id: "billing.subscription.state.errorTitle" })}
+        description={intl.formatMessage({ id: "billing.subscription.state.errorDescription" })}
         onBack={() => navigate(-1)}
         onRetry={() => void retrySubscription()}
         retrying={entitlementQuery.isFetching}
@@ -747,14 +804,14 @@ export function Subscription() {
   if (subscriptionDataEmpty) {
     return (
       <ScreenQueryState
-        screenTitle="프리미엄 구독"
+        screenTitle={intl.formatMessage({ id: "billing.subscription.title" })}
         state="empty"
-        heading="구독 정보가 아직 준비되지 않았어요"
-        description="잠시 후 다시 확인해 주세요. 확인 전에는 결제가 시작되지 않아요."
+        heading={intl.formatMessage({ id: "billing.subscription.state.emptyTitle" })}
+        description={intl.formatMessage({ id: "billing.subscription.state.emptyDescription" })}
         onBack={() => navigate(-1)}
         onRetry={() => void retrySubscription()}
         retrying={entitlementQuery.isFetching}
-        retryLabel="구독 상태 다시 확인"
+        retryLabel={intl.formatMessage({ id: "billing.subscription.state.retry" })}
       />
     );
   }
@@ -765,23 +822,21 @@ export function Subscription() {
         <button
           type="button"
           className="hy-iconbtn hy-press sub-back"
-          aria-label="뒤로"
+          aria-label={intl.formatMessage({ id: "billing.common.back" })}
           onClick={() => navigate(-1)}
         >
           <ChevronLeft size={22} strokeWidth={2.2} />
         </button>
-        <span className="sub-header__title">프리미엄 구독</span>
+        <span className="sub-header__title">{intl.formatMessage({ id: "billing.subscription.title" })}</span>
       </div>
 
       <div className="sub-body">
         {/* 히어로 */}
         <div className="sub-hero">
           <img className="sub-hero__crown" src={asset("ui/crown.webp")} alt="" />
-          <div className="sub-hero__title">혜니 프리미엄</div>
+          <div className="sub-hero__title">{intl.formatMessage({ id: "billing.subscription.hero.title" })}</div>
           <div className="sub-hero__sub">
-            실시간 위치와 AI 요약으로
-            <br />
-            아이의 하루를 더 안심하게 확인하세요
+            {intl.formatMessage({ id: "billing.subscription.hero.description" })}
           </div>
         </div>
 
@@ -792,7 +847,12 @@ export function Subscription() {
               <img src={asset("ui/crown.webp")} alt="" />
             </div>
             <div className="sub-active__text">
-              <div className="sub-active__title">{view.planLabel} 이용 중</div>
+              <div className="sub-active__title">
+                {intl.formatMessage(
+                  { id: "billing.subscription.activePlan" },
+                  { plan: getTierLabel(tier, intl) },
+                )}
+              </div>
               <div className="sub-active__sub">{activeSub}</div>
             </div>
             <Check className="sub-active__check" size={22} strokeWidth={3} />
@@ -801,7 +861,11 @@ export function Subscription() {
 
         {/* 플랜 선택 (미구독 시에만) */}
         {!premiumActive && (
-          <div className="sub-plans" role="radiogroup" aria-label="프리미엄 결제 주기">
+          <div
+            className="sub-plans"
+            role="radiogroup"
+            aria-label={intl.formatMessage({ id: "billing.subscription.plan.groupAria" })}
+          >
             <button
               ref={(element) => { planRefs.current.year = element; }}
               type="button"
@@ -814,16 +878,26 @@ export function Subscription() {
               onKeyDown={(event) => onPlanKeyDown(event, "year")}
             >
               <span className="sub-plan__ribbon">
-                {annualSavingsWon > 0 ? `연 ${annualSavingsWon.toLocaleString("ko-KR")}원 절약` : "연간 플랜"}
+                {intl.formatMessage({ id: "billing.subscription.plan.annualRibbon" })}
               </span>
               <div className="sub-plan__info">
-                <div className="sub-plan__name">프리미엄 연간 구독</div>
+                <div className="sub-plan__name">
+                  {intl.formatMessage({ id: "billing.subscription.plan.annual" })}
+                </div>
                 <div className="sub-plan__meta">
-                  월 환산 3,250원 · {isWebBillingChannel
+                  {isWebBillingChannel
                     ? webCatalog?.trialEligible === true && webCatalog.trialDays === 7
-                      ? "7일 무료 체험 후 웹 자동결제"
-                      : "웹 자동결제 · 언제든 해지 예약 가능"
-                    : annualOffer?.hasSevenDayTrial ? "7일 무료 체험 후 자동 갱신" : "Google Play 구독 · 언제든 해지 가능"}
+                      ? intl.formatMessage(
+                          { id: "billing.subscription.eligibleTrial" },
+                          { trialDays: webCatalog.trialDays },
+                        )
+                      : intl.formatMessage({ id: "billing.subscription.plan.webManage" })
+                    : annualOffer?.hasSevenDayTrial
+                      ? intl.formatMessage(
+                          { id: "billing.subscription.eligibleTrial" },
+                          { trialDays: 7 },
+                        )
+                      : intl.formatMessage({ id: "billing.subscription.plan.googleManage" })}
                 </div>
               </div>
               <div className="sub-plan__price">{annualDisplayPrice}</div>
@@ -841,13 +915,23 @@ export function Subscription() {
               onKeyDown={(event) => onPlanKeyDown(event, "month")}
             >
               <div className="sub-plan__info">
-                <div className="sub-plan__name">프리미엄 월간 구독</div>
+                <div className="sub-plan__name">
+                  {intl.formatMessage({ id: "billing.subscription.plan.monthly" })}
+                </div>
                 <div className="sub-plan__meta">
                   {isWebBillingChannel
                     ? webCatalog?.trialEligible === true && webCatalog.trialDays === 7
-                      ? "7일 무료 체험 후 웹 자동결제"
-                      : "웹 자동결제 · 언제든 해지 예약 가능"
-                    : monthlyOffer?.hasSevenDayTrial ? "7일 무료 체험 후 자동 갱신" : "Google Play 구독 · 언제든 해지 가능"}
+                      ? intl.formatMessage(
+                          { id: "billing.subscription.eligibleTrial" },
+                          { trialDays: webCatalog.trialDays },
+                        )
+                      : intl.formatMessage({ id: "billing.subscription.plan.webManage" })
+                    : monthlyOffer?.hasSevenDayTrial
+                      ? intl.formatMessage(
+                          { id: "billing.subscription.eligibleTrial" },
+                          { trialDays: 7 },
+                        )
+                      : intl.formatMessage({ id: "billing.subscription.plan.googleManage" })}
                 </div>
               </div>
               <div className="sub-plan__price">{monthlyDisplayPrice}</div>
@@ -858,11 +942,20 @@ export function Subscription() {
         {!premiumActive && isWebBillingChannel && (
           <div className="sub-note hy-explain">
             <span className="hy-explain__lines">
-              <span className="hy-explain__line">웹 자동결제는 국내 발급 카드만 지원해요.</span>
+              <span className="hy-explain__line">
+                {intl.formatMessage({ id: "billing.subscription.web.noGooglePlay" })}
+              </span>
+              <span className="hy-explain__line">
+                {intl.formatMessage({ id: "billing.subscription.web.domesticCardOnly" })}
+              </span>
               {selectedHasTrial && (
-                <span className="hy-explain__line">결제 정보를 등록해도 지금은 청구하지 않고, 정확히 7일 후 선택한 주기로 첫 결제돼요.</span>
+                <span className="hy-explain__line">
+                  {intl.formatMessage({ id: "billing.subscription.web.firstCharge" })}
+                </span>
               )}
-              <span className="hy-explain__line">선택한 주기마다 자동 갱신되며 이 화면에서 언제든 해지 예약할 수 있어요.</span>
+              <span className="hy-explain__line">
+                {intl.formatMessage({ id: "billing.subscription.web.renewal" })}
+              </span>
             </span>
           </div>
         )}
@@ -872,14 +965,24 @@ export function Subscription() {
             <span className="hy-explain__lines">
               {isWebBillingChannel ? (
                 <>
-                  <span className="hy-explain__line">이 가족이 처음 받는 7일 무료 체험이에요.</span>
-                  <span className="hy-explain__line">체험 종료 전 해지하면 첫 결제는 발생하지 않아요.</span>
+                  <span className="hy-explain__line">
+                    {intl.formatMessage({ id: "billing.subscription.trial.webFirst" })}
+                  </span>
+                  <span className="hy-explain__line">
+                    {intl.formatMessage({ id: "billing.subscription.trial.webNoCharge" })}
+                  </span>
                 </>
               ) : (
                 <>
-                  <span className="hy-explain__line">Google Play 결제 정보 등록 후 7일 동안 무료로 이용할 수 있어요.</span>
-                  <span className="hy-explain__line">7일 무료 체험 종료 후 Google Play에 표시된 구독 금액으로 자동 갱신돼요.</span>
-                  <span className="hy-explain__line">원하지 않으면 Google Play에서 체험 종료 전에 취소해 주세요.</span>
+                  <span className="hy-explain__line">
+                    {intl.formatMessage({ id: "billing.subscription.trial.googleFree" })}
+                  </span>
+                  <span className="hy-explain__line">
+                    {intl.formatMessage({ id: "billing.subscription.trial.googleRenewal" })}
+                  </span>
+                  <span className="hy-explain__line">
+                    {intl.formatMessage({ id: "billing.subscription.trial.googleCancel" })}
+                  </span>
                 </>
               )}
             </span>
@@ -889,13 +992,17 @@ export function Subscription() {
         {/* 혜택 */}
         <div className="sub-benefits">
           {BENEFITS.map((b) => (
-            <div key={b.t} className="sub-benefit">
+            <div key={b.id} className="sub-benefit">
               <div className="sub-benefit__icon">
                 <img src={asset(b.icon)} alt="" />
               </div>
               <div className="sub-benefit__text">
-                <div className="sub-benefit__t">{b.t}</div>
-                <div className="sub-benefit__s">{b.s}</div>
+                <div className="sub-benefit__t">
+                  {intl.formatMessage({ id: `billing.subscription.benefit.${b.id}.title` })}
+                </div>
+                <div className="sub-benefit__s">
+                  {intl.formatMessage({ id: `billing.subscription.benefit.${b.id}.description` })}
+                </div>
               </div>
               <Check className="sub-benefit__check" size={20} strokeWidth={3} />
             </div>
@@ -904,13 +1011,15 @@ export function Subscription() {
 
         {/* 플랜 비교표 (S-02) — 현재 티어 열 하이라이트 */}
         <div className="sub-compare">
-          <div className="sub-compare__title">플랜 비교</div>
+          <div className="sub-compare__title">
+            {intl.formatMessage({ id: "billing.subscription.compare.title" })}
+          </div>
           <div className="sub-compare__scroll">
             <table className="sub-table">
               <thead>
                 <tr>
                   <th scope="col" className="sub-table__rowhead sub-table__corner">
-                    구분
+                    {intl.formatMessage({ id: "billing.subscription.compare.category" })}
                   </th>
                   {COMPARE_COLS.map((t) => (
                     <th
@@ -919,17 +1028,21 @@ export function Subscription() {
                       className="sub-table__col"
                       data-current={t === comparisonTier}
                     >
-                      <span className="sub-table__col-name">{getTierLabel(t)}</span>
+                      <span className="sub-table__col-name">{getTierLabel(t, intl)}</span>
                       {t === TIERS.PREMIUM && (
                         <span className="sub-table__col-price">{monthlyDisplayPrice}</span>
                       )}
-                      {t === comparisonTier && <span className="sub-table__col-badge">현재</span>}
+                      {t === comparisonTier && (
+                        <span className="sub-table__col-badge">
+                          {intl.formatMessage({ id: "billing.subscription.compare.current" })}
+                        </span>
+                      )}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {COMPARE_ROWS.map((row) => (
+                {localizedCompareRows.map((row) => (
                   <tr key={row.label}>
                     <th scope="row" className="sub-table__rowhead">
                       {row.label}
@@ -955,16 +1068,20 @@ export function Subscription() {
 
         <div className="sub-note hy-explain" role="note">
           <span className="hy-explain__lines">
-            <span className="hy-explain__line">{EXISTING_CHILD_DOWNGRADE_NOTICE}</span>
-            <span className="hy-explain__line">{DOWNGRADE_LIMIT_NOTICE}</span>
+            <span className="hy-explain__line">{existingChildDowngradeNotice}</span>
+            <span className="hy-explain__line">{downgradeLimitNotice}</span>
           </span>
         </div>
 
         {tier === TIERS.REVIEWED && (
           <div className="sub-note hy-explain" role="note">
             <span className="hy-explain__lines">
-              <span className="hy-explain__line">현재 상품은 무료 플랜으로 표시돼요.</span>
-              <span className="hy-explain__line">기존 혜택으로 저장 장소 3곳 한도는 계속 유지돼요.</span>
+              <span className="hy-explain__line">
+                {intl.formatMessage({ id: "billing.subscription.reviewed.currentFree" })}
+              </span>
+              <span className="hy-explain__line">
+                {intl.formatMessage({ id: "billing.subscription.reviewed.placesKept" })}
+              </span>
             </span>
           </div>
         )}
@@ -973,13 +1090,26 @@ export function Subscription() {
         {!premiumActive && (
           <div className="sub-note hy-explain">
             <span className="hy-explain__lines">
-              <span className="hy-explain__line">SOS와 긴급 안전 알림은 무료로 계속 제공돼요.</span>
-              <span className="hy-explain__line">프리미엄은 실시간 위치와 AI 요약처럼 더 자세한 안심 기능을 열어드려요.</span>
               <span className="hy-explain__line">
-                위급 주변소리는 아이가 누르지 않아도 연결되지만, 아이 화면과 알림에 계속 표시되고 1분 뒤 자동 종료되며 청취 기록이 남아요.
+                {intl.formatMessage({ id: "billing.subscription.safetyFree" })}
               </span>
               <span className="hy-explain__line">
-                실제 가격과 결제 조건은 {isWebBillingChannel ? "웹 결제" : "Google Play"} 확인 화면 기준입니다.
+                {intl.formatMessage({ id: "billing.subscription.detailedPremium" })}
+              </span>
+              <span className="hy-explain__line">
+                {intl.formatMessage({ id: "billing.subscription.remoteAudioDisclosure" })}
+              </span>
+              <span className="hy-explain__line">
+                {intl.formatMessage(
+                  { id: "billing.subscription.provider.terms" },
+                  {
+                    provider: intl.formatMessage({
+                      id: isWebBillingChannel
+                        ? "billing.subscription.provider.web"
+                        : "billing.subscription.provider.googlePlay",
+                    }),
+                  },
+                )}
               </span>
             </span>
           </div>
@@ -987,7 +1117,7 @@ export function Subscription() {
 
         {!premiumActive && isWebBillingChannel && webCatalogUnavailable && (
           <div className="sub-web-unavailable" role="status">
-            웹 결제 설정을 확인하지 못해 결제 시작을 잠시 닫았어요. 무료 기능은 그대로 이용할 수 있어요.
+            {intl.formatMessage({ id: "billing.subscription.web.catalogUnavailable" })}
           </div>
         )}
 
@@ -1001,7 +1131,9 @@ export function Subscription() {
             aria-busy={busy}
           >
             <img src={asset("ui/crown.webp")} alt="" />
-            {webCancellationScheduled ? "구독 해지 예약됨" : "구독 관리"}
+            {webCancellationScheduled
+              ? intl.formatMessage({ id: "billing.subscription.cancel.cancelScheduled" })
+              : intl.formatMessage({ id: "billing.subscription.cta.manage" })}
           </button>
         ) : (
           <button
@@ -1011,20 +1143,25 @@ export function Subscription() {
             disabled={busy || (isWebBillingChannel && !webCatalog && !webReconciliationPending)} aria-busy={busy}
           >
             <img src={asset("ui/crown.webp")} alt="" />
-            {busy ? "결제 진행 중…" : purchaseLabel}
+            {busy ? intl.formatMessage({ id: "billing.subscription.cta.busy" }) : purchaseLabel}
           </button>
         )}
 
         {premiumActive && view?.provider === "toss_web" && cancelConfirmOpen && (
           <section className="sub-cancel" aria-labelledby="sub-cancel-title">
-            <h2 id="sub-cancel-title">웹 구독을 해지할까요?</h2>
+            <h2 id="sub-cancel-title">
+              {intl.formatMessage({ id: "billing.subscription.cancel.title" })}
+            </h2>
             <p>
               {view.periodEnd
-                ? `${formatPeriodEnd(view.periodEnd)}까지 프리미엄을 이용하고, 이후 자동결제를 중단해요.`
-                : "현재 결제 기간이 끝날 때 프리미엄 자동결제를 중단해요."}
+                ? intl.formatMessage(
+                    { id: "billing.subscription.cancel.until" },
+                    { date: formatPeriodEnd(view.periodEnd, locale) },
+                  )
+                : intl.formatMessage({ id: "billing.subscription.cancel.currentPeriod" })}
             </p>
             <p>
-              {EXISTING_CHILD_DOWNGRADE_NOTICE} {DOWNGRADE_LIMIT_NOTICE}
+              {existingChildDowngradeNotice} {downgradeLimitNotice}
             </p>
             <div className="sub-cancel__actions">
               <button
@@ -1034,7 +1171,7 @@ export function Subscription() {
                 disabled={busy}
                 aria-busy={busy}
               >
-                계속 이용
+                {intl.formatMessage({ id: "billing.subscription.cancel.continue" })}
               </button>
               <button
                 type="button"
@@ -1043,7 +1180,9 @@ export function Subscription() {
                 disabled={busy}
                 aria-busy={busy}
               >
-                {busy ? "해지 예약 중…" : "구독 해지 예약"}
+                {busy
+                  ? intl.formatMessage({ id: "billing.subscription.cancel.confirming" })
+                  : intl.formatMessage({ id: "billing.subscription.cancel.confirm" })}
               </button>
             </div>
           </section>
@@ -1054,19 +1193,26 @@ export function Subscription() {
             <>
               {view?.isTrial
                 ? view.provider === "toss_web"
-                  ? "무료 체험은 종료 전 이 화면에서 해지하지 않으면 선택한 웹 구독 금액으로 첫 결제돼요."
-                  : "무료 체험은 종료 전 Google Play에서 취소하지 않으면 Google Play에 표시된 구독 금액으로 자동 갱신돼요."
+                  ? intl.formatMessage({ id: "billing.subscription.fine.trialWeb" })
+                  : intl.formatMessage({ id: "billing.subscription.fine.trialGoogle" })
                 : view?.status === "cancelled"
-                  ? `${view.periodEnd ? formatPeriodEnd(view.periodEnd) : "현재 이용 기간"}까지 프리미엄 혜택이 유지돼요.`
+                  ? intl.formatMessage(
+                      { id: "billing.subscription.cancelledUntil" },
+                      {
+                        date: view.periodEnd
+                          ? formatPeriodEnd(view.periodEnd, locale)
+                          : intl.formatMessage({ id: "billing.subscription.currentPeriod" }),
+                      },
+                    )
                   : view?.provider === "toss_web"
-                    ? "웹 구독은 이 화면에서 언제든 해지 예약할 수 있어요."
-                    : "구독은 설정 > 구독 관리에서 언제든 해지할 수 있어요."}
+                    ? intl.formatMessage({ id: "billing.subscription.fine.webManage" })
+                    : intl.formatMessage({ id: "billing.subscription.fine.googleManage" })}
             </>
           ) : (
             <>
-              구독은 선택한 기간마다 자동 갱신되며,
+              {intl.formatMessage({ id: "billing.subscription.fine.inactiveFirst" })}
               <br />
-              설정 &gt; 구독 관리에서 언제든 해지할 수 있어요.
+              {intl.formatMessage({ id: "billing.subscription.fine.inactiveSecond" })}
             </>
           )}
         </div>

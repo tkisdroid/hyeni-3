@@ -7,20 +7,22 @@ export function playdateCandidateNotice(
   error: string | undefined,
   empty: boolean,
   loadFailed = false,
+  providedIntl?: IntlShape,
 ): string | null {
+  const intl = withDefaultIntl(providedIntl);
   // 하드 에러(네트워크/5xx)는 "친구 없음"과 다르다 — 없다고 단정하면 거짓 안내가 된다.
-  if (loadFailed) return "친구 목록을 불러오지 못했어. 다시 해 볼래?";
+  if (loadFailed) return intl.formatMessage({ id: "child.playdate.notice.loadFailed" });
   switch (error) {
     case "playdate_not_enabled":
-      return "지금은 친구놀이가 꺼져 있어. 부모님한테 켜 달라고 하자!";
+      return intl.formatMessage({ id: "child.playdate.notice.disabled" });
     case "current_location_unavailable":
-      return "아직 네 위치를 못 찾았어. 잠깐 있다가 다시 해 볼까?";
+      return intl.formatMessage({ id: "child.playdate.notice.noLocation" });
     case "in_danger_zone":
-      return "지금 있는 곳에선 친구를 찾을 수 없어.";
+      return intl.formatMessage({ id: "child.playdate.notice.dangerZone" });
     case "forbidden":
-      return "지금은 친구를 찾을 수 없어.";
+      return intl.formatMessage({ id: "child.playdate.notice.forbidden" });
     default:
-      return empty ? "근처에 놀 수 있는 친구가 아직 없어. 조금 있다 다시 볼까?" : null;
+      return empty ? intl.formatMessage({ id: "child.playdate.notice.empty" }) : null;
   }
 }
 
@@ -41,3 +43,5 @@ export function friendAvatar(childUserId: string): string {
   }
   return FRIEND_ANIMALS[hash % FRIEND_ANIMALS.length];
 }
+import type { IntlShape } from "react-intl";
+import { withDefaultIntl } from "../i18n/defaultIntl.ts";

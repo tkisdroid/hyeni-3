@@ -1,5 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { createServer } from "vite";
+
+import { ApiError } from "../src/lib/api/errors.ts";
 
 import {
   WEB_BILLING_AMOUNTS,
@@ -190,10 +194,18 @@ test("웹 가격표는 서버가 반환한 KRW 월 4,900원·연 39,000원만 �
 });
 
 test("웹 결제 서버 오류 코드는 결제·대사·해지 상태를 숨기지 않는 안내로 변환한다", () => {
-  const error = (message: string) => new Error(message);
+  const error = (code: string, status = 409) => new ApiError(code, status);
+  assert.equal(
+    webBillingRequestFailureMessage(error("web_subscription_new_checkouts_paused", 503)),
+    "새 구독 결제를 잠시 중단했어요. 기존 결제 확인과 해지는 계속 이용할 수 있어요.",
+  );
   assert.equal(
     webBillingRequestFailureMessage(error("web_billing_unavailable")),
     "웹 결제가 아직 준비되지 않았어요. 잠시 후 다시 확인해 주세요.",
+  );
+  assert.equal(
+    webBillingRequestFailureMessage(error("web_billing_session_expired", 410)),
+    "결제 인증 시간이 지나 다시 시작해야 해요.",
   );
   assert.equal(
     webBillingRequestFailureMessage(error("subscription_already_active")),
@@ -223,4 +235,65 @@ test("웹 결제 서버 오류 코드는 결제·대사·해지 상태를 숨기
     webBillingRequestFailureMessage(error("web_billing_trial_state_changed")),
     /결제하지 않고.*다시 확인/,
   );
+});
+
+test("웹 결제 로컬 sentinel만 Error.message로 해석하고 임의 원문은 일반 안내로 닫는다", () => {
+  assert.equal(
+    webBillingRequestFailureMessage(new Error("web_billing_not_configured")),
+    "웹 결제가 아직 준비되지 않았어요. 잠시 후 다시 확인해 주세요.",
+  );
+  assert.equal(
+    webBillingRequestFailureMessage(new Error("web_billing_session_storage_unavailable")),
+    "웹 결제를 완료하지 못했어요. 잠시 후 다시 시도해 주세요.",
+  );
+  const raw = "DECLINED: card 4111 secret-token";
+  const message = webBillingRequestFailureMessage(new Error(raw));
+  assert.equal(message, "웹 결제를 완료하지 못했어요. 잠시 후 다시 시도해 주세요.");
+  assert.doesNotMatch(message, /4111|secret-token|DECLINED/);
+});
+
+test("웹 checkout·복구·해지 catch는 같은 안전 resolver를 사용한다", () => {
+  const source = readFileSync(
+    new URL("../src/screens/feature/Subscription.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.equal(
+    source.match(/webBillingRequestFailureMessage\(error\)/g)?.length,
+    3,
+    "checkout, redirect 복구, 해지 실패 경로를 모두 안전 resolver에 연결해야 한다",
+  );
+  assert.doesNotMatch(source, /show\([^)]*error\.message/);
+});
+
+test("실제 apiRequest 경계가 만든 ApiError.code도 웹 결제 안전 문구로 이어진다", async () => {
+  const originalFetch = globalThis.fetch;
+  const server = await createServer({
+    logLevel: "silent",
+    server: { middlewareMode: true },
+    appType: "custom",
+  });
+  try {
+    globalThis.fetch = async () => new Response(JSON.stringify({
+      code: "web_billing_reconciliation_pending",
+      error: "provider raw token-should-not-appear",
+    }), {
+      status: 409,
+      headers: { "Content-Type": "application/json" },
+    });
+    const api = await server.ssrLoadModule("/src/lib/api/client.ts");
+    const billing = await server.ssrLoadModule("/src/transform/webBilling.ts");
+    await assert.rejects(
+      api.apiRequest("/api/web-billing/test", {}, false),
+      (error: unknown) => {
+        assert.equal((error as { code?: unknown }).code, "web_billing_reconciliation_pending");
+        const message = billing.webBillingRequestFailureMessage(error);
+        assert.equal(message, "결제 결과를 확인하고 있어요. 같은 주문을 다시 확인해 주세요.");
+        assert.doesNotMatch(message, /provider|token-should-not-appear/);
+        return true;
+      },
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+    await server.close();
+  }
 });

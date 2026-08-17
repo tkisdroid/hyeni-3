@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [packageJson, versionPolicy, vite, gradle, androidManifest, parentSettings, teacherSettings, teacherGate] = await Promise.all([
+const [packageJson, versionPolicy, vite, gradle, androidManifest, parentSettings, teacherSettings, teacherGate, koParent, koShared] = await Promise.all([
   readFile(new URL("../package.json", import.meta.url), "utf8").then(JSON.parse),
   readFile(new URL("../public/app-version.json", import.meta.url), "utf8").then(JSON.parse),
   readFile(new URL("../vite.config.ts", import.meta.url), "utf8"),
@@ -11,6 +11,8 @@ const [packageJson, versionPolicy, vite, gradle, androidManifest, parentSettings
   readFile(new URL("../src/screens/parent/ParentSettings.tsx", import.meta.url), "utf8"),
   readFile(new URL("../src/screens/teacher/TeacherSettings.tsx", import.meta.url), "utf8"),
   readFile(new URL("../src/screens/teacher/TeacherReleaseGate.tsx", import.meta.url), "utf8"),
+  readFile(new URL("../locales/ko/parent.json", import.meta.url), "utf8").then(JSON.parse),
+  readFile(new URL("../locales/ko/shared.json", import.meta.url), "utf8").then(JSON.parse),
 ]);
 
 test("웹과 Android 표시 버전은 package.json을 단일 정본으로 사용한다", () => {
@@ -24,9 +26,12 @@ test("웹과 Android 표시 버전은 package.json을 단일 정본으로 사용
   assert.match(gradle, /릴리즈 산출물은 clean 앱 worktree에서만 만들 수 있습니다/);
   assert.match(androidManifest, /com\.hyeni\.calendar\.RELEASE_SOURCE_SHA/);
   assert.match(androidManifest, /android:value="\$\{hyeniReleaseSourceSha\}"/);
-  assert.match(parentSettings, /v\{APP_VERSION\}/);
-  assert.match(teacherSettings, /v\{APP_VERSION\}/);
-  assert.match(teacherGate, /v\{APP_VERSION\}/);
+  assert.match(parentSettings, /parent\.settings\.version/);
+  assert.match(koParent["parent.settings.version"], /v\{version\}/);
+  assert.match(teacherSettings, /shared\.teacherSettings\.version[\s\S]*APP_VERSION/);
+  assert.match(koShared["shared.teacherSettings.version"], /v\{version\}/);
+  assert.match(teacherGate, /shared\.teacherReleaseGate\.eyebrow[\s\S]*APP_VERSION/);
+  assert.match(koShared["shared.teacherReleaseGate.eyebrow"], /v\{version\}/);
   assert.doesNotMatch(`${parentSettings}\n${teacherSettings}`, /v2\.0\.0/);
 });
 

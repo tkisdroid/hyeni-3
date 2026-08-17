@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 const auth = readFileSync(new URL("../src/lib/api/endpoints/auth.ts", import.meta.url), "utf8");
 const deepLink = readFileSync(new URL("../src/lib/native/oauthDeepLink.ts", import.meta.url), "utf8");
 const screen = readFileSync(new URL("../src/screens/parent/SocialLinks.tsx", import.meta.url), "utf8");
+const koParent = JSON.parse(readFileSync(new URL("../locales/ko/parent.json", import.meta.url), "utf8"));
 
 test("OAuth 시작 시 흐름(login/link)을 저장하고, 콜백에서 그대로 읽는다", () => {
   assert.match(auth, /export async function startWorkerOAuth\([\s\S]{0,120}provider: OAuthProvider,[\s\S]{0,120}mode: OAuthFlowMode = "login"/);
@@ -36,8 +37,10 @@ test("서버가 지원하지 않는 provider 연결은 시작하지 않는다(�
 test("연결 화면은 네이티브에서만 활성화되고, 연결된 provider 도 다른 계정을 추가할 수 있다", () => {
   assert.match(screen, /const native = isNativePlatform\(\)/);
   assert.match(screen, /disabled=\{!native \|\| isLoading \|\| busy === provider\}/);
-  assert.match(screen, /소셜 계정 연결은 안드로이드 앱에서 할 수 있어요/);
-  assert.match(screen, /hasAny \? "다른 계정 연결" : "연결하기"/);
+  assert.match(screen, /parent\.socialLinks\.copy021/);
+  assert.match(screen, /hasAny \? intl\.formatMessage\(\{ id: "parent\.socialLinks\.copy015" \}\) : intl\.formatMessage\(\{ id: "parent\.socialLinks\.copy016" \}\)/);
+  assert.equal(koParent["parent.socialLinks.copy021"], "소셜 계정 연결은 안드로이드 앱에서 할 수 있어요.");
+  assert.equal(koParent["parent.socialLinks.copy015"], "다른 계정 연결");
 });
 
 test("연결된 계정은 provider 가 아니라 계정 단위로 보여준다(구글 2개 등)", () => {
@@ -48,12 +51,14 @@ test("연결된 계정은 provider 가 아니라 계정 단위로 보여준다(�
 test("마지막 로그인 수단이면 해제 버튼을 잠근다", () => {
   assert.match(screen, /const canUnlink = \(data\?\.hasPasswordLogin \?\? false\) \|\| links\.length > 1/);
   assert.match(screen, /disabled=\{!canUnlink \|\| busy === key\}/);
-  assert.match(screen, /유일한 로그인 수단이라 해제할 수 없어요/);
+  assert.match(screen, /parent\.socialLinks\.copy019/);
+  assert.match(koParent["parent.socialLinks.copy019"], /유일한 로그인 수단이라 해제할 수 없어요/);
 });
 
 test("해제는 한 번 더 확인받는다(오탭 방지)", () => {
   assert.match(screen, /if \(confirming !== key\) \{\s*setConfirming\(key\);\s*return;/);
-  assert.match(screen, /정말 해제할까요\?/);
+  assert.match(screen, /parent\.socialLinks\.copy009/);
+  assert.equal(koParent["parent.socialLinks.copy009"], "정말 해제할까요?");
 });
 
 test("해제 API 는 provider_id 로 대상 연결을 특정한다", () => {
@@ -74,11 +79,15 @@ test("OAuth 취소도 context를 검증·폐기하고 연결 화면 잠금을 �
   assert.match(auth, /const context = takeOAuthContext\(\)/);
   assert.match(deepLink, /parseOAuthCancellationUrl/);
   assert.match(deepLink, /finishOAuthCancellation/);
-  assert.match(deepLink, /const error = new Error\("소셜 로그인을 취소했어요\."\)/);
+  assert.match(deepLink, /errorCode: "oauth_cancelled"/);
+  assert.match(deepLink, /detail: \{ provider: cb\.provider, cancelled: true \}/);
+  assert.match(deepLink, /errorCode: "oauth_cancellation_failed"/);
+  assert.doesNotMatch(deepLink, /new Error\("소셜 로그인을 취소했어요/);
 });
 
 test("계정 화면 안내문이 실제 동작과 맞는다(해제 가능한데 '해당 서비스에서 관리' 금지)", () => {
   const account = readFileSync(new URL("../src/screens/parent/ParentAccount.tsx", import.meta.url), "utf8");
-  assert.ok(!account.includes("연동된 소셜 계정은 해당 서비스에서 관리돼요"));
-  assert.match(account, /소셜 로그인은 아래에서 연결하거나 해제할 수 있어요/);
+  assert.ok(!Object.values(koParent).includes("연동된 소셜 계정은 해당 서비스에서 관리돼요"));
+  assert.match(account, /parent\.parentAccount\.copy022/);
+  assert.equal(koParent["parent.parentAccount.copy022"], "소셜 로그인은 아래에서 연결하거나 해제할 수 있어요.");
 });

@@ -2077,6 +2077,7 @@ const semanticSurfaceManifest = [
     ["src/screens/feature/DailySafetyReport.css", "dr-empty", "card"],
     ["src/components/ui/ScreenQueryState.css", "sqs-card", "card"],
     ["src/components/ui/ScreenQueryState.css", "sqs-inline-empty", "card"],
+    ["src/components/LanguageSelector.css", "hy-language", "card"],
     ["src/screens/child/AiFriendChat.css", "afc-query-state", "card"],
     ["src/screens/child/ChildHome.css", "kd-map__query-state", "floating"],
     // 입력창 위에 떠서 "아직 실행하지 않은 부탁"을 확인받는 카드.
@@ -2205,6 +2206,7 @@ const nonSurfacePaintManifest = new Set([
   ["src/styles/components.css", ".hy-crash__ghost"],
   ["src/components/ui/ScreenQueryState.css", ".sqs-retry"],
   ["src/components/ui/ScreenQueryState.css", ".sqs-inline-empty button"],
+  ["src/components/LanguageSelector.css", ".hy-language__option"],
   ["src/app/ChildDock.css", ".kdock__sos"],
   ["src/screens/child/AiFriendChat.css", ".afc-query-state button"],
   ["src/screens/child/ChildHome.css", ".kd-map__query-state button"],
