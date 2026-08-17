@@ -47,8 +47,8 @@ export function webPushDeliveryView(
       canSubscribe: false,
       canRegisterAccount: false,
       canUnsubscribe: false,
-      title: "웹 알림 상태 확인 중",
-      detail: "서버 설정과 브라우저 구독을 확인하고 있어요.",
+      title: "알림 확인 중",
+      detail: "웹 알림 연결을 확인하고 있어요.",
       configuredLabel: "확인 중",
       permissionLabel: "확인 중",
       subscriptionLabel: "확인 중",
@@ -75,11 +75,11 @@ export function webPushDeliveryView(
   const labels = {
     configuredLabel: state.configured ? "설정됨" : "설정 필요",
     permissionLabel: permissionLabel(state.permission),
-    subscriptionLabel: state.subscribed ? "구독됨" : "구독 안 됨",
+    subscriptionLabel: state.subscribed ? "켜짐" : "꺼짐",
     accountRegistrationLabel: state.accountRegistered === true
-      ? "현재 계정 등록됨"
+      ? "연결됨"
       : state.accountRegistered === false
-        ? "현재 계정 등록 안 됨"
+        ? "연결 안 됨"
         : "확인 실패",
   };
   if (!state.supported) {
@@ -89,8 +89,8 @@ export function webPushDeliveryView(
       canSubscribe: false,
       canRegisterAccount: false,
       canUnsubscribe: false,
-      title: "웹 푸시를 사용할 수 없어요",
-      detail: "이 브라우저에서는 웹 푸시를 쓸 수 없어요.",
+      title: "이 브라우저에서는 알림을 못 받아요",
+      detail: "지금 브라우저에서는 웹 알림을 쓸 수 없어요.",
       configuredLabel: "확인 안 함",
       permissionLabel: "지원 안 됨",
       subscriptionLabel: "지원 안 됨",
@@ -104,8 +104,8 @@ export function webPushDeliveryView(
       canSubscribe: false,
       canRegisterAccount: false,
       canUnsubscribe: state.subscribed,
-      title: "웹 푸시 서버 상태를 확인하지 못했어요",
-      detail: "서버 확인에 실패했어요. 남은 구독은 끌 수 있어요.",
+      title: "알림 서버를 확인하지 못했어요",
+      detail: "서버 확인에 실패했어요. 남은 알림은 끌 수 있어요.",
       ...labels,
     };
   }
@@ -116,8 +116,8 @@ export function webPushDeliveryView(
       canSubscribe: false,
       canRegisterAccount: false,
       canUnsubscribe: state.subscribed,
-      title: "웹 푸시 서버 설정이 필요해요",
-      detail: "서버 알림 설정이 아직이라 이 기기를 등록할 수 없어요.",
+      title: "알림 서버가 아직 준비되지 않았어요",
+      detail: "서버가 아직이라 이 기기를 연결할 수 없어요.",
       ...labels,
     };
   }
@@ -140,8 +140,8 @@ export function webPushDeliveryView(
       canSubscribe: false,
       canRegisterAccount: true,
       canUnsubscribe: true,
-      title: "현재 계정 알림 등록이 필요해요",
-      detail: "브라우저 구독은 있지만 현재 계정에 등록되지 않았어요.",
+      title: "이 계정에 알림을 연결해 주세요",
+      detail: "브라우저 알림은 있지만 이 계정에는 연결되지 않았어요.",
       ...labels,
     };
   }
@@ -157,8 +157,8 @@ export function webPushDeliveryView(
       canSubscribe: false,
       canRegisterAccount: true,
       canUnsubscribe: true,
-      title: "현재 계정 웹 알림 준비 완료",
-      detail: "권한·구독·계정 등록이 모두 확인됐어요.",
+      title: "웹 알림을 받을 수 있어요",
+      detail: "권한·연결·계정이 모두 확인됐어요.",
       ...labels,
     };
   }
@@ -169,8 +169,8 @@ export function webPushDeliveryView(
       canSubscribe: false,
       canRegisterAccount: true,
       canUnsubscribe: true,
-      title: "현재 계정 알림 연결을 확인하지 못했어요",
-      detail: "구독은 있지만 계정 등록을 다시 확인해야 해요.",
+      title: "알림 연결을 확인하지 못했어요",
+      detail: "알림은 있지만 계정 연결을 다시 확인해야 해요.",
       ...labels,
     };
   }
@@ -180,11 +180,11 @@ export function webPushDeliveryView(
     canSubscribe: true,
     canRegisterAccount: true,
     canUnsubscribe: false,
-    title: "웹 알림 구독이 필요해요",
+    title: "웹 알림을 켜 주세요",
     detail:
       state.permission === "granted"
-        ? "권한은 허용됐지만 아직 이 계정에 등록되지 않았어요."
-        : "버튼을 누르면 권한을 요청하고 이 계정에 등록해요.",
+        ? "권한은 허용됐지만 아직 이 계정에 연결되지 않았어요."
+        : "버튼을 누르면 권한을 요청하고 이 계정에 연결해요.",
     ...labels,
   };
 }

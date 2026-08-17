@@ -29,7 +29,7 @@ test("온보딩은 추천 귀속과 보상 조건을 숨기지 않고 KID 페어
 test("부모 설정은 기존 스토어 혜택을 보존하면서 주 보호자에게 친구 초대 진입점을 제공한다", () => {
   const settings = read("src/screens/parent/ParentSettings.tsx");
   assert.match(settings, /기존에 받은 스토어 방문 혜택은 그대로 유지돼요/);
-  assert.match(settings, /친구 초대 · 서로 AI 대화 10회/);
+  assert.match(settings, /친구 초대하고 AI 10회 받기/);
   assert.match(settings, /account\?\.isPrimaryParent/);
   assert.match(settings, /<ReferralRewardPanel/);
 });

@@ -97,10 +97,10 @@ export function DataSync() {
   if (dataSyncQueryState === "loading") {
     return (
       <ScreenQueryState
-        screenTitle="데이터 · 동기화"
+        screenTitle="내 데이터"
         state="loading"
-        heading="가족 데이터를 확인하고 있어요"
-        description="계정과 가족 범위를 불러오고 있어요."
+        heading="가족 정보를 확인하고 있어요"
+        description="계정과 가족을 불러오고 있어요."
         onBack={() => navigate(-1)}
       />
     );
@@ -109,10 +109,10 @@ export function DataSync() {
   if (dataSyncQueryState === "error") {
     return (
       <ScreenQueryState
-        screenTitle="데이터 · 동기화"
+        screenTitle="내 데이터"
         state="error"
-        heading="동기화 정보를 불러오지 못했어요"
-        description="잘못된 파일을 만들지 않으려고 내보내기를 닫았어요."
+        heading="정보를 불러오지 못했어요"
+        description="잘못된 파일을 만들지 않으려고 저장을 닫았어요."
         onBack={() => navigate(-1)}
         onRetry={() => void retryDataSync()}
         retrying={dataSyncRefetching}
@@ -123,10 +123,10 @@ export function DataSync() {
   if (dataSyncEmpty) {
     return (
       <ScreenQueryState
-        screenTitle="데이터 · 동기화"
+        screenTitle="내 데이터"
         state="empty"
-        heading="내보낼 가족 정보가 없어요"
-        description="계정과 가족 연결 상태를 다시 확인해 주세요."
+        heading="받을 가족 정보가 없어요"
+        description="계정과 가족 연결을 다시 확인해 주세요."
         onBack={() => navigate(-1)}
         onRetry={() => void retryDataSync()}
         retrying={dataSyncRefetching}
@@ -146,7 +146,7 @@ export function DataSync() {
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="var(--fg-secondary)" />
         </button>
-        <span className="ds-head-title">데이터 · 동기화</span>
+        <span className="ds-head-title">내 데이터</span>
       </header>
 
       <div className="ds-content">
@@ -154,7 +154,7 @@ export function DataSync() {
         <div className="ds-sync">
           <div className="ds-sync__top">
             <span className="ds-sync__dot" />
-            <span className="ds-sync__state">실시간 동기화 켜짐</span>
+            <span className="ds-sync__state">최신 상태로 맞춰져 있어요</span>
           </div>
           <div className="ds-sync__rows">
             <div className="ds-sync__row">
@@ -172,13 +172,13 @@ export function DataSync() {
               <span className="ds-sync__v">{formatCount(childCount)}</span>
             </div>
             <div className="ds-sync__row">
-              <span className="ds-sync__k">마지막 동기화</span>
+              <span className="ds-sync__k">마지막 확인</span>
               <span className="ds-sync__v">{syncedAt}</span>
             </div>
           </div>
           <button type="button" className="ds-sync__btn hy-press" onClick={resync}>
             <RefreshCw size={16} strokeWidth={2.4} />
-            지금 동기화
+            다시 불러오기
           </button>
         </div>
 
@@ -188,7 +188,7 @@ export function DataSync() {
             <Download size={20} strokeWidth={2.2} />
           </div>
           <div className="ds-card__main">
-            <div className="ds-card__title">내 데이터 다운로드</div>
+            <div className="ds-card__title">내 정보 받기</div>
             <div className="ds-card__desc">
               일정·장소·학원 정보를 파일로 저장해요.
             </div>
@@ -199,7 +199,7 @@ export function DataSync() {
             onClick={exportJson}
             disabled={exportData.isPending || !account} aria-busy={exportData.isPending}
           >
-            {exportData.isPending ? "모으는 중…" : "내보내기"}
+            {exportData.isPending ? "준비 중…" : "저장하기"}
           </button>
         </div>
         <div className="ds-note hy-explain">위치 이력과 대화는 이 파일에 들어가지 않아요.</div>
@@ -210,13 +210,13 @@ export function DataSync() {
             <Trash2 size={20} strokeWidth={2.2} />
           </div>
           <div className="ds-card__main">
-            <div className="ds-card__title">임시 데이터 비우기</div>
+            <div className="ds-card__title">임시 저장 지우기</div>
             <div className="ds-card__desc">
               임시 저장만 지워요. 계정·가족 데이터는 그대로예요.
             </div>
           </div>
           <button type="button" className="ds-card__cta ds-card__cta--ghost hy-press" onClick={clearCache}>
-            비우기
+            지우기
           </button>
         </div>
       </div>

@@ -39,11 +39,11 @@ type Tone = "lav" | "rose" | "blue" | "mint" | "gold" | "neutral" | "danger";
 type NavRow = { id: string; Icon: LucideIcon; tone: Tone; label: string; route: string; badge?: boolean };
 
 const settingsRows: NavRow[] = [
-  { id: "account", Icon: UserRound, tone: "lav", label: "계정 · 프로필", route: "/account" },
-  { id: "notif", Icon: Bell, tone: "rose", label: "알림 설정", route: "/notification-settings" },
-  { id: "location", Icon: MapPin, tone: "blue", label: "위치 · 백그라운드", route: "/location-settings" },
-  { id: "data", Icon: DatabaseZap, tone: "mint", label: "데이터 · 동기화", route: "/data-sync" },
-  { id: "subscription", Icon: Crown, tone: "gold", label: "구독 관리", route: "/subscription", badge: true },
+  { id: "account", Icon: UserRound, tone: "lav", label: "내 계정", route: "/account" },
+  { id: "notif", Icon: Bell, tone: "rose", label: "알림", route: "/notification-settings" },
+  { id: "location", Icon: MapPin, tone: "blue", label: "아이 위치", route: "/location-settings" },
+  { id: "data", Icon: DatabaseZap, tone: "mint", label: "내 데이터", route: "/data-sync" },
+  { id: "subscription", Icon: Crown, tone: "gold", label: "구독", route: "/subscription", badge: true },
 ];
 
 type FeatureRow = { id: string; icon: string; tone: Tone; label: string; route: string };
@@ -51,11 +51,11 @@ type FeatureRow = { id: string; icon: string; tone: Tone; label: string; route: 
 const featureRows: FeatureRow[] = [
   { id: "child", icon: "ui/menu-child-tracker.webp", tone: "blue", label: "아이 관리", route: "/parent/family" },
   { id: "place", icon: "ui/menu-place-manager.webp", tone: "mint", label: "장소 관리", route: "/place-manager" },
-  { id: "friend", icon: "ui/menu-friend-playdate.webp", tone: "gold", label: "친구 · 놀이 약속", route: "/friend-play" },
-  { id: "audio", icon: "ui/menu-remote-audio.webp", tone: "rose", label: "원격 소리 듣기", route: "/remote-audio" },
-  { id: "audio-audit", icon: "ui/menu-remote-audio.webp", tone: "neutral", label: "주변 소리 듣기 기록", route: "/remote-audio-audit" },
-  { id: "reward", icon: "ui/menu-sticker.webp", tone: "gold", label: "스티커 · 보상", route: "/sticker-send" },
-  { id: "ai", icon: "ui/menu-ai-schedule.webp", tone: "lav", label: "AI 친구 · 크레딧", route: "/ai-credit" },
+  { id: "friend", icon: "ui/menu-friend-playdate.webp", tone: "gold", label: "친구놀이", route: "/friend-play" },
+  { id: "audio", icon: "ui/menu-remote-audio.webp", tone: "rose", label: "주변 소리", route: "/remote-audio" },
+  { id: "audio-audit", icon: "ui/menu-remote-audio.webp", tone: "neutral", label: "주변 소리 기록", route: "/remote-audio-audit" },
+  { id: "reward", icon: "ui/menu-sticker.webp", tone: "gold", label: "스티커", route: "/sticker-send" },
+  { id: "ai", icon: "ui/menu-ai-schedule.webp", tone: "lav", label: "AI 친구", route: "/ai-credit" },
 ];
 
 type AccountRow = {
@@ -288,7 +288,7 @@ export function ParentSettings() {
                 onClick={() => setReferralOpen(true)}
               >
                 <SettingsIcon Icon={Gift} tone="gold" />
-                <span className="ps-nav__label">친구 초대 · 서로 AI 대화 10회</span>
+                <span className="ps-nav__label">친구 초대하고 AI 10회 받기</span>
                 {chevronIcon}
               </button>
             )}
@@ -303,7 +303,7 @@ export function ParentSettings() {
 
         {/* 가족 · 안전 */}
         <div className="ps-group">
-          <div className="ps-group__label">가족 · 안전</div>
+          <div className="ps-group__label">가족</div>
           <div className="ps-list">
             {featureRows.map((f) => (
               <button
@@ -324,11 +324,11 @@ export function ParentSettings() {
 
         {/* 약관 · 계정 */}
         <div className="ps-group">
-          <div className="ps-group__label">약관 · 계정</div>
+          <div className="ps-group__label">기타</div>
           <div className="ps-list">
             {([
               { id: "privacy", Icon: ShieldCheck, tone: "neutral", label: "개인정보 처리방침", onClick: openPrivacy, chevron: true },
-              { id: "feedback", Icon: MessageCircleQuestion, tone: "blue", label: "문제 신고 · 문의", onClick: () => navigate("/feedback"), chevron: true },
+              { id: "feedback", Icon: MessageCircleQuestion, tone: "blue", label: "문의하기", onClick: () => navigate("/feedback"), chevron: true },
               { id: "logout", Icon: LogOut, tone: "danger", label: "로그아웃", onClick: () => void handleLogout() },
               { id: "delete", Icon: AlertTriangle, tone: "danger", label: "회원 탈퇴", onClick: () => setConfirmDelete(true), danger: true },
             ] satisfies AccountRow[]).map((r) => (

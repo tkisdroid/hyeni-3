@@ -932,7 +932,7 @@ export function AiCredit() {
         <div className="ac-auto">
           <span className="ac-auto__icon"><Bot size={20} strokeWidth={2.2} color="var(--mint-text)" /></span>
           <span className="ac-auto__main">
-            <span className="ac-auto__title">AI 친구 대화 허용</span>
+            <span className="ac-auto__title">AI 친구 켜기</span>
             <span className="ac-auto__sub">
               {aiEnabled
                 ? dailyLimit != null
@@ -944,7 +944,7 @@ export function AiCredit() {
           <button
             type="button"
             className="ac-toggle"
-            aria-label="AI 친구 대화 허용"
+            aria-label="AI 친구 켜기"
             aria-pressed={aiEnabled}
             onClick={toggleAiEnabled}
             disabled={saveSettings.isPending || !childUserId}
@@ -959,8 +959,8 @@ export function AiCredit() {
           <div className="ac-auto" style={{ marginTop: -4 }}>
             <span className="ac-auto__icon"><Hash size={20} strokeWidth={2.2} color="var(--mint-text)" /></span>
             <span className="ac-auto__main">
-              <span className="ac-auto__title">하루 대화 한도</span>
-              <span className="ac-auto__sub">무료 포함분 기준 · 초과분은 크레딧 사용</span>
+              <span className="ac-auto__title">하루 몇 번</span>
+              <span className="ac-auto__sub">기본 횟수예요. 넘으면 크레딧을 써요</span>
             </span>
             <span className="ac-limit">
               <button
@@ -1003,13 +1003,13 @@ export function AiCredit() {
         <section className="ac-detail" aria-busy={!advancedSettingsReady}>
           <div className="ac-detail__head">
             <div>
-              <div className="ac-detail__title">AI 친구 상세 제어</div>
-              <div className="ac-detail__sub">{childName}에게 적용되는 부모 설정이에요</div>
+              <div className="ac-detail__title">자세히</div>
+              <div className="ac-detail__sub">{childName}에게만 적용돼요</div>
             </div>
           </div>
 
           <label className="ac-field">
-            <span className="ac-field__label">금지 주제</span>
+            <span className="ac-field__label">하면 안 되는 이야기</span>
             <textarea
               className="ac-textarea"
               value={forbiddenTopicsText}
@@ -1023,13 +1023,13 @@ export function AiCredit() {
 
           <div className="ac-control-row">
             <span className="ac-control-row__main">
-              <span className="ac-control-row__title">선제 대화</span>
-              <span className="ac-control-row__sub">일정이나 안내가 있을 때 먼저 말을 걸어요</span>
+              <span className="ac-control-row__title">먼저 말 걸기</span>
+              <span className="ac-control-row__sub">일정이 있으면 먼저 말을 걸어요</span>
             </span>
             <button
               type="button"
               className="ac-toggle"
-              aria-label="선제 대화"
+              aria-label="먼저 말 걸기"
               aria-pressed={proactiveEnabled}
               onClick={() => setProactiveEnabled((v) => !v)}
               disabled={!advancedSettingsReady || saveSettings.isPending}
@@ -1042,7 +1042,7 @@ export function AiCredit() {
 
           <div className="ac-time-grid">
             <label className="ac-field">
-              <span className="ac-field__label">선제 대화 시작</span>
+              <span className="ac-field__label">시작 시간</span>
               <input
                 className="ac-time"
                 type="time"
@@ -1052,7 +1052,7 @@ export function AiCredit() {
               />
             </label>
             <label className="ac-field">
-              <span className="ac-field__label">선제 대화 종료</span>
+              <span className="ac-field__label">끝 시간</span>
               <input
                 className="ac-time"
                 type="time"
@@ -1085,13 +1085,13 @@ export function AiCredit() {
 
           <div className="ac-control-row">
             <span className="ac-control-row__main">
-              <span className="ac-control-row__title">일정 조작 허용</span>
-              <span className="ac-control-row__sub">아이 일정의 조회·추가·수정을 도와요</span>
+              <span className="ac-control-row__title">일정 바꾸기</span>
+              <span className="ac-control-row__sub">일정을 찾고 넣고 고칠 수 있어요</span>
             </span>
             <button
               type="button"
               className="ac-toggle"
-              aria-label="일정 조작 허용"
+              aria-label="일정 바꾸기"
               aria-pressed={allowScheduleActions}
               onClick={() => setAllowScheduleActions((v) => !v)}
               disabled={!advancedSettingsReady || saveSettings.isPending}
@@ -1104,13 +1104,13 @@ export function AiCredit() {
 
           <div className="ac-control-row">
             <span className="ac-control-row__main">
-              <span className="ac-control-row__title">연락 동작 허용</span>
-              <span className="ac-control-row__sub">부모님께 전화·메시지 요청을 도와요</span>
+              <span className="ac-control-row__title">연락 돕기</span>
+              <span className="ac-control-row__sub">전화나 메시지를 도와줄 수 있어요</span>
             </span>
             <button
               type="button"
               className="ac-toggle"
-              aria-label="연락 동작 허용"
+              aria-label="연락 돕기"
               aria-pressed={allowContactActions}
               onClick={() => setAllowContactActions((v) => !v)}
               disabled={!advancedSettingsReady || saveSettings.isPending}
@@ -1128,7 +1128,7 @@ export function AiCredit() {
             disabled={!advancedSettingsReady || saveSettings.isPending}
             aria-busy={advancedSettingsSaving}
           >
-            {advancedSettingsSaving ? "저장 중…" : "상세 설정 저장"}
+            {advancedSettingsSaving ? "저장 중…" : "저장"}
           </button>
         </section>
 
@@ -1136,7 +1136,7 @@ export function AiCredit() {
         <div className="ac-auto">
           <span className="ac-auto__icon"><BellRing size={20} strokeWidth={2.2} color="var(--mint-text)" /></span>
           <span className="ac-auto__main">
-            <span className="ac-auto__title">잔액 부족 알림</span>
+            <span className="ac-auto__title">크레딧이 부족할 때</span>
             <span className="ac-auto__sub">
               {lowCreditAlert ? "3회 이하가 되면 이 화면에서 알려드려요" : "크레딧이 부족할 때 확인할 수 있어요"}
             </span>

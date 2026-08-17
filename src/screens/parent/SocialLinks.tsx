@@ -105,7 +105,7 @@ export function SocialLinks() {
 
   return (
     <div className="pa-group">
-      <div className="pa-group__label">소셜 로그인 연결</div>
+      <div className="pa-group__label">소셜 계정</div>
 
       <div className="pa-card">
         {native && isLoading && (

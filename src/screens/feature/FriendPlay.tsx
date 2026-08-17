@@ -206,7 +206,7 @@ export function FriendPlay() {
               <PartyPopper size={22} strokeWidth={2.2} />
             </span>
             <span className="fp-setting__main">
-              <span className="fp-setting__title">친구놀이 요청 허용</span>
+              <span className="fp-setting__title">친구놀이 허용</span>
               <span className="fp-setting__sub">
                 {playdateEnabled
                   ? "안전한 곳에서 근처 친구에게 요청해요"
@@ -219,7 +219,7 @@ export function FriendPlay() {
           </button>
 
           <div className="fp-parent-card">
-            <div className="fp-parent-card__title">허용 기준</div>
+            <div className="fp-parent-card__title">이렇게 동작해요</div>
             <div className="fp-parent-rule">
               <span>1</span>
               양쪽 가족이 모두 켠 경우에만 보여요.

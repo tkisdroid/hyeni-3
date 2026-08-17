@@ -183,8 +183,8 @@ test("전체화면 특별 접근과 주변 소리 요청 채널 상태를 웹 �
   assert.match(permissions, /openFullScreenIntentSettings/);
   assert.match(family, /fullScreenIntentAllowed\?: boolean \| null/);
   assert.match(family, /remoteListenChannelEnabled\?: boolean \| null/);
-  assert.match(screen, /잠금 화면 전체 표시/);
-  assert.match(screen, /화면 상단 팝업/);
+  assert.match(screen, /잠금 화면에도 크게/);
+  assert.match(screen, /위쪽 팝업/);
   assert.match(screen, /openFullScreenIntentSettings/);
   assert.match(
     plugin,

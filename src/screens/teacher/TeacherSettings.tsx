@@ -179,7 +179,7 @@ export function TeacherSettings() {
               onClick={() => navigate("/notification-settings")}
             >
               <span className="ps-nav__chip" data-tone="rose"><Bell size={18} strokeWidth={2.3} /></span>
-              <span className="ps-nav__label">알림 설정</span>
+              <span className="ps-nav__label">알림</span>
               <ChevronRight className="ps-nav__chev" size={18} strokeWidth={2.4} color="#C9BFC4" />
             </button>
           </div>
@@ -187,7 +187,7 @@ export function TeacherSettings() {
 
         {/* 약관 · 계정 */}
         <div className="ps-group">
-          <div className="ps-group__label">약관 · 계정</div>
+          <div className="ps-group__label">기타</div>
           <div className="ps-list">
             <button type="button" className="ps-account hy-press" onClick={openPrivacy}>
               <span className="ps-account__chip" data-tone="neutral"><Lock size={18} strokeWidth={2.3} /></span>
@@ -196,7 +196,7 @@ export function TeacherSettings() {
             </button>
             <button type="button" className="ps-account hy-press" onClick={() => navigate("/feedback")}>
               <span className="ps-account__chip" data-tone="blue"><MessageCircleQuestion size={18} strokeWidth={2.3} /></span>
-              <span className="ps-account__label">문제 신고 · 문의</span>
+              <span className="ps-account__label">문의하기</span>
               <ChevronRight className="ps-nav__chev" size={18} strokeWidth={2.4} color="#C9BFC4" />
             </button>
             <button type="button" className="ps-account hy-press" onClick={() => void handleLogout()}>

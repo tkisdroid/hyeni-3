@@ -52,14 +52,14 @@ const DEFAULT_PREFS: LocationPrefs = {
 
 const INTERVALS: { id: UpdateInterval; label: string }[] = [
   { id: "live", label: "실시간" },
-  { id: "balanced", label: "균형" },
+  { id: "balanced", label: "보통" },
   { id: "saver", label: "절약" },
 ];
 
 const INTERVAL_DESC: Record<UpdateInterval, string> = {
-  live: "자주 보내 최신 위치를 보여줘요. 배터리는 더 써요.",
-  balanced: "이동 중엔 자주, 멈춰 있을 땐 드물게 보내요.",
-  saver: "배터리를 아끼고, 위치는 조금 늦게 와요.",
+  live: "자주 보내요. 배터리는 더 써요.",
+  balanced: "움직일 땐 자주, 멈춰 있을 땐 가끔 보내요.",
+  saver: "배터리를 아끼고 위치는 조금 늦게 와요.",
 };
 
 function restoredLiveIntervalIntent(state: LocationSettingsRouteState | null): boolean {
@@ -274,16 +274,16 @@ export function LocationSettings() {
   };
 
   const retentionLabel = isPremium
-    ? "최근 30일 (프리미엄 조회 범위)"
-    : "오늘 (무료 조회 범위)";
+    ? "최근 30일"
+    : "오늘만";
 
   if (locationSettingsQueryState === "loading" || locationSettingsHydrating) {
     return (
       <ScreenQueryState
-        screenTitle="위치 · 백그라운드"
+        screenTitle="아이 위치"
         state="loading"
         heading="위치 설정을 확인하고 있어요"
-        description="전송 주기와 이용 범위를 불러오고 있어요."
+        description="얼마나 자주 보낼지 불러오고 있어요."
         onBack={() => navigate(-1)}
       />
     );
@@ -292,10 +292,10 @@ export function LocationSettings() {
   if (locationSettingsQueryState === "error" || locationSettingsDataMissing) {
     return (
       <ScreenQueryState
-        screenTitle="위치 · 백그라운드"
+        screenTitle="아이 위치"
         state="error"
         heading="위치 설정을 확인하지 못했어요"
-        description="서버 설정을 지키려고 변경을 잠시 닫았어요."
+        description="기존 설정을 지키려고 변경을 잠시 닫았어요."
         onBack={() => navigate(-1)}
         onRetry={() => void retryLocationSettings()}
         retrying={locationSettingsRefetching}
@@ -306,10 +306,10 @@ export function LocationSettings() {
   if (locationSettingsEmpty) {
     return (
       <ScreenQueryState
-        screenTitle="위치 · 백그라운드"
+        screenTitle="아이 위치"
         state="empty"
         heading="연결된 가족이 없어요"
-        description="가족을 연결한 뒤 위치 설정을 관리할 수 있어요."
+        description="가족을 연결한 뒤 위치를 관리할 수 있어요."
         onBack={() => navigate(-1)}
         onRetry={() => navigate("/parent/family")}
         retryLabel="가족 연결 확인"
@@ -323,7 +323,7 @@ export function LocationSettings() {
         <button type="button" className="lset-back hy-press" aria-label="뒤로" onClick={() => navigate(-1)}>
           <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
         </button>
-        <span className="lset-title">위치 · 백그라운드</span>
+        <span className="lset-title">아이 위치</span>
       </header>
 
       <div className="lset-body">
@@ -333,7 +333,7 @@ export function LocationSettings() {
             <MapPin size={18} strokeWidth={2.2} color="#2E86C1" />
           </span>
           <span className="lset-row__main">
-            <span className="lset-row__title">아이 기기 위치 상태</span>
+            <span className="lset-row__title">지금 위치 상태</span>
             <span className="lset-row__sub">{childName} · {childLocationHealth.detail}</span>
           </span>
           <span className={`lset-chip lset-chip--${childLocationTone}`}>
@@ -347,7 +347,7 @@ export function LocationSettings() {
             <Radar size={18} strokeWidth={2.2} color="#2E86C1" />
           </span>
           <span className="lset-row__main">
-            <span className="lset-row__title">백그라운드 위치 전송</span>
+            <span className="lset-row__title">앱을 꺼도 보내기</span>
             <span className="lset-row__sub">앱을 닫아도 위치를 보내요</span>
           </span>
           <button
@@ -355,7 +355,7 @@ export function LocationSettings() {
             className="lset-toggle"
             role="switch"
             aria-checked={prefs.background}
-            aria-label="백그라운드 위치 전송"
+            aria-label="앱을 꺼도 보내기"
             data-on={prefs.background}
             onClick={toggleBackground}
             disabled={saving || !locationSettingsDataReady}
@@ -367,7 +367,7 @@ export function LocationSettings() {
 
         {/* 업데이트 주기 */}
         <div className="lset-field">
-          <div className="lset-flabel">업데이트 주기</div>
+          <div className="lset-flabel">얼마나 자주</div>
           <div className="lset-seg">
             {INTERVALS.map((opt) => {
               const on = selectedInterval === opt.id;
@@ -405,8 +405,8 @@ export function LocationSettings() {
               <Radar size={18} strokeWidth={2.2} color="#2E86C1" />
             </span>
             <span className="lset-row__main">
-              <span className="lset-row__title">실시간 모드 저장하기</span>
-              <span className="lset-row__sub">결제 전 선택이에요. 아직 저장되지 않았어요.</span>
+              <span className="lset-row__title">실시간으로 저장</span>
+              <span className="lset-row__sub">방금 고른 실시간이에요. 아직 저장되지 않았어요.</span>
             </span>
             <ChevronRight size={18} strokeWidth={2.2} color="var(--fg-tertiary)" />
           </button>
@@ -418,15 +418,15 @@ export function LocationSettings() {
             <BatteryCharging size={18} strokeWidth={2.2} color="#2E86C1" />
           </span>
           <span className="lset-row__main">
-            <span className="lset-row__title">배터리 최적화 예외</span>
-            <span className="lset-row__sub">아이 기기에서 직접 허용해야 적용돼요</span>
+            <span className="lset-row__title">절전 모드에서도 보내기</span>
+            <span className="lset-row__sub">아이 휴대폰에서 직접 허용해야 해요</span>
           </span>
           <button
             type="button"
             className="lset-toggle"
             role="switch"
             aria-checked={prefs.batterySaverException}
-            aria-label="배터리 최적화 예외"
+            aria-label="절전 모드에서도 보내기"
             data-on={prefs.batterySaverException}
             onClick={toggleBatteryException}
             disabled={saving || !locationSettingsDataReady}
@@ -446,7 +446,7 @@ export function LocationSettings() {
             <History size={18} strokeWidth={2.2} color="#2E86C1" />
           </span>
           <span className="lset-row__main">
-            <span className="lset-row__title">위치 기록 조회 범위</span>
+            <span className="lset-row__title">위치 기록</span>
             <span className="lset-row__sub">{retentionLabel}</span>
           </span>
           <ChevronRight size={18} strokeWidth={2.2} color="var(--fg-tertiary)" />
@@ -455,8 +455,8 @@ export function LocationSettings() {
         {/* 정직 안내 — 설명은 짧게 두 줄까지만(사실은 유지, 문장만 줄임). */}
         <p className="lset-note hy-explain">
           <span className="hy-explain__lines">
-            <span className="hy-explain__line">{childName} 앱이 주기적으로 확인해서 반영해요.</span>
-            <span className="hy-explain__line">권한·배터리 예외는 아이 기기에서 직접 허용해야 해요.</span>
+            <span className="hy-explain__line">{childName} 앱이 가끔 확인해서 반영해요.</span>
+            <span className="hy-explain__line">권한과 절전 예외는 아이 휴대폰에서 허용해야 해요.</span>
           </span>
         </p>
       </div>

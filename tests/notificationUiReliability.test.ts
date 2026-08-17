@@ -266,7 +266,7 @@ test("로컬 웹 구독이 있어도 현재 계정 서버 등록이 아니면 �
   assert.equal(wrongAccount.reason, "account_not_registered");
   assert.equal(wrongAccount.canRegisterAccount, true);
   assert.equal(wrongAccount.canUnsubscribe, true);
-  assert.match(wrongAccount.detail, /현재 계정/);
+  assert.match(wrongAccount.detail, /이 계정에는 연결되지 않았어요/);
 });
 
 test("VAPID 상태 조회가 실패해도 남은 로컬 웹 구독은 해제할 수 있다", () => {

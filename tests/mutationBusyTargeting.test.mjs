@@ -78,7 +78,7 @@ test("목록 mutation은 실제로 클릭한 행만 aria-busy가 된다", () => 
 
 test("AI 설정의 공용 mutation은 클릭한 설정 동작에만 진행 상태를 표시한다", () => {
   const source = read("src/screens/feature/AiCredit.tsx");
-  const aiToggle = onlyButtonWith("src/screens/feature/AiCredit.tsx", 'aria-label="AI 친구 대화 허용"');
+  const aiToggle = onlyButtonWith("src/screens/feature/AiCredit.tsx", 'aria-label="AI 친구 켜기"');
   const decrease = onlyButtonWith("src/screens/feature/AiCredit.tsx", 'aria-label="한도 줄이기"');
   const increase = onlyButtonWith("src/screens/feature/AiCredit.tsx", 'aria-label="한도 늘리기"');
   const advancedSave = onlyButtonWith("src/screens/feature/AiCredit.tsx", "ac-save-detail");
@@ -90,7 +90,7 @@ test("AI 설정의 공용 mutation은 클릭한 설정 동작에만 진행 상�
   assert.match(increase, /aria-busy=\{limitIncreaseSaving\}/);
   assert.match(advancedSave, /aria-busy=\{advancedSettingsSaving\}/);
 
-  for (const label of ["선제 대화", "일정 조작 허용", "연락 동작 허용"]) {
+  for (const label of ["먼저 말 걸기", "일정 바꾸기", "연락 돕기"]) {
     const localToggle = onlyButtonWith("src/screens/feature/AiCredit.tsx", `aria-label="${label}"`);
     assert.doesNotMatch(localToggle, /\baria-busy=/, `${label} 로컬 토글에 저장 spinner가 뜨면 안 돼요`);
   }

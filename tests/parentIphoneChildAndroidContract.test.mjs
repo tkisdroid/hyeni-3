@@ -44,7 +44,7 @@ test("부모 위치 설정은 부모 iPhone이 아니라 활성 아이 Android�
 
   assert.match(settings, /useActiveChild\(\)/);
   assert.match(settings, /deviceLocationHealthView\(activeChild\?\.device_health/);
-  assert.match(settings, /아이 기기 위치 상태/);
+  assert.match(settings, /지금 위치 상태/);
   assert.doesNotMatch(settings, /navigator\.geolocation/);
   assert.doesNotMatch(settings, /navigator\.permissions/);
   assert.doesNotMatch(settings, /이 휴대폰의 위치 권한/);

@@ -27,7 +27,7 @@ test("부모 알림 시간 편집기는 한 개의 매일 반복 구간을 명�
   assert.match(parent, /끝 시간/);
   assert.match(parent, /role="switch"/);
   assert.match(parent, /aria-checked=\{/);
-  assert.match(parent, />적용</);
+  assert.match(parent, />저장</);
   assert.match(parent, /시작 시간과 끝 시간을 다르게 선택해 주세요/);
   assert.match(parent, /dirty/);
   assert.match(parent, /isPending/);

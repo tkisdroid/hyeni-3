@@ -76,7 +76,7 @@ const SCHEDULE_TOGGLE: ToggleDef = {
   key: "parentEnabled",
   Icon: CalendarDays,
   tone: "rose",
-  label: "일정 알림",
+  label: "일정",
   sub: "시작 전에 알려드려요",
 };
 
@@ -85,22 +85,22 @@ const SAFETY_TOGGLES: ToggleDef[] = [
     key: "locationEnabled",
     Icon: MapPin,
     tone: "blue",
-    label: "일반 위치 알림",
-    sub: "도착·이탈을 알려드려요",
+    label: "도착·출발",
+    sub: "도착하면 알려드려요",
   },
   {
     key: "registeredPlaceEnabled",
     Icon: School,
     tone: "mint",
-    label: "등록 장소 알림",
-    sub: "저장 장소 출입을 알려드려요",
+    label: "저장한 장소",
+    sub: "집·학원 출입을 알려드려요",
   },
   {
     key: "playdateEnabled",
     Icon: ToyBrick,
     tone: "gold",
-    label: "친구·놀이 알림",
-    sub: "놀이 약속 소식을 알려드려요",
+    label: "친구놀이",
+    sub: "놀이 약속을 알려드려요",
   },
 ];
 
@@ -424,7 +424,7 @@ export function NotificationSettings() {
             startMinute: result.quietHours.startMinute,
             endMinute: result.quietHours.endMinute,
           });
-          setQuietSaveMessage("조용한 시간을 적용했어요.");
+          setQuietSaveMessage("조용한 시간을 저장했어요.");
         },
         onError: () => {
           if (!isSameNotificationQuietHoursTargetDraft(quietDraftRef.current, submittedQuietDraft)) {
@@ -560,23 +560,23 @@ export function NotificationSettings() {
   const deliveryReady = nativePlatform ? delivery?.granted === true : webDelivery.ready;
   const deliveryTitle = nativePlatform
     ? delivery === null
-      ? "알림 상태 확인 중"
+      ? "알림 확인 중"
       : delivery.granted
-        ? "기기 알림 표시 가능"
-        : "알림 설정 확인 필요"
+        ? "알림을 받을 수 있어요"
+        : "알림이 꺼져 있어요"
     : webPushLoadError
-      ? "웹 알림 상태를 확인하지 못했어요"
+      ? "웹 알림을 확인하지 못했어요"
       : webDelivery.title;
   const deliveryDetail = nativePlatform
     ? delivery === null
-      ? "알림 권한을 확인하고 있어요"
+      ? "휴대폰 알림을 확인하고 있어요"
       : !delivery.supported
-        ? "이 환경에서는 알림 상태를 확인할 수 없어요"
+        ? "이 환경에서는 알림을 확인할 수 없어요"
         : delivery.granted
-          ? "알림 권한과 필수 채널이 켜져 있어요"
-          : "알림 권한 또는 필수 채널이 꺼져 있어요"
+          ? "휴대폰 알림이 켜져 있어요"
+          : "휴대폰 알림이 꺼져 있어요"
     : webPushLoadError
-      ? "서버 설정과 브라우저 구독을 다시 확인해 주세요."
+      ? "알림 연결을 다시 확인해 주세요."
       : webDelivery.detail;
 
   if (notificationQueryState === "loading") {
@@ -637,7 +637,7 @@ export function NotificationSettings() {
                 />
                 {draft.parentEnabled && (
                   <div className="nst-minutes">
-                    <div className="nst-minutes__label">사전 알림 시간</div>
+                    <div className="nst-minutes__label">몇 분 전에</div>
                     <div className="nst-minutes__row">
                       {NOTIF_MINUTE_OPTIONS.map((m) => {
                         const on = draft.minutesBefore.includes(m);
@@ -664,7 +664,7 @@ export function NotificationSettings() {
             {/* 위치·안전 — 위치 소식 토글은 부모 알림에만 적용된다.
                 아이에게는 도착·출발을 보내지 않으므로(2026-08-03) 토글을 숨기고 사실만 알린다. */}
             <div className="nst-group">
-              <div className="nst-group__label">위치 · 안전</div>
+              <div className="nst-group__label">위치</div>
               {role === "child" ? (
                 <div className="nst-safety-note hy-explain">
                   <ShieldCheck size={17} strokeWidth={2.2} aria-hidden="true" />
@@ -772,8 +772,8 @@ export function NotificationSettings() {
                         }}
                       >
                         <span>
-                          <b>매일 조용한 시간 사용</b>
-                          <small>시작부터 끝 직전까지 적용돼요.</small>
+                          <b>조용한 시간 켜기</b>
+                          <small>시작부터 끝 직전까지 쉬어요.</small>
                         </span>
                         <span className="nst-switch" data-on={quietDraft.enabled} aria-hidden="true">
                           <span className="nst-switch__knob" />
@@ -815,7 +815,7 @@ export function NotificationSettings() {
                         onClick={applyQuietHours}
                         disabled={!dirty || !valid || saveQuietHours.isPending} aria-busy={saveQuietHours.isPending}
                       >
-                        {saveQuietHours.isPending ? "적용 중…" : <span>적용</span>}
+                        {saveQuietHours.isPending ? "저장 중…" : <span>저장</span>}
                       </button>
                       <p className="nst-quiet__live" aria-live="polite">
                         {quietSaveMessage}
@@ -828,7 +828,7 @@ export function NotificationSettings() {
 
             {/* 이 기기의 실제 OS/브라우저 알림 상태 */}
             <div className="nst-group">
-              <div className="nst-group__label">이 기기의 알림 수신</div>
+              <div className="nst-group__label">이 휴대폰</div>
               <div className="nst-list">
                 <div className="nst-row">
                   <span className="nst-row__icon" data-tone={deliveryReady ? "mint" : "gold"}>
@@ -847,10 +847,10 @@ export function NotificationSettings() {
                 </div>
                 {!nativePlatform && !webPushLoadError && (
                   <div className="nst-web-facts" aria-label="웹 알림 전달 상태">
-                    <span><b>서버 설정</b>{webDelivery.configuredLabel}</span>
-                    <span><b>브라우저 권한</b>{webDelivery.permissionLabel}</span>
-                    <span><b>이 기기 구독</b>{webDelivery.subscriptionLabel}</span>
-                    <span><b>현재 계정 등록</b>{webDelivery.accountRegistrationLabel}</span>
+                    <span><b>서버</b>{webDelivery.configuredLabel}</span>
+                    <span><b>권한</b>{webDelivery.permissionLabel}</span>
+                    <span><b>이 기기</b>{webDelivery.subscriptionLabel}</span>
+                    <span><b>내 계정</b>{webDelivery.accountRegistrationLabel}</span>
                   </div>
                 )}
                 {nativePlatform ? (
@@ -862,21 +862,21 @@ export function NotificationSettings() {
                       disabled={deliveryBusy}
                       aria-busy={deliveryAction === "permission"}
                     >
-                      {deliveryAction === "permission" ? "확인 중…" : "휴대폰 알림 설정 확인"}
+                      {deliveryAction === "permission" ? "확인 중…" : "휴대폰 설정 열기"}
                     </button>
                     <div
                       className="nst-capability"
                       data-state={delivery?.fullScreenIntentAllowed === true ? "ready" : "attention"}
                     >
-                      <span className="nst-capability__title">잠금 화면 전체 표시</span>
+                      <span className="nst-capability__title">잠금 화면에도 크게</span>
                       <span className="nst-capability__detail">
                         {delivery === null
-                          ? "전체 화면 알림 상태를 확인하고 있어요"
+                          ? "잠금 화면 알림을 확인하고 있어요"
                           : delivery.fullScreenIntentAllowed === true
-                            ? "긴급 알림을 잠금 화면 전체로 보여줄 수 있어요"
+                            ? "긴급 알림을 잠금 화면에도 크게 보여요"
                             : delivery.fullScreenIntentAllowed === false
-                              ? "전체 화면이 꺼져 있어 긴급 알림은 상단 팝업만 표시돼요"
-                              : "이 기기에서는 전체 화면 상태를 확인하지 못했어요"}
+                              ? "꺼져 있어 긴급 알림은 위쪽 팝업만 보여요"
+                              : "이 휴대폰에서는 잠금 화면 알림을 확인하지 못했어요"}
                       </span>
                     </div>
                     {delivery?.fullScreenIntentAllowed !== true && (
@@ -887,7 +887,7 @@ export function NotificationSettings() {
                         disabled={deliveryBusy}
                         aria-busy={deliveryAction === "full-screen"}
                       >
-                        {deliveryAction === "full-screen" ? "설정 여는 중…" : "잠금 화면 전체 표시 설정"}
+                        {deliveryAction === "full-screen" ? "여는 중…" : "잠금 화면 설정 열기"}
                       </button>
                     )}
                     {role === "child" && (
@@ -917,8 +917,8 @@ export function NotificationSettings() {
                         {deliveryAction === "web-register"
                           ? "처리 중…"
                           : webDelivery.ready
-                            ? "현재 계정 알림 등록 확인"
-                            : "이 기기에서 웹 알림 켜기"}
+                            ? "알림 연결 확인"
+                            : "웹 알림 켜기"}
                       </button>
                     )}
                     {webDelivery.canUnsubscribe && (
@@ -929,7 +929,7 @@ export function NotificationSettings() {
                         disabled={deliveryBusy}
                         aria-busy={deliveryAction === "web-unsubscribe"}
                       >
-                        {deliveryAction === "web-unsubscribe" ? "끄는 중…" : "이 기기의 웹 알림 끄기"}
+                        {deliveryAction === "web-unsubscribe" ? "끄는 중…" : "웹 알림 끄기"}
                       </button>
                     )}
                   </>
@@ -938,7 +938,7 @@ export function NotificationSettings() {
               <div className="nst-note hy-explain">
                 소리·진동은 휴대폰이나 브라우저에서 바꿔 주세요.
                 <button type="button" className="nst-refresh" onClick={() => void refreshDelivery()}>
-                  상태 다시 확인
+                  다시 확인
                 </button>
               </div>
             </div>

@@ -204,7 +204,7 @@ export function ParentAccount() {
           >
             <ChevronLeft size={22} strokeWidth={2.2} color="var(--fg-secondary)" />
           </button>
-          <span className="pa-head-title">계정 · 프로필</span>
+          <span className="pa-head-title">내 계정</span>
         </header>
         <div className="pa-content">
           <div className="pa-account-state" role={accountLoadError ? "alert" : "status"}>
@@ -285,7 +285,7 @@ export function ParentAccount() {
             onClick={saveProfile}
             disabled={!dirty || updateProfile.isPending} aria-busy={updateProfile.isPending}
           >
-            {updateProfile.isPending ? "저장 중…" : "프로필 저장"}
+            {updateProfile.isPending ? "저장 중…" : "저장"}
           </button>
         </div>
 
@@ -369,8 +369,8 @@ export function ParentAccount() {
             <div id={deleteTitleId} className="pa-modal__title">정말 탈퇴하시겠어요?</div>
             <p id={deleteDescriptionId} className="pa-modal__body">
               {isPrimary
-                ? "가족의 일정·위치 이력·대화·아이 계정이 모두 영구 삭제되며 복구할 수 없어요."
-                : "내 계정과 이 가족에서의 정보가 삭제돼요. 가족의 다른 데이터는 유지돼요."}
+                ? "일정·위치·대화·아이 계정이 모두 삭제되며 되돌릴 수 없어요."
+                : "내 계정과 이 가족 정보가 삭제돼요. 다른 가족 데이터는 남아요."}
             </p>
             <div className="pa-modal__btns">
               <button
