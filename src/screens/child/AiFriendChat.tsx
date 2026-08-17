@@ -1,7 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePwaUpdateCriticalSection } from "@/lib/usePwaUpdateCriticalSection";
 import { useLocation, useNavigate } from "react-router";
-import { ChevronLeft, Flag, MessageCircle, Phone, Settings } from "lucide-react";
+import { ChevronLeft, Flag, MessageCircle, Mic, Phone, Settings, Volume2, VolumeX } from "lucide-react";
+import {
+  cancelSpeechCapture,
+  captureSpeech,
+  isSpeechCaptureSupported,
+  isSpeechPlaybackSupported,
+  speakText,
+  stopSpeaking,
+} from "@/lib/native/speech";
+import {
+  readChildVoiceReplyEnabled,
+  SPEECH_LOCALE,
+  speakableReplyText,
+  writeChildVoiceReplyEnabled,
+} from "@/transform/childVoiceChat";
 import { useIntl, type IntlShape } from "react-intl";
 import { useLongPress, type LongPressHandlers } from "@/lib/useLongPress";
 import { asset } from "@/lib/assets";
@@ -255,6 +269,30 @@ export function AiFriendChat() {
   const [reportTarget, setReportTarget] = useState<ChatBubble | null>(null);
   // 부모에게 충전을 부탁하는 중/부탁 완료 — 버튼 상태를 정직하게 나눈다.
   const [creditRequest, setCreditRequest] = useState<"idle" | "sending" | "sent">("idle");
+  // ── 음성 대화 ──
+  // 아이는 타자보다 말이 빠르다. 마이크로 말을 걸고 답을 귀로 들으면 "쓰는 앱"이 아니라
+  // "친구와 이야기하는" 경험이 된다.
+  const [listening, setListening] = useState(false);
+  const voiceGenRef = useRef(0);
+  const [voiceReply, setVoiceReply] = useState(false);
+  const voiceReplyRef = useRef(false);
+  const speechLang = SPEECH_LOCALE[locale];
+  const micSupported = useMemo(() => isSpeechCaptureSupported(), []);
+  const playbackSupported = useMemo(() => isSpeechPlaybackSupported(), []);
+
+  // 저장된 읽어주기 설정은 아이가 바뀌면 다시 읽는다(가족+아이 키).
+  useEffect(() => {
+    const enabled = readChildVoiceReplyEnabled(familyId, userId);
+    setVoiceReply(enabled);
+    voiceReplyRef.current = enabled;
+  }, [familyId, userId]);
+
+  // 화면을 떠나면 듣기·읽어주기를 반드시 멈춘다(뒤에서 계속 말하면 안 된다).
+  useEffect(() => () => {
+    voiceGenRef.current += 1;
+    cancelSpeechCapture();
+    stopSpeaking();
+  }, []);
   usePwaUpdateCriticalSection(input.trim().length > 0 || sendChat.isPending);
   // 신고는 AI 답변을 길게 눌러 연다(버블마다 버튼을 띄우지 않기 위해).
   // 신고 대상이 아닌 말풍선(내 메시지·로컬 인사)에는 핸들러를 붙이지 않는다.
@@ -352,6 +390,10 @@ export function AiFriendChat() {
                 },
           ]);
           applyToolResult(res.toolResult);
+          // 읽어주기가 켜져 있으면 답을 소리로 들려준다(실패는 조용히 넘긴다 — 글은 이미 떠 있다).
+          if (voiceReplyRef.current && reply) {
+            void speakText(speakableReplyText(reply), speechLang);
+          }
           reactTo({
             phase: "reply",
             childText: text,
@@ -379,6 +421,54 @@ export function AiFriendChat() {
   const handleSend = () => {
     send(input, "composer");
     setInput("");
+  };
+
+  /**
+   * 마이크로 말 걸기. 인식된 말을 곧바로 보낸다 —
+   * 아이가 "말하고 → 확인하고 → 전송" 3단계를 거치면 대화가 아니라 받아쓰기가 된다.
+   */
+  const startVoice = () => {
+    if (listening || sendChat.isPending) return;
+    if (!micSupported) {
+      show(intl.formatMessage({ id: "child.aiChat.voice.unsupported" }), "🎤");
+      return;
+    }
+    // 내 차례에 친구가 계속 말하고 있으면 어색하다 — 듣기 시작 전에 읽어주기를 멈춘다.
+    stopSpeaking();
+    const gen = ++voiceGenRef.current;
+    setListening(true);
+    void captureSpeech(speechLang)
+      .then((transcript) => {
+        if (gen !== voiceGenRef.current) return; // 화면 이탈·중단된 인식은 무시
+        const spoken = transcript.trim();
+        if (!spoken) {
+          show(intl.formatMessage({ id: "child.aiChat.voice.empty" }), "🎤");
+          return;
+        }
+        send(spoken, "voice");
+      })
+      .catch(() => {
+        if (gen !== voiceGenRef.current) return;
+        show(intl.formatMessage({ id: "child.aiChat.voice.failed" }), "🎤");
+      })
+      .finally(() => {
+        if (gen === voiceGenRef.current) setListening(false);
+      });
+  };
+
+  const stopVoice = () => {
+    voiceGenRef.current += 1;
+    cancelSpeechCapture();
+    setListening(false);
+  };
+
+  /** 읽어주기 켜기/끄기. 끄면 지금 읽고 있던 말도 즉시 멈춘다. */
+  const toggleVoiceReply = () => {
+    const next = !voiceReply;
+    setVoiceReply(next);
+    voiceReplyRef.current = next;
+    writeChildVoiceReplyEnabled(familyId, userId, next);
+    if (!next) stopSpeaking();
   };
 
   /**
@@ -474,6 +564,21 @@ export function AiFriendChat() {
             <MessageCircle size={14} strokeWidth={2.2} aria-hidden="true" />
             {intl.formatMessage({ id: "child.aiChat.remaining" }, { count: shownRemaining })}
           </span>
+        )}
+        {playbackSupported && (
+          <button
+            type="button"
+            className="afc-voicetog hy-press"
+            aria-pressed={voiceReply}
+            aria-label={intl.formatMessage({
+              id: voiceReply ? "child.aiChat.voice.replyOffAria" : "child.aiChat.voice.replyOnAria",
+            })}
+            onClick={toggleVoiceReply}
+          >
+            {voiceReply
+              ? <Volume2 size={20} strokeWidth={2.2} color="var(--hy-accent-text)" />
+              : <VolumeX size={20} strokeWidth={2.2} color="var(--fg-tertiary)" />}
+          </button>
         )}
         <button
           type="button"
@@ -613,7 +718,33 @@ export function AiFriendChat() {
             </button>
           ))}
         </div>
+        {listening && (
+          <div className="afc-listening" role="status">
+            <span className="afc-listening__wave" aria-hidden="true">
+              <span /><span /><span /><span />
+            </span>
+            {intl.formatMessage({ id: "child.aiChat.voice.listening" })}
+            <button type="button" className="afc-listening__stop hy-press" onClick={stopVoice}>
+              {intl.formatMessage({ id: "child.aiChat.voice.stop" })}
+            </button>
+          </div>
+        )}
         <div className="afc-bar">
+          {micSupported && (
+            <button
+              type="button"
+              className={listening ? "afc-mic afc-mic--on hy-press" : "afc-mic hy-press"}
+              onClick={listening ? stopVoice : startVoice}
+              disabled={sendChat.isPending}
+              // 진행 표시는 전송 버튼이 소유한다 — 마이크는 전송 중 잠기기만 한다.
+              data-progress-owner="afc-send"
+              aria-label={intl.formatMessage({
+                id: listening ? "child.aiChat.voice.stopAria" : "child.aiChat.voice.startAria",
+              })}
+            >
+              <Mic size={20} strokeWidth={2.2} aria-hidden="true" />
+            </button>
+          )}
           <input
             className="afc-field"
             value={input}

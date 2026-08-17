@@ -138,35 +138,39 @@ test("아이가 쓸 수 있는 알림 유형에 포함되고 본문은 서버가
   assert.match(gate, /ai_credit_available/);
 });
 
-test("LLM 을 안 부르는 결정적 응답은 크레딧을 깎지 않는다", async () => {
+test("아이가 말을 건 turn 은 LLM 사용 여부와 무관하게 1회 차감한다", async () => {
   const { shouldChargeForAiTurn } = await import("../shared/aiUsagePolicy.js");
-  // 라우트가 서버 문구로 바로 답하는 도구는 원가가 0이다.
+  // 서버가 LLM 없이 결정적으로 답하는 도구도 1회로 센다(과금 예측 가능성 우선).
   for (const toolName of [
     "updateNotificationSettings", "updateAiFriendName", "changeAppTheme",
-    "getTodaySchedule", "getScheduleByDate",
+    "getTodaySchedule", "getScheduleByDate", "createSchedule",
   ]) {
     assert.equal(
       shouldChargeForAiTurn({ detectedIntent: "schedule_lookup", toolResult: { ok: true, toolName } }),
-      false,
-      `${toolName} 이 크레딧을 깎는다`,
+      true,
+      `${toolName} 이 차감되지 않는다`,
     );
   }
-  // LLM 을 실제로 거치는 일반 대화·생성 도구는 그대로 깎는다.
   assert.equal(shouldChargeForAiTurn({ detectedIntent: "general_chat", toolResult: null }), true);
-  assert.equal(
-    shouldChargeForAiTurn({ detectedIntent: "schedule_create", toolResult: { ok: true, toolName: "createSchedule" } }),
-    true,
-  );
 });
 
-test("결정적 응답 목록은 라우트 분기와 어긋나지 않는다", async () => {
-  const [policy, route] = await Promise.all([
-    readFile(resolve(workerDir, "shared/aiUsagePolicy.js"), "utf8"),
-    readFile(resolve(workerDir, "routes/ai-child-chat.ts"), "utf8"),
-  ]);
-  // 라우트가 LLM 없이 답하는 일정 조회 도구가 무료 목록에도 있어야 한다.
-  for (const toolName of ["getTodaySchedule", "getScheduleByDate"]) {
-    assert.match(route, new RegExp(`toolName === "${toolName}"`));
-    assert.match(policy, new RegExp(`"${toolName}"`));
+test("안전 위험과 거절만 한 turn 은 차감하지 않는다", async () => {
+  const { shouldChargeForAiTurn, shouldBypassAiCreditLimit } = await import("../shared/aiUsagePolicy.js");
+  // ① 힘든 아이가 도움을 청한 turn — 한도가 0이어도 열리고 차감도 없다.
+  for (const riskLevel of ["medium", "high"]) {
+    assert.equal(shouldChargeForAiTurn({ detectedIntent: "general_chat", safety: { riskLevel } }), false);
+    assert.equal(shouldBypassAiCreditLimit({ safety: { riskLevel } }), true);
   }
+  // ② 해 준 것 없이 거절만 한 turn.
+  for (const detectedIntent of [
+    "parent_forbidden_topic", "parent_allowed_topic_restriction", "external_contact_rejected",
+    "parent_tool_disabled", "schedule_delete_parent_only", "notification_settings_parent_only",
+  ]) {
+    assert.equal(shouldChargeForAiTurn({ detectedIntent }), false, `${detectedIntent} 이 차감된다`);
+  }
+  // 도구가 실패해 아이가 얻은 게 없는 turn.
+  assert.equal(
+    shouldChargeForAiTurn({ detectedIntent: "schedule_create", toolResult: { ok: false, toolName: "createSchedule" } }),
+    false,
+  );
 });

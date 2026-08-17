@@ -4,35 +4,38 @@ export function shouldBypassAiCreditLimit({ safety = null } = {}) {
 }
 
 /**
- * LLM 을 거치지 않고 서버가 결정적으로 답하는 도구 — 대화 횟수를 깎지 않는다.
+ * 크레딧 차감 기준(2026-08-17 TK 결정): **아이가 보낸 말 1회 = 1크레딧**.
  *
- * 라우트의 `isChildSettingsToolResult`·`isScheduleLookupToolResult` 분기와 같은 목록이어야 한다.
- * 일정 조회는 원가가 0인데도 크레딧을 깎고 있었다(2026-08-17 실측: 응답은 서버 문구인데
- * `creditCharged:true`). "오늘 일정 뭐야?" 한 마디에 하루 5번뿐인 무료 대화를 쓰게 하지 않는다.
+ * 이전에는 "LLM 을 실제로 호출했는가"로 갈랐다. 그러면 같은 한 마디인데 어떤 날은 깎이고
+ * 어떤 날은 안 깎여 아이도 부모도 남은 횟수를 예측할 수 없었고, 서버 내부 구현(결정적 응답
+ * 분기)이 바뀔 때마다 과금이 조용히 따라 움직였다. 이제 내부 LLM 사용 여부와 무관하게
+ * 한 번 말을 걸면 한 번 깎는다 — 화면의 "오늘 N번 더"가 곧 실제로 말 걸 수 있는 횟수다.
+ *
+ * 예외는 두 가지뿐이고, 둘 다 과금 취향이 아니라 원칙이다.
+ *  ① 안전 위험(medium/high) — 힘든 아이가 도움을 청한 turn 에 횟수를 물리지 않는다.
+ *     `shouldBypassAiCreditLimit` 과 짝이며, 한도가 0이어도 대화가 열린다.
+ *  ② 아무것도 해 주지 못하고 거절만 한 turn — 부모 전용/금지 주제/도구 비활성.
+ *     해 준 것이 없는데 횟수를 가져가면 아이가 "말 걸면 손해"라고 배운다.
+ *
+ * 실패한 도구(ok === false)도 ②와 같은 이유로 깎지 않는다.
  */
-const FREE_DETERMINISTIC_TOOLS = new Set([
-    "updateNotificationSettings",
-    "updateAiFriendName",
-    "changeAppTheme",
-    "getTodaySchedule",
-    "getScheduleByDate",
+const REFUSAL_ONLY_INTENTS = new Set([
+    "parent_forbidden_topic",
+    "parent_allowed_topic_restriction",
+    "external_contact_rejected",
+    "parent_tool_disabled",
+    "schedule_delete_parent_only",
+    "notification_settings_parent_only",
 ]);
 
 export function shouldChargeForAiTurn({ detectedIntent = "", toolResult = null, safety = null } = {}) {
-    if (
-        detectedIntent === "parent_forbidden_topic"
-        || detectedIntent === "parent_allowed_topic_restriction"
-        || detectedIntent === "external_contact_rejected"
-        || detectedIntent === "parent_tool_disabled"
-        // 못 해 주겠다고 안내만 한 turn 은 아이의 대화 횟수를 쓰지 않는다.
-        || detectedIntent === "schedule_delete_parent_only"
-        || detectedIntent === "notification_settings_parent_only"
-    ) return false;
+    // ② 거절만 한 turn
+    if (REFUSAL_ONLY_INTENTS.has(String(detectedIntent || ""))) return false;
+    // ① 안전 위험 turn
     const riskLevel = String(safety?.riskLevel || "none");
     if (riskLevel === "medium" || riskLevel === "high") return false;
+    // 도구가 실패해 아이가 얻은 게 없는 turn
     if (toolResult && toolResult.ok === false) return false;
-    if (toolResult && toolResult.ok === true && FREE_DETERMINISTIC_TOOLS.has(String(toolResult.toolName || ""))) {
-        return false;
-    }
+    // 그 외는 LLM 호출 여부와 무관하게 1회 차감한다.
     return true;
 }

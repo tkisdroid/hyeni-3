@@ -2340,6 +2340,69 @@
     "variables": {},
     "description": "아이 역할 또는 가족 연결 문제로 AI 대화 불가 안내"
   },
+  "child.aiChat.voice.empty": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "아무 말도 인식되지 않았을 때의 토스트"
+  },
+  "child.aiChat.voice.failed": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "마이크 캡처가 실패했을 때의 토스트"
+  },
+  "child.aiChat.voice.listening": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "마이크가 열려 있음을 알리는 상태 줄"
+  },
+  "child.aiChat.voice.replyOffAria": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "대답 읽어주기 끄기 토글 aria 라벨"
+  },
+  "child.aiChat.voice.replyOnAria": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "대답 읽어주기 켜기 토글 aria 라벨"
+  },
+  "child.aiChat.voice.startAria": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "AI 친구 대화 마이크 버튼 aria 라벨(대기)"
+  },
+  "child.aiChat.voice.stop": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "듣기 중단 버튼 라벨"
+  },
+  "child.aiChat.voice.stopAria": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "AI 친구 대화 마이크 버튼 aria 라벨(듣는 중)"
+  },
+  "child.aiChat.voice.unsupported": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "이 기기에서 음성 인식을 못 쓸 때의 토스트"
+  },
   "child.aiPersona.bear.greeting": {
     "namespace": "child",
     "audience": "child",

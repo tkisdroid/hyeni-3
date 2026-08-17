@@ -2480,6 +2480,12 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/child/StickerBook.css", ".sb-slot__count"],
   ["src/screens/child/ChildSos.css", ".cs-checks__dot"],
   ["src/screens/child/AiFriendChat.css", ".afc-typing span"],
+  // 음성 대화 컨트롤·상태 표시 — 카드 표면이 아니라 조작·상태 요소다.
+  ["src/screens/child/AiFriendChat.css", ".afc-voicetog"],
+  ["src/screens/child/AiFriendChat.css", ".afc-mic"],
+  ["src/screens/child/AiFriendChat.css", ".afc-listening"],
+  ["src/screens/child/AiFriendChat.css", ".afc-listening__wave span"],
+  ["src/screens/child/AiFriendChat.css", ".afc-listening__stop"],
   ["src/screens/teacher/TeacherHome.css", ".th-hero__attend"],
   ["src/screens/onboarding/Onboarding.css", ".ob-progress__track"],
   ["src/screens/onboarding/Onboarding.css", ".ob-role-badge"],

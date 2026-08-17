@@ -171,21 +171,24 @@ test("도구 결과 안내문은 실행한 도구에 맞게 나온다", () => {
   );
 });
 
-test("못 해 준 turn 과 설정 변경 turn 은 하루 대화 횟수를 쓰지 않는다", () => {
+test("못 해 준 turn 만 하루 대화 횟수를 쓰지 않는다", () => {
+  // 2026-08-17 TK 결정: 아이가 말을 건 turn 은 LLM 사용 여부와 무관하게 1회 차감한다.
+  // 해 준 것이 없는 거절만 예외로 남는다.
   assert.equal(shouldChargeForAiTurn({ detectedIntent: "schedule_delete_parent_only" }), false);
   assert.equal(shouldChargeForAiTurn({ detectedIntent: "notification_settings_parent_only" }), false);
+  // 설정 변경은 실제로 해 준 일이므로 이제 1회로 센다(과금 예측 가능성 우선).
   assert.equal(
     shouldChargeForAiTurn({
       detectedIntent: "notification_settings",
       toolResult: { ok: true, toolName: "updateNotificationSettings" },
     }),
-    false,
+    true,
   );
   assert.equal(
     shouldChargeForAiTurn({ detectedIntent: "ai_friend_name", toolResult: { ok: true, toolName: "updateAiFriendName" } }),
-    false,
+    true,
   );
-  // 일반 대화와 일정 등록은 그대로 차감한다(정책 변경 아님).
+  // 일반 대화와 일정 등록도 그대로 차감한다.
   assert.equal(shouldChargeForAiTurn({ detectedIntent: "general_chat" }), true);
   assert.equal(
     shouldChargeForAiTurn({ detectedIntent: "schedule_create", toolResult: { ok: true, toolName: "createSchedule" } }),

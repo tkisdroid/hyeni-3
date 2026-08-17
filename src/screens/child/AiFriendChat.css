@@ -461,3 +461,117 @@
   background: var(--bg-chip-idle);
   color: var(--fg-tertiary);
 }
+
+/* ── 음성 대화 ────────────────────────────────────────────────────────────
+   아이는 타자보다 말이 빠르다. 마이크로 말을 걸고 답을 귀로 듣게 한다. */
+
+/* 헤더의 읽어주기 켜기/끄기. 설정 버튼과 같은 원형 규격으로 맞춘다. */
+.afc-voicetog {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--hy-accent-text) 24%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.88;
+}
+.afc-voicetog[aria-pressed="true"] {
+  background: var(--hy-accent-soft);
+}
+
+/* 컴포저의 마이크. 입력창·전송과 같은 52px 높이라 한 줄로 읽힌다. */
+.afc-mic {
+  position: relative; /* 듣는 중 펄스 링(::after)의 기준 — 없으면 화면 엉뚱한 곳에 그려진다. */
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-20);
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  --press: 0.9;
+}
+.afc-mic:disabled {
+  background: var(--bg-chip-idle);
+  color: var(--fg-tertiary);
+}
+.afc-mic--on {
+  background: var(--cta-grad-accent);
+  color: var(--bg-card);
+}
+/* 듣는 중임을 링으로 알린다 — 정적 표시자 금지 계약(진행 중 = 움직임). */
+.afc-mic--on::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-20);
+  border: 2px solid var(--hy-accent);
+  animation: afc-mic-pulse 1.4s ease-out infinite;
+}
+@keyframes afc-mic-pulse {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+
+/* 듣는 중 안내 줄 — 지금 마이크가 열려 있다는 사실을 글로도 알린다. */
+.afc-listening {
+  margin: 0 12px 4px;
+  padding: 8px 12px;
+  border-radius: var(--radius-16);
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+}
+.afc-listening__wave {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 16px;
+}
+.afc-listening__wave span {
+  width: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--hy-accent-text);
+  animation: afc-wave 0.9s ease-in-out infinite;
+}
+.afc-listening__wave span:nth-child(1) { height: 6px; animation-delay: 0s; }
+.afc-listening__wave span:nth-child(2) { height: 14px; animation-delay: 0.15s; }
+.afc-listening__wave span:nth-child(3) { height: 10px; animation-delay: 0.3s; }
+.afc-listening__wave span:nth-child(4) { height: 16px; animation-delay: 0.45s; }
+@keyframes afc-wave {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+}
+.afc-listening__stop {
+  margin-left: auto;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-card);
+  color: var(--hy-accent-text);
+
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
+  --press: 0.94;
+}
+
+/* 움직임을 줄이는 사용자에게는 파형·펄스를 멈춘다(내용은 그대로 읽힌다). */
+@media (prefers-reduced-motion: reduce) {
+  .afc-mic--on::after,
+  .afc-listening__wave span {
+    animation: none;
+  }
+}
