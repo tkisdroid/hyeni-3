@@ -3,11 +3,19 @@ export function shouldBypassAiCreditLimit({ safety = null } = {}) {
     return riskLevel === "medium" || riskLevel === "high";
 }
 
-/** 아이가 자기 설정을 바꾸는 도구 — LLM 을 쓰지 않으므로 대화 횟수를 깎지 않는다. */
-const FREE_CHILD_SETTINGS_TOOLS = new Set([
+/**
+ * LLM 을 거치지 않고 서버가 결정적으로 답하는 도구 — 대화 횟수를 깎지 않는다.
+ *
+ * 라우트의 `isChildSettingsToolResult`·`isScheduleLookupToolResult` 분기와 같은 목록이어야 한다.
+ * 일정 조회는 원가가 0인데도 크레딧을 깎고 있었다(2026-08-17 실측: 응답은 서버 문구인데
+ * `creditCharged:true`). "오늘 일정 뭐야?" 한 마디에 하루 5번뿐인 무료 대화를 쓰게 하지 않는다.
+ */
+const FREE_DETERMINISTIC_TOOLS = new Set([
     "updateNotificationSettings",
     "updateAiFriendName",
     "changeAppTheme",
+    "getTodaySchedule",
+    "getScheduleByDate",
 ]);
 
 export function shouldChargeForAiTurn({ detectedIntent = "", toolResult = null, safety = null } = {}) {
@@ -23,7 +31,7 @@ export function shouldChargeForAiTurn({ detectedIntent = "", toolResult = null, 
     const riskLevel = String(safety?.riskLevel || "none");
     if (riskLevel === "medium" || riskLevel === "high") return false;
     if (toolResult && toolResult.ok === false) return false;
-    if (toolResult && toolResult.ok === true && FREE_CHILD_SETTINGS_TOOLS.has(String(toolResult.toolName || ""))) {
+    if (toolResult && toolResult.ok === true && FREE_DETERMINISTIC_TOOLS.has(String(toolResult.toolName || ""))) {
         return false;
     }
     return true;

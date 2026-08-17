@@ -137,3 +137,36 @@ test("아이가 쓸 수 있는 알림 유형에 포함되고 본문은 서버가
   assert.match(gate, /status\?\.canChat !== false/);
   assert.match(gate, /ai_credit_available/);
 });
+
+test("LLM 을 안 부르는 결정적 응답은 크레딧을 깎지 않는다", async () => {
+  const { shouldChargeForAiTurn } = await import("../shared/aiUsagePolicy.js");
+  // 라우트가 서버 문구로 바로 답하는 도구는 원가가 0이다.
+  for (const toolName of [
+    "updateNotificationSettings", "updateAiFriendName", "changeAppTheme",
+    "getTodaySchedule", "getScheduleByDate",
+  ]) {
+    assert.equal(
+      shouldChargeForAiTurn({ detectedIntent: "schedule_lookup", toolResult: { ok: true, toolName } }),
+      false,
+      `${toolName} 이 크레딧을 깎는다`,
+    );
+  }
+  // LLM 을 실제로 거치는 일반 대화·생성 도구는 그대로 깎는다.
+  assert.equal(shouldChargeForAiTurn({ detectedIntent: "general_chat", toolResult: null }), true);
+  assert.equal(
+    shouldChargeForAiTurn({ detectedIntent: "schedule_create", toolResult: { ok: true, toolName: "createSchedule" } }),
+    true,
+  );
+});
+
+test("결정적 응답 목록은 라우트 분기와 어긋나지 않는다", async () => {
+  const [policy, route] = await Promise.all([
+    readFile(resolve(workerDir, "shared/aiUsagePolicy.js"), "utf8"),
+    readFile(resolve(workerDir, "routes/ai-child-chat.ts"), "utf8"),
+  ]);
+  // 라우트가 LLM 없이 답하는 일정 조회 도구가 무료 목록에도 있어야 한다.
+  for (const toolName of ["getTodaySchedule", "getScheduleByDate"]) {
+    assert.match(route, new RegExp(`toolName === "${toolName}"`));
+    assert.match(policy, new RegExp(`"${toolName}"`));
+  }
+});
