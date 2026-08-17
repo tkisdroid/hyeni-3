@@ -7,6 +7,7 @@ import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "@/queries/useFamily";
 import { useAiFriendPublicSettings, useSetAiFriendName } from "@/queries/useAi";
 import { resolveAiFriendDisplayName } from "@/transform/aiFriendName";
+import { aiBuddyFaceAsset } from "@/transform/aiBuddyEmotion";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./AiFriendSetup.css";
@@ -214,17 +215,18 @@ export function AiFriendSetup() {
             아직 저장한 AI 친구 이름이 없어. 마음에 드는 친구부터 골라 봐.
           </div>
         )}
-        {/* 선택한 친구 미리보기 */}
+        {/* 내 AI 친구 얼굴 — 플로팅 버튼·대화 화면과 같은 얼굴 하나를 쓴다.
+            동물 그림을 얼굴로 쓰면 대화에 들어갔을 때 친구가 둘처럼 보인다. */}
         <div className="afs-preview">
           <div className="afs-preview__art">
-            <img src={asset(`animal/${persona.animal}.webp`)} alt="" />
+            <img src={asset(aiBuddyFaceAsset("happy"))} alt="" />
           </div>
           <div className="afs-preview__name">{effectiveName}</div>
-          <div className="afs-preview__tone">{persona.tone} {persona.species}</div>
+          <div className="afs-preview__tone">{persona.tone} 말투</div>
         </div>
 
-        {/* 캐릭터 고르기 */}
-        <div className="afs-label">친구 고르기</div>
+        {/* 동물 카드는 얼굴이 아니라 성격을 고르는 카드다. */}
+        <div className="afs-label">성격 고르기</div>
         <div className="afs-grid">
           {AI_FRIEND_PERSONAS.map((p) => (
             <button
@@ -250,14 +252,14 @@ export function AiFriendSetup() {
           onChange={(e) => setCustomName(e.target.value)}
         />
 
-        {/* 성격 · 말투(친구를 고르면 정해져) */}
-        <div className="afs-label">성격 · 말투</div>
+        {/* 고른 성격이 어떤 말투인지 확인만 시켜 준다(위 "성격 고르기"와 중복 라벨 금지). */}
+        <div className="afs-label">이 친구 말투</div>
         <div className="afs-traits">
           <span className="afs-chip afs-chip--on">
             {persona.tone}
             <Check size={16} strokeWidth={2.4} aria-hidden="true" />
           </span>
-          <span className="afs-trait-hint">친구를 고르면 성격이 정해져</span>
+          <span className="afs-trait-hint">성격을 고르면 말투가 정해져</span>
         </div>
 
         <button

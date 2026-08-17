@@ -13,13 +13,21 @@ export function openaiChatUrl(env: { OPENAI_BASE_URL?: string }): string {
   return `${base}/chat/completions`;
 }
 
+/** 호출부가 고를 수 있는 추론 강도. 기본은 비용·지연이 가장 낮은 none. */
+export type OpenAiLunaReasoningEffort = typeof OPENAI_LUNA_REASONING_EFFORT | "low";
+
 /**
  * 기존 Chat Completions 응답 계약을 유지하면서 Luna의 비용·지연을 예측 가능하게 고정한다.
- * max_completion_tokens는 보이는 출력과 reasoning token을 모두 포함하므로 reasoning은 none으로 둔다.
+ * max_completion_tokens는 보이는 출력과 reasoning token을 모두 포함하므로,
+ * reasoning을 켜는 호출부는 답변이 잘리지 않도록 예산을 함께 넉넉히 잡아야 한다.
+ * (예산이 모자라면 빈 응답이 오고, 그 turn은 실패로 강등돼 크레딧도 차감되지 않는다.)
  */
-export function openaiLunaChatConfig(maxCompletionTokens: number): {
+export function openaiLunaChatConfig(
+  maxCompletionTokens: number,
+  options: { reasoningEffort?: OpenAiLunaReasoningEffort } = {},
+): {
   model: typeof OPENAI_LUNA_MODEL;
-  reasoning_effort: typeof OPENAI_LUNA_REASONING_EFFORT;
+  reasoning_effort: OpenAiLunaReasoningEffort;
   max_completion_tokens: number;
 } {
   if (
@@ -29,9 +37,14 @@ export function openaiLunaChatConfig(maxCompletionTokens: number): {
   ) {
     throw new RangeError("invalid_openai_luna_max_completion_tokens");
   }
+  const reasoningEffort = options.reasoningEffort ?? OPENAI_LUNA_REASONING_EFFORT;
+  // reasoning을 켜면 추론 토큰이 예산을 먹으므로 보이는 답이 남을 만큼은 확보돼야 한다.
+  if (reasoningEffort !== OPENAI_LUNA_REASONING_EFFORT && maxCompletionTokens < 600) {
+    throw new RangeError("insufficient_openai_luna_reasoning_budget");
+  }
   return {
     model: OPENAI_LUNA_MODEL,
-    reasoning_effort: OPENAI_LUNA_REASONING_EFFORT,
+    reasoning_effort: reasoningEffort,
     max_completion_tokens: maxCompletionTokens,
   };
 }

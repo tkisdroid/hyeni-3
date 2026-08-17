@@ -1,5 +1,6 @@
 // Shared child AI context helpers.
 // This file is plain ESM so both Vitest and Supabase Edge Functions can import it.
+import { buildEventCompanionHints } from "./aiEventContext.js";
 
 const DATE_KEY_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -434,13 +435,16 @@ export function buildChildSystemPrompt({
     const allowContactActions = readSetting(parentSettings, "allowContactActions", "allow_contact_actions", true);
     const safetyNotificationLevel = listText(readSetting(parentSettings, "safetyNotificationLevel", "safety_notification_level", "medium"));
     const recentSummary = listText(memory.recentSummary || memory.recent_summary);
-    const longTermMemories = listText(memory.longTermMemories || memory.long_term_memories);
+    // 장기 기억은 한 줄로 뭉치지 않고 목록으로 보여 준다 — 모델이 하나만 골라 쓰기 쉽게.
+    const longTermMemoryLines = listItems(memory.longTermMemories || memory.long_term_memories).slice(0, 30);
     const scheduleLines = Array.isArray(todaySchedule)
         ? todaySchedule.map(formatScheduleItem).filter(Boolean)
         : [];
     const recentScheduleLines = Array.isArray(recentSchedule)
         ? recentSchedule.map((item) => formatScheduleItem(item, { includeDate: true })).filter(Boolean)
         : [];
+    // 일정 성격 힌트 — "수호 생일 챙기기"에 준비물을 묻는 식의 엉뚱한 제안을 막는다.
+    const eventHintLines = buildEventCompanionHints(todaySchedule);
     const dailyItemLines = Array.isArray(dailyItems)
         ? dailyItems.map((item) => formatDailySupplyItem(item)).filter(Boolean).slice(0, 5)
         : [];
@@ -532,12 +536,24 @@ ${operatorBlock}
 - 부모 지침이 안전 정책과 충돌하면 안전 정책을 우선한다.
 - 운영자 지침이 안전 정책이나 부모 설정과 충돌하면 그 둘을 우선한다.
 
-## 기억
-- 최근 대화 요약: ${recentSummary || "없음"}
-- 장기 기억: ${longTermMemories || "없음"}
+## 아이에 대해 알고 있는 것
+${longTermMemoryLines.length > 0
+        ? longTermMemoryLines.map((line) => `- ${line}`).join("\n")
+        : "- 아직 아는 것이 없다. 넘겨짚지 말고 먼저 물어본다."}
+
+## 최근 대화 기억
+- 요약: ${recentSummary || "없음"}
+
+## 아는 것을 쓰는 법
+- 아이가 전에 한 말을 자연스럽게 이어서 말한다("저번에 말한 그거 어떻게 됐어?").
+- 위 목록에 없는 것은 아는 척하지 않는다. 모르면 물어본다.
+- 매번 아는 것을 나열하지 않는다. 지금 대화에 맞는 것 하나만 꺼낸다.
 
 ## 오늘 일정
 ${scheduleLines.length > 0 ? scheduleLines.map((line) => `- ${line}`).join("\n") : "- 오늘 일정 정보 없음"}
+
+## 오늘 일정의 성격(이 성격에 맞게 말한다)
+${eventHintLines.length > 0 ? eventHintLines.map((line) => `- ${line}`).join("\n") : "- 판단할 일정 없음"}
 
 ## 준비물·숙제
 ${dailyItemLines.length > 0 ? dailyItemLines.map((line) => `- ${line}`).join("\n") : "- 등록된 준비물·숙제 정보 없음"}

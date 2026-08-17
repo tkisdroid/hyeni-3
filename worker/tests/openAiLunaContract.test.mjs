@@ -75,7 +75,19 @@ test("네 활성 AI 호출은 Luna 설정과 최신 token 상한 필드를 사�
   assert.match(aiRoute, /openaiLunaChatConfig\(isPaste \? 1000 : 300\)/);
   assert.match(aiRoute, /openaiLunaChatConfig\(360\)/);
   assert.match(aiRoute, /openaiLunaChatConfig\(500\)/);
-  assert.match(childChatRoute, /openaiLunaChatConfig\(220\)/);
+  // 아이 대화만 추론을 조금 켠다(2026-08-17). 예산 900은 추론 토큰이 답변을 밀어내
+  // 빈 응답이 되는 것을 막기 위한 상한이며, 실제 사용분만 과금된다.
+  assert.match(childChatRoute, /openaiLunaChatConfig\(900, \{ reasoningEffort: "low" \}\)/);
+  assert.deepEqual(openaiLunaChatConfig(900, { reasoningEffort: "low" }), {
+    model: "gpt-5.6-luna",
+    reasoning_effort: "low",
+    max_completion_tokens: 900,
+  });
+  // 추론을 켜면서 예산을 줄이면 답이 잘리므로 아예 막는다.
+  assert.throws(
+    () => openaiLunaChatConfig(220, { reasoningEffort: "low" }),
+    /insufficient_openai_luna_reasoning_budget/,
+  );
   assert.equal((activeSources.match(/safety_identifier:/g) || []).length, 4);
 });
 

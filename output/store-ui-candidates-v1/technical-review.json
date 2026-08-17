@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
   "artifactKind": "hyeni-store-ui-technical-review",
-  "reviewedAt": "2026-08-17T00:56:26.895Z",
+  "reviewedAt": "2026-08-17T01:26:04.664Z",
   "sourceManifest": {
     "path": "manifest.json",
-    "sha256": "2f45d2731e1bcbba48c6ba652999b7715ed9cc63bfeec8f375362c8c5a456840"
+    "sha256": "7c768eda77cfef649845f77d63c1639b0c1b1abfce56342a41c3a6ece9b73fa5"
   },
   "sourceDist": {
     "fileCount": 428,
-    "sha256": "3bc16b6543946f618b30e2268550fcd9adab1ee5103d315171576250f7a4cbd5"
+    "sha256": "c5c9bdf3fb44903a447fea5ae840c87fbc15f523fa3807229e9d6a259001bf75"
   },
   "verdict": "TECHNICAL_REVIEW_PASSED",
   "playUploadApproved": false,
@@ -24,23 +24,23 @@
   "artifacts": [
     {
       "file": "01-parent-home-ui.png",
-      "bytes": 577538,
-      "sha256": "22a340af539923d61d89a3ef2a5dcd35ead4094aff6c037685a59dde674f9260"
+      "bytes": 575399,
+      "sha256": "c92c5d5b57e040d959404b1505bfda463d346f266db78a6cc280ac32489e0cb2"
     },
     {
       "file": "02-family-calendar-ui.png",
-      "bytes": 188962,
-      "sha256": "410009ccf0a5d5d0c4e6f844882c5927fec97dab85b83e78270c037f3b7d408b"
+      "bytes": 187294,
+      "sha256": "04da9ff95b50d2c8d1fac00fa6f7d5a3cef203042cbfaf65d319a3a2fd2de63c"
     },
     {
       "file": "03-family-memo-ui.png",
-      "bytes": 228324,
-      "sha256": "f5b335a4112cb33a0a2c929e97ff47469d99c64b9d0074438e6026462fc3b678"
+      "bytes": 227950,
+      "sha256": "890700dafba66f7b2d2c048045a8c222301a840918bb8596587b3548d0cbb116"
     },
     {
       "file": "04-daily-safety-report-ui.png",
-      "bytes": 399642,
-      "sha256": "90f4336fbe5d3376c7a7160cd7a7831cb057396a926074e4d90da34d9a92a954"
+      "bytes": 398883,
+      "sha256": "145bd3170261c8901e32c841dfd7f348f53ce51fb5abbe4ae7ea0a2a792f4f70"
     },
     {
       "file": "05-weekly-family-report-ui.png",
@@ -49,8 +49,8 @@
     },
     {
       "file": "06-child-home-ui.png",
-      "bytes": 661910,
-      "sha256": "f4a81c04c05420a0d543cbbc523b33731062c933f8dc80523678e47ba227bf55"
+      "bytes": 672962,
+      "sha256": "7fa90c38e374f8c2d36ce4b35c8646a37aa673f003c97d907e4ad20300791b48"
     }
   ]
 }

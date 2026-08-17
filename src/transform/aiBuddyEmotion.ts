@@ -61,13 +61,13 @@ export function aiBuddyEmotionLabel(emotion: AiBuddyEmotion): string {
  * 설명문(EMOTION_LABEL)은 스크린리더 전용으로 남긴다.
  */
 const EMOTION_STATUS: Record<AiBuddyEmotion, string> = {
-  idle: "이야기할 준비됐어!",
-  happy: "너랑 얘기하니까 좋아",
+  idle: "얘기하자!",
+  happy: "좋아 좋아!",
   excited: "우와, 신난다!",
-  thinking: "생각하는 중이야…",
-  caring: "네 얘기 듣고 있어",
-  sad: "미안, 그건 잘 안 됐어",
-  sleepy: "조금 졸려…",
+  thinking: "생각 중…",
+  caring: "듣고 있어",
+  sad: "미안해…",
+  sleepy: "졸려…",
   cheer: "완전 잘했어!",
 };
 

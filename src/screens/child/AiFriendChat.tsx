@@ -30,6 +30,7 @@ import { useAccent } from "@/app/accent";
 import { useAiBuddyMood } from "@/app/aiBuddyMood";
 import { aiBuddyEmotionLabel, aiBuddyFaceAsset, aiBuddyStatusLine } from "@/transform/aiBuddyEmotion";
 import { isAccentKey } from "@/transform/childAccent";
+import { buildEventCompanionGreeting, eventCompanionSuggestions } from "@/transform/eventCompanionPrompt";
 import { placePhoneCall } from "@/lib/native/phone";
 import type { AiToolResult, ConfirmedAiTool } from "@/lib/api/endpoints/ai";
 import { useSafeBack } from "@/app/useSafeBack";
@@ -149,7 +150,9 @@ export function AiFriendChat() {
     childName,
     fallbackName: persona.name,
   });
-  const animalSrc = asset(`animal/${persona.animal}.webp`);
+  // 말풍선 옆 얼굴도 헤더·플로팅 버튼과 같은 AI 친구 얼굴이다.
+  // (동물 프로필을 쓰면 "토끼와 대화하는 느낌"이 되어 친구가 둘처럼 보였다.)
+  const friendFaceSrc = asset(aiBuddyFaceAsset(emotion));
 
   // 오늘 일정·준비물(내 것) — AI 가 먼저 물어보는 선제 인사와 제안칩의 컨텍스트(로컬 생성 · 크레딧 0).
   const { data: events } = useEvents();
@@ -169,24 +172,29 @@ export function AiFriendChat() {
     return mine.find((s) => !s.done) ?? null;
   }, [suppliesQuery.data, myMemberId]);
 
-  // 선제 인사 — 준비물/일정이 있으면 AI 가 먼저 물어본다(서버 프롬프트도 같은 컨텍스트 인지).
+  // 선제 인사 — 일정의 성격을 읽어 그 상황에 맞게 묻는다.
+  // (생일에 "준비물 챙겼어?"처럼 엉뚱하게 묻지 않는다.)
   const greeting: ChatBubble = useMemo(() => {
+    const opening = persona.greeting.split("!")[0];
     let text = persona.greeting;
     if (pendingSupply) {
-      text = `${persona.greeting.split("!")[0]}! 오늘 「${pendingSupply.label}」 아직 안 챙겼지? 같이 확인해 볼까? 😊`;
+      text = `${opening}! 오늘 「${pendingSupply.label}」 아직 안 챙겼지? 같이 확인해 볼까? 😊`;
     } else if (nextEvent) {
-      text = `${persona.greeting.split("!")[0]}! 오늘 ${nextEvent.time ? `${nextEvent.time} ` : ""}${nextEvent.title} 있네! 준비는 다 됐어?`;
+      text = buildEventCompanionGreeting(
+        { title: nextEvent.title, time: nextEvent.time },
+        opening,
+      );
     }
     return { id: "greeting", role: "ai", text };
   }, [persona.greeting, pendingSupply, nextEvent]);
 
-  // 제안칩 — 오늘 컨텍스트가 있으면 관련 질문을 앞세운다.
+  // 제안칩 — 오늘 일정의 성격에 맞는 말을 앞세운다.
   const suggestions = useMemo(() => {
     const out: string[] = [];
-    if (nextEvent) out.push("오늘 일정 알려줘");
+    if (nextEvent) out.push(...eventCompanionSuggestions({ title: nextEvent.title }));
     if (pendingSupply) out.push("준비물 뭐 챙겨야 해?");
     out.push(...BASE_SUGGESTIONS);
-    return out.slice(0, 4);
+    return [...new Set(out)].slice(0, 4);
   }, [nextEvent, pendingSupply]);
 
   const messagesQuery = useAiMessages(userId);
@@ -438,7 +446,7 @@ export function AiFriendChat() {
               <div key={m.id} className={`afc-row afc-row--${m.role}`}>
                 {m.role === "ai" && (
                   <div className="afc-mini">
-                    <img src={animalSrc} alt="" />
+                    <img src={friendFaceSrc} alt="" />
                   </div>
                 )}
                 <div className="afc-bubble-stack">
@@ -464,7 +472,7 @@ export function AiFriendChat() {
         {sendChat.isPending && (
           <div className="afc-row afc-row--ai">
             <div className="afc-mini">
-              <img src={animalSrc} alt="" />
+              <img src={friendFaceSrc} alt="" />
             </div>
             <div className="afc-bubble afc-bubble--ai afc-typing" aria-label={`${friendName}${hasJongseong(friendName) ? "이" : "가"} 생각하는 중`}>
               <span />

@@ -62,13 +62,18 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* 지금 기분을 아이 말투 한 줄로 — "신난 표정" 같은 설명 대신 친구가 하는 말. */
+/* 지금 기분을 아이 말투 한 줄로 — "신난 표정" 같은 설명 대신 친구가 하는 말.
+   헤더는 한 줄이라 "준비됐/어"처럼 글자가 끊기면 안 된다. 한 줄로 고정하고 넘치면 말줄임. */
 .afc-head-status {
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
 
   color: var(--hy-accent-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: keep-all;
 }
 .afc-credits {
   flex: none;

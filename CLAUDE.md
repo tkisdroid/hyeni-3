@@ -286,7 +286,24 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   403 이다. `deleteSchedule` 실행 경로를 되살리지 말 것. 알림 쉬는 시간·위치/장소/친구놀이 알림은 부모 소관이라
   `notification_settings_parent_only` 로 정직하게 거절한다(못 하는 걸 한 척 금지).
   확인이 필요한 도구(부모 메시지·일정 변경·전화)는 클라가 **확인 카드**를 세우고 버튼에서만 `confirmedTool` 을 보낸다.
-  회귀=`tests/aiBuddyFab.test.ts`·Worker `tests/aiChildSettingsAgent.test.mjs`.
+  **④한 얼굴 원칙(2026-08-17 TK 제보)** — 대화 화면 말풍선 옆·타이핑·설정 미리보기까지 **모두 같은 이모티콘 얼굴**을 쓴다.
+  동물(`animal/*.webp`)을 프로필로 쓰면 "토끼와 대화하는 느낌"이라 친구가 둘로 보인다. 동물 카드는 얼굴이 아니라
+  **성격 고르기**다(설정 화면 라벨도 그렇게 읽히게 두었다). 헤더 상태 문구는 `aiBuddyStatusLine`(짧은 반말) +
+  `white-space:nowrap`+말줄임 — 전에는 "이야기 할 준비됐/어"로 글자가 끊겼다.
+  **⑤일정 성격별 제안** — 어떤 일정이든 "준비는 다 됐어?"로 묻던 것을 고쳤다("수호 생일 챙기기"에 준비물 질문).
+  `src/transform/eventCompanionPrompt.ts`(클라 인사·제안칩·아이 홈 말풍선)와 `worker/shared/aiEventContext.js`
+  (LLM 프롬프트 힌트)가 **같은 키워드 표**를 쓰며 `tests/eventCompanionPrompt.test.ts` 가 두 표의 동기화를 강제한다.
+  한쪽만 고치면 홈에서는 "선물 정했어?", 대화에서는 "준비물 챙겼어?"라고 하는 앞뒤 안 맞는 친구가 된다.
+  **⑥아이를 알아 가는 AI(2026-08-17)** — 맥락 창 6→**14**턴, 요약 3→5건, 장기기억 20→**30건(확신도 우선)**.
+  `aiMemoryPolicy` 는 고정 목록 10개 대신 **문장 구조로 열린 어휘**를 뽑는다(관심·싫음·무서움·잘하는 것·꿈·음식).
+  ⚠️ 조사 처리 함정: 서술어에 따라 붙는 조사가 다르다(좋아해=을/를, 무서워=이/가). **`이` 는 절대 떼지 않는다**
+  — 고양이·떡볶이·어린이가 고양·떡볶·어린으로 망가진다. 같은 말을 다시 하면 confidence 가 +0.05(상한 0.95)로
+  올라가 "점점 잘 아는" 효과를 낸다. 민감·일시적 감정·대명사 필터는 그대로다.
+  프롬프트는 `## 아이에 대해 알고 있는 것` 목록 + "모르면 아는 척하지 말고 물어본다" 규칙을 함께 준다.
+  아이 대화만 `reasoningEffort:"low"` + `max_completion_tokens 900` 이다(`openaiLunaChatConfig` 2번째 인자).
+  ⚠️ 추론을 켜면 추론 토큰이 예산을 먹어 **빈 응답 → 실패 강등**이 되므로 600 미만 예산은 함수가 막는다.
+  회귀=`tests/aiBuddyFab.test.ts`·`tests/eventCompanionPrompt.test.ts`·Worker
+  `tests/aiChildSettingsAgent.test.mjs`·`tests/aiChildMemoryDepth.test.mjs`·`tests/openAiLunaContract.test.mjs`.
 - **알림 전달·원격청취 보안 계약(2026-07-14)**: 즉시 알림은 네트워크 발송 전에 수신자별
   `pending_notifications`를 만들고 실제 네이티브 표시/Web Push 표시 ACK 전에는 delivered로 완료하지 않는다.
   targetless 레거시 행은 일반 사용자가 조회·ACK하지 못한다. 일정·도착·위험·메모는 활성 가족 구성원과 정확한

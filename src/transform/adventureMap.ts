@@ -7,6 +7,7 @@
  *
  * 일정이 4개를 넘으면 다음 일정을 반드시 포함하도록 창을 잡는다(아이가 볼 이유가 있는 구간).
  */
+import { eventCompanionGoLine } from "./eventCompanionPrompt.ts";
 
 export interface AdventureEventInput {
   id: string;
@@ -99,10 +100,12 @@ export function pickAdventureWindow(
 function bubbleFor(next: AdventureEventInput | null, nowMinutes: number): string {
   if (!next) return "오늘 일정 다 끝났어! 푹 쉬어도 돼 🎈";
   const josa = hasJongseong(next.title) ? "이야" : "야";
-  if (next.startMinutes == null) return `다음은 ${next.title}${josa}! 나랑 같이 가자 🎒`;
+  // 일정 성격에 맞는 말 — 생일·병원처럼 "같이 가자 🎒"가 어울리지 않는 일정이 있다.
+  const go = eventCompanionGoLine(next.title);
+  if (next.startMinutes == null) return `다음은 ${next.title}${josa}! ${go}`;
   const left = next.startMinutes - nowMinutes;
   if (left <= 0) return `지금 ${next.title} 갈 시간이야! 🏃`;
-  if (left <= 120) return `${left}분 뒤 ${next.title}${josa}!\n나랑 같이 가자 🎒`;
+  if (left <= 120) return `${left}분 뒤 ${next.title}${josa}!\n${go}`;
   return `${compactTime(next.startMinutes)}에 ${next.title}${josa}!\n아직 시간 있어 😊`;
 }
 

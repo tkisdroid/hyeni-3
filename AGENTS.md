@@ -532,7 +532,15 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   서버 도구에 아이 본인 설정 3종(`updateNotificationSettings`·`updateAiFriendName`·`changeAppTheme`)을 더했고
   셋 다 LLM 없이 답해 하루 대화 횟수를 깎지 않는다. **일정 삭제는 보호자 전용**이라 planner 는
   `schedule_delete_parent_only` 로 닫고 route 는 확인 토큰이 와도 403 이다. 부모 소관 알림 설정도 정직하게 거절한다.
-  회귀=`tests/aiBuddyFab.test.ts`·Worker `tests/aiChildSettingsAgent.test.mjs`.
+  한 얼굴 원칙: 대화 말풍선 옆·타이핑·설정 미리보기까지 같은 이모티콘을 쓰고 동물은 얼굴이 아니라 성격 카드다.
+  헤더 상태 문구는 짧은 반말 + nowrap 말줄임(전엔 "이야기 할 준비됐/어"로 끊겼다).
+  일정 성격별 제안은 `src/transform/eventCompanionPrompt.ts` 와 `worker/shared/aiEventContext.js` 가 같은 키워드
+  표를 쓰며 테스트가 동기화를 강제한다(생일에 준비물을 묻지 않는다).
+  아이를 알아 가는 부분: 맥락 14턴·요약 5건·장기기억 30건(확신도 우선), 열린 어휘 기억 추출,
+  반복 시 confidence +0.05(상한 0.95), 아이 대화만 reasoningEffort low + 예산 900.
+  ⚠️ 조사 처리에서 `이` 는 떼지 않는다(고양이·떡볶이가 망가진다).
+  회귀=`tests/aiBuddyFab.test.ts`·`tests/eventCompanionPrompt.test.ts`·Worker
+  `tests/aiChildSettingsAgent.test.mjs`·`tests/aiChildMemoryDepth.test.mjs`.
 - 아이모드 리디자인(2026-07-10, 시안 `아이모드 리디자인.dc.html` 2a 확정): 홈이 "오늘 모험 지도"로 바뀌었다.
   ①지도 노드는 **오늘 일정에서 파생**(`transform/adventureMap.ts`) — 실제 지리 좌표가 아니라 하루의 흐름을 그린
   여정 그림이라 고정 슬롯 4개에 시간순 배치하고, 일정이 5개 이상이면 다음 일정을 포함하는 창을 고른다.

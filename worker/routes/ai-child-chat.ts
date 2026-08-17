@@ -811,9 +811,11 @@ chat.post("/child-chat", requireAuth, async (c) => {
   }
 
   // ── 최근 대화(컨텍스트 윈도) ──
+  // 6턴은 "아까 한 말"을 자주 잊어 아이가 같은 설명을 되풀이해야 했다.
+  // 14턴이면 한 번의 대화 주제가 통째로 들어가면서 프롬프트 비용은 완만하게만 늘어난다.
   const recentRes = await db
     .prepare(
-      "SELECT role, content FROM ai_chat_messages WHERE family_id=? AND child_user_id=? AND role != 'system' ORDER BY substr(created_at,1,19) DESC LIMIT 6",
+      "SELECT role, content FROM ai_chat_messages WHERE family_id=? AND child_user_id=? AND role != 'system' ORDER BY substr(created_at,1,19) DESC LIMIT 14",
     )
     .bind(familyId, userId)
     .all<{ role: string; content: string }>();
@@ -859,7 +861,7 @@ chat.post("/child-chat", requireAuth, async (c) => {
   if (memoryEnabled) {
     const summaries = await db
       .prepare(
-        "SELECT summary FROM ai_memory_summaries WHERE family_id=? AND child_user_id=? ORDER BY substr(updated_at,1,19) DESC LIMIT 3",
+        "SELECT summary FROM ai_memory_summaries WHERE family_id=? AND child_user_id=? ORDER BY substr(updated_at,1,19) DESC LIMIT 5",
       )
       .bind(familyId, userId)
       .all<{ summary: string }>();
@@ -868,7 +870,8 @@ chat.post("/child-chat", requireAuth, async (c) => {
     if (longTermMemoryEnabled) {
       const ltm = await db
         .prepare(
-          "SELECT type, key, value, confidence FROM ai_long_term_memories WHERE family_id=? AND child_user_id=? AND parent_visible=1 ORDER BY substr(updated_at,1,19) DESC LIMIT 20",
+          // 확신도가 높은(여러 번 확인된) 기억을 먼저 보여 준다 — 스쳐 지나간 말보다 아이를 더 잘 설명한다.
+          "SELECT type, key, value, confidence FROM ai_long_term_memories WHERE family_id=? AND child_user_id=? AND parent_visible=1 ORDER BY confidence DESC, substr(updated_at,1,19) DESC LIMIT 30",
         )
         .bind(familyId, userId)
         .all<{ type: string; key: string; value: string }>();
@@ -877,7 +880,10 @@ chat.post("/child-chat", requireAuth, async (c) => {
 
     memoryContext = {
       recentSummary: (summaries.results ?? []).map((row) => row.summary).filter(Boolean).join("\n"),
-      longTermMemories: longTermMemories.map((row) => `${row.type}:${row.key}=${row.value}`),
+      // `interest:레고=레고를 좋아함` 같은 기계 표기 대신 사람이 읽는 문장으로 넘긴다.
+      longTermMemories: longTermMemories
+        .map((row) => String(row.value || "").trim() || `${row.key}`)
+        .filter(Boolean),
     };
   }
 
@@ -1388,7 +1394,9 @@ chat.post("/child-chat", requireAuth, async (c) => {
             headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
             signal: AbortSignal.timeout(AI_CHILD_CHAT_TIMEOUT_MS),
             body: JSON.stringify({
-              ...openaiLunaChatConfig(220),
+              // 아이 대화만 추론을 조금 켠다 — 기억·일정·감정을 함께 읽고 답해야 하는 유일한 경로다.
+              // 예산 900은 상한일 뿐 실제 사용분만 과금되며, 답이 잘려 빈 응답이 되는 것을 막는다.
+              ...openaiLunaChatConfig(900, { reasoningEffort: "low" }),
               messages: [
                 { role: "system", content: systemPrompt },
                 ...contextWindow,
@@ -1580,13 +1588,20 @@ chat.post("/child-chat", requireAuth, async (c) => {
         const m = memoryPatch.memory;
         const now = pgNow();
         const existing = await db
-          .prepare("SELECT id FROM ai_long_term_memories WHERE family_id=? AND child_user_id=? AND type=? AND key=? LIMIT 1")
+          .prepare("SELECT id, confidence FROM ai_long_term_memories WHERE family_id=? AND child_user_id=? AND type=? AND key=? LIMIT 1")
           .bind(familyId, userId, m.type, m.key)
-          .first<{ id: string }>();
+          .first<{ id: string; confidence: number }>();
         if (existing?.id) {
+          // 같은 이야기를 다시 하면 확신이 올라간다 — 아이를 점점 더 잘 알게 되는 부분.
+          // 상한 0.95: 한 번도 "확정"으로 굳히지 않아 나중에 바뀐 취향도 밀려날 수 있다.
+          const priorConfidence = Number(existing.confidence);
+          const nextConfidence = Math.min(
+            0.95,
+            Math.max(Number(m.confidence ?? 0.7), Number.isFinite(priorConfidence) ? priorConfidence + 0.05 : 0),
+          );
           await db
             .prepare("UPDATE ai_long_term_memories SET value=?, confidence=?, parent_visible=?, source=?, updated_at=? WHERE id=?")
-            .bind(m.value, Number(m.confidence ?? 0.7), b(m.parent_visible), "conversation", now, existing.id)
+            .bind(m.value, nextConfidence, b(m.parent_visible), "conversation", now, existing.id)
             .run();
         } else {
           await db
