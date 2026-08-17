@@ -315,6 +315,7 @@ export const messageIds = [
   "child.aiChat.providerBusy",
   "child.aiChat.ready",
   "child.aiChat.remaining",
+  "child.aiChat.remainingUnlimited",
   "child.aiChat.report.abusive",
   "child.aiChat.report.description",
   "child.aiChat.report.inaccurate",

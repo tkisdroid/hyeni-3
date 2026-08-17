@@ -50,6 +50,7 @@
   "child.aiChat.providerBusy": "지금은 내가 대답을 못 해. 조금 뒤에 다시 말 걸어 줘! 💜",
   "child.aiChat.ready": "● 얘기하자!",
   "child.aiChat.remaining": "{count, number}번 남았어",
+  "child.aiChat.remainingUnlimited": "무제한",
   "child.aiChat.report.abusive": "나쁜 말",
   "child.aiChat.report.description": "불편하거나 이상한 답변은 앱 안에서 바로 신고할 수 있어.",
   "child.aiChat.report.inaccurate": "사실과 달라",

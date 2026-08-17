@@ -22,6 +22,7 @@ import { insertContentReport, normalizeContentReportInput } from "../lib/content
 import { resolveCanonicalFamilyMembership, resolveVerifiedFamilyMembership } from "../db/authz";
 import { resolveFamilyEntitlement } from "../shared/subscriptionEntitlement.js";
 import { resolveIncludedDailyLimit } from "../shared/aiCredits.js";
+import { isAiUnlimitedFamily } from "../lib/aiUnlimitedAccess";
 
 const aiData = new Hono<{ Bindings: Env; Variables: Vars }>();
 
@@ -440,6 +441,9 @@ aiData.get("/credits/public-status", requireAuth, async (c) => {
   const dailyIncludedRemaining = Math.max(0, dailyIncludedLimit - dailyIncludedUsed);
   const availableRemaining = Math.min(parentDailyRemaining, dailyIncludedRemaining + purchasedCredits);
 
+  // 운영자 본인 가족은 한도가 적용되지 않는다 — 화면이 남은 횟수 대신 무제한을 표시한다.
+  const unlimited = await isAiUnlimitedFamily(c.env, c.env.DB, familyId);
+
   return c.json({
     is_premium: isPremium,
     daily_included_limit: dailyIncludedLimit,
@@ -449,6 +453,7 @@ aiData.get("/credits/public-status", requireAuth, async (c) => {
     parent_daily_used: parentDailyUsed,
     parent_daily_limit: parentDailyLimit,
     available_remaining: availableRemaining,
+    unlimited,
   });
 });
 

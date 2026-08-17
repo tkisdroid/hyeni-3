@@ -50,6 +50,7 @@ const messages = {
   "child.aiChat.providerBusy": "I can't answer right now. Talk to me again in a little while! 💜",
   "child.aiChat.ready": "● Let's chat!",
   "child.aiChat.remaining": "{count, plural, one {# chat left} other {# chats left}}",
+  "child.aiChat.remainingUnlimited": "Unlimited",
   "child.aiChat.report.abusive": "Mean words",
   "child.aiChat.report.description": "You can report an uncomfortable or strange answer right here in the app.",
   "child.aiChat.report.inaccurate": "It isn't true",

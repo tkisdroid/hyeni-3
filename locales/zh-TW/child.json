@@ -50,6 +50,7 @@
   "child.aiChat.providerBusy": "我現在沒辦法回答呢。過一會兒再來找我吧！💜",
   "child.aiChat.ready": "● 我們聊天吧！",
   "child.aiChat.remaining": "還剩{count, number}次",
+  "child.aiChat.remainingUnlimited": "無限次",
   "child.aiChat.report.abusive": "不好的話",
   "child.aiChat.report.description": "讓你不舒服或覺得奇怪的回答，可以直接在 App 裡檢舉。",
   "child.aiChat.report.inaccurate": "和事實不一樣",

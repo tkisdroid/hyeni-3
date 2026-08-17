@@ -255,6 +255,9 @@ export function AiFriendChat() {
   // 공개 상태는 포함분·구매분·부모 상한을 합친 서버 정본이고, 전송 성공값도 같은 캐시에 반영된다.
   const [remaining, setRemaining] = useState<number | null>(null);
   const shownRemaining = remaining ?? aiCreditStatus.data?.availableRemaining ?? null;
+  // 한도가 없는 가족은 남은 횟수 대신 무제한을 보여준다(줄지 않는 숫자는 고장처럼 보인다).
+  const [unlimited, setUnlimited] = useState(false);
+  const shownUnlimited = unlimited || aiCreditStatus.data?.unlimited === true;
 
   useEffect(() => {
     setRemaining(aiCreditStatus.data?.availableRemaining ?? null);
@@ -372,6 +375,7 @@ export function AiFriendChat() {
           ) {
             setRemaining(res.remaining);
           }
+          if (res.unlimited === true) setUnlimited(true);
           // 말풍선은 순수 텍스트라 마크다운을 해석하지 않는다 — 별표가 그대로 보이지 않게 벗긴다.
           const reply = stripChatMarkdownEmphasis(String(res.reply ?? "").trim());
           setMessages((prev) => [
@@ -559,7 +563,12 @@ export function AiFriendChat() {
           <div className="afc-head-name">{friendName}</div>
           <div className="afc-head-status">{intl.formatMessage({ id: "child.aiChat.ready" })}</div>
         </div>
-        {shownRemaining != null && (
+        {shownUnlimited ? (
+          <span className="afc-credits">
+            <MessageCircle size={14} strokeWidth={2.2} aria-hidden="true" />
+            {intl.formatMessage({ id: "child.aiChat.remainingUnlimited" })}
+          </span>
+        ) : shownRemaining != null && (
           <span className="afc-credits">
             <MessageCircle size={14} strokeWidth={2.2} aria-hidden="true" />
             {intl.formatMessage({ id: "child.aiChat.remaining" }, { count: shownRemaining })}

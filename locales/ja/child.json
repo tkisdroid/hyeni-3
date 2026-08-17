@@ -50,6 +50,7 @@
   "child.aiChat.providerBusy": "今はお返事できないんだ。少ししたらまた話しかけてね！💜",
   "child.aiChat.ready": "● おはなししよう！",
   "child.aiChat.remaining": "あと{count, number}回",
+  "child.aiChat.remainingUnlimited": "むせいげん",
   "child.aiChat.report.abusive": "ひどい言葉",
   "child.aiChat.report.description": "いやだったり変だと思った答えは、アプリですぐ報告できるよ。",
   "child.aiChat.report.inaccurate": "本当のこととちがう",

@@ -81,6 +81,7 @@ import {
   sanitizeChildNotificationMinutes,
 } from "../shared/aiChildSettingsTools.js";
 import { aiMutationScopeErrorResponse, aiMutationScopeState } from "../lib/aiMutationScope";
+import { isAiUnlimitedFamily } from "../lib/aiUnlimitedAccess";
 
 /** 아이에게 색 이름을 말해 줄 때 쓰는 라벨 — src/transform/childAccent.ts 의 label 과 같다. */
 const CHILD_ACCENT_LABELS: Record<string, string> = {
@@ -828,7 +829,9 @@ chat.post("/child-chat", requireAuth, async (c) => {
     parentSettings: parentSettingsRow || {},
     recentMessages: contextWindow,
   });
-  const canBypassAiCreditLimit = shouldBypassAiCreditLimit({ safety: agentPlan.safety });
+  // 운영자 본인 가족은 한도·차감을 적용하지 않는다(secret 화이트리스트, 결제 상태 무변경).
+  const aiUnlimited = await isAiUnlimitedFamily(c.env, db, familyId);
+  const canBypassAiCreditLimit = shouldBypassAiCreditLimit({ safety: agentPlan.safety }) || aiUnlimited;
 
   if (!creditStatus.canChat && !canBypassAiCreditLimit) {
     return c.json(
@@ -1513,7 +1516,9 @@ chat.post("/child-chat", requireAuth, async (c) => {
   // D1 batch 한 트랜잭션에서 함께 확정한다. 동시 요청이 상한을 먼저 소진했다면 방금
   // 저장한 두 메시지를 제거하고 유료 결과를 반환하지 않는다.
   const shouldChargeCredit =
-    shouldChargeForAiTurn({ detectedIntent: agentPlan.detectedIntent, toolResult, safety: agentPlan.safety }) && !assistantTextWasEmpty;
+    !aiUnlimited
+    && shouldChargeForAiTurn({ detectedIntent: agentPlan.detectedIntent, toolResult, safety: agentPlan.safety })
+    && !assistantTextWasEmpty;
   if (shouldChargeCredit) {
     if (!aiCreditRow || !logged.assistantMessageId) {
       await deleteUnchargedChatMessages(db, familyId, userId, logged);
@@ -1657,6 +1662,8 @@ chat.post("/child-chat", requireAuth, async (c) => {
     {
       reply: assistantText,
       remaining,
+      // 운영자 본인 가족은 한도·차감이 없다 — 화면이 남은 횟수 대신 무제한을 표시한다.
+      unlimited: aiUnlimited,
       dailyLimit,
       creditBalance: toPublicCreditBalance(newCredit),
       creditCharged: shouldChargeCredit,

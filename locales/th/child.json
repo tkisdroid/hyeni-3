@@ -50,6 +50,7 @@
   "child.aiChat.providerBusy": "ตอนนี้ยังตอบไม่ได้เลย เดี๋ยวมาคุยกันใหม่นะ! 💜",
   "child.aiChat.ready": "● มาคุยกันเถอะ!",
   "child.aiChat.remaining": "เหลือ {count, number} ครั้ง",
+  "child.aiChat.remainingUnlimited": "ไม่จำกัด",
   "child.aiChat.report.abusive": "คำพูดไม่ดี",
   "child.aiChat.report.description": "ถ้าคำตอบทำให้ไม่สบายใจหรือรู้สึกแปลก ก็รายงานในแอปได้ทันที",
   "child.aiChat.report.inaccurate": "ไม่ตรงกับความจริง",

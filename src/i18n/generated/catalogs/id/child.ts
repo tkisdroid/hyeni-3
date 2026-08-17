@@ -50,6 +50,7 @@ const messages = {
   "child.aiChat.providerBusy": "Sekarang aku belum bisa menjawab. Ngobrol lagi sebentar lagi, ya! 💜",
   "child.aiChat.ready": "● Ayo mengobrol!",
   "child.aiChat.remaining": "Tersisa {count, number} kali",
+  "child.aiChat.remainingUnlimited": "Tanpa batas",
   "child.aiChat.report.abusive": "Kata-kata kasar",
   "child.aiChat.report.description": "Kamu bisa langsung melaporkan jawaban yang membuatmu tidak nyaman atau terasa aneh di aplikasi.",
   "child.aiChat.report.inaccurate": "Tidak sesuai fakta",

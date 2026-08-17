@@ -50,6 +50,7 @@ const messages = {
   "child.aiChat.providerBusy": "Bây giờ mình chưa trả lời được. Lát nữa nói chuyện với mình nhé! 💜",
   "child.aiChat.ready": "● Mình trò chuyện nhé!",
   "child.aiChat.remaining": "Còn {count, number} lượt",
+  "child.aiChat.remainingUnlimited": "Không giới hạn",
   "child.aiChat.report.abusive": "Lời nói xấu",
   "child.aiChat.report.description": "Bạn có thể báo cáo ngay trong ứng dụng nếu câu trả lời làm bạn khó chịu hoặc thấy lạ.",
   "child.aiChat.report.inaccurate": "Không đúng sự thật",

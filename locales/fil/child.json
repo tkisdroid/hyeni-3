@@ -50,6 +50,7 @@
   "child.aiChat.providerBusy": "Hindi muna ako makakasagot ngayon. Kausapin mo ulit ako mamaya! 💜",
   "child.aiChat.ready": "● Mag-usap tayo!",
   "child.aiChat.remaining": "{count, number} pa ang natitira",
+  "child.aiChat.remainingUnlimited": "Walang limitasyon",
   "child.aiChat.report.abusive": "Masasamang salita",
   "child.aiChat.report.description": "Puwede mong i-report agad sa app ang sagot na hindi komportable o kakaiba.",
   "child.aiChat.report.inaccurate": "Hindi totoo",

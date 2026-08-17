@@ -2219,6 +2219,13 @@
     },
     "description": "서버가 반환한 남은 AI 대화 횟수"
   },
+  "child.aiChat.remainingUnlimited": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "한도가 없는 가족의 AI 대화 헤더 표시(남은 횟수 대신)"
+  },
   "child.aiChat.report.abusive": {
     "namespace": "child",
     "audience": "child",

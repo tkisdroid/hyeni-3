@@ -30,6 +30,8 @@ export interface Env {
   // 전역 AI 프롬프트 등 모든 가족에 적용되는 설정을 바꿀 수 있는 유일한 통로다.
   // 미설정이면 아무도 관리자가 아니다(fail-closed, lib/adminAccess.ts).
   ADMIN_USER_IDS?: string;
+  /** AI 친구 대화 한도·차감을 적용하지 않을 가족의 소유 부모 계정 목록(fail-closed). */
+  AI_UNLIMITED_OWNER_IDS?: string;
   OPENAI_API_KEY?: string;
   OPENAI_BASE_URL?: string; // Cloudflare AI Gateway openai 엔드포인트(OpenAI 지역차단 우회). 미설정 시 api.openai.com 직접.
   ANTHROPIC_API_KEY?: string;

@@ -325,6 +325,8 @@ export interface ChildChatReply {
   /** 저장된 assistant 행 ID. 이 ID가 있어야 방금 받은 답변도 즉시 신고할 수 있다. */
   assistantMessageId?: string | null;
   remaining?: number;
+  /** 한도·차감이 적용되지 않는 가족(운영자 본인 계정). 화면은 남은 횟수 대신 무제한을 표시한다. */
+  unlimited?: boolean;
   dailyLimit?: number;
   creditBalance?: number;
   character?: string;
