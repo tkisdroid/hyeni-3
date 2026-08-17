@@ -42,6 +42,7 @@ const messages = {
   "child.aiChat.loading": "Nilo-load ang mga nakaraang usapan",
   "child.aiChat.messageAria": "Magpadala ng mensahe kay {name}",
   "child.aiChat.placeholder": "Magsabi ng isang bagay kay {name}…",
+  "child.aiChat.providerBusy": "Hindi muna ako makakasagot ngayon. Kausapin mo ulit ako mamaya! 💜",
   "child.aiChat.ready": "● Mag-usap tayo!",
   "child.aiChat.remaining": "{count, number} pa ang natitira",
   "child.aiChat.report.abusive": "Masasamang salita",

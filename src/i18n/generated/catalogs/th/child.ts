@@ -42,6 +42,7 @@ const messages = {
   "child.aiChat.loading": "กำลังโหลดเรื่องที่คุยไว้ก่อนหน้า",
   "child.aiChat.messageAria": "ส่งข้อความถึง {name}",
   "child.aiChat.placeholder": "ลองพูดกับ {name}…",
+  "child.aiChat.providerBusy": "ตอนนี้ยังตอบไม่ได้เลย เดี๋ยวมาคุยกันใหม่นะ! 💜",
   "child.aiChat.ready": "● มาคุยกันเถอะ!",
   "child.aiChat.remaining": "เหลือ {count, number} ครั้ง",
   "child.aiChat.report.abusive": "คำพูดไม่ดี",

@@ -307,6 +307,7 @@ export const messageIds = [
   "child.aiChat.loading",
   "child.aiChat.messageAria",
   "child.aiChat.placeholder",
+  "child.aiChat.providerBusy",
   "child.aiChat.ready",
   "child.aiChat.remaining",
   "child.aiChat.report.abusive",

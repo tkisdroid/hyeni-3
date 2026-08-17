@@ -42,6 +42,7 @@
   "child.aiChat.loading": "Đang tải những cuộc trò chuyện trước",
   "child.aiChat.messageAria": "Nhắn tin cho {name}",
   "child.aiChat.placeholder": "Nói gì đó với {name}…",
+  "child.aiChat.providerBusy": "Bây giờ mình chưa trả lời được. Lát nữa nói chuyện với mình nhé! 💜",
   "child.aiChat.ready": "● Mình trò chuyện nhé!",
   "child.aiChat.remaining": "Còn {count, number} lượt",
   "child.aiChat.report.abusive": "Lời nói xấu",

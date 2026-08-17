@@ -30,7 +30,17 @@ type OpenAiLogInput = {
   finishReason?: unknown;
   usage?: OpenAiUsage | null;
   errorKind?: OpenAiErrorKind;
+  /** 공급자 오류 분류 코드(rate_limit_exceeded·insufficient_quota 등). 사용자 문장은 담지 않는다. */
+  providerErrorCode?: unknown;
 };
+
+/** 공급자 오류 코드만 남긴다 — 길거나 형식이 다르면 버린다(원문 유출 방지). */
+function providerErrorCode(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const code = value.trim();
+  if (!code || code.length > 48) return undefined;
+  return /^[a-z0-9_.-]+$/i.test(code) ? code : undefined;
+}
 
 const ALLOWED_FINISH_REASONS = new Set([
   "stop",
@@ -90,6 +100,9 @@ export function writeOpenAiLog(level: "error" | "info", input: OpenAiLogInput): 
     ...(completionTokens === undefined ? {} : { completionTokens }),
     ...(totalTokens === undefined ? {} : { totalTokens }),
     ...(input.errorKind === undefined ? {} : { errorKind: input.errorKind }),
+    ...(providerErrorCode(input.providerErrorCode) === undefined
+      ? {}
+      : { providerErrorCode: providerErrorCode(input.providerErrorCode) }),
   });
   if (level === "error") console.error(entry);
   else console.info(entry);

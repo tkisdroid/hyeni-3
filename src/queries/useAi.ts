@@ -122,6 +122,9 @@ export function useSendChildChat() {
   const qc = useQueryClient();
   const { familyId, userId } = useAuth();
   return useMutation<ChildChatReply, unknown, SendChildChatInput>({
+    // 실패 안내는 대화 말풍선이 아이 말투로 하나만 보여 준다.
+    // meta 가 없으면 전역 MutationCache 폴백이 "방금 한 일이 저장되지 않았어" 토스트를 겹쳐 띄운다.
+    meta: { silentError: true },
     mutationFn: (input: SendChildChatInput) => sendChildChat(input),
     onSuccess: (result) => {
       const nextRemaining = result.remaining;

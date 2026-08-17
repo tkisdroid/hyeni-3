@@ -42,6 +42,7 @@ const messages = {
   "child.aiChat.loading": "正在加载以前的聊天",
   "child.aiChat.messageAria": "给{name}发消息",
   "child.aiChat.placeholder": "和{name}说点什么吧…",
+  "child.aiChat.providerBusy": "我现在没法回答呢。过一会儿再来找我吧！💜",
   "child.aiChat.ready": "● 我们聊天吧！",
   "child.aiChat.remaining": "还剩{count, number}次",
   "child.aiChat.report.abusive": "不好的话",

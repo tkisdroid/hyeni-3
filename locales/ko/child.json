@@ -42,6 +42,7 @@
   "child.aiChat.loading": "지난 이야기를 불러오는 중이야",
   "child.aiChat.messageAria": "{name}에게 메시지",
   "child.aiChat.placeholder": "{name}에게 말해 봐…",
+  "child.aiChat.providerBusy": "지금은 내가 대답을 못 해. 조금 뒤에 다시 말 걸어 줘! 💜",
   "child.aiChat.ready": "● 얘기하자!",
   "child.aiChat.remaining": "{count, number}번 남았어",
   "child.aiChat.report.abusive": "나쁜 말",

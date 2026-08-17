@@ -2161,6 +2161,13 @@
     },
     "description": "번역하지 않는 저장 AI 친구 이름을 넣은 메시지 입력 힌트"
   },
+  "child.aiChat.providerBusy": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "AI 친구 대화 다국어 문구: providerBusy"
+  },
   "child.aiChat.ready": {
     "namespace": "child",
     "audience": "child",

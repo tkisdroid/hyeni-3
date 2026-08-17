@@ -42,6 +42,7 @@ const messages = {
   "child.aiChat.loading": "Memuatkan perbualan terdahulu",
   "child.aiChat.messageAria": "Hantar mesej kepada {name}",
   "child.aiChat.placeholder": "Cakap sesuatu kepada {name}…",
+  "child.aiChat.providerBusy": "Sekarang saya belum boleh menjawab. Berbual lagi sekejap lagi, ya! 💜",
   "child.aiChat.ready": "● Jom berbual!",
   "child.aiChat.remaining": "Tinggal {count, number} kali",
   "child.aiChat.report.abusive": "Kata-kata kasar",

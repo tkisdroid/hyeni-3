@@ -1394,9 +1394,10 @@ chat.post("/child-chat", requireAuth, async (c) => {
             headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
             signal: AbortSignal.timeout(AI_CHILD_CHAT_TIMEOUT_MS),
             body: JSON.stringify({
-              // 아이 대화만 추론을 조금 켠다 — 기억·일정·감정을 함께 읽고 답해야 하는 유일한 경로다.
-              // 예산 900은 상한일 뿐 실제 사용분만 과금되며, 답이 잘려 빈 응답이 되는 것을 막는다.
-              ...openaiLunaChatConfig(900, { reasoningEffort: "low" }),
+              // ⚠️ 2026-08-17: 추론 low + 예산 900 으로 올렸더니 프로덕션에서 429(provider_rejected)로
+              // 아이 대화가 통째로 막혔다. 배포 전 동작하던 값으로 되돌린다.
+              // 다시 올리려면 실제 한도(TPM·잔액)를 먼저 확인해야 한다.
+              ...openaiLunaChatConfig(220),
               messages: [
                 { role: "system", content: systemPrompt },
                 ...contextWindow,
@@ -1410,18 +1411,31 @@ chat.post("/child-chat", requireAuth, async (c) => {
             }),
           });
           if (!openaiRes.ok) {
+            // 429 가 분당 한도인지 잔액 소진인지 알아야 대응이 갈린다. 코드만 읽고 본문은 버린다.
+            let providerErrorCode: unknown;
+            try {
+              const failure = await openaiRes.json<{ error?: { code?: unknown; type?: unknown } }>();
+              providerErrorCode = failure?.error?.code ?? failure?.error?.type;
+            } catch {
+              providerErrorCode = undefined;
+            }
             writeOpenAiLog("error", {
               operation: "child_chat",
               outcome: "http_error",
               status: openaiRes.status,
               latencyMs: Date.now() - openAiStartedAt,
               errorKind: "provider_rejected",
+              providerErrorCode,
             });
             const fallbackAssistantText = buildToolResultChildReply(toolResult);
             if (fallbackAssistantText) {
               assistantText = fallbackAssistantText;
             } else {
-              return c.json({ error: "ai_failure" }, 502);
+              // 429 는 네트워크 문제가 아니라 공급자 한도·잔액이다. 아이에게 "연결이 안 됐어"라고
+              // 잘못 말하지 않도록 코드를 나눠 보낸다(정직한 강등).
+              return openaiRes.status === 429
+                ? c.json({ error: "ai_provider_busy" }, 503)
+                : c.json({ error: "ai_failure" }, 502);
             }
           } else {
             const data = await openaiRes.json<OpenAiChatResponse>();

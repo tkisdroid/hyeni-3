@@ -114,6 +114,9 @@ function friendlyError(err: unknown, status: AiCreditPublicStatus | null): (intl
     case "not_child":
     case "no_family":
       return intl.formatMessage({ id: "child.aiChat.unavailable" });
+    case "ai_provider_busy":
+      // 네트워크가 아니라 AI 공급자 쪽 한도·잔액이다. 연결 탓으로 돌리지 않는다.
+      return intl.formatMessage({ id: "child.aiChat.providerBusy" });
     case "message_too_long":
       return intl.formatMessage({ id: "child.aiChat.tooLong" });
     default:

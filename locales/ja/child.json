@@ -42,6 +42,7 @@
   "child.aiChat.loading": "前のおしゃべりを読み込んでいるよ",
   "child.aiChat.messageAria": "{name}にメッセージ",
   "child.aiChat.placeholder": "{name}に話しかけてみよう…",
+  "child.aiChat.providerBusy": "今はお返事できないんだ。少ししたらまた話しかけてね！💜",
   "child.aiChat.ready": "● おはなししよう！",
   "child.aiChat.remaining": "あと{count, number}回",
   "child.aiChat.report.abusive": "ひどい言葉",

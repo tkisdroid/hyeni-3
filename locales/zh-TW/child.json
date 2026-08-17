@@ -42,6 +42,7 @@
   "child.aiChat.loading": "正在載入以前的聊天",
   "child.aiChat.messageAria": "傳訊息給{name}",
   "child.aiChat.placeholder": "和{name}說點什麼吧…",
+  "child.aiChat.providerBusy": "我現在沒辦法回答呢。過一會兒再來找我吧！💜",
   "child.aiChat.ready": "● 我們聊天吧！",
   "child.aiChat.remaining": "還剩{count, number}次",
   "child.aiChat.report.abusive": "不好的話",

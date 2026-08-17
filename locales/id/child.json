@@ -42,6 +42,7 @@
   "child.aiChat.loading": "Memuat obrolan sebelumnya",
   "child.aiChat.messageAria": "Kirim pesan kepada {name}",
   "child.aiChat.placeholder": "Katakan sesuatu kepada {name}…",
+  "child.aiChat.providerBusy": "Sekarang aku belum bisa menjawab. Ngobrol lagi sebentar lagi, ya! 💜",
   "child.aiChat.ready": "● Ayo mengobrol!",
   "child.aiChat.remaining": "Tersisa {count, number} kali",
   "child.aiChat.report.abusive": "Kata-kata kasar",

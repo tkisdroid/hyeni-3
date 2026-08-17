@@ -42,6 +42,7 @@
   "child.aiChat.loading": "Loading earlier chats…",
   "child.aiChat.messageAria": "Message {name}",
   "child.aiChat.placeholder": "Say something to {name}…",
+  "child.aiChat.providerBusy": "I can't answer right now. Talk to me again in a little while! 💜",
   "child.aiChat.ready": "● Let's chat!",
   "child.aiChat.remaining": "{count, plural, one {# chat left} other {# chats left}}",
   "child.aiChat.report.abusive": "Mean words",
