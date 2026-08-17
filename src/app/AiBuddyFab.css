@@ -35,20 +35,8 @@
   transform: scale(0.92);
 }
 
-/* 어떤 배경 위에서도 얼굴이 떠 보이도록 뒤에 부드러운 후광을 깐다. */
-.abf__glow {
-  position: absolute;
-  inset: -6px;
-  border-radius: 999px;
-  background: radial-gradient(
-    circle at 50% 45%,
-    color-mix(in srgb, var(--hy-accent-soft) 88%, #ffffff) 0%,
-    color-mix(in srgb, var(--hy-accent-soft) 42%, transparent) 62%,
-    transparent 78%
-  );
-  box-shadow: var(--shadow-floating);
-}
-
+/* 후광(흰 원)은 두지 않는다 — 얼굴 그림이 이미 자기 배경을 갖고 있어 흰 판처럼 보였다(2026-08-18 TK 제보).
+   떠 있는 느낌은 얼굴 자체의 그림자로만 만든다. */
 .abf__face {
   position: absolute;
   inset: 0;
@@ -73,6 +61,7 @@
   height: 100%;
   /* 원본 그림에 알파가 없어 배경(무지개)이 그대로 버튼 면이 된다 — 둥글게 오려 쓴다. */
   border-radius: var(--radius-20);
+  box-shadow: var(--shadow-floating);
   object-fit: cover;
   opacity: 0;
   transition: opacity var(--duration-fast) var(--easing-standard);

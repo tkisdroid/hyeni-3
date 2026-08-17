@@ -346,7 +346,6 @@ function AiBuddyFabButton({ bottomInset }: AiBuddyFabProps) {
       {wanderLine ? (
         <span className="abf__bubble" aria-hidden="true">{wanderLine}</span>
       ) : null}
-      <span className="abf__glow" aria-hidden="true" />
       <span className="abf__face">
         <span className="abf__stack">
           {/* 표정 전환이 끊겨 보이지 않도록 전체 프레임을 겹쳐 두고 투명도로 바꾼다. */}

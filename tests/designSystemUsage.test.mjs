@@ -2688,8 +2688,6 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/feature/SosReceive.css", ".sr-history-emoji"],
   ["src/screens/feature/PermDenied.css", ".pd-icon"],
   ["src/components/ui/StickerCelebration.css", ".sticker-celebration__confetti span"],
-  // AI 친구 플로팅 버튼의 후광 — 조작 면이 아니라 얼굴 뒤에 까는 장식 원.
-  ["src/app/AiBuddyFab.css", ".abf__glow"],
   // nested와 inset 조각 — exact path + selector만 허용
   ["src/components/MessageSafetyDialog.css", ".msd-error"],
   ["src/screens/child/AiFriendChat.css", ".afc-confirm__detail"],
