@@ -34,9 +34,60 @@ export function isAiBuddyEmotion(value: unknown): value is AiBuddyEmotion {
   return typeof value === "string" && (AI_BUDDY_EMOTIONS as readonly string[]).includes(value);
 }
 
-/** 표정 webp 경로(asset() 접두 전). blink 는 감정이 아니라 대기 애니메이션 프레임이다. */
-export function aiBuddyFaceAsset(emotion: AiBuddyEmotion | "blink"): string {
-  return `ai-buddy/${emotion}.webp`;
+/**
+ * 감정 채팅 버튼 20종(2026-08-18 TK 지시). 원본은 512px 불투명 PNG 였고
+ * `scripts/import-ai-buddy-chat-emotions.mjs` 가 256px webp 로 들여온다.
+ * 배경(무지개 그라디언트)이 그림에 포함돼 있어 둥근 버튼 면으로 쓴다 — 알파가 없다.
+ */
+export const AI_BUDDY_CHAT_FACES = [
+  "happy", "wink", "joy", "excited", "love", "curious", "thinking", "idea", "talking", "sleepy",
+  "sad", "worried", "shy", "celebrate", "greeting", "music", "explore", "typing", "waiting", "quick",
+] as const;
+
+export type AiBuddyChatFace = (typeof AI_BUDDY_CHAT_FACES)[number];
+
+/**
+ * 의미(감정) → 그림. 판정은 그대로 두고 얼굴만 새 그림으로 바꾼다.
+ * caring 은 "걱정하며 다독이는" 뜻이라 걱정 얼굴을, cheer 는 축하 얼굴을 쓴다.
+ */
+const EMOTION_FACE: Record<AiBuddyEmotion, AiBuddyChatFace> = {
+  idle: "waiting",
+  happy: "happy",
+  excited: "joy",
+  thinking: "thinking",
+  caring: "worried",
+  sad: "sad",
+  sleepy: "sleepy",
+  cheer: "celebrate",
+};
+
+/**
+ * 대기 중 혼자 움직일 때 짓는 표정들(감정 판정과 별개인 "살아 있는 척"용).
+ * 아이가 말을 걸지 않아도 친구가 두리번거리고 노래 듣고 인사한다.
+ */
+export const AI_BUDDY_IDLE_MOTIONS = [
+  "greeting", "curious", "explore", "music", "idea", "love", "shy", "wink", "waiting", "talking",
+] as const satisfies readonly AiBuddyChatFace[];
+
+/** 눈 깜빡임 대신 쓰는 프레임 — 새 그림에는 blink 가 없어 윙크로 살아 있음을 알린다. */
+export const AI_BUDDY_BLINK_FACE: AiBuddyChatFace = "wink";
+
+/** 아이가 버튼을 누른 순간의 반응 얼굴. */
+export const AI_BUDDY_TAP_FACE: AiBuddyChatFace = "quick";
+
+/** 대화 화면 타이핑 표시용 얼굴. */
+export const AI_BUDDY_TYPING_FACE: AiBuddyChatFace = "typing";
+
+/** 표정 webp 경로(asset() 접두 전). */
+export function aiBuddyFaceAsset(emotion: AiBuddyEmotion | AiBuddyChatFace): string {
+  const face = (EMOTION_FACE as Record<string, AiBuddyChatFace | undefined>)[emotion]
+    ?? (emotion as AiBuddyChatFace);
+  return `ai-buddy/chat/${face}.webp`;
+}
+
+/** 감정에 대응하는 그림 이름(테스트·프리로드가 참조). */
+export function aiBuddyFaceFor(emotion: AiBuddyEmotion): AiBuddyChatFace {
+  return EMOTION_FACE[emotion];
 }
 
 /** 스크린리더용 표정 설명 — 얼굴만으로는 전달되지 않는다. */

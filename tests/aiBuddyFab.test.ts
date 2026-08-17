@@ -8,14 +8,35 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
+import { existsSync } from "node:fs";
 import {
+  AI_BUDDY_BLINK_FACE,
+  AI_BUDDY_CHAT_FACES,
   AI_BUDDY_EMOTIONS,
+  AI_BUDDY_IDLE_MOTIONS,
+  AI_BUDDY_TAP_FACE,
+  AI_BUDDY_TYPING_FACE,
   aiBuddyEmotionLabel,
   aiBuddyFaceAsset,
+  aiBuddyFaceFor,
   aiBuddyIdleEmotion,
   isAiBuddyEmotion,
   resolveAiBuddyEmotion,
 } from "../src/transform/aiBuddyEmotion.ts";
+import {
+  AI_BUDDY_WANDER_MAX_STEP,
+  AI_BUDDY_WANDER_PAUSE_AFTER_DRAG_MS,
+  AI_BUDDY_WANDER_STEP_MS,
+  AI_BUDDY_WANDER_VERTICAL_MAX,
+  AI_BUDDY_WANDER_VERTICAL_MIN,
+  AI_BUDDY_WANDER_LINE_EVERY,
+  AI_BUDDY_WANDER_LINE_MS,
+  aiBuddyWanderFace,
+  aiBuddyWanderLine,
+  canAiBuddyWander,
+  nextAiBuddyWanderRatio,
+  shouldShowAiBuddyWanderLine,
+} from "../src/transform/aiBuddyWander.ts";
 import {
   AI_BUDDY_FAB_EDGE_GAP,
   AI_BUDDY_FAB_SIZE,
@@ -80,15 +101,116 @@ test("밤에는 대기 얼굴이 졸린 표정이고, 시각을 모르면 지어
   assert.equal(resolveAiBuddyEmotion({ phase: "idle", hourOfDay: 23 }), "sleepy");
 });
 
-test("표정마다 실제 에셋 경로와 읽어 주는 설명이 있다", () => {
+test("감정마다 감정 채팅 버튼 그림과 읽어 주는 설명이 있다", () => {
+  // 2026-08-18: 얼굴을 감정 채팅 버튼 20종으로 교체했다. 판정(감정)은 그대로 두고 그림만 바뀐다.
   for (const emotion of AI_BUDDY_EMOTIONS) {
-    assert.equal(aiBuddyFaceAsset(emotion), `ai-buddy/${emotion}.webp`);
+    const face = aiBuddyFaceFor(emotion);
+    assert.ok(AI_BUDDY_CHAT_FACES.includes(face), `${emotion} 그림 매핑 누락`);
+    assert.equal(aiBuddyFaceAsset(emotion), `ai-buddy/chat/${face}.webp`);
     assert.ok(aiBuddyEmotionLabel(emotion).length > 0, `${emotion} 설명 누락`);
     assert.equal(isAiBuddyEmotion(emotion), true);
   }
-  assert.equal(aiBuddyFaceAsset("blink"), "ai-buddy/blink.webp");
   assert.equal(isAiBuddyEmotion("blink"), false);
   assert.equal(isAiBuddyEmotion(null), false);
+  // 속상한 아이에게는 걱정하며 다독이는 얼굴, 축하에는 축하 얼굴을 쓴다.
+  assert.equal(aiBuddyFaceFor("caring"), "worried");
+  assert.equal(aiBuddyFaceFor("cheer"), "celebrate");
+  assert.equal(aiBuddyFaceFor("idle"), "waiting");
+});
+
+test("20종 그림 파일이 실제로 있고 대기·탭·타이핑 얼굴이 그 안에 있다", () => {
+  assert.equal(AI_BUDDY_CHAT_FACES.length, 20);
+  for (const face of AI_BUDDY_CHAT_FACES) {
+    const file = new URL(`../public/assets/ai-buddy/chat/${face}.webp`, import.meta.url);
+    assert.equal(existsSync(file), true, `${face}.webp 누락`);
+  }
+  for (const face of [AI_BUDDY_BLINK_FACE, AI_BUDDY_TAP_FACE, AI_BUDDY_TYPING_FACE]) {
+    assert.ok(AI_BUDDY_CHAT_FACES.includes(face), `${face} 는 20종 안에 있어야 한다`);
+  }
+  for (const face of AI_BUDDY_IDLE_MOTIONS) {
+    assert.ok(AI_BUDDY_CHAT_FACES.includes(face), `${face} 대기 동작 그림 누락`);
+  }
+});
+
+test("대기 중 배회는 조금씩 움직이고 가장자리 띠를 벗어나지 않는다", () => {
+  let ratio = { xRatio: 1, yRatio: 0.86 };
+  const seen = new Set<string>();
+  for (let step = 1; step <= 24; step += 1) {
+    const next = nextAiBuddyWanderRatio(ratio, step);
+    assert.ok(next.xRatio === 0 || next.xRatio === 1, "좌우 가장자리에만 선다");
+    assert.ok(
+      next.yRatio >= AI_BUDDY_WANDER_VERTICAL_MIN && next.yRatio <= AI_BUDDY_WANDER_VERTICAL_MAX,
+      `step ${step}: 세로 띠를 벗어났다(${next.yRatio})`,
+    );
+    assert.ok(
+      Math.abs(next.yRatio - ratio.yRatio) <= AI_BUDDY_WANDER_MAX_STEP + 1e-9,
+      `step ${step}: 한 번에 너무 멀리 갔다`,
+    );
+    seen.add(`${next.xRatio}:${next.yRatio.toFixed(3)}`);
+    ratio = next;
+  }
+  assert.ok(seen.size >= 8, "같은 자리만 오가면 돌아다니는 것이 아니다");
+  // 결정적이다 — 같은 step 이면 같은 결과.
+  assert.deepEqual(
+    nextAiBuddyWanderRatio({ xRatio: 1, yRatio: 0.5 }, 7),
+    nextAiBuddyWanderRatio({ xRatio: 1, yRatio: 0.5 }, 7),
+  );
+  // 세 걸음마다 반대쪽으로 건너간다.
+  assert.equal(nextAiBuddyWanderRatio({ xRatio: 1, yRatio: 0.5 }, 2).xRatio, 0);
+  assert.equal(nextAiBuddyWanderRatio({ xRatio: 0, yRatio: 0.5 }, 2).xRatio, 1);
+});
+
+test("이동 중에는 두리번거리고 도착하면 말을 걸 듯한 얼굴을 짓는다", () => {
+  assert.equal(aiBuddyWanderFace(3, true), "explore");
+  for (let step = 1; step <= 24; step += 1) {
+    const face = aiBuddyWanderFace(step, false);
+    assert.ok(AI_BUDDY_IDLE_MOTIONS.includes(face), `step ${step}: 대기 동작 밖 얼굴`);
+    // 도착 얼굴이 이동 중 얼굴과 같으면 멈춘 걸 알 수 없다(실측: 계속 걸어가는 것처럼 보였다).
+    assert.notEqual(face, "explore", `step ${step}: 도착했는데 이동 중 얼굴이다`);
+    assert.equal(typeof aiBuddyWanderLine(face), "string", `step ${step}: 도착 얼굴에 대사가 없다`);
+  }
+  assert.equal(aiBuddyWanderFace(5, false), aiBuddyWanderFace(5, false));
+});
+
+test("말은 몇 걸음에 한 번만 걸고, 이동 중에는 말풍선을 띄우지 않는다", () => {
+  assert.equal(shouldShowAiBuddyWanderLine(0), false, "첫 렌더에 먼저 말을 걸지 않는다");
+  assert.equal(shouldShowAiBuddyWanderLine(AI_BUDDY_WANDER_LINE_EVERY), true);
+  assert.equal(shouldShowAiBuddyWanderLine(AI_BUDDY_WANDER_LINE_EVERY + 1), false);
+  assert.ok(AI_BUDDY_WANDER_LINE_EVERY >= 3, "매 걸음 말을 걸면 잔소리가 된다");
+  assert.ok(AI_BUDDY_WANDER_LINE_MS >= 2_000 && AI_BUDDY_WANDER_LINE_MS <= 4_000);
+
+  // 이동 중 얼굴(explore)에는 대사가 없고, 도착 얼굴에는 반말 한 마디가 있다.
+  assert.equal(aiBuddyWanderLine("explore"), null);
+  assert.equal(aiBuddyWanderLine("typing"), null);
+  for (const face of AI_BUDDY_IDLE_MOTIONS) {
+    const line = aiBuddyWanderLine(face);
+    if (face === "explore") continue;
+    assert.equal(typeof line, "string", `${face} 대사 누락`);
+    assert.ok(line && line.length <= 10, `${face} 대사가 길다: ${line}`);
+    assert.doesNotMatch(line ?? "", /(?:요|습니다|세요)$/, `${face} 대사가 존댓말이다`);
+  }
+});
+
+test("배회는 드래그·감정 표시·움직임 줄이기·숨은 화면에서 멈춘다", () => {
+  const base = {
+    dragging: false,
+    showingEmotion: false,
+    visible: true,
+    reducedMotion: false,
+    msSinceDrag: null,
+  };
+  assert.equal(canAiBuddyWander(base), true);
+  assert.equal(canAiBuddyWander({ ...base, dragging: true }), false);
+  assert.equal(canAiBuddyWander({ ...base, showingEmotion: true }), false);
+  assert.equal(canAiBuddyWander({ ...base, reducedMotion: true }), false);
+  assert.equal(canAiBuddyWander({ ...base, visible: false }), false);
+  // 아이가 직접 옮긴 자리는 잠시 그대로 둔다.
+  assert.equal(canAiBuddyWander({ ...base, msSinceDrag: 1_000 }), false);
+  assert.equal(
+    canAiBuddyWander({ ...base, msSinceDrag: AI_BUDDY_WANDER_PAUSE_AFTER_DRAG_MS + 1 }),
+    true,
+  );
+  assert.ok(AI_BUDDY_WANDER_STEP_MS >= 6_000, "너무 자주 움직이면 산만하다");
 });
 
 test("버튼은 프레임 안, 상단 헤더 아래·하단 독 위에만 놓인다", () => {
@@ -183,6 +305,19 @@ test("AI 친구 화면 안에서는 플로팅 버튼을 겹쳐 띄우지 않는�
   assert.match(fab, /role !== "child"[\s\S]{0,80}return null/);
   // 드래그가 화면 스크롤로 새지 않아야 한다.
   assert.match(read("src/app/AiBuddyFab.css"), /touch-action: none/);
+});
+
+test("배회 타이머는 감정이 바뀌어도 다시 만들지 않고 말풍선은 대화에 자리를 비킨다", () => {
+  const fab = read("src/app/AiBuddyFab.tsx");
+  // emotion 을 의존성에 넣으면 도착 표정·말풍선 타이머가 취소돼 두리번거리는 얼굴로 굳는다.
+  assert.match(fab, /}, \[\]\);\n\n  \/\/ 표정이 바뀌면/);
+  assert.match(fab, /showingEmotion: emotionRef\.current !== "idle"/);
+  // 실제 대화 감정·탭·드래그에는 말풍선이 즉시 물러난다.
+  assert.match(fab, /setWanderLine\(null\);\n  \}, \[emotion\]\)/);
+  assert.match(fab, /setTapped\(true\);\n    setWanderLine\(null\)/);
+  // 말풍선은 얼굴을 가리지 않는 안내라 조작을 가로채지 않고 스크린리더에 중복 낭독되지 않는다.
+  assert.match(fab, /className="abf__bubble" aria-hidden="true"/);
+  assert.match(read("src/app/AiBuddyFab.css"), /\.abf__bubble \{[^}]*pointer-events: none/);
 });
 
 test("움직임 최소화 설정에서는 떠다니지도 깜빡이지도 않는다", () => {

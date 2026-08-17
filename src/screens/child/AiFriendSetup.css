@@ -78,7 +78,8 @@
 .afs-preview__art img {
   width: 92px;
   height: 92px;
-  object-fit: contain;
+  border-radius: var(--radius-24);
+  object-fit: cover;
 }
 .afs-preview__name {
   margin-top: 12px;

@@ -286,8 +286,14 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   Worker `tests/childSafetyNotifications.test.mjs`.
 - ★**아이모드 AI 친구 = 표정 있는 플로팅 버디 + 도구 에이전트(2026-08-17 TK 지시)**:
   **①얼굴** — AI 진입점은 로봇/혜니 아이콘이 아니라 **표정만 읽히는 소프트 3D 이모티콘**
-  `public/assets/ai-buddy/*.webp`(9종=8감정+blink, `scripts/generate-ai-buddy-faces.mjs` 로 SVG→sharp 생성).
-  판정 정본은 `src/transform/aiBuddyEmotion.ts` 하나이고 플로팅 버튼·아이 홈 타일·대화 헤더가 **같은 표정**을 쓴다.
+  `public/assets/ai-buddy/chat/*.webp`(**20종**, TK 지정 원본을 `scripts/import-ai-buddy-chat-emotions.mjs` 로
+  512px PNG→256px webp 변환 · 한글 파일명↔slug 표가 그 스크립트의 `EMOTION_FILE_SLUGS`).
+  ⚠️ 이 그림들은 **알파가 없다**(무지개 배경이 그림에 포함) — 배경을 지우려 하지 말고
+  `border-radius: var(--radius-20)` + `object-fit: cover` 로 **둥근 버튼 면**으로 쓴다.
+  의미(감정 8종)→그림 매핑은 `EMOTION_FACE` 한 곳이고 판정 정본은 `src/transform/aiBuddyEmotion.ts` 하나다.
+  blink 그림이 없어 눈 깜빡임은 `wink`(`AI_BUDDY_BLINK_FACE`)로 대신한다. 이전 9종
+  (`public/assets/ai-buddy/*.webp`)과 생성 스크립트는 소비자가 없어 삭제했다 — 되살리지 말 것.
+  플로팅 버튼·아이 홈 타일·대화 헤더·타이핑 표시가 **같은 표정 세트**를 쓴다.
   규칙: 답 대기=thinking · 안전 신호(medium/high)=caring(어떤 즐거운 단어보다 우선) · **아이가 속상하면 같이
   슬퍼하지 않고 caring** · `ok:true && !confirmationRequired` 일 때만 excited(확인 대기 중에 해낸 표정 금지) ·
   도구 실패=sad · 22~05시 대기=sleepy. 화면 문구는 `aiBuddyStatusLine`(반말 한 줄), `aiBuddyEmotionLabel`은 aria 전용.
@@ -297,6 +303,16 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   `role !== "child"` 와 AI 친구/SOS/온보딩 경로에서는 렌더하지 않는다(부모·선생님 화면에 뜨면 오작동).
   ⚠️ 진입 번들 예산 500KB 를 넘겨서 **lazy + Suspense 필수**(직접 import 하면 build 가 막힌다).
   표정은 `AiBuddyMoodProvider`(App, 라우터 **위**)가 들고 있어야 대화→홈 이동에도 기분이 이어진다.
+  **②-b 대기 중 배회·말 걸기(2026-08-18 TK 지시)** — 아이가 아무 것도 안 해도 친구가 살아 있어야 한다.
+  경로 계산 정본은 `src/transform/aiBuddyWander.ts`(순수·시드 결정적): 9초마다 한 걸음, 좌우 가장자리(0/1)에만
+  서고 세로는 8~92% 띠 안에서 최대 0.34비율씩, 세 걸음마다 반대쪽으로 건너간다. 이동 중 얼굴은 `explore`,
+  도착 얼굴은 **explore 를 뺀** 대기 동작 9종에서 뽑는다 — 도착 얼굴이 이동 얼굴과 같으면 9초 동안 계속 걸어가는
+  것처럼 보인다(실측으로 잡은 결함). 세 걸음마다 도착 얼굴에 맞는 반말 한 마디를 2.6초 띄운다
+  (`abf__bubble`, `pointer-events:none`·`aria-hidden`, 버튼 바깥쪽 가장자리 정렬로 화면 밖 이탈 방지).
+  배회는 **임시 자리**라 저장하지 않고(아이가 직접 옮긴 자리가 정본), 드래그 직후 20초·드래그 중·실제 대화 감정
+  표시 중·`document.hidden`·움직임 줄이기에서는 멈춘다(`canAiBuddyWander`). ⚠️ 배회 `setInterval` effect 의
+  의존성에 `emotion` 을 넣지 말 것 — 감정이 바뀔 때 effect 가 재생성되며 도착 표정·말풍선 타이머가 취소된다
+  (`emotionRef` 로 읽는다). 회귀=`tests/aiBuddyFab.test.ts`.
   **③도구 에이전트** — 기존 일정/부모연락 도구에 아이 본인 설정 3종을 추가했다:
   `updateNotificationSettings`(일정 알림 on/off·N분 전) · `updateAiFriendName` · `changeAppTheme`.
   셋 다 LLM 을 거치지 않는 결정적 응답이라 **하루 대화 횟수를 깎지 않는다**(`aiUsagePolicy`).
@@ -890,6 +906,17 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
 - ★출발 알림 톤(2026-07-30): 도착=민트, 출발=라벤더, 앰버(확인 필요)는 미도착·지연만. `arrivalAlertTone` 단일 출처.
 
 ### J. 실기기 검증 치트시트 (함정 포함)
+- ★**`adb install -r` 직후 WebView 는 옛 번들을 보여 준다(2026-08-18 실측)**: PWA Service Worker 가 이전 빌드를
+  precache 해 뒀기 때문에, 설치가 Success 여도 화면은 **직전 번들**이다(그때 새 자산 20종을 넣었는데
+  `faceCount:9`·구 경로가 그대로 나와 "빌드가 안 들어갔다"고 오판했다). 판정 순서: ①APK 안에 새 자산이 있는지
+  먼저 확인(`System.IO.Compression.ZipFile` 로 `assets/public/...` 열거) ②그래도 옛 화면이면 SW 문제다.
+  앱 자체는 `main.tsx` 의 `onNeedRefresh`→활성화→controllerchange 리로드로 **다음 실행에 자동 갱신**되므로
+  실사용자는 조치가 필요 없다. 즉시 증거가 필요할 때만 CDP 로 `getRegistrations().unregister()` +
+  `caches.delete()` 후 `Page.reload{ignoreCache:true}` 한다(SW 는 새 번들로 자동 재등록된다).
+- ★**대기 중 애니메이션은 화면이 꺼진 기기에서 관측할 수 없다**: 잠긴/꺼진 화면의 WebView 는
+  `document.hidden === true` 라 배회·깜빡임이 (설계대로) 멈춘다. 밤에 아이 기기를 깨우지 말고,
+  시간축 동작은 **격리 Chromium + dist + 아이 세션만 심은 하니스**로 관측한다(외부 호스트는
+  `--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1` 로 닫아 운영 API·실계정과 무관하게 만든다).
 - ★**CDP 스크린샷은 디자인 판정용이 아니다(2026-07-30)**: WebView 가 `backdrop-filter`·`filter` 레이어를
   합성하지 못해 히어로 카드가 흐릿하게/겹쳐 보이는 캡처 아티팩트가 난다. 실제 화면 판정은
   `adb -s <serial> exec-out screencap -p` 프레임버퍼로 하고 CDP 는 DOM·상태·클릭에만 쓴다(리뷰는 width 420 축소본).

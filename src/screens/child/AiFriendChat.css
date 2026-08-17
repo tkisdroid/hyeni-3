@@ -43,7 +43,9 @@
 .afc-avatar img {
   width: 46px;
   height: 46px;
-  object-fit: contain;
+  /* 감정 채팅 버튼 그림은 배경이 포함돼 있어 둥글게 오려 쓴다(2026-08-18). */
+  border-radius: var(--radius-16);
+  object-fit: cover;
   animation: afc-bob 3s ease-in-out infinite;
 }
 .afc-head-main {
@@ -129,7 +131,8 @@
 .afc-mini img {
   width: 36px;
   height: 36px;
-  object-fit: contain;
+  border-radius: var(--radius-12);
+  object-fit: cover;
 }
 .afc-bubble {
   max-width: 78%;

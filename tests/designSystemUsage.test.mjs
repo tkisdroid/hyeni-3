@@ -2185,6 +2185,8 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/shared/MemoChat.css", ".mc-private-photo-status"],
   ["src/screens/child/ChildHome.css", ".kd-map__chip"],
   ["src/screens/child/ChildHome.css", ".kd-hyeni__bubble"],
+  // AI 친구가 지나가며 건네는 한 마디 — 조작 면이 아니라 몇 초 떠 있다 사라지는 말풍선이다.
+  ["src/app/AiBuddyFab.css", ".abf__bubble"],
   ["src/screens/child/AiFriendChat.css", ".afc-credits"],
   ["src/screens/child/AiFriendChat.css", ".afc-chip"],
   ["src/screens/feature/Subscription.css", ".sub-plan__ribbon"],

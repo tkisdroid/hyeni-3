@@ -12,9 +12,10 @@
   cursor: grab;
   touch-action: none; /* 드래그가 화면 스크롤로 새지 않게 한다. */
   -webkit-tap-highlight-color: transparent;
+  /* 대기 중 스스로 옮겨 다니므로 이동은 천천히 미끄러진다(2026-08-18). */
   transition:
-    left var(--duration-base) var(--easing-standard),
-    top var(--duration-base) var(--easing-standard);
+    left 1.4s var(--easing-standard),
+    top 1.4s var(--easing-standard);
 }
 
 /* 드래그 중에는 손가락을 그대로 따라와야 하므로 위치 보간을 끈다. */
@@ -70,13 +71,55 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  /* 원본 그림에 알파가 없어 배경(무지개)이 그대로 버튼 면이 된다 — 둥글게 오려 쓴다. */
+  border-radius: var(--radius-20);
+  object-fit: cover;
   opacity: 0;
   transition: opacity var(--duration-fast) var(--easing-standard);
 }
 
 .abf__stack img[data-shown="true"] {
   opacity: 1;
+}
+
+/* 도착해서 건네는 한 마디. 버튼 바깥쪽 가장자리에 맞춰 화면 밖으로 나가지 않게 한다. */
+.abf__bubble {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  max-width: 132px;
+  padding: 8px 12px;
+  border-radius: var(--radius-16);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-floating);
+  color: var(--fg-primary);
+  font-family: Jua, var(--font-sans);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none; /* 말풍선이 아니라 얼굴을 눌러 대화를 연다. */
+  animation: abf-say 0.28s var(--easing-cheer) 1;
+}
+
+.abf[data-edge="left"] .abf__bubble {
+  left: 0;
+}
+
+.abf[data-edge="right"] .abf__bubble {
+  right: 0;
+}
+
+@keyframes abf-say {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @keyframes abf-bob {
@@ -112,5 +155,8 @@
   }
   .abf {
     transition: none;
+  }
+  .abf__bubble {
+    animation: none;
   }
 }

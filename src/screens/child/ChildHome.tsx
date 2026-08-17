@@ -766,7 +766,7 @@ export function ChildHome() {
             </button>
 
             {/* AI 친구는 앱 어디서나 같은 얼굴이다 — 플로팅 버튼과 대화 화면과 같은 표정 에셋. */}
-            <button type="button" className="kd-tile kd-tile--bob hy-press" onClick={openAiFriend}>
+            <button type="button" className="kd-tile kd-tile--bob kd-tile--ai hy-press" onClick={openAiFriend}>
               <img src={asset(aiBuddyFaceAsset(aiTileEmotion))} alt="" />
               <span>
                 <span className="kd-tile__title">

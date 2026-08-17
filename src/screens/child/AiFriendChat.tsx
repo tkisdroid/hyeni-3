@@ -46,7 +46,11 @@ import {
 import { useToast } from "@/app/toast";
 import { useAccent } from "@/app/accent";
 import { useAiBuddyMood } from "@/app/aiBuddyMood";
-import { aiBuddyEmotionLabel, aiBuddyFaceAsset } from "@/transform/aiBuddyEmotion";
+import {
+  AI_BUDDY_TYPING_FACE,
+  aiBuddyEmotionLabel,
+  aiBuddyFaceAsset,
+} from "@/transform/aiBuddyEmotion";
 import { isAccentKey } from "@/transform/childAccent";
 import { placePhoneCall } from "@/lib/native/phone";
 import type { AiToolResult, ConfirmedAiTool } from "@/lib/api/endpoints/ai";
@@ -181,6 +185,8 @@ export function AiFriendChat() {
   // 말풍선 옆 얼굴도 헤더·플로팅 버튼과 같은 AI 친구 얼굴이다.
   // (동물 프로필을 쓰면 "토끼와 대화하는 느낌"이 되어 친구가 둘처럼 보였다.)
   const friendFaceSrc = asset(aiBuddyFaceAsset(emotion));
+  // 답을 쓰는 동안에는 "입력중" 얼굴로 지금 무엇을 하는지 보여 준다.
+  const friendTypingFaceSrc = asset(aiBuddyFaceAsset(AI_BUDDY_TYPING_FACE));
 
   // 오늘 일정·준비물(내 것) — AI 가 먼저 물어보는 선제 인사와 제안칩의 컨텍스트(로컬 생성 · 크레딧 0).
   const { data: events } = useEvents();
@@ -665,7 +671,7 @@ export function AiFriendChat() {
         {sendChat.isPending && (
           <div className="afc-row afc-row--ai">
             <div className="afc-mini">
-              <img src={friendFaceSrc} alt="" />
+              <img src={friendTypingFaceSrc} alt="" />
             </div>
             <div
               className="afc-bubble afc-bubble--ai afc-typing"

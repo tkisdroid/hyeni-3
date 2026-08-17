@@ -522,9 +522,12 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   부모 화면을 가로챈다. `not_arrived` 는 FCM 전체화면과 알림 목록으로 전달한다(오래된 위치면 severity=warning 로 강등됨).
 
 - ★아이모드 AI 친구 = 표정 있는 플로팅 버디 + 도구 에이전트(2026-08-17 TK 지시):
-  AI 진입점은 로봇/혜니 아이콘이 아니라 표정만 읽히는 소프트 3D 이모티콘 `public/assets/ai-buddy/*.webp`
-  (9종=8감정+blink, `scripts/generate-ai-buddy-faces.mjs`). 표정 판정 정본은 `src/transform/aiBuddyEmotion.ts`
-  하나이고 플로팅 버튼·아이 홈 타일·대화 헤더가 같은 얼굴을 쓴다. 아이가 속상하면 같이 슬퍼하지 않고 다독이며
+  AI 진입점은 로봇/혜니 아이콘이 아니라 표정만 읽히는 소프트 3D 이모티콘 `public/assets/ai-buddy/chat/*.webp`
+  (**20종**, TK 지정 원본을 `scripts/import-ai-buddy-chat-emotions.mjs` 로 256px webp 변환).
+  ⚠️ 이 그림들은 알파가 없어(무지개 배경 포함) 배경을 지우지 말고 `--radius-20` + `object-fit: cover` 로 둥근
+  버튼 면으로 쓴다. blink 그림이 없어 깜빡임은 `wink` 로 대신한다. 옛 9종과 생성 스크립트는 소비자가 없어
+  삭제했으니 되살리지 않는다. 표정 판정 정본은 `src/transform/aiBuddyEmotion.ts`
+  하나이고 플로팅 버튼·아이 홈 타일·대화 헤더·타이핑 표시가 같은 얼굴을 쓴다. 아이가 속상하면 같이 슬퍼하지 않고 다독이며
   (caring), 확인 대기 중에는 해낸 표정(excited)을 짓지 않는다. 플로팅 버튼(`src/app/AiBuddyFab.tsx`)은
   ChildShell·PushShell 에서 아이 세션에만 뜨고, 위치를 px 가 아니라 이동 가능 영역 비율로 가족+아이 키에 저장한다
   (`src/transform/aiBuddyFabPosition.ts`). 진입 번들 예산 때문에 lazy+Suspense 로 붙여야 build 가 통과한다.
@@ -539,6 +542,12 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   아이를 알아 가는 부분: 맥락 14턴·요약 5건·장기기억 30건(확신도 우선), 열린 어휘 기억 추출,
   반복 시 confidence +0.05(상한 0.95), 아이 대화만 reasoningEffort low + 예산 900.
   ⚠️ 조사 처리에서 `이` 는 떼지 않는다(고양이·떡볶이가 망가진다).
+  대기 중 배회·말 걸기(2026-08-18 TK 지시): 경로 정본은 `src/transform/aiBuddyWander.ts`(순수·시드 결정적)로
+  9초마다 한 걸음, 좌우 가장자리에만 서고 세로 8~92% 띠 안에서 최대 0.34비율, 세 걸음마다 반대쪽으로 건너간다.
+  이동 얼굴은 explore, 도착 얼굴은 explore 를 뺀 9종에서 뽑고(같으면 계속 걷는 것처럼 보인다) 세 걸음마다
+  반말 한 마디를 2.6초 띄운다(`pointer-events:none`·`aria-hidden`·바깥쪽 가장자리 정렬). 배회 자리는 저장하지
+  않으며 드래그 직후 20초·드래그 중·실제 대화 감정·`document.hidden`·움직임 줄이기에서 멈춘다.
+  ⚠️ 배회 interval effect 의 의존성에 `emotion` 을 넣으면 도착 표정·말풍선 타이머가 취소된다(`emotionRef` 사용).
   회귀=`tests/aiBuddyFab.test.ts`·`tests/eventCompanionPrompt.test.ts`·Worker
   `tests/aiChildSettingsAgent.test.mjs`·`tests/aiChildMemoryDepth.test.mjs`.
 - ★AI 실패 안내는 하나로·정직하게(2026-08-17 실사고): 전역 MutationCache 폴백은 `mutation.options.onError`
@@ -710,6 +719,15 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 
 ## 실기기 검증 치트시트
 
+- ★**`adb install -r` 직후 WebView 는 옛 번들을 보여 준다(2026-08-18 실측)**: PWA Service Worker 가 이전 빌드를
+  precache 했기 때문에 설치가 Success 여도 화면은 직전 번들이다(새 자산 20종을 넣었는데 구 경로·구 개수가 나와
+  "빌드가 안 들어갔다"고 오판했다). ①먼저 APK 안에 새 자산이 있는지 확인한다(zip 열거로 `assets/public/...`)
+  ②그래도 옛 화면이면 SW 문제다. 앱은 `main.tsx` 의 `onNeedRefresh`→활성화→controllerchange 리로드로 다음
+  실행에 자동 갱신되므로 실사용자 조치는 필요 없고, 즉시 증거가 필요할 때만 CDP 로 `getRegistrations()`
+  `unregister()` + `caches.delete()` 후 `Page.reload{ignoreCache:true}` 한다(SW 는 새 번들로 재등록된다).
+- ★**대기 중 애니메이션은 꺼진 화면에서 관측할 수 없다**: 화면이 꺼진 WebView 는 `document.hidden === true` 라
+  배회·깜빡임이 설계대로 멈춘다. 밤에 아이 기기를 깨우지 말고, 시간축 동작은 격리 Chromium + dist + 아이 세션만
+  심은 하니스로 관측한다(`--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1` 로 외부 호스트를 닫는다).
 - ★**CDP 스크린샷은 디자인 판정용이 아니다(2026-07-30)**: Android WebView 의 `backdrop-filter`·`filter`
   레이어를 합성하지 못해 히어로 카드가 흐릿하게/텍스트가 겹쳐 보이는 **캡처 아티팩트**가 난다. 실제 화면
   판정은 `adb -s <serial> exec-out screencap -p > out.png` 프레임버퍼로 하고, CDP 는 DOM·상태·클릭에만 쓴다.

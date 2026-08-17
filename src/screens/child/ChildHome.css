@@ -833,6 +833,11 @@
   height: 46px;
   object-fit: contain;
 }
+/* AI 친구 얼굴 그림은 배경이 포함돼 있어 둥글게 오려 쓴다(다른 타일 아이콘은 투명 배경 유지). */
+.kd-tile--ai img {
+  border-radius: var(--radius-16);
+  object-fit: cover;
+}
 .kd-tile__title {
   display: -webkit-box;
   -webkit-box-orient: vertical;
