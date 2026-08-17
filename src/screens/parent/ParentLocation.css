@@ -299,10 +299,6 @@
 .pl-chip--active {
   border-color: #31c48d;
 }
-.pl-chip[data-refreshing="true"] {
-  width: min(100%, 278px);
-  border-color: var(--mint-line);
-}
 .pl-chip__avatar {
   width: 26px;
   height: 26px;
@@ -333,30 +329,12 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.pl-chip__status {
-  color: var(--fg-muted);
-  font-size: var(--type-caption);
-  line-height: var(--type-caption-line-height);
-  font-weight: var(--type-caption-weight);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 .pl-chip__dot {
   flex: none;
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: #31c48d;
-}
-.pl-chip__spinner {
-  flex: none;
-  width: 16px;
-  height: 16px;
-  border: 2px solid var(--mint-line);
-  border-top-color: var(--mint-600);
-  border-radius: 50%;
-  animation: hy-spin 0.9s linear infinite;
 }
 
 /* ── 하단 상세 카드 ─────────────────────────────────────────────────────── */
@@ -1202,7 +1180,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pl-chip__spinner,
+  .pl-sheet__zone--loading .pl-sheet__zone-dot,
   .pl-history-toolbar,
   .pl-journey,
   .pl-journey__stay,

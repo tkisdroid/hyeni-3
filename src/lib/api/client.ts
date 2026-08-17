@@ -209,7 +209,7 @@ function encodeStorageKey(path: string): string {
     .join("/");
 }
 
-export type ChildPhotoUploadPurpose = "memo" | "profile" | "placeholder";
+export type ChildPhotoUploadPurpose = "memo" | "profile" | "placeholder" | "parent_profile";
 
 export interface ChildPhotoUploadInput {
   familyId: string;

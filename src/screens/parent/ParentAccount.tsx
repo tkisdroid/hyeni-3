@@ -1,14 +1,16 @@
 import { useEffect, useId, useState, useRef } from "react";
+import type { ChangeEvent } from "react";
 import { useNavigate } from "react-router";
-import { ChevronLeft, KeyRound, LogOut, ShieldAlert, Trash2 } from "lucide-react";
+import { Camera, ChevronLeft, KeyRound, LogOut, ShieldAlert, Trash2 } from "lucide-react";
 import { asset } from "@/lib/assets";
+import { resizeImageFileSafe } from "@/lib/imageResize";
 import { formatPhoneDisplay } from "@/transform/phoneFormat";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { qk } from "@/queries/keys";
 import { useAccount, useChangePassword, useDeleteAccount } from "@/queries/useAccount";
-import { useUpdateProfile } from "@/queries/useFamily";
+import { useUpdateProfile, useUploadMyPhoto } from "@/queries/useFamily";
 import { SocialLinks } from "./SocialLinks";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import { Loading } from "@/components/ui/Loading";
@@ -33,9 +35,13 @@ export function ParentAccount() {
     refetch: refetchAccount,
   } = useAccount();
   const updateProfile = useUpdateProfile();
+  const uploadMyPhoto = useUploadMyPhoto();
   const deleteAccount = useDeleteAccount();
   const changePassword = useChangePassword();
 
+  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
+  const [photoProcessing, setPhotoProcessing] = useState(false);
+  const photoFileRef = useRef<HTMLInputElement | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [seeded, setSeeded] = useState(false);
@@ -79,8 +85,15 @@ export function ParentAccount() {
     : account?.isCoParent
       ? intl.formatMessage({ id: "parent.parentSettings.copy004" })
       : intl.formatMessage({ id: "parent.parentSettings.copy003" });
-  const avatarSrc =
-    me?.gender === "dad" ? "family/dad.webp" : "family/mom.webp";
+  // 프로필 사진 — 방금 고른 사진 > 저장된 사진(표시용 blob URL) > 성별 기본 캐릭터.
+  const defaultAvatarSrc = asset(me?.gender === "dad" ? "family/dad.webp" : "family/mom.webp");
+  const savedPhoto = me?.photo_url
+    && (me.photo_url.startsWith("http") || me.photo_url.startsWith("blob:"))
+    ? me.photo_url
+    : null;
+  const avatarSrc = photoDataUrl ?? savedPhoto ?? defaultAvatarSrc;
+  const hasOwnPhoto = !!(photoDataUrl ?? savedPhoto);
+  const photoBusy = photoProcessing || uploadMyPhoto.isPending;
 
   // 전화번호는 표시 포맷("010-0000-0000")으로 통일해 비교한다 —
   // 저장값이 하이픈 없이 들어와도 화면에 들어온 것만으로 '변경됨'이 되지 않게 한다.
@@ -91,6 +104,7 @@ export function ParentAccount() {
   const accountReady = !isLoading && !accountIsError && account !== null;
   usePwaUpdateCriticalSection(
     dirty
+    || photoBusy
     || updateProfile.isPending
     || changePassword.isPending
     || deleteAccount.isPending
@@ -99,6 +113,42 @@ export function ParentAccount() {
     || newPassword.length > 0
     || newPasswordConfirm.length > 0,
   );
+
+  /**
+   * 내 프로필 사진 등록·변경. 대상은 내 멤버 행이고 서버가 소유권을 다시 확인한다.
+   * 고른 즉시 업로드하고, 서버 사진이 표시용 URL로 도착할 때까지 방금 고른 사진을 보여준다.
+   */
+  const onPickPhoto = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = ""; // 같은 파일 재선택 허용
+    if (!file || photoBusy) return;
+    if (!accountReady || !me) {
+      show(intl.formatMessage({ id: "parent.parentAccount.copy002" }), "⚠️");
+      return;
+    }
+    setPhotoProcessing(true);
+    let dataUrl: string | null = null;
+    try {
+      dataUrl = await resizeImageFileSafe(file, { maxEdge: 512, quality: 0.85 });
+    } catch (error) {
+      console.error("프로필 사진 준비 실패:", error);
+    } finally {
+      setPhotoProcessing(false);
+    }
+    if (!dataUrl) {
+      show(intl.formatMessage({ id: "parent.profileEdit.error.photoLoad" }), "⚠️");
+      return;
+    }
+    setPhotoDataUrl(dataUrl);
+    try {
+      await uploadMyPhoto.mutateAsync({ memberId: me.id, dataUrl });
+      show(intl.formatMessage({ id: "parent.parentAccount.copy004" }), "✅");
+    } catch (error) {
+      console.error("프로필 사진 저장 실패:", error);
+      setPhotoDataUrl(null); // 저장 실패를 저장된 것처럼 보여주지 않는다.
+      show(localizeApiError(error, intl, "formal"), "⚠️");
+    }
+  };
 
   const saveProfile = () => {
     if (!accountReady) {
@@ -242,15 +292,41 @@ export function ParentAccount() {
       </header>
 
       <div className="pa-content">
-        {/* 프로필 미리보기 */}
+        {/* 프로필 미리보기 + 내 사진 등록(2026-08-17 TK 요청) */}
         <div className="pa-profile">
-          <div className="pa-profile__avatar">
-            <img src={asset(avatarSrc)} alt="" />
-          </div>
+          <button
+            type="button"
+            className="pa-profile__avatar pa-profile__avatar--edit hy-busy-center hy-press"
+            data-photo={hasOwnPhoto ? "true" : "false"}
+            onClick={() => photoFileRef.current?.click()}
+            disabled={!accountReady || !me || photoBusy}
+            aria-busy={photoBusy}
+            aria-label={intl.formatMessage({
+              id: hasOwnPhoto ? "parent.parentAccount.photo.change" : "parent.parentAccount.photo.set",
+            })}
+          >
+            <img src={avatarSrc} alt="" loading="eager" decoding="async" />
+            <span className="pa-profile__avatar-edit" aria-hidden="true">
+              <Camera size={14} strokeWidth={2.4} color="#fff" />
+            </span>
+          </button>
+          <input
+            ref={photoFileRef}
+            type="file"
+            accept="image/*"
+            hidden
+            disabled={!accountReady || !me || photoBusy}
+            onChange={(event) => void onPickPhoto(event)}
+          />
           <div className="pa-profile__info">
             <div className="pa-profile__name">{name.trim() || account?.myName || intl.formatMessage({ id: "parent.parentSettings.copy003" })}</div>
             <div className="pa-profile__meta">
               {providerLabel} · {roleLabel}
+            </div>
+            <div className="pa-profile__hint">
+              {photoBusy
+                ? intl.formatMessage({ id: "parent.profileEdit.photo.processing" })
+                : intl.formatMessage({ id: "parent.parentAccount.photo.hint" })}
             </div>
           </div>
         </div>

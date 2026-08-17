@@ -737,6 +737,37 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   새 화면은 `aria-busy={<진행 식>}` 만 정확히 켜면 된다(`disabled` 식에서 **진행 항만** 골라야 한다 — 유효성 항까지
   넣으면 그냥 못 누르는 버튼이 '작업 중'으로 잘못 알려진다). 자기 스피너를 그리는 버튼은 `hy-busy-quiet` 로 제외한다.
   가드=`tests/progressIndicatorContract.test.mjs`.
+  ★**아이콘만 있는 원형 버튼은 `hy-busy-center` 를 함께 붙인다(2026-08-17 TK 제보)**: 공용 링은 `::before` 로
+  flex 행에 끼어들어 라벨 왼쪽에 붙는 설계라, 라벨이 없는 원형 버튼에서는 아이콘을 밀어내 글리프가 치우쳐 보인다
+  (채팅 보내기 비행기). `hy-busy-center` 가 링을 절대 배치로 가운데 겹치고 자식(아이콘)만 감춘다 —
+  버튼 크기·아이콘 위치는 그대로다. 자기 펄스/스피너를 겹쳐 두 표시자로 만들지 말 것.
+- ★**진행 표시자는 한 화면에 하나만 움직인다(2026-08-17 TK 제보)**: 부모 위치 화면은 갱신 중에
+  ①아이 칩의 "위치 요청을 보냈어요" 문구 ②칩 폭 확장 ③칩 스피너 ④우상단 새로고침 회전을 동시에 했고,
+  사용자에게는 "프로필 위에 문구가 겹치고 버튼이 따로 움직인다"로 보였다. 지금은 **새로고침 버튼 회전 하나**만
+  진행을 알리고 아이 칩은 정지 상태를 유지한다(`parent.location.requestSent` 재도입 금지).
+  상세 카드는 갱신 중에도 마지막 확인 시각·정확도를 그대로 보여 준다(빈 문구로 바꾸지 않는다).
+  가드=`tests/parentLocationUi.test.mjs`.
+- ★**부모 프로필 사진(2026-08-17 TK 요청)**: 업로드 purpose 는 `parent_profile` 이고 대상은 **항상 caller 본인
+  멤버 행**이다(주 보호자도 남의 부모 사진을 대신 못 바꾼다). 서버는 세 곳에서 같은 소유권을 확인한다 —
+  `authorizeChildPhotoUpload`, `storageInvalidUploadCleanup` 의 journal INSERT **SQL 분기**(kind 를 추가하고
+  분기를 안 넣으면 업로드가 `storage_journal_unavailable` 503 으로 조용히 막힌다), `/api/family/member/photo`
+  (주 보호자 아니면 본인 멤버 + `{familyId}/uploads/{본인}/{uuid}.{ext}` 키만). 조회는 `profile` 과 같은 판정이라
+  같은 가족 아이·공동 보호자가 아바타를 볼 수 있다.
+  ⚠️ 멤버 `photo_url` 은 R2 객체 키라 그대로 `<img src>` 에 넣으면 화면에 안 나온다 — `queries/memberPhotos.ts`
+  의 `useResolvedMemberPhotoUrls` 로 표시용 blob URL을 만들고 `useMyFamily`·`useAccount` 가 이 한 곳을 공유한다.
+  부모 아바타 기본값(성별 캐릭터)은 `lib/avatar.ts parentAvatarPath` 단일 출처다.
+  가드=`tests/parentProfilePhoto.test.mjs`·`worker/tests/storageObjectAuthorization.test.mjs`.
+- ★**라우트 namespace 누락 = 화면에 원시 message id(2026-08-17 실기기 확인)**: namespace 는 화면을 지나며
+  누적되므로 다른 화면을 먼저 들른 세션에서는 가려지고, 콜드 스타트로 그 화면에 바로 들어가면 문구가 id 로 보인다.
+  `/subscription`(열 제목 `parent.tier.free`)·`/place-manager` 계열(제목 `notifications.placeManager.title`)·
+  부모 위치 상태 칩(`child.state.checking`)이 실제로 그랬다. `routeElement` 의 GROUP 은 화면이 쓰는 모든
+  namespace 를 포함해야 하고, 공용 transform(`tierPolicy`·`premiumUpsell`)이 만드는 문구도 화면 몫으로 센다.
+  부모 라우트에서 `child.*` 문구를 쓰지 않는다. 가드=`tests/i18nUiWiring.test.mjs`.
+  ⚠️ 눈으로 훑는 스윕은 이 결함을 놓친다 — hash 만 바꾸며 도는 하니스는 앞 화면의 namespace 를 이미 갖고 있다.
+- ★**표는 열 폭을 먼저 고정한다(2026-08-17 TK 제보 "플랜 비교 줄바꿈이 난잡함")**: 항목 이름에 `white-space: nowrap`
+  을 주면 표가 화면보다 넓어지고, 남은 폭에 밀린 값 칸이 한국어 글자 중간에서 끊긴다. `table-layout: fixed` +
+  열 폭(44%/28%/28%) + `word-break: keep-all`·`overflow-wrap: anywhere`·`text-wrap: pretty` 로 어절 단위로만 접는다.
+  가드=`tests/responsiveTextWrapContract.test.mjs`.
 - ★**Worker 배포 자격(2026-08-02 갱신)**: 루트 `.env` 의 `CLOUDFLARE_API_TOKEN` 은 D1 전용이라 Workers 배포가
   `Authentication error 10000` 이다. 배포 권한 토큰과 계정 ID 는 **`worker/.env`** 에 있고 두 값 모두 따옴표를
   벗겨 프로세스 env 로 주입해야 한다(`"…"` 그대로면 `/accounts/"id"/…` 로 요청돼 실패).

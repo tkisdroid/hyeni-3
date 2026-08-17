@@ -142,7 +142,8 @@ const shortcutLabelIds: Readonly<Record<string, string>> = {
   sc4: "parent.home.shortcut.places",
   sc5: "parent.home.shortcut.remoteAudio",
   sc6: "parent.home.shortcut.safetyReport",
-  sc7: "parent.home.shortcut.subscription",
+  // sc7 은 "아이 기기 찾기"(/remote-ring)다 — 예전 라벨 id 는 "구독"이라 눌러야 하는 곳과 이름이 달랐다.
+  sc7: "parent.home.shortcut.deviceFinder",
   sc8: "parent.home.shortcut.notifications",
 };
 

@@ -22,25 +22,28 @@ test("실시간 위치 요청 중에는 대기 상태를 화면에 표시하고 
   assert.match(refreshWaitSource, /export const LOCATION_REFRESH_POLL_MS = 2_500/);
   assert.match(refreshWaitSource, /while \(now\(\) < deadline\)/);
   assert.match(source, /return \(\) => \{\s*refreshSeq\.current \+= 1;/s);
-  // 진행 안내는 간단한 한 줄만 쓴다 — 단계별 설명과 부제는 재도입 금지(2026-08-02 TK 지시).
-  assert.equal(koParent["parent.location.requestSent"], "위치 요청을 보냈어요");
-  assert.match(source, /const refreshOverlayTitle = intl\.formatMessage\(\{ id: "parent\.location\.requestSent" \}\)/);
-  assert.doesNotMatch(source, /refreshOverlaySub|새 위치를 기다리는 중|위치 요청을 보내는 중/);
   // 새로고침 버튼은 자체 회전 아이콘이 있으므로 전역 aria-busy 스피너를 끈다(아이콘 2개 방지).
   assert.match(source, /className=\{`pl-refresh hy-busy-quiet\$\{/);
+  assert.match(source, /aria-busy=\{isRefreshingLocation\}/);
+  // 진행 중 버튼 라벨은 대상 아이를 밝힌다("혜니 위치 확인 중").
+  assert.match(source, /aria-label=\{isRefreshingLocation \? refreshBusyLabel :/);
+  assert.match(koParent["parent.location.refreshingForChild"], /\{childName\} 위치 확인 중/);
 });
 
-test("위치 요청 안내는 아이 프로필 칩 안에 표시해 프로필을 가리지 않는다", () => {
-  assert.match(source, /data-refreshing=\{isRefreshingLocation \? "true" : "false"\}/);
-  assert.match(source, /className="pl-chip__status"/);
-  assert.match(source, /className="pl-chip__spinner"/);
-  assert.match(source, /role="status" aria-live="polite"/);
+test("위치 갱신 진행은 새로고침 버튼 하나로만 알리고 아이 프로필을 건드리지 않는다", () => {
+  // 2026-08-17 TK 제보: 아이 프로필 위에 "위치 요청을 보냈어요"가 겹쳐 보이고
+  // 칩과 새로고침 버튼이 각각 움직여 디자인이 흐트러졌다. 문구·칩 변형은 재도입 금지.
+  assert.doesNotMatch(source, /parent\.location\.requestSent/);
+  assert.doesNotMatch(source, /parent\.parentLocation\.copy006/);
+  assert.doesNotMatch(source, /pl-chip__status|pl-chip__spinner|data-refreshing/);
+  assert.doesNotMatch(css, /\.pl-chip__status|\.pl-chip__spinner|\.pl-chip\[data-refreshing/);
   assert.doesNotMatch(source, /className="pl-refreshing"/);
   assert.doesNotMatch(css, /\.pl-refreshing\s*\{/);
-  assert.match(css, /\.pl-chip\[data-refreshing="true"\]/);
+  // 상세 카드는 진행 중에도 마지막 확인 정보를 그대로 보여준다(빈 문구로 바꾸지 않는다).
+  assert.match(source, /pl-sheet__zone--loading/);
   assert.match(
     css,
-    /@media \(prefers-reduced-motion: reduce\) \{[^}]*\.pl-chip__spinner[^}]*animation: none;/s,
+    /@media \(prefers-reduced-motion: reduce\) \{[^}]*\.pl-sheet__zone--loading \.pl-sheet__zone-dot[^}]*animation: none;/s,
   );
 });
 

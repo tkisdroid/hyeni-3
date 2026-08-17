@@ -501,6 +501,35 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   `--mint-text`/`--gold-text`/`--fg-tertiary` 토큰이 정본이고 중간 톤을 soft 위 글자색으로 쓰지 않는다.
   ⚠️ 런타임 대비 계측은 **그라디언트 채움을 못 본다**(배경 이미지라 배경색이 없음) — 정적 검사가 이 맹점을 잡았다.
   회귀=`tests/colorContrastAndRadius.test.mjs`(토큰 대비 계산 + 흰글자/파스텔 조합 스캔).
+- ★**부모 프로필 사진(2026-08-17 TK 요청 "부모도 프로필 사진을 등록할 수 있게")**: 진입점은 부모 설정 →
+  계정(`/account`) 상단 프로필 카드의 사진 버튼이고, 고른 즉시 업로드한다. 업로드 purpose 는 `parent_profile`,
+  대상은 **항상 caller 본인 멤버 행**이라 주 보호자도 다른 보호자 사진을 대신 바꾸지 못한다. 서버는 같은 소유권을
+  세 곳에서 확인한다 — `worker/routes/storage.ts authorizeChildPhotoUpload`, `worker/lib/storageInvalidUploadCleanup.ts`
+  journal INSERT 의 **kind 별 SQL 분기**, `/api/family/member/photo`(주 보호자가 아니면 본인 멤버 + 서버 발급
+  `{familyId}/uploads/{본인}/{uuid}.{ext}` 키만 허용). ⚠️ journal 분기를 빼먹으면 인증·quota 를 다 통과한 업로드가
+  `storage_journal_unavailable` 503 으로 조용히 막힌다(실제로 이 실수를 했다). 조회 판정은 `profile` 과 같아
+  같은 가족 아이·공동 보호자가 아바타를 볼 수 있다. 표시는 `src/queries/memberPhotos.ts` 의
+  `useResolvedMemberPhotoUrls` 한 곳에서 R2 객체 키 → 표시용 blob URL로 바꾸며 `useMyFamily`·`useAccount` 가
+  이 해석기를 공유한다(키를 그대로 `<img src>` 에 넣으면 사진이 안 나온다). 성별 기본 캐릭터 폴백은
+  `lib/avatar.ts parentAvatarPath` 단일 출처이고 familyView·MemoChat·FamilyConnection·ParentSettings 가 함께 쓴다
+  (예전 MemoChat 은 아빠 계정에도 mom.webp 를 썼다). 사진은 프레임을 채우고(`data-photo="true"` → cover) 기본
+  캐릭터는 `contain` 을 유지한다. 회귀=`tests/parentProfilePhoto.test.mjs`·
+  `worker/tests/storageObjectAuthorization.test.mjs`.
+- ★**라우트가 싣지 않는 namespace 문구 = 화면에 원시 id 노출(2026-08-17 실기기 확인)**: `routeElement(<X/>, GROUP)`
+  의 GROUP 이 화면이 쓰는 모든 message namespace를 포함해야 한다. namespace 는 화면을 지나며 **누적**되므로
+  다른 화면을 먼저 들른 세션에서는 정상처럼 보이고, 콜드 스타트로 그 화면에 바로 들어가면 문구가 id 로 보인다.
+  실제로 `/subscription` 은 플랜 비교 열 제목이 `parent.tier.free`(tierPolicy 가 parent.* 사용),
+  `/place-manager`·`/place-form`·`/location-status`·`/location-settings` 는 화면 전체가
+  `notifications.placeManager.title` 처럼 보였고, 부모 위치 상세 카드 상태 칩은 `child.state.checking` 이었다.
+  수정: BILLING 에 `parent` 추가, 위 네 화면은 `PARENT_NOTIFICATION_NAMESPACES`, 위치 탭은
+  `PARENT_LOCATION_NAMESPACES`(core·parent·notifications·billing·shared), 부모 화면의 `child.*` 2건은
+  `parent.location.state.*` 로 옮겼다. **부모 라우트에서 child namespace 문구를 쓰지 말 것.**
+  가드=`tests/i18nUiWiring.test.mjs`("화면이 쓰는 모든 message namespace를 그 라우트가 싣는다" — 공용
+  transform(`tierPolicy`·`premiumUpsell`·`PremiumUpsell`) import 도 parent 문구로 계산한다).
+- ★**플랜 비교표 줄바꿈(2026-08-17 TK 제보)**: 항목 이름 `white-space: nowrap` 때문에 표가 화면보다 넓어지고
+  값 칸이 글자 중간에서 끊겼다. `table-layout: fixed` + 44%/28%/28% 열 폭 + `word-break: keep-all` ·
+  `overflow-wrap: anywhere` · `text-wrap: pretty` 로 어절 단위로만 접는다(`.sub-compare__scroll` 의 가로 스크롤은
+  안전망으로 유지). 문구는 그대로 두고 레이아웃만 고쳤다. 회귀=`tests/responsiveTextWrapContract.test.mjs`.
 - ★**모서리 반경 정규화(2026-07-30)**: 8/12/16/20/24px·pill 만 쓴다. 10·11·13·14·15·17·18·19px 등 161건을
   가장 가까운 단계의 `var(--radius-*)` 로 정규화했다. 제외 대상은 **UI 표면이 아닌 것**뿐이다 —
   장식(색종이·유기적 블롭·히어로 orb), 폰 베젤 프레임(`.hy-app` 44px), 인라인 링크 `:focus-visible` 링(2px).
@@ -512,6 +541,13 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   붙이고 `--press:1` 로 진행 중 눌림 축소를 멈춘다. 그래서 **새 화면은 `aria-busy={<진행 식>}` 만 정확히 켜면 된다**.
   `disabled` 식에서 진행 항만 골라 써야 한다(유효성 항까지 넣으면 그냥 못 누르는 버튼이 '작업 중'으로 잘못 알려진다).
   자기 스피너를 그리는 버튼(`sqs-retry`·`cls-cta`·`ls-retry`·`ais-mic`)은 `hy-busy-quiet` 로 제외해 표시자가 겹치지 않게 한다.
+  ⑤★**아이콘 전용 원형 버튼은 `hy-busy-center` 를 함께 붙인다(2026-08-17 TK 제보 "보내기를 누르면 비행기가
+  치우쳐 보임")** — 공용 링은 라벨 왼쪽에 끼는 `::before` 라서 라벨 없는 원형 버튼에서는 아이콘을 밀어낸다.
+  `hy-busy-center` 가 링을 절대 배치로 가운데 겹치고 자식만 감춘다(크기·위치 불변). 자기 펄스를 겹쳐 두 표시자로
+  만들지 말 것(`.mc-send--sending` 의 opacity 펄스는 이 이유로 제거했다).
+  ⑥★**한 화면에 움직이는 표시자는 하나** — 부모 위치 갱신은 우상단 새로고침 회전만 쓴다. 아이 칩 문구
+  (`parent.location.requestSent`)·칩 폭 확장·칩 스피너는 프로필 위에 겹쳐 보여 전부 제거했고 재도입 금지다.
+  갱신 중에도 상세 카드는 마지막 확인 시각·정확도를 그대로 보여 준다. 회귀=`tests/parentLocationUi.test.mjs`.
   화면 단위 로딩은 애니메이션이 있는 `<Loading/>`·`ScreenQueryState`·`hy-skel` 만 쓰고 맨 문구를 쓰지 않는다.
   `useActiveChild().familyLoading` 은 **조회 중과 "아이 없음"을 구분**하기 위한 값이다 — 이게 없으면 주간리포트·
   하루요약·AI크레딧·길찾기가 가족 조회 중에 "아이가 없어요"를 미리 단정해 표시자도 못 띄웠다.
@@ -563,6 +599,14 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   진단은 response code/debug message와 미조회 product id/type/status만 다루고 purchase/order token을 로그나 응답 진단에
   포함하지 않는다. Play 구매는 SHA-256 obfuscated family/parent id를 서버에서 대조하고, 부모 foreground에서 6시간 제한으로
   기존 구독을 재검증해 자동갱신 종료일을 갱신한다. AI 크레딧은 event claim·잔액·원장을 D1 batch로 원자 확정한다.
+- ★구독 유효기간 표시 검증(2026-08-17 TK 요청 "2100년까지 이용 가능해요가 정상인지 확인"): 화면은 D1
+  `family_subscription.current_period_end` 를 Asia/Seoul `dateStyle:"medium"` 으로 그대로 표시하므로 클라 버그가 아니다.
+  프로덕션 조회 결과 구독 행 6개 전부 `provider=google_play` 이고 **실제 결제 고객은 아직 없다** —
+  `2099-12-31 23:59:59+00`(2행, KST 로 2100-01-01)·`2099-01-01`(1행)은 수동 프리미엄 그랜트, `2027-04-26` 1행,
+  `qa_final_e2e_premium`(2026-08-01, 만료) 1행, `trial` 인데 `trial_ends_at` NULL 1행(계약대로 프리미엄 아님)이다.
+  코드에는 sentinel 날짜가 없고 실제 결제 경로는 Google `subscriptionsv2` 의 `line.expiryTime` 을 그대로 저장하므로
+  (`worker/shared/googlePlaySubscription.js` → `prepareGooglePlayFamilySubscriptionWrite`) 일반 회원은 실제 다음 결제일이
+  보인다. 즉 2100년은 운영자 수동 그랜트 데이터의 정직한 표시다(원한다면 그 행의 날짜를 정리하면 된다).
 - 프리미엄 퍼널 최소수집 계약(2026-08-01): 클라이언트는 고정 행동 이벤트에 UUID·앱 버전·발생 시각만 붙여 20건씩 보내고,
   실패는 제품 흐름과 분리된 메모리 100건 큐에서 다음 기록 때만 재시도한다(브라우저 저장소·세션 refresh 금지). Worker는
   active parent의 현재 가족을 서버에서 정본화하고 `PREMIUM_FUNNEL_HASH_SECRET` HMAC-SHA256 가족 가명키만 저장한다.

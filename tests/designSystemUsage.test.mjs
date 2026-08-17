@@ -2632,6 +2632,7 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/parent/EventForm.css", ".ef-chip__avatar"],
   ["src/screens/feature/ProfileEdit.css", ".pe-photo"],
   ["src/screens/feature/ProfileEdit.css", ".pe-photo__edit"],
+  ["src/screens/parent/ParentAccount.css", ".pa-profile__avatar-edit"],
   ["src/screens/feature/PlaceForm.css", ".pf-map__ring"],
   ["src/screens/feature/PlaceForm.css", ".pf-map-handle__bar"],
   ["src/screens/feature/ChildInvite.css", ".ci-qr-skeleton"],

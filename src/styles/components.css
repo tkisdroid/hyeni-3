@@ -620,6 +620,27 @@ button[aria-busy="true"],
 [role="button"][aria-busy="true"] {
   --press: 1;
 }
+/* 아이콘만 있는 원형 컨트롤(전송·확인 버튼 등)은 링을 라벨 옆에 끼울 자리가 없다.
+   그대로 두면 링이 아이콘을 밀어내 글리프가 한쪽으로 치우쳐 보인다(2026-08-17 TK 제보:
+   채팅 보내기 비행기). 그래서 링을 버튼 가운데에 겹쳐 놓고 아이콘만 잠시 감춘다 —
+   버튼 크기·아이콘 위치는 그대로 유지된다. */
+button.hy-busy-center[aria-busy="true"],
+[role="button"].hy-busy-center[aria-busy="true"] {
+  position: relative;
+}
+button.hy-busy-center[aria-busy="true"]:not(.hy-busy-quiet)::before,
+[role="button"].hy-busy-center[aria-busy="true"]:not(.hy-busy-quiet)::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  margin-inline-end: 0;
+  vertical-align: baseline;
+}
+button.hy-busy-center[aria-busy="true"] > *,
+[role="button"].hy-busy-center[aria-busy="true"] > * {
+  visibility: hidden;
+}
 @media (prefers-reduced-motion: reduce) {
   button[aria-busy="true"]:not(.hy-busy-quiet)::before,
   [role="button"][aria-busy="true"]:not(.hy-busy-quiet)::before {

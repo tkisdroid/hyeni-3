@@ -90,10 +90,16 @@ const PermDenied = lazyScreen(() => import("@/screens/feature/PermDenied"), "Per
 const ONBOARDING_NAMESPACES = ["core", "onboarding", "shared"] as const;
 const PARENT_NAMESPACES = ["core", "parent", "shared"] as const;
 const CHILD_NAMESPACES = ["core", "child", "shared"] as const;
-const BILLING_NAMESPACES = ["core", "billing", "shared"] as const;
+// 결제 화면도 parent 를 함께 싣는다 — 티어 라벨·잠금 안내(transform/tierPolicy, premiumUpsell)가
+// `parent.tier.*`·`parent.upsell.*` 를 쓰므로, 없으면 플랜 비교 열 제목이 "parent.tier.free" 원문 id로 보인다
+// (2026-08-17 브라우저 스윕에서 실제로 확인).
+const BILLING_NAMESPACES = ["core", "billing", "parent", "shared"] as const;
 const REPORT_NAMESPACES = ["core", "reports", "parent", "shared"] as const;
 const PARENT_NOTIFICATION_NAMESPACES = ["core", "notifications", "parent", "shared"] as const;
 const CHILD_NOTIFICATION_NAMESPACES = ["core", "notifications", "child", "shared"] as const;
+// 위치 탭은 위치·장소 문구(notifications)와 프리미엄 안내(billing)를 함께 쓴다 —
+// 2026-08-17 실기기 콜드 스타트에서 상태 칩이 원문 id 로 보이던 원인이다.
+const PARENT_LOCATION_NAMESPACES = ["core", "parent", "notifications", "billing", "shared"] as const;
 const SHARED_NAMESPACES = ["core", "shared"] as const;
 
 function routeElement(
@@ -161,7 +167,7 @@ const router = createHashRouter([
         children: [
           { path: "parent/home", element: routeElement(<ParentHome />, PARENT_NAMESPACES) },
           { path: "parent/calendar", element: routeElement(<ParentCalendar />, PARENT_NAMESPACES) },
-          { path: "parent/location", element: routeElement(<ParentLocation />, PARENT_NAMESPACES) },
+          { path: "parent/location", element: routeElement(<ParentLocation />, PARENT_LOCATION_NAMESPACES) },
           { path: "parent/memo", element: routeElement(<MemoChat />, PARENT_NAMESPACES) },
           { path: "parent/settings", element: routeElement(<ParentSettings />, PARENT_NAMESPACES) },
         ],
@@ -225,22 +231,22 @@ const router = createHashRouter([
           { path: "trial-lock", element: routeElement(<TrialLock />, BILLING_NAMESPACES) },
           { path: "notifications", element: routeElement(<Notifications />, PARENT_NOTIFICATION_NAMESPACES) },
           { path: "remote-audio", element: routeElement(<RemoteAudio />, PARENT_NOTIFICATION_NAMESPACES) },
-          { path: "place-manager", element: routeElement(<PlaceManager />, PARENT_NAMESPACES) },
+          { path: "place-manager", element: routeElement(<PlaceManager />, PARENT_NOTIFICATION_NAMESPACES) },
           { path: "friend-play", element: routeElement(<FriendPlay />, PARENT_NAMESPACES) },
           { path: "ai-schedule", element: routeElement(<AiSchedule />, PARENT_NAMESPACES) },
           { path: "ai-credit", element: routeElement(<AiCredit />, BILLING_NAMESPACES) },
           { path: "phone-setup", element: routeElement(<PhoneSetup />, PARENT_NAMESPACES) },
           { path: "sticker-send", element: routeElement(<StickerSend />, PARENT_NAMESPACES) },
           { path: "profile-edit", element: routeElement(<ProfileEdit />, PARENT_NAMESPACES) },
-          { path: "place-form", element: routeElement(<PlaceForm />, PARENT_NAMESPACES) },
+          { path: "place-form", element: routeElement(<PlaceForm />, PARENT_NOTIFICATION_NAMESPACES) },
           { path: "child-invite", element: routeElement(<ChildInvite />, PARENT_NAMESPACES) },
           { path: "event-form", element: routeElement(<EventForm />, PARENT_NAMESPACES) },
           { path: "danger-zone-form", element: routeElement(<DangerZoneForm />, PARENT_NOTIFICATION_NAMESPACES) },
-          { path: "location-status", element: routeElement(<LocationStatus />, PARENT_NAMESPACES) },
+          { path: "location-status", element: routeElement(<LocationStatus />, PARENT_NOTIFICATION_NAMESPACES) },
           { path: "child-detail", element: routeElement(<ChildDetail />, PARENT_NAMESPACES) },
           { path: "pairing-wizard", element: routeElement(<PairingWizard />, PARENT_NAMESPACES) },
           { path: "family-connection", element: routeElement(<FamilyConnection />, PARENT_NAMESPACES) },
-          { path: "location-settings", element: routeElement(<LocationSettings />, PARENT_NAMESPACES) },
+          { path: "location-settings", element: routeElement(<LocationSettings />, PARENT_NOTIFICATION_NAMESPACES) },
           { path: "account", element: routeElement(<ParentAccount />, PARENT_NAMESPACES) },
           { path: "data-sync", element: routeElement(<DataSync />, PARENT_NAMESPACES) },
           { path: "notification-settings", element: routeElement(<NotificationSettings />, PARENT_NOTIFICATION_NAMESPACES) },

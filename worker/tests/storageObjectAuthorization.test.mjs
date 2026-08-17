@@ -987,6 +987,92 @@ test("memo 업로드 목적은 정확한 활성 아이 대상만 허용한다", 
   assert.equal(photos.objects.size, 0);
 });
 
+test("부모 본인 프로필 사진은 자기 멤버 행만 올리고 가족은 그 아바타를 볼 수 있다", async () => {
+  const { sqlite, db } = createDb();
+  addFamily(sqlite);
+  // 주 보호자가 아닌 공동 보호자 — 자기 사진은 스스로 정할 수 있어야 한다.
+  sqlite.prepare("INSERT INTO users(id,is_anonymous) VALUES ('parent-b',0)").run();
+  sqlite.prepare(
+    `INSERT INTO family_members(id,family_id,user_id,role,name,is_active)
+     VALUES ('parent-member-b','family-a','parent-b','parent','공동 보호자',1)`,
+  ).run();
+  const photos = new PhotosBucket();
+  const coParent = { sub: "parent-b", role: "parent", familyId: "family-a" };
+  const child = { sub: "child-a", role: "child", familyId: "family-a" };
+  const uploadHeaders = (targetMemberId) => ({
+    "Content-Type": "image/jpeg",
+    "X-Hyeni-Upload-Purpose": "parent_profile",
+    "X-Hyeni-Target-Member-Id": targetMemberId,
+  });
+
+  // 다른 보호자의 사진을 대신 바꾸지 못한다.
+  const otherParent = await request(db, photos, "/api/storage/child-photo-uploads/family-a", coParent, {
+    method: "POST",
+    headers: uploadHeaders("parent-member-a"),
+    body: JPEG,
+  });
+  assert.equal(otherParent.status, 403, await otherParent.text());
+
+  // 아이는 부모 프로필 목적을 쓸 수 없다.
+  const childAttempt = await request(db, photos, "/api/storage/child-photo-uploads/family-a", child, {
+    method: "POST",
+    headers: uploadHeaders("parent-member-b"),
+    body: JPEG,
+  });
+  assert.equal(childAttempt.status, 403, await childAttempt.text());
+  assert.equal(photos.objects.size, 0);
+
+  const created = await request(db, photos, "/api/storage/child-photo-uploads/family-a", coParent, {
+    method: "POST",
+    headers: uploadHeaders("parent-member-b"),
+    body: JPEG,
+  });
+  assert.equal(created.status, 200, await created.clone().text());
+  const { path } = await created.json();
+  assert.match(path, /^family-a\/uploads\/parent-b\/[0-9a-f-]{36}\.jpg$/);
+  assert.equal(photos.objects.get(path)?.customMetadata?.purpose, "parent_profile");
+  assert.equal(
+    sqlite.prepare(
+      "SELECT authorization_kind FROM storage_invalid_upload_cleanup_jobs WHERE object_key=?",
+    ).get(path)?.authorization_kind,
+    "parent_profile",
+  );
+
+  // photo_url 은 본인 멤버 행 + 서버 발급 키만 받는다.
+  const savePhoto = (memberId, url, actor = coParent) => request(
+    db,
+    photos,
+    "/api/family/member/photo",
+    actor,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ family_id: "family-a", member_id: memberId, url }),
+    },
+  );
+
+  const foreignMember = await savePhoto("parent-member-a", path);
+  assert.equal(foreignMember.status, 403, await foreignMember.text());
+  const arbitraryUrl = await savePhoto("parent-member-b", "https://evil.example/avatar.jpg");
+  assert.equal(arbitraryUrl.status, 403, await arbitraryUrl.text());
+  const otherOwnerKey = await savePhoto(
+    "parent-member-b",
+    "family-a/uploads/parent-a/11111111-2222-3333-4444-555555555555.jpg",
+  );
+  assert.equal(otherOwnerKey.status, 403, await otherOwnerKey.text());
+
+  const saved = await savePhoto("parent-member-b", path);
+  assert.equal(saved.status, 200, await saved.clone().text());
+  assert.equal(
+    sqlite.prepare("SELECT photo_url FROM family_members WHERE id='parent-member-b'").get()?.photo_url,
+    path,
+  );
+
+  // 같은 가족의 아이도 부모 아바타를 표시할 수 있어야 한다.
+  const read = await request(db, photos, `/api/storage/child-photos/${path}`, child);
+  assert.equal(read.status, 200, await read.clone().text());
+});
+
 test("신규 memo 객체 조회는 부모와 대상 아이만 허용하고 형제는 차단한다", async () => {
   const { sqlite, db } = createDb();
   addFamily(sqlite);

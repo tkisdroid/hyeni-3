@@ -19,6 +19,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { asset } from "@/lib/assets";
+import { parentAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { ReferralRewardPanel } from "@/components/ReferralRewardPanel";
@@ -142,7 +143,9 @@ export function ParentSettings() {
   // 멤버 행 gender 가 비어 있으면 가입 메타(user_metadata.gender)를 본다.
   const genderHint = String(me?.gender ?? user?.user_metadata?.gender ?? "");
   const isDad = /dad|father|male|남/i.test(genderHint);
-  const profileAvatar = me?.photo_url || asset(isDad ? "family/dad.webp" : "family/mom.webp");
+  const profileAvatarPath = parentAvatarPath(me?.photo_url, isDad ? "dad" : "mom");
+  const hasProfilePhoto = profileAvatarPath.startsWith("http") || profileAvatarPath.startsWith("blob:");
+  const profileAvatar = hasProfilePhoto ? profileAvatarPath : asset(profileAvatarPath);
 
   const logoutBusyRef = useRef(false);
   const handleLogout = async () => {
@@ -245,7 +248,7 @@ export function ParentSettings() {
       <div className="ps-content">
         {/* 프로필 (실 로그인 사용자) */}
         <div className="ps-profile">
-          <div className="ps-profile__avatar">
+          <div className="ps-profile__avatar" data-photo={hasProfilePhoto ? "true" : "false"}>
             <img className="hy-network-avatar" src={profileAvatar} alt="" loading="eager" decoding="async" />
           </div>
           <div className="ps-profile__info">

@@ -2,7 +2,7 @@ import { useId, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { ChevronLeft, ChevronRight, UserPlus, Link2Off, Wifi } from "lucide-react";
 import { asset } from "@/lib/assets";
-import { DEFAULT_CHILD_AVATAR } from "@/lib/avatar";
+import { DEFAULT_CHILD_AVATAR, parentAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import { useMyFamily, useUnpairChild } from "@/queries/useFamily";
@@ -271,7 +271,7 @@ export function FamilyConnection() {
                 coParents.map((p) => (
                   <div key={p.id} className="fc-device">
                     <span className="fc-device__avatar" style={{ background: "var(--cream-soft, #FFF3D6)" }}>
-                      <img src={asset(p.gender === "dad" ? "family/dad.webp" : "family/mom.webp")} alt="" />
+                      <img src={avatarSrc(parentAvatarPath(p.photo_url, p.gender))} alt="" />
                     </span>
                     <span className="fc-device__main">
                       <span className="fc-device__name">{p.name || guardianFallback}</span>

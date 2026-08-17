@@ -12127,6 +12127,13 @@
     "variables": {},
     "description": "parent.home.shortcut.aiSchedule에 표시하는 사용자 안내 문구"
   },
+  "parent.home.shortcut.deviceFinder": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "부모 홈 바로가기 다국어 문구: 아이 기기 찾기"
+  },
   "parent.home.shortcut.location": {
     "namespace": "parent",
     "audience": "parent",
@@ -12569,6 +12576,20 @@
       "childName": "string"
     },
     "description": "parent.location.scopeLoadingForChild에 표시하는 사용자 안내 문구"
+  },
+  "parent.location.state.checking": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "부모 위치 화면 다국어 문구: 상태 칩 확인 중"
+  },
+  "parent.location.state.error": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "부모 위치 화면 다국어 문구: 상태 칩 확인 실패"
   },
   "parent.location.today": {
     "namespace": "parent",
@@ -13317,6 +13338,27 @@
     "qualityTier": "B",
     "variables": {},
     "description": "부모 계정 전화번호 입력 예시"
+  },
+  "parent.parentAccount.photo.change": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "부모 계정 화면 다국어 문구: 내 프로필 사진 변경 버튼"
+  },
+  "parent.parentAccount.photo.hint": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "부모 계정 화면 다국어 문구: 내 프로필 사진 안내"
+  },
+  "parent.parentAccount.photo.set": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "부모 계정 화면 다국어 문구: 내 프로필 사진 등록 버튼"
   },
   "parent.parentCalendar.copy001": {
     "namespace": "parent",

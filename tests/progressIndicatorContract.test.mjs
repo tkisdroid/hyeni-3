@@ -143,6 +143,35 @@ test("표시자는 한 버튼에 하나만 — 자체 스피너를 그리면 공
   );
 });
 
+test("아이콘만 있는 원형 버튼은 진행 링을 가운데에 겹쳐 글리프가 밀리지 않는다", () => {
+  // 2026-08-17 TK 제보: 채팅 보내기 버튼의 비행기가 전송 중 한쪽으로 치우쳐 보였다.
+  // 원인은 공용 링(::before)이 flex 행에 끼어 아이콘을 밀어낸 것 — 링을 가운데로 겹친다.
+  assert.ok(
+    COMPONENTS_CSS.includes('button.hy-busy-center[aria-busy="true"]:not(.hy-busy-quiet)::before'),
+    "아이콘 전용 컨트롤용 가운데 정렬 규칙이 있어야 한다",
+  );
+  const block = COMPONENTS_CSS.slice(
+    COMPONENTS_CSS.indexOf('button.hy-busy-center[aria-busy="true"]'),
+  );
+  assert.match(block, /position:\s*absolute/, "링을 흐름에서 빼야 아이콘이 밀리지 않는다");
+  assert.match(block, /translate:\s*-50% -50%/);
+  assert.match(block, /margin-inline-end:\s*0/, "라벨용 여백을 남기면 다시 치우친다");
+  assert.match(block, /visibility:\s*hidden/, "겹치는 동안 아이콘은 감춘다");
+
+  const memo = readFileSync("src/screens/shared/MemoChat.tsx", "utf8");
+  const send = buttonTags(memo).filter((tag) => tag.includes("mc-send"));
+  assert.equal(send.length, 1, "보내기 버튼은 하나여야 한다");
+  assert.match(send[0], /hy-busy-center/);
+  assert.match(send[0], /aria-busy=\{sendMemo\.isPending\}/);
+
+  // 펄스(투명도) 애니메이션을 되살리면 링과 겹쳐 표시자가 둘로 보인다.
+  const sending = /\.mc-send--sending\s*\{([^}]*)\}/.exec(
+    readFileSync("src/screens/shared/MemoChat.css", "utf8"),
+  );
+  assert.ok(sending, ".mc-send--sending 규칙이 있어야 한다");
+  assert.doesNotMatch(sending[1], /animation:/);
+});
+
 test("활성 아이 컨텍스트는 가족 조회 중임을 알려 '아이 없음' 단정을 막는다", () => {
   const provider = readFileSync("src/app/activeChild.tsx", "utf8");
   assert.match(provider, /familyLoading:\s*boolean/, "컨텍스트 타입에 familyLoading 이 있어야 한다");

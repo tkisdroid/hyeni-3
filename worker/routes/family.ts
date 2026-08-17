@@ -1718,6 +1718,40 @@ family.post("/member/profile", requireAuth, async (c) => {
 });
 
 // ── POST /member/photo — set_family_member_photo_url_by_id (url 텍스트만) ──────
+// 주 보호자는 가족 멤버 사진을 정하고, 그 외 부모는 자기 프로필 사진만 정한다(2026-08-17).
+// 본인 경로는 서버가 발급한 `{familyId}/uploads/{본인}/{uuid}.{ext}` 키만 받는다 —
+// 임의 문자열이나 남의 업로드 키를 자기 아바타로 붙이지 못하게 한다.
+const OWN_UPLOAD_PHOTO_KEY =
+  /^[A-Za-z0-9_-]{1,128}\/uploads\/[A-Za-z0-9_-]{1,128}\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(?:jpg|png|webp)$/i;
+
+function isOwnUploadPhotoKey(url: string | null, familyId: string, userId: string): boolean {
+  if (url === null) return true; // 사진 지우기
+  if (!OWN_UPLOAD_PHOTO_KEY.test(url)) return false;
+  const segments = url.split("/");
+  return segments[0] === familyId && segments[2] === userId;
+}
+
+async function isOwnActiveParentMember(
+  db: D1Database,
+  memberId: string,
+  familyId: string,
+  userId: string,
+): Promise<boolean> {
+  if (!memberId || !familyId || !userId) return false;
+  const row = await db
+    .prepare(
+      `SELECT 1 AS ok
+         FROM family_members fm
+         JOIN families f ON f.id = fm.family_id
+        WHERE fm.id = ? AND fm.family_id = ? AND fm.user_id = ?
+          AND fm.role = 'parent' AND fm.is_active = 1
+        LIMIT 1`,
+    )
+    .bind(memberId, familyId, userId)
+    .first<{ ok: number }>();
+  return !!row;
+}
+
 family.post("/member/photo", requireAuth, async (c) => {
   const userId = c.get("user").sub;
   const body = await c.req.json<Record<string, unknown>>();
@@ -1725,7 +1759,12 @@ family.post("/member/photo", requireAuth, async (c) => {
   const memberId = String(body.member_id ?? "");
   const url = body.url == null ? null : String(body.url);
   if (!(await assertPrimaryParent(c.env.DB, userId, familyId))) {
-    return c.json({ error: "Not authorized" }, 403);
+    if (
+      !isOwnUploadPhotoKey(url, familyId, userId)
+      || !(await isOwnActiveParentMember(c.env.DB, memberId, familyId, userId))
+    ) {
+      return c.json({ error: "Not authorized" }, 403);
+    }
   }
   await c.env.DB.prepare("UPDATE family_members SET photo_url=? WHERE id=? AND family_id=?")
     .bind(url, memberId, familyId)

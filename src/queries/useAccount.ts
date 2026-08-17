@@ -3,9 +3,14 @@
  * 컴포넌트는 이 훅만 import(endpoints/account 직접 호출 금지).
  * 프로필 수정(useUpdateProfile)·가족 조회(useMyFamily)는 queries/useFamily 를 그대로 재사용한다.
  */
+import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { QueryObserverResult } from "@tanstack/react-query";
 import { qk } from "./keys";
+import {
+  useResolvedMemberPhotoUrls,
+  withResolvedMemberPhotos,
+} from "./memberPhotos";
 import { useAuth } from "@/auth/AuthContext";
 import type { FamilyMember } from "@/lib/api/endpoints/family";
 import {
@@ -55,7 +60,13 @@ export function useAccount(): UseAccountResult {
     enabled: status === "authenticated",
   });
 
-  const account = query.data ?? null;
+  // 멤버 사진은 서버 객체 키라 그대로는 표시되지 않는다 — 가족 조회와 같은 lease 규칙으로 해석한다.
+  const photoUrls = useResolvedMemberPhotoUrls(query.data?.members);
+  const account = useMemo(() => {
+    const data = query.data ?? null;
+    if (!data) return null;
+    return { ...data, members: withResolvedMemberPhotos(data.members, photoUrls) };
+  }, [query.data, photoUrls]);
   const me =
     account && userId ? account.members.find((m) => m.user_id === userId) ?? null : null;
   const provider = user?.app_metadata?.provider ?? null;

@@ -5,7 +5,7 @@
  */
 import type { DeviceHealth, FamilyMember } from "@/lib/api/endpoints/family";
 import { unlockCountLabel } from "./deviceUnlock";
-import { childAvatarPath } from "@/lib/avatar";
+import { childAvatarPath, parentAvatarPath } from "@/lib/avatar";
 import {
   buildDeviceAppUsageView,
   type DeviceAppUsageItemView,
@@ -55,10 +55,6 @@ function parentRoleLabel(gender: string | null | undefined, intl: IntlShape): st
   return intl.formatMessage({ id: "parent.family.role.parent" });
 }
 
-function parentAvatar(gender: string | null | undefined): string {
-  if (gender === "dad") return "family/dad.webp";
-  return "family/mom.webp";
-}
 
 export interface FamilyView {
   parents: ParentView[];
@@ -74,7 +70,7 @@ export function mapFamilyToView(members: FamilyMember[], currentUserId: string |
       id: m.id,
       name: m.name || intl.formatMessage({ id: "parent.family.role.parent" }),
       roleLabel: parentRoleLabel(m.gender, intl),
-      avatar: parentAvatar(m.gender),
+      avatar: parentAvatarPath(m.photo_url, m.gender),
       isMe: !!currentUserId && m.user_id === currentUserId,
     }));
 

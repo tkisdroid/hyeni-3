@@ -5,7 +5,7 @@ import type { MouseEvent as ReactMouseEvent } from "react";
 import { useSearchParams } from "react-router";
 import { ChevronLeft, Send, Image as ImageIcon, MapPin, ShieldAlert, Download } from "lucide-react";
 import { asset } from "@/lib/assets";
-import { childAvatarPath } from "@/lib/avatar";
+import { childAvatarPath, parentAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { useSafeBack } from "@/app/useSafeBack";
 import { useAuth } from "@/auth/AuthContext";
@@ -287,10 +287,13 @@ export function MemoChat() {
     const map = new Map<string, { name: string; avatar: string; role: string }>();
     for (const m of family?.members ?? []) {
       if (!m.user_id) continue;
-      const fallback = m.role === "parent" ? "family/mom.webp" : childAvatarPath(m.photo_url);
+      // 부모는 등록한 프로필 사진 > 성별 기본 캐릭터(예전에는 아빠 계정도 엄마 캐릭터였다).
+      const avatar = m.role === "parent"
+        ? parentAvatarPath(m.photo_url, m.gender)
+        : childAvatarPath(m.photo_url);
       map.set(m.user_id, {
         name: m.name || (m.role === "parent" ? intl.formatMessage({ id: "shared.memoChat.copy001" }) : intl.formatMessage({ id: "shared.memoChat.copy002" })),
-        avatar: avatarSrc(m.role === "parent" ? (m.photo_url || fallback) : fallback),
+        avatar: avatarSrc(avatar),
         role: m.role,
       });
     }
@@ -845,7 +848,7 @@ export function MemoChat() {
           />
           <button
             type="button"
-            className={`mc-send hy-press${sendMemo.isPending ? " mc-send--sending" : ""}`}
+            className={`mc-send hy-busy-center hy-press${sendMemo.isPending ? " mc-send--sending" : ""}`}
             aria-label={sendMemo.isPending ? intl.formatMessage({ id: "shared.memoChat.copy044" }) : intl.formatMessage({ id: "shared.memoChat.copy045" })}
             onClick={handleSend}
             disabled={sendMemo.isPending || !scopeChild} aria-busy={sendMemo.isPending}

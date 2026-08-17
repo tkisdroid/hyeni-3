@@ -291,15 +291,18 @@ export function ParentLocation() {
     ? intl.formatMessage({ id: "parent.parentLocation.copy004" })
     : isLocked
     ? intl.formatMessage({ id: "parent.parentLocation.copy005" })
-    : isRefreshingLocation
-      ? intl.formatMessage({ id: "parent.location.requestSent" })
-      : isLowAccuracy
-        ? intl.formatMessage({ id: "parent.location.lowAccuracy" }, { accuracy: accuracyM, freshness: fresh?.label ?? intl.formatMessage({ id: "parent.parentLocation.copy007" }) })
-        : accuracyM != null
+    : isLowAccuracy
+      ? intl.formatMessage({ id: "parent.location.lowAccuracy" }, { accuracy: accuracyM, freshness: fresh?.label ?? intl.formatMessage({ id: "parent.parentLocation.copy007" }) })
+      : accuracyM != null
         ? intl.formatMessage({ id: "parent.location.freshnessAccuracy" }, { freshness: fresh?.label ?? intl.formatMessage({ id: "parent.parentLocation.copy008" }), accuracy: accuracyM })
         : (fresh?.label ?? intl.formatMessage({ id: "parent.parentLocation.copy008" }));
-  // 진행 단계를 나눠 설명하지 않는다 — 항상 간단한 한 줄만 보여준다(2026-08-02 TK 지시).
-  const refreshOverlayTitle = intl.formatMessage({ id: "parent.location.requestSent" });
+  // 진행 표시자는 상단 새로고침 버튼 하나뿐이다(2026-08-17 TK 제보).
+  // 예전에는 아이 칩과 상세 카드가 "위치 요청을 보냈어요"를 각각 띄우고 칩 폭까지 늘려서,
+  // 프로필 위에 문구가 겹치고 버튼과 별개로 움직이는 것처럼 보였다. 문구는 재도입하지 않는다.
+  const refreshBusyLabel = intl.formatMessage(
+    { id: "parent.location.refreshingForChild" },
+    { childName },
+  );
 
   // ── 보기 모드: 최근/실시간 위치 ↔ 오늘 이동 경로 ─────────────────────
   const [view, setView] = useState<"live" | "history">(requestedView);
@@ -826,7 +829,7 @@ export function ParentLocation() {
             <button
               type="button"
               className={`pl-refresh hy-busy-quiet${isRefreshingLocation ? " pl-refresh--loading" : ""}`}
-              aria-label={isRefreshingLocation ? refreshOverlayTitle : intl.formatMessage({ id: "parent.location.action.requestNow" })}
+              aria-label={isRefreshingLocation ? refreshBusyLabel : intl.formatMessage({ id: "parent.location.action.requestNow" })}
               aria-busy={isRefreshingLocation}
               onClick={refresh}
               disabled={isFetching || isRefreshingLocation}
@@ -861,9 +864,9 @@ export function ParentLocation() {
       {/* 아이 표시 배지 — 실시간에서만 현재 보는 아이를 명시한다. */}
       {!isLocked && !locationScopePending && activeView === "live" && selected && (
         <div className="pl-chips">
+          {/* 갱신 중에도 이 칩은 움직이지 않는다 — 진행은 상단 새로고침 버튼만 알린다. */}
           <div
             className="pl-chip pl-chip--active"
-            data-refreshing={isRefreshingLocation ? "true" : "false"}
             aria-label={intl.formatMessage({ id: "parent.location.currentChildLocation" }, { childName: selected.name || intl.formatMessage({ id: "parent.location.childFallback" }) })}
           >
             <span className="pl-chip__avatar">
@@ -871,17 +874,8 @@ export function ParentLocation() {
             </span>
             <span className="pl-chip__main">
               <span className="pl-chip__name">{selected.name || intl.formatMessage({ id: "parent.location.childFallback" })}</span>
-              {isRefreshingLocation && (
-                <span className="pl-chip__status" role="status" aria-live="polite">
-                  {refreshOverlayTitle}
-                </span>
-              )}
             </span>
-            {isRefreshingLocation ? (
-              <span className="pl-chip__spinner" aria-hidden="true" />
-            ) : (
-              <span className="pl-chip__dot" />
-            )}
+            <span className="pl-chip__dot" />
           </div>
         </div>
       )}
@@ -931,10 +925,11 @@ export function ParentLocation() {
           </div>
           {/* 상태 칩은 말할 내용이 있을 때만 렌더한다(정상일 때 빈 알약이 보이던 문제). */}
           {(() => {
+            // 부모 라우트는 child namespace 를 싣지 않는다 — parent 문구를 쓴다(원시 id 노출 방지).
             const durText = locationScopeError
-              ? intl.formatMessage({ id: "child.state.error" })
+              ? intl.formatMessage({ id: "parent.location.state.error" })
               : locationScopePending || isRefreshingLocation
-                ? intl.formatMessage({ id: "child.state.checking" })
+                ? intl.formatMessage({ id: "parent.location.state.checking" })
                 : loc
                   ? ""
                   : intl.formatMessage({ id: "parent.parentLocation.copy048" });

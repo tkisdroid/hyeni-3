@@ -54,7 +54,8 @@ import {
 const storage = new Hono<{ Bindings: Env; Variables: Vars }>();
 
 type Ctx = Context<{ Bindings: Env; Variables: Vars }>;
-type ChildPhotoUploadPurpose = "memo" | "profile" | "placeholder";
+// parent_profile = 부모가 올리는 자기 프로필 사진(2026-08-17). 대상은 항상 caller 본인 멤버 행이다.
+type ChildPhotoUploadPurpose = "memo" | "profile" | "placeholder" | "parent_profile";
 type LegacyChildPhotoUploadKind = "memo" | "profile" | "placeholder";
 
 const SAFE_KEY_SEGMENT = /^[A-Za-z0-9_-]{1,128}$/;
@@ -99,7 +100,9 @@ function childPhotoExtension(contentType: string): string {
 
 function readUploadPurpose(c: Ctx): ChildPhotoUploadPurpose | null {
   const value = String(c.req.header("X-Hyeni-Upload-Purpose") ?? "").trim();
-  return value === "memo" || value === "profile" || value === "placeholder" ? value : null;
+  return value === "memo" || value === "profile" || value === "placeholder" || value === "parent_profile"
+    ? value
+    : null;
 }
 
 async function authorizeChildPhotoUpload(
@@ -111,6 +114,24 @@ async function authorizeChildPhotoUpload(
   const user = c.get("user");
   if (purpose === "placeholder") {
     return (await assertPrimaryParent(c.env.DB, user.sub, familyId)) ? "ok" : "forbidden";
+  }
+
+  // 부모 본인 프로필 사진 — 주 보호자 여부와 무관하게 자기 멤버 행만 대상으로 허용한다.
+  // 공동 보호자가 다른 부모의 사진을 대신 올리지 못하게 대상=caller 로 못 박는다.
+  if (purpose === "parent_profile") {
+    if (!targetMemberId || !SAFE_KEY_SEGMENT.test(targetMemberId)) return "bad_target";
+    const own = await c.env.DB
+      .prepare(
+        `SELECT 1 AS ok
+           FROM family_members fm
+           JOIN families f ON f.id = fm.family_id
+          WHERE fm.id = ? AND fm.family_id = ? AND fm.user_id = ?
+            AND fm.role = 'parent' AND fm.is_active = 1
+          LIMIT 1`,
+      )
+      .bind(targetMemberId, familyId, user.sub)
+      .first<{ ok: number }>();
+    return own ? "ok" : "forbidden";
   }
 
   if (purpose === "profile" && !(await assertPrimaryParent(c.env.DB, user.sub, familyId))) {
@@ -457,7 +478,9 @@ async function handleChildPhotoCreate(c: Ctx) {
     ? { kind: "child_memo", targetMemberId }
     : purpose === "profile"
       ? { kind: "child_profile", targetMemberId }
-      : { kind: "primary_parent" };
+      : purpose === "parent_profile"
+        ? { kind: "parent_profile", targetMemberId }
+        : { kind: "primary_parent" };
   const contentSha256 = requestId ? await sha256Hex(upload.bytes) : null;
   if (requestId && contentSha256) {
     const existing = await resolveCommittedStorageUploadRequest(c.env.DB, {
@@ -833,14 +856,15 @@ async function canReadMemoPhotoObject(
     || segments[0] !== familyId
     || segments[1] !== "uploads"
     || segments[2] !== ownerUserId
-    || !["memo", "profile", "placeholder"].includes(purpose)
+    || !["memo", "profile", "placeholder", "parent_profile"].includes(purpose)
   ) return false;
 
   if (purpose === "placeholder") return true;
   if (!SAFE_KEY_SEGMENT.test(targetMemberId)) return false;
   // 프로필 사진은 다른 활성 구성원이 같은 immutable 키를 photo_url로 함께 참조할 수 있다.
   // 원 대상이 연결 해제돼도 남은 참조를 깨지 않도록 메타데이터 무결성까지만 확인한다.
-  if (purpose === "profile") return true;
+  // 부모 본인 프로필도 같은 가족의 아이·공동 보호자가 아바타로 보므로 같은 판정을 쓴다.
+  if (purpose === "profile" || purpose === "parent_profile") return true;
 
   const caller = await resolveVerifiedFamilyMembership(db, sub, familyId);
   if (!caller) return false;
