@@ -347,7 +347,7 @@
   "child.sos.locationIncluded": "Your current location was added to the SOS",
   "child.sos.locationMissing": "Your location wasn't found, but the SOS was received",
   "child.sos.mainDescription": "Hold the circle for <strong>3 seconds</strong><br></br>to send Mom and Dad an SOS<br></br>with <strong>your location</strong> if it can be found",
-  "child.sos.mainTitle": "Press and hold for help!",
+  "child.sos.mainTitle": "I'll ask a grown-up for help",
   "child.sos.noGuardianPhone": "There isn't a guardian number to call yet, but you can still send an SOS.",
   "child.sos.notificationStarted": "We're starting to notify your guardian",
   "child.sos.phoneMissing": "I don't have {name}'s phone number",

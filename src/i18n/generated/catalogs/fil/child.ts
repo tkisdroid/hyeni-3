@@ -347,7 +347,7 @@ const messages = {
   "child.sos.locationIncluded": "Kasama rin sa SOS ang lokasyon mo ngayon",
   "child.sos.locationMissing": "Hindi nakita ang lokasyon mo, pero natanggap ang SOS",
   "child.sos.mainDescription": "Hawakan ang bilog nang <strong>3 segundo</strong><br></br>para magpadala ng SOS kina Mama at Papa,<br></br>kasama ang <strong>lokasyon ko</strong> kung makita ito",
-  "child.sos.mainTitle": "Pindutin nang matagal para humingi ng tulong!",
+  "child.sos.mainTitle": "Hihingi ako ng tulong sa magulang",
   "child.sos.noGuardianPhone": "Wala pang numero ng tagapag-alaga na matatawagan, pero puwede pa ring magpadala ng SOS.",
   "child.sos.notificationStarted": "Sinimulan nang abisuhan ang tagapag-alaga",
   "child.sos.phoneMissing": "Wala pa ang numero ng telepono ni {name}",

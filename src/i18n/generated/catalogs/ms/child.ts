@@ -347,7 +347,7 @@ const messages = {
   "child.sos.locationIncluded": "Lokasi kamu sekarang turut disertakan dalam SOS",
   "child.sos.locationMissing": "Lokasi tidak ditemui, tetapi SOS sudah diterima",
   "child.sos.mainDescription": "Tahan bulatan selama <strong>3 saat</strong><br></br>untuk menghantar SOS kepada Ibu dan Ayah,<br></br>bersama <strong>lokasi saya</strong> jika ditemui",
-  "child.sos.mainTitle": "Tekan dan tahan untuk minta bantuan!",
+  "child.sos.mainTitle": "Saya minta tolong pada ibu bapa, ya",
   "child.sos.noGuardianPhone": "Belum ada nombor penjaga untuk ditelefon, tetapi SOS masih boleh dihantar.",
   "child.sos.notificationStarted": "Pemberitahuan kepada penjaga mula dihantar",
   "child.sos.phoneMissing": "Nombor telefon {name} belum ada",

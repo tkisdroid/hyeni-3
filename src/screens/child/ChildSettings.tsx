@@ -30,7 +30,6 @@ import {
 } from "@/lib/native/location";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
-import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLocale } from "@/i18n/useLocale";
 import { notificationQuietHoursRange } from "@/transform/notificationQuietHours";
 import { useIntl, type IntlShape } from "react-intl";
@@ -295,11 +294,8 @@ export function ChildSettings() {
           </div>
         </div>
 
-        <section className="ks-sec">
-          <div className="ks-label">{intl.formatMessage({ id: "child.settings.title" })}</div>
-          <LanguageSelector tone="child" />
-        </section>
-
+        {/* 언어 고르기는 부모 설정에만 둔다(2026-08-17 TK 지시) — 가족 공용 설정이라
+            아이가 바꾸면 부모 화면까지 함께 바뀐다. */}
         {/* 부모님이 정한 거(읽기 전용): 없으면 "알림 쉬는 시간이 설정되지 않았어", 있으면 해당 범위에 "알림을 쉬어"라고 안내한다. */}
         <section className="ks-sec">
           <div className="ks-label">{intl.formatMessage({ id: "child.settings.parentManaged" })}</div>

@@ -38,12 +38,8 @@ const userFacingPropertyNames = new Set([
 
 const literalAllowlist = [
   ...[
-    ["property:species", "토끼"], ["property:tone", "활발하고 친근한"], ["property:greeting", "안녕! 나 통통이야. 오늘은 뭐가 궁금해?"],
-    ["property:species", "고양이"], ["property:tone", "장난스럽고 재미있는"], ["property:greeting", "야옹~ 나는 야옹이야! 오늘 재밌는 일 있었어?"],
+    // 2026-08-17 TK 지시로 친구는 꼬미(여우) 하나만 남았다 — 나머지 동물 원문은 화면에서 사라졌다.
     ["property:species", "여우"], ["property:tone", "깜찍하고 귀여운"], ["property:greeting", "헤헤, 나는 꼬미야! 같이 얘기하자, 응?"],
-    ["property:species", "강아지"], ["property:tone", "씩씩하고 충직한"], ["property:greeting", "왈! 나는 멍이야. 내가 항상 네 편이야!"],
-    ["property:species", "곰"], ["property:tone", "포근하고 든든한"], ["property:greeting", "안녕, 나는 곰돌이야. 오늘도 잘 지냈어?"],
-    ["property:species", "판다"], ["property:tone", "평화롭고 순한"], ["property:greeting", "안녕, 나는 푸푸야. 마음이 편해지는 이야기 해줄게."],
   ].map(([context, value]) => ({
     path: "src/screens/child/AiFriendSetup.tsx",
     context,

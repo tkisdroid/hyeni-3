@@ -347,7 +347,7 @@ const messages = {
   "child.sos.locationIncluded": "今いる場所もSOSに入れたよ",
   "child.sos.locationMissing": "場所は見つからなかったけど、SOSは受け付けたよ",
   "child.sos.mainDescription": "丸を<strong>3秒</strong>長押しすると<br></br>ママとパパにSOSを送り、<br></br>見つかった<strong>今いる場所</strong>も一緒に伝えるよ",
-  "child.sos.mainTitle": "長押しして助けを呼ぼう！",
+  "child.sos.mainTitle": "おうちの人にたすけをたのむね",
   "child.sos.noGuardianPhone": "電話できる保護者の番号はまだないけど、SOS通知はそのまま送れるよ。",
   "child.sos.notificationStarted": "保護者への通知を送り始めたよ",
   "child.sos.phoneMissing": "{name}の電話番号がないよ",

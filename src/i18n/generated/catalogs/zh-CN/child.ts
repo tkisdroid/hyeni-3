@@ -347,7 +347,7 @@ const messages = {
   "child.sos.locationIncluded": "当前位置也加入SOS了",
   "child.sos.locationMissing": "虽然没找到位置，但SOS已经收到",
   "child.sos.mainDescription": "长按圆圈<strong>3秒</strong><br></br>就会向妈妈和爸爸发送SOS，<br></br>还会附上找到的<strong>我的位置</strong>",
-  "child.sos.mainTitle": "长按呼救！",
+  "child.sos.mainTitle": "我来请爸爸妈妈帮忙",
   "child.sos.noGuardianPhone": "暂时没有可以拨打的家长号码，但仍然能发送SOS通知。",
   "child.sos.notificationStarted": "已经开始向家长发送通知",
   "child.sos.phoneMissing": "没有{name}的电话号码",

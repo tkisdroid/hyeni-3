@@ -557,11 +557,11 @@ export function AiFriendChat() {
         </button>
         <div className="afc-avatar" data-emotion={emotion}>
           <img src={friendFaceSrc} alt={aiBuddyEmotionLabel(emotion)} />
-          <span className="afc-online" />
         </div>
+        {/* 이름만 둔다. 아래 상태 한 줄과 가짜 온라인 점은 장식이라 좁은 헤더에서 잘리기만 했다
+            (2026-08-17 TK 제보 "얘기…"). 표정은 아바타가 이미 말해 준다. */}
         <div className="afc-head-main">
           <div className="afc-head-name">{friendName}</div>
-          <div className="afc-head-status">{intl.formatMessage({ id: "child.aiChat.ready" })}</div>
         </div>
         {shownUnlimited ? (
           <span className="afc-credits">

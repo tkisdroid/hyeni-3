@@ -347,7 +347,7 @@ const messages = {
   "child.sos.locationIncluded": "지금 위치도 SOS에 담았어",
   "child.sos.locationMissing": "위치는 못 찾았지만 SOS는 접수했어",
   "child.sos.mainDescription": "동그라미를 <strong>3초</strong> 동안 누르면<br></br>엄마·아빠에게 SOS를 보내고,<br></br>찾은 <strong>내 위치</strong>도 함께 담을게",
-  "child.sos.mainTitle": "꾹 눌러서 도와 줘!",
+  "child.sos.mainTitle": "부모님께 도움을 요청할게",
   "child.sos.noGuardianPhone": "전화할 보호자 번호는 아직 없지만 SOS 알림은 그대로 보낼 수 있어.",
   "child.sos.notificationStarted": "보호자에게 알림 전송을 시작했어",
   "child.sos.phoneMissing": "{name} 전화번호가 없어",

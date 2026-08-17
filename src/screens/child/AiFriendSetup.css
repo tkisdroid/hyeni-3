@@ -176,6 +176,8 @@
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
 
+  /* 알약은 한 줄이 기본이다 — 접히면 마지막 줄에 두 글자만 남아 깨져 보였다(실측 16px). */
+  white-space: nowrap;
 }
 .afs-chip--on {
   background: var(--hy-accent-soft);

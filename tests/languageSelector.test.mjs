@@ -60,11 +60,10 @@ test("언어 선택기는 키보드 포커스와 44px 터치 영역, 확대 글�
   assert.match(css, /\.hy-language__option:focus-visible\s*\{/);
 });
 
-test("onboarding과 부모·아이 설정은 같은 공용 선택기를 역할에 맞는 어조로 사용한다", () => {
+test("onboarding과 부모 설정은 같은 공용 선택기를 역할에 맞는 어조로 사용한다", () => {
   const screens = [
     ["src/screens/onboarding/Onboarding.tsx", "formal"],
     ["src/screens/parent/ParentSettings.tsx", "formal"],
-    ["src/screens/child/ChildSettings.tsx", "child"],
   ];
 
   for (const [path, tone] of screens) {
@@ -72,6 +71,10 @@ test("onboarding과 부모·아이 설정은 같은 공용 선택기를 역할�
     assert.match(source, /import \{ LanguageSelector \} from "@\/components\/LanguageSelector";/);
     assert.match(source, new RegExp(`<LanguageSelector\\s+tone="${tone}"\\s*\\/>`));
   }
+
+  // 2026-08-17 TK 지시: 언어는 가족 공용 설정이라 아이 화면에서는 바꾸지 못한다.
+  const childSettings = read("src/screens/child/ChildSettings.tsx");
+  assert.doesNotMatch(childSettings, /LanguageSelector/);
 
   const onboarding = read("src/screens/onboarding/Onboarding.tsx");
   const roleStep = onboarding.slice(onboarding.indexOf("function RoleStep"));

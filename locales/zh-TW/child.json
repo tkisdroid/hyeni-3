@@ -347,7 +347,7 @@
   "child.sos.locationIncluded": "目前位置也放進 SOS 了",
   "child.sos.locationMissing": "雖然找不到位置，但已收到 SOS",
   "child.sos.mainDescription": "長按圓圈<strong>3秒</strong><br></br>就會向媽媽和爸爸傳送 SOS，<br></br>也會附上找到的<strong>我的位置</strong>",
-  "child.sos.mainTitle": "長按來求救！",
+  "child.sos.mainTitle": "我來請爸爸媽媽幫忙",
   "child.sos.noGuardianPhone": "還沒有可以撥打的家長號碼，但仍然能傳送 SOS 通知。",
   "child.sos.notificationStarted": "已開始向家長傳送通知",
   "child.sos.phoneMissing": "沒有{name}的電話號碼",

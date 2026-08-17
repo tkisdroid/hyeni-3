@@ -347,7 +347,7 @@ const messages = {
   "child.sos.locationIncluded": "Vị trí hiện tại cũng đã được thêm vào SOS",
   "child.sos.locationMissing": "Không tìm thấy vị trí nhưng SOS đã được nhận",
   "child.sos.mainDescription": "Giữ vòng tròn trong <strong>3 giây</strong><br></br>để gửi SOS cho mẹ và bố,<br></br>kèm theo <strong>vị trí của mình</strong> nếu tìm thấy",
-  "child.sos.mainTitle": "Nhấn giữ để gọi giúp đỡ!",
+  "child.sos.mainTitle": "Mình sẽ nhờ bố mẹ giúp nhé",
   "child.sos.noGuardianPhone": "Chưa có số người giám hộ để gọi nhưng vẫn có thể gửi SOS.",
   "child.sos.notificationStarted": "Đã bắt đầu gửi thông báo cho người giám hộ",
   "child.sos.phoneMissing": "Chưa có số điện thoại của {name}",

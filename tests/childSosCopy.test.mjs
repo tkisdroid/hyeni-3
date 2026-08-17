@@ -17,7 +17,10 @@ test("SOS 는 3초 홀드 안내를 반말로 명확히 말한다(시안 2a)", (
   assert.match(childSos, /id: "child\.sos\.mainTitle"/);
   assert.match(childSos, /id="child\.sos\.mainDescription"/);
   assert.match(childSos, /id: progress > 0 \? "child\.sos\.keepHolding" : "child\.sos\.hintHold"/);
-  assert.match(koChild["child.sos.mainTitle"], /꾹 눌러서 도와 줘!/);
+  // 2026-08-17 TK 지시: "도와 줘!"는 아이가 비명 지르는 말투다.
+  // 실제로 하는 일(부모에게 도움 요청)을 반말로 말한다.
+  assert.equal(koChild["child.sos.mainTitle"], "부모님께 도움을 요청할게");
+  assert.doesNotMatch(koChild["child.sos.mainTitle"], /도와 ?줘/);
   assert.match(koChild["child.sos.mainDescription"], /<strong>3초<\/strong>.*<strong>내 위치<\/strong>/);
   assert.equal(koChild["child.sos.hintHold"], "3초 꾹");
   assert.doesNotMatch(koChild["child.sos.mainDescription"], /알려요|놀라요|갈래요/);

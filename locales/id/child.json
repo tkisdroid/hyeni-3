@@ -347,7 +347,7 @@
   "child.sos.locationIncluded": "Lokasimu saat ini juga disertakan dalam SOS",
   "child.sos.locationMissing": "Lokasimu tidak ditemukan, tetapi SOS sudah diterima",
   "child.sos.mainDescription": "Tahan lingkaran selama <strong>3 detik</strong><br></br>untuk mengirim SOS kepada Ibu dan Ayah,<br></br>beserta <strong>lokasiku</strong> jika ditemukan",
-  "child.sos.mainTitle": "Tekan dan tahan untuk minta bantuan!",
+  "child.sos.mainTitle": "Aku minta tolong ke orang tua, ya",
   "child.sos.noGuardianPhone": "Belum ada nomor wali yang bisa ditelepon, tetapi SOS tetap bisa dikirim.",
   "child.sos.notificationStarted": "Pemberitahuan kepada wali mulai dikirim",
   "child.sos.phoneMissing": "Nomor telepon {name} belum ada",

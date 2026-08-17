@@ -7,7 +7,10 @@ import { createIntl, createIntlCache } from "react-intl";
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const locales = ["ko", "en", "ja", "zh-CN", "zh-TW", "vi", "th", "id", "ms", "fil"];
-const personaKeys = ["rabbit", "cat", "fox", "dog", "bear", "panda"];
+// 2026-08-17 TK 지시: 친구는 꼬미(fox) 하나만 남긴다. 카탈로그에는 나머지 문구가 남아 있어도
+// 화면이 노출하는 persona 는 이것뿐이다.
+const personaKeys = ["fox"];
+const catalogPersonaKeys = ["rabbit", "cat", "fox", "dog", "bear", "panda"];
 const helperPath = resolve(rootDir, "src/transform/aiFriendDisplay.ts");
 const routeHelperPath = resolve(rootDir, "src/transform/routeExternalUrl.ts");
 
@@ -24,9 +27,13 @@ test("AI 친구 표시 필드는 안정적인 persona key와 카탈로그 ID를 
   const chat = source("src/screens/child/AiFriendChat.tsx");
 
   for (const key of personaKeys) assert.match(setup, new RegExp(`key: ["']${key}["']`), key);
-  assert.match(setup, /species:\s*["']토끼["']/);
-  assert.match(setup, /tone:\s*["']활발하고 친근한["']/);
-  assert.match(setup, /greeting:\s*["']안녕! 나 통통이야\. 오늘은 뭐가 궁금해\?["']/);
+  assert.match(setup, /species:\s*["']여우["']/);
+  assert.match(setup, /tone:\s*["']깜찍하고 귀여운["']/);
+  assert.match(setup, /greeting:\s*["']헤헤, 나는 꼬미야! 같이 얘기하자, 응\?["']/);
+  // 고르기 UI 를 없앴으므로 다른 동물이 화면에 남아 있으면 안 된다.
+  for (const removed of ["rabbit", "cat", "dog", "bear", "panda"]) {
+    assert.doesNotMatch(setup, new RegExp(`key: ["']${removed}["']`), removed);
+  }
   assert.match(setup, /aiFriendPersonaMessageId|child\.aiPersona\./);
   assert.doesNotMatch(setup, />\s*\{persona\.(?:species|tone|greeting)\}/);
   assert.doesNotMatch(chat, /persona\.greeting\.split/);
@@ -36,7 +43,8 @@ test("AI 친구 표시 필드는 안정적인 persona key와 카탈로그 ID를 
 test("10개 locale은 AI persona 표시 문구와 클라이언트 인사 ICU 변수를 완전하게 제공한다", () => {
   for (const locale of locales) {
     const catalog = childCatalog(locale);
-    for (const key of personaKeys) {
+    // 카탈로그는 전부 유지한다 — 서버 PERSONAS 가 남아 있어 과거 값이 들어와도 표시할 수 있어야 한다.
+    for (const key of catalogPersonaKeys) {
       for (const field of ["species", "tone", "greeting", "intro"]) {
         const id = `child.aiPersona.${key}.${field}`;
         assert.equal(typeof catalog[id], "string", `${locale}:${id}`);

@@ -347,7 +347,7 @@
   "child.sos.locationIncluded": "ใส่ตำแหน่งตอนนี้ไว้ใน SOS แล้ว",
   "child.sos.locationMissing": "หาตำแหน่งไม่พบ แต่รับ SOS แล้ว",
   "child.sos.mainDescription": "กดวงกลมค้างไว้ <strong>3 วินาที</strong><br></br>เพื่อส่ง SOS ให้แม่กับพ่อ<br></br>พร้อม <strong>ตำแหน่งของฉัน</strong>ถ้าหาเจอ",
-  "child.sos.mainTitle": "กดค้างเพื่อขอความช่วยเหลือ!",
+  "child.sos.mainTitle": "จะขอให้ผู้ปกครองช่วยนะ",
   "child.sos.noGuardianPhone": "ยังไม่มีเบอร์ผู้ปกครองให้โทรหา แต่ยังส่ง SOS ได้ตามปกติ",
   "child.sos.notificationStarted": "เริ่มส่งการแจ้งเตือนให้ผู้ปกครองแล้ว",
   "child.sos.phoneMissing": "ยังไม่มีเบอร์โทรของ{name}",

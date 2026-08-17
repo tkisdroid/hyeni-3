@@ -32,16 +32,14 @@ export interface FriendPersona {
   animal: string;
 }
 
+// 2026-08-17 TK 지시: 친구는 꼬미 하나만 남긴다.
+// 아이가 고를 동물이 여럿이면 "누구와 이야기하는지"가 흐려지고, 얼굴은 이미 표정 이모티콘이
+// 담당한다(한 얼굴 원칙). 서버 PERSONAS 에는 나머지가 남아 있어도 클라가 🦊 만 보내므로 안전하다.
 export const AI_FRIEND_PERSONAS: FriendPersona[] = [
-  { key: "rabbit", emoji: "🐰", name: "통통이", species: "토끼", tone: "활발하고 친근한", greeting: "안녕! 나 통통이야. 오늘은 뭐가 궁금해?", animal: "rabbit" },
-  { key: "cat", emoji: "🐱", name: "야옹이", species: "고양이", tone: "장난스럽고 재미있는", greeting: "야옹~ 나는 야옹이야! 오늘 재밌는 일 있었어?", animal: "cat" },
   { key: "fox", emoji: "🦊", name: "꼬미", species: "여우", tone: "깜찍하고 귀여운", greeting: "헤헤, 나는 꼬미야! 같이 얘기하자, 응?", animal: "fox" },
-  { key: "dog", emoji: "🐶", name: "멍이", species: "강아지", tone: "씩씩하고 충직한", greeting: "왈! 나는 멍이야. 내가 항상 네 편이야!", animal: "dog" },
-  { key: "bear", emoji: "🐻", name: "곰돌이", species: "곰", tone: "포근하고 든든한", greeting: "안녕, 나는 곰돌이야. 오늘도 잘 지냈어?", animal: "bear" },
-  { key: "panda", emoji: "🐼", name: "푸푸", species: "판다", tone: "평화롭고 순한", greeting: "안녕, 나는 푸푸야. 마음이 편해지는 이야기 해줄게.", animal: "panda" },
 ];
 
-export const DEFAULT_CHARACTER = "🐰";
+export const DEFAULT_CHARACTER = "🦊";
 
 /** 이모지 → 페르소나(없으면 기본 토끼). */
 export function personaFor(emoji: string | null | undefined): FriendPersona {
@@ -240,21 +238,7 @@ export function AiFriendSetup() {
           </div>
         </div>
 
-        {/* 캐릭터 고르기 */}
-        <div className="afs-label">{intl.formatMessage({ id: "child.aiSetup.chooseFriend" })}</div>
-        <div className="afs-grid">
-          {AI_FRIEND_PERSONAS.map((p) => (
-            <button
-              key={p.emoji}
-              type="button"
-              className={`afs-cell hy-press${p.emoji === selected ? " afs-cell--on" : ""}`}
-              aria-pressed={p.emoji === selected}
-              onClick={() => setSelected(p.emoji)}
-            >
-              <img src={asset(`animal/${p.animal}.webp`)} alt={p.name} />
-            </button>
-          ))}
-        </div>
+        {/* 캐릭터 고르기는 없앴다(2026-08-17 TK 지시) — 친구는 꼬미 하나다. */}
 
         {/* 이름 짓기 */}
         <div className="afs-label">{intl.formatMessage({ id: "child.aiSetup.nameFriend" })}</div>
