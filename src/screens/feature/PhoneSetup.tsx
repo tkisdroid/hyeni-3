@@ -7,15 +7,17 @@ import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { useMyFamily, useUpdateProfile } from "@/queries/useFamily";
 import { useAuth } from "@/auth/AuthContext";
 import { normalizePhoneForStorage } from "@/transform/phone";
-import { formatPhoneDisplay, formatPhoneOrMissing } from "@/transform/phoneFormat";
+import { formatPhoneDisplay } from "@/transform/phoneFormat";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import type { FamilyMember } from "@/lib/api/endpoints/family";
 import "./PhoneSetup.css";
+import { useIntl, type IntlShape } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 
-function roleLabel(gender: string | null | undefined): string {
-  if (gender === "mom") return "엄마";
-  if (gender === "dad") return "아빠";
-  return "보호자";
+function roleLabel(gender: string | null | undefined, intl: IntlShape): string {
+  if (gender === "mom") return intl.formatMessage({ id: "parent.phoneSetup.role.mom" });
+  if (gender === "dad") return intl.formatMessage({ id: "parent.phoneSetup.role.dad" });
+  return intl.formatMessage({ id: "parent.phoneSetup.role.guardian" });
 }
 
 function avatarFor(gender: string | null | undefined): string {
@@ -28,6 +30,7 @@ function softFor(gender: string | null | undefined): string {
 
 /** 전화번호 설정: 실 보호자 목록 표시. 본인 번호만 편집(백엔드는 본인 프로필만 수정 가능). */
 export function PhoneSetup() {
+  const intl = useIntl();
   const navigate = useNavigate();
   const { show } = useToast();
   const { userId, familyId } = useAuth();
@@ -77,21 +80,21 @@ export function PhoneSetup() {
   const save = () => {
     if (update.isPending) return;
     if (!phoneFormReady || !me) {
-      show("현재 계정의 전화번호를 불러온 뒤 다시 시도해 주세요", "⚠️");
+      show(intl.formatMessage({ id: "parent.phoneSetup.error.notReady" }), "⚠️");
       return;
     }
     let phone: string;
     try {
       phone = normalizePhoneForStorage(myPhone);
     } catch (e) {
-      show(e instanceof Error ? e.message : "번호를 확인해 주세요", "⚠️");
+      show(localizeApiError(e, intl, "formal"), "⚠️");
       return;
     }
     update.mutate(
       { phone },
       {
-        onSuccess: () => show("전화번호를 저장했어요", "📞"),
-        onError: (e) => show(e instanceof Error ? e.message : "저장에 실패했어요", "⚠️"),
+        onSuccess: () => show(intl.formatMessage({ id: "parent.phoneSetup.saved" }), "📞"),
+        onError: (e) => show(localizeApiError(e, intl, "formal"), "⚠️"),
       },
     );
   };
@@ -99,10 +102,10 @@ export function PhoneSetup() {
   if (phoneQueryState === "loading" || phoneFormHydrating) {
     return (
       <ScreenQueryState
-        screenTitle="전화번호 설정"
+        screenTitle={intl.formatMessage({ id: "parent.phoneSetup.screenTitle" })}
         state="loading"
-        heading="가족 정보를 불러오고 있어요"
-        description="전화번호를 안전하게 연결할 보호자를 확인하는 중이에요."
+        heading={intl.formatMessage({ id: "parent.phoneSetup.loading.heading" })}
+        description={intl.formatMessage({ id: "parent.phoneSetup.loading.description" })}
         onBack={() => navigate(-1)}
       />
     );
@@ -111,10 +114,10 @@ export function PhoneSetup() {
   if (phoneQueryState === "error") {
     return (
       <ScreenQueryState
-        screenTitle="전화번호 설정"
+        screenTitle={intl.formatMessage({ id: "parent.phoneSetup.screenTitle" })}
         state="error"
-        heading="가족 정보를 불러오지 못했어요"
-        description="본인 보호자 행을 확인한 뒤에만 전화번호를 변경할 수 있어요."
+        heading={intl.formatMessage({ id: "parent.phoneSetup.loadError.heading" })}
+        description={intl.formatMessage({ id: "parent.phoneSetup.loadError.description" })}
         onBack={() => navigate(-1)}
         onRetry={() => void retryPhoneSetup()}
         retrying={familyQuery.isFetching}
@@ -125,14 +128,14 @@ export function PhoneSetup() {
   if (phoneDataEmpty) {
     return (
       <ScreenQueryState
-        screenTitle="전화번호 설정"
+        screenTitle={intl.formatMessage({ id: "parent.phoneSetup.screenTitle" })}
         state="empty"
-        heading="연결된 보호자 정보가 없어요"
-        description="가족 연결 상태를 다시 확인해 주세요."
+        heading={intl.formatMessage({ id: "parent.phoneSetup.empty.heading" })}
+        description={intl.formatMessage({ id: "parent.phoneSetup.empty.description" })}
         onBack={() => navigate(-1)}
         onRetry={() => void retryPhoneSetup()}
         retrying={familyQuery.isFetching}
-        retryLabel="가족 정보 다시 확인"
+        retryLabel={intl.formatMessage({ id: "parent.phoneSetup.empty.retry" })}
       />
     );
   }
@@ -143,20 +146,26 @@ export function PhoneSetup() {
         <button
           type="button"
           className="psu-back hy-press"
-          aria-label="뒤로"
+          aria-label={intl.formatMessage({ id: "parent.phoneSetup.back" })}
           onClick={() => navigate(-1)}
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
         </button>
-        <span className="psu-title">전화번호 설정</span>
+        <span className="psu-title">
+          {intl.formatMessage({ id: "parent.phoneSetup.screenTitle" })}
+        </span>
       </div>
 
       <div className="psu-content">
         <div className="psu-intro">
           <img className="psu-intro__img" src={asset("ui/phone-lavender.webp")} alt="" />
           <div>
-            <div className="psu-intro__title">가족 전화번호</div>
-            <div className="psu-intro__sub">SOS 연결과 선생님 매칭에 쓰여요</div>
+            <div className="psu-intro__title">
+              {intl.formatMessage({ id: "parent.phoneSetup.intro.title" })}
+            </div>
+            <div className="psu-intro__sub">
+              {intl.formatMessage({ id: "parent.phoneSetup.intro.description" })}
+            </div>
           </div>
         </div>
 
@@ -169,22 +178,27 @@ export function PhoneSetup() {
                     <img src={asset(avatarFor(g.gender))} alt="" />
                   </span>
                   <span className="psu-row__role">
-                    {roleLabel(g.gender)}
-                    {isMe ? " · 나" : ""}
+                    {roleLabel(g.gender, intl)}
+                    {isMe ? intl.formatMessage({ id: "parent.phoneSetup.role.current" }) : ""}
                   </span>
                   {isMe ? (
                     <input
                       className="psu-row__input"
                       value={myPhone}
                       onChange={(e) => setMyPhone(formatPhoneDisplay(e.target.value))}
-                      placeholder="010-0000-0000"
+                      placeholder={intl.formatMessage({ id: "parent.phoneSetup.phonePlaceholder" })}
                       inputMode="numeric"
-                      aria-label={`${roleLabel(g.gender)} 전화번호`}
+                      aria-label={intl.formatMessage(
+                        { id: "parent.phoneSetup.phoneAria" },
+                        { role: roleLabel(g.gender, intl) },
+                      )}
                       disabled={!phoneFormReady || update.isPending}
                     />
                   ) : (
                     <span className="psu-row__input" style={{ color: "var(--fg-muted)", display: "flex", alignItems: "center" }}>
-                      {formatPhoneOrMissing(g.phone)}
+                      {g.phone
+                        ? formatPhoneDisplay(g.phone)
+                        : intl.formatMessage({ id: "parent.phoneSetup.phoneMissing" })}
                     </span>
                   )}
                 </div>
@@ -197,8 +211,12 @@ export function PhoneSetup() {
             <Lock size={18} strokeWidth={2.2} />
           </span>
           <span className="hy-explain__lines">
-            <span className="hy-explain__line">본인 번호만 수정할 수 있어요.</span>
-            <span className="hy-explain__line">번호는 가족·담임 선생님 연결에만 사용하고 아이에게는 공개되지 않아요.</span>
+            <span className="hy-explain__line">
+              {intl.formatMessage({ id: "parent.phoneSetup.note.selfOnly" })}
+            </span>
+            <span className="hy-explain__line">
+              {intl.formatMessage({ id: "parent.phoneSetup.note.privacy" })}
+            </span>
           </span>
         </div>
 
@@ -208,7 +226,9 @@ export function PhoneSetup() {
           onClick={save}
           disabled={!phoneFormReady || update.isPending || !me} aria-busy={update.isPending}
         >
-          {update.isPending ? "저장 중…" : "저장하기"}
+          {update.isPending
+            ? intl.formatMessage({ id: "parent.phoneSetup.save.pending" })
+            : intl.formatMessage({ id: "parent.phoneSetup.save.button" })}
         </button>
       </div>
     </div>

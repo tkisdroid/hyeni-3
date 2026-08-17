@@ -14,6 +14,7 @@
  */
 import { getNativePlugin, isNativePlatform } from "./plugins";
 import { apiPost } from "@/lib/api/client";
+import { ApiError, normalizeApiErrorCode } from "@/lib/api/errors";
 import { getApiUser } from "@/lib/api/session";
 import {
   hasExpectedLaunchSubscriptionPrice,
@@ -27,6 +28,11 @@ import type {
   BillingProductsQueryResult,
   SubscriptionProductQueryResult,
 } from "@/transform/billingProductDiagnostics";
+import {
+  BillingError,
+  isBillingError,
+  normalizeBillingFailure,
+} from "./billingError";
 
 export const GOOGLE_PLAY_PACKAGE_NAME = "com.hyeni.calendar";
 const PLUGIN_NAME = "GooglePlayBilling";
@@ -128,44 +134,9 @@ export interface VerifyResponse {
   availableCreditsAdded?: number;
 }
 
-// ── 에러 매핑(Capacitor reject code → 한국어 메시지) ──────────────────
-
-type BillingErrorLike = {
-  message?: unknown;
-  code?: unknown;
-  error?: unknown;
-  data?: { code?: unknown };
-};
-
-function messageOf(error: unknown, fallback: string): string {
-  const e = error as BillingErrorLike;
-  if (typeof e?.message === "string" && e.message.trim()) return e.message;
-  if (typeof error === "string" && error.trim()) return error;
-  return fallback;
-}
-
-function codeOf(error: unknown): string {
-  const e = error as BillingErrorLike;
-  const raw = e?.data?.code ?? e?.code ?? e?.error;
-  return typeof raw === "string" ? raw : "";
-}
-
 /** 결제 취소 여부(호출부에서 취소 토스트를 생략하고 싶을 때 사용). */
 export function isPurchaseCanceled(error: unknown): boolean {
-  return codeOf(error) === "purchase_canceled";
-}
-
-function billingError(error: unknown, fallback = "결제 처리 중 오류가 발생했어요."): Error {
-  const code = codeOf(error);
-  if (code === "purchase_canceled") return new Error("구매가 취소되었어요.");
-  if (code === "purchase_pending") {
-    return new Error("결제 승인이 대기 중입니다. 승인 완료 후 다시 확인해 주세요.");
-  }
-  if (code === "product_unavailable" || code === "product_offer_unavailable") {
-    return new Error("Google Play 상품 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
-  }
-  if (code === "billing_unavailable") return new Error("이 기기에서 Google Play 결제를 사용할 수 없어요.");
-  return new Error(messageOf(error, fallback));
+  return isBillingError(error) && error.code === "purchase_canceled";
 }
 
 // ── 내부 헬퍼 ────────────────────────────────────────────────────────
@@ -177,7 +148,7 @@ export function isBillingAvailable(): boolean {
 
 function requirePlugin(): GooglePlayBillingPlugin {
   const plugin = getNativePlugin<GooglePlayBillingPlugin>(PLUGIN_NAME);
-  if (!plugin) throw new Error("Google Play 결제는 Android 앱에서만 사용할 수 있어요.");
+  if (!plugin) throw new BillingError("billing_unavailable");
   return plugin;
 }
 
@@ -220,7 +191,7 @@ function normalizePurchase(purchase: RawPurchase | undefined): NormalizedPurchas
 async function verifyPurchase(body: Record<string, unknown>): Promise<VerifyResponse> {
   const data = await apiPost<VerifyResponse>(VERIFY_PATH, body);
   if (!data?.ok) {
-    throw new Error(data?.message || data?.error || "서버 구매 검증에 실패했어요.");
+    throw new ApiError(normalizeApiErrorCode(data?.error) ?? "purchase_verification_failed", 400);
   }
   return data;
 }
@@ -345,7 +316,7 @@ export async function launchSubscriptionPurchase({
     });
   } catch (error) {
     await releaseGooglePlaySubscriptionReservation(familyId, preflight.reservationRef);
-    throw billingError(error, "구독을 시작하지 못했어요.");
+    throw normalizeBillingFailure(error);
   }
 
   const purchase = normalizePurchase(result?.purchase);
@@ -436,7 +407,7 @@ export async function launchCreditPurchase({
       profileId: authenticatedParentId,
     });
   } catch (error) {
-    throw billingError(error, "AI 크레딧 구매를 시작하지 못했어요.");
+    throw normalizeBillingFailure(error);
   }
 
   const purchase = normalizePurchase(result?.purchase);
@@ -520,7 +491,7 @@ export async function queryGooglePlayPurchases(): Promise<RawPurchase[]> {
     const res = await plugin.queryPurchases();
     return Array.isArray(res?.purchases) ? res.purchases : [];
   } catch (error) {
-    throw billingError(error, "구매 내역을 확인하지 못했어요.");
+    throw normalizeBillingFailure(error);
   }
 }
 

@@ -11,6 +11,11 @@ export interface AiCreditPublicStatus {
   parentDailyUsed: number;
   parentDailyLimit: number;
   availableRemaining: number;
+  /**
+   * 한도·차감이 적용되지 않는 가족(운영자 본인 계정). 화면은 남은 횟수 대신 무제한을 표시한다.
+   * 구버전 Worker 응답에는 이 필드가 없으므로 없으면 false 로 본다(기본은 한도 적용).
+   */
+  unlimited: boolean;
 }
 
 export const FREE_AI_DAILY_INCLUDED_LIMIT = 5;
@@ -89,6 +94,9 @@ export function normalizeAiCreditPublicStatusPayload(
   if (availableRemaining > parentDailyRemaining) return null;
   if (purchasedCredits === 0 && availableRemaining > dailyIncludedRemaining) return null;
 
+  // unlimited 는 additive 필드다 — 없거나 boolean 이 아니면 한도 적용(false)으로 닫는다.
+  const unlimited = value.unlimited === true;
+
   return {
     isPremium: value.is_premium,
     dailyIncludedLimit,
@@ -98,5 +106,6 @@ export function normalizeAiCreditPublicStatusPayload(
     parentDailyUsed,
     parentDailyLimit,
     availableRemaining,
+    unlimited,
   };
 }

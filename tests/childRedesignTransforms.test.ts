@@ -102,15 +102,17 @@ test("시간 파싱과 짧은 시각 표기", () => {
   assert.equal(timeLabelToMinutes("보통"), null);
   assert.equal(timeLabelToMinutes(null), null);
 
-  assert.equal(compactTime(960), "오후 4:00");
-  assert.equal(compactTime(510), "오전 8:30");
-  assert.equal(compactTime(0), "오전 12:00");
-  assert.equal(compactTime(720), "오후 12:00");
-  assert.equal(compactTime(null), "");
+  assert.match(compactTime(960, "ko"), /^(?:오후|PM) 4:00$/);
+  assert.match(compactTime(510, "ko"), /^(?:오전|AM) 8:30$/);
+  assert.match(compactTime(0, "ko"), /^(?:오전|AM) 12:00$/);
+  assert.match(compactTime(720, "ko"), /^(?:오후|PM) 12:00$/);
+  assert.equal(compactTime(null, "ko"), "");
 
   // 오전/오후가 없으면 아침 9시와 밤 9시가 구분되지 않는다(razr 실기기에서 23:40 → "11:40" 로 보였다).
-  assert.notEqual(compactTime(9 * 60), compactTime(21 * 60));
-  assert.equal(compactTime(23 * 60 + 40), "오후 11:40");
+  assert.notEqual(compactTime(9 * 60, "ko"), compactTime(21 * 60, "ko"));
+  assert.match(compactTime(23 * 60 + 40, "ko"), /^(?:오후|PM) 11:40$/);
+  assert.equal(compactTime(16 * 60, "en"), "4:00 PM");
+  assert.doesNotMatch(compactTime(16 * 60, "ja"), /오전|오후/);
 });
 
 test("받침 판정으로 조사를 고른다", () => {
@@ -130,16 +132,16 @@ test("일정 4개 이하면 전부 배치하고 상태를 나눈다", () => {
     ev("c", "태권도", "16:00", false),
     ev("d", "가족 저녁", "19:00", false),
   ];
-  const map = buildAdventureMap(events, 15 * 60 + 15); // 15:15
+  const map = buildAdventureMap(events, 15 * 60 + 15, "ko"); // 15:15
   assert.equal(map.nodes.length, 4);
   assert.deepEqual(map.nodes.map((n) => n.state), ["done", "done", "next", "todo"]);
   assert.equal(map.nodes[0].pill, "학교 ✓");
-  assert.equal(map.nodes[2].pill, "태권도 오후 4:00");
+  assert.match(map.nodes[2].pill, /^태권도 (?:오후|PM) 4:00$/);
   // 긴 제목은 pill 두 줄 안에서 시간을 밀어내지 않도록 8자까지만 쓴다(2026-07-30 실기기 제보).
-  assert.equal(map.nodes[3].pill, "가족 저녁 오후 7:00");
-  assert.equal(
-    buildAdventureMap([ev("e", "방과후 코딩교실 심화반", "18:00", false)], 9 * 60).nodes[0].pill,
-    "방과후 코딩교실… 오후 6:00",
+  assert.match(map.nodes[3].pill, /^가족 저녁 (?:오후|PM) 7:00$/);
+  assert.match(
+    buildAdventureMap([ev("e", "방과후 코딩교실 심화반", "18:00", false)], 9 * 60, "ko").nodes[0].pill,
+    /^방과후 코딩교실… (?:오후|PM) 6:00$/,
   );
   assert.equal(map.next?.id, "c");
   assert.equal(map.nodes[0].leftPct, ADVENTURE_SLOTS[0].leftPct);
@@ -148,12 +150,16 @@ test("일정 4개 이하면 전부 배치하고 상태를 나눈다", () => {
 
 test("말풍선은 반말이고 남은 시간을 실제로 계산한다", () => {
   const events = [ev("c", "태권도", "16:00", false)];
-  assert.equal(buildAdventureMap(events, 15 * 60 + 15).bubble, "45분 뒤 태권도야!\n나랑 같이 가자 🎒");
-  assert.equal(buildAdventureMap([ev("s", "수영", "16:00", false)], 15 * 60 + 15).bubble.startsWith("45분 뒤 수영이야!"), true);
-  assert.equal(buildAdventureMap(events, 16 * 60).bubble, "지금 태권도 갈 시간이야! 🏃");
-  assert.equal(buildAdventureMap(events, 9 * 60).bubble.startsWith("오후 4:00에 태권도야!"), true);
-  assert.equal(buildAdventureMap([], 9 * 60).bubble, "오늘 일정 다 끝났어! 푹 쉬어도 돼 🎈");
-  assert.equal(buildAdventureMap([ev("x", "학교", null, false)], 9 * 60).bubble, "다음은 학교야! 나랑 같이 가자 🎒");
+  assert.equal(buildAdventureMap(events, 15 * 60 + 15, "ko").bubble, "45분 후 태권도야!\n나랑 같이 가자 🎒");
+  assert.equal(buildAdventureMap([ev("s", "수영", "16:00", false)], 15 * 60 + 15, "ko").bubble.startsWith("45분 후 수영이야!"), true);
+  assert.match(
+    buildAdventureMap([ev("e", "English", "16:00", false)], 15 * 60, "en").bubble,
+    /^in 1 hour English/,
+  );
+  assert.equal(buildAdventureMap(events, 16 * 60, "ko").bubble, "지금 태권도 갈 시간이야! 🏃");
+  assert.match(buildAdventureMap(events, 9 * 60, "ko").bubble, /^(?:오후|PM) 4:00에 태권도야!/);
+  assert.equal(buildAdventureMap([], 9 * 60, "ko").bubble, "오늘 일정 다 끝났어! 푹 쉬어도 돼 🎈");
+  assert.equal(buildAdventureMap([ev("x", "학교", null, false)], 9 * 60, "ko").bubble, "다음은 학교야! 나랑 같이 가자 🎒");
 });
 
 test("일정이 5개를 넘으면 다음 일정을 반드시 포함하는 4개 창을 고른다", () => {
@@ -173,7 +179,7 @@ test("일정이 5개를 넘으면 다음 일정을 반드시 포함하는 4개 �
 
 test("전부 다녀온 날은 마지막 4개를 보여주고 next 는 없다", () => {
   const events = ["1", "2", "3", "4", "5"].map((id, i) => ev(id, `일정${id}`, `0${i + 7}:00`, true));
-  const map = buildAdventureMap(events, 23 * 60);
+  const map = buildAdventureMap(events, 23 * 60, "ko");
   assert.equal(map.next, null);
   assert.deepEqual(map.nodes.map((n) => n.id), ["2", "3", "4", "5"]);
   assert.ok(map.nodes.every((n) => n.state === "done"));
@@ -248,14 +254,23 @@ test("스티커 설명은 서버가 아는 사실만 말한다(보낸 사람·�
 });
 
 test("받은 날짜는 아이 말투 상대 표현", () => {
-  const now = new Date(2026, 6, 10, 9, 0, 0).getTime();
-  const dayAgo = (n: number) => new Date(2026, 6, 10 - n, 20, 0, 0).getTime();
-  assert.equal(stickerWhenLabel(now - 3600_000, now), "오늘 받았어");
-  assert.equal(stickerWhenLabel(dayAgo(1), now), "어제 받았어");
-  assert.equal(stickerWhenLabel(dayAgo(3), now), "3일 전에 받았어");
-  assert.equal(stickerWhenLabel(dayAgo(9), now), "지난주에 받았어");
-  assert.equal(stickerWhenLabel(dayAgo(20), now), "2주 전에 받았어");
-  assert.equal(stickerWhenLabel(null, now), "");
+  const now = new Date("2026-07-10T00:00:00.000Z").getTime();
+  const dayAgo = (n: number) => now - n * 86_400_000;
+  assert.equal(stickerWhenLabel(now - 3600_000, now, "ko", "Asia/Seoul"), "오늘 받았어");
+  assert.equal(stickerWhenLabel(dayAgo(1), now, "ko", "Asia/Seoul"), "어제 받았어");
+  assert.match(stickerWhenLabel(dayAgo(3), now, "ko", "Asia/Seoul"), /^3일 전에 받았어$/);
+  assert.equal(stickerWhenLabel(dayAgo(3), now, "en", "Asia/Seoul"), "3 days ago에 받았어");
+  assert.equal(stickerWhenLabel(dayAgo(9), now, "ko", "Asia/Seoul"), "지난주에 받았어");
+  assert.equal(stickerWhenLabel(dayAgo(20), now, "ko", "Asia/Seoul"), "2주 전에 받았어");
+  assert.equal(stickerWhenLabel(dayAgo(20), now, "en", "Asia/Seoul"), "2 weeks ago에 받았어");
+  assert.equal(stickerWhenLabel(null, now, "ko", "Asia/Seoul"), "");
+});
+
+test("스티커 받은 날은 host 자정이 아니라 명시 time zone의 달력 날짜로 계산한다", () => {
+  const now = new Date("2026-07-08T07:30:00.000Z").getTime();
+  const earned = new Date("2026-07-08T06:30:00.000Z").getTime();
+
+  assert.equal(stickerWhenLabel(earned, now, "ko", "America/Los_Angeles"), "어제 받았어");
 });
 
 // ────────────────────────────── 홈 데이터 ──────────────────────────────

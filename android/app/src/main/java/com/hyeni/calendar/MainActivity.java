@@ -47,6 +47,8 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(InAppReviewPlugin.class);
         registerPlugin(PhoneCallPlugin.class);
         registerPlugin(MediaSavePlugin.class);
+        registerPlugin(ShareSheetPlugin.class);
+        registerPlugin(InstallReferrerPlugin.class);
         super.onCreate(savedInstanceState);
 
         // Phase 5 RL-03: WebView WebChromeClient no longer auto-grants the

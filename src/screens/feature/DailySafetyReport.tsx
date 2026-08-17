@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { useIntl, type IntlShape } from "react-intl";
 import { useNavigate } from "react-router";
 import {
   AlertTriangle,
@@ -26,46 +27,52 @@ import { useMemoThread } from "@/queries/useMemo";
 import { useChildNotifSettingsStatus, useParentAlerts } from "@/queries/useNotifications";
 import { useEntitlement } from "@/queries/useEntitlement";
 import { requestDeviceStatus } from "@/lib/api/endpoints/remote";
-import { todayDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import { groupEventsByDateKey, PAST_TAGS } from "@/transform/scheduleView";
 import { deviceStatusView } from "@/transform/familyView";
 import { formatFreshness } from "@/transform/locationView";
-import { deriveDailyReportStatus, summarizeDailySupplies, type DailyReportAlertInput } from "@/transform/dailyReportView";
+import {
+  dailyReportDateScope,
+  deriveDailyReportStatus,
+  summarizeDailySupplies,
+  type DailyReportAlertInput,
+} from "@/transform/dailyReportView";
 import { isLocationVisible, TIERS } from "@/transform/tierPolicy";
-import { useMessage } from "@/i18n/useMessage";
+import type { SupportedLocale } from "@/i18n/locale";
+import { useLocale } from "@/i18n/useLocale";
+import { formatDateTime, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
 import "./DailySafetyReport.css";
 
-function formatShortTime(value: string | null | undefined): string {
+function formatShortTime(
+  value: string | null | undefined,
+  locale: SupportedLocale,
+): string {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  return formatDateTime(date, {
+    locale,
+    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    timeStyle: "short",
+  });
 }
 
-function formatClock(value: Date): string {
-  return `${String(value.getHours()).padStart(2, "0")}:${String(value.getMinutes()).padStart(2, "0")}`;
+function formatClock(value: Date, locale: SupportedLocale): string {
+  return formatDateTime(value, {
+    locale,
+    timeZone: LEGACY_FAMILY_TIME_ZONE,
+    timeStyle: "short",
+  });
 }
 
-function isSameLocalDay(value: string | null | undefined, now: Date): boolean {
-  if (!value) return false;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return false;
-  return (
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth() &&
-    date.getDate() === now.getDate()
-  );
-}
-
-function alertLabel(alert: DailyReportAlertInput): string {
+function alertLabel(alert: DailyReportAlertInput, intl: IntlShape): string {
   const type = alert.alert_type.toLowerCase();
-  if (type === "sos" || type === "sos_followup") return "SOS 알림";
-  if (type === "emergency") return "긴급 알림";
-  if (type === "not_arrived") return "미도착 알림";
-  if (type === "danger_zone" || type === "danger_zone_entry") return "위험구역 진입";
-  if (type === "danger_zone_exit") return "위험구역 이탈";
-  return "안전 알림";
+  if (type === "sos" || type === "sos_followup") return intl.formatMessage({ id: "reports.daily.alert.sos" });
+  if (type === "emergency") return intl.formatMessage({ id: "reports.daily.alert.emergency" });
+  if (type === "not_arrived") return intl.formatMessage({ id: "reports.daily.alert.notArrived" });
+  if (type === "danger_zone" || type === "danger_zone_entry") return intl.formatMessage({ id: "reports.daily.alert.dangerEntry" });
+  if (type === "danger_zone_exit") return intl.formatMessage({ id: "reports.daily.alert.dangerExit" });
+  return intl.formatMessage({ id: "reports.daily.alert.safety" });
 }
 
 function alertTone(alert: DailyReportAlertInput): ReportTone {
@@ -89,9 +96,10 @@ interface ReportOverviewCard {
 }
 
 export function DailySafetyReport() {
+  const intl = useIntl();
   const navigate = useNavigate();
   const { show } = useToast();
-  const msg = useMessage();
+  const { locale } = useLocale();
   const { familyId } = useAuth();
   const { activeChild } = useActiveChild();
   const [now, setNow] = useState(() => new Date());
@@ -102,7 +110,11 @@ export function DailySafetyReport() {
     return () => window.clearInterval(id);
   }, []);
 
-  const todayKey = useMemo(() => todayDateKey(now), [now]);
+  const reportDateScope = useMemo(
+    () => dailyReportDateScope(now, LEGACY_FAMILY_TIME_ZONE),
+    [now],
+  );
+  const todayKey = reportDateScope.dateKey;
   const eventsQuery = useEvents();
   const suppliesQuery = useDailySupplies(todayKey);
   const familyQuery = useMyFamily();
@@ -144,12 +156,13 @@ export function DailySafetyReport() {
     ? locationsQuery.data?.find((loc) => loc.user_id === activeChild.user_id) ?? null
     : null;
   const childLocation = canShowLocation ? cachedChildLocation : null;
-  const locationFreshness = childLocation ? formatFreshness(childLocation.updated_at, now) : null;
+  const locationFreshness = childLocation ? formatFreshness(childLocation.updated_at, now, locale, intl) : null;
   const locationLocked = !locationScopePending && !isLocationVisible(entitlement.tier);
   const device = useMemo(
     () => deviceStatusView(
       activeChild?.device_health,
       now,
+      locale,
       childNotifSettingsQuery.data?.userId === activeChild?.user_id
         ? childNotifSettingsQuery.data?.childEnabled ?? null
         : null,
@@ -158,12 +171,15 @@ export function DailySafetyReport() {
         : childNotifSettingsQuery.isSuccess
           ? "ready"
           : "loading",
+      intl,
     ),
     [
       activeChild,
       childNotifSettingsQuery.data,
       childNotifSettingsQuery.isError,
       childNotifSettingsQuery.isSuccess,
+      intl,
+      locale,
       now,
     ],
   );
@@ -174,10 +190,18 @@ export function DailySafetyReport() {
       (event) => event.date_key === todayKey,
     );
     const allowedIds = new Set(dayEvents.map((event) => event.id));
-    return (groupEventsByDateKey(eventsQuery.data ?? [], now, undefined, places)[todayKey] ?? []).filter((event) =>
+    return (groupEventsByDateKey(
+      eventsQuery.data ?? [],
+      now,
+      locale,
+      LEGACY_FAMILY_TIME_ZONE,
+      undefined,
+      places,
+      intl,
+    )[todayKey] ?? []).filter((event) =>
       allowedIds.has(event.id),
     );
-  }, [activeChild, eventsQuery.data, now, places, todayKey]);
+  }, [activeChild, eventsQuery.data, intl, locale, now, places, todayKey]);
   const nextEvent = todayEvents.find((event) => !PAST_TAGS.has(event.tag)) ?? null;
   const pastEventCount = todayEvents.filter((event) => PAST_TAGS.has(event.tag)).length;
 
@@ -197,14 +221,16 @@ export function DailySafetyReport() {
     alerts: childAlerts,
     locationFreshness: locationFreshness?.status ?? "unknown",
     deviceSafetyLabel: device.safetyLabel,
+    deviceSafetyState: device.safetyState,
     deviceHasData: device.hasData,
     now,
+    timeZone: LEGACY_FAMILY_TIME_ZONE,
   });
   const todayAlerts = useMemo(
-    () => childAlerts.filter((alert) => isSameLocalDay(alert.created_at, now)).slice(0, 3),
-    [childAlerts, now],
+    () => childAlerts.filter((alert) => reportDateScope.includesTimestamp(alert.created_at)).slice(0, 3),
+    [childAlerts, reportDateScope],
   );
-  const reportTimeLabel = useMemo(() => formatClock(now), [now]);
+  const reportTimeLabel = useMemo(() => formatClock(now, locale), [locale, now]);
   const supplyPercent = supplySummary.total > 0 ? Math.round((supplySummary.done / supplySummary.total) * 100) : 0;
   const overviewCards = useMemo<ReportOverviewCard[]>(() => {
     const locationTone: ReportTone = locationScopeError
@@ -217,70 +243,75 @@ export function DailySafetyReport() {
     return [
       {
         id: "location",
-        label: "최근 위치",
+        label: intl.formatMessage({ id: "reports.daily.recentLocation" }),
         value: locationScopeError
-          ? "조회 범위 확인 실패"
+          ? intl.formatMessage({ id: "reports.daily.scopeFailed" })
           : locationScopePending
-          ? "조회 범위 확인 중"
+          ? intl.formatMessage({ id: "reports.daily.scopeLoading" })
           : locationLocked
-            ? "잠금"
+            ? intl.formatMessage({ id: "reports.daily.locked" })
             : childLocation
               ? locationLabel(childLocation)
-              : "확인 중",
+              : intl.formatMessage({ id: "reports.daily.checking" }),
         detail: locationScopeError
-          ? "구독 상태를 확인하지 못했어요"
+          ? intl.formatMessage({ id: "reports.daily.subscriptionFailed" })
           : locationScopePending
-            ? "구독 상태를 확인하고 있어요"
+            ? intl.formatMessage({ id: "reports.daily.subscriptionChecking" })
             : locationLocked
-              ? "프리미엄에서 상세 위치 확인"
-              : locationFreshness?.label ?? "위치 정보 없음",
+              ? intl.formatMessage({ id: "reports.daily.premiumLocation" })
+              : locationFreshness?.label ?? intl.formatMessage({ id: "reports.daily.noLocationInfo" }),
         tone: locationTone,
         icon: <img src={asset("ui/pin-heart.webp")} alt="" loading="lazy" decoding="async" />,
       },
       {
         id: "schedule",
-        label: "오늘 일정",
+        label: intl.formatMessage({ id: "reports.daily.todaySchedule" }),
         value: eventsQuery.isError
-          ? "확인 실패"
+          ? intl.formatMessage({ id: "reports.daily.checkFailed" })
           : eventsQuery.isLoading
-            ? "확인 중"
-            : `${todayEvents.length}개`,
+            ? intl.formatMessage({ id: "reports.daily.checking" })
+            : intl.formatMessage({ id: "reports.daily.itemCount" }, { count: todayEvents.length }),
         detail: eventsQuery.isError
-          ? "아래에서 다시 시도해 주세요"
+          ? intl.formatMessage({ id: "reports.daily.retryBelow" })
           : eventsQuery.isLoading
-            ? "오늘 일정을 불러오는 중"
+            ? intl.formatMessage({ id: "reports.daily.scheduleLoading" })
             : nextEvent
               ? `${nextEvent.title}${nextEvent.time ? ` · ${nextEvent.time}` : ""}`
-              : "남은 일정 없음",
+              : intl.formatMessage({ id: "reports.daily.noRemainingSchedule" }),
         tone: eventsQuery.isError ? "cream" : todayEvents.length > 0 ? "blue" : "mint",
         icon: <img src={asset("ui/calendar-heart.webp")} alt="" loading="lazy" decoding="async" />,
       },
       {
         id: "supplies",
-        label: "준비물",
+        label: intl.formatMessage({ id: "reports.daily.supplies" }),
         value: suppliesQuery.isError
-          ? "확인 실패"
+          ? intl.formatMessage({ id: "reports.daily.checkFailed" })
           : suppliesQuery.isLoading
-            ? "확인 중"
+            ? intl.formatMessage({ id: "reports.daily.checking" })
             : supplySummary.total === 0
-              ? "없음"
-              : `${supplySummary.done}/${supplySummary.total}`,
+              ? intl.formatMessage({ id: "reports.daily.none" })
+              : intl.formatMessage(
+                  { id: "reports.daily.ratio" },
+                  { done: supplySummary.done, total: supplySummary.total },
+                ),
         detail: suppliesQuery.isError
-          ? "아래에서 다시 시도해 주세요"
+          ? intl.formatMessage({ id: "reports.daily.retryBelow" })
           : suppliesQuery.isLoading
-            ? "준비물을 불러오는 중"
+            ? intl.formatMessage({ id: "reports.daily.supplyLoading" })
             : supplySummary.total === 0
-              ? "오늘 챙길 항목 없음"
-              : `${supplyPercent}% 완료`,
+              ? intl.formatMessage({ id: "reports.daily.noItemsToday" })
+              : intl.formatMessage({ id: "reports.daily.percentComplete" }, { percent: supplyPercent }),
         tone: suppliesQuery.isError ? "cream" : supplySummary.remaining > 0 ? "cream" : "mint",
         icon: <img src={asset("cat/study.webp")} alt="" loading="lazy" decoding="async" />,
       },
       {
         id: "device",
-        label: "기기 상태",
+        label: intl.formatMessage({ id: "reports.daily.deviceStatus" }),
         value: device.safetyLabel,
-        detail: device.hasData ? `${device.batteryLabel} · ${device.networkLabel}` : "새로고침으로 확인 필요",
-        tone: device.safetyLabel === "양호" ? "mint" : "cream",
+        detail: device.hasData
+          ? `${device.batteryLabel} · ${device.networkLabel}`
+          : intl.formatMessage({ id: "reports.daily.refreshNeeded" }),
+        tone: device.safetyState === "ready" ? "mint" : "cream",
         icon: <img src={asset("ui/battery.webp")} alt="" loading="lazy" decoding="async" />,
       },
     ];
@@ -292,6 +323,7 @@ export function DailySafetyReport() {
     device.safetyLabel,
     eventsQuery.isError,
     eventsQuery.isLoading,
+    intl,
     locationFreshness?.label,
     locationFreshness?.status,
     locationLabel,
@@ -311,26 +343,45 @@ export function DailySafetyReport() {
     () => [
       {
         id: "alert",
-        label: "안전 알림",
-        value: todayAlerts.length > 0 ? `${todayAlerts.length}건` : "0건",
-        detail: todayAlerts[0] ? alertLabel(todayAlerts[0]) : "오늘 긴급 신호 없음",
+        label: intl.formatMessage({ id: "reports.daily.safetyAlert" }),
+        value: intl.formatMessage({ id: "reports.daily.alertCount" }, { count: todayAlerts.length }),
+        detail: todayAlerts[0]
+          ? alertLabel(todayAlerts[0], intl)
+          : intl.formatMessage({ id: "reports.daily.noEmergencyToday" }),
         tone: statusView.status === "danger" ? "danger" : todayAlerts.length > 0 ? "cream" : "mint",
         icon: <img src={asset(todayAlerts.length > 0 ? "ui/bell.webp" : "ui/shield-heart.webp")} alt="" loading="lazy" decoding="async" />,
       },
       {
         id: "freshness",
-        label: "위치 신선도",
-        value: locationScopeError ? "조회 범위 확인 실패" : locationScopePending ? "조회 범위 확인 중" : locationLocked ? "잠금" : locationFreshness?.label ?? "없음",
-        detail: locationScopeError ? "구독 상태를 확인하지 못했어요" : locationScopePending ? "구독 상태를 확인하고 있어요" : childLocation ? "아이 기기 위치 기준" : "위치 기록 대기 중",
+        label: intl.formatMessage({ id: "reports.daily.locationFreshness" }),
+        value: locationScopeError
+          ? intl.formatMessage({ id: "reports.daily.scopeFailed" })
+          : locationScopePending
+            ? intl.formatMessage({ id: "reports.daily.scopeLoading" })
+            : locationLocked
+              ? intl.formatMessage({ id: "reports.daily.locked" })
+              : locationFreshness?.label ?? intl.formatMessage({ id: "reports.daily.none" }),
+        detail: locationScopeError
+          ? intl.formatMessage({ id: "reports.daily.subscriptionFailed" })
+          : locationScopePending
+            ? intl.formatMessage({ id: "reports.daily.subscriptionChecking" })
+            : childLocation
+              ? intl.formatMessage({ id: "reports.daily.childLocationBasis" })
+              : intl.formatMessage({ id: "reports.daily.locationWaiting" }),
         tone: locationScopeError ? "cream" : locationScopePending || locationLocked ? "lav" : locationFreshness?.status === "stale" || !childLocation ? "cream" : "mint",
         icon: <img src={asset("ui/pin.webp")} alt="" loading="lazy" decoding="async" />,
       },
       {
         id: "device-signal",
-        label: "기기 리포트",
+        label: intl.formatMessage({ id: "reports.daily.deviceReport" }),
         value: device.freshnessLabel,
-        detail: device.hasData ? `잠금 해제 ${device.unlockCountLabel}` : "아이 앱 연결 후 표시",
-        tone: device.safetyLabel === "양호" ? "blue" : "cream",
+        detail: device.hasData
+          ? intl.formatMessage(
+              { id: "reports.daily.unlockDetail" },
+              { count: device.unlockCountLabel },
+            )
+          : intl.formatMessage({ id: "reports.daily.afterChildConnect" }),
+        tone: device.safetyState === "ready" ? "blue" : "cream",
         icon: <img src={asset("ui/battery.webp")} alt="" loading="lazy" decoding="async" />,
       },
     ],
@@ -347,6 +398,7 @@ export function DailySafetyReport() {
       locationScopePending,
       statusView.status,
       todayAlerts,
+      intl,
     ],
   );
   const topDeviceApps = device.topApps.slice(0, 2);
@@ -363,8 +415,8 @@ export function DailySafetyReport() {
   const safetySourceIssues = [
     {
       id: "alerts",
-      label: "안전 알림",
-      retryLabel: "안전 알림 다시 시도",
+      label: intl.formatMessage({ id: "reports.daily.safetyAlert" }),
+      retryLabel: intl.formatMessage({ id: "reports.daily.retryAlerts" }),
       failed: alertsQuery.isError,
       isFetching: alertsQuery.isFetching,
       refetch: async () => {
@@ -373,8 +425,8 @@ export function DailySafetyReport() {
     },
     {
       id: "location",
-      label: "위치",
-      retryLabel: "위치 다시 시도",
+      label: intl.formatMessage({ id: "reports.daily.location" }),
+      retryLabel: intl.formatMessage({ id: "reports.daily.retryLocation" }),
       failed: locationsQuery.isError || entitlement.isError,
       isFetching: locationsQuery.isFetching || entitlement.isFetching,
       refetch: async () => {
@@ -383,8 +435,8 @@ export function DailySafetyReport() {
     },
     {
       id: "device",
-      label: "기기 상태",
-      retryLabel: "기기 상태 다시 시도",
+      label: intl.formatMessage({ id: "reports.daily.deviceStatus" }),
+      retryLabel: intl.formatMessage({ id: "reports.daily.retryDevice" }),
       failed: familyQuery.isError || (!!activeChild?.user_id && childNotifSettingsQuery.isError),
       isFetching: familyQuery.isFetching || childNotifSettingsQuery.isFetching,
       refetch: async () => {
@@ -402,33 +454,38 @@ export function DailySafetyReport() {
     setRefreshingDevice(true);
     try {
       await requestDeviceStatus(familyId, activeChild?.user_id ?? null);
-      show("아이 기기에 상태 확인을 요청했어요", "📱");
+      show(intl.formatMessage({ id: "reports.daily.deviceRequestSent" }), "📱");
     } catch (error) {
       console.error("기기 상태 확인 요청 실패:", error);
-      show("기기 상태 요청에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️");
+      show(intl.formatMessage({ id: "reports.daily.deviceRequestFailed" }), "⚠️");
     } finally {
       setRefreshingDevice(false);
     }
   };
 
-  const childName = activeChild?.name ?? "아이";
+  const childName = activeChild?.name ?? intl.formatMessage({ id: "reports.daily.childFallback" });
 
   return (
     <div className="dr-root">
       <header className="dr-header">
-        <button type="button" className="dr-back hy-press" aria-label="뒤로" onClick={() => navigate(-1)}>
+        <button
+          type="button"
+          className="dr-back hy-press"
+          aria-label={intl.formatMessage({ id: "reports.daily.back" })}
+          onClick={() => navigate(-1)}
+        >
           <ChevronLeft size={22} strokeWidth={2.2} />
         </button>
         <div className="dr-head-main">
-          <div className="dr-title">{msg.dailyReportTitle}</div>
-          <div className="dr-subtitle">{msg.dailyReportSubtitle}</div>
+          <div className="dr-title">{intl.formatMessage({ id: "reports.daily.title" })}</div>
+          <div className="dr-subtitle">{intl.formatMessage({ id: "reports.daily.subtitle" })}</div>
         </div>
       </header>
 
       <div className="dr-content">
         {safetySourceState === "loading" ? (
           <section className="hy-card dr-loading">
-            <Loading label="안심 데이터를 불러오는 중" />
+            <Loading label={intl.formatMessage({ id: "reports.daily.loading" })} />
           </section>
         ) : safetySourceState === "error" ? (
           <section className="hy-card dr-source-error" role="alert" aria-live="assertive">
@@ -437,11 +494,14 @@ export function DailySafetyReport() {
                 <AlertTriangle size={24} strokeWidth={2.3} />
               </span>
               <span>
-                <b>안심 데이터를 확인하지 못했어요</b>
-                <small>실패한 항목을 다시 확인한 뒤 리포트를 보여드릴게요.</small>
+                <b>{intl.formatMessage({ id: "reports.daily.sourceErrorTitle" })}</b>
+                <small>{intl.formatMessage({ id: "reports.daily.sourceErrorDescription" })}</small>
               </span>
             </div>
-            <div className="dr-source-error__actions" aria-label="안심 데이터 다시 시도">
+            <div
+              className="dr-source-error__actions"
+              aria-label={intl.formatMessage({ id: "reports.daily.sourceRetryAria" })}
+            >
               {safetySourceIssues.map((source) => (
                 <button
                   key={source.id}
@@ -456,7 +516,12 @@ export function DailySafetyReport() {
                     strokeWidth={2.4}
                     className={source.isFetching ? "dr-spin" : undefined}
                   />
-                  {source.isFetching ? `${source.label} 확인 중…` : source.retryLabel}
+                  {source.isFetching
+                    ? intl.formatMessage(
+                        { id: "reports.daily.checkingSource" },
+                        { source: source.label },
+                      )
+                    : source.retryLabel}
                 </button>
               ))}
             </div>
@@ -464,27 +529,33 @@ export function DailySafetyReport() {
         ) : !activeChild ? (
           <section className="hy-card dr-empty">
             <ShieldCheck size={38} strokeWidth={2.1} />
-            <div className="dr-empty__title">연결된 아이가 없어요</div>
-            <p>아이를 연결하면 오늘의 위치, 일정, 준비물, 기기 상태를 한 화면에서 볼 수 있어요.</p>
+            <div className="dr-empty__title">{intl.formatMessage({ id: "reports.daily.noChildTitle" })}</div>
+            <p>{intl.formatMessage({ id: "reports.daily.noChildDescription" })}</p>
             <button type="button" className="dr-primary hy-press" onClick={() => navigate("/child-invite")}>
-              아이 연결하기
+              {intl.formatMessage({ id: "reports.daily.connectChild" })}
             </button>
           </section>
         ) : (
           <>
             <section className={`dr-hero dr-hero--${statusView.status}`}>
               <div className="dr-hero__copy">
-                <div className="dr-hero__eyebrow">{childName} · 오늘</div>
-                <div className="dr-hero__title">{statusView.title}</div>
-                <p>{statusView.description}</p>
+                <div className="dr-hero__eyebrow">
+                  {intl.formatMessage({ id: "reports.daily.heroEyebrow" }, { childName })}
+                </div>
+                <div className="dr-hero__title">
+                  {intl.formatMessage({ id: `reports.daily.status.${statusView.status}.title` })}
+                </div>
+                <p>{intl.formatMessage({ id: `reports.daily.status.${statusView.status}.description` })}</p>
                 <div className="dr-hero__chips">
                   <span>
                     <Clock3 size={14} strokeWidth={2.3} />
-                    {reportTimeLabel} 기준
+                    {intl.formatMessage({ id: "reports.daily.asOf" }, { time: reportTimeLabel })}
                   </span>
                   <span>
                     <ShieldCheck size={14} strokeWidth={2.3} />
-                    {todayAlerts.length > 0 ? `알림 ${todayAlerts.length}건` : "알림 없음"}
+                    {todayAlerts.length > 0
+                      ? intl.formatMessage({ id: "reports.daily.heroAlertCount" }, { count: todayAlerts.length })
+                      : intl.formatMessage({ id: "reports.daily.noAlerts" })}
                   </span>
                 </div>
               </div>
@@ -516,7 +587,10 @@ export function DailySafetyReport() {
               </div>
             </section>
 
-            <section className="dr-overview" aria-label="오늘 주요 지표">
+            <section
+              className="dr-overview"
+              aria-label={intl.formatMessage({ id: "reports.daily.overviewAria" })}
+            >
               {overviewCards.map((card) => (
                 <div key={card.id} className={`dr-overview-card dr-tone--${card.tone}`}>
                   <span className="dr-overview-card__icon">{card.icon}</span>
@@ -533,8 +607,8 @@ export function DailySafetyReport() {
                   <img src={asset("ui/safety-mascot.webp")} alt="" loading="lazy" decoding="async" />
                 </span>
                 <span>
-                  <b>안전 신호</b>
-                  <small>위치, 기기, 알림을 함께 봅니다</small>
+                  <b>{intl.formatMessage({ id: "reports.daily.safetySignals" })}</b>
+                  <small>{intl.formatMessage({ id: "reports.daily.safetySignalsDescription" })}</small>
                 </span>
               </div>
               <div className="dr-signal-grid">
@@ -551,8 +625,11 @@ export function DailySafetyReport() {
                   {todayAlerts.map((alert) => (
                     <div key={`${alert.alert_type}-${alert.created_at}`} className={`dr-alert dr-tone--${alertTone(alert)}`}>
                       <BellRing size={16} strokeWidth={2.2} />
-                      <span>{alertLabel(alert)}</span>
-                      <small>{formatShortTime(alert.created_at) || "시간 확인 중"}</small>
+                      <span>{alertLabel(alert, intl)}</span>
+                      <small>
+                        {formatShortTime(alert.created_at, locale)
+                          || intl.formatMessage({ id: "reports.daily.timePending" })}
+                      </small>
                     </div>
                   ))}
                 </div>
@@ -565,11 +642,11 @@ export function DailySafetyReport() {
                   <img src={asset("ui/pin-heart.webp")} alt="" loading="lazy" decoding="async" />
                 </span>
                 <span>
-                  <b>이동 요약</b>
-                  <small>오늘 위치 흐름을 확인합니다</small>
+                  <b>{intl.formatMessage({ id: "reports.daily.movementTitle" })}</b>
+                  <small>{intl.formatMessage({ id: "reports.daily.movementDescription" })}</small>
                 </span>
                 <button type="button" className="dr-link hy-press" onClick={() => navigate("/parent/location?view=history")}>
-                  지도 보기
+                  {intl.formatMessage({ id: "reports.daily.viewMap" })}
                   <ChevronRight size={14} strokeWidth={2.4} />
                 </button>
               </div>
@@ -577,8 +654,8 @@ export function DailySafetyReport() {
                 <div className="dr-scope-error" role="alert" aria-live="assertive">
                   <AlertTriangle size={20} strokeWidth={2.2} aria-hidden="true" />
                   <span>
-                    <b>위치 조회 범위 확인 실패</b>
-                    <small>구독 상태를 확인하지 못했어요. 인터넷 연결을 확인한 뒤 다시 시도해 주세요.</small>
+                    <b>{intl.formatMessage({ id: "reports.daily.scopeFailed" })}</b>
+                    <small>{intl.formatMessage({ id: "reports.daily.scopeErrorDescription" })}</small>
                   </span>
                   <button
                     type="button"
@@ -591,16 +668,18 @@ export function DailySafetyReport() {
                       strokeWidth={2.4}
                       className={entitlement.isFetching ? "dr-spin" : undefined}
                     />
-                    {entitlement.isFetching ? "확인 중…" : "다시 시도"}
+                    {entitlement.isFetching
+                      ? intl.formatMessage({ id: "reports.daily.checking" })
+                      : intl.formatMessage({ id: "reports.daily.retry" })}
                   </button>
                 </div>
               ) : locationScopePending ? (
                 <div className="dr-emptyline" role="status" aria-live="polite">
-                  위치 조회 범위 확인 중 · 구독 상태를 확인하고 있어요.
+                  {intl.formatMessage({ id: "reports.daily.scopePendingDescription" })}
                 </div>
               ) : locationLocked ? (
                 <div className="dr-lock">
-                  실시간 위치는 프리미엄에서 확인할 수 있어요. SOS와 긴급 알림은 계속 무료로 받을 수 있어요.
+                  {intl.formatMessage({ id: "reports.daily.locationLockDescription" })}
                 </div>
               ) : childLocation ? (
                 <div className="dr-feature-row">
@@ -609,11 +688,19 @@ export function DailySafetyReport() {
                   </span>
                   <span className="dr-feature-row__main">
                     <b>{locationLabel(childLocation)}</b>
-                    <small>마지막 업데이트 · {locationFreshness?.label ?? "위치 정보 없음"}</small>
+                    <small>
+                      {intl.formatMessage(
+                        { id: "reports.daily.lastUpdate" },
+                        {
+                          freshness: locationFreshness?.label
+                            ?? intl.formatMessage({ id: "reports.daily.noLocationInfo" }),
+                        },
+                      )}
+                    </small>
                   </span>
                 </div>
               ) : (
-                <div className="dr-emptyline">아직 오늘 위치 기록이 없어요.</div>
+                <div className="dr-emptyline">{intl.formatMessage({ id: "reports.daily.noLocationToday" })}</div>
               )}
             </section>
 
@@ -624,25 +711,31 @@ export function DailySafetyReport() {
                     <img src={asset("ui/calendar-heart.webp")} alt="" loading="lazy" decoding="async" />
                   </span>
                   <span>
-                    <b>일정 체크</b>
+                    <b>{intl.formatMessage({ id: "reports.daily.scheduleCheck" })}</b>
                     <small>
                       {eventsQuery.isError
-                        ? "일정 조회를 다시 시도해 주세요"
+                        ? intl.formatMessage({ id: "reports.daily.scheduleRetryDescription" })
                         : eventsQuery.isLoading
-                          ? "오늘 일정을 불러오는 중"
-                          : `지난 일정 ${pastEventCount}개 · 남은 일정 ${Math.max(0, todayEvents.length - pastEventCount)}개`}
+                          ? intl.formatMessage({ id: "reports.daily.scheduleLoading" })
+                          : intl.formatMessage(
+                              { id: "reports.daily.scheduleCounts" },
+                              {
+                                past: pastEventCount,
+                                remaining: Math.max(0, todayEvents.length - pastEventCount),
+                              },
+                            )}
                     </small>
                   </span>
                   <button type="button" className="dr-link hy-press" onClick={() => navigate("/event-form", { state: { childId: activeChild.id } })}>
-                    일정 추가
+                    {intl.formatMessage({ id: "reports.daily.addSchedule" })}
                   </button>
                 </div>
                 {eventsQuery.isError ? (
                   <div className="dr-section-error" role="alert" aria-live="assertive">
                     <AlertTriangle size={19} strokeWidth={2.3} aria-hidden="true" />
                     <span>
-                      <b>오늘 일정을 확인하지 못했어요</b>
-                      <small>인터넷 연결을 확인한 뒤 다시 시도해 주세요.</small>
+                      <b>{intl.formatMessage({ id: "reports.daily.scheduleErrorTitle" })}</b>
+                      <small>{intl.formatMessage({ id: "reports.daily.networkRetryDescription" })}</small>
                     </span>
                     <button
                       type="button"
@@ -655,13 +748,15 @@ export function DailySafetyReport() {
                         strokeWidth={2.4}
                         className={eventsQuery.isFetching ? "dr-spin" : undefined}
                       />
-                      {eventsQuery.isFetching ? "일정 확인 중…" : "일정 다시 시도"}
+                      {eventsQuery.isFetching
+                        ? intl.formatMessage({ id: "reports.daily.scheduleChecking" })
+                        : intl.formatMessage({ id: "reports.daily.retrySchedule" })}
                     </button>
                   </div>
                 ) : eventsQuery.isLoading ? (
-                  <Loading label="오늘 일정을 불러오는 중" />
+                  <Loading label={intl.formatMessage({ id: "reports.daily.scheduleLoading" })} />
                 ) : todayEvents.length === 0 ? (
-                  <div className="dr-emptyline">오늘 일정이 없어요.</div>
+                  <div className="dr-emptyline">{intl.formatMessage({ id: "reports.daily.noScheduleToday" })}</div>
                 ) : (
                   <div className="dr-event-list">
                     {todayEvents.slice(0, 3).map((event) => (
@@ -674,7 +769,7 @@ export function DailySafetyReport() {
                           <small>{event.time}{event.place ? ` · ${event.place}` : ""}</small>
                         </span>
                         <span className="dr-event__tag" style={{ color: event.tagText, background: event.tagBg }}>
-                          {event.tag}
+                          {event.tagLabel}
                         </span>
                       </div>
                     ))}
@@ -688,16 +783,16 @@ export function DailySafetyReport() {
                   <img src={asset("cat/study.webp")} alt="" loading="lazy" decoding="async" />
                   </span>
                   <span>
-                    <b>준비물</b>
-                    <small>가방에 챙길 항목을 점검합니다</small>
+                    <b>{intl.formatMessage({ id: "reports.daily.supplies" })}</b>
+                    <small>{intl.formatMessage({ id: "reports.daily.suppliesDescription" })}</small>
                   </span>
                 </div>
                 {suppliesQuery.isError ? (
                   <div className="dr-section-error" role="alert" aria-live="assertive">
                     <AlertTriangle size={19} strokeWidth={2.3} aria-hidden="true" />
                     <span>
-                      <b>준비물을 확인하지 못했어요</b>
-                      <small>인터넷 연결을 확인한 뒤 다시 시도해 주세요.</small>
+                      <b>{intl.formatMessage({ id: "reports.daily.suppliesErrorTitle" })}</b>
+                      <small>{intl.formatMessage({ id: "reports.daily.networkRetryDescription" })}</small>
                     </span>
                     <button
                       type="button"
@@ -710,20 +805,29 @@ export function DailySafetyReport() {
                         strokeWidth={2.4}
                         className={suppliesQuery.isFetching ? "dr-spin" : undefined}
                       />
-                      {suppliesQuery.isFetching ? "준비물 확인 중…" : "준비물 다시 시도"}
+                      {suppliesQuery.isFetching
+                        ? intl.formatMessage({ id: "reports.daily.suppliesChecking" })
+                        : intl.formatMessage({ id: "reports.daily.retrySupplies" })}
                     </button>
                   </div>
                 ) : suppliesQuery.isLoading ? (
-                  <Loading label="준비물을 불러오는 중" />
+                  <Loading label={intl.formatMessage({ id: "reports.daily.supplyLoading" })} />
                 ) : supplySummary.total === 0 ? (
-                  <div className="dr-emptyline">오늘 챙길 준비물이 없어요.</div>
+                  <div className="dr-emptyline">{intl.formatMessage({ id: "reports.daily.noSuppliesToday" })}</div>
                 ) : (
                   <>
                     <div className="dr-progress">
                       <span style={{ width: `${supplyPercent}%` }} />
                     </div>
                     <div className="dr-note">
-                      {supplySummary.done}/{supplySummary.total}개 완료 · 남은 준비물 {supplySummary.remaining}개
+                      {intl.formatMessage(
+                        { id: "reports.daily.supplyProgress" },
+                        {
+                          done: supplySummary.done,
+                          total: supplySummary.total,
+                          remaining: supplySummary.remaining,
+                        },
+                      )}
                     </div>
                     {supplySummary.remainingLabels.length > 0 && (
                       <div className="dr-chips">
@@ -746,8 +850,8 @@ export function DailySafetyReport() {
                   <img src={asset("ui/battery.webp")} alt="" loading="lazy" decoding="async" />
                 </span>
                 <span>
-                  <b>기기 상태</b>
-                  <small>배터리, 네트워크, 앱 사용 흐름</small>
+                  <b>{intl.formatMessage({ id: "reports.daily.deviceStatus" })}</b>
+                  <small>{intl.formatMessage({ id: "reports.daily.deviceDescription" })}</small>
                 </span>
                 <button
                   type="button"
@@ -757,28 +861,30 @@ export function DailySafetyReport() {
                   aria-busy={refreshingDevice}
                 >
                   <RefreshCw size={14} strokeWidth={2.2} />
-                  {refreshingDevice ? "요청 중" : "새로고침"}
+                  {refreshingDevice
+                    ? intl.formatMessage({ id: "reports.daily.requesting" })
+                    : intl.formatMessage({ id: "reports.daily.refresh" })}
                 </button>
               </div>
               <div className="dr-device-grid">
                 <div>
                   <img src={asset("ui/battery.webp")} alt="" loading="lazy" decoding="async" />
-                  <span>배터리</span>
+                  <span>{intl.formatMessage({ id: "reports.daily.battery" })}</span>
                   <b>{device.batteryLabel}</b>
                 </div>
                 <div>
                   <img src={asset("ui/lock-open-3d.webp")} alt="" loading="lazy" decoding="async" />
-                  <span>잠금 해제</span>
+                  <span>{intl.formatMessage({ id: "reports.daily.unlock" })}</span>
                   <b>{device.unlockCountLabel}</b>
                 </div>
                 <div>
                   <img src={asset("ui/wifi-3d.webp")} alt="" loading="lazy" decoding="async" />
-                  <span>네트워크</span>
+                  <span>{intl.formatMessage({ id: "reports.daily.network" })}</span>
                   <b>{device.networkLabel}</b>
                 </div>
                 <div>
                   <img src={asset("ui/clock-3d.webp")} alt="" loading="lazy" decoding="async" />
-                  <span>마지막 확인</span>
+                  <span>{intl.formatMessage({ id: "reports.daily.lastChecked" })}</span>
                   <b>{device.freshnessLabel}</b>
                 </div>
               </div>
@@ -803,7 +909,7 @@ export function DailySafetyReport() {
                 </span>
               </div>
               {!device.hasData ? (
-                <div className="dr-emptyline">기기 상태를 확인하려면 새로고침을 눌러 주세요.</div>
+                <div className="dr-emptyline">{intl.formatMessage({ id: "reports.daily.deviceRefreshEmpty" })}</div>
               ) : topDeviceApps.length > 0 ? (
                 <div className="dr-app-list">
                   {topDeviceApps.map((app) => (
@@ -816,8 +922,8 @@ export function DailySafetyReport() {
               ) : (
                 <div className="dr-emptyline">
                   {device.appUsagePermissionGranted
-                    ? "혜니캘린더 외에 오늘 쓴 앱이 없어요."
-                    : "사용정보 접근 권한을 켜면 많이 쓴 앱이 표시돼요."}
+                    ? intl.formatMessage({ id: "reports.daily.noOtherApps" })
+                    : intl.formatMessage({ id: "reports.daily.appPermission" })}
                 </div>
               )}
             </section>
@@ -828,19 +934,19 @@ export function DailySafetyReport() {
                   <img src={asset("ui/chat-heart.webp")} alt="" loading="lazy" decoding="async" />
                 </span>
                 <span>
-                  <b>최신 소식</b>
-                  <small>오늘 아이와 주고받은 메시지</small>
+                  <b>{intl.formatMessage({ id: "reports.daily.latestNews" })}</b>
+                  <small>{intl.formatMessage({ id: "reports.daily.latestNewsDescription" })}</small>
                 </span>
                 <button type="button" className="dr-link hy-press" onClick={() => navigate("/parent/memo")}>
-                  대화 열기
+                  {intl.formatMessage({ id: "reports.daily.openChat" })}
                 </button>
               </div>
               {memoThread.isError ? (
                 <div className="dr-section-error" role="alert" aria-live="assertive">
                   <AlertTriangle size={19} strokeWidth={2.3} aria-hidden="true" />
                   <span>
-                    <b>최신 소식을 확인하지 못했어요</b>
-                    <small>인터넷 연결을 확인한 뒤 다시 시도해 주세요.</small>
+                    <b>{intl.formatMessage({ id: "reports.daily.memoErrorTitle" })}</b>
+                    <small>{intl.formatMessage({ id: "reports.daily.networkRetryDescription" })}</small>
                   </span>
                   <button
                     type="button"
@@ -853,13 +959,15 @@ export function DailySafetyReport() {
                       strokeWidth={2.4}
                       className={memoThread.isFetching ? "dr-spin" : undefined}
                     />
-                    {memoThread.isFetching ? "메시지 확인 중…" : "메시지 다시 시도"}
+                    {memoThread.isFetching
+                      ? intl.formatMessage({ id: "reports.daily.memoChecking" })
+                      : intl.formatMessage({ id: "reports.daily.retryMemo" })}
                   </button>
                 </div>
               ) : memoThread.isLoading ? (
-                <Loading label="최신 소식을 불러오는 중" />
+                <Loading label={intl.formatMessage({ id: "reports.daily.memoLoading" })} />
               ) : memoPreview.length === 0 ? (
-                <div className="dr-emptyline">오늘 주고받은 메시지가 없어요.</div>
+                <div className="dr-emptyline">{intl.formatMessage({ id: "reports.daily.noMemoToday" })}</div>
               ) : (
                 <div className="dr-memos">
                   {memoPreview.map((memo) => (
@@ -867,9 +975,13 @@ export function DailySafetyReport() {
                       <span className="dr-memo__icon">
                         <MessageSquareText size={15} strokeWidth={2.2} />
                       </span>
-                      <span>{memo.user_role === "child" ? childName : "부모님"}</span>
+                      <span>
+                        {memo.user_role === "child"
+                          ? childName
+                          : intl.formatMessage({ id: "reports.daily.parentSender" })}
+                      </span>
                       <b>{memo.content}</b>
-                      <small>{formatShortTime(memo.created_at)}</small>
+                      <small>{formatShortTime(memo.created_at, locale)}</small>
                     </div>
                   ))}
                 </div>
@@ -881,8 +993,8 @@ export function DailySafetyReport() {
                 <img src={asset("ui/ai-robot.webp")} alt="" loading="lazy" decoding="async" />
               </span>
               <span>
-                <b>AI 하루 요약 보기</b>
-                <small>일정·위치·안전 기록을 AI가 정리해 드려요</small>
+                <b>{intl.formatMessage({ id: "reports.daily.aiSummaryTitle" })}</b>
+                <small>{intl.formatMessage({ id: "reports.daily.aiSummaryDescription" })}</small>
               </span>
               <ChevronRight size={20} strokeWidth={2.4} />
             </button>
@@ -892,8 +1004,14 @@ export function DailySafetyReport() {
                 <img src={asset("ui/sparkle.webp")} alt="" loading="lazy" decoding="async" />
               </span>
               <span>
-                <b>이번 주 흐름 보기</b>
-                <small>{entitlement.isPremium ? "주간 가족 리포트로 이동해요" : "프리미엄으로 주간 리포트 보기"}</small>
+                <b>{intl.formatMessage({ id: "reports.daily.weeklyTitle" })}</b>
+                <small>
+                  {intl.formatMessage({
+                    id: entitlement.isPremium
+                      ? "reports.daily.weeklyOpen"
+                      : "reports.daily.weeklyPremium",
+                  })}
+                </small>
               </span>
               <ChevronRight size={20} strokeWidth={2.4} />
             </button>
@@ -902,11 +1020,11 @@ export function DailySafetyReport() {
               <section className="dr-premium">
                 <img className="dr-premium__crown" src={asset("ui/crown.webp")} alt="" loading="lazy" decoding="async" />
                 <div>
-                  <b>프리미엄으로 더 자세히 확인하세요</b>
-                  <p>실시간 위치, 주간 리포트, AI 하루 요약까지 함께 볼 수 있어요.</p>
+                  <b>{intl.formatMessage({ id: "reports.daily.premiumTitle" })}</b>
+                  <p>{intl.formatMessage({ id: "reports.daily.premiumDescription" })}</p>
                 </div>
                 <button type="button" className="hy-press" onClick={() => navigate("/subscription")}>
-                  프리미엄 보기
+                  {intl.formatMessage({ id: "reports.daily.premiumCta" })}
                 </button>
               </section>
             )}

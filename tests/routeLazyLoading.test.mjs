@@ -158,6 +158,62 @@ test("59개 경로의 component·guard·출시 조건 정본을 AST로 고정한
   assert.doesNotThrow(() => assertAppRouteContract(app, expected));
 });
 
+test("namespace가 있는 routeElement의 첫 JSX 인자에서 화면을 읽는다", () => {
+  assert.deepEqual(
+    parseAppRouteContract(app).routes.find(({ path }) => path === "parent/home"),
+    route("parent/home", "ParentHome", "parent"),
+  );
+});
+
+test("단일 인자 routeElement도 같은 라우트 정본으로 읽는다", () => {
+  const singleArgumentRoute = app.replace(
+    'routeElement(<ParentHome />, PARENT_NAMESPACES)',
+    "routeElement(<ParentHome />)",
+  );
+  assert.notEqual(singleArgumentRoute, app, "단일 인자 fixture가 원본을 바꿔야 합니다.");
+  assert.deepEqual(
+    parseAppRouteContract(singleArgumentRoute).routes.find(({ path }) => path === "parent/home"),
+    route("parent/home", "ParentHome", "parent"),
+  );
+});
+
+test("routeElement의 지원 계약 밖 인자 형태를 거부한다", () => {
+  assert.throws(
+    () => parseAppRouteContract(app.replace(
+      'routeElement(<ParentHome />, PARENT_NAMESPACES)',
+      "routeElement()",
+    )),
+    /routeElement.*인자/,
+  );
+  assert.throws(
+    () => parseAppRouteContract(app.replace(
+      'routeElement(<ParentHome />, PARENT_NAMESPACES)',
+      "routeElement(<ParentHome />, PARENT_NAMESPACES, SHARED_NAMESPACES)",
+    )),
+    /routeElement.*인자/,
+  );
+
+  const wrongNamespace = app.replace(
+    'routeElement(<ParentHome />, PARENT_NAMESPACES)',
+    "routeElement(<ParentHome />, NOT_A_NAMESPACE)",
+  );
+  assert.notEqual(wrongNamespace, app, "잘못된 namespace fixture가 원본을 바꿔야 합니다.");
+  assert.throws(
+    () => parseAppRouteContract(wrongNamespace),
+    /routeElement.*namespace.*인자/,
+  );
+
+  const inlineNamespace = app.replace(
+    'routeElement(<ParentHome />, PARENT_NAMESPACES)',
+    'routeElement(<ParentHome />, ["core", "parent"])',
+  );
+  assert.notEqual(inlineNamespace, app, "직접 배열 namespace fixture가 원본을 바꿔야 합니다.");
+  assert.throws(
+    () => parseAppRouteContract(inlineNamespace),
+    /routeElement.*namespace.*인자/,
+  );
+});
+
 test("지연 화면 선언 삭제를 검출한다", () => {
   assertMutationRejected(
     (source) => source.replace(
@@ -182,7 +238,7 @@ test("지연 화면의 module 및 named export 오배선을 각각 검출한다"
 test("라우트 삭제를 검출한다", () => {
   assertMutationRejected(
     (source) => source.replace(
-      '{ path: "parent/home", element: routeElement(<ParentHome />) },',
+      '{ path: "parent/home", element: routeElement(<ParentHome />, PARENT_NAMESPACES) },',
       "",
     ),
     "라우트 삭제를 허용하면 안 됩니다.",
@@ -218,7 +274,13 @@ test("공통 Suspense 전환 상태와 안정된 로더 접근성을 유지한�
   assert.match(helper, /<Suspense fallback=\{<RouteLoading \/>\}>/);
   assert.match(component, /role="status"/);
   assert.match(component, /aria-live="polite"/);
-  assert.match(component, /화면을 불러오는 중/);
+  assert.equal(
+    component.match(/intl\.formatMessage\(\{ id: "core\.state\.loadingScreen" \}\)/g)?.length,
+    2,
+    "상태 label과 화면 표시 문구가 같은 locale catalog ID를 사용해야 합니다",
+  );
+  const koCore = JSON.parse(read("locales/ko/core.json"));
+  assert.match(koCore["core.state.loadingScreen"], /화면을 불러오는 중/);
   assert.match(css, /\.route-loading\s*\{[^}]*min-height:\s*(?:var\([^;]+\)|\d+px)/s);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(css, /animation:\s*none/);

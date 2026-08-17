@@ -1,0 +1,16 @@
+{
+  "homeHasFab": true,
+  "chatVisible": true,
+  "fabMetrics": {
+    "backgroundColor": "rgba(0, 0, 0, 0)",
+    "boxShadow": "none",
+    "imgSrc": "/assets/mascot-status/status-happy.webp"
+  },
+  "chatMetrics": {
+    "avatarSrc": "/assets/mascot-status/status-happy.webp",
+    "miniSrc": "/assets/mascot-status/status-happy.webp"
+  },
+  "sameFamily": true,
+  "transparentFab": true,
+  "url": "http://localhost:5199/#/child/ai-friend"
+}

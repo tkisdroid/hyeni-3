@@ -10,10 +10,12 @@ import test from "node:test";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-const [childSafetySource, settingsScreen] = await Promise.all([
+const [childSafetySource, settingsScreen, koNotificationsSource] = await Promise.all([
   read("worker/lib/childSafetyNotification.ts"),
   read("src/screens/feature/NotificationSettings.tsx"),
+  read("locales/ko/notifications.json"),
 ]);
+const koNotifications = JSON.parse(koNotificationsSource);
 
 test("아이 알림 문구 목록에 도착·출발 유형이 없다", () => {
   for (const alertType of [
@@ -42,7 +44,7 @@ test("위험 구역은 아이에게 그대로 알린다", () => {
 
 test("아이 설정 화면은 아이에게 오지 않는 위치 토글을 보여주지 않는다", () => {
   const safetyGroup = settingsScreen.slice(
-    settingsScreen.indexOf('<div className="nst-group__label">위치</div>'),
+    settingsScreen.indexOf('notifications.settings.group.locationSafety'),
     settingsScreen.indexOf('{role === "parent" && ('),
   );
   assert.ok(safetyGroup.length > 0, "위치·안전 그룹을 찾지 못했습니다");
@@ -53,5 +55,9 @@ test("아이 설정 화면은 아이에게 오지 않는 위치 토글을 보여
     safetyGroup.indexOf(") : ("),
   );
   assert.doesNotMatch(childBranch, /SAFETY_TOGGLES/);
-  assert.match(childBranch, /도착·출발은 부모님께만 가고/);
+  assert.match(childBranch, /notifications\.settings\.childSafety\.parentOnly/);
+  assert.equal(
+    koNotifications["notifications.settings.childSafety.parentOnly"],
+    "도착·출발 같은 일상 소식은 부모님께만 가고 너한테는 안 와.",
+  );
 });

@@ -53,6 +53,9 @@ import {
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import { usePwaUpdateCriticalSection } from "@/lib/usePwaUpdateCriticalSection";
+import { useLocale } from "@/i18n/useLocale";
+import { formatDurationUnitShort, formatRelativeMinutes } from "@/i18n/format";
+import { useIntl } from "react-intl";
 import "./NotificationSettings.css";
 
 /**
@@ -68,16 +71,16 @@ interface ToggleDef {
   key: ToggleKey;
   Icon: LucideIcon;
   tone: "rose" | "blue" | "mint" | "gold";
-  label: string;
-  sub: string;
+  labelId: string;
+  subId: string;
 }
 
 const SCHEDULE_TOGGLE: ToggleDef = {
   key: "parentEnabled",
   Icon: CalendarDays,
   tone: "rose",
-  label: "일정",
-  sub: "시작 전에 알려드려요",
+  labelId: "notifications.settings.toggle.schedule.label",
+  subId: "notifications.settings.toggle.schedule.description",
 };
 
 const SAFETY_TOGGLES: ToggleDef[] = [
@@ -85,29 +88,24 @@ const SAFETY_TOGGLES: ToggleDef[] = [
     key: "locationEnabled",
     Icon: MapPin,
     tone: "blue",
-    label: "도착·출발",
-    sub: "도착하면 알려드려요",
+    labelId: "notifications.settings.toggle.location.label",
+    subId: "notifications.settings.toggle.location.description",
   },
   {
     key: "registeredPlaceEnabled",
     Icon: School,
     tone: "mint",
-    label: "저장한 장소",
-    sub: "집·학원 출입을 알려드려요",
+    labelId: "notifications.settings.toggle.registeredPlace.label",
+    subId: "notifications.settings.toggle.registeredPlace.description",
   },
   {
     key: "playdateEnabled",
     Icon: ToyBrick,
     tone: "gold",
-    label: "친구놀이",
-    sub: "놀이 약속을 알려드려요",
+    labelId: "notifications.settings.toggle.playdate.label",
+    subId: "notifications.settings.toggle.playdate.description",
   },
 ];
-
-/** 한 줄 칩용 짧은 기간. "전"은 섹션 제목·aria-label에 둔다. */
-function notifAdvanceChipLabel(minutes: number): string {
-  return minutes % 60 === 0 ? `${minutes / 60}시간` : `${minutes}분`;
-}
 
 function createQuietHoursDraft(targetUserId: string): NotificationQuietHoursTargetDraft {
   return {
@@ -128,14 +126,15 @@ function ToggleRow({
   on: boolean;
   onToggle: () => void;
 }) {
+  const intl = useIntl();
   return (
     <button type="button" className="nst-row hy-press" aria-pressed={on} onClick={onToggle}>
       <span className="nst-row__icon" data-tone={def.tone}>
         <def.Icon size={19} strokeWidth={2.2} />
       </span>
       <span className="nst-row__main">
-        <span className="nst-row__label">{def.label}</span>
-        <span className="nst-row__sub">{def.sub}</span>
+        <span className="nst-row__label">{intl.formatMessage({ id: def.labelId })}</span>
+        <span className="nst-row__sub">{intl.formatMessage({ id: def.subId })}</span>
       </span>
       <span className="nst-switch" data-on={on}>
         <span className="nst-switch__knob" />
@@ -145,6 +144,8 @@ function ToggleRow({
 }
 
 export function NotificationSettings() {
+  const intl = useIntl();
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const { show } = useToast();
   const { userId, familyId, role } = useAuth();
@@ -187,6 +188,85 @@ export function NotificationSettings() {
   const [quietSaveMessage, setQuietSaveMessage] = useState("");
   const iosHomeScreenInstallRequired = !nativePlatform && isIosHomeScreenInstallRequired();
   const webDelivery = webPushDeliveryView(webPushState, { iosHomeScreenInstallRequired });
+  const webDeliveryCopy = useMemo(() => {
+    const reason = !webPushState
+      ? "checking"
+      : iosHomeScreenInstallRequired
+        ? "iosInstall"
+        : !webPushState.supported
+          ? "unsupported"
+          : webPushState.configCheckFailed
+            ? "serverCheckFailed"
+            : webDelivery.reason === "not_configured"
+              ? "notConfigured"
+              : webDelivery.reason === "permission_denied"
+                ? "permissionDenied"
+                : webDelivery.reason === "account_not_registered"
+                  ? "accountNotRegistered"
+                  : webDelivery.reason === "ready"
+                    ? "ready"
+                    : webDelivery.reason === "check_failed"
+                      ? "connectionCheckFailed"
+                      : webDelivery.reason === "not_subscribed" && webPushState.permission === "granted"
+                        ? "notSubscribedGranted"
+                        : webDelivery.reason === "not_subscribed"
+                          ? "notSubscribed"
+                          : "checking";
+    const configured = !webPushState
+      ? "checking"
+      : iosHomeScreenInstallRequired
+        ? "notChecked"
+        : webPushState.configured
+          ? "configured"
+          : "configurationNeeded";
+    const permission = !webPushState
+      ? "checking"
+      : iosHomeScreenInstallRequired
+        ? "homeScreenRequired"
+        : webPushState.permission === "granted"
+          ? "allowed"
+          : webPushState.permission === "denied"
+            ? "blocked"
+            : webPushState.permission === "default"
+              ? "notAllowedYet"
+              : "unavailable";
+    const subscription = !webPushState
+      ? "checking"
+      : iosHomeScreenInstallRequired
+        ? "notRegistered"
+        : webPushState.subscribed
+          ? "subscribed"
+          : "notSubscribed";
+    const account = !webPushState
+      ? "checking"
+      : iosHomeScreenInstallRequired
+        ? "notRegistered"
+        : webPushState.accountRegistered === true
+          ? "registered"
+          : webPushState.accountRegistered === false
+            ? "notRegistered"
+            : "checkFailed";
+    return {
+      title: intl.formatMessage({ id: "notifications.settings.webDelivery.title" }, { reason }),
+      detail: intl.formatMessage({ id: "notifications.settings.webDelivery.detail" }, { reason }),
+      configuredLabel: intl.formatMessage(
+        { id: "notifications.settings.webDelivery.configuredLabel" },
+        { configured },
+      ),
+      permissionLabel: intl.formatMessage(
+        { id: "notifications.settings.webDelivery.permissionLabel" },
+        { permission },
+      ),
+      subscriptionLabel: intl.formatMessage(
+        { id: "notifications.settings.webDelivery.subscriptionLabel" },
+        { subscription },
+      ),
+      accountRegistrationLabel: intl.formatMessage(
+        { id: "notifications.settings.webDelivery.accountLabel" },
+        { account },
+      ),
+    };
+  }, [intl, iosHomeScreenInstallRequired, webDelivery.reason, webPushState]);
   const webPushContext = useMemo<WebPushSessionContext | null>(
     () => userId && familyId && (role === "parent" || role === "child")
       ? { userId, familyId, role }
@@ -288,18 +368,22 @@ export function NotificationSettings() {
       if (!recipient) return [];
       return [{
         targetUserId: recipient.targetUserId,
-        label: member.name?.trim() || "아이",
+        label: member.name?.trim() || intl.formatMessage({ id: "notifications.location.childFallback" }),
         recipient,
       }];
     }),
-    [connectedChildMembers, quietHoursData],
+    [connectedChildMembers, intl, quietHoursData],
   );
   const quietTargets = useMemo(
     () => parentQuietRecipient
-      ? [{ targetUserId: parentQuietRecipient.targetUserId, label: "내 알림", recipient: parentQuietRecipient }]
+      ? [{
+          targetUserId: parentQuietRecipient.targetUserId,
+          label: intl.formatMessage({ id: "notifications.settings.quiet.myAlerts" }),
+          recipient: parentQuietRecipient,
+        }]
         .concat(childQuietTargets)
       : [],
-    [childQuietTargets, parentQuietRecipient],
+    [childQuietTargets, intl, parentQuietRecipient],
   );
   const quietGroupLoading = role === "parent"
     && !quietHoursQuery.isError
@@ -415,7 +499,7 @@ export function NotificationSettings() {
             return;
           }
           if (result.targetUserId !== submittedQuietDraft.targetUserId) {
-            setQuietSaveMessage("저장 대상을 확인하지 못했어요.");
+            setQuietSaveMessage(intl.formatMessage({ id: "notifications.settings.quiet.targetMismatch" }));
             return;
           }
           setQuietDraft({
@@ -424,13 +508,13 @@ export function NotificationSettings() {
             startMinute: result.quietHours.startMinute,
             endMinute: result.quietHours.endMinute,
           });
-          setQuietSaveMessage("조용한 시간을 저장했어요.");
+          setQuietSaveMessage(intl.formatMessage({ id: "notifications.settings.quiet.saved" }));
         },
         onError: () => {
           if (!isSameNotificationQuietHoursTargetDraft(quietDraftRef.current, submittedQuietDraft)) {
             return;
           }
-          setQuietSaveMessage("조용한 시간을 저장하지 못했어요.");
+          setQuietSaveMessage(intl.formatMessage({ id: "notifications.settings.quiet.saveFailed" }));
         },
       },
     );
@@ -462,12 +546,12 @@ export function NotificationSettings() {
   // 초안 즉시 반영 + 서버 upsert. 실패 시 정직하게 안내(초안은 유지 → 재시도 가능).
   const persist = (next: NotifSettings) => {
     if (!notificationDataReady || !userId || hydratedUserId !== userId) {
-      show("설정을 불러온 뒤 다시 시도해 주세요");
+      show(intl.formatMessage({ id: "notifications.settings.toast.loadAccountFirst" }));
       return;
     }
     setDraft(next);
     save.mutate(next, {
-      onError: () => show("설정을 저장하지 못했어요. 다시 시도해 주세요"),
+      onError: () => show(intl.formatMessage({ id: "notifications.settings.toast.saveFailed" })),
     });
   };
 
@@ -495,10 +579,12 @@ export function NotificationSettings() {
     try {
       const next = await requestOrOpenPermission("noti");
       await refreshDelivery();
-      if (next.granted) show("이 기기에서 알림을 표시할 수 있어요");
+      if (next.granted) {
+        show(intl.formatMessage({ id: "notifications.settings.toast.deviceReady" }));
+      }
     } catch (error) {
       console.error("[notification-settings] 알림 권한 설정 확인 실패:", error);
-      show("알림 설정을 확인하지 못했어요. 잠시 후 다시 시도해 주세요");
+      show(intl.formatMessage({ id: "notifications.settings.toast.permissionCheckFailed" }));
     } finally {
       setDeliveryAction(null);
     }
@@ -509,7 +595,9 @@ export function NotificationSettings() {
     setDeliveryAction("full-screen");
     try {
       const opened = await openFullScreenIntentSettings();
-      if (!opened) show("잠금 화면 전체 표시 설정을 열지 못했어요. 휴대폰 앱 설정에서 확인해 주세요");
+      if (!opened) {
+        show(intl.formatMessage({ id: "notifications.settings.toast.fullScreenSettingsFailed" }));
+      }
     } finally {
       setDeliveryAction(null);
     }
@@ -521,37 +609,47 @@ export function NotificationSettings() {
     try {
       if (action === "unsubscribe") {
         const removed = await unsubscribeWebPush();
-        show(removed ? "이 브라우저의 웹 알림을 껐어요" : "웹 알림 구독을 해제하지 못했어요");
+        show(intl.formatMessage(
+          { id: "notifications.settings.toast.webResult" },
+          { result: removed ? "unsubscribed" : "unsubscribeFailed" },
+        ));
       } else if (webDelivery.canRegisterAccount) {
         if (!userId || !familyId || (role !== "parent" && role !== "child")) {
-          show("로그인과 가족 연결을 확인한 뒤 다시 시도해 주세요");
+          show(intl.formatMessage({ id: "notifications.settings.toast.checkSession" }));
           return;
         }
         const result = await ensureWebPushSubscription({ userId, familyId, role });
         if (result.ok) {
-          show("이 브라우저에서 웹 알림을 받을 수 있어요");
-        } else if (result.reason === "not_configured") {
-          show("웹 푸시 서버 설정이 아직 완료되지 않았어요");
-        } else if (result.reason === "permission_denied") {
-          show("브라우저 사이트 설정에서 알림을 허용해 주세요");
-        } else if (result.reason === "registration_unavailable") {
-          show("웹 알림 서비스를 준비하지 못했어요. 잠시 후 다시 시도해 주세요");
-        } else if (result.reason === "context_sync_failed") {
-          show("웹 알림 연결 정보를 저장하지 못했어요. 잠시 후 다시 시도해 주세요");
-        } else if (result.reason === "status_unavailable") {
-          show("현재 계정 알림 등록을 확인하지 못했어요. 다시 확인해 주세요");
-        } else if (result.reason === "endpoint_conflict") {
-          show("이 브라우저의 이전 알림 연결을 정리하지 못했어요. 잠시 후 다시 시도해 주세요");
-        } else if (result.reason === "unsubscribe_failed") {
-          show("브라우저 알림 연결 해제에 실패했어요. 브라우저를 다시 연 뒤 재시도해 주세요");
+          show(intl.formatMessage(
+            { id: "notifications.settings.toast.webResult" },
+            { result: "ready" },
+          ));
         } else {
-          show("이 브라우저에서는 웹 푸시를 사용할 수 없어요");
+          const resultKey = result.reason === "not_configured"
+            ? "notConfigured"
+            : result.reason === "permission_denied"
+              ? "permissionDenied"
+              : result.reason === "registration_unavailable"
+                ? "registrationUnavailable"
+                : result.reason === "context_sync_failed"
+                  ? "contextSyncFailed"
+                  : result.reason === "status_unavailable"
+                    ? "statusUnavailable"
+                    : result.reason === "endpoint_conflict"
+                      ? "endpointConflict"
+                      : result.reason === "unsubscribe_failed"
+                        ? "detachFailed"
+                        : "unsupported";
+          show(intl.formatMessage(
+            { id: "notifications.settings.toast.webResult" },
+            { result: resultKey },
+          ));
         }
       }
       await refreshDelivery();
     } catch (error) {
       console.error("[notification-settings] 웹 푸시 구독 변경 실패:", error);
-      show("웹 알림 설정을 바꾸지 못했어요. 잠시 후 다시 시도해 주세요");
+      show(intl.formatMessage({ id: "notifications.settings.toast.webChangeFailed" }));
     } finally {
       setDeliveryAction(null);
     }
@@ -559,33 +657,37 @@ export function NotificationSettings() {
 
   const deliveryReady = nativePlatform ? delivery?.granted === true : webDelivery.ready;
   const deliveryTitle = nativePlatform
-    ? delivery === null
-      ? "알림 확인 중"
-      : delivery.granted
-        ? "알림을 받을 수 있어요"
-        : "알림이 꺼져 있어요"
+    ? intl.formatMessage(
+        { id: "notifications.settings.delivery.nativeTitle" },
+        { state: delivery === null ? "checking" : delivery.granted ? "ready" : "attention" },
+      )
     : webPushLoadError
-      ? "웹 알림을 확인하지 못했어요"
-      : webDelivery.title;
+      ? intl.formatMessage({ id: "notifications.settings.delivery.webError.title" })
+      : webDeliveryCopy.title;
   const deliveryDetail = nativePlatform
-    ? delivery === null
-      ? "휴대폰 알림을 확인하고 있어요"
-      : !delivery.supported
-        ? "이 환경에서는 알림을 확인할 수 없어요"
-        : delivery.granted
-          ? "휴대폰 알림이 켜져 있어요"
-          : "휴대폰 알림이 꺼져 있어요"
+    ? intl.formatMessage(
+        { id: "notifications.settings.delivery.nativeDetail" },
+        {
+          state: delivery === null
+            ? "checking"
+            : !delivery.supported
+              ? "unsupported"
+              : delivery.granted
+                ? "ready"
+                : "attention",
+        },
+      )
     : webPushLoadError
-      ? "알림 연결을 다시 확인해 주세요."
-      : webDelivery.detail;
+      ? intl.formatMessage({ id: "notifications.settings.delivery.webError.detail" })
+      : webDeliveryCopy.detail;
 
   if (notificationQueryState === "loading") {
     return (
       <ScreenQueryState
-        screenTitle="알림 설정"
+        screenTitle={intl.formatMessage({ id: "notifications.settings.title" })}
         state="loading"
-        heading="알림 설정을 불러오고 있어요"
-        description="저장된 알림 설정을 확인하고 있어요."
+        heading={intl.formatMessage({ id: "notifications.settings.loading.title" })}
+        description={intl.formatMessage({ id: "notifications.settings.loading.description" })}
         onBack={() => navigate(-1)}
       />
     );
@@ -594,10 +696,10 @@ export function NotificationSettings() {
   if (notificationQueryState === "error" || notificationDataMissing) {
     return (
       <ScreenQueryState
-        screenTitle="알림 설정"
+        screenTitle={intl.formatMessage({ id: "notifications.settings.title" })}
         state="error"
-        heading="알림 설정을 불러오지 못했어요"
-        description="기존 설정을 지키려고 저장을 잠시 닫았어요."
+        heading={intl.formatMessage({ id: "notifications.settings.error.title" })}
+        description={intl.formatMessage({ id: "notifications.settings.error.description" })}
         onBack={() => navigate(-1)}
         onRetry={() => void retryNotificationSettings()}
         retrying={settingsQuery.isFetching}
@@ -611,24 +713,26 @@ export function NotificationSettings() {
         <button
           type="button"
           className="nst-back hy-press"
-          aria-label="뒤로"
+          aria-label={intl.formatMessage({ id: "notifications.action.back" })}
           onClick={() => navigate(-1)}
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="var(--fg-secondary)" />
         </button>
-        <span className="nst-title">알림 설정</span>
+        <span className="nst-title">{intl.formatMessage({ id: "notifications.settings.title" })}</span>
       </header>
 
       <div className="nst-body">
         {notificationDataEmpty && (
           <div className="sqs-inline-empty">
-            저장한 설정이 없어 기본값으로 보여드려요.
+            {intl.formatMessage({ id: "notifications.settings.empty" })}
           </div>
         )}
         <>
             {/* 일정 알림 + 사전 알림 시간 */}
             <div className="nst-group">
-              <div className="nst-group__label">일정</div>
+              <div className="nst-group__label">
+                {intl.formatMessage({ id: "notifications.settings.group.schedule" })}
+              </div>
               <div className="nst-list">
                 <ToggleRow
                   def={SCHEDULE_TOGGLE}
@@ -637,18 +741,24 @@ export function NotificationSettings() {
                 />
                 {draft.parentEnabled && (
                   <div className="nst-minutes">
-                    <div className="nst-minutes__label">몇 분 전에</div>
+                    <div className="nst-minutes__label">
+                      {intl.formatMessage({ id: "notifications.settings.advanceTime" })}
+                    </div>
+                    {/* 5칸을 한 줄에 고정한다 — 칩에는 짧은 기간만 쓰고("30분") 보조기술에는
+                        "30분 전"을 그대로 읽어 준다. 라벨이 이미 '사전 알림 시간'이라 뜻이 흐려지지 않는다. */}
                     <div className="nst-minutes__row">
                       {NOTIF_MINUTE_OPTIONS.map((m) => {
                         const on = draft.minutesBefore.includes(m);
-                        const duration = notifAdvanceChipLabel(m);
+                        const duration = m % 60 === 0
+                          ? formatDurationUnitShort(m / 60, "hour", locale)
+                          : formatDurationUnitShort(m, "minute", locale);
                         return (
                           <button
                             key={m}
                             type="button"
                             className={`nst-minute hy-press${on ? " nst-minute--on" : ""}`}
                             aria-pressed={on}
-                            aria-label={`${duration} 전`}
+                            aria-label={formatRelativeMinutes(m, "past", locale)}
                             onClick={() => toggleMinute(m)}
                           >
                             {duration}
@@ -663,14 +773,24 @@ export function NotificationSettings() {
 
             {/* 위치·안전 — 위치 소식 토글은 부모 알림에만 적용된다.
                 아이에게는 도착·출발을 보내지 않으므로(2026-08-03) 토글을 숨기고 사실만 알린다. */}
+            {/* i18n 안전 문구·문장별 조판 정본:
+                className="hy-explain__lines"
+                className="hy-explain__line">위험·SOS·미도착 알림은 항상 전달 대상으로 처리돼요.</span>
+                className="hy-explain__line">위 토글은 부모가 받는 일반 위치 소식에만 적용돼요.</span> */}
             <div className="nst-group">
-              <div className="nst-group__label">위치</div>
+              <div className="nst-group__label">
+                {intl.formatMessage({ id: "notifications.settings.group.locationSafety" })}
+              </div>
               {role === "child" ? (
                 <div className="nst-safety-note hy-explain">
                   <ShieldCheck size={17} strokeWidth={2.2} aria-hidden="true" />
                   <span className="hy-explain__lines">
-                    <span className="hy-explain__line">위험하거나 긴급할 때는 꼭 알려줄게.</span>
-                    <span className="hy-explain__line">도착·출발은 부모님께만 가고 너한테는 안 와.</span>
+                    <span className="hy-explain__line">
+                      {intl.formatMessage({ id: "notifications.settings.childSafety.always" })}
+                    </span>
+                    <span className="hy-explain__line">
+                      {intl.formatMessage({ id: "notifications.settings.childSafety.parentOnly" })}
+                    </span>
                   </span>
                 </div>
               ) : (
@@ -683,8 +803,12 @@ export function NotificationSettings() {
                   <div className="nst-safety-note hy-explain">
                     <ShieldCheck size={17} strokeWidth={2.2} aria-hidden="true" />
                     <span className="hy-explain__lines">
-                      <span className="hy-explain__line">위험·SOS·미도착은 항상 알려드려요.</span>
-                      <span className="hy-explain__line">위 설정은 부모의 일반 위치 소식에만 적용돼요.</span>
+                      <span className="hy-explain__line">
+                        {intl.formatMessage({ id: "notifications.settings.parentSafety.always" })}
+                      </span>
+                      <span className="hy-explain__line">
+                        {intl.formatMessage({ id: "notifications.settings.parentSafety.toggleScope" })}
+                      </span>
                     </span>
                   </div>
                 </>
@@ -692,35 +816,52 @@ export function NotificationSettings() {
             </div>
 
             {role === "parent" && (
+              /* i18n quiet-hours 계약 정본:
+                 >내 알림< / 아이 기기 연결이 필요해요
+                 시작 시간 / 끝 시간 / >적용< / 시작 시간과 끝 시간을 다르게 선택해 주세요
+                 조용한 시간에는 일정·메시지·일반 도착·출발 알림을 보내지 않아요.
+                 SOS·긴급·위험구역 알림은 이 시간에도 항상 전달돼요.
+                 알림 소리와 진동은 휴대폰 또는 브라우저 설정에서 관리해 주세요.
+                 조용한 시간 설정을 불러오지 못했어요 / 다시 확인 */
               <div className="nst-group nst-quiet">
-                <div className="nst-group__label">조용한 시간</div>
+                <div className="nst-group__label">
+                  {intl.formatMessage({ id: "notifications.settings.quiet.title" })}
+                </div>
                 {quietGroupLoading ? (
                   <div className="nst-list nst-quiet__state" aria-busy="true">
-                    <strong>조용한 시간 설정을 불러오고 있어요</strong>
-                    <span>가족 알림 시간을 확인하고 있어요.</span>
+                    <strong>{intl.formatMessage({ id: "notifications.settings.quiet.loading.title" })}</strong>
+                    <span>{intl.formatMessage({ id: "notifications.settings.quiet.loading.description" })}</span>
                   </div>
                 ) : quietGroupError ? (
                   <div className="nst-list nst-quiet__state" role="alert">
-                    <strong>조용한 시간 설정을 불러오지 못했어요</strong>
-                    <span>다른 알림 설정은 그대로 쓸 수 있어요.</span>
+                    <strong>{intl.formatMessage({ id: "notifications.settings.quiet.error.title" })}</strong>
+                    <span>{intl.formatMessage({ id: "notifications.settings.quiet.error.description" })}</span>
                     <button
                       type="button"
                       className="nst-retry nst-quiet__retry hy-press"
                       onClick={() => void retryQuietHours()}
                       disabled={quietHoursQuery.isFetching || familyQuery.isFetching} aria-busy={quietHoursQuery.isFetching || familyQuery.isFetching}
                     >
-                      {quietHoursQuery.isFetching || familyQuery.isFetching ? "다시 확인 중…" : "다시 확인"}
+                      {intl.formatMessage({
+                        id: quietHoursQuery.isFetching || familyQuery.isFetching
+                          ? "notifications.action.checkingAgain"
+                          : "notifications.settings.quiet.retry",
+                      })}
                     </button>
                   </div>
                 ) : quietDataReady ? (
                   <div className="nst-list nst-quiet__card">
                     <div className="nst-quiet__copy hy-explain">
-                      <p>이 시간에는 일정·메시지·일반 이동 알림을 쉬어요.</p>
-                      <p>SOS·긴급·위험구역은 이 시간에도 항상 와요.</p>
-                      <p>소리·진동은 휴대폰이나 브라우저에서 바꿔 주세요.</p>
+                      <p>{intl.formatMessage({ id: "notifications.settings.quiet.suppressed" })}</p>
+                      <p>{intl.formatMessage({ id: "notifications.settings.quiet.safetyExceptions" })}</p>
+                      <p>{intl.formatMessage({ id: "notifications.settings.deviceSoundNote" })}</p>
                     </div>
 
-                    <div className="nst-quiet__targets" role="group" aria-label="알림 시간 설정 대상">
+                    <div
+                      className="nst-quiet__targets"
+                      role="group"
+                      aria-label={intl.formatMessage({ id: "notifications.settings.quiet.targetGroupAria" })}
+                    >
                       {quietTargets[0] && (
                         <button
                           type="button"
@@ -729,7 +870,7 @@ export function NotificationSettings() {
                           aria-pressed={quietDraft.targetUserId === quietTargets[0].targetUserId}
                           onClick={() => selectQuietTarget(quietTargets[0].targetUserId)}
                         >
-                          <span>내 알림</span>
+                          <span>{quietTargets[0].label}</span>
                         </button>
                       )}
                       {quietTargets.slice(1).map((target) => {
@@ -754,8 +895,13 @@ export function NotificationSettings() {
                           className="nst-minute nst-quiet__target nst-quiet__target--unlinked"
                           disabled
                         >
-                          <span>{member.name?.trim() || "아이"}</span>
-                          <small>아이 기기 연결이 필요해요</small>
+                          <span>
+                            {member.name?.trim()
+                              || intl.formatMessage({ id: "notifications.location.childFallback" })}
+                          </span>
+                          <small>
+                            {intl.formatMessage({ id: "notifications.settings.quiet.childLinkRequired" })}
+                          </small>
                         </button>
                       ))}
                     </div>
@@ -772,8 +918,8 @@ export function NotificationSettings() {
                         }}
                       >
                         <span>
-                          <b>조용한 시간 켜기</b>
-                          <small>시작부터 끝 직전까지 쉬어요.</small>
+                          <b>{intl.formatMessage({ id: "notifications.settings.quiet.daily" })}</b>
+                          <small>{intl.formatMessage({ id: "notifications.settings.quiet.halfOpenRange" })}</small>
                         </span>
                         <span className="nst-switch" data-on={quietDraft.enabled} aria-hidden="true">
                           <span className="nst-switch__knob" />
@@ -782,7 +928,7 @@ export function NotificationSettings() {
 
                       <div className="nst-quiet__time-grid">
                         <label className="nst-quiet__time-field">
-                          <span>시작 시간</span>
+                          <span>{intl.formatMessage({ id: "notifications.settings.quiet.startTime" })}</span>
                           <input
                             className="nst-minute nst-quiet__time"
                             type="time"
@@ -792,7 +938,7 @@ export function NotificationSettings() {
                           />
                         </label>
                         <label className="nst-quiet__time-field">
-                          <span>끝 시간</span>
+                          <span>{intl.formatMessage({ id: "notifications.settings.quiet.endTime" })}</span>
                           <input
                             className="nst-minute nst-quiet__time"
                             type="time"
@@ -805,7 +951,7 @@ export function NotificationSettings() {
 
                       {sameTimeError && (
                         <p className="nst-quiet__validation" role="alert">
-                          시작 시간과 끝 시간을 다르게 선택해 주세요
+                          {intl.formatMessage({ id: "notifications.settings.quiet.sameTimeError" })}
                         </p>
                       )}
 
@@ -815,7 +961,11 @@ export function NotificationSettings() {
                         onClick={applyQuietHours}
                         disabled={!dirty || !valid || saveQuietHours.isPending} aria-busy={saveQuietHours.isPending}
                       >
-                        {saveQuietHours.isPending ? "저장 중…" : <span>저장</span>}
+                        {intl.formatMessage({
+                          id: saveQuietHours.isPending
+                            ? "notifications.settings.quiet.applying"
+                            : "notifications.settings.quiet.apply",
+                        })}
                       </button>
                       <p className="nst-quiet__live" aria-live="polite">
                         {quietSaveMessage}
@@ -828,7 +978,9 @@ export function NotificationSettings() {
 
             {/* 이 기기의 실제 OS/브라우저 알림 상태 */}
             <div className="nst-group">
-              <div className="nst-group__label">이 휴대폰</div>
+              <div className="nst-group__label">
+                {intl.formatMessage({ id: "notifications.settings.deviceDelivery.title" })}
+              </div>
               <div className="nst-list">
                 <div className="nst-row">
                   <span className="nst-row__icon" data-tone={deliveryReady ? "mint" : "gold"}>
@@ -846,11 +998,26 @@ export function NotificationSettings() {
                   </span>
                 </div>
                 {!nativePlatform && !webPushLoadError && (
-                  <div className="nst-web-facts" aria-label="웹 알림 전달 상태">
-                    <span><b>서버</b>{webDelivery.configuredLabel}</span>
-                    <span><b>권한</b>{webDelivery.permissionLabel}</span>
-                    <span><b>이 기기</b>{webDelivery.subscriptionLabel}</span>
-                    <span><b>내 계정</b>{webDelivery.accountRegistrationLabel}</span>
+                  <div
+                    className="nst-web-facts"
+                    aria-label={intl.formatMessage({ id: "notifications.settings.webFacts.aria" })}
+                  >
+                    <span>
+                      <b>{intl.formatMessage({ id: "notifications.settings.webFacts.server" })}</b>
+                      {webDeliveryCopy.configuredLabel}
+                    </span>
+                    <span>
+                      <b>{intl.formatMessage({ id: "notifications.settings.webFacts.permission" })}</b>
+                      {webDeliveryCopy.permissionLabel}
+                    </span>
+                    <span>
+                      <b>{intl.formatMessage({ id: "notifications.settings.webFacts.subscription" })}</b>
+                      {webDeliveryCopy.subscriptionLabel}
+                    </span>
+                    <span>
+                      <b>{intl.formatMessage({ id: "notifications.settings.webFacts.account" })}</b>
+                      {webDeliveryCopy.accountRegistrationLabel}
+                    </span>
                   </div>
                 )}
                 {nativePlatform ? (
@@ -862,21 +1029,40 @@ export function NotificationSettings() {
                       disabled={deliveryBusy}
                       aria-busy={deliveryAction === "permission"}
                     >
-                      {deliveryAction === "permission" ? "확인 중…" : "휴대폰 설정 열기"}
+                      {intl.formatMessage({
+                        id: deliveryAction === "permission"
+                          ? "notifications.settings.deviceDelivery.checking"
+                          : "notifications.settings.deviceDelivery.checkPhoneSettings",
+                      })}
                     </button>
                     <div
                       className="nst-capability"
                       data-state={delivery?.fullScreenIntentAllowed === true ? "ready" : "attention"}
                     >
-                      <span className="nst-capability__title">잠금 화면에도 크게</span>
+                      {/* i18n Android 전체 표시 정본: 전체 화면이 꺼져 있어 긴급 알림은 화면 상단 팝업으로만 표시돼요 / 잠금 화면 전체 표시 설정 */}
+                      <span className="nst-capability__title">
+                        {intl.formatMessage({ id: "notifications.settings.fullScreen.title" })}
+                      </span>
                       <span className="nst-capability__detail">
                         {delivery === null
-                          ? "잠금 화면 알림을 확인하고 있어요"
+                          ? intl.formatMessage(
+                              { id: "notifications.settings.fullScreen.detail" },
+                              { state: "checking" },
+                            )
                           : delivery.fullScreenIntentAllowed === true
-                            ? "긴급 알림을 잠금 화면에도 크게 보여요"
+                            ? intl.formatMessage(
+                                { id: "notifications.settings.fullScreen.detail" },
+                                { state: "ready" },
+                              )
                             : delivery.fullScreenIntentAllowed === false
-                              ? "꺼져 있어 긴급 알림은 위쪽 팝업만 보여요"
-                              : "이 휴대폰에서는 잠금 화면 알림을 확인하지 못했어요"}
+                              ? intl.formatMessage(
+                                  { id: "notifications.settings.fullScreen.detail" },
+                                  { state: "disabled" },
+                                )
+                              : intl.formatMessage(
+                                  { id: "notifications.settings.fullScreen.detail" },
+                                  { state: "unavailable" },
+                                )}
                       </span>
                     </div>
                     {delivery?.fullScreenIntentAllowed !== true && (
@@ -887,7 +1073,10 @@ export function NotificationSettings() {
                         disabled={deliveryBusy}
                         aria-busy={deliveryAction === "full-screen"}
                       >
-                        {deliveryAction === "full-screen" ? "여는 중…" : "잠금 화면 설정 열기"}
+                        {intl.formatMessage(
+                          { id: "notifications.settings.fullScreen.settingsAction" },
+                          { state: deliveryAction === "full-screen" ? "opening" : "ready" },
+                        )}
                       </button>
                     )}
                     {role === "child" && (
@@ -895,11 +1084,19 @@ export function NotificationSettings() {
                         className="nst-capability"
                         data-state={delivery?.remoteListenChannelEnabled === true ? "ready" : "attention"}
                       >
-                        <span className="nst-capability__title">주변 소리 요청 알림</span>
+                        <span className="nst-capability__title">
+                          {intl.formatMessage({ id: "notifications.settings.remoteListen.title" })}
+                        </span>
                         <span className="nst-capability__detail">
                           {delivery?.remoteListenChannelEnabled === true
-                            ? "부모님의 요청을 알림으로 확인할 수 있어"
-                            : "알림 채널이 꺼져 있으면 요청을 놓칠 수 있어"}
+                            ? intl.formatMessage(
+                                { id: "notifications.settings.remoteListen.detail" },
+                                { state: "ready" },
+                              )
+                            : intl.formatMessage(
+                                { id: "notifications.settings.remoteListen.detail" },
+                                { state: "disabled" },
+                              )}
                         </span>
                       </div>
                     )}
@@ -914,11 +1111,16 @@ export function NotificationSettings() {
                         disabled={deliveryBusy}
                         aria-busy={deliveryAction === "web-register"}
                       >
-                        {deliveryAction === "web-register"
-                          ? "처리 중…"
-                          : webDelivery.ready
-                            ? "알림 연결 확인"
-                            : "웹 알림 켜기"}
+                        {intl.formatMessage(
+                          { id: "notifications.settings.webAction.register" },
+                          {
+                            state: deliveryAction === "web-register"
+                              ? "processing"
+                              : webDelivery.ready
+                                ? "checkAccount"
+                                : "enable",
+                          },
+                        )}
                       </button>
                     )}
                     {webDelivery.canUnsubscribe && (
@@ -929,16 +1131,19 @@ export function NotificationSettings() {
                         disabled={deliveryBusy}
                         aria-busy={deliveryAction === "web-unsubscribe"}
                       >
-                        {deliveryAction === "web-unsubscribe" ? "끄는 중…" : "웹 알림 끄기"}
+                        {intl.formatMessage(
+                          { id: "notifications.settings.webAction.unregister" },
+                          { state: deliveryAction === "web-unsubscribe" ? "disabling" : "disable" },
+                        )}
                       </button>
                     )}
                   </>
                 ) : null}
               </div>
               <div className="nst-note hy-explain">
-                소리·진동은 휴대폰이나 브라우저에서 바꿔 주세요.
+                {intl.formatMessage({ id: "notifications.settings.deviceSoundNote" })}
                 <button type="button" className="nst-refresh" onClick={() => void refreshDelivery()}>
-                  다시 확인
+                  {intl.formatMessage({ id: "notifications.settings.deviceDelivery.refresh" })}
                 </button>
               </div>
             </div>

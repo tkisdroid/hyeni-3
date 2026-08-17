@@ -13,6 +13,9 @@ import {
   type AlertItemView,
 } from "@/transform/notificationsView";
 import type { ParentAlert } from "@/lib/api/endpoints/notifications";
+import { useLocale } from "@/i18n/useLocale";
+import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+import { useIntl } from "react-intl";
 import "./Notifications.css";
 
 /**
@@ -32,15 +35,17 @@ const FILTER_ORDER: ReadonlyArray<Exclude<FilterKey, "all">> = [
   "talk",
 ];
 
-const FILTER_LABEL: Record<FilterKey, string> = {
-  all: "전체",
-  safety: "안전",
-  location: "위치",
-  schedule: "일정",
-  talk: "대화",
+const FILTER_LABEL_ID: Record<FilterKey, string> = {
+  all: "notifications.center.filter.all",
+  safety: "notifications.center.filter.safety",
+  location: "notifications.center.filter.location",
+  schedule: "notifications.center.filter.schedule",
+  talk: "notifications.center.filter.talk",
 };
 
 export function Notifications() {
+  const intl = useIntl();
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const goBack = useSafeBack("/parent/home");
   const [searchParams] = useSearchParams();
@@ -75,7 +80,10 @@ export function Notifications() {
     () => (filter === "all" ? list : list.filter((a) => alertCategory(a.alert_type) === filter)),
     [list, filter],
   );
-  const groups = useMemo(() => mapAlertsToGroups(filteredList, now), [filteredList, now]);
+  const groups = useMemo(
+    () => mapAlertsToGroups(filteredList, now, locale, LEGACY_FAMILY_TIME_ZONE),
+    [filteredList, locale, now],
+  );
 
   useEffect(() => {
     if (!requestedAlertId) return;
@@ -93,12 +101,12 @@ export function Notifications() {
   const markAllRead = () => {
     const unread = list.filter((a) => !a.read);
     if (unread.length === 0) {
-      show("읽지 않은 알림이 없어요", "🔔");
+      show(intl.formatMessage({ id: "notifications.center.toast.noUnread" }), "🔔");
       return;
     }
     markAll.mutate(undefined, {
-      onSuccess: () => show("모든 알림을 읽음 처리했어요", "✅"),
-      onError: () => show("읽음 처리에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️"),
+      onSuccess: () => show(intl.formatMessage({ id: "notifications.center.toast.markedAllRead" }), "✅"),
+      onError: () => show(intl.formatMessage({ id: "notifications.center.toast.markAllFailed" }), "⚠️"),
     });
   };
 
@@ -132,7 +140,7 @@ export function Notifications() {
       navigate(dest);
       return;
     }
-    show("알림을 확인했어요", "🔔");
+    show(intl.formatMessage({ id: "notifications.center.toast.checked" }), "🔔");
   };
 
   const hasAlerts = !isLoading && !isError && list.length > 0;
@@ -143,19 +151,19 @@ export function Notifications() {
         <button
           type="button"
           className="hy-iconbtn hy-press nc-back"
-          aria-label="뒤로"
+          aria-label={intl.formatMessage({ id: "notifications.action.back" })}
           onClick={goBack}
         >
           <ChevronLeft size={22} strokeWidth={2.2} />
         </button>
-        <span className="nc-title">알림</span>
+        <span className="nc-title">{intl.formatMessage({ id: "notifications.center.title" })}</span>
         <button
           type="button"
           className="nc-markread hy-press"
           onClick={markAllRead}
           disabled={markAll.isPending} aria-busy={markAll.isPending}
         >
-          모두 읽음
+          {intl.formatMessage({ id: "notifications.center.markAllRead" })}
         </button>
       </header>
 
@@ -169,8 +177,8 @@ export function Notifications() {
               aria-pressed={filter === k}
               onClick={() => setFilter(k)}
             >
-              {FILTER_LABEL[k]}
-              <span className="nc-filter__count">{counts[k]}</span>
+              {intl.formatMessage({ id: FILTER_LABEL_ID[k] })}
+              <span className="nc-filter__count">{intl.formatNumber(counts[k])}</span>
             </button>
           ))}
         </div>
@@ -179,15 +187,17 @@ export function Notifications() {
       <div className="hy-content nc-list">
         {isLoading && (
           <div className="nc-state">
-            <Loading label="알림을 불러오는 중" />
+            <Loading label={intl.formatMessage({ id: "notifications.center.loading" })} />
           </div>
         )}
 
         {isError && !isLoading && (
           <div className="nc-state">
-            <span className="nc-state__text">알림을 불러오지 못했어요</span>
+            <span className="nc-state__text">
+              {intl.formatMessage({ id: "notifications.center.loadFailed" })}
+            </span>
             <button type="button" className="nc-retry hy-press" onClick={() => refetch()}>
-              다시 시도
+              {intl.formatMessage({ id: "notifications.action.retry" })}
             </button>
           </div>
         )}
@@ -195,7 +205,11 @@ export function Notifications() {
         {!isLoading && !isError && groups.length === 0 && (
           <div className="nc-state">
             <span className="nc-state__text">
-              {list.length > 0 ? "이 유형의 알림이 없어요" : "아직 도착한 알림이 없어요"}
+              {intl.formatMessage({
+                id: list.length > 0
+                  ? "notifications.center.empty.filter"
+                  : "notifications.center.empty.all",
+              })}
             </span>
           </div>
         )}

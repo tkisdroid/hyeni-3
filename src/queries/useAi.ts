@@ -122,6 +122,9 @@ export function useSendChildChat() {
   const qc = useQueryClient();
   const { familyId, userId } = useAuth();
   return useMutation<ChildChatReply, unknown, SendChildChatInput>({
+    // 실패 안내는 대화 말풍선이 아이 말투로 하나만 보여 준다.
+    // meta 가 없으면 전역 MutationCache 폴백이 "방금 한 일이 저장되지 않았어" 토스트를 겹쳐 띄운다.
+    meta: { silentError: true },
     mutationFn: (input: SendChildChatInput) => sendChildChat(input),
     onSuccess: (result) => {
       const nextRemaining = result.remaining;
@@ -139,14 +142,18 @@ export function useSendChildChat() {
       }
       void qc.invalidateQueries({ queryKey: qk.aiCredits(familyId ?? "") });
       if (userId) void qc.invalidateQueries({ queryKey: qk.aiMessages(userId) });
-      const toolName = result.toolResult && typeof result.toolResult === "object"
-        ? String((result.toolResult as { toolName?: unknown }).toolName || "")
-        : "";
-      if (toolName === "createSchedule" || toolName === "updateSchedule") {
+
+      // AI 친구가 실제로 바꾼 것만 다시 읽는다 — 화면에 옛 값이 남아 "안 됐네"로 보이지 않게.
+      const tool = result.toolResult;
+      if (!tool || tool.ok !== true || tool.confirmationRequired === true) return;
+      if (tool.toolName === "createSchedule" || tool.toolName === "updateSchedule") {
         void qc.invalidateQueries({ queryKey: qk.events(familyId ?? "") });
       }
-      if (toolName === "createDailyItem") {
-        void qc.invalidateQueries({ queryKey: ["dailySupplies", familyId ?? ""] });
+      if (tool.toolName === "updateNotificationSettings" && userId) {
+        void qc.invalidateQueries({ queryKey: qk.notifSettings(userId) });
+      }
+      if (tool.toolName === "updateAiFriendName" && userId) {
+        void qc.invalidateQueries({ queryKey: ["aiFriendPublic", familyId ?? "", userId] });
       }
     },
   });

@@ -21,6 +21,8 @@ import { buildPairLink } from "@/transform/pairLink";
 import { useSafeBack } from "@/app/useSafeBack";
 import { Loading } from "@/components/ui/Loading";
 import "./ParentFamily.css";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 
 // 자녀 사진은 인증 fetch로 만든 blob URL, 기본 아바타는 asset 경로.
 function avatarSrc(path: string): string {
@@ -31,6 +33,7 @@ export function ParentFamily() {
   const navigate = useNavigate();
   const goBack = useSafeBack("/parent/home");
   const { show } = useToast();
+  const intl = useIntl();
   const { userId } = useAuth();
   const { data: family, isLoading, isError, error, refetch: refetchFamily } = useMyFamily();
   const { data: locations } = useChildLocations();
@@ -41,8 +44,8 @@ export function ParentFamily() {
   const [upsellOpen, setUpsellOpen] = useState(false);
 
   const view = useMemo(
-    () => mapFamilyToView(family?.members ?? [], userId),
-    [family, userId],
+    () => mapFamilyToView(family?.members ?? [], userId, intl),
+    [family, userId, intl],
   );
   const childPlaceByUserId = useMemo(() => {
     const map = new Map<string, string>();
@@ -62,10 +65,10 @@ export function ParentFamily() {
   });
   const addLocked = addDecision.status !== "allowed";
   const addLockMessage = addDecision.status === "limit_reached"
-    ? "프리미엄은 아이 2명까지 연결할 수 있어요"
+    ? intl.formatMessage({ id: "parent.parentFamily.copy001" })
     : addDecision.status === "unavailable"
-      ? "구독 상태를 확인한 뒤 아이를 추가할 수 있어요"
-      : lockMessageFor(FEATURES.MULTI_CHILD);
+      ? intl.formatMessage({ id: "parent.parentFamily.copy002" })
+      : lockMessageFor(FEATURES.MULTI_CHILD, intl);
 
   // 연결 코드 + QR 딥링크(아이 재연결·선생님 학생추가 시 이 코드로 다시 연결).
   const pairCode = family?.pairCode ?? "";
@@ -85,8 +88,8 @@ export function ParentFamily() {
     }
     show(
       addDecision.status === "limit_reached"
-        ? "프리미엄은 아이 2명까지 연결할 수 있어요"
-        : "구독 상태를 확인하지 못해 아이 추가를 진행하지 않아요. 잠시 후 다시 시도해 주세요",
+        ? intl.formatMessage({ id: "parent.parentFamily.copy001" })
+        : intl.formatMessage({ id: "parent.parentFamily.copy003" }),
       addDecision.status === "unavailable" ? "⏳" : "🔒",
     );
   };
@@ -94,12 +97,12 @@ export function ParentFamily() {
     if (!pairCode) return;
     const clip = navigator.clipboard;
     if (!clip?.writeText) {
-      show(`복사를 지원하지 않아요 · 코드 ${pairCode}`, "✏️");
+      show(intl.formatMessage({ id: "parent.family.copyUnsupported" }, { code: pairCode }), "✏️");
       return;
     }
     clip.writeText(pairCode).then(
-      () => show("연결 코드를 복사했어요", "📋"),
-      () => show(`복사를 못 했어요 · 코드 ${pairCode}`, "✏️"),
+      () => show(intl.formatMessage({ id: "parent.parentFamily.copy004" }), "📋"),
+      () => show(intl.formatMessage({ id: "parent.family.copyFailed" }, { code: pairCode }), "✏️"),
     );
   };
 
@@ -109,16 +112,16 @@ export function ParentFamily() {
         <button
           type="button"
           className="hy-iconbtn hy-press"
-          aria-label="뒤로"
+          aria-label={intl.formatMessage({ id: "parent.parentSettings.copy017" })}
           onClick={goBack}
         >
           <ChevronLeft size={22} strokeWidth={2.2} />
         </button>
-        <span className="pf-header__title">우리 가족</span>
+        <span className="pf-header__title">{intl.formatMessage({ id: "parent.parentFamily.copy005" })}</span>
         <button
           type="button"
           className="pf-invite-btn hy-press"
-          aria-label="가족 초대"
+          aria-label={intl.formatMessage({ id: "parent.parentFamily.copy006" })}
           onClick={invite}
         >
           <UserPlus size={21} strokeWidth={1.9} color="#4A4145" />
@@ -126,13 +129,13 @@ export function ParentFamily() {
       </header>
 
       <div className="hy-content">
-        {isLoading && <div className="pf-state"><Loading label="가족 정보를 불러오는 중" /></div>}
+        {isLoading && <div className="pf-state"><Loading label={intl.formatMessage({ id: "parent.parentFamily.copy007" })} /></div>}
         {isError && (
           <div className="pf-state pf-state--error">
-            가족 정보를 불러오지 못했어요
-            {error instanceof Error ? ` (${error.message})` : ""}
+            {intl.formatMessage({ id: "parent.eventForm.copy005" })}
+            {` (${localizeApiError(error, intl, "formal")})`}
             <button type="button" className="hy-section-action hy-press" onClick={() => void refetchFamily()}>
-              다시 시도
+              {intl.formatMessage({ id: "parent.parentHome.copy017" })}
             </button>
           </div>
         )}
@@ -141,7 +144,7 @@ export function ParentFamily() {
           <>
             {/* 보호자 */}
             <section>
-              <div className="pf-label">보호자</div>
+              <div className="pf-label">{intl.formatMessage({ id: "parent.parentSettings.copy003" })}</div>
               <div className="pf-parents">
                 {view.parents.map((p) => (
                   <div key={p.id} className="pf-parent">
@@ -151,7 +154,7 @@ export function ParentFamily() {
                     <span className="pf-parent__main">
                       <span className="pf-parent__name-row">
                         <span className="pf-parent__name">{p.name}</span>
-                        {p.isMe && <span className="pf-parent__badge">나</span>}
+                        {p.isMe && <span className="pf-parent__badge">{intl.formatMessage({ id: "parent.parentFamily.copy008" })}</span>}
                       </span>
                       <span className="pf-parent__role">{p.roleLabel}</span>
                     </span>
@@ -162,10 +165,10 @@ export function ParentFamily() {
 
             {/* 아이 */}
             <section>
-              <div className="pf-label">아이</div>
+              <div className="pf-label">{intl.formatMessage({ id: "parent.parentHome.copy004" })}</div>
               <div className="pf-children">
                 {view.children.length === 0 && (
-                  <div className="pf-children__empty">아직 연결된 아이가 없어요. ‘아이 추가’를 눌러 연결을 시작해 주세요.</div>
+                  <div className="pf-children__empty">{intl.formatMessage({ id: "parent.parentFamily.copy009" })}</div>
                 )}
                 {view.children.map((c) => (
                   <button
@@ -181,7 +184,7 @@ export function ParentFamily() {
                       <span className="pf-child__name">{c.name}</span>
                       <span className="pf-child__device">
                         <Smartphone size={12} strokeWidth={2.2} />
-                        {c.deviceLabel ?? "기기 연결 대기 중"}
+                        {c.deviceLabel ?? intl.formatMessage({ id: "parent.parentHome.copy032" })}
                       </span>
                       {c.info && <span className="pf-child__info">{c.info}</span>}
                       <span className="pf-child__chips">
@@ -193,7 +196,7 @@ export function ParentFamily() {
                         )}
                         <span className="pf-chip pf-chip--place">
                           <span className="pf-chip__dot" />
-                          {(c.userId ? childPlaceByUserId.get(c.userId) : null) ?? c.place ?? "위치 연동 예정"}
+                          {(c.userId ? childPlaceByUserId.get(c.userId) : null) ?? c.place ?? intl.formatMessage({ id: "parent.parentFamily.copy010" })}
                         </span>
                       </span>
                     </span>
@@ -218,8 +221,8 @@ export function ParentFamily() {
                       </span>
                       <span className="pf-add__lock-sub">
                         {addDecision.status === "premium_required"
-                          ? "프리미엄 혜택 확인하기"
-                          : "현재 연결 한도를 확인해 주세요"}
+                          ? intl.formatMessage({ id: "parent.parentFamily.copy011" })
+                          : intl.formatMessage({ id: "parent.parentFamily.copy012" })}
                       </span>
                     </span>
                   </button>
@@ -230,7 +233,7 @@ export function ParentFamily() {
                     onClick={addChild}
                   >
                     <Plus size={19} strokeWidth={2.4} color="#B0477A" />
-                    아이 추가하기
+                    {intl.formatMessage({ id: "parent.parentFamily.copy013" })}
                   </button>
                 )}
               </div>
@@ -246,31 +249,31 @@ export function ParentFamily() {
                 <Link2 size={20} strokeWidth={2.2} color="#087653" />
               </span>
               <span className="pf-conn__main">
-                <span className="pf-conn__title">연결 상태</span>
-                <span className="pf-conn__sub">기기 연결·공동 보호자·연결 해제 관리</span>
+                <span className="pf-conn__title">{intl.formatMessage({ id: "parent.parentFamily.copy014" })}</span>
+                <span className="pf-conn__sub">{intl.formatMessage({ id: "parent.parentFamily.copy015" })}</span>
               </span>
               <ChevronRight className="pf-conn__chev" size={20} strokeWidth={2.4} color="#C9BFC4" />
             </button>
 
             {/* 연결 코드 · QR — 아이 재연결·선생님 학생추가 시 이 코드로 다시 연결 */}
             <section className="pf-paircode">
-              <div className="pf-paircode__label">연결 코드 · QR</div>
+              <div className="pf-paircode__label">{intl.formatMessage({ id: "parent.parentFamily.copy016" })}</div>
               <div className="pf-paircode__card">
                 <div className="pf-paircode__row">
                   <button
                     type="button"
                     className="pf-paircode__qr hy-press"
-                    aria-label="QR 코드 크게 보기"
+                    aria-label={intl.formatMessage({ id: "parent.parentFamily.copy017" })}
                     onClick={invite}
                   >
                     {pairLink ? (
-                      <QrCode value={pairLink} size={96} label="아이 연결 QR 코드" />
+                      <QrCode value={pairLink} size={96} label={intl.formatMessage({ id: "parent.parentFamily.copy018" })} />
                     ) : (
                       <span className="pf-paircode__qr-skel">…</span>
                     )}
                   </button>
                   <div className="pf-paircode__main">
-                    <div className="pf-paircode__code">{pairCode || "코드 불러오는 중…"}</div>
+                    <div className="pf-paircode__code">{pairCode || intl.formatMessage({ id: "parent.parentFamily.copy019" })}</div>
                     <div className="pf-paircode__btns">
                       <button
                         type="button"
@@ -279,7 +282,7 @@ export function ParentFamily() {
                         disabled={!pairCode}
                       >
                         <Copy size={15} strokeWidth={2.2} />
-                        복사
+                        {intl.formatMessage({ id: "parent.parentFamily.copy020" })}
                       </button>
                       <button
                         type="button"
@@ -287,13 +290,13 @@ export function ParentFamily() {
                         onClick={invite}
                       >
                         <QrIcon size={15} strokeWidth={2.2} />
-                        크게 보기 · 공유
+                        {intl.formatMessage({ id: "parent.parentFamily.copy021" })}
                       </button>
                     </div>
                   </div>
                 </div>
                 <div className="pf-paircode__hint">
-                  아이 연결이 끊겼거나 선생님이 학생을 추가할 때 이 코드나 QR로 다시 연결해요.
+                  {intl.formatMessage({ id: "parent.parentFamily.copy022" })}
                 </div>
               </div>
             </section>
@@ -306,8 +309,8 @@ export function ParentFamily() {
                 alt=""
               />
               <span className="pf-invite-card__main">
-                <span className="pf-invite-card__title">배우자 초대하기</span>
-                <span className="pf-invite-card__sub">같은 코드로 공동 보호자도 연결할 수 있어요</span>
+                <span className="pf-invite-card__title">{intl.formatMessage({ id: "parent.parentFamily.copy023" })}</span>
+                <span className="pf-invite-card__sub">{intl.formatMessage({ id: "parent.parentFamily.copy024" })}</span>
               </span>
               <ChevronRight
                 className="pf-invite-card__chev"
@@ -330,7 +333,7 @@ export function ParentFamily() {
           const saved = storage && returnTo
             ? savePremiumReturnIntent(storage, { source, feature, returnTo })
             : false;
-          if (!saved) throw new Error("아이 연결 복귀 경로를 안전하게 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+          if (!saved) throw new Error(intl.formatMessage({ id: "parent.family.returnIntentFailed" }));
           setUpsellOpen(false);
           navigate("/subscription");
         }}

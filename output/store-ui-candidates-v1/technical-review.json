@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
   "artifactKind": "hyeni-store-ui-technical-review",
-  "reviewedAt": "2026-08-04T06:10:15.257Z",
+  "reviewedAt": "2026-08-17T01:26:04.664Z",
   "sourceManifest": {
     "path": "manifest.json",
-    "sha256": "152c64f4fcf193330dbedebcf18a3dc0b9347760f681d35121c11fa9812a9fa6"
+    "sha256": "7c768eda77cfef649845f77d63c1639b0c1b1abfce56342a41c3a6ece9b73fa5"
   },
   "sourceDist": {
-    "fileCount": 414,
-    "sha256": "69f6499788005675e0c40881773fccdc3a68336ea8f14eaa4322f1ca296c223e"
+    "fileCount": 428,
+    "sha256": "c5c9bdf3fb44903a447fea5ae840c87fbc15f523fa3807229e9d6a259001bf75"
   },
   "verdict": "TECHNICAL_REVIEW_PASSED",
   "playUploadApproved": false,
@@ -24,33 +24,33 @@
   "artifacts": [
     {
       "file": "01-parent-home-ui.png",
-      "bytes": 575590,
-      "sha256": "5dcbd4d5ca8b5faef8c85eccd9023cc8da7820ab080b1b89151d584503ac8adf"
+      "bytes": 575399,
+      "sha256": "c92c5d5b57e040d959404b1505bfda463d346f266db78a6cc280ac32489e0cb2"
     },
     {
       "file": "02-family-calendar-ui.png",
-      "bytes": 186630,
-      "sha256": "c07338405f0588ff51bb504990994fccc1170e5c168af997fff81b7a6b1af7a5"
+      "bytes": 187294,
+      "sha256": "04da9ff95b50d2c8d1fac00fa6f7d5a3cef203042cbfaf65d319a3a2fd2de63c"
     },
     {
       "file": "03-family-memo-ui.png",
-      "bytes": 227572,
-      "sha256": "f60456b3c2dd7e8d66823333dfcc74d03ee439ad06bdc733107fcb7af65b863c"
+      "bytes": 227950,
+      "sha256": "890700dafba66f7b2d2c048045a8c222301a840918bb8596587b3548d0cbb116"
     },
     {
       "file": "04-daily-safety-report-ui.png",
-      "bytes": 398524,
-      "sha256": "11f5076f4e18c07423f7ddf9a878001e78af5d9f4167ea2784c8372d524627a1"
+      "bytes": 398883,
+      "sha256": "145bd3170261c8901e32c841dfd7f348f53ce51fb5abbe4ae7ea0a2a792f4f70"
     },
     {
       "file": "05-weekly-family-report-ui.png",
-      "bytes": 263572,
-      "sha256": "2b64d36a47cff2070bea688c3899ef95e63942494b7379170835735377e52088"
+      "bytes": 263111,
+      "sha256": "0610ae6f217c4714fa03880a812b0378c7d9e770eff893f36ee5120adf6f0c4b"
     },
     {
       "file": "06-child-home-ui.png",
-      "bytes": 650628,
-      "sha256": "eb8e0d797c3dbec7afb20927dbb37c1ec6ab12508f60b5e0d41c73d8fdeab8d4"
+      "bytes": 672962,
+      "sha256": "7fa90c38e374f8c2d36ce4b35c8646a37aa673f003c97d907e4ad20300791b48"
     }
   ]
 }

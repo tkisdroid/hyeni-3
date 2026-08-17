@@ -352,6 +352,8 @@
   /* 한 줄 고정이면 긴 제목이 시간을 밀어냈다 → 어절 단위로 최대 두 줄까지 접는다. */
   white-space: normal;
   word-break: keep-all;
+  /* 마지막 줄에 "✓" 나 시간만 덩그러니 남던 것(2026-08-17 실측 9px·25px)을 막는다. */
+  text-wrap: balance;
   text-align: center;
   display: -webkit-box;
   -webkit-line-clamp: 2;

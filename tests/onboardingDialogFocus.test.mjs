@@ -7,7 +7,7 @@ import tsModule from "typescript";
 
 const ts = tsModule.default ?? tsModule;
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const sourcePath = resolve(root, "src/screens/onboarding/Onboarding.tsx");
+const sourcePath = resolve(root, "src/components/ChildLocationPermissionDialog.tsx");
 const source = readFileSync(sourcePath, "utf8");
 const sourceFile = ts.createSourceFile(
   sourcePath,
@@ -17,10 +17,10 @@ const sourceFile = ts.createSourceFile(
   ts.ScriptKind.TSX,
 );
 
-function findPermsStep() {
+function findLocationPermissionDialog() {
   let result = null;
   const visit = (node) => {
-    if (ts.isFunctionDeclaration(node) && node.name?.text === "PermsStep") {
+    if (ts.isFunctionDeclaration(node) && node.name?.text === "ChildLocationPermissionDialog") {
       result = node;
       return;
     }
@@ -44,8 +44,8 @@ function jsxAttributeExpression(opening, name) {
 }
 
 test("위치 권한 dialog는 열린 상태의 단계 전환마다 새 제목으로 포커스를 옮긴다", () => {
-  const permsStep = findPermsStep();
-  assert.ok(permsStep, "PermsStep을 찾을 수 없습니다");
+  const permissionDialog = findLocationPermissionDialog();
+  assert.ok(permissionDialog, "ChildLocationPermissionDialog를 찾을 수 없습니다");
 
   const headings = [];
   const stageEffects = [];
@@ -53,7 +53,7 @@ test("위치 권한 dialog는 열린 상태의 단계 전환마다 새 제목으
     if (
       ts.isJsxElement(node)
       && node.openingElement.tagName.getText(sourceFile) === "h2"
-      && jsxAttributeExpression(node.openingElement, "id") === "consentTitleId"
+      && jsxAttributeExpression(node.openingElement, "id") === "titleId"
     ) {
       headings.push(node.openingElement);
     }
@@ -62,13 +62,13 @@ test("위치 권한 dialog는 열린 상태의 단계 전환마다 새 제목으
       && node.expression.getText(sourceFile) === "useEffect"
       && node.arguments.length >= 2
       && ts.isArrayLiteralExpression(node.arguments[1])
-      && node.arguments[1].elements.some((element) => element.getText(sourceFile) === "locationStage")
+      && node.arguments[1].elements.some((element) => element.getText(sourceFile) === "stage")
     ) {
       stageEffects.push(node);
     }
     ts.forEachChild(node, visit);
   };
-  visit(permsStep);
+  visit(permissionDialog);
 
   assert.equal(headings.length, 3, "권한 단계별 제목 전수 목록이 바뀌었습니다");
   const titleRefs = headings.map((heading) => jsxAttributeExpression(heading, "ref"));
@@ -84,10 +84,10 @@ test("위치 권한 dialog는 열린 상태의 단계 전환마다 새 제목으
     stageEffects.some((effect) => {
       const effectText = effect.getText(sourceFile);
       return effectText.includes(`${titleRef}.current?.focus({ preventScroll: true })`)
-        && effectText.includes("previousLocationStage")
-        && effectText.includes('previousLocationStage === "idle"')
-        && effectText.includes('locationStage === "idle"');
+        && effectText.includes("previousStage")
+        && effectText.includes('previousStage === "closed"')
+        && effectText.includes('stage === "closed"');
     }),
-    "열린 dialog의 locationStage가 바뀌면 새 제목을 즉시 포커스해야 합니다",
+    "열린 dialog의 stage가 바뀌면 새 제목을 즉시 포커스해야 합니다",
   );
 });

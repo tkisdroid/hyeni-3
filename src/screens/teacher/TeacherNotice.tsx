@@ -11,9 +11,11 @@ import { dateInputValueToDateKey } from "@/transform/dateKey";
 import type { TeacherNoticeAttachment } from "@/lib/api/endpoints/teacher";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
+import { useLocale } from "@/i18n/useLocale";
+import { formatCalendarDay, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
 import "./TeacherNotice.css";
-
-const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 const MAX_ATTACHMENTS = 5;
 const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
 
@@ -31,6 +33,8 @@ function safeFileName(name: string): string {
 }
 
 export function TeacherNotice() {
+  const { locale } = useLocale();
+  const intl = useIntl();
   const navigate = useNavigate();
   const location = useLocation();
   const { show } = useToast();
@@ -40,7 +44,8 @@ export function TeacherNotice() {
   const classesQ = useTeacherClasses();
   const firstClass = classesQ.data?.[0] ?? null;
   const classId = firstClass?.classId ?? null;
-  const className = firstClass?.className ?? "우리 반";
+  const className = firstClass?.className
+    ?? intl.formatMessage({ id: "shared.teacherNotice.classFallback" });
 
   const rosterQ = useRoster(classId);
   const recipientCount = rosterQ.data?.length ?? 0;
@@ -74,8 +79,12 @@ export function TeacherNotice() {
   const today = useMemo(() => isoDateKey(new Date()), []);
   const todayLabel = useMemo(() => {
     const now = new Date();
-    return `${now.getMonth() + 1}월 ${now.getDate()}일 ${WEEKDAYS[now.getDay()]}요일`;
-  }, []);
+    return formatCalendarDay(now, {
+      locale,
+      timeZone: LEGACY_FAMILY_TIME_ZONE,
+      weekday: "long",
+    });
+  }, [locale]);
 
   // 반 시간표 '일정 추가'에서 넘어온 날짜(state.dateInput, ISO "YYYY-MM-DD")를 반영일 초깃값으로.
   const prefillDate = useMemo(() => {
@@ -116,23 +125,26 @@ export function TeacherNotice() {
     const next: AttachmentDraft[] = [];
     for (const file of Array.from(files)) {
       if (attachments.length + next.length >= MAX_ATTACHMENTS) {
-        show(`첨부는 ${MAX_ATTACHMENTS}개까지 가능해요`, "📎");
+        show(intl.formatMessage(
+          { id: "shared.teacherNotice.attachment.limit" },
+          { max: MAX_ATTACHMENTS },
+        ), "📎");
         break;
       }
       const contentType = file.type || "application/octet-stream";
       const supported = contentType.startsWith("image/") || contentType === "application/pdf";
       if (!supported) {
-        show("사진 또는 PDF만 첨부할 수 있어요", "📎");
+        show(intl.formatMessage({ id: "shared.teacherNotice.attachment.type" }), "📎");
         continue;
       }
       if (file.size > MAX_ATTACHMENT_BYTES) {
-        show("첨부 파일은 8MB 이하만 가능해요", "📎");
+        show(intl.formatMessage({ id: "shared.teacherNotice.attachment.size" }), "📎");
         continue;
       }
       next.push({
         id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
         file,
-        name: file.name || "첨부파일",
+        name: file.name || intl.formatMessage({ id: "shared.teacherNotice.attachment.defaultName" }),
         size: file.size,
         contentType,
       });
@@ -160,18 +172,20 @@ export function TeacherNotice() {
 
   const handleSend = async () => {
     if (!teacherNoticeDataReady || !classId || recipientCount === 0) {
-      show("연결된 반과 학생을 확인한 뒤 다시 시도해 주세요", "🧑‍🏫");
+      show(intl.formatMessage({ id: "shared.teacherNotice.targetRequired" }), "🧑‍🏫");
       return;
     }
     const trimmedTitle = title.trim();
     if (!trimmedTitle) {
-      show("알림장 제목을 입력해 주세요", "✏️");
+      show(intl.formatMessage({ id: "shared.teacherNotice.titleRequired" }), "✏️");
       return;
     }
 
     // 준비물은 본문 끝에 한 줄로 덧붙인다(별도 서버 필드가 없어 본문 통합).
     const bodyText = body.trim();
-    const suppliesLine = supplies.length > 0 ? `준비물: ${supplies.join(", ")}` : "";
+    const suppliesLine = supplies.length > 0
+      ? `${intl.formatMessage({ id: "shared.teacherNotice.suppliesPrefix" })}: ${supplies.join(", ")}`
+      : "";
     const composedBody = [bodyText, suppliesLine].filter(Boolean).join("\n");
 
     // "학부모 캘린더에 반영" ON → 선택 날짜에 알림장 제목으로 일정 1건을 함께 등록.
@@ -187,7 +201,7 @@ export function TeacherNotice() {
       uploadedAttachments = await uploadAttachments();
     } catch (err) {
       setUploading(false);
-      show(err instanceof Error ? err.message : "첨부 파일 업로드에 실패했어요", "⚠️");
+      show(localizeApiError(err, intl, "formal"), "⚠️");
       return;
     }
     setUploading(false);
@@ -204,16 +218,20 @@ export function TeacherNotice() {
       {
         onSuccess: (res) => {
           const reached = res.recipients;
-          const msg =
-            res.eventsCreated > 0
-              ? `${reached}명에게 보냈어요 · 학부모 캘린더에 반영됐어요`
-              : `${reached}명에게 알림장을 보냈어요`;
+          const msg = intl.formatMessage(
+            {
+              id: res.eventsCreated > 0
+                ? "shared.teacherNotice.sent.withCalendar"
+                : "shared.teacherNotice.sent.noticeOnly",
+            },
+            { count: reached },
+          );
           show(msg, "📣");
           navigate(-1);
         },
         onError: (err) => {
           show(
-            err instanceof Error ? err.message : "알림장 보내기에 실패했어요. 잠시 후 다시 시도해 주세요",
+            localizeApiError(err, intl, "formal"),
             "⚠️",
           );
         },
@@ -224,10 +242,10 @@ export function TeacherNotice() {
   if (teacherNoticeQueryState === "loading") {
     return (
       <ScreenQueryState
-        screenTitle="알림장"
+        screenTitle={intl.formatMessage({ id: "shared.teacherNotice.screenTitle" })}
         state="loading"
-        heading="반과 학생 정보를 불러오고 있어요"
-        description="알림장을 받을 학생과 반 정보를 확인하는 중이에요."
+        heading={intl.formatMessage({ id: "shared.teacherNotice.loading.heading" })}
+        description={intl.formatMessage({ id: "shared.teacherNotice.loading.description" })}
         onBack={() => navigate(-1)}
       />
     );
@@ -236,10 +254,10 @@ export function TeacherNotice() {
   if (teacherNoticeQueryState === "error" || teacherNoticeDataMissing) {
     return (
       <ScreenQueryState
-        screenTitle="알림장"
+        screenTitle={intl.formatMessage({ id: "shared.teacherNotice.screenTitle" })}
         state="error"
-        heading="알림장 대상을 확인하지 못했어요"
-        description="수신자가 확인되지 않은 상태에서는 파일 업로드와 발송을 시작하지 않아요."
+        heading={intl.formatMessage({ id: "shared.teacherNotice.error.heading" })}
+        description={intl.formatMessage({ id: "shared.teacherNotice.error.description" })}
         onBack={() => navigate(-1)}
         onRetry={() => void retryTeacherNotice()}
         retrying={teacherNoticeRefetching}
@@ -250,25 +268,25 @@ export function TeacherNotice() {
   if (teacherNoticeDataEmpty) {
     const hasClass = !!classId;
     const emptyHeading = classesFeatureMissing
-      ? "알림장 서버 기능이 준비되지 않았어요"
+      ? intl.formatMessage({ id: "shared.teacherNotice.empty.server.heading" })
       : hasClass
-        ? "연결된 학생이 없어요"
-        : "연결된 반이 없어요";
+        ? intl.formatMessage({ id: "shared.teacherNotice.empty.students.heading" })
+        : intl.formatMessage({ id: "shared.teacherNotice.empty.class.heading" });
     const emptyDescription = classesFeatureMissing
-      ? "개발 환경의 선생님 기능을 확인한 뒤 다시 시도해 주세요."
+      ? intl.formatMessage({ id: "shared.teacherNotice.empty.server.description" })
       : hasClass
-        ? "학생이 연결되면 학부모에게 알림장과 준비물을 보낼 수 있어요."
-        : "반을 만들고 학생을 연결하면 알림장을 보낼 수 있어요.";
+        ? intl.formatMessage({ id: "shared.teacherNotice.empty.students.description" })
+        : intl.formatMessage({ id: "shared.teacherNotice.empty.class.description" });
     return (
       <ScreenQueryState
-        screenTitle="알림장"
+        screenTitle={intl.formatMessage({ id: "shared.teacherNotice.screenTitle" })}
         state="empty"
         heading={emptyHeading}
         description={emptyDescription}
         onBack={() => navigate(-1)}
         onRetry={() => void retryTeacherNotice()}
         retrying={teacherNoticeRefetching}
-        retryLabel="반 정보 다시 확인"
+        retryLabel={intl.formatMessage({ id: "shared.teacherNotice.empty.retry" })}
       />
     );
   }
@@ -279,12 +297,14 @@ export function TeacherNotice() {
         <button
           type="button"
           className="tn-back hy-press"
-          aria-label="뒤로"
+          aria-label={intl.formatMessage({ id: "shared.teacherNotice.back" })}
           onClick={() => navigate(-1)}
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
         </button>
-        <span className="tn-title">알림장</span>
+        <span className="tn-title">
+          {intl.formatMessage({ id: "shared.teacherNotice.screenTitle" })}
+        </span>
       </header>
 
       <div className="tn-body">
@@ -294,31 +314,37 @@ export function TeacherNotice() {
             </div>
 
             <div>
-              <div className="tn-label">제목</div>
+              <div className="tn-label">
+                {intl.formatMessage({ id: "shared.teacherNotice.title.label" })}
+              </div>
               <input
                 className="tn-input"
-                aria-label="알림장 제목"
+                aria-label={intl.formatMessage({ id: "shared.teacherNotice.title.aria" })}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="예) 내일 준비물 안내"
+                placeholder={intl.formatMessage({ id: "shared.teacherNotice.title.placeholder" })}
                 maxLength={80}
               />
             </div>
 
             <div>
-              <div className="tn-label">내용</div>
+              <div className="tn-label">
+                {intl.formatMessage({ id: "shared.teacherNotice.body.label" })}
+              </div>
               <textarea
                 className="tn-textarea"
-                aria-label="알림장 내용"
+                aria-label={intl.formatMessage({ id: "shared.teacherNotice.body.aria" })}
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
-                placeholder="예) 내일 수학 단원평가 있어요. 교과서 32–40p 복습해 오세요."
+                placeholder={intl.formatMessage({ id: "shared.teacherNotice.body.placeholder" })}
                 rows={4}
               />
             </div>
 
             <div>
-              <div className="tn-label">준비물</div>
+              <div className="tn-label">
+                {intl.formatMessage({ id: "shared.teacherNotice.supplies.label" })}
+              </div>
               <div className="tn-chips">
                 {supplies.map((item) => (
                   <span key={item} className="tn-chip">
@@ -326,7 +352,7 @@ export function TeacherNotice() {
                     <button
                       type="button"
                       className="tn-chip__x hy-press"
-                      aria-label={`${item} 삭제`}
+                      aria-label={`${item} ${intl.formatMessage({ id: "shared.teacherNotice.supplies.remove" })}`}
                       onClick={() => removeSupply(item)}
                     >
                       <X size={13} strokeWidth={2.6} />
@@ -335,7 +361,7 @@ export function TeacherNotice() {
                 ))}
                 <input
                   className="tn-chip-input"
-                  aria-label="준비물 추가"
+                  aria-label={intl.formatMessage({ id: "shared.teacherNotice.supplies.addAria" })}
                   value={supplyInput}
                   onChange={(e) => setSupplyInput(e.target.value)}
                   onKeyDown={(e) => {
@@ -344,14 +370,16 @@ export function TeacherNotice() {
                       addSupply();
                     }
                   }}
-                  placeholder="＋ 추가 (예: 체육복)"
+                  placeholder={intl.formatMessage({ id: "shared.teacherNotice.supplies.placeholder" })}
                 />
               </div>
             </div>
 
             {/* 첨부 — R2 업로드 후 알림장 metadata 로 저장. */}
             <div>
-              <div className="tn-label">첨부</div>
+              <div className="tn-label">
+                {intl.formatMessage({ id: "shared.teacherNotice.attachment.label" })}
+              </div>
               <button
                 type="button"
                 className="tn-attach hy-press"
@@ -363,10 +391,22 @@ export function TeacherNotice() {
                   <Paperclip size={18} strokeWidth={2} color="#8B7E84" />
                 </span>
                 <span className="tn-attach__main">
-                  <span className="tn-attach__title">파일 첨부</span>
-                  <span className="tn-attach__sub">사진·PDF를 {MAX_ATTACHMENTS}개까지 보낼 수 있어요</span>
+                  <span className="tn-attach__title">
+                    {intl.formatMessage({ id: "shared.teacherNotice.attachment.title" })}
+                  </span>
+                  <span className="tn-attach__sub">
+                    {intl.formatMessage(
+                      { id: "shared.teacherNotice.attachment.description" },
+                      { max: MAX_ATTACHMENTS },
+                    )}
+                  </span>
                 </span>
-                <span className="tn-attach__badge">{attachments.length}개</span>
+                <span className="tn-attach__badge">
+                  {intl.formatMessage(
+                    { id: "shared.teacherNotice.attachment.count" },
+                    { count: attachments.length },
+                  )}
+                </span>
               </button>
               <input
                 ref={fileRef}
@@ -388,7 +428,7 @@ export function TeacherNotice() {
                       <button
                         type="button"
                         className="tn-file-chip__x hy-press"
-                        aria-label={`${a.name} 첨부 삭제`}
+                        aria-label={`${a.name} ${intl.formatMessage({ id: "shared.teacherNotice.attachment.remove" })}`}
                         onClick={() => setAttachments((list) => list.filter((item) => item.id !== a.id))}
                       >
                         <X size={13} strokeWidth={2.6} />
@@ -403,14 +443,18 @@ export function TeacherNotice() {
             <div className="tn-reflect">
               <div className="tn-reflect__row">
                 <span className="tn-reflect__main">
-                  <span className="tn-reflect__title">학부모 캘린더에 반영</span>
-                  <span className="tn-reflect__sub">켜면 아래 날짜에 이 알림장 일정이 등록돼요</span>
+                  <span className="tn-reflect__title">
+                    {intl.formatMessage({ id: "shared.teacherNotice.reflect.title" })}
+                  </span>
+                  <span className="tn-reflect__sub">
+                    {intl.formatMessage({ id: "shared.teacherNotice.reflect.description" })}
+                  </span>
                 </span>
                 <button
                   type="button"
                   role="switch"
                   aria-checked={reflect}
-                  aria-label="학부모 캘린더에 반영"
+                  aria-label={intl.formatMessage({ id: "shared.teacherNotice.reflect.title" })}
                   className={`tn-toggle${reflect ? " tn-toggle--on" : ""}`}
                   onClick={() => setReflect((v) => !v)}
                 >
@@ -421,7 +465,7 @@ export function TeacherNotice() {
                 <input
                   type="date"
                   className="tn-date"
-                  aria-label="학부모 캘린더 반영 날짜"
+                  aria-label={intl.formatMessage({ id: "shared.teacherNotice.reflect.dateAria" })}
                   value={reflectDate}
                   onChange={(e) => setReflectDate(e.target.value)}
                 />
@@ -436,19 +480,26 @@ export function TeacherNotice() {
               aria-busy={publish.isPending}
             >
               {uploading
-                ? "첨부 올리는 중…"
+                ? intl.formatMessage({ id: "shared.teacherNotice.send.uploading" })
                 : publish.isPending
-                ? "보내는 중…"
+                ? intl.formatMessage({ id: "shared.teacherNotice.send.pending" })
                 : recipientCount > 0
-                  ? `${recipientCount}명에게 발송`
-                  : "반 전체에 발송"}
+                  ? intl.formatMessage(
+                      { id: "shared.teacherNotice.send.toCount" },
+                      { count: recipientCount },
+                    )
+                  : intl.formatMessage({ id: "shared.teacherNotice.send.all" })}
             </button>
 
             {recipientCount === 0 && (
               <div className="tn-hint hy-explain">
                 <span className="hy-explain__lines">
-                  <span className="hy-explain__line">아직 연결된 학생이 없어요.</span>
-                  <span className="hy-explain__line">학생이 연결되면 알림장이 학부모에게 전달돼요.</span>
+                  <span className="hy-explain__line">
+                    {intl.formatMessage({ id: "shared.teacherNotice.hint.empty" })}
+                  </span>
+                  <span className="hy-explain__line">
+                    {intl.formatMessage({ id: "shared.teacherNotice.hint.delivery" })}
+                  </span>
                 </span>
               </div>
             )}

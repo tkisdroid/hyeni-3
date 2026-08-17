@@ -57,18 +57,18 @@ test("quiet draft는 boolean과 유효 분 범위 및 서로 다른 시각만 �
   );
 });
 
-test("Asia/Seoul 조용한 시간 범위를 자연스러운 한국어로 표시한다", () => {
+test("조용한 시간 범위를 선택한 locale의 시각 표기로 표시한다", () => {
   assert.equal(
-    notificationQuietHoursRange({ enabled: true, startMinute: 1320, endMinute: 420 }),
-    "밤 10시부터 아침 7시까지",
+    notificationQuietHoursRange({ enabled: true, startMinute: 1320, endMinute: 420 }, "en"),
+    "10:00 PM부터 7:00 AM까지",
   );
   assert.equal(
-    notificationQuietHoursRange({ enabled: true, startMinute: 0, endMinute: 65 }),
-    "자정부터 새벽 1시 5분까지",
+    notificationQuietHoursRange({ enabled: true, startMinute: 0, endMinute: 65 }, "en"),
+    "12:00 AM부터 1:05 AM까지",
   );
   assert.equal(
-    notificationQuietHoursRange({ enabled: true, startMinute: 750, endMinute: 1110 }),
-    "낮 12시 30분부터 저녁 6시 30분까지",
+    notificationQuietHoursRange({ enabled: true, startMinute: 750, endMinute: 1110 }, "en"),
+    "12:30 PM부터 6:30 PM까지",
   );
 });
 

@@ -1,24 +1,29 @@
 import { useEffect, useId, useState, useRef } from "react";
+import type { ChangeEvent } from "react";
 import { useNavigate } from "react-router";
-import { ChevronLeft, KeyRound, LogOut, ShieldAlert, Trash2 } from "lucide-react";
+import { Camera, ChevronLeft, KeyRound, LogOut, ShieldAlert, Trash2 } from "lucide-react";
 import { asset } from "@/lib/assets";
+import { resizeImageFileSafe } from "@/lib/imageResize";
 import { formatPhoneDisplay } from "@/transform/phoneFormat";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { qk } from "@/queries/keys";
 import { useAccount, useChangePassword, useDeleteAccount } from "@/queries/useAccount";
-import { useUpdateProfile } from "@/queries/useFamily";
+import { useUpdateProfile, useUploadMyPhoto } from "@/queries/useFamily";
 import { SocialLinks } from "./SocialLinks";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import { Loading } from "@/components/ui/Loading";
 import { usePwaUpdateCriticalSection } from "@/lib/usePwaUpdateCriticalSection";
 import "./ParentAccount.css";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 
 /** P-30 계정·프로필 — 프로필 편집·로그인 정보·로그아웃·회원 탈퇴. */
 export function ParentAccount() {
   const navigate = useNavigate();
   const { show } = useToast();
+  const intl = useIntl();
   const qc = useQueryClient();
   const { logout, familyId, user } = useAuth();
   const {
@@ -30,9 +35,13 @@ export function ParentAccount() {
     refetch: refetchAccount,
   } = useAccount();
   const updateProfile = useUpdateProfile();
+  const uploadMyPhoto = useUploadMyPhoto();
   const deleteAccount = useDeleteAccount();
   const changePassword = useChangePassword();
 
+  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
+  const [photoProcessing, setPhotoProcessing] = useState(false);
+  const photoFileRef = useRef<HTMLInputElement | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [seeded, setSeeded] = useState(false);
@@ -72,12 +81,19 @@ export function ParentAccount() {
   }, [me, account, seeded]);
 
   const roleLabel = account?.isPrimaryParent
-    ? "대표 보호자"
+    ? intl.formatMessage({ id: "parent.parentAccount.copy001" })
     : account?.isCoParent
-      ? "공동 보호자"
-      : "보호자";
-  const avatarSrc =
-    me?.gender === "dad" ? "family/dad.webp" : "family/mom.webp";
+      ? intl.formatMessage({ id: "parent.parentSettings.copy004" })
+      : intl.formatMessage({ id: "parent.parentSettings.copy003" });
+  // 프로필 사진 — 방금 고른 사진 > 저장된 사진(표시용 blob URL) > 성별 기본 캐릭터.
+  const defaultAvatarSrc = asset(me?.gender === "dad" ? "family/dad.webp" : "family/mom.webp");
+  const savedPhoto = me?.photo_url
+    && (me.photo_url.startsWith("http") || me.photo_url.startsWith("blob:"))
+    ? me.photo_url
+    : null;
+  const avatarSrc = photoDataUrl ?? savedPhoto ?? defaultAvatarSrc;
+  const hasOwnPhoto = !!(photoDataUrl ?? savedPhoto);
+  const photoBusy = photoProcessing || uploadMyPhoto.isPending;
 
   // 전화번호는 표시 포맷("010-0000-0000")으로 통일해 비교한다 —
   // 저장값이 하이픈 없이 들어와도 화면에 들어온 것만으로 '변경됨'이 되지 않게 한다.
@@ -88,6 +104,7 @@ export function ParentAccount() {
   const accountReady = !isLoading && !accountIsError && account !== null;
   usePwaUpdateCriticalSection(
     dirty
+    || photoBusy
     || updateProfile.isPending
     || changePassword.isPending
     || deleteAccount.isPending
@@ -97,13 +114,49 @@ export function ParentAccount() {
     || newPasswordConfirm.length > 0,
   );
 
+  /**
+   * 내 프로필 사진 등록·변경. 대상은 내 멤버 행이고 서버가 소유권을 다시 확인한다.
+   * 고른 즉시 업로드하고, 서버 사진이 표시용 URL로 도착할 때까지 방금 고른 사진을 보여준다.
+   */
+  const onPickPhoto = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = ""; // 같은 파일 재선택 허용
+    if (!file || photoBusy) return;
+    if (!accountReady || !me) {
+      show(intl.formatMessage({ id: "parent.parentAccount.copy002" }), "⚠️");
+      return;
+    }
+    setPhotoProcessing(true);
+    let dataUrl: string | null = null;
+    try {
+      dataUrl = await resizeImageFileSafe(file, { maxEdge: 512, quality: 0.85 });
+    } catch (error) {
+      console.error("프로필 사진 준비 실패:", error);
+    } finally {
+      setPhotoProcessing(false);
+    }
+    if (!dataUrl) {
+      show(intl.formatMessage({ id: "parent.profileEdit.error.photoLoad" }), "⚠️");
+      return;
+    }
+    setPhotoDataUrl(dataUrl);
+    try {
+      await uploadMyPhoto.mutateAsync({ memberId: me.id, dataUrl });
+      show(intl.formatMessage({ id: "parent.parentAccount.copy004" }), "✅");
+    } catch (error) {
+      console.error("프로필 사진 저장 실패:", error);
+      setPhotoDataUrl(null); // 저장 실패를 저장된 것처럼 보여주지 않는다.
+      show(localizeApiError(error, intl, "formal"), "⚠️");
+    }
+  };
+
   const saveProfile = () => {
     if (!accountReady) {
-      show("계정 정보를 확인한 뒤 다시 시도해 주세요", "⚠️");
+      show(intl.formatMessage({ id: "parent.parentAccount.copy002" }), "⚠️");
       return;
     }
     if (!name.trim()) {
-      show("이름을 입력해 주세요", "✏️");
+      show(intl.formatMessage({ id: "parent.parentAccount.copy003" }), "✏️");
       return;
     }
     updateProfile.mutate(
@@ -112,11 +165,11 @@ export function ParentAccount() {
         onSuccess: () => {
           void qc.invalidateQueries({ queryKey: qk.family(familyId) });
           void qc.invalidateQueries({ queryKey: qk.account(familyId) });
-          show("프로필을 저장했어요", "✅");
+          show(intl.formatMessage({ id: "parent.parentAccount.copy004" }), "✅");
         },
         onError: (e) => {
           console.error("프로필 저장 실패:", e);
-          show("저장에 실패했어요. 다시 시도해 주세요", "⚠️");
+          show(intl.formatMessage({ id: "parent.parentAccount.copy005" }), "⚠️");
         },
       },
     );
@@ -129,11 +182,11 @@ export function ParentAccount() {
     setLogoutBusy(true);
     try {
       await logout();
-      show("로그아웃되었어요", "👋");
+      show(intl.formatMessage({ id: "parent.parentSettings.copy005" }), "👋");
       navigate("/onboarding");
     } catch (e) {
       console.error("로그아웃 실패:", e);
-      show("로그아웃에 실패했어요. 다시 시도해 주세요", "⚠️");
+      show(intl.formatMessage({ id: "parent.parentSettings.copy006" }), "⚠️");
     } finally {
       logoutBusyRef.current = false;
       setLogoutBusy(false);
@@ -142,18 +195,18 @@ export function ParentAccount() {
 
   const handleDelete = () => {
     if (!accountReady) {
-      show("계정 정보를 확인한 뒤 다시 시도해 주세요", "⚠️");
+      show(intl.formatMessage({ id: "parent.parentAccount.copy002" }), "⚠️");
       return;
     }
     deleteAccount.mutate(undefined, {
       onSuccess: () => {
-        show("계정이 삭제되었어요", "🗑️");
+        show(intl.formatMessage({ id: "parent.parentSettings.copy008" }), "🗑️");
         navigate("/onboarding");
       },
       onError: (e) => {
         console.error("계정 삭제 실패:", e);
         setConfirmDelete(false);
-        show("계정 삭제에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️");
+        show(intl.formatMessage({ id: "parent.parentSettings.copy009" }), "⚠️");
       },
     });
   };
@@ -168,25 +221,25 @@ export function ParentAccount() {
 
   const handlePasswordChange = () => {
     if (!currentPassword) {
-      show("현재 비밀번호를 입력해 주세요", "🔐");
+      show(intl.formatMessage({ id: "parent.parentAccount.copy006" }), "🔐");
       return;
     }
     if (newPassword.length < 6) {
-      show("새 비밀번호는 6자 이상이어야 해요", "🔐");
+      show(intl.formatMessage({ id: "parent.parentAccount.copy007" }), "🔐");
       return;
     }
     if (newPassword !== newPasswordConfirm) {
-      show("새 비밀번호 확인이 일치하지 않아요", "🔐");
+      show(intl.formatMessage({ id: "parent.parentAccount.copy008" }), "🔐");
       return;
     }
     changePassword.mutate(
       { currentPassword, newPassword },
       {
         onSuccess: () => {
-          show("비밀번호를 변경했어요", "✅");
+          show(intl.formatMessage({ id: "parent.parentAccount.copy009" }), "✅");
           closePassword(true);
         },
-        onError: (e) => show(e instanceof Error ? e.message : "비밀번호 변경에 실패했어요", "⚠️"),
+        onError: (e) => show(localizeApiError(e, intl, "formal"), "⚠️"),
       },
     );
   };
@@ -199,21 +252,21 @@ export function ParentAccount() {
           <button
             type="button"
             className="pa-back hy-press"
-            aria-label="뒤로"
+            aria-label={intl.formatMessage({ id: "parent.parentSettings.copy017" })}
             onClick={() => navigate(-1)}
           >
             <ChevronLeft size={22} strokeWidth={2.2} color="var(--fg-secondary)" />
           </button>
-          <span className="pa-head-title">내 계정</span>
+          <span className="pa-head-title">{intl.formatMessage({ id: "parent.parentAccount.copy010" })}</span>
         </header>
         <div className="pa-content">
           <div className="pa-account-state" role={accountLoadError ? "alert" : "status"}>
             {accountLoadError
-              ? <span>계정 정보를 불러오지 못했어요</span>
-              : <Loading label="계정 정보를 불러오는 중" />}
+              ? <span>{intl.formatMessage({ id: "parent.parentAccount.copy011" })}</span>
+              : <Loading label={intl.formatMessage({ id: "parent.parentAccount.copy012" })} />}
             {accountLoadError && (
               <button type="button" className="pa-save hy-press" onClick={() => void refetchAccount()}>
-                다시 시도
+                {intl.formatMessage({ id: "parent.parentHome.copy017" })}
               </button>
             )}
           </div>
@@ -230,53 +283,84 @@ export function ParentAccount() {
         <button
           type="button"
           className="pa-back hy-press"
-          aria-label="뒤로"
+          aria-label={intl.formatMessage({ id: "parent.parentSettings.copy017" })}
           onClick={() => navigate(-1)}
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="var(--fg-secondary)" />
         </button>
-        <span className="pa-head-title">계정 · 프로필</span>
+        <span className="pa-head-title">{intl.formatMessage({ id: "parent.parentAccount.copy010" })}</span>
       </header>
 
       <div className="pa-content">
-        {/* 프로필 미리보기 */}
+        {/* 프로필 미리보기 + 내 사진 등록(2026-08-17 TK 요청) */}
         <div className="pa-profile">
-          <div className="pa-profile__avatar">
-            <img src={asset(avatarSrc)} alt="" />
-          </div>
+          <button
+            type="button"
+            className="pa-profile__avatar pa-profile__avatar--edit hy-busy-center hy-press"
+            data-photo={hasOwnPhoto ? "true" : "false"}
+            onClick={() => photoFileRef.current?.click()}
+            disabled={!accountReady || !me || photoBusy}
+            aria-busy={photoBusy}
+            aria-label={intl.formatMessage({
+              id: hasOwnPhoto ? "parent.parentAccount.photo.change" : "parent.parentAccount.photo.set",
+            })}
+          >
+            <img src={avatarSrc} alt="" loading="eager" decoding="async" />
+            <span className="pa-profile__avatar-edit" aria-hidden="true">
+              <Camera size={14} strokeWidth={2.4} color="#fff" />
+            </span>
+          </button>
+          <input
+            ref={photoFileRef}
+            type="file"
+            accept="image/*"
+            hidden
+            disabled={!accountReady || !me || photoBusy}
+            onChange={(event) => void onPickPhoto(event)}
+          />
           <div className="pa-profile__info">
-            <div className="pa-profile__name">{name.trim() || account?.myName || "보호자"}</div>
+            <div className="pa-profile__name">{name.trim() || account?.myName || intl.formatMessage({ id: "parent.parentSettings.copy003" })}</div>
             <div className="pa-profile__meta">
               {providerLabel} · {roleLabel}
+            </div>
+            <div className="pa-profile__hint">
+              {photoBusy
+                ? intl.formatMessage({ id: "parent.profileEdit.photo.processing" })
+                : intl.formatMessage({ id: "parent.parentAccount.photo.hint" })}
             </div>
           </div>
         </div>
 
         {/* 프로필 편집 */}
         <div className="pa-group">
-          <div className="pa-group__label">프로필</div>
+          <div className="pa-group__label">{intl.formatMessage({ id: "parent.parentAccount.copy013" })}</div>
           <div className="pa-card">
             <label className="pa-field">
-              <span className="pa-field__k">이름</span>
+              <span className="pa-field__k">{intl.formatMessage({ id: "parent.parentAccount.copy014" })}</span>
               <input
                 className="pa-input"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="이름"
+                placeholder={intl.formatMessage({ id: "parent.parentAccount.copy014" })}
                 disabled={isLoading}
               />
             </label>
             <div className="pa-divider" />
             <label className="pa-field">
-              <span className="pa-field__k">전화번호</span>
-              <input
-                className="pa-input"
-                value={phone}
-                onChange={(e) => setPhone(formatPhoneDisplay(e.target.value))}
-                placeholder="010-0000-0000"
-                inputMode="tel"
-                disabled={isLoading}
-              />
+              <span className="pa-field__k">{intl.formatMessage({ id: "parent.parentAccount.copy015" })}</span>
+              <span className="pa-field__control">
+                <input
+                  className="pa-input"
+                  value={phone}
+                  onChange={(e) => setPhone(formatPhoneDisplay(e.target.value))}
+                  placeholder={intl.formatMessage({ id: "parent.parentAccount.phonePlaceholder" })}
+                  inputMode="tel"
+                  disabled={isLoading}
+                />
+                <span className="pa-field__help">
+                  {intl.formatMessage({ id: "parent.parentAccount.phoneKoreanOnlyHelp" })}
+                </span>
+              </span>
             </label>
           </div>
           <button
@@ -285,16 +369,16 @@ export function ParentAccount() {
             onClick={saveProfile}
             disabled={!dirty || updateProfile.isPending} aria-busy={updateProfile.isPending}
           >
-            {updateProfile.isPending ? "저장 중…" : "저장"}
+            {updateProfile.isPending ? intl.formatMessage({ id: "parent.parentAccount.copy016" }) : intl.formatMessage({ id: "parent.parentAccount.copy017" })}
           </button>
         </div>
 
         {/* 로그인 정보 */}
         <div className="pa-group">
-          <div className="pa-group__label">로그인 정보</div>
+          <div className="pa-group__label">{intl.formatMessage({ id: "parent.parentAccount.copy018" })}</div>
           <div className="pa-card">
             <div className="pa-row">
-              <span className="pa-row__k">로그인 방식</span>
+              <span className="pa-row__k">{intl.formatMessage({ id: "parent.parentAccount.copy019" })}</span>
               <span className="pa-row__v">{providerLabel}</span>
             </div>
             <div className="pa-divider" />
@@ -303,12 +387,12 @@ export function ParentAccount() {
               className="pa-row pa-row-btn hy-press"
               onClick={() => setPasswordOpen(true)}
             >
-              <span className="pa-row__k">비밀번호 변경</span>
-              <span className="pa-row__hint">변경</span>
+              <span className="pa-row__k">{intl.formatMessage({ id: "parent.parentAccount.copy020" })}</span>
+              <span className="pa-row__hint">{intl.formatMessage({ id: "parent.parentAccount.copy021" })}</span>
             </button>
           </div>
           <div className="pa-note hy-explain">
-            소셜 로그인은 아래에서 연결하거나 해제할 수 있어요.
+            {intl.formatMessage({ id: "parent.parentAccount.copy022" })}
           </div>
         </div>
 
@@ -326,7 +410,7 @@ export function ParentAccount() {
             <span className="pa-action__ic pa-action__ic--neutral">
               <LogOut size={18} strokeWidth={2.2} />
             </span>
-            <span className="pa-action__label">{logoutBusy ? "로그아웃 중…" : "로그아웃"}</span>
+            <span className="pa-action__label">{logoutBusy ? intl.formatMessage({ id: "parent.parentAccount.copy023" }) : intl.formatMessage({ id: "parent.parentSettings.copy023" })}</span>
           </button>
 
           <button
@@ -337,11 +421,16 @@ export function ParentAccount() {
             <span className="pa-action__ic pa-action__ic--danger">
               <ShieldAlert size={18} strokeWidth={2.2} />
             </span>
-            <span className="pa-action__label pa-action__label--danger">회원 탈퇴</span>
+            <span className="pa-action__label pa-action__label--danger">{intl.formatMessage({ id: "parent.parentSettings.copy024" })}</span>
           </button>
         </div>
 
-        <div className="pa-uid">계정 ID · {user?.id?.slice(0, 8) ?? "-"}</div>
+        <div className="pa-uid">
+          {intl.formatMessage(
+            { id: "parent.account.id" },
+            { accountId: user?.id?.slice(0, 8) ?? "-" },
+          )}
+        </div>
       </div>
 
       {/* 회원 탈퇴 확인 모달 */}
@@ -359,18 +448,18 @@ export function ParentAccount() {
             type="button"
             className="pa-modal__scrim"
             tabIndex={-1}
-            aria-label="닫기"
+            aria-label={intl.formatMessage({ id: "parent.parentSettings.copy027" })}
             onClick={() => !deleteAccount.isPending && setConfirmDelete(false)}
           />
           <div className="pa-modal__card">
             <div className="pa-modal__emoji" aria-hidden="true">
               <Trash2 size={34} strokeWidth={2.2} />
             </div>
-            <div id={deleteTitleId} className="pa-modal__title">정말 탈퇴하시겠어요?</div>
+            <div id={deleteTitleId} className="pa-modal__title">{intl.formatMessage({ id: "parent.parentSettings.copy028" })}</div>
             <p id={deleteDescriptionId} className="pa-modal__body">
               {isPrimary
-                ? "일정·위치·대화·아이 계정이 모두 삭제되며 되돌릴 수 없어요."
-                : "내 계정과 이 가족 정보가 삭제돼요. 다른 가족 데이터는 남아요."}
+                ? intl.formatMessage({ id: "parent.parentSettings.copy029" })
+                : intl.formatMessage({ id: "parent.parentAccount.copy025" })}
             </p>
             <div className="pa-modal__btns">
               <button
@@ -381,7 +470,7 @@ export function ParentAccount() {
                 disabled={deleteAccount.isPending}
                 data-progress-owner="confirm-action"
               >
-                취소
+                {intl.formatMessage({ id: "parent.parentSettings.copy031" })}
               </button>
               <button
                 type="button"
@@ -389,7 +478,7 @@ export function ParentAccount() {
                 onClick={handleDelete}
                 disabled={deleteAccount.isPending} aria-busy={deleteAccount.isPending}
               >
-                {deleteAccount.isPending ? "삭제 중…" : "탈퇴하기"}
+                {deleteAccount.isPending ? intl.formatMessage({ id: "parent.parentSettings.copy032" }) : intl.formatMessage({ id: "parent.parentSettings.copy033" })}
               </button>
             </div>
           </div>
@@ -411,40 +500,40 @@ export function ParentAccount() {
             type="button"
             className="pa-modal__scrim"
             tabIndex={-1}
-            aria-label="닫기"
+            aria-label={intl.formatMessage({ id: "parent.parentSettings.copy027" })}
             onClick={() => closePassword()}
           />
           <div className="pa-modal__card">
             <div className="pa-modal__emoji">
               <KeyRound size={34} strokeWidth={2.2} />
             </div>
-            <div id={passwordTitleId} className="pa-modal__title">비밀번호 변경</div>
+            <div id={passwordTitleId} className="pa-modal__title">{intl.formatMessage({ id: "parent.parentAccount.copy020" })}</div>
             <div id={passwordDescriptionId} className="pa-modal__fields">
               <input
                 ref={currentPasswordRef}
                 className="pa-modal__input"
                 type="password"
-                aria-label="현재 비밀번호"
+                aria-label={intl.formatMessage({ id: "parent.parentAccount.copy026" })}
                 autoComplete="current-password"
-                placeholder="현재 비밀번호"
+                placeholder={intl.formatMessage({ id: "parent.parentAccount.copy026" })}
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
               />
               <input
                 className="pa-modal__input"
                 type="password"
-                aria-label="새 비밀번호"
+                aria-label={intl.formatMessage({ id: "parent.parentAccount.copy027" })}
                 autoComplete="new-password"
-                placeholder="새 비밀번호 (6자 이상)"
+                placeholder={intl.formatMessage({ id: "parent.parentAccount.copy028" })}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
               />
               <input
                 className="pa-modal__input"
                 type="password"
-                aria-label="새 비밀번호 확인"
+                aria-label={intl.formatMessage({ id: "parent.parentAccount.copy029" })}
                 autoComplete="new-password"
-                placeholder="새 비밀번호 확인"
+                placeholder={intl.formatMessage({ id: "parent.parentAccount.copy029" })}
                 value={newPasswordConfirm}
                 onChange={(e) => setNewPasswordConfirm(e.target.value)}
                 onKeyDown={(e) => {
@@ -460,7 +549,7 @@ export function ParentAccount() {
                 disabled={changePassword.isPending}
                 data-progress-owner="confirm-action"
               >
-                취소
+                {intl.formatMessage({ id: "parent.parentSettings.copy031" })}
               </button>
               <button
                 type="button"
@@ -468,7 +557,7 @@ export function ParentAccount() {
                 onClick={handlePasswordChange}
                 disabled={changePassword.isPending} aria-busy={changePassword.isPending}
               >
-                {changePassword.isPending ? "변경 중…" : "변경하기"}
+                {changePassword.isPending ? intl.formatMessage({ id: "parent.parentAccount.copy030" }) : intl.formatMessage({ id: "parent.parentAccount.copy031" })}
               </button>
             </div>
           </div>

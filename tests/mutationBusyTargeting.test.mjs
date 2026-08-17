@@ -78,9 +78,9 @@ test("목록 mutation은 실제로 클릭한 행만 aria-busy가 된다", () => 
 
 test("AI 설정의 공용 mutation은 클릭한 설정 동작에만 진행 상태를 표시한다", () => {
   const source = read("src/screens/feature/AiCredit.tsx");
-  const aiToggle = onlyButtonWith("src/screens/feature/AiCredit.tsx", 'aria-label="AI 친구 켜기"');
-  const decrease = onlyButtonWith("src/screens/feature/AiCredit.tsx", 'aria-label="한도 줄이기"');
-  const increase = onlyButtonWith("src/screens/feature/AiCredit.tsx", 'aria-label="한도 늘리기"');
+  const aiToggle = onlyButtonWith("src/screens/feature/AiCredit.tsx", "billing.aiCredit.settings.aiToggleTitle");
+  const decrease = onlyButtonWith("src/screens/feature/AiCredit.tsx", "billing.aiCredit.settings.decrease");
+  const increase = onlyButtonWith("src/screens/feature/AiCredit.tsx", "billing.aiCredit.settings.increase");
   const advancedSave = onlyButtonWith("src/screens/feature/AiCredit.tsx", "ac-save-detail");
 
   assert.match(source, /type SettingsSaveAction = "ai-toggle" \| "limit-decrease" \| "limit-increase" \| "advanced" \| null/);
@@ -90,9 +90,13 @@ test("AI 설정의 공용 mutation은 클릭한 설정 동작에만 진행 상�
   assert.match(increase, /aria-busy=\{limitIncreaseSaving\}/);
   assert.match(advancedSave, /aria-busy=\{advancedSettingsSaving\}/);
 
-  for (const label of ["먼저 말 걸기", "일정 바꾸기", "연락 돕기"]) {
-    const localToggle = onlyButtonWith("src/screens/feature/AiCredit.tsx", `aria-label="${label}"`);
-    assert.doesNotMatch(localToggle, /\baria-busy=/, `${label} 로컬 토글에 저장 spinner가 뜨면 안 돼요`);
+  for (const id of [
+    "billing.aiCredit.detail.proactiveTitle",
+    "billing.aiCredit.detail.scheduleTitle",
+    "billing.aiCredit.detail.contactTitle",
+  ]) {
+    const localToggle = onlyButtonWith("src/screens/feature/AiCredit.tsx", id);
+    assert.doesNotMatch(localToggle, /\baria-busy=/, `${id} 로컬 토글에 저장 spinner가 뜨면 안 돼요`);
   }
 });
 

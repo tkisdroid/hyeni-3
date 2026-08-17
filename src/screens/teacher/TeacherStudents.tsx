@@ -13,24 +13,42 @@ import {
 import { isMissingFunction } from "@/lib/api/errors";
 import { isoDateKey, mapRosterToStudents, type StudentView } from "@/transform/teacherView";
 import "./TeacherStudents.css";
+import { useIntl } from "react-intl";
+import { localizeApiError } from "@/i18n/apiError";
 
 // 선생님이 기록 가능한 참석 상태(백엔드 enum 중 의미 있는 3종). '지각'은 서버 상태가 없어 미노출.
 const ATTEND_ACTIONS = [
-  { status: "attended", label: "출석" },
-  { status: "left", label: "하교" },
-  { status: "absent", label: "결석" },
+  { status: "attended", labelId: "shared.teacherStudents.attendance.attended" },
+  { status: "left", labelId: "shared.teacherStudents.attendance.left" },
+  { status: "absent", labelId: "shared.teacherStudents.attendance.absent" },
 ] as const;
 
-// 연결 요청 결과 status → 학부모용 한글 안내(서버 jsonb status 계약).
-const PAIRING_MESSAGES: Record<string, string> = {
-  not_found: "입력한 번호로 연결할 보호자·아이를 찾지 못했어요. 번호를 다시 확인해 주세요",
-  rate_limited: "연결 요청이 많아요. 잠시 후 다시 시도해 주세요",
-  duplicate: "이미 연결 요청을 보냈어요",
-  revoked_blocked: "부모님이 연결을 해제하셨어요. 부모님께 직접 요청해 주세요",
+// 연결 요청 결과 status → 안내 문구 ID(서버 jsonb status 계약).
+const PAIRING_MESSAGE_IDS: Record<string, string> = {
+  not_found: "shared.teacherStudents.pairing.notFound",
+  rate_limited: "shared.teacherStudents.pairing.rateLimited",
+  duplicate: "shared.teacherStudents.pairing.duplicate",
+  revoked_blocked: "shared.teacherStudents.pairing.revokedBlocked",
+};
+
+const ATTENDANCE_MESSAGE_IDS: Record<StudentView["status"], string> = {
+  attended: "shared.teacherStudents.attendance.attended",
+  left: "shared.teacherStudents.attendance.left",
+  absent: "shared.teacherStudents.attendance.absent",
+  unknown: "shared.teacherStudents.attendance.unknown",
+  pending: "shared.teacherStudents.attendance.pending",
+};
+
+const SCOPE_MESSAGE_IDS: Record<string, string> = {
+  "일정 공유": "shared.teacherStudents.scope.schedule",
+  "일정·출석": "shared.teacherStudents.scope.scheduleAttendance",
+  "일정·출석·위치": "shared.teacherStudents.scope.scheduleAttendanceLocation",
+  "연결됨": "shared.teacherStudents.scope.connected",
 };
 
 export function TeacherStudents() {
   const { show } = useToast();
+  const intl = useIntl();
 
   // 출석 태그·기록 기준일(표준 ISO). 마운트 시 고정해 쿼리키 churn 방지.
   const todayIso = useMemo(() => isoDateKey(new Date()), []);
@@ -38,7 +56,8 @@ export function TeacherStudents() {
   const classesQ = useTeacherClasses();
   const firstClass = classesQ.data?.[0] ?? null;
   const classId = firstClass?.classId ?? null;
-  const className = firstClass?.className ?? "우리 반";
+  const className = firstClass?.className
+    ?? intl.formatMessage({ id: "shared.teacherStudents.classFallback" });
 
   const rosterQ = useRoster(classId);
   const attendanceQ = useAttendance(classId, todayIso);
@@ -65,9 +84,12 @@ export function TeacherStudents() {
     setAttendance.mutate(
       { childMemberId: s.childMemberId, dateKey: todayIso, status, scheduleId: null },
       {
-        onSuccess: () => show(`${s.name} 참석 상태를 저장했어요`, "✅"),
+        onSuccess: () => show(
+          `${s.name}${intl.formatMessage({ id: "shared.teacherStudents.attendance.saved" })}`,
+          "✅",
+        ),
         onError: (err) =>
-          show(err instanceof Error ? err.message : "참석 상태를 저장하지 못했어요", "⚠️"),
+          show(localizeApiError(err, intl, "formal"), "⚠️"),
         onSettled: () => setSavingAttendance(null),
       },
     );
@@ -90,7 +112,7 @@ export function TeacherStudents() {
 
   const openInvite = () => {
     if (!classId) {
-      show("먼저 반을 만들어야 학생을 초대할 수 있어요", "🧑‍🏫");
+      show(intl.formatMessage({ id: "shared.teacherStudents.invite.needClass" }), "🧑‍🏫");
       return;
     }
     setInvitePhone("");
@@ -102,7 +124,7 @@ export function TeacherStudents() {
     if (!classId) return;
     const phone = invitePhone.trim();
     if (!phone) {
-      show("부모님 전화번호를 입력해 주세요", "📞");
+      show(intl.formatMessage({ id: "shared.teacherStudents.invite.phoneRequired" }), "📞");
       return;
     }
     requestPairing.mutate(
@@ -110,20 +132,22 @@ export function TeacherStudents() {
       {
         onSuccess: (data) => {
           if (data.status === "ok") {
-            show("부모님께 연결 요청을 보냈어요", "🔗");
+            show(intl.formatMessage({ id: "shared.teacherStudents.pairing.success" }), "🔗");
             setInviteOpen(false);
             setInvitePhone("");
             setInviteChild("");
           } else {
             show(
-              PAIRING_MESSAGES[data.status ?? ""] ??
-                "연결 요청을 보내지 못했어요. 번호를 다시 확인해 주세요",
+              intl.formatMessage({
+                id: PAIRING_MESSAGE_IDS[data.status ?? ""]
+                  ?? "shared.teacherStudents.pairing.fallback",
+              }),
               "⚠️",
             );
           }
         },
         onError: (err) => {
-          show(err instanceof Error ? err.message : "연결 요청을 보내지 못했어요", "⚠️");
+          show(localizeApiError(err, intl, "formal"), "⚠️");
         },
       },
     );
@@ -151,11 +175,13 @@ export function TeacherStudents() {
   return (
     <div className="hy-rise-in">
       <div className="ts-header">
-        <span className="ts-title">학생</span>
+        <span className="ts-title">
+          {intl.formatMessage({ id: "shared.teacherStudents.title" })}
+        </span>
         <button
           type="button"
           className="ts-invite hy-press"
-          aria-label="학생 초대"
+          aria-label={intl.formatMessage({ id: "shared.teacherStudents.invite.aria" })}
           onClick={openInvite}
         >
           <Plus size={22} strokeWidth={2.4} color="#23A876" />
@@ -163,14 +189,22 @@ export function TeacherStudents() {
       </div>
 
       <div className="ts-body">
-        {studentsLoading && <div className="ts-empty ts-empty--soft">학생 명단을 불러오는 중…</div>}
+        {studentsLoading && (
+          <div className="ts-empty ts-empty--soft">
+            {intl.formatMessage({ id: "shared.teacherStudents.loading" })}
+          </div>
+        )}
 
         {!studentsLoading && studentsError && (
           <div className="ts-empty" role="alert">
-            <span className="ts-empty__title">학생 명단을 불러오지 못했어요</span>
-            <span className="ts-empty__sub">네트워크 연결을 확인한 뒤 다시 시도해 주세요.</span>
+            <span className="ts-empty__title">
+              {intl.formatMessage({ id: "shared.teacherStudents.error.heading" })}
+            </span>
+            <span className="ts-empty__sub">
+              {intl.formatMessage({ id: "shared.teacherStudents.error.description" })}
+            </span>
             <button type="button" className="ts-filter__btn hy-press" onClick={() => void retryTeacherStudents()}>
-              다시 시도
+              {intl.formatMessage({ id: "shared.teacherStudents.error.retry" })}
             </button>
           </div>
         )}
@@ -179,10 +213,10 @@ export function TeacherStudents() {
           <div className="ts-empty">
             <span className="ts-empty__emoji"><img src={asset("mascot/teacher-glasses.webp")} alt="" style={{ width: 48, height: 48, objectFit: "contain", borderRadius: 12 }} /></span>
             <span className="ts-empty__title">
-              연결된 반이 없어요
+              {intl.formatMessage({ id: "shared.teacherStudents.empty.class.heading" })}
             </span>
             <span className="ts-empty__sub">
-              반을 만들고 학생을 연결하면 여기에 명단이 표시돼요.
+              {intl.formatMessage({ id: "shared.teacherStudents.empty.class.description" })}
             </span>
           </div>
         )}
@@ -190,22 +224,37 @@ export function TeacherStudents() {
         {!studentsLoading && !studentsError && !notReady && (
           <>
             <div className="ts-meta">
-              {className} · 학생 <span className="ts-meta__count">{students.length}명</span>
+              {className} · <span className="ts-meta__count">
+                {intl.formatMessage(
+                  { id: "shared.teacherStudents.meta.students" },
+                  { count: students.length },
+                )}
+              </span>
             </div>
             <div className="ts-meta ts-meta-row">
               <span className="ts-subtitle">
                 {filterNotArrivedOnly
-                  ? `미도착만 ${visibleStudents.length}명`
-                  : `표시 학생 ${visibleStudents.length}명`}
+                  ? intl.formatMessage(
+                      { id: "shared.teacherStudents.filter.notArrivedCount" },
+                      { count: visibleStudents.length },
+                    )
+                  : intl.formatMessage(
+                      { id: "shared.teacherStudents.filter.displayedCount" },
+                      { count: visibleStudents.length },
+                    )}
               </span>
-              <div className="ts-filter" role="group" aria-label="학생 보기 필터">
+              <div
+                className="ts-filter"
+                role="group"
+                aria-label={intl.formatMessage({ id: "shared.teacherStudents.filter.aria" })}
+              >
                 <button
                   type="button"
                   className={`ts-filter__btn hy-press${!filterNotArrivedOnly ? " ts-filter__btn--on" : ""}`}
                   onClick={() => setFilterNotArrivedOnly(false)}
                   aria-pressed={!filterNotArrivedOnly}
                 >
-                  전체
+                  {intl.formatMessage({ id: "shared.teacherStudents.filter.all" })}
                 </button>
                 <button
                   type="button"
@@ -213,7 +262,7 @@ export function TeacherStudents() {
                   onClick={() => setFilterNotArrivedOnly(true)}
                   aria-pressed={filterNotArrivedOnly}
                 >
-                  미도착만
+                  {intl.formatMessage({ id: "shared.teacherStudents.filter.notArrived" })}
                 </button>
               </div>
             </div>
@@ -221,7 +270,11 @@ export function TeacherStudents() {
             <div className="hy-card ts-list">
               {visibleStudents.length === 0 && (
                 <div className="ts-row--empty">
-                  {filterNotArrivedOnly ? "현재 미도착 아이가 없어요" : "아직 등록된 학생이 없어요"}
+                  {intl.formatMessage({
+                    id: filterNotArrivedOnly
+                      ? "shared.teacherStudents.empty.notArrived"
+                      : "shared.teacherStudents.empty.students",
+                  })}
                 </div>
               )}
               {visibleStudents.map((s) => {
@@ -233,16 +286,24 @@ export function TeacherStudents() {
                       </span>
                       <span className="ts-main">
                         <span className="ts-name">{s.name}</span>
-                        <span className="ts-parent">{s.subtitle}</span>
+                        <span className="ts-parent">
+                          {SCOPE_MESSAGE_IDS[s.subtitle]
+                            ? intl.formatMessage({ id: SCOPE_MESSAGE_IDS[s.subtitle] })
+                            : s.subtitle}
+                        </span>
                       </span>
                       <span
                         className="ts-tag"
                         style={{ color: s.attend.tone, background: s.attend.bg }}
                       >
-                        {s.attend.label}
+                        {intl.formatMessage({ id: ATTENDANCE_MESSAGE_IDS[s.status] })}
                       </span>
                     </div>
-                    <div className="ts-attend" role="group" aria-label={`${s.name} 출결`}>
+                    <div
+                      className="ts-attend"
+                      role="group"
+                      aria-label={`${s.name}${intl.formatMessage({ id: "shared.teacherStudents.attendance.aria" })}`}
+                    >
                       {ATTEND_ACTIONS.map((a) => {
                         const active = s.status === a.status;
                         const savingThisAction = savingAttendance?.childMemberId === s.childMemberId
@@ -258,7 +319,7 @@ export function TeacherStudents() {
                             disabled={setAttendance.isPending}
                             aria-busy={savingThisAction}
                           >
-                            {a.label}
+                            {intl.formatMessage({ id: a.labelId })}
                           </button>
                         );
                       })}
@@ -270,7 +331,7 @@ export function TeacherStudents() {
 
             <div className="ts-hint hy-explain">
               <span className="ts-hint__ico"><Link2 size={15} strokeWidth={2.2} /></span>
-              부모님 전화번호로 초대하면, 부모님 승인 후 학생이 자동으로 연결돼요.
+              {intl.formatMessage({ id: "shared.teacherStudents.invite.description" })}
             </div>
           </>
         )}
@@ -293,12 +354,14 @@ export function TeacherStudents() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="ts-sheet__head">
-              <span id={inviteTitleId} className="ts-sheet__title">학생 초대</span>
+              <span id={inviteTitleId} className="ts-sheet__title">
+                {intl.formatMessage({ id: "shared.teacherStudents.invite.title" })}
+              </span>
               <button
                 ref={inviteCloseRef}
                 type="button"
                 className="ts-sheet__x hy-press"
-                aria-label="닫기"
+                aria-label={intl.formatMessage({ id: "shared.teacherStudents.invite.close" })}
                 onClick={() => setInviteOpen(false)}
                 disabled={requestPairing.isPending}
                 data-progress-owner="sheet-submit"
@@ -307,25 +370,29 @@ export function TeacherStudents() {
               </button>
             </div>
             <p id={inviteDescriptionId} className="ts-sheet__desc">
-              부모님 전화번호로 초대하면, 부모님 승인 후 학생이 자동으로 연결돼요.
+              {intl.formatMessage({ id: "shared.teacherStudents.invite.description" })}
             </p>
-            <div className="ts-sheet__label">부모님 전화번호</div>
+            <div className="ts-sheet__label">
+              {intl.formatMessage({ id: "shared.teacherStudents.invite.phoneLabel" })}
+            </div>
             <input
               className="ts-sheet__input"
               type="tel"
-              aria-label="부모님 전화번호"
+              aria-label={intl.formatMessage({ id: "shared.teacherStudents.invite.phoneAria" })}
               inputMode="tel"
               value={invitePhone}
               onChange={(e) => setInvitePhone(e.target.value)}
-              placeholder="010-1234-5678"
+              placeholder={intl.formatMessage({ id: "shared.teacherStudents.invite.phonePlaceholder" })}
             />
-            <div className="ts-sheet__label">아이 이름 (선택)</div>
+            <div className="ts-sheet__label">
+              {intl.formatMessage({ id: "shared.teacherStudents.invite.childLabel" })}
+            </div>
             <input
               className="ts-sheet__input"
-              aria-label="아이 이름"
+              aria-label={intl.formatMessage({ id: "shared.teacherStudents.invite.childAria" })}
               value={inviteChild}
               onChange={(e) => setInviteChild(e.target.value)}
-              placeholder="자녀가 여럿일 때 특정을 도와요"
+              placeholder={intl.formatMessage({ id: "shared.teacherStudents.invite.childPlaceholder" })}
             />
             <button
               type="button"
@@ -333,7 +400,9 @@ export function TeacherStudents() {
               onClick={sendInvite}
               disabled={requestPairing.isPending} aria-busy={requestPairing.isPending}
             >
-              {requestPairing.isPending ? "요청 보내는 중…" : "연결 요청 보내기"}
+              {requestPairing.isPending
+                ? intl.formatMessage({ id: "shared.teacherStudents.invite.pending" })
+                : intl.formatMessage({ id: "shared.teacherStudents.invite.send" })}
             </button>
           </div>
         </div>

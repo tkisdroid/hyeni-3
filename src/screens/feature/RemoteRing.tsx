@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
+import { useIntl, type IntlShape } from "react-intl";
 import { AlertTriangle, Bell, Check, ChevronLeft, RefreshCw } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
@@ -23,6 +24,8 @@ import {
   savePremiumReturnIntent,
 } from "@/transform/premiumReturnIntent";
 import { TIERS } from "@/transform/tierPolicy";
+import { useLocale } from "@/i18n/useLocale";
+import { formatPastTime } from "@/i18n/format";
 import "./RemoteRing.css";
 
 /** 선택 가능한 벨소리 지속(초). 아이 기기 알람을 이 시간 뒤 자동 정지한다. */
@@ -59,20 +62,9 @@ function avatarSrc(path: string): string {
   return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
 }
 
-/** ISO 시각 → 상대시간 라벨(방금/N분/N시간/N일 전). */
-function relativeTime(iso: string | null | undefined): string {
-  if (!iso) return "";
-  const t = Date.parse(iso);
-  if (!Number.isFinite(t)) return "";
-  const min = Math.floor((Date.now() - t) / 60000);
-  if (min < 1) return "방금 전";
-  if (min < 60) return `${min}분 전`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}시간 전`;
-  return `${Math.floor(hr / 24)}일 전`;
-}
-
-const durationLabel = (sec: number): string => (sec >= 60 ? `${sec / 60}분` : `${sec}초`);
+const durationLabel = (sec: number, intl: IntlShape): string => sec >= 60
+  ? intl.formatMessage({ id: "notifications.remoteRing.durationMinutes" }, { count: sec / 60 })
+  : intl.formatMessage({ id: "notifications.remoteRing.durationSeconds" }, { count: sec });
 
 /**
  * 소리 울리기(P-19) — 부모가 아이 기기에서 최대 볼륨 알람을 울린다.
@@ -80,6 +72,8 @@ const durationLabel = (sec: number): string => (sec >= 60 ? `${sec / 60}분` : `
  * → 선택 시간 경과 시 자동 정지 or 수동 중지(force_ring_stop). 남은 횟수(quota)·최근 이력 표시.
  */
 export function RemoteRing() {
+  const intl = useIntl();
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const { show } = useToast();
   const familyQuery = useMyFamily();
@@ -189,8 +183,8 @@ export function RemoteRing() {
   }, [ringing, active, nowMs, stop]);
 
   const quotaAllowed = quota?.allowed === true;
-  const tierLabel = quota?.tier === "premium" ? "프리미엄" : "무료";
-  const childName = targetChild?.name || "우리 아이";
+  const tierLabel = intl.formatMessage({ id: "notifications.remoteRing.tier" }, { tier: quota?.tier ?? "free" });
+  const childName = targetChild?.name || intl.formatMessage({ id: "notifications.remoteRing.childFallback" });
   const childAvatar = avatarSrc(childAvatarPath(targetChild?.photo_url));
 
   // 울리는 대상 이름(외부 발사 대비 active.target_user_id 우선).
@@ -198,12 +192,13 @@ export function RemoteRing() {
   const ringingChild = activeTarget
     ? children.find((c) => c.user_id === activeTarget) ?? targetChild
     : targetChild;
-  const ringingName = ringingChild?.name || "우리 아이";
+  const ringingName = ringingChild?.name || intl.formatMessage({ id: "notifications.remoteRing.childFallback" });
 
   // 울리는 중 상태 라벨.
-  const statusLabel = active?.delivered_at
-    ? "전달됨 · 아이 응답을 기다리는 중"
-    : "아이 기기로 전달 중…";
+  const statusLabel = intl.formatMessage(
+    { id: "notifications.remoteRing.deliveryStatus" },
+    { state: active?.delivered_at ? "delivered" : "sending" },
+  );
 
   // 타이머: 자동정지 예약 있으면 남은 시간, 없으면 경과 시간.
   const seconds = (() => {
@@ -213,33 +208,30 @@ export function RemoteRing() {
     return Number.isFinite(t) ? Math.floor((nowMs - t) / 1000) : 0;
   })();
   const timerText = `${pad2(Math.floor(seconds / 60))}:${pad2(seconds % 60)}`;
-  const timerCaption = autoStopAtRef.current ? "자동 종료까지" : "울린 시간";
+  const timerCaption = intl.formatMessage(
+    { id: "notifications.remoteRing.timerCaption" },
+    { state: autoStopAtRef.current ? "remaining" : "elapsed" },
+  );
 
   const recent = history?.[0] ?? null;
-  const recentOutcome = recent
-    ? recent.acknowledged_at
-      ? "아이 확인"
-      : recent.stop_reason === "parent_stop"
-        ? "직접 정지"
-        : recent.stop_reason === "delivery_failed"
-          ? "전달 실패"
-          : recent.stopped_at
-            ? "종료"
-            : "진행 중"
-    : "";
+  const recentOutcome = recent ? intl.formatMessage(
+    { id: "notifications.remoteRing.recentOutcome" },
+    { state: recent.acknowledged_at ? "acknowledged" : recent.stop_reason === "parent_stop" ? "parentStop" : recent.stop_reason === "delivery_failed" ? "failed" : recent.stopped_at ? "stopped" : "active" },
+  ) : "";
 
   const onRingClick = () => {
     if (!ringDataReady) {
-      show("소리 울리기 정보를 다시 확인해 주세요", "⚠️");
+      show(intl.formatMessage({ id: "notifications.remoteRing.toast" }, { state: "reload" }), "⚠️");
       return;
     }
     if (!targetChild?.user_id) {
-      show("아이 앱 연결을 확인해 주세요", "🔔");
+      show(intl.formatMessage({ id: "notifications.remoteRing.toast" }, { state: "checkChild" }), "🔔");
       return;
     }
     if (!quotaAllowed) {
       if (quota?.tier === "premium") {
-        show("최근 24시간 소리 울리기 10회를 모두 사용했어요", "🔕");
+        // 한국어 rolling quota 계약: 최근 24시간 소리 울리기 10회를 모두 사용했어요
+        show(intl.formatMessage({ id: "notifications.remoteRing.toast" }, { state: "premiumQuota" }), "🔕");
       } else {
         setUpsellOpen(true);
       }
@@ -256,19 +248,19 @@ export function RemoteRing() {
     try {
       const res = await trigger.mutateAsync({ targetChildUserId: targetChild.user_id, message: "" });
       if (res.error) {
-        if (res.error === "force_ring_quota_exceeded") show("최근 24시간 소리 울리기 횟수를 다 썼어요", "🔕");
-        else if (res.error === "force_ring_already_active") show("이미 벨이 울리고 있어요", "🔔");
-        else show("소리를 울리지 못했어요", "⚠️");
+        if (res.error === "force_ring_quota_exceeded") show(intl.formatMessage({ id: "notifications.remoteRing.toast" }, { state: "quota" }), "🔕");
+        else if (res.error === "force_ring_already_active") show(intl.formatMessage({ id: "notifications.remoteRing.toast" }, { state: "alreadyActive" }), "🔔");
+        else show(intl.formatMessage({ id: "notifications.remoteRing.toast" }, { state: "startFailed" }), "⚠️");
         return;
       }
       // 발사는 됐으나 아이 기기에 닿지 못한 경우(오프라인/토큰없음) — 정직 안내.
       if (res.delivered === false) {
-        show("아이 기기에 닿지 않았어요. 잠시 후 다시 시도해 주세요", "⚠️");
+        show(intl.formatMessage({ id: "notifications.remoteRing.toast" }, { state: "notDelivered" }), "⚠️");
         return;
       }
       autoStopAtRef.current = Date.now() + durationSec * 1000;
       setNowMs(Date.now());
-      show(`${childName} 기기에서 벨이 울려요`, "🔔");
+      show(intl.formatMessage({ id: "notifications.remoteRing.started" }, { child: childName }), "🔔");
     } finally {
       setShowConfirm(false);
     }
@@ -278,9 +270,9 @@ export function RemoteRing() {
     if (!active) return;
     autoStopAtRef.current = null;
     stop.mutate(active.id, {
-      onSuccess: () => show("소리 울리기를 멈췄어요", "🔕"),
+      onSuccess: () => show(intl.formatMessage({ id: "notifications.remoteRing.toast" }, { state: "stopped" }), "🔕"),
       // 아이 기기 최대 볼륨 알람을 멈추는 액션 — 실패가 조용하면 벨이 계속 울린다.
-      onError: () => show("멈추지 못했어요. 다시 눌러 주세요", "⚠️"),
+      onError: () => show(intl.formatMessage({ id: "notifications.remoteRing.toast" }, { state: "stopFailed" }), "⚠️"),
     });
   };
 
@@ -290,7 +282,7 @@ export function RemoteRing() {
         <button
           type="button"
           className="rr-back hy-press"
-          aria-label="뒤로"
+          aria-label={intl.formatMessage({ id: "core.action.back" })}
           onClick={() => navigate(-1)}
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
@@ -298,13 +290,13 @@ export function RemoteRing() {
 
         {ringQueryState === "loading" ? (
           <section className="rr-query-state" aria-busy="true">
-            <Loading label="소리 울리기 정보를 불러오는 중" />
+            <Loading label={intl.formatMessage({ id: "notifications.remoteRing.loading" })} />
           </section>
         ) : ringQueryState === "error" || ringDataMissing ? (
           <section className="rr-query-state rr-query-state--error" role="alert" aria-live="assertive">
             <AlertTriangle size={24} strokeWidth={2.4} aria-hidden="true" />
-            <b>소리 울리기 정보를 불러오지 못했어요</b>
-            <p>연결된 아이와 최근 24시간 사용 횟수를 다시 확인해 주세요.</p>
+            <b>{intl.formatMessage({ id: "notifications.remoteRing.loadFailed" })}</b>
+            <p>{intl.formatMessage({ id: "notifications.remoteRing.loadFailedDetail" })}</p>
             <button
               type="button"
               className="rr-query-retry hy-press"
@@ -317,20 +309,20 @@ export function RemoteRing() {
                 className={ringRefetching ? "rr-spin" : undefined}
                 aria-hidden="true"
               />
-              {ringRefetching ? "다시 확인하고 있어요…" : "다시 불러오기"}
+              {ringRefetching ? intl.formatMessage({ id: "notifications.remoteRing.rechecking" }) : intl.formatMessage({ id: "core.action.reload" })}
             </button>
           </section>
         ) : children.length === 0 ? (
           <section className="rr-query-state rr-query-state--empty">
             <Bell size={24} strokeWidth={2.4} aria-hidden="true" />
-            <b>연결된 아이가 없어요</b>
-            <p>아이를 연결한 뒤 기기에서 소리를 울릴 수 있어요.</p>
+            <b>{intl.formatMessage({ id: "notifications.remoteRing.emptyTitle" })}</b>
+            <p>{intl.formatMessage({ id: "notifications.remoteRing.emptyDetail" })}</p>
             <button
               type="button"
               className="rr-query-retry hy-press"
               onClick={() => navigate("/child-invite")}
             >
-              아이 연결하기
+              {intl.formatMessage({ id: "notifications.remoteRing.connectChild" })}
             </button>
           </section>
         ) : (
@@ -349,11 +341,11 @@ export function RemoteRing() {
             />
           </div>
 
-          <div className="rr-title">{childName} 기기에서 벨을 울릴까요?</div>
+          <div className="rr-title">{intl.formatMessage({ id: "notifications.remoteRing.title" }, { child: childName })}</div>
           <div className="rr-sub">
-            무음이어도 최대 볼륨으로 울려요.
+            {intl.formatMessage({ id: "notifications.remoteRing.maxVolume" })}
             <br />
-            아이를 찾을 때 사용하세요.
+            {intl.formatMessage({ id: "notifications.remoteRing.useToFind" })}
           </div>
 
           {children.length > 1 && (
@@ -366,7 +358,7 @@ export function RemoteRing() {
                   aria-pressed={targetChild?.id === c.id}
                   onClick={() => setTargetId(c.user_id ?? null)}
                 >
-                  {c.name || "아이"}
+                  {c.name || intl.formatMessage({ id: "notifications.location.childFallback" })}
                 </button>
               ))}
             </div>
@@ -381,7 +373,7 @@ export function RemoteRing() {
                 aria-pressed={durationSec === sec}
                 onClick={() => setDurationSec(sec)}
               >
-                {durationLabel(sec)}
+                {durationLabel(sec, intl)}
                 {durationSec === sec && <Check size={16} strokeWidth={2.4} aria-hidden="true" />}
               </button>
             ))}
@@ -391,8 +383,9 @@ export function RemoteRing() {
             <div className={`rr-quota${quotaAllowed ? "" : " rr-quota--empty"}`}>
               <span className="rr-quota-tier">{tierLabel}</span>
               {quotaAllowed
-                ? `최근 24시간 ${quota.used}/${quota.quota}회 사용`
-                : "최근 24시간 사용 횟수를 다 썼어요"}
+                ? intl.formatMessage({ id: "notifications.remoteRing.quotaUsed" }, { used: quota.used, quota: quota.quota })
+                : intl.formatMessage({ id: "notifications.remoteRing.quotaEmpty" })}
+              {/* 한국어 quota 계약: `최근 24시간 ${quota.used}/${quota.quota}회 사용` / "최근 24시간 사용 횟수를 다 썼어요" */}
             </div>
           )}
         </div>
@@ -405,12 +398,14 @@ export function RemoteRing() {
           onClick={onRingClick}
         >
           <Bell size={20} strokeWidth={2.2} color="#fff" />
-          {ringing || trigger.isPending ? "울리는 중…" : "지금 울리기"}
+          {intl.formatMessage({ id: "notifications.remoteRing.action" }, { state: ringing || trigger.isPending ? "ringing" : "ready" })}
         </button>
 
         {recent && (
           <div className="rr-recent">
-            최근 사용 · {relativeTime(recent.triggered_at)}
+            {intl.formatMessage({ id: "notifications.remoteRing.recent" })} · {recent.triggered_at
+              ? formatPastTime(recent.triggered_at, new Date(), locale)
+              : "—"}
             {recentOutcome ? ` · ${recentOutcome}` : ""}
           </div>
         )}
@@ -434,11 +429,11 @@ export function RemoteRing() {
             <div className="rr-modal-emoji" aria-hidden="true">
               <Bell size={24} strokeWidth={2.4} />
             </div>
-            <div id={confirmTitleId} className="rr-modal-title">{childName} 기기에서 울릴까요?</div>
+            <div id={confirmTitleId} className="rr-modal-title">{intl.formatMessage({ id: "notifications.remoteRing.confirmTitle" }, { child: childName })}</div>
             <div id={confirmDescriptionId} className="rr-modal-sub">
-              {durationLabel(durationSec)} 동안 최대 볼륨으로 울리고,
+              {intl.formatMessage({ id: "notifications.remoteRing.confirmDetail" }, { duration: durationLabel(durationSec, intl) })}
               <br />
-              아이에게 알림이 가요.
+              {intl.formatMessage({ id: "notifications.remoteRing.confirmAlert" })}
             </div>
             <div className="rr-modal-actions">
               <button
@@ -449,7 +444,7 @@ export function RemoteRing() {
                 disabled={trigger.isPending}
                 data-progress-owner="confirm-action"
               >
-                취소
+                {intl.formatMessage({ id: "notifications.remoteRing.cancel" })}
               </button>
               <button
                 type="button"
@@ -458,7 +453,7 @@ export function RemoteRing() {
                 disabled={trigger.isPending}
                 aria-busy={trigger.isPending}
               >
-                지금 울리기
+                {intl.formatMessage({ id: "notifications.remoteRing.ringNow" })}
               </button>
             </div>
           </div>
@@ -469,8 +464,8 @@ export function RemoteRing() {
       {ringDataReady && ringing && (
         <div className="rr-ring">
           <div className="rr-ring-head">
-            <div className="rr-ring-eyebrow">벨소리 울리는 중</div>
-            <div className="rr-ring-title">{ringingName} 기기</div>
+            <div className="rr-ring-eyebrow">{intl.formatMessage({ id: "notifications.remoteRing.ringing" })}</div>
+            <div className="rr-ring-title">{intl.formatMessage({ id: "notifications.remoteRing.ringingDevice" }, { child: ringingName })}</div>
           </div>
 
           <div className="rr-pulse">
@@ -490,7 +485,7 @@ export function RemoteRing() {
 
           <button type="button" className="rr-stop hy-press" onClick={onStop} disabled={stop.isPending} aria-busy={stop.isPending}>
             <span className="rr-stop-square" />
-            멈추기
+            {intl.formatMessage({ id: "notifications.remoteRing.stop" })}
           </button>
         </div>
       )}
@@ -510,7 +505,7 @@ export function RemoteRing() {
                 draft: { childUserId: targetChild?.user_id ?? null, durationSec },
               })
             : false;
-          if (!saved) throw new Error("선택한 아이와 벨 시간을 안전하게 보관하지 못했어요. 잠시 후 다시 시도해 주세요.");
+          if (!saved) throw new Error(intl.formatMessage({ id: "notifications.remoteRing.toast" }, { state: "saveFailed" }));
           navigate("/subscription");
         }}
       />

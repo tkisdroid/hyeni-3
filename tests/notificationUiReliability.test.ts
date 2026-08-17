@@ -67,6 +67,8 @@ test("위험구역 이탈은 과거 severity가 emergency여도 긴급으로 다
   const [group] = mapAlertsToGroups(
     [alert("danger_exit", "emergency")],
     new Date("2026-07-14T03:01:00.000Z"),
+    "ko",
+    "Asia/Seoul",
   );
   assert.equal(group?.items[0]?.soft, "var(--mint-soft)");
 });

@@ -43,9 +43,15 @@ test("Play Console이 요구한 업로드 인증서 SHA-1과 일치하기 전에
 
 test("중앙 키 보관함과 Play 인증서 파일을 우선하되 인자로 덮어쓸 수 있다", () => {
   assert.match(source, /keys\\hyeni-calendar\\android-signing\\private/);
+  assert.match(source, /hyeni-upload-reset-20260808\.jks/);
   assert.match(source, /Join-Path \$env:USERPROFILE 'keys\\hyeni-upload\.jks'/);
   assert.match(source, /\[string\]\$KeystorePath/);
+  assert.match(source, /play-upload-reset-20260808_certificate\.pem/);
   assert.match(source, /play-console-certificates-20260804\\upload_cert\.der/);
+  const keystoreDefaults = source.match(/\$defaultKeystore = @\(([\s\S]*?)\) \|/)?.[1] ?? "";
+  const certificateDefaults = source.match(/\$defaultPlayUploadCertificate = @\(([\s\S]*?)\) \|/)?.[1] ?? "";
+  assert.ok(keystoreDefaults.indexOf("$approvedUploadKeystore") < keystoreDefaults.indexOf("$vaultUploadKeystoreCandidate"));
+  assert.ok(certificateDefaults.indexOf("$vaultPlayUploadCertificate") < certificateDefaults.indexOf("$artifactPlayUploadCertificate"));
   assert.match(source, /\$selectedKeystore = if \(\[string\]::IsNullOrWhiteSpace\(\$KeystorePath\)\)/);
   assert.match(
     source,
@@ -79,6 +85,62 @@ test("release 서명 스크립트는 기존 AAB를 보관하고 clean source만 
   assert.match(source, /git status --porcelain=v1 --untracked-files=all/);
   assert.match(source, /release AAB는 clean worktree에서만 만들 수 있습니다/);
   assert.doesNotMatch(source, /Remove-Item[\s\S]{0,120}app-release\.aab/i);
+});
+
+test("release 서명 스크립트는 Android SDK를 빌드 전에 찾아 Gradle 환경에 전달한다", () => {
+  const sdkResolveIndex = source.indexOf("$sdkRoot = Get-AndroidSdkRoot");
+  const webBuildIndex = source.indexOf("& npm.cmd run build");
+  const releaseBuildIndex = source.indexOf("':app:bundleRelease'");
+
+  assert.ok(sdkResolveIndex > 0);
+  assert.ok(sdkResolveIndex < webBuildIndex);
+  assert.ok(sdkResolveIndex < releaseBuildIndex);
+
+  const sdkSetup = source.slice(sdkResolveIndex, webBuildIndex);
+  assert.match(sdkSetup, /\$env:ANDROID_SDK_ROOT = \$sdkRoot/);
+  assert.match(sdkSetup, /\$env:ANDROID_HOME = \$sdkRoot/);
+  assert.equal(source.match(/\$sdkRoot = Get-AndroidSdkRoot/g)?.length, 1);
+});
+
+test("연결 worktree release 빌드는 정본 .env의 Kakao 공개 키만 값 노출 없이 전달한다", () => {
+  assert.match(source, /Get-RequiredViteKakaoKeyState/);
+  assert.match(source, /--git-common-dir/);
+  assert.match(source, /VITE_KAKAO_APP_KEY/);
+  assert.match(source, /viteKakaoKeyConfigured/);
+  assert.match(source, /viteKakaoKeySource/);
+  assert.doesNotMatch(source, /\$envCandidates \| Sort-Object/);
+
+  const currentEnvIndex = source.indexOf("$envCandidates = @((Join-Path $repoRoot '.env'))");
+  const primaryEnvIndex = source.indexOf("$envCandidates += Join-Path $primaryWorktreeRoot '.env'");
+  assert.ok(currentEnvIndex > 0);
+  assert.ok(currentEnvIndex < primaryEnvIndex);
+
+  const resolveIndex = source.indexOf("$viteKakaoKeyState = Get-RequiredViteKakaoKeyState");
+  const webBuildIndex = source.indexOf("& npm.cmd run build");
+  assert.ok(resolveIndex > 0);
+  assert.ok(resolveIndex < webBuildIndex);
+
+  const buildSetup = source.slice(resolveIndex, webBuildIndex);
+  assert.match(buildSetup, /\$env:VITE_KAKAO_APP_KEY = \$viteKakaoKeyState\.Value/);
+  assert.doesNotMatch(source, /Write-(?:Host|Output)[^\n]*\$viteKakaoKeyState\.Value/);
+  assert.match(source, /Restore-ViteKakaoKeyEnvironment/);
+});
+
+test("release 증거 도구는 웹 빌드와 비밀번호 입력 전에 모두 확인한다", () => {
+  const webBuildIndex = source.indexOf("& npm.cmd run build");
+  const passwordIndex = source.indexOf("Read-Host '키스토어 비밀번호' -AsSecureString");
+  const bundletoolIndex = source.indexOf("Ensure-Bundletool");
+  const zipalignIndex = source.indexOf("$zipalign = Find-LatestTool");
+  const readelfIndex = source.indexOf("$readelf = Find-LatestTool");
+
+  for (const index of [bundletoolIndex, zipalignIndex, readelfIndex]) {
+    assert.ok(index > 0);
+    assert.ok(index < webBuildIndex);
+    assert.ok(index < passwordIndex);
+  }
+  assert.equal(source.match(/Ensure-Bundletool/g)?.length, 2); // 함수 선언 + 호출
+  assert.equal(source.match(/\$zipalign = Find-LatestTool/g)?.length, 1);
+  assert.equal(source.match(/\$readelf = Find-LatestTool/g)?.length, 1);
 });
 
 test("release AAB는 승인 인증서와 16KB 조건을 모두 검증한다", () => {

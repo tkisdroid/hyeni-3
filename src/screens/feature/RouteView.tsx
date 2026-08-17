@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
+import { useIntl, type IntlShape } from "react-intl";
 import { ChevronLeft, Home, Map, MapPin, Navigation, RotateCw } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { childAvatarPath } from "@/lib/avatar";
@@ -12,23 +13,39 @@ import { useLocationLabels } from "@/queries/useLocationLabels";
 import { useEvents } from "@/queries/useSchedule";
 import { useWalkingRoute } from "@/queries/useRoute";
 import { loadKakaoMaps } from "@/lib/kakaoMap";
+import { straightLineHint } from "@/transform/straightLineRoute";
 import { openExternal } from "@/lib/native/browser";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { straightDistanceM, type RoutePoint } from "@/lib/api/endpoints/route";
-import type { CalendarEvent } from "@/lib/api/endpoints/schedule";
-import { parseAppDateKey } from "@/transform/dateKey";
 import { filterEventsForChild } from "@/transform/eventScope";
 import {
   beginRouteDestinationScope,
+  pickNextEventWithPlace,
   resolveRouteDestination,
   selectRouteDestinationForChild,
   type OwnedRouteDestination,
 } from "@/transform/routeDestinationScope";
+import { formatDurationUnit, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+import { buildKakaoToUrl } from "@/transform/routeExternalUrl";
+import { useLocale } from "@/i18n/useLocale";
 import "./RouteView.css";
 
 // 도보 4km/h ≈ 67m/분 — 실 도보 경로의 '거리'만으로 소요시간을 보정할 때 쓴다
 // (직선 근사가 아니라 서버가 준 실 경로 총거리 기준). 서버가 duration 을 주면 그 값 우선.
 const WALK_M_PER_MIN = 67;
+const SHORT_METER_FORMAT = {
+  style: "unit",
+  unit: "meter",
+  unitDisplay: "short",
+  maximumFractionDigits: 0,
+} as const;
+const SHORT_KILOMETER_FORMAT = {
+  style: "unit",
+  unit: "kilometer",
+  unitDisplay: "short",
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+} as const;
 
 type Step = { tone: "pink" | "mint"; text: string };
 interface DestPick {
@@ -39,15 +56,17 @@ interface DestPick {
 // 경로 표시 상태(모두 실데이터 기반 — 직선 근사·가짜 경로 없음).
 type RouteState = "no-child" | "no-dest" | "no-origin" | "loading" | "error" | "ready";
 
-function distanceLabel(m: number): string {
-  if (m < 1000) return `${Math.round(m)}m`;
-  return `${(m / 1000).toFixed(1)}km`;
-}
-
-function durationLabel(sec: number | null): string {
-  if (sec == null) return "도보";
+function durationLabel(
+  sec: number | null,
+  locale: Parameters<typeof formatDurationUnit>[2],
+  intl: IntlShape,
+): string {
+  if (sec == null) return intl.formatMessage({ id: "shared.routeView.walkOnly" });
   const min = Math.max(1, Math.round(sec / 60));
-  return `도보 ${min}분`;
+  return intl.formatMessage(
+    { id: "shared.routeView.walkDuration" },
+    { duration: formatDurationUnit(min, "minute", locale) },
+  );
 }
 
 // 외부 지도 도보 길안내 URL(구글맵 — 웹·안드로이드 모두 좌표 기반으로 열림).
@@ -55,43 +74,16 @@ function buildWalkDirectionsUrl(o: RoutePoint, d: RoutePoint): string {
   return `https://www.google.com/maps/dir/?api=1&origin=${o.lat},${o.lng}&destination=${d.lat},${d.lng}&travelmode=walking`;
 }
 
-// 카카오맵 길찾기 링크 — 앱 설치 시 카카오맵으로 연결(도보 안내 선택 가능), 미설치 시 웹.
-function buildKakaoToUrl(name: string, d: RoutePoint): string {
-  return `https://map.kakao.com/link/to/${encodeURIComponent(name || "도착지")},${d.lat},${d.lng}`;
-}
-
-// 일정의 시작 시각(ms). date_key + time("HH:MM") 조합. 무효 시 null.
-function eventStartMs(ev: CalendarEvent): number | null {
-  const d = parseAppDateKey(ev.date_key);
-  if (!d) return null;
-  let h = 0;
-  let m = 0;
-  if (ev.time && /^\d{1,2}:\d{2}$/.test(ev.time)) {
-    const [hh, mm] = ev.time.split(":").map(Number);
-    h = hh;
-    m = mm;
-  }
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m).getTime();
-}
-
-/** 다음 일정(장소 문자열이라도 있는 것) — 좌표 유무와 무관하게 시간순 선정. */
-function pickNextEventWithPlace(
-  events: CalendarEvent[] | undefined,
-  nowMs: number,
-): CalendarEvent | null {
-  const upcoming = (events ?? [])
-    .filter(
-      (ev) =>
-        (typeof ev.location?.lat === "number" && typeof ev.location?.lng === "number") ||
-        !!ev.location?.address?.trim(),
-    )
-    .map((ev) => ({ ev, ms: eventStartMs(ev) }))
-    .filter((x): x is { ev: CalendarEvent; ms: number } => x.ms != null && x.ms >= nowMs - 60 * 60 * 1000)
-    .sort((a, b) => a.ms - b.ms);
-  return upcoming[0]?.ev ?? null;
-}
-
 export function RouteView() {
+  const intl = useIntl();
+  const { locale } = useLocale();
+  const distanceLabel = useCallback(
+    (m: number) =>
+      m < 1000
+        ? intl.formatNumber(Math.round(m), SHORT_METER_FORMAT)
+        : intl.formatNumber(m / 1000, SHORT_KILOMETER_FORMAT),
+    [intl],
+  );
   const navigate = useNavigate();
   const { show } = useToast();
   const { role, userId } = useAuth();
@@ -113,7 +105,7 @@ export function RouteView() {
       : null;
   const childMember = isChild ? ownChild : activeChildMember;
   const childAvatar = childAvatarPath(childMember?.photo_url);
-  const childName = childMember?.name || "아이";
+  const childName = childMember?.name || intl.formatMessage({ id: "shared.routeView.childFallback" });
   const loc = childMember
     ? locations?.find((l) => l.user_id === childMember.user_id) ?? null
     : null;
@@ -129,7 +121,10 @@ export function RouteView() {
     () => childMember ? filterEventsForChild(events ?? [], childMember.id) : [],
     [events, childMember?.id],
   );
-  const nextEvent = useMemo(() => pickNextEventWithPlace(childEvents, nowMs), [childEvents, nowMs]);
+  const nextEvent = useMemo(
+    () => pickNextEventWithPlace(childEvents, nowMs, LEGACY_FAMILY_TIME_ZONE),
+    [childEvents, nowMs],
+  );
   const [destinationState, setDestinationState] = useState<OwnedRouteDestination<DestPick> | null>(null);
   const destination = selectRouteDestinationForChild(destinationState, childMember?.id ?? null);
   useEffect(() => {
@@ -150,7 +145,7 @@ export function RouteView() {
       return;
     }
     const evLoc = nextEvent.location;
-    const name = nextEvent.title || "다음 일정";
+    const name = nextEvent.title || intl.formatMessage({ id: "shared.routeView.nextEventFallback" });
     // ① 일정에 좌표가 직접 저장돼 있으면 그대로(지도 피커/저장장소 칩으로 등록된 일정).
     if (typeof evLoc?.lat === "number" && typeof evLoc?.lng === "number") {
       commit({ name, point: { lat: evLoc.lat, lng: evLoc.lng } });
@@ -215,7 +210,7 @@ export function RouteView() {
     return () => {
       cancelled = true;
     };
-  }, [childMember?.id, events, nextEvent, places]);
+  }, [childMember?.id, events, intl, nextEvent, places]);
 
   // 실 도보 경로(출발·도착 모두 있을 때만 활성).
   const {
@@ -263,30 +258,32 @@ export function RouteView() {
   );
 
   const locationLabel = useLocationLabels(loc ? [loc] : [], places);
-  const curPlace = loc ? locationLabel(loc) : "현재 위치";
-  const title = destination ? `${destination.name} 길찾기` : "길찾기";
+  const curPlace = loc ? locationLabel(loc) : intl.formatMessage({ id: "shared.routeView.currentLocationFallback" });
+  const title = destination
+    ? intl.formatMessage({ id: "shared.routeView.directionsTitle" }, { destination: destination.name })
+    : intl.formatMessage({ id: "shared.routeView.directionsTitleFallback" });
   const canStart = !!origin && !!destination;
-  const routeLoadingText = isChild ? "걸어가는 길을 찾는 중…" : "걸어가는 길을 찾는 중이에요…";
-  const routeRetryText = isChild ? "길을 못 찾았어 · 다시 시도" : "길을 찾지 못했어요 · 다시 시도";
-  const locationPendingText = isChild
-    ? "네 위치를 확인하는 중…"
-    : `${childName} 위치를 확인하는 중이에요…`;
+  const audience = isChild ? "child" : "parent";
+  const routeLoadingText = intl.formatMessage({ id: "shared.routeView.routeLoading" }, { audience });
+  // 한국어 역할별 재시도 계약: 길을 못 찾았어 · 다시 시도 / 길을 찾지 못했어요 · 다시 시도
+  const routeRetryText = intl.formatMessage({ id: "shared.routeView.routeRetry" }, { audience });
+  // 상류 라우팅이 죽었을 때 쓸 직선 거리(경로가 아니라 참고값이다).
+  const straight = straightLineHint(origin, destination?.point ?? null);
+  const locationPendingText = intl.formatMessage(
+    { id: "shared.routeView.locationPending" },
+    { audience, childName },
+  );
+  // 한국어 역할별 빈 상태 계약: 안내할 곳이 없어 / 안내할 곳이 없어요
   const emptyTitle =
     routeState === "no-child"
-      ? isChild ? "내 정보를 찾지 못했어" : "길을 안내할 아이를 선택할 수 없어요"
-      : isChild ? "안내할 곳이 없어" : "안내할 곳이 없어요";
+      ? intl.formatMessage({ id: "shared.routeView.emptyNoChildTitle" }, { audience })
+      : intl.formatMessage({ id: "shared.routeView.emptyNoDestinationTitle" }, { audience });
   const emptyDescription =
     routeState === "no-child"
-      ? isChild
-        ? "가족 연결을 확인한 뒤 다시 들어와 줘."
-        : "부모 홈에서 아이를 선택한 뒤 다시 시도해 주세요."
+      ? intl.formatMessage({ id: "shared.routeView.emptyNoChildDescription" }, { audience })
       : nextEvent
-        ? isChild
-          ? "다음 일정의 장소를 아직 못 찾았어.\n부모님께 지도로 장소를 정해 달라고 해 줘."
-          : "다음 일정의 장소를 아직 찾지 못했어요.\n일정에서 지도 위치를 지정해 주세요."
-        : isChild
-          ? "오늘 남은 일정이 없어.\n일정이 생기면 길을 알려줄게."
-          : "오늘 남은 일정이 없어요.\n일정을 추가하면 길을 안내해 드려요.";
+        ? intl.formatMessage({ id: "shared.routeView.emptyUnresolvedDescription" }, { audience })
+        : intl.formatMessage({ id: "shared.routeView.emptyNoScheduleDescription" }, { audience });
 
   // 안내 시작 — 외부 지도 앱(네이티브: 시스템 브라우저 / 웹: 새 탭)에서 도보 길안내를 연다.
   const startNavigation = async () => {
@@ -299,18 +296,16 @@ export function RouteView() {
         const win = window.open(url, "_blank", "noopener,noreferrer");
         if (!win) {
           show(
-            isChild
-              ? "지도를 못 열었어. 팝업 차단을 확인해 줘"
-              : "지도를 열지 못했어요. 팝업 차단을 확인해 주세요",
+            intl.formatMessage({ id: "shared.routeView.popupBlocked" }, { audience }),
             "🧭",
           );
           return;
         }
       }
-      show(isChild ? "지도 앱에서 걷는 길 안내를 열었어" : "지도 앱에서 걷는 길 안내를 열었어요", "🧭");
+      show(intl.formatMessage({ id: "shared.routeView.navigationOpened" }, { audience }), "🧭");
     } catch (error) {
       console.error("길안내 열기 실패:", error);
-      show(isChild ? "길 안내를 못 열었어" : "길 안내를 열지 못했어요", "⚠️");
+      show(intl.formatMessage({ id: "shared.routeView.navigationOpenFailed" }, { audience }), "⚠️");
     }
   };
 
@@ -321,17 +316,28 @@ export function RouteView() {
   );
   const straightEta =
     straightM != null
-      ? `직선 ${distanceLabel(straightM)} · 걸어서 ${Math.max(1, Math.round((straightM * 1.3) / WALK_M_PER_MIN))}분쯤`
+      ? intl.formatMessage(
+          { id: "shared.routeView.straightEstimate" },
+          {
+            distance: distanceLabel(straightM),
+            duration: formatDurationUnit(
+              Math.max(1, Math.round((straightM * 1.3) / WALK_M_PER_MIN)),
+              "minute",
+              locale,
+            ),
+          },
+        )
       : null;
+  // 한국어 정직한 강등 기준: `직선 ${distanceLabel(straightM)}`이며 실제 경로처럼 표시하지 않는다.
 
   // 소요시간·거리 요약(실 경로만 정확 수치 노출).
   const etaText =
     routeState === "ready" && distanceM != null
-      ? `${durationLabel(durationSec)} · ${distanceLabel(distanceM)}`
+      ? `${durationLabel(durationSec, locale, intl)} · ${distanceLabel(distanceM)}`
       : routeState === "loading"
         ? routeLoadingText
         : routeState === "error"
-          ? straightEta ?? (isChild ? "도보 경로를 못 찾았어" : "도보 경로를 찾지 못했어요")
+          ? straightEta ?? intl.formatMessage({ id: "shared.routeView.routeUnavailable" }, { audience })
           : locationPendingText;
 
   // 경로 안내 단계 — 실 도보 경로의 턴바이턴(guides)을 아이가 따라갈 수 있게 나열.
@@ -339,7 +345,10 @@ export function RouteView() {
   const steps: Step[] = useMemo(() => {
     if (routeState !== "ready" || distanceM == null) return [];
     const out: Step[] = [
-      { tone: "pink", text: `출발 · ${curPlace}에서 ${isChild ? "시작해" : "시작해요"}` },
+      {
+        tone: "pink",
+        text: intl.formatMessage({ id: "shared.routeView.stepStart" }, { audience, place: curPlace }),
+      },
     ];
     const guides = routeData?.guides ?? [];
     if (guides.length > 0) {
@@ -349,16 +358,33 @@ export function RouteView() {
           text: g.distanceM != null ? `${g.text} · ${distanceLabel(g.distanceM)}` : g.text,
         });
       }
-      if (guides.length > 12) out.push({ tone: "pink", text: `…남은 길 ${guides.length - 12}구간` });
+      if (guides.length > 12) {
+        out.push({
+          tone: "pink",
+          text: intl.formatMessage(
+            { id: "shared.routeView.stepRemaining" },
+            { count: guides.length - 12 },
+          ),
+        });
+      }
     } else {
       out.push({
         tone: "pink",
-        text: `길을 따라 약 ${distanceLabel(distanceM)} ${isChild ? "걸어가" : "걸어가세요"}`,
+        text: intl.formatMessage(
+          { id: "shared.routeView.stepWalk" },
+          { audience, distance: distanceLabel(distanceM) },
+        ),
       });
     }
-    out.push({ tone: "mint", text: `도착 · ${destination?.name ?? "다음 일정"}` });
+    out.push({
+      tone: "mint",
+      text: intl.formatMessage(
+        { id: "shared.routeView.stepArrival" },
+        { destination: destination?.name ?? intl.formatMessage({ id: "shared.routeView.nextEventFallback" }) },
+      ),
+    });
     return out;
-  }, [routeState, distanceM, curPlace, routeData?.guides, destination?.name, isChild]);
+  }, [routeState, distanceM, curPlace, routeData?.guides, destination?.name, audience, distanceLabel, intl]);
 
   return (
     <div className="rv-screen">
@@ -366,7 +392,7 @@ export function RouteView() {
         <button
           type="button"
           className="rv-back hy-press"
-          aria-label="뒤로"
+          aria-label={intl.formatMessage({ id: "core.action.back" })}
           onClick={() => navigate(-1)}
         >
           <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
@@ -389,7 +415,7 @@ export function RouteView() {
               onClick={() => navigate(homePath)}
             >
               <Home size={17} strokeWidth={2.4} color="#fff" />
-              홈으로
+              {intl.formatMessage({ id: "shared.routeView.homeButton" })}
             </button>
           </div>
         ) : (
@@ -424,7 +450,7 @@ export function RouteView() {
                 <span className="rv-ph__msg">
                   {routeState === "no-origin"
                     ? locationPendingText
-                    : isChild ? "갈 곳을 찾는 중…" : "갈 곳을 찾는 중이에요…"}
+                    : intl.formatMessage({ id: "shared.routeView.destinationSearching" }, { audience })}
                 </span>
               </div>
             )}
@@ -432,22 +458,33 @@ export function RouteView() {
             {/* 인앱 도보 경로 불가(제휴 API 필요) — 카카오맵 앱의 상세 도보 안내로 연결(정직한 강등). */}
             {routeState === "error" && destination && (
               <div className="rv-fallback">
+                {/* 경로를 못 받아도 좌표는 있다 — 직선 거리만이라도 정직하게 알린다(경로 아님을 명시). */}
+                {straight && (
+                  <span className="rv-fallback__msg">
+                    {intl.formatMessage(
+                      { id: "shared.routeView.straightLine" },
+                      { audience, distance: straight.distanceM, minutes: straight.minutes },
+                    )}
+                  </span>
+                )}
                 <span className="rv-fallback__msg">
-                  {isChild
-                    ? "자세한 걷는 길은 카카오맵이 알려줄게!"
-                    : "자세한 걷는 길은 카카오맵에서 확인해 주세요."}
+                  {intl.formatMessage({ id: "shared.routeView.fallbackDescription" }, { audience })}
                 </span>
                 <button
                   type="button"
                   className="rv-fallback__kakao hy-press"
                   onClick={() =>
-                    openExternal(buildKakaoToUrl(destination.name, destination.point)).catch(() =>
-                      show(isChild ? "카카오맵을 열 수 없어" : "카카오맵을 열 수 없어요", "🗺️"),
+                    openExternal(buildKakaoToUrl(
+                      destination.name,
+                      intl.formatMessage({ id: "shared.routeView.destinationFallback" }),
+                      destination.point,
+                    )).catch(() =>
+                      show(intl.formatMessage({ id: "shared.routeView.kakaoOpenFailed" }, { audience }), "🗺️"),
                     )
                   }
                 >
                   <Map size={18} strokeWidth={2.2} aria-hidden="true" />
-                  카카오맵에서 길찾기
+                  {intl.formatMessage({ id: "shared.routeView.kakaoDirections" })}
                 </button>
               </div>
             )}
@@ -458,10 +495,14 @@ export function RouteView() {
                 <MapPin size={28} strokeWidth={2.2} color="#087653" />
               </span>
               <span className="rv-info__main">
-                <span className="rv-info__name">{destination?.name ?? "목적지"}</span>
+                <span className="rv-info__name">
+                  {destination?.name ?? intl.formatMessage({ id: "shared.routeView.destinationFallback" })}
+                </span>
                 <span className="rv-info__eta">{etaText}</span>
               </span>
-              {routeState === "ready" && <span className="rv-info__tag">도보 경로</span>}
+              {routeState === "ready" && (
+                <span className="rv-info__tag">{intl.formatMessage({ id: "shared.routeView.walkingRouteTag" })}</span>
+              )}
             </div>
 
             {/* 경로 안내 단계 */}
@@ -484,7 +525,7 @@ export function RouteView() {
               onClick={() => void startNavigation()}
             >
               <Navigation size={20} strokeWidth={2.2} aria-hidden="true" />
-              안내 시작
+              {intl.formatMessage({ id: "shared.routeView.navigationStart" })}
             </button>
           </>
         )}

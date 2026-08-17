@@ -1,0 +1,21 @@
+{
+  "brand": {
+    "ko": "혜니캘린더",
+    "en": "Hyeni Calendar",
+    "ja": "Hyeni Calendar",
+    "zh-CN": "Hyeni Calendar",
+    "zh-TW": "Hyeni Calendar",
+    "vi": "Hyeni Calendar",
+    "th": "Hyeni Calendar",
+    "id": "Hyeni Calendar",
+    "ms": "Hyeni Calendar",
+    "fil": "Hyeni Calendar"
+  },
+  "tone": {
+    "parent": "존댓말",
+    "pairing": "존댓말",
+    "billing": "존댓말",
+    "child": "반말"
+  },
+  "protectedTerms": ["SOS", "Premium", "Google Play", "PWA"]
+}

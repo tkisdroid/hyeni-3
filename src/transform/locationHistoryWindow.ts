@@ -1,4 +1,9 @@
-import { addDaysToDateKey, dateToDateKey, parseAppDateKey } from "./dateKey.ts";
+import {
+  addDaysToDateKey,
+  dateToDateKey,
+  dateToDateKeyInTimeZone,
+  parseAppDateKey,
+} from "./dateKey.ts";
 
 export const HISTORY_DAY_START_HOUR = 8;
 
@@ -12,16 +17,63 @@ export interface HistoryDayWindow {
   maxOffsetMinutes: number;
 }
 
-export function getHistoryDayWindow(now: Date, startHour = HISTORY_DAY_START_HOUR): HistoryDayWindow {
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startHour, 0, 0, 0);
-  if (now.getHours() < startHour) {
-    start.setDate(start.getDate() - 1);
-  }
-  return buildHistoryDayWindow(start, now);
+interface ZonedDateTimeParts {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
 }
 
-function buildHistoryDayWindow(start: Date, now: Date): HistoryDayWindow {
-  const queryEnd = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+function zonedParts(value: Date, timeZone: string): ZonedDateTimeParts {
+  const parts = new Intl.DateTimeFormat("en-US-u-ca-gregory-nu-latn", {
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(value);
+  const number = (type: Intl.DateTimeFormatPartTypes) => (
+    Number(parts.find((part) => part.type === type)?.value)
+  );
+  return {
+    year: number("year"),
+    month: number("month"),
+    day: number("day"),
+    hour: number("hour"),
+    minute: number("minute"),
+    second: number("second"),
+  };
+}
+
+/** 앱 달력 날짜의 명시 time zone wall-clock 시각을 epoch로 바꾼다. */
+function zonedDateKeyHour(dateKey: string, hour: number, timeZone: string): Date | null {
+  const date = parseAppDateKey(dateKey);
+  if (!date) return null;
+  const desiredMs = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), hour, 0, 0, 0);
+  let candidateMs = desiredMs;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const actual = zonedParts(new Date(candidateMs), timeZone);
+    const actualWallMs = Date.UTC(
+      actual.year,
+      actual.month - 1,
+      actual.day,
+      actual.hour,
+      actual.minute,
+      actual.second,
+    );
+    const adjustment = desiredMs - actualWallMs;
+    candidateMs += adjustment;
+    if (adjustment === 0) break;
+  }
+  return new Date(candidateMs);
+}
+
+function buildHistoryDayWindow(start: Date, queryEnd: Date, now: Date): HistoryDayWindow {
   const end = new Date(Math.min(now.getTime(), queryEnd.getTime()));
   const startMs = start.getTime();
   const endMs = end.getTime();
@@ -36,17 +88,34 @@ function buildHistoryDayWindow(start: Date, now: Date): HistoryDayWindow {
   };
 }
 
+export function getHistoryDayWindow(
+  now: Date,
+  timeZone: string,
+  startHour = HISTORY_DAY_START_HOUR,
+): HistoryDayWindow {
+  const zonedTodayKey = dateToDateKeyInTimeZone(now, timeZone);
+  const todayStart = zonedDateKeyHour(zonedTodayKey, startHour, timeZone);
+  const dateKey = todayStart && now.getTime() >= todayStart.getTime()
+    ? zonedTodayKey
+    : addDaysToDateKey(zonedTodayKey, -1);
+  const start = zonedDateKeyHour(dateKey, startHour, timeZone) as Date;
+  const queryEnd = zonedDateKeyHour(addDaysToDateKey(dateKey, 1), startHour, timeZone) as Date;
+  return buildHistoryDayWindow(start, queryEnd, now);
+}
+
 /** 선택한 앱 date_key의 오전 8시부터 다음 날 오전 8시까지의 조회 창. */
 export function getHistoryDayWindowForKey(
   dateKey: string,
   now: Date,
+  timeZone: string,
   startHour = HISTORY_DAY_START_HOUR,
 ): HistoryDayWindow | null {
-  const date = parseAppDateKey(dateKey);
-  if (!date || Number.isNaN(now.getTime())) return null;
-  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate(), startHour, 0, 0, 0);
+  if (!parseAppDateKey(dateKey) || Number.isNaN(now.getTime())) return null;
+  const start = zonedDateKeyHour(dateKey, startHour, timeZone);
+  const queryEnd = zonedDateKeyHour(addDaysToDateKey(dateKey, 1), startHour, timeZone);
+  if (!start || !queryEnd) return null;
   if (start.getTime() > now.getTime()) return null;
-  return buildHistoryDayWindow(start, now);
+  return buildHistoryDayWindow(start, queryEnd, now);
 }
 
 export function clampHistoryOffsetMinute(value: number, maxOffsetMinutes: number): number {
@@ -54,8 +123,12 @@ export function clampHistoryOffsetMinute(value: number, maxOffsetMinutes: number
   return Math.min(maxOffsetMinutes, Math.max(0, Math.round(value)));
 }
 
-export function getHistoryDayKey(now: Date, startHour = HISTORY_DAY_START_HOUR): string {
-  return dateToDateKey(getHistoryDayWindow(now, startHour).start);
+export function getHistoryDayKey(
+  now: Date,
+  timeZone: string,
+  startHour = HISTORY_DAY_START_HOUR,
+): string {
+  return dateToDateKeyInTimeZone(getHistoryDayWindow(now, timeZone, startHour).start, timeZone);
 }
 
 export interface HistoryDayKeyRange {
@@ -64,8 +137,12 @@ export interface HistoryDayKeyRange {
 }
 
 /** 현재 오전 8시 기준 날짜를 포함한 최근 N개의 선택 가능 날짜. */
-export function getHistoryDayKeyRange(now: Date, dayCount: number): HistoryDayKeyRange {
-  const maxDateKey = getHistoryDayKey(now);
+export function getHistoryDayKeyRange(
+  now: Date,
+  dayCount: number,
+  timeZone: string,
+): HistoryDayKeyRange {
+  const maxDateKey = getHistoryDayKey(now, timeZone);
   const normalizedDayCount = Number.isFinite(dayCount) ? Math.max(1, Math.floor(dayCount)) : 1;
   return {
     minDateKey: addDaysToDateKey(maxDateKey, -(normalizedDayCount - 1)),
@@ -74,8 +151,13 @@ export function getHistoryDayKeyRange(now: Date, dayCount: number): HistoryDayKe
 }
 
 /** 무효·미래·보관 범위 밖 날짜를 서버 조회 전에 허용 범위로 고정한다. */
-export function clampHistoryDayKey(requestedDateKey: string, now: Date, dayCount: number): string {
-  const range = getHistoryDayKeyRange(now, dayCount);
+export function clampHistoryDayKey(
+  requestedDateKey: string,
+  now: Date,
+  dayCount: number,
+  timeZone: string,
+): string {
+  const range = getHistoryDayKeyRange(now, dayCount, timeZone);
   const requested = parseAppDateKey(requestedDateKey);
   const min = parseAppDateKey(range.minDateKey);
   const max = parseAppDateKey(range.maxDateKey);

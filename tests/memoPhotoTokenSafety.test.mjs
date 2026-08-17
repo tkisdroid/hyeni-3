@@ -38,10 +38,19 @@ const familyQuerySource = readFileSync(
   new URL("../src/queries/useFamily.ts", import.meta.url),
   "utf8",
 );
+const accountQuerySource = readFileSync(
+  new URL("../src/queries/useAccount.ts", import.meta.url),
+  "utf8",
+);
+const memberPhotosSource = readFileSync(
+  new URL("../src/queries/memberPhotos.ts", import.meta.url),
+  "utf8",
+);
 const longPressSource = readFileSync(
   new URL("../src/lib/useLongPress.ts", import.meta.url),
   "utf8",
 );
+const koShared = JSON.parse(readFileSync(new URL("../locales/ko/shared.json", import.meta.url), "utf8"));
 
 test("비공개 사진은 JWT query URL 없이 Authorization fetch와 blob URL로 표시한다", () => {
   assert.doesNotMatch(clientSource, /childPhotoProxyUrl|teacherNoticeFileProxyUrl|\?token=/);
@@ -68,8 +77,10 @@ test("비공개 사진은 JWT query URL 없이 Authorization fetch와 blob URL�
   assert.match(memoSource, /saveImageToDevice\(previewImageUrl\)/);
   assert.match(memoSource, /IntersectionObserver/);
   assert.match(memoSource, /lease\.release\(\)/);
-  assert.match(memoSource, /사진을 불러오지 못했어요/);
-  assert.match(memoSource, /사진을 불러오지 못했어\. 눌러서 다시 시도해 줘\./);
+  assert.match(memoSource, /shared\.memoChat\.copy054/);
+  assert.match(memoSource, /shared\.memo\.photo\.error\.child/);
+  assert.equal(koShared["shared.memoChat.copy054"], "사진을 불러오지 못했어요.");
+  assert.equal(koShared["shared.memo.photo.error.child"], "사진을 불러오지 못했어. 눌러서 다시 시도해 줘.");
   assert.match(memoSource, /isChildSession=\{isChildSession\}/);
   assert.match(memoSource, /if \(event\.defaultPrevented\) return/);
   assert.match(longPressSource, /if \(firedRef\.current\)[\s\S]*?event\.preventDefault\(\)/);
@@ -90,12 +101,18 @@ test("가족 정본 조회는 사진 blob 완료와 분리하고 UI 수명 lease
   assert.doesNotMatch(familyEndpointSource, /childPhotoObjectUrl|enrichPhotos|await\s+.*photo/i);
   assert.match(familyEndpointSource, /members: data\.members \|\| \[\]/);
   assert.match(familyQuerySource, /useResolvedFamilyPhotos/);
-  assert.match(familyQuerySource, /acquireChildPhotoObjectUrl\(request\.path\)/);
-  assert.match(familyQuerySource, /FAMILY_PHOTO_RETRY_DELAYS_MS = \[750, 2_000, 5_000\]/);
-  assert.match(familyQuerySource, /scheduleRetry\(request, retryIndex\)/);
-  assert.match(familyQuerySource, /clearTimeout\(timer\)/);
-  assert.match(familyQuerySource, /lease\.release\(\)/);
-  assert.match(familyQuerySource, /photo_url: urls\.get\(member\.id\) \?\? null/);
+  // 사진 해석기는 queries/memberPhotos.ts 한 곳이고 가족·계정 조회가 함께 쓴다(2026-08-17).
+  // 부모 본인 프로필 사진도 같은 lease 로 표시되므로 객체 키가 img src 로 새지 않는다.
+  for (const source of [familyQuerySource, accountQuerySource]) {
+    assert.match(source, /useResolvedMemberPhotoUrls/);
+    assert.match(source, /withResolvedMemberPhotos/);
+  }
+  assert.match(memberPhotosSource, /acquireChildPhotoObjectUrl\(request\.path\)/);
+  assert.match(memberPhotosSource, /MEMBER_PHOTO_RETRY_DELAYS_MS = \[750, 2_000, 5_000\]/);
+  assert.match(memberPhotosSource, /scheduleRetry\(request, retryIndex\)/);
+  assert.match(memberPhotosSource, /clearTimeout\(timer\)/);
+  assert.match(memberPhotosSource, /lease\.release\(\)/);
+  assert.match(memberPhotosSource, /photo_url: urls\.get\(member\.id\) \?\? null/);
 });
 
 test("가족 사진 blob URL은 공통 아바타·지도 오버레이·프로필 미리보기에서 asset 경로로 변형하지 않는다", () => {

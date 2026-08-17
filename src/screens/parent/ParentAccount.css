@@ -70,6 +70,43 @@
   height: 46px;
   object-fit: contain;
 }
+/* 내 프로필 사진 등록 버튼(2026-08-17). 기본 3D 캐릭터는 contain,
+   실제 사진은 프레임을 채우도록 cover 로 바꾼다. */
+.pa-profile__avatar--edit {
+  position: relative;
+  padding: 0;
+  overflow: hidden;
+  --press: 0.94;
+}
+.pa-profile__avatar--edit[data-photo="true"] img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pa-profile__avatar-edit {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--hy-accent-cta);
+  box-shadow: 0 2px 6px rgba(32, 26, 29, 0.24);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pa-profile__hint {
+  margin-top: 4px;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
+  color: var(--fg-secondary);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
 .pa-profile__info {
   flex: 1;
   min-width: 0;
@@ -132,6 +169,12 @@
 
   color: var(--fg-secondary);
 }
+.pa-field__control {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
 .pa-input {
   flex: 1;
   min-width: 0;
@@ -142,6 +185,16 @@
   font-weight: var(--type-body-weight);
 
   color: var(--fg-primary);
+  text-align: right;
+}
+.pa-field__control .pa-input {
+  width: 100%;
+}
+.pa-field__help {
+  color: var(--fg-tertiary);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
   text-align: right;
 }
 .pa-input::placeholder {

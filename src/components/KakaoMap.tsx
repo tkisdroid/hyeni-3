@@ -1,3 +1,4 @@
+import { useIntl } from "react-intl";
 /**
  * Kakao 지도 컴포넌트. 자녀 마커(아바타 오버레이) + 위험구역(원) + 저장장소(마커).
  * SDK 로드 실패(키 미인증 등) 시 스타일 폴백으로 대체.
@@ -6,12 +7,19 @@ import { useEffect, useRef, useState } from "react";
 import { loadKakaoMaps } from "@/lib/kakaoMap";
 import { asset } from "@/lib/assets";
 import type { LocationRoutePoint } from "@/transform/locationRoute";
+import {
+  getMapFocusPanOffset,
+  normalizeMapViewportPadding,
+  type MapViewportPadding,
+} from "@/transform/mapViewportPadding";
 
 export interface MapChild {
   lat: number;
   lng: number;
   name: string;
   avatar: string; // asset 경로 또는 http/blob URL
+  /** 특정 시각 위치를 보고 있을 때 아바타 위에 표시할 시각. */
+  caption?: string;
   tone?: "normal" | "danger";
 }
 export interface MapZone {
@@ -61,6 +69,7 @@ export function KakaoMap({
   center = null,
   centerLevel = null,
   recenterKey = 0,
+  viewportPadding,
   className,
   tone = "formal",
 }: {
@@ -86,9 +95,12 @@ export function KakaoMap({
   centerLevel?: number | null;
   /** 값이 바뀌면 center 가 같은 좌표여도 강제로 재이동(현재 위치 버튼 등). */
   recenterKey?: number;
+  /** 자동 bounds 맞춤 시 상단 도구막대와 패널을 피하기 위한 화면 안쪽 여백. */
+  viewportPadding?: Partial<MapViewportPadding>;
   className?: string;
   tone?: "formal" | "child";
 }) {
+  const intl = useIntl();
   const ref = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapRef = useRef<any>(null);
@@ -102,10 +114,14 @@ export function KakaoMap({
   const lastCenterRef = useRef<string | null>(null);
   // 마지막으로 적용한 recenterKey — 바뀌면 같은 좌표라도 강제 재이동.
   const lastRecenterRef = useRef(0);
+  // 패널 크기가 바뀌면 같은 좌표라도 새 가시 영역의 중앙으로 다시 맞춘다.
+  const lastFitPaddingRef = useRef<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
   // 지도가 그려지기 전엔 흰 사각형 대신 부드러운 자리표시자를 보여준다(체감 지연 감소).
   const [ready, setReady] = useState(false);
+  const fitPadding = normalizeMapViewportPadding(viewportPadding);
+  const fitPaddingKey = `${fitPadding.top}:${fitPadding.right}:${fitPadding.bottom}:${fitPadding.left}`;
 
   useEffect(() => {
     onPickRef.current = onPick;
@@ -121,9 +137,13 @@ export function KakaoMap({
         const desired = center ?? (child ? { lat: child.lat, lng: child.lng } : { lat: 37.5665, lng: 126.978 });
         const centerKey = `${desired.lat},${desired.lng}`;
         const centerLatLng = new maps.LatLng(desired.lat, desired.lng);
+        const mapExisted = Boolean(mapRef.current);
+        const shouldMoveCenter =
+          !mapExisted || centerKey !== lastCenterRef.current || recenterKey !== lastRecenterRef.current;
+        const shouldRefocusVisibleArea =
+          Boolean(center) && (shouldMoveCenter || fitPaddingKey !== lastFitPaddingRef.current);
         if (!mapRef.current) {
           mapRef.current = new maps.Map(ref.current, { center: centerLatLng, level: 4 });
-          lastCenterRef.current = centerKey;
           setReady(true);
           // 컨테이너 크기 변화(드래그 리사이즈 등) → relayout + 중심 유지.
           // Kakao 지도는 컨테이너가 커져도 스스로 타일을 다시 깔지 않는다(회색 여백 버그 방지).
@@ -148,17 +168,26 @@ export function KakaoMap({
               onPickRef.current?.(latlng.getLat(), latlng.getLng());
             },
           );
-        } else if (centerKey !== lastCenterRef.current || recenterKey !== lastRecenterRef.current) {
+        } else if (shouldMoveCenter) {
           // 중심이 실제로 바뀔 때만 이동(클릭으로 picked 만 갱신될 땐 지도 튐 방지).
           // 단 recenterKey 가 갱신되면 같은 좌표여도 강제 재이동(현재 위치 버튼).
           mapRef.current.setCenter(centerLatLng);
-          lastCenterRef.current = centerKey;
+        }
+        if (shouldRefocusVisibleArea) {
+          // panBy 는 현재 중심으로부터 누적되므로 언제나 실제 좌표로 먼저 되돌린 뒤 한 번만 보정한다.
+          mapRef.current.setCenter(centerLatLng);
           // 포커스 요청은 "더 넓게 보고 있을 때만" 확대한다(사용자가 직접 확대한 화면은 유지).
           if (centerLevel != null && typeof mapRef.current.getLevel === "function") {
             if (mapRef.current.getLevel() > centerLevel) mapRef.current.setLevel(centerLevel);
           }
+          const focusPan = getMapFocusPanOffset(fitPadding);
+          if (typeof mapRef.current.panBy === "function" && (focusPan.x !== 0 || focusPan.y !== 0)) {
+            mapRef.current.panBy(focusPan.x, focusPan.y);
+          }
         }
+        lastCenterRef.current = centerKey;
         lastRecenterRef.current = recenterKey;
+        lastFitPaddingRef.current = fitPaddingKey;
         // 이전 오버레이 제거
         overlaysRef.current.forEach((o) => o.setMap(null));
         overlaysRef.current = [];
@@ -208,11 +237,12 @@ export function KakaoMap({
           overlaysRef.current.push(marker);
         }
 
+        const rootStyle = getComputedStyle(document.documentElement);
+
         // 경로 폴리라인 — 전 구간 실선 하나로 그린다.
         // 소비 화면이 실측점만 넘기므로(직선 보간 채움점 제외) 선의 기하는 그대로이고,
         // 끊긴 점선 때문에 이동이 '기록 안 됨'처럼 보이던 오해만 없앤다.
         if (route && route.length >= 2) {
-          const rootStyle = getComputedStyle(document.documentElement);
           const routeColor = rootStyle.getPropertyValue("--mint-500").trim();
           const polyline = new maps.Polyline({
             path: route.map((p) => new maps.LatLng(p.lat, p.lng)),
@@ -233,7 +263,7 @@ export function KakaoMap({
             const link = new maps.Polyline({
               path,
               strokeWeight: 3,
-              strokeColor: "#A78BFA",
+              strokeColor: rootStyle.getPropertyValue("--mint-400").trim(),
               strokeOpacity: 0.8,
               strokeStyle: "solid",
             });
@@ -242,12 +272,13 @@ export function KakaoMap({
           }
           for (const s of stays) {
             const el = document.createElement("div");
-            const accent = s.active ? "#7C3AED" : "#A78BFA";
+            const stayColor = rootStyle.getPropertyValue(s.active ? "--mint-600" : "--mint-400").trim();
+            const stayShadow = s.active ? "rgba(8,118,83,.44)" : "rgba(49,196,141,.34)";
             el.style.cssText = "transform:translateY(-4px);text-align:center;white-space:nowrap;pointer-events:none";
             const stayChip = document.createElement("div");
             stayChip.style.cssText =
               "display:inline-flex;align-items:center;gap:4px;padding:3px 9px 3px 5px;border-radius:999px;" +
-              `background:${accent};color:#fff;box-shadow:0 4px 12px rgba(124,58,237,.4);font-size:11.5px;font-weight:800;` +
+              `background:${stayColor};color:#fff;box-shadow:0 4px 12px ${stayShadow};font-size:11.5px;font-weight:800;` +
               (s.active ? "outline:2px solid #fff;" : "");
             const orderText = document.createElement("span");
             orderText.style.cssText =
@@ -272,9 +303,24 @@ export function KakaoMap({
         // 자녀(아바타 커스텀 오버레이)
         if (child) {
           const content = document.createElement("div");
-          const danger = child.tone === "danger";
+          content.className = "km-child-marker";
           content.style.cssText =
-            "width:48px;height:48px;border-radius:50%;overflow:hidden;transform:translateY(-6px);" +
+            "display:grid;justify-items:center;gap:4px;transform:translateY(-6px);pointer-events:none";
+          const danger = child.tone === "danger";
+          if (child.caption) {
+            const timeBadge = document.createElement("span");
+            timeBadge.className = "km-child-marker__time";
+            timeBadge.textContent = child.caption;
+            timeBadge.style.cssText =
+              "padding:4px 8px;border:2px solid var(--bg-card);border-radius:999px;" +
+              "background:var(--mint-600);color:var(--bg-card);box-shadow:0 3px 10px rgba(8,118,83,.34);" +
+              "font-size:12px;font-weight:800;line-height:1;white-space:nowrap";
+            content.append(timeBadge);
+          }
+          const avatarFrame = document.createElement("div");
+          avatarFrame.className = "km-child-marker__avatar";
+          avatarFrame.style.cssText =
+            "width:48px;height:48px;border-radius:50%;overflow:hidden;" +
             (danger
               ? "border:3px solid #E5484D;box-shadow:0 0 0 8px rgba(229,72,77,.18),0 6px 18px rgba(229,72,77,.55);background:#FFE5E8;"
               : "border:3px solid #fff;box-shadow:0 4px 14px rgba(240,81,143,.5);background:#FDE7F1;");
@@ -282,14 +328,15 @@ export function KakaoMap({
           avatarImage.src = src(child.avatar);
           avatarImage.alt = child.name;
           avatarImage.style.cssText = "width:100%;height:100%;object-fit:cover";
-          content.replaceChildren(avatarImage);
+          avatarFrame.replaceChildren(avatarImage);
+          content.append(avatarFrame);
           const overlay = new maps.CustomOverlay({
             // 지도 중심(center)과 자녀 좌표를 분리한다. 머문 곳·특정 시각으로 지도를 옮겨도
             // 아바타는 실제 이력점에 남아야 한다.
             position: new maps.LatLng(child.lat, child.lng),
             content,
             yAnchor: 1,
-            zIndex: 10,
+            zIndex: child.caption ? 40 : 10,
           });
           overlay.setMap(mapRef.current);
           overlaysRef.current.push(overlay);
@@ -302,13 +349,27 @@ export function KakaoMap({
           route.forEach((p) => bounds.extend(new maps.LatLng(p.lat, p.lng)));
           if (destination) bounds.extend(new maps.LatLng(destination.lat, destination.lng));
           if (child) bounds.extend(new maps.LatLng(child.lat, child.lng));
-          mapRef.current.setBounds(bounds);
+          mapRef.current.setBounds(
+            bounds,
+            fitPadding.top,
+            fitPadding.right,
+            fitPadding.bottom,
+            fitPadding.left,
+          );
         } else if (!center && stays && stays.length > 0) {
           // 스테이포인트 전체가 보이도록 bounds. 단 명시적 center(목록 항목 선택)면 그 지점 우선.
           const bounds = new maps.LatLngBounds();
           stays.forEach((s) => bounds.extend(new maps.LatLng(s.lat, s.lng)));
           if (stays.length === 1) mapRef.current.setCenter(new maps.LatLng(stays[0].lat, stays[0].lng));
-          else mapRef.current.setBounds(bounds);
+          else {
+            mapRef.current.setBounds(
+              bounds,
+              fitPadding.top,
+              fitPadding.right,
+              fitPadding.bottom,
+              fitPadding.left,
+            );
+          }
         }
       })
       .catch(() => {
@@ -317,7 +378,23 @@ export function KakaoMap({
     return () => {
       cancelled = true;
     };
-  }, [child, zones, places, route, stays, destination, picked, center, centerLevel, recenterKey, retryKey]);
+  }, [
+    child,
+    zones,
+    places,
+    route,
+    stays,
+    destination,
+    picked,
+    center,
+    centerLevel,
+    recenterKey,
+    viewportPadding?.top,
+    viewportPadding?.right,
+    viewportPadding?.bottom,
+    viewportPadding?.left,
+    retryKey,
+  ]);
 
   // 언마운트 시 ResizeObserver 해제.
   useEffect(
@@ -332,10 +409,10 @@ export function KakaoMap({
     return (
       <div className={[className, "km-error"].filter(Boolean).join(" ")} role="status">
         <strong className="km-error__title">
-          {tone === "child" ? "지도를 불러오지 못했어" : "지도를 불러오지 못했어요"}
+          {tone === "child" ? intl.formatMessage({ id: "shared.kakaoMap.copy001" }) : intl.formatMessage({ id: "shared.kakaoMap.copy002" })}
         </strong>
         <span className="km-error__detail">
-          {tone === "child" ? "인터넷 연결을 확인한 뒤 다시 해 줘" : "인터넷 연결을 확인한 뒤 다시 시도해 주세요"}
+          {tone === "child" ? intl.formatMessage({ id: "shared.kakaoMap.copy003" }) : intl.formatMessage({ id: "shared.kakaoMap.copy004" })}
         </span>
         <button
           type="button"
@@ -346,7 +423,7 @@ export function KakaoMap({
             setRetryKey((value) => value + 1);
           }}
         >
-          지도 다시 불러오기
+          {intl.formatMessage({ id: "shared.kakaoMap.copy005" })}
         </button>
       </div>
     );

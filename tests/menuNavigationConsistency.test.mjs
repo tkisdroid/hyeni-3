@@ -16,13 +16,14 @@ test("부모 홈 바로가기는 핵심 서비스 순서와 실제 라우트를 
 
   const labels = [...mock.matchAll(/label: "([^"]+)"/g)]
     .map((m) => m[1])
-    .filter((label) => ["AI 일정", "위치추적", "친구놀이", "장소관리", "주변소리", "안심리포트", "구독", "알림"].includes(label));
+    .filter((label) => ["AI 일정", "위치추적", "친구놀이", "장소관리", "주변소리", "안심리포트", "아이 기기 찾기", "알림"].includes(label));
 
-  assert.deepEqual(labels, ["AI 일정", "위치추적", "친구놀이", "장소관리", "주변소리", "안심리포트", "구독", "알림"]);
+  assert.deepEqual(labels, ["AI 일정", "위치추적", "친구놀이", "장소관리", "주변소리", "안심리포트", "아이 기기 찾기", "알림"]);
   assert.match(home, /"AI 일정": "\/ai-schedule\?tab=text"/);
   assert.match(home, /"위치추적": "\/parent\/location\?view=history"/);
   assert.match(home, /"친구놀이": "\/friend-play"/);
   assert.match(home, /"안심리포트": "\/daily-report"/);
+  assert.match(home, /"아이 기기 찾기": "\/remote-ring"/);
   assert.match(home, /"알림": "\/notifications"/);
 });
 
@@ -45,6 +46,7 @@ test("부모 메뉴 아이콘과 바로가기 색상은 토큰 기반으로 유�
 test("부모 위치 시트의 액션 버튼은 원시 이모지 대신 아이콘/에셋을 쓴다", () => {
   const location = readSource("src/screens/parent/ParentLocation.tsx");
   const css = readSource("src/screens/parent/ParentLocation.css");
+  const koParent = JSON.parse(readSource("locales/ko/parent.json"));
   const actions = location.slice(
     location.indexOf('<div className="pl-actions">'),
     location.indexOf("</div>", location.indexOf('className="pl-call-btn')),
@@ -56,8 +58,15 @@ test("부모 위치 시트의 액션 버튼은 원시 이모지 대신 아이콘
   assert.match(actions, /<Navigation size=\{22\} strokeWidth=\{2\.2\}/);
   assert.match(css, /\.pl-route-btn \{[^}]*background: var\(--blue-soft\)/);
   // 4열 퀵액션은 아이콘마다 라벨을 함께 보여준다(처음 쓰는 부모도 뜻을 안다).
-  for (const label of ["메모", "경로", "주변소리", "전화"]) {
-    assert.match(actions, new RegExp(`<span className="pl-actions__label">${label}</span>`));
+  const labels = {
+    "parent.eventForm.copy060": "메모",
+    "parent.parentLocation.copy054": "경로",
+    "parent.home.shortcut.remoteAudio": "주변소리",
+    "parent.parentLocation.copy057": "전화",
+  };
+  for (const [id, label] of Object.entries(labels)) {
+    assert.match(actions, new RegExp(`className="pl-actions__label"[^>]*>[\\s\\S]{0,100}${id}`));
+    assert.equal(koParent[id], label);
   }
   assert.match(css, /\.pl-actions \{[^}]*grid-template-columns: repeat\(4, 1fr\)/s);
 });

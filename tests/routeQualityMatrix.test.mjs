@@ -38,9 +38,16 @@ const route = (
 // App.tsx에서 실제 렌더되는 59개 사용자 화면의 출시 품질 계약이다.
 // 같은 MemoChat 소스를 쓰더라도 부모/아이 라우트는 guard·말투 계약이 달라 별도 행으로 둔다.
 const routeQualityMatrix = [
-  route("parent/home", "ParentHome", "src/screens/parent/ParentHome.tsx", "parent", "all", "query", queryStates(/eventsQuery\.isLoading/, /eventsQuery\.isError/, /todayEvents\.length === 0/, /todayEvents\.map/, /void handleRefresh\(\)/), "shell", "parent-formal"),
+  route("parent/home", "ParentHome", "src/screens/parent/ParentHome.tsx", "parent", "all", "query", [
+    queryStatesAt("src/screens/parent/ParentHome.tsx", /eventsQuery\.isLoading/, /eventsQuery\.isError/, /todayEvents\.length === 0/, /todayEvents\.map/, /void handleRefresh\(\)/),
+    // 홈의 친구 초대 카드가 여는 패널도 같은 화면의 read query다(2026-08-17).
+    queryStatesAt("src/components/ReferralRewardPanel.tsx", /statusQuery\.isLoading/, /statusQuery\.isError/, /eligibleChildren\.length === 0/, /status \? \(/, /void statusQuery\.refetch\(\)/),
+  ], "shell", "parent-formal"),
   route("parent/calendar", "ParentCalendar", "src/screens/parent/ParentCalendar.tsx", "parent", "all", "query", queryStates(/isLoading \? \(/, /isError \? \(/, /selEvents\.length > 0/, /selEvents\.map/, /void refetchEvents\(\)/), "shell", "parent-formal"),
-  route("parent/location", "ParentLocation", "src/screens/parent/ParentLocation.tsx", "parent", "all", "query", queryStates(/histLoading/, /histErrored/, /histEmpty/, /timedTrail\.length > 0/, /void refetchHistory\(\)/), "shell", "parent-formal"),
+  route("parent/location", "ParentLocation", "src/screens/parent/ParentLocation.tsx", "parent", "all", "query", [
+    queryStatesAt("src/screens/parent/ParentLocation.tsx", /isFetching: historyFetching/, /isError: historyError/, /pointCount: timedHistoryPoints\.length/, /<LocationJourneyPanel/, /onRetry=\{\(\) => void refetchHistory\(\)\}/),
+    queryStatesAt("src/screens/parent/LocationJourneyPanel.tsx", /loading: "parent\.location\.history\.loadingShort"/, /error: "parent\.parentLocation\.copy016"/, /empty: "parent.location.history.emptyDay"/, /state === "ready"/, /onClick=\{onRetry\}/),
+  ], "shell", "parent-formal"),
   route("parent/memo", "MemoChat", "src/screens/shared/MemoChat.tsx", "parent", "all", "query", queryStates(/thread\.isLoading/, /thread\.isError/, /showEmpty/, /messages\.map/, /void thread\.refetch\(\)/), "safe", "role-aware"),
   route("parent/settings", "ParentSettings", "src/screens/parent/ParentSettings.tsx", "parent", "all", "hybrid", [
     queryStatesAt("src/screens/parent/ParentSettings.tsx", /settingsQueryState === "loading"/, /settingsQueryState === "error"/, /settingsDataEmpty/, /settingsRows\.map/, /void retryParentSettings\(\)/),
@@ -68,7 +75,7 @@ const routeQualityMatrix = [
   route("notifications", "Notifications", "src/screens/feature/Notifications.tsx", "parent", "all", "query", queryStates(/isLoading/, /isError/, /groups\.length === 0/, /groups\.map/, /refetch\(\)/), "safe", "parent-formal"),
   route("remote-audio", "RemoteAudio", "src/screens/feature/RemoteAudio.tsx", "parent", "all", "hybrid", queryStates(/remoteAudioQueryState === "loading"/, /remoteAudioQueryState === "error"/, /childMembers\.length === 0/, /className="ra-start hy-press"/, /void retryRemoteAudio\(\)/), "screen", "parent-formal"),
   route("place-manager", "PlaceManager", "src/screens/feature/PlaceManager.tsx", "parent", "all", "query", queryStates(/placesLoading/, /placesError/, /places\.length === 0/, /places\.map/, /void retryPlaces\(\)/), "screen", "parent-formal"),
-  route("friend-play", "FriendPlay", "src/screens/feature/FriendPlay.tsx", "parent", "all", "query", queryStates(/parentPlaydateLoading/, /parentPlaydateError/, /현재 진행 중인 친구놀이가 없어요/, /active \? \(/, /void retryParentPlaydate\(\)/), "safe", "parent-formal"),
+  route("friend-play", "FriendPlay", "src/screens/feature/FriendPlay.tsx", "parent", "all", "query", queryStates(/parentPlaydateLoading/, /parentPlaydateError/, /shared\.friendPlay\.parent\.empty/, /active \? \(/, /void retryParentPlaydate\(\)/), "safe", "parent-formal"),
   route("ai-schedule", "AiSchedule", "src/screens/feature/AiSchedule.tsx", "parent", "all", "hybrid", queryStates(/aiScheduleQueryState === "loading"/, /aiScheduleQueryState === "error"/, /existingEvents\.data\?\.length === 0/, /className="ais-confirm hy-press"/, /void retryAiSchedule\(\)/), "screen", "parent-formal"),
   route("ai-credit", "AiCredit", "src/screens/feature/AiCredit.tsx", "parent", "all", "hybrid", queryStates(/aiCreditQueryState === "loading"/, /aiCreditQueryState === "error"/, /!childUserId|aiCreditDataEmpty/, /availablePacks\.map/, /void retryAiCredit\(\)/), "screen", "parent-formal"),
   route("phone-setup", "PhoneSetup", "src/screens/feature/PhoneSetup.tsx", "parent", "all", "hybrid", queryStates(/phoneQueryState === "loading"/, /phoneQueryState === "error"/, /family && parents\.length === 0/, /parents\.map/, /void retryPhoneSetup\(\)/), "screen", "parent-formal"),
@@ -102,7 +109,7 @@ const routeQualityMatrix = [
   route("child/ai-friend", "AiFriendChat", "src/screens/child/AiFriendChat.tsx", "child", "all", "query", queryStates(/chatLoading/, /chatError/, /messagesData\.length === 0/, /shown\.map/, /void retryChat\(\)/), "safe", "child-informal"),
   route("child/location-status", "ChildLocationStatus", "src/screens/child/ChildLocationStatus.tsx", "child", "all", "query", queryStates(/isLoading/, /isError/, /!location/, /location &&/, /void refetchLocation\(\)/), "screen", "child-informal"),
   route("child/settings", "ChildSettings", "src/screens/child/ChildSettings.tsx", "child", "all", "hybrid", queryStates(/childSettingsQueryState === "loading"/, /childSettingsQueryState === "error"/, /childSettingsDataEmpty|!me/, /REQUEST_ITEMS\.map/, /void retryChildSettings\(\)/), "screen", "child-informal"),
-  route("child/ai-friend-setup", "AiFriendSetup", "src/screens/child/AiFriendSetup.tsx", "child", "all", "hybrid", queryStates(/aiFriendSetupQueryState === "loading"/, /aiFriendSetupQueryState === "error"/, /aiFriendSetupDataEmpty|!childMember/, /AI_FRIEND_PERSONAS\.map/, /void retryAiFriendSetup\(\)/), "screen", "child-informal"),
+  route("child/ai-friend-setup", "AiFriendSetup", "src/screens/child/AiFriendSetup.tsx", "child", "all", "hybrid", queryStates(/aiFriendSetupQueryState === "loading"/, /aiFriendSetupQueryState === "error"/, /aiFriendSetupDataEmpty|!childMember/, /afs-name-field/, /void retryAiFriendSetup\(\)/), "screen", "child-informal"),
   route("playdate-accept", "PlaydateAccept", "src/screens/feature/PlaydateAccept.tsx", "child", "all", "query", queryStates(/playdateLoading/, /playdateError/, /incoming\.length === 0/, /incoming\.map/, /void retryPlaydates\(\)/), "safe", "child-informal"),
 
   route("teacher/notice", "TeacherNotice", "src/screens/teacher/TeacherNotice.tsx", "teacher", "dev", "hybrid", queryStates(/teacherNoticeQueryState === "loading"/, /teacherNoticeQueryState === "error"/, /teacherNoticeDataEmpty/, /attachments\.map/, /void retryTeacherNotice\(\)/), "screen", "teacher-dev"),

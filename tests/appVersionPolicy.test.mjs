@@ -168,7 +168,10 @@ test("업데이트 화면은 차단이 아닐 때 계속 사용할 수 있다고
     new URL("../src/screens/feature/AppUpdate.tsx", import.meta.url),
     "utf8",
   );
-  assert.match(screen, /지금 하지 않아도 계속 사용할 수 있어요/);
-  assert.match(screen, /지금 하지 않아도 계속 쓸 수 있어/);
+  const koCore = JSON.parse(readFileSync(new URL("../locales/ko/core.json", import.meta.url), "utf8"));
+  assert.match(screen, /core\.appUpdate\.optional\.formal/);
+  assert.match(screen, /core\.appUpdate\.optional\.child/);
+  assert.equal(koCore["core.appUpdate.optional.formal"], "지금 하지 않아도 계속 사용할 수 있어요.");
+  assert.equal(koCore["core.appUpdate.optional.child"], "지금 하지 않아도 계속 쓸 수 있어.");
   assert.match(screen, /\{!forced && \(/);
 });

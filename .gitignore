@@ -7,6 +7,7 @@ node_modules
 dist
 dist-ssr
 dev-dist
+*.tsbuildinfo
 *.local
 
 # env
@@ -79,6 +80,7 @@ artifacts/lighthouse-chrome-profile-*/
 artifacts/docx-final-qa-*/
 artifacts/release-evidence/
 artifacts/release-records/
+artifacts/global-release/
 
 # output 스크린샷/렌더 산출물 — 개인정보 없는 생성 자산만 예외로 유지
 output/*
@@ -88,3 +90,5 @@ output/*
 !output/store-ui-candidates-v1/**
 !output/store-listing-assets-v1/
 !output/store-listing-assets-v1/**
+!output/play-store-final-v1/
+!output/play-store-final-v1/**

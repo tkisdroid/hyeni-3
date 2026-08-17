@@ -31,7 +31,7 @@ test("최종 브라우저 QA는 부모·아이 출시 화면과 핵심 전환 �
   assert.match(source, /월 4,900원/);
   assert.match(source, /연 39,000원/);
   assert.match(source, /결제 시작을 잠시 닫았어요/);
-  assert.match(source, /무료로 계속 쓰기/);
+  assert.match(source, /무료 플랜으로 계속 사용하기/);
   assert.match(source, /AI 일정 정리/);
   assert.match(source, /ai_schedule_limit/);
   assert.match(source, /daily_limit_reached/);
@@ -43,6 +43,21 @@ test("최종 브라우저 QA는 부모·아이 출시 화면과 핵심 전환 �
   assert.match(source, /hyeni:premium-return-intent:v1/);
   assert.match(source, /저장됨 · 프리미엄에서 알림 대상/);
   assert.match(source, /혜니캘린더 v1\.3\.0/);
+  assert.match(source, /parent\/location\?view=history/);
+  assert.match(source, /parent-location-history-interaction/);
+  assert.match(source, /latestAligned/);
+  assert.match(source, /eyebrow !== "최신 기록"/);
+  assert.match(source, /locationHistoryAfterReplay\.followsLatest !== "false"/);
+  assert.match(source, /locationHistoryLatest\.followsLatest !== "true"/);
+  assert.match(source, /parent-home-shortcuts-free/);
+  assert.match(source, /parent-home-shortcuts-premium/);
+  assert.match(source, /아이 기기 찾기/);
+  assert.match(source, /구독 시 혜택/);
+  assert.match(source, /구독 관리/);
+  assert.match(source, /subscriptionAction/);
+  assert.match(source, /subscriptionHasGradient/);
+  assert.match(source, /subscriptionActionHeight/);
+  assert.match(source, /history\.state\?\.usr\?\.childUserId/);
 });
 
 test("최종 브라우저 QA는 출시 품질 결함을 JSON과 스크린샷 증거로 남긴다", () => {
@@ -52,6 +67,7 @@ test("최종 브라우저 QA는 출시 품질 결함을 JSON과 스크린샷 증
   assert.match(source, /smallTargets/);
   assert.match(source, /overflowX/);
   assert.match(source, /Page\.captureScreenshot/);
+  assert.match(source, /parent-location-history\.png/);
   assert.match(source, /buildFingerprint/);
   assert.match(source, /createHash\("sha256"\)/);
   assert.match(source, /report\.json/);

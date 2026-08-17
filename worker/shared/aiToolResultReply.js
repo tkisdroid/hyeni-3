@@ -1,3 +1,5 @@
+import { describeChildNotificationChange } from "./aiChildSettingsTools.js";
+
 function text(value, fallback = "") {
     const normalized = String(value || "").trim();
     return normalized || fallback;
@@ -66,12 +68,6 @@ function failureReply(result = {}) {
     if (result.error === "invalid_schedule_time_range") {
         return "끝나는 시간은 시작 시간보다 늦어야 해. 시간을 다시 알려줘.";
     }
-    if (result.error === "daily_supply_limit_exceeded") {
-        return "오늘은 8개까지만 담을 수 있어. 하나만 빼면 더 넣을 수 있어.";
-    }
-    if (result.error === "schedule_delete_parent_only") {
-        return "일정 지우는 건 부모님만 할 수 있어. 엄마나 아빠에게 말해 줄까?";
-    }
     if (String(result.error || "").startsWith("schedule_")) {
         return "일정을 처리하지 못했어. 잠시 후 다시 해보자.";
     }
@@ -95,20 +91,13 @@ export function buildAgentPlanChildReply(plan = {}) {
         return "부모님이나 보호자에게만 연락을 도와줄 수 있어.";
     }
 
+    // 일정 삭제는 보호자만 할 수 있다. 못 하는 걸 한 척하지 않고 대신 전해 주겠다고 제안한다.
     if (intent === "schedule_delete_parent_only") {
-        return "일정 지우는 건 부모님만 할 수 있어. 엄마나 아빠에게 말해 줄까?";
+        return "일정 지우기는 부모님만 할 수 있어. 내가 부모님께 대신 말해 줄까? \"엄마한테 ○○ 일정 지워달라고 전해줘\"라고 말해 줘.";
     }
 
-    if (intent === "parent_locked_setting") {
-        return "그 설정은 부모님이 정하는 거야. 바꾸고 싶으면 엄마나 아빠에게 말해 줄까?";
-    }
-
-    if (intent === "settings_accent" && hasMissing(plan, "accent")) {
-        return "무슨 색으로 바꿀까? 핑크, 살구, 보라, 민트, 하늘, 레몬 중에 골라줘.";
-    }
-
-    if (intent === "daily_item_create" && hasMissing(plan, "label")) {
-        return plan.toolArgs?.kind === "hw" ? "어떤 숙제를 넣을까?" : "어떤 준비물을 넣을까?";
+    if (intent === "notification_settings_parent_only") {
+        return "그 알림은 부모님이 정하는 거라 내가 못 바꿔. 내가 부모님께 대신 부탁해 줄까?";
     }
 
     if (missingArgs(plan).length === 0) return "";
@@ -128,13 +117,21 @@ export function buildAgentPlanChildReply(plan = {}) {
         if (hasMissing(plan, "title")) return "어떤 일정인지 알려줘.";
     }
 
-    if (intent === "schedule_delete" || intent === "schedule_delete_parent_only") {
-        return "일정 지우는 건 부모님만 할 수 있어. 엄마나 아빠에게 말해 줄까?";
+    if (intent === "schedule_delete") {
+        if (hasMissing(plan, "date") || hasMissing(plan, "title")) return "언제 어떤 일정을 지울까?";
     }
 
     if (intent === "schedule_update") {
         if (hasMissing(plan, "changes")) return "무엇을 어떻게 바꿀까?";
         if (hasMissing(plan, "date") || hasMissing(plan, "title")) return "언제 어떤 일정을 바꿀까?";
+    }
+
+    if (intent === "ai_friend_name" && hasMissing(plan, "name")) {
+        return "새 이름을 알려줘! 어떤 이름으로 불러 줄까?";
+    }
+
+    if (intent === "app_theme" && hasMissing(plan, "accent")) {
+        return "무슨 색으로 바꿀까? 핑크·살구·보라·민트·하늘·레몬 중에 골라 줘.";
     }
 
     return "";
@@ -150,16 +147,8 @@ export function buildToolResultChildReply(result) {
         const time = timeRange(result.event);
         return time ? `${title} 일정을 ${time}에 추가했어.` : `${title} 일정을 추가했어.`;
     }
-    if (toolName === "createDailyItem") {
-        const kindLabel = result.kind === "hw" ? "숙제" : "준비물";
-        if (result.duplicate) return `「${text(result.label, kindLabel)}」는 이미 들어 있어.`;
-        return `「${text(result.label, kindLabel)}」 ${kindLabel}에 넣었어.`;
-    }
-    if (toolName === "setChildAccent") {
-        return `${text(result.label, "그")} 색으로 바꿔 줄게.`;
-    }
     if (toolName === "deleteSchedule") {
-        return "일정 지우는 건 부모님만 할 수 있어. 엄마나 아빠에게 말해 줄까?";
+        return `${text(result.event?.title, "일정")} 일정을 지울지 확인해줘.`;
     }
     if (toolName === "updateSchedule") {
         const title = text(result.event?.title, "일정");
@@ -189,6 +178,15 @@ export function buildToolResultChildReply(result) {
         return result.parentNotified
             ? "걱정되는 일이 있어서 보호자에게 알림을 남겼어. 가까운 어른에게도 바로 말해줘."
             : "걱정되는 일이 있어. 지금 가까운 어른에게 바로 말해줘.";
+    }
+    if (toolName === "updateNotificationSettings") {
+        return describeChildNotificationChange(result.applied) || "알림 설정을 확인했어.";
+    }
+    if (toolName === "updateAiFriendName") {
+        return `좋아, 이제부터 내 이름은 ${text(result.name, "AI 친구")}야!`;
+    }
+    if (toolName === "changeAppTheme") {
+        return `${text(result.accentLabel, "새")} 색으로 바꿨어! 마음에 들어?`;
     }
     return "";
 }

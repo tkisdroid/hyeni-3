@@ -53,9 +53,29 @@ test("부모·연결 화면의 긴 한국어 문구는 의미 단위 줄바꿈�
 test("가족 연결과 위치 잠금 안내는 강제 줄바꿈 없이 폭에 맞춰 흐른다", () => {
   const family = readFileSync(resolve(rootDir, "src/screens/parent/ParentFamily.tsx"), "utf8");
   const location = readFileSync(resolve(rootDir, "src/screens/parent/ParentLocation.tsx"), "utf8");
+  const koParent = JSON.parse(readFileSync(resolve(rootDir, "locales/ko/parent.json"), "utf8"));
 
-  assert.ok(family.includes("이 코드나 QR로 다시 연결해요."));
+  assert.ok(family.includes("parent.parentFamily.copy022"));
+  assert.match(koParent["parent.parentFamily.copy022"], /이 코드나 QR로 다시 연결해요\./);
   assert.doesNotMatch(location, /<br\s*\/?>/);
+});
+
+test("플랜 비교표는 열 폭을 먼저 고정하고 한국어를 어절 단위로만 접는다", () => {
+  // 2026-08-17 TK 제보 "플랜 비교 줄바꿈이 난잡하다": 항목 이름 nowrap 때문에 표가
+  // 화면보다 넓어지고, 남은 폭에 밀린 값 칸이 글자 중간에서 끊겼다.
+  const css = readCss("src/screens/feature/Subscription.css");
+  const table = selectorBlock(css, ".sub-table");
+  const rowhead = selectorBlock(css, ".sub-table__rowhead");
+  const cell = selectorBlock(css, ".sub-table__cell");
+
+  assert.match(table, /table-layout:\s*fixed\s*;/, "열 폭이 내용 길이에 흔들리면 안 돼요");
+  assert.match(rowhead, /width:\s*44%\s*;/);
+  assert.match(selectorBlock(css, ".sub-table__col"), /width:\s*28%\s*;/);
+  assert.doesNotMatch(rowhead, /white-space:\s*nowrap\s*;/, "항목 이름은 접혀도 되고 표는 화면 폭을 지켜야 해요");
+  assertPrettyKoreanWrap(rowhead, ".sub-table__rowhead");
+  assertPrettyKoreanWrap(cell, ".sub-table__cell");
+  // 넓은 표는 그래도 자기 컨테이너 안에서만 가로 스크롤한다(문서 본문은 넘치지 않는다).
+  assert.match(selectorBlock(css, ".sub-compare__scroll"), /overflow-x:\s*auto\s*;/);
 });
 
 test("도착 알림 카드는 동적 본문 길이에 맞춰 늘어나며 고정 높이를 강제하지 않는다", () => {
@@ -77,7 +97,12 @@ test("장소 저장과 아이 연결 CTA는 공용 primary 높이를 유지한�
 
 test("아이 연결 요금 안내는 390px에서 마지막 어절만 고립되지 않도록 짧게 유지한다", () => {
   const source = readFileSync(resolve(rootDir, "src/screens/feature/PairingWizard.tsx"), "utf8");
+  const koParent = JSON.parse(readFileSync(resolve(rootDir, "locales/ko/parent.json"), "utf8"));
 
-  assert.ok(source.includes("첫째 아이는 무료, 둘째부터는 프리미엄이에요."));
-  assert.ok(!source.includes("아이 1명은 무료예요. 두 번째 아이는 프리미엄에서 연결할 수 있어요."));
+  assert.ok(source.includes("parent.pairingWizard.firstFree"));
+  assert.equal(koParent["parent.pairingWizard.firstFree"], "첫째 아이는 무료, 둘째부터는 프리미엄이에요.");
+  assert.notEqual(
+    koParent["parent.pairingWizard.firstFree"],
+    "아이 1명은 무료예요. 두 번째 아이는 프리미엄에서 연결할 수 있어요.",
+  );
 });

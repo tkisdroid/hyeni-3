@@ -121,6 +121,17 @@
                     android:path="/oauth/callback" />
             </intent-filter>
 
+            <!-- 친구 초대: 카카오톡·메일 링크가 설치된 앱을 연다. /oauth 와 경로를 분리한다. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="hyeni-calendar.pages.dev"
+                    android:pathPrefix="/invite" />
+            </intent-filter>
+
         </activity>
 
         <!-- showWhenLocked/turnScreenOn 은 API 27+ 전용이고 그 아래는 Activity 가 window flag 로

@@ -1,3 +1,6 @@
+import type { SupportedLocale } from "../i18n/locale.ts";
+import { formatDateTime } from "../i18n/format.ts";
+
 export interface NotificationQuietHours {
   enabled: boolean;
   startMinute: number;
@@ -84,24 +87,21 @@ export function resolveNotificationQuietHoursSourceUpdate(
   };
 }
 
-function koreanTimeLabel(value: number): string {
+function timeLabel(value: number, locale: SupportedLocale): string {
   const hour = Math.floor(value / 60);
   const minute = value % 60;
-  let label: string;
-
-  if (hour === 0) label = "자정";
-  else if (hour <= 5) label = `새벽 ${hour}시`;
-  else if (hour <= 9) label = `아침 ${hour}시`;
-  else if (hour <= 11) label = `오전 ${hour}시`;
-  else if (hour === 12) label = "낮 12시";
-  else if (hour <= 17) label = `오후 ${hour - 12}시`;
-  else if (hour <= 20) label = `저녁 ${hour - 12}시`;
-  else label = `밤 ${hour - 12}시`;
-
-  return minute === 0 ? label : `${label} ${minute}분`;
+  // quiet hours 값은 특정 날짜의 instant가 아니라 wall-clock 분이므로 UTC 합성 시각으로 표시한다.
+  return formatDateTime(Date.UTC(2026, 0, 1, hour, minute), {
+    locale,
+    timeZone: "UTC",
+    timeStyle: "short",
+  });
 }
 
-export function notificationQuietHoursRange(value: NotificationQuietHoursDraft): string {
+export function notificationQuietHoursRange(
+  value: NotificationQuietHoursDraft,
+  locale: SupportedLocale,
+): string {
   if (!isValidNotificationQuietHours(value)) return "";
-  return `${koreanTimeLabel(value.startMinute)}부터 ${koreanTimeLabel(value.endMinute)}까지`;
+  return `${timeLabel(value.startMinute, locale)}부터 ${timeLabel(value.endMinute, locale)}까지`;
 }

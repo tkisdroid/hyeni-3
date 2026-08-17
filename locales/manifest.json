@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "sourceLocale": "ko",
+  "fallbackLocale": "en",
+  "locales": [
+    { "code": "ko", "nativeName": "한국어", "brandName": "혜니캘린더", "intlLocale": "ko-KR", "androidLocale": "ko", "mapboxLocale": "ko", "runtimeStatus": "enabled", "releaseStatus": "draft" },
+    { "code": "en", "nativeName": "English", "brandName": "Hyeni Calendar", "intlLocale": "en-US", "androidLocale": "en", "mapboxLocale": "en", "runtimeStatus": "enabled", "releaseStatus": "draft" },
+    { "code": "ja", "nativeName": "日本語", "brandName": "Hyeni Calendar", "intlLocale": "ja-JP", "androidLocale": "ja", "mapboxLocale": "ja", "runtimeStatus": "enabled", "releaseStatus": "draft" },
+    { "code": "zh-CN", "nativeName": "简体中文", "brandName": "Hyeni Calendar", "intlLocale": "zh-CN", "androidLocale": "zh-CN", "mapboxLocale": "zh-Hans", "runtimeStatus": "enabled", "releaseStatus": "draft" },
+    { "code": "zh-TW", "nativeName": "繁體中文", "brandName": "Hyeni Calendar", "intlLocale": "zh-TW", "androidLocale": "zh-TW", "mapboxLocale": "zh-Hant", "runtimeStatus": "enabled", "releaseStatus": "draft" },
+    { "code": "vi", "nativeName": "Tiếng Việt", "brandName": "Hyeni Calendar", "intlLocale": "vi-VN", "androidLocale": "vi", "mapboxLocale": "vi", "runtimeStatus": "enabled", "releaseStatus": "draft" },
+    { "code": "th", "nativeName": "ไทย", "brandName": "Hyeni Calendar", "intlLocale": "th-TH-u-ca-gregory", "androidLocale": "th", "mapboxLocale": "th", "runtimeStatus": "enabled", "releaseStatus": "draft" },
+    { "code": "id", "nativeName": "Bahasa Indonesia", "brandName": "Hyeni Calendar", "intlLocale": "id-ID", "androidLocale": "id", "mapboxLocale": "id", "runtimeStatus": "enabled", "releaseStatus": "draft" },
+    { "code": "ms", "nativeName": "Bahasa Melayu", "brandName": "Hyeni Calendar", "intlLocale": "ms-MY", "androidLocale": "ms", "mapboxLocale": "ms", "runtimeStatus": "enabled", "releaseStatus": "draft" },
+    { "code": "fil", "nativeName": "Filipino", "brandName": "Hyeni Calendar", "intlLocale": "fil-PH", "androidLocale": "fil", "mapboxLocale": "fil", "runtimeStatus": "enabled", "releaseStatus": "draft" }
+  ]
+}

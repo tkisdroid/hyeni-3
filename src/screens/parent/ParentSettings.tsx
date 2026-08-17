@@ -1,3 +1,4 @@
+import { useIntl } from "react-intl";
 import { useId, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import {
@@ -8,6 +9,7 @@ import {
   Crown,
   DatabaseZap,
   Gift,
+  Languages,
   LogOut,
   MapPin,
   MessageCircleQuestion,
@@ -18,9 +20,12 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { asset } from "@/lib/assets";
+import { parentAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { ReferralRewardPanel } from "@/components/ReferralRewardPanel";
+import { LanguageSelector, languageNativeName } from "@/components/LanguageSelector";
+import { useLocale } from "@/i18n/useLocale";
 import { APP_VERSION } from "@/config/version";
 import { useAuth } from "@/auth/AuthContext";
 import { useEntitlement } from "@/queries/useEntitlement";
@@ -30,32 +35,33 @@ import { openExternal } from "@/lib/native/browser";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { PRIVACY_POLICY_URL } from "@/lib/api/endpoints/account";
 import { getTierLabel, TIERS } from "@/transform/tierPolicy";
+import { REFERRAL_REWARD_CREDITS_DISPLAY } from "@/transform/referralReward";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./ParentSettings.css";
 
 /* ── 행 정의 (결합 회피: 화면 자체 정의) ─────────────────────────────── */
 
 type Tone = "lav" | "rose" | "blue" | "mint" | "gold" | "neutral" | "danger";
-type NavRow = { id: string; Icon: LucideIcon; tone: Tone; label: string; route: string; badge?: boolean };
+type NavRow = { id: string; Icon: LucideIcon; tone: Tone; labelId: string; route: string; badge?: boolean };
 
 const settingsRows: NavRow[] = [
-  { id: "account", Icon: UserRound, tone: "lav", label: "내 계정", route: "/account" },
-  { id: "notif", Icon: Bell, tone: "rose", label: "알림", route: "/notification-settings" },
-  { id: "location", Icon: MapPin, tone: "blue", label: "아이 위치", route: "/location-settings" },
-  { id: "data", Icon: DatabaseZap, tone: "mint", label: "내 데이터", route: "/data-sync" },
-  { id: "subscription", Icon: Crown, tone: "gold", label: "구독", route: "/subscription", badge: true },
+  { id: "account", Icon: UserRound, tone: "lav", labelId: "parent.settings.account", route: "/account" },
+  { id: "notif", Icon: Bell, tone: "rose", labelId: "parent.settings.notifications", route: "/notification-settings" },
+  { id: "location", Icon: MapPin, tone: "blue", labelId: "parent.settings.location", route: "/location-settings" },
+  { id: "data", Icon: DatabaseZap, tone: "mint", labelId: "parent.settings.dataSync", route: "/data-sync" },
+  { id: "subscription", Icon: Crown, tone: "gold", labelId: "parent.settings.subscription", route: "/subscription", badge: true },
 ];
 
-type FeatureRow = { id: string; icon: string; tone: Tone; label: string; route: string };
+type FeatureRow = { id: string; icon: string; tone: Tone; labelId: string; route: string };
 
 const featureRows: FeatureRow[] = [
-  { id: "child", icon: "ui/menu-child-tracker.webp", tone: "blue", label: "아이 관리", route: "/parent/family" },
-  { id: "place", icon: "ui/menu-place-manager.webp", tone: "mint", label: "장소 관리", route: "/place-manager" },
-  { id: "friend", icon: "ui/menu-friend-playdate.webp", tone: "gold", label: "친구놀이", route: "/friend-play" },
-  { id: "audio", icon: "ui/menu-remote-audio.webp", tone: "rose", label: "주변 소리", route: "/remote-audio" },
-  { id: "audio-audit", icon: "ui/menu-remote-audio.webp", tone: "neutral", label: "주변 소리 기록", route: "/remote-audio-audit" },
-  { id: "reward", icon: "ui/menu-sticker.webp", tone: "gold", label: "스티커", route: "/sticker-send" },
-  { id: "ai", icon: "ui/menu-ai-schedule.webp", tone: "lav", label: "AI 친구", route: "/ai-credit" },
+  { id: "child", icon: "ui/menu-child-tracker.webp", tone: "blue", labelId: "parent.settings.children", route: "/parent/family" },
+  { id: "place", icon: "ui/menu-place-manager.webp", tone: "mint", labelId: "parent.settings.places", route: "/place-manager" },
+  { id: "friend", icon: "ui/menu-friend-playdate.webp", tone: "gold", labelId: "parent.settings.playdates", route: "/friend-play" },
+  { id: "audio", icon: "ui/menu-remote-audio.webp", tone: "rose", labelId: "parent.settings.remoteAudio", route: "/remote-audio" },
+  { id: "audio-audit", icon: "ui/menu-remote-audio.webp", tone: "neutral", labelId: "parent.settings.remoteAudioAudit", route: "/remote-audio-audit" },
+  { id: "reward", icon: "ui/menu-sticker.webp", tone: "gold", labelId: "parent.settings.stickers", route: "/sticker-send" },
+  { id: "ai", icon: "ui/menu-ai-schedule.webp", tone: "lav", labelId: "parent.settings.aiCredits", route: "/ai-credit" },
 ];
 
 type AccountRow = {
@@ -88,6 +94,7 @@ const chevronIcon = <ChevronRight className="ps-nav__chev" size={18} strokeWidth
 const featureChevronIcon = <ChevronRight className="ps-feature__chev" size={18} strokeWidth={2.4} />;
 
 export function ParentSettings() {
+  const intl = useIntl();
   const navigate = useNavigate();
   const { show } = useToast();
   const { logout, user } = useAuth();
@@ -96,6 +103,9 @@ export function ParentSettings() {
   const deleteAccount = useDeleteAccount();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [referralOpen, setReferralOpen] = useState(false);
+  // 언어는 계정 프로필 바로 아래 한 줄이고, 그 줄을 펼쳐서 고른다(2026-08-17 TK 지시).
+  const [languageOpen, setLanguageOpen] = useState(false);
+  const { locale } = useLocale();
   const deleteTitleId = useId();
   const deleteDescriptionId = useId();
   const deleteCancelRef = useRef<HTMLButtonElement>(null);
@@ -121,25 +131,27 @@ export function ParentSettings() {
   const reviewRewardNotice = !ready
     ? null
     : tier === TIERS.REVIEWED
-      ? "기존에 받은 스토어 방문 혜택은 그대로 유지돼요"
+      ? intl.formatMessage({ id: "parent.parentSettings.copy001" })
       : tier === TIERS.FREE
-        ? "스토어 방문 혜택의 신규 지급은 종료되었어요"
+        ? intl.formatMessage({ id: "parent.parentSettings.copy002" })
         : null;
   const referralEligibleChildren = useMemo(() => (
     (account?.members ?? []).flatMap((member) => (
       member.role === "child" && member.user_id
-        ? [{ userId: member.user_id, name: member.name?.trim() || "아이" }]
+        ? [{ userId: member.user_id, name: member.name?.trim() || intl.formatMessage({ id: "parent.parentHome.copy004" }) }]
         : []
     ))
-  ), [account?.members]);
+  ), [account?.members, intl]);
 
-  const displayName = account?.myName || "보호자";
-  const roleLabel = account?.isCoParent ? "공동 보호자" : "보호자";
+  const displayName = account?.myName || intl.formatMessage({ id: "parent.parentSettings.copy003" });
+  const roleLabel = account?.isCoParent ? intl.formatMessage({ id: "parent.parentSettings.copy004" }) : intl.formatMessage({ id: "parent.parentSettings.copy003" });
   // 프로필 아바타 — 업로드 사진 > 성별 매칭 3D 캐릭터(아빠 계정에 엄마 캐릭터가 뜨지 않게).
   // 멤버 행 gender 가 비어 있으면 가입 메타(user_metadata.gender)를 본다.
   const genderHint = String(me?.gender ?? user?.user_metadata?.gender ?? "");
   const isDad = /dad|father|male|남/i.test(genderHint);
-  const profileAvatar = me?.photo_url || asset(isDad ? "family/dad.webp" : "family/mom.webp");
+  const profileAvatarPath = parentAvatarPath(me?.photo_url, isDad ? "dad" : "mom");
+  const hasProfilePhoto = profileAvatarPath.startsWith("http") || profileAvatarPath.startsWith("blob:");
+  const profileAvatar = hasProfilePhoto ? profileAvatarPath : asset(profileAvatarPath);
 
   const logoutBusyRef = useRef(false);
   const handleLogout = async () => {
@@ -147,11 +159,11 @@ export function ParentSettings() {
     logoutBusyRef.current = true;
     try {
       await logout();
-      show("로그아웃되었어요", "👋");
+      show(intl.formatMessage({ id: "parent.parentSettings.copy005" }), "👋");
       navigate("/onboarding");
     } catch (error) {
       console.error("로그아웃 실패:", error);
-      show("로그아웃에 실패했어요. 다시 시도해 주세요", "⚠️");
+      show(intl.formatMessage({ id: "parent.parentSettings.copy006" }), "⚠️");
     } finally {
       logoutBusyRef.current = false;
     }
@@ -163,7 +175,7 @@ export function ParentSettings() {
     if (isNativePlatform()) {
       void openExternal(PRIVACY_POLICY_URL).catch((error) => {
         console.error("개인정보 처리방침 열기 실패:", error);
-        show("브라우저를 열 수 없어요", "⚠️");
+        show(intl.formatMessage({ id: "parent.parentSettings.copy007" }), "⚠️");
       });
       return;
     }
@@ -173,13 +185,13 @@ export function ParentSettings() {
   const handleDelete = () => {
     deleteAccount.mutate(undefined, {
       onSuccess: () => {
-        show("계정이 삭제되었어요", "🗑️");
+        show(intl.formatMessage({ id: "parent.parentSettings.copy008" }), "🗑️");
         navigate("/onboarding");
       },
       onError: (e) => {
         console.error("계정 삭제 실패:", e);
         setConfirmDelete(false);
-        show("계정 삭제에 실패했어요. 잠시 후 다시 시도해 주세요", "⚠️");
+        show(intl.formatMessage({ id: "parent.parentSettings.copy009" }), "⚠️");
       },
     });
   };
@@ -187,10 +199,10 @@ export function ParentSettings() {
   if (settingsQueryState === "loading") {
     return (
       <ScreenQueryState
-        screenTitle="설정"
+        screenTitle={intl.formatMessage({ id: "parent.parentHome.copy009" })}
         state="loading"
-        heading="설정을 불러오고 있어요"
-        description="계정과 구독 상태를 확인하고 있어요."
+        heading={intl.formatMessage({ id: "parent.parentSettings.copy010" })}
+        description={intl.formatMessage({ id: "parent.parentSettings.copy011" })}
         onBack={() => navigate(-1)}
       />
     );
@@ -199,10 +211,10 @@ export function ParentSettings() {
   if (settingsQueryState === "error") {
     return (
       <ScreenQueryState
-        screenTitle="설정"
+        screenTitle={intl.formatMessage({ id: "parent.parentHome.copy009" })}
         state="error"
-        heading="설정을 불러오지 못했어요"
-        description="계정·구독 확인에 실패해 변경을 잠시 닫았어요."
+        heading={intl.formatMessage({ id: "parent.parentSettings.copy012" })}
+        description={intl.formatMessage({ id: "parent.parentSettings.copy013" })}
         onBack={() => navigate(-1)}
         onRetry={() => void retryParentSettings()}
         retrying={settingsRefetching}
@@ -213,14 +225,14 @@ export function ParentSettings() {
   if (settingsDataEmpty) {
     return (
       <ScreenQueryState
-        screenTitle="설정"
+        screenTitle={intl.formatMessage({ id: "parent.parentHome.copy009" })}
         state="empty"
-        heading="확인할 설정 정보가 없어요"
-        description="계정 연결 상태를 다시 확인해 주세요."
+        heading={intl.formatMessage({ id: "parent.parentSettings.copy014" })}
+        description={intl.formatMessage({ id: "parent.parentSettings.copy015" })}
         onBack={() => navigate(-1)}
         onRetry={() => void retryParentSettings()}
         retrying={settingsRefetching}
-        retryLabel="다시 확인하기"
+        retryLabel={intl.formatMessage({ id: "parent.parentSettings.copy016" })}
       />
     );
   }
@@ -231,18 +243,18 @@ export function ParentSettings() {
         <button
           type="button"
           className="ps-back hy-press"
-          aria-label="뒤로"
+          aria-label={intl.formatMessage({ id: "parent.parentSettings.copy017" })}
           onClick={() => navigate(-1)}
         >
           <ChevronLeft size={22} strokeWidth={2.2} />
         </button>
-        <span className="ps-head-title">설정</span>
+        <span className="ps-head-title">{intl.formatMessage({ id: "parent.parentHome.copy009" })}</span>
       </header>
 
       <div className="ps-content">
         {/* 프로필 (실 로그인 사용자) */}
         <div className="ps-profile">
-          <div className="ps-profile__avatar">
+          <div className="ps-profile__avatar" data-photo={hasProfilePhoto ? "true" : "false"}>
             <img className="hy-network-avatar" src={profileAvatar} alt="" loading="eager" decoding="async" />
           </div>
           <div className="ps-profile__info">
@@ -256,13 +268,39 @@ export function ParentSettings() {
             className="ps-profile__edit hy-press"
             onClick={() => navigate("/account")}
           >
-            편집
+            {intl.formatMessage({ id: "parent.parentHome.copy051" })}
           </button>
+        </div>
+
+        {/* 언어 — 계정 프로필 바로 아래 한 줄. 지금 언어를 보여주고 눌러서 펼친다. */}
+        <div className="ps-list ps-language">
+          <button
+            type="button"
+            className="ps-nav hy-press"
+            aria-expanded={languageOpen}
+            onClick={() => setLanguageOpen((open) => !open)}
+          >
+            <SettingsIcon Icon={Languages} tone="blue" />
+            <span className="ps-nav__label">{intl.formatMessage({ id: "core.language.rowLabel" })}</span>
+            <span className="ps-nav__value" lang={locale}>{languageNativeName(locale)}</span>
+            <ChevronRight
+              className="ps-language__chevron"
+              size={18}
+              strokeWidth={2.2}
+              color="var(--fg-placeholder)"
+              aria-hidden="true"
+            />
+          </button>
+          {languageOpen && (
+            <div className="ps-language__panel">
+              <LanguageSelector tone="formal" compact />
+            </div>
+          )}
         </div>
 
         {/* 설정 (신규 화면 배선) */}
         <div className="ps-group">
-          <div className="ps-group__label">설정</div>
+          <div className="ps-group__label">{intl.formatMessage({ id: "parent.parentHome.copy009" })}</div>
           <div className="ps-list">
             {settingsRows.map((r) => (
               <button
@@ -272,10 +310,10 @@ export function ParentSettings() {
                 onClick={() => navigate(r.route)}
               >
                 <SettingsIcon Icon={r.Icon} tone={r.tone} />
-                <span className="ps-nav__label">{r.label}</span>
+                <span className="ps-nav__label">{intl.formatMessage({ id: r.labelId })}</span>
                 {r.badge && ready && (
                   <span className="ps-account__badge" data-premium={tier === TIERS.PREMIUM}>
-                    {getTierLabel(tier)}
+                    {getTierLabel(tier, intl)}
                   </span>
                 )}
                 {chevronIcon}
@@ -288,7 +326,12 @@ export function ParentSettings() {
                 onClick={() => setReferralOpen(true)}
               >
                 <SettingsIcon Icon={Gift} tone="gold" />
-                <span className="ps-nav__label">친구 초대하고 AI 10회 받기</span>
+                <span className="ps-nav__label">
+                  {intl.formatMessage(
+                    { id: "parent.parentSettings.copy018" },
+                    { count: REFERRAL_REWARD_CREDITS_DISPLAY },
+                  )}
+                </span>
                 {chevronIcon}
               </button>
             )}
@@ -303,7 +346,7 @@ export function ParentSettings() {
 
         {/* 가족 · 안전 */}
         <div className="ps-group">
-          <div className="ps-group__label">가족</div>
+          <div className="ps-group__label">{intl.formatMessage({ id: "parent.parentSettings.copy019" })}</div>
           <div className="ps-list">
             {featureRows.map((f) => (
               <button
@@ -315,7 +358,7 @@ export function ParentSettings() {
                 <span className="ps-feature__icon" data-tone={f.tone}>
                   <img src={asset(f.icon)} alt="" />
                 </span>
-                <span className="ps-feature__label">{f.label}</span>
+                <span className="ps-feature__label">{intl.formatMessage({ id: f.labelId })}</span>
                 {featureChevronIcon}
               </button>
             ))}
@@ -324,13 +367,13 @@ export function ParentSettings() {
 
         {/* 약관 · 계정 */}
         <div className="ps-group">
-          <div className="ps-group__label">기타</div>
+          <div className="ps-group__label">{intl.formatMessage({ id: "parent.parentSettings.copy020" })}</div>
           <div className="ps-list">
             {([
-              { id: "privacy", Icon: ShieldCheck, tone: "neutral", label: "개인정보 처리방침", onClick: openPrivacy, chevron: true },
-              { id: "feedback", Icon: MessageCircleQuestion, tone: "blue", label: "문의하기", onClick: () => navigate("/feedback"), chevron: true },
-              { id: "logout", Icon: LogOut, tone: "danger", label: "로그아웃", onClick: () => void handleLogout() },
-              { id: "delete", Icon: AlertTriangle, tone: "danger", label: "회원 탈퇴", onClick: () => setConfirmDelete(true), danger: true },
+              { id: "privacy", Icon: ShieldCheck, tone: "neutral", label: intl.formatMessage({ id: "parent.parentSettings.copy021" }), onClick: openPrivacy, chevron: true },
+              { id: "feedback", Icon: MessageCircleQuestion, tone: "blue", label: intl.formatMessage({ id: "parent.parentSettings.copy022" }), onClick: () => navigate("/feedback"), chevron: true },
+              { id: "logout", Icon: LogOut, tone: "danger", label: intl.formatMessage({ id: "parent.parentSettings.copy023" }), onClick: () => void handleLogout() },
+              { id: "delete", Icon: AlertTriangle, tone: "danger", label: intl.formatMessage({ id: "parent.parentSettings.copy024" }), onClick: () => setConfirmDelete(true), danger: true },
             ] satisfies AccountRow[]).map((r) => (
               <button key={r.id} type="button" className="ps-account hy-press" onClick={r.onClick}>
                 <AccountIcon Icon={r.Icon} tone={r.tone} />
@@ -343,7 +386,9 @@ export function ParentSettings() {
           </div>
         </div>
 
-        <div className="ps-version">혜니캘린더 v{APP_VERSION} · 함께 보는 우리 가족 일정</div>
+        <div className="ps-version">
+          {intl.formatMessage({ id: "parent.settings.version" }, { version: APP_VERSION })}
+        </div>
       </div>
 
       <ReferralRewardPanel
@@ -366,18 +411,18 @@ export function ParentSettings() {
             type="button"
             className="ps-modal__scrim"
             tabIndex={-1}
-            aria-label="닫기"
+            aria-label={intl.formatMessage({ id: "parent.parentSettings.copy027" })}
             onClick={() => !deleteAccount.isPending && setConfirmDelete(false)}
           />
           <div className="ps-modal__card">
             <div className="ps-modal__emoji" aria-hidden="true">
               <Trash2 size={24} strokeWidth={2.2} />
             </div>
-            <div id={deleteTitleId} className="ps-modal__title">정말 탈퇴하시겠어요?</div>
+            <div id={deleteTitleId} className="ps-modal__title">{intl.formatMessage({ id: "parent.parentSettings.copy028" })}</div>
             <p id={deleteDescriptionId} className="ps-modal__body">
               {account?.isPrimaryParent
-                ? "일정·위치·대화·아이 계정이 모두 삭제되며 복구할 수 없어요."
-                : "내 계정과 이 가족에서의 정보가 삭제돼요."}
+                ? intl.formatMessage({ id: "parent.parentSettings.copy029" })
+                : intl.formatMessage({ id: "parent.parentSettings.copy030" })}
             </p>
             <div className="ps-modal__btns">
               <button
@@ -388,7 +433,7 @@ export function ParentSettings() {
                 disabled={deleteAccount.isPending}
                 data-progress-owner="confirm-action"
               >
-                취소
+                {intl.formatMessage({ id: "parent.parentSettings.copy031" })}
               </button>
               <button
                 type="button"
@@ -396,7 +441,7 @@ export function ParentSettings() {
                 onClick={handleDelete}
                 disabled={deleteAccount.isPending} aria-busy={deleteAccount.isPending}
               >
-                {deleteAccount.isPending ? "삭제 중…" : "탈퇴하기"}
+                {deleteAccount.isPending ? intl.formatMessage({ id: "parent.parentSettings.copy032" }) : intl.formatMessage({ id: "parent.parentSettings.copy033" })}
               </button>
             </div>
           </div>

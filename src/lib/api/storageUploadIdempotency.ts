@@ -20,7 +20,7 @@ interface StorageLike {
 
 export interface ChildPhotoUploadRequestScope {
   familyId: string;
-  purpose: "memo" | "profile" | "placeholder";
+  purpose: "memo" | "profile" | "placeholder" | "parent_profile";
   targetMemberId?: string;
   fileOrBlob: Blob;
 }

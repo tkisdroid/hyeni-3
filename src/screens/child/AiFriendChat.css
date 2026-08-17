@@ -46,9 +46,6 @@
   object-fit: contain;
   animation: afc-bob 3s ease-in-out infinite;
 }
-.afc-online {
-  display: none;
-}
 .afc-head-main {
   flex: 1;
   min-width: 0;
@@ -65,16 +62,8 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.afc-head-status {
-  font-size: var(--type-caption);
-  line-height: var(--type-caption-line-height);
-  font-weight: var(--type-caption-weight);
-
-  color: var(--hy-accent-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+/* 이름 아래 상태 한 줄은 제거했다(2026-08-17). 헤더에 버튼이 늘면서 말줄임으로 잘려
+   "얘기…"만 보였고, 어차피 표정 아바타가 같은 정보를 더 잘 전달한다. */
 .afc-credits {
   flex: none;
   display: inline-flex;
@@ -287,46 +276,6 @@
 .afc-send:disabled {
   opacity: 0.5;
 }
-.afc-mic,
-.afc-speak {
-  flex: none;
-  width: 52px;
-  height: 52px;
-  min-width: 52px;
-  border-radius: var(--radius-20);
-  background: var(--hy-accent-soft);
-  color: var(--hy-accent-text);
-  border: 1.5px solid var(--hy-accent);
-  display: grid;
-  place-items: center;
-  --press: 0.92;
-}
-.afc-mic:disabled,
-.afc-speak:disabled {
-  opacity: 0.5;
-}
-.afc-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 0 8px 4px 44px;
-}
-.afc-action {
-  min-height: 44px;
-  padding: 0 16px;
-  border-radius: var(--radius-pill);
-  background: var(--cta-grad-accent);
-  color: var(--bg-card);
-  font-size: var(--type-body);
-  line-height: var(--type-body-line-height);
-  font-weight: var(--type-body-weight);
-  --press: 0.94;
-}
-.afc-action--soft {
-  background: var(--hy-accent-soft);
-  color: var(--hy-accent-text);
-  border: 1.5px solid var(--hy-accent);
-}
 
 @keyframes afc-bob {
   0%,
@@ -372,10 +321,7 @@
 .afc-back,
 .afc-setup,
 .afc-report-link,
-.afc-chip,
-.afc-mic,
-.afc-speak,
-.afc-action {
+.afc-chip {
   min-height: var(--control-min-size);
 }
 .afc-back,
@@ -410,4 +356,211 @@
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
+}
+
+/* 부탁 확인 카드 — 아직 실행하지 않았고 아이가 눌러야 진행된다.
+   입력창 바로 위에 붙여 무엇에 답하는 버튼인지 헷갈리지 않게 한다. */
+.afc-confirm {
+  flex: none;
+  margin: 0 12px 8px;
+  padding: 12px 16px 16px;
+  border-radius: var(--radius-16);
+  background: var(--bg-card);
+  border: 1.5px solid color-mix(in srgb, var(--hy-accent) 34%, transparent);
+  box-shadow: var(--shadow-floating);
+}
+.afc-confirm__title {
+  font-family: Jua, var(--font-sans);
+
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+
+  color: var(--hy-accent-text);
+}
+.afc-confirm__detail {
+  margin-top: 8px;
+  padding: 12px;
+  border-radius: var(--radius-12);
+  background: var(--hy-accent-soft);
+
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
+  color: var(--fg-primary);
+  overflow-wrap: anywhere;
+}
+.afc-confirm__actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+}
+.afc-confirm__cancel,
+.afc-confirm__go {
+  flex: 1;
+  height: 48px;
+  border-radius: var(--radius-16);
+  font-family: Jua, var(--font-sans);
+
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
+  --press: 0.94;
+}
+.afc-confirm__cancel {
+  background: var(--bg-chip-idle);
+  color: var(--fg-tertiary);
+}
+.afc-confirm__go {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--cta-grad-accent);
+  color: var(--bg-card);
+}
+.afc-confirm__go:disabled {
+  opacity: 0.5;
+}
+
+/* 오늘 대화를 다 썼을 때 말풍선 아래 붙는 "부모님께 부탁하기".
+   설명만 하고 길을 안 주면 아이가 할 수 있는 게 없어서, 그 자리에서 바로 부탁하게 한다.
+   보조 버튼 규격(soft 채움 + accent 라벨 + 테두리)이라 안내 말풍선을 압도하지 않는다. */
+.afc-credit-ask {
+  align-self: flex-start;
+  margin-top: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1.5px solid var(--hy-accent);
+  border-radius: var(--radius-pill);
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+  font-family: Jua, var(--font-sans);
+
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
+  --press: 0.94;
+}
+.afc-credit-ask:disabled {
+  border-color: var(--line-soft);
+  background: var(--bg-chip-idle);
+  color: var(--fg-tertiary);
+}
+
+/* ── 음성 대화 ────────────────────────────────────────────────────────────
+   아이는 타자보다 말이 빠르다. 마이크로 말을 걸고 답을 귀로 듣게 한다. */
+
+/* 헤더의 읽어주기 켜기/끄기. 설정 버튼과 같은 원형 규격으로 맞춘다. */
+.afc-voicetog {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--hy-accent-text) 24%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.88;
+}
+.afc-voicetog[aria-pressed="true"] {
+  background: var(--hy-accent-soft);
+}
+
+/* 컴포저의 마이크. 입력창·전송과 같은 52px 높이라 한 줄로 읽힌다. */
+.afc-mic {
+  position: relative; /* 듣는 중 펄스 링(::after)의 기준 — 없으면 화면 엉뚱한 곳에 그려진다. */
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-20);
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  --press: 0.9;
+}
+.afc-mic:disabled {
+  background: var(--bg-chip-idle);
+  color: var(--fg-tertiary);
+}
+.afc-mic--on {
+  background: var(--cta-grad-accent);
+  color: var(--bg-card);
+}
+/* 듣는 중임을 링으로 알린다 — 정적 표시자 금지 계약(진행 중 = 움직임). */
+.afc-mic--on::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-20);
+  border: 2px solid var(--hy-accent);
+  animation: afc-mic-pulse 1.4s ease-out infinite;
+}
+@keyframes afc-mic-pulse {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+
+/* 듣는 중 안내 줄 — 지금 마이크가 열려 있다는 사실을 글로도 알린다. */
+.afc-listening {
+  margin: 0 12px 4px;
+  padding: 8px 12px;
+  border-radius: var(--radius-16);
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+}
+.afc-listening__wave {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 16px;
+}
+.afc-listening__wave span {
+  width: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--hy-accent-text);
+  animation: afc-wave 0.9s ease-in-out infinite;
+}
+.afc-listening__wave span:nth-child(1) { height: 6px; animation-delay: 0s; }
+.afc-listening__wave span:nth-child(2) { height: 14px; animation-delay: 0.15s; }
+.afc-listening__wave span:nth-child(3) { height: 10px; animation-delay: 0.3s; }
+.afc-listening__wave span:nth-child(4) { height: 16px; animation-delay: 0.45s; }
+@keyframes afc-wave {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+}
+.afc-listening__stop {
+  margin-left: auto;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-card);
+  color: var(--hy-accent-text);
+
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
+  --press: 0.94;
+}
+
+/* 움직임을 줄이는 사용자에게는 파형·펄스를 멈춘다(내용은 그대로 읽힌다). */
+@media (prefers-reduced-motion: reduce) {
+  .afc-mic--on::after,
+  .afc-listening__wave span {
+    animation: none;
+  }
 }

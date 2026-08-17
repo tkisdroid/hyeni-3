@@ -1,3 +1,6 @@
+import type { IntlShape } from "react-intl";
+import { withDefaultIntl, defaultKoreanIntl } from "../i18n/defaultIntl.ts";
+
 /**
  * 대화 화면의 빠른 답장 문구 — 보내는 사람(role)에 따라 갈린다.
  *
@@ -10,23 +13,22 @@
 export type MemoQuickReplyRole = "parent" | "child" | "teacher" | null | undefined;
 
 /** 부모 → 아이. */
-export const PARENT_QUICK_REPLIES: readonly string[] = [
-  "지금 어디야?",
-  "숙제는 했어?",
-  "몇 시에 끝나?",
-  "조심히 와 💛",
-  "간식 챙겼어?",
-];
+export const PARENT_QUICK_REPLY_IDS = [1, 2, 3, 4, 5] as const;
 
 /** 아이 → 부모. */
-export const CHILD_QUICK_REPLIES: readonly string[] = [
-  "언제 와?",
-  "숙제 다 했어",
-  "지금 가고 있어",
-  "배고파 🍪",
-  "사랑해 💛",
-];
+export const CHILD_QUICK_REPLY_IDS = [1, 2, 3, 4, 5] as const;
 
-export function resolveMemoQuickReplies(role: MemoQuickReplyRole): readonly string[] {
-  return role === "child" ? CHILD_QUICK_REPLIES : PARENT_QUICK_REPLIES;
+/** 기존 순수 transform 소비자를 위한 한국어 기본값. 화면에서는 현재 locale의 Intl을 사용한다. */
+export const PARENT_QUICK_REPLIES = PARENT_QUICK_REPLY_IDS.map((index) =>
+  defaultKoreanIntl.formatMessage({ id: `shared.memo.quick.parent.${index}` }),
+);
+export const CHILD_QUICK_REPLIES = CHILD_QUICK_REPLY_IDS.map((index) =>
+  defaultKoreanIntl.formatMessage({ id: `shared.memo.quick.child.${index}` }),
+);
+
+export function resolveMemoQuickReplies(role: MemoQuickReplyRole, providedIntl?: IntlShape): readonly string[] {
+  const intl = withDefaultIntl(providedIntl);
+  const sender = role === "child" ? "child" : "parent";
+  const ids = role === "child" ? CHILD_QUICK_REPLY_IDS : PARENT_QUICK_REPLY_IDS;
+  return ids.map((index) => intl.formatMessage({ id: `shared.memo.quick.${sender}.${index}` }));
 }

@@ -8,6 +8,9 @@ const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const readSource = (path) => readFileSync(resolve(rootDir, path), "utf8");
 
 const components = readSource("src/styles/components.css");
+const koParent = JSON.parse(readSource("locales/ko/parent.json"));
+const koBilling = JSON.parse(readSource("locales/ko/billing.json"));
+const koShared = JSON.parse(readSource("locales/ko/shared.json"));
 
 function cssBlock(source, selector) {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -53,6 +56,18 @@ function assertSentenceLines(block, sentences, expectedLineGroups = 1) {
       block,
       new RegExp(`className="hy-explain__line"\\s*>\\s*${escapeRegex(sentence)}\\s*<\\/span>`),
       `문장을 독립된 설명 행으로 유지해야 합니다: ${sentence}`,
+    );
+  }
+}
+
+function assertMessageLines(block, ids, expectedLineGroups = 1) {
+  const groups = block.match(/className="hy-explain__lines"/g) ?? [];
+  assert.equal(groups.length, expectedLineGroups, "조건별 hy-explain__lines 묶음 수가 달라졌습니다");
+  for (const id of ids) {
+    assert.match(
+      block,
+      new RegExp(`className="hy-explain__line"[\\s\\S]{0,180}${escapeRegex(id)}`),
+      `번역 문구를 독립된 설명 행으로 유지해야 합니다: ${id}`,
     );
   }
 }
@@ -118,62 +133,84 @@ test("다문장 설명 다섯 곳은 조건과 문구를 유지한 채 문장별
   const aiSchedule = explanationBlock(
     "src/screens/feature/AiSchedule.tsx",
     "ais-hint hy-explain",
-    "AI가 사진에서 일정을 찾습니다.",
+    "parent.aiSchedule.imageSearch",
   );
-  assertSentenceLines(aiSchedule.block, [
-    "AI가 사진에서 일정을 찾습니다.",
-    "크레딧이 사용될 수 있어요.",
-    "사진은 일정 후보를 찾기 위해 서버로 전송돼요.",
-  ]);
+  assert.equal((aiSchedule.block.match(/className="hy-explain__lines"/g) ?? []).length, 1);
+  const aiScheduleCopy = {
+    "parent.aiSchedule.imageSearch": "AI가 사진에서 일정을 찾습니다.",
+    "parent.aiSchedule.imageCredit": "크레딧이 사용될 수 있어요.",
+    "parent.aiSchedule.imageServer": "사진은 일정 후보를 찾기 위해 서버로 전송돼요.",
+  };
+  for (const [id, expected] of Object.entries(aiScheduleCopy)) {
+    assert.match(aiSchedule.block, new RegExp(`className="hy-explain__line"[\\s\\S]{0,160}${escapeRegex(id)}`));
+    assert.equal(koParent[id], expected);
+  }
 
   const socialLinks = explanationBlock(
     "src/screens/parent/SocialLinks.tsx",
     "pa-note hy-explain",
-    "계정을 바꾸려면 새 계정을 먼저 연결하세요.",
+    "parent.socialLinks.copy017",
   );
   assert.match(socialLinks.block, /\{native\s*\?\s*canUnlink\s*\?/);
-  assertSentenceLines(socialLinks.block, [
-    "계정을 바꾸려면 새 계정을 먼저 연결하세요.",
-    "해제해도 가족·일정 데이터는 그대로예요.",
-    "지금이 유일한 로그인 수단이라 해제할 수 없어요.",
-    "다른 로그인 방법을 먼저 추가해 주세요.",
-    "소셜 계정 연결은 안드로이드 앱에서 할 수 있어요.",
-  ], 3);
+  const socialCopy = {
+    "parent.socialLinks.copy017": "계정을 바꾸려면 새 계정을 먼저 연결한 뒤 예전 계정을 해제하세요.",
+    "parent.socialLinks.copy018": "해제해도 가족·일정 데이터는 그대로예요.",
+    "parent.socialLinks.copy019": "지금은 이 소셜 계정이 유일한 로그인 수단이라 해제할 수 없어요.",
+    "parent.socialLinks.copy020": "다른 로그인 방법을 먼저 추가해 주세요.",
+    "parent.socialLinks.copy021": "소셜 계정 연결은 안드로이드 앱에서 할 수 있어요.",
+  };
+  assert.equal((socialLinks.block.match(/className="hy-explain__lines"/g) ?? []).length, 3);
+  for (const [id, expected] of Object.entries(socialCopy)) {
+    assert.match(socialLinks.block, new RegExp(`className="hy-explain__line"[\\s\\S]{0,120}${id.replaceAll(".", "\\.")}`));
+    assert.equal(koParent[id], expected);
+  }
 
   const pairingWizard = explanationBlock(
     "src/screens/feature/PairingWizard.tsx",
     "pw-note hy-explain",
-    "연결 코드를 만들면 아이 정보(사진·이름·생년월일·테마색)가 저장돼요.",
+    "parent.pairingWizard.primarySaveLine",
     "p",
   );
   assert.match(pairingWizard.block, /\{family\?\.isPrimaryParent\s*\?/);
-  assertSentenceLines(pairingWizard.block, [
-    "연결 코드를 만들면 아이 정보(사진·이름·생년월일·테마색)가 저장돼요.",
-    "아이 기기에서 코드를 입력하면 이 정보를 이어받아 연결돼요.",
-    "주 보호자만 아이 정보를 서버에 저장할 수 있어요.",
-    "지금 만든 정보는 초대 화면에 미리보기로 전달돼요.",
-  ], 2);
+  assert.equal((pairingWizard.block.match(/className="hy-explain__lines"/g) ?? []).length, 2);
+  const pairingWizardCopy = {
+    "parent.pairingWizard.primarySaveLine": "연결 코드를 만들면 아이 정보(사진·이름·생년월일·테마색)가 저장돼요.",
+    "parent.pairingWizard.primaryInheritLine": "아이 기기에서 코드를 입력하면 이 정보를 이어받아 연결돼요.",
+    "parent.pairingWizard.secondarySaveLine": "주 보호자만 아이 정보를 서버에 저장할 수 있어요.",
+    "parent.pairingWizard.secondaryPreviewLine": "지금 만든 정보는 초대 화면에 미리보기로 전달돼요.",
+  };
+  for (const [id, expected] of Object.entries(pairingWizardCopy)) {
+    assert.match(pairingWizard.block, new RegExp(`className="hy-explain__line"[\\s\\S]{0,160}${escapeRegex(id)}`));
+    assert.equal(koParent[id], expected);
+  }
 
   const aiCredit = explanationBlock(
     "src/screens/feature/AiCredit.tsx",
     "ac-note hy-explain",
-    "일정·안전 대화에 크레딧 1회가 사용돼요.",
+    "billing.aiCredit.creditUse",
   );
-  assertSentenceLines(aiCredit.block, [
-    "일정·안전 대화에 크레딧 1회가 사용돼요.",
-    "필요할 때 충전해 주세요.",
-  ]);
+  assert.equal((aiCredit.block.match(/className="hy-explain__lines"/g) ?? []).length, 1);
+  for (const id of ["billing.aiCredit.creditUse", "billing.aiCredit.topUpHint"]) {
+    assert.match(aiCredit.block, new RegExp(`className="hy-explain__line"[\\s\\S]{0,160}${escapeRegex(id)}`));
+  }
+  assert.equal(
+    koBilling["billing.aiCredit.creditUse"],
+    "AI가 아이의 일정·안전 대화를 도울 때 크레딧 1회가 사용돼요.",
+  );
+  assert.equal(koBilling["billing.aiCredit.topUpHint"], "필요할 때 충전해 주세요.");
 
   const teacherNotice = explanationBlock(
     "src/screens/teacher/TeacherNotice.tsx",
     "tn-hint hy-explain",
-    "아직 연결된 학생이 없어요.",
+    "shared.teacherNotice.hint.empty",
   );
   assert.match(teacherNotice.source, /\{recipientCount === 0 && \(\s*<div className="tn-hint hy-explain">/);
-  assertSentenceLines(teacherNotice.block, [
-    "아직 연결된 학생이 없어요.",
-    "학생이 연결되면 알림장이 학부모에게 전달돼요.",
+  assertMessageLines(teacherNotice.block, [
+    "shared.teacherNotice.hint.empty",
+    "shared.teacherNotice.hint.delivery",
   ]);
+  assert.equal(koShared["shared.teacherNotice.hint.empty"], "학생을 연결하면 알림장을 보낼 수 있어요.");
+  assert.equal(koShared["shared.teacherNotice.hint.delivery"], "보낸 알림장은 연결된 모든 학부모님께 전달돼요.");
 });
 
 test("필수 설명 상자는 공통 스타일을 사용하고 긴 안전 문구를 문장별로 나눈다", () => {
@@ -190,7 +227,7 @@ test("필수 설명 상자는 공통 스타일을 사용하고 긴 안전 문구
 
   assert.match(
     notification,
-    /className="hy-explain__lines"[\s\S]*?className="hy-explain__line">위험·SOS·미도착은 항상 알려드려요\.<\/span>[\s\S]*?className="hy-explain__line">위 설정은 부모의 일반 위치 소식에만 적용돼요\.<\/span>/,
+    /className="hy-explain__lines"[\s\S]*?className="hy-explain__line">위험·SOS·미도착 알림은 항상 전달 대상으로 처리돼요\.<\/span>[\s\S]*?className="hy-explain__line">위 토글은 부모가 받는 일반 위치 소식에만 적용돼요\.<\/span>/,
   );
   assert.match(
     locationStatus,

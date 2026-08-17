@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
+import { useIntl } from "react-intl";
 import { Check, Crown, X } from "lucide-react";
 import { useAuth } from "@/auth/AuthContext";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
@@ -38,6 +39,7 @@ export function PremiumUpsell({
   onClose,
   onUpgrade,
 }: PremiumUpsellProps) {
+  const intl = useIntl();
   const { familyId } = useAuth();
   const titleId = useId();
   const descriptionId = useId();
@@ -48,7 +50,7 @@ export function PremiumUpsell({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [trialEligible, setTrialEligible] = useState(false);
-  const content = resolvePremiumUpsell(source, usage);
+  const content = resolvePremiumUpsell(source, usage, intl);
   const busy = externallyBusy || submitting;
   const funnelTier: PremiumFunnelTier = tier === TIERS.PREMIUM
     ? "premium"
@@ -138,18 +140,16 @@ export function PremiumUpsell({
     setError("");
     try {
       await onUpgrade({ source, feature: content.feature, ...(returnTo ? { returnTo } : {}) });
-    } catch (upgradeError) {
-      setError(
-        upgradeError instanceof Error && upgradeError.message.trim()
-          ? upgradeError.message
-          : "프리미엄 화면을 열지 못했어요. 다시 시도해 주세요.",
-      );
+    } catch {
+      setError(intl.formatMessage({ id: "core.error.api.unknown.formal" }));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const ctaLabel = trialEligible ? `7일 무료로 ${content.ctaLabel}` : content.ctaLabel;
+  const ctaLabel = trialEligible
+    ? intl.formatMessage({ id: "parent.premiumUpsell.trialCta" }, { cta: content.ctaLabel })
+    : content.ctaLabel;
 
   return (
     <div
@@ -171,7 +171,7 @@ export function PremiumUpsell({
         <button
           type="button"
           className="pu-close hy-press"
-          aria-label="프리미엄 안내 닫기"
+          aria-label={intl.formatMessage({ id: "parent.premiumUpsell.copy001" })}
           onClick={onClose}
           disabled={busy}
           aria-busy={busy}
@@ -198,12 +198,12 @@ export function PremiumUpsell({
           disabled={busy}
           aria-busy={busy}
         >
-          {busy ? "프리미엄 화면 여는 중…" : ctaLabel}
+          {busy ? intl.formatMessage({ id: "parent.premiumUpsell.copy002" }) : ctaLabel}
         </button>
         <button
           type="button"
           className="pu-continue hy-press"
-          aria-label="무료로 계속 쓰기"
+          aria-label={content.continueLabel}
           onClick={() => {
             recordPremiumFunnelEvent({
               event: "paywall_continue_free",

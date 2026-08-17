@@ -68,18 +68,19 @@ test("아이 홈 JSX의 주요 색상은 직접 hex 대신 토큰을 사용한�
   assert.match(source, /var\(--bg-card\)/);
 });
 
-test("부모 오늘경로의 오늘 머문 곳 시트는 접힘 transform이 sheet-up 애니메이션에 덮이지 않는다", () => {
+test("부모 오늘경로 패널은 명시적 토글과 최소 조작 크기를 제공한다", () => {
   const css = readCss("src/screens/parent/ParentLocation.css");
 
-  assert.match(css, /\.pl-stays\s*\{[^}]*animation:\s*none/s);
-  assert.match(css, /\.pl-stays--collapsed\s*\{[^}]*transform:\s*translateY\(calc\(100% \+ 28px\)\)/s);
+  assert.match(css, /\.pl-journey__toggle\s*\{[^}]*min-height:\s*var\(--control-min-size\)/s);
+  assert.doesNotMatch(css, /\.pl-stays--collapsed/);
 });
 
-test("부모 이동 기록의 시간대별 경로는 날짜 선택기 아래 안전영역에 배치된다", () => {
+test("부모 이동 기록은 세로 하단 패널과 가로 왼쪽 패널로 배치된다", () => {
   const css = readCss("src/screens/parent/ParentLocation.css");
 
-  assert.match(css, /\.pl-history-day\s*\{[^}]*top:\s*calc\(env\(safe-area-inset-top, 0px\) \+ 64px\)/s);
-  assert.match(css, /\.pl-scrub\s*\{[^}]*top:\s*calc\(env\(safe-area-inset-top, 0px\) \+ 120px\)/s);
+  assert.match(css, /\.pl-journey\s*\{[^}]*left:\s*16px[^}]*right:\s*16px[^}]*bottom:/s);
+  assert.match(css, /@media\s*\(min-width:\s*720px\)[\s\S]*\.pl-journey\s*\{[^}]*width:\s*392px[^}]*left:\s*16px/s);
+  assert.match(css, /\.pl-journey__toggle\s*\{[^}]*min-height:\s*var\(--control-min-size\)/s);
 });
 
 test("아이 화면은 TopBar 가 없으므로 각자 상단 안전영역을 챙긴다(상태바 겹침 금지)", () => {

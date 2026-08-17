@@ -25,34 +25,18 @@ export interface MemoChatCopy {
   locationUnavailable: string;
 }
 
-const PARENT_COPY: MemoChatCopy = {
-  noConversation: "새 대화를 시작해요",
-  loading: "대화를 불러오는 중…",
-  loadError: "대화를 불러오지 못했어요",
-  empty: "아직 나눈 대화가 없어요. 먼저 인사를 건네 보세요 💌",
-  inputPlaceholder: "메시지를 입력하세요…",
-  emptyDraft: "메시지를 입력해 주세요",
-  sendFailed: "메시지 전송에 실패했어요",
-  imageFailed: "사진 전송에 실패했어요",
-  imageLoadFailed: "사진을 불러오지 못했어요",
-  locationFailed: "위치 전송에 실패했어요",
-  locationUnavailable: "현재 위치를 확인하지 못했어요",
-};
-
-const CHILD_COPY: MemoChatCopy = {
-  noConversation: "새 대화를 시작해",
-  loading: "대화를 불러오는 중…",
-  loadError: "대화를 불러오지 못했어",
-  empty: "아직 나눈 대화가 없어. 먼저 인사해 볼까? 💌",
-  inputPlaceholder: "메시지를 입력해 줘…",
-  emptyDraft: "메시지를 써 줘",
-  sendFailed: "보내지 못했어. 잠시 후 다시 해 줘",
-  imageFailed: "사진을 보내지 못했어. 다시 해 볼래?",
-  imageLoadFailed: "사진을 불러오지 못했어",
-  locationFailed: "위치를 보내지 못했어. 다시 해 볼래?",
-  locationUnavailable: "지금 위치를 못 찾았어. 잠시 후 다시 해줘",
-};
-
-export function resolveMemoChatCopy(role: MemoChatRole): MemoChatCopy {
-  return role === "child" ? CHILD_COPY : PARENT_COPY;
+export function resolveMemoChatCopy(role: MemoChatRole, providedIntl?: IntlShape): MemoChatCopy {
+  const intl = withDefaultIntl(providedIntl);
+  const tone = role === "child" ? "child" : "formal";
+  const message = (field: keyof MemoChatCopy) => intl.formatMessage({ id: `shared.memo.copy.${field}.${tone}` });
+  return {
+    noConversation: message("noConversation"), loading: message("loading"),
+    loadError: message("loadError"), empty: message("empty"),
+    inputPlaceholder: message("inputPlaceholder"), emptyDraft: message("emptyDraft"),
+    sendFailed: message("sendFailed"), imageFailed: message("imageFailed"),
+    imageLoadFailed: message("imageLoadFailed"), locationFailed: message("locationFailed"),
+    locationUnavailable: message("locationUnavailable"),
+  };
 }
+import type { IntlShape } from "react-intl";
+import { withDefaultIntl } from "../i18n/defaultIntl.ts";

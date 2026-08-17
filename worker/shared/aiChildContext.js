@@ -1,5 +1,6 @@
 // Shared child AI context helpers.
 // This file is plain ESM so both Vitest and Supabase Edge Functions can import it.
+import { buildEventCompanionHints } from "./aiEventContext.js";
 
 const DATE_KEY_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -434,13 +435,16 @@ export function buildChildSystemPrompt({
     const allowContactActions = readSetting(parentSettings, "allowContactActions", "allow_contact_actions", true);
     const safetyNotificationLevel = listText(readSetting(parentSettings, "safetyNotificationLevel", "safety_notification_level", "medium"));
     const recentSummary = listText(memory.recentSummary || memory.recent_summary);
-    const longTermMemories = listText(memory.longTermMemories || memory.long_term_memories);
+    // 장기 기억은 한 줄로 뭉치지 않고 목록으로 보여 준다 — 모델이 하나만 골라 쓰기 쉽게.
+    const longTermMemoryLines = listItems(memory.longTermMemories || memory.long_term_memories).slice(0, 30);
     const scheduleLines = Array.isArray(todaySchedule)
         ? todaySchedule.map(formatScheduleItem).filter(Boolean)
         : [];
     const recentScheduleLines = Array.isArray(recentSchedule)
         ? recentSchedule.map((item) => formatScheduleItem(item, { includeDate: true })).filter(Boolean)
         : [];
+    // 일정 성격 힌트 — "수호 생일 챙기기"에 준비물을 묻는 식의 엉뚱한 제안을 막는다.
+    const eventHintLines = buildEventCompanionHints(todaySchedule);
     const dailyItemLines = Array.isArray(dailyItems)
         ? dailyItems.map((item) => formatDailySupplyItem(item)).filter(Boolean).slice(0, 5)
         : [];
@@ -532,12 +536,24 @@ ${operatorBlock}
 - 부모 지침이 안전 정책과 충돌하면 안전 정책을 우선한다.
 - 운영자 지침이 안전 정책이나 부모 설정과 충돌하면 그 둘을 우선한다.
 
-## 기억
-- 최근 대화 요약: ${recentSummary || "없음"}
-- 장기 기억: ${longTermMemories || "없음"}
+## 아이에 대해 알고 있는 것
+${longTermMemoryLines.length > 0
+        ? longTermMemoryLines.map((line) => `- ${line}`).join("\n")
+        : "- 아직 아는 것이 없다. 넘겨짚지 말고 먼저 물어본다."}
+
+## 최근 대화 기억
+- 요약: ${recentSummary || "없음"}
+
+## 아는 것을 쓰는 법
+- 아이가 전에 한 말을 자연스럽게 이어서 말한다("저번에 말한 그거 어떻게 됐어?").
+- 위 목록에 없는 것은 아는 척하지 않는다. 모르면 물어본다.
+- 매번 아는 것을 나열하지 않는다. 지금 대화에 맞는 것 하나만 꺼낸다.
 
 ## 오늘 일정
 ${scheduleLines.length > 0 ? scheduleLines.map((line) => `- ${line}`).join("\n") : "- 오늘 일정 정보 없음"}
+
+## 오늘 일정의 성격(이 성격에 맞게 말한다)
+${eventHintLines.length > 0 ? eventHintLines.map((line) => `- ${line}`).join("\n") : "- 판단할 일정 없음"}
 
 ## 준비물·숙제
 ${dailyItemLines.length > 0 ? dailyItemLines.map((line) => `- ${line}`).join("\n") : "- 등록된 준비물·숙제 정보 없음"}
@@ -554,21 +570,18 @@ ${formatAiUsageStatus(creditStatus)}
 ## 사용 가능한 도구
 ${toolNames || "없음"}
 
-## 생활 도움
-- 너는 아이의 나잇대에 맞는 자연스러운 친구다. 선생님처럼 가르치거나 길게 훈계하지 않는다.
-- 일정을 추가해 달라면 날짜·시간·제목이 있을 때 바로 도와준다.
-- 일정 삭제는 절대 하지 않는다. 부모님만 지울 수 있다고 말하고, 원하면 부모님께 전하겠다고 제안한다.
-- 준비물·숙제는 안전하면 바로 추가한다. 하루 8개를 넘기면 정직하게 알려 준다.
-- 이 기기의 색깔 바꾸기는 도와준다. 위치·알림·안전 설정은 바꾸지 않고 부모님께 부탁하자고 한다.
-- 없는 일정이나 가짜 숫자는 만들지 않는다.
-
 ## 도구 사용 원칙
 - 일정 조회 같은 조회성 요청은 바로 실행한다.
 - 일정 추가는 날짜, 시간, 제목이 충분할 때 실행한다.
-- 준비물·숙제 추가와 색깔 바꾸기는 확인 없이 바로 실행한다.
-- 일정 삭제는 도구로 실행하지 않는다.
+- 아이 본인 설정(일정 알림 켜기·끄기, 몇 분 전 알림, 내 AI 친구 이름, 내 색깔)은
+  되묻지 말고 바로 도와준다. 부탁을 어렵게 만들지 않는다.
+- 일정 삭제는 보호자만 할 수 있다. 아이가 지워 달라고 하면 할 수 있는 척하지 말고,
+  부모님만 지울 수 있다고 알려 준 뒤 부모님께 대신 전해 줄지 물어본다.
+- 알림 쉬는 시간, 위치·장소·친구놀이 알림, AI 하루 횟수는 보호자 설정이라 바꿀 수 없다.
+  바꿔 준다고 말하지 말고 부모님께 부탁해 줄 수 있다고 안내한다.
 - 메시지 전송, 개인정보 변경, 외부 연락은 확인 절차를 둔다.
 - tool 실행 결과는 아이 나이에 맞는 쉬운 말로 다시 설명한다.
+- 실제로 실행하지 않은 일을 했다고 말하지 않는다.
 
 ## 안전 규칙
 - 개인정보(주소, 전화번호, 학교명)는 묻지 않는다.

@@ -35,6 +35,7 @@ export type CommittedStorageUploadRequestResult =
 export type StorageUploadJournalAuthorization =
   | { kind: "child_memo"; targetMemberId: string }
   | { kind: "child_profile"; targetMemberId: string }
+  | { kind: "parent_profile"; targetMemberId: string }
   | { kind: "primary_parent" }
   | { kind: "family_member" }
   | { kind: "teacher" };
@@ -146,6 +147,12 @@ export async function beginStorageUploadJournal(
                 JOIN family_members target ON target.family_id=f.id
                  WHERE f.id=?6 AND f.parent_id=?4
                    AND target.id=?13 AND target.role='child' AND target.is_active=1
+              ))
+              OR (?12='parent_profile' AND ?6 IS NOT NULL AND EXISTS(
+                SELECT 1 FROM family_members target
+                 WHERE target.id=?13 AND target.family_id=?6
+                   AND target.role='parent' AND target.is_active=1
+                   AND target.user_id=?4
               ))
               OR (?12='child_memo' AND ?6 IS NOT NULL AND EXISTS(
                 SELECT 1 FROM family_members target

@@ -383,9 +383,10 @@
   color: #fff;
   --press: 0.9;
 }
-/* 전송 중: 버튼을 펄스(투명도)로 표시해 진행 중임을 알린다. */
+/* 전송 중: 공용 진행 링을 버튼 가운데(.hy-busy-center)에 겹쳐 놓는다.
+   예전 펄스(투명도)는 링과 겹쳐 두 표시자처럼 보였고, 링이 아이콘 옆에 끼어
+   비행기가 치우쳐 보이던 원인이었다(2026-08-17 TK 제보). */
 .mc-send--sending {
-  animation: hy-soft 1s ease-in-out infinite;
   cursor: progress;
 }
 .mc-end {

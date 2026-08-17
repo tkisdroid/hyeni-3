@@ -10,26 +10,18 @@
  */
 import { useMemo } from "react";
 import type { CalendarEvent } from "@/lib/api/endpoints/schedule";
-import { parseAppDateKey } from "@/transform/dateKey";
+import { dateKeyDayRangeIso } from "@/transform/dateKey";
 import { verifyVisits, type VisitChildScope, type VisitVerdict } from "@/transform/visitVerify";
 import { useLocationHistory } from "./useLocation";
 
-/** date_key 하루(로컬 자정~익일 자정)의 UTC ISO 범위. 무효 키면 null. */
-function dayRangeIso(dateKey: string): { start: string; end: string } | null {
-  const date = parseAppDateKey(dateKey);
-  if (!date) return null;
-  const start = date.getTime();
-  const end = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1).getTime();
-  return { start: new Date(start).toISOString(), end: new Date(end).toISOString() };
-}
-
 export function useVisitVerify(
   dateKey: string,
+  timeZone: string,
   events: CalendarEvent[] | undefined,
   childScope: VisitChildScope,
   locationHistoryAllowed: boolean,
 ): Map<string, VisitVerdict> {
-  const range = useMemo(() => dayRangeIso(dateKey), [dateKey]);
+  const range = useMemo(() => dateKeyDayRangeIso(dateKey, timeZone), [dateKey, timeZone]);
   // 좌표 있는 이벤트가 그 날짜에 있고, 하루가 이미 시작됐을 때만 이력 조회.
   const dayEvents = useMemo(
     () => (events ?? []).filter((e) => e.date_key === dateKey),

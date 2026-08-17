@@ -71,6 +71,9 @@ export interface DeviceHealth {
   locationServiceRunning?: boolean | null;
   /** OS가 앱 백그라운드 실행을 제한하고 있는지 여부. */
   backgroundRestricted?: boolean | null;
+  /** 마지막 네이티브 상태 보고의 실제 제조사·모델. 오래된 device_label 보정에 사용. */
+  manufacturer?: string | null;
+  model?: string | null;
 }
 
 export interface FamilyMember {
@@ -473,4 +476,37 @@ export async function sendChildSettingRequest(input: ChildSettingRequestInput): 
     child_user_id: senderUserId ?? null,
   });
   markRequestSent(menu);
+}
+
+// ── 아이 → 부모 AI 대화 충전 요청 ────────────────────────────────────────────
+// 아이가 오늘 AI 대화 횟수를 다 썼을 때 부모에게 바로 부탁한다. 부모 알림을 탭하면
+// 충전·하루 한도 화면(`/ai-credit`)으로 직행해 그 자리에서 해결할 수 있다.
+//
+// 제목·본문·소진 여부는 Worker 가 다시 판정한다(여기서 보내는 문자열은 쓰이지 않는다).
+// 아직 대화가 남아 있으면 서버가 `ai_credit_available` 로 거절한다.
+
+export interface AiCreditRequestResult {
+  /** 최근에 이미 부탁해서 부모 알림을 새로 만들지 않았다. */
+  duplicate: boolean;
+}
+
+export async function sendAiCreditRequest(input: {
+  familyId: string;
+  childUserId: string;
+}): Promise<AiCreditRequestResult> {
+  const { familyId, childUserId } = input;
+  if (!familyId || !childUserId) throw new Error("가족 정보가 없어 부탁을 보낼 수 없어");
+  const res = await apiPost<unknown>("/api/parent-alerts", {
+    family_id: familyId,
+    alert_type: "ai_credit_request",
+    // 서버가 소진 원인에 맞는 문구로 덮어쓴다. 아이 입력은 부모 알림에 담기지 않는다.
+    title: "",
+    message: "",
+    severity: "info",
+    event_id: null,
+    child_user_id: childUserId,
+  });
+  const duplicate = typeof res === "object" && res !== null
+    && (res as Record<string, unknown>).duplicate === true;
+  return { duplicate };
 }

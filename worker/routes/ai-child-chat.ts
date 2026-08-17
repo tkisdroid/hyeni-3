@@ -25,7 +25,7 @@ import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import { requireAuth } from "../middleware/auth";
 import { pgNow } from "../lib/time";
-import { parseJson, toBool } from "../lib/serialize";
+import { parseJson, pgArray, toBool, toPgArray } from "../lib/serialize";
 import { openaiChatUrl, openaiLunaChatConfig, openaiSafetyIdentifier } from "../lib/openai";
 import { classifyOpenAiError, writeOpenAiLog } from "../lib/openaiLog";
 import { notifyPg } from "../lib/realtime";
@@ -75,9 +75,23 @@ import { shouldBypassAiCreditLimit, shouldChargeForAiTurn } from "../shared/aiUs
 import { createAiToolConfirmationToken, verifyAiToolConfirmationToken } from "../shared/aiConfirmationToken.js";
 import { sanitizeAiToolResultForPrompt } from "../shared/aiToolResultPrompt.js";
 import { buildAgentPlanChildReply, buildToolResultChildReply } from "../shared/aiToolResultReply.js";
-import { mergeDailyChecklistItem, encodeDailyChecklist } from "../shared/aiDailyItemTools.js";
-import { inferChildAiEmotion } from "../shared/aiChildEmotion.js";
+import {
+  isChildAccentKey,
+  sanitizeAiFriendName,
+  sanitizeChildNotificationMinutes,
+} from "../shared/aiChildSettingsTools.js";
 import { aiMutationScopeErrorResponse, aiMutationScopeState } from "../lib/aiMutationScope";
+import { isAiUnlimitedFamily } from "../lib/aiUnlimitedAccess";
+
+/** 아이에게 색 이름을 말해 줄 때 쓰는 라벨 — src/transform/childAccent.ts 의 label 과 같다. */
+const CHILD_ACCENT_LABELS: Record<string, string> = {
+  rose: "핑크",
+  peach: "살구",
+  lavender: "보라",
+  mint: "민트",
+  sky: "하늘",
+  lemon: "레몬",
+};
 
 type OpenAiChatResponse = {
   choices?: Array<{ message?: { content?: string }; finish_reason?: unknown }>;
@@ -145,7 +159,15 @@ const SCHEDULE_AGENT_TOOLS = new Set([
   "createSchedule",
   "updateSchedule",
 ]);
-const CHILD_HELP_TOOLS = new Set(["createDailyItem", "setChildAccent"]);
+/**
+ * 아이가 자기 것만 바꾸는 설정 도구.
+ * 부모의 일정·연락 허용 스위치와 무관하다(아이 설정 화면에서 이미 스스로 바꿀 수 있는 항목).
+ */
+const CHILD_SETTINGS_AGENT_TOOLS = new Set([
+  "updateNotificationSettings",
+  "updateAiFriendName",
+  "changeAppTheme",
+]);
 
 function isAgentToolAllowedForPrompt(
   toolName: unknown,
@@ -155,30 +177,25 @@ function isAgentToolAllowedForPrompt(
   if (!name) return false;
   if (CONTACT_AGENT_TOOLS.has(name)) return allowContactActions;
   if (SCHEDULE_AGENT_TOOLS.has(name)) return allowScheduleActions;
-  if (CHILD_HELP_TOOLS.has(name)) return true;
+  if (CHILD_SETTINGS_AGENT_TOOLS.has(name)) return true;
   return name === "notifyParent";
 }
 
-function isDeterministicHelpToolResult(toolResult: any): boolean {
+function isScheduleLookupToolResult(toolResult: any): boolean {
   if (!toolResult || typeof toolResult !== "object") return false;
   if (toolResult.ok !== true) return false;
-  return (
-    toolResult.toolName === "getTodaySchedule"
-    || toolResult.toolName === "getScheduleByDate"
-    || toolResult.toolName === "createSchedule"
-    || toolResult.toolName === "createDailyItem"
-    || toolResult.toolName === "setChildAccent"
-  );
+  return toolResult.toolName === "getTodaySchedule" || toolResult.toolName === "getScheduleByDate";
 }
 
-const CHILD_ACCENT_LABELS: Record<string, string> = {
-  rose: "핑크",
-  peach: "살구",
-  lavender: "보라",
-  mint: "민트",
-  sky: "하늘",
-  lemon: "레몬",
-};
+/**
+ * 설정 변경은 확정된 사실이라 LLM 을 거치지 않고 그대로 알린다.
+ * "알림 꺼줘" 한 마디에 하루 5번뿐인 무료 대화 횟수를 쓰게 하지 않으려는 목적도 있다.
+ */
+function isChildSettingsToolResult(toolResult: any): boolean {
+  if (!toolResult || typeof toolResult !== "object") return false;
+  if (toolResult.ok !== true) return false;
+  return CHILD_SETTINGS_AGENT_TOOLS.has(String(toolResult.toolName || ""));
+}
 
 function formatFamilyMemberForPrompt(member: Record<string, unknown>): string {
   const role = String(member?.role || "").trim();
@@ -276,10 +293,6 @@ function childLinksForEvent(row: Record<string, any>): Array<{ child_id?: string
 
 function isEventLinkedToChild(row: Record<string, any>, childMemberId: string): boolean {
   return childLinksForEvent(row).some((link) => link?.child_id === childMemberId);
-}
-
-function isChildDeletableEvent(row: Record<string, any>, childMemberId: string): boolean {
-  return !!row && row.is_family_event !== true && isEventLinkedToChild(row, childMemberId);
 }
 
 function isSingleChildMutableEvent(row: Record<string, any>, childMemberId: string): boolean {
@@ -599,7 +612,9 @@ chat.post("/child-chat", requireAuth, async (c) => {
     );
   }
 
-  // 일정 삭제는 부모만 가능하다. 옛 클라이언트의 확인 토큰도 실행하지 않는다.
+  // ── 일정 삭제는 보호자 전용(2026-08-17 TK 결정) ──
+  // 계획 단계에서 이미 막지만, 정책 전환 전에 발급된 확인 토큰(10분 유효)이나 조작된 요청도
+  // 여기서 함께 닫는다. 삭제 경로는 아이 세션에서 완전히 사라진다.
   if (body.confirmedTool?.toolName === "deleteSchedule") {
     return c.json({ error: "schedule_delete_parent_only" }, 403);
   }
@@ -797,9 +812,11 @@ chat.post("/child-chat", requireAuth, async (c) => {
   }
 
   // ── 최근 대화(컨텍스트 윈도) ──
+  // 6턴은 "아까 한 말"을 자주 잊어 아이가 같은 설명을 되풀이해야 했다.
+  // 14턴이면 한 번의 대화 주제가 통째로 들어가면서 프롬프트 비용은 완만하게만 늘어난다.
   const recentRes = await db
     .prepare(
-      "SELECT role, content FROM ai_chat_messages WHERE family_id=? AND child_user_id=? AND role != 'system' ORDER BY substr(created_at,1,19) DESC LIMIT 6",
+      "SELECT role, content FROM ai_chat_messages WHERE family_id=? AND child_user_id=? AND role != 'system' ORDER BY substr(created_at,1,19) DESC LIMIT 14",
     )
     .bind(familyId, userId)
     .all<{ role: string; content: string }>();
@@ -812,7 +829,9 @@ chat.post("/child-chat", requireAuth, async (c) => {
     parentSettings: parentSettingsRow || {},
     recentMessages: contextWindow,
   });
-  const canBypassAiCreditLimit = shouldBypassAiCreditLimit({ safety: agentPlan.safety });
+  // 운영자 본인 가족은 한도·차감을 적용하지 않는다(secret 화이트리스트, 결제 상태 무변경).
+  const aiUnlimited = await isAiUnlimitedFamily(c.env, db, familyId);
+  const canBypassAiCreditLimit = shouldBypassAiCreditLimit({ safety: agentPlan.safety }) || aiUnlimited;
 
   if (!creditStatus.canChat && !canBypassAiCreditLimit) {
     return c.json(
@@ -845,7 +864,7 @@ chat.post("/child-chat", requireAuth, async (c) => {
   if (memoryEnabled) {
     const summaries = await db
       .prepare(
-        "SELECT summary FROM ai_memory_summaries WHERE family_id=? AND child_user_id=? ORDER BY substr(updated_at,1,19) DESC LIMIT 3",
+        "SELECT summary FROM ai_memory_summaries WHERE family_id=? AND child_user_id=? ORDER BY substr(updated_at,1,19) DESC LIMIT 5",
       )
       .bind(familyId, userId)
       .all<{ summary: string }>();
@@ -854,7 +873,8 @@ chat.post("/child-chat", requireAuth, async (c) => {
     if (longTermMemoryEnabled) {
       const ltm = await db
         .prepare(
-          "SELECT type, key, value, confidence FROM ai_long_term_memories WHERE family_id=? AND child_user_id=? AND parent_visible=1 ORDER BY substr(updated_at,1,19) DESC LIMIT 20",
+          // 확신도가 높은(여러 번 확인된) 기억을 먼저 보여 준다 — 스쳐 지나간 말보다 아이를 더 잘 설명한다.
+          "SELECT type, key, value, confidence FROM ai_long_term_memories WHERE family_id=? AND child_user_id=? AND parent_visible=1 ORDER BY confidence DESC, substr(updated_at,1,19) DESC LIMIT 30",
         )
         .bind(familyId, userId)
         .all<{ type: string; key: string; value: string }>();
@@ -863,7 +883,10 @@ chat.post("/child-chat", requireAuth, async (c) => {
 
     memoryContext = {
       recentSummary: (summaries.results ?? []).map((row) => row.summary).filter(Boolean).join("\n"),
-      longTermMemories: longTermMemories.map((row) => `${row.type}:${row.key}=${row.value}`),
+      // `interest:레고=레고를 좋아함` 같은 기계 표기 대신 사람이 읽는 문장으로 넘긴다.
+      longTermMemories: longTermMemories
+        .map((row) => String(row.value || "").trim() || `${row.key}`)
+        .filter(Boolean),
     };
   }
 
@@ -1031,97 +1054,6 @@ chat.post("/child-chat", requireAuth, async (c) => {
     }
   }
 
-  // ── 도구: deleteSchedule — 아이에게는 실행하지 않고 안내만 한다 ──
-  if (agentPlan.toolName === "deleteSchedule" || agentPlan.detectedIntent === "schedule_delete_parent_only") {
-    toolResult = { ok: false, toolName: "deleteSchedule", error: "schedule_delete_parent_only" };
-  }
-
-  // ── 도구: createDailyItem ──
-  if (agentPlan.shouldUseTool && agentPlan.toolName === "createDailyItem") {
-    const kind = agentPlan.toolArgs.kind === "hw" ? "hw" : "prep";
-    const label = String(agentPlan.toolArgs.label || "").trim();
-    if (!label) {
-      toolResult = { ok: false, toolName: "createDailyItem", error: "missing_label", kind };
-    } else {
-      try {
-        const appDateKey = toAppDateKey(String(agentPlan.toolArgs.date || contextDate));
-        const existing = await db
-          .prepare(
-            "SELECT id, supplies, homework, note FROM daily_supplies WHERE family_id=? AND child_id=? AND date_key=? ORDER BY updated_at DESC LIMIT 1",
-          )
-          .bind(familyId, childMemberId, appDateKey)
-          .first<{ id: string; supplies: string | null; homework: string | null; note: string | null }>();
-        const column = kind === "hw" ? "homework" : "supplies";
-        const merged = mergeDailyChecklistItem(existing?.[column] ?? "", label);
-        if (!merged.ok) {
-          toolResult = { ok: false, toolName: "createDailyItem", error: merged.error, kind, label: merged.label };
-        } else {
-          const nextSupplies = kind === "prep" ? encodeDailyChecklist(merged.items) : String(existing?.supplies ?? "");
-          const nextHomework = kind === "hw" ? encodeDailyChecklist(merged.items) : String(existing?.homework ?? "");
-          const now = pgNow();
-          if (existing?.id) {
-            await db
-              .prepare("UPDATE daily_supplies SET supplies=?, homework=?, updated_by=?, updated_at=? WHERE id=?")
-              .bind(nextSupplies, nextHomework, userId, now, existing.id)
-              .run();
-          } else {
-            await db
-              .prepare(
-                `INSERT INTO daily_supplies
-                  (id, family_id, child_id, date_key, supplies, homework, note, created_by, updated_by, created_at, updated_at)
-                 VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-              )
-              .bind(
-                crypto.randomUUID(),
-                familyId,
-                childMemberId,
-                appDateKey,
-                nextSupplies,
-                nextHomework,
-                "",
-                userId,
-                userId,
-                now,
-                now,
-              )
-              .run();
-          }
-          try {
-            await notifyPg(c.env, familyId, "daily_supplies", existing?.id ? "UPDATE" : "INSERT", {
-              family_id: familyId,
-              child_id: childMemberId,
-              date_key: appDateKey,
-            });
-          } catch {
-            console.error("[ai-child-chat] daily supply realtime notify failed");
-          }
-          toolResult = {
-            ok: true,
-            toolName: "createDailyItem",
-            kind,
-            label: merged.label,
-            added: merged.added,
-            duplicate: merged.duplicate === true,
-          };
-        }
-      } catch (e) {
-        console.error("[ai-child-chat] daily item create failed");
-        toolResult = { ok: false, toolName: "createDailyItem", error: "daily_item_create_failed", kind, label };
-      }
-    }
-  }
-
-  // ── 도구: setChildAccent — 서버 스키마에 색 컬럼이 없어 클라가 이 기기만 적용한다 ──
-  if (agentPlan.shouldUseTool && agentPlan.toolName === "setChildAccent") {
-    const accent = String(agentPlan.toolArgs.accent || "");
-    const label = CHILD_ACCENT_LABELS[accent];
-    if (!label) {
-      toolResult = { ok: false, toolName: "setChildAccent", error: "invalid_accent" };
-    } else {
-      toolResult = { ok: true, toolName: "setChildAccent", accent, label };
-    }
-  }
-
   // ── 도구: getTodaySchedule / getScheduleByDate ──
   if (agentPlan.shouldUseTool && (agentPlan.toolName === "getTodaySchedule" || agentPlan.toolName === "getScheduleByDate")) {
     if (!allowScheduleActions) {
@@ -1196,11 +1128,6 @@ chat.post("/child-chat", requireAuth, async (c) => {
               .bind(eventRow.id, childMemberId)
               .run();
             toolResult = { ok: true, toolName: "createSchedule", event: eventRowToToolEvent(eventRow) };
-            try {
-              await notifyPg(c.env, familyId, "events", "INSERT", eventRow, null);
-            } catch {
-              console.error("[ai-child-chat] schedule create realtime notify failed");
-            }
           } catch (e) {
             console.error("[ai-child-chat] schedule child link failed");
             try {
@@ -1215,6 +1142,133 @@ chat.post("/child-chat", requireAuth, async (c) => {
         console.error("[ai-child-chat] schedule create exception");
         toolResult = { ok: false, error: "schedule_create_failed" };
       }
+    }
+  }
+
+  // ── 도구: updateNotificationSettings(아이 본인 일정 알림) ──
+  // 아이가 설정 화면에서 이미 바꿀 수 있는 항목만 말로도 바꿔 준다. 부모 소관 항목
+  // (쉬는 시간·위치/장소/친구놀이 알림)은 planner 가 앞에서 parent_only 로 막는다.
+  if (agentPlan.shouldUseTool && agentPlan.toolName === "updateNotificationSettings") {
+    const requestedEnabled = typeof agentPlan.toolArgs.scheduleAlertsEnabled === "boolean"
+      ? agentPlan.toolArgs.scheduleAlertsEnabled
+      : null;
+    const requestedMinutes = sanitizeChildNotificationMinutes(agentPlan.toolArgs.minutesBefore);
+    if (requestedEnabled === null && requestedMinutes === null) {
+      toolResult = { ok: false, toolName: "updateNotificationSettings", error: "notification_settings_no_change" };
+    } else {
+      try {
+        const existing = await db
+          .prepare(
+            `SELECT family_id, child_enabled, parent_enabled, location_enabled,
+                    registered_place_enabled, playdate_enabled, minutes_before
+               FROM notification_settings WHERE user_id=? LIMIT 1`,
+          )
+          .bind(userId)
+          .first<Record<string, any>>();
+
+        // 저장된 값이 없으면 앱 기본값(일정 알림 켜짐 · 15/5분 전)에서 출발한다.
+        const nextChildEnabled = requestedEnabled ?? (existing ? toBool(existing.child_enabled) : true);
+        const currentMinutes = existing
+          ? pgArray(existing.minutes_before).map((n) => Number(n)).filter((n) => Number.isFinite(n))
+          : [15, 5];
+        const nextMinutes = requestedMinutes ?? currentMinutes;
+        const nextFamilyId = existing?.family_id ?? familyId;
+        const now = pgNow();
+
+        if (existing) {
+          await db
+            .prepare(
+              `UPDATE notification_settings SET child_enabled=?, minutes_before=?, updated_at=? WHERE user_id=?`,
+            )
+            .bind(b(nextChildEnabled), toPgArray(nextMinutes.map((n) => String(n))), now, userId)
+            .run();
+        } else {
+          await db
+            .prepare(
+              `INSERT INTO notification_settings
+                 (user_id, family_id, child_enabled, parent_enabled, location_enabled,
+                  registered_place_enabled, playdate_enabled, minutes_before, updated_at)
+               VALUES (?,?,?,?,?,?,?,?,?)`,
+            )
+            .bind(
+              userId, nextFamilyId, b(nextChildEnabled), 1, 1, 1, 1,
+              toPgArray(nextMinutes.map((n) => String(n))), now,
+            )
+            .run();
+        }
+
+        // 같은 계정의 다른 기기·화면이 즉시 따라오도록 알린다(설정 화면과 값이 어긋나지 않게).
+        try {
+          await notifyPg(c.env, nextFamilyId ?? "", "notification_settings", existing ? "UPDATE" : "INSERT", {
+            user_id: userId,
+            family_id: nextFamilyId,
+            child_enabled: nextChildEnabled,
+            minutes_before: nextMinutes,
+          });
+        } catch (error) {
+          console.error("[ai-child-chat] notification settings realtime notify failed");
+        }
+
+        toolResult = {
+          ok: true,
+          toolName: "updateNotificationSettings",
+          applied: {
+            scheduleAlertsEnabled: requestedEnabled,
+            minutesBefore: requestedMinutes,
+          },
+          current: { scheduleAlertsEnabled: nextChildEnabled, minutesBefore: nextMinutes },
+        };
+      } catch (e) {
+        console.error("[ai-child-chat] notification settings update failed");
+        toolResult = { ok: false, toolName: "updateNotificationSettings", error: "notification_settings_update_failed" };
+      }
+    }
+  }
+
+  // ── 도구: updateAiFriendName(내 AI 친구 이름) ──
+  if (agentPlan.shouldUseTool && agentPlan.toolName === "updateAiFriendName") {
+    const nextName = sanitizeAiFriendName(agentPlan.toolArgs.name);
+    if (!nextName) {
+      toolResult = { ok: false, toolName: "updateAiFriendName", error: "invalid_ai_friend_name" };
+    } else {
+      try {
+        const now = pgNow();
+        await db
+          .prepare(
+            `INSERT INTO ai_parent_settings
+               (id, family_id, child_user_id, ai_friend_name, daily_limit, updated_by, created_at, updated_at)
+             VALUES (?,?,?,?,?,?,?,?)
+             ON CONFLICT(family_id,child_user_id) DO UPDATE SET
+               ai_friend_name=excluded.ai_friend_name,
+               updated_by=excluded.updated_by,
+               updated_at=excluded.updated_at`,
+          )
+          .bind(crypto.randomUUID(), familyId, userId, nextName, parentDailyLimit, userId, now, now)
+          .run();
+        persona.name = nextName;
+        toolResult = { ok: true, toolName: "updateAiFriendName", name: nextName };
+      } catch (e) {
+        console.error("[ai-child-chat] ai friend name update failed");
+        toolResult = { ok: false, toolName: "updateAiFriendName", error: "ai_friend_name_update_failed" };
+      }
+    }
+  }
+
+  // ── 도구: changeAppTheme(내 색깔) ──
+  // 아이 테마색은 서버 컬럼이 없어 기기 로컬 저장이다. 서버는 색만 확정해 주고
+  // 실제 적용은 클라이언트가 한다(clientAction). 여기서 저장했다고 말하지 않는다.
+  if (agentPlan.shouldUseTool && agentPlan.toolName === "changeAppTheme") {
+    const accent = String(agentPlan.toolArgs.accent || "");
+    if (!isChildAccentKey(accent)) {
+      toolResult = { ok: false, toolName: "changeAppTheme", error: "invalid_accent" };
+    } else {
+      toolResult = {
+        ok: true,
+        toolName: "changeAppTheme",
+        accent,
+        accentLabel: CHILD_ACCENT_LABELS[accent] ?? accent,
+        clientAction: "setAccent",
+      };
     }
   }
 
@@ -1320,7 +1374,7 @@ chat.post("/child-chat", requireAuth, async (c) => {
     const planFallbackAssistantText = buildAgentPlanChildReply(agentPlan);
     if (planFallbackAssistantText) {
       assistantText = planFallbackAssistantText;
-    } else if (isDeterministicHelpToolResult(toolResult)) {
+    } else if (isScheduleLookupToolResult(toolResult) || isChildSettingsToolResult(toolResult)) {
       const deterministicScheduleReply = buildToolResultChildReply(toolResult);
       if (deterministicScheduleReply) {
         assistantText = deterministicScheduleReply;
@@ -1338,45 +1392,53 @@ chat.post("/child-chat", requireAuth, async (c) => {
           }
         } else {
           openAiStartedAt = Date.now();
-          const chatMessages = [
-            { role: "system", content: systemPrompt },
-            ...contextWindow,
-            ...(toolResult
-              ? [{ role: "system", content: `도구 실행 결과: ${JSON.stringify(sanitizeAiToolResultForPrompt(toolResult))}` }]
-              : []),
-            { role: "user", content: message },
-          ];
-          const safetyIdentifier = await openaiSafetyIdentifier(userId);
-          const lunaConfig = openaiLunaChatConfig(220);
-          const postCompletion = (includeTemperature: boolean) => fetch(openaiChatUrl(c.env), {
+          const openaiRes = await fetch(openaiChatUrl(c.env), {
             method: "POST",
             headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
             signal: AbortSignal.timeout(AI_CHILD_CHAT_TIMEOUT_MS),
             body: JSON.stringify({
-              ...lunaConfig,
-              messages: chatMessages,
-              ...(includeTemperature ? { temperature: 0.7 } : {}),
-              safety_identifier: safetyIdentifier,
+              // ⚠️ 2026-08-17: 추론 low + 예산 900 으로 올렸더니 프로덕션에서 429(provider_rejected)로
+              // 아이 대화가 통째로 막혔다. 배포 전 동작하던 값으로 되돌린다.
+              // 다시 올리려면 실제 한도(TPM·잔액)를 먼저 확인해야 한다.
+              ...openaiLunaChatConfig(220),
+              messages: [
+                { role: "system", content: systemPrompt },
+                ...contextWindow,
+                ...(toolResult
+                  ? [{ role: "system", content: `도구 실행 결과: ${JSON.stringify(sanitizeAiToolResultForPrompt(toolResult))}` }]
+                  : []),
+                { role: "user", content: message },
+              ],
+              temperature: 0.7,
+              safety_identifier: await openaiSafetyIdentifier(userId),
             }),
           });
-          let openaiRes = await postCompletion(true);
-          // Luna 일부 경로가 temperature 를 거부하면 같은 프롬프트로 한 번 더 시도한다.
-          if (openaiRes.status === 400) {
-            openaiRes = await postCompletion(false);
-          }
           if (!openaiRes.ok) {
+            // 429 가 분당 한도인지 잔액 소진인지 알아야 대응이 갈린다. 코드만 읽고 본문은 버린다.
+            let providerErrorCode: unknown;
+            try {
+              const failure = await openaiRes.json<{ error?: { code?: unknown; type?: unknown } }>();
+              providerErrorCode = failure?.error?.code ?? failure?.error?.type;
+            } catch {
+              providerErrorCode = undefined;
+            }
             writeOpenAiLog("error", {
               operation: "child_chat",
               outcome: "http_error",
               status: openaiRes.status,
               latencyMs: Date.now() - openAiStartedAt,
               errorKind: "provider_rejected",
+              providerErrorCode,
             });
             const fallbackAssistantText = buildToolResultChildReply(toolResult);
             if (fallbackAssistantText) {
               assistantText = fallbackAssistantText;
             } else {
-              return c.json({ error: "ai_failure" }, 502);
+              // 429 는 네트워크 문제가 아니라 공급자 한도·잔액이다. 아이에게 "연결이 안 됐어"라고
+              // 잘못 말하지 않도록 코드를 나눠 보낸다(정직한 강등).
+              return openaiRes.status === 429
+                ? c.json({ error: "ai_provider_busy" }, 503)
+                : c.json({ error: "ai_failure" }, 502);
             }
           } else {
             const data = await openaiRes.json<OpenAiChatResponse>();
@@ -1454,7 +1516,9 @@ chat.post("/child-chat", requireAuth, async (c) => {
   // D1 batch 한 트랜잭션에서 함께 확정한다. 동시 요청이 상한을 먼저 소진했다면 방금
   // 저장한 두 메시지를 제거하고 유료 결과를 반환하지 않는다.
   const shouldChargeCredit =
-    shouldChargeForAiTurn({ detectedIntent: agentPlan.detectedIntent, toolResult, safety: agentPlan.safety }) && !assistantTextWasEmpty;
+    !aiUnlimited
+    && shouldChargeForAiTurn({ detectedIntent: agentPlan.detectedIntent, toolResult, safety: agentPlan.safety })
+    && !assistantTextWasEmpty;
   if (shouldChargeCredit) {
     if (!aiCreditRow || !logged.assistantMessageId) {
       await deleteUnchargedChatMessages(db, familyId, userId, logged);
@@ -1543,13 +1607,20 @@ chat.post("/child-chat", requireAuth, async (c) => {
         const m = memoryPatch.memory;
         const now = pgNow();
         const existing = await db
-          .prepare("SELECT id FROM ai_long_term_memories WHERE family_id=? AND child_user_id=? AND type=? AND key=? LIMIT 1")
+          .prepare("SELECT id, confidence FROM ai_long_term_memories WHERE family_id=? AND child_user_id=? AND type=? AND key=? LIMIT 1")
           .bind(familyId, userId, m.type, m.key)
-          .first<{ id: string }>();
+          .first<{ id: string; confidence: number }>();
         if (existing?.id) {
+          // 같은 이야기를 다시 하면 확신이 올라간다 — 아이를 점점 더 잘 알게 되는 부분.
+          // 상한 0.95: 한 번도 "확정"으로 굳히지 않아 나중에 바뀐 취향도 밀려날 수 있다.
+          const priorConfidence = Number(existing.confidence);
+          const nextConfidence = Math.min(
+            0.95,
+            Math.max(Number(m.confidence ?? 0.7), Number.isFinite(priorConfidence) ? priorConfidence + 0.05 : 0),
+          );
           await db
             .prepare("UPDATE ai_long_term_memories SET value=?, confidence=?, parent_visible=?, source=?, updated_at=? WHERE id=?")
-            .bind(m.value, Number(m.confidence ?? 0.7), b(m.parent_visible), "conversation", now, existing.id)
+            .bind(m.value, nextConfidence, b(m.parent_visible), "conversation", now, existing.id)
             .run();
         } else {
           await db
@@ -1591,6 +1662,8 @@ chat.post("/child-chat", requireAuth, async (c) => {
     {
       reply: assistantText,
       remaining,
+      // 운영자 본인 가족은 한도·차감이 없다 — 화면이 남은 횟수 대신 무제한을 표시한다.
+      unlimited: aiUnlimited,
       dailyLimit,
       creditBalance: toPublicCreditBalance(newCredit),
       creditCharged: shouldChargeCredit,
@@ -1605,12 +1678,6 @@ chat.post("/child-chat", requireAuth, async (c) => {
         ? { name: agentPlan.toolName, args: agentPlan.toolArgs, confirmationRequired: agentPlan.confirmationRequired }
         : null,
       toolResult,
-      emotion: inferChildAiEmotion({
-        userText: message,
-        reply: assistantText,
-        intent: agentPlan.detectedIntent,
-        toolName: toolResult && typeof toolResult === "object" ? (toolResult as { toolName?: string }).toolName : agentPlan.toolName,
-      }),
       safety: agentPlan.safety,
       flagged,
       assistantMessageId: logged.assistantMessageId,

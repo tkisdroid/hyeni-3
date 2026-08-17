@@ -11,6 +11,7 @@ test("프리미엄의 90초 이내 위치만 현재 위치로 안내한다", () 
       modeKnown: true,
       updatedAt: "2026-07-14T05:59:30.000Z",
       now,
+      locale: "ko",
     }),
     { badge: "현재 위치", detail: "방금 갱신" },
   );
@@ -22,6 +23,7 @@ test("무료 최근 위치 또는 오래된 좌표를 실시간으로 단정하�
     modeKnown: true,
     updatedAt: "2026-07-14T05:54:00.000Z",
     now,
+    locale: "ko",
   });
   assert.equal(standard.badge, "최근 위치");
   assert.match(standard.detail, /약 10분 간격 자동 확인/);
@@ -32,6 +34,7 @@ test("무료 최근 위치 또는 오래된 좌표를 실시간으로 단정하�
     modeKnown: true,
     updatedAt: "2026-07-14T04:00:00.000Z",
     now,
+    locale: "ko",
   });
   assert.equal(stale.badge, "마지막 확인 위치");
   assert.doesNotMatch(`${stale.badge} ${stale.detail}`, /실시간/);
@@ -39,11 +42,11 @@ test("무료 최근 위치 또는 오래된 좌표를 실시간으로 단정하�
 
 test("좌표나 티어가 미확정이면 현재 위치라고 표시하지 않는다", () => {
   assert.equal(
-    resolveLocationTrustCopy({ mode: "realtime", modeKnown: true, updatedAt: null, now }).badge,
+    resolveLocationTrustCopy({ mode: "realtime", modeKnown: true, updatedAt: null, now, locale: "ko" }).badge,
     "위치 신호 대기",
   );
   assert.equal(
-    resolveLocationTrustCopy({ mode: "realtime", modeKnown: false, updatedAt: "2026-07-14T05:59:30Z", now }).badge,
+    resolveLocationTrustCopy({ mode: "realtime", modeKnown: false, updatedAt: "2026-07-14T05:59:30Z", now, locale: "ko" }).badge,
     "마지막 확인 위치",
   );
 });
@@ -56,6 +59,7 @@ test("위치 조회 범위 확인이 실패하면 캐시 좌표 대신 재확인
       updatedAt: null,
       loadState: "error",
       now,
+      locale: "ko",
     }),
     {
       badge: "위치 조회 범위 확인 실패",
@@ -73,6 +77,7 @@ test("무료 잠금은 좌표·로딩·오류보다 먼저 위치 조회 제한�
         updatedAt: null,
         loadState,
         now,
+        locale: "ko",
       }),
       { badge: "위치 조회 제한", detail: "현재 위치는 표시되지 않아요" },
     );
@@ -87,6 +92,7 @@ test("위치 조회 로딩·오류·신호 대기는 서로 다른 문구로 안
       updatedAt: null,
       loadState: "loading",
       now,
+      locale: "ko",
     }),
     { badge: "위치 불러오는 중", detail: "위치 정보를 불러오고 있어요" },
   );
@@ -97,15 +103,16 @@ test("위치 조회 로딩·오류·신호 대기는 서로 다른 문구로 안
       updatedAt: null,
       loadState: "error",
       now,
+      locale: "ko",
     }),
     { badge: "위치 조회 실패", detail: "새 위치를 불러오지 못했어요" },
   );
   assert.deepEqual(
-    resolveLocationTrustCopy({ mode: "realtime", modeKnown: true, updatedAt: null, now }),
+    resolveLocationTrustCopy({ mode: "realtime", modeKnown: true, updatedAt: null, now, locale: "ko" }),
     { badge: "위치 신호 대기", detail: "아이 기기의 새 위치 신호를 기다리고 있어요" },
   );
   assert.deepEqual(
-    resolveLocationTrustCopy({ mode: "standard", modeKnown: true, updatedAt: null, now }),
+    resolveLocationTrustCopy({ mode: "standard", modeKnown: true, updatedAt: null, now, locale: "ko" }),
     { badge: "위치 신호 대기", detail: "아이 기기의 새 위치 신호를 기다리고 있어요" },
   );
 });
@@ -117,6 +124,7 @@ test("무료 최근 위치 조회 실패는 마지막 측정 시각과 자동 �
     updatedAt: "2026-07-14T05:55:00.000Z",
     loadState: "error",
     now,
+    locale: "ko",
   });
   assert.equal(copy.badge, "최근 위치");
   assert.match(copy.detail, /5분 전 확인/);
@@ -130,6 +138,7 @@ test("기존 좌표가 있을 때 새 조회 실패는 마지막 확인 위치�
     updatedAt: "2026-07-14T05:55:00.000Z",
     loadState: "error",
     now,
+    locale: "ko",
   });
   assert.equal(copy.badge, "마지막 확인 위치");
   assert.match(copy.detail, /새 위치 조회 실패/);

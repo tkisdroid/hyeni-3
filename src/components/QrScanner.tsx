@@ -7,7 +7,9 @@
  */
 import { useEffect, useId, useRef, useState } from "react";
 import { Camera } from "lucide-react";
+import { useIntl } from "react-intl";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
+import type { MessageId } from "@/i18n/generated/messageIds";
 import { ensureQrCameraPermission, openCameraPermissionSettings } from "@/lib/native/cameraPermission";
 import "./QrScanner.css";
 
@@ -20,7 +22,7 @@ interface BarcodeDetectorLike {
 }
 type BarcodeDetectorCtor = new (opts: { formats: string[] }) => BarcodeDetectorLike;
 
-const PERMISSION_MSG = "카메라를 사용하려면 권한이 필요해요. 허용한 뒤 다시 시도해 주세요.";
+const PERMISSION_MESSAGE_ID: MessageId = "shared.qrScanner.permissionRequired";
 
 function isPermissionDenied(err: unknown): boolean {
   const e = err as { name?: string; message?: string } | null;
@@ -42,14 +44,17 @@ export function QrScanner({
   onDetected: (rawValue: string) => void | Promise<void>;
   onClose: () => void;
 }) {
+  const intl = useIntl();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const frameRef = useRef(0);
   const detectorRef = useRef<BarcodeDetectorLike | null>(null);
   const handledRef = useRef(false);
-  const [error, setError] = useState("");
+  const [errorId, setErrorId] = useState<MessageId | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loadingLabel, setLoadingLabel] = useState("카메라 허용 확인 중…");
+  const [loadingLabelId, setLoadingLabelId] = useState<MessageId>(
+    "shared.qrScanner.loading.permission",
+  );
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
   const titleId = useId();
@@ -95,36 +100,36 @@ export function QrScanner({
 
     const startScanner = async () => {
       handledRef.current = false;
-      setError("");
+      setErrorId(null);
       setPermissionDenied(false);
       setLoading(true);
-      setLoadingLabel("카메라 허용 확인 중…");
+      setLoadingLabelId("shared.qrScanner.loading.permission");
 
       const permission = await ensureQrCameraPermission();
       if (!active) return;
       if (!permission.granted) {
         setPermissionDenied(true);
-        setError(PERMISSION_MSG);
+        setErrorId(PERMISSION_MESSAGE_ID);
         setLoading(false);
         return;
       }
 
       if (!navigator.mediaDevices?.getUserMedia) {
-        setError("이 기기에서는 카메라를 사용할 수 없어요. 코드를 직접 입력해 주세요.");
+        setErrorId("shared.qrScanner.cameraUnavailable");
         setLoading(false);
         return;
       }
       const Detector = (window as unknown as { BarcodeDetector?: BarcodeDetectorCtor }).BarcodeDetector;
       if (typeof Detector !== "function") {
-        setError("이 기기에서는 QR 스캔을 할 수 없어요. 코드를 직접 입력해 주세요.");
+        setErrorId("shared.qrScanner.scannerUnavailable");
         setLoading(false);
         return;
       }
 
       try {
-        setLoadingLabel("QR 스캔 시작 중…");
+        setLoadingLabelId("shared.qrScanner.loading.scanner");
         detectorRef.current = new Detector({ formats: ["qr_code"] });
-        setLoadingLabel("카메라 여는 중…");
+        setLoadingLabelId("shared.qrScanner.loading.camera");
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: false,
@@ -144,7 +149,7 @@ export function QrScanner({
         console.error("QR 스캐너 시작 실패:", err);
         const denied = isPermissionDenied(err);
         setPermissionDenied(denied);
-        setError(denied ? PERMISSION_MSG : "카메라를 열 수 없어요. 잠시 후 다시 시도해 주세요.");
+        setErrorId(denied ? PERMISSION_MESSAGE_ID : "shared.qrScanner.openFailed");
         setLoading(false);
       }
     };
@@ -168,21 +173,36 @@ export function QrScanner({
     >
       <div className="qrs-top">
         <button ref={closeRef} type="button" className="qrs-close hy-press" onClick={onClose}>
-          ← 닫기
+          ← {intl.formatMessage({ id: "shared.qrScanner.close" })}
         </button>
-        <span id={titleId} className="qrs-title"><Camera size={16} strokeWidth={2.4} /> QR 코드 스캔</span>
+        <span id={titleId} className="qrs-title">
+          <Camera size={16} strokeWidth={2.4} />
+          {intl.formatMessage({ id: "shared.qrScanner.title" })}
+        </span>
       </div>
 
       <div className="qrs-body">
         <div className="qrs-cam">
-          <video ref={videoRef} muted playsInline className="qrs-video" />
+          <video
+            ref={videoRef}
+            muted
+            playsInline
+            className="qrs-video"
+            aria-label={intl.formatMessage({ id: "shared.qrScanner.cameraPreview" })}
+          />
           <div className="qrs-frame" aria-hidden="true" />
-          {loading && <div className="qrs-loading">{loadingLabel}</div>}
+          {loading && (
+            <div className="qrs-loading">{intl.formatMessage({ id: loadingLabelId })}</div>
+          )}
         </div>
         <div className="qrs-guide">
-          <div className="qrs-guide-title">부모님 화면의 QR 코드를 비춰 주세요</div>
-          <div id={descriptionId} className="qrs-guide-sub">QR을 인식하면 코드를 입력하지 않아도 바로 연결돼요</div>
-          {error && <div className="qrs-error">{error}</div>}
+          <div className="qrs-guide-title">
+            {intl.formatMessage({ id: "shared.qrScanner.guide.title" })}
+          </div>
+          <div id={descriptionId} className="qrs-guide-sub">
+            {intl.formatMessage({ id: "shared.qrScanner.guide.description" })}
+          </div>
+          {errorId && <div className="qrs-error">{intl.formatMessage({ id: errorId })}</div>}
           {permissionDenied && (
             <div className="qrs-actions">
               <button
@@ -190,14 +210,14 @@ export function QrScanner({
                 className="qrs-retry hy-press"
                 onClick={() => setRetryKey((v) => v + 1)}
               >
-                허용 다시 확인
+                {intl.formatMessage({ id: "shared.qrScanner.retryPermission" })}
               </button>
               <button
                 type="button"
                 className="qrs-settings hy-press"
                 onClick={() => void openCameraPermissionSettings()}
               >
-                앱 설정 열기
+                {intl.formatMessage({ id: "shared.qrScanner.openSettings" })}
               </button>
             </div>
           )}

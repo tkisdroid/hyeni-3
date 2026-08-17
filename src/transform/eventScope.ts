@@ -1,4 +1,6 @@
 import type { CalendarEvent } from "@/lib/api/endpoints/schedule";
+import type { IntlShape } from "react-intl";
+import { withDefaultIntl } from "../i18n/defaultIntl.ts";
 
 /**
  * 일정 소유권 규칙.
@@ -19,6 +21,10 @@ export function eventIsFamilyShared(event: CalendarEvent): boolean {
   return event.is_family_event === true;
 }
 
+export function eventNeedsChildAssignment(event: CalendarEvent): boolean {
+  return !eventIsFamilyShared(event) && eventChildMemberIds(event).length === 0;
+}
+
 export function eventAppliesToChild(
   event: CalendarEvent,
   childMemberId: string | null | undefined,
@@ -36,7 +42,10 @@ export function filterEventsForChild<T extends CalendarEvent>(
   return events.filter((event) => eventAppliesToChild(event, childMemberId));
 }
 
-export function eventScopeLabel(event: CalendarEvent): "가족 일정" | "배정 필요" | "" {
-  if (eventIsFamilyShared(event)) return "가족 일정";
-  return eventChildMemberIds(event).length === 0 ? "배정 필요" : "";
+export function eventScopeLabel(event: CalendarEvent, providedIntl?: IntlShape): string {
+  const intl = withDefaultIntl(providedIntl);
+  if (eventIsFamilyShared(event)) return intl.formatMessage({ id: "parent.eventScope.family" });
+  return eventNeedsChildAssignment(event)
+    ? intl.formatMessage({ id: "parent.eventScope.assignmentRequired" })
+    : "";
 }

@@ -1,0 +1,3 @@
+/invite /index.html 200
+/invite/ /index.html 200
+/invite/* /index.html 200

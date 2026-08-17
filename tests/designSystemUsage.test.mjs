@@ -1886,7 +1886,7 @@ const semanticSurfaceManifest = [
     ["src/screens/feature/AiCredit.css", "ac-pack", "card"],
     ["src/screens/feature/AiCredit.css", "ac-auto", "card"],
     ["src/screens/feature/AiCredit.css", "ac-premium-callout", "card"],
-    ["src/screens/onboarding/Onboarding.css", "ob-consent-dialog", "modal"],
+    ["src/components/ChildLocationPermissionDialog.css", "clp-dialog", "modal"],
     ["src/components/MapPickerSheet.css", "mps-sheet", "sheet"],
     ["src/components/MapPickerSheet.css", "mps-map", "media"],
     ["src/components/MessageSafetyDialog.css", "msd-dialog", "modal"],
@@ -1933,7 +1933,11 @@ const semanticSurfaceManifest = [
     ["src/screens/parent/ParentCalendar.css", "pc-event__card", "card"],
     ["src/screens/parent/ParentCalendar.css", "pc-sheet", "sheet"],
     ["src/screens/parent/ParentLocation.css", "pl-sheet", "sheet"],
-    ["src/screens/parent/ParentLocation.css", "pl-history-day", "floating"],
+    ["src/screens/parent/ParentLocation.css", "pl-history-toolbar", "floating"],
+    ["src/screens/parent/ParentLocation.css", "pl-journey", "sheet"],
+    ["src/screens/parent/ParentLocation.css", "pl-journey__state", "card"],
+    ["src/screens/parent/ParentLocation.css", "pl-journey__replay", "card"],
+    ["src/screens/parent/ParentLocation.css", "pl-journey__stay", "card"],
     ["src/screens/parent/ParentFamily.css", "pf-invite-card", "card"],
     ["src/screens/parent/ParentFamily.css", "pf-conn", "card"],
     ["src/screens/parent/ParentFamily.css", "pf-paircode__card", "card"],
@@ -2048,7 +2052,6 @@ const semanticSurfaceManifest = [
     ["src/screens/parent/ParentHome.css", "ph-app-summary__item", "card"],
     ["src/screens/parent/ParentCalendar.css", "pc-sheet__row", "card"],
     ["src/screens/parent/ParentLocation.css", "pl-status", "card"],
-    ["src/screens/parent/ParentLocation.css", "pl-stay", "card"],
     ["src/screens/child/overlays/ChildSheet.css", "ks-modal__msg", "card"],
     ["src/screens/feature/FriendPlay.css", "fp-steps", "card"],
     ["src/screens/feature/AiSchedule.css", "ais-edit-note", "card"],
@@ -2074,8 +2077,11 @@ const semanticSurfaceManifest = [
     ["src/screens/feature/DailySafetyReport.css", "dr-empty", "card"],
     ["src/components/ui/ScreenQueryState.css", "sqs-card", "card"],
     ["src/components/ui/ScreenQueryState.css", "sqs-inline-empty", "card"],
+    ["src/components/LanguageSelector.css", "hy-language", "card"],
     ["src/screens/child/AiFriendChat.css", "afc-query-state", "card"],
     ["src/screens/child/ChildHome.css", "kd-map__query-state", "floating"],
+    // 입력창 위에 떠서 "아직 실행하지 않은 부탁"을 확인받는 카드.
+    ["src/screens/child/AiFriendChat.css", "afc-confirm", "floating"],
     ["src/screens/feature/RemoteRing.css", "rr-query-state", "card"],
 ];
 
@@ -2128,19 +2134,18 @@ const nonSurfacePaintManifest = new Set([
   // 기존 버튼과 액션 컨트롤 — exact path + selector만 허용
   ["src/screens/parent/ParentHome.css", ".ph-stickerbtn"],
   ["src/screens/parent/ParentHome.css", ".ph-location-error__retry"],
+  ["src/screens/parent/ParentHome.css", ".ph-subscription__action"],
   ["src/screens/parent/ParentLocation.css", ".pl-lock__cta"],
   ["src/screens/parent/ParentLocation.css", ".pl-lock__retry"],
   ["src/screens/parent/ParentLocation.css", ".pl-viewtog"],
-  ["src/screens/parent/ParentLocation.css", ".pl-scrub__latest"],
-  ["src/screens/parent/ParentLocation.css", ".pl-stays-reopen"],
+  ["src/screens/parent/ParentLocation.css", ".pl-journey__retry"],
+  ["src/screens/parent/ParentLocation.css", ".pl-journey__follow"],
   ["src/screens/shared/MemoChat.css", ".mc-quick-btn"],
   ["src/screens/child/AiFriendSetup.css", ".afs-cta"],
   ["src/screens/child/AiFriendChat.css", ".afc-send"],
-  ["src/screens/child/AiFriendChat.css", ".afc-mic"],
-  ["src/screens/child/AiFriendChat.css", ".afc-speak"],
-  ["src/screens/child/AiFriendChat.css", ".afc-action"],
-  ["src/screens/child/AiFriendChat.css", ".afc-action--soft"],
-  ["src/components/child/ChildAiFab.css", ".caf"],
+  ["src/screens/child/AiFriendChat.css", ".afc-confirm__cancel"],
+  ["src/screens/child/AiFriendChat.css", ".afc-confirm__go"],
+  ["src/screens/child/AiFriendChat.css", ".afc-credit-ask"],
   ["src/screens/teacher/TeacherHome.css", ".th-empty__cta"],
   ["src/screens/feature/RemoteAudio.css", ".ra-audit-link"],
   ["src/screens/feature/Notifications.css", ".nc-filter"],
@@ -2167,15 +2172,14 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/feature/AiSchedule.css", ".ais-textbox"],
   ["src/screens/feature/Feedback.css", ".fb-textwrap"],
   ["src/screens/feature/StickerSend.css", ".ss-msg"],
-  ["src/screens/parent/ParentLocation.css", ".pl-history-day__input"],
+  ["src/screens/parent/ParentLocation.css", ".pl-history-toolbar__date-picker"],
   // 기존 칩과 상태 표시 — exact path + selector만 허용
   ["src/screens/parent/ParentLocation.css", ".pl-safe-label"],
   ["src/screens/parent/ParentLocation.css", ".pl-danger__pill"],
   ["src/screens/parent/ParentLocation.css", ".pl-live"],
   ["src/screens/parent/ParentLocation.css", ".pl-refreshing"],
   ["src/screens/parent/ParentLocation.css", ".pl-chip"],
-  ["src/screens/parent/ParentLocation.css", ".pl-histmsg"],
-  ["src/screens/parent/ParentLocation.css", ".pl-scrub"],
+  ["src/screens/parent/ParentLocation.css", ".pl-journey__skeleton-row"],
   ["src/screens/shared/MemoChat.css", ".mc-sticker"],
   // 인증 사진이 준비되기 전 이미지 버블 내부를 채우는 상태 레이어다.
   ["src/screens/shared/MemoChat.css", ".mc-private-photo-status"],
@@ -2183,7 +2187,6 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/child/ChildHome.css", ".kd-hyeni__bubble"],
   ["src/screens/child/AiFriendChat.css", ".afc-credits"],
   ["src/screens/child/AiFriendChat.css", ".afc-chip"],
-  ["src/components/child/ChildAiFab.css", ".caf-credit"],
   ["src/screens/feature/Subscription.css", ".sub-plan__ribbon"],
   ["src/screens/feature/AiSchedule.css", ".ais-bubble"],
   ["src/screens/feature/StickerSend.css", ".ss-child"],
@@ -2204,6 +2207,7 @@ const nonSurfacePaintManifest = new Set([
   ["src/styles/components.css", ".hy-crash__ghost"],
   ["src/components/ui/ScreenQueryState.css", ".sqs-retry"],
   ["src/components/ui/ScreenQueryState.css", ".sqs-inline-empty button"],
+  ["src/components/LanguageSelector.css", ".hy-language__option"],
   ["src/app/ChildDock.css", ".kdock__sos"],
   ["src/screens/child/AiFriendChat.css", ".afc-query-state button"],
   ["src/screens/child/ChildHome.css", ".kd-map__query-state button"],
@@ -2252,11 +2256,6 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/child/AiFriendChat.css", ".afc-back"],
   ["src/screens/child/AiFriendChat.css", ".afc-setup"],
   ["src/screens/child/AiFriendChat.css", ".afc-report-link"],
-  ["src/screens/child/AiFriendChat.css", ".afc-mic"],
-  ["src/screens/child/AiFriendChat.css", ".afc-speak"],
-  ["src/screens/child/AiFriendChat.css", ".afc-action"],
-  ["src/screens/child/AiFriendChat.css", ".afc-action--soft"],
-  ["src/components/child/ChildAiFab.css", ".caf"],
   ["src/screens/teacher/TeacherHome.css", ".th-sheet__x"],
   ["src/screens/teacher/TeacherHome.css", ".th-sheet__send"],
   ["src/screens/teacher/TeacherStudents.css", ".ts-invite"],
@@ -2270,8 +2269,8 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/onboarding/Onboarding.css", ".ob-back"],
   ["src/screens/onboarding/Onboarding.css", ".ob-loginbtn"],
   ["src/screens/onboarding/Onboarding.css", ".ob-datebtn"],
-  ["src/screens/onboarding/Onboarding.css", ".ob-consent-primary"],
-  ["src/screens/onboarding/Onboarding.css", ".ob-consent-secondary"],
+  ["src/components/ChildLocationPermissionDialog.css", ".clp-primary"],
+  ["src/components/ChildLocationPermissionDialog.css", ".clp-secondary"],
   ["src/screens/feature/Subscription.css", ".sub-cta"],
   ["src/screens/feature/Subscription.css", ".sub-cancel__actions button"],
   ["src/screens/feature/Notifications.css", ".nc-retry"],
@@ -2455,8 +2454,9 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/parent/ParentLocation.css", ".pl-sheet__dur"],
   ["src/screens/parent/ParentLocation.css", ".pl-status__dot"],
   ["src/screens/parent/ParentLocation.css", ".pl-delay-badge"],
-  ["src/screens/parent/ParentLocation.css", ".pl-scrub__dot"],
-  ["src/screens/parent/ParentLocation.css", ".pl-stay__num"],
+  ["src/screens/parent/ParentLocation.css", ".pl-history-toolbar__avatar"],
+  ["src/screens/parent/ParentLocation.css", ".pl-journey__timeline::before"],
+  ["src/screens/parent/ParentLocation.css", ".pl-journey__order"],
   ["src/screens/parent/ParentFamily.css", ".pf-parent__badge"],
   ["src/screens/parent/ParentFamily.css", ".pf-chip__dot"],
   ["src/screens/parent/ParentSettings.css", ".ps-account__badge"],
@@ -2480,9 +2480,14 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/child/StickerBook.css", ".sb-slot__count"],
   ["src/screens/child/ChildSos.css", ".cs-checks__dot"],
   ["src/screens/child/AiFriendChat.css", ".afc-typing span"],
+  // 음성 대화 컨트롤·상태 표시 — 카드 표면이 아니라 조작·상태 요소다.
+  ["src/screens/child/AiFriendChat.css", ".afc-voicetog"],
+  ["src/screens/child/AiFriendChat.css", ".afc-mic"],
+  ["src/screens/child/AiFriendChat.css", ".afc-listening"],
+  ["src/screens/child/AiFriendChat.css", ".afc-listening__wave span"],
+  ["src/screens/child/AiFriendChat.css", ".afc-listening__stop"],
   ["src/screens/teacher/TeacherHome.css", ".th-hero__attend"],
   ["src/screens/onboarding/Onboarding.css", ".ob-progress__track"],
-  ["src/screens/onboarding/Onboarding.css", ".ob-role-badge"],
   ["src/screens/onboarding/Onboarding.css", ".ob-perm-check"],
   ["src/screens/feature/Subscription.css", ".sub-active__badge"],
   ["src/screens/feature/Subscription.css", ".sub-table__col-badge"],
@@ -2543,6 +2548,7 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/parent/ParentHome.css", ".ph-child__online"],
   ["src/screens/parent/ParentHome.css", ".ph-recent-row__icon"],
   ["src/screens/parent/ParentHome.css", ".ph-memo__icon"],
+  ["src/screens/parent/ParentHome.css", ".ph-subscription__icon"],
   ["src/screens/parent/ParentCalendar.css", ".pc-sheet__handle"],
   ["src/screens/parent/ParentLocation.css", ".pl-blob-1"],
   ["src/screens/parent/ParentLocation.css", ".pl-blob-2"],
@@ -2559,7 +2565,6 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/parent/ParentLocation.css", ".pl-sheet__handle"],
   ["src/screens/parent/ParentLocation.css", ".pl-sheet__avatar"],
   ["src/screens/parent/ParentLocation.css", ".pl-lock__ring"],
-  ["src/screens/parent/ParentLocation.css", ".pl-scrub__line"],
   ["src/screens/parent/ParentFamily.css", ".pf-parent__avatar"],
   ["src/screens/parent/ParentFamily.css", ".pf-conn__icon"],
   ["src/screens/parent/ParentFamily.css", ".pf-paircode__qr"],
@@ -2626,6 +2631,9 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/parent/EventForm.css", ".ef-chip__avatar"],
   ["src/screens/feature/ProfileEdit.css", ".pe-photo"],
   ["src/screens/feature/ProfileEdit.css", ".pe-photo__edit"],
+  ["src/screens/parent/ParentAccount.css", ".pa-profile__avatar-edit"],
+  ["src/screens/parent/ParentHome.css", ".ph-referral__icon"],
+  ["src/screens/parent/ParentHome.css", ".ph-referral__action"],
   ["src/screens/feature/PlaceForm.css", ".pf-map__ring"],
   ["src/screens/feature/PlaceForm.css", ".pf-map-handle__bar"],
   ["src/screens/feature/ChildInvite.css", ".ci-qr-skeleton"],
@@ -2678,8 +2686,11 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/feature/SosReceive.css", ".sr-history-emoji"],
   ["src/screens/feature/PermDenied.css", ".pd-icon"],
   ["src/components/ui/StickerCelebration.css", ".sticker-celebration__confetti span"],
+  // AI 친구 플로팅 버튼의 후광 — 조작 면이 아니라 얼굴 뒤에 까는 장식 원.
+  ["src/app/AiBuddyFab.css", ".abf__glow"],
   // nested와 inset 조각 — exact path + selector만 허용
   ["src/components/MessageSafetyDialog.css", ".msd-error"],
+  ["src/screens/child/AiFriendChat.css", ".afc-confirm__detail"],
   ["src/screens/shared/MemoChat.css", ".mc-msg--peer .mc-bubble"],
   ["src/screens/shared/MemoChat.css", ".mc-msg--mine .mc-bubble"],
   ["src/screens/child/AiFriendChat.css", ".afc-bubble--ai"],
@@ -2882,7 +2893,7 @@ test("320~349px 경계에서도 달력·요일 선택과 권한 모달 행동이
   const widths = [320, 340, 341, 344, 347, 348, 349];
   const calendarPath = "src/screens/parent/ParentCalendar.css";
   const eventPath = "src/screens/parent/EventForm.css";
-  const onboardingPath = "src/screens/onboarding/Onboarding.css";
+  const permissionDialogPath = "src/components/ChildLocationPermissionDialog.css";
   const violations = [];
   for (const width of widths) {
     const calendarBody = classStyleAtWidth(calendarPath, "pc-body", width);
@@ -2904,7 +2915,7 @@ test("320~349px 경계에서도 달력·요일 선택과 권한 모달 행동이
       resolvePixels(declarationValue(weekday, "min-height")) ?? 0,
     );
 
-    const actions = classStyleAtWidth(onboardingPath, "ob-consent-dialog__actions", width);
+    const actions = classStyleAtWidth(permissionDialogPath, "clp-dialog__actions", width);
     const columns = declarationValue(actions, "grid-template-columns")?.trim();
 
     if (calendarAvailable < 7 * 44) {
@@ -2915,7 +2926,7 @@ test("320~349px 경계에서도 달력·요일 선택과 권한 모달 행동이
     }
     if (weekdayHeight < 44) violations.push(`${eventPath} ${width}px 요일 높이 ${weekdayHeight}px`);
     if (width <= 348 && columns !== "1fr") {
-      violations.push(`${onboardingPath} ${width}px 권한 버튼 열 ${columns ?? "미지정"}`);
+      violations.push(`${permissionDialogPath} ${width}px 권한 버튼 열 ${columns ?? "미지정"}`);
     }
   }
 
@@ -3402,8 +3413,6 @@ const opticalSpacingAllowlist = new Map([
   // 지도 marker/ring 중심을 실제 좌표에 맞추는 기하 오프셋입니다.
   ["src/screens/parent/ParentLocation.css|.pl-child-ring|margin-left", new Set([-75])],
   ["src/screens/parent/ParentLocation.css|.pl-child-ring|margin-top", new Set([-46])],
-  // scrub tick의 1px stroke 중심을 track에 맞추는 optical 오프셋입니다.
-  ["src/screens/parent/ParentLocation.css|.pl-scrub__ticks|margin-top", new Set([-2])],
 ]);
 
 test("출시 화면의 padding·gap·margin은 근거 있는 optical 예외 외 4px 리듬을 사용한다", () => {

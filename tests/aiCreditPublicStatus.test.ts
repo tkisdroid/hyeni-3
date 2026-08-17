@@ -28,6 +28,8 @@ test("AI 공개 사용량은 서버의 Free/Premium 포함량과 실제 잔여 �
       parentDailyUsed: 2,
       parentDailyLimit: 5,
       availableRemaining: 3,
+      // 구버전 Worker 응답에는 unlimited 가 없다 — 한도 적용(false)으로 닫는다.
+      unlimited: false,
     },
   );
 
@@ -51,6 +53,7 @@ test("AI 공개 사용량은 서버의 Free/Premium 포함량과 실제 잔여 �
       parentDailyUsed: 4,
       parentDailyLimit: 30,
       availableRemaining: 26,
+      unlimited: false,
     },
   );
 });
@@ -111,4 +114,24 @@ test("AI 소진 원인은 부모 안전 상한과 Free·Premium 상업 포함량
     parentDailyLimit: 20,
   }), "premium_allowance_limit");
   assert.equal(resolveAiLimitExhaustionReason(null), "unknown");
+});
+
+test("unlimited 는 additive 필드이며 정확히 true 일 때만 무제한으로 읽는다", () => {
+  const base = {
+    is_premium: true,
+    daily_included_limit: 20,
+    daily_included_used: 14,
+    daily_reset_date: "2026-08-17",
+    purchased_credits: 0,
+    parent_daily_used: 14,
+    parent_daily_limit: 10,
+    available_remaining: 0,
+  };
+  // 운영자 본인 가족: 한도가 0이어도 무제한으로 표시된다.
+  assert.equal(normalizeAiCreditPublicStatusPayload({ ...base, unlimited: true })?.unlimited, true);
+  // 없거나 truthy 흉내(문자열 "true"·1)는 무제한으로 보지 않는다(fail-closed).
+  assert.equal(normalizeAiCreditPublicStatusPayload(base)?.unlimited, false);
+  for (const bad of ["true", 1, "1", {}, []]) {
+    assert.equal(normalizeAiCreditPublicStatusPayload({ ...base, unlimited: bad })?.unlimited, false);
+  }
 });

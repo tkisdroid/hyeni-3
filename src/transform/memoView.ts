@@ -4,6 +4,9 @@
  * 표현(아바타/색)은 화면 CSS 가 mine/peer 로 처리하므로 여기서는 다루지 않는다.
  */
 import type { MemoReply } from "@/lib/api/endpoints/memo";
+import type { SupportedLocale } from "../i18n/locale.ts";
+import { formatCalendarDay, formatDateTime, formatWeekday } from "../i18n/format.ts";
+import { dateKeyToDateInputValue, dateToDateKeyInTimeZone } from "./dateKey.ts";
 
 export interface ThreadMsg {
   id: string;
@@ -55,35 +58,43 @@ export function encodeImageContent(path: string): string {
 }
 
 /** UTC ISO created_at → 로컬 일자 스탬프("yyyy-mm-dd") — 날짜 구분선 그룹핑용. 무효 시 빈 문자열. */
-export function memoDayStamp(iso: string): string {
+export function memoDayStamp(iso: string, timeZone: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return dateKeyToDateInputValue(dateToDateKeyInTimeZone(d, timeZone));
 }
 
 /** 일자 스탬프 → 구분선 라벨. 오늘/어제는 관용 표현, 그 외 "M월 D일 요일". */
-export function formatMemoDayLabel(dayStamp: string, now: Date = new Date()): string {
+export function formatMemoDayLabel(
+  dayStamp: string,
+  now: Date,
+  locale: SupportedLocale,
+  timeZone: string,
+): string {
   if (!dayStamp) return "";
   const [y, m, d] = dayStamp.split("-").map(Number);
   if (!y || !m || !d) return "";
-  const date = new Date(y, m - 1, d);
-  const startOf = (dt: Date) => new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()).getTime();
-  const diffDays = Math.round((startOf(now) - startOf(date)) / 86_400_000);
-  const weekday = date.toLocaleDateString("ko-KR", { weekday: "long" });
+  const date = new Date(Date.UTC(y, m - 1, d, 12));
+  const todayStamp = memoDayStamp(now.toISOString(), timeZone);
+  const [todayY, todayM, todayD] = todayStamp.split("-").map(Number);
+  const todayUtc = Date.UTC(todayY, todayM - 1, todayD);
+  const dateUtc = Date.UTC(y, m - 1, d);
+  const diffDays = Math.round((todayUtc - dateUtc) / 86_400_000);
+  const weekday = formatWeekday(date, { locale, timeZone: "UTC", width: "long" });
   if (diffDays === 0) return `오늘 · ${weekday}`;
   if (diffDays === 1) return `어제 · ${weekday}`;
-  return `${m}월 ${d}일 ${weekday}`;
+  return formatCalendarDay(date, { locale, timeZone: "UTC", weekday: "long" });
 }
 
 /** UTC ISO created_at → "오전/오후 h:mm"(로컬 시각). 무효 시 빈 문자열. */
-export function formatMemoClock(iso: string): string {
+export function formatMemoClock(
+  iso: string,
+  locale: SupportedLocale,
+  timeZone: string,
+): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  const h = d.getHours();
-  const m = d.getMinutes();
-  const ampm = h < 12 ? "오전" : "오후";
-  const hh = h % 12 === 0 ? 12 : h % 12;
-  return `${ampm} ${hh}:${String(m).padStart(2, "0")}`;
+  return formatDateTime(d, { locale, timeZone, timeStyle: "short" });
 }
 
 // 대화는 시간순이 자연스러우므로 created_at 오름차순, 동시각은 id 로 안정 정렬.
@@ -101,6 +112,8 @@ function compareReplies(a: MemoReply, b: MemoReply): number {
 export function mapRepliesToThread(
   replies: MemoReply[],
   currentUserId: string | null,
+  locale: SupportedLocale,
+  timeZone: string,
 ): ThreadMsg[] {
   return [...replies].sort(compareReplies).map((r) => {
     const mine = !!currentUserId && r.user_id === currentUserId;
@@ -110,8 +123,8 @@ export function mapRepliesToThread(
       mine,
       showMeta: !mine,
       senderUserId: r.user_id ?? null,
-      time: formatMemoClock(r.created_at),
-      dayStamp: memoDayStamp(r.created_at),
+      time: formatMemoClock(r.created_at, locale, timeZone),
+      dayStamp: memoDayStamp(r.created_at, timeZone),
       ...rich,
     };
   });

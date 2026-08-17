@@ -4,6 +4,7 @@ import { asset } from "@/lib/assets";
 import { useReceivedStickers } from "@/queries/useStickers";
 import type { ReceivedSticker } from "@/lib/api/endpoints/stickers";
 import "./StickerCelebration.css";
+import { useIntl } from "react-intl";
 
 export interface StickerCelebrationDetail {
   id?: string;
@@ -43,9 +44,9 @@ function stickerImage(emoji?: string): string {
   return asset(STICKER_BY_EMOJI[emoji ?? ""] ?? "sticker/best.webp");
 }
 
-function stickerTitle(title?: string): string {
+function stickerTitle(title: string | undefined, fallback: string): string {
   const text = String(title ?? "").trim();
-  return text || "칭찬";
+  return text || fallback;
 }
 
 function isRecentSticker(sticker: ReceivedSticker): boolean {
@@ -55,6 +56,7 @@ function isRecentSticker(sticker: ReceivedSticker): boolean {
 
 export function StickerCelebrationHost() {
   const { role, userId } = useAuth();
+  const intl = useIntl();
   const received = useReceivedStickers(role === "child" ? userId : null);
   const [detail, setDetail] = useState<(StickerCelebrationDetail & { key: number }) | null>(null);
   const timer = useRef<number | null>(null);
@@ -102,13 +104,13 @@ export function StickerCelebrationHost() {
 
   if (!detail) return null;
 
-  const title = stickerTitle(detail.title);
+  const title = stickerTitle(detail.title, intl.formatMessage({ id: "shared.sticker.defaultTitle" }));
   return (
     <button
       key={detail.key}
       type="button"
       className="sticker-celebration"
-      aria-label={`${title} 스티커를 받았어`}
+      aria-label={intl.formatMessage({ id: "shared.sticker.receivedLabel" }, { title })}
       onClick={() => setDetail(null)}
     >
       <span className="sticker-celebration__flash" />
@@ -118,10 +120,10 @@ export function StickerCelebrationHost() {
         ))}
       </span>
       <span className="sticker-celebration__main">
-        <span className="sticker-celebration__eyebrow">스티커 도착!</span>
+        <span className="sticker-celebration__eyebrow">{intl.formatMessage({ id: "shared.sticker.arrived" })}</span>
         <img className="sticker-celebration__sticker" src={stickerImage(detail.emoji)} alt="" />
         <span className="sticker-celebration__title">{title}</span>
-        <span className="sticker-celebration__sub">부모님이 칭찬 스티커를 보내줬어</span>
+        <span className="sticker-celebration__sub">{intl.formatMessage({ id: "shared.sticker.sentByParent" })}</span>
       </span>
       <span className="sticker-celebration__stars" aria-hidden="true">
         <span>★</span>

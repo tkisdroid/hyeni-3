@@ -6,7 +6,9 @@ import { fileURLToPath } from "node:url";
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const source = readFileSync(resolve(rootDir, "src/screens/parent/ParentLocation.tsx"), "utf8");
+const css = readFileSync(resolve(rootDir, "src/screens/parent/ParentLocation.css"), "utf8");
 const refreshWaitSource = readFileSync(resolve(rootDir, "src/transform/locationRefreshWait.ts"), "utf8");
+const koParent = JSON.parse(readFileSync(resolve(rootDir, "locales/ko/parent.json"), "utf8"));
 
 test("부모 위치 화면의 아이 표시 배지는 조회 범위가 확정된 실시간 탭에서만 보인다", () => {
   assert.match(source, /!isLocked && !locationScopePending && activeView === "live" && selected && \(/);
@@ -20,12 +22,29 @@ test("실시간 위치 요청 중에는 대기 상태를 화면에 표시하고 
   assert.match(refreshWaitSource, /export const LOCATION_REFRESH_POLL_MS = 2_500/);
   assert.match(refreshWaitSource, /while \(now\(\) < deadline\)/);
   assert.match(source, /return \(\) => \{\s*refreshSeq\.current \+= 1;/s);
-  assert.match(source, /className="pl-refreshing"/);
-  // 진행 안내는 간단한 한 줄만 쓴다 — 단계별 설명과 부제는 재도입 금지(2026-08-02 TK 지시).
-  assert.match(source, /const refreshOverlayTitle = "위치 요청을 보냈어요"/);
-  assert.doesNotMatch(source, /refreshOverlaySub|새 위치를 기다리는 중|위치 요청을 보내는 중/);
   // 새로고침 버튼은 자체 회전 아이콘이 있으므로 전역 aria-busy 스피너를 끈다(아이콘 2개 방지).
   assert.match(source, /className=\{`pl-refresh hy-busy-quiet\$\{/);
+  assert.match(source, /aria-busy=\{isRefreshingLocation\}/);
+  // 진행 중 버튼 라벨은 대상 아이를 밝힌다("혜니 위치 확인 중").
+  assert.match(source, /aria-label=\{isRefreshingLocation \? refreshBusyLabel :/);
+  assert.match(koParent["parent.location.refreshingForChild"], /\{childName\} 위치 확인 중/);
+});
+
+test("위치 갱신 진행은 새로고침 버튼 하나로만 알리고 아이 프로필을 건드리지 않는다", () => {
+  // 2026-08-17 TK 제보: 아이 프로필 위에 "위치 요청을 보냈어요"가 겹쳐 보이고
+  // 칩과 새로고침 버튼이 각각 움직여 디자인이 흐트러졌다. 문구·칩 변형은 재도입 금지.
+  assert.doesNotMatch(source, /parent\.location\.requestSent/);
+  assert.doesNotMatch(source, /parent\.parentLocation\.copy006/);
+  assert.doesNotMatch(source, /pl-chip__status|pl-chip__spinner|data-refreshing/);
+  assert.doesNotMatch(css, /\.pl-chip__status|\.pl-chip__spinner|\.pl-chip\[data-refreshing/);
+  assert.doesNotMatch(source, /className="pl-refreshing"/);
+  assert.doesNotMatch(css, /\.pl-refreshing\s*\{/);
+  // 상세 카드는 진행 중에도 마지막 확인 정보를 그대로 보여준다(빈 문구로 바꾸지 않는다).
+  assert.match(source, /pl-sheet__zone--loading/);
+  assert.match(
+    css,
+    /@media \(prefers-reduced-motion: reduce\) \{[^}]*\.pl-sheet__zone--loading \.pl-sheet__zone-dot[^}]*animation: none;/s,
+  );
 });
 
 test("부모 위치 화면 자동 요청은 Premium에서만 실행해 Free 수동 5회를 소모하지 않는다", () => {
@@ -41,6 +60,7 @@ test("부모 위치 화면 자동 요청은 Premium에서만 실행해 Free 수�
 
 test("오래된 위치는 현재 장소가 아니라 마지막 확인 장소로 표시한다", () => {
   assert.match(source, /fresh\?\.status === "stale"/);
-  assert.match(source, /마지막 확인: \$\{curPlace\}/);
+  assert.match(koParent["parent.location.lastSeenAt"], /마지막 확인: \{place\}/);
+  assert.match(source, /parent\.location\.lastSeenAt/);
   assert.match(source, /pl-sheet__zone--stale/);
 });

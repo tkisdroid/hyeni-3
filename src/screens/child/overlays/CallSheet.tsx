@@ -6,6 +6,7 @@
  * 번호가 없는 보호자는 버튼을 비활성화하고 이유를 적는다(누르면 아무 일 없는 버튼 금지).
  */
 import { asset } from "@/lib/assets";
+import { useIntl } from "react-intl";
 import { ChildSheet } from "./ChildSheet";
 
 export interface CallTarget {
@@ -27,13 +28,14 @@ const AVATAR: Record<CallTarget["gender"], string> = {
 };
 
 export function CallSheet({ open, onClose, targets, onCall }: CallSheetProps) {
+  const intl = useIntl();
   const missing = targets.filter((t) => !t.phone);
   return (
-    <ChildSheet open={open} onClose={onClose} label="부모님 전화">
-      <div className="ks-call__title">누구한테 전화할까? 📞</div>
+    <ChildSheet open={open} onClose={onClose} label={intl.formatMessage({ id: "child.call.title" })}>
+      <div className="ks-call__title">{intl.formatMessage({ id: "child.call.prompt" })}</div>
 
       {targets.length === 0 ? (
-        <div className="ks-empty">아직 보호자 전화번호가 없어. 부모님한테 등록해 달라고 하자!</div>
+        <div className="ks-empty">{intl.formatMessage({ id: "child.call.empty" })}</div>
       ) : (
         <div className="ks-call__grid">
           {targets.map((t) => (
@@ -53,7 +55,10 @@ export function CallSheet({ open, onClose, targets, onCall }: CallSheetProps) {
 
       {missing.length > 0 && targets.length > 0 && (
         <div className="ks-call__note">
-          {missing.map((m) => m.label).join(" · ")} 전화번호가 아직 없어
+          {intl.formatMessage(
+            { id: "child.call.missingNumber" },
+            { names: missing.map((member) => member.label).join(" · ") },
+          )}
         </div>
       )}
     </ChildSheet>

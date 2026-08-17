@@ -246,7 +246,7 @@ test("아이 일정 알림 상태 endpoint와 네이티브 위치 상태 필드�
   assert.match(notificationsQuery, /useChildNotifSettingsStatus/);
   assert.match(notificationsQuery, /qk\.childNotifSettings/);
   assert.match(familyView, /deviceNotificationHealthView\(health,/);
-  assert.match(familyView, /deviceLocationHealthView\(health, now\)/);
+  assert.match(familyView, /deviceLocationHealthView\(health, now, intl\)/);
   assert.match(familyView, /deviceOverallSafetyLabel\(/);
 });
 

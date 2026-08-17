@@ -1079,6 +1079,116 @@
   color: #554c50;
   text-align: center;
 }
+
+/* ── 구독 상태 카드 ─────────────────────────────────────────────────────── */
+.ph-subscription {
+  width: 100%;
+  min-height: 104px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  overflow: hidden;
+  border: 1px solid var(--lav-line);
+  background: linear-gradient(135deg, var(--lav-soft2), var(--rose-soft));
+  box-shadow: var(--shadow-lavender);
+  --press: 0.985;
+}
+.ph-subscription[data-tone="manage"] {
+  border-color: var(--mint-line);
+  background: linear-gradient(135deg, var(--mint-soft), var(--lav-soft));
+  box-shadow: var(--shadow-mint);
+}
+.ph-subscription[data-tone="neutral"] {
+  border-color: var(--line-soft);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-soft);
+}
+.ph-subscription__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-20);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-soft);
+}
+.ph-subscription[data-tone="manage"] .ph-subscription__icon {
+  background: var(--bg-card);
+}
+.ph-subscription[data-tone="neutral"] .ph-subscription__icon {
+  background: var(--bg-chip-idle);
+  box-shadow: none;
+}
+.ph-subscription__icon img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+}
+.ph-subscription__main {
+  flex: 1;
+  min-width: 0;
+}
+.ph-subscription__title,
+.ph-subscription__description,
+.ph-subscription__meta {
+  display: block;
+}
+.ph-subscription__title {
+  color: var(--lav-text);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+}
+.ph-subscription[data-tone="manage"] .ph-subscription__title {
+  color: var(--mint-text);
+}
+.ph-subscription[data-tone="neutral"] .ph-subscription__title {
+  color: var(--fg-tertiary);
+}
+.ph-subscription__description {
+  margin-top: 4px;
+  color: var(--fg-primary);
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+}
+.ph-subscription__meta {
+  margin-top: 4px;
+  color: var(--fg-muted);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+}
+.ph-subscription__action {
+  flex: none;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #fff;
+  background: var(--cta-grad-lavender);
+  box-shadow: var(--shadow-lavender);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+  white-space: nowrap;
+}
+.ph-subscription[data-tone="manage"] .ph-subscription__action {
+  background: var(--cta-grad-mint);
+  box-shadow: var(--shadow-mint);
+}
+.ph-subscription[data-tone="neutral"] .ph-subscription__action {
+  color: var(--fg-secondary);
+  background: var(--bg-chip-idle);
+  box-shadow: none;
+}
 .ph-location-chip {
   color: var(--gold-text);
   background: var(--cream-soft);
@@ -1098,4 +1208,59 @@
 .ph-child__more,
 .ph-prep-check {
   min-width: var(--control-min-size);
+}
+
+/* ── 친구 초대 카드(2026-08-17) ────────────────────────────────────────────
+   한 줄 + 버튼만. 구독 카드 아래에 두어 홈에서 바로 보이게 한다. */
+.ph-referral {
+  width: 100%;
+  min-height: 64px;
+  margin-top: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  border: 1px solid var(--gold-400);
+  background: var(--cream-soft);
+  box-shadow: var(--shadow-soft);
+  --press: 0.985;
+}
+.ph-referral__icon {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold-text);
+  background: #fff;
+}
+.ph-referral__headline {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
+  color: var(--fg-primary);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+.ph-referral__action {
+  flex: none;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: var(--hy-accent-cta);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+  white-space: nowrap;
 }

@@ -9,6 +9,7 @@ import {
   type OAuthProvider,
 } from "@/transform/oauthProvider";
 import { apiRequest, apiPost } from "../client";
+import { ApiError, normalizeApiErrorCode } from "../errors";
 import { applyApiSession, setApiUser, clearApiSession, notifyTokens, type ApiUser } from "../session";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { openExternal } from "@/lib/native/browser";
@@ -189,7 +190,7 @@ export function logout(): void {
 export async function deleteAccount(): Promise<{ ok?: boolean; error?: string }> {
   const data = await apiPost<{ ok?: boolean; error?: string }>("/api/account/delete", {});
   if (data && data.ok === false) {
-    throw new Error(data.error || "계정 삭제에 실패했어요.");
+    throw new ApiError(normalizeApiErrorCode(data.error), 400);
   }
   clearApiSession();
   return data;

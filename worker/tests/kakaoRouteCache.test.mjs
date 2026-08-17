@@ -11,11 +11,15 @@ const code = (source) =>
     .replace(/^[ 	]*\/\/.*$/gm, " ")
     .replace(/\s+/g, " ");
 
-test("도보 경로는 카카오와 OSRM 을 동시에 부른다(순차 대기 금지)", () => {
-  // 카카오 도보는 제휴 전용이라 매번 403 인데, 그 왕복을 다 기다린 뒤 OSRM 을 시작해 2.2초가 걸렸다.
-  assert.match(src, /await Promise\.all\(\[\s*fetchKakaoWalkingRoute\([\s\S]{0,120}fetchOsrmFootRoute\(/);
-  // 제휴가 살아나면 카카오가 이긴다.
-  assert.match(src, /const payload = kakaoRoute \?\? osrmRoute/);
+test("도보 경로는 상류 세 곳을 동시에 부른다(순차 대기 금지)", () => {
+  // 카카오 도보는 제휴 전용이라 매번 403 인데, 그 왕복을 다 기다린 뒤 폴백을 시작해 2.2초가 걸렸다.
+  // 2026-08-17: FOSSGIS OSRM 이 Workers 대역을 막아 ORS 를 1순위 폴백으로 추가했다.
+  assert.match(
+    src,
+    /await Promise\.all\(\[\s*fetchKakaoWalkingRoute\([\s\S]{0,200}fetchOrsFootRoute\([\s\S]{0,200}fetchOsrmFootRoute\(/,
+  );
+  // 제휴가 살아나면 카카오가 이기고, 그다음이 ORS 다.
+  assert.match(src, /const payload = kakaoRoute \?\? orsRoute \?\? osrmRoute/);
 });
 
 const cacheSrc = readFileSync(new URL("../lib/edgeCache.ts", import.meta.url), "utf8");

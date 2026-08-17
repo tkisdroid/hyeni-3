@@ -100,7 +100,7 @@ export async function triggerForceRing(input: TriggerForceRingInput): Promise<Tr
     const status = e instanceof ApiError ? e.status : undefined;
     if (status === 429) return { error: "force_ring_quota_exceeded", delivered: false };
     if (status === 423) return { error: "force_ring_already_active", delivered: false };
-    return { error: e instanceof Error ? e.message : "unknown_error", delivered: false };
+    return { error: e instanceof ApiError ? e.code ?? "unknown_error" : "unknown_error", delivered: false };
   }
 }
 
@@ -113,7 +113,7 @@ export async function stopForceRing(eventId: string): Promise<{ stopped: boolean
       event_id: eventId,
     });
   } catch (e) {
-    return { stopped: false, error: e instanceof Error ? e.message : "stop_failed" };
+    return { stopped: false, error: e instanceof ApiError ? e.code ?? "stop_failed" : "stop_failed" };
   }
 }
 
@@ -168,7 +168,7 @@ export async function requestLocationRefresh(
     return { ok: true };
   } catch (e) {
     const status = e instanceof ApiError ? e.status : undefined;
-    return { ok: false, status, error: e instanceof Error ? e.message : "request_location_failed" };
+    return { ok: false, status, error: e instanceof ApiError ? e.code ?? "request_location_failed" : "request_location_failed" };
   }
 }
 
@@ -259,7 +259,7 @@ export async function requestRemoteListen(
     return { ok: true, ...res };
   } catch (e) {
     const status = e instanceof ApiError ? e.status : undefined;
-    return { ok: false, status, error: e instanceof Error ? e.message : "remote_listen_failed" };
+    return { ok: false, status, error: e instanceof ApiError ? e.code ?? "remote_listen_failed" : "remote_listen_failed" };
   }
 }
 
@@ -285,6 +285,6 @@ export async function stopRemoteListen(input: {
     return { ok: true };
   } catch (e) {
     const status = e instanceof ApiError ? e.status : undefined;
-    return { ok: false, status, error: e instanceof Error ? e.message : "remote_listen_stop_failed" };
+    return { ok: false, status, error: e instanceof ApiError ? e.code ?? "remote_listen_stop_failed" : "remote_listen_stop_failed" };
   }
 }

@@ -6,6 +6,7 @@
  */
 import { useMemo, useState } from "react";
 import { Lock } from "lucide-react";
+import { useIntl } from "react-intl";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
@@ -28,6 +29,7 @@ function countThisWeek(latestAts: readonly (number | null)[], nowMs: number): nu
 }
 
 export function StickerBook() {
+  const intl = useIntl();
   const { show } = useToast();
   const { userId } = useAuth();
   const received = useReceivedStickers(userId);
@@ -48,8 +50,9 @@ export function StickerBook() {
   );
 
   const openSlot = (slot: StickerSlot) => {
+    // 잠긴 칸은 부모님 칭찬을 받으면 열려 있으므로 서버에 없는 스티커를 지어내지 않는다.
     if (!slot.got) {
-      show("부모님 칭찬을 받으면 열려! 🔒", "✨");
+      show(intl.formatMessage({ id: "child.stickerBook.lockedToast" }), "✨");
       return;
     }
     setSelected(slot);
@@ -62,31 +65,42 @@ export function StickerBook() {
     <div className="sb-root hy-rise-in">
       <header className="sb-head">
         <img src={asset("ui/crown.webp")} alt="" />
-        <span className="sb-head__title">내 스티커북</span>
-        {weekCount > 0 && <span className="sb-head__badge">이번 주 +{weekCount}</span>}
+        <span className="sb-head__title">{intl.formatMessage({ id: "child.stickerBook.title" })}</span>
+        {weekCount > 0 && (
+          <span className="sb-head__badge">
+            {intl.formatMessage({ id: "child.stickerBook.thisWeek" }, { count: weekCount })}
+          </span>
+        )}
       </header>
 
       <div className="sb-body">
         <div className="sb-progress">
           <div className="sb-progress__count">
-            {book.total}개 중 <b>{book.gotCount}개</b> 모았어!
+            {intl.formatMessage(
+              { id: "child.stickerBook.progress" },
+              { total: book.total, count: book.gotCount, strong: (chunks) => <b>{chunks}</b> },
+            )}
           </div>
           <div className="sb-progress__bar">
             <div className="sb-progress__fill" style={{ width: `${book.percent}%` }} />
           </div>
-          <div className="sb-progress__hint">부모님이 칭찬 스티커를 보내면 여기 모여 💌</div>
+          <div className="sb-progress__hint">{intl.formatMessage({ id: "child.stickerBook.hint" })}</div>
         </div>
 
         {received.isLoading ? (
-          <div className="sb-state"><Loading label="스티커를 불러오는 중이야" /></div>
+          <div className="sb-state"><Loading label={intl.formatMessage({ id: "child.stickerBook.loading" })} /></div>
         ) : received.isError ? (
           <div className="sb-state" role="alert">
-            <span>스티커를 못 불러왔어.</span>
-            <button type="button" className="hy-press" onClick={() => void received.refetch()}>다시 불러오기</button>
+            <span>{intl.formatMessage({ id: "child.stickerBook.loadError" })}</span>
+            <button type="button" className="hy-press" onClick={() => void received.refetch()}>
+              {intl.formatMessage({ id: "child.action.reload" })}
+            </button>
           </div>
         ) : (
           <>
-            {book.gotCount === 0 && <div className="sb-state">아직 받은 스티커가 없어. 첫 칭찬을 기다려 보자!</div>}
+            {book.gotCount === 0 && (
+              <div className="sb-state">{intl.formatMessage({ id: "child.stickerBook.empty" })}</div>
+            )}
             <div className="sb-grid">
               {book.slots.map((slot) => (
                 <button
@@ -94,7 +108,10 @@ export function StickerBook() {
                   type="button"
                   className={`sb-slot${slot.got ? "" : " sb-slot--locked"} hy-press`}
                   onClick={() => openSlot(slot)}
-                  aria-label={slot.got ? `${slot.label} 스티커 열어보기` : `${slot.label} 스티커 아직 못 받았어`}
+                  aria-label={intl.formatMessage(
+                    { id: slot.got ? "child.stickerBook.openAria" : "child.stickerBook.lockedAria" },
+                    { label: slot.label },
+                  )}
                 >
                   {slot.isNew && <span className="sb-slot__new">NEW</span>}
                   {slot.count > 1 && <span className="sb-slot__count">{slot.count}</span>}

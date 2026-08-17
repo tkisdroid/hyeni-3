@@ -41,8 +41,8 @@ test("대화 문구는 부모=존댓말, 아이=반말로 분리된다", () => {
 
 test("MemoChat 은 하드코딩 문구 대신 role 별 copy 를 쓴다", () => {
   const src = readFileSync(new URL("../src/screens/shared/MemoChat.tsx", import.meta.url), "utf8");
-  assert.match(src, /resolveMemoQuickReplies\(role\)/);
-  assert.match(src, /resolveMemoChatCopy\(role\)/);
+  assert.match(src, /resolveMemoQuickReplies\(role, intl\)/);
+  assert.match(src, /resolveMemoChatCopy\(role, intl\)/);
   for (const hardcoded of [
     '"메시지를 입력해 주세요"',
     '"메시지 전송에 실패했어요"',

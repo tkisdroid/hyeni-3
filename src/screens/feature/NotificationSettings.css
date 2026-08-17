@@ -186,7 +186,8 @@
 
 /* ── 사전 알림 시간(칩 멀티 선택) ───────────────────────────────────────── */
 .nst-minutes {
-  padding: 4px 8px 12px;
+  /* 아이콘 열 아래 64px 들여쓰기를 두면 칩 5개가 한 줄에 못 들어간다(2026-08-17 TK 지시). */
+  padding: 4px 12px 12px;
 }
 .nst-minutes__label {
   font-size: var(--type-caption);
@@ -194,14 +195,24 @@
   font-weight: var(--type-caption-weight);
 
   color: var(--fg-tertiary);
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
-/* 5칸을 한 줄에 고정한다. 줄바꿈하면 들쭉날쭉해진다. */
 .nst-minutes__row {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: stretch;
-  gap: 6px;
+  /* 5칸 고정 그리드 — 줄바꿈 없이 항상 한 줄이다. */
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--spacing-8);
+}
+.nst-minutes__row .nst-minute {
+  min-height: var(--control-min-size);
+  padding: 8px 4px;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .nst-minute {
   padding: 8px 12px;
@@ -215,21 +226,6 @@
   --press: 0.94;
 }
 .nst-minute--on {
-  background: var(--hy-accent-soft);
-  color: var(--hy-accent-text);
-}
-.nst-minutes__row .nst-minute {
-  flex: 1 1 0;
-  min-width: 0;
-  padding: 8px 2px;
-  border: 1.5px solid transparent;
-  background: var(--bg-chip-idle);
-  color: var(--fg-tertiary);
-  text-align: center;
-  white-space: nowrap;
-}
-.nst-minutes__row .nst-minute--on {
-  border-color: var(--hy-accent);
   background: var(--hy-accent-soft);
   color: var(--hy-accent-text);
 }

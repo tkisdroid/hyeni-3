@@ -1,6 +1,6 @@
 -- 친구 초대 보상 v2 — 운영 적용은 Worker 배포 전에 정확히 1회 수행한다.
 -- 이 migration은 기존 referral_codes/referral_completions/point_wallets를 변경하지 않는다.
--- 추천 보상은 Free/Premium entitlement가 아닌 추가 AI 대화 크레딧 10회이며,
+-- 추천 보상은 Free/Premium entitlement가 아닌 추가 AI 대화 크레딧이며(현재 50회, 상한 없음),
 -- 위치 좌표·주소·전화번호·이름은 추천 테이블에 저장하지 않는다.
 
 CREATE TABLE IF NOT EXISTS referral_codes_v2 (
@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS referral_codes_v2 (
   status TEXT NOT NULL DEFAULT 'active'
     CHECK (status IN ('active','revoked')),
   successful_referrals INTEGER NOT NULL DEFAULT 0
-    CHECK (successful_referrals BETWEEN 0 AND 3),
+    CHECK (successful_referrals >= 0),
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   revoked_at TEXT,
@@ -35,8 +35,8 @@ CREATE TABLE IF NOT EXISTS referral_completions_v2 (
   referee_child_user_id TEXT,
   status TEXT NOT NULL DEFAULT 'pending'
     CHECK (status IN ('pending','qualified','rewarded','rejected')),
-  reward_credits INTEGER NOT NULL DEFAULT 10
-    CHECK (reward_credits = 10),
+  reward_credits INTEGER NOT NULL DEFAULT 50
+    CHECK (reward_credits > 0),
   first_location_at TEXT,
   latest_location_at TEXT,
   qualified_at TEXT,

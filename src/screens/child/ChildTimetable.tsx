@@ -2,6 +2,7 @@
  * 오늘 시간표 목록 — 홈 카드와 시간표 시트가 같은 컴포넌트를 쓴다(두 벌 만들지 않는다).
  */
 import { Check } from "lucide-react";
+import { useIntl } from "react-intl";
 import { asset } from "@/lib/assets";
 
 export interface ChildTimetableRow {
@@ -24,8 +25,9 @@ export function ChildTimetableList({
   rows: readonly ChildTimetableRow[];
   compact?: boolean;
 }) {
+  const intl = useIntl();
   if (rows.length === 0) {
-    return <div className="kd-tt__empty">오늘은 일정이 없어 🎈</div>;
+    return <div className="kd-tt__empty">{intl.formatMessage({ id: "child.timetable.empty" })}</div>;
   }
   return (
     <>
@@ -46,11 +48,11 @@ export function ChildTimetableList({
             {r.place && <span className="kd-tt__place">{r.place}</span>}
           </span>
           {r.done && (
-            <span className="kd-tt__done" aria-label="다녀왔어">
+            <span className="kd-tt__done" aria-label={intl.formatMessage({ id: "child.timetable.done" })}>
               <Check size={16} strokeWidth={3.2} color="var(--mint-text)" />
             </span>
           )}
-          {r.next && <span className="kd-tt__next">다음이야!</span>}
+          {r.next && <span className="kd-tt__next">{intl.formatMessage({ id: "child.timetable.next" })}</span>}
         </div>
       ))}
     </>

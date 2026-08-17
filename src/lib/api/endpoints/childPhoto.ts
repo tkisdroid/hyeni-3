@@ -39,6 +39,33 @@ export async function uploadChildPhoto(
 }
 
 /**
+ * 부모 본인 프로필 사진 등록. 대상은 항상 caller 자기 멤버 행이고, 서버가
+ * `parent_profile` purpose 로 소유권을 다시 확인한다(공동 보호자 사진 대리 변경 불가).
+ */
+export async function uploadMyParentPhoto(
+  familyId: string,
+  memberId: string,
+  dataUrl: string,
+): Promise<string> {
+  if (!familyId || !memberId) throw new Error("가족·계정 정보가 필요해요");
+  if (!dataUrl) throw new Error("사진이 필요해요");
+  const blob = dataUrlToBlob(dataUrl);
+  const uploaded = await apiUploadChildPhoto({
+    familyId,
+    purpose: "parent_profile",
+    targetMemberId: memberId,
+    fileOrBlob: blob,
+    contentType: blob.type || "image/jpeg",
+  });
+  await apiPost("/api/family/member/photo", {
+    family_id: familyId,
+    member_id: memberId,
+    url: uploaded.path,
+  });
+  return uploaded.path;
+}
+
+/**
  * 페어링 위저드용: 아직 멤버가 없는 placeholder 아이 사진을 서버 발급 경로에 업로드한다.
  */
 export async function uploadPlaceholderChildPhoto(

@@ -10,7 +10,7 @@ import { API_BASE } from "@/config/env";
 import { adoptNativeLocationSessionTokens, syncNativeLocationToken } from "@/lib/native/location";
 import { getAuthDeviceInstallId } from "@/lib/native/deviceIdentity";
 import { isNativePlatform } from "@/lib/native/plugins";
-import { ApiError } from "./errors";
+import { ApiError, apiErrorCodeFromResponseBody } from "./errors";
 import { recordFeedbackDiagnostic } from "@/lib/feedbackDiagnostics";
 import {
   acquirePendingChildPhotoUploadRequest,
@@ -144,22 +144,21 @@ export async function apiRequest<T = unknown>(
     // result === "error"(5xx·네트워크 일시 오류) → 세션 유지(로그아웃 안 함). 아래에서 ApiError 표면화 → 재시도 여지.
   }
   if (!res.ok) {
-    // Worker 가 보낸 한글 에러 메시지(본문 error/message)를 우선 표면화.
-    let detail: string | null = null;
+    // Worker 자유 message/raw body는 버리고 제한된 snake_case error code만 보존한다.
+    let code: string | null = null;
     try {
-      const body = (await res.clone().json()) as { error?: string; message?: string };
-      detail = body?.error || body?.message || null;
+      code = apiErrorCodeFromResponseBody(await res.clone().json());
     } catch {
       /* non-json body */
     }
     recordFeedbackDiagnostic({
       kind: "api",
-      error: detail || `http_${res.status}`,
+      error: code ?? `http_${res.status}`,
       status: res.status,
       method,
       path,
     });
-    throw new ApiError(detail || `API ${res.status}`, res.status);
+    throw new ApiError(code, res.status);
   }
   // 204 No Content(void RPC) — 빈 본문 파싱 없이 null 단락.
   if (res.status === 204) return null as T;
@@ -210,7 +209,7 @@ function encodeStorageKey(path: string): string {
     .join("/");
 }
 
-export type ChildPhotoUploadPurpose = "memo" | "profile" | "placeholder";
+export type ChildPhotoUploadPurpose = "memo" | "profile" | "placeholder" | "parent_profile";
 
 export interface ChildPhotoUploadInput {
   familyId: string;
@@ -263,7 +262,7 @@ export async function apiUploadChildPhoto(input: ChildPhotoUploadInput): Promise
     clearPendingChildPhotoUploadRequest(pending);
     return validated;
   } catch (error) {
-    if (error instanceof ApiError && error.message === "storage_upload_request_retired") {
+    if (error instanceof ApiError && error.code === "storage_upload_request_retired") {
       clearPendingChildPhotoUploadRequest(pending);
     }
     throw error;

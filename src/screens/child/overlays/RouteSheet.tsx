@@ -9,8 +9,10 @@
  */
 import { useEffect, useState } from "react";
 import { Home, Map, Navigation } from "lucide-react";
+import { useIntl } from "react-intl";
 import { asset } from "@/lib/assets";
 import { useWalkingRoute } from "@/queries/useRoute";
+import { straightLineHint } from "@/transform/straightLineRoute";
 import type { RoutePoint } from "@/lib/api/endpoints/route";
 import { ChildSheet } from "./ChildSheet";
 
@@ -50,24 +52,56 @@ export function RouteSheet({
   onOpenMap,
   sending,
 }: RouteSheetProps) {
+  const intl = useIntl();
   const route = useWalkingRoute(open ? origin : null, open ? destination : null);
   const [pendingAction, setPendingAction] = useState<"depart" | "arrive" | null>(null);
   const data = route.data ?? null;
   const steps = (data?.guides ?? []).filter((g) => g.text.trim()).slice(0, 3);
   const estimated = !!data && !data.durationSec;
+  // 상류 라우팅이 죽었을 때 쓸 직선 거리(경로가 아니라 참고값이다).
+  const straight = straightLineHint(origin, destination);
 
   useEffect(() => {
     if (!open || !sending) setPendingAction(null);
   }, [open, sending]);
 
+  // 길 안내를 못 받은 모든 경우(오류·중단·빈 응답)를 한 화면으로 닫는다.
+  // 예전에는 오류일 때만 안내하고 그 밖에는 "지도에서 길을 볼까?"라는 막다른 문구를 띄웠는데,
+  // 실제로는 조회가 실패해도 그 문구에 머물러 아이가 아무 정보도 못 받았다(2026-08-17 실사고).
+  // 좌표는 둘 다 있으니 직선 거리만이라도 정직하게 알려주고, 실제 길은 아래 지도 버튼으로 넘긴다.
+  const routeUnavailable = (
+    <div className="ks-empty">
+      {straight
+        ? intl.formatMessage(
+            { id: "child.route.straightLine" },
+            { distance: straight.distanceM, minutes: straight.minutes },
+          )
+        : intl.formatMessage({ id: "child.route.error" })}
+      <br />
+      {intl.formatMessage({ id: "child.route.openMapAfterError" })}
+      <button type="button" className="ks-retry hy-press" onClick={() => void route.refetch()}>
+        {intl.formatMessage({ id: "child.route.retry" })}
+      </button>
+    </div>
+  );
+
   return (
-    <ChildSheet open={open} onClose={onClose} label={`${destinationName} 가는 길`}>
+    <ChildSheet
+      open={open}
+      onClose={onClose}
+      label={intl.formatMessage({ id: "child.route.title" }, { destination: destinationName })}
+    >
       <div className="ks-head">
         <img src={asset(icon)} alt="" />
-        <span className="ks-head__title">{destinationName} 가는 길</span>
+        <span className="ks-head__title">
+          {intl.formatMessage({ id: "child.route.title" }, { destination: destinationName })}
+        </span>
         {data && (
           <span className="ks-head__badge">
-            걸어서 {walkMinutes(data.durationSec, data.distanceM)}분{estimated ? "쯤" : ""}
+            {intl.formatMessage(
+              { id: estimated ? "child.route.walkingMinutesApprox" : "child.route.walkingMinutes" },
+              { minutes: walkMinutes(data.durationSec, data.distanceM) },
+            )}
           </span>
         )}
       </div>
@@ -76,7 +110,7 @@ export function RouteSheet({
         <div className="ks-route__row">
           <span className="ks-route__spot">
             <img src={asset("ui/place-home.webp")} alt="" />
-            <span>지금 여기</span>
+            <span>{intl.formatMessage({ id: "child.route.currentHere" })}</span>
           </span>
           <img className="ks-route__deco" src={asset("bg/crosswalk.webp")} alt="" style={{ width: 72 }} />
           <img className="ks-route__deco" src={asset("bg/busstop.webp")} alt="" style={{ width: 56 }} />
@@ -91,29 +125,22 @@ export function RouteSheet({
         <div className="ks-route__line" />
       </div>
 
-      {!destination ? (
+      {!destination ? ( // 장소가 아직 없어도 경로를 지어내지 않고 정직하게 안내한다.
         <div className="ks-empty">
-          이 일정에 장소가 아직 없어.
+          {intl.formatMessage({ id: "child.route.noDestination" })}
           <br />
-          지도에서 같이 찾아 볼까?
+          {intl.formatMessage({ id: "child.route.findOnMap" })}
         </div>
-      ) : !origin ? (
+      ) : !origin ? ( // 어디 있는지 아직 몰라서 경로를 지어내지 않고 재시도를 권한다.
         <div className="ks-empty">
-          지금 네가 어디 있는지 아직 몰라.
+          {intl.formatMessage({ id: "child.route.noOrigin" })}
           <br />
-          잠깐 있다가 다시 눌러 볼래?
+          {intl.formatMessage({ id: "child.route.tryLater" })}
         </div>
       ) : route.isLoading ? (
-        <div className="ks-empty">가는 길을 찾는 중이야… 🗺️</div>
+        <div className="ks-empty">{intl.formatMessage({ id: "child.route.loading" })}</div>
       ) : route.isError ? (
-        <div className="ks-empty">
-          길을 못 찾았어.
-          <br />
-          지도에서 직접 볼 수 있어!
-          <button type="button" className="ks-retry hy-press" onClick={() => void route.refetch()}>
-            다시 찾기
-          </button>
-        </div>
+        routeUnavailable
       ) : steps.length > 0 ? (
         <div className="ks-route__steps">
           {steps.map((s, i) => (
@@ -121,15 +148,19 @@ export function RouteSheet({
               <span className="ks-route__no">{i + 1}</span>
               <span className="ks-route__step-text">
                 {s.text}
-                {s.distanceM ? ` · ${s.distanceM}m` : ""}
+                {s.distanceM
+                  ? intl.formatMessage({ id: "child.route.stepDistance" }, { distance: s.distanceM })
+                  : ""}
               </span>
             </div>
           ))}
         </div>
-      ) : (
+      ) : data ? (
         <div className="ks-empty">
-          {data ? `${data.distanceM}m 떨어져 있어. 지도에서 길을 볼까?` : "지도에서 길을 볼까?"}
+          {intl.formatMessage({ id: "child.route.distancePrompt" }, { distance: data.distanceM })}
         </div>
+      ) : (
+        routeUnavailable
       )}
 
       <button
@@ -143,7 +174,7 @@ export function RouteSheet({
         aria-busy={sending && pendingAction === "depart"}
       >
         <Navigation size={20} strokeWidth={2.2} aria-hidden="true" />
-        출발할게!
+        {intl.formatMessage({ id: "child.route.depart" })}
       </button>
       <button
         type="button"
@@ -156,11 +187,11 @@ export function RouteSheet({
         aria-busy={sending && pendingAction === "arrive"}
       >
         <Home size={19} strokeWidth={2.2} aria-hidden="true" />
-        도착했다고 알리기
+        {intl.formatMessage({ id: "child.route.arrive" })}
       </button>
       <button type="button" className="ks-cta ks-cta--ghost hy-press" onClick={onOpenMap}>
         <Map size={19} strokeWidth={2.2} aria-hidden="true" />
-        지도로 자세히 보기
+        {intl.formatMessage({ id: "child.route.openMap" })}
       </button>
     </ChildSheet>
   );

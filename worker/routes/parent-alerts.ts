@@ -27,6 +27,7 @@ import {
 import { parentAlertTargetRoute } from "../lib/parentAlertRoute";
 import { resolveParentAlertPushType } from "../lib/parentAlertPushPolicy";
 import { resolveLegacyChildScheduleAlertEvidence } from "../lib/legacyScheduleAlertEvidence";
+import { resolveAiCreditRequestEvidence } from "../lib/aiCreditRequestGate";
 import {
   registeredPlacePresenceMetadata,
   resolveRegisteredPlacePresenceDedupe,
@@ -62,7 +63,7 @@ async function queueParentAlertPending(
     pushPolicy: {
       type: "sos" | "parent_alert";
       urgent: boolean;
-      route: "/sos-receive" | "/notifications";
+      route: "/sos-receive" | "/notifications" | "/ai-credit";
     };
   },
 ): Promise<void> {
@@ -202,7 +203,10 @@ parentAlerts.post("/", requireAuth, async (c) => {
     : requestedAlertType;
   const severity = legacyScheduleEvidence?.status === "verified"
     ? legacyScheduleEvidence.severity
-    : String(b.severity ?? "info");
+    // 아이가 보내는 충전 요청은 긴급도를 올릴 수 없다(안전 알림 톤 잠식 방지).
+    : alertType === "ai_credit_request"
+      ? "info"
+      : String(b.severity ?? "info");
   const pushPolicy = resolveParentAlertPushType(alertType, severity);
   let eventId = b.event_id ? String(b.event_id) : null;
   let sourceEventId = b.source_event_id ? String(b.source_event_id) : null;
@@ -226,12 +230,33 @@ parentAlerts.post("/", requireAuth, async (c) => {
     }
   }
 
-  const title = legacyScheduleEvidence?.status === "verified"
+  let title = legacyScheduleEvidence?.status === "verified"
     ? legacyScheduleEvidence.title
     : String(b.title ?? "");
-  const message = legacyScheduleEvidence?.status === "verified"
+  let message = legacyScheduleEvidence?.status === "verified"
     ? legacyScheduleEvidence.message
     : String(b.message ?? "");
+
+  // 아이가 보낸 AI 대화 충전 요청은 본문을 신뢰하지 않는다. 오늘 정말 다 썼는지 서버가
+  // 다시 판정하고, 부모가 읽을 문구도 소진 원인에 맞춰 서버가 만든다.
+  let aiCreditRequestMetadata: Record<string, unknown> | null = null;
+  if (alertType === "ai_credit_request") {
+    const evidence = await resolveAiCreditRequestEvidence(c.env.DB, {
+      familyId,
+      childUserId: writeScope.childUserId ?? "",
+    });
+    if (evidence.status !== "ok") {
+      const rejected = evidence.error;
+      return c.json({ error: rejected }, rejected === "forbidden" ? 403 : 409);
+    }
+    // 최근에 이미 부탁했으면 부모 알림을 새로 만들지 않고 성공으로 닫는다(도배 방지).
+    if (evidence.evidence.duplicate) {
+      return c.json({ accepted: true, duplicate: true, reason: evidence.evidence.reason }, 202);
+    }
+    title = evidence.evidence.title;
+    message = evidence.evidence.message;
+    aiCreditRequestMetadata = evidence.evidence.metadata;
+  }
   // 등록장소 출입은 자녀 네이티브와 서버 cron 이 같은 방문을 각자 평가한다. episode 시각이
   // 서로 달라 10분 버킷 멱등키가 갈리면 부모에게 같은 알림이 두 번 갔다(2026-07-24 실사고).
   // 장소 단위 쿨다운으로 판정해 두 번째 평가자의 알림은 만들지도 보내지도 않는다.
@@ -258,9 +283,10 @@ parentAlerts.post("/", requireAuth, async (c) => {
     severity,
     eventId,
     childUserId: writeScope.childUserId,
-    metadata: presenceDedupe
-      ? registeredPlacePresenceMetadata(presenceDedupe.placeKey, presenceDedupe.kind)
-      : null,
+    metadata: aiCreditRequestMetadata
+      ?? (presenceDedupe
+        ? registeredPlacePresenceMetadata(presenceDedupe.placeKey, presenceDedupe.kind)
+        : null),
   });
   if (!alertId) return c.json({ error: "alert_insert_failed" }, 503);
   if (resolveLocationAlertConfirmation(alertType)) {

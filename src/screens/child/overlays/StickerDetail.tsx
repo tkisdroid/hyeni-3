@@ -6,8 +6,11 @@
  * 대신 확실한 사실만 쓴다: 언제 받았는지(earned_at), 어떤 종류인지(sticker_type), 몇 개인지.
  */
 import { asset } from "@/lib/assets";
+import { useIntl } from "react-intl";
 import { stickerOriginText, stickerWhenLabel, type StickerSlot } from "@/transform/stickerBook";
 import { ChildModal } from "./ChildSheet";
+import { useLocale } from "@/i18n/useLocale";
+import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
 
 export interface StickerDetailProps {
   slot: StickerSlot | null;
@@ -16,18 +19,26 @@ export interface StickerDetailProps {
 }
 
 export function StickerDetail({ slot, nowMs, onClose }: StickerDetailProps) {
+  const intl = useIntl();
+  const { locale } = useLocale();
   if (!slot) return null;
   return (
-    <ChildModal open onClose={onClose} label={`${slot.label} 스티커`}>
+    <ChildModal
+      open
+      onClose={onClose}
+      label={intl.formatMessage({ id: "child.stickerDetail.label" }, { label: slot.label })}
+    >
       <img className="ks-modal__img" src={asset(slot.img)} alt={slot.label} />
       <div className="ks-modal__label">{slot.label}</div>
       <div className="ks-modal__meta">
-        {stickerWhenLabel(slot.latestAt, nowMs)}
-        {slot.count > 1 ? ` · ${slot.count}개 모았어` : ""}
+        {stickerWhenLabel(slot.latestAt, nowMs, locale, LEGACY_FAMILY_TIME_ZONE)}
+        {slot.count > 1
+          ? intl.formatMessage({ id: "child.stickerDetail.count" }, { count: slot.count })
+          : ""}
       </div>
       <div className="ks-modal__msg">{stickerOriginText(slot.latestType)}</div>
       <button type="button" className="ks-cta hy-press" onClick={onClose}>
-        좋아!
+        {intl.formatMessage({ id: "child.stickerDetail.confirm" })}
       </button>
     </ChildModal>
   );

@@ -389,12 +389,17 @@
   border-radius: var(--radius-16);
   box-shadow: var(--shadow-soft);
 }
+/* 열 폭을 고정한다(2026-08-17 TK 제보 "줄바꿈이 난잡함).
+   예전에는 항목 이름이 nowrap 이라 표가 화면보다 넓어지고, 남은 폭에 밀린 값 칸이
+   글자 중간에서 끊겼다. 이제 세 열의 폭을 먼저 정하고 한국어는 어절 단위로만 접는다. */
 .sub-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-variant-numeric: tabular-nums;
 }
 .sub-table__rowhead {
+  width: 44%;
   padding: 12px 8px;
   text-align: left;
   font-size: var(--type-label);
@@ -402,13 +407,16 @@
   font-weight: var(--type-label-weight);
 
   color: var(--fg-tertiary);
-  white-space: nowrap;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 .sub-table__corner {
   font-weight: 800;
   color: var(--fg-muted);
 }
 .sub-table__col {
+  width: 28%;
   padding: 8px 4px;
   text-align: center;
   border-top-left-radius: var(--radius-16);
@@ -428,6 +436,7 @@
 .sub-table__col-price {
   display: block;
   margin-top: 4px;
+  word-break: keep-all;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
@@ -449,10 +458,6 @@
 
   color: var(--gold-text);
 }
-.sub-table tbody tr + tr .sub-table__rowhead,
-.sub-table tbody tr + tr .sub-table__cell {
-  border-top: 1px solid var(--line-hair);
-}
 .sub-table__cell {
   padding: 12px 4px;
   text-align: center;
@@ -461,6 +466,13 @@
   font-weight: var(--type-label-weight);
 
   color: var(--fg-body);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+.sub-table tbody tr + tr .sub-table__rowhead,
+.sub-table tbody tr + tr .sub-table__cell {
+  border-top: 1px solid var(--line-hair);
 }
 .sub-table__cell[data-current="true"] {
   background: rgba(224, 138, 30, 0.06);

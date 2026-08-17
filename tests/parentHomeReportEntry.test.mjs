@@ -13,11 +13,13 @@ function readSource(relativePath) {
 test("부모 홈은 상단 꾹 대신 스티커 버튼을 보여준다", () => {
   const source = readSource("src/screens/parent/ParentHome.tsx");
   const css = readSource("src/screens/parent/ParentHome.css");
+  const koParent = JSON.parse(readSource("locales/ko/parent.json"));
 
   assert.match(source, /className="ph-stickerbtn hy-press"/);
-  assert.match(source, /aria-label=\{`\$\{childName\}에게 칭찬 스티커 보내기`\}/);
+  assert.match(source, /aria-label=\{intl\.formatMessage\([\s\S]{0,100}parent\.home\.sendStickerTo[\s\S]{0,100}childName/);
+  assert.equal(koParent["parent.home.sendStickerTo"], "{childName}에게 칭찬 스티커 보내기");
   assert.match(source, /navigate\("\/sticker-send"\)/);
-  assert.doesNotMatch(source, /꾹/);
+  assert.doesNotMatch(JSON.stringify(koParent), /꾹/);
   assert.doesNotMatch(source, /ph-heartbtn/);
   assert.doesNotMatch(css, /ph-heartbtn/);
 });

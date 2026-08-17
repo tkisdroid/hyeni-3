@@ -11,6 +11,25 @@
 **1~10단계 전부 완료**(전 화면 실데이터·다자녀·AI 친구·알림 3종·릴리즈 게이트) — 실기기 3대 운용 중.
 **현 국면 = 실사용 안정화**: TK 가 실기기로 쓰며 제보하는 버그·개선을 즉시 수정·검증·배포.
 
+**현재 배포 상태(2026-08-17 밤 갱신)**: 친구 초대 50회·상한 없음까지 반영해 Worker version
+`c887c03f-fcb2-4c92-9fd7-467f635ace41`, Pages `https://2a822262.hyeni-calendar.pages.dev`(고정 URL·프로덕션 별칭 index
+SHA-256 `1674cdac29be64517c6713ddd1fbcda0909406ab5c46449d3bdaee4b74876da8` = 로컬 dist, entry JS/CSS 바이트 일치,
+보안 헤더 3/3, manifest·sw·assetlinks 200)를 배포했다. 배포 전 `worker/db/referral-rewards-v2-unlimited.sql` 을
+프로덕션에 1회 적용해 초대 코드 1행을 보존하고 트리거를 복원했다. 배포 뒤 A17 부모 세션으로
+`GET /api/referrals/me` 200 · `rewardCredits: 50` · 상한 필드 제거를 확인했다. 브라우저 QA 문제 0건.
+아래는 그 직전 배포 기록이다.
+
+**직전 배포(2026-08-17 저녁)**: 앱 커밋 `1a313d9` 기준으로 Worker·Pages를 함께 배포했다.
+Worker version ID `59191d7e-efd5-4f4b-afb9-5d5819941668`(health 200, `/api/family/member/photo` 미인증 401),
+Pages 배포 `https://0f411410.hyeni-calendar.pages.dev` — 고정 URL과 `hyeni-calendar.pages.dev`의 index SHA-256
+`f1d9c7c88dcf9fb3d30f94c029a475ec047d57d5cfbdffda45225c7ea36ee382`가 로컬 dist와 같고 entry
+`assets/index-m9ofkan_.js`·`assets/index-DMy0b23w.css`도 바이트 일치, CSP·`Referrer-Policy: no-referrer`·nosniff·
+manifest·sw.js·assetlinks 200을 확인했다. 배포 전 migration 선행 확인 결과 `worker/db/*.sql`의 테이블 44·인덱스 96·
+추가 컬럼 59가 프로덕션에 모두 존재해 추가 적용은 없었다. 배포 후 실기기(A17)에서 `parent_profile` 업로드가
+남의 멤버 대상은 403 `forbidden`, 본인 멤버 대상은 본문 검증까지 진행(4바이트 더미라 415)함을 확인했고
+quota·journal 행이 0건이라 아무것도 저장되지 않았다. ⚠️ Pages 배포 자격은 OAuth가 만료돼 있어
+`worker/.env`의 `CLOUDFLARE_API_TOKEN`(Pages 권한 포함)을 저장소 밖 디렉터리에서 주입해 사용했다.
+
 **★단일 저장소(2026-08-02)**: Cloudflare Worker(`worker/`)와 D1 스키마(`cloudflare/`)가 이 저장소로 이관됐다.
 **hyeni-1 은 폐기 예정이며 어떤 코드·테스트·CI·런북도 그 경로에 의존하지 않는다.** 상세는 §6.
 
@@ -20,6 +39,24 @@
 로컬 AI Gateway text/JSON/image canary는 3/3 통과했지만 감사 과정에서 당시 API 키 원문이 내부 도구 로그에 노출됐으므로,
 운영 전 기존 키 폐기·새 키 발급/secret 반영·canary 재실행이 필수다. 현재 프로덕션 Worker는 아직 구버전이므로 Luna 전환 완료로
 간주하지 않는다. 기존 `docs/plans/2026-07-31-pricing-tier-benchmark.md`의 gpt-4o-mini 원가 가정은 역사 스냅샷으로만 보존한다.
+
+**현재 Google Play 출시 상태(2026-08-15 오후)**: **최종 심사 전송 직전 HOLD**다. 최신 앱 source commit
+`40a32e2c18e929877e7c92970d6898619d7feedd`에서 승인된 업로드 키로 v1.3.0/versionCode 6 release AAB를 만들었고,
+SHA-256은 `6b31166c7b6e141ed451a81970ed78a4a934ea1ecd8cc31addd4024f9d0dbc45`다. 승인 인증서 일치,
+release/non-debuggable manifest, `PAGE_ALIGNMENT_16K`·ZIP·전체 ELF 16KB 정렬을 증거 JSON으로 확인한 뒤 Play 프로덕션
+초안 `혜니캘린더 1.3.0 (6)`에 업로드했다. 최신 production build, 앱 1,298/1,298, Worker 1,161/1,161,
+Android unit 175/175·lint·assembleDebug가 통과했고 A17 부모에 `adb install -r`로 설치해 세션 보존, 부모 홈,
+razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 완전 무조작했다. Worker는 version ID
+`c4c769c3-b4d5-4ba1-8c68-ef2ba22c742c`로 배포했고 health 200과 reverse-geocode 인증 route 401을 확인했다.
+
+사용자가 지정한 `C:\Users\TK\Downloads\Gmail (3)`의 피처 그래픽 1장, 휴대전화 스크린샷 8장,
+7인치·10인치 태블릿 스크린샷 각 4장으로 Play 자산을 전부 교체했고 API readback의 순서·SHA-256을 로컬 원본과
+대조했다. 폴더에 512×512 아이콘이 없어 Play 아이콘만 기존 설치 아이콘을 유지했다. A17·razr 정책 영상은 개인정보·
+정밀 위치를 가린 무음 최종본으로 게시했고, 백그라운드 위치=`https://youtu.be/yTfCI3RsVE8`, FGS 위치·마이크·특수 용도=
+`https://youtu.be/cb_BFyed6uE` 모두 `아동용 아님`·`일부 공개` 저장과 비로그인 외부 접근을 확인했다. Play의 백그라운드
+위치·FGS 선언과 제한된 앱 액세스 심사 계정도 저장됐다. Play의 일반 문제 빠른 검사는 감지된 차단 없이 끝났고 게시 개요에는
+**검토를 위해 변경사항 12개 제출** 버튼이 활성화돼 있다. 최종 심사 전송 버튼은 사용자 최종 실행을 위해 누르지 않았다. 정확한 자산 순서·
+문구·영상 URL·AAB 증거는 `docs/store/play-console-submission-v1.3.0.md`가 정본이다.
 
 ---
 
@@ -247,6 +284,57 @@
   아이 설정 화면의 "위치·안전" 토글 3개(일반 위치·등록 장소·친구놀이)는 전부 부모 알림에만 적용되므로
   아이 role 에서는 토글을 숨기고 사실만 안내한다(빈 약속 금지). 회귀=`tests/childEverydayMovementAlerts.test.mjs`·
   Worker `tests/childSafetyNotifications.test.mjs`.
+- ★**아이모드 AI 친구 = 표정 있는 플로팅 버디 + 도구 에이전트(2026-08-17 TK 지시)**:
+  **①얼굴** — AI 진입점은 로봇/혜니 아이콘이 아니라 **표정만 읽히는 소프트 3D 이모티콘**
+  `public/assets/ai-buddy/*.webp`(9종=8감정+blink, `scripts/generate-ai-buddy-faces.mjs` 로 SVG→sharp 생성).
+  판정 정본은 `src/transform/aiBuddyEmotion.ts` 하나이고 플로팅 버튼·아이 홈 타일·대화 헤더가 **같은 표정**을 쓴다.
+  규칙: 답 대기=thinking · 안전 신호(medium/high)=caring(어떤 즐거운 단어보다 우선) · **아이가 속상하면 같이
+  슬퍼하지 않고 caring** · `ok:true && !confirmationRequired` 일 때만 excited(확인 대기 중에 해낸 표정 금지) ·
+  도구 실패=sad · 22~05시 대기=sleepy. 화면 문구는 `aiBuddyStatusLine`(반말 한 줄), `aiBuddyEmotionLabel`은 aria 전용.
+  **②플로팅 버튼** — `src/app/AiBuddyFab.tsx` 를 `ChildShell`(bottomInset 112)·`PushShell`(20)에 둬 아이 화면
+  어디서나 대기한다. 위치는 px 가 아니라 **이동 가능 영역 비율**(`src/transform/aiBuddyFabPosition.ts`)로
+  가족+아이 키에 저장해 회전·기기 변경에도 화면 밖으로 나가지 않고, 손을 떼면 가까운 좌우 가장자리에 붙는다.
+  `role !== "child"` 와 AI 친구/SOS/온보딩 경로에서는 렌더하지 않는다(부모·선생님 화면에 뜨면 오작동).
+  ⚠️ 진입 번들 예산 500KB 를 넘겨서 **lazy + Suspense 필수**(직접 import 하면 build 가 막힌다).
+  표정은 `AiBuddyMoodProvider`(App, 라우터 **위**)가 들고 있어야 대화→홈 이동에도 기분이 이어진다.
+  **③도구 에이전트** — 기존 일정/부모연락 도구에 아이 본인 설정 3종을 추가했다:
+  `updateNotificationSettings`(일정 알림 on/off·N분 전) · `updateAiFriendName` · `changeAppTheme`.
+  셋 다 LLM 을 거치지 않는 결정적 응답이라 **하루 대화 횟수를 깎지 않는다**(`aiUsagePolicy`).
+  테마는 서버 컬럼이 없어 서버가 색만 확정하고 `clientAction:"setAccent"` 로 클라가 적용한다.
+  ⚠️ **일정 삭제는 보호자 전용** — planner 는 `schedule_delete_parent_only` 로 닫고 route 는 확인 토큰이 와도
+  403 이다. `deleteSchedule` 실행 경로를 되살리지 말 것. 알림 쉬는 시간·위치/장소/친구놀이 알림은 부모 소관이라
+  `notification_settings_parent_only` 로 정직하게 거절한다(못 하는 걸 한 척 금지).
+  확인이 필요한 도구(부모 메시지·일정 변경·전화)는 클라가 **확인 카드**를 세우고 버튼에서만 `confirmedTool` 을 보낸다.
+  **④한 얼굴 원칙(2026-08-17 TK 제보)** — 대화 화면 말풍선 옆·타이핑·설정 미리보기까지 **모두 같은 이모티콘 얼굴**을 쓴다.
+  동물(`animal/*.webp`)을 프로필로 쓰면 "토끼와 대화하는 느낌"이라 친구가 둘로 보인다. 동물 카드는 얼굴이 아니라
+  **성격 고르기**다(설정 화면 라벨도 그렇게 읽히게 두었다). 헤더 상태 문구는 `aiBuddyStatusLine`(짧은 반말) +
+  `white-space:nowrap`+말줄임 — 전에는 "이야기 할 준비됐/어"로 글자가 끊겼다.
+  **⑤일정 성격별 제안** — 어떤 일정이든 "준비는 다 됐어?"로 묻던 것을 고쳤다("수호 생일 챙기기"에 준비물 질문).
+  `src/transform/eventCompanionPrompt.ts`(클라 인사·제안칩·아이 홈 말풍선)와 `worker/shared/aiEventContext.js`
+  (LLM 프롬프트 힌트)가 **같은 키워드 표**를 쓰며 `tests/eventCompanionPrompt.test.ts` 가 두 표의 동기화를 강제한다.
+  한쪽만 고치면 홈에서는 "선물 정했어?", 대화에서는 "준비물 챙겼어?"라고 하는 앞뒤 안 맞는 친구가 된다.
+  **⑥아이를 알아 가는 AI(2026-08-17)** — 맥락 창 6→**14**턴, 요약 3→5건, 장기기억 20→**30건(확신도 우선)**.
+  `aiMemoryPolicy` 는 고정 목록 10개 대신 **문장 구조로 열린 어휘**를 뽑는다(관심·싫음·무서움·잘하는 것·꿈·음식).
+  ⚠️ 조사 처리 함정: 서술어에 따라 붙는 조사가 다르다(좋아해=을/를, 무서워=이/가). **`이` 는 절대 떼지 않는다**
+  — 고양이·떡볶이·어린이가 고양·떡볶·어린으로 망가진다. 같은 말을 다시 하면 confidence 가 +0.05(상한 0.95)로
+  올라가 "점점 잘 아는" 효과를 낸다. 민감·일시적 감정·대명사 필터는 그대로다.
+  프롬프트는 `## 아이에 대해 알고 있는 것` 목록 + "모르면 아는 척하지 말고 물어본다" 규칙을 함께 준다.
+  아이 대화만 `reasoningEffort:"low"` + `max_completion_tokens 900` 이다(`openaiLunaChatConfig` 2번째 인자).
+  ⚠️ 추론을 켜면 추론 토큰이 예산을 먹어 **빈 응답 → 실패 강등**이 되므로 600 미만 예산은 함수가 막는다.
+  회귀=`tests/aiBuddyFab.test.ts`·`tests/eventCompanionPrompt.test.ts`·Worker
+  `tests/aiChildSettingsAgent.test.mjs`·`tests/aiChildMemoryDepth.test.mjs`·`tests/openAiLunaContract.test.mjs`.
+- ★**AI 실패 안내는 하나로·정직하게(2026-08-17 TK 제보 실사고)**: 아이가 채팅을 보내면 말풍선에
+  "잠깐 연결이 안됐어"가 뜨고 **동시에** 하단에 "방금 한 일이 저장되지 않았어" 토스트가 겹쳤다.
+  ①**중복 원인** — `QueryProvider` MutationCache 폴백은 `mutation.options.onError` 만 본다.
+  콜사이트 `mutate(vars, { onError })` 는 **폴백을 막지 못한다**. 화면이 자기 문구를 책임지는 mutation 은
+  훅 정의에 `meta: { silentError: true }` 를 달아야 한다(`useSendChildChat`). 말풍선은 토스트가 아니라
+  `markToastShown()` 도 안 찍히므로 450ms 양보 규칙으로도 안 막힌다.
+  ②**정직성 원인** — 진짜 원인은 OpenAI **크레딧 소진**(429 `credit_balance_exhausted`)인데 "연결" 탓으로
+  안내했다. 429 는 `ai_provider_busy`(503)로 분리해 내려보내고 아이에게는 "지금은 내가 대답을 못 해"로 말한다.
+  ⚠️ 진단 교훈: `writeOpenAiLog` 에 `providerErrorCode`(짧은 enum 만, 48자·`[a-z0-9_.-]` 검증)를 남기기 전에는
+  429 가 분당 한도인지 잔액인지 알 수 없어 엉뚱한 곳(토큰 예산)을 먼저 되돌렸다. 상태 코드만으로 단정하지 말 것.
+  ⚠️ 아이 대화 `reasoningEffort:"low"`·예산 900 은 이 사고 조사 중 되돌렸다(429 원인 아님). 다시 올리려면
+  실제 TPM·잔액을 먼저 확인한다. 회귀=`tests/aiChatFailureUx.test.ts`.
 - **알림 전달·원격청취 보안 계약(2026-07-14)**: 즉시 알림은 네트워크 발송 전에 수신자별
   `pending_notifications`를 만들고 실제 네이티브 표시/Web Push 표시 ACK 전에는 delivered로 완료하지 않는다.
   targetless 레거시 행은 일반 사용자가 조회·ACK하지 못한다. 일정·도착·위험·메모는 활성 가족 구성원과 정확한
@@ -412,15 +500,13 @@
 - **오늘 경로 시각 포커스(2026-07-29)**: 이동선 실선화 계약은 위치 신뢰 항목의 ★부모 오늘경로 줄에 있다. 여기에 더해
   지도 중심과 아이 마커 좌표는 독립이다(머문 곳 선택은 지도만 옮기고 아바타는 실제 이력 좌표에 남는다). 기본은 최신
   따라가기(`scrubOffsetMinute === null`)이고 조회창은 하루 시작+24h 고정이라 30초 위치 폴링이 부모가 고른 시각과 접어 둔
-  시트를 되돌리지 않는다. 신선도는 `useLocationHistory(..., 60_000)` 배경 폴링으로만 유지한다.
+  머문 곳 상세를 되돌리지 않는다. 신선도는 `useLocationHistory(..., 60_000)` 배경 폴링으로만 유지한다. 명시적 과거
+  시각은 현재 위치로 대체하지 않고 실제 이력점만 마커로 표시한다.
   회귀=`tests/parentLocationScrubFocus.test.mjs`.
 - **눌림 피드백 계약(2026-07-29)**: 실제 버튼은 `hy-press`(전체 축소) 또는 자기 클래스의 `:active` 반응 중 하나를 반드시
   갖는다. 토글 스위치는 트랙이 흔들려 보이지 않게 노브만 `scale(0.9)`로 누르고, 문장 안 글자 버튼은 크기를 바꾸지 않고
   opacity로만 알린다. 보이지 않는 닫기용 스크림은 의도적으로 제외한다(무엇이 눌렸는지 오해를 준다).
   전역 `prefers-reduced-motion` 규칙이 새 전환 시간도 함께 줄인다. 회귀=`tests/pressFeedbackCoverage.test.mjs`.
-- ★**설정 알림 시간 칩·설명 축약(2026-08-17)**: 일정 사전 알림 5칸(1시간·30·15·10·5분)은 한 줄 고정이다.
-  칩 문구는 짧은 기간("1시간"/"30분")이고 `aria-label`만 "30분 전"을 쓴다. 설정 화면 설명은 사실을 유지한 채
-  한 줄로 읽히게 줄인다. 회귀=`tests/notificationSettingsReliability.test.ts`.
 - ★**색상 대비 계약(2026-07-30 디자인 검수)**: 파스텔 팔레트 위 **흰 글자는 어떤 테마색에서도 AA 를 만족할 수 없다**
   (`--hy-accent` 1.4~2.8:1, `--hy-accent-deep` 3.34:1). WCAG 큰 글씨 완화(3:1)는 굵은 글씨라도 **18.66px 이상**에만
   적용되므로 18px/700 버튼에는 4.5:1 이 그대로 걸린다. 그래서 3단 체계를 쓴다:
@@ -434,6 +520,65 @@
   `--mint-text`/`--gold-text`/`--fg-tertiary` 토큰이 정본이고 중간 톤을 soft 위 글자색으로 쓰지 않는다.
   ⚠️ 런타임 대비 계측은 **그라디언트 채움을 못 본다**(배경 이미지라 배경색이 없음) — 정적 검사가 이 맹점을 잡았다.
   회귀=`tests/colorContrastAndRadius.test.mjs`(토큰 대비 계산 + 흰글자/파스텔 조합 스캔).
+- ★**부모 프로필 사진(2026-08-17 TK 요청 "부모도 프로필 사진을 등록할 수 있게")**: 진입점은 부모 설정 →
+  계정(`/account`) 상단 프로필 카드의 사진 버튼이고, 고른 즉시 업로드한다. 업로드 purpose 는 `parent_profile`,
+  대상은 **항상 caller 본인 멤버 행**이라 주 보호자도 다른 보호자 사진을 대신 바꾸지 못한다. 서버는 같은 소유권을
+  세 곳에서 확인한다 — `worker/routes/storage.ts authorizeChildPhotoUpload`, `worker/lib/storageInvalidUploadCleanup.ts`
+  journal INSERT 의 **kind 별 SQL 분기**, `/api/family/member/photo`(주 보호자가 아니면 본인 멤버 + 서버 발급
+  `{familyId}/uploads/{본인}/{uuid}.{ext}` 키만 허용). ⚠️ journal 분기를 빼먹으면 인증·quota 를 다 통과한 업로드가
+  `storage_journal_unavailable` 503 으로 조용히 막힌다(실제로 이 실수를 했다). 조회 판정은 `profile` 과 같아
+  같은 가족 아이·공동 보호자가 아바타를 볼 수 있다. 표시는 `src/queries/memberPhotos.ts` 의
+  `useResolvedMemberPhotoUrls` 한 곳에서 R2 객체 키 → 표시용 blob URL로 바꾸며 `useMyFamily`·`useAccount` 가
+  이 해석기를 공유한다(키를 그대로 `<img src>` 에 넣으면 사진이 안 나온다). 성별 기본 캐릭터 폴백은
+  `lib/avatar.ts parentAvatarPath` 단일 출처이고 familyView·MemoChat·FamilyConnection·ParentSettings 가 함께 쓴다
+  (예전 MemoChat 은 아빠 계정에도 mom.webp 를 썼다). 사진은 프레임을 채우고(`data-photo="true"` → cover) 기본
+  캐릭터는 `contain` 을 유지한다. 회귀=`tests/parentProfilePhoto.test.mjs`·
+  `worker/tests/storageObjectAuthorization.test.mjs`.
+- ★**라우트가 싣지 않는 namespace 문구 = 화면에 원시 id 노출(2026-08-17 실기기 확인)**: `routeElement(<X/>, GROUP)`
+  의 GROUP 이 화면이 쓰는 모든 message namespace를 포함해야 한다. namespace 는 화면을 지나며 **누적**되므로
+  다른 화면을 먼저 들른 세션에서는 정상처럼 보이고, 콜드 스타트로 그 화면에 바로 들어가면 문구가 id 로 보인다.
+  실제로 `/subscription` 은 플랜 비교 열 제목이 `parent.tier.free`(tierPolicy 가 parent.* 사용),
+  `/place-manager`·`/place-form`·`/location-status`·`/location-settings` 는 화면 전체가
+  `notifications.placeManager.title` 처럼 보였고, 부모 위치 상세 카드 상태 칩은 `child.state.checking` 이었다.
+  수정: BILLING 에 `parent` 추가, 위 네 화면은 `PARENT_NOTIFICATION_NAMESPACES`, 위치 탭은
+  `PARENT_LOCATION_NAMESPACES`(core·parent·notifications·billing·shared), 부모 화면의 `child.*` 2건은
+  `parent.location.state.*` 로 옮겼다. **부모 라우트에서 child namespace 문구를 쓰지 말 것.**
+  가드=`tests/i18nUiWiring.test.mjs`("화면이 쓰는 모든 message namespace를 그 라우트가 싣는다" — 공용
+  transform(`tierPolicy`·`premiumUpsell`·`PremiumUpsell`) import 도 parent 문구로 계산한다).
+- ★**친구 초대 보상 정본(2026-08-17 TK 지시)**: 보상은 **양쪽 가족 각각 AI 대화 50회**(유료 팩 30/80/200 사이),
+  **초대 가족 수 상한 없음**이다. 서버 정본은 `worker/lib/referralRewardsV2.ts` 의 `REFERRAL_REWARD_CREDITS` 하나이고
+  `REFERRAL_SUCCESS_CAP` 은 삭제했다. 클라이언트는 숫자를 하드코딩하지 않는다 — 상태를 받은 화면은
+  `status.rewardCredits`, 상태가 없는 진입점(홈 카드·설정 행)은 `src/transform/referralReward.ts` 의
+  `REFERRAL_REWARD_CREDITS_DISPLAY` 를 쓰고 두 값의 일치는 `tests/referralRewardWiring.test.mjs` 가 강제한다.
+  ⚠️ **정책 숫자는 DB CHECK 제약에도 박혀 있었다** — `referral_completions_v2.reward_credits = 10`,
+  `referral_codes_v2.successful_referrals BETWEEN 0 AND 3`. D1 은 CHECK 를 ALTER 로 못 바꿔
+  `worker/db/referral-rewards-v2-unlimited.sql` 로 테이블을 재작성했다(행 보존). 이때 트리거
+  `trg_referral_location_evidence_snapshot` 이 본문에서 `referral_completions_v2` 를 참조하므로 **같은 파일에서
+  먼저 DROP 하고 마지막에 다시 CREATE** 해야 한다(안 그러면 `error in trigger ...: no such table` 로 전체 롤백된다).
+  지급액은 상수가 아니라 **완료 행에 기록된 `reward_credits`** 를 쓴다 — 정책이 바뀌어도 귀속 시점에 약속한 금액을
+  지킨다. 진입점은 부모 홈 구독 카드 아래 한 줄 카드(주 보호자만)와 설정 행 두 곳이고, 문구는 보상 한 줄 + 조건
+  한 줄만 남겼다(단계 설명·법률 문단·상한 안내는 재도입 금지).
+  ★공유 링크는 `https://hyeni-calendar.pages.dev/?ref=HYENI-…` 다. `#/onboarding?ref=` 해시는
+  카카오톡·라인에서 잘리므로 쓰지 않는다. `/invite?ref=` 도 읽지만, Pages rewrite 전에는
+  루트 쿼리를 공유한다. 「친구에게 공유」는 시스템 공유 시트(`sharePlainContent` +
+  Android `ShareSheet`)로 카카오톡·라인·Gmail을 고른다. 가입·가족 연결 화면에 초대 링크/코드를 붙여 넣는
+  칸이 있고, 새 가족을 만들 때만 `setupFamily.referralCode` 로 귀속한다(기존 가족 합류·아이 페어링은 대상 아님).
+  네이티브는 App Link `/invite` 와 Play 설치 추천을 `initReferralDeepLink` 가 localStorage에 영속한다.
+  회귀=`worker/tests/referralRewardsV2.test.mjs`·`tests/referralRewardWiring.test.mjs`·`tests/referralReward.test.ts`.
+- ★**언어 선택 위치(2026-08-17 TK 지시)**: 부모 설정에서 언어는 **계정 프로필 카드 바로 아래 한 줄**(`ps-language`)이고
+  현재 언어를 값으로 보여 주며 그 줄을 눌러 펼쳐서 고른다(`aria-expanded`, 모달 아님). 펼침 안에서는
+  `<LanguageSelector tone="formal" compact />` 가 제목·설명을 화면에서 감춰(`hy-language__text--quiet`) 같은 말을
+  두 번 보여주지 않는다. 행 라벨은 `core.language.rowLabel`("언어 선택 (Language)")로 낯선 언어에서도 찾을 수 있게
+  영어를 병기한다. 온보딩은 그대로 카드형 선택기를 쓴다. 회귀=`tests/languageSelector.test.mjs`.
+- ★**문구는 짧게(2026-08-17 TK 지시)**: 렌더 기준 60자를 넘는 사용 문구는 남기지 않는다(측정은 ICU 분기별 최대
+  렌더 길이로 한다 — 원문 길이는 select 분기 때문에 과대 계상된다). 2026-08-17에 결제 범위·권한·업셀·리포트·
+  준비물 한도·추천 안내 14건을 10개 locale 모두 축약했고, 남긴 것은 **삭제 경고**(`parent.childDetail.copy022`),
+  **Play 정책 고지**, **숨은 운영자 화면**뿐이다. 중복 제거가 우선이다 — 예: 웹 결제 안내는 카드 발급국 제한을
+  바로 아래 `domesticCardOnly` 가 이미 말하므로 그 문장을 뺐다.
+- ★**플랜 비교표 줄바꿈(2026-08-17 TK 제보)**: 항목 이름 `white-space: nowrap` 때문에 표가 화면보다 넓어지고
+  값 칸이 글자 중간에서 끊겼다. `table-layout: fixed` + 44%/28%/28% 열 폭 + `word-break: keep-all` ·
+  `overflow-wrap: anywhere` · `text-wrap: pretty` 로 어절 단위로만 접는다(`.sub-compare__scroll` 의 가로 스크롤은
+  안전망으로 유지). 문구는 그대로 두고 레이아웃만 고쳤다. 회귀=`tests/responsiveTextWrapContract.test.mjs`.
 - ★**모서리 반경 정규화(2026-07-30)**: 8/12/16/20/24px·pill 만 쓴다. 10·11·13·14·15·17·18·19px 등 161건을
   가장 가까운 단계의 `var(--radius-*)` 로 정규화했다. 제외 대상은 **UI 표면이 아닌 것**뿐이다 —
   장식(색종이·유기적 블롭·히어로 orb), 폰 베젤 프레임(`.hy-app` 44px), 인라인 링크 `:focus-visible` 링(2px).
@@ -445,6 +590,13 @@
   붙이고 `--press:1` 로 진행 중 눌림 축소를 멈춘다. 그래서 **새 화면은 `aria-busy={<진행 식>}` 만 정확히 켜면 된다**.
   `disabled` 식에서 진행 항만 골라 써야 한다(유효성 항까지 넣으면 그냥 못 누르는 버튼이 '작업 중'으로 잘못 알려진다).
   자기 스피너를 그리는 버튼(`sqs-retry`·`cls-cta`·`ls-retry`·`ais-mic`)은 `hy-busy-quiet` 로 제외해 표시자가 겹치지 않게 한다.
+  ⑤★**아이콘 전용 원형 버튼은 `hy-busy-center` 를 함께 붙인다(2026-08-17 TK 제보 "보내기를 누르면 비행기가
+  치우쳐 보임")** — 공용 링은 라벨 왼쪽에 끼는 `::before` 라서 라벨 없는 원형 버튼에서는 아이콘을 밀어낸다.
+  `hy-busy-center` 가 링을 절대 배치로 가운데 겹치고 자식만 감춘다(크기·위치 불변). 자기 펄스를 겹쳐 두 표시자로
+  만들지 말 것(`.mc-send--sending` 의 opacity 펄스는 이 이유로 제거했다).
+  ⑥★**한 화면에 움직이는 표시자는 하나** — 부모 위치 갱신은 우상단 새로고침 회전만 쓴다. 아이 칩 문구
+  (`parent.location.requestSent`)·칩 폭 확장·칩 스피너는 프로필 위에 겹쳐 보여 전부 제거했고 재도입 금지다.
+  갱신 중에도 상세 카드는 마지막 확인 시각·정확도를 그대로 보여 준다. 회귀=`tests/parentLocationUi.test.mjs`.
   화면 단위 로딩은 애니메이션이 있는 `<Loading/>`·`ScreenQueryState`·`hy-skel` 만 쓰고 맨 문구를 쓰지 않는다.
   `useActiveChild().familyLoading` 은 **조회 중과 "아이 없음"을 구분**하기 위한 값이다 — 이게 없으면 주간리포트·
   하루요약·AI크레딧·길찾기가 가족 조회 중에 "아이가 없어요"를 미리 단정해 표시자도 못 띄웠다.
@@ -496,6 +648,14 @@
   진단은 response code/debug message와 미조회 product id/type/status만 다루고 purchase/order token을 로그나 응답 진단에
   포함하지 않는다. Play 구매는 SHA-256 obfuscated family/parent id를 서버에서 대조하고, 부모 foreground에서 6시간 제한으로
   기존 구독을 재검증해 자동갱신 종료일을 갱신한다. AI 크레딧은 event claim·잔액·원장을 D1 batch로 원자 확정한다.
+- ★구독 유효기간 표시 검증(2026-08-17 TK 요청 "2100년까지 이용 가능해요가 정상인지 확인"): 화면은 D1
+  `family_subscription.current_period_end` 를 Asia/Seoul `dateStyle:"medium"` 으로 그대로 표시하므로 클라 버그가 아니다.
+  프로덕션 조회 결과 구독 행 6개 전부 `provider=google_play` 이고 **실제 결제 고객은 아직 없다** —
+  `2099-12-31 23:59:59+00`(2행, KST 로 2100-01-01)·`2099-01-01`(1행)은 수동 프리미엄 그랜트, `2027-04-26` 1행,
+  `qa_final_e2e_premium`(2026-08-01, 만료) 1행, `trial` 인데 `trial_ends_at` NULL 1행(계약대로 프리미엄 아님)이다.
+  코드에는 sentinel 날짜가 없고 실제 결제 경로는 Google `subscriptionsv2` 의 `line.expiryTime` 을 그대로 저장하므로
+  (`worker/shared/googlePlaySubscription.js` → `prepareGooglePlayFamilySubscriptionWrite`) 일반 회원은 실제 다음 결제일이
+  보인다. 즉 2100년은 운영자 수동 그랜트 데이터의 정직한 표시다(원한다면 그 행의 날짜를 정리하면 된다).
 - 프리미엄 퍼널 최소수집 계약(2026-08-01): 클라이언트는 고정 행동 이벤트에 UUID·앱 버전·발생 시각만 붙여 20건씩 보내고,
   실패는 제품 흐름과 분리된 메모리 100건 큐에서 다음 기록 때만 재시도한다(브라우저 저장소·세션 refresh 금지). Worker는
   active parent의 현재 가족을 서버에서 정본화하고 `PREMIUM_FUNNEL_HASH_SECRET` HMAC-SHA256 가족 가명키만 저장한다.
@@ -509,29 +669,58 @@
 - 출시 AAB 신선도(2026-07-13): 체크리스트의 서명 AAB는 최신 앱 커밋 이후 다시 빌드하고 서명·해시·mtime을 확인한
   경우에만 준비 완료로 표시한다. 과거 AAB가 디스크에 존재한다는 이유만으로 업로드하지 않는다. 서명 비밀번호는 사용자만
   입력하며 에이전트가 자격 파일을 읽어 자동 서명하지 않는다.
-- 설정/가입/오늘경로 안정화(2026-07-08): 부모 `/friend-play`는 아이 요청 UI가 아니라 가족 친구놀이 허용 설정이다.
+  릴리즈 스크립트는 worktree의 `android/local.properties`를 전제로 하지 않고 Android SDK를 먼저 탐색해
+  `ANDROID_SDK_ROOT`·`ANDROID_HOME`을 설정한 뒤 build·Capacitor sync·Gradle release를 실행한다.
+- 설정/가입/오늘경로 안정화(2026-07-08, 이동기록 UI 2026-08-07 갱신): 부모 `/friend-play`는 아이 요청 UI가 아니라 가족 친구놀이 허용 설정이다.
   장소 관리는 서버/AI 생성 없이 `resolvePlaceVisual` 정적 asset 매핑으로 장소명에 맞는 이미지를 고른다.
   가입 전 설문은 progress 20%에서 시작하고 복수 선택만 수집한다. 부모 오늘경로는 오전 8시를 하루 시작으로,
-  00~07시는 전날 경로로 본다. 이력 로딩 중 지도 중심은 서울 기본점보다 현재 위치가 우선이며,
-  "오늘 머문 곳"은 손잡이뿐 아니라 목록 영역 드래그 다운으로도 완전히 접히고 다시 열기 버튼으로 복귀하는지
-  검증한다. 로컬 mock 검증 시 현재 시각이 08시 전이면 mock 이력도 `/api/location/history`의 `start`
+  00~07시는 전날 경로로 본다. 최신 따라가기의 이력 로딩 중에는 서울 기본점보다 현재 위치가 우선이지만, 과거 시각을
+  고른 뒤에는 실측 이력점이 없으면 현재 위치로 대체하지 않는다. 이동기록 카드는 드래그하지 않고 명시적 버튼으로
+  머문 곳 상세만 펼치고 접으며 시간 막대는 항상 남아 연속 탐색할 수 있는지 검증한다. 로컬 mock 검증 시 현재 시각이
+  08시 전이면 mock 이력도 `/api/location/history`의 `start`
   파라미터 기준으로 만든다.
-- ★시간대별 경로 조작 정본(2026-07-29 TK 제보): 슬라이더로 시각을 옮기면 ①하단 "오늘 머문 곳" 시트를 자동으로
-  접어 지도를 열고(다시 열기 pill 유지) ②그 시각의 마지막 확인 위치를 지도 중심(`center`)으로 잡고 ③하루 전체 축척으로
+- ★시간대별 경로 조작 정본(2026-08-07 TK 제보): 슬라이더로 시각을 옮기면 ①시각·장소·시간 막대가 있는 탐색 카드와
+  사용자가 정한 머문 곳 펼침 상태를 그대로 유지하며 ②그 시각의 마지막 확인 위치를 지도 중심(`center`)으로 잡고
+  해당 머문 곳을 자동 강조하고 ③하루 전체 축척으로
   멀어져 있으면 `centerLevel=4`까지만 당긴다(이미 더 확대한 화면은 유지 — 확대 방향 보정만). `KakaoMap`은 명시적
-  `center`가 있으면 `setBounds`로 덮지 않으며, 자녀 아바타는 `center`가 아니라 자기 좌표에 그린다.
-  슬라이더 상태는 `null`=최신 따라가기이고 30초 위치 폴링(`now` 갱신)으로 부모가 고른 시각·접어 둔 시트를 되돌리지 않는다.
+  `center`가 있으면 `setBounds`로 덮지 않는다. toolbar/panel의 실제 DOM rect를 `ResizeObserver`로 재서
+  `viewportPadding`을 만들고 `setCenter` 뒤 `panBy`해 아이 마커를 두 오버레이 사이의 가시 지도 중앙에 둔다.
+  자녀 아바타는 `center`가 아니라 자기 실측 좌표에 그리고, 과거 탐색 중에는 선택 시각 배지를 붙여 머문 곳 마커보다 위에 둔다.
+  연속 드래그의 시각·경로·아바타·배지는 입력마다 즉시 갱신하되 지도 중심 좌표와 실제 DOM 여백은 160ms 동안 함께 고정하고,
+  입력이 멈춘 뒤 같은 렌더에서 한 번만 확정한다. 슬라이더 입력마다 `recenterKey`나 `setCenter→panBy`를 실행하거나 드래그 시작에
+  머문 곳을 자동으로 접어 패널 높이를 바꾸면 지도가 떨리므로 금지한다.
+  슬라이더 상태는 `null`=최신 따라가기이고 30초 위치 폴링(`now` 갱신)으로 부모가 고른 시각·접어 둔 상세를 되돌리지 않는다.
   `/api/location/history` 쿼리 키의 끝시각은 하루 창 끝(시작+24h)으로 고정하고 신선도는 60초 배경 폴링으로 유지한다
-  (끝시각에 `now`를 넣으면 키가 매번 바뀌어 하루치를 다시 받고 슬라이더가 최신으로 튀었다). 헤더는 `시각 · 위치`
-  (머문 곳 이름/이동 중/기록 없음)와 "최신으로" 버튼을 보여주고, 판정 시각은 마지막 기록 시각으로 clamp 한다.
-  머문 곳 시트 여백은 `12/16/20px`(손잡이 4/8, 헤더 하단 12, 목록 gap 12).
-  회귀=`tests/parentLocationScrubFocus.test.mjs`·`tests/locationHistoryScrub.test.ts`.
+  (끝시각에 `now`를 넣으면 키가 매번 바뀌어 하루치를 다시 받고 슬라이더가 최신으로 튀었다). 탐색 카드는 선택 시각과
+  위치(머문 곳 이름/이동 중/기록 없음), "최신 위치" 버튼을 보여주고 판정 시각은 마지막 기록 시각으로 clamp 한다.
+  선택 시각 이전에 실측점이 없으면 현재 위치를 대신 그리지 않으며 "기록 없음"으로 닫는다. 최신 위치로 돌아가면 시각 배지를
+  제거하고 하루 경로 전체 bounds를 복원한다. 회귀=`tests/parentLocationScrubFocus.test.mjs`·
+  `tests/locationHistoryScrub.test.ts`·`tests/mapViewportPadding.test.ts`·`tests/locationJourneyPanelContract.test.mjs`.
   로컬 검증 팁: Kakao JS 키 도메인 제한 때문에 로컬 하니스에서는 실 SDK가 로드되지 않으므로 `window.kakao.maps`
   계측 스텁(Polyline/Map 호출 기록)으로 선 스타일과 `setCenter/setLevel/setBounds` 결정을 확인한다.
-- 메뉴·페어링 안정화(2026-07-09): 부모 홈 바로가기는 `AI 일정 → 위치추적 → 친구놀이 → 장소관리 → 주변소리 →
-  안심리포트 → 구독 → 알림` 순서와 실제 라우트를 회귀 테스트로 고정한다. 부모 설정 메뉴는 emoji 칩 대신
+- 메뉴·페어링 안정화(2026-08-07): 부모 홈 바로가기는 `AI 일정 → 위치추적 → 친구놀이 → 장소관리 → 주변소리 →
+  안심리포트 → 아이 기기 찾기 → 알림` 순서와 실제 라우트를 회귀 테스트로 고정한다. `아이 기기 찾기`는 활성 아이
+  `user_id`를 `/remote-ring`에 명시한다. 구독은 그리드 아래 가로 카드로 분리하고 Free·reviewed는 `구독 시 혜택`,
+  Premium은 `구독 관리`, 미확정·오류는 `구독 정보`로 표시해 Free로 추정하지 않는다. 부모 설정 메뉴는 emoji 칩 대신
   lucide/image 아이콘 + `data-tone` 토큰 색상만 사용한다. 페어링 위저드는 `/api/family/mine`과 엔타이틀먼트가
   모두 확정되기 전 2명 선택과 코드 생성을 막고, 코드 생성 직전에도 현재 티어의 아이 수 상한을 다시 검사한다.
+  위치 요청 진행 문구는 지도 위 절대 배치 오버레이로 띄우지 않고 활성 아이 `.pl-chip` 안에서 사진·이름과 함께 표시해
+  프로필을 가리지 않는다. 구독 가로 카드는 Free의 보라–핑크 `혜택 보기`, Premium의 민트 `관리하기`, 미확정의 중립
+  `확인하기` CTA로 상태를 분명히 하고, 확인되지 않은 할인·긴급성 문구는 만들지 않는다. 회귀는
+  `tests/parentLocationUi.test.mjs`·`tests/parentHomeSubscriptionCard.test.ts`와 격리 브라우저/A17 CDP 하니스가 보호한다.
+  2026-08-07 Pages production에는 앱 source `1925ab1`, deployment `b5a80284-8a05-4637-bad1-9d4f368b94a1`로 배포했다
+  (직전 rollback 기준 `827855b3-876d-4d35-af6a-ad3f25dc0669`). 고정 배포 URL과 `hyeni-calendar.pages.dev`가 local dist와
+  index SHA-256 `e126019f135fbfc938e17a3f9ef0a56b91d3d3164283905ba818dd3c6910bfae` 및 entry JS/CSS 해시가 같고,
+  CSP·`Referrer-Policy: no-referrer`·`X-Content-Type-Options: nosniff`, manifest·SW·assetlinks가 모두 정상이다.
+  exact dist의 격리 브라우저 부모 42/42·아이 14/14와 PWA install·offline·안전 업데이트도 문제 0건이다. Worker/D1은 변경·배포하지 않았다.
+  같은 날 이동기록 가시성·드래그 떨림 수정 앱 커밋 `d6c9b24`의 exact dist를 production deployment
+  `10bb824e-54c9-4686-ab6b-d987c343159e`(`https://10bb824e.hyeni-calendar.pages.dev`)로 추가 배포했다.
+  고정 URL과 `hyeni-calendar.pages.dev`의 index SHA-256은 로컬 `e30d70101ed12fde2ff3c127ff40903ddb39122db809797ba68743804a4ff152`와
+  같고 entry `assets/index-DNVmEhWH.js`·위치 청크 `assets/ParentLocation-2ElKRDyp.js`도 바이트 일치한다. CSP·referrer·nosniff,
+  manifest·SW·assetlinks 200을 다시 확인했다. exact dist 브라우저 부모 42/42·아이 14/14, PWA 런타임 문제 0건이며,
+  A17 `adb install -r` 데이터 보존 설치(APK SHA-256 `0f1efedc00f8cd06713ad421f044b15438035cadc8e8250803ca0591d3ac0273`) 뒤
+  1.2초 실물 슬라이더 드래그에서 `panBy` 1회·선택 시각/마커 배지 일치·가시 영역 내 마커를 확인했다. 검증 시작 이후
+  A17 Java/native crash·ANR은 각각 0건이고 Worker/D1은 변경·배포하지 않았다.
 - OAuth 딥링크 인가코드는 1회용(2026-07-10 실기기 규명): Capacitor `App.getLaunchUrl()`은 실행 인텐트를 계속
   반환하고(휘발되지 않음) `appUrlOpen`도 같은 인텐트를 전달해, 콜드 스타트에서 같은 code 가 2~3회 교환됐다.
   구글은 코드 재사용을 감지하면 그 코드로 발급한 토큰을 전부 무효화하므로 로그인이 통째로 실패하고,
@@ -567,15 +756,7 @@
   ④스티커북은 12칸 도감. `stickers` 테이블에 보낸 사람·메시지 컬럼이 없으므로 상세 모달은 아는 사실만 말한다
   (받은 날짜 + `sticker_type`: praise=부모 칭찬 / early·on_time=일찍 도착). NEW=최근 7일 + 미열람(기기 로컬 저장).
   ⑤내 색깔(accent)은 서버 스키마에 컬럼이 없어 `localStorage` 가족+아이 키에만 저장한다. 부모·선생님 세션은 rose 고정.
-  ⑥아이 AI 남은 횟수는 `useAiCreditPublicStatus` 정본이다.
-  ★아이 AI 친구(2026-08-17): 아이 셸·푸시 화면에 3D 감정 FAB(`ChildAiFab`)가 항상 대기한다. SOS·채팅·설정 화면에서는 숨긴다.
-  FAB와 채팅 헤더·말풍선 아바타는 같은 `mascot-status` 혜니를 쓰고, 버튼에 `--bg-card` 원판을 깔지 않는다.
-  표정 정본=`transform/childAiEmotion.ts`. 아이는 일정 추가·준비물/숙제 추가·내 색깔 변경을 시킬 수 있고,
-  일정 삭제와 위치/알림/안전 설정은 부모만 가능하다. 음성은 `captureSpeech`+`speakChildAiReply` 이며
-  전송은 `POST /api/ai/child-chat` 한 경로라 크레딧 차감이 유지된다.
-  일정 추가/조회/수정 안내는 Luna 없이 planner+도구만 쓴다. "만들어/넣어/잡아"와 `N월 N일`도 추가 의도로 잡고,
-  부족한 칸은 "언제, 몇 시에, 무슨 일정인지"로 이어서 받으며 OpenAI 502(`생각이 잘 안 나`)로 대화를 끊지 않는다.
-  회귀=`tests/childAiEmotion.test.ts`·`tests/childAiCompanionWiring.test.mjs`·Worker `tests/aiChildHelpPolicy.test.mjs`.
+  ⑥아이 AI 남은 횟수는 `/api/ai/usage/today`(parent-or-self) + `daily_limit` 으로 계산한다.
   `/api/ai/credits/balance` 는 부모 전용이라 아이 화면에서 호출하면 403.
   ⑦하단 독(`app/ChildDock.tsx`)의 SOS 는 화면 이동만 하고, 실제 발사는 SOS 화면에서 3초 홀드해야 한다(오발사 방지).
   ⑧Jua 폰트는 Google 서브셋 87개를 `public/fonts/jua/` 에 번들(OFL). 오프라인·네이티브에서 원격 폰트를 못 받기 때문이며,
@@ -639,6 +820,10 @@
   긴 `label`/`detail` 안내 박스는 `attention`(조치 필요) 상태에만 렌더한다(2026-07-14 TK 제보 "과도한 텍스트가
   디자인을 해침" 수정). 안심리포트(`DailySafetyReport`)는 상세 화면이라 label/detail 전체 표시를 유지한다.
   회귀=`tests/deviceNotificationHealth.test.ts`.
+- ★장식성 마이크로 배지 금지(2026-08-14 TK 지시): 주변 제목·설명을 반복하거나 클릭되지 않는데 작은 버튼처럼 보이는
+  pill/eyebrow는 삭제한다. 배지는 실제 상태·읽지 않은 수·현재 선택·티어·날짜처럼 사용자가 판단에 쓰는 정보에만 쓴다.
+  온보딩 상단 `함께 보는 우리 가족` 배지, AI 친구의 가짜 온라인 점·`이야기할 준비됐어!`, 설정 버전 뒤 장식 슬로건은
+  재도입하지 않는다. `scripts/final-browser-qa.mjs`는 public 온보딩·아이 AI 친구·부모 설정을 실제 렌더해 이 계약을 확인한다.
 - ★채팅 화면 UI 계약(2026-07-24 TK 제보 "입력할 때 파란 네모·문장마다 신고 버튼·사진 확대 저장"):
   ①**포커스 링은 없앨 수 없다** — `tests/designSystemUsage`의 "출시 화면은 브라우저 focus outline을
   제거하지 않는다"가 `outline:none`을 예외 없이 금지한다(접근성). 파란 네모의 실체는 전역
@@ -755,6 +940,11 @@
   정확한 모바일 렌더는 `--remote-debugging-port` + CDP `Emulation.setDeviceMetricsOverride(390x844)` +
   `Page.captureScreenshot` 로. 임시 `--user-data-dir` 필수(기본 프로필 오염 방지). ⚠️ localhost:5173 은
   다른 프로젝트 dev 서버가 살아 있을 수 있다 — hyeni-3 는 `--port 5199 --strictPort` 처럼 명시 포트로 띄울 것.
+- ★**D1 compound SELECT 항 수 제한(2026-08-17)**: `UNION ALL` 을 5~6개 이상 이으면
+  `too many terms in compound SELECT: SQLITE_ERROR [code 7500]` 로 쿼리 자체가 실패한다(로컬 SQLite 는 통과).
+  스키마 점검처럼 여러 테이블을 훑을 때는 4개 이하로 쪼개거나 테이블별로 따로 실행한다.
+  wrangler `d1 execute --json` 실패 응답은 `[` 로 시작하지 않으므로 `indexOf("[")` 파싱이 조용히 0건을 만든다 —
+  stderr 를 버리지 말고 실패를 먼저 확인할 것(실제로 "컬럼 35개 누락"이라는 오진을 만들었다).
 - ★**D1 표현식 깊이 100 제한(2026-08-03 실사고)**: D1 은 `SQLITE_MAX_EXPR_DEPTH` 를 **100** 으로 낮춰 놓았다
   (로컬 `node:sqlite` 는 기본 1000). 조건을 `AND`/`OR` 로 길게 이으면 이진 트리 깊이가 넘쳐
   `Expression tree is too large (maximum depth 100): SQLITE_ERROR` 로 **쿼리 자체가 실패**한다.
@@ -959,7 +1149,7 @@ hyeni-3/
   - **부모 설정 친구놀이**: `/friend-play`가 role=parent일 때 아이 후보/요청 화면을 숨기고, `/api/playdate/family-enabled` 기반 "친구놀이 요청 허용" 설정·허용 기준·진행 중 종료 UI를 보여준다. 아이 role의 요청 UI는 그대로 유지한다.
   - **장소 이미지/구독/AI 크레딧 문구**: `resolvePlaceVisual`로 태권도·피아노·수영·축구·미술 등 장소명/카테고리별 정적 이미지를 매핑한다. 구독 소제목은 의도한 두 줄로 고정하고, AI 크레딧 안내는 "AI가 아이의 일정, 안전을 도와줘요"로 변경한다.
   - **가입 전 설문**: 부모 회원가입 진입 전에 간단한 복수선택 설문을 추가하고, 가입 진행률은 20%→40%→60%→80%→100% 단계로 표시한다. 로그인 흐름은 설문 상태를 초기화한다.
-  - **오늘경로**: `getHistoryDayWindow`/`getHistoryDayKey`로 오전 8시 시작 경로를 계산한다. 00~07시는 전날 08:00부터 이어지는 경로로 보고, 이력 로딩/빈 trail에서는 현재 위치를 우선 마커로 넘긴다. "오늘 머문 곳" 시트는 헤더/목록 드래그로 완전히 접히고 reopen pill로 다시 연다. `.pl-sheet` 공통 `hy-sheetup` 애니메이션 transform이 접힘 transform을 덮지 않도록 `.pl-stays`는 animation을 끄고, S25 WebView computed transform까지 확인한다. 오늘경로에서는 상단 아이 배지를 숨기고 시간대별 경로 UI만 남긴다.
+  - **오늘경로**: `getHistoryDayWindow`/`getHistoryDayKey`로 오전 8시 시작 경로를 계산한다. 00~07시는 전날 08:00부터 이어지는 경로로 본다. 최신 따라가기의 이력 로딩/빈 trail에서만 현재 위치를 우선할 수 있고, 부모가 과거 시각을 고른 뒤에는 실측 이력점이 없으면 현재 위치로 대체하지 않는다. 이동기록 카드는 명시적 버튼으로 머문 곳 상세만 펼치고 접으며 시간 막대는 항상 남긴다. 오늘경로에서는 상단 아이 배지를 숨기고 시간대별 경로 UI만 남긴다.
   - **안심리포트·스티커 진입점(2026-07-09)**: `/daily-report`는 부모 홈 별도 카드가 아니라 바로가기의 "안심리포트" 슬롯으로 진입한다. 기존 상단 하트/`꾹` 스티커 UI는 제거하고, 상단 액션은 명확한 "스티커" 전송 버튼(`/sticker-send`)으로 유지한다. 아이 모드 긴급 SOS 동선은 안전 기능이므로 이 부모 홈 `꾹` 제거와 별도로 취급한다.
   - **검증**: 신규 node tests 7개, 전체 `node --test tests/*.test.*` 48개, `npm run typecheck`, `npm run build` 통과. Playwright 모바일 390x844 API 모킹 검증으로 온보딩 설문/progress, 구독 줄바꿈, AI 크레딧 문구, 장소 이미지, 부모 친구놀이 설정, 오늘경로 08:00 슬라이더와 머문 곳 접힘을 콘솔 오류 0으로 확인.
 

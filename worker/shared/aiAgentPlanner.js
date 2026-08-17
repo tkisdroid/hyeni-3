@@ -1,6 +1,13 @@
 // Deterministic child-agent intent planner.
 // The LLM can still answer naturally, but safety and app actions start from this policy layer.
 
+import {
+  detectChildAccentIntent,
+  detectChildNotificationIntent,
+  extractAiFriendNameRequest,
+  isAiFriendNameChangeRequest,
+} from "./aiChildSettingsTools.js";
+
 const DATE_KEY_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 function parseDateKey(value) {
@@ -271,16 +278,6 @@ function extractScheduleTitle(text) {
     return title || null;
 }
 
-function extractScheduleDeleteTitle(text) {
-    const title = text
-        .replace(/오늘|내일|모레/g, " ")
-        .replace(/(오전|오후)?\s*\d{1,2}\s*시(?:\s*\d{1,2}\s*분?)?/g, " ")
-        .replace(/일정|스케줄|삭제|지워|취소|없애|해줘|해\s*줘|해|좀|에|을|를|이|가|은|는/gi, " ")
-        .replace(/\s+/g, " ")
-        .trim();
-    return title || null;
-}
-
 function extractScheduleUpdateTitle(text) {
     const title = text
         .replace(/오늘|내일|모레/g, " ")
@@ -325,61 +322,6 @@ function isGenericParentMessageRequest(text) {
     if (/(에게|한테|께)/.test(text)) return false;
     return /(문자|메시지|카톡).{0,30}(보내|전해|말해)\s*(줘|줄래|주라)?/.test(text)
         || /^(문자|메시지|카톡)\s*(보내|전해|말해)?\s*(줘|줄래|주라)?$/.test(text);
-}
-
-const CHILD_ACCENT_ALIASES = [
-    { key: "rose", aliases: ["핑크", "분홍", "장미", "로즈"] },
-    { key: "peach", aliases: ["살구", "복숭아", "오렌지"] },
-    { key: "lavender", aliases: ["보라", "라벤더", "퍼플"] },
-    { key: "mint", aliases: ["민트", "초록", "그린"] },
-    { key: "sky", aliases: ["하늘", "파랑", "블루"] },
-    { key: "lemon", aliases: ["레몬", "노랑", "노란"] },
-];
-
-function extractChildAccentKey(text) {
-    const compact = compactText(text);
-    const found = CHILD_ACCENT_ALIASES.find((entry) =>
-        entry.aliases.some((alias) => compact.includes(compactText(alias))),
-    );
-    return found?.key || null;
-}
-
-function isChildAccentRequest(text) {
-    return /(색깔|색|테마|강조색)/.test(text) && /(바꿔|바꾸|골라|고르|해줘|할래|하고 싶)/.test(text);
-}
-
-function isParentLockedSettingRequest(text) {
-    return /(위치|추적|알림|방해금지|조용한 시간|안전|소리 울리|주변 소리)/.test(text)
-        && /(꺼|끄|켜|바꿔|바꾸|멈춰|그만|설정)/.test(text)
-        && !isChildAccentRequest(text);
-}
-
-function extractDailyItemLabel(text) {
-    const quoted = /["'“”‘’](.+?)["'“”‘’]/.exec(text);
-    if (quoted?.[1]?.trim()) return quoted[1].trim().slice(0, 24);
-
-    const named = /(?:준비물|숙제장|숙제)\s*(?:에|을|를)?\s*(.+?)\s*(?:추가|넣어|챙겨|등록)/.exec(text);
-    if (named?.[1]?.trim()) return named[1].trim().slice(0, 24);
-
-    const cleaned = String(text || "")
-        .replace(/오늘|내일|모레|지금/g, " ")
-        .replace(/준비물|숙제장|숙제/g, " ")
-        .replace(/추가|넣어|챙겨|등록|해줘|해줄래|할래|부탁|좀/g, " ")
-        .replace(/^[에을를은는이가]\s+/g, "")
-        .replace(/\s+/g, " ")
-        .trim();
-    if (!cleaned || cleaned.length > 24) return null;
-    if (/^(이거|그거|저거)$/.test(cleaned)) return null;
-    return cleaned;
-}
-
-function isDailyItemCreateRequest(text) {
-    if (!/(준비물|숙제)/.test(text)) return false;
-    return /(추가|넣어|챙겨|등록|적어|써)/.test(text) || /(해줘|해줄래|할래)/.test(text);
-}
-
-function dailyItemKindFromRequest(text) {
-    return /숙제/.test(text) && !/준비물/.test(text) ? "hw" : "prep";
 }
 
 function basePlan(overrides = {}) {
@@ -464,47 +406,17 @@ function findRecentScheduleUpdateChanges(recentMessages) {
     return {};
 }
 
-function findRecentScheduleDeleteTitle(recentMessages) {
+/**
+ * 예전 대화에 남아 있는 "어떤 일정을 지울까?" 되묻기.
+ * 일정 삭제는 부모 전용이 되어 더 이상 시작되지 않지만, 구버전 대화를 이어받은 아이가
+ * 답을 적었을 때 일반 잡담으로 흘려보내지 않고 같은 안내로 닫기 위해 남겨 둔다.
+ */
+function findPendingScheduleDeletePrompt(recentMessages) {
     const messages = normalizeRecentMessages(recentMessages);
-    for (let index = messages.length - 1; index >= 0; index -= 1) {
-        const message = messages[index];
-        if (message.role !== "user") continue;
-        const title = extractScheduleDeleteTitle(message.content);
-        if (!title) continue;
-        return title;
-    }
-    return null;
-}
-
-function findPendingScheduleDelete(recentMessages, { referenceDate, parentSettings }) {
-    const messages = normalizeRecentMessages(recentMessages);
-    for (let index = messages.length - 1; index >= 1; index -= 1) {
-        const assistant = messages[index];
-        if (
-            assistant.role !== "assistant"
-            || !/(언제\s*어떤\s*일정|어떤\s*일정을?\s*(?:지울|삭제|취소|없앨)|일정을?\s*(?:지울|삭제|취소|없앨).*까)/.test(assistant.content)
-        ) continue;
-
-        for (let previousIndex = index - 1; previousIndex >= 0; previousIndex -= 1) {
-            const previous = messages[previousIndex];
-            if (previous.role !== "user") continue;
-            const previousPlan = planChildAgentAction(previous.content, {
-                referenceDate,
-                parentSettings,
-                recentMessages: [],
-            });
-            const missingArgs = Array.isArray(previousPlan.missingArgs) ? previousPlan.missingArgs : [];
-            if (
-                previousPlan.detectedIntent === "schedule_delete"
-                && previousPlan.toolName === "deleteSchedule"
-                && missingArgs.some((arg) => arg === "date" || arg === "title")
-            ) {
-                return previousPlan;
-            }
-            break;
-        }
-    }
-    return null;
+    return messages.some(
+        (message) => message.role === "assistant"
+            && /(언제\s*어떤\s*일정|어떤\s*일정을?\s*(?:지울|삭제|취소|없앨)|일정을?\s*(?:지울|삭제|취소|없앨).*까)/.test(message.content),
+    );
 }
 
 function findPendingScheduleUpdate(recentMessages, { referenceDate, parentSettings }) {
@@ -672,15 +584,10 @@ export function planChildAgentAction(message, { referenceDate = new Date(), pare
         });
     }
 
-    const pendingScheduleDelete = findPendingScheduleDelete(recentMessages, { referenceDate, parentSettings });
-    if (pendingScheduleDelete && text) {
-        return basePlan({
-            detectedIntent: "schedule_delete_parent_only",
-            shouldUseTool: false,
-            toolName: null,
-            toolArgs: {},
-            safety,
-        });
+    // 삭제는 부모 전용이라 새로 시작하지 않는다. 예전 대화에 남아 있던 삭제 되묻기에
+    // 아이가 답한 경우에도 같은 안내로 닫는다(구버전 대화 이어받기 방어).
+    if (text && findPendingScheduleDeletePrompt(recentMessages)) {
+        return basePlan({ detectedIntent: "schedule_delete_parent_only", safety });
     }
 
     const pendingScheduleUpdate = findPendingScheduleUpdate(recentMessages, { referenceDate, parentSettings });
@@ -816,55 +723,54 @@ export function planChildAgentAction(message, { referenceDate = new Date(), pare
         });
     }
 
-    if (/(삭제|지워|취소|없애)/.test(text) && /일정|스케줄/.test(text)) {
-        return basePlan({
-            detectedIntent: "schedule_delete_parent_only",
-            shouldUseTool: false,
-            toolName: null,
-            toolArgs: {},
-            safety,
-        });
-    }
-
-    if (isParentLockedSettingRequest(text)) {
-        return basePlan({
-            detectedIntent: "parent_locked_setting",
-            shouldUseTool: false,
-            toolName: null,
-            toolArgs: { setting: "parent_only" },
-            safety,
-        });
-    }
-
-    if (isChildAccentRequest(text)) {
-        const accent = extractChildAccentKey(text);
-        const missingArgs = accent ? [] : ["accent"];
-        return basePlan({
-            detectedIntent: "settings_accent",
-            shouldUseTool: Boolean(accent),
-            toolName: "setChildAccent",
-            toolArgs: { accent },
-            missingArgs,
-            safety,
-        });
-    }
-
-    if (isDailyItemCreateRequest(text)) {
-        if (!isAllowedParentTopic(text, parentSettings, ["일정", "스케줄", "루틴", "준비물", "숙제", "학교생활", "학원", "운동"])) {
-            return parentAllowedTopicRestriction(parentSettings, safety);
+    // ── 내 설정 바꾸기 ────────────────────────────────────────────────────
+    // 부모에게 "알림 꺼달라고 전해줘" 같은 부탁은 위 연락 분기가 이미 가져갔으므로,
+    // 여기 오는 건 아이가 자기 기기 설정을 직접 바꾸려는 요청이다.
+    const notificationIntent = detectChildNotificationIntent(text);
+    if (notificationIntent) {
+        if (notificationIntent.parentOnly) {
+            return basePlan({ detectedIntent: "notification_settings_parent_only", safety });
         }
-        const kind = dailyItemKindFromRequest(text);
-        const label = extractDailyItemLabel(text);
-        const date = extractDate(text, referenceDate) || todayKey(referenceDate);
-        const missingArgs = label ? [] : ["label"];
         return basePlan({
-            detectedIntent: "daily_item_create",
-            shouldUseTool: Boolean(label),
-            toolName: "createDailyItem",
-            toolArgs: { kind, label, date },
-            missingArgs,
+            detectedIntent: "notification_settings",
+            shouldUseTool: true,
+            toolName: "updateNotificationSettings",
+            toolArgs: {
+                scheduleAlertsEnabled: notificationIntent.scheduleAlertsEnabled,
+                minutesBefore: notificationIntent.minutesBefore,
+            },
             safety,
         });
+    }
+
+    if (isAiFriendNameChangeRequest(text)) {
+        const name = extractAiFriendNameRequest(text);
+        return basePlan({
+            detectedIntent: "ai_friend_name",
+            shouldUseTool: !!name,
+            toolName: "updateAiFriendName",
+            toolArgs: { name },
+            missingArgs: name ? [] : ["name"],
+            safety,
+        });
+    }
+
+    const accentIntent = detectChildAccentIntent(text);
+    if (accentIntent) {
+        return basePlan({
+            detectedIntent: "app_theme",
+            shouldUseTool: !!accentIntent.accent,
+            toolName: "changeAppTheme",
+            toolArgs: { accent: accentIntent.accent },
+            missingArgs: accentIntent.accent ? [] : ["accent"],
+            safety,
+        });
+    }
+
+    // 일정 삭제는 부모만 할 수 있다(보호자 결정). 아이에게는 정직하게 알리고
+    // 대신 부모님께 전해 주겠다고 제안한다 — 못 하는 걸 한 척하지 않는다.
+    if (/(삭제|지워|취소|없애)/.test(text) && /일정|스케줄/.test(text)) {
+        return basePlan({ detectedIntent: "schedule_delete_parent_only", safety });
     }
 
     if (/(수정|변경|바꿔|바꾸|옮겨|미뤄|당겨)/.test(text) && /일정|스케줄/.test(text)) {

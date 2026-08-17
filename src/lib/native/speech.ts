@@ -119,3 +119,68 @@ export function cancelSpeechCapture(): void {
     /* 이미 종료 — 무시 */
   }
 }
+
+// ── TTS(읽어주기) — 아이가 AI 친구의 말을 귀로 듣게 한다 ──────────────────────
+// 네이티브 SpeechPlugin 의 speak/stopSpeak 이 이미 있는데 JS 로 노출돼 있지 않았다.
+// 웹·PWA 는 표준 `speechSynthesis` 로 폴백한다(추가 의존성 0).
+
+interface NativeSpeakPlugin {
+  speak(opts: { text: string; rate?: number }): Promise<{ started?: boolean }>;
+  stopSpeak(): Promise<{ status?: string }>;
+}
+
+function webSpeechSynthesis(): SpeechSynthesis | null {
+  const w = window as unknown as { speechSynthesis?: SpeechSynthesis };
+  return w.speechSynthesis ?? null;
+}
+
+/** 이 기기에서 읽어주기가 가능한지(네이티브 플러그인 또는 Web Speech Synthesis). */
+export function isSpeechPlaybackSupported(): boolean {
+  if (getNativePlugin("SpeechRecognition")) return true;
+  return !!webSpeechSynthesis() && typeof window.SpeechSynthesisUtterance === "function";
+}
+
+/**
+ * 텍스트를 소리로 읽는다. 이미 읽는 중이면 그 말을 끊고 새 말을 읽는다(네이티브 QUEUE_FLUSH 동일).
+ * 실패·미지원은 조용히 false — 읽어주기가 안 된다고 대화 자체를 막지 않는다.
+ */
+export async function speakText(text: string, language = "ko-KR", rate = 1.0): Promise<boolean> {
+  const spoken = text.trim();
+  if (!spoken) return false;
+  try {
+    const plugin = getNativePlugin<NativeSpeakPlugin>("SpeechRecognition");
+    if (plugin?.speak) {
+      const result = await plugin.speak({ text: spoken, rate });
+      if (result?.started !== false) return true;
+    }
+  } catch {
+    /* 네이티브 실패 → 웹 폴백 시도 */
+  }
+  try {
+    const synth = webSpeechSynthesis();
+    if (!synth || typeof window.SpeechSynthesisUtterance !== "function") return false;
+    synth.cancel();
+    const utterance = new window.SpeechSynthesisUtterance(spoken);
+    utterance.lang = language;
+    utterance.rate = rate;
+    synth.speak(utterance);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** 읽어주기 중단(화면 이탈·아이가 끄기·새 메시지 전송). */
+export function stopSpeaking(): void {
+  try {
+    const plugin = getNativePlugin<NativeSpeakPlugin>("SpeechRecognition");
+    void plugin?.stopSpeak?.().catch(() => undefined);
+  } catch {
+    /* 네이티브 미지원 — 무시 */
+  }
+  try {
+    webSpeechSynthesis()?.cancel();
+  } catch {
+    /* 이미 종료 — 무시 */
+  }
+}

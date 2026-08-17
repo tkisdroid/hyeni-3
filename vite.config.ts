@@ -3,10 +3,18 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { fileURLToPath, URL } from "node:url";
 import { readFileSync } from "node:fs";
+import { initialChunkProvenancePlugin } from "./scripts/vite/initialChunkProvenancePlugin.mjs";
+
+const rootDir = fileURLToPath(new URL(".", import.meta.url));
 
 const packageMetadata = JSON.parse(
   readFileSync(fileURLToPath(new URL("./package.json", import.meta.url)), "utf8"),
 ) as { version: string };
+
+function comparePrecacheEntries(left: { url: string }, right: { url: string }): number {
+  if (left.url === right.url) return 0;
+  return left.url < right.url ? -1 : 1;
+}
 
 // 상대 경로 base('./') → Capacitor(file://)와 PWA 모두에서 자원이 정상 로드됩니다.
 export default defineConfig({
@@ -47,6 +55,13 @@ export default defineConfig({
       },
       injectManifest: {
         globPatterns: ["**/*.{js,css,html,woff2,webp,png,svg}"],
+        // fast-glob 결과 순서는 파일시스템의 대소문자 규칙에 좌우되므로 명시적으로 고정한다.
+        manifestTransforms: [
+          (manifestEntries) => ({
+            manifest: [...manifestEntries].sort(comparePrecacheEntries),
+            warnings: [],
+          }),
+        ],
         // Jua 는 유니코드 구간별 87개 서브셋(총 854KB)이라 전부 프리캐시하면 설치가 무거워진다.
         // 브라우저가 실제로 쓰는 구간만 내려받게 두고, 네이티브는 어차피 로컬 파일이라 영향이 없다.
         globIgnores: [
@@ -79,7 +94,24 @@ export default defineConfig({
       },
       devOptions: { enabled: false },
     }),
+    initialChunkProvenancePlugin({ rootDir }),
   ],
   server: { port: 5173, host: true },
-  build: { target: "es2022", sourcemap: false },
+  build: {
+    target: "es2022",
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "i18n-runtime": [
+            "react",
+            "react-dom",
+            "react-dom/client",
+            "react-intl",
+            "intl-messageformat",
+          ],
+        },
+      },
+    },
+  },
 });

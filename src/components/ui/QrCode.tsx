@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
+import { useIntl } from "react-intl";
 
 interface QrCodeProps {
   /** QR 에 인코딩할 문자열(딥링크·코드 등). */
@@ -19,7 +20,9 @@ interface QrCodeProps {
  * qrcode 브라우저 빌드의 toCanvas 사용 — fs 의존 없음, 오프라인 동작.
  * 생성 실패 시 조용히 빈 상태 유지(상위에서 코드 텍스트로 대체 안내).
  */
-export function QrCode({ value, size = 220, dark = "#2A2327", light = "#FFFFFF", label = "QR 코드" }: QrCodeProps) {
+export function QrCode({ value, size = 220, dark = "#2A2327", light = "#FFFFFF", label }: QrCodeProps) {
+  const intl = useIntl();
+  const accessibleLabel = label ?? intl.formatMessage({ id: "shared.qr.label" });
   const ref = useRef<HTMLCanvasElement>(null);
   const [failed, setFailed] = useState(false);
 
@@ -45,7 +48,7 @@ export function QrCode({ value, size = 220, dark = "#2A2327", light = "#FFFFFF",
     return (
       <div
         role="img"
-        aria-label={`${label} 생성 실패`}
+        aria-label={intl.formatMessage({ id: "shared.qr.failedLabel" }, { label: accessibleLabel })}
         style={{
           width: size,
           height: size,
@@ -59,10 +62,10 @@ export function QrCode({ value, size = 220, dark = "#2A2327", light = "#FFFFFF",
           borderRadius: 12,
         }}
       >
-        코드를 직접 입력해 주세요
+        {intl.formatMessage({ id: "shared.qr.enterManually" })}
       </div>
     );
   }
 
-  return <canvas ref={ref} width={size} height={size} role="img" aria-label={label} style={{ borderRadius: 12 }} />;
+  return <canvas ref={ref} width={size} height={size} role="img" aria-label={accessibleLabel} style={{ borderRadius: 12 }} />;
 }
