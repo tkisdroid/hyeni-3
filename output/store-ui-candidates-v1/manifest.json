@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-08-15T09:05:18.298Z",
+  "generatedAt": "2026-08-17T00:56:26.894Z",
   "source": "local-production-dist-with-static-demo-session",
   "sourceDist": {
-    "fileCount": 417,
-    "sha256": "aa6c305e4cf7a88e3607249ac80b242ebae479372d8ac00879abd24ae955e426"
+    "fileCount": 428,
+    "sha256": "3bc16b6543946f618b30e2268550fcd9adab1ee5103d315171576250f7a4cbd5"
   },
   "uploadStatus": "candidate_requires_policy_and_visual_review",
   "files": [
@@ -78,33 +78,33 @@
   "artifacts": [
     {
       "file": "01-parent-home-ui.png",
-      "bytes": 573905,
-      "sha256": "480ab66039f172f8a3e4df03f91cb24b10bd2bf97bdbaa1ad90879962e95e696"
+      "bytes": 577538,
+      "sha256": "22a340af539923d61d89a3ef2a5dcd35ead4094aff6c037685a59dde674f9260"
     },
     {
       "file": "02-family-calendar-ui.png",
-      "bytes": 186616,
-      "sha256": "8ddc2476eaccf9a98482da8390d6a4dba773bb2103a8e96e9f9b0c3bb4829fa7"
+      "bytes": 188962,
+      "sha256": "410009ccf0a5d5d0c4e6f844882c5927fec97dab85b83e78270c037f3b7d408b"
     },
     {
       "file": "03-family-memo-ui.png",
-      "bytes": 227236,
-      "sha256": "202bb4b7f7526f33da3156690d8db44b6824483ce26eda294ab27392d484fdb4"
+      "bytes": 228324,
+      "sha256": "f5b335a4112cb33a0a2c929e97ff47469d99c64b9d0074438e6026462fc3b678"
     },
     {
       "file": "04-daily-safety-report-ui.png",
-      "bytes": 397308,
-      "sha256": "4acb3757534cb2fbc7ebe63964a274857fc336c651600e678383e7e9a360c1cb"
+      "bytes": 399642,
+      "sha256": "90f4336fbe5d3376c7a7160cd7a7831cb057396a926074e4d90da34d9a92a954"
     },
     {
       "file": "05-weekly-family-report-ui.png",
-      "bytes": 263434,
-      "sha256": "283eaf348e8b64aca42d31ec83ca3e9d2e2d6a81c6d3282f97f4b8112c64fde5"
+      "bytes": 263111,
+      "sha256": "0610ae6f217c4714fa03880a812b0378c7d9e770eff893f36ee5120adf6f0c4b"
     },
     {
       "file": "06-child-home-ui.png",
-      "bytes": 649022,
-      "sha256": "e1e770d54c8dabb70fe02b7ed719eda2cc0c1160471f4efe485b0a0f43ef9b1b"
+      "bytes": 661910,
+      "sha256": "f4a81c04c05420a0d543cbbc523b33731062c933f8dc80523678e47ba227bf55"
     }
   ]
 }

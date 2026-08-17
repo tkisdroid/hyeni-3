@@ -24,6 +24,8 @@ import { buildStickerBook, readSeenStickers } from "@/transform/stickerBook";
 import { resolveEventVisualAsset } from "@/transform/placeVisual";
 import { CHILD_ACCENTS } from "@/transform/childAccent";
 import { resolveAiFriendDisplayName } from "@/transform/aiFriendName";
+import { aiBuddyFaceAsset } from "@/transform/aiBuddyEmotion";
+import { useAiBuddyMood } from "@/app/aiBuddyMood";
 import {
   MAX_SUPPLY_ITEMS_PER_KIND,
   dailySupplyLimitMessage,
@@ -86,6 +88,8 @@ export function ChildHome() {
   const receivedStickers = useReceivedStickers(userId);
   const aiFriend = useAiFriendPublicSettings(userId);
   const aiCreditStatus = useAiCreditPublicStatus(userId);
+  // AI 친구 타일도 지금 기분을 그대로 보여 준다(플로팅 버튼·대화 화면과 같은 얼굴).
+  const { emotion: aiTileEmotion } = useAiBuddyMood();
   const homeLoading = familyQuery.isLoading || eventsQuery.isLoading || placesQuery.isLoading;
   const homeError = familyQuery.isError || eventsQuery.isError || placesQuery.isError;
   const retryHomeData = async () => {
@@ -696,8 +700,9 @@ export function ChildHome() {
               </span>
             </button>
 
+            {/* AI 친구는 앱 어디서나 같은 얼굴이다 — 플로팅 버튼과 대화 화면과 같은 표정 에셋. */}
             <button type="button" className="kd-tile kd-tile--bob hy-press" onClick={openAiFriend}>
-              <img src={asset("ui/ai-robot.webp")} alt="" />
+              <img src={asset(aiBuddyFaceAsset(aiTileEmotion))} alt="" />
               <span>
                 <span className="kd-tile__title">
                   {aiFriendDisplayName ? `${aiFriendDisplayName} 만나러 가기` : "AI 친구 만나기"}

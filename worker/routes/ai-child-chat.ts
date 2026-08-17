@@ -25,7 +25,7 @@ import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import { requireAuth } from "../middleware/auth";
 import { pgNow } from "../lib/time";
-import { parseJson, toBool } from "../lib/serialize";
+import { parseJson, pgArray, toBool, toPgArray } from "../lib/serialize";
 import { openaiChatUrl, openaiLunaChatConfig, openaiSafetyIdentifier } from "../lib/openai";
 import { classifyOpenAiError, writeOpenAiLog } from "../lib/openaiLog";
 import { notifyPg } from "../lib/realtime";
@@ -75,7 +75,22 @@ import { shouldBypassAiCreditLimit, shouldChargeForAiTurn } from "../shared/aiUs
 import { createAiToolConfirmationToken, verifyAiToolConfirmationToken } from "../shared/aiConfirmationToken.js";
 import { sanitizeAiToolResultForPrompt } from "../shared/aiToolResultPrompt.js";
 import { buildAgentPlanChildReply, buildToolResultChildReply } from "../shared/aiToolResultReply.js";
+import {
+  isChildAccentKey,
+  sanitizeAiFriendName,
+  sanitizeChildNotificationMinutes,
+} from "../shared/aiChildSettingsTools.js";
 import { aiMutationScopeErrorResponse, aiMutationScopeState } from "../lib/aiMutationScope";
+
+/** 아이에게 색 이름을 말해 줄 때 쓰는 라벨 — src/transform/childAccent.ts 의 label 과 같다. */
+const CHILD_ACCENT_LABELS: Record<string, string> = {
+  rose: "핑크",
+  peach: "살구",
+  lavender: "보라",
+  mint: "민트",
+  sky: "하늘",
+  lemon: "레몬",
+};
 
 type OpenAiChatResponse = {
   choices?: Array<{ message?: { content?: string }; finish_reason?: unknown }>;
@@ -142,7 +157,15 @@ const SCHEDULE_AGENT_TOOLS = new Set([
   "getScheduleByDate",
   "createSchedule",
   "updateSchedule",
-  "deleteSchedule",
+]);
+/**
+ * 아이가 자기 것만 바꾸는 설정 도구.
+ * 부모의 일정·연락 허용 스위치와 무관하다(아이 설정 화면에서 이미 스스로 바꿀 수 있는 항목).
+ */
+const CHILD_SETTINGS_AGENT_TOOLS = new Set([
+  "updateNotificationSettings",
+  "updateAiFriendName",
+  "changeAppTheme",
 ]);
 
 function isAgentToolAllowedForPrompt(
@@ -153,6 +176,7 @@ function isAgentToolAllowedForPrompt(
   if (!name) return false;
   if (CONTACT_AGENT_TOOLS.has(name)) return allowContactActions;
   if (SCHEDULE_AGENT_TOOLS.has(name)) return allowScheduleActions;
+  if (CHILD_SETTINGS_AGENT_TOOLS.has(name)) return true;
   return name === "notifyParent";
 }
 
@@ -160,6 +184,16 @@ function isScheduleLookupToolResult(toolResult: any): boolean {
   if (!toolResult || typeof toolResult !== "object") return false;
   if (toolResult.ok !== true) return false;
   return toolResult.toolName === "getTodaySchedule" || toolResult.toolName === "getScheduleByDate";
+}
+
+/**
+ * 설정 변경은 확정된 사실이라 LLM 을 거치지 않고 그대로 알린다.
+ * "알림 꺼줘" 한 마디에 하루 5번뿐인 무료 대화 횟수를 쓰게 하지 않으려는 목적도 있다.
+ */
+function isChildSettingsToolResult(toolResult: any): boolean {
+  if (!toolResult || typeof toolResult !== "object") return false;
+  if (toolResult.ok !== true) return false;
+  return CHILD_SETTINGS_AGENT_TOOLS.has(String(toolResult.toolName || ""));
 }
 
 function formatFamilyMemberForPrompt(member: Record<string, unknown>): string {
@@ -258,10 +292,6 @@ function childLinksForEvent(row: Record<string, any>): Array<{ child_id?: string
 
 function isEventLinkedToChild(row: Record<string, any>, childMemberId: string): boolean {
   return childLinksForEvent(row).some((link) => link?.child_id === childMemberId);
-}
-
-function isChildDeletableEvent(row: Record<string, any>, childMemberId: string): boolean {
-  return !!row && row.is_family_event !== true && isEventLinkedToChild(row, childMemberId);
 }
 
 function isSingleChildMutableEvent(row: Record<string, any>, childMemberId: string): boolean {
@@ -581,72 +611,11 @@ chat.post("/child-chat", requireAuth, async (c) => {
     );
   }
 
-  // ── 확인된 도구: deleteSchedule ──
+  // ── 일정 삭제는 보호자 전용(2026-08-17 TK 결정) ──
+  // 계획 단계에서 이미 막지만, 정책 전환 전에 발급된 확인 토큰(10분 유효)이나 조작된 요청도
+  // 여기서 함께 닫는다. 삭제 경로는 아이 세션에서 완전히 사라진다.
   if (body.confirmedTool?.toolName === "deleteSchedule") {
-    if (!scheduleActionsAllowed) return c.json({ error: "schedule_actions_disabled" }, 403);
-    const scheduleId = String(body.confirmedTool.scheduleId || "").trim();
-    if (!scheduleId) return c.json({ error: "invalid_schedule_id" }, 400);
-    const confirmation = await verifyConfirmedToolPayload(
-      body.confirmedTool.confirmationToken,
-      { familyId, childUserId: userId, toolName: "deleteSchedule", scheduleId },
-      confirmSecret,
-    );
-    if (!confirmation.ok) return c.json({ error: confirmation.error }, 403);
-
-    let eventRow: Record<string, any> | null = null;
-    try {
-      eventRow = await loadSingleEvent(db, familyId, scheduleId);
-    } catch (e) {
-      console.error("[ai-child-chat] schedule delete lookup failed");
-      return c.json({ error: "schedule_lookup_failed" }, 500);
-    }
-    if (!eventRow) return c.json({ error: "schedule_not_found" }, 404);
-    if (!isChildDeletableEvent(eventRow, childMemberId)) return c.json({ error: "schedule_delete_not_allowed" }, 403);
-
-    const eventForClient = eventRowToToolEvent(eventRow);
-    const childLinks = childLinksForEvent(eventRow);
-    let deleted = false;
-    let removedForChild = false;
-
-    if (childLinks.length > 1) {
-      try {
-        await db
-          .prepare("DELETE FROM events_children WHERE event_id=? AND child_id=?")
-          .bind(scheduleId, childMemberId)
-          .run();
-      } catch (e) {
-        console.error("[ai-child-chat] schedule child unlink failed");
-        return c.json({ error: "schedule_delete_failed" }, 500);
-      }
-      removedForChild = true;
-    } else {
-      try {
-        await db.prepare("DELETE FROM events WHERE family_id=? AND id=?").bind(familyId, scheduleId).run();
-        await db.prepare("DELETE FROM events_children WHERE event_id=?").bind(scheduleId).run();
-      } catch (e) {
-        console.error("[ai-child-chat] schedule delete failed");
-        return c.json({ error: "schedule_delete_failed" }, 500);
-      }
-      deleted = true;
-      removedForChild = true;
-    }
-
-    const title = String(eventForClient.title || body.confirmedTool.title || "일정");
-    const reply = `${title} 일정을 지웠어.`;
-    const logged = await insertChatMessages(db, familyId, userId, characterEmoji, [
-      { role: "user", content: `[일정 삭제 확인] ${title}`, flagged: false },
-      { role: "assistant", content: reply, flagged: false },
-    ]);
-    if (!logged) return c.json({ error: "account_state_changed" }, 409);
-    return c.json(
-      {
-        reply,
-        toolResult: { ok: true, toolName: "deleteSchedule", event: eventForClient, deleted, removedForChild },
-        flagged: false,
-        assistantMessageId: logged.assistantMessageId,
-      },
-      200,
-    );
+    return c.json({ error: "schedule_delete_parent_only" }, 403);
   }
 
   // ── 확인된 도구: updateSchedule ──
@@ -1076,37 +1045,6 @@ chat.post("/child-chat", requireAuth, async (c) => {
     }
   }
 
-  // ── 도구: deleteSchedule(후보 탐색 → 확인 토큰) ──
-  if (agentPlan.toolName === "deleteSchedule") {
-    if (!allowScheduleActions) {
-      toolResult = { ok: false, toolName: "deleteSchedule", error: "schedule_actions_disabled" };
-    } else if (!agentPlan.shouldUseTool) {
-      toolResult = { ok: false, toolName: "deleteSchedule", error: "missing_schedule_delete_args", missingArgs: agentPlan.missingArgs };
-    } else {
-      try {
-        const appDateKey = toAppDateKey(String(agentPlan.toolArgs.date || contextDate));
-        const requestedTitle = String(agentPlan.toolArgs.title || "").trim();
-        const scheduleRows = await loadEventsByDateKey(db, familyId, appDateKey);
-        const candidate = scheduleRows
-          .filter((row) => isChildDeletableEvent(row, childMemberId))
-          .find((row) => scheduleTitleMatches(row.title, requestedTitle));
-        if (!candidate) {
-          toolResult = { ok: false, toolName: "deleteSchedule", error: "schedule_not_found", date: appDateKey, title: requestedTitle };
-        } else {
-          const event = eventRowToToolEvent(candidate);
-          toolResult = await addConfirmationToken(
-            { ok: true, toolName: "deleteSchedule", confirmationRequired: true, event },
-            { familyId, childUserId: userId, toolName: "deleteSchedule", scheduleId: String(event.id || "") },
-            confirmSecret,
-          );
-        }
-      } catch (e) {
-        console.error("[ai-child-chat] schedule delete candidate lookup exception");
-        toolResult = { ok: false, toolName: "deleteSchedule", error: "schedule_lookup_failed" };
-      }
-    }
-  }
-
   // ── 도구: getTodaySchedule / getScheduleByDate ──
   if (agentPlan.shouldUseTool && (agentPlan.toolName === "getTodaySchedule" || agentPlan.toolName === "getScheduleByDate")) {
     if (!allowScheduleActions) {
@@ -1195,6 +1133,133 @@ chat.post("/child-chat", requireAuth, async (c) => {
         console.error("[ai-child-chat] schedule create exception");
         toolResult = { ok: false, error: "schedule_create_failed" };
       }
+    }
+  }
+
+  // ── 도구: updateNotificationSettings(아이 본인 일정 알림) ──
+  // 아이가 설정 화면에서 이미 바꿀 수 있는 항목만 말로도 바꿔 준다. 부모 소관 항목
+  // (쉬는 시간·위치/장소/친구놀이 알림)은 planner 가 앞에서 parent_only 로 막는다.
+  if (agentPlan.shouldUseTool && agentPlan.toolName === "updateNotificationSettings") {
+    const requestedEnabled = typeof agentPlan.toolArgs.scheduleAlertsEnabled === "boolean"
+      ? agentPlan.toolArgs.scheduleAlertsEnabled
+      : null;
+    const requestedMinutes = sanitizeChildNotificationMinutes(agentPlan.toolArgs.minutesBefore);
+    if (requestedEnabled === null && requestedMinutes === null) {
+      toolResult = { ok: false, toolName: "updateNotificationSettings", error: "notification_settings_no_change" };
+    } else {
+      try {
+        const existing = await db
+          .prepare(
+            `SELECT family_id, child_enabled, parent_enabled, location_enabled,
+                    registered_place_enabled, playdate_enabled, minutes_before
+               FROM notification_settings WHERE user_id=? LIMIT 1`,
+          )
+          .bind(userId)
+          .first<Record<string, any>>();
+
+        // 저장된 값이 없으면 앱 기본값(일정 알림 켜짐 · 15/5분 전)에서 출발한다.
+        const nextChildEnabled = requestedEnabled ?? (existing ? toBool(existing.child_enabled) : true);
+        const currentMinutes = existing
+          ? pgArray(existing.minutes_before).map((n) => Number(n)).filter((n) => Number.isFinite(n))
+          : [15, 5];
+        const nextMinutes = requestedMinutes ?? currentMinutes;
+        const nextFamilyId = existing?.family_id ?? familyId;
+        const now = pgNow();
+
+        if (existing) {
+          await db
+            .prepare(
+              `UPDATE notification_settings SET child_enabled=?, minutes_before=?, updated_at=? WHERE user_id=?`,
+            )
+            .bind(b(nextChildEnabled), toPgArray(nextMinutes.map((n) => String(n))), now, userId)
+            .run();
+        } else {
+          await db
+            .prepare(
+              `INSERT INTO notification_settings
+                 (user_id, family_id, child_enabled, parent_enabled, location_enabled,
+                  registered_place_enabled, playdate_enabled, minutes_before, updated_at)
+               VALUES (?,?,?,?,?,?,?,?,?)`,
+            )
+            .bind(
+              userId, nextFamilyId, b(nextChildEnabled), 1, 1, 1, 1,
+              toPgArray(nextMinutes.map((n) => String(n))), now,
+            )
+            .run();
+        }
+
+        // 같은 계정의 다른 기기·화면이 즉시 따라오도록 알린다(설정 화면과 값이 어긋나지 않게).
+        try {
+          await notifyPg(c.env, nextFamilyId ?? "", "notification_settings", existing ? "UPDATE" : "INSERT", {
+            user_id: userId,
+            family_id: nextFamilyId,
+            child_enabled: nextChildEnabled,
+            minutes_before: nextMinutes,
+          });
+        } catch (error) {
+          console.error("[ai-child-chat] notification settings realtime notify failed");
+        }
+
+        toolResult = {
+          ok: true,
+          toolName: "updateNotificationSettings",
+          applied: {
+            scheduleAlertsEnabled: requestedEnabled,
+            minutesBefore: requestedMinutes,
+          },
+          current: { scheduleAlertsEnabled: nextChildEnabled, minutesBefore: nextMinutes },
+        };
+      } catch (e) {
+        console.error("[ai-child-chat] notification settings update failed");
+        toolResult = { ok: false, toolName: "updateNotificationSettings", error: "notification_settings_update_failed" };
+      }
+    }
+  }
+
+  // ── 도구: updateAiFriendName(내 AI 친구 이름) ──
+  if (agentPlan.shouldUseTool && agentPlan.toolName === "updateAiFriendName") {
+    const nextName = sanitizeAiFriendName(agentPlan.toolArgs.name);
+    if (!nextName) {
+      toolResult = { ok: false, toolName: "updateAiFriendName", error: "invalid_ai_friend_name" };
+    } else {
+      try {
+        const now = pgNow();
+        await db
+          .prepare(
+            `INSERT INTO ai_parent_settings
+               (id, family_id, child_user_id, ai_friend_name, daily_limit, updated_by, created_at, updated_at)
+             VALUES (?,?,?,?,?,?,?,?)
+             ON CONFLICT(family_id,child_user_id) DO UPDATE SET
+               ai_friend_name=excluded.ai_friend_name,
+               updated_by=excluded.updated_by,
+               updated_at=excluded.updated_at`,
+          )
+          .bind(crypto.randomUUID(), familyId, userId, nextName, parentDailyLimit, userId, now, now)
+          .run();
+        persona.name = nextName;
+        toolResult = { ok: true, toolName: "updateAiFriendName", name: nextName };
+      } catch (e) {
+        console.error("[ai-child-chat] ai friend name update failed");
+        toolResult = { ok: false, toolName: "updateAiFriendName", error: "ai_friend_name_update_failed" };
+      }
+    }
+  }
+
+  // ── 도구: changeAppTheme(내 색깔) ──
+  // 아이 테마색은 서버 컬럼이 없어 기기 로컬 저장이다. 서버는 색만 확정해 주고
+  // 실제 적용은 클라이언트가 한다(clientAction). 여기서 저장했다고 말하지 않는다.
+  if (agentPlan.shouldUseTool && agentPlan.toolName === "changeAppTheme") {
+    const accent = String(agentPlan.toolArgs.accent || "");
+    if (!isChildAccentKey(accent)) {
+      toolResult = { ok: false, toolName: "changeAppTheme", error: "invalid_accent" };
+    } else {
+      toolResult = {
+        ok: true,
+        toolName: "changeAppTheme",
+        accent,
+        accentLabel: CHILD_ACCENT_LABELS[accent] ?? accent,
+        clientAction: "setAccent",
+      };
     }
   }
 
@@ -1300,7 +1365,7 @@ chat.post("/child-chat", requireAuth, async (c) => {
     const planFallbackAssistantText = buildAgentPlanChildReply(agentPlan);
     if (planFallbackAssistantText) {
       assistantText = planFallbackAssistantText;
-    } else if (isScheduleLookupToolResult(toolResult)) {
+    } else if (isScheduleLookupToolResult(toolResult) || isChildSettingsToolResult(toolResult)) {
       const deterministicScheduleReply = buildToolResultChildReply(toolResult);
       if (deterministicScheduleReply) {
         assistantText = deterministicScheduleReply;

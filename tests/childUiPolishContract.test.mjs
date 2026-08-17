@@ -107,7 +107,10 @@ test("아이 홈의 AI 친구 진입점은 채팅 화면과 같은 저장 이름
   assert.match(home, /import \{ resolveAiFriendDisplayName \} from "@\/transform\/aiFriendName"/);
   assert.match(home, /const aiFriendDisplayName = aiFriendSavedName[\s\S]{0,180}resolveAiFriendDisplayName/);
   assert.match(home, /aiFriendDisplayName \? `\$\{aiFriendDisplayName\} 만나러 가기` : "AI 친구 만나기"/);
-  assert.ok(home.includes('asset("ui/ai-robot.webp")'));
+  // AI 친구 얼굴은 플로팅 버튼·대화 화면과 같은 표정 에셋 하나로 통일한다(2026-08-17).
+  // 로봇 아이콘은 표정이 없어 "지금 기분"을 보여 줄 수 없었다.
+  assert.ok(home.includes("aiBuddyFaceAsset(aiTileEmotion)"));
+  assert.doesNotMatch(home, /ui\/ai-robot\.webp/);
   assert.doesNotMatch(home, /혜니랑 말하기/);
 });
 

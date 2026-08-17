@@ -2079,6 +2079,8 @@ const semanticSurfaceManifest = [
     ["src/components/ui/ScreenQueryState.css", "sqs-inline-empty", "card"],
     ["src/screens/child/AiFriendChat.css", "afc-query-state", "card"],
     ["src/screens/child/ChildHome.css", "kd-map__query-state", "floating"],
+    // 입력창 위에 떠서 "아직 실행하지 않은 부탁"을 확인받는 카드.
+    ["src/screens/child/AiFriendChat.css", "afc-confirm", "floating"],
     ["src/screens/feature/RemoteRing.css", "rr-query-state", "card"],
 ];
 
@@ -2140,6 +2142,8 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/shared/MemoChat.css", ".mc-quick-btn"],
   ["src/screens/child/AiFriendSetup.css", ".afs-cta"],
   ["src/screens/child/AiFriendChat.css", ".afc-send"],
+  ["src/screens/child/AiFriendChat.css", ".afc-confirm__cancel"],
+  ["src/screens/child/AiFriendChat.css", ".afc-confirm__go"],
   ["src/screens/teacher/TeacherHome.css", ".th-empty__cta"],
   ["src/screens/feature/RemoteAudio.css", ".ra-audit-link"],
   ["src/screens/feature/Notifications.css", ".nc-filter"],
@@ -2671,8 +2675,11 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/feature/SosReceive.css", ".sr-history-emoji"],
   ["src/screens/feature/PermDenied.css", ".pd-icon"],
   ["src/components/ui/StickerCelebration.css", ".sticker-celebration__confetti span"],
+  // AI 친구 플로팅 버튼의 후광 — 조작 면이 아니라 얼굴 뒤에 까는 장식 원.
+  ["src/app/AiBuddyFab.css", ".abf__glow"],
   // nested와 inset 조각 — exact path + selector만 허용
   ["src/components/MessageSafetyDialog.css", ".msd-error"],
+  ["src/screens/child/AiFriendChat.css", ".afc-confirm__detail"],
   ["src/screens/shared/MemoChat.css", ".mc-msg--peer .mc-bubble"],
   ["src/screens/shared/MemoChat.css", ".mc-msg--mine .mc-bubble"],
   ["src/screens/child/AiFriendChat.css", ".afc-bubble--ai"],

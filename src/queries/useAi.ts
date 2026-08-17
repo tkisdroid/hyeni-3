@@ -139,6 +139,19 @@ export function useSendChildChat() {
       }
       void qc.invalidateQueries({ queryKey: qk.aiCredits(familyId ?? "") });
       if (userId) void qc.invalidateQueries({ queryKey: qk.aiMessages(userId) });
+
+      // AI 친구가 실제로 바꾼 것만 다시 읽는다 — 화면에 옛 값이 남아 "안 됐네"로 보이지 않게.
+      const tool = result.toolResult;
+      if (!tool || tool.ok !== true || tool.confirmationRequired === true) return;
+      if (tool.toolName === "createSchedule" || tool.toolName === "updateSchedule") {
+        void qc.invalidateQueries({ queryKey: qk.events(familyId ?? "") });
+      }
+      if (tool.toolName === "updateNotificationSettings" && userId) {
+        void qc.invalidateQueries({ queryKey: qk.notifSettings(userId) });
+      }
+      if (tool.toolName === "updateAiFriendName" && userId) {
+        void qc.invalidateQueries({ queryKey: ["aiFriendPublic", familyId ?? "", userId] });
+      }
     },
   });
 }

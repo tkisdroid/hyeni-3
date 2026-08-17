@@ -1,0 +1,116 @@
+/* 아이 모드 상시 대기 AI 친구 버튼 — 드래그로 옮기고 표정으로 지금 기분을 알린다.
+   .hy-app 이 position:relative 라 absolute 로 프레임 안에 갇힌다(독·탭바와 같은 규약). */
+
+.abf {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  z-index: 28;
+  cursor: grab;
+  touch-action: none; /* 드래그가 화면 스크롤로 새지 않게 한다. */
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    left var(--duration-base) var(--easing-standard),
+    top var(--duration-base) var(--easing-standard);
+}
+
+/* 드래그 중에는 손가락을 그대로 따라와야 하므로 위치 보간을 끈다. */
+.abf[data-dragging="true"] {
+  cursor: grabbing;
+  transition: none;
+}
+
+/* 눌린 걸 알리는 축소 — bob 애니메이션과 transform 이 겹치지 않도록 안쪽 stack 에 준다. */
+.abf__stack {
+  position: absolute;
+  inset: 0;
+  display: block;
+  transition: transform var(--duration-fast) var(--easing-standard);
+}
+.abf:active .abf__stack {
+  transform: scale(0.92);
+}
+
+/* 어떤 배경 위에서도 얼굴이 떠 보이도록 뒤에 부드러운 후광을 깐다. */
+.abf__glow {
+  position: absolute;
+  inset: -6px;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle at 50% 45%,
+    color-mix(in srgb, var(--hy-accent-soft) 88%, #ffffff) 0%,
+    color-mix(in srgb, var(--hy-accent-soft) 42%, transparent) 62%,
+    transparent 78%
+  );
+  box-shadow: var(--shadow-floating);
+}
+
+.abf__face {
+  position: absolute;
+  inset: 0;
+  display: block;
+  animation: abf-bob 3.4s var(--easing-standard) infinite;
+}
+
+.abf[data-dragging="true"] .abf__face {
+  animation: none;
+  transform: scale(1.08);
+}
+
+/* 표정이 바뀐 순간 한 번 통통 튀어 변화를 알린다. */
+.abf[data-pop="true"] .abf__face {
+  animation: abf-pop 0.46s var(--easing-cheer) 1;
+}
+
+.abf__stack img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--easing-standard);
+}
+
+.abf__stack img[data-shown="true"] {
+  opacity: 1;
+}
+
+@keyframes abf-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes abf-pop {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.16);
+  }
+  70% {
+    transform: scale(0.96);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* 움직임을 줄이도록 설정한 기기에서는 떠다니지 않고 조용히 대기한다. */
+@media (prefers-reduced-motion: reduce) {
+  .abf__face,
+  .abf[data-pop="true"] .abf__face {
+    animation: none;
+  }
+  .abf {
+    transition: none;
+  }
+}

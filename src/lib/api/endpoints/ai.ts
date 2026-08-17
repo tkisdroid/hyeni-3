@@ -266,10 +266,57 @@ export async function fetchAiMessages(
 
 // ── 자녀 채팅 전송(쓰기 · 크레딧 소모) ──────────────────────────────────────
 
+/**
+ * 아이가 "이대로 보내 줘"라고 확인한 도구 실행 요청.
+ * confirmationToken 은 서버가 발급한 HMAC 이고 클라이언트는 그대로 되돌려주기만 한다.
+ * 일정 삭제는 보호자 전용이라 이 경로에 없다(서버도 403 으로 닫는다).
+ */
+export interface ConfirmedAiTool {
+  toolName: "sendMessageToParent" | "updateSchedule";
+  confirmationToken: string;
+  parentRole?: string;
+  message?: string;
+  scheduleId?: string;
+  title?: string;
+  changes?: Record<string, unknown>;
+}
+
 export interface SendChildChatInput {
   message: string;
   /** 아이가 고른 동물 캐릭터 이모지(있으면 페르소나 결정). */
   characterEmoji?: string;
+  /** 확인 카드에서 아이가 실행을 눌렀을 때만 채운다. */
+  confirmedTool?: ConfirmedAiTool;
+}
+
+/**
+ * 도구 실행 결과. 서버가 실제로 한 일만 담기며, `confirmationRequired` 는
+ * "아직 하지 않았고 아이 확인을 기다린다"는 뜻이다(했다고 표시하면 안 된다).
+ */
+export interface AiToolResult {
+  ok?: boolean;
+  toolName?: string;
+  error?: string;
+  confirmationRequired?: boolean;
+  confirmationToken?: string;
+  /** createMessageToParent / callParent */
+  parentRole?: string;
+  displayName?: string;
+  message?: string;
+  phone?: string | null;
+  /** createSchedule / updateSchedule */
+  event?: { id?: string; title?: string; time?: string | null; endTime?: string | null; dateKey?: string | null };
+  changes?: Record<string, string>;
+  /** updateNotificationSettings */
+  applied?: { scheduleAlertsEnabled?: boolean | null; minutesBefore?: number[] | null };
+  current?: { scheduleAlertsEnabled?: boolean; minutesBefore?: number[] };
+  /** updateAiFriendName */
+  name?: string;
+  /** changeAppTheme — 서버에 저장 컬럼이 없어 기기에서 적용한다. */
+  accent?: string;
+  accentLabel?: string;
+  clientAction?: string;
+  parentNotified?: boolean;
 }
 
 /** 전송 성공 응답. 인증/한도/크레딧 차감/저장은 Worker 가 처리한다. */
@@ -283,6 +330,10 @@ export interface ChildChatReply {
   character?: string;
   characterName?: string;
   flagged?: boolean;
+  /** 서버가 실행했거나 확인을 기다리는 도구. */
+  toolResult?: AiToolResult | null;
+  detectedIntent?: string;
+  safety?: { riskLevel?: string; reason?: string } | null;
 }
 
 /**
@@ -298,6 +349,7 @@ export async function sendChildChat(input: SendChildChatInput): Promise<ChildCha
     message,
     usageDate: todayDateKST(),
     ...(characterEmoji ? { characterEmoji } : {}),
+    ...(input.confirmedTool ? { confirmedTool: input.confirmedTool } : {}),
   });
 }
 

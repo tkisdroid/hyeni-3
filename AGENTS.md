@@ -521,6 +521,18 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 - 미도착 알림은 SOS 전면화면 전환 대상이 아니다: `transform/urgentAlert.ts` 가 단일 출처이며 `sos`/`emergency` 만
   부모 화면을 가로챈다. `not_arrived` 는 FCM 전체화면과 알림 목록으로 전달한다(오래된 위치면 severity=warning 로 강등됨).
 
+- ★아이모드 AI 친구 = 표정 있는 플로팅 버디 + 도구 에이전트(2026-08-17 TK 지시):
+  AI 진입점은 로봇/혜니 아이콘이 아니라 표정만 읽히는 소프트 3D 이모티콘 `public/assets/ai-buddy/*.webp`
+  (9종=8감정+blink, `scripts/generate-ai-buddy-faces.mjs`). 표정 판정 정본은 `src/transform/aiBuddyEmotion.ts`
+  하나이고 플로팅 버튼·아이 홈 타일·대화 헤더가 같은 얼굴을 쓴다. 아이가 속상하면 같이 슬퍼하지 않고 다독이며
+  (caring), 확인 대기 중에는 해낸 표정(excited)을 짓지 않는다. 플로팅 버튼(`src/app/AiBuddyFab.tsx`)은
+  ChildShell·PushShell 에서 아이 세션에만 뜨고, 위치를 px 가 아니라 이동 가능 영역 비율로 가족+아이 키에 저장한다
+  (`src/transform/aiBuddyFabPosition.ts`). 진입 번들 예산 때문에 lazy+Suspense 로 붙여야 build 가 통과한다.
+  표정 상태는 라우터 위 `AiBuddyMoodProvider` 한 곳에서 들고 있어야 화면을 옮겨도 기분이 이어진다.
+  서버 도구에 아이 본인 설정 3종(`updateNotificationSettings`·`updateAiFriendName`·`changeAppTheme`)을 더했고
+  셋 다 LLM 없이 답해 하루 대화 횟수를 깎지 않는다. **일정 삭제는 보호자 전용**이라 planner 는
+  `schedule_delete_parent_only` 로 닫고 route 는 확인 토큰이 와도 403 이다. 부모 소관 알림 설정도 정직하게 거절한다.
+  회귀=`tests/aiBuddyFab.test.ts`·Worker `tests/aiChildSettingsAgent.test.mjs`.
 - 아이모드 리디자인(2026-07-10, 시안 `아이모드 리디자인.dc.html` 2a 확정): 홈이 "오늘 모험 지도"로 바뀌었다.
   ①지도 노드는 **오늘 일정에서 파생**(`transform/adventureMap.ts`) — 실제 지리 좌표가 아니라 하루의 흐름을 그린
   여정 그림이라 고정 슬롯 4개에 시간순 배치하고, 일정이 5개 이상이면 다음 일정을 포함하는 창을 고른다.

@@ -62,6 +62,14 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* 지금 기분을 아이 말투 한 줄로 — "신난 표정" 같은 설명 대신 친구가 하는 말. */
+.afc-head-status {
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+
+  color: var(--hy-accent-text);
+}
 .afc-credits {
   flex: none;
   display: inline-flex;
@@ -354,4 +362,71 @@
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
+}
+
+/* 부탁 확인 카드 — 아직 실행하지 않았고 아이가 눌러야 진행된다.
+   입력창 바로 위에 붙여 무엇에 답하는 버튼인지 헷갈리지 않게 한다. */
+.afc-confirm {
+  flex: none;
+  margin: 0 12px 8px;
+  padding: 12px 16px 16px;
+  border-radius: var(--radius-16);
+  background: var(--bg-card);
+  border: 1.5px solid color-mix(in srgb, var(--hy-accent) 34%, transparent);
+  box-shadow: var(--shadow-floating);
+}
+.afc-confirm__title {
+  font-family: Jua, var(--font-sans);
+
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+
+  color: var(--hy-accent-text);
+}
+.afc-confirm__detail {
+  margin-top: 8px;
+  padding: 12px;
+  border-radius: var(--radius-12);
+  background: var(--hy-accent-soft);
+
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
+  color: var(--fg-primary);
+  overflow-wrap: anywhere;
+}
+.afc-confirm__actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+}
+.afc-confirm__cancel,
+.afc-confirm__go {
+  flex: 1;
+  height: 48px;
+  border-radius: var(--radius-16);
+  font-family: Jua, var(--font-sans);
+
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
+  --press: 0.94;
+}
+.afc-confirm__cancel {
+  background: var(--bg-chip-idle);
+  color: var(--fg-tertiary);
+}
+.afc-confirm__go {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--cta-grad-accent);
+  color: var(--bg-card);
+}
+.afc-confirm__go:disabled {
+  opacity: 0.5;
 }
