@@ -38,7 +38,7 @@ test("AI 크레딧 화면은 사용자 문구를 billing Intl 경계로만 렌�
   assert.equal(koBilling["billing.aiCredit.title"], "AI 크레딧");
   assert.equal(
     koBilling["billing.aiCredit.creditUse"],
-    "AI가 아이의 일정·안전 대화를 도울 때 크레딧 1회가 사용돼요.",
+    "AI가 도울 때 크레딧 1회를 써요.",
   );
 });
 

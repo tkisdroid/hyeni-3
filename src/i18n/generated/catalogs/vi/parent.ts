@@ -563,7 +563,7 @@ const messages = {
   "parent.parentAccount.copy022": "Bạn có thể kết nối hoặc vô hiệu hóa đăng nhập xã hội bên dưới.",
   "parent.parentAccount.copy023": "Đang đăng xuất...",
   "parent.parentAccount.copy024": "ID tài khoản ·",
-  "parent.parentAccount.copy025": "Tài khoản của tôi và thông tin từ gia đình này sẽ bị xóa. Các dữ liệu khác của gia đình được duy trì.",
+  "parent.parentAccount.copy025": "Chỉ xóa tài khoản của bạn và dữ liệu của bạn trong gia đình này.",
   "parent.parentAccount.copy026": "mật khẩu hiện tại",
   "parent.parentAccount.copy027": "mật khẩu mới",
   "parent.parentAccount.copy028": "Mật khẩu mới (6 ký tự trở lên)",

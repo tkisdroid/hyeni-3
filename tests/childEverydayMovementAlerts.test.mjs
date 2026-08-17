@@ -58,6 +58,6 @@ test("아이 설정 화면은 아이에게 오지 않는 위치 토글을 보여
   assert.match(childBranch, /notifications\.settings\.childSafety\.parentOnly/);
   assert.equal(
     koNotifications["notifications.settings.childSafety.parentOnly"],
-    "도착·출발 같은 일상 소식은 부모님께만 가고 너한테는 안 와.",
+    "도착·출발 소식은 부모님께만 가.",
   );
 });

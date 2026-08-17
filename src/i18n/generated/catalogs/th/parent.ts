@@ -563,7 +563,7 @@ const messages = {
   "parent.parentAccount.copy022": "คุณสามารถเชื่อมต่อหรือปิดการใช้งานการเข้าสู่ระบบโซเชียลด้านล่าง",
   "parent.parentAccount.copy023": "กำลังออกจากระบบ...",
   "parent.parentAccount.copy024": "รหัสบัญชี ·",
-  "parent.parentAccount.copy025": "บัญชีและข้อมูลจากครอบครัวนี้จะถูกลบ ข้อมูลอื่นๆ ของครอบครัวจะถูกเก็บรักษาไว้",
+  "parent.parentAccount.copy025": "ลบเฉพาะบัญชีของคุณและข้อมูลของคุณในครอบครัวนี้",
   "parent.parentAccount.copy026": "รหัสผ่านปัจจุบัน",
   "parent.parentAccount.copy027": "รหัสผ่านใหม่",
   "parent.parentAccount.copy028": "รหัสผ่านใหม่ (6 ตัวอักษรขึ้นไป)",

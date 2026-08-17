@@ -1039,7 +1039,7 @@ export function NotificationSettings() {
                       className="nst-capability"
                       data-state={delivery?.fullScreenIntentAllowed === true ? "ready" : "attention"}
                     >
-                      {/* i18n Android 전체 표시 정본: 전체 화면이 꺼져 있어 긴급 알림은 화면 상단 팝업으로만 표시돼요 / 잠금 화면 전체 표시 설정 */}
+                      {/* i18n Android 전체 표시 정본: 잠금 화면 전체로 표시해요 / 꺼져 있어 상단 팝업으로만 표시돼요 / 잠금 화면 전체 표시 설정 */}
                       <span className="nst-capability__title">
                         {intl.formatMessage({ id: "notifications.settings.fullScreen.title" })}
                       </span>

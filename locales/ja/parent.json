@@ -563,7 +563,7 @@
   "parent.parentAccount.copy022": "ソーシャルログインは下からリンクまたは解除できます。",
   "parent.parentAccount.copy023": "ログアウト中…",
   "parent.parentAccount.copy024": "アカウントID ·",
-  "parent.parentAccount.copy025": "私のアカウントとこの家族からの情報は削除されます。家族の他のデータは維持されます。",
+  "parent.parentAccount.copy025": "自分のアカウントとこの家族での自分の情報だけ削除されます。",
   "parent.parentAccount.copy026": "現在のパスワード",
   "parent.parentAccount.copy027": "新しいパスワード",
   "parent.parentAccount.copy028": "新しいパスワード（6文字以上）",

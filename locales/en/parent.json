@@ -563,7 +563,7 @@
   "parent.parentAccount.copy022": "You can connect or disable social login below.",
   "parent.parentAccount.copy023": "Logging out...",
   "parent.parentAccount.copy024": "Account ID ·",
-  "parent.parentAccount.copy025": "My account and information from this family will be deleted. The family's other data is maintained.",
+  "parent.parentAccount.copy025": "Only your account and your data in this family are deleted.",
   "parent.parentAccount.copy026": "current password",
   "parent.parentAccount.copy027": "new password",
   "parent.parentAccount.copy028": "New password (6 characters or more)",

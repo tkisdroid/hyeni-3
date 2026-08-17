@@ -563,7 +563,7 @@ const messages = {
   "parent.parentAccount.copy022": "Anda boleh menyambung atau melumpuhkan log masuk sosial di bawah.",
   "parent.parentAccount.copy023": "Log keluar...",
   "parent.parentAccount.copy024": "ID Akaun ·",
-  "parent.parentAccount.copy025": "Akaun saya dan maklumat daripada keluarga ini akan dipadamkan. Data keluarga yang lain dikekalkan.",
+  "parent.parentAccount.copy025": "Hanya akaun anda dan data anda dalam keluarga ini dipadam.",
   "parent.parentAccount.copy026": "kata laluan semasa",
   "parent.parentAccount.copy027": "kata laluan baharu",
   "parent.parentAccount.copy028": "Kata laluan baharu (6 aksara atau lebih)",

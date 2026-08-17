@@ -563,7 +563,7 @@ const messages = {
   "parent.parentAccount.copy022": "您可以在下面连接或禁用社交登录。",
   "parent.parentAccount.copy023": "正在退出...",
   "parent.parentAccount.copy024": "账号ID·",
-  "parent.parentAccount.copy025": "我的帐户和该家庭的信息将被删除。该家庭的其他数据均得到保留。",
+  "parent.parentAccount.copy025": "仅删除你的账号与你在此家庭的信息。",
   "parent.parentAccount.copy026": "当前密码",
   "parent.parentAccount.copy027": "新密码",
   "parent.parentAccount.copy028": "新密码（6位或以上）",

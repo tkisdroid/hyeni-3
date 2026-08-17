@@ -14,7 +14,7 @@ test("부모 세션의 친구놀이 화면은 아이 요청 화면이 아니라 
   assert.match(source, /shared\.friendPlay\.parent\.screenTitle/);
   assert.match(source, /shared\.friendPlay\.parent\.heroDescription/);
   assert.equal(koShared["shared.friendPlay.parent.screenTitle"], "친구놀이 설정");
-  assert.match(koShared["shared.friendPlay.parent.heroDescription"], /아이 기기에서 친구놀이 요청을 보낼 수 있어요/);
+  assert.match(koShared["shared.friendPlay.parent.heroDescription"], /아이 기기에서 친구놀이 요청을 보내요/);
   assert.match(source, /useSetPlaydateEnabled/);
 });
 

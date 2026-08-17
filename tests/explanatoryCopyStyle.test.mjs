@@ -195,7 +195,7 @@ test("다문장 설명 다섯 곳은 조건과 문구를 유지한 채 문장별
   }
   assert.equal(
     koBilling["billing.aiCredit.creditUse"],
-    "AI가 아이의 일정·안전 대화를 도울 때 크레딧 1회가 사용돼요.",
+    "AI가 도울 때 크레딧 1회를 써요.",
   );
   assert.equal(koBilling["billing.aiCredit.topUpHint"], "필요할 때 충전해 주세요.");
 
