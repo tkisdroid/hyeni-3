@@ -293,15 +293,21 @@ test("일반 설정과 self quiet 저장 완료 순서가 바뀌어도 최신 qu
   client.clear();
 });
 
-test("서버가 지원하는 60분 알림을 1시간 전으로 표시한다", () => {
+test("서버가 지원하는 60분 알림을 한 줄 칩의 짧은 기간으로 표시한다", () => {
   const endpoint = readSource("src/lib/api/endpoints/notifications.ts");
   const screen = readSource("src/screens/feature/NotificationSettings.tsx");
+  const css = readSource("src/screens/feature/NotificationSettings.css");
 
   assert.match(
     endpoint,
     /NOTIF_MINUTE_OPTIONS:\s*readonly number\[\]\s*=\s*\[60, 30, 15, 10, 5\]/,
   );
-  assert.match(screen, /m === 60 \? "1시간 전" : `\$\{m\}분 전`/);
+  assert.match(screen, /notifAdvanceChipLabel/);
+  assert.match(screen, /minutes % 60 === 0 \? `\$\{minutes \/ 60\}시간` : `\$\{minutes\}분`/);
+  assert.match(screen, /aria-label=\{`\$\{duration\} 전`\}/);
+  assert.doesNotMatch(screen, /1시간 전|\$\{m\}분 전/);
+  assert.match(css, /\.nst-minutes__row\s*\{[^}]*flex-wrap:\s*nowrap/s);
+  assert.match(css, /\.nst-minutes__row \.nst-minute\s*\{[^}]*white-space:\s*nowrap/s);
 });
 
 test("미등록 장소 출발은 일반 위치의 도착·출발 알림으로 상세 화면에 연결한다", () => {
@@ -466,7 +472,7 @@ test("Android 전체화면 특별 접근은 일반 알림 권한과 분리해 �
 
   assert.match(permissions, /export async function openFullScreenIntentSettings/);
   assert.match(permissions, /plugin\.openFullScreenIntentSettings\?\.\(\)/);
-  assert.match(screen, /전체 화면이 꺼져 있어 긴급 알림은 화면 상단 팝업으로만 표시돼요/);
+  assert.match(screen, /전체 화면이 꺼져 있어 긴급 알림은 상단 팝업만 표시돼요/);
   assert.match(screen, /잠금 화면 전체 표시 설정/);
   assert.match(screen, /onClick=\{openFullScreenSettings\}/);
   assert.doesNotMatch(screen, /useEffect\([\s\S]{0,400}openFullScreenIntentSettings/);

@@ -418,6 +418,9 @@
   갖는다. 토글 스위치는 트랙이 흔들려 보이지 않게 노브만 `scale(0.9)`로 누르고, 문장 안 글자 버튼은 크기를 바꾸지 않고
   opacity로만 알린다. 보이지 않는 닫기용 스크림은 의도적으로 제외한다(무엇이 눌렸는지 오해를 준다).
   전역 `prefers-reduced-motion` 규칙이 새 전환 시간도 함께 줄인다. 회귀=`tests/pressFeedbackCoverage.test.mjs`.
+- ★**설정 알림 시간 칩·설명 축약(2026-08-17)**: 일정 사전 알림 5칸(1시간·30·15·10·5분)은 한 줄 고정이다.
+  칩 문구는 짧은 기간("1시간"/"30분")이고 `aria-label`만 "30분 전"을 쓴다. 설정 화면 설명은 사실을 유지한 채
+  한 줄로 읽히게 줄인다. 회귀=`tests/notificationSettingsReliability.test.ts`.
 - ★**색상 대비 계약(2026-07-30 디자인 검수)**: 파스텔 팔레트 위 **흰 글자는 어떤 테마색에서도 AA 를 만족할 수 없다**
   (`--hy-accent` 1.4~2.8:1, `--hy-accent-deep` 3.34:1). WCAG 큰 글씨 완화(3:1)는 굵은 글씨라도 **18.66px 이상**에만
   적용되므로 18px/700 버튼에는 4.5:1 이 그대로 걸린다. 그래서 3단 체계를 쓴다:
@@ -566,9 +569,12 @@
   ⑤내 색깔(accent)은 서버 스키마에 컬럼이 없어 `localStorage` 가족+아이 키에만 저장한다. 부모·선생님 세션은 rose 고정.
   ⑥아이 AI 남은 횟수는 `useAiCreditPublicStatus` 정본이다.
   ★아이 AI 친구(2026-08-17): 아이 셸·푸시 화면에 3D 감정 FAB(`ChildAiFab`)가 항상 대기한다. SOS·채팅·설정 화면에서는 숨긴다.
+  FAB와 채팅 헤더·말풍선 아바타는 같은 `mascot-status` 혜니를 쓰고, 버튼에 `--bg-card` 원판을 깔지 않는다.
   표정 정본=`transform/childAiEmotion.ts`. 아이는 일정 추가·준비물/숙제 추가·내 색깔 변경을 시킬 수 있고,
   일정 삭제와 위치/알림/안전 설정은 부모만 가능하다. 음성은 `captureSpeech`+`speakChildAiReply` 이며
   전송은 `POST /api/ai/child-chat` 한 경로라 크레딧 차감이 유지된다.
+  일정 추가/조회/수정 안내는 Luna 없이 planner+도구만 쓴다. "만들어/넣어/잡아"와 `N월 N일`도 추가 의도로 잡고,
+  부족한 칸은 "언제, 몇 시에, 무슨 일정인지"로 이어서 받으며 OpenAI 502(`생각이 잘 안 나`)로 대화를 끊지 않는다.
   회귀=`tests/childAiEmotion.test.ts`·`tests/childAiCompanionWiring.test.mjs`·Worker `tests/aiChildHelpPolicy.test.mjs`.
   `/api/ai/credits/balance` 는 부모 전용이라 아이 화면에서 호출하면 403.
   ⑦하단 독(`app/ChildDock.tsx`)의 SOS 는 화면 이동만 하고, 실제 발사는 SOS 화면에서 3초 홀드해야 한다(오발사 방지).

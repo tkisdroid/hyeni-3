@@ -53,5 +53,5 @@ test("아이 설정 화면은 아이에게 오지 않는 위치 토글을 보여
     safetyGroup.indexOf(") : ("),
   );
   assert.doesNotMatch(childBranch, /SAFETY_TOGGLES/);
-  assert.match(childBranch, /도착·출발 같은 일상 소식은 부모님께만 가고/);
+  assert.match(childBranch, /도착·출발은 부모님께만 가고/);
 });

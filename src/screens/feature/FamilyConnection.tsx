@@ -224,7 +224,7 @@ export function FamilyConnection() {
                   </span>
                   <span className="fc-invite__main">
                     <span className="fc-invite__title">공동 보호자 초대하기</span>
-                    <span className="fc-invite__sub">연결 코드를 공유해 배우자를 연결해요</span>
+                    <span className="fc-invite__sub">연결 코드로 배우자를 초대해요</span>
                   </span>
                   <ChevronRight size={20} strokeWidth={2.4} color="var(--fg-disabled)" />
                 </button>

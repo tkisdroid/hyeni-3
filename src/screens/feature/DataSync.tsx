@@ -100,7 +100,7 @@ export function DataSync() {
         screenTitle="데이터 · 동기화"
         state="loading"
         heading="가족 데이터를 확인하고 있어요"
-        description="내보낼 계정과 가족 범위를 불러오는 중이에요."
+        description="계정과 가족 범위를 불러오고 있어요."
         onBack={() => navigate(-1)}
       />
     );
@@ -112,7 +112,7 @@ export function DataSync() {
         screenTitle="데이터 · 동기화"
         state="error"
         heading="동기화 정보를 불러오지 못했어요"
-        description="불완전한 파일을 만들지 않도록 내보내기를 잠시 닫았어요."
+        description="잘못된 파일을 만들지 않으려고 내보내기를 닫았어요."
         onBack={() => navigate(-1)}
         onRetry={() => void retryDataSync()}
         retrying={dataSyncRefetching}
@@ -190,7 +190,7 @@ export function DataSync() {
           <div className="ds-card__main">
             <div className="ds-card__title">내 데이터 다운로드</div>
             <div className="ds-card__desc">
-              일정·장소·위험구역·학원 정보를 JSON 파일로 저장해요.
+              일정·장소·학원 정보를 파일로 저장해요.
             </div>
           </div>
           <button
@@ -202,7 +202,7 @@ export function DataSync() {
             {exportData.isPending ? "모으는 중…" : "내보내기"}
           </button>
         </div>
-        <div className="ds-note hy-explain">위치 이력과 대화 내용은 용량이 커서 이 파일에는 포함되지 않아요.</div>
+        <div className="ds-note hy-explain">위치 이력과 대화는 이 파일에 들어가지 않아요.</div>
 
         {/* 캐시 비우기 */}
         <div className="ds-card">
@@ -212,7 +212,7 @@ export function DataSync() {
           <div className="ds-card__main">
             <div className="ds-card__title">임시 데이터 비우기</div>
             <div className="ds-card__desc">
-              저장된 캐시를 지워요. 계정·가족 데이터는 서버에 그대로 남아요.
+              임시 저장만 지워요. 계정·가족 데이터는 그대로예요.
             </div>
           </div>
           <button type="button" className="ds-card__cta ds-card__cta--ghost hy-press" onClick={clearCache}>

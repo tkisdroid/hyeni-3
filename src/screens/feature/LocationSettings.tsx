@@ -57,9 +57,9 @@ const INTERVALS: { id: UpdateInterval; label: string }[] = [
 ];
 
 const INTERVAL_DESC: Record<UpdateInterval, string> = {
-  live: "위치를 자주 보내 최신 상태를 빠르게 보여주지만 배터리를 더 사용해요.",
-  balanced: "이동할 때는 자주, 멈춰 있을 때는 드물게 보내요.",
-  saver: "배터리를 아끼는 대신 위치가 조금 늦게 갱신될 수 있어요.",
+  live: "자주 보내 최신 위치를 보여줘요. 배터리는 더 써요.",
+  balanced: "이동 중엔 자주, 멈춰 있을 땐 드물게 보내요.",
+  saver: "배터리를 아끼고, 위치는 조금 늦게 와요.",
 };
 
 function restoredLiveIntervalIntent(state: LocationSettingsRouteState | null): boolean {
@@ -283,7 +283,7 @@ export function LocationSettings() {
         screenTitle="위치 · 백그라운드"
         state="loading"
         heading="위치 설정을 확인하고 있어요"
-        description="아이 기기에 적용할 전송 주기와 이용 범위를 불러오는 중이에요."
+        description="전송 주기와 이용 범위를 불러오고 있어요."
         onBack={() => navigate(-1)}
       />
     );
@@ -295,7 +295,7 @@ export function LocationSettings() {
         screenTitle="위치 · 백그라운드"
         state="error"
         heading="위치 설정을 확인하지 못했어요"
-        description="기기에 남은 값이 서버 설정을 덮어쓰지 않도록 변경 기능을 닫았어요."
+        description="서버 설정을 지키려고 변경을 잠시 닫았어요."
         onBack={() => navigate(-1)}
         onRetry={() => void retryLocationSettings()}
         retrying={locationSettingsRefetching}
@@ -309,7 +309,7 @@ export function LocationSettings() {
         screenTitle="위치 · 백그라운드"
         state="empty"
         heading="연결된 가족이 없어요"
-        description="가족을 연결한 뒤 아이 기기에 적용할 위치 설정을 관리할 수 있어요."
+        description="가족을 연결한 뒤 위치 설정을 관리할 수 있어요."
         onBack={() => navigate(-1)}
         onRetry={() => navigate("/parent/family")}
         retryLabel="가족 연결 확인"
@@ -406,7 +406,7 @@ export function LocationSettings() {
             </span>
             <span className="lset-row__main">
               <span className="lset-row__title">실시간 모드 저장하기</span>
-              <span className="lset-row__sub">결제 전 선택을 복원했어요. 아직 저장되지 않았어요.</span>
+              <span className="lset-row__sub">결제 전 선택이에요. 아직 저장되지 않았어요.</span>
             </span>
             <ChevronRight size={18} strokeWidth={2.2} color="var(--fg-tertiary)" />
           </button>
@@ -455,8 +455,8 @@ export function LocationSettings() {
         {/* 정직 안내 — 설명은 짧게 두 줄까지만(사실은 유지, 문장만 줄임). */}
         <p className="lset-note hy-explain">
           <span className="hy-explain__lines">
-            <span className="hy-explain__line">저장한 설정은 {childName}의 안드로이드 앱이 주기적으로 확인해 반영해요.</span>
-            <span className="hy-explain__line">아이 기기의 권한·배터리 예외는 아이 앱에서 직접 허용해야 해요.</span>
+            <span className="hy-explain__line">{childName} 앱이 주기적으로 확인해서 반영해요.</span>
+            <span className="hy-explain__line">권한·배터리 예외는 아이 기기에서 직접 허용해야 해요.</span>
           </span>
         </p>
       </div>

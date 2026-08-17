@@ -129,13 +129,13 @@ test("다문장 설명 다섯 곳은 조건과 문구를 유지한 채 문장별
   const socialLinks = explanationBlock(
     "src/screens/parent/SocialLinks.tsx",
     "pa-note hy-explain",
-    "계정을 바꾸려면 새 계정을 먼저 연결한 뒤 예전 계정을 해제하세요.",
+    "계정을 바꾸려면 새 계정을 먼저 연결하세요.",
   );
   assert.match(socialLinks.block, /\{native\s*\?\s*canUnlink\s*\?/);
   assertSentenceLines(socialLinks.block, [
-    "계정을 바꾸려면 새 계정을 먼저 연결한 뒤 예전 계정을 해제하세요.",
+    "계정을 바꾸려면 새 계정을 먼저 연결하세요.",
     "해제해도 가족·일정 데이터는 그대로예요.",
-    "지금은 이 소셜 계정이 유일한 로그인 수단이라 해제할 수 없어요.",
+    "지금이 유일한 로그인 수단이라 해제할 수 없어요.",
     "다른 로그인 방법을 먼저 추가해 주세요.",
     "소셜 계정 연결은 안드로이드 앱에서 할 수 있어요.",
   ], 3);
@@ -157,10 +157,10 @@ test("다문장 설명 다섯 곳은 조건과 문구를 유지한 채 문장별
   const aiCredit = explanationBlock(
     "src/screens/feature/AiCredit.tsx",
     "ac-note hy-explain",
-    "AI가 아이의 일정·안전 대화를 도울 때 크레딧 1회가 사용돼요.",
+    "일정·안전 대화에 크레딧 1회가 사용돼요.",
   );
   assertSentenceLines(aiCredit.block, [
-    "AI가 아이의 일정·안전 대화를 도울 때 크레딧 1회가 사용돼요.",
+    "일정·안전 대화에 크레딧 1회가 사용돼요.",
     "필요할 때 충전해 주세요.",
   ]);
 
@@ -190,7 +190,7 @@ test("필수 설명 상자는 공통 스타일을 사용하고 긴 안전 문구
 
   assert.match(
     notification,
-    /className="hy-explain__lines"[\s\S]*?className="hy-explain__line">위험·SOS·미도착 알림은 항상 전달 대상으로 처리돼요\.<\/span>[\s\S]*?className="hy-explain__line">위 토글은 부모가 받는 일반 위치 소식에만 적용돼요\.<\/span>/,
+    /className="hy-explain__lines"[\s\S]*?className="hy-explain__line">위험·SOS·미도착은 항상 알려드려요\.<\/span>[\s\S]*?className="hy-explain__line">위 설정은 부모의 일반 위치 소식에만 적용돼요\.<\/span>/,
   );
   assert.match(
     locationStatus,

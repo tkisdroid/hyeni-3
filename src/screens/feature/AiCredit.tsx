@@ -789,7 +789,7 @@ export function AiCredit() {
       <div className="hy-content ac-content">
         {aiCreditDataEmpty && (
           <div className="sqs-inline-empty">
-            아직 크레딧 또는 AI 친구 설정 기록이 없어요. 안전한 기본 설정으로 시작할 수 있어요.
+            아직 기록이 없어요. 기본 설정으로 시작할 수 있어요.
           </div>
         )}
         {/* 잔액 히어로 */}
@@ -813,7 +813,7 @@ export function AiCredit() {
         <div className="ac-note hy-explain">
           <span className="ac-note__emoji"><MessageCircle size={15} strokeWidth={2.2} /></span>
             <span className="hy-explain__lines">
-              <span className="hy-explain__line">AI가 아이의 일정·안전 대화를 도울 때 크레딧 1회가 사용돼요.</span>
+              <span className="hy-explain__line">일정·안전 대화에 크레딧 1회가 사용돼요.</span>
               <span className="hy-explain__line">필요할 때 충전해 주세요.</span>
           </span>
         </div>
@@ -828,7 +828,7 @@ export function AiCredit() {
           )}
           {isWebBillingChannel && webCatalogQuery.isError && (
             <div className="sqs-inline-empty" role="status">
-              확정 가격을 확인하지 못해 결제 팩을 잠시 숨겼어요. 크레딧 잔액과 무료 기능은 그대로 이용할 수 있어요.
+              가격을 확인하지 못해 결제 팩을 잠시 숨겼어요. 잔액과 무료 기능은 그대로예요.
             </div>
           )}
           {isWebBillingChannel

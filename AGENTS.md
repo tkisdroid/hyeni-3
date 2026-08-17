@@ -514,10 +514,13 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   ⑤내 색깔(accent)은 서버 스키마에 컬럼이 없어 `localStorage` 가족+아이 키에만 저장한다. 부모·선생님 세션은 rose 고정.
   ⑥아이 AI 남은 횟수는 `useAiCreditPublicStatus` 정본이다. `/api/ai/credits/balance` 는 부모 전용이라 아이 화면에서 호출하면 403.
   ★아이 AI 친구(2026-08-17): 아이 셸·푸시 화면에 3D 감정 FAB(`ChildAiFab`)가 항상 대기한다. SOS·채팅·설정 화면에서는 숨긴다.
+  FAB와 채팅 헤더·말풍선 아바타는 같은 `mascot-status` 혜니를 쓰고, 버튼에 `--bg-card` 원판을 깔지 않는다.
   표정 정본=`transform/childAiEmotion.ts`, 에셋=`public/assets/mascot-status/`. 아이는 일정 추가·준비물/숙제 추가·내 색깔 변경을
   시킬 수 있고, 일정 삭제와 위치/알림/안전 설정은 부모만 가능하다. 음성은 `captureSpeech`+`speakChildAiReply` 이며
-  전송은 기존 `POST /api/ai/child-chat` 한 경로라 크레딧 차감이 유지된다. 회귀=`tests/childAiEmotion.test.ts`·
-  `tests/childAiCompanionWiring.test.mjs`·Worker `tests/aiChildHelpPolicy.test.mjs`.
+  전송은 기존 `POST /api/ai/child-chat` 한 경로라 크레딧 차감이 유지된다.
+  일정 추가/조회/수정 안내는 Luna 없이 planner+도구만 쓴다. "만들어/넣어/잡아"와 `N월 N일`도 추가 의도로 잡고,
+  부족한 칸은 "언제, 몇 시에, 무슨 일정인지"로 이어서 받으며 OpenAI 502(`생각이 잘 안 나`)로 대화를 끊지 않는다.
+  회귀=`tests/childAiEmotion.test.ts`·`tests/childAiCompanionWiring.test.mjs`·Worker `tests/aiChildHelpPolicy.test.mjs`.
   ⑦하단 독(`app/ChildDock.tsx`)의 SOS 는 화면 이동만 하고, 실제 발사는 SOS 화면에서 3초 홀드해야 한다(오발사 방지).
   ⑧Jua 폰트는 Google 서브셋 87개를 `public/fonts/jua/` 에 번들(OFL). 오프라인·네이티브에서 원격 폰트를 못 받기 때문이며,
   PWA precache 에서는 제외한다(`globIgnores`). 지도 배경 4종은 `assets/06-backgrounds/` 원본을 webp 로 변환해 `public/assets/bg/`.
@@ -575,6 +578,9 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   `--cat-*-text/-soft` 토큰이 정본이며 중간 톤을 soft 위 글자색으로 쓰지 않는다. 가드=`tests/colorContrastAndRadius.test.mjs`.
 - ★**모서리 반경은 8/12/16/20/24px·pill 만**(2026-07-30 · 161건 정규화). 예외는 UI 표면이 아닌 것뿐 —
   장식(색종이·블롭·히어로 orb), 폰 베젤 `.hy-app`(44px), 인라인 링크 `:focus-visible` 링(2px). 같은 가드가 강제한다.
+- ★**설정 알림 시간 칩·설명 축약(2026-08-17)**: 일정 사전 알림 5칸(1시간·30·15·10·5분)은 한 줄 고정이다.
+  칩 문구는 짧은 기간("1시간"/"30분")이고 `aria-label`만 "30분 전"을 쓴다. 설정 화면 설명은 사실을 유지한 채
+  한 줄로 읽히게 줄인다. 회귀=`tests/notificationSettingsReliability.test.ts`.
 - UI 요소 아이콘은 유니코드 이모지 대신 **3D 에셋(public/assets)** 또는 lucide 라인 아이콘. 색 칩 위에는 알파 채널 있는 에셋만
   (`status/*.webp`는 흰 배경 불투명 — 사용 금지 목록. `ui/mic-lavender.webp`는 2026-07-14 투명본으로 교체돼 사용 가능).
   일정 아이콘은 `resolveEventCharacter`(제목→cat/*.webp).

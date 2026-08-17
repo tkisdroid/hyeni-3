@@ -209,7 +209,7 @@ export function ChildSettings() {
         screenTitle="내 정보"
         state="loading"
         heading="내 정보와 알림 설정을 확인하고 있어"
-        description="가족 연결과 이 기기의 일정 알림 설정을 불러오는 중이야."
+        description="가족과 알림 설정을 불러오는 중이야."
         onBack={() => navigate(-1)}
       />
     );
@@ -221,7 +221,7 @@ export function ChildSettings() {
         screenTitle="내 정보"
         state="error"
         heading="내 설정을 불러오지 못했어"
-        description="다른 사람 설정을 바꾸지 않도록 잠깐 닫았어. 다시 확인해 줘."
+        description="다른 사람 설정을 건드리지 않게 잠깐 닫았어."
         onBack={() => navigate(-1)}
         onRetry={() => void retryChildSettings()}
         retrying={childSettingsRefetching}
@@ -257,7 +257,7 @@ export function ChildSettings() {
       <div className="ks-content">
         {childSettingsDataEmpty && (
           <div className="sqs-inline-empty">
-            아직 저장한 알림 설정이 없어. 안전한 기본값으로 보여주고 있어.
+            저장한 알림 설정이 없어. 기본값으로 보여주고 있어.
           </div>
         )}
         {/* 히어로 */}
@@ -325,7 +325,7 @@ export function ChildSettings() {
             <span className="ks-row__main">
               <span className="ks-row__title">알림</span>
               <span className="ks-row__sub">
-                내 일정 알림 설정으로 저장돼
+                내 일정 알림을 켜고 끌 수 있어
               </span>
             </span>
             <span className={notifOn ? "ks-toggle on" : "ks-toggle"} aria-hidden="true">
@@ -401,21 +401,21 @@ export function ChildSettings() {
                 <span className="ks-help-item__emoji"><MapPin size={18} strokeWidth={2.2} /></span>
                 <span className="hy-explain__lines">
                   <b className="hy-explain__line">위치 알려주기</b>
-                  <small className="hy-explain__line">부모님이 네가 안전한지 확인하려고 켜 둔 거야.</small>
+                  <small className="hy-explain__line">부모님이 네가 안전한지 보려고 켜 둔 거야.</small>
                 </span>
               </div>
               <div className="ks-help-item hy-explain">
                 <span className="ks-help-item__emoji"><Bell size={18} strokeWidth={2.2} /></span>
                 <span className="hy-explain__lines">
                   <b className="hy-explain__line">알림</b>
-                  <small className="hy-explain__line">내 일정 알림을 켜고 끌 수 있어. 중요한 안전 알림은 부모님께 계속 가.</small>
+                  <small className="hy-explain__line">일정 알림을 켜고 끌 수 있어. 안전 알림은 부모님께 계속 가.</small>
                 </span>
               </div>
               <div className="ks-help-item hy-explain">
                 <span className="ks-help-item__emoji"><Mail size={18} strokeWidth={2.2} /></span>
                 <span className="hy-explain__lines">
                   <b className="hy-explain__line">부모님한테 부탁하기</b>
-                  <small className="hy-explain__line">캐릭터나 소리를 바꾸고 싶을 때 부모님께 요청을 보낼 수 있어.</small>
+                  <small className="hy-explain__line">캐릭터나 소리를 바꾸고 싶을 때 부모님께 부탁할 수 있어.</small>
                 </span>
               </div>
             </div>

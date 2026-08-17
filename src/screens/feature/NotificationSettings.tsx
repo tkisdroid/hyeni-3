@@ -77,7 +77,7 @@ const SCHEDULE_TOGGLE: ToggleDef = {
   Icon: CalendarDays,
   tone: "rose",
   label: "일정 알림",
-  sub: "일정 시작 전 미리 알려드려요",
+  sub: "시작 전에 알려드려요",
 };
 
 const SAFETY_TOGGLES: ToggleDef[] = [
@@ -86,23 +86,28 @@ const SAFETY_TOGGLES: ToggleDef[] = [
     Icon: MapPin,
     tone: "blue",
     label: "일반 위치 알림",
-    sub: "도착·이탈 같은 위치 소식을 알려드려요",
+    sub: "도착·이탈을 알려드려요",
   },
   {
     key: "registeredPlaceEnabled",
     Icon: School,
     tone: "mint",
     label: "등록 장소 알림",
-    sub: "저장한 장소에 출입할 때 알려드려요",
+    sub: "저장 장소 출입을 알려드려요",
   },
   {
     key: "playdateEnabled",
     Icon: ToyBrick,
     tone: "gold",
     label: "친구·놀이 알림",
-    sub: "놀이 약속 소식이 오면 알려드려요",
+    sub: "놀이 약속 소식을 알려드려요",
   },
 ];
+
+/** 한 줄 칩용 짧은 기간. "전"은 섹션 제목·aria-label에 둔다. */
+function notifAdvanceChipLabel(minutes: number): string {
+  return minutes % 60 === 0 ? `${minutes / 60}시간` : `${minutes}분`;
+}
 
 function createQuietHoursDraft(targetUserId: string): NotificationQuietHoursTargetDraft {
   return {
@@ -410,7 +415,7 @@ export function NotificationSettings() {
             return;
           }
           if (result.targetUserId !== submittedQuietDraft.targetUserId) {
-            setQuietSaveMessage("저장 대상을 확인하지 못해 반영하지 않았어요.");
+            setQuietSaveMessage("저장 대상을 확인하지 못했어요.");
             return;
           }
           setQuietDraft({
@@ -425,7 +430,7 @@ export function NotificationSettings() {
           if (!isSameNotificationQuietHoursTargetDraft(quietDraftRef.current, submittedQuietDraft)) {
             return;
           }
-          setQuietSaveMessage("조용한 시간을 저장하지 못했어요. 다시 시도해 주세요.");
+          setQuietSaveMessage("조용한 시간을 저장하지 못했어요.");
         },
       },
     );
@@ -457,12 +462,12 @@ export function NotificationSettings() {
   // 초안 즉시 반영 + 서버 upsert. 실패 시 정직하게 안내(초안은 유지 → 재시도 가능).
   const persist = (next: NotifSettings) => {
     if (!notificationDataReady || !userId || hydratedUserId !== userId) {
-      show("현재 계정의 설정을 불러온 뒤 다시 시도해 주세요");
+      show("설정을 불러온 뒤 다시 시도해 주세요");
       return;
     }
     setDraft(next);
     save.mutate(next, {
-      onError: () => show("설정 저장에 실패했어요. 잠시 후 다시 시도해 주세요"),
+      onError: () => show("설정을 저장하지 못했어요. 다시 시도해 주세요"),
     });
   };
 
@@ -564,14 +569,14 @@ export function NotificationSettings() {
       : webDelivery.title;
   const deliveryDetail = nativePlatform
     ? delivery === null
-      ? "OS 알림 권한과 채널을 확인하고 있어요"
+      ? "알림 권한을 확인하고 있어요"
       : !delivery.supported
-        ? "이 환경에서는 시스템 알림 상태를 확인할 수 없어요"
+        ? "이 환경에서는 알림 상태를 확인할 수 없어요"
         : delivery.granted
-          ? "OS 알림 권한과 필수 채널이 켜져 있어요"
-          : "OS 알림 권한 또는 필수 채널이 꺼져 있어요"
+          ? "알림 권한과 필수 채널이 켜져 있어요"
+          : "알림 권한 또는 필수 채널이 꺼져 있어요"
     : webPushLoadError
-      ? "서버 설정과 이 브라우저의 구독 상태를 다시 확인해 주세요."
+      ? "서버 설정과 브라우저 구독을 다시 확인해 주세요."
       : webDelivery.detail;
 
   if (notificationQueryState === "loading") {
@@ -580,7 +585,7 @@ export function NotificationSettings() {
         screenTitle="알림 설정"
         state="loading"
         heading="알림 설정을 불러오고 있어요"
-        description="현재 계정에 저장된 일정과 위치 알림 설정을 확인하는 중이에요."
+        description="저장된 알림 설정을 확인하고 있어요."
         onBack={() => navigate(-1)}
       />
     );
@@ -592,7 +597,7 @@ export function NotificationSettings() {
         screenTitle="알림 설정"
         state="error"
         heading="알림 설정을 불러오지 못했어요"
-        description="확인되지 않은 기본값이 기존 설정을 덮어쓰지 않도록 저장 기능을 닫았어요."
+        description="기존 설정을 지키려고 저장을 잠시 닫았어요."
         onBack={() => navigate(-1)}
         onRetry={() => void retryNotificationSettings()}
         retrying={settingsQuery.isFetching}
@@ -617,7 +622,7 @@ export function NotificationSettings() {
       <div className="nst-body">
         {notificationDataEmpty && (
           <div className="sqs-inline-empty">
-            아직 저장한 알림 설정이 없어 안전한 기본값으로 보여드려요. 변경하면 현재 계정에 저장돼요.
+            저장한 설정이 없어 기본값으로 보여드려요.
           </div>
         )}
         <>
@@ -636,15 +641,17 @@ export function NotificationSettings() {
                     <div className="nst-minutes__row">
                       {NOTIF_MINUTE_OPTIONS.map((m) => {
                         const on = draft.minutesBefore.includes(m);
+                        const duration = notifAdvanceChipLabel(m);
                         return (
                           <button
                             key={m}
                             type="button"
                             className={`nst-minute hy-press${on ? " nst-minute--on" : ""}`}
                             aria-pressed={on}
+                            aria-label={`${duration} 전`}
                             onClick={() => toggleMinute(m)}
                           >
-                            {m === 60 ? "1시간 전" : `${m}분 전`}
+                            {duration}
                           </button>
                         );
                       })}
@@ -662,8 +669,8 @@ export function NotificationSettings() {
                 <div className="nst-safety-note hy-explain">
                   <ShieldCheck size={17} strokeWidth={2.2} aria-hidden="true" />
                   <span className="hy-explain__lines">
-                    <span className="hy-explain__line">위험한 곳에 들어가거나 긴급할 때는 꼭 알려줄게.</span>
-                    <span className="hy-explain__line">도착·출발 같은 일상 소식은 부모님께만 가고 너한테는 안 와.</span>
+                    <span className="hy-explain__line">위험하거나 긴급할 때는 꼭 알려줄게.</span>
+                    <span className="hy-explain__line">도착·출발은 부모님께만 가고 너한테는 안 와.</span>
                   </span>
                 </div>
               ) : (
@@ -676,8 +683,8 @@ export function NotificationSettings() {
                   <div className="nst-safety-note hy-explain">
                     <ShieldCheck size={17} strokeWidth={2.2} aria-hidden="true" />
                     <span className="hy-explain__lines">
-                      <span className="hy-explain__line">위험·SOS·미도착 알림은 항상 전달 대상으로 처리돼요.</span>
-                      <span className="hy-explain__line">위 토글은 부모가 받는 일반 위치 소식에만 적용돼요.</span>
+                      <span className="hy-explain__line">위험·SOS·미도착은 항상 알려드려요.</span>
+                      <span className="hy-explain__line">위 설정은 부모의 일반 위치 소식에만 적용돼요.</span>
                     </span>
                   </div>
                 </>
@@ -690,12 +697,12 @@ export function NotificationSettings() {
                 {quietGroupLoading ? (
                   <div className="nst-list nst-quiet__state" aria-busy="true">
                     <strong>조용한 시간 설정을 불러오고 있어요</strong>
-                    <span>가족별 알림 시간을 확인하는 중이에요.</span>
+                    <span>가족 알림 시간을 확인하고 있어요.</span>
                   </div>
                 ) : quietGroupError ? (
                   <div className="nst-list nst-quiet__state" role="alert">
                     <strong>조용한 시간 설정을 불러오지 못했어요</strong>
-                    <span>기존 알림 유형과 이 기기의 알림 설정은 계속 이용할 수 있어요.</span>
+                    <span>다른 알림 설정은 그대로 쓸 수 있어요.</span>
                     <button
                       type="button"
                       className="nst-retry nst-quiet__retry hy-press"
@@ -708,9 +715,9 @@ export function NotificationSettings() {
                 ) : quietDataReady ? (
                   <div className="nst-list nst-quiet__card">
                     <div className="nst-quiet__copy hy-explain">
-                      <p>조용한 시간에는 일정·메시지·일반 도착·출발 알림을 보내지 않아요.</p>
-                      <p>SOS·긴급·위험구역 알림은 이 시간에도 항상 전달돼요.</p>
-                      <p>알림 소리와 진동은 휴대폰 또는 브라우저 설정에서 관리해 주세요.</p>
+                      <p>이 시간에는 일정·메시지·일반 이동 알림을 쉬어요.</p>
+                      <p>SOS·긴급·위험구역은 이 시간에도 항상 와요.</p>
+                      <p>소리·진동은 휴대폰이나 브라우저에서 바꿔 주세요.</p>
                     </div>
 
                     <div className="nst-quiet__targets" role="group" aria-label="알림 시간 설정 대상">
@@ -766,7 +773,7 @@ export function NotificationSettings() {
                       >
                         <span>
                           <b>매일 조용한 시간 사용</b>
-                          <small>시작 시간부터 끝 시간 직전까지 적용돼요.</small>
+                          <small>시작부터 끝 직전까지 적용돼요.</small>
                         </span>
                         <span className="nst-switch" data-on={quietDraft.enabled} aria-hidden="true">
                           <span className="nst-switch__knob" />
@@ -864,12 +871,12 @@ export function NotificationSettings() {
                       <span className="nst-capability__title">잠금 화면 전체 표시</span>
                       <span className="nst-capability__detail">
                         {delivery === null
-                          ? "전체 화면 긴급 알림 상태를 확인하고 있어요"
+                          ? "전체 화면 알림 상태를 확인하고 있어요"
                           : delivery.fullScreenIntentAllowed === true
-                            ? "긴급 상황에서 잠금 화면 전체로 표시할 수 있어요"
+                            ? "긴급 알림을 잠금 화면 전체로 보여줄 수 있어요"
                             : delivery.fullScreenIntentAllowed === false
-                              ? "전체 화면이 꺼져 있어 긴급 알림은 화면 상단 팝업으로만 표시돼요"
-                              : "이 기기에서는 전체 화면 긴급 알림 상태를 확인하지 못했어요"}
+                              ? "전체 화면이 꺼져 있어 긴급 알림은 상단 팝업만 표시돼요"
+                              : "이 기기에서는 전체 화면 상태를 확인하지 못했어요"}
                       </span>
                     </div>
                     {delivery?.fullScreenIntentAllowed !== true && (
@@ -892,7 +899,7 @@ export function NotificationSettings() {
                         <span className="nst-capability__detail">
                           {delivery?.remoteListenChannelEnabled === true
                             ? "부모님의 요청을 알림으로 확인할 수 있어"
-                            : "요청 알림 채널이 꺼져 있으면 주변 소리 요청을 놓칠 수 있어"}
+                            : "알림 채널이 꺼져 있으면 요청을 놓칠 수 있어"}
                         </span>
                       </div>
                     )}
@@ -929,7 +936,7 @@ export function NotificationSettings() {
                 ) : null}
               </div>
               <div className="nst-note hy-explain">
-                알림 소리와 진동은 휴대폰 또는 브라우저 설정에서 관리해 주세요.
+                소리·진동은 휴대폰이나 브라우저에서 바꿔 주세요.
                 <button type="button" className="nst-refresh" onClick={() => void refreshDelivery()}>
                   상태 다시 확인
                 </button>

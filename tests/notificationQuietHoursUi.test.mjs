@@ -67,9 +67,9 @@ test("quiet cache hydration은 마지막 서버 source와 비교해 사용자 �
 test("조용한 시간 설명은 억제 범위와 안전 예외 및 기기 설정 경계를 분리한다", () => {
   const parent = source("src/screens/feature/NotificationSettings.tsx");
 
-  assert.match(parent, /조용한 시간에는 일정·메시지·일반 도착·출발 알림을 보내지 않아요\./);
-  assert.match(parent, /SOS·긴급·위험구역 알림은 이 시간에도 항상 전달돼요\./);
-  assert.match(parent, /알림 소리와 진동은 휴대폰 또는 브라우저 설정에서 관리해 주세요\./);
+  assert.match(parent, /이 시간에는 일정·메시지·일반 이동 알림을 쉬어요\./);
+  assert.match(parent, /SOS·긴급·위험구역은 이 시간에도 항상 와요\./);
+  assert.match(parent, /소리·진동은 휴대폰이나 브라우저에서 바꿔 주세요\./);
   assert.doesNotMatch(parent, /알림 소리·진동과 방해금지는/);
 });
 

@@ -191,7 +191,7 @@ export function FriendPlay() {
             <div className="fp-hero__sub">
               아이 기기에서 친구놀이 요청을 보낼 수 있어요.
               <br />
-              허용 조건을 먼저 정해 주세요.
+              허용 조건을 정해 주세요.
             </div>
           </div>
 
@@ -210,7 +210,7 @@ export function FriendPlay() {
               <span className="fp-setting__sub">
                 {playdateEnabled
                   ? "안전한 곳에서 근처 친구에게 요청해요"
-                  : "아이 화면에서 친구찾기와 요청 보내기가 꺼져요"}
+                  : "아이 화면의 친구찾기와 요청이 꺼져요"}
               </span>
             </span>
             <span className="fp-setting__switch" data-on={playdateEnabled}>
@@ -222,11 +222,11 @@ export function FriendPlay() {
             <div className="fp-parent-card__title">허용 기준</div>
             <div className="fp-parent-rule">
               <span>1</span>
-              양쪽 가족 모두 친구놀이를 켠 경우에만 보여요.
+              양쪽 가족이 모두 켠 경우에만 보여요.
             </div>
             <div className="fp-parent-rule">
               <span>2</span>
-              아이가 위험구역 밖에 있고, 현재 위치가 확인될 때만 요청할 수 있어요.
+              위험구역 밖이고 위치가 확인될 때만 요청할 수 있어요.
             </div>
             <div className="fp-parent-rule">
               <span>3</span>

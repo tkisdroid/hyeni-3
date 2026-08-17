@@ -186,7 +186,7 @@
 
 /* ── 사전 알림 시간(칩 멀티 선택) ───────────────────────────────────────── */
 .nst-minutes {
-  padding: 4px 12px 12px 64px;
+  padding: 4px 8px 12px;
 }
 .nst-minutes__label {
   font-size: var(--type-caption);
@@ -194,12 +194,14 @@
   font-weight: var(--type-caption-weight);
 
   color: var(--fg-tertiary);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
+/* 5칸을 한 줄에 고정한다. 줄바꿈하면 들쭉날쭉해진다. */
 .nst-minutes__row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 6px;
 }
 .nst-minute {
   padding: 8px 12px;
@@ -213,6 +215,21 @@
   --press: 0.94;
 }
 .nst-minute--on {
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+}
+.nst-minutes__row .nst-minute {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 8px 2px;
+  border: 1.5px solid transparent;
+  background: var(--bg-chip-idle);
+  color: var(--fg-tertiary);
+  text-align: center;
+  white-space: nowrap;
+}
+.nst-minutes__row .nst-minute--on {
+  border-color: var(--hy-accent);
   background: var(--hy-accent-soft);
   color: var(--hy-accent-text);
 }

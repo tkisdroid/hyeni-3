@@ -48,7 +48,7 @@ export function webPushDeliveryView(
       canRegisterAccount: false,
       canUnsubscribe: false,
       title: "웹 알림 상태 확인 중",
-      detail: "서버 설정과 이 브라우저의 구독 상태를 확인하고 있어요.",
+      detail: "서버 설정과 브라우저 구독을 확인하고 있어요.",
       configuredLabel: "확인 중",
       permissionLabel: "확인 중",
       subscriptionLabel: "확인 중",
@@ -64,7 +64,7 @@ export function webPushDeliveryView(
       canRegisterAccount: false,
       canUnsubscribe: false,
       title: "iPhone 홈 화면 앱에서 알림을 켜 주세요",
-      detail: "Safari 공유 버튼에서 ‘홈 화면에 추가’한 혜니캘린더를 연 뒤 웹 알림을 켜 주세요.",
+      detail: "Safari 공유 버튼에서 ‘홈 화면에 추가’한 뒤 웹 알림을 켜 주세요.",
       configuredLabel: "확인 안 함",
       permissionLabel: "홈 화면 앱 필요",
       subscriptionLabel: "등록 전",
@@ -90,7 +90,7 @@ export function webPushDeliveryView(
       canRegisterAccount: false,
       canUnsubscribe: false,
       title: "웹 푸시를 사용할 수 없어요",
-      detail: "이 브라우저 또는 현재 설치 상태는 웹 푸시를 지원하지 않아요.",
+      detail: "이 브라우저에서는 웹 푸시를 쓸 수 없어요.",
       configuredLabel: "확인 안 함",
       permissionLabel: "지원 안 됨",
       subscriptionLabel: "지원 안 됨",
@@ -105,7 +105,7 @@ export function webPushDeliveryView(
       canRegisterAccount: false,
       canUnsubscribe: state.subscribed,
       title: "웹 푸시 서버 상태를 확인하지 못했어요",
-      detail: "서버 상태 확인에 실패했지만 남아 있는 이 기기 구독은 끌 수 있어요.",
+      detail: "서버 확인에 실패했어요. 남은 구독은 끌 수 있어요.",
       ...labels,
     };
   }
@@ -117,7 +117,7 @@ export function webPushDeliveryView(
       canRegisterAccount: false,
       canUnsubscribe: state.subscribed,
       title: "웹 푸시 서버 설정이 필요해요",
-      detail: "VAPID 설정이 완료되지 않아 이 기기를 알림 수신 기기로 등록할 수 없어요.",
+      detail: "서버 알림 설정이 아직이라 이 기기를 등록할 수 없어요.",
       ...labels,
     };
   }
@@ -129,7 +129,7 @@ export function webPushDeliveryView(
       canRegisterAccount: false,
       canUnsubscribe: state.subscribed,
       title: "브라우저 알림이 차단됐어요",
-      detail: "주소창의 사이트 설정에서 알림을 허용한 뒤 상태를 다시 확인해 주세요.",
+      detail: "사이트 설정에서 알림을 허용한 뒤 다시 확인해 주세요.",
       ...labels,
     };
   }
@@ -141,7 +141,7 @@ export function webPushDeliveryView(
       canRegisterAccount: true,
       canUnsubscribe: true,
       title: "현재 계정 알림 등록이 필요해요",
-      detail: "브라우저 구독은 남아 있지만 현재 계정의 알림 수신 기기로 등록되지 않았어요.",
+      detail: "브라우저 구독은 있지만 현재 계정에 등록되지 않았어요.",
       ...labels,
     };
   }
@@ -158,7 +158,7 @@ export function webPushDeliveryView(
       canRegisterAccount: true,
       canUnsubscribe: true,
       title: "현재 계정 웹 알림 준비 완료",
-      detail: "브라우저 권한·구독·현재 계정 등록과 알림 연결 정보가 모두 확인됐어요.",
+      detail: "권한·구독·계정 등록이 모두 확인됐어요.",
       ...labels,
     };
   }
@@ -170,7 +170,7 @@ export function webPushDeliveryView(
       canRegisterAccount: true,
       canUnsubscribe: true,
       title: "현재 계정 알림 연결을 확인하지 못했어요",
-      detail: "구독은 남아 있지만 현재 계정 등록 또는 알림 연결 정보 확인이 필요해요.",
+      detail: "구독은 있지만 계정 등록을 다시 확인해야 해요.",
       ...labels,
     };
   }
@@ -183,8 +183,8 @@ export function webPushDeliveryView(
     title: "웹 알림 구독이 필요해요",
     detail:
       state.permission === "granted"
-        ? "브라우저 권한은 허용됐지만 이 계정의 알림 수신 기기로 아직 등록되지 않았어요."
-        : "버튼을 누르면 브라우저 권한을 요청하고 이 계정의 알림 수신 기기로 등록해요.",
+        ? "권한은 허용됐지만 아직 이 계정에 등록되지 않았어요."
+        : "버튼을 누르면 권한을 요청하고 이 계정에 등록해요.",
     ...labels,
   };
 }

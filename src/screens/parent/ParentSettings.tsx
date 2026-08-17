@@ -190,7 +190,7 @@ export function ParentSettings() {
         screenTitle="설정"
         state="loading"
         heading="설정을 불러오고 있어요"
-        description="계정과 구독 상태를 안전하게 확인하는 중이에요."
+        description="계정과 구독 상태를 확인하고 있어요."
         onBack={() => navigate(-1)}
       />
     );
@@ -202,7 +202,7 @@ export function ParentSettings() {
         screenTitle="설정"
         state="error"
         heading="설정을 불러오지 못했어요"
-        description="계정이나 구독 상태를 확인하지 못해 설정 변경을 잠시 닫았어요."
+        description="계정·구독 확인에 실패해 변경을 잠시 닫았어요."
         onBack={() => navigate(-1)}
         onRetry={() => void retryParentSettings()}
         retrying={settingsRefetching}
@@ -376,7 +376,7 @@ export function ParentSettings() {
             <div id={deleteTitleId} className="ps-modal__title">정말 탈퇴하시겠어요?</div>
             <p id={deleteDescriptionId} className="ps-modal__body">
               {account?.isPrimaryParent
-                ? "가족의 일정·위치 이력·대화·아이 계정이 모두 영구 삭제되며 복구할 수 없어요."
+                ? "일정·위치·대화·아이 계정이 모두 삭제되며 복구할 수 없어요."
                 : "내 계정과 이 가족에서의 정보가 삭제돼요."}
             </p>
             <div className="ps-modal__btns">

@@ -183,13 +183,13 @@ export function SocialLinks() {
           ? canUnlink
             ? (
               <span className="hy-explain__lines">
-                <span className="hy-explain__line">계정을 바꾸려면 새 계정을 먼저 연결한 뒤 예전 계정을 해제하세요.</span>
+                <span className="hy-explain__line">계정을 바꾸려면 새 계정을 먼저 연결하세요.</span>
                 <span className="hy-explain__line">해제해도 가족·일정 데이터는 그대로예요.</span>
               </span>
             )
             : (
               <span className="hy-explain__lines">
-                <span className="hy-explain__line">지금은 이 소셜 계정이 유일한 로그인 수단이라 해제할 수 없어요.</span>
+                <span className="hy-explain__line">지금이 유일한 로그인 수단이라 해제할 수 없어요.</span>
                 <span className="hy-explain__line">다른 로그인 방법을 먼저 추가해 주세요.</span>
               </span>
             )
