@@ -34,7 +34,7 @@ test("부모 PWA에서는 아이 Android 권한을 원격 부여할 수 없음�
   assert.match(source, /shared\.permDenied\.limit\.web\.formal/);
   assert.equal(
     koShared["shared.permDenied.limit.web.formal"],
-    "부모 iPhone/PWA에서는 아이 Android의 OS 권한과 배터리 예외를 원격으로 부여할 수 없어요. 아이 기기에서 한 번 허용해 주세요.",
+    "아이 Android 권한은 원격으로 켤 수 없어요. 아이 기기에서 한 번 허용해 주세요.",
   );
 });
 

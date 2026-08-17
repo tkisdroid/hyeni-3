@@ -9,6 +9,7 @@ import {
   Crown,
   DatabaseZap,
   Gift,
+  Languages,
   LogOut,
   MapPin,
   MessageCircleQuestion,
@@ -23,7 +24,8 @@ import { parentAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { ReferralRewardPanel } from "@/components/ReferralRewardPanel";
-import { LanguageSelector } from "@/components/LanguageSelector";
+import { LanguageSelector, languageNativeName } from "@/components/LanguageSelector";
+import { useLocale } from "@/i18n/useLocale";
 import { APP_VERSION } from "@/config/version";
 import { useAuth } from "@/auth/AuthContext";
 import { useEntitlement } from "@/queries/useEntitlement";
@@ -33,6 +35,7 @@ import { openExternal } from "@/lib/native/browser";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { PRIVACY_POLICY_URL } from "@/lib/api/endpoints/account";
 import { getTierLabel, TIERS } from "@/transform/tierPolicy";
+import { REFERRAL_REWARD_CREDITS_DISPLAY } from "@/transform/referralReward";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./ParentSettings.css";
 
@@ -100,6 +103,9 @@ export function ParentSettings() {
   const deleteAccount = useDeleteAccount();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [referralOpen, setReferralOpen] = useState(false);
+  // 언어는 계정 프로필 바로 아래 한 줄이고, 그 줄을 펼쳐서 고른다(2026-08-17 TK 지시).
+  const [languageOpen, setLanguageOpen] = useState(false);
+  const { locale } = useLocale();
   const deleteTitleId = useId();
   const deleteDescriptionId = useId();
   const deleteCancelRef = useRef<HTMLButtonElement>(null);
@@ -266,10 +272,35 @@ export function ParentSettings() {
           </button>
         </div>
 
+        {/* 언어 — 계정 프로필 바로 아래 한 줄. 지금 언어를 보여주고 눌러서 펼친다. */}
+        <div className="ps-list ps-language">
+          <button
+            type="button"
+            className="ps-nav hy-press"
+            aria-expanded={languageOpen}
+            onClick={() => setLanguageOpen((open) => !open)}
+          >
+            <SettingsIcon Icon={Languages} tone="blue" />
+            <span className="ps-nav__label">{intl.formatMessage({ id: "core.language.rowLabel" })}</span>
+            <span className="ps-nav__value" lang={locale}>{languageNativeName(locale)}</span>
+            <ChevronRight
+              className="ps-language__chevron"
+              size={18}
+              strokeWidth={2.2}
+              color="var(--fg-placeholder)"
+              aria-hidden="true"
+            />
+          </button>
+          {languageOpen && (
+            <div className="ps-language__panel">
+              <LanguageSelector tone="formal" compact />
+            </div>
+          )}
+        </div>
+
         {/* 설정 (신규 화면 배선) */}
         <div className="ps-group">
           <div className="ps-group__label">{intl.formatMessage({ id: "parent.parentHome.copy009" })}</div>
-          <LanguageSelector tone="formal" />
           <div className="ps-list">
             {settingsRows.map((r) => (
               <button
@@ -295,7 +326,12 @@ export function ParentSettings() {
                 onClick={() => setReferralOpen(true)}
               >
                 <SettingsIcon Icon={Gift} tone="gold" />
-                <span className="ps-nav__label">{intl.formatMessage({ id: "parent.parentSettings.copy018" })}</span>
+                <span className="ps-nav__label">
+                  {intl.formatMessage(
+                    { id: "parent.parentSettings.copy018" },
+                    { count: REFERRAL_REWARD_CREDITS_DISPLAY },
+                  )}
+                </span>
                 {chevronIcon}
               </button>
             )}

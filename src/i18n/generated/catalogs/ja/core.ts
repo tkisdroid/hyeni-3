@@ -76,6 +76,7 @@ const messages = {
   "core.language.child.label": "言語をえらぶ",
   "core.language.formal.description": "この端末で使用する言語を選択してください。",
   "core.language.formal.label": "言語を選択",
+  "core.language.rowLabel": "言語 (Language)",
   "core.nav.calendar": "カレンダー",
   "core.nav.chat": "チャット",
   "core.nav.classHome": "クラスホーム",

@@ -76,6 +76,7 @@ const messages = {
   "core.language.child.label": "Pilih bahasa",
   "core.language.formal.description": "Silakan pilih bahasa yang ingin Anda gunakan pada perangkat ini.",
   "core.language.formal.label": "Pilih bahasa",
+  "core.language.rowLabel": "Bahasa (Language)",
   "core.nav.calendar": "Kalender",
   "core.nav.chat": "Chat",
   "core.nav.classHome": "Beranda kelas",

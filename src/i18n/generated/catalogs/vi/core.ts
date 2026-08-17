@@ -76,6 +76,7 @@ const messages = {
   "core.language.child.label": "Chọn một ngôn ngữ",
   "core.language.formal.description": "Vui lòng chọn ngôn ngữ bạn muốn sử dụng trên thiết bị này.",
   "core.language.formal.label": "Chọn ngôn ngữ",
+  "core.language.rowLabel": "Ngôn ngữ (Language)",
   "core.nav.calendar": "Lịch",
   "core.nav.chat": "Trò chuyện",
   "core.nav.classHome": "Trang lớp học",

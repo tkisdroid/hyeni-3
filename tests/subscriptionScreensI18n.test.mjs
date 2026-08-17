@@ -53,9 +53,11 @@ test("7일 체험은 현재 가족 자격과 정확한 공급자 7일 offer가 �
 
 test("PWA 웹 결제는 Google Play 결제·복원이 아니라는 한계를 숨기지 않는다", () => {
   assert.match(subscription, /isWebBillingChannel[\s\S]*billing\.subscription\.web\.noGooglePlay/);
-  assert.match(koBilling["billing.subscription.web.noGooglePlay"], /웹\/PWA.*Google Play 결제.*구독 복원/);
-  assert.match(koBilling["billing.subscription.web.noGooglePlay"], /해외 발급.*Android 앱.*Google Play/);
-  assert.match(koBilling["billing.subscription.web.noGooglePlay"], /PWA.*대한민국에서 발급된 카드/);
+  // 2026-08-17: 카드 발급국 제한은 바로 아래 domesticCardOnly 가 말하므로 중복 문장을 뺐다.
+  assert.match(koBilling["billing.subscription.web.noGooglePlay"], /웹에서는 Google Play 결제·복원을 쓸 수 없어요/);
+  assert.match(koBilling["billing.subscription.web.noGooglePlay"], /해외 카드는 Android 앱에서 결제/);
+  // 카드 발급국 제한은 같은 영역의 domesticCardOnly 가 그대로 말한다(중복 제거 후에도 화면에서는 함께 보인다).
+  assert.match(koBilling["billing.subscription.web.domesticCardOnly"], /대한민국에서 발급된 카드/);
   assert.match(subscription, /startTossBillingAuthorization/);
   assert.match(subscription, /billing\.subscription\.web\.domesticCardOnly/);
 });

@@ -49,7 +49,7 @@ test("상황형 업셀은 한도와 기존 데이터 보존을 정확히 안내�
   const grandfatheredPlace = resolvePremiumUpsell("saved_place", { used: 3, limit: 3 });
   assert.match(grandfatheredPlace.title, /무료 알림 대상 3개/);
   assert.equal(grandfatheredPlace.usageLabel, "알림 3/3 사용");
-  assert.match(grandfatheredPlace.description, /현재 플랜 알림 대상은 생성 순 3개까지/);
+  assert.match(grandfatheredPlace.description, /알림은 생성 순 3곳까지/);
   assert.doesNotMatch(`${grandfatheredPlace.title} ${grandfatheredPlace.usageLabel}`, /2\/2|2개/);
 
   const overLimitPlace = resolvePremiumUpsell("saved_place", { used: 3, limit: 2 });

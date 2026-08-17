@@ -188,7 +188,7 @@ const messages = {
   "parent.upsell.remote_ring.usageLabel": "1/1 사용",
   "parent.upsell.saved_place.ctaLabel": "장소 계속 추가하기",
   "parent.upsell.saved_place.description": "등록한 장소는 삭제되지 않아요. 무료 플랜 알림 대상은 생성 순 2개까지이며, 나머지는 프리미엄에서 다시 알림 대상이 돼요.",
-  "parent.upsell.saved_place.dynamicDescription": "등록한 장소는 삭제되지 않아요. 현재 플랜 알림 대상은 생성 순 {limit}개까지이며, 나머지는 프리미엄에서 다시 알림 대상이 돼요.",
+  "parent.upsell.saved_place.dynamicDescription": "등록한 장소는 그대로예요. 알림은 생성 순 {limit}곳까지, 나머지는 프리미엄에서 다시 켜져요.",
   "parent.upsell.saved_place.dynamicTitle": "무료 알림 대상 {limit}개를 모두 사용했어요",
   "parent.upsell.saved_place.premiumValue": "프리미엄에서는 장소와 도착·출발 알림을 제한 없이 추가할 수 있어요.",
   "parent.upsell.saved_place.title": "무료 알림 대상 2개를 모두 사용했어요",

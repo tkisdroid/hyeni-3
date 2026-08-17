@@ -7,8 +7,9 @@ import {
   type AccountMutationScope,
 } from "./accountMutationScope";
 
-export const REFERRAL_REWARD_CREDITS = 10;
-export const REFERRAL_SUCCESS_CAP = 3;
+// 친구 추천은 새 가족을 데려오는 일이라 유료 팩(30/80/200) 사이에서 체감이 큰 값으로 준다(2026-08-17 TK 지시).
+export const REFERRAL_REWARD_CREDITS = 50;
+// 초대 가족 수 상한은 두지 않는다 — 예전 3가족 제한은 추천을 그만할 이유가 됐다.
 export const REFERRAL_QUALIFICATION_HOURS = 72;
 export const REFERRAL_LOCATION_RETENTION_HOURS = 48;
 
@@ -146,9 +147,6 @@ export async function prepareReferralAttribution(
     }
     throw new ReferralAttributionError("referral_existing_family_forbidden", 409);
   }
-  if (Number(row.successful_referrals) >= REFERRAL_SUCCESS_CAP) {
-    throw new ReferralAttributionError("referral_success_cap_reached", 409);
-  }
   const attributed = await db.prepare(
     `SELECT 1 AS attributed FROM referral_completions_v2
       WHERE referee_parent_id=? OR referee_family_id=? LIMIT 1`,
@@ -181,7 +179,6 @@ export function buildReferralAttributionStatements(
            JOIN families f ON f.id=rc.family_id AND f.parent_id=rc.owner_parent_id
           WHERE rc.id=? AND rc.code=? COLLATE NOCASE AND rc.status='active'
             AND rc.family_id=? AND rc.owner_parent_id=? AND rc.reward_child_user_id=?
-            AND rc.successful_referrals < ?
             AND EXISTS(
               SELECT 1 FROM family_members pm
                WHERE pm.family_id=rc.family_id AND pm.user_id=rc.owner_parent_id
@@ -209,7 +206,6 @@ export function buildReferralAttributionStatements(
       prepared.referrerFamilyId,
       prepared.referrerParentId,
       prepared.referrerChildUserId,
-      REFERRAL_SUCCESS_CAP,
       prepared.refereeParentId,
       prepared.refereeParentId,
       prepared.refereeParentId,
@@ -243,13 +239,11 @@ export interface ReferralStatus {
   code: string | null;
   rewardChildUserId: string | null;
   rewardCredits: number;
-  successCap: number;
   qualificationHours: number;
   locationRetentionHours: number;
+  /** 지급까지 끝난 초대 가족 수(상한 없음). */
   successfulCount: number;
   pendingCount: number;
-  remainingCount: number;
-  canInvite: boolean;
 }
 
 export async function readReferralStatus(
@@ -268,23 +262,19 @@ export async function readReferralStatus(
        SUM(CASE WHEN status IN ('pending','qualified') THEN 1 ELSE 0 END) AS pending_count
        FROM referral_completions_v2 WHERE referrer_family_id=?`,
   ).bind(familyId).first<{ successful_count: number | null; pending_count: number | null }>();
-  const successfulCount = Math.min(
-    REFERRAL_SUCCESS_CAP,
-    Math.max(Number(code?.successful_referrals ?? 0), Number(counts?.successful_count ?? 0)),
+  const successfulCount = Math.max(
+    Number(code?.successful_referrals ?? 0),
+    Number(counts?.successful_count ?? 0),
   );
   const pendingCount = Math.max(0, Number(counts?.pending_count ?? 0));
-  const remainingCount = Math.max(0, REFERRAL_SUCCESS_CAP - successfulCount);
   return {
     code: code?.status === "active" ? code.code : null,
     rewardChildUserId: code?.reward_child_user_id ?? null,
     rewardCredits: REFERRAL_REWARD_CREDITS,
-    successCap: REFERRAL_SUCCESS_CAP,
     qualificationHours: REFERRAL_QUALIFICATION_HOURS,
     locationRetentionHours: REFERRAL_LOCATION_RETENTION_HOURS,
     successfulCount,
     pendingCount,
-    remainingCount,
-    canInvite: successfulCount < REFERRAL_SUCCESS_CAP,
   };
 }
 
@@ -383,6 +373,7 @@ interface PendingReferralRow {
   referee_family_id: string;
   referee_parent_id: string;
   referee_child_user_id: string | null;
+  reward_credits: number;
   first_location_at: string | null;
   latest_location_at: string | null;
   created_at: string;
@@ -528,6 +519,9 @@ async function grantReferralReward(
     }
 
     const nowPg = pgTs(now);
+    // 보상액은 귀속 시점에 완료 행에 기록한 값이다 — 정책이 바뀌어도 약속한 만큼만 지급한다.
+    const rewardCredits = Number(row.reward_credits);
+    if (!Number.isSafeInteger(rewardCredits) || rewardCredits <= 0) return "failed";
     const referrerLedgerId = `referral:${row.id}:referrer`;
     const refereeLedgerId = `referral:${row.id}:referee`;
     try {
@@ -541,7 +535,6 @@ async function grantReferralReward(
               AND completion.referrer_child_user_id=? AND completion.referee_child_user_id=?
               AND completion.reward_credits=?
               AND code.family_id=completion.referrer_family_id
-              AND code.successful_referrals < ?
               AND datetime(substr(completion.created_at,1,19), '+' || ? || ' hours')
                   <=datetime(substr(?,1,19))
               AND completion.first_location_at IS NOT NULL
@@ -572,8 +565,7 @@ async function grantReferralReward(
           row.referee_family_id,
           row.referrer_child_user_id,
           evidence.child_user_id,
-          REFERRAL_REWARD_CREDITS,
-          REFERRAL_SUCCESS_CAP,
+          rewardCredits,
           REFERRAL_QUALIFICATION_HOURS,
           nowPg,
           REFERRAL_LOCATION_RETENTION_HOURS,
@@ -589,7 +581,7 @@ async function grantReferralReward(
           row.referrer_family_id,
           row.referrer_child_user_id,
           row.referrer_parent_id,
-          REFERRAL_REWARD_CREDITS,
+          rewardCredits,
           row.id,
           nowPg,
         ),
@@ -610,7 +602,7 @@ async function grantReferralReward(
           row.referee_family_id,
           evidence.child_user_id,
           row.referee_parent_id,
-          REFERRAL_REWARD_CREDITS,
+          rewardCredits,
           row.id,
           nowPg,
         ),
@@ -625,8 +617,8 @@ async function grantReferralReward(
         env.DB.prepare(
           `UPDATE referral_codes_v2
               SET successful_referrals=successful_referrals+1,updated_at=?
-            WHERE id=? AND family_id=? AND successful_referrals<?`,
-        ).bind(nowPg, row.referral_code_id, row.referrer_family_id, REFERRAL_SUCCESS_CAP),
+            WHERE id=? AND family_id=?`,
+        ).bind(nowPg, row.referral_code_id, row.referrer_family_id),
         env.DB.prepare(
           `UPDATE referral_completions_v2
               SET status='rewarded',qualified_at=COALESCE(qualified_at,?),rewarded_at=?,updated_at=?
@@ -675,8 +667,8 @@ export async function processPendingReferralRewards(
   const cutoff = pgTs(new Date(now.getTime() - REFERRAL_QUALIFICATION_HOURS * HOUR_MS));
   const { results } = await env.DB.prepare(
     `SELECT id,referral_code_id,referrer_family_id,referrer_parent_id,referrer_child_user_id,
-            referee_family_id,referee_parent_id,referee_child_user_id,first_location_at,
-            latest_location_at,created_at
+            referee_family_id,referee_parent_id,referee_child_user_id,reward_credits,
+            first_location_at,latest_location_at,created_at
        FROM referral_completions_v2
       WHERE status IN ('pending','qualified')
         AND referee_child_user_id IS NOT NULL
@@ -719,8 +711,9 @@ export async function processPendingReferralRewards(
       const code = await env.DB.prepare(
         "SELECT successful_referrals FROM referral_codes_v2 WHERE id=? AND family_id=? LIMIT 1",
       ).bind(row.referral_code_id, row.referrer_family_id).first<{ successful_referrals: number }>();
-      if (!code || Number(code.successful_referrals) >= REFERRAL_SUCCESS_CAP) {
-        if (await markRejected(env.DB, row.id, "success_cap_reached", now)) outcome.rejected += 1;
+      // 초대 코드 행이 사라졌다면 추천자 쪽을 확인할 수 없다는 뜻이다(사유 enum 은 D1 CHECK 로 고정돼 있다).
+      if (!code) {
+        if (await markRejected(env.DB, row.id, "referrer_unavailable", now)) outcome.rejected += 1;
         continue;
       }
       const partyState = await referralPartyState(env.DB, row, evidence);

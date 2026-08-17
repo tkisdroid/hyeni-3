@@ -62,7 +62,7 @@ test("웹과 네이티브 크레딧 구매 한계를 결제 채널별로 정직�
   assert.match(source, /billing\.aiCredit\.native\.providerNotice/);
   assert.equal(
     koBilling["billing.aiCredit.web.noGooglePlay"],
-    "웹/PWA에서는 Google Play 결제를 이용할 수 없어요. 웹에서는 서버가 확인한 일회성 카드 결제를 사용해요.",
+    "웹에서는 Google Play 결제 대신 카드 결제를 사용해요.",
   );
   assert.equal(
     koBilling["billing.aiCredit.native.providerNotice"],

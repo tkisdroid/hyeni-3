@@ -1,7 +1,7 @@
 import { useIntl, type IntlShape } from "react-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { AlertTriangle, Bell, Settings, ChevronRight, Check, MapPin, Smartphone, Mic, Keyboard, Image as ImageIcon, CalendarDays, RefreshCw } from "lucide-react";
+import { AlertTriangle, Bell, Settings, ChevronRight, Check, Gift, MapPin, Smartphone, Mic, Keyboard, Image as ImageIcon, CalendarDays, RefreshCw } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
@@ -14,6 +14,8 @@ import type { CalendarEvent, DailySupply } from "@/lib/api/endpoints/schedule";
 import { useChildNotifSettingsStatus, useParentAlerts } from "@/queries/useNotifications";
 import { countUnread } from "@/transform/notificationsView";
 import { useMyFamily } from "@/queries/useFamily";
+import { ReferralRewardPanel } from "@/components/ReferralRewardPanel";
+import { REFERRAL_REWARD_CREDITS_DISPLAY } from "@/transform/referralReward";
 import { useActiveChild } from "@/app/activeChild";
 import { useAuth } from "@/auth/AuthContext";
 import { requestDeviceStatus } from "@/lib/api/endpoints/remote";
@@ -164,6 +166,7 @@ export function ParentHome() {
     [now],
   );
 
+  const [referralOpen, setReferralOpen] = useState(false);
   const eventsQuery = useEvents();
   const familyQuery = useMyFamily();
   const locationsQuery = useChildLocations();
@@ -179,6 +182,13 @@ export function ParentHome() {
   const locationsForDisplay = !locationScopeUnavailable && locationMode !== "locked"
     ? locations
     : undefined;
+  const referralEligibleChildren = useMemo(() => (
+    (family?.members ?? []).flatMap((member) => (
+      member.role === "child" && member.user_id
+        ? [{ userId: member.user_id, name: member.name?.trim() || intl.formatMessage({ id: "parent.parentHome.copy004" }) }]
+        : []
+    ))
+  ), [family?.members, intl]);
 
   // 아이 기기 상태 새로고침 요청 — 네이티브 device_health 리포트는 on-demand 라
   // 홈 진입 시 1회 요청해야 안전지표가 채워진다(도착하면 WS 브릿지가 자동 반영).
@@ -1105,7 +1115,34 @@ export function ParentHome() {
             <ChevronRight size={16} strokeWidth={2.6} />
           </span>
         </button>
+
+        {/* 친구 초대 — 한 줄과 버튼만. 주 보호자에게만 보인다(코드 발급 권한이 있는 사람). */}
+        {family?.isPrimaryParent === true && (
+          <button
+            type="button"
+            className="hy-card ph-referral hy-press"
+            onClick={() => setReferralOpen(true)}
+          >
+            <span className="ph-referral__icon" aria-hidden="true">
+              <Gift size={20} strokeWidth={2.4} />
+            </span>
+            <span className="ph-referral__headline">
+              {intl.formatMessage(
+                { id: "parent.referral.home.headline" },
+                { count: REFERRAL_REWARD_CREDITS_DISPLAY },
+              )}
+            </span>
+            <span className="ph-referral__action" aria-hidden="true">
+              {intl.formatMessage({ id: "parent.referral.home.action" })}
+            </span>
+          </button>
+        )}
       </div>
+      <ReferralRewardPanel
+        open={referralOpen && family?.isPrimaryParent === true}
+        onClose={() => setReferralOpen(false)}
+        eligibleChildren={referralEligibleChildren}
+      />
       {valueUpsellSource && (
         <PremiumUpsell
           open

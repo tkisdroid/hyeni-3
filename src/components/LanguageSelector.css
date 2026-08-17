@@ -24,6 +24,26 @@
   color: var(--fg-muted);
 }
 
+/* 설정 행 안에 펼쳐 쓰는 형태 — 행이 이미 제목을 말하므로 카드 테두리와 반복 문구를 지운다. */
+.hy-language--compact {
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+/* 화면에서만 감추고 보조기술에는 남긴다(라벨·설명은 조작 요소가 아니다). */
+.hy-language__text--quiet {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .hy-language__options {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

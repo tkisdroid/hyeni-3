@@ -38,7 +38,11 @@ const route = (
 // App.tsx에서 실제 렌더되는 59개 사용자 화면의 출시 품질 계약이다.
 // 같은 MemoChat 소스를 쓰더라도 부모/아이 라우트는 guard·말투 계약이 달라 별도 행으로 둔다.
 const routeQualityMatrix = [
-  route("parent/home", "ParentHome", "src/screens/parent/ParentHome.tsx", "parent", "all", "query", queryStates(/eventsQuery\.isLoading/, /eventsQuery\.isError/, /todayEvents\.length === 0/, /todayEvents\.map/, /void handleRefresh\(\)/), "shell", "parent-formal"),
+  route("parent/home", "ParentHome", "src/screens/parent/ParentHome.tsx", "parent", "all", "query", [
+    queryStatesAt("src/screens/parent/ParentHome.tsx", /eventsQuery\.isLoading/, /eventsQuery\.isError/, /todayEvents\.length === 0/, /todayEvents\.map/, /void handleRefresh\(\)/),
+    // 홈의 친구 초대 카드가 여는 패널도 같은 화면의 read query다(2026-08-17).
+    queryStatesAt("src/components/ReferralRewardPanel.tsx", /statusQuery\.isLoading/, /statusQuery\.isError/, /eligibleChildren\.length === 0/, /status \? \(/, /void statusQuery\.refetch\(\)/),
+  ], "shell", "parent-formal"),
   route("parent/calendar", "ParentCalendar", "src/screens/parent/ParentCalendar.tsx", "parent", "all", "query", queryStates(/isLoading \? \(/, /isError \? \(/, /selEvents\.length > 0/, /selEvents\.map/, /void refetchEvents\(\)/), "shell", "parent-formal"),
   route("parent/location", "ParentLocation", "src/screens/parent/ParentLocation.tsx", "parent", "all", "query", [
     queryStatesAt("src/screens/parent/ParentLocation.tsx", /isFetching: historyFetching/, /isError: historyError/, /pointCount: timedHistoryPoints\.length/, /<LocationJourneyPanel/, /onRetry=\{\(\) => void refetchHistory\(\)\}/),

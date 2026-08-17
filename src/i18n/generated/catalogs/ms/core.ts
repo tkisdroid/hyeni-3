@@ -76,6 +76,7 @@ const messages = {
   "core.language.child.label": "Pilih bahasa",
   "core.language.formal.description": "Sila pilih bahasa yang anda mahu gunakan pada peranti ini.",
   "core.language.formal.label": "Pilih bahasa",
+  "core.language.rowLabel": "Bahasa (Language)",
   "core.nav.calendar": "Kalendar",
   "core.nav.chat": "Sembang",
   "core.nav.classHome": "Laman kelas",

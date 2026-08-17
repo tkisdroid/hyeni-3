@@ -362,6 +362,31 @@
   flex: none;
   color: var(--fg-disabled);
 }
+/* 행 오른쪽에 지금 값(현재 언어)을 보여 준다 — 장식이 아니라 상태다. */
+.ps-nav__value {
+  flex: none;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+
+  color: var(--fg-secondary);
+}
+
+/* ── 언어 한 줄 + 펼침 ─────────────────────────────────────────────────── */
+.ps-language__chevron {
+  flex: none;
+  transition: transform 0.2s ease;
+}
+.ps-language [aria-expanded="true"] .ps-language__chevron {
+  transform: rotate(90deg);
+}
+.ps-language__panel {
+  padding: 4px 12px 12px;
+}
 
 /* ── 버전 푸터 ──────────────────────────────────────────────────────────── */
 .ps-version {

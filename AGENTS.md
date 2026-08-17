@@ -764,6 +764,15 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   namespace 를 포함해야 하고, 공용 transform(`tierPolicy`·`premiumUpsell`)이 만드는 문구도 화면 몫으로 센다.
   부모 라우트에서 `child.*` 문구를 쓰지 않는다. 가드=`tests/i18nUiWiring.test.mjs`.
   ⚠️ 눈으로 훑는 스윕은 이 결함을 놓친다 — hash 만 바꾸며 도는 하니스는 앞 화면의 namespace 를 이미 갖고 있다.
+- ★**정책 숫자는 DB CHECK 에도 박혀 있을 수 있다(2026-08-17)**: 친구 초대 보상을 10→50회로 올리고 3가족 상한을
+  없앨 때 코드만 고치면 `family_setup_retryable` 503 이 났다 — `reward_credits = 10`·`successful_referrals BETWEEN 0 AND 3`
+  CHECK 가 원인이었다. D1 은 CHECK 를 ALTER 로 못 바꿔 테이블 재작성이 필요하고, 그 테이블을 본문에서 참조하는
+  트리거는 **같은 migration 파일에서 DROP → 재작성 → CREATE** 해야 한다(아니면 전체 롤백).
+  지급액은 상수가 아니라 완료 행의 `reward_credits` 를 쓴다(정책이 바뀌어도 약속한 금액을 지킨다).
+- ★**문구 길이는 ICU 분기별로 재라(2026-08-17)**: `locales/ko/*.json` 의 원문 길이는 select 분기가 다 합산돼
+  과대 계상된다. 실제 화면 길이는 분기별 최대 렌더 길이로 재야 하고(파서로 AST 를 훑는다), 그 기준으로 60자를
+  넘는 문구는 축약한다. 남기는 예외는 삭제 경고·Play 정책 고지·숨은 운영자 화면뿐이다.
+  10개 locale 을 같이 고치고 `node scripts/i18n/build-catalogs.mjs` 로 생성물을 갱신한다.
 - ★**표는 열 폭을 먼저 고정한다(2026-08-17 TK 제보 "플랜 비교 줄바꿈이 난잡함")**: 항목 이름에 `white-space: nowrap`
   을 주면 표가 화면보다 넓어지고, 남은 폭에 밀린 값 칸이 한국어 글자 중간에서 끊긴다. `table-layout: fixed` +
   열 폭(44%/28%/28%) + `word-break: keep-all`·`overflow-wrap: anywhere`·`text-wrap: pretty` 로 어절 단위로만 접는다.

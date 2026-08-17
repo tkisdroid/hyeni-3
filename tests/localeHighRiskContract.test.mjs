@@ -277,7 +277,8 @@ test("QR·추천 크레딧·주변소리·준비물의 고위험 의미를 local
     assert.equal(parent["parent.parentFamily.copy018"], qr[locale], `${locale}: 아이 연결 QR`);
     assert.equal(parent["parent.eventForm.copy056"], supplies[locale], `${locale}: 준비물 예시`);
     if (locale !== "ko") {
-      assert.doesNotMatch(parent["parent.referralRewardPanel.copy013"], /\bpays?\b|현금|cash/i, `${locale}: 추천 보상을 현금 지급으로 오해하면 안 됩니다`);
+      // 단계 설명(copy013)은 2026-08-17에 없어졌다 — 남은 지급 조건 문구로 같은 오인을 막는다.
+      assert.doesNotMatch(parent["parent.referralRewardPanel.copy010"], /\bpays?\b|현금|cash/i, `${locale}: 추천 보상을 현금 지급으로 오해하면 안 됩니다`);
     }
   }
 

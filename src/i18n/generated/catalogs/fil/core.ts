@@ -76,6 +76,7 @@ const messages = {
   "core.language.child.label": "Pumili ng wika",
   "core.language.formal.description": "Mangyaring piliin ang wikang gusto mong gamitin sa device na ito.",
   "core.language.formal.label": "Pumili ng wika",
+  "core.language.rowLabel": "Wika (Language)",
   "core.nav.calendar": "Kalendaryo",
   "core.nav.chat": "Chat",
   "core.nav.classHome": "Home ng klase",

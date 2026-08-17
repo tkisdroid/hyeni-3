@@ -1107,12 +1107,13 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       const recordedStart = recordedRange.split("–").at(0)?.trim() || "";
       const recordedEnd = recordedRange.split("–").at(-1)?.trim() || "";
       const range = document.querySelector(".pl-journey__range");
+      // 화면 라벨은 앱과 같은 locale 시각 포맷(오후 6:46)이라 24시간 문자열로 비교하면 절대 일치하지 않는다.
+      // 앱이 쓰는 formatDateTime(timeStyle:"short", Asia/Seoul)과 같은 방식으로 맞춘다.
+      const rangeClockFormat = new Intl.DateTimeFormat("ko-KR", { timeStyle: "short", timeZone: "Asia/Seoul" });
       const formatRangeClock = (value) => {
         const date = new Date(Number(value));
         if (Number.isNaN(date.getTime())) return "";
-        return String(date.getHours()).padStart(2, "0")
-          + ":"
-          + String(date.getMinutes()).padStart(2, "0");
+        return rangeClockFormat.format(date);
       };
       const sliderStart = range instanceof HTMLInputElement ? formatRangeClock(range.min) : "";
       const sliderEnd = range instanceof HTMLInputElement ? formatRangeClock(range.max) : "";
@@ -1516,7 +1517,8 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       return {
         open: Boolean(dialog),
         text,
-        hasExactLimit: text.includes("저장 장소 2개를 모두 사용했어요") && text.includes("3/2 사용"),
+        // 현재 정책은 "저장은 남고 알림 대상만 제한" 이다(2026-08-01 결정) — 정확한 수치를 보여주는지 본다.
+        hasExactLimit: text.includes("무료 알림 대상 2개를 모두 사용했어요") && text.includes("알림 2/2") && text.includes("저장 3개"),
         hasContinue: text.includes("무료 플랜으로 계속 사용하기"),
         hasUpgrade: text.includes("장소 계속 추가하기"),
       };

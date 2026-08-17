@@ -18,7 +18,7 @@ test("직접 일정 저장은 Free에서도 개수·엔타이틀먼트 조회로
   assert.match(aiSchedule, /limit:\s*intl\.formatNumber\(MAX_SUPPLY_ITEMS_PER_KIND\)/);
   assert.equal(
     koParent["parent.aiSchedule.supplyLimit"],
-    "직접 일정 추가와 기존 일정 관리는 무료에서도 제한 없이 사용할 수 있어요. 준비물과 숙제는 모든 플랜에서 아이별 하루 각각 {limit}개까지 저장할 수 있어요.",
+    "일정 추가는 무료도 제한 없어요. 준비물·숙제는 아이별 하루 각각 {limit}개까지예요.",
   );
 
   assert.match(eventForm, /useEvents\(\)/);

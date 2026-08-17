@@ -54,6 +54,7 @@ import type { OAuthProvider } from "@/transform/oauthProvider";
 import { normalizePairCodeInput } from "@/transform/pairCode";
 import { readPairParam, clearPairParam } from "@/transform/pairLink";
 import { clearReferralParam, readReferralParam } from "@/transform/referralLink";
+import { REFERRAL_REWARD_CREDITS_DISPLAY } from "@/transform/referralReward";
 import { resolveAuthenticatedOnboardingRedirect } from "@/transform/onboardingRedirect";
 import { QrScanner } from "@/components/QrScanner";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -637,8 +638,8 @@ function RoleStep({
   const intl = useIntl();
   return (
     <div className="ob-step ob-role">
+      {/* 장식 배지는 두지 않는다 — 제목·부제와 같은 말을 반복했다(2026-08-14 지시). */}
       <div className="ob-role-head">
-        <span className="ob-role-badge">{intl.formatMessage({ id: "onboarding.role.badge" })}</span>
         <div className="ob-role-logo">
           <img
             src={asset("mascot/wave.webp")}
@@ -1308,7 +1309,12 @@ function ConnectStep({
       {referralCode && (
         <div className="ob-referral-notice" role="status">
           <strong>{intl.formatMessage({ id: "onboarding.connect.referralTitle" })}</strong>
-          <span>{intl.formatMessage({ id: "onboarding.connect.referralDescription" })}</span>
+          <span>
+            {intl.formatMessage(
+              { id: "onboarding.connect.referralDescription" },
+              { count: REFERRAL_REWARD_CREDITS_DISPLAY },
+            )}
+          </span>
         </div>
       )}
 

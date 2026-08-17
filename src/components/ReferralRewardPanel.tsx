@@ -5,6 +5,7 @@ import { PUBLIC_WEB_BASE } from "@/config/env";
 import { useDialogFocusLifecycle } from "./useDialogFocusLifecycle";
 import { useEnsureReferralCode, useReferralStatus } from "@/queries/useReferrals";
 import { buildReferralLink } from "@/transform/referralLink";
+import { referralRewardCredits } from "@/transform/referralReward";
 import "./ReferralRewardPanel.css";
 import { useIntl } from "react-intl";
 import { localizeApiError } from "@/i18n/apiError";
@@ -72,10 +73,12 @@ export function ReferralRewardPanel({
     });
   };
 
+  // 보상 횟수는 서버가 정한다 — 화면은 받은 값을 그대로 보여 준다.
+  const rewardCredits = referralRewardCredits(status?.rewardCredits);
   const invitationText = status?.code
     ? intl.formatMessage(
       { id: "parent.referralRewardPanel.shareBody" },
-      { link: buildReferralLink(PUBLIC_WEB_BASE, status.code) },
+      { link: buildReferralLink(PUBLIC_WEB_BASE, status.code), count: rewardCredits },
     )
     : "";
 
@@ -135,7 +138,9 @@ export function ReferralRewardPanel({
           <span className="rrp__header-icon" aria-hidden="true"><Gift size={22} /></span>
           <div className="rrp__header-copy">
             <h2 id={titleId}>{intl.formatMessage({ id: "parent.referralRewardPanel.copy006" })}</h2>
-            <p id={descriptionId}>{intl.formatMessage({ id: "parent.referralRewardPanel.copy007" })}</p>
+            <p id={descriptionId}>
+              {intl.formatMessage({ id: "parent.referralRewardPanel.copy007" }, { count: rewardCredits })}
+            </p>
           </div>
           <button
             ref={closeRef}
@@ -151,15 +156,12 @@ export function ReferralRewardPanel({
         </header>
 
         <div className="rrp__body">
+          {/* 보상과 조건 한 줄씩 — 단계 설명·법률 문단은 두지 않는다(2026-08-17 TK 지시). */}
           <section className="rrp__policy" aria-label={intl.formatMessage({ id: "parent.referralRewardPanel.copy008" })}>
-            <div className="rrp__reward">{intl.formatMessage({ id: "parent.referralRewardPanel.copy009" })}</div>
+            <div className="rrp__reward">
+              {intl.formatMessage({ id: "parent.referralRewardPanel.copy009" }, { count: rewardCredits })}
+            </div>
             <p>{intl.formatMessage({ id: "parent.referralRewardPanel.copy010" })}</p>
-            <ol>
-              <li>{intl.formatMessage({ id: "parent.referralRewardPanel.copy011" })}</li>
-              <li>{intl.formatMessage({ id: "parent.referralRewardPanel.copy012" })}</li>
-              <li>{intl.formatMessage({ id: "parent.referralRewardPanel.copy013" })}</li>
-            </ol>
-            <small>{intl.formatMessage({ id: "parent.referralRewardPanel.copy014" })}</small>
           </section>
 
           {statusQuery.isLoading ? (
@@ -178,8 +180,20 @@ export function ReferralRewardPanel({
           ) : status ? (
             <>
               <section className="rrp__progress" aria-label={intl.formatMessage({ id: "parent.referralRewardPanel.copy018" })}>
-                <span><CheckCircle2 size={18} aria-hidden="true" /> {intl.formatMessage({ id: "parent.referralRewardPanel.copy019" })} {status.successfulCount}/{status.successCap}</span>
-                <span>{intl.formatMessage({ id: "parent.parentHome.copy033" })} {status.pendingCount}{intl.formatMessage({ id: "parent.category.family" })}</span>
+                <span>
+                  <CheckCircle2 size={18} aria-hidden="true" />
+                  {" "}
+                  {intl.formatMessage(
+                    { id: "parent.referralRewardPanel.copy019" },
+                    { count: status.successfulCount },
+                  )}
+                </span>
+                <span>
+                  {intl.formatMessage(
+                    { id: "parent.referralRewardPanel.pending" },
+                    { count: status.pendingCount },
+                  )}
+                </span>
               </section>
 
               <label className="rrp__field" htmlFor="referral-reward-child">
@@ -218,7 +232,7 @@ export function ReferralRewardPanel({
                   type="button"
                   className="rrp__save hy-press"
                   onClick={saveCode}
-                  disabled={!selectedChild || busy || !status.canInvite}
+                  disabled={!selectedChild || busy}
                   aria-busy={busy}
                 >
                   {busy ? intl.formatMessage({ id: "parent.referralRewardPanel.copy022" }) : status.code ? intl.formatMessage({ id: "parent.referralRewardPanel.copy023" }) : intl.formatMessage({ id: "parent.referralRewardPanel.copy024" })}
@@ -230,7 +244,7 @@ export function ReferralRewardPanel({
                   type="button"
                   className="rrp__action rrp__action--copy hy-press"
                   onClick={() => void copyInvitation()}
-                  disabled={!status.code || !status.canInvite}
+                  disabled={!status.code}
                 >
                   <Copy size={18} aria-hidden="true" /> {intl.formatMessage({ id: "parent.referralRewardPanel.copy025" })}
                 </button>
@@ -238,14 +252,11 @@ export function ReferralRewardPanel({
                   type="button"
                   className="rrp__action rrp__action--share hy-press"
                   onClick={() => void shareInvitation()}
-                  disabled={!status.code || !status.canInvite}
+                  disabled={!status.code}
                 >
                   <Share2 size={18} aria-hidden="true" /> {intl.formatMessage({ id: "parent.referralRewardPanel.copy026" })}
                 </button>
               </div>
-              {!status.canInvite && (
-                <p className="rrp__complete" role="status">{intl.formatMessage({ id: "parent.referralRewardPanel.copy027" })}</p>
-              )}
             </>
           ) : (
             <div className="rrp__state" role="status">{intl.formatMessage({ id: "parent.referralRewardPanel.copy028" })}</div>

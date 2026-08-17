@@ -76,6 +76,7 @@ const messages = {
   "core.language.child.label": "Choose a language",
   "core.language.formal.description": "Please select the language you want to use on this device.",
   "core.language.formal.label": "Select language",
+  "core.language.rowLabel": "Language",
   "core.nav.calendar": "Calendar",
   "core.nav.chat": "Chat",
   "core.nav.classHome": "Class home",

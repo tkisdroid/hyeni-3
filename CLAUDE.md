@@ -11,7 +11,15 @@
 **1~10단계 전부 완료**(전 화면 실데이터·다자녀·AI 친구·알림 3종·릴리즈 게이트) — 실기기 3대 운용 중.
 **현 국면 = 실사용 안정화**: TK 가 실기기로 쓰며 제보하는 버그·개선을 즉시 수정·검증·배포.
 
-**현재 배포 상태(2026-08-17 저녁)**: 앱 커밋 `1a313d9` 기준으로 Worker·Pages를 함께 배포했다.
+**현재 배포 상태(2026-08-17 밤 갱신)**: 친구 초대 50회·상한 없음까지 반영해 Worker version
+`c887c03f-fcb2-4c92-9fd7-467f635ace41`, Pages `https://2a822262.hyeni-calendar.pages.dev`(고정 URL·프로덕션 별칭 index
+SHA-256 `1674cdac29be64517c6713ddd1fbcda0909406ab5c46449d3bdaee4b74876da8` = 로컬 dist, entry JS/CSS 바이트 일치,
+보안 헤더 3/3, manifest·sw·assetlinks 200)를 배포했다. 배포 전 `worker/db/referral-rewards-v2-unlimited.sql` 을
+프로덕션에 1회 적용해 초대 코드 1행을 보존하고 트리거를 복원했다. 배포 뒤 A17 부모 세션으로
+`GET /api/referrals/me` 200 · `rewardCredits: 50` · 상한 필드 제거를 확인했다. 브라우저 QA 문제 0건.
+아래는 그 직전 배포 기록이다.
+
+**직전 배포(2026-08-17 저녁)**: 앱 커밋 `1a313d9` 기준으로 Worker·Pages를 함께 배포했다.
 Worker version ID `59191d7e-efd5-4f4b-afb9-5d5819941668`(health 200, `/api/family/member/photo` 미인증 401),
 Pages 배포 `https://0f411410.hyeni-calendar.pages.dev` — 고정 URL과 `hyeni-calendar.pages.dev`의 index SHA-256
 `f1d9c7c88dcf9fb3d30f94c029a475ec047d57d5cfbdffda45225c7ea36ee382`가 로컬 dist와 같고 entry
@@ -537,6 +545,30 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   `parent.location.state.*` 로 옮겼다. **부모 라우트에서 child namespace 문구를 쓰지 말 것.**
   가드=`tests/i18nUiWiring.test.mjs`("화면이 쓰는 모든 message namespace를 그 라우트가 싣는다" — 공용
   transform(`tierPolicy`·`premiumUpsell`·`PremiumUpsell`) import 도 parent 문구로 계산한다).
+- ★**친구 초대 보상 정본(2026-08-17 TK 지시)**: 보상은 **양쪽 가족 각각 AI 대화 50회**(유료 팩 30/80/200 사이),
+  **초대 가족 수 상한 없음**이다. 서버 정본은 `worker/lib/referralRewardsV2.ts` 의 `REFERRAL_REWARD_CREDITS` 하나이고
+  `REFERRAL_SUCCESS_CAP` 은 삭제했다. 클라이언트는 숫자를 하드코딩하지 않는다 — 상태를 받은 화면은
+  `status.rewardCredits`, 상태가 없는 진입점(홈 카드·설정 행)은 `src/transform/referralReward.ts` 의
+  `REFERRAL_REWARD_CREDITS_DISPLAY` 를 쓰고 두 값의 일치는 `tests/referralRewardWiring.test.mjs` 가 강제한다.
+  ⚠️ **정책 숫자는 DB CHECK 제약에도 박혀 있었다** — `referral_completions_v2.reward_credits = 10`,
+  `referral_codes_v2.successful_referrals BETWEEN 0 AND 3`. D1 은 CHECK 를 ALTER 로 못 바꿔
+  `worker/db/referral-rewards-v2-unlimited.sql` 로 테이블을 재작성했다(행 보존). 이때 트리거
+  `trg_referral_location_evidence_snapshot` 이 본문에서 `referral_completions_v2` 를 참조하므로 **같은 파일에서
+  먼저 DROP 하고 마지막에 다시 CREATE** 해야 한다(안 그러면 `error in trigger ...: no such table` 로 전체 롤백된다).
+  지급액은 상수가 아니라 **완료 행에 기록된 `reward_credits`** 를 쓴다 — 정책이 바뀌어도 귀속 시점에 약속한 금액을
+  지킨다. 진입점은 부모 홈 구독 카드 아래 한 줄 카드(주 보호자만)와 설정 행 두 곳이고, 문구는 보상 한 줄 + 조건
+  한 줄만 남겼다(단계 설명·법률 문단·상한 안내는 재도입 금지). 회귀=`worker/tests/referralRewardsV2.test.mjs`·
+  `tests/referralRewardWiring.test.mjs`.
+- ★**언어 선택 위치(2026-08-17 TK 지시)**: 부모 설정에서 언어는 **계정 프로필 카드 바로 아래 한 줄**(`ps-language`)이고
+  현재 언어를 값으로 보여 주며 그 줄을 눌러 펼쳐서 고른다(`aria-expanded`, 모달 아님). 펼침 안에서는
+  `<LanguageSelector tone="formal" compact />` 가 제목·설명을 화면에서 감춰(`hy-language__text--quiet`) 같은 말을
+  두 번 보여주지 않는다. 행 라벨은 `core.language.rowLabel`("언어 선택 (Language)")로 낯선 언어에서도 찾을 수 있게
+  영어를 병기한다. 온보딩은 그대로 카드형 선택기를 쓴다. 회귀=`tests/languageSelector.test.mjs`.
+- ★**문구는 짧게(2026-08-17 TK 지시)**: 렌더 기준 60자를 넘는 사용 문구는 남기지 않는다(측정은 ICU 분기별 최대
+  렌더 길이로 한다 — 원문 길이는 select 분기 때문에 과대 계상된다). 2026-08-17에 결제 범위·권한·업셀·리포트·
+  준비물 한도·추천 안내 14건을 10개 locale 모두 축약했고, 남긴 것은 **삭제 경고**(`parent.childDetail.copy022`),
+  **Play 정책 고지**, **숨은 운영자 화면**뿐이다. 중복 제거가 우선이다 — 예: 웹 결제 안내는 카드 발급국 제한을
+  바로 아래 `domesticCardOnly` 가 이미 말하므로 그 문장을 뺐다.
 - ★**플랜 비교표 줄바꿈(2026-08-17 TK 제보)**: 항목 이름 `white-space: nowrap` 때문에 표가 화면보다 넓어지고
   값 칸이 글자 중간에서 끊겼다. `table-layout: fixed` + 44%/28%/28% 열 폭 + `word-break: keep-all` ·
   `overflow-wrap: anywhere` · `text-wrap: pretty` 로 어절 단위로만 접는다(`.sub-compare__scroll` 의 가로 스크롤은

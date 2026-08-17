@@ -61,16 +61,31 @@ test("언어 선택기는 키보드 포커스와 44px 터치 영역, 확대 글�
 });
 
 test("onboarding과 부모 설정은 같은 공용 선택기를 역할에 맞는 어조로 사용한다", () => {
-  const screens = [
-    ["src/screens/onboarding/Onboarding.tsx", "formal"],
-    ["src/screens/parent/ParentSettings.tsx", "formal"],
-  ];
+  const onboardingSource = read("src/screens/onboarding/Onboarding.tsx");
+  assert.match(onboardingSource, /import \{ LanguageSelector \} from "@\/components\/LanguageSelector";/);
+  assert.match(onboardingSource, /<LanguageSelector\s+tone="formal"\s*\/>/);
 
-  for (const [path, tone] of screens) {
-    const source = read(path);
-    assert.match(source, /import \{ LanguageSelector \} from "@\/components\/LanguageSelector";/);
-    assert.match(source, new RegExp(`<LanguageSelector\\s+tone="${tone}"\\s*\\/>`));
-  }
+  // 2026-08-17 TK 지시: 부모 설정에서는 계정 프로필 바로 아래 한 줄로 두고 그 줄을 펼쳐서 고른다.
+  const settings = read("src/screens/parent/ParentSettings.tsx");
+  assert.match(settings, /import \{ LanguageSelector, languageNativeName \} from "@\/components\/LanguageSelector";/);
+  assert.match(settings, /<LanguageSelector\s+tone="formal"\s+compact\s*\/>/);
+  assert.match(settings, /id: "core\.language\.rowLabel"/);
+  assert.match(settings, /aria-expanded=\{languageOpen\}/);
+  assert.match(settings, /languageNativeName\(locale\)/);
+  // 프로필 카드 → 언어 행 → 설정 그룹 순서를 지킨다.
+  assert.ok(
+    settings.indexOf('className="ps-profile"') < settings.indexOf("ps-language")
+      && settings.indexOf("ps-language") < settings.indexOf('className="ps-group"'),
+    "언어 행은 계정 프로필 아래, 설정 그룹 위에 있어야 합니다",
+  );
+  const koCore = JSON.parse(read("locales/ko/core.json"));
+  assert.equal(koCore["core.language.rowLabel"], "언어 선택 (Language)");
+  assert.equal(JSON.parse(read("locales/en/core.json"))["core.language.rowLabel"], "Language");
+
+  // compact 는 화면에서만 제목·설명을 감춘다(보조기술에는 남는다).
+  const selectorCss = read("src/components/LanguageSelector.css");
+  assert.match(selectorCss, /\.hy-language--compact\s*\{/);
+  assert.match(selectorCss, /\.hy-language__text--quiet\s*\{[^}]*clip-path:\s*inset\(50%\)/s);
 
   // 2026-08-17 TK 지시: 언어는 가족 공용 설정이라 아이 화면에서는 바꾸지 못한다.
   const childSettings = read("src/screens/child/ChildSettings.tsx");

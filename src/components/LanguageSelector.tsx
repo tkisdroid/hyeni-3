@@ -28,24 +28,34 @@ const copyIds = {
   },
 } as const;
 
-export function LanguageSelector({ tone }: { tone: "formal" | "child" }) {
+/** 현재 언어의 자칭 명칭(설정 행에 지금 값을 보여줄 때 쓴다). */
+export function languageNativeName(locale: SupportedLocale): string {
+  return localeEntries.find((entry) => entry.code === locale)?.nativeName ?? locale;
+}
+
+/**
+ * compact = 이미 라벨이 있는 설정 행 안에 펼쳐 쓰는 형태.
+ * 제목·설명을 화면에서 감춰 같은 말을 두 번 보여주지 않고(보조기술에는 그대로 남긴다) 선택 칩만 보여준다.
+ */
+export function LanguageSelector({ tone, compact = false }: { tone: "formal" | "child"; compact?: boolean }) {
   const { locale, setLocale } = useLocale();
   const intl = useIntl();
   const labelId = useId();
   const descriptionId = useId();
   const copy = copyIds[tone];
+  const textClass = compact ? " hy-language__text--quiet" : "";
 
   return (
     <fieldset
-      className="hy-language"
+      className={compact ? "hy-language hy-language--compact" : "hy-language"}
       role="radiogroup"
       aria-labelledby={labelId}
       aria-describedby={descriptionId}
     >
-      <legend id={labelId} className="hy-language__label">
+      <legend id={labelId} className={`hy-language__label${textClass}`}>
         {intl.formatMessage({ id: copy.label })}
       </legend>
-      <p id={descriptionId} className="hy-language__description">
+      <p id={descriptionId} className={`hy-language__description${textClass}`}>
         {intl.formatMessage({ id: copy.description })}
       </p>
       <div className="hy-language__options">

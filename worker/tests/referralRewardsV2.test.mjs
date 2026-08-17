@@ -276,7 +276,7 @@ test("추천 위치 요약은 중간 fix를 쓰지 않고 역순 earlier fix가 
        (id,referral_code_id,referrer_family_id,referrer_parent_id,referrer_child_user_id,
         referee_family_id,referee_parent_id,status,reward_credits,created_at,updated_at)
      VALUES ('reverse-completion','reverse-code','reverse-referrer','reverse-parent','reverse-child',
-             'reverse-referee','reverse-referee-parent','pending',10,?,?)`,
+             'reverse-referee','reverse-referee-parent','pending',50,?,?)`,
   ).run("2026-07-31 00:00:00.000+00", "2026-07-31 00:00:00.000+00");
 
   const insertHistory = sqlite.prepare(
@@ -347,7 +347,7 @@ test("가족 삭제는 referee 간접 참조까지 지우고 다른 가족의 �
        (id,referral_code_id,referrer_family_id,referrer_parent_id,referrer_child_user_id,
         referee_family_id,referee_parent_id,status,reward_credits,created_at,updated_at)
      VALUES ('delete-completion','delete-code','delete-f-a','delete-p-a','delete-c-a',
-       'delete-f-b','delete-p-b','pending',10,?,?)`,
+       'delete-f-b','delete-p-b','pending',50,?,?)`,
   ).run("2026-08-01 00:00:00.000+00", "2026-08-01 00:00:00.000+00");
 
   const statements = await buildFamilyScopedDeleteStmts(db, ["delete-f-b"]);
@@ -483,7 +483,7 @@ test("신규 가족 setup만 추천을 한 번 원자 귀속하고 기존·self�
       referee_family_id: created.id,
       referee_parent_id: "new-parent",
       status: "pending",
-      reward_credits: 10,
+      reward_credits: 50,
     },
   );
 
@@ -507,7 +507,7 @@ test("신규 가족 setup만 추천을 한 번 원자 귀속하고 기존·self�
   sqlite.close();
 });
 
-test("72시간·이력 전용 첫 위치·48시간 이후 최신 위치를 충족한 뒤 양측에 10회만 원자·멱등 지급한다", async () => {
+test("72시간·이력 전용 첫 위치·48시간 이후 최신 위치를 충족한 뒤 양측에 약속한 50회만 원자·멱등 지급한다", async () => {
   const { sqlite, db } = createDb();
   const app = createApp();
   for (const userId of ["referrer-parent", "referrer-child", "referee-parent", "referee-child"]) {
@@ -620,19 +620,19 @@ test("72시간·이력 전용 첫 위치·48시간 이후 최신 위치를 충�
     { ...sqlite.prepare(
       "SELECT child_user_id,purchased_credits FROM ai_credit_balances WHERE family_id=?",
     ).get(refereeFamilyId) },
-    { child_user_id: "referee-child", purchased_credits: 10 },
+    { child_user_id: "referee-child", purchased_credits: 50 },
   );
   assert.deepEqual(
     { ...sqlite.prepare(
       "SELECT child_user_id,purchased_credits FROM ai_credit_balances WHERE family_id='referrer-family'",
     ).get() },
-    { child_user_id: "referrer-child", purchased_credits: 10 },
+    { child_user_id: "referrer-child", purchased_credits: 50 },
   );
   assert.deepEqual(
     sqlite.prepare("SELECT delta,reason,source FROM ai_credit_ledger ORDER BY id").all().map((row) => ({ ...row })),
     [
-      { delta: 10, reason: "referral_reward", source: "referral_reward" },
-      { delta: 10, reason: "referral_reward", source: "referral_reward" },
+      { delta: 50, reason: "referral_reward", source: "referral_reward" },
+      { delta: 50, reason: "referral_reward", source: "referral_reward" },
     ],
   );
   assert.equal(
@@ -649,8 +649,8 @@ test("72시간·이력 전용 첫 위치·48시간 이후 최신 위치를 충�
     limit: 10,
   });
   assert.equal(retry.rewarded, 0);
-  assert.equal(sqlite.prepare("SELECT SUM(delta) AS n FROM ai_credit_ledger").get().n, 20);
-  assert.equal(sqlite.prepare("SELECT SUM(purchased_credits) AS n FROM ai_credit_balances").get().n, 20);
+  assert.equal(sqlite.prepare("SELECT SUM(delta) AS n FROM ai_credit_ledger").get().n, 100);
+  assert.equal(sqlite.prepare("SELECT SUM(purchased_credits) AS n FROM ai_credit_balances").get().n, 100);
   sqlite.close();
 });
 
@@ -670,7 +670,7 @@ test("가입이 아니라 첫 실제 위치부터 48시간이 지난 뒤에만 �
         referee_family_id,referee_parent_id,referee_child_user_id,status,reward_credits,
         first_location_at,latest_location_at,created_at,updated_at)
      VALUES ('late-completion','late-code','late-f-a','late-p-a','late-c-a',
-       'late-f-b','late-p-b','late-c-b','pending',10,NULL,NULL,?,?)`,
+       'late-f-b','late-p-b','late-c-b','pending',50,NULL,NULL,?,?)`,
   ).run(
     "2026-08-01 00:00:00.000+00",
     "2026-08-01 00:00:00.000+00",
@@ -699,7 +699,7 @@ test("가입이 아니라 첫 실제 위치부터 48시간이 지난 뒤에만 �
     limit: 1,
   });
   assert.deepEqual(fullRetention, { scanned: 1, rewarded: 1, rejected: 0, pending: 0, failed: 0 });
-  assert.equal(sqlite.prepare("SELECT SUM(delta) AS n FROM ai_credit_ledger").get().n, 20);
+  assert.equal(sqlite.prepare("SELECT SUM(delta) AS n FROM ai_credit_ledger").get().n, 100);
   sqlite.close();
 });
 
@@ -737,7 +737,7 @@ test("위치가 없는 오래된 추천은 limit 1 cron에서 뒤의 자격 충�
        (id,referral_code_id,referrer_family_id,referrer_parent_id,referrer_child_user_id,
         referee_family_id,referee_parent_id,status,reward_credits,created_at,updated_at)
      VALUES ('fair-stale-completion','fair-code','fair-referrer-family','fair-referrer-parent',
-             'fair-referrer-child','fair-stale-family','fair-stale-parent','pending',10,?,?)`,
+             'fair-referrer-child','fair-stale-family','fair-stale-parent','pending',50,?,?)`,
   ).run("2026-08-01 00:00:00.000+00", "2026-08-01 00:00:00.000+00");
   sqlite.prepare(
     `INSERT INTO referral_completions_v2
@@ -746,7 +746,7 @@ test("위치가 없는 오래된 추천은 limit 1 cron에서 뒤의 자격 충�
         created_at,updated_at)
      VALUES ('fair-ready-completion','fair-code','fair-referrer-family','fair-referrer-parent',
              'fair-referrer-child','fair-ready-family','fair-ready-parent','fair-ready-child',
-             'pending',10,?,?)`,
+             'pending',50,?,?)`,
   ).run("2026-08-01 01:00:00.000+00", "2026-08-01 01:00:00.000+00");
   sqlite.prepare(
     `INSERT INTO child_locations(user_id,family_id,lat,lng,updated_at,accuracy_m)
@@ -772,7 +772,7 @@ test("위치가 없는 오래된 추천은 limit 1 cron에서 뒤의 자격 충�
     sqlite.prepare("SELECT status FROM referral_completions_v2 WHERE id='fair-ready-completion'").get().status,
     "rewarded",
   );
-  assert.equal(sqlite.prepare("SELECT SUM(delta) AS n FROM ai_credit_ledger").get().n, 20);
+  assert.equal(sqlite.prepare("SELECT SUM(delta) AS n FROM ai_credit_ledger").get().n, 100);
   sqlite.close();
 });
 
@@ -791,7 +791,7 @@ test("양측 지급 batch 중간 실패는 잔액·원장·상태·성공횟수�
        (id,referral_code_id,referrer_family_id,referrer_parent_id,referrer_child_user_id,
         referee_family_id,referee_parent_id,referee_child_user_id,status,reward_credits,
         first_location_at,latest_location_at,created_at,updated_at)
-     VALUES ('completion-a','code-a','f-a','p-a','c-a','f-b','p-b','c-b','pending',10,
+     VALUES ('completion-a','code-a','f-a','p-a','c-a','f-b','p-b','c-b','pending',50,
        '2026-08-01 01:00:00.000+00','2026-08-03 01:00:00.000+00',?,?)`,
   ).run("2026-08-01 00:00:00.000+00", "2026-08-03 01:00:00.000+00");
   sqlite.prepare(
@@ -831,7 +831,7 @@ test("두 가족 mutation lease 획득 중 삭제 scope가 생기면 지급 없�
         referee_family_id,referee_parent_id,referee_child_user_id,status,reward_credits,
         first_location_at,latest_location_at,created_at,updated_at)
      VALUES ('race-completion','race-code','race-f-a','race-p-a','race-c-a',
-       'race-f-b','race-p-b','race-c-b','pending',10,
+       'race-f-b','race-p-b','race-c-b','pending',50,
        '2026-08-01 01:00:00.000+00','2026-08-03 01:00:00.000+00',?,?)`,
   ).run("2026-08-01 00:00:00.000+00", "2026-08-03 01:00:00.000+00");
   sqlite.prepare(
@@ -869,7 +869,7 @@ test("두 가족 mutation lease 획득 중 삭제 scope가 생기면 지급 없�
   sqlite.close();
 });
 
-test("추천인 성공 3가족 이후의 신규 귀속은 가족 생성까지 함께 거부한다", async () => {
+test("초대 가족 수 상한이 없어 네 번째 가족도 그대로 귀속된다", async () => {
   const { sqlite, db } = createDb();
   const app = createApp();
   for (const userId of ["cap-parent", "cap-child", "fourth-parent"]) addUser(sqlite, userId);
@@ -880,7 +880,7 @@ test("추천인 성공 3가족 이후의 신규 귀속은 가족 생성까지 �
      VALUES ('cap-code','cap-family','cap-parent','cap-child','HYENI-23456789ABCDEFGH','active',3,?,?)`,
   ).run("2026-08-01 00:00:00.000+00", "2026-08-01 00:00:00.000+00");
 
-  const blocked = await jsonRequest(
+  const accepted = await jsonRequest(
     app,
     db,
     "/api/family/setup",
@@ -888,8 +888,17 @@ test("추천인 성공 3가족 이후의 신규 귀속은 가족 생성까지 �
     null,
     { parentName: "네 번째", referralCode: "HYENI-23456789ABCDEFGH" },
   );
-  assert.equal(blocked.status, 409);
-  assert.equal((await blocked.json()).error, "referral_success_cap_reached");
-  assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM families WHERE parent_id='fourth-parent'").get().n, 0);
+  assert.equal(accepted.status, 200, JSON.stringify(await accepted.clone().json()));
+  const created = await accepted.json();
+  assert.equal(
+    sqlite.prepare("SELECT referred_by_family_id FROM families WHERE id=?").get(created.id).referred_by_family_id,
+    "cap-family",
+  );
+  assert.deepEqual(
+    { ...sqlite.prepare(
+      "SELECT status,reward_credits FROM referral_completions_v2 WHERE referee_family_id=?",
+    ).get(created.id) },
+    { status: "pending", reward_credits: 50 },
+  );
   sqlite.close();
 });

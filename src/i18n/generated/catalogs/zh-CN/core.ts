@@ -76,6 +76,7 @@ const messages = {
   "core.language.child.label": "选择语言",
   "core.language.formal.description": "请选择您想在此设备上使用的语言。",
   "core.language.formal.label": "选择语言",
+  "core.language.rowLabel": "语言 (Language)",
   "core.nav.calendar": "日历",
   "core.nav.chat": "聊天",
   "core.nav.classHome": "班级主页",

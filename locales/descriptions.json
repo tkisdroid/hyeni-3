@@ -5193,6 +5193,13 @@
     "variables": {},
     "description": "온보딩과 부모 설정의 언어 선택기 접근성 이름"
   },
+  "core.language.rowLabel": {
+    "namespace": "core",
+    "audience": "shared",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "설정 행 다국어 문구: 언어 선택(영어 병기로 낯선 언어에서도 찾을 수 있게)"
+  },
   "core.nav.calendar": {
     "namespace": "core",
     "audience": "shared",
@@ -8234,9 +8241,11 @@
   "onboarding.connect.referralDescription": {
     "namespace": "onboarding",
     "audience": "parent",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "onboarding.connect.referralDescription에 표시하는 사용자 안내 문구"
+    "qualityTier": "A",
+    "variables": {
+      "count": "number"
+    },
+    "description": "온보딩 추천 코드 안내: 보상 조건 한 줄"
   },
   "onboarding.connect.referralTitle": {
     "namespace": "onboarding",
@@ -8783,13 +8792,6 @@
     "qualityTier": "B",
     "variables": {},
     "description": "onboarding.progress.survey에 표시하는 사용자 안내 문구"
-  },
-  "onboarding.role.badge": {
-    "namespace": "onboarding",
-    "audience": "parent",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "onboarding.role.badge에 표시하는 사용자 안내 문구"
   },
   "onboarding.role.child.description": {
     "namespace": "onboarding",
@@ -14561,8 +14563,10 @@
     "namespace": "parent",
     "audience": "parent",
     "qualityTier": "B",
-    "variables": {},
-    "description": "parent.parentSettings.copy018에 표시하는 사용자 안내 문구"
+    "variables": {
+      "count": "number"
+    },
+    "description": "부모 설정 메뉴: 친구 초대 진입 행"
   },
   "parent.parentSettings.copy019": {
     "namespace": "parent",
@@ -14612,13 +14616,6 @@
     "qualityTier": "B",
     "variables": {},
     "description": "parent.parentSettings.copy025에 표시하는 사용자 안내 문구"
-  },
-  "parent.parentSettings.copy026": {
-    "namespace": "parent",
-    "audience": "parent",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "parent.parentSettings.copy026에 표시하는 사용자 안내 문구"
   },
   "parent.parentSettings.copy027": {
     "namespace": "parent",
@@ -15256,6 +15253,22 @@
     "variables": {},
     "description": "아이 프로필 편집 다국어 문구: screenTitle"
   },
+  "parent.referral.home.action": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "부모 홈 카드: 친구 초대 버튼"
+  },
+  "parent.referral.home.headline": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "count": "number"
+    },
+    "description": "부모 홈 카드: 친구 초대 보상 한 줄"
+  },
   "parent.referralRewardPanel.clipboardFailed": {
     "namespace": "parent",
     "audience": "parent",
@@ -15314,14 +15327,16 @@
     "audience": "parent",
     "qualityTier": "B",
     "variables": {},
-    "description": "parent.referralRewardPanel.copy006에 표시하는 사용자 안내 문구"
+    "description": "친구 초대 시트 제목"
   },
   "parent.referralRewardPanel.copy007": {
     "namespace": "parent",
     "audience": "parent",
     "qualityTier": "B",
-    "variables": {},
-    "description": "parent.referralRewardPanel.copy007에 표시하는 사용자 안내 문구"
+    "variables": {
+      "count": "number"
+    },
+    "description": "친구 초대 안내: 두 가족 보상 요약"
   },
   "parent.referralRewardPanel.copy008": {
     "namespace": "parent",
@@ -15334,43 +15349,17 @@
     "namespace": "parent",
     "audience": "parent",
     "qualityTier": "B",
-    "variables": {},
-    "description": "parent.referralRewardPanel.copy009에 표시하는 사용자 안내 문구"
+    "variables": {
+      "count": "number"
+    },
+    "description": "친구 초대 안내: 보상 크레딧 강조"
   },
   "parent.referralRewardPanel.copy010": {
     "namespace": "parent",
     "audience": "parent",
-    "qualityTier": "B",
+    "qualityTier": "A",
     "variables": {},
-    "description": "parent.referralRewardPanel.copy010에 표시하는 사용자 안내 문구"
-  },
-  "parent.referralRewardPanel.copy011": {
-    "namespace": "parent",
-    "audience": "parent",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "parent.referralRewardPanel.copy011에 표시하는 사용자 안내 문구"
-  },
-  "parent.referralRewardPanel.copy012": {
-    "namespace": "parent",
-    "audience": "parent",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "parent.referralRewardPanel.copy012에 표시하는 사용자 안내 문구"
-  },
-  "parent.referralRewardPanel.copy013": {
-    "namespace": "parent",
-    "audience": "parent",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "parent.referralRewardPanel.copy013에 표시하는 사용자 안내 문구"
-  },
-  "parent.referralRewardPanel.copy014": {
-    "namespace": "parent",
-    "audience": "parent",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "parent.referralRewardPanel.copy014에 표시하는 사용자 안내 문구"
+    "description": "친구 초대 지급 조건 한 줄"
   },
   "parent.referralRewardPanel.copy015": {
     "namespace": "parent",
@@ -15404,8 +15393,10 @@
     "namespace": "parent",
     "audience": "parent",
     "qualityTier": "B",
-    "variables": {},
-    "description": "parent.referralRewardPanel.copy019에 표시하는 사용자 안내 문구"
+    "variables": {
+      "count": "number"
+    },
+    "description": "친구 초대 진행: 완료한 가족 수"
   },
   "parent.referralRewardPanel.copy020": {
     "namespace": "parent",
@@ -15456,13 +15447,6 @@
     "variables": {},
     "description": "parent.referralRewardPanel.copy026에 표시하는 사용자 안내 문구"
   },
-  "parent.referralRewardPanel.copy027": {
-    "namespace": "parent",
-    "audience": "parent",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "parent.referralRewardPanel.copy027에 표시하는 사용자 안내 문구"
-  },
   "parent.referralRewardPanel.copy028": {
     "namespace": "parent",
     "audience": "parent",
@@ -15479,14 +15463,24 @@
     },
     "description": "친구 초대 코드 접근성 이름"
   },
-  "parent.referralRewardPanel.shareBody": {
+  "parent.referralRewardPanel.pending": {
     "namespace": "parent",
     "audience": "parent",
     "qualityTier": "B",
     "variables": {
+      "count": "number"
+    },
+    "description": "친구 초대 진행: 확인 중인 가족 수"
+  },
+  "parent.referralRewardPanel.shareBody": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {
+      "count": "number",
       "link": "string"
     },
-    "description": "친구 초대 실제 공유 본문"
+    "description": "친구 초대 공유 본문(보상 횟수와 링크 포함)"
   },
   "parent.repeat.daily": {
     "namespace": "parent",
