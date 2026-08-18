@@ -873,6 +873,7 @@ const messages = {
   "parent.referralRewardPanel.copy028": "Tidak ada status undangan untuk ditampilkan.",
   "parent.referralRewardPanel.inviteCodeAria": "Kode undangan teman {code}",
   "parent.referralRewardPanel.pending": "{count} menunggu",
+  "parent.referralRewardPanel.primaryParentOnly": "Kode dibuat oleh orang tua utama",
   "parent.referralRewardPanel.shareBody": "Keamanan anak bersama Hyeni Calendar.\nGabung lewat tautan ini — setelah 3 hari terkonfirmasi, tiap keluarga dapat {count} obrolan AI.\n{link}",
   "parent.repeat.daily": "setiap hari",
   "parent.repeat.monthly": "setiap bulan",

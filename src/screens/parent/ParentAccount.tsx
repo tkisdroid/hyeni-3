@@ -1,7 +1,7 @@
 import { useEffect, useId, useState, useRef } from "react";
 import type { ChangeEvent } from "react";
 import { useNavigate } from "react-router";
-import { Camera, ChevronLeft, KeyRound, LogOut, ShieldAlert, Trash2 } from "lucide-react";
+import { ChevronLeft, KeyRound, LogOut, ShieldAlert, Trash2 } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { resizeImageFileSafe } from "@/lib/imageResize";
 import { formatPhoneDisplay } from "@/transform/phoneFormat";
@@ -306,8 +306,9 @@ export function ParentAccount() {
             })}
           >
             <img src={avatarSrc} alt="" loading="eager" decoding="async" />
+            {/* 사진 = 카메라 3D 아이콘. 설정 화면의 아이콘 언어를 따른다(2026-08-18 TK 지시). */}
             <span className="pa-profile__avatar-edit" aria-hidden="true">
-              <Camera size={14} strokeWidth={2.4} color="#fff" />
+              <img src={asset("ui/camera-3d.webp")} alt="" />
             </span>
           </button>
           <input

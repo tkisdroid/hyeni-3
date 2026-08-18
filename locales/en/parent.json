@@ -865,6 +865,7 @@
   "parent.referralRewardPanel.copy019": "{count} families joined",
   "parent.referralRewardPanel.copy020": "Children who will receive invitation rewards",
   "parent.referralRewardPanel.copy021": "Please create the code first",
+  "parent.referralRewardPanel.primaryParentOnly": "Only the main guardian can create the code",
   "parent.referralRewardPanel.copy022": "preparing…",
   "parent.referralRewardPanel.copy023": "Change the recipient child",
   "parent.referralRewardPanel.copy024": "Create an invitation code",

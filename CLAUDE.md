@@ -574,6 +574,13 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   지급액은 상수가 아니라 **완료 행에 기록된 `reward_credits`** 를 쓴다 — 정책이 바뀌어도 귀속 시점에 약속한 금액을
   지킨다. 진입점은 부모 홈 구독 카드 아래 한 줄 카드(주 보호자만)와 설정 행 두 곳이고, 문구는 보상 한 줄 + 조건
   한 줄만 남겼다(단계 설명·법률 문단·상한 안내는 재도입 금지).
+  ★**코드는 계정이 아니라 가족의 것이다(2026-08-18)**: `readReferralStatus`·`upsertReferralCode` 를
+  `owner_parent_id` 로 좁히면 주 보호자가 바뀐 가족에서 **이미 있는 코드가 안 보이고**, 발급을 눌러도
+  UPDATE 가 0행이라 **조용히 아무 일도 일어나지 않는다**. 이제 둘 다 `family_id` 로 잠그고 변경 시
+  `owner_parent_id` 를 현재 주 보호자로 맞추며, 0행이면 `referral_code_update_unavailable`(503)로 실패를 드러낸다.
+  조회(`GET /me`)는 **활성 보호자 전원**에게 열고 응답의 `canManage`(주 보호자만 true)로 만들기·아이 변경만 막는다 —
+  공동 보호자도 코드를 보고 공유할 수 있어야 한다. 홈·설정 진입점도 `myRole === "parent"` 기준이다.
+  회귀=`worker/tests/referralRewardsV2.test.mjs`(가족 스코프·공동 보호자 읽기)·`tests/referralRewardWiring.test.mjs`.
   ★공유 링크는 `https://hyeni-calendar.pages.dev/?ref=HYENI-…` 다. `#/onboarding?ref=` 해시는
   카카오톡·라인에서 잘리므로 쓰지 않는다. `/invite?ref=` 도 읽지만, Pages rewrite 전에는
   루트 쿼리를 공유한다. 「친구에게 공유」는 시스템 공유 시트(`sharePlainContent` +
@@ -905,6 +912,15 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   강등하며 신고 대상에서 뺀다. 주변 소리 기록의 0초 세션은 "청취 없이 종료", 그 외는 "N초 청취".
 - ★출발 알림 톤(2026-07-30): 도착=민트, 출발=라벤더, 앰버(확인 필요)는 미도착·지연만. `arrivalAlertTone` 단일 출처.
 
+- ★**"브라우저에서만 안 된다" = 먼저 번들 신선도를 의심한다(2026-08-18)**: 부모 프로필 사진·친구 초대 코드가
+  브라우저에서만 안 보인다는 제보를 D1·R2·API 로 추적한 결과 **서버 데이터는 정상**이었다(멤버 `photo_url` 저장,
+  R2 객체 59,960B·`purpose: parent_profile`·`targetMemberId` 일치, 코드 행 `HYENI-…` active). 격리 브라우저에서
+  같은 계약으로 재현하니 사진은 blob URL 로 그려지고 코드 발급도 성공했다. 즉 원인은 **탭이 들고 있던 옛 번들**이
+  가장 유력하다(옛 클라이언트는 서버가 더 이상 주지 않는 상한 필드를 요구해 초대 화면이 오류가 된다).
+  그래서 `registerSW`의 `onRegisteredSW` 에서 30분마다·화면 복귀마다 `registration.update()` 를 돌려 오래 열어
+  둔 탭도 스스로 새 번들을 받게 했다. 진단 순서: ①D1 행 ②R2 객체·메타데이터(`wrangler dev --remote` 로 띄운
+  읽기 전용 스크래치 워커의 `PHOTOS.head`) ③격리 브라우저 재현 ④그래도 정상이면 번들·세션(계정) 신선도.
+  회귀=`scripts/final-browser-qa.mjs`(부모 사진 blob 렌더 + 초대 코드 발급 클릭)·`tests/routePreload.test.ts`.
 - ★**화면이 "한 번씩 리프레시"되는 두 원인(2026-08-18 TK 제보)**: ①**새 버전 적용 새로고침** — 새 빌드를 깔면
   Service Worker 가 몇 초 뒤 활성화되고 `main.tsx` 가 `window.location.reload()` 한다. 부팅 중이 아니라 사용자가
   이미 화면을 보고 있을 때 실행되면 "대화·설정 화면에서 갑자기 새로고침"으로 읽힌다. 이제 `pwaReloadTiming`

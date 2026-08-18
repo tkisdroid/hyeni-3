@@ -39,6 +39,25 @@ const CHILD_ID = "qa-child";
 const TEACHER_ID = "qa-teacher";
 const PARENT_MEMBER_ID = "qa-parent-member";
 const CHILD_MEMBER_ID = "qa-child-member";
+/** 서버가 저장하는 비공개 객체 키 모양 — 그대로 <img src> 에 넣으면 안 되는 값이다. */
+const PARENT_PHOTO_KEY = `${FAMILY_ID}/uploads/${PARENT_ID}/qa-parent-profile.jpg`;
+/** 1×1 PNG — 사진이 실제로 디코딩되는지(naturalWidth>0) 확인하기 위한 최소 바이트. */
+const QA_PHOTO_PNG_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+const QA_REFERRAL_CODE = "HYENI-QA34567890ABCDEF";
+let qaReferralCode = null;
+
+function referralStatusFixture() {
+  return {
+    code: qaReferralCode,
+    rewardChildUserId: qaReferralCode ? CHILD_ID : null,
+    rewardCredits: 50,
+    qualificationHours: 72,
+    locationRetentionHours: 168,
+    successfulCount: 0,
+    pendingCount: 0,
+    canManage: true,
+  };
+}
 const HOME = Object.freeze({ lat: 37.3021, lng: 127.1043 });
 const SCHOOL = Object.freeze({ lat: 37.2925, lng: 127.1191 });
 
@@ -109,7 +128,9 @@ function familyResponse(role) {
         role: "parent",
         name: "데모 보호자",
         phone: null,
-        photo_url: null,
+        // 서버는 비공개 객체 키를 준다 — 화면이 이걸 표시용 URL로 바꾸는지 함께 본다.
+        photo_url: PARENT_PHOTO_KEY,
+        gender: "dad",
       },
       {
         id: CHILD_MEMBER_ID,
@@ -323,7 +344,7 @@ function demoMemos() {
   ];
 }
 
-function mockApi(pathname, scenario) {
+function mockApi(pathname, scenario, method = "GET") {
   const {
     role,
     tier,
@@ -409,7 +430,13 @@ function mockApi(pathname, scenario) {
   if (pathname === "/api/saved-places") return savedPlaces(overLimit);
   if (pathname === "/api/danger-zones") return dangerZones(overLimit);
   if (pathname === "/api/academies") return tier === "premium" ? [{ id: "qa-academy-1", family_id: FAMILY_ID, child_id: CHILD_MEMBER_ID, name: "데모 피아노", category: "music", schedule: [] }] : [];
-  if (pathname === "/api/referrals/me") return { code: null, shareUrl: null, successfulReferrals: 0, pendingReferrals: 0 };
+  // 친구 초대 상태·발급은 서버 계약(rewardCredits·qualificationHours…)을 그대로 흉내 낸다.
+  // 예전 fixture(shareUrl·successfulReferrals)는 클라 검증을 통과하지 못해 화면이 오류로 보였다.
+  if (pathname === "/api/referrals/me") return referralStatusFixture();
+  if (pathname === "/api/referrals/code") {
+    if (method === "POST") qaReferralCode = QA_REFERRAL_CODE;
+    return referralStatusFixture();
+  }
   if (pathname === "/api/auth/oauth/links") return { links: [] };
   if (pathname === "/api/force-ring/active") return null;
   if (pathname === "/api/force-ring/history") return [];
@@ -864,7 +891,18 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
             await cdp.send("Fetch.fulfillRequest", { requestId, responseCode: 200, responseHeaders: [...cors, { name: "content-type", value: "application/javascript" }], body: Buffer.from("/* isolated browser QA */").toString("base64") });
             return;
           }
-          const payload = mockApi(url.pathname, activeScenario);
+          // 비공개 사진은 JSON이 아니라 이미지다 — 부모·아이 아바타가 실제로 그려지는지 보려면
+          // 이 경로도 진짜 바이트로 응답해야 한다(2026-08-18 부모 프로필 사진 제보).
+          if (url.pathname.startsWith("/api/storage/child-photos/")) {
+            await cdp.send("Fetch.fulfillRequest", {
+              requestId,
+              responseCode: 200,
+              responseHeaders: [...cors, { name: "content-type", value: "image/png" }, { name: "cache-control", value: "private, no-store" }],
+              body: QA_PHOTO_PNG_BASE64,
+            });
+            return;
+          }
+          const payload = mockApi(url.pathname, activeScenario, request.method);
           const responseCode = url.pathname === "/api/ai/voice-parse"
             && activeScenario.aiScheduleExhausted === true
             ? 429
@@ -1365,6 +1403,69 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       });
     }
     report.focused.antiSlop.parentSettings = parentSettingsAntiSlopFacts;
+
+    // 부모 프로필 사진: 서버가 준 객체 키를 표시용 URL로 바꿔 실제로 그려지는지(디코딩까지) 본다.
+    const parentProfilePhotoFacts = await cdp.evaluate(`(() => {
+      const img = document.querySelector(".ps-profile__avatar img");
+      if (!img) return { found: false, src: "", naturalWidth: 0 };
+      const src = img.getAttribute("src") || "";
+      return {
+        found: true,
+        src: src.slice(0, 16),
+        isDisplayUrl: src.startsWith("blob:") || src.startsWith("http"),
+        naturalWidth: img.naturalWidth,
+        complete: img.complete,
+      };
+    })()`);
+    if (
+      !parentProfilePhotoFacts.found
+      || !parentProfilePhotoFacts.isDisplayUrl
+      || parentProfilePhotoFacts.naturalWidth <= 0
+    ) {
+      report.problems.push({ scope: "parent-profile-photo", facts: parentProfilePhotoFacts });
+    }
+    report.focused.parentProfilePhoto = parentProfilePhotoFacts;
+    report.screenshots.push(await screenshot(cdp, freshOutputDir, "parent-settings-icons.png"));
+
+    // 친구 초대: 설정 행 → 패널 → 코드 발급까지 실제로 눌러 본다.
+    await cdp.evaluate(`(() => {
+      const row = [...document.querySelectorAll(".ps-nav")].find((node) => (node.textContent || "").includes("초대"));
+      if (row instanceof HTMLElement) row.click();
+      return true;
+    })()`);
+    await wait(900);
+    const referralPanelFacts = await cdp.evaluate(`(() => ({
+      open: Boolean(document.querySelector(".rrp__body")),
+      state: document.querySelector(".rrp__state")?.textContent?.trim().slice(0, 40) ?? null,
+      childOptions: document.querySelectorAll("#referral-reward-child option").length,
+      code: document.querySelector(".rrp__code")?.textContent?.trim() ?? null,
+      hasSave: Boolean(document.querySelector(".rrp__save")),
+    }))()`);
+    await cdp.evaluate(`(() => {
+      const save = document.querySelector(".rrp__save");
+      if (save instanceof HTMLElement) save.click();
+      return true;
+    })()`);
+    await wait(1_400);
+    const referralIssuedFacts = await cdp.evaluate(`(() => ({
+      code: document.querySelector(".rrp__code")?.textContent?.trim() ?? null,
+      stillAsksToIssue: Boolean(document.querySelector(".rrp__save")),
+      copyEnabled: !document.querySelector(".rrp__action--copy")?.disabled,
+    }))()`);
+    if (
+      !referralPanelFacts.open
+      || referralPanelFacts.state !== null
+      || referralPanelFacts.childOptions < 1
+      || !/^HYENI-[0-9A-HJKMNP-TV-Z]{16}$/.test(referralIssuedFacts.code ?? "")
+      || referralIssuedFacts.stillAsksToIssue
+      || !referralIssuedFacts.copyEnabled
+    ) {
+      report.problems.push({
+        scope: "referral-code-issue",
+        facts: { panel: referralPanelFacts, issued: referralIssuedFacts },
+      });
+    }
+    report.focused.referralCodeIssue = { panel: referralPanelFacts, issued: referralIssuedFacts };
 
     const subscription = await navigate({ role: "parent", tier: "free", catalogMode: "valid", overLimit: false }, "subscription");
     const subscriptionFacts = await cdp.evaluate(`(() => {

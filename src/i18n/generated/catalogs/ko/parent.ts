@@ -873,6 +873,7 @@ const messages = {
   "parent.referralRewardPanel.copy028": "표시할 초대 상태가 없어요.",
   "parent.referralRewardPanel.inviteCodeAria": "친구 초대 코드 {code}",
   "parent.referralRewardPanel.pending": "확인 중 {count}가족",
+  "parent.referralRewardPanel.primaryParentOnly": "코드는 주 보호자가 만들어요",
   "parent.referralRewardPanel.shareBody": "혜니캘린더로 아이 안전을 함께 시작해요.\n이 링크로 가족을 만들고 3일 동안 위치가 확인되면 두 가족 모두 AI 대화 {count}회를 받아요.\n{link}",
   "parent.repeat.daily": "매일",
   "parent.repeat.monthly": "매월",

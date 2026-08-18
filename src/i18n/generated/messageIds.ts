@@ -2147,6 +2147,7 @@ export const messageIds = [
   "parent.referralRewardPanel.copy028",
   "parent.referralRewardPanel.inviteCodeAria",
   "parent.referralRewardPanel.pending",
+  "parent.referralRewardPanel.primaryParentOnly",
   "parent.referralRewardPanel.shareBody",
   "parent.repeat.daily",
   "parent.repeat.monthly",

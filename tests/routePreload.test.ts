@@ -77,6 +77,14 @@ test("네이티브 앱은 사용자가 보고 있는 화면을 스스로 새로�
   assert.equal(canReloadForPwaUpdateNow({ native: false, visibility: "hidden" }), true);
 });
 
+test("오래 열어 둔 브라우저 탭도 새 버전을 주기적으로 확인한다", () => {
+  // 확인을 안 하면 며칠 열어 둔 탭이 옛 번들에 머물러 새 기능이 없는 화면을 보게 된다.
+  assert.match(main, /onRegisteredSW: \(_url, registration\) =>/);
+  assert.match(main, /setInterval\(check, PWA_UPDATE_CHECK_INTERVAL_MS\)/);
+  assert.match(main, /PWA_UPDATE_CHECK_INTERVAL_MS = 30 \* 60_000/);
+  assert.match(main, /registration\.update\(\)/);
+});
+
 test("미뤄 둔 새로고침은 앱이 백그라운드로 갈 때 다시 시도한다", () => {
   assert.match(main, /queuePwaUpdateAction\("reload", reloadForPwaUpdate\)/);
   assert.match(main, /canReloadForPwaUpdateNow\(\{\s*native: isNativePlatform\(\),\s*visibility: document\.visibilityState,\s*\}\)/);

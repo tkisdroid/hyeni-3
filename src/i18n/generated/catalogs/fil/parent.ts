@@ -873,6 +873,7 @@ const messages = {
   "parent.referralRewardPanel.copy028": "Walang ipapakitang katayuan ng imbitasyon.",
   "parent.referralRewardPanel.inviteCodeAria": "Code ng imbitasyon sa kaibigan {code}",
   "parent.referralRewardPanel.pending": "{count} naghihintay",
+  "parent.referralRewardPanel.primaryParentOnly": "Ang pangunahing tagapag-alaga lang ang gumagawa ng code",
   "parent.referralRewardPanel.shareBody": "Kaligtasan ng pamilya sa Hyeni Calendar.\nSumali sa link — pagkatapos ng 3 araw, {count} AI chat para sa bawat pamilya.\n{link}",
   "parent.repeat.daily": "araw-araw",
   "parent.repeat.monthly": "bawat buwan",

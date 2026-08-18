@@ -865,6 +865,7 @@
   "parent.referralRewardPanel.copy019": "สำเร็จ {count} ครอบครัว",
   "parent.referralRewardPanel.copy020": "เด็ก ๆ ที่จะได้รับรางวัลคำเชิญ",
   "parent.referralRewardPanel.copy021": "กรุณาสร้างรหัสก่อน",
+  "parent.referralRewardPanel.primaryParentOnly": "ผู้ปกครองหลักเท่านั้นที่สร้างรหัสได้",
   "parent.referralRewardPanel.copy022": "กำลังเตรียม...",
   "parent.referralRewardPanel.copy023": "เปลี่ยนลูกผู้รับ",
   "parent.referralRewardPanel.copy024": "สร้างรหัสคำเชิญ",

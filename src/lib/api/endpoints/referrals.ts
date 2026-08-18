@@ -11,6 +11,8 @@ export interface ReferralStatus {
   /** 지급까지 끝난 초대 가족 수. 상한은 없다(2026-08-17). */
   successfulCount: number;
   pendingCount: number;
+  /** 코드를 만들거나 받을 아이를 바꿀 수 있는지(주 보호자만). 공동 보호자는 보고 공유만 한다. */
+  canManage: boolean;
 }
 
 const SAFE_USER_ID = /^[A-Za-z0-9_-]{1,128}$/;
@@ -57,6 +59,8 @@ function validateReferralStatus(value: unknown): ReferralStatus {
     locationRetentionHours,
     successfulCount,
     pendingCount,
+    // 옛 서버 응답에는 없는 값이라 없으면 관리 가능으로 본다(주 보호자만 이 화면에 들어왔었다).
+    canManage: value.canManage !== false,
   };
 }
 

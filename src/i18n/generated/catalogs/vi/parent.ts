@@ -873,6 +873,7 @@ const messages = {
   "parent.referralRewardPanel.copy028": "Không có trạng thái lời mời để hiển thị.",
   "parent.referralRewardPanel.inviteCodeAria": "Mã mời bạn bè {code}",
   "parent.referralRewardPanel.pending": "Đang xác nhận {count}",
+  "parent.referralRewardPanel.primaryParentOnly": "Chỉ phụ huynh chính tạo được mã",
   "parent.referralRewardPanel.shareBody": "An toàn cho con, cùng Hyeni Calendar.\nVào bằng liên kết này — sau 3 ngày xác nhận, cả hai gia đình nhận {count} lượt AI.\n{link}",
   "parent.repeat.daily": "hàng ngày",
   "parent.repeat.monthly": "mỗi tháng",

@@ -73,6 +73,23 @@ async function primaryFamily(
     : null;
 }
 
+/**
+ * 조회는 가족의 모든 활성 보호자에게 연다(2026-08-18).
+ * 코드는 가족의 것이라 공동 보호자도 보고 공유할 수 있어야 한다 — 만들고 바꾸는 것만 주 보호자다.
+ */
+async function parentFamily(
+  db: D1Database,
+  userId: string,
+  preferredFamilyId: string | null,
+): Promise<{ familyId: string; canManage: boolean } | null> {
+  const membership = await resolveCanonicalFamilyMembership(db, userId, preferredFamilyId);
+  if (!membership || membership.role !== "parent") return null;
+  return {
+    familyId: membership.familyId,
+    canManage: await assertPrimaryParent(db, userId, membership.familyId),
+  };
+}
+
 function referralError(c: Context<{ Bindings: Env; Variables: Vars }>, error: unknown) {
   if (error instanceof ReferralAttributionError) {
     return c.json({ error: error.message }, error.status);
@@ -86,10 +103,11 @@ function referralError(c: Context<{ Bindings: Env; Variables: Vars }>, error: un
 
 referrals.get("/me", requireAuth, async (c) => {
   const user = c.get("user");
-  const familyId = await primaryFamily(c.env.DB, user.sub, user.family_id);
-  if (!familyId) return c.json({ error: "referral_primary_parent_required" }, 403);
+  const family = await parentFamily(c.env.DB, user.sub, user.family_id);
+  if (!family) return c.json({ error: "referral_primary_parent_required" }, 403);
   try {
-    return c.json(await readReferralStatus(c.env.DB, familyId, user.sub));
+    const status = await readReferralStatus(c.env.DB, family.familyId);
+    return c.json({ ...status, canManage: family.canManage });
   } catch (error) {
     return referralError(c, error);
   }
@@ -119,11 +137,12 @@ referrals.post("/code", requireAuth, async (c) => {
   const familyId = await primaryFamily(c.env.DB, user.sub, user.family_id);
   if (!familyId) return c.json({ error: "referral_primary_parent_required" }, 403);
   try {
-    return c.json(await upsertReferralCode(c.env.DB, {
+    const status = await upsertReferralCode(c.env.DB, {
       familyId,
       parentId: user.sub,
       rewardChildUserId,
-    }));
+    });
+    return c.json({ ...status, canManage: true });
   } catch (error) {
     return referralError(c, error);
   }

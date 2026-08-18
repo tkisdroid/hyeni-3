@@ -1,0 +1,3 @@
+camera-3d.webp	15356B	원본 1024x1024
+mic-3d.webp	13468B	원본 1024x1024
+pencil-3d.webp	15104B	원본 1024x1024

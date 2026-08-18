@@ -865,6 +865,7 @@
   "parent.referralRewardPanel.copy019": "已完成 {count} 个家庭",
   "parent.referralRewardPanel.copy020": "将获得邀请奖励的小朋友",
   "parent.referralRewardPanel.copy021": "请先创建代码",
+  "parent.referralRewardPanel.primaryParentOnly": "邀请码由主监护人创建",
   "parent.referralRewardPanel.copy022": "准备……",
   "parent.referralRewardPanel.copy023": "更改接收者孩子",
   "parent.referralRewardPanel.copy024": "创建邀请码",

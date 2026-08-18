@@ -873,6 +873,7 @@ const messages = {
   "parent.referralRewardPanel.copy028": "There is no invitation status to display.",
   "parent.referralRewardPanel.inviteCodeAria": "Friend invitation code {code}",
   "parent.referralRewardPanel.pending": "{count} pending",
+  "parent.referralRewardPanel.primaryParentOnly": "Only the main guardian can create the code",
   "parent.referralRewardPanel.shareBody": "Family safety, together on Hyeni Calendar.\nJoin with this link — after 3 confirmed days both families get {count} AI chats.\n{link}",
   "parent.repeat.daily": "everyday",
   "parent.repeat.monthly": "every month",

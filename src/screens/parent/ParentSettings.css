@@ -95,6 +95,9 @@
   color: var(--fg-tertiary);
 }
 .ps-profile__edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   flex: none;
   padding: 8px 12px;
   border-radius: 999px;
@@ -105,6 +108,13 @@
 
   color: var(--blue-text);
   --press: 0.94;
+}
+
+/* 연필 3D 아이콘 — 글자와 같은 시각 높이로 맞춘다. */
+.ps-profile__edit-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
 }
 
 /* ── 그룹(라벨 + 흰 카드 리스트) ────────────────────────────────────────── */

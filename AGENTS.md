@@ -719,6 +719,12 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 
 ## 실기기 검증 치트시트
 
+- ★**"브라우저에서만 안 된다" 진단 순서(2026-08-18)**: ①D1 행 ②R2 객체·customMetadata(`wrangler dev --remote`
+  로 띄운 읽기 전용 스크래치 워커의 `PHOTOS.head`) ③격리 브라우저에서 같은 계약으로 재현 ④그래도 정상이면
+  **탭이 들고 있던 옛 번들**을 의심한다(옛 클라이언트가 사라진 응답 필드를 요구해 화면이 오류가 된다).
+  `registerSW`의 `onRegisteredSW` 가 30분마다·화면 복귀마다 `registration.update()` 를 돌려 자가 회복시킨다.
+  친구 초대 코드는 계정이 아니라 **가족** 스코프이고 조회는 활성 보호자 전원, 만들기·변경만 주 보호자다
+  (응답의 `canManage`). 0행 UPDATE 를 성공처럼 돌려주지 않는다.
 - ★**화면이 "한 번씩 리프레시"되는 두 원인(2026-08-18 TK 제보)**: ①새 빌드를 깔면 Service Worker 가 몇 초 뒤
   활성화되며 `main.tsx` 가 `location.reload()` 한다 — 부팅 중이 아니라 사용 중에 걸리면 화면이 튕긴 것처럼 보인다.
   `canReloadForPwaUpdateNow`(`src/lib/pwaReloadTiming.ts`)가 네이티브에서는 `hidden` 일 때만 새로고침하고 사용 중이면

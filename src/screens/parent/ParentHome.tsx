@@ -1116,8 +1116,8 @@ export function ParentHome() {
           </span>
         </button>
 
-        {/* 친구 초대 — 한 줄과 버튼만. 주 보호자에게만 보인다(코드 발급 권한이 있는 사람). */}
-        {family?.isPrimaryParent === true && (
+        {/* 친구 초대 — 한 줄과 버튼만. 공동 보호자도 코드를 보고 공유한다(만들기는 주 보호자). */}
+        {family?.myRole === "parent" && (
           <button
             type="button"
             className="hy-card ph-referral hy-press"
@@ -1139,7 +1139,7 @@ export function ParentHome() {
         )}
       </div>
       <ReferralRewardPanel
-        open={referralOpen && family?.isPrimaryParent === true}
+        open={referralOpen && family?.myRole === "parent"}
         onClose={() => setReferralOpen(false)}
         eligibleChildren={referralEligibleChildren}
       />

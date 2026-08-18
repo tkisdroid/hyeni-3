@@ -249,13 +249,15 @@ export interface ReferralStatus {
 export async function readReferralStatus(
   db: D1Database,
   familyId: string,
-  parentId: string,
 ): Promise<ReferralStatus> {
+  // 코드는 "가족의 것"이다. 만든 보호자 계정으로 좁히면 주 보호자가 바뀐 가족에서
+  // 이미 있는 코드가 보이지 않고, 다시 만들려 해도 조용히 아무 일도 일어나지 않는다
+  // (2026-08-18 TK 제보 "코드 발급이 안 된다"의 재발 방지).
   const code = await db.prepare(
     `SELECT id,family_id,owner_parent_id,reward_child_user_id,code,status,successful_referrals
        FROM referral_codes_v2
-      WHERE family_id=? AND owner_parent_id=? LIMIT 1`,
-  ).bind(familyId, parentId).first<ReferralCodeRow>();
+      WHERE family_id=? LIMIT 1`,
+  ).bind(familyId).first<ReferralCodeRow>();
   const counts = await db.prepare(
     `SELECT
        SUM(CASE WHEN status='rewarded' THEN 1 ELSE 0 END) AS successful_count,
@@ -293,21 +295,23 @@ export async function upsertReferralCode(
   ).bind(input.familyId).first<{ id: string }>();
   const now = pgTs(new Date());
   if (existing) {
-    await db.batch([
+    // 소유 계정이 아니라 가족으로 잠근다 — 주 보호자가 바뀐 가족에서 기존 코드를 못 고쳐
+    // "눌러도 아무 일 없음"이 되던 문제를 없앤다(호출자는 route 에서 주 보호자로 확인된다).
+    const [updated] = await db.batch([
       db.prepare(
         `UPDATE referral_codes_v2
-            SET reward_child_user_id=?,status='active',revoked_at=NULL,updated_at=?
-          WHERE id=? AND family_id=? AND owner_parent_id=?
+            SET reward_child_user_id=?,owner_parent_id=?,status='active',revoked_at=NULL,updated_at=?
+          WHERE id=? AND family_id=?
             AND EXISTS(
               SELECT 1 FROM family_members
                WHERE family_id=? AND user_id=? AND role='child' AND is_active=1
             )`,
       ).bind(
         input.rewardChildUserId,
+        input.parentId,
         now,
         existing.id,
         input.familyId,
-        input.parentId,
         input.familyId,
         input.rewardChildUserId,
       ),
@@ -316,7 +320,11 @@ export async function upsertReferralCode(
           WHERE referral_code_id=? AND referrer_family_id=? AND status IN ('pending','qualified')`,
       ).bind(input.rewardChildUserId, now, existing.id, input.familyId),
     ]);
-    return readReferralStatus(db, input.familyId, input.parentId);
+    // 한 행도 바뀌지 않았다면 성공처럼 돌려주지 않는다(조용한 실패 금지).
+    if (Number(updated?.meta?.changes ?? 0) !== 1) {
+      throw new ReferralAttributionError("referral_code_update_unavailable", 503);
+    }
+    return readReferralStatus(db, input.familyId);
   }
 
   for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -347,7 +355,7 @@ export async function upsertReferralCode(
         input.familyId,
       ).run();
       if (Number(result.meta?.changes ?? 0) === 1) {
-        return readReferralStatus(db, input.familyId, input.parentId);
+        return readReferralStatus(db, input.familyId);
       }
       const raced = await db.prepare(
         "SELECT id FROM referral_codes_v2 WHERE family_id=? LIMIT 1",

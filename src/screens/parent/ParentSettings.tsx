@@ -58,8 +58,8 @@ const featureRows: FeatureRow[] = [
   { id: "child", icon: "ui/menu-child-tracker.webp", tone: "blue", labelId: "parent.settings.children", route: "/parent/family" },
   { id: "place", icon: "ui/menu-place-manager.webp", tone: "mint", labelId: "parent.settings.places", route: "/place-manager" },
   { id: "friend", icon: "ui/menu-friend-playdate.webp", tone: "gold", labelId: "parent.settings.playdates", route: "/friend-play" },
-  { id: "audio", icon: "ui/menu-remote-audio.webp", tone: "rose", labelId: "parent.settings.remoteAudio", route: "/remote-audio" },
-  { id: "audio-audit", icon: "ui/menu-remote-audio.webp", tone: "neutral", labelId: "parent.settings.remoteAudioAudit", route: "/remote-audio-audit" },
+  { id: "audio", icon: "ui/mic-3d.webp", tone: "rose", labelId: "parent.settings.remoteAudio", route: "/remote-audio" },
+  { id: "audio-audit", icon: "ui/mic-3d.webp", tone: "neutral", labelId: "parent.settings.remoteAudioAudit", route: "/remote-audio-audit" },
   { id: "reward", icon: "ui/menu-sticker.webp", tone: "gold", labelId: "parent.settings.stickers", route: "/sticker-send" },
   { id: "ai", icon: "ui/menu-ai-schedule.webp", tone: "lav", labelId: "parent.settings.aiCredits", route: "/ai-credit" },
 ];
@@ -268,6 +268,8 @@ export function ParentSettings() {
             className="ps-profile__edit hy-press"
             onClick={() => navigate("/account")}
           >
+            {/* 수정 = 연필. 설정의 다른 3D 아이콘과 같은 언어를 쓴다(2026-08-18 TK 지시). */}
+            <img className="ps-profile__edit-icon" src={asset("ui/pencil-3d.webp")} alt="" aria-hidden="true" />
             {intl.formatMessage({ id: "parent.parentHome.copy051" })}
           </button>
         </div>
@@ -319,7 +321,8 @@ export function ParentSettings() {
                 {chevronIcon}
               </button>
             ))}
-            {account?.isPrimaryParent && (
+            {/* 공동 보호자도 가족의 초대 코드를 보고 공유할 수 있다(만들기는 주 보호자 전용). */}
+            {account?.myRole === "parent" && (
               <button
                 type="button"
                 className="ps-nav hy-press"
@@ -392,7 +395,7 @@ export function ParentSettings() {
       </div>
 
       <ReferralRewardPanel
-        open={referralOpen && account?.isPrimaryParent === true}
+        open={referralOpen && account?.myRole === "parent"}
         onClose={() => setReferralOpen(false)}
         eligibleChildren={referralEligibleChildren}
       />

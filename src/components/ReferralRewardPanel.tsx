@@ -202,7 +202,8 @@ export function ReferralRewardPanel({
                 </span>
               </section>
 
-              <label className="rrp__field" htmlFor="referral-reward-child">
+              {/* 공동 보호자는 코드를 보고 공유만 한다 — 만들고 바꾸는 건 주 보호자다. */}
+              <label className="rrp__field" htmlFor="referral-reward-child" hidden={!status.canManage}>
                 <span>{intl.formatMessage({ id: "parent.referralRewardPanel.copy020" })}</span>
                 <select
                   id="referral-reward-child"
@@ -230,10 +231,16 @@ export function ReferralRewardPanel({
                   {status.code}
                 </div>
               ) : (
-                <div className="rrp__code rrp__code--empty">{intl.formatMessage({ id: "parent.referralRewardPanel.copy021" })}</div>
+                <div className="rrp__code rrp__code--empty">
+                  {intl.formatMessage({
+                    id: status.canManage
+                      ? "parent.referralRewardPanel.copy021"
+                      : "parent.referralRewardPanel.primaryParentOnly",
+                  })}
+                </div>
               )}
 
-              {status.rewardChildUserId !== selectedChild || !status.code ? (
+              {status.canManage && (status.rewardChildUserId !== selectedChild || !status.code) ? (
                 <button
                   type="button"
                   className="rrp__save hy-press"

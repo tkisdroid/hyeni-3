@@ -902,3 +902,90 @@ test("초대 가족 수 상한이 없어 네 번째 가족도 그대로 귀속�
   );
   sqlite.close();
 });
+
+test("코드는 가족의 것이라 만든 계정이 달라도 보이고 다시 지정할 수 있다", async () => {
+  const { sqlite, db } = createDb();
+  const app = createApp();
+  for (const userId of ["own-parent", "own-coparent", "own-child", "own-child2"]) addUser(sqlite, userId);
+  addFamily(sqlite, {
+    familyId: "own-family",
+    parentId: "own-parent",
+    childUserId: "own-child",
+    coParentId: "own-coparent",
+  });
+  sqlite.prepare(
+    `INSERT INTO family_members(id,family_id,user_id,role,name,is_active,child_order,created_at)
+     VALUES ('member-own-child2','own-family','own-child2','child','둘째',1,2,'2026-08-01 00:00:00.000+00')`,
+  ).run();
+  // 예전 주 보호자(지금은 이 가족의 계정이 아님)가 만든 코드 행.
+  sqlite.prepare(
+    `INSERT INTO referral_codes_v2
+       (id,family_id,owner_parent_id,reward_child_user_id,code,status,created_at,updated_at)
+     VALUES ('own-code','own-family','former-parent','own-child','HYENI-3456789ABCDEFGHJ','active',?,?)`,
+  ).run("2026-08-01 00:00:00.000+00", "2026-08-01 00:00:00.000+00");
+
+  // 조회: 만든 계정으로 좁히면 코드가 없는 것처럼 보였다(발급 버튼만 계속 뜨는 원인).
+  const status = await app.request("http://test.local/api/referrals/me", {
+    headers: { authorization: await authorization("own-parent", "own-family") },
+  }, environment(db));
+  assert.equal(status.status, 200);
+  const statusBody = await status.json();
+  assert.equal(statusBody.code, "HYENI-3456789ABCDEFGHJ");
+  assert.equal(statusBody.canManage, true);
+
+  // 발급(변경): 조용한 no-op 대신 실제로 대상 아이를 바꾸고 소유 계정을 현재 주 보호자로 맞춘다.
+  const changed = await jsonRequest(
+    app,
+    db,
+    "/api/referrals/code",
+    "own-parent",
+    "own-family",
+    { rewardChildUserId: "own-child2" },
+  );
+  assert.equal(changed.status, 200, JSON.stringify(await changed.clone().json()));
+  const changedBody = await changed.json();
+  assert.equal(changedBody.code, "HYENI-3456789ABCDEFGHJ");
+  assert.equal(changedBody.rewardChildUserId, "own-child2");
+  assert.deepEqual(
+    { ...sqlite.prepare("SELECT owner_parent_id,reward_child_user_id FROM referral_codes_v2 WHERE id='own-code'").get() },
+    { owner_parent_id: "own-parent", reward_child_user_id: "own-child2" },
+  );
+  sqlite.close();
+});
+
+test("공동 보호자는 코드를 보고 공유만 하고 만들거나 바꾸지는 못한다", async () => {
+  const { sqlite, db } = createDb();
+  const app = createApp();
+  for (const userId of ["co-parent-main", "co-parent-second", "co-child"]) addUser(sqlite, userId);
+  addFamily(sqlite, {
+    familyId: "co-family",
+    parentId: "co-parent-main",
+    childUserId: "co-child",
+    coParentId: "co-parent-second",
+  });
+  sqlite.prepare(
+    `INSERT INTO referral_codes_v2
+       (id,family_id,owner_parent_id,reward_child_user_id,code,status,created_at,updated_at)
+     VALUES ('co-code','co-family','co-parent-main','co-child','HYENI-456789ABCDEFGHJK','active',?,?)`,
+  ).run("2026-08-01 00:00:00.000+00", "2026-08-01 00:00:00.000+00");
+
+  const status = await app.request("http://test.local/api/referrals/me", {
+    headers: { authorization: await authorization("co-parent-second", "co-family") },
+  }, environment(db));
+  assert.equal(status.status, 200);
+  const body = await status.json();
+  assert.equal(body.code, "HYENI-456789ABCDEFGHJK");
+  assert.equal(body.canManage, false);
+
+  const blocked = await jsonRequest(
+    app,
+    db,
+    "/api/referrals/code",
+    "co-parent-second",
+    "co-family",
+    { rewardChildUserId: "co-child" },
+  );
+  assert.equal(blocked.status, 403);
+  assert.equal((await blocked.json()).error, "referral_primary_parent_required");
+  sqlite.close();
+});

@@ -46,7 +46,7 @@ test("부모 설정은 기존 스토어 혜택을 보존하면서 주 보호자�
   assert.equal(koParent["parent.parentSettings.copy001"], "기존에 받은 스토어 방문 혜택은 그대로 유지돼요");
   assert.equal(koParent["parent.parentSettings.copy018"], "친구 초대 · AI 대화 {count}회");
   assert.match(settings, /REFERRAL_REWARD_CREDITS_DISPLAY/);
-  assert.match(settings, /account\?\.isPrimaryParent/);
+  assert.match(settings, /account\?\.myRole === "parent"/);
   assert.match(settings, /<ReferralRewardPanel/);
 });
 
@@ -94,8 +94,9 @@ test("부모 홈은 친구 초대를 한 줄 카드로 눈에 띄게 보여준�
   assert.match(home, /parent\.referral\.home\.headline/);
   assert.match(home, /parent\.referral\.home\.action/);
   assert.match(home, /<ReferralRewardPanel/);
-  // 코드 발급 권한이 있는 주 보호자에게만 노출한다.
-  assert.match(home, /family\?\.isPrimaryParent === true && \(/);
+  // 가족의 보호자면 보이고, 만들기 권한은 패널이 canManage 로 구분한다(공동 보호자는 공유만).
+  assert.match(home, /family\?\.myRole === "parent" && \(/);
+  assert.match(read("src/components/ReferralRewardPanel.tsx"), /status\.canManage/);
   assert.equal(koParent["parent.referral.home.headline"], "친구 초대하면 AI 대화 {count}회");
   assert.equal(koParent["parent.referral.home.action"], "초대하기");
 });

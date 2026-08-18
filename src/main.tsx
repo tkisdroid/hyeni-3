@@ -61,8 +61,22 @@ async function activateWaitingServiceWorker(): Promise<void> {
   );
 }
 
+/** 오래 열어 둔 브라우저 탭이 옛 번들에 머물지 않도록 주기적으로 새 버전을 확인한다. */
+const PWA_UPDATE_CHECK_INTERVAL_MS = 30 * 60_000;
+
 applyWaitingServiceWorker = registerSW({
   immediate: true,
+  onRegisteredSW: (_url, registration) => {
+    if (!registration) return;
+    const check = () => {
+      void registration.update().catch(() => undefined);
+    };
+    setInterval(check, PWA_UPDATE_CHECK_INTERVAL_MS);
+    // 다시 화면을 볼 때도 한 번 확인한다 — 배포 직후 탭으로 돌아온 경우를 덮는다.
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") check();
+    });
+  },
   onNeedRefresh: () => {
     queuePwaUpdateAction("activate", activateWaitingServiceWorker);
   },

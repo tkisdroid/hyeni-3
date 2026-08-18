@@ -873,6 +873,7 @@ const messages = {
   "parent.referralRewardPanel.copy028": "没有可显示的邀请状态。",
   "parent.referralRewardPanel.inviteCodeAria": "好友邀请码 {code}",
   "parent.referralRewardPanel.pending": "确认中 {count} 个",
+  "parent.referralRewardPanel.primaryParentOnly": "邀请码由主监护人创建",
   "parent.referralRewardPanel.shareBody": "用 Hyeni Calendar 一起守护孩子安全。\n用此链接创建家庭并连续 3 天确认位置，两个家庭各得 AI 对话 {count} 次。\n{link}",
   "parent.repeat.daily": "每天",
   "parent.repeat.monthly": "每个月",

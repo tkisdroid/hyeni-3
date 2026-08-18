@@ -873,6 +873,7 @@ const messages = {
   "parent.referralRewardPanel.copy028": "ไม่มีสถานะคำเชิญที่จะแสดง",
   "parent.referralRewardPanel.inviteCodeAria": "รหัสเชิญเพื่อน {code}",
   "parent.referralRewardPanel.pending": "รอยืนยัน {count}",
+  "parent.referralRewardPanel.primaryParentOnly": "ผู้ปกครองหลักเท่านั้นที่สร้างรหัสได้",
   "parent.referralRewardPanel.shareBody": "มาดูแลความปลอดภัยของลูกด้วย Hyeni Calendar\nสร้างครอบครัวด้วยลิงก์นี้และยืนยันตำแหน่งครบ 3 วัน ทั้งสองครอบครัวได้แชท AI {count} ครั้ง\n{link}",
   "parent.repeat.daily": "ทุกวัน",
   "parent.repeat.monthly": "ทุกเดือน",
