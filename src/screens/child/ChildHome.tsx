@@ -523,7 +523,7 @@ export function ChildHome() {
         </div>
 
         {homeLoading ? (
-          <div className="kd-map__query-state"><Loading label={intl.formatMessage({ id: "child.home.loading" })} size={6} /></div>
+          <div className="kd-map__query-state"><Loading label={intl.formatMessage({ id: "child.home.loading" })} compact /></div>
         ) : homeError ? (
           <div className="kd-map__query-state" role="alert">
             <span>{intl.formatMessage({ id: "child.home.loadError" })}</span>

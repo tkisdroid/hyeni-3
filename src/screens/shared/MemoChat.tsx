@@ -683,12 +683,12 @@ export function MemoChat() {
         )}
         {thread.isLoading && (
           <div className="mc-daysep">
-            <Loading label={copy.loading} size={6} />
+            <Loading label={copy.loading} compact />
           </div>
         )}
         {familyLoading && (
           <div className="mc-daysep">
-            <Loading label={copy.loading} size={6} />
+            <Loading label={copy.loading} compact />
           </div>
         )}
         {familyError && (
@@ -942,7 +942,7 @@ export function MemoChat() {
                 </div>
               ) : (
                 <div className="mc-photo-preview__status" role="status">
-                  <Loading label={isChildSession ? intl.formatMessage({ id: "shared.memoChat.copy057" }) : intl.formatMessage({ id: "shared.memoChat.copy058" })} size={6} />
+                  <Loading label={isChildSession ? intl.formatMessage({ id: "shared.memoChat.copy057" }) : intl.formatMessage({ id: "shared.memoChat.copy058" })} compact />
                 </div>
               )}
             </div>

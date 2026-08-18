@@ -6,6 +6,7 @@ import { useIntl } from "react-intl";
 import { useEffect, useRef, useState } from "react";
 import { loadKakaoMaps } from "@/lib/kakaoMap";
 import { asset } from "@/lib/assets";
+import { LoaderMark } from "@/components/ui/LoaderMark";
 import type { LocationRoutePoint } from "@/transform/locationRoute";
 import {
   getMapFocusPanOffset,
@@ -436,7 +437,7 @@ export function KakaoMap({
       <div ref={ref} className="km-canvas" />
       {!ready && (
         <div className="km-skeleton" aria-hidden="true">
-          <span className="km-skeleton__shimmer" />
+          <LoaderMark variant="location" />
         </div>
       )}
     </div>

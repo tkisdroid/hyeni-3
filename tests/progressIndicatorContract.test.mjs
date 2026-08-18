@@ -192,6 +192,48 @@ test("공용 소형 표시자는 애니메이션이 있고 보조기술에 상�
   const loading = readFileSync("src/components/ui/Loading.tsx", "utf8");
   assert.match(loading, /role="status"/);
   assert.match(loading, /aria-live="polite"/);
-  const css = readFileSync("src/components/ui/Loading.css", "utf8");
-  assert.match(css, /animation:\s*hy-loading-pulse\s+[\d.]+s[^;]*infinite/);
+  // 움직임은 이제 CSS keyframe 이 아니라 공용 로딩 마크(애니메이션 webp)가 갖는다.
+  assert.match(loading, /<LoaderMark \/>/, "소형 표시자는 공용 로딩 마크를 써야 한다");
+});
+
+test("화면 로딩은 전부 공용 로딩 마크 하나를 쓴다", () => {
+  // 화면마다 다른 로더를 만들면 같은 앱에서 서로 다른 그림이 돈다.
+  const consumers = [
+    ["src/components/ui/Loading.tsx", "calendar"],
+    ["src/components/ui/RouteLoading.tsx", "calendar"],
+    ["src/components/ui/ScreenQueryState.tsx", "calendar"],
+    ["src/components/KakaoMap.tsx", "location"],
+    ["src/screens/feature/RouteView.tsx", "location"],
+  ];
+  for (const [file, variant] of consumers) {
+    const src = readFileSync(file, "utf8");
+    assert.match(src, /import \{ LoaderMark \}/, `${file} 가 공용 로딩 마크를 import 해야 한다`);
+    const expected = variant === "location" ? /<LoaderMark variant="location" \/>/ : /<LoaderMark \/>/;
+    assert.match(src, expected, `${file} 는 ${variant} 마크를 써야 한다`);
+  }
+
+  // 크기는 소비 화면 CSS 의 몫이다 — 공용 컴포넌트가 인라인 style 로 덮어쓰면 안 된다.
+  const mark = readFileSync("src/components/ui/LoaderMark.tsx", "utf8");
+  assert.doesNotMatch(mark, /style=\{/, "로딩 마크에 인라인 style 을 주면 소비 화면 배치를 덮어쓴다");
+  assert.match(
+    COMPONENTS_CSS,
+    /\.hy-loader-mark\s*\{[^}]*width:\s*var\(--loader-mark-size,\s*\d+px\)/s,
+    "크기는 --loader-mark-size 로 정한다",
+  );
+});
+
+test("로딩 마크는 진짜 loop 표시자이고 움직임 줄이기에서는 정지 프레임으로 바뀐다", () => {
+  // 애니메이션 webp 는 CSS 로 멈출 수 없으므로 <picture> 가 정지본을 대신 내려준다.
+  const mark = readFileSync("src/components/ui/LoaderMark.tsx", "utf8");
+  assert.match(mark, /media="\(prefers-reduced-motion: reduce\)"/);
+  assert.match(mark, /srcSet=\{asset\(`ui\/loader-\$\{variant\}-still\.webp`\)\}/);
+  assert.match(mark, /src=\{asset\(`ui\/loader-\$\{variant\}\.webp`\)\}/);
+
+  // 파일이 실제로 움직이는지/멈춰 있는지는 webp 의 ANIM 청크로만 확인할 수 있다.
+  for (const variant of ["calendar", "location"]) {
+    const animated = readFileSync(`public/assets/ui/loader-${variant}.webp`);
+    const still = readFileSync(`public/assets/ui/loader-${variant}-still.webp`);
+    assert.notEqual(animated.indexOf("ANIM"), -1, `loader-${variant} 은 애니메이션이어야 한다(정적 표시자 금지)`);
+    assert.equal(still.indexOf("ANIM"), -1, `loader-${variant}-still 은 정지 프레임이어야 한다`);
+  }
 });

@@ -1,6 +1,7 @@
-import { AlertTriangle, ChevronLeft, Inbox, LoaderCircle, RefreshCw } from "lucide-react";
+import { AlertTriangle, ChevronLeft, Inbox, RefreshCw } from "lucide-react";
 import "./ScreenQueryState.css";
 import { useIntl } from "react-intl";
+import { LoaderMark } from "./LoaderMark";
 
 export type ScreenQueryStateKind = "loading" | "error" | "empty";
 
@@ -31,7 +32,8 @@ export function ScreenQueryState({
   const intl = useIntl();
   const resolvedRetryLabel = retryLabel ?? intl.formatMessage({ id: "core.action.reload" });
   const resolvedRetryingLabel = retryingLabel ?? intl.formatMessage({ id: "core.state.retrying" });
-  const Icon = state === "loading" ? LoaderCircle : state === "error" ? AlertTriangle : Inbox;
+  // 로딩은 공용 로딩 마크(그림)를 쓰고, 오류·빈 상태만 lucide 글리프 칩을 쓴다.
+  const Icon = state === "error" ? AlertTriangle : Inbox;
   return (
     <div className="sqs-screen">
       <header className="sqs-header">
@@ -52,9 +54,15 @@ export function ScreenQueryState({
         aria-live={state === "error" ? "assertive" : "polite"}
         aria-busy={state === "loading" ? "true" : undefined}
       >
-        <span className="sqs-icon" aria-hidden="true">
-          <Icon className={state === "loading" ? "sqs-spin" : undefined} size={32} strokeWidth={2.1} />
-        </span>
+        {state === "loading" ? (
+          <span className="sqs-loader" aria-hidden="true">
+            <LoaderMark />
+          </span>
+        ) : (
+          <span className="sqs-icon" aria-hidden="true">
+            <Icon size={32} strokeWidth={2.1} />
+          </span>
+        )}
         <h1>{heading}</h1>
         <p>{description}</p>
         {state !== "loading" && onRetry && (

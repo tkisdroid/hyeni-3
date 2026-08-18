@@ -93,7 +93,7 @@ export function PlaceManager() {
         <div>
           <div className="pm-label pm-label--saved">{intl.formatMessage({ id: "notifications.placeManager.savedPlaces" })}</div>
           <div className="pm-list">
-            {placesLoading && <Loading label={intl.formatMessage({ id: "notifications.placeManager.savedPlacesLoading" })} size={6} />}
+            {placesLoading && <Loading label={intl.formatMessage({ id: "notifications.placeManager.savedPlacesLoading" })} compact />}
             {placesError && !placesLoading && (
               <div className="pm-item__addr" style={{ padding: 16 }} role="alert">
                 {intl.formatMessage({ id: "notifications.placeManager.savedPlacesError" })}{" "}
@@ -160,7 +160,7 @@ export function PlaceManager() {
             </button>
           </div>
           <div className="pm-list">
-            {zonesLoading && <Loading label={intl.formatMessage({ id: "notifications.placeManager.dangerZonesLoading" })} size={6} />}
+            {zonesLoading && <Loading label={intl.formatMessage({ id: "notifications.placeManager.dangerZonesLoading" })} compact />}
             {zonesError && !zonesLoading && (
               <div className="pm-danger__addr" style={{ padding: 16 }} role="alert">
                 {intl.formatMessage({ id: "notifications.placeManager.dangerZonesError" })}{" "}

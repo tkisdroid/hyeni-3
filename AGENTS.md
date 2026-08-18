@@ -778,6 +778,10 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   `Page.navigate`+`Page.reload` → BootSplash 1.6초 게이트 통과 → mock 3초 지연 응답 전(≈2.4초)에 읽는다
   ⑥**"움직이는 요소 있음"으로 진행 표시자를 판정하지 않는다** — 진입 페이드·마스코트 부유가 다 걸려 전부 통과처럼
   보인다. `[aria-busy]`·`[role=status]`·skel/loading/spin 맥락 안의 애니메이션만 센다.
+  ⑦**dist 로 만든 정적 하니스는 진입 CSS 만 링크하면 안 된다(2026-08-19 실측 오판)** — 화면 컴포넌트 CSS 는
+  route lazy 청크(`assets/Loading-*.css`·`ScreenQueryState-*.css`)로 갈라져 나가므로 `assets/index-*.css` 만
+  링크하면 그 규칙이 조용히 빠지고 커스텀 속성이 기본값으로 되돌아간다(로더 44/72px 지정이 64px 로 측정됐다).
+  `grep -l <클래스> dist/assets/*.css` 로 실제 청크를 찾아 전부 링크하고, 순서도 진입 CSS 다음에 둔다(런타임과 같은 순서).
 - ★**진행 표시자는 화면마다 만들지 않는다(2026-07-30)**: `components.css` 의
   `button[aria-busy="true"]:not(.hy-busy-quiet)::before` 가 `currentColor` 회전 링을 자동으로 붙인다.
   새 화면은 `aria-busy={<진행 식>}` 만 정확히 켜면 된다(`disabled` 식에서 **진행 항만** 골라야 한다 — 유효성 항까지
@@ -787,6 +791,21 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   flex 행에 끼어들어 라벨 왼쪽에 붙는 설계라, 라벨이 없는 원형 버튼에서는 아이콘을 밀어내 글리프가 치우쳐 보인다
   (채팅 보내기 비행기). `hy-busy-center` 가 링을 절대 배치로 가운데 겹치고 자식(아이콘)만 감춘다 —
   버튼 크기·아이콘 위치는 그대로다. 자기 펄스/스피너를 겹쳐 두 표시자로 만들지 말 것.
+- ★**화면 로딩은 공용 로딩 마크 하나로 통일(2026-08-19 TK 지시)**: 점 3개·반짝임·회전 링이 화면마다 달랐다.
+  이제 `src/components/ui/LoaderMark.tsx` 한 곳이 그림을 정하고 **일반 로딩=`loader-calendar`**,
+  **지도·경로 로딩=`loader-location`** 두 가지만 쓴다. 소비처는 `Loading`·`RouteLoading`·`ScreenQueryState`(loading
+  상태)·`KakaoMap`(`.km-skeleton`)·`RouteView`(`.rv-map--placeholder`) 5곳이다.
+  ⚠️ **애니메이션 webp 는 CSS 로 멈출 수 없다** — 그래서 컴포넌트가 `<picture>` +
+  `media="(prefers-reduced-motion: reduce)"` 로 **정지 프레임(`-still.webp`)** 을 대신 내려준다.
+  정지본은 루프 중간(18/36) 프레임이다. 마지막 프레임(체크 완료·하트)을 쓰면 로딩 중인데 "끝났다"로 읽힌다.
+  크기는 소비 화면 CSS 의 `--loader-mark-size` 로만 정한다(공용 컴포넌트에 인라인 style 로 크기를 주면
+  소비 화면 클래스를 덮어쓴다 — `KakaoMap` 지도 실종 사고와 같은 함정). 마크는 `aspect-ratio: 1/1` 이라
+  `.km-skeleton` 처럼 폭에 `clamp(40px, 38%, 96px)` 를 줘도 정사각을 유지한다.
+  **그대로 둔 것**: 버튼 안 `aria-busy` 회전 링(라벨 옆 인라인 표시자), `hy-skel` 스켈레톤(레이아웃 자리표시),
+  스플래시의 점 3개(콜드스타트 브랜드 연출), 지도 위 `rv-map-chip` 스피너(작은 칩).
+  자산 정본=`scripts/import-loader-marks.mjs`(원본 파일→slug 표, q88 재인코딩 + 정지 프레임 생성).
+  가드=`tests/progressIndicatorContract.test.mjs`(소비처 5곳·`--loader-mark-size`·webp `ANIM` 청크 유무로
+  "애니메이션 본 / 정지본"을 파일 단위 검증)·`tests/mapPerf.test.ts`·`tests/routeLazyLoading.test.mjs`.
 - ★**진행 표시자는 한 화면에 하나만 움직인다(2026-08-17 TK 제보)**: 부모 위치 화면은 갱신 중에
   ①아이 칩의 "위치 요청을 보냈어요" 문구 ②칩 폭 확장 ③칩 스피너 ④우상단 새로고침 회전을 동시에 했고,
   사용자에게는 "프로필 위에 문구가 겹치고 버튼이 따로 움직인다"로 보였다. 지금은 **새로고침 버튼 회전 하나**만

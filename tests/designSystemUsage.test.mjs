@@ -2440,7 +2440,6 @@ const nonSurfacePaintManifest = new Set([
   ["src/styles/components.css", ".hy-tab__dot"],
   ["src/app/ChildDock.css", ".kdock__badge"],
   ["src/screens/Splash.css", ".sp-dot"],
-  ["src/components/ui/Loading.css", ".hy-loading__dot"],
   ["src/screens/parent/ParentHome.css", ".ph-hero__badge"],
   ["src/screens/parent/ParentHome.css", ".ph-child__now"],
   ["src/screens/parent/ParentHome.css", ".ph-child__attend"],
@@ -2542,7 +2541,6 @@ const nonSurfacePaintManifest = new Set([
   // 장식과 미디어 조각 — exact path + selector만 허용
   ["src/styles/components.css", ".hy-iconbtn__dot"],
   ["src/styles/components.css", ".hy-chip__pulse"],
-  ["src/components/ui/RouteLoading.css", ".route-loading__visual"],
   ["src/components/ui/ScreenQueryState.css", ".sqs-icon"],
   ["src/screens/Splash.css", ".sp-halo"],
   ["src/screens/Splash.css", ".sp-halo::after"],

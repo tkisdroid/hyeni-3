@@ -5,6 +5,7 @@ import { ChevronLeft, Home, Map, MapPin, Navigation, RotateCw } from "lucide-rea
 import { useToast } from "@/app/toast";
 import { childAvatarPath } from "@/lib/avatar";
 import { KakaoMap, type MapPlace } from "@/components/KakaoMap";
+import { LoaderMark } from "@/components/ui/LoaderMark";
 import { useAuth } from "@/auth/AuthContext";
 import { useActiveChild } from "@/app/activeChild";
 import { useMyFamily } from "@/queries/useFamily";
@@ -446,7 +447,7 @@ export function RouteView() {
               </div>
             ) : (
               <div className="rv-map rv-map--placeholder">
-                <span className="rv-ph__spinner" aria-hidden="true" />
+                <LoaderMark variant="location" />
                 <span className="rv-ph__msg">
                   {routeState === "no-origin"
                     ? locationPendingText

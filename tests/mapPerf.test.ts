@@ -48,9 +48,17 @@ test("지도가 그려지기 전에는 흰 사각형 대신 자리표시자를 �
   assert.match(map, /\{!ready && \(/);
   assert.match(map, /className="km-skeleton"/);
 
+  // 자리표시자는 지도 바탕색 위에 위치 로딩 마크 하나만 둔다(반짝임과 겹치면 표시자가 둘이 된다).
+  assert.match(map, /<LoaderMark variant="location" \/>/);
+  assert.doesNotMatch(map, /km-skeleton__shimmer/);
+
   const css = read("src/styles/components.css");
   assert.match(css, /\.km-skeleton\s*\{/);
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]{0,160}\.km-skeleton__shimmer[\s\S]{0,60}animation: none/);
+  // 작은 썸네일 지도에서도 마크가 넘치지 않게 폭을 컨테이너 비율로 잡는다.
+  assert.match(css, /\.km-skeleton\s*\{[^}]*--loader-mark-size:\s*clamp\(/s);
+  // 움직임 줄이기 처리는 로딩 마크가 <picture> 정지 프레임으로 담당한다
+  // (가드=tests/progressIndicatorContract.test.mjs).
+  assert.match(read("src/components/ui/LoaderMark.tsx"), /media="\(prefers-reduced-motion: reduce\)"/);
 });
 
 test("길찾기 화면은 경로 API 를 기다리지 않고 지도를 먼저 그린다", () => {

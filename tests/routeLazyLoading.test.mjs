@@ -282,6 +282,8 @@ test("공통 Suspense 전환 상태와 안정된 로더 접근성을 유지한�
   const koCore = JSON.parse(read("locales/ko/core.json"));
   assert.match(koCore["core.state.loadingScreen"], /화면을 불러오는 중/);
   assert.match(css, /\.route-loading\s*\{[^}]*min-height:\s*(?:var\([^;]+\)|\d+px)/s);
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
-  assert.match(css, /animation:\s*none/);
+  // 로더 그림은 공용 로딩 마크가 맡고, 움직임 줄이기도 그 컴포넌트가 정지 프레임으로 처리한다
+  // (가드=tests/progressIndicatorContract.test.mjs).
+  assert.match(component, /<LoaderMark \/>/);
+  assert.match(read("src/components/ui/LoaderMark.tsx"), /media="\(prefers-reduced-motion: reduce\)"/);
 });

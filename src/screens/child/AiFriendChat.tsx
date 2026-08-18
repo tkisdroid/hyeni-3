@@ -634,7 +634,7 @@ export function AiFriendChat() {
 
       <div ref={messagesRef} className="afc-msgs">
         {chatLoading ? (
-          <div className="afc-query-state"><Loading label={intl.formatMessage({ id: "child.aiChat.loading" })} size={6} /></div>
+          <div className="afc-query-state"><Loading label={intl.formatMessage({ id: "child.aiChat.loading" })} compact /></div>
         ) : chatError ? (
           <div className="afc-query-state" role="alert">
             <span>{intl.formatMessage({ id: "child.aiChat.loadError" })}</span>

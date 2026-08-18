@@ -414,19 +414,17 @@
   box-sizing: border-box;
 }
 
+/* 지도 타일을 받는 동안의 자리표시 — 지도 바탕색 위에 위치 로딩 마크 하나만 둔다.
+   작은 썸네일 지도에서도 넘치지 않게 폭을 컨테이너 비율로 잡는다(마크는 정사각 유지). */
 .km-skeleton {
+  --loader-mark-size: clamp(40px, 38%, 96px);
   position: absolute;
   inset: 0;
   overflow: hidden;
+  display: grid;
+  place-items: center;
   background: linear-gradient(135deg, #eaf3fb, #f3ecff);
   pointer-events: none;
-}
-.km-skeleton__shimmer {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%);
-  transform: translateX(-100%);
-  animation: km-shimmer 1.4s ease-in-out infinite;
 }
 .km-error {
   display: flex;
@@ -465,11 +463,6 @@
 @keyframes km-shimmer {
   to {
     transform: translateX(100%);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .km-skeleton__shimmer {
-    animation: none;
   }
 }
 
@@ -588,6 +581,25 @@
   .hy-crash__img {
     animation: none;
   }
+}
+
+/* ── 공용 로딩 마크 ────────────────────────────────────────────────────────
+   화면 로딩은 전부 같은 그림 하나를 쓴다 — 캘린더=일반, 위치=지도·경로.
+   컴포넌트는 <picture> 로 정지 프레임까지 함께 내려주므로 여기서는 자리만 잡는다.
+   크기는 소비 화면이 --loader-mark-size 로 정한다(컴포넌트에 인라인 style 금지). */
+.hy-loader-mark {
+  flex: none;
+  display: block;
+  /* 세로는 aspect-ratio 로 따라오게 둔다 — 폭에 %(지도 위처럼)를 줘도 정사각을 유지한다. */
+  width: var(--loader-mark-size, 64px);
+  aspect-ratio: 1 / 1;
+}
+.hy-loader-mark img {
+  /* 원본이 정사각이라 잘림 없이 슬롯을 채운다(width/height 속성이 자리를 미리 예약). */
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 /* ── 진행 표시자 (Progress Indicator) ──────────────────────────────────────

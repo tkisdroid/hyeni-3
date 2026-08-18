@@ -227,6 +227,7 @@
 
 /* ── 지도 자리표시(로딩·재시도·현재위치 확인) — 직선 근사 대신 정직한 상태 ── */
 .rv-map--placeholder {
+  --loader-mark-size: 88px;
   display: flex;
   flex-direction: column;
   align-items: center;

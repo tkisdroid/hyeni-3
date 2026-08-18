@@ -54,6 +54,13 @@
   text-align: center;
 }
 
+/* 로딩만 그림(공용 로딩 마크)을 쓴다 — 칩 배경 없이 마크 자체가 형태를 갖는다. */
+.sqs-loader {
+  --loader-mark-size: 72px;
+  margin-bottom: 4px;
+  display: inline-flex;
+}
+
 .sqs-icon {
   width: 56px;
   height: 56px;

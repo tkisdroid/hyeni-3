@@ -649,6 +649,25 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   `useActiveChild().familyLoading` 은 **조회 중과 "아이 없음"을 구분**하기 위한 값이다 — 이게 없으면 주간리포트·
   하루요약·AI크레딧·길찾기가 가족 조회 중에 "아이가 없어요"를 미리 단정해 표시자도 못 띄웠다.
   회귀=`tests/progressIndicatorContract.test.mjs`.
+- ★**화면 로딩 그림은 하나다(2026-08-19 TK 지시)**: 점 3개 로더·라우트 반짝임·조회 회전 링이 화면마다 달랐던 것을
+  **공용 로딩 마크** 하나로 통일했다. 정본은 `src/components/ui/LoaderMark.tsx` 이고 종류는 두 가지뿐이다 —
+  **일반 로딩=`ui/loader-calendar.webp`**(체크가 달력을 채우는 애니메이션), **지도·경로 로딩=`ui/loader-location.webp`**
+  (핀이 경로를 따라가는 애니메이션). 소비처는 `Loading`(+`compact`)·`RouteLoading`·`ScreenQueryState`(loading 상태)·
+  `KakaoMap`의 `.km-skeleton`·`RouteView`의 `.rv-map--placeholder` 5곳이다.
+  ⚠️ **애니메이션 webp 는 CSS 로 멈출 수 없다** — `prefers-reduced-motion` 은 컴포넌트가 `<picture>` +
+  `media="(prefers-reduced-motion: reduce)"` 로 **정지 프레임(`-still.webp`)** 을 대신 내려줘 처리한다
+  (점 3개 로더가 `animation:none` 으로 멈추던 것과 같은 결과). 정지본은 루프 **중간(18/36)** 프레임이다 —
+  마지막 프레임(체크 완료·하트)을 쓰면 로딩 중인데 "끝났다"로 읽힌다.
+  ⚠️ 크기는 **소비 화면 CSS 의 `--loader-mark-size`** 로만 정한다. 공용 컴포넌트에 인라인 style 로 크기를 주면
+  소비 화면 클래스를 덮어쓰고(`KakaoMap` 지도 실종 사고와 같은 함정) `designSystemUsage` 의 인라인 스케일 검사에도 걸린다.
+  마크가 `aspect-ratio: 1/1` 이라 `.km-skeleton` 처럼 폭에 `clamp(40px, 38%, 96px)` 를 줘도 썸네일 지도에서 정사각을 유지한다.
+  **의도적으로 그대로 둔 것**: 버튼 안 `aria-busy` 회전 링(라벨 옆 인라인 표시자라 그림이 들어갈 자리가 없다),
+  `hy-skel` 스켈레톤(레이아웃 자리표시), 스플래시 점 3개(콜드스타트 브랜드 연출), 지도 위 `rv-map-chip` 스피너(작은 칩).
+  자산은 `scripts/import-loader-marks.mjs` 가 정본이다(원본 파일→slug 표, q88 재인코딩으로 239KB→80KB, 정지 프레임 생성).
+  회귀=`tests/progressIndicatorContract.test.mjs`(소비처 5곳·`--loader-mark-size`·webp `ANIM` 청크 유무로
+  "애니메이션 본 / 정지본"을 파일 단위 검증)·`tests/mapPerf.test.ts`·`tests/routeLazyLoading.test.mjs`.
+  ⚠️ 검증 함정: 화면 컴포넌트 CSS 는 route lazy 청크(`assets/Loading-*.css` 등)로 갈라지므로, dist 로 만든 정적
+  하니스에 `assets/index-*.css` 만 링크하면 `--loader-mark-size` 지정이 조용히 빠져 전부 기본값 64px 로 측정된다.
 - Capacitor SystemBars 패치(2026-07-09): Android WebView 시작 직후 `document.documentElement`가 아직 없으면
   기본 `SystemBars` safe-area CSS 주입이 콘솔 오류를 낸다. `postinstall`의
   `scripts/patch-capacitor-systembars.mjs`가 DOM 준비 전 주입을 건너뛰게 패치하므로, 의존성 재설치 후에는
