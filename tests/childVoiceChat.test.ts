@@ -97,6 +97,23 @@ test("음성 turn은 설정과 무관하게 읽고 글 turn은 읽어주기 설�
   }
 });
 
+test("AI 답변은 해당 turn source와 최신 영구 설정으로 재생 여부를 판정한다", () => {
+  const chat = read("src/screens/child/AiFriendChat.tsx");
+  const onSuccessStart = chat.indexOf("onSuccess: (res) => {");
+  const onErrorStart = chat.indexOf("onError: (err) => {", onSuccessStart);
+  assert.ok(onSuccessStart >= 0 && onErrorStart > onSuccessStart);
+  const onSuccess = chat.slice(onSuccessStart, onErrorStart);
+  assert.match(
+    onSuccess,
+    /const spokenReply = speakableReplyText\(reply\);/,
+  );
+  assert.match(
+    onSuccess,
+    /shouldSpeakAiReply\(\{\s*source,\s*persistentEnabled:\s*voiceReplyRef\.current,\s*hasReply:\s*Boolean\(spokenReply\),\s*\}\)/,
+  );
+  assert.match(onSuccess, /speakText\(spokenReply, speechLang\)/);
+});
+
 test("읽어줄 때 화면 마커는 소리로 읽지 않는다", () => {
   // "[[img:...]]" 를 그대로 읽으면 "대괄호 아이엠지 콜론..."처럼 들린다.
   assert.equal(speakableReplyText("사진 보냈어 [[img:abc/def.jpg]] 어때?"), "사진 보냈어 어때?");

@@ -12,9 +12,11 @@ import {
 } from "@/lib/native/speech";
 import {
   readChildVoiceReplyEnabled,
+  shouldSpeakAiReply,
   SPEECH_LOCALE,
   speakableReplyText,
   writeChildVoiceReplyEnabled,
+  type AiChatTurnSource,
 } from "@/transform/childVoiceChat";
 import { useIntl, type IntlShape } from "react-intl";
 import { useLongPress, type LongPressHandlers } from "@/lib/useLongPress";
@@ -277,7 +279,7 @@ export function AiFriendChat() {
   const [messages, setMessages] = useState<ChatBubble[]>([]);
   const [seeded, setSeeded] = useState(false);
   const [input, setInput] = useState("");
-  const [pendingSendSource, setPendingSendSource] = useState<string | null>(null);
+  const [pendingSendSource, setPendingSendSource] = useState<AiChatTurnSource | null>(null);
   // 아직 실행하지 않고 아이 확인을 기다리는 도구(부모 메시지·일정 변경·전화).
   const [pendingTool, setPendingTool] = useState<AiToolResult | null>(null);
   // 기기 동작은 앱이 대신 하지 않는다 — 열어 줄 화면만 기억해 두고 아이가 누른다(2026-08-18).
@@ -373,7 +375,11 @@ export function AiFriendChat() {
   );
 
   // 전송 = 사용자 액션(버튼·칩·Enter)에서만. 자동 실행 금지. 크레딧 소모 주의.
-  const send = (raw: string, source: string, confirmedTool?: ConfirmedAiTool) => {
+  const send = (
+    raw: string,
+    source: AiChatTurnSource,
+    confirmedTool?: ConfirmedAiTool,
+  ) => {
     const text = raw.trim();
     if (!text || sendChat.isPending) return;
     // 사용자가 대화를 시작하면 로컬 상태가 정본 — 뒤늦게 도착한 서버 기록이 덮어쓰지 않게 시드 잠금.
@@ -415,9 +421,15 @@ export function AiFriendChat() {
                 },
           ]);
           applyToolResult(res.toolResult);
-          // 읽어주기가 켜져 있으면 답을 소리로 들려준다(실패는 조용히 넘긴다 — 글은 이미 떠 있다).
-          if (voiceReplyRef.current && reply) {
-            void speakText(speakableReplyText(reply), speechLang);
+          // 음성 질문은 이번 답을 바로 읽고, 글 질문은 아이별 영구 설정을 따른다.
+          // 합성 실패는 조용히 넘긴다 — 글 답변은 이미 화면에 떠 있다.
+          const spokenReply = speakableReplyText(reply);
+          if (shouldSpeakAiReply({
+            source,
+            persistentEnabled: voiceReplyRef.current,
+            hasReply: Boolean(spokenReply),
+          })) {
+            void speakText(spokenReply, speechLang);
           }
           reactTo({
             phase: "reply",
