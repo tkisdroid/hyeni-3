@@ -1,7 +1,7 @@
 # 아이 AI 친구 음성 답변 설계
 
 - 날짜: 2026-08-18
-- 상태: 사용자 방향 승인, 구현 전 문서 검토 대기
+- 상태: 사용자 설계 승인, 구현 계획 확정
 - 대상: 아이 모드 `#/child/ai-friend`
 
 ## 1. 목표
@@ -13,6 +13,7 @@
 - 마이크로 보낸 turn의 정상 AI 답변은 읽어주기 영구 설정이 꺼져 있어도 한 번 자동 재생된다.
 - 키보드·추천 칩·확인 카드로 보낸 turn은 기존 아이별 읽어주기 설정을 그대로 따른다.
 - 새 음성 입력을 시작하거나 읽어주기를 끄거나 화면을 떠나면 재생 중인 음성이 즉시 멈춘다.
+- 중단 시점에 Android TTS가 아직 초기화 중이어도 늦게 도착한 초기화 callback이 재생이나 웹 폴백을 다시 시작하지 않는다.
 - 사용자 음성 원본은 혜니캘린더 Worker나 OpenAI에 업로드하지 않는다. Worker에는 음성 인식 결과인 텍스트만 전송한다.
 - TTS 추가 API 비용, 새 서버 endpoint, 새 DB, 새 Android 권한을 만들지 않는다.
 - 앱의 현재 10개 locale에 맞는 언어 태그를 Android TTS에도 전달한다.
@@ -96,7 +97,7 @@ shouldSpeakAiReply({ source, persistentEnabled, hasReply })
 - 음성 원본은 혜니캘린더 Worker와 OpenAI로 보내지 않는다.
 - 다만 Android `SpeechRecognizer`, Web Speech, 시스템 TTS는 기기·브라우저·선택된 음성 엔진에 따라 외부 제공자 서버에서 음성이나 합성할 텍스트를 처리할 수 있다. “항상 기기 안에서만 처리된다”고 안내하지 않는다.
 - Worker로 들어온 인식 텍스트는 일반 AI 친구 입력과 동일하게 500자 상한, 안전 판정, 대화 저장, 장기기억 필터, 콘텐츠 신고 계약을 따른다.
-- TTS에 넘기기 전 `speakableReplyText()`로 `[[img:...]]` 마커와 위치 좌표를 제거하고 사람이 읽을 주소만 남긴다.
+- TTS에 넘기기 전 `speakableReplyText()`로 `[[img:...]]` 마커와 위치 좌표를 제거하고 사람이 읽을 주소만 남긴다. 정리 뒤 빈 문자열이면 합성을 시작하지 않는다.
 - 음성 turn도 기존 “아이의 한 번 발화 = 1회” 크레딧 규칙을 따른다. TTS 때문에 추가 차감하지 않는다.
 
 ## 6. Android 언어 처리
@@ -107,6 +108,7 @@ shouldSpeakAiReply({ source, persistentEnabled, hasReply })
 - `TextToSpeech.setLanguage()`가 `LANG_MISSING_DATA` 또는 `LANG_NOT_SUPPORTED`를 반환하면 해당 네이티브 재생을 실패로 끝낸다.
 - JS는 기존처럼 웹 `speechSynthesis` 폴백을 시도한다.
 - TTS 엔진 설치 화면을 자동으로 열거나 새 권한을 요구하지 않는다.
+- JS와 Android가 각각 재생 generation을 관리한다. 새 재생·중단·화면 이탈은 이전 generation을 무효화하고, 초기화 중이던 native 요청은 `started:false`로 닫아 오래된 답변이 웹 폴백으로 되살아나지 않게 한다.
 
 지원 여부 버튼을 비동기 사전 진단하는 별도 기능은 이번 범위에 넣지 않는다. 실제 재생 실패가 대화를 막지 않는 현재 fail-soft 계약을 유지한다.
 
@@ -120,6 +122,8 @@ Play Data Safety 초안은 다음 사실을 함께 반영한다.
 - 혜니캘린더 서버는 음성 원본이 아니라 인식된 텍스트를 받는다.
 - TTS 제공자는 합성을 위해 AI 답변 텍스트를 처리할 수 있다.
 
+구현 계획 검토 중 공개 이용약관과 현행 출시 문서에 과거 친구 초대 수치(양쪽 10회·3가족 상한)와 과거 신고 버튼 위치가 남은 것도 확인했다. 현재 정본은 양쪽 가족 각각 50회·초대 가족 수 상한 없음이고 신고 진입은 long-press다. 공개 Worker를 다시 배포하면서 이미 아는 오표기를 그대로 재배포하지 않도록, 음성 고지와 구분한 별도 커밋에서 `worker/README.md`, Play 체크리스트·가이드·가격 준비 보고서까지 함께 동기화한다.
+
 구현 뒤 `AGENTS.md`와 `CLAUDE.md`에 이 음성 turn 계약과 회귀 테스트를 같은 내용으로 추가한다.
 
 ## 8. 변경 범위
@@ -131,10 +135,13 @@ Play Data Safety 초안은 다음 사실을 함께 반영한다.
 - `src/lib/native/speech.ts`: 네이티브 `language` 전달
 - `android/app/src/main/java/com/hyeni/calendar/SpeechPlugin.java`: locale 적용과 미지원 언어 실패 처리
 - Android의 작은 순수 locale 정책 파일과 JVM 단위 테스트
+- Android의 작은 순수 재생 generation 정책 파일과 JVM 단위 테스트
+- raw session을 반출하지 않고 razr WebView만 serial-scoped forward로 확인하는 CDP probe와 정적 안전 테스트
 - `locales/*/child.json` 및 생성 catalog: 토글 접근성 문구 10개 locale 동기화
 - `tests/childVoiceChat.test.ts`: 자동 재생·토글·중단·locale 계약 회귀
 - `worker/routes/legal.ts`, `worker/tests/legalCopy.test.mjs`: 공개 고지 확장
 - `docs/store/play-data-safety.md`: STT/TTS 실제 데이터 경계 보완
+- `worker/README.md`와 현행 Play 체크리스트·가이드·가격 준비 보고서: 기존 친구 초대 오표기 완전 동기화
 - `AGENTS.md`, `CLAUDE.md`: 운영 정본 동기화
 
 서버 AI route, D1 schema, 결제·크레딧 정책, CSS, Android 권한은 변경하지 않는다.
@@ -146,7 +153,7 @@ Play Data Safety 초안은 다음 사실을 함께 반영한다.
 - 순수 함수: 음성 source/텍스트 source × 토글 on/off × 빈/정상 답변 조합
 - 화면 계약: `send(spoken, "voice")`, 새 음성 시작·토글 off·unmount 중단
 - 음성 마커 정리와 10개 locale 문구
-- Android JVM: 10개 locale 태그 변환, 빈 값·무효 값 한국어 폴백
+- Android JVM: 10개 locale 태그 변환, 빈 값·무효 값 한국어 폴백, 초기화 중 중단과 새 요청 generation 교체
 - Worker 공개 법적 문구 회귀
 - `npm run typecheck`
 - 관련 앱/Worker 테스트
@@ -164,7 +171,7 @@ Play Data Safety 초안은 다음 사실을 함께 반영한다.
 4. 빈/오류 답변 → 재생 0회
 5. 화면 이탈과 새 마이크 입력 → 중단 1회
 
-실제 가청 TTS는 허용된 razr 아이 기기에만 `adb install -r`로 세션을 보존해 확인한다. AI 서버 호출 없이 네이티브 플러그인에 짧은 고정 문구를 전달해 스피커 재생과 중단을 검증한다. A17 부모 세션은 역할 확인 등 필요한 읽기 검증만 하고, S25에는 어떤 adb 접근도 하지 않는다.
+실제 가청 TTS는 허용된 razr 아이 기기에만 `adb install -r`로 세션을 보존해 확인한다. 전역 기기 열거·Chrome inspect 대신 razr serial과 해당 앱 PID의 WebView socket만 localhost로 forward한다. raw session·token·family ID는 WebView 밖으로 내보내지 않고 child 역할·family scope 존재/일치 boolean만 전후 비교한다. AI 서버 호출 없이 네이티브 플러그인에 짧은 완료 문구와 충분히 긴 중단 문구를 전달해 스피커 재생과 700ms 중단을 검증한다. A17 부모 세션은 이번 기능 검증에 필요하지 않으면 건드리지 않고, S25에는 어떤 adb 접근도 하지 않는다.
 
 운영 AI와 연결한 실제 “발화→AI→가청 재생”은 테스트 대화·크레딧·대화 기록을 만들므로 자동 수행하지 않는다. 사용자가 별도로 허용한 경우에만 정확한 범위를 정해 실행하고, 삭제가 허용되지 않는 운영 기록을 테스트 목적으로 만들지 않는다.
 
