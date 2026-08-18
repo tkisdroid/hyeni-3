@@ -21,6 +21,24 @@ export const SPEECH_LOCALE: Record<SupportedLocale, string> = {
   fil: "fil-PH",
 };
 
+export type AiChatTurnSource =
+  | "composer"
+  | "voice"
+  | "confirm"
+  | `suggestion:${string}`;
+
+export function shouldSpeakAiReply({
+  source,
+  persistentEnabled,
+  hasReply,
+}: {
+  source: AiChatTurnSource;
+  persistentEnabled: boolean;
+  hasReply: boolean;
+}): boolean {
+  return hasReply && (source === "voice" || persistentEnabled);
+}
+
 const VOICE_REPLY_PREFIX = "hyeni-child-voice-reply-";
 
 function storageKey(familyId: string | null, userId: string | null): string {

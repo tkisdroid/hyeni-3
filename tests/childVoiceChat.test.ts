@@ -7,8 +7,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   readChildVoiceReplyEnabled,
+  shouldSpeakAiReply,
   SPEECH_LOCALE,
   speakableReplyText,
+  type AiChatTurnSource,
   writeChildVoiceReplyEnabled,
 } from "../src/transform/childVoiceChat.ts";
 
@@ -69,6 +71,30 @@ test("읽어주기는 기본 꺼짐이고 아이별로 저장된다", () => {
   // 다른 아이의 설정을 넘겨받지 않는다.
   assert.equal(readChildVoiceReplyEnabled("fam", "kid2"), false);
   delete (globalThis as { window?: unknown }).window;
+});
+
+test("음성 turn은 설정과 무관하게 읽고 글 turn은 읽어주기 설정을 따른다", () => {
+  const cases = [
+    ["voice", false, true, true],
+    ["voice", true, true, true],
+    ["composer", false, true, false],
+    ["composer", true, true, true],
+    ["suggestion:놀자", false, true, false],
+    ["suggestion:놀자", true, true, true],
+    ["confirm", false, true, false],
+    ["confirm", true, true, true],
+    ["voice", false, false, false],
+    ["composer", true, false, false],
+  ] as const satisfies readonly (
+    readonly [AiChatTurnSource, boolean, boolean, boolean]
+  )[];
+
+  for (const [source, persistentEnabled, hasReply, expected] of cases) {
+    assert.equal(
+      shouldSpeakAiReply({ source, persistentEnabled, hasReply }),
+      expected,
+    );
+  }
 });
 
 test("읽어줄 때 화면 마커는 소리로 읽지 않는다", () => {
