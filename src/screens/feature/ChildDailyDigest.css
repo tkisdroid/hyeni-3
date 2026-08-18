@@ -1,0 +1,300 @@
+/* 아이 하루 대시보드 — 프리미엄 보호자에게 하루 한 번 도착하는 요약 화면.
+   구조·톤은 주간 리포트(WeeklyFamilyReport)와 같은 언어를 쓴다. */
+
+.cdd-root {
+  min-height: 100%;
+  background: radial-gradient(120% 42% at 50% 0%, var(--cream-soft) 0%, transparent 55%),
+    linear-gradient(180deg, var(--bg-app), var(--bg-page));
+  animation: hy-fadein 0.35s ease forwards;
+}
+
+.cdd-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: calc(env(safe-area-inset-top, 0px) + var(--space-4)) var(--space-4) var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bg-app) 94%, transparent), transparent);
+  backdrop-filter: blur(10px);
+}
+
+.cdd-back {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-soft);
+  color: var(--fg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  --press: 0.9;
+}
+
+.cdd-head-main {
+  min-width: 0;
+}
+
+.cdd-title {
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+  color: var(--fg-primary);
+}
+
+.cdd-subtitle {
+  margin-top: 4px;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  color: var(--fg-muted);
+}
+
+.cdd-content {
+  padding: var(--space-2) var(--space-5) calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.cdd-hero {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+  border-radius: var(--radius-20);
+  padding: var(--space-5);
+  background: linear-gradient(135deg, var(--cream-soft), var(--bg-card));
+  border: 1px solid var(--line-card);
+  box-shadow: var(--shadow-floating);
+}
+
+.cdd-hero__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-16);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.cdd-hero__icon img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.cdd-hero__body {
+  min-width: 0;
+}
+
+.cdd-hero__body h1 {
+  margin: 0;
+  font-size: var(--type-title-lg);
+  line-height: var(--type-title-lg-line-height);
+  font-weight: var(--type-title-lg-weight);
+  color: var(--fg-primary);
+}
+
+.cdd-hero__body p {
+  margin: 4px 0 0;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  color: var(--fg-muted);
+}
+
+.cdd-section {
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.cdd-section__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.cdd-section__head b {
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+  color: var(--fg-primary);
+}
+
+.cdd-metric {
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  color: var(--fg-secondary);
+  text-align: right;
+  word-break: keep-all;
+}
+
+.cdd-label {
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  color: var(--fg-muted);
+}
+
+.cdd-chips {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.cdd-chip {
+  padding: var(--space-2) var(--space-3);
+  border-radius: 999px;
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent-text);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  word-break: keep-all;
+}
+
+.cdd-chip--warn {
+  background: var(--cream-soft);
+  color: var(--gold-text);
+}
+
+.cdd-list {
+  margin: 0;
+  padding-left: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+  color: var(--fg-primary);
+}
+
+.cdd-events {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.cdd-events li {
+  display: flex;
+  gap: var(--space-3);
+  align-items: baseline;
+}
+
+.cdd-events__time {
+  flex: none;
+  min-width: 48px;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  color: var(--fg-muted);
+}
+
+.cdd-events__title {
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+  color: var(--fg-primary);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.cdd-emptyline {
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+  color: var(--fg-muted);
+}
+
+/* 안전 신호는 사실만 알리고 겁주지 않는다 — 자세한 판단은 안전 화면 몫이다. */
+.cdd-flag {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-12);
+  background: var(--cream-soft);
+  color: var(--gold-text);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+}
+
+.cdd-note {
+  margin: 0;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  color: var(--fg-tertiary);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.cdd-state {
+  padding: var(--space-6) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  text-align: center;
+}
+
+.cdd-state b {
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+  color: var(--fg-primary);
+}
+
+.cdd-state p {
+  margin: 0;
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+  color: var(--fg-muted);
+  word-break: keep-all;
+}
+
+.cdd-state__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-16);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.cdd-state__icon img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.cdd-cta {
+  min-height: 48px;
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-16);
+  background: var(--cta-grad-accent);
+  color: #fff;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+  --press: 0.96;
+}

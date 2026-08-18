@@ -58,6 +58,15 @@ export function sanitizeNotificationRoute(
       ? `${path}?${params.toString()}`
       : fallback(role);
   }
+  // 하루 대시보드는 알림이 지정한 아이를 그대로 연다(활성 아이 폴백 금지).
+  if (path === "/child-digest") {
+    const allowedKeys = keys.every((key) => key === "alert" || key === "child");
+    const uniqueKeys = new Set(keys).size === keys.length;
+    const childValid = !params.has("child") || hasOneSafeValue(params, "child");
+    return allowedKeys && uniqueKeys && hasOneSafeValue(params, "alert") && childValid
+      ? `${path}?${params.toString()}`
+      : fallback(role);
+  }
   if (path === "/sos-receive") {
     const allowedKeys = keys.every((key) => key === "alert" || key === "child");
     const uniqueKeys = new Set(keys).size === keys.length;

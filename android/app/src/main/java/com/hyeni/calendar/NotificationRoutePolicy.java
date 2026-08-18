@@ -35,6 +35,9 @@ public final class NotificationRoutePolicy {
     private static final Pattern SOS_RECEIVE_QUERY = Pattern.compile(
         "^/sos-receive\\?alert=" + SAFE_IDENTIFIER + "&child=" + SAFE_IDENTIFIER + "$"
     );
+    private static final Pattern CHILD_DIGEST_QUERY = Pattern.compile(
+        "^/child-digest\\?alert=" + SAFE_IDENTIFIER + "&child=" + SAFE_IDENTIFIER + "$"
+    );
     private static final Pattern NOTIFICATIONS_QUERY = Pattern.compile(
         "^/notifications\\?alert=" + SAFE_IDENTIFIER + "$"
     );
@@ -58,7 +61,8 @@ public final class NotificationRoutePolicy {
         return PARENT_ROUTES.contains(route)
             || PARENT_MEMO_QUERY.matcher(route).matches()
             || SOS_RECEIVE_QUERY.matcher(route).matches()
-            || NOTIFICATIONS_QUERY.matcher(route).matches();
+            || NOTIFICATIONS_QUERY.matcher(route).matches()
+            || CHILD_DIGEST_QUERY.matcher(route).matches();
     }
 
     private static String clean(String value) {

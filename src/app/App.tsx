@@ -80,6 +80,7 @@ const ArrivalAlerts = lazyScreen(() => import("@/screens/feature/ArrivalAlerts")
 const DangerAlert = lazyScreen(() => import("@/screens/feature/DangerAlert"), "DangerAlert");
 const DaySummary = lazyScreen(() => import("@/screens/feature/DaySummary"), "DaySummary");
 const DailySafetyReport = lazyScreen(() => import("@/screens/feature/DailySafetyReport"), "DailySafetyReport");
+const ChildDailyDigest = lazyScreen(() => import("@/screens/feature/ChildDailyDigest"), "ChildDailyDigest");
 const WeeklyFamilyReport = lazyScreen(() => import("@/screens/feature/WeeklyFamilyReport"), "WeeklyFamilyReport");
 const RemoteAudioAudit = lazyScreen(() => import("@/screens/feature/RemoteAudioAudit"), "RemoteAudioAudit");
 const AiFriendSetup = lazyScreen(() => import("@/screens/child/AiFriendSetup"), "AiFriendSetup");
@@ -283,6 +284,7 @@ const router = createHashRouter([
           { path: "day-summary", element: routeElement(<DaySummary />, REPORT_NAMESPACES) },
           { path: "daily-report", element: routeElement(<DailySafetyReport />, REPORT_NAMESPACES) },
           { path: "weekly-report", element: routeElement(<WeeklyFamilyReport />, REPORT_NAMESPACES) },
+          { path: "child-digest", element: routeElement(<ChildDailyDigest />, REPORT_NAMESPACES) },
           { path: "remote-audio-audit", element: routeElement(<RemoteAudioAudit />, PARENT_NOTIFICATION_NAMESPACES) },
           { path: "remote-ring", element: routeElement(<RemoteRing />, PARENT_NOTIFICATION_NAMESPACES) },
           { path: "sos-receive", element: routeElement(<SosReceive />, PARENT_NOTIFICATION_NAMESPACES) },

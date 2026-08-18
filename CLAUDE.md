@@ -11,7 +11,22 @@
 **1~10단계 전부 완료**(전 화면 실데이터·다자녀·AI 친구·알림 3종·릴리즈 게이트) — 실기기 3대 운용 중.
 **현 국면 = 실사용 안정화**: TK 가 실기기로 쓰며 제보하는 버그·개선을 즉시 수정·검증·배포.
 
-**현재 배포 상태(2026-08-17 밤 갱신)**: 친구 초대 50회·상한 없음까지 반영해 Worker version
+**현재 배포 상태(2026-08-19 새벽 갱신)**: 아이 AI 친구 3종(꾹 눌러 말하기·습관 기억·하루 대시보드)을 배포했다.
+배포 전 `worker/db/child-daily-digest.sql` 을 프로덕션 D1 에 1회 적용해 `child_daily_digests` 테이블과
+`idx_child_daily_digests_created` 인덱스를 readback 으로 확인했다(적용 전 조회 0행 → 적용 후 table+index 존재).
+Worker version `d4947d51-2ccf-4fb5-abae-54df0bc20df4`(health 200 `{"ok":true,"status":"ready"}`,
+`GET /api/ai/daily-digest` 미인증 401, cron 트리거 5개 유지). Pages `https://a2a336a0.hyeni-calendar.pages.dev`
+— 고정 URL과 `hyeni-calendar.pages.dev` 의 index SHA-256 `b258f99e9692af03fd835b389408a62221ea54214e7e0e981f2c2fdfec262122`
+가 로컬 dist 와 같고 entry `assets/index-Q5Ov8ZnS.js`·`assets/index-fxI4MsT3.css`, manifest·sw·assetlinks 200,
+CSP·`Referrer-Policy: no-referrer`·nosniff 3/3 을 확인했다. 로컬 검증은 앱 1,768/1,768, Worker 1,233/1,233,
+`tsc -b`·`typecheck:worker`·production build(진입 JS 339,259/500,000B), Android unit+lintDebug+assembleDebug 통과다.
+razr(ZY22H9VTQD)에 `adb install -r` 로 데이터 보존 설치했고 CDP 로 세션 role=`child`·family `f9a75cb4…` 유지와
+활성 번들 `index-Q5Ov8ZnS.js`(= 방금 배포본, SW 구번들 잔존 없음)를 확인했다. ⚠️ 화면 관측은 미완료다 —
+새벽 3시라 razr 화면이 꺼져 있어 CLAUDE.md 안전 원칙대로 깨우지 않았다(`document.hidden` 이라 배회·안내
+말풍선은 설계대로 멈춰 있다). A17 은 미연결이라 부모 대시보드 실기기 검증도 미완료다.
+아래는 그 직전 배포 기록이다.
+
+**직전 배포(2026-08-17 밤)**: 친구 초대 50회·상한 없음까지 반영해 Worker version
 `c887c03f-fcb2-4c92-9fd7-467f635ace41`, Pages `https://2a822262.hyeni-calendar.pages.dev`(고정 URL·프로덕션 별칭 index
 SHA-256 `1674cdac29be64517c6713ddd1fbcda0909406ab5c46449d3bdaee4b74876da8` = 로컬 dist, entry JS/CSS 바이트 일치,
 보안 헤더 3/3, manifest·sw·assetlinks 200)를 배포했다. 배포 전 `worker/db/referral-rewards-v2-unlimited.sql` 을
@@ -351,6 +366,47 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   회귀=`tests/aiBuddyFab.test.ts`·`tests/eventCompanionPrompt.test.ts`·Worker
   `tests/aiChildSettingsAgent.test.mjs`·`tests/aiChildMemoryDepth.test.mjs`·`tests/openAiLunaContract.test.mjs`.
 - ★**AI 친구 음성 turn 자동 답변(2026-08-18 TK 승인)**: 마이크가 만든 `source="voice"`의 정상 reply는 가족+아이 읽어주기 설정이 꺼져 있어도 그 turn만 자동 TTS한다. `composer`·`suggestion:*`·`confirm`은 기존 영구 설정을 따르고, 빈·오류·한도 응답은 읽지 않는다. 새 마이크 시작·토글 off·화면 이탈은 STT/TTS를 즉시 중단하며 초기화 중이던 오래된 native callback도 재생을 되살리지 않는다. 사용자 음성 원본은 Worker·OpenAI에 보내지 않고 인식 텍스트만 기존 안전·크레딧·저장 경로로 보낸다. 단 OS·브라우저·선택된 STT/TTS 제공자는 음성 또는 합성할 답변 텍스트를 외부 처리할 수 있으므로 “항상 기기 안에서만 처리”라고 고지하지 않는다. TTS는 추가 API·크레딧·권한 없이 fail-soft이며 10개 locale 태그를 전달한다. 회귀=`tests/childVoiceChat.test.ts`·`tests/nativeTtsCdpProbeSafety.test.mjs`·Android `SpeechLocalePolicyTest`/`SpeechPlaybackGenerationTest`·`worker/tests/legalCopy.test.mjs`·`tests/playReleaseDocumentation.test.mjs`.
+- ★**꾹 누르면 바로 말하기 + 버튼이 그걸 알려 준다(2026-08-19 TK 지시)**: 아이는 플로팅 AI 친구 버튼에
+  음성 대화가 있다는 걸 알 방법이 없었다. ①**조작** — `AI_BUDDY_VOICE_LONG_PRESS_MS`(550ms) 이상 누르면
+  `navigate("/child/ai-friend", { state:{ startVoice:true } })` 로 대화창이 열리고 `startVoice()` 가 바로 돈다.
+  길게 누른 것 자체가 아이의 조작이라 "전송은 사용자 액션에서만" 계약을 어기지 않는다. 대화 화면은
+  `navigate(pathname, { replace:true, state:{...navState, startVoice:false} })` 로 히스토리 state 를 즉시 지운다 —
+  안 지우면 뒤로 갔다 돌아올 때마다 마이크가 켜져 아이가 놀란다. 드래그로 옮기는 중이면 `cancelLongPress()`,
+  발동한 뒤 `endDrag` 는 `longPressFiredRef` 를 보고 대화창을 **또 열지 않는다**.
+  ②**안내** — `src/transform/aiBuddyVoiceHint.ts` 가 판정한다. **한 번 써 본 아이에게는 다시 띄우지 않고**
+  (`used`), 안 써 본 아이에게도 하루 한 번(`AI_BUDDY_VOICE_HINT_MIN_GAP_MS`)·최대 3회다. 말풍선은 배회 한 마디
+  보다 우선하며 `.abf__bubble--hint` 로 두 줄까지 펴진다(기본 말풍선은 `nowrap`+말줄임이라 잘린다).
+  ⚠️ 저장값 파싱은 `typeof` 가드 필수 — `Number(null)===0` 이면 "1970년에 알림"이 되어 매번 다시 뜬다.
+  회귀=`tests/aiBuddyFab.test.ts`.
+- ★**AI 친구는 아이를 알아 가는 친구다(2026-08-19 TK 지시)**: 대화는 관계를 쌓는 데 쓰여야 한다.
+  정본은 `worker/shared/aiChildHabits.js` 하나다.
+  ①**습관 기억** — 아이가 지나가듯 말한 습관("집에 오면 내일 일정 정리해")을 `extractChildHabitMemory` 가 뽑아
+  기존 장기기억(`ai_long_term_memories`)에 `type:"habit"` 으로 저장한다(**스키마 무변경**).
+  `createLongTermMemoryPatch` 가 민감·금지 필터를 통과시킨 **뒤에** 습관을 먼저 본다(관심·싫음보다 구체적).
+  집 도착 geofence 트리거에서 `buildHabitHomeArrivalMessage` 가 "늘 하던 대로 일정 정리 같이 할까?"로 제안하고,
+  습관을 모르면 기존 일반 인사로 강등한다(없는 습관을 지어내지 않는다).
+  ②**활동별 챙길 물건** — `ACTIVITY_BELONGINGS`(태권도→도복·띠, 수영→수영복·수경·수건 …)로 "준비물 챙겼어?"
+  대신 물건 이름으로 묻는다. 클라 표는 `src/transform/childBelongings.ts`(아무것도 import 하지 않는 아래층)이고
+  성격 게이트는 위층 `eventCompanionPrompt.ts` 가 씌운다 — 두 모듈이 서로 import 하면 순환이 된다.
+  ⚠️ 게이트(`BELONGINGS_EVENT_KINDS`) 없이 표만 쓰면 "학교 생일 파티"에 알림장을 묻는다. 인사말 교체는
+  `BELONGINGS_GREETING_KINDS`=`lesson` 에만 한다 — **시합·발표는 물건보다 응원이 먼저다**("오늘도 파이팅!").
+  ③**물건을 자주 두고 오는 아이** — 등록 장소를 **떠날 때**(cron `trigger:"place_departure"`) 한 번만 확인해 준다.
+  할 말이 없으면 정책이 빈 문자열을 돌려 `no_useful_context` 로 조용히 끝나고 크레딧도 쓰지 않는다.
+  프롬프트에는 `## 이 아이의 습관·오늘 챙길 것` 블록으로 실린다(시키는 말투 금지, 같이 하자는 말투).
+  회귀=`tests/childRelationshipContext.test.ts`·`tests/eventCompanionPrompt.test.ts`.
+- ★**아이 하루 대시보드 = 프리미엄 1회성 알림(2026-08-19 TK 지시)**: KST 20~23시 창에서 기존 `*/10` cron 이
+  `worker/cron/child-daily-digest.ts` 를 돌려 프리미엄 가족 아이의 하루를 정리하고 **하루·아이당 한 번**
+  부모에게 알린다. 알림을 누르면 `/child-digest?alert=&child=` 대시보드가 열린다(부모 라우트 60번째).
+  · **1회성 보증** = `child_daily_digests` PK(family, child, date) + `INSERT OR IGNORE`. 행을 실제로 만든 실행만
+    알림을 보내므로 여러 tick 이 겹쳐도 1건이다. 후보 조회도 이미 만든 아이를 `NOT EXISTS` 로 걸러 낸다.
+  · ⚠️ **아이 대화 원문은 payload 에 넣지 않는다.** 주제 분류(`CHILD_CHAT_TOPICS`)·집계·부모 공개 장기기억
+    (`parent_visible=1`)·안전 신호 **개수**만 담는다. 아이가 감시당한다고 느끼면 AI 친구에게 마음을 열지 않는다.
+    화면도 "대화 원문은 보여드리지 않고 주제만 정리해요"라고 분명히 쓴다.
+  · 기록이 하나도 없는 날은 아예 만들지 않는다(`shouldSendChildDailyDigest`) — 빈 알림은 소음이다.
+  · 엔타이틀먼트 조회 실패는 프리미엄으로 **추정하지 않는다**(fail-closed). 화면도 미확정을 Free 로 단정하지 않는다.
+  · Cloudflare Free 플랜 cron trigger 5개 한도라 **새 표현식을 만들지 않고** `*/10` 에 얹었다. 창 밖이면 즉시 반환한다.
+  · 운영 순서 = `worker/db/child-daily-digest.sql` 적용 → Worker 배포 → Pages/Android.
+  회귀=`worker/tests/childDailyDigest.test.mjs`.
 - ★**AI 실패 안내는 하나로·정직하게(2026-08-17 TK 제보 실사고)**: 아이가 채팅을 보내면 말풍선에
   "잠깐 연결이 안됐어"가 뜨고 **동시에** 하단에 "방금 한 일이 저장되지 않았어" 토스트가 겹쳤다.
   ①**중복 원인** — `QueryProvider` MutationCache 폴백은 `mutation.options.onError` 만 본다.

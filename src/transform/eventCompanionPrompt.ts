@@ -10,6 +10,8 @@
  * 두 표의 동기화는 `tests/eventCompanionPrompt.test.ts` 가 고정한다.
  */
 
+import { belongingsForActivity, belongingsQuestionForItems } from "./childBelongings.ts";
+
 export type EventCompanionKind =
   | "birthday"
   | "medical"
@@ -71,6 +73,25 @@ function normalize(value: unknown): string {
   return String(value ?? "").toLowerCase().replace(/\s+/g, "");
 }
 
+/**
+ * 챙길 물건을 물어봐도 되는 일정 성격.
+ * "학교 생일 파티"처럼 제목에 활동 낱말이 섞여 있어도 성격이 생일·병원이면 묻지 않는다.
+ */
+export const BELONGINGS_EVENT_KINDS: readonly EventCompanionKind[] = [
+  "lesson",
+  "sports",
+  "school",
+  "outing",
+  "performance",
+];
+
+/**
+ * 인사말에서 "챙길 거 다 넣었어?" 대신 물건 이름으로 바꿔도 되는 성격.
+ * 시합·발표는 물건보다 **응원**이 먼저다("오늘도 파이팅!") — 떨리는 날 준비물부터 묻지 않는다.
+ * 학교는 "오늘 뭐 할 거야?"라는 관계 질문이 더 낫다. 물건은 출발할 때 따로 확인해 준다.
+ */
+const BELONGINGS_GREETING_KINDS: readonly EventCompanionKind[] = ["lesson"];
+
 /** 일정 제목(+메모)으로 성격을 읽는다. 못 읽으면 general. */
 export function resolveEventCompanionKind(title: unknown, extra?: unknown): EventCompanionKind {
   const text = `${normalize(title)}${normalize(extra)}`;
@@ -79,6 +100,20 @@ export function resolveEventCompanionKind(title: unknown, extra?: unknown): Even
     if (words.some((word) => text.includes(normalize(word)))) return kind;
   }
   return "general";
+}
+
+/**
+ * 이 일정에서 챙길 물건. 성격 게이트를 통과한 일정만 물건을 돌려준다
+ * (생일·병원 일정에 "알림장 챙겼어?"라고 묻지 않기 위한 이중 방어).
+ */
+export function belongingsForEvent(title: unknown, extra?: unknown): readonly string[] {
+  if (!BELONGINGS_EVENT_KINDS.includes(resolveEventCompanionKind(title, extra))) return [];
+  return belongingsForActivity(title, extra);
+}
+
+/** 그 일정에 맞는 "도복이랑 띠를 챙겼어?" 한 마디. 모르는 활동이면 빈 문자열. */
+export function buildBelongingsQuestion(title: unknown, extra?: unknown): string {
+  return belongingsQuestionForItems(belongingsForEvent(title, extra));
 }
 
 export interface EventCompanionInput {
@@ -99,13 +134,21 @@ export function buildEventCompanionGreeting(
   const kind = resolveEventCompanionKind(title, input.memo);
   const time = String(input.time ?? "").trim();
   const when = time ? `${time}에 ` : "";
-  return `${opening}! 오늘 ${when}${title} 있네. ${KIND_ASK[kind]}`;
+  // 무엇을 챙길지 아는 학원·수업이면 "챙길 거 다 넣었어?" 대신 그 물건 이름으로 묻는다.
+  const ask = (BELONGINGS_GREETING_KINDS.includes(kind)
+    ? buildBelongingsQuestion(title, input.memo)
+    : "") || KIND_ASK[kind];
+  return `${opening}! 오늘 ${when}${title} 있네. ${ask}`;
 }
 
 /** 일정 성격에 맞는 제안 칩. 없으면 일반 제안. */
 export function eventCompanionSuggestions(input: EventCompanionInput | null): readonly string[] {
   if (!input) return KIND_SUGGESTIONS.general;
-  return KIND_SUGGESTIONS[resolveEventCompanionKind(input.title, input.memo)];
+  const base = KIND_SUGGESTIONS[resolveEventCompanionKind(input.title, input.memo)];
+  // 챙길 물건을 아는 활동이면 그 물건을 첫 칩으로 올린다("도복 챙겼나?").
+  const items = belongingsForEvent(input.title, input.memo);
+  if (items.length === 0) return base;
+  return [`${items[0]} 챙겼는지 봐줘`, ...base];
 }
 
 /** 아이 홈 모험 지도 말풍선 꼬리말 — 이동이 필요 없는 일정에 "같이 가자"라고 하지 않는다. */

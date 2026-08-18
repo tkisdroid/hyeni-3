@@ -271,6 +271,21 @@ CREATE TABLE IF NOT EXISTS "app_global_settings" (
   "updated_at" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 아이 하루 대시보드(프리미엄 보호자에게 하루 한 번). 운영 migration = worker/db/child-daily-digest.sql
+CREATE TABLE IF NOT EXISTS "child_daily_digests" (
+  "family_id" TEXT NOT NULL,
+  "child_user_id" TEXT NOT NULL,
+  "date_key" TEXT NOT NULL,
+  "payload" TEXT NOT NULL DEFAULT '{}',
+  "alert_id" TEXT,
+  "notified_at" TEXT,
+  "created_at" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY ("family_id", "child_user_id", "date_key")
+);
+
+CREATE INDEX IF NOT EXISTS "idx_child_daily_digests_created"
+  ON "child_daily_digests" ("created_at");
+
 CREATE TABLE "ai_safety_events" (
   "id" TEXT NOT NULL,
   "family_id" TEXT NOT NULL,

@@ -2101,6 +2101,62 @@
     "variables": {},
     "description": "부모에게 충전 요청을 보냈을 때의 토스트"
   },
+  "child.aiChat.device.battery": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 AI 친구가 기기 화면을 열어 줄 때 쓰는 버튼·안내 문구"
+  },
+  "child.aiChat.device.dial": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 AI 친구가 기기 화면을 열어 줄 때 쓰는 버튼·안내 문구"
+  },
+  "child.aiChat.device.location": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 AI 친구가 기기 화면을 열어 줄 때 쓰는 버튼·안내 문구"
+  },
+  "child.aiChat.device.notifications": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 AI 친구가 기기 화면을 열어 줄 때 쓰는 버튼·안내 문구"
+  },
+  "child.aiChat.device.sms": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 AI 친구가 기기 화면을 열어 줄 때 쓰는 버튼·안내 문구"
+  },
+  "child.aiChat.device.sound": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 AI 친구가 기기 화면을 열어 줄 때 쓰는 버튼·안내 문구"
+  },
+  "child.aiChat.device.unavailable": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 AI 친구가 기기 화면을 열어 줄 때 쓰는 버튼·안내 문구"
+  },
+  "child.aiChat.device.wifi": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 AI 친구가 기기 화면을 열어 줄 때 쓰는 버튼·안내 문구"
+  },
   "child.aiChat.empty": {
     "namespace": "child",
     "audience": "child",
@@ -15440,13 +15496,6 @@
     "variables": {},
     "description": "parent.referralRewardPanel.copy021에 표시하는 사용자 안내 문구"
   },
-  "parent.referralRewardPanel.primaryParentOnly": {
-    "namespace": "parent",
-    "audience": "parent",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "공동 보호자에게 초대 코드는 주 보호자가 만든다고 알리는 문구"
-  },
   "parent.referralRewardPanel.copy022": {
     "namespace": "parent",
     "audience": "parent",
@@ -15506,6 +15555,13 @@
       "count": "number"
     },
     "description": "친구 초대 진행: 확인 중인 가족 수"
+  },
+  "parent.referralRewardPanel.primaryParentOnly": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "공동 보호자에게 초대 코드는 주 보호자가 만든다고 알리는 문구"
   },
   "parent.referralRewardPanel.shareBody": {
     "namespace": "parent",
@@ -17384,6 +17440,249 @@
     "qualityTier": "B",
     "variables": {},
     "description": "리포트 다국어 문구: daily.weeklyTitle"
+  },
+  "reports.digest.asOf": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "date": "string"
+    },
+    "description": "리포트 다국어 문구: digest.asOf"
+  },
+  "reports.digest.back": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "리포트 다국어 문구: digest.back"
+  },
+  "reports.digest.chatCount": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "count": "number"
+    },
+    "description": "리포트 다국어 문구: digest.chatCount"
+  },
+  "reports.digest.chatNone": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "리포트 다국어 문구: digest.chatNone"
+  },
+  "reports.digest.chatTitle": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "리포트 다국어 문구: digest.chatTitle"
+  },
+  "reports.digest.checklist": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "supplies": "number",
+      "homework": "number"
+    },
+    "description": "리포트 다국어 문구: digest.checklist"
+  },
+  "reports.digest.dangerCount": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "count": "number"
+    },
+    "description": "리포트 다국어 문구: digest.dangerCount"
+  },
+  "reports.digest.dayTitle": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "리포트 다국어 문구: digest.dayTitle"
+  },
+  "reports.digest.discoveriesNone": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "리포트 다국어 문구: digest.discoveriesNone"
+  },
+  "reports.digest.discoveriesTitle": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "리포트 다국어 문구: digest.discoveriesTitle"
+  },
+  "reports.digest.emptyDescription": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "리포트 다국어 문구: digest.emptyDescription"
+  },
+  "reports.digest.emptyTitle": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "리포트 다국어 문구: digest.emptyTitle"
+  },
+  "reports.digest.entryDescription": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "리포트 다국어 문구: digest.entryDescription"
+  },
+  "reports.digest.entryTitle": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "리포트 다국어 문구: digest.entryTitle"
+  },
+  "reports.digest.error": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "리포트 다국어 문구: digest.error"
+  },
+  "reports.digest.eventsNone": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "리포트 다국어 문구: digest.eventsNone"
+  },
+  "reports.digest.goParentHome": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "리포트 다국어 문구: digest.goParentHome"
+  },
+  "reports.digest.loading": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "리포트 다국어 문구: digest.loading"
+  },
+  "reports.digest.lockedDescription": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "리포트 다국어 문구: digest.lockedDescription"
+  },
+  "reports.digest.lockedTitle": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "리포트 다국어 문구: digest.lockedTitle"
+  },
+  "reports.digest.movement": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "arrived": "number",
+      "left": "number"
+    },
+    "description": "리포트 다국어 문구: digest.movement"
+  },
+  "reports.digest.noChildDescription": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "리포트 다국어 문구: digest.noChildDescription"
+  },
+  "reports.digest.noChildTitle": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "리포트 다국어 문구: digest.noChildTitle"
+  },
+  "reports.digest.notArrivedCount": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "count": "number"
+    },
+    "description": "리포트 다국어 문구: digest.notArrivedCount"
+  },
+  "reports.digest.privacyNote": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "리포트 다국어 문구: digest.privacyNote"
+  },
+  "reports.digest.retry": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "리포트 다국어 문구: digest.retry"
+  },
+  "reports.digest.safetySignal": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "count": "number"
+    },
+    "description": "리포트 다국어 문구: digest.safetySignal"
+  },
+  "reports.digest.subscribe": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "리포트 다국어 문구: digest.subscribe"
+  },
+  "reports.digest.subtitle": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "리포트 다국어 문구: digest.subtitle"
+  },
+  "reports.digest.title": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "리포트 다국어 문구: digest.title"
+  },
+  "reports.digest.topicCount": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "label": "string",
+      "count": "number"
+    },
+    "description": "리포트 다국어 문구: digest.topicCount"
+  },
+  "reports.digest.topicsTitle": {
+    "namespace": "reports",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "리포트 다국어 문구: digest.topicsTitle"
   },
   "reports.weekly.alerts": {
     "namespace": "reports",
@@ -23148,61 +23447,5 @@
     "qualityTier": "B",
     "variables": {},
     "description": "선생님 주간 시간표 다국어 문구: week.aria"
-  },
-  "child.aiChat.device.sound": {
-    "namespace": "child",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "아이 AI 친구가 기기 화면을 열어 줄 때 쓰는 버튼·안내 문구"
-  },
-  "child.aiChat.device.wifi": {
-    "namespace": "child",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "아이 AI 친구가 기기 화면을 열어 줄 때 쓰는 버튼·안내 문구"
-  },
-  "child.aiChat.device.battery": {
-    "namespace": "child",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "아이 AI 친구가 기기 화면을 열어 줄 때 쓰는 버튼·안내 문구"
-  },
-  "child.aiChat.device.notifications": {
-    "namespace": "child",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "아이 AI 친구가 기기 화면을 열어 줄 때 쓰는 버튼·안내 문구"
-  },
-  "child.aiChat.device.location": {
-    "namespace": "child",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "아이 AI 친구가 기기 화면을 열어 줄 때 쓰는 버튼·안내 문구"
-  },
-  "child.aiChat.device.dial": {
-    "namespace": "child",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "아이 AI 친구가 기기 화면을 열어 줄 때 쓰는 버튼·안내 문구"
-  },
-  "child.aiChat.device.sms": {
-    "namespace": "child",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "아이 AI 친구가 기기 화면을 열어 줄 때 쓰는 버튼·안내 문구"
-  },
-  "child.aiChat.device.unavailable": {
-    "namespace": "child",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "아이 AI 친구가 기기 화면을 열어 줄 때 쓰는 버튼·안내 문구"
   }
 }

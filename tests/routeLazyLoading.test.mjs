@@ -61,6 +61,7 @@ const lazyScreens = [
   { component: "DangerAlert", module: "@/screens/feature/DangerAlert", namedExport: "DangerAlert" },
   { component: "DaySummary", module: "@/screens/feature/DaySummary", namedExport: "DaySummary" },
   { component: "DailySafetyReport", module: "@/screens/feature/DailySafetyReport", namedExport: "DailySafetyReport" },
+  { component: "ChildDailyDigest", module: "@/screens/feature/ChildDailyDigest", namedExport: "ChildDailyDigest" },
   { component: "WeeklyFamilyReport", module: "@/screens/feature/WeeklyFamilyReport", namedExport: "WeeklyFamilyReport" },
   { component: "RemoteAudioAudit", module: "@/screens/feature/RemoteAudioAudit", namedExport: "RemoteAudioAudit" },
   { component: "AiFriendSetup", module: "@/screens/child/AiFriendSetup", namedExport: "AiFriendSetup" },
@@ -121,6 +122,7 @@ const routes = [
   route("day-summary", "DaySummary", "parent"),
   route("daily-report", "DailySafetyReport", "parent"),
   route("weekly-report", "WeeklyFamilyReport", "parent"),
+  route("child-digest", "ChildDailyDigest", "parent"),
   route("remote-audio-audit", "RemoteAudioAudit", "parent"),
   route("remote-ring", "RemoteRing", "parent"),
   route("sos-receive", "SosReceive", "parent"),
@@ -147,13 +149,13 @@ function assertMutationRejected(replacement, message) {
   assert.throws(() => assertAppRouteContract(mutated, expected), message);
 }
 
-test("58개 지연 화면의 component·module·named export 정본을 AST로 고정한다", () => {
-  assert.equal(lazyScreens.length, 58);
+test("59개 지연 화면의 component·module·named export 정본을 AST로 고정한다", () => {
+  assert.equal(lazyScreens.length, 59);
   assert.deepEqual(parseAppRouteContract(app).lazyScreens, lazyScreens);
 });
 
-test("59개 경로의 component·guard·출시 조건 정본을 AST로 고정한다", () => {
-  assert.equal(routes.length, 59);
+test("60개 경로의 component·guard·출시 조건 정본을 AST로 고정한다", () => {
+  assert.equal(routes.length, 60);
   assert.deepEqual(parseAppRouteContract(app).routes, routes);
   assert.doesNotThrow(() => assertAppRouteContract(app, expected));
 });

@@ -38,6 +38,18 @@ import {
   shouldShowAiBuddyWanderLine,
 } from "../src/transform/aiBuddyWander.ts";
 import {
+  aiBuddyVoiceHintStorageKey,
+  markAiBuddyVoiceHintShown,
+  markAiBuddyVoiceHintUsed,
+  normalizeAiBuddyVoiceHintState,
+  shouldShowAiBuddyVoiceHint,
+  AI_BUDDY_VOICE_HINT_LINE,
+  AI_BUDDY_VOICE_HINT_MAX_SHOWN,
+  AI_BUDDY_VOICE_HINT_MIN_GAP_MS,
+  AI_BUDDY_VOICE_LONG_PRESS_MS,
+  EMPTY_AI_BUDDY_VOICE_HINT_STATE,
+} from "../src/transform/aiBuddyVoiceHint.ts";
+import {
   AI_BUDDY_FAB_EDGE_GAP,
   AI_BUDDY_FAB_SIZE,
   aiBuddyFabOffset,
@@ -313,10 +325,11 @@ test("배회 타이머는 감정이 바뀌어도 다시 만들지 않고 말풍�
   assert.match(fab, /}, \[\]\);\n\n  \/\/ 표정이 바뀌면/);
   assert.match(fab, /showingEmotion: emotionRef\.current !== "idle"/);
   // 실제 대화 감정·탭·드래그에는 말풍선이 즉시 물러난다.
-  assert.match(fab, /setWanderLine\(null\);\n  \}, \[emotion\]\)/);
+  assert.match(fab, /setWanderLine\(null\);\n    setVoiceHint\(false\);\n  \}, \[emotion\]\)/);
   assert.match(fab, /setTapped\(true\);\n    setWanderLine\(null\)/);
   // 말풍선은 얼굴을 가리지 않는 안내라 조작을 가로채지 않고 스크린리더에 중복 낭독되지 않는다.
-  assert.match(fab, /className="abf__bubble" aria-hidden="true"/);
+  assert.match(fab, /className=\{voiceHint \? "abf__bubble abf__bubble--hint" : "abf__bubble"\}/);
+  assert.match(fab, /aria-hidden="true"/);
   assert.match(read("src/app/AiBuddyFab.css"), /\.abf__bubble \{[^}]*pointer-events: none/);
 });
 
@@ -324,6 +337,81 @@ test("움직임 최소화 설정에서는 떠다니지도 깜빡이지도 않는
   const fab = read("src/app/AiBuddyFab.tsx");
   assert.match(fab, /prefersReducedMotion\(\)/);
   assert.match(read("src/app/AiBuddyFab.css"), /@media \(prefers-reduced-motion: reduce\)/);
+});
+
+// ── 꾹 누르면 바로 말하기(2026-08-19 TK 지시) ─────────────────────────────
+
+test("한 번 써 본 아이에게는 말하기 안내를 다시 띄우지 않는다", () => {
+  const now = 1_700_000_000_000;
+  assert.equal(shouldShowAiBuddyVoiceHint(EMPTY_AI_BUDDY_VOICE_HINT_STATE, now), true);
+  // 실제로 꾹 눌러 써 봤으면 끝이다 — 아는 걸 계속 알리면 잔소리가 된다.
+  assert.equal(
+    shouldShowAiBuddyVoiceHint(markAiBuddyVoiceHintUsed(EMPTY_AI_BUDDY_VOICE_HINT_STATE), now),
+    false,
+  );
+});
+
+test("안내는 하루 한 번, 최대 세 번까지만 한다", () => {
+  const now = 1_700_000_000_000;
+  let state = EMPTY_AI_BUDDY_VOICE_HINT_STATE;
+  state = markAiBuddyVoiceHintShown(state, now);
+  assert.equal(state.shownCount, 1);
+  // 방금 알렸으면 오늘은 그만.
+  assert.equal(shouldShowAiBuddyVoiceHint(state, now + 1_000), false);
+  assert.equal(shouldShowAiBuddyVoiceHint(state, now + AI_BUDDY_VOICE_HINT_MIN_GAP_MS), true);
+
+  state = markAiBuddyVoiceHintShown(state, now + AI_BUDDY_VOICE_HINT_MIN_GAP_MS);
+  state = markAiBuddyVoiceHintShown(state, now + AI_BUDDY_VOICE_HINT_MIN_GAP_MS * 2);
+  assert.equal(state.shownCount, AI_BUDDY_VOICE_HINT_MAX_SHOWN);
+  assert.equal(shouldShowAiBuddyVoiceHint(state, now + AI_BUDDY_VOICE_HINT_MIN_GAP_MS * 9), false);
+});
+
+test("저장된 안내 상태가 깨져 있어도 0 으로 둔갑하지 않는다", () => {
+  assert.deepEqual(normalizeAiBuddyVoiceHintState(null), EMPTY_AI_BUDDY_VOICE_HINT_STATE);
+  assert.deepEqual(normalizeAiBuddyVoiceHintState("3"), EMPTY_AI_BUDDY_VOICE_HINT_STATE);
+  // Number(null) === 0 함정 — "1970년에 알림"이 되면 매번 다시 뜬다.
+  assert.equal(normalizeAiBuddyVoiceHintState({ lastShownAtMs: null }).lastShownAtMs, null);
+  assert.equal(normalizeAiBuddyVoiceHintState({ lastShownAtMs: "x" }).lastShownAtMs, null);
+  assert.equal(normalizeAiBuddyVoiceHintState({ shownCount: -4 }).shownCount, 0);
+  assert.equal(normalizeAiBuddyVoiceHintState({ used: "true" }).used, false);
+  assert.notEqual(
+    aiBuddyVoiceHintStorageKey("f1", "c1"),
+    aiBuddyVoiceHintStorageKey("f1", "c2"),
+  );
+});
+
+test("안내 문구는 무엇을 하면 무엇이 되는지 한 문장 반말로 말한다", () => {
+  assert.ok(AI_BUDDY_VOICE_HINT_LINE.includes("꾹"));
+  assert.ok(AI_BUDDY_VOICE_HINT_LINE.includes("말"));
+  assert.ok(AI_BUDDY_VOICE_HINT_LINE.length <= 20, "말풍선에 들어갈 길이를 넘겼다");
+  assert.doesNotMatch(AI_BUDDY_VOICE_HINT_LINE, /(?:요|습니다|세요)[!.]?$/, "아이 모드는 반말이다");
+  // 꾹 누름은 열기(탭)와 확실히 구분돼야 한다.
+  assert.ok(AI_BUDDY_VOICE_LONG_PRESS_MS >= 400 && AI_BUDDY_VOICE_LONG_PRESS_MS <= 800);
+});
+
+test("꾹 누르면 마이크가 켜진 대화창이 열리고 손을 떼도 또 열리지 않는다", () => {
+  const fab = read("src/app/AiBuddyFab.tsx");
+  assert.match(fab, /longPressTimerRef\.current = setTimeout\([\s\S]{0,200}AI_BUDDY_VOICE_LONG_PRESS_MS\)/);
+  // 옮기는 중이면 말하기가 아니다.
+  assert.match(fab, /drag\.moved = true;[\s\S]{0,140}cancelLongPress\(\)/);
+  // 이미 마이크가 켜졌으면 손을 뗀 것으로 대화창을 다시 열지 않는다.
+  assert.match(fab, /if \(longPressFiredRef\.current\) \{[\s\S]{0,200}return;/);
+  assert.match(fab, /navigate\("\/child\/ai-friend", startVoice \? \{ state: \{ startVoice: true \} \} : undefined\)/);
+  // 이름을 안 정한 아이는 여전히 친구 만들기로 간다(빈 대화창을 열지 않는다).
+  assert.match(fab, /if \(!configured\) \{[\s\S]{0,120}"\/child\/ai-friend-setup"/);
+  // 써 본 아이에게는 다시 알리지 않는다.
+  assert.match(fab, /markAiBuddyVoiceHintUsed\(voiceHintStateRef\.current\)/);
+  // 버튼 라벨이 이 조작을 알려 준다(스크린리더도 알 수 있게).
+  assert.match(fab, /길게 누르면 바로 말하기/);
+});
+
+test("대화 화면은 꾹 눌러 들어왔을 때만 마이크를 켜고 히스토리를 지운다", () => {
+  const chat = read("src/screens/child/AiFriendChat.tsx");
+  assert.match(chat, /navState\.startVoice !== true\) return/);
+  assert.match(chat, /autoVoiceStartedRef\.current = true/);
+  // 뒤로 갔다 돌아왔을 때 또 켜지지 않도록 state 를 즉시 지운다.
+  assert.match(chat, /replace: true,\s*state: \{ \.\.\.navState, startVoice: false \}/);
+  assert.match(chat, /startVoice\(\);/);
 });
 
 test("대화 화면은 확인 카드에서만 도구를 실행하고 같은 표정을 공유한다", () => {

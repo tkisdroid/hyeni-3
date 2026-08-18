@@ -563,6 +563,31 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   회귀=`tests/aiBuddyFab.test.ts`·`tests/eventCompanionPrompt.test.ts`·Worker
   `tests/aiChildSettingsAgent.test.mjs`·`tests/aiChildMemoryDepth.test.mjs`.
 - ★**AI 친구 음성 turn 자동 답변(2026-08-18 TK 승인)**: 마이크가 만든 `source="voice"`의 정상 reply는 가족+아이 읽어주기 설정이 꺼져 있어도 그 turn만 자동 TTS한다. `composer`·`suggestion:*`·`confirm`은 기존 영구 설정을 따르고, 빈·오류·한도 응답은 읽지 않는다. 새 마이크 시작·토글 off·화면 이탈은 STT/TTS를 즉시 중단하며 초기화 중이던 오래된 native callback도 재생을 되살리지 않는다. 사용자 음성 원본은 Worker·OpenAI에 보내지 않고 인식 텍스트만 기존 안전·크레딧·저장 경로로 보낸다. 단 OS·브라우저·선택된 STT/TTS 제공자는 음성 또는 합성할 답변 텍스트를 외부 처리할 수 있으므로 “항상 기기 안에서만 처리”라고 고지하지 않는다. TTS는 추가 API·크레딧·권한 없이 fail-soft이며 10개 locale 태그를 전달한다. 회귀=`tests/childVoiceChat.test.ts`·`tests/nativeTtsCdpProbeSafety.test.mjs`·Android `SpeechLocalePolicyTest`/`SpeechPlaybackGenerationTest`·`worker/tests/legalCopy.test.mjs`·`tests/playReleaseDocumentation.test.mjs`.
+- ★**꾹 누르면 바로 말하기 + 버튼이 그걸 알려 준다(2026-08-19 TK 지시)**: 플로팅 AI 친구 버튼을
+  `AI_BUDDY_VOICE_LONG_PRESS_MS`(550ms) 이상 누르면 `navigate("/child/ai-friend", { state:{startVoice:true} })`
+  로 대화창이 열리고 마이크가 바로 켜진다. 길게 누른 것 자체가 아이의 조작이라 "자동 실행"이 아니다.
+  대화 화면은 state 를 즉시 `replace` 로 지워 뒤로가기 재진입에 다시 켜지지 않게 한다.
+  드래그로 옮기는 중이면 타이머를 취소하고, 발동한 뒤에는 손을 떼도 대화창을 또 열지 않는다.
+  안내 말풍선은 `src/transform/aiBuddyVoiceHint.ts` 판정 — **한 번 써 본 아이에게는 다시 띄우지 않고**
+  안 써 본 아이에게도 하루 한 번·최대 3회다. 회귀=`tests/aiBuddyFab.test.ts`.
+- ★**AI 친구는 아이를 알아 가는 친구다(2026-08-19 TK 지시)**: ①**습관 기억** — 아이가 지나가듯 말한 습관을
+  `worker/shared/aiChildHabits.js` 가 뽑아 기존 장기기억(`ai_long_term_memories`)에 `type:"habit"` 으로 저장한다
+  (스키마 무변경). "집에 오면 내일 일정 정리해" → 집 도착 geofence 때 `buildHabitHomeArrivalMessage` 가
+  "늘 하던 대로 일정 정리 같이 할까?"로 먼저 제안한다. ②**활동별 챙길 물건** — `ACTIVITY_BELONGINGS`(태권도→도복·띠)
+  로 "준비물 챙겼어?" 대신 물건 이름으로 묻는다. 클라 표는 `src/transform/childBelongings.ts` 이고 두 표의 동기화는
+  `tests/childRelationshipContext.test.ts` 가 강제한다. ⚠️ 성격 게이트(`BELONGINGS_EVENT_KINDS`) 없이 표만 쓰면
+  "학교 생일 파티"에 알림장을 묻는다. 인사말 교체는 `lesson` 에만 적용한다 — 시합·발표는 물건보다 응원이 먼저다.
+  ③**물건을 자주 두고 오는 아이** — 등록 장소를 **떠날 때**(`trigger:"place_departure"`) 한 번만 확인해 준다.
+  할 말이 없으면 빈 문자열을 돌려 `no_useful_context` 로 조용히 끝나고 크레딧도 쓰지 않는다.
+  회귀=`tests/childRelationshipContext.test.ts`·`tests/eventCompanionPrompt.test.ts`.
+- ★**아이 하루 대시보드 = 프리미엄 1회성 알림(2026-08-19 TK 지시)**: KST 20~23시에 `*/10` cron 이
+  `worker/cron/child-daily-digest.ts` 로 프리미엄 가족 아이의 하루를 정리해 **하루·아이당 한 번** 부모에게 보낸다.
+  1회성 보증은 `child_daily_digests` PK(family, child, date) + `INSERT OR IGNORE` 이고, 행을 실제로 만든 실행만
+  알림을 보낸다. 알림은 `/child-digest?alert=&child=` 로 대시보드 화면을 연다.
+  ⚠️ **대화 원문은 payload 에 넣지 않는다** — 주제(`CHILD_CHAT_TOPICS`)·집계·부모 공개 장기기억만 담는다.
+  기록이 0이면 아예 만들지 않는다(`shouldSendChildDailyDigest`). 엔타이틀먼트 조회 실패는 프리미엄으로 추정하지
+  않는다(fail-closed). 운영 순서 = `worker/db/child-daily-digest.sql` 적용 → Worker 배포 → Pages/Android.
+  회귀=`worker/tests/childDailyDigest.test.mjs`.
 - ★AI 실패 안내는 하나로·정직하게(2026-08-17 실사고): 전역 MutationCache 폴백은 `mutation.options.onError`
   만 보므로 콜사이트 `mutate(vars,{onError})` 로는 막히지 않는다. 화면이 자기 문구를 책임지면 훅 정의에
   `meta:{silentError:true}` 를 단다. 그리고 429 는 네트워크가 아니라 공급자 한도·잔액이므로

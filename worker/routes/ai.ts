@@ -725,6 +725,51 @@ ai.get("/day-summary", requireAuth, async (c) => {
   return c.json({ summary: row.summary, signals: parseJson(row.signals) });
 });
 
+// ── GET /api/ai/daily-digest?familyId=&childUserId=&dateKey=  ── 아이 하루 대시보드 조회.
+// cron 이 하루 한 번 만든 요약(child_daily_digests)을 읽기만 한다. OpenAI·과금 없음.
+// authz: 프리미엄 가족의 활성 보호자만(day-summary 와 같은 게이트).
+// dateKey 를 생략하면 가장 최근 대시보드를 돌려준다(알림을 늦게 연 부모를 위해).
+ai.get("/daily-digest", requireAuth, async (c) => {
+  const db = c.env.DB;
+  const callerUserId = c.get("user").sub;
+  const familyId = c.req.query("familyId") || "";
+  const childUserId = c.req.query("childUserId") || "";
+  const dateKey = c.req.query("dateKey") || "";
+  if (!isValidUuidLike(familyId) || !isValidUuidLike(childUserId)) {
+    return c.json({ error: "invalid_request" }, 400);
+  }
+  if (dateKey && !isValidDateKey(dateKey)) {
+    return c.json({ error: "invalid_date_key" }, 400);
+  }
+
+  const access = await authorizePremiumAiParent(db, { callerUserId, familyId }, resolveFamilyEntitlement);
+  if (!access.ok) {
+    return access.status === 503
+      ? c.json({ error: access.error }, 503)
+      : c.json({ error: access.error }, 403);
+  }
+
+  const row = dateKey
+    ? await db
+      .prepare(
+        "SELECT date_key, payload, notified_at FROM child_daily_digests WHERE family_id=? AND child_user_id=? AND date_key=? LIMIT 1",
+      )
+      .bind(familyId, childUserId, dateKey)
+      .first<{ date_key: string; payload: string; notified_at: string | null }>()
+    : await db
+      .prepare(
+        "SELECT date_key, payload, notified_at FROM child_daily_digests WHERE family_id=? AND child_user_id=? ORDER BY date_key DESC LIMIT 1",
+      )
+      .bind(familyId, childUserId)
+      .first<{ date_key: string; payload: string; notified_at: string | null }>();
+  if (!row) return c.json(null);
+  return c.json({
+    dateKey: row.date_key,
+    notifiedAt: row.notified_at,
+    digest: parseJson(row.payload),
+  });
+});
+
 // ── POST /api/ai/child-monitor  ← ai-child-monitor (메모 감정/일정 준수/주간 요약 분석) ──
 // 원본 직역. 멤버십 검증(assertFamilyAccess)으로 abuse(임의 가족 분석·무제한 OpenAI) 차단.
 const MONITOR_SYSTEM_BASE = `당신은 혜니캘린더 AI입니다. 어린이 일정관리 앱에서 아이의 행동 패턴과 메모를 분석하는 따뜻한 AI 도우미입니다.
