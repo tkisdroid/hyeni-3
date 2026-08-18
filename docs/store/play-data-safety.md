@@ -1,6 +1,6 @@
 # Play 데이터 보안(Data Safety) 제출 워크시트 — 혜니캘린더
 
-코드 근거 기준 초안(2026-07-14). 서버는 Cloudflare Worker(hyeni-calendar-api), D1, R2를 사용한다. 이 문서는 Play Console에 기계적으로 복사하는 확정 답안이 아니다. Console의 최신 데이터 유형·수집·공유 정의와 각 처리업체 계약을 제출 직전에 다시 대조한다.
+코드 근거 기준 초안(2026-08-18). 서버는 Cloudflare Worker(hyeni-calendar-api), D1, R2를 사용한다. 이 문서는 Play Console에 기계적으로 복사하는 확정 답안이 아니다. Console의 최신 데이터 유형·수집·공유 정의와 각 처리업체 계약을 제출 직전에 다시 대조한다.
 
 > **제출 차단:** 각 외부 처리 흐름에 대한 계약·DPA, 실제 제품 설정, 보관·삭제 기간, 학습·광고 등 2차 이용 여부의 증거가 모두 확보되기 전에는 Google Play의 서비스 제공자 예외를 적용하지 않는다. 확인되지 않은 흐름은 해당 데이터 유형을 공유로 보수적으로 신고하거나 기능을 출시 빌드에서 차단한다.
 
@@ -9,7 +9,7 @@
 - 데이터를 수집하나요? **예**
 - 데이터를 제3자와 공유하나요? **미확정**
   - 가족 구성원에게 사용자가 의도한 범위로 보여 주는 행위와 데이터 판매는 현재 코드에서 확인되지 않는다.
-  - Cloudflare, Firebase/FCM, Google Play, Toss Payments, Google/Kakao/Naver OAuth, OpenAI, Kakao 지도·모빌리티, 공개 OSRM, Resend, NCP SENS 및 단말·브라우저의 음성 인식 제공자가 기능 제공 과정에서 데이터를 처리할 수 있다.
+  - Cloudflare, Firebase/FCM, Google Play, Toss Payments, Google/Kakao/Naver OAuth, OpenAI, Kakao 지도·모빌리티, 공개 OSRM, Resend, NCP SENS 및 단말·브라우저의 음성 인식·합성 제공자가 기능 제공 과정에서 데이터를 처리할 수 있다.
   - 각 업체가 개발자 지시에 따라서만 처리하는 서비스 제공자 예외에 해당하는지는 계약·DPA, 제품 설정, 보관·삭제 기간 및 2차 이용 조건의 서면 증거를 확인해 데이터 유형별로 판단한다.
 - 전송 중 암호화하나요? **예** — 공개 API와 실시간 채널은 HTTPS/WSS를 사용한다. 출시 빌드에서 평문 endpoint가 없는지 최종 확인한다.
 - 삭제 요청 수단을 제공하나요? **예, 공개 상태 재확인 필요** — 앱 내 회원 탈퇴와 `https://hyeni-calendar-api.tkisdroid.workers.dev/data-deletion`을 사용한다. 제출 직전 로그인 없이 안내를 읽을 수 있고 URL이 HTTPS 200인지 확인한다.
@@ -29,9 +29,9 @@
 | 개인 정보/위치 | 저장 장소·주소 | 보호자가 장소·일정 위치를 등록한 경우 | 저장 장소·일정과 함께 보관 | 위치·도착·일정 기능 | `saved_places`, `academies`, event location |
 | 사진·동영상 | 프로필·가족 메시지 사진, AI 일정 분석 사진 | 사용자가 사진을 선택한 경우 | 기능별 R2 저장 또는 AI 분석 전송 | 앱 기능, 사용자 간 소통 | R2 `child-photos`, AI image input |
 | 오디오 | 주변 소리 실시간 음성 | 부모 요청 뒤 서버 승인 증표를 받은 `RemoteListenActivity`가 준비되어 자동 연결된 경우. 아이 화면·알림에 듣는 중임을 계속 표시 | 최대 1분 실시간 전송 중 일시 처리, 음성 본문 장기 저장 안 함. 세션 메타데이터는 감사 목적으로 저장 | 가족 안전 기능, 오남용 방지 | `RemoteListenActivity`, `AmbientListenService`, remote-listen session |
-| 오디오 | AI 일정 음성 입력 | 사용자가 음성 입력을 실행한 경우 | Android `SpeechRecognizer` 또는 Web Speech가 음성을 처리하고 앱은 인식 텍스트를 서버로 보냄 | 앱 기능 | `src/lib/native/speech.ts`, `SpeechPlugin.java` |
+| 오디오 | AI 일정·AI 친구 음성 입력 | 사용자가 음성 입력을 실행한 경우 | Android `SpeechRecognizer` 또는 Web Speech Recognition·선택된 음성 인식 제공자가 음성을 처리할 수 있으며, 혜니캘린더 Worker와 OpenAI에는 음성 원본이 아니라 인식된 텍스트만 전송 | 앱 기능 | `src/lib/native/speech.ts`, `SpeechPlugin.java` |
 | 메시지/기타 UGC | 가족 메모, 빠른 상태, 공유 위치·사진 참조 | 가족 구성원이 전송한 경우 | 가족·아이 스레드에 저장 | 앱 기능, 사용자 간 소통 | `memo_replies` |
-| 메시지/기타 UGC | 아이가 AI 친구에 입력한 프롬프트·대화와 assistant 답변 | 아이가 AI 친구를 사용한 경우 | 가족·아이 범위의 대화로 D1에 저장되고 AI 답변 생성을 위해 OpenAI가 처리할 수 있음 | 앱 기능, 안전, 사용자 지원 | `ai_chat_messages`, OpenAI API |
+| 메시지/기타 UGC | 아이가 AI 친구에 입력한 프롬프트·대화와 assistant 답변 | 아이가 AI 친구를 사용한 경우 | 가족·아이 범위의 대화로 D1에 저장되고 AI 답변 생성을 위해 OpenAI가 처리할 수 있음. assistant 답변 읽어주기 사용 시 Android `TextToSpeech`, Web `speechSynthesis` 또는 선택된 음성 엔진이 합성할 assistant 답변 텍스트와 기기 관련 정보를 처리할 수 있음 | 앱 기능, 안전, 사용자 지원 | `ai_chat_messages`, OpenAI API, `src/lib/native/speech.ts` |
 | 캘린더/기타 UGC | 일정, 준비물, 알림장 내용 | 사용자가 입력·촬영·AI 변환 후 저장한 경우 | 가족·아이 범위에 저장 | 앱 기능 | `events`, `daily_supplies`, AI schedule |
 | 앱 활동 | 설치된 앱 중 최근 많이 사용한 상위 5개의 packageName | 아이 기기에서 사용정보 접근을 허용한 경우 앱이 자동 보고 | 자녀 보호 보고에 필요한 앱 식별자를 전송·저장 | 앱 기능 | Android UsageStats, `DeviceStatusReporter` |
 | 앱 활동 | 상위 5개 앱의 앱 사용 시간·최근 사용 시각, 잠금 해제·앱 상호작용 지표 | 아이 기기에서 사용정보 접근을 허용한 경우 앱이 자동 보고 | 기기 상태·안심 지표로 전송·저장 | 앱 기능 | `DeviceStatusReporter`, `device_health` |
@@ -43,14 +43,15 @@
 | 개인 정보 | 전화번호와 6자리 OTP | 전화 가입 또는 OAuth 전화 계정 연결 인증을 요청한 경우 | OTP 원문은 NCP SENS 문자 내용으로 전송하고 서버에는 검증용 해시와 만료 정보를 저장 | 계정 관리, 보안 | `lib/ncpSens.ts`, `phone_otp` |
 | 위치 | 도보 경로의 출발·도착 좌표 | 사용자가 도보 경로를 요청했고 카카오 또는 폴백 경로 조회가 필요한 경우 | Kakao Mobility와 공개 OSRM을 동시에 조회하며 좌표를 5자리 반올림한 경로 캐시 키와 결과를 최대 7일 보관 | 앱 기능 | `routes/kakao.ts`, `edge_cache` |
 
-## 음성 인식 외부 처리 주의
+## 음성 인식·합성 외부 처리 주의
 
-Android `SpeechRecognizer`와 브라우저 Web Speech는 사용 중인 OS·브라우저·음성 서비스 설정에 따라 서버 기반으로 동작할 수 있다. 따라서 “음성이 항상 기기 안에서만 처리된다”고 설명하지 않는다. 출시 전 다음을 확인한다.
+Android `SpeechRecognizer`와 브라우저 Web Speech Recognition은 사용 중인 OS·브라우저·음성 서비스 설정에 따라 서버 기반으로 동작할 수 있다. Android `TextToSpeech`, Web `speechSynthesis` 및 선택된 음성 엔진도 합성할 AI 답변 텍스트와 기기 관련 정보를 외부에서 처리할 수 있다. 따라서 “음성이 항상 기기 안에서만 처리된다”고 설명하지 않는다. 출시 전 다음을 확인한다.
 
 - 지원 Android 버전·기기에서 실제 음성 인식 제공자와 네트워크 동작
-- Web Speech 지원 브라우저의 개인정보 처리 조건
+- Web Speech Recognition 지원 브라우저의 개인정보 처리 조건
 - 음성 원본의 외부 처리 가능성과 보관 여부를 개인정보처리방침에 반영
-- 앱 서버가 받는 데이터는 인식된 텍스트라는 점과 단말/브라우저 제공자의 별도 처리를 구분
+- 혜니캘린더 Worker와 OpenAI가 받는 데이터는 음성 원본이 아니라 인식된 텍스트라는 STT 경계와 단말·브라우저 제공자의 별도 처리를 구분
+- 답변 읽어주기에서 Android `TextToSpeech`, Web `speechSynthesis` 및 선택된 음성 엔진이 합성할 AI 답변 텍스트와 기기 관련 정보를 처리하는 TTS 경계를 구분
 
 ## 외부 처리업체·공유 판정
 
@@ -68,7 +69,7 @@ Android `SpeechRecognizer`와 브라우저 Web Speech는 사용 중인 OS·브�
 | 공개 OSRM(openstreetmap.de routed-foot) | 도보 경로 출발·도착 좌표, 요청 IP·기술 로그 가능성 | 운영 주체·약관, 로그·보관·삭제, 2차 이용, DPA·아동 대상 적격성. 증거가 없으면 아이 경로에서 차단 |
 | Resend | 기능 제안의 `senderName`, `senderEmail`, `senderRole`, `senderUserId`, `familyId`, `content`, `appOrigin` | 이메일 본문·로그 보관·삭제, 2차 이용, DPA, 전송 지역 |
 | NAVER Cloud Platform NCP SENS | 수신 전화번호와 6자리 OTP 문자 내용 | SMS 계약, 로그·보관·삭제, 2차 이용, 국외 이전 여부 |
-| OS/브라우저 음성 인식 제공자 | Android `SpeechRecognizer`·Web Speech를 통한 사용자 음성, 인식 결과, 기기 관련 정보 | 실제 제공자 식별, 계약·정책, 음성·로그 보관·삭제, 학습 등 2차 이용, 아동 대상 적격성 |
+| OS/브라우저 음성 인식·합성 제공자 | Android `SpeechRecognizer`·Web Speech Recognition을 통한 사용자 음성·인식 결과·기기 관련 정보와 Android `TextToSpeech`·Web `speechSynthesis`·선택된 음성 엔진이 처리할 수 있는 합성할 AI 답변 텍스트·기기 관련 정보 | 실제 STT·TTS 제공자 식별, TTS 엔진의 계약·정책, 음성·텍스트·로그 보관·삭제, 학습 등 2차 이용, 아동 대상 적격성 증거 |
 
 서비스 제공자 예외는 업체 이름이나 “기능 수행용”이라는 설명만으로 자동 적용되지 않는다. 계약·DPA, 실제 설정, 보관·삭제 기간, 2차 이용 금지 또는 제한의 증거가 모두 확보되기 전에는 서비스 제공자 예외를 적용하지 않는다. 확인 뒤에도 각 데이터 유형에 대해 `수집`, `공유`, `일시 처리`, `필수/선택`, `목적`을 Console에 각각 입력한다.
 
@@ -87,7 +88,7 @@ Android `SpeechRecognizer`와 브라우저 Web Speech는 사용 중인 OS·브�
 - 정확한 위치와 사용정보는 자녀 보호 기능에 필요한 범위로 제한하고, 권한을 끄는 방법과 기능 제한을 아이·보호자에게 설명한다.
 - 아이 모드를 아동이 실제 사용하므로 심사를 피하기 위한 성인 전용 대상 연령 선택은 금지한다.
 - 정밀·백그라운드 위치를 유지하는 현재 앱을 아동 전용으로 제출하는 선택은 금지한다.
-- 보호자+아동 혼합 연령으로 제출하더라도 Firebase/FCM, Kakao 지도·경로, 공개 OSRM, OpenAI, 음성 인식 등 아이 경로에서 접근 가능한 API/SDK의 Families 적격성 증거가 없으면 해당 기능을 아이 경로에서 코드로 차단하고 차단 E2E를 남긴다.
+- 보호자+아동 혼합 연령으로 제출하더라도 Firebase/FCM, Kakao 지도·경로, 공개 OSRM, OpenAI, 음성 인식·합성 등 아이 경로에서 접근 가능한 API/SDK의 Families 적격성 증거가 없으면 해당 기능을 아이 경로에서 코드로 차단하고 차단 E2E를 남긴다.
 
 ## 계정 삭제 범위 정합성
 
@@ -101,7 +102,7 @@ Android `SpeechRecognizer`와 브라우저 Web Speech는 사용 중인 OS·브�
 - [ ] 앱·Worker·Android merged manifest·실제 네트워크를 기준으로 위 데이터 유형을 재검증
 - [ ] 위 표의 모든 외부 처리업체에 대해 계약·DPA, 실제 설정, 보관·삭제 기간, 2차 이용 증거를 확보한 뒤 서비스 제공자 예외 적용 여부를 유형별로 확정
 - [ ] 아이 경로 API/SDK의 Families 적격성 증거를 확보하거나 해당 기능의 코드 차단·E2E 증거를 확보
-- [ ] 개인정보처리방침에 이메일, 사용자 ID, 주소·장소, 사진, 일정, 앱 사용정보, AI 처리, 음성 인식 외부 처리 가능성을 반영
+- [ ] 개인정보처리방침에 이메일, 사용자 ID, 주소·장소, 사진, 일정, 앱 사용정보, AI 처리, 음성 인식·합성 외부 처리 가능성을 반영
 - [ ] 공개 개인정보처리방침·이용약관·데이터 삭제 URL과 앱 내 링크를 실제로 열어 확인
 - [ ] Play Console 최신 질문의 필수/선택·일시 처리·목적·공유 답변을 유형별로 입력
 - [ ] 정책·법무 책임자가 최종 답안을 승인하기 전까지 제출 차단

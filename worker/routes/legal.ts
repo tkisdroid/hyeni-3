@@ -13,7 +13,7 @@ const META = {
   privacyOfficer: "이윤미",
   businessRegistrationNumber: "369-02-01464",
   effectiveDate: "2026-06-18",
-  lastUpdated: "2026-08-01",
+  lastUpdated: "2026-08-18",
 };
 
 const EXTERNAL_PROCESSING = [
@@ -29,7 +29,7 @@ const EXTERNAL_PROCESSING = [
   "OpenAI — AI 친구 프롬프트·대화와 assistant 답변 생성, 일정 사진·텍스트 분석 및 AI 요약에 이용자가 제출한 콘텐츠를 처리",
   "Resend — 문제 신고·문의·기능 제안 이메일 발송 시 senderName, senderEmail, senderRole, senderUserId, familyId, content, appOrigin과 사용자가 포함을 선택한 currentScreen·deviceInfo·errorLogs를 처리",
   "NAVER Cloud Platform NCP SENS — 전화 가입·OAuth 계정 연결 인증 시 전화번호와 6자리 OTP 문자 내용을 발송 처리",
-  "운영체제·브라우저 음성 인식 제공자(Android SpeechRecognizer·Web Speech) — 음성 입력을 실행할 때 사용자 음성·인식 결과·기기 관련 정보를 외부에서 처리할 수 있음",
+  "운영체제·브라우저 음성 서비스 제공자(Android SpeechRecognizer·Web Speech Recognition·Android TextToSpeech·Web speechSynthesis 및 선택된 음성 엔진) — 음성 입력 시 사용자 음성·인식 결과·기기 관련 정보를, 답변 읽어주기 시 합성할 AI 답변 텍스트·기기 관련 정보를 외부에서 처리할 수 있음",
 ];
 
 type Section = { title: string; body: string[] };
@@ -133,7 +133,7 @@ const PRIVACY_SECTIONS: Section[] = [
       "• 앱 사용 활동: 자녀 기기에 설치된 앱 이름·패키지 식별자, 앱별 사용 시간과 잠금 해제 횟수(보호자가 자녀 보호용 사용정보 접근 권한을 허용한 경우)",
       "• 콘텐츠 안전 정보: AI 답변·가족 메모 신고의 대상 식별자·사유·추가 설명·처리 상태와 메모 차단 관계(해당 기능 이용 시)",
       "• 친구 초대 정보: 추천 코드, 초대한 가족·보호자·보상 대상 아이와 초대받은 신규 가족의 내부 식별자, 귀속·자격·지급 상태와 시각(친구 초대 기능 이용 시, 위치 좌표·주소·이름은 추천 기록에 저장하지 않음)",
-      "• 음성 입력: 일정 음성 입력은 운영체제 또는 브라우저의 음성 인식 서비스가 음성을 처리할 수 있으며, 서비스 서버에는 인식된 텍스트가 전송됩니다.",
+      "• 음성 입력·AI 답변 읽어주기: 일정·AI 친구 음성 입력은 운영체제 또는 브라우저의 음성 인식 서비스가 음성을 처리할 수 있으며, 혜니캘린더 Worker와 OpenAI에는 음성 원본이 아니라 인식된 텍스트만 전송됩니다. AI 친구 답변 읽어주기를 사용하면 운영체제·브라우저·선택된 음성 엔진이 합성할 AI 답변 텍스트와 기기 관련 정보를 외부에서 처리할 수 있습니다.",
       "• 주변 소리: 보호자가 요청한 1분 이내의 실시간 주변 소리와 요청·시작·종료 시각 등 세션 기록(해당 기능 이용 시)",
       "• 결제·구독 정보: Google Play의 상품·구매 token·주문·구독 상태와 기간, 또는 iPhone 홈 화면 웹 결제의 무작위 customerKey·암호화된 billingKey·AI 크레딧 팩·주문번호·결제 금액·결제·환불 상태·구독 주기와 기간. Toss Payments 결제 인증의 authKey는 빌링키 발급 요청에만 일시 사용하며 저장하지 않고, 일회성 결제의 paymentKey도 결제사 확인 요청에만 일시 사용하며 원문을 저장하지 않습니다. paymentKey는 중복 지급 방지용 비가역 해시만 저장하며 서비스는 카드번호·유효기간·CVC 원문을 수집하거나 저장하지 않습니다.",
       "• 고객 지원·오류 진단 정보: 문제 신고·문의·기능 제안의 작성 내용과, 이용자가 '진단 정보 함께 보내기'를 선택한 경우 앱 버전·실행 환경·현재 화면·최근 24시간의 정규화된 오류 최대 12건(대화 내용·위치 좌표·사진·비밀번호·로그인 및 구매 토큰·원문 오류 제외)",

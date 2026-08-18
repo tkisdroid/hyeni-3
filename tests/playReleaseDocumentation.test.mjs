@@ -19,6 +19,13 @@ test("데이터 보안 답안은 외부 처리와 전체 데이터 범주를 제
   assert.doesNotMatch(dataSafety, /기기 내 STT/);
   assert.match(dataSafety, /SpeechRecognizer/);
   assert.match(dataSafety, /Web Speech/);
+  assert.match(dataSafety, /AI 일정·AI 친구 음성 입력/);
+  assert.match(dataSafety, /Worker와 OpenAI에는 음성 원본이 아니라 인식된 텍스트만 전송/);
+  assert.match(dataSafety, /TextToSpeech/);
+  assert.match(dataSafety, /speechSynthesis/);
+  assert.match(dataSafety, /합성할 AI 답변 텍스트/);
+  assert.match(dataSafety, /음성이 항상 기기 안에서만 처리된다[^\n]*설명하지 않는다/);
+  assert.match(dataSafety, /assistant 답변[^\n]*읽어주기[^\n]*(?:TextToSpeech|speechSynthesis)/);
   assert.match(dataSafety, /외부 처리 가능/);
   assert.match(dataSafety, /서비스 제공자 예외/);
   assert.match(dataSafety, /미확정/);
@@ -53,6 +60,8 @@ test("데이터 보안 문서는 실제 외부 전송 흐름과 서비스 제공
     "공개 OSRM",
     "SpeechRecognizer",
     "Web Speech",
+    "TextToSpeech",
+    "speechSynthesis",
   ]) {
     assert.match(dataSafety, new RegExp(processor));
   }

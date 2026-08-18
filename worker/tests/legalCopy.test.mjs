@@ -6,7 +6,7 @@ const source = await readFile(new URL("../routes/legal.ts", import.meta.url), "u
 const indexSource = await readFile(new URL("../index.ts", import.meta.url), "utf8");
 
 test("공개 법적 문서는 자연스러운 서비스명 조사와 최신 갱신일을 사용한다", () => {
-  assert.match(source, /lastUpdated:\s*"2026-08-01"/);
+  assert.match(source, /lastUpdated:\s*"2026-08-18"/);
   assert.match(source, /\$\{META\.serviceName\}가 어떤 정보를/);
   assert.match(source, /\$\{META\.serviceName\}의 계정과 데이터를/);
   assert.doesNotMatch(source, /\$\{META\.serviceName\}이 어떤 정보를/);
@@ -77,7 +77,11 @@ test("처리방침은 AI·UGC·음성 인식·설치 앱의 실제 처리 범위
   assert.match(source, /설치된 앱 이름·패키지 식별자/);
   assert.match(source, /AI 답변·가족 메모 신고/);
   assert.match(source, /운영체제 또는 브라우저의 음성 인식 서비스/);
-  assert.match(source, /인식된 텍스트가 전송/);
+  assert.match(source, /일정·AI 친구 음성 입력/);
+  assert.match(source, /Worker와 OpenAI에는 음성 원본이 아니라 인식된 텍스트만 전송/);
+  assert.match(source, /Android TextToSpeech/);
+  assert.match(source, /Web speechSynthesis/);
+  assert.match(source, /합성할 AI 답변 텍스트/);
   assert.match(source, /진단 정보 함께 보내기/);
   assert.match(source, /최근 24시간의 정규화된 오류 최대 12건/);
   assert.match(source, /위치 좌표·사진·비밀번호·로그인 및 구매 토큰·원문 오류 제외/);
@@ -111,6 +115,8 @@ test("처리방침은 실제 외부 전송업체·필드를 열거하고 증거 
     "공개 OSRM",
     "SpeechRecognizer",
     "Web Speech",
+    "TextToSpeech",
+    "speechSynthesis",
   ]) {
     assert.match(source, new RegExp(processor));
   }
