@@ -34,7 +34,9 @@ test("부모 메뉴 아이콘과 바로가기 색상은 토큰 기반으로 유�
 
   assert.doesNotMatch(settings, /emoji:/);
   assert.doesNotMatch(settings, /chipBg:/);
-  assert.match(settings, /type LucideIcon/);
+  // 설정 행 아이콘은 clay 3D webp 로 통일했다(2026-08-18 TK 지시) — 남은 lucide 는 이동·모달 글리프뿐이다.
+  assert.match(settings, /ui\/clay\/account\.webp/);
+  assert.match(settings, /asset\(icon\)/);
   assert.match(settings, /data-tone=\{tone\}/);
   assert.match(settings, /data-tone=\{f\.tone\}/);
   assert.doesNotMatch(shortcutsBlock, /#[0-9A-Fa-f]{3,8}/);

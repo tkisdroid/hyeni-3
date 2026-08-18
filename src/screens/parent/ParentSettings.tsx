@@ -1,16 +1,7 @@
 import { useIntl } from "react-intl";
 import { useId, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import {
-  AlertTriangle,
-  ChevronLeft,
-  ChevronRight,
-  LogOut,
-  MessageCircleQuestion,
-  ShieldCheck,
-  Trash2,
-  type LucideIcon,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { parentAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
@@ -39,28 +30,28 @@ type Tone = "lav" | "rose" | "blue" | "mint" | "gold" | "neutral" | "danger";
 type NavRow = { id: string; icon: string; tone: Tone; labelId: string; route: string; badge?: boolean };
 
 const settingsRows: NavRow[] = [
-  { id: "account", icon: "ui/profile-3d.webp", tone: "lav", labelId: "parent.settings.account", route: "/account" },
-  { id: "notif", icon: "ui/bell.webp", tone: "rose", labelId: "parent.settings.notifications", route: "/notification-settings" },
-  { id: "location", icon: "ui/pin.webp", tone: "blue", labelId: "parent.settings.location", route: "/location-settings" },
-  { id: "data", icon: "ui/data-sync-3d.webp", tone: "mint", labelId: "parent.settings.dataSync", route: "/data-sync" },
-  { id: "subscription", icon: "ui/crown.webp", tone: "gold", labelId: "parent.settings.subscription", route: "/subscription", badge: true },
+  { id: "account", icon: "ui/clay/account.webp", tone: "lav", labelId: "parent.settings.account", route: "/account" },
+  { id: "notif", icon: "ui/clay/notification.webp", tone: "rose", labelId: "parent.settings.notifications", route: "/notification-settings" },
+  { id: "location", icon: "ui/clay/location.webp", tone: "blue", labelId: "parent.settings.location", route: "/location-settings" },
+  { id: "data", icon: "ui/clay/data-sync.webp", tone: "mint", labelId: "parent.settings.dataSync", route: "/data-sync" },
+  { id: "subscription", icon: "ui/clay/subscription.webp", tone: "gold", labelId: "parent.settings.subscription", route: "/subscription", badge: true },
 ];
 
 type FeatureRow = { id: string; icon: string; tone: Tone; labelId: string; route: string };
 
 const featureRows: FeatureRow[] = [
-  { id: "child", icon: "ui/menu-child-tracker.webp", tone: "blue", labelId: "parent.settings.children", route: "/parent/family" },
-  { id: "place", icon: "ui/menu-place-manager.webp", tone: "mint", labelId: "parent.settings.places", route: "/place-manager" },
-  { id: "friend", icon: "ui/menu-friend-playdate.webp", tone: "gold", labelId: "parent.settings.playdates", route: "/friend-play" },
-  { id: "audio", icon: "ui/mic-3d.webp", tone: "rose", labelId: "parent.settings.remoteAudio", route: "/remote-audio" },
-  { id: "audio-audit", icon: "ui/mic-3d.webp", tone: "neutral", labelId: "parent.settings.remoteAudioAudit", route: "/remote-audio-audit" },
-  { id: "reward", icon: "ui/menu-sticker.webp", tone: "gold", labelId: "parent.settings.stickers", route: "/sticker-send" },
-  { id: "ai", icon: "ui/menu-ai-schedule.webp", tone: "lav", labelId: "parent.settings.aiCredits", route: "/ai-credit" },
+  { id: "child", icon: "ui/clay/children.webp", tone: "blue", labelId: "parent.settings.children", route: "/parent/family" },
+  { id: "place", icon: "ui/clay/places.webp", tone: "mint", labelId: "parent.settings.places", route: "/place-manager" },
+  { id: "friend", icon: "ui/clay/playdate.webp", tone: "gold", labelId: "parent.settings.playdates", route: "/friend-play" },
+  { id: "audio", icon: "ui/clay/remote-audio.webp", tone: "rose", labelId: "parent.settings.remoteAudio", route: "/remote-audio" },
+  { id: "audio-audit", icon: "ui/clay/remote-audio-history.webp", tone: "neutral", labelId: "parent.settings.remoteAudioAudit", route: "/remote-audio-audit" },
+  { id: "reward", icon: "ui/clay/sticker.webp", tone: "gold", labelId: "parent.settings.stickers", route: "/sticker-send" },
+  { id: "ai", icon: "ui/clay/ai-credit.webp", tone: "lav", labelId: "parent.settings.aiCredits", route: "/ai-credit" },
 ];
 
 type AccountRow = {
   id: string;
-  Icon: LucideIcon;
+  icon: string;
   tone: Tone;
   label: string;
   onClick: () => void;
@@ -76,10 +67,10 @@ function SettingsIcon({ icon, tone }: { icon: string; tone: Tone }) {
   );
 }
 
-function AccountIcon({ Icon, tone }: { Icon: LucideIcon; tone: Tone }) {
+function AccountIcon({ icon, tone }: { icon: string; tone: Tone }) {
   return (
     <span className="ps-account__chip" data-tone={tone}>
-      <Icon size={18} strokeWidth={2.3} />
+      <img src={asset(icon)} alt="" aria-hidden="true" />
     </span>
   );
 }
@@ -262,8 +253,6 @@ export function ParentSettings() {
             className="ps-profile__edit hy-press"
             onClick={() => navigate("/account")}
           >
-            {/* 수정 = 연필. 설정의 다른 3D 아이콘과 같은 언어를 쓴다(2026-08-18 TK 지시). */}
-            <img className="ps-profile__edit-icon" src={asset("ui/pencil-3d.webp")} alt="" aria-hidden="true" />
             {intl.formatMessage({ id: "parent.parentHome.copy051" })}
           </button>
         </div>
@@ -276,7 +265,7 @@ export function ParentSettings() {
             aria-expanded={languageOpen}
             onClick={() => setLanguageOpen((open) => !open)}
           >
-            <SettingsIcon icon="ui/language-3d.webp" tone="blue" />
+            <SettingsIcon icon="ui/clay/language.webp" tone="blue" />
             <span className="ps-nav__label">{intl.formatMessage({ id: "core.language.rowLabel" })}</span>
             <span className="ps-nav__value" lang={locale}>{languageNativeName(locale)}</span>
             <ChevronRight
@@ -322,7 +311,7 @@ export function ParentSettings() {
                 className="ps-nav hy-press"
                 onClick={() => setReferralOpen(true)}
               >
-                <SettingsIcon icon="ui/gift-3d.webp" tone="gold" />
+                <SettingsIcon icon="ui/clay/referral.webp" tone="gold" />
                 <span className="ps-nav__label">
                   {intl.formatMessage(
                     { id: "parent.parentSettings.copy018" },
@@ -334,7 +323,7 @@ export function ParentSettings() {
             )}
             {reviewRewardNotice && (
               <div className="ps-nav" role="status">
-                <SettingsIcon icon="ui/star-medal.webp" tone="gold" />
+                <SettingsIcon icon="ui/clay/sticker.webp" tone="gold" />
                 <span className="ps-nav__label">{reviewRewardNotice}</span>
               </div>
             )}
@@ -367,13 +356,13 @@ export function ParentSettings() {
           <div className="ps-group__label">{intl.formatMessage({ id: "parent.parentSettings.copy020" })}</div>
           <div className="ps-list">
             {([
-              { id: "privacy", Icon: ShieldCheck, tone: "neutral", label: intl.formatMessage({ id: "parent.parentSettings.copy021" }), onClick: openPrivacy, chevron: true },
-              { id: "feedback", Icon: MessageCircleQuestion, tone: "blue", label: intl.formatMessage({ id: "parent.parentSettings.copy022" }), onClick: () => navigate("/feedback"), chevron: true },
-              { id: "logout", Icon: LogOut, tone: "danger", label: intl.formatMessage({ id: "parent.parentSettings.copy023" }), onClick: () => void handleLogout() },
-              { id: "delete", Icon: AlertTriangle, tone: "danger", label: intl.formatMessage({ id: "parent.parentSettings.copy024" }), onClick: () => setConfirmDelete(true), danger: true },
+              { id: "privacy", icon: "ui/clay/privacy.webp", tone: "neutral", label: intl.formatMessage({ id: "parent.parentSettings.copy021" }), onClick: openPrivacy, chevron: true },
+              { id: "feedback", icon: "ui/clay/feedback.webp", tone: "blue", label: intl.formatMessage({ id: "parent.parentSettings.copy022" }), onClick: () => navigate("/feedback"), chevron: true },
+              { id: "logout", icon: "ui/clay/logout.webp", tone: "danger", label: intl.formatMessage({ id: "parent.parentSettings.copy023" }), onClick: () => void handleLogout() },
+              { id: "delete", icon: "ui/clay/trash.webp", tone: "danger", label: intl.formatMessage({ id: "parent.parentSettings.copy024" }), onClick: () => setConfirmDelete(true), danger: true },
             ] satisfies AccountRow[]).map((r) => (
               <button key={r.id} type="button" className="ps-account hy-press" onClick={r.onClick}>
-                <AccountIcon Icon={r.Icon} tone={r.tone} />
+                <AccountIcon icon={r.icon} tone={r.tone} />
                 <span className="ps-account__label" data-danger={r.danger ? "true" : undefined}>
                   {r.label}
                 </span>

@@ -641,6 +641,9 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 - UI 요소 아이콘은 유니코드 이모지 대신 **3D 에셋(public/assets)** 또는 lucide 라인 아이콘. 색 칩 위에는 알파 채널 있는 에셋만
   (`status/*.webp`는 흰 배경 불투명 — 사용 금지 목록. `ui/mic-lavender.webp`는 2026-07-14 투명본으로 교체돼 사용 가능).
   일정 아이콘은 `resolveEventCharacter`(제목→cat/*.webp).
+- ★부모 설정 아이콘은 clay 3D 세트 하나다(2026-08-18 TK 지시): 설정 화면의 모든 행이 `public/assets/ui/clay/*.webp`
+  25종을 쓰고(`scripts/import-clay-3d-icons.mjs` 가 표를 들고 있다), lucide 는 chevron·뒤로가기·삭제 모달에만 남는다.
+  칩 38px·그림 32px. 브라우저 QA 가 `parent-settings-icons(.bottom).png` 두 장을 남긴다.
 - ★아이콘 언어 통일(2026-07-14): 기능 타일·색 칩·히어로·안전지표 = 3D webp(menu-*/place-* 기준), 텍스트 행 인라인·유틸 =
   lucide. 진한 선 스타일 플랫 SVG(`ui/icon-*.svg`) 재유입 금지. 안전지표 4칸 = battery/clock-3d/lock-open-3d/wifi-3d.webp,
   프리미엄 잠금 = lock-3d.webp, 주간리포트 히어로 = chart-3d.webp. 새 3D 아이콘은 원본 팩 `assets/05-icons/*` 변환 우선,

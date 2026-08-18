@@ -110,12 +110,6 @@
   --press: 0.94;
 }
 
-/* 연필 3D 아이콘 — 글자와 같은 시각 높이로 맞춘다. */
-.ps-profile__edit-icon {
-  width: 18px;
-  height: 18px;
-  object-fit: contain;
-}
 
 /* ── 그룹(라벨 + 흰 카드 리스트) ────────────────────────────────────────── */
 .ps-group__label {
@@ -297,8 +291,8 @@
   --press: 0.99;
 }
 .ps-account__chip {
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   border-radius: var(--radius-12);
   display: flex;
   align-items: center;
@@ -350,8 +344,8 @@
   --press: 0.99;
 }
 .ps-nav__chip {
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   border-radius: var(--radius-12);
   display: flex;
   align-items: center;
@@ -361,9 +355,10 @@
 }
 
 /* 3D 아이콘은 칩 안을 넉넉히 채운다(기능 행의 40px 칩과 같은 비율). */
-.ps-nav__chip img {
-  width: 27px;
-  height: 27px;
+.ps-nav__chip img,
+.ps-account__chip img {
+  width: 32px;
+  height: 32px;
   object-fit: contain;
 }
 .ps-nav__label {

@@ -1430,6 +1430,10 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     }
     report.focused.parentProfilePhoto = parentProfilePhotoFacts;
     report.screenshots.push(await screenshot(cdp, freshOutputDir, "parent-settings-icons.png"));
+    // 아래쪽 가족·안전, 약관·계정 그룹 아이콘까지 한 장 더 남긴다.
+    await cdp.evaluate(`(() => { document.querySelector(".ps-content")?.scrollIntoView(false); window.scrollTo(0, document.body.scrollHeight); return true; })()`);
+    await wait(600);
+    report.screenshots.push(await screenshot(cdp, freshOutputDir, "parent-settings-icons-bottom.png"));
 
     // 친구 초대: 설정 행 → 패널 → 코드 발급까지 실제로 눌러 본다.
     await cdp.evaluate(`(() => {

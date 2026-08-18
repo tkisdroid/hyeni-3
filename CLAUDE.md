@@ -836,6 +836,14 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   반투명은 `background: rgba(...)` 가 아니라 `background:#fff` + `opacity` 로 줘야 겹친 덩이의 이음선이 안 생긴다.
 - 원시 유니코드 이모지를 버튼 아이콘으로 쓰지 않는다(시스템 폰트라 옆 아이콘과 크기·베이스라인이 어긋난다).
   lucide 아이콘 또는 3D webp 에셋 중 하나로 통일한다. 가드=`tests/menuNavigationConsistency.test.mjs`.
+- ★**부모 설정 아이콘 = clay 3D 세트 하나로 통일(2026-08-18 TK 지시)**: 설정 화면의 **모든 행**(언어·계정·알림·
+  위치·데이터·구독·친구 초대·스토어 혜택 안내 + 가족/안전 7행 + 약관·계정 4행)이 `public/assets/ui/clay/*.webp`
+  25종을 쓴다. 원본은 TK 가 준 1024px 투명 PNG 이고 `scripts/import-clay-3d-icons.mjs` 가 여백을 잘라 256px webp 로
+  들여온다(파일→slug 표가 그 스크립트의 정본). 칩은 38px·그림 32px 이라 예전 lucide 18px 글리프보다 크다.
+  lucide 는 이동 chevron·뒤로가기·삭제 모달 글리프에만 남는다. 앞선 3D 세트 중 `mic-3d`·`pencil-3d`·`profile-3d`·
+  `language-3d`·`data-sync-3d`·`gift-3d` 는 소비자가 없어 삭제했다(계정 사진 버튼의 `camera-3d` 만 남김).
+  브라우저 QA 가 `parent-settings-icons.png`·`-bottom.png` 두 장을 남기므로 아이콘 변경은 눈으로 바로 확인한다.
+  ⚠️ `tests/menuNavigationConsistency.test.mjs` 는 이제 `type LucideIcon` 이 아니라 clay 자산 참조를 요구한다.
 - ★아이콘 언어 통일(2026-07-14 TK 제보 "안전지표·위치 아이콘이 다른 아이콘과 다름" 수정): **기능 타일·색 칩·히어로·
   안전지표 = 소프트 3D webp**(바로가기 menu-*.webp·장소 place-*.webp 가 기준), **텍스트 행 인라인(14~19px)·유틸리티 =
   lucide**(주변 텍스트/형제 lucide와 색·크기 정합). 진한 선(line) 스타일 플랫 SVG(`ui/icon-*.svg`)는 재유입 금지 —

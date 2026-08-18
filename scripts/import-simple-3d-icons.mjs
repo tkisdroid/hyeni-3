@@ -7,7 +7,7 @@
  *
  * 사용: node scripts/import-simple-3d-icons.mjs "<원본 폴더>"
  */
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
@@ -18,10 +18,10 @@ const OUTPUT_SIZE = 256;
 const WEBP_QUALITY = 88;
 
 /** 원본 파일 이름 → 앱에서 쓰는 자산 이름. */
+// 마이크·연필은 2026-08-18 clay 세트(scripts/import-clay-3d-icons.mjs)로 대체됐다.
+// 계정 화면 사진 버튼의 카메라 배지만 이 세트에서 남는다.
 export const SIMPLE_3D_ICON_FILES = Object.freeze({
   "camera_icon_3d_transparent.png": "camera-3d.webp",
-  "microphone_icon_3d_transparent.png": "mic-3d.webp",
-  "pencil_icon_3d_transparent.png": "pencil-3d.webp",
 });
 
 async function main() {
