@@ -146,6 +146,8 @@ export function alertRoute(type: string): string | null {
   if (normalized.startsWith("memo") || normalized.startsWith("sticker")) return "/parent/memo";
   // 아이가 AI 대화를 다 써서 부탁한 요청 — 충전·하루 한도를 그 자리에서 바꿀 수 있는 화면으로.
   if (normalized === "ai_credit_request") return "/ai-credit";
+  // 하루 대시보드는 알림함에서도 같은 화면으로 간다(푸시로만 열리면 놓친 알림을 못 본다).
+  if (normalized === "child_daily_digest") return "/child-digest";
   if (normalized === "schedule_suggestion") return "/event-form";
   if (normalized.startsWith("event")) return "/parent/calendar";
   return null;
@@ -183,6 +185,7 @@ const ICON_BY_TYPE: Record<string, string> = {
   event_ended_by_child: "ui/calendar-heart.webp",
   event_reminder: "ui/calendar-heart.webp",
   ai_credit_request: "ui/crown.webp",
+  child_daily_digest: "ui/chart-3d.webp",
   child_setting_request: "ui/shield-heart.webp",
   low_battery: "ui/battery.webp",
   battery_low: "ui/battery.webp", // 과거 저장 행 호환

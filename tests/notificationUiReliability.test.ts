@@ -61,6 +61,8 @@ test("알림 유형별 상세 경로가 도착·위험·일정을 정확히 구�
   assert.equal(alertRoute("sos_followup"), "/danger-alert");
   assert.equal(alertRoute("danger_exit"), "/parent/location");
   assert.equal(alertRoute("low_battery"), "/parent/location");
+  // 하루 대시보드는 푸시와 알림함이 같은 화면으로 간다(2026-08-19).
+  assert.equal(alertRoute("child_daily_digest"), "/child-digest");
 });
 
 test("위험구역 이탈은 과거 severity가 emergency여도 긴급으로 다시 표시하지 않는다", () => {
