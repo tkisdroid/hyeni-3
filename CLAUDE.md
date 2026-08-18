@@ -1116,6 +1116,12 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   로컬 테스트는 전부 통과해 배포 전까지 드러나지 않았다. 조건이 많은 검사는 **여러 문장으로 쪼개
   순차 실행**하고(early-exit 이득도 있다) 청크당 `AND` 수를 넉넉히 낮게 잡는다.
   가드=`worker/tests/healthReadiness.test.mjs` 의 AND 개수 상한 검사.
+- ★**CI 는 shallow checkout이다 — 고정 baseline 커밋을 읽는 감사기는 `fetch-depth: 0` 이 필요하다(2026-08-19)**:
+  `scripts/i18n/audit-task8-locales.mjs` 가 `git show 4fc8b55:locales/ko/*.json` 으로 baseline 을 읽는데,
+  `actions/checkout` 기본값(fetch-depth 1)에서는 그 커밋이 없어 `fatal: invalid object name` 으로
+  **locale 감사 4건이 통째로 실패**했다. 로컬은 전체 히스토리라 항상 통과해 오래 방치됐다
+  (실제로 앱 CI 가 여러 커밋 연속 red 였다). `release-candidate.yml` 의 두 checkout 에 `fetch-depth: 0` 을 넣었고
+  `tests/releaseCiContract.test.mjs` 가 그것을 강제한다. **로컬 통과만 보고 CI 통과로 단정하지 말 것.**
 - ★**배포 전 스키마 선행 확인(2026-08-03)**: wrangler 는 워킹트리를 배포하므로, 오래 미배포된 Worker 를 올리면
   그 사이 추가된 `worker/db/*.sql` migration 이 **한꺼번에 필요**해진다. 배포 전에 `worker/db/*.sql` 이 만드는
   테이블·인덱스·컬럼을 프로덕션 `sqlite_master` 와 대조하고 **migration 을 먼저 적용**한다(런북의 migration-first).

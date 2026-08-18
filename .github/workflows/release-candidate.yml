@@ -32,6 +32,9 @@ jobs:
         with:
           path: hyeni-3
           persist-credentials: false
+          # Task 8 locale 감사기가 고정 baseline 커밋을 `git show` 로 읽는다.
+          # 기본 shallow(fetch-depth 1) checkout 에서는 그 커밋이 없어 감사 자체가 실패한다.
+          fetch-depth: 0
 
       # Worker는 같은 저장소의 worker/ 디렉터리가 정본이다(과거 hyeni-1 sibling checkout 폐지).
       - name: 앱·Worker 실제 HEAD 검증
@@ -157,6 +160,9 @@ jobs:
         with:
           path: hyeni-3
           persist-credentials: false
+          # Task 8 locale 감사기가 고정 baseline 커밋을 `git show` 로 읽는다.
+          # 기본 shallow(fetch-depth 1) checkout 에서는 그 커밋이 없어 감사 자체가 실패한다.
+          fetch-depth: 0
 
       - name: 앱 실제 HEAD 검증
         shell: bash

@@ -35,6 +35,9 @@ function assertCheckoutCredentialsAreNotPersisted(workflow) {
   assert.ok(checkoutSteps.length > 0, "검증할 checkout step이 있어야 합니다.");
   for (const step of checkoutSteps) {
     assert.match(step, /^\s*persist-credentials:\s*false\s*$/m);
+    // Task 8 locale 감사기는 고정 baseline 커밋을 `git show` 로 읽는다.
+    // 기본 shallow checkout 에서는 그 커밋이 없어 감사가 통째로 실패한다(2026-08-19 실사고).
+    assert.match(step, /^\s*fetch-depth:\s*0\s*$/m);
   }
 }
 
