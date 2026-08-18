@@ -445,6 +445,104 @@ export async function parseSchedule(input: ParseScheduleInput): Promise<ParseSch
   return normalizeParsedSchedule(data);
 }
 
+// ── 아이 하루 대시보드(daily-digest · 프리미엄) ───────────────────────────────
+// Worker(/api/ai/daily-digest): cron 이 하루 한 번 만들어 둔 요약을 읽기만 한다(무과금).
+// ⚠️ 대화 원문은 서버가 담지 않는다 — 주제·집계만 온다(아이 프라이버시 계약).
+
+export interface ChildDailyDigestTopic {
+  label: string;
+  count: number;
+}
+
+export interface ChildDailyDigest {
+  dateKey: string;
+  childName: string;
+  chat: {
+    count: number;
+    topics: ChildDailyDigestTopic[];
+    discoveries: string[];
+    safetySignals: number;
+  };
+  day: {
+    events: { title: string; time: string }[];
+    eventCount: number;
+    supplyCount: number;
+    homeworkCount: number;
+    alerts: { arrived: number; left: number; danger: number; notArrived: number; other: number };
+  };
+}
+
+export interface ChildDailyDigestResult {
+  dateKey: string;
+  notifiedAt: string | null;
+  digest: ChildDailyDigest;
+}
+
+interface ChildDailyDigestResponse {
+  dateKey?: string | null;
+  notifiedAt?: string | null;
+  digest?: Partial<ChildDailyDigest> | null;
+}
+
+function digestNumber(value: unknown): number {
+  // Number(null) === 0 함정을 피한다 — 숫자가 아니면 0 으로 두되 없는 값을 지어내지 않는다.
+  return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.round(value)) : 0;
+}
+
+/** 서버 payload 를 화면 계약으로 좁힌다. 빠진 값은 0·빈 배열(기록 없음)로 둔다. */
+function normalizeChildDailyDigest(raw: Partial<ChildDailyDigest> | null | undefined): ChildDailyDigest {
+  const chat = raw?.chat ?? ({} as ChildDailyDigest["chat"]);
+  const day = raw?.day ?? ({} as ChildDailyDigest["day"]);
+  const alerts = day.alerts ?? ({} as ChildDailyDigest["day"]["alerts"]);
+  return {
+    dateKey: String(raw?.dateKey ?? ""),
+    childName: String(raw?.childName ?? ""),
+    chat: {
+      count: digestNumber(chat.count),
+      topics: (Array.isArray(chat.topics) ? chat.topics : [])
+        .map((topic) => ({ label: String(topic?.label ?? ""), count: digestNumber(topic?.count) }))
+        .filter((topic) => topic.label),
+      discoveries: (Array.isArray(chat.discoveries) ? chat.discoveries : [])
+        .map((line) => String(line ?? "")).filter(Boolean),
+      safetySignals: digestNumber(chat.safetySignals),
+    },
+    day: {
+      events: (Array.isArray(day.events) ? day.events : [])
+        .map((event) => ({ title: String(event?.title ?? ""), time: String(event?.time ?? "") }))
+        .filter((event) => event.title),
+      eventCount: digestNumber(day.eventCount),
+      supplyCount: digestNumber(day.supplyCount),
+      homeworkCount: digestNumber(day.homeworkCount),
+      alerts: {
+        arrived: digestNumber(alerts.arrived),
+        left: digestNumber(alerts.left),
+        danger: digestNumber(alerts.danger),
+        notArrived: digestNumber(alerts.notArrived),
+        other: digestNumber(alerts.other),
+      },
+    },
+  };
+}
+
+/** 최신(또는 지정 날짜) 대시보드. 아직 만들어진 적이 없으면 null. */
+export async function fetchChildDailyDigest(input: {
+  familyId: string;
+  childUserId: string;
+  dateKey?: string | null;
+}): Promise<ChildDailyDigestResult | null> {
+  const { familyId, childUserId, dateKey } = input;
+  if (!familyId || !childUserId) return null;
+  const data = await apiGet<ChildDailyDigestResponse | null>(
+    `/api/ai/daily-digest${aiQuery({ familyId, childUserId, ...(dateKey ? { dateKey } : {}) })}`,
+  );
+  if (!data) return null;
+  return {
+    dateKey: String(data.dateKey ?? ""),
+    notifiedAt: data.notifiedAt ?? null,
+    digest: normalizeChildDailyDigest(data.digest),
+  };
+}
+
 // ── AI 하루 요약(day-summary · 프리미엄) ──────────────────────────────────────
 // Worker(/api/ai/day-summary): GET = 캐시 read(무과금), POST = 생성(프리미엄·AI 과금).
 // ⚠️ dateKey 는 ISO "YYYY-MM-DD"(서버 정규식 검증). 앱 date_key(0-index 월)와 다르므로

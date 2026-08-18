@@ -63,7 +63,7 @@ async function queueParentAlertPending(
     pushPolicy: {
       type: "sos" | "parent_alert";
       urgent: boolean;
-      route: "/sos-receive" | "/notifications" | "/ai-credit";
+      route: "/sos-receive" | "/notifications" | "/ai-credit" | "/child-digest";
     };
   },
 ): Promise<void> {

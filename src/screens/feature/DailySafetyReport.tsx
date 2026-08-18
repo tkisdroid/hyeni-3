@@ -988,6 +988,18 @@ export function DailySafetyReport() {
               )}
             </section>
 
+            {/* 하루 대시보드는 알림으로도 오지만, 놓쳤을 때 여기서도 열 수 있어야 한다. */}
+            <button type="button" className="hy-card dr-weekly hy-press" onClick={() => navigate("/child-digest")}>
+              <span className="dr-weekly__icon">
+                <img src={asset("ui/chart-3d.webp")} alt="" loading="lazy" decoding="async" />
+              </span>
+              <span>
+                <b>{intl.formatMessage({ id: "reports.digest.entryTitle" })}</b>
+                <small>{intl.formatMessage({ id: "reports.digest.entryDescription" })}</small>
+              </span>
+              <ChevronRight size={20} strokeWidth={2.4} />
+            </button>
+
             <button type="button" className="hy-card dr-weekly hy-press" onClick={() => navigate("/day-summary")}>
               <span className="dr-weekly__icon">
                 <img src={asset("ui/ai-robot.webp")} alt="" loading="lazy" decoding="async" />

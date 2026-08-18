@@ -56,6 +56,7 @@ import { run as runForceRingReminder } from "./cron/force-ring-reminder";
 import { run as runForceRingDeliveryTimeout } from "./cron/force-ring-delivery-timeout";
 import { run as runPlaydateAutoEnd } from "./cron/friend-playdate-auto-end";
 import { run as runAiProactive } from "./cron/ai-proactive";
+import { run as runChildDailyDigest } from "./cron/child-daily-digest";
 import { run as runPushIdempotencyCleanup } from "./cron/push-idempotency-cleanup";
 import { run as runRemoteListenExpiry } from "./cron/remote-listen-expiry";
 import { cacheSweep } from "./lib/edgeCache";
@@ -570,7 +571,12 @@ const CRON: Record<string, CronHandler[]> = {
     { name: "unregistered-stay-check", run: runStay },
     { name: "teacher-notification-batch", run: runTeacher },
   ],
-  "*/10 * * * *": [{ name: "ai-proactive", run: runAiProactive }],
+  // 하루 대시보드는 자기 트리거를 새로 만들지 않는다(Cloudflare Free 플랜 cron 5개 한도).
+  // 핸들러가 KST 저녁 창 밖이면 즉시 빠져나오고, 하루 1회는 DB PK 가 보증한다.
+  "*/10 * * * *": [
+    { name: "ai-proactive", run: runAiProactive },
+    { name: "child-daily-digest", run: runChildDailyDigest },
+  ],
 };
 
 export default {

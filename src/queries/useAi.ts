@@ -16,6 +16,7 @@ import {
   sendChildChat,
   parseSchedule,
   fetchDaySummary,
+  fetchChildDailyDigest,
   generateDaySummary,
   fetchAiFriendPublicSettings,
   fetchAiFriendSettings,
@@ -170,6 +171,26 @@ export function useParseSchedule() {
     // AiSchedule가 quota·Premium·파싱·네트워크 오류를 모두 구체적으로 안내한다.
     meta: { silentError: true },
     mutationFn: (input: ParseScheduleInput) => parseSchedule(input),
+  });
+}
+
+// ── 아이 하루 대시보드(daily-digest) ──────────────────────────────────────────
+
+/**
+ * cron 이 하루 한 번 만들어 둔 대시보드 조회(GET · 무과금 · 프리미엄 보호자 전용).
+ * dateKey 를 주지 않으면 가장 최근 대시보드를 읽는다(알림을 늦게 연 부모를 위해).
+ */
+export function useChildDailyDigest(childUserId?: string | null, isoDateKey?: string | null) {
+  const { familyId, status } = useAuth();
+  return useQuery({
+    queryKey: ["childDailyDigest", familyId ?? "", childUserId ?? "", isoDateKey ?? "latest"],
+    queryFn: () =>
+      fetchChildDailyDigest({
+        familyId: familyId as string,
+        childUserId: childUserId as string,
+        dateKey: isoDateKey ?? null,
+      }),
+    enabled: status === "authenticated" && !!familyId && !!childUserId,
   });
 }
 
