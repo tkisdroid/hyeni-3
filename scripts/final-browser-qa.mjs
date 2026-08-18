@@ -69,7 +69,7 @@ export const PARENT_BROWSER_QA_ROUTES = Object.freeze([
   "danger-zone-form", "location-status", "child-detail", "pairing-wizard",
   "family-connection", "location-settings", "account", "data-sync",
   "notification-settings", "arrival-alerts", "danger-alert", "day-summary",
-  "daily-report", "weekly-report", "remote-audio-audit", "remote-ring",
+  "daily-report", "weekly-report", "child-digest", "remote-audio-audit", "remote-ring",
   "sos-receive", "feedback", "supplies", "route", "app-update", "perm-denied",
 ]);
 
@@ -800,6 +800,9 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     "--no-default-browser-check",
     "--disable-background-networking",
     "--disable-component-update",
+    // 이 하니스의 검사는 한국어 정본 문구 기준이다. 브라우저 기본 언어를 따라가면
+    // Linux CI(en-US)에서 영어 화면을 한국어로 검사하게 되므로 표시 언어를 고정한다.
+    "--lang=ko-KR",
     "--window-size=390,844",
     "about:blank",
   ], {

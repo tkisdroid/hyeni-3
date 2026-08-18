@@ -1116,6 +1116,14 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   로컬 테스트는 전부 통과해 배포 전까지 드러나지 않았다. 조건이 많은 검사는 **여러 문장으로 쪼개
   순차 실행**하고(early-exit 이득도 있다) 청크당 `AND` 수를 넉넉히 낮게 잡는다.
   가드=`worker/tests/healthReadiness.test.mjs` 의 AND 개수 상한 검사.
+- ★**QA 하니스는 locale 을 고정해야 한다(2026-08-19)**: `final-browser-qa`·`pwa-runtime-qa` 는 한국어 문구를
+  기준으로 화면을 검사하는데 Chrome 을 `env: {}` 로 띄운다. Windows 로컬은 OS 가 한국어라 늘 통과했지만
+  **Linux CI 는 en-US** 라 화면이 영어로 렌더돼 문구 검사 12건 + PWA 앱 이름 검사 1건이 실패했다.
+  두 하니스가 Chrome 인자에 `--lang=ko-KR` 을 넣어 표시 언어를 고정한다.
+  ⚠️ `localStorage` 로 locale 을 심는 방법은 쓰지 말 것 — `pwaRuntimeQaHarness` 가 하니스 소스에
+  `process.env|localStorage|sessionStorage|document.cookie` 를 금지한다(사용자 브라우저 상태 차단 계약).
+  재현 검증은 `--lang=en-US` 로 바꿔 돌리면 된다 — 실제로 그렇게 12건 red → `ko-KR` 로 0건 green 을 확인했다.
+  가드=`tests/finalBrowserQaHarness.test.mjs`·`tests/pwaRuntimeQaHarness.test.mjs`.
 - ★**CI 는 shallow checkout이다 — 고정 baseline 커밋을 읽는 감사기는 `fetch-depth: 0` 이 필요하다(2026-08-19)**:
   `scripts/i18n/audit-task8-locales.mjs` 가 `git show 4fc8b55:locales/ko/*.json` 으로 baseline 을 읽는데,
   `actions/checkout` 기본값(fetch-depth 1)에서는 그 커밋이 없어 `fatal: invalid object name` 으로
