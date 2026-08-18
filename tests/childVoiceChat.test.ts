@@ -66,6 +66,60 @@ test("네이티브 speak/stopSpeak 가 JS 로 노출되고 웹 폴백이 있다"
   assert.doesNotMatch(plugin, /Locale\.KOREAN/);
 });
 
+test("새 읽어주기는 이전 웹 음성을 끊고 native 실패도 중단한 뒤 폴백한다", () => {
+  const speech = read("src/lib/native/speech.ts");
+  const speakStart = speech.indexOf("export async function speakText");
+  const stopStart = speech.indexOf("export function stopSpeaking", speakStart);
+  assert.ok(speakStart >= 0 && stopStart > speakStart);
+  const speak = speech.slice(speakStart, stopStart);
+
+  const cancelAtStart = speak.indexOf("webSpeechSynthesis()?.cancel()");
+  const nativeSpeak = speak.indexOf("await plugin.speak");
+  assert.ok(cancelAtStart >= 0 && cancelAtStart < nativeSpeak);
+  assert.match(speech, /async function stopNativePlaybackBeforeFallback/);
+  assert.match(speech, /await plugin\.stopSpeak\(\);[\s\S]*generation === speechPlaybackGeneration/);
+  assert.match(
+    speak,
+    /await stopNativePlaybackBeforeFallback\(fallbackPlugin, generation\);\s*if \(generation !== speechPlaybackGeneration/,
+  );
+});
+
+test("Android TTS lifecycle은 실패 엔진과 늦은 초기화 callback을 닫는다", () => {
+  const plugin = read("android/app/src/main/java/com/hyeni/calendar/SpeechPlugin.java");
+  assert.match(plugin, /private volatile boolean destroyed = false;/);
+  assert.match(plugin, /private void disposeTextToSpeech\(\)/);
+
+  const disposeStart = plugin.indexOf("private void disposeTextToSpeech()");
+  const nextMethod = plugin.indexOf("\n    private ", disposeStart + 1);
+  assert.ok(disposeStart >= 0 && nextMethod > disposeStart);
+  const dispose = plugin.slice(disposeStart, nextMethod);
+  assert.match(dispose, /textToSpeech = null;/);
+  assert.match(dispose, /ttsReady = false;/);
+  assert.match(dispose, /\.stop\(\);/);
+  assert.match(dispose, /\.shutdown\(\);/);
+
+  assert.match(
+    plugin,
+    /status -> \{\s*if \(destroyed\) \{\s*return;\s*\}[\s\S]*?getActivity\(\)[\s\S]*?runOnUiThread\(\(\) -> \{\s*if \(destroyed\) \{\s*return;/,
+  );
+  assert.match(
+    plugin,
+    /status != TextToSpeech\.SUCCESS[\s\S]*?disposeTextToSpeech\(\);/,
+  );
+  assert.match(
+    plugin,
+    /protected void handleOnDestroy\(\) \{\s*destroyed = true;[\s\S]*?ttsGeneration\.cancel\(\);[\s\S]*?pendingTtsRequest = null;[\s\S]*?ttsInitializing = false;[\s\S]*?disposeTextToSpeech\(\);/,
+  );
+  assert.match(
+    plugin,
+    /public void speak\(PluginCall call\)[\s\S]*?Activity activity = getActivity\(\);[\s\S]*?if \(destroyed \|\| activity == null\)[\s\S]*?resolveNotStarted\(call\);[\s\S]*?activity\.runOnUiThread\(\(\) -> \{\s*if \(destroyed\)/,
+  );
+  assert.match(
+    plugin,
+    /private void startUtterance\(PendingTtsRequest request\) \{\s*try \{\s*if \(destroyed \|\| !ttsGeneration\.isCurrent/,
+  );
+});
+
 test("말한 내용은 확인 단계 없이 바로 보낸다(받아쓰기가 아니라 대화)", () => {
   const chat = read("src/screens/child/AiFriendChat.tsx");
   assert.match(chat, /const transcript = await captureSpeech|captureSpeech\(speechLang\)/);

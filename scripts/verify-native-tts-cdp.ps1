@@ -31,6 +31,7 @@ function Send-CdpCommand {
         [hashtable]$Parameters
     )
 
+    $commandDeadline = [DateTime]::UtcNow.AddSeconds(10)
     $script:NextCommandId += 1
     $commandId = $script:NextCommandId
     $payload = @{
@@ -40,7 +41,13 @@ function Send-CdpCommand {
     } | ConvertTo-Json -Compress -Depth 12
     $bytes = [System.Text.Encoding]::UTF8.GetBytes($payload)
     $sendBuffer = [ArraySegment[byte]]::new($bytes)
-    $sendTimeout = [System.Threading.CancellationTokenSource]::new(10000)
+    $sendRemainingMilliseconds = [int][Math]::Ceiling(
+        ($commandDeadline - [DateTime]::UtcNow).TotalMilliseconds
+    )
+    if ($sendRemainingMilliseconds -le 0) {
+        throw "CDP 명령 제한 시간이 초과됐습니다."
+    }
+    $sendTimeout = [System.Threading.CancellationTokenSource]::new($sendRemainingMilliseconds)
 
     try {
         Invoke-WebSocketTask ($Socket.SendAsync(
@@ -54,12 +61,23 @@ function Send-CdpCommand {
     }
 
     while ($true) {
+        if ([DateTime]::UtcNow -ge $commandDeadline) {
+            throw "CDP 명령 제한 시간이 초과됐습니다."
+        }
         $message = [System.IO.MemoryStream]::new()
         try {
             do {
+                $receiveRemainingMilliseconds = [int][Math]::Ceiling(
+                    ($commandDeadline - [DateTime]::UtcNow).TotalMilliseconds
+                )
+                if ($receiveRemainingMilliseconds -le 0) {
+                    throw "CDP 명령 제한 시간이 초과됐습니다."
+                }
                 $receiveBytes = [byte[]]::new(8192)
                 $receiveBuffer = [ArraySegment[byte]]::new($receiveBytes)
-                $receiveTimeout = [System.Threading.CancellationTokenSource]::new(10000)
+                $receiveTimeout = [System.Threading.CancellationTokenSource]::new(
+                    $receiveRemainingMilliseconds
+                )
                 try {
                     $receiveResult = $Socket.ReceiveAsync(
                         $receiveBuffer,
@@ -252,6 +270,9 @@ try {
 })()
 '@)
     $shortState = Wait-CdpProbeState -Socket $socket -Name "short"
+    if ($shortState -ne "started") {
+        throw "네이티브 TTS 짧은 재생 확인에 실패했습니다."
+    }
     Start-Sleep -Milliseconds 2500
 
     [void](Invoke-CdpEvaluate -Socket $socket -Expression @'
@@ -277,6 +298,10 @@ try {
   return window.__hyeniNativeTtsProbe.long;
 })()
 '@)
+    $longState = Wait-CdpProbeState -Socket $socket -Name "long"
+    if ($longState -ne "started") {
+        throw "네이티브 TTS 긴 재생 확인에 실패했습니다."
+    }
     Start-Sleep -Milliseconds 700
     [void](Invoke-CdpEvaluate -Socket $socket -Expression @'
 (() => {
@@ -297,8 +322,10 @@ try {
   return window.__hyeniNativeTtsProbe.stop;
 })()
 '@)
-    $longState = Wait-CdpProbeState -Socket $socket -Name "long"
     $stopState = Wait-CdpProbeState -Socket $socket -Name "stop"
+    if ($stopState -ne "stopped") {
+        throw "네이티브 TTS 중단 확인에 실패했습니다."
+    }
 
     [ordered]@{
         mode = $Mode

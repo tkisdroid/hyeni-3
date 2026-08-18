@@ -1,6 +1,7 @@
 package com.hyeni.calendar;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -38,6 +39,7 @@ public class SpeechPlugin extends Plugin {
     private final SpeechPlaybackGeneration ttsGeneration = new SpeechPlaybackGeneration();
     private boolean ttsInitializing = false;
     private PendingTtsRequest pendingTtsRequest;
+    private volatile boolean destroyed = false;
 
     private static final class PendingTtsRequest {
         final PluginCall call;
@@ -194,7 +196,16 @@ public class SpeechPlugin extends Plugin {
         Float rateValue = call.getFloat("rate", 1.0f);
         float rate = rateValue != null ? rateValue : 1.0f;
 
-        getActivity().runOnUiThread(() -> {
+        Activity activity = getActivity();
+        if (destroyed || activity == null) {
+            resolveNotStarted(call);
+            return;
+        }
+        activity.runOnUiThread(() -> {
+            if (destroyed) {
+                resolveNotStarted(call);
+                return;
+            }
             long generation = ttsGeneration.next();
             PendingTtsRequest request = new PendingTtsRequest(
                 call,
@@ -225,14 +236,27 @@ public class SpeechPlugin extends Plugin {
             try {
                 textToSpeech = new TextToSpeech(
                     getContext(),
-                    status -> getActivity().runOnUiThread(() -> finishTtsInitialization(status))
+                    status -> {
+                        if (destroyed) {
+                            return;
+                        }
+                        Activity callbackActivity = getActivity();
+                        if (destroyed || callbackActivity == null) {
+                            return;
+                        }
+                        callbackActivity.runOnUiThread(() -> {
+                            if (destroyed) {
+                                return;
+                            }
+                            finishTtsInitialization(status);
+                        });
+                    }
                 );
             } catch (Exception error) {
                 ttsInitializing = false;
-                ttsReady = false;
-                textToSpeech = null;
                 PendingTtsRequest failedRequest = pendingTtsRequest;
                 pendingTtsRequest = null;
+                disposeTextToSpeech();
                 Log.e(TAG, "TTS init exception", error);
                 if (failedRequest != null) {
                     if (ttsGeneration.isCurrent(failedRequest.generation)) {
@@ -245,14 +269,36 @@ public class SpeechPlugin extends Plugin {
         });
     }
 
+    private void disposeTextToSpeech() {
+        TextToSpeech engine = textToSpeech;
+        textToSpeech = null;
+        ttsReady = false;
+        if (engine == null) {
+            return;
+        }
+        try {
+            engine.stop();
+        } catch (Exception error) {
+            Log.e(TAG, "TTS stop during dispose failed", error);
+        }
+        try {
+            engine.shutdown();
+        } catch (Exception error) {
+            Log.e(TAG, "TTS shutdown failed", error);
+        }
+    }
+
     private void finishTtsInitialization(int status) {
+        if (destroyed) {
+            return;
+        }
         ttsInitializing = false;
         PendingTtsRequest request = pendingTtsRequest;
         pendingTtsRequest = null;
 
         if (status != TextToSpeech.SUCCESS) {
-            ttsReady = false;
             Log.e(TAG, "TTS init failed: " + status);
+            disposeTextToSpeech();
             if (request != null) {
                 if (ttsGeneration.isCurrent(request.generation)) {
                     request.call.reject("TTS not available on this device");
@@ -280,7 +326,7 @@ public class SpeechPlugin extends Plugin {
 
     private void startUtterance(PendingTtsRequest request) {
         try {
-            if (!ttsGeneration.isCurrent(request.generation)) {
+            if (destroyed || !ttsGeneration.isCurrent(request.generation)) {
                 resolveNotStarted(request.call);
                 return;
             }
@@ -353,18 +399,15 @@ public class SpeechPlugin extends Plugin {
 
     @Override
     protected void handleOnDestroy() {
-        cleanup();
+        destroyed = true;
         ttsGeneration.cancel();
         if (pendingTtsRequest != null) {
             resolveNotStarted(pendingTtsRequest.call);
             pendingTtsRequest = null;
         }
-        if (textToSpeech != null) {
-            textToSpeech.stop();
-            textToSpeech.shutdown();
-            textToSpeech = null;
-            ttsReady = false;
-        }
+        ttsInitializing = false;
+        disposeTextToSpeech();
+        cleanup();
         super.handleOnDestroy();
     }
 }

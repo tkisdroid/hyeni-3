@@ -136,6 +136,18 @@ function webSpeechSynthesis(): SpeechSynthesis | null {
   return w.speechSynthesis ?? null;
 }
 
+async function stopNativePlaybackBeforeFallback(
+  plugin: NativeSpeakPlugin,
+  generation: number,
+): Promise<boolean> {
+  try {
+    await plugin.stopSpeak();
+  } catch {
+    /* 이미 멈췄거나 native 연결 종료 — 웹 폴백은 계속 판단 */
+  }
+  return generation === speechPlaybackGeneration;
+}
+
 /** 이 기기에서 읽어주기가 가능한지(네이티브 플러그인 또는 Web Speech Synthesis). */
 export function isSpeechPlaybackSupported(): boolean {
   if (getNativePlugin("SpeechRecognition")) return true;
@@ -151,8 +163,17 @@ export async function speakText(text: string, language = "ko-KR", rate = 1.0): P
   const spoken = text.trim();
   if (!spoken) return false;
   try {
+    webSpeechSynthesis()?.cancel();
+  } catch {
+    /* 이전 웹 음성이 이미 끝남 — 무시 */
+  }
+  if (generation !== speechPlaybackGeneration) return false;
+
+  let fallbackPlugin: NativeSpeakPlugin | null = null;
+  try {
     const plugin = getNativePlugin<NativeSpeakPlugin>("SpeechRecognition");
     if (plugin?.speak) {
+      fallbackPlugin = plugin;
       const result = await plugin.speak({ text: spoken, language, rate });
       if (generation !== speechPlaybackGeneration) return false;
       if (result?.started !== false) return true;
@@ -160,6 +181,11 @@ export async function speakText(text: string, language = "ko-KR", rate = 1.0): P
   } catch {
     if (generation !== speechPlaybackGeneration) return false;
     /* 네이티브 실패 → 웹 폴백 시도 */
+  }
+  if (fallbackPlugin) {
+    const nativeStoppedForFallback =
+      await stopNativePlaybackBeforeFallback(fallbackPlugin, generation);
+    if (generation !== speechPlaybackGeneration || !nativeStoppedForFallback) return false;
   }
   if (generation !== speechPlaybackGeneration) return false;
   try {
