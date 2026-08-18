@@ -304,7 +304,7 @@ const router = createHashRouter([
         ],
       },
 
-      // 선생님 전용 푸시/상세 — v1.3.0 프로덕션에서는 위 teacher/* gate가 먼저 막는다.
+      // 선생님 전용 푸시/상세 — v1.4.0 프로덕션에서는 위 teacher/* gate가 먼저 막는다.
       ...(TEACHER_MODE_ENABLED ? [{
         element: <RequireRole role="teacher" />,
         children: [

@@ -94,7 +94,7 @@ test("기본 생성 결과는 육안 승인 전이며 검증 manifest와 정확�
 test("스토어 문서와 제출 정본은 최종 자산 폴더와 비프로모션 문구를 가리킨다", async () => {
   const [listing, submission] = await Promise.all([
     readFile(new URL("../docs/store/play-listing.md", import.meta.url), "utf8"),
-    readFile(new URL("../docs/store/play-console-submission-v1.3.0.md", import.meta.url), "utf8"),
+    readFile(new URL("../docs/store/play-console-submission-v1.4.0.md", import.meta.url), "utf8"),
   ]);
   // 등록정보 문서는 생성기 산출 폴더를 가리킨다.
   assert.match(listing, /output\/play-store-final-v1/);

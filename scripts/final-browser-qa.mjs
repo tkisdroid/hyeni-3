@@ -23,6 +23,7 @@ import {
 const ROOT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DIST_INDEX = resolve(ROOT_DIR, "dist/index.html");
 const VITE_BIN = resolve(ROOT_DIR, "node_modules/vite/bin/vite.js");
+const PACKAGE_VERSION = JSON.parse(await readFile(resolve(ROOT_DIR, "package.json"), "utf8")).version;
 export const BROWSER_QA_OUTPUT_DIR = resolve(ROOT_DIR, "artifacts/release-evidence/browser-qa");
 export const BROWSER_QA_VIEWPORT = Object.freeze({ width: 390, height: 844 });
 
@@ -1671,7 +1672,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       const text = (document.body.innerText || "").replace(/\\s+/g, " ").trim();
       return {
         hash: location.hash,
-        hasVersion: text.includes("혜니캘린더 v1.3.0"),
+        hasVersion: text.includes(${JSON.stringify(`혜니캘린더 v${PACKAGE_VERSION}`)}),
         gated: text.includes("선생님 모드는 준비 중이에요"),
         hasExitControls: text.includes("로그아웃하고 다른 계정으로 시작") && text.includes("회원 탈퇴"),
       };

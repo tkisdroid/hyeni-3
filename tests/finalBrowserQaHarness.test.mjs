@@ -49,7 +49,8 @@ test("최종 브라우저 QA는 부모·아이 출시 화면과 핵심 전환 �
   assert.match(source, /aiScheduleContinueScenario/);
   assert.match(source, /hyeni:premium-return-intent:v1/);
   assert.match(source, /저장됨 · 프리미엄에서 알림 대상/);
-  assert.match(source, /혜니캘린더 v1\.3\.0/);
+  assert.match(source, /const PACKAGE_VERSION = JSON\.parse/);
+  assert.match(source, /혜니캘린더 v\$\{PACKAGE_VERSION\}/);
   assert.match(source, /parent\/location\?view=history/);
   assert.match(source, /parent-location-history-interaction/);
   assert.match(source, /latestAligned/);
