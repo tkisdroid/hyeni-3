@@ -15,13 +15,13 @@
 배포 전 `worker/db/child-daily-digest.sql` 을 프로덕션 D1 에 1회 적용해 `child_daily_digests` 테이블과
 `idx_child_daily_digests_created` 인덱스를 readback 으로 확인했다(적용 전 조회 0행 → 적용 후 table+index 존재).
 Worker version `d4947d51-2ccf-4fb5-abae-54df0bc20df4`(health 200 `{"ok":true,"status":"ready"}`,
-`GET /api/ai/daily-digest` 미인증 401, cron 트리거 5개 유지). Pages `https://a2a336a0.hyeni-calendar.pages.dev`
-— 고정 URL과 `hyeni-calendar.pages.dev` 의 index SHA-256 `b258f99e9692af03fd835b389408a62221ea54214e7e0e981f2c2fdfec262122`
-가 로컬 dist 와 같고 entry `assets/index-Q5Ov8ZnS.js`·`assets/index-fxI4MsT3.css`, manifest·sw·assetlinks 200,
+`GET /api/ai/daily-digest` 미인증 401, cron 트리거 5개 유지). Pages `https://c2f7d017.hyeni-calendar.pages.dev`
+— 고정 URL과 `hyeni-calendar.pages.dev` 의 index SHA-256 `240aa011a0f96ae9a39a1a1a78dfb93d6693f2fe4b4cfad33fe39b20c3e5bcad`
+가 로컬 dist 와 같고 entry `assets/index-bovhBdQ7.js`·`assets/index-fxI4MsT3.css`, manifest·sw·assetlinks 200,
 CSP·`Referrer-Policy: no-referrer`·nosniff 3/3 을 확인했다. 로컬 검증은 앱 1,768/1,768, Worker 1,233/1,233,
 `tsc -b`·`typecheck:worker`·production build(진입 JS 339,259/500,000B), Android unit+lintDebug+assembleDebug 통과다.
 razr(ZY22H9VTQD)에 `adb install -r` 로 데이터 보존 설치했고 CDP 로 세션 role=`child`·family `f9a75cb4…` 유지와
-활성 번들 `index-Q5Ov8ZnS.js`(= 방금 배포본, SW 구번들 잔존 없음)를 확인했다. ⚠️ 화면 관측은 미완료다 —
+활성 번들 `index-bovhBdQ7.js`(= 방금 배포본, SW 구번들 잔존 없음)를 확인했다. ⚠️ 화면 관측은 미완료다 —
 새벽 3시라 razr 화면이 꺼져 있어 CLAUDE.md 안전 원칙대로 깨우지 않았다(`document.hidden` 이라 배회·안내
 말풍선은 설계대로 멈춰 있다). A17 은 미연결이라 부모 대시보드 실기기 검증도 미완료다.
 아래는 그 직전 배포 기록이다.
