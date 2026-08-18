@@ -28,6 +28,9 @@ test("최종 브라우저 QA는 부모·아이 출시 화면과 핵심 전환 �
   // 문구 검사는 한국어 정본 기준이다. 표시 언어를 고정하지 않으면 Linux CI(en-US)에서
   // 영어 화면을 한국어로 검사하게 되어 12건이 항상 실패한다(2026-08-19 실사고).
   assert.match(source, /"--lang=ko-KR"/);
+  // navigator.languages 는 --lang 이 아니라 --accept-lang 이 정한다.
+  // 이걸 빼면 Linux CI 에서 여전히 영어로 렌더된다(2026-08-19 실측).
+  assert.match(source, /"--accept-lang=ko-KR,ko"/);
   assert.equal(CHILD_BROWSER_QA_ROUTES.length, 14);
   assert.ok(PARENT_BROWSER_QA_ROUTES.includes("subscription"));
   assert.ok(PARENT_BROWSER_QA_ROUTES.includes("place-manager"));

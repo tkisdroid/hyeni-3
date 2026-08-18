@@ -767,6 +767,7 @@ export async function runPwaRuntimeQa({ outputDir = resolvePwaRuntimeQaOutputDir
     // 이 하니스의 검사는 한국어 정본 문구 기준이다. 브라우저 기본 언어를 따라가면
     // Linux CI(en-US)에서 영어 화면을 한국어로 검사하게 되므로 표시 언어를 고정한다.
     "--lang=ko-KR",
+    "--accept-lang=ko-KR,ko",
       "--disable-default-apps",
       "--disable-sync",
       "--metrics-recording-only",

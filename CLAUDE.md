@@ -1119,7 +1119,10 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
 - ★**QA 하니스는 locale 을 고정해야 한다(2026-08-19)**: `final-browser-qa`·`pwa-runtime-qa` 는 한국어 문구를
   기준으로 화면을 검사하는데 Chrome 을 `env: {}` 로 띄운다. Windows 로컬은 OS 가 한국어라 늘 통과했지만
   **Linux CI 는 en-US** 라 화면이 영어로 렌더돼 문구 검사 12건 + PWA 앱 이름 검사 1건이 실패했다.
-  두 하니스가 Chrome 인자에 `--lang=ko-KR` 을 넣어 표시 언어를 고정한다.
+  두 하니스가 Chrome 인자에 `--lang=ko-KR` **과 `--accept-lang=ko-KR,ko`** 를 함께 넣어 언어를 고정한다.
+  ⚠️ `--lang` 만으로는 부족하다 — 앱은 `navigator.languages` 를 읽는데 그 값은 `--accept-lang` 이 정한다
+  (`--lang=ko-KR` 만 넣고 배포했다가 CI 가 또 12건 red 였다). 실측: `--accept-lang=en-US,en` → 12건 red,
+  `ko-KR,ko` → 0건 green.
   ⚠️ `localStorage` 로 locale 을 심는 방법은 쓰지 말 것 — `pwaRuntimeQaHarness` 가 하니스 소스에
   `process.env|localStorage|sessionStorage|document.cookie` 를 금지한다(사용자 브라우저 상태 차단 계약).
   재현 검증은 `--lang=en-US` 로 바꿔 돌리면 된다 — 실제로 그렇게 12건 red → `ko-KR` 로 0건 green 을 확인했다.
