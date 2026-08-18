@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFile(new URL(path, import.meta.url), "utf8");
 
-const [dataSafety, checklist, listing, guide, generator, readiness, releaseRunbook] = await Promise.all([
+const [dataSafety, checklist, listing, guide, generator, readiness, releaseRunbook, workerReadme] = await Promise.all([
   read("../docs/store/play-data-safety.md"),
   read("../docs/store/play-release-checklist.md"),
   read("../docs/store/play-listing.md"),
@@ -12,6 +12,7 @@ const [dataSafety, checklist, listing, guide, generator, readiness, releaseRunbo
   read("../scripts/create-play-release-guide.py"),
   read("../docs/reports/2026-08-01-pricing-launch-readiness.md"),
   read("../docs/release/release-day-rollback-runbook.md"),
+  read("../worker/README.md"),
 ]);
 
 test("데이터 보안 답안은 외부 처리와 전체 데이터 범주를 제출 전 확인 항목으로 남긴다", () => {
@@ -225,6 +226,23 @@ test("출시 체크리스트는 AI·UGC 코드 완료와 실제 E2E 출시 게�
   assert.match(checklist, /(?:Gateway[^\n]*canary 3\/3|live canary 4\/4)/);
   assert.match(readiness, /실제 사용자 AI는 아직 Luna 전환 완료 상태가 아니다/);
   assert.match(checklist, /제출 차단/);
+});
+
+test("친구 초대 운영 문서는 현재 보상과 자격 조건을 같은 수치로 고정한다", () => {
+  for (const currentReferralDocument of [workerReadme, checklist, guide, readiness]) {
+    assert.match(
+      currentReferralDocument,
+      /(?:친구 초대|추천 보상|양쪽 가족)[^\n]*(?:각각|양쪽 가족)[^\n]*AI 대화 50회/,
+    );
+    assert.match(
+      currentReferralDocument,
+      /초대 가족 수 상한(?:은)? (?:없다|없음|없습니다)/,
+    );
+    assert.doesNotMatch(
+      currentReferralDocument,
+      /(?:친구 초대|추천 보상|추천인 가족)[^\n]*(?:AI 대화 10회|최대 3가족|평생 3가족)/,
+    );
+  }
 });
 
 test("서명 절차는 비밀번호를 Gradle 인자로 넘기지 않고 임시 환경변수를 정리한다", () => {

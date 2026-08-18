@@ -66,7 +66,9 @@ test("이용약관은 UGC 금지 콘텐츠, 앱 내 신고·메모 차단과 안
   assert.match(source, /괴롭힘, 혐오·차별, 성적·폭력적 내용/);
   assert.match(source, /메모 조회·푸시에만 적용/);
   assert.match(source, /위치 공유, SOS, 도착·위험장소 등 안전 알림은 중단하지 않습니다/);
-  assert.match(source, /'이 답변 신고'/);
+  assert.match(source, /상대가 보낸 가족 메모를 길게 눌러/);
+  assert.match(source, /AI 친구 답변을 길게 눌러 '이 답변 신고'/);
+  assert.doesNotMatch(source, /해당 메시지 아래의 '신고·차단'|답변 아래의 '이 답변 신고'/);
   assert.match(source, /이의가 있는 경우/);
 });
 
@@ -160,7 +162,9 @@ test("Toss AI 크레딧은 일회성 결제·환불 회수·키 최소처리·�
 
 test("Google Play 환불 상계와 추천 보상 조건·최소 수집 항목을 정확히 고지한다", () => {
   assert.match(source, /Google Play에서 전액 취소된 구매를 확인하면 지급분을 한 번 회수/);
-  assert.match(source, /친구 초대 보상은 유료 구독권이 아니라 양쪽 가족에 AI 대화 10회/);
+  assert.match(source, /친구 초대 보상은 유료 구독권이 아니라 양쪽 가족에 각각 AI 대화 50회/);
+  assert.match(source, /초대 가족 수 상한은 없습니다/);
+  assert.doesNotMatch(source, /양쪽 가족에 AI 대화 10회|최대 3가족/);
   assert.match(source, /신규 가족 생성 72시간 경과와 첫 실제 위치 저장 후 48시간 유지/);
   assert.match(source, /위치 좌표·주소·이름은 추천 기록에 저장하지 않음/);
 });

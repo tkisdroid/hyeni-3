@@ -349,8 +349,8 @@ npx wrangler d1 execute hyeni-calendar --remote --command "SELECT COUNT(*) AS ra
 
 ### 친구 초대 AI 크레딧 보상 migration-first 배포
 
-추천 보상은 Free/Premium 구독권이 아니라 초대한 가족과 초대받은 신규 가족에 각각 AI 대화 10회를 한 번 지급한다.
-추천인 가족은 평생 최대 3가족까지만 성공 처리되며, 본인·공동 보호자·기존 가족·중복 귀속은 서버에서 차단한다.
+추천 보상은 Free/Premium 구독권이 아니라 초대한 가족과 초대받은 신규 가족에 각각 AI 대화 50회를 한 번 지급한다.
+초대 가족 수 상한은 없다. 본인·공동 보호자·기존 가족·중복 귀속과 그 밖의 부정 이용은 서버에서 차단한다.
 신규 가족 생성 후 72시간이 지나고 첫 실제 위치가 저장된 뒤 48시간 유지된 경우만 서버 cron이 두 가족의
 account mutation lease를 정렬 획득해 원장·잔액·완료 상태를 한 batch로 확정한다. 클라이언트 지급 endpoint는 없다.
 
