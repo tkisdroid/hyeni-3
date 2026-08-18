@@ -36,5 +36,9 @@ test("웹과 Android 표시 버전은 package.json을 단일 정본으로 사용
 });
 
 test("Play에 이미 올라간 versionCode 5를 새 출시 산출물이 재사용하지 않는다", () => {
-  assert.match(gradle, /versionCode 6/);
+  // 특정 숫자를 박아 두면 다음 빌드 번호를 올릴 때마다 테스트가 깨진다 —
+  // 지켜야 하는 계약은 "이미 업로드한 5 이하를 다시 쓰지 않는다"이다(2026-08-18 정리).
+  const declared = gradle.match(/versionCode (\d+)/);
+  assert.ok(declared, "android/app/build.gradle 에 versionCode 선언이 필요합니다");
+  assert.ok(Number(declared[1]) > 5, `Play에 올라간 versionCode 5 이하를 재사용했습니다: ${declared[1]}`);
 });

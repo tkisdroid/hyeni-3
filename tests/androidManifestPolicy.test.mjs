@@ -27,11 +27,12 @@ ${permissions}
 </manifest>`;
 }
 
-test("Android 출시 manifest 정책은 승인 권한 24개와 자녀 모니터링 선언을 확정한다", () => {
+test("Android 출시 manifest 정책은 승인 권한 목록과 자녀 모니터링 선언을 확정한다", () => {
   const result = inspectAndroidManifestPolicy(manifestFixture(), PACKAGE_NAME);
   assert.equal(result.policyVersion, 1);
   assert.equal(result.exactApprovedPermissions, true);
-  assert.equal(result.permissionCount, 24);
+  // 개수를 박아 두면 승인된 권한이 하나 늘 때마다 두 곳을 고쳐야 한다 — 목록이 정본이다.
+  assert.equal(result.permissionCount, expectedReleasePermissionNames(PACKAGE_NAME).length);
   assert.deepEqual(result.permissionNames, expectedReleasePermissionNames(PACKAGE_NAME));
   assert.equal(result.monitoringTool, "child_monitoring");
   assert.equal(result.legacyStorageMaxSdkVersion, 28);

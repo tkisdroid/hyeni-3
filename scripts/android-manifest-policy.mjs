@@ -25,6 +25,9 @@ const BASE_RELEASE_PERMISSIONS = Object.freeze([
   "android.permission.WRITE_EXTERNAL_STORAGE",
   "com.android.vending.BILLING",
   "com.google.android.c2dm.permission.RECEIVE",
+  // 친구 초대 설치 추천(Play Install Referrer 2.2)이 병합하는 서비스 바인딩 권한.
+  // 런타임 사용자 권한이 아니라 Play 스토어 서비스 연결용이다(2026-08-18 확인).
+  "com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE",
 ]);
 
 const PACKAGE_NAME = /^[A-Za-z][A-Za-z0-9_.]{2,199}$/;

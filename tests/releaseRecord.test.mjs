@@ -265,7 +265,8 @@ database_id = "c08f9b89-3418-443e-9946-e6b2c68cfc4c"
       policy: {
         policyVersion: ANDROID_MANIFEST_POLICY_VERSION,
         exactApprovedPermissions: true,
-        permissionCount: 24,
+        // 승인 목록이 정본이다 — 숫자를 박아 두면 권한이 하나 늘 때 fixture 가 어긋난다.
+        permissionCount: expectedReleasePermissionNames("com.hyeni.calendar").length,
         permissionNames: expectedReleasePermissionNames("com.hyeni.calendar"),
         monitoringTool: "child_monitoring",
         legacyStorageMaxSdkVersion: 28,
@@ -636,7 +637,10 @@ test("현재 dist·AAB·Play inventory·strict D1 bookmark evidence가 모두 �
   assert.equal(record.schemaVersion, 4);
   assert.equal(record.assessment.humanApprovalRequired, true);
   assert.equal(record.machineEvidence.releaseAab.summary.versionCode, 5);
-  assert.equal(record.machineEvidence.releaseAab.summary.manifestPermissionCount, 24);
+  assert.equal(
+    record.machineEvidence.releaseAab.summary.manifestPermissionCount,
+    expectedReleasePermissionNames("com.hyeni.calendar").length,
+  );
   assert.equal(record.machineEvidence.releaseAab.summary.monitoringTool, "child_monitoring");
   assert.equal(record.machineEvidence.releaseAab.summary.minimumElfLoadAlignment, 16384);
   assert.equal(

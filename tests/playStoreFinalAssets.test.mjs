@@ -96,7 +96,12 @@ test("스토어 문서와 제출 정본은 최종 자산 폴더와 비프로모�
     readFile(new URL("../docs/store/play-listing.md", import.meta.url), "utf8"),
     readFile(new URL("../docs/store/play-console-submission-v1.3.0.md", import.meta.url), "utf8"),
   ]);
-  for (const source of [listing, submission]) assert.match(source, /output\/play-store-final-v1/);
+  // 등록정보 문서는 생성기 산출 폴더를 가리킨다.
+  assert.match(listing, /output\/play-store-final-v1/);
+  // 제출 정본은 2026-08-15부터 사용자가 지정한 이미지를 올렸으므로, 폴더 이름 대신
+  // "업로드한 파일마다 SHA-256을 대조했다"는 증거를 요구한다(2026-08-18 정리).
+  assert.match(submission, /SHA-256/);
+  assert.match(submission, /\b[0-9a-f]{64}\b/);
   assert.match(listing, /가족 캘린더와 아이 위치를 한눈에/);
   assert.doesNotMatch(listing, /📅|📍|🆘|💬|🤖|🎧|👑|🔐/);
   assert.match(submission, /가격·할인·무료 프로모션을 넣지 않고/);

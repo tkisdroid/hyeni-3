@@ -146,11 +146,15 @@ test("알림 설정과 권한 화면은 가짜 로컬 방해금지 대신 실제
   const settings = readSource("src/screens/feature/NotificationSettings.tsx");
   const permDenied = readSource("src/screens/feature/PermDenied.tsx");
   assert.doesNotMatch(settings, /hyeni-dnd-v1|localStorage\.setItem\(DND/);
-  assert.match(settings, /소리·진동은 휴대폰이나 브라우저에서 바꿔 주세요\./);
+  // 문구는 화면이 아니라 카탈로그가 정본이라 id 배선과 ko 값을 함께 확인한다(2026-08-18 정리).
+  const koNotifications = JSON.parse(readSource("locales/ko/notifications.json"));
+  assert.match(settings, /notifications\.settings\.deviceSoundNote/);
+  assert.match(koNotifications["notifications.settings.deviceSoundNote"], /소리·진동은 휴대폰 설정에서/);
   assert.doesNotMatch(settings, /방해금지/);
   assert.match(settings, /readNotificationDeliveryState\(\)/);
   assert.match(settings, /requestOrOpenPermission\("noti"\)/);
-  assert.match(settings, /위험·SOS·미도착은 항상 알려/);
+  assert.match(settings, /notifications\.settings\.parentSafety\.always/);
+  assert.match(koNotifications["notifications.settings.parentSafety.always"], /위험·SOS·미도착/);
   assert.match(permDenied, /readPermissionState\(kind\)/);
   assert.match(permDenied, /requestOrOpenPermission\(kind\)/);
   assert.match(permDenied, /if \(result\.granted\) navigate\(-1\)/);

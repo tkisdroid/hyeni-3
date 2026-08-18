@@ -44,7 +44,10 @@ test("부모 위치 설정은 부모 iPhone이 아니라 활성 아이 Android�
 
   assert.match(settings, /useActiveChild\(\)/);
   assert.match(settings, /deviceLocationHealthView\(activeChild\?\.device_health/);
-  assert.match(settings, /지금 위치 상태/);
+  // 제목 문구는 축약됐지만 계약은 "아이 이름 + 그 기기 상태"를 보여 주는 것이다(2026-08-18 정리).
+  const koNotifications = JSON.parse(read("locales/ko/notifications.json"));
+  assert.match(settings, /notifications\.locationSettings\.childStatus/);
+  assert.match(koNotifications["notifications.locationSettings.childStatus"], /\{childName\}[\s\S]*\{detail\}/);
   assert.doesNotMatch(settings, /navigator\.geolocation/);
   assert.doesNotMatch(settings, /navigator\.permissions/);
   assert.doesNotMatch(settings, /이 휴대폰의 위치 권한/);

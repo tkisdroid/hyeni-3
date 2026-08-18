@@ -55,7 +55,8 @@ test("출시 manifest 병합 뒤 receiver·민감 권한·자녀 모니터링 �
   assert.match(shutdownReceiver, /android:exported="false"/);
 
   const manifestPolicy = inspectAndroidManifestPolicy(mergedManifest, "com.hyeni.calendar");
-  assert.equal(manifestPolicy.permissionCount, 24);
+  // 24 + Play Install Referrer 바인딩 권한(친구 초대 설치 추천, 2026-08-18).
+  assert.equal(manifestPolicy.permissionCount, 25);
   assert.deepEqual(
     manifestPolicy.permissionNames,
     expectedReleasePermissionNames("com.hyeni.calendar"),
