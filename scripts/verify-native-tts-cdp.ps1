@@ -18,7 +18,7 @@ function Invoke-WebSocketTask {
         [System.Threading.Tasks.Task]$Task
     )
 
-    $Task.GetAwaiter().GetResult()
+    [void]$Task.GetAwaiter().GetResult()
 }
 
 function Send-CdpCommand {
@@ -112,21 +112,41 @@ function Invoke-CdpEvaluate {
         [Parameter(Mandatory = $true)]
         [System.Net.WebSockets.ClientWebSocket]$Socket,
         [Parameter(Mandatory = $true)]
-        [string]$Expression
+        [string]$Expression,
+        [bool]$AwaitPromise = $false
     )
 
-    $response = Send-CdpCommand -Socket $Socket -Method "Runtime.evaluate" -Parameters @{
-        expression = $Expression
-        returnByValue = $true
-        awaitPromise = $false
+    $responseItems = @(
+        Send-CdpCommand -Socket $Socket -Method "Runtime.evaluate" -Parameters @{
+            expression = $Expression
+            returnByValue = $true
+            awaitPromise = $AwaitPromise
+        }
+    )
+    if ($responseItems.Count -ne 1) {
+        throw "CDP 응답은 정확히 하나여야 합니다."
     }
-    if ($response.PSObject.Properties.Name -contains "error") {
+    $response = $responseItems[0]
+    $responseProperties = @($response.PSObject.Properties.Name)
+    if ($responseProperties -contains "error") {
         throw "CDP 명령이 실패했습니다."
     }
-    if ($response.result.PSObject.Properties.Name -contains "exceptionDetails") {
+    if ($responseProperties -notcontains "result") {
+        throw "CDP 응답에 result가 없습니다: $($responseProperties -join ',')"
+    }
+    $resultEnvelope = $response.result
+    $resultProperties = @($resultEnvelope.PSObject.Properties.Name)
+    if ($resultProperties -contains "exceptionDetails") {
         throw "WebView 확인식 실행이 실패했습니다."
     }
-    return $response.result.result.value
+    if ($resultProperties -notcontains "result") {
+        throw "CDP Runtime 응답에 result가 없습니다: $($resultProperties -join ',')"
+    }
+    $runtimeResult = $resultEnvelope.result
+    if ($runtimeResult.PSObject.Properties.Name -notcontains "value") {
+        throw "CDP Runtime 결과에 value가 없습니다."
+    }
+    return $runtimeResult.value
 }
 
 function Wait-CdpRoot {
@@ -158,14 +178,21 @@ function Wait-CdpProbeState {
         [System.Net.WebSockets.ClientWebSocket]$Socket,
         [Parameter(Mandatory = $true)]
         [ValidateSet("short", "long", "stop")]
-        [string]$Name
+        [string]$Name,
+        [Parameter(Mandatory = $true)]
+        [ValidateSet("started", "done", "stopped")]
+        [string]$ExpectedState,
+        [int]$TimeoutSeconds = 10
     )
 
-    $deadline = [DateTime]::UtcNow.AddSeconds(10)
+    $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
     $expression = "(() => window.__hyeniNativeTtsProbe?.$Name ?? 'pending')()"
     do {
         $state = [string](Invoke-CdpEvaluate -Socket $Socket -Expression $expression)
-        if ($state -in @("started", "stopped", "failed")) {
+        if ($state -eq "failed") {
+            throw "네이티브 TTS 상태 확인에 실패했습니다: $Name"
+        }
+        if ($state -eq $ExpectedState) {
             return $state
         }
         Start-Sleep -Milliseconds 100
@@ -192,13 +219,26 @@ $identityExpression = @'
 '@
 
 try {
+    # Windows PowerShell 5.1은 Invoke-RestMethod의 최상위 JSON 배열을
+    # 파이프라인에서 단일 Object[]로 유지할 수 있어 먼저 변수에 받는다.
+    $targetPayload = Invoke-RestMethod -Uri "http://127.0.0.1:$Port/json/list" -TimeoutSec 10
     $targets = @(
-        Invoke-RestMethod -Uri "http://127.0.0.1:$Port/json/list" -TimeoutSec 10 |
-            Where-Object {
-                $_.type -eq "page" -and
-                $_.webSocketDebuggerUrl -and
-                ([Uri]$_.url).Host -eq "localhost"
+        foreach ($target in [object[]]$targetPayload) {
+            $targetUrl = $null
+            $hasAllowedUrl = [Uri]::TryCreate(
+                [string]$target.url,
+                [UriKind]::Absolute,
+                [ref]$targetUrl
+            )
+            if (
+                $target.type -eq "page" -and
+                $target.webSocketDebuggerUrl -and
+                $hasAllowedUrl -and
+                $targetUrl.Host -eq "localhost"
+            ) {
+                $target
             }
+        }
     )
     if ($targets.Count -ne 1) {
         throw "localhost 혜니 WebView target은 정확히 하나여야 합니다."
@@ -247,39 +287,81 @@ try {
 
     [void](Invoke-CdpEvaluate -Socket $socket -Expression @'
 (() => {
-  window.__hyeniNativeTtsProbe = { short: "pending", long: "pending", stop: "pending" };
+  const probe = {
+    short: "pending",
+    long: "pending",
+    stop: "pending",
+    shortId: null,
+    longId: null,
+    statesById: {},
+    listener: null,
+    cancelled: false,
+    stopRequested: false,
+  };
+  window.__hyeniNativeTtsProbe = probe;
   const SpeechRecognition = window.Capacitor?.Plugins?.SpeechRecognition;
-  if (!SpeechRecognition?.speak || !SpeechRecognition?.stopSpeak) {
-    window.__hyeniNativeTtsProbe.short = "failed";
+  if (!SpeechRecognition?.speak || !SpeechRecognition?.stopSpeak || !SpeechRecognition?.addListener) {
+    probe.short = "failed";
     return "failed";
   }
+  const applyState = (id, state) => {
+    if (typeof id !== "string" || !id || !["started", "done", "error", "stopped"].includes(state)) return;
+    const normalized = state === "error" ? "failed" : state;
+    probe.statesById[id] = normalized;
+    if (id === probe.shortId) probe.short = normalized;
+    if (id === probe.longId) {
+      probe.long = normalized;
+      if (normalized === "stopped" && probe.stopRequested) probe.stop = "stopped";
+    }
+  };
   try {
-    Promise.resolve(SpeechRecognition.speak({
-      text: "AI 친구 음성 답변 확인이야.",
-      language: "ko-KR",
-      rate: 1,
-    })).then((result) => {
-      window.__hyeniNativeTtsProbe.short = result?.started === false ? "failed" : "started";
+    Promise.resolve(SpeechRecognition.addListener("ttsState", (event) => {
+      applyState(event?.utteranceId, event?.state);
+    })).then((listener) => {
+      if (probe.cancelled) {
+        return Promise.resolve(listener?.remove?.()).then(() => {
+          throw new Error("probe cancelled");
+        });
+      }
+      probe.listener = listener;
+      return SpeechRecognition.speak({
+        text: "AI 친구 음성 답변 확인이야.",
+        language: "ko-KR",
+        rate: 1,
+      });
+    }).then((result) => {
+      const id = typeof result?.utteranceId === "string" ? result.utteranceId : "";
+      if (probe.cancelled) {
+        Promise.resolve(SpeechRecognition.stopSpeak()).catch(() => undefined);
+        return;
+      }
+      if (result?.started !== true || !id) {
+        probe.short = "failed";
+        return;
+      }
+      probe.shortId = id;
+      probe.short = probe.statesById[id] ?? "queued";
     }).catch(() => {
-      window.__hyeniNativeTtsProbe.short = "failed";
+      probe.short = "failed";
     });
   } catch {
-    window.__hyeniNativeTtsProbe.short = "failed";
+    probe.short = "failed";
   }
-  return window.__hyeniNativeTtsProbe.short;
+  return probe.short;
 })()
 '@)
-    $shortState = Wait-CdpProbeState -Socket $socket -Name "short"
-    if ($shortState -ne "started") {
-        throw "네이티브 TTS 짧은 재생 확인에 실패했습니다."
-    }
-    Start-Sleep -Milliseconds 2500
+    $shortState = Wait-CdpProbeState `
+        -Socket $socket `
+        -Name "short" `
+        -ExpectedState "done" `
+        -TimeoutSeconds 20
 
     [void](Invoke-CdpEvaluate -Socket $socket -Expression @'
 (() => {
   const SpeechRecognition = window.Capacitor?.Plugins?.SpeechRecognition;
-  if (!SpeechRecognition?.speak) {
-    window.__hyeniNativeTtsProbe.long = "failed";
+  const probe = window.__hyeniNativeTtsProbe;
+  if (!SpeechRecognition?.speak || !probe) {
+    if (probe) probe.long = "failed";
     return "failed";
   }
   try {
@@ -288,20 +370,32 @@ try {
       language: "ko-KR",
       rate: 1,
     })).then((result) => {
-      window.__hyeniNativeTtsProbe.long = result?.started === false ? "failed" : "started";
+      const id = typeof result?.utteranceId === "string" ? result.utteranceId : "";
+      if (probe.cancelled) {
+        Promise.resolve(SpeechRecognition.stopSpeak()).catch(() => undefined);
+        return;
+      }
+      if (result?.started !== true || !id) {
+        probe.long = "failed";
+        return;
+      }
+      probe.longId = id;
+      probe.long = probe.statesById[id] ?? "queued";
+      if (probe.long === "stopped" && probe.stopRequested) probe.stop = "stopped";
     }).catch(() => {
-      window.__hyeniNativeTtsProbe.long = "failed";
+      probe.long = "failed";
     });
   } catch {
-    window.__hyeniNativeTtsProbe.long = "failed";
+    probe.long = "failed";
   }
-  return window.__hyeniNativeTtsProbe.long;
+  return probe.long;
 })()
 '@)
-    $longState = Wait-CdpProbeState -Socket $socket -Name "long"
-    if ($longState -ne "started") {
-        throw "네이티브 TTS 긴 재생 확인에 실패했습니다."
-    }
+    $longState = Wait-CdpProbeState `
+        -Socket $socket `
+        -Name "long" `
+        -ExpectedState "started" `
+        -TimeoutSeconds 15
     Start-Sleep -Milliseconds 700
     [void](Invoke-CdpEvaluate -Socket $socket -Expression @'
 (() => {
@@ -311,8 +405,12 @@ try {
     return "failed";
   }
   try {
-    Promise.resolve(SpeechRecognition.stopSpeak()).then(() => {
-      window.__hyeniNativeTtsProbe.stop = "stopped";
+    window.__hyeniNativeTtsProbe.stopRequested = true;
+    window.__hyeniNativeTtsProbe.stop = "requested";
+    Promise.resolve(SpeechRecognition.stopSpeak()).then((result) => {
+      if (result?.status !== "stopped") {
+        window.__hyeniNativeTtsProbe.stop = "failed";
+      }
     }).catch(() => {
       window.__hyeniNativeTtsProbe.stop = "failed";
     });
@@ -322,10 +420,10 @@ try {
   return window.__hyeniNativeTtsProbe.stop;
 })()
 '@)
-    $stopState = Wait-CdpProbeState -Socket $socket -Name "stop"
-    if ($stopState -ne "stopped") {
-        throw "네이티브 TTS 중단 확인에 실패했습니다."
-    }
+    $stopState = Wait-CdpProbeState `
+        -Socket $socket `
+        -Name "stop" `
+        -ExpectedState "stopped"
 
     [ordered]@{
         mode = $Mode
@@ -333,12 +431,30 @@ try {
         hasFamilyId = [bool]$identity.hasFamilyId
         familyScopesMatch = [bool]$identity.familyScopesMatch
         rootVisible = [bool]$identity.rootVisible
-        shortPlayback = $shortState
+        shortPlayback = "started"
+        shortCompletion = $shortState
         longPlayback = $longState
         stopPlayback = $stopState
     } | ConvertTo-Json -Compress
 } finally {
     if ($socket.State -eq [System.Net.WebSockets.WebSocketState]::Open) {
+        try {
+            [void](Invoke-CdpEvaluate -Socket $socket -AwaitPromise $true -Expression @'
+(async () => {
+  const probe = window.__hyeniNativeTtsProbe;
+  if (probe) probe.cancelled = true;
+  const SpeechRecognition = window.Capacitor?.Plugins?.SpeechRecognition;
+  const cleanup = [];
+  if (probe && SpeechRecognition?.stopSpeak) cleanup.push(Promise.resolve(SpeechRecognition.stopSpeak()));
+  if (probe?.listener?.remove) cleanup.push(Promise.resolve(probe.listener.remove()));
+  await Promise.allSettled(cleanup);
+  delete window.__hyeniNativeTtsProbe;
+  return true;
+})()
+'@)
+        } catch {
+            # 검증 결과를 바꾸지 않고 임시 listener 정리만 최선 노력한다.
+        }
         $closeTimeout = [System.Threading.CancellationTokenSource]::new(2000)
         try {
             Invoke-WebSocketTask ($socket.CloseAsync(

@@ -176,7 +176,7 @@ export async function speakText(text: string, language = "ko-KR", rate = 1.0): P
       fallbackPlugin = plugin;
       const result = await plugin.speak({ text: spoken, language, rate });
       if (generation !== speechPlaybackGeneration) return false;
-      if (result?.started !== false) return true;
+      if (result?.started === true) return true;
     }
   } catch {
     if (generation !== speechPlaybackGeneration) return false;

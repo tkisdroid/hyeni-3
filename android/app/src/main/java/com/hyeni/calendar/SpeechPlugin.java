@@ -5,6 +5,8 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
@@ -33,12 +35,17 @@ import java.util.ArrayList;
 public class SpeechPlugin extends Plugin {
 
     private static final String TAG = "SpeechPlugin";
+    private static final long TTS_START_TIMEOUT_MS = 10_000L;
     private SpeechRecognizer speechRecognizer;
     private TextToSpeech textToSpeech;
     private boolean ttsReady = false;
     private final SpeechPlaybackGeneration ttsGeneration = new SpeechPlaybackGeneration();
     private boolean ttsInitializing = false;
     private PendingTtsRequest pendingTtsRequest;
+    private PendingTtsStart pendingTtsStart;
+    private String activeTtsUtteranceId;
+    private long activeTtsGeneration = -1L;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private volatile boolean destroyed = false;
 
     private static final class PendingTtsRequest {
@@ -54,6 +61,19 @@ public class SpeechPlugin extends Plugin {
             this.language = language;
             this.rate = rate;
             this.generation = generation;
+        }
+    }
+
+    private static final class PendingTtsStart {
+        final PluginCall call;
+        final long generation;
+        final String utteranceId;
+        Runnable timeout;
+
+        PendingTtsStart(PluginCall call, long generation, String utteranceId) {
+            this.call = call;
+            this.generation = generation;
+            this.utteranceId = utteranceId;
         }
     }
 
@@ -207,6 +227,8 @@ public class SpeechPlugin extends Plugin {
                 return;
             }
             long generation = ttsGeneration.next();
+            clearActiveTtsUtterance();
+            resolvePendingTtsStart(false);
             PendingTtsRequest request = new PendingTtsRequest(
                 call,
                 text,
@@ -324,7 +346,83 @@ public class SpeechPlugin extends Plugin {
         call.resolve(new JSObject().put("started", false));
     }
 
+    private void resolvePendingTtsStart(boolean started) {
+        PendingTtsStart pending = pendingTtsStart;
+        if (pending == null) {
+            return;
+        }
+        pendingTtsStart = null;
+        if (pending.timeout != null) {
+            mainHandler.removeCallbacks(pending.timeout);
+        }
+        if (!started) {
+            resolveNotStarted(pending.call);
+            return;
+        }
+        JSObject result = new JSObject();
+        result.put("started", true);
+        result.put("utteranceId", pending.utteranceId);
+        pending.call.resolve(result);
+    }
+
+    private void handleTtsStarted(String utteranceId) {
+        mainHandler.post(() -> {
+            if (destroyed) {
+                return;
+            }
+            PendingTtsStart pending = pendingTtsStart;
+            if (
+                pending == null ||
+                !pending.utteranceId.equals(utteranceId) ||
+                !ttsGeneration.isCurrent(pending.generation)
+            ) {
+                return;
+            }
+            activeTtsUtteranceId = utteranceId;
+            activeTtsGeneration = pending.generation;
+            notifyTtsState("started", utteranceId);
+            resolvePendingTtsStart(true);
+        });
+    }
+
+    private void handleTtsTerminalState(String state, String utteranceId) {
+        mainHandler.post(() -> {
+            if (destroyed) {
+                return;
+            }
+            PendingTtsStart pending = pendingTtsStart;
+            if (pending != null && pending.utteranceId.equals(utteranceId)) {
+                if (ttsGeneration.isCurrent(pending.generation)) {
+                    notifyTtsState(state, utteranceId);
+                }
+                resolvePendingTtsStart(false);
+                return;
+            }
+            if (
+                activeTtsUtteranceId == null ||
+                !activeTtsUtteranceId.equals(utteranceId)
+            ) {
+                return;
+            }
+            if (
+                !"stopped".equals(state) &&
+                !ttsGeneration.isCurrent(activeTtsGeneration)
+            ) {
+                clearActiveTtsUtterance();
+                return;
+            }
+            notifyTtsState(state, utteranceId);
+            clearActiveTtsUtterance();
+        });
+    }
+
+    private void clearActiveTtsUtterance() {
+        activeTtsUtteranceId = null;
+        activeTtsGeneration = -1L;
+    }
+
     private void startUtterance(PendingTtsRequest request) {
+        PendingTtsStart start = null;
         try {
             if (destroyed || !ttsGeneration.isCurrent(request.generation)) {
                 resolveNotStarted(request.call);
@@ -336,16 +434,26 @@ public class SpeechPlugin extends Plugin {
                 return;
             }
             textToSpeech.setSpeechRate(request.rate);
-            final String utteranceId = "hyeni-tts-" + System.currentTimeMillis();
+            final String utteranceId = "hyeni-tts-" + request.generation + "-" + System.currentTimeMillis();
             textToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener() {
-                @Override public void onStart(String id) {}
+                @Override public void onStart(String id) {
+                    handleTtsStarted(id);
+                }
                 @Override public void onDone(String id) {
-                    notifyTtsState("done", id);
+                    handleTtsTerminalState("done", id);
                 }
                 @Override public void onError(String id) {
-                    notifyTtsState("error", id);
+                    handleTtsTerminalState("error", id);
+                }
+                @Override public void onError(String id, int errorCode) {
+                    handleTtsTerminalState("error", id);
+                }
+                @Override public void onStop(String id, boolean interrupted) {
+                    handleTtsTerminalState("stopped", id);
                 }
             });
+            start = new PendingTtsStart(request.call, request.generation, utteranceId);
+            pendingTtsStart = start;
             int result = textToSpeech.speak(
                 request.text,
                 TextToSpeech.QUEUE_FLUSH,
@@ -353,14 +461,32 @@ public class SpeechPlugin extends Plugin {
                 utteranceId
             );
             if (result == TextToSpeech.SUCCESS) {
-                JSObject ret = new JSObject();
-                ret.put("started", true);
-                ret.put("utteranceId", utteranceId);
-                request.call.resolve(ret);
+                PendingTtsStart scheduled = start;
+                scheduled.timeout = () -> {
+                    if (pendingTtsStart != scheduled) {
+                        return;
+                    }
+                    if (textToSpeech != null) {
+                        textToSpeech.stop();
+                    }
+                    resolvePendingTtsStart(false);
+                };
+                if (pendingTtsStart == scheduled) {
+                    mainHandler.postDelayed(scheduled.timeout, TTS_START_TIMEOUT_MS);
+                }
             } else {
+                if (pendingTtsStart == start) {
+                    pendingTtsStart = null;
+                }
                 request.call.reject("TTS speak failed");
             }
         } catch (Exception e) {
+            if (start != null && pendingTtsStart == start) {
+                pendingTtsStart = null;
+                if (start.timeout != null) {
+                    mainHandler.removeCallbacks(start.timeout);
+                }
+            }
             Log.e(TAG, "TTS speak exception", e);
             request.call.reject("TTS error: " + e.getMessage());
         }
@@ -377,6 +503,7 @@ public class SpeechPlugin extends Plugin {
     public void stopSpeak(PluginCall call) {
         getActivity().runOnUiThread(() -> {
             ttsGeneration.cancel();
+            resolvePendingTtsStart(false);
             if (pendingTtsRequest != null) {
                 resolveNotStarted(pendingTtsRequest.call);
                 pendingTtsRequest = null;
@@ -401,6 +528,8 @@ public class SpeechPlugin extends Plugin {
     protected void handleOnDestroy() {
         destroyed = true;
         ttsGeneration.cancel();
+        clearActiveTtsUtterance();
+        resolvePendingTtsStart(false);
         if (pendingTtsRequest != null) {
             resolveNotStarted(pendingTtsRequest.call);
             pendingTtsRequest = null;

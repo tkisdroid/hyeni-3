@@ -44,6 +44,7 @@
 
     <!-- 최근 실행 앱을 패키지명이 아닌 앱 이름으로 표시하고 제조사별 시스템 홈을
          제외하기 위해 일반 런처·기본 홈·보조 화면 홈을 PackageManager 로 조회한다.
+         Android 11+에서 시스템 TTS 엔진도 공식 service action으로만 조회한다.
          QUERY_ALL_PACKAGES 같은 민감 권한 없이 필요한 범위만 가시성을 확보한다. -->
     <queries>
         <intent>
@@ -57,6 +58,9 @@
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.SECONDARY_HOME" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
         </intent>
     </queries>
 

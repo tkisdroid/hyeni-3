@@ -51,6 +51,7 @@ test("네이티브 speak/stopSpeak 가 JS 로 노출되고 웹 폴백이 있다"
   assert.match(speech, /speechSynthesis/);
   assert.match(speech, /speak\(opts:\s*\{\s*text:\s*string;\s*language\?:\s*string;\s*rate\?:\s*number/);
   assert.match(speech, /plugin\.speak\(\{\s*text:\s*spoken,\s*language,\s*rate\s*\}\)/);
+  assert.match(speech, /result\?\.started === true/);
   assert.match(speech, /const generation = \+\+speechPlaybackGeneration/);
   assert.match(speech, /generation !== speechPlaybackGeneration/);
   assert.match(speech, /export function stopSpeaking\(\): void \{\s*speechPlaybackGeneration \+= 1;/);
@@ -63,7 +64,10 @@ test("네이티브 speak/stopSpeak 가 JS 로 노출되고 웹 폴백이 있다"
   assert.match(plugin, /ttsGeneration\.cancel\(\)/);
   assert.match(plugin, /ttsGeneration\.isCurrent\(/);
   assert.match(plugin, /SpeechLocalePolicy\.apply\(/);
+  assert.match(plugin, /onStart\(String id\) \{\s*handleTtsStarted\(id\);/);
   assert.doesNotMatch(plugin, /Locale\.KOREAN/);
+  const manifest = read("android/app/src/main/AndroidManifest.xml");
+  assert.match(manifest, /android\.intent\.action\.TTS_SERVICE/);
 });
 
 test("새 읽어주기는 이전 웹 음성을 끊고 native 실패도 중단한 뒤 폴백한다", () => {
@@ -116,8 +120,31 @@ test("Android TTS lifecycle은 실패 엔진과 늦은 초기화 callback을 닫
   );
   assert.match(
     plugin,
-    /private void startUtterance\(PendingTtsRequest request\) \{\s*try \{\s*if \(destroyed \|\| !ttsGeneration\.isCurrent/,
+    /private void startUtterance\(PendingTtsRequest request\) \{[\s\S]*?try \{\s*if \(destroyed \|\| !ttsGeneration\.isCurrent/,
   );
+});
+
+test("Android TTS는 큐 접수와 실제 발화 시작을 구분한다", () => {
+  const plugin = read("android/app/src/main/java/com/hyeni/calendar/SpeechPlugin.java");
+
+  assert.match(plugin, /TTS_START_TIMEOUT_MS\s*=\s*10_000L/);
+  assert.match(plugin, /hyeni-tts-" \+ request\.generation/);
+  assert.match(plugin, /onStart\(String id\) \{\s*handleTtsStarted\(id\);/);
+  assert.match(
+    plugin,
+    /private void handleTtsStarted\(String utteranceId\)[\s\S]*?notifyTtsState\("started", utteranceId\);[\s\S]*?resolvePendingTtsStart\(true\);/,
+  );
+  assert.match(plugin, /postDelayed\(scheduled\.timeout, TTS_START_TIMEOUT_MS\)/);
+  assert.match(plugin, /onError\(String id, int errorCode\)[\s\S]*?handleTtsTerminalState\("error", id\)/);
+  assert.match(plugin, /onStop\(String id, boolean interrupted\)[\s\S]*?handleTtsTerminalState\("stopped", id\)/);
+  assert.match(plugin, /if \(destroyed\) \{\s*return;\s*\}[\s\S]*?activeTtsUtteranceId = utteranceId;/);
+  assert.match(plugin, /activeTtsUtteranceId == null[\s\S]*?!activeTtsUtteranceId\.equals\(utteranceId\)[\s\S]*?return;/);
+
+  const queueAccepted = plugin.slice(
+    plugin.indexOf("if (result == TextToSpeech.SUCCESS)"),
+    plugin.indexOf("} else {", plugin.indexOf("if (result == TextToSpeech.SUCCESS)")),
+  );
+  assert.doesNotMatch(queueAccepted, /request\.call\.resolve|put\("started", true\)/);
 });
 
 test("말한 내용은 확인 단계 없이 바로 보낸다(받아쓰기가 아니라 대화)", () => {
