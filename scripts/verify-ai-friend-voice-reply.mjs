@@ -8,6 +8,7 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { existsSync } from "node:fs";
+import { readdir, stat } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { setTimeout as wait } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
@@ -15,8 +16,29 @@ import { chromium } from "@playwright/test";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const ORIGIN = "http://127.0.0.1:4184";
+const API_ORIGIN = "https://hyeni-calendar-api.tkisdroid.workers.dev";
+const KAKAO_SDK_ORIGIN = "https://dapi.kakao.com";
 const VOICE_SETTING_KEY = "hyeni-child-voice-reply-voice-fam:voice-child";
 const PREVIEW_READY_TIMEOUT_MS = 20_000;
+const REQUIRED_DIST_FILES = ["dist/index.html", "dist/sw.js", "dist/manifest.webmanifest"];
+
+// 이 하니스가 응답해도 되는 외부 HTTP 계약. OPTIONS도 여기의 실제 method/path만 허용한다.
+const EXTERNAL_HTTP_ALLOWLIST = new Set([
+  "GET /api/family/mine",
+  "GET /api/events",
+  "GET /api/saved-places",
+  "GET /api/daily-supplies",
+  "GET /api/ai/messages",
+  "GET /api/ai/settings/friend-public",
+  "GET /api/ai/credits/public-status",
+  "GET /api/stickers/received",
+  "GET /api/memos/replies",
+  "POST /api/ai/child-chat",
+  "POST /rest/v1/rpc/get_pending_notifications_for_device",
+  "POST /api/realtime/ticket",
+  "PATCH /api/family/member/device",
+]);
+const KAKAO_SDK_CONTRACT = "GET /v2/maps/sdk.js";
 
 const toBase64Url = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
 const mockAccessJwt = `${toBase64Url({ alg: "HS256", typ: "JWT" })}.${toBase64Url({
@@ -56,6 +78,8 @@ const apiFixtures = {
   "/api/daily-supplies": [],
   "/api/ai/messages": [],
   "/api/ai/settings/friend-public": { ai_friend_name: "통통이" },
+  "/api/stickers/received": [],
+  "/api/memos/replies": [],
   "/api/ai/credits/public-status": {
     is_premium: false,
     daily_included_limit: 5,
@@ -68,6 +92,12 @@ const apiFixtures = {
     unlimited: false,
   },
 };
+
+const mockRealtimeTicket = `${toBase64Url({ alg: "HS256", typ: "JWT" })}.${toBase64Url({
+  sub: "voice-child",
+  family_id: "voice-fam",
+  nonce: "voice-qa-ticket".repeat(6),
+})}.voice-qa-signature`;
 
 let assistantSequence = 0;
 
@@ -84,6 +114,52 @@ function childChatReply(message) {
       assistantMessageId: `00000000-0000-4000-8000-${String(assistantSequence).padStart(12, "0")}`,
     },
   };
+}
+
+async function verifyFreshDist() {
+  for (const relativePath of REQUIRED_DIST_FILES) {
+    assert.ok(existsSync(resolve(ROOT, relativePath)), `${relativePath}가 없습니다. 먼저 npm run build를 실행해 주세요.`);
+  }
+
+  const assetNames = await readdir(resolve(ROOT, "dist/assets"));
+  const chatAssets = assetNames.filter((name) => /^AiFriendChat-[\w-]+\.js$/.test(name));
+  assert.equal(chatAssets.length, 1, "AI 친구 lazy asset이 정확히 1개가 아닙니다. npm run build를 다시 실행해 주세요.");
+
+  const sourcePaths = [
+    resolve(ROOT, "src/screens/child/AiFriendChat.tsx"),
+    resolve(ROOT, "src/transform/childVoiceChat.ts"),
+  ];
+  const sourceStats = await Promise.all(sourcePaths.map((path) => stat(path)));
+  const assetPath = resolve(ROOT, "dist/assets", chatAssets[0]);
+  const assetStat = await stat(assetPath);
+  const newestSourceMtimeMs = Math.max(...sourceStats.map((entry) => entry.mtimeMs));
+  assert.ok(
+    assetStat.mtimeMs >= newestSourceMtimeMs,
+    "AI 친구 dist asset이 소스보다 오래됐습니다. 먼저 npm run build를 실행해 주세요.",
+  );
+  return chatAssets[0];
+}
+
+function externalHttpContract(request, url) {
+  const method = request.method().toUpperCase();
+  if (url.origin === KAKAO_SDK_ORIGIN) {
+    const contract = `${method} ${url.pathname}`;
+    return contract === KAKAO_SDK_CONTRACT
+      ? { contract, preflight: false, fixture: "kakao-sdk" }
+      : null;
+  }
+  if (url.origin !== API_ORIGIN) return null;
+  if (method === "OPTIONS") {
+    const requestedMethod = String(request.headers()["access-control-request-method"] ?? "").toUpperCase();
+    const requestedContract = `${requestedMethod} ${url.pathname}`;
+    return EXTERNAL_HTTP_ALLOWLIST.has(requestedContract)
+      ? { contract: requestedContract, preflight: true, fixture: "api" }
+      : null;
+  }
+  const contract = `${method} ${url.pathname}`;
+  return EXTERNAL_HTTP_ALLOWLIST.has(contract)
+    ? { contract, preflight: false, fixture: "api" }
+    : null;
 }
 
 async function waitForPreview(preview) {
@@ -146,6 +222,7 @@ async function sendTyped(page, message, expectedReply) {
 }
 
 async function run() {
+  const distAsset = await verifyFreshDist();
   const preview = spawn(
     process.execPath,
     [resolve(ROOT, "node_modules/vite/bin/vite.js"), "preview", "--host", "127.0.0.1", "--port", "4184", "--strictPort"],
@@ -154,7 +231,8 @@ async function run() {
   let browser = null;
   let mockedExternalRequests = 0;
   let mockedWebSockets = 0;
-  const continuedRequests = [];
+  const continuedLocalRequests = [];
+  const unmockedExternalRequests = [];
   const pageErrors = [];
   let interruptOrder = [];
 
@@ -183,7 +261,7 @@ async function run() {
       const request = route.request();
       const url = new URL(request.url());
       if (url.origin === ORIGIN && ["GET", "HEAD"].includes(request.method())) {
-        continuedRequests.push({ origin: url.origin, method: request.method(), path: url.pathname });
+        continuedLocalRequests.push({ method: request.method(), path: url.pathname });
         await route.continue();
         return;
       }
@@ -194,9 +272,28 @@ async function run() {
         return;
       }
 
+      const contract = externalHttpContract(request, url);
+      if (!contract) {
+        unmockedExternalRequests.push({ method: request.method(), path: url.pathname });
+        await route.fulfill({
+          status: 404,
+          headers: { ...cors, "content-type": "application/json; charset=utf-8" },
+          body: JSON.stringify({ error: "qa_unmocked_route" }),
+        });
+        return;
+      }
+
       mockedExternalRequests += 1;
-      if (request.method() === "OPTIONS") {
+      if (contract.preflight) {
         await route.fulfill({ status: 204, headers: cors });
+        return;
+      }
+      if (contract.fixture === "kakao-sdk") {
+        await route.fulfill({
+          status: 200,
+          headers: { "content-type": "application/javascript; charset=utf-8" },
+          body: "window.kakao={maps:{load:function(callback){callback();}}};",
+        });
         return;
       }
 
@@ -208,11 +305,20 @@ async function run() {
         const result = childChatReply(requestBody.message);
         status = result.status;
         body = result.body;
+      } else if (request.method() === "POST" && url.pathname === "/rest/v1/rpc/get_pending_notifications_for_device") {
+        body = [];
+      } else if (request.method() === "POST" && url.pathname === "/api/realtime/ticket") {
+        body = {
+          ticket: mockRealtimeTicket,
+          expires_at: new Date(Date.now() + 30_000).toISOString(),
+          expires_in: 30,
+        };
+      } else if (request.method() === "PATCH" && url.pathname === "/api/family/member/device") {
+        body = { ok: true };
       } else if (request.method() === "GET" && Object.hasOwn(apiFixtures, url.pathname)) {
         body = apiFixtures[url.pathname];
       } else {
-        status = 404;
-        body = { error: "qa_unmocked_route" };
+        assert.fail(`allowlist 응답 구현이 없습니다: ${contract.contract}`);
       }
 
       await route.fulfill({
@@ -361,11 +467,18 @@ async function run() {
     state = await voiceQaState(page);
     assert.ok(state.events.includes("cancel"), "AI 친구 화면 이탈 시 TTS를 중단하지 않았습니다.");
 
+    // 컨텍스트를 먼저 닫아 더 들어올 요청이 없게 만든 뒤 네트워크 감사를 확정한다.
+    await context.close();
+    const unmockedExternalSnapshot = [...unmockedExternalRequests];
+
     assert.equal(pageErrors.length, 0, `브라우저 page error: ${pageErrors.join(" | ")}`);
-    assert.ok(continuedRequests.length > 0, "localhost 정적 asset 요청을 확인하지 못했습니다.");
+    assert.ok(continuedLocalRequests.length > 0, "localhost 정적 asset 요청을 확인하지 못했습니다.");
     assert.ok(mockedExternalRequests > 0, "외부 API mock 차단 경로가 실행되지 않았습니다.");
-    const continuedExternalRequests = continuedRequests.filter(({ origin }) => origin !== ORIGIN);
-    assert.equal(continuedExternalRequests.length, 0, "외부 요청이 실제 네트워크로 전달됐습니다.");
+    assert.deepEqual(
+      unmockedExternalSnapshot,
+      [],
+      `allowlist 밖 외부 요청: ${unmockedExternalSnapshot.map(({ method, path }) => `${method} ${path}`).join(", ")}`,
+    );
 
     console.log([
       "AI 친구 음성 답변 격리 QA 통과",
@@ -380,13 +493,19 @@ async function run() {
       `interruptEvents=${interruptOrder.length}`,
       `interruptOrder=${interruptOrder.join(">")}`,
       `unmountEvents=${state.events.length}:${state.events.join(">")}`,
+      `distAsset=${distAsset}`,
+      `continuedLocalRequests=${continuedLocalRequests.length}`,
       `mockedExternalRequests=${mockedExternalRequests}`,
       `mockedWebSockets=${mockedWebSockets}`,
-      "continuedExternalRequests=0",
+      "unmockedExternalRequests=0",
+      "isolation=sw-blocked,dns-denied,http-fulfilled,ws-closed",
     ].join(" "));
   } finally {
-    if (browser) await browser.close();
-    await stopPreview(preview);
+    try {
+      if (browser) await browser.close();
+    } finally {
+      await stopPreview(preview);
+    }
   }
 }
 
