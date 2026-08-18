@@ -168,7 +168,12 @@ export function AiFriendChat() {
   const { data: publicSettings } = useAiFriendPublicSettings(userId);
 
   // 설정 화면에서 넘어온 선택(state) 우선 → 로컬 저장 → 가족 멤버 emoji → 기본.
-  const navState = (location.state ?? {}) as { characterEmoji?: string; friendName?: string };
+  // startVoice = 플로팅 버튼을 꾹 눌러 들어온 경우. 대화창이 뜨자마자 마이크를 켠다.
+  const navState = (location.state ?? {}) as {
+    characterEmoji?: string;
+    friendName?: string;
+    startVoice?: boolean;
+  };
   const familyEmoji = userId
     ? family?.members.find((m) => m.user_id === userId)?.emoji ?? undefined
     : undefined;
@@ -498,6 +503,24 @@ export function AiFriendChat() {
     cancelSpeechCapture();
     setListening(false);
   };
+
+  /**
+   * 플로팅 버튼을 꾹 눌러 들어왔으면 마이크를 바로 켠다(2026-08-19 TK 지시).
+   * 길게 누른 것 자체가 "말로 하고 싶다"는 아이의 조작이라 자동 실행이 아니다.
+   * 히스토리 state 는 즉시 지운다 — 뒤로 갔다 돌아왔을 때 또 켜지면 놀란다.
+   */
+  const autoVoiceStartedRef = useRef(false);
+  useEffect(() => {
+    if (autoVoiceStartedRef.current || navState.startVoice !== true) return;
+    autoVoiceStartedRef.current = true;
+    navigate(location.pathname, {
+      replace: true,
+      state: { ...navState, startVoice: false },
+    });
+    startVoice();
+    // startVoice 는 렌더마다 새 참조라 의존성에 넣으면 매 렌더 재실행된다(ref 로 1회만 보장).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navState.startVoice]);
 
   /** 읽어주기 켜기/끄기. 끄면 지금 읽고 있던 말도 즉시 멈춘다. */
   const toggleVoiceReply = () => {

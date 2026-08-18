@@ -37,6 +37,20 @@ import {
   type AiBuddyFabFrame,
   type AiBuddyFabRatio,
 } from "@/transform/aiBuddyFabPosition";
+import {
+  aiBuddyVoiceHintStorageKey,
+  markAiBuddyVoiceHintShown,
+  markAiBuddyVoiceHintUsed,
+  readAiBuddyVoiceHintState,
+  shouldShowAiBuddyVoiceHint,
+  writeAiBuddyVoiceHintState,
+  AI_BUDDY_VOICE_HINT_DELAY_MS,
+  AI_BUDDY_VOICE_HINT_LINE,
+  AI_BUDDY_VOICE_HINT_MS,
+  AI_BUDDY_VOICE_LONG_PRESS_MS,
+  EMPTY_AI_BUDDY_VOICE_HINT_STATE,
+  type AiBuddyVoiceHintState,
+} from "@/transform/aiBuddyVoiceHint";
 import "./AiBuddyFab.css";
 
 /** 상단 상태바·화면 헤더가 가리는 높이. 이 아래로만 버튼을 놓는다. */
@@ -113,6 +127,12 @@ function AiBuddyFabButton({ bottomInset }: AiBuddyFabProps) {
   const [wanderFace, setWanderFace] = useState<AiBuddyChatFace | null>(null);
   const [wanderLine, setWanderLine] = useState<string | null>(null);
   const [tapped, setTapped] = useState(false);
+  // 길게 누르면 마이크가 바로 켜진다는 안내 — 아직 써 보지 않은 아이에게만 띄운다.
+  const [voiceHint, setVoiceHint] = useState(false);
+  const voiceHintStateRef = useRef<AiBuddyVoiceHintState>(EMPTY_AI_BUDDY_VOICE_HINT_STATE);
+  const voiceHintKey = aiBuddyVoiceHintStorageKey(familyId, userId);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFiredRef = useRef(false);
   const wanderStepRef = useRef(0);
   const wanderRatioRef = useRef<AiBuddyFabRatio | null>(null);
   wanderRatioRef.current = wanderRatio;
@@ -241,12 +261,66 @@ function AiBuddyFabButton({ bottomInset }: AiBuddyFabProps) {
     // 실제 대화 감정이 오면 혼자 놀던 표정·말풍선은 물러난다(대화가 우선이다).
     setWanderFace(null);
     setWanderLine(null);
+    setVoiceHint(false);
   }, [emotion]);
 
-  const openChat = () => {
+  /**
+   * "꾹 누르면 바로 말할 수 있어" 안내(2026-08-19 TK 지시).
+   * 버튼이 스스로 알려 주지 않으면 아이는 이 기능이 있는 줄 모른다.
+   * 한 번 써 본 아이·이미 여러 번 들은 아이에게는 띄우지 않는다(판정은 transform 정본).
+   */
+  useEffect(() => {
+    const state = readAiBuddyVoiceHintState(voiceHintKey);
+    voiceHintStateRef.current = state;
+    if (!shouldShowAiBuddyVoiceHint(state, Date.now())) return;
+    let hideTimer: ReturnType<typeof setTimeout> | null = null;
+    const showTimer = setTimeout(() => {
+      // 화면이 안 보이는 동안 띄우면 아무도 못 보고 횟수만 깎인다.
+      if (typeof document !== "undefined" && document.hidden) return;
+      setVoiceHint(true);
+      const shown = markAiBuddyVoiceHintShown(voiceHintStateRef.current, Date.now());
+      voiceHintStateRef.current = shown;
+      writeAiBuddyVoiceHintState(voiceHintKey, shown);
+      hideTimer = setTimeout(() => setVoiceHint(false), AI_BUDDY_VOICE_HINT_MS);
+    }, AI_BUDDY_VOICE_HINT_DELAY_MS);
+    return () => {
+      clearTimeout(showTimer);
+      if (hideTimer) clearTimeout(hideTimer);
+    };
+  }, [voiceHintKey]);
+
+  // 화면을 떠나면 대기 중인 꾹 누르기 타이머도 함께 정리한다.
+  useEffect(() => () => cancelLongPress(), []);
+
+  const openChat = (startVoice = false) => {
     // 이름을 아직 안 정했으면 대화창 대신 친구 만들기부터. 빈 대화창을 열지 않는다.
     const configured = !!friendSettings.data?.ai_friend_name;
-    navigate(configured ? "/child/ai-friend" : "/child/ai-friend-setup");
+    if (!configured) {
+      navigate("/child/ai-friend-setup");
+      return;
+    }
+    // 길게 누른 건 "말로 하고 싶다"는 뜻이다 — 대화창이 뜨자마자 마이크를 켠다.
+    navigate("/child/ai-friend", startVoice ? { state: { startVoice: true } } : undefined);
+  };
+
+  /**
+   * 꾹 누르기 = 바로 말하기. 손을 떼기 전에 발동하므로 여기서 대화창을 연다.
+   * 아이가 한 번이라도 써 봤으면 안내 말풍선은 더 띄우지 않는다(아는 걸 계속 알리지 않는다).
+   */
+  const fireVoiceLongPress = () => {
+    longPressFiredRef.current = true;
+    setVoiceHint(false);
+    setWanderLine(null);
+    const next = markAiBuddyVoiceHintUsed(voiceHintStateRef.current);
+    voiceHintStateRef.current = next;
+    writeAiBuddyVoiceHintState(voiceHintKey, next);
+    openChat(true);
+  };
+
+  const cancelLongPress = () => {
+    if (longPressTimerRef.current === null) return;
+    clearTimeout(longPressTimerRef.current);
+    longPressTimerRef.current = null;
   };
 
   const onPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
@@ -267,6 +341,14 @@ function AiBuddyFabButton({ bottomInset }: AiBuddyFabProps) {
     setDragging(true);
     setTapped(true);
     setWanderLine(null);
+    // 꾹 누르고 있으면 손을 떼기 전에 마이크가 켜진 대화창이 열린다.
+    longPressFiredRef.current = false;
+    cancelLongPress();
+    longPressTimerRef.current = setTimeout(() => {
+      longPressTimerRef.current = null;
+      if (dragRef.current === null || dragRef.current.moved) return;
+      fireVoiceLongPress();
+    }, AI_BUDDY_VOICE_LONG_PRESS_MS);
     // 누르는 순간 대화 화면을 미리 받아 둔다 — 손을 뗐을 때 빈 화면이 스치지 않게.
     preloadRoute("/child/ai-friend");
     preloadRoute("/child/ai-friend-setup");
@@ -289,6 +371,8 @@ function AiBuddyFabButton({ bottomInset }: AiBuddyFabProps) {
     );
     if (!isAiBuddyFabTap(event.clientX - drag.startX, event.clientY - drag.startY, Date.now() - drag.startedAt)) {
       drag.moved = true;
+      // 옮기는 중이면 말하기가 아니다 — 자리를 바꾸다 마이크가 켜지면 놀란다.
+      cancelLongPress();
     }
     applyOffset(next);
     ratioRef.current = next;
@@ -299,8 +383,17 @@ function AiBuddyFabButton({ bottomInset }: AiBuddyFabProps) {
     const host = hostRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
     dragRef.current = null;
+    cancelLongPress();
     setDragging(false);
     if (host?.hasPointerCapture(event.pointerId)) host.releasePointerCapture(event.pointerId);
+
+    // 이미 꾹 누르기로 말하기가 시작됐으면 손을 뗀 것으로 대화창을 또 열지 않는다.
+    if (longPressFiredRef.current) {
+      longPressFiredRef.current = false;
+      applyOffset(wanderRatioRef.current ?? ratioRef.current);
+      setTapped(false);
+      return;
+    }
 
     if (!drag.moved) {
       // 옮기지 않았으면 열기. 위치는 지금 있던 자리로 되돌린다.
@@ -328,7 +421,9 @@ function AiBuddyFabButton({ bottomInset }: AiBuddyFabProps) {
         : blinking && !dragging
           ? AI_BUDDY_BLINK_FACE
           : aiBuddyFaceFor(emotion);
-  const label = `AI 친구와 이야기하기 · ${aiBuddyEmotionLabel(emotion)}`;
+  // 안내는 혼자 놀며 건네는 말보다 먼저다 — 아이가 아직 모르는 기능을 알려 주는 중이다.
+  const bubbleLine = voiceHint ? AI_BUDDY_VOICE_HINT_LINE : wanderLine;
+  const label = `AI 친구와 이야기하기 · ${aiBuddyEmotionLabel(emotion)} · 길게 누르면 바로 말하기`;
 
   return (
     <button
@@ -347,8 +442,13 @@ function AiBuddyFabButton({ bottomInset }: AiBuddyFabProps) {
       onPointerCancel={endDrag}
     >
       {/* 말풍선은 버튼 라벨에 이미 담긴 안내라 스크린리더에는 중복으로 읽히지 않게 둔다. */}
-      {wanderLine ? (
-        <span className="abf__bubble" aria-hidden="true">{wanderLine}</span>
+      {bubbleLine ? (
+        <span
+          className={voiceHint ? "abf__bubble abf__bubble--hint" : "abf__bubble"}
+          aria-hidden="true"
+        >
+          {bubbleLine}
+        </span>
       ) : null}
       <span className="abf__face">
         <span className="abf__stack">

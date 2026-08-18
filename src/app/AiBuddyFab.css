@@ -92,6 +92,17 @@
   animation: abf-say 0.28s var(--easing-cheer) 1;
 }
 
+/* 기능 안내("꾹 누르면 바로 말할 수 있어!")는 배회 한 마디보다 길다.
+   말줄임으로 잘리면 안내가 되지 않으므로 어절 단위로 두 줄까지 편다. */
+.abf__bubble--hint {
+  max-width: 172px;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  border: 1.5px solid var(--hy-accent);
+}
+
 .abf[data-edge="left"] .abf__bubble {
   left: 0;
 }
