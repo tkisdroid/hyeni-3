@@ -350,6 +350,7 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   ⚠️ 추론을 켜면 추론 토큰이 예산을 먹어 **빈 응답 → 실패 강등**이 되므로 600 미만 예산은 함수가 막는다.
   회귀=`tests/aiBuddyFab.test.ts`·`tests/eventCompanionPrompt.test.ts`·Worker
   `tests/aiChildSettingsAgent.test.mjs`·`tests/aiChildMemoryDepth.test.mjs`·`tests/openAiLunaContract.test.mjs`.
+- ★**AI 친구 음성 turn 자동 답변(2026-08-18 TK 승인)**: 마이크가 만든 `source="voice"`의 정상 reply는 가족+아이 읽어주기 설정이 꺼져 있어도 그 turn만 자동 TTS한다. `composer`·`suggestion:*`·`confirm`은 기존 영구 설정을 따르고, 빈·오류·한도 응답은 읽지 않는다. 새 마이크 시작·토글 off·화면 이탈은 STT/TTS를 즉시 중단하며 초기화 중이던 오래된 native callback도 재생을 되살리지 않는다. 사용자 음성 원본은 Worker·OpenAI에 보내지 않고 인식 텍스트만 기존 안전·크레딧·저장 경로로 보낸다. 단 OS·브라우저·선택된 STT/TTS 제공자는 음성 또는 합성할 답변 텍스트를 외부 처리할 수 있으므로 “항상 기기 안에서만 처리”라고 고지하지 않는다. TTS는 추가 API·크레딧·권한 없이 fail-soft이며 10개 locale 태그를 전달한다. 회귀=`tests/childVoiceChat.test.ts`·`tests/nativeTtsCdpProbeSafety.test.mjs`·Android `SpeechLocalePolicyTest`/`SpeechPlaybackGenerationTest`·`worker/tests/legalCopy.test.mjs`·`tests/playReleaseDocumentation.test.mjs`.
 - ★**AI 실패 안내는 하나로·정직하게(2026-08-17 TK 제보 실사고)**: 아이가 채팅을 보내면 말풍선에
   "잠깐 연결이 안됐어"가 뜨고 **동시에** 하단에 "방금 한 일이 저장되지 않았어" 토스트가 겹쳤다.
   ①**중복 원인** — `QueryProvider` MutationCache 폴백은 `mutation.options.onError` 만 본다.
