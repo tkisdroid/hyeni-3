@@ -1,6 +1,7 @@
 // Shared child AI context helpers.
 // This file is plain ESM so both Vitest and Supabase Edge Functions can import it.
 import { buildEventCompanionHints } from "./aiEventContext.js";
+import { buildChildRelationshipLines } from "./aiChildHabits.js";
 
 const DATE_KEY_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -445,6 +446,11 @@ export function buildChildSystemPrompt({
         : [];
     // 일정 성격 힌트 — "수호 생일 챙기기"에 준비물을 묻는 식의 엉뚱한 제안을 막는다.
     const eventHintLines = buildEventCompanionHints(todaySchedule);
+    // 이 아이의 습관과 오늘 챙길 물건 — "나를 아는 친구"가 되는 재료(2026-08-19).
+    const relationshipLines = buildChildRelationshipLines({
+        longTermMemories: longTermMemoryLines,
+        todaySchedule,
+    });
     const dailyItemLines = Array.isArray(dailyItems)
         ? dailyItems.map((item) => formatDailySupplyItem(item)).filter(Boolean).slice(0, 5)
         : [];
@@ -544,10 +550,18 @@ ${longTermMemoryLines.length > 0
 ## 최근 대화 기억
 - 요약: ${recentSummary || "없음"}
 
+## 이 아이의 습관·오늘 챙길 것
+${relationshipLines.length > 0
+        ? relationshipLines.map((line) => `- ${line}`).join("\n")
+        : "- 아직 파악한 습관이 없다. 대화하다 알게 되면 다음에 먼저 챙겨 준다."}
+
 ## 아는 것을 쓰는 법
 - 아이가 전에 한 말을 자연스럽게 이어서 말한다("저번에 말한 그거 어떻게 됐어?").
 - 위 목록에 없는 것은 아는 척하지 않는다. 모르면 물어본다.
 - 매번 아는 것을 나열하지 않는다. 지금 대화에 맞는 것 하나만 꺼낸다.
+- 아이의 습관을 알고 있으면 시키는 말투가 아니라 같이 하자는 말투로 먼저 꺼낸다
+  ("늘 하던 대로 같이 할까?"). 안 한다고 해도 다그치지 않는다.
+- 물건을 자주 두고 오는 아이에게는 장소를 옮길 때 한 번만 짧게 확인해 준다. 매번 반복하지 않는다.
 
 ## 오늘 일정
 ${scheduleLines.length > 0 ? scheduleLines.map((line) => `- ${line}`).join("\n") : "- 오늘 일정 정보 없음"}

@@ -345,6 +345,8 @@ export async function run(env: Env): Promise<Record<string, unknown>> {
   let silentLeft = 0;
   let aiArrivalTriggered = 0;
   let aiArrivalQueued = 0;
+  let aiDepartureTriggered = 0;
+  let aiDepartureQueued = 0;
 
   // 한 배치에서 나온 전이 1건 — 수집(1단계) 후 계획(2단계)·전달(3단계)로 나눈다.
   interface CollectedStep {
@@ -564,6 +566,24 @@ export async function run(env: Env): Promise<Record<string, unknown>> {
           console.error("[registered-place] home-arrival AI greeting failed");
         }
       }
+      // 장소를 떠날 때 — 물건을 자주 두고 오는 아이이거나 다음 일정에 챙길 물건이
+      // 분명할 때만 AI 친구가 한 번 확인해 준다. 할 말이 없으면 정책이 빈 문자열을
+      // 돌려 "no_useful_context" 로 조용히 끝난다(크레딧도 쓰지 않는다).
+      if (!isEnter) {
+        aiDepartureTriggered++;
+        try {
+          const aiResult = await runSingleProactive(penv, db, {
+            familyId: child.familyId,
+            childUserId: child.childUserId,
+            trigger: "place_departure",
+            placeName: step.place.name,
+            minIntervalMinutes: 120,
+          });
+          aiDepartureQueued += Number(aiResult.generated ?? 0);
+        } catch (e) {
+          console.error("[registered-place] departure AI reminder failed");
+        }
+      }
     }
 
     // 알림 없는 타이머 전이(pending/armed)는 재생 종료 후 1회만 영속.
@@ -589,5 +609,7 @@ export async function run(env: Env): Promise<Record<string, unknown>> {
     silentLeft,
     aiArrivalTriggered,
     aiArrivalQueued,
+    aiDepartureTriggered,
+    aiDepartureQueued,
   };
 }

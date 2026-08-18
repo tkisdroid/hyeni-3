@@ -57,7 +57,7 @@ interface ProactiveBody {
   usageDate?: string;
   minIntervalMinutes?: number;
   limit?: number;
-  // 집 도착 geofence 트리거 — trigger="place_arrival" + placeName 을 함께 보낸다.
+  // 장소 geofence 트리거 — trigger="place_arrival"|"place_departure" + placeName 을 함께 보낸다.
   trigger?: string;
   placeName?: string;
 }
@@ -451,6 +451,29 @@ async function loadRecentSummary(
   return String(row?.summary || "");
 }
 
+/**
+ * 아이에 대해 알고 있는 것(습관 포함). 선제 인사가 "늘 하던 대로 할까?"라고 말하려면
+ * 이 목록이 필요하다. 조회 실패는 "아는 것 없음"으로 강등해 인사 자체를 막지 않는다.
+ */
+async function loadLongTermMemories(
+  db: D1Database,
+  familyId: string,
+  childUserId: string,
+): Promise<string[]> {
+  try {
+    const { results } = await db
+      .prepare(
+        "SELECT value FROM ai_long_term_memories WHERE family_id=? AND child_user_id=? ORDER BY confidence DESC, substr(updated_at,1,19) DESC LIMIT 30",
+      )
+      .bind(familyId, childUserId)
+      .all<{ value: string }>();
+    return (results ?? []).map((row) => String(row?.value || "")).filter(Boolean);
+  } catch {
+    console.error("[ai-proactive] long-term memory lookup failed");
+    return [];
+  }
+}
+
 interface ProcessResult {
   childUserId: string;
   queued: boolean;
@@ -478,6 +501,7 @@ async function processCandidate(
     minIntervalMinutes,
     dryRun,
     arrivalPlaceName = "",
+    departurePlaceName = "",
   }: {
     candidate: ChildCandidate;
     contextDate: string;
@@ -487,6 +511,7 @@ async function processCandidate(
     minIntervalMinutes: number;
     dryRun: boolean;
     arrivalPlaceName?: string;
+    departurePlaceName?: string;
   },
 ): Promise<ProcessResult> {
   const familyId = candidate.family_id;
@@ -563,9 +588,10 @@ async function processCandidate(
     return { childUserId, queued: false, reason: policy.reason };
   }
 
-  const [todaySchedule, recentSummary] = await Promise.all([
+  const [todaySchedule, recentSummary, longTermMemories] = await Promise.all([
     loadTodaySchedule(db, familyId, candidate.id, contextDate),
     loadRecentSummary(db, familyId, childUserId),
+    loadLongTermMemories(db, familyId, childUserId),
   ]);
   const message = (buildProactiveAiMessage as (x: unknown) => string)({
     childName: candidate.name || "",
@@ -575,6 +601,8 @@ async function processCandidate(
     referenceDate: contextDate,
     nowHHMM,
     arrivalPlaceName,
+    departurePlaceName,
+    longTermMemories,
   });
   if (!message) {
     return { childUserId, queued: false, reason: "no_useful_context" };
@@ -826,6 +854,9 @@ export async function runSingleProactive(
   const arrivalPlaceName = body.trigger === "place_arrival"
     ? String(body.placeName || "").trim().slice(0, 40)
     : "";
+  const departurePlaceName = body.trigger === "place_departure"
+    ? String(body.placeName || "").trim().slice(0, 40)
+    : "";
 
   const loaded = await loadSingleCandidate(db, body.childUserId, body.familyId);
   if (loaded.error || !loaded.candidate) {
@@ -841,6 +872,7 @@ export async function runSingleProactive(
     minIntervalMinutes,
     dryRun,
     arrivalPlaceName,
+    departurePlaceName,
   });
 
   return {
@@ -874,8 +906,11 @@ proactive.post("/proactive", requireAuth, async (c) => {
     ? Math.max(30, Number(body.minIntervalMinutes))
     : 360;
   const dryRun = body.dryRun === true;
-  // 집 도착 트리거는 단일 자녀 호출에서만 의미가 있다.
+  // 장소 트리거는 단일 자녀 호출에서만 의미가 있다.
   const arrivalPlaceName = body.trigger === "place_arrival" && body.childUserId
+    ? String(body.placeName || "").trim().slice(0, 40)
+    : "";
+  const departurePlaceName = body.trigger === "place_departure" && body.childUserId
     ? String(body.placeName || "").trim().slice(0, 40)
     : "";
 
@@ -905,6 +940,7 @@ proactive.post("/proactive", requireAuth, async (c) => {
       minIntervalMinutes,
       dryRun,
       arrivalPlaceName,
+      departurePlaceName,
     }));
   }
 

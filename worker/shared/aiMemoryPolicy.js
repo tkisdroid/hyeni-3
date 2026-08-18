@@ -1,4 +1,5 @@
 // Conservative long-term memory policy for child AI conversations.
+import { extractChildHabitMemory } from "./aiChildHabits.js";
 
 const SENSITIVE_PATTERNS = [
     /주소|사는\s*곳|집\s*어디|학교\s*이름|우리\s*학교(?:는|은|이야|입니다)?|[가-힣A-Za-z0-9]{2,30}(?:초등학교|중학교|고등학교|유치원)|전화번호|010[-\s]?\d{3,4}[-\s]?\d{4}/,
@@ -189,6 +190,13 @@ export function createLongTermMemoryPatch(message, { parentSettings = {} } = {})
 
     if (TEMPORARY_NEGATIVE_PATTERNS.some((pattern) => pattern.test(text))) {
         return { shouldStore: false, reason: "temporary_or_negative_preference" };
+    }
+
+    // 생활 습관("집에 오면 일정 정리해", "나 물건 자주 두고 와")이 먼저다.
+    // 관심·싫음보다 구체적인 신호이고, 이걸 알아야 다음에 먼저 물어볼 수 있다(관계 형성).
+    const habit = extractChildHabitMemory(text);
+    if (habit) {
+        return { shouldStore: true, memory: habit };
     }
 
     const hasSubjectChallenge = /어려워|힘들어|헷갈려|잘\s*못|못하겠|막혀/.test(text);

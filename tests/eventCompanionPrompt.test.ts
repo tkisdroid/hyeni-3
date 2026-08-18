@@ -54,7 +54,8 @@ test("성격이 다르면 하는 말도 다르다", () => {
   assert.match(lines[0], /긴장|같이 있어/);
   assert.match(lines[1], /떨리|잘할 수 있어/);
   assert.match(lines[2], /파이팅/);
-  assert.match(lines[3], /챙길/);
+  // 학원은 "챙길 거 다 넣었어?" 대신 그 활동에 실제로 필요한 물건 이름으로 묻는다(2026-08-19).
+  assert.match(lines[3], /도복이랑 띠를 챙겼어\?/);
 });
 
 test("시간을 모르면 시간을 지어내지 않는다", () => {

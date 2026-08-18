@@ -1,3 +1,10 @@
+import {
+    buildBelongingsQuestion,
+    buildDepartureBelongingsMessage,
+    buildHabitHomeArrivalMessage,
+    isForgetfulChild,
+} from "./aiChildHabits.js";
+
 function parseHHMM(value) {
     const match = /^(\d{2}):(\d{2})(?::\d{2})?$/.exec(String(value || "").trim());
     if (!match) return null;
@@ -172,6 +179,23 @@ export function canGenerateProactiveAiMessage({
     return { ok: true, reason: "allowed" };
 }
 
+/** 지금 시각 이후의 다음 일정(시간 없는 일정은 마지막 후보). 없으면 undefined. */
+function resolveNextEvent(todaySchedule, nowHHMM) {
+    const events = Array.isArray(todaySchedule) ? todaySchedule : [];
+    const nowMinutes = parseHHMM(nowHHMM);
+    const titledEvents = events.filter((event) => String(event?.title || "").trim());
+    if (nowMinutes == null) return titledEvents[0];
+    const upcomingTimedEvents = titledEvents
+        .map((event) => ({
+            event,
+            minutes: parseHHMM(event?.time || event?.startTime || event?.start_time),
+        }))
+        .filter(({ minutes }) => minutes != null && minutes >= nowMinutes)
+        .sort((left, right) => left.minutes - right.minutes);
+    return upcomingTimedEvents[0]?.event
+        || titledEvents.find((event) => parseHHMM(event?.time || event?.startTime || event?.start_time) == null);
+}
+
 export function buildProactiveAiMessage({
     childName = "",
     todaySchedule = [],
@@ -180,13 +204,32 @@ export function buildProactiveAiMessage({
     referenceDate = "",
     nowHHMM = "",
     arrivalPlaceName = "",
+    departurePlaceName = "",
+    longTermMemories = [],
 } = {}) {
     const name = String(childName || "").trim();
+
+    // 장소를 떠나는 트리거(geofence LEAVE) — 물건을 자주 두고 오는 아이이거나 다음 일정에
+    // 챙길 물건이 분명할 때만 말을 건다. 할 말이 없으면 빈 문자열로 조용히 지나간다.
+    const departurePlace = String(departurePlaceName || "").trim();
+    if (departurePlace) {
+        const next = resolveNextEvent(todaySchedule, nowHHMM);
+        return buildDepartureBelongingsMessage({
+            childName: name,
+            placeName: departurePlace,
+            nextEventTitle: next?.title || "",
+            nextEventMemo: next?.memo || "",
+            forgetful: isForgetfulChild(longTermMemories),
+        });
+    }
 
     // 집 도착 트리거(geofence ENTER) — 도착 알림을 받은 직후의 맥락이므로
     // 일정·생일보다 우선해 "집에 왔구나" 인사를 만든다. 집이 아닌 장소는 무시.
     const arrivalPlace = String(arrivalPlaceName || "").trim();
     if (arrivalPlace.includes("집")) {
+        // 늘 하던 일이 있으면 그 일부터 제안한다("집에 와서 내일 일정 정리하는 아이").
+        const habitMessage = buildHabitHomeArrivalMessage(longTermMemories, name);
+        if (habitMessage) return habitMessage;
         const arrivalHour = Number(String(nowHHMM || "").slice(0, 2));
         const pool = Number.isFinite(arrivalHour) && arrivalHour >= 19
             ? HOME_ARRIVAL_EVENING_MESSAGES
@@ -194,21 +237,16 @@ export function buildProactiveAiMessage({
         const message = pickDailyVariant(pool, referenceDate);
         return name ? `${name}, ${message}` : message;
     }
-    const events = Array.isArray(todaySchedule) ? todaySchedule : [];
-    const nowMinutes = parseHHMM(nowHHMM);
-    const titledEvents = events.filter((event) => String(event?.title || "").trim());
-    const nextEvent = (() => {
-        if (nowMinutes == null) return titledEvents[0];
-        const upcomingTimedEvents = titledEvents
-            .map((event) => ({
-                event,
-                minutes: parseHHMM(event?.time || event?.startTime || event?.start_time),
-            }))
-            .filter(({ minutes }) => minutes != null && minutes >= nowMinutes)
-            .sort((left, right) => left.minutes - right.minutes);
-        return upcomingTimedEvents[0]?.event
-            || titledEvents.find((event) => parseHHMM(event?.time || event?.startTime || event?.start_time) == null);
-    })();
+    const nextEvent = resolveNextEvent(todaySchedule, nowHHMM);
+    if (nextEvent) {
+        // 챙길 물건을 아는 활동이면 "준비물"이 아니라 그 물건 이름으로 묻는다.
+        const belongings = buildBelongingsQuestion(nextEvent.title, nextEvent.memo);
+        if (belongings) {
+            const time = displayHHMM(nextEvent.time || nextEvent.startTime || nextEvent.start_time);
+            const title = String(nextEvent.title || "").trim();
+            return time ? `${time}에 ${title} 있어. ${belongings}` : `오늘 ${title} 있어. ${belongings}`;
+        }
+    }
     if (nextEvent) {
         const title = String(nextEvent.title || "").trim();
         const time = displayHHMM(nextEvent.time || nextEvent.startTime || nextEvent.start_time);
