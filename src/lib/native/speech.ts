@@ -125,9 +125,11 @@ export function cancelSpeechCapture(): void {
 // 웹·PWA 는 표준 `speechSynthesis` 로 폴백한다(추가 의존성 0).
 
 interface NativeSpeakPlugin {
-  speak(opts: { text: string; rate?: number }): Promise<{ started?: boolean }>;
+  speak(opts: { text: string; language?: string; rate?: number }): Promise<{ started?: boolean }>;
   stopSpeak(): Promise<{ status?: string }>;
 }
+
+let speechPlaybackGeneration = 0;
 
 function webSpeechSynthesis(): SpeechSynthesis | null {
   const w = window as unknown as { speechSynthesis?: SpeechSynthesis };
@@ -145,17 +147,21 @@ export function isSpeechPlaybackSupported(): boolean {
  * 실패·미지원은 조용히 false — 읽어주기가 안 된다고 대화 자체를 막지 않는다.
  */
 export async function speakText(text: string, language = "ko-KR", rate = 1.0): Promise<boolean> {
+  const generation = ++speechPlaybackGeneration;
   const spoken = text.trim();
   if (!spoken) return false;
   try {
     const plugin = getNativePlugin<NativeSpeakPlugin>("SpeechRecognition");
     if (plugin?.speak) {
-      const result = await plugin.speak({ text: spoken, rate });
+      const result = await plugin.speak({ text: spoken, language, rate });
+      if (generation !== speechPlaybackGeneration) return false;
       if (result?.started !== false) return true;
     }
   } catch {
+    if (generation !== speechPlaybackGeneration) return false;
     /* 네이티브 실패 → 웹 폴백 시도 */
   }
+  if (generation !== speechPlaybackGeneration) return false;
   try {
     const synth = webSpeechSynthesis();
     if (!synth || typeof window.SpeechSynthesisUtterance !== "function") return false;
@@ -172,6 +178,7 @@ export async function speakText(text: string, language = "ko-KR", rate = 1.0): P
 
 /** 읽어주기 중단(화면 이탈·아이가 끄기·새 메시지 전송). */
 export function stopSpeaking(): void {
+  speechPlaybackGeneration += 1;
   try {
     const plugin = getNativePlugin<NativeSpeakPlugin>("SpeechRecognition");
     void plugin?.stopSpeak?.().catch(() => undefined);

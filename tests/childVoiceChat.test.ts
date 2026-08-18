@@ -49,10 +49,21 @@ test("네이티브 speak/stopSpeak 가 JS 로 노출되고 웹 폴백이 있다"
   // 네이티브 우선 → 웹 speechSynthesis 폴백(추가 의존성 없이).
   assert.match(speech, /plugin\?\.speak/);
   assert.match(speech, /speechSynthesis/);
+  assert.match(speech, /speak\(opts:\s*\{\s*text:\s*string;\s*language\?:\s*string;\s*rate\?:\s*number/);
+  assert.match(speech, /plugin\.speak\(\{\s*text:\s*spoken,\s*language,\s*rate\s*\}\)/);
+  assert.match(speech, /const generation = \+\+speechPlaybackGeneration/);
+  assert.match(speech, /generation !== speechPlaybackGeneration/);
+  assert.match(speech, /export function stopSpeaking\(\): void \{\s*speechPlaybackGeneration \+= 1;/);
   // 네이티브 플러그인에 실제 메서드가 있어야 브리지가 의미를 갖는다.
   const plugin = read("android/app/src/main/java/com/hyeni/calendar/SpeechPlugin.java");
   assert.match(plugin, /public void speak\(PluginCall call\)/);
   assert.match(plugin, /public void stopSpeak\(PluginCall call\)/);
+  assert.match(plugin, /SpeechPlaybackGeneration ttsGeneration/);
+  assert.match(plugin, /ttsGeneration\.next\(\)/);
+  assert.match(plugin, /ttsGeneration\.cancel\(\)/);
+  assert.match(plugin, /ttsGeneration\.isCurrent\(/);
+  assert.match(plugin, /SpeechLocalePolicy\.apply\(/);
+  assert.doesNotMatch(plugin, /Locale\.KOREAN/);
 });
 
 test("말한 내용은 확인 단계 없이 바로 보낸다(받아쓰기가 아니라 대화)", () => {

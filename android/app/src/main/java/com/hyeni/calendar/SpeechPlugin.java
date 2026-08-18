@@ -22,7 +22,6 @@ import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 
 import java.util.ArrayList;
-import java.util.Locale;
 
 @CapacitorPlugin(
     name = "SpeechRecognition",
@@ -36,6 +35,25 @@ public class SpeechPlugin extends Plugin {
     private SpeechRecognizer speechRecognizer;
     private TextToSpeech textToSpeech;
     private boolean ttsReady = false;
+    private final SpeechPlaybackGeneration ttsGeneration = new SpeechPlaybackGeneration();
+    private boolean ttsInitializing = false;
+    private PendingTtsRequest pendingTtsRequest;
+
+    private static final class PendingTtsRequest {
+        final PluginCall call;
+        final String text;
+        final String language;
+        final float rate;
+        final long generation;
+
+        PendingTtsRequest(PluginCall call, String text, String language, float rate, long generation) {
+            this.call = call;
+            this.text = text;
+            this.language = language;
+            this.rate = rate;
+            this.generation = generation;
+        }
+    }
 
     @PluginMethod
     public void start(PluginCall call) {
@@ -169,31 +187,109 @@ public class SpeechPlugin extends Plugin {
             call.reject("text required");
             return;
         }
+        String language = call.getString(
+            "language",
+            SpeechLocalePolicy.DEFAULT_LANGUAGE_TAG
+        );
         Float rateValue = call.getFloat("rate", 1.0f);
         float rate = rateValue != null ? rateValue : 1.0f;
 
         getActivity().runOnUiThread(() -> {
+            long generation = ttsGeneration.next();
+            PendingTtsRequest request = new PendingTtsRequest(
+                call,
+                text,
+                language,
+                rate,
+                generation
+            );
             if (textToSpeech != null && ttsReady) {
-                startUtterance(call, text, rate);
+                startUtterance(request);
                 return;
             }
-            textToSpeech = new TextToSpeech(getContext(), status -> {
-                if (status == TextToSpeech.SUCCESS) {
-                    ttsReady = true;
-                    getActivity().runOnUiThread(() -> startUtterance(call, text, rate));
-                } else {
-                    ttsReady = false;
-                    Log.e(TAG, "TTS init failed: " + status);
-                    call.reject("TTS not available on this device");
+
+            if (ttsInitializing) {
+                if (pendingTtsRequest != null) {
+                    resolveNotStarted(pendingTtsRequest.call);
                 }
-            });
+                pendingTtsRequest = request;
+                return;
+            }
+
+            if (pendingTtsRequest != null) {
+                resolveNotStarted(pendingTtsRequest.call);
+            }
+            pendingTtsRequest = request;
+            ttsInitializing = true;
+            ttsReady = false;
+            try {
+                textToSpeech = new TextToSpeech(
+                    getContext(),
+                    status -> getActivity().runOnUiThread(() -> finishTtsInitialization(status))
+                );
+            } catch (Exception error) {
+                ttsInitializing = false;
+                ttsReady = false;
+                textToSpeech = null;
+                PendingTtsRequest failedRequest = pendingTtsRequest;
+                pendingTtsRequest = null;
+                Log.e(TAG, "TTS init exception", error);
+                if (failedRequest != null) {
+                    if (ttsGeneration.isCurrent(failedRequest.generation)) {
+                        failedRequest.call.reject("TTS not available on this device");
+                    } else {
+                        resolveNotStarted(failedRequest.call);
+                    }
+                }
+            }
         });
     }
 
-    private void startUtterance(PluginCall call, String text, float rate) {
+    private void finishTtsInitialization(int status) {
+        ttsInitializing = false;
+        PendingTtsRequest request = pendingTtsRequest;
+        pendingTtsRequest = null;
+
+        if (status != TextToSpeech.SUCCESS) {
+            ttsReady = false;
+            Log.e(TAG, "TTS init failed: " + status);
+            if (request != null) {
+                if (ttsGeneration.isCurrent(request.generation)) {
+                    request.call.reject("TTS not available on this device");
+                } else {
+                    resolveNotStarted(request.call);
+                }
+            }
+            return;
+        }
+
+        ttsReady = true;
+        if (request == null) {
+            return;
+        }
+        if (!ttsGeneration.isCurrent(request.generation)) {
+            resolveNotStarted(request.call);
+            return;
+        }
+        startUtterance(request);
+    }
+
+    private void resolveNotStarted(PluginCall call) {
+        call.resolve(new JSObject().put("started", false));
+    }
+
+    private void startUtterance(PendingTtsRequest request) {
         try {
-            textToSpeech.setLanguage(Locale.KOREAN);
-            textToSpeech.setSpeechRate(rate);
+            if (!ttsGeneration.isCurrent(request.generation)) {
+                resolveNotStarted(request.call);
+                return;
+            }
+            if (!SpeechLocalePolicy.apply(request.language, textToSpeech::setLanguage)) {
+                textToSpeech.stop();
+                request.call.reject("TTS language not available");
+                return;
+            }
+            textToSpeech.setSpeechRate(request.rate);
             final String utteranceId = "hyeni-tts-" + System.currentTimeMillis();
             textToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener() {
                 @Override public void onStart(String id) {}
@@ -204,18 +300,23 @@ public class SpeechPlugin extends Plugin {
                     notifyTtsState("error", id);
                 }
             });
-            int result = textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId);
+            int result = textToSpeech.speak(
+                request.text,
+                TextToSpeech.QUEUE_FLUSH,
+                null,
+                utteranceId
+            );
             if (result == TextToSpeech.SUCCESS) {
                 JSObject ret = new JSObject();
                 ret.put("started", true);
                 ret.put("utteranceId", utteranceId);
-                call.resolve(ret);
+                request.call.resolve(ret);
             } else {
-                call.reject("TTS speak failed");
+                request.call.reject("TTS speak failed");
             }
         } catch (Exception e) {
             Log.e(TAG, "TTS speak exception", e);
-            call.reject("TTS error: " + e.getMessage());
+            request.call.reject("TTS error: " + e.getMessage());
         }
     }
 
@@ -229,6 +330,11 @@ public class SpeechPlugin extends Plugin {
     @PluginMethod
     public void stopSpeak(PluginCall call) {
         getActivity().runOnUiThread(() -> {
+            ttsGeneration.cancel();
+            if (pendingTtsRequest != null) {
+                resolveNotStarted(pendingTtsRequest.call);
+                pendingTtsRequest = null;
+            }
             if (textToSpeech != null) {
                 textToSpeech.stop();
             }
@@ -248,6 +354,11 @@ public class SpeechPlugin extends Plugin {
     @Override
     protected void handleOnDestroy() {
         cleanup();
+        ttsGeneration.cancel();
+        if (pendingTtsRequest != null) {
+            resolveNotStarted(pendingTtsRequest.call);
+            pendingTtsRequest = null;
+        }
         if (textToSpeech != null) {
             textToSpeech.stop();
             textToSpeech.shutdown();
