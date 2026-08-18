@@ -980,6 +980,10 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       row.problems = rowProblems(row);
       report.routes.parent.push(row);
       if (row.problems.length > 0) report.problems.push({ scope: "parent-route", route, problems: row.problems });
+      // 대화 화면은 프로필·글자 크기를 눈으로 확인할 일이 잦아 증거 화면을 남긴다.
+      if (route === "parent/memo") {
+        report.screenshots.push(await screenshot(cdp, freshOutputDir, "parent-memo-chat.png"));
+      }
       process.stdout.write(`${row.problems.length ? "FAIL" : "OK  "} parent ${route}\n`);
     }
 

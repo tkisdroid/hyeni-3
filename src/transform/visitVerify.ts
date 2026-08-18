@@ -9,9 +9,9 @@
  */
 import type { CalendarEvent } from "@/lib/api/endpoints/schedule";
 import type { LocationHistoryPoint } from "@/lib/api/endpoints/location";
-import { parseAppDateKey } from "./dateKey";
-import { eventChildMemberIds, eventIsFamilyShared } from "./eventScope";
-import { isReliableLocationEvidence } from "./locationAccuracy";
+import { parseAppDateKey } from "./dateKey.ts";
+import { eventChildMemberIds, eventIsFamilyShared } from "./eventScope.ts";
+import { isReliableLocationEvidence } from "./locationAccuracy.ts";
 
 export type VisitVerdict = "visited" | "unverified";
 export type VisitChildScope = string | null | ReadonlyMap<string, string>;

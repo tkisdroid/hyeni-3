@@ -67,6 +67,12 @@ function avatarSrc(path: string): string {
   return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
 }
 
+/** 등록한 사진인지(=원을 꽉 채워야 하는지). 기본 캐릭터 그림은 여백을 남긴다. */
+function isUploadedAvatar(src: string | null | undefined): boolean {
+  const value = src ?? "";
+  return value.startsWith("http") || value.startsWith("blob:");
+}
+
 type ChildPhotoLoadState =
   | { path: string | null; status: "idle" | "loading" | "error"; url: null }
   | { path: string; status: "ready"; url: string };
@@ -633,7 +639,7 @@ export function MemoChat() {
         >
           <ChevronLeft size={24} strokeWidth={2.4} />
         </button>
-        <span className="mc-peer-avatar">
+        <span className="mc-peer-avatar" data-photo={isUploadedAvatar(peer.avatar) ? "true" : "false"}>
           <img src={peer.avatar} alt="" loading="eager" decoding="async" />
         </span>
         <div className="mc-peer-main">
@@ -743,7 +749,10 @@ export function MemoChat() {
               )}
               <div className={`mc-msg ${m.mine ? "mc-msg--mine" : "mc-msg--peer"}`}>
               {m.showMeta && (
-                <span className="mc-msg-avatar">
+                <span
+                  className="mc-msg-avatar"
+                  data-photo={isUploadedAvatar(sender?.avatar ?? peer.avatar) ? "true" : "false"}
+                >
                   <img src={sender?.avatar ?? peer.avatar} alt="" loading="lazy" decoding="async" />
                 </span>
               )}

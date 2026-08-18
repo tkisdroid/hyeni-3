@@ -88,9 +88,10 @@ const TAG_STYLES: Record<ScheduleTagKind, TagStyle> = {
 /** 이벤트별 방문 판정(transform/visitVerify) — "다녀옴"을 위치로 확정/보류할 때 주입. */
 export type VisitMap = ReadonlyMap<string, "visited" | "unverified">;
 
-// 이벤트 날짜/시간 vs now → 진행 상태. visitMap 이 있으면 시간상 "다녀옴"을
-// 위치 검증 결과로 확정(visited=다녀옴 / unverified=확인 필요). 장소가 아예 없어
-// 맵에 없는 일정만 기존 시간 기반 "다녀옴"을 유지한다.
+// 이벤트 날짜/시간 vs now → 진행 상태. 방문 검증을 하는 화면(visitMap 주입)에서는
+// **위치로 확인된 일정만** "다녀옴"이고 나머지는 "확인 필요"다. 장소를 지정하지 않은 일정도
+// 다녀왔는지 확인할 방법이 없으므로 다녀온 것처럼 단정하지 않는다(2026-08-18 TK 제보).
+// visitMap 을 주지 않는 화면(아이 홈·리포트)은 기존 시간 기반 표시를 유지한다.
 function computeTag(
   event: CalendarEvent,
   now: Date,
@@ -98,9 +99,8 @@ function computeTag(
   visitMap?: VisitMap,
 ): TagStyle {
   const donePast = () => {
-    const verdict = visitMap?.get(event.id);
-    if (verdict === "unverified") return TAG_STYLES["확인 필요"];
-    return TAG_STYLES.다녀옴;
+    if (!visitMap) return TAG_STYLES.다녀옴;
+    return visitMap.get(event.id) === "visited" ? TAG_STYLES.다녀옴 : TAG_STYLES["확인 필요"];
   };
   const date = parseAppDateKey(event.date_key);
   if (!date) return TAG_STYLES.예정;

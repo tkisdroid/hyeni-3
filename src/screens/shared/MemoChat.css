@@ -32,13 +32,14 @@
   --press: 0.9;
 }
 .mc-peer-avatar {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--radius-12);
   background: var(--hy-accent-soft);
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
   flex: none;
 }
 .mc-peer-avatar img {
@@ -161,21 +162,30 @@
 .mc-msg--mine {
   justify-content: flex-end;
 }
+/* 말풍선 옆 프로필 — 일반 채팅 앱과 같은 40px(2026-08-18 TK 지시). */
 .mc-msg-avatar {
-  width: 30px;
-  height: 30px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: #f1eef0;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
   flex: none;
 }
 .mc-msg-avatar img {
-  width: 24px;
-  height: 24px;
+  width: 34px;
+  height: 34px;
   aspect-ratio: 1;
   object-fit: contain;
+}
+/* 등록한 사진은 원을 꽉 채우고(cover), 기본 캐릭터는 여백을 둔 contain 을 유지한다. */
+.mc-msg-avatar[data-photo="true"] img,
+.mc-peer-avatar[data-photo="true"] img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .mc-bubble-wrap {
   max-width: 74%;
@@ -190,14 +200,14 @@
   color: var(--fg-muted);
 }
 
-/* 텍스트 말풍선 */
+/* 텍스트 말풍선 — 글자는 일반 채팅 앱 크기(14px)로 낮춘다(2026-08-18 TK 지시). */
 .mc-bubble {
-  padding: 12px 12px;
+  padding: 8px 12px;
   animation: hy-fadein 0.28s ease both;
   box-shadow: 0 4px 14px rgba(32, 26, 29, 0.06);
-  font-size: var(--type-body);
-  line-height: var(--type-body-line-height);
-  font-weight: var(--type-body-weight);
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
 
   word-break: keep-all;
   overflow-wrap: anywhere;

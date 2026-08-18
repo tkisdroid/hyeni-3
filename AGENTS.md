@@ -350,6 +350,9 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   별도 설명·버튼으로 background 권한을 요청한다. 서비스가 임의로 권한 창을 띄우지 않는다. 위치 엔타이틀먼트가
   미확정이거나 조회 오류이면 이전 캐시 좌표·경로·리포트를 표시하지 않고 명시적 확인/오류 상태로 닫는다. 방문 확인 쿼리도
   같은 gate가 열리기 전에는 캐시된 위치 이력을 읽거나 `다녀옴`으로 표시하지 않는다.
+  ★"다녀옴"은 위치로 확인됐을 때만이다(2026-08-18 TK 제보): 방문 검증을 하는 화면에서 `visited` 판정이 없으면
+  장소 미지정 일정이라도 `확인 필요`로 남긴다. 시간이 지났다는 이유로 다녀온 것처럼 단정하지 않는다.
+  회귀=`tests/visitVerifyTag.test.ts`.
 - **역할 라우트·알림 표시 경계(2026-07-14)**: 부모·아이뿐 아니라 선생님 탭과 알림장 상세도 `RequireRole`로 막아
   URL 직접 입력이 역할 경계를 우회하지 못하게 한다. Android pending 복구는 표시용 알림인지 먼저 판정한 뒤에만
   system/local ACK를 확인하며 `request_location`·`request_device_status`·원격청취 같은 네이티브 명령을 알림 표시 완료로
