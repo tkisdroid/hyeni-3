@@ -3,20 +3,12 @@ import { useId, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import {
   AlertTriangle,
-  Bell,
   ChevronLeft,
   ChevronRight,
-  Crown,
-  DatabaseZap,
-  Gift,
-  Languages,
   LogOut,
-  MapPin,
   MessageCircleQuestion,
   ShieldCheck,
-  Star,
   Trash2,
-  UserRound,
   type LucideIcon,
 } from "lucide-react";
 import { asset } from "@/lib/assets";
@@ -42,14 +34,16 @@ import "./ParentSettings.css";
 /* ── 행 정의 (결합 회피: 화면 자체 정의) ─────────────────────────────── */
 
 type Tone = "lav" | "rose" | "blue" | "mint" | "gold" | "neutral" | "danger";
-type NavRow = { id: string; Icon: LucideIcon; tone: Tone; labelId: string; route: string; badge?: boolean };
+// 설정 행 아이콘도 기능 행과 같은 소프트 3D webp 를 쓴다(2026-08-18 TK 지시).
+// 로그아웃·탈퇴 같은 계정 유틸리티 행만 lucide 로 남긴다(대응하는 3D 자산이 없다).
+type NavRow = { id: string; icon: string; tone: Tone; labelId: string; route: string; badge?: boolean };
 
 const settingsRows: NavRow[] = [
-  { id: "account", Icon: UserRound, tone: "lav", labelId: "parent.settings.account", route: "/account" },
-  { id: "notif", Icon: Bell, tone: "rose", labelId: "parent.settings.notifications", route: "/notification-settings" },
-  { id: "location", Icon: MapPin, tone: "blue", labelId: "parent.settings.location", route: "/location-settings" },
-  { id: "data", Icon: DatabaseZap, tone: "mint", labelId: "parent.settings.dataSync", route: "/data-sync" },
-  { id: "subscription", Icon: Crown, tone: "gold", labelId: "parent.settings.subscription", route: "/subscription", badge: true },
+  { id: "account", icon: "ui/profile-3d.webp", tone: "lav", labelId: "parent.settings.account", route: "/account" },
+  { id: "notif", icon: "ui/bell.webp", tone: "rose", labelId: "parent.settings.notifications", route: "/notification-settings" },
+  { id: "location", icon: "ui/pin.webp", tone: "blue", labelId: "parent.settings.location", route: "/location-settings" },
+  { id: "data", icon: "ui/data-sync-3d.webp", tone: "mint", labelId: "parent.settings.dataSync", route: "/data-sync" },
+  { id: "subscription", icon: "ui/crown.webp", tone: "gold", labelId: "parent.settings.subscription", route: "/subscription", badge: true },
 ];
 
 type FeatureRow = { id: string; icon: string; tone: Tone; labelId: string; route: string };
@@ -74,10 +68,10 @@ type AccountRow = {
   chevron?: boolean;
 };
 
-function SettingsIcon({ Icon, tone }: { Icon: LucideIcon; tone: Tone }) {
+function SettingsIcon({ icon, tone }: { icon: string; tone: Tone }) {
   return (
     <span className="ps-nav__chip" data-tone={tone}>
-      <Icon size={18} strokeWidth={2.3} />
+      <img src={asset(icon)} alt="" aria-hidden="true" />
     </span>
   );
 }
@@ -282,7 +276,7 @@ export function ParentSettings() {
             aria-expanded={languageOpen}
             onClick={() => setLanguageOpen((open) => !open)}
           >
-            <SettingsIcon Icon={Languages} tone="blue" />
+            <SettingsIcon icon="ui/language-3d.webp" tone="blue" />
             <span className="ps-nav__label">{intl.formatMessage({ id: "core.language.rowLabel" })}</span>
             <span className="ps-nav__value" lang={locale}>{languageNativeName(locale)}</span>
             <ChevronRight
@@ -311,7 +305,7 @@ export function ParentSettings() {
                 className="ps-nav hy-press"
                 onClick={() => navigate(r.route)}
               >
-                <SettingsIcon Icon={r.Icon} tone={r.tone} />
+                <SettingsIcon icon={r.icon} tone={r.tone} />
                 <span className="ps-nav__label">{intl.formatMessage({ id: r.labelId })}</span>
                 {r.badge && ready && (
                   <span className="ps-account__badge" data-premium={tier === TIERS.PREMIUM}>
@@ -328,7 +322,7 @@ export function ParentSettings() {
                 className="ps-nav hy-press"
                 onClick={() => setReferralOpen(true)}
               >
-                <SettingsIcon Icon={Gift} tone="gold" />
+                <SettingsIcon icon="ui/gift-3d.webp" tone="gold" />
                 <span className="ps-nav__label">
                   {intl.formatMessage(
                     { id: "parent.parentSettings.copy018" },
@@ -340,7 +334,7 @@ export function ParentSettings() {
             )}
             {reviewRewardNotice && (
               <div className="ps-nav" role="status">
-                <SettingsIcon Icon={Star} tone="gold" />
+                <SettingsIcon icon="ui/star-medal.webp" tone="gold" />
                 <span className="ps-nav__label">{reviewRewardNotice}</span>
               </div>
             )}

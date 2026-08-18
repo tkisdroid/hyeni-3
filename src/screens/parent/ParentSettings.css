@@ -359,6 +359,13 @@
   color: var(--fg-tertiary);
   flex: none;
 }
+
+/* 3D 아이콘은 칩 안을 넉넉히 채운다(기능 행의 40px 칩과 같은 비율). */
+.ps-nav__chip img {
+  width: 27px;
+  height: 27px;
+  object-fit: contain;
+}
 .ps-nav__label {
   flex: 1;
   min-width: 0;
