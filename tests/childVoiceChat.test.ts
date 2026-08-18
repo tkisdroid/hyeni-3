@@ -28,6 +28,18 @@ const IDS = [
   "child.aiChat.voice.replyOnAria",
   "child.aiChat.voice.replyOffAria",
 ] as const;
+const VOICE_TOGGLE_COPY = {
+  ko: ["글로 물어본 답도 읽어주기 켜기", "글로 물어본 답도 읽어주기 끄기"],
+  en: ["Turn on reading answers to text questions aloud", "Turn off reading answers to text questions aloud"],
+  ja: ["文字で聞いた答えも読み上げる設定をオンにする", "文字で聞いた答えも読み上げる設定をオフにする"],
+  "zh-CN": ["开启朗读文字提问的回答", "关闭朗读文字提问的回答"],
+  "zh-TW": ["開啟朗讀文字提問的回答", "關閉朗讀文字提問的回答"],
+  vi: ["Bật đọc to câu trả lời cho câu hỏi bằng chữ", "Tắt đọc to câu trả lời cho câu hỏi bằng chữ"],
+  th: ["เปิดการอ่านออกเสียงคำตอบของคำถามที่พิมพ์", "ปิดการอ่านออกเสียงคำตอบของคำถามที่พิมพ์"],
+  id: ["Nyalakan pembacaan jawaban untuk pertanyaan yang diketik", "Matikan pembacaan jawaban untuk pertanyaan yang diketik"],
+  ms: ["Hidupkan bacaan jawapan untuk soalan yang ditaip", "Matikan bacaan jawapan untuk soalan yang ditaip"],
+  fil: ["I-on ang pagbasa nang malakas ng sagot sa text", "I-off ang pagbasa nang malakas ng sagot sa text"],
+} as const;
 
 test("네이티브 speak/stopSpeak 가 JS 로 노출되고 웹 폴백이 있다", () => {
   const speech = read("src/lib/native/speech.ts");
@@ -141,6 +153,16 @@ test("음성 문구는 10개 locale 에 모두 있고 아이 말투를 지킨다
     for (const id of IDS) {
       assert.ok((catalog[id] ?? "").trim().length > 0, `${locale}:${id} 누락`);
     }
+  }
+  for (const locale of LOCALES) {
+    const catalog = JSON.parse(read(`locales/${locale}/child.json`)) as Record<string, string>;
+    assert.deepEqual(
+      [
+        catalog["child.aiChat.voice.replyOnAria"],
+        catalog["child.aiChat.voice.replyOffAria"],
+      ],
+      VOICE_TOGGLE_COPY[locale],
+    );
   }
   const ko = JSON.parse(read("locales/ko/child.json")) as Record<string, string>;
   for (const id of IDS) {

@@ -2373,14 +2373,14 @@
     "audience": "child",
     "qualityTier": "A",
     "variables": {},
-    "description": "대답 읽어주기 끄기 토글 aria 라벨"
+    "description": "글로 물어본 답도 읽어주는 영구 설정을 끄는 토글 aria 라벨"
   },
   "child.aiChat.voice.replyOnAria": {
     "namespace": "child",
     "audience": "child",
     "qualityTier": "A",
     "variables": {},
-    "description": "대답 읽어주기 켜기 토글 aria 라벨"
+    "description": "글로 물어본 답도 읽어주는 영구 설정을 켜는 토글 aria 라벨"
   },
   "child.aiChat.voice.startAria": {
     "namespace": "child",
