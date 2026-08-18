@@ -350,6 +350,10 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   별도 설명·버튼으로 background 권한을 요청한다. 서비스가 임의로 권한 창을 띄우지 않는다. 위치 엔타이틀먼트가
   미확정이거나 조회 오류이면 이전 캐시 좌표·경로·리포트를 표시하지 않고 명시적 확인/오류 상태로 닫는다. 방문 확인 쿼리도
   같은 gate가 열리기 전에는 캐시된 위치 이력을 읽거나 `다녀옴`으로 표시하지 않는다.
+  ★사용 정보 접근(PACKAGE_USAGE_STATS)은 아이 기기가 스스로 받는다(2026-08-18 TK 지시): 위치 권한 마법사에
+  `usageAccess` 단계를 이어 붙이고, 설정에서 돌아오면 `getDeliveryHealth().usageAccessGranted` 로 실제 상태를 다시
+  확인한다. 꺼져 있으면 아이 홈이 7일에 한 번 다시 묻는다(`transform/usageAccessPrompt`, 가족+아이 키).
+  부모 화면에는 설정 경로를 시키지 않고 "아이 기기에서 사용 정보 접근을 켜면 보여요" 한 줄만 남긴다.
   ★"다녀옴"은 위치로 확인됐을 때만이다(2026-08-18 TK 제보): 방문 검증을 하는 화면에서 `visited` 판정이 없으면
   장소 미지정 일정이라도 `확인 필요`로 남긴다. 시간이 지났다는 이유로 다녀온 것처럼 단정하지 않는다.
   회귀=`tests/visitVerifyTag.test.ts`.

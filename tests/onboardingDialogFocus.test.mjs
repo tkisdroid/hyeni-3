@@ -70,7 +70,8 @@ test("위치 권한 dialog는 열린 상태의 단계 전환마다 새 제목으
   };
   visit(permissionDialog);
 
-  assert.equal(headings.length, 3, "권한 단계별 제목 전수 목록이 바뀌었습니다");
+  // 위치 고지·백그라운드 교육·사용 정보 접근·거부 안내 네 단계(2026-08-18 사용 정보 접근 추가).
+  assert.equal(headings.length, 4, "권한 단계별 제목 전수 목록이 바뀌었습니다");
   const titleRefs = headings.map((heading) => jsxAttributeExpression(heading, "ref"));
   assert.ok(titleRefs.every(Boolean), "모든 단계 제목에 focus ref가 필요합니다");
   assert.equal(new Set(titleRefs).size, 1, "단계별 제목은 같은 focus ref를 사용해야 합니다");

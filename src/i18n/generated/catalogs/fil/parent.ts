@@ -658,7 +658,7 @@ const messages = {
   "parent.parentHome.copy044": "oras ng paggamit",
   "parent.parentHome.copy045": "Ito ay ipinapakita kapag ang device ng bata ay naka-link.",
   "parent.parentHome.copy046": "Maliban sa Hyeni Calendar, walang mga app na ginamit ko ngayon.",
-  "parent.parentHome.copy047": "Lumalabas ito kapag na-on mo ang mga setting ng device ng bata > Payagan ang access sa impormasyon sa paggamit.",
+  "parent.parentHome.copy047": "Lalabas kapag naka-on ang usage access sa device ng bata",
   "parent.parentHome.copy048": "Ina-update…",
   "parent.parentHome.copy049": "Update Ngayon",
   "parent.parentHome.copy050": "Mga materyales at takdang-aralin",

@@ -10,7 +10,7 @@
   "reports.daily.alert.safety": "안전 알림",
   "reports.daily.alert.sos": "SOS 알림",
   "reports.daily.alertCount": "{count, number}건",
-  "reports.daily.appPermission": "사용정보 접근 권한을 켜면 많이 쓴 앱이 표시돼요.",
+  "reports.daily.appPermission": "아이 기기에서 사용 정보 접근을 켜면 보여요.",
   "reports.daily.asOf": "{time} 기준",
   "reports.daily.back": "뒤로",
   "reports.daily.battery": "배터리",

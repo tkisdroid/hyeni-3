@@ -10,7 +10,7 @@
   "reports.daily.alert.safety": "peringatan keselamatan",
   "reports.daily.alert.sos": "Pemberitahuan SOS",
   "reports.daily.alertCount": "{count, number} kes",
-  "reports.daily.appPermission": "Jika anda menghidupkan akses maklumat penggunaan, apl yang paling banyak digunakan akan dipaparkan.",
+  "reports.daily.appPermission": "Dipaparkan setelah akses penggunaan dihidupkan pada peranti anak.",
   "reports.daily.asOf": "Berdasarkan {time}",
   "reports.daily.back": "belakang",
   "reports.daily.battery": "bateri",

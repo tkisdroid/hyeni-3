@@ -15,6 +15,8 @@ interface NativeDeliveryHealth {
   remoteListenChannelEnabled?: boolean;
   batteryOptimizationsIgnored?: boolean;
   recordAudioGranted?: boolean;
+  /** 사용 정보 접근(PACKAGE_USAGE_STATS) — 부모가 보는 "오늘 많이 쓴 앱"의 전제. */
+  usageAccessGranted?: boolean;
 }
 
 interface NativeNotificationPermissionPlugin {
@@ -23,6 +25,7 @@ interface NativeNotificationPermissionPlugin {
   openFullScreenIntentSettings?(): Promise<void>;
   openBatteryOptimizationSettings?(): Promise<void>;
   openAppDetailsSettings?(): Promise<void>;
+  openUsageAccessSettings?(): Promise<void>;
   requestRecordAudio?(): Promise<{ granted?: boolean; requested?: boolean }>;
 }
 
@@ -101,6 +104,38 @@ export async function readNotificationDeliveryState(): Promise<NotificationDeliv
   } catch (error) {
     console.error("[permission] 네이티브 알림 상태 확인 실패:", error);
     return unsupportedNotificationDeliveryState();
+  }
+}
+
+/**
+ * 사용 정보 접근(특별 접근) 상태. 부모가 보는 "오늘 많이 쓴 앱"은 이 권한이 있어야 채워지므로
+ * 아이 기기 설정 단계에서 함께 받아 둔다(2026-08-18 TK 지시).
+ * 런타임 권한이 아니라 시스템 설정 토글이라 요청 다이얼로그가 없다 — 설정 화면을 열고 다시 확인한다.
+ */
+export async function readUsageAccessState(): Promise<PermissionState> {
+  if (!isNativePlatform()) return { supported: false, granted: false };
+  const plugin = getNativePlugin<NativeNotificationPermissionPlugin>(NOTIFICATION_PLUGIN);
+  if (!plugin?.getDeliveryHealth) return { supported: false, granted: false };
+  try {
+    const health = await plugin.getDeliveryHealth();
+    return { supported: true, granted: health.usageAccessGranted === true };
+  } catch (error) {
+    console.error("[permission] 사용 정보 접근 상태 확인 실패:", error);
+    return { supported: false, granted: false };
+  }
+}
+
+/** 설명 뒤 사용자 버튼에서만 사용 정보 접근 설정 화면을 연다. */
+export async function openUsageAccessSettings(): Promise<boolean> {
+  if (!isNativePlatform()) return false;
+  const plugin = getNativePlugin<NativeNotificationPermissionPlugin>(NOTIFICATION_PLUGIN);
+  if (!plugin?.openUsageAccessSettings) return false;
+  try {
+    await plugin.openUsageAccessSettings();
+    return true;
+  } catch (error) {
+    console.error("[permission] 사용 정보 접근 설정 열기 실패:", error);
+    return false;
   }
 }
 

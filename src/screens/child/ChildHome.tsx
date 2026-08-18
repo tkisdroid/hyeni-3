@@ -29,6 +29,15 @@ import { CHILD_ACCENTS } from "@/transform/childAccent";
 import { resolveAiFriendDisplayName } from "@/transform/aiFriendName";
 import { aiBuddyFaceAsset } from "@/transform/aiBuddyEmotion";
 import { useAiBuddyMood } from "@/app/aiBuddyMood";
+import { ChildLocationPermissionDialog } from "@/components/ChildLocationPermissionDialog";
+import { isNativePlatform } from "@/lib/native/plugins";
+import { readUsageAccessState } from "@/lib/native/permissions";
+import {
+  readUsageAccessPromptedAt,
+  shouldPromptUsageAccess,
+  usageAccessPromptStorageKey,
+  writeUsageAccessPromptedAt,
+} from "@/transform/usageAccessPrompt";
 import {
   MAX_SUPPLY_ITEMS_PER_KIND,
   dailySupplyLimitMessage,
@@ -74,7 +83,32 @@ export function ChildHome() {
   const navigate = useNavigate();
   const { show } = useToast();
   const { accent, setAccent } = useAccent();
-  const { userId } = useAuth();
+  const { userId, familyId } = useAuth();
+  // 부모가 아이 기기 정보를 보려면 사용 정보 접근이 필요한데 부모가 대신 켤 수 없다.
+  // 꺼져 있으면 아이 기기가 스스로 다시 물어본다(일주일에 한 번, 2026-08-18 TK 지시).
+  const [usageAccessPromptOpen, setUsageAccessPromptOpen] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || !isNativePlatform()) return;
+    let active = true;
+    const key = usageAccessPromptStorageKey(familyId, userId);
+    void readUsageAccessState().then((state) => {
+      if (!active) return;
+      const now = Date.now();
+      const due = shouldPromptUsageAccess({
+        native: true,
+        supported: state.supported,
+        granted: state.granted,
+        lastPromptedAtMs: readUsageAccessPromptedAt(window.localStorage, key),
+        nowMs: now,
+      });
+      if (!due) return;
+      writeUsageAccessPromptedAt(window.localStorage, key, now);
+      setUsageAccessPromptOpen(true);
+    }).catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [familyId, userId]);
 
   const memoDateKeys = useRecentDateKeys(7, LEGACY_FAMILY_TIME_ZONE);
   const memoDateKey = latestDateKeyOrNull(memoDateKeys);
@@ -423,6 +457,13 @@ export function ChildHome() {
 
   return (
     <div className="kd-root">
+      <ChildLocationPermissionDialog
+        open={usageAccessPromptOpen}
+        copyMode="child"
+        initialStage="usageAccess"
+        onDismiss={() => setUsageAccessPromptOpen(false)}
+        onPermissionGranted={() => setUsageAccessPromptOpen(false)}
+      />
       {/* ── 오늘 모험 지도 ─────────────────────────────────────────── */}
       <div className={`kd-map${adventure.nodes.length === 0 ? " kd-map--empty" : ""}`}>
         <div className="kd-map__stage">

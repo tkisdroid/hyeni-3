@@ -10,7 +10,7 @@
   "reports.daily.alert.safety": "safety reminder",
   "reports.daily.alert.sos": "SOS notification",
   "reports.daily.alertCount": "{count, number} alerts",
-  "reports.daily.appPermission": "If you turn on usage information access, the most used apps will be displayed.",
+  "reports.daily.appPermission": "Shown once usage access is on for the child's device.",
   "reports.daily.asOf": "Based on {time}",
   "reports.daily.back": "back",
   "reports.daily.battery": "battery",

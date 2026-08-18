@@ -10,7 +10,7 @@ const messages = {
   "reports.daily.alert.safety": "nhắc nhở an toàn",
   "reports.daily.alert.sos": "Thông báo SOS",
   "reports.daily.alertCount": "{count, number} cảnh báo",
-  "reports.daily.appPermission": "Nếu bạn bật quyền truy cập thông tin sử dụng, các ứng dụng được sử dụng nhiều nhất sẽ được hiển thị.",
+  "reports.daily.appPermission": "Hiển thị khi bật quyền truy cập sử dụng trên máy của trẻ.",
   "reports.daily.asOf": "Tính đến {time}",
   "reports.daily.back": "mặt sau",
   "reports.daily.battery": "ắc quy",

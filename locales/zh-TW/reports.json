@@ -10,7 +10,7 @@
   "reports.daily.alert.safety": "安全提醒",
   "reports.daily.alert.sos": "求救通知",
   "reports.daily.alertCount": "{count, number} 例",
-  "reports.daily.appPermission": "如果您開啟使用資訊訪問，將顯示最常用的應用程式。",
+  "reports.daily.appPermission": "在孩子的裝置上開啟使用資訊存取後顯示。",
   "reports.daily.asOf": "截至{time}",
   "reports.daily.back": "後退",
   "reports.daily.battery": "電池",

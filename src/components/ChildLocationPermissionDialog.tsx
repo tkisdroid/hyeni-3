@@ -1,6 +1,8 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import {
+  openUsageAccessSettings,
+  readUsageAccessState,
   requestBackgroundLocationPermission,
   requestForegroundLocationPermission,
 } from "@/lib/native/permissions";
@@ -8,6 +10,7 @@ import {
   advanceLocationPermissionStage,
   type LocationPermissionStage,
 } from "@/transform/locationPermissionFlow";
+import { writeUsageAccessPromptedAt } from "@/transform/usageAccessPrompt";
 import "./ChildLocationPermissionDialog.css";
 
 type CopyMode = "formal" | "child";
@@ -17,6 +20,13 @@ interface ChildLocationPermissionDialogProps {
   copyMode: CopyMode;
   onDismiss: () => void;
   onPermissionGranted: () => void | Promise<void>;
+  /**
+   * 열릴 때 시작할 단계. 기본은 위치 안내부터이고, 위치는 이미 켰지만 사용 정보 접근만
+   * 꺼져 있는 기기에서는 그 단계만 따로 연다(2026-08-18).
+   */
+  initialStage?: "disclosure" | "usageAccess";
+  /** 사용 정보 접근 단계를 보여 준 시각을 남길 저장 키(다른 화면의 중복 물음 방지). */
+  usagePromptStorageKey?: string;
 }
 
 const FORMAL_COPY = {
@@ -39,6 +49,14 @@ const FORMAL_COPY = {
   deniedBody: "권한 없이 시작하면 보호자에게 현재 위치와 도착·출발 알림이 전달되지 않습니다.",
   unsupportedBody: "아이의 백그라운드 위치 공유는 Android 앱에서 사용할 수 있습니다.",
   deniedFollowup: "앱은 계속 사용할 수 있고, 아이 설정에서 언제든지 다시 설정할 수 있습니다.",
+  usageEyebrow: "기기 정보 공유",
+  usageTitle: "사용 정보 접근을 켜 주세요",
+  usageBody: [
+    "보호자가 오늘 많이 쓴 앱과 화면 사용 시간을 보려면 Android의 사용 정보 접근이 필요합니다.",
+    "다음 화면에서 혜니캘린더를 찾아 켠 뒤 돌아와 주세요. 켜지 않아도 앱은 사용할 수 있습니다.",
+  ],
+  usageOpen: "사용 정보 접근 열기",
+  usageDone: "켰어요",
   later: "나중에",
   continue: "동의하고 계속",
   openSettings: "‘항상 허용’ 설정 열기",
@@ -68,6 +86,14 @@ const CHILD_COPY = {
   deniedBody: "권한 없이 시작하면 엄마·아빠에게 지금 위치와 도착·출발 알림을 보낼 수 없어.",
   unsupportedBody: "백그라운드 위치 공유는 Android 앱에서 쓸 수 있어.",
   deniedFollowup: "앱은 계속 쓸 수 있고, 내 위치에서 언제든지 다시 설정할 수 있어.",
+  usageEyebrow: "기기 정보 공유",
+  usageTitle: "사용 정보 접근을 켜 줘",
+  usageBody: [
+    "엄마·아빠가 오늘 많이 쓴 앱과 화면 사용 시간을 보려면 Android의 사용 정보 접근이 필요해.",
+    "다음 화면에서 혜니캘린더를 찾아 켜고 돌아와 줘. 안 켜도 앱은 쓸 수 있어.",
+  ],
+  usageOpen: "사용 정보 접근 열기",
+  usageDone: "켰어",
   later: "나중에",
   continue: "동의하고 계속",
   openSettings: "‘항상 허용’ 설정 열기",
@@ -82,6 +108,8 @@ export function ChildLocationPermissionDialog({
   copyMode,
   onDismiss,
   onPermissionGranted,
+  initialStage = "disclosure",
+  usagePromptStorageKey,
 }: ChildLocationPermissionDialogProps) {
   const copy = copyMode === "child" ? CHILD_COPY : FORMAL_COPY;
   const [stage, setStage] = useState<LocationPermissionStage>("closed");
@@ -112,11 +140,13 @@ export function ChildLocationPermissionDialog({
     previousOpenRef.current = open;
     if (open && !wasOpen) {
       setLocationUnsupported(false);
-      setStage(advanceLocationPermissionStage("closed", { type: "open" }));
+      setStage(initialStage === "usageAccess"
+        ? "usageAccess"
+        : advanceLocationPermissionStage("closed", { type: "open" }));
     } else if (!open && wasOpen) {
       setStage("closed");
     }
-  }, [open]);
+  }, [initialStage, open]);
 
   useEffect(() => {
     const previousStage = previousStageRef.current;
@@ -124,6 +154,11 @@ export function ChildLocationPermissionDialog({
     if (previousStage === "closed" || stage === "closed") return;
     stageTitleRef.current?.focus({ preventScroll: true });
   }, [stage]);
+
+  useEffect(() => {
+    if (stage !== "usageAccess" || !usagePromptStorageKey || typeof window === "undefined") return;
+    writeUsageAccessPromptedAt(window.localStorage, usagePromptStorageKey, Date.now());
+  }, [stage, usagePromptStorageKey]);
 
   const requestForeground = async () => {
     if (permissionBusy) return;
@@ -150,16 +185,43 @@ export function ChildLocationPermissionDialog({
     try {
       const result = await requestBackgroundLocationPermission();
       setLocationUnsupported(!result.supported);
+      // 위치를 다 받은 뒤 "오늘 많이 쓴 앱"의 전제인 사용 정보 접근까지 이어서 켠다.
+      const usage = result.granted ? await readUsageAccessState() : null;
       const nextStage = advanceLocationPermissionStage(stage, {
         type: "backgroundResult",
         granted: result.granted,
         supported: result.supported,
+        usageAccessGranted: usage ? usage.supported && usage.granted : undefined,
       });
       setStage(nextStage);
       if (result.granted) await onPermissionGranted();
     } catch {
       setLocationUnsupported(false);
       setStage("backgroundDenied");
+    } finally {
+      setPermissionBusy(false);
+    }
+  };
+
+  const openUsageAccess = async () => {
+    if (permissionBusy) return;
+    setPermissionBusy(true);
+    try {
+      await openUsageAccessSettings();
+    } finally {
+      setPermissionBusy(false);
+    }
+  };
+
+  /** 설정에서 돌아온 뒤 실제 상태를 다시 읽는다 — 켰다고 말만 듣고 끝내지 않는다. */
+  const confirmUsageAccess = async () => {
+    if (permissionBusy) return;
+    setPermissionBusy(true);
+    try {
+      const usage = await readUsageAccessState();
+      const granted = usage.supported && usage.granted;
+      setStage(advanceLocationPermissionStage(stage, { type: "usageAccessResult", granted }));
+      if (granted) await onPermissionGranted();
     } finally {
       setPermissionBusy(false);
     }
@@ -213,6 +275,27 @@ export function ChildLocationPermissionDialog({
               </button>
               <button type="button" className="clp-primary hy-press" onClick={() => void requestBackground()} disabled={permissionBusy} aria-busy={permissionBusy}>
                 {permissionBusy ? copy.opening : copy.openSettings}
+              </button>
+            </div>
+          </>
+        )}
+
+        {stage === "usageAccess" && (
+          <>
+            <span className="clp-dialog__eyebrow">{copy.usageEyebrow}</span>
+            <h2 ref={stageTitleRef} id={titleId} tabIndex={-1}>{copy.usageTitle}</h2>
+            <div id={descriptionId} className="clp-dialog__copy">
+              {copy.usageBody.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+            </div>
+            <div className="clp-dialog__actions">
+              <button ref={secondaryRef} type="button" className="clp-secondary hy-press" onClick={dismiss} disabled={permissionBusy} data-progress-owner="permission-request">
+                {copy.later}
+              </button>
+              <button type="button" className="clp-secondary hy-press" onClick={() => void openUsageAccess()} disabled={permissionBusy} aria-busy={permissionBusy}>
+                {permissionBusy ? copy.opening : copy.usageOpen}
+              </button>
+              <button type="button" className="clp-primary hy-press" onClick={() => void confirmUsageAccess()} disabled={permissionBusy} aria-busy={permissionBusy}>
+                {permissionBusy ? copy.checking : copy.usageDone}
               </button>
             </div>
           </>

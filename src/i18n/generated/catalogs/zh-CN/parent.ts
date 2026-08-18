@@ -658,7 +658,7 @@ const messages = {
   "parent.parentHome.copy044": "使用时间",
   "parent.parentHome.copy045": "当孩子的设备被链接时会显示。",
   "parent.parentHome.copy046": "除了 Hyeni Calendar 之外，我今天没有使用任何应用程序。",
-  "parent.parentHome.copy047": "当您打开孩子的设备设置 > 允许访问使用信息时，就会显示该信息。",
+  "parent.parentHome.copy047": "在孩子的设备上开启使用情况访问后显示",
   "parent.parentHome.copy048": "正在更新…",
   "parent.parentHome.copy049": "立即更新",
   "parent.parentHome.copy050": "材料和作业",

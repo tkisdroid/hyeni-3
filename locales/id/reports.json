@@ -10,7 +10,7 @@
   "reports.daily.alert.safety": "pengingat keselamatan",
   "reports.daily.alert.sos": "pemberitahuan SOS",
   "reports.daily.alertCount": "{count, number} peringatan",
-  "reports.daily.appPermission": "Jika Anda mengaktifkan akses informasi penggunaan, aplikasi yang paling sering digunakan akan ditampilkan.",
+  "reports.daily.appPermission": "Tampil setelah akses penggunaan aktif di perangkat anak.",
   "reports.daily.asOf": "Per {time}",
   "reports.daily.back": "kembali",
   "reports.daily.battery": "baterai",

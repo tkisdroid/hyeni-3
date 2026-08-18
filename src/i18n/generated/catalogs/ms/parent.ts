@@ -658,7 +658,7 @@ const messages = {
   "parent.parentHome.copy044": "masa penggunaan",
   "parent.parentHome.copy045": "Ia dipaparkan apabila peranti kanak-kanak dipautkan.",
   "parent.parentHome.copy046": "Selain Hyeni Calendar, tiada apl yang saya gunakan hari ini.",
-  "parent.parentHome.copy047": "Ia muncul apabila anda menghidupkan tetapan peranti kanak-kanak > Benarkan akses kepada maklumat penggunaan.",
+  "parent.parentHome.copy047": "Dipaparkan setelah akses penggunaan dihidupkan pada peranti anak",
   "parent.parentHome.copy048": "Mengemas kini…",
   "parent.parentHome.copy049": "Kemas kini Sekarang",
   "parent.parentHome.copy050": "Bahan dan kerja rumah",

@@ -8,6 +8,7 @@ import { DEFAULT_CHILD_AVATAR } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { deriveAuthState, useAuth } from "@/auth/AuthContext";
 import { ChildLocationPermissionDialog } from "@/components/ChildLocationPermissionDialog";
+import { usageAccessPromptStorageKey } from "@/transform/usageAccessPrompt";
 import { homePathForRole } from "@/auth/guards";
 import {
   beginOnboardingAuthTransition,
@@ -1615,8 +1616,11 @@ function PermsStep({
   onDone: () => void;
 }) {
   const intl = useIntl();
+  const { userId: permsUserId, familyId: permsFamilyId } = useAuth();
   const permissionItems = role === "child" ? CHILD_PERM_ITEMS : GUARDIAN_PERM_ITEMS;
   const [locationDialogOpen, setLocationDialogOpen] = useState(false);
+  // 이 단계에서 사용 정보 접근을 물었다는 기록 — 아이 홈이 곧바로 또 묻지 않게 한다.
+  const usageAccessPromptKey = usageAccessPromptStorageKey(permsFamilyId, permsUserId);
 
   const start = () => {
     if (role !== "child") {
@@ -1663,6 +1667,7 @@ function PermsStep({
       <ChildLocationPermissionDialog
         open={locationDialogOpen}
         copyMode="formal"
+        usagePromptStorageKey={usageAccessPromptKey}
         onDismiss={finishLocationSetup}
         onPermissionGranted={finishLocationSetup}
       />

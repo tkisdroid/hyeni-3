@@ -658,7 +658,7 @@ const messages = {
   "parent.parentHome.copy044": "사용 시간",
   "parent.parentHome.copy045": "아이 기기가 연동되면 표시돼요",
   "parent.parentHome.copy046": "혜니캘린더 외에 오늘 쓴 앱이 없어요",
-  "parent.parentHome.copy047": "아이 기기 설정 > 사용정보 접근 허용을 켜면 표시돼요",
+  "parent.parentHome.copy047": "아이 기기에서 사용 정보 접근을 켜면 보여요",
   "parent.parentHome.copy048": "갱신 중…",
   "parent.parentHome.copy049": "지금 갱신",
   "parent.parentHome.copy050": "준비물 · 숙제",

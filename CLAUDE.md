@@ -498,6 +498,15 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   `/.well-known/assetlinks.json`의 debug 인증서 지문은 A17 개발 빌드 검증용일 뿐이다. Play 공개 전에는 debug 지문을 제거하고
   **Play App Signing key certificate SHA-256**으로 교체한 뒤 내부 테스트 설치본의 App Link가 `verified`인지 확인해야 하며,
   해당 인증서가 아직 없으면 출시 차단이다.
+- ★**사용 정보 접근은 아이 기기가 스스로 받는다(2026-08-18 TK 지시)**: 부모는 아이 폰을 만질 수 없는데
+  "오늘 많이 쓴 앱"이 `아이 기기 설정 > 사용정보 접근 허용을 켜면 표시돼요`라는 **부모가 할 수 없는 안내**로 끝났다.
+  이제 아이 위치 권한 마법사에 `usageAccess` 단계를 붙여 백그라운드 위치를 받은 직후 이어서 받고
+  (`NativeNotification.openUsageAccessSettings` → 돌아오면 `getDeliveryHealth().usageAccessGranted` 재확인 — 말만
+  듣고 닫지 않는다), 이미 켜져 있거나 확인 불가면 단계를 건너뛴다. 그 뒤에도 꺼져 있으면 **아이 홈이 7일에 한 번**
+  같은 단계를 다시 연다(`transform/usageAccessPrompt`, 저장 키는 가족+아이). 온보딩·아이 홈이 같은 키를 쓰므로
+  물어본 직후 다른 화면이 또 묻지 않는다. 부모 문구는 `아이 기기에서 사용 정보 접근을 켜면 보여요` 한 줄로 줄였다
+  (설정 경로를 부모에게 시키지 않는다). ⚠️ 이 권한은 런타임 다이얼로그가 없는 **특별 접근**이라 코드로 켤 수 없다.
+  회귀=`tests/usageAccessPrompt.test.ts`·`tests/onboardingDialogFocus.test.mjs`(단계 4개).
 - **권한·위치 캐시 fail-closed(2026-07-14)**: 배경 위치는 아이에게 기능 설명 후 foreground 권한을 먼저 받고,
   별도 설명·사용자 버튼에서 background 권한을 요청한다. 서비스가 권한 창을 자동 호출하지 않는다. 위치 엔타이틀먼트가
   미확정·오류이면 캐시된 현재 위치·경로·리포트를 숨기고 명시적 확인/오류 상태로 닫는다. 방문 확인도 같은 gate가 열리기

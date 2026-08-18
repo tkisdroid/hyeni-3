@@ -10,7 +10,7 @@
   "reports.daily.alert.safety": "paalala sa kaligtasan",
   "reports.daily.alert.sos": "Notification ng SOS",
   "reports.daily.alertCount": "{count, number} cases",
-  "reports.daily.appPermission": "Kung io-on mo ang access sa impormasyon ng paggamit, ipapakita ang mga pinaka ginagamit na app.",
+  "reports.daily.appPermission": "Lalabas kapag naka-on ang usage access sa device ng bata.",
   "reports.daily.asOf": "Batay sa {time}",
   "reports.daily.back": "pabalik",
   "reports.daily.battery": "baterya",

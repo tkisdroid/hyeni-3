@@ -658,7 +658,7 @@ const messages = {
   "parent.parentHome.copy044": "usage time",
   "parent.parentHome.copy045": "It is displayed when the child's device is linked.",
   "parent.parentHome.copy046": "Other than Hyeni Calendar, there are no apps I used today.",
-  "parent.parentHome.copy047": "It appears when you turn on the child's device settings > Allow access to usage information.",
+  "parent.parentHome.copy047": "Shown once usage access is on for the child's device",
   "parent.parentHome.copy048": "Updating…",
   "parent.parentHome.copy049": "Update Now",
   "parent.parentHome.copy050": "Materials and homework",

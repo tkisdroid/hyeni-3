@@ -10,7 +10,7 @@ const messages = {
   "reports.daily.alert.safety": "安全通知",
   "reports.daily.alert.sos": "SOS通知",
   "reports.daily.alertCount": "{count, number}件",
-  "reports.daily.appPermission": "使用情報のアクセス権をオンにすると、たくさん書いたアプリが表示されます。",
+  "reports.daily.appPermission": "お子さまの端末で使用情報アクセスをオンにすると表示されます。",
   "reports.daily.asOf": "{time}基準",
   "reports.daily.back": "戻る",
   "reports.daily.battery": "バッテリー",

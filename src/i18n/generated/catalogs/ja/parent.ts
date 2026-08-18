@@ -658,7 +658,7 @@ const messages = {
   "parent.parentHome.copy044": "使用時間",
   "parent.parentHome.copy045": "子機が連動すると表示されます。",
   "parent.parentHome.copy046": "Hyeni Calendar以外に今日使ったアプリはありません。",
-  "parent.parentHome.copy047": "子機の設定>使用情報アクセス許可をオンにすると表示されます。",
+  "parent.parentHome.copy047": "お子さまの端末で使用情報アクセスをオンにすると表示されます",
   "parent.parentHome.copy048": "更新中…",
   "parent.parentHome.copy049": "今更新",
   "parent.parentHome.copy050": "準備物・宿題",

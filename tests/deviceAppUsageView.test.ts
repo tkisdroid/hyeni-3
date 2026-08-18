@@ -217,14 +217,14 @@ test("빈 목록 문구는 Usage Access 허용 여부로 '권한 필요'와 '쓴
   assert.match(home, /appUsagePermissionGranted[\s\S]{0,180}parent\.parentHome\.copy046/);
   assert.match(home, /parent\.parentHome\.copy047/);
   assert.equal(koParent["parent.parentHome.copy046"], "혜니캘린더 외에 오늘 쓴 앱이 없어요");
-  assert.equal(koParent["parent.parentHome.copy047"], "아이 기기 설정 > 사용정보 접근 허용을 켜면 표시돼요");
+  assert.equal(koParent["parent.parentHome.copy047"], "아이 기기에서 사용 정보 접근을 켜면 보여요");
 
   const report = readSource("src/screens/feature/DailySafetyReport.tsx");
   const koReports = JSON.parse(readSource("locales/ko/reports.json"));
   assert.match(report, /appUsagePermissionGranted[\s\S]{0,180}reports\.daily\.noOtherApps/);
   assert.match(report, /reports\.daily\.appPermission/);
   assert.equal(koReports["reports.daily.noOtherApps"], "혜니캘린더 외에 오늘 쓴 앱이 없어요.");
-  assert.equal(koReports["reports.daily.appPermission"], "사용정보 접근 권한을 켜면 많이 쓴 앱이 표시돼요.");
+  assert.equal(koReports["reports.daily.appPermission"], "아이 기기에서 사용 정보 접근을 켜면 보여요.");
 });
 
 test("Android 패키지 가시성은 일반 앱·기본 홈·보조 화면 홈을 모두 조회한다", () => {

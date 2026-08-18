@@ -10,7 +10,7 @@
   "reports.daily.alert.safety": "เตือนความปลอดภัย",
   "reports.daily.alert.sos": "การแจ้งเตือน SOS",
   "reports.daily.alertCount": "การแจ้งเตือน {count, number} รายการ",
-  "reports.daily.appPermission": "หากคุณเปิดการเข้าถึงข้อมูลการใช้งาน แอพที่ใช้มากที่สุดจะปรากฏขึ้น",
+  "reports.daily.appPermission": "แสดงเมื่อเปิดการเข้าถึงข้อมูลการใช้งานบนเครื่องของเด็ก",
   "reports.daily.asOf": "ขึ้นอยู่กับ {time}",
   "reports.daily.back": "กลับ",
   "reports.daily.battery": "แบตเตอรี่",

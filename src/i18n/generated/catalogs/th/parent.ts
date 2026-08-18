@@ -658,7 +658,7 @@ const messages = {
   "parent.parentHome.copy044": "เวลาการใช้งาน",
   "parent.parentHome.copy045": "จะแสดงขึ้นเมื่อเชื่อมต่ออุปกรณ์ของเด็กแล้ว",
   "parent.parentHome.copy046": "นอกจาก Hyeni Calendar แล้ว วันนี้ไม่มีแอปใดที่ฉันใช้เลย",
-  "parent.parentHome.copy047": "จะปรากฏขึ้นเมื่อคุณเปิดการตั้งค่าอุปกรณ์ของเด็ก > อนุญาตการเข้าถึงข้อมูลการใช้งาน",
+  "parent.parentHome.copy047": "แสดงเมื่อเปิดการเข้าถึงข้อมูลการใช้งานบนเครื่องของเด็ก",
   "parent.parentHome.copy048": "กำลังอัปเดต...",
   "parent.parentHome.copy049": "อัปเดตทันที",
   "parent.parentHome.copy050": "วัสดุและการบ้าน",
