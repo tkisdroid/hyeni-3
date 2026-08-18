@@ -14,6 +14,15 @@ test("네이티브 TTS CDP 확인은 localhost와 비식별 projection만 사용
   assert.match(probe, /familyScopesMatch/);
   assert.match(probe, /\.afc/);
   assert.match(probe, /SpeechRecognition\.speak/);
+  assert.match(
+    probe,
+    /text:\s*"AI \\uce5c\\uad6c \\uc74c\\uc131 \\ub2f5\\ubcc0 \\ud655\\uc778\\uc774\\uc57c\."/,
+  );
+  const ttsTextLiterals = [...probe.matchAll(/text:\s*"([^"\r\n]*)"/g)].map((match) => match[1]);
+  assert.equal(ttsTextLiterals.length, 2);
+  for (const text of ttsTextLiterals) assert.doesNotMatch(text, /[^\x00-\x7f]/);
+  assert.match(probe, /window\.speechSynthesis\?\.cancel\(\)/);
+  assert.match(probe, /\[switch\]\$ShortOnly/);
   assert.match(probe, /SpeechRecognition\.stopSpeak/);
   assert.match(probe, /SpeechRecognition\.addListener\("ttsState"/);
   assert.match(probe, /result\?\.started !== true/);
@@ -49,7 +58,7 @@ test("네이티브 TTS CDP 확인은 성공 상태만 출력하고 명령 전체
   assert.match(probe, /Promise\.allSettled\(cleanup\)/);
 
   const shortDoneWait = probe.indexOf('$shortState = Wait-CdpProbeState');
-  const longSpeak = probe.indexOf('text: "AI 친구 음성 답변 중단 확인', shortDoneWait);
+  const longSpeak = probe.indexOf("SpeechRecognition.speak", shortDoneWait);
   const longWait = probe.indexOf('$longState = Wait-CdpProbeState', longSpeak);
   const stopDelay = probe.indexOf("Start-Sleep -Milliseconds 700", longWait);
   const stopCall = probe.indexOf("Promise.resolve(SpeechRecognition.stopSpeak())", stopDelay);

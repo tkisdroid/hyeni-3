@@ -366,6 +366,12 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   회귀=`tests/aiBuddyFab.test.ts`·`tests/eventCompanionPrompt.test.ts`·Worker
   `tests/aiChildSettingsAgent.test.mjs`·`tests/aiChildMemoryDepth.test.mjs`·`tests/openAiLunaContract.test.mjs`.
 - ★**AI 친구 음성 turn 자동 답변(2026-08-18 TK 승인)**: 마이크가 만든 `source="voice"`의 정상 reply는 가족+아이 읽어주기 설정이 꺼져 있어도 그 turn만 자동 TTS한다. `composer`·`suggestion:*`·`confirm`은 기존 영구 설정을 따르고, 빈·오류·한도 응답은 읽지 않는다. 새 마이크 시작·토글 off·화면 이탈은 STT/TTS를 즉시 중단하며 초기화 중이던 오래된 native callback도 재생을 되살리지 않는다. 사용자 음성 원본은 Worker·OpenAI에 보내지 않고 인식 텍스트만 기존 안전·크레딧·저장 경로로 보낸다. 단 OS·브라우저·선택된 STT/TTS 제공자는 음성 또는 합성할 답변 텍스트를 외부 처리할 수 있으므로 “항상 기기 안에서만 처리”라고 고지하지 않는다. TTS는 추가 API·크레딧·권한 없이 fail-soft이며 10개 locale 태그를 전달한다. 회귀=`tests/childVoiceChat.test.ts`·`tests/nativeTtsCdpProbeSafety.test.mjs`·Android `SpeechLocalePolicyTest`/`SpeechPlaybackGenerationTest`·`worker/tests/legalCopy.test.mjs`·`tests/playReleaseDocumentation.test.mjs`.
+  **razr 최종 가청 검증(2026-08-19)**: `adb install -r` 전후 role=`child`·가족 scope·앱 root projection을
+  보존했고, native callback 기준 짧은 발화 `started→done`과 긴 발화 `started→stopped`를 확인했다. 최초에는
+  “AI”만 들리거나 다른 내용이 들렸지만 제품 결함이 아니라 BOM 없는 UTF-8 QA 스크립트를 Windows PowerShell 5.1이
+  CP949로 읽어 한글 고정 문장을 깨뜨린 것이 원인이었다. 발화문 전체를 ASCII `\uXXXX`로 고정하고 단일 문장 모드로
+  재검증해 TK가 “AI 친구 음성 답변 확인이야” 전체를 정확히 들었다고 확인했다. 운영 마이크→AI 왕복은 대화 행·크레딧
+  보호를 위해 실행하지 않았다. 현재 앱 소스는 Play v1.3.0/versionCode 6 서명 AAB 이후이므로 기존 AAB는 stale이다.
 - ★**꾹 누르면 바로 말하기 + 버튼이 그걸 알려 준다(2026-08-19 TK 지시)**: 아이는 플로팅 AI 친구 버튼에
   음성 대화가 있다는 걸 알 방법이 없었다. ①**조작** — `AI_BUDDY_VOICE_LONG_PRESS_MS`(550ms) 이상 누르면
   `navigate("/child/ai-friend", { state:{ startVoice:true } })` 로 대화창이 열리고 `startVoice()` 가 바로 돈다.

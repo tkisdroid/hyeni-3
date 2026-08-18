@@ -2,7 +2,8 @@
 param(
     [int]$Port = 9224,
     [ValidateSet("Identity", "Tts")]
-    [string]$Mode = "Tts"
+    [string]$Mode = "Tts",
+    [switch]$ShortOnly
 )
 
 $ErrorActionPreference = "Stop"
@@ -304,6 +305,7 @@ try {
     probe.short = "failed";
     return "failed";
   }
+  window.speechSynthesis?.cancel();
   const applyState = (id, state) => {
     if (typeof id !== "string" || !id || !["started", "done", "error", "stopped"].includes(state)) return;
     const normalized = state === "error" ? "failed" : state;
@@ -325,7 +327,8 @@ try {
       }
       probe.listener = listener;
       return SpeechRecognition.speak({
-        text: "AI 친구 음성 답변 확인이야.",
+        // Windows PowerShell 5.1은 BOM 없는 UTF-8을 CP949로 읽으므로 발화문은 ASCII Unicode escape로 고정한다.
+        text: "AI \uce5c\uad6c \uc74c\uc131 \ub2f5\ubcc0 \ud655\uc778\uc774\uc57c.",
         language: "ko-KR",
         rate: 1,
       });
@@ -356,6 +359,19 @@ try {
         -ExpectedState "done" `
         -TimeoutSeconds 20
 
+    if ($ShortOnly) {
+        [ordered]@{
+            mode = $Mode
+            role = [string]$identity.role
+            hasFamilyId = [bool]$identity.hasFamilyId
+            familyScopesMatch = [bool]$identity.familyScopesMatch
+            rootVisible = [bool]$identity.rootVisible
+            shortPlayback = "started"
+            shortCompletion = $shortState
+        } | ConvertTo-Json -Compress
+        return
+    }
+
     [void](Invoke-CdpEvaluate -Socket $socket -Expression @'
 (() => {
   const SpeechRecognition = window.Capacitor?.Plugins?.SpeechRecognition;
@@ -366,7 +382,7 @@ try {
   }
   try {
     Promise.resolve(SpeechRecognition.speak({
-      text: "AI 친구 음성 답변 중단 확인을 위해 이 문장을 끝까지 천천히 읽고 있어. 중간에 소리가 멈추는지 확인해 줘.",
+      text: "AI \uce5c\uad6c \uc74c\uc131 \ub2f5\ubcc0 \uc911\ub2e8 \ud655\uc778\uc744 \uc704\ud574 \uc774 \ubb38\uc7a5\uc744 \ub05d\uae4c\uc9c0 \ucc9c\ucc9c\ud788 \uc77d\uace0 \uc788\uc5b4. \uc911\uac04\uc5d0 \uc18c\ub9ac\uac00 \uba48\ucd94\ub294\uc9c0 \ud655\uc778\ud574 \uc918.",
       language: "ko-KR",
       rate: 1,
     })).then((result) => {
@@ -445,6 +461,7 @@ try {
   if (probe) probe.cancelled = true;
   const SpeechRecognition = window.Capacitor?.Plugins?.SpeechRecognition;
   const cleanup = [];
+  window.speechSynthesis?.cancel();
   if (probe && SpeechRecognition?.stopSpeak) cleanup.push(Promise.resolve(SpeechRecognition.stopSpeak()));
   if (probe?.listener?.remove) cleanup.push(Promise.resolve(probe.listener.remove()));
   await Promise.allSettled(cleanup);
