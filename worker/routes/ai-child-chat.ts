@@ -76,6 +76,10 @@ import { createAiToolConfirmationToken, verifyAiToolConfirmationToken } from "..
 import { sanitizeAiToolResultForPrompt } from "../shared/aiToolResultPrompt.js";
 import { buildAgentPlanChildReply, buildToolResultChildReply } from "../shared/aiToolResultReply.js";
 import {
+  CONTACT_DEVICE_ACTION_TARGETS,
+  isDeviceActionTarget,
+} from "../shared/aiDeviceActionTools.js";
+import {
   isChildAccentKey,
   sanitizeAiFriendName,
   sanitizeChildNotificationMinutes,
@@ -167,6 +171,8 @@ const CHILD_SETTINGS_AGENT_TOOLS = new Set([
   "updateNotificationSettings",
   "updateAiFriendName",
   "changeAppTheme",
+  // 기기 동작은 앱이 대신 하지 않고 화면만 열어 준다(2026-08-18 TK 지시).
+  "openDeviceAction",
 ]);
 
 function isAgentToolAllowedForPrompt(
@@ -1268,6 +1274,25 @@ chat.post("/child-chat", requireAuth, async (c) => {
         accent,
         accentLabel: CHILD_ACCENT_LABELS[accent] ?? accent,
         clientAction: "setAccent",
+      };
+    }
+  }
+
+  // ── 도구: openDeviceAction(기기 화면 열기) ──
+  // 소리·진동·무음, 전화, 문자 같은 기기 동작은 앱이 대신 실행하지 않는다.
+  // 서버는 어떤 화면을 열지만 정하고, 실제로 여는 것과 마지막 확인은 아이 기기가 한다.
+  if (agentPlan.shouldUseTool && agentPlan.toolName === "openDeviceAction") {
+    const target = String(agentPlan.toolArgs.target || "");
+    if (!isDeviceActionTarget(target)) {
+      toolResult = { ok: false, toolName: "openDeviceAction", error: "invalid_device_action" };
+    } else if (CONTACT_DEVICE_ACTION_TARGETS.includes(target) && !contactActionsAllowed) {
+      toolResult = { ok: false, toolName: "openDeviceAction", error: "contact_actions_disabled" };
+    } else {
+      toolResult = {
+        ok: true,
+        toolName: "openDeviceAction",
+        target,
+        clientAction: "openDeviceAction",
       };
     }
   }

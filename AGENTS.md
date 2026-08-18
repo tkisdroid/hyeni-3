@@ -549,6 +549,11 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   아이를 알아 가는 부분: 맥락 14턴·요약 5건·장기기억 30건(확신도 우선), 열린 어휘 기억 추출,
   반복 시 confidence +0.05(상한 0.95), 아이 대화만 reasoningEffort low + 예산 900.
   ⚠️ 조사 처리에서 `이` 는 떼지 않는다(고양이·떡볶이가 망가진다).
+  기기 동작은 열어 주기만 한다(2026-08-18 TK 지시): 소리·진동·무음, 전화, 문자, 와이파이 같은 부탁을 앱이
+  대신 실행하지 않는다. 도구는 openDeviceAction 하나이고 target 화이트리스트 7개(sound|wifi|battery|
+  notifications|location|dial|sms)만 연다. 서버는 화면만 정하고 대화 아래 버튼을 아이가 눌러야 열린다.
+  전화는 ACTION_DIAL, 문자는 ACTION_SENDTO 라 발신·전송은 사람이 누른다. 무음을 앱이 바꾸려면 방해금지 접근이
+  필요하고 부모의 SOS·소리 울리기가 조용해질 수 있어 넣지 않았다(새 권한 0개). 전화·문자는 부모 연락 허용을 따른다.
   대기 중 배회·말 걸기(2026-08-18 TK 지시): 경로 정본은 `src/transform/aiBuddyWander.ts`(순수·시드 결정적)로
   9초마다 한 걸음, 좌우 가장자리에만 서고 세로 8~92% 띠 안에서 최대 0.34비율, 세 걸음마다 반대쪽으로 건너간다.
   이동 얼굴은 explore, 도착 얼굴은 explore 를 뺀 9종에서 뽑고(같으면 계속 걷는 것처럼 보인다) 세 걸음마다

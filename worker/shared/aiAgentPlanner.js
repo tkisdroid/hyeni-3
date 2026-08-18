@@ -7,6 +7,7 @@ import {
   extractAiFriendNameRequest,
   isAiFriendNameChangeRequest,
 } from "./aiChildSettingsTools.js";
+import { detectChildDeviceActionIntent } from "./aiDeviceActionTools.js";
 
 const DATE_KEY_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -763,6 +764,19 @@ export function planChildAgentAction(message, { referenceDate = new Date(), pare
             toolName: "changeAppTheme",
             toolArgs: { accent: accentIntent.accent },
             missingArgs: accentIntent.accent ? [] : ["accent"],
+            safety,
+        });
+    }
+
+    // ── 기기 동작(소리·전화·문자·와이파이…) ─────────────────────────────
+    // 앱이 대신 바꾸지 않는다. 알맞은 화면만 열어 주고 마지막 한 번은 아이가 누른다.
+    const deviceAction = detectChildDeviceActionIntent(text);
+    if (deviceAction) {
+        return basePlan({
+            detectedIntent: "device_action",
+            shouldUseTool: true,
+            toolName: "openDeviceAction",
+            toolArgs: { target: deviceAction.target },
             safety,
         });
     }

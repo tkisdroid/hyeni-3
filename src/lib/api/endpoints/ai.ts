@@ -315,6 +315,8 @@ export interface AiToolResult {
   /** changeAppTheme — 서버에 저장 컬럼이 없어 기기에서 적용한다. */
   accent?: string;
   accentLabel?: string;
+  /** openDeviceAction — 앱이 대신 하지 않고 열어 줄 기기 화면 이름. */
+  target?: string;
   clientAction?: string;
   parentNotified?: boolean;
 }

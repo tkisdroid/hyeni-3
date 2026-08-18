@@ -1,5 +1,16 @@
 import { describeChildNotificationChange } from "./aiChildSettingsTools.js";
 
+/** 기기 화면 이름(아이에게 보이는 말). 화이트리스트 밖 값은 여기 없다. */
+const DEVICE_ACTION_REPLY = Object.freeze({
+    sound: "소리 설정을",
+    wifi: "와이파이 설정을",
+    battery: "배터리 설정을",
+    notifications: "알림 설정을",
+    location: "위치 설정을",
+    dial: "전화 앱을",
+    sms: "문자 앱을",
+});
+
 function text(value, fallback = "") {
     const normalized = String(value || "").trim();
     return normalized || fallback;
@@ -187,6 +198,11 @@ export function buildToolResultChildReply(result) {
     }
     if (toolName === "changeAppTheme") {
         return `${text(result.accentLabel, "새")} 색으로 바꿨어! 마음에 들어?`;
+    }
+    if (toolName === "openDeviceAction") {
+        // 앱이 대신 바꾸지 않는다 — 못 하는 걸 한 척하지 않고 화면만 열어 준다.
+        const label = DEVICE_ACTION_REPLY[text(result.target, "")] ?? "그 설정";
+        return `그건 내가 대신 못 바꿔. ${label} 열어 줄게, 거기서 바꿔 줘!`;
     }
     return "";
 }

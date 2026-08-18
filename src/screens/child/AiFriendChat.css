@@ -567,3 +567,23 @@
     animation: none;
   }
 }
+
+/* 기기 화면 열기 — 앱이 대신 바꾸지 않고 아이가 누르는 한 번(2026-08-18 TK 지시). */
+.afc-device {
+  display: flex;
+  justify-content: flex-start;
+  padding: 0 16px 8px 44px;
+}
+.afc-device__open {
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: var(--radius-pill);
+  background: var(--hy-accent-soft);
+  border: 1.5px solid var(--hy-accent);
+  color: var(--hy-accent-text);
+  font-family: Jua, var(--font-sans);
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+  --press: 0.94;
+}

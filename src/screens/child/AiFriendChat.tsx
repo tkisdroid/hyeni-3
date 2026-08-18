@@ -45,6 +45,11 @@ import {
 } from "@/transform/aiCreditPublicStatus";
 import { useToast } from "@/app/toast";
 import { useAccent } from "@/app/accent";
+import {
+  isDeviceActionTarget,
+  openDeviceAction,
+  type DeviceActionTarget,
+} from "@/lib/native/deviceAction";
 import { useAiBuddyMood } from "@/app/aiBuddyMood";
 import {
   AI_BUDDY_TYPING_FACE,
@@ -275,6 +280,8 @@ export function AiFriendChat() {
   const [pendingSendSource, setPendingSendSource] = useState<string | null>(null);
   // 아직 실행하지 않고 아이 확인을 기다리는 도구(부모 메시지·일정 변경·전화).
   const [pendingTool, setPendingTool] = useState<AiToolResult | null>(null);
+  // 기기 동작은 앱이 대신 하지 않는다 — 열어 줄 화면만 기억해 두고 아이가 누른다(2026-08-18).
+  const [deviceAction, setDeviceAction] = useState<{ target: DeviceActionTarget; phone: string | null } | null>(null);
   const [reportTarget, setReportTarget] = useState<ChatBubble | null>(null);
   // 부모에게 충전을 부탁하는 중/부탁 완료 — 버튼 상태를 정직하게 나눈다.
   const [creditRequest, setCreditRequest] = useState<"idle" | "sending" | "sent">("idle");
@@ -352,6 +359,14 @@ export function AiFriendChat() {
       setPendingTool(null);
       if (tool.toolName === "changeAppTheme" && tool.clientAction === "setAccent" && isAccentKey(tool.accent)) {
         setAccent(tool.accent);
+      }
+      if (
+        tool.toolName === "openDeviceAction"
+        && tool.clientAction === "openDeviceAction"
+        && isDeviceActionTarget(tool.target)
+      ) {
+        // 여는 것도 아이가 버튼을 눌렀을 때만 한다(대화 도착만으로 화면을 가로채지 않는다).
+        setDeviceAction({ target: tool.target, phone: tool.phone ?? null });
       }
     },
     [setAccent],
@@ -684,6 +699,28 @@ export function AiFriendChat() {
           </div>
         )}
       </div>
+
+      {/* 기기 동작 — 앱이 바꾸지 않고 화면만 열어 준다. 마지막 한 번은 아이가 누른다. */}
+      {deviceAction && (
+        <div className="afc-device" role="group">
+          <button
+            type="button"
+            className="afc-device__open hy-press"
+            onClick={() => {
+              void (async () => {
+                const result = await openDeviceAction(deviceAction);
+                if (!result.opened) {
+                  show(intl.formatMessage({ id: "child.aiChat.device.unavailable" }), "⚠️");
+                  return;
+                }
+                setDeviceAction(null);
+              })();
+            }}
+          >
+            {intl.formatMessage({ id: `child.aiChat.device.${deviceAction.target}` })}
+          </button>
+        </div>
+      )}
 
       {/* 확인이 필요한 부탁 — 여기서 누르기 전에는 아무것도 실행되지 않았다. */}
       {pendingTool && (() => {

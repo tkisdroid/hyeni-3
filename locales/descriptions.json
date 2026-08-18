@@ -23148,5 +23148,61 @@
     "qualityTier": "B",
     "variables": {},
     "description": "선생님 주간 시간표 다국어 문구: week.aria"
+  },
+  "child.aiChat.device.sound": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 AI 친구가 기기 화면을 열어 줄 때 쓰는 버튼·안내 문구"
+  },
+  "child.aiChat.device.wifi": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 AI 친구가 기기 화면을 열어 줄 때 쓰는 버튼·안내 문구"
+  },
+  "child.aiChat.device.battery": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 AI 친구가 기기 화면을 열어 줄 때 쓰는 버튼·안내 문구"
+  },
+  "child.aiChat.device.notifications": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 AI 친구가 기기 화면을 열어 줄 때 쓰는 버튼·안내 문구"
+  },
+  "child.aiChat.device.location": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 AI 친구가 기기 화면을 열어 줄 때 쓰는 버튼·안내 문구"
+  },
+  "child.aiChat.device.dial": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 AI 친구가 기기 화면을 열어 줄 때 쓰는 버튼·안내 문구"
+  },
+  "child.aiChat.device.sms": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 AI 친구가 기기 화면을 열어 줄 때 쓰는 버튼·안내 문구"
+  },
+  "child.aiChat.device.unavailable": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 AI 친구가 기기 화면을 열어 줄 때 쓰는 버튼·안내 문구"
   }
 }

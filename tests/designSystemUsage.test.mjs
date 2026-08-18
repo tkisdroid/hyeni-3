@@ -2188,6 +2188,8 @@ const nonSurfacePaintManifest = new Set([
   // AI 친구가 지나가며 건네는 한 마디 — 조작 면이 아니라 몇 초 떠 있다 사라지는 말풍선이다.
   ["src/app/AiBuddyFab.css", ".abf__bubble"],
   ["src/screens/child/AiFriendChat.css", ".afc-credits"],
+  // 기기 화면 열기 버튼 — 조작 면이지만 카드가 아니라 대화 아래 붙는 알약 버튼이다.
+  ["src/screens/child/AiFriendChat.css", ".afc-device__open"],
   ["src/screens/child/AiFriendChat.css", ".afc-chip"],
   ["src/screens/feature/Subscription.css", ".sub-plan__ribbon"],
   ["src/screens/feature/AiSchedule.css", ".ais-bubble"],

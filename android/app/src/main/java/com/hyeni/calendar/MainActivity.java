@@ -48,6 +48,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(PhoneCallPlugin.class);
         registerPlugin(MediaSavePlugin.class);
         registerPlugin(ShareSheetPlugin.class);
+        registerPlugin(DeviceActionPlugin.class);
         registerPlugin(InstallReferrerPlugin.class);
         super.onCreate(savedInstanceState);
 

@@ -313,6 +313,17 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   표시 중·`document.hidden`·움직임 줄이기에서는 멈춘다(`canAiBuddyWander`). ⚠️ 배회 `setInterval` effect 의
   의존성에 `emotion` 을 넣지 말 것 — 감정이 바뀔 때 effect 가 재생성되며 도착 표정·말풍선 타이머가 취소된다
   (`emotionRef` 로 읽는다). 회귀=`tests/aiBuddyFab.test.ts`.
+  **②-c 기기 동작은 열어 주기만 한다(2026-08-18 TK 지시)** — 아이가 "무음으로 해줘", "전화 걸어줘",
+  "문자 보내줘", "와이파이 켜줘" 라고 하면 **앱이 대신 바꾸지 않는다**. 판정은
+  `worker/shared/aiDeviceActionTools.js`(순수)이고 도구는 `openDeviceAction` 하나, target 화이트리스트는
+  `sound|wifi|battery|notifications|location|dial|sms` 7개다. 서버는 화면 이름만 정하고
+  (`clientAction:"openDeviceAction"`), 대화 아래 **버튼 한 개**를 세워 아이가 누를 때만 네이티브
+  `DeviceAction.open()` 이 해당 화면을 연다(전화=`ACTION_DIAL`, 문자=`ACTION_SENDTO` — **발신·전송은 사람이 누른다**).
+  ⚠️ 무음 전환을 앱이 대신 하려면 방해금지 접근(`ACCESS_NOTIFICATION_POLICY`)이 필요하고, 그러면 부모의
+  SOS·소리 울리기(알람 스트림 최대 볼륨)까지 조용해질 수 있어 **의도적으로 넣지 않았다**. 새 권한 0개다.
+  전화·문자 target 은 부모의 연락 허용 스위치(`contactActionsAllowed`)를 따르고, 나머지 설정 화면은 항상 열 수 있다.
+  LLM·크레딧을 쓰지 않는 결정적 응답이라 `CHILD_SETTINGS_AGENT_TOOLS` 에 넣었다.
+  회귀=`worker/tests/aiChildDeviceActions.test.mjs`·`tests/childDeviceActionUi.test.ts`.
   **③도구 에이전트** — 기존 일정/부모연락 도구에 아이 본인 설정 3종을 추가했다:
   `updateNotificationSettings`(일정 알림 on/off·N분 전) · `updateAiFriendName` · `changeAppTheme`.
   셋 다 LLM 을 거치지 않는 결정적 응답이라 **하루 대화 횟수를 깎지 않는다**(`aiUsagePolicy`).
