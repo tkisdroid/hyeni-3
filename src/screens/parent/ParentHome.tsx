@@ -674,11 +674,8 @@ export function ParentHome() {
           </div>
         </section>
 
-        {/* AI로 일정 추가 — 창가 아크릴 글래스. 라우트·2열 격자는 유지한다. */}
+        {/* AI로 일정 추가 — 단색 글래스. 라우트·2열 격자는 유지한다. */}
         <section className="ph-ai" aria-labelledby="ph-ai-title">
-          <span className="ph-ai__orb ph-ai__orb--lav" aria-hidden="true" />
-          <span className="ph-ai__orb ph-ai__orb--rose" aria-hidden="true" />
-          <span className="ph-ai__pane" aria-hidden="true" />
           <div className="ph-ai__head">
             <span className="ph-ai__icon">
               <img src={asset("ui/sparkle.webp")} alt="" />

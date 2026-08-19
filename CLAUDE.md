@@ -919,9 +919,9 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   1.2초 실물 슬라이더 드래그에서 `panBy` 1회·선택 시각/마커 배지 일치·가시 영역 내 마커를 확인했다. 검증 시작 이후
   A17 Java/native crash·ANR은 각각 0건이고 Worker/D1은 변경·배포하지 않았다.
 - ★부모 홈 AI로 일정 추가 글래스(2026-08-19): `.ph-ai` 는 카드 계약(`radius-16`·`shadow-soft`) 안에서
-  웹 글래스모피즘 근사(코스틱 orb + 반투명 pane + `backdrop-filter`)다. 2열 4버튼 라우트
-  (`voice`/`text`/`image`/`mode=academy`)는 유지한다. 장식 배지·흰 글자 파스텔 CTA는 쓰지 않고,
-  `prefers-reduced-transparency` 에서는 솔리드 `--lav-soft`/`--bg-card` 폴백을 쓴다.
+  단색 글래스(`--bg-card` 반투명 + `backdrop-filter`)다. 그라데이션·코스틱 orb는 쓰지 않는다.
+  2열 4버튼 라우트(`voice`/`text`/`image`/`mode=academy`)는 유지한다. 장식 배지·흰 글자 파스텔 CTA는
+  쓰지 않고, `prefers-reduced-transparency` 에서는 솔리드 `--bg-card` 폴백을 쓴다.
   도착 화면 `AiSchedule` 도 같은 아크릴 톤이다.
 - OAuth 딥링크 인가코드는 1회용(2026-07-10 실기기 규명): Capacitor `App.getLaunchUrl()`은 실행 인텐트를 계속
   반환하고(휘발되지 않음) `appUrlOpen`도 같은 인텐트를 전달해, 콜드 스타트에서 같은 code 가 2~3회 교환됐다.

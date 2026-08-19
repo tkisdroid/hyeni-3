@@ -1,36 +1,10 @@
-/* AI 일정추가 — 부모 홈 글래스 트레이와 같은 아크릴 재질.
-   이 화면은 아이 테마색(--hy-accent)과 무관하게 AI=라벤더 고정 톤을 사용한다.
-   웹 글래스모피즘 근사(공식 Liquid Glass 아님). */
+/* AI 일정추가 — 단색 글래스. 아이 테마색과 무관하게 AI=라벤더 문구 톤만 쓴다. */
 
-/* ── 래퍼: 창가 코스틱 + 진입 모션 ──────────────────────────────────────── */
+/* ── 래퍼 ──────────────────────────────────────────────────────────────── */
 .ais-wrap {
-  position: relative;
-  isolation: isolate;
   min-height: 100%;
-  background:
-    radial-gradient(120% 46% at 86% -8%, color-mix(in srgb, var(--lav-soft2) 88%, transparent) 0%, transparent 58%),
-    radial-gradient(90% 40% at 8% 108%, color-mix(in srgb, var(--rose-soft) 80%, transparent) 0%, transparent 62%),
-    linear-gradient(180deg, var(--bg-app), var(--bg-page));
+  background: var(--bg-page);
   animation: hy-fadein 0.35s ease forwards;
-}
-.ais-wrap::before,
-.ais-wrap::after {
-  content: "";
-  position: absolute;
-  width: 220px;
-  height: 220px;
-  pointer-events: none;
-  z-index: 0;
-  background: radial-gradient(circle, color-mix(in srgb, var(--lav-300) 42%, transparent) 0%, transparent 72%);
-}
-.ais-wrap::before {
-  top: -72px;
-  right: -48px;
-}
-.ais-wrap::after {
-  bottom: 12%;
-  left: -64px;
-  background: radial-gradient(circle, color-mix(in srgb, var(--rose-300) 36%, transparent) 0%, transparent 72%);
 }
 
 /* ── 상단 헤더 (sticky · 뒤로가기) ───────────────────────────────────────── */
@@ -42,22 +16,18 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: color-mix(in srgb, var(--bg-app) 62%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--bg-card) 40%, transparent);
-  backdrop-filter: blur(18px) saturate(150%);
-  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  background: color-mix(in srgb, var(--bg-page) 72%, transparent);
+  border-bottom: 1px solid var(--line-hair);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 .ais-back {
   width: 42px;
   height: 42px;
   border-radius: 50%;
   color: var(--fg-secondary);
-  background: color-mix(in srgb, var(--bg-card) 72%, transparent);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--bg-card) 80%, transparent),
-    var(--shadow-soft);
-  backdrop-filter: blur(12px) saturate(140%);
-  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  background: color-mix(in srgb, var(--bg-card) 78%, transparent);
+  box-shadow: var(--shadow-soft);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -75,8 +45,6 @@
 
 /* ── 본문 컬럼 (하단 탭바 여백 포함) ────────────────────────────────────── */
 .ais-body {
-  position: relative;
-  z-index: 1;
   padding: 8px 20px calc(120px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
@@ -87,12 +55,12 @@
   width: 100%;
   margin-bottom: 12px;
   padding: var(--spacing-16);
-  border: 1px solid color-mix(in srgb, var(--bg-card) 62%, var(--lav-line));
+  border: 1px solid var(--line-soft);
   border-radius: var(--radius-16);
-  background: color-mix(in srgb, var(--bg-card) 70%, transparent);
+  background: color-mix(in srgb, var(--bg-card) 72%, transparent);
   box-shadow: none;
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   color: var(--fg-secondary);
   display: flex;
   flex-direction: column;
@@ -168,10 +136,10 @@
   gap: 4px;
   padding: 4px;
   border-radius: var(--radius-16);
-  background: color-mix(in srgb, var(--lav-soft) 62%, transparent);
-  border: 1px solid color-mix(in srgb, var(--bg-card) 50%, var(--lav-line));
-  backdrop-filter: blur(16px) saturate(150%);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  background: color-mix(in srgb, var(--bg-card) 56%, transparent);
+  border: 1px solid var(--line-soft);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 .ais-tab {
   flex: 1;
@@ -264,13 +232,11 @@
   width: 100%;
   padding: 16px 16px;
   border-radius: 20px 20px 20px var(--radius-8);
-  background: color-mix(in srgb, var(--bg-card) 74%, transparent);
-  border: 1px solid color-mix(in srgb, var(--bg-card) 62%, var(--lav-line));
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--bg-card) 80%, transparent),
-    var(--shadow-soft);
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  background: color-mix(in srgb, var(--bg-card) 78%, transparent);
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   font-size: var(--type-body);
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
@@ -313,11 +279,9 @@
 }
 /* 인식된 발화 말풍선 강조 */
 .ais-bubble--said {
-  background: linear-gradient(150deg, var(--lav-soft2), color-mix(in srgb, var(--lav-soft) 55%, var(--bg-card)));
+  background: color-mix(in srgb, var(--bg-card) 88%, transparent);
   color: var(--fg-primary);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--bg-card) 72%, transparent),
-    var(--shadow-soft);
+  box-shadow: var(--shadow-soft);
 }
 
 /* ── 텍스트 ─────────────────────────────────────────────────────────────── */
@@ -326,15 +290,13 @@
   padding-top: 8px;
 }
 .ais-textbox {
-  background: color-mix(in srgb, var(--bg-card) 74%, transparent);
+  background: color-mix(in srgb, var(--bg-card) 78%, transparent);
   border-radius: var(--radius-20);
   padding: 4px;
-  border: 1px solid color-mix(in srgb, var(--bg-card) 62%, var(--lav-line));
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--bg-card) 80%, transparent),
-    var(--shadow-soft);
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 .ais-textarea {
   width: 100%;
@@ -362,11 +324,11 @@
   margin-bottom: 12px;
   padding: 12px 16px;
   border-radius: var(--radius-16);
-  background: color-mix(in srgb, var(--bg-card) 74%, transparent);
+  background: color-mix(in srgb, var(--bg-card) 78%, transparent);
   box-shadow: var(--shadow-soft);
-  border: 1px solid color-mix(in srgb, var(--bg-card) 62%, var(--lav-line));
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid var(--line-soft);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 .ais-mode-intro__title {
   font-size: var(--type-body);
@@ -525,9 +487,9 @@
   border-radius: var(--radius-16);
   padding: 8px;
   box-shadow: var(--shadow-soft);
-  border: 1px solid color-mix(in srgb, var(--bg-card) 62%, var(--lav-line));
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid var(--line-soft);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 .ais-result__top {
   display: flex;
@@ -674,7 +636,7 @@
     background: var(--bg-card);
   }
   .ais-tabs {
-    background: var(--lav-soft);
+    background: var(--bg-chip-idle);
   }
 }
 
