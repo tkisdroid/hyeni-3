@@ -39,10 +39,15 @@ function assertCheckoutCredentialsAreNotPersisted(workflow) {
 }
 
 test("Worker CI는 타입·전체 테스트·의존성 감사를 차단 게이트로 실행한다", () => {
+  const pkg = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8"));
   const workflow = readFileSync(new URL("../../.github/workflows/worker-quality.yml", import.meta.url), "utf8");
 
-  assert.match(workflow, /npx tsc --noEmit/);
-  assert.match(workflow, /node --test worker\/tests\/\*\.test\.mjs/);
+  assert.equal(pkg.scripts["typecheck:worker"], "tsc -p worker --noEmit");
+  assert.equal(pkg.scripts["test:worker"], "node --test worker/tests/*.test.mjs");
+  assert.match(workflow, /npm run typecheck:worker/);
+  assert.match(workflow, /npm run test:worker/);
+  assert.doesNotMatch(workflow, /npx tsc --noEmit/);
+  assert.doesNotMatch(workflow, /node --test worker\/tests\/\*\.test\.mjs/);
   assert.match(workflow, /npx wrangler deploy --dry-run/);
   assert.match(workflow, /RUNNER_TEMP\/hyeni-worker-dry-run/);
   assert.match(workflow, /npm audit --audit-level=high/);
