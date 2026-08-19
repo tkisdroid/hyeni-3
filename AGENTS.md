@@ -508,9 +508,9 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   Premium은 `구독 관리`, 미확정·오류는 `구독 정보`로 표시해 Free로 추정하지 않는다. 부모 설정 메뉴는 emoji 칩 대신
   lucide/image 아이콘 + `data-tone` 토큰 색상만 사용한다. 페어링 위저드는 `/api/family/mine`과 엔타이틀먼트가
   모두 확정되기 전 2명 선택과 코드 생성을 막고, 코드 생성 직전에도 현재 티어의 아이 수 상한을 다시 검사한다.
-- ★**부모 홈 글래스모피즘(2026-08-19, wiki)**: 색은 `.ph-frost__wash` 뒤에만 두고 카드(`.ph-glass`)는
-  반투명 `--bg-card` + `backdrop-filter` + 밝은 흰 획으로 그 위를 떠 있게 한다.
-  카드 면 그라데이션·어두운 안쪽 선(뉴모피즘)은 쓰지 않는다. AI·구독·친구 초대가 같은 면이다.
+- ★**부모 홈 글래스모피즘(2026-08-19, wiki)**: 색은 페이지 배경(`.ph-page::before`)에만 두고
+  카드(`.ph-glass`)는 반투명 `--bg-card` + `backdrop-filter` + 밝은 흰 획이다.
+  섹션 안 그라데이션·어두운 안쪽 선(뉴모피즘)은 쓰지 않는다. AI·구독·친구 초대가 같은 면이다.
   2열 4버튼 라우트(`voice`/`text`/`image`/`mode=academy`)는 유지한다. 장식 배지·흰 글자 파스텔 CTA는
   쓰지 않고, `prefers-reduced-transparency` 에서는 워시를 숨기고 솔리드 `--bg-card` 로 폴백한다.
 - **OAuth 딥링크 1회 소비(2026-07-10)**: 인가코드는 1회용인데 Capacitor `App.getLaunchUrl()` 이 실행 인텐트를

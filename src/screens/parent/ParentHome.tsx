@@ -519,7 +519,7 @@ export function ParentHome() {
   });
 
   return (
-    <div className="hy-rise-in">
+    <div className="hy-rise-in ph-page">
       <TopBar
         actions={
           <>
@@ -674,49 +674,46 @@ export function ParentHome() {
           </div>
         </section>
 
-        {/* AI로 일정 추가 — 위키 글래스(색은 뒤 워시, 카드는 서리 유리). 라우트·2열은 유지. */}
-        <div className="ph-frost">
-          <div className="ph-frost__wash" aria-hidden="true" />
-          <section className="ph-ai ph-glass" aria-labelledby="ph-ai-title">
-            <div className="ph-ai__head">
-              <span className="ph-ai__icon">
-                <img src={asset("ui/ai-friend-credits.webp")} alt="" />
+        {/* AI로 일정 추가 — 서리 유리. 색은 페이지 배경(.ph-page). 라우트·2열은 유지. */}
+        <section className="ph-ai ph-glass" aria-labelledby="ph-ai-title">
+          <div className="ph-ai__head">
+            <span className="ph-ai__icon">
+              <img src={asset("ui/ai-friend-credits.webp")} alt="" />
+            </span>
+            <span className="ph-ai__copy">
+              <span className="ph-ai__title" id="ph-ai-title">
+                {intl.formatMessage({ id: "parent.parentHome.copy023" })}
               </span>
-              <span className="ph-ai__copy">
-                <span className="ph-ai__title" id="ph-ai-title">
-                  {intl.formatMessage({ id: "parent.parentHome.copy023" })}
-                </span>
-                <span className="ph-ai__sub">{intl.formatMessage({ id: "parent.parentHome.copy024" })}</span>
+              <span className="ph-ai__sub">{intl.formatMessage({ id: "parent.parentHome.copy024" })}</span>
+            </span>
+          </div>
+          <div className="ph-ai__grid">
+            <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=voice")}>
+              <span className="ph-ai__btn-icon">
+                <img src={asset("ui/mic-lavender.webp")} alt="" />
               </span>
-            </div>
-            <div className="ph-ai__grid">
-              <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=voice")}>
-                <span className="ph-ai__btn-icon">
-                  <img src={asset("ui/mic-lavender.webp")} alt="" />
-                </span>
-                {intl.formatMessage({ id: "parent.parentHome.copy025" })}
-              </button>
-              <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=text")}>
-                <span className="ph-ai__btn-icon">
-                  <img src={asset("ui/menu-ai-schedule.webp")} alt="" />
-                </span>
-                {intl.formatMessage({ id: "parent.parentHome.copy026" })}
-              </button>
-              <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=image")}>
-                <span className="ph-ai__btn-icon">
-                  <img src={asset("ui/calendar-heart.webp")} alt="" />
-                </span>
-                {intl.formatMessage({ id: "parent.parentHome.copy027" })}
-              </button>
-              <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?mode=academy&tab=image")}>
-                <span className="ph-ai__btn-icon">
-                  <img src={asset("ui/place-academy.webp")} alt="" />
-                </span>
-                {intl.formatMessage({ id: "parent.parentHome.copy028" })}
-              </button>
-            </div>
-          </section>
-        </div>
+              {intl.formatMessage({ id: "parent.parentHome.copy025" })}
+            </button>
+            <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=text")}>
+              <span className="ph-ai__btn-icon">
+                <img src={asset("ui/menu-ai-schedule.webp")} alt="" />
+              </span>
+              {intl.formatMessage({ id: "parent.parentHome.copy026" })}
+            </button>
+            <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=image")}>
+              <span className="ph-ai__btn-icon">
+                <img src={asset("ui/calendar-heart.webp")} alt="" />
+              </span>
+              {intl.formatMessage({ id: "parent.parentHome.copy027" })}
+            </button>
+            <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?mode=academy&tab=image")}>
+              <span className="ph-ai__btn-icon">
+                <img src={asset("ui/place-academy.webp")} alt="" />
+              </span>
+              {intl.formatMessage({ id: "parent.parentHome.copy028" })}
+            </button>
+          </div>
+        </section>
 
         {/* 아이 현황 */}
         <section>
@@ -1113,7 +1110,6 @@ export function ParentHome() {
         </section>
 
         <div className="ph-frost ph-frost--stack">
-          <div className="ph-frost__wash" aria-hidden="true" />
           <button
             type="button"
             className="hy-card ph-glass ph-subscription hy-press"

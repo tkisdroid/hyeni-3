@@ -92,7 +92,8 @@ test("부모 홈은 친구 초대를 한 줄 카드로 눈에 띄게 보여준�
   const koParent = JSON.parse(read("locales/ko/parent.json"));
   assert.match(home, /className="hy-card ph-glass ph-referral hy-press"/);
   assert.match(home, /ph-frost ph-frost--stack/);
-  assert.match(home, /ph-frost__wash/);
+  assert.match(home, /hy-rise-in ph-page/);
+  assert.doesNotMatch(home, /ph-frost__wash/);
   assert.match(home, /parent\.referral\.home\.headline/);
   assert.match(home, /parent\.referral\.home\.action/);
   assert.match(home, /<ReferralRewardPanel/);

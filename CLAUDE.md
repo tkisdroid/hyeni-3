@@ -918,9 +918,9 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   A17 `adb install -r` 데이터 보존 설치(APK SHA-256 `0f1efedc00f8cd06713ad421f044b15438035cadc8e8250803ca0591d3ac0273`) 뒤
   1.2초 실물 슬라이더 드래그에서 `panBy` 1회·선택 시각/마커 배지 일치·가시 영역 내 마커를 확인했다. 검증 시작 이후
   A17 Java/native crash·ANR은 각각 0건이고 Worker/D1은 변경·배포하지 않았다.
-- ★부모 홈 글래스모피즘(2026-08-19, wiki): 색은 `.ph-frost__wash` 뒤에만 두고 카드(`.ph-glass`)는
-  반투명 `--bg-card` + `backdrop-filter` + 밝은 흰 획으로 그 위를 떠 있게 한다.
-  카드 면 그라데이션·어두운 안쪽 선(뉴모피즘)은 쓰지 않는다. AI·구독·친구 초대가 같은 면이다.
+- ★부모 홈 글래스모피즘(2026-08-19, wiki): 색은 페이지 배경(`.ph-page::before`)에만 두고
+  카드(`.ph-glass`)는 반투명 `--bg-card` + `backdrop-filter` + 밝은 흰 획이다.
+  섹션 안 그라데이션·어두운 안쪽 선(뉴모피즘)은 쓰지 않는다. AI·구독·친구 초대가 같은 면이다.
   2열 4버튼 라우트(`voice`/`text`/`image`/`mode=academy`)는 유지한다. 장식 배지·흰 글자 파스텔 CTA는
   쓰지 않고, `prefers-reduced-transparency` 에서는 워시를 숨기고 솔리드 `--bg-card` 로 폴백한다.
 - OAuth 딥링크 인가코드는 1회용(2026-07-10 실기기 규명): Capacitor `App.getLaunchUrl()`은 실행 인텐트를 계속
