@@ -246,9 +246,12 @@
     inset -2px 0 0 rgba(255, 255, 255, 0.6),
     inset 0 -3px 2px -1px rgba(255, 255, 255, 0.8);
   /* 카드가 바닥에서 실제로 떠 보이게 — 넓고 깊은 그림자 + 접지 그림자 두 겹. */
+  /* 떠 있는 판 + 테두리가 은은하게 빛난다(사양: thin glowing white borders). */
   --glass-lift:
-    0 2px 6px -2px rgba(90, 46, 74, 0.16),
-    0 22px 46px -22px rgba(90, 46, 74, 0.55);
+    0 0 0 1px rgba(255, 255, 255, 0.55),
+    0 0 14px rgba(255, 255, 255, 0.45),
+    0 2px 6px -2px rgba(70, 60, 95, 0.14),
+    0 24px 48px -24px rgba(70, 60, 95, 0.5);
   /* 유리 위에 얹히는 작은 면(아이콘 타일·칩) — 카드보다 한 겹 더 밝다. */
   --glass-tile: rgba(255, 255, 255, 0.62);
 
@@ -260,7 +263,7 @@
      사라지고 어두운 그림자만 남아 때가 탄 것처럼 보인다.
      light 는 좌상단(빛), dark 는 우하단(그늘) — 광원은 화면 전체에서 하나다. */
   --neu-light: rgba(255, 255, 255, 0.95);
-  --neu-dark: rgba(118, 90, 110, 0.38);
+  --neu-dark: rgba(96, 88, 122, 0.3);
   /* 볼록 — 아이콘 타일·칩처럼 '누를 수 있는' 작은 면 */
   --neu-raised:
     -4px -4px 10px var(--neu-light),
@@ -273,8 +276,12 @@
   --neu-pressed:
     inset 3px 4px 8px var(--neu-dark),
     inset -3px -3px 7px var(--neu-light);
-  /* 뉴모피즘 면의 채움 — 카드와 같은 톤이어야 '한 덩어리에서 솟은' 것으로 보인다. */
-  --neu-surface: rgba(255, 255, 255, 0.86);
+  /* 뉴모피즘 면은 **자기 배경과 같은 색**이어야 한다 — 배경에서 솟아오른 한 덩어리로 보여야 하기
+     때문이다. 흰색을 채우면 그건 뉴모피즘이 아니라 그냥 흰 버튼이다.
+     transparent 로 두면 바닥 위에서도 유리 카드 위에서도 자동으로 그 면의 색을 그대로 쓴다. */
+  --neu-surface: transparent;
+  /* 배경과 같은 색이 필요한데 투명을 쓸 수 없을 때(겹친 그림자 격리)만 쓰는 대체값. */
+  --neu-surface-solid: #F2F0F4;
 
   /* ── Elevation ── */
   --shadow-soft: 0 2px 8px rgba(32, 26, 29, 0.08);
@@ -333,3 +340,12 @@
 [data-accent="mint"]     { --hy-accent: #31C48D; --hy-accent-light: #6FE0B4; --hy-accent-deep: #1E9E6E; --hy-accent-soft: #E7F8F0; --hy-accent-text: #0C7752; --hy-accent-cta: #268561; }
 [data-accent="sky"]      { --hy-accent: #4FB2E8; --hy-accent-light: #8FD4F5; --hy-accent-deep: #2E86C1; --hy-accent-soft: #E6F4FC; --hy-accent-text: #1F6EA3; --hy-accent-cta: #387CA9; }
 [data-accent="lemon"]    { --hy-accent: #F5C542; --hy-accent-light: #FFDE7A; --hy-accent-deep: #E0A11E; --hy-accent-soft: #FFF6DC; --hy-accent-text: #89610C; --hy-accent-cta: #957022; }
+
+/* ⚠️ accent 파생 합성값은 [data-accent] 에서 다시 선언해야 한다.
+   커스텀 속성의 var() 는 **선언된 요소에서** 치환된다 — :root 에만 두면 rose 값으로 굳은 채
+   아래로 상속되고, .hy-app 의 [data-accent] override 는 이미 늦다.
+   (2026-08-19 실사고: 어른 accent 를 lavender 로 바꿨는데 히어로만 로즈로 남았다.) */
+[data-accent] {
+  --hy-accent-on-ground: color-mix(in srgb, var(--hy-accent-text) 70%, #2A1520);
+  --cta-grad-accent: linear-gradient(120deg, var(--hy-accent-cta), var(--hy-accent-text));
+}

@@ -25,6 +25,14 @@ export const CHILD_ACCENTS: readonly ChildAccentOption[] = [
   { key: "lemon", label: "레몬", color: "#F5C542" },
 ];
 
+/**
+ * 부모·선생님 강조색.
+ * 아이는 홈에서 직접 고르지만 어른 화면은 고정이며, 부모 모드의 시각 사양이
+ * "하늘색·보라 파스텔 배경"이라 브랜드 로즈 대신 같은 계열의 라벤더를 쓴다.
+ * ⚠️ 아이 기본색(DEFAULT_ACCENT)과 분리해 둔다 — 아이가 색을 고르기 전 기본은 그대로 로즈다.
+ */
+export const ADULT_ACCENT: AccentKey = "lavender";
+
 export const DEFAULT_ACCENT: AccentKey = "rose";
 
 const PREFIX = "hyeni-child-accent-v1";

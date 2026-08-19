@@ -712,6 +712,17 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   + 1.5px accent 테두리 ③미선택 칩 = `--bg-chip-idle` + `--fg-tertiary`. **비텍스트 면(장식·아바타·진행바·마커)은 계속
   `--hy-accent`.** 문구 토큰은 card·app·page·body **네 표면 전부** 4.5:1 이상이어야 한다. 카테고리·태그 색은
   `--cat-*-text/-soft` 토큰이 정본이며 중간 톤을 soft 위 글자색으로 쓰지 않는다. 가드=`tests/colorContrastAndRadius.test.mjs`.
+- ★**어른 accent = lavender(2026-08-19)**: `ADULT_ACCENT`(childAccent.ts)로 어른 화면만 고정하고 아이 기본색
+  (`DEFAULT_ACCENT`=rose)은 건드리지 않는다. ⚠️ 커스텀 속성 `var()` 는 선언된 요소에서 치환된다 —
+  `--cta-grad-accent`·`--hy-accent-on-ground` 를 `:root` 에만 두면 accent 를 바꿔도 히어로가 안 바뀐다.
+  `[data-accent]` 블록에서 다시 선언할 것. ⚠️ "부모가 아이 색을 안 읽는다" 가드는 정규식 거리 대신
+  어른 분기의 `return` 으로 검사한다(거리로 쓰면 child 분기를 잡아 오탐).
+- ★**부모 모드 시각 사양(2026-08-19)**: 바닥은 무광 오프화이트 단색(`#F2F0F4`)이고 색은 "깊은 배경"의
+  하늘색·보라 블롭이 담당한다(전면 wash 금지). 뉴모피즘 면은 `--neu-surface: transparent` — 자기 배경과
+  같은 색이어야 뉴모피즘이다. `--glass-lift` 첫 두 겹이 thin glowing white border 다. 알약·타일 버튼 4종은
+  "조작 버튼 정본" 한 규칙을 공유하고 `:active` 로 함께 눌린다. ⚠️ 상태 배지는 버튼이 아니다(accent 칩 유지).
+  ⚠️ 블롭 채도 상한은 대비가 정한다(blue 26%는 4.36:1 미달 → 15%로 4.67:1). ⚠️ CSS 일괄 치환은 의도치 않은
+  선택자까지 지운다 — 치환 후 확인할 것.
 - ★**섹션은 얼음 유리, 정적 오목 금지(2026-08-19)**: ⚠️ "유리 질감이 없다"의 원인이 대개 **그 카드가 애초에
   유리가 아닌 것**이다 — 재질을 바꾸기 전에 `.ph-glass` 가 실제로 붙어 있는지 확인한다(일정·안전지표 등 5개가
   불투명 `.hy-card` 였다). 얼음 = `--glass-fill` 0.42 + `blur(30px) saturate(190%)` + 또렷한 `--glass-rim`.

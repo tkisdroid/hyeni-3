@@ -739,6 +739,33 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   값 칸이 글자 중간에서 끊겼다. `table-layout: fixed` + 44%/28%/28% 열 폭 + `word-break: keep-all` ·
   `overflow-wrap: anywhere` · `text-wrap: pretty` 로 어절 단위로만 접는다(`.sub-compare__scroll` 의 가로 스크롤은
   안전망으로 유지). 문구는 그대로 두고 레이아웃만 고쳤다. 회귀=`tests/responsiveTextWrapContract.test.mjs`.
+- ★**어른 화면 강조색 = lavender(2026-08-19 TK "더 모던·심플에 가까운 색으로 해도 됨")**:
+  새 색을 만들지 않고 이미 대비가 검증된 accent 6종 중 lavender 를 어른 기본값으로 지정했다
+  (`transform/childAccent.ts` 의 `ADULT_ACCENT`). 히어로·배지·활성 탭·링크·CTA 가 토큰으로 함께 따라온다.
+  ⚠️ **`ADULT_ACCENT` 는 `DEFAULT_ACCENT` 와 분리한다** — 아이가 색을 고르기 전 기본은 그대로 rose 다.
+  ⚠️ **커스텀 속성의 `var()` 는 "선언된 요소"에서 치환된다.** `--cta-grad-accent`·`--hy-accent-on-ground` 를
+    `:root` 에만 두면 rose 값으로 굳은 채 상속되고, `.hy-app` 의 `[data-accent]` override 는 이미 늦다.
+    실제로 accent 를 바꿨는데 **히어로만 로즈로 남았다.** accent 파생 합성값은 `[data-accent]` 블록에서
+    **다시 선언**해야 한다(tokens.css 끝의 `[data-accent] { … }`).
+  ⚠️ 가드(`childRedesignWiring`)의 "부모는 아이 색을 안 읽는다" 검사를 정규식 거리로 쓰면 아래 child 분기의
+    `readChildAccent` 를 잡아 오탐이 난다 — **어른 분기가 `return` 하는지**로 검사한다.
+- ★**부모 모드 시각 사양 정본(2026-08-19 TK 레퍼런스 프롬프트)**: "glassmorphism + neumorphism, soft matte
+  off-white background, pastel gradients (light blue and purple) in the deep background to bleed color through
+  the glass panels, thin glowing white borders, consistent design system across all buttons".
+  · **바닥 = 무광 오프화이트 단색**(`#F2F0F4`). 전면 wash 를 깔지 않는다 — 바닥이 탁해지고 뉴모피즘의
+    흰 하이라이트가 죽는다. **색은 바닥이 아니라 "깊은 배경"의 블롭 4개**(하늘색·보라)가 담당하며,
+    그것이 유리 판으로 색이 배어 나오는 유일한 출처다.
+  · **뉴모피즘 면은 자기 배경과 같은 색이어야 한다** — `--neu-surface: transparent`. 흰색을 채우면
+    그건 뉴모피즘이 아니라 그냥 흰 버튼이다. 투명이면 바닥 위에서도 유리 카드 위에서도 자동으로 맞는다.
+  · **thin glowing white borders** = `--glass-lift` 첫 두 겹(1px 흰 링 + 14px 흰 glow).
+  · **버튼은 한 재질** — `.ph-ai__btn`·`.ph-subscription__action`·`.ph-referral__action`·`.ph-safety__refresh button`
+    이 "조작 버튼 정본" 한 규칙을 공유하고 `:active` 에서 함께 눌린다. 글자색만 맥락별 토큰을 유지한다.
+    ⚠️ **상태 배지(`.ph-child__now` 등)는 버튼이 아니다** — accent 칩을 유지한다(실제로 이걸 실수로
+    지워 "보는 중" 배지가 맨 글자가 됐다).
+  · ⚠️ **블롭 채도의 상한은 대비가 정한다** — 실측으로 blue-500 26%는 카드 위 `--fg-muted` 4.36:1 로 미달이라
+    15%/13%, lav 38%/22% 로 낮춰 4.67:1 을 확보했다. 색을 올릴 때는 반드시 이 값을 다시 잰다.
+  · ⚠️ CSS 일괄 치환으로 재질을 걷어낼 때 **의도하지 않은 선택자까지 지워진다** — 치환 후 어떤 규칙이
+    바뀌었는지 반드시 확인할 것.
 - ★**섹션은 얼음 유리, 정적인 오목은 쓰지 않는다(2026-08-19 TK 지시)**:
   · ⚠️ **"유리 질감이 안 느껴진다"의 진짜 원인은 대부분의 섹션이 애초에 유리가 아니었던 것**이다 —
     `.ph-glass` 가 AI·구독·초대 3개에만 붙어 있었고 일정·아이현황·안전지표·준비물·메모 카드는 그냥

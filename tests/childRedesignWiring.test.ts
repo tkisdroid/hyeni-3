@@ -67,7 +67,14 @@ test("내 색깔 6개는 전역 accent 를 바꾸고 기기에 저장된다", ()
   assert.match(home, /setAccent\(c\.key\)/);
   const accent = read("src/app/accent.tsx");
   assert.match(accent, /writeChildAccent\(window\.localStorage, familyId, userId, next\)/);
-  assert.match(accent, /role !== "child"[\s\S]{0,120}setAccentState\(initial\)/, "부모 세션은 기본색");
+  // 어른 화면은 아이가 고른 색을 읽지 않고 ADULT_ACCENT 로 수렴한다(2026-08-19 부모 모드 라벤더).
+  assert.match(accent, /role !== "child"[\s\S]{0,180}setAccentState\(ADULT_ACCENT\)/, "부모 세션은 어른 고정색");
+  // 어른 분기는 아이 저장값을 읽기 전에 return 한다 — 이게 "부모가 아이 색을 안 읽는다"의 실제 불변식이다.
+  assert.match(
+    accent,
+    /role !== "child"\s*\)\s*\{[\s\S]{0,160}setAccentState\(ADULT_ACCENT\);[\s\S]{0,40}return;/,
+    "어른 분기가 readChildAccent 전에 return 해야 한다",
+  );
 });
 
 test("하단 독은 3탭 + SOS 버튼이고, SOS 는 화면 이동만 한다(오발사 방지)", () => {
