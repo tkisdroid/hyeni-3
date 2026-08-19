@@ -46,7 +46,8 @@ test("출시 후보 CI는 앱 전체 검증과 Android unit·lint·APK를 모두
   const workflow = readFileSync(new URL("../.github/workflows/release-candidate.yml", import.meta.url), "utf8");
 
   assert.equal(pkg.scripts.test, "node --test tests/*.test.*");
-  assert.equal(pkg.scripts.verify, "npm run typecheck && npm run build && npm test");
+  assert.equal(pkg.scripts.verify, "npm run build && npm test");
+  assert.doesNotMatch(pkg.scripts.verify, /typecheck/, "build가 이미 tsc -b를 실행하므로 verify에서 중복 타입 검사를 하지 않습니다.");
   assert.equal(pkg.scripts["qa:browser"], "node scripts/final-browser-qa.mjs");
   assert.equal(pkg.scripts["qa:pwa-runtime"], "node scripts/pwa-runtime-qa.mjs");
   assert.match(workflow, /npm run verify/);
