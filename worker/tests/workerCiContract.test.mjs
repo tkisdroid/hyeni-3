@@ -61,8 +61,8 @@ test("Worker 필수 검사는 변경 경로와 관계없이 모든 main PR에서
   assert.match(pullRequestBlock, /branches:\s*\[main\]/);
   assert.doesNotMatch(
     pullRequestBlock,
-    /paths:/,
-    "필수 상태 검사가 생략되지 않도록 pull_request에는 경로 필터를 두지 않습니다.",
+    /^\s*paths(?:-ignore)?:/m,
+    "필수 상태 검사가 생략되지 않도록 pull_request에는 paths 또는 paths-ignore 필터를 두지 않습니다.",
   );
 });
 
