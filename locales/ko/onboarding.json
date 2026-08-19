@@ -43,6 +43,7 @@
   "onboarding.locationDisclosure.eyebrow": "아이 위치 공유 안내",
   "onboarding.locationDisclosure.purpose": "위치는 실시간 위치·오늘 경로와 집·학교·학원 도착·출발, 일정 미도착, 위험구역 알림에 사용돼.",
   "onboarding.locationDisclosure.title": "백그라운드 위치를 사용해",
+  "onboarding.login.deviceTransferNote": "로그인하면 이 기기가 활성 기기가 되고, 다른 기기에서는 자동으로 로그아웃됩니다.",
   "onboarding.login.google": "Google로 계속하기",
   "onboarding.login.googlePending": "Google 로그인 중…",
   "onboarding.login.kakao": "카카오로 계속하기",

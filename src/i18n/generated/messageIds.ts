@@ -1187,6 +1187,7 @@ export const messageIds = [
   "onboarding.locationDisclosure.eyebrow",
   "onboarding.locationDisclosure.purpose",
   "onboarding.locationDisclosure.title",
+  "onboarding.login.deviceTransferNote",
   "onboarding.login.google",
   "onboarding.login.googlePending",
   "onboarding.login.kakao",

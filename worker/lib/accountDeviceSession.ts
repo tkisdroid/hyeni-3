@@ -119,6 +119,75 @@ export async function claimAccountDeviceSession(
   }
 }
 
+/**
+ * 명시적 본인 인증이 성공한 새 설치로 계정을 원자 전환한다.
+ * 이전 설치의 API/refresh뿐 아니라 푸시 endpoint도 같은 batch에서 닫아,
+ * 기존 기기에 가족 정보가 계속 전달되는 짧은 틈을 만들지 않는다.
+ */
+export async function takeOverAccountDeviceSession(
+  db: D1Database,
+  userId: string,
+  device: AccountDeviceDescriptor,
+  newRefreshToken: string,
+  now = new Date(),
+): Promise<void> {
+  const nowIso = now.toISOString();
+  const expiresAt = new Date(now.getTime() + DEVICE_SESSION_TTL_MS).toISOString();
+  const results = await db.batch([
+    db
+      .prepare(
+        `UPDATE refresh_tokens
+            SET revoked=1, rotated_to=NULL, rotated_at=?
+          WHERE user_id=? AND token<>? AND revoked=0`,
+      )
+      .bind(nowIso, userId, newRefreshToken),
+    db
+      .prepare(
+        `UPDATE fcm_tokens
+            SET disabled_at=?, disabled_reason='device_session_replaced'
+          WHERE user_id=? AND disabled_at IS NULL`,
+      )
+      .bind(nowIso, userId),
+    db
+      .prepare(
+        `UPDATE push_subscriptions
+            SET disabled_at=?, disabled_reason='device_session_replaced'
+          WHERE user_id=? AND disabled_at IS NULL`,
+      )
+      .bind(nowIso, userId),
+    db
+      .prepare(
+        `INSERT INTO account_device_sessions
+           (user_id,device_id,device_label,device_platform,claimed_at,last_seen_at,expires_at,revoked_at)
+         VALUES (?,?,?,?,?,?,?,NULL)
+         ON CONFLICT(user_id) DO UPDATE SET
+           device_id=excluded.device_id,
+           device_label=COALESCE(excluded.device_label,account_device_sessions.device_label),
+           device_platform=COALESCE(excluded.device_platform,account_device_sessions.device_platform),
+           claimed_at=CASE
+             WHEN account_device_sessions.device_id=excluded.device_id
+               THEN account_device_sessions.claimed_at
+             ELSE excluded.claimed_at
+           END,
+           last_seen_at=excluded.last_seen_at,
+           expires_at=excluded.expires_at,
+           revoked_at=NULL`,
+      )
+      .bind(
+        userId,
+        device.deviceId,
+        device.deviceLabel ?? null,
+        device.devicePlatform ?? null,
+        nowIso,
+        nowIso,
+        expiresAt,
+      ),
+  ]);
+  if (Number(results[3]?.meta?.changes ?? 0) !== 1) {
+    throw new Error("account_device_session_takeover_failed");
+  }
+}
+
 /** JWT의 설치 claim과 서버 활성 설치 정본을 대조한다. */
 export async function checkAccountDeviceSession(
   db: D1Database,

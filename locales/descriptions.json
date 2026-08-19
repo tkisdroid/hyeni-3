@@ -8569,6 +8569,13 @@
     "variables": {},
     "description": "onboarding.locationDisclosure.title에 표시하는 사용자 안내 문구"
   },
+  "onboarding.login.deviceTransferNote": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "로그인한 새 기기가 활성 설치가 되고 다른 기기 세션은 자동 종료된다는 안내"
+  },
   "onboarding.login.google": {
     "namespace": "onboarding",
     "audience": "parent",

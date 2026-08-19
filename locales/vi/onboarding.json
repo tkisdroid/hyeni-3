@@ -43,6 +43,7 @@
   "onboarding.locationDisclosure.eyebrow": "Giới thiệu về việc chia sẻ vị trí của bạn",
   "onboarding.locationDisclosure.purpose": "Vị trí được dùng để chia sẻ vị trí trực tiếp, lộ trình hôm nay, thông báo đến và rời khỏi nhà, trường học, lớp học thêm, cũng như cảnh báo chưa đến đúng giờ và vùng nguy hiểm.",
   "onboarding.locationDisclosure.title": "Sử dụng vị trí nền",
+  "onboarding.login.deviceTransferNote": "Khi đăng nhập, thiết bị này sẽ trở thành thiết bị đang hoạt động và các thiết bị khác sẽ tự động đăng xuất.",
   "onboarding.login.google": "Tiếp tục với Google",
   "onboarding.login.googlePending": "Đang đăng nhập bằng Google…",
   "onboarding.login.kakao": "Tiếp tục với Kakao",

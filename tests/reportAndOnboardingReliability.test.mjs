@@ -12,6 +12,9 @@ const [weeklyReport, onboarding, requireGuest, authEndpoint, familyEndpoint] = a
 const koReports = JSON.parse(
   await readFile(new URL("../locales/ko/reports.json", import.meta.url), "utf8"),
 );
+const koOnboarding = JSON.parse(
+  await readFile(new URL("../locales/ko/onboarding.json", import.meta.url), "utf8"),
+);
 
 test("주간 리포트는 네 조회의 오류를 로딩보다 먼저 분기한다", () => {
   assert.match(weeklyReport, /resolveQueryTruthState/);
@@ -96,6 +99,14 @@ test("ID 로그인과 OAuth callback은 gate 시작 뒤 deferred 응답만 요�
   assert.ok(loginBegin >= 0 && signIn > loginBegin, "ID 로그인 전에 gate를 시작해야 합니다");
   assert.ok(callbackBegin >= 0 && finishOAuth > callbackBegin, "OAuth 교환 전에 gate를 시작해야 합니다");
   assert.match(login, /signInWithLoginId\([\s\S]*sessionAdoption: "deferred"/);
+});
+
+test("로그인 화면은 새 기기가 활성 설치가 되고 다른 기기는 자동 종료됨을 미리 안내한다", () => {
+  assert.match(onboarding, /onboarding\.login\.deviceTransferNote/);
+  assert.equal(
+    koOnboarding["onboarding.login.deviceTransferNote"],
+    "로그인하면 이 기기가 활성 기기가 되고, 다른 기기에서는 자동으로 로그아웃됩니다.",
+  );
 });
 
 test("인증 endpoint 기본값은 immediate이고 온보딩은 explicit adopt만 사용한다", () => {

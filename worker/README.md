@@ -44,10 +44,11 @@ worker/
 
 ### 계정 활성 설치 1대 migration-first 배포
 
-`account_device_sessions`는 인증 계정별 현재 활성 설치를 정확히 한 행으로 보관한다. 새 로그인·가입·OAuth·페어링·
-refresh가 다른 활성 설치와 충돌하면 409로 닫고 refresh 체인을 회전시키지 않는다. 정상 로그아웃 뒤에는 다른 설치가
-claim을 인계할 수 있다. Worker가 이 테이블 없이 먼저 배포되면 신규 세션 발급이 fail-closed하므로 반드시 migration을
-먼저 적용한다. 운영 확인은 스키마 이름만 읽으며 user/device 식별자를 출력하지 않는다.
+`account_device_sessions`는 인증 계정별 현재 활성 설치를 정확히 한 행으로 보관한다. 비밀번호·OAuth·페어링처럼
+본인 인증을 다시 끝낸 새 로그인은 활성 설치를 새 기기로 전환하고 이전 refresh 체인·FCM/Web Push endpoint·실시간
+소켓을 닫는다. 기존 기기를 잃어 로그아웃할 수 없어도 새 기기로 들어갈 수 있지만, 비활성 설치의 refresh만으로는
+인계할 수 없고 401로 닫힌다. Worker가 이 테이블 없이 먼저 배포되면 신규 세션 발급이 fail-closed하므로 반드시
+migration을 먼저 적용한다. 운영 확인은 스키마 이름만 읽으며 user/device 식별자를 출력하지 않는다.
 
 ```bash
 cd worker

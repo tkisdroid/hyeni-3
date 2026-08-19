@@ -53,10 +53,12 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 2. **라이브 refresh 토큰 조작 금지** — 회전시키면 앱 세션이 파괴된다. access 토큰만 읽기.
    2026-07-10부터 refresh 체인은 **기기 바인딩**(device_install_id 스탬핑) — 외부에서 토큰 사본으로 회전 시도하면 401이 정상이다.
    세션이 유실된 아이 기기는 딥링크 `#/onboarding?pair=KID-…` 재페어링이 정답(previous_user_id 힌트로 같은 uid 무손실 복구).
-   2026-08-20부터 인증 계정은 `account_device_sessions`로 **동시에 한 설치만 활성**이다. 새 로그인·가입·OAuth·페어링·
-   refresh는 공통 설치 claim을 거치고, 다른 활성 설치는 `active_device_session_exists`로 거부한다. 정상 로그아웃만 현재
-   설치 claim을 놓는다. 운영은 `worker/db/account-device-sessions.sql`을 Worker보다 먼저 적용하며 라이브 계정으로 충돌을
-   억지 재현하지 않는다(`worker/tests/accountDeviceSession.test.mjs`가 정본).
+   2026-08-20부터 인증 계정은 `account_device_sessions`로 **동시에 한 설치만 활성**이다. 비밀번호·OAuth·페어링처럼
+   사용자가 다시 본인 인증한 새 로그인은 활성 설치를 새 기기로 원자 전환하고, 이전 refresh 체인·FCM/Web Push endpoint와
+   실시간 소켓을 즉시 닫는다. 따라서 기존 기기를 잃어 로그아웃할 수 없어도 새 기기로 들어갈 수 있고, 이전 기기는 곧바로
+   가족 정보를 읽거나 받지 못한다. 반대로 **refresh만으로는 설치를 인계하지 못하며** 비활성 기기 refresh는 401이다.
+   운영은 `worker/db/account-device-sessions.sql`을 Worker보다 먼저 적용하며 라이브 계정으로 전환을 억지 재현하지 않는다
+   (`worker/tests/accountDeviceSession.test.mjs`가 정본).
 3. **파괴적 작업 전 안전 불변식 확인**(예: 아이 페어링 전 프리미엄 캡 확인 — 기존 아이가 밀리지 않는지).
 4. 테스트로 만든 데이터·바꾼 설정은 **반드시 원복/삭제**. 비밀번호는 사용자만 입력.
 5. 프로덕션 D1 파괴적 삭제·스토어 배포·시크릿 변경 금지.
@@ -876,19 +878,18 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   `registerSW`의 `onRegisteredSW` 가 30분마다·화면 복귀마다 `registration.update()` 를 돌려 자가 회복시킨다.
   친구 초대 코드는 계정이 아니라 **가족** 스코프이고 조회는 활성 보호자 전원, 만들기·변경만 주 보호자다
   (응답의 `canManage`). 0행 UPDATE 를 성공처럼 돌려주지 않는다.
-- ★**화면이 "한 번씩 리프레시"되는 두 원인(2026-08-18 TK 제보)**: ①새 빌드를 깔면 Service Worker 가 몇 초 뒤
-  활성화되며 `main.tsx` 가 `location.reload()` 한다 — 부팅 중이 아니라 사용 중에 걸리면 화면이 튕긴 것처럼 보인다.
-  `canReloadForPwaUpdateNow`(`src/lib/pwaReloadTiming.ts`)가 네이티브에서는 `hidden` 일 때만 새로고침하고 사용 중이면
-  보류한다. `visibilitychange` 는 visible/hidden 양쪽 다 재시도해야 백그라운드 전환에 조용히 적용된다. 웹·PWA 는 즉시.
+- ★**화면이 "한 번씩 리프레시"되는 두 원인(2026-08-18 제보, 2026-08-20 정본)**: ①과거 Android
+  네이티브에서도 PWA Service Worker를 등록해 새 APK 직후 옛 화면이 한 번 뜨거나 사용 중 reload가 일어났다.
+  Capacitor는 APK 자산을 직접 읽으므로 이제 `main.tsx`가 네이티브에서는 Service Worker를 등록하지 않고 과거 등록도
+  `unregister()`한다. 웹·PWA만 `registerSW` 업데이트·오프라인·웹 푸시 계약을 유지한다. 구버전에서 처음 올라오는
+  1회는 옛 controller가 먼저 응답할 수 있어 앱을 한 번 다시 열어 최신 번들을 읽으면 등록이 영구 정리된다.
   ②화면은 route 단위 lazy 청크라 첫 진입에 `RouteLoading` 이 지나간다 — `src/app/routePreload.ts` 등록소 +
   탭바·아이 독의 idle/pointerdown 프리로드로 없앴다. `lazyScreen.preload()` 는 실패한 promise 를 캐시하지 않는다.
   `LocaleBoundary` 는 문구 로딩 중 빈 화면 대신 `RouteLoading` 을 렌더한다. 회귀=`tests/routePreload.test.ts`.
-- ★**`adb install -r` 직후 WebView 는 옛 번들을 보여 준다(2026-08-18 실측)**: PWA Service Worker 가 이전 빌드를
-  precache 했기 때문에 설치가 Success 여도 화면은 직전 번들이다(새 자산 20종을 넣었는데 구 경로·구 개수가 나와
-  "빌드가 안 들어갔다"고 오판했다). ①먼저 APK 안에 새 자산이 있는지 확인한다(zip 열거로 `assets/public/...`)
-  ②그래도 옛 화면이면 SW 문제다. 앱은 `main.tsx` 의 `onNeedRefresh`→활성화→controllerchange 리로드로 다음
-  실행에 자동 갱신되므로 실사용자 조치는 필요 없고, 즉시 증거가 필요할 때만 CDP 로 `getRegistrations()`
-  `unregister()` + `caches.delete()` 후 `Page.reload{ignoreCache:true}` 한다(SW 는 새 번들로 재등록된다).
+- ★**`adb install -r` 직후 번들 신선도(2026-08-20 정본)**: 구버전에서 이 수정 버전으로 처음 올라오는 경우만
+  옛 Service Worker가 1회 응답할 수 있다. ①APK 진입 asset 확인 ②앱 1회 재시작 ③CDP에서 활성 진입 asset과
+  `navigator.serviceWorker.getRegistrations()` 길이 0을 확인한다. 이후 네이티브는 APK 자산을 바로 읽으며 SW를
+  다시 등록하지 않는다. 웹/PWA의 Service Worker는 그대로 유지한다.
 - ★**대기 중 애니메이션은 꺼진 화면에서 관측할 수 없다**: 화면이 꺼진 WebView 는 `document.hidden === true` 라
   배회·깜빡임이 설계대로 멈춘다. 밤에 아이 기기를 깨우지 말고, 시간축 동작은 격리 Chromium + dist + 아이 세션만
   심은 하니스로 관측한다(`--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1` 로 외부 호스트를 닫는다).

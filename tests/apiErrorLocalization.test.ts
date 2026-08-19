@@ -9,6 +9,8 @@ import * as apiErrors from "../src/lib/api/errors.ts";
 const messages: Record<string, string> = {
   "core.error.api.invalidCredentials.formal": "로그인 정보를 확인해 주세요.",
   "core.error.api.invalidCredentials.child": "로그인 정보를 확인해 줘.",
+  "core.error.api.activeDeviceSession.formal": "이 기기로 계정을 전환하지 못했어요. 잠시 후 다시 로그인해 주세요.",
+  "core.error.api.activeDeviceSession.child": "이 기기로 계정을 전환하지 못했어. 잠시 후 다시 로그인해 줘.",
   "core.error.api.invalidPhone.formal": "휴대폰 번호를 확인해 주세요.",
   "core.error.api.invalidLoginId.formal": "아이디 형식을 확인해 주세요.",
   "core.error.api.loginIdTaken.formal": "이미 사용 중인 아이디예요. 다른 아이디를 입력해 주세요.",
@@ -84,6 +86,17 @@ test("실제 signup·OTP stable code는 다시 시도 방법이 있는 구체 �
   for (const [code, message] of Object.entries(expected)) {
     assert.equal(localizeApiError(new ApiError(code, 400), intl, "formal"), message, code);
   }
+});
+
+test("구버전 Worker의 활성 설치 409도 일반 오류가 아니라 복구 방법을 안내한다", () => {
+  assert.equal(
+    localizeApiError(new ApiError("active_device_session_exists", 409), intl, "formal"),
+    messages["core.error.api.activeDeviceSession.formal"],
+  );
+  assert.equal(
+    localizeApiError(new ApiError("active_device_session_exists", 409), intl, "child"),
+    messages["core.error.api.activeDeviceSession.child"],
+  );
 });
 
 test("allowlist code만 구체화하고 알 수 없는 4xx·5xx는 역할별 문구로 닫는다", () => {

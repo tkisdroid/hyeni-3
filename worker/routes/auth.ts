@@ -182,9 +182,6 @@ auth.post("/login-password", async (c) => {
     if (isDeviceIdentityRequiredError(error)) {
       return c.json({ error: "device_identity_required" }, 400);
     }
-    if (isActiveDeviceSessionExistsError(error)) {
-      return c.json({ error: "active_device_session_exists" }, 409);
-    }
     if (isRefreshTokenIssuanceBlocked(error)) {
       return c.json({ error: "account_deletion_in_progress" }, 409);
     }

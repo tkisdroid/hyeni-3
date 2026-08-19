@@ -43,6 +43,7 @@ const messages = {
   "onboarding.locationDisclosure.eyebrow": "孩子位置共享说明",
   "onboarding.locationDisclosure.purpose": "位置信息用于共享实时位置和当天路线，并发送到家、学校、课外班的到达与离开提醒，以及未按时到达和危险区域提醒。",
   "onboarding.locationDisclosure.title": "使用后台位置信息",
+  "onboarding.login.deviceTransferNote": "登录后，这台设备将成为当前设备，其他设备会自动退出登录。",
   "onboarding.login.google": "使用 Google 继续",
   "onboarding.login.googlePending": "正在使用 Google 登录…",
   "onboarding.login.kakao": "使用 Kakao 继续",

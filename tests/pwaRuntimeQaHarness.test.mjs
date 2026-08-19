@@ -32,6 +32,12 @@ test("PWA 런타임 QA는 exact production dist와 중요 작업 보호형 업�
   assert.match(source, /const DIST_SW = resolve\(DIST_DIR, "sw\.js"\)/);
   assert.match(viteConfig, /registerType:\s*"prompt"/);
   assert.match(viteConfig, /strategies:\s*"injectManifest"/);
+  assert.match(mainSource, /const nativePlatform = isNativePlatform\(\)/);
+  assert.match(mainSource, /const serviceWorkerContainer = nativePlatform \? null : browserServiceWorkerContainer/);
+  assert.match(mainSource, /nativePlatform && browserServiceWorkerContainer/);
+  assert.match(mainSource, /getRegistrations\(\)/);
+  assert.match(mainSource, /registration\.unregister\(\)/);
+  assert.match(mainSource, /if \(serviceWorkerContainer\) \{[\s\S]*registerSW\(\{/);
   assert.match(mainSource, /registerSW\(\{/);
   assert.match(mainSource, /immediate:\s*true/);
   assert.match(mainSource, /onNeedRefresh/);

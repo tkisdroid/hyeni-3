@@ -43,6 +43,7 @@
   "onboarding.locationDisclosure.eyebrow": "About sharing your location",
   "onboarding.locationDisclosure.purpose": "Your location is used for live location, today’s route, arrivals and departures at home, school, and after-school activities, missed-arrival alerts, and danger-zone alerts.",
   "onboarding.locationDisclosure.title": "Use background location",
+  "onboarding.login.deviceTransferNote": "Signing in makes this the active device and signs the account out on other devices.",
   "onboarding.login.google": "Continue with Google",
   "onboarding.login.googlePending": "Signing in with Google…",
   "onboarding.login.kakao": "Continue with Kakao",

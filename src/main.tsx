@@ -17,12 +17,25 @@ import {
 } from "./lib/pwaUpdateCoordinator";
 import { canReloadForPwaUpdateNow } from "./lib/pwaReloadTiming";
 
+const nativePlatform = isNativePlatform();
+
 document.documentElement.toggleAttribute("data-hy-native", isNativePlatform());
 rememberReferralFromCurrentLocation();
 
-const serviceWorkerContainer = "serviceWorker" in navigator
+const browserServiceWorkerContainer = "serviceWorker" in navigator
   ? navigator.serviceWorker
   : null;
+// Capacitor는 APK 안의 정적 파일을 직접 읽으므로 PWA Service Worker가 필요하지 않다.
+// 네이티브에서 등록을 남기면 `adb install -r`/스토어 업데이트 직후 이전 index.html을
+// 한 번 더 제공해 새 오류 문구·보안 흐름이 늦게 적용될 수 있다. 웹/PWA만 등록하고,
+// 새 번들을 한 번 읽은 네이티브 설치에서는 과거 등록도 제거해 다음 업데이트를 보호한다.
+const serviceWorkerContainer = nativePlatform ? null : browserServiceWorkerContainer;
+
+if (nativePlatform && browserServiceWorkerContainer) {
+  void browserServiceWorkerContainer.getRegistrations()
+    .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+    .catch(() => undefined);
+}
 
 /**
  * 새 버전 적용 새로고침. 네이티브 앱에서 보고 있는 화면을 스스로 새로고침하면
@@ -64,31 +77,31 @@ async function activateWaitingServiceWorker(): Promise<void> {
 /** 오래 열어 둔 브라우저 탭이 옛 번들에 머물지 않도록 주기적으로 새 버전을 확인한다. */
 const PWA_UPDATE_CHECK_INTERVAL_MS = 30 * 60_000;
 
-applyWaitingServiceWorker = registerSW({
-  immediate: true,
-  onRegisteredSW: (_url, registration) => {
-    if (!registration) return;
-    const check = () => {
-      void registration.update().catch(() => undefined);
-    };
-    setInterval(check, PWA_UPDATE_CHECK_INTERVAL_MS);
-    // 다시 화면을 볼 때도 한 번 확인한다 — 배포 직후 탭으로 돌아온 경우를 덮는다.
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") check();
-    });
-  },
-  onNeedRefresh: () => {
-    queuePwaUpdateAction("activate", activateWaitingServiceWorker);
-  },
-  onNeedReload: () => {
-    queuePwaUpdateAction("reload", reloadForPwaUpdate);
-  },
-});
+if (serviceWorkerContainer) {
+  applyWaitingServiceWorker = registerSW({
+    immediate: true,
+    onRegisteredSW: (_url, registration) => {
+      if (!registration) return;
+      const check = () => {
+        void registration.update().catch(() => undefined);
+      };
+      setInterval(check, PWA_UPDATE_CHECK_INTERVAL_MS);
+      // 다시 화면을 볼 때도 한 번 확인한다 — 배포 직후 탭으로 돌아온 경우를 덮는다.
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") check();
+      });
+    },
+    onNeedRefresh: () => {
+      queuePwaUpdateAction("activate", activateWaitingServiceWorker);
+    },
+    onNeedReload: () => {
+      queuePwaUpdateAction("reload", reloadForPwaUpdate);
+    },
+  });
 
-window.addEventListener("online", retryPendingPwaUpdate);
-// 화면을 다시 볼 때뿐 아니라 백그라운드로 갈 때도 다시 시도한다 — 미뤄 둔 새로고침은
-// 사용자가 보고 있지 않은 그 순간에 조용히 적용해야 한다.
-document.addEventListener("visibilitychange", retryPendingPwaUpdate);
+  window.addEventListener("online", retryPendingPwaUpdate);
+  document.addEventListener("visibilitychange", retryPendingPwaUpdate);
+}
 
 const root = document.getElementById("root");
 if (!root) throw new Error("#root 엘리먼트를 찾을 수 없습니다.");

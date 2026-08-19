@@ -515,6 +515,15 @@
   transition: transform 0.14s ease;
   --press: 0.98;
 }
+.ob-login-device-note {
+  margin: 4px 8px 0;
+  color: var(--fg-muted);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  text-align: center;
+  text-wrap: pretty;
+}
 .ob-login-foot {
   margin-top: 20px;
   text-align: center;

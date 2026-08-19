@@ -22,8 +22,6 @@ import { parseJson } from "../lib/serialize";
 import { normalizeDeviceId } from "../lib/refresh";
 import { issueAccountSession } from "../lib/authSession";
 import {
-  checkAccountDeviceSession,
-  isActiveDeviceSessionExistsError,
   isDeviceIdentityRequiredError,
 } from "../lib/accountDeviceSession";
 import { notifyPg, revokeFamilyRealtimeUser, revokeFamilyRealtimeUsers } from "../lib/realtime";
@@ -818,14 +816,6 @@ family.post("/join", requireAuth, async (c) => {
 
     if (reusable) {
       sessionUserId = reusable.user_id;
-      const reusableDeviceState = await checkAccountDeviceSession(
-        c.env.DB,
-        sessionUserId,
-        normalizeDeviceId(deviceInstallId),
-      );
-      if (reusableDeviceState === "inactive") {
-        return c.json({ error: "active_device_session_exists" }, 409);
-      }
       const sets = ["is_active=1"];
       const binds: unknown[] = [];
       if (deviceLabel) {
@@ -1169,9 +1159,6 @@ family.post("/join", requireAuth, async (c) => {
       childPlatform,
     );
   } catch (error) {
-    if (isActiveDeviceSessionExistsError(error)) {
-      return c.json({ error: "active_device_session_exists" }, 409);
-    }
     if (isDeviceIdentityRequiredError(error)) {
       return c.json({ error: "device_identity_required" }, 400);
     }
@@ -1414,9 +1401,6 @@ family.post("/join-as-parent", requireAuth, async (c) => {
       cleanText(body.device_platform),
     );
   } catch (error) {
-    if (isActiveDeviceSessionExistsError(error)) {
-      return c.json({ error: "active_device_session_exists" }, 409);
-    }
     if (isDeviceIdentityRequiredError(error)) {
       return c.json({ error: "device_identity_required" }, 400);
     }

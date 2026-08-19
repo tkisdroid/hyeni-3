@@ -43,6 +43,7 @@ const messages = {
   "onboarding.locationDisclosure.eyebrow": "Tentang perkongsian lokasi kamu",
   "onboarding.locationDisclosure.purpose": "Lokasi digunakan untuk lokasi masa nyata, laluan hari ini, pemberitahuan tiba dan bertolak dari rumah, sekolah dan kelas tambahan, serta amaran tidak tiba dan zon bahaya.",
   "onboarding.locationDisclosure.title": "Gunakan lokasi latar belakang",
+  "onboarding.login.deviceTransferNote": "Apabila anda log masuk, peranti ini menjadi peranti aktif dan akaun akan dilog keluar secara automatik daripada peranti lain.",
   "onboarding.login.google": "Teruskan dengan Google",
   "onboarding.login.googlePending": "Log masuk dengan Google…",
   "onboarding.login.kakao": "Teruskan dengan Kakao",

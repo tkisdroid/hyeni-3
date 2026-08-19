@@ -857,10 +857,13 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
     stale snapshot을 정상 상태로 덮는다.
   · **조기 도착 자동 보상**은 일정 시작 60분 안에 먼저 도착한 occurrence에 `automaticStickerReward`가 결정적 멱등키로
     `일찍 왔어요` 스티커를 1회 저장하고 아이 realtime 축하를 보낸다. 임의 도착 감지와 등록장소 cron이 같은 helper를 쓴다.
-  · **계정 동시 설치 차단**은 `account_device_sessions`가 계정별 활성 설치 1개를 정본으로 가진다. 모든 세션 발급·
-    refresh·직접 JWT 경로가 `authenticatedAccess`를 공통 사용하며 다른 활성 설치는 409로 닫는다. 충돌 refresh는 기존
-    체인을 회전하지 않고, 정상 logout은 현재 설치의 refresh 체인과 claim을 함께 놓는다. migration=
-    `worker/db/account-device-sessions.sql`, 회귀=`worker/tests/accountDeviceSession.test.mjs`.
+  · **계정 활성 설치 전환**은 `account_device_sessions`가 계정별 활성 설치 1개를 정본으로 가진다. 비밀번호·OAuth·
+    페어링처럼 본인 인증을 다시 끝낸 새 로그인은 `takeOverAccountDeviceSession`이 활성 설치를 원자 교체하고 이전
+    refresh 체인·FCM/Web Push endpoint를 같은 D1 batch에서 닫으며 FamilyRoom 소켓도 철회한다. 기존 기기를 잃어
+    로그아웃할 수 없어도 새 기기로 들어갈 수 있지만 이전 기기는 즉시 가족 정보를 읽거나 받지 못한다. **refresh는
+    인계 권한이 아니므로** 비활성 설치에서는 기존 체인을 건드리지 않고 401로 닫는다. 정상 logout은 현재 설치의
+    refresh 체인과 claim을 함께 놓는다. migration=`worker/db/account-device-sessions.sql`, 회귀=
+    `worker/tests/accountDeviceSession.test.mjs`.
 - ★**대화 전송은 낙관적이다(2026-08-19 TK 제보 "채팅 보낼 때 느림")**: 예전에는 POST 응답이 와야 말풍선이 서고
   입력칸도 그때 비워져, 느린 네트워크에서 앱이 멈춘 것처럼 보였다. **실측: 서버 2초 지연 재현에서 2,000ms → 7ms.**
   · `useSendMemo.onMutate` 가 `insertPendingMemoReply` 로 임시 행을 넣고, 화면은 `mutate` 직전에 `setDraft("")` 한다.
@@ -1250,12 +1253,13 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   둔 탭도 스스로 새 번들을 받게 했다. 진단 순서: ①D1 행 ②R2 객체·메타데이터(`wrangler dev --remote` 로 띄운
   읽기 전용 스크래치 워커의 `PHOTOS.head`) ③격리 브라우저 재현 ④그래도 정상이면 번들·세션(계정) 신선도.
   회귀=`scripts/final-browser-qa.mjs`(부모 사진 blob 렌더 + 초대 코드 발급 클릭)·`tests/routePreload.test.ts`.
-- ★**화면이 "한 번씩 리프레시"되는 두 원인(2026-08-18 TK 제보)**: ①**새 버전 적용 새로고침** — 새 빌드를 깔면
-  Service Worker 가 몇 초 뒤 활성화되고 `main.tsx` 가 `window.location.reload()` 한다. 부팅 중이 아니라 사용자가
-  이미 화면을 보고 있을 때 실행되면 "대화·설정 화면에서 갑자기 새로고침"으로 읽힌다. 이제 `pwaReloadTiming`
-  (`canReloadForPwaUpdateNow`)이 **네이티브에서는 `document.visibilityState === "hidden"` 일 때만** 새로고침하고,
-  보고 있는 중이면 실패로 돌려 coordinator 가 보류한다. `visibilitychange` 는 visible/hidden **양쪽** 모두
-  재시도해야 백그라운드 전환 순간에 조용히 적용된다. 웹·PWA 는 기존대로 즉시 적용(브라우저 탭에서는 자연스럽다).
+- ★**화면이 "한 번씩 리프레시"되는 두 원인(2026-08-18 TK 제보, 2026-08-20 정본 갱신)**:
+  ①**새 버전 적용 새로고침** — 과거에는 Android 네이티브에서도 PWA Service Worker를 등록해 새 APK 설치 직후
+  이전 `index.html`을 한 번 보여 주거나 사용 중 `location.reload()`가 일어났다. 2026-08-20부터 Capacitor는 APK의
+  로컬 자산을 직접 읽으므로 `main.tsx`가 **네이티브에서는 Service Worker를 등록하지 않고 기존 등록도 전부
+  `unregister()`**한다. 웹·PWA만 기존 `registerSW` 업데이트·오프라인 계약을 유지한다. 이 수정이 들어오기 전 버전에서
+  처음 올라오는 1회는 옛 controller가 먼저 응답할 수 있으므로 앱을 한 번 다시 열어 최신 번들이 로드되면 등록이
+  영구 정리된다. `pwaReloadTiming`은 과거 설치와 웹 회귀를 위한 순수 판정으로 남긴다.
   ②**첫 진입 청크 로딩** — 화면은 route 단위 lazy 청크라 처음 들어갈 때 `RouteLoading`("화면을 불러오는 중")이
   한 번 지나간다. `src/app/routePreload.ts` 등록소에 App 이 경로→`screen.preload` 를 등록하고 탭바·아이 독이
   `preloadRoutesWhenIdle`(idle)+`onPointerDown`(즉시)으로 미리 받는다. `lazyScreen` 은 `preload()` 를 노출하며
@@ -1263,13 +1267,12 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   `null`(빈 화면) 대신 `RouteLoading` 을 렌더한다. 회귀=`tests/routePreload.test.ts`.
 
 ### J. 실기기 검증 치트시트 (함정 포함)
-- ★**`adb install -r` 직후 WebView 는 옛 번들을 보여 준다(2026-08-18 실측)**: PWA Service Worker 가 이전 빌드를
-  precache 해 뒀기 때문에, 설치가 Success 여도 화면은 **직전 번들**이다(그때 새 자산 20종을 넣었는데
-  `faceCount:9`·구 경로가 그대로 나와 "빌드가 안 들어갔다"고 오판했다). 판정 순서: ①APK 안에 새 자산이 있는지
-  먼저 확인(`System.IO.Compression.ZipFile` 로 `assets/public/...` 열거) ②그래도 옛 화면이면 SW 문제다.
-  앱 자체는 `main.tsx` 의 `onNeedRefresh`→활성화→controllerchange 리로드로 **다음 실행에 자동 갱신**되므로
-  실사용자는 조치가 필요 없다. 즉시 증거가 필요할 때만 CDP 로 `getRegistrations().unregister()` +
-  `caches.delete()` 후 `Page.reload{ignoreCache:true}` 한다(SW 는 새 번들로 자동 재등록된다).
+- ★**`adb install -r` 직후 번들 신선도(2026-08-20 정본)**: 2026-08-18까지의 APK는 네이티브 WebView에도 PWA
+  Service Worker를 남겼으므로 설치 Success 뒤 직전 번들이 한 번 보일 수 있었다. 이제 네이티브는 등록하지 않고
+  최신 번들이 뜨는 즉시 과거 등록을 `unregister()`하므로 이후 업데이트는 APK 자산을 바로 읽는다. 구버전에서 이
+  수정 버전으로 처음 올라올 때만 ①APK 안 진입 asset 확인 ②앱 1회 재시작 ③CDP에서 활성 진입 asset과
+  `navigator.serviceWorker.getRegistrations()` 길이 0을 확인한다. 네이티브에서 SW를 다시 등록하거나 캐시 삭제를
+  상시 절차로 만들지 않는다. 웹/PWA의 Service Worker·웹 푸시·오프라인 계약은 그대로다.
 - ★**대기 중 애니메이션은 화면이 꺼진 기기에서 관측할 수 없다**: 잠긴/꺼진 화면의 WebView 는
   `document.hidden === true` 라 배회·깜빡임이 (설계대로) 멈춘다. 밤에 아이 기기를 깨우지 말고,
   시간축 동작은 **격리 Chromium + dist + 아이 세션만 심은 하니스**로 관측한다(외부 호스트는

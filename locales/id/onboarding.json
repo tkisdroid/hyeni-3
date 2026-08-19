@@ -43,6 +43,7 @@
   "onboarding.locationDisclosure.eyebrow": "Tentang berbagi lokasimu",
   "onboarding.locationDisclosure.purpose": "Lokasi digunakan untuk lokasi langsung, rute hari ini, notifikasi tiba dan berangkat dari rumah, sekolah, dan tempat les, serta peringatan terlambat tiba dan zona bahaya.",
   "onboarding.locationDisclosure.title": "Gunakan lokasi latar belakang",
+  "onboarding.login.deviceTransferNote": "Saat masuk, perangkat ini menjadi perangkat aktif dan akun akan otomatis keluar dari perangkat lain.",
   "onboarding.login.google": "Lanjutkan dengan Google",
   "onboarding.login.googlePending": "Masuk dengan Google…",
   "onboarding.login.kakao": "Lanjutkan dengan Kakao",

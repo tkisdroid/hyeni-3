@@ -90,6 +90,14 @@ function createDb() {
       device_platform TEXT, claimed_at TEXT NOT NULL, last_seen_at TEXT NOT NULL,
       expires_at TEXT NOT NULL, revoked_at TEXT
     );
+    CREATE TABLE fcm_tokens (
+      id TEXT PRIMARY KEY, user_id TEXT NOT NULL,
+      disabled_at TEXT, disabled_reason TEXT
+    );
+    CREATE TABLE push_subscriptions (
+      id TEXT PRIMARY KEY, user_id TEXT NOT NULL,
+      disabled_at TEXT, disabled_reason TEXT
+    );
     CREATE TABLE account_deletion_scopes (
       job_id TEXT NOT NULL, scope_type TEXT NOT NULL, scope_id TEXT NOT NULL,
       created_at TEXT NOT NULL, PRIMARY KEY(scope_type, scope_id)

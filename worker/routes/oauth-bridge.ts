@@ -27,7 +27,6 @@ import { requireAuth } from "../middleware/auth";
 import { isRefreshTokenIssuanceBlocked, normalizeDeviceId } from "../lib/refresh";
 import { issueAccountSession } from "../lib/authSession";
 import {
-  isActiveDeviceSessionExistsError,
   isDeviceIdentityRequiredError,
 } from "../lib/accountDeviceSession";
 import { resolveCanonicalFamilyMembership } from "../db/authz";
@@ -138,9 +137,6 @@ bridge.post("/oauth-bridge/verify-otp", requireAuth, async (c) => {
   } catch (error) {
     if (isDeviceIdentityRequiredError(error)) {
       return c.json({ error: "device_identity_required" }, 400);
-    }
-    if (isActiveDeviceSessionExistsError(error)) {
-      return c.json({ error: "active_device_session_exists" }, 409);
     }
     if (isRefreshTokenIssuanceBlocked(error)) {
       return c.json({ error: "account_deletion_in_progress" }, 409);

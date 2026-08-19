@@ -43,6 +43,7 @@
   "onboarding.locationDisclosure.eyebrow": "เกี่ยวกับการแชร์ตำแหน่งของเธอ",
   "onboarding.locationDisclosure.purpose": "ใช้ตำแหน่งเพื่อแสดงตำแหน่งปัจจุบันและเส้นทางวันนี้ แจ้งเมื่อมาถึงหรือออกจากบ้าน โรงเรียน และที่เรียนพิเศษ รวมถึงแจ้งเมื่อมาไม่ถึงตามเวลาและเมื่อเข้าเขตอันตราย",
   "onboarding.locationDisclosure.title": "ใช้ตำแหน่งพื้นหลัง",
+  "onboarding.login.deviceTransferNote": "เมื่อเข้าสู่ระบบ อุปกรณ์นี้จะเป็นอุปกรณ์ที่ใช้งาน และอุปกรณ์อื่นจะออกจากระบบโดยอัตโนมัติ",
   "onboarding.login.google": "ดำเนินการต่อด้วย Google",
   "onboarding.login.googlePending": "กำลังลงชื่อเข้าใช้ด้วย Google…",
   "onboarding.login.kakao": "ต่อด้วยคาเคา",

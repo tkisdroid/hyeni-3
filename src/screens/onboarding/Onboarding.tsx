@@ -1065,6 +1065,9 @@ function LoginStep({
         <button type="button" className="ob-loginbtn hy-press hy-busy-quiet" onClick={loginIdPw} disabled={busy} aria-busy={busy && pendingAction === "id"}>
           <BusyLabel busy={busy && pendingAction === "id"} idle={intl.formatMessage({ id: "onboarding.login.submit" })} pending={intl.formatMessage({ id: "onboarding.login.pending" })} />
         </button>
+        <p className="ob-login-device-note">
+          {intl.formatMessage({ id: "onboarding.login.deviceTransferNote" })}
+        </p>
       </div>
 
       <div className="ob-login-foot">

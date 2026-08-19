@@ -43,6 +43,7 @@
   "onboarding.locationDisclosure.eyebrow": "孩子位置分享說明",
   "onboarding.locationDisclosure.purpose": "位置資訊用於分享即時位置和今日路線，並傳送住家、學校、補習班或課後活動的抵達與離開提醒，以及未抵達和危險區域提醒。",
   "onboarding.locationDisclosure.title": "使用背景位置資訊",
+  "onboarding.login.deviceTransferNote": "登入後，這台裝置將成為目前裝置，其他裝置會自動登出。",
   "onboarding.login.google": "使用 Google 繼續",
   "onboarding.login.googlePending": "正在使用 Google 登入…",
   "onboarding.login.kakao": "使用 Kakao 繼續",

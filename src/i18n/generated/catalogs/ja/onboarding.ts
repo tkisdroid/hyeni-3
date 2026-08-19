@@ -43,6 +43,7 @@ const messages = {
   "onboarding.locationDisclosure.eyebrow": "お子さまの位置情報共有について",
   "onboarding.locationDisclosure.purpose": "位置情報は、現在地や今日の移動経路、自宅・学校・塾や習い事への到着と出発、未到着アラート、危険エリアのお知らせに使うよ。",
   "onboarding.locationDisclosure.title": "バックグラウンドで位置情報を使うよ",
+  "onboarding.login.deviceTransferNote": "ログインするとこの端末が有効になり、他の端末からは自動的にログアウトします。",
   "onboarding.login.google": "Googleで続ける",
   "onboarding.login.googlePending": "Googleでログイン中…",
   "onboarding.login.kakao": "Kakaoで続ける",

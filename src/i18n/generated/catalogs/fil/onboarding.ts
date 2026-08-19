@@ -43,6 +43,7 @@ const messages = {
   "onboarding.locationDisclosure.eyebrow": "Tungkol sa pagbabahagi ng iyong lokasyon",
   "onboarding.locationDisclosure.purpose": "Ginagamit ang lokasyon para sa real-time na lokasyon, ruta ngayong araw, mga alerto sa pagdating at pag-alis sa bahay, paaralan, at tutorial center, pati mga alerto kapag hindi nakarating sa oras o pumasok sa mapanganib na lugar.",
   "onboarding.locationDisclosure.title": "Gumamit ng lokasyon sa background",
+  "onboarding.login.deviceTransferNote": "Kapag nag-login, magiging aktibong device ito at awtomatikong mala-log out ang account sa ibang device.",
   "onboarding.login.google": "Magpatuloy sa Google",
   "onboarding.login.googlePending": "Nagsa-sign in gamit ang Google…",
   "onboarding.login.kakao": "Ituloy mo si Kakao",
