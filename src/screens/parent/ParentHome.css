@@ -294,6 +294,9 @@
   position: relative;
   isolation: isolate;
   min-height: 100%;
+  /* ⚠️ 바닥은 솟은 면보다 살짝 어두워야 한다 — 바닥이 흰색이면 뉴모피즘의 흰 하이라이트가
+     보이지 않아 그냥 드롭섀도로 읽힌다. 카드·타일(near-white)과 이 톤의 차이가 입체감의 근거다. */
+  background: color-mix(in srgb, var(--bg-body) 74%, var(--bg-app));
 }
 .ph-page::before {
   content: "";
@@ -774,7 +777,8 @@
   width: 42px;
   height: 42px;
   border-radius: var(--radius-12);
-  background: var(--glass-tile);
+  background: var(--neu-surface);
+  box-shadow: var(--neu-raised-soft);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -818,8 +822,8 @@
   min-width: 0;
   padding: 8px 12px;
   border-radius: var(--radius-16);
-  background: var(--bg-press);
-  box-shadow: none;
+  background: color-mix(in srgb, var(--bg-press) 60%, transparent);
+  box-shadow: var(--neu-pressed);
 }
 .ph-app-summary__k {
   display: block;
@@ -1143,19 +1147,24 @@
   border-radius: 16px;
   --press: 0.93;
 }
+/* 바로가기는 '누르는 것'이라 유리판이 아니라 솟은 물체로 만든다. */
 .ph-shortcut__icon {
   position: relative;
   width: 58px;
   height: 58px;
   border-radius: var(--radius-20);
-  background: var(--glass-fill);
+  background: var(--neu-surface);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-rim), 0 8px 18px -12px rgba(32, 26, 29, 0.28);
+  box-shadow: var(--neu-raised);
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: box-shadow 0.16s var(--easing-standard);
+}
+/* 누르면 실제로 들어간다 — 뉴모피즘의 값어치는 여기에 있다. */
+.ph-shortcut:active .ph-shortcut__icon {
+  box-shadow: var(--neu-pressed);
 }
 .ph-shortcut__icon img {
   width: 40px;

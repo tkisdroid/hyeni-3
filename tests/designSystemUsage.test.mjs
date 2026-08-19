@@ -2050,7 +2050,7 @@ const semanticSurfaceManifest = [
     ["src/screens/feature/PlaydateAccept.css", "pa-active", "card"],
     ["src/screens/feature/LocationStatus.css", "ls-permit", "card"],
     ["src/screens/feature/PermDenied.css", "pd-steps", "card"],
-    ["src/screens/parent/ParentHome.css", "ph-app-summary__item", "card"],
+    ["src/screens/parent/ParentHome.css", "ph-app-summary__item", "well"],
     ["src/screens/parent/ParentCalendar.css", "pc-sheet__row", "card"],
     ["src/screens/parent/ParentLocation.css", "pl-status", "card"],
     ["src/screens/child/overlays/ChildSheet.css", "ks-modal__msg", "card"],
@@ -2723,6 +2723,8 @@ const nonSurfacePaintManifest = new Set([
 
 const semanticSurfaceRoleSpecs = {
   card: { radius: ["var(--radius-16)"], shadow: ["none", "var(--shadow-soft)"] },
+  // 값이 들어가는 면(요약 우물)은 솟지 않고 눌린다 — card 와 역할이 달라 따로 둔다(2026-08-19).
+  well: { radius: ["var(--radius-16)"], shadow: ["var(--neu-pressed)"] },
   hero: { radius: ["var(--radius-20)", "0 0 var(--radius-20) var(--radius-20)"], shadow: ["none", "var(--shadow-soft)", "var(--shadow-floating)"] },
   media: { radius: ["var(--radius-20)"], shadow: ["none", "var(--shadow-soft)", "var(--shadow-modal)"] },
   modal: { radius: ["var(--radius-20)"], shadow: ["var(--shadow-modal)"] },

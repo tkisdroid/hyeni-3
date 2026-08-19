@@ -238,6 +238,30 @@
   /* 유리 위에 얹히는 작은 면(아이콘 타일·칩) — 카드보다 한 겹 더 밝다. */
   --glass-tile: rgba(255, 255, 255, 0.62);
 
+  /* ── Neumorphism · 조작 면의 촉감 ──
+     유리(큰 면)와 역할이 다르다. 유리는 '떠 있는 판', 뉴모피즘은 '눌리는 물체'다.
+     ⚠️ 두 스타일은 바닥 요구가 정반대다 — 유리는 색이 있어야 굴절하고, 뉴모피즘은
+     밝은 그림자가 보이려면 바닥이 near-neutral 이어야 한다. 그래서 뉴모피즘은
+     **바닥이 아니라 카드(near-white) 위에만** 얹는다. 색 바닥 위에 두면 흰 그림자가
+     사라지고 어두운 그림자만 남아 때가 탄 것처럼 보인다.
+     light 는 좌상단(빛), dark 는 우하단(그늘) — 광원은 화면 전체에서 하나다. */
+  --neu-light: rgba(255, 255, 255, 0.95);
+  --neu-dark: rgba(126, 100, 118, 0.26);
+  /* 볼록 — 아이콘 타일·칩처럼 '누를 수 있는' 작은 면 */
+  --neu-raised:
+    -3px -3px 8px var(--neu-light),
+    4px 5px 12px var(--neu-dark);
+  /* 얕은 볼록 — 카드 안에서 여러 개가 반복될 때(그림자가 겹쳐 지저분해지지 않게) */
+  --neu-raised-soft:
+    -2px -2px 5px var(--neu-light),
+    2px 3px 7px var(--neu-dark);
+  /* 오목 — 값이 들어가는 면(입력칸·요약 우물). 눌린 자리는 그늘이 좌상단이다. */
+  --neu-pressed:
+    inset 2px 3px 6px var(--neu-dark),
+    inset -2px -2px 5px var(--neu-light);
+  /* 뉴모피즘 면의 채움 — 카드와 같은 톤이어야 '한 덩어리에서 솟은' 것으로 보인다. */
+  --neu-surface: rgba(255, 255, 255, 0.58);
+
   /* ── Elevation ── */
   --shadow-soft: 0 2px 8px rgba(32, 26, 29, 0.08);
   --shadow-floating: 0 10px 28px -8px rgba(32, 26, 29, 0.2);

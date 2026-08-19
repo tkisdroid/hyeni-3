@@ -131,6 +131,12 @@
   margin-bottom: 12px;
   padding-inline: 4px;
 }
+.hy-app[data-role="parent"] .hy-section-icon {
+  background: var(--neu-surface);
+  box-shadow: var(--neu-raised-soft);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
 .hy-section-icon {
   width: 30px;
   height: 30px;

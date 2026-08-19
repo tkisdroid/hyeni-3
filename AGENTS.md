@@ -712,6 +712,12 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   + 1.5px accent 테두리 ③미선택 칩 = `--bg-chip-idle` + `--fg-tertiary`. **비텍스트 면(장식·아바타·진행바·마커)은 계속
   `--hy-accent`.** 문구 토큰은 card·app·page·body **네 표면 전부** 4.5:1 이상이어야 한다. 카테고리·태그 색은
   `--cat-*-text/-soft` 토큰이 정본이며 중간 톤을 soft 위 글자색으로 쓰지 않는다. 가드=`tests/colorContrastAndRadius.test.mjs`.
+- ★**뉴모피즘 + 글래스모피즘은 면의 역할로 나눈다(2026-08-19)**: 두 스타일은 바닥 요구가 정반대다 —
+  유리는 색 바닥이 있어야 굴절하고, 뉴모피즘은 바닥이 솟은 면보다 어두워야 흰 하이라이트가 보인다.
+  큰 면=유리(`.ph-glass`·탭바), 작은 조작 면=볼록(`--neu-raised`), 값이 들어가는 면=눌린 우물(`--neu-pressed`).
+  `:active` 에서 raised→pressed 로 실제로 눌린다. ⚠️ 바닥은 `color-mix(--bg-body 74%, --bg-app)` 이 전제이고,
+  이 바닥에서 `--fg-muted` 가 4.72:1 이라 **더 어둡게 하면 AA 가 깨진다** — 입체감은 `--neu-dark` 로 올린다.
+  ⚠️ 뉴모피즘을 색 바닥 위에 직접 두지 않는다. ⚠️ 값이 들어가는 면은 card 가 아니라 `well` 역할이다.
 - ★**부모 홈 유리 보정(2026-08-19)**: 구조(`.ph-page::before` 바닥 + `.ph-glass` 카드)는 그대로 두고 값만 고친다.
   바닥은 **색 두 가지·26% 이하**(4색 고채도가 촌스러움의 실체였다), 유리 질감은 채움이 아니라 **rim** 이 만든다
   (`.ph-glass` 는 탭바와 같은 `--glass-*` 정본을 쓴다 — 더 투명하게 내리면 질감이 사라지고 대비도 깨진다).
