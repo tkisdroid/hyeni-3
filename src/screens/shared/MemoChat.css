@@ -327,7 +327,7 @@
   flex: none;
   padding: 8px 12px;
   border-radius: var(--radius-pill);
-  background: var(--neu-surface);
+  background: var(--glass-fill-solid);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   box-shadow: var(--neu-raised-soft);
@@ -339,17 +339,19 @@
   white-space: nowrap;
   --press: 0.94;
 }
-/* 입력칸은 값이 들어가는 면이라 솟지 않고 들어간다(뉴모피즘 inset). */
+/* 대화 말풍선이 뒤로 지나가는 면이라 얼음이 아니라 불투명 등급을 쓴다.
+   정적인 '움푹'은 쓰지 않는다 — 눌린 느낌은 실제 눌림에만 준다. */
 .mc-inputbar {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--glass-fill);
+  background: var(--glass-fill-solid);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-pill);
   padding: 4px 8px;
-  box-shadow: var(--neu-pressed);
+  box-shadow: var(--glass-rim), 0 10px 24px -14px rgba(32, 26, 29, 0.28);
 }
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
   .mc-inputbar {

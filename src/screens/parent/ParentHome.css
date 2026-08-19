@@ -296,7 +296,9 @@
   min-height: 100%;
   /* ⚠️ 바닥은 솟은 면보다 살짝 어두워야 한다 — 바닥이 흰색이면 뉴모피즘의 흰 하이라이트가
      보이지 않아 그냥 드롭섀도로 읽힌다. 카드·타일(near-white)과 이 톤의 차이가 입체감의 근거다. */
-  background: color-mix(in srgb, var(--bg-body) 74%, var(--bg-app));
+  /* ⚠️ 얼음 유리(fill 0.32)의 전제 조건이다. 밝기를 낮추면 카드 위 글자가 먼저 깨진다.
+     뉴모피즘 타일은 --neu-surface 를 0.86 으로 올려 이 바닥 위에서도 솟아 보이게 했다. */
+  background: color-mix(in srgb, var(--bg-body) 26%, var(--bg-app));
 }
 .ph-page::before {
   content: "";
@@ -307,11 +309,13 @@
   /* 반투명 유리는 뒤에 색이 있어야 비친다. 그래서 '어둡게'가 아니라 '색이 많아지게' 만든다 —
      밝기를 낮추면 바닥 위 글자(섹션 제목·전체보기 링크) 대비가 먼저 깨진다.
      ⚠️ 색조는 셋까지, 각 45% 이하. 넘기면 촌스러워진다. */
+  /* 얼음 뒤로 비칠 색. 밝은 톤(-200/-300)을 써서 채도는 살리고 밝기는 지킨다 —
+     -400/-500 처럼 진한 톤을 쓰면 카드 위 글자 대비가 바로 깨진다. */
   background:
-    radial-gradient(ellipse 92% 32% at 100% 0%, color-mix(in srgb, var(--rose-300) 44%, transparent), transparent 68%),
-    radial-gradient(ellipse 86% 30% at 0% 30%, color-mix(in srgb, var(--lav-400) 38%, transparent), transparent 66%),
-    radial-gradient(ellipse 78% 26% at 96% 66%, color-mix(in srgb, var(--mint-400) 22%, transparent), transparent 64%),
-    linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--lav-soft) 40%, transparent) 62%, color-mix(in srgb, var(--rose-soft) 34%, transparent) 100%);
+    radial-gradient(ellipse 92% 34% at 100% 0%, color-mix(in srgb, var(--rose-200) 62%, transparent), transparent 68%),
+    radial-gradient(ellipse 88% 32% at 0% 28%, color-mix(in srgb, var(--lav-300) 24%, transparent), transparent 66%),
+    radial-gradient(ellipse 80% 28% at 98% 64%, color-mix(in srgb, var(--mint-400) 20%, transparent), transparent 62%),
+    linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--lav-soft) 32%, transparent) 60%, color-mix(in srgb, var(--rose-soft) 40%, transparent) 100%);
 }
 .ph-page > * {
   position: relative;
@@ -820,12 +824,14 @@
   gap: 8px;
   margin-bottom: 16px;
 }
+/* 값이 들어가는 면이지만 '움푹'하게 만들지 않는다 — 정적인 오목은 눌린 것처럼 보여
+   실제 눌림 피드백과 헷갈린다. 얼음 카드 안에서 한 겹 더 맑은 면으로만 구분한다. */
 .ph-app-summary__item {
   min-width: 0;
   padding: 8px 12px;
   border-radius: var(--radius-16);
-  background: color-mix(in srgb, var(--bg-press) 60%, transparent);
-  box-shadow: var(--neu-pressed);
+  background: rgba(255, 255, 255, 0.46);
+  box-shadow: none;
 }
 .ph-app-summary__k {
   display: block;

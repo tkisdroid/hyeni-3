@@ -283,8 +283,9 @@
   );
 }
 .hy-tabbar__inner {
-  /* 재질 정본은 tokens.css 의 --glass-* 하나다(카드와 같은 유리). */
-  background: var(--glass-fill);
+  /* ⚠️ 탭바는 얼음(--glass-fill)을 쓰지 않는다 — 스크롤 콘텐츠가 뒤로 지나가므로
+     그만큼 투명하면 라벨 대비가 AA 밑으로 떨어진다(2026-08-19 픽셀 실측). */
+  background: var(--glass-fill-solid);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);

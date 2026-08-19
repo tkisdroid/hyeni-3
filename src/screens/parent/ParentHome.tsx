@@ -630,7 +630,7 @@ export function ParentHome() {
               </button>
             }
           />
-          <div className="hy-card ph-sched">
+          <div className="hy-card ph-glass ph-sched">
             {eventsQuery.isLoading ? (
               <div className="ph-sched-skel" role="status" aria-label={intl.formatMessage({ id: "parent.parentHome.copy020" })}>
                 <span className="hy-skel hy-skel--avatar" aria-hidden="true" />
@@ -733,7 +733,7 @@ export function ParentHome() {
             }
           />
           {childCards.length === 0 ? (
-            <div className="hy-card ph-child">
+            <div className="hy-card ph-glass ph-child">
               <div className="ph-child__foot">
                 <span className="ph-child__next">{intl.formatMessage({ id: "parent.parentHome.copy030" })}</span>
               </div>
@@ -824,7 +824,7 @@ export function ParentHome() {
               </span>
             }
           />
-          <div className="hy-card ph-safety">
+          <div className="hy-card ph-glass ph-safety">
             {!deviceStatus.hasData && (
               <div className="ph-safety__pending">
                 {intl.formatMessage({ id: "parent.parentHome.copy036" })}
@@ -995,7 +995,7 @@ export function ParentHome() {
               </>
             }
           />
-          <div className="hy-card ph-prep">
+          <div className="hy-card ph-glass ph-prep">
             {suppliesQuery.isLoading ? (
               <div
                 className="ph-prep-row"
@@ -1058,7 +1058,7 @@ export function ParentHome() {
         </section>
 
         {/* 대화 프리뷰 */}
-        <button type="button" className="hy-card ph-memo hy-press" onClick={() => navigate("/parent/memo")}>
+        <button type="button" className="hy-card ph-glass ph-memo hy-press" onClick={() => navigate("/parent/memo")}>
           <span className="ph-memo__icon">
             <img src={asset("ui/chat-heart.webp")} alt="" />
           </span>

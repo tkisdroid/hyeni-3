@@ -712,6 +712,12 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   + 1.5px accent 테두리 ③미선택 칩 = `--bg-chip-idle` + `--fg-tertiary`. **비텍스트 면(장식·아바타·진행바·마커)은 계속
   `--hy-accent`.** 문구 토큰은 card·app·page·body **네 표면 전부** 4.5:1 이상이어야 한다. 카테고리·태그 색은
   `--cat-*-text/-soft` 토큰이 정본이며 중간 톤을 soft 위 글자색으로 쓰지 않는다. 가드=`tests/colorContrastAndRadius.test.mjs`.
+- ★**섹션은 얼음 유리, 정적 오목 금지(2026-08-19)**: ⚠️ "유리 질감이 없다"의 원인이 대개 **그 카드가 애초에
+  유리가 아닌 것**이다 — 재질을 바꾸기 전에 `.ph-glass` 가 실제로 붙어 있는지 확인한다(일정·안전지표 등 5개가
+  불투명 `.hy-card` 였다). 얼음 = `--glass-fill` 0.42 + `blur(30px) saturate(190%)` + 또렷한 `--glass-rim`.
+  콘텐츠가 뒤로 지나가는 면(탭바·입력 알약)은 `--glass-fill-solid`(0.8) 를 쓴다. 정적인 `--neu-pressed` 는 쓰지
+  않고 `:active` 에만 쓴다. ⚠️ 얼음의 상한은 바닥 밝기가 정한다(실측 카드 `#EFE9F3` → `--fg-muted` 4.64:1).
+  ⚠️ 대비는 픽셀 스캔이 아니라 **순수 바닥 샘플 + `over(white, fill, ground)` 계산**으로 잰다.
 - ★**입체감은 그늘로, 투명도는 rim 으로(2026-08-19)**: `--neu-dark` 를 올려 입체감을 낸다(바닥을 어둡게 하면
   글자 대비가 먼저 깨진다). `--glass-fill` 을 내릴 때는 `--glass-rim` 을 같이 세운다 — 채움을 내릴수록 rim 이
   유일한 경계다. 반투명 유리는 뒤에 색이 있어야 비치므로 바닥은 "어둡게"가 아니라 "색이 많아지게" 만든다.
