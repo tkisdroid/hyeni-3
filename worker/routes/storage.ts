@@ -17,7 +17,7 @@ import { Hono } from "hono";
 import type { Context } from "hono";
 import type { Env, Vars } from "../types";
 import { requireAuth } from "../middleware/auth";
-import { verifyAccessToken } from "../lib/jwt";
+import { verifyActiveAccessToken } from "../lib/authenticatedAccess";
 import {
   assertFamilyAccess,
   assertPrimaryParent,
@@ -906,7 +906,7 @@ storage.get("/child-photos/:path{.+}", async (c: Ctx) => {
   if (!token) return c.json({ error: "invalid_token" }, 401);
   let sub: string;
   try {
-    const claims = await verifyAccessToken(c.env, token);
+    const claims = await verifyActiveAccessToken(c.env, c.env.DB, token);
     sub = claims.sub;
   } catch {
     return c.json({ error: "invalid_token" }, 401);
@@ -946,7 +946,7 @@ storage.get("/teacher-notices/:path{.+}", async (c: Ctx) => {
   if (!token) return c.json({ error: "invalid_token" }, 401);
   let sub: string;
   try {
-    const claims = await verifyAccessToken(c.env, token);
+    const claims = await verifyActiveAccessToken(c.env, c.env.DB, token);
     sub = claims.sub;
   } catch {
     return c.json({ error: "invalid_token" }, 401);

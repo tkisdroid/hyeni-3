@@ -21,7 +21,6 @@ const expectedDialogCounts = new Map([
   ["src/screens/parent/EventForm.tsx", 1],
   ["src/screens/parent/ParentAccount.tsx", 2],
   ["src/screens/parent/ParentCalendar.tsx", 1],
-  ["src/screens/parent/ParentSettings.tsx", 1],
   ["src/screens/shared/MemoChat.tsx", 1],
   ["src/screens/teacher/TeacherHome.tsx", 2],
   ["src/screens/teacher/TeacherReleaseGate.tsx", 1],
@@ -138,7 +137,7 @@ test("dialog의 투명 scrim은 Tab 순서에 들어오지 않는다", () => {
       if (!/tabIndex=\{-1\}/.test(tag)) violations.push(relativePath);
     }
   }
-  assert.equal(scrimCount, 14, "dialog scrim 전수 목록이 바뀌면 접근성 계약도 갱신해야 합니다");
+  assert.equal(scrimCount, 13, "dialog scrim 전수 목록이 바뀌면 접근성 계약도 갱신해야 합니다");
   assert.deepEqual(violations, [], `Tab 순서에 남은 투명 scrim:\n${violations.join("\n")}`);
 });
 

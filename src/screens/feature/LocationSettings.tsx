@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { ChevronLeft, ChevronRight, MapPin, Check, Radar, BatteryCharging, History, Crown } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Crown } from "lucide-react";
+import { asset } from "@/lib/assets";
 import { useIntl } from "react-intl";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
@@ -354,7 +355,7 @@ export function LocationSettings() {
         {/* 활성 아이 Android의 실제 위치 권한·서비스 보고 상태 */}
         <div className="lset-row" aria-live="polite">
           <span className="lset-row__icon">
-            <MapPin size={18} strokeWidth={2.2} color="#2E86C1" />
+            <img src={asset("ui/clay/background-location.webp")} alt="" />
           </span>
           <span className="lset-row__main">
             {/* i18n 회귀 불변식: 아이 기기 위치 상태 */}
@@ -374,7 +375,7 @@ export function LocationSettings() {
         {/* 백그라운드 위치 전송 */}
         <div className="lset-row">
           <span className="lset-row__icon">
-            <Radar size={18} strokeWidth={2.2} color="#2E86C1" />
+            <img src={asset("ui/clay/location.webp")} alt="" />
           </span>
           <span className="lset-row__main">
             <span className="lset-row__title">{intl.formatMessage({ id: "notifications.locationSettings.background.title" })}</span>
@@ -436,7 +437,7 @@ export function LocationSettings() {
             aria-busy={savingAction === "return-live"}
           >
             <span className="lset-row__icon">
-              <Radar size={18} strokeWidth={2.2} color="#2E86C1" />
+              <img src={asset("ui/clay/location.webp")} alt="" />
             </span>
             <span className="lset-row__main">
               <span className="lset-row__title">{intl.formatMessage({ id: "notifications.locationSettings.pendingLive.title" })}</span>
@@ -450,7 +451,7 @@ export function LocationSettings() {
         {/* 배터리 최적화 예외 */}
         <div className="lset-row">
           <span className="lset-row__icon">
-            <BatteryCharging size={18} strokeWidth={2.2} color="#2E86C1" />
+            <img src={asset("ui/clay/battery.webp")} alt="" />
           </span>
           <span className="lset-row__main">
             <span className="lset-row__title">{intl.formatMessage({ id: "notifications.locationSettings.battery.title" })}</span>
@@ -478,7 +479,7 @@ export function LocationSettings() {
           onClick={openLocationHistory}
         >
           <span className="lset-row__icon">
-            <History size={18} strokeWidth={2.2} color="#2E86C1" />
+            <img src={asset("ui/clay/history.webp")} alt="" />
           </span>
           <span className="lset-row__main">
             {/* i18n 회귀 불변식: >위치 기록 조회 범위< */}

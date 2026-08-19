@@ -346,13 +346,13 @@
 }
 
 /* ── AI 일정 추가 ─────────────────────────────────────────────────────────
-   카드 계약: radius-16 · shadow-soft. */
+   카드 계약: radius-16 · glass rim/lift. */
 .ph-ai {
   position: relative;
   overflow: hidden;
   border-radius: var(--radius-16);
   padding: 16px;
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--glass-rim), var(--glass-lift);
 }
 .ph-ai__head {
   display: flex;
@@ -479,7 +479,11 @@
 /* 활성 아이(전역 스위치 선택) 카드 강조 */
 .ph-child--active {
   border-color: var(--hy-accent);
-  box-shadow: 0 12px 30px -18px color-mix(in srgb, var(--hy-accent) 45%, transparent);
+  /* 선택 강조를 더해도 유리의 rim·부유 그림자를 잃지 않는다. */
+  box-shadow:
+    var(--glass-rim),
+    var(--glass-lift),
+    0 12px 30px -18px color-mix(in srgb, var(--hy-accent) 45%, transparent);
 }
 .ph-child__rowwrap {
   display: flex;
@@ -1402,4 +1406,441 @@
 .ph-referral__action:active,
 .ph-safety__refresh button:active {
   box-shadow: var(--neu-pressed);
+}
+
+/* ── 2026-08-20 부모 홈 정돈 ──────────────────────────────────────────────
+   설정 화면처럼 밝고 단정한 정보 면을 기준으로 삼고, 얼음 질감은 낮은 대비의
+   푸른 반사와 얕은 블러로만 남긴다. 기능의 상태색 외에는 보라를 강조하지 않는다. */
+.ph-page {
+  background: color-mix(in srgb, var(--bg-app) 94%, var(--blue-soft));
+}
+
+.ph-page::before {
+  background:
+    radial-gradient(ellipse 72% 18% at 92% 7%, color-mix(in srgb, var(--blue-500) 7%, transparent), transparent 72%),
+    radial-gradient(ellipse 64% 18% at 4% 58%, color-mix(in srgb, var(--mint-500) 5%, transparent), transparent 74%);
+}
+
+/* 홈의 일반 자식 레이어 규칙이 공용 sticky를 덮지 않도록 상단바를 다시 고정한다. */
+.ph-page > .hy-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  padding: calc(env(safe-area-inset-top, 0px) + 20px) 20px 12px;
+  background: color-mix(in srgb, var(--bg-app) 94%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--blue-500) 8%, transparent);
+  backdrop-filter: blur(18px) saturate(135%);
+  -webkit-backdrop-filter: blur(18px) saturate(135%);
+}
+
+.ph-page .hy-iconbtn,
+.ph-stickerbtn {
+  background: color-mix(in srgb, var(--bg-card) 94%, transparent);
+  border: 1px solid var(--line-card);
+  box-shadow: var(--shadow-soft);
+}
+
+.ph-stickerbtn {
+  color: var(--fg-secondary);
+}
+
+.ph-stickerbtn img {
+  width: 28px;
+  height: 28px;
+}
+
+.ph-top-action-icon {
+  width: 25px;
+  height: 25px;
+  object-fit: contain;
+}
+
+.ph-top-action-icon--settings {
+  width: 28px;
+  height: 28px;
+  filter: saturate(0.72) brightness(1.04);
+}
+
+.ph-glass,
+.hy-card.ph-glass {
+  background: color-mix(in srgb, var(--bg-card) 90%, transparent);
+  border: 1px solid color-mix(in srgb, var(--blue-500) 9%, var(--line-card));
+  backdrop-filter: blur(18px) saturate(130%);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+  box-shadow: var(--shadow-soft);
+}
+
+.ph-hero {
+  padding: 20px 124px 24px 20px;
+  background: linear-gradient(
+    128deg,
+    color-mix(in srgb, var(--blue-soft) 76%, var(--bg-card)),
+    color-mix(in srgb, var(--lav-soft) 28%, var(--bg-card))
+  );
+  border: 1px solid color-mix(in srgb, var(--blue-500) 11%, var(--line-card));
+  box-shadow: var(--shadow-soft);
+}
+
+.ph-hero__sheen {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.46), rgba(255, 255, 255, 0) 58%);
+}
+
+.ph-hero__mascot img {
+  filter: drop-shadow(0 10px 16px color-mix(in srgb, var(--blue-500) 14%, transparent));
+}
+
+.ph-hero__badge {
+  background: color-mix(in srgb, var(--bg-card) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--blue-500) 10%, var(--line-card));
+  color: var(--fg-secondary);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.ph-hero__title,
+.ph-hero__title em {
+  color: var(--fg-primary);
+}
+
+.ph-hero__title em {
+  color: var(--blue-text);
+}
+
+.ph-hero__live {
+  max-width: 100%;
+  min-height: 36px;
+  padding: 8px 12px;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--blue-500) 10%, var(--line-card));
+  border-radius: var(--radius-12);
+  background: color-mix(in srgb, var(--bg-card) 86%, transparent);
+  color: var(--fg-secondary);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  overflow: hidden;
+}
+
+.ph-hero__location-icon {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  object-fit: contain;
+}
+
+.ph-hero__location-state {
+  flex: none;
+  white-space: nowrap;
+}
+
+.ph-hero__location-place {
+  min-width: 0;
+  padding-left: 8px;
+  border-left: 1px solid var(--line-card);
+  color: var(--fg-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 기능을 뜻하는 아이콘은 부모 설정과 같은 clay 3D 슬롯을 쓴다. */
+.ph-page .hy-section-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-12);
+  background: color-mix(in srgb, var(--bg-card) 88%, var(--blue-soft)) !important;
+  border: 1px solid color-mix(in srgb, var(--blue-500) 8%, var(--line-card));
+  box-shadow: none;
+}
+
+.ph-page .hy-section-icon img {
+  width: 32px;
+  height: 32px;
+}
+
+.ph-inline-3d-icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  object-fit: contain;
+}
+
+.ph-signal-3d-icon {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  object-fit: contain;
+}
+
+.ph-notice-3d-icon {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  object-fit: contain;
+}
+
+/* 작은 상태·편집 조작은 같은 높이, 모서리, 중립 표면을 공유한다. */
+.ph-small-control,
+.ph-safety__refresh .ph-small-control {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line-card);
+  border-radius: var(--radius-12);
+  background: color-mix(in srgb, var(--bg-card) 92%, transparent);
+  box-shadow: none;
+  color: var(--fg-secondary);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+}
+
+.ph-location-chip[data-current="true"],
+.ph-safety__status[data-state="ready"] {
+  border-color: var(--mint-line);
+  background: color-mix(in srgb, var(--mint-soft) 68%, var(--bg-card));
+  color: var(--mint-text);
+}
+
+.ph-prep-edit {
+  min-width: 52px;
+}
+
+.ph-child--active {
+  border-color: color-mix(in srgb, var(--blue-500) 26%, var(--line-card));
+  box-shadow: var(--shadow-soft);
+}
+
+.ph-child__now {
+  background: color-mix(in srgb, var(--blue-soft) 64%, var(--bg-card));
+  color: var(--blue-text);
+}
+
+.ph-ai {
+  padding: 20px;
+  box-shadow: var(--glass-rim), var(--glass-lift);
+}
+
+.ph-ai__icon {
+  width: 54px;
+  height: 54px;
+  border-radius: var(--radius-16);
+  background: color-mix(in srgb, var(--blue-soft) 64%, var(--bg-card));
+  border: 1px solid color-mix(in srgb, var(--blue-500) 8%, var(--line-card));
+  box-shadow: none;
+}
+
+.ph-ai__icon img {
+  width: 44px;
+  height: 44px;
+}
+
+.ph-ai__grid {
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.ph-ai__btn {
+  min-height: 64px;
+  padding: 12px;
+  gap: 12px;
+  border: 1px solid color-mix(in srgb, var(--blue-500) 8%, var(--line-card));
+  background: color-mix(in srgb, var(--bg-card) 86%, transparent);
+  box-shadow: none;
+  color: var(--fg-primary);
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+}
+
+.ph-ai__btn-icon {
+  width: 40px;
+  height: 40px;
+  background: transparent;
+}
+
+.ph-ai__btn-icon img {
+  width: 34px;
+  height: 34px;
+}
+
+.ph-ai__btn:active,
+.ph-subscription__action:active,
+.ph-referral__action:active,
+.ph-safety__refresh button:active {
+  box-shadow: none;
+}
+
+.ph-shortcut__icon {
+  background: color-mix(in srgb, var(--bg-card) 90%, transparent);
+  border: 1px solid var(--line-card);
+  box-shadow: var(--shadow-soft);
+}
+
+.ph-shortcut:active .ph-shortcut__icon {
+  box-shadow: none;
+}
+
+.ph-memo__icon,
+.ph-subscription__icon,
+.ph-referral__icon {
+  background: color-mix(in srgb, var(--bg-card) 88%, var(--blue-soft));
+  border: 1px solid color-mix(in srgb, var(--blue-500) 8%, var(--line-card));
+  box-shadow: none;
+}
+
+.ph-memo__icon img,
+.ph-subscription__icon img {
+  width: 38px;
+  height: 38px;
+}
+
+.ph-referral__icon img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
+.ph-subscription__action,
+.ph-referral__action {
+  background: color-mix(in srgb, var(--bg-card) 92%, transparent);
+  border: 1px solid var(--line-card);
+  box-shadow: none;
+}
+
+/* 히어로 아래에서만 순서를 편집한다. 상단·하단 내비게이션과 히어로는 고정이다. */
+.ph-reorder-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 8px 8px 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--blue-500) 8%, var(--line-card));
+  border-radius: var(--radius-16);
+  background: color-mix(in srgb, var(--bg-card) 84%, transparent);
+  box-shadow: var(--shadow-soft);
+  order: 0;
+}
+
+.ph-reorder-toolbar__copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.ph-reorder-toolbar__copy b,
+.ph-reorder-toolbar__copy small {
+  display: block;
+}
+
+.ph-reorder-toolbar__copy b {
+  color: var(--fg-primary);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+}
+
+.ph-reorder-toolbar__copy small {
+  margin-top: 4px;
+  color: var(--fg-muted);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+}
+
+.ph-reorder-toolbar__button,
+.ph-reorder-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  border: 1px solid var(--line-card);
+  border-radius: var(--radius-12);
+  background: var(--bg-card);
+  color: var(--blue-text);
+  box-shadow: none;
+}
+
+.ph-reorder-toolbar__button {
+  padding: 0 12px;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+}
+
+.ph-home-section {
+  min-width: 0;
+  transition: transform var(--duration-fast) var(--easing-standard), opacity var(--duration-fast) var(--easing-standard);
+}
+
+.ph-home-section--editing {
+  padding: 8px;
+  border: 1px dashed color-mix(in srgb, var(--blue-500) 24%, var(--line-card));
+  border-radius: var(--radius-20);
+  background: color-mix(in srgb, var(--blue-soft) 22%, transparent);
+}
+
+.ph-home-section--dragging {
+  z-index: 5;
+  opacity: 0.84;
+  transform: scale(1.015);
+  box-shadow: var(--shadow-floating);
+}
+
+.ph-reorder-handle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-bottom: 8px;
+  padding-left: 4px;
+  color: var(--fg-secondary);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+}
+
+.ph-reorder-handle-row > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.ph-reorder-handle {
+  width: 44px;
+  min-width: 44px;
+  padding: 0;
+  cursor: grab;
+  touch-action: none;
+}
+
+.ph-home-section--dragging .ph-reorder-handle {
+  cursor: grabbing;
+}
+
+.ph-home-section--editing .ph-home-section__content {
+  opacity: 0.72;
+  pointer-events: none;
+  user-select: none;
+}
+
+@media (max-width: 370px) {
+  .ph-hero {
+    padding-right: 112px;
+  }
+
+  .ph-ai__btn {
+    padding-inline: 8px;
+    gap: 8px;
+    font-size: var(--type-label);
+    line-height: var(--type-label-line-height);
+    font-weight: var(--type-label-weight);
+  }
+
+  .ph-ai__btn-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .ph-ai__btn-icon img {
+    width: 30px;
+    height: 30px;
+  }
 }

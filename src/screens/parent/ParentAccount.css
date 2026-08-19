@@ -295,13 +295,18 @@
   margin-top: 12px;
 }
 .pa-action__ic {
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--radius-12);
   display: flex;
   align-items: center;
   justify-content: center;
   flex: none;
+}
+.pa-action__ic img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
 }
 .pa-action__ic--neutral {
   background: #f1ecf5;
@@ -363,6 +368,11 @@
 }
 .pa-modal__emoji {
   font-size: 34px;
+}
+.pa-modal__emoji img {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
 }
 .pa-modal__title {
   margin-top: 12px;

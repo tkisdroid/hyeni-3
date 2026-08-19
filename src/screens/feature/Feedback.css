@@ -165,6 +165,11 @@
   background: var(--bg-card);
   color: currentColor;
 }
+.fb-kind__icon img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
 
 .fb-kind__copy {
   min-width: 0;
@@ -281,6 +286,11 @@
   border-radius: var(--radius-12);
   background: var(--blue-soft);
   color: var(--blue-text);
+}
+.fb-diagnostic__icon img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
 }
 
 .fb-diagnostic__copy {

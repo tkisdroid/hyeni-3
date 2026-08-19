@@ -8,6 +8,7 @@
 import { getNativePlugin, isNativePlatform } from "./plugins.ts";
 
 export const DEVICE_ACTION_TARGETS = [
+  "alarm",
   "sound",
   "wifi",
   "battery",
@@ -24,7 +25,7 @@ export function isDeviceActionTarget(value: unknown): value is DeviceActionTarge
 }
 
 interface NativeDeviceActionPlugin {
-  open(options: { target: string; phone?: string; body?: string }): Promise<{
+  open(options: { target: string; phone?: string; body?: string; hour?: number; minute?: number }): Promise<{
     opened?: boolean;
     reason?: string;
     fallback?: boolean;
@@ -64,9 +65,16 @@ export async function openDeviceAction(input: {
   target: DeviceActionTarget;
   phone?: string | null;
   body?: string | null;
+  hour?: number | null;
+  minute?: number | null;
 }): Promise<DeviceActionResult> {
   if (!isDeviceActionTarget(input.target)) return { opened: false, reason: "unsupported_target" };
   const phone = sanitizePhone(input.phone);
+  const alarmTime = Number.isInteger(input.hour) && Number.isInteger(input.minute)
+    && Number(input.hour) >= 0 && Number(input.hour) <= 23
+    && Number(input.minute) >= 0 && Number(input.minute) <= 59
+    ? { hour: Number(input.hour), minute: Number(input.minute) }
+    : null;
   if (!isNativePlatform()) return openOnWeb(input.target, phone);
 
   const plugin = getNativePlugin<NativeDeviceActionPlugin>("DeviceAction");
@@ -76,6 +84,7 @@ export async function openDeviceAction(input: {
       target: input.target,
       ...(phone ? { phone } : {}),
       ...(input.body ? { body: input.body } : {}),
+      ...(input.target === "alarm" && alarmTime ? alarmTime : {}),
     });
     if (result?.opened === true) return { opened: true };
     return { opened: false, reason: result?.reason === "no_activity" ? "no_activity" : "failed" };

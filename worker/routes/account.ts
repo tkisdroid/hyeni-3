@@ -49,6 +49,7 @@ const account = new Hono<{ Bindings: Env; Variables: Vars }>();
 function deleteAuthUserStmts(db: D1Database, uid: string): D1PreparedStatement[] {
   return [
     db.prepare("DELETE FROM refresh_tokens WHERE user_id = ?").bind(uid),
+    db.prepare("DELETE FROM account_device_sessions WHERE user_id = ?").bind(uid),
     db.prepare("DELETE FROM auth_identities WHERE user_id = ?").bind(uid),
     db.prepare("DELETE FROM users WHERE id = ?").bind(uid),
   ];

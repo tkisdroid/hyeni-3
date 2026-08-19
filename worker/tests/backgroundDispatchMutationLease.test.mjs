@@ -9,7 +9,7 @@ function source(relativePath) {
 test("수동 인증 push dispatch는 caller와 해석된 대상 가족 lease 안에서 실행된다", () => {
   const text = source("../routes/push-notify.ts");
   const routeStart = text.indexOf('push.post("/"');
-  const auth = text.indexOf("verifyAccessToken", routeStart);
+  const auth = text.indexOf("verifyActiveAccessToken", routeStart);
   const dispatchLease = text.indexOf("acquirePushDispatchMutationLeases", auth);
   const dispatch = text.indexOf("handleInstantNotification", dispatchLease);
   const release = text.indexOf("releaseAccountMutationLeases", dispatch);

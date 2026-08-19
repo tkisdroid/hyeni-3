@@ -225,6 +225,11 @@
   text-align: center;
 
 }
+.fp-waiting > img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
 
 /* ── 발신 불가 안내(부모 기기 등) ───────────────────────────────────────── */
 .fp-note {
@@ -272,6 +277,11 @@
   justify-content: center;
   flex: none;
   color: var(--gold-text);
+}
+.fp-setting__icon img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
 }
 .fp-setting__main {
   flex: 1;
@@ -397,6 +407,11 @@
   font-weight: var(--type-label-weight);
 
 }
+.fp-connected__badge img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
 .fp-connected__friend {
   margin-top: 16px;
   font-size: var(--type-title-lg);
@@ -416,6 +431,17 @@
   font-weight: var(--type-label-weight);
 
   color: var(--mint-text);
+}
+.fp-connected__place img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.fp-cta__icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
 }
 .fp-end {
   margin-top: 20px;

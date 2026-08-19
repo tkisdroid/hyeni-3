@@ -14,6 +14,14 @@ const CODE_MESSAGES: Readonly<Record<string, Readonly<Record<ApiErrorTone, Messa
     formal: "core.error.api.invalidCredentials.formal",
     child: "core.error.api.invalidCredentials.child",
   },
+  active_device_session_exists: {
+    formal: "core.error.api.activeDeviceSession.formal",
+    child: "core.error.api.activeDeviceSession.child",
+  },
+  device_identity_required: {
+    formal: "core.error.api.deviceIdentityRequired.formal",
+    child: "core.error.api.deviceIdentityRequired.child",
+  },
   invalid_pair_code: {
     formal: "core.error.api.invalidPairCode.formal",
     child: "core.error.api.invalidPairCode.child",

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { useIntl } from "react-intl";
-import { Bell, ChevronLeft, FileClock, Mic, Phone, Timer, VolumeX } from "lucide-react";
+import { ChevronLeft, Mic, Phone, VolumeX } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
@@ -51,17 +51,17 @@ const WAVE_DELAYS = [
 
 const TRUST_CARDS = [
   {
-    icon: Bell,
+    icon: "ui/clay/notification.webp",
     titleId: "notifications.remoteAudio.visibleToChildTitle",
     textId: "notifications.remoteAudio.visibleToChild",
   },
   {
-    icon: Timer,
+    icon: "ui/clock.webp",
     titleId: "notifications.remoteAudio.oneMinuteLimit",
     textId: "notifications.remoteAudio.oneMinuteDetail",
   },
   {
-    icon: FileClock,
+    icon: "ui/clay/remote-audio-history.webp",
     titleId: "notifications.remoteAudio.auditTitle",
     textId: "notifications.remoteAudio.auditRecorded",
   },
@@ -639,11 +639,10 @@ export function RemoteAudio() {
           </div>
           <div className="ra-trust-grid">
             {TRUST_CARDS.map((item) => {
-              const TrustIcon = item.icon;
               return (
                 <div key={item.titleId} className="ra-trust-card hy-explain">
                   <span className="ra-trust-card__icon" aria-hidden="true">
-                    <TrustIcon size={20} strokeWidth={2.2} />
+                    <img src={asset(item.icon)} alt="" />
                   </span>
                   <span className="ra-trust-card__body hy-explain__lines">
                     <span className="ra-trust-card__title hy-explain__line">{intl.formatMessage({ id: item.titleId })}</span>
@@ -658,7 +657,7 @@ export function RemoteAudio() {
             className="ra-audit-link hy-press"
             onClick={() => navigate("/remote-audio-audit")}
           >
-            <FileClock size={18} strokeWidth={2.2} />
+            <img src={asset("ui/clay/remote-audio-history.webp")} alt="" />
             {intl.formatMessage({ id: "notifications.remoteAudio.viewAudit" })}
           </button>
         </div>

@@ -1,4 +1,4 @@
-export const ANDROID_MANIFEST_POLICY_VERSION = 1;
+export const ANDROID_MANIFEST_POLICY_VERSION = 2;
 export const ANDROID_MONITORING_TOOL_VALUE = "child_monitoring";
 
 const BASE_RELEASE_PERMISSIONS = Object.freeze([
@@ -24,6 +24,9 @@ const BASE_RELEASE_PERMISSIONS = Object.freeze([
   "android.permission.WAKE_LOCK",
   "android.permission.WRITE_EXTERNAL_STORAGE",
   "com.android.vending.BILLING",
+  // 아이가 AI 친구에게 알람을 요청했을 때 시간이 채워진 시스템 알람 화면을 연다.
+  // 정확 알람 백그라운드 예약 권한이 아니라 사용자가 저장을 확인하는 일반 권한이다.
+  "com.android.alarm.permission.SET_ALARM",
   "com.google.android.c2dm.permission.RECEIVE",
   // 친구 초대 설치 추천(Play Install Referrer 2.2)이 병합하는 서비스 바인딩 권한.
   // 런타임 사용자 권한이 아니라 Play 스토어 서비스 연결용이다(2026-08-18 확인).

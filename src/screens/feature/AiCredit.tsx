@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { BellRing, Bot, ChevronLeft, Hash, MessageCircle, Sparkles } from "lucide-react";
+import { ChevronLeft, Sparkles } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
@@ -862,7 +862,7 @@ export function AiCredit() {
 
         {/* 안내 */}
         <div className="ac-note hy-explain">
-          <span className="ac-note__emoji"><MessageCircle size={15} strokeWidth={2.2} /></span>
+          <span className="ac-note__emoji"><img src={asset("ui/chat-heart.webp")} alt="" /></span>
             <span className="hy-explain__lines">
               <span className="hy-explain__line">{intl.formatMessage({ id: "billing.aiCredit.creditUse" })}</span>
               <span className="hy-explain__line">{intl.formatMessage({ id: "billing.aiCredit.topUpHint" })}</span>
@@ -1029,7 +1029,7 @@ export function AiCredit() {
 
         {/* AI 친구 켜기 + 하루 대화 한도(부모 설정 — 꺼져 있으면 아이가 대화 불가) */}
         <div className="ac-auto">
-          <span className="ac-auto__icon"><Bot size={20} strokeWidth={2.2} color="var(--mint-text)" /></span>
+          <span className="ac-auto__icon"><img src={asset("ui/clay/ai-credit.webp")} alt="" /></span>
           <span className="ac-auto__main">
             <span className="ac-auto__title">{intl.formatMessage({ id: "billing.aiCredit.settings.aiToggleTitle" })}</span>
             <span className="ac-auto__sub">
@@ -1059,7 +1059,7 @@ export function AiCredit() {
         {aiEnabled && (
           <div className="ac-limit-wrap">
           <div className="ac-auto" style={{ marginTop: -4 }}>
-            <span className="ac-auto__icon"><Hash size={20} strokeWidth={2.2} color="var(--mint-text)" /></span>
+            <span className="ac-auto__icon"><img src={asset("ui/clock.webp")} alt="" /></span>
             <span className="ac-auto__main">
               <span className="ac-auto__title">{intl.formatMessage({ id: "billing.aiCredit.settings.dailyLimitTitle" })}</span>
               <span className="ac-auto__sub">{intl.formatMessage({ id: "billing.aiCredit.settings.dailyLimitDescription" })}</span>
@@ -1262,7 +1262,7 @@ export function AiCredit() {
 
         {/* 잔액 부족 알림 — 자동 결제는 하지 않고, 보호자 확인 후 직접 충전하도록 안내한다. */}
         <div className="ac-auto">
-          <span className="ac-auto__icon"><BellRing size={20} strokeWidth={2.2} color="var(--mint-text)" /></span>
+          <span className="ac-auto__icon"><img src={asset("ui/clay/notification.webp")} alt="" /></span>
           <span className="ac-auto__main">
             <span className="ac-auto__title">{intl.formatMessage({ id: "billing.aiCredit.lowAlert.title" })}</span>
             <span className="ac-auto__sub">

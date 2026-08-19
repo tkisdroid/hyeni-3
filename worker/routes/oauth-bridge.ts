@@ -24,8 +24,12 @@
 import { Hono } from "hono";
 import type { Env, Vars, AuthUser } from "../types";
 import { requireAuth } from "../middleware/auth";
-import { signAccessToken } from "../lib/jwt";
-import { issueRefreshToken, isRefreshTokenIssuanceBlocked } from "../lib/refresh";
+import { isRefreshTokenIssuanceBlocked, normalizeDeviceId } from "../lib/refresh";
+import { issueAccountSession } from "../lib/authSession";
+import {
+  isActiveDeviceSessionExistsError,
+  isDeviceIdentityRequiredError,
+} from "../lib/accountDeviceSession";
 import { resolveCanonicalFamilyMembership } from "../db/authz";
 import { pgNow } from "../lib/time";
 import { parsePhone } from "../lib/phone";
@@ -88,7 +92,13 @@ bridge.post("/oauth-bridge/send-otp", requireAuth, async (c) => {
 // 3) OTP 검증 → 전화 user(기존 계정) 의 ES256 세션 발급.
 bridge.post("/oauth-bridge/verify-otp", requireAuth, async (c) => {
   const db = c.env.DB;
-  let body: { phone?: unknown; token?: unknown };
+  let body: {
+    phone?: unknown;
+    token?: unknown;
+    device_install_id?: unknown;
+    device_label?: unknown;
+    device_platform?: unknown;
+  };
   try {
     body = await c.req.json();
   } catch {
@@ -114,11 +124,24 @@ bridge.post("/oauth-bridge/verify-otp", requireAuth, async (c) => {
   const familyId = canonicalFamily?.familyId ?? null;
   const role = canonicalFamily?.role ?? await resolveRole(db, userId);
   const user: AuthUser = { sub: userId, role, family_id: familyId, is_anonymous: false };
-  const accessToken = await signAccessToken(c.env, user);
+  const deviceId = normalizeDeviceId(c.get("user").device_id ?? body.device_install_id);
+  let accessToken: string;
   let refreshToken: string;
   try {
-    refreshToken = await issueRefreshToken(db, userId, familyId);
+    const issued = await issueAccountSession(c.env, user, {
+      deviceId,
+      deviceLabel: body.device_label,
+      devicePlatform: body.device_platform,
+    });
+    accessToken = issued.accessToken;
+    refreshToken = issued.refreshToken;
   } catch (error) {
+    if (isDeviceIdentityRequiredError(error)) {
+      return c.json({ error: "device_identity_required" }, 400);
+    }
+    if (isActiveDeviceSessionExistsError(error)) {
+      return c.json({ error: "active_device_session_exists" }, 409);
+    }
     if (isRefreshTokenIssuanceBlocked(error)) {
       return c.json({ error: "account_deletion_in_progress" }, 409);
     }

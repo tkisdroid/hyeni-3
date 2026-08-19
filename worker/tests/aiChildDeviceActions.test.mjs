@@ -15,6 +15,7 @@ const {
   DEVICE_ACTION_TARGETS,
   detectChildDeviceActionIntent,
   isDeviceActionTarget,
+  parseDeviceAlarmTime,
 } = await import("../shared/aiDeviceActionTools.js");
 const { planChildAgentAction } = await import("../shared/aiAgentPlanner.js");
 const { buildToolResultChildReply } = await import("../shared/aiToolResultReply.js");
@@ -41,9 +42,29 @@ test("전화·문자·와이파이 같은 기기 앱도 열어 주기로만 계�
   assert.equal(detectChildDeviceActionIntent(""), null);
 });
 
+test("아침 알람은 부모 권한이 아니라 시간이 채워진 기기 알람 화면으로 계획한다", () => {
+  assert.deepEqual(parseDeviceAlarmTime("아침 7시 반에 깨워 줘"), { hour: 7, minute: 30 });
+  assert.deepEqual(parseDeviceAlarmTime("오후 7:05 알람 맞춰줘"), { hour: 19, minute: 5 });
+  assert.deepEqual(detectChildDeviceActionIntent("아침 7시에 알람 설정해 줘"), {
+    target: "alarm",
+    hour: 7,
+    minute: 0,
+  });
+  assert.deepEqual(detectChildDeviceActionIntent("아침 알람 설정 열어 줘"), { target: "alarm" });
+
+  const plan = planChildAgentAction("오전 6시 40분에 알람 맞춰 줘");
+  assert.equal(plan.detectedIntent, "device_action");
+  assert.equal(plan.toolName, "openDeviceAction");
+  assert.deepEqual(plan.toolArgs, { target: "alarm", hour: 6, minute: 40 });
+
+  // 일정 알림은 기존 아이 설정 도구가 계속 맡는다.
+  const scheduleAlertPlan = planChildAgentAction("일정 알림 켜 줘");
+  assert.equal(scheduleAlertPlan.toolName, "updateNotificationSettings");
+});
+
 test("열 수 있는 화면은 화이트리스트이고 전화·문자만 부모 연락 허용을 따른다", () => {
   assert.deepEqual([...DEVICE_ACTION_TARGETS].sort(), [
-    "battery", "dial", "location", "notifications", "sms", "sound", "wifi",
+    "alarm", "battery", "dial", "location", "notifications", "sms", "sound", "wifi",
   ]);
   assert.deepEqual([...CONTACT_DEVICE_ACTION_TARGETS].sort(), ["dial", "sms"]);
   assert.equal(isDeviceActionTarget("sound"), true);
@@ -56,6 +77,19 @@ test("서버는 화면만 정하고 실행했다고 말하지 않는다", () => 
   assert.match(reply, /대신 못 바꿔/);
   assert.match(reply, /소리 설정을 열어 줄게/);
   assert.doesNotMatch(reply, /바꿨어|껐어|켰어/);
+});
+
+test("알람 응답은 부모 권한을 요구하지 않고 아이 확인 단계를 안내한다", () => {
+  const reply = buildToolResultChildReply({
+    ok: true,
+    toolName: "openDeviceAction",
+    target: "alarm",
+    hour: 7,
+    minute: 0,
+  });
+  assert.match(reply, /07:00/);
+  assert.match(reply, /확인한 다음 저장/);
+  assert.doesNotMatch(reply, /부모|권한|대신 못/);
 });
 
 test("route 는 화이트리스트 밖 target 과 연락 차단 가족을 거부한다", () => {

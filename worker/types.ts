@@ -97,6 +97,8 @@ export interface AuthUser {
   role: "parent" | "child" | "teacher" | "anonymous";
   family_id: string | null;
   is_anonymous: boolean;
+  /** 계정당 활성 설치 대조용 서명 claim. 레거시 access token만 생략될 수 있다. */
+  device_id?: string | null;
 }
 
 // hono Variables 확장

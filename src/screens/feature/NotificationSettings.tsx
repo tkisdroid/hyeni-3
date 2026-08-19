@@ -1,16 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import {
-  BellOff,
-  BellRing,
-  CalendarDays,
   ChevronLeft,
-  MapPin,
-  School,
   ShieldCheck,
-  ToyBrick,
-  type LucideIcon,
 } from "lucide-react";
+import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "@/queries/useFamily";
@@ -69,7 +63,7 @@ type ToggleKey = "parentEnabled" | "locationEnabled" | "registeredPlaceEnabled" 
 
 interface ToggleDef {
   key: ToggleKey;
-  Icon: LucideIcon;
+  icon: string;
   tone: "rose" | "blue" | "mint" | "gold";
   labelId: string;
   subId: string;
@@ -77,7 +71,7 @@ interface ToggleDef {
 
 const SCHEDULE_TOGGLE: ToggleDef = {
   key: "parentEnabled",
-  Icon: CalendarDays,
+  icon: "ui/clay/calendar.webp",
   tone: "rose",
   labelId: "notifications.settings.toggle.schedule.label",
   subId: "notifications.settings.toggle.schedule.description",
@@ -86,21 +80,21 @@ const SCHEDULE_TOGGLE: ToggleDef = {
 const SAFETY_TOGGLES: ToggleDef[] = [
   {
     key: "locationEnabled",
-    Icon: MapPin,
+    icon: "ui/clay/location.webp",
     tone: "blue",
     labelId: "notifications.settings.toggle.location.label",
     subId: "notifications.settings.toggle.location.description",
   },
   {
     key: "registeredPlaceEnabled",
-    Icon: School,
+    icon: "ui/clay/school.webp",
     tone: "mint",
     labelId: "notifications.settings.toggle.registeredPlace.label",
     subId: "notifications.settings.toggle.registeredPlace.description",
   },
   {
     key: "playdateEnabled",
-    Icon: ToyBrick,
+    icon: "ui/clay/playdate.webp",
     tone: "gold",
     labelId: "notifications.settings.toggle.playdate.label",
     subId: "notifications.settings.toggle.playdate.description",
@@ -130,7 +124,7 @@ function ToggleRow({
   return (
     <button type="button" className="nst-row hy-press" aria-pressed={on} onClick={onToggle}>
       <span className="nst-row__icon" data-tone={def.tone}>
-        <def.Icon size={19} strokeWidth={2.2} />
+        <img src={asset(def.icon)} alt="" />
       </span>
       <span className="nst-row__main">
         <span className="nst-row__label">{intl.formatMessage({ id: def.labelId })}</span>
@@ -984,9 +978,7 @@ export function NotificationSettings() {
               <div className="nst-list">
                 <div className="nst-row">
                   <span className="nst-row__icon" data-tone={deliveryReady ? "mint" : "gold"}>
-                    {deliveryReady
-                      ? <BellRing size={19} strokeWidth={2.2} />
-                      : <BellOff size={19} strokeWidth={2.2} />}
+                    <img src={asset("ui/clay/notification.webp")} alt="" />
                   </span>
                   <span className="nst-row__main">
                     <span className="nst-row__label">

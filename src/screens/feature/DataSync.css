@@ -95,6 +95,11 @@
 
   color: var(--fg-secondary);
 }
+.ds-sync__mini-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
 .ds-sync__v {
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);
@@ -141,6 +146,11 @@
   align-items: center;
   justify-content: center;
   flex: none;
+}
+.ds-card__icon img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
 }
 .ds-card__icon--blue {
   background: #e6f2fb;

@@ -35,6 +35,7 @@ const messages = {
   "child.aiChat.creditRequest.done": "たのんだよ！",
   "child.aiChat.creditRequest.failed": "おくれなかったよ。あとでもう一回やってみて？",
   "child.aiChat.creditRequest.sent": "おうちの人にたのんだよ！",
+  "child.aiChat.device.alarm": "アラーム設定を開く",
   "child.aiChat.device.battery": "電池の設定を開く",
   "child.aiChat.device.dial": "電話アプリを開く",
   "child.aiChat.device.location": "位置情報の設定を開く",

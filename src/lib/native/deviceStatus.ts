@@ -11,6 +11,7 @@
  */
 import type { DeviceHealth } from "@/lib/api/endpoints/family";
 import { getOrCreateDeviceInstallId } from "@/lib/native/deviceIdentity";
+import { getNativePlugin, isNativePlatform } from "@/lib/native/plugins";
 
 // navigator.getBattery() 가 반환하는 BatteryManager 의 사용 부분만(표준 타입 미제공 대비).
 interface BatteryLike {
@@ -22,6 +23,10 @@ interface BatteryLike {
 
 type BatterySource = { getBattery?: () => Promise<BatteryLike> };
 type ConnectionSource = { connection?: { effectiveType?: string } };
+
+interface NativeDeviceHealthPlugin {
+  getDeviceHealthSnapshot(input: { familyId: string; userId: string }): Promise<DeviceHealth>;
+}
 
 // getBattery 는 Promise 반환 + 일부 브라우저 미지원 → 가드/폴백. 실패 시 배터리값 null.
 async function readBattery(): Promise<{ batteryLevel: number | null; isCharging: boolean | null }> {
@@ -67,6 +72,22 @@ export async function collectDeviceHealth(now: number): Promise<DeviceHealth> {
     deviceInstallId: getOrCreateDeviceInstallId(),
     lastReportedAt: new Date(now).toISOString(),
   };
+}
+
+/**
+ * Android의 배터리·네트워크·알림·위치·Usage Access를 한 번에 읽는다.
+ * null은 네이티브 플러그인이 없는 빌드라는 뜻이며 웹 부분집합으로 덮어쓰지 않는다.
+ */
+export async function collectNativeDeviceHealth(
+  familyId: string,
+  userId: string,
+): Promise<DeviceHealth | null> {
+  if (!isNativePlatform() || !familyId || !userId) return null;
+  const plugin = getNativePlugin<NativeDeviceHealthPlugin>("BackgroundLocation");
+  if (!plugin || typeof plugin.getDeviceHealthSnapshot !== "function") return null;
+  const snapshot = await plugin.getDeviceHealthSnapshot({ familyId, userId });
+  if (!snapshot || typeof snapshot !== "object") return null;
+  return snapshot;
 }
 
 /**

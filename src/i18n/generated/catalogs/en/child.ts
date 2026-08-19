@@ -35,6 +35,7 @@ const messages = {
   "child.aiChat.creditRequest.done": "Asked!",
   "child.aiChat.creditRequest.failed": "I couldn't send it. Try again in a bit?",
   "child.aiChat.creditRequest.sent": "I asked your grown-up!",
+  "child.aiChat.device.alarm": "Open alarm settings",
   "child.aiChat.device.battery": "Open battery settings",
   "child.aiChat.device.dial": "Open the phone app",
   "child.aiChat.device.location": "Open location settings",

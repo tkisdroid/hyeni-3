@@ -11,7 +11,7 @@
 //
 // ⚠️ 함정: 네이티브 폴백 경로가 Bearer 에 Supabase anonKey 를 넣으면 우리 JWT 가 아니라
 // 검증 실패 → 익명 처리된다. 컷오버 시 JS 레이어가 우리 토큰을 넘기도록 보장해야 한다.
-import { verifyAccessToken } from "../lib/jwt";
+import { verifyActiveAccessToken } from "../lib/authenticatedAccess";
 import type { Env } from "../types";
 
 export interface ShimCaller {
@@ -46,7 +46,7 @@ export async function resolveCaller(
   const token = (headers.authorization || "").replace(/^Bearer\s+/i, "").trim();
   if (token) {
     try {
-      const claims = await verifyAccessToken(env, token);
+      const claims = await verifyActiveAccessToken(env, env.DB, token);
       const role = String(claims.role || "authenticated");
       const familyId = typeof claims.family_id === "string" && claims.family_id ? claims.family_id : null;
       return { sub: claims.sub, role, familyId, serviceRole: role === "service_role", familyIds: [] };

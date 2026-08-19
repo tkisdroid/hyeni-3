@@ -343,6 +343,11 @@
   justify-content: center;
   flex: none;
 }
+.pf-conn__icon img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
 .pf-conn__main {
   flex: 1;
   min-width: 0;

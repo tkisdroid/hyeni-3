@@ -2,13 +2,8 @@ import { useState } from "react";
 import { useIntl } from "react-intl";
 import { useNavigate } from "react-router";
 import {
-  Bug,
   ChevronLeft,
-  CircleHelp,
-  Lightbulb,
   Paperclip,
-  ShieldCheck,
-  type LucideIcon,
 } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
@@ -28,7 +23,7 @@ import { isApiError } from "@/lib/api/errors";
 
 interface FeedbackTypeOption {
   id: FeedbackKind;
-  Icon: LucideIcon;
+  icon: string;
   labelId: string;
   childLabelId: string;
   detailId: string;
@@ -38,7 +33,7 @@ interface FeedbackTypeOption {
 const FEEDBACK_TYPES: readonly FeedbackTypeOption[] = [
   {
     id: "problem",
-    Icon: Bug,
+    icon: "ui/clay/feedback.webp",
     labelId: "shared.feedback.type.problem.formal",
     childLabelId: "shared.feedback.type.problem.child",
     detailId: "shared.feedback.type.problemDetail.formal",
@@ -46,7 +41,7 @@ const FEEDBACK_TYPES: readonly FeedbackTypeOption[] = [
   },
   {
     id: "question",
-    Icon: CircleHelp,
+    icon: "ui/settings-faq.svg",
     labelId: "shared.feedback.type.question.formal",
     childLabelId: "shared.feedback.type.question.child",
     detailId: "shared.feedback.type.questionDetail.formal",
@@ -54,7 +49,7 @@ const FEEDBACK_TYPES: readonly FeedbackTypeOption[] = [
   },
   {
     id: "suggestion",
-    Icon: Lightbulb,
+    icon: "ui/sparkle.webp",
     labelId: "shared.feedback.type.suggestion.formal",
     childLabelId: "shared.feedback.type.suggestion.child",
     detailId: "shared.feedback.type.suggestionDetail.formal",
@@ -218,7 +213,7 @@ export function Feedback() {
                   onClick={() => setFeedbackKind(option.id)}
                 >
                   <span className="fb-kind__icon" aria-hidden="true">
-                    <option.Icon size={20} strokeWidth={2.2} />
+                    <img src={asset(option.icon)} alt="" />
                   </span>
                   <span className="fb-kind__copy">
                     <strong>{intl.formatMessage({
@@ -299,7 +294,7 @@ export function Feedback() {
           <div className="fb-ideas__card">
             <div className="fb-diagnostic">
               <span className="fb-diagnostic__icon" aria-hidden="true">
-                <ShieldCheck size={22} strokeWidth={2.2} />
+                <img src={asset("ui/clay/privacy.webp")} alt="" />
               </span>
               <span className="fb-diagnostic__copy">
                 <strong>{message(

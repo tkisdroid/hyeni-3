@@ -1,4 +1,4 @@
-import { ChevronLeft, MapPin, PartyPopper } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useAuth } from "@/auth/AuthContext";
@@ -235,7 +235,7 @@ export function FriendPlay() {
             disabled={enabledQ.isLoading || setEnabled.isPending} aria-busy={enabledQ.isLoading || setEnabled.isPending}
           >
             <span className="fp-setting__icon" aria-hidden="true">
-              <PartyPopper size={22} strokeWidth={2.2} />
+              <img src={asset("ui/clay/playdate.webp")} alt="" />
             </span>
             <span className="fp-setting__main">
               <span className="fp-setting__title">
@@ -283,7 +283,7 @@ export function FriendPlay() {
               </div>
               {active.place_name ? (
                 <div className="fp-connected__place">
-                  <MapPin size={16} strokeWidth={2.2} color="var(--mint-text)" />
+                  <img src={asset("ui/clay/location.webp")} alt="" />
                   {active.place_name}
                 </div>
               ) : null}
@@ -368,7 +368,7 @@ export function FriendPlay() {
           /* ── 연결됨 상태 ─────────────────────────────── */
           <div className="fp-connected">
             <div className="fp-connected__badge">
-              <PartyPopper size={16} strokeWidth={2.2} aria-hidden="true" />
+              <img src={asset("ui/clay/playdate.webp")} alt="" />
               {intl.formatMessage({ id: "shared.friendPlay.child.connected" })}
             </div>
             <div className="fp-connected__friend">
@@ -377,7 +377,7 @@ export function FriendPlay() {
             </div>
             {active.place_name ? (
               <div className="fp-connected__place">
-                <MapPin size={16} strokeWidth={2.2} color="var(--mint-text)" />
+                <img src={asset("ui/clay/location.webp")} alt="" />
                 {active.place_name}
               </div>
             ) : null}
@@ -445,7 +445,7 @@ export function FriendPlay() {
             {/* 발신 상태 / 보내기 */}
             {outgoing.length > 0 ? (
               <div className="fp-waiting">
-                <PartyPopper size={20} strokeWidth={2.2} aria-hidden="true" />
+                <img src={asset("ui/clay/playdate.webp")} alt="" />
                 {intl.formatMessage({ id: "shared.friendPlay.child.waiting" })}
               </div>
             ) : !canSend ? (
@@ -459,7 +459,7 @@ export function FriendPlay() {
                 onClick={onSend}
                 disabled={sending || candidates.length === 0} aria-busy={sending}
               >
-                <PartyPopper size={20} strokeWidth={2.2} aria-hidden="true" />
+                <img className="fp-cta__icon" src={asset("ui/clay/playdate.webp")} alt="" />
                 {intl.formatMessage({
                   id: sending
                     ? "shared.friendPlay.child.sending"

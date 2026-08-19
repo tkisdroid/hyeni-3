@@ -63,7 +63,11 @@ function maybeCelebrateSticker(msg: FamilyMessage, role: string | null, userId: 
   if (role !== "child" || !userId) return;
   if (msg.kind !== "pg" || msg.table !== "stickers" || msg.eventType !== "INSERT") return;
   const row = msg.new as { id?: string; user_id?: string; sticker_type?: string; emoji?: string; title?: string } | null | undefined;
-  if (!row || row.user_id !== userId || row.sticker_type !== "praise") return;
+  if (
+    !row
+    || row.user_id !== userId
+    || !["praise", "early", "on_time"].includes(row.sticker_type ?? "")
+  ) return;
   if (typeof window === "undefined") return;
   window.dispatchEvent(
     new CustomEvent("hy:sticker-celebration", {
@@ -71,6 +75,7 @@ function maybeCelebrateSticker(msg: FamilyMessage, role: string | null, userId: 
         id: row.id,
         emoji: row.emoji,
         title: row.title,
+        stickerType: row.sticker_type,
       },
     }),
   );

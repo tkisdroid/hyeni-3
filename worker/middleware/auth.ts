@@ -1,6 +1,10 @@
 // Bearer JWT 검증 → ctx.user 주입. GoTrue 세션 검증을 대체.
 import { createMiddleware } from "hono/factory";
-import { verifyAccessToken } from "../lib/jwt";
+import {
+  isActiveAccessUnavailableError,
+  isDeviceSessionInactiveError,
+  verifyActiveAccessToken,
+} from "../lib/authenticatedAccess";
 import {
   acquireAccountMutationLease,
   releaseAccountMutationLease,
@@ -72,10 +76,17 @@ export const requireAuth = createMiddleware<{
   if (!hdr || !hdr.startsWith("Bearer ")) {
     return c.json({ error: "unauthorized" }, 401);
   }
-  let claims: Awaited<ReturnType<typeof verifyAccessToken>>;
+  let claims: Awaited<ReturnType<typeof verifyActiveAccessToken>>;
   try {
-    claims = await verifyAccessToken(c.env, hdr.slice(7));
-  } catch {
+    claims = await verifyActiveAccessToken(c.env, c.env.DB, hdr.slice(7));
+  } catch (error) {
+    if (isDeviceSessionInactiveError(error)) {
+      return c.json({ error: "device_session_inactive" }, 401);
+    }
+    if (isActiveAccessUnavailableError(error)) {
+      console.error("[auth] device session check failed");
+      return c.json({ error: "auth_unavailable" }, 503);
+    }
     return c.json({ error: "invalid_token" }, 401);
   }
   c.set("user", {
@@ -83,6 +94,7 @@ export const requireAuth = createMiddleware<{
     role: claims.role,
     family_id: claims.family_id,
     is_anonymous: !!claims.is_anonymous,
+    device_id: claims.device_id ?? null,
   });
   c.set("accessTokenExp", Number(claims.exp));
 

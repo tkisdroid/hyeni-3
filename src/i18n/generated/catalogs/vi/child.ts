@@ -35,6 +35,7 @@ const messages = {
   "child.aiChat.creditRequest.done": "Đã nhờ rồi!",
   "child.aiChat.creditRequest.failed": "Chưa gửi được. Lát nữa thử lại nhé?",
   "child.aiChat.creditRequest.sent": "Mình đã nhờ bố mẹ rồi!",
+  "child.aiChat.device.alarm": "Mở cài đặt báo thức",
   "child.aiChat.device.battery": "Mở cài đặt pin",
   "child.aiChat.device.dial": "Mở ứng dụng điện thoại",
   "child.aiChat.device.location": "Mở cài đặt vị trí",

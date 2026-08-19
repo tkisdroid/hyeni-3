@@ -42,6 +42,23 @@ worker/
 > 7단계 migration·전체 secret·readback·clean release SHA의 green CI를 모두 확인한 뒤 태그와 메시지에 정확한
 > Worker SHA를 기록해 **Worker를 한 번만 배포**한다. 개별 기능만 준비된 Worker를 운영에 노출하지 않는다.
 
+### 계정 활성 설치 1대 migration-first 배포
+
+`account_device_sessions`는 인증 계정별 현재 활성 설치를 정확히 한 행으로 보관한다. 새 로그인·가입·OAuth·페어링·
+refresh가 다른 활성 설치와 충돌하면 409로 닫고 refresh 체인을 회전시키지 않는다. 정상 로그아웃 뒤에는 다른 설치가
+claim을 인계할 수 있다. Worker가 이 테이블 없이 먼저 배포되면 신규 세션 발급이 fail-closed하므로 반드시 migration을
+먼저 적용한다. 운영 확인은 스키마 이름만 읽으며 user/device 식별자를 출력하지 않는다.
+
+```bash
+cd worker
+npx wrangler d1 execute hyeni-calendar --remote --file=db/account-device-sessions.sql -y
+npx wrangler d1 execute hyeni-calendar --remote --command "SELECT type,name FROM sqlite_master WHERE name IN ('account_device_sessions','idx_account_device_sessions_device') ORDER BY type,name" -y
+cd ..
+npm run typecheck:worker
+npm run test:worker
+npm run deploy:worker
+```
+
 ### AI 크레딧 balance UNIQUE migration-first 배포
 
 `ai_credit_balances`는 `(family_id, child_user_id)`당 정확히 한 행이어야 한다. 기존

@@ -10,6 +10,7 @@ export interface StickerCelebrationDetail {
   id?: string;
   emoji?: string;
   title?: string;
+  stickerType?: string;
 }
 
 declare global {
@@ -92,14 +93,19 @@ export function StickerCelebrationHost() {
 
   useEffect(() => {
     if (role !== "child" || !userId) return;
-    const latest = (received.data ?? []).find((sticker) => sticker.sticker_type === "praise");
+    const latest = (received.data ?? [])[0];
     if (!latest?.id || !isRecentSticker(latest)) return;
     try {
       if (window.localStorage.getItem(storageKey(userId)) === latest.id) return;
     } catch {
       // 저장소 접근 불가 환경에서는 세션 중복 방지만 적용한다.
     }
-    openCelebration({ id: latest.id, emoji: latest.emoji, title: latest.title });
+    openCelebration({
+      id: latest.id,
+      emoji: latest.emoji,
+      title: latest.title,
+      stickerType: latest.sticker_type,
+    });
   }, [openCelebration, received.data, role, userId]);
 
   if (!detail) return null;
@@ -123,7 +129,13 @@ export function StickerCelebrationHost() {
         <span className="sticker-celebration__eyebrow">{intl.formatMessage({ id: "shared.sticker.arrived" })}</span>
         <img className="sticker-celebration__sticker" src={stickerImage(detail.emoji)} alt="" />
         <span className="sticker-celebration__title">{title}</span>
-        <span className="sticker-celebration__sub">{intl.formatMessage({ id: "shared.sticker.sentByParent" })}</span>
+        <span className="sticker-celebration__sub">
+          {intl.formatMessage({
+            id: detail.stickerType === "early" || detail.stickerType === "on_time"
+              ? "shared.sticker.earnedAutomatically"
+              : "shared.sticker.sentByParent",
+          })}
+        </span>
       </span>
       <span className="sticker-celebration__stars" aria-hidden="true">
         <span>★</span>

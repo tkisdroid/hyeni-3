@@ -213,7 +213,11 @@ final class DeviceStatusReporter {
         }
     }
 
-    private static JSONObject buildPayload(
+    /**
+     * WebView가 현재 access token으로 직접 저장할 수 있도록 네이티브 전체 상태를 반환한다.
+     * FCM/백그라운드 보고와 포그라운드 보고가 반드시 같은 필드·권한 판정을 쓰는 단일 정본이다.
+     */
+    static JSONObject buildPayload(
             Context context,
             String familyId,
             String userId,

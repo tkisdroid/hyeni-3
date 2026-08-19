@@ -727,6 +727,19 @@ export function planChildAgentAction(message, { referenceDate = new Date(), pare
     // ── 내 설정 바꾸기 ────────────────────────────────────────────────────
     // 부모에게 "알림 꺼달라고 전해줘" 같은 부탁은 위 연락 분기가 이미 가져갔으므로,
     // 여기 오는 건 아이가 자기 기기 설정을 직접 바꾸려는 요청이다.
+    // 기기 알람은 아이가 직접 바꿀 수 있다. 일정 알림과 단어가 겹치므로 이 대상만
+    // 먼저 분리하고, Android에서는 시간이 채워진 확인 화면을 연다.
+    const alarmAction = detectChildDeviceActionIntent(text);
+    if (alarmAction?.target === "alarm") {
+        return basePlan({
+            detectedIntent: "device_action",
+            shouldUseTool: true,
+            toolName: "openDeviceAction",
+            toolArgs: alarmAction,
+            safety,
+        });
+    }
+
     const notificationIntent = detectChildNotificationIntent(text);
     if (notificationIntent) {
         if (notificationIntent.parentOnly) {
@@ -770,13 +783,13 @@ export function planChildAgentAction(message, { referenceDate = new Date(), pare
 
     // ── 기기 동작(소리·전화·문자·와이파이…) ─────────────────────────────
     // 앱이 대신 바꾸지 않는다. 알맞은 화면만 열어 주고 마지막 한 번은 아이가 누른다.
-    const deviceAction = detectChildDeviceActionIntent(text);
+    const deviceAction = alarmAction ?? detectChildDeviceActionIntent(text);
     if (deviceAction) {
         return basePlan({
             detectedIntent: "device_action",
             shouldUseTool: true,
             toolName: "openDeviceAction",
-            toolArgs: { target: deviceAction.target },
+            toolArgs: deviceAction,
             safety,
         });
     }

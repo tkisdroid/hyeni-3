@@ -9,28 +9,23 @@ const source = readFileSync(resolve(rootDir, "src/screens/parent/ParentLocation.
 const css = readFileSync(resolve(rootDir, "src/screens/parent/ParentLocation.css"), "utf8");
 const journey = readFileSync(resolve(rootDir, "src/screens/parent/LocationJourneyPanel.tsx"), "utf8");
 
-test("오늘 경로 패널은 드래그 없이 명시적 버튼으로 펼치고 접는다", () => {
-  assert.match(source, /const \[historyPanelExpanded, setHistoryPanelExpanded\] = useState\(true\)/);
-  assert.match(source, /onToggleExpanded=\{\(\) => setHistoryPanelExpanded\(\(value\) => !value\)\}/);
+test("오늘 경로는 플로팅 시트와 시간 막대 없이 지도 아래 목록으로 이어진다", () => {
   assert.doesNotMatch(source, /setPointerCapture|STAYS_DRAG_|onStaysPointer|onStaysTouch/);
   assert.match(source, /<LocationJourneyPanel/);
-  assert.match(journey, /className="pl-journey__range"/);
-  assert.match(journey, /id="location-journey-stays"[^>]*hidden=\{!expanded\}/s);
-  assert.doesNotMatch(journey, /className="pl-journey__body"[^>]*hidden/);
-  assert.match(css, /\.pl-journey__toggle\s*\{[^}]*min-height:\s*var\(--control-min-size\)/s);
+  assert.match(source, /pl-root\$\{activeView === "history" \? " pl-root--history" : ""\}/);
+  assert.match(journey, /className="pl-visited"/);
+  assert.doesNotMatch(journey, /type="range"|pl-journey__range|location-journey-stays/);
+  assert.match(css, /\.pl-root--history \.pl-map\s*\{[^}]*position:\s*relative/s);
+  assert.match(css, /\.pl-visited\s*\{[^}]*position:\s*relative/s);
 });
 
 test("오늘 경로는 오전 8시 기준 윈도우와 아이·날짜 도구막대를 함께 사용한다", () => {
   assert.match(source, /getHistoryDayWindowForKey\(historyDayKey, now, LEGACY_FAMILY_TIME_ZONE\)/);
-  assert.match(source, /sliderMin=\{journeyRange\?\.startMs \?\? 0\}/);
-  assert.match(source, /sliderMax=\{journeyRange\?\.endMs \?\? 0\}/);
   assert.match(source, /const timedHistoryPoints = useMemo\(/);
   assert.match(source, /getJourneyRecordedRange\(timedHistoryPoints\)/);
   assert.doesNotMatch(source, /getJourneyRecordedRange\(timedTrail\)/);
-  assert.match(source, /followsLatest\s*\? journeyRange\.endMs/);
-  assert.match(source, /sliderValue=\{scrubMs\}/);
-  assert.match(source, /lastPointMs: scrubEvidencePoint\?\.ms \?\? null/);
-  assert.match(journey, /followsLatest \? "parent.location.history.latest" : "parent.location.history.selectedTime"/);
   assert.match(source, /<LocationHistoryToolbar/);
   assert.match(source, /childName=\{selected\.name \|\| intl\.formatMessage\(\{ id: "parent\.location\.childFallback" \}\)\}/);
+  assert.match(source, /timeLabel: `\$\{formatClockHM\(stay\.arrivalMs/);
+  assert.match(source, /placeLabel: stayLabels\[index\]/);
 });

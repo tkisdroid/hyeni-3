@@ -37,6 +37,7 @@ test("제목·연결 상태·삭제 모달의 의미 아이콘은 Lucide로 고�
   const koChild = JSON.parse(source("locales/ko/child.json"));
   const childSettings = source("src/screens/child/ChildSettings.tsx");
   const parentSettings = source("src/screens/parent/ParentSettings.tsx");
+  const parentAccount = source("src/screens/parent/ParentAccount.tsx");
   const teacherSettings = source("src/screens/teacher/TeacherSettings.tsx");
 
   for (const [Icon, messageId, koreanLabel] of [
@@ -61,10 +62,14 @@ test("제목·연결 상태·삭제 모달의 의미 아이콘은 Lucide로 고�
   assert.match(childSettings, /<conn\.Icon size=\{16\} strokeWidth=\{2\.2\}/);
   assert.doesNotMatch(childSettings, /conn\.emoji|emoji:\s*"(?:👩|👨|👪|🔗)/);
 
-  for (const settings of [parentSettings, teacherSettings]) {
-    assert.match(settings, /<div className="ps-modal__emoji" aria-hidden="true">\s*<Trash2 size=\{24\} strokeWidth=\{2\.2\}/);
-    assert.doesNotMatch(settings, /<div className="ps-modal__emoji">🗑️<\/div>/);
-  }
+  // 부모 설정 첫 화면에서는 회원탈퇴를 숨기고 계정 프로필 안에서만 제공한다.
+  assert.doesNotMatch(parentSettings, /setConfirmDelete|Trash2|pa-action__label--danger/);
+  assert.match(parentAccount, /onClick=\{\(\) => setConfirmDelete\(true\)\}/);
+  assert.match(parentAccount, /<div className="pa-modal__emoji" aria-hidden="true">\s*<img src=\{asset\("ui\/clay\/trash\.webp"\)\}/);
+
+  // 선생님 설정의 기존 탈퇴 흐름은 Lucide 의미 아이콘을 유지한다.
+  assert.match(teacherSettings, /<div className="ps-modal__emoji" aria-hidden="true">\s*<Trash2 size=\{24\} strokeWidth=\{2\.2\}/);
+  assert.doesNotMatch(teacherSettings, /<div className="ps-modal__emoji">🗑️<\/div>/);
 });
 
 test("보고된 비표준 모서리 반경은 디자인 토큰으로 정규화한다", () => {

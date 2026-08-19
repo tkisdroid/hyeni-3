@@ -6,9 +6,6 @@ import { useNavigate, useSearchParams } from "react-router";
 import {
   AlertTriangle,
   Crown,
-  MessageCircle,
-  Navigation,
-  Phone,
   RefreshCw,
 } from "lucide-react";
 import { asset } from "@/lib/assets";
@@ -79,11 +76,15 @@ import {
   LocationJourneyPanel,
   type StayTimelineItem,
 } from "@/screens/parent/LocationJourneyPanel";
-import { useHistoryMapViewportPadding } from "@/screens/parent/useHistoryMapViewportPadding";
 import "./ParentLocation.css";
 
 function avatarSrc(path: string): string {
   return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
+}
+
+function isUploadedPhoto(path: string | null | undefined): boolean {
+  const value = path?.trim() ?? "";
+  return value.startsWith("http") || value.startsWith("blob:");
 }
 
 const SCHEDULE_STAY_RADIUS_M = 220;
@@ -91,6 +92,7 @@ const MIN_SCHEDULE_STAY_OVERLAP_MS = 10 * 60 * 1000;
 // 시간대·머문 곳 포커스 시 확대 단계(Kakao level — 작을수록 확대). 하루 전체 bounds 로 멀어진
 // 화면에서도 그 시각 위치가 보이도록 동네 축척까지만 당긴다(이미 더 확대돼 있으면 그대로 둔다).
 const HISTORY_FOCUS_MAP_LEVEL = 4;
+const HISTORY_MAP_VIEWPORT_PADDING = Object.freeze({ top: 160, right: 24, bottom: 24, left: 24 });
 type LocationRefreshState = "idle" | "requesting" | "waiting";
 
 function timeToMinutes(value: string | null | undefined): number | null {
@@ -431,23 +433,13 @@ export function ParentLocation() {
   // 목록에서 선택한 스테이포인트(지도 포커스 + 강조).
   const [selectedStayIdx, setSelectedStayIdx] = useState<number | null>(null);
   const [historyPanelExpanded, setHistoryPanelExpanded] = useState(true);
-  const [historyWideLayout, setHistoryWideLayout] = useState(false);
   const historyToolbarRef = useRef<HTMLElement | null>(null);
   const historyPanelRef = useRef<HTMLElement | null>(null);
-  const historyMapPadding = useHistoryMapViewportPadding({
-    enabled: historyEnabled && Boolean(selected),
-    wideLayout: historyWideLayout,
-    toolbarRef: historyToolbarRef,
-    panelRef: historyPanelRef,
-  });
-  const [settledHistoryMapPadding, setSettledHistoryMapPadding] = useState(historyMapPadding);
 
-  // 연속 입력 중에는 좌표뿐 아니라 패널 높이로 계산한 지도 여백도 고정한다. 두 값을 같은
-  // debounce 콜백에서 확정해야 KakaoMap의 setCenter→panBy가 마지막에 한 번만 실행된다.
+  // 시간 막대는 제거했지만 날짜·아이 전환 때 중심값을 같은 렌더에서 정리해 지도 떨림을 막는다.
   useEffect(() => {
     if (scrubTimeMs == null) {
       setSettledScrubTimeMs(null);
-      setSettledHistoryMapPadding(historyMapPadding);
       return;
     }
     const nextScrubTimeMs = journeyRange
@@ -455,18 +447,9 @@ export function ParentLocation() {
       : historyWindow.endMs;
     const timer = window.setTimeout(() => {
       setSettledScrubTimeMs(nextScrubTimeMs);
-      setSettledHistoryMapPadding(historyMapPadding);
     }, 160);
     return () => window.clearTimeout(timer);
-  }, [historyMapPadding, historyWindow.endMs, journeyRange, scrubTimeMs]);
-
-  useEffect(() => {
-    const media = window.matchMedia("(min-width: 720px) and (orientation: landscape)");
-    const sync = () => setHistoryWideLayout(media.matches);
-    sync();
-    media.addEventListener("change", sync);
-    return () => media.removeEventListener("change", sync);
-  }, []);
+  }, [historyWindow.endMs, journeyRange, scrubTimeMs]);
 
   // 아이·날짜·보기 전환에서만 선택을 초기화하고 패널을 펼친다.
   // 60초 이력 폴링과 시간 막대 조작은 사용자가 정한 패널 상태를 바꾸지 않는다.
@@ -715,7 +698,7 @@ export function ParentLocation() {
   };
 
   return (
-    <div className="pl-root">
+    <div className={`pl-root${activeView === "history" ? " pl-root--history" : ""}`}>
       {/* 실 Kakao 지도 — 실시간(마커·구역·장소) ↔ 오늘경로(이동 폴리라인 + 출발/현재 마커). */}
       {activeView === "history" ? (
         <KakaoMap
@@ -726,7 +709,7 @@ export function ParentLocation() {
           center={historyCenter}
           centerLevel={HISTORY_FOCUS_MAP_LEVEL}
           places={historyPlaces}
-          viewportPadding={settledHistoryMapPadding}
+          viewportPadding={HISTORY_MAP_VIEWPORT_PADDING}
         />
       ) : (
         <KakaoMap
@@ -869,7 +852,7 @@ export function ParentLocation() {
             className="pl-chip pl-chip--active"
             aria-label={intl.formatMessage({ id: "parent.location.currentChildLocation" }, { childName: selected.name || intl.formatMessage({ id: "parent.location.childFallback" }) })}
           >
-            <span className="pl-chip__avatar">
+            <span className="pl-chip__avatar" data-photo={isUploadedPhoto(selected.photo_url)}>
               <img className="hy-network-avatar" src={avatarSrc(childAvatarPath(selected.photo_url))} alt="" loading="eager" decoding="async" />
             </span>
             <span className="pl-chip__main">
@@ -910,7 +893,7 @@ export function ParentLocation() {
       <div className="pl-sheet">
         <div className="pl-sheet__handle" />
         <div className="pl-sheet__head">
-          <div className="pl-sheet__avatar">
+          <div className="pl-sheet__avatar" data-photo={isUploadedPhoto(selected?.photo_url)}>
             <img className="hy-network-avatar" src={avatarSrc(childAvatar)} alt="" loading="eager" decoding="async" />
           </div>
           <div className="pl-sheet__info">
@@ -983,7 +966,7 @@ export function ParentLocation() {
             aria-label={intl.formatMessage({ id: "parent.parentLocation.copy052" })}
             onClick={() => navigate("/parent/memo")}
           >
-            <MessageCircle size={22} strokeWidth={2.2} color="#fff" aria-hidden="true" />
+            <img className="pl-actions__icon" src={asset("ui/chat-heart.webp")} alt="" />
             <span className="pl-actions__label">{intl.formatMessage({ id: "parent.eventForm.copy060" })}</span>
           </button>
           {/* 길찾기는 모든 티어에서 열고, 주변 소리는 대상 화면의 고지형 Premium gate를 사용한다. */}
@@ -995,7 +978,7 @@ export function ParentLocation() {
                 aria-label={intl.formatMessage({ id: "parent.parentLocation.copy053" })}
                 onClick={() => navigate("/route")}
               >
-                <Navigation size={22} strokeWidth={2.2} color="var(--blue-500)" aria-hidden="true" />
+                <img className="pl-actions__icon" src={asset("ui/clay/location.webp")} alt="" />
                 <span className="pl-actions__label">{intl.formatMessage({ id: "parent.parentLocation.copy054" })}</span>
               </button>
               <button
@@ -1004,13 +987,13 @@ export function ParentLocation() {
                 aria-label={intl.formatMessage({ id: "parent.parentLocation.copy055" })}
                 onClick={() => navigate("/remote-audio")}
               >
-                <img src={asset("ui/menu-remote-audio.webp")} alt="" />
+                <img className="pl-actions__icon" src={asset("ui/clay/remote-audio.webp")} alt="" />
                 <span className="pl-actions__label">{intl.formatMessage({ id: "parent.home.shortcut.remoteAudio" })}</span>
               </button>
             </>
           )}
           <button type="button" className="pl-call-btn hy-press" aria-label={intl.formatMessage({ id: "parent.parentLocation.copy056" })} onClick={callChild}>
-            <Phone size={22} strokeWidth={2.2} color="var(--mint-text)" aria-hidden="true" />
+            <img className="pl-actions__icon" src={asset("ui/phone-lavender.webp")} alt="" />
             <span className="pl-actions__label">{intl.formatMessage({ id: "parent.parentLocation.copy057" })}</span>
           </button>
         </div>

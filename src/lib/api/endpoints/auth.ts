@@ -13,7 +13,9 @@ import { ApiError, normalizeApiErrorCode } from "../errors";
 import { applyApiSession, setApiUser, clearApiSession, notifyTokens, type ApiUser } from "../session";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { openExternal } from "@/lib/native/browser";
-import { getAuthDeviceInstallId } from "@/lib/native/deviceIdentity";
+import {
+  getAuthDeviceDescriptor,
+} from "@/lib/native/deviceIdentity";
 import {
   createIdempotentAuthResultAdopter,
   returnAuthResultWithAdoption,
@@ -68,7 +70,7 @@ export async function signInWithLoginId(
     throw new Error("ID 또는 비밀번호를 확인해 주세요");
   }
   // 기기 바인딩 — 이 기기에서 발급된 refresh 체인은 이 기기만 회전할 수 있게 스탬핑한다.
-  const deviceInstallId = await getAuthDeviceInstallId().catch(() => null);
+  const device = await getAuthDeviceDescriptor().catch(() => null);
   const data = await apiRequest<AuthResult>(
     "/auth/login-password",
     {
@@ -76,7 +78,7 @@ export async function signInWithLoginId(
       body: JSON.stringify({
         loginId,
         password: input.password,
-        ...(deviceInstallId ? { device_install_id: deviceInstallId } : {}),
+        ...(device ?? {}),
       }),
     },
     false,
@@ -86,12 +88,12 @@ export async function signInWithLoginId(
 
 /** 아이(child) 익명 로그인. 매 호출 새 익명 세션. allowRetry=false. */
 export async function anonymousLogin(): Promise<AuthResult> {
-  const deviceInstallId = await getAuthDeviceInstallId().catch(() => null);
+  const device = await getAuthDeviceDescriptor().catch(() => null);
   const data = await apiRequest<AuthResult>(
     "/auth/anonymous",
     {
       method: "POST",
-      body: JSON.stringify(deviceInstallId ? { device_install_id: deviceInstallId } : {}),
+      body: JSON.stringify(device ?? {}),
     },
     false,
   );
@@ -166,6 +168,7 @@ export async function verifyPhoneSignupCode(input: {
   if (!/^\d{6}$/.test(token)) {
     throw new Error("인증번호 6자리를 입력해 주세요");
   }
+  const device = await getAuthDeviceDescriptor().catch(() => null);
   const data = await apiPost<AuthResult>("/auth/signup/verify", {
     phone: phoneAuth,
     token,
@@ -174,6 +177,7 @@ export async function verifyPhoneSignupCode(input: {
     name: input.profile?.display_name,
     gender: input.profile?.gender,
     birthdate: input.profile?.birthdate,
+    ...(device ?? {}),
   });
   if (!data?.user || !data?.session?.access_token) {
     throw new Error("인증 후 사용자 정보를 확인하지 못했어요");
@@ -181,8 +185,10 @@ export async function verifyPhoneSignupCode(input: {
   return returnAuthResultWithAdoption(data, options, adoptAuthResult);
 }
 
-/** 로그아웃 — 메모리 세션 제거(캐시 clear 는 AuthProvider 가 수행). */
-export function logout(): void {
+/** 로그아웃 — 서버 활성 설치 잠금 해제 성공 뒤 메모리 세션을 제거한다. */
+export async function logout(): Promise<void> {
+  const device = await getAuthDeviceDescriptor().catch(() => null);
+  await apiPost("/auth/logout", device ?? {});
   clearApiSession();
 }
 
@@ -411,6 +417,8 @@ export async function finishOAuthLogin(input: {
     throw new Error("로그인 인증 정보가 어긋났어요. 보안을 위해 처음부터 다시 해 주세요!");
   }
 
+  const device = await getAuthDeviceDescriptor().catch(() => null);
+
   const data = await apiRequest<AuthResult>(
     oauthExchangePath(input.provider),
     {
@@ -419,6 +427,7 @@ export async function finishOAuthLogin(input: {
         code: input.code,
         state: context.state,
         transactionSecret: context.transactionSecret,
+        ...(device ?? {}),
       }),
     },
     false,

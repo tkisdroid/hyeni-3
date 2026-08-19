@@ -1,7 +1,7 @@
 import { useIntl } from "react-intl";
-import { useId, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { parentAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
@@ -12,8 +12,7 @@ import { useLocale } from "@/i18n/useLocale";
 import { APP_VERSION } from "@/config/version";
 import { useAuth } from "@/auth/AuthContext";
 import { useEntitlement } from "@/queries/useEntitlement";
-import { useAccount, useDeleteAccount } from "@/queries/useAccount";
-import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
+import { useAccount } from "@/queries/useAccount";
 import { openExternal } from "@/lib/native/browser";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { PRIVACY_POLICY_URL } from "@/lib/api/endpoints/account";
@@ -55,7 +54,6 @@ type AccountRow = {
   tone: Tone;
   label: string;
   onClick: () => void;
-  danger?: boolean;
   chevron?: boolean;
 };
 
@@ -85,15 +83,10 @@ export function ParentSettings() {
   const { logout, user } = useAuth();
   const accountQuery = useAccount();
   const { account, me, providerLabel } = accountQuery;
-  const deleteAccount = useDeleteAccount();
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [referralOpen, setReferralOpen] = useState(false);
   // 언어는 계정 프로필 바로 아래 한 줄이고, 그 줄을 펼쳐서 고른다(2026-08-17 TK 지시).
   const [languageOpen, setLanguageOpen] = useState(false);
   const { locale } = useLocale();
-  const deleteTitleId = useId();
-  const deleteDescriptionId = useId();
-  const deleteCancelRef = useRef<HTMLButtonElement>(null);
   // 티어 배지는 ready 일 때만 노출(미확정/조회실패 시 미표시 — R9: free 강등 금지).
   const entitlementQuery = useEntitlement();
   const { ready, tier } = entitlementQuery;
@@ -102,13 +95,6 @@ export function ParentSettings() {
     { isLoading: entitlementQuery.isLoading, isError: entitlementQuery.isError },
   ]);
   const settingsDataEmpty = settingsQueryState === "ready" && (!account || !entitlementQuery.view);
-  const deleteDialogVisible = confirmDelete && settingsQueryState === "ready" && !settingsDataEmpty;
-  const deleteDialogRef = useDialogFocusLifecycle<HTMLDivElement>({
-    open: deleteDialogVisible,
-    onClose: () => setConfirmDelete(false),
-    initialFocusRef: deleteCancelRef,
-    canClose: () => !deleteAccount.isPending,
-  });
   const settingsRefetching = accountQuery.isFetching || entitlementQuery.isFetching;
   const retryParentSettings = async (): Promise<void> => {
     await Promise.all([accountQuery.refetch(), entitlementQuery.refetch()]);
@@ -165,20 +151,6 @@ export function ParentSettings() {
       return;
     }
     window.open(PRIVACY_POLICY_URL, "_blank", "noopener");
-  };
-
-  const handleDelete = () => {
-    deleteAccount.mutate(undefined, {
-      onSuccess: () => {
-        show(intl.formatMessage({ id: "parent.parentSettings.copy008" }), "🗑️");
-        navigate("/onboarding");
-      },
-      onError: (e) => {
-        console.error("계정 삭제 실패:", e);
-        setConfirmDelete(false);
-        show(intl.formatMessage({ id: "parent.parentSettings.copy009" }), "⚠️");
-      },
-    });
   };
 
   if (settingsQueryState === "loading") {
@@ -359,11 +331,10 @@ export function ParentSettings() {
               { id: "privacy", icon: "ui/clay/privacy.webp", tone: "neutral", label: intl.formatMessage({ id: "parent.parentSettings.copy021" }), onClick: openPrivacy, chevron: true },
               { id: "feedback", icon: "ui/clay/feedback.webp", tone: "blue", label: intl.formatMessage({ id: "parent.parentSettings.copy022" }), onClick: () => navigate("/feedback"), chevron: true },
               { id: "logout", icon: "ui/clay/logout.webp", tone: "danger", label: intl.formatMessage({ id: "parent.parentSettings.copy023" }), onClick: () => void handleLogout() },
-              { id: "delete", icon: "ui/clay/trash.webp", tone: "danger", label: intl.formatMessage({ id: "parent.parentSettings.copy024" }), onClick: () => setConfirmDelete(true), danger: true },
             ] satisfies AccountRow[]).map((r) => (
               <button key={r.id} type="button" className="ps-account hy-press" onClick={r.onClick}>
                 <AccountIcon icon={r.icon} tone={r.tone} />
-                <span className="ps-account__label" data-danger={r.danger ? "true" : undefined}>
+                <span className="ps-account__label">
                   {r.label}
                 </span>
                 {r.chevron && chevronIcon}
@@ -382,57 +353,6 @@ export function ParentSettings() {
         onClose={() => setReferralOpen(false)}
         eligibleChildren={referralEligibleChildren}
       />
-
-      {/* 회원 탈퇴 확인 모달 */}
-      {deleteDialogVisible && (
-        <div
-          ref={deleteDialogRef}
-          className="ps-modal"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={deleteTitleId}
-          aria-describedby={deleteDescriptionId}
-        >
-          <button
-            type="button"
-            className="ps-modal__scrim"
-            tabIndex={-1}
-            aria-label={intl.formatMessage({ id: "parent.parentSettings.copy027" })}
-            onClick={() => !deleteAccount.isPending && setConfirmDelete(false)}
-          />
-          <div className="ps-modal__card">
-            <div className="ps-modal__emoji" aria-hidden="true">
-              <Trash2 size={24} strokeWidth={2.2} />
-            </div>
-            <div id={deleteTitleId} className="ps-modal__title">{intl.formatMessage({ id: "parent.parentSettings.copy028" })}</div>
-            <p id={deleteDescriptionId} className="ps-modal__body">
-              {account?.isPrimaryParent
-                ? intl.formatMessage({ id: "parent.parentSettings.copy029" })
-                : intl.formatMessage({ id: "parent.parentSettings.copy030" })}
-            </p>
-            <div className="ps-modal__btns">
-              <button
-                ref={deleteCancelRef}
-                type="button"
-                className="ps-modal__btn ps-modal__btn--ghost hy-press"
-                onClick={() => setConfirmDelete(false)}
-                disabled={deleteAccount.isPending}
-                data-progress-owner="confirm-action"
-              >
-                {intl.formatMessage({ id: "parent.parentSettings.copy031" })}
-              </button>
-              <button
-                type="button"
-                className="ps-modal__btn ps-modal__btn--danger hy-press"
-                onClick={handleDelete}
-                disabled={deleteAccount.isPending} aria-busy={deleteAccount.isPending}
-              >
-                {deleteAccount.isPending ? intl.formatMessage({ id: "parent.parentSettings.copy032" }) : intl.formatMessage({ id: "parent.parentSettings.copy033" })}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

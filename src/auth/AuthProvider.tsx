@@ -64,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     await cleanupPushBeforeSessionEnd(state.userId);
     await stopLocationTracking({ clearSession: true });
-    apiLogout();
+    await apiLogout();
     queryClient.clear();
     syncFromSession();
   }, [state.userId, syncFromSession]);

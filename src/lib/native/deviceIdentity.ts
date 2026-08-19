@@ -1,5 +1,5 @@
 import { detectDeviceLabel } from "@/lib/native/deviceName";
-import { getNativePlugin, isNativePlatform } from "@/lib/native/plugins";
+import { getNativePlugin, getPlatform, isNativePlatform } from "@/lib/native/plugins";
 
 const DEVICE_INSTALL_ID_KEY = "hyeni-device-install-id-v1";
 const LOCATION_PLUGIN = "BackgroundLocation";
@@ -20,6 +20,12 @@ export interface ChildDeviceIdentityHint {
   deviceInstallId: string;
   previousUserId: string | null;
   previousFamilyId: string | null;
+}
+
+export interface AuthDeviceDescriptor {
+  device_install_id: string;
+  device_label: string | null;
+  device_platform: "android" | "ios" | "web";
 }
 
 function randomDeviceId(): string {
@@ -79,6 +85,18 @@ export async function getAuthDeviceInstallId(): Promise<string | null> {
     /* 메모리 캐시만 유지 */
   }
   return resolved;
+}
+
+/** 로그인·갱신·페어링에 공통으로 싣는 최소 기기 정보. */
+export async function getAuthDeviceDescriptor(): Promise<AuthDeviceDescriptor | null> {
+  const deviceInstallId = await getAuthDeviceInstallId();
+  if (!deviceInstallId) return null;
+  const platform = getPlatform();
+  return {
+    device_install_id: deviceInstallId,
+    device_label: detectDeviceLabel(),
+    device_platform: platform === "android" || platform === "ios" ? platform : "web",
+  };
 }
 
 async function readNativePushContext(): Promise<NativePushContext | null> {

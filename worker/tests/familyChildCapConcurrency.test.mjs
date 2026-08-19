@@ -179,7 +179,13 @@ async function joinRequest(db, childId, pairCode, name) {
       authorization: await authorization(childId, "anonymous", null, true),
       "content-type": "application/json",
     },
-    body: JSON.stringify({ pairCode, name, device_platform: "android" }),
+    body: JSON.stringify({
+      pairCode,
+      name,
+      device_install_id: `device-${childId}`,
+      device_label: `테스트 ${childId}`,
+      device_platform: "android",
+    }),
   }, environment(db));
 }
 
@@ -192,7 +198,13 @@ async function joinAsParentRequest(db, parentId, pairCode, name = "보조 보호
       authorization: await authorization(parentId, "parent"),
       "content-type": "application/json",
     },
-    body: JSON.stringify({ pairCode, name }),
+    body: JSON.stringify({
+      pairCode,
+      name,
+      device_install_id: `device-${parentId}`,
+      device_label: `테스트 ${parentId}`,
+      device_platform: "web",
+    }),
   }, environment(db));
 }
 

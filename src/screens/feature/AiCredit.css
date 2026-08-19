@@ -136,6 +136,11 @@
 .ac-note__emoji {
   font-size: 15px;
 }
+.ac-note__emoji img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
 
 .ac-premium-callout {
   display: flex;
@@ -310,6 +315,11 @@
   justify-content: center;
   flex: none;
   font-size: 20px;
+}
+.ac-auto__icon img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
 }
 .ac-auto__main {
   flex: 1;

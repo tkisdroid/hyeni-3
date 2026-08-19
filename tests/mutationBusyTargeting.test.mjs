@@ -45,7 +45,6 @@ test("확인 dialog의 취소·닫기 버튼은 잠기기만 하고 진행 spinn
   const controls = [
     ["src/screens/parent/ChildDetail.tsx", "cd-confirm__cancel", 1],
     ["src/screens/parent/ParentAccount.tsx", "pa-modal__btn--ghost", 2],
-    ["src/screens/parent/ParentSettings.tsx", "ps-modal__btn--ghost", 1],
     ["src/screens/parent/ParentCalendar.tsx", "onClick={() => setConfirmDelete(false)}", 1],
     ["src/screens/feature/FamilyConnection.tsx", "fc-modal__btn--ghost", 1],
     ["src/screens/feature/RemoteRing.tsx", "rr-modal-cancel", 1],

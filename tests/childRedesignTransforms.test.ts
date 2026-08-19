@@ -200,7 +200,12 @@ test("받은 스티커를 도감 칸에 매칭한다(early/on_time 은 타입 �
   assert.equal(matchStickerSlot({ id: "2", title: "아무거나", sticker_type: "on_time", earned_at: "" }), "early");
   assert.equal(matchStickerSlot({ id: "3", title: "최고예요!", sticker_type: "praise", earned_at: "" }), "best");
   assert.equal(matchStickerSlot({ id: "4", title: "사랑해", sticker_type: "praise", earned_at: "" }), "love");
-  assert.equal(matchStickerSlot({ id: "5", title: "듣도보도못한칭찬", sticker_type: "praise", earned_at: "" }), null);
+  assert.equal(
+    matchStickerSlot({ id: "5", title: "오늘도 정말 잘했어", emoji: "🏆", sticker_type: "praise", earned_at: "" }),
+    "best",
+    "부모 한마디가 title에 저장돼도 전송 이모지로 같은 스티커 칸을 찾는다",
+  );
+  assert.equal(matchStickerSlot({ id: "6", title: "듣도보도못한칭찬", sticker_type: "praise", earned_at: "" }), null);
 });
 
 test("도감 집계 — 개수·진행률·NEW 배지", () => {

@@ -1,4 +1,9 @@
 // 불투명 refresh 토큰 발급/회전. D1 refresh_tokens 테이블에 저장.
+import {
+  claimAccountDeviceSession,
+  requireDeviceDescriptor,
+} from "./accountDeviceSession";
+
 const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30일
 
 function newOpaqueToken(): string {
@@ -168,6 +173,7 @@ export async function rotateRefreshToken(
   db: D1Database,
   oldToken: string,
   presentedDeviceId: string | null = null,
+  deviceMeta: { deviceLabel?: unknown; devicePlatform?: unknown } = {},
 ): Promise<RotatedToken | null> {
   const row = await db
     .prepare("SELECT * FROM refresh_tokens WHERE token=?")
@@ -196,8 +202,23 @@ export async function rotateRefreshToken(
     // 탈취자는 device_id 불일치로 위에서 이미 차단된다.
     //
     // device_id 가 없는 레거시 체인은 기존 60초 유예 + 1단계만 유지(보수적).
-    return resolveRevokedRefreshToken(db, row, presentedDeviceId);
+    const live = await resolveRevokedRefreshToken(db, row, presentedDeviceId);
+    if (!live) return null;
+    const device = requireDeviceDescriptor({
+      deviceId: live.deviceId ?? presentedDeviceId,
+      ...deviceMeta,
+    });
+    await claimAccountDeviceSession(db, live.userId, device);
+    return live;
   }
+
+  // 유효 refresh를 회전시키기 전에 계정당 활성 설치를 먼저 선점한다. 다른 설치가
+  // 활성 상태면 old token을 건드리지 않아 원래 기기의 세션 체인이 보존된다.
+  const activeDevice = requireDeviceDescriptor({
+    deviceId: row.device_id ?? presentedDeviceId,
+    ...deviceMeta,
+  });
+  await claimAccountDeviceSession(db, row.user_id, activeDevice);
 
   // old claim과 새 token INSERT를 한 D1 batch로 선형화한다. 동일 old token의 동시 회전은
   // 조건부 UPDATE를 먼저 성공한 한 요청만 새 token을 만들고, 나머지는 그 체인으로 재동기화한다.

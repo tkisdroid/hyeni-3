@@ -35,6 +35,7 @@ const messages = {
   "child.aiChat.creditRequest.done": "부탁했어!",
   "child.aiChat.creditRequest.failed": "부탁을 못 보냈어. 조금 뒤에 다시 해줄래?",
   "child.aiChat.creditRequest.sent": "부모님께 부탁했어!",
+  "child.aiChat.device.alarm": "알람 설정 열기",
   "child.aiChat.device.battery": "배터리 설정 열기",
   "child.aiChat.device.dial": "전화 앱 열기",
   "child.aiChat.device.location": "위치 설정 열기",

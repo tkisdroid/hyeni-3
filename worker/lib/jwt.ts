@@ -11,6 +11,7 @@ export interface AccessClaims extends JWTPayload {
   role: AuthUser["role"];
   family_id: string | null;
   is_anonymous: boolean;
+  device_id?: string;
 }
 
 export interface RealtimeTicketClaims extends JWTPayload {
@@ -38,6 +39,7 @@ export async function signAccessToken(
     role: user.role,
     family_id: user.family_id,
     is_anonymous: user.is_anonymous,
+    ...(user.device_id ? { device_id: user.device_id } : {}),
   })
     .setProtectedHeader({ alg: ALG })
     .setSubject(user.sub)
@@ -68,6 +70,9 @@ export async function verifyAccessToken(
         && payload.family_id.trim() === payload.family_id
         && payload.family_id.length > 0
         && payload.family_id.length <= 128);
+    const deviceIdValid = payload.device_id === undefined
+      || (typeof payload.device_id === "string"
+        && /^[A-Za-z0-9-]{1,64}$/.test(payload.device_id));
     if (
       payload.purpose !== undefined
       || subject.length === 0
@@ -75,6 +80,7 @@ export async function verifyAccessToken(
       || subject.length > 256
       || !["parent", "child", "teacher", "anonymous"].includes(String(payload.role))
       || !familyIdValid
+      || !deviceIdValid
       || typeof payload.is_anonymous !== "boolean"
       || !Number.isSafeInteger(payload.iat)
       || !Number.isSafeInteger(payload.exp)

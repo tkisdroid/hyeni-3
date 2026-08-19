@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { ChevronLeft, RefreshCw, Download, Trash2, Users } from "lucide-react";
+import { ChevronLeft, RefreshCw } from "lucide-react";
+import { asset } from "@/lib/assets";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/app/toast";
 import { useIntl } from "react-intl";
@@ -199,7 +200,7 @@ export function DataSync() {
           <div className="ds-sync__rows">
             <div className="ds-sync__row">
               <span className="ds-sync__k">
-                <Users size={14} strokeWidth={2.3} />
+                <img className="ds-sync__mini-icon" src={asset("ui/clay/children.webp")} alt="" />
                 {intl.formatMessage({ id: "parent.dataSync.familyMembers" })}
               </span>
               <span className="ds-sync__v">{formatCount(memberCount)}</span>
@@ -239,7 +240,7 @@ export function DataSync() {
         {/* 내 데이터 다운로드 */}
         <div className="ds-card">
           <div className="ds-card__icon ds-card__icon--blue">
-            <Download size={20} strokeWidth={2.2} />
+            <img src={asset("ui/clay/download.webp")} alt="" />
           </div>
           <div className="ds-card__main">
             <div className="ds-card__title">{intl.formatMessage({ id: "parent.dataSync.export.title" })}</div>
@@ -265,7 +266,7 @@ export function DataSync() {
         {/* 캐시 비우기 */}
         <div className="ds-card">
           <div className="ds-card__icon ds-card__icon--rose">
-            <Trash2 size={20} strokeWidth={2.2} />
+            <img src={asset("ui/clay/trash.webp")} alt="" />
           </div>
           <div className="ds-card__main">
             <div className="ds-card__title">{intl.formatMessage({ id: "parent.dataSync.cache.title" })}</div>

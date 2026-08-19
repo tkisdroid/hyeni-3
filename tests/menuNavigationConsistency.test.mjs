@@ -57,7 +57,11 @@ test("부모 위치 시트의 액션 버튼은 원시 이모지 대신 아이콘
   assert.ok(actions.length > 0, "pl-actions 블록을 찾지 못했다");
   // 원시 이모지는 시스템 폰트로 렌더돼 크기·베이스라인이 옆 아이콘과 어긋난다.
   assert.doesNotMatch(actions, /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
-  assert.match(actions, /<Navigation size=\{22\} strokeWidth=\{2\.2\}/);
+  // 네 액션은 부모 화면 전체와 같은 소프트 3D 질감으로 맞춘다.
+  assert.match(actions, /ui\/chat-heart\.webp/);
+  assert.match(actions, /ui\/clay\/location\.webp/);
+  assert.match(actions, /ui\/clay\/remote-audio\.webp/);
+  assert.match(actions, /ui\/phone-lavender\.webp/);
   assert.match(css, /\.pl-route-btn \{[^}]*background: var\(--blue-soft\)/);
   // 4열 퀵액션은 아이콘마다 라벨을 함께 보여준다(처음 쓰는 부모도 뜻을 안다).
   const labels = {

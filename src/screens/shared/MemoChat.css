@@ -311,11 +311,26 @@
     rgba(251, 247, 244, 0.74) 100%
   );
 }
+.mc-quick-group {
+  margin-bottom: 12px;
+}
+.mc-quick-title {
+  margin: 0 4px 8px;
+  color: var(--fg-secondary);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  letter-spacing: -0.01em;
+}
 .mc-quick {
   display: flex;
   gap: 8px;
-  margin-bottom: 12px;
   overflow-x: auto;
+  padding: 0 0 4px;
+  scrollbar-width: none;
+}
+.mc-quick::-webkit-scrollbar {
+  display: none;
 }
 @media (max-width: 380px) {
   .mc-quick {
@@ -348,7 +363,6 @@
   background: var(--glass-fill-solid);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
   border-radius: var(--radius-pill);
   padding: 4px 8px;
   box-shadow: var(--glass-rim), 0 10px 24px -14px rgba(32, 26, 29, 0.28);
@@ -360,8 +374,8 @@
 }
 /* 사진·위치 공유 버튼(입력 왼쪽) */
 .mc-attach {
-  width: 34px;
-  height: 34px;
+  width: var(--control-min-size);
+  height: var(--control-min-size);
   border-radius: 50%;
   background: var(--neu-surface);
   box-shadow: var(--neu-raised-soft);
@@ -390,16 +404,16 @@
   color: #2a2327;
   min-width: 0;
 }
-/* 입력 중 보이던 "파란 네모" 제거 — 접근성상 focus 표시는 없앨 수 없으므로(가드:
-   출시 화면은 브라우저 focus outline을 제거하지 않는다) 모양과 색만 앱 톤으로 바꾼다.
-   각져 보이던 원인은 이 필드에 radius 가 없어 outline 이 직사각형으로 그려진 것이다.
-   알약 안쪽에 딱 맞는 둥근 링으로 만들고 공통 고대비 포커스 색을 사용한다. */
+/* 입력 중 색 테두리는 표시하지 않는다. 투명 outline은 유지하고, 입력줄 전체의
+   중립 명도 변화로 키보드 포커스를 구분해 접근성도 보존한다. */
 .mc-input:focus,
 .mc-input:focus-visible {
-  outline-color: var(--focus-ring-color);
-  outline-width: 2px;
-  outline-offset: 0;
+  outline: 2px solid transparent;
   border-radius: 999px;
+}
+.mc-inputbar:focus-within {
+  box-shadow: var(--glass-rim), 0 10px 24px -14px rgba(32, 26, 29, 0.28),
+    0 0 0 2px rgba(38, 54, 74, 0.16);
 }
 .mc-input::placeholder {
   color: var(--fg-placeholder);
@@ -408,8 +422,8 @@
   width: var(--control-min-size);
   height: var(--control-min-size);
   border-radius: 50%;
-  background: var(--cta-grad-accent);
-  box-shadow: 0 8px 18px -6px rgba(240, 81, 143, 0.7);
+  background: #607994;
+  box-shadow: 0 5px 12px -7px rgba(38, 54, 74, 0.58);
   display: flex;
   align-items: center;
   justify-content: center;

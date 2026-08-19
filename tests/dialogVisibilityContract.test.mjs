@@ -20,12 +20,6 @@ const contracts = [
     clauses: ["seriesScopePrompt!==null", "eventFormDataReady", "children.length>0"],
   },
   {
-    sourcePath: "src/screens/parent/ParentSettings.tsx",
-    dialogRef: "deleteDialogRef",
-    visibleFlag: "deleteDialogVisible",
-    clauses: ["confirmDelete", 'settingsQueryState==="ready"', "!settingsDataEmpty"],
-  },
-  {
     sourcePath: "src/screens/teacher/TeacherSettings.tsx",
     dialogRef: "deleteDialogRef",
     visibleFlag: "deleteDialogVisible",

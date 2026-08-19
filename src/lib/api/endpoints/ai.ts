@@ -317,6 +317,9 @@ export interface AiToolResult {
   accentLabel?: string;
   /** openDeviceAction — 앱이 대신 하지 않고 열어 줄 기기 화면 이름. */
   target?: string;
+  /** alarm — Android 알람 화면에 미리 채울 검증된 시각. */
+  hour?: number;
+  minute?: number;
   clientAction?: string;
   parentNotified?: boolean;
 }

@@ -280,6 +280,13 @@
     rgba(251, 247, 244, 0.72) 100%
   );
 }
+/* 유리 위 글자는 배경이 비쳐 흐려지므로 한 단계 진한 라벨을 쓴다(iOS 머티리얼과 같은 규칙).
+   ⚠️ 이 재정의가 없으면 --glass-fill 을 0.2 아래로 못 내린다 — --fg-muted 가 먼저 AA 를 깬다. */
+.hy-app[data-role="parent"] .ph-glass {
+  --fg-muted: var(--fg-secondary);
+  --fg-tertiary: var(--fg-secondary);
+}
+
 .hy-tabbar__inner {
   /* ⚠️ 탭바는 얼음(--glass-fill)을 쓰지 않는다 — 스크롤 콘텐츠가 뒤로 지나가므로
      그만큼 투명하면 라벨 대비가 AA 밑으로 떨어진다(2026-08-19 픽셀 실측). */
@@ -355,6 +362,26 @@
   .hy-tab[data-active="true"] .hy-tab__icon {
     animation: none;
   }
+}
+
+/* 부모 탭은 스크롤 내용보다 항상 위에 남고, 설정 화면과 같은 밝은 얼음판으로 읽힌다. */
+.hy-app[data-role="parent"] .hy-tabbar {
+  z-index: 60;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(
+    180deg,
+    rgba(251, 247, 244, 0) 0%,
+    rgba(251, 247, 244, 0.58) 42%,
+    rgba(251, 247, 244, 0.92) 100%
+  );
+}
+
+.hy-app[data-role="parent"] .hy-tabbar__inner {
+  background: color-mix(in srgb, var(--bg-card) 92%, transparent);
+  border-color: color-mix(in srgb, var(--blue-500) 10%, var(--line-card));
+  box-shadow: var(--shadow-floating);
+  backdrop-filter: blur(20px) saturate(135%);
+  -webkit-backdrop-filter: blur(20px) saturate(135%);
 }
 .hy-tab[data-active="true"] .hy-tab__label {
   color: var(--hy-accent-text);

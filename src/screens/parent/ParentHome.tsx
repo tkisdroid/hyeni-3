@@ -1,7 +1,9 @@
 import { useIntl, type IntlShape } from "react-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { useNavigate } from "react-router";
-import { AlertTriangle, Bell, Settings, ChevronRight, Check, Gift, MapPin, Smartphone, RefreshCw } from "lucide-react";
+import { AlertTriangle, ChevronRight, Check, GripVertical, RefreshCw } from "lucide-react";
+import settings3dIcon from "../../../assets/01-runtime-3d/ui/settings.webp";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
@@ -49,6 +51,13 @@ import { resolveParentHomeSubscriptionCard } from "@/transform/parentHomeSubscri
 import { resolveParentHomeDeviceFinder } from "@/transform/parentHomeShortcut";
 import { useLocale } from "@/i18n/useLocale";
 import { formatCalendarDay, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
+import {
+  PARENT_HOME_SECTION_IDS,
+  moveParentHomeSection,
+  normalizeParentHomeSectionOrder,
+  parentHomeSectionOrderStorageKey,
+  type ParentHomeSectionId,
+} from "@/transform/parentHomeSectionOrder";
 import "./ParentHome.css";
 
 function avatarSrc(path: string): string {
@@ -61,6 +70,67 @@ type ChildScheduleEvent = {
   raw: CalendarEvent;
   view: CalEventView;
 };
+
+type ReorderableHomeSectionProps = {
+  id: ParentHomeSectionId;
+  title: string;
+  order: number;
+  editing: boolean;
+  dragging: boolean;
+  children: ReactNode;
+  setElement: (id: ParentHomeSectionId, element: HTMLDivElement | null) => void;
+  onPointerDown: (id: ParentHomeSectionId, event: ReactPointerEvent<HTMLButtonElement>) => void;
+  onPointerMove: (id: ParentHomeSectionId, event: ReactPointerEvent<HTMLButtonElement>) => void;
+  onPointerEnd: (id: ParentHomeSectionId, event: ReactPointerEvent<HTMLButtonElement>) => void;
+  onKeyDown: (id: ParentHomeSectionId, event: ReactKeyboardEvent<HTMLButtonElement>) => void;
+  handleLabel: string;
+};
+
+function ReorderableHomeSection({
+  id,
+  title,
+  order,
+  editing,
+  dragging,
+  children,
+  setElement,
+  onPointerDown,
+  onPointerMove,
+  onPointerEnd,
+  onKeyDown,
+  handleLabel,
+}: ReorderableHomeSectionProps) {
+  return (
+    <div
+      ref={(element) => setElement(id, element)}
+      className={`ph-home-section${editing ? " ph-home-section--editing" : ""}${dragging ? " ph-home-section--dragging" : ""}`}
+      data-section-id={id}
+      style={{ order }}
+    >
+      {editing && (
+        <div className="ph-reorder-handle-row">
+          <span>{title}</span>
+          <button
+            type="button"
+            className="ph-reorder-handle hy-press"
+            aria-label={handleLabel}
+            aria-pressed={dragging}
+            onPointerDown={(event) => onPointerDown(id, event)}
+            onPointerMove={(event) => onPointerMove(id, event)}
+            onPointerUp={(event) => onPointerEnd(id, event)}
+            onPointerCancel={(event) => onPointerEnd(id, event)}
+            onKeyDown={(event) => onKeyDown(id, event)}
+          >
+            <GripVertical size={20} strokeWidth={2.2} aria-hidden="true" />
+          </button>
+        </div>
+      )}
+      <div className="ph-home-section__content" inert={editing ? true : undefined}>
+        {children}
+      </div>
+    </div>
+  );
+}
 
 function eventLocationPoint(event: CalendarEvent): { lat: number; lng: number } | null {
   const lat = event.location?.lat;
@@ -149,6 +219,17 @@ const shortcutLabelIds: Readonly<Record<string, string>> = {
   sc8: "parent.home.shortcut.notifications",
 };
 
+const shortcutIconPaths: Readonly<Record<string, string>> = {
+  sc1: "ui/clay/ai-credit.webp",
+  sc2: "ui/clay/location.webp",
+  sc3: "ui/clay/playdate.webp",
+  sc4: "ui/clay/places.webp",
+  sc5: "ui/clay/remote-audio.webp",
+  sc6: "ui/clay/background-location.webp",
+  sc7: "ui/clay/pin.webp",
+  sc8: "ui/clay/notification.webp",
+};
+
 export function ParentHome() {
   const intl = useIntl();
   const navigate = useNavigate();
@@ -193,12 +274,118 @@ export function ParentHome() {
   // 아이 기기 상태 새로고침 요청 — 네이티브 device_health 리포트는 on-demand 라
   // 홈 진입 시 1회 요청해야 안전지표가 채워진다(도착하면 WS 브릿지가 자동 반영).
   const { familyId } = useAuth();
-  const statusRequestedRef = useRef(false);
+  const [sectionOrder, setSectionOrder] = useState<ParentHomeSectionId[]>(() => [...PARENT_HOME_SECTION_IDS]);
+  const sectionOrderRef = useRef<ParentHomeSectionId[]>(sectionOrder);
+  const sectionElementsRef = useRef(new Map<ParentHomeSectionId, HTMLDivElement>());
+  const [reorderEditing, setReorderEditing] = useState(false);
+  const [draggingSectionId, setDraggingSectionId] = useState<ParentHomeSectionId | null>(null);
+
   useEffect(() => {
-    if (statusRequestedRef.current || !familyId) return;
-    statusRequestedRef.current = true;
-    void requestDeviceStatus(familyId);
+    if (!familyId) {
+      sectionOrderRef.current = [...PARENT_HOME_SECTION_IDS];
+      setSectionOrder([...PARENT_HOME_SECTION_IDS]);
+      return;
+    }
+    let next = [...PARENT_HOME_SECTION_IDS];
+    try {
+      const raw = window.localStorage.getItem(parentHomeSectionOrderStorageKey(familyId));
+      next = normalizeParentHomeSectionOrder(raw ? JSON.parse(raw) : null);
+    } catch {
+      // 저장값이 손상돼도 기본 순서로 안전하게 복구한다.
+    }
+    sectionOrderRef.current = next;
+    setSectionOrder(next);
+    setReorderEditing(false);
+    setDraggingSectionId(null);
   }, [familyId]);
+
+  const persistSectionOrder = (next: readonly ParentHomeSectionId[]) => {
+    const normalized = normalizeParentHomeSectionOrder(next);
+    sectionOrderRef.current = normalized;
+    setSectionOrder(normalized);
+    if (!familyId) return;
+    try {
+      window.localStorage.setItem(
+        parentHomeSectionOrderStorageKey(familyId),
+        JSON.stringify(normalized),
+      );
+    } catch {
+      // 저장소를 사용할 수 없어도 현재 화면의 재정렬은 유지한다.
+    }
+  };
+
+  const setSectionElement = (id: ParentHomeSectionId, element: HTMLDivElement | null) => {
+    if (element) sectionElementsRef.current.set(id, element);
+    else sectionElementsRef.current.delete(id);
+  };
+
+  const startSectionDrag = (
+    id: ParentHomeSectionId,
+    event: ReactPointerEvent<HTMLButtonElement>,
+  ) => {
+    if (!event.isPrimary || event.button !== 0) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setDraggingSectionId(id);
+  };
+
+  const moveSectionDrag = (
+    id: ParentHomeSectionId,
+    event: ReactPointerEvent<HTMLButtonElement>,
+  ) => {
+    if (draggingSectionId !== id || !event.isPrimary) return;
+    event.preventDefault();
+    let target: ParentHomeSectionId | null = null;
+    let distance = Number.POSITIVE_INFINITY;
+    for (const candidate of sectionOrderRef.current) {
+      const element = sectionElementsRef.current.get(candidate);
+      if (!element) continue;
+      const rect = element.getBoundingClientRect();
+      const candidateDistance = Math.abs(event.clientY - (rect.top + rect.bottom) / 2);
+      if (candidateDistance < distance) {
+        target = candidate;
+        distance = candidateDistance;
+      }
+    }
+    if (target && target !== id) {
+      const next = moveParentHomeSection(sectionOrderRef.current, id, target);
+      sectionOrderRef.current = next;
+      setSectionOrder(next);
+    }
+
+    const scroller = event.currentTarget.closest<HTMLElement>(".hy-screen");
+    if (!scroller) return;
+    const scrollerRect = scroller.getBoundingClientRect();
+    const edge = 88;
+    if (event.clientY < scrollerRect.top + edge) scroller.scrollBy({ top: -18 });
+    else if (event.clientY > scrollerRect.bottom - edge) scroller.scrollBy({ top: 18 });
+  };
+
+  const endSectionDrag = (
+    id: ParentHomeSectionId,
+    event: ReactPointerEvent<HTMLButtonElement>,
+  ) => {
+    if (draggingSectionId !== id) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    setDraggingSectionId(null);
+    persistSectionOrder(sectionOrderRef.current);
+  };
+
+  const moveSectionWithKeyboard = (
+    id: ParentHomeSectionId,
+    event: ReactKeyboardEvent<HTMLButtonElement>,
+  ) => {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+    event.preventDefault();
+    const current = sectionOrderRef.current.indexOf(id);
+    const targetIndex = event.key === "ArrowUp" ? current - 1 : current + 1;
+    const target = sectionOrderRef.current[targetIndex];
+    if (!target) return;
+    persistSectionOrder(moveParentHomeSection(sectionOrderRef.current, id, target));
+  };
+
   const places = placesQuery.data;
   const locationLabel = useLocationLabels(locationsForDisplay, places);
 
@@ -217,6 +404,28 @@ export function ParentHome() {
 
   // 활성 아이(전역 스위치) — 홈 카드 탭으로만 전환. 안전지표·오늘일정·준비물이 이 아이 기준.
   const { activeChild, setActiveChildId } = useActiveChild();
+  const statusRequestedKeyRef = useRef("");
+  useEffect(() => {
+    const childUserId = activeChild?.user_id?.trim() ?? "";
+    if (!familyId || !childUserId) return;
+    const key = `${familyId}:${childUserId}`;
+    if (statusRequestedKeyRef.current === key) return;
+    statusRequestedKeyRef.current = key;
+    let cancelled = false;
+    const timers: number[] = [];
+    void requestDeviceStatus(familyId, childUserId).then(() => {
+      // WS가 지연·누락돼도 서버에 저장된 device_health를 세 차례 직접 재조회한다.
+      for (const delay of [1200, 3500, 8000]) {
+        timers.push(window.setTimeout(() => {
+          if (!cancelled) void familyQuery.refetch();
+        }, delay));
+      }
+    });
+    return () => {
+      cancelled = true;
+      for (const timer of timers) window.clearTimeout(timer);
+    };
+  }, [activeChild?.user_id, familyId]);
   const subscriptionCard = resolveParentHomeSubscriptionCard({
     ready: entitlement.ready,
     isError: entitlement.isError,
@@ -311,6 +520,13 @@ export function ParentHome() {
     intl,
   });
   const heroLocationIsCurrent = heroLocationCopy.badge === intl.formatMessage({ id: "parent.locationTrust.current" });
+  const heroLocationPlace = useMemo(() => {
+    if (!activeHeroLocation) return null;
+    const label = locationLabel(activeHeroLocation).trim();
+    const loadingLabel = intl.formatMessage({ id: "parent.location.addressLoading" });
+    if (!label || label === loadingLabel || label === "주소 확인 중") return null;
+    return intl.formatMessage({ id: "parent.home.nearPlace" }, { place: label });
+  }, [activeHeroLocation, intl, locationLabel]);
 
   // 준비물·숙제: 오늘 date_key 의 daily-supplies 실데이터 + 체크 토글(서버 업서트).
   // 서버 응답은 모든 아이가 섞여 있으므로 활성 아이(activeChild.id = child_user_id)만 필터.
@@ -341,7 +557,11 @@ export function ParentHome() {
     setRefreshing(true);
     try {
       // 아이 기기에 상태 리포트 재요청(안전지표 실갱신 — 응답은 WS 로 자동 반영).
-      if (familyId) void requestDeviceStatus(familyId);
+      if (familyId) {
+        await requestDeviceStatus(familyId, activeChild?.user_id ?? null);
+        // 즉시 재조회만 하면 아이 응답 전에 끝나므로 짧은 확인 창을 둔다.
+        await new Promise<void>((resolve) => window.setTimeout(resolve, 1200));
+      }
       const results = await Promise.all([
         eventsQuery.refetch(),
         familyQuery.refetch(),
@@ -518,6 +738,40 @@ export function ParentHome() {
     weekday: "long",
   });
 
+  const sectionTitle = (id: ParentHomeSectionId): string => {
+    switch (id) {
+      case "schedule": return intl.formatMessage({ id: "parent.parentHome.copy018" });
+      case "ai_schedule": return intl.formatMessage({ id: "parent.parentHome.copy023" });
+      case "children": return intl.formatMessage({ id: "parent.parentHome.copy029" });
+      case "safety": return intl.formatMessage({ id: "parent.parentHome.copy035" });
+      case "supplies": return intl.formatMessage({ id: "parent.parentHome.copy050" });
+      case "memo": return intl.formatMessage({ id: "core.nav.chat" });
+      case "shortcuts": return intl.formatMessage({ id: "parent.parentHome.copy060" });
+      case "membership": return intl.formatMessage({ id: "parent.settings.subscription" });
+    }
+  };
+
+  const renderHomeSection = (id: ParentHomeSectionId, children: ReactNode) => {
+    const title = sectionTitle(id);
+    return (
+      <ReorderableHomeSection
+        id={id}
+        title={title}
+        order={sectionOrder.indexOf(id) + 1}
+        editing={reorderEditing}
+        dragging={draggingSectionId === id}
+        setElement={setSectionElement}
+        onPointerDown={startSectionDrag}
+        onPointerMove={moveSectionDrag}
+        onPointerEnd={endSectionDrag}
+        onKeyDown={moveSectionWithKeyboard}
+        handleLabel={intl.formatMessage({ id: "parent.home.reorder.handle" }, { section: title })}
+      >
+        {children}
+      </ReorderableHomeSection>
+    );
+  };
+
   return (
     <div className="hy-rise-in ph-page">
       <TopBar
@@ -532,7 +786,7 @@ export function ParentHome() {
               )}
               onClick={() => navigate("/sticker-send")}
             >
-              <img src={asset("ui/menu-sticker.webp")} alt="" />
+              <img src={asset("ui/clay/sticker.webp")} alt="" />
               <span>{intl.formatMessage({ id: "parent.parentHome.copy007" })}</span>
             </button>
             <button
@@ -541,7 +795,7 @@ export function ParentHome() {
               aria-label={intl.formatMessage({ id: "parent.parentHome.copy008" })}
               onClick={() => navigate("/notifications")}
             >
-              <Bell size={21} strokeWidth={1.9} />
+              <img className="ph-top-action-icon" src={asset("ui/clay/notification.webp")} alt="" />
               {hasUnreadAlerts && <span className="hy-iconbtn__dot" />}
             </button>
             <button
@@ -550,7 +804,7 @@ export function ParentHome() {
               aria-label={intl.formatMessage({ id: "parent.parentHome.copy009" })}
               onClick={() => navigate("/parent/settings")}
             >
-              <Settings size={21} strokeWidth={1.9} />
+              <img className="ph-top-action-icon ph-top-action-icon--settings" src={settings3dIcon} alt="" />
             </button>
           </>
         }
@@ -578,16 +832,19 @@ export function ParentHome() {
               </>
             )}
           </div>
-          <div className="ph-hero__live">
+          <div className="ph-hero__live" data-current={heroLocationIsCurrent}>
             {heroLocationIsCurrent ? (
               <span className="ph-live-dot">
                 <span className="ring" />
                 <span className="core" />
               </span>
             ) : (
-              <MapPin size={14} strokeWidth={2.3} aria-hidden="true" />
+              <img className="ph-hero__location-icon" src={asset("ui/clay/pin.webp")} alt="" />
             )}
-            {heroLocationCopy.badge}
+            <span className="ph-hero__location-state">{heroLocationCopy.badge}</span>
+            {heroLocationPlace && (
+              <span className="ph-hero__location-place">{heroLocationPlace}</span>
+            )}
           </div>
         </button>
 
@@ -614,11 +871,36 @@ export function ParentHome() {
           </div>
         )}
 
+        <div className="ph-reorder-toolbar" data-editing={reorderEditing}>
+          <span className="ph-reorder-toolbar__copy">
+            <b>{intl.formatMessage({ id: "parent.home.reorder.title" })}</b>
+            {reorderEditing && (
+              <small>{intl.formatMessage({ id: "parent.home.reorder.hint" })}</small>
+            )}
+          </span>
+          <button
+            type="button"
+            className="ph-reorder-toolbar__button hy-press"
+            aria-pressed={reorderEditing}
+            onClick={() => {
+              if (reorderEditing) persistSectionOrder(sectionOrderRef.current);
+              setDraggingSectionId(null);
+              setReorderEditing((editing) => !editing);
+            }}
+          >
+            <GripVertical size={18} strokeWidth={2.2} aria-hidden="true" />
+            {intl.formatMessage({
+              id: reorderEditing ? "parent.home.reorder.done" : "parent.home.reorder.edit",
+            })}
+          </button>
+        </div>
+
         {/* 오늘의 일정 */}
+        {renderHomeSection("schedule", (
         <section>
           <SectionHeader
             iconBg="var(--glass-tile)"
-            icon={<img src={asset("ui/calendar-heart.webp")} alt="" />}
+            icon={<img src={asset("ui/clay/calendar.webp")} alt="" />}
             title={intl.formatMessage({ id: "parent.parentHome.copy018" })}
             action={
               <button
@@ -673,12 +955,14 @@ export function ParentHome() {
             )}
           </div>
         </section>
+        ))}
 
         {/* AI로 일정 추가 — 서리 유리. 색은 페이지 배경(.ph-page). 라우트·2열은 유지. */}
+        {renderHomeSection("ai_schedule", (
         <section className="ph-ai ph-glass" aria-labelledby="ph-ai-title">
           <div className="ph-ai__head">
             <span className="ph-ai__icon">
-              <img src={asset("ui/ai-friend-credits.webp")} alt="" />
+              <img src={asset("ui/clay/ai-credit.webp")} alt="" />
             </span>
             <span className="ph-ai__copy">
               <span className="ph-ai__title" id="ph-ai-title">
@@ -690,40 +974,42 @@ export function ParentHome() {
           <div className="ph-ai__grid">
             <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=voice")}>
               <span className="ph-ai__btn-icon">
-                <img src={asset("ui/mic-lavender.webp")} alt="" />
+                <img src={asset("ui/clay/remote-audio.webp")} alt="" />
               </span>
               {intl.formatMessage({ id: "parent.parentHome.copy025" })}
             </button>
             <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=text")}>
               <span className="ph-ai__btn-icon">
-                <img src={asset("ui/menu-ai-schedule.webp")} alt="" />
+                <img src={asset("ui/clay/ai-credit.webp")} alt="" />
               </span>
               {intl.formatMessage({ id: "parent.parentHome.copy026" })}
             </button>
             <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=image")}>
               <span className="ph-ai__btn-icon">
-                <img src={asset("ui/calendar-heart.webp")} alt="" />
+                <img src={asset("ui/clay/calendar.webp")} alt="" />
               </span>
               {intl.formatMessage({ id: "parent.parentHome.copy027" })}
             </button>
             <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?mode=academy&tab=image")}>
               <span className="ph-ai__btn-icon">
-                <img src={asset("ui/place-academy.webp")} alt="" />
+                <img src={asset("ui/clay/school.webp")} alt="" />
               </span>
               {intl.formatMessage({ id: "parent.parentHome.copy028" })}
             </button>
           </div>
         </section>
+        ))}
 
         {/* 아이 현황 */}
+        {renderHomeSection("children", (
         <section>
           <SectionHeader
             iconBg="var(--glass-tile)"
-            icon={<img src={asset("ui/pin-heart.webp")} alt="" />}
+            icon={<img src={asset("ui/clay/children.webp")} alt="" />}
             title={intl.formatMessage({ id: "parent.parentHome.copy029" })}
             action={
               <span
-                className="hy-chip ph-location-chip"
+                className="hy-chip ph-small-control ph-location-chip"
                 data-current={heroLocationIsCurrent}
                 style={{ marginLeft: "auto" }}
               >
@@ -743,7 +1029,7 @@ export function ParentHome() {
               {childCards.map((c) => {
                 const active = c.id === activeChild?.id;
                 return (
-                  <div key={c.id} className={`hy-card ph-child${active ? " ph-child--active" : ""}`}>
+                  <div key={c.id} className={`hy-card ph-glass ph-child${active ? " ph-child--active" : ""}`}>
                     {/* 활성 표시는 카드 우상단 코너 배지(이름 행에 넣으면 줄바꿈 유발) */}
                     {active && <span className="ph-child__now">{intl.formatMessage({ id: "parent.parentHome.copy031" })}</span>}
                     {/* 카드 탭 = 아이 스위치(전역). 상세는 우측 화살표로. */}
@@ -762,14 +1048,13 @@ export function ParentHome() {
                           <span className="ph-child__name-row">
                             <span className="ph-child__name">{c.name}</span>
                             <span className="ph-child__device">
-                              <Smartphone size={12} strokeWidth={2.2} />
                               <span className="ph-child__device-label">
                                 {c.device ?? intl.formatMessage({ id: "parent.parentHome.copy032" })}
                               </span>
                             </span>
                           </span>
                           <span className="ph-child__loc">
-                            <MapPin size={14} strokeWidth={2} color="var(--fg-muted)" />
+                            <img className="ph-inline-3d-icon" src={asset("ui/clay/pin.webp")} alt="" />
                             <span>{c.place} · {c.fresh}</span>
                           </span>
                         </span>
@@ -807,16 +1092,18 @@ export function ParentHome() {
             </div>
           )}
         </section>
+        ))}
 
         {/* 안전 지표 */}
+        {renderHomeSection("safety", (
         <section>
           <SectionHeader
             iconBg="var(--glass-tile)"
-            icon={<img src={asset("ui/shield-heart.webp")} alt="" />}
+            icon={<img src={asset("ui/clay/background-location.webp")} alt="" />}
             title={intl.formatMessage({ id: "parent.parentHome.copy035" })}
             action={
               <span
-                className="hy-chip ph-safety__status"
+                className="hy-chip ph-small-control ph-safety__status"
                 data-state={deviceStatus.safetyState}
                 style={{ marginLeft: "auto" }}
               >
@@ -836,20 +1123,20 @@ export function ParentHome() {
                 className="ph-safety__signal"
                 data-state={deviceStatus.notification.state}
               >
-                <Bell size={14} strokeWidth={2.4} aria-hidden="true" />
+                <img className="ph-signal-3d-icon" src={asset("ui/clay/notification.webp")} alt="" />
                 {deviceStatus.notification.shortLabel}
               </span>
               <span
                 className="ph-safety__signal"
                 data-state={deviceStatus.location.state}
               >
-                <MapPin size={14} strokeWidth={2.4} aria-hidden="true" />
+                <img className="ph-signal-3d-icon" src={asset("ui/clay/location.webp")} alt="" />
                 {deviceStatus.location.shortLabel}
               </span>
             </div>
             {deviceStatus.notification.state === "attention" && (
               <div className="ph-safety__notification" data-state="attention">
-                <Bell size={18} strokeWidth={2.2} aria-hidden="true" />
+                <img className="ph-notice-3d-icon" src={asset("ui/clay/notification.webp")} alt="" />
                 <span>
                   <b>{deviceStatus.notification.label}</b>
                   <small>{deviceStatus.notification.detail}</small>
@@ -858,7 +1145,7 @@ export function ParentHome() {
             )}
             {deviceStatus.location.state === "attention" && (
               <div className="ph-safety__notification" data-state="attention">
-                <MapPin size={18} strokeWidth={2.2} aria-hidden="true" />
+                <img className="ph-notice-3d-icon" src={asset("ui/clay/location.webp")} alt="" />
                 <span>
                   <b>{deviceStatus.location.label}</b>
                   <small>{deviceStatus.location.detail}</small>
@@ -960,7 +1247,7 @@ export function ParentHome() {
               <span>{deviceStatus.freshnessLabel}</span>
               <button
                 type="button"
-                className="hy-press"
+                className="ph-small-control hy-press"
                 onClick={handleRefresh}
                 disabled={refreshing} aria-busy={refreshing}
               >
@@ -969,12 +1256,14 @@ export function ParentHome() {
             </div>
           </div>
         </section>
+        ))}
 
         {/* 준비물 · 숙제 */}
+        {renderHomeSection("supplies", (
         <section>
           <SectionHeader
             iconBg="var(--glass-tile)"
-            icon={<img src={asset("cat/study.webp")} alt="" />}
+            icon={<img src={asset("ui/clay/school.webp")} alt="" />}
             title={intl.formatMessage({ id: "parent.parentHome.copy050" })}
             action={
               <>
@@ -983,7 +1272,7 @@ export function ParentHome() {
                 </span>
                 <button
                   type="button"
-                  className="ph-prep-edit"
+                  className="ph-small-control ph-prep-edit hy-press"
                   onClick={() =>
                     navigate("/supplies", {
                       state: { dateKey: todayKey, childId: activeChild?.id },
@@ -1056,11 +1345,13 @@ export function ParentHome() {
             )}
           </div>
         </section>
+        ))}
 
         {/* 대화 프리뷰 */}
+        {renderHomeSection("memo", (
         <button type="button" className="hy-card ph-glass ph-memo hy-press" onClick={() => navigate("/parent/memo")}>
           <span className="ph-memo__icon">
-            <img src={asset("ui/chat-heart.webp")} alt="" />
+            <img src={asset("ui/clay/notification.webp")} alt="" />
           </span>
           <span className="ph-memo__main">
             <span className="ph-memo__from">{intl.formatMessage({ id: "parent.parentHome.copy057" })}</span>
@@ -1069,14 +1360,15 @@ export function ParentHome() {
             </span>
             <span className="ph-memo__time">{intl.formatMessage({ id: "parent.parentHome.copy059" })}</span>
           </span>
-          <ChevronRight size={20} strokeWidth={2.4} color="var(--fg-disabled)" style={{ flex: "none" }} />
         </button>
+        ))}
 
         {/* 바로가기 */}
+        {renderHomeSection("shortcuts", (
         <section>
           <SectionHeader
-            iconBg="var(--lav-soft)"
-            icon={<img src={asset("ui/sparkle.webp")} alt="" />}
+            iconBg="var(--glass-tile)"
+            icon={<img src={asset("ui/clay/history.webp")} alt="" />}
             title={intl.formatMessage({ id: "parent.parentHome.copy060" })}
           />
           <div className="ph-shortcuts">
@@ -1094,7 +1386,7 @@ export function ParentHome() {
                   <span
                     className="ph-shortcut__icon"
                   >
-                    <img src={asset(s.icon)} alt="" />
+                    <img src={asset(shortcutIconPaths[s.id] ?? s.icon)} alt="" />
                     {badge > 0 && (
                       <span className="ph-shortcut__badge">{badge > 99 ? "99+" : badge}</span>
                     )}
@@ -1107,7 +1399,9 @@ export function ParentHome() {
             })}
           </div>
         </section>
+        ))}
 
+        {renderHomeSection("membership", (
         <div className="ph-frost ph-frost--stack">
           <button
             type="button"
@@ -1117,7 +1411,7 @@ export function ParentHome() {
             onClick={() => navigate("/subscription")}
           >
             <span className="ph-subscription__icon">
-              <img src={asset("ui/menu-subscription.webp")} alt="" />
+              <img src={asset("ui/clay/subscription.webp")} alt="" />
             </span>
             <span className="ph-subscription__main">
               <span className="ph-subscription__title">{subscriptionCard.title}</span>
@@ -1126,7 +1420,6 @@ export function ParentHome() {
             </span>
             <span className="ph-subscription__action" aria-hidden="true">
               {subscriptionCard.actionLabel}
-              <ChevronRight size={16} strokeWidth={2.6} />
             </span>
           </button>
 
@@ -1138,7 +1431,7 @@ export function ParentHome() {
               onClick={() => setReferralOpen(true)}
             >
               <span className="ph-referral__icon" aria-hidden="true">
-                <Gift size={20} strokeWidth={2.4} />
+                <img src={asset("ui/clay/referral.webp")} alt="" />
               </span>
               <span className="ph-referral__headline">
                 {intl.formatMessage(
@@ -1152,6 +1445,7 @@ export function ParentHome() {
             </button>
           )}
         </div>
+        ))}
       </div>
       <ReferralRewardPanel
         open={referralOpen && family?.myRole === "parent"}

@@ -4,6 +4,7 @@
  */
 import { useCallback, useMemo } from "react";
 import { useQueries } from "@tanstack/react-query";
+import { useIntl } from "react-intl";
 import { qk } from "./keys";
 import {
   reverseGeocodeLocation,
@@ -25,6 +26,7 @@ export function useLocationLabels(
   locations: readonly ChildLocation[] | undefined,
   places: SavedPlace[] | undefined,
 ): (loc: ChildLocation) => string {
+  const intl = useIntl();
   const candidates = useMemo(() => {
     const out = new Map<string, ChildLocation>();
     for (const loc of locations ?? []) {
@@ -57,7 +59,9 @@ export function useLocationLabels(
 
   return useCallback(
     (loc: ChildLocation) =>
-      savedPlaceLabel(loc, places) ?? addressByKey.get(coordKey(loc)) ?? "주소 확인 중",
-    [addressByKey, places],
+      savedPlaceLabel(loc, places)
+      ?? addressByKey.get(coordKey(loc))
+      ?? intl.formatMessage({ id: "parent.location.addressLoading" }),
+    [addressByKey, intl, places],
   );
 }

@@ -299,7 +299,12 @@ export function AiFriendChat() {
   // 아직 실행하지 않고 아이 확인을 기다리는 도구(부모 메시지·일정 변경·전화).
   const [pendingTool, setPendingTool] = useState<AiToolResult | null>(null);
   // 기기 동작은 앱이 대신 하지 않는다 — 열어 줄 화면만 기억해 두고 아이가 누른다(2026-08-18).
-  const [deviceAction, setDeviceAction] = useState<{ target: DeviceActionTarget; phone: string | null } | null>(null);
+  const [deviceAction, setDeviceAction] = useState<{
+    target: DeviceActionTarget;
+    phone: string | null;
+    hour: number | null;
+    minute: number | null;
+  } | null>(null);
   const [reportTarget, setReportTarget] = useState<ChatBubble | null>(null);
   // 부모에게 충전을 부탁하는 중/부탁 완료 — 버튼 상태를 정직하게 나눈다.
   const [creditRequest, setCreditRequest] = useState<"idle" | "sending" | "sent">("idle");
@@ -423,7 +428,12 @@ export function AiFriendChat() {
         && isDeviceActionTarget(tool.target)
       ) {
         // 여는 것도 아이가 버튼을 눌렀을 때만 한다(대화 도착만으로 화면을 가로채지 않는다).
-        setDeviceAction({ target: tool.target, phone: tool.phone ?? null });
+        setDeviceAction({
+          target: tool.target,
+          phone: tool.phone ?? null,
+          hour: typeof tool.hour === "number" ? tool.hour : null,
+          minute: typeof tool.minute === "number" ? tool.minute : null,
+        });
       }
     },
     [setAccent],

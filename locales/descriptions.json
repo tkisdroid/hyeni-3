@@ -2115,6 +2115,13 @@
     "variables": {},
     "description": "부모에게 충전 요청을 보냈을 때의 토스트"
   },
+  "child.aiChat.device.alarm": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "아이 AI 친구가 시간이 채워진 기기 알람 설정 화면을 열 때 쓰는 버튼 문구"
+  },
   "child.aiChat.device.battery": {
     "namespace": "child",
     "audience": "child",
@@ -4941,6 +4948,20 @@
     "variables": {},
     "description": "core.crash.title.formal에 표시하는 사용자 안내 문구"
   },
+  "core.error.api.activeDeviceSession.child": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "다른 설치에서 같은 계정을 사용 중일 때 아이 말투로 기존 기기 로그아웃을 안내"
+  },
+  "core.error.api.activeDeviceSession.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "다른 설치에서 같은 계정을 사용 중일 때 기존 기기 로그아웃 후 재로그인을 정중히 안내"
+  },
   "core.error.api.client.child": {
     "namespace": "core",
     "audience": "child",
@@ -4968,6 +4989,20 @@
     "qualityTier": "B",
     "variables": {},
     "description": "core.error.api.currentPasswordRequired.formal에 표시하는 사용자 안내 문구"
+  },
+  "core.error.api.deviceIdentityRequired.child": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "로그인에 필요한 설치 식별자를 읽지 못했을 때 앱 재실행을 아이 말투로 안내"
+  },
+  "core.error.api.deviceIdentityRequired.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "로그인에 필요한 설치 식별자를 읽지 못했을 때 앱 재실행을 정중히 안내"
   },
   "core.error.api.expiredPairCode.child": {
     "namespace": "core",
@@ -12209,6 +12244,43 @@
     },
     "description": "parent.home.nearPlace에 표시하는 사용자 안내 문구"
   },
+  "parent.home.reorder.done": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "부모 홈 섹션 순서 편집 완료 버튼"
+  },
+  "parent.home.reorder.edit": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "부모 홈 섹션 순서 편집 시작 버튼"
+  },
+  "parent.home.reorder.handle": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "section": "string"
+    },
+    "description": "부모 홈 섹션 드래그 손잡이 접근성 이름"
+  },
+  "parent.home.reorder.hint": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "부모 홈 섹션 순서 변경 방법 안내"
+  },
+  "parent.home.reorder.title": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "부모 홈 섹션 순서 편집 영역 제목"
+  },
   "parent.home.schedulePlace": {
     "namespace": "parent",
     "audience": "parent",
@@ -12562,6 +12634,23 @@
       "count": "string"
     },
     "description": "부모 위치 화면 다국어 문구: stayCountShort"
+  },
+  "parent.location.history.visitedListAria": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "childName": "string",
+      "dayLabel": "string"
+    },
+    "description": "부모 위치 화면의 다녀온 곳 목록 접근성 이름"
+  },
+  "parent.location.history.visitedPlaces": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "부모 위치 화면의 다녀온 곳 목록 제목"
   },
   "parent.location.history.timelineAria": {
     "namespace": "parent",
@@ -19686,6 +19775,13 @@
     "variables": {},
     "description": "shared.memo.quick.parent.5에 표시하는 사용자 안내 문구"
   },
+  "shared.memo.quick.title": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "대화 입력창 위 빠른 문구 영역 제목"
+  },
   "shared.memo.report.harassment.child": {
     "namespace": "shared",
     "audience": "shared",
@@ -21348,6 +21444,13 @@
     "variables": {},
     "description": "shared.sticker.sentByParent에 표시하는 사용자 안내 문구"
   },
+  "shared.sticker.earnedAutomatically": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "일정 장소 조기 도착으로 자동 지급된 스티커의 아이 말투 안내"
+  },
   "shared.stickerSend.back": {
     "namespace": "shared",
     "audience": "parent",
@@ -21477,6 +21580,11 @@
       "count": "number"
     },
     "description": "선택 아이의 실제 받은 칭찬 수"
+  },
+  "shared.stickerSend.receivedBookTitle": {
+    "namespace": "shared",
+    "audience": "parent",
+    "description": "부모가 페어링된 아이의 현재 스티커북을 확인하는 섹션 제목"
   },
   "shared.stickerSend.screenTitle": {
     "namespace": "shared",

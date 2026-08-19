@@ -36,6 +36,7 @@
   "child.aiChat.creditRequest.failed": "ส่งไม่ได้ เดี๋ยวลองใหม่นะ",
   "child.aiChat.creditRequest.sent": "บอกผู้ปกครองให้แล้วนะ!",
   "child.aiChat.device.battery": "เปิดการตั้งค่าแบตเตอรี่",
+  "child.aiChat.device.alarm": "เปิดการตั้งปลุก",
   "child.aiChat.device.dial": "เปิดแอปโทรศัพท์",
   "child.aiChat.device.location": "เปิดการตั้งค่าตำแหน่ง",
   "child.aiChat.device.notifications": "เปิดการตั้งค่าการแจ้งเตือน",

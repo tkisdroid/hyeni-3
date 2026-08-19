@@ -12,19 +12,14 @@ test("경로 도구막대는 아이와 날짜를 한 그룹에서 명시한다",
   assert.match(toolbar, /onNext/);
 });
 
-test("타임라인 패널은 드래그 없이 명시적으로 펼치고 모든 상태를 정직하게 표시한다", () => {
-  assert.match(panel, /aria-expanded=\{expanded\}/);
-  assert.match(panel, /aria-controls="location-journey-stays"/);
-  assert.match(panel, /id="location-journey-stays"/);
-  assert.match(panel, /className="pl-journey__stays" hidden=\{!expanded\}/);
-  assert.match(panel, /<div className="pl-journey__body">/);
-  assert.doesNotMatch(panel, /className="pl-journey__body" hidden=\{!expanded\}/);
+test("이동 이력은 시간·장소 목록만 표시하고 모든 상태를 정직하게 표시한다", () => {
+  assert.match(panel, /className="pl-visited"/);
+  assert.match(panel, /parent.location.history.visitedPlaces/);
+  assert.match(panel, /<time>\{stay\.timeLabel\}<\/time>/);
+  assert.match(panel, /<strong>\{stay\.placeLabel\}<\/strong>/);
   assert.match(panel, /parent.location.history.noStay/);
   assert.match(panel, /parent.location.history.emptyDay/);
   assert.match(panel, /role=\{state === "error" \? "alert" : "status"\}/);
-  assert.match(panel, /min=\{sliderMin\}/);
-  assert.match(panel, /max=\{sliderMax\}/);
-  assert.match(panel, /disabled=\{sliderMax <= sliderMin\}/);
-  assert.match(panel, /aria-valuetext=\{`\$\{currentTimeLabel\} · \$\{currentWhere\}`\}/);
-  assert.doesNotMatch(panel, /onPointerDown|onPointerMove|onPointerUp|onTouchMove|onTouchEnd|setPointerCapture/);
+  assert.doesNotMatch(panel, /type="range"|pl-journey__replay|pl-journey__toggle/);
+  assert.doesNotMatch(panel, /stay\.dwellLabel|stay\.order/);
 });

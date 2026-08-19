@@ -67,6 +67,21 @@ CREATE TABLE "refresh_tokens" (
 
 CREATE INDEX IF NOT EXISTS "idx_refresh_user" ON "refresh_tokens" ("user_id");
 
+CREATE TABLE "account_device_sessions" (
+  "user_id" TEXT NOT NULL,
+  "device_id" TEXT NOT NULL,
+  "device_label" TEXT,
+  "device_platform" TEXT CHECK ("device_platform" IS NULL OR "device_platform" IN ('android','ios','web')),
+  "claimed_at" TEXT NOT NULL,
+  "last_seen_at" TEXT NOT NULL,
+  "expires_at" TEXT NOT NULL,
+  "revoked_at" TEXT,
+  PRIMARY KEY ("user_id")
+);
+
+CREATE INDEX IF NOT EXISTS "idx_account_device_sessions_expiry"
+  ON "account_device_sessions" ("expires_at", "revoked_at");
+
 CREATE TABLE "ai_credit_balances" (
   "id" TEXT NOT NULL,
   "family_id" TEXT NOT NULL,

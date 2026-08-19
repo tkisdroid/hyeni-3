@@ -16,6 +16,7 @@ import { normalizePhoneForStorage } from "@/transform/phone";
 import { reconcileApiUserWithFamilyMine } from "@/transform/sessionFamilySync";
 import { requestWithSessionOwnership } from "@/auth/sessionRequestOwnership";
 import { getPlatform, isNativePlatform } from "@/lib/native/plugins";
+import { getAuthDeviceDescriptor } from "@/lib/native/deviceIdentity";
 
 /**
  * 아이 기기 상태(웹 수집 부분집합). 서버 family_members.device_health(jsonb)에 저장.
@@ -264,7 +265,12 @@ export async function joinFamily(pairCode: string, options?: string | JoinFamily
 export async function joinFamilyAsParent(pairCode: string, parentName?: string): Promise<string> {
   const code = String(pairCode || "").toUpperCase().trim();
   if (!code) throw new Error("연결 코드를 입력해 주세요");
-  const data = await apiPost<SessionResponse>("/api/family/join-as-parent", { pairCode: code, name: parentName || "부모" });
+  const device = await getAuthDeviceDescriptor().catch(() => null);
+  const data = await apiPost<SessionResponse>("/api/family/join-as-parent", {
+    pairCode: code,
+    name: parentName || "부모",
+    ...(device ?? {}),
+  });
   adoptSession(data);
   if (!data.family_id) throw new Error("연결 코드를 찾지 못했습니다");
   return data.family_id;

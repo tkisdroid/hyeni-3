@@ -35,6 +35,7 @@ const messages = {
   "child.aiChat.creditRequest.done": "Dah minta!",
   "child.aiChat.creditRequest.failed": "Tak dapat hantar. Cuba lagi nanti, ya?",
   "child.aiChat.creditRequest.sent": "Saya dah beritahu ibu bapa awak!",
+  "child.aiChat.device.alarm": "Buka tetapan penggera",
   "child.aiChat.device.battery": "Buka tetapan bateri",
   "child.aiChat.device.dial": "Buka apl telefon",
   "child.aiChat.device.location": "Buka tetapan lokasi",

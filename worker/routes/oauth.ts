@@ -26,8 +26,12 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import type { Env, Vars, AuthUser } from "../types";
-import { signAccessToken } from "../lib/jwt";
-import { issueRefreshToken, isRefreshTokenIssuanceBlocked } from "../lib/refresh";
+import { isRefreshTokenIssuanceBlocked, normalizeDeviceId } from "../lib/refresh";
+import { issueAccountSession } from "../lib/authSession";
+import {
+  isActiveDeviceSessionExistsError,
+  isDeviceIdentityRequiredError,
+} from "../lib/accountDeviceSession";
 import { insertAuthIdentityForCurrentUser } from "../lib/authIdentity";
 import {
   decideOAuthLink,
@@ -467,7 +471,6 @@ oauth.post("/oauth/:provider/link", requireAuth, async (c) => {
   if (!code || !state || !transactionSecret) {
     return c.json({ error: "missing_params", required: ["code", "state", "transactionSecret"] }, 400);
   }
-
   const db = c.env.DB;
   const uid = c.get("user").sub;
   const claimed = await consumeOAuthTransaction(db, {
@@ -532,7 +535,14 @@ oauth.post("/oauth/:provider", async (c) => {
     return configError(c, provider);
   }
 
-  let body: { code?: unknown; state?: unknown; transactionSecret?: unknown };
+  let body: {
+    code?: unknown;
+    state?: unknown;
+    transactionSecret?: unknown;
+    device_install_id?: unknown;
+    device_label?: unknown;
+    device_platform?: unknown;
+  };
   try {
     body = await c.req.json();
   } catch {
@@ -544,6 +554,8 @@ oauth.post("/oauth/:provider", async (c) => {
   if (!code || !state || !transactionSecret) {
     return c.json({ error: "missing_params", required: ["code", "state", "transactionSecret"] }, 400);
   }
+  const deviceId = normalizeDeviceId(body.device_install_id);
+  if (!deviceId) return c.json({ error: "device_identity_required" }, 400);
   const claimed = await consumeOAuthTransaction(db, {
     provider,
     code,
@@ -662,11 +674,23 @@ oauth.post("/oauth/:provider", async (c) => {
   const familyId = canonicalFamily?.familyId ?? null;
   const role = canonicalFamily?.role ?? await resolveRole(db, userId);
   const user: AuthUser = { sub: userId, role, family_id: familyId, is_anonymous: false };
-  const accessToken = await signAccessToken(c.env, user);
+  let accessToken: string;
   let refreshToken: string;
   try {
-    refreshToken = await issueRefreshToken(db, userId, familyId);
+    const issued = await issueAccountSession(c.env, user, {
+      deviceId,
+      deviceLabel: body.device_label,
+      devicePlatform: body.device_platform,
+    });
+    accessToken = issued.accessToken;
+    refreshToken = issued.refreshToken;
   } catch (error) {
+    if (isDeviceIdentityRequiredError(error)) {
+      return c.json({ error: "device_identity_required" }, 400);
+    }
+    if (isActiveDeviceSessionExistsError(error)) {
+      return c.json({ error: "active_device_session_exists" }, 409);
+    }
     if (isRefreshTokenIssuanceBlocked(error)) {
       return c.json({ error: "account_deletion_in_progress" }, 409);
     }

@@ -383,16 +383,23 @@ test("상태·경고·포커스 표식은 흐려지지 않는 의미 토큰을 �
     assert.equal(exactRule(file, selector).get("color"), expected, `${file} ${selector}`);
   }
 
-  for (const [file, selector] of [
-    ["src/screens/admin/AdminAiPrompt.css", ".aap-textarea:focus, .aap-textarea:focus-visible"],
-    ["src/screens/shared/MemoChat.css", ".mc-input:focus, .mc-input:focus-visible"],
-  ]) {
-    assert.equal(
-      exactRule(file, selector).get("outline-color"),
-      "var(--focus-ring-color)",
-      `${file} ${selector}`,
-    );
-  }
+  const adminFocus = [
+    "src/screens/admin/AdminAiPrompt.css",
+    ".aap-textarea:focus, .aap-textarea:focus-visible",
+  ];
+  assert.equal(exactRule(...adminFocus).get("outline-color"), "var(--focus-ring-color)");
+
+  // 메시지 입력 중에는 사용자가 요청한 대로 색 테두리를 만들지 않는다. 투명 outline과
+  // 입력줄 전체의 중립 명도 링으로 키보드 focus 위치는 계속 구분한다.
+  const memoFocus = exactRule(
+    "src/screens/shared/MemoChat.css",
+    ".mc-input:focus, .mc-input:focus-visible",
+  );
+  assert.equal(memoFocus.get("outline"), "2px solid transparent");
+  assert.match(
+    exactRule("src/screens/shared/MemoChat.css", ".mc-inputbar:focus-within").get("box-shadow") ?? "",
+    /rgba\(38, 54, 74, 0\.16\)/,
+  );
 
   const parentFamily = readSource("src/screens/parent/ParentFamily.tsx");
   const parentLocation = readSource("src/screens/parent/ParentLocation.tsx");

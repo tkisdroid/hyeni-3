@@ -8,7 +8,7 @@
  */
 import { API_BASE } from "@/config/env";
 import { adoptNativeLocationSessionTokens, syncNativeLocationToken } from "@/lib/native/location";
-import { getAuthDeviceInstallId } from "@/lib/native/deviceIdentity";
+import { getAuthDeviceDescriptor } from "@/lib/native/deviceIdentity";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { ApiError, apiErrorCodeFromResponseBody } from "./errors";
 import { recordFeedbackDiagnostic } from "@/lib/feedbackDiagnostics";
@@ -76,15 +76,15 @@ async function doRefreshAccess(): Promise<RefreshResult> {
   if (!refreshToken) return "rejected"; // 회전 불가 → 세션 무효
   try {
     // 기기 바인딩 회전 — 스탬핑된 체인은 같은 deviceInstallId 를 제시해야 회전된다.
-    const deviceInstallId = await getAuthDeviceInstallId().catch(() => null);
+    const device = await getAuthDeviceDescriptor().catch(() => null);
     // 네이티브 bridge가 아직 준비되지 않은 순간 ID 없이 요청하면 device-bound 체인이 401을
     // 반환한다. 이를 세션 철회로 오판해 로그아웃하지 말고 다음 요청에서 다시 시도한다.
-    if (isNativePlatform() && !deviceInstallId) return "error";
+    if (isNativePlatform() && !device) return "error";
     const res = await doFetch("/auth/refresh", {
       method: "POST",
       body: JSON.stringify({
         refresh_token: refreshToken,
-        ...(deviceInstallId ? { device_install_id: deviceInstallId } : {}),
+        ...(device ?? {}),
       }),
     });
     // 요청 중 명시적 로그아웃 또는 다른 계정 로그인이 일어나면, 늦은 응답으로

@@ -816,18 +816,21 @@ export function MemoChat() {
 
       {/* 하단 입력 (composer) */}
       <div className="mc-composer">
-        <div className="mc-quick">
-          {quickReplies.map((q) => (
-            <button
-              key={q}
-              type="button"
-              className="mc-quick-btn hy-press"
-              onClick={() => setDraft(q)}
-              disabled={!scopeChild}
-            >
-              {q}
-            </button>
-          ))}
+        <div className="mc-quick-group">
+          <div className="mc-quick-title">{intl.formatMessage({ id: "shared.memo.quick.title" })}</div>
+          <div className="mc-quick">
+            {quickReplies.map((q) => (
+              <button
+                key={q}
+                type="button"
+                className="mc-quick-btn hy-press"
+                onClick={() => setDraft(q)}
+                disabled={!scopeChild}
+              >
+                {q}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="mc-inputbar">
           {/* 사진·위치 공유: R2 업로드와 위치 공유를 사용자 액션에서만 실행한다. */}
@@ -838,7 +841,7 @@ export function MemoChat() {
             onClick={() => fileRef.current?.click()}
             disabled={sharing !== "" || !scopeChild}
           >
-            <ImageIcon size={19} strokeWidth={2} />
+            <ImageIcon size={16} strokeWidth={2} />
           </button>
           <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => void onPickImage(e)} />
           <button
@@ -848,7 +851,7 @@ export function MemoChat() {
             onClick={() => void shareLocation()}
             disabled={sharing !== "" || !scopeChild}
           >
-            <MapPin size={19} strokeWidth={2} />
+            <MapPin size={16} strokeWidth={2} />
           </button>
           <input
             className="mc-input"

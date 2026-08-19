@@ -300,6 +300,40 @@ public class LocationPlugin extends Plugin {
         call.resolve(result);
     }
 
+    /**
+     * 권한 설정 화면에서 앱으로 돌아온 즉시 WebView가 최신 세션으로 저장할 수 있는
+     * 전체 device_health 스냅샷. 네트워크 저장은 JS API client가 담당해 만료 access token도
+     * 정상 refresh한 뒤 기록하므로, FCM·위치 서비스 실행 여부에 의존하지 않는다.
+     */
+    @PluginMethod
+    public void getDeviceHealthSnapshot(PluginCall call) {
+        String familyId = call.getString("familyId", "");
+        String userId = call.getString("userId", "");
+        if (familyId == null || familyId.trim().isEmpty()
+                || userId == null || userId.trim().isEmpty()) {
+            call.reject("familyId and userId are required");
+            return;
+        }
+
+        final String targetFamilyId = familyId.trim();
+        final String targetUserId = userId.trim();
+        new Thread(() -> {
+            try {
+                JSONObject payload = DeviceStatusReporter.buildPayload(
+                    getContext().getApplicationContext(),
+                    targetFamilyId,
+                    targetUserId,
+                    null,
+                    null
+                );
+                call.resolve(JSObject.fromJSONObject(payload));
+            } catch (Exception error) {
+                Log.w(TAG, "getDeviceHealthSnapshot failed", error);
+                call.reject("기기 상태를 확인할 수 없습니다", error);
+            }
+        }, "hyeni-device-health-snapshot").start();
+    }
+
     @PluginMethod
     public void stopService(PluginCall call) {
         SharedPreferences prefs = getContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);

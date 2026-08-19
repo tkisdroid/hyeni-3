@@ -7,9 +7,9 @@ import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { useMyFamily } from "@/queries/useFamily";
 import { useActiveChild } from "@/app/activeChild";
-import { useSendSticker, useStickerSummary } from "@/queries/useStickers";
+import { useReceivedStickers, useSendSticker, useStickerSummary } from "@/queries/useStickers";
 import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
-import { stickerSendDateKey } from "@/transform/stickerBook";
+import { buildStickerBook, stickerSendDateKey } from "@/transform/stickerBook";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import "./StickerSend.css";
@@ -46,16 +46,6 @@ export function StickerSend() {
   const summaryQuery = useStickerSummary();
   const family = familyQuery.data;
   const summary = summaryQuery.data;
-  const stickerQueryState = resolveQueryTruthState([
-    { isLoading: familyQuery.isLoading, isError: familyQuery.isError },
-    { isLoading: summaryQuery.isLoading, isError: summaryQuery.isError },
-  ]);
-  const stickerDataMissing = stickerQueryState === "ready" && (!family || summary === undefined);
-  const stickerDataReady = stickerQueryState === "ready" && !stickerDataMissing;
-  const stickerRefetching = familyQuery.isFetching || summaryQuery.isFetching;
-  const retryStickerSend = async (): Promise<void> => {
-    await Promise.all([familyQuery.refetch(), summaryQuery.refetch()]);
-  };
   const sendSticker = useSendSticker();
 
   const [pickedId, setPickedId] = useState<string>(STICKERS[0].id);
@@ -79,6 +69,33 @@ export function StickerSend() {
       null,
     [children, selectedUserId, activeChild],
   );
+  const receivedQuery = useReceivedStickers(targetChild?.user_id ?? null);
+  const nowMs = useMemo(() => Date.now(), []);
+  // 아이 스티커북과 동일한 API·동일한 변환기를 사용해 부모 화면의 보유 현황이 반드시 일치한다.
+  const receivedBook = useMemo(
+    () => buildStickerBook(receivedQuery.data ?? [], nowMs, new Set<string>()),
+    [receivedQuery.data, nowMs],
+  );
+  const stickerQueryState = resolveQueryTruthState([
+    { isLoading: familyQuery.isLoading, isError: familyQuery.isError },
+    { isLoading: summaryQuery.isLoading, isError: summaryQuery.isError },
+    {
+      isLoading: targetChild ? receivedQuery.isLoading : false,
+      isError: targetChild ? receivedQuery.isError : false,
+    },
+  ]);
+  const stickerDataMissing = stickerQueryState === "ready" && (
+    !family || summary === undefined || (targetChild != null && receivedQuery.data === undefined)
+  );
+  const stickerDataReady = stickerQueryState === "ready" && !stickerDataMissing;
+  const stickerRefetching = familyQuery.isFetching || summaryQuery.isFetching || receivedQuery.isFetching;
+  const retryStickerSend = async (): Promise<void> => {
+    await Promise.all([
+      familyQuery.refetch(),
+      summaryQuery.refetch(),
+      ...(targetChild ? [receivedQuery.refetch()] : []),
+    ]);
+  };
   const childName = targetChild?.name
     || intl.formatMessage({ id: "shared.stickerSend.childFallback" });
 
@@ -230,6 +247,36 @@ export function StickerSend() {
             )}
           </div>
         </div>
+
+        {/* 아이 스티커북과 같은 정본 데이터로 보여주는 현재 보유 현황. */}
+        <section className="ss-received" aria-labelledby="ss-received-title">
+          <div className="ss-received__head">
+            <div>
+              <div id="ss-received-title" className="ss-pick-title">
+                {intl.formatMessage({ id: "shared.stickerSend.receivedBookTitle" })}
+              </div>
+              <p>{intl.formatMessage(
+                { id: "shared.stickerSend.receivedCount" },
+                { count: receivedQuery.data?.length ?? 0 },
+              )}</p>
+            </div>
+            <img src={asset("ui/clay/sticker.webp")} alt="" />
+          </div>
+          <div className="hy-card ss-received__grid">
+            {receivedBook.slots.map((slot) => (
+              <div
+                key={slot.key}
+                className="ss-received__slot"
+                data-received={slot.got}
+                aria-label={`${slot.label} ${slot.count}`}
+              >
+                {slot.count > 1 ? <span>{slot.count}</span> : null}
+                <img src={asset(slot.img)} alt="" />
+                <small>{slot.label}</small>
+              </div>
+            ))}
+          </div>
+        </section>
 
         {/* 상황별 선택 그리드 */}
         <div>

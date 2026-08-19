@@ -6,6 +6,7 @@ const EARTH_RADIUS_M = 6_371_000;
 
 export interface ScheduleArrivalCandidate {
   eventId: string;
+  dateKey?: string;
   startAtMs: number;
   lat: number;
   lng: number;

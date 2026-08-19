@@ -1,4 +1,5 @@
-import { AlertTriangle, ChevronLeft, FileClock, RefreshCw, ShieldCheck } from "lucide-react";
+import { AlertTriangle, ChevronLeft, RefreshCw } from "lucide-react";
+import { asset } from "@/lib/assets";
 import { useNavigate } from "react-router";
 import { useIntl, type IntlShape } from "react-intl";
 import { useRemoteListenAudit } from "@/queries/useRemoteAudit";
@@ -80,7 +81,7 @@ export function RemoteAudioAudit() {
       <div className="raa-content">
         <section className="raa-hero">
           <div className="raa-hero__icon">
-            <ShieldCheck size={30} strokeWidth={2.2} />
+            <img src={asset("ui/clay/privacy.webp")} alt="" />
           </div>
           <div>
             <b>{intl.formatMessage({ id: "notifications.remoteAudio.audit.heroTitle" })}</b>
@@ -90,7 +91,7 @@ export function RemoteAudioAudit() {
 
         <section className="hy-card raa-section" aria-busy={audit.isLoading || audit.isFetching}>
           <div className="raa-section__head">
-            <FileClock size={20} strokeWidth={2.2} />
+            <img src={asset("ui/clay/remote-audio-history.webp")} alt="" />
             <b>{intl.formatMessage({ id: "notifications.remoteAudio.audit.listTitle" })}</b>
           </div>
           {audit.isLoading ? (
@@ -109,7 +110,7 @@ export function RemoteAudioAudit() {
             </div>
           ) : items.length === 0 ? (
             <div className="raa-empty">
-              <FileClock size={34} strokeWidth={2.1} />
+              <img className="raa-empty__icon" src={asset("ui/clay/remote-audio-history.webp")} alt="" />
               <b>{intl.formatMessage({ id: "notifications.remoteAudio.audit.emptyTitle" })}</b>
               <p>{intl.formatMessage({ id: "notifications.remoteAudio.audit.emptyDescription" })}</p>
             </div>
@@ -140,7 +141,7 @@ export function RemoteAudioAudit() {
 
         <section className="hy-card raa-section">
           <div className="raa-section__head">
-            <ShieldCheck size={20} strokeWidth={2.2} />
+            <img src={asset("ui/clay/privacy.webp")} alt="" />
             <b>{intl.formatMessage({ id: "notifications.remoteAudio.audit.privacyTitle" })}</b>
           </div>
           <div className="raa-note hy-explain">

@@ -2,6 +2,7 @@ import { describeChildNotificationChange } from "./aiChildSettingsTools.js";
 
 /** 기기 화면 이름(아이에게 보이는 말). 화이트리스트 밖 값은 여기 없다. */
 const DEVICE_ACTION_REPLY = Object.freeze({
+    alarm: "알람 설정을",
     sound: "소리 설정을",
     wifi: "와이파이 설정을",
     battery: "배터리 설정을",
@@ -200,6 +201,14 @@ export function buildToolResultChildReply(result) {
         return `${text(result.accentLabel, "새")} 색으로 바꿨어! 마음에 들어?`;
     }
     if (toolName === "openDeviceAction") {
+        if (result.target === "alarm") {
+            const hour = typeof result.hour === "number" ? result.hour : null;
+            const minute = typeof result.minute === "number" ? result.minute : null;
+            const timeLabel = hour == null || minute == null
+                ? ""
+                : `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")} `;
+            return `${timeLabel}알람 설정 화면을 준비했어. 아래 버튼을 누르고 시간을 확인한 다음 저장해 줘!`;
+        }
         // 앱이 대신 바꾸지 않는다 — 못 하는 걸 한 척하지 않고 화면만 열어 준다.
         const label = DEVICE_ACTION_REPLY[text(result.target, "")] ?? "그 설정";
         return `그건 내가 대신 못 바꿔. ${label} 열어 줄게, 거기서 바꿔 줘!`;

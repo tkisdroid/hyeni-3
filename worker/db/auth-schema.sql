@@ -57,3 +57,17 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
   rotated_at TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_refresh_user ON refresh_tokens(user_id);
+
+-- 같은 계정으로 여러 설치가 동시에 가족/아이 정보를 열람하지 못하게 하는 활성 설치 잠금.
+CREATE TABLE IF NOT EXISTS account_device_sessions (
+  user_id TEXT PRIMARY KEY,
+  device_id TEXT NOT NULL,
+  device_label TEXT,
+  device_platform TEXT CHECK (device_platform IS NULL OR device_platform IN ('android','ios','web')),
+  claimed_at TEXT NOT NULL,
+  last_seen_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  revoked_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_account_device_sessions_expiry
+  ON account_device_sessions(expires_at, revoked_at);

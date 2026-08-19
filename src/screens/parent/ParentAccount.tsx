@@ -1,7 +1,7 @@
 import { useEffect, useId, useState, useRef } from "react";
 import type { ChangeEvent } from "react";
 import { useNavigate } from "react-router";
-import { ChevronLeft, KeyRound, LogOut, ShieldAlert, Trash2 } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { resizeImageFileSafe } from "@/lib/imageResize";
 import { formatPhoneDisplay } from "@/transform/phoneFormat";
@@ -409,7 +409,7 @@ export function ParentAccount() {
             aria-busy={logoutBusy}
           >
             <span className="pa-action__ic pa-action__ic--neutral">
-              <LogOut size={18} strokeWidth={2.2} />
+              <img src={asset("ui/clay/logout.webp")} alt="" />
             </span>
             <span className="pa-action__label">{logoutBusy ? intl.formatMessage({ id: "parent.parentAccount.copy023" }) : intl.formatMessage({ id: "parent.parentSettings.copy023" })}</span>
           </button>
@@ -420,7 +420,7 @@ export function ParentAccount() {
             onClick={() => setConfirmDelete(true)}
           >
             <span className="pa-action__ic pa-action__ic--danger">
-              <ShieldAlert size={18} strokeWidth={2.2} />
+              <img src={asset("ui/clay/trash.webp")} alt="" />
             </span>
             <span className="pa-action__label pa-action__label--danger">{intl.formatMessage({ id: "parent.parentSettings.copy024" })}</span>
           </button>
@@ -454,7 +454,7 @@ export function ParentAccount() {
           />
           <div className="pa-modal__card">
             <div className="pa-modal__emoji" aria-hidden="true">
-              <Trash2 size={34} strokeWidth={2.2} />
+              <img src={asset("ui/clay/trash.webp")} alt="" />
             </div>
             <div id={deleteTitleId} className="pa-modal__title">{intl.formatMessage({ id: "parent.parentSettings.copy028" })}</div>
             <p id={deleteDescriptionId} className="pa-modal__body">
@@ -506,7 +506,7 @@ export function ParentAccount() {
           />
           <div className="pa-modal__card">
             <div className="pa-modal__emoji">
-              <KeyRound size={34} strokeWidth={2.2} />
+              <img src={asset("ui/clay/privacy.webp")} alt="" />
             </div>
             <div id={passwordTitleId} className="pa-modal__title">{intl.formatMessage({ id: "parent.parentAccount.copy020" })}</div>
             <div id={passwordDescriptionId} className="pa-modal__fields">

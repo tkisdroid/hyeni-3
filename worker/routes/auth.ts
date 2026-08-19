@@ -10,6 +10,11 @@ import {
   rotateRefreshToken,
   normalizeDeviceId,
 } from "../lib/refresh";
+import { issueAccountSession } from "../lib/authSession";
+import {
+  isActiveDeviceSessionExistsError,
+  isDeviceIdentityRequiredError,
+} from "../lib/accountDeviceSession";
 import { resolveCanonicalFamilyMembership } from "../db/authz";
 import { pgNow, tsNorm } from "../lib/time";
 import { parsePhone, e164ToGoTruePhone, e164ToLocalKr } from "../lib/phone";
@@ -111,13 +116,20 @@ async function clearLoginFailures(db: D1Database, loginId: string): Promise<void
 
 // POST /auth/login-password — 전화+비밀번호 로그인 (login_id 기반)
 auth.post("/login-password", async (c) => {
-  let body: { loginId?: string; password?: string; device_install_id?: unknown };
+  let body: {
+    loginId?: string;
+    password?: string;
+    device_install_id?: unknown;
+    device_label?: unknown;
+    device_platform?: unknown;
+  };
   try {
     body = await c.req.json();
   } catch {
     return c.json({ error: "bad_request" }, 400);
   }
   const loginDeviceId = normalizeDeviceId(body?.device_install_id);
+  if (!loginDeviceId) return c.json({ error: "device_identity_required" }, 400);
   const loginId = String(body?.loginId ?? "").trim().toLowerCase();
   const password = String(body?.password ?? "");
   if (!loginId || !password) {
@@ -156,11 +168,23 @@ auth.post("/login-password", async (c) => {
     family_id: familyId,
     is_anonymous: !!Number(row.anon),
   };
-  const accessToken = await signAccessToken(c.env, user);
+  let accessToken: string;
   let refreshToken: string;
   try {
-    refreshToken = await issueRefreshToken(c.env.DB, row.id, familyId, loginDeviceId);
+    const issued = await issueAccountSession(c.env, user, {
+      deviceId: loginDeviceId,
+      deviceLabel: body.device_label,
+      devicePlatform: body.device_platform,
+    });
+    accessToken = issued.accessToken;
+    refreshToken = issued.refreshToken;
   } catch (error) {
+    if (isDeviceIdentityRequiredError(error)) {
+      return c.json({ error: "device_identity_required" }, 400);
+    }
+    if (isActiveDeviceSessionExistsError(error)) {
+      return c.json({ error: "active_device_session_exists" }, 409);
+    }
     if (isRefreshTokenIssuanceBlocked(error)) {
       return c.json({ error: "account_deletion_in_progress" }, 409);
     }
@@ -190,13 +214,20 @@ auth.post("/login-password", async (c) => {
 // ES256 access + 불투명 refresh 를 발급한다. 페어링(join_family) 전까지 가족이 없다.
 auth.post("/anonymous", async (c) => {
   let anonDeviceId: string | null = null;
+  let anonDeviceLabel: unknown;
+  let anonDevicePlatform: unknown;
   try {
-    const body = await c.req.json<{ device_install_id?: unknown }>();
+    const body = await c.req.json<{
+      device_install_id?: unknown;
+      device_label?: unknown;
+      device_platform?: unknown;
+    }>();
     anonDeviceId = normalizeDeviceId(body?.device_install_id);
+    anonDeviceLabel = body?.device_label;
+    anonDevicePlatform = body?.device_platform;
   } catch {
-    /* 본문 없는 레거시 호출 허용 */
+    /* 아래 설치 식별자 필수 게이트에서 거부 */
   }
-
   const protection = await claimAnonymousSignupProtection(c.env.DB, {
     cfConnectingIp: c.req.header("CF-Connecting-IP"),
     deviceInstallId: anonDeviceId,
@@ -233,11 +264,24 @@ auth.post("/anonymous", async (c) => {
   let accessToken: string;
   let refreshToken: string;
   try {
-    accessToken = await signAccessToken(c.env, user);
-    refreshToken = await issueRefreshToken(c.env.DB, userId, null, anonDeviceId);
+    if (anonDeviceId) {
+      const issued = await issueAccountSession(c.env, user, {
+        deviceId: anonDeviceId,
+        deviceLabel: anonDeviceLabel,
+        devicePlatform: anonDevicePlatform,
+      });
+      accessToken = issued.accessToken;
+      refreshToken = issued.refreshToken;
+    } else {
+      // 미페어링 익명 계정은 가족/아이 데이터를 볼 수 없으므로 구버전 온보딩을 유지한다.
+      // 실제 페어링 세션 재발급에서는 설치 식별자를 필수로 받는다.
+      accessToken = await signAccessToken(c.env, user);
+      refreshToken = await issueRefreshToken(c.env.DB, userId, null, null);
+    }
   } catch {
     try {
       await c.env.DB.batch([
+        c.env.DB.prepare("DELETE FROM account_device_sessions WHERE user_id=?").bind(userId),
         c.env.DB.prepare("DELETE FROM refresh_tokens WHERE user_id=?").bind(userId),
         c.env.DB
           .prepare(
@@ -277,7 +321,12 @@ auth.post("/anonymous", async (c) => {
 // POST /auth/refresh — 불투명 refresh 토큰 회전 후 새 access 발급.
 // device_install_id 를 함께 받으면 기기 바인딩 회전(스탬핑된 체인은 같은 기기만 회전 가능).
 auth.post("/refresh", async (c) => {
-  let body: { refresh_token?: string; device_install_id?: unknown };
+  let body: {
+    refresh_token?: string;
+    device_install_id?: unknown;
+    device_label?: unknown;
+    device_platform?: unknown;
+  };
   try {
     body = await c.req.json();
   } catch {
@@ -286,7 +335,23 @@ auth.post("/refresh", async (c) => {
   const old = String(body?.refresh_token ?? "");
   if (!old) return c.json({ error: "invalid_token" }, 401);
 
-  const rot = await rotateRefreshToken(c.env.DB, old, normalizeDeviceId(body?.device_install_id));
+  let rot: Awaited<ReturnType<typeof rotateRefreshToken>>;
+  try {
+    rot = await rotateRefreshToken(
+      c.env.DB,
+      old,
+      normalizeDeviceId(body?.device_install_id),
+      { deviceLabel: body.device_label, devicePlatform: body.device_platform },
+    );
+  } catch (error) {
+    if (isActiveDeviceSessionExistsError(error)) {
+      return c.json({ error: "device_session_inactive" }, 401);
+    }
+    if (isDeviceIdentityRequiredError(error)) {
+      return c.json({ error: "device_identity_required" }, 401);
+    }
+    throw error;
+  }
   if (!rot) return c.json({ error: "invalid_token" }, 401);
 
   // 익명 세션도 갱신 가능해야 한다. 익명 user 는 family_members 가 없어 resolveRole 이
@@ -309,6 +374,7 @@ auth.post("/refresh", async (c) => {
     role,
     family_id: familyId,
     is_anonymous: isAnon,
+    device_id: rot.deviceId,
   };
   const accessToken = await signAccessToken(c.env, user);
   return c.json({
@@ -318,6 +384,40 @@ auth.post("/refresh", async (c) => {
       token_type: "bearer",
     },
   });
+});
+
+// POST /auth/logout — 현재 설치의 활성 잠금과 모든 refresh 체인을 함께 철회한다.
+// 클라이언트는 이 성공 응답을 받은 뒤에만 로컬 세션을 지운다.
+auth.post("/logout", requireAuth, async (c) => {
+  const user = c.get("user");
+  let body: { device_install_id?: unknown } = {};
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "bad_request" }, 400);
+  }
+  const deviceId = normalizeDeviceId(user.device_id ?? body.device_install_id);
+  if (!deviceId) return c.json({ error: "device_identity_required" }, 400);
+  if (user.device_id && normalizeDeviceId(body.device_install_id) !== user.device_id) {
+    return c.json({ error: "device_identity_mismatch" }, 403);
+  }
+  const now = new Date().toISOString();
+  await c.env.DB.batch([
+    c.env.DB
+      .prepare(
+        `UPDATE refresh_tokens SET revoked=1
+          WHERE user_id=? AND device_id=? AND revoked=0`,
+      )
+      .bind(user.sub, deviceId),
+    c.env.DB
+      .prepare(
+        `UPDATE account_device_sessions
+            SET revoked_at=?, last_seen_at=?
+          WHERE user_id=? AND device_id=? AND revoked_at IS NULL`,
+      )
+      .bind(now, now, user.sub, deviceId),
+  ]);
+  return c.json({ ok: true });
 });
 
 // POST /auth/change-password — 현재 비밀번호 확인 후 새 비밀번호 저장.
@@ -427,6 +527,8 @@ auth.post("/signup/verify", async (c) => {
     gender?: unknown;
     birthdate?: unknown;
     device_install_id?: unknown;
+    device_label?: unknown;
+    device_platform?: unknown;
   };
   try {
     body = await c.req.json();
@@ -455,6 +557,7 @@ auth.post("/signup/verify", async (c) => {
   if (!verified.ok) {
     return c.json({ error: verified.error }, (verified.status ?? 401) as 401 | 429);
   }
+  if (!signupDeviceId) return c.json({ error: "device_identity_required" }, 400);
 
   // select-then-write 중복 가드 — OTP 통과 후 재확인(동시 가입/직접 호출 방어).
   if (await isPhoneTaken(db, phone)) return c.json({ error: "phone_exists" }, 409);
@@ -503,8 +606,22 @@ auth.post("/signup/verify", async (c) => {
 
   // 가입 직후엔 가족이 없다(페어링/가족 생성은 후속). login-password 와 동일한 세션 형태.
   const user: AuthUser = { sub: userId, role: "parent", family_id: null, is_anonymous: false };
-  const accessToken = await signAccessToken(c.env, user);
-  const refreshToken = await issueRefreshToken(db, userId, null, signupDeviceId);
+  let accessToken: string;
+  let refreshToken: string;
+  try {
+    const issued = await issueAccountSession(c.env, user, {
+      deviceId: signupDeviceId,
+      deviceLabel: body.device_label,
+      devicePlatform: body.device_platform,
+    });
+    accessToken = issued.accessToken;
+    refreshToken = issued.refreshToken;
+  } catch (error) {
+    if (isDeviceIdentityRequiredError(error)) {
+      return c.json({ error: "device_identity_required" }, 400);
+    }
+    throw error;
+  }
 
   return c.json({
     user: {

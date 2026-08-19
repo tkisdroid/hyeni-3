@@ -42,6 +42,7 @@ function requiredSchemaColumns(
 const REQUIRED_SCHEMA_OBJECTS: readonly RequiredSchemaObject[] = [
   { type: "table", name: "users" },
   { type: "table", name: "refresh_tokens" },
+  { type: "table", name: "account_device_sessions" },
   { type: "table", name: "families" },
   { type: "table", name: "family_members" },
   { type: "table", name: "events" },
@@ -88,6 +89,7 @@ const REQUIRED_SCHEMA_OBJECTS: readonly RequiredSchemaObject[] = [
   { type: "index", name: "uq_ai_parent_settings_family_child" },
   { type: "index", name: "idx_fcm_tokens_token_active_unique" },
   { type: "index", name: "idx_push_sent_event_notif" },
+  { type: "index", name: "idx_account_device_sessions_expiry" },
   { type: "index", name: "idx_push_subscriptions_endpoint_active_unique" },
   { type: "index", name: "idx_premium_funnel_received" },
   { type: "index", name: "idx_premium_funnel_event_received" },

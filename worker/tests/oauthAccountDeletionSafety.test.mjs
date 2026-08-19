@@ -225,6 +225,9 @@ async function runExistingAccountOAuthDeletionRace(provider) {
         code: "provider-code",
         state: prepared.state,
         transactionSecret: prepared.transactionSecret,
+        device_install_id: "device-oauth-race",
+        device_label: "테스트 기기",
+        device_platform: "web",
       }),
     });
     await db.writeStarted;
@@ -289,7 +292,13 @@ test("OAuth bridge OTP caller와 다른 전화 계정 삭제 중에는 target se
   const verification = request(app, db, "/api/auth/oauth-bridge/verify-otp", {
     method: "POST",
     headers: { Authorization: `Bearer ${callerToken}` },
-    body: JSON.stringify({ phone, token: otp }),
+    body: JSON.stringify({
+      phone,
+      token: otp,
+      device_install_id: "device-bridge-race",
+      device_label: "테스트 기기",
+      device_platform: "web",
+    }),
   });
   await db.writeStarted;
   beginDeletion(sqlite, "phone-target");

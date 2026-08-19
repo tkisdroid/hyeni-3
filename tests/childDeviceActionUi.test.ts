@@ -18,7 +18,7 @@ const koChild = JSON.parse(read("locales/ko/child.json")) as Record<string, stri
 
 test("열 수 있는 화면은 서버와 같은 화이트리스트다", () => {
   assert.deepEqual([...DEVICE_ACTION_TARGETS].sort(), [
-    "battery", "dial", "location", "notifications", "sms", "sound", "wifi",
+    "alarm", "battery", "dial", "location", "notifications", "sms", "sound", "wifi",
   ]);
   assert.equal(isDeviceActionTarget("sound"), true);
   assert.equal(isDeviceActionTarget("ringer_silent"), false);
@@ -37,7 +37,7 @@ test("모든 화면에 아이가 누를 버튼 문구가 있다", () => {
 
 test("대화 화면은 도착만으로 화면을 열지 않고 버튼을 세운다", () => {
   assert.match(chat, /tool\.toolName === "openDeviceAction"/);
-  assert.match(chat, /setDeviceAction\(\{ target: tool\.target, phone: tool\.phone \?\? null \}\)/);
+  assert.match(chat, /target: tool\.target,[\s\S]{0,220}hour: typeof tool\.hour === "number"/);
   assert.match(chat, /className="afc-device__open hy-press"/);
   assert.match(chat, /onClick=\{\(\) => \{[\s\S]{0,200}openDeviceAction\(deviceAction\)/);
   // 열지 못하면 연 척하지 않고 알린다.
@@ -48,16 +48,23 @@ test("네이티브는 화면만 열고 발신·전송·벨소리 변경을 하�
   assert.match(plugin, /Intent\.ACTION_DIAL/);
   assert.match(plugin, /Intent\.ACTION_SENDTO/);
   assert.match(plugin, /Settings\.ACTION_SOUND_SETTINGS/);
+  assert.match(plugin, /AlarmClock\.ACTION_SET_ALARM/);
+  assert.match(plugin, /AlarmClock\.EXTRA_SKIP_UI, false/);
+  assert.match(plugin, /AlarmClock\.EXTRA_HOUR, hour/);
+  assert.match(plugin, /AlarmClock\.EXTRA_MINUTES, minute/);
   // 자동 발신·자동 전송·벨소리 변경 API 는 쓰지 않는다.
   // 주석에는 "ACTION_CALL 을 쓰지 않는다"고 적혀 있으므로 실제 호출 형태로 검사한다.
   assert.doesNotMatch(plugin, /Intent\.ACTION_CALL/);
   assert.doesNotMatch(plugin, /SmsManager|sendTextMessage/);
   assert.doesNotMatch(plugin, /setRingerMode|RINGER_MODE|setStreamVolume|setInterruptionFilter/);
+  assert.doesNotMatch(plugin, /AlarmManager|setExact|setAlarmClock/);
 });
 
 test("새 권한 없이 동작한다", () => {
   const manifest = read("android/app/src/main/AndroidManifest.xml");
   assert.doesNotMatch(manifest, /ACCESS_NOTIFICATION_POLICY|MODIFY_AUDIO_SETTINGS_PRIVILEGED|SEND_SMS/);
+  assert.match(manifest, /com\.android\.alarm\.permission\.SET_ALARM/);
+  assert.doesNotMatch(manifest, /SCHEDULE_EXACT_ALARM|USE_EXACT_ALARM/);
   // 플러그인은 등록돼 있어야 실제로 열린다.
   assert.match(
     read("android/app/src/main/java/com/hyeni/calendar/MainActivity.java"),

@@ -1288,10 +1288,19 @@ chat.post("/child-chat", requireAuth, async (c) => {
     } else if (CONTACT_DEVICE_ACTION_TARGETS.includes(target) && !contactActionsAllowed) {
       toolResult = { ok: false, toolName: "openDeviceAction", error: "contact_actions_disabled" };
     } else {
+      const alarmHour = target === "alarm" && typeof agentPlan.toolArgs.hour === "number"
+        && Number.isInteger(agentPlan.toolArgs.hour) && agentPlan.toolArgs.hour >= 0 && agentPlan.toolArgs.hour <= 23
+        ? agentPlan.toolArgs.hour
+        : null;
+      const alarmMinute = target === "alarm" && typeof agentPlan.toolArgs.minute === "number"
+        && Number.isInteger(agentPlan.toolArgs.minute) && agentPlan.toolArgs.minute >= 0 && agentPlan.toolArgs.minute <= 59
+        ? agentPlan.toolArgs.minute
+        : null;
       toolResult = {
         ok: true,
         toolName: "openDeviceAction",
         target,
+        ...(alarmHour != null && alarmMinute != null ? { hour: alarmHour, minute: alarmMinute } : {}),
         clientAction: "openDeviceAction",
       };
     }

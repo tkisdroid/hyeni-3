@@ -85,6 +85,11 @@ function createDb() {
       issued_at TEXT, expires_at TEXT, revoked INTEGER NOT NULL DEFAULT 0,
       rotated_to TEXT, rotated_at TEXT
     );
+    CREATE TABLE account_device_sessions (
+      user_id TEXT PRIMARY KEY, device_id TEXT NOT NULL, device_label TEXT,
+      device_platform TEXT, claimed_at TEXT NOT NULL, last_seen_at TEXT NOT NULL,
+      expires_at TEXT NOT NULL, revoked_at TEXT
+    );
     CREATE TABLE account_deletion_scopes (
       job_id TEXT NOT NULL, scope_type TEXT NOT NULL, scope_id TEXT NOT NULL,
       created_at TEXT NOT NULL, PRIMARY KEY(scope_type, scope_id)
@@ -228,6 +233,9 @@ test("동일 transaction 병렬 교환은 정확히 하나만 provider fetch·�
         code: "parallel-code",
         state: prepared.body.state,
         transactionSecret: prepared.body.transactionSecret,
+        device_install_id: "device-oauth-security",
+        device_label: "테스트 기기",
+        device_platform: "web",
       }),
     });
     const [first, second] = await Promise.all([request(), request()]);

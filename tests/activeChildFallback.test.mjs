@@ -28,6 +28,8 @@ test("명시적 수신자 화면도 활성 아이가 없으면 첫 아이를 임
     /children\.find\(\(c\) => c\.user_id === selectedUserId\)[\s\S]{0,180}children\.find\(\(c\) => c\.id === activeChild\?\.id\)/,
   );
   assert.match(stickerSend, /user_id: targetChild\.user_id/);
+  assert.match(stickerSend, /useReceivedStickers\(targetChild\?\.user_id \?\? null\)/);
+  assert.match(stickerSend, /buildStickerBook\(receivedQuery\.data \?\? \[\], nowMs/);
   assert.match(stickerSend, /children\.length > 1 \|\| !targetChild/);
   assert.doesNotMatch(stickerSend, /children\[0\]/);
 });

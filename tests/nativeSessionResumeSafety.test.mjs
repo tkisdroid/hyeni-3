@@ -65,9 +65,9 @@ test("refresh 성공 뒤 개별 API가 401이어도 전체 세션을 삭제하�
   assert.doesNotMatch(okBranch, /clearApiSession\(\)/);
 });
 
-test("네이티브 기기 ID를 일시적으로 못 읽으면 refresh를 거절로 오판하지 않는다", () => {
+test("네이티브 기기 식별 정보를 일시적으로 못 읽으면 refresh를 거절로 오판하지 않는다", () => {
   const source = read("src/lib/api/client.ts");
-  assert.match(source, /if \(isNativePlatform\(\) && !deviceInstallId\) return "error";/);
+  assert.match(source, /if \(isNativePlatform\(\) && !device\) return "error";/);
 });
 
 test("WebView refresh 성공 토큰은 native 재채택 없이 먼저 저장한 뒤 구독자에게 알린다", () => {

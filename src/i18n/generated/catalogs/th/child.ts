@@ -35,6 +35,7 @@ const messages = {
   "child.aiChat.creditRequest.done": "ขอให้แล้ว!",
   "child.aiChat.creditRequest.failed": "ส่งไม่ได้ เดี๋ยวลองใหม่นะ",
   "child.aiChat.creditRequest.sent": "บอกผู้ปกครองให้แล้วนะ!",
+  "child.aiChat.device.alarm": "เปิดการตั้งปลุก",
   "child.aiChat.device.battery": "เปิดการตั้งค่าแบตเตอรี่",
   "child.aiChat.device.dial": "เปิดแอปโทรศัพท์",
   "child.aiChat.device.location": "เปิดการตั้งค่าตำแหน่ง",

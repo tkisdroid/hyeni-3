@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Battery, ChevronLeft, ChevronRight, Copy, Link2, Lock, Plus, QrCode as QrIcon, Smartphone, UserPlus } from "lucide-react";
+import { Battery, ChevronLeft, ChevronRight, Copy, Lock, Plus, QrCode as QrIcon, Smartphone, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
@@ -246,7 +246,7 @@ export function ParentFamily() {
               onClick={() => navigate("/family-connection")}
             >
               <span className="pf-conn__icon">
-                <Link2 size={20} strokeWidth={2.2} color="#087653" />
+                <img src={asset("ui/clay/data-sync.webp")} alt="" />
               </span>
               <span className="pf-conn__main">
                 <span className="pf-conn__title">{intl.formatMessage({ id: "parent.parentFamily.copy014" })}</span>

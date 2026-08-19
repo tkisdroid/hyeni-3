@@ -23,6 +23,7 @@ import {
   recordLocationAlertProvisionToParents,
   recordLocationConfirmation,
 } from "./locationConfirmationAudit";
+import { awardAutomaticStickerForBehavior } from "./automaticStickerReward";
 
 const ANCHOR_RADIUS_M = 150; // 이 반경을 벗어나면 이동 중 → 앵커 리셋
 const DWELL_MS = 5 * 60 * 1000; // 5분 이상 머물면 "도착"
@@ -109,6 +110,7 @@ async function overlappingScheduleEvent(
     const point = location as { lat?: unknown; lng?: unknown };
     const candidate: ScheduleArrivalCandidate = {
       eventId: String(row.id),
+      dateKey: String(row.date_key),
       occurrenceId: eventOccurrenceAlertId({
         eventId: String(row.id),
         dateKey: String(row.date_key),
@@ -345,6 +347,19 @@ export async function detectArbitraryArrival(
       null,
     );
     if (!delivery.ok) return;
+
+    if (scheduleAssociation) {
+      await awardAutomaticStickerForBehavior(env, db, {
+        kind: "schedule_early_arrival",
+        familyId,
+        childUserId: userId,
+        eventId: scheduleAssociation.eventId,
+        occurrenceId: scheduleAssociation.occurrenceId ?? scheduleAssociation.eventId,
+        dateKey: scheduleAssociation.dateKey ?? "",
+        arrivedAtMs: sinceMs,
+        scheduledAtMs: scheduleAssociation.startAtMs,
+      });
+    }
 
     const deliveredNow = pgNow();
     await db

@@ -1190,3 +1190,255 @@
     animation: none;
   }
 }
+
+/* ── 2026-08-20 위치 화면 정돈 ───────────────────────────────────────────
+   이동 이력은 지도 위 플로팅 카드·시간 슬라이더를 쓰지 않는다. 지도 다음에
+   시간과 장소만 있는 목록을 두어 경로가 화면을 압도하지 않도록 한다. */
+.pl-root--history {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  background: color-mix(in srgb, var(--bg-app) 94%, var(--blue-soft));
+}
+
+.pl-root--history .pl-map {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: 58dvh;
+  min-height: 480px;
+}
+
+.pl-visited {
+  position: relative;
+  z-index: 2;
+  min-height: 260px;
+  padding: 20px 20px calc(120px + env(safe-area-inset-bottom, 0px));
+  background: color-mix(in srgb, var(--bg-app) 96%, var(--blue-soft));
+}
+
+.pl-visited__head {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.pl-visited__head img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.pl-visited__head strong {
+  color: var(--fg-primary);
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+}
+
+.pl-visited__head span {
+  color: var(--fg-muted);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+}
+
+.pl-visited__body {
+  border-top: 1px solid var(--line-card);
+}
+
+.pl-visited__state {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 16px;
+  border-radius: var(--radius-16);
+  background: color-mix(in srgb, var(--bg-card) 92%, transparent);
+  box-shadow: none;
+  color: var(--fg-muted);
+}
+
+.pl-visited__state svg {
+  color: var(--mint-600);
+}
+
+.pl-visited__state--error svg {
+  color: var(--danger-500);
+}
+
+.pl-visited__state strong {
+  display: block;
+  color: var(--fg-primary);
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+}
+
+.pl-visited__state p {
+  margin: 4px 0 0;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+}
+
+.pl-visited__retry {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--control-min-size);
+  padding: 0 16px;
+  border: 1px solid var(--line-card);
+  border-radius: var(--radius-12);
+  background: var(--bg-card);
+  color: var(--blue-text);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+}
+
+.pl-visited__skeleton {
+  display: grid;
+  gap: 12px;
+  padding-top: 12px;
+}
+
+.pl-visited__skeleton span {
+  display: block;
+  height: 64px;
+  border-radius: var(--radius-12);
+  background: linear-gradient(90deg, var(--bg-page), var(--bg-card), var(--bg-page));
+  background-size: 220% 100%;
+  animation: km-shimmer 1.4s ease-in-out infinite;
+}
+
+.pl-visited__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pl-visited__list li + li {
+  border-top: 1px solid var(--line-card);
+}
+
+.pl-visited__row {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-height: 68px;
+  padding: 12px 4px;
+  background: transparent;
+  text-align: left;
+  --press: 0.99;
+}
+
+.pl-visited__row time {
+  color: var(--fg-muted);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+  font-variant-numeric: tabular-nums;
+}
+
+.pl-visited__row strong {
+  overflow: hidden;
+  color: var(--fg-primary);
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pl-visited__row--selected strong {
+  color: var(--blue-text);
+}
+
+/* 등록 사진은 프레임을 끝까지 채우고, 기본 캐릭터만 contain을 유지한다. */
+.pl-chip__avatar {
+  width: 36px;
+  height: 36px;
+  overflow: hidden;
+}
+
+.pl-chip__avatar img {
+  width: 100%;
+  height: 100%;
+}
+
+.pl-chip__avatar[data-photo="true"] img,
+.pl-sheet__avatar[data-photo="true"] img {
+  object-fit: cover;
+}
+
+.pl-sheet__avatar {
+  width: 60px;
+  height: 60px;
+  overflow: hidden;
+}
+
+.pl-sheet__avatar img {
+  width: 100%;
+  height: 100%;
+}
+
+/* 네 액션은 기능색을 배경으로 쓰지 않고 같은 얼음 재질과 3D 아이콘을 공유한다. */
+.pl-actions {
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.pl-actions > button {
+  min-height: 76px;
+  padding: 8px 4px;
+  border: 1px solid color-mix(in srgb, var(--blue-500) 8%, var(--line-card));
+  border-radius: var(--radius-16);
+  background: color-mix(in srgb, var(--bg-card) 92%, transparent);
+  box-shadow: var(--shadow-soft);
+  color: var(--fg-secondary);
+}
+
+.pl-actions .pl-actions__icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.pl-actions__label {
+  color: var(--fg-secondary);
+}
+
+@media (max-width: 370px) {
+  .pl-root--history .pl-map {
+    min-height: 440px;
+  }
+
+  .pl-visited__row {
+    grid-template-columns: 104px minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 720px) and (orientation: landscape) {
+  .pl-root--history .pl-map {
+    height: 72dvh;
+    min-height: 420px;
+  }
+
+  .pl-visited {
+    padding-inline: max(20px, calc((100% - 680px) / 2));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-visited__skeleton span {
+    animation: none;
+  }
+}

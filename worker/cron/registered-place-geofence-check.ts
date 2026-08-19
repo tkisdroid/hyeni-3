@@ -47,6 +47,7 @@ import {
   scheduleWindowDateKeys,
   type ScheduleArrivalCandidate,
 } from "../lib/scheduleArrivalOverlap";
+import { awardAutomaticStickerForBehavior } from "../lib/automaticStickerReward";
 import { eventOccurrenceAlertId } from "../lib/eventOccurrence";
 import {
   acquireAccountMutationLeases,
@@ -149,6 +150,7 @@ async function loadScheduleArrivalCandidates(
       if (startAtMs == null) continue;
       candidates.push({
         eventId: String(event.id),
+        dateKey: String(event.date_key),
         occurrenceId: eventOccurrenceAlertId({
           eventId: String(event.id),
           dateKey: String(event.date_key),
@@ -548,6 +550,18 @@ export async function run(env: Env): Promise<Record<string, unknown>> {
 
       await persistPlacePresence(db, child.familyId, child.childUserId, step.place.placeKey, step.nextState);
       presence.set(step.stateKey, { ...step.nextState, updatedAtMs: Date.now() });
+      if (isEnter && step.scheduleAssociation) {
+        await awardAutomaticStickerForBehavior(penv, db, {
+          kind: "schedule_early_arrival",
+          familyId: child.familyId,
+          childUserId: child.childUserId,
+          eventId: step.scheduleAssociation.eventId,
+          occurrenceId: step.scheduleAssociation.occurrenceId ?? step.scheduleAssociation.eventId,
+          dateKey: step.scheduleAssociation.dateKey ?? "",
+          arrivedAtMs: step.episodeMs,
+          scheduledAtMs: step.scheduleAssociation.startAtMs,
+        });
+      }
       if (isEnter && step.scheduleMatch) scheduleSuppressed++;
       else if (isEnter) arrived++;
       else left++;

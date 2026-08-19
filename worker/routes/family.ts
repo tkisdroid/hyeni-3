@@ -19,8 +19,13 @@ import {
   isFamilyPremium,
 } from "../db/authz";
 import { parseJson } from "../lib/serialize";
-import { signAccessToken } from "../lib/jwt";
-import { issueRefreshToken, normalizeDeviceId } from "../lib/refresh";
+import { normalizeDeviceId } from "../lib/refresh";
+import { issueAccountSession } from "../lib/authSession";
+import {
+  checkAccountDeviceSession,
+  isActiveDeviceSessionExistsError,
+  isDeviceIdentityRequiredError,
+} from "../lib/accountDeviceSession";
 import { notifyPg, revokeFamilyRealtimeUser, revokeFamilyRealtimeUsers } from "../lib/realtime";
 import { supersedeActiveChildren } from "../lib/realtimeMembership.ts";
 import { insertParentAlertV2 } from "./push-notify";
@@ -140,6 +145,8 @@ async function buildFreshSession(
   userId: string,
   deviceId: string | null = null,
   preferredFamilyId: string | null = null,
+  deviceLabel: string | null = null,
+  devicePlatform: string | null = null,
 ): Promise<FreshSession> {
   const canonicalFamily = preferredFamilyId
     ? await resolveVerifiedFamilyMembership(env.DB, userId, preferredFamilyId)
@@ -154,8 +161,13 @@ async function buildFreshSession(
   const isAnon = await isAnonymousUser(env.DB, userId);
   const role = isAnon ? "anonymous" : canonicalFamily?.role ?? await resolveRole(env.DB, userId);
   const authUser: AuthUser = { sub: userId, role, family_id: familyId, is_anonymous: isAnon };
-  const accessToken = await signAccessToken(env, authUser);
-  const refreshToken = await issueRefreshToken(env.DB, userId, familyId, deviceId);
+  const issued = await issueAccountSession(env, authUser, {
+    deviceId,
+    deviceLabel,
+    devicePlatform,
+  });
+  const accessToken = issued.accessToken;
+  const refreshToken = issued.refreshToken;
   let meta: unknown = {};
   try {
     const row = await env.DB.prepare("SELECT raw_user_meta_data AS m FROM users WHERE id=? LIMIT 1")
@@ -806,6 +818,14 @@ family.post("/join", requireAuth, async (c) => {
 
     if (reusable) {
       sessionUserId = reusable.user_id;
+      const reusableDeviceState = await checkAccountDeviceSession(
+        c.env.DB,
+        sessionUserId,
+        normalizeDeviceId(deviceInstallId),
+      );
+      if (reusableDeviceState === "inactive") {
+        return c.json({ error: "active_device_session_exists" }, 409);
+      }
       const sets = ["is_active=1"];
       const binds: unknown[] = [];
       if (deviceLabel) {
@@ -1145,8 +1165,16 @@ family.post("/join", requireAuth, async (c) => {
       sessionUserId,
       normalizeDeviceId(deviceInstallId),
       familyId,
+      deviceLabel,
+      childPlatform,
     );
   } catch (error) {
+    if (isActiveDeviceSessionExistsError(error)) {
+      return c.json({ error: "active_device_session_exists" }, 409);
+    }
+    if (isDeviceIdentityRequiredError(error)) {
+      return c.json({ error: "device_identity_required" }, 400);
+    }
     const state = await accountDeletionMutationState(c.env.DB, {
       userIds: [userId, sessionUserId],
       familyIds: [familyId],
@@ -1380,10 +1408,18 @@ family.post("/join-as-parent", requireAuth, async (c) => {
     fresh = await buildFreshSession(
       c.env,
       userId,
-      normalizeDeviceId(body.device_install_id),
+      normalizeDeviceId(body.device_install_id) ?? user.device_id ?? null,
       familyId,
+      cleanText(body.device_label),
+      cleanText(body.device_platform),
     );
   } catch (error) {
+    if (isActiveDeviceSessionExistsError(error)) {
+      return c.json({ error: "active_device_session_exists" }, 409);
+    }
+    if (isDeviceIdentityRequiredError(error)) {
+      return c.json({ error: "device_identity_required" }, 400);
+    }
     const state = await accountDeletionMutationState(c.env.DB, {
       userIds: [userId],
       familyIds: [familyId],

@@ -1,7 +1,10 @@
+// 앱 소스(`@/` 별칭·확장자 없는 import·import.meta.env)를 Node 로 직접 로드하기 위한 훅.
+// 반드시 src/** 를 동적 import 하기 전에 평가돼야 하므로 첫 줄에 둔다.
+import "./helpers/appModuleResolve.mjs";
+
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { createServer } from "vite";
 
 import { ApiError } from "../src/lib/api/errors.ts";
 
@@ -267,11 +270,6 @@ test("웹 checkout·복구·해지 catch는 같은 안전 resolver를 사용한�
 
 test("실제 apiRequest 경계가 만든 ApiError.code도 웹 결제 안전 문구로 이어진다", async () => {
   const originalFetch = globalThis.fetch;
-  const server = await createServer({
-    logLevel: "silent",
-    server: { middlewareMode: true },
-    appType: "custom",
-  });
   try {
     globalThis.fetch = async () => new Response(JSON.stringify({
       code: "web_billing_reconciliation_pending",
@@ -280,13 +278,13 @@ test("실제 apiRequest 경계가 만든 ApiError.code도 웹 결제 안전 문�
       status: 409,
       headers: { "Content-Type": "application/json" },
     });
-    const api = await server.ssrLoadModule("/src/lib/api/client.ts");
-    const billing = await server.ssrLoadModule("/src/transform/webBilling.ts");
+    // 훅이 등록된 뒤에 해석되도록 동적 import 를 쓴다(정적 import 는 링크 시점이 더 이르다).
+    const api = await import("../src/lib/api/client.ts");
     await assert.rejects(
       api.apiRequest("/api/web-billing/test", {}, false),
       (error: unknown) => {
         assert.equal((error as { code?: unknown }).code, "web_billing_reconciliation_pending");
-        const message = billing.webBillingRequestFailureMessage(error);
+        const message = webBillingRequestFailureMessage(error);
         assert.equal(message, "결제 결과를 확인하고 있어요. 같은 주문을 다시 확인해 주세요.");
         assert.doesNotMatch(message, /provider|token-should-not-appear/);
         return true;
@@ -294,6 +292,5 @@ test("실제 apiRequest 경계가 만든 ApiError.code도 웹 결제 안전 문�
     );
   } finally {
     globalThis.fetch = originalFetch;
-    await server.close();
   }
 });

@@ -22,7 +22,7 @@
 import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import type { PushEnv } from "../lib/pushEnv";
-import { verifyAccessToken } from "../lib/jwt";
+import { verifyActiveAccessToken } from "../lib/authenticatedAccess";
 import { pgNow, tsNorm } from "../lib/time";
 import { parseJson, toBool, pgArray } from "../lib/serialize";
 import { notifyPg } from "../lib/realtime";
@@ -4041,7 +4041,7 @@ push.post("/", async (c) => {
     callerRole = "service_role";
   } else if (token) {
     try {
-      const claims = await verifyAccessToken(c.env, token);
+      const claims = await verifyActiveAccessToken(c.env, c.env.DB, token);
       callerUserId = claims.sub;
       callerRole = "authenticated"; // 사용자 JWT 는 service_role 로 승격하지 않음(원본 보존).
     } catch {

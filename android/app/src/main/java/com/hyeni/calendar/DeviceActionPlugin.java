@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.provider.AlarmClock;
 import android.provider.Settings;
 
 import com.getcapacitor.JSObject;
@@ -62,10 +63,26 @@ public class DeviceActionPlugin extends Plugin {
         String target = call.getString("target", "");
         String number = sanitizeNumber(call.getString("phone", ""));
         String body = call.getString("body", "");
+        Integer hour = call.getInt("hour");
+        Integer minute = call.getInt("minute");
 
         Intent intent;
         Intent fallback = appDetailsIntent(context);
         switch (target == null ? "" : target) {
+            case "alarm":
+                Intent showAlarms = settingsIntent(AlarmClock.ACTION_SHOW_ALARMS);
+                if (hour != null && minute != null && hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+                    // 시간을 채우되 저장은 하지 않는다. 아이가 Clock 화면에서 확인하고 누른다.
+                    intent = settingsIntent(AlarmClock.ACTION_SET_ALARM);
+                    intent.putExtra(AlarmClock.EXTRA_HOUR, hour);
+                    intent.putExtra(AlarmClock.EXTRA_MINUTES, minute);
+                    intent.putExtra(AlarmClock.EXTRA_MESSAGE, "혜니캘린더");
+                    intent.putExtra(AlarmClock.EXTRA_SKIP_UI, false);
+                } else {
+                    intent = showAlarms;
+                }
+                fallback = showAlarms;
+                break;
             case "sound":
                 intent = settingsIntent(Settings.ACTION_SOUND_SETTINGS);
                 break;

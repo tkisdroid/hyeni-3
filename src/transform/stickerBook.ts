@@ -23,24 +23,26 @@ export interface StickerCatalogEntry {
   key: string;
   img: string;
   label: string;
+  /** 전송 화면이 저장하는 종류 식별용 이모지. 사용자 한마디가 title에 저장돼도 같은 칸을 찾는다. */
+  emoji: string;
   /** 서버 title 매칭 후보(공백·느낌표 제거 후 비교). */
   titles: readonly string[];
 }
 
 /** 시안 BOOK 12종과 1:1. 순서도 시안과 같다. */
 export const STICKER_CATALOG: readonly StickerCatalogEntry[] = [
-  { key: "best", img: "sticker/best.webp", label: "최고예요", titles: ["최고", "최고예요"] },
-  { key: "love", img: "sticker/love.webp", label: "사랑해요", titles: ["사랑해요", "사랑해", "사랑둥이"] },
-  { key: "brave", img: "sticker/brave.webp", label: "용감해요", titles: ["용감해요", "용감이", "도전성공"] },
-  { key: "friend", img: "sticker/friend.webp", label: "사이좋아요", titles: ["사이좋게", "친구사랑", "친구배려", "사이좋아요"] },
-  { key: "study", img: "sticker/study.webp", label: "공부 열심히", titles: ["공부왕", "숙제완료", "공부열심히"] },
-  { key: "early", img: "sticker/early.webp", label: "일찍 준비했어요", titles: ["일찍왔어", "일찍왕", "일찍도착", "정시도착", "일찍준비했어요"] },
-  { key: "play", img: "sticker/play.webp", label: "신나게 놀았어요", titles: ["신나게", "놀이천재", "신나게놀았어요"] },
-  { key: "ready", img: "sticker/ready.webp", label: "준비 완료", titles: ["준비완료", "준비왕"] },
-  { key: "self", img: "sticker/self.webp", label: "스스로 했어요", titles: ["스스로", "스스로했어요"] },
-  { key: "sports", img: "sticker/sports.webp", label: "운동 짱", titles: ["운동왕", "운동최고", "운동짱"] },
-  { key: "cool", img: "sticker/cool.webp", label: "멋져요", titles: ["멋져요", "멋쟁이"] },
-  { key: "rest", img: "sticker/rest.webp", label: "푹 쉬었어요", titles: ["푹쉬어요", "푹잘자", "마음충전", "푹쉬었어요"] },
+  { key: "best", img: "sticker/best.webp", label: "최고예요", emoji: "🏆", titles: ["최고", "최고예요"] },
+  { key: "love", img: "sticker/love.webp", label: "사랑해요", emoji: "💗", titles: ["사랑해요", "사랑해", "사랑둥이"] },
+  { key: "brave", img: "sticker/brave.webp", label: "용감해요", emoji: "🙌", titles: ["용감해요", "용감이", "도전성공"] },
+  { key: "friend", img: "sticker/friend.webp", label: "사이좋아요", emoji: "💛", titles: ["사이좋게", "친구사랑", "친구배려", "사이좋아요"] },
+  { key: "study", img: "sticker/study.webp", label: "공부 열심히", emoji: "📚", titles: ["공부왕", "숙제완료", "공부열심히"] },
+  { key: "early", img: "sticker/early.webp", label: "일찍 준비했어요", emoji: "🌟", titles: ["일찍왔어", "일찍왕", "일찍도착", "정시도착", "일찍준비했어요"] },
+  { key: "play", img: "sticker/play.webp", label: "신나게 놀았어요", emoji: "🧸", titles: ["신나게", "놀이천재", "신나게놀았어요"] },
+  { key: "ready", img: "sticker/ready.webp", label: "준비 완료", emoji: "✅", titles: ["준비완료", "준비왕"] },
+  { key: "self", img: "sticker/self.webp", label: "스스로 했어요", emoji: "👍", titles: ["스스로", "스스로했어요"] },
+  { key: "sports", img: "sticker/sports.webp", label: "운동 짱", emoji: "🎾", titles: ["운동왕", "운동최고", "운동짱"] },
+  { key: "cool", img: "sticker/cool.webp", label: "멋져요", emoji: "😎", titles: ["멋져요", "멋쟁이"] },
+  { key: "rest", img: "sticker/rest.webp", label: "푹 쉬었어요", emoji: "🌙", titles: ["푹쉬어요", "푹잘자", "마음충전", "푹쉬었어요"] },
 ];
 
 export const STICKER_NEW_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
@@ -49,6 +51,7 @@ export const STICKER_NEW_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 export interface ReceivedStickerLike {
   id: string;
   title: string;
+  emoji?: string;
   sticker_type: string;
   earned_at: string;
 }
@@ -82,8 +85,9 @@ const norm = (s: string): string => s.replace(/[!?.\s]/g, "");
 export function matchStickerSlot(sticker: ReceivedStickerLike): string | null {
   if (sticker.sticker_type === "early" || sticker.sticker_type === "on_time") return "early";
   const t = norm(sticker.title || "");
-  if (!t) return null;
-  const hit = STICKER_CATALOG.find((c) => c.titles.some((k) => norm(k) === t));
+  const hit = STICKER_CATALOG.find((c) =>
+    (t && c.titles.some((k) => norm(k) === t)) || (!!sticker.emoji && c.emoji === sticker.emoji),
+  );
   return hit?.key ?? null;
 }
 

@@ -828,7 +828,39 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   · **히어로**: `.ph-hero` 에 `padding-right: 128px` 로 마스코트 자리를 실제로 비운다 — 없으면 위치 문구가
     마스코트를 뚫고 카드 끝까지 나간다(실측 결함). 제목은 개수(`em`)만 `--type-display` 로 세우고 위치 줄은
     `badge` 한 마디만 쓴다(신선도·주기는 아래 아이 현황 카드가 이미 말한다).
+- ★**부모 홈 실데이터 유리 불변식(2026-08-20, 레퍼런스 재검증)**:
+  · 빈 상태 카드에만 `ph-glass` 가 있고 `children.map` 의 실제 아이 카드에는 빠져 있어, 실사용 화면에서만 불투명
+    흰 카드가 나타났다. 부모 홈의 모든 주요 `hy-card` 는 데이터 유무와 무관하게 `ph-glass` 를 명시한다.
+  · `.ph-ai`·`.ph-child--active` 처럼 자체 `box-shadow` 를 갖는 규칙은 공통 유리 그림자를 덮지 말고
+    `var(--glass-rim), var(--glass-lift)` 를 먼저 합성한다. 선택 강조 그림자는 그 뒤에만 추가한다.
+  · semantic surface의 일반 `card` 허용 그림자를 넓히지 않고 `glass-card` 역할을 따로 둔다. 회귀는
+    `tests/parentHomeGlassMaterial.test.mjs`와 `tests/designSystemUsage.test.mjs`가 함께 막는다.
   · **색은 의미가 있을 때만** — 섹션 아이콘 칩·지표 칩 4개·바로가기 8칸의 파스텔 채움을 걷고 색은 3D 아이콘이 낸다.
+- ★**2026-08-20 실사용 피드백 묶음**:
+  · **부모 홈**은 설정 화면에 가까운 아이스 블루 바닥·얇은 glass rim으로 정돈하고, 상단 `혜니캘린더`와 하단 탭은
+    safe-area를 포함해 고정한다. 히어로는 활성 아이의 실시간 대략 장소를 보여주며 `현재위치`·상태·편집 같은 소형
+    버튼과 일정/알림장 아이콘은 3D 재질로 맞췄다. `아이와 대화하기`·구독 `관리하기`의 장식 화살표는 없다.
+    홈 섹션은 `parentHomeSectionOrder` 정본으로 drag/키보드 재배치하고 가족+설치별 localStorage에 저장한다.
+  · **대화**는 입력 바로 위 제목을 `자주 쓰는 문구`로 명확히 하고 기존 빠른 문구 버튼을 유지한다. 이미지·위치 glyph는
+    작게 보이되 44px hit area는 유지하고, 입력 focus는 색 테두리 대신 투명 outline+중립 명도 ring을 쓴다. 하단 탭과
+    keyboard 여백을 동시에 확보한다.
+  · **위치 이력**은 하단 재생/스크러버/막대 카드 전체를 제거하고 지도 아래 `시간 범위 + 장소` 목록만 둔다.
+    실시간 sheet의 아이 사진은 큰 `cover` crop이고, 메모·경로·주변소리·전화는 같은 3D 액션 재질이다.
+  · **설정·스티커**는 설정 첫 화면의 회원탈퇴를 없애고 `/account` 안에서만 제공한다. 알림·위치 백그라운드·동기화·
+    가족·친구놀이·주변소리/감사·AI 크레딧·피드백 하위 화면의 섹션 아이콘을 3D로 맞췄다. `/sticker-send`는 아이 화면과
+    같은 `useReceivedStickers`+`buildStickerBook` 정본으로 받은 스티커 12칸과 수량을 부모에게도 보여준다.
+  · **아이 AI 알람**은 parent-only가 아니다. `open_device_screen(alarm_create)`가 시간이 채워진 Android
+    `AlarmClock.ACTION_SET_ALARM` 화면을 열고 아이가 저장을 확인한다. 끄기/삭제 요청은 알람 관리 화면을 연다. 앱이
+    직접 정확 알람을 예약하거나 부모 권한을 요구하지 않는다.
+  · **기기 상태**는 `NativeBootstrap`이 mount·foreground·120초마다 전체 health snapshot을 다시 보고하고, 부모 홈은
+    활성 아이에게 `request_device_status`를 보낸 뒤 지연 재조회한다. Usage Access를 이미 허용했는데 예전 안내가 남는
+    stale snapshot을 정상 상태로 덮는다.
+  · **조기 도착 자동 보상**은 일정 시작 60분 안에 먼저 도착한 occurrence에 `automaticStickerReward`가 결정적 멱등키로
+    `일찍 왔어요` 스티커를 1회 저장하고 아이 realtime 축하를 보낸다. 임의 도착 감지와 등록장소 cron이 같은 helper를 쓴다.
+  · **계정 동시 설치 차단**은 `account_device_sessions`가 계정별 활성 설치 1개를 정본으로 가진다. 모든 세션 발급·
+    refresh·직접 JWT 경로가 `authenticatedAccess`를 공통 사용하며 다른 활성 설치는 409로 닫는다. 충돌 refresh는 기존
+    체인을 회전하지 않고, 정상 logout은 현재 설치의 refresh 체인과 claim을 함께 놓는다. migration=
+    `worker/db/account-device-sessions.sql`, 회귀=`worker/tests/accountDeviceSession.test.mjs`.
 - ★**대화 전송은 낙관적이다(2026-08-19 TK 제보 "채팅 보낼 때 느림")**: 예전에는 POST 응답이 와야 말풍선이 서고
   입력칸도 그때 비워져, 느린 네트워크에서 앱이 멈춘 것처럼 보였다. **실측: 서버 2초 지연 재현에서 2,000ms → 7ms.**
   · `useSendMemo.onMutate` 가 `insertPendingMemoReply` 로 임시 행을 넣고, 화면은 `mutate` 직전에 `setDraft("")` 한다.
@@ -1340,6 +1372,20 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   `worker/tests/helpers/tsModuleResolve.mjs` 를 **정적 import 첫 줄에** 넣으면 resolve 훅이 확장자를 보완한다
   (소스·배포 산출물 무변경). 새 worker 테스트도 `vite` 를 도입하지 말고 이 훅 + `await import("../lib/x.ts")` 를 쓴다.
   실측: 1,159 테스트 3.3초 전부 통과(이전 Vite 방식은 7개 실패).
+  ★**앱 테스트도 Vite 를 쓰지 않는다(2026-08-20)**: 같은 함정이 앱 쪽에 하나 남아 있었다 —
+  `tests/webBilling.test.ts` 만 `createServer()` + `ssrLoadModule("/src/lib/api/client.ts")` 를 써서
+  `fetchModule` 이 60초 한도를 넘겨 **224초 만에 실패**했고, 전체 스위트 시간을 이 한 건이 지배했다
+  (1,798개 중 유일한 red). ⚠️ **`node --test` 는 실패가 있어도 종료 코드 0 을 줄 수 있다** —
+  이 실패는 종료 코드가 아니라 `ℹ fail 1` 요약 줄로만 드러났다. **exit code 만 보고 통과로 판정하지 말 것.**
+  처방은 worker 와 같다: `tests/helpers/appModuleResolve.mjs` 를 **정적 import 첫 줄**에 두고
+  `await import("../src/lib/api/client.ts")` 로 동적 로드한다(정적 import 는 링크가 훅 등록보다 이르다).
+  앱 소스는 worker 와 달리 세 가지를 더 메워야 한다 — ①`@/` 별칭 ②확장자 없는 상대 import
+  ③Vite 가 빌드 시 치환하는 `import.meta.env` 와 `define` 전역 `__APP_VERSION__`(load 훅에서 치환·주입,
+  버전은 package.json 에서 읽어 Vite 와 같은 출처를 유지).
+  실측: 224,158ms → **47.6ms**(파일 전체 224.8초 → 0.18초), 12/12 통과.
+  red-green 확인 = 목 응답의 `code` 를 바꾸면 실패하므로 실제 `client.ts` 경계를 그대로 검증한다.
+  ⚠️ `tests/**` 는 `tsconfig.app.json` 의 `include: ["src"]` 밖이라 **`tsc -b` 가 타입 검사하지 않는다** —
+  테스트 TS 의 오류는 실행해야만 드러난다. 남은 Vite 사용처는 `tests/localeSessionIsolation.test.mjs` 하나다.
   ★ `wrangler tail --format json` 출력은 **pretty-print** 라 줄 단위(JSONL) 파싱하면 0건으로 보인다 —
   `json.JSONDecoder().raw_decode` 로 스트림 파싱할 것. CDP `Runtime.consoleAPICalled` 의 Error 인자는
   `value` 가 아니라 `description` 에 들어온다(둘 다 읽지 않으면 오류를 못 세고 "0회"로 오판).

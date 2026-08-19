@@ -16,7 +16,11 @@ import {
   stopLocationTracking,
   syncNativeLocationToken,
 } from "@/lib/native/location";
-import { collectDeviceHealth, attachBatteryChange } from "@/lib/native/deviceStatus";
+import {
+  attachBatteryChange,
+  collectDeviceHealth,
+  collectNativeDeviceHealth,
+} from "@/lib/native/deviceStatus";
 import { detectDeviceLabel } from "@/lib/native/deviceName";
 import { reportDeviceStatus, reportDeviceLabel } from "@/lib/api/endpoints/family";
 import { fetchLocationPreferences } from "@/lib/api/endpoints/location";
@@ -451,46 +455,68 @@ export function NativeBootstrap() {
     };
   }, [status, role, familyId, userId, syncFromSession]);
 
-  // 아이 기기 상태(배터리·충전·네트워크) 리포트 → 부모 '안전 지표' 실데이터원.
-  // 웹(PWA) 자녀 전용: Web API(getBattery/onLine/connection)로 배터리·네트워크만 리포트.
-  // ⚠️ 네이티브(Android)에서는 하지 않는다 — LocationService(백그라운드 위치 서비스)가
-  //    배터리·네트워크·화면시간·최근 사용앱까지 리치한 device_health 를 이미 publish 하므로,
-  //    web 부분집합으로 덮어쓰면 최근앱/화면시간이 사라진다(사용자 리포트 버그).
-  // 아이 세션 + 웹에서만: 마운트 1회 + 120초 주기 + online/offline·배터리 변화 이벤트에 리포트.
+  // 아이 기기 상태 → 부모 '안전 지표' 실데이터원.
+  // Android는 네이티브 전체 스냅샷을 현재 WebView 세션으로 직접 저장한다. 따라서 위치 서비스나
+  // FCM이 멈춰 있어도, 특히 Usage Access 설정에서 앱으로 돌아온 즉시 새 권한 상태가 반영된다.
+  // 웹/PWA는 기존 Web API 부분집합을 유지한다.
   useEffect(() => {
     if (status !== "authenticated" || role !== "child" || !familyId || !userId) return;
-    if (isNativePlatform()) return; // 네이티브는 LocationService 가 리치 리포트 담당
 
     let cancelled = false;
     let detachBattery: (() => void) | null = null;
+    let appStateListener: { remove(): Promise<void> } | null = null;
+    let inFlight = false;
+    const native = isNativePlatform();
 
     const send = () => {
+      if (cancelled || inFlight) return;
+      inFlight = true;
       void (async () => {
         try {
-          const health = await collectDeviceHealth(Date.now());
+          const health = native
+            ? await collectNativeDeviceHealth(familyId, userId)
+            : await collectDeviceHealth(Date.now());
           if (cancelled) return;
+          if (!health) throw new Error("native_device_health_unavailable");
           await reportDeviceStatus(familyId, health);
         } catch (error) {
           console.error("아이 기기 상태 리포트 실패:", error);
+        } finally {
+          inFlight = false;
         }
       })();
     };
 
     send(); // 마운트 즉시 1회(부모가 곧바로 실데이터를 보게)
     const timer = window.setInterval(send, DEVICE_REPORT_INTERVAL_MS);
-    window.addEventListener("online", send);
-    window.addEventListener("offline", send);
-    void attachBatteryChange(send).then((detach) => {
-      if (cancelled) detach?.(); // 이미 정리됐으면 즉시 해제
-      else detachBattery = detach;
-    });
+    if (native) {
+      void import("@capacitor/app").then(async ({ App }) => {
+        const handle = await App.addListener("appStateChange", (state) => {
+          if (state.isActive) send();
+        });
+        if (cancelled) await handle.remove();
+        else appStateListener = handle;
+      }).catch((error: unknown) => {
+        if (!cancelled) console.warn("Android 기기 상태 foreground 감지 실패:", error);
+      });
+    } else {
+      window.addEventListener("online", send);
+      window.addEventListener("offline", send);
+      void attachBatteryChange(send).then((detach) => {
+        if (cancelled) detach?.();
+        else detachBattery = detach;
+      });
+    }
 
     return () => {
       cancelled = true;
       window.clearInterval(timer);
-      window.removeEventListener("online", send);
-      window.removeEventListener("offline", send);
+      if (!native) {
+        window.removeEventListener("online", send);
+        window.removeEventListener("offline", send);
+      }
       detachBattery?.();
+      void appStateListener?.remove();
     };
   }, [status, role, familyId, userId]);
 

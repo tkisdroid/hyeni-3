@@ -32,6 +32,11 @@ npm run build      # 완료 기준 = exit 0
 #   (cd <임시디렉터리> && npx wrangler pages deploy C:/Users/TK/Desktop/hyeni-3/dist \n#      --project-name=hyeni-calendar --branch=main --commit-dirty=true)
 # Worker(백엔드, 이 저장소 worker/): npm run typecheck:worker && npm run test:worker && npm run deploy:worker
 #   worker 테스트는 Vite 를 쓰지 않는다(Node 24 네이티브 TS + tsModuleResolve 훅) — 1,159개 약 3초.
+# 앱 테스트: npm test (node --test tests/*.test.*)
+#   ⚠️ node --test 는 실패가 있어도 exit 0 을 줄 수 있다 — `ℹ fail N` 요약 줄로 판정할 것.
+#   src/** 를 로드하는 테스트도 Vite 를 쓰지 않는다: tests/helpers/appModuleResolve.mjs 를 정적 import
+#   첫 줄에 두고 await import("../src/...") 로 동적 로드(@/ 별칭·확장자·import.meta.env·__APP_VERSION__ 보완).
+#   ⚠️ tests/** 는 tsconfig include 밖이라 tsc -b 가 타입 검사하지 않는다.
 ```
 
 API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: https://hyeni-calendar.pages.dev
@@ -48,6 +53,10 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 2. **라이브 refresh 토큰 조작 금지** — 회전시키면 앱 세션이 파괴된다. access 토큰만 읽기.
    2026-07-10부터 refresh 체인은 **기기 바인딩**(device_install_id 스탬핑) — 외부에서 토큰 사본으로 회전 시도하면 401이 정상이다.
    세션이 유실된 아이 기기는 딥링크 `#/onboarding?pair=KID-…` 재페어링이 정답(previous_user_id 힌트로 같은 uid 무손실 복구).
+   2026-08-20부터 인증 계정은 `account_device_sessions`로 **동시에 한 설치만 활성**이다. 새 로그인·가입·OAuth·페어링·
+   refresh는 공통 설치 claim을 거치고, 다른 활성 설치는 `active_device_session_exists`로 거부한다. 정상 로그아웃만 현재
+   설치 claim을 놓는다. 운영은 `worker/db/account-device-sessions.sql`을 Worker보다 먼저 적용하며 라이브 계정으로 충돌을
+   억지 재현하지 않는다(`worker/tests/accountDeviceSession.test.mjs`가 정본).
 3. **파괴적 작업 전 안전 불변식 확인**(예: 아이 페어링 전 프리미엄 캡 확인 — 기존 아이가 밀리지 않는지).
 4. 테스트로 만든 데이터·바꾼 설정은 **반드시 원복/삭제**. 비밀번호는 사용자만 입력.
 5. 프로덕션 D1 파괴적 삭제·스토어 배포·시크릿 변경 금지.
@@ -747,6 +756,10 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   바닥은 한 겹만 — 셸에도 깔면 `.ph-page::before` 와 두 겹이 된다. 카드 유리도 셸에서 `.hy-card` 를 덮지 말고
   화면이 `.ph-glass` 로 명시한다(semantic surface 계약). 히어로는 `padding-right: 128px` 로 마스코트 자리를
   비우지 않으면 문구가 마스코트를 뚫는다.
+- ★**부모 홈 실데이터 유리 불변식(2026-08-20)**: 빈 상태뿐 아니라 `children.map` 의 실제 아이 카드까지 모든
+  주요 `hy-card` 에 `ph-glass` 를 붙인다. `.ph-ai`·`.ph-child--active` 같은 variant가 `box-shadow` 를 선언하면
+  `var(--glass-rim), var(--glass-lift)` 를 먼저 합성해 공통 유리 깊이를 지우지 않는다. 유리 카드의 semantic surface
+  역할은 일반 `card` 허용 범위를 넓히지 않고 `glass-card` 로 분리한다. 회귀=`tests/parentHomeGlassMaterial.test.mjs`.
 - ★**대화 전송은 낙관적(2026-08-19)**: `useSendMemo.onMutate` 로 임시 행을 넣고 화면은 mutate 직전에 입력칸을
   비운다(실측 2,000ms → 7ms). ⚠️ 임시 행은 지우고 다시 넣지 말고 `reconcilePendingMemoReply` 로 제자리 교체한다 —
   먼저 지우면 응답이 배열·빈 객체일 때 방금 보낸 말풍선이 사라진다. 실패는 임시 행을 걷고 원문을 되돌린다.
