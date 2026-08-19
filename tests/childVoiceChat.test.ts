@@ -6,6 +6,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
+  estimateSpeechDurationMs,
   readChildVoiceReplyEnabled,
   shouldSpeakAiReply,
   SPEECH_LOCALE,
@@ -13,6 +14,7 @@ import {
   type AiChatTurnSource,
   writeChildVoiceReplyEnabled,
 } from "../src/transform/childVoiceChat.ts";
+import { normalizeSpeechRms } from "../src/transform/childVoiceWave.ts";
 
 const read = (path: string): string => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -152,7 +154,7 @@ test("말한 내용은 확인 단계 없이 바로 보낸다(받아쓰기가 아
   assert.match(chat, /const transcript = await captureSpeech|captureSpeech\(speechLang\)/);
   assert.match(chat, /send\(spoken, "voice"\)/);
   // 듣기 시작 전에 읽어주기를 멈춰야 아이 차례에 친구가 겹쳐 말하지 않는다.
-  assert.match(chat, /stopSpeaking\(\);\s*\n\s*const gen = \+\+voiceGenRef\.current;/);
+  assert.match(chat, /stopSpeaking\(\);[\s\S]{0,140}const gen = \+\+voiceGenRef\.current;/);
 });
 
 test("화면을 떠나면 듣기와 읽어주기를 반드시 멈춘다", () => {
@@ -215,7 +217,9 @@ test("AI 답변은 해당 turn source와 최신 영구 설정으로 재생 여�
     onSuccess,
     /shouldSpeakAiReply\(\{\s*source,\s*persistentEnabled:\s*voiceReplyRef\.current,\s*hasReply:\s*Boolean\(spokenReply\),\s*\}\)/,
   );
-  assert.match(onSuccess, /speakText\(spokenReply, speechLang\)/);
+  // 읽어주기 시작과 파형 표시를 한 곳에서 맞춘다(둘이 갈라지면 말하는데 파형이 안 움직인다).
+  assert.match(onSuccess, /speakReply\(spokenReply\);/);
+  assert.match(chat, /const speakReply = \(text: string\) => \{[\s\S]{0,600}speakText\(text, speechLang\)/);
 });
 
 test("읽어줄 때 화면 마커는 소리로 읽지 않는다", () => {
@@ -260,4 +264,89 @@ test("음성 문구는 10개 locale 에 모두 있고 아이 말투를 지킨다
   for (const id of IDS) {
     assert.doesNotMatch(ko[id], /습니다|하세요/, `${id} 가 존댓말이다`);
   }
+});
+
+
+// ── 말로 이야기하는 동안의 화면(2026-08-19 TK 지시) ────────────────────────
+// "음성으로 할 때에는 굳이 텍스트를 아이가 보지 않아도 되니 말하는 이미지(음성 파형)가
+//  움직여도 좋을 것 같아요" — 그래서 듣는 중·말하는 중을 얼굴과 파형으로 보여 준다.
+
+test("파형은 아이 목소리 크기를 실제로 받아서 움직인다", () => {
+  // Android SpeechRecognizer 의 RMS(dB) → 0~1. 지어낸 값이 아니라 실제 입력이다.
+  assert.equal(normalizeSpeechRms(-2), 0);
+  assert.equal(normalizeSpeechRms(10), 1);
+  assert.ok(normalizeSpeechRms(4) > 0.4 && normalizeSpeechRms(4) < 0.6);
+  // 범위를 벗어난 값도 화면을 깨뜨리지 않는다.
+  assert.equal(normalizeSpeechRms(-40), 0);
+  assert.equal(normalizeSpeechRms(120), 1);
+  // Number(null) === 0 함정 — 숫자가 아니면 조용함(0)으로 좁힌다.
+  assert.equal(normalizeSpeechRms(null), 0);
+  assert.equal(normalizeSpeechRms("6"), 0);
+  assert.equal(normalizeSpeechRms(Number.NaN), 0);
+
+  const plugin = read("android/app/src/main/java/com/hyeni/calendar/SpeechPlugin.java");
+  // 예전에는 onRmsChanged 가 비어 있어 화면이 실제 목소리를 알 방법이 없었다.
+  assert.match(plugin, /onRmsChanged\(float rmsdB\) \{[\s\S]{0,220}notifySpeechRms\(rmsdB\)/);
+  assert.match(plugin, /notifyListeners\("speechRms", data\)/);
+  // 음성 자체는 보내지 않는다 — 크기 하나뿐이다.
+  assert.match(plugin, /data\.put\("rms", rmsdB\)/);
+  assert.doesNotMatch(plugin, /notifyListeners\("speechRms"[\s\S]{0,80}buffer/);
+});
+
+test("친구가 말하는 중인지 알 수 있고, 신호가 없어도 파형이 영영 움직이지 않는다", () => {
+  const speech = read("src/lib/native/speech.ts");
+  // 네이티브 ttsState 와 웹 SpeechSynthesis 양쪽에서 시작·종료를 받는다.
+  assert.match(speech, /plugin\.addListener\("ttsState"/);
+  assert.match(speech, /utterance\.onstart = \(\) => emitPlayback\("started"\)/);
+  assert.match(speech, /utterance\.onend = \(\) => emitPlayback\("done"\)/);
+  assert.match(speech, /export function onSpeechPlaybackState/);
+  // 웹에는 stopped 이벤트가 없어 중단 시 직접 알린다.
+  assert.match(speech, /export function stopSpeaking\(\): void \{[\s\S]{0,200}emitPlayback\("stopped"\)/);
+
+  // 종료 신호를 못 주는 기기용 상한 — 길이에 비례하되 무한정 기다리지 않는다.
+  assert.equal(estimateSpeechDurationMs(""), 0);
+  assert.equal(estimateSpeechDurationMs(null), 0);
+  assert.ok(estimateSpeechDurationMs("응") >= 1_500);
+  assert.ok(estimateSpeechDurationMs("가".repeat(40)) > estimateSpeechDurationMs("가".repeat(10)));
+  assert.equal(estimateSpeechDurationMs("가".repeat(5_000)), 45_000, "상한이 있어야 한다");
+
+  const chat = read("src/screens/child/AiFriendChat.tsx");
+  assert.match(chat, /speakingTimerRef\.current = setTimeout\([\s\S]{0,160}estimateSpeechDurationMs\(text\)\)/);
+  // 합성이 시작조차 안 됐으면 말하는 척하지 않는다.
+  assert.match(chat, /if \(started\) return;[\s\S]{0,80}setSpeaking\(false\)/);
+});
+
+test("말하는 동안에는 글 대신 얼굴과 파형을 보여 주고, 원하면 글로 볼 수 있다", () => {
+  const chat = read("src/screens/child/AiFriendChat.tsx");
+  const css = read("src/screens/child/AiFriendChat.css");
+  // 듣는 중·말하는 중 모두 같은 화면을 쓴다.
+  assert.match(chat, /const voiceActive = listening \|\| speaking;/);
+  assert.match(chat, /\{voiceActive && !voiceTextMode \? \(/);
+  assert.match(chat, /data-mode=\{listening \? "listening" : "speaking"\}/);
+  assert.match(chat, /AI_BUDDY_LISTENING_FACE : AI_BUDDY_SPEAKING_FACE/);
+  // 아이가 글을 보고 싶으면 접을 수 있고, 마이크를 다시 켜면 되돌아온다.
+  assert.match(chat, /onClick=\{\(\) => setVoiceTextMode\(true\)\}/);
+  assert.match(chat, /setVoiceTextMode\(false\);\n    const gen = \+\+voiceGenRef\.current/);
+  // 접었을 때만 아래 한 줄 표시가 나온다(움직이는 표시자는 화면에 하나).
+  assert.match(chat, /\{listening && voiceTextMode && \(/);
+  // 실제 목소리 크기는 리렌더 없이 CSS 변수로만 흘린다(초당 10회 리렌더 방지).
+  assert.match(chat, /stage\.style\.setProperty\("--voice-level"/);
+  assert.match(chat, /stage\.dataset\.level = "live"/);
+  // 값을 못 받는 기기에서는 기본 파형으로 강등한다.
+  assert.match(css, /\.afc-voice__wave span \{[^}]*animation: afc-voice-bar/);
+  assert.match(css, /\.afc-voice\[data-level="live"\] \.afc-voice__wave span \{[^}]*animation: none/);
+  // 그만 누르면 듣기·읽어주기를 함께 멈춘다.
+  assert.match(chat, /const stopVoiceStage = \(\) => \{[\s\S]{0,160}stopSpeaking\(\);/);
+});
+
+test("파형 화면 문구는 10개 locale 에 모두 있고 아이 말투를 지킨다", () => {
+  for (const locale of LOCALES) {
+    const catalog = JSON.parse(read("locales/" + locale + "/child.json"));
+    for (const id of ["child.aiChat.voice.speaking", "child.aiChat.voice.showText"]) {
+      assert.ok(typeof catalog[id] === "string" && catalog[id].trim(), locale + " " + id);
+    }
+  }
+  const ko = JSON.parse(read("locales/ko/child.json"));
+  assert.doesNotMatch(ko["child.aiChat.voice.speaking"], /(?:요|습니다|세요)/);
+  assert.doesNotMatch(ko["child.aiChat.voice.showText"], /(?:요|습니다|세요)/);
 });

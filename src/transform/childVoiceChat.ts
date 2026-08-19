@@ -85,3 +85,16 @@ export function speakableReplyText(text: string): string {
     .replace(/\s+/g, " ")
     .trim();
 }
+
+/**
+ * 이 말을 다 읽는 데 걸릴 대략의 시간(ms).
+ *
+ * 화면의 음성 파형은 읽어주기가 끝나면 멈춰야 하는데, 끝났다는 신호를 못 주는 기기·브라우저가
+ * 있다. 그런 기기에서 파형이 영영 움직이면 "아직 말하는 중"이라는 거짓말이 되므로 상한을 둔다.
+ * 정확한 길이가 아니라 **안전 상한**이라 넉넉하게 잡고, 실제 종료 신호가 오면 그때 바로 멈춘다.
+ */
+export function estimateSpeechDurationMs(text: unknown): number {
+  const spoken = typeof text === "string" ? text.trim() : "";
+  if (!spoken) return 0;
+  return Math.min(45_000, 1_500 + spoken.length * 110);
+}

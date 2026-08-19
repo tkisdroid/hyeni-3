@@ -432,8 +432,8 @@ test("활성 토글·선택 하트·진행 중 CTA는 밝은 테마에서도 경
   assert.equal(
     (aiCredit.match(/\?\s*"var\(--hy-accent-cta\)"\s*:\s*"var\(--line-soft\)"/g) ?? [])
       .length,
-    5,
-    "AI 설정의 다섯 토글이 모두 고대비 ON 트랙을 사용합니다",
+    6,
+    "AI 설정의 여섯 토글이 모두 고대비 ON 트랙을 사용합니다",
   );
   assert.doesNotMatch(
     aiCredit,

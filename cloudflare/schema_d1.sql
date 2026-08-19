@@ -253,6 +253,8 @@ CREATE TABLE "ai_parent_settings" (
   "long_term_memory_enabled" INTEGER DEFAULT 1 NOT NULL,
   "allow_schedule_actions" INTEGER DEFAULT 1 NOT NULL,
   "allow_contact_actions" INTEGER DEFAULT 1 NOT NULL,
+  -- 플로팅 AI 친구가 스스로 커졌다 화면을 채우며 아이를 부를지(부모 스위치, 기본 켜짐).
+  "buddy_attention_enabled" INTEGER DEFAULT 1 NOT NULL,
   "safety_notification_level" TEXT DEFAULT 'medium' NOT NULL,
   "updated_by" TEXT,
   "created_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,

@@ -1,5 +1,7 @@
 const messages = {
   "billing.aiCredit.creditUse": "Setiap balasan AI memakai 1 kredit.",
+  "billing.aiCredit.detail.buddyAttentionDescription": "Sesekali membesar untuk mengajak mengobrol",
+  "billing.aiCredit.detail.buddyAttentionTitle": "Teman AI menyapa lebih dulu",
   "billing.aiCredit.detail.contactDescription": "Membantu anak Anda meminta panggilan atau pesan kepada orang tua",
   "billing.aiCredit.detail.contactTitle": "Izinkan tindakan kontak",
   "billing.aiCredit.detail.description": "Pengaturan orang tua ini berlaku untuk {childName}",

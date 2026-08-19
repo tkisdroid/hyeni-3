@@ -2,6 +2,7 @@
 
 /* 앱 프레임 높이에 딱 맞추고 메시지 목록만 스크롤한다(페이지 전체 스크롤 금지). */
 .afc {
+  position: relative; /* 진입 전환·파형 화면이 이 프레임 안에 겹친다. */
   height: 100%;
   overflow: hidden;
   animation: hy-fadein 0.35s ease forwards;
@@ -586,4 +587,167 @@
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
   --press: 0.94;
+}
+
+/* ── 플로팅 버튼에서 이어받는 진입 전환 ─────────────────────────────────────
+   버튼이 커지며 화면 가운데로 온 그 크기·자리에서 얼굴을 받아 제자리로 보낸다.
+   크기 168px 은 transform/aiBuddyLaunch 의 AI_BUDDY_HANDOFF_FACE_PX 와 같아야 한다. */
+.afc-enter {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.afc-enter img {
+  width: 168px;
+  height: 168px;
+  border-radius: var(--radius-24);
+  box-shadow: var(--shadow-modal);
+  object-fit: cover;
+  animation: afc-enter-face 0.46s var(--easing-standard) forwards;
+}
+
+/* 얼굴이 제자리로 가는 동안 대화 내용은 뒤따라 올라온다(툭 나타나지 않게). */
+.afc[data-entering="true"] .afc-msgs,
+.afc[data-entering="true"] .afc-input-wrap {
+  animation: afc-enter-rise 0.46s var(--easing-standard) forwards;
+}
+
+/* ── 말로 이야기하는 동안의 화면 ────────────────────────────────────────────
+   아이는 글을 읽지 않아도 지금 무슨 일이 일어나는지 알아야 한다(2026-08-19 TK 지시).
+   막대 높이는 네이티브가 알려 주는 실제 목소리 크기(--voice-level)를 따르고,
+   그 값을 못 받는 기기·읽어주기 중에는 기본 파형 애니메이션으로 강등한다. */
+.afc-voice {
+  position: absolute;
+  inset: 0;
+  z-index: 24;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 24px;
+  background: linear-gradient(
+    180deg,
+    var(--hy-accent-soft) 0%,
+    color-mix(in srgb, var(--hy-accent-soft) 46%, var(--bg-body)) 100%
+  );
+  animation: hy-fadein 0.24s ease forwards;
+}
+.afc-voice__face {
+  width: 168px;
+  height: 168px;
+  border-radius: var(--radius-24);
+  box-shadow: var(--shadow-modal);
+  object-fit: cover;
+}
+.afc-voice__wave {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 76px;
+}
+.afc-voice__wave span {
+  width: 10px;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--hy-accent-cta);
+  transform-origin: center;
+  animation: afc-voice-bar 0.9s ease-in-out infinite;
+}
+.afc-voice__wave span:nth-child(1) { height: 34%; animation-delay: 0s; }
+.afc-voice__wave span:nth-child(2) { height: 56%; animation-delay: 0.1s; }
+.afc-voice__wave span:nth-child(3) { height: 80%; animation-delay: 0.2s; }
+.afc-voice__wave span:nth-child(4) { height: 100%; animation-delay: 0.3s; }
+.afc-voice__wave span:nth-child(5) { height: 80%; animation-delay: 0.4s; }
+.afc-voice__wave span:nth-child(6) { height: 56%; animation-delay: 0.5s; }
+.afc-voice__wave span:nth-child(7) { height: 34%; animation-delay: 0.6s; }
+
+/* 실제 목소리 크기가 들어오면 지어낸 파형 대신 그 값으로 움직인다. */
+.afc-voice[data-level="live"] .afc-voice__wave span {
+  animation: none;
+  transform: scaleY(calc(0.22 + var(--voice-level, 0) * 0.78));
+  transition: transform 90ms linear;
+}
+
+.afc-voice__label {
+  color: var(--fg-primary);
+  font-family: Jua, var(--font-sans);
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+}
+.afc-voice__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.afc-voice__stop {
+  min-height: 48px;
+  padding: 0 24px;
+  border-radius: var(--radius-pill);
+  background: var(--cta-grad-accent);
+  color: var(--bg-card);
+
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+
+  --press: 0.94;
+}
+.afc-voice__text {
+  min-height: 48px;
+  padding: 0 20px;
+  border-radius: var(--radius-pill);
+  background: var(--hy-accent-soft);
+  border: 1.5px solid var(--hy-accent);
+  color: var(--hy-accent-text);
+
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+
+  --press: 0.94;
+}
+
+@keyframes afc-voice-bar {
+  0%, 100% { transform: scaleY(0.38); }
+  50% { transform: scaleY(1); }
+}
+
+@keyframes afc-enter-face {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-108px, -172px) scale(0.28);
+  }
+}
+
+@keyframes afc-enter-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 움직임을 줄이는 사용자에게는 전환·파형 애니메이션을 멈춘다(상태 문구는 그대로 읽힌다). */
+@media (prefers-reduced-motion: reduce) {
+  .afc-enter img,
+  .afc[data-entering="true"] .afc-msgs,
+  .afc[data-entering="true"] .afc-input-wrap,
+  .afc-voice,
+  .afc-voice__wave span {
+    animation: none;
+  }
 }

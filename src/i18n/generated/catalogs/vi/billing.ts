@@ -1,5 +1,7 @@
 const messages = {
   "billing.aiCredit.creditUse": "Mỗi lần AI trả lời dùng 1 lượt.",
+  "billing.aiCredit.detail.buddyAttentionDescription": "Thỉnh thoảng phóng to để mời trò chuyện",
+  "billing.aiCredit.detail.buddyAttentionTitle": "Bạn AI chủ động bắt chuyện",
   "billing.aiCredit.detail.contactDescription": "Giúp con bạn yêu cầu cuộc gọi hoặc tin nhắn tới phụ huynh",
   "billing.aiCredit.detail.contactTitle": "Cho phép hành động liên hệ",
   "billing.aiCredit.detail.description": "Các cài đặt dành cho phụ huynh này áp dụng cho {childName}",

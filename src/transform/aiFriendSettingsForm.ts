@@ -7,6 +7,8 @@ export interface AiFriendControlForm {
   quietHoursEnd: string;
   allowScheduleActions: boolean;
   allowContactActions: boolean;
+  /** 플로팅 AI 친구가 스스로 커졌다 화면을 채우며 아이를 부를지. */
+  buddyAttentionEnabled: boolean;
 }
 
 export interface AiFriendControlPatch {
@@ -18,6 +20,7 @@ export interface AiFriendControlPatch {
   quiet_hours_end: string;
   allow_schedule_actions: boolean;
   allow_contact_actions: boolean;
+  buddy_attention_enabled: boolean;
 }
 
 export interface AiFriendControlSource {
@@ -29,6 +32,7 @@ export interface AiFriendControlSource {
   quiet_hours_end?: string | null;
   allow_schedule_actions?: boolean | null;
   allow_contact_actions?: boolean | null;
+  buddy_attention_enabled?: boolean | null;
 }
 
 export function parseAiTopicText(value: string): string[] {
@@ -68,6 +72,7 @@ export function buildAiFriendControlPatch(form: AiFriendControlForm): AiFriendCo
     quiet_hours_end: normalizeAiControlTime(form.quietHoursEnd, "07:00"),
     allow_schedule_actions: form.allowScheduleActions,
     allow_contact_actions: form.allowContactActions,
+    buddy_attention_enabled: form.buddyAttentionEnabled,
   };
 }
 
@@ -86,6 +91,8 @@ export function isAiFriendControlFormDirty(
     quietHoursEnd: source?.quiet_hours_end ?? "07:00",
     allowScheduleActions: source?.allow_schedule_actions ?? true,
     allowContactActions: source?.allow_contact_actions ?? true,
+    // 서버에 값이 없는 가족(옛 행)은 켜짐이 기본이다 — 화면 초깃값과 같아야 미저장 변경으로 보이지 않는다.
+    buddyAttentionEnabled: source?.buddy_attention_enabled ?? true,
   });
   return draft.proactive_enabled !== saved.proactive_enabled
     || draft.proactive_start_time !== saved.proactive_start_time
@@ -94,6 +101,7 @@ export function isAiFriendControlFormDirty(
     || draft.quiet_hours_end !== saved.quiet_hours_end
     || draft.allow_schedule_actions !== saved.allow_schedule_actions
     || draft.allow_contact_actions !== saved.allow_contact_actions
+    || draft.buddy_attention_enabled !== saved.buddy_attention_enabled
     || draft.forbidden_topics.length !== saved.forbidden_topics.length
     || draft.forbidden_topics.some((topic, index) => topic !== saved.forbidden_topics[index]);
 }

@@ -81,6 +81,8 @@ const messages = {
   "child.aiChat.voice.listening": "듣고 있어…",
   "child.aiChat.voice.replyOffAria": "글로 물어본 답도 읽어주기 끄기",
   "child.aiChat.voice.replyOnAria": "글로 물어본 답도 읽어주기 켜기",
+  "child.aiChat.voice.showText": "글로 볼래",
+  "child.aiChat.voice.speaking": "말하는 중이야…",
   "child.aiChat.voice.startAria": "말로 이야기하기",
   "child.aiChat.voice.stop": "그만",
   "child.aiChat.voice.stopAria": "말하기 그만두기",

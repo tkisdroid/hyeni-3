@@ -22,6 +22,7 @@ test("선제 대화와 권한 설정은 서버 patch 형태로 정규화된다",
     quietHoursEnd: "07:00",
     allowScheduleActions: false,
     allowContactActions: true,
+    buddyAttentionEnabled: false,
   });
 
   assert.deepEqual(patch, {
@@ -33,6 +34,7 @@ test("선제 대화와 권한 설정은 서버 patch 형태로 정규화된다",
     quiet_hours_end: "07:00",
     allow_schedule_actions: false,
     allow_contact_actions: true,
+    buddy_attention_enabled: false,
   });
 });
 
@@ -52,6 +54,8 @@ test("AI 상세 설정은 서버 기본값과 같으면 깨끗하고 의미 있�
     quietHoursEnd: "07:00",
     allowScheduleActions: true,
     allowContactActions: true,
+    // 서버에 값이 없는 옛 가족은 켜짐이 기본이다 — 화면 초깃값과 같아야 미저장 변경으로 안 보인다.
+    buddyAttentionEnabled: true,
   };
 
   assert.equal(isAiFriendControlFormDirty(form, { forbidden_topics: ["게임"] }), false);
@@ -61,6 +65,11 @@ test("AI 상세 설정은 서버 기본값과 같으면 깨끗하고 의미 있�
   );
   assert.equal(
     isAiFriendControlFormDirty({ ...form, allowContactActions: false }, { forbidden_topics: ["게임"] }),
+    true,
+  );
+  // 부모가 "먼저 말 걸기"를 끄면 저장할 변경으로 잡혀야 한다(끈 게 조용히 사라지면 안 된다).
+  assert.equal(
+    isAiFriendControlFormDirty({ ...form, buddyAttentionEnabled: false }, { forbidden_topics: ["게임"] }),
     true,
   );
 });

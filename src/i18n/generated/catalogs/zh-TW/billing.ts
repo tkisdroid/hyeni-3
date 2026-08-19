@@ -1,5 +1,7 @@
 const messages = {
   "billing.aiCredit.creditUse": "AI 每次幫忙使用 1 次額度。",
+  "billing.aiCredit.detail.buddyAttentionDescription": "偶爾在畫面上變大，邀請孩子聊天",
+  "billing.aiCredit.detail.buddyAttentionTitle": "AI 夥伴主動搭話",
   "billing.aiCredit.detail.contactDescription": "協助您的孩子要求打電話或發送訊息",
   "billing.aiCredit.detail.contactTitle": "允許接觸操作",
   "billing.aiCredit.detail.description": "這些家長設定適用於 {childName}",

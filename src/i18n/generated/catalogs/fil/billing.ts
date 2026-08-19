@@ -1,5 +1,7 @@
 const messages = {
   "billing.aiCredit.creditUse": "Isang credit kada sagot ng AI.",
+  "billing.aiCredit.detail.buddyAttentionDescription": "Paminsan-minsan lumalaki para mag-usap",
+  "billing.aiCredit.detail.buddyAttentionTitle": "Mauunang kumausap ang AI buddy",
   "billing.aiCredit.detail.contactDescription": "Tumutulong sa iyong anak na humiling ng tawag o mensahe sa isang magulang",
   "billing.aiCredit.detail.contactTitle": "Payagan ang mga pagkilos sa pakikipag-ugnayan",
   "billing.aiCredit.detail.description": "Ang mga setting ng magulang na ito ay nalalapat sa {childName}",

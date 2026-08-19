@@ -81,6 +81,8 @@ const messages = {
   "child.aiChat.voice.listening": "Aku dengerin…",
   "child.aiChat.voice.replyOffAria": "Matikan pembacaan jawaban untuk pertanyaan yang diketik",
   "child.aiChat.voice.replyOnAria": "Nyalakan pembacaan jawaban untuk pertanyaan yang diketik",
+  "child.aiChat.voice.showText": "Lihat teks",
+  "child.aiChat.voice.speaking": "Sedang bicara…",
   "child.aiChat.voice.startAria": "Bicara pakai suara",
   "child.aiChat.voice.stop": "Berhenti",
   "child.aiChat.voice.stopAria": "Berhenti bicara",

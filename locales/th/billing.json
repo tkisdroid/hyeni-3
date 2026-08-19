@@ -1,5 +1,7 @@
 {
   "billing.aiCredit.creditUse": "AI ตอบครั้งละ 1 เครดิต",
+  "billing.aiCredit.detail.buddyAttentionDescription": "บางครั้งจะขยายใหญ่บนหน้าจอเพื่อชวนคุย",
+  "billing.aiCredit.detail.buddyAttentionTitle": "ให้เพื่อน AI ชวนคุยก่อน",
   "billing.aiCredit.detail.contactDescription": "ช่วยให้บุตรหลานของคุณขอการโทรหรือส่งข้อความถึงผู้ปกครอง",
   "billing.aiCredit.detail.contactTitle": "อนุญาตการดำเนินการติดต่อ",
   "billing.aiCredit.detail.description": "การตั้งค่าหลักเหล่านี้ใช้กับ {childName}",

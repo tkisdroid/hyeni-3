@@ -664,6 +664,8 @@ export interface AiFriendSettings {
   long_term_memory_enabled?: boolean;
   allow_schedule_actions?: boolean;
   allow_contact_actions?: boolean;
+  /** 플로팅 AI 친구가 스스로 커졌다 화면을 채우며 아이를 부를지. 미설정 가족은 켜짐으로 본다. */
+  buddy_attention_enabled?: boolean;
   safety_notification_level?: string | null;
 }
 
@@ -677,6 +679,7 @@ export interface AiFriendPublicSettings {
   proactive_end_time?: string | null;
   quiet_hours_start?: string | null;
   quiet_hours_end?: string | null;
+  buddy_attention_enabled?: boolean;
 }
 
 /** 부모 전용 상세 설정 조회(GET /settings/friend). 미설정이면 null. */

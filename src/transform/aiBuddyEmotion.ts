@@ -215,3 +215,9 @@ export function resolveAiBuddyEmotion(input: AiBuddyEmotionInput): AiBuddyEmotio
   if (hasAny(child, JOY_WORDS)) return "happy";
   return aiBuddyIdleEmotion(input.hourOfDay);
 }
+
+/** 아이 말을 듣는 중일 때의 얼굴(음성 화면). */
+export const AI_BUDDY_LISTENING_FACE: AiBuddyChatFace = "curious";
+
+/** 친구가 소리 내어 말하는 중일 때의 얼굴(음성 화면). */
+export const AI_BUDDY_SPEAKING_FACE: AiBuddyChatFace = "talking";

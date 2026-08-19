@@ -374,7 +374,8 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   보호를 위해 실행하지 않았다. 현재 앱 소스는 Play v1.3.0/versionCode 6 서명 AAB 이후이므로 기존 AAB는 stale이다.
 - ★**꾹 누르면 바로 말하기 + 버튼이 그걸 알려 준다(2026-08-19 TK 지시)**: 아이는 플로팅 AI 친구 버튼에
   음성 대화가 있다는 걸 알 방법이 없었다. ①**조작** — `AI_BUDDY_VOICE_LONG_PRESS_MS`(550ms) 이상 누르면
-  `navigate("/child/ai-friend", { state:{ startVoice:true } })` 로 대화창이 열리고 `startVoice()` 가 바로 돈다.
+  `navigate("/child/ai-friend", { state:{ startVoice:true, buddyLaunch:true } })` 로 대화창이 열리고
+  `startVoice()` 가 바로 돈다(`buddyLaunch` 는 아래 전환 연출을 이어받게 하는 표식이다).
   길게 누른 것 자체가 아이의 조작이라 "전송은 사용자 액션에서만" 계약을 어기지 않는다. 대화 화면은
   `navigate(pathname, { replace:true, state:{...navState, startVoice:false} })` 로 히스토리 state 를 즉시 지운다 —
   안 지우면 뒤로 갔다 돌아올 때마다 마이크가 켜져 아이가 놀란다. 드래그로 옮기는 중이면 `cancelLongPress()`,
@@ -384,6 +385,52 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   보다 우선하며 `.abf__bubble--hint` 로 두 줄까지 펴진다(기본 말풍선은 `nowrap`+말줄임이라 잘린다).
   ⚠️ 저장값 파싱은 `typeof` 가드 필수 — `Number(null)===0` 이면 "1970년에 알림"이 되어 매번 다시 뜬다.
   회귀=`tests/aiBuddyFab.test.ts`.
+- ★**AI 친구가 스스로 아이를 부른다 · 부모가 끌 수 있다(2026-08-19 TK 지시)**: 아이는 구석의 작은 버튼을
+  그냥 지나친다. ①**부르기** — 정본은 `src/transform/aiBuddyAttention.ts` 하나다. 화면에 들어온 지 20초 뒤부터
+  15초마다 판정해 **커졌다 작아지거나**(`grow`) **화면을 채우고 말을 건 뒤 스스로 물러난다**(`full`).
+  첫 번째는 `full`, 그 뒤로는 세 번에 한 번만 `full` 이고 하루 8회·최소 간격 5분이며 날짜는 KST 로 센다.
+  드래그 직후 20초·대화 감정 표시 중·`document.hidden`·움직임 줄이기에서는 부르지 않는다(배회와 같은 게이트).
+  ⚠️ 화면을 채운 오버레이는 **modal dialog 가 아니다** — 스스로 물러나므로 focus 를 가두면 대화 중이던 아이를
+  막는다. `role="dialog"` 를 붙이지 말고 scrim 은 `tabIndex={-1}` 로 Tab 순서에서 뺀다.
+  ②**부모 스위치** — `ai_parent_settings.buddy_attention_enabled`(D1 컬럼, 기본 1=켜짐). 부모 설정 > AI 친구의
+  「AI 친구가 먼저 말 걸기」 토글이며, **아이 기기가 그 값을 알아야 하므로 `FRIEND_PUBLIC_COLS` 에도 넣는다**
+  (부모 전용 `FRIEND_SELECT_COLS` 에만 넣으면 부모가 꺼도 아이 화면은 계속 부른다). 운영 순서 =
+  `worker/db/ai-buddy-attention.sql` 적용 → Worker 배포 → Pages/Android. 설정을 아직 못 읽었으면 조용히 있는다
+  (`ai_enabled === true` 이고 `buddy_attention_enabled !== false` 일 때만 부른다).
+  ③**먼저 알려 주는 말** — 정본은 `src/transform/aiBuddyNudge.ts` 다. 안 읽은 부모님 메시지 > 다음 일정 >
+  아직 못 챙긴 준비물 > 그냥 부르기 순이고, **부모 메시지는 무조건 1순위**, 나머지는 돌아가며 말해 같은 말만
+  반복하지 않는다. 재료는 `src/queries/useAiBuddyNudge.ts` 가 아이 홈·대화 화면과 **같은 query key** 로 받아
+  캐시를 공유한다(AI 친구가 꺼진 가족은 조회 자체를 하지 않는다). 일정 한 마디는 `eventCompanionAsk` 한 곳에서
+  고른다 — nudge 가 자기 규칙을 갖고 있으면 "축구 시합"에 축구화를 묻는다(시합·발표는 응원이 먼저다).
+  ⚠️ 이 **알려 주는 동작은 부모 스위치와 무관하게 유지된다** — 스위치는 "커지는 연출"만 끈다.
+  회귀=`tests/aiBuddyFab.test.ts`·`worker/tests/aiBuddyAttentionSetting.test.mjs`.
+- ★**꾹 누른 뒤 대화창까지 한 동작으로 잇는다(2026-08-19 TK 제보 "흐름이 끊어져 보여요")**: 정본은
+  `src/transform/aiBuddyLaunch.ts` 하나다(크기·시간을 화면마다 따로 두면 중간에 툭 튄다).
+  ①버튼이 `AI_BUDDY_HANDOFF_FACE_PX`(168px)로 커지며 화면 가운데로 가고(`AI_BUDDY_LAUNCH_MS` 300ms)
+  ②대화 화면이 **같은 크기·같은 자리**에서 받아 제자리로 줄이며 내용을 올린다(`AI_BUDDY_ENTER_MS` 460ms).
+  넘길 때 `state:{ buddyLaunch:true }` 를 함께 보내고 대화 화면은 첫 렌더에서만 붙잡은 뒤 히스토리에서 지운다
+  (안 지우면 뒤로 갔다 올 때마다 연출이 반복된다). `startVoice` 는 꾹 누른 경우에만 실려 그냥 탭으로 들어오면
+  마이크가 켜지지 않는다. ⚠️ 전환 중에는 `useLayoutEffect` 의 위치 복원과 `ResizeObserver` 재배치를 멈춰야
+  한다 — 안 그러면 가운데로 가던 버튼이 제자리로 튕겨 전환이 깨진다. 움직임 줄이기에서는 지연 0 으로 바로 연다.
+- ★**말할 때는 글 대신 파형이 움직인다(2026-08-19 TK 지시)**: 음성으로 대화하는 동안 대화 화면 위에
+  얼굴+파형(`.afc-voice`)을 덮어 아이가 글을 읽지 않아도 되게 한다. 듣는 중 얼굴=`AI_BUDDY_LISTENING_FACE`,
+  말하는 중=`AI_BUDDY_SPEAKING_FACE`(얼굴은 여전히 한 세트다). ①**파형은 실제 목소리다** — Android
+  `SpeechPlugin.onRmsChanged` 가 `speechRms` 이벤트로 dB 만 보내고(음성 자체는 보내지 않는다)
+  `normalizeSpeechRms`(`src/transform/childVoiceWave.ts`)가 0~1 로 좁힌다. 값은 state 가 아니라 **CSS 변수**
+  `--voice-level` 로 흘린다(초당 10회 리렌더 방지). 값이 한 번도 오지 않는 기기(웹)는 `data-level="live"` 가
+  붙지 않아 기본 파형 애니메이션으로 정직하게 강등한다. ②**말하는 중 판정** — `onSpeechPlaybackState` 가
+  네이티브 `ttsState`(started/done/error/stopped)와 웹 `SpeechSynthesisUtterance` 이벤트를 함께 전한다.
+  종료 신호를 못 주는 기기가 있어 `estimateSpeechDurationMs` 상한 타이머를 함께 건다 — 파형이 영영 안 멈추면
+  "아직 말하는 중"이라는 거짓말이 된다. ③아이가 글을 보고 싶으면 「글로 볼래」로 접고 마이크를 다시 켜면
+  돌아온다. 접었을 때만 기존 `.afc-listening` 한 줄 표시가 나온다(움직이는 표시자는 화면에 하나).
+  회귀=`tests/childVoiceChat.test.ts`.
+- ★**새 문구는 세 곳을 함께 고쳐야 화면에 나온다(2026-08-19 실측)**: `locales/<locale>/*.json` 10개만 고치면
+  화면에는 여전히 `child.aiChat.voice.speaking` 같은 **원시 id** 가 보인다. 런타임이 읽는 건 커밋된 생성물
+  `src/i18n/generated/catalogs/**` 이고, 빌드 파이프라인이 그걸 다시 만들어 주지 않기 때문이다. 순서는
+  ①10개 locale JSON ②`locales/descriptions.json` 에 같은 키 추가(namespace·audience·qualityTier·description —
+  없으면 `missing_description:<id>` 로 생성이 **실패**한다) ③`node scripts/i18n/build-catalogs.mjs` ④`npm run build`.
+  ⚠️ 이 함정은 테스트로 안 잡힌다 — locale JSON 만 보는 테스트는 통과하고, 화면에서만 id 가 보인다.
+  브라우저 하니스로 실제 문구를 눈으로 확인하는 게 유일한 확인 방법이다.
 - ★**AI 친구는 아이를 알아 가는 친구다(2026-08-19 TK 지시)**: 대화는 관계를 쌓는 데 쓰여야 한다.
   정본은 `worker/shared/aiChildHabits.js` 하나다.
   ①**습관 기억** — 아이가 지나가듯 말한 습관("집에 오면 내일 일정 정리해")을 `extractChildHabitMemory` 가 뽑아

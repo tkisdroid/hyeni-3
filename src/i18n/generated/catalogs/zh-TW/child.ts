@@ -81,6 +81,8 @@ const messages = {
   "child.aiChat.voice.listening": "我在聽…",
   "child.aiChat.voice.replyOffAria": "關閉朗讀文字提問的回答",
   "child.aiChat.voice.replyOnAria": "開啟朗讀文字提問的回答",
+  "child.aiChat.voice.showText": "看文字",
+  "child.aiChat.voice.speaking": "正在說話…",
   "child.aiChat.voice.startAria": "用說的",
   "child.aiChat.voice.stop": "停",
   "child.aiChat.voice.stopAria": "停止說話",

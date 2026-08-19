@@ -50,6 +50,34 @@ import {
   EMPTY_AI_BUDDY_VOICE_HINT_STATE,
 } from "../src/transform/aiBuddyVoiceHint.ts";
 import {
+  aiBuddyAttentionDayKey,
+  aiBuddyAttentionDurationMs,
+  aiBuddyAttentionStage,
+  aiBuddyAttentionStorageKey,
+  aiBuddyAttentionToday,
+  markAiBuddyAttentionShown,
+  normalizeAiBuddyAttentionState,
+  shouldPlayAiBuddyAttention,
+  AI_BUDDY_ATTENTION_FIRST_DELAY_MS,
+  AI_BUDDY_ATTENTION_FULL_EVERY,
+  AI_BUDDY_ATTENTION_MAX_PER_DAY,
+  AI_BUDDY_ATTENTION_MIN_GAP_MS,
+  EMPTY_AI_BUDDY_ATTENTION_STATE,
+} from "../src/transform/aiBuddyAttention.ts";
+import {
+  aiBuddyNudgeCandidates,
+  aiBuddyNudgeTimeLabel,
+  buildAiBuddyNudge,
+  AI_BUDDY_INVITE_NUDGE,
+  EMPTY_AI_BUDDY_NUDGE_INPUT,
+} from "../src/transform/aiBuddyNudge.ts";
+import {
+  aiBuddyEnterDurationMs,
+  aiBuddyLaunchDelayMs,
+  AI_BUDDY_HANDOFF_FACE_PX,
+  AI_BUDDY_LAUNCH_MS,
+} from "../src/transform/aiBuddyLaunch.ts";
+import {
   AI_BUDDY_FAB_EDGE_GAP,
   AI_BUDDY_FAB_SIZE,
   aiBuddyFabOffset,
@@ -322,10 +350,13 @@ test("AI 친구 화면 안에서는 플로팅 버튼을 겹쳐 띄우지 않는�
 test("배회 타이머는 감정이 바뀌어도 다시 만들지 않고 말풍선은 대화에 자리를 비킨다", () => {
   const fab = read("src/app/AiBuddyFab.tsx");
   // emotion 을 의존성에 넣으면 도착 표정·말풍선 타이머가 취소돼 두리번거리는 얼굴로 굳는다.
-  assert.match(fab, /}, \[\]\);\n\n  \/\/ 표정이 바뀌면/);
+  assert.match(fab, /AI_BUDDY_WANDER_STEP_MS\);[\s\S]{0,320}\n  \}, \[\]\);/);
   assert.match(fab, /showingEmotion: emotionRef\.current !== "idle"/);
   // 실제 대화 감정·탭·드래그에는 말풍선이 즉시 물러난다.
-  assert.match(fab, /setWanderLine\(null\);\n    setVoiceHint\(false\);\n  \}, \[emotion\]\)/);
+  assert.match(
+    fab,
+    /setWanderLine\(null\);\n    setVoiceHint\(false\);\n    setAttention\(null\);\n  \}, \[emotion\]\)/,
+  );
   assert.match(fab, /setTapped\(true\);\n    setWanderLine\(null\)/);
   // 말풍선은 얼굴을 가리지 않는 안내라 조작을 가로채지 않고 스크린리더에 중복 낭독되지 않는다.
   assert.match(fab, /className=\{voiceHint \? "abf__bubble abf__bubble--hint" : "abf__bubble"\}/);
@@ -396,9 +427,9 @@ test("꾹 누르면 마이크가 켜진 대화창이 열리고 손을 떼도 또
   assert.match(fab, /drag\.moved = true;[\s\S]{0,140}cancelLongPress\(\)/);
   // 이미 마이크가 켜졌으면 손을 뗀 것으로 대화창을 다시 열지 않는다.
   assert.match(fab, /if \(longPressFiredRef\.current\) \{[\s\S]{0,200}return;/);
-  assert.match(fab, /navigate\("\/child\/ai-friend", startVoice \? \{ state: \{ startVoice: true \} \} : undefined\)/);
+  assert.match(fab, /const state = \{ startVoice: configured && startVoice, buddyLaunch: true \}/);
   // 이름을 안 정한 아이는 여전히 친구 만들기로 간다(빈 대화창을 열지 않는다).
-  assert.match(fab, /if \(!configured\) \{[\s\S]{0,120}"\/child\/ai-friend-setup"/);
+  assert.match(fab, /configured \? "\/child\/ai-friend" : "\/child\/ai-friend-setup"/);
   // 써 본 아이에게는 다시 알리지 않는다.
   assert.match(fab, /markAiBuddyVoiceHintUsed\(voiceHintStateRef\.current\)/);
   // 버튼 라벨이 이 조작을 알려 준다(스크린리더도 알 수 있게).
@@ -407,11 +438,15 @@ test("꾹 누르면 마이크가 켜진 대화창이 열리고 손을 떼도 또
 
 test("대화 화면은 꾹 눌러 들어왔을 때만 마이크를 켜고 히스토리를 지운다", () => {
   const chat = read("src/screens/child/AiFriendChat.tsx");
-  assert.match(chat, /navState\.startVoice !== true\) return/);
+  assert.match(chat, /navState\.startVoice !== true && navState\.buddyLaunch !== true\) return/);
   assert.match(chat, /autoVoiceStartedRef\.current = true/);
   // 뒤로 갔다 돌아왔을 때 또 켜지지 않도록 state 를 즉시 지운다.
-  assert.match(chat, /replace: true,\s*state: \{ \.\.\.navState, startVoice: false \}/);
-  assert.match(chat, /startVoice\(\);/);
+  assert.match(
+    chat,
+    /replace: true,\s*state: \{ \.\.\.navState, startVoice: false, buddyLaunch: false \}/,
+  );
+  // 마이크는 "말로 하고 싶다"고 꾹 누른 경우에만 켠다(그냥 탭으로 들어오면 켜지 않는다).
+  assert.match(chat, /if \(wantsVoice\) startVoice\(\);/);
 });
 
 test("대화 화면은 확인 카드에서만 도구를 실행하고 같은 표정을 공유한다", () => {
@@ -425,4 +460,280 @@ test("대화 화면은 확인 카드에서만 도구를 실행하고 같은 표�
   assert.match(chat, /send\(\s*intl\.formatMessage\(\{ id: "child\.aiChat\.confirm\.yes" \}\),\s*"confirm",\s*confirmed,?\s*\)/);
   // 내 색깔은 서버 컬럼이 없어 기기에서 적용한다.
   assert.match(chat, /clientAction === "setAccent"[\s\S]{0,80}setAccent\(tool\.accent\)/);
+});
+
+
+// ── 스스로 아이를 부르기(2026-08-19 TK 지시) ──────────────────────────────
+
+test("부모가 끄면 어떤 조건에서도 부르지 않는다", () => {
+  const now = 1_700_000_000_000;
+  const base = {
+    dragging: false,
+    showingEmotion: false,
+    visible: true,
+    reducedMotion: false,
+    msSinceDrag: null,
+    msSinceMount: AI_BUDDY_ATTENTION_FIRST_DELAY_MS + 1,
+    state: EMPTY_AI_BUDDY_ATTENTION_STATE,
+    nowMs: now,
+  };
+  assert.equal(shouldPlayAiBuddyAttention({ ...base, enabled: true }), true);
+  // 부모 스위치가 유일한 최상위 게이트다 — 나머지 조건이 아무리 좋아도 조용히 있는다.
+  assert.equal(shouldPlayAiBuddyAttention({ ...base, enabled: false }), false);
+});
+
+test("들어오자마자·드래그 직후·화면이 안 보일 때는 부르지 않는다", () => {
+  const now = 1_700_000_000_000;
+  const base = {
+    enabled: true,
+    dragging: false,
+    showingEmotion: false,
+    visible: true,
+    reducedMotion: false,
+    msSinceDrag: null,
+    msSinceMount: AI_BUDDY_ATTENTION_FIRST_DELAY_MS + 1,
+    state: EMPTY_AI_BUDDY_ATTENTION_STATE,
+    nowMs: now,
+  };
+  assert.equal(shouldPlayAiBuddyAttention({ ...base, msSinceMount: 1_000 }), false);
+  assert.equal(shouldPlayAiBuddyAttention({ ...base, msSinceDrag: 3_000 }), false);
+  assert.equal(shouldPlayAiBuddyAttention({ ...base, visible: false }), false);
+  assert.equal(shouldPlayAiBuddyAttention({ ...base, dragging: true }), false);
+  // 실제 대화 감정을 보여 주는 중이면 그게 우선이다.
+  assert.equal(shouldPlayAiBuddyAttention({ ...base, showingEmotion: true }), false);
+  assert.equal(shouldPlayAiBuddyAttention({ ...base, reducedMotion: true }), false);
+});
+
+test("하루 횟수와 최소 간격을 지키고 날이 바뀌면 다시 센다", () => {
+  const now = Date.UTC(2026, 7, 19, 3, 0, 0); // KST 정오
+  const gate = (state: AiBuddyAttentionState, nowMs: number) => shouldPlayAiBuddyAttention({
+    enabled: true,
+    dragging: false,
+    showingEmotion: false,
+    visible: true,
+    reducedMotion: false,
+    msSinceDrag: null,
+    msSinceMount: AI_BUDDY_ATTENTION_FIRST_DELAY_MS + 1,
+    state,
+    nowMs,
+  });
+
+  let state = markAiBuddyAttentionShown(EMPTY_AI_BUDDY_ATTENTION_STATE, now);
+  assert.equal(state.shownToday, 1);
+  assert.equal(gate(state, now + 1_000), false, "방금 불렀으면 잠시 조용히 있는다");
+  assert.equal(gate(state, now + AI_BUDDY_ATTENTION_MIN_GAP_MS), true);
+
+  for (let i = 1; i < AI_BUDDY_ATTENTION_MAX_PER_DAY; i += 1) {
+    state = markAiBuddyAttentionShown(state, now + AI_BUDDY_ATTENTION_MIN_GAP_MS * i);
+  }
+  assert.equal(state.shownToday, AI_BUDDY_ATTENTION_MAX_PER_DAY);
+  assert.equal(gate(state, now + AI_BUDDY_ATTENTION_MIN_GAP_MS * 99), false, "하루 상한을 넘겼다");
+
+  // 다음 날이 되면 오늘 횟수만 0 으로 돌아간다(총 횟수는 이어져 연출이 매번 같아지지 않는다).
+  const tomorrow = now + 24 * 60 * 60 * 1_000;
+  const reset = aiBuddyAttentionToday(state, tomorrow);
+  assert.equal(reset.shownToday, 0);
+  assert.equal(reset.totalShown, state.totalShown);
+  assert.equal(reset.dayKey, aiBuddyAttentionDayKey(tomorrow));
+});
+
+test("하루 경계는 아이가 사는 시간대(KST)로 센다", () => {
+  // UTC 2026-08-18 16:00 = KST 2026-08-19 01:00 — 아이에게는 이미 다음 날이다.
+  assert.equal(aiBuddyAttentionDayKey(Date.UTC(2026, 7, 18, 16, 0, 0)), "2026-08-19");
+  assert.equal(aiBuddyAttentionDayKey(Date.UTC(2026, 7, 18, 14, 59, 0)), "2026-08-18");
+});
+
+test("화면을 채우는 큰 동작은 몇 번에 한 번뿐이다", () => {
+  assert.equal(aiBuddyAttentionStage(0), "full", "처음에는 확실히 눈에 띄어야 발견된다");
+  const stages = Array.from({ length: 9 }, (_, i) => aiBuddyAttentionStage(i));
+  const fullCount = stages.filter((stage) => stage === "full").length;
+  assert.equal(fullCount, 9 / AI_BUDDY_ATTENTION_FULL_EVERY);
+  assert.ok(stages.includes("grow"), "나머지는 살짝 커졌다 작아진다");
+  // 화면을 가리는 동작이 더 짧게 끝나면 안 된다(읽을 시간은 줘야 한다).
+  assert.ok(aiBuddyAttentionDurationMs("full") > aiBuddyAttentionDurationMs("grow"));
+  assert.ok(aiBuddyAttentionDurationMs("full") <= 5_000, "화면을 오래 가리면 방해가 된다");
+});
+
+test("저장된 부르기 상태가 깨져 있어도 0 으로 둔갑하지 않는다", () => {
+  assert.deepEqual(normalizeAiBuddyAttentionState(null), EMPTY_AI_BUDDY_ATTENTION_STATE);
+  assert.deepEqual(normalizeAiBuddyAttentionState("3"), EMPTY_AI_BUDDY_ATTENTION_STATE);
+  // Number(null) === 0 함정 — "1970년에 불렀다"가 되면 간격 제한이 통째로 무력화된다.
+  assert.equal(normalizeAiBuddyAttentionState({ lastAtMs: null }).lastAtMs, null);
+  assert.equal(normalizeAiBuddyAttentionState({ lastAtMs: "x" }).lastAtMs, null);
+  assert.equal(normalizeAiBuddyAttentionState({ shownToday: -2 }).shownToday, 0);
+  assert.notEqual(
+    aiBuddyAttentionStorageKey("f1", "c1"),
+    aiBuddyAttentionStorageKey("f1", "c2"),
+  );
+});
+
+// ── 먼저 알려 주는 말(부모 메시지·다음 일정·준비물) ────────────────────────
+
+test("부모님 메시지는 무엇보다 먼저 알린다", () => {
+  const nudge = buildAiBuddyNudge({
+    unreadParentMessages: 2,
+    parentMessagePreview: "학원 끝나면 전화해",
+    nextEventTitle: "태권도",
+    nextEventTime: "15:00",
+    pendingSupplies: ["물통"],
+  }, 7);
+  assert.equal(nudge.kind, "parentMessage");
+  assert.ok(nudge.fullLine.includes("학원 끝나면 전화해"));
+});
+
+test("미리보기를 모르면 있는 척하지 않고 확인하자고만 한다", () => {
+  const nudge = buildAiBuddyNudge({
+    ...EMPTY_AI_BUDDY_NUDGE_INPUT,
+    unreadParentMessages: 1,
+    parentMessagePreview: null,
+  }, 0);
+  assert.equal(nudge.kind, "parentMessage");
+  assert.doesNotMatch(nudge.fullLine, /""/, "빈 인용부호를 남기지 않는다");
+});
+
+test("다음 일정은 물건 이름으로 묻고, 시합·발표는 응원부터 한다", () => {
+  const lesson = buildAiBuddyNudge({
+    ...EMPTY_AI_BUDDY_NUDGE_INPUT,
+    nextEventTitle: "태권도",
+    nextEventTime: "15:00",
+  }, 0);
+  assert.equal(lesson.kind, "nextEvent");
+  assert.ok(lesson.line.includes("3시"), lesson.line);
+  assert.ok(lesson.fullLine.includes("도복"), lesson.fullLine);
+
+  const game = buildAiBuddyNudge({
+    ...EMPTY_AI_BUDDY_NUDGE_INPUT,
+    nextEventTitle: "축구 시합",
+    nextEventTime: "10:00",
+  }, 0);
+  assert.ok(game.fullLine.includes("파이팅"), game.fullLine);
+});
+
+test("시각 형식을 모르면 시각을 지어내지 않는다", () => {
+  assert.equal(aiBuddyNudgeTimeLabel("15:00"), "3시");
+  assert.equal(aiBuddyNudgeTimeLabel("15:30"), "3시 반");
+  assert.equal(aiBuddyNudgeTimeLabel("09:15"), "9시 15분");
+  assert.equal(aiBuddyNudgeTimeLabel("00:00"), "12시");
+  assert.equal(aiBuddyNudgeTimeLabel(""), null);
+  assert.equal(aiBuddyNudgeTimeLabel(null), null);
+  assert.equal(aiBuddyNudgeTimeLabel("종일"), null);
+  assert.equal(aiBuddyNudgeTimeLabel("25:00"), null);
+
+  const noTime = buildAiBuddyNudge({
+    ...EMPTY_AI_BUDDY_NUDGE_INPUT,
+    nextEventTitle: "소풍",
+    nextEventTime: null,
+  }, 0);
+  assert.doesNotMatch(noTime.line, /\d+시/, "모르는 시각을 만들어 말하지 않는다");
+});
+
+test("아직 못 챙긴 준비물이 있으면 물건 이름으로 묻는다", () => {
+  const nudge = buildAiBuddyNudge({
+    ...EMPTY_AI_BUDDY_NUDGE_INPUT,
+    pendingSupplies: ["알림장", "물통", "실내화"],
+  }, 0);
+  assert.equal(nudge.kind, "supplies");
+  assert.ok(nudge.fullLine.includes("알림장"));
+  assert.ok(nudge.fullLine.includes("물통"));
+  assert.ok(!nudge.fullLine.includes("실내화"), "한 번에 두 개까지만 말한다");
+});
+
+test("알려 줄 게 없으면 지어내지 않고 그냥 부른다", () => {
+  const nudge = buildAiBuddyNudge(EMPTY_AI_BUDDY_NUDGE_INPUT, 0);
+  assert.deepEqual(nudge, AI_BUDDY_INVITE_NUDGE);
+  assert.equal(aiBuddyNudgeCandidates(EMPTY_AI_BUDDY_NUDGE_INPUT).length, 1);
+});
+
+test("부모 메시지가 없으면 돌아가며 말해 같은 말만 반복하지 않는다", () => {
+  const input = {
+    unreadParentMessages: 0,
+    parentMessagePreview: null,
+    nextEventTitle: "피아노",
+    nextEventTime: "17:00",
+    pendingSupplies: ["악보"],
+  };
+  const kinds = [0, 1, 2, 3].map((turn) => buildAiBuddyNudge(input, turn).kind);
+  assert.equal(new Set(kinds).size, 3, "돌아가며 말해야 한다: " + kinds.join(","));
+  assert.equal(kinds[0], "nextEvent");
+  assert.equal(kinds[3], "nextEvent", "한 바퀴 돌면 처음으로 돌아온다");
+});
+
+test("먼저 건네는 말은 짧은 반말이고 말풍선에 들어간다", () => {
+  const inputs = [
+    { ...EMPTY_AI_BUDDY_NUDGE_INPUT, unreadParentMessages: 1, parentMessagePreview: "밥 먹었어?" },
+    { ...EMPTY_AI_BUDDY_NUDGE_INPUT, nextEventTitle: "수영", nextEventTime: "16:00" },
+    { ...EMPTY_AI_BUDDY_NUDGE_INPUT, pendingSupplies: ["수경"] },
+    EMPTY_AI_BUDDY_NUDGE_INPUT,
+  ];
+  for (const input of inputs) {
+    const nudge = buildAiBuddyNudge(input, 0);
+    assert.ok(nudge.line.length <= 16, "말풍선에 안 들어간다: " + nudge.line);
+    assert.ok(nudge.fullLine.length <= 40, "화면 문구가 너무 길다: " + nudge.fullLine);
+    assert.doesNotMatch(nudge.line, /(?:요|습니다|세요)[!?.]?$/, "아이 모드는 반말이다");
+    assert.ok((AI_BUDDY_CHAT_FACES as readonly string[]).includes(nudge.face), nudge.face);
+  }
+});
+
+// ── 대화 화면으로 이어지는 전환 ────────────────────────────────────────────
+
+test("전환은 두 화면이 같은 크기·같은 시간을 쓴다", () => {
+  const fabCss = read("src/app/AiBuddyFab.css");
+  const chatCss = read("src/screens/child/AiFriendChat.css");
+  // ① 버튼이 커지며 가운데로 가는 크기 = ② 대화 화면이 이어받는 크기.
+  assert.match(
+    fabCss,
+    new RegExp('\\.abf\\[data-launching="true"\\] \\{[^}]*width: ' + AI_BUDDY_HANDOFF_FACE_PX + 'px'),
+  );
+  assert.match(
+    chatCss,
+    new RegExp('\\.afc-enter img \\{[^}]*width: ' + AI_BUDDY_HANDOFF_FACE_PX + 'px'),
+  );
+  // 이동 시간도 같아야 중간에 툭 튀지 않는다.
+  assert.match(fabCss, new RegExp('left ' + (AI_BUDDY_LAUNCH_MS / 1_000) + 's'));
+  assert.ok(aiBuddyEnterDurationMs(false) > AI_BUDDY_LAUNCH_MS, "이어받는 쪽이 더 여유 있게 자리를 잡는다");
+});
+
+test("움직임 줄이기에서는 연출 없이 바로 대화창을 연다", () => {
+  assert.equal(aiBuddyLaunchDelayMs(true), 0, "기다리게만 하고 아무것도 안 보이면 느린 앱이 된다");
+  assert.equal(aiBuddyEnterDurationMs(true), 0);
+  assert.equal(aiBuddyLaunchDelayMs(false), AI_BUDDY_LAUNCH_MS);
+});
+
+test("플로팅 버튼은 부모 설정과 AI 켜짐을 함께 확인하고 오늘 알 것을 말한다", () => {
+  const fab = read("src/app/AiBuddyFab.tsx");
+  // 부모가 끄면 부르지 않고, 설정을 아직 못 읽었으면 조용히 있는다(놀래키지 않는다).
+  assert.match(fab, /friendSettings\.data\?\.buddy_attention_enabled !== false/);
+  assert.match(fab, /aiEnabled = friendSettings\.data\?\.ai_enabled === true/);
+  // AI 가 꺼진 가족에서는 말 걸 재료도 받지 않는다.
+  assert.match(fab, /useAiBuddyNudgeInput\(aiEnabled\)/);
+  // 배회하며 건네는 말도 오늘 알아야 할 것이 있으면 그걸 먼저 말한다.
+  assert.match(fab, /buildAiBuddyNudge\(nudgeInputRef\.current, step\)/);
+  assert.match(fab, /nudge\.kind === "invite" \? aiBuddyWanderLine\(arrival\) : nudge\.line/);
+  // 부르는 중에는 배회하지 않는다(커진 얼굴이 걸어 다니면 어지럽다).
+  assert.match(fab, /if \(attentionRef\.current \|\| launchingRef\.current\) return;/);
+});
+
+test("화면을 채우고 부를 때도 조작은 같다(누르면 대화·꾹 누르면 말하기)", () => {
+  const fab = read("src/app/AiBuddyFab.tsx");
+  assert.match(fab, /className="abf-stage__face hy-press"/);
+  assert.match(fab, /bindStageLongPress\(undefined, \(\) => openChatRef\.current\(false\)\)/);
+  assert.match(fab, /delayMs: AI_BUDDY_VOICE_LONG_PRESS_MS/);
+  // 바깥을 누르면 바로 닫힌다(아이를 붙잡아 두지 않는다).
+  assert.match(fab, /className="abf-stage__scrim"[\s\S]{0,140}onClick=\{dismissAttention\}/);
+  // 스스로도 물러난다.
+  assert.match(fab, /setAttention\(null\),\s*aiBuddyAttentionDurationMs\(stage\)/);
+});
+
+
+test("부르는 동안에도 SOS 는 가려지지 않는다", () => {
+  const zIndexIn = (css: string, pattern: RegExp): number => {
+    const block = pattern.exec(css)?.[0] ?? "";
+    return Number(/z-index:\s*(\d+)/.exec(block)?.[1] ?? NaN);
+  };
+  const stage = zIndexIn(read("src/app/AiBuddyFab.css"), /\.abf-stage\s*\{[^}]*\}/);
+  const dock = zIndexIn(read("src/app/ChildDock.css"), /\.kdock\s*\{[^}]*\}/);
+  assert.ok(Number.isFinite(stage) && Number.isFinite(dock), "z-index 를 읽지 못했어요");
+  // 화면을 채우고 부르는 오버레이는 최대 3.8초 떠 있다 —
+  // 그동안 아이 독(SOS)을 덮으면 위급한 순간에 아이가 버튼을 못 누른다.
+  assert.ok(stage < dock, "부르기 오버레이(" + stage + ")가 아이 독(" + dock + ")을 덮고 있다");
 });

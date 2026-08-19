@@ -280,6 +280,8 @@ export function AiCredit() {
   const [quietHoursEnd, setQuietHoursEnd] = useState("07:00");
   const [allowScheduleActions, setAllowScheduleActions] = useState(true);
   const [allowContactActions, setAllowContactActions] = useState(true);
+  // 플로팅 AI 친구가 스스로 아이를 부르는 동작. 서버에 값이 없는 옛 가족은 켜짐이 기본이다.
+  const [buddyAttentionEnabled, setBuddyAttentionEnabled] = useState(true);
   const [formHydration, setFormHydration] = useState<{
     childUserId: string;
     source: typeof friendSettings;
@@ -298,6 +300,7 @@ export function AiCredit() {
     setQuietHoursEnd(normalizeAiControlTime(friendSettings?.quiet_hours_end, "07:00"));
     setAllowScheduleActions(friendSettings?.allow_schedule_actions ?? true);
     setAllowContactActions(friendSettings?.allow_contact_actions ?? true);
+    setBuddyAttentionEnabled(friendSettings?.buddy_attention_enabled ?? true);
     setFormHydration({ childUserId, source: friendSettings });
   }, [aiCreditDataReady, childUserId, friendSettings]);
 
@@ -333,6 +336,7 @@ export function AiCredit() {
       quietHoursEnd,
       allowScheduleActions,
       allowContactActions,
+      buddyAttentionEnabled,
     });
     setSettingsSaveAction("advanced");
     saveSettings.mutate(
@@ -373,6 +377,7 @@ export function AiCredit() {
     quietHoursEnd,
     allowScheduleActions,
     allowContactActions,
+    buddyAttentionEnabled,
   }, friendSettings);
   usePwaUpdateCriticalSection(
     busyPack !== null
@@ -1219,6 +1224,26 @@ export function AiCredit() {
               style={{ background: allowContactActions ? "var(--hy-accent-cta)" : "var(--line-soft)" }}
             >
               <span className="ac-toggle__knob" style={{ left: allowContactActions ? 22 : 2 }} />
+            </button>
+          </div>
+
+          {/* 아이가 구석의 버튼을 지나치지 않도록 친구가 가끔 커지며 부른다 — 부담스러우면 끈다. */}
+          <div className="ac-control-row">
+            <span className="ac-control-row__main">
+              <span className="ac-control-row__title">{intl.formatMessage({ id: "billing.aiCredit.detail.buddyAttentionTitle" })}</span>
+              <span className="ac-control-row__sub">{intl.formatMessage({ id: "billing.aiCredit.detail.buddyAttentionDescription" })}</span>
+            </span>
+            <button
+              type="button"
+              className="ac-toggle"
+              aria-label={intl.formatMessage({ id: "billing.aiCredit.detail.buddyAttentionTitle" })}
+              aria-pressed={buddyAttentionEnabled}
+              onClick={() => setBuddyAttentionEnabled((v) => !v)}
+              disabled={!advancedSettingsReady || saveSettings.isPending}
+              data-progress-owner="advanced-save"
+              style={{ background: buddyAttentionEnabled ? "var(--hy-accent-cta)" : "var(--line-soft)" }}
+            >
+              <span className="ac-toggle__knob" style={{ left: buddyAttentionEnabled ? 22 : 2 }} />
             </button>
           </div>
 

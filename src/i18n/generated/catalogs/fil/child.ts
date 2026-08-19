@@ -81,6 +81,8 @@ const messages = {
   "child.aiChat.voice.listening": "Nakikinig ako…",
   "child.aiChat.voice.replyOffAria": "I-off ang pagbasa nang malakas ng sagot sa text",
   "child.aiChat.voice.replyOnAria": "I-on ang pagbasa nang malakas ng sagot sa text",
+  "child.aiChat.voice.showText": "Tingnan ang teksto",
+  "child.aiChat.voice.speaking": "Nagsasalita…",
   "child.aiChat.voice.startAria": "Magsalita gamit ang boses",
   "child.aiChat.voice.stop": "Tigil",
   "child.aiChat.voice.stopAria": "Itigil ang pagsasalita",

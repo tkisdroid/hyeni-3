@@ -5,6 +5,7 @@
  * voice-parse 엔드포인트는 텍스트를 받으므로 STT 는 클라에서 처리한다.
  */
 import { getNativePlugin } from "./plugins";
+import { normalizeSpeechRms } from "@/transform/childVoiceWave";
 
 interface SpeechResult {
   transcript?: string;
@@ -195,6 +196,10 @@ export async function speakText(text: string, language = "ko-KR", rate = 1.0): P
     const utterance = new window.SpeechSynthesisUtterance(spoken);
     utterance.lang = language;
     utterance.rate = rate;
+    // 화면이 파형을 언제 멈춰야 하는지 알 수 있도록 시작·종료를 그대로 전한다.
+    utterance.onstart = () => emitPlayback("started");
+    utterance.onend = () => emitPlayback("done");
+    utterance.onerror = () => emitPlayback("error");
     synth.speak(utterance);
     return true;
   } catch {
@@ -205,6 +210,8 @@ export async function speakText(text: string, language = "ko-KR", rate = 1.0): P
 /** 읽어주기 중단(화면 이탈·아이가 끄기·새 메시지 전송). */
 export function stopSpeaking(): void {
   speechPlaybackGeneration += 1;
+  // 네이티브도 stopped 를 보내지만, 웹 폴백에는 그런 이벤트가 없어 여기서 알린다.
+  emitPlayback("stopped");
   try {
     const plugin = getNativePlugin<NativeSpeakPlugin>("SpeechRecognition");
     void plugin?.stopSpeak?.().catch(() => undefined);
@@ -216,4 +223,92 @@ export function stopSpeaking(): void {
   } catch {
     /* 이미 종료 — 무시 */
   }
+}
+
+// ── 지금 말하고 있는지 / 아이 목소리가 얼마나 큰지 ────────────────────────────
+// 아이가 말로 대화할 때는 글을 읽지 않아도 되게 **파형이 움직여야** 한다(2026-08-19 TK 지시).
+// 그러려면 두 가지를 알아야 한다: ①친구가 지금 말하는 중인지 ②아이 목소리 크기.
+// 둘 다 네이티브가 이미 알고 있던 값이라 새 권한·새 API 없이 JS 로 열어 주기만 한다.
+
+/** 읽어주기 진행 상태. 네이티브 SpeechPlugin 의 ttsState 와 같은 값이다. */
+export type SpeechPlaybackState = "started" | "done" | "error" | "stopped";
+
+type PlaybackListener = (state: SpeechPlaybackState) => void;
+type LevelListener = (level: number) => void;
+
+interface NativeEventPlugin {
+  addListener(
+    eventName: string,
+    listener: (event: Record<string, unknown>) => void,
+  ): Promise<{ remove: () => Promise<void> }>;
+}
+
+const playbackListeners = new Set<PlaybackListener>();
+const levelListeners = new Set<LevelListener>();
+let nativeEventsBound = false;
+
+function emitPlayback(state: SpeechPlaybackState): void {
+  for (const listener of [...playbackListeners]) {
+    try {
+      listener(state);
+    } catch {
+      /* 구독자 오류가 다른 구독자를 막지 않는다 */
+    }
+  }
+}
+
+function emitLevel(level: number): void {
+  for (const listener of [...levelListeners]) {
+    try {
+      listener(level);
+    } catch {
+      /* 구독자 오류가 다른 구독자를 막지 않는다 */
+    }
+  }
+}
+
+/** 네이티브 이벤트 구독은 한 번만 건다(구독자가 늘어도 리스너는 하나). */
+function bindNativeSpeechEvents(): void {
+  if (nativeEventsBound) return;
+  const plugin = getNativePlugin<NativeEventPlugin>("SpeechRecognition");
+  if (!plugin?.addListener) return;
+  nativeEventsBound = true;
+  try {
+    void plugin.addListener("ttsState", (event) => {
+      const state = typeof event?.state === "string" ? event.state : "";
+      if (state === "started" || state === "done" || state === "error" || state === "stopped") {
+        emitPlayback(state);
+      }
+    }).catch(() => undefined);
+    void plugin.addListener("speechRms", (event) => {
+      emitLevel(normalizeSpeechRms(event?.rms));
+    }).catch(() => undefined);
+  } catch {
+    /* 네이티브 연결 실패 — 웹 폴백만 동작한다 */
+  }
+}
+
+/**
+ * 읽어주기 시작·종료 구독. 해제 함수를 돌려준다.
+ * 네이티브는 실제 utterance 진행을, 웹은 SpeechSynthesis 이벤트를 그대로 전한다.
+ * 어느 쪽도 못 알려 주는 기기가 있으므로 호출부는 별도 상한 타이머를 함께 둔다.
+ */
+export function onSpeechPlaybackState(listener: PlaybackListener): () => void {
+  playbackListeners.add(listener);
+  bindNativeSpeechEvents();
+  return () => {
+    playbackListeners.delete(listener);
+  };
+}
+
+/**
+ * 아이 목소리 크기(0~1) 구독. 네이티브 음성 인식이 알려 주는 실제 값이다.
+ * 웹에는 이 값이 없어 아무 이벤트도 오지 않는다 — 화면은 그때 기본 파형으로 강등한다.
+ */
+export function onSpeechInputLevel(listener: LevelListener): () => void {
+  levelListeners.add(listener);
+  bindNativeSpeechEvents();
+  return () => {
+    levelListeners.delete(listener);
+  };
 }
