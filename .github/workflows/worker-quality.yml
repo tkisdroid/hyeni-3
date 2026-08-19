@@ -11,14 +11,10 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/worker-quality.yml"
+  # main 보호 규칙에서 필수 상태 검사로 지정하므로 모든 PR에서 항상 생성한다.
+  # 경로 필터를 두면 비-Worker PR에서 검사가 아예 생기지 않아 병합이 영구 대기할 수 있다.
   pull_request:
     branches: [main]
-    paths:
-      - "worker/**"
-      - "cloudflare/schema_d1.sql"
-      - "package.json"
-      - "package-lock.json"
-      - ".github/workflows/worker-quality.yml"
   workflow_dispatch:
 
 concurrency:

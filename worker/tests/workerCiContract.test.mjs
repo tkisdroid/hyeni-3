@@ -54,6 +54,18 @@ test("Worker CI는 타입·전체 테스트·의존성 감사를 차단 게이�
   assert.doesNotMatch(workflow, /continue-on-error:\s*true/);
 });
 
+test("Worker 필수 검사는 변경 경로와 관계없이 모든 main PR에서 생성된다", () => {
+  const workflow = readFileSync(new URL("../../.github/workflows/worker-quality.yml", import.meta.url), "utf8");
+  const pullRequestBlock = workflow.match(/\n  pull_request:\n([\s\S]*?)\n  workflow_dispatch:/)?.[1] ?? "";
+
+  assert.match(pullRequestBlock, /branches:\s*\[main\]/);
+  assert.doesNotMatch(
+    pullRequestBlock,
+    /^\s*paths(?:-ignore)?:/m,
+    "필수 상태 검사가 생략되지 않도록 pull_request에는 paths 또는 paths-ignore 필터를 두지 않습니다.",
+  );
+});
+
 // 과거 hyeni-1 시절에는 앱 저장소를 sibling checkout했지만, Worker 정본이 이
 // 저장소의 worker/ 디렉터리로 이관되어 앱과 같은 커밋에서 함께 검증된다.
 test("Worker CI는 단일 저장소 checkout으로 실행되고 교차 저장소 checkout이 없다", () => {
