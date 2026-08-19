@@ -587,7 +587,7 @@ export function ParentHome() {
             ) : (
               <MapPin size={14} strokeWidth={2.3} aria-hidden="true" />
             )}
-            {heroLocationCopy.badge} · {heroLocationCopy.detail}
+            {heroLocationCopy.badge}
           </div>
         </button>
 
@@ -617,7 +617,7 @@ export function ParentHome() {
         {/* 오늘의 일정 */}
         <section>
           <SectionHeader
-            iconBg="var(--rose-soft)"
+            iconBg="var(--glass-tile)"
             icon={<img src={asset("ui/calendar-heart.webp")} alt="" />}
             title={intl.formatMessage({ id: "parent.parentHome.copy018" })}
             action={
@@ -718,7 +718,7 @@ export function ParentHome() {
         {/* 아이 현황 */}
         <section>
           <SectionHeader
-            iconBg="var(--mint-soft)"
+            iconBg="var(--glass-tile)"
             icon={<img src={asset("ui/pin-heart.webp")} alt="" />}
             title={intl.formatMessage({ id: "parent.parentHome.copy029" })}
             action={
@@ -811,7 +811,7 @@ export function ParentHome() {
         {/* 안전 지표 */}
         <section>
           <SectionHeader
-            iconBg="var(--lav-soft)"
+            iconBg="var(--glass-tile)"
             icon={<img src={asset("ui/shield-heart.webp")} alt="" />}
             title={intl.formatMessage({ id: "parent.parentHome.copy035" })}
             action={
@@ -867,7 +867,7 @@ export function ParentHome() {
             )}
             <div className="ph-safety__grid">
               <div className="ph-metric">
-                <span className="ph-metric__icon" style={{ background: "var(--mint-soft)" }}>
+                <span className="ph-metric__icon">
                   <img src={asset("ui/battery.webp")} alt="" />
                 </span>
                 <span style={{ minWidth: 0 }}>
@@ -876,7 +876,7 @@ export function ParentHome() {
                 </span>
               </div>
               <div className="ph-metric">
-                <span className="ph-metric__icon" style={{ background: "var(--rose-soft)" }}>
+                <span className="ph-metric__icon">
                   <img src={asset("ui/clock-3d.webp")} alt="" />
                 </span>
                 <span style={{ minWidth: 0 }}>
@@ -885,7 +885,7 @@ export function ParentHome() {
                 </span>
               </div>
               <div className="ph-metric">
-                <span className="ph-metric__icon" style={{ background: "var(--cream-soft)" }}>
+                <span className="ph-metric__icon">
                   <img src={asset("ui/lock-open-3d.webp")} alt="" />
                 </span>
                 <span style={{ minWidth: 0 }}>
@@ -894,7 +894,7 @@ export function ParentHome() {
                 </span>
               </div>
               <div className="ph-metric">
-                <span className="ph-metric__icon" style={{ background: "var(--lav-soft)" }}>
+                <span className="ph-metric__icon">
                   <img src={asset("ui/wifi-3d.webp")} alt="" />
                 </span>
                 <span style={{ minWidth: 0 }}>
@@ -973,7 +973,7 @@ export function ParentHome() {
         {/* 준비물 · 숙제 */}
         <section>
           <SectionHeader
-            iconBg="var(--cream-soft)"
+            iconBg="var(--glass-tile)"
             icon={<img src={asset("cat/study.webp")} alt="" />}
             title={intl.formatMessage({ id: "parent.parentHome.copy050" })}
             action={
@@ -1093,7 +1093,6 @@ export function ParentHome() {
                 >
                   <span
                     className="ph-shortcut__icon"
-                    style={{ background: s.soft, boxShadow: `0 8px 18px ${s.shadow}` }}
                   >
                     <img src={asset(s.icon)} alt="" />
                     {badge > 0 && (

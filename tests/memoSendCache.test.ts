@@ -57,3 +57,84 @@ test("메시지 POST 성공 행은 재조회 완료 전에도 해당 아이·날
   assert.equal(reconciled.filter((row) => row.id === "new").length, 1, "같은 행을 중복 추가하면 안 된다");
   assert.equal(reconciled.find((row) => row.id === "new")?.content, "서버 정본");
 });
+
+test("보낸 즉시 말풍선이 서고, 서버 응답이 이상해도 사라지지 않는다", async () => {
+  const [{ QueryClient }, cache] = await Promise.all([
+    import("@tanstack/react-query"),
+    import(memoCacheUrl.href),
+  ]);
+  const { insertPendingMemoReply, reconcilePendingMemoReply, removeMemoReply, isPendingMemoReply, PENDING_MEMO_ID_PREFIX } = cache;
+  const key = ["memoReplies", "family-a", "2026-6-13", "child-a"] as const;
+
+  const pendingId = `${PENDING_MEMO_ID_PREFIX}abc`;
+  const pending = {
+    id: pendingId,
+    family_id: "family-a",
+    date_key: "2026-6-13",
+    child_id: "child-a",
+    user_id: "parent-a",
+    user_role: "parent" as const,
+    content: "지금 보낸 메시지",
+    read_by: [],
+    created_at: "2026-08-19T00:00:00.000Z",
+  };
+
+  assert.equal(isPendingMemoReply(pending), true, "임시 행은 서버 행과 구분돼야 한다");
+
+  // 1) 서버 왕복 전에 말풍선이 선다.
+  const client = new QueryClient();
+  client.setQueryData(key, []);
+  insertPendingMemoReply(client, "family-a", pending);
+  assert.deepEqual(
+    client.getQueryData<Array<{ content: string }>>(key)?.map((row) => row.content),
+    ["지금 보낸 메시지"],
+  );
+
+  // 2) 저장 행이 오면 제자리 교체(중복 없음).
+  reconcilePendingMemoReply(client, "family-a", pendingId, { ...pending, id: "saved-1" });
+  const afterSave = client.getQueryData<Array<{ id: string }>>(key) ?? [];
+  assert.deepEqual(afterSave.map((row) => row.id), ["saved-1"]);
+
+  // 3) 응답이 배열·빈 객체 등 저장 행이 아니면 말풍선을 지우지 않는다.
+  const shaky = new QueryClient();
+  shaky.setQueryData(key, []);
+  insertPendingMemoReply(shaky, "family-a", pending);
+  for (const bogus of [[], {}, null, undefined, { id: "", date_key: "2026-6-13" }]) {
+    reconcilePendingMemoReply(shaky, "family-a", pendingId, bogus);
+    assert.equal(
+      (shaky.getQueryData<Array<{ id: string }>>(key) ?? []).length,
+      1,
+      "서버 응답이 이상해도 방금 보낸 말풍선은 남아야 한다",
+    );
+  }
+
+  // 4) 전송 실패는 임시 행을 반드시 걷는다('보낸 척' 금지).
+  removeMemoReply(shaky, "family-a", pendingId);
+  assert.deepEqual(shaky.getQueryData(key), []);
+});
+
+test("읽음 처리는 재조회 없이 캐시만 갱신한다", async () => {
+  const [{ QueryClient }, cache] = await Promise.all([
+    import("@tanstack/react-query"),
+    import(memoCacheUrl.href),
+  ]);
+  const { markMemoReplyRead } = cache;
+  const key = ["memoReplies", "family-a", "2026-6-13", "child-a"] as const;
+  const client = new QueryClient();
+  let refetches = 0;
+  const originalInvalidate = client.invalidateQueries.bind(client);
+  client.invalidateQueries = ((...args: unknown[]) => {
+    refetches += 1;
+    return (originalInvalidate as (...a: unknown[]) => Promise<void>)(...args);
+  }) as typeof client.invalidateQueries;
+
+  client.setQueryData(key, [{ id: "m1", read_by: [] }, { id: "m2", read_by: ["other"] }]);
+  markMemoReplyRead(client, "family-a", "m1", "parent-a");
+  markMemoReplyRead(client, "family-a", "m2", "parent-a");
+  markMemoReplyRead(client, "family-a", "m1", "parent-a"); // 멱등
+
+  assert.equal(refetches, 0, "읽음 표시마다 7일치 스레드를 다시 받으면 대화가 느려진다");
+  const rows = client.getQueryData<Array<{ id: string; read_by: string[] }>>(key) ?? [];
+  assert.deepEqual(rows.find((row) => row.id === "m1")?.read_by, ["parent-a"]);
+  assert.deepEqual(rows.find((row) => row.id === "m2")?.read_by, ["other", "parent-a"]);
+});

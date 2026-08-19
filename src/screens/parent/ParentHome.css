@@ -33,7 +33,8 @@
   position: relative;
   width: 100%;
   border-radius: var(--radius-20);
-  padding: 20px 20px 20px;
+  /* 오른쪽 128px 은 마스코트 자리다. 없으면 위치 문구가 마스코트를 뚫고 카드 끝까지 나간다. */
+  padding: 20px 128px 24px 20px;
   overflow: hidden;
   background: var(--cta-grad-accent);
   box-shadow: var(--shadow-floating);
@@ -49,11 +50,12 @@
 }
 .ph-hero__mascot {
   position: absolute;
-  right: -8px;
-  bottom: -16px;
-  width: 142px;
-  height: 162px;
+  right: -10px;
+  bottom: -14px;
+  width: 138px;
+  height: 158px;
   animation: hy-float 5.5s ease-in-out infinite;
+  pointer-events: none;
 }
 .ph-hero__mascot img {
   width: 100%;
@@ -81,16 +83,21 @@
 .ph-hero__title {
   position: relative;
   margin-top: 16px;
-  font-size: var(--type-title-xl);
-  line-height: var(--type-title-xl-line-height);
-  font-weight: var(--type-title-xl-weight);
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
 
   color: #fff;
-  letter-spacing: -0.02em;
-  text-shadow: 0 2px 10px rgba(180, 40, 90, 0.25);
+  letter-spacing: -0.01em;
+  word-break: keep-all;
 }
 .ph-hero__title em {
   font-style: normal;
+  display: inline-block;
+  font-size: var(--type-display);
+  line-height: var(--type-display-line-height);
+  font-weight: var(--type-display-weight);
+  letter-spacing: -0.03em;
   color: #fff;
 }
 .ph-hero__live {
@@ -294,11 +301,12 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  /* ⚠️ 색 수와 채도를 올리면 바로 촌스러워진다 — 두 가지 색조, 26% 이하만 쓴다.
+     radial 은 '빛'이고, 위아래 흐름은 세로 그라디언트가 만든다. */
   background:
-    radial-gradient(ellipse 80% 36% at 100% 6%, color-mix(in srgb, var(--rose-300) 46%, transparent), transparent 72%),
-    radial-gradient(ellipse 70% 32% at 0% 38%, color-mix(in srgb, var(--lav-400) 40%, transparent), transparent 70%),
-    radial-gradient(ellipse 64% 28% at 96% 72%, color-mix(in srgb, var(--mint-400) 28%, transparent), transparent 68%),
-    radial-gradient(ellipse 56% 24% at 8% 96%, color-mix(in srgb, var(--rose-300) 30%, transparent), transparent 72%);
+    radial-gradient(ellipse 96% 34% at 100% 2%, color-mix(in srgb, var(--rose-300) 26%, transparent), transparent 70%),
+    radial-gradient(ellipse 84% 30% at 0% 34%, color-mix(in srgb, var(--lav-400) 20%, transparent), transparent 68%),
+    linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--lav-soft) 34%, transparent) 68%, color-mix(in srgb, var(--mint-soft) 30%, transparent) 100%);
 }
 .ph-page > * {
   position: relative;
@@ -309,15 +317,22 @@
   flex-direction: column;
   gap: 12px;
 }
+/* 재질 정본은 tokens.css 의 --glass-* 하나다(탭바·입력 알약과 같은 유리).
+   ⚠️ 채움을 더 투명하게 내리면 카드가 바닥에 녹아 '유리 질감'이 오히려 사라지고,
+   글자 대비도 AA 밑으로 떨어진다. 유리를 유리로 보이게 하는 건 채움이 아니라 rim 이다. */
 .ph-glass,
 .hy-card.ph-glass {
-  background: color-mix(in srgb, var(--bg-card) 36%, transparent);
-  border: 1px solid color-mix(in srgb, var(--bg-card) 58%, transparent);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--bg-card) 52%, transparent),
-    var(--shadow-soft);
+  background: var(--glass-fill);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-rim), var(--glass-lift);
+}
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .ph-glass,
+  .hy-card.ph-glass {
+    background: var(--bg-card);
+  }
 }
 
 /* ── AI 일정 추가 ─────────────────────────────────────────────────────────
@@ -759,6 +774,7 @@
   width: 42px;
   height: 42px;
   border-radius: var(--radius-12);
+  background: var(--glass-tile);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1132,6 +1148,11 @@
   width: 58px;
   height: 58px;
   border-radius: var(--radius-20);
+  background: var(--glass-fill);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-rim), 0 8px 18px -12px rgba(32, 26, 29, 0.28);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1230,6 +1251,10 @@
   font-size: var(--type-body-sm);
   line-height: var(--type-body-sm-line-height);
   font-weight: var(--type-body-sm-weight);
+  /* 어절 중간에서 끊겨 "보세 / 요" 로 갈라지던 것을 막는다. */
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 .ph-subscription__meta {
   margin-top: 4px;

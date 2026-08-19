@@ -12,6 +12,7 @@ import { useAuth } from "@/auth/AuthContext";
 import { useActiveChild } from "@/app/activeChild";
 import { useMyFamily } from "@/queries/useFamily";
 import { useMemoThread, useSendMemo, useMarkRead } from "@/queries/useMemo";
+import { isPendingMemoReply } from "@/queries/memoCache";
 import { useChildLocations } from "@/queries/useLocation";
 import {
   mapRepliesToThread,
@@ -447,6 +448,7 @@ export function MemoChat() {
     if (!userId) return;
     for (const r of replies) {
       if (r.user_id === userId) continue; // 내 메시지는 스킵
+      if (isPendingMemoReply(r)) continue; // 아직 서버에 없는 임시 행
       if ((r.content ?? "").trim().length === 0) continue;
       if ((r.read_by ?? []).includes(userId)) continue;
       if (markedRef.current.has(r.id)) continue;
@@ -479,12 +481,17 @@ export function MemoChat() {
       return;
     }
     if (sendMemo.isPending) return;
+    // 입력칸은 서버 응답을 기다리지 않고 바로 비운다 — 기다리면 앱이 멈춘 것처럼 보인다.
+    // 실패하면 원문을 그대로 돌려주므로 사용자가 다시 타이핑할 필요는 없다.
+    setDraft("");
     // childId(member id)로 아이별 스레드에 귀속 — 다른 아이 화면엔 절대 표시되지 않음.
     sendMemo.mutate(
       { content: text, dateKey: memoDateKey, childId: scopeChild.id },
       {
-        onSuccess: () => setDraft(""),
-        onError: () => show(copy.sendFailed, "⚠️"),
+        onError: () => {
+          setDraft((current) => (current.trim() ? current : text));
+          show(copy.sendFailed, "⚠️");
+        },
       },
     );
   };

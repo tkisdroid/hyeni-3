@@ -345,7 +345,7 @@ function demoMemos() {
   ];
 }
 
-function mockApi(pathname, scenario, method = "GET") {
+export function mockApi(pathname, scenario, method = "GET") {
   const {
     role,
     tier,
@@ -615,7 +615,7 @@ async function connectCdp(cdpPort, interrupted) {
   return { socket, client: new CdpClient(socket) };
 }
 
-function newDocumentScript() {
+export function newDocumentScript() {
   const sessions = Object.fromEntries(["parent", "child", "teacher"].map((role) => {
     const userId = role === "child" ? CHILD_ID : role === "teacher" ? TEACHER_ID : PARENT_ID;
     return [role, {

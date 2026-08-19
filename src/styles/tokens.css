@@ -217,6 +217,27 @@
   --disabled-opacity: 0.48;
   --busy-opacity: 1;
 
+  /* ── Glass · 부모 모드 단일 재질 ──
+     탭바와 모든 카드가 같은 유리를 쓴다. 값을 여기서만 바꾸면 앱 전체가 함께 움직인다.
+     흰 바닥을 0.78 아래로 내리지 말 것 — 채도 높은 콘텐츠가 뒤로 지나갈 때
+     라벨 대비가 AA(4.5:1) 밑으로 떨어진다(2026-08-19 픽셀 실측). */
+  /* ⚠️ 그라디언트를 쓰지 않는다 — 유리 면 안의 그라데이션은 디자인 규칙 위반이고
+     final-browser-qa 의 subscriptionIsGlass 검사(backdrop blur + 그라디언트 없음)에 걸린다.
+     유리로 보이게 하는 건 채움이 아니라 --glass-rim 이다. */
+  --glass-fill: rgba(255, 255, 255, 0.82);
+  --glass-blur: blur(22px) saturate(180%);
+  --glass-border: rgba(255, 255, 255, 0.9);
+  /* 유리의 두께 — 바깥 헤어라인 + 위 모서리에 닿는 빛 + 아래로 흐르는 반사.
+     inset 하이라이트를 2px 로 두께감 있게 준다. 이 rim 이 없으면 유리와 흰 카드가
+     구분되지 않는다(채움이 거의 같기 때문). */
+  --glass-rim:
+    0 0 0 0.5px rgba(32, 26, 29, 0.055),
+    inset 0 2px 1px -1px rgba(255, 255, 255, 1),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.5);
+  --glass-lift: 0 18px 40px -24px rgba(90, 46, 74, 0.42);
+  /* 유리 위에 얹히는 작은 면(아이콘 타일·칩) — 카드보다 한 겹 더 밝다. */
+  --glass-tile: rgba(255, 255, 255, 0.62);
+
   /* ── Elevation ── */
   --shadow-soft: 0 2px 8px rgba(32, 26, 29, 0.08);
   --shadow-floating: 0 10px 28px -8px rgba(32, 26, 29, 0.2);

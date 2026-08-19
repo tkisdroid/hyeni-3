@@ -80,7 +80,7 @@ export function ParentShell() {
   const tabs = useMemoDotTabs(useParentTabs(), "/parent/memo");
   useWarmKakaoMaps();
   return (
-    <div className="hy-app" data-accent={accent}>
+    <div className="hy-app" data-role="parent" data-accent={accent}>
       <main className="hy-screen">
         <Outlet />
       </main>

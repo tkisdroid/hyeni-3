@@ -712,6 +712,19 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   + 1.5px accent 테두리 ③미선택 칩 = `--bg-chip-idle` + `--fg-tertiary`. **비텍스트 면(장식·아바타·진행바·마커)은 계속
   `--hy-accent`.** 문구 토큰은 card·app·page·body **네 표면 전부** 4.5:1 이상이어야 한다. 카테고리·태그 색은
   `--cat-*-text/-soft` 토큰이 정본이며 중간 톤을 soft 위 글자색으로 쓰지 않는다. 가드=`tests/colorContrastAndRadius.test.mjs`.
+- ★**부모 홈 유리 보정(2026-08-19)**: 구조(`.ph-page::before` 바닥 + `.ph-glass` 카드)는 그대로 두고 값만 고친다.
+  바닥은 **색 두 가지·26% 이하**(4색 고채도가 촌스러움의 실체였다), 유리 질감은 채움이 아니라 **rim** 이 만든다
+  (`.ph-glass` 는 탭바와 같은 `--glass-*` 정본을 쓴다 — 더 투명하게 내리면 질감이 사라지고 대비도 깨진다).
+  바닥은 한 겹만 — 셸에도 깔면 `.ph-page::before` 와 두 겹이 된다. 카드 유리도 셸에서 `.hy-card` 를 덮지 말고
+  화면이 `.ph-glass` 로 명시한다(semantic surface 계약). 히어로는 `padding-right: 128px` 로 마스코트 자리를
+  비우지 않으면 문구가 마스코트를 뚫는다.
+- ★**대화 전송은 낙관적(2026-08-19)**: `useSendMemo.onMutate` 로 임시 행을 넣고 화면은 mutate 직전에 입력칸을
+  비운다(실측 2,000ms → 7ms). ⚠️ 임시 행은 지우고 다시 넣지 말고 `reconcilePendingMemoReply` 로 제자리 교체한다 —
+  먼저 지우면 응답이 배열·빈 객체일 때 방금 보낸 말풍선이 사라진다. 실패는 임시 행을 걷고 원문을 되돌린다.
+  `useMarkRead` 에 invalidateQueries 를 걸지 않는다 — 미읽음 N개가 7일치 스레드를 N번 재조회하게 만든다.
+  회귀=`tests/memoSendCache.test.ts`.
+- ⚠️ **작업 전 `git fetch`**(2026-08-19 실사고): 같은 화면을 원격이 이미 고쳐 둔 채로 낡은 base 에서 재디자인해
+  진단과 push 가 모두 어긋났다. 겹치면 원격 구조를 기준으로 값만 보정한다(force push 금지).
 - ★**하단 탭바 = 유리판(2026-08-19)**: 정본은 `components.css` 의 `.hy-tabbar`(스크림)·`.hy-tabbar__inner`(유리)
   두 블록이고 부모·선생님 셸 공용이다(아이 모드는 `ChildDock` 별도). ⚠️ **조상에 `backdrop-filter` 가 있으면
   자식 유리의 backdrop 이 그 조상으로 격리돼 뒤 화면이 안 비친다** — 블러는 알약 한 곳에만 걸고 스크림은

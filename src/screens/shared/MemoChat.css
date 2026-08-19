@@ -302,8 +302,14 @@
   /* 탭바(≈90px+safe-area) 위에 올라오도록 safe-area 포함. z-index는 탭바(45) 위. */
   bottom: var(--mc-tabbar-clearance);
   z-index: 46;
-  padding: 8px 16px 12px;
-  background: linear-gradient(180deg, rgba(251, 247, 244, 0), rgba(251, 247, 244, 0.96) 30%);
+  /* 좌우는 본문(.hy-content 20px)과 같은 선에 맞춘다 — 입력줄만 더 넓으면 어긋나 보인다. */
+  padding: 8px 20px 12px;
+  background: linear-gradient(
+    180deg,
+    rgba(251, 247, 244, 0) 0%,
+    rgba(251, 247, 244, 0.4) 40%,
+    rgba(251, 247, 244, 0.74) 100%
+  );
 }
 .mc-quick {
   display: flex;
@@ -320,9 +326,12 @@
 .mc-quick-btn {
   flex: none;
   padding: 8px 12px;
-  border-radius: 999px;
-  background: #fff;
-  box-shadow: 0 3px 10px rgba(32, 26, 29, 0.06);
+  border-radius: var(--radius-pill);
+  background: var(--glass-fill);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-rim), 0 6px 14px -10px rgba(32, 26, 29, 0.28);
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
@@ -334,11 +343,19 @@
 .mc-inputbar {
   display: flex;
   align-items: center;
-  gap: 4px;
-  background: #fff;
-  border-radius: 999px;
-  padding: 4px;
-  box-shadow: 0 8px 22px rgba(32, 26, 29, 0.08);
+  gap: 8px;
+  background: var(--glass-fill);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-pill);
+  padding: 4px 8px;
+  box-shadow: var(--glass-rim), 0 10px 24px -14px rgba(32, 26, 29, 0.3);
+}
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .mc-inputbar {
+    background: var(--bg-card);
+  }
 }
 /* 사진·위치 공유 버튼(입력 왼쪽) */
 .mc-attach {
@@ -356,7 +373,8 @@
 .mc-input {
   flex: 1;
   border: none;
-
+  /* 첨부 버튼·전송 버튼에 글자가 달라붙지 않도록 입력 자체에도 여백을 준다. */
+  padding-inline: 4px;
   background: none;
   font-size: var(--type-body);
   line-height: var(--type-body-line-height);

@@ -121,6 +121,16 @@
   margin-bottom: 16px;
   padding: 0;
 }
+/* 부모 모드는 색이 아니라 여백으로 구역을 나눈다. */
+.hy-app[data-role="parent"] .hy-content {
+  gap: var(--spacing-32);
+}
+
+/* 부모 모드 섹션 제목은 카드 위가 아니라 바닥에 놓인다 — 여백을 조금 더 준다. */
+.hy-app[data-role="parent"] .hy-section-head {
+  margin-bottom: 12px;
+  padding-inline: 4px;
+}
 .hy-section-icon {
   width: 30px;
   height: 30px;
@@ -263,21 +273,13 @@
   );
 }
 .hy-tabbar__inner {
-  /* 반투명 유리면 — 위가 밝고 아래로 가라앉아 빛이 위에서 온다는 걸 알린다. */
-  background: linear-gradient(158deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.78));
-  /* saturate 가 없으면 파스텔 화면 위에서 유리가 회색으로 죽는다. */
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
-  /* 유리의 두께 = 빛을 받는 border 1px + 안쪽 하이라이트. */
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  /* 재질 정본은 tokens.css 의 --glass-* 하나다(카드와 같은 유리). */
+  background: var(--glass-fill);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-pill);
-  box-shadow:
-    /* 밝은 배경에서도 유리 경계가 사라지지 않게 잡아 주는 헤어라인 */
-    0 0 0 0.5px rgba(32, 26, 29, 0.06),
-    /* 윗 모서리에 닿는 빛과 아래로 흐르는 약한 반사 */
-    inset 0 1px 1px rgba(255, 255, 255, 0.95),
-    inset 0 -1px 1px rgba(255, 255, 255, 0.42),
-    var(--shadow-floating);
+  box-shadow: var(--glass-rim), var(--shadow-floating);
   padding: 8px;
   display: flex;
   align-items: center;
@@ -289,6 +291,7 @@
     background: var(--bg-card);
   }
 }
+
 .hy-tab {
   flex: 1;
   display: flex;
