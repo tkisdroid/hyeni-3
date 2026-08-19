@@ -706,6 +706,16 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   + 1.5px accent 테두리 ③미선택 칩 = `--bg-chip-idle` + `--fg-tertiary`. **비텍스트 면(장식·아바타·진행바·마커)은 계속
   `--hy-accent`.** 문구 토큰은 card·app·page·body **네 표면 전부** 4.5:1 이상이어야 한다. 카테고리·태그 색은
   `--cat-*-text/-soft` 토큰이 정본이며 중간 톤을 soft 위 글자색으로 쓰지 않는다. 가드=`tests/colorContrastAndRadius.test.mjs`.
+- ★**하단 탭바 = 유리판(2026-08-19)**: 정본은 `components.css` 의 `.hy-tabbar`(스크림)·`.hy-tabbar__inner`(유리)
+  두 블록이고 부모·선생님 셸 공용이다(아이 모드는 `ChildDock` 별도). ⚠️ **조상에 `backdrop-filter` 가 있으면
+  자식 유리의 backdrop 이 그 조상으로 격리돼 뒤 화면이 안 비친다** — 블러는 알약 한 곳에만 걸고 스크림은
+  페이드(0 → 0.38 → 0.72)만 맡는다. ⚠️ **유리 위 선택 상태를 채움색으로 알리지 않는다** — 뒤 화면이 같은 계열이면
+  `--hy-accent-soft` 칩이 사라진다(로즈 히어로 위 실측). 색이 아니라 윤곽(안쪽 흰 테두리 1px + 얕은 그림자)으로 알린다.
+  `saturate(180%)` 없으면 파스텔 위에서 유리가 회색으로 죽고, 미지원 환경은 `@supports not` 으로 `--bg-card` 강등한다.
+  대비는 추정하지 말고 캡처 픽셀을 디코딩해 실측한다(최악 조건 비활성 5.08:1 · 활성 5.46:1). 이 선택자는
+  `designSystemUsage` non-surface manifest와 `releaseVisualConsistencyContract` 의 `var(--radius-pill)` 기대에
+  exact 등록돼 있어 **배경+radius 를 가진 새 pseudo 를 추가하면 막힌다** — 테두리·하이라이트는 같은 요소의
+  `border`+`box-shadow` 로만 만든다.
 - ★**모서리 반경은 8/12/16/20/24px·pill 만**(2026-07-30 · 161건 정규화). 예외는 UI 표면이 아닌 것뿐 —
   장식(색종이·블롭·히어로 orb), 폰 베젤 `.hy-app`(44px), 인라인 링크 `:focus-visible` 링(2px). 같은 가드가 강제한다.
 - UI 요소 아이콘은 유니코드 이모지 대신 **3D 에셋(public/assets)** 또는 lucide 라인 아이콘. 색 칩 위에는 알파 채널 있는 에셋만

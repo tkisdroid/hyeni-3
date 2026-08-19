@@ -737,6 +737,24 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   값 칸이 글자 중간에서 끊겼다. `table-layout: fixed` + 44%/28%/28% 열 폭 + `word-break: keep-all` ·
   `overflow-wrap: anywhere` · `text-wrap: pretty` 로 어절 단위로만 접는다(`.sub-compare__scroll` 의 가로 스크롤은
   안전망으로 유지). 문구는 그대로 두고 레이아웃만 고쳤다. 회귀=`tests/responsiveTextWrapContract.test.mjs`.
+- ★**하단 탭바 = 유리판(2026-08-19 TK 지시 "글래스모피즘으로 세련되게")**: 불투명 흰 알약이 스크롤 중
+  섹션을 통째로 잘라 먹던 것을 빛을 받는 반투명 유리로 바꿨다. 정본은 `components.css` 의
+  `.hy-tabbar`·`.hy-tabbar__inner` 두 블록뿐이고 부모·선생님 셸이 공용한다(아이 모드는 `ChildDock` 별도).
+  ⚠️ **부모에 `backdrop-filter` 가 있으면 자식 유리는 아무것도 못 비춘다** — 조상이 backdrop-root 를 만들어
+  자식의 backdrop 이 그 조상 내용으로 격리된다. 그래서 기존 `.hy-tabbar` 의 `blur(12px)` 를 걷어내고
+  블러는 알약 한 곳에만 건다. 스크림은 목록이 알약 위 가장자리에서 하드컷되지 않게 하는 페이드
+  (0 → 0.38 → 0.72)만 맡는다 — 예전 값 0.96 을 두면 유리가 크림색만 비춰 유리인 의미가 없다.
+  ⚠️ **유리 위에서 선택 상태를 채움색으로 알리면 안 된다** — 뒤 화면이 같은 계열이면(로즈 히어로 위에서 실측)
+  `--hy-accent-soft` 칩이 물든 유리와 같은 톤이 되어 **어느 탭이 선택됐는지 사라진다**. 불투명도를 올리는 건
+  유리를 죽이는 해법이라, 색이 아니라 **윤곽**으로 알린다(안쪽 흰 테두리 1px + 얕은 그림자 = 유리 위에 얹힌 알약).
+  `saturate(180%)` 가 없으면 파스텔 화면 위에서 유리가 회색으로 죽는다. `backdrop-filter` 미지원은
+  `@supports not` 으로 `--bg-card` 불투명 강등한다(라벨 가독성이 먼저다).
+  대비는 추정하지 말고 **캡처 픽셀을 디코딩해 실측**한다 — 로즈 히어로가 바로 뒤일 때 비활성 라벨 5.08:1 ·
+  활성 라벨 5.46:1 로 AA 통과를 확인했다(흰 0.92→0.78 + 스크림 0.72 합성 기준).
+  ⚠️ `.hy-tabbar__inner` 는 `tests/designSystemUsage` 의 non-surface manifest와
+  `releaseVisualConsistencyContract` 의 `var(--radius-pill)` 기대에 exact 경로+선택자로 등록돼 있다 —
+  배경·radius 를 가진 **새 pseudo(::before 등)를 추가하면 manifest 미분류로 막힌다**. 그래서 유리의 테두리·
+  하이라이트는 전부 같은 요소의 `border`+`box-shadow` 로만 만들었다.
 - ★**모서리 반경 정규화(2026-07-30)**: 8/12/16/20/24px·pill 만 쓴다. 10·11·13·14·15·17·18·19px 등 161건을
   가장 가까운 단계의 `var(--radius-*)` 로 정규화했다. 제외 대상은 **UI 표면이 아닌 것**뿐이다 —
   장식(색종이·유기적 블롭·히어로 orb), 폰 베젤 프레임(`.hy-app` 44px), 인라인 링크 `:focus-visible` 링(2px).
