@@ -52,7 +52,7 @@ claim을 인계할 수 있다. Worker가 이 테이블 없이 먼저 배포되�
 ```bash
 cd worker
 npx wrangler d1 execute hyeni-calendar --remote --file=db/account-device-sessions.sql -y
-npx wrangler d1 execute hyeni-calendar --remote --command "SELECT type,name FROM sqlite_master WHERE name IN ('account_device_sessions','idx_account_device_sessions_device') ORDER BY type,name" -y
+npx wrangler d1 execute hyeni-calendar --remote --command "SELECT type,name FROM sqlite_master WHERE name IN ('account_device_sessions','idx_account_device_sessions_expiry') ORDER BY type,name" -y
 cd ..
 npm run typecheck:worker
 npm run test:worker

@@ -171,6 +171,7 @@ test("로그인·페어링·미들웨어·로그아웃이 활성 설치 정본�
   const restShim = readFileSync(new URL("../routes/rest-shim-auth.ts", import.meta.url), "utf8");
   const push = readFileSync(new URL("../routes/push-notify.ts", import.meta.url), "utf8");
   const storage = readFileSync(new URL("../routes/storage.ts", import.meta.url), "utf8");
+  const runbook = readFileSync(new URL("../README.md", import.meta.url), "utf8");
   assert.match(auth, /issueAccountSession\(c\.env, user/);
   assert.match(auth, /auth\.post\("\/logout", requireAuth/);
   assert.match(auth, /UPDATE account_device_sessions[\s\S]{0,220}revoked_at/);
@@ -181,4 +182,6 @@ test("로그인·페어링·미들웨어·로그아웃이 활성 설치 정본�
   for (const source of [restShim, push, storage]) {
     assert.match(source, /verifyActiveAccessToken/);
   }
+  assert.match(runbook, /--file=db\/account-device-sessions\.sql/);
+  assert.match(runbook, /idx_account_device_sessions_expiry/);
 });
