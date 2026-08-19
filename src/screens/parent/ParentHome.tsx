@@ -678,7 +678,7 @@ export function ParentHome() {
         <section className="ph-ai" aria-labelledby="ph-ai-title">
           <div className="ph-ai__head">
             <span className="ph-ai__icon">
-              <img src={asset("ui/sparkle.webp")} alt="" />
+              <img src={asset("ui/ai-friend-credits.webp")} alt="" />
             </span>
             <span className="ph-ai__copy">
               <span className="ph-ai__title" id="ph-ai-title">

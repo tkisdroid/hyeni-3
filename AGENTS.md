@@ -509,7 +509,7 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   lucide/image 아이콘 + `data-tone` 토큰 색상만 사용한다. 페어링 위저드는 `/api/family/mine`과 엔타이틀먼트가
   모두 확정되기 전 2명 선택과 코드 생성을 막고, 코드 생성 직전에도 현재 티어의 아이 수 상한을 다시 검사한다.
 - ★**부모 홈 AI로 일정 추가 글래스(2026-08-19)**: `.ph-ai` 는 카드 계약(`radius-16`·`shadow-soft`) 안에서
-  단색 글래스(`--bg-card` 반투명 + `backdrop-filter`)다. 그라데이션·코스틱 orb는 쓰지 않는다.
+  단색 글래스(`--bg-card` 반투명 + `backdrop-filter` + 안쪽 하이라이트)다. 색 그라데이션·코스틱 orb는 쓰지 않는다.
   2열 4버튼 라우트(`voice`/`text`/`image`/`mode=academy`)는 유지한다. 장식 배지·흰 글자 파스텔 CTA는
   쓰지 않고, `prefers-reduced-transparency` 에서는 솔리드 `--bg-card` 폴백을 쓴다.
   도착 화면 `AiSchedule` 도 같은 아크릴 톤이다.
