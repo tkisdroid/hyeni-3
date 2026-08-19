@@ -1,5 +1,7 @@
 {
   "billing.aiCredit.creditUse": "AI가 도울 때 크레딧 1회를 써요.",
+  "billing.aiCredit.detail.buddyAttentionDescription": "아이 화면에서 가끔 커지며 대화를 권해요",
+  "billing.aiCredit.detail.buddyAttentionTitle": "AI 친구가 먼저 말 걸기",
   "billing.aiCredit.detail.contactDescription": "부모님께 전화·메시지 요청을 도와요",
   "billing.aiCredit.detail.contactTitle": "연락 동작 허용",
   "billing.aiCredit.detail.description": "{childName}에게 적용되는 부모 설정이에요",

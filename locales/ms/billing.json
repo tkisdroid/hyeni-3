@@ -1,5 +1,7 @@
 {
   "billing.aiCredit.creditUse": "Setiap jawapan AI guna 1 kredit.",
+  "billing.aiCredit.detail.buddyAttentionDescription": "Sesekali membesar untuk mengajak berbual",
+  "billing.aiCredit.detail.buddyAttentionTitle": "Rakan AI menyapa dahulu",
   "billing.aiCredit.detail.contactDescription": "Membantu anak anda meminta panggilan atau mesej kepada ibu bapa",
   "billing.aiCredit.detail.contactTitle": "Benarkan tindakan hubungan",
   "billing.aiCredit.detail.description": "Tetapan ibu bapa ini digunakan pada {childName}",

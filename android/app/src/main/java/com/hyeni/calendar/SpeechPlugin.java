@@ -165,7 +165,11 @@ public class SpeechPlugin extends Plugin {
                         Log.d(TAG, "Ready for speech");
                     }
                     @Override public void onBeginningOfSpeech() {}
-                    @Override public void onRmsChanged(float rmsdB) {}
+                    @Override public void onRmsChanged(float rmsdB) {
+                        // 아이 목소리 크기를 화면 파형에 그대로 싣는다(2026-08-19).
+                        // 음성 자체는 보내지 않는다 — 크기(dB) 하나뿐이고 앱 밖으로 나가지 않는다.
+                        notifySpeechRms(rmsdB);
+                    }
                     @Override public void onBufferReceived(byte[] buffer) {}
                     @Override public void onEndOfSpeech() {
                         Log.d(TAG, "End of speech");
@@ -490,6 +494,20 @@ public class SpeechPlugin extends Plugin {
             Log.e(TAG, "TTS speak exception", e);
             request.call.reject("TTS error: " + e.getMessage());
         }
+    }
+
+    /**
+     * 음성 인식이 알려 주는 입력 크기(dB)를 JS 로 전한다.
+     * 화면은 이 값으로 파형을 그리므로 "지어낸 파형"이 아니라 실제 목소리가 움직인다.
+     * 값이 유한하지 않으면 보내지 않는다(화면이 0 으로 둔갑시키지 않도록).
+     */
+    private void notifySpeechRms(float rmsdB) {
+        if (Float.isNaN(rmsdB) || Float.isInfinite(rmsdB)) {
+            return;
+        }
+        JSObject data = new JSObject();
+        data.put("rms", rmsdB);
+        notifyListeners("speechRms", data);
     }
 
     private void notifyTtsState(String state, String utteranceId) {

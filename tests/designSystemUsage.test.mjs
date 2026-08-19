@@ -2189,6 +2189,8 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/child/ChildHome.css", ".kd-hyeni__bubble"],
   // AI 친구가 지나가며 건네는 한 마디 — 조작 면이 아니라 몇 초 떠 있다 사라지는 말풍선이다.
   ["src/app/AiBuddyFab.css", ".abf__bubble"],
+  // 화면을 채우고 부를 때 얼굴 아래 붙는 말풍선 — 같은 이유로 카드 표면이 아니다.
+  ["src/app/AiBuddyFab.css", ".abf-stage__bubble"],
   ["src/screens/child/AiFriendChat.css", ".afc-credits"],
   // 기기 화면 열기 버튼 — 조작 면이지만 카드가 아니라 대화 아래 붙는 알약 버튼이다.
   ["src/screens/child/AiFriendChat.css", ".afc-device__open"],
@@ -2492,6 +2494,10 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/child/AiFriendChat.css", ".afc-listening"],
   ["src/screens/child/AiFriendChat.css", ".afc-listening__wave span"],
   ["src/screens/child/AiFriendChat.css", ".afc-listening__stop"],
+  // 말로 이야기하는 동안의 파형·컨트롤 — 상태 표시와 조작 면이라 카드 표면이 아니다.
+  ["src/screens/child/AiFriendChat.css", ".afc-voice__wave span"],
+  ["src/screens/child/AiFriendChat.css", ".afc-voice__stop"],
+  ["src/screens/child/AiFriendChat.css", ".afc-voice__text"],
   ["src/screens/teacher/TeacherHome.css", ".th-hero__attend"],
   ["src/screens/onboarding/Onboarding.css", ".ob-progress__track"],
   ["src/screens/onboarding/Onboarding.css", ".ob-perm-check"],

@@ -13,6 +13,20 @@
     "variables": {},
     "description": "AI 크레딧 다국어 문구: creditUse"
   },
+  "billing.aiCredit.detail.buddyAttentionDescription": {
+    "namespace": "billing",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "AI 크레딧 다국어 문구: detail.buddyAttentionDescription"
+  },
+  "billing.aiCredit.detail.buddyAttentionTitle": {
+    "namespace": "billing",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "AI 크레딧 다국어 문구: detail.buddyAttentionTitle"
+  },
   "billing.aiCredit.detail.contactDescription": {
     "namespace": "billing",
     "audience": "parent",
@@ -2437,6 +2451,20 @@
     "qualityTier": "A",
     "variables": {},
     "description": "글로 물어본 답도 읽어주는 영구 설정을 켜는 토글 aria 라벨"
+  },
+  "child.aiChat.voice.showText": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "음성 파형 화면을 접고 대화 글을 보는 버튼"
+  },
+  "child.aiChat.voice.speaking": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "AI 친구가 소리 내어 말하는 중임을 알리는 상태 줄"
   },
   "child.aiChat.voice.startAria": {
     "namespace": "child",

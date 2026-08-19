@@ -81,6 +81,8 @@ const messages = {
   "child.aiChat.voice.listening": "Mình đang nghe…",
   "child.aiChat.voice.replyOffAria": "Tắt đọc to câu trả lời cho câu hỏi bằng chữ",
   "child.aiChat.voice.replyOnAria": "Bật đọc to câu trả lời cho câu hỏi bằng chữ",
+  "child.aiChat.voice.showText": "Xem chữ",
+  "child.aiChat.voice.speaking": "Đang nói…",
   "child.aiChat.voice.startAria": "Nói chuyện bằng giọng",
   "child.aiChat.voice.stop": "Dừng",
   "child.aiChat.voice.stopAria": "Dừng nói",

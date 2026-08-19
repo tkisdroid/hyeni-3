@@ -54,6 +54,19 @@
   animation: abf-pop 0.46s var(--easing-cheer) 1;
 }
 
+/* 스스로 아이를 부를 때 — 커졌다가 다시 작아진다(2026-08-19 TK 지시).
+   상자 크기(left/top 기준)는 그대로 두고 얼굴만 키운다. 상자를 키우면 붙어 있던
+   가장자리에서 어긋나 위치가 튄다. */
+.abf[data-attention="grow"] .abf__face {
+  animation: abf-attention 2.6s var(--easing-cheer) 1;
+}
+
+/* 화면을 채워 부르는 동안에는 작은 버튼을 감춘다 — 같은 얼굴이 두 개면 어느 걸 누를지 헷갈린다. */
+.abf[data-attention="full"] {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .abf__stack img {
   position: absolute;
   inset: 0;
@@ -111,6 +124,125 @@
   right: 0;
 }
 
+/* ── 화면을 채우고 부르는 순간 ─────────────────────────────────────────────
+   아이가 구석의 작은 버튼을 지나치지 않도록, 몇 번에 한 번은 친구가 화면 가운데로
+   나와 오늘 알아야 할 것을 말한다. 스스로 물러나고 아무 데나 누르면 바로 닫힌다. */
+.abf-stage {
+  position: absolute;
+  inset: 0;
+  /* ⚠️ 아이 독(.kdock z-index 30)보다 **아래**여야 한다.
+     이 오버레이는 최대 3.8초 떠 있는데, 그동안 SOS 버튼이 가려지면 안 된다.
+     안전 동선은 어떤 연출보다 우선이다(부르는 중에도 아이는 SOS 를 바로 누를 수 있다). */
+  z-index: 29;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+/* 보이지 않는 닫기 영역 — 눌린 티가 나면 무엇이 눌렸는지 오해를 준다(눌림 피드백 의도적 제외). */
+.abf-stage__scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: rgba(28, 22, 25, 0.58);
+  backdrop-filter: blur(2px);
+  animation: abf-stage-scrim 0.28s var(--easing-standard) 1;
+}
+
+.abf-stage__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 300px;
+}
+
+.abf-stage__face {
+  width: 168px;
+  height: 168px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius-24);
+  animation: abf-stage-in 0.52s var(--easing-cheer) 1;
+
+  --press: 0.94;
+}
+
+.abf-stage__face img {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-24);
+  box-shadow: var(--shadow-modal);
+  object-fit: cover;
+}
+
+.abf-stage__bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  border-radius: var(--radius-20);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-floating);
+  text-align: center;
+  animation: abf-say 0.32s var(--easing-cheer) 1;
+}
+
+.abf-stage__line {
+  color: var(--fg-primary);
+  font-family: Jua, var(--font-sans);
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+  word-break: keep-all;
+}
+
+.abf-stage__hint {
+  color: var(--fg-muted);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  word-break: keep-all;
+}
+
+/* ── 대화 화면으로 이어지는 전환 ──────────────────────────────────────────
+   버튼이 있던 자리에서 커지며 가운데로 온 다음 넘어간다. 대화 화면이 같은 크기·자리에서
+   이어받으므로 크기(168px)는 transform/aiBuddyLaunch 의 AI_BUDDY_HANDOFF_FACE_PX 와 같아야 한다. */
+.abf[data-launching="true"] {
+  width: 168px;
+  height: 168px;
+  z-index: 72;
+  pointer-events: none;
+  transition:
+    left 0.3s var(--easing-standard),
+    top 0.3s var(--easing-standard),
+    width 0.3s var(--easing-standard),
+    height 0.3s var(--easing-standard);
+}
+
+.abf[data-launching="true"] .abf__face {
+  animation: none;
+}
+
+.abf[data-launching="true"] .abf__stack img {
+  border-radius: var(--radius-24);
+  box-shadow: var(--shadow-modal);
+}
+
+.abf-launch-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 71;
+  background: var(--bg-page);
+  opacity: 0;
+  pointer-events: none;
+  animation: abf-launch-veil 0.3s var(--easing-standard) forwards;
+}
+
 @keyframes abf-say {
   0% {
     opacity: 0;
@@ -147,16 +279,76 @@
   }
 }
 
+/* 커졌다가 한 번 흔들고 다시 작아진다 — "나 여기 있어"가 한눈에 읽히게. */
+@keyframes abf-attention {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  22% {
+    transform: scale(1.55) rotate(-6deg);
+  }
+  40% {
+    transform: scale(1.55) rotate(6deg);
+  }
+  58% {
+    transform: scale(1.55) rotate(-4deg);
+  }
+  78% {
+    transform: scale(1.42) rotate(0deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes abf-stage-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes abf-stage-scrim {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes abf-launch-veil {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
 /* 움직임을 줄이도록 설정한 기기에서는 떠다니지 않고 조용히 대기한다. */
 @media (prefers-reduced-motion: reduce) {
   .abf__face,
-  .abf[data-pop="true"] .abf__face {
+  .abf[data-pop="true"] .abf__face,
+  .abf[data-attention="grow"] .abf__face {
     animation: none;
   }
   .abf {
     transition: none;
   }
-  .abf__bubble {
+  .abf__bubble,
+  .abf-stage__scrim,
+  .abf-stage__face,
+  .abf-stage__bubble,
+  .abf-launch-scrim {
     animation: none;
   }
 }

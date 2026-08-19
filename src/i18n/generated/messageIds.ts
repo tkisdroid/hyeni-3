@@ -14,6 +14,8 @@ export type MessageNamespace = (typeof messageNamespaces)[number];
 
 export const messageIds = [
   "billing.aiCredit.creditUse",
+  "billing.aiCredit.detail.buddyAttentionDescription",
+  "billing.aiCredit.detail.buddyAttentionTitle",
   "billing.aiCredit.detail.contactDescription",
   "billing.aiCredit.detail.contactTitle",
   "billing.aiCredit.detail.description",
@@ -346,6 +348,8 @@ export const messageIds = [
   "child.aiChat.voice.listening",
   "child.aiChat.voice.replyOffAria",
   "child.aiChat.voice.replyOnAria",
+  "child.aiChat.voice.showText",
+  "child.aiChat.voice.speaking",
   "child.aiChat.voice.startAria",
   "child.aiChat.voice.stop",
   "child.aiChat.voice.stopAria",

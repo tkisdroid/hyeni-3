@@ -146,6 +146,7 @@ const FRIEND_BOOL_COLS = new Set([
   "long_term_memory_enabled",
   "allow_schedule_actions",
   "allow_contact_actions",
+  "buddy_attention_enabled",
 ]);
 // PG text[] 컬럼 — array literal('{}' / '{a,b}')로 이관됨(JSON 아님).
 const FRIEND_ARRAY_COLS = new Set(["forbidden_topics", "forbidden_phrases", "allowed_topics"]);
@@ -189,7 +190,7 @@ function deserializeFriendRow(row: Record<string, unknown> | null): Record<strin
 }
 
 const FRIEND_SELECT_COLS =
-  "ai_enabled, ai_friend_name, daily_limit, parent_instructions, forbidden_topics, forbidden_phrases, allowed_topics, child_traits, sensitive_triggers, education_style, proactive_enabled, proactive_start_time, proactive_end_time, quiet_hours_start, quiet_hours_end, memory_enabled, long_term_memory_enabled, allow_schedule_actions, allow_contact_actions, safety_notification_level";
+  "ai_enabled, ai_friend_name, daily_limit, parent_instructions, forbidden_topics, forbidden_phrases, allowed_topics, child_traits, sensitive_triggers, education_style, proactive_enabled, proactive_start_time, proactive_end_time, quiet_hours_start, quiet_hours_end, memory_enabled, long_term_memory_enabled, allow_schedule_actions, allow_contact_actions, buddy_attention_enabled, safety_notification_level";
 
 // GET /api/ai/settings/friend?familyId=&childUserId=  ← loadAiFriendSettings (parent 전용)
 aiData.get("/settings/friend", requireAuth, async (c) => {
@@ -207,7 +208,7 @@ aiData.get("/settings/friend", requireAuth, async (c) => {
 });
 
 const FRIEND_PUBLIC_COLS =
-  "ai_enabled, ai_friend_name, daily_limit, proactive_enabled, proactive_start_time, proactive_end_time, quiet_hours_start, quiet_hours_end";
+  "ai_enabled, ai_friend_name, daily_limit, proactive_enabled, proactive_start_time, proactive_end_time, quiet_hours_start, quiet_hours_end, buddy_attention_enabled";
 
 // GET /api/ai/settings/friend-public?familyId=&childUserId=  ← get_ai_friend_public_settings (parent or self)
 aiData.get("/settings/friend-public", requireAuth, async (c) => {

@@ -64,7 +64,7 @@ test("Worker CI는 단일 저장소 checkout으로 실행되고 교차 저장소
   assert.doesNotMatch(workflow, /path:\s*hyeni-1/);
   assert.match(workflow, /git rev-parse HEAD/);
   assert.match(workflow, /actual_sha.*EXPECTED_SOURCE_SHA/s);
-  assert.match(workflow, /working-directory:\s*worker/);
+  assert.doesNotMatch(workflow, /working-directory:\s*worker[\s\S]*?npm run typecheck:worker/);
   assert.match(workflow, /paths:[\s\S]*?- "worker\/\*\*"/);
 });
 

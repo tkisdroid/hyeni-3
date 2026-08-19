@@ -90,7 +90,7 @@ export const BELONGINGS_EVENT_KINDS: readonly EventCompanionKind[] = [
  * 시합·발표는 물건보다 **응원**이 먼저다("오늘도 파이팅!") — 떨리는 날 준비물부터 묻지 않는다.
  * 학교는 "오늘 뭐 할 거야?"라는 관계 질문이 더 낫다. 물건은 출발할 때 따로 확인해 준다.
  */
-const BELONGINGS_GREETING_KINDS: readonly EventCompanionKind[] = ["lesson"];
+export const BELONGINGS_GREETING_KINDS: readonly EventCompanionKind[] = ["lesson"];
 
 /** 일정 제목(+메모)으로 성격을 읽는다. 못 읽으면 general. */
 export function resolveEventCompanionKind(title: unknown, extra?: unknown): EventCompanionKind {
@@ -116,6 +116,19 @@ export function buildBelongingsQuestion(title: unknown, extra?: unknown): string
   return belongingsQuestionForItems(belongingsForEvent(title, extra));
 }
 
+/**
+ * 그 일정에서 친구가 던지는 질문 한 조각("도복이랑 띠 챙겼어?" / "오늘도 파이팅!").
+ * 인사말·플로팅 친구가 **같은 표**를 쓰도록 고르는 곳을 여기 하나로 둔다 —
+ * 한쪽만 고치면 홈에서는 "파이팅", 대화에서는 "축구화 챙겼어?"라고 하는 친구가 된다.
+ */
+export function eventCompanionAsk(title: unknown, memo?: unknown): string {
+  const kind = resolveEventCompanionKind(title, memo);
+  // 무엇을 챙길지 아는 학원·수업이면 "챙길 거 다 넣었어?" 대신 그 물건 이름으로 묻는다.
+  // 시합·발표는 물건보다 응원이 먼저다(떨리는 날 준비물부터 묻지 않는다).
+  return (BELONGINGS_GREETING_KINDS.includes(kind) ? buildBelongingsQuestion(title, memo) : "")
+    || KIND_ASK[kind];
+}
+
 export interface EventCompanionInput {
   title: unknown;
   /** "HH:MM" 표기. 없으면 시간을 말하지 않는다(지어내지 않는다). */
@@ -131,14 +144,9 @@ export function buildEventCompanionGreeting(
   const title = String(input.title ?? "").trim();
   const opening = String(openingLine ?? "").trim() || "안녕";
   if (!title) return `${opening}! 오늘은 뭐 하고 놀까?`;
-  const kind = resolveEventCompanionKind(title, input.memo);
   const time = String(input.time ?? "").trim();
   const when = time ? `${time}에 ` : "";
-  // 무엇을 챙길지 아는 학원·수업이면 "챙길 거 다 넣었어?" 대신 그 물건 이름으로 묻는다.
-  const ask = (BELONGINGS_GREETING_KINDS.includes(kind)
-    ? buildBelongingsQuestion(title, input.memo)
-    : "") || KIND_ASK[kind];
-  return `${opening}! 오늘 ${when}${title} 있네. ${ask}`;
+  return `${opening}! 오늘 ${when}${title} 있네. ${eventCompanionAsk(title, input.memo)}`;
 }
 
 /** 일정 성격에 맞는 제안 칩. 없으면 일반 제안. */

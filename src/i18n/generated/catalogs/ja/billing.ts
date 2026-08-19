@@ -1,5 +1,7 @@
 const messages = {
   "billing.aiCredit.creditUse": "AI が答えるたびに1回使います。",
+  "billing.aiCredit.detail.buddyAttentionDescription": "画面で時々大きくなって会話に誘います",
+  "billing.aiCredit.detail.buddyAttentionTitle": "AI 友だちから話しかける",
   "billing.aiCredit.detail.contactDescription": "お子様が保護者への通話またはメッセージをリクエストできるようにします",
   "billing.aiCredit.detail.contactTitle": "連絡先アクションを許可する",
   "billing.aiCredit.detail.description": "以下は {childName} に適用される保護者設定です",

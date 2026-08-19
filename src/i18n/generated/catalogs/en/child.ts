@@ -81,6 +81,8 @@ const messages = {
   "child.aiChat.voice.listening": "I'm listening…",
   "child.aiChat.voice.replyOffAria": "Turn off reading answers to text questions aloud",
   "child.aiChat.voice.replyOnAria": "Turn on reading answers to text questions aloud",
+  "child.aiChat.voice.showText": "Show text",
+  "child.aiChat.voice.speaking": "Talking…",
   "child.aiChat.voice.startAria": "Talk out loud",
   "child.aiChat.voice.stop": "Stop",
   "child.aiChat.voice.stopAria": "Stop talking",

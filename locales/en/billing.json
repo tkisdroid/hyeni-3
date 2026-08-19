@@ -1,5 +1,7 @@
 {
   "billing.aiCredit.creditUse": "Each AI reply uses one credit.",
+  "billing.aiCredit.detail.buddyAttentionDescription": "It grows now and then to invite a chat",
+  "billing.aiCredit.detail.buddyAttentionTitle": "Let the buddy start chats",
   "billing.aiCredit.detail.contactDescription": "Helps your child request a call or message to a parent",
   "billing.aiCredit.detail.contactTitle": "Allow contact actions",
   "billing.aiCredit.detail.description": "These parent settings apply to {childName}",

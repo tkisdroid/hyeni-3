@@ -81,6 +81,8 @@ const messages = {
   "child.aiChat.voice.listening": "きいてるよ…",
   "child.aiChat.voice.replyOffAria": "文字で聞いた答えも読み上げる設定をオフにする",
   "child.aiChat.voice.replyOnAria": "文字で聞いた答えも読み上げる設定をオンにする",
+  "child.aiChat.voice.showText": "文字で見る",
+  "child.aiChat.voice.speaking": "話しているよ…",
   "child.aiChat.voice.startAria": "こえではなす",
   "child.aiChat.voice.stop": "やめる",
   "child.aiChat.voice.stopAria": "はなすのをやめる",

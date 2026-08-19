@@ -7,10 +7,13 @@ import {
   captureSpeech,
   isSpeechCaptureSupported,
   isSpeechPlaybackSupported,
+  onSpeechInputLevel,
+  onSpeechPlaybackState,
   speakText,
   stopSpeaking,
 } from "@/lib/native/speech";
 import {
+  estimateSpeechDurationMs,
   readChildVoiceReplyEnabled,
   shouldSpeakAiReply,
   SPEECH_LOCALE,
@@ -53,11 +56,18 @@ import {
   type DeviceActionTarget,
 } from "@/lib/native/deviceAction";
 import { useAiBuddyMood } from "@/app/aiBuddyMood";
+import { prefersReducedMotion } from "@/lib/reducedMotion";
 import {
+  AI_BUDDY_LISTENING_FACE,
+  AI_BUDDY_SPEAKING_FACE,
   AI_BUDDY_TYPING_FACE,
   aiBuddyEmotionLabel,
   aiBuddyFaceAsset,
 } from "@/transform/aiBuddyEmotion";
+import {
+  aiBuddyEnterDurationMs,
+  AI_BUDDY_HANDOFF_FACE_PX,
+} from "@/transform/aiBuddyLaunch";
 import { isAccentKey } from "@/transform/childAccent";
 import { placePhoneCall } from "@/lib/native/phone";
 import type { AiToolResult, ConfirmedAiTool } from "@/lib/api/endpoints/ai";
@@ -173,6 +183,7 @@ export function AiFriendChat() {
     characterEmoji?: string;
     friendName?: string;
     startVoice?: boolean;
+    buddyLaunch?: boolean;
   };
   const familyEmoji = userId
     ? family?.members.find((m) => m.user_id === userId)?.emoji ?? undefined
@@ -296,6 +307,12 @@ export function AiFriendChat() {
   // 아이는 타자보다 말이 빠르다. 마이크로 말을 걸고 답을 귀로 들으면 "쓰는 앱"이 아니라
   // "친구와 이야기하는" 경험이 된다.
   const [listening, setListening] = useState(false);
+  // 친구가 소리 내어 말하는 중인지. 파형을 언제 멈출지 결정한다(신호 없는 기기는 상한 타이머).
+  const [speaking, setSpeaking] = useState(false);
+  // 아이가 "글로 볼래"를 누르면 파형 화면을 접는다. 마이크를 다시 켜면 원래대로 돌아온다.
+  const [voiceTextMode, setVoiceTextMode] = useState(false);
+  const speakingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const voiceStageRef = useRef<HTMLDivElement>(null);
   const voiceGenRef = useRef(0);
   const [voiceReply, setVoiceReply] = useState(false);
   const voiceReplyRef = useRef(false);
@@ -315,7 +332,40 @@ export function AiFriendChat() {
     voiceGenRef.current += 1;
     cancelSpeechCapture();
     stopSpeaking();
+    if (speakingTimerRef.current) clearTimeout(speakingTimerRef.current);
   }, []);
+
+  /**
+   * 지금 친구가 소리 내어 말하는 중인지 구독한다(2026-08-19 TK 지시).
+   * 이 값이 있어야 아이가 글을 읽지 않아도 "말하는 중"을 파형으로 볼 수 있다.
+   * 종료 신호를 못 주는 기기가 있어 호출부가 별도 상한 타이머도 함께 건다.
+   */
+  useEffect(() => onSpeechPlaybackState((state) => {
+    if (state === "started") {
+      setSpeaking(true);
+      return;
+    }
+    setSpeaking(false);
+    if (speakingTimerRef.current) {
+      clearTimeout(speakingTimerRef.current);
+      speakingTimerRef.current = null;
+    }
+  }), []);
+
+  /**
+   * 아이 목소리 크기를 파형에 그대로 싣는다(네이티브만 제공).
+   * state 로 올리면 초당 10회 리렌더가 되므로 CSS 변수만 직접 쓴다.
+   * 값이 한 번도 오지 않는 기기에서는 data-level 이 붙지 않아 기본 파형 애니메이션으로 강등된다.
+   */
+  useEffect(() => {
+    if (!listening) return;
+    return onSpeechInputLevel((level) => {
+      const stage = voiceStageRef.current;
+      if (!stage) return;
+      stage.dataset.level = "live";
+      stage.style.setProperty("--voice-level", level.toFixed(3));
+    });
+  }, [listening]);
   usePwaUpdateCriticalSection(input.trim().length > 0 || sendChat.isPending);
   // 신고는 AI 답변을 길게 눌러 연다(버블마다 버튼을 띄우지 않기 위해).
   // 신고 대상이 아닌 말풍선(내 메시지·로컬 인사)에는 핸들러를 붙이지 않는다.
@@ -434,7 +484,7 @@ export function AiFriendChat() {
             persistentEnabled: voiceReplyRef.current,
             hasReply: Boolean(spokenReply),
           })) {
-            void speakText(spokenReply, speechLang);
+            speakReply(spokenReply);
           }
           reactTo({
             phase: "reply",
@@ -477,6 +527,8 @@ export function AiFriendChat() {
     }
     // 내 차례에 친구가 계속 말하고 있으면 어색하다 — 듣기 시작 전에 읽어주기를 멈춘다.
     stopSpeaking();
+    // 마이크를 다시 켠 건 "말로 하고 싶다"는 뜻이라 글 모드로 접어 둔 파형 화면을 되돌린다.
+    setVoiceTextMode(false);
     const gen = ++voiceGenRef.current;
     setListening(true);
     void captureSpeech(speechLang)
@@ -504,6 +556,35 @@ export function AiFriendChat() {
     setListening(false);
   };
 
+  /** 지금 파형이 움직여야 하는 상태 — 듣는 중이거나 친구가 말하는 중. */
+  const voiceActive = listening || speaking;
+
+  /** 친구 말을 소리로 읽으면서 화면에 파형을 띄운다(둘의 시작·끝을 한 곳에서 맞춘다). */
+  const speakReply = (text: string) => {
+    setSpeaking(true);
+    if (speakingTimerRef.current) clearTimeout(speakingTimerRef.current);
+    // 끝났다는 신호를 못 주는 기기에서도 파형이 영영 움직이지 않도록 상한을 둔다.
+    speakingTimerRef.current = setTimeout(() => {
+      speakingTimerRef.current = null;
+      setSpeaking(false);
+    }, estimateSpeechDurationMs(text));
+    void speakText(text, speechLang).then((started) => {
+      if (started) return;
+      // 합성 자체가 시작되지 않았으면 말하는 척하지 않는다.
+      setSpeaking(false);
+      if (speakingTimerRef.current) {
+        clearTimeout(speakingTimerRef.current);
+        speakingTimerRef.current = null;
+      }
+    });
+  };
+
+  /** 파형 화면에서 지금 하고 있는 것을 멈춘다(듣는 중이면 마이크, 말하는 중이면 읽어주기). */
+  const stopVoiceStage = () => {
+    if (listening) stopVoice();
+    if (speaking) stopSpeaking();
+  };
+
   /**
    * 플로팅 버튼을 꾹 눌러 들어왔으면 마이크를 바로 켠다(2026-08-19 TK 지시).
    * 길게 누른 것 자체가 "말로 하고 싶다"는 아이의 조작이라 자동 실행이 아니다.
@@ -511,16 +592,35 @@ export function AiFriendChat() {
    */
   const autoVoiceStartedRef = useRef(false);
   useEffect(() => {
-    if (autoVoiceStartedRef.current || navState.startVoice !== true) return;
+    if (autoVoiceStartedRef.current) return;
+    if (navState.startVoice !== true && navState.buddyLaunch !== true) return;
     autoVoiceStartedRef.current = true;
+    const wantsVoice = navState.startVoice === true;
     navigate(location.pathname, {
       replace: true,
-      state: { ...navState, startVoice: false },
+      state: { ...navState, startVoice: false, buddyLaunch: false },
     });
-    startVoice();
+    if (wantsVoice) startVoice();
     // startVoice 는 렌더마다 새 참조라 의존성에 넣으면 매 렌더 재실행된다(ref 로 1회만 보장).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navState.startVoice]);
+  }, [navState.startVoice, navState.buddyLaunch]);
+
+  /**
+   * 플로팅 버튼에서 이어받는 진입 전환(2026-08-19 TK 제보 "흐름이 끊어져 보여요").
+   * 버튼이 커지며 가운데로 온 그 크기·자리에서 얼굴을 받아 제자리로 줄이고 내용을 올린다.
+   * 히스토리 state 는 위에서 지우므로 첫 렌더 값만 붙잡아 둔다(뒤로 왔다 갈 때 반복되지 않게).
+   */
+  const [entering, setEntering] = useState(() => (
+    navState.buddyLaunch === true && aiBuddyEnterDurationMs(prefersReducedMotion()) > 0
+  ));
+  useEffect(() => {
+    if (!entering) return;
+    const timer = setTimeout(
+      () => setEntering(false),
+      aiBuddyEnterDurationMs(prefersReducedMotion()),
+    );
+    return () => clearTimeout(timer);
+  }, [entering]);
 
   /** 읽어주기 켜기/끄기. 끄면 지금 읽고 있던 말도 즉시 멈춘다. */
   const toggleVoiceReply = () => {
@@ -601,7 +701,20 @@ export function AiFriendChat() {
   };
 
   return (
-    <div className="afc">
+    <div className="afc" data-entering={entering ? "true" : "false"}>
+      {/* 플로팅 버튼이 두고 간 큰 얼굴을 그대로 받아 제자리로 보낸다(한 동작으로 읽히게). */}
+      {entering ? (
+        <div className="afc-enter" aria-hidden="true">
+          <img
+            src={friendFaceSrc}
+            alt=""
+            width={AI_BUDDY_HANDOFF_FACE_PX}
+            height={AI_BUDDY_HANDOFF_FACE_PX}
+            decoding="async"
+          />
+        </div>
+      ) : null}
+
       <header className="afc-header">
         <button
           type="button"
@@ -790,6 +903,46 @@ export function AiFriendChat() {
         );
       })()}
 
+      {/* 말로 이야기하는 동안은 글을 읽지 않아도 되게 얼굴과 파형만 크게 보여 준다. */}
+      {voiceActive && !voiceTextMode ? (
+        <div
+          ref={voiceStageRef}
+          className="afc-voice"
+          role="status"
+          data-mode={listening ? "listening" : "speaking"}
+        >
+          <img
+            className="afc-voice__face"
+            src={asset(aiBuddyFaceAsset(listening ? AI_BUDDY_LISTENING_FACE : AI_BUDDY_SPEAKING_FACE))}
+            alt=""
+            width={AI_BUDDY_HANDOFF_FACE_PX}
+            height={AI_BUDDY_HANDOFF_FACE_PX}
+            decoding="async"
+          />
+          {/* 막대 높이는 네이티브가 알려 주는 실제 목소리 크기를 따른다(못 받으면 기본 파형). */}
+          <span className="afc-voice__wave" aria-hidden="true">
+            <span /><span /><span /><span /><span /><span /><span />
+          </span>
+          <p className="afc-voice__label">
+            {intl.formatMessage({
+              id: listening ? "child.aiChat.voice.listening" : "child.aiChat.voice.speaking",
+            })}
+          </p>
+          <div className="afc-voice__actions">
+            <button type="button" className="afc-voice__stop hy-press" onClick={stopVoiceStage}>
+              {intl.formatMessage({ id: "child.aiChat.voice.stop" })}
+            </button>
+            <button
+              type="button"
+              className="afc-voice__text hy-press"
+              onClick={() => setVoiceTextMode(true)}
+            >
+              {intl.formatMessage({ id: "child.aiChat.voice.showText" })}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <div className="afc-input-wrap">
         <div className="afc-suggest">
           {suggestions.map((q) => (
@@ -805,7 +958,7 @@ export function AiFriendChat() {
             </button>
           ))}
         </div>
-        {listening && (
+        {listening && voiceTextMode && (
           <div className="afc-listening" role="status">
             <span className="afc-listening__wave" aria-hidden="true">
               <span /><span /><span /><span />
