@@ -475,9 +475,12 @@ for (const route of routes) {
         || (subscriptionTone === "manage" && subscriptionActionText === "관리하기")
         || (subscriptionTone === "neutral" && subscriptionActionText === "확인하기")
       );
-      const subscriptionHasGradient = subscription
-        ? getComputedStyle(subscription).backgroundImage.includes("gradient")
-        : false;
+      const subscriptionStyle = subscription ? getComputedStyle(subscription) : null;
+      const subscriptionHasGradient = Boolean(subscriptionStyle?.backgroundImage.includes("gradient"));
+      const subscriptionIsGlass = Boolean(
+        (subscriptionStyle?.backdropFilter || "").includes("blur")
+        && !subscriptionHasGradient
+      );
       const subscriptionActionHeight = Math.round(subscriptionActionRect?.height ?? 0);
       return {
         shortcutLabels,
@@ -487,13 +490,14 @@ for (const route of routes) {
         subscriptionStateConsistent,
         subscriptionActionConsistent,
         subscriptionHasGradient,
+        subscriptionIsGlass,
         subscriptionHeight: Math.round(subscriptionRect?.height ?? 0),
         subscriptionActionHeight,
         valid: JSON.stringify(shortcutLabels) === ${JSON.stringify(JSON.stringify(parentHomeShortcutLabels))}
           && isElementVisible(subscription)
           && subscriptionStateConsistent
           && subscriptionActionConsistent
-          && (subscriptionTone === "neutral" || subscriptionHasGradient)
+          && (subscriptionTone === "neutral" || subscriptionIsGlass)
           && (subscriptionRect?.height ?? 0) >= 100
           && subscriptionActionHeight >= 36,
       };

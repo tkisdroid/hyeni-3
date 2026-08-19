@@ -280,36 +280,62 @@
 
 }
 
-/* ── AI 일정 추가 ─────────────────────────────────────────────────────────
-   단색 글래스모피즘(공식 Liquid Glass 아님).
-   카드 계약: radius-16 · shadow-soft. 색 그라데이션·코스틱 없음.
-   입체감은 안쪽 하이라이트·가장자리 굴절만으로 만든다. */
-.ph-ai {
+/* ── 홈 글래스 면 ─────────────────────────────────────────────────────────
+   Aesthetics Wiki Glassmorphism: 반투명 채움 + 배경 블러 + 밝은 흰 획.
+   색·그라데이션은 뒤 워시(.ph-frost__wash)에만 두고, 카드 면에는 올리지 않는다.
+   어두운 안쪽 선은 뉴모피즘이라 쓰지 않는다. */
+.ph-frost {
   position: relative;
   isolation: isolate;
+}
+.ph-frost--stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ph-frost > :not(.ph-frost__wash) {
+  position: relative;
+  z-index: 1;
+}
+.ph-frost__wash {
+  position: absolute;
+  inset: -16px -8px;
+  z-index: 0;
+  pointer-events: none;
+  mask-image: radial-gradient(ellipse 86% 80% at 50% 48%, black 40%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse 86% 80% at 50% 48%, black 40%, transparent 78%);
+  background:
+    radial-gradient(ellipse 220px 180px at 92% 4%, color-mix(in srgb, var(--rose-300) 82%, transparent), transparent 72%),
+    radial-gradient(ellipse 240px 200px at 2% 96%, color-mix(in srgb, var(--lav-400) 74%, transparent), transparent 70%),
+    radial-gradient(ellipse 180px 160px at 74% 86%, color-mix(in srgb, var(--mint-400) 48%, transparent), transparent 68%);
+}
+.ph-frost--stack .ph-frost__wash {
+  background:
+    radial-gradient(ellipse 220px 160px at 94% 12%, color-mix(in srgb, var(--lav-400) 76%, transparent), transparent 70%),
+    radial-gradient(ellipse 200px 170px at 0% 92%, color-mix(in srgb, var(--rose-300) 64%, transparent), transparent 72%),
+    radial-gradient(ellipse 170px 140px at 62% 58%, color-mix(in srgb, var(--mint-400) 40%, transparent), transparent 70%);
+}
+.ph-glass,
+.hy-card.ph-glass {
+  background: color-mix(in srgb, var(--bg-card) 28%, transparent);
+  border: 1px solid color-mix(in srgb, var(--bg-card) 58%, transparent);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--bg-card) 52%, transparent),
+    var(--shadow-soft);
+}
+
+/* ── AI 일정 추가 ─────────────────────────────────────────────────────────
+   카드 계약: radius-16 · shadow-soft. */
+.ph-ai {
+  position: relative;
   overflow: hidden;
   border-radius: var(--radius-16);
   padding: 16px;
-  background: color-mix(in srgb, var(--bg-card) 40%, transparent);
   box-shadow: var(--shadow-soft);
-  border: 1px solid color-mix(in srgb, var(--bg-card) 86%, var(--line-soft));
-  backdrop-filter: blur(26px) saturate(160%);
-  -webkit-backdrop-filter: blur(26px) saturate(160%);
-}
-.ph-ai::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--bg-card) 94%, transparent),
-    inset 1px 0 0 color-mix(in srgb, var(--bg-card) 55%, transparent),
-    inset -1px 0 0 color-mix(in srgb, var(--ink) 6%, transparent),
-    inset 0 -1px 0 color-mix(in srgb, var(--ink) 9%, transparent);
 }
 .ph-ai__head {
-  position: relative;
-  z-index: 1;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -318,17 +344,15 @@
   width: 48px;
   height: 48px;
   border-radius: var(--radius-16);
-  background: color-mix(in srgb, var(--bg-card) 62%, transparent);
+  background: color-mix(in srgb, var(--bg-card) 38%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
   flex: none;
-  border: 1px solid color-mix(in srgb, var(--bg-card) 86%, var(--line-soft));
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--bg-card) 92%, transparent),
-    var(--shadow-soft);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in srgb, var(--bg-card) 62%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--bg-card) 48%, transparent);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
 }
 .ph-ai__icon img {
   width: 38px;
@@ -362,8 +386,6 @@
   text-wrap: pretty;
 }
 .ph-ai__grid {
-  position: relative;
-  z-index: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
@@ -378,13 +400,11 @@
   gap: 8px;
   padding: 12px 8px;
   border-radius: var(--radius-12);
-  background: color-mix(in srgb, var(--bg-card) 56%, transparent);
-  border: 1px solid color-mix(in srgb, var(--bg-card) 84%, var(--line-soft));
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--bg-card) 90%, transparent),
-    0 4px 12px color-mix(in srgb, var(--ink) 8%, transparent);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: color-mix(in srgb, var(--bg-card) 34%, transparent);
+  border: 1px solid color-mix(in srgb, var(--bg-card) 56%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--bg-card) 44%, transparent);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
@@ -397,12 +417,11 @@
   width: 32px;
   height: 32px;
   border-radius: var(--radius-12);
-  background: color-mix(in srgb, var(--bg-card) 70%, transparent);
+  background: color-mix(in srgb, var(--bg-card) 42%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
   flex: none;
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--bg-card) 88%, transparent);
 }
 .ph-ai__btn-icon img {
   width: 22px;
@@ -411,10 +430,18 @@
 }
 
 @media (prefers-reduced-transparency: reduce) {
-  .ph-ai,
+  .ph-frost__wash {
+    display: none;
+  }
+  .ph-glass,
+  .hy-card.ph-glass,
   .ph-ai__icon,
   .ph-ai__btn,
-  .ph-ai__btn-icon {
+  .ph-ai__btn-icon,
+  .ph-subscription__icon,
+  .ph-referral__icon,
+  .ph-subscription__action,
+  .ph-referral__action {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     background: var(--bg-card);
@@ -1159,20 +1186,7 @@
   gap: 12px;
   text-align: left;
   overflow: hidden;
-  border: 1px solid var(--lav-line);
-  background: linear-gradient(135deg, var(--lav-soft2), var(--rose-soft));
-  box-shadow: var(--shadow-lavender);
   --press: 0.985;
-}
-.ph-subscription[data-tone="manage"] {
-  border-color: var(--mint-line);
-  background: linear-gradient(135deg, var(--mint-soft), var(--lav-soft));
-  box-shadow: var(--shadow-mint);
-}
-.ph-subscription[data-tone="neutral"] {
-  border-color: var(--line-soft);
-  background: var(--bg-card);
-  box-shadow: var(--shadow-soft);
 }
 .ph-subscription__icon {
   width: 56px;
@@ -1182,15 +1196,13 @@
   align-items: center;
   justify-content: center;
   flex: none;
-  background: var(--bg-card);
-  box-shadow: var(--shadow-soft);
-}
-.ph-subscription[data-tone="manage"] .ph-subscription__icon {
-  background: var(--bg-card);
+  background: color-mix(in srgb, var(--bg-card) 36%, transparent);
+  border: 1px solid color-mix(in srgb, var(--bg-card) 56%, transparent);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
 }
 .ph-subscription[data-tone="neutral"] .ph-subscription__icon {
-  background: var(--bg-chip-idle);
-  box-shadow: none;
+  background: color-mix(in srgb, var(--bg-card) 32%, transparent);
 }
 .ph-subscription__icon img {
   width: 38px;
@@ -1241,22 +1253,22 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
-  color: #fff;
-  background: var(--cta-grad-lavender);
-  box-shadow: var(--shadow-lavender);
+  color: var(--lav-text);
+  background: color-mix(in srgb, var(--bg-card) 34%, transparent);
+  border: 1px solid color-mix(in srgb, var(--bg-card) 56%, transparent);
+  box-shadow: none;
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
   white-space: nowrap;
 }
 .ph-subscription[data-tone="manage"] .ph-subscription__action {
-  background: var(--cta-grad-mint);
-  box-shadow: var(--shadow-mint);
+  color: var(--mint-text);
 }
 .ph-subscription[data-tone="neutral"] .ph-subscription__action {
   color: var(--fg-secondary);
-  background: var(--bg-chip-idle);
-  box-shadow: none;
 }
 .ph-location-chip {
   color: var(--gold-text);
@@ -1284,15 +1296,11 @@
 .ph-referral {
   width: 100%;
   min-height: 64px;
-  margin-top: 12px;
   padding: 12px 16px;
   display: flex;
   align-items: center;
   gap: 12px;
   text-align: left;
-  border: 1px solid var(--gold-400);
-  background: var(--cream-soft);
-  box-shadow: var(--shadow-soft);
   --press: 0.985;
 }
 .ph-referral__icon {
@@ -1303,8 +1311,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--gold-text);
-  background: #fff;
+  color: var(--lav-text);
+  background: color-mix(in srgb, var(--bg-card) 36%, transparent);
+  border: 1px solid color-mix(in srgb, var(--bg-card) 56%, transparent);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
 }
 .ph-referral__headline {
   flex: 1;
@@ -1326,8 +1337,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  background: var(--hy-accent-cta);
+  color: var(--lav-text);
+  background: color-mix(in srgb, var(--bg-card) 34%, transparent);
+  border: 1px solid color-mix(in srgb, var(--bg-card) 56%, transparent);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);

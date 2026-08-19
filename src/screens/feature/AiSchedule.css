@@ -1,10 +1,28 @@
-/* AI 일정추가 — 단색 글래스. 아이 테마색과 무관하게 AI=라벤더 문구 톤만 쓴다. */
+/* AI 일정추가 — 위키 글래스. 색은 페이지 워시에만, 면은 서리 유리. */
 
 /* ── 래퍼 ──────────────────────────────────────────────────────────────── */
 .ais-wrap {
+  position: relative;
+  isolation: isolate;
   min-height: 100%;
   background: var(--bg-page);
   animation: hy-fadein 0.35s ease forwards;
+}
+.ais-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 280px 220px at 96% 0%, color-mix(in srgb, var(--lav-400) 58%, transparent), transparent 72%),
+    radial-gradient(ellipse 240px 200px at 0% 28%, color-mix(in srgb, var(--rose-300) 52%, transparent), transparent 70%),
+    radial-gradient(ellipse 220px 180px at 80% 88%, color-mix(in srgb, var(--mint-400) 28%, transparent), transparent 68%);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .ais-wrap::before {
+    display: none;
+  }
 }
 
 /* ── 상단 헤더 (sticky · 뒤로가기) ───────────────────────────────────────── */
@@ -45,6 +63,8 @@
 
 /* ── 본문 컬럼 (하단 탭바 여백 포함) ────────────────────────────────────── */
 .ais-body {
+  position: relative;
+  z-index: 1;
   padding: 8px 20px calc(120px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;

@@ -90,7 +90,9 @@ test("추천 화면은 보상과 조건을 한 줄씩만 보여주고 초대 가
 test("부모 홈은 친구 초대를 한 줄 카드로 눈에 띄게 보여준다", () => {
   const home = read("src/screens/parent/ParentHome.tsx");
   const koParent = JSON.parse(read("locales/ko/parent.json"));
-  assert.match(home, /className="hy-card ph-referral hy-press"/);
+  assert.match(home, /className="hy-card ph-glass ph-referral hy-press"/);
+  assert.match(home, /ph-frost ph-frost--stack/);
+  assert.match(home, /ph-frost__wash/);
   assert.match(home, /parent\.referral\.home\.headline/);
   assert.match(home, /parent\.referral\.home\.action/);
   assert.match(home, /<ReferralRewardPanel/);
