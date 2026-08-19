@@ -170,6 +170,10 @@
   color: var(--hy-accent-text);
   transition: transform 0.12s ease, opacity 0.12s ease;
 }
+/* 부모 모드 섹션 헤더는 색이 깔린 바닥 위에 놓인다 — 카드 위 기준 색으로는 대비가 모자라다. */
+.hy-app[data-role="parent"] .hy-section-action {
+  color: var(--hy-accent-on-ground);
+}
 .hy-section-action:active {
   transform: scale(0.94);
   opacity: 0.75;

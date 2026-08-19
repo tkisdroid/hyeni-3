@@ -224,17 +224,23 @@
   /* ⚠️ 그라디언트를 쓰지 않는다 — 유리 면 안의 그라데이션은 디자인 규칙 위반이고
      final-browser-qa 의 subscriptionIsGlass 검사(backdrop blur + 그라디언트 없음)에 걸린다.
      유리로 보이게 하는 건 채움이 아니라 --glass-rim 이다. */
-  --glass-fill: rgba(255, 255, 255, 0.82);
+  --glass-fill: rgba(255, 255, 255, 0.66);
   --glass-blur: blur(22px) saturate(180%);
   --glass-border: rgba(255, 255, 255, 0.9);
   /* 유리의 두께 — 바깥 헤어라인 + 위 모서리에 닿는 빛 + 아래로 흐르는 반사.
      inset 하이라이트를 2px 로 두께감 있게 준다. 이 rim 이 없으면 유리와 흰 카드가
      구분되지 않는다(채움이 거의 같기 때문). */
+  /* 빛을 받는 위 모서리를 확실히 세운다 — 채움을 투명하게 내릴수록 rim 이 유일한 경계다. */
   --glass-rim:
-    0 0 0 0.5px rgba(32, 26, 29, 0.055),
-    inset 0 2px 1px -1px rgba(255, 255, 255, 1),
-    inset 0 -1px 1px rgba(255, 255, 255, 0.5);
-  --glass-lift: 0 18px 40px -24px rgba(90, 46, 74, 0.42);
+    0 0 0 0.5px rgba(32, 26, 29, 0.06),
+    inset 0 1.5px 0 rgba(255, 255, 255, 1),
+    inset 1px 0 0 rgba(255, 255, 255, 0.65),
+    inset -1px 0 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1.5px 1px rgba(255, 255, 255, 0.55);
+  /* 카드가 바닥에서 실제로 떠 보이게 — 넓고 깊은 그림자 + 접지 그림자 두 겹. */
+  --glass-lift:
+    0 2px 6px -2px rgba(90, 46, 74, 0.16),
+    0 22px 46px -22px rgba(90, 46, 74, 0.55);
   /* 유리 위에 얹히는 작은 면(아이콘 타일·칩) — 카드보다 한 겹 더 밝다. */
   --glass-tile: rgba(255, 255, 255, 0.62);
 
@@ -246,19 +252,19 @@
      사라지고 어두운 그림자만 남아 때가 탄 것처럼 보인다.
      light 는 좌상단(빛), dark 는 우하단(그늘) — 광원은 화면 전체에서 하나다. */
   --neu-light: rgba(255, 255, 255, 0.95);
-  --neu-dark: rgba(126, 100, 118, 0.26);
+  --neu-dark: rgba(118, 90, 110, 0.38);
   /* 볼록 — 아이콘 타일·칩처럼 '누를 수 있는' 작은 면 */
   --neu-raised:
-    -3px -3px 8px var(--neu-light),
-    4px 5px 12px var(--neu-dark);
+    -4px -4px 10px var(--neu-light),
+    5px 7px 16px var(--neu-dark);
   /* 얕은 볼록 — 카드 안에서 여러 개가 반복될 때(그림자가 겹쳐 지저분해지지 않게) */
   --neu-raised-soft:
-    -2px -2px 5px var(--neu-light),
-    2px 3px 7px var(--neu-dark);
+    -3px -3px 7px var(--neu-light),
+    3px 4px 10px var(--neu-dark);
   /* 오목 — 값이 들어가는 면(입력칸·요약 우물). 눌린 자리는 그늘이 좌상단이다. */
   --neu-pressed:
-    inset 2px 3px 6px var(--neu-dark),
-    inset -2px -2px 5px var(--neu-light);
+    inset 3px 4px 8px var(--neu-dark),
+    inset -3px -3px 7px var(--neu-light);
   /* 뉴모피즘 면의 채움 — 카드와 같은 톤이어야 '한 덩어리에서 솟은' 것으로 보인다. */
   --neu-surface: rgba(255, 255, 255, 0.58);
 
@@ -293,6 +299,12 @@
      그래서 명도를 내리고 채도를 살짝 낮춘 '딥 로즈' 계열을 CTA 채움으로 따로 둔다.
      장식·아바타·진행바·마커 같은 비텍스트 면은 계속 --hy-accent 를 쓴다. */
   --hy-accent-cta: #D93072;
+
+  /* 색 있는 '바닥' 위에 직접 놓이는 강조 글자(부모 섹션 헤더 링크) 전용.
+     --hy-accent-text 는 자기 -soft 채움 위 기준이라, 색이 깔린 바닥에서는 4.5:1 을 못 넘긴다
+     (rose 바닥 3.82:1 · lavender 바닥 3.54:1 실측). 어두운 쪽으로 30% 섞어 6개 테마 전부 통과시킨다.
+     ⚠️ 바닥 radial 채도를 올리면 여기부터 깨진다 — 바꾸기 전에 이 조합을 다시 계산할 것. */
+  --hy-accent-on-ground: color-mix(in srgb, var(--hy-accent-text) 70%, #2A1520);
 
   /* 흰 라벨 CTA 그라디언트 — 두 stop 모두 4.5:1 이상이어야 한다.
      이전에는 밝은 stop(--hy-accent-light 2.0:1 · --lav-400 2.7:1 · --danger-strong 3.6:1)에서
