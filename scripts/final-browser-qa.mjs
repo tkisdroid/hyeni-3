@@ -1020,6 +1020,10 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
         subscriptionHeight: Math.round(subscriptionRect?.height || 0),
         subscriptionActionHeight: Math.round(subscriptionActionRect?.height || 0),
         subscriptionHasGradient: Boolean(subscriptionStyle?.backgroundImage.includes("gradient")),
+        subscriptionIsGlass: Boolean(
+          (subscriptionStyle?.backdropFilter || "").includes("blur")
+          && !(subscriptionStyle?.backgroundImage || "").includes("gradient")
+        ),
         subscriptionActionInside: Boolean(
           subscriptionRect
           && subscriptionActionRect
@@ -1052,7 +1056,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       || parentHomeFreeFacts.subscriptionTag !== "BUTTON"
       || parentHomeFreeFacts.subscriptionHeight < 100
       || parentHomeFreeFacts.subscriptionActionHeight < 36
-      || !parentHomeFreeFacts.subscriptionHasGradient
+      || !parentHomeFreeFacts.subscriptionIsGlass
       || !parentHomeFreeFacts.subscriptionActionInside
       || !parentHomeFreeFacts.isSubscriptionBelowGrid
       || !parentHomeFreeFacts.alignsWithMemo
@@ -1113,7 +1117,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       || parentHomePremiumFacts.subscriptionTag !== "BUTTON"
       || parentHomePremiumFacts.subscriptionHeight < 100
       || parentHomePremiumFacts.subscriptionActionHeight < 36
-      || !parentHomePremiumFacts.subscriptionHasGradient
+      || !parentHomePremiumFacts.subscriptionIsGlass
       || !parentHomePremiumFacts.subscriptionActionInside
       || !parentHomePremiumFacts.isSubscriptionBelowGrid
       || !parentHomePremiumFacts.alignsWithMemo

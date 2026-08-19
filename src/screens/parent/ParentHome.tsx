@@ -674,46 +674,49 @@ export function ParentHome() {
           </div>
         </section>
 
-        {/* AI로 일정 추가 — 단색 글래스. 라우트·2열 격자는 유지한다. */}
-        <section className="ph-ai" aria-labelledby="ph-ai-title">
-          <div className="ph-ai__head">
-            <span className="ph-ai__icon">
-              <img src={asset("ui/ai-friend-credits.webp")} alt="" />
-            </span>
-            <span className="ph-ai__copy">
-              <span className="ph-ai__title" id="ph-ai-title">
-                {intl.formatMessage({ id: "parent.parentHome.copy023" })}
+        {/* AI로 일정 추가 — 위키 글래스(색은 뒤 워시, 카드는 서리 유리). 라우트·2열은 유지. */}
+        <div className="ph-frost">
+          <div className="ph-frost__wash" aria-hidden="true" />
+          <section className="ph-ai ph-glass" aria-labelledby="ph-ai-title">
+            <div className="ph-ai__head">
+              <span className="ph-ai__icon">
+                <img src={asset("ui/ai-friend-credits.webp")} alt="" />
               </span>
-              <span className="ph-ai__sub">{intl.formatMessage({ id: "parent.parentHome.copy024" })}</span>
-            </span>
-          </div>
-          <div className="ph-ai__grid">
-            <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=voice")}>
-              <span className="ph-ai__btn-icon">
-                <img src={asset("ui/mic-lavender.webp")} alt="" />
+              <span className="ph-ai__copy">
+                <span className="ph-ai__title" id="ph-ai-title">
+                  {intl.formatMessage({ id: "parent.parentHome.copy023" })}
+                </span>
+                <span className="ph-ai__sub">{intl.formatMessage({ id: "parent.parentHome.copy024" })}</span>
               </span>
-              {intl.formatMessage({ id: "parent.parentHome.copy025" })}
-            </button>
-            <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=text")}>
-              <span className="ph-ai__btn-icon">
-                <img src={asset("ui/menu-ai-schedule.webp")} alt="" />
-              </span>
-              {intl.formatMessage({ id: "parent.parentHome.copy026" })}
-            </button>
-            <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=image")}>
-              <span className="ph-ai__btn-icon">
-                <img src={asset("ui/calendar-heart.webp")} alt="" />
-              </span>
-              {intl.formatMessage({ id: "parent.parentHome.copy027" })}
-            </button>
-            <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?mode=academy&tab=image")}>
-              <span className="ph-ai__btn-icon">
-                <img src={asset("ui/place-academy.webp")} alt="" />
-              </span>
-              {intl.formatMessage({ id: "parent.parentHome.copy028" })}
-            </button>
-          </div>
-        </section>
+            </div>
+            <div className="ph-ai__grid">
+              <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=voice")}>
+                <span className="ph-ai__btn-icon">
+                  <img src={asset("ui/mic-lavender.webp")} alt="" />
+                </span>
+                {intl.formatMessage({ id: "parent.parentHome.copy025" })}
+              </button>
+              <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=text")}>
+                <span className="ph-ai__btn-icon">
+                  <img src={asset("ui/menu-ai-schedule.webp")} alt="" />
+                </span>
+                {intl.formatMessage({ id: "parent.parentHome.copy026" })}
+              </button>
+              <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=image")}>
+                <span className="ph-ai__btn-icon">
+                  <img src={asset("ui/calendar-heart.webp")} alt="" />
+                </span>
+                {intl.formatMessage({ id: "parent.parentHome.copy027" })}
+              </button>
+              <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?mode=academy&tab=image")}>
+                <span className="ph-ai__btn-icon">
+                  <img src={asset("ui/place-academy.webp")} alt="" />
+                </span>
+                {intl.formatMessage({ id: "parent.parentHome.copy028" })}
+              </button>
+            </div>
+          </section>
+        </div>
 
         {/* 아이 현황 */}
         <section>
@@ -1109,48 +1112,51 @@ export function ParentHome() {
           </div>
         </section>
 
-        <button
-          type="button"
-          className="hy-card ph-subscription hy-press"
-          data-tone={subscriptionCard.tone}
-          aria-busy={!entitlement.ready && !entitlement.isError}
-          onClick={() => navigate("/subscription")}
-        >
-          <span className="ph-subscription__icon">
-            <img src={asset("ui/menu-subscription.webp")} alt="" />
-          </span>
-          <span className="ph-subscription__main">
-            <span className="ph-subscription__title">{subscriptionCard.title}</span>
-            <span className="ph-subscription__description">{subscriptionCard.description}</span>
-            <span className="ph-subscription__meta">{subscriptionCard.meta}</span>
-          </span>
-          <span className="ph-subscription__action" aria-hidden="true">
-            {subscriptionCard.actionLabel}
-            <ChevronRight size={16} strokeWidth={2.6} />
-          </span>
-        </button>
-
-        {/* 친구 초대 — 한 줄과 버튼만. 공동 보호자도 코드를 보고 공유한다(만들기는 주 보호자). */}
-        {family?.myRole === "parent" && (
+        <div className="ph-frost ph-frost--stack">
+          <div className="ph-frost__wash" aria-hidden="true" />
           <button
             type="button"
-            className="hy-card ph-referral hy-press"
-            onClick={() => setReferralOpen(true)}
+            className="hy-card ph-glass ph-subscription hy-press"
+            data-tone={subscriptionCard.tone}
+            aria-busy={!entitlement.ready && !entitlement.isError}
+            onClick={() => navigate("/subscription")}
           >
-            <span className="ph-referral__icon" aria-hidden="true">
-              <Gift size={20} strokeWidth={2.4} />
+            <span className="ph-subscription__icon">
+              <img src={asset("ui/menu-subscription.webp")} alt="" />
             </span>
-            <span className="ph-referral__headline">
-              {intl.formatMessage(
-                { id: "parent.referral.home.headline" },
-                { count: REFERRAL_REWARD_CREDITS_DISPLAY },
-              )}
+            <span className="ph-subscription__main">
+              <span className="ph-subscription__title">{subscriptionCard.title}</span>
+              <span className="ph-subscription__description">{subscriptionCard.description}</span>
+              <span className="ph-subscription__meta">{subscriptionCard.meta}</span>
             </span>
-            <span className="ph-referral__action" aria-hidden="true">
-              {intl.formatMessage({ id: "parent.referral.home.action" })}
+            <span className="ph-subscription__action" aria-hidden="true">
+              {subscriptionCard.actionLabel}
+              <ChevronRight size={16} strokeWidth={2.6} />
             </span>
           </button>
-        )}
+
+          {/* 친구 초대 — 한 줄과 버튼만. 공동 보호자도 코드를 보고 공유한다(만들기는 주 보호자). */}
+          {family?.myRole === "parent" && (
+            <button
+              type="button"
+              className="hy-card ph-glass ph-referral hy-press"
+              onClick={() => setReferralOpen(true)}
+            >
+              <span className="ph-referral__icon" aria-hidden="true">
+                <Gift size={20} strokeWidth={2.4} />
+              </span>
+              <span className="ph-referral__headline">
+                {intl.formatMessage(
+                  { id: "parent.referral.home.headline" },
+                  { count: REFERRAL_REWARD_CREDITS_DISPLAY },
+                )}
+              </span>
+              <span className="ph-referral__action" aria-hidden="true">
+                {intl.formatMessage({ id: "parent.referral.home.action" })}
+              </span>
+            </button>
+          )}
+        </div>
       </div>
       <ReferralRewardPanel
         open={referralOpen && family?.myRole === "parent"}
