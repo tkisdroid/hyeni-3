@@ -280,15 +280,55 @@
 
 }
 
-/* ── AI 일정 추가 ───────────────────────────────────────────────────────── */
+/* ── AI 일정 추가 ─────────────────────────────────────────────────────────
+   웹 글래스모피즘 근사(공식 Liquid Glass 아님).
+   카드 계약: radius-16 · shadow-soft. 빛은 자식 코스틱이 잡고,
+   반투명 패널이 그 위를 덮어 유리가 색을 머금게 한다. */
 .ph-ai {
   position: relative;
+  isolation: isolate;
   overflow: hidden;
   border-radius: var(--radius-16);
   padding: 16px;
-  background: linear-gradient(135deg, #f1ecff 0%, #fce6f1 100%);
+  background: transparent;
   box-shadow: var(--shadow-soft);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid color-mix(in srgb, var(--bg-card) 62%, var(--lav-line));
+}
+.ph-ai__orb {
+  position: absolute;
+  width: 210px;
+  height: 210px;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(circle, color-mix(in srgb, var(--lav-400) 88%, transparent) 0%, transparent 70%);
+}
+.ph-ai__orb--lav {
+  top: -64px;
+  right: -48px;
+}
+.ph-ai__orb--rose {
+  bottom: -72px;
+  left: -56px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--rose-400) 78%, transparent) 0%, transparent 70%);
+}
+.ph-ai__pane {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--bg-card) 36%, transparent), color-mix(in srgb, var(--lav-soft) 62%, transparent) 58%, color-mix(in srgb, var(--rose-soft) 44%, transparent)),
+    color-mix(in srgb, var(--lav-soft2) 38%, transparent);
+  backdrop-filter: blur(22px) saturate(170%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--bg-card) 86%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--lav-line) 42%, transparent);
+}
+.ph-ai__head,
+.ph-ai__grid {
+  position: relative;
+  z-index: 1;
 }
 .ph-ai__head {
   display: flex;
@@ -299,17 +339,25 @@
   width: 46px;
   height: 46px;
   border-radius: var(--radius-16);
-  background: #fff;
+  background: color-mix(in srgb, var(--bg-card) 72%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
   flex: none;
-  box-shadow: 0 6px 16px rgba(124, 92, 225, 0.16);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--bg-card) 80%, transparent),
+    var(--shadow-soft);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
 }
 .ph-ai__icon img {
   width: 30px;
   height: 30px;
   object-fit: contain;
+}
+.ph-ai__copy {
+  flex: 1;
+  min-width: 0;
 }
 .ph-ai__title {
   display: block;
@@ -318,7 +366,8 @@
   font-weight: var(--type-body-lg-weight);
 
   letter-spacing: -0.01em;
-  color: #43356b;
+  color: var(--fg-primary);
+  word-break: keep-all;
 }
 .ph-ai__sub {
   display: block;
@@ -327,7 +376,10 @@
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
 
-  color: var(--fg-muted);
+  color: var(--fg-secondary);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 .ph-ai__grid {
   display: grid;
@@ -338,18 +390,62 @@
 .ph-ai__btn {
   min-height: var(--control-min-size);
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 12px 4px;
+  gap: 8px;
+  padding: 10px 8px;
   border-radius: var(--radius-12);
-  background: rgba(255, 255, 255, 0.8);
+  background: color-mix(in srgb, var(--bg-card) 54%, transparent);
+  border: 1px solid color-mix(in srgb, var(--bg-card) 58%, var(--lav-line));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--bg-card) 82%, transparent);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
 
   color: var(--lav-text);
+  word-break: keep-all;
   --press: 0.94;
+}
+.ph-ai__btn-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-12);
+  background: color-mix(in srgb, var(--bg-card) 70%, var(--lav-soft));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--bg-card) 86%, transparent);
+}
+.ph-ai__btn-icon img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .ph-ai {
+    background: var(--lav-soft);
+  }
+  .ph-ai__pane,
+  .ph-ai__icon,
+  .ph-ai__btn {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .ph-ai__pane {
+    background: color-mix(in srgb, var(--lav-soft) 86%, var(--bg-card));
+  }
+  .ph-ai__icon,
+  .ph-ai__btn {
+    background: var(--bg-card);
+  }
+  .ph-ai__btn-icon {
+    background: var(--lav-soft);
+  }
 }
 
 /* ── 아이 현황 ──────────────────────────────────────────────────────────── */

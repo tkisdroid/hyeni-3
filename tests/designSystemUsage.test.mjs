@@ -2558,6 +2558,7 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/parent/ParentHome.css", ".ph-live-dot .ring"],
   ["src/screens/parent/ParentHome.css", ".ph-live-dot .core"],
   ["src/screens/parent/ParentHome.css", ".ph-ai__icon"],
+  ["src/screens/parent/ParentHome.css", ".ph-ai__btn-icon"],
   ["src/screens/parent/ParentHome.css", ".ph-child__online"],
   ["src/screens/parent/ParentHome.css", ".ph-recent-row__icon"],
   ["src/screens/parent/ParentHome.css", ".ph-memo__icon"],

@@ -1,7 +1,7 @@
 import { useIntl, type IntlShape } from "react-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { AlertTriangle, Bell, Settings, ChevronRight, Check, Gift, MapPin, Smartphone, Mic, Keyboard, Image as ImageIcon, CalendarDays, RefreshCw } from "lucide-react";
+import { AlertTriangle, Bell, Settings, ChevronRight, Check, Gift, MapPin, Smartphone, RefreshCw } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
@@ -674,32 +674,49 @@ export function ParentHome() {
           </div>
         </section>
 
-        {/* AI로 일정 추가 */}
-        <div className="ph-ai">
+        {/* AI로 일정 추가 — 창가 아크릴 글래스. 라우트·2열 격자는 유지한다. */}
+        <section className="ph-ai" aria-labelledby="ph-ai-title">
+          <span className="ph-ai__orb ph-ai__orb--lav" aria-hidden="true" />
+          <span className="ph-ai__orb ph-ai__orb--rose" aria-hidden="true" />
+          <span className="ph-ai__pane" aria-hidden="true" />
           <div className="ph-ai__head">
             <span className="ph-ai__icon">
-              <img src={asset("ui/mic-lavender.webp")} alt="" />
+              <img src={asset("ui/sparkle.webp")} alt="" />
             </span>
-            <span style={{ flex: 1, minWidth: 0 }}>
-              <span className="ph-ai__title">{intl.formatMessage({ id: "parent.parentHome.copy023" })}</span>
+            <span className="ph-ai__copy">
+              <span className="ph-ai__title" id="ph-ai-title">
+                {intl.formatMessage({ id: "parent.parentHome.copy023" })}
+              </span>
               <span className="ph-ai__sub">{intl.formatMessage({ id: "parent.parentHome.copy024" })}</span>
             </span>
           </div>
           <div className="ph-ai__grid">
             <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=voice")}>
-              <Mic size={15} strokeWidth={2.4} /> {intl.formatMessage({ id: "parent.parentHome.copy025" })}
+              <span className="ph-ai__btn-icon">
+                <img src={asset("ui/mic-lavender.webp")} alt="" />
+              </span>
+              {intl.formatMessage({ id: "parent.parentHome.copy025" })}
             </button>
             <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=text")}>
-              <Keyboard size={15} strokeWidth={2.4} /> {intl.formatMessage({ id: "parent.parentHome.copy026" })}
+              <span className="ph-ai__btn-icon">
+                <img src={asset("ui/menu-ai-schedule.webp")} alt="" />
+              </span>
+              {intl.formatMessage({ id: "parent.parentHome.copy026" })}
             </button>
             <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=image")}>
-              <ImageIcon size={15} strokeWidth={2.4} /> {intl.formatMessage({ id: "parent.parentHome.copy027" })}
+              <span className="ph-ai__btn-icon">
+                <img src={asset("ui/calendar-heart.webp")} alt="" />
+              </span>
+              {intl.formatMessage({ id: "parent.parentHome.copy027" })}
             </button>
             <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?mode=academy&tab=image")}>
-              <CalendarDays size={15} strokeWidth={2.4} /> {intl.formatMessage({ id: "parent.parentHome.copy028" })}
+              <span className="ph-ai__btn-icon">
+                <img src={asset("ui/place-academy.webp")} alt="" />
+              </span>
+              {intl.formatMessage({ id: "parent.parentHome.copy028" })}
             </button>
           </div>
-        </div>
+        </section>
 
         {/* 아이 현황 */}
         <section>

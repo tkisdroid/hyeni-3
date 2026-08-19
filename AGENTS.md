@@ -508,6 +508,11 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   Premium은 `구독 관리`, 미확정·오류는 `구독 정보`로 표시해 Free로 추정하지 않는다. 부모 설정 메뉴는 emoji 칩 대신
   lucide/image 아이콘 + `data-tone` 토큰 색상만 사용한다. 페어링 위저드는 `/api/family/mine`과 엔타이틀먼트가
   모두 확정되기 전 2명 선택과 코드 생성을 막고, 코드 생성 직전에도 현재 티어의 아이 수 상한을 다시 검사한다.
+- ★**부모 홈 AI로 일정 추가 글래스(2026-08-19)**: `.ph-ai` 는 카드 계약(`radius-16`·`shadow-soft`) 안에서
+  웹 글래스모피즘 근사(코스틱 orb + 반투명 pane + `backdrop-filter`)다. 2열 4버튼 라우트
+  (`voice`/`text`/`image`/`mode=academy`)는 유지한다. 장식 배지·흰 글자 파스텔 CTA는 쓰지 않고,
+  `prefers-reduced-transparency` 에서는 솔리드 `--lav-soft`/`--bg-card` 폴백을 쓴다.
+  도착 화면 `AiSchedule` 도 같은 아크릴 톤이다.
 - **OAuth 딥링크 1회 소비(2026-07-10)**: 인가코드는 1회용인데 Capacitor `App.getLaunchUrl()` 이 실행 인텐트를
   계속 반환하고 `appUrlOpen` 도 같은 인텐트를 줘, 콜드 스타트에서 code 가 2~3회 교환됐다. 구글은 코드 재사용 시
   발급 토큰을 전부 무효화해 로그인이 실패하고(카카오는 먼저 도착한 요청만 성공해 은폐), D1 에는 세션 행이

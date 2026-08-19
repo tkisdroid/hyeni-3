@@ -1,12 +1,36 @@
-/* AI 일정추가 — 화면 전용 스타일 (원본 dc.html 1287–1348행 값 1:1)
-   이 화면은 아이 테마색(--hy-accent)과 무관하게 AI=라벤더 고정 톤을 사용한다. */
+/* AI 일정추가 — 부모 홈 글래스 트레이와 같은 아크릴 재질.
+   이 화면은 아이 테마색(--hy-accent)과 무관하게 AI=라벤더 고정 톤을 사용한다.
+   웹 글래스모피즘 근사(공식 Liquid Glass 아님). */
 
-/* ── 래퍼: 라벤더 그라디언트 배경 + 진입 모션 ─────────────────────────────── */
+/* ── 래퍼: 창가 코스틱 + 진입 모션 ──────────────────────────────────────── */
 .ais-wrap {
+  position: relative;
+  isolation: isolate;
   min-height: 100%;
-  background: radial-gradient(120% 44% at 50% 0%, #efe8ff 0%, rgba(239, 232, 255, 0) 55%),
-    linear-gradient(180deg, #fdf4f1, #f7f4f3);
+  background:
+    radial-gradient(120% 46% at 86% -8%, color-mix(in srgb, var(--lav-soft2) 88%, transparent) 0%, transparent 58%),
+    radial-gradient(90% 40% at 8% 108%, color-mix(in srgb, var(--rose-soft) 80%, transparent) 0%, transparent 62%),
+    linear-gradient(180deg, var(--bg-app), var(--bg-page));
   animation: hy-fadein 0.35s ease forwards;
+}
+.ais-wrap::before,
+.ais-wrap::after {
+  content: "";
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(circle, color-mix(in srgb, var(--lav-300) 42%, transparent) 0%, transparent 72%);
+}
+.ais-wrap::before {
+  top: -72px;
+  right: -48px;
+}
+.ais-wrap::after {
+  bottom: 12%;
+  left: -64px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--rose-300) 36%, transparent) 0%, transparent 72%);
 }
 
 /* ── 상단 헤더 (sticky · 뒤로가기) ───────────────────────────────────────── */
@@ -18,15 +42,22 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(180deg, rgba(253, 244, 241, 0.9) 60%, rgba(253, 244, 241, 0));
-  backdrop-filter: blur(8px);
+  background: color-mix(in srgb, var(--bg-app) 62%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--bg-card) 40%, transparent);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
 }
 .ais-back {
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 4px 12px rgba(32, 26, 29, 0.06);
+  color: var(--fg-secondary);
+  background: color-mix(in srgb, var(--bg-card) 72%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--bg-card) 80%, transparent),
+    var(--shadow-soft);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -44,6 +75,8 @@
 
 /* ── 본문 컬럼 (하단 탭바 여백 포함) ────────────────────────────────────── */
 .ais-body {
+  position: relative;
+  z-index: 1;
   padding: 8px 20px calc(120px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
@@ -54,10 +87,12 @@
   width: 100%;
   margin-bottom: 12px;
   padding: var(--spacing-16);
-  border: 1px solid rgba(124, 92, 225, 0.16);
+  border: 1px solid color-mix(in srgb, var(--bg-card) 62%, var(--lav-line));
   border-radius: var(--radius-16);
-  background: rgba(255, 255, 255, 0.82);
+  background: color-mix(in srgb, var(--bg-card) 70%, transparent);
   box-shadow: none;
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
   color: var(--fg-secondary);
   display: flex;
   flex-direction: column;
@@ -108,7 +143,7 @@
   margin-top: var(--spacing-16);
   padding: var(--spacing-16);
   border-radius: var(--radius-16);
-  background: rgba(124, 92, 225, 0.08);
+  background: color-mix(in srgb, var(--lav-soft) 72%, transparent);
   box-shadow: none;
   color: var(--lav-text);
 }
@@ -132,8 +167,11 @@
   display: flex;
   gap: 4px;
   padding: 4px;
-  border-radius: 16px;
-  background: rgba(124, 92, 225, 0.08);
+  border-radius: var(--radius-16);
+  background: color-mix(in srgb, var(--lav-soft) 62%, transparent);
+  border: 1px solid color-mix(in srgb, var(--bg-card) 50%, var(--lav-line));
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
 }
 .ais-tab {
   flex: 1;
@@ -142,7 +180,7 @@
   justify-content: center;
   gap: 4px;
   padding: 8px 4px;
-  border-radius: 12px;
+  border-radius: var(--radius-12);
   background: transparent;
   box-shadow: none;
   font-size: var(--type-label);
@@ -157,9 +195,9 @@
   font-size: 14px;
 }
 .ais-tab[data-active="true"] {
-  background: #fff;
-  box-shadow: 0 6px 16px rgba(124, 92, 225, 0.18);
-  color: #43356b;
+  background: color-mix(in srgb, var(--bg-card) 86%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--bg-card) 80%, transparent);
+  color: var(--fg-primary);
 }
 
 /* ── 음성 ───────────────────────────────────────────────────────────────── */
@@ -226,13 +264,18 @@
   width: 100%;
   padding: 16px 16px;
   border-radius: 20px 20px 20px var(--radius-8);
-  background: #fff;
-  box-shadow: 0 8px 22px rgba(124, 92, 225, 0.1);
+  background: color-mix(in srgb, var(--bg-card) 74%, transparent);
+  border: 1px solid color-mix(in srgb, var(--bg-card) 62%, var(--lav-line));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--bg-card) 80%, transparent),
+    var(--shadow-soft);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
   font-size: var(--type-body);
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
 
-  color: #43356b;
+  color: var(--fg-primary);
 }
 
 /* 마이크는 버튼 — 리셋 + 탭 가능 */
@@ -270,9 +313,11 @@
 }
 /* 인식된 발화 말풍선 강조 */
 .ais-bubble--said {
-  background: linear-gradient(150deg, #efe8ff, #f6f1ff);
-  color: #43356b;
-  box-shadow: 0 8px 22px rgba(124, 92, 225, 0.16);
+  background: linear-gradient(150deg, var(--lav-soft2), color-mix(in srgb, var(--lav-soft) 55%, var(--bg-card)));
+  color: var(--fg-primary);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--bg-card) 72%, transparent),
+    var(--shadow-soft);
 }
 
 /* ── 텍스트 ─────────────────────────────────────────────────────────────── */
@@ -281,10 +326,15 @@
   padding-top: 8px;
 }
 .ais-textbox {
-  background: #fff;
-  border-radius: 20px;
+  background: color-mix(in srgb, var(--bg-card) 74%, transparent);
+  border-radius: var(--radius-20);
   padding: 4px;
-  box-shadow: 0 8px 22px rgba(124, 92, 225, 0.1);
+  border: 1px solid color-mix(in srgb, var(--bg-card) 62%, var(--lav-line));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--bg-card) 80%, transparent),
+    var(--shadow-soft);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
 }
 .ais-textarea {
   width: 100%;
@@ -297,7 +347,7 @@
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
 
-  color: #43356b;
+  color: var(--fg-primary);
   font-family: inherit;
 
   box-sizing: border-box;
@@ -312,8 +362,11 @@
   margin-bottom: 12px;
   padding: 12px 16px;
   border-radius: var(--radius-16);
-  background: var(--bg-card);
+  background: color-mix(in srgb, var(--bg-card) 74%, transparent);
   box-shadow: var(--shadow-soft);
+  border: 1px solid color-mix(in srgb, var(--bg-card) 62%, var(--lav-line));
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
 }
 .ais-mode-intro__title {
   font-size: var(--type-body);
@@ -333,8 +386,8 @@
 .ais-upload {
   width: 100%;
   border-radius: var(--radius-20);
-  border: 2px dashed rgba(124, 92, 225, 0.35);
-  background: rgba(124, 92, 225, 0.05);
+  border: 2px dashed color-mix(in srgb, var(--lav-500) 38%, var(--lav-line));
+  background: color-mix(in srgb, var(--lav-soft) 48%, transparent);
   padding: 32px 20px;
   box-shadow: none;
   display: flex;
@@ -346,12 +399,14 @@
 .ais-upload__icon {
   width: 64px;
   height: 64px;
-  border-radius: 20px;
-  background: #fff;
+  border-radius: var(--radius-20);
+  background: color-mix(in srgb, var(--bg-card) 82%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 20px rgba(124, 92, 225, 0.14);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--bg-card) 80%, transparent),
+    var(--shadow-soft);
 }
 .ais-upload__icon img {
   width: 44px;
@@ -367,7 +422,7 @@
   line-height: var(--type-body-line-height);
   font-weight: var(--type-body-weight);
 
-  color: #43356b;
+  color: var(--fg-primary);
 }
 .ais-upload__sub {
   display: block;
@@ -403,12 +458,12 @@
 .ais-preview__change {
   padding: 8px 16px;
   border-radius: 999px;
-  background: rgba(124, 92, 225, 0.08);
+  background: color-mix(in srgb, var(--lav-soft) 78%, transparent);
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
 
-  color: #6d4e9c;
+  color: var(--lav-text);
   --press: 0.95;
 }
 
@@ -444,7 +499,7 @@
   width: 20px;
   height: 20px;
   border-radius: var(--radius-8);
-  background: #efe8ff;
+  background: var(--lav-soft2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -459,17 +514,20 @@
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
 
-  color: #6d4e9c;
+  color: var(--lav-text);
 }
 
 /* ── AI 인식 결과 카드 ──────────────────────────────────────────────────── */
 .ais-result {
   margin-top: 16px;
   width: 100%;
-  background: #fff;
+  background: color-mix(in srgb, var(--bg-card) 76%, transparent);
   border-radius: var(--radius-16);
   padding: 8px;
   box-shadow: var(--shadow-soft);
+  border: 1px solid color-mix(in srgb, var(--bg-card) 62%, var(--lav-line));
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
 }
 .ais-result__top {
   display: flex;
@@ -587,6 +645,36 @@
   .ais-confirm {
     animation: none;
     transition: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .ais-header,
+  .ais-back,
+  .ais-academy-intro,
+  .ais-tabs,
+  .ais-tab[data-active="true"],
+  .ais-bubble,
+  .ais-textbox,
+  .ais-mode-intro,
+  .ais-result {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .ais-header {
+    background: var(--bg-app);
+  }
+  .ais-back,
+  .ais-tab[data-active="true"],
+  .ais-bubble,
+  .ais-textbox,
+  .ais-mode-intro,
+  .ais-result,
+  .ais-academy-intro {
+    background: var(--bg-card);
+  }
+  .ais-tabs {
+    background: var(--lav-soft);
   }
 }
 

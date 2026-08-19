@@ -402,7 +402,7 @@ export function AiSchedule() {
             aria-label={intl.formatMessage({ id: "parent.aiSchedule.back" })}
             onClick={() => navigate(-1)}
           >
-            <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
+            <ChevronLeft size={22} strokeWidth={2.2} color="currentColor" />
           </button>
           <span className="ais-title">{screenTitle}</span>
         </header>
@@ -466,7 +466,7 @@ export function AiSchedule() {
           aria-label={intl.formatMessage({ id: "parent.aiSchedule.back" })}
           onClick={() => navigate(-1)}
         >
-          <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
+          <ChevronLeft size={22} strokeWidth={2.2} color="currentColor" />
         </button>
         <span className="ais-title">{screenTitle}</span>
       </header>
