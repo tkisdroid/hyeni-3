@@ -19,6 +19,7 @@
     "verify:production:web-push": "node scripts/verify-production-web-push-secrets.mjs",
     "verify:route-bundle": "node scripts/verify-route-bundle.mjs",
     "qa:browser": "node scripts/final-browser-qa.mjs",
+    "capture:screen": "node scripts/capture-screen.mjs",
     "qa:ai-voice": "node scripts/verify-ai-friend-voice-reply.mjs",
     "qa:pwa-runtime": "node scripts/pwa-runtime-qa.mjs",
     "release:pages-provenance": "node scripts/create-pages-provenance.mjs",
