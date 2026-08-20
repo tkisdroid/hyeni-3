@@ -883,7 +883,9 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
     허용하며 가입의 `name`·`username`·`new-password`도 표준 토큰을 쓴다.
   · 검증: 앱 전체 Node 회귀, `npm run typecheck`, `npm run build`+PWA route/precache 검사, Android unit·lintDebug·
     assembleDebug 모두 통과. 최신 debug APK를 S25(`R5CY521CFNZ`, `SM-S937N`)에 `adb install -r`로 설치해 기존 앱
-    데이터·계정·페어링 세션을 보존했다.
+    데이터·계정·페어링 세션을 보존했다. Git `main`은 `527ed5b`까지 push 완료. Pages CLI 배포는 기존 Cloudflare
+    OAuth가 2026-08-18에 만료되어 비대화형 refresh에 실패했고, Workers/D1 전용 `.env` 토큰은 Pages 권한이 없으므로
+    사용하지 않았다. 2026-08-20 확인 시 `hyeni-calendar.pages.dev`는 이전 `index-CjC4ucSe.js`를 제공해 웹만 미배포다.
 - ★**대화 전송은 낙관적이다(2026-08-19 TK 제보 "채팅 보낼 때 느림")**: 예전에는 POST 응답이 와야 말풍선이 서고
   입력칸도 그때 비워져, 느린 네트워크에서 앱이 멈춘 것처럼 보였다. **실측: 서버 2초 지연 재현에서 2,000ms → 7ms.**
   · `useSendMemo.onMutate` 가 `insertPendingMemoReply` 로 임시 행을 넣고, 화면은 `mutate` 직전에 `setDraft("")` 한다.
