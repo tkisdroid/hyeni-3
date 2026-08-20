@@ -12279,7 +12279,7 @@
     "audience": "parent",
     "qualityTier": "B",
     "variables": {},
-    "description": "부모 홈 섹션 순서 변경 방법 안내"
+    "description": "부모 홈 섹션을 길게 눌러 드래그하는 순서 변경 방법의 최초 1회 안내"
   },
   "parent.home.reorder.title": {
     "namespace": "parent",
@@ -12299,10 +12299,8 @@
     "namespace": "parent",
     "audience": "parent",
     "qualityTier": "B",
-    "variables": {
-      "childName": "string"
-    },
-    "description": "parent.home.sendMessageTo에 표시하는 사용자 안내 문구"
+    "variables": {},
+    "description": "부모 홈 아이와 대화하기 섹션의 일반 메시지 전송 안내"
   },
   "parent.home.sendStickerTo": {
     "namespace": "parent",

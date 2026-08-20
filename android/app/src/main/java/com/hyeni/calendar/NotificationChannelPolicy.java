@@ -12,16 +12,16 @@ final class NotificationChannelPolicy {
 
         if (urgent) return "emergency";
         if ("kkuk".equals(normalizedType)) return "kkuk";
-        if (isChildMessage(normalizedType)) return "child_message";
+        if (isFamilyMessage(normalizedType)) return "family_message";
+        if ("ai_proactive".equals(normalizedType)) return "ai_friend";
+        if ("sticker".equals(normalizedType)) return "sticker";
         if (isSafety(normalizedType, normalizedAlertType)) return "safety";
         return "schedule";
     }
 
-    private static boolean isChildMessage(String type) {
+    private static boolean isFamilyMessage(String type) {
         return "new_memo".equals(type)
-            || "memo".equals(type)
-            || "ai_proactive".equals(type)
-            || "sticker".equals(type);
+            || "memo".equals(type);
     }
 
     private static boolean isSafety(String type, String alertType) {

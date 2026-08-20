@@ -1,8 +1,13 @@
 import { useIntl, type IntlShape } from "react-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactNode } from "react";
+import type {
+  KeyboardEvent as ReactKeyboardEvent,
+  MouseEvent as ReactMouseEvent,
+  PointerEvent as ReactPointerEvent,
+  ReactNode,
+} from "react";
 import { useNavigate } from "react-router";
-import { AlertTriangle, ChevronRight, Check, GripVertical, RefreshCw } from "lucide-react";
+import { AlertTriangle, ChevronRight, Check, RefreshCw } from "lucide-react";
 import settings3dIcon from "../../../assets/01-runtime-3d/ui/settings.webp";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
@@ -55,6 +60,7 @@ import {
   PARENT_HOME_SECTION_IDS,
   moveParentHomeSection,
   normalizeParentHomeSectionOrder,
+  parentHomeReorderHintStorageKey,
   parentHomeSectionOrderStorageKey,
   type ParentHomeSectionId,
 } from "@/transform/parentHomeSectionOrder";
@@ -73,24 +79,22 @@ type ChildScheduleEvent = {
 
 type ReorderableHomeSectionProps = {
   id: ParentHomeSectionId;
-  title: string;
   order: number;
-  editing: boolean;
   dragging: boolean;
   children: ReactNode;
   setElement: (id: ParentHomeSectionId, element: HTMLDivElement | null) => void;
-  onPointerDown: (id: ParentHomeSectionId, event: ReactPointerEvent<HTMLButtonElement>) => void;
-  onPointerMove: (id: ParentHomeSectionId, event: ReactPointerEvent<HTMLButtonElement>) => void;
-  onPointerEnd: (id: ParentHomeSectionId, event: ReactPointerEvent<HTMLButtonElement>) => void;
-  onKeyDown: (id: ParentHomeSectionId, event: ReactKeyboardEvent<HTMLButtonElement>) => void;
+  onPointerDown: (id: ParentHomeSectionId, event: ReactPointerEvent<HTMLDivElement>) => void;
+  onPointerMove: (id: ParentHomeSectionId, event: ReactPointerEvent<HTMLDivElement>) => void;
+  onPointerEnd: (id: ParentHomeSectionId, event: ReactPointerEvent<HTMLDivElement>) => void;
+  onKeyDown: (id: ParentHomeSectionId, event: ReactKeyboardEvent<HTMLDivElement>) => void;
+  onClickCapture: (id: ParentHomeSectionId, event: ReactMouseEvent<HTMLDivElement>) => void;
+  onContextMenu: (id: ParentHomeSectionId, event: ReactMouseEvent<HTMLDivElement>) => void;
   handleLabel: string;
 };
 
 function ReorderableHomeSection({
   id,
-  title,
   order,
-  editing,
   dragging,
   children,
   setElement,
@@ -98,38 +102,102 @@ function ReorderableHomeSection({
   onPointerMove,
   onPointerEnd,
   onKeyDown,
+  onClickCapture,
+  onContextMenu,
   handleLabel,
 }: ReorderableHomeSectionProps) {
   return (
     <div
       ref={(element) => setElement(id, element)}
-      className={`ph-home-section${editing ? " ph-home-section--editing" : ""}${dragging ? " ph-home-section--dragging" : ""}`}
+      className={`ph-home-section${dragging ? " ph-home-section--dragging" : ""}`}
       data-section-id={id}
       style={{ order }}
+      tabIndex={0}
+      aria-label={handleLabel}
+      aria-grabbed={dragging}
+      onPointerDown={(event) => onPointerDown(id, event)}
+      onPointerMove={(event) => onPointerMove(id, event)}
+      onPointerUp={(event) => onPointerEnd(id, event)}
+      onPointerCancel={(event) => onPointerEnd(id, event)}
+      onKeyDown={(event) => onKeyDown(id, event)}
+      onClickCapture={(event) => onClickCapture(id, event)}
+      onContextMenu={(event) => onContextMenu(id, event)}
     >
-      {editing && (
-        <div className="ph-reorder-handle-row">
-          <span>{title}</span>
-          <button
-            type="button"
-            className="ph-reorder-handle hy-press"
-            aria-label={handleLabel}
-            aria-pressed={dragging}
-            onPointerDown={(event) => onPointerDown(id, event)}
-            onPointerMove={(event) => onPointerMove(id, event)}
-            onPointerUp={(event) => onPointerEnd(id, event)}
-            onPointerCancel={(event) => onPointerEnd(id, event)}
-            onKeyDown={(event) => onKeyDown(id, event)}
-          >
-            <GripVertical size={20} strokeWidth={2.2} aria-hidden="true" />
-          </button>
-        </div>
-      )}
-      <div className="ph-home-section__content" inert={editing ? true : undefined}>
+      <div className="ph-home-section__content" inert={dragging ? true : undefined}>
         {children}
       </div>
     </div>
   );
+}
+
+const SECTION_LONG_PRESS_MS = 380;
+const SECTION_LONG_PRESS_MOVE_TOLERANCE_PX = 10;
+const SECTION_DRAG_PREVIEW_MAX_HEIGHT_PX = 280;
+const SECTION_REORDER_HINT_DELAY_MS = 700;
+const reorderHintShownThisRun = new Set<string>();
+
+type SectionDragSession = {
+  id: ParentHomeSectionId;
+  pointerId: number;
+  startX: number;
+  startY: number;
+  source: HTMLDivElement;
+  timerId: number;
+  active: boolean;
+  preview: HTMLDivElement | null;
+  previewTop: number;
+  previewHeight: number;
+};
+
+function removeDuplicateIds(root: HTMLElement): void {
+  root.removeAttribute("id");
+  root.querySelectorAll<HTMLElement>("[id]").forEach((element) => element.removeAttribute("id"));
+}
+
+/** 길게 누른 섹션을 실제 카드와 같은 '떠 있는 이미지'로 복제해 손가락을 따라가게 한다. */
+function createSectionDragPreview(source: HTMLDivElement): {
+  preview: HTMLDivElement;
+  top: number;
+  height: number;
+} {
+  const rect = source.getBoundingClientRect();
+  const preview = source.cloneNode(true) as HTMLDivElement;
+  const availableHeight = Math.max(160, window.innerHeight - 96);
+  const height = Math.min(rect.height, SECTION_DRAG_PREVIEW_MAX_HEIGHT_PX, availableHeight);
+  const top = Math.min(
+    Math.max(12, rect.top),
+    Math.max(12, window.innerHeight - height - 12),
+  );
+
+  removeDuplicateIds(preview);
+  preview.classList.remove("ph-home-section--dragging");
+  preview.classList.add("ph-section-drag-preview");
+  preview.setAttribute("aria-hidden", "true");
+  preview.setAttribute("inert", "");
+  preview.removeAttribute("tabindex");
+  preview.removeAttribute("aria-label");
+  preview.removeAttribute("aria-grabbed");
+  preview.querySelectorAll<HTMLImageElement>("img").forEach((image) => {
+    image.draggable = false;
+  });
+  preview.style.left = `${rect.left}px`;
+  preview.style.top = `${top}px`;
+  preview.style.width = `${rect.width}px`;
+  preview.style.height = `${height}px`;
+  preview.style.removeProperty("order");
+  document.body.append(preview);
+  return { preview, top, height };
+}
+
+function preventSectionDragTouchScroll(event: TouchEvent): void {
+  event.preventDefault();
+}
+
+function clearSectionDragVisual(session: SectionDragSession): void {
+  window.clearTimeout(session.timerId);
+  session.preview?.remove();
+  document.removeEventListener("touchmove", preventSectionDragTouchScroll, true);
+  document.documentElement.classList.remove("ph-reorder-active");
 }
 
 function eventLocationPoint(event: CalendarEvent): { lat: number; lng: number } | null {
@@ -277,13 +345,50 @@ export function ParentHome() {
   const [sectionOrder, setSectionOrder] = useState<ParentHomeSectionId[]>(() => [...PARENT_HOME_SECTION_IDS]);
   const sectionOrderRef = useRef<ParentHomeSectionId[]>(sectionOrder);
   const sectionElementsRef = useRef(new Map<ParentHomeSectionId, HTMLDivElement>());
-  const [reorderEditing, setReorderEditing] = useState(false);
+  const sectionDragSessionRef = useRef<SectionDragSession | null>(null);
+  const suppressedSectionClickRef = useRef<{ id: ParentHomeSectionId; expiresAt: number } | null>(null);
   const [draggingSectionId, setDraggingSectionId] = useState<ParentHomeSectionId | null>(null);
 
   useEffect(() => {
+    if (!familyId || !familyQuery.isSuccess || reorderHintShownThisRun.has(familyId)) return;
+    const storageKey = parentHomeReorderHintStorageKey(familyId);
+    try {
+      if (window.localStorage.getItem(storageKey) === "shown") {
+        reorderHintShownThisRun.add(familyId);
+        return;
+      }
+    } catch {
+      // 저장소가 막혀도 현재 실행 중에는 안내를 한 번만 보여준다.
+    }
+
+    const timerId = window.setTimeout(() => {
+      if (reorderHintShownThisRun.has(familyId)) return;
+      reorderHintShownThisRun.add(familyId);
+      try {
+        window.localStorage.setItem(storageKey, "shown");
+      } catch {
+        // 저장 실패는 홈 사용을 막지 않는다.
+      }
+      show(intl.formatMessage({ id: "parent.home.reorder.hint" }));
+    }, SECTION_REORDER_HINT_DELAY_MS);
+    return () => window.clearTimeout(timerId);
+  }, [familyId, familyQuery.isSuccess, intl, show]);
+
+  useEffect(() => () => {
+    const session = sectionDragSessionRef.current;
+    if (session) clearSectionDragVisual(session);
+    sectionDragSessionRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    const session = sectionDragSessionRef.current;
+    if (session) clearSectionDragVisual(session);
+    sectionDragSessionRef.current = null;
+    suppressedSectionClickRef.current = null;
     if (!familyId) {
       sectionOrderRef.current = [...PARENT_HOME_SECTION_IDS];
       setSectionOrder([...PARENT_HOME_SECTION_IDS]);
+      setDraggingSectionId(null);
       return;
     }
     let next = [...PARENT_HOME_SECTION_IDS];
@@ -295,7 +400,6 @@ export function ParentHome() {
     }
     sectionOrderRef.current = next;
     setSectionOrder(next);
-    setReorderEditing(false);
     setDraggingSectionId(null);
   }, [familyId]);
 
@@ -321,20 +425,70 @@ export function ParentHome() {
 
   const startSectionDrag = (
     id: ParentHomeSectionId,
-    event: ReactPointerEvent<HTMLButtonElement>,
+    event: ReactPointerEvent<HTMLDivElement>,
   ) => {
     if (!event.isPrimary || event.button !== 0) return;
-    event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setDraggingSectionId(id);
+    if (sectionDragSessionRef.current) return;
+    suppressedSectionClickRef.current = null;
+
+    const session: SectionDragSession = {
+      id,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      source: event.currentTarget,
+      timerId: 0,
+      active: false,
+      preview: null,
+      previewTop: 0,
+      previewHeight: 0,
+    };
+    session.timerId = window.setTimeout(() => {
+      if (sectionDragSessionRef.current !== session || session.active) return;
+      const visual = createSectionDragPreview(session.source);
+      session.active = true;
+      session.preview = visual.preview;
+      session.previewTop = visual.top;
+      session.previewHeight = visual.height;
+      document.documentElement.classList.add("ph-reorder-active");
+      document.addEventListener("touchmove", preventSectionDragTouchScroll, { passive: false, capture: true });
+      try {
+        session.source.setPointerCapture(session.pointerId);
+      } catch {
+        // 포인터가 이미 취소된 극단적인 타이밍이면 종료 이벤트가 시각 복제를 정리한다.
+      }
+      try {
+        navigator.vibrate?.(12);
+      } catch {
+        // 진동을 지원하지 않거나 OS가 차단해도 재정렬은 그대로 동작한다.
+      }
+      setDraggingSectionId(id);
+    }, SECTION_LONG_PRESS_MS);
+    sectionDragSessionRef.current = session;
   };
 
   const moveSectionDrag = (
     id: ParentHomeSectionId,
-    event: ReactPointerEvent<HTMLButtonElement>,
+    event: ReactPointerEvent<HTMLDivElement>,
   ) => {
-    if (draggingSectionId !== id || !event.isPrimary) return;
+    const session = sectionDragSessionRef.current;
+    if (!session || session.id !== id || session.pointerId !== event.pointerId || !event.isPrimary) return;
+    if (!session.active) {
+      const moved = Math.hypot(event.clientX - session.startX, event.clientY - session.startY);
+      if (moved > SECTION_LONG_PRESS_MOVE_TOLERANCE_PX) {
+        clearSectionDragVisual(session);
+        sectionDragSessionRef.current = null;
+      }
+      return;
+    }
     event.preventDefault();
+    if (session.preview) {
+      const desiredTop = Math.min(
+        Math.max(12, session.previewTop + event.clientY - session.startY),
+        Math.max(12, window.innerHeight - session.previewHeight - 12),
+      );
+      session.preview.style.transform = `translate3d(0, ${desiredTop - session.previewTop}px, 0) scale(1.015)`;
+    }
     let target: ParentHomeSectionId | null = null;
     let distance = Number.POSITIVE_INFINITY;
     for (const candidate of sectionOrderRef.current) {
@@ -363,20 +517,30 @@ export function ParentHome() {
 
   const endSectionDrag = (
     id: ParentHomeSectionId,
-    event: ReactPointerEvent<HTMLButtonElement>,
+    event: ReactPointerEvent<HTMLDivElement>,
   ) => {
-    if (draggingSectionId !== id) return;
+    const session = sectionDragSessionRef.current;
+    if (!session || session.id !== id || session.pointerId !== event.pointerId) return;
+    sectionDragSessionRef.current = null;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
+    if (!session.active) {
+      clearSectionDragVisual(session);
+      return;
+    }
+    event.preventDefault();
+    suppressedSectionClickRef.current = { id, expiresAt: Date.now() + 800 };
+    clearSectionDragVisual(session);
     setDraggingSectionId(null);
     persistSectionOrder(sectionOrderRef.current);
   };
 
   const moveSectionWithKeyboard = (
     id: ParentHomeSectionId,
-    event: ReactKeyboardEvent<HTMLButtonElement>,
+    event: ReactKeyboardEvent<HTMLDivElement>,
   ) => {
+    if (event.target !== event.currentTarget) return;
     if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
     event.preventDefault();
     const current = sectionOrderRef.current.indexOf(id);
@@ -384,6 +548,30 @@ export function ParentHome() {
     const target = sectionOrderRef.current[targetIndex];
     if (!target) return;
     persistSectionOrder(moveParentHomeSection(sectionOrderRef.current, id, target));
+  };
+
+  const suppressClickAfterSectionDrag = (
+    id: ParentHomeSectionId,
+    event: ReactMouseEvent<HTMLDivElement>,
+  ) => {
+    const suppressed = suppressedSectionClickRef.current;
+    if (!suppressed) return;
+    if (Date.now() > suppressed.expiresAt) {
+      suppressedSectionClickRef.current = null;
+      return;
+    }
+    if (suppressed.id !== id) return;
+    event.preventDefault();
+    event.stopPropagation();
+    suppressedSectionClickRef.current = null;
+  };
+
+  const suppressContextMenuDuringSectionDrag = (
+    id: ParentHomeSectionId,
+    event: ReactMouseEvent<HTMLDivElement>,
+  ) => {
+    const session = sectionDragSessionRef.current;
+    if (session?.id === id && session.active) event.preventDefault();
   };
 
   const places = placesQuery.data;
@@ -675,6 +863,7 @@ export function ParentHome() {
         id: kid.id,
         name: kid.name || intl.formatMessage({ id: "parent.parentHome.copy004" }),
         avatar: childAvatarPath(kid.photo_url),
+        hasPhoto: Boolean(kid.photo_url?.trim().match(/^(https?:|blob:)/)),
         device: resolveDeviceLabel({
           deviceLabel: kid.device_label,
           manufacturer: kid.device_health?.manufacturer,
@@ -756,15 +945,15 @@ export function ParentHome() {
     return (
       <ReorderableHomeSection
         id={id}
-        title={title}
         order={sectionOrder.indexOf(id) + 1}
-        editing={reorderEditing}
         dragging={draggingSectionId === id}
         setElement={setSectionElement}
         onPointerDown={startSectionDrag}
         onPointerMove={moveSectionDrag}
         onPointerEnd={endSectionDrag}
         onKeyDown={moveSectionWithKeyboard}
+        onClickCapture={suppressClickAfterSectionDrag}
+        onContextMenu={suppressContextMenuDuringSectionDrag}
         handleLabel={intl.formatMessage({ id: "parent.home.reorder.handle" }, { section: title })}
       >
         {children}
@@ -871,36 +1060,10 @@ export function ParentHome() {
           </div>
         )}
 
-        <div className="ph-reorder-toolbar" data-editing={reorderEditing}>
-          <span className="ph-reorder-toolbar__copy">
-            <b>{intl.formatMessage({ id: "parent.home.reorder.title" })}</b>
-            {reorderEditing && (
-              <small>{intl.formatMessage({ id: "parent.home.reorder.hint" })}</small>
-            )}
-          </span>
-          <button
-            type="button"
-            className="ph-reorder-toolbar__button hy-press"
-            aria-pressed={reorderEditing}
-            onClick={() => {
-              if (reorderEditing) persistSectionOrder(sectionOrderRef.current);
-              setDraggingSectionId(null);
-              setReorderEditing((editing) => !editing);
-            }}
-          >
-            <GripVertical size={18} strokeWidth={2.2} aria-hidden="true" />
-            {intl.formatMessage({
-              id: reorderEditing ? "parent.home.reorder.done" : "parent.home.reorder.edit",
-            })}
-          </button>
-        </div>
-
         {/* 오늘의 일정 */}
         {renderHomeSection("schedule", (
-        <section>
+        <section className="ph-section-shell ph-glass">
           <SectionHeader
-            iconBg="var(--glass-tile)"
-            icon={<img src={asset("ui/clay/calendar.webp")} alt="" />}
             title={intl.formatMessage({ id: "parent.parentHome.copy018" })}
             action={
               <button
@@ -912,7 +1075,7 @@ export function ParentHome() {
               </button>
             }
           />
-          <div className="hy-card ph-glass ph-sched">
+          <div className="ph-inner-surface ph-sched">
             {eventsQuery.isLoading ? (
               <div className="ph-sched-skel" role="status" aria-label={intl.formatMessage({ id: "parent.parentHome.copy020" })}>
                 <span className="hy-skel hy-skel--avatar" aria-hidden="true" />
@@ -959,11 +1122,8 @@ export function ParentHome() {
 
         {/* AI로 일정 추가 — 서리 유리. 색은 페이지 배경(.ph-page). 라우트·2열은 유지. */}
         {renderHomeSection("ai_schedule", (
-        <section className="ph-ai ph-glass" aria-labelledby="ph-ai-title">
+        <section className="ph-section-shell ph-ai ph-glass" aria-labelledby="ph-ai-title">
           <div className="ph-ai__head">
-            <span className="ph-ai__icon">
-              <img src={asset("ui/clay/ai-credit.webp")} alt="" />
-            </span>
             <span className="ph-ai__copy">
               <span className="ph-ai__title" id="ph-ai-title">
                 {intl.formatMessage({ id: "parent.parentHome.copy023" })}
@@ -1002,10 +1162,8 @@ export function ParentHome() {
 
         {/* 아이 현황 */}
         {renderHomeSection("children", (
-        <section>
+        <section className="ph-section-shell ph-glass">
           <SectionHeader
-            iconBg="var(--glass-tile)"
-            icon={<img src={asset("ui/clay/children.webp")} alt="" />}
             title={intl.formatMessage({ id: "parent.parentHome.copy029" })}
             action={
               <span
@@ -1019,7 +1177,7 @@ export function ParentHome() {
             }
           />
           {childCards.length === 0 ? (
-            <div className="hy-card ph-glass ph-child">
+            <div className="ph-inner-surface ph-child">
               <div className="ph-child__foot">
                 <span className="ph-child__next">{intl.formatMessage({ id: "parent.parentHome.copy030" })}</span>
               </div>
@@ -1029,7 +1187,7 @@ export function ParentHome() {
               {childCards.map((c) => {
                 const active = c.id === activeChild?.id;
                 return (
-                  <div key={c.id} className={`hy-card ph-glass ph-child${active ? " ph-child--active" : ""}`}>
+                  <div key={c.id} className={`ph-inner-surface ph-child${active ? " ph-child--active" : ""}`}>
                     {/* 활성 표시는 카드 우상단 코너 배지(이름 행에 넣으면 줄바꿈 유발) */}
                     {active && <span className="ph-child__now">{intl.formatMessage({ id: "parent.parentHome.copy031" })}</span>}
                     {/* 카드 탭 = 아이 스위치(전역). 상세는 우측 화살표로. */}
@@ -1040,7 +1198,11 @@ export function ParentHome() {
                         aria-pressed={active}
                         onClick={() => setActiveChildId(c.id)}
                       >
-                        <span className="ph-child__avatar" style={{ background: "var(--rose-soft)" }}>
+                        <span
+                          className="ph-child__avatar"
+                          data-photo={c.hasPhoto ? "true" : "false"}
+                          style={{ background: "var(--rose-soft)" }}
+                        >
                           <img className="hy-network-avatar" src={avatarSrc(c.avatar)} alt="" loading="lazy" decoding="async" />
                           <span className="ph-child__online" />
                         </span>
@@ -1096,10 +1258,8 @@ export function ParentHome() {
 
         {/* 안전 지표 */}
         {renderHomeSection("safety", (
-        <section>
+        <section className="ph-section-shell ph-glass">
           <SectionHeader
-            iconBg="var(--glass-tile)"
-            icon={<img src={asset("ui/clay/background-location.webp")} alt="" />}
             title={intl.formatMessage({ id: "parent.parentHome.copy035" })}
             action={
               <span
@@ -1111,7 +1271,7 @@ export function ParentHome() {
               </span>
             }
           />
-          <div className="hy-card ph-glass ph-safety">
+          <div className="ph-inner-surface ph-safety">
             {!deviceStatus.hasData && (
               <div className="ph-safety__pending">
                 {intl.formatMessage({ id: "parent.parentHome.copy036" })}
@@ -1260,10 +1420,8 @@ export function ParentHome() {
 
         {/* 준비물 · 숙제 */}
         {renderHomeSection("supplies", (
-        <section>
+        <section className="ph-section-shell ph-glass">
           <SectionHeader
-            iconBg="var(--glass-tile)"
-            icon={<img src={asset("ui/clay/school.webp")} alt="" />}
             title={intl.formatMessage({ id: "parent.parentHome.copy050" })}
             action={
               <>
@@ -1284,7 +1442,7 @@ export function ParentHome() {
               </>
             }
           />
-          <div className="hy-card ph-glass ph-prep">
+          <div className="ph-inner-surface ph-prep">
             {suppliesQuery.isLoading ? (
               <div
                 className="ph-prep-row"
@@ -1349,26 +1507,23 @@ export function ParentHome() {
 
         {/* 대화 프리뷰 */}
         {renderHomeSection("memo", (
-        <button type="button" className="hy-card ph-glass ph-memo hy-press" onClick={() => navigate("/parent/memo")}>
+        <button type="button" className="ph-section-shell ph-glass ph-memo hy-press" onClick={() => navigate("/parent/memo")}>
           <span className="ph-memo__icon">
             <img src={asset("ui/clay/notification.webp")} alt="" />
           </span>
           <span className="ph-memo__main">
             <span className="ph-memo__from">{intl.formatMessage({ id: "parent.parentHome.copy057" })}</span>
             <span className="ph-memo__text">
-              {intl.formatMessage({ id: "parent.home.sendMessageTo" }, { childName })}
+              {intl.formatMessage({ id: "parent.home.sendMessageTo" })}
             </span>
-            <span className="ph-memo__time">{intl.formatMessage({ id: "parent.parentHome.copy059" })}</span>
           </span>
         </button>
         ))}
 
         {/* 바로가기 */}
         {renderHomeSection("shortcuts", (
-        <section>
+        <section className="ph-section-shell ph-glass">
           <SectionHeader
-            iconBg="var(--glass-tile)"
-            icon={<img src={asset("ui/clay/history.webp")} alt="" />}
             title={intl.formatMessage({ id: "parent.parentHome.copy060" })}
           />
           <div className="ph-shortcuts">

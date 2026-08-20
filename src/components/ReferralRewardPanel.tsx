@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { CheckCircle2, Copy, Gift, RefreshCw, Share2, X } from "lucide-react";
 import { useToast } from "@/app/toast";
 import { PUBLIC_WEB_BASE } from "@/config/env";
@@ -122,7 +123,7 @@ export function ReferralRewardPanel({
     }
   };
 
-  return (
+  return createPortal((
     <div className="rrp" role="presentation">
       <button
         type="button"
@@ -277,5 +278,5 @@ export function ReferralRewardPanel({
         </div>
       </div>
     </div>
-  );
+  ), document.body);
 }

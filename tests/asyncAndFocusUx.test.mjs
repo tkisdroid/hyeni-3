@@ -72,7 +72,8 @@ test("ID·소셜·가입 확인 버튼은 중복 실행을 막은 채 BusyLabel�
     assert.equal(koOnboarding[idleId], idleText);
     assert.equal(koOnboarding[pendingId], pendingText);
   }
-  assert.match(onboarding, /onClick=\{loginIdPw\} disabled=\{busy\}/);
+  assert.match(onboarding, /<form[\s\S]{0,180}onSubmit=\{\(event\) => \{[\s\S]{0,120}void loginIdPw\(\)/);
+  assert.match(onboarding, /type="submit"[\s\S]{0,80}disabled=\{busy\}/);
   assert.match(onboarding, /onClick=\{verify\}\s+disabled=\{busy\}/);
 });
 

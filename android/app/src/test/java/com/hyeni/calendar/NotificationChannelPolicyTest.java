@@ -19,10 +19,11 @@ public class NotificationChannelPolicyTest {
     }
 
     @Test
-    public void messageAndScheduleChannelsStayDistinct() {
-        assertEquals("child_message", NotificationChannelPolicy.channelFor("new_memo", "", false));
-        assertEquals("child_message", NotificationChannelPolicy.channelFor("ai_proactive", "", false));
-        assertEquals("child_message", NotificationChannelPolicy.channelFor("sticker", "", false));
+    public void messageFunctionsAndScheduleChannelsStayDistinct() {
+        assertEquals("family_message", NotificationChannelPolicy.channelFor("new_memo", "", false));
+        assertEquals("family_message", NotificationChannelPolicy.channelFor("memo", "", false));
+        assertEquals("ai_friend", NotificationChannelPolicy.channelFor("ai_proactive", "", false));
+        assertEquals("sticker", NotificationChannelPolicy.channelFor("sticker", "", false));
         assertEquals("schedule", NotificationChannelPolicy.channelFor("schedule", "", false));
         assertEquals("kkuk", NotificationChannelPolicy.channelFor("kkuk", "", false));
     }

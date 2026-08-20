@@ -44,10 +44,12 @@ public final class NotificationHelper {
     // 무음 표시용 채널: JS 가 channel="silent" 로 보낸 알림을 사운드/진동/뱃지
     // 없이 조용히 게시한다. IMPORTANCE_LOW 라 heads-up 도 뜨지 않는다(의도된 무음).
     public static final String CHANNEL_SILENT = "hyeni_silent_v2_private";
-    // 아이가 받는 메시지(AI 친구 선제 대화·가족 메시지) 전용 채널. 새 설치 기본값은
-    // IMPORTANCE_HIGH(heads-up)이고, 기존 설치는 사용자가 정한 채널 설정을 그대로 이관한다.
-    // 전체화면(fullScreenIntent)은 쓰지 않는다.
-    public static final String CHANNEL_CHILD_MESSAGE = "hyeni_child_message_v2_private";
+    // 아이 알림이 위치 공유 상태와 한 묶음으로 접히지 않도록 기능별 독립 채널을 쓴다.
+    // 세 채널 모두 기존 아이 메시지 채널의 사용자 설정을 최초 생성 때 이관한다.
+    public static final String CHANNEL_FAMILY_MESSAGE = "hyeni_family_message_v1_private";
+    public static final String CHANNEL_AI_FRIEND = "hyeni_ai_friend_v1_private";
+    public static final String CHANNEL_STICKER = "hyeni_sticker_v1_private";
+    private static final String CHANNEL_CHILD_MESSAGE_LEGACY = "hyeni_child_message_v2_private";
     // 원격 듣기(주변 소리) 채널 단일 소스. MyFirebaseMessagingService / LocationService /
     // NotificationPlugin / DeviceStatusReporter 가 모두 이 상수를 참조해 ID 드리프트를 막는다.
     // v6_consent는 이전 출시에서 만든 호환 ID다. 현재는 서버 승인 증표를 확인한
@@ -134,7 +136,8 @@ public final class NotificationHelper {
             "hyeni_alert_v6",
             "hyeni_kkuk_v6",
             "hyeni_silent_v1",
-            "hyeni_child_message_v1"
+            "hyeni_child_message_v1",
+            CHANNEL_CHILD_MESSAGE_LEGACY
     };
 
     private NotificationHelper() {}
@@ -198,19 +201,54 @@ public final class NotificationHelper {
         emergency.setLockscreenVisibility(NotificationCompat.VISIBILITY_PRIVATE);
         nm.createNotificationChannel(emergency);
 
-        NotificationChannel childMessage = new NotificationChannel(
-                CHANNEL_CHILD_MESSAGE,
-                "AI 친구·가족 메시지",
-                legacyImportance(nm, "hyeni_child_message_v1", NotificationManager.IMPORTANCE_HIGH)
+        NotificationChannel previousChildMessage = nm.getNotificationChannel(CHANNEL_CHILD_MESSAGE_LEGACY);
+        String previousChildMessageId = CHANNEL_CHILD_MESSAGE_LEGACY;
+        if (previousChildMessage == null) {
+            previousChildMessage = nm.getNotificationChannel("hyeni_child_message_v1");
+            previousChildMessageId = "hyeni_child_message_v1";
+        }
+
+        NotificationChannel familyMessage = new NotificationChannel(
+                CHANNEL_FAMILY_MESSAGE,
+                "가족 메시지",
+                legacyImportance(nm, previousChildMessageId, NotificationManager.IMPORTANCE_HIGH)
         );
-        childMessage.setDescription("AI 친구와 가족이 보낸 메시지를 팝업으로 알려줘요");
-        childMessage.enableVibration(true);
-        childMessage.setVibrationPattern(new long[]{0, 120, 80, 120});
-        childMessage.setSound(sound, audioAttr);
-        childMessage.setShowBadge(true);
-        applyLegacyChannelBehavior(childMessage, nm.getNotificationChannel("hyeni_child_message_v1"));
-        childMessage.setLockscreenVisibility(NotificationCompat.VISIBILITY_PRIVATE);
-        nm.createNotificationChannel(childMessage);
+        familyMessage.setDescription("보호자와 아이가 주고받는 메시지를 팝업으로 알려줘요");
+        familyMessage.enableVibration(true);
+        familyMessage.setVibrationPattern(new long[]{0, 120, 80, 120});
+        familyMessage.setSound(sound, audioAttr);
+        familyMessage.setShowBadge(true);
+        applyLegacyChannelBehavior(familyMessage, previousChildMessage);
+        familyMessage.setLockscreenVisibility(NotificationCompat.VISIBILITY_PRIVATE);
+        nm.createNotificationChannel(familyMessage);
+
+        NotificationChannel aiFriend = new NotificationChannel(
+                CHANNEL_AI_FRIEND,
+                "AI 친구 알림",
+                legacyImportance(nm, previousChildMessageId, NotificationManager.IMPORTANCE_HIGH)
+        );
+        aiFriend.setDescription("AI 친구가 먼저 건네는 말을 팝업으로 알려줘요");
+        aiFriend.enableVibration(true);
+        aiFriend.setVibrationPattern(new long[]{0, 120, 80, 120});
+        aiFriend.setSound(sound, audioAttr);
+        aiFriend.setShowBadge(true);
+        applyLegacyChannelBehavior(aiFriend, previousChildMessage);
+        aiFriend.setLockscreenVisibility(NotificationCompat.VISIBILITY_PRIVATE);
+        nm.createNotificationChannel(aiFriend);
+
+        NotificationChannel sticker = new NotificationChannel(
+                CHANNEL_STICKER,
+                "스티커 알림",
+                legacyImportance(nm, previousChildMessageId, NotificationManager.IMPORTANCE_HIGH)
+        );
+        sticker.setDescription("보호자가 보낸 칭찬 스티커를 팝업으로 알려줘요");
+        sticker.enableVibration(true);
+        sticker.setVibrationPattern(new long[]{0, 120, 80, 120});
+        sticker.setSound(sound, audioAttr);
+        sticker.setShowBadge(true);
+        applyLegacyChannelBehavior(sticker, previousChildMessage);
+        sticker.setLockscreenVisibility(NotificationCompat.VISIBILITY_PRIVATE);
+        nm.createNotificationChannel(sticker);
 
         NotificationChannel kkuk = new NotificationChannel(
                 CHANNEL_KKUK,
@@ -322,7 +360,7 @@ public final class NotificationHelper {
             CHANNEL_SAFETY,
             CHANNEL_EMERGENCY,
             CHANNEL_KKUK,
-            CHANNEL_CHILD_MESSAGE
+            CHANNEL_FAMILY_MESSAGE
         };
         for (String channelId : required) {
             NotificationChannel channel = nm.getNotificationChannel(channelId);
@@ -520,7 +558,10 @@ public final class NotificationHelper {
         boolean emergency = "emergency".equals(channel);
         boolean kkuk = "kkuk".equals(channel);
         boolean silent = "silent".equals(channel);
-        boolean childMessage = "child_message".equals(channel);
+        boolean familyMessage = "family_message".equals(channel);
+        boolean aiFriend = "ai_friend".equals(channel);
+        boolean sticker = "sticker".equals(channel);
+        boolean childMessage = familyMessage || aiFriend || sticker;
         boolean safety = "safety".equals(channel);
         Bitmap largeIcon = largeIcon(context);
 
@@ -535,8 +576,14 @@ public final class NotificationHelper {
             case "silent":
                 channelId = CHANNEL_SILENT;
                 break;
-            case "child_message":
-                channelId = CHANNEL_CHILD_MESSAGE;
+            case "family_message":
+                channelId = CHANNEL_FAMILY_MESSAGE;
+                break;
+            case "ai_friend":
+                channelId = CHANNEL_AI_FRIEND;
+                break;
+            case "sticker":
+                channelId = CHANNEL_STICKER;
                 break;
             case "safety":
                 channelId = CHANNEL_SAFETY;
@@ -649,6 +696,8 @@ public final class NotificationHelper {
                         emergency || kkuk || fullScreen,
                         contentPi
                 ))
+                .setGroup(NotificationGroupPolicy.groupFor(channel))
+                .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
                 .setAutoCancel(true)
                 .setContentIntent(contentPi)
                 .setWhen(System.currentTimeMillis());

@@ -297,7 +297,7 @@
   /* 부드러운 무광 오프화이트. 뉴모피즘이 성립하려면 바닥이 흰색이면 안 되고(흰 하이라이트가
      사라진다), 얼음 유리가 성립하려면 너무 어두워도 안 된다(카드 위 글자가 깨진다).
      이 톤이 두 조건의 교집합이며, 색은 바닥이 아니라 '깊은 배경'의 블롭이 담당한다. */
-  background: #F2F0F4;
+  background: #edf4f7;
 }
 .ph-page::before {
   content: "";
@@ -313,10 +313,10 @@
      큰 덩어리 몇 개로만 둔다(전면 wash 는 바닥을 탁하게 만든다).
      ⚠️ 채도·크기를 올리면 카드 위 글자 대비가 먼저 깨진다. */
   background:
-    radial-gradient(ellipse 74% 26% at 88% 4%, color-mix(in srgb, var(--lav-300) 38%, transparent), transparent 72%),
-    radial-gradient(ellipse 68% 24% at 6% 26%, color-mix(in srgb, var(--blue-500) 15%, transparent), transparent 70%),
-    radial-gradient(ellipse 78% 26% at 96% 58%, color-mix(in srgb, var(--lav-400) 22%, transparent), transparent 72%),
-    radial-gradient(ellipse 70% 24% at 2% 84%, color-mix(in srgb, var(--blue-500) 13%, transparent), transparent 70%);
+    radial-gradient(ellipse 72% 24% at 90% 4%, color-mix(in srgb, var(--blue-500) 16%, transparent), transparent 72%),
+    radial-gradient(ellipse 66% 22% at 4% 28%, color-mix(in srgb, var(--mint-500) 10%, transparent), transparent 70%),
+    radial-gradient(ellipse 76% 24% at 96% 60%, color-mix(in srgb, var(--lav-300) 12%, transparent), transparent 72%),
+    radial-gradient(ellipse 70% 22% at 2% 86%, color-mix(in srgb, var(--blue-500) 12%, transparent), transparent 70%);
 }
 .ph-page > * {
   position: relative;
@@ -355,28 +355,7 @@
   box-shadow: var(--glass-rim), var(--glass-lift);
 }
 .ph-ai__head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.ph-ai__icon {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-16);
-  background: color-mix(in srgb, var(--bg-card) 38%, transparent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  border: 1px solid color-mix(in srgb, var(--bg-card) 62%, transparent);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--bg-card) 48%, transparent);
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
-}
-.ph-ai__icon img {
-  width: 38px;
-  height: 38px;
-  object-fit: contain;
+  display: block;
 }
 .ph-ai__copy {
   flex: 1;
@@ -452,7 +431,6 @@
   }
   .ph-glass,
   .hy-card.ph-glass,
-  .ph-ai__icon,
   .ph-ai__btn,
   .ph-ai__btn-icon,
   .ph-subscription__icon,
@@ -531,18 +509,24 @@
 }
 .ph-child__avatar {
   position: relative;
-  width: 60px;
-  height: 60px;
+  width: 72px;
+  height: 72px;
   border-radius: var(--radius-20);
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
   flex: none;
 }
 .ph-child__avatar img {
-  width: 44px;
-  height: 44px;
+  width: 58px;
+  height: 58px;
   object-fit: contain;
+}
+.ph-child__avatar[data-photo="true"] img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .ph-child__online {
   position: absolute;
@@ -1117,15 +1101,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.ph-memo__time {
-  display: block;
-  margin-top: 4px;
-  font-size: var(--type-caption);
-  line-height: var(--type-caption-line-height);
-  font-weight: var(--type-caption-weight);
-
-  color: var(--fg-muted);
-}
 .ph-memo__badge {
   flex: none;
   min-width: 26px;
@@ -1619,20 +1594,6 @@
   box-shadow: var(--glass-rim), var(--glass-lift);
 }
 
-.ph-ai__icon {
-  width: 54px;
-  height: 54px;
-  border-radius: var(--radius-16);
-  background: color-mix(in srgb, var(--blue-soft) 64%, var(--bg-card));
-  border: 1px solid color-mix(in srgb, var(--blue-500) 8%, var(--line-card));
-  box-shadow: none;
-}
-
-.ph-ai__icon img {
-  width: 44px;
-  height: 44px;
-}
-
 .ph-ai__grid {
   gap: 12px;
   margin-top: 20px;
@@ -1706,119 +1667,276 @@
   box-shadow: none;
 }
 
-/* 히어로 아래에서만 순서를 편집한다. 상단·하단 내비게이션과 히어로는 고정이다. */
-.ph-reorder-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 52px;
-  padding: 8px 8px 8px 12px;
-  border: 1px solid color-mix(in srgb, var(--blue-500) 8%, var(--line-card));
-  border-radius: var(--radius-16);
-  background: color-mix(in srgb, var(--bg-card) 84%, transparent);
-  box-shadow: var(--shadow-soft);
-  order: 0;
+/* ── 부모 홈 얼음 섹션 체계 ───────────────────────────────────────────────
+   제목과 내용을 한 장의 서리 유리 안에 묶되, 안쪽 내용은 한 겹 맑은 면으로만 나눈다. */
+.ph-page .hy-content {
+  gap: 20px;
 }
 
-.ph-reorder-toolbar__copy {
-  flex: 1;
-  min-width: 0;
+.ph-section-shell {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  padding: 20px;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-20);
+  background: var(--glass-fill);
+  box-shadow: var(--glass-rim), var(--glass-lift);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  --neu-light: rgba(255, 255, 255, 0.96);
+  --neu-dark: rgba(91, 128, 146, 0.22);
 }
 
-.ph-reorder-toolbar__copy b,
-.ph-reorder-toolbar__copy small {
-  display: block;
+.ph-section-shell > * {
+  position: relative;
+  z-index: 1;
 }
 
-.ph-reorder-toolbar__copy b {
+.ph-section-shell .hy-section-head {
+  margin-bottom: 16px;
+  padding-inline: 0;
+}
+
+.ph-section-shell .hy-section-title,
+.ph-ai__title,
+.ph-memo__from {
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+  letter-spacing: -0.02em;
   color: var(--fg-primary);
+}
+
+.ph-inner-surface {
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: var(--radius-16);
+  background: var(--glass-tile);
+  box-shadow: none;
+}
+
+/* 핵심값은 즉시 읽히고, 설명·시각 정보는 한 단계 조용하게 보인다. */
+.ph-sched-title,
+.ph-prep-text,
+.ph-child__loc {
+  color: var(--fg-primary);
+}
+
+.ph-sched-sub,
+.ph-ai__sub,
+.ph-child__device,
+.ph-child__next {
+  color: var(--fg-muted);
+}
+
+.ph-metric__k,
+.ph-app-summary__k {
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  color: var(--fg-secondary);
+}
+
+.ph-metric__v {
+  margin-top: 4px;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+  color: var(--fg-primary);
+}
+
+.ph-app-summary__item {
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: none;
+}
+
+.ph-app-summary__v {
+  margin-top: 8px;
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+  color: var(--fg-primary);
+}
+
+.ph-app-summary__time {
+  margin-top: 4px;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+  color: var(--blue-text);
+}
+
+.ph-recent-head b {
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+  color: var(--fg-primary);
+}
+
+.ph-recent-head span {
+  color: var(--fg-muted);
+}
+
+.ph-recent-row__name {
   font-size: var(--type-label);
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
 }
 
-.ph-reorder-toolbar__copy small {
-  margin-top: 4px;
-  color: var(--fg-muted);
-  font-size: var(--type-caption);
-  line-height: var(--type-caption-line-height);
-  font-weight: var(--type-caption-weight);
+.ph-recent-row__time {
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+  color: var(--fg-secondary);
 }
 
-.ph-reorder-toolbar__button,
-.ph-reorder-handle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 44px;
-  border: 1px solid var(--line-card);
-  border-radius: var(--radius-12);
-  background: var(--bg-card);
-  color: var(--blue-text);
+.ph-safety__refresh > span {
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+  color: var(--fg-secondary);
+}
+
+/* 일정 추가와 바로가기는 실제로 솟은 조작면이며 누르면 안으로 들어간다. */
+.ph-ai__btn {
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  background: color-mix(in srgb, var(--blue-soft) 28%, var(--bg-card));
+  box-shadow: var(--neu-raised-soft);
+  color: var(--fg-primary);
+}
+
+.ph-ai__btn:active {
+  box-shadow: var(--neu-pressed);
+}
+
+.ph-shortcuts {
+  gap: 12px 8px;
+}
+
+.ph-shortcut {
+  min-height: 98px;
+  padding: 12px 4px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: var(--radius-16);
+  background: color-mix(in srgb, var(--blue-soft) 24%, var(--bg-card));
+  box-shadow: var(--neu-raised-soft);
+}
+
+.ph-shortcut:active {
+  box-shadow: var(--neu-pressed);
+}
+
+.ph-shortcut__icon,
+.ph-shortcut:active .ph-shortcut__icon {
+  width: 52px;
+  height: 52px;
+  border: 0;
+  background: transparent;
   box-shadow: none;
 }
 
-.ph-reorder-toolbar__button {
-  padding: 0 12px;
+.ph-shortcut__icon img {
+  width: 38px;
+  height: 38px;
+}
+
+.ph-shortcut__label {
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
+  color: var(--fg-secondary);
 }
 
+.ph-memo__from {
+  display: block;
+}
+
+.ph-memo__text {
+  margin-top: 8px;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+  color: var(--blue-text);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .ph-section-shell,
+  .ph-inner-surface {
+    background: var(--bg-card);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* 히어로는 고정하고 그 아래 섹션만 길게 눌러 직접 옮긴다. */
 .ph-home-section {
+  position: relative;
   min-width: 0;
+  touch-action: pan-y;
+  -webkit-touch-callout: none;
   transition: transform var(--duration-fast) var(--easing-standard), opacity var(--duration-fast) var(--easing-standard);
 }
 
-.ph-home-section--editing {
-  padding: 8px;
-  border: 1px dashed color-mix(in srgb, var(--blue-500) 24%, var(--line-card));
-  border-radius: var(--radius-20);
-  background: color-mix(in srgb, var(--blue-soft) 22%, transparent);
+.ph-home-section:focus-visible {
+  border-radius: var(--radius-16);
+  outline: 2px solid color-mix(in srgb, var(--blue-500) 54%, transparent);
+  outline-offset: 6px;
 }
 
 .ph-home-section--dragging {
   z-index: 5;
-  opacity: 0.84;
-  transform: scale(1.015);
-  box-shadow: var(--shadow-floating);
+  opacity: 0.18;
+  transform: scale(0.985);
 }
 
-.ph-reorder-handle-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  margin-bottom: 8px;
-  padding-left: 4px;
-  color: var(--fg-secondary);
-  font-size: var(--type-label);
-  line-height: var(--type-label-line-height);
-  font-weight: var(--type-label-weight);
-}
-
-.ph-reorder-handle-row > span {
-  flex: 1;
-  min-width: 0;
-}
-
-.ph-reorder-handle {
-  width: 44px;
-  min-width: 44px;
-  padding: 0;
-  cursor: grab;
-  touch-action: none;
-}
-
-.ph-home-section--dragging .ph-reorder-handle {
+.ph-reorder-active,
+.ph-reorder-active * {
   cursor: grabbing;
+  user-select: none;
 }
 
-.ph-home-section--editing .ph-home-section__content {
-  opacity: 0.72;
+.ph-section-drag-preview {
+  position: fixed !important;
+  z-index: 180;
+  margin: 0 !important;
+  padding: 12px;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-16);
+  background: color-mix(in srgb, var(--bg-page) 92%, transparent);
+  box-shadow: var(--shadow-floating);
+  backdrop-filter: blur(22px) saturate(145%);
+  -webkit-backdrop-filter: blur(22px) saturate(145%);
   pointer-events: none;
-  user-select: none;
+  opacity: 0.98;
+  transform: translate3d(0, 0, 0) scale(1.015);
+  transform-origin: center;
+  will-change: transform;
+}
+
+.ph-section-drag-preview .ph-home-section__content {
+  pointer-events: none;
+}
+
+.ph-section-drag-preview img {
+  -webkit-user-drag: none;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .ph-section-drag-preview {
+    background: var(--bg-page);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ph-home-section {
+    transition: none;
+  }
 }
 
 @media (max-width: 370px) {

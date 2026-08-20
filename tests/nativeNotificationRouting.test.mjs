@@ -10,7 +10,7 @@ function readSource(relativePath) {
   return readFileSync(resolve(rootDir, relativePath), "utf8");
 }
 
-test("부모가 보낸 메모 FCM은 아이 메시지 채널로 heads-up 표시된다", () => {
+test("부모 메모·AI 친구·스티커는 기능별 독립 채널로 표시된다", () => {
   const fcm = readSource("android/app/src/main/java/com/hyeni/calendar/MyFirebaseMessagingService.java");
   const poll = readSource("android/app/src/main/java/com/hyeni/calendar/LocationService.java");
   const policy = readSource("android/app/src/main/java/com/hyeni/calendar/NotificationChannelPolicy.java");
@@ -18,7 +18,9 @@ test("부모가 보낸 메모 FCM은 아이 메시지 채널로 heads-up 표시�
   assert.match(fcm, /boolean isMemo = "new_memo"\.equals\(type\);/);
   assert.match(fcm, /NotificationChannelPolicy\.channelFor\(type, alertType, isEmergency\)/);
   assert.match(policy, /"new_memo"\.equals\(type\)/);
-  assert.match(policy, /return "child_message"/);
+  assert.match(policy, /return "family_message"/);
+  assert.match(policy, /return "ai_friend"/);
+  assert.match(policy, /return "sticker"/);
   assert.match(poll, /"new_memo"\.equals\(type\) \? "child-memo"/);
 });
 
@@ -46,17 +48,26 @@ test("아이 기기의 로컬 일정 fallback을 탭하면 아이 홈으로 진�
   );
 });
 
-test("아이 메시지 채널은 다른 일반 알림보다 우선 보이도록 high importance 계약을 유지한다", () => {
+test("아이 메시지 기능은 독립 high 채널과 독립 표시 그룹을 유지한다", () => {
   const helper = readSource("android/app/src/main/java/com/hyeni/calendar/NotificationHelper.java");
+  const groups = readSource("android/app/src/main/java/com/hyeni/calendar/NotificationGroupPolicy.java");
+  const location = readSource("android/app/src/main/java/com/hyeni/calendar/LocationService.java");
 
-  assert.match(helper, /CHANNEL_CHILD_MESSAGE = "hyeni_child_message_v2_private"/);
+  assert.match(helper, /CHANNEL_FAMILY_MESSAGE = "hyeni_family_message_v1_private"/);
+  assert.match(helper, /CHANNEL_AI_FRIEND = "hyeni_ai_friend_v1_private"/);
+  assert.match(helper, /CHANNEL_STICKER = "hyeni_sticker_v1_private"/);
   assert.match(
     helper,
-    /CHANNEL_CHILD_MESSAGE,\s*"AI 친구·가족 메시지",\s*legacyImportance\([\s\S]*?NotificationManager\.IMPORTANCE_HIGH\)/s,
+    /CHANNEL_FAMILY_MESSAGE,\s*"가족 메시지",\s*legacyImportance\([\s\S]*?NotificationManager\.IMPORTANCE_HIGH\)/s,
   );
-  assert.match(helper, /boolean childMessage = "child_message"\.equals\(channel\);/);
+  assert.match(helper, /boolean childMessage = familyMessage \|\| aiFriend \|\| sticker;/);
   assert.match(helper, /fullScreen \|\| childMessage \|\| safety\) \? NotificationCompat\.PRIORITY_HIGH/);
   assert.match(helper, /kkuk \|\| childMessage\) \? NotificationCompat\.CATEGORY_MESSAGE/);
+  assert.match(helper, /\.setGroup\(NotificationGroupPolicy\.groupFor\(channel\)\)/);
+  assert.match(groups, /GROUP_FAMILY_MESSAGE = "hyeni\.group\.family_message"/);
+  assert.match(groups, /GROUP_AI_FRIEND = "hyeni\.group\.ai_friend"/);
+  assert.match(groups, /GROUP_STICKER = "hyeni\.group\.sticker"/);
+  assert.match(location, /\.setGroup\(NotificationGroupPolicy\.GROUP_LOCATION_STATUS\)/);
 });
 
 test("같은 위치 요청의 FCM·pending fallback은 GPS를 한 번만 깨운다", () => {

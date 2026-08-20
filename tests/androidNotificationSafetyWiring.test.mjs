@@ -46,7 +46,7 @@ test("알림 상태 진단은 아이 메시지 채널과 NotificationManager 누
   const plugin = read("android/app/src/main/java/com/hyeni/calendar/NotificationPlugin.java");
   const helper = read("android/app/src/main/java/com/hyeni/calendar/NotificationHelper.java");
 
-  assert.match(helper, /CHANNEL_CHILD_MESSAGE/);
+  assert.match(helper, /CHANNEL_FAMILY_MESSAGE/);
   assert.match(plugin, /boolean notificationsEnabled = nm != null\s*&& nm\.areNotificationsEnabled\(\)/s);
   assert.match(plugin, /boolean channelsEnabled = NotificationHelper\.areRequiredDeliveryChannelsEnabled\(nm\)/);
   assert.match(plugin, /if \(nm == null\) \{\s*call\.resolve\(new JSObject\(\)\.put\("enabled", false\)/s);
@@ -87,7 +87,7 @@ test("필수 알림 채널 진단은 앱·기기 상태 모두 공통 fail-close
   const reporter = read("android/app/src/main/java/com/hyeni/calendar/DeviceStatusReporter.java");
 
   assert.match(helper, /CHANNEL_SAFETY = "hyeni_safety_v2_private"/);
-  assert.match(helper, /CHANNEL_CHILD_MESSAGE/);
+  assert.match(helper, /CHANNEL_FAMILY_MESSAGE/);
   assert.match(helper, /areRequiredDeliveryChannelsEnabled/);
   assert.match(plugin, /NotificationHelper\.areRequiredDeliveryChannelsEnabled\(nm\)/);
   assert.match(reporter, /NotificationHelper\.areRequiredDeliveryChannelsEnabled\(nm\)/);
@@ -123,7 +123,9 @@ test("민감 알림은 private 본문과 일반화한 잠금화면 publicVersion
 
   assert.match(helper, /CHANNEL_SCHEDULE = "hyeni_schedule_v7_private"/);
   assert.match(helper, /CHANNEL_SAFETY = "hyeni_safety_v2_private"/);
-  assert.match(helper, /CHANNEL_CHILD_MESSAGE = "hyeni_child_message_v2_private"/);
+  assert.match(helper, /CHANNEL_FAMILY_MESSAGE = "hyeni_family_message_v1_private"/);
+  assert.match(helper, /CHANNEL_AI_FRIEND = "hyeni_ai_friend_v1_private"/);
+  assert.match(helper, /CHANNEL_STICKER = "hyeni_sticker_v1_private"/);
   assert.match(helper, /CHANNEL_SILENT = "hyeni_silent_v2_private"/);
   assert.match(helper, /CHANNEL_EMERGENCY = "hyeni_alert_v7_private"/);
   assert.match(helper, /CHANNEL_KKUK = "hyeni_kkuk_v7_private"/);
@@ -136,7 +138,7 @@ test("민감 알림은 private 본문과 일반화한 잠금화면 publicVersion
   assert.match(helper, /previous\.getImportance\(\)/);
   assert.match(helper, /previous\.getSound\(\)/);
   assert.match(helper, /previous\.shouldVibrate\(\)/);
-  for (const channelVariable of ["schedule", "safety", "emergency", "childMessage", "kkuk", "silent"]) {
+  for (const channelVariable of ["schedule", "safety", "emergency", "familyMessage", "aiFriend", "sticker", "kkuk", "silent"]) {
     const blockStart = helper.indexOf(`NotificationChannel ${channelVariable} =`);
     const blockEnd = helper.indexOf(`nm.createNotificationChannel(${channelVariable})`, blockStart);
     const block = helper.slice(blockStart, blockEnd);
@@ -164,6 +166,7 @@ test("민감 알림은 private 본문과 일반화한 잠금화면 publicVersion
     "hyeni_kkuk_v6",
     "hyeni_silent_v1",
     "hyeni_child_message_v1",
+    "hyeni_child_message_v2_private",
   ]) {
     assert.match(helper, new RegExp(`"${legacyId}"`));
   }

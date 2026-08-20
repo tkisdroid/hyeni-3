@@ -46,3 +46,8 @@ export function moveParentHomeSection(
 export function parentHomeSectionOrderStorageKey(familyId: string): string {
   return `hyeni-parent-home-section-order-v1:${familyId}`;
 }
+
+/** 재정렬 사용법은 가족별 기기에서 최초 1회만 안내한다. */
+export function parentHomeReorderHintStorageKey(familyId: string): string {
+  return `hyeni-parent-home-reorder-hint-v1:${familyId}`;
+}

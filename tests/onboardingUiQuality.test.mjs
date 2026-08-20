@@ -45,3 +45,21 @@ test("권한 예정 배지는 인라인 스타일 없이 caption 토큰 묶음�
   assert.match(badge, /background:\s*var\(--bg-page\)\s*;/);
   assert.match(badge, /color:\s*var\(--fg-muted\)\s*;/);
 });
+
+test("로그인 폼은 Android 비밀번호 관리자가 인식하는 표준 자동완성 계약을 제공한다", () => {
+  const onboarding = source("src/screens/onboarding/Onboarding.tsx");
+  const main = source("android/app/src/main/java/com/hyeni/calendar/MainActivity.java");
+  const login = onboarding.slice(
+    onboarding.indexOf("function LoginStep("),
+    onboarding.indexOf("function SignupStep("),
+  );
+
+  assert.match(login, /<form[\s\S]*?className="ob-login-form"[\s\S]*?autoComplete="on"[\s\S]*?onSubmit=/);
+  assert.match(login, /name="username"[\s\S]*?autoComplete="username"/);
+  assert.match(login, /name="password"[\s\S]*?autoComplete="current-password"/);
+  assert.match(login, /<button type="submit" className="ob-loginbtn/);
+  assert.doesNotMatch(login, /<button type="button" className="ob-loginbtn/);
+  assert.match(main, /configureWebViewAutofill\(\);/);
+  assert.match(main, /setImportantForAutofill\(View\.IMPORTANT_FOR_AUTOFILL_YES\)/);
+  assert.match(main, /setSaveFormData\(true\)/);
+});

@@ -3690,6 +3690,7 @@ public class LocationService extends Service {
                     .setPublicVersion(NotificationHelper.buildPublicVersion(
                         this, CHANNEL_ID, false, null
                     ))
+                    .setGroup(NotificationGroupPolicy.GROUP_LOCATION_STATUS)
                     .build();
                 manager.notify(NOTIFICATION_ID, notif);
             }
@@ -3855,6 +3856,7 @@ public class LocationService extends Service {
             .setPublicVersion(NotificationHelper.buildPublicVersion(
                 this, CHANNEL_ID, false, pendingIntent
             ))
+            .setGroup(NotificationGroupPolicy.GROUP_LOCATION_STATUS)
             .build();
     }
 

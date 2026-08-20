@@ -864,6 +864,26 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
     인계 권한이 아니므로** 비활성 설치에서는 기존 체인을 건드리지 않고 401로 닫는다. 정상 logout은 현재 설치의
     refresh 체인과 claim을 함께 놓는다. migration=`worker/db/account-device-sessions.sql`, 회귀=
     `worker/tests/accountDeviceSession.test.mjs`.
+- ★**부모 홈 정보 구획·알림 분리·로그인 자동완성(2026-08-20 TK 실사용 지시)**:
+  · 오늘의 일정·AI 일정추가·아이 현황·안전지표·준비물/숙제·아이와 대화하기·바로가기는 모두
+    `.ph-section-shell.ph-glass` 한 장 안에 제목과 내용을 묶는다. 내부 실데이터 면은 `.ph-inner-surface`의
+    `--glass-tile`만 써서 카드 안에 카드를 겹친 느낌 없이 한 단계 낮은 얼음 면으로 구분한다.
+  · 제목은 `--type-title` 3종 토큰, 안전지표의 시각·핵심 수치·앱 이름·최근 실행 정보는 중요도별 semantic type
+    토큰을 함께 쓴다. AI 일정과 바로가기 버튼은 `--neu-raised-soft`, 누름은 `--neu-pressed`로 구분한다.
+    `아이와 대화하기`의 `메모·실시간` 보조 표시는 없애고 CTA는 모든 아이에게 맞는 `메시지 보내기`로 10개 locale을
+    일반화했다. 바로가기 제목 장식 아이콘도 없다.
+  · 홈 순서 편집은 별도 섹션 없이 카드 길게 누르기+햅틱+떠 있는 복제본 드래그이며, 가족별 localStorage에 최초 1회
+    `카드를 길게 눌러 드래그하면 순서를 바꿀 수 있어요.` 안내를 띄운다. 친구초대/QR은 `createPortal`로 앱 셸 위
+    중앙 modal layer에 렌더해 홈 하단에서 잘리지 않는다.
+  · Android 아이 알림은 `family_message`·`ai_friend`·`sticker`를 서로 다른 notification channel로 만들고 일정·안전·
+    긴급·위치 상태도 `NotificationGroupPolicy` 그룹을 사용한다. 예전 `hyeni_child_message_v1/v2_private`의 사용자 설정은
+    새 채널 생성 시 이관한 뒤 삭제해 가족 메시지가 AI/상태 알림에 묻히지 않게 한다.
+  · ID 로그인은 표준 `<form autocomplete="on">`, `username`·`current-password` 이름/자동완성 토큰과 submit 동작을
+    사용한다. Android WebView는 API 26+에서 `IMPORTANT_FOR_AUTOFILL_YES`로 삼성월렛·Google 비밀번호 관리자 진입을
+    허용하며 가입의 `name`·`username`·`new-password`도 표준 토큰을 쓴다.
+  · 검증: 앱 전체 Node 회귀, `npm run typecheck`, `npm run build`+PWA route/precache 검사, Android unit·lintDebug·
+    assembleDebug 모두 통과. 최신 debug APK를 S25(`R5CY521CFNZ`, `SM-S937N`)에 `adb install -r`로 설치해 기존 앱
+    데이터·계정·페어링 세션을 보존했다.
 - ★**대화 전송은 낙관적이다(2026-08-19 TK 제보 "채팅 보낼 때 느림")**: 예전에는 POST 응답이 와야 말풍선이 서고
   입력칸도 그때 비워져, 느린 네트워크에서 앱이 멈춘 것처럼 보였다. **실측: 서버 2초 지연 재현에서 2,000ms → 7ms.**
   · `useSendMemo.onMutate` 가 `insertPendingMemoReply` 로 임시 행을 넣고, 화면은 `mutate` 직전에 `setDraft("")` 한다.

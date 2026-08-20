@@ -399,8 +399,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         boolean isKkuk = "kkuk".equals(type);
         // 꾹은 긴급 등급 — 전체화면(fullScreenIntent)으로 띄운다.
         boolean fullScreen = isEmergency || isKkuk;
-        // AI 친구 메시지, 부모 메모, 부모 칭찬 스티커는 child_message 채널
-        // (IMPORTANCE_HIGH)로 heads-up 팝업을 보장한다.
+        // AI 친구·부모 메모·칭찬 스티커는 서로 다른 high 채널과 그룹으로 보내
+        // 위치 공유 상시 알림이나 다른 기능 아래에 메시지가 묻히지 않게 한다.
         boolean isSticker = "sticker".equals(type);
         boolean isMemo = "new_memo".equals(type);
         String alertType = firstNonBlank(data.get("alertType"), data.get("alert_type"), "");

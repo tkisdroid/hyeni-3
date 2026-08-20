@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.view.WindowManager;
 import android.webkit.GeolocationPermissions;
 import android.webkit.PermissionRequest;
@@ -51,6 +52,10 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(DeviceActionPlugin.class);
         registerPlugin(InstallReferrerPlugin.class);
         super.onCreate(savedInstanceState);
+
+        // Samsung Pass·Google 비밀번호 관리자 등 Android Autofill 서비스가
+        // WebView 안의 표준 username/password 폼을 탐색할 수 있게 한다.
+        configureWebViewAutofill();
 
         // Phase 5 RL-03: WebView WebChromeClient no longer auto-grants the
         // microphone PermissionRequest. Google Play's stalkerware / spyware
@@ -146,6 +151,15 @@ public class MainActivity extends BridgeActivity {
         // microphone/camera/location prompts before the user understands why the
         // app needs each permission.
         primeFcmToken();
+    }
+
+    @SuppressWarnings("deprecation")
+    private void configureWebViewAutofill() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            getBridge().getWebView().setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_YES);
+            return;
+        }
+        getBridge().getWebView().getSettings().setSaveFormData(true);
     }
 
     @Override

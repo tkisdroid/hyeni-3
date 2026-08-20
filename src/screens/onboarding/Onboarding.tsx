@@ -1018,16 +1018,31 @@ function LoginStep({
         <span />
       </div>
 
-      <div className="ob-login-form">
+      <form
+        className="ob-login-form"
+        autoComplete="on"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void loginIdPw();
+        }}
+      >
         <div className="ob-login-field">
           <input
             ref={loginIdInputRef}
+            id="hyeni-login-username"
+            name="username"
             className="ob-input"
+            type="text"
+            inputMode="text"
             placeholder={intl.formatMessage({ id: "onboarding.field.loginId" })}
             aria-label={intl.formatMessage({ id: "onboarding.field.loginId" })}
             aria-invalid={Boolean(errors.loginId)}
             aria-describedby={errors.loginId ? "ob-login-id-error" : undefined}
             autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            enterKeyHint="next"
             value={loginId}
             onChange={(e) => {
               setLoginId(e.target.value);
@@ -1043,6 +1058,8 @@ function LoginStep({
         <div className="ob-login-field">
           <input
             ref={passwordInputRef}
+            id="hyeni-login-password"
+            name="password"
             className="ob-input"
             type="password"
             placeholder={intl.formatMessage({ id: "onboarding.field.password" })}
@@ -1050,6 +1067,7 @@ function LoginStep({
             aria-invalid={Boolean(errors.password)}
             aria-describedby={errors.password ? "ob-login-password-error" : undefined}
             autoComplete="current-password"
+            enterKeyHint="go"
             value={password}
             onChange={(e) => {
               setPassword(e.target.value);
@@ -1062,13 +1080,13 @@ function LoginStep({
             </p>
           )}
         </div>
-        <button type="button" className="ob-loginbtn hy-press hy-busy-quiet" onClick={loginIdPw} disabled={busy} aria-busy={busy && pendingAction === "id"}>
+        <button type="submit" className="ob-loginbtn hy-press hy-busy-quiet" disabled={busy} aria-busy={busy && pendingAction === "id"}>
           <BusyLabel busy={busy && pendingAction === "id"} idle={intl.formatMessage({ id: "onboarding.login.submit" })} pending={intl.formatMessage({ id: "onboarding.login.pending" })} />
         </button>
         <p className="ob-login-device-note">
           {intl.formatMessage({ id: "onboarding.login.deviceTransferNote" })}
         </p>
-      </div>
+      </form>
 
       <div className="ob-login-foot">
         {intl.formatMessage({ id: "onboarding.login.noAccount" })}{" "}
@@ -1296,16 +1314,16 @@ function SignupStep({
 
       <div className="ob-signup-form">
         <Field label={intl.formatMessage({ id: "onboarding.field.name" })}>
-          <input className="ob-input" aria-label={intl.formatMessage({ id: "onboarding.field.name" })} placeholder={intl.formatMessage({ id: "onboarding.field.namePlaceholder" })} value={name} onChange={(e) => setName(e.target.value)} />
+          <input className="ob-input" name="name" autoComplete="name" aria-label={intl.formatMessage({ id: "onboarding.field.name" })} placeholder={intl.formatMessage({ id: "onboarding.field.namePlaceholder" })} value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
         <Field label={intl.formatMessage({ id: "onboarding.field.loginId" })}>
-          <input className="ob-input" aria-label={intl.formatMessage({ id: "onboarding.field.loginId" })} placeholder={intl.formatMessage({ id: "onboarding.field.loginIdPlaceholder" })} autoCapitalize="none" value={loginId} onChange={(e) => setLoginId(e.target.value)} />
+          <input className="ob-input" name="username" autoComplete="username" aria-label={intl.formatMessage({ id: "onboarding.field.loginId" })} placeholder={intl.formatMessage({ id: "onboarding.field.loginIdPlaceholder" })} autoCapitalize="none" autoCorrect="off" spellCheck={false} value={loginId} onChange={(e) => setLoginId(e.target.value)} />
         </Field>
         <Field label={intl.formatMessage({ id: "onboarding.field.password" })}>
-          <input className="ob-input" type="password" aria-label={intl.formatMessage({ id: "onboarding.field.password" })} placeholder={intl.formatMessage({ id: "onboarding.field.passwordPlaceholder" })} value={password} onChange={(e) => setPassword(e.target.value)} />
+          <input className="ob-input" name="new-password" type="password" autoComplete="new-password" aria-label={intl.formatMessage({ id: "onboarding.field.password" })} placeholder={intl.formatMessage({ id: "onboarding.field.passwordPlaceholder" })} value={password} onChange={(e) => setPassword(e.target.value)} />
         </Field>
         <Field label={intl.formatMessage({ id: "onboarding.field.passwordConfirm" })}>
-          <input className="ob-input" type="password" aria-label={intl.formatMessage({ id: "onboarding.field.passwordConfirm" })} placeholder={intl.formatMessage({ id: "onboarding.field.passwordConfirmPlaceholder" })} value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} />
+          <input className="ob-input" name="new-password-confirm" type="password" autoComplete="new-password" aria-label={intl.formatMessage({ id: "onboarding.field.passwordConfirm" })} placeholder={intl.formatMessage({ id: "onboarding.field.passwordConfirmPlaceholder" })} value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} />
         </Field>
         <Field label={intl.formatMessage({ id: "onboarding.field.guardianType" })}>
           <div style={{ display: "flex", gap: 8 }}>

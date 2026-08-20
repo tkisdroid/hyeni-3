@@ -80,6 +80,11 @@ test("추천 화면은 보상과 조건을 한 줄씩만 보여주고 초대 가
   assert.match(panel, /parent\.referralRewardPanel\.pending/);
   assert.match(panel, /sharePlainContent/);
   assert.match(panel, /navigator\.clipboard/);
+  assert.match(panel, /createPortal/);
+  assert.match(panel, /\), document\.body\)/);
+  const panelCss = read("src/components/ReferralRewardPanel.css");
+  assert.match(panelCss, /\.rrp\s*\{[\s\S]*?position: fixed;[\s\S]*?place-items: center;/);
+  assert.match(panelCss, /max-width: 448px/);
   const share = read("src/lib/native/share.ts");
   assert.match(share, /navigator\.share/);
   assert.match(share, /ShareSheet/);
