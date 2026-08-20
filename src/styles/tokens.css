@@ -250,6 +250,45 @@
   /* 유리 위에 얹히는 작은 면(아이콘 타일·칩) — 카드보다 한 겹 더 밝다. */
   --glass-tile: rgba(255, 255, 255, 0.62);
 
+  /* ── Liquid glass · 부모 홈의 큰 정보 박스 ──
+     2026-08-21 레퍼런스처럼 투명 판의 두께가 먼저 읽히는 별도 등급이다.
+     탭바·입력창에는 적용하지 않고, 제목과 내용을 함께 감싸는 큰 섹션에만 쓴다. */
+  --liquid-glass-fill:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.42) 0%,
+      rgba(255, 255, 255, 0.18) 48%,
+      color-mix(in srgb, var(--mint-500) 12%, rgba(255, 255, 255, 0.12)) 100%
+    );
+  --liquid-glass-border: rgba(255, 255, 255, 0.74);
+  --liquid-glass-blur: blur(28px) saturate(155%) contrast(1.04);
+  --liquid-glass-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.94),
+    inset -1px -1px 0 rgba(66, 126, 132, 0.16),
+    inset 0 0 0 3px rgba(255, 255, 255, 0.13),
+    0 2px 8px -4px rgba(55, 102, 110, 0.18),
+    0 22px 42px -24px rgba(52, 94, 104, 0.38);
+  --liquid-glass-sheen:
+    radial-gradient(120% 54% at 22% -12%, rgba(255, 255, 255, 0.78), transparent 43%),
+    linear-gradient(
+      115deg,
+      rgba(255, 255, 255, 0.24),
+      transparent 30%,
+      transparent 66%,
+      color-mix(in srgb, var(--mint-500) 13%, transparent)
+    );
+  --liquid-glass-inner-border: rgba(255, 255, 255, 0.56);
+  --liquid-glass-inner-rim:
+    inset 0 1px 0 rgba(255, 255, 255, 0.74),
+    inset 0 -1px 0 rgba(62, 125, 132, 0.11);
+  --liquid-glass-tile:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.84),
+      rgba(255, 255, 255, 0.68) 72%,
+      color-mix(in srgb, var(--mint-500) 7%, rgba(255, 255, 255, 0.7))
+    );
+
   /* ── Neumorphism · 조작 면의 촉감 ──
      유리(큰 면)와 역할이 다르다. 유리는 '떠 있는 판', 뉴모피즘은 '눌리는 물체'다.
      ⚠️ 두 스타일은 바닥 요구가 정반대다 — 유리는 색이 있어야 굴절하고, 뉴모피즘은

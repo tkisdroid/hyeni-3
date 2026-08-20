@@ -867,7 +867,15 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
 - ★**부모 홈 정보 구획·알림 분리·로그인 자동완성(2026-08-20 TK 실사용 지시)**:
   · 오늘의 일정·AI 일정추가·아이 현황·안전지표·준비물/숙제·아이와 대화하기·바로가기는 모두
     `.ph-section-shell.ph-glass` 한 장 안에 제목과 내용을 묶는다. 내부 실데이터 면은 `.ph-inner-surface`의
-    `--glass-tile`만 써서 카드 안에 카드를 겹친 느낌 없이 한 단계 낮은 얼음 면으로 구분한다.
+    `--liquid-glass-tile`만 써서 카드 안에 카드를 겹친 느낌 없이 한 단계 낮은 얼음 면으로 구분한다.
+  · **액체 유리 보정(2026-08-21, `liquid-glass-morphism-social-media-mockup_47987-32800.avif` 레퍼런스)**:
+    큰 섹션만 `--liquid-glass-*` 재질로 분리한다. 24px 외곽 판은 흰 상단 하이라이트·옅은 민트 하단 굴절과
+    다섯 겹 inset/lift shadow를 쓰고, `::after`의 4px 안쪽 이중 림으로 투명 판의 두께를 보인다. 실데이터 면은
+    더 밝은 `--liquid-glass-tile`이라 글자 대비를 유지한다. 탭바·입력창·구독/초대 보조 카드는 기존 얇은 유리 등급을
+    유지해 모든 요소가 같은 두께로 부풀지 않게 한다. `prefers-reduced-transparency`와 backdrop 미지원 환경은
+    `--bg-card` 불투명 면으로 강등한다. fixture 전체 캡처=`artifacts/parent-home-liquid-glass-2026-08-21.png`.
+    디자인 시스템·부모 홈·모바일/대비 관련 회귀와 production build/PWA 검증, Android assembleDebug가 통과했고
+    S25(`R5CY521CFNZ`)에 `adb install -r`로 설치해 기존 데이터와 세션을 보존했다.
   · 제목은 `--type-title` 3종 토큰, 안전지표의 시각·핵심 수치·앱 이름·최근 실행 정보는 중요도별 semantic type
     토큰을 함께 쓴다. AI 일정과 바로가기 버튼은 `--neu-raised-soft`, 누름은 `--neu-pressed`로 구분한다.
     `아이와 대화하기`의 `메모·실시간` 보조 표시는 없애고 CTA는 모든 아이에게 맞는 `메시지 보내기`로 10개 locale을

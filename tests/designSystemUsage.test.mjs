@@ -2572,6 +2572,7 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/Splash.css", ".sp-halo::after"],
   ["src/screens/parent/ParentHome.css", ".ph-live-dot .ring"],
   ["src/screens/parent/ParentHome.css", ".ph-live-dot .core"],
+  ["src/screens/parent/ParentHome.css", ".ph-section-shell::before"],
   ["src/screens/parent/ParentHome.css", ".ph-metric__icon"],
   ["src/screens/parent/ParentHome.css", ".ph-shortcut__icon"],
   ["src/screens/parent/ParentHome.css", ".ph-ai__btn-icon"],
@@ -2738,7 +2739,7 @@ const nonSurfacePaintManifest = new Set([
 const semanticSurfaceRoleSpecs = {
   card: { radius: ["var(--radius-16)"], shadow: ["none", "var(--shadow-soft)"] },
   "glass-card": { radius: ["var(--radius-16)"], shadow: ["var(--glass-rim), var(--glass-lift)"] },
-  "ice-section": { radius: ["var(--radius-20)"], shadow: ["var(--glass-rim), var(--glass-lift)"] },
+  "ice-section": { radius: ["var(--radius-24)"], shadow: ["var(--liquid-glass-shadow)"] },
   hero: { radius: ["var(--radius-20)", "0 0 var(--radius-20) var(--radius-20)"], shadow: ["none", "var(--shadow-soft)", "var(--shadow-floating)"] },
   media: { radius: ["var(--radius-20)"], shadow: ["none", "var(--shadow-soft)", "var(--shadow-modal)"] },
   modal: { radius: ["var(--radius-20)"], shadow: ["var(--shadow-modal)"] },

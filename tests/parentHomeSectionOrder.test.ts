@@ -100,8 +100,9 @@ test("부모 홈 주요 기능은 얼음 유리 섹션으로 묶고 조작 버�
   const ko = JSON.parse(readFileSync(new URL("../locales/ko/parent.json", import.meta.url), "utf8"));
 
   assert.ok((source.match(/className="ph-section-shell(?: ph-ai)? ph-glass"/g) ?? []).length >= 6);
-  assert.match(css, /\.ph-section-shell\s*\{[\s\S]*?backdrop-filter: var\(--glass-blur\)/);
-  assert.match(css, /\.ph-inner-surface\s*\{[\s\S]*?background: var\(--glass-tile\)/);
+  assert.match(css, /\.ph-section-shell\s*\{[\s\S]*?backdrop-filter: var\(--liquid-glass-blur\)/);
+  assert.match(css, /\.ph-section-shell::after\s*\{[\s\S]*?inset: 4px;[\s\S]*?box-shadow: var\(--liquid-glass-inner-rim\)/);
+  assert.match(css, /\.ph-inner-surface\s*\{[\s\S]*?background: var\(--liquid-glass-tile\)/);
   assert.match(css, /\.ph-ai__btn\s*\{[\s\S]*?background: color-mix[\s\S]*?box-shadow: var\(--neu-raised-soft\)/);
   assert.match(css, /\.ph-shortcut\s*\{[\s\S]*?background: color-mix[\s\S]*?box-shadow: var\(--neu-raised-soft\)/);
   assert.match(css, /\.ph-app-summary__v\s*\{[\s\S]*?font-weight: var\(--type-body-lg-weight\)/);

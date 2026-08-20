@@ -1667,8 +1667,8 @@
   box-shadow: none;
 }
 
-/* ── 부모 홈 얼음 섹션 체계 ───────────────────────────────────────────────
-   제목과 내용을 한 장의 서리 유리 안에 묶되, 안쪽 내용은 한 겹 맑은 면으로만 나눈다. */
+/* ── 부모 홈 액체 유리 섹션 체계 ─────────────────────────────────────────
+   제목과 내용을 두꺼운 투명 판 안에 묶고, 안쪽 실데이터 면은 맑은 백색 면으로 나눈다. */
 .ph-page .hy-content {
   gap: 20px;
 }
@@ -1679,14 +1679,35 @@
   width: 100%;
   padding: 20px;
   overflow: hidden;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-20);
-  background: var(--glass-fill);
-  box-shadow: var(--glass-rim), var(--glass-lift);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--liquid-glass-border);
+  border-radius: var(--radius-24);
+  background: var(--liquid-glass-fill);
+  box-shadow: var(--liquid-glass-shadow);
+  backdrop-filter: var(--liquid-glass-blur);
+  -webkit-backdrop-filter: var(--liquid-glass-blur);
   --neu-light: rgba(255, 255, 255, 0.96);
   --neu-dark: rgba(91, 128, 146, 0.22);
+}
+
+.ph-section-shell::before,
+.ph-section-shell::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.ph-section-shell::before {
+  inset: 0;
+  border-radius: inherit;
+  background: var(--liquid-glass-sheen);
+}
+
+.ph-section-shell::after {
+  inset: 4px;
+  border: 1px solid var(--liquid-glass-inner-border);
+  border-radius: calc(var(--radius-24) - 4px);
+  box-shadow: var(--liquid-glass-inner-rim);
 }
 
 .ph-section-shell > * {
@@ -1710,9 +1731,9 @@
 }
 
 .ph-inner-surface {
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--liquid-glass-inner-border);
   border-radius: var(--radius-16);
-  background: var(--glass-tile);
+  background: var(--liquid-glass-tile);
   box-shadow: none;
 }
 
@@ -1868,6 +1889,18 @@
     background: var(--bg-card);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
+  }
+
+  .ph-section-shell::before,
+  .ph-section-shell::after {
+    display: none;
+  }
+}
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .ph-section-shell,
+  .ph-inner-surface {
+    background: var(--bg-card);
   }
 }
 
