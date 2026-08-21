@@ -27,6 +27,8 @@ health 200 ready, ID 확인 응답 `no-store`를 확인했다.
 루트·`/oauth/callback`·과거 GET 경로는 모두 Cloudflare 200이고 `x-vercel-*`가 없으며, 현재 entry
 `assets/index-JSdP-RED.js`와 Service Worker SHA-256
 `b70daaad2964926be2c38265011c97f3e5d6770f26ca6d002a0e65cd8f8deedf`가 로컬 `dist`와 일치한다.
+브랜드 도메인의 HTML raw 응답에는 zone Web Analytics beacon 1줄이 Cloudflare에서 삽입되므로 raw index hash를 곧바로
+비교하지 않는다. 그 삽입 줄을 제외한 HTML과 entry/CSS/Service Worker 바이트를 로컬 `dist`와 교차 확인한다.
 웹 OAuth 시작은 반드시 절대 Worker API
 `POST https://hyeni-calendar-api.tkisdroid.workers.dev/api/auth/oauth/{provider}/start`와 서버 생성 state/transaction을
 사용한다. 같은 origin GET을 되살리지 않는다. Worker CORS/OAuth redirect origin은 정확한
