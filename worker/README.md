@@ -60,6 +60,25 @@ npm run test:worker
 npm run deploy:worker
 ```
 
+### 로그인·전화가입 UNIQUE migration-first 배포
+
+전화번호·정규화 ID·활성 OTP는 각각 하나여야 한다. 가입 요청이 동시에 들어와도 두 계정이나
+서로 다른 OTP가 생기지 않도록 Worker는 아래 UNIQUE 인덱스와 `ON CONFLICT(phone)` 원자 cooldown을
+전제로 한다. 운영 적용은 원문 ID·전화번호를 출력하지 않는 중복 그룹 진단 3개가 모두 0일 때만
+진행하며, 중복이 있으면 자동 삭제·병합하지 않고 배포를 중지한다. migration은 기존 값을 바꾸지
+않는 additive 인덱스지만 반드시 Worker보다 먼저 적용한다.
+
+```bash
+cd worker
+npx wrangler d1 execute hyeni-calendar --remote --command "SELECT COUNT(*) AS duplicate_user_phone_groups FROM (SELECT phone FROM users WHERE phone IS NOT NULL AND TRIM(phone)<>'' GROUP BY phone HAVING COUNT(*)>1)" -y
+npx wrangler d1 execute hyeni-calendar --remote --command "SELECT COUNT(*) AS duplicate_profile_phone_groups FROM (SELECT phone FROM user_profiles WHERE phone IS NOT NULL AND TRIM(phone)<>'' GROUP BY phone HAVING COUNT(*)>1)" -y
+npx wrangler d1 execute hyeni-calendar --remote --command "SELECT COUNT(*) AS duplicate_login_id_groups FROM (SELECT LOWER(TRIM(login_id)) AS login_id FROM user_profiles WHERE login_id IS NOT NULL AND TRIM(login_id)<>'' GROUP BY LOWER(TRIM(login_id)) HAVING COUNT(*)>1)" -y
+npx wrangler d1 execute hyeni-calendar --remote --command "SELECT COUNT(*) AS duplicate_otp_phone_groups FROM (SELECT phone FROM phone_otp GROUP BY phone HAVING COUNT(*)>1)" -y
+npx wrangler d1 execute hyeni-calendar --remote --file=db/auth-entry-uniqueness.sql -y
+npx wrangler d1 execute hyeni-calendar --remote --command "SELECT name,[unique],partial FROM pragma_index_list('users') WHERE name='idx_users_phone_unique_nonempty' UNION ALL SELECT name,[unique],partial FROM pragma_index_list('user_profiles') WHERE name IN ('idx_user_profiles_phone_unique_nonempty','idx_user_profiles_login_id_unique_normalized') UNION ALL SELECT name,[unique],partial FROM pragma_index_list('phone_otp') WHERE name='idx_phone_otp_phone_unique' ORDER BY name" -y
+# 통합 출시에서는 전체 readback 뒤 Worker를 한 번만 배포한다.
+```
+
 ### AI 크레딧 balance UNIQUE migration-first 배포
 
 `ai_credit_balances`는 `(family_id, child_user_id)`당 정확히 한 행이어야 한다. 기존

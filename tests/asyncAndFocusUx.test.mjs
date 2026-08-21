@@ -74,7 +74,8 @@ test("ID·소셜·가입 확인 버튼은 중복 실행을 막은 채 BusyLabel�
   }
   assert.match(onboarding, /<form[\s\S]{0,180}onSubmit=\{\(event\) => \{[\s\S]{0,120}void loginIdPw\(\)/);
   assert.match(onboarding, /type="submit"[\s\S]{0,80}disabled=\{busy\}/);
-  assert.match(onboarding, /onClick=\{verify\}\s+disabled=\{busy\}/);
+  assert.match(onboarding, /onSubmit=\{\(event\) => \{[\s\S]{0,120}void verify\(\)/);
+  assert.match(onboarding, /type="submit"[\s\S]{0,120}disabled=\{busy \|\| otpNeedsResend\}/);
 });
 
 test("로그인 요청 중에는 뒤로가기를 잠가 취소된 요청의 busy가 역할 화면에 남지 않는다", () => {
@@ -117,7 +118,9 @@ test("가입 성공·오류·finally와 세션 채택은 모두 고유 request t
 
   assert.match(signup, /runOwnedAsyncAction\(\{[\s\S]*token: requestToken[\s\S]*onSuccess: \(result\) => \{[\s\S]*setPending\(result\)[\s\S]*setPhase\("otp"\)[\s\S]*show\(intl\.formatMessage\(\{ id: "onboarding\.toast\.otpSent" \}\)/);
   assert.match(signup, /verifyPhoneSignupCode\([\s\S]*\{ sessionAdoption: "deferred" \}[\s\S]*onSuccess: \(result\) => \{[\s\S]*adoptAuthResult\(result\)[\s\S]*show\(intl\.formatMessage\(\{ id: "onboarding\.toast\.signupComplete" \}\)[\s\S]*onDone\(name\)/);
-  assert.equal((signup.match(/onError: \(error\) => show\(localizeApiError\(error, intl, "formal"\), "⚠️"\)/g) ?? []).length, 2);
+  assert.match(signup, /onError: handleRequestCodeError/);
+  assert.match(signup, /const handleRequestCodeError = \(error: unknown\) => \{[\s\S]{0,900}setFormError\(message\)[\s\S]{0,120}show\(message, "⚠️"\)/);
+  assert.match(signup, /onError: \(error\) => \{[\s\S]{0,900}setOtpError\(message\)[\s\S]{0,900}show\(message, "⚠️"\)/);
   assert.equal(koOnboarding["onboarding.toast.otpSent"], "인증번호를 보냈어요");
   assert.equal(koOnboarding["onboarding.toast.signupComplete"], "가입이 완료됐어요");
   assert.equal((signup.match(/onFinally: \(\) => finishSignupAction\(requestToken\)/g) ?? []).length, 2);
@@ -132,6 +135,30 @@ test("전화 가입 endpoint는 기본 즉시 채택을 유지하고 SignupStep�
   assert.match(verifyEndpoint, /options\?: AuthResultAdoptionOptions/);
   assert.match(verifyEndpoint, /returnAuthResultWithAdoption\(data, options, adoptAuthResult\)/);
   assert.doesNotMatch(verifyEndpoint, /\badoptAuthResult\(data\)/);
+});
+
+test("잘못된 비밀번호는 입력을 지우지 않고 고정 오류를 보여준 뒤 비밀번호 칸에 초점을 돌린다", () => {
+  const start = onboarding.indexOf("function LoginStep(");
+  const end = onboarding.indexOf("/* ── STEP: SIGNUP", start);
+  const login = onboarding.slice(start, end);
+
+  assert.match(login, /if \(isApiError\(e\) && e\.code === "invalid_credentials"\) \{\s*passwordInputRef\.current\?\.focus\(\)/);
+  assert.match(login, /onAuthError\(message\)/);
+  assert.match(login, /\{authError && \([\s\S]{0,100}<div className="ob-auth-alert" role="alert">/);
+  assert.match(login, /value=\{loginId\}/);
+  assert.match(login, /value=\{password\}/);
+  assert.doesNotMatch(login, /catch \(e\)[\s\S]{0,500}setLoginId\(""\)/);
+  assert.doesNotMatch(login, /catch \(e\)[\s\S]{0,500}setPassword\(""\)/);
+});
+
+test("ID 중복 확인 통신 실패는 사용 중 상태로 오인하지 않는다", () => {
+  const start = onboarding.indexOf("const checkLoginId = async () => {");
+  const end = onboarding.indexOf("const handleRequestCodeError", start);
+  const check = onboarding.slice(start, end);
+
+  assert.match(check, /catch \(error\) \{[\s\S]{0,250}setLoginIdAvailability\("error"\)/);
+  assert.doesNotMatch(check, /catch \(error\) \{[\s\S]{0,250}setLoginIdAvailability\("taken"\)/);
+  assert.match(onboarding, /error\.code === "login_id_taken"[\s\S]{0,180}setLoginIdAvailability\("taken"\)/);
 });
 
 test("visibility·pageshow는 외부 OAuth가 실제 열린 경우에만 busy를 해제한다", () => {

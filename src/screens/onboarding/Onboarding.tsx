@@ -31,6 +31,7 @@ import {
   signInWithLoginId,
   adoptAuthResult,
   anonymousLogin,
+  checkLoginIdAvailability,
   requestPhoneSignupCode,
   verifyPhoneSignupCode,
   startWorkerOAuth,
@@ -72,6 +73,12 @@ import {
 } from "@/lib/api/endpoints/account";
 import { validateLoginForm, type LoginFormErrors } from "@/transform/loginForm";
 import {
+  isValidLoginId,
+  normalizeLoginId,
+  validateParentSignupForm,
+  type ParentSignupErrors,
+} from "@/transform/phone";
+import {
   createAsyncActionController,
   isAsyncActionTokenFor,
   isLoginNavigationLocked,
@@ -82,8 +89,10 @@ import {
 } from "@/transform/asyncUiState";
 import "./Onboarding.css";
 import { localizeApiError } from "@/i18n/apiError";
+import { isApiError } from "@/lib/api/errors";
 
 type Step = "role" | "teacherSetup" | "login" | "survey" | "signup" | "connect" | "pairing" | "perms";
+type AuthIntent = "login" | "signup";
 type Show = (text: string, emoji?: string) => void;
 
 const CHILD_PERM_ITEMS = [
@@ -121,6 +130,8 @@ export function Onboarding() {
     getOnboardingAuthCommitSnapshot,
   );
   const [step, setStep] = useState<Step>("role");
+  const [authIntent, setAuthIntent] = useState<AuthIntent>("login");
+  const [authEntryError, setAuthEntryError] = useState<string | null>(null);
   const [role, setRole] = useState<"parent" | "child" | "teacher">("parent");
   const [pairMode, setPairMode] = useState<"child" | "parent">("child");
   const [busy, setBusy] = useState(false);
@@ -218,7 +229,9 @@ export function Onboarding() {
         finishOAuthCancellation(cancellation);
         show(intl.formatMessage({ id: "onboarding.toast.socialCancelled" }), "ℹ️");
       } catch (e) {
-        show(localizeApiError(e, intl, "formal"), "⚠️");
+        const message = localizeApiError(e, intl, "formal");
+        setAuthEntryError(message);
+        show(message, "⚠️");
       } finally {
         cancelOnboardingAuthTransitions();
         clearOAuthExternalBusy();
@@ -252,7 +265,9 @@ export function Onboarding() {
         clearOAuthCallbackUrl();
         if (!canApplySideEffects) return;
         clearOAuthExternalBusy();
-        show(localizeApiError(e, intl, "formal"), "⚠️");
+        const message = localizeApiError(e, intl, "formal");
+        setAuthEntryError(message);
+        show(message, "⚠️");
         setRole("parent");
         setStep("login");
         setBusy(false);
@@ -294,6 +309,7 @@ export function Onboarding() {
         oauthExternalPending: oauthExternalBusyRef.current,
       })) return;
       clearOAuthExternalBusy();
+      cancelOnboardingAuthTransitions();
       setBusy(false);
     };
     document.addEventListener("visibilitychange", unstickOAuth);
@@ -445,6 +461,8 @@ export function Onboarding() {
             cancelOnboardingAuthTransitions();
             setSignupFlowStarted(false);
             setSurveyChoices([]);
+            setAuthIntent("login");
+            setAuthEntryError(null);
             setRole("parent");
             setStep("login");
           }}
@@ -466,6 +484,13 @@ export function Onboarding() {
       )}
       {step === "login" && (
         <LoginStep
+          intent={authIntent}
+          onIntentChange={(nextIntent) => {
+            setAuthIntent(nextIntent);
+            setAuthEntryError(null);
+          }}
+          authError={authEntryError}
+          onAuthError={setAuthEntryError}
           busy={busy}
           setBusy={setBusy}
           commitBoundaryActive={authCommitBoundaryActive}
@@ -477,6 +502,7 @@ export function Onboarding() {
             back();
           }}
           onLoggedIn={async (transitionToken) => {
+            setAuthEntryError(null);
             setSignupFlowStarted(false);
             setSurveyChoices([]);
             await routeAfterParentLogin(transitionToken);
@@ -484,6 +510,8 @@ export function Onboarding() {
           onSignup={() => {
             if (authCommitBoundaryActive) return;
             cancelOnboardingAuthTransitions();
+            setAuthIntent("signup");
+            setAuthEntryError(null);
             setSignupFlowStarted(true);
             setStep("survey");
           }}
@@ -496,6 +524,7 @@ export function Onboarding() {
           onBack={() => {
             setSignupFlowStarted(false);
             setSurveyChoices([]);
+            setAuthIntent("signup");
             setStep("login");
           }}
           onToggle={(id) =>
@@ -513,6 +542,18 @@ export function Onboarding() {
           referralDraft={referralDraft}
           onReferralDraftChange={applyReferralDraft}
           onBack={back}
+          onExistingAccountLogin={() => {
+            setSignupFlowStarted(false);
+            setAuthIntent("login");
+            setAuthEntryError(null);
+            setStep("login");
+          }}
+          onUseSocialSignup={() => {
+            setSignupFlowStarted(false);
+            setAuthIntent("signup");
+            setAuthEntryError(null);
+            setStep("login");
+          }}
           onDone={(name) => {
             setSignupName(name);
             setStep("connect");
@@ -606,11 +647,26 @@ function BackButton({
   );
 }
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function Field({
+  label,
+  children,
+  validationMessage,
+  errorId,
+}: {
+  label: string;
+  children: ReactNode;
+  validationMessage?: string | null;
+  errorId?: string;
+}) {
   return (
-    <div>
+    <div className="ob-field">
       <div className="ob-label">{label}</div>
       {children}
+      {validationMessage && (
+        <p id={errorId} className="ob-field-error" role="alert">
+          {validationMessage}
+        </p>
+      )}
     </div>
   );
 }
@@ -894,6 +950,10 @@ function TeacherStep({ onBack, onSave, show }: { onBack: () => void; onSave: () 
 /* ── STEP: LOGIN ───────────────────────────────────────────────────────── */
 
 function LoginStep({
+  intent,
+  onIntentChange,
+  authError,
+  onAuthError,
   busy,
   setBusy,
   commitBoundaryActive,
@@ -904,6 +964,10 @@ function LoginStep({
   onSignup,
   show,
 }: {
+  intent: AuthIntent;
+  onIntentChange: (intent: AuthIntent) => void;
+  authError: string | null;
+  onAuthError: (message: string | null) => void;
   busy: boolean;
   setBusy: (v: boolean) => void;
   commitBoundaryActive: boolean;
@@ -922,6 +986,7 @@ function LoginStep({
   const loginIdInputRef = useRef<HTMLInputElement>(null);
   const passwordInputRef = useRef<HTMLInputElement>(null);
   const loginNavigationLocked = isLoginNavigationLocked({ busy, commitBoundaryActive });
+  const signingUp = intent === "signup";
 
   const clearFieldError = (field: keyof LoginFormErrors) => {
     setErrors((current) => {
@@ -934,6 +999,7 @@ function LoginStep({
 
   const social = async (provider: OAuthProvider) => {
     if (busy) return;
+    onAuthError(null);
     setPendingAction(provider);
     setBusy(true);
     const transitionToken = beginOnboardingAuthTransition();
@@ -942,7 +1008,9 @@ function LoginStep({
     } catch (e) {
       if (!isOnboardingAuthTransitionActive(transitionToken)) return;
       onOAuthExternalEnd();
-      show(localizeApiError(e, intl, "formal"), "⚠️");
+      const message = localizeApiError(e, intl, "formal");
+      onAuthError(message);
+      show(message, "⚠️");
       // 키 미설정 등 설정 오류 — busy 를 풀고 정직하게 안내(버튼이 영구 잠기지 않게).
       setPendingAction(null);
       setBusy(false);
@@ -952,6 +1020,7 @@ function LoginStep({
 
   const loginIdPw = async () => {
     if (busy) return;
+    onAuthError(null);
     const validationErrors = validateLoginForm({ loginId, password });
     setErrors(validationErrors);
     if (validationErrors.loginId) {
@@ -975,7 +1044,12 @@ function LoginStep({
       await onLoggedIn(transitionToken);
     } catch (e) {
       if (!isOnboardingAuthTransitionActive(transitionToken)) return;
-      show(localizeApiError(e, intl, "formal"), "⚠️");
+      const message = localizeApiError(e, intl, "formal");
+      onAuthError(message);
+      show(message, "⚠️");
+      if (isApiError(e) && e.code === "invalid_credentials") {
+        passwordInputRef.current?.focus();
+      }
     } finally {
       if (isOnboardingAuthTransitionActive(transitionToken)) {
         setPendingAction(null);
@@ -990,8 +1064,35 @@ function LoginStep({
       <BackButton onBack={onBack} disabled={loginNavigationLocked} />
       <div className="ob-login-head">
         <img className="ob-login-mascot" src={asset("mascot/wave.webp")} alt="" />
-        <div className="ob-h1">{intl.formatMessage({ id: "onboarding.login.title" })}</div>
-        <div className="ob-sub">{intl.formatMessage({ id: "onboarding.login.subtitle" })}</div>
+        <div className="ob-h1">
+          {intl.formatMessage({ id: signingUp ? "onboarding.signup.title" : "onboarding.login.title" })}
+        </div>
+        <div className="ob-sub">
+          {intl.formatMessage({ id: signingUp ? "onboarding.signup.subtitle" : "onboarding.login.subtitle" })}
+        </div>
+      </div>
+
+      <div className="ob-auth-intent" role="tablist" aria-label={intl.formatMessage({ id: "onboarding.auth.intentLabel" })}>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={!signingUp}
+          className={!signingUp ? "ob-auth-intent__tab ob-auth-intent__tab--active" : "ob-auth-intent__tab"}
+          onClick={() => onIntentChange("login")}
+          disabled={loginNavigationLocked}
+        >
+          {intl.formatMessage({ id: "onboarding.login.submit" })}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={signingUp}
+          className={signingUp ? "ob-auth-intent__tab ob-auth-intent__tab--active" : "ob-auth-intent__tab"}
+          onClick={() => onIntentChange("signup")}
+          disabled={loginNavigationLocked}
+        >
+          {intl.formatMessage({ id: "onboarding.login.signup" })}
+        </button>
       </div>
 
       <div className="ob-login-social">
@@ -1012,94 +1113,124 @@ function LoginStep({
         )}
       </div>
 
+      {authError && (
+        <div className="ob-auth-alert" role="alert">
+          {authError}
+        </div>
+      )}
+
       <div className="ob-divider">
         <span />
-        <em>{intl.formatMessage({ id: "onboarding.login.orId" })}</em>
+        <em>{intl.formatMessage({ id: signingUp ? "onboarding.signup.orPhone" : "onboarding.login.orId" })}</em>
         <span />
       </div>
 
-      <form
-        className="ob-login-form"
-        autoComplete="on"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void loginIdPw();
-        }}
-      >
-        <div className="ob-login-field">
-          <input
-            ref={loginIdInputRef}
-            id="hyeni-login-username"
-            name="username"
-            className="ob-input"
-            type="text"
-            inputMode="text"
-            placeholder={intl.formatMessage({ id: "onboarding.field.loginId" })}
-            aria-label={intl.formatMessage({ id: "onboarding.field.loginId" })}
-            aria-invalid={Boolean(errors.loginId)}
-            aria-describedby={errors.loginId ? "ob-login-id-error" : undefined}
-            autoComplete="username"
-            autoCapitalize="none"
-            autoCorrect="off"
-            spellCheck={false}
-            enterKeyHint="next"
-            value={loginId}
-            onChange={(e) => {
-              setLoginId(e.target.value);
-              clearFieldError("loginId");
+      {signingUp ? (
+        <>
+          <button
+            type="button"
+            className="ob-loginbtn hy-press"
+            onClick={onSignup}
+            disabled={loginNavigationLocked}
+            data-progress-owner="login-action"
+          >
+            {intl.formatMessage({ id: "onboarding.signup.withPhone" })}
+          </button>
+          <div className="ob-login-foot">
+            {intl.formatMessage({ id: "onboarding.login.haveAccount" })}{" "}
+            <button type="button" className="ob-link" onClick={() => onIntentChange("login")} disabled={loginNavigationLocked}>
+              {intl.formatMessage({ id: "onboarding.login.submit" })}
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <form
+            className="ob-login-form"
+            autoComplete="on"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void loginIdPw();
             }}
-          />
-          {errors.loginId && (
-            <p id="ob-login-id-error" className="ob-field-error" role="alert">
-              {intl.formatMessage({ id: "onboarding.validation.loginIdRequired" })}
+          >
+            <div className="ob-login-field">
+              <input
+                ref={loginIdInputRef}
+                id="hyeni-login-username"
+                name="username"
+                className="ob-input"
+                type="text"
+                inputMode="text"
+                placeholder={intl.formatMessage({ id: "onboarding.field.loginId" })}
+                aria-label={intl.formatMessage({ id: "onboarding.field.loginId" })}
+                aria-invalid={Boolean(errors.loginId)}
+                aria-describedby={errors.loginId ? "ob-login-id-error" : undefined}
+                autoComplete="username"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="next"
+                value={loginId}
+                onChange={(e) => {
+                  setLoginId(e.target.value);
+                  clearFieldError("loginId");
+                  onAuthError(null);
+                }}
+              />
+              {errors.loginId && (
+                <p id="ob-login-id-error" className="ob-field-error" role="alert">
+                  {intl.formatMessage({ id: "onboarding.validation.loginIdRequired" })}
+                </p>
+              )}
+            </div>
+            <div className="ob-login-field">
+              <input
+                ref={passwordInputRef}
+                id="hyeni-login-password"
+                name="password"
+                className="ob-input"
+                type="password"
+                placeholder={intl.formatMessage({ id: "onboarding.field.password" })}
+                aria-label={intl.formatMessage({ id: "onboarding.field.password" })}
+                aria-invalid={Boolean(errors.password)}
+                aria-describedby={errors.password ? "ob-login-password-error" : undefined}
+                autoComplete="current-password"
+                enterKeyHint="go"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  clearFieldError("password");
+                  onAuthError(null);
+                }}
+              />
+              {errors.password && (
+                <p id="ob-login-password-error" className="ob-field-error" role="alert">
+                  {intl.formatMessage({ id: "onboarding.validation.passwordRequired" })}
+                </p>
+              )}
+            </div>
+            <button type="submit" className="ob-loginbtn hy-press hy-busy-quiet" disabled={busy} aria-busy={busy && pendingAction === "id"}>
+              <BusyLabel busy={busy && pendingAction === "id"} idle={intl.formatMessage({ id: "onboarding.login.submit" })} pending={intl.formatMessage({ id: "onboarding.login.pending" })} />
+            </button>
+            <p className="ob-login-device-note">
+              {intl.formatMessage({ id: "onboarding.login.deviceTransferNote" })}
             </p>
-          )}
-        </div>
-        <div className="ob-login-field">
-          <input
-            ref={passwordInputRef}
-            id="hyeni-login-password"
-            name="password"
-            className="ob-input"
-            type="password"
-            placeholder={intl.formatMessage({ id: "onboarding.field.password" })}
-            aria-label={intl.formatMessage({ id: "onboarding.field.password" })}
-            aria-invalid={Boolean(errors.password)}
-            aria-describedby={errors.password ? "ob-login-password-error" : undefined}
-            autoComplete="current-password"
-            enterKeyHint="go"
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-              clearFieldError("password");
-            }}
-          />
-          {errors.password && (
-            <p id="ob-login-password-error" className="ob-field-error" role="alert">
-              {intl.formatMessage({ id: "onboarding.validation.passwordRequired" })}
-            </p>
-          )}
-        </div>
-        <button type="submit" className="ob-loginbtn hy-press hy-busy-quiet" disabled={busy} aria-busy={busy && pendingAction === "id"}>
-          <BusyLabel busy={busy && pendingAction === "id"} idle={intl.formatMessage({ id: "onboarding.login.submit" })} pending={intl.formatMessage({ id: "onboarding.login.pending" })} />
-        </button>
-        <p className="ob-login-device-note">
-          {intl.formatMessage({ id: "onboarding.login.deviceTransferNote" })}
-        </p>
-      </form>
+          </form>
 
-      <div className="ob-login-foot">
-        {intl.formatMessage({ id: "onboarding.login.noAccount" })}{" "}
-        <button
-          type="button"
-          className="ob-link"
-          onClick={onSignup}
-          disabled={busy || commitBoundaryActive}
-          data-progress-owner="login-action"
-        >
-          {intl.formatMessage({ id: "onboarding.login.signup" })}
-        </button>
-      </div>
+          <div className="ob-login-foot">
+            {intl.formatMessage({ id: "onboarding.login.noAccount" })}{" "}
+            <button
+              type="button"
+              className="ob-link"
+              onClick={() => onIntentChange("signup")}
+              disabled={loginNavigationLocked}
+              data-progress-owner="login-action"
+            >
+              {intl.formatMessage({ id: "onboarding.login.signup" })}
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -1173,6 +1304,8 @@ function SignupStep({
   referralDraft,
   onReferralDraftChange,
   onBack,
+  onExistingAccountLogin,
+  onUseSocialSignup,
   onDone,
   show,
 }: {
@@ -1181,6 +1314,8 @@ function SignupStep({
   referralDraft: string;
   onReferralDraftChange: (value: string) => void;
   onBack: () => void;
+  onExistingAccountLogin: () => void;
+  onUseSocialSignup: () => void;
   onDone: (name: string) => void;
   show: Show;
 }) {
@@ -1195,6 +1330,22 @@ function SignupStep({
   const [phone, setPhone] = useState("");
   const [pending, setPending] = useState<PendingSignup | null>(null);
   const [otp, setOtp] = useState("");
+  const [formErrors, setFormErrors] = useState<ParentSignupErrors>({});
+  const [formError, setFormError] = useState<string | null>(null);
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const [otpNeedsResend, setOtpNeedsResend] = useState(false);
+  const [existingAccountDetected, setExistingAccountDetected] = useState(false);
+  const [loginIdAvailability, setLoginIdAvailability] = useState<"idle" | "checking" | "available" | "taken" | "error">("idle");
+  const [checkedLoginId, setCheckedLoginId] = useState<string | null>(null);
+  const loginIdCheckGenerationRef = useRef(0);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const loginIdInputRef = useRef<HTMLInputElement>(null);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
+  const passwordConfirmInputRef = useRef<HTMLInputElement>(null);
+  const guardianFirstButtonRef = useRef<HTMLButtonElement>(null);
+  const birthdateInputRef = useRef<HTMLInputElement>(null);
+  const phoneInputRef = useRef<HTMLInputElement>(null);
+  const otpInputRef = useRef<HTMLInputElement>(null);
   const signupActionControllerRef = useRef(createAsyncActionController<SignupPendingAction>());
   const [pendingSignupAction, setPendingSignupAction] = useState<AsyncActionToken<SignupPendingAction> | null>(null);
 
@@ -1210,8 +1361,118 @@ function SignupStep({
     setBusy(false);
   };
 
+  const fieldErrorMessage = (field: keyof ParentSignupErrors): string => {
+    const value = formErrors[field];
+    if (!value) return "";
+    if (value === "login_id_taken") {
+      return intl.formatMessage({ id: "core.error.api.loginIdTaken.formal" });
+    }
+    if (value === "phone_exists") {
+      return intl.formatMessage({ id: "core.error.api.phoneExists.formal" });
+    }
+    switch (field) {
+      case "name": return intl.formatMessage({ id: "onboarding.validation.nameRequired" });
+      case "loginId": return intl.formatMessage({ id: "onboarding.validation.loginIdInvalid" });
+      case "password": return intl.formatMessage({ id: "onboarding.validation.passwordWeak" });
+      case "passwordConfirm": return intl.formatMessage({ id: "onboarding.validation.passwordMismatch" });
+      case "gender": return intl.formatMessage({ id: "onboarding.validation.guardianRequired" });
+      case "birthdate": return intl.formatMessage({ id: "onboarding.validation.birthdateInvalid" });
+      case "phone": return intl.formatMessage({ id: "onboarding.validation.phoneInvalid" });
+    }
+    return intl.formatMessage({ id: "core.error.api.client.formal" });
+  };
+
+  const clearFormFieldError = (field: keyof ParentSignupErrors) => {
+    setFormErrors((current) => {
+      if (!current[field]) return current;
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
+    setFormError(null);
+  };
+
+  const focusFirstFormError = (errors: ParentSignupErrors) => {
+    const target = errors.name
+      ? nameInputRef
+      : errors.loginId
+        ? loginIdInputRef
+        : errors.password
+          ? passwordInputRef
+          : errors.passwordConfirm
+            ? passwordConfirmInputRef
+            : errors.gender
+              ? guardianFirstButtonRef
+              : errors.birthdate
+                ? birthdateInputRef
+                : errors.phone
+                  ? phoneInputRef
+                  : null;
+    target?.current?.focus();
+  };
+
+  const checkLoginId = async () => {
+    if (busy || loginIdAvailability === "checking") return;
+    const normalized = normalizeLoginId(loginId);
+    if (!isValidLoginId(normalized)) {
+      const nextErrors = { ...formErrors, loginId: "invalid_login_id" };
+      setFormErrors(nextErrors);
+      setLoginIdAvailability("idle");
+      setCheckedLoginId(null);
+      loginIdInputRef.current?.focus();
+      return;
+    }
+    setLoginId(normalized);
+    clearFormFieldError("loginId");
+    setLoginIdAvailability("checking");
+    const generation = ++loginIdCheckGenerationRef.current;
+    try {
+      const available = await checkLoginIdAvailability(normalized);
+      if (loginIdCheckGenerationRef.current !== generation) return;
+      setCheckedLoginId(normalized);
+      setLoginIdAvailability(available ? "available" : "taken");
+      if (!available) {
+        setFormErrors((current) => ({ ...current, loginId: "login_id_taken" }));
+        loginIdInputRef.current?.focus();
+      }
+    } catch (error) {
+      if (loginIdCheckGenerationRef.current !== generation) return;
+      const message = localizeApiError(error, intl, "formal");
+      setLoginIdAvailability("error");
+      setCheckedLoginId(null);
+      setFormError(message);
+      show(message, "⚠️");
+    }
+  };
+
+  const handleRequestCodeError = (error: unknown) => {
+    const message = localizeApiError(error, intl, "formal");
+    if (isApiError(error) && error.code === "login_id_taken") {
+      setFormErrors((current) => ({ ...current, loginId: "login_id_taken" }));
+      setLoginIdAvailability("taken");
+      setCheckedLoginId(normalizeLoginId(loginId));
+      loginIdInputRef.current?.focus();
+    } else if (isApiError(error) && error.code === "phone_exists") {
+      setFormErrors((current) => ({ ...current, phone: "phone_exists" }));
+      setExistingAccountDetected(true);
+      phoneInputRef.current?.focus();
+    }
+    if (phase === "otp") setOtpError(message);
+    else setFormError(message);
+    show(message, "⚠️");
+  };
+
   const requestCode = async () => {
     if (busy) return;
+    const validation = validateParentSignupForm({ name, loginId, password, passwordConfirm, gender, birthdate, phone });
+    setFormErrors(validation.errors);
+    setFormError(null);
+    setExistingAccountDetected(false);
+    if (!validation.ok || !validation.values) {
+      focusFirstFormError(validation.errors);
+      return;
+    }
+    setLoginId(validation.values.loginId);
     const requestToken = beginSignupAction("request-code");
     await runOwnedAsyncAction({
       controller: signupActionControllerRef.current,
@@ -1219,16 +1480,30 @@ function SignupStep({
       request: () => requestPhoneSignupCode({ name, loginId, password, passwordConfirm, gender, birthdate, phone }),
       onSuccess: (result) => {
         setPending(result);
+        setLoginId(result.profile.login_id);
+        setCheckedLoginId(result.profile.login_id);
+        setLoginIdAvailability("available");
+        setFormErrors({});
+        setFormError(null);
+        setOtp("");
+        setOtpError(null);
+        setOtpNeedsResend(false);
         setPhase("otp");
         show(intl.formatMessage({ id: "onboarding.toast.otpSent" }), "📩");
       },
-      onError: (error) => show(localizeApiError(error, intl, "formal"), "⚠️"),
+      onError: handleRequestCodeError,
       onFinally: () => finishSignupAction(requestToken),
     });
   };
 
   const verify = async () => {
     if (busy || !pending) return;
+    if (!/^\d{6}$/.test(otp)) {
+      setOtpError(intl.formatMessage({ id: "onboarding.validation.otpInvalid" }));
+      otpInputRef.current?.focus();
+      return;
+    }
+    setOtpError(null);
     const requestToken = beginSignupAction("verify");
     await runOwnedAsyncAction({
       controller: signupActionControllerRef.current,
@@ -1242,7 +1517,29 @@ function SignupStep({
         show(intl.formatMessage({ id: "onboarding.toast.signupComplete" }), "🎉");
         onDone(name);
       },
-      onError: (error) => show(localizeApiError(error, intl, "formal"), "⚠️"),
+      onError: (error) => {
+        const code = isApiError(error) ? error.code : null;
+        const mustResend = code === "otp_expired" || code === "otp_not_found" || code === "too_many_attempts";
+        const message = code === "too_many_attempts"
+          ? intl.formatMessage({ id: "onboarding.validation.otpResendRequired" })
+          : localizeApiError(error, intl, "formal");
+        setOtpError(message);
+        setOtpNeedsResend(mustResend);
+        if (code === "phone_exists") {
+          setFormErrors((current) => ({ ...current, phone: "phone_exists" }));
+          setExistingAccountDetected(true);
+          setPhase("form");
+          queueMicrotask(() => phoneInputRef.current?.focus());
+        } else if (code === "login_id_taken") {
+          setFormErrors((current) => ({ ...current, loginId: "login_id_taken" }));
+          setLoginIdAvailability("taken");
+          setPhase("form");
+          queueMicrotask(() => loginIdInputRef.current?.focus());
+        } else if (!mustResend) {
+          otpInputRef.current?.focus();
+        }
+        show(message, "⚠️");
+      },
       onFinally: () => finishSignupAction(requestToken),
     });
   };
@@ -1256,32 +1553,50 @@ function SignupStep({
           <div className="ob-signup-title">{intl.formatMessage({ id: "onboarding.signup.otpTitle" })}</div>
           <div className="ob-sub">{intl.formatMessage({ id: "onboarding.signup.otpDescription" }, { phone: pending?.phoneStorage ?? "" })}</div>
         </div>
-        <div className="ob-signup-form">
-          <Field label={intl.formatMessage({ id: "onboarding.field.otp" })}>
+        <form
+          className="ob-signup-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void verify();
+          }}
+        >
+          <Field
+            label={intl.formatMessage({ id: "onboarding.field.otp" })}
+            validationMessage={otpError}
+            errorId="ob-signup-otp-error"
+          >
             <input
+              ref={otpInputRef}
+              id="hyeni-signup-otp"
+              name="one-time-code"
               className="ob-input"
               aria-label={intl.formatMessage({ id: "onboarding.field.otp" })}
+              aria-invalid={Boolean(otpError)}
+              aria-describedby={otpError ? "ob-signup-otp-error" : undefined}
               inputMode="numeric"
+              autoComplete="one-time-code"
               maxLength={6}
               placeholder="000000"
               value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              onChange={(e) => {
+                setOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
+                setOtpError(null);
+              }}
             />
           </Field>
-        </div>
-        <button
-          type="button"
-          className="ob-cta ob-cta--accent hy-press hy-busy-quiet"
-          onClick={verify}
-          disabled={busy}
-          aria-busy={busy && isAsyncActionTokenFor(pendingSignupAction, "verify")}
-        >
-          <BusyLabel
-            busy={busy && isAsyncActionTokenFor(pendingSignupAction, "verify")}
-            idle={intl.formatMessage({ id: "onboarding.signup.verify" })}
-            pending={intl.formatMessage({ id: "onboarding.signup.verifying" })}
-          />
-        </button>
+          <button
+            type="submit"
+            className="ob-cta ob-cta--accent hy-press hy-busy-quiet"
+            disabled={busy || otpNeedsResend}
+            aria-busy={busy && isAsyncActionTokenFor(pendingSignupAction, "verify")}
+          >
+            <BusyLabel
+              busy={busy && isAsyncActionTokenFor(pendingSignupAction, "verify")}
+              idle={intl.formatMessage({ id: "onboarding.signup.verify" })}
+              pending={intl.formatMessage({ id: "onboarding.signup.verifying" })}
+            />
+          </button>
+        </form>
         {/* 재전송은 requestPhoneSignupCode 를 다시 호출(실 전송) */}
         <div className="ob-login-foot">
           {intl.formatMessage({ id: "onboarding.signup.otpMissing" })}{" "}
@@ -1299,6 +1614,11 @@ function SignupStep({
             />
           </button>
         </div>
+        <div className="ob-auth-alternative">
+          <button type="button" className="ob-link" onClick={onUseSocialSignup} disabled={busy} data-progress-owner="signup-action">
+            {intl.formatMessage({ id: "onboarding.signup.useSocial" })}
+          </button>
+        </div>
       </div>
     );
   }
@@ -1312,69 +1632,94 @@ function SignupStep({
         <div className="ob-sub">{intl.formatMessage({ id: "onboarding.signup.subtitle" })}</div>
       </div>
 
-      <div className="ob-signup-form">
-        <Field label={intl.formatMessage({ id: "onboarding.field.name" })}>
-          <input className="ob-input" name="name" autoComplete="name" aria-label={intl.formatMessage({ id: "onboarding.field.name" })} placeholder={intl.formatMessage({ id: "onboarding.field.namePlaceholder" })} value={name} onChange={(e) => setName(e.target.value)} />
+      <form
+        className="ob-signup-form"
+        autoComplete="on"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void requestCode();
+        }}
+      >
+        {formError && <div className="ob-auth-alert" role="alert">{formError}</div>}
+        <Field label={intl.formatMessage({ id: "onboarding.field.name" })} validationMessage={fieldErrorMessage("name")} errorId="ob-signup-name-error">
+          <input ref={nameInputRef} id="hyeni-signup-name" className="ob-input" name="name" autoComplete="name" aria-label={intl.formatMessage({ id: "onboarding.field.name" })} aria-invalid={Boolean(formErrors.name)} aria-describedby={formErrors.name ? "ob-signup-name-error" : undefined} placeholder={intl.formatMessage({ id: "onboarding.field.namePlaceholder" })} value={name} onChange={(e) => { setName(e.target.value); clearFormFieldError("name"); }} />
         </Field>
-        <Field label={intl.formatMessage({ id: "onboarding.field.loginId" })}>
-          <input className="ob-input" name="username" autoComplete="username" aria-label={intl.formatMessage({ id: "onboarding.field.loginId" })} placeholder={intl.formatMessage({ id: "onboarding.field.loginIdPlaceholder" })} autoCapitalize="none" autoCorrect="off" spellCheck={false} value={loginId} onChange={(e) => setLoginId(e.target.value)} />
+        <Field label={intl.formatMessage({ id: "onboarding.field.loginId" })} validationMessage={fieldErrorMessage("loginId")} errorId="ob-signup-login-id-error">
+          <div className="ob-inline-control">
+            <input ref={loginIdInputRef} id="hyeni-signup-username" className="ob-input" name="username" autoComplete="username" aria-label={intl.formatMessage({ id: "onboarding.field.loginId" })} aria-invalid={Boolean(formErrors.loginId)} aria-describedby={formErrors.loginId ? "ob-signup-login-id-error" : loginIdAvailability === "available" ? "ob-signup-login-id-status" : undefined} placeholder={intl.formatMessage({ id: "onboarding.field.loginIdPlaceholder" })} autoCapitalize="none" autoCorrect="off" spellCheck={false} value={loginId} onChange={(e) => { loginIdCheckGenerationRef.current += 1; setLoginId(e.target.value); setLoginIdAvailability("idle"); setCheckedLoginId(null); clearFormFieldError("loginId"); }} />
+            <button
+              type="button"
+              className="ob-inline-control__button hy-press"
+              onClick={() => void checkLoginId()}
+              disabled={busy || loginIdAvailability === "checking"}
+              aria-busy={loginIdAvailability === "checking"}
+            >
+              {intl.formatMessage({ id: loginIdAvailability === "checking" ? "onboarding.signup.loginIdChecking" : "onboarding.signup.loginIdCheck" })}
+            </button>
+          </div>
+          {loginIdAvailability === "available" && checkedLoginId === normalizeLoginId(loginId) && (
+            <p id="ob-signup-login-id-status" className="ob-field-success" role="status">
+              {intl.formatMessage({ id: "onboarding.signup.loginIdAvailable" })}
+            </p>
+          )}
         </Field>
-        <Field label={intl.formatMessage({ id: "onboarding.field.password" })}>
-          <input className="ob-input" name="new-password" type="password" autoComplete="new-password" aria-label={intl.formatMessage({ id: "onboarding.field.password" })} placeholder={intl.formatMessage({ id: "onboarding.field.passwordPlaceholder" })} value={password} onChange={(e) => setPassword(e.target.value)} />
+        <Field label={intl.formatMessage({ id: "onboarding.field.password" })} validationMessage={fieldErrorMessage("password")} errorId="ob-signup-password-error">
+          <input ref={passwordInputRef} id="hyeni-signup-password" className="ob-input" name="new-password" type="password" autoComplete="new-password" aria-label={intl.formatMessage({ id: "onboarding.field.password" })} aria-invalid={Boolean(formErrors.password)} aria-describedby={formErrors.password ? "ob-signup-password-error" : undefined} placeholder={intl.formatMessage({ id: "onboarding.field.passwordPlaceholder" })} value={password} onChange={(e) => { setPassword(e.target.value); clearFormFieldError("password"); }} />
         </Field>
-        <Field label={intl.formatMessage({ id: "onboarding.field.passwordConfirm" })}>
-          <input className="ob-input" name="new-password-confirm" type="password" autoComplete="new-password" aria-label={intl.formatMessage({ id: "onboarding.field.passwordConfirm" })} placeholder={intl.formatMessage({ id: "onboarding.field.passwordConfirmPlaceholder" })} value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} />
+        <Field label={intl.formatMessage({ id: "onboarding.field.passwordConfirm" })} validationMessage={fieldErrorMessage("passwordConfirm")} errorId="ob-signup-password-confirm-error">
+          <input ref={passwordConfirmInputRef} id="hyeni-signup-password-confirm" className="ob-input" name="new-password-confirm" type="password" autoComplete="new-password" aria-label={intl.formatMessage({ id: "onboarding.field.passwordConfirm" })} aria-invalid={Boolean(formErrors.passwordConfirm)} aria-describedby={formErrors.passwordConfirm ? "ob-signup-password-confirm-error" : undefined} placeholder={intl.formatMessage({ id: "onboarding.field.passwordConfirmPlaceholder" })} value={passwordConfirm} onChange={(e) => { setPasswordConfirm(e.target.value); clearFormFieldError("passwordConfirm"); }} />
         </Field>
-        <Field label={intl.formatMessage({ id: "onboarding.field.guardianType" })}>
-          <div style={{ display: "flex", gap: 8 }}>
-            {GENDERS.map((g) => (
+        <Field label={intl.formatMessage({ id: "onboarding.field.guardianType" })} validationMessage={fieldErrorMessage("gender")} errorId="ob-signup-gender-error">
+          <div className="ob-guardian-options" role="group" aria-describedby={formErrors.gender ? "ob-signup-gender-error" : undefined}>
+            {GENDERS.map((g, index) => (
               <button
+                ref={index === 0 ? guardianFirstButtonRef : undefined}
                 key={g.value}
                 type="button"
-                className="hy-press"
-                onClick={() => setGender(g.value)}
-                style={{
-                  flex: 1,
-                  height: 48,
-                  borderRadius: 12,
-                  fontWeight: 700,
-                  fontSize: "var(--type-body-sm)",
-                  border: gender === g.value ? "none" : "1.5px solid var(--line-strong)",
-                  background: gender === g.value ? "var(--hy-accent-cta)" : "#fff",
-                  color: gender === g.value ? "#fff" : "var(--fg-body)",
-                }}
+                className={gender === g.value ? "ob-guardian-option ob-guardian-option--active hy-press" : "ob-guardian-option hy-press"}
+                aria-pressed={gender === g.value}
+                onClick={() => { setGender(g.value); clearFormFieldError("gender"); }}
               >
                 {intl.formatMessage({ id: g.labelId })}
               </button>
             ))}
           </div>
         </Field>
-        <Field label={intl.formatMessage({ id: "onboarding.field.birthdate" })}>
-          <input className="ob-input" type="date" aria-label={intl.formatMessage({ id: "onboarding.field.birthdate" })} value={birthdate} onChange={(e) => setBirthdate(e.target.value)} />
+        <Field label={intl.formatMessage({ id: "onboarding.field.birthdate" })} validationMessage={fieldErrorMessage("birthdate")} errorId="ob-signup-birthdate-error">
+          <input ref={birthdateInputRef} id="hyeni-signup-birthdate" name="bday" className="ob-input" type="date" autoComplete="bday" aria-label={intl.formatMessage({ id: "onboarding.field.birthdate" })} aria-invalid={Boolean(formErrors.birthdate)} aria-describedby={formErrors.birthdate ? "ob-signup-birthdate-error" : undefined} value={birthdate} onChange={(e) => { setBirthdate(e.target.value); clearFormFieldError("birthdate"); }} />
         </Field>
-        <Field label={intl.formatMessage({ id: "onboarding.field.phone" })}>
-          <input className="ob-input" inputMode="tel" aria-label={intl.formatMessage({ id: "onboarding.field.phone" })} placeholder={intl.formatMessage({ id: "onboarding.field.phonePlaceholder" })} value={phone} onChange={(e) => setPhone(e.target.value)} />
+        <Field label={intl.formatMessage({ id: "onboarding.field.phone" })} validationMessage={fieldErrorMessage("phone")} errorId="ob-signup-phone-error">
+          <input ref={phoneInputRef} id="hyeni-signup-phone" name="tel" className="ob-input" type="tel" inputMode="tel" autoComplete="tel-national" aria-label={intl.formatMessage({ id: "onboarding.field.phone" })} aria-invalid={Boolean(formErrors.phone)} aria-describedby={formErrors.phone ? "ob-signup-phone-error" : undefined} placeholder={intl.formatMessage({ id: "onboarding.field.phonePlaceholder" })} value={phone} onChange={(e) => { setPhone(e.target.value); setExistingAccountDetected(false); clearFormFieldError("phone"); }} />
         </Field>
         <ReferralCodeField
           value={referralDraft}
           onChange={onReferralDraftChange}
           disabled={busy}
         />
-      </div>
+        <button
+          type="submit"
+          className="ob-cta ob-cta--accent hy-press hy-busy-quiet"
+          disabled={busy || loginIdAvailability === "checking"}
+          aria-busy={busy && isAsyncActionTokenFor(pendingSignupAction, "request-code")}
+        >
+          <BusyLabel
+            busy={busy && isAsyncActionTokenFor(pendingSignupAction, "request-code")}
+            idle={intl.formatMessage({ id: "onboarding.signup.requestOtp" })}
+            pending={intl.formatMessage({ id: "onboarding.signup.requestingOtp" })}
+          />
+        </button>
+      </form>
 
-      <button
-        type="button"
-        className="ob-cta ob-cta--accent hy-press hy-busy-quiet"
-        onClick={requestCode}
-        disabled={busy}
-        aria-busy={busy && isAsyncActionTokenFor(pendingSignupAction, "request-code")}
-      >
-        <BusyLabel
-          busy={busy && isAsyncActionTokenFor(pendingSignupAction, "request-code")}
-          idle={intl.formatMessage({ id: "onboarding.signup.requestOtp" })}
-          pending={intl.formatMessage({ id: "onboarding.signup.requestingOtp" })}
-        />
-      </button>
+      <div className="ob-auth-alternative">
+        {existingAccountDetected && (
+          <button type="button" className="ob-link" onClick={onExistingAccountLogin} disabled={busy} data-progress-owner="signup-action">
+            {intl.formatMessage({ id: "onboarding.signup.existingAccount" })}
+          </button>
+        )}
+        <button type="button" className="ob-link" onClick={onUseSocialSignup} disabled={busy} data-progress-owner="signup-action">
+          {intl.formatMessage({ id: "onboarding.signup.useSocial" })}
+        </button>
+      </div>
     </div>
   );
 }

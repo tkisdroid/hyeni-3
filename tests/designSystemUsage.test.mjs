@@ -2146,6 +2146,11 @@ function unclassifiedSurfaceCandidates(blocks, manifestKeys, nonSurfaceKeys) {
 const semanticSurfaceManifestKeys = new Set(semanticSurfaceManifest.map(([path, className]) =>
   surfaceManifestKey(path, `.${className}`)));
 const nonSurfacePaintManifest = new Set([
+  // 인증 탭·상태·폼 선택 컨트롤 — 독립 콘텐츠 판이 아니라 입력 흐름의 조작/피드백 면이다.
+  ["src/screens/onboarding/Onboarding.css", ".ob-auth-intent"],
+  ["src/screens/onboarding/Onboarding.css", ".ob-auth-alert"],
+  ["src/screens/onboarding/Onboarding.css", ".ob-inline-control__button"],
+  ["src/screens/onboarding/Onboarding.css", ".ob-guardian-option"],
   // 기존 레이아웃·navigation container — exact path + selector만 허용
   // 2026-08-21 어른 모드 유리 언어의 물체·타일·상태점 — 판(surface)이 아니라 칠해진 조작·표시 면이다.
   ["src/screens/parent/ParentLocation.redesign.css", ".pl-root .pl-sheet__dur::before"],

@@ -27,6 +27,7 @@ after(() => typeScriptResolutionHook.deregister());
 const authRoutes = (await import(pathToFileURL(resolve(workerDir, "routes/auth.ts")).href)).default;
 const familyRoutes = (await import(pathToFileURL(resolve(workerDir, "routes/family.ts")).href)).default;
 const { hashOtp } = await import(pathToFileURL(resolve(workerDir, "lib/otp.ts")).href);
+const { hashPassword } = await import(pathToFileURL(resolve(workerDir, "lib/bcrypt.ts")).href);
 const { privateKey, publicKey } = await generateKeyPair("ES256", { extractable: true });
 const jwtPrivateKey = JSON.stringify(await exportJWK(privateKey));
 const jwtPublicKey = JSON.stringify(await exportJWK(publicKey));
@@ -105,6 +106,19 @@ async function post(app, env, path, body, authorizationHeader) {
   }, env);
 }
 
+test("아이디 확인은 기존 대소문자·공백을 정규화해 중복으로 보고 캐시하지 않는다", async () => {
+  const { app, env, sqlite } = setup();
+  sqlite.prepare("INSERT INTO users(id,is_anonymous) VALUES ('legacy-login-owner',0)").run();
+  sqlite.prepare(
+    "INSERT INTO user_profiles(user_id,display_name,login_id,created_at,updated_at) VALUES ('legacy-login-owner','기존 보호자',' MindLady ','2026-08-01','2026-08-01')",
+  ).run();
+
+  const response = await post(app, env, "/auth/check-login-id", { loginId: "mindlady" });
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("cache-control"), "no-store");
+  assert.deepEqual(await response.json(), { available: false });
+});
+
 test("child·공동 보호자 pairing 실패는 legacy error와 stable code를 함께 반환한다", async () => {
   const { app, env, sqlite } = setup();
   sqlite.prepare("INSERT INTO users(id,is_anonymous) VALUES ('primary-parent',0)").run();
@@ -155,7 +169,15 @@ test("signup 입력·중복·OTP 실패는 실제 응답 payload에 stable code�
 
   const phone = "+821099998888";
   const codeHash = await hashOtp(phone, "123456", otpSecret);
-  const verifyBody = { phone: "01099998888", token: "654321", password: "123456", loginId: "newid", name: "보호자" };
+  const verifyBody = {
+    phone: "01099998888",
+    token: "654321",
+    password: "123456",
+    loginId: "newid",
+    name: "보호자",
+    device_install_id: "signup-test-device",
+    device_platform: "web",
+  };
   sqlite.prepare(
     "INSERT INTO phone_otp(phone,code_hash,expires_at,attempts,created_at) VALUES (?,?,?,0,?)",
   ).run(phone, codeHash, "2020-01-01 00:00:00", "2020-01-01 00:00:00");
@@ -169,4 +191,124 @@ test("signup 입력·중복·OTP 실패는 실제 응답 payload에 stable code�
   response = await post(app, env, "/auth/signup/verify", verifyBody);
   assert.equal(response.status, 401);
   assert.deepEqual(await response.json(), { error: "otp_mismatch" });
+});
+
+test("가입 전제조건 실패는 올바른 OTP를 소비하지 않아 같은 요청을 바로 고칠 수 있다", async () => {
+  const { app, env, sqlite } = setup();
+  const phone = "+821077771111";
+  const token = "123456";
+  const codeHash = await hashOtp(phone, token, otpSecret);
+  sqlite.prepare(
+    "INSERT INTO phone_otp(phone,code_hash,expires_at,attempts,created_at) VALUES (?,?,?,0,?)",
+  ).run(phone, codeHash, "2099-01-01 00:00:00", "2026-08-21 00:00:00");
+
+  const body = {
+    phone: "01077771111",
+    token,
+    password: "signup-password",
+    loginId: "otpkeeper",
+    name: "보호자",
+  };
+  const missingDevice = await post(app, env, "/auth/signup/verify", body);
+  assert.equal(missingDevice.status, 400);
+  assert.deepEqual(await missingDevice.json(), { error: "device_identity_required" });
+  assert.equal(
+    sqlite.prepare("SELECT COUNT(*) AS n FROM phone_otp WHERE phone=? AND code_hash=?").get(phone, codeHash).n,
+    1,
+  );
+
+  sqlite.prepare(
+    "INSERT INTO users(id,phone,is_anonymous,created_at) VALUES ('taken-login-owner','821077770000',0,'2026-08-01')",
+  ).run();
+  sqlite.prepare(
+    "INSERT INTO user_profiles(user_id,display_name,login_id,phone,created_at,updated_at) VALUES ('taken-login-owner','기존 보호자','otpkeeper','+821077770000','2026-08-01','2026-08-01')",
+  ).run();
+  const takenLogin = await post(app, env, "/auth/signup/verify", {
+    ...body,
+    device_install_id: "signup-test-device",
+  });
+  assert.equal(takenLogin.status, 409);
+  assert.deepEqual(await takenLogin.json(), { error: "login_id_taken" });
+  assert.equal(
+    sqlite.prepare("SELECT COUNT(*) AS n FROM phone_otp WHERE phone=? AND code_hash=?").get(phone, codeHash).n,
+    1,
+  );
+});
+
+test("OTP 검증 직후 재발급이 경합하면 계정 행을 만들지 않고 새 OTP를 보존한다", async () => {
+  const { app, db, env, sqlite } = setup();
+  const phone = "+821055551111";
+  const token = "123456";
+  const validatedHash = await hashOtp(phone, token, otpSecret);
+  const replacementHash = await hashOtp(phone, "654321", otpSecret);
+  sqlite.prepare(
+    "INSERT INTO phone_otp(phone,code_hash,expires_at,attempts,created_at) VALUES (?,?,?,0,?)",
+  ).run(phone, validatedHash, "2099-01-01 00:00:00", "2026-08-21 00:00:00");
+
+  const originalBatch = db.batch.bind(db);
+  db.batch = async (statements) => {
+    sqlite.prepare("UPDATE phone_otp SET code_hash=?,created_at=? WHERE phone=?")
+      .run(replacementHash, "2026-08-21 00:02:00", phone);
+    return originalBatch(statements);
+  };
+
+  const response = await post(app, env, "/auth/signup/verify", {
+    phone: "01055551111",
+    token,
+    password: "signup-password",
+    loginId: "otpraceparent",
+    name: "보호자",
+    device_install_id: "otp-race-device",
+    device_platform: "web",
+  });
+  assert.equal(response.status, 500);
+  assert.deepEqual(await response.json(), { error: "signup_failed" });
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM users WHERE phone='821055551111'").get().n, 0);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM user_profiles WHERE login_id='otpraceparent'").get().n, 0);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM auth_identities WHERE provider_id IN (SELECT id FROM users WHERE phone='821055551111')").get().n, 0);
+  assert.equal(
+    sqlite.prepare("SELECT COUNT(*) AS n FROM phone_otp WHERE phone=? AND code_hash=?").get(phone, replacementHash).n,
+    1,
+  );
+});
+
+test("잘못된 비밀번호 뒤에도 입력 계정의 세션은 생기지 않고 올바른 비밀번호 로그인은 즉시 성공한다", async () => {
+  const { app, env, sqlite } = setup();
+  const passwordHash = await hashPassword("correct-password");
+  sqlite.prepare(
+    `INSERT INTO users(id,phone,encrypted_password,is_anonymous,raw_user_meta_data,created_at)
+     VALUES ('password-parent','821066661111',?,0,'{}','2026-08-21')`,
+  ).run(passwordHash);
+  sqlite.prepare(
+    `INSERT INTO user_profiles(user_id,display_name,login_id,phone,created_at,updated_at)
+     VALUES ('password-parent','비밀번호 보호자','passwordparent','+821066661111','2026-08-21','2026-08-21')`,
+  ).run();
+  const loginBody = {
+    loginId: "passwordparent",
+    device_install_id: "password-test-device",
+    device_platform: "web",
+  };
+
+  const wrong = await post(app, env, "/auth/login-password", {
+    ...loginBody,
+    password: "wrong-password",
+  });
+  assert.equal(wrong.status, 401);
+  assert.deepEqual(await wrong.json(), { error: "invalid_credentials" });
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM refresh_tokens WHERE user_id='password-parent'").get().n, 0);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM account_device_sessions WHERE user_id='password-parent'").get().n, 0);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM login_attempts WHERE login_id='passwordparent'").get().n, 1);
+
+  const correct = await post(app, env, "/auth/login-password", {
+    ...loginBody,
+    password: "correct-password",
+  });
+  assert.equal(correct.status, 200);
+  const payload = await correct.json();
+  assert.equal(payload.user.id, "password-parent");
+  assert.equal(typeof payload.session.access_token, "string");
+  assert.equal(typeof payload.session.refresh_token, "string");
+  assert.equal("password" in payload, false);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM login_attempts WHERE login_id='passwordparent'").get().n, 0);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM account_device_sessions WHERE user_id='password-parent' AND revoked_at IS NULL").get().n, 1);
 });

@@ -266,11 +266,11 @@ test("build 산출물이나 단일 module entry가 없으면 명시적으로 실
   assert.throws(() => inspectRouteEntryBundle({ distDir }), /정확히 1개/);
 }));
 
-test("npm run build는 Vite 산출 직후 실제 번들 예산 검사를 실행한다", () => {
+test("npm run build는 Vite 산출 뒤 OAuth 콜백 엔트리와 실제 번들 예산을 함께 검증한다", () => {
   const packageJson = JSON.parse(readFileSync(join(rootDir, "package.json"), "utf8"));
   assert.equal(
     packageJson.scripts.build,
-    "tsc -b && vite build && node scripts/verify-route-bundle.mjs",
+    "tsc -b && vite build && node scripts/write-oauth-callback-entry.mjs && node scripts/verify-route-bundle.mjs",
   );
   assert.equal(packageJson.scripts["verify:route-bundle"], "node scripts/verify-route-bundle.mjs");
 });

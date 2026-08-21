@@ -209,6 +209,30 @@ export async function captureScreen() {
     // BootSplash 게이트(1.6s)와 조회 완료를 지나야 실제 화면이 나온다.
     await wait(6_500);
 
+    const targetAudit = await cdp.send("Runtime.evaluate", {
+      returnByValue: true,
+      expression: `(() => [...document.querySelectorAll("button,a[href],input:not([type='hidden']),select,textarea,[role='button'],[role='tab'],summary")]
+        .filter((element) => {
+          const style = getComputedStyle(element);
+          const rect = element.getBoundingClientRect();
+          return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity) > 0
+            && rect.width > 0 && rect.height > 0 && !element.matches(":disabled,[aria-disabled='true']")
+            && !element.closest("[aria-hidden='true']");
+        })
+        .map((element) => {
+          const rect = element.getBoundingClientRect();
+          return {
+            className: element.getAttribute("class") || "",
+            height: Math.round(rect.height * 10) / 10,
+            label: (element.getAttribute("aria-label") || element.textContent || element.getAttribute("name") || "").replace(/\\s+/g, " ").trim().slice(0, 80),
+            tag: element.tagName.toLowerCase(),
+            width: Math.round(rect.width * 10) / 10,
+          };
+        })
+        .filter(({ width, height }) => width < 43.5 || height < 43.5))()`,
+    });
+    const smallTargets = targetAudit.result?.result?.value ?? [];
+
     // 스크롤러를 펼쳐 화면 전체를 한 장에 담는다.
     const measured = await cdp.send("Runtime.evaluate", {
       returnByValue: true,
@@ -236,7 +260,7 @@ export async function captureScreen() {
 
     const shot = await cdp.send("Page.captureScreenshot", { format: "png", captureBeyondViewport: true });
     await writeFile(OUT_PATH, Buffer.from(shot.result.data, "base64"));
-    return { outPath: OUT_PATH, route: ROUTE, tier: TIER, height: height ?? null, crashed: Boolean(crashed) };
+    return { outPath: OUT_PATH, route: ROUTE, tier: TIER, height: height ?? null, crashed: Boolean(crashed), smallTargets };
   } finally {
     socket?.close();
     browser.kill();
@@ -250,7 +274,7 @@ const isMain = process.argv[1]
 if (isMain) {
   try {
     const result = await captureScreen();
-    process.stdout.write(`캡처 완료: ${result.outPath}\n경로 ${result.route} · ${result.tier} · 높이 ${result.height ?? "미측정"}px${result.crashed ? " · ⚠️ 렌더 크래시" : ""}\n`);
+    process.stdout.write(`캡처 완료: ${result.outPath}\n경로 ${result.route} · ${result.tier} · 높이 ${result.height ?? "미측정"}px${result.crashed ? " · ⚠️ 렌더 크래시" : ""}\n작은 조작 대상 ${JSON.stringify(result.smallTargets)}\n`);
     process.exit(result.crashed ? 1 : 0);
   } catch (error) {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);

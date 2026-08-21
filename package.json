@@ -10,7 +10,7 @@
   "scripts": {
     "postinstall": "node scripts/patch-capacitor-systembars.mjs",
     "dev": "vite",
-    "build": "tsc -b && vite build && node scripts/verify-route-bundle.mjs",
+    "build": "tsc -b && vite build && node scripts/write-oauth-callback-entry.mjs && node scripts/verify-route-bundle.mjs",
     "test": "node --test tests/*.test.*",
     "test:worker": "node --test worker/tests/*.test.mjs",
     "typecheck:worker": "tsc -p worker --noEmit",
@@ -22,6 +22,7 @@
     "capture:screen": "node scripts/capture-screen.mjs",
     "qa:ai-voice": "node scripts/verify-ai-friend-voice-reply.mjs",
     "qa:pwa-runtime": "node scripts/pwa-runtime-qa.mjs",
+    "android:install:debug": "node scripts/install-android-debug.mjs",
     "release:pages-provenance": "node scripts/create-pages-provenance.mjs",
     "release:aab-evidence": "node scripts/create-aab-evidence.mjs",
     "release:record": "node scripts/create-release-record.mjs",

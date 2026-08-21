@@ -18,13 +18,20 @@ import {
 import { resolveCanonicalFamilyMembership } from "../db/authz";
 import { pgNow, tsNorm } from "../lib/time";
 import { parsePhone, e164ToGoTruePhone, e164ToLocalKr } from "../lib/phone";
-import { sendPhoneOtp, verifyPhoneOtp } from "../lib/phoneOtp";
+import { sendPhoneOtp, validatePhoneOtp } from "../lib/phoneOtp";
 import {
   claimAnonymousSignupProtection,
   releaseAnonymousSignupProtectionClaims,
 } from "../lib/anonymousSignupProtection";
 
 const auth = new Hono<{ Bindings: Env; Variables: Vars }>();
+
+// 로그인·가입·아이디 확인 응답은 브라우저/프록시가 재사용하지 않는다.
+// 특히 아이디 확인은 직전 결과를 캐시하면 실제 DB 상태와 어긋난 안내가 될 수 있다.
+auth.use("*", async (c, next) => {
+  await next();
+  c.header("Cache-Control", "no-store");
+});
 
 // access token 수명(초). signAccessToken 기본값 "1h"와 동기화 — 응답 expires_in 에 사용.
 const ACCESS_TTL_SECONDS = 3600;
@@ -40,7 +47,7 @@ function normalizeLoginId(value: unknown): string {
 // user_profiles.login_id 미사용 여부(is_login_id_available RPC 직역, lower(trim) 매칭).
 async function isLoginIdAvailable(db: D1Database, loginId: string): Promise<boolean> {
   const row = await db
-    .prepare("SELECT 1 AS x FROM user_profiles WHERE login_id = ? LIMIT 1")
+    .prepare("SELECT 1 AS x FROM user_profiles WHERE LOWER(TRIM(login_id)) = ? LIMIT 1")
     .bind(loginId)
     .first<{ x: number }>();
   return !row;
@@ -549,16 +556,18 @@ auth.post("/signup/verify", async (c) => {
     ? String(body.birthdate)
     : null;
 
-  // OTP 검증·소비(만료/시도제한/상수시간) — 공유 모듈. 통과 후에만 user 를 만든다.
-  const verified = await verifyPhoneOtp(db, c.env, phone, token);
-  if (!verified.ok) {
-    return c.json({ error: verified.error }, (verified.status ?? 401) as 401 | 429);
-  }
+  // 재시도 가능한 입력·설치·중복 오류는 일회용 OTP보다 먼저 판정한다.
+  // 이 경계가 뒤에 있으면 올바른 OTP를 입력하고도 실패한 뒤 같은 번호로 다시 시도할 수 없다.
   if (!signupDeviceId) return c.json({ error: "device_identity_required" }, 400);
-
-  // select-then-write 중복 가드 — OTP 통과 후 재확인(동시 가입/직접 호출 방어).
   if (await isPhoneTaken(db, phone)) return c.json({ error: "phone_exists" }, 409);
   if (!(await isLoginIdAvailable(db, loginId))) return c.json({ error: "login_id_taken" }, 409);
+
+  // OTP를 먼저 검증하되 user 3개 행과 같은 D1 batch에서 정확히 같은 HMAC 행을 소비한다.
+  // user INSERT가 실패하면 OTP DELETE도 롤백돼 네트워크·DB 일시 오류를 그대로 재시도할 수 있다.
+  const validatedOtp = await validatePhoneOtp(db, c.env, phone, token);
+  if (!validatedOtp.ok || !validatedOtp.verificationHash) {
+    return c.json({ error: validatedOtp.error }, (validatedOtp.status ?? 401) as 401 | 429);
+  }
 
   const userId = crypto.randomUUID();
   const phoneNoPlus = e164ToGoTruePhone(phone); // users.phone (GoTrue 형식, '+' 제거)
@@ -575,29 +584,59 @@ auth.post("/signup/verify", async (c) => {
   };
 
   try {
-    await db.batch([
+    const inserted = await db.batch([
       db
         .prepare(
           `INSERT INTO users (id, phone, encrypted_password, is_anonymous, raw_user_meta_data, created_at)
-           VALUES (?,?,?,0,?,?)`,
+           SELECT ?,?,?,0,?,?
+           WHERE EXISTS (
+             SELECT 1 FROM phone_otp WHERE phone=? AND code_hash=?
+           )`,
         )
-        .bind(userId, phoneNoPlus, encryptedPassword, JSON.stringify(meta), nowTs),
+        .bind(
+          userId,
+          phoneNoPlus,
+          encryptedPassword,
+          JSON.stringify(meta),
+          nowTs,
+          phone,
+          validatedOtp.verificationHash,
+        ),
       // phone identity — GoTrue 는 phone provider 의 provider_id 를 user.id 로 둔다(충돌 없음).
       db
         .prepare(
           `INSERT INTO auth_identities (id, user_id, provider, provider_id, identity_data, created_at)
-           VALUES (?,?,?,?,?,?)`,
+           SELECT ?,?,?,?,?,?
+           WHERE EXISTS (SELECT 1 FROM users WHERE id=?)`,
         )
-        .bind(crypto.randomUUID(), userId, "phone", userId, JSON.stringify({ sub: userId, phone: phoneNoPlus }), nowTs),
+        .bind(
+          crypto.randomUUID(),
+          userId,
+          "phone",
+          userId,
+          JSON.stringify({ sub: userId, phone: phoneNoPlus }),
+          nowTs,
+          userId,
+        ),
       db
         .prepare(
           `INSERT INTO user_profiles (user_id, login_id, display_name, phone, provider, gender, birthdate, linked_providers, created_at, updated_at)
-           VALUES (?,?,?,?,?,?,?,'{}',?,?)`,
+           SELECT ?,?,?,?,?,?,?,'{}',?,?
+           WHERE EXISTS (SELECT 1 FROM users WHERE id=?)`,
         )
-        .bind(userId, loginId, name, phone, "phone", gender, birthdate, nowTs, nowTs),
+        .bind(userId, loginId, name, phone, "phone", gender, birthdate, nowTs, nowTs, userId),
+      db.prepare("DELETE FROM phone_otp WHERE phone=? AND code_hash=?")
+        .bind(phone, validatedOtp.verificationHash),
     ]);
+    if (inserted.some((result) => Number(result.meta?.changes ?? 0) !== 1)) {
+      throw new Error("signup_batch_incomplete");
+    }
   } catch (err) {
     console.error("[auth/signup/verify] user insert failed:");
+    // UNIQUE race는 정직한 필드 오류로 돌린다. OTP 교체 경합은 조건부 INSERT가 모든 계정 행을 0건으로
+    // 유지하고 새 OTP도 남기므로, 사용자는 최신 문자를 확인해 안전하게 재시도할 수 있다.
+    if (await isPhoneTaken(db, phone)) return c.json({ error: "phone_exists" }, 409);
+    if (!(await isLoginIdAvailable(db, loginId))) return c.json({ error: "login_id_taken" }, 409);
     return c.json({ error: "signup_failed" }, 500);
   }
 
@@ -617,7 +656,9 @@ auth.post("/signup/verify", async (c) => {
     if (isDeviceIdentityRequiredError(error)) {
       return c.json({ error: "device_identity_required" }, 400);
     }
-    throw error;
+    // 계정 생성은 이미 원자 커밋됐다. 일반 500으로 위장하면 사용자가 다시 가입하다
+    // phone_exists에 갇히므로, 클라이언트가 같은 ID/PW 로그인으로 즉시 복구할 stable code를 준다.
+    return c.json({ error: "signup_created_login_required" }, 409);
   }
 
   return c.json({

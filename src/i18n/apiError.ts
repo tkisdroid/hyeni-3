@@ -54,6 +54,14 @@ const CODE_MESSAGES: Readonly<Record<string, Readonly<Record<ApiErrorTone, Messa
     formal: "core.error.api.otpMismatch.formal",
     child: "core.error.api.otpMismatch.child",
   },
+  invalid_token_format: {
+    formal: "core.error.api.otpMismatch.formal",
+    child: "core.error.api.otpMismatch.child",
+  },
+  otp_not_found: {
+    formal: "core.error.api.otpExpired.formal",
+    child: "core.error.api.otpExpired.child",
+  },
   rate_limited: {
     formal: "core.error.api.rateLimited.formal",
     child: "core.error.api.rateLimited.child",
@@ -61,6 +69,82 @@ const CODE_MESSAGES: Readonly<Record<string, Readonly<Record<ApiErrorTone, Messa
   too_many_requests: {
     formal: "core.error.api.rateLimited.formal",
     child: "core.error.api.rateLimited.child",
+  },
+  too_many_attempts: {
+    formal: "core.error.api.rateLimited.formal",
+    child: "core.error.api.rateLimited.child",
+  },
+  sms_not_configured: {
+    formal: "core.error.api.smsUnavailable.formal",
+    child: "core.error.api.smsUnavailable.child",
+  },
+  sms_provider_failed: {
+    formal: "core.error.api.smsUnavailable.formal",
+    child: "core.error.api.smsUnavailable.child",
+  },
+  oauth_not_configured: {
+    formal: "core.error.api.oauthUnavailable.formal",
+    child: "core.error.api.oauthUnavailable.child",
+  },
+  naver_not_configured: {
+    formal: "core.error.api.oauthUnavailable.formal",
+    child: "core.error.api.oauthUnavailable.child",
+  },
+  unsupported_provider: {
+    formal: "core.error.api.oauthUnavailable.formal",
+    child: "core.error.api.oauthUnavailable.child",
+  },
+  oauth_client_update_required: {
+    formal: "core.error.api.oauthRetry.formal",
+    child: "core.error.api.oauthRetry.child",
+  },
+  invalid_oauth_client: {
+    formal: "core.error.api.oauthRetry.formal",
+    child: "core.error.api.oauthRetry.child",
+  },
+  invalid_oauth_transaction: {
+    formal: "core.error.api.oauthRetry.formal",
+    child: "core.error.api.oauthRetry.child",
+  },
+  oauth_start_invalid: {
+    formal: "core.error.api.oauthRetry.formal",
+    child: "core.error.api.oauthRetry.child",
+  },
+  oauth_storage_unavailable: {
+    formal: "core.error.api.oauthRetry.formal",
+    child: "core.error.api.oauthRetry.child",
+  },
+  oauth_response_invalid: {
+    formal: "core.error.api.oauthRetry.formal",
+    child: "core.error.api.oauthRetry.child",
+  },
+  token_exchange_failed: {
+    formal: "core.error.api.oauthRetry.formal",
+    child: "core.error.api.oauthRetry.child",
+  },
+  token_exchange_rejected: {
+    formal: "core.error.api.oauthRetry.formal",
+    child: "core.error.api.oauthRetry.child",
+  },
+  profile_fetch_failed: {
+    formal: "core.error.api.oauthRetry.formal",
+    child: "core.error.api.oauthRetry.child",
+  },
+  profile_invalid: {
+    formal: "core.error.api.oauthRetry.formal",
+    child: "core.error.api.oauthRetry.child",
+  },
+  signup_failed: {
+    formal: "core.error.api.signupRetry.formal",
+    child: "core.error.api.signupRetry.child",
+  },
+  signup_response_invalid: {
+    formal: "core.error.api.signupRetry.formal",
+    child: "core.error.api.signupRetry.child",
+  },
+  signup_created_login_required: {
+    formal: "core.error.api.signupRetry.formal",
+    child: "core.error.api.signupRetry.child",
   },
   current_password_required: {
     formal: "core.error.api.currentPasswordRequired.formal",

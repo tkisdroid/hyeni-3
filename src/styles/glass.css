@@ -188,9 +188,10 @@
 }
 
 .hy-adult .hy-iconbtn {
-  width: 40px;
-  height: 40px;
-  min-height: 40px;
+  width: var(--control-size-icon);
+  height: var(--control-size-icon);
+  min-width: var(--control-size-icon);
+  min-height: var(--control-size-icon);
   border: 0;
   background: var(--ph-object-fill);
   box-shadow: var(--ph-object-raise);

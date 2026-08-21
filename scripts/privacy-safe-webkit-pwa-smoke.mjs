@@ -72,14 +72,27 @@ async function startStaticServer() {
           response.end();
           return;
         }
+        let resolvedFilePath = filePath;
         let fileStat;
         try {
-          fileStat = await stat(filePath);
+          fileStat = await stat(resolvedFilePath);
         } catch {
-          statusCode = 404;
-          response.writeHead(statusCode, { "cache-control": "no-store" });
-          response.end();
-          return;
+          // Cloudflare Pages가 /oauth/callback.html을 확장자 없는
+          // /oauth/callback으로 제공하는 production 동작을 로컬에서도 재현한다.
+          if (!extname(resolvedFilePath)) {
+            resolvedFilePath = `${resolvedFilePath}.html`;
+            try {
+              fileStat = await stat(resolvedFilePath);
+            } catch {
+              fileStat = undefined;
+            }
+          }
+          if (!fileStat) {
+            statusCode = 404;
+            response.writeHead(statusCode, { "cache-control": "no-store" });
+            response.end();
+            return;
+          }
         }
         if (!fileStat.isFile()) {
           statusCode = 404;
@@ -91,7 +104,7 @@ async function startStaticServer() {
         const headers = {
           "cache-control": "no-store",
           "content-length": String(fileStat.size),
-          "content-type": MIME_TYPES[extname(filePath).toLowerCase()] ?? "application/octet-stream",
+          "content-type": MIME_TYPES[extname(resolvedFilePath).toLowerCase()] ?? "application/octet-stream",
           "x-content-type-options": "nosniff",
         };
         if (pathname === "/sw.js") headers["service-worker-allowed"] = "/";
@@ -100,7 +113,7 @@ async function startStaticServer() {
           response.end();
           return;
         }
-        createReadStream(filePath).pipe(response);
+        createReadStream(resolvedFilePath).pipe(response);
       } catch {
         if (!response.headersSent) response.writeHead(500, { "cache-control": "no-store" });
         if (!response.writableEnded) response.end();
@@ -134,8 +147,9 @@ async function startDenyProxy() {
 }
 
 async function staticChecks() {
-  const [indexHtml, manifestRaw, swBytes, assetNames] = await Promise.all([
+  const [indexHtml, callbackHtml, manifestRaw, swBytes, assetNames] = await Promise.all([
     readFile(resolve(DIST_DIR, "index.html"), "utf8"),
+    readFile(resolve(DIST_DIR, "oauth", "callback.html"), "utf8"),
     readFile(resolve(DIST_DIR, "manifest.webmanifest"), "utf8"),
     readFile(resolve(DIST_DIR, "sw.js")),
     readdir(resolve(DIST_DIR, "assets")),
@@ -158,6 +172,11 @@ async function staticChecks() {
   await Promise.all(entryAssets.map(async (assetPath) => {
     assert.ok((await stat(resolve(DIST_DIR, assetPath))).isFile(), `entry asset 없음: ${assetPath}`);
   }));
+  const callbackEntryAssets = [...callbackHtml.matchAll(/(?:src|href)="\/([^"?#]+\.(?:js|css))"/g)]
+    .map((match) => match[1]);
+  assert.deepEqual(callbackEntryAssets, entryAssets, "OAuth 콜백이 현재 index와 다른 JS/CSS를 참조합니다");
+  assert.doesNotMatch(callbackHtml, /(?:src|href)="\.\//, "OAuth 콜백에 깨지는 중첩 상대 자원 경로가 있습니다");
+  assert.match(callbackHtml, /<base href="\/" \/>/, "OAuth 콜백의 Service Worker 기준 경로가 루트가 아닙니다");
 
   const jsAssetNames = assetNames.filter((name) => name.endsWith(".js"));
   const jsContents = await Promise.all(jsAssetNames.map(async (name) => ({
@@ -173,13 +192,14 @@ async function staticChecks() {
     "현재 상품은 무료 플랜으로 표시돼요.",
     "SOS와 긴급 안전 알림은 무료로 계속 제공돼요.",
     "프리미엄은 실시간 위치와 AI 요약처럼 더 자세한 안심 기능을 열어드려요.",
-    "월 4,900원·연 39,000원",
+    "웹에서는 Google Play 결제·복원을 쓸 수 없어요.",
   ]) {
     assert.ok(subscriptionAsset.source.includes(expectedCopy), `구독 계약 문구 없음: ${expectedCopy}`);
   }
 
   return {
     entryAssets,
+    callbackSha256: sha256(callbackHtml),
     indexSha256: sha256(indexHtml),
     manifestSha256: sha256(manifestRaw),
     serviceWorkerBytes: swBytes.length,
@@ -190,6 +210,7 @@ async function staticChecks() {
 
 async function runtimeChecks(origin, requests, denyProxy) {
   const externalAttempts = [];
+  let authRequests = [];
   const consoleProblems = [];
   const pageErrors = [];
   const iphone13 = devices["iPhone 13"];
@@ -206,6 +227,31 @@ async function runtimeChecks(origin, requests, denyProxy) {
     viewport: { width: 390, height: 844 },
     screen: { width: 390, height: 844 },
     serviceWorkers: "allow",
+  });
+  await context.addInitScript(() => {
+    const nativeFetch = window.fetch.bind(window);
+    window.__hyWebkitAuthRequests = [];
+    window.fetch = (input, init) => {
+      const rawUrl = typeof input === "string" || input instanceof URL
+        ? String(input)
+        : input.url;
+      const url = new URL(rawUrl, location.href);
+      if (["/auth/login-password", "/auth/check-login-id"].includes(url.pathname)) {
+        const wrongPassword = url.pathname === "/auth/login-password";
+        window.__hyWebkitAuthRequests.push({
+          method: String(init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase(),
+          pathname: url.pathname,
+          status: wrongPassword ? 401 : 200,
+        });
+        return Promise.resolve(new Response(JSON.stringify(wrongPassword
+          ? { error: "invalid_credentials" }
+          : { available: true }), {
+          status: wrongPassword ? 401 : 200,
+          headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
+        }));
+      }
+      return nativeFetch(input, init);
+    };
   });
   await context.route("**/*", async (route) => {
     const url = new URL(route.request().url());
@@ -225,6 +271,25 @@ async function runtimeChecks(origin, requests, denyProxy) {
   page.on("pageerror", (error) => pageErrors.push(error.message.slice(0, 500)));
 
   try {
+    const callbackResponse = await page.goto(`${origin}/oauth/callback`, { waitUntil: "domcontentloaded" });
+    assert.equal(callbackResponse?.status(), 200, "WebKit OAuth 콜백 물리 엔트리가 200이 아닙니다");
+    assert.equal(new URL(page.url()).pathname, "/oauth/callback");
+    await page.locator("#root").waitFor({ state: "attached" });
+    const callbackEntryLoaded = await page.evaluate(() => (
+      [...document.scripts].some((script) => /\/assets\/index-[^/]+\.js$/.test(script.src))
+    ));
+    assert.equal(callbackEntryLoaded, true, "WebKit OAuth 콜백이 production 진입 번들을 로드하지 못했습니다");
+    await page.waitForFunction(async () => {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      return registrations.some((registration) => (
+        new URL(registration.scope).pathname === "/" && registration.active?.state === "activated"
+      ));
+    }, undefined, { timeout: 15_000 });
+    const callbackServiceWorkerScope = await page.evaluate(async () => (
+      (await navigator.serviceWorker.getRegistrations()).map((registration) => new URL(registration.scope).pathname)
+    ));
+    assert.ok(callbackServiceWorkerScope.includes("/"), "OAuth 콜백이 루트 Service Worker를 등록하지 못했습니다");
+
     await page.goto(`${origin}/index.html#/onboarding`, { waitUntil: "domcontentloaded" });
     await page.locator(".ob-root").waitFor({ state: "visible" });
     await assert.doesNotReject(() => page.getByText("혜니캘린더", { exact: true }).first().waitFor());
@@ -244,6 +309,71 @@ async function runtimeChecks(origin, requests, denyProxy) {
     assert.equal(onlineLayout.hasTouch, true);
     assert.ok(onlineLayout.scrollWidth <= onlineLayout.clientWidth, `온보딩 가로 overflow ${onlineLayout.scrollWidth - onlineLayout.clientWidth}px`);
 
+    // iPhone급 WebKit 인증 진입점 — 실제 계정·SMS 없이 401 복구와 ID 중복확인을 검증한다.
+    await page.getByRole("button", { name: /학부모/ }).click();
+    await page.getByRole("tab", { name: "로그인", exact: true }).waitFor();
+    const loginEntry = await page.evaluate(() => ({
+      selectedTab: document.querySelector('[role="tab"][aria-selected="true"]')?.textContent?.trim() ?? null,
+      hasLoginForm: Boolean(document.querySelector(".ob-login-form")),
+      hasSignupTab: [...document.querySelectorAll('[role="tab"]')]
+        .some((tab) => tab.textContent?.trim() === "회원가입"),
+    }));
+    assert.deepEqual(loginEntry, { selectedTab: "로그인", hasLoginForm: true, hasSignupTab: true });
+    await page.locator("#hyeni-login-username").fill("mindlady");
+    await page.locator("#hyeni-login-password").fill("incorrect-password");
+    await page.locator(".ob-login-form").evaluate((form) => form.requestSubmit());
+    await page.locator(".ob-auth-alert").waitFor({ state: "visible" });
+    const wrongPassword = await page.evaluate(() => ({
+      alert: document.querySelector(".ob-auth-alert")?.textContent?.replace(/\s+/g, " ").trim() ?? null,
+      focusedId: document.activeElement?.id ?? null,
+      loginId: document.querySelector("#hyeni-login-username")?.value ?? null,
+      password: document.querySelector("#hyeni-login-password")?.value ?? null,
+      sessionAbsent: localStorage.getItem("hyeni-api-session-v1") === null,
+      submitEnabled: !document.querySelector(".ob-login-form button[type=submit]")?.disabled,
+    }));
+    authRequests = await page.evaluate(() => window.__hyWebkitAuthRequests ?? []);
+    assert.ok(
+      wrongPassword.alert?.includes("아이디 또는 비밀번호가 맞지 않아요"),
+      `WebKit 잘못된 비밀번호 안내 불일치: ${JSON.stringify({ wrongPassword, authRequests })}`,
+    );
+    assert.equal(wrongPassword.focusedId, "hyeni-login-password");
+    assert.equal(wrongPassword.loginId, "mindlady");
+    assert.equal(wrongPassword.password, "incorrect-password");
+    assert.equal(wrongPassword.sessionAbsent, true);
+    assert.equal(wrongPassword.submitEnabled, true);
+
+    // 같은 첫 문서 안에서 역할 화면으로 돌아가 Service Worker가 API mock보다 먼저
+    // 새 문서를 제어하지 않게 한다. 제품 흐름의 실제 뒤로가기 복구도 함께 확인한다.
+    await page.locator(".ob-back").click();
+    await page.locator(".ob-role-card--parent").waitFor({ state: "visible" });
+    await page.getByRole("button", { name: /학부모/ }).click();
+    await page.getByRole("tab", { name: "회원가입", exact: true }).click();
+    await page.getByRole("button", { name: "휴대폰 번호로 가입하기", exact: true }).click();
+    await page.getByRole("button", { name: "선택 안 하고 계속", exact: true }).click();
+    await page.locator("#hyeni-signup-username").fill("mindlady");
+    await page.getByRole("button", { name: "중복 확인", exact: true }).click();
+    await page.locator(".ob-field-success").waitFor({ state: "visible", timeout: 5_000 }).catch(() => undefined);
+    const signupEntry = await page.evaluate(() => ({
+      available: document.querySelector(".ob-field-success")?.textContent?.replace(/\s+/g, " ").trim() ?? null,
+      fieldError: document.querySelector("#ob-signup-login-id-error")?.textContent?.replace(/\s+/g, " ").trim() ?? null,
+      formAlert: document.querySelector(".ob-auth-alert")?.textContent?.replace(/\s+/g, " ").trim() ?? null,
+      loginId: document.querySelector("#hyeni-signup-username")?.value ?? null,
+      title: document.querySelector(".ob-signup-title")?.textContent?.trim() ?? null,
+    }));
+    authRequests = await page.evaluate(() => window.__hyWebkitAuthRequests ?? []);
+    assert.equal(signupEntry.loginId, "mindlady");
+    assert.equal(
+      signupEntry.available,
+      "사용할 수 있는 아이디예요.",
+      `WebKit ID 중복확인 불일치: ${JSON.stringify({ signupEntry, authRequests, externalAttempts })}`,
+    );
+    assert.equal(signupEntry.fieldError, null);
+    assert.equal(signupEntry.title, "혜니 가족 시작하기");
+    assert.deepEqual(authRequests, [
+      { method: "POST", pathname: "/auth/login-password", status: 401 },
+      { method: "POST", pathname: "/auth/check-login-id", status: 200 },
+    ]);
+
     await page.goto(`${origin}/index.html#/subscription`, { waitUntil: "domcontentloaded" });
     await page.waitForURL(/#\/onboarding$/);
     await page.locator(".ob-root").waitFor({ state: "visible" });
@@ -251,7 +381,12 @@ async function runtimeChecks(origin, requests, denyProxy) {
 
     const serviceWorkerSupported = await page.evaluate(() => "serviceWorker" in navigator);
     assert.equal(serviceWorkerSupported, true, "WebKit에서 Service Worker를 지원하지 않습니다");
-    await page.evaluate(() => navigator.serviceWorker.ready.then(() => true));
+    await page.waitForFunction(async () => {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      return registrations.some((registration) => (
+        new URL(registration.scope).pathname === "/" && registration.active?.state === "activated"
+      ));
+    }, undefined, { timeout: 15_000 });
     const initiallyControlled = await page.evaluate(() => Boolean(navigator.serviceWorker.controller));
     if (!initiallyControlled) {
       await page.reload({ waitUntil: "domcontentloaded" });
@@ -301,12 +436,19 @@ async function runtimeChecks(origin, requests, denyProxy) {
     await context.setOffline(false);
 
     assert.deepEqual(pageErrors, [], `page errors: ${JSON.stringify(pageErrors)}`);
-    assert.deepEqual(consoleProblems, [], `console problems: ${JSON.stringify(consoleProblems)}`);
+    assert.deepEqual(
+      consoleProblems,
+      [],
+      `console problems: ${JSON.stringify(consoleProblems)}; HTTP errors: ${JSON.stringify(requests.filter(({ statusCode }) => statusCode >= 400))}`,
+    );
     assert.deepEqual(externalAttempts, [], `외부 요청 시도: ${JSON.stringify(externalAttempts)}`);
     assert.equal(denyProxy.blockedConnections, 0, "외부망 차단 프록시에 연결 시도가 있었습니다");
     return {
       consoleProblems,
       externalAttempts,
+      callbackEntryLoaded,
+      callbackServiceWorkerScope,
+      authEntry: { authRequests, loginEntry, signupEntry, wrongPassword },
       guestSubscriptionRedirect,
       offlineNavigation: "not verified: Playwright WebKit offline reload returned an internal engine error; Cache Storage shell verified instead",
       offlineLayout,

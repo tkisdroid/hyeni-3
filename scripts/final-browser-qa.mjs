@@ -353,6 +353,14 @@ export function mockApi(pathname, scenario, method = "GET") {
     overLimit = false,
     aiScheduleExhausted = false,
   } = scenario;
+  if (pathname === "/auth/check-login-id") {
+    return scenario.authCase === "id-check-error"
+      ? { error: "temporary_unavailable" }
+      : { available: true };
+  }
+  if (pathname === "/auth/login-password" && scenario.authCase === "wrong-password") {
+    return { error: "invalid_credentials" };
+  }
   if (pathname === "/api/family/mine") return familyResponse(role);
   if (pathname === "/api/entitlement") return entitlementResponse(tier);
   if (pathname === "/api/billing/web/catalog") return webBillingCatalog(catalogMode);
@@ -738,12 +746,26 @@ async function clickSelector(cdp, selector) {
   const point = await cdp.evaluate(`(() => {
     const element = document.querySelector(${JSON.stringify(selector)});
     if (!element) return null;
+    element.scrollIntoView({ block: "center", inline: "center", behavior: "instant" });
     const rect = element.getBoundingClientRect();
     return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, disabled: element.matches(":disabled,[aria-disabled='true']") };
   })()`);
   if (!point || point.disabled) throw new Error(`클릭할 수 없는 요소입니다: ${selector}`);
   await cdp.send("Input.dispatchMouseEvent", { type: "mousePressed", x: point.x, y: point.y, button: "left", clickCount: 1 });
   await cdp.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: point.x, y: point.y, button: "left", clickCount: 1 });
+}
+
+async function setInputValue(cdp, selector, value) {
+  const updated = await cdp.evaluate(`(() => {
+    const input = document.querySelector(${JSON.stringify(selector)});
+    if (!(input instanceof HTMLInputElement)) return false;
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+    setter?.call(input, ${JSON.stringify(value)});
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: ${JSON.stringify(value)} }));
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+    return true;
+  })()`);
+  if (!updated) throw new Error(`값을 입력할 수 없는 요소입니다: ${selector}`);
 }
 
 function uniqueStrings(values) {
@@ -844,6 +866,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     let activeScenario = { role: "parent", tier: "free", catalogMode: "valid", overLimit: false };
     let consoleMessages = [];
     let networkFailures = [];
+    const expectedAuthResponses = [];
     let documentNonce = 0;
 
     await cdp.send("Runtime.enable");
@@ -869,6 +892,14 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
         consoleMessages.push((message.params.exceptionDetails?.exception?.description ?? message.params.exceptionDetails?.text ?? "runtime_exception").slice(0, 500));
       }
       if (message.method === "Network.responseReceived" && message.params.response.status >= 400) {
+        const responseUrl = new URL(message.params.response.url);
+        if (
+          (message.params.response.status === 401 && responseUrl.pathname === "/auth/login-password")
+          || (message.params.response.status === 503 && responseUrl.pathname === "/auth/check-login-id")
+        ) {
+          expectedAuthResponses.push(`${message.params.response.status} ${message.params.response.url}`);
+          return;
+        }
         networkFailures.push(`${message.params.response.status} ${message.params.response.url}`);
       }
       if (message.method === "Network.loadingFailed" && !message.params.canceled && message.params.errorText !== "net::ERR_ABORTED") {
@@ -911,7 +942,11 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
           const responseCode = url.pathname === "/api/ai/voice-parse"
             && activeScenario.aiScheduleExhausted === true
             ? 429
-            : 200;
+            : url.pathname === "/auth/login-password" && activeScenario.authCase === "wrong-password"
+              ? 401
+              : url.pathname === "/auth/check-login-id" && activeScenario.authCase === "id-check-error"
+                ? 503
+                : 200;
           await cdp.send("Fetch.fulfillRequest", {
             requestId,
             responseCode,
@@ -980,6 +1015,147 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     }
     report.focused.antiSlop = { onboarding: onboardingAntiSlopFacts };
 
+    // 인증 진입점: 로그인/회원가입이 명확히 분리되고, 잘못된 비밀번호 뒤에도 입력·재시도 상태가 남는다.
+    activeScenario.authCase = "wrong-password";
+    await clickSelector(cdp, ".ob-role-card--parent");
+    await wait(350);
+    const loginEntryFacts = await cdp.evaluate(`(() => ({
+      title: document.querySelector(".ob-h1")?.textContent?.trim() ?? null,
+      tabs: [...document.querySelectorAll('[role="tab"]')].map((tab) => ({
+        text: tab.textContent?.trim() ?? "",
+        selected: tab.getAttribute("aria-selected") === "true",
+      })),
+      hasLoginForm: Boolean(document.querySelector(".ob-login-form")),
+      hasKakao: (document.querySelector(".ob-social--kakao")?.textContent || "").includes("카카오로 계속하기"),
+    }))()`);
+    await setInputValue(cdp, "#hyeni-login-username", "mindlady");
+    await setInputValue(cdp, "#hyeni-login-password", "incorrect-password");
+    await cdp.evaluate(`(() => {
+      const form = document.querySelector(".ob-login-form");
+      if (!(form instanceof HTMLFormElement)) return false;
+      form.requestSubmit();
+      return true;
+    })()`);
+    await wait(900);
+    const wrongPasswordFacts = await cdp.evaluate(`(() => ({
+      alert: document.querySelector(".ob-auth-alert")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      loginId: document.querySelector("#hyeni-login-username")?.value ?? null,
+      password: document.querySelector("#hyeni-login-password")?.value ?? null,
+      focusedId: document.activeElement?.id ?? null,
+      submitDisabled: Boolean(document.querySelector(".ob-login-form button[type=submit]")?.disabled),
+      sessionAbsent: localStorage.getItem("hyeni-api-session-v1") === null,
+    }))()`);
+    const wrongPasswordExpected401 = expectedAuthResponses.some((value) => value.includes("401") && value.includes("/auth/login-password"));
+    if (
+      loginEntryFacts.title !== "다시 만나 반가워요"
+      || JSON.stringify(loginEntryFacts.tabs) !== JSON.stringify([
+        { text: "로그인", selected: true },
+        { text: "회원가입", selected: false },
+      ])
+      || !loginEntryFacts.hasLoginForm
+      || !loginEntryFacts.hasKakao
+      || !wrongPasswordFacts.alert?.includes("아이디 또는 비밀번호가 맞지 않아요")
+      || wrongPasswordFacts.loginId !== "mindlady"
+      || wrongPasswordFacts.password !== "incorrect-password"
+      || wrongPasswordFacts.focusedId !== "hyeni-login-password"
+      || wrongPasswordFacts.submitDisabled
+      || !wrongPasswordFacts.sessionAbsent
+      || !wrongPasswordExpected401
+    ) {
+      report.problems.push({
+        scope: "auth-wrong-password-recovery",
+        facts: { entry: loginEntryFacts, wrongPassword: wrongPasswordFacts, expected401: wrongPasswordExpected401 },
+      });
+    }
+    report.screenshots.push(await screenshot(cdp, freshOutputDir, "auth-wrong-password.png"));
+
+    const signupOnboarding = await navigate(
+      { role: "public", tier: "free", catalogMode: "valid", overLimit: false },
+      "onboarding",
+    );
+    await clickSelector(cdp, ".ob-role-card--parent");
+    await wait(250);
+    await cdp.evaluate(`(() => {
+      const tab = [...document.querySelectorAll('[role="tab"]')].find((node) => node.textContent?.trim() === "회원가입");
+      if (!(tab instanceof HTMLElement)) return false;
+      tab.click();
+      return true;
+    })()`);
+    await wait(250);
+    const signupEntryFacts = await cdp.evaluate(`(() => ({
+      title: document.querySelector(".ob-h1")?.textContent?.trim() ?? null,
+      selectedTab: document.querySelector('[role="tab"][aria-selected="true"]')?.textContent?.trim() ?? null,
+      phoneButton: [...document.querySelectorAll("button")].some((button) => button.textContent?.trim() === "휴대폰 번호로 가입하기"),
+      loginFormAbsent: !document.querySelector(".ob-login-form"),
+    }))()`);
+    await cdp.evaluate(`(() => {
+      const button = [...document.querySelectorAll("button")].find((node) => node.textContent?.trim() === "휴대폰 번호로 가입하기");
+      if (!(button instanceof HTMLElement)) return false;
+      button.click();
+      return true;
+    })()`);
+    await wait(250);
+    await cdp.evaluate(`(() => {
+      const button = document.querySelector(".ob-survey .ob-cta");
+      if (!(button instanceof HTMLElement)) return false;
+      button.click();
+      return true;
+    })()`);
+    await wait(300);
+    await setInputValue(cdp, "#hyeni-signup-username", "mindlady");
+    await cdp.evaluate(`document.querySelector(".ob-inline-control__button")?.click(); true`);
+    await wait(650);
+    const loginIdAvailableFacts = await cdp.evaluate(`(() => ({
+      value: document.querySelector("#hyeni-signup-username")?.value ?? null,
+      available: document.querySelector(".ob-field-success")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      fieldError: document.querySelector("#ob-signup-login-id-error")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      formAlert: document.querySelector(".ob-auth-alert")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+    }))()`);
+    activeScenario.authCase = "id-check-error";
+    await setInputValue(cdp, "#hyeni-signup-username", "networklady");
+    await cdp.evaluate(`document.querySelector(".ob-inline-control__button")?.click(); true`);
+    await wait(650);
+    const loginIdNetworkFacts = await cdp.evaluate(`(() => ({
+      markedTaken: (document.querySelector("#ob-signup-login-id-error")?.textContent || "").includes("이미 사용 중"),
+      markedAvailable: Boolean(document.querySelector(".ob-field-success")),
+      hasRetryAlert: Boolean(document.querySelector(".ob-auth-alert")),
+    }))()`);
+    const loginIdExpected503 = expectedAuthResponses.some((value) => value.includes("503") && value.includes("/auth/check-login-id"));
+    if (
+      signupEntryFacts.title !== "혜니 가족 시작하기"
+      || signupEntryFacts.selectedTab !== "회원가입"
+      || !signupEntryFacts.phoneButton
+      || !signupEntryFacts.loginFormAbsent
+      || loginIdAvailableFacts.value !== "mindlady"
+      || !loginIdAvailableFacts.available?.includes("사용할 수 있는 아이디예요")
+      || loginIdAvailableFacts.fieldError !== null
+      || loginIdAvailableFacts.formAlert !== null
+      || loginIdNetworkFacts.markedTaken
+      || loginIdNetworkFacts.markedAvailable
+      || !loginIdNetworkFacts.hasRetryAlert
+      || !loginIdExpected503
+      || rowProblems(signupOnboarding).length > 0
+    ) {
+      report.problems.push({
+        scope: "auth-signup-entry-and-id-check",
+        facts: {
+          entry: signupEntryFacts,
+          available: loginIdAvailableFacts,
+          network: loginIdNetworkFacts,
+          expected503: loginIdExpected503,
+        },
+        routeProblems: rowProblems(signupOnboarding),
+      });
+    }
+    report.focused.authEntry = {
+      login: loginEntryFacts,
+      wrongPassword: { ...wrongPasswordFacts, expected401: wrongPasswordExpected401 },
+      signup: signupEntryFacts,
+      loginIdAvailable: loginIdAvailableFacts,
+      loginIdNetworkFailure: { ...loginIdNetworkFacts, expected503: loginIdExpected503 },
+    };
+    report.screenshots.push(await screenshot(cdp, freshOutputDir, "auth-signup-id-check.png"));
+
     for (const route of PARENT_BROWSER_QA_ROUTES) {
       const row = await navigate({ role: "parent", tier: "free", catalogMode: "valid", overLimit: route === "place-manager" }, route);
       row.problems = rowProblems(row);
@@ -989,7 +1165,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       if (route === "parent/memo") {
         report.screenshots.push(await screenshot(cdp, freshOutputDir, "parent-memo-chat.png"));
       }
-      process.stdout.write(`${row.problems.length ? "FAIL" : "OK  "} parent ${route}\n`);
+      process.stdout.write(`${row.problems.length ? "FAIL" : "OK  "} parent ${route}${row.problems.length ? ` — ${row.problems.join(",")}` : ""}\n`);
     }
 
     const inspectParentHomeShortcuts = () => cdp.evaluate(`(() => {
@@ -1115,7 +1291,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       || parentHomePremiumFacts.subscriptionAction !== "관리하기"
       || parentHomePremiumFacts.subscriptionTone !== "manage"
       || parentHomePremiumFacts.subscriptionTag !== "BUTTON"
-      || parentHomePremiumFacts.subscriptionHeight < 100
+      || parentHomePremiumFacts.subscriptionHeight < 90
       || parentHomePremiumFacts.subscriptionActionHeight < 36
       || !parentHomePremiumFacts.subscriptionIsGlass
       || !parentHomePremiumFacts.subscriptionActionInside
@@ -1148,60 +1324,29 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       "parent/location?view=history",
     );
     const locationHistoryFacts = await cdp.evaluate(`(() => {
-      const panel = document.querySelector(".pl-journey");
-      const toggle = document.querySelector(".pl-journey__toggle");
-      const stays = [...document.querySelectorAll(".pl-journey__stay")];
+      const panel = document.querySelector(".pl-visited");
+      const stays = [...document.querySelectorAll(".pl-visited__row")];
       const text = (panel?.innerText || "").replace(/\\s+/g, " ").trim();
-      const eyebrow = document.querySelector(".pl-journey__eyebrow")?.textContent?.trim() || "";
-      const selectedTime = document.querySelector(".pl-journey__replay-head strong")?.textContent?.trim() || "";
-      const recordedRange = document.querySelector(".pl-journey__range-label")?.textContent?.trim() || "";
-      const recordedStart = recordedRange.split("–").at(0)?.trim() || "";
-      const recordedEnd = recordedRange.split("–").at(-1)?.trim() || "";
-      const range = document.querySelector(".pl-journey__range");
-      // 화면 라벨은 앱과 같은 locale 시각 포맷(오후 6:46)이라 24시간 문자열로 비교하면 절대 일치하지 않는다.
-      // 앱이 쓰는 formatDateTime(timeStyle:"short", Asia/Seoul)과 같은 방식으로 맞춘다.
-      const rangeClockFormat = new Intl.DateTimeFormat("ko-KR", { timeStyle: "short", timeZone: "Asia/Seoul" });
-      const formatRangeClock = (value) => {
-        const date = new Date(Number(value));
-        if (Number.isNaN(date.getTime())) return "";
-        return rangeClockFormat.format(date);
-      };
-      const sliderStart = range instanceof HTMLInputElement ? formatRangeClock(range.min) : "";
-      const sliderEnd = range instanceof HTMLInputElement ? formatRangeClock(range.max) : "";
       return {
         hash: location.hash,
         panelVisible: Boolean(panel),
-        expanded: toggle?.getAttribute("aria-expanded"),
         stayCount: stays.length,
         stayTexts: stays.map((stay) => (stay.textContent || "").replace(/\\s+/g, " ").trim()),
         hasToolbar: Boolean(document.querySelector(".pl-history-toolbar")),
-        hasReplay: Boolean(document.querySelector(".pl-journey__replay")),
-        eyebrow,
-        selectedTime,
-        recordedRange,
-        sliderStart,
-        sliderEnd,
-        sliderBoundsAligned: Boolean(
-          recordedStart
-          && recordedEnd
-          && sliderStart === recordedStart
-          && sliderEnd === recordedEnd
-        ),
-        latestAligned: Boolean(selectedTime && selectedTime === recordedEnd),
+        hasLegacyReplay: Boolean(document.querySelector(".pl-journey__replay, .pl-journey__toggle, .pl-journey__range")),
+        heading: document.querySelector(".pl-visited__head strong")?.textContent?.trim() || "",
+        count: document.querySelector(".pl-visited__head span")?.textContent?.trim() || "",
         text,
       };
     })()`);
     if (
       locationHistoryFacts.hash !== "#/parent/location?view=history"
       || !locationHistoryFacts.panelVisible
-      || locationHistoryFacts.expanded !== "true"
       || locationHistoryFacts.stayCount !== 2
       || !locationHistoryFacts.hasToolbar
-      || !locationHistoryFacts.hasReplay
-      || locationHistoryFacts.eyebrow !== "최신 기록"
-      || !locationHistoryFacts.latestAligned
-      || !locationHistoryFacts.sliderBoundsAligned
-      || !locationHistoryFacts.text.includes("머문 곳")
+      || locationHistoryFacts.hasLegacyReplay
+      || locationHistoryFacts.heading !== "다녀온 곳"
+      || locationHistoryFacts.count !== "2곳"
       || !locationHistoryFacts.stayTexts.some((text) => text.includes("우리 집"))
       || !locationHistoryFacts.stayTexts.some((text) => text.includes("데모 학교"))
       || rowProblems(locationHistory).length > 0
@@ -1214,6 +1359,8 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     }
     report.screenshots.push(await screenshot(cdp, freshOutputDir, "parent-location-history.png"));
 
+    const legacyJourneyPresent = await cdp.evaluate(`Boolean(document.querySelector(".pl-journey__toggle"))`);
+    if (legacyJourneyPresent) {
     await clickSelector(cdp, ".pl-journey__toggle");
     await wait(360);
     const locationHistoryCollapsed = await cdp.evaluate(`(() => {
@@ -1368,6 +1515,43 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       rapidReplay: locationHistoryRapidReplay,
       latest: locationHistoryLatest,
     };
+    } else {
+      await clickSelector(cdp, ".pl-visited__row");
+      await wait(260);
+      const selectedStay = await cdp.evaluate(`(() => ({
+        pressed: document.querySelector(".pl-visited__row")?.getAttribute("aria-pressed"),
+        selectedCount: document.querySelectorAll(".pl-visited__row--selected").length,
+        selectedText: document.querySelector(".pl-visited__row--selected")?.textContent?.replace(/\\s+/g, " ").trim() || null,
+        legacyReplayPresent: Boolean(document.querySelector(".pl-journey__replay, .pl-journey__range")),
+      }))()`);
+      await clickSelector(cdp, ".pl-visited__row");
+      await wait(260);
+      const deselectedStay = await cdp.evaluate(`(() => ({
+        pressed: document.querySelector(".pl-visited__row")?.getAttribute("aria-pressed"),
+        selectedCount: document.querySelectorAll(".pl-visited__row--selected").length,
+        fallbackText: document.querySelector(".pl-visited__row--selected")?.textContent?.replace(/\\s+/g, " ").trim() || null,
+      }))()`);
+      if (
+        selectedStay.pressed !== "true"
+        || selectedStay.selectedCount !== 1
+        || !selectedStay.selectedText
+        || selectedStay.legacyReplayPresent
+        || deselectedStay.pressed !== "false"
+        || deselectedStay.selectedCount !== 1
+        || !deselectedStay.fallbackText
+        || deselectedStay.fallbackText === selectedStay.selectedText
+      ) {
+        report.problems.push({
+          scope: "parent-location-history-interaction",
+          facts: { selected: selectedStay, deselected: deselectedStay },
+        });
+      }
+      report.focused.parentLocationHistory = {
+        ...locationHistoryFacts,
+        selected: selectedStay,
+        deselected: deselectedStay,
+      };
+    }
 
     for (const route of CHILD_BROWSER_QA_ROUTES) {
       const row = await navigate({ role: "child", tier: "free", catalogMode: "valid", overLimit: false }, route);

@@ -7,8 +7,8 @@ import { ApiError, normalizeApiErrorCode } from "../src/lib/api/errors.ts";
 import * as apiErrors from "../src/lib/api/errors.ts";
 
 const messages: Record<string, string> = {
-  "core.error.api.invalidCredentials.formal": "로그인 정보를 확인해 주세요.",
-  "core.error.api.invalidCredentials.child": "로그인 정보를 확인해 줘.",
+  "core.error.api.invalidCredentials.formal": "아이디 또는 비밀번호가 맞지 않아요. 다시 확인해 주세요.",
+  "core.error.api.invalidCredentials.child": "아이디 또는 비밀번호가 맞지 않아. 다시 확인해 줘.",
   "core.error.api.activeDeviceSession.formal": "이 기기로 계정을 전환하지 못했어요. 잠시 후 다시 로그인해 주세요.",
   "core.error.api.activeDeviceSession.child": "이 기기로 계정을 전환하지 못했어. 잠시 후 다시 로그인해 줘.",
   "core.error.api.invalidPhone.formal": "휴대폰 번호를 확인해 주세요.",
@@ -102,7 +102,7 @@ test("구버전 Worker의 활성 설치 409도 일반 오류가 아니라 복구
 test("allowlist code만 구체화하고 알 수 없는 4xx·5xx는 역할별 문구로 닫는다", () => {
   assert.equal(
     localizeApiError(new ApiError("invalid_credentials", 401), intl, "formal"),
-    "로그인 정보를 확인해 주세요.",
+    "아이디 또는 비밀번호가 맞지 않아요. 다시 확인해 주세요.",
   );
   assert.equal(
     localizeApiError(new ApiError("worker_database_table_missing", 409), intl, "child"),

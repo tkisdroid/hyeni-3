@@ -1794,6 +1794,12 @@ button.ph-neu-control:disabled {
   color: var(--blue-text);
 }
 
+.ph-page button.ph-prep-edit.ph-neu-control {
+  width: auto;
+  min-width: 52px;
+  flex: none;
+}
+
 .ph-sched {
   gap: 12px;
 }

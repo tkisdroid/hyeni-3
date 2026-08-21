@@ -16,6 +16,9 @@ CREATE TABLE "users" (
 
 CREATE INDEX IF NOT EXISTS "idx_users_phone" ON "users" ("phone");
 CREATE INDEX IF NOT EXISTS "idx_users_email" ON "users" ("email");
+CREATE UNIQUE INDEX IF NOT EXISTS "idx_users_phone_unique_nonempty"
+  ON "users" ("phone")
+  WHERE "phone" IS NOT NULL AND TRIM("phone") <> '';
 
 CREATE TABLE "auth_identities" (
   "id" TEXT,
@@ -959,6 +962,7 @@ CREATE TABLE "phone_otp" (
 );
 
 CREATE INDEX IF NOT EXISTS "idx_phone_otp_phone" ON "phone_otp" ("phone");
+CREATE UNIQUE INDEX IF NOT EXISTS "idx_phone_otp_phone_unique" ON "phone_otp" ("phone");
 
 CREATE INDEX IF NOT EXISTS "idx_parent_alerts_family_created"
   ON "parent_alerts" ("family_id", "created_at");
@@ -1338,6 +1342,14 @@ CREATE TABLE "user_profiles" (
   "linked_providers" TEXT DEFAULT '{}' NOT NULL,
   PRIMARY KEY ("user_id")
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS "idx_user_profiles_phone_unique_nonempty"
+  ON "user_profiles" ("phone")
+  WHERE "phone" IS NOT NULL AND TRIM("phone") <> '';
+
+CREATE UNIQUE INDEX IF NOT EXISTS "idx_user_profiles_login_id_unique_normalized"
+  ON "user_profiles" (LOWER(TRIM("login_id")))
+  WHERE "login_id" IS NOT NULL AND TRIM("login_id") <> '';
 
 CREATE TABLE "storage_upload_daily_usage" (
   "user_id" TEXT NOT NULL,

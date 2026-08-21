@@ -11,7 +11,32 @@
 **1~10단계 전부 완료**(전 화면 실데이터·다자녀·AI 친구·알림 3종·릴리즈 게이트) — 실기기 3대 운용 중.
 **현 국면 = 실사용 안정화**: TK 가 실기기로 쓰며 제보하는 버그·개선을 즉시 수정·검증·배포.
 
-**현재 배포 상태(2026-08-19 새벽 갱신)**: 아이 AI 친구 3종(꾹 눌러 말하기·습관 기억·하루 대시보드)을 배포했다.
+**현재 배포 상태(2026-08-21 인증 진입점·Android 중복 아이콘 안정화)**: 브라우저 부모 모드의 로그인/회원가입을
+첫 화면의 명시적 탭으로 분리하고 전화 가입·카카오/구글 가입, 지속 오류 안내, 잘못된 비밀번호 뒤 입력 유지·비밀번호
+포커스·버튼 재활성화를 정리했다. ID 확인 실패를 중복으로 오인하지 않으며 `mindlady`는 production 공개 조회에서
+`200 {"available":true}`다. 가입 전 입력·설치 식별자·전화·ID 중복을 먼저 확인하고, OTP 검증 뒤 user/identity/profile/
+OTP 소비를 한 D1 batch로 확정한다. `worker/db/auth-entry-uniqueness.sql` 적용 전 익명 중복 그룹 4종이 모두 0임을 확인했고,
+적용 후 phone·정규화 login_id·phone_otp UNIQUE 인덱스 4개를 readback했다. OTP 검증 직후 재발급 경합도 조건부
+INSERT로 계정 행 0건·새 OTP 보존을 보장한다. Worker version은 `4d9154e1-12af-4221-8be2-d4b38aec18d3`이며
+health 200 ready, ID 확인 응답 `no-store`를 확인했다.
+
+Kakao/Google 복귀는 Pages 200 rewrite에 기대지 않고 build가 현재 hashed entry를 참조하는 물리
+`/oauth/callback.html`을 생성한다. production `/oauth/callback`은 redirect 없이 200·`Cache-Control:no-store`, 루트
+Service Worker scope(`/`)이며 콜백 SHA-256 `792475a3a22205dd6094eb40cf3de938bf6845954db84a340ed5ea79cadc6ae0`다.
+Pages 배포는 `https://515bc307.hyeni-calendar.pages.dev`, 고정 주소 index SHA-256은 로컬과 같은
+`178950a8cceaab935bf0f9ea9da136c01f334beec820ac6a3a20d9ae4abbe046`다. iPhone 13 WebKit 격리 검증은
+콜백/Service Worker·390×844 레이아웃·잘못된 비밀번호·ID 확인·오프라인 Cache Storage까지 문제 0으로 통과했다.
+실제 iPhone Safari 실기기와 실제 OAuth 동의·SMS 수신은 계정/외부 발송을 건드리지 않기 위해 이번 검증에서 수행하지 않았다.
+
+Android 아이콘 2개는 Manifest 런처 중복이 아니라 S25의 Samsung `DUAL_APP` user 95에 ADB가 패키지를 함께 설치한 것이
+원인이었다. 기본 user 0의 앱·데이터·세션은 유지하고 `notLaunched=true`였던 user 95 복제만 제거했으며, 현재 S25 readback은
+user 0 `com.hyeni.calendar/.MainActivity` 1개·user 95 package/activity 없음이다. 이후 설치는 반드시
+`npm run android:install:debug -- <serial>`(`adb install --user 0 -r`)을 쓴다. 최종 병합 Manifest와 debug APK 모두
+launchable activity 1개, APK SHA-256 `ea0f94aedbc0930819f2f68a383cec170dbaaa74b404bfdbb86d932509477a4b`다.
+검증은 앱 1,837/1,837, Worker 1,252/1,252, typecheck 2종, production build/PWA 중복 0, 브라우저 QA 57화면
+문제 0, iPhone WebKit, Android unit+lintDebug+assembleDebug를 통과했다.
+
+**직전 배포 상태(2026-08-19 새벽 갱신)**: 아이 AI 친구 3종(꾹 눌러 말하기·습관 기억·하루 대시보드)을 배포했다.
 배포 전 `worker/db/child-daily-digest.sql` 을 프로덕션 D1 에 1회 적용해 `child_daily_digests` 테이블과
 `idx_child_daily_digests_created` 인덱스를 readback 으로 확인했다(적용 전 조회 0행 → 적용 후 table+index 존재).
 Worker version `d4947d51-2ccf-4fb5-abae-54df0bc20df4`(health 200 `{"ok":true,"status":"ready"}`,
@@ -103,7 +128,9 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
 
 ### E. 실사용 보호가 기능보다 우선
 - **2026-08-19 최신 사용자 지시 기준 실기기 검증기는 A17(RFKL40DP73J) 부모 · razr(ZY22H9VTQD) 아이 ·
-  S25(R5CY521CFNZ, SM-S937N) 세 대다.** 세 기기 모두 `adb install -r`로 앱 데이터·계정·페어링·세션을 보존하고
+  S25(R5CY521CFNZ, SM-S937N) 세 대다.** 세 기기 모두 `npm run android:install:debug -- <serial>`
+  (`adb install --user 0 -r`)로 기본 사용자 데이터·계정·페어링·세션을 보존한다. `--user 0` 없는 설치는
+  Samsung DUAL_APP 프로필까지 패키지를 복제해 아이콘이 두 개 생길 수 있으므로 금지한다.
   실제 계정 로그아웃·역할 전환·재페어링을 하지 않는다. refresh 토큰은 출력·복사·회전하지 않는다.
   ⚠️ S25는 2026-08-02~08-19 검증 제외였다가 TK 지시로 상시 검증기로 복귀했다(이전 문서의 "S25 접근 금지"
   문장은 그 기간의 역사 기록이다). **A17·razr 와 달리 S25 는 고정 역할이 없으므로** 검증 전에 아래

@@ -17,7 +17,7 @@ test("OAuth context는 읽는 즉시 두 저장소에서 폐기된다(재사용 
 });
 
 test("context가 없거나 state·provider·mode가 다르면 네트워크 전에 중단한다", () => {
-  assert.match(src, /if \(!context[\s\S]{0,240}context\.state !== input\.state\)[\s\S]{0,120}throw new Error/);
+  assert.match(src, /if \(!context[\s\S]{0,240}context\.state !== input\.state\)[\s\S]{0,160}throw new ApiError\("invalid_oauth_transaction", 400\)/);
   // 교환 POST 는 대조 이후에만 일어나야 한다.
   assert.ok(
     src.indexOf("context.state !== input.state") < src.indexOf("oauthExchangePath(input.provider)"),

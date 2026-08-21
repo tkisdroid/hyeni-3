@@ -11,3 +11,9 @@
 /app-version.json
   Access-Control-Allow-Origin: *
   Cache-Control: no-store
+
+/oauth/callback
+  Cache-Control: no-store
+
+/oauth/callback.html
+  Cache-Control: no-store

@@ -67,7 +67,7 @@ test("가족 조회 실패는 연결 단계로 보내지 않고 기존 로그인
   );
   assert.match(
     onboarding,
-    /await onLoggedIn\(transitionToken\);[\s\S]{0,120}catch \(e\) \{[\s\S]{0,180}show\(localizeApiError\(e, intl, "formal"\), "⚠️"\)/,
+    /await onLoggedIn\(transitionToken\);[\s\S]{0,120}catch \(e\) \{[\s\S]{0,240}const message = localizeApiError\(e, intl, "formal"\);[\s\S]{0,160}onAuthError\(message\);[\s\S]{0,80}show\(message, "⚠️"\)/,
   );
   assert.doesNotMatch(onboarding, /show\([^\n]*e\.message/);
 });
@@ -142,7 +142,7 @@ test("부모 로그인에서 back·signup·인증 시작 실패로 이탈하면 
   assert.match(onboarding, /onSignup=\{\(\) => \{[\s\S]{0,200}cancelOnboardingAuthTransitions\(\)/);
   assert.match(
     onboarding,
-    /catch \(e\) \{\s*if \(!isOnboardingAuthTransitionActive\(transitionToken\)\) return;[\s\S]{0,180}show\(localizeApiError\(e, intl, "formal"\), "⚠️"\)[\s\S]{0,180}setBusy\(false\);[\s\S]{0,120}endOnboardingAuthTransition\(transitionToken\)/,
+    /catch \(e\) \{\s*if \(!isOnboardingAuthTransitionActive\(transitionToken\)\) return;[\s\S]{0,240}const message = localizeApiError\(e, intl, "formal"\);[\s\S]{0,180}show\(message, "⚠️"\)[\s\S]{0,180}setBusy\(false\);[\s\S]{0,120}endOnboardingAuthTransition\(transitionToken\)/,
   );
 });
 
@@ -150,7 +150,7 @@ test("인증 채택 전 실패는 자신의 pending token만 끝내고 명시적
   assert.match(onboarding, /catch \(e\)[\s\S]*endOnboardingAuthTransition\(transitionToken\)/);
   assert.match(
     onboarding,
-    /finishOAuthCancellation\(cancellation\)[\s\S]{0,240}cancelOnboardingAuthTransitions\(\)/,
+    /finishOAuthCancellation\(cancellation\)[\s\S]{0,420}cancelOnboardingAuthTransitions\(\)/,
   );
   assert.match(onboarding, /await routeAfterParentLogin\(transitionToken\)/);
   assert.match(onboarding, /await onLoggedIn\(transitionToken\)/);
@@ -191,7 +191,7 @@ test("로그인 요청과 세션 commit boundary 동안 back과 signup은 비활
   assert.match(onboarding, /<RoleStep[\s\S]{0,120}busy=\{busy \|\| authCommitBoundaryActive\}/);
   assert.match(onboarding, /const loginNavigationLocked = isLoginNavigationLocked\(\{ busy, commitBoundaryActive \}\)/);
   assert.match(onboarding, /<BackButton onBack=\{onBack\} disabled=\{loginNavigationLocked\} \/>/);
-  assert.match(onboarding, /disabled=\{busy \|\| commitBoundaryActive\}/);
+  assert.match(onboarding, /onClick=\{onSignup\}[\s\S]{0,120}disabled=\{loginNavigationLocked\}/);
 });
 
 test("세션 commit 전 역할을 다시 고르면 이전 pending 인증을 먼저 취소한다", () => {

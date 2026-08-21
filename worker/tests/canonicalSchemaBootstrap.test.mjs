@@ -52,6 +52,10 @@ const webBillingMigration = await readFile(
   new URL("../db/web-billing.sql", import.meta.url),
   "utf8",
 );
+const authEntryUniquenessMigration = await readFile(
+  new URL("../db/auth-entry-uniqueness.sql", import.meta.url),
+  "utf8",
+);
 const appGlobalSettingsMigration = await readFile(
   new URL("../db/app-global-settings.sql", import.meta.url),
   "utf8",
@@ -98,6 +102,34 @@ function indexes(db) {
 test("정본 D1 스키마는 빈 DB에서 한 번에 실행된다", () => {
   const db = bootstrap();
   assert.ok(db.prepare("SELECT 1 FROM family_members LIMIT 1").get() === undefined);
+  db.close();
+});
+
+test("인증 진입 UNIQUE migration은 재실행 가능하고 전화·정규화 ID·OTP 경합을 막는다", () => {
+  const db = new DatabaseSync(":memory:");
+  db.exec(`
+    CREATE TABLE users(id TEXT PRIMARY KEY, phone TEXT);
+    CREATE TABLE user_profiles(user_id TEXT PRIMARY KEY, phone TEXT, login_id TEXT);
+    CREATE TABLE phone_otp(phone TEXT, code_hash TEXT, expires_at TEXT, attempts INTEGER, created_at TEXT);
+  `);
+  db.exec(authEntryUniquenessMigration);
+  db.exec(authEntryUniquenessMigration);
+
+  db.prepare("INSERT INTO users(id,phone) VALUES ('user-1','821011112222')").run();
+  assert.throws(
+    () => db.prepare("INSERT INTO users(id,phone) VALUES ('user-2','821011112222')").run(),
+    /UNIQUE constraint failed/,
+  );
+  db.prepare("INSERT INTO user_profiles(user_id,phone,login_id) VALUES ('user-1','+821011112222',' MindLady ')").run();
+  assert.throws(
+    () => db.prepare("INSERT INTO user_profiles(user_id,phone,login_id) VALUES ('user-2','+821033334444','mindlady')").run(),
+    /UNIQUE constraint failed/,
+  );
+  db.prepare("INSERT INTO phone_otp(phone,code_hash) VALUES ('+821055556666','hash-1')").run();
+  assert.throws(
+    () => db.prepare("INSERT INTO phone_otp(phone,code_hash) VALUES ('+821055556666','hash-2')").run(),
+    /UNIQUE constraint failed/,
+  );
   db.close();
 });
 
@@ -309,6 +341,10 @@ test("정본 D1 스키마는 운영 보조 테이블과 전달 무결성 인덱�
     "idx_refresh_user",
     "idx_login_attempts_id_at",
     "idx_phone_otp_phone",
+    "idx_phone_otp_phone_unique",
+    "idx_users_phone_unique_nonempty",
+    "idx_user_profiles_phone_unique_nonempty",
+    "idx_user_profiles_login_id_unique_normalized",
     "idx_family_review_rewards_parent_id",
     "idx_google_play_rtdn_events_status_lease",
     "idx_google_play_rtdn_events_purchase_hash",

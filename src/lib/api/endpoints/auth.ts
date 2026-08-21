@@ -9,7 +9,7 @@ import {
   type OAuthProvider,
 } from "@/transform/oauthProvider";
 import { apiRequest, apiPost } from "../client";
-import { ApiError, normalizeApiErrorCode } from "../errors";
+import { ApiError, isApiError, normalizeApiErrorCode } from "../errors";
 import { applyApiSession, setApiUser, clearApiSession, notifyTokens, type ApiUser } from "../session";
 import { isNativePlatform } from "@/lib/native/plugins";
 import { openExternal } from "@/lib/native/browser";
@@ -27,7 +27,6 @@ import {
   normalizePhoneForAuth,
   normalizePhoneForStorage,
   validateParentSignupForm,
-  firstSignupValidationError,
   type ParentSignupInput,
 } from "@/transform/phone";
 
@@ -67,7 +66,7 @@ export async function signInWithLoginId(
 ): Promise<AuthResult> {
   const loginId = normalizeLoginId(input.loginId);
   if (!isValidLoginId(loginId) || !input.password) {
-    throw new Error("ID 또는 비밀번호를 확인해 주세요");
+    throw new ApiError("invalid_credentials", 400);
   }
   // 기기 바인딩 — 이 기기에서 발급된 refresh 체인은 이 기기만 회전할 수 있게 스탬핑한다.
   const device = await getAuthDeviceDescriptor().catch(() => null);
@@ -83,6 +82,9 @@ export async function signInWithLoginId(
     },
     false,
   );
+  if (!data?.user || !data?.session?.access_token) {
+    throw new ApiError("login_response_invalid", 502);
+  }
   return returnAuthResultWithAdoption(data, options, adoptAuthResult);
 }
 
@@ -108,10 +110,13 @@ export async function anonymousLogin(): Promise<AuthResult> {
 export async function checkLoginIdAvailability(loginId: string): Promise<boolean> {
   const normalized = normalizeLoginId(loginId);
   if (!isValidLoginId(normalized)) {
-    throw new Error("ID는 영문 소문자, 숫자, ., _, - 조합 4~24자로 입력해 주세요");
+    throw new ApiError("invalid_login_id", 400);
   }
   const data = await apiPost<{ available?: boolean }>("/auth/check-login-id", { loginId: normalized });
-  return data?.available !== false;
+  if (typeof data?.available !== "boolean") {
+    throw new ApiError("login_id_check_invalid", 502);
+  }
+  return data.available;
 }
 
 export interface PendingSignup {
@@ -133,13 +138,23 @@ export interface PendingSignup {
 export async function requestPhoneSignupCode(input: ParentSignupInput): Promise<PendingSignup> {
   const validation = validateParentSignupForm(input);
   if (!validation.ok || !validation.values) {
-    throw new Error(firstSignupValidationError(validation.errors));
+    const code = validation.errors.loginId
+      ? "invalid_login_id"
+      : validation.errors.phone
+        ? "invalid_phone"
+        : validation.errors.password
+          ? "weak_password"
+          : "bad_request";
+    throw new ApiError(code, 400);
   }
   const { name, loginId, password, gender, birthdate, phoneAuth, phoneStorage } = validation.values;
   const available = await checkLoginIdAvailability(loginId);
-  if (!available) throw new Error("이미 사용 중인 ID예요");
+  if (!available) throw new ApiError("login_id_taken", 409);
 
-  await apiPost("/auth/signup/request-otp", { phone: phoneAuth, password, loginId });
+  const sent = await apiPost<{ ok?: boolean }>("/auth/signup/request-otp", { phone: phoneAuth, password, loginId });
+  if (sent?.ok !== true) {
+    throw new ApiError("signup_response_invalid", 502);
+  }
   return {
     phone: phoneAuth,
     phoneStorage,
@@ -166,21 +181,32 @@ export async function verifyPhoneSignupCode(input: {
   const phoneAuth = normalizePhoneForAuth(input.phone);
   const token = String(input.token || "").replace(/\D/g, "");
   if (!/^\d{6}$/.test(token)) {
-    throw new Error("인증번호 6자리를 입력해 주세요");
+    throw new ApiError("invalid_token_format", 400);
   }
   const device = await getAuthDeviceDescriptor().catch(() => null);
-  const data = await apiPost<AuthResult>("/auth/signup/verify", {
-    phone: phoneAuth,
-    token,
-    password: input.password ?? "",
-    loginId: input.profile?.login_id,
-    name: input.profile?.display_name,
-    gender: input.profile?.gender,
-    birthdate: input.profile?.birthdate,
-    ...(device ?? {}),
-  });
+  let data: AuthResult;
+  try {
+    data = await apiPost<AuthResult>("/auth/signup/verify", {
+      phone: phoneAuth,
+      token,
+      password: input.password ?? "",
+      loginId: input.profile?.login_id,
+      name: input.profile?.display_name,
+      gender: input.profile?.gender,
+      birthdate: input.profile?.birthdate,
+      ...(device ?? {}),
+    });
+  } catch (error) {
+    if (!isApiError(error) || error.code !== "signup_created_login_required") throw error;
+    // user 생성은 끝났지만 가입 응답용 세션만 실패한 경계다. 같은 메모리의 ID/PW로
+    // 새 로그인 세션을 즉시 발급해 사용자를 phone_exists 막다른 길로 보내지 않는다.
+    return signInWithLoginId(
+      { loginId: input.profile?.login_id ?? "", password: input.password ?? "" },
+      options,
+    );
+  }
   if (!data?.user || !data?.session?.access_token) {
-    throw new Error("인증 후 사용자 정보를 확인하지 못했어요");
+    throw new ApiError("signup_response_invalid", 502);
   }
   return returnAuthResultWithAdoption(data, options, adoptAuthResult);
 }
@@ -283,14 +309,19 @@ function readOAuthContext(): OAuthFlowContext | null {
 function writeOAuthContext(context: OAuthFlowContext): void {
   const serialized = JSON.stringify(context);
   clearOAuthContext();
-  try {
-    for (const store of [window.sessionStorage, window.localStorage]) {
+  let written = 0;
+  for (const store of [window.sessionStorage, window.localStorage]) {
+    try {
       store.setItem(OAUTH_CONTEXT_KEY, serialized);
       if (store.getItem(OAUTH_CONTEXT_KEY) !== serialized) throw new Error("oauth_context_write_failed");
+      written += 1;
+    } catch {
+      // Safari 개인정보 보호 설정 등으로 한 저장소만 막혀도 다른 저장소로 안전하게 계속한다.
     }
-  } catch (error) {
+  }
+  if (written === 0) {
     clearOAuthContext();
-    throw error;
+    throw new Error("oauth_context_write_failed");
   }
 }
 
@@ -316,10 +347,15 @@ const AUTHORIZE_ORIGIN: Record<OAuthProvider, string> = {
 };
 
 function validateAuthorizationUrl(provider: OAuthProvider, value: unknown): string {
-  if (typeof value !== "string") throw new Error("로그인 시작 주소가 올바르지 않아요.");
-  const url = new URL(value);
+  if (typeof value !== "string") throw new ApiError("oauth_start_invalid", 502);
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new ApiError("oauth_start_invalid", 502);
+  }
   if (url.protocol !== "https:" || url.origin !== AUTHORIZE_ORIGIN[provider]) {
-    throw new Error("로그인 시작 주소가 안전하지 않아요.");
+    throw new ApiError("oauth_start_invalid", 502);
   }
   return url.toString();
 }
@@ -336,11 +372,11 @@ function validateOAuthStartResponse(
     || response.transactionSecret.length > 256
     || typeof response.expiresAt !== "string"
   ) {
-    throw new Error("로그인 시작 정보를 확인할 수 없어요. 다시 시도해 주세요.");
+    throw new ApiError("oauth_start_invalid", 502);
   }
   const expiresAt = Date.parse(response.expiresAt);
   if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
-    throw new Error("로그인 시작 정보가 만료됐어요. 다시 시도해 주세요.");
+    throw new ApiError("invalid_oauth_transaction", 400);
   }
   return {
     state: response.state,
@@ -376,13 +412,17 @@ export async function startWorkerOAuth(
   }, false);
   const validated = validateOAuthStartResponse(response);
   const startUrl = validateAuthorizationUrl(provider, response.authorizationUrl);
-  writeOAuthContext({
-    provider,
-    mode,
-    state: validated.state,
-    transactionSecret: validated.transactionSecret,
-    expiresAt: validated.expiresAt,
-  });
+  try {
+    writeOAuthContext({
+      provider,
+      mode,
+      state: validated.state,
+      transactionSecret: validated.transactionSecret,
+      expiresAt: validated.expiresAt,
+    });
+  } catch {
+    throw new ApiError("oauth_storage_unavailable", 400);
+  }
 
   options?.onExternalOpen?.();
   if (native) {
@@ -404,9 +444,9 @@ export async function finishOAuthLogin(input: {
   state?: string;
 }, options?: AuthResultAdoptionOptions): Promise<AuthResult> {
   if (!isOAuthProvider(input.provider)) {
-    throw new Error("지원하지 않는 로그인 방식이에요.");
+    throw new ApiError("unsupported_provider", 400);
   }
-  if (!input.code) throw new Error("로그인 인증 코드가 없어요. 다시 시도해 주세요!");
+  if (!input.code) throw new ApiError("invalid_oauth_transaction", 400);
 
   const context = takeOAuthContext();
   if (!context
@@ -414,7 +454,7 @@ export async function finishOAuthLogin(input: {
     || context.provider !== input.provider
     || !input.state
     || context.state !== input.state) {
-    throw new Error("로그인 인증 정보가 어긋났어요. 보안을 위해 처음부터 다시 해 주세요!");
+    throw new ApiError("invalid_oauth_transaction", 400);
   }
 
   const device = await getAuthDeviceDescriptor().catch(() => null);
@@ -433,7 +473,7 @@ export async function finishOAuthLogin(input: {
     false,
   );
   if (!data?.session?.access_token) {
-    throw new Error("로그인 응답이 이상해요. 다시 시도해 주세요!");
+    throw new ApiError("oauth_response_invalid", 502);
   }
   return returnAuthResultWithAdoption(data, options, adoptAuthResult);
 }
@@ -497,7 +537,7 @@ export async function linkOAuthAccount(input: {
     || context.provider !== input.provider
     || !input.state
     || context.state !== input.state) {
-    throw new Error("로그인 인증 정보가 어긋났어요. 보안을 위해 처음부터 다시 해 주세요!");
+    throw new ApiError("invalid_oauth_transaction", 400);
   }
 
   return apiRequest(`/api/auth/oauth/${input.provider}/link`, {
@@ -522,7 +562,7 @@ export function finishOAuthCancellation(input: {
     || !input.state
     || context.state !== input.state
   ) {
-    throw new Error("로그인 취소 정보가 어긋났어요. 보안을 위해 다시 시작해 주세요.");
+    throw new ApiError("invalid_oauth_transaction", 400);
   }
   return context.mode;
 }

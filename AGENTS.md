@@ -26,7 +26,8 @@ npm run dev        # http://localhost:5173
 npm run typecheck  # tsc -b  (수정 후 필수)
 npm run build      # 완료 기준 = exit 0
 # Android: npm run build && npx cap sync android && (cd android && ./gradlew assembleDebug)
-# 설치:    adb -s <serial> install -r android/app/build/outputs/apk/debug/app-debug.apk
+# 설치:    npm run android:install:debug -- <serial>
+#           (= adb -s <serial> install --user 0 -r ...; Samsung DUAL_APP 중복 아이콘 방지)
 # 웹 배포: ★ hyeni-3/.env 의 CLOUDFLARE_API_TOKEN(Workers/D1 전용, Pages 권한 없음)을 wrangler 가
 #   자동 로드해 OAuth 를 덮어쓴다 → .env 가 없는 디렉터리에서 실행할 것.
 #   (cd <임시디렉터리> && npx wrangler pages deploy C:/Users/TK/Desktop/hyeni-3/dist \n#      --project-name=hyeni-calendar --branch=main --commit-dirty=true)
@@ -45,7 +46,9 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 
 1. **실사용 기기 보호**: 2026-08-19 최신 사용자 지시 기준 실기기 검증기는
    **A17(RFKL40DP73J) 부모 · razr(ZY22H9VTQD) 아이 · S25(R5CY521CFNZ, SM-S937N)** 세 대다.
-   세 기기 모두 현재 역할·세션을 유지하고 `adb install -r`로 앱 데이터·계정·페어링·세션을 보존한다.
+   세 기기 모두 현재 역할·세션을 유지하고 `npm run android:install:debug -- <serial>`로 기본 사용자(0)에만
+   `adb install --user 0 -r`하여 앱 데이터·계정·페어링·세션을 보존한다. `--user 0` 없는 adb 설치는
+   Samsung DUAL_APP 프로필에도 복제되어 아이콘이 두 개 생길 수 있으므로 금지한다.
    실제 계정 로그아웃·역할 전환·재페어링을 하지 않는다.
    ⚠️ S25는 2026-08-02~08-19 검증 제외였다가 TK 지시로 복귀했다. **A17·razr 와 달리 고정 역할이 없으므로**
    역할 의존 검증 전에 CDP 세션 확인(아래)으로 역할을 먼저 확정한다.
@@ -65,6 +68,14 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 
 ## 아키텍처 핵심 (어기면 다자녀에서 데이터가 섞인다)
 
+- **인증 진입점 정본(2026-08-21)**: 첫 부모 화면은 로그인/회원가입 탭을 명시 분리하며 전화 가입과 소셜 가입을
+  같은 "로그인" 버튼으로 섞지 않는다. ID 확인 네트워크/응답 오류를 `중복 아이디`로 표시하지 않고, 잘못된 비밀번호는
+  세션을 만들지 않은 채 ID·비밀번호를 유지하고 비밀번호 필드로 포커스를 돌려 즉시 재시도시킨다. ID는 Worker와 D1
+  UNIQUE 모두 `LOWER(TRIM(login_id))` 기준이고 인증 응답은 `no-store`다. 가입은 입력·device id·전화/ID 중복 확인 뒤
+  OTP를 검증하고 user/identity/profile/OTP 소비를 한 batch로 확정한다. 운영은 익명 중복 그룹 4종=0 확인 →
+  `worker/db/auth-entry-uniqueness.sql` → Worker 순서다. Pages OAuth 복귀는 `_redirects` rewrite가 아니라 build의
+  `scripts/write-oauth-callback-entry.mjs`가 생성하는 물리 `/oauth/callback.html`이 정본이다. 중첩 경로에서 자원과
+  Service Worker가 `/oauth/*`로 잘못 해석되지 않도록 루트 asset URL과 `<base href="/">`를 유지한다.
 - **부모 iPhone·아이 Android 정본 토폴로지(2026-07-31)**: 최종 기능 검증의 기본 조합은
   **부모=iPhone 홈 화면 PWA, 아이=Android 네이티브 앱**이다. 위치 즉시 요청·기기 상태·소리 울리기·주변 소리·
   메시지·장소/알림 설정은 부모 기기의 Capacitor 여부로 막지 않고 Worker API→FCM→아이 Android 경로를 사용한다.

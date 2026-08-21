@@ -53,10 +53,11 @@ test("최종 브라우저 QA는 부모·아이 출시 화면과 핵심 전환 �
   assert.match(source, /혜니캘린더 v\$\{PACKAGE_VERSION\}/);
   assert.match(source, /parent\/location\?view=history/);
   assert.match(source, /parent-location-history-interaction/);
-  assert.match(source, /latestAligned/);
-  assert.match(source, /eyebrow !== "최신 기록"/);
-  assert.match(source, /locationHistoryAfterReplay\.followsLatest !== "false"/);
-  assert.match(source, /locationHistoryLatest\.followsLatest !== "true"/);
+  assert.match(source, /document\.querySelector\("\.pl-visited"\)/);
+  assert.match(source, /locationHistoryFacts\.heading !== "다녀온 곳"/);
+  assert.match(source, /selectedStay\.selectedCount !== 1/);
+  assert.match(source, /deselectedStay\.selectedCount !== 1/);
+  assert.match(source, /deselectedStay\.fallbackText === selectedStay\.selectedText/);
   assert.match(source, /parent-home-shortcuts-free/);
   assert.match(source, /parent-home-shortcuts-premium/);
   assert.match(source, /아이 기기 찾기/);

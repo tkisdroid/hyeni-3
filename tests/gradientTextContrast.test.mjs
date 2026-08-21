@@ -725,9 +725,16 @@ test("단색 CTA와 선택 상태도 전경색에 맞는 AA 전용 토큰을 쓴
     readSource("src/screens/feature/Supplies.tsx"),
     /background:\s*s\.done\s*\?\s*"var\(--hy-accent-cta\)"/,
   );
-  assert.match(
-    readSource("src/screens/onboarding/Onboarding.tsx"),
-    /background:\s*gender === g\.value\s*\?\s*"var\(--hy-accent-cta\)"/,
+  const guardianSelected = exactRule(
+    "src/screens/onboarding/Onboarding.css",
+    ".ob-guardian-option--active",
+  );
+  assert.equal(guardianSelected.get("background"), "var(--hy-accent-cta)");
+  assert.equal(guardianSelected.get("color"), "var(--bg-card)");
+  assertAccessiblePair(
+    guardianSelected.get("background"),
+    guardianSelected.get("color"),
+    "Onboarding guardian selected",
   );
 
   const pulsePairs = [

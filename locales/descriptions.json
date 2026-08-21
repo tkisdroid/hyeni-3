@@ -23588,5 +23588,187 @@
     "qualityTier": "B",
     "variables": {},
     "description": "선생님 주간 시간표 다국어 문구: week.aria"
+  },
+  "onboarding.auth.intentLabel": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "보호자 인증 진입점에서 로그인과 신규가입 탭을 구분하는 접근성 라벨"
+  },
+  "onboarding.login.haveAccount": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "신규가입 화면에서 기존 계정 로그인으로 전환하는 질문"
+  },
+  "onboarding.signup.existingAccount": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "이미 가입된 휴대폰 번호를 감지했을 때 기존 계정 로그인으로 이동하는 액션"
+  },
+  "onboarding.signup.loginIdAvailable": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "가입 아이디가 서버에서 사용 가능하다고 확인된 상태"
+  },
+  "onboarding.signup.loginIdCheck": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "가입 아이디 중복 여부를 서버에서 확인하는 버튼"
+  },
+  "onboarding.signup.loginIdChecking": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "가입 아이디 중복 확인 요청 진행 상태"
+  },
+  "onboarding.signup.orPhone": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "소셜 신규가입과 휴대폰 번호 신규가입을 나누는 구분 문구"
+  },
+  "onboarding.signup.useSocial": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "SMS 가입 실패 또는 OTP 화면에서 소셜 신규가입으로 이동하는 대체 액션"
+  },
+  "onboarding.signup.withPhone": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "신규가입 탭에서 휴대폰 번호 가입 흐름을 시작하는 명시적 액션"
+  },
+  "onboarding.validation.birthdateInvalid": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "가입 생년월일이 비어 있거나 유효하지 않을 때 해당 필드에 표시"
+  },
+  "onboarding.validation.guardianRequired": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "가입 보호자 구분을 선택하지 않았을 때 해당 필드에 표시"
+  },
+  "onboarding.validation.loginIdInvalid": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "가입 아이디의 허용 문자와 4~24자 형식을 안내"
+  },
+  "onboarding.validation.nameRequired": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "가입 이름을 입력하지 않았을 때 해당 필드에 표시"
+  },
+  "onboarding.validation.otpInvalid": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "인증번호가 6자리가 아닐 때 네트워크 요청 전에 표시"
+  },
+  "onboarding.validation.otpResendRequired": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "OTP 시도 제한을 넘겨 새 인증번호 발급이 필요할 때 표시"
+  },
+  "onboarding.validation.passwordMismatch": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "가입 비밀번호와 확인 입력이 일치하지 않을 때 표시"
+  },
+  "onboarding.validation.passwordWeak": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "가입 비밀번호 최소 6자 규칙을 안내"
+  },
+  "onboarding.validation.phoneInvalid": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "전화 가입에서 010으로 시작하는 11자리 번호 형식을 안내"
+  },
+  "core.error.api.oauthRetry.child": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "소셜 인증 거래·콜백·제공자 교환 실패 시 공식 웹에서 재시작하도록 아이 말투로 안내"
+  },
+  "core.error.api.oauthRetry.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "소셜 인증 거래·콜백·제공자 교환 실패 시 공식 웹에서 재시작하도록 정중히 안내"
+  },
+  "core.error.api.oauthUnavailable.child": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "소셜 제공자 설정 누락 시 전화 가입이나 ID 로그인을 아이 말투로 안내"
+  },
+  "core.error.api.oauthUnavailable.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "소셜 제공자 설정 누락 시 전화 가입이나 ID 로그인을 정중히 안내"
+  },
+  "core.error.api.signupRetry.child": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "가입 저장·응답 실패 시 입력 보존과 재시도를 아이 말투로 안내"
+  },
+  "core.error.api.signupRetry.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "가입 저장·응답 실패 시 입력 보존과 재시도를 정중히 안내"
+  },
+  "core.error.api.smsUnavailable.child": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "SMS 설정·제공자 발송 실패 시 재전송과 소셜 가입 대안을 아이 말투로 안내"
+  },
+  "core.error.api.smsUnavailable.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "SMS 설정·제공자 발송 실패 시 재전송과 소셜 가입 대안을 정중히 안내"
   }
 }
