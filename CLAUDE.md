@@ -21,6 +21,14 @@ safe-area 뒤 상단 16px, 전역 수평 overflow 차단, 세로 fade 전환을 
 먼저 확인하고, Android 임시 거부는 재요청·영구 거부는 설정 이동 후 자동 재확인·모든 오류는 수동 코드 입력으로 복구한다.
 대상 회귀 34/34와 Worker 공개 API 2/2, 앱·Worker typecheck, production build(469 precache·중복 0)는 통과했다.
 사용자 요청으로 이후 브라우저 57화면 전수 검수와 전체 앱/Worker 테스트 재실행은 생략했으므로 그 범위를 완료로 간주하지 않는다.
+소스 커밋 `4be6089`를 `main`에 푸시하고 Worker version `29acfe86-974e-4bbc-b69d-f3c8b885a394`와 Pages
+`https://064d0ec0.hyeni-calendar.pages.dev`를 배포했다. Worker health 200 ready, 공개 지역 API 200
+`{"country":"KR"}`·`Cache-Control:no-store, private`를 확인했다. 배포별 주소·고정 Pages·`hyenicalendar.com`은 모두
+entry `assets/index-BLgtnG0U.js`(SHA-256 `7c6e6a89a18c0967cb0dde130e5f59bd88719281f2a06a5adeb4ad5c498af719`),
+CSS `assets/index-DMuUhfUk.css`, Service Worker가 로컬 `dist`와 바이트 일치하고 브랜드 OAuth callback도 200이다.
+Android는 최신 `dist`를 sync하고 `assembleDebug` 성공, APK SHA-256은
+`52cdf25abdc5c5c6827d5dc5650b56e6bfd30cb92f4009a8c0ee0520f3d346da`다. S25 설치는 실행 직전 기기가 ADB에서
+이탈해 앱을 건드리지 않은 채 대기 중이며, 재연결 후 반드시 `npm run android:install:debug -- R5CY521CFNZ`만 사용한다.
 
 **현재 배포 상태(2026-08-21 인증 진입점·브랜드 도메인/PWA 문서 신선도·Android 중복 아이콘 안정화)**: 브라우저 부모 모드의 로그인/회원가입을
 첫 화면의 명시적 탭으로 분리하고 전화 가입·카카오/구글 가입, 지속 오류 안내, 잘못된 비밀번호 뒤 입력 유지·비밀번호
