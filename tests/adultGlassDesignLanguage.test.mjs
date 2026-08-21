@@ -115,3 +115,25 @@ test("하단 메뉴는 바로가기로 들어간 화면에서도 보인다", () 
   assert.match(pushBody, /data-nav=\{showNav && !isChild \? "push" : undefined\}/);
   assert.match(glass, /\.hy-adult \.hy-screen\[data-nav="push"\] \{[^}]*padding-bottom/);
 });
+
+test("화면을 옮기면 처음은 최상단, 다시 찾으면 보던 자리로 돌아간다", () => {
+  const hook = read("src/app/useScrolledShell.ts");
+
+  // 화면 구분은 경로(+쿼리) 기준이다 — 탭으로 다시 들어가도 보던 자리를 찾아야 한다.
+  assert.match(hook, /const screenKey = `\$\{pathname\}\$\{search\}`/);
+  assert.match(hook, /savedPositions\.get\(screenKey\)/);
+  // 처음 보는 화면은 반드시 맨 위에서 시작한다.
+  assert.match(hook, /saved === undefined \|\| saved <= 0[\s\S]{0,80}scrollTop = 0/);
+  // 지연 청크·쿼리로 내용이 늦게 자라므로 한 번으로는 못 돌아간다.
+  assert.match(hook, /requestAnimationFrame\(apply\)/);
+  // 사용자가 손대면 즉시 그만둔다(복원이 조작을 이기면 안 된다).
+  assert.match(hook, /addEventListener\("pointerdown", stop/);
+  // 무한히 쌓이지 않게 오래된 것부터 버린다.
+  assert.match(hook, /MAX_REMEMBERED/);
+});
+
+test("절대 배치 루트 화면은 하단 메뉴 위로 바닥을 끌어올린다", () => {
+  // padding 은 position:absolute + inset:0 루트에 통하지 않는다.
+  // 실제로 '기기 찾기'의 [지금 울리기] 버튼이 탭바에 가려졌다.
+  assert.match(glass, /\.hy-adult \.hy-screen\[data-nav="push"\] :is\(\.rr-root, \.ra-root, \.sr-root\) \{[^}]*bottom: var\(--hy-nav-inset\)/);
+});

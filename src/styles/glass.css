@@ -538,7 +538,16 @@
    ⚠️ 탭 셸(부모·선생님 홈 등)에는 붙이지 않는다 — 거기는 .hy-content 가 이미 잡고 있어
       두 겹이 되면 바닥에 빈 공간이 길게 남는다. */
 .hy-adult .hy-screen[data-nav="push"] {
-  padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  --hy-nav-inset: calc(76px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: var(--hy-nav-inset);
+}
+
+/* ⚠️ 화면 루트가 position:absolute + inset:0 이면 위 padding 이 통하지 않는다 —
+   절대 배치는 padding box 를 기준으로 잡혀 패딩 안쪽까지 그대로 채운다.
+   그래서 그 세 화면(기기 찾기·주변 소리·SOS 수신)은 바닥을 직접 끌어올린다.
+   실제로 '기기 찾기'의 [지금 울리기] 버튼이 탭바에 가려졌다(2026-08-21 TK 제보). */
+.hy-adult .hy-screen[data-nav="push"] :is(.rr-root, .ra-root, .sr-root) {
+  bottom: var(--hy-nav-inset);
 }
 
 /* 화면이 자기 .hy-content 로 이미 여백을 잡았다면 그 몫은 줄인다(중복 방지). */
