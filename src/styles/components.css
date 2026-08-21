@@ -106,19 +106,21 @@
 }
 
 /* 모든 화면의 뒤로가기 버튼 정본.
-   화면별 `*-back` 클래스는 배치만 맡고 크기·형태·재질·아이콘은 여기서 통일한다. */
+   화면별 `*-back` 클래스는 배치만 맡는다. 보이는 면은 없애되 44px 터치 영역은 유지한다. */
 .hy-app button.hy-press[class*="-back"],
 .hy-app button.hy-backbtn {
-  width: var(--control-min-size);
-  height: var(--control-min-size);
-  min-width: var(--control-min-size);
-  min-height: var(--control-min-size);
+  width: var(--control-min-size) !important;
+  height: var(--control-min-size) !important;
+  min-width: var(--control-min-size) !important;
+  min-height: var(--control-min-size) !important;
   margin: 0;
-  padding: 0;
-  border: 1px solid color-mix(in srgb, var(--bg-card) 76%, var(--line-card));
-  border-radius: var(--radius-pill);
-  background: var(--bg-card);
-  box-shadow: var(--shadow-soft);
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
   display: grid;
   place-items: center;
   flex: none;
@@ -129,18 +131,15 @@
 
 .hy-app button.hy-press[class*="-back"] > svg,
 .hy-app button.hy-backbtn > svg {
-  width: var(--icon-22);
-  height: var(--icon-22);
+  width: var(--icon-20) !important;
+  height: var(--icon-20) !important;
   color: inherit !important;
   stroke-width: 2.2 !important;
 }
 
-/* 어두운 온보딩·아이 SOS는 같은 형태를 유지하고 대비만 반전한다. */
+/* 어두운 온보딩·아이 SOS도 표면은 만들지 않고 아이콘 대비만 반전한다. */
 .hy-app button.hy-press.ob-back--dark,
 .hy-app button.hy-press.cs-back {
-  border-color: rgba(255, 255, 255, 0.28);
-  background: rgba(255, 255, 255, 0.16);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
   color: #fff;
 }
 

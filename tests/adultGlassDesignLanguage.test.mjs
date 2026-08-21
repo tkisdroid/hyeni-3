@@ -91,17 +91,29 @@ test("서리 스크림은 가릴 것이 생겼을 때만 켠다", () => {
   assert.match(topbarRule, /background: transparent/);
 });
 
-test("어른 화면 헤더는 같은 상하 리듬과 44px 뒤로가기를 쓴다", () => {
+test("어른 화면 헤더는 같은 상하 리듬과 투명한 44px 뒤로가기를 쓴다", () => {
   const components = read("src/styles/components.css");
   const family = read("src/screens/parent/ParentFamily.tsx");
+  const backRule = components.match(
+    /\.hy-app button\.hy-press\[class\*="-back"\],\s*\.hy-app button\.hy-backbtn \{([\s\S]*?)\n\}/,
+  )?.[1] ?? "";
+  const iconRule = components.match(
+    /\.hy-app button\.hy-press\[class\*="-back"\] > svg,\s*\.hy-app button\.hy-backbtn > svg \{([\s\S]*?)\n\}/,
+  )?.[1] ?? "";
 
   assert.match(glass, /padding: calc\(env\(safe-area-inset-top, 0px\) \+ 16px\) 16px 28px/);
   assert.match(glass, /padding-top: calc\(env\(safe-area-inset-top, 0px\) \+ 16px\)/);
   assert.match(glass, /padding-bottom: 28px/);
   assert.match(glass, /calc\(100% - 28px\)/);
-  assert.match(components, /button\.hy-press\[class\*="-back"\][\s\S]*width: var\(--control-min-size\)/);
-  assert.match(components, /border-radius: var\(--radius-pill\)/);
-  assert.match(glass, /\[class\*="-back"\]:not\(\.ob-back--dark\):not\(\.cs-back\)/);
+  assert.match(backRule, /width: var\(--control-min-size\) !important/);
+  assert.match(backRule, /height: var\(--control-min-size\) !important/);
+  assert.match(backRule, /border: 0 !important/);
+  assert.match(backRule, /background: transparent !important/);
+  assert.match(backRule, /box-shadow: none !important/);
+  assert.match(backRule, /backdrop-filter: none !important/);
+  assert.match(iconRule, /width: var\(--icon-20\) !important/);
+  assert.match(iconRule, /height: var\(--icon-20\) !important/);
+  assert.doesNotMatch(glass, /\[class\*="-back"\]|hy-backbtn/);
   assert.match(family, /className="hy-iconbtn hy-backbtn hy-press"/);
 });
 

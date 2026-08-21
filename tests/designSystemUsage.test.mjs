@@ -2163,7 +2163,7 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/parent/ParentLocation.redesign.css", ".pl-root .pl-call-btn"],
   ["src/styles/glass.css", ".hy-adult .hy-tile"],
   ["src/styles/glass.css", ".hy-adult .hy-status::before"],
-  // 모든 화면이 공유하는 뒤로가기는 독립 카드가 아니라 44px 아이콘 조작면이다.
+  // 모든 화면이 공유하는 뒤로가기는 독립 카드가 아니라 투명한 44px 아이콘 조작면이다.
   ["src/styles/components.css", ".hy-app button.hy-press[class*=\"-back\"]"],
   ["src/styles/components.css", ".hy-app button.hy-backbtn"],
   ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-location-chip::before"],

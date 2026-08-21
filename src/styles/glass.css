@@ -202,21 +202,6 @@
   box-shadow: var(--ph-object-press);
 }
 
-/* 상세 화면 뒤로가기도 부모 홈의 조작 버튼과 같은 물성을 쓴다. */
-.hy-app.hy-adult button.hy-press[class*="-back"]:not(.ob-back--dark):not(.cs-back),
-.hy-app.hy-adult button.hy-backbtn {
-  border: 0;
-  background: var(--ph-object-fill);
-  box-shadow: var(--ph-object-raise);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
-.hy-app.hy-adult button.hy-press[class*="-back"]:not(.ob-back--dark):not(.cs-back):active,
-.hy-app.hy-adult button.hy-backbtn:active {
-  box-shadow: var(--ph-object-press);
-}
-
 /* ── 섹션 제목과 ④ 조용한 메타 ─────────────────────────────────────────── */
 .hy-adult .hy-section-head {
   gap: 8px;
