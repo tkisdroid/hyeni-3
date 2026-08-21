@@ -167,24 +167,26 @@ export function Notifications() {
         </button>
       </header>
 
-      {hasAlerts && (
-        <div className="nc-filters">
-          {chips.map((k) => (
-            <button
-              key={k}
-              type="button"
-              className={`nc-filter hy-press${filter === k ? " nc-filter--active" : ""}`}
-              aria-pressed={filter === k}
-              onClick={() => setFilter(k)}
-            >
-              {intl.formatMessage({ id: FILTER_LABEL_ID[k] })}
-              <span className="nc-filter__count">{intl.formatNumber(counts[k])}</span>
-            </button>
-          ))}
-        </div>
-      )}
 
       <div className="hy-content nc-list">
+        {/* 필터는 메인 섹션 안에 둔다 — sticky 헤더에 붙이면 그 경계에서
+            목록 카드가 반쯤 비쳐 보인다(2026-08-21 TK 지시). */}
+        {hasAlerts && (
+          <div className="nc-filters">
+            {chips.map((k) => (
+              <button
+                key={k}
+                type="button"
+                className={`nc-filter hy-press${filter === k ? " nc-filter--active" : ""}`}
+                aria-pressed={filter === k}
+                onClick={() => setFilter(k)}
+              >
+                {intl.formatMessage({ id: FILTER_LABEL_ID[k] })}
+                <span className="nc-filter__count">{intl.formatNumber(counts[k])}</span>
+              </button>
+            ))}
+          </div>
+        )}
         {isLoading && (
           <div className="nc-state">
             <Loading label={intl.formatMessage({ id: "notifications.center.loading" })} />

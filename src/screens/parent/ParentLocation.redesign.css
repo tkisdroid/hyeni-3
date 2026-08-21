@@ -358,3 +358,57 @@
 .pl-root .pl-chip--active {
   border-color: transparent;
 }
+
+/* ── 시트 머리의 상태 칩 ─────────────────────────────────────────────────
+   '확인 중'·경과 시간은 상태이지 조작이 아니다. 채워진 알약을 벗기고
+   원칙 ④대로 점 + 조용한 글자로 말한다(색은 점이 낸다). */
+.pl-root .pl-sheet__dur {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ph-ink-3);
+}
+
+.pl-root .pl-sheet__dur::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--mint-500);
+}
+
+/* 갱신 중은 '지금 확인하고 있다'는 진행 상태라 점 색만 바꾼다. */
+.pl-root .pl-sheet__dur--loading {
+  min-width: 0;
+  background: transparent;
+  color: var(--ph-ink-3);
+}
+
+.pl-root .pl-sheet__dur--loading::before {
+  background: var(--blue-500);
+}
+
+/* 지연 안내(Free)도 같은 규칙 — 다만 '주의'라 점만 앰버로 남긴다. */
+.pl-root .pl-delay-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ph-ink-3);
+}
+
+.pl-root .pl-delay-badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--gold-600);
+}

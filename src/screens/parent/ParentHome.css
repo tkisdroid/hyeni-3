@@ -306,10 +306,6 @@
   /* 배경 색 블롭을 만들지 않는다. */
   background: none;
 }
-.ph-page > * {
-  position: relative;
-  z-index: 1;
-}
 .ph-frost--stack {
   display: flex;
   flex-direction: column;
@@ -1329,17 +1325,8 @@
   background: none;
 }
 
-/* 홈의 일반 자식 레이어 규칙이 공용 sticky를 덮지 않도록 상단바를 다시 고정한다. */
-.ph-page > .hy-topbar {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  padding: calc(env(safe-area-inset-top, 0px) + 20px) 20px 12px;
-  background: color-mix(in srgb, var(--bg-app) 94%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--blue-500) 8%, transparent);
-  backdrop-filter: blur(18px) saturate(135%);
-  -webkit-backdrop-filter: blur(18px) saturate(135%);
-}
+/* 상단바는 공용 .hy-topbar(components.css + glass.css) 그대로 쓴다.
+   화면 CSS 에서 재질·여백을 다시 선언하면 같은 특이도에 뒤에 로드돼 공용 규칙을 이긴다. */
 
 .ph-page .hy-iconbtn,
 .ph-stickerbtn {

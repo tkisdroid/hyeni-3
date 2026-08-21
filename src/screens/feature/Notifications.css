@@ -5,7 +5,7 @@
   animation: hy-fadein 0.35s ease forwards;
 }
 
-/* ── 상단 헤더 (sticky) ─────────────────────────────────────────────────── */
+/* ── 상단 헤더 (sticky) — 재질은 glass.css 정본이 정한다 ───────────────── */
 .nc-header {
   position: sticky;
   top: 0;
@@ -14,8 +14,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(251, 247, 244, 0.94);
-  backdrop-filter: blur(10px);
 }
 .nc-back {
   --press: 0.9;
@@ -176,7 +174,9 @@
 .nc-filters {
   display: flex;
   gap: 8px;
-  padding: 4px 16px 4px;
+  /* 목록 안으로 들어왔으므로 좌우 여백은 .hy-content 가 맡는다. */
+  padding: 0;
+  margin-bottom: 4px;
   overflow-x: auto;
   scrollbar-width: none;
 }

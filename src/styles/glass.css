@@ -172,16 +172,19 @@
      덮고 마지막 구간만 오로라로 녹아든다. */
   background: linear-gradient(
     180deg,
-    rgba(242, 242, 251, 0.97) 0%,
-    rgba(242, 242, 251, 0.95) 62%,
+    rgba(242, 242, 251, 0.97) 0,
+    rgba(242, 242, 251, 0.96) calc(100% - 20px),
     rgba(242, 242, 251, 0) 100%
   );
   backdrop-filter: blur(24px) saturate(150%);
   -webkit-backdrop-filter: blur(24px) saturate(150%);
   /* ⚠️ backdrop-filter 는 요소 상자에서 잘려 아래쪽에 딱딱한 경계선을 만든다.
-     마스크로 블러를 함께 페이드시켜야 오로라와 이어진다. */
-  mask-image: linear-gradient(180deg, #000 0%, #000 74%, rgba(0, 0, 0, 0) 100%);
-  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 74%, rgba(0, 0, 0, 0) 100%);
+     마스크로 블러를 함께 페이드시켜야 오로라와 이어진다.
+     ⚠️ 페이드 띠는 퍼센트가 아니라 padding-bottom 과 같은 px 로 잡는다 —
+     헤더 높이가 화면마다 달라 퍼센트로 잡으면 띠가 여백을 넘어
+     아래 목록 카드가 반쯤 비친다(2026-08-21 실측). */
+  mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 20px), rgba(0, 0, 0, 0) 100%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 20px), rgba(0, 0, 0, 0) 100%);
 }
 
 .hy-adult .hy-topbar__title {
@@ -379,21 +382,35 @@
 }
 
 /* 화면별 sticky 헤더도 상단바와 같은 서리 스크림을 쓴다.
-   (개별 화면이 자기 색 그라데이션을 헤더에 칠하고 있었다) */
+   ⚠️ 이 목록은 '어른 화면의 sticky 헤더 전수'다(2026-08-21 실측 33곳).
+      새 화면이 자기 헤더에 배경을 칠하면 오로라 위에서 딱딱한 밴드로 남으므로
+      여기에 등록하거나 아예 배경을 칠하지 않아야 한다.
+   ⚠️ 예외: .sr-header(SOS 수신)는 붉은 긴급 화면의 일부라 건드리지 않는다. */
 .hy-adult :is(
-  .ais-header, .cdd-header, .dr-header, .raa-header, .wr-header, .ps-head, .mc-header
+  .ais-header, .cdd-header, .dr-header, .raa-header,
+  .wr-header, .ps-head, .mc-header, .ac-header,
+  .aa-header, .ci-header, .da-header, .dzf-header,
+  .ds-head, .ds-header, .fc-header, .fb-header,
+  .fp-header, .lset-header, .ls-header, .nc-header,
+  .pw-header, .psu-header, .pf-header, .pm-header,
+  .pa-header, .pa-head, .pe-header, .rv-header,
+  .sub-header, .sup-header, .tl-head, .cd-header,
+  .ef-header, .pc-header, .th-topbar, .tn-header,
+  .ts-header, .tt-topbar
 ) {
   border-bottom: 0;
+  /* 마스크가 아래 26%를 지우므로 내용이 그 안에 들어오지 않게 여백을 확보한다. */
+  padding-bottom: 20px;
   background: linear-gradient(
     180deg,
-    rgba(242, 242, 251, 0.97) 0%,
-    rgba(242, 242, 251, 0.95) 62%,
+    rgba(242, 242, 251, 0.97) 0,
+    rgba(242, 242, 251, 0.96) calc(100% - 20px),
     rgba(242, 242, 251, 0) 100%
   );
   backdrop-filter: blur(24px) saturate(150%);
   -webkit-backdrop-filter: blur(24px) saturate(150%);
-  mask-image: linear-gradient(180deg, #000 0%, #000 74%, rgba(0, 0, 0, 0) 100%);
-  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 74%, rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 20px), rgba(0, 0, 0, 0) 100%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 20px), rgba(0, 0, 0, 0) 100%);
 }
 
 /* 섹션 사이 여백은 카드가 자기 padding 을 가지므로 12px 이면 충분하다.
@@ -428,4 +445,72 @@
 .hy-adult .hy-tab:focus-visible .hy-tab__icon {
   outline: 2px solid color-mix(in srgb, var(--ph-link) 60%, transparent);
   outline-offset: 2px;
+}
+
+
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   어른 화면의 흰 카드도 같은 유리로 (2026-08-21 TK 제보: 알림 오늘/어제 카드가
+   메인의 유리 카드와 달랐다).
+   목록 정본은 semantic surface manifest 의 role="card" 중 **무채색 카드**다 —
+   상태색을 띤 카드(앰버 경고·민트 완료)는 색이 곧 의미라 그대로 두고,
+   유리판 위에 이미 얹힌 안쪽 면과 SOS 수신(.sr-*)은 제외한다.
+   ⚠️ --bg-page 로 칠한 카드도 포함한다 — 그 토큰은 이제 오로라 바닥색이라
+      그대로 두면 카드가 바닥에 묻혀 사라진다.
+   ══════════════════════════════════════════════════════════════════════════ */
+.hy-adult :is(
+  .aa-item, .ac-auto, .ac-control-row, .ac-detail,
+  .ac-pack, .ais-academy-intro, .ais-mode-intro, .ais-result,
+  .au-card, .cd-danger, .cd-row, .cd-stat,
+  .da-item, .ds-card, .ds-panel, .ds-quote,
+  .ds-row, .dzf-toggles, .fb-ideas__card, .fb-satis,
+  .fc-device, .fc-invite, .fp-card, .fp-connected,
+  .fp-setting, .ls-card, .ls-last, .lset-row,
+  .nc-item, .nst-list, .ob-connect-card, .ob-perm,
+  .ob-role-card--parent, .ob-survey-card, .pa-action, .pa-card,
+  .pc-card, .pc-event__card, .pc-sheet__row, .pd-card,
+  .pf-child, .pf-conn, .pf-paircode__card, .pf-parents,
+  .pm-danger, .pm-item, .ps-list, .psu-card,
+  .pw-childcard, .pw-summary, .rrp__code, .rrp__progress,
+  .rrp__state, .rv-empty, .rv-fallback, .rv-info,
+  .rv-steps, .sqs-card, .sqs-inline-empty, .sub-benefits,
+  .sub-cancel, .sub-plan, .sub-web-unavailable, .sup-card,
+  .sup-status, .th-empty, .th-tile, .tl-lock,
+  .tl-perks, .tn-empty, .tn-reflect, .trg-card,
+  .ts-empty, .ts-row, .tt-empty
+) {
+  border: 0;
+  background: var(--ph-glass-fill);
+  box-shadow: var(--ph-panel-shadow);
+  backdrop-filter: var(--ph-glass-blur);
+  -webkit-backdrop-filter: var(--ph-glass-blur);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .hy-adult :is(
+  .aa-item, .ac-auto, .ac-control-row, .ac-detail,
+  .ac-pack, .ais-academy-intro, .ais-mode-intro, .ais-result,
+  .au-card, .cd-danger, .cd-row, .cd-stat,
+  .da-item, .ds-card, .ds-panel, .ds-quote,
+  .ds-row, .dzf-toggles, .fb-ideas__card, .fb-satis,
+  .fc-device, .fc-invite, .fp-card, .fp-connected,
+  .fp-setting, .ls-card, .ls-last, .lset-row,
+  .nc-item, .nst-list, .ob-connect-card, .ob-perm,
+  .ob-role-card--parent, .ob-survey-card, .pa-action, .pa-card,
+  .pc-card, .pc-event__card, .pc-sheet__row, .pd-card,
+  .pf-child, .pf-conn, .pf-paircode__card, .pf-parents,
+  .pm-danger, .pm-item, .ps-list, .psu-card,
+  .pw-childcard, .pw-summary, .rrp__code, .rrp__progress,
+  .rrp__state, .rv-empty, .rv-fallback, .rv-info,
+  .rv-steps, .sqs-card, .sqs-inline-empty, .sub-benefits,
+  .sub-cancel, .sub-plan, .sub-web-unavailable, .sup-card,
+  .sup-status, .th-empty, .th-tile, .tl-lock,
+  .tl-perks, .tn-empty, .tn-reflect, .trg-card,
+  .ts-empty, .ts-row, .tt-empty
+  ) {
+    background: #fff;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }

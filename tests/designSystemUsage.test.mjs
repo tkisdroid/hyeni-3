@@ -2147,6 +2147,8 @@ const semanticSurfaceManifestKeys = new Set(semanticSurfaceManifest.map(([path, 
 const nonSurfacePaintManifest = new Set([
   // 기존 레이아웃·navigation container — exact path + selector만 허용
   // 2026-08-21 어른 모드 유리 언어의 물체·타일·상태점 — 판(surface)이 아니라 칠해진 조작·표시 면이다.
+  ["src/screens/parent/ParentLocation.redesign.css", ".pl-root .pl-sheet__dur::before"],
+  ["src/screens/parent/ParentLocation.redesign.css", ".pl-root .pl-delay-badge::before"],
   ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-ai__btn.ph-neu-control"],
   ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-memo__icon.ph-neu-control"],
   ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-shortcut:active .ph-shortcut__icon"],
