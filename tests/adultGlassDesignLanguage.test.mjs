@@ -73,3 +73,28 @@ test("위치 실시간 카드와 이동 기록 카드는 같은 판·같은 행 
   // 4색 파스텔 액션 타일은 한 재질로 통일했다.
   assert.match(css, /\.pl-root \.pl-memo-btn,/);
 });
+
+test("서리 스크림은 가릴 것이 생겼을 때만 켠다", () => {
+  const shell = read("src/app/AppShell.tsx");
+  const hook = read("src/app/useScrolledShell.ts");
+
+  // 어른 셸 3개의 스크롤 영역이 스크롤 상태를 알린다(아이 셸은 이 언어를 쓰지 않는다).
+  assert.equal((shell.match(/const scrolledRef = useScrolledShell\(\);/g) ?? []).length, 3);
+  assert.equal((shell.match(/<main className="hy-screen[^"]*" ref=\{scrolledRef\}>/g) ?? []).length, 3);
+  assert.match(hook, /dataset\.scrolled/);
+  assert.match(hook, /passive: true/);
+
+  // 맨 위에서는 스크림이 없어야 오로라 위에 납작한 사각형이 생기지 않는다.
+  assert.match(glass, /\.hy-adult \.hy-screen\[data-scrolled\] :is\(/);
+  const topbarRule = glass.match(/\.hy-adult \.hy-topbar \{([\s\S]*?)\n\}/)?.[1] ?? "";
+  assert.match(topbarRule, /background: transparent/);
+});
+
+test("알림 화면의 필터는 sticky 헤더가 아니라 메인 섹션 안에 있다", () => {
+  const source = read("src/screens/feature/Notifications.tsx");
+  const listAt = source.indexOf('<div className="hy-content nc-list">');
+  const filtersAt = source.indexOf('<div className="nc-filters">');
+  assert.ok(listAt > 0 && filtersAt > listAt, "필터는 목록(.nc-list) 안에 있어야 한다");
+  // 헤더에 둘째 줄을 붙이면 스크림·마스크 경계에 걸린다.
+  assert.doesNotMatch(source, /nc-top/);
+});

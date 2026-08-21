@@ -3,6 +3,7 @@ import { Home, CalendarDays, MapPin, MessageCircle, Settings, Users } from "luci
 import { lazy, Suspense, useMemo } from "react";
 import { useAccent } from "./accent";
 import { useAuth } from "@/auth/AuthContext";
+import { useScrolledShell } from "./useScrolledShell";
 import { useEffect } from "react";
 import { warmKakaoMaps } from "@/lib/kakaoMap";
 import { ChildDock } from "./ChildDock";
@@ -79,10 +80,11 @@ function useWarmKakaoMaps(): void {
 export function ParentShell() {
   const { accent } = useAccent();
   const tabs = useMemoDotTabs(useParentTabs(), "/parent/memo");
+  const scrolledRef = useScrolledShell();
   useWarmKakaoMaps();
   return (
     <div className="hy-app hy-adult" data-role="parent" data-accent={accent}>
-      <main className="hy-screen">
+      <main className="hy-screen" ref={scrolledRef}>
         <Outlet />
       </main>
       <TabBar tabs={tabs} iconOnly />
@@ -111,9 +113,10 @@ export function ChildShell() {
 /** 선생님 모드 셸: 강조색 민트 고정 + 선생님 탭바. */
 export function TeacherShell() {
   const tabs = useTeacherTabs();
+  const scrolledRef = useScrolledShell();
   return (
     <div className="hy-app hy-adult" data-accent="mint">
-      <main className="hy-screen">
+      <main className="hy-screen" ref={scrolledRef}>
         <Outlet />
       </main>
       <TabBar tabs={tabs} />
@@ -125,14 +128,15 @@ export function TeacherShell() {
 /** 푸시/상세 화면 셸: 탭바 없음(화면 자체 헤더의 뒤로가기 사용). */
 export function PushShell() {
   const { accent } = useAccent();
-  // 아이도 지나가는 셸이라 어른 유리 언어(.hy-adult)는 세션 role 로 판정한다.
+  // 아이도 쓰는 셸이라 .hy-adult 는 role 로 정한다.
   const { role } = useAuth();
+  const scrolledRef = useScrolledShell();
   return (
     <div className={`hy-app${role === "child" ? "" : " hy-adult"}`} data-accent={accent}>
-      <main className="hy-screen">
+      <main className="hy-screen" ref={scrolledRef}>
         <Outlet />
       </main>
-      {/* 아이가 상세 화면에 있어도 AI 친구는 계속 대기한다(부모·선생님 세션에서는 렌더되지 않음). */}
+      {/* 아이 세션에서만 렌더된다. */}
       <AiBuddyFabSlot bottomInset={20} />
       <ToastHost />
     </div>
