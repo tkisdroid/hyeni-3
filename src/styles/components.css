@@ -105,6 +105,45 @@
   border: 2px solid #fff;
 }
 
+/* 모든 화면의 뒤로가기 버튼 정본.
+   화면별 `*-back` 클래스는 배치만 맡고 크기·형태·재질·아이콘은 여기서 통일한다. */
+.hy-app button.hy-press[class*="-back"],
+.hy-app button.hy-backbtn {
+  width: var(--control-min-size);
+  height: var(--control-min-size);
+  min-width: var(--control-min-size);
+  min-height: var(--control-min-size);
+  margin: 0;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--bg-card) 76%, var(--line-card));
+  border-radius: var(--radius-pill);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-soft);
+  display: grid;
+  place-items: center;
+  flex: none;
+  color: var(--fg-secondary);
+  touch-action: manipulation;
+  --press: 0.94;
+}
+
+.hy-app button.hy-press[class*="-back"] > svg,
+.hy-app button.hy-backbtn > svg {
+  width: var(--icon-22);
+  height: var(--icon-22);
+  color: inherit !important;
+  stroke-width: 2.2 !important;
+}
+
+/* 어두운 온보딩·아이 SOS는 같은 형태를 유지하고 대비만 반전한다. */
+.hy-app button.hy-press.ob-back--dark,
+.hy-app button.hy-press.cs-back {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  color: #fff;
+}
+
 /* ── 스크롤 콘텐츠 컬럼 ─────────────────────────────────────────────────── */
 .hy-content {
   padding: 4px 20px calc(120px + env(safe-area-inset-bottom, 0px));

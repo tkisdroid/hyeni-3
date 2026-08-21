@@ -188,10 +188,11 @@
   grid-template-columns: minmax(0, 1fr) 112px;
   gap: var(--space-4);
   align-items: center;
-  border-radius: var(--radius-20);
+  border-radius: var(--radius-24);
   padding: var(--space-5);
-  box-shadow: var(--shadow-floating);
-  border: 1px solid var(--line-card);
+  background: var(--ph-glass-fill-clear);
+  box-shadow: var(--ph-panel-shadow);
+  border: 0;
 }
 
 .dr-hero--safe {
@@ -210,14 +211,7 @@
 }
 
 .dr-hero::after {
-  content: "";
-  position: absolute;
-  inset: auto -48px -72px auto;
-  width: 160px;
-  height: 160px;
-  border-radius: 50%;
-  background: color-mix(in srgb, currentColor 12%, transparent);
-  pointer-events: none;
+  display: none;
 }
 
 .dr-hero__copy {
@@ -1218,4 +1212,538 @@
 }
 .dr-back {
   min-width: var(--control-min-size);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   안심리포트 재디자인 — 부모 홈과 같은 "한 섹션 = 한 장의 유리" 원칙.
+
+   기존 데이터·상태색·오류 계약은 유지하고, 카드 안에 다시 카드가 반복되던
+   표현만 걷어낸다. 안쪽 정보는 평평한 행과 hairline으로 나누며 실제로
+   누르는 아이콘과 CTA만 한 단계 떠 있는 물체로 표현한다.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.dr-content {
+  padding: 8px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+  gap: 12px;
+}
+
+.dr-head-main {
+  display: grid;
+  gap: 4px;
+}
+
+.dr-subtitle {
+  margin-top: 0;
+}
+
+/* 첫눈에 오늘 상태만 읽히는 메인과 같은 맑은 히어로. */
+.dr-hero {
+  grid-template-columns: minmax(0, 1fr) 96px;
+  gap: 12px;
+  min-height: 176px;
+  padding: 20px;
+  border: 0;
+  border-radius: var(--radius-24);
+  background: var(--ph-glass-fill-clear);
+  box-shadow: var(--ph-panel-shadow);
+  backdrop-filter: blur(20px) saturate(200%);
+  -webkit-backdrop-filter: blur(20px) saturate(200%);
+}
+
+.dr-hero--safe {
+  color: var(--mint-text);
+}
+
+.dr-hero--attention {
+  color: var(--gold-text);
+}
+
+.dr-hero--danger {
+  color: var(--danger-text);
+}
+
+.dr-hero::after {
+  display: none;
+}
+
+.dr-hero__eyebrow {
+  color: currentColor;
+  letter-spacing: 0.02em;
+}
+
+.dr-hero__title {
+  margin-top: 8px;
+  letter-spacing: -0.035em;
+}
+
+.dr-hero p {
+  max-width: 23rem;
+  margin-top: 8px;
+  color: var(--ph-ink-3);
+  word-break: keep-all;
+}
+
+.dr-hero__chips {
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.dr-hero__chips span {
+  gap: 4px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ph-ink-3);
+}
+
+.dr-hero__chips span + span {
+  padding-left: 12px;
+  border-left: 1px solid var(--ph-hairline);
+}
+
+.dr-hero__visual {
+  width: 96px;
+  height: 120px;
+  align-self: center;
+}
+
+.dr-hero__orb {
+  inset: 12px 2px;
+  border-radius: 30px;
+  background: var(--ph-object-fill);
+  box-shadow: var(--ph-object-raise);
+}
+
+.dr-hero__orb img {
+  width: 64px;
+  height: 64px;
+  filter: drop-shadow(0 10px 14px rgba(40, 50, 78, 0.16));
+}
+
+/* 네 개의 핵심 수치는 별도 카드 네 장이 아니라 한 장 안의 2×2 지표다. */
+.dr-overview {
+  gap: 0;
+  padding: 8px 12px;
+  border-radius: var(--radius-24);
+}
+
+.dr-root .dr-overview,
+.dr-root .dr-section,
+.dr-root .dr-more {
+  border-radius: var(--radius-24);
+}
+
+.dr-overview-card {
+  padding: 12px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dr-overview-card:nth-child(odd) {
+  border-right: 1px solid var(--ph-hairline);
+}
+
+.dr-overview-card:nth-child(n + 3) {
+  border-top: 1px solid var(--ph-hairline);
+}
+
+.dr-overview-card__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-12);
+  background: var(--ph-object-fill);
+  box-shadow: var(--ph-object-raise);
+}
+
+.dr-overview-card__icon img {
+  width: 25px;
+  height: 25px;
+}
+
+.dr-overview-card__label {
+  margin-top: 8px;
+  color: var(--ph-ink-3);
+}
+
+.dr-overview-card strong {
+  margin-top: 4px;
+  color: var(--ph-ink);
+  letter-spacing: -0.03em;
+}
+
+.dr-overview-card small {
+  margin-top: 4px;
+  color: var(--ph-ink-3);
+}
+
+/* 상세 섹션은 바깥 유리 한 장만 남긴다. */
+.dr-section {
+  padding: 16px;
+  border-radius: var(--radius-24);
+}
+
+.dr-section__head,
+.dr-section__head--large {
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.dr-section__head > span:nth-child(2) {
+  min-width: 0;
+}
+
+.dr-section__head b {
+  color: var(--ph-ink);
+  letter-spacing: -0.025em;
+}
+
+.dr-section__head small {
+  margin-top: 4px;
+  color: var(--ph-ink-3);
+}
+
+.dr-section__icon {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: var(--radius-12);
+  background: var(--ph-object-fill);
+  box-shadow: var(--ph-object-raise);
+}
+
+.dr-section__icon img {
+  width: 27px;
+  height: 27px;
+}
+
+.dr-link {
+  min-height: var(--control-min-size);
+  padding: 8px 4px;
+  border-radius: var(--radius-8);
+  background: transparent;
+  box-shadow: none;
+  color: var(--ph-link);
+}
+
+.dr-link:active {
+  opacity: 0.58;
+}
+
+/* 안전 신호는 세 개의 조용한 지표, 실제 경고만 별도 강조한다. */
+.dr-signal-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  padding: 4px 0;
+}
+
+.dr-signal {
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dr-signal + .dr-signal {
+  border-left: 1px solid var(--ph-hairline);
+}
+
+.dr-signal span {
+  color: var(--tone-text);
+}
+
+.dr-signal b {
+  margin-top: 8px;
+  color: var(--ph-ink);
+}
+
+.dr-signal small {
+  margin-top: 4px;
+  color: var(--ph-ink-3);
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+.dr-alert-list {
+  gap: 0;
+  margin-top: 12px;
+  padding-top: 4px;
+  border-top: 1px solid var(--ph-hairline);
+}
+
+.dr-alert {
+  padding: 12px 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dr-alert + .dr-alert {
+  border-top: 1px solid var(--ph-hairline);
+}
+
+.dr-feature-row {
+  padding: 12px 0 0;
+  border: 0;
+  border-top: 1px solid var(--ph-hairline);
+  background: transparent;
+  box-shadow: none;
+}
+
+.dr-feature-row__icon {
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: var(--radius-12);
+  background: var(--ph-object-fill);
+  box-shadow: var(--ph-object-raise);
+}
+
+.dr-emptyline,
+.dr-lock,
+.dr-note {
+  padding: 12px 0 0;
+  border: 0;
+  border-top: 1px solid var(--ph-hairline);
+  background: transparent;
+  box-shadow: none;
+  color: var(--ph-ink-3);
+}
+
+.dr-duo {
+  gap: 12px;
+}
+
+.dr-event-list {
+  gap: 0;
+}
+
+.dr-event {
+  padding: 12px 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dr-event + .dr-event {
+  border-top: 1px solid var(--ph-hairline);
+}
+
+.dr-event__emoji {
+  box-shadow: var(--ph-object-raise);
+}
+
+.dr-event__tag {
+  padding: 0;
+  border-radius: 0;
+  background: transparent !important;
+}
+
+.dr-progress {
+  height: 7px;
+  background: rgba(76, 86, 112, 0.14);
+}
+
+.dr-note {
+  margin-top: 12px;
+}
+
+.dr-chips {
+  gap: 8px 16px;
+  margin-top: 12px;
+}
+
+.dr-chips span {
+  padding: 4px 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* 기기 수치도 2×2 한 판. 정상 신호는 선, 조치 필요만 색 면을 쓴다. */
+.dr-device-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  padding: 4px 0 12px;
+}
+
+.dr-device-grid div {
+  padding: 12px;
+  border-radius: 0;
+  background: transparent;
+}
+
+.dr-device-grid div:nth-child(odd) {
+  border-right: 1px solid var(--ph-hairline);
+}
+
+.dr-device-grid div:nth-child(n + 3) {
+  border-top: 1px solid var(--ph-hairline);
+}
+
+.dr-device-grid img {
+  width: 20px;
+  height: 20px;
+}
+
+.dr-notification-health,
+.dr-notification-health[data-state="ready"] {
+  gap: 12px;
+  margin-top: 0;
+  padding: 12px 0;
+  border: 0;
+  border-top: 1px solid var(--ph-hairline);
+  background: transparent;
+  box-shadow: none;
+  color: var(--ph-ink-3);
+}
+
+.dr-notification-health[data-state="attention"] {
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--gold-600) 28%, var(--line-card));
+  border-radius: var(--radius-16);
+  background: var(--cream-soft);
+  color: var(--gold-text);
+}
+
+.dr-notification-health small {
+  margin-top: 4px;
+  color: var(--ph-ink-3);
+}
+
+.dr-app-list,
+.dr-memos {
+  gap: 0;
+  margin-top: 12px;
+  padding-top: 4px;
+  border-top: 1px solid var(--ph-hairline);
+}
+
+.dr-app,
+.dr-memo {
+  padding: 12px 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dr-app + .dr-app,
+.dr-memo + .dr-memo {
+  border-top: 1px solid var(--ph-hairline);
+}
+
+.dr-memo__icon {
+  background: var(--ph-object-fill);
+  box-shadow: var(--ph-object-raise);
+}
+
+/* 관련 리포트 세 개도 카드 세 장 대신 한 장의 탐색 목록으로 묶는다. */
+.dr-more {
+  padding: 4px 16px;
+  border-radius: var(--radius-24);
+}
+
+.dr-weekly {
+  padding: 12px 0;
+  border: 0;
+  border-radius: var(--radius-12);
+  background: transparent;
+  box-shadow: none;
+  --press: 1;
+}
+
+.dr-weekly + .dr-weekly {
+  border-top: 1px solid var(--ph-hairline);
+  border-radius: 0;
+}
+
+.dr-weekly:active {
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.dr-weekly__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-12);
+  background: var(--ph-object-fill);
+  box-shadow: var(--ph-object-raise);
+}
+
+.dr-weekly b {
+  color: var(--ph-ink);
+  letter-spacing: -0.02em;
+}
+
+.dr-weekly small {
+  margin-top: 4px;
+  color: var(--ph-ink-3);
+}
+
+.dr-weekly > svg {
+  color: var(--ph-ink-3);
+}
+
+.dr-premium {
+  gap: 12px;
+  padding: 16px;
+  border: 0;
+  background: transparent;
+  color: var(--lav-text);
+}
+
+.dr-premium p {
+  margin-top: 4px;
+  color: var(--ph-ink-3);
+}
+
+@media (max-width: 360px) {
+  .dr-hero {
+    grid-template-columns: minmax(0, 1fr) 78px;
+    min-height: 164px;
+    padding: 16px;
+  }
+
+  .dr-hero__visual {
+    width: 78px;
+    height: 104px;
+  }
+
+  .dr-hero__orb {
+    inset: 12px 0;
+    border-radius: 24px;
+  }
+
+  .dr-hero__orb img {
+    width: 52px;
+    height: 52px;
+  }
+
+  .dr-overview-card {
+    padding-inline: 8px;
+  }
+
+  .dr-section__head {
+    align-items: flex-start;
+  }
+
+  .dr-signal {
+    padding-inline: 8px;
+  }
+
+  .dr-premium {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .dr-premium button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .dr-hero {
+    background: #fff;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }

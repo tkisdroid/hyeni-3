@@ -111,7 +111,7 @@ export function ParentFamily() {
       <header className="pf-header">
         <button
           type="button"
-          className="hy-iconbtn hy-press"
+          className="hy-iconbtn hy-backbtn hy-press"
           aria-label={intl.formatMessage({ id: "parent.parentSettings.copy017" })}
           onClick={goBack}
         >

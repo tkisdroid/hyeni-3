@@ -637,7 +637,7 @@ export function RemoteAudio() {
             <br />
             {intl.formatMessage({ id: "notifications.remoteAudio.subtitleLine2" })}
           </div>
-          <div className="ra-trust-grid">
+          <div className="hy-card ra-trust-grid">
             {TRUST_CARDS.map((item) => {
               return (
                 <div key={item.titleId} className="ra-trust-card hy-explain">

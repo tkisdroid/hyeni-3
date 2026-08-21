@@ -91,13 +91,24 @@ test("서리 스크림은 가릴 것이 생겼을 때만 켠다", () => {
   assert.match(topbarRule, /background: transparent/);
 });
 
-test("알림 화면의 필터는 sticky 헤더가 아니라 메인 섹션 안에 있다", () => {
+test("어른 화면 헤더는 같은 상하 리듬과 44px 뒤로가기를 쓴다", () => {
+  const components = read("src/styles/components.css");
+  const family = read("src/screens/parent/ParentFamily.tsx");
+
+  assert.match(glass, /padding: calc\(env\(safe-area-inset-top, 0px\) \+ 16px\) 16px 28px/);
+  assert.match(glass, /padding-top: calc\(env\(safe-area-inset-top, 0px\) \+ 16px\)/);
+  assert.match(glass, /padding-bottom: 28px/);
+  assert.match(glass, /calc\(100% - 28px\)/);
+  assert.match(components, /button\.hy-press\[class\*="-back"\][\s\S]*width: var\(--control-min-size\)/);
+  assert.match(components, /border-radius: var\(--radius-pill\)/);
+  assert.match(glass, /\[class\*="-back"\]:not\(\.ob-back--dark\):not\(\.cs-back\)/);
+  assert.match(family, /className="hy-iconbtn hy-backbtn hy-press"/);
+});
+
+test("알림 화면은 상단 유형 필터 섹션을 표시하지 않는다", () => {
   const source = read("src/screens/feature/Notifications.tsx");
-  const listAt = source.indexOf('<div className="hy-content nc-list">');
-  const filtersAt = source.indexOf('<div className="nc-filters">');
-  assert.ok(listAt > 0 && filtersAt > listAt, "필터는 목록(.nc-list) 안에 있어야 한다");
-  // 헤더에 둘째 줄을 붙이면 스크림·마스크 경계에 걸린다.
-  assert.doesNotMatch(source, /nc-top/);
+  assert.doesNotMatch(source, /nc-filters|nc-filter/);
+  assert.doesNotMatch(source, /notifications\.center\.filter\./);
 });
 
 test("하단 메뉴는 바로가기로 들어간 화면에서도 보인다", () => {
@@ -136,4 +147,17 @@ test("절대 배치 루트 화면은 하단 메뉴 위로 바닥을 끌어올린
   // padding 은 position:absolute + inset:0 루트에 통하지 않는다.
   // 실제로 '기기 찾기'의 [지금 울리기] 버튼이 탭바에 가려졌다.
   assert.match(glass, /\.hy-adult \.hy-screen\[data-nav="push"\] :is\(\.rr-root, \.ra-root, \.sr-root\) \{[^}]*bottom: var\(--hy-nav-inset\)/);
+});
+
+test("주변소리 대기 화면은 CTA를 고정하고 설명 본문만 스크롤한다", () => {
+  const css = read("src/screens/feature/RemoteAudio.css");
+  const idle = css.match(/\.ra-idle \{([\s\S]*?)\n\}/)?.[1] ?? "";
+  const center = css.match(/\.ra-idle-center \{([\s\S]*?)\n\}/)?.[1] ?? "";
+
+  assert.match(idle, /height: 100%/);
+  assert.match(idle, /grid-template-rows: auto minmax\(0, 1fr\) auto/);
+  assert.match(idle, /overflow: hidden/);
+  assert.match(idle, /env\(safe-area-inset-bottom, 0px\)/);
+  assert.doesNotMatch(idle, /120px/);
+  assert.match(center, /overflow-y: auto/);
 });

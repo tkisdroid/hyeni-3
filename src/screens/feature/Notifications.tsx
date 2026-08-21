@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { ChevronLeft } from "lucide-react";
 import { asset } from "@/lib/assets";
@@ -7,41 +7,21 @@ import { useSafeBack } from "@/app/useSafeBack";
 import { Loading } from "@/components/ui/Loading";
 import { useParentAlerts, useMarkAlertRead, useMarkAllAlertsRead } from "@/queries/useNotifications";
 import {
-  alertCategory,
   alertRoute,
   mapAlertsToGroups,
   type AlertItemView,
 } from "@/transform/notificationsView";
-import type { ParentAlert } from "@/lib/api/endpoints/notifications";
 import { useLocale } from "@/i18n/useLocale";
 import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
 import { useIntl } from "react-intl";
 import "./Notifications.css";
 
 /**
- * 알림 센터: 부모 알림(parent-alerts)을 유형 필터 + 날짜 그룹으로 표시.
+ * 알림 센터: 부모 알림(parent-alerts)을 날짜 그룹으로 표시.
  * 아이콘/틴트색은 alert_type + severity 신호색 규칙(transform/notificationsView),
  * 읽음 처리는 사용자 탭·"모두 읽음" 버튼에서만 실행(자동 처리 없음).
  * 탭 시 유형별 상세 화면으로 이동(도착→/arrival-alerts · 위험→/danger-alert · 위치→지도).
  */
-
-/** 유형 필터 키. "전체" 외에는 alert_type 로 분류(비겹침). */
-type FilterKey = "all" | "safety" | "location" | "schedule" | "talk";
-
-const FILTER_ORDER: ReadonlyArray<Exclude<FilterKey, "all">> = [
-  "safety",
-  "location",
-  "schedule",
-  "talk",
-];
-
-const FILTER_LABEL_ID: Record<FilterKey, string> = {
-  all: "notifications.center.filter.all",
-  safety: "notifications.center.filter.safety",
-  location: "notifications.center.filter.location",
-  schedule: "notifications.center.filter.schedule",
-  talk: "notifications.center.filter.talk",
-};
 
 export function Notifications() {
   const intl = useIntl();
@@ -60,29 +40,9 @@ export function Notifications() {
   // 알림이 바뀔 때만 now 재계산(상대시간/그룹 안정화).
   const now = useMemo(() => new Date(), [list]);
 
-  // 유형 필터 + 카테고리별 개수(칩 노출/뱃지 계산).
-  const [filter, setFilter] = useState<FilterKey>("all");
-  const counts = useMemo(() => {
-    const c: Record<FilterKey, number> = { all: 0, safety: 0, location: 0, schedule: 0, talk: 0 };
-    for (const a of list) {
-      c.all += 1;
-      c[alertCategory(a.alert_type)] += 1;
-    }
-    return c;
-  }, [list]);
-  // 전체 + 실제 알림이 존재하는 카테고리만 칩으로 노출(빈 필터 방지).
-  const chips = useMemo<FilterKey[]>(
-    () => ["all", ...FILTER_ORDER.filter((k) => counts[k] > 0)],
-    [counts],
-  );
-
-  const filteredList = useMemo<ParentAlert[]>(
-    () => (filter === "all" ? list : list.filter((a) => alertCategory(a.alert_type) === filter)),
-    [list, filter],
-  );
   const groups = useMemo(
-    () => mapAlertsToGroups(filteredList, now, locale, LEGACY_FAMILY_TIME_ZONE),
-    [filteredList, locale, now],
+    () => mapAlertsToGroups(list, now, locale, LEGACY_FAMILY_TIME_ZONE),
+    [list, locale, now],
   );
 
   useEffect(() => {
@@ -143,8 +103,6 @@ export function Notifications() {
     show(intl.formatMessage({ id: "notifications.center.toast.checked" }), "🔔");
   };
 
-  const hasAlerts = !isLoading && !isError && list.length > 0;
-
   return (
     <div className="nc-root">
       <header className="nc-header">
@@ -166,27 +124,7 @@ export function Notifications() {
           {intl.formatMessage({ id: "notifications.center.markAllRead" })}
         </button>
       </header>
-
-
       <div className="hy-content nc-list">
-        {/* 필터는 메인 섹션 안에 둔다 — sticky 헤더에 붙이면 그 경계에서
-            목록 카드가 반쯤 비쳐 보인다(2026-08-21 TK 지시). */}
-        {hasAlerts && (
-          <div className="nc-filters">
-            {chips.map((k) => (
-              <button
-                key={k}
-                type="button"
-                className={`nc-filter hy-press${filter === k ? " nc-filter--active" : ""}`}
-                aria-pressed={filter === k}
-                onClick={() => setFilter(k)}
-              >
-                {intl.formatMessage({ id: FILTER_LABEL_ID[k] })}
-                <span className="nc-filter__count">{intl.formatNumber(counts[k])}</span>
-              </button>
-            ))}
-          </div>
-        )}
         {isLoading && (
           <div className="nc-state">
             <Loading label={intl.formatMessage({ id: "notifications.center.loading" })} />
@@ -207,11 +145,7 @@ export function Notifications() {
         {!isLoading && !isError && groups.length === 0 && (
           <div className="nc-state">
             <span className="nc-state__text">
-              {intl.formatMessage({
-                id: list.length > 0
-                  ? "notifications.center.empty.filter"
-                  : "notifications.center.empty.all",
-              })}
+              {intl.formatMessage({ id: "notifications.center.empty.all" })}
             </span>
           </div>
         )}

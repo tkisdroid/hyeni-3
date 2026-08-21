@@ -638,7 +638,6 @@ test("단색 CTA와 선택 상태도 전경색에 맞는 AA 전용 토큰을 쓴
     "반투명 날짜 구분면에는 더 진한 보조 문구 토큰을 사용합니다",
   );
   for (const [file, selector] of [
-    ["src/screens/feature/Notifications.css", ".nc-filter__count"],
     ["src/screens/shared/MemoChat.css", ".mc-loc-title"],
   ]) {
     assert.equal(

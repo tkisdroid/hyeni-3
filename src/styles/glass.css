@@ -166,7 +166,7 @@
 
 /* ── 상단바 ─────────────────────────────────────────────────────────────── */
 .hy-adult .hy-topbar {
-  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 20px;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 28px;
   border-bottom: 0;
   /* 스크롤 내용이 브랜드 행 뒤로 비쳐 보이면 안 된다 — 제목 줄까지는 거의 불투명하게
      덮고 마지막 구간만 오로라로 녹아든다. */
@@ -178,8 +178,8 @@
      ⚠️ 페이드 띠는 퍼센트가 아니라 padding-bottom 과 같은 px 로 잡는다 —
      헤더 높이가 화면마다 달라 퍼센트로 잡으면 띠가 여백을 넘어
      아래 목록 카드가 반쯤 비친다(2026-08-21 실측). */
-  mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 20px), rgba(0, 0, 0, 0) 100%);
-  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 20px), rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 28px), rgba(0, 0, 0, 0) 100%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 28px), rgba(0, 0, 0, 0) 100%);
 }
 
 .hy-adult .hy-topbar__title {
@@ -199,6 +199,21 @@
 }
 
 .hy-adult button.hy-iconbtn:active {
+  box-shadow: var(--ph-object-press);
+}
+
+/* 상세 화면 뒤로가기도 부모 홈의 조작 버튼과 같은 물성을 쓴다. */
+.hy-app.hy-adult button.hy-press[class*="-back"]:not(.ob-back--dark):not(.cs-back),
+.hy-app.hy-adult button.hy-backbtn {
+  border: 0;
+  background: var(--ph-object-fill);
+  box-shadow: var(--ph-object-raise);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.hy-app.hy-adult button.hy-press[class*="-back"]:not(.ob-back--dark):not(.cs-back):active,
+.hy-app.hy-adult button.hy-backbtn:active {
   box-shadow: var(--ph-object-press);
 }
 
@@ -394,13 +409,14 @@
   .ts-header, .tt-topbar
 ) {
   border-bottom: 0;
-  /* 마스크가 아래 26%를 지우므로 내용이 그 안에 들어오지 않게 여백을 확보한다. */
-  padding-bottom: 20px;
+  /* 제목 행 아래 28px을 확보해 첫 섹션과 숨이 붙지 않게 한다. */
+  padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+  padding-bottom: 28px;
   background: transparent;
   backdrop-filter: blur(30px) saturate(180%);
   -webkit-backdrop-filter: blur(30px) saturate(180%);
-  mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 20px), rgba(0, 0, 0, 0) 100%);
-  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 20px), rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 28px), rgba(0, 0, 0, 0) 100%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 28px), rgba(0, 0, 0, 0) 100%);
 }
 
 /* 섹션 사이 여백은 카드가 자기 padding 을 가지므로 12px 이면 충분하다.
@@ -526,7 +542,7 @@
   background: linear-gradient(
     180deg,
     rgba(248, 248, 253, 0.94) 0,
-    rgba(248, 248, 253, 0.92) calc(100% - 20px),
+    rgba(248, 248, 253, 0.92) calc(100% - 28px),
     rgba(248, 248, 253, 0) 100%
   );
 }

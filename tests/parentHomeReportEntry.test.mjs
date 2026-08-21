@@ -50,3 +50,17 @@ test("오늘의 안심 리포트는 아이콘형 요약과 안전 신호 섹션�
   assert.match(css, /\.dr-signal-grid\s*\{/);
   assert.match(css, /\.dr-device-grid\s*\{/);
 });
+
+test("오늘의 안심 리포트는 부모 홈처럼 섹션 한 장과 평평한 안쪽 행을 쓴다", () => {
+  const source = readSource("src/screens/feature/DailySafetyReport.tsx");
+  const css = readSource("src/screens/feature/DailySafetyReport.css");
+
+  assert.match(source, /className="hy-card dr-overview"/);
+  assert.match(source, /className="hy-card dr-more"/);
+  assert.doesNotMatch(source, /dr-hero__mini/);
+  assert.match(css, /안심리포트 재디자인/);
+  assert.match(css, /\.dr-section \{[^}]*border-radius: var\(--radius-24\)/s);
+  assert.match(css, /\.dr-overview-card \{[\s\S]*?background: transparent/);
+  assert.match(css, /\.dr-event \{[\s\S]*?background: transparent/);
+  assert.match(css, /\.dr-weekly \{[\s\S]*?background: transparent/);
+});
