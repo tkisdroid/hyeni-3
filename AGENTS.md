@@ -75,7 +75,11 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   OTP를 검증하고 user/identity/profile/OTP 소비를 한 batch로 확정한다. 운영은 익명 중복 그룹 4종=0 확인 →
   `worker/db/auth-entry-uniqueness.sql` → Worker 순서다. Pages OAuth 복귀는 `_redirects` rewrite가 아니라 build의
   `scripts/write-oauth-callback-entry.mjs`가 생성하는 물리 `/oauth/callback.html`이 정본이다. 중첩 경로에서 자원과
-  Service Worker가 `/oauth/*`로 잘못 해석되지 않도록 루트 asset URL과 `<base href="/">`를 유지한다.
+  Service Worker가 `/oauth/*`로 잘못 해석되지 않도록 루트 asset URL과 `<base href="/">`를 유지한다. 웹 OAuth 시작은
+  반드시 절대 Worker API의 `POST /api/auth/oauth/{provider}/start`와 서버 생성 state/transaction을 사용하며, 같은 origin
+  GET을 만들지 않는다. `hyenicalendar.com` apex의 배포 정본은 Vercel이 아니라 Proxied CNAME으로 연결된
+  `hyeni-calendar.pages.dev` Pages custom domain이다. Worker CORS/OAuth origin은 정확한 apex·`www`·Pages origin만
+  허용하고 경로/접미사 lookalike는 거부하며, Android OAuth callback은 계속 Pages App Link를 사용한다.
 - **부모 iPhone·아이 Android 정본 토폴로지(2026-07-31)**: 최종 기능 검증의 기본 조합은
   **부모=iPhone 홈 화면 PWA, 아이=Android 네이티브 앱**이다. 위치 즉시 요청·기기 상태·소리 울리기·주변 소리·
   메시지·장소/알림 설정은 부모 기기의 Capacitor 여부로 막지 않고 Worker API→FCM→아이 Android 경로를 사용한다.

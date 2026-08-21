@@ -11,14 +11,27 @@
 **1~10단계 전부 완료**(전 화면 실데이터·다자녀·AI 친구·알림 3종·릴리즈 게이트) — 실기기 3대 운용 중.
 **현 국면 = 실사용 안정화**: TK 가 실기기로 쓰며 제보하는 버그·개선을 즉시 수정·검증·배포.
 
-**현재 배포 상태(2026-08-21 인증 진입점·Android 중복 아이콘 안정화)**: 브라우저 부모 모드의 로그인/회원가입을
+**현재 배포 상태(2026-08-21 인증 진입점·브랜드 도메인·Android 중복 아이콘 안정화)**: 브라우저 부모 모드의 로그인/회원가입을
 첫 화면의 명시적 탭으로 분리하고 전화 가입·카카오/구글 가입, 지속 오류 안내, 잘못된 비밀번호 뒤 입력 유지·비밀번호
 포커스·버튼 재활성화를 정리했다. ID 확인 실패를 중복으로 오인하지 않으며 `mindlady`는 production 공개 조회에서
 `200 {"available":true}`다. 가입 전 입력·설치 식별자·전화·ID 중복을 먼저 확인하고, OTP 검증 뒤 user/identity/profile/
 OTP 소비를 한 D1 batch로 확정한다. `worker/db/auth-entry-uniqueness.sql` 적용 전 익명 중복 그룹 4종이 모두 0임을 확인했고,
 적용 후 phone·정규화 login_id·phone_otp UNIQUE 인덱스 4개를 readback했다. OTP 검증 직후 재발급 경합도 조건부
-INSERT로 계정 행 0건·새 OTP 보존을 보장한다. Worker version은 `4d9154e1-12af-4221-8be2-d4b38aec18d3`이며
+INSERT로 계정 행 0건·새 OTP 보존을 보장한다. Worker version은 `188d1103-e9b8-4ac2-9cc0-59419b1709fd`이며
 health 200 ready, ID 확인 응답 `no-store`를 확인했다.
+
+브랜드 도메인 가입 404의 근본 원인은 `hyenicalendar.com` apex가 구형 Vercel 배포를 가리켜, 당시 번들이 비어 있는
+`VITE_API_BASE`로 같은 origin의 `GET /api/auth/oauth/{provider}/start`를 만든 것이었다. 구형 apex A 레코드 2개를
+제거하고 Proxied CNAME `hyenicalendar.com → hyeni-calendar.pages.dev`를 연결했으며 Pages custom domain API의
+`status=active`·`validation=active`를 확인했다. `www`·와일드카드·CAA 등 비대상 레코드는 보존했다. production
+루트·`/oauth/callback`·과거 GET 경로는 모두 Cloudflare 200이고 `x-vercel-*`가 없으며, 현재 entry
+`assets/index-JSdP-RED.js`와 Service Worker SHA-256
+`b70daaad2964926be2c38265011c97f3e5d6770f26ca6d002a0e65cd8f8deedf`가 로컬 `dist`와 일치한다.
+웹 OAuth 시작은 반드시 절대 Worker API
+`POST https://hyeni-calendar-api.tkisdroid.workers.dev/api/auth/oauth/{provider}/start`와 서버 생성 state/transaction을
+사용한다. 같은 origin GET을 되살리지 않는다. Worker CORS/OAuth redirect origin은 정확한
+`https://hyenicalendar.com`·`https://www.hyenicalendar.com`·Pages origin만 허용하고 경로/접미사 lookalike는 거부한다.
+Android App Link OAuth callback 정본은 계속 `https://hyeni-calendar.pages.dev/oauth/callback`이다.
 
 Kakao/Google 복귀는 Pages 200 rewrite에 기대지 않고 build가 현재 hashed entry를 참조하는 물리
 `/oauth/callback.html`을 생성한다. production `/oauth/callback`은 redirect 없이 200·`Cache-Control:no-store`, 루트
