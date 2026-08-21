@@ -27,8 +27,9 @@ safe-area 뒤 상단 16px, 전역 수평 overflow 차단, 세로 fade 전환을 
 entry `assets/index-BLgtnG0U.js`(SHA-256 `7c6e6a89a18c0967cb0dde130e5f59bd88719281f2a06a5adeb4ad5c498af719`),
 CSS `assets/index-DMuUhfUk.css`, Service Worker가 로컬 `dist`와 바이트 일치하고 브랜드 OAuth callback도 200이다.
 Android는 최신 `dist`를 sync하고 `assembleDebug` 성공, APK SHA-256은
-`52cdf25abdc5c5c6827d5dc5650b56e6bfd30cb92f4009a8c0ee0520f3d346da`다. S25 설치는 실행 직전 기기가 ADB에서
-이탈해 앱을 건드리지 않은 채 대기 중이며, 재연결 후 반드시 `npm run android:install:debug -- R5CY521CFNZ`만 사용한다.
+`52cdf25abdc5c5c6827d5dc5650b56e6bfd30cb92f4009a8c0ee0520f3d346da`다. 재연결한 S25에
+`npm run android:install:debug -- R5CY521CFNZ`로 보존 설치했고 v1.4.0/versionCode 11·user 0 패키지 존재·
+DUAL_APP user 95 패키지 없음·`lastUpdateTime=2026-08-22 01:46:16`을 확인했다. 앱 실행·로그인·역할·페어링은 건드리지 않았다.
 
 **현재 배포 상태(2026-08-21 인증 진입점·브랜드 도메인/PWA 문서 신선도·Android 중복 아이콘 안정화)**: 브라우저 부모 모드의 로그인/회원가입을
 첫 화면의 명시적 탭으로 분리하고 전화 가입·카카오/구글 가입, 지속 오류 안내, 잘못된 비밀번호 뒤 입력 유지·비밀번호
