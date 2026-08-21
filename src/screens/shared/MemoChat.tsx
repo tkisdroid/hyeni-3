@@ -841,7 +841,7 @@ export function MemoChat() {
             onClick={() => fileRef.current?.click()}
             disabled={sharing !== "" || !scopeChild}
           >
-            <ImageIcon size={16} strokeWidth={2} />
+            <ImageIcon size={20} strokeWidth={2} aria-hidden="true" />
           </button>
           <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => void onPickImage(e)} />
           <button
@@ -851,7 +851,7 @@ export function MemoChat() {
             onClick={() => void shareLocation()}
             disabled={sharing !== "" || !scopeChild}
           >
-            <MapPin size={16} strokeWidth={2} />
+            <MapPin size={20} strokeWidth={2} aria-hidden="true" />
           </button>
           <input
             className="mc-input"

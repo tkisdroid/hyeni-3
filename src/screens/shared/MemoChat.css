@@ -376,19 +376,28 @@
 .mc-attach {
   width: var(--control-min-size);
   height: var(--control-min-size);
-  border-radius: 50%;
-  background: var(--neu-surface);
-  box-shadow: var(--neu-raised-soft);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   color: var(--fg-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
   flex: none;
-  --press: 0.9;
-  transition: box-shadow 0.16s var(--easing-standard);
+  touch-action: manipulation;
+  --press: 0.94;
 }
 .mc-attach:active {
-  box-shadow: var(--neu-pressed);
+  box-shadow: none;
+}
+.mc-attach > svg {
+  width: var(--icon-20);
+  height: var(--icon-20);
+  pointer-events: none;
 }
 .mc-input {
   flex: 1;

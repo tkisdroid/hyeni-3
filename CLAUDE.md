@@ -1048,6 +1048,16 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   테두리에 붙어 눌려 보였다. `padding: 4px 8px`·`gap: 8px` + `.mc-input` 자체 `padding-inline: 4px` 로 풀고,
   컴포저 좌우도 본문(`.hy-content` 20px)과 같은 선에 맞춘다(16px 이면 입력줄만 넓어 어긋나 보인다).
   입력 알약·퀵버튼도 같은 `--glass-*` 재질을 쓴다.
+- ★**대화 사진·위치 도구 평면화(2026-08-21 TK 제보)**: 입력 알약 왼쪽의 사진 첨부·위치 공유는 기능과
+  접근성 이름을 유지하되, `.mc-attach`의 배경·테두리·원형 radius·그림자·backdrop-filter를 모두 없애
+  **투명한 44px 터치 영역 안에 20px Lucide 아이콘만** 보인다. 눌림 피드백은 공용 `hy-press`의 작은 scale만
+  남기고 active 그림자도 만들지 않는다. `.mc-composer`의 `bottom: var(--mc-tabbar-clearance)`와 본문 정렬은
+  건드리지 않아 채팅 전체가 계속 하단 메뉴 위에 놓인다. 회귀=`tests/memoComposerDesign.test.mjs`.
+  · 검증: 전용+아이 컴포저 29/29, 디자인·접근성 73/73, 앱 전체 1,826/1,826, typecheck와 production/PWA
+  build가 통과했다. Android unit·lint·assemble도 통과하고 debug APK(SHA-256 `6BBCBB27…96B165`)를
+  S25에 `adb install -r`로 설치했다. 설치 전후 부모 역할·가족 지문 `418660464c2e`가 같고, 실측 두 버튼은
+  각각 44×44px/아이콘 20×20px·투명/무테/무그림자/무blur였다. 컴포저 bottom 734px ≤ 탭바 top 737px,
+  가로 overflow 없음까지 확인한 뒤 부모 홈으로 복귀했다.
 - ⚠️ **원격이 같은 화면을 이미 고쳤을 수 있다(2026-08-19 실사고)**: 이 세션은 `9a6ab81` 기준으로 부모 홈을
   재디자인했는데, 그 사이 원격 main 에 같은 영역의 커밋 5개(`.ph-page`/`.ph-glass` 도입)가 올라와 있었다.
   "before" 스크린샷이 이미 낡은 상태라 진단 자체가 어긋났고 push 도 거부됐다. **디자인 작업 시작 전에
