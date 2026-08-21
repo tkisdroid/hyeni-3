@@ -564,16 +564,28 @@ async function requestWorkerVersion(cdp) {
   }))()`, { timeoutMs: 5_000 });
 }
 
-async function setNetworkOfflineState(cdp, offline) {
-  const conditions = {
+function networkConditions(offline) {
+  return {
     offline,
     latency: 0,
     downloadThroughput: offline ? 0 : -1,
     uploadThroughput: offline ? 0 : -1,
     connectionType: offline ? "none" : "wifi",
   };
-  await cdp.send("Network.emulateNetworkConditions", conditions);
-  await cdp.send("Network.overrideNetworkState", conditions);
+}
+
+async function setTargetNetworkOfflineState(cdp, offline, sessionId = null) {
+  const conditions = networkConditions(offline);
+  await cdp.send("Network.emulateNetworkConditions", conditions, 20_000, sessionId);
+  await cdp.send("Network.overrideNetworkState", conditions, 20_000, sessionId);
+}
+
+async function setNetworkOfflineState(cdp, offline, browserCdp = null, workerSessions = []) {
+  await setTargetNetworkOfflineState(cdp, offline);
+  if (!browserCdp) return;
+  await Promise.all([...workerSessions].map(
+    (sessionId) => setTargetNetworkOfflineState(browserCdp, offline, sessionId),
+  ));
 }
 
 async function runOfflineNetworkProbe(cdp, origin) {
@@ -898,7 +910,12 @@ export async function runPwaRuntimeQa({ outputDir = resolvePwaRuntimeQaOutputDir
         if (appOwned) appWorkerSessions.add(sessionId);
         void (async () => {
           try {
-            if (appOwned) await browserCdp.send("Network.enable", {}, 20_000, sessionId);
+            if (appOwned) {
+              await browserCdp.send("Network.enable", {}, 20_000, sessionId);
+              if (offlineEnabled) {
+                await setTargetNetworkOfflineState(browserCdp, true, sessionId);
+              }
+            }
           } catch (error) {
             networkFailures.push({
               phase,
@@ -969,10 +986,39 @@ export async function runPwaRuntimeQa({ outputDir = resolvePwaRuntimeQaOutputDir
       ),
     };
 
+    phase = "online-navigation";
+    const onlineNavigationRequestStart = staticServer.requests.length;
+    await cdp.send("Page.reload", { ignoreCache: false });
+    const onlineNavigationRoute = await waitForCondition(
+      "Service Worker 온라인 최신 문서 재진입",
+      () => readRouteState(cdp),
+      (state) => state?.hash === `#${PWA_RUNTIME_QA_ROUTE}`
+        && state.rootVisible
+        && state.hasAppName
+        && !state.crash
+        && state.controlled,
+      { timeoutMs: 25_000, interrupted },
+    );
+    const onlineNavigationRequests = staticServer.requests.slice(onlineNavigationRequestStart);
+    const onlineDocumentRequests = onlineNavigationRequests.filter(
+      (request) => request.method === "GET" && request.path === "/index.html" && request.status === 200,
+    );
+    report.checks.onlineNavigationFreshness = {
+      route: onlineNavigationRoute,
+      serverRequests: onlineNavigationRequests,
+      documentRequests: onlineDocumentRequests,
+    };
+    if (onlineDocumentRequests.length === 0) {
+      throw new Error("온라인 reload가 현재 index.html을 네트워크에서 확인하지 않았습니다");
+    }
+
     phase = "offline";
-    const offlineServerRequestStart = staticServer.requests.length;
-    await setNetworkOfflineState(cdp, true);
+    await setNetworkOfflineState(cdp, true, browserCdp, appWorkerSessions);
     offlineEnabled = true;
+    // 직전 온라인 문서가 시작한 SW 업데이트/탐색 요청이 완료된 뒤부터
+    // 오프라인 reload의 서버 접근만 집계한다.
+    await wait(250);
+    const offlineServerRequestStart = staticServer.requests.length;
     await cdp.send("Page.reload", { ignoreCache: true });
     await waitForCondition(
       "Service Worker 오프라인 route 재진입",
@@ -984,7 +1030,7 @@ export async function runPwaRuntimeQa({ outputDir = resolvePwaRuntimeQaOutputDir
         && state.controlled,
       { timeoutMs: 25_000, interrupted },
     );
-    await setNetworkOfflineState(cdp, true);
+    await setNetworkOfflineState(cdp, true, browserCdp, appWorkerSessions);
     const offlineRoute = await waitForCondition(
       "오프라인 navigator 상태",
       () => readRouteState(cdp),
@@ -999,10 +1045,18 @@ export async function runPwaRuntimeQa({ outputDir = resolvePwaRuntimeQaOutputDir
     const offlineNetworkProbe = await runOfflineNetworkProbe(cdp, origin);
     const offlineRegistration = await readRegistrationState(cdp);
     const offlineServerRequests = staticServer.requests.slice(offlineServerRequestStart);
+    const offlineServiceWorkerUpdateRequests = offlineServerRequests.filter(
+      (request) => request.method === "GET" && request.path === "/sw.js",
+    );
+    const offlineUnexpectedServerRequests = offlineServerRequests.filter(
+      (request) => !(request.method === "GET" && request.path === "/sw.js"),
+    );
     report.checks.offlineReload = {
       route: offlineRoute,
       registration: offlineRegistration,
       serverRequests: offlineServerRequests,
+      serviceWorkerUpdateRequests: offlineServiceWorkerUpdateRequests,
+      unexpectedServerRequests: offlineUnexpectedServerRequests,
       networkEmulationOffline: true,
       navigatorOfflineConfirmed: offlineRoute.navigatorOnlineAdvisory === false,
       uncachedNetworkProbe: offlineNetworkProbe,
@@ -1010,11 +1064,11 @@ export async function runPwaRuntimeQa({ outputDir = resolvePwaRuntimeQaOutputDir
     if (!offlineNetworkProbe.rejected) {
       throw new Error(`오프라인 uncached probe가 HTTP ${offlineNetworkProbe.status} 응답을 받았습니다`);
     }
-    if (offlineServerRequests.length > 0) {
-      throw new Error(`오프라인 reload가 localhost 서버에 ${offlineServerRequests.length}건 접근했습니다`);
+    if (offlineUnexpectedServerRequests.length > 0) {
+      throw new Error(`오프라인 reload가 앱 문서/자산 서버에 ${offlineUnexpectedServerRequests.length}건 접근했습니다`);
     }
 
-    await setNetworkOfflineState(cdp, false);
+    await setNetworkOfflineState(cdp, false, browserCdp, appWorkerSessions);
     offlineEnabled = false;
     await waitForCondition(
       "온라인 navigator 상태 복구",
@@ -1086,7 +1140,7 @@ export async function runPwaRuntimeQa({ outputDir = resolvePwaRuntimeQaOutputDir
     });
   } finally {
     if (offlineEnabled && cdp) {
-      await setNetworkOfflineState(cdp, false).catch(() => undefined);
+      await setNetworkOfflineState(cdp, false, browserCdp, appWorkerSessions).catch(() => undefined);
     }
     removeSignalHandlers();
     await cleanup();

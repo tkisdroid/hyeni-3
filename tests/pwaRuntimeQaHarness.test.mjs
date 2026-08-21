@@ -66,7 +66,8 @@ test("PWA 런타임 QA는 Service Worker 우회 없이 install·offline route·c
   assert.match(source, /Network\.setBypassServiceWorker",\s*\{\s*bypass:\s*false\s*\}/);
   assert.doesNotMatch(source, /bypass:\s*true/);
   assert.match(source, /Network\.setCacheDisabled/);
-  assert.match(source, /setNetworkOfflineState\(cdp, true\)/);
+  assert.match(source, /setNetworkOfflineState\(cdp, true, browserCdp, appWorkerSessions\)/);
+  assert.match(source, /setTargetNetworkOfflineState\(browserCdp, true, sessionId\)/);
   assert.match(source, /Network\.overrideNetworkState/);
   assert.match(source, /Page\.reload",\s*\{\s*ignoreCache:\s*true\s*\}/);
   assert.match(source, /networkEmulationOffline:\s*true/);
@@ -77,7 +78,9 @@ test("PWA 런타임 QA는 Service Worker 우회 없이 install·offline route·c
   assert.match(source, /activeState === "activated"/);
   assert.match(source, /controllerState === "activated"/);
   assert.match(source, /PWA_RUNTIME_QA_ROUTE_SELECTOR/);
-  assert.match(source, /offlineServerRequests\.length > 0/);
+  assert.match(source, /offlineUnexpectedServerRequests\.length > 0/);
+  assert.match(source, /Page\.reload",\s*\{\s*ignoreCache:\s*false\s*\}/);
+  assert.match(source, /onlineDocumentRequests\.length === 0/);
 });
 
 test("PWA 런타임 QA는 의도적으로 precache에서 뺀 Jua 폰트의 오프라인 실패만 예외로 분류한다", () => {

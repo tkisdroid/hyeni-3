@@ -1,7 +1,9 @@
 /// <reference lib="webworker" />
 
-import { cleanupOutdatedCaches, precacheAndRoute } from "workbox-precaching";
+import { cleanupOutdatedCaches, matchPrecache, precacheAndRoute } from "workbox-precaching";
+import { registerRoute } from "workbox-routing";
 import { API_BASE } from "./config/env";
+import { resolvePwaNavigationResponse } from "./transform/pwaNavigationFreshness";
 import {
   authorizeMemoDisplay,
   isNewMemoPush,
@@ -52,6 +54,18 @@ const ALLOWED_ROUTES = {
     "/child/ai-friend",
   ]),
 } as const;
+
+// 앱 문서는 온라인일 때 현재 배포를 먼저 확인한다. 브랜드 도메인이 구형 호스팅에서
+// 넘어온 브라우저가 설치 당시 index.html만 계속 받으면 로그인 직후 새 문서가 부팅되지
+// 않을 수 있다. 자산 precache보다 먼저 등록해야 탐색 요청을 이 정책이 선점한다.
+registerRoute(
+  ({ request }) => request.mode === "navigate",
+  ({ request }) => resolvePwaNavigationResponse({
+    request,
+    fetchNetwork: (navigationRequest) => fetch(navigationRequest, { cache: "no-store" }),
+    matchOfflineShell: () => matchPrecache("index.html"),
+  }),
+);
 
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();

@@ -361,6 +361,25 @@ export function mockApi(pathname, scenario, method = "GET") {
   if (pathname === "/auth/login-password" && scenario.authCase === "wrong-password") {
     return { error: "invalid_credentials" };
   }
+  if (pathname === "/auth/login-password" && scenario.authCase === "success") {
+    const accessToken = safeAccessToken("parent");
+    return {
+      user: {
+        id: PARENT_ID,
+        role: "parent",
+        family_id: FAMILY_ID,
+        is_anonymous: false,
+        app_metadata: { role: "parent", family_id: FAMILY_ID },
+        user_metadata: { role: "parent", family_id: FAMILY_ID },
+      },
+      session: {
+        access_token: accessToken,
+        refresh_token: "qa-refresh-not-valid",
+        token_type: "bearer",
+        expires_in: 3_600,
+      },
+    };
+  }
   if (pathname === "/api/family/mine") return familyResponse(role);
   if (pathname === "/api/entitlement") return entitlementResponse(tier);
   if (pathname === "/api/billing/web/catalog") return webBillingCatalog(catalogMode);
@@ -643,7 +662,7 @@ export function newDocumentScript() {
       const sessions = ${JSON.stringify(sessions)};
       try {
         if (role === "public") localStorage.removeItem("hyeni-api-session-v1");
-        else localStorage.setItem("hyeni-api-session-v1", JSON.stringify(sessions[role] || sessions.parent));
+        else if (role !== "preserve") localStorage.setItem("hyeni-api-session-v1", JSON.stringify(sessions[role] || sessions.parent));
         localStorage.setItem("hyeni-active-child-v1", JSON.stringify({ ${JSON.stringify(FAMILY_ID)}: ${JSON.stringify(CHILD_MEMBER_ID)} }));
       } catch {}
 
@@ -1068,6 +1087,91 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       });
     }
     report.screenshots.push(await screenshot(cdp, freshOutputDir, "auth-wrong-password.png"));
+
+    // 인증 성공 회귀: API가 유효한 부모 세션을 돌려주면 정적 부팅 셸이나 로그인 화면에
+    // 머물지 않고 가족 조회를 거쳐 부모 홈까지 한 번에 전환되어야 한다.
+    await navigate(
+      { role: "public", tier: "free", catalogMode: "valid", overLimit: false },
+      "onboarding",
+    );
+    await clickSelector(cdp, ".ob-role-card--parent");
+    await wait(250);
+    activeScenario = {
+      role: "parent",
+      tier: "free",
+      catalogMode: "valid",
+      overLimit: false,
+      authCase: "success",
+    };
+    await setInputValue(cdp, "#hyeni-login-username", "qa-parent");
+    await setInputValue(cdp, "#hyeni-login-password", "correct-password");
+    await cdp.evaluate(`(() => {
+      const form = document.querySelector(".ob-login-form");
+      if (!(form instanceof HTMLFormElement)) return false;
+      form.requestSubmit();
+      return true;
+    })()`);
+    await wait(2_200);
+    const successfulLoginFacts = await cdp.evaluate(`(() => ({
+      hash: location.hash,
+      sessionPresent: localStorage.getItem("hyeni-api-session-v1") !== null,
+      staticBootShellPresent: Boolean(document.querySelector(".boot-shell")),
+      splashPresent: Boolean(document.querySelector(".sp-root")),
+      parentHomePresent: Boolean(document.querySelector(".ph-page")),
+      loginFormPresent: Boolean(document.querySelector(".ob-login-form")),
+    }))()`);
+    const successfulLoginProblems = [
+      ...uniqueStrings(consoleMessages).map((value) => `console:${value}`),
+      ...uniqueStrings(networkFailures).map((value) => `network:${value}`),
+    ];
+    await cdp.evaluate(`(() => {
+      const url = new URL(location.href);
+      url.searchParams.set("qaRole", "preserve");
+      history.replaceState(history.state, "", url.href);
+    })()`);
+    consoleMessages = [];
+    networkFailures = [];
+    await cdp.send("Page.reload", { ignoreCache: true });
+    await wait(3_200);
+    const successfulLoginReloadFacts = await cdp.evaluate(`(() => ({
+      hash: location.hash,
+      sessionPresent: localStorage.getItem("hyeni-api-session-v1") !== null,
+      staticBootShellPresent: Boolean(document.querySelector(".boot-shell")),
+      splashPresent: Boolean(document.querySelector(".sp-root")),
+      parentHomePresent: Boolean(document.querySelector(".ph-page")),
+      loginFormPresent: Boolean(document.querySelector(".ob-login-form")),
+    }))()`);
+    const successfulLoginReloadProblems = [
+      ...uniqueStrings(consoleMessages).map((value) => `console:${value}`),
+      ...uniqueStrings(networkFailures).map((value) => `network:${value}`),
+    ];
+    if (
+      successfulLoginFacts.hash !== "#/parent/home"
+      || !successfulLoginFacts.sessionPresent
+      || successfulLoginFacts.staticBootShellPresent
+      || successfulLoginFacts.splashPresent
+      || !successfulLoginFacts.parentHomePresent
+      || successfulLoginFacts.loginFormPresent
+      || successfulLoginProblems.length > 0
+      || successfulLoginReloadFacts.hash !== "#/parent/home"
+      || !successfulLoginReloadFacts.sessionPresent
+      || successfulLoginReloadFacts.staticBootShellPresent
+      || successfulLoginReloadFacts.splashPresent
+      || !successfulLoginReloadFacts.parentHomePresent
+      || successfulLoginReloadFacts.loginFormPresent
+      || successfulLoginReloadProblems.length > 0
+    ) {
+      report.problems.push({
+        scope: "auth-successful-parent-home-transition",
+        facts: { initial: successfulLoginFacts, reload: successfulLoginReloadFacts },
+        problems: { initial: successfulLoginProblems, reload: successfulLoginReloadProblems },
+      });
+    }
+    report.focused.successfulLogin = {
+      initial: successfulLoginFacts,
+      reload: successfulLoginReloadFacts,
+      problems: { initial: successfulLoginProblems, reload: successfulLoginReloadProblems },
+    };
 
     const signupOnboarding = await navigate(
       { role: "public", tier: "free", catalogMode: "valid", overLimit: false },
