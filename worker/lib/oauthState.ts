@@ -5,6 +5,8 @@ export type OAuthFlowMode = "login" | "link";
 
 const NATIVE_REDIRECT_TARGET = "https://hyeni-calendar.pages.dev/oauth/callback";
 const WEB_REDIRECT_ORIGINS = new Set([
+  "https://hyenicalendar.com",
+  "https://www.hyenicalendar.com",
   "https://hyeni-calendar.pages.dev",
 ]);
 const TRANSACTION_TTL_MS = 10 * 60 * 1000;

@@ -74,8 +74,15 @@ test("OAuth 복귀 대상은 고정 앱 딥링크와 승인된 정확한 웹 ori
     "https://hyeni-calendar.pages.dev/oauth/callback",
   );
   assert.equal(resolveOAuthRedirectTarget("web", "https://hyeni-calendar.pages.dev"), "https://hyeni-calendar.pages.dev");
+  assert.equal(resolveOAuthRedirectTarget("web", "https://hyenicalendar.com"), "https://hyenicalendar.com");
+  assert.equal(
+    resolveOAuthRedirectTarget("web", "https://www.hyenicalendar.com"),
+    "https://www.hyenicalendar.com",
+  );
   for (const target of [
     "https://evil.example",
+    "https://hyenicalendar.com.evil.example",
+    "https://www.hyenicalendar.com/path",
     "https://hyeni-calendar.pages.dev.evil.example",
     "https://hyeni-calendar.pages.dev/path",
     "http://localhost:5173",

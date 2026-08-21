@@ -1,4 +1,6 @@
 const TRUSTED_CORS_ORIGINS = new Set([
+  "https://hyenicalendar.com",
+  "https://www.hyenicalendar.com",
   "https://hyeni-calendar.pages.dev",
   "https://localhost",
   "http://localhost",

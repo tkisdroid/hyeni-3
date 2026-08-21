@@ -10,6 +10,8 @@ function read(relativePath) {
 
 test("CORS는 배포 PWA·Android WebView·고정 로컬 개발 origin만 허용한다", () => {
   for (const origin of [
+    "https://hyenicalendar.com",
+    "https://www.hyenicalendar.com",
     "https://hyeni-calendar.pages.dev",
     "https://localhost",
     "http://localhost",
@@ -21,6 +23,8 @@ test("CORS는 배포 PWA·Android WebView·고정 로컬 개발 origin만 허용
   for (const origin of [
     "",
     "https://evil.example",
+    "https://hyenicalendar.com.evil.example",
+    "https://www.hyenicalendar.com.evil.example",
     "https://hyeni-calendar.pages.dev.evil.example",
     "https://preview.hyeni-calendar.pages.dev",
     "http://localhost.evil.example:5173",
