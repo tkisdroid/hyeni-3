@@ -12,7 +12,8 @@ test("어른 모드 디자인 언어는 glass.css 한 곳에서 .hy-adult 로만
   assert.match(shell, /className="hy-app hy-adult" data-role="parent"/);
   assert.match(shell, /className="hy-app hy-adult" data-accent="mint"/);
   // PushShell 은 아이도 지나가므로 세션 role 로 판정해야 한다.
-  assert.match(shell, /role === "child" \? "" : " hy-adult"/);
+  assert.match(shell, /const isChild = role === "child"/);
+  assert.match(shell, /isChild \? "" : " hy-adult"/);
   assert.doesNotMatch(shell, /data-role="child"[^>]*hy-adult/);
 
   // 팔레트·바닥은 glass.css 가 정본이다.
@@ -80,7 +81,7 @@ test("서리 스크림은 가릴 것이 생겼을 때만 켠다", () => {
 
   // 어른 셸 3개의 스크롤 영역이 스크롤 상태를 알린다(아이 셸은 이 언어를 쓰지 않는다).
   assert.equal((shell.match(/const scrolledRef = useScrolledShell\(\);/g) ?? []).length, 3);
-  assert.equal((shell.match(/<main className="hy-screen[^"]*" ref=\{scrolledRef\}>/g) ?? []).length, 3);
+  assert.equal((shell.match(/<main className="hy-screen[^"]*" ref=\{scrolledRef\}/g) ?? []).length, 3);
   assert.match(hook, /dataset\.scrolled/);
   assert.match(hook, /passive: true/);
 
@@ -97,4 +98,20 @@ test("알림 화면의 필터는 sticky 헤더가 아니라 메인 섹션 안에
   assert.ok(listAt > 0 && filtersAt > listAt, "필터는 목록(.nc-list) 안에 있어야 한다");
   // 헤더에 둘째 줄을 붙이면 스크림·마스크 경계에 걸린다.
   assert.doesNotMatch(source, /nc-top/);
+});
+
+test("하단 메뉴는 바로가기로 들어간 화면에서도 보인다", () => {
+  // 바로가기 목적지는 전부 PushShell 아래인데 여기에만 탭바가 없었다(2026-08-21 TK 제보).
+  const pushBody = shell.slice(shell.indexOf("export function PushShell()"));
+  assert.match(pushBody, /showNav && role === "parent" && <TabBar tabs=\{parentTabs\} iconOnly \/>/);
+  assert.match(pushBody, /showNav && role === "teacher" && <TabBar tabs=\{teacherTabs\} \/>/);
+
+  // 갈 곳이 없거나 일부러 가둬 둔 화면에서는 숨긴다.
+  for (const path of ["/onboarding", "/app-update", "/perm-denied"]) {
+    assert.ok(shell.includes(`"${path}"`), `${path} 는 하단 메뉴 예외 목록에 있어야 한다`);
+  }
+
+  // 새로 생긴 탭바에 내용이 가리지 않도록 스크롤 영역이 자리를 마련한다.
+  assert.match(pushBody, /data-nav=\{showNav && !isChild \? "push" : undefined\}/);
+  assert.match(glass, /\.hy-adult \.hy-screen\[data-nav="push"\] \{[^}]*padding-bottom/);
 });

@@ -530,3 +530,18 @@
     rgba(248, 248, 253, 0) 100%
   );
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   바로가기·상세 화면(PushShell)에도 하단 메뉴가 생겼다(2026-08-21 TK 지시).
+   이 화면들은 탭바가 없던 시절 기준으로 아래 여백을 잡아 두지 않았으므로
+   스크롤 영역이 탭바 높이만큼 자리를 마련한다.
+   ⚠️ 탭 셸(부모·선생님 홈 등)에는 붙이지 않는다 — 거기는 .hy-content 가 이미 잡고 있어
+      두 겹이 되면 바닥에 빈 공간이 길게 남는다. */
+.hy-adult .hy-screen[data-nav="push"] {
+  padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+}
+
+/* 화면이 자기 .hy-content 로 이미 여백을 잡았다면 그 몫은 줄인다(중복 방지). */
+.hy-adult .hy-screen[data-nav="push"] .hy-content {
+  padding-bottom: 24px;
+}

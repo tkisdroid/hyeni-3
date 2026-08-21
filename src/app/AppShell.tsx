@@ -1,4 +1,4 @@
-import { Outlet } from "react-router";
+import { Outlet, useLocation } from "react-router";
 import { Home, CalendarDays, MapPin, MessageCircle, Settings, Users } from "lucide-react";
 import { lazy, Suspense, useMemo } from "react";
 import { useAccent } from "./accent";
@@ -125,17 +125,43 @@ export function TeacherShell() {
   );
 }
 
-/** 푸시/상세 화면 셸: 탭바 없음(화면 자체 헤더의 뒤로가기 사용). */
+/**
+ * 아직 앱 안으로 들어오지 않았거나, 들어와서는 안 되는 화면들.
+ * 여기서는 하단 메뉴를 숨긴다 — 누르면 갈 곳이 없거나(온보딩: 가족 미연결),
+ * 일부러 가둬 둔 게이트(권한 거부·강제 업데이트)이기 때문이다.
+ */
+const NAVLESS_PUSH_PATHS = new Set([
+  "/onboarding",
+  "/app-update",
+  "/perm-denied",
+  "/crash-test",
+]);
+
+/**
+ * 푸시/상세 화면 셸. 바로가기로 들어간 화면에서도 하단 메뉴가 보이도록
+ * 부모·선생님 탭바를 함께 렌더한다(2026-08-21 TK 지시).
+ *
+ * ⚠️ 아이 세션은 제외한다. 아이 상세 화면은 SOS 3초 홀드처럼 화면을 통째로 쓰거나
+ *    AI 친구 대화처럼 하단에 자기 입력줄을 두고 있어, 독을 겹치면 그 화면이 무너진다.
+ *    아이의 이동 수단은 플로팅 AI 친구와 화면 헤더의 뒤로가기다.
+ */
 export function PushShell() {
   const { accent } = useAccent();
   // 아이도 쓰는 셸이라 .hy-adult 는 role 로 정한다.
   const { role } = useAuth();
   const scrolledRef = useScrolledShell();
+  const { pathname } = useLocation();
+  const parentTabs = useMemoDotTabs(useParentTabs(), "/parent/memo");
+  const teacherTabs = useTeacherTabs();
+  const showNav = !NAVLESS_PUSH_PATHS.has(pathname);
+  const isChild = role === "child";
   return (
-    <div className={`hy-app${role === "child" ? "" : " hy-adult"}`} data-accent={accent}>
-      <main className="hy-screen" ref={scrolledRef}>
+    <div className={`hy-app${isChild ? "" : " hy-adult"}`} data-accent={accent}>
+      <main className="hy-screen" ref={scrolledRef} data-nav={showNav && !isChild ? "push" : undefined}>
         <Outlet />
       </main>
+      {showNav && role === "parent" && <TabBar tabs={parentTabs} iconOnly />}
+      {showNav && role === "teacher" && <TabBar tabs={teacherTabs} />}
       {/* 아이 세션에서만 렌더된다. */}
       <AiBuddyFabSlot bottomInset={20} />
       <ToastHost />

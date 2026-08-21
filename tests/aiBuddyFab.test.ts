@@ -327,7 +327,12 @@ test("플로팅 버튼은 아이 셸과 상세 셸 양쪽에서 상시 대기한
   assert.match(shell, /<Suspense fallback=\{null\}>[\s\S]{0,120}<AiBuddyFab bottomInset=\{bottomInset\} \/>/);
   // 아이 탭 화면(독 있음)과 상세 화면(독 없음)에서 각각 다른 하단 여유를 준다.
   assert.match(shell, /<ChildDock \/>[\s\S]{0,220}<AiBuddyFabSlot bottomInset=\{112\} \/>/);
-  assert.match(shell, /export function PushShell\(\)[\s\S]{0,400}<AiBuddyFabSlot bottomInset=\{20\} \/>/);
+  // PushShell 본문 안에 있는지를 함수 범위로 정확히 본다.
+  // (예전 400자 창은 본문이 길어지면 깨지는 대략적인 장치였다 — 하단 메뉴가 들어오며 넘쳤다.)
+  const pushBody = shell.slice(shell.indexOf("export function PushShell()"));
+  assert.match(pushBody, /<AiBuddyFabSlot bottomInset=\{20\} \/>/);
+  // 아이 상세 화면에는 독을 겹치지 않는다 — SOS 홀드·대화 입력줄과 부딪힌다.
+  assert.doesNotMatch(pushBody, /<ChildDock \/>/);
 });
 
 test("표정 상태는 라우터 위 provider 한 곳에서만 들고 있다", () => {
