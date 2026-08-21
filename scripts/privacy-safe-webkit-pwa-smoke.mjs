@@ -236,6 +236,12 @@ async function runtimeChecks(origin, requests, denyProxy) {
         ? String(input)
         : input.url;
       const url = new URL(rawUrl, location.href);
+      if (url.pathname === "/api/access-region") {
+        return Promise.resolve(new Response(JSON.stringify({ country: "KR" }), {
+          status: 200,
+          headers: { "content-type": "application/json; charset=utf-8", "cache-control": "private, no-store" },
+        }));
+      }
       if (["/auth/login-password", "/auth/check-login-id"].includes(url.pathname)) {
         const wrongPassword = url.pathname === "/auth/login-password";
         window.__hyWebkitAuthRequests.push({
@@ -298,8 +304,16 @@ async function runtimeChecks(origin, requests, denyProxy) {
     await assert.doesNotReject(() => page.getByRole("button", { name: /아이/ }).waitFor());
 
     const onlineLayout = await page.evaluate(() => ({
+      bodyOverflowX: getComputedStyle(document.body).overflowX,
       clientWidth: document.documentElement.clientWidth,
       hasTouch: "ontouchstart" in globalThis,
+      htmlOverflowX: getComputedStyle(document.documentElement).overflowX,
+      rootOverflowX: getComputedStyle(document.querySelector("#root")).overflowX,
+      rolePaddingTop: Number.parseFloat(getComputedStyle(document.querySelector(".ob-role")).paddingTop),
+      rolePaddingLeft: Number.parseFloat(getComputedStyle(document.querySelector(".ob-role")).paddingLeft),
+      languageCurrent: document.querySelector(".hy-language__current")?.textContent?.replace(/\s+/g, " ").trim() ?? null,
+      languageExpanded: document.querySelector(".hy-language__current")?.getAttribute("aria-expanded") ?? null,
+      languageOptionsVisible: Boolean(document.querySelector(".hy-language__options")),
       scrollWidth: document.documentElement.scrollWidth,
       viewportHeight: globalThis.innerHeight,
       viewportWidth: globalThis.innerWidth,
@@ -308,17 +322,45 @@ async function runtimeChecks(origin, requests, denyProxy) {
     assert.equal(onlineLayout.viewportHeight, 844);
     assert.equal(onlineLayout.hasTouch, true);
     assert.ok(onlineLayout.scrollWidth <= onlineLayout.clientWidth, `온보딩 가로 overflow ${onlineLayout.scrollWidth - onlineLayout.clientWidth}px`);
+    assert.equal(onlineLayout.htmlOverflowX, "hidden", "Safari 문서 루트의 가로 끌림이 잠기지 않았습니다");
+    assert.equal(onlineLayout.bodyOverflowX, "hidden", "Safari body의 가로 끌림이 잠기지 않았습니다");
+    assert.equal(onlineLayout.rootOverflowX, "hidden", "앱 root의 가로 끌림이 잠기지 않았습니다");
+    assert.ok(
+      onlineLayout.rolePaddingTop <= 32,
+      `Safari 탭에서 역할 화면 위 여백이 과도합니다: ${onlineLayout.rolePaddingTop}px`,
+    );
+    assert.equal(onlineLayout.rolePaddingLeft, 24, "첫 역할 화면의 좌우 리듬이 달라졌습니다");
+    assert.ok(onlineLayout.languageCurrent?.includes("한국어"), "접속 국가 기본 언어가 하단에 보이지 않습니다");
+    assert.equal(onlineLayout.languageExpanded, "false");
+    assert.equal(onlineLayout.languageOptionsVisible, false);
+    await page.locator(".hy-language__current").click();
+    assert.equal(await page.locator(".hy-language__options .hy-language__option").count(), 9);
+    assert.equal(await page.locator(".hy-language__current").getAttribute("aria-expanded"), "true");
+    await page.locator(".hy-language__current").click();
 
     // iPhone급 WebKit 인증 진입점 — 실제 계정·SMS 없이 401 복구와 ID 중복확인을 검증한다.
     await page.getByRole("button", { name: /학부모/ }).click();
     await page.getByRole("tab", { name: "로그인", exact: true }).waitFor();
     const loginEntry = await page.evaluate(() => ({
+      paddingTop: Number.parseFloat(getComputedStyle(document.querySelector(".ob-login")).paddingTop),
+      paddingLeft: Number.parseFloat(getComputedStyle(document.querySelector(".ob-login")).paddingLeft),
+      paddingRight: Number.parseFloat(getComputedStyle(document.querySelector(".ob-login")).paddingRight),
       selectedTab: document.querySelector('[role="tab"][aria-selected="true"]')?.textContent?.trim() ?? null,
       hasLoginForm: Boolean(document.querySelector(".ob-login-form")),
       hasSignupTab: [...document.querySelectorAll('[role="tab"]')]
         .some((tab) => tab.textContent?.trim() === "회원가입"),
+      hasKakao: Boolean(document.querySelector(".ob-social--kakao")),
+      hasGoogle: Boolean(document.querySelector(".ob-social--google")),
     }));
-    assert.deepEqual(loginEntry, { selectedTab: "로그인", hasLoginForm: true, hasSignupTab: true });
+    assert.deepEqual(
+      { selectedTab: loginEntry.selectedTab, hasLoginForm: loginEntry.hasLoginForm, hasSignupTab: loginEntry.hasSignupTab },
+      { selectedTab: "로그인", hasLoginForm: true, hasSignupTab: true },
+    );
+    assert.ok(loginEntry.paddingTop <= 24, `Safari 탭에서 로그인 화면 위 여백이 과도합니다: ${loginEntry.paddingTop}px`);
+    assert.equal(loginEntry.paddingLeft, 16, "Safari 가입 단계 왼쪽 여백은 16px이어야 합니다");
+    assert.equal(loginEntry.paddingRight, 16, "Safari 가입 단계 오른쪽 여백은 16px이어야 합니다");
+    assert.equal(loginEntry.hasKakao, true, "한국 접속에서 카카오 로그인이 보여야 합니다");
+    assert.equal(loginEntry.hasGoogle, true, "한국 접속에서 Google 로그인이 보여야 합니다");
     await page.locator("#hyeni-login-username").fill("mindlady");
     await page.locator("#hyeni-login-password").fill("incorrect-password");
     await page.locator(".ob-login-form").evaluate((form) => form.requestSubmit());

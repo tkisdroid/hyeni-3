@@ -5,18 +5,21 @@
  * (웹은 getUserMedia 호출 자체가 실제 프롬프트를 띄우므로 기본 통과).
  */
 import { getNativePlugin } from "./plugins";
+import {
+  cameraPermissionFailure,
+  normalizeBrowserCameraPermission,
+  normalizeNativeCameraPermission,
+  type CameraPermissionState,
+  type NativeCameraPermissionSnapshot,
+} from "@/transform/cameraPermissionState";
 
 interface CameraPermissionPlugin {
-  checkPermission: () => Promise<{ granted?: boolean }>;
-  requestPermission: () => Promise<{ granted?: boolean }>;
+  checkPermission: () => Promise<NativeCameraPermissionSnapshot>;
+  requestPermission: () => Promise<NativeCameraPermissionSnapshot>;
   openAppSettings: () => Promise<void>;
 }
 
-export interface CameraPermissionResult {
-  granted: boolean;
-  denied?: boolean;
-  source: "native" | "browser";
-}
+export type CameraPermissionResult = CameraPermissionState;
 
 function plugin(): CameraPermissionPlugin | null {
   return getNativePlugin<CameraPermissionPlugin>("CameraPermission");
@@ -28,22 +31,22 @@ export async function ensureQrCameraPermission(): Promise<CameraPermissionResult
   if (native?.checkPermission && native?.requestPermission) {
     try {
       const checked = await native.checkPermission();
-      if (checked?.granted) return { granted: true, source: "native" };
+      if (checked?.granted) return normalizeNativeCameraPermission(checked);
       const requested = await native.requestPermission();
-      return { granted: !!requested?.granted, denied: !requested?.granted, source: "native" };
+      return normalizeNativeCameraPermission(requested);
     } catch (error) {
       console.warn("카메라 권한 요청 실패:", error);
-      return { granted: false, denied: true, source: "native" };
+      return cameraPermissionFailure("native");
     }
   }
 
   try {
     const status = await navigator.permissions?.query?.({ name: "camera" as PermissionName });
-    if (status?.state === "denied") return { granted: false, denied: true, source: "browser" };
+    return normalizeBrowserCameraPermission(status?.state);
   } catch {
     // permissions API 미지원 — getUserMedia 가 실제 프롬프트/오류를 낸다
   }
-  return { granted: true, source: "browser" };
+  return normalizeBrowserCameraPermission(null);
 }
 
 /** 권한이 영구 거부됐을 때 앱 설정 화면 열기(네이티브 전용, 웹은 no-op). */

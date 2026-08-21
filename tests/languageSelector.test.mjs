@@ -49,6 +49,9 @@ test("언어 선택기는 catalog 접근성 이름과 현재 선택 radio 상태
   assert.match(selector, /core\.language\.child\.label/);
   assert.match(selector, /core\.language\.formal\.description/);
   assert.match(selector, /core\.language\.child\.description/);
+  assert.match(selector, /collapseOthers/);
+  assert.match(selector, /aria-expanded=\{expanded\}/);
+  assert.match(selector, /localeEntries\.filter\(\(entry\) => entry\.code !== locale\)/);
 });
 
 test("언어 선택기는 키보드 포커스와 44px 터치 영역, 확대 글자 줄바꿈을 보장한다", () => {
@@ -58,12 +61,14 @@ test("언어 선택기는 키보드 포커스와 44px 터치 영역, 확대 글�
   assert.match(css, /\.hy-language__option\s*\{[^}]*white-space:\s*normal/s);
   assert.match(css, /\.hy-language__option\s*\{[^}]*overflow-wrap:\s*anywhere/s);
   assert.match(css, /\.hy-language__option:focus-visible\s*\{/);
+  assert.match(css, /\.hy-language__current\s*\{[^}]*min-height:\s*var\(--control-min-size\)/s);
+  assert.match(css, /\.hy-language__toggle\s*\{[^}]*min-height:\s*var\(--control-min-size\)/s);
 });
 
 test("onboarding과 부모 설정은 같은 공용 선택기를 역할에 맞는 어조로 사용한다", () => {
   const onboardingSource = read("src/screens/onboarding/Onboarding.tsx");
   assert.match(onboardingSource, /import \{ LanguageSelector \} from "@\/components\/LanguageSelector";/);
-  assert.match(onboardingSource, /<LanguageSelector\s+tone="formal"\s*\/>/);
+  assert.match(onboardingSource, /<LanguageSelector\s+tone="formal"\s+collapseOthers\s*\/>/);
 
   // 2026-08-17 TK 지시: 부모 설정에서는 계정 프로필 바로 아래 한 줄로 두고 그 줄을 펼쳐서 고른다.
   const settings = read("src/screens/parent/ParentSettings.tsx");
@@ -94,7 +99,8 @@ test("onboarding과 부모 설정은 같은 공용 선택기를 역할에 맞는
   const onboarding = read("src/screens/onboarding/Onboarding.tsx");
   const roleStep = onboarding.slice(onboarding.indexOf("function RoleStep"));
   assert.ok(
-    roleStep.indexOf('<LanguageSelector tone="formal" />') < roleStep.indexOf("ob-role-card--parent"),
-    "온보딩 첫 화면에서 역할 선택 전에 언어를 바꿀 수 있어야 합니다",
+    roleStep.indexOf("ob-role-card--parent") < roleStep.indexOf('<LanguageSelector tone="formal" collapseOthers />')
+      && roleStep.indexOf('<LanguageSelector tone="formal" collapseOthers />') < roleStep.indexOf("ob-role-terms"),
+    "온보딩 언어 선택은 역할 카드 아래·약관 위의 페이지 하단에 있어야 합니다",
   );
 });

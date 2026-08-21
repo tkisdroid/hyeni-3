@@ -29,15 +29,36 @@ test("관리자 prompt 본문과 서버 저장값은 raw 편집·저장 계약�
 });
 
 test("QR와 관리자 화면의 권한·query·mutation·role 계약을 유지한다", () => {
+  const capabilityCheck = qr.indexOf("if (!navigator.mediaDevices?.getUserMedia)");
+  const permissionRequest = qr.indexOf("const permission = await ensureQrCameraPermission()");
+
+  assert.ok(capabilityCheck >= 0 && capabilityCheck < permissionRequest, "스캔 미지원 기기에는 카메라 권한을 먼저 요청하지 않는다");
   assert.match(qr, /ensureQrCameraPermission\(\)/);
   assert.match(qr, /openCameraPermissionSettings\(\)/);
+  assert.match(qr, /permissionRecovery === "settings"/);
   assert.match(qr, /setRetryKey\(\(v\) => v \+ 1\)/);
+  assert.match(qr, /document\.addEventListener\("visibilitychange", retryOnResume\)/);
+  assert.match(qr, /id: "shared\.qr\.enterManually"/);
+  assert.match(qr, /className="qrs-manual hy-press" onClick=\{onClose\}/);
   assert.match(admin, /adminStatus\.data\?\.isAdmin === true/);
   assert.match(admin, /useAdminAiPrompt\(isAdmin\)/);
   assert.match(admin, /useAdminCommerceControls\(isAdmin\)/);
   assert.match(admin, /commerceQuery\.refetch\(\)/);
   assert.match(admin, /promptQuery\.refetch\(\)/);
   assert.match(admin, /saveCommerceControls\.mutateAsync/);
+});
+
+test("Android QR 권한 브리지는 요청 결과와 영구 거부 판정 근거를 JS에 전달한다", () => {
+  const bridge = read("android/app/src/main/java/com/hyeni/calendar/CameraPermissionPlugin.java");
+  const activity = read("android/app/src/main/java/com/hyeni/calendar/MainActivity.java");
+  const permissionClient = read("src/lib/native/cameraPermission.ts");
+
+  assert.match(bridge, /result\.put\("requested", requested\)/);
+  assert.match(bridge, /result\.put\("shouldShowRationale", shouldShowRationale\)/);
+  assert.match(permissionClient, /normalizeNativeCameraPermission\(requested\)/);
+  assert.match(activity, /WebViewOriginPolicy\.isTrusted\(request\.getOrigin\(\)\.toString\(\)\)/);
+  assert.match(activity, /PermissionRequest\.RESOURCE_VIDEO_CAPTURE/);
+  assert.match(activity, /hasCameraPermissionGranted\(\)/);
 });
 
 test("QR와 관리자 UI chrome은 10개 locale에 완전하고 영어 폴백이 없다", () => {

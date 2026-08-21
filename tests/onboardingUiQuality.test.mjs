@@ -63,3 +63,40 @@ test("로그인 폼은 Android 비밀번호 관리자가 인식하는 표준 자
   assert.match(main, /setImportantForAutofill\(View\.IMPORTANT_FOR_AUTOFILL_YES\)/);
   assert.match(main, /setSaveFormData\(true\)/);
 });
+
+test("온보딩은 Safari 가로 끌림을 잠그고 브라우저·Android safe area를 같은 규칙으로 계산한다", () => {
+  const global = source("src/styles/global.css");
+  const css = source("src/screens/onboarding/Onboarding.css");
+
+  assert.match(global, /html,\s*\nbody\s*\{[^}]*overflow-x:\s*hidden/s);
+  assert.match(global, /#root\s*\{[^}]*overflow-x:\s*hidden/s);
+  assert.match(css, /\.ob-step\s*\{[^}]*padding:\s*calc\(env\(safe-area-inset-top, 0px\) \+ 16px\) 16px/s);
+  assert.match(css, /\.ob-role\s*\{[^}]*padding-top:\s*calc\(env\(safe-area-inset-top, 0px\) \+ 24px\)/s);
+  assert.match(css, /\.ob-role\s*\{[^}]*padding-right:\s*24px[^}]*padding-left:\s*24px/s);
+  assert.match(css, /\.ob-step\s*\{[^}]*overflow-x:\s*hidden/s);
+  assert.match(css, /\.ob-step\s*\{[^}]*animation:\s*hy-fadeup/s);
+  assert.doesNotMatch(css, /\.ob-(?:login|survey|signup|connect|pairing|perms)\s*\{[^}]*hy-slidein/s);
+});
+
+test("가입 전 단계는 같은 헤더·밝은 표면을 쓰고 QR 실행 영역만 어둡게 남긴다", () => {
+  const onboarding = source("src/screens/onboarding/Onboarding.tsx");
+  const css = source("src/screens/onboarding/Onboarding.css");
+
+  for (const className of ["ob-login-head", "ob-survey-head", "ob-signup-head", "ob-connect-head", "ob-pair-head", "ob-perms-head"]) {
+    assert.match(onboarding, new RegExp(`className="${className} ob-step-head"`), `${className}: 공통 헤더 누락`);
+  }
+  assert.match(css, /\.ob-step-head\s*\{[^}]*grid-template-columns:\s*56px minmax\(0, 1fr\)/s);
+  assert.match(css, /:is\(\.ob-role-card, \.ob-survey-card, \.ob-connect-card, \.ob-perm, \.ob-referral-notice\)/);
+  assert.match(css, /\.ob-qr\s*\{[^}]*background:\s*#0c0a0a/s);
+  assert.match(onboarding, /className="ob-input ob-pair-code-input"/);
+  assert.doesNotMatch(onboarding, /ob-pair-code-input[^>]*style=\{/s);
+});
+
+test("기존 가족 연결 실패는 화면 안에 남고 입력을 고치면 즉시 해제된다", () => {
+  const onboarding = source("src/screens/onboarding/Onboarding.tsx");
+
+  assert.match(onboarding, /const \[pairingError, setPairingError\] = useState<string \| null>\(null\)/);
+  assert.match(onboarding, /className="ob-auth-alert" role="alert"/);
+  assert.match(onboarding, /onChange=\{\(e\) => \{[\s\S]{0,160}setPairingError\(null\)/);
+  assert.match(onboarding, /const message = localizeApiError\(e, intl, "formal"\)[\s\S]{0,120}setPairingError\(message\)/);
+});

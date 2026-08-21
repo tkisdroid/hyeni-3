@@ -1,5 +1,6 @@
-import { useId } from "react";
+import { useId, useState } from "react";
 import { useIntl } from "react-intl";
+import { ChevronDown } from "lucide-react";
 import { useLocale } from "@/i18n/useLocale";
 import type { SupportedLocale } from "@/i18n/locale";
 import "./LanguageSelector.css";
@@ -37,13 +38,27 @@ export function languageNativeName(locale: SupportedLocale): string {
  * compact = 이미 라벨이 있는 설정 행 안에 펼쳐 쓰는 형태.
  * 제목·설명을 화면에서 감춰 같은 말을 두 번 보여주지 않고(보조기술에는 그대로 남긴다) 선택 칩만 보여준다.
  */
-export function LanguageSelector({ tone, compact = false }: { tone: "formal" | "child"; compact?: boolean }) {
+export function LanguageSelector({
+  tone,
+  compact = false,
+  collapseOthers = false,
+}: {
+  tone: "formal" | "child";
+  compact?: boolean;
+  collapseOthers?: boolean;
+}) {
   const { locale, setLocale } = useLocale();
   const intl = useIntl();
+  const [expanded, setExpanded] = useState(false);
   const labelId = useId();
   const descriptionId = useId();
+  const optionsId = useId();
   const copy = copyIds[tone];
-  const textClass = compact ? " hy-language__text--quiet" : "";
+  const textClass = compact || collapseOthers ? " hy-language__text--quiet" : "";
+  const currentEntry = localeEntries.find((entry) => entry.code === locale) ?? localeEntries[1];
+  const visibleEntries = collapseOthers
+    ? localeEntries.filter((entry) => entry.code !== locale)
+    : localeEntries;
 
   return (
     <fieldset
@@ -58,8 +73,25 @@ export function LanguageSelector({ tone, compact = false }: { tone: "formal" | "
       <p id={descriptionId} className={`hy-language__description${textClass}`}>
         {intl.formatMessage({ id: copy.description })}
       </p>
-      <div className="hy-language__options">
-        {localeEntries.map((entry) => (
+      {collapseOthers && (
+        <button
+          type="button"
+          role="radio"
+          aria-checked="true"
+          aria-expanded={expanded}
+          aria-controls={optionsId}
+          className="hy-language__current hy-language__toggle hy-press"
+          lang={currentEntry.code}
+          onClick={() => setExpanded((value) => !value)}
+        >
+          <span>{currentEntry.nativeName}</span>
+          <span className="hy-language__toggle-label">{intl.formatMessage({ id: copy.label })}</span>
+          <ChevronDown size={20} strokeWidth={2.2} aria-hidden="true" />
+        </button>
+      )}
+      {(!collapseOthers || expanded) && (
+        <div id={optionsId} className="hy-language__options">
+          {visibleEntries.map((entry) => (
           <button
             key={entry.code}
             type="button"
@@ -67,12 +99,16 @@ export function LanguageSelector({ tone, compact = false }: { tone: "formal" | "
             aria-checked={locale === entry.code}
             className="hy-language__option hy-press"
             lang={entry.code}
-            onClick={() => void setLocale(entry.code)}
+            onClick={() => {
+              setExpanded(false);
+              void setLocale(entry.code);
+            }}
           >
             {entry.nativeName}
           </button>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </fieldset>
   );
 }

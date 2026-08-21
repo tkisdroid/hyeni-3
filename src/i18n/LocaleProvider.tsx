@@ -20,6 +20,7 @@ import type {
   MessageNamespace,
 } from "./generated/messageIds";
 import {
+  isSupportedLocale,
   localeDirection,
   localizedBrandName,
   type SupportedLocale,
@@ -33,9 +34,15 @@ import {
   applyBootstrapDocumentLocale,
   localeBootstrapCopy,
 } from "./bootstrapCopy";
+import { fetchAccessCountry } from "@/lib/api/endpoints/accessRegion";
+import {
+  accessCountryFromClientHints,
+  localeForAccessCountry,
+} from "@/transform/accessCountry";
 
 export interface LocaleContextValue {
   locale: SupportedLocale;
+  accessCountry: string;
   setLocale(locale: SupportedLocale): Promise<void>;
   ensureNamespaces(namespaces: readonly MessageNamespace[]): Promise<void>;
   readyNamespaces: ReadonlySet<MessageNamespace>;
@@ -76,16 +83,23 @@ const browserLocaleStorage: LocaleStoragePort = {
   },
 };
 
-function detectInitialLocale(): SupportedLocale {
+function readBrowserLocaleHints(): {
+  storedLocale: string | null;
+  navigatorLanguages: readonly string[];
+  timeZone: string | null;
+} {
   const navigatorLanguages = typeof navigator === "undefined"
     ? []
     : navigator.languages.length > 0
       ? navigator.languages
       : [navigator.language];
-  return resolveWebLocale({
+  return {
     storedLocale: typeof window === "undefined" ? null : browserLocaleStorage.read(),
     navigatorLanguages,
-  });
+    timeZone: typeof Intl === "undefined"
+      ? null
+      : Intl.DateTimeFormat().resolvedOptions().timeZone,
+  };
 }
 
 function updateInitialDocument(
@@ -101,24 +115,37 @@ function updateInitialDocument(
     ?.setAttribute("content", brand);
 }
 
-function createBrowserCoordinator(): LocaleRuntimeCoordinator {
-  const initialLocale = detectInitialLocale();
+function createBrowserCoordinator(): {
+  coordinator: LocaleRuntimeCoordinator;
+  initialAccessCountry: string;
+  hadStoredLocale: boolean;
+} {
+  const hints = readBrowserLocaleHints();
+  const initialLocale = resolveWebLocale(hints);
+  const initialAccessCountry = accessCountryFromClientHints(hints);
   applyBootstrapDocumentLocale(initialLocale);
-  return createLocaleRuntimeCoordinator({
-    initialLocale,
-    load: (locale, namespace) => loadNamespaceAtomically({ locale, namespace }),
-    storage: browserLocaleStorage,
-    document: { update: updateInitialDocument },
-  });
+  return {
+    coordinator: createLocaleRuntimeCoordinator({
+      initialLocale,
+      load: (locale, namespace) => loadNamespaceAtomically({ locale, namespace }),
+      storage: browserLocaleStorage,
+      document: { update: updateInitialDocument },
+    }),
+    initialAccessCountry,
+    hadStoredLocale: hints.storedLocale !== null && isSupportedLocale(hints.storedLocale),
+  };
 }
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
-  const coordinatorRef = useRef<LocaleRuntimeCoordinator | null>(null);
-  if (coordinatorRef.current === null) {
-    coordinatorRef.current = createBrowserCoordinator();
+  const browserRuntimeRef = useRef<ReturnType<typeof createBrowserCoordinator> | null>(null);
+  if (browserRuntimeRef.current === null) {
+    browserRuntimeRef.current = createBrowserCoordinator();
   }
-  const coordinator = coordinatorRef.current;
+  const browserRuntime = browserRuntimeRef.current;
+  const coordinator = browserRuntime.coordinator;
+  const userLocaleLockedRef = useRef(browserRuntime.hadStoredLocale);
   const [runtime, setRuntime] = useState(() => coordinator.getSnapshot());
+  const [accessCountry, setAccessCountry] = useState(browserRuntime.initialAccessCountry);
 
   useEffect(() => {
     const unsubscribe = coordinator.subscribe(setRuntime);
@@ -126,8 +153,24 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     return unsubscribe;
   }, [coordinator]);
 
+  useEffect(() => {
+    let active = true;
+    void fetchAccessCountry().then((country) => {
+      if (!active || !country) return;
+      setAccessCountry(country);
+      if (userLocaleLockedRef.current) return;
+      void coordinator.setLocale(localeForAccessCountry(country)).catch(() => undefined);
+    });
+    return () => {
+      active = false;
+    };
+  }, [coordinator]);
+
   const setLocale = useCallback(
-    (locale: SupportedLocale) => coordinator.setLocale(locale),
+    (locale: SupportedLocale) => {
+      userLocaleLockedRef.current = true;
+      return coordinator.setLocale(locale);
+    },
     [coordinator],
   );
   const ensureNamespaces = useCallback(
@@ -140,11 +183,12 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   );
   const value = useMemo<LocaleContextValue>(() => ({
     locale: runtime.locale,
+    accessCountry,
     setLocale,
     ensureNamespaces,
     readyNamespaces: runtime.readyNamespaces,
     loading: runtime.loading,
-  }), [ensureNamespaces, runtime.locale, runtime.loading, runtime.readyNamespaces, setLocale]);
+  }), [accessCountry, ensureNamespaces, runtime.locale, runtime.loading, runtime.readyNamespaces, setLocale]);
 
   if (!runtime.readyNamespaces.has("core")) {
     if (!runtime.error) return null;

@@ -86,6 +86,14 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   `https://hyenicalendar.com/?hy-recover=20260821`이며, 현재 문서가 열린 같은 탭에서 로그인을 완료해 새 SW 활성화까지
   이어간다. 회귀=`tests/pwaNavigationFreshness.test.ts` + `npm run qa:pwa-runtime`의
   `onlineNavigationFreshness`·`offlineReload` + `npm run qa:browser`의 `focused.successfulLogin`이다.
+- **접속 국가·온보딩 UI 정본(2026-08-22)**: 저장된 언어가 없는 첫 접속만 Worker 공개
+  `GET /api/access-region`의 Cloudflare edge country를 기본 언어와 소셜 제공자에 반영한다. 이 route는 인증·GPS·D1 없이
+  `request.cf.country`의 2글자 값만 `private, no-store`로 반환하고 IP·세부 위치를 저장/로그하지 않는다. 국가 응답보다
+  브라우저 힌트를 먼저 쓸 수 있지만, 사용자가 직접 고른 언어는 비동기 국가 응답으로 절대 덮지 않는다. 첫 역할 화면은
+  하단에서 현재 언어 1개만 표시하고 나머지 9개를 펼친다. 한국(`KR`)·판별 불가(`ZZ`)는 Kakao+Google(+설정 시 Naver),
+  다른 국가는 Google만 표시한다. 첫 화면 좌우 24px, 이후 온보딩은 좌우 16px·safe-area 뒤 상단 16px이며 수평 overflow와
+  좌우 slide 전환을 금지한다. QR 스캔은 엔진 지원 확인 뒤 권한을 요청하고, 임시 거부=재요청·Android 영구 거부=설정 이동
+  후 복귀 자동 재확인·모든 오류=수동 코드 입력으로 복구한다.
 - **부모 iPhone·아이 Android 정본 토폴로지(2026-07-31)**: 최종 기능 검증의 기본 조합은
   **부모=iPhone 홈 화면 PWA, 아이=Android 네이티브 앱**이다. 위치 즉시 요청·기기 상태·소리 울리기·주변 소리·
   메시지·장소/알림 설정은 부모 기기의 Capacitor 여부로 막지 않고 Worker API→FCM→아이 Android 경로를 사용한다.

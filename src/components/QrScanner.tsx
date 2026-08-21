@@ -11,6 +11,7 @@ import { useIntl } from "react-intl";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
 import type { MessageId } from "@/i18n/generated/messageIds";
 import { ensureQrCameraPermission, openCameraPermissionSettings } from "@/lib/native/cameraPermission";
+import type { CameraPermissionRecovery } from "@/transform/cameraPermissionState";
 import "./QrScanner.css";
 
 // BarcodeDetector 는 TS lib 에 없어 최소 형태만 선언(Shape Detection API).
@@ -56,7 +57,9 @@ export function QrScanner({
     "shared.qrScanner.loading.permission",
   );
   const [permissionDenied, setPermissionDenied] = useState(false);
+  const [permissionRecovery, setPermissionRecovery] = useState<CameraPermissionRecovery>("none");
   const [retryKey, setRetryKey] = useState(0);
+  const resumeRetryAtRef = useRef(0);
   const titleId = useId();
   const descriptionId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -102,18 +105,11 @@ export function QrScanner({
       handledRef.current = false;
       setErrorId(null);
       setPermissionDenied(false);
+      setPermissionRecovery("none");
       setLoading(true);
       setLoadingLabelId("shared.qrScanner.loading.permission");
 
-      const permission = await ensureQrCameraPermission();
-      if (!active) return;
-      if (!permission.granted) {
-        setPermissionDenied(true);
-        setErrorId(PERMISSION_MESSAGE_ID);
-        setLoading(false);
-        return;
-      }
-
+      // 스캔 엔진이 없는 기기에서는 카메라 권한을 먼저 요구하지 않는다.
       if (!navigator.mediaDevices?.getUserMedia) {
         setErrorId("shared.qrScanner.cameraUnavailable");
         setLoading(false);
@@ -122,6 +118,16 @@ export function QrScanner({
       const Detector = (window as unknown as { BarcodeDetector?: BarcodeDetectorCtor }).BarcodeDetector;
       if (typeof Detector !== "function") {
         setErrorId("shared.qrScanner.scannerUnavailable");
+        setLoading(false);
+        return;
+      }
+
+      const permission = await ensureQrCameraPermission();
+      if (!active) return;
+      if (!permission.granted) {
+        setPermissionDenied(true);
+        setPermissionRecovery(permission.recovery);
+        setErrorId(PERMISSION_MESSAGE_ID);
         setLoading(false);
         return;
       }
@@ -149,6 +155,7 @@ export function QrScanner({
         console.error("QR 스캐너 시작 실패:", err);
         const denied = isPermissionDenied(err);
         setPermissionDenied(denied);
+        setPermissionRecovery(denied ? "retry" : "none");
         setErrorId(denied ? PERMISSION_MESSAGE_ID : "shared.qrScanner.openFailed");
         setLoading(false);
       }
@@ -161,6 +168,24 @@ export function QrScanner({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [retryKey]);
+
+  // Android 앱 설정에서 카메라를 허용하고 돌아오면 사용자가 같은 버튼을 또 찾지 않게 자동 재확인한다.
+  useEffect(() => {
+    if (!permissionDenied || permissionRecovery !== "settings") return;
+    const retryOnResume = () => {
+      if (document.visibilityState !== "visible") return;
+      const now = Date.now();
+      if (now - resumeRetryAtRef.current < 500) return;
+      resumeRetryAtRef.current = now;
+      setRetryKey((value) => value + 1);
+    };
+    document.addEventListener("visibilitychange", retryOnResume);
+    window.addEventListener("focus", retryOnResume);
+    return () => {
+      document.removeEventListener("visibilitychange", retryOnResume);
+      window.removeEventListener("focus", retryOnResume);
+    };
+  }, [permissionDenied, permissionRecovery]);
 
   return (
     <div
@@ -203,21 +228,28 @@ export function QrScanner({
             {intl.formatMessage({ id: "shared.qrScanner.guide.description" })}
           </div>
           {errorId && <div className="qrs-error">{intl.formatMessage({ id: errorId })}</div>}
-          {permissionDenied && (
+          {errorId && !loading && (
             <div className="qrs-actions">
-              <button
-                type="button"
-                className="qrs-retry hy-press"
-                onClick={() => setRetryKey((v) => v + 1)}
-              >
-                {intl.formatMessage({ id: "shared.qrScanner.retryPermission" })}
-              </button>
-              <button
-                type="button"
-                className="qrs-settings hy-press"
-                onClick={() => void openCameraPermissionSettings()}
-              >
-                {intl.formatMessage({ id: "shared.qrScanner.openSettings" })}
+              {permissionDenied && (
+                <button
+                  type="button"
+                  className="qrs-retry hy-press"
+                  onClick={() => setRetryKey((v) => v + 1)}
+                >
+                  {intl.formatMessage({ id: "shared.qrScanner.retryPermission" })}
+                </button>
+              )}
+              {permissionRecovery === "settings" && (
+                <button
+                  type="button"
+                  className="qrs-settings hy-press"
+                  onClick={() => void openCameraPermissionSettings()}
+                >
+                  {intl.formatMessage({ id: "shared.qrScanner.openSettings" })}
+                </button>
+              )}
+              <button type="button" className="qrs-manual hy-press" onClick={onClose}>
+                {intl.formatMessage({ id: "shared.qr.enterManually" })}
               </button>
             </div>
           )}
