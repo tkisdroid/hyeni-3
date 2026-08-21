@@ -141,6 +141,15 @@ test("화면을 옮기면 처음은 최상단, 다시 찾으면 보던 자리로
   assert.match(hook, /addEventListener\("pointerdown", stop/);
   // 무한히 쌓이지 않게 오래된 것부터 버린다.
   assert.match(hook, /MAX_REMEMBERED/);
+
+  // ParentShell → PushShell → ParentShell은 스크롤 DOM을 새로 만든다. 새 DOM의 초기 0을
+  // 저장 함수로 넘기면 기존 홈 위치를 덮어쓰므로, ref 연결 때는 표시 상태만 동기화한다.
+  const refCallback = hook.slice(hook.indexOf("return useCallback("));
+  assert.match(refCallback, /node\.addEventListener\("scroll", rememberAndSync/);
+  assert.match(refCallback, /syncScrolledState\(node\)/);
+  assert.doesNotMatch(refCallback, /rememberAndSync\(\)/);
+  // 셸 DOM이 해제될 때는 마지막 실제 위치를 한 번 더 보존한다.
+  assert.match(refCallback, /rememberPosition\(activeScreenKeyRef\.current, previous\.scrollTop\)/);
 });
 
 test("절대 배치 루트 화면은 하단 메뉴 위로 바닥을 끌어올린다", () => {

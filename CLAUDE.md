@@ -810,6 +810,16 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
     다시 찾은 화면은 **보던 자리로** 돌아간다. 정본은 `src/app/useScrolledShell.ts` 하나이고
     셸 3개가 같은 훅을 쓴다. 화면 구분은 history key 가 아니라 **경로(+쿼리)** 다 —
     탭으로 다시 들어가도 보던 자리를 찾아야 하기 때문이다(캐시된 데이터와 짝이 맞는다).
+    ⚠️ **ParentShell→PushShell→ParentShell 복귀 때 홈 위치가 0으로 사라진 실사고(2026-08-21 TK 제보)**:
+    두 셸은 서로 다른 `.hy-screen` DOM을 쓰므로 돌아온 홈의 ref가 새 노드에 연결된다. 과거 구현은
+    그 연결 순간 `sync()`가 새 노드의 초기 `scrollTop=0`을 `/parent/home` 값으로 저장해, 복원할 위치를
+    읽기 전에 스스로 덮어썼다. 이제 ref 연결은 `syncScrolledState()`로 헤더 상태만 맞추고 위치를 저장하지
+    않는다. 위치 저장은 실제 `scroll` 이벤트와 셸 DOM 해제 시점에만 `rememberAndSync()`/`rememberPosition()`으로
+    수행한다. 복원은 `useLayoutEffect`에서 첫 페인트 전에 시작한다. 이 분리를 다시 합치지 않는다.
+    S25(`R5CY521CFNZ`, 부모 세션) 실측은 수정 전 `1200px→알림→뒤로가기→0px`, 수정 APK
+    (`index-lmPuG48f.js`) 설치 후 같은 동선 `1200px→알림→뒤로가기→1200px`이다. `adb install -r` 뒤
+    최초 설치 시각·부모 role·가족 연결이 유지됐고, 앱 전체 1,822/1,822·타입 검사·production build/PWA 검증·
+    Android `assembleDebug`가 통과했다. APK SHA-256=`2b47a0f2525a4abf57759afe9f1f8e5aeb131b10c6c954b0a6c5e0ad352306ae`.
     ⚠️ **한 번에 되돌아가지지 않는다** — route 청크와 쿼리가 늦게 도착해 복원 시점엔 아직
     문서가 짧다. `requestAnimationFrame` 으로 최대 600ms 동안 다시 시도하되
     사용자가 손대면(pointerdown·wheel) 즉시 그만둔다. 복원이 조작을 이기면 안 된다.

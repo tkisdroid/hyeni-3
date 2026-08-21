@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { useLocation } from "react-router";
 
 /**
@@ -43,13 +43,10 @@ export function useScrolledShell(): (node: HTMLElement | null) => void {
   const scrolledRef = useRef(false);
   const { pathname, search } = useLocation();
   const screenKey = `${pathname}${search}`;
-  const keyRef = useRef(screenKey);
-  keyRef.current = screenKey;
+  const activeScreenKeyRef = useRef(screenKey);
 
-  const sync = useCallback(() => {
-    const node = nodeRef.current;
-    if (!node) return;
-    rememberPosition(keyRef.current, node.scrollTop);
+  /** 현재 위치를 저장하지 않고 헤더 스크림 상태만 맞춘다. */
+  const syncScrolledState = useCallback((node: HTMLElement) => {
     const scrolled = node.scrollTop > SCROLLED_THRESHOLD_PX;
     // 매 스크롤 프레임마다 DOM 을 건드리지 않는다 — 상태가 실제로 바뀔 때만 쓴다.
     if (scrolled === scrolledRef.current) return;
@@ -58,14 +55,24 @@ export function useScrolledShell(): (node: HTMLElement | null) => void {
     else delete node.dataset.scrolled;
   }, []);
 
+  /** 실제 스크롤 이벤트에서만 현재 화면의 위치를 새 값으로 기억한다. */
+  const rememberAndSync = useCallback(() => {
+    const node = nodeRef.current;
+    if (!node) return;
+    rememberPosition(activeScreenKeyRef.current, node.scrollTop);
+    syncScrolledState(node);
+  }, [syncScrolledState]);
+
   // 화면이 바뀌면 기억해 둔 자리로 돌아가고, 처음 보는 화면이면 맨 위에서 시작한다.
-  useEffect(() => {
+  // ref 연결 직후, 브라우저가 첫 프레임을 그리기 전에 적용해 최상단이 번쩍이는 것도 줄인다.
+  useLayoutEffect(() => {
+    activeScreenKeyRef.current = screenKey;
     const node = nodeRef.current;
     if (!node) return undefined;
     const saved = savedPositions.get(screenKey);
     if (saved === undefined || saved <= 0) {
       node.scrollTop = 0;
-      sync();
+      syncScrolledState(node);
       return undefined;
     }
 
@@ -82,6 +89,7 @@ export function useScrolledShell(): (node: HTMLElement | null) => void {
       if (cancelled || !current) return;
       const max = Math.max(0, current.scrollHeight - current.clientHeight);
       current.scrollTop = Math.min(saved, max);
+      syncScrolledState(current);
       if (current.scrollTop < saved && Date.now() < deadline) {
         requestAnimationFrame(apply);
       }
@@ -93,24 +101,30 @@ export function useScrolledShell(): (node: HTMLElement | null) => void {
       node.removeEventListener("pointerdown", stop);
       node.removeEventListener("wheel", stop);
     };
-  }, [screenKey, sync]);
+  }, [screenKey, syncScrolledState]);
 
   useEffect(() => () => {
     const node = nodeRef.current;
-    if (node) node.removeEventListener("scroll", sync);
-  }, [sync]);
+    if (!node) return;
+    rememberPosition(activeScreenKeyRef.current, node.scrollTop);
+    node.removeEventListener("scroll", rememberAndSync);
+  }, [rememberAndSync]);
 
   return useCallback(
     (node: HTMLElement | null) => {
       const previous = nodeRef.current;
-      if (previous) previous.removeEventListener("scroll", sync);
+      if (previous) {
+        // ParentShell ↔ PushShell처럼 스크롤 DOM 자체가 바뀌는 경우에도 마지막 위치를 보존한다.
+        rememberPosition(activeScreenKeyRef.current, previous.scrollTop);
+        previous.removeEventListener("scroll", rememberAndSync);
+      }
       nodeRef.current = node;
       scrolledRef.current = false;
       if (!node) return;
-      node.addEventListener("scroll", sync, { passive: true });
-      // 화면을 바꿔 들어왔을 때 이미 스크롤돼 있을 수 있다.
-      sync();
+      node.addEventListener("scroll", rememberAndSync, { passive: true });
+      // 중요: 새 셸의 초기 scrollTop=0은 저장하지 않는다. 저장하면 복원할 과거 위치를 덮어쓴다.
+      syncScrolledState(node);
     },
-    [sync],
+    [rememberAndSync, syncScrolledState],
   );
 }
