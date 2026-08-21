@@ -2,6 +2,7 @@ import { Outlet } from "react-router";
 import { Home, CalendarDays, MapPin, MessageCircle, Settings, Users } from "lucide-react";
 import { lazy, Suspense, useMemo } from "react";
 import { useAccent } from "./accent";
+import { useAuth } from "@/auth/AuthContext";
 import { useEffect } from "react";
 import { warmKakaoMaps } from "@/lib/kakaoMap";
 import { ChildDock } from "./ChildDock";
@@ -80,11 +81,11 @@ export function ParentShell() {
   const tabs = useMemoDotTabs(useParentTabs(), "/parent/memo");
   useWarmKakaoMaps();
   return (
-    <div className="hy-app" data-role="parent" data-accent={accent}>
+    <div className="hy-app hy-adult" data-role="parent" data-accent={accent}>
       <main className="hy-screen">
         <Outlet />
       </main>
-      <TabBar tabs={tabs} />
+      <TabBar tabs={tabs} iconOnly />
       <ToastHost />
     </div>
   );
@@ -111,7 +112,7 @@ export function ChildShell() {
 export function TeacherShell() {
   const tabs = useTeacherTabs();
   return (
-    <div className="hy-app" data-accent="mint">
+    <div className="hy-app hy-adult" data-accent="mint">
       <main className="hy-screen">
         <Outlet />
       </main>
@@ -124,8 +125,10 @@ export function TeacherShell() {
 /** 푸시/상세 화면 셸: 탭바 없음(화면 자체 헤더의 뒤로가기 사용). */
 export function PushShell() {
   const { accent } = useAccent();
+  // 아이도 지나가는 셸이라 어른 유리 언어(.hy-adult)는 세션 role 로 판정한다.
+  const { role } = useAuth();
   return (
-    <div className="hy-app" data-accent={accent}>
+    <div className={`hy-app${role === "child" ? "" : " hy-adult"}`} data-accent={accent}>
       <main className="hy-screen">
         <Outlet />
       </main>

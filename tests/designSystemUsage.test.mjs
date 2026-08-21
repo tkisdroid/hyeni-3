@@ -225,6 +225,10 @@ const typeRoles = new Map([
   ["--type-body", ["--type-body-line-height", "--type-body-weight"]],
   ["--type-body-sm", ["--type-body-sm-line-height", "--type-body-sm-weight"]],
   ["--type-label", ["--type-label-line-height", "--type-label-weight"]],
+  ["--type-section", ["--type-section-line-height", "--type-section-weight"]],
+  ["--type-row", ["--type-row-line-height", "--type-row-weight"]],
+  ["--type-metric", ["--type-metric-line-height", "--type-metric-weight"]],
+  ["--type-meta", ["--type-meta-line-height", "--type-meta-weight"]],
   ["--type-caption", ["--type-caption-line-height", "--type-caption-weight"]],
 ]);
 
@@ -1927,6 +1931,13 @@ const semanticSurfaceManifest = [
     ["src/screens/teacher/TeacherNotice.css", "tn-empty", "card"],
     ["src/styles/components.css", "hy-toast", "floating"],
     ["src/styles/components.css", "hy-card", "card"],
+    ["src/styles/glass.css", "hy-card", "glass-panel"],
+    ["src/styles/glass.css", "hy-glass", "glass-panel"],
+    ["src/screens/parent/ParentHome.redesign.css", "ph-section-shell", "glass-panel"],
+    ["src/screens/parent/ParentHome.redesign.css", "ph-glass", "glass-panel"],
+    ["src/screens/parent/ParentHome.redesign.css", "ph-hero", "glass-panel"],
+    ["src/screens/parent/ParentLocation.redesign.css", "pl-sheet", "glass-panel"],
+    ["src/screens/parent/ParentLocation.redesign.css", "pl-visited", "glass-panel"],
     ["src/screens/parent/ParentHome.css", "ph-hero", "hero"],
     ["src/screens/parent/ParentHome.css", "ph-ai", "glass-card"],
     ["src/screens/parent/ParentHome.css", "ph-section-shell", "ice-section"],
@@ -2135,6 +2146,36 @@ const semanticSurfaceManifestKeys = new Set(semanticSurfaceManifest.map(([path, 
   surfaceManifestKey(path, `.${className}`)));
 const nonSurfacePaintManifest = new Set([
   // 기존 레이아웃·navigation container — exact path + selector만 허용
+  // 2026-08-21 어른 모드 유리 언어의 물체·타일·상태점 — 판(surface)이 아니라 칠해진 조작·표시 면이다.
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-ai__btn.ph-neu-control"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-memo__icon.ph-neu-control"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-shortcut:active .ph-shortcut__icon"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-referral__icon"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-referral__action"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-subscription__action.ph-neu-control"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-referral__action.ph-neu-control"],
+  ["src/screens/parent/ParentLocation.redesign.css", ".pl-root .pl-memo-btn"],
+  ["src/screens/parent/ParentLocation.redesign.css", ".pl-root .pl-route-btn"],
+  ["src/screens/parent/ParentLocation.redesign.css", ".pl-root .pl-listen-btn"],
+  ["src/screens/parent/ParentLocation.redesign.css", ".pl-root .pl-call-btn"],
+  ["src/styles/glass.css", ".hy-adult .hy-tile"],
+  ["src/styles/glass.css", ".hy-adult .hy-status::before"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-location-chip::before"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-safety__status::before"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-sched-icon"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-sched-tag::before"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-ai__btn"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-metric__icon"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-app-summary__item"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-prep-check::before"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-memo__icon"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-shortcut__icon"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-subscription__icon"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-subscription__action"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-section-drag-preview"],
+  ["src/screens/parent/ParentLocation.redesign.css", ".pl-root .pl-actions > button"],
+  ["src/screens/parent/ParentLocation.redesign.css", ".pl-root .pl-visited__state"],
+  ["src/screens/parent/ParentLocation.redesign.css", ".pl-root .pl-history-toolbar"],
   ["src/styles/components.css", ".hy-tabbar__inner"],
   ["src/app/ChildDock.css", ".kdock__bar"],
   // 기존 버튼과 액션 컨트롤 — exact path + selector만 허용
@@ -2461,7 +2502,6 @@ const nonSurfacePaintManifest = new Set([
   ["src/app/ChildDock.css", ".kdock__badge"],
   ["src/screens/Splash.css", ".sp-dot"],
   ["src/screens/parent/ParentHome.css", ".ph-hero__badge"],
-  ["src/screens/parent/ParentHome.css", ".ph-child__now"],
   ["src/screens/parent/ParentHome.css", ".ph-child__attend"],
   ["src/screens/parent/ParentHome.css", ".ph-safety__pending"],
   ["src/screens/parent/ParentHome.css", ".ph-safety__signal"],
@@ -2572,7 +2612,6 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/Splash.css", ".sp-halo::after"],
   ["src/screens/parent/ParentHome.css", ".ph-live-dot .ring"],
   ["src/screens/parent/ParentHome.css", ".ph-live-dot .core"],
-  ["src/screens/parent/ParentHome.css", ".ph-section-shell::before"],
   ["src/screens/parent/ParentHome.css", ".ph-metric__icon"],
   ["src/screens/parent/ParentHome.css", ".ph-shortcut__icon"],
   ["src/screens/parent/ParentHome.css", ".ph-ai__btn-icon"],
@@ -2739,7 +2778,14 @@ const nonSurfacePaintManifest = new Set([
 const semanticSurfaceRoleSpecs = {
   card: { radius: ["var(--radius-16)"], shadow: ["none", "var(--shadow-soft)"] },
   "glass-card": { radius: ["var(--radius-16)"], shadow: ["var(--glass-rim), var(--glass-lift)"] },
-  "ice-section": { radius: ["var(--radius-24)"], shadow: ["var(--liquid-glass-shadow)"] },
+  // 2026-08-21 어른 모드 유리 언어: 오로라 위의 판(--ph-panel-shadow)과
+  // 지도처럼 고대비 배경 위의 판(--ph-float-shadow) 두 등급만 쓴다.
+  "glass-panel": {
+    radius: ["var(--radius-20)", "var(--radius-24)"],
+    shadow: ["var(--ph-panel-shadow)", "var(--ph-float-shadow)"],
+  },
+  // 2026-08-21 어른 모드 유리 언어 전환: --liquid-glass-* 는 폐기하고 --ph-glass-* 가 정본이다.
+  "ice-section": { radius: ["var(--radius-24)"], shadow: ["var(--ph-glass-lift)", "var(--ph-glass-rim), var(--ph-glass-lift)"] },
   hero: { radius: ["var(--radius-20)", "0 0 var(--radius-20) var(--radius-20)"], shadow: ["none", "var(--shadow-soft)", "var(--shadow-floating)"] },
   media: { radius: ["var(--radius-20)"], shadow: ["none", "var(--shadow-soft)", "var(--shadow-modal)"] },
   modal: { radius: ["var(--radius-20)"], shadow: ["var(--shadow-modal)"] },
@@ -2750,8 +2796,15 @@ const semanticSurfaceRoleSpecs = {
 function semanticSurfaceViolations(manifest, blocks) {
   const violations = [];
 
+  // 2026-08-21: 어른 모드 유리 언어는 판을 `.hy-adult .hy-card` 처럼 **범위를 좁혀** 선언한다.
+  // 공용 .hy-card 를 !important 없이 덮으려면 그래야 하므로, 같은 파일 안에서
+  // 그 클래스를 **마지막 단순 선택자(subject)로 겨냥하는** 규칙도 root 로 인정한다.
+  // (`.a .cls:active` 같은 상태 변형은 여전히 root 가 아니다 — 판의 기본 재질이 아니기 때문이다.)
+  const classSubjectPattern = (className) =>
+    new RegExp("(^|\\s)\\." + className + "$");
   const findRootBlock = (path, className) => blocks.find(
-    (block) => block.path === path && block.selectors.includes(`.${className}`),
+    (block) => block.path === path
+      && block.selectors.some((selector) => classSubjectPattern(className).test(selector.trim())),
   ) ?? null;
 
   for (const [path, className, role] of manifest) {
@@ -3121,10 +3174,13 @@ test("hit-area cascade 계산은 후행 고특이도 30px override를 이전 44p
 });
 
 test("main import graph는 global.css를 포함한 실제 CSS 파일 순서를 보존한다", () => {
-  assert.deepEqual(orderedReleaseCssFiles.slice(0, 4).map(displayPath), [
+  // glass.css = 어른 모드 공용 디자인 언어. components.css 뒤(공용 클래스를 덮을 수 있어야 하고)
+  // 화면별 CSS 앞(화면이 마지막 발언권을 갖도록)이 정본 위치다.
+  assert.deepEqual(orderedReleaseCssFiles.slice(0, 5).map(displayPath), [
     "src/styles/tokens.css",
     "src/styles/global.css",
     "src/styles/components.css",
+    "src/styles/glass.css",
     "src/app/ChildDock.css",
   ]);
 });
@@ -3440,7 +3496,6 @@ const opticalSpacingAllowlist = new Map([
   // 작은 상태 capsule의 세로 2px은 44px hit box와 분리된 내부 optical padding입니다.
   ["src/screens/shared/MemoChat.css|.mc-safety-action|padding", new Set([2])],
   ["src/screens/child/AiFriendChat.css|.afc-report-link|padding", new Set([2])],
-  ["src/screens/parent/ParentHome.css|.ph-child__now|padding", new Set([2])],
   // 44px hit 안의 18px 삭제 원을 중앙에 두는 13px 역마진입니다.
   ["src/screens/teacher/TeacherNotice.css|.tn-file-chip__x|margin", new Set([-13])],
   // 지도 marker/ring 중심을 실제 좌표에 맞추는 기하 오프셋입니다.

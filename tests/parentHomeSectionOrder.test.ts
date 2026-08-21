@@ -92,21 +92,35 @@ test("부모 홈 핵심 섹션과 바로가기는 제목 왼쪽 장식 아이콘
   assert.match(source, /className="ph-child__avatar"[\s\S]{0,120}data-photo=/);
   assert.match(css, /\.ph-child__avatar\s*\{[\s\S]*?width: 72px;[\s\S]*?height: 72px;/);
   assert.match(css, /\.ph-child__avatar\[data-photo="true"\] img[\s\S]*?width: 100%;[\s\S]*?object-fit: cover;/);
+  assert.doesNotMatch(source, /ChevronRight|ph-child__now|ph-child__more/);
+  assert.doesNotMatch(source.slice(source.indexOf("{/* 오늘의 일정 */}"), source.indexOf("{/* AI로 일정 추가")), /ChevronRight/);
 });
 
-test("부모 홈 주요 기능은 얼음 유리 섹션으로 묶고 조작 버튼과 텍스트 위계를 분명히 한다", () => {
+test("부모 홈 주요 기능은 유리 섹션으로 묶고 조작·문구 계약을 지킨다", () => {
   const source = readFileSync(new URL("../src/screens/parent/ParentHome.tsx", import.meta.url), "utf8");
-  const css = readFileSync(new URL("../src/screens/parent/ParentHome.css", import.meta.url), "utf8");
+  const redesignCss = readFileSync(new URL("../src/screens/parent/ParentHome.redesign.css", import.meta.url), "utf8");
+  const appShell = readFileSync(new URL("../src/app/AppShell.tsx", import.meta.url), "utf8");
+  const tabBar = readFileSync(new URL("../src/app/TabBar.tsx", import.meta.url), "utf8");
   const ko = JSON.parse(readFileSync(new URL("../locales/ko/parent.json", import.meta.url), "utf8"));
 
+  // 주요 섹션은 모두 같은 유리 판이다.
   assert.ok((source.match(/className="ph-section-shell(?: ph-ai)? ph-glass"/g) ?? []).length >= 6);
-  assert.match(css, /\.ph-section-shell\s*\{[\s\S]*?backdrop-filter: var\(--liquid-glass-blur\)/);
-  assert.match(css, /\.ph-section-shell::after\s*\{[\s\S]*?inset: 4px;[\s\S]*?box-shadow: var\(--liquid-glass-inner-rim\)/);
-  assert.match(css, /\.ph-inner-surface\s*\{[\s\S]*?background: var\(--liquid-glass-tile\)/);
-  assert.match(css, /\.ph-ai__btn\s*\{[\s\S]*?background: color-mix[\s\S]*?box-shadow: var\(--neu-raised-soft\)/);
-  assert.match(css, /\.ph-shortcut\s*\{[\s\S]*?background: color-mix[\s\S]*?box-shadow: var\(--neu-raised-soft\)/);
-  assert.match(css, /\.ph-app-summary__v\s*\{[\s\S]*?font-weight: var\(--type-body-lg-weight\)/);
-  assert.match(css, /\.ph-recent-row__time\s*\{[\s\S]*?font-weight: var\(--type-label-weight\)/);
+
+  // 재질 정본은 glass.css 이고, 화면 파일은 그 위에 화면 고유 요소만 얹는다.
+  // (2026-08-21 전환 전 스펙이던 --liquid-glass-*·--neu-control-* 는 폐기됐다.)
+  assert.doesNotMatch(redesignCss, /--liquid-glass-|--neu-control-/);
+  assert.match(redesignCss, /\.ph-page \.ph-section-shell,[\s\S]*?backdrop-filter: var\(--ph-glass-blur\)/);
+
+  // 부모 탭은 라벨 없는 아이콘 전용이고 이름은 aria-label 로만 남는다.
+  assert.match(appShell, /<TabBar tabs=\{tabs\} iconOnly \/>/);
+  assert.match(tabBar, /aria-label=\{t\.label\}/);
+  assert.match(tabBar, /\{!iconOnly && <span className="hy-tab__label">\{t\.label\}<\/span>\}/);
+
+  // 화면 파일은 공용 파일보다 뒤에 로드돼 마지막 발언권을 갖는다.
+  assert.ok(
+    source.indexOf('import "./ParentHome.css";') < source.indexOf('import "./ParentHome.redesign.css";'),
+    "부모 홈 리디자인 파일의 실제 후행 cascade를 검사해야 합니다",
+  );
 
   const memo = source.slice(source.indexOf("{/* 대화 프리뷰 */}"), source.indexOf("{/* 바로가기 */}"));
   assert.doesNotMatch(memo, /copy059|ph-memo__time|childName/);

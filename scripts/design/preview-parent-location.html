@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<!--
+  디자인 검증용 정적 하니스 — 앱 번들이 아니다.
+  실제 화면 CSS 를 그대로 링크해 실측(스크린샷·대비 감사)에 쓴다.
+  실행: node scripts/design/serve.mjs . 후 http://127.0.0.1:5199/scripts/design/<파일>
+-->
+<title>ParentLocation preview</title>
+<link rel="stylesheet" href="/src/styles/tokens.css" />
+<link rel="stylesheet" href="/src/styles/global.css" />
+<link rel="stylesheet" href="/src/styles/components.css" />
+<link rel="stylesheet" href="/src/styles/glass.css" />
+<link rel="stylesheet" href="/src/screens/parent/ParentLocation.css" />
+<link rel="stylesheet" href="/src/screens/parent/ParentLocation.redesign.css" />
+<style>
+  html, body { margin:0; padding:0; }
+  /* 지도 자리에는 실제 카카오 타일 대신 같은 밝기의 회색 격자를 둔다(도메인 제한으로 SDK 미로드). */
+  .km-mock {
+    position:absolute; inset:0;
+    background:
+      repeating-linear-gradient(0deg, #dfe3e0 0 1px, transparent 1px 42px),
+      repeating-linear-gradient(90deg, #dfe3e0 0 1px, transparent 1px 42px),
+      linear-gradient(160deg,#eef2ea 0%,#f2efe8 55%,#eee9f0 100%);
+  }
+  .pl-root--history .km-mock { position:relative; height:100%; }
+</style>
+</head>
+<body>
+<div class="hy-app hy-adult" data-role="parent" data-accent="lavender">
+  <main class="hy-screen">
+    <div class="pl-root" id="live">
+      <div class="pl-map"><div class="km-mock"></div></div>
+
+      <div class="pl-top">
+        <div class="pl-viewtog" role="tablist">
+          <button class="pl-viewtog__btn pl-viewtog__btn--on" type="button">실시간</button>
+          <button class="pl-viewtog__btn" type="button">이동 기록</button>
+        </div>
+      </div>
+
+      <div class="pl-chips">
+        <div class="pl-chip pl-chip--active">
+          <span class="pl-chip__avatar" data-photo="true"><img src="/public/assets/mascot/cheer.webp" alt="" /></span>
+          <span class="pl-chip__main"><span class="pl-chip__name">헤니</span></span>
+          <span class="pl-chip__dot"></span>
+        </div>
+      </div>
+
+      <div class="pl-sheet">
+        <div class="pl-sheet__head">
+          <div class="pl-sheet__avatar" data-photo="true">
+            <img class="hy-network-avatar" src="/public/assets/mascot/cheer.webp" alt="" />
+          </div>
+          <div class="pl-sheet__info">
+            <div class="pl-sheet__name">헤니 위치 확인 중</div>
+            <div class="pl-sheet__zone"><span class="pl-sheet__zone-dot"></span>4분 전 · 오차 약 16m</div>
+          </div>
+        </div>
+        <div class="pl-actions">
+          <button type="button" class="pl-memo-btn hy-press">
+            <img class="pl-actions__icon" src="/public/assets/ui/clay/notification.webp" alt="" />
+            <span class="pl-actions__label">메모</span>
+          </button>
+          <button type="button" class="pl-route-btn hy-press">
+            <img class="pl-actions__icon" src="/public/assets/ui/clay/location.webp" alt="" />
+            <span class="pl-actions__label">경로</span>
+          </button>
+          <button type="button" class="pl-listen-btn hy-press">
+            <img class="pl-actions__icon" src="/public/assets/ui/clay/remote-audio.webp" alt="" />
+            <span class="pl-actions__label">주변소리</span>
+          </button>
+          <button type="button" class="pl-call-btn hy-press">
+            <img class="pl-actions__icon" src="/public/assets/ui/clay/playdate.webp" alt="" />
+            <span class="pl-actions__label">전화</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <nav class="hy-tabbar" data-icon-only="true">
+    <div class="hy-tabbar__inner">
+      <button class="hy-tab"><span class="hy-tab__icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span></button>
+      <button class="hy-tab"><span class="hy-tab__icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span></button>
+      <button class="hy-tab" data-active="true"><span class="hy-tab__icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg></span></button>
+      <button class="hy-tab"><span class="hy-tab__icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg></span></button>
+      <button class="hy-tab"><span class="hy-tab__icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg></span></button>
+    </div>
+  </nav>
+</div>
+</body>
+</html>

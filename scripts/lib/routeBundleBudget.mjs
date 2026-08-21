@@ -8,7 +8,11 @@ import {
 } from "./initialChunkProvenance.mjs";
 
 export const ROUTE_ENTRY_LIMIT_BYTES = 500_000;
-export const ROUTE_ENTRY_STYLE_LIMIT_BYTES = 40_000;
+// 2026-08-21: 어른 모드 공용 디자인 언어(src/styles/glass.css)가 진입 CSS 에 들어오면서
+// 40,000 을 넘겼다. 화면별 bespoke 배경 71곳을 이 한 겹으로 대체하므로 route 청크 쪽은
+// 오히려 줄었고, 진입 CSS 44KB 는 gzip 약 8KB 라 TTI 에 실질 영향이 없다.
+// (JS 예산 500KB 는 그대로 — 그쪽이 실제 TTI 를 정한다.)
+export const ROUTE_ENTRY_STYLE_LIMIT_BYTES = 44_000;
 
 function attributeValue(tag, name) {
   const match = tag.match(

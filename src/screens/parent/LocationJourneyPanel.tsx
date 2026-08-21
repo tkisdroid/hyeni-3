@@ -1,7 +1,6 @@
 import { MapPin, RefreshCw } from "lucide-react";
 import type { Ref } from "react";
 import { useIntl } from "react-intl";
-import { asset } from "@/lib/assets";
 import type { JourneyContentState } from "@/transform/locationJourneyView";
 
 export interface StayTimelineItem {
@@ -64,7 +63,6 @@ export function LocationJourneyPanel({
       aria-label={intl.formatMessage({ id: "parent.location.history.visitedListAria" }, { childName, dayLabel })}
     >
       <header className="pl-visited__head">
-        <img src={asset("ui/clay/history.webp")} alt="" />
         <strong>{intl.formatMessage({ id: "parent.location.history.visitedPlaces" })}</strong>
         {state === "ready" && (
           <span>{intl.formatMessage({ id: "parent.location.history.stayCountShort" }, { count: stayCount })}</span>

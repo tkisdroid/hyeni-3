@@ -1,0 +1,1032 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   부모 홈 — 어른 모드 디자인 언어(src/styles/glass.css)의 화면별 적용.
+
+   ⚠️ 팔레트·바닥 오로라·상단바·하단 탭·접근성 강등은 전부 glass.css 가 정본이다.
+      여기서 다시 정의하지 말 것. 이 파일은 부모 홈에만 있는 요소
+      (히어로, 일정/아이/안전/준비물 섹션, 바로가기, 구독·초대)만 다룬다.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 리듬: 섹션은 붙이고 안쪽에 숨 쉴 공간을 준다 ────────────────────────── */
+.hy-app .ph-page .hy-content {
+  gap: 12px;
+  padding: 8px 16px calc(112px + env(safe-area-inset-bottom, 0px));
+}
+
+.ph-page .hy-iconbtn,
+.ph-page .ph-stickerbtn {
+  background: var(--ph-object-fill);
+  border: 0;
+  box-shadow: var(--ph-object-raise);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.ph-page .ph-stickerbtn {
+  height: 38px;
+  padding: 0 12px 0 8px;
+  color: var(--ph-ink-2);
+}
+
+.ph-page .ph-stickerbtn img {
+  width: 24px;
+  height: 24px;
+}
+
+.ph-page .ph-stickerbtn span {
+
+  font-size: var(--type-caption);
+
+  line-height: var(--type-caption-line-height);
+
+  font-weight: var(--type-caption-weight);
+  letter-spacing: -0.02em;
+}
+
+.ph-page .hy-iconbtn {
+  width: 38px;
+  height: 38px;
+}
+
+.ph-page .ph-top-action-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.ph-page .ph-top-action-icon--settings {
+  width: 24px;
+  height: 24px;
+}
+
+/* ── ② 한 섹션 = 한 장의 유리 ───────────────────────────────────────────── */
+.ph-page .ph-section-shell,
+.ph-page .ph-glass,
+.ph-page .hy-card.ph-glass {
+  padding: 16px;
+  border: 0;
+  border-radius: var(--radius-24);
+  background: var(--ph-glass-fill);
+  box-shadow: var(--ph-panel-shadow);
+  backdrop-filter: var(--ph-glass-blur);
+  -webkit-backdrop-filter: var(--ph-glass-blur);
+  --neu-light: rgba(255, 255, 255, 0.95);
+  --neu-dark: rgba(64, 78, 110, 0.16);
+}
+
+/* 판 안에 판을 넣지 않는다. 내용은 유리 위에 바로 놓인다. */
+.ph-page .ph-inner-surface {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.ph-page .hy-section-head {
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-inline: 0;
+}
+
+.ph-page .hy-section-title,
+.ph-page .ph-ai__title,
+.ph-page .ph-memo__from {
+
+  font-size: var(--type-section);
+
+  line-height: var(--type-section-line-height);
+
+  font-weight: var(--type-section-weight);
+  letter-spacing: -0.03em;
+  color: var(--ph-ink);
+}
+
+/* ── ④ 상태는 조용하게, 동작은 색으로. 둘 다 박스는 없다 ────────────────── */
+.ph-page .hy-section-action,
+.ph-page .hy-section-action.ph-neu-control,
+.ph-page .ph-small-control,
+.ph-page .ph-prep-edit,
+.ph-page .ph-safety__refresh .ph-small-control {
+  min-width: 0;
+  /* 글자는 작아도 실제 누르는 영역은 44px 을 유지한다(배경이 없어 눈에는 안 보인다). */
+  min-height: var(--control-min-size);
+  margin-left: auto;
+  padding: 8px 4px;
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  box-shadow: none;
+  font-size: var(--type-meta);
+  line-height: var(--type-meta-line-height);
+  font-weight: var(--type-meta-weight);
+  letter-spacing: -0.02em;
+  color: var(--ph-link);
+  white-space: nowrap;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.ph-page button.hy-section-action:active,
+.ph-page button.ph-small-control:active {
+  box-shadow: none;
+  opacity: 0.55;
+}
+
+/* 상태 표시(현재 위치 · 헤니 · 양호): 점 하나 + 작은 회색 글자. 버튼이 아니다. */
+.ph-page .ph-location-chip,
+.ph-page .ph-safety__status,
+.ph-page .hy-chip.ph-small-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  padding: 8px 4px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  letter-spacing: -0.02em;
+  color: var(--ph-ink-3);
+}
+
+.ph-page .ph-location-chip::before,
+.ph-page .ph-safety__status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--ph-ink-3);
+}
+
+.ph-page .ph-location-chip[data-current="true"]::before,
+.ph-page .ph-safety__status[data-state="ready"]::before {
+  background: var(--mint-500);
+  box-shadow: 0 0 0 3px rgba(49, 196, 141, 0.18);
+}
+
+.ph-page .ph-safety__status[data-state="attention"]::before {
+  background: var(--gold-600);
+  box-shadow: 0 0 0 3px rgba(214, 158, 46, 0.2);
+}
+
+.ph-page .ph-location-chip[data-current="true"],
+.ph-page .ph-safety__status[data-state="ready"],
+.ph-page .ph-safety__status[data-state="attention"],
+.ph-page .ph-safety__status[data-state="unknown"] {
+  background: transparent;
+  color: var(--ph-ink-3);
+}
+
+/* 이 점이 이미 상태를 말한다 — 펄스 링은 중복이라 지운다. */
+.ph-page .hy-chip__pulse {
+  display: none;
+}
+
+/* ── 히어로 — 섹션보다 한 단계 맑은 단색 유리 ─────────────────────────── */
+.ph-page .ph-hero {
+  padding: 20px 120px 20px 20px;
+  border: 0;
+  border-radius: var(--radius-24);
+  background: var(--ph-glass-fill-clear);
+  box-shadow: var(--ph-panel-shadow);
+  backdrop-filter: blur(20px) saturate(200%);
+  -webkit-backdrop-filter: blur(20px) saturate(200%);
+}
+
+.ph-page .ph-hero__mascot {
+  right: -6px;
+  bottom: -10px;
+  width: 128px;
+  height: 146px;
+}
+
+.ph-page .ph-hero__mascot img {
+  filter: drop-shadow(0 12px 18px rgba(40, 50, 78, 0.18));
+}
+
+/* 날짜는 라벨이지 버튼이 아니다 — 박스를 벗기고 자간을 벌려 눈금처럼 읽힌다. */
+.ph-page .ph-hero__badge {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  letter-spacing: 0.04em;
+  color: var(--ph-ink-3);
+}
+
+.ph-page .ph-hero__title {
+  margin-top: 12px;
+  font-size: var(--type-title-lg);
+  line-height: var(--type-title-lg-line-height);
+  font-weight: var(--type-title-lg-weight);
+  letter-spacing: -0.035em;
+  color: var(--ph-ink);
+}
+
+.ph-page .ph-hero__title em {
+
+  font-size: var(--type-display);
+
+  line-height: var(--type-display-line-height);
+
+  font-weight: var(--type-display-weight);
+  letter-spacing: -0.05em;
+  color: var(--ph-link);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 위치도 상태다 — 알약을 벗기고 점 + 작은 글자로. */
+.ph-page .ph-hero__live {
+  min-height: 0;
+  margin-top: 12px;
+  padding: 0;
+  gap: 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  font-size: var(--type-meta);
+  line-height: var(--type-meta-line-height);
+  font-weight: var(--type-meta-weight);
+  letter-spacing: -0.02em;
+  color: var(--ph-ink-3);
+}
+
+.ph-page .ph-hero__location-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.ph-page .ph-hero__location-place {
+  padding-left: 8px;
+  border-left: 1px solid var(--ph-hairline);
+  color: var(--ph-ink-2);
+  font-weight: 700;
+}
+
+.ph-page .ph-live-dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+}
+
+.ph-page .ph-live-dot .core {
+  background: var(--mint-500);
+}
+
+.ph-page .ph-live-dot .ring {
+  background: var(--mint-400);
+}
+
+/* ── ③ 목록 행: 납작하고, 선으로만 나뉜다 ──────────────────────────────── */
+.ph-page .ph-sched {
+  gap: 0;
+  padding: 0;
+}
+
+.ph-page .ph-sched-row,
+.ph-page .ph-sched-row.ph-neu-control {
+  padding: 12px 4px;
+  gap: 12px;
+  border: 0;
+  border-radius: var(--radius-12);
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  --press: 1;
+}
+
+.ph-page .ph-sched-row + .ph-sched-row {
+  border-top: 1px solid var(--ph-hairline);
+}
+
+.ph-page button.ph-sched-row:active {
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: none;
+}
+
+.ph-page .ph-sched-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-12);
+  background: rgba(255, 255, 255, 0.62) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.75);
+}
+
+.ph-page .ph-sched-icon img {
+  width: 27px;
+  height: 27px;
+}
+
+.ph-page .ph-sched-title {
+
+  font-size: var(--type-row);
+
+  line-height: var(--type-row-line-height);
+
+  font-weight: var(--type-row-weight);
+  letter-spacing: -0.025em;
+  color: var(--ph-ink);
+}
+
+.ph-page .ph-sched-sub {
+  margin-top: 4px;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  color: var(--ph-ink-3);
+}
+
+/* 태그는 상태다 — 채움을 걷고 점 하나로만 말한다.
+   링크색(--ph-link)을 절대 쓰지 않는다: 그러면 '전체보기'와 같은 층으로 읽힌다. */
+.ph-page .ph-sched-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent !important;
+  color: var(--ph-ink-3) !important;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  letter-spacing: -0.02em;
+}
+
+.ph-page .ph-sched-tag::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex: none;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+/* ── AI 일정 추가: 4개는 진짜 물체다 ────────────────────────────────────── */
+.ph-page .ph-ai {
+  padding: 16px;
+  box-shadow: var(--ph-panel-shadow);
+}
+
+.ph-page .ph-ai__sub {
+  margin-top: 4px;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  color: var(--ph-ink-3);
+}
+
+.ph-page .ph-ai__grid {
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.ph-page .ph-ai__btn,
+.ph-page .ph-ai__btn.ph-neu-control {
+  min-height: 56px;
+  padding: 12px;
+  gap: 12px;
+  border: 0;
+  border-radius: var(--radius-16);
+  background: var(--ph-object-fill);
+  box-shadow: var(--ph-object-raise);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+  letter-spacing: -0.025em;
+  color: var(--ph-ink);
+}
+
+.ph-page button.ph-ai__btn:active {
+  box-shadow: var(--ph-object-press);
+}
+
+.ph-page .ph-ai__btn-icon {
+  width: 32px;
+  height: 32px;
+  background: transparent;
+}
+
+.ph-page .ph-ai__btn-icon img {
+  width: 30px;
+  height: 30px;
+}
+
+/* ── 아이 현황 ──────────────────────────────────────────────────────────── */
+.ph-page .ph-children {
+  gap: 4px;
+}
+
+.ph-page .ph-child,
+.ph-page .ph-inner-surface.ph-child {
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-16);
+  background: transparent;
+  box-shadow: none;
+}
+
+/* 선택된 아이만 불이 켜진다 — 테두리 대신 밝기로 알린다. */
+.ph-page .ph-child--active,
+.ph-page .ph-inner-surface.ph-child--active {
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.52);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.ph-page .ph-child__row,
+.ph-page .ph-child__row.ph-neu-control,
+.ph-page .ph-child__row.ph-neu-control[aria-pressed="true"] {
+  padding: 4px;
+  gap: 12px;
+  border: 0;
+  border-radius: var(--radius-12);
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  --press: 1;
+}
+
+.ph-page button.ph-child__row:active {
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.ph-page .ph-child__avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: var(--radius-16);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.85);
+}
+
+.ph-page .ph-child__avatar img {
+  width: 44px;
+  height: 44px;
+}
+
+.ph-page .ph-child__online {
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+}
+
+.ph-page .ph-child__name {
+
+  font-size: var(--type-row);
+
+  line-height: var(--type-row-line-height);
+
+  font-weight: var(--type-row-weight);
+  letter-spacing: -0.03em;
+  color: var(--ph-ink);
+}
+
+.ph-page .ph-child__device,
+.ph-page .ph-child__device-label {
+
+  font-size: var(--type-caption);
+
+  line-height: var(--type-caption-line-height);
+
+  font-weight: var(--type-caption-weight);
+  color: var(--ph-ink-3);
+}
+
+.ph-page .ph-child__loc {
+  margin-top: 4px;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  color: var(--ph-ink-2);
+}
+
+.ph-page .ph-child__foot {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ph-hairline);
+}
+
+.ph-page .ph-child__next {
+
+  font-size: var(--type-caption);
+
+  line-height: var(--type-caption-line-height);
+
+  font-weight: var(--type-caption-weight);
+  color: var(--ph-ink-3);
+}
+
+.ph-page .ph-child__next b {
+  font-weight: 700;
+  color: var(--ph-ink-2);
+}
+
+/* ── 안전 지표 ──────────────────────────────────────────────────────────── */
+.ph-page .ph-safety {
+  padding: 0;
+}
+
+/* 정상일 때는 알약이 아니라 점 + 글자. 조치가 필요할 때만 진짜 박스가 나온다. */
+.ph-page .ph-safety__signals {
+  gap: 16px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--ph-hairline);
+}
+
+.ph-page .ph-safety__signal {
+  flex: 0 1 auto;
+  justify-content: flex-start;
+  padding: 0;
+  gap: 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  letter-spacing: -0.02em;
+  color: var(--ph-ink-3);
+}
+
+.ph-page .ph-safety__signal[data-state="ready"],
+.ph-page .ph-safety__signal[data-state="attention"] {
+  background: transparent;
+  color: var(--ph-ink-3);
+}
+
+.ph-page .ph-signal-3d-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.ph-page .ph-safety__notification {
+  margin-bottom: 12px;
+  border-radius: var(--radius-16);
+}
+
+.ph-page .ph-safety__grid {
+  gap: 16px 12px;
+}
+
+.ph-page .ph-metric {
+  gap: 12px;
+}
+
+.ph-page .ph-metric__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-12);
+  background: rgba(255, 255, 255, 0.66);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+}
+
+.ph-page .ph-metric__icon img {
+  width: 24px;
+  height: 24px;
+}
+
+.ph-page .ph-metric__k {
+
+  font-size: var(--type-caption);
+
+  line-height: var(--type-caption-line-height);
+
+  font-weight: var(--type-caption-weight);
+  letter-spacing: -0.01em;
+  color: var(--ph-ink-3);
+}
+
+.ph-page .ph-metric__v {
+  margin-top: 0;
+  font-size: var(--type-metric);
+  line-height: var(--type-metric-line-height);
+  font-weight: var(--type-metric-weight);
+  letter-spacing: -0.03em;
+  color: var(--ph-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.ph-page .ph-safety__divider {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ph-hairline);
+}
+
+.ph-page .ph-app-summary {
+  gap: 12px;
+}
+
+.ph-page .ph-app-summary__item {
+  padding: 12px;
+  border: 0;
+  border-radius: var(--radius-12);
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.66);
+}
+
+.ph-page .ph-app-summary__k {
+
+  font-size: var(--type-caption);
+
+  line-height: var(--type-caption-line-height);
+
+  font-weight: var(--type-caption-weight);
+  color: var(--ph-ink-3);
+}
+
+.ph-page .ph-app-summary__v {
+  margin-top: 4px;
+  font-size: var(--type-row);
+  line-height: var(--type-row-line-height);
+  font-weight: var(--type-row-weight);
+  letter-spacing: -0.03em;
+  color: var(--ph-ink);
+}
+
+.ph-page .ph-app-summary__time {
+  margin-top: 4px;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  color: var(--ph-link);
+  font-variant-numeric: tabular-nums;
+}
+
+.ph-page .ph-safety__refresh {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ph-hairline);
+}
+
+.ph-page .ph-safety__refresh > span {
+
+  font-size: var(--type-caption);
+
+  line-height: var(--type-caption-line-height);
+
+  font-weight: var(--type-caption-weight);
+  color: var(--ph-ink-3);
+}
+
+/* ── 준비물 · 숙제 ──────────────────────────────────────────────────────── */
+.ph-page .ph-prep {
+  gap: 0;
+  padding: 0;
+}
+
+.ph-page .ph-prep-count {
+  margin-left: auto;
+  margin-right: 0;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  color: var(--ph-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.ph-page .ph-prep-edit {
+  margin-left: 12px;
+}
+
+.ph-page .ph-prep-row {
+  gap: 4px;
+  padding: 0;
+  border-radius: var(--radius-12);
+}
+
+.ph-page .ph-prep-row + .ph-prep-row {
+  border-top: 1px solid var(--ph-hairline);
+}
+
+/* 체크박스는 진짜 물체다 — 유일하게 솟아 있는 준비물 요소.
+   ⚠️ .hy-press 의 min-height:44px 가 height 를 이긴다(실측: 24px 지정이 44px 로 렌더됐다).
+   그래서 버튼 자체는 44px 투명 히트영역으로 두고, 보이는 사각형은 ::before 가 그린다. */
+.ph-page .ph-prep-check,
+.ph-page .ph-prep-check.ph-neu-control {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  margin-left: -8px;
+  border: 0;
+  border-radius: var(--radius-12);
+  background: transparent;
+  box-shadow: none;
+}
+
+.ph-page .ph-prep-check::before {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border-radius: var(--radius-8);
+  background: var(--ph-object-fill);
+  box-shadow: var(--ph-object-raise);
+}
+
+.ph-page .ph-prep-check svg {
+  position: relative;
+}
+
+.ph-page .ph-prep-check.ph-neu-control[data-done="true"] {
+  background: transparent;
+  box-shadow: none;
+}
+
+.ph-page .ph-prep-check.ph-neu-control[data-done="true"]::before {
+  background: var(--ph-link);
+  box-shadow: var(--ph-object-press);
+}
+
+.ph-page button.ph-prep-check:active::before {
+  box-shadow: var(--ph-object-press);
+}
+
+.ph-page .ph-prep-text {
+
+  font-size: var(--type-row);
+
+  line-height: var(--type-row-line-height);
+
+  font-weight: var(--type-row-weight);
+  letter-spacing: -0.025em;
+}
+
+.ph-page .ph-prep-kind {
+  padding: 4px 8px;
+  border-radius: var(--radius-8);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+}
+
+/* ── 대화 프리뷰 ────────────────────────────────────────────────────────── */
+.ph-page .ph-memo {
+  padding: 16px;
+  gap: 12px;
+}
+
+.ph-page .ph-memo__icon,
+.ph-page .ph-memo__icon.ph-neu-control {
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: var(--radius-12);
+  background: var(--ph-object-fill);
+  box-shadow: var(--ph-object-raise);
+}
+
+.ph-page .ph-memo__icon img {
+  width: 28px;
+  height: 28px;
+}
+
+.ph-page .ph-memo__text {
+  margin-top: 4px;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  color: var(--ph-link);
+}
+
+/* ── ④ 바로가기: 작게, 그리고 서로 떨어뜨린다 ──────────────────────────── */
+.ph-page .ph-shortcuts {
+  gap: 16px 8px;
+}
+
+.ph-page .ph-shortcut,
+.ph-page .ph-shortcut.ph-neu-control {
+  /* 아이콘 46 + 라벨로 실제 높이는 74px 이지만, 선언으로도 44px 을 보장한다. */
+  min-height: var(--control-min-size);
+  padding: 0;
+  gap: 8px;
+  border: 0;
+  border-radius: var(--radius-12);
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  --press: 0.94;
+}
+
+.ph-page .ph-shortcut__icon,
+.ph-page .ph-shortcut:active .ph-shortcut__icon {
+  width: 46px;
+  height: 46px;
+  border: 0;
+  border-radius: var(--radius-16);
+  background: var(--ph-object-fill);
+  box-shadow: var(--ph-object-raise);
+}
+
+.ph-page .ph-shortcut:active .ph-shortcut__icon {
+  box-shadow: var(--ph-object-press);
+}
+
+.ph-page .ph-shortcut__icon img {
+  width: 27px;
+  height: 27px;
+}
+
+.ph-page .ph-shortcut__label {
+
+  font-size: var(--type-caption);
+
+  line-height: var(--type-caption-line-height);
+
+  font-weight: var(--type-caption-weight);
+  letter-spacing: -0.045em;
+  color: var(--ph-ink-3);
+}
+
+.ph-page .ph-shortcut__badge {
+  border: 2px solid rgba(255, 255, 255, 0.95);
+}
+
+/* ── 구독 · 초대 ────────────────────────────────────────────────────────── */
+.ph-page .ph-frost--stack {
+  gap: 12px;
+}
+
+.ph-page .ph-subscription,
+.ph-page .ph-referral {
+  /* 104px 강제 높이는 없앴지만 조작 최소 높이는 선언으로 지킨다. */
+  min-height: var(--control-min-size);
+  padding: 16px;
+  gap: 12px;
+}
+
+.ph-page .ph-subscription__icon,
+.ph-page .ph-referral__icon {
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: var(--radius-12);
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.78);
+}
+
+.ph-page .ph-subscription__icon img {
+  width: 30px;
+  height: 30px;
+}
+
+.ph-page .ph-subscription__title {
+
+  font-size: var(--type-row);
+
+  line-height: var(--type-row-line-height);
+
+  font-weight: var(--type-row-weight);
+  letter-spacing: -0.03em;
+  color: var(--ph-ink);
+}
+
+.ph-page .ph-subscription__description {
+  margin-top: 4px;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  color: var(--ph-ink-3);
+}
+
+.ph-page .ph-subscription__meta {
+  margin-top: 4px;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  color: var(--ph-ink-3);
+}
+
+.ph-page .ph-referral__headline {
+
+  font-size: var(--type-meta);
+
+  line-height: var(--type-meta-line-height);
+
+  font-weight: var(--type-meta-weight);
+  letter-spacing: -0.03em;
+  color: var(--ph-ink);
+}
+
+/* 구독·초대의 액션은 물체다 — 이 화면에서 유일하게 채워진 알약. */
+.ph-page .ph-subscription__action,
+.ph-page .ph-referral__action,
+.ph-page .ph-subscription__action.ph-neu-control,
+.ph-page .ph-referral__action.ph-neu-control {
+  padding: 8px 12px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--ph-object-fill);
+  box-shadow: var(--ph-object-raise);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  letter-spacing: -0.02em;
+  color: var(--ph-link);
+  white-space: nowrap;
+}
+
+/* ── 유리 위 글자는 한 단계 진하게(iOS 머티리얼 규칙) ───────────────────── */
+.hy-app[data-role="parent"] .ph-page .ph-glass,
+.hy-app[data-role="parent"] .ph-page .ph-section-shell {
+  --fg-muted: var(--ph-ink-2);
+  --fg-tertiary: var(--ph-ink-2);
+  --fg-secondary: var(--ph-ink-2);
+  --fg-body: var(--ph-ink);
+  --fg-primary: var(--ph-ink);
+}
+
+@media (max-width: 370px) {
+  .ph-page .ph-hero {
+    padding-right: 104px;
+  }
+
+  .ph-page .ph-shortcuts {
+    gap: 12px 8px;
+  }
+
+  .ph-page .ph-ai__btn {
+    padding-inline: 8px;
+    gap: 8px;
+    font-size: var(--type-meta);
+    line-height: var(--type-meta-line-height);
+    font-weight: var(--type-meta-weight);
+  }
+}
+
+/* 일정 상태 4종은 점 색으로만 구분한다. 글자는 '확인 필요'일 때만 색을 얻는다 —
+   조치가 필요한 것 하나만 눈에 띄어야 목록이 조용해진다. */
+.ph-page .ph-sched-tag[data-tag="진행 중"]::before {
+  background: var(--mint-500);
+  opacity: 1;
+  box-shadow: 0 0 0 3px rgba(49, 196, 141, 0.18);
+}
+
+.ph-page .ph-sched-tag[data-tag="다녀옴"]::before {
+  background: var(--mint-500);
+  opacity: 0.6;
+}
+
+.ph-page .ph-sched-tag[data-tag="확인 필요"] {
+  color: var(--gold-text) !important;
+  font-weight: 700;
+}
+
+.ph-page .ph-sched-tag[data-tag="확인 필요"]::before {
+  background: var(--gold-600);
+  opacity: 1;
+}
+
+/* 아이가 한 명이면 고를 것이 없다 — 선택 강조를 끄면 카드 안 카드가 사라진다.
+   두 명 이상일 때만 선택된 아이에 불이 켜진다. */
+.ph-page .ph-children > .ph-child--active:only-child {
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* ── 길게 눌러 순서 바꿀 때 떠오르는 복제본 ─────────────────────────────
+   2026-08-21 TK 제보: 드래그 미리보기만 다른 디자인이었다(옛 --bg-page 크림 바닥 +
+   --glass-border 테두리). 손에 들린 카드가 놓여 있던 카드와 달라 보이면 "같은 것을
+   옮기는 중"이라는 느낌이 끊긴다. 섹션 유리와 같은 재질을 쓰고, 들어 올렸다는 것은
+   재질이 아니라 '그림자와 크기'로만 알린다. */
+.ph-section-drag-preview {
+  padding: 16px;
+  border: 0;
+  border-radius: var(--radius-24);
+  background: var(--ph-glass-fill);
+  box-shadow:
+    var(--ph-glass-rim),
+    0 24px 48px -20px rgba(40, 50, 78, 0.5);
+  backdrop-filter: var(--ph-glass-blur);
+  -webkit-backdrop-filter: var(--ph-glass-blur);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .ph-section-drag-preview {
+    background: #fff;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* 바닥은 glass.css 의 오로라 하나다 — 옛 ParentHome.css 의 .ph-page::before 색 블록을 끈다.
+   ⚠️ 여기에 background-image:none 을 광범위하게 걸지 말 것: 탭바 스크림과
+      오로라까지 함께 죽여 유리가 비칠 색이 사라진다(실제로 그렇게 됐던 적이 있다). */
+.ph-page::before {
+  content: none;
+}

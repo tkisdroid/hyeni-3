@@ -7,7 +7,7 @@ import type {
   ReactNode,
 } from "react";
 import { useNavigate } from "react-router";
-import { AlertTriangle, ChevronRight, Check, RefreshCw } from "lucide-react";
+import { AlertTriangle, Check, RefreshCw } from "lucide-react";
 import settings3dIcon from "../../../assets/01-runtime-3d/ui/settings.webp";
 import { asset } from "@/lib/assets";
 import { childAvatarPath } from "@/lib/avatar";
@@ -65,6 +65,7 @@ import {
   type ParentHomeSectionId,
 } from "@/transform/parentHomeSectionOrder";
 import "./ParentHome.css";
+import "./ParentHome.redesign.css";
 
 function avatarSrc(path: string): string {
   return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
@@ -968,7 +969,7 @@ export function ParentHome() {
           <>
             <button
               type="button"
-              className="ph-stickerbtn hy-press"
+              className="ph-stickerbtn ph-neu-control hy-press"
               aria-label={intl.formatMessage(
                 { id: "parent.home.sendStickerTo" },
                 { childName },
@@ -980,7 +981,7 @@ export function ParentHome() {
             </button>
             <button
               type="button"
-              className="hy-iconbtn hy-press"
+              className="hy-iconbtn ph-neu-control hy-press"
               aria-label={intl.formatMessage({ id: "parent.parentHome.copy008" })}
               onClick={() => navigate("/notifications")}
             >
@@ -989,7 +990,7 @@ export function ParentHome() {
             </button>
             <button
               type="button"
-              className="hy-iconbtn hy-press"
+              className="hy-iconbtn ph-neu-control hy-press"
               aria-label={intl.formatMessage({ id: "parent.parentHome.copy009" })}
               onClick={() => navigate("/parent/settings")}
             >
@@ -1046,7 +1047,7 @@ export function ParentHome() {
             </span>
             <button
               type="button"
-              className="ph-location-error__retry hy-press hy-busy-quiet"
+              className="ph-location-error__retry ph-neu-control hy-press hy-busy-quiet"
               onClick={() => void entitlement.refetch()}
               disabled={entitlement.isFetching} aria-busy={entitlement.isFetching}
             >
@@ -1068,10 +1069,10 @@ export function ParentHome() {
             action={
               <button
                 type="button"
-                className="hy-section-action"
+                className="hy-section-action ph-neu-control hy-press"
                 onClick={() => navigate("/parent/calendar")}
               >
-                {intl.formatMessage({ id: "parent.parentHome.copy019" })} <ChevronRight size={14} strokeWidth={2.4} />
+                {intl.formatMessage({ id: "parent.parentHome.copy019" })}
               </button>
             }
           />
@@ -1087,7 +1088,7 @@ export function ParentHome() {
             ) : eventsQuery.isError ? (
               <div className="ph-sched-row" style={{ justifyContent: "center", gap: 8 }} role="alert">
                 <span>{intl.formatMessage({ id: "parent.parentHome.copy021" })}</span>
-                <button type="button" className="hy-section-action hy-press" onClick={() => void handleRefresh()}>
+                <button type="button" className="hy-section-action ph-neu-control hy-press" onClick={() => void handleRefresh()}>
                   {intl.formatMessage({ id: "parent.parentHome.copy017" })}
                 </button>
               </div>
@@ -1100,7 +1101,7 @@ export function ParentHome() {
                 <button
                   key={e.id}
                   type="button"
-                  className="ph-sched-row"
+                  className="ph-sched-row ph-neu-control hy-press"
                   onClick={() => navigate("/parent/calendar")}
                 >
                   <span className="ph-sched-icon" style={{ background: e.soft, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -1110,7 +1111,7 @@ export function ParentHome() {
                     <span className="ph-sched-title">{e.title}</span>
                     <span className="ph-sched-sub">{e.time}{e.place ? ` · ${e.place}` : ""}</span>
                   </span>
-                  <span className="ph-sched-tag" style={{ color: e.tagText, background: e.tagBg }}>
+                  <span className="ph-sched-tag" data-tag={e.tag} style={{ color: e.tagText, background: e.tagBg }}>
                     {e.tagLabel}
                   </span>
                 </button>
@@ -1132,25 +1133,25 @@ export function ParentHome() {
             </span>
           </div>
           <div className="ph-ai__grid">
-            <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=voice")}>
+            <button type="button" className="ph-ai__btn ph-neu-control hy-press" onClick={() => navigate("/ai-schedule?tab=voice")}>
               <span className="ph-ai__btn-icon">
                 <img src={asset("ui/clay/remote-audio.webp")} alt="" />
               </span>
               {intl.formatMessage({ id: "parent.parentHome.copy025" })}
             </button>
-            <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=text")}>
+            <button type="button" className="ph-ai__btn ph-neu-control hy-press" onClick={() => navigate("/ai-schedule?tab=text")}>
               <span className="ph-ai__btn-icon">
                 <img src={asset("ui/clay/ai-credit.webp")} alt="" />
               </span>
               {intl.formatMessage({ id: "parent.parentHome.copy026" })}
             </button>
-            <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?tab=image")}>
+            <button type="button" className="ph-ai__btn ph-neu-control hy-press" onClick={() => navigate("/ai-schedule?tab=image")}>
               <span className="ph-ai__btn-icon">
                 <img src={asset("ui/clay/calendar.webp")} alt="" />
               </span>
               {intl.formatMessage({ id: "parent.parentHome.copy027" })}
             </button>
-            <button type="button" className="ph-ai__btn hy-press" onClick={() => navigate("/ai-schedule?mode=academy&tab=image")}>
+            <button type="button" className="ph-ai__btn ph-neu-control hy-press" onClick={() => navigate("/ai-schedule?mode=academy&tab=image")}>
               <span className="ph-ai__btn-icon">
                 <img src={asset("ui/clay/school.webp")} alt="" />
               </span>
@@ -1188,15 +1189,20 @@ export function ParentHome() {
                 const active = c.id === activeChild?.id;
                 return (
                   <div key={c.id} className={`ph-inner-surface ph-child${active ? " ph-child--active" : ""}`}>
-                    {/* 활성 표시는 카드 우상단 코너 배지(이름 행에 넣으면 줄바꿈 유발) */}
-                    {active && <span className="ph-child__now">{intl.formatMessage({ id: "parent.parentHome.copy031" })}</span>}
-                    {/* 카드 탭 = 아이 스위치(전역). 상세는 우측 화살표로. */}
+                    {/* 카드 전체를 누르면 활성 아이를 바꾸고 상세로 들어간다. 별도 배지·화살표는 두지 않는다. */}
                     <div className="ph-child__rowwrap">
                       <button
                         type="button"
-                        className="ph-child__row hy-press"
+                        className="ph-child__row ph-neu-control hy-press"
                         aria-pressed={active}
-                        onClick={() => setActiveChildId(c.id)}
+                        aria-label={intl.formatMessage(
+                          { id: "parent.home.childDetailAria" },
+                          { name: c.name },
+                        )}
+                        onClick={() => {
+                          setActiveChildId(c.id);
+                          navigate("/child-detail", { state: { childId: c.id } });
+                        }}
                       >
                         <span
                           className="ph-child__avatar"
@@ -1220,20 +1226,6 @@ export function ParentHome() {
                             <span>{c.place} · {c.fresh}</span>
                           </span>
                         </span>
-                      </button>
-                      <button
-                        type="button"
-                        className="ph-child__more hy-press"
-                        aria-label={intl.formatMessage(
-                          { id: "parent.home.childDetailAria" },
-                          { name: c.name },
-                        )}
-                        onClick={() => {
-                          setActiveChildId(c.id);
-                          navigate("/child-detail", { state: { childId: c.id } });
-                        }}
-                      >
-                        <ChevronRight size={20} strokeWidth={2.4} color="var(--fg-disabled)" />
                       </button>
                     </div>
                     <div className="ph-child__foot">
@@ -1407,7 +1399,7 @@ export function ParentHome() {
               <span>{deviceStatus.freshnessLabel}</span>
               <button
                 type="button"
-                className="ph-small-control hy-press"
+                className="ph-small-control ph-neu-control hy-press"
                 onClick={handleRefresh}
                 disabled={refreshing} aria-busy={refreshing}
               >
@@ -1430,7 +1422,7 @@ export function ParentHome() {
                 </span>
                 <button
                   type="button"
-                  className="ph-small-control ph-prep-edit hy-press"
+                  className="ph-small-control ph-prep-edit ph-neu-control hy-press"
                   onClick={() =>
                     navigate("/supplies", {
                       state: { dateKey: todayKey, childId: activeChild?.id },
@@ -1453,7 +1445,7 @@ export function ParentHome() {
             ) : suppliesQuery.isError ? (
               <div className="ph-prep-row" style={{ justifyContent: "center", gap: 8 }} role="alert">
                 <span>{intl.formatMessage({ id: "parent.parentHome.copy053" })}</span>
-                <button type="button" className="hy-section-action hy-press" onClick={() => void handleRefresh()}>
+                <button type="button" className="hy-section-action ph-neu-control hy-press" onClick={() => void handleRefresh()}>
                   {intl.formatMessage({ id: "parent.parentHome.copy017" })}
                 </button>
               </div>
@@ -1469,13 +1461,10 @@ export function ParentHome() {
                 <div key={s.id} className="ph-prep-row">
                   <button
                     type="button"
-                    className="ph-prep-check hy-press"
+                    className="ph-prep-check ph-neu-control hy-press"
+                    data-done={s.done}
                     aria-label={intl.formatMessage({ id: "parent.parentHome.copy055" })}
                     onClick={() => togglePrep(s)}
-                    style={{
-                      background: s.done ? "var(--hy-accent-cta)" : "var(--bg-card)",
-                      border: s.done ? "none" : "2px solid var(--line-strong)",
-                    }}
                   >
                     <Check size={15} strokeWidth={3} color="var(--bg-card)" style={{ opacity: s.done ? 1 : 0 }} />
                   </button>
@@ -1508,7 +1497,7 @@ export function ParentHome() {
         {/* 대화 프리뷰 */}
         {renderHomeSection("memo", (
         <button type="button" className="ph-section-shell ph-glass ph-memo hy-press" onClick={() => navigate("/parent/memo")}>
-          <span className="ph-memo__icon">
+          <span className="ph-memo__icon ph-neu-control">
             <img src={asset("ui/clay/notification.webp")} alt="" />
           </span>
           <span className="ph-memo__main">
@@ -1534,7 +1523,7 @@ export function ParentHome() {
                 <button
                   key={s.id}
                   type="button"
-                  className="ph-shortcut hy-press"
+                  className="ph-shortcut ph-neu-control hy-press"
                   onPointerDown={s.label === "위치추적" ? () => void loadKakaoMaps().catch(() => undefined) : undefined}
                   onClick={() => openShortcut(s.label)}
                 >
@@ -1573,7 +1562,7 @@ export function ParentHome() {
               <span className="ph-subscription__description">{subscriptionCard.description}</span>
               <span className="ph-subscription__meta">{subscriptionCard.meta}</span>
             </span>
-            <span className="ph-subscription__action" aria-hidden="true">
+            <span className="ph-subscription__action ph-neu-control" aria-hidden="true">
               {subscriptionCard.actionLabel}
             </span>
           </button>
@@ -1594,7 +1583,7 @@ export function ParentHome() {
                   { count: REFERRAL_REWARD_CREDITS_DISPLAY },
                 )}
               </span>
-              <span className="ph-referral__action" aria-hidden="true">
+              <span className="ph-referral__action ph-neu-control" aria-hidden="true">
                 {intl.formatMessage({ id: "parent.referral.home.action" })}
               </span>
             </button>

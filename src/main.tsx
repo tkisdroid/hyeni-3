@@ -4,6 +4,7 @@ import { registerSW } from "virtual:pwa-register";
 import "./styles/tokens.css";
 import "./styles/global.css";
 import "./styles/components.css";
+import "./styles/glass.css";
 import { App } from "./app/App";
 import { LocaleProvider } from "./i18n/LocaleProvider";
 import { isNativePlatform } from "./lib/native/plugins";

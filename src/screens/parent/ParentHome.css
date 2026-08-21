@@ -36,7 +36,7 @@
   /* 오른쪽 128px 은 마스코트 자리다. 없으면 위치 문구가 마스코트를 뚫고 카드 끝까지 나간다. */
   padding: 20px 128px 24px 20px;
   overflow: hidden;
-  background: var(--cta-grad-accent);
+  background: var(--hy-accent-cta);
   box-shadow: var(--shadow-floating);
   transition: transform 0.16s ease;
 }
@@ -46,7 +46,7 @@
 .ph-hero__sheen {
   position: absolute;
   inset: 0;
-  background: radial-gradient(80% 120% at 85% 8%, rgba(255, 255, 255, 0.3), transparent 60%);
+  background: none;
 }
 .ph-hero__mascot {
   position: absolute;
@@ -288,15 +288,13 @@
 }
 
 /* ── 홈 글래스 면 ─────────────────────────────────────────────────────────
-   Aesthetics Wiki Glassmorphism: 색은 페이지 배경(.ph-page)에만.
-   카드는 반투명 서리 유리 + 밝은 흰 획. 섹션 안 그라데이션·어두운 안쪽 선은 쓰지 않는다. */
+   단색 바닥 위에 반투명 서리 유리 + 밝은 흰 획만 둔다.
+   그라데이션·색 블롭·어두운 안쪽 선은 쓰지 않는다. */
 .ph-page {
   position: relative;
   isolation: isolate;
   min-height: 100%;
-  /* 부드러운 무광 오프화이트. 뉴모피즘이 성립하려면 바닥이 흰색이면 안 되고(흰 하이라이트가
-     사라진다), 얼음 유리가 성립하려면 너무 어두워도 안 된다(카드 위 글자가 깨진다).
-     이 톤이 두 조건의 교집합이며, 색은 바닥이 아니라 '깊은 배경'의 블롭이 담당한다. */
+  /* 부드러운 단색 아이스 블루. 카드와의 명도 차이만으로 유리 면을 구분한다. */
   background: #edf4f7;
 }
 .ph-page::before {
@@ -305,18 +303,8 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  /* 반투명 유리는 뒤에 색이 있어야 비친다. 그래서 '어둡게'가 아니라 '색이 많아지게' 만든다 —
-     밝기를 낮추면 바닥 위 글자(섹션 제목·전체보기 링크) 대비가 먼저 깨진다.
-     ⚠️ 색조는 셋까지, 각 45% 이하. 넘기면 촌스러워진다. */
-  /* '깊은 배경'에 놓인 파스텔 블롭 — 하늘색과 보라 두 가지만 쓴다.
-     유리 판으로 색이 배어 나오는 유일한 출처이므로, 화면 전체를 물들이지 않고
-     큰 덩어리 몇 개로만 둔다(전면 wash 는 바닥을 탁하게 만든다).
-     ⚠️ 채도·크기를 올리면 카드 위 글자 대비가 먼저 깨진다. */
-  background:
-    radial-gradient(ellipse 72% 24% at 90% 4%, color-mix(in srgb, var(--blue-500) 16%, transparent), transparent 72%),
-    radial-gradient(ellipse 66% 22% at 4% 28%, color-mix(in srgb, var(--mint-500) 10%, transparent), transparent 70%),
-    radial-gradient(ellipse 76% 24% at 96% 60%, color-mix(in srgb, var(--lav-300) 12%, transparent), transparent 72%),
-    radial-gradient(ellipse 70% 22% at 2% 86%, color-mix(in srgb, var(--blue-500) 12%, transparent), transparent 70%);
+  /* 배경 색 블롭을 만들지 않는다. */
+  background: none;
 }
 .ph-page > * {
   position: relative;
@@ -464,39 +452,11 @@
     0 12px 30px -18px color-mix(in srgb, var(--hy-accent) 45%, transparent);
 }
 .ph-child__rowwrap {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  display: block;
 }
 .ph-child__rowwrap .ph-child__row {
-  flex: 1;
+  width: 100%;
   min-width: 0;
-}
-.ph-child__more {
-  flex: none;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  --press: 0.9;
-}
-/* 활성 아이 코너 배지 — 카드 우상단(이름 행 밖: 줄바꿈 방지) */
-.ph-child__now {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  z-index: 1;
-  padding: 2px 8px;
-  border-radius: var(--radius-pill);
-  /* 상태 배지는 조작 버튼이 아니다 — 뉴모픽 면이 아니라 accent 칩을 유지한다. */
-  background: var(--hy-accent-soft);
-  color: var(--hy-accent-text);
-  font-size: var(--type-caption);
-  line-height: var(--type-caption-line-height);
-  font-weight: var(--type-caption-weight);
-
 }
 .ph-child__row {
   text-align: left;
@@ -1295,11 +1255,9 @@
 
 /* 실제 TSX 상호작용 요소의 최소 터치 영역 */
 .ph-stickerbtn,
-.ph-child__more,
 .ph-prep-check {
   min-height: var(--control-min-size);
 }
-.ph-child__more,
 .ph-prep-check {
   min-width: var(--control-min-size);
 }
@@ -1361,39 +1319,14 @@
   white-space: nowrap;
 }
 
-/* ── 조작 버튼 정본 ───────────────────────────────────────────────────────
-   부모 모드의 모든 알약·타일 버튼은 같은 재질이다 — 자기 배경에서 솟은 뉴모픽 면.
-   ⚠️ 채움을 주지 않는다(--neu-surface: transparent). 배경색과 같은 면이어야
-   '솟아오른 한 덩어리'로 보이고, 유리 카드 위에서도 바닥 위에서도 자동으로 맞는다.
-   글자색은 각 맥락의 기존 토큰을 유지한다(대비 계약을 건드리지 않는다). */
-.ph-ai__btn,
-.ph-subscription__action,
-.ph-referral__action,
-.ph-safety__refresh button {
-  background: var(--neu-surface);
-  border: 0;
-  box-shadow: var(--neu-raised-soft);
-  transition: box-shadow 0.16s var(--easing-standard);
-}
-/* 누르면 실제로 들어간다 — 조작 면 전체가 같은 반응을 가진다. */
-.ph-ai__btn:active,
-.ph-subscription__action:active,
-.ph-referral__action:active,
-.ph-safety__refresh button:active {
-  box-shadow: var(--neu-pressed);
-}
-
-/* ── 2026-08-20 부모 홈 정돈 ──────────────────────────────────────────────
-   설정 화면처럼 밝고 단정한 정보 면을 기준으로 삼고, 얼음 질감은 낮은 대비의
-   푸른 반사와 얕은 블러로만 남긴다. 기능의 상태색 외에는 보라를 강조하지 않는다. */
+/* ── 부모 홈 정돈 ─────────────────────────────────────────────────────────
+   설정 화면처럼 밝고 단정한 단색 면을 기준으로 삼고, 얼음 질감은 투명도와 블러로만 남긴다. */
 .ph-page {
   background: color-mix(in srgb, var(--bg-app) 94%, var(--blue-soft));
 }
 
 .ph-page::before {
-  background:
-    radial-gradient(ellipse 72% 18% at 92% 7%, color-mix(in srgb, var(--blue-500) 7%, transparent), transparent 72%),
-    radial-gradient(ellipse 64% 18% at 4% 58%, color-mix(in srgb, var(--mint-500) 5%, transparent), transparent 74%);
+  background: none;
 }
 
 /* 홈의 일반 자식 레이어 규칙이 공용 sticky를 덮지 않도록 상단바를 다시 고정한다. */
@@ -1447,17 +1380,14 @@
 
 .ph-hero {
   padding: 20px 124px 24px 20px;
-  background: linear-gradient(
-    128deg,
-    color-mix(in srgb, var(--blue-soft) 76%, var(--bg-card)),
-    color-mix(in srgb, var(--lav-soft) 28%, var(--bg-card))
-  );
+  background: color-mix(in srgb, var(--blue-soft) 58%, var(--bg-card));
   border: 1px solid color-mix(in srgb, var(--blue-500) 11%, var(--line-card));
   box-shadow: var(--shadow-soft);
 }
 
 .ph-hero__sheen {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.46), rgba(255, 255, 255, 0) 58%);
+  display: none;
+  background: none;
 }
 
 .ph-hero__mascot img {
@@ -1584,11 +1514,6 @@
   box-shadow: var(--shadow-soft);
 }
 
-.ph-child__now {
-  background: color-mix(in srgb, var(--blue-soft) 64%, var(--bg-card));
-  color: var(--blue-text);
-}
-
 .ph-ai {
   padding: 20px;
   box-shadow: var(--glass-rim), var(--glass-lift);
@@ -1621,13 +1546,6 @@
 .ph-ai__btn-icon img {
   width: 34px;
   height: 34px;
-}
-
-.ph-ai__btn:active,
-.ph-subscription__action:active,
-.ph-referral__action:active,
-.ph-safety__refresh button:active {
-  box-shadow: none;
 }
 
 .ph-shortcut__icon {
@@ -1675,44 +1593,17 @@
 
 .ph-section-shell {
   position: relative;
-  isolation: isolate;
   width: 100%;
   padding: 20px;
   overflow: hidden;
-  border: 1px solid var(--liquid-glass-border);
+  border: 1px solid transparent;
   border-radius: var(--radius-24);
-  background: var(--liquid-glass-fill);
-  box-shadow: var(--liquid-glass-shadow);
-  backdrop-filter: var(--liquid-glass-blur);
-  -webkit-backdrop-filter: var(--liquid-glass-blur);
+  background: var(--ph-glass-fill);
+  box-shadow: var(--ph-glass-lift);
+  backdrop-filter: var(--ph-glass-blur);
+  -webkit-backdrop-filter: var(--ph-glass-blur);
   --neu-light: rgba(255, 255, 255, 0.96);
   --neu-dark: rgba(91, 128, 146, 0.22);
-}
-
-.ph-section-shell::before,
-.ph-section-shell::after {
-  content: "";
-  position: absolute;
-  z-index: 0;
-  pointer-events: none;
-}
-
-.ph-section-shell::before {
-  inset: 0;
-  border-radius: inherit;
-  background: var(--liquid-glass-sheen);
-}
-
-.ph-section-shell::after {
-  inset: 4px;
-  border: 1px solid var(--liquid-glass-inner-border);
-  border-radius: calc(var(--radius-24) - 4px);
-  box-shadow: var(--liquid-glass-inner-rim);
-}
-
-.ph-section-shell > * {
-  position: relative;
-  z-index: 1;
 }
 
 .ph-section-shell .hy-section-head {
@@ -1731,9 +1622,9 @@
 }
 
 .ph-inner-surface {
-  border: 1px solid var(--liquid-glass-inner-border);
+  border: 0;
   border-radius: var(--radius-16);
-  background: var(--liquid-glass-tile);
+  background: transparent;
   box-shadow: none;
 }
 
@@ -1821,16 +1712,9 @@
   color: var(--fg-secondary);
 }
 
-/* 일정 추가와 바로가기는 실제로 솟은 조작면이며 누르면 안으로 들어간다. */
+/* 일정 추가와 바로가기는 반복 조작에 맞는 크기·간격을 유지한다. 재질은 아래 공통 버튼 규칙이 정한다. */
 .ph-ai__btn {
-  border: 1px solid rgba(255, 255, 255, 0.82);
-  background: color-mix(in srgb, var(--blue-soft) 28%, var(--bg-card));
-  box-shadow: var(--neu-raised-soft);
   color: var(--fg-primary);
-}
-
-.ph-ai__btn:active {
-  box-shadow: var(--neu-pressed);
 }
 
 .ph-shortcuts {
@@ -1838,30 +1722,23 @@
 }
 
 .ph-shortcut {
-  min-height: 98px;
-  padding: 12px 4px 8px;
-  border: 1px solid rgba(255, 255, 255, 0.82);
+  min-height: 80px;
+  padding: 8px 0;
   border-radius: var(--radius-16);
-  background: color-mix(in srgb, var(--blue-soft) 24%, var(--bg-card));
-  box-shadow: var(--neu-raised-soft);
-}
-
-.ph-shortcut:active {
-  box-shadow: var(--neu-pressed);
 }
 
 .ph-shortcut__icon,
 .ph-shortcut:active .ph-shortcut__icon {
-  width: 52px;
-  height: 52px;
+  width: 44px;
+  height: 44px;
   border: 0;
   background: transparent;
   box-shadow: none;
 }
 
 .ph-shortcut__icon img {
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
 }
 
 .ph-shortcut__label {
@@ -1869,6 +1746,8 @@
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
   color: var(--fg-secondary);
+  letter-spacing: -0.04em;
+  white-space: nowrap;
 }
 
 .ph-memo__from {
@@ -1883,6 +1762,88 @@
   color: var(--blue-text);
 }
 
+/* ── 2026-08-21 실제 조작 버튼 뉴모피즘 ──────────────────────────────────
+   큰 정보 면은 액체 유리로 유지하고, 실제로 누를 수 있는 요소만 냉백색의 볼록한
+   물체로 분리한다. 상태 칩·배지는 이 클래스를 쓰지 않아 버튼처럼 오해되지 않는다. */
+.ph-neu-control {
+  background: var(--neu-control-surface);
+  border: 1px solid var(--neu-control-border);
+  box-shadow: var(--neu-control-raised-soft);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transition:
+    transform var(--duration-fast) var(--easing-standard),
+    box-shadow var(--duration-base) var(--easing-standard),
+    background var(--duration-base) var(--easing-standard),
+    opacity var(--duration-fast) var(--easing-standard);
+}
+
+button.ph-neu-control:active {
+  box-shadow: var(--neu-control-pressed);
+}
+
+button.ph-neu-control:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--blue-500) 58%, transparent);
+  outline-offset: 3px;
+}
+
+button.ph-neu-control:disabled {
+  box-shadow: var(--neu-control-raised-soft);
+  opacity: 0.58;
+}
+
+/* 상단 원형 버튼과 핵심 2열 버튼은 레퍼런스처럼 한 단계 더 또렷하게 솟는다. */
+.ph-stickerbtn.ph-neu-control,
+.ph-page .hy-iconbtn.ph-neu-control,
+.ph-ai__btn.ph-neu-control {
+  box-shadow: var(--neu-control-raised);
+}
+
+.ph-page .hy-section-action.ph-neu-control {
+  min-width: var(--control-min-size);
+  padding: 0 12px;
+  gap: 4px;
+  border-radius: var(--radius-pill);
+  color: var(--blue-text);
+}
+
+.ph-sched {
+  gap: 12px;
+}
+
+.ph-sched-row.ph-neu-control {
+  border-radius: var(--radius-16);
+  --press: 0.985;
+}
+
+.ph-child__row.ph-neu-control {
+  padding: 8px;
+  border-radius: var(--radius-16);
+}
+
+.ph-child__row.ph-neu-control[aria-pressed="true"] {
+  background: var(--neu-control-selected-surface);
+  box-shadow: var(--neu-control-pressed);
+}
+
+.ph-prep-check.ph-neu-control[data-done="true"] {
+  background: var(--hy-accent-cta);
+  border-color: color-mix(in srgb, var(--hy-accent) 38%, var(--bg-card));
+  box-shadow: var(--neu-control-pressed);
+}
+
+.ph-memo:active .ph-memo__icon,
+.ph-subscription:active .ph-subscription__action,
+.ph-referral:active .ph-referral__action {
+  box-shadow: var(--neu-control-pressed);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ph-neu-control {
+    transition: none;
+  }
+}
+
 @media (prefers-reduced-transparency: reduce) {
   .ph-section-shell,
   .ph-inner-surface {
@@ -1891,10 +1852,6 @@
     -webkit-backdrop-filter: none;
   }
 
-  .ph-section-shell::before,
-  .ph-section-shell::after {
-    display: none;
-  }
 }
 
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
@@ -1994,4 +1951,15 @@
     width: 30px;
     height: 30px;
   }
+}
+
+/* 부모 홈의 UI 표면에는 CSS 그라데이션을 남기지 않는다.
+   3D 에셋은 <img>로 보존하고 CSS 배경 이미지만 차단한다. */
+.ph-page,
+.ph-page::before,
+.ph-page::after,
+.ph-page *,
+.ph-page *::before,
+.ph-page *::after {
+  background-image: none;
 }

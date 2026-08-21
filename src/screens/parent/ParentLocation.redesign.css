@@ -1,0 +1,360 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   위치 화면 — 어른 모드 디자인 언어(src/styles/glass.css)의 화면별 적용.
+   2026-08-21 TK 제보 반영:
+     · 실시간 하단 카드가 화면의 5분의 1을 먹었다(아바타 48 + 액션 타일 4개 64px
+       + 손잡이 + 넉넉한 패딩). 지도가 주인공인 화면에서 카드가 지도를 밀어냈다.
+     · 이동 기록의 「다녀온 곳」은 더 컸다(행 68px + 40px 3D 아이콘 + 20px 패딩).
+     · 두 카드가 서로 다르게 생겼다 → 같은 재질·같은 행 높이·같은 제목 규칙으로 묶는다.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 공통: 지도 위에 뜨는 유리 판 ───────────────────────────────────────── */
+.pl-root .pl-sheet,
+.pl-root .pl-visited {
+  border: 0;
+  border-radius: var(--radius-24);
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: var(--ph-float-shadow);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+
+/* ⚠️ 지도가 뒤에 있는 판은 오로라 위의 판보다 진해야 한다(0.8).
+   지도 타일은 글자·도로가 가득한 고대비 배경이라 0.62 로는 이름이 안 읽힌다. */
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .pl-root .pl-sheet,
+  .pl-root .pl-visited {
+    background: rgba(255, 255, 255, 0.97);
+  }
+}
+
+/* ── 실시간 하단 카드: 한 줄 정보 + 한 줄 동작 ─────────────────────────── */
+.pl-root .pl-sheet {
+  left: 12px;
+  right: 12px;
+  bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+  padding: 12px;
+}
+
+/* 끌 수 없는 시트라 손잡이는 JSX 에서 제거했다. 남은 규칙도 자리를 차지하지 않게 한다. */
+.pl-root .pl-sheet__handle {
+  display: none;
+}
+
+.pl-root .pl-sheet__head {
+  gap: 12px;
+  padding: 0 4px;
+}
+
+.pl-root .pl-sheet__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-12);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+}
+
+.pl-root .pl-sheet__avatar img {
+  width: 32px;
+  height: 32px;
+}
+
+.pl-root .pl-sheet__name {
+
+  font-size: var(--type-row);
+
+  line-height: var(--type-row-line-height);
+
+  font-weight: var(--type-row-weight);
+  letter-spacing: -0.03em;
+  color: var(--ph-ink);
+}
+
+.pl-root .pl-sheet__zone {
+  margin-top: 4px;
+  gap: 8px;
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+  color: var(--ph-ink-2);
+}
+
+/* ── 4개 동작: 파스텔 네모 4색 대신 같은 재질의 물체 4개 ────────────────
+   ⚠️ 색이 4개면 무엇이 중요한지 알 수 없다. 색은 3D 아이콘이 이미 내고 있으므로
+      면은 하나로 통일하고 글자만 읽히게 둔다. */
+.pl-root .pl-actions {
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.pl-root .pl-actions > button,
+.pl-root .pl-memo-btn,
+.pl-root .pl-route-btn,
+.pl-root .pl-listen-btn,
+.pl-root .pl-call-btn {
+  min-height: 60px;
+  gap: 4px;
+  border: 0;
+  border-radius: var(--radius-16);
+  background: var(--ph-object-fill);
+  box-shadow: var(--ph-object-raise);
+  color: var(--ph-ink-2);
+}
+
+.pl-root .pl-actions > button:active {
+  box-shadow: var(--ph-object-press);
+}
+
+.pl-root .pl-actions__icon {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+
+.pl-root .pl-listen-btn img {
+  width: 26px;
+  height: 26px;
+}
+
+.pl-root .pl-actions__label {
+
+  font-size: var(--type-caption);
+
+  line-height: var(--type-caption-line-height);
+
+  font-weight: var(--type-caption-weight);
+  letter-spacing: -0.04em;
+  color: var(--ph-ink-2);
+}
+
+/* 상태 줄과 업셀도 같은 리듬으로 줄인다. */
+.pl-root .pl-status,
+.pl-root .pl-upsell {
+  margin-top: 12px;
+}
+
+/* ── 이동 기록: 「다녀온 곳」을 실시간 카드와 같은 판으로 ──────────────── */
+.pl-root--history .pl-map {
+  height: 50dvh;
+  min-height: 320px;
+  border-radius: 0;
+}
+
+.pl-root .pl-visited {
+  min-height: 0;
+  margin: 12px 12px calc(100px + env(safe-area-inset-bottom, 0px));
+  padding: 16px;
+}
+
+.pl-root .pl-visited__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.pl-root .pl-visited__head strong {
+
+  font-size: var(--type-section);
+
+  line-height: var(--type-section-line-height);
+
+  font-weight: var(--type-section-weight);
+  letter-spacing: -0.03em;
+  color: var(--ph-ink);
+}
+
+.pl-root .pl-visited__head span {
+  margin-left: auto;
+  font-size: var(--type-meta);
+  line-height: var(--type-meta-line-height);
+  font-weight: var(--type-meta-weight);
+  color: var(--ph-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.pl-root .pl-visited__body {
+  border-top: 1px solid var(--ph-hairline);
+}
+
+/* 행: 68px 두 칸 그리드 → 44px 한 줄. 시각은 고정폭 숫자로 왼쪽에 정렬한다. */
+.pl-root .pl-visited__list li + li {
+  border-top: 1px solid var(--ph-hairline);
+}
+
+.pl-root .pl-visited__row {
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 12px;
+  min-height: 44px;
+  padding: 8px 4px;
+  border-radius: var(--radius-12);
+}
+
+.pl-root .pl-visited__row time {
+
+  font-size: var(--type-caption);
+
+  line-height: var(--type-caption-line-height);
+
+  font-weight: var(--type-caption-weight);
+  color: var(--ph-ink-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.pl-root .pl-visited__row strong {
+
+  font-size: var(--type-row);
+
+  line-height: var(--type-row-line-height);
+
+  font-weight: var(--type-row-weight);
+  letter-spacing: -0.025em;
+  color: var(--ph-ink);
+}
+
+.pl-root .pl-visited__row--selected {
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.pl-root .pl-visited__row:active {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.pl-root .pl-visited__state {
+  padding: 12px;
+  border-radius: var(--radius-12);
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.pl-root .pl-visited__skeleton span {
+  height: 44px;
+}
+
+/* ── 상단 도구막대: 아이 하나 + 날짜 하나 ───────────────────────────────
+   좌우 화살표를 없앤 자리를 날짜가 가져간다(LocationHistoryToolbar 주석 참고). */
+.pl-root .pl-history-toolbar {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: var(--ph-float-shadow);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+.pl-root .pl-history-toolbar__child-name {
+
+  font-size: var(--type-body-sm);
+
+  line-height: var(--type-body-sm-line-height);
+
+  font-weight: var(--type-body-sm-weight);
+  letter-spacing: -0.03em;
+  color: var(--ph-ink);
+}
+
+/* 날짜 = 이 막대의 유일한 동작. 박스 대신 강조색 글자 + 달력 글리프. */
+.pl-root .pl-history-toolbar__date {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--control-min-size);
+  padding: 0 8px;
+  border-radius: var(--radius-12);
+  color: var(--ph-link);
+  font-size: var(--type-meta);
+  line-height: var(--type-meta-line-height);
+  font-weight: var(--type-meta-weight);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.pl-root .pl-history-toolbar__date:active {
+  opacity: 0.6;
+}
+
+.pl-root .pl-history-toolbar__day {
+  color: inherit;
+  font: inherit;
+}
+
+/* 실제 달력은 이 투명한 input 이 연다 — 보이는 것은 위의 글자뿐이다. */
+.pl-root .pl-history-toolbar__date input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: transparent;
+  opacity: 0;
+  cursor: pointer;
+  color-scheme: light;
+}
+
+/* Free 가족은 오늘만 볼 수 있다 — 고를 수 없다는 사실을 색으로 정직하게 알린다. */
+.pl-root .pl-history-toolbar[data-history-access="today"] .pl-history-toolbar__date {
+  color: var(--gold-text);
+}
+
+/* ── 실시간 상단 컨트롤 ─────────────────────────────────────────────────── */
+.pl-root .pl-chip {
+  border: 0;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.55),
+    0 10px 24px -16px rgba(40, 50, 78, 0.42);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+/* 실시간/이동기록 토글 알약과 도구막대가 겹치지 않게 한 칸 더 내린다
+   (safe-area 가 0 인 기기·창에서 실제로 겹쳤다). */
+.pl-root .pl-history-toolbar {
+  top: calc(env(safe-area-inset-top, 0px) + 72px);
+}
+
+/* ── 실시간 / 이동 기록 전환 ─────────────────────────────────────────────
+   선택된 쪽이 하드코딩 민트(#087653)라 어른 모드 강조색(라벤더)과 따로 놀았다.
+   전환은 '어디를 보고 있는지'를 말하는 조작이므로 테마 강조색을 그대로 쓴다. */
+.pl-root .pl-viewtog {
+  padding: 4px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: var(--ph-float-shadow);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+.pl-root .pl-viewtog__btn {
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  color: var(--ph-ink-3);
+}
+
+.pl-root .pl-viewtog__btn--on {
+  background: var(--ph-link);
+  color: #fff;
+  box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--ph-link) 55%, transparent);
+}
+
+.pl-root .pl-viewtog__btn:active {
+  opacity: 0.72;
+}
+
+/* 아이 칩도 같은 규칙으로 — 이름은 하드코딩 로즈(#b0477a)가 아니라 본문 잉크로 읽고,
+   '실시간'이라는 상태는 초록 점 하나가 말한다(신호색 민트는 테마와 무관하게 고정이다).
+   활성 표시를 초록 테두리로 또 하는 건 같은 말을 두 번 하는 것이라 지운다. */
+.pl-root .pl-chip__name {
+  color: var(--ph-ink);
+}
+
+.pl-root .pl-chip--active {
+  border-color: transparent;
+}

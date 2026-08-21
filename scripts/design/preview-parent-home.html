@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="ko" data-hy-native>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<!--
+  디자인 검증용 정적 하니스 — 앱 번들이 아니다.
+  실제 화면 CSS 를 그대로 링크해 실측(스크린샷·대비 감사)에 쓴다.
+  실행: node scripts/design/serve.mjs . 후 http://127.0.0.1:5199/scripts/design/<파일>
+-->
+<title>ParentHome preview</title>
+<link rel="stylesheet" href="/src/styles/tokens.css" />
+<link rel="stylesheet" href="/src/styles/global.css" />
+<link rel="stylesheet" href="/src/styles/components.css" />
+<link rel="stylesheet" href="/src/styles/glass.css" />
+<link rel="stylesheet" href="/src/screens/parent/ParentHome.css" />
+<link rel="stylesheet" href="/src/screens/parent/ParentHome.redesign.css" />
+<style>
+  html, body { margin:0; padding:0; }
+</style>
+</head>
+<body>
+<div class="hy-app hy-adult" data-role="parent" data-accent="lavender">
+  <div class="hy-screen">
+    <div class="hy-rise-in ph-page">
+
+      <div class="hy-topbar">
+        <div class="hy-topbar__brand">
+          <img class="hy-topbar__logo" src="/public/assets/mascot/wave.webp" alt="" />
+          <span class="hy-topbar__title">혜니캘린더</span>
+        </div>
+        <div class="hy-topbar__actions">
+          <button type="button" class="ph-stickerbtn ph-neu-control hy-press">
+            <img src="/public/assets/ui/clay/sticker.webp" alt="" /><span>스티커</span>
+          </button>
+          <button type="button" class="hy-iconbtn ph-neu-control hy-press">
+            <img class="ph-top-action-icon" src="/public/assets/ui/clay/notification.webp" alt="" />
+            <span class="hy-iconbtn__dot"></span>
+          </button>
+          <button type="button" class="hy-iconbtn ph-neu-control hy-press">
+            <img class="ph-top-action-icon ph-top-action-icon--settings" src="/assets/01-runtime-3d/ui/settings.webp" alt="" />
+          </button>
+        </div>
+      </div>
+
+      <div class="hy-content">
+        <!-- HERO -->
+        <button type="button" class="ph-hero">
+          <span class="ph-hero__sheen"></span>
+          <span class="ph-hero__mascot"><img src="/public/assets/mascot/phone.webp" alt="" /></span>
+          <span class="ph-hero__badge">8월 21일 금요일</span>
+          <div class="ph-hero__title">헤니의 오늘,<br />일정 <em>1개</em></div>
+          <div class="ph-hero__live" data-current="true">
+            <span class="ph-live-dot"><span class="ring"></span><span class="core"></span></span>
+            <span class="ph-hero__location-state">현재 위치</span>
+            <span class="ph-hero__location-place">집 근처</span>
+          </div>
+        </button>
+
+        <!-- 오늘의 일정 -->
+        <div class="ph-home-section"><div class="ph-home-section__content">
+        <section class="ph-section-shell ph-glass">
+          <div class="hy-section-head">
+            <span class="hy-section-title">오늘의 일정</span>
+            <button type="button" class="hy-section-action ph-neu-control hy-press">전체보기</button>
+          </div>
+          <div class="ph-inner-surface ph-sched">
+            <button type="button" class="ph-sched-row ph-neu-control hy-press">
+              <span class="ph-sched-icon" style="background:#FDE7F1;display:flex;align-items:center;justify-content:center">
+                <img src="/public/assets/ui/clay/school.webp" alt="" onerror="this.src='/public/assets/ui/clay/calendar.webp'" />
+              </span>
+              <span class="ph-sched-main">
+                <span class="ph-sched-title">태권도 시범단</span>
+                <span class="ph-sched-sub">오후 8:00 · 태권도 학원</span>
+              </span>
+              <span class="ph-sched-tag" data-tag="예정" style="color:var(--lav-text);background:var(--lav-soft2)">예정</span>
+            </button>
+            <button type="button" class="ph-sched-row ph-neu-control hy-press">
+              <span class="ph-sched-icon" style="background:#E6F2FB;display:flex;align-items:center;justify-content:center">
+                <img src="/public/assets/ui/clay/calendar.webp" alt="" />
+              </span>
+              <span class="ph-sched-main">
+                <span class="ph-sched-title">수학 학원</span>
+                <span class="ph-sched-sub">오후 4:30 · 대치 수학</span>
+              </span>
+              <span class="ph-sched-tag" data-tag="다녀옴" style="color:var(--fg-tertiary);background:var(--bg-chip-idle)">다녀옴</span>
+            </button>
+          </div>
+        </section>
+        </div></div>
+
+        <!-- AI -->
+        <div class="ph-home-section"><div class="ph-home-section__content">
+        <section class="ph-section-shell ph-ai ph-glass">
+          <div class="ph-ai__head">
+            <span class="ph-ai__copy">
+              <span class="ph-ai__title">AI로 일정 추가</span>
+              <span class="ph-ai__sub">말하거나, 쓰거나, 알림장 사진 한 장으로</span>
+            </span>
+          </div>
+          <div class="ph-ai__grid">
+            <button type="button" class="ph-ai__btn ph-neu-control hy-press">
+              <span class="ph-ai__btn-icon"><img src="/public/assets/ui/clay/remote-audio.webp" alt="" onerror="this.src='/public/assets/ui/clay/ai-credit.webp'" /></span>음성
+            </button>
+            <button type="button" class="ph-ai__btn ph-neu-control hy-press">
+              <span class="ph-ai__btn-icon"><img src="/public/assets/ui/clay/ai-credit.webp" alt="" /></span>텍스트
+            </button>
+            <button type="button" class="ph-ai__btn ph-neu-control hy-press">
+              <span class="ph-ai__btn-icon"><img src="/public/assets/ui/clay/feedback.webp" alt="" onerror="this.src='/public/assets/ui/clay/feedback.webp'" /></span>알림장
+            </button>
+            <button type="button" class="ph-ai__btn ph-neu-control hy-press">
+              <span class="ph-ai__btn-icon"><img src="/public/assets/ui/clay/places.webp" alt="" /></span>학원표
+            </button>
+          </div>
+        </section>
+        </div></div>
+
+        <!-- 아이 현황 -->
+        <div class="ph-home-section"><div class="ph-home-section__content">
+        <section class="ph-section-shell ph-glass">
+          <div class="hy-section-head">
+            <span class="hy-section-title">아이 현황</span>
+            <span class="hy-chip ph-small-control ph-location-chip" data-current="true" style="margin-left:auto">
+              <span class="hy-chip__pulse"></span>현재 위치
+            </span>
+          </div>
+          <div class="ph-children">
+            <div class="ph-inner-surface ph-child ph-child--active">
+              <div class="ph-child__rowwrap">
+                <button type="button" class="ph-child__row ph-neu-control hy-press" aria-pressed="true">
+                  <span class="ph-child__avatar" data-photo="true" style="background:var(--rose-soft)">
+                    <img class="hy-network-avatar" src="/public/assets/mascot/cheer.webp" alt="" />
+                    <span class="ph-child__online"></span>
+                  </span>
+                  <span class="ph-child__main">
+                    <span class="ph-child__name-row">
+                      <span class="ph-child__name">헤니</span>
+                      <span class="ph-child__device"><span class="ph-child__device-label">motorola razr 40 ultra</span></span>
+                    </span>
+                    <span class="ph-child__loc">
+                      <img class="ph-inline-3d-icon" src="/public/assets/ui/clay/pin.webp" alt="" />
+                      <span>집 · 방금 갱신</span>
+                    </span>
+                  </span>
+                </button>
+              </div>
+              <div class="ph-child__foot">
+                <span class="ph-child__next">다음 일정 · <b>태권도 시범단 오후 8:00</b></span>
+              </div>
+            </div>
+          </div>
+        </section>
+        </div></div>
+
+        <!-- 안전 지표 -->
+        <div class="ph-home-section"><div class="ph-home-section__content">
+        <section class="ph-section-shell ph-glass">
+          <div class="hy-section-head">
+            <span class="hy-section-title">안전 지표</span>
+            <span class="hy-chip ph-small-control ph-safety__status" data-state="ready" style="margin-left:auto">헤니 · 양호</span>
+          </div>
+          <div class="ph-inner-surface ph-safety">
+            <div class="ph-safety__signals">
+              <span class="ph-safety__signal" data-state="ready">
+                <img class="ph-signal-3d-icon" src="/public/assets/ui/clay/notification.webp" alt="" />알림 정상
+              </span>
+              <span class="ph-safety__signal" data-state="ready">
+                <img class="ph-signal-3d-icon" src="/public/assets/ui/clay/location.webp" alt="" />위치 정상
+              </span>
+            </div>
+            <div class="ph-safety__grid">
+              <div class="ph-metric">
+                <span class="ph-metric__icon"><img src="/public/assets/ui/clay/battery.webp" alt="" /></span>
+                <span><span class="ph-metric__k">배터리</span><span class="ph-metric__v">100%</span></span>
+              </div>
+              <div class="ph-metric">
+                <span class="ph-metric__icon"><img src="/public/assets/ui/clay/history.webp" alt="" /></span>
+                <span><span class="ph-metric__k">화면시간</span><span class="ph-metric__v">1시간 12분</span></span>
+              </div>
+              <div class="ph-metric">
+                <span class="ph-metric__icon"><img src="/public/assets/ui/clay/account.webp" alt="" /></span>
+                <span><span class="ph-metric__k">잠금 해제</span><span class="ph-metric__v">14회</span></span>
+              </div>
+              <div class="ph-metric">
+                <span class="ph-metric__icon"><img src="/public/assets/ui/clay/data-sync.webp" alt="" /></span>
+                <span><span class="ph-metric__k">네트워크</span><span class="ph-metric__v">Wi-Fi</span></span>
+              </div>
+            </div>
+            <div class="ph-safety__divider">
+              <div class="ph-app-summary">
+                <div class="ph-app-summary__item">
+                  <span class="ph-app-summary__k">최근 실행</span>
+                  <span class="ph-app-summary__v">유튜브</span>
+                </div>
+                <div class="ph-app-summary__item">
+                  <span class="ph-app-summary__k">가장 오래 쓴 앱</span>
+                  <span><span class="ph-app-summary__v">카카오톡<span class="ph-app-summary__time">42분</span></span></span>
+                </div>
+              </div>
+            </div>
+            <div class="ph-safety__refresh">
+              <span>2분 전 확인</span>
+              <button type="button" class="ph-small-control ph-neu-control hy-press">지금 갱신</button>
+            </div>
+          </div>
+        </section>
+        </div></div>
+
+        <!-- 준비물 -->
+        <div class="ph-home-section"><div class="ph-home-section__content">
+        <section class="ph-section-shell ph-glass">
+          <div class="hy-section-head">
+            <span class="hy-section-title">준비물 · 숙제</span>
+            <span class="ph-prep-count">1/3</span>
+            <button type="button" class="ph-small-control ph-prep-edit ph-neu-control hy-press">편집</button>
+          </div>
+          <div class="ph-inner-surface ph-prep">
+            <div class="ph-prep-row">
+              <button type="button" class="ph-prep-check ph-neu-control hy-press" data-done="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--bg-card)" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
+              </button>
+              <button type="button" class="ph-prep-label">
+                <span class="ph-prep-text" style="color:var(--fg-faint);text-decoration:line-through">태권도복</span>
+              </button>
+            </div>
+            <div class="ph-prep-row">
+              <button type="button" class="ph-prep-check ph-neu-control hy-press" data-done="false">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--bg-card)" stroke-width="3" style="opacity:0"><path d="M20 6 9 17l-5-5"/></svg>
+              </button>
+              <button type="button" class="ph-prep-label">
+                <span class="ph-prep-kind" style="color:var(--lav-text);background:var(--lav-soft2)">숙제</span>
+                <span class="ph-prep-text" style="color:var(--fg-body)">수학 문제집 12쪽</span>
+              </button>
+            </div>
+            <div class="ph-prep-row">
+              <button type="button" class="ph-prep-check ph-neu-control hy-press" data-done="false">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--bg-card)" stroke-width="3" style="opacity:0"><path d="M20 6 9 17l-5-5"/></svg>
+              </button>
+              <button type="button" class="ph-prep-label">
+                <span class="ph-prep-text" style="color:var(--fg-body)">물통</span>
+              </button>
+            </div>
+          </div>
+        </section>
+        </div></div>
+
+        <!-- 메모 -->
+        <div class="ph-home-section"><div class="ph-home-section__content">
+        <button type="button" class="ph-section-shell ph-glass ph-memo hy-press">
+          <span class="ph-memo__icon ph-neu-control"><img src="/public/assets/ui/clay/notification.webp" alt="" /></span>
+          <span class="ph-memo__main">
+            <span class="ph-memo__from">아이와 대화하기</span>
+            <span class="ph-memo__text">헤니에게 메시지 보내기</span>
+          </span>
+        </button>
+        </div></div>
+
+        <!-- 바로가기 -->
+        <div class="ph-home-section"><div class="ph-home-section__content">
+        <section class="ph-section-shell ph-glass">
+          <div class="hy-section-head"><span class="hy-section-title">바로가기</span></div>
+          <div class="ph-shortcuts">
+            <button type="button" class="ph-shortcut ph-neu-control hy-press"><span class="ph-shortcut__icon"><img src="/public/assets/ui/clay/ai-credit.webp" alt="" /></span><span class="ph-shortcut__label">AI 일정</span></button>
+            <button type="button" class="ph-shortcut ph-neu-control hy-press"><span class="ph-shortcut__icon"><img src="/public/assets/ui/clay/location.webp" alt="" /></span><span class="ph-shortcut__label">위치추적</span></button>
+            <button type="button" class="ph-shortcut ph-neu-control hy-press"><span class="ph-shortcut__icon"><img src="/public/assets/ui/clay/playdate.webp" alt="" /></span><span class="ph-shortcut__label">친구놀이</span></button>
+            <button type="button" class="ph-shortcut ph-neu-control hy-press"><span class="ph-shortcut__icon"><img src="/public/assets/ui/clay/places.webp" alt="" /></span><span class="ph-shortcut__label">장소관리</span></button>
+            <button type="button" class="ph-shortcut ph-neu-control hy-press"><span class="ph-shortcut__icon"><img src="/public/assets/ui/clay/remote-audio.webp" alt="" /></span><span class="ph-shortcut__label">주변소리</span></button>
+            <button type="button" class="ph-shortcut ph-neu-control hy-press"><span class="ph-shortcut__icon"><img src="/public/assets/ui/clay/background-location.webp" alt="" /></span><span class="ph-shortcut__label">안심리포트</span></button>
+            <button type="button" class="ph-shortcut ph-neu-control hy-press"><span class="ph-shortcut__icon"><img src="/public/assets/ui/clay/pin.webp" alt="" /></span><span class="ph-shortcut__label">기기찾기</span></button>
+            <button type="button" class="ph-shortcut ph-neu-control hy-press"><span class="ph-shortcut__icon"><img src="/public/assets/ui/clay/notification.webp" alt="" /><span class="ph-shortcut__badge">3</span></span><span class="ph-shortcut__label">알림</span></button>
+          </div>
+        </section>
+        </div></div>
+
+        <!-- 구독 · 초대 -->
+        <div class="ph-home-section"><div class="ph-home-section__content">
+        <div class="ph-frost ph-frost--stack">
+          <button type="button" class="hy-card ph-glass ph-subscription hy-press" data-tone="free">
+            <span class="ph-subscription__icon"><img src="/public/assets/ui/clay/subscription.webp" alt="" /></span>
+            <span class="ph-subscription__main">
+              <span class="ph-subscription__title">구독 시 혜택</span>
+              <span class="ph-subscription__description">실시간 위치와 30일 이력을 볼 수 있어요</span>
+              <span class="ph-subscription__meta">무료 플랜 이용 중</span>
+            </span>
+            <span class="ph-subscription__action ph-neu-control">혜택 보기</span>
+          </button>
+          <button type="button" class="hy-card ph-glass ph-referral hy-press">
+            <span class="ph-referral__icon"><img src="/public/assets/ui/clay/referral.webp" alt="" /></span>
+            <span class="ph-referral__headline">친구를 초대하면 둘 다 AI 대화 50회</span>
+            <span class="ph-referral__action ph-neu-control">초대하기</span>
+          </button>
+        </div>
+        </div></div>
+
+      </div>
+    </div>
+  </div>
+
+  <nav class="hy-tabbar" data-icon-only="true">
+    <div class="hy-tabbar__inner">
+      <button class="hy-tab" data-active="true"><span class="hy-tab__icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg></span></button>
+      <button class="hy-tab"><span class="hy-tab__icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span></button>
+      <button class="hy-tab"><span class="hy-tab__icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg></span></button>
+      <button class="hy-tab"><span class="hy-tab__icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg></span></button>
+      <button class="hy-tab"><span class="hy-tab__icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6h.09A1.65 1.65 0 0 0 10 3.09V3a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 15 4.6h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1"/></svg></span></button>
+    </div>
+  </nav>
+</div>
+</body>
+</html>

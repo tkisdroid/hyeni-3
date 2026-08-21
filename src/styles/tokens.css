@@ -139,6 +139,21 @@
   --type-label: 13px;
   --type-label-line-height: 1.4;
   --type-label-weight: 700;
+  /* 2026-08-21 어른 모드 유리 언어가 쓰는 4단계.
+     기존 단계와 크기는 겹쳐도 무게가 다르다 — 이 언어는 '크기'가 아니라
+     '무게'로 위계를 만들고 대비는 절대 낮추지 않는다. */
+  --type-section: 18px;
+  --type-section-line-height: 1.3;
+  --type-section-weight: 800;
+  --type-row: 15px;
+  --type-row-line-height: 1.35;
+  --type-row-weight: 700;
+  --type-metric: 16px;
+  --type-metric-line-height: 1.25;
+  --type-metric-weight: 800;
+  --type-meta: 13px;
+  --type-meta-line-height: 1.35;
+  --type-meta-weight: 600;
   --type-caption: 12px;
   --type-caption-line-height: 1.4;
   --type-caption-weight: 600;
@@ -247,48 +262,6 @@
   --glass-lift:
     0 2px 8px -4px rgba(60, 55, 90, 0.16),
     0 20px 40px -22px rgba(60, 55, 90, 0.42);
-  /* 유리 위에 얹히는 작은 면(아이콘 타일·칩) — 카드보다 한 겹 더 밝다. */
-  --glass-tile: rgba(255, 255, 255, 0.62);
-
-  /* ── Liquid glass · 부모 홈의 큰 정보 박스 ──
-     2026-08-21 레퍼런스처럼 투명 판의 두께가 먼저 읽히는 별도 등급이다.
-     탭바·입력창에는 적용하지 않고, 제목과 내용을 함께 감싸는 큰 섹션에만 쓴다. */
-  --liquid-glass-fill:
-    linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.42) 0%,
-      rgba(255, 255, 255, 0.18) 48%,
-      color-mix(in srgb, var(--mint-500) 12%, rgba(255, 255, 255, 0.12)) 100%
-    );
-  --liquid-glass-border: rgba(255, 255, 255, 0.74);
-  --liquid-glass-blur: blur(28px) saturate(155%) contrast(1.04);
-  --liquid-glass-shadow:
-    inset 1px 1px 0 rgba(255, 255, 255, 0.94),
-    inset -1px -1px 0 rgba(66, 126, 132, 0.16),
-    inset 0 0 0 3px rgba(255, 255, 255, 0.13),
-    0 2px 8px -4px rgba(55, 102, 110, 0.18),
-    0 22px 42px -24px rgba(52, 94, 104, 0.38);
-  --liquid-glass-sheen:
-    radial-gradient(120% 54% at 22% -12%, rgba(255, 255, 255, 0.78), transparent 43%),
-    linear-gradient(
-      115deg,
-      rgba(255, 255, 255, 0.24),
-      transparent 30%,
-      transparent 66%,
-      color-mix(in srgb, var(--mint-500) 13%, transparent)
-    );
-  --liquid-glass-inner-border: rgba(255, 255, 255, 0.56);
-  --liquid-glass-inner-rim:
-    inset 0 1px 0 rgba(255, 255, 255, 0.74),
-    inset 0 -1px 0 rgba(62, 125, 132, 0.11);
-  --liquid-glass-tile:
-    linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.84),
-      rgba(255, 255, 255, 0.68) 72%,
-      color-mix(in srgb, var(--mint-500) 7%, rgba(255, 255, 255, 0.7))
-    );
-
   /* ── Neumorphism · 조작 면의 촉감 ──
      유리(큰 면)와 역할이 다르다. 유리는 '떠 있는 판', 뉴모피즘은 '눌리는 물체'다.
      ⚠️ 두 스타일은 바닥 요구가 정반대다 — 유리는 색이 있어야 굴절하고, 뉴모피즘은
@@ -316,6 +289,25 @@
   --neu-surface: transparent;
   /* 배경과 같은 색이 필요한데 투명을 쓸 수 없을 때(겹친 그림자 격리)만 쓰는 대체값. */
   --neu-surface-solid: #F2F0F4;
+
+  /* 실제 조작 버튼 전용 뉴모피즘.
+     큰 유리판과 섞이지 않도록 밝은 냉백색 물체로 분리하고, 화면 전체 광원은 좌상단 하나로 맞춘다. */
+  --neu-control-surface: color-mix(in srgb, var(--bg-card) 91%, var(--blue-soft));
+  --neu-control-selected-surface: color-mix(in srgb, var(--bg-card) 76%, var(--blue-soft));
+  --neu-control-border: rgba(255, 255, 255, 0.9);
+  --neu-control-raised:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.98),
+    inset -1px -1px 0 rgba(77, 111, 125, 0.08),
+    -5px -5px 11px rgba(255, 255, 255, 0.92),
+    6px 8px 15px rgba(72, 104, 118, 0.24);
+  --neu-control-raised-soft:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.96),
+    -3px -3px 7px rgba(255, 255, 255, 0.88),
+    4px 5px 10px rgba(72, 104, 118, 0.2);
+  --neu-control-pressed:
+    inset 3px 4px 8px rgba(72, 104, 118, 0.22),
+    inset -3px -3px 7px rgba(255, 255, 255, 0.94),
+    0 1px 0 rgba(255, 255, 255, 0.7);
 
   /* ── Elevation ── */
   --shadow-soft: 0 2px 8px rgba(32, 26, 29, 0.08);

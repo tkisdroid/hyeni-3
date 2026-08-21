@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<!--
+  디자인 검증용 정적 하니스 — 앱 번들이 아니다.
+  공용 언어(glass.css)가 화면 자체 CSS 를 건드리지 않고도 적용되는지 보는 표본이다.
+-->
+<title>Adult screens preview</title>
+<link rel="stylesheet" href="/src/styles/tokens.css" />
+<link rel="stylesheet" href="/src/styles/global.css" />
+<link rel="stylesheet" href="/src/styles/components.css" />
+<link rel="stylesheet" href="/src/styles/glass.css" />
+<link rel="stylesheet" href="/src/screens/feature/Subscription.css" />
+<link rel="stylesheet" href="/src/screens/feature/Notifications.css" />
+<style>html,body{margin:0;padding:0}</style>
+</head>
+<body>
+<div class="hy-app hy-adult" data-accent="lavender">
+  <main class="hy-screen">
+    <div class="sub-screen">
+      <header class="hy-topbar">
+        <div class="hy-topbar__brand">
+          <img class="hy-topbar__logo" src="/public/assets/mascot/wave.webp" alt="" />
+          <span class="hy-topbar__title">구독</span>
+        </div>
+      </header>
+      <div class="hy-content">
+        <div class="hy-card" style="padding:16px">
+          <div class="hy-section-head">
+            <span class="hy-section-title">프리미엄</span>
+            <button type="button" class="hy-section-action">자세히</button>
+          </div>
+          <p style="margin:0;color:var(--fg-muted);font-size:var(--type-meta);line-height:var(--type-meta-line-height);font-weight:var(--type-meta-weight)">
+            실시간 위치, 30일 이동 기록, 안심 리포트를 모두 볼 수 있어요.
+          </p>
+        </div>
+        <div class="hy-card" style="padding:16px">
+          <div class="hy-section-head">
+            <span class="hy-section-title">알림</span>
+            <span class="hy-status" data-state="ready">정상</span>
+          </div>
+          <div class="hy-tile" style="padding:12px">
+            <span style="color:var(--fg-primary);font-size:var(--type-row);line-height:var(--type-row-line-height);font-weight:var(--type-row-weight)">일정 알림</span>
+          </div>
+        </div>
+        <div class="hy-card" style="padding:16px">
+          <div class="hy-section-head"><span class="hy-section-title">기기</span></div>
+          <button type="button" class="hy-object" style="min-height:48px;border-radius:16px;width:100%;color:var(--fg-primary);font-size:var(--type-row);line-height:var(--type-row-line-height);font-weight:var(--type-row-weight)">지금 갱신</button>
+        </div>
+      </div>
+    </div>
+  </main>
+  <nav class="hy-tabbar">
+    <div class="hy-tabbar__inner">
+      <button class="hy-tab" data-active="true"><span class="hy-tab__icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span><span class="hy-tab__label">홈</span></button>
+      <button class="hy-tab"><span class="hy-tab__icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/></svg></span><span class="hy-tab__label">학생</span></button>
+      <button class="hy-tab"><span class="hy-tab__icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg></span><span class="hy-tab__label">설정</span></button>
+    </div>
+  </nav>
+</div>
+</body>
+</html>

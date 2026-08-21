@@ -15,7 +15,7 @@ test("부모 홈은 상단 꾹 대신 스티커 버튼을 보여준다", () => {
   const css = readSource("src/screens/parent/ParentHome.css");
   const koParent = JSON.parse(readSource("locales/ko/parent.json"));
 
-  assert.match(source, /className="ph-stickerbtn hy-press"/);
+  assert.match(source, /className="ph-stickerbtn ph-neu-control hy-press"/);
   assert.match(source, /aria-label=\{intl\.formatMessage\([\s\S]{0,100}parent\.home\.sendStickerTo[\s\S]{0,100}childName/);
   assert.equal(koParent["parent.home.sendStickerTo"], "{childName}에게 칭찬 스티커 보내기");
   assert.match(source, /navigate\("\/sticker-send"\)/);

@@ -749,21 +749,46 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
     **다시 선언**해야 한다(tokens.css 끝의 `[data-accent] { … }`).
   ⚠️ 가드(`childRedesignWiring`)의 "부모는 아이 색을 안 읽는다" 검사를 정규식 거리로 쓰면 아래 child 분기의
     `readChildAccent` 를 잡아 오탐이 난다 — **어른 분기가 `return` 하는지**로 검사한다.
-- ★**부모 모드 시각 사양 정본(2026-08-19 TK 레퍼런스 프롬프트)**: "glassmorphism + neumorphism, soft matte
-  off-white background, pastel gradients (light blue and purple) in the deep background to bleed color through
-  the glass panels, thin glowing white borders, consistent design system across all buttons".
-  · **바닥 = 무광 오프화이트 단색**(`#F2F0F4`). 전면 wash 를 깔지 않는다 — 바닥이 탁해지고 뉴모피즘의
-    흰 하이라이트가 죽는다. **색은 바닥이 아니라 "깊은 배경"의 블롭 4개**(하늘색·보라)가 담당하며,
-    그것이 유리 판으로 색이 배어 나오는 유일한 출처다.
+- ★★**어른 모드 디자인 언어 정본(2026-08-21 TK 확정 — 이 항목이 아래 시각 사양들을 대체한다)**:
+  정본은 **`src/styles/glass.css` 한 파일**이고, AppShell 이 붙이는 **`.hy-adult`** 아래에서만 적용된다
+  (부모·선생님 셸은 항상, PushShell 은 세션 role 이 child 가 아닐 때만 — 아이의 SOS·AI 친구 화면을 덮지 않기 위해서다).
+  화면별 파일은 `*.redesign.css` 로 **그 화면에만 있는 요소만** 다루고 팔레트·바닥·상단바·탭바를 다시 정의하지 않는다.
+  · **① 유리는 뒤에 색이 있어야 유리다** — 단색 바닥 위 반투명 판은 그냥 흰 카드다.
+    `.hy-adult .hy-screen::before` 가 **뷰포트 고정 오로라**(색 오브 6 + 흰 베일)를 깔고 판이 그 위를 지나간다.
+    ⚠️ **이 앱의 "일관성 없음"의 실체는 카드가 아니라 바닥이었다** — 화면 71곳이 각자 분홍·민트·보라·금색
+    그라데이션을 자기 루트에 칠하고 있었다(실측). glass.css 가 그 루트 37개를 `background: transparent` 로
+    돌려 오로라 하나로 통일한다. **예외는 `.sr-root`(SOS 수신) 하나** — 붉은 바닥이 "지금 긴급"이라는 신호라서 남긴다.
+  · **② 한 섹션은 한 장이다** — 판 안에 판을 넣지 않고 목록은 1px 헤어라인(`--ph-hairline`)으로만 나눈다.
+    이전의 shell + inner-surface + neu row 3중 겹침이 여백을 먹고 재질을 흐렸다(TK 제보 "섹션이 너무 떨어져 있다").
+  · **③ 물체만 솟는다** — 버튼·아이콘 타일·체크박스만 `--ph-object-raise` 로 볼록하고 `:active` 에서 실제로 눌린다.
+    목록 행·상태 표시는 판 위에 인쇄된 것이라 납작하다.
+  · **④ 상태는 조용하고 동작은 색이다** — 상태(현재 위치·헤니 · 양호·예정·다녀옴)는 **점 + 회색 글자**,
+    동작(전체보기·편집·지금 갱신)은 **강조색 글자**. **둘 다 박스 없음.** 채워진 알약은 화면당 한두 개만.
+    ⚠️ 상태 태그에 `--ph-link` 를 쓰지 말 것 — '전체보기'와 같은 층으로 읽힌다.
+  · **⑤ 조용함이 흐림이 되면 안 된다(2026-08-21 TK 제보 "너무 톤다운돼 잘 안 보인다")** —
+    톤을 낮추는 건 **크기·굵기·박스**이지 **대비**가 아니다. 본문 8:1↑, 보조 5.5:1↑, 최소 글자 12px.
+    유리 채움 `--ph-glass-fill` 0.62 는 "오로라가 비치면서 12px 글자도 AA"인 실측 균형점이다 —
+    0.5 아래로 내리면 유리는 예뻐지지만 보조 글자가 먼저 죽는다.
+  · **적용 결과**: 부모 홈 콘텐츠 높이 약 4,700px → 약 2,650px. 위치 실시간 하단 카드와 이동기록
+    「다녀온 곳」은 같은 판·같은 44px 행으로 통일했고, 이동기록 좌우 화살표를 없애고 날짜 자체를 버튼으로 만들었다
+    (30일 전으로 가려면 29번 눌러야 했다). 길게 눌러 옮길 때의 드래그 복제본도 섹션 유리와 같은 재질이다.
+  · ⚠️ **함정(전부 실측으로 걸렸다)**: `backdrop-filter` 는 요소 상자에서 잘려 아래에 딱딱한 경계선을 남긴다
+    → 상단바는 `mask-image` 로 블러까지 페이드시킨다. `.hy-press{min-height:44px}` 가 `height:24px` 를 이기므로
+    작은 체크박스는 44px 투명 히트영역 + `::before` 사각형으로 만든다. 대비 검증에서 **최빈 픽셀을 배경으로 쓰면**
+    굵은 제목이 1.00:1 허위 실패를 낸다(상위 버킷 중 가장 밝은 값을 쓰되 요소 자신의 불투명 배경이 있으면 그것을 우선).
+    진입 CSS 예산은 minify 후 크기라 **주석은 무료**이고 바이트는 선택자에서 나온다
+    (`.hy-app:not([data-role="child"])` → `.hy-adult` 로 약 1KB 절약). 진입 CSS 예산은 40,000 → **44,000** 으로 올렸다.
+  · 회귀=`tests/designSystemUsage.test.mjs`(4px 리듬·surface manifest)·`tests/adultGlassDesignLanguage.test.mjs`.
+
+- ★**부모 모드 시각 사양 정본(2026-08-21 TK 최종 지시)**: 부모 홈의 CSS 그라데이션은 전부 제거한다.
+  · 바닥은 단색 아이스 블루, 큰 섹션은 배경과 명도 차이가 나는 단색 반투명 서리 유리로 둔다.
+    색 블롭·wash·히어로 sheen·탭바 fade·카드/버튼 gradient를 만들지 않는다.
   · **뉴모피즘 면은 자기 배경과 같은 색이어야 한다** — `--neu-surface: transparent`. 흰색을 채우면
     그건 뉴모피즘이 아니라 그냥 흰 버튼이다. 투명이면 바닥 위에서도 유리 카드 위에서도 자동으로 맞는다.
-  · **thin glowing white borders** = `--glass-lift` 첫 두 겹(1px 흰 링 + 14px 흰 glow).
+  · 큰 섹션 경계는 단일 1px 밝은 선만 사용하며 이중 rim·의사요소 테두리·두꺼운 inset은 쓰지 않는다.
   · **버튼은 한 재질** — `.ph-ai__btn`·`.ph-subscription__action`·`.ph-referral__action`·`.ph-safety__refresh button`
     이 "조작 버튼 정본" 한 규칙을 공유하고 `:active` 에서 함께 눌린다. 글자색만 맥락별 토큰을 유지한다.
-    ⚠️ **상태 배지(`.ph-child__now` 등)는 버튼이 아니다** — accent 칩을 유지한다(실제로 이걸 실수로
-    지워 "보는 중" 배지가 맨 글자가 됐다).
-  · ⚠️ **블롭 채도의 상한은 대비가 정한다** — 실측으로 blue-500 26%는 카드 위 `--fg-muted` 4.36:1 로 미달이라
-    15%/13%, lav 38%/22% 로 낮춰 4.67:1 을 확보했다. 색을 올릴 때는 반드시 이 값을 다시 잰다.
+    ⚠️ **상태 배지는 버튼이 아니다.** 아이현황의 `보는 중`과 별도 상세 화살표는 최종 지시로 삭제했다.
   · ⚠️ CSS 일괄 치환으로 재질을 걷어낼 때 **의도하지 않은 선택자까지 지워진다** — 치환 후 어떤 규칙이
     바뀌었는지 반드시 확인할 것.
 - ★**섹션은 얼음 유리, 정적인 오목은 쓰지 않는다(2026-08-19 TK 지시)**:
@@ -868,16 +893,26 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   · 오늘의 일정·AI 일정추가·아이 현황·안전지표·준비물/숙제·아이와 대화하기·바로가기는 모두
     `.ph-section-shell.ph-glass` 한 장 안에 제목과 내용을 묶는다. 내부 실데이터 면은 `.ph-inner-surface`의
     `--liquid-glass-tile`만 써서 카드 안에 카드를 겹친 느낌 없이 한 단계 낮은 얼음 면으로 구분한다.
-  · **액체 유리 보정(2026-08-21, `liquid-glass-morphism-social-media-mockup_47987-32800.avif` 레퍼런스)**:
-    큰 섹션만 `--liquid-glass-*` 재질로 분리한다. 24px 외곽 판은 흰 상단 하이라이트·옅은 민트 하단 굴절과
-    다섯 겹 inset/lift shadow를 쓰고, `::after`의 4px 안쪽 이중 림으로 투명 판의 두께를 보인다. 실데이터 면은
-    더 밝은 `--liquid-glass-tile`이라 글자 대비를 유지한다. 탭바·입력창·구독/초대 보조 카드는 기존 얇은 유리 등급을
-    유지해 모든 요소가 같은 두께로 부풀지 않게 한다. `prefers-reduced-transparency`와 backdrop 미지원 환경은
-    `--bg-card` 불투명 면으로 강등한다. fixture 전체 캡처=`artifacts/parent-home-liquid-glass-2026-08-21.png`.
-    디자인 시스템·부모 홈·모바일/대비 관련 회귀와 production build/PWA 검증, Android assembleDebug가 통과했고
-    S25(`R5CY521CFNZ`)에 `adb install -r`로 설치해 기존 데이터와 세션을 보존했다.
+  · **단색 유리 보정(2026-08-21, 최종 제공 이미지 레퍼런스)**: 큰 섹션만 `--liquid-glass-*` 재질로 분리하되
+    `--liquid-glass-fill`은 단색 반투명 냉백색, 경계는 단일 1px, 그림자는 얕은 ambient 한 겹으로 제한한다.
+    이중 rim·`::before/::after`·여러 겹 inset은 없다. 내부 실데이터 면은 단색 `--liquid-glass-tile`이며 border는 0이다.
+    부모 홈 `.ph-page` 전체와 부모 하단 탭의 `background-image`를 `none`으로 고정해 전역 스타일에서 gradient가
+    다시 유입되는 것도 막는다. `prefers-reduced-transparency`와 backdrop 미지원 환경은 `--bg-card`로 강등한다.
+  · **실제 조작 버튼 뉴모피즘 보정(2026-08-21, `realistic-neumorphic-design-user-interface-elements/4786587.jpg`
+    레퍼런스)**: 큰 정보 박스는 위 액체 유리 재질을 유지하고 실제 클릭 요소만 `.ph-neu-control`로 명시한다.
+    `--neu-control-surface/raised/raised-soft/pressed`는 냉백색 면·좌상단 흰 하이라이트·우하단 청회색 그림자 한 광원을
+    공유한다. 상단 스티커/알림/설정, 일정 행, AI 일정 4버튼, 아이 행, 새로고침·편집·완료 체크,
+    대화 아이콘, 구독/초대 액션에 적용한다. 바로가기는 44px 아이콘·80px 셀의 얕은 등급으로 줄여 한글 라벨이
+    줄바꿈되지 않게 하고, 선택된 아이·완료 체크·터치 중 버튼은 inset
+    `--neu-control-pressed`로 오목해지고, 상태 칩·안전 배지·일정 태그에는 클래스를 주지 않아 조작으로 오인되지 않는다.
+    부모 하단 탭은 뉴모피즘 대상에서 제외한 flat icon-only다. 한글 라벨은 시각적으로 렌더하지 않고 접근성용
+    `aria-label`만 유지한다. `전체보기`의 화살표와 아이현황의 `보는 중`·화살표도 없다.
+    최종 S25 실기기 캡처=`artifacts/s25-parent-home-no-gradients-top-2026-08-21.png`. 디자인/모바일 회귀 78/78,
+    typecheck·production build/PWA·Android assembleDebug가 통과했다. debug APK SHA-256
+    `ED2A705E2A0C895A25C1680AB623116DE82E21A2FD476724B108B59D16E323E1`를 S25에 `adb install -r`로 설치해
+    기존 부모 세션·가족 데이터를 보존했고, 단색 히어로·섹션·버튼·flat 탭을 실기기에서 확인했다.
   · 제목은 `--type-title` 3종 토큰, 안전지표의 시각·핵심 수치·앱 이름·최근 실행 정보는 중요도별 semantic type
-    토큰을 함께 쓴다. AI 일정과 바로가기 버튼은 `--neu-raised-soft`, 누름은 `--neu-pressed`로 구분한다.
+    토큰을 함께 쓴다. 실제 조작 버튼의 재질·눌림은 위 `--neu-control-*` 정본만 사용한다.
     `아이와 대화하기`의 `메모·실시간` 보조 표시는 없애고 CTA는 모든 아이에게 맞는 `메시지 보내기`로 10개 locale을
     일반화했다. 바로가기 제목 장식 아이콘도 없다.
   · 홈 순서 편집은 별도 섹션 없이 카드 길게 누르기+햅틱+떠 있는 복제본 드래그이며, 가족별 localStorage에 최초 1회
@@ -914,9 +949,9 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   재디자인했는데, 그 사이 원격 main 에 같은 영역의 커밋 5개(`.ph-page`/`.ph-glass` 도입)가 올라와 있었다.
   "before" 스크린샷이 이미 낡은 상태라 진단 자체가 어긋났고 push 도 거부됐다. **디자인 작업 시작 전에
   `git fetch` 로 원격을 먼저 확인하고, 겹치면 원격 구조를 기준으로 값만 보정한다**(force push 금지).
-- ★**하단 탭바 = 유리판(2026-08-19 TK 지시 "글래스모피즘으로 세련되게")**: 불투명 흰 알약이 스크롤 중
-  섹션을 통째로 잘라 먹던 것을 빛을 받는 반투명 유리로 바꿨다. 정본은 `components.css` 의
-  `.hy-tabbar`·`.hy-tabbar__inner` 두 블록뿐이고 부모·선생님 셸이 공용한다(아이 모드는 `ChildDock` 별도).
+- ★**하단 탭바(2026-08-21 최신)**: 공용/선생님 탭바의 유리판 정본은 `components.css`의
+  `.hy-tabbar`·`.hy-tabbar__inner`이고 아이 모드는 `ChildDock` 별도다. 부모 셸은 여기에 명시적인
+  `data-icon-only` override를 적용해 **한글 없는 flat 아이콘 5개**만 보이며, 배경 gradient도 쓰지 않는다.
   ⚠️ **부모에 `backdrop-filter` 가 있으면 자식 유리는 아무것도 못 비춘다** — 조상이 backdrop-root 를 만들어
   자식의 backdrop 이 그 조상 내용으로 격리된다. 그래서 기존 `.hy-tabbar` 의 `blur(12px)` 를 걷어내고
   블러는 알약 한 곳에만 건다. 스크림은 목록이 알약 위 가장자리에서 하드컷되지 않게 하는 페이드

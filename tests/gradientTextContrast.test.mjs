@@ -217,7 +217,7 @@ const AUDITED_SPLIT_RULES = [
     file: "src/screens/parent/ParentHome.css",
     backgroundSelector: ".ph-hero",
     foregroundSelectors: [".ph-hero__title", ".ph-hero__title em", ".ph-hero__live"],
-    background: "var(--cta-grad-accent)",
+    background: "var(--hy-accent-cta)",
   },
   {
     file: "src/screens/onboarding/Onboarding.css",
@@ -692,6 +692,10 @@ test("단색 CTA와 선택 상태도 전경색에 맞는 AA 전용 토큰을 쓴
   const accentCheckSurfaces = [
     ["src/screens/child/ChildHome.css", '.kd-prep__check[data-done="true"]'],
     [
+      "src/screens/parent/ParentHome.css",
+      '.ph-prep-check.ph-neu-control[data-done="true"]',
+    ],
+    [
       "src/screens/child/overlays/ChildSheet.css",
       '.ks-friend[aria-pressed="true"] .ks-friend__check',
     ],
@@ -718,10 +722,6 @@ test("단색 CTA와 선택 상태도 전경색에 맞는 AA 전용 토큰을 쓴
       `${file}의 선택 완료 면에 밝은 accent 채움을 쓰지 않습니다`,
     );
   }
-  assert.match(
-    readSource("src/screens/parent/ParentHome.tsx"),
-    /background:\s*s\.done\s*\?\s*"var\(--hy-accent-cta\)"/,
-  );
   assert.match(
     readSource("src/screens/feature/Supplies.tsx"),
     /background:\s*s\.done\s*\?\s*"var\(--hy-accent-cta\)"/,

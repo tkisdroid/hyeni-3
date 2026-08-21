@@ -11,7 +11,7 @@ export type TabItem = {
 };
 
 /** 역할별 하단 탭바. tabs 설정을 받아 렌더. */
-export function TabBar({ tabs }: { tabs: TabItem[] }) {
+export function TabBar({ tabs, iconOnly = false }: { tabs: TabItem[]; iconOnly?: boolean }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
@@ -20,7 +20,7 @@ export function TabBar({ tabs }: { tabs: TabItem[] }) {
   useEffect(() => preloadRoutesWhenIdle(tabPathKey.split("|")), [tabPathKey]);
 
   return (
-    <nav className="hy-tabbar" aria-label="주 메뉴">
+    <nav className="hy-tabbar" aria-label="주 메뉴" data-icon-only={iconOnly ? "true" : undefined}>
       <div className="hy-tabbar__inner">
         {tabs.map((t) => {
           const active = pathname === t.to || pathname.startsWith(t.to + "/");
@@ -31,6 +31,7 @@ export function TabBar({ tabs }: { tabs: TabItem[] }) {
               className="hy-tab hy-press"
               data-active={active}
               aria-current={active ? "page" : undefined}
+              aria-label={t.label}
               onPointerDown={() => preloadRoute(t.to)}
               onClick={() => navigate(t.to)}
             >
@@ -38,7 +39,7 @@ export function TabBar({ tabs }: { tabs: TabItem[] }) {
                 <t.Icon size={22} strokeWidth={active ? 2.4 : 2.2} />
                 {t.dot && <span className="hy-tab__dot" />}
               </span>
-              <span className="hy-tab__label">{t.label}</span>
+              {!iconOnly && <span className="hy-tab__label">{t.label}</span>}
             </button>
           );
         })}

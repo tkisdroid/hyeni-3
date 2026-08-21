@@ -37,7 +37,6 @@ import {
 } from "@/transform/stayPoints";
 import { TIERS, historyDaysFor, locationModeFor } from "@/transform/tierPolicy";
 import {
-  addDaysToDateKey,
   dateInputValueToDateKey,
   dateKeyToDateInputValue,
   parseAppDateKey,
@@ -77,6 +76,7 @@ import {
   type StayTimelineItem,
 } from "@/screens/parent/LocationJourneyPanel";
 import "./ParentLocation.css";
+import "./ParentLocation.redesign.css";
 
 function avatarSrc(path: string): string {
   return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
@@ -532,16 +532,6 @@ export function ParentLocation() {
     setHistoryPanelExpanded(true);
   };
 
-  const selectPreviousHistoryDay = (): void => {
-    selectHistoryDay(addDaysToDateKey(historyDayKey, -1));
-  };
-
-  const selectNextHistoryDay = (): void => {
-    selectHistoryDay(addDaysToDateKey(historyDayKey, 1));
-  };
-
-  const historyAtMin = historyDayKey === premiumHistoryRange.minDateKey;
-  const historyAtMax = historyDayKey === premiumHistoryRange.maxDateKey;
 
   // 시간대별 경로 조작 — 수동 목록 선택을 해제해 고른 시각의 머문 곳을 자동 강조한다.
   // 드래그 도중 패널 높이를 바꾸면 지도 가시 영역도 바뀌어 한 번 더 흔들리므로 펼침 상태는 유지한다.
@@ -833,10 +823,6 @@ export function ParentLocation() {
           minDateValue={historyMinDateValue}
           maxDateValue={historyMaxDateValue}
           premiumOpen={premiumOpen}
-          previousDisabled={premiumOpen && historyAtMin}
-          nextDisabled={historyAtMax}
-          onPrevious={selectPreviousHistoryDay}
-          onNext={selectNextHistoryDay}
           onDateChange={(value) => {
             const nextDateKey = dateInputValueToDateKey(value);
             if (nextDateKey) selectHistoryDay(nextDateKey);
@@ -891,7 +877,6 @@ export function ParentLocation() {
       {/* 하단 상세 카드는 실시간 보기에서만 표시한다. */}
       {activeView === "live" && (
       <div className="pl-sheet">
-        <div className="pl-sheet__handle" />
         <div className="pl-sheet__head">
           <div className="pl-sheet__avatar" data-photo={isUploadedPhoto(selected?.photo_url)}>
             <img className="hy-network-avatar" src={avatarSrc(childAvatar)} alt="" loading="eager" decoding="async" />
