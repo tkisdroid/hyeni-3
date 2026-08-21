@@ -11,7 +11,7 @@
 **1~10단계 전부 완료**(전 화면 실데이터·다자녀·AI 친구·알림 3종·릴리즈 게이트) — 실기기 3대 운용 중.
 **현 국면 = 실사용 안정화**: TK 가 실기기로 쓰며 제보하는 버그·개선을 즉시 수정·검증·배포.
 
-**현재 배포 상태(2026-08-21 인증 진입점·브랜드 도메인·Android 중복 아이콘 안정화)**: 브라우저 부모 모드의 로그인/회원가입을
+**현재 배포 상태(2026-08-21 인증 진입점·브랜드 도메인/PWA 문서 신선도·Android 중복 아이콘 안정화)**: 브라우저 부모 모드의 로그인/회원가입을
 첫 화면의 명시적 탭으로 분리하고 전화 가입·카카오/구글 가입, 지속 오류 안내, 잘못된 비밀번호 뒤 입력 유지·비밀번호
 포커스·버튼 재활성화를 정리했다. ID 확인 실패를 중복으로 오인하지 않으며 `mindlady`는 production 공개 조회에서
 `200 {"available":true}`다. 가입 전 입력·설치 식별자·전화·ID 중복을 먼저 확인하고, OTP 검증 뒤 user/identity/profile/
@@ -26,7 +26,7 @@ health 200 ready, ID 확인 응답 `no-store`를 확인했다.
 `status=active`·`validation=active`를 확인했다. `www`·와일드카드·CAA 등 비대상 레코드는 보존했다. production
 루트·`/oauth/callback`·과거 GET 경로는 모두 Cloudflare 200이고 `x-vercel-*`가 없으며, 현재 entry
 `assets/index-JSdP-RED.js`와 Service Worker SHA-256
-`b70daaad2964926be2c38265011c97f3e5d6770f26ca6d002a0e65cd8f8deedf`가 로컬 `dist`와 일치한다.
+`639b4bf823d674c99c5ef50226b4585aff968e9106f736cee8d1ec7ffe4d1a61`가 로컬 `dist`와 일치한다.
 브랜드 도메인의 HTML raw 응답에는 zone Web Analytics beacon 1줄이 Cloudflare에서 삽입되므로 raw index hash를 곧바로
 비교하지 않는다. 그 삽입 줄을 제외한 HTML과 entry/CSS/Service Worker 바이트를 로컬 `dist`와 교차 확인한다.
 웹 OAuth 시작은 반드시 절대 Worker API
@@ -35,10 +35,20 @@ health 200 ready, ID 확인 응답 `no-store`를 확인했다.
 `https://hyenicalendar.com`·`https://www.hyenicalendar.com`·Pages origin만 허용하고 경로/접미사 lookalike는 거부한다.
 Android App Link OAuth callback 정본은 계속 `https://hyeni-calendar.pages.dev/oauth/callback`이다.
 
+앱 계정은 살아 있는데 기존 브라우저 로그인 뒤 정적 `가족 일정을 불러오는 중`에서 멈춘 원인은 가족 조회 API가 아니라,
+기존 브라우저의 구형 Service Worker가 온라인 탐색에도 설치 당시 `index.html`을 cache-first로 돌려준 것이었다. 새 Pages
+배포에 더는 없는 과거 hashed entry를 그 문서가 가리키면 React가 마운트되지 않아 정적 부팅 셸만 남는다. `src/sw.ts`는
+이제 모든 문서 탐색을 `fetch(request, { cache: "no-store" })`로 먼저 받고 네트워크가 실제 실패할 때만 precache
+`index.html`로 강등한다(`src/transform/pwaNavigationFreshness.ts`). 구형 SW가 현재 entry조차 못 받는 브라우저는
+`https://hyenicalendar.com/?hy-recover=20260821`을 같은 탭에서 1회 열고 로그인을 끝까지 완료해 새 SW 활성화까지
+이어간다. 성공 로그인→가족 조회→`#/parent/home` 및 하드 reload 세션 유지가 브라우저 QA에 추가됐고, PWA runtime QA는
+온라인 `/index.html` 실요청·오프라인 precache 복구·새 SW controllerchange를 함께 검증한다. 실제 계정·refresh 토큰·
+실기기 역할은 건드리지 않았다. 수정 커밋=`a715467`.
+
 Kakao/Google 복귀는 Pages 200 rewrite에 기대지 않고 build가 현재 hashed entry를 참조하는 물리
 `/oauth/callback.html`을 생성한다. production `/oauth/callback`은 redirect 없이 200·`Cache-Control:no-store`, 루트
 Service Worker scope(`/`)이며 콜백 SHA-256 `792475a3a22205dd6094eb40cf3de938bf6845954db84a340ed5ea79cadc6ae0`다.
-Pages 배포는 `https://515bc307.hyeni-calendar.pages.dev`, 고정 주소 index SHA-256은 로컬과 같은
+Pages 최신 배포는 `https://1ef2cce3.hyeni-calendar.pages.dev`, 고정 주소 index SHA-256은 로컬과 같은
 `178950a8cceaab935bf0f9ea9da136c01f334beec820ac6a3a20d9ae4abbe046`다. iPhone 13 WebKit 격리 검증은
 콜백/Service Worker·390×844 레이아웃·잘못된 비밀번호·ID 확인·오프라인 Cache Storage까지 문제 0으로 통과했다.
 실제 iPhone Safari 실기기와 실제 OAuth 동의·SMS 수신은 계정/외부 발송을 건드리지 않기 위해 이번 검증에서 수행하지 않았다.
@@ -50,6 +60,11 @@ user 0 `com.hyeni.calendar/.MainActivity` 1개·user 95 package/activity 없음�
 launchable activity 1개, APK SHA-256 `ea0f94aedbc0930819f2f68a383cec170dbaaa74b404bfdbb86d932509477a4b`다.
 검증은 앱 1,837/1,837, Worker 1,252/1,252, typecheck 2종, production build/PWA 중복 0, 브라우저 QA 57화면
 문제 0, iPhone WebKit, Android unit+lintDebug+assembleDebug를 통과했다.
+이번 웹 전용 신선도 수정은 앱 1,840/1,840·Worker 1,252/1,252·typecheck 2종·production build(469 precache,
+중복 0), exact dist 브라우저 QA 부모 43+아이 14 화면 및 성공 로그인/reload, PWA install·온라인 최신 문서·오프라인·
+안전 업데이트를 모두 문제 0으로 확인했다. 최종 dist tree SHA-256은
+`6289028f4e5ed78bdfdaa64f40b8113f110082a47650985b36fb86d350e8b4d4`이고 운영 배포별·고정 Pages·브랜드 주소의
+entry/Service Worker/브랜드 entry asset 바이트가 로컬과 일치한다. Worker·D1·Android 앱은 변경·배포하지 않았다.
 
 **직전 배포 상태(2026-08-19 새벽 갱신)**: 아이 AI 친구 3종(꾹 눌러 말하기·습관 기억·하루 대시보드)을 배포했다.
 배포 전 `worker/db/child-daily-digest.sql` 을 프로덕션 D1 에 1회 적용해 `child_daily_digests` 테이블과

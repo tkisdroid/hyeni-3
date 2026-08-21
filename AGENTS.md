@@ -79,7 +79,13 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   반드시 절대 Worker API의 `POST /api/auth/oauth/{provider}/start`와 서버 생성 state/transaction을 사용하며, 같은 origin
   GET을 만들지 않는다. `hyenicalendar.com` apex의 배포 정본은 Vercel이 아니라 Proxied CNAME으로 연결된
   `hyeni-calendar.pages.dev` Pages custom domain이다. Worker CORS/OAuth origin은 정확한 apex·`www`·Pages origin만
-  허용하고 경로/접미사 lookalike는 거부하며, Android OAuth callback은 계속 Pages App Link를 사용한다.
+  허용하고 경로/접미사 lookalike는 거부하며, Android OAuth callback은 계속 Pages App Link를 사용한다. 웹 PWA 문서
+  탐색은 `src/sw.ts`에서 **network-first(`cache:no-store`) → 실패 시 precache `index.html`** 순서다. 이를 cache-first로
+  되돌리면 브랜드 도메인의 구형 SW/문서가 로그인 뒤 정적 "가족 일정을 불러오는 중" 셸에 다시 가둘 수 있다.
+  구형 SW가 이미 제어해 새 entry 자체를 못 받는 브라우저의 1회 복구 주소는
+  `https://hyenicalendar.com/?hy-recover=20260821`이며, 현재 문서가 열린 같은 탭에서 로그인을 완료해 새 SW 활성화까지
+  이어간다. 회귀=`tests/pwaNavigationFreshness.test.ts` + `npm run qa:pwa-runtime`의
+  `onlineNavigationFreshness`·`offlineReload` + `npm run qa:browser`의 `focused.successfulLogin`이다.
 - **부모 iPhone·아이 Android 정본 토폴로지(2026-07-31)**: 최종 기능 검증의 기본 조합은
   **부모=iPhone 홈 화면 PWA, 아이=Android 네이티브 앱**이다. 위치 즉시 요청·기기 상태·소리 울리기·주변 소리·
   메시지·장소/알림 설정은 부모 기기의 Capacitor 여부로 막지 않고 Worker API→FCM→아이 Android 경로를 사용한다.
