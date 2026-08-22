@@ -3,6 +3,34 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
+**아이관리 공용 QR의 보호자→아이 오등록 차단(2026-08-23, 운영 배포 완료)**: Safari에서 다른 보호자가
+`아이관리 > 가족 연결 코드 · QR`을 읽으면 `아이2`로 보이던 근본 원인은 공용 QR이
+`buildPairLink(pairCode)`의 과거 기본값을 통해 `as=child`를 붙여 발급되던 것이었다. Safari 카메라는 그 URL을
+그대로 열었고 온보딩은 정상적으로 익명 아이 세션을 시작했으므로, 별도 공동 보호자 CTA가 있어도 공용 QR 사용자는
+계속 아이로 들어갔다. `buildPairLink`는 이제 역할을 필수 인자로만 받고, 공용 진입점은 `as`가 없는
+`buildPairRoleChoiceLink`를 사용한다. 공용 QR·확대·공유 화면은 `role=choose`로 통일하고, 스캔 뒤에는 인증이나
+익명 아이 생성보다 먼저 학부모/아이 역할을 선택한다. 보호자 전용 CTA는 기존처럼 `as=parent`, 아이 전용 CTA는
+`as=child`를 유지해 역할 의도를 섞지 않는다. 공용 QR의 제목·힌트·접근성 라벨·대기 문구와 역할 선택 안내는
+10개 locale 및 생성 catalog에 함께 반영했다.
+
+검증은 앱 `1,885/1,885`, Worker `1,262/1,262`, main 병합 후 가입·역할 집중 회귀 `54/54`, 앱·Worker
+typecheck, i18n catalog freshness, production build(2,280 modules·precache 472·중복 0), 브라우저 QA
+부모 43+아이 14 화면 문제 0, PWA install/offline/update 문제 0, Android
+`testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL이다. 별도 iPhone 13 WebKit 격리 검증에서 공용 QR은
+학부모·아이 선택을 모두 표시하고 페어링 화면은 숨겼으며 `/auth/anonymous` 요청 0건, 처리 뒤 `pair` URL 제거,
+console/page/외부 연결 문제 0건을 확인했다. 실제 계정 로그인·로그아웃·역할 전환·재페어링, refresh 토큰,
+실기기 설치, Worker·D1은 건드리지 않았다.
+
+구현 커밋 `857a7dd`를 기능 브랜치와 `main`에 push했고 Pages는
+`https://45d74c61.hyeni-calendar.pages.dev`에 배포했다. 배포별 주소·고정 `hyeni-calendar.pages.dev`·브랜드
+`hyenicalendar.com` 모두 index/callback 200이며 새 entry `assets/index-DC0nsuUH.js`를 참조한다. 세 주소의 entry
+SHA-256 `5167e7ee5c305e24b431fa8aa07726064d84000d6374ad932a8a491493519f6e`, CSS
+`177583e46ce74cda70b47b5f3139d3d674abd5923f433b0e610a5279a41ce6f4`, Service Worker
+`07d84867588658b4db094bf916b7157e5e5849df03ce0f1d8bc957d4922b0814`가 로컬 dist와 일치한다.
+로컬 index SHA-256은 `8347cf39643c707c32ae2f26e24109cf7ee31b705920ae7b11b8cf41ca6d0456`, OAuth callback은
+`66b72499fe3db73ee920e5945849ee2d1aa1aa3ea27417d8404f964823d1f4fc`다. 최신 debug APK SHA-256은
+`5636b67b735646a51ff47c7c4e5353b2734549204f3583b2af618a072fbed6c0`이며 기기에는 설치하지 않았다.
+
 **가입·역할 매칭 전수 개선(2026-08-22, 운영 배포 완료)**: 가입 첫 진입을 로그인/회원가입 탭으로 명시 분리하고,
 역할 화면의 언어 설정을 하단 1곳으로 통합했다. 선택한 전화·Kakao·Google·Naver 가입 방식과 가입 설문은
 20분 만료·session/local 이중 draft로 새로고침/OAuth 왕복에도 이어지며, 설문은 고정 allowlist만 user metadata에
