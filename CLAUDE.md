@@ -27,6 +27,8 @@ console/page/외부 연결 문제 0건을 확인했다. 실제 계정 로그인�
 SHA-256 `5167e7ee5c305e24b431fa8aa07726064d84000d6374ad932a8a491493519f6e`, CSS
 `177583e46ce74cda70b47b5f3139d3d674abd5923f433b0e610a5279a41ce6f4`, Service Worker
 `07d84867588658b4db094bf916b7157e5e5849df03ce0f1d8bc957d4922b0814`가 로컬 dist와 일치한다.
+배포 후 빈 iPhone 13 WebKit 세션으로 브랜드의 실제 `#/onboarding?pair=KID-QA123456`을 열어 학부모·아이 선택 표시,
+페어링 화면 미표시, `/auth/anonymous` 요청 0건, 처리 뒤 `pair` 제거를 다시 확인했다.
 로컬 index SHA-256은 `8347cf39643c707c32ae2f26e24109cf7ee31b705920ae7b11b8cf41ca6d0456`, OAuth callback은
 `66b72499fe3db73ee920e5945849ee2d1aa1aa3ea27417d8404f964823d1f4fc`다. 최신 debug APK SHA-256은
 `5636b67b735646a51ff47c7c4e5353b2734549204f3583b2af618a072fbed6c0`이며 기기에는 설치하지 않았다.
