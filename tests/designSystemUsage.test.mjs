@@ -2148,6 +2148,9 @@ const semanticSurfaceManifestKeys = new Set(semanticSurfaceManifest.map(([path, 
 const nonSurfacePaintManifest = new Set([
   // 인증 탭·상태·폼 선택 컨트롤 — 독립 콘텐츠 판이 아니라 입력 흐름의 조작/피드백 면이다.
   ["src/screens/onboarding/Onboarding.css", ".ob-auth-intent"],
+  // 언어 피커 트리거 알약과 OTP 진행 칸 — 조작면·상태 표식이다.
+  ["src/components/LanguageSelector.css", ".hy-language__trigger"],
+  ["src/screens/onboarding/Onboarding.css", ".ob-otp-cell"],
   ["src/screens/onboarding/Onboarding.css", ".ob-auth-alert"],
   ["src/screens/onboarding/Onboarding.css", ".ob-inline-control__button"],
   ["src/screens/onboarding/Onboarding.css", ".ob-guardian-option"],
@@ -2776,6 +2779,7 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/child/AiFriendChat.css", ".afc-bubble--ai"],
   ["src/screens/child/AiFriendChat.css", ".afc-bubble--me"],
   ["src/screens/onboarding/Onboarding.css", ".ob-pair-cell"],
+  ["src/components/LanguageSelector.css", ".hy-language__options--list"],
   ["src/screens/feature/FriendPlay.css", ".fp-parent-rule span"],
   ["src/screens/feature/PlaydateAccept.css", ".pa-screen .pa-note"],
   ["src/screens/feature/RouteView.css", ".rv-map__label"],

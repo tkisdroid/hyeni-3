@@ -32,6 +32,15 @@
   box-shadow: none;
 }
 
+/* 첫 화면 피커 — 카드가 아니라 한 줄 알약. 배경 그라디언트 위에 떠 있는 조작 면이다. */
+.hy-language--picker {
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  position: relative;
+}
+
 /* 화면에서만 감추고 보조기술에는 남긴다(라벨·설명은 조작 요소가 아니다). */
 .hy-language__text--quiet {
   position: absolute;
@@ -44,10 +53,88 @@
   white-space: nowrap;
 }
 
+/* ── 트리거 알약 ─────────────────────────────────────────────────────── */
+.hy-language__trigger {
+  width: 100%;
+  height: var(--control-height-secondary);
+  flex: none;
+  padding: 0 var(--spacing-16);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--bg-card) 88%, transparent);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  color: var(--fg-secondary);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+  --press: 0.97;
+}
+
+.hy-language__trigger-word {
+  color: var(--fg-tertiary);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.hy-language__trigger-value {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  color: var(--fg-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hy-language__chevron {
+  flex: none;
+  color: var(--fg-placeholder);
+  transition: transform var(--duration-base) var(--easing-standard);
+}
+
+.hy-language__chevron--open {
+  transform: rotate(180deg);
+}
+
+/* ── 펼침 패널 ─────────────────────────────────────────────────────── */
+/* grid 0fr→1fr 로 접힌다. px 높이를 쓰지 않아 글자 크기·locale 폭 변화에 강하다. */
+.hy-language__collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--duration-screen) var(--easing-standard);
+}
+
+.hy-language[data-open="true"] .hy-language__collapse {
+  grid-template-rows: 1fr;
+}
+
+.hy-language__panel {
+  overflow: hidden;
+  min-height: 0;
+}
+
 .hy-language__options {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--spacing-8);
+  margin-top: var(--spacing-8);
+}
+
+/* 피커 패널은 1열 목록 — 2행 그리드의 어색한 줄바꿈을 없앤다. */
+.hy-language__options--list {
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-8);
+  padding: var(--spacing-8);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-20);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-modal);
 }
 
 .hy-language__option {
@@ -65,6 +152,10 @@
   text-align: center;
   white-space: normal;
   overflow-wrap: anywhere;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-8);
   --press: 0.97;
 }
 
@@ -74,13 +165,46 @@
   color: var(--hy-accent-text);
 }
 
+.hy-language__options--list .hy-language__option {
+  border: 0;
+  background: none;
+  justify-content: space-between;
+  text-align: left;
+}
+
+.hy-language__options--list .hy-language__option[aria-checked="true"] {
+  background: var(--hy-accent-soft);
+}
+
+.hy-language__option-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.hy-language__option-check {
+  flex: none;
+  width: var(--icon-16);
+  height: var(--icon-16);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--hy-accent-text);
+}
+
 .hy-language__option:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: 2px;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .hy-language__chevron,
+  .hy-language__collapse {
+    transition: none;
+  }
+}
+
 @media (max-width: 348px) {
-  .hy-language__options {
+  .hy-language__options:not(.hy-language__options--list) {
     grid-template-columns: minmax(0, 1fr);
   }
 }

@@ -658,10 +658,19 @@ function Field({
   validationMessage?: string | null;
   errorId?: string;
 }) {
+  // 오류가 새로 생긴 프레임에만 흔들림을 준다 — 재렌더 때마다 반복하지 않는다.
+  const [shakeKey, setShakeKey] = useState(0);
+  const hadErrorRef = useRef(false);
+  useEffect(() => {
+    if (validationMessage && !hadErrorRef.current) setShakeKey((key) => key + 1);
+    hadErrorRef.current = Boolean(validationMessage);
+  }, [validationMessage]);
   return (
-    <div className="ob-field">
+    <div className="ob-field" data-error={validationMessage ? "true" : undefined}>
       <div className="ob-label">{label}</div>
-      {children}
+      <div className="ob-field__control" data-shake={shakeKey}>
+        {children}
+      </div>
       {validationMessage && (
         <p id={errorId} className="ob-field-error" role="alert">
           {validationMessage}
@@ -793,7 +802,9 @@ function RoleStep({
       </div>
 
       <div className="ob-role-list">
-        <LanguageSelector tone="formal" />
+        <div className="ob-language-slot">
+          <LanguageSelector tone="formal" />
+        </div>
         <button
           type="button"
           className="ob-role-card ob-role-card--parent hy-press"
@@ -997,9 +1008,16 @@ function LoginStep({
     });
   };
 
+  // 소셜 버튼은 intent 를 따른다 — 로그인 탭이면 바로 OAuth, 회원가입 탭이면
+  // 설문(20%)을 거친 뒤 같은 provider 로 가입 흐름을 이어간다. 설문 답은
+  // surveyChoices 가 유지되므로 휴대폰 가입과 같은 귀속 경로를 쓴다.
   const social = async (provider: OAuthProvider) => {
     if (busy) return;
     onAuthError(null);
+    if (signingUp) {
+      onSignup();
+      return;
+    }
     setPendingAction(provider);
     setBusy(true);
     const transitionToken = beginOnboardingAuthTransition();
@@ -1098,17 +1116,17 @@ function LoginStep({
       <div className="ob-login-social">
         <button type="button" className="ob-social ob-social--kakao hy-press hy-busy-quiet" onClick={() => social("kakao")} disabled={busy} aria-busy={busy && pendingAction === "kakao"}>
           <KakaoIcon />
-          <BusyLabel busy={busy && pendingAction === "kakao"} idle={intl.formatMessage({ id: "onboarding.login.kakao" })} pending={intl.formatMessage({ id: "onboarding.login.kakaoPending" })} />
+          <BusyLabel busy={busy && pendingAction === "kakao"} idle={intl.formatMessage({ id: signingUp ? "onboarding.signup.kakao" : "onboarding.login.kakao" })} pending={intl.formatMessage({ id: "onboarding.login.kakaoPending" })} />
         </button>
         <button type="button" className="ob-social ob-social--google hy-press hy-busy-quiet" onClick={() => social("google")} disabled={busy} aria-busy={busy && pendingAction === "google"}>
           <GoogleIcon />
-          <BusyLabel busy={busy && pendingAction === "google"} idle={intl.formatMessage({ id: "onboarding.login.google" })} pending={intl.formatMessage({ id: "onboarding.login.googlePending" })} />
+          <BusyLabel busy={busy && pendingAction === "google"} idle={intl.formatMessage({ id: signingUp ? "onboarding.signup.google" : "onboarding.login.google" })} pending={intl.formatMessage({ id: "onboarding.login.googlePending" })} />
         </button>
         {/* 네이버 키가 없으면 버튼 자체를 숨긴다 — 누르면 실패하는 버튼을 보여주지 않는다. */}
         {hasNaverClientId && (
           <button type="button" className="ob-social ob-social--naver hy-press hy-busy-quiet" onClick={() => social("naver")} disabled={busy} aria-busy={busy && pendingAction === "naver"}>
             <NaverIcon />
-            <BusyLabel busy={busy && pendingAction === "naver"} idle={intl.formatMessage({ id: "onboarding.login.naver" })} pending={intl.formatMessage({ id: "onboarding.login.naverPending" })} />
+            <BusyLabel busy={busy && pendingAction === "naver"} idle={intl.formatMessage({ id: signingUp ? "onboarding.signup.naver" : "onboarding.login.naver" })} pending={intl.formatMessage({ id: "onboarding.login.naverPending" })} />
           </button>
         )}
       </div>
@@ -1129,12 +1147,13 @@ function LoginStep({
         <>
           <button
             type="button"
-            className="ob-loginbtn hy-press"
+            className="ob-social ob-social--phone hy-press hy-busy-quiet"
             onClick={onSignup}
             disabled={loginNavigationLocked}
             data-progress-owner="login-action"
           >
             {intl.formatMessage({ id: "onboarding.signup.withPhone" })}
+            <ChevronRight size={20} strokeWidth={2.4} aria-hidden="true" />
           </button>
           <div className="ob-login-foot">
             {intl.formatMessage({ id: "onboarding.login.haveAccount" })}{" "}
@@ -1565,24 +1584,43 @@ function SignupStep({
             validationMessage={otpError}
             errorId="ob-signup-otp-error"
           >
-            <input
-              ref={otpInputRef}
-              id="hyeni-signup-otp"
-              name="one-time-code"
-              className="ob-input"
-              aria-label={intl.formatMessage({ id: "onboarding.field.otp" })}
-              aria-invalid={Boolean(otpError)}
-              aria-describedby={otpError ? "ob-signup-otp-error" : undefined}
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={6}
-              placeholder="000000"
-              value={otp}
-              onChange={(e) => {
-                setOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
-                setOtpError(null);
-              }}
-            />
+            <div className="ob-otp-wrap">
+              <input
+                ref={otpInputRef}
+                id="hyeni-signup-otp"
+                name="one-time-code"
+                className="ob-input ob-input--otp"
+                aria-label={intl.formatMessage({ id: "onboarding.field.otp" })}
+                aria-invalid={Boolean(otpError)}
+                aria-describedby={otpError ? "ob-signup-otp-error" : undefined}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                autoComplete="one-time-code"
+                maxLength={6}
+                autoFocus
+                placeholder="000000"
+                value={otp}
+                onChange={(e) => {
+                  setOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
+                  setOtpError(null);
+                }}
+              />
+              {/* 6칸 트랙 — 채워진 칸이 하나씩 맞춰진다(iOS 문자 자동입력과 무관한 시각 피드백). */}
+              <span className="ob-otp-track" aria-hidden="true">
+                {[0, 1, 2, 3, 4, 5].map((index) => (
+                  <span
+                    key={index}
+                    className={
+                      otp.length > index
+                        ? "ob-otp-cell ob-otp-cell--filled"
+                        : otp.length === index
+                          ? "ob-otp-cell ob-otp-cell--active"
+                          : "ob-otp-cell"
+                    }
+                  />
+                ))}
+              </span>
+            </div>
           </Field>
           <button
             type="submit"

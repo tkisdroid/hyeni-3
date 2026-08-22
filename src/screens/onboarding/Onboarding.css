@@ -203,6 +203,11 @@
 
   color: var(--fg-muted);
 }
+.ob-language-slot {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--spacing-12);
+}
 .ob-role-list {
   margin-top: 40px;
   display: flex;
@@ -485,6 +490,16 @@
   color: #fff;
   box-shadow: 0 10px 24px -10px rgba(0, 132, 60, 0.55);
 }
+/* 휴대폰 가입도 소셜 버튼과 같은 보조 48px 계층 — 높이가 다른 버튼 섞임을 없앤다. */
+.ob-social--phone {
+  background: var(--bg-card);
+  color: var(--fg-primary);
+  border: 1.5px solid rgba(32, 26, 29, 0.1);
+  box-shadow: 0 6px 16px rgba(32, 26, 29, 0.05);
+}
+.ob-social--phone svg:last-child {
+  color: var(--fg-placeholder);
+}
 .ob-divider {
   display: flex;
   align-items: center;
@@ -585,6 +600,66 @@
 }
 .ob-link:active {
   opacity: 0.5;
+}
+
+/* ── 입력 오류·OTP 마이크로 인터랙션 ────────────────────────────────────── */
+.ob-field__control {
+  min-width: 0;
+}
+.ob-field[data-error="true"] > .ob-field__control {
+  animation: ob-shake 0.32s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  transform-origin: center;
+}
+@keyframes ob-shake {
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+
+.ob-otp-wrap {
+  position: relative;
+  display: block;
+}
+.ob-input--otp {
+  height: 64px;
+  padding: 0 16px;
+  font-size: var(--type-title-lg);
+  line-height: var(--type-title-lg-line-height);
+  font-weight: var(--type-title-lg-weight);
+  letter-spacing: 0.28em;
+  text-indent: 0.14em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.ob-otp-track {
+  position: absolute;
+  inset-inline: 16px;
+  bottom: 10px;
+  display: flex;
+  gap: 8px;
+  pointer-events: none;
+}
+.ob-otp-cell {
+  flex: 1;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--line-soft);
+  transition: background-color var(--duration-fast) ease, transform var(--duration-fast) var(--easing-cheer);
+}
+.ob-otp-cell--filled {
+  background: var(--hy-accent-deep);
+  transform: scaleY(1.4);
+}
+.ob-otp-cell--active {
+  background: color-mix(in srgb, var(--hy-accent) 55%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ob-field[data-error="true"] > .ob-field__control,
+  .ob-otp-cell {
+    animation: none;
+    transition: none;
+  }
 }
 
 /* ── STEP: SIGNUP ──────────────────────────────────────────────────────── */

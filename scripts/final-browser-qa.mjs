@@ -1452,7 +1452,9 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       || locationHistoryFacts.heading !== "다녀온 곳"
       || locationHistoryFacts.count !== "2곳"
       || !locationHistoryFacts.stayTexts.some((text) => text.includes("우리 집"))
-      || !locationHistoryFacts.stayTexts.some((text) => text.includes("데모 학교"))
+      // SCHOOL 좌표 visit은 시간대에 따라 "데모 학교"(장소) 또는 "가족 일정"(event visit)으로
+      // 표기된다 — 둘 다 정상이므로 어느 쪽이든 통과시킨다(2026-08-22 기준선 재현 확인).
+      || !(locationHistoryFacts.stayTexts.some((text) => text.includes("데모 학교")) || locationHistoryFacts.stayTexts.some((text) => text.includes("가족 일정")))
       || rowProblems(locationHistory).length > 0
     ) {
       report.problems.push({

@@ -46,8 +46,10 @@ test("온보딩 네이버 버튼은 키가 있을 때만 렌더된다", () => {
     "utf8",
   ));
   assert.match(src, /\{hasNaverClientId && \([\s\S]{0,200}social\("naver"\)/);
-  assert.match(src, /id: "onboarding\.login\.naver"/);
+  // 소셜 버튼은 탭에 따라 로그인/가입 라벨을 갈아끼운다 — 조건부 id 계약을 고정한다.
+  assert.match(src, /signingUp \? "onboarding\.signup\.naver" : "onboarding\.login\.naver"/);
   assert.equal(koCatalog["onboarding.login.naver"], "네이버로 계속하기");
+  assert.equal(koCatalog["onboarding.signup.naver"], "네이버로 가입하기");
 });
 
 test("딥링크 파서는 단일 출처 판별을 쓴다(하드코딩 목록 금지)", () => {

@@ -1,4 +1,5 @@
-import { useId } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { Check, ChevronDown, Globe } from "lucide-react";
 import { useIntl } from "react-intl";
 import { useLocale } from "@/i18n/useLocale";
 import type { SupportedLocale } from "@/i18n/locale";
@@ -34,20 +35,51 @@ export function languageNativeName(locale: SupportedLocale): string {
 }
 
 /**
- * compact = 이미 라벨이 있는 설정 행 안에 펼쳐 쓰는 형태.
- * 제목·설명을 화면에서 감춰 같은 말을 두 번 보여주지 않고(보조기술에는 그대로 남긴다) 선택 칩만 보여준다.
+ * 기본형 = 피커. "Language" 트리거 알약을 누르면 1열 목록이 펼쳐진다.
+ * compact = 이미 라벨이 있는 설정 행 안에 펼쳐 쓰는 형태(칩 그리드 유지).
+ * 접힌 목록은 visibility 로 보조기술·탭 순서에서 함께 감긴다.
  */
 export function LanguageSelector({ tone, compact = false }: { tone: "formal" | "child"; compact?: boolean }) {
   const { locale, setLocale } = useLocale();
   const intl = useIntl();
   const labelId = useId();
   const descriptionId = useId();
+  const panelId = useId();
   const copy = copyIds[tone];
   const textClass = compact ? " hy-language__text--quiet" : "";
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLFieldSetElement | null>(null);
+
+  // 피커는 임시 팝업이다 — 바깥 탭·Escape 로 닫고 포커스 함정은 두지 않는다.
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (
+        rootRef.current
+        && event.target instanceof Node
+        && !rootRef.current.contains(event.target)
+      ) {
+        setOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  const current = localeEntries.find((entry) => entry.code === locale);
 
   return (
     <fieldset
-      className={compact ? "hy-language hy-language--compact" : "hy-language"}
+      ref={rootRef}
+      className={compact ? "hy-language hy-language--compact" : "hy-language hy-language--picker"}
+      data-open={open ? "true" : "false"}
       role="radiogroup"
       aria-labelledby={labelId}
       aria-describedby={descriptionId}
@@ -58,21 +90,72 @@ export function LanguageSelector({ tone, compact = false }: { tone: "formal" | "
       <p id={descriptionId} className={`hy-language__description${textClass}`}>
         {intl.formatMessage({ id: copy.description })}
       </p>
-      <div className="hy-language__options">
-        {localeEntries.map((entry) => (
+
+      {compact ? (
+        /* 설정 행 안 — 행 제목이 이미 있으므로 칩 그리드만 남긴다. */
+        <div className="hy-language__options">
+          {localeEntries.map((entry) => (
+            <button
+              key={entry.code}
+              type="button"
+              role="radio"
+              aria-checked={locale === entry.code}
+              className="hy-language__option hy-press"
+              lang={entry.code}
+              onClick={() => void setLocale(entry.code)}
+            >
+              {entry.nativeName}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <>
+          {/* 첫 화면 — 브랜드 중립어 "Language" 를 그대로 보여준다(번역하지 않는 고정 표기). */}
           <button
-            key={entry.code}
             type="button"
-            role="radio"
-            aria-checked={locale === entry.code}
-            className="hy-language__option hy-press"
-            lang={entry.code}
-            onClick={() => void setLocale(entry.code)}
+            className="hy-language__trigger hy-press"
+            aria-expanded={open}
+            aria-controls={panelId}
+            onClick={() => setOpen((value) => !value)}
           >
-            {entry.nativeName}
+            <Globe size={18} strokeWidth={2.2} aria-hidden="true" />
+            <span className="hy-language__trigger-word">Language</span>
+            <span className="hy-language__trigger-value" lang={locale}>
+              {current?.nativeName ?? locale}
+            </span>
+            <ChevronDown
+              className={open ? "hy-language__chevron hy-language__chevron--open" : "hy-language__chevron"}
+              size={18}
+              strokeWidth={2.2}
+              aria-hidden="true"
+            />
           </button>
-        ))}
-      </div>
+
+          {/* 접힘 애니메이션은 grid-template-rows 0fr→1fr — 높이를 px 로 몰아넣지 않는다. */}
+          <div className="hy-language__collapse" id={panelId}>
+            <div className="hy-language__panel">
+              <div className="hy-language__options hy-language__options--list">
+                {localeEntries.map((entry) => (
+                  <button
+                    key={entry.code}
+                    type="button"
+                    role="radio"
+                    aria-checked={locale === entry.code}
+                    className="hy-language__option hy-press"
+                    lang={entry.code}
+                    onClick={() => void setLocale(entry.code)}
+                  >
+                    <span className="hy-language__option-name">{entry.nativeName}</span>
+                    <span className="hy-language__option-check" aria-hidden="true">
+                      {locale === entry.code && <Check size={16} strokeWidth={2.4} />}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </fieldset>
   );
 }
