@@ -71,6 +71,10 @@ test("최종 브라우저 QA는 부모·아이 출시 화면과 핵심 전환 �
   assert.match(source, /auth-successful-parent-home-transition/);
   assert.match(source, /url\.searchParams\.set\("qaRole", "preserve"\)/);
   assert.match(source, /successfulLoginReloadFacts/);
+  assert.match(source, /authCase: "device-inactive"/);
+  assert.match(source, /deviceTakeoverFacts/);
+  assert.match(source, /scope: "auth-device-takeover-logout-notice"/);
+  assert.match(source, /onboarding\.session\.deviceInactive|다른 기기에서 다시 로그인/);
   assert.match(source, /pathname === "\/api\/access-region"/);
   assert.match(source, /scope: "access-country-social-login"/);
   assert.match(source, /onboardingLanguageExpandedFacts\.optionCount !== 9/);
@@ -84,9 +88,17 @@ test("최종 브라우저 QA는 부모·아이 출시 화면과 핵심 전환 �
   assert.match(source, /qrFallbackFacts\.cameraRequests !== 1/);
   assert.match(source, /child-invite\?role=parent/);
   assert.match(source, /sharedText\.includes\("as=parent"\)/);
-  assert.match(source, /child-invite\?role=choose/);
-  assert.match(source, /scope: "family-management-role-choice-qr"/);
-  assert.match(source, /roleChoiceSharedText\.includes\("as=child"\)/);
+  assert.match(source, /child-invite\?role=child/);
+  assert.match(source, /scope: "family-management-role-specific-invites"/);
+  assert.match(source, /childInviteSharedText\.includes\("as=child"\)/);
+  assert.match(source, /childInviteSharedText\.includes\("as=parent"\)/);
+  assert.match(source, /genericQrVisible/);
+  assert.match(source, /coParentConnected: true/);
+  assert.match(source, /scope: "occupied-co-parent-replacement-flow"/);
+  assert.match(source, /coParentViewer: true/);
+  assert.match(source, /coParentGuardianVisibilityFacts/);
+  assert.match(source, /scope: "co-parent-sees-primary-guardian-and-children"/);
+  assert.match(source, /family-existing-coparent-management\.png/);
   assert.match(source, /\.ob-pair-code-input/);
 });
 

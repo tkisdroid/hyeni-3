@@ -12,6 +12,7 @@ const GOOGLE_NATIVE = `${CALLBACK}?provider=google&code=CODE123&state=nonce-abc`
 const NAVER_NATIVE = `${CALLBACK}?provider=naver&code=TESTCODE&state=n1`;
 const KAKAO_NATIVE = `${CALLBACK}?provider=kakao&code=CODE123&state=nonce-abc`;
 const GOOGLE_CANCEL = `${CALLBACK}?provider=google&state=nonce-abc&error=oauth_cancelled`;
+const IOS_CALLBACK = "com.hyeni.calendar.oauth://oauth/callback";
 
 test("구글 딥링크 콜백을 파싱한다(Worker 실제 출력)", () => {
   assert.deepEqual(parseOAuthDeepLinkUrl(GOOGLE_NATIVE), {
@@ -25,6 +26,17 @@ test("카카오·네이버 딥링크 콜백도 같은 파서로 처리된다", (
   assert.equal(parseOAuthDeepLinkUrl(KAKAO_NATIVE)?.provider, "kakao");
   assert.equal(parseOAuthDeepLinkUrl(NAVER_NATIVE)?.provider, "naver");
   assert.equal(parseOAuthDeepLinkUrl(NAVER_NATIVE)?.code, "TESTCODE");
+});
+
+test("iOS 커스텀 URL 콜백도 같은 state 검증 파서로 처리된다", () => {
+  assert.deepEqual(
+    parseOAuthDeepLinkUrl(`${IOS_CALLBACK}?provider=google&code=IOSCODE&state=ios-state`),
+    { provider: "google", code: "IOSCODE", state: "ios-state" },
+  );
+  assert.deepEqual(
+    parseOAuthCancellationUrl(`${IOS_CALLBACK}?provider=kakao&state=ios-state&error=oauth_cancelled`),
+    { provider: "kakao", state: "ios-state" },
+  );
 });
 
 test("사용자 취소는 로그인 시도가 아니라 별도 취소 결과로 파싱한다", () => {
@@ -50,6 +62,10 @@ test("서버가 정규화한 oauth_cancelled 외 오류와 callback 유사 호�
   );
   assert.equal(
     parseOAuthDeepLinkUrl("hyenicalendar://auth-callback?provider=google&code=C&state=S"),
+    null,
+  );
+  assert.equal(
+    parseOAuthDeepLinkUrl("com.hyeni.calendar.oauth://evil/callback?provider=google&code=C&state=S"),
     null,
   );
 });

@@ -212,6 +212,31 @@ async function joinAsParentRequest(db, parentId, pairCode, name = "보조 보호
   }, environment(db));
 }
 
+async function removeCoParentRequest(db, callerId, familyId, parentUserId) {
+  const app = new Hono();
+  app.route("/api/family", familyRoutes);
+  return app.request("http://test.local/api/family/co-parent/remove", {
+    method: "POST",
+    headers: {
+      authorization: await authorization(callerId, "parent", familyId),
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ family_id: familyId, parent_user_id: parentUserId }),
+  }, environment(db));
+}
+
+async function mineRequest(db, userId, familyId, role = "parent", accessToken = null) {
+  const app = new Hono();
+  app.route("/api/family", familyRoutes);
+  return app.request("http://test.local/api/family/mine", {
+    headers: {
+      authorization: accessToken
+        ? `Bearer ${accessToken}`
+        : await authorization(userId, role, familyId),
+    },
+  }, environment(db));
+}
+
 test("가족이 아직 없는 등록 보호자 계정도 자녀 전용 join으로 역할을 바꿀 수 없다", async () => {
   const { sqlite, db } = createDb({ concurrent: false });
   addUser(sqlite, "primary-role-guard", false);
@@ -459,7 +484,7 @@ test("같은 연동 코드의 서로 다른 두 사용자가 동시에 보조 �
     joinAsParentRequest(db, "coparent-b", pairCode, "보조 B"),
   ]);
 
-  assert.deepEqual(responses.map((response) => response.status).sort(), [200, 400]);
+  assert.deepEqual(responses.map((response) => response.status).sort(), [200, 409]);
   assert.equal(sqlite.prepare(
     `SELECT COUNT(*) AS count FROM family_members
       WHERE family_id='coparent-race-family' AND role='parent' AND is_active=1
@@ -513,7 +538,7 @@ test("서로 다른 비활성 보조 보호자의 동시 재가입도 한 명만
     joinAsParentRequest(db, "inactive-coparent-b", pairCode, "보조 B"),
   ]);
 
-  assert.deepEqual(responses.map((response) => response.status).sort(), [200, 400]);
+  assert.deepEqual(responses.map((response) => response.status).sort(), [200, 409]);
   assert.equal(sqlite.prepare(
     `SELECT COUNT(*) AS count FROM family_members
       WHERE family_id='coparent-reactivate-race-family' AND role='parent' AND is_active=1
@@ -543,4 +568,110 @@ test("같은 보조 보호자의 동시 재호출은 멱등 성공하고 중복 
     `SELECT COUNT(*) AS count FROM family_members
       WHERE family_id='coparent-idempotent-family' AND user_id='idempotent-coparent'`,
   ).get().count, 1);
+});
+
+test("주 보호자는 기존 공동 보호자를 해제하고 세션·알림·실시간 권한을 즉시 닫는다", async () => {
+  const { sqlite, db } = createDb({ concurrent: false });
+  addUser(sqlite, "remove-primary", false);
+  addUser(sqlite, "remove-coparent", false);
+  addFamily(sqlite, "remove-family", "remove-primary");
+  sqlite.prepare(
+    `INSERT INTO family_members(id,family_id,user_id,role,name,is_active,last_selected_at,created_at)
+     VALUES ('remove-coparent-member','remove-family','remove-coparent','parent','기존 보호자',1,'2026-08-23T00:00:00.000Z','2026-08-01')`,
+  ).run();
+  sqlite.prepare(
+    `INSERT INTO refresh_tokens(token,user_id,family_id,device_id,issued_at,expires_at,revoked)
+     VALUES ('remove-refresh','remove-coparent','remove-family','remove-device','2026-08-23','2099-01-01',0)`,
+  ).run();
+  sqlite.prepare(
+    `INSERT INTO account_device_sessions(user_id,device_id,claimed_at,last_seen_at,expires_at,revoked_at)
+     VALUES ('remove-coparent','remove-device','2026-08-23','2026-08-23','2099-01-01',NULL)`,
+  ).run();
+  sqlite.prepare(
+    `INSERT INTO fcm_tokens(id,user_id,family_id,fcm_token,disabled_at)
+     VALUES ('remove-fcm','remove-coparent','remove-family','remove-token',NULL)`,
+  ).run();
+  sqlite.prepare(
+    `INSERT INTO push_subscriptions(id,user_id,family_id,endpoint,subscription,disabled_at)
+     VALUES ('remove-push','remove-coparent','remove-family','https://push.example/remove','{}',NULL)`,
+  ).run();
+
+  const response = await removeCoParentRequest(db, "remove-primary", "remove-family", "remove-coparent");
+  assert.equal(response.status, 200, await response.clone().text());
+  assert.deepEqual(await response.json(), { ok: true, already_removed: false });
+  assert.deepEqual({ ...sqlite.prepare(
+    "SELECT is_active,last_selected_at FROM family_members WHERE id='remove-coparent-member'",
+  ).get() }, { is_active: 0, last_selected_at: null });
+  assert.equal(sqlite.prepare("SELECT revoked FROM refresh_tokens WHERE token='remove-refresh'").get().revoked, 1);
+  assert.notEqual(sqlite.prepare("SELECT revoked_at FROM account_device_sessions WHERE user_id='remove-coparent'").get().revoked_at, null);
+  assert.equal(sqlite.prepare("SELECT disabled_reason FROM fcm_tokens WHERE id='remove-fcm'").get().disabled_reason, "family_member_removed");
+  assert.equal(sqlite.prepare("SELECT disabled_reason FROM push_subscriptions WHERE id='remove-push'").get().disabled_reason, "family_member_removed");
+
+  const familyAfterRemoval = await mineRequest(db, "remove-primary", "remove-family");
+  assert.equal(familyAfterRemoval.status, 200, await familyAfterRemoval.clone().text());
+  assert.equal(
+    (await familyAfterRemoval.json()).members.some((member) => member.user_id === "remove-coparent"),
+    false,
+  );
+
+  const retry = await removeCoParentRequest(db, "remove-primary", "remove-family", "remove-coparent");
+  assert.equal(retry.status, 200, await retry.clone().text());
+  assert.deepEqual(await retry.json(), { ok: true, already_removed: true });
+});
+
+test("공동 보호자·자녀는 보호자 해제 대상으로 위장할 수 없다", async () => {
+  const { sqlite, db } = createDb({ concurrent: false });
+  for (const userId of ["guard-primary", "guard-coparent", "guard-child"]) addUser(sqlite, userId, false);
+  addFamily(sqlite, "guard-family", "guard-primary");
+  sqlite.prepare(
+    `INSERT INTO family_members(id,family_id,user_id,role,name,is_active,created_at) VALUES
+       ('guard-coparent-member','guard-family','guard-coparent','parent','공동 보호자',1,'2026-08-01'),
+       ('guard-child-member','guard-family','guard-child','child','아이',1,'2026-08-01')`,
+  ).run();
+
+  const nonPrimary = await removeCoParentRequest(db, "guard-coparent", "guard-family", "guard-primary");
+  assert.equal(nonPrimary.status, 403);
+  assert.deepEqual(await nonPrimary.json(), { error: "forbidden", code: "primary_parent_required" });
+
+  const childTarget = await removeCoParentRequest(db, "guard-primary", "guard-family", "guard-child");
+  assert.equal(childTarget.status, 404);
+  assert.deepEqual(await childTarget.json(), { error: "coparent_not_found", code: "coparent_not_found" });
+  assert.equal(sqlite.prepare("SELECT is_active FROM family_members WHERE id='guard-child-member'").get().is_active, 1);
+});
+
+test("아이·공동 보호자 연결 성공은 주 보호자 가족 조회에 같은 user_id와 역할로 나타난다", async () => {
+  const { sqlite, db } = createDb({ concurrent: false });
+  addUser(sqlite, "visible-primary", false);
+  addUser(sqlite, "visible-child", true);
+  addUser(sqlite, "visible-coparent", false);
+  addFamily(sqlite, "visible-family", "visible-primary", true);
+  sqlite.prepare("UPDATE families SET pair_code='KID-VISIBLE' WHERE id='visible-family'").run();
+
+  const childJoin = await joinRequest(db, "visible-child", "KID-VISIBLE", "혜니");
+  assert.equal(childJoin.status, 200, await childJoin.clone().text());
+  const parentJoin = await joinAsParentRequest(db, "visible-coparent", "KID-VISIBLE", "다른 보호자");
+  assert.equal(parentJoin.status, 200, await parentJoin.clone().text());
+  const parentJoinPayload = await parentJoin.json();
+
+  const response = await mineRequest(db, "visible-primary", "visible-family");
+  assert.equal(response.status, 200, await response.clone().text());
+  const payload = await response.json();
+  assert.equal(payload.familyId, "visible-family");
+  assert.ok(payload.members.some((member) => member.user_id === "visible-child" && member.role === "child"));
+  assert.ok(payload.members.some((member) => member.user_id === "visible-coparent" && member.role === "parent"));
+
+  const coParentResponse = await mineRequest(
+    db,
+    "visible-coparent",
+    "visible-family",
+    "parent",
+    parentJoinPayload.session.access_token,
+  );
+  assert.equal(coParentResponse.status, 200, await coParentResponse.clone().text());
+  const coParentPayload = await coParentResponse.json();
+  assert.equal(coParentPayload.isCoParent, true);
+  assert.deepEqual(
+    coParentPayload.members.map((member) => [member.user_id, member.role]).sort(),
+    payload.members.map((member) => [member.user_id, member.role]).sort(),
+  );
 });

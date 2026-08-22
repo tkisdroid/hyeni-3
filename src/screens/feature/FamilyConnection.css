@@ -147,6 +147,16 @@
 
   color: var(--fg-muted);
 }
+.fc-coparent {
+  display: grid;
+  gap: 12px;
+}
+.fc-coparent + .fc-coparent {
+  margin-top: 12px;
+}
+.fc-coparent .fc-note {
+  margin: 0 4px;
+}
 
 /* ── 상태 칩 ────────────────────────────────────────────────────────────── */
 .fc-chip {

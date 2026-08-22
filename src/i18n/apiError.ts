@@ -42,6 +42,14 @@ const CODE_MESSAGES: Readonly<Record<string, Readonly<Record<ApiErrorTone, Messa
     formal: "core.error.api.childRoleRequired.formal",
     child: "core.error.api.childRoleRequired.formal",
   },
+  coparent_slot_occupied: {
+    formal: "core.error.api.coparentSlotOccupied.formal",
+    child: "core.error.api.coparentSlotOccupied.formal",
+  },
+  pairing_confirmation_failed: {
+    formal: "core.error.api.pairingConfirmationFailed.formal",
+    child: "core.error.api.pairingConfirmationFailed.formal",
+  },
   invalid_phone: {
     formal: "core.error.api.invalidPhone.formal",
     child: "core.error.api.invalidPhone.child",

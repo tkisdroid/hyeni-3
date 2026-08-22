@@ -108,5 +108,7 @@
   "core.time.remaining": "{duration} yang tinggal",
   "core.error.api.parentRoleMismatch.formal": "Ini sudah menjadi akaun penjaga. Gunakan pautan jemputan penjaga bersama.",
   "core.error.api.parentRoleRequired.formal": "Log masuk dengan akaun penjaga, kemudian cuba sambungkan penjaga bersama sekali lagi.",
-  "core.error.api.childRoleRequired.formal": "Sambungkan peranti anak daripada Mod Anak."
+  "core.error.api.childRoleRequired.formal": "Sambungkan peranti anak daripada Mod Anak.",
+  "core.error.api.coparentSlotOccupied.formal": "Seorang penjaga bersama sudah disambungkan. Minta penjaga utama memutuskan penjaga sedia ada, kemudian cuba lagi.",
+  "core.error.api.pairingConfirmationFailed.formal": "Pelayan belum dapat mengesahkan peranan dan sambungan keluarga. Peranan anda tidak diubah; sila cuba lagi."
 }

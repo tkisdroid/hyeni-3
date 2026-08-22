@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Battery, ChevronLeft, ChevronRight, Copy, Lock, Plus, QrCode as QrIcon, Smartphone, UserPlus } from "lucide-react";
+import { Battery, ChevronLeft, ChevronRight, Lock, Plus, Smartphone, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
@@ -15,9 +15,7 @@ import {
   browserPremiumReturnIntentStorage,
   savePremiumReturnIntent,
 } from "@/transform/premiumReturnIntent";
-import { QrCode } from "@/components/ui/QrCode";
 import { PremiumUpsell } from "@/components/PremiumUpsell";
-import { buildPairRoleChoiceLink } from "@/transform/pairLink";
 import { useSafeBack } from "@/app/useSafeBack";
 import { Loading } from "@/components/ui/Loading";
 import "./ParentFamily.css";
@@ -70,22 +68,19 @@ export function ParentFamily() {
       ? intl.formatMessage({ id: "parent.parentFamily.copy002" })
       : lockMessageFor(FEATURES.MULTI_CHILD, intl);
 
-  // 아이관리의 공용 QR은 연결 역할을 추정하지 않는다. Safari 카메라로 바로 읽어도
-  // 온보딩에서 학부모/아이를 먼저 선택해야 다른 보호자가 자녀로 등록되지 않는다.
-  const pairCode = family?.pairCode ?? "";
-  const pairLink = useMemo(() => (pairCode ? buildPairRoleChoiceLink(pairCode) : ""), [pairCode]);
+  const coParent = family?.members.find(
+    (member) =>
+      member.role === "parent"
+      && member.user_id
+      && member.user_id !== family.primaryParentId,
+  );
   const canInviteCoParent = Boolean(
     family?.isPrimaryParent
-    && !family.members.some(
-      (member) =>
-        member.role === "parent"
-        && member.user_id
-        && member.user_id !== family.primaryParentId,
-    ),
+    && !coParent,
   );
 
-  const inviteRoleChoice = () => {
-    navigate("/child-invite?role=choose");
+  const inviteChild = () => {
+    navigate("/child-invite?role=child");
   };
   const inviteCoParent = () => {
     navigate("/child-invite?role=parent");
@@ -106,19 +101,6 @@ export function ParentFamily() {
       addDecision.status === "unavailable" ? "⏳" : "🔒",
     );
   };
-  const copyCode = () => {
-    if (!pairCode) return;
-    const clip = navigator.clipboard;
-    if (!clip?.writeText) {
-      show(intl.formatMessage({ id: "parent.family.copyUnsupported" }, { code: pairCode }), "✏️");
-      return;
-    }
-    clip.writeText(pairCode).then(
-      () => show(intl.formatMessage({ id: "parent.parentFamily.copy004" }), "📋"),
-      () => show(intl.formatMessage({ id: "parent.family.copyFailed" }, { code: pairCode }), "✏️"),
-    );
-  };
-
   return (
     <div className="hy-rise-in">
       <header className="pf-header">
@@ -272,72 +254,66 @@ export function ParentFamily() {
               <ChevronRight className="pf-conn__chev" size={20} strokeWidth={2.4} color="#C9BFC4" />
             </button>
 
-            {/* 연결 코드 · QR — 아이 재연결·선생님 학생추가 시 이 코드로 다시 연결 */}
+            {/* 역할을 먼저 확정한 뒤에만 해당 역할 전용 QR·코드를 발급한다. */}
             <section className="pf-paircode">
-              <div className="pf-paircode__label">{intl.formatMessage({ id: "parent.parentFamily.copy016" })}</div>
+              <div className="pf-paircode__label">
+                {intl.formatMessage({ id: "parent.parentFamily.connectionTargetTitle" })}
+              </div>
               <div className="pf-paircode__card">
-                <div className="pf-paircode__row">
+                <p className="pf-paircode__intro">
+                  {intl.formatMessage({ id: "parent.parentFamily.connectionTargetDescription" })}
+                </p>
+                <div className="pf-paircode__targets">
                   <button
                     type="button"
-                    className="pf-paircode__qr hy-press"
-                    aria-label={intl.formatMessage({ id: "parent.parentFamily.copy017" })}
-                    onClick={inviteRoleChoice}
+                    className="pf-paircode__target pf-paircode__target--child hy-press"
+                    onClick={inviteChild}
                   >
-                    {pairLink ? (
-                      <QrCode value={pairLink} size={96} label={intl.formatMessage({ id: "parent.parentFamily.copy018" })} />
-                    ) : (
-                      <span className="pf-paircode__qr-skel">…</span>
-                    )}
+                    <span className="pf-paircode__target-icon pf-paircode__target-icon--child">
+                      <Smartphone size={21} strokeWidth={2.2} />
+                    </span>
+                    <span className="pf-paircode__target-main">
+                      <span className="pf-paircode__target-title">
+                        {intl.formatMessage({ id: "parent.parentFamily.connectChild" })}
+                      </span>
+                      <span className="pf-paircode__target-sub">
+                        {intl.formatMessage({ id: "parent.parentFamily.connectChildDescription" })}
+                      </span>
+                    </span>
+                    <ChevronRight size={20} strokeWidth={2.4} color="var(--fg-disabled)" />
                   </button>
-                  <div className="pf-paircode__main">
-                    <div className="pf-paircode__code">{pairCode || intl.formatMessage({ id: "parent.parentFamily.copy019" })}</div>
-                    <div className="pf-paircode__btns">
-                      <button
-                        type="button"
-                        className="pf-paircode__btn hy-press"
-                        onClick={copyCode}
-                        disabled={!pairCode}
-                      >
-                        <Copy size={15} strokeWidth={2.2} />
-                        {intl.formatMessage({ id: "parent.parentFamily.copy020" })}
-                      </button>
-                      <button
-                        type="button"
-                        className="pf-paircode__btn pf-paircode__btn--accent hy-press"
-                        onClick={inviteRoleChoice}
-                      >
-                        <QrIcon size={15} strokeWidth={2.2} />
-                        {intl.formatMessage({ id: "parent.parentFamily.copy021" })}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <div className="pf-paircode__hint">
-                  {intl.formatMessage({ id: "parent.parentFamily.copy022" })}
+                  <button
+                    type="button"
+                    className="pf-paircode__target pf-paircode__target--parent hy-press"
+                    onClick={canInviteCoParent ? inviteCoParent : () => navigate("/family-connection")}
+                  >
+                    <span className="pf-paircode__target-icon pf-paircode__target-icon--parent">
+                      <UserPlus size={21} strokeWidth={2.2} />
+                    </span>
+                    <span className="pf-paircode__target-main">
+                      <span className="pf-paircode__target-title">
+                        {intl.formatMessage({
+                          id: canInviteCoParent
+                            ? "parent.familyConnection.inviteCoParent"
+                            : "parent.parentFamily.guardianSlotOccupied",
+                        })}
+                      </span>
+                      <span className="pf-paircode__target-sub">
+                        {intl.formatMessage(
+                          {
+                            id: canInviteCoParent
+                              ? "parent.familyInvite.choice.parentDescription"
+                              : "parent.parentFamily.guardianSlotOccupiedDescription",
+                          },
+                          { guardianName: coParent?.name || intl.formatMessage({ id: "parent.familyConnection.guardianFallback" }) },
+                        )}
+                      </span>
+                    </span>
+                    <ChevronRight size={20} strokeWidth={2.4} color="var(--fg-disabled)" />
+                  </button>
                 </div>
               </div>
             </section>
-
-            {/* 공동 보호자 초대 */}
-            {canInviteCoParent && (
-              <button type="button" className="pf-invite-card hy-press" onClick={inviteCoParent}>
-                <img
-                  className="pf-invite-card__img"
-                  src={asset("ui/friend-pair.webp")}
-                  alt=""
-                />
-                <span className="pf-invite-card__main">
-                  <span className="pf-invite-card__title">{intl.formatMessage({ id: "parent.parentFamily.copy023" })}</span>
-                  <span className="pf-invite-card__sub">{intl.formatMessage({ id: "parent.parentFamily.copy024" })}</span>
-                </span>
-                <ChevronRight
-                  className="pf-invite-card__chev"
-                  size={20}
-                  strokeWidth={2.4}
-                  color="#B79DE0"
-                />
-              </button>
-            )}
           </>
         )}
       </div>

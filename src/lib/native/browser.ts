@@ -2,11 +2,11 @@
  * 외부(시스템) 브라우저 열기 브리지 — hyeni-1 nativeBrowser.js 이관.
  *
  * OAuth authorize 페이지는 앱 WebView 가 아니라 시스템 브라우저에서 열어야 한다
- * (카카오/구글 정책 + 딥링크로 앱 복귀). 네이티브는 커스텀 ExternalBrowser 플러그인
- * (Android ACTION_VIEW)을 쓰고, 웹(PWA)은 플러그인이 없으므로 현재 창을 해당 URL 로
+ * (카카오/구글 정책 + 딥링크로 앱 복귀). Android는 커스텀 ExternalBrowser 플러그인의
+ * ACTION_VIEW, iOS는 공식 Capacitor Browser를 사용한다. 웹(PWA)은 현재 창을 해당 URL로
  * 이동시켜(window.location.href) 기존 웹 OAuth 리다이렉트 동작을 그대로 보존한다.
  */
-import { getNativePlugin, isNativePlatform } from "./plugins";
+import { getNativePlugin, getPlatform, isNativePlatform } from "./plugins";
 
 interface ExternalBrowserPlugin {
   open(options: { url: string }): Promise<void>;
@@ -17,11 +17,23 @@ const PLUGIN_NAME = "ExternalBrowser";
 
 /**
  * 외부 브라우저로 URL 열기.
- * - 네이티브: 시스템 브라우저(ExternalBrowser 플러그인)로 연다.
+ * - Android: ExternalBrowser 플러그인으로 기본 브라우저를 연다.
+ * - iOS: Capacitor Browser로 SFSafariViewController를 연다.
  * - 웹(폴백): 현재 창을 이동(window.location.href) — 기존 웹 흐름 보존.
  */
 export async function openExternal(url: string): Promise<void> {
   if (!url) throw new Error("URL이 필요해요");
+
+  if (isNativePlatform() && getPlatform() === "ios") {
+    try {
+      const { Browser } = await import("@capacitor/browser");
+      await Browser.open({ url });
+      return;
+    } catch (error) {
+      console.error("iOS 시스템 브라우저 열기 실패:", error);
+      throw new Error("외부 브라우저를 열 수 없어요. Safari 설정을 확인해 주세요.");
+    }
+  }
 
   const browser = getNativePlugin<ExternalBrowserPlugin>(PLUGIN_NAME);
   if (!browser) {
@@ -46,6 +58,11 @@ export async function openExternal(url: string): Promise<void> {
 export async function closeExternal(): Promise<void> {
   if (!isNativePlatform()) return;
   try {
+    if (getPlatform() === "ios") {
+      const { Browser } = await import("@capacitor/browser");
+      await Browser.close();
+      return;
+    }
     const browser = getNativePlugin<ExternalBrowserPlugin>(PLUGIN_NAME);
     await browser?.close?.();
   } catch {

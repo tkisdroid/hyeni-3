@@ -195,17 +195,17 @@ export async function checkAccountDeviceSession(
   tokenDeviceId: string | null | undefined,
   now = new Date(),
 ): Promise<AccountDeviceSessionCheck> {
-  let row: { device_id: string } | null;
+  let row: { device_id: string; revoked_at: string | null; expires_at: string } | null;
   try {
     row = await db
       .prepare(
-        `SELECT device_id
+        `SELECT device_id,revoked_at,expires_at
            FROM account_device_sessions
-          WHERE user_id=? AND revoked_at IS NULL AND expires_at>?
+          WHERE user_id=?
           LIMIT 1`,
       )
-      .bind(userId, now.toISOString())
-      .first<{ device_id: string }>();
+      .bind(userId)
+      .first<{ device_id: string; revoked_at: string | null; expires_at: string }>();
   } catch (error) {
     // additive migration 직전의 레거시 access token만 계속 읽을 수 있게 한다.
     // 새 로그인/refresh는 이 테이블에 쓰므로 스키마가 없으면 발급 자체가 실패하며,
@@ -214,8 +214,9 @@ export async function checkAccountDeviceSession(
     throw error;
   }
   const normalized = normalizeAccountDeviceId(tokenDeviceId);
-  if (!normalized) return row ? "inactive" : "legacy";
-  return row?.device_id === normalized ? "active" : "inactive";
+  if (!row) return normalized ? "inactive" : "legacy";
+  if (!normalized || row.revoked_at || row.expires_at <= now.toISOString()) return "inactive";
+  return row.device_id === normalized ? "active" : "inactive";
 }
 
 /** 정상 로그아웃한 동일 설치만 잠금을 해제한다. */

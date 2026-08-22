@@ -85,7 +85,7 @@ export async function saveImageToDevice(imageUrl: string): Promise<MediaSaveResu
   if (!isNativePlatform()) return saveViaBrowserDownload(blob, fileName);
 
   const plugin = getNativePlugin<MediaSavePlugin>("MediaSave");
-  if (!plugin?.saveImage) return { ok: false, reason: "unsupported" };
+  if (!plugin?.saveImage) return saveViaBrowserDownload(blob, fileName);
 
   try {
     const base64 = await blobToBase64(blob);

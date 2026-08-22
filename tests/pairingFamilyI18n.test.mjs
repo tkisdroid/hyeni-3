@@ -28,8 +28,12 @@ test("가족 연결 상태는 실제 user_id 유무와 서버 정본 역할로 �
   assert.match(source, /members\.filter\(\(m\) => m\.role === "child"\)/);
   assert.match(source, /children\.filter\(\(c\) => c\.user_id\)/);
   assert.match(source, /children\.filter\(\(c\) => !c\.user_id\)/);
-  assert.match(source, /m\.role === "parent" && m\.user_id && m\.user_id !== family\?\.primaryParentId/);
-  assert.match(source, /unpair\.mutate\(confirm\.userId/);
+  assert.match(source, /const \{ userId \} = useAuth\(\)/);
+  assert.match(source, /m\.role === "parent" && m\.user_id && m\.user_id !== userId/);
+  assert.match(source, /p\.user_id === family\?\.primaryParentId[\s\S]{0,180}parent\.parentAccount\.copy001/);
+  assert.match(source, /isPrimary && p\.user_id !== family\?\.primaryParentId/);
+  assert.match(source, /const disconnectMutation = confirm\?\.kind === "coparent" \? removeCoParent : unpair/);
+  assert.match(source, /disconnectMutation\.mutate\(confirm\.userId/);
 });
 
 test("페어링은 기존 아이를 밀지 않는 한도 게이트와 같은 아이 계정 복구 힌트를 유지한다", () => {

@@ -108,5 +108,7 @@
   "core.time.remaining": "{duration} remaining",
   "core.error.api.parentRoleMismatch.formal": "This is already a guardian account. Please use a co-guardian invitation link.",
   "core.error.api.parentRoleRequired.formal": "Sign in with a guardian account, then try connecting as a co-guardian again.",
-  "core.error.api.childRoleRequired.formal": "Connect a child's device from Child mode."
+  "core.error.api.childRoleRequired.formal": "Connect a child's device from Child mode.",
+  "core.error.api.coparentSlotOccupied.formal": "A co-guardian is already connected. Ask the primary guardian to disconnect the existing guardian, then try again.",
+  "core.error.api.pairingConfirmationFailed.formal": "We could not confirm the role and family connection on the server. Your role was not changed; please try again."
 }

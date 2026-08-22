@@ -108,5 +108,7 @@
   "core.time.remaining": "剩餘 {duration}",
   "core.error.api.parentRoleMismatch.formal": "這已經是監護人帳號。請使用共同監護人邀請連結。",
   "core.error.api.parentRoleRequired.formal": "請先登入監護人帳號，再重新嘗試連接共同監護人。",
-  "core.error.api.childRoleRequired.formal": "請從孩子模式連接孩子的裝置。"
+  "core.error.api.childRoleRequired.formal": "請從孩子模式連接孩子的裝置。",
+  "core.error.api.coparentSlotOccupied.formal": "已有一名共同監護人連接。請由主要監護人先解除現有監護人的連接，然後重試。",
+  "core.error.api.pairingConfirmationFailed.formal": "伺服器未能確認角色和家庭連接已完成。您的角色沒有變更，請重試。"
 }

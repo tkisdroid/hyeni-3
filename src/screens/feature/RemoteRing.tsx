@@ -320,7 +320,7 @@ export function RemoteRing() {
             <button
               type="button"
               className="rr-query-retry hy-press"
-              onClick={() => navigate("/child-invite")}
+              onClick={() => navigate("/child-invite?role=child")}
             >
               {intl.formatMessage({ id: "notifications.remoteRing.connectChild" })}
             </button>

@@ -143,6 +143,15 @@ test("정상 로그아웃 후에는 다른 설치가 계정 잠금을 인계할 
   assert.equal(await checkAccountDeviceSession(db, "user-a", "device-a", now), "inactive");
 });
 
+test("해제된 설치의 device claim 없는 구 access token도 legacy로 되살아나지 않는다", async () => {
+  const { db } = fixture();
+  const now = at("2026-08-20T00:00:00.000Z");
+  await claimAccountDeviceSession(db, "user-a", { deviceId: "device-a" }, now);
+  await releaseAccountDeviceSession(db, "user-a", "device-a", now);
+
+  assert.equal(await checkAccountDeviceSession(db, "user-a", null, now), "inactive");
+});
+
 test("새 기기 로그인은 이전 설치·refresh·푸시를 원자적으로 교체한다", async () => {
   const { sqlite, db } = fixture();
   const initial = at("2026-08-20T00:00:00.000Z");

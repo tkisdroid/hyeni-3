@@ -42,8 +42,8 @@ test("부모·연결 화면의 긴 한국어 문구는 의미 단위 줄바꿈�
   const arrival = readCss("src/screens/feature/ArrivalAlerts.css");
   const pairing = readCss("src/screens/feature/PairingWizard.css");
 
-  assertPrettyKoreanWrap(selectorBlock(family, ".pf-invite-card__sub"), ".pf-invite-card__sub");
-  assertPrettyKoreanWrap(selectorBlock(family, ".pf-paircode__hint"), ".pf-paircode__hint");
+  assertPrettyKoreanWrap(selectorBlock(family, ".pf-paircode__intro"), ".pf-paircode__intro");
+  assertPrettyKoreanWrap(selectorBlock(family, ".pf-paircode__target-sub"), ".pf-paircode__target-sub");
   assertPrettyKoreanWrap(selectorBlock(location, ".pl-lock__sub"), ".pl-lock__sub");
   assertPrettyKoreanWrap(selectorBlock(arrival, ".aa-item__title"), ".aa-item__title");
   assertPrettyKoreanWrap(selectorBlock(arrival, ".aa-item__detail"), ".aa-item__detail");
@@ -55,8 +55,8 @@ test("가족 연결과 위치 잠금 안내는 강제 줄바꿈 없이 폭에 �
   const location = readFileSync(resolve(rootDir, "src/screens/parent/ParentLocation.tsx"), "utf8");
   const koParent = JSON.parse(readFileSync(resolve(rootDir, "locales/ko/parent.json"), "utf8"));
 
-  assert.ok(family.includes("parent.parentFamily.copy022"));
-  assert.match(koParent["parent.parentFamily.copy022"], /학부모.*아이.*먼저 선택/);
+  assert.ok(family.includes("parent.parentFamily.connectionTargetDescription"));
+  assert.match(koParent["parent.parentFamily.connectionTargetDescription"], /연결할 사람.*먼저 선택.*역할 전용 QR/);
   assert.doesNotMatch(location, /<br\s*\/?>/);
 });
 

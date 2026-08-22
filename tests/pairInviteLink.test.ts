@@ -5,7 +5,6 @@ import { readFileSync } from "node:fs";
 
 const {
   buildPairLink,
-  buildPairRoleChoiceLink,
   parsePairInviteFromLocation,
   removePairInviteParams,
 } = await import("../src/transform/pairLink.ts");
@@ -15,11 +14,9 @@ test("아이와 공동 보호자 초대 링크는 역할 의도를 URL에 명시
   assert.match(buildPairLink("kid-ab12cd34", "parent"), /pair=KID-AB12CD34&as=parent$/);
 });
 
-test("아이관리 공용 QR은 자녀 역할을 추정하지 않고 역할 선택 링크를 만든다", () => {
-  const link = buildPairRoleChoiceLink("kid-ab12cd34");
-
-  assert.match(link, /pair=KID-AB12CD34$/);
-  assert.doesNotMatch(link, /[?&]as=(?:child|parent)(?:&|$)/);
+test("새 초대 링크 생성기는 역할 없는 QR을 만들 수 없다", () => {
+  const source = readFileSync(new URL("../src/transform/pairLink.ts", import.meta.url), "utf8");
+  assert.doesNotMatch(source, /export function buildPairRoleChoiceLink/);
 });
 
 test("HashRouter 초대는 코드·역할·legacy 여부를 함께 복원한다", () => {

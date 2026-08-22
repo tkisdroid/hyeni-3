@@ -11,6 +11,7 @@ import {
   updateMyProfile,
   regeneratePairCode,
   unpairChild,
+  removeCoParent,
   setChildProfile,
   reportDeviceStatus,
   sendChildSettingRequest,
@@ -87,6 +88,19 @@ export function useUnpairChild() {
     mutationFn: (childUserId: string) => {
       if (!familyId) throw new Error("가족 정보가 없어요");
       return unpairChild(familyId, childUserId);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.family(familyId) }),
+  });
+}
+
+/** 기존 공동 보호자 연결 해제(주 보호자만) → 가족 캐시 무효화. */
+export function useRemoveCoParent() {
+  const qc = useQueryClient();
+  const { familyId } = useAuth();
+  return useMutation({
+    mutationFn: (parentUserId: string) => {
+      if (!familyId) throw new Error("가족 정보가 없어요");
+      return removeCoParent(familyId, parentUserId);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.family(familyId) }),
   });

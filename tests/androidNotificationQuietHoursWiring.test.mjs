@@ -97,7 +97,7 @@ test("Capacitor adapter는 웹 no-op과 native 저장 거부를 구분한다", (
   assert.match(adapter, /export interface NativeQuietHoursInput/);
   assert.match(adapter, /timeZoneId: "Asia\/Seoul"/);
   assert.match(adapter, /updatedAtMs: number/);
-  assert.match(adapter, /if \(!isNativePlatform\(\)\) return true/);
+  assert.match(adapter, /if \(getPlatform\(\) !== "android"\) return true/);
   assert.match(adapter, /getNativePlugin<[^>]+>\("NativeNotification"\)/s);
   assert.match(adapter, /if \(!plugin\) return false/);
   assert.match(adapter, /await plugin\.setQuietHours\(input\)/);

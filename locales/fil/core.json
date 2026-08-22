@@ -108,5 +108,7 @@
   "core.time.remaining": "{duration} ang natitira",
   "core.error.api.parentRoleMismatch.formal": "Guardian account na ito. Gamitin ang invitation link para sa co-guardian.",
   "core.error.api.parentRoleRequired.formal": "Mag-sign in gamit ang guardian account, pagkatapos ay subukang muli ang co-guardian connection.",
-  "core.error.api.childRoleRequired.formal": "Ikonekta ang device ng bata mula sa Child mode."
+  "core.error.api.childRoleRequired.formal": "Ikonekta ang device ng bata mula sa Child mode.",
+  "core.error.api.coparentSlotOccupied.formal": "May nakakonekta nang isang co-guardian. Hilingin sa primary guardian na idiskonekta muna ang kasalukuyang guardian at subukan muli.",
+  "core.error.api.pairingConfirmationFailed.formal": "Hindi nakumpirma ng server ang role at family connection. Hindi binago ang iyong role; pakisubukang muli."
 }

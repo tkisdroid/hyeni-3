@@ -8,12 +8,13 @@ function read(relativePath) {
   return readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf8");
 }
 
-test("CORS는 배포 PWA·Android WebView·고정 로컬 개발 origin만 허용한다", () => {
+test("CORS는 배포 PWA·Android/iOS WebView·고정 로컬 개발 origin만 허용한다", () => {
   for (const origin of [
     "https://hyenicalendar.com",
     "https://www.hyenicalendar.com",
     "https://hyeni-calendar.pages.dev",
     "https://localhost",
+    "capacitor://localhost",
     "http://localhost",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
@@ -27,6 +28,7 @@ test("CORS는 배포 PWA·Android WebView·고정 로컬 개발 origin만 허용
     "https://www.hyenicalendar.com.evil.example",
     "https://hyeni-calendar.pages.dev.evil.example",
     "https://preview.hyeni-calendar.pages.dev",
+    "capacitor://localhost.evil.example",
     "http://localhost.evil.example:5173",
   ]) {
     assert.equal(resolveCorsOrigin(origin), undefined);

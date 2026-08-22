@@ -1,6 +1,10 @@
-import { getNativePlugin, isNativePlatform } from "./plugins";
+import { getNativePlugin, getPlatform, isNativePlatform } from "./plugins";
 
 export type PermissionKind = "loc" | "noti" | "battery" | "mic";
+
+function usesAndroidNativePermissions(): boolean {
+  return isNativePlatform() && getPlatform() === "android";
+}
 
 export interface PermissionState {
   supported: boolean;
@@ -204,7 +208,7 @@ async function readWebPermissionState(kind: PermissionKind): Promise<PermissionS
 /** OS·브라우저가 현재 보고하는 실제 권한 상태를 읽는다. 조회 실패는 granted로 추정하지 않는다. */
 export async function readPermissionState(kind: PermissionKind): Promise<PermissionState> {
   try {
-    return isNativePlatform()
+    return usesAndroidNativePermissions()
       ? await readNativePermissionState(kind)
       : await readWebPermissionState(kind);
   } catch (error) {
@@ -238,7 +242,7 @@ async function requestStagedNativeLocationPermission(
 
 /** prominent disclosure 확인 직후 전경 위치만 요청한다. */
 export async function requestForegroundLocationPermission(): Promise<StagedLocationPermissionResult> {
-  if (!isNativePlatform()) {
+  if (!usesAndroidNativePermissions()) {
     await requestGeolocation();
     const state = await readWebPermissionState("loc");
     return { ...state, step: state.granted ? "foregroundComplete" : "foregroundDenied" };
@@ -248,7 +252,7 @@ export async function requestForegroundLocationPermission(): Promise<StagedLocat
 
 /** 전경 권한 완료 뒤 별도 교육 화면의 사용자 버튼에서 백그라운드 위치만 요청한다. */
 export async function requestBackgroundLocationPermission(): Promise<StagedLocationPermissionResult> {
-  if (!isNativePlatform()) return { supported: false, granted: false, step: "unsupported" };
+  if (!usesAndroidNativePermissions()) return { supported: false, granted: false, step: "unsupported" };
   return requestStagedNativeLocationPermission("background");
 }
 
@@ -320,7 +324,7 @@ async function requestWebPermission(kind: PermissionKind): Promise<void> {
 /** 사용자 버튼에서 OS 설정을 열거나 브라우저 권한을 요청한 뒤, 확인된 상태만 반환한다. */
 export async function requestOrOpenPermission(kind: PermissionKind): Promise<PermissionState> {
   try {
-    if (isNativePlatform()) await requestNativePermission(kind);
+    if (usesAndroidNativePermissions()) await requestNativePermission(kind);
     else await requestWebPermission(kind);
   } catch (error) {
     console.error(`[permission] ${kind} 권한 요청 실패:`, error);

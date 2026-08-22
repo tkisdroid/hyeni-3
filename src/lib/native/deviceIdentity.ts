@@ -52,10 +52,9 @@ function clean(value: unknown): string | null {
 }
 
 // 인증(refresh 회전·로그인)에 싣는 기기 id — refresh 체인 기기 바인딩용.
-// 네이티브에선 반드시 네이티브 서비스와 같은 deviceInstallId 를 써야 하므로(불일치 시 회전 거부),
-// 첫 성공 조회를 localStorage 에 고정 캐시하고 이후엔 플러그인 왕복 없이 재사용한다.
-// 네이티브 플러그인 조회가 실패한 시점엔 웹 폴백 id 를 캐시하지 않고 null 을 반환한다
-// (스탬핑된 체인에 다른 id 를 제시해 세션이 풀리는 것 방지 — id 없인 레거시 체인만 회전 가능).
+// Android는 위치·푸시 서비스와 같은 deviceInstallId를 써야 하므로(불일치 시 회전 거부)
+// 플러그인 값을 기다린다. iOS 부모 앱에는 해당 Android 서비스가 없으므로 WebView 설치 저장소의
+// UUID를 사용한다. 첫 성공 값을 별도 키에 고정해 로그인·refresh·로그아웃이 같은 설치를 가리킨다.
 const AUTH_DEVICE_ID_KEY = "hyeni-auth-device-id-v1";
 let authDeviceIdMemo: string | null = null;
 
@@ -71,10 +70,10 @@ export async function getAuthDeviceInstallId(): Promise<string | null> {
     /* localStorage 접근 불가 → 아래 경로로 */
   }
   let resolved: string | null = null;
-  if (isNativePlatform()) {
+  if (isNativePlatform() && getPlatform() === "android") {
     const native = await readNativePushContext();
     resolved = clean(native?.deviceInstallId);
-    if (!resolved) return null; // 네이티브 id 확보 전엔 캐시/폴백 금지
+    if (!resolved) return null; // Android 서비스 id 확보 전엔 다른 id로 체인을 스탬핑하지 않는다.
   } else {
     resolved = getOrCreateDeviceInstallId();
   }

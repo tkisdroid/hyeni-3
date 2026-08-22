@@ -1,7 +1,7 @@
 /**
  * 네이티브 플러그인 접근 기반(hyeni-1 nativePlugins.js 이관).
- * Capacitor 네이티브(Android)에서만 플러그인을 등록/반환, 웹에선 null → 화면이 폴백.
- * 커스텀 플러그인(Java)은 android/ MainActivity 에 registerPlugin 으로 등록돼 있다.
+ * Capacitor 네이티브에서 플러그인을 등록/반환하고 웹에선 null → 화면이 폴백한다.
+ * 프로젝트 커스텀 플러그인(Java)은 Android MainActivity에 등록돼 있으며 iOS는 공식 플러그인만 사용한다.
  */
 import { Capacitor, registerPlugin } from "@capacitor/core";
 
@@ -45,6 +45,11 @@ function asNonThenable<T extends object>(plugin: T): T {
  */
 export function getNativePlugin<T extends object = PluginShape>(name: string): T | null {
   if (!name || !isNativePlatform()) return null;
+  try {
+    if (!Capacitor.isPluginAvailable(name)) return null;
+  } catch {
+    return null;
+  }
   const cached = cache.get(name);
   if (cached) return cached as T;
   const plugin = asNonThenable(registerPlugin<T>(name));

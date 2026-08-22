@@ -174,7 +174,7 @@ export function StickerSend() {
         heading={intl.formatMessage({ id: "shared.stickerSend.emptyHeading" })}
         description={intl.formatMessage({ id: "shared.stickerSend.emptyDescription" })}
         onBack={() => navigate(-1)}
-        onRetry={() => navigate("/child-invite")}
+        onRetry={() => navigate("/child-invite?role=child")}
         retryLabel={intl.formatMessage({ id: "shared.stickerSend.connectChild" })}
       />
     );

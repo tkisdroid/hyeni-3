@@ -147,6 +147,35 @@ test("child·공동 보호자 pairing 실패는 legacy error와 stable code를 �
   }
 });
 
+test("공동 보호자 자리가 찬 실패는 교체 방법을 안내할 stable code를 반환한다", async () => {
+  const { app, env, sqlite } = setup();
+  for (const userId of ["primary-parent", "current-coparent", "next-coparent"]) {
+    sqlite.prepare("INSERT INTO users(id,is_anonymous) VALUES (?,0)").run(userId);
+  }
+  sqlite.prepare(
+    "INSERT INTO families(id,parent_id,pair_code,created_at) VALUES ('occupied-family','primary-parent','KID-OCCUPIED','2026-08-23')",
+  ).run();
+  sqlite.prepare(
+    `INSERT INTO family_members(id,family_id,user_id,role,name,is_active,created_at) VALUES
+       ('primary-member','occupied-family','primary-parent','parent','주 보호자',1,'2026-08-23'),
+       ('coparent-member','occupied-family','current-coparent','parent','기존 보호자',1,'2026-08-23')`,
+  ).run();
+
+  const response = await post(
+    app,
+    env,
+    "/api/family/join-as-parent",
+    { pairCode: "KID-OCCUPIED", device_install_id: "next-coparent-device" },
+    await authorization("next-coparent", "parent", false),
+  );
+
+  assert.equal(response.status, 409);
+  assert.deepEqual(await response.json(), {
+    error: "이미 보조 보호자가 등록되어 있어요",
+    code: "coparent_slot_occupied",
+  });
+});
+
 test("signup 입력·중복·OTP 실패는 실제 응답 payload에 stable code만 담는다", async () => {
   const { app, env, sqlite } = setup();
   sqlite.prepare(
@@ -352,4 +381,80 @@ test("잘못된 비밀번호 뒤에도 입력 계정의 세션은 생기지 않�
   assert.equal("password" in payload, false);
   assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM login_attempts WHERE login_id='passwordparent'").get().n, 0);
   assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM account_device_sessions WHERE user_id='password-parent' AND revoked_at IS NULL").get().n, 1);
+});
+
+test("PC 재로그인은 iPhone 세션만 닫고 같은 가족·아이 정본을 새 설치에 유지한다", async () => {
+  const { app, env, sqlite } = setup();
+  const passwordHash = await hashPassword("takeover-password");
+  sqlite.prepare(
+    `INSERT INTO users(id,phone,encrypted_password,is_anonymous,raw_user_meta_data,created_at)
+     VALUES
+       ('takeover-parent','821077771111',?,0,'{}','2026-08-23'),
+       ('takeover-child',NULL,NULL,0,'{}','2026-08-23')`,
+  ).run(passwordHash);
+  sqlite.prepare(
+    `INSERT INTO user_profiles(user_id,display_name,login_id,phone,created_at,updated_at)
+     VALUES ('takeover-parent','보호자','takeoverparent','+821077771111','2026-08-23','2026-08-23')`,
+  ).run();
+  sqlite.prepare(
+    `INSERT INTO families(id,parent_id,parent_name,pair_code,created_at)
+     VALUES ('takeover-family','takeover-parent','보호자','KID-TAKEOVER','2026-08-23')`,
+  ).run();
+  sqlite.prepare(
+    `INSERT INTO family_members(id,family_id,user_id,role,name,is_active,created_at) VALUES
+       ('takeover-parent-member','takeover-family','takeover-parent','parent','보호자',1,'2026-08-23'),
+       ('takeover-child-member','takeover-family','takeover-child','child','혜니',1,'2026-08-23')`,
+  ).run();
+
+  const iphoneLogin = await post(app, env, "/auth/login-password", {
+    loginId: "takeoverparent",
+    password: "takeover-password",
+    device_install_id: "iphone-install",
+    device_label: "보호자 iPhone",
+    device_platform: "ios",
+  });
+  assert.equal(iphoneLogin.status, 200, await iphoneLogin.clone().text());
+  const iphone = await iphoneLogin.json();
+
+  const pcLogin = await post(app, env, "/auth/login-password", {
+    loginId: "takeoverparent",
+    password: "takeover-password",
+    device_install_id: "pc-browser-install",
+    device_label: "보호자 PC",
+    device_platform: "web",
+  });
+  assert.equal(pcLogin.status, 200, await pcLogin.clone().text());
+  const pc = await pcLogin.json();
+
+  const oldRefresh = await post(app, env, "/auth/refresh", {
+    refresh_token: iphone.session.refresh_token,
+    device_install_id: "iphone-install",
+    device_platform: "ios",
+  });
+  assert.equal(oldRefresh.status, 401);
+  assert.deepEqual(await oldRefresh.json(), { error: "device_session_inactive" });
+
+  const oldFamily = await app.request("http://test.local/api/family/mine", {
+    headers: { authorization: `Bearer ${iphone.session.access_token}` },
+  }, env);
+  assert.equal(oldFamily.status, 401);
+  assert.deepEqual(await oldFamily.json(), { error: "device_session_inactive" });
+
+  const pcFamily = await app.request("http://test.local/api/family/mine", {
+    headers: { authorization: `Bearer ${pc.session.access_token}` },
+  }, env);
+  assert.equal(pcFamily.status, 200, await pcFamily.clone().text());
+  const family = await pcFamily.json();
+  assert.equal(family.familyId, "takeover-family");
+  assert.ok(family.members.some((member) => member.user_id === "takeover-child" && member.name === "혜니"));
+  assert.deepEqual({ ...sqlite.prepare(
+    "SELECT device_id,device_platform,revoked_at FROM account_device_sessions WHERE user_id='takeover-parent'",
+  ).get() }, {
+    device_id: "pc-browser-install",
+    device_platform: "web",
+    revoked_at: null,
+  });
+  assert.equal(sqlite.prepare(
+    "SELECT COUNT(*) AS n FROM refresh_tokens WHERE user_id='takeover-parent' AND revoked=0",
+  ).get().n, 1);
 });

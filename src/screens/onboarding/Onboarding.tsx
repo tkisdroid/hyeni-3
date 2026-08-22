@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState, useSyncExternalStore } fro
 import type { ReactNode } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { useNavigate } from "react-router";
-import { Camera, Check, ChevronLeft, ChevronRight, Link2 } from "lucide-react";
+import { Camera, Check, ChevronLeft, ChevronRight, Link2, LogOut } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { deriveAuthState, useAuth } from "@/auth/AuthContext";
@@ -53,6 +53,8 @@ import { hasNaverClientId } from "@/config/env";
 import { TEACHER_MODE_ENABLED } from "@/config/releaseFeatures";
 import type { OAuthProvider } from "@/transform/oauthProvider";
 import { normalizePairCodeInput } from "@/transform/pairCode";
+import { isPairingMembershipConfirmed } from "@/transform/pairingConfirmation";
+import { consumeSessionEndReason } from "@/auth/sessionEndReason";
 
 // QrScanner(+jsQR 폴백 디코더)는 스캔 버튼을 누른 시점에만 내려받는다.
 const QrScanner = lazy(() =>
@@ -94,7 +96,7 @@ import {
 import "./Onboarding.css";
 import { localizeApiError } from "@/i18n/apiError";
 import { useLocale } from "@/i18n/useLocale";
-import { isApiError } from "@/lib/api/errors";
+import { ApiError, isApiError } from "@/lib/api/errors";
 import { socialProvidersForAccessCountry } from "@/transform/accessCountry";
 import {
   resolvePairInviteAction,
@@ -155,6 +157,9 @@ export function Onboarding() {
   );
   const [initialDraft] = useState(() => readOnboardingDraft());
   const [initialAuthState] = useState(() => deriveAuthState());
+  const [sessionEndedOnAnotherDevice] = useState(
+    () => consumeSessionEndReason() === "device_session_inactive",
+  );
   const [step, setStep] = useState<Step>(() =>
     initialDraft?.signupMethod
       ? "survey"
@@ -680,6 +685,7 @@ export function Onboarding() {
           busy={busy || authCommitBoundaryActive}
           childStarting={childStarting}
           legacyInvite={Boolean(pendingPairInvite && !pendingPairInvite.roleExplicit)}
+          sessionEndedOnAnotherDevice={sessionEndedOnAnotherDevice}
           onParent={() => {
             if (authCommitBoundaryActive) return;
             cancelOnboardingAuthTransitions();
@@ -739,6 +745,7 @@ export function Onboarding() {
           accessCountry={accessCountry}
           intent={authIntent}
           parentInvite={pendingPairInvite?.role === "parent"}
+          sessionEndedOnAnotherDevice={sessionEndedOnAnotherDevice}
           onIntentChange={(nextIntent) => {
             setAuthIntent(nextIntent);
             setAuthEntryError(null);
@@ -1078,6 +1085,7 @@ function RoleStep({
   busy,
   childStarting,
   legacyInvite,
+  sessionEndedOnAnotherDevice,
   onParent,
   onChild,
   onTeacher,
@@ -1085,6 +1093,7 @@ function RoleStep({
   busy: boolean;
   childStarting: boolean;
   legacyInvite: boolean;
+  sessionEndedOnAnotherDevice: boolean;
   onParent: () => void;
   onChild: () => void;
   onTeacher: () => void;
@@ -1106,6 +1115,8 @@ function RoleStep({
         <div className="ob-role-title">{intl.formatMessage({ id: "core.brand.name" })}</div>
         <div className="ob-role-sub">{intl.formatMessage({ id: "onboarding.role.subtitle" })}</div>
       </div>
+
+      <SessionEndNotice visible={sessionEndedOnAnotherDevice} />
 
       {legacyInvite && (
         <div className="ob-invite-context" role="status">
@@ -1280,6 +1291,7 @@ function LoginStep({
   accessCountry,
   intent,
   parentInvite,
+  sessionEndedOnAnotherDevice,
   onIntentChange,
   authError,
   onAuthError,
@@ -1296,6 +1308,7 @@ function LoginStep({
   accessCountry: string;
   intent: AuthIntent;
   parentInvite: boolean;
+  sessionEndedOnAnotherDevice: boolean;
   onIntentChange: (intent: AuthIntent) => void;
   authError: string | null;
   onAuthError: (message: string | null) => void;
@@ -1403,6 +1416,7 @@ function LoginStep({
   return (
     <div className="ob-step ob-login">
       <BackButton onBack={onBack} disabled={loginNavigationLocked} />
+      <SessionEndNotice visible={sessionEndedOnAnotherDevice} />
       {parentInvite && (
         <div className="ob-invite-context" role="status">
           <Link2 size={18} strokeWidth={2.3} aria-hidden="true" />
@@ -1590,6 +1604,17 @@ function LoginStep({
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function SessionEndNotice({ visible }: { visible: boolean }) {
+  const intl = useIntl();
+  if (!visible) return null;
+  return (
+    <div className="ob-session-end" role="alert">
+      <LogOut size={18} strokeWidth={2.3} aria-hidden="true" />
+      <span>{intl.formatMessage({ id: "onboarding.session.deviceInactive" })}</span>
     </div>
   );
 }
@@ -2297,15 +2322,26 @@ function PairingStep({
     try {
       // 화면에 명시된 초대 역할을 그대로 전송한다. 세션 역할이 다르면 Worker가
       // stable role error로 거부해 다른 가족 역할로 조용히 등록되는 일을 막는다.
+      let joinedFamilyId: string | null;
       if (mode === "child") {
         const nextHint = await readChildDeviceIdentityHint();
         onPermissionTransitionStart();
         permissionTransitionStarted = true;
-        await joinFamily(code, childJoinHint ?? nextHint);
+        joinedFamilyId = await joinFamily(code, childJoinHint ?? nextHint);
       } else {
         onPermissionTransitionStart();
         permissionTransitionStarted = true;
-        await joinFamilyAsParent(code);
+        joinedFamilyId = await joinFamilyAsParent(code);
+      }
+      const confirmedFamily = await getMyFamily();
+      const confirmedSession = deriveAuthState();
+      if (!isPairingMembershipConfirmed({
+        mode,
+        expectedFamilyId: joinedFamilyId,
+        session: confirmedSession,
+        family: confirmedFamily,
+      })) {
+        throw new ApiError("pairing_confirmation_failed", 409);
       }
       onPaired();
       show(intl.formatMessage({ id: "onboarding.toast.familyConnected" }), "🔗");

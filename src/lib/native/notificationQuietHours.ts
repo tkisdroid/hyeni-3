@@ -1,4 +1,4 @@
-import { getNativePlugin, isNativePlatform } from "./plugins";
+import { getNativePlugin, getPlatform } from "./plugins";
 
 export interface NativeQuietHoursInput {
   userId: string;
@@ -22,7 +22,7 @@ interface NativeNotificationQuietHoursPlugin {
 export async function syncNativeNotificationQuietHours(
   input: NativeQuietHoursInput,
 ): Promise<boolean> {
-  if (!isNativePlatform()) return true;
+  if (getPlatform() !== "android") return true;
   const plugin = getNativePlugin<NativeNotificationQuietHoursPlugin>("NativeNotification");
   if (!plugin) return false;
   try {

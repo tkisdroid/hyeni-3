@@ -108,5 +108,7 @@
   "core.time.remaining": "{duration} còn lại",
   "core.error.api.parentRoleMismatch.formal": "Đây đã là tài khoản người giám hộ. Vui lòng dùng liên kết mời người giám hộ chung.",
   "core.error.api.parentRoleRequired.formal": "Hãy đăng nhập bằng tài khoản người giám hộ rồi thử kết nối người giám hộ chung lại.",
-  "core.error.api.childRoleRequired.formal": "Hãy kết nối thiết bị của trẻ từ Chế độ trẻ em."
+  "core.error.api.childRoleRequired.formal": "Hãy kết nối thiết bị của trẻ từ Chế độ trẻ em.",
+  "core.error.api.coparentSlotOccupied.formal": "Đã có một người giám hộ chung được kết nối. Hãy nhờ người giám hộ chính ngắt kết nối người hiện tại rồi thử lại.",
+  "core.error.api.pairingConfirmationFailed.formal": "Máy chủ chưa xác nhận được vai trò và kết nối gia đình. Vai trò của bạn chưa thay đổi; vui lòng thử lại."
 }

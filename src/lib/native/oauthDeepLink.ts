@@ -3,8 +3,8 @@
  *
  * 흐름(네이티브):
  *   1. startWorkerOAuth 가 시스템 브라우저로 Worker /start 를 연다.
- *   2. provider 로그인 완료 → Worker가 검증된 HTTPS App Link로 code/state를 반환한다.
- *   3. Android가 assetlinks 서명을 확인한 공식 앱만 열고 appUrlOpen(또는 실행 인텐트)으로 URL을 전달한다.
+ *   2. provider 로그인 완료 → Worker가 플랫폼별로 고정된 callback에 code/state를 반환한다.
+ *   3. Android는 검증된 HTTPS App Link, iOS는 등록된 전용 URL scheme으로 앱을 열어 URL을 전달한다.
  *   4. 여기서 파싱 → finishOAuthLogin(code 교환 + 세션 적용) → AuthProvider 가 토큰변경으로 상태 재동기화.
  *
  * ★ 인가코드는 1회용이다(2026-07-10 실기기 실측).
@@ -65,7 +65,7 @@ export const OAUTH_LINK_EVENT = "hyeni:oauth-link";
 export type OAuthResultHandler = (result: OAuthDeepLinkResult) => void;
 
 /**
- * 검증 App Link URL → {provider, code, state} 파싱.
+ * 플랫폼별 고정 callback URL → {provider, code, state} 파싱.
  * 스킴/코드/지원 provider 가 아니면 null. 파라미터는 fragment(#) 우선, 없으면 query(?) 에서 읽는다
  * (Worker 는 query 로 보내지만 fragment 형태도 안전하게 커버 — hyeni-1 계약).
  */

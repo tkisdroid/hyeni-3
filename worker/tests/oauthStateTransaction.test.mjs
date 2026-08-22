@@ -73,6 +73,10 @@ test("OAuth 복귀 대상은 고정 앱 딥링크와 승인된 정확한 웹 ori
     resolveOAuthRedirectTarget("native", "https://evil.example"),
     "https://hyeni-calendar.pages.dev/oauth/callback",
   );
+  assert.equal(
+    resolveOAuthRedirectTarget("ios", "https://evil.example"),
+    "com.hyeni.calendar.oauth://oauth/callback",
+  );
   assert.equal(resolveOAuthRedirectTarget("web", "https://hyeni-calendar.pages.dev"), "https://hyeni-calendar.pages.dev");
   assert.equal(resolveOAuthRedirectTarget("web", "https://hyenicalendar.com"), "https://hyenicalendar.com");
   assert.equal(
@@ -95,6 +99,10 @@ test("OAuth 복귀 대상은 고정 앱 딥링크와 승인된 정확한 웹 ori
   assert.equal(parseOAuthPrepareBody({ client: "web", webOrigin: "https://evil.example" }), null);
   assert.deepEqual(parseOAuthPrepareBody({ client: "native", webOrigin: "https://evil.example" }), {
     clientKind: "native",
+    webOrigin: "https://evil.example",
+  });
+  assert.deepEqual(parseOAuthPrepareBody({ client: "ios", webOrigin: "https://evil.example" }), {
+    clientKind: "ios",
     webOrigin: "https://evil.example",
   });
 });

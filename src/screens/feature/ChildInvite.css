@@ -70,6 +70,90 @@
 
 }
 
+.ci-role-list {
+  width: 100%;
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+}
+.ci-role-card {
+  width: 100%;
+  min-height: 92px;
+  padding: 16px;
+  border: 1px solid var(--line-card);
+  border-radius: var(--radius-16);
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  --press: 0.98;
+}
+.ci-role-card__icon {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-16);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.ci-role-card__icon--child {
+  background: var(--mint-soft);
+  color: var(--mint-text);
+}
+.ci-role-card__icon--parent {
+  background: var(--cream-soft);
+  color: var(--gold-text);
+}
+.ci-role-card__main {
+  flex: 1;
+  min-width: 0;
+}
+.ci-role-card__title,
+.ci-role-card__description {
+  display: block;
+}
+.ci-role-card__title {
+  color: var(--fg-primary);
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+}
+.ci-role-card__description {
+  margin-top: 4px;
+  color: var(--fg-muted);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+.ci-role-state {
+  width: 100%;
+  min-height: 120px;
+  margin-top: 24px;
+  padding: 20px;
+  border-radius: var(--radius-16);
+  background: #fff;
+  box-shadow: none;
+  color: var(--fg-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+}
+.ci-role-state--error {
+  color: var(--danger-text);
+}
+.ci-role-state .ci-regen {
+  margin-top: 0;
+}
+
 /* ── QR 카드 ────────────────────────────────────────────────────────────── */
 .ci-qr-card {
   margin-top: 20px;
@@ -178,6 +262,51 @@
   background: var(--cta-grad-lavender);
   color: #fff;
   box-shadow: 0 10px 22px -10px rgba(139, 107, 236, 0.7);
+}
+.ci-btn--manage {
+  width: 100%;
+  margin-top: 16px;
+  background: var(--cta-grad-lavender);
+  color: #fff;
+}
+
+.ci-occupied {
+  width: 100%;
+  margin-top: 24px;
+  padding: 20px;
+  border: 1px solid var(--line-card);
+  border-radius: var(--radius-16);
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+  color: var(--fg-primary);
+  text-align: center;
+}
+.ci-occupied__icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 12px;
+  border-radius: var(--radius-16);
+  background: var(--cream-soft);
+  color: var(--gold-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ci-occupied strong {
+  display: block;
+  font-size: var(--type-title);
+  line-height: var(--type-title-line-height);
+  font-weight: var(--type-title-weight);
+}
+.ci-occupied p {
+  margin: 8px 0 0;
+  color: var(--fg-muted);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
 .ci-regen {

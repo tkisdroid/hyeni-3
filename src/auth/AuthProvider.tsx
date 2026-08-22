@@ -54,7 +54,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // 토큰 회전(client.ts refreshAccess → notifyTokens) 시 상태 반영.
   useEffect(() => {
-    setOnApiTokensChanged(() => {
+    setOnApiTokensChanged((tokens) => {
+      if (!tokens.access) {
+        queryClient.clear();
+        void stopLocationTracking({ clearSession: true });
+        void syncWebPushSessionContext(null);
+      }
       syncFromSession();
       void syncNativeLocationToken();
     });

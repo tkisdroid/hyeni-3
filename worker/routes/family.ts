@@ -1339,7 +1339,10 @@ family.post("/join-as-parent", requireAuth, async (c) => {
     .bind(familyId, fam.parent_id, userId)
     .first<{ user_id: string }>();
   if (existingCoparent) {
-    return c.json({ error: "이미 보조 보호자가 등록되어 있어요" }, 400);
+    return c.json({
+      error: "이미 보조 보호자가 등록되어 있어요",
+      code: "coparent_slot_occupied",
+    }, 409);
   }
 
   // 기존 행 여부만 먼저 고르고, 실제 활성화/삽입은 같은 SQL 문 안에서 현재 활성
@@ -1417,7 +1420,12 @@ family.post("/join-as-parent", requireAuth, async (c) => {
           WHERE family_id=? AND role='parent' AND is_active=1 AND user_id IS NOT NULL
             AND user_id<>? AND user_id<>? LIMIT 1`,
       ).bind(familyId, fam.parent_id, userId).first<{ ok: number }>();
-      if (winner) return c.json({ error: "이미 보조 보호자가 등록되어 있어요" }, 400);
+      if (winner) {
+        return c.json({
+          error: "이미 보조 보호자가 등록되어 있어요",
+          code: "coparent_slot_occupied",
+        }, 409);
+      }
       return c.json({ error: "join_session_invalidated" }, 409);
     }
   } else {
@@ -1478,7 +1486,12 @@ family.post("/join-as-parent", requireAuth, async (c) => {
           WHERE family_id=? AND role='parent' AND is_active=1 AND user_id IS NOT NULL
             AND user_id<>? AND user_id<>? LIMIT 1`,
       ).bind(familyId, fam.parent_id, userId).first<{ ok: number }>();
-      if (winner) return c.json({ error: "이미 보조 보호자가 등록되어 있어요" }, 400);
+      if (winner) {
+        return c.json({
+          error: "이미 보조 보호자가 등록되어 있어요",
+          code: "coparent_slot_occupied",
+        }, 409);
+      }
       return c.json({ error: "join_session_invalidated" }, 409);
     }
   }
@@ -1569,7 +1582,7 @@ family.get("/mine", requireAuth, async (c) => {
       await safeRun(c.env.DB, "UPDATE families SET pair_code=? WHERE id=?", [finalPairCode, pf.id]);
     }
     const { results } = await c.env.DB.prepare(
-      `SELECT ${MEMBER_COLS} FROM family_members WHERE family_id=? AND NOT (role='child' AND is_active=0)`,
+      `SELECT ${MEMBER_COLS} FROM family_members WHERE family_id=? AND is_active=1`,
     )
       .bind(pf.id)
       .all<Record<string, unknown>>();
@@ -1604,7 +1617,7 @@ family.get("/mine", requireAuth, async (c) => {
   }
 
   const { results } = await c.env.DB.prepare(
-    `SELECT ${MEMBER_COLS} FROM family_members WHERE family_id=? AND NOT (role='child' AND is_active=0)`,
+    `SELECT ${MEMBER_COLS} FROM family_members WHERE family_id=? AND is_active=1`,
   )
     .bind(membership.family_id)
     .all<Record<string, unknown>>();
@@ -1885,6 +1898,113 @@ family.post("/member/photo", requireAuth, async (c) => {
     .run();
   await notifyPg(c.env, familyId, "family_members", "UPDATE", { id: memberId, family_id: familyId }, null);
   return c.json({ ok: true });
+});
+
+// ── POST /co-parent/remove — 공동 보호자 연결 해제(주 보호자만) ─────────────
+family.post("/co-parent/remove", requireAuth, async (c) => {
+  const userId = c.get("user").sub;
+  const body = await c.req.json<Record<string, unknown>>();
+  const familyId = String(body.family_id ?? "").trim();
+  const parentUserId = String(body.parent_user_id ?? "").trim();
+  if (!familyId || !parentUserId) {
+    return c.json({ error: "family_id/parent_user_id required", code: "invalid_coparent_target" }, 400);
+  }
+  if (!(await assertPrimaryParent(c.env.DB, userId, familyId))) {
+    return c.json({ error: "forbidden", code: "primary_parent_required" }, 403);
+  }
+  if (parentUserId === userId) {
+    return c.json({ error: "cannot_remove_primary_parent", code: "cannot_remove_primary_parent" }, 400);
+  }
+
+  const member = await c.env.DB.prepare(
+    `SELECT id,is_active FROM family_members
+      WHERE family_id=? AND user_id=? AND role='parent'
+      LIMIT 1`,
+  )
+    .bind(familyId, parentUserId)
+    .first<{ id: string; is_active: number }>();
+  if (!member) {
+    return c.json({ error: "coparent_not_found", code: "coparent_not_found" }, 404);
+  }
+
+  const alreadyRemoved = Number(member.is_active) !== 1;
+  const now = new Date().toISOString();
+  let results: D1Result<unknown>[];
+  try {
+    results = await c.env.DB.batch([
+      c.env.DB.prepare(
+        `UPDATE family_members SET is_active=0,last_selected_at=NULL
+          WHERE id=? AND family_id=? AND user_id=? AND role='parent' AND is_active=1
+            AND user_id<>?
+            AND EXISTS(SELECT 1 FROM families WHERE id=? AND parent_id=?)`,
+      ).bind(member.id, familyId, parentUserId, userId, familyId, userId),
+      c.env.DB.prepare(
+        `UPDATE refresh_tokens SET revoked=1
+          WHERE user_id=? AND revoked=0
+            AND EXISTS(SELECT 1 FROM families WHERE id=? AND parent_id=?)
+            AND EXISTS(
+              SELECT 1 FROM family_members
+               WHERE id=? AND family_id=? AND user_id=? AND role='parent' AND is_active=0
+            )`,
+      ).bind(parentUserId, familyId, userId, member.id, familyId, parentUserId),
+      c.env.DB.prepare(
+        `UPDATE account_device_sessions SET revoked_at=?,last_seen_at=?
+          WHERE user_id=? AND revoked_at IS NULL
+            AND EXISTS(SELECT 1 FROM families WHERE id=? AND parent_id=?)
+            AND EXISTS(
+              SELECT 1 FROM family_members
+               WHERE id=? AND family_id=? AND user_id=? AND role='parent' AND is_active=0
+            )`,
+      ).bind(now, now, parentUserId, familyId, userId, member.id, familyId, parentUserId),
+      c.env.DB.prepare(
+        `UPDATE fcm_tokens SET disabled_at=?,disabled_reason='family_member_removed'
+          WHERE family_id=? AND user_id=? AND disabled_at IS NULL
+            AND EXISTS(SELECT 1 FROM families WHERE id=? AND parent_id=?)
+            AND EXISTS(
+              SELECT 1 FROM family_members
+               WHERE id=? AND family_id=? AND user_id=? AND role='parent' AND is_active=0
+            )`,
+      ).bind(now, familyId, parentUserId, familyId, userId, member.id, familyId, parentUserId),
+      c.env.DB.prepare(
+        `UPDATE push_subscriptions SET disabled_at=?,disabled_reason='family_member_removed'
+          WHERE family_id=? AND user_id=? AND disabled_at IS NULL
+            AND EXISTS(SELECT 1 FROM families WHERE id=? AND parent_id=?)
+            AND EXISTS(
+              SELECT 1 FROM family_members
+               WHERE id=? AND family_id=? AND user_id=? AND role='parent' AND is_active=0
+            )`,
+      ).bind(now, familyId, parentUserId, familyId, userId, member.id, familyId, parentUserId),
+    ]);
+  } catch {
+    console.error("[family/co-parent/remove] mutation failed");
+    return c.json({ error: "coparent_remove_failed", code: "coparent_remove_failed" }, 503);
+  }
+
+  const finalMember = await c.env.DB.prepare(
+    "SELECT is_active FROM family_members WHERE id=? AND family_id=? AND user_id=? AND role='parent' LIMIT 1",
+  )
+    .bind(member.id, familyId, parentUserId)
+    .first<{ is_active: number }>();
+  if (!finalMember || Number(finalMember.is_active) !== 0) {
+    return c.json({ error: "coparent_remove_conflict", code: "coparent_remove_conflict" }, 409);
+  }
+
+  try {
+    await revokeFamilyRealtimeUser(c.env, familyId, parentUserId);
+  } catch {
+    console.error("[family/co-parent/remove] realtime socket revoke failed");
+  }
+  if (Number(results[0]?.meta?.changes ?? 0) === 1) {
+    await notifyPg(
+      c.env,
+      familyId,
+      "family_members",
+      "DELETE",
+      null,
+      { id: member.id, family_id: familyId, user_id: parentUserId },
+    );
+  }
+  return c.json({ ok: true, already_removed: alreadyRemoved });
 });
 
 // ── POST /unpair — unpair_child (primary parent only; user-tied cleanup) ───────

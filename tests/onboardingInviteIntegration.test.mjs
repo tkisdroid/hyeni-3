@@ -25,33 +25,43 @@ test("기존 소셜 회원 안내는 서버가 existing 또는 linked를 확정�
 test("공동 보호자와 아이 초대 CTA는 서로 다른 역할 링크를 만든다", () => {
   assert.match(childInvite, /buildPairLink\(pairCode, inviteRole\)/);
   assert.match(familyConnection, /navigate\("\/child-invite\?role=parent"\)/);
-  assert.match(parentFamily, /const inviteRoleChoice = \(\) => \{\s*navigate\("\/child-invite\?role=choose"\)/);
+  assert.match(parentFamily, /navigate\("\/child-invite\?role=child"\)/);
   assert.match(parentFamily, /const inviteCoParent = \(\) => \{\s*navigate\("\/child-invite\?role=parent"\)/);
   assert.match(parentFamily, /const canInviteCoParent = Boolean\(/);
-  assert.match(parentFamily, /\{canInviteCoParent && \(\s*<button type="button" className="pf-invite-card/);
+  assert.match(parentFamily, /parent\.parentFamily\.connectChild/);
 });
 
-test("아이관리 공용 연결 QR은 Safari에서 역할을 자녀로 고정하지 않는다", () => {
-  assert.match(parentFamily, /buildPairRoleChoiceLink\(pairCode\)/);
-  assert.match(parentFamily, /navigate\("\/child-invite\?role=choose"\)/);
-  assert.doesNotMatch(parentFamily, /buildPairLink\(pairCode\)(?!,)/);
-  assert.match(childInvite, /requestedRole === "choose"/);
-  assert.match(childInvite, /buildPairRoleChoiceLink\(pairCode\)/);
+test("아이관리는 역할 선택 전에 QR·코드·공유 링크를 발급하지 않는다", () => {
+  assert.doesNotMatch(parentFamily, /buildPairRoleChoiceLink|<QrCode|pairCode|copyCode/);
+  assert.doesNotMatch(childInvite, /buildPairRoleChoiceLink/);
+  assert.match(childInvite, /requestedRole !== "child" && requestedRole !== "parent"/);
+  assert.match(childInvite, /if \(roleChoiceInvite\) return <InviteRoleChoice \/>/);
+  assert.match(childInvite, /buildPairLink\(pairCode, inviteRole\)/);
 });
 
-test("공용 QR 문구는 보호자와 아이 역할 선택을 명확히 안내한다", () => {
-  assert.equal(koParent["parent.parentFamily.copy016"], "가족 연결 코드 · QR");
-  assert.match(koParent["parent.parentFamily.copy022"], /학부모.*아이.*먼저 선택/);
-  assert.equal(koParent["parent.familyInvite.choice.headline"], "QR을 읽는 사람이 역할을 선택해요");
-  assert.match(koParent["parent.familyInvite.choice.waiting"], /역할 선택을 기다리고/);
-  assert.match(koParent["parent.parentFamily.copy024"], /보호자 전용 QR.*로그인·가입.*공동 보호자/);
+test("연결 문구는 역할 결과와 공동 보호자 교체 방법을 명확히 안내한다", () => {
+  assert.equal(koParent["parent.parentFamily.connectionTargetTitle"], "누구를 연결할까요?");
+  assert.match(koParent["parent.parentFamily.connectionTargetDescription"], /먼저 선택.*전용 QR/);
+  assert.match(koParent["parent.familyInvite.choice.childDescription"], /아이로만 등록/);
+  assert.match(koParent["parent.familyInvite.choice.parentDescription"], /공동 보호자로만 연결/);
+  assert.match(koParent["parent.parentFamily.guardianSlotOccupiedDescription"], /기존 보호자.*해제/);
+  assert.match(koParent["parent.familyConnection.coParentReplacementHint"], /기존 보호자.*해제/);
   assert.doesNotMatch(koOnboarding["onboarding.invite.legacyChoice"], /예전에 만든/);
-  assert.match(koOnboarding["onboarding.invite.legacyChoice"], /학부모.*아이.*선택/);
-  assert.match(childInvite, /parent\.familyInvite\.choice\.headline/);
-  assert.match(childInvite, /parent\.familyInvite\.choice\.waiting/);
+  assert.match(koOnboarding["onboarding.invite.legacyChoice"], /다른 보호자.*학부모.*아이.*자녀 기기/);
+  assert.match(childInvite, /parent\.familyInvite\.choice\.childDescription/);
+  assert.match(childInvite, /parent\.familyInvite\.choice\.parentDescription/);
 });
 
-test("iPhone WebKit 스모크는 공용 QR에서 역할 선택이 인증보다 먼저 보이는지 검증한다", () => {
+test("주 보호자는 연결된 공동 보호자를 아이 연결 해제와 구분해 교체할 수 있다", () => {
+  assert.match(familyConnection, /useRemoveCoParent/);
+  assert.match(familyConnection, /const disconnectMutation = confirm\?\.kind === "coparent" \? removeCoParent : unpair/);
+  assert.match(familyConnection, /disconnectMutation\.mutate\(confirm\.userId/);
+  assert.match(familyConnection, /className="fc-unpair fc-unpair--coparent hy-press"/);
+  assert.match(familyConnection, /kind: "coparent"[\s\S]{0,180}userId: p\.user_id/);
+  assert.match(familyConnection, /parent\.familyConnection\.removeCoParentConfirmTitle/);
+});
+
+test("iPhone WebKit 스모크는 역할 없는 구형 링크에서 역할 선택이 인증보다 먼저 보이는지 검증한다", () => {
   assert.match(webkitSmoke, /#\/onboarding\?pair=KID-QA123456/);
   assert.match(webkitSmoke, /roleChoiceInvite\.inviteContext/);
   assert.match(webkitSmoke, /roleChoiceInvite\.anonymousRequested/);
@@ -93,4 +103,7 @@ test("페어링 제출은 화면의 초대 역할을 세션 역할로 조용히 
   assert.doesNotMatch(pairingStep, /effectiveMode/);
   assert.match(pairingStep, /if \(mode === "child"\)[\s\S]{0,320}await joinFamily\(code,[\s\S]{0,220}else \{[\s\S]{0,220}await joinFamilyAsParent\(code\)/);
   assert.match(pairingStep, /localizeApiError\(e, intl, mode === "child" \? "child" : "formal"\)/);
+  assert.match(pairingStep, /isPairingMembershipConfirmed/);
+  assert.match(pairingStep, /pairing_confirmation_failed/);
+  assert.ok(pairingStep.indexOf("isPairingMembershipConfirmed") < pairingStep.indexOf("onPaired()"));
 });

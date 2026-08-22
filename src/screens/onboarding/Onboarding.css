@@ -444,6 +444,21 @@
   display: grid;
   gap: 4px;
 }
+.ob-session-end {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 16px;
+  color: var(--fg-secondary);
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+}
+.ob-session-end svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--hy-accent-cta);
+}
 .ob-invite-context strong {
   color: var(--fg-primary);
   font-weight: var(--type-body-lg-weight);

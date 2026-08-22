@@ -108,5 +108,7 @@
   "core.time.remaining": "{duration} 남음",
   "core.error.api.parentRoleMismatch.formal": "이미 보호자 계정이에요. 공동 보호자 초대 링크로 연결해 주세요.",
   "core.error.api.parentRoleRequired.formal": "보호자 계정으로 로그인한 뒤 공동 보호자 연결을 다시 시도해 주세요.",
-  "core.error.api.childRoleRequired.formal": "아이 기기 연결은 아이 모드에서 진행해 주세요."
+  "core.error.api.childRoleRequired.formal": "아이 기기 연결은 아이 모드에서 진행해 주세요.",
+  "core.error.api.coparentSlotOccupied.formal": "이미 공동 보호자 1명이 연결되어 있어요. 주 보호자가 기존 보호자 연결을 해제한 뒤 다시 시도해 주세요.",
+  "core.error.api.pairingConfirmationFailed.formal": "서버에서 역할과 가족 연결 완료를 확인하지 못했어요. 역할은 바꾸지 않았으니 다시 시도해 주세요."
 }

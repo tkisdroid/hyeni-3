@@ -191,7 +191,7 @@ export function PairingWizard() {
     regen.mutate(undefined, {
       onSuccess: () => {
         show(intl.formatMessage({ id: "parent.pairingWizard.codeCreated" }), "🔗");
-        navigate("/child-invite", { state: { pendingChildren } });
+        navigate("/child-invite?role=child", { state: { pendingChildren } });
       },
       onError: (e) => show(localizeApiError(e, intl, "formal"), "⚠️"),
     });

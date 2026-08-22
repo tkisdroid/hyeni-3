@@ -12,7 +12,7 @@
  * ⚠️ 상품 ID/베이스플랜/크레딧 개수는 Google Play Console 설정값과 반드시 일치해야 한다.
  *    (아래 상수는 hyeni-1 premiumPolicy.js 원본과 동일하게 이관한 것.)
  */
-import { getNativePlugin, isNativePlatform } from "./plugins";
+import { getNativePlugin, getPlatform, isNativePlatform } from "./plugins";
 import { apiPost } from "@/lib/api/client";
 import { ApiError, normalizeApiErrorCode } from "@/lib/api/errors";
 import { getApiUser } from "@/lib/api/session";
@@ -143,7 +143,9 @@ export function isPurchaseCanceled(error: unknown): boolean {
 
 /** 네이티브 결제 사용 가능 여부(웹/PWA 에서는 false). 화면은 이 값으로 CTA 분기. */
 export function isBillingAvailable(): boolean {
-  return isNativePlatform() && getNativePlugin<GooglePlayBillingPlugin>(PLUGIN_NAME) !== null;
+  return isNativePlatform()
+    && getPlatform() === "android"
+    && getNativePlugin<GooglePlayBillingPlugin>(PLUGIN_NAME) !== null;
 }
 
 function requirePlugin(): GooglePlayBillingPlugin {

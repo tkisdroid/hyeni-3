@@ -276,55 +276,6 @@
   color: var(--gold-text);
 }
 
-/* ── 가족 초대 카드 ─────────────────────────────────────────────────────── */
-.pf-invite-card {
-  text-align: left;
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--radius-16);
-  padding: 16px 20px;
-  background: linear-gradient(120deg, #f1ecff, #fde7f1);
-  box-shadow: var(--shadow-soft);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  --press: 0.985;
-}
-.pf-invite-card__img {
-  width: 50px;
-  height: 50px;
-  object-fit: contain;
-  flex: none;
-  animation: hy-bob 3s ease-in-out infinite;
-}
-.pf-invite-card__main {
-  flex: 1;
-  min-width: 0;
-}
-.pf-invite-card__title {
-  display: block;
-  font-size: var(--type-body-lg);
-  line-height: var(--type-body-lg-line-height);
-  font-weight: var(--type-body-lg-weight);
-
-  color: var(--lav-text);
-}
-.pf-invite-card__sub {
-  display: block;
-  margin-top: 4px;
-  font-size: var(--type-label);
-  line-height: var(--type-label-line-height);
-  font-weight: var(--type-label-weight);
-  word-break: keep-all;
-  overflow-wrap: anywhere;
-  text-wrap: pretty;
-
-  color: var(--lav-text);
-}
-.pf-invite-card__chev {
-  flex: none;
-}
-
 /* ── 연결 상태 · 관리 행 ────────────────────────────────────────────────── */
 .pf-conn {
   text-align: left;
@@ -408,83 +359,70 @@
   border: 1px solid var(--line-card);
   padding: 16px;
 }
-.pf-paircode__row {
+.pf-paircode__intro {
+  margin: 0;
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+  color: var(--fg-muted);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+.pf-paircode__targets {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+.pf-paircode__target {
+  width: 100%;
+  min-height: 72px;
+  padding: 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-16);
+  background: var(--bg-body);
+  box-shadow: none;
   display: flex;
   align-items: center;
   gap: 12px;
+  text-align: left;
+  --press: 0.98;
 }
-.pf-paircode__qr {
-  flex: none;
-  width: 96px;
-  height: 96px;
+.pf-paircode__target-icon {
+  width: 44px;
+  height: 44px;
   border-radius: var(--radius-16);
-  overflow: hidden;
-  background: #fff;
-  border: 1px solid var(--line-soft);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  --press: 0.97;
+  flex: none;
 }
-.pf-paircode__qr-skel {
+.pf-paircode__target-icon--child {
+  background: var(--mint-soft);
+  color: var(--mint-text);
+}
+.pf-paircode__target-icon--parent {
+  background: var(--cream-soft);
+  color: var(--gold-text);
+}
+.pf-paircode__target-main {
+  flex: 1;
+  min-width: 0;
+}
+.pf-paircode__target-title {
+  display: block;
+  color: var(--fg-primary);
+  font-size: var(--type-body);
+  line-height: var(--type-body-line-height);
+  font-weight: var(--type-body-weight);
+}
+.pf-paircode__target-sub {
+  display: block;
+  margin-top: 4px;
+  color: var(--fg-muted);
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
   font-weight: var(--type-caption-weight);
-
-  color: var(--fg-muted);
-}
-.pf-paircode__main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.pf-paircode__code {
-  font-size: var(--type-title-lg);
-  line-height: var(--type-title-lg-line-height);
-  font-weight: var(--type-title-lg-weight);
-
-  letter-spacing: 0.04em;
-  color: var(--hy-accent-text);
-  font-variant-numeric: tabular-nums;
-  word-break: break-all;
-}
-.pf-paircode__btns {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.pf-paircode__btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 12px;
-  border-radius: var(--radius-pill);
-  font-size: var(--type-label);
-  line-height: var(--type-label-line-height);
-  font-weight: var(--type-label-weight);
-
-  background: var(--bg-body);
-  color: var(--fg-secondary);
-  --press: 0.96;
-}
-.pf-paircode__btn:disabled {
-  opacity: 0.5;
-}
-.pf-paircode__btn--accent {
-  background: var(--hy-accent-soft);
-  color: var(--hy-accent-text);
-}
-.pf-paircode__hint {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line-hair);
-  font-size: var(--type-label);
-  line-height: var(--type-label-line-height);
-  font-weight: var(--type-label-weight);
-
-  color: var(--fg-muted);
   word-break: keep-all;
   overflow-wrap: anywhere;
   text-wrap: pretty;

@@ -108,5 +108,7 @@
   "core.time.remaining": "{duration} tersisa",
   "core.error.api.parentRoleMismatch.formal": "Ini sudah merupakan akun wali. Gunakan tautan undangan wali bersama.",
   "core.error.api.parentRoleRequired.formal": "Masuk dengan akun wali, lalu coba lagi menghubungkan sebagai wali bersama.",
-  "core.error.api.childRoleRequired.formal": "Hubungkan perangkat anak dari Mode Anak."
+  "core.error.api.childRoleRequired.formal": "Hubungkan perangkat anak dari Mode Anak.",
+  "core.error.api.coparentSlotOccupied.formal": "Sudah ada satu wali bersama yang terhubung. Minta wali utama memutuskan wali yang ada, lalu coba lagi.",
+  "core.error.api.pairingConfirmationFailed.formal": "Server belum dapat mengonfirmasi peran dan koneksi keluarga. Peran Anda tidak diubah; silakan coba lagi."
 }

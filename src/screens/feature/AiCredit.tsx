@@ -785,7 +785,7 @@ export function AiCredit() {
         heading={intl.formatMessage({ id: "billing.aiCredit.state.noChildTitle" })}
         description={intl.formatMessage({ id: "billing.aiCredit.state.noChildDescription" })}
         onBack={() => navigate(-1)}
-        onRetry={() => navigate("/child-invite")}
+        onRetry={() => navigate("/child-invite?role=child")}
         retryLabel={intl.formatMessage({ id: "billing.aiCredit.state.connectChild" })}
       />
     );

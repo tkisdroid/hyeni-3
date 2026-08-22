@@ -11,7 +11,7 @@ import {
 import { apiRequest, apiPost } from "../client";
 import { ApiError, isApiError, normalizeApiErrorCode } from "../errors";
 import { applyApiSession, setApiUser, clearApiSession, notifyTokens, type ApiUser } from "../session";
-import { isNativePlatform } from "@/lib/native/plugins";
+import { getPlatform, isNativePlatform } from "@/lib/native/plugins";
 import { openExternal } from "@/lib/native/browser";
 import {
   getAuthDeviceDescriptor,
@@ -392,7 +392,8 @@ function validateOAuthStartResponse(
 /**
  * OAuth 시작 — Worker /start 를 연다.
  * - 웹: 현재 창을 이동(location.href). 복귀 target = window.location.origin.
- * - 네이티브: 시스템 브라우저로 열고(openExternal), 복귀 target = verified HTTPS App Link.
+ * - 네이티브: 시스템 브라우저로 열고(openExternal), Android는 검증된 HTTPS App Link,
+ *   iOS는 transaction secret으로 보호된 전용 URL scheme으로 복귀한다.
  *   복귀는 initOAuthDeepLink 의 appUrlOpen 리스너가 받아 finishOAuthLogin 을 호출한다.
  *
  * 서버가 발급한 state·별도 transaction secret·provider·mode를 두 저장소에 동일하게 기록하고
@@ -404,13 +405,14 @@ export async function startWorkerOAuth(
   options?: OAuthStartOptions,
 ): Promise<void> {
   const native = isNativePlatform();
+  const oauthClient = native && getPlatform() === "ios" ? "ios" : native ? "native" : "web";
   const startPath = mode === "link"
     ? `/api/auth/oauth/${provider}/link/start`
     : `/api/auth/oauth/${provider}/start`;
   const response = await apiRequest<OAuthStartResponse>(startPath, {
     method: "POST",
     body: JSON.stringify({
-      client: native ? "native" : "web",
+      client: oauthClient,
       webOrigin: native ? undefined : window.location.origin,
     }),
   }, false);

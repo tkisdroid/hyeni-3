@@ -350,7 +350,7 @@ async function runtimeChecks(origin, requests, denyProxy) {
     assert.equal(await page.locator(".hy-language__current").getAttribute("aria-expanded"), "true");
     await page.locator(".hy-language__current").click();
 
-    // 아이관리 공용 QR을 iPhone Safari가 새 탭에서 직접 연 경우 역할을 아이로 단정하지 않는다.
+    // 과거 as 없는 초대 링크를 iPhone Safari가 새 탭에서 직접 연 경우 역할을 아이로 단정하지 않는다.
     const roleChoicePage = await context.newPage();
     roleChoicePage.on("console", (message) => {
       if (["error", "warning"].includes(message.type())) {
@@ -369,15 +369,15 @@ async function runtimeChecks(origin, requests, denyProxy) {
       parentVisible: Boolean(document.querySelector(".ob-role-card--parent")),
     }));
     await roleChoicePage.close();
-    assert.equal(roleChoiceInvite.anonymousRequested, false, "공용 QR이 익명 아이 로그인을 시작했습니다");
-    assert.equal(roleChoiceInvite.parentVisible, true, "공용 QR에서 학부모 역할을 선택할 수 없습니다");
-    assert.equal(roleChoiceInvite.childVisible, true, "공용 QR에서 아이 역할을 선택할 수 없습니다");
-    assert.equal(roleChoiceInvite.pairingVisible, false, "공용 QR이 역할 선택 전에 아이 페어링을 열었습니다");
+    assert.equal(roleChoiceInvite.anonymousRequested, false, "구형 초대 링크가 익명 아이 로그인을 시작했습니다");
+    assert.equal(roleChoiceInvite.parentVisible, true, "구형 초대 링크에서 학부모 역할을 선택할 수 없습니다");
+    assert.equal(roleChoiceInvite.childVisible, true, "구형 초대 링크에서 아이 역할을 선택할 수 없습니다");
+    assert.equal(roleChoiceInvite.pairingVisible, false, "구형 초대 링크가 역할 선택 전에 아이 페어링을 열었습니다");
     assert.ok(
-      roleChoiceInvite.inviteContext?.includes("학부모인지 아이인지 선택"),
-      `공용 QR 역할 안내가 불명확합니다: ${JSON.stringify(roleChoiceInvite)}`,
+      roleChoiceInvite.inviteContext?.includes("다른 보호자로 연결하려면 반드시 학부모"),
+      `구형 초대 링크 역할 안내가 불명확합니다: ${JSON.stringify(roleChoiceInvite)}`,
     );
-    assert.equal(roleChoiceInvite.hash.includes("pair="), false, "처리한 공용 QR 파라미터가 Safari URL에 남았습니다");
+    assert.equal(roleChoiceInvite.hash.includes("pair="), false, "처리한 구형 초대 파라미터가 Safari URL에 남았습니다");
 
     await page.goto(`${origin}/index.html#/onboarding`, { waitUntil: "domcontentloaded" });
     await page.locator(".ob-role-card--parent").waitFor({ state: "visible" });

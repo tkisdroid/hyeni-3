@@ -531,7 +531,7 @@ export function DailySafetyReport() {
             <ShieldCheck size={38} strokeWidth={2.1} />
             <div className="dr-empty__title">{intl.formatMessage({ id: "reports.daily.noChildTitle" })}</div>
             <p>{intl.formatMessage({ id: "reports.daily.noChildDescription" })}</p>
-            <button type="button" className="dr-primary hy-press" onClick={() => navigate("/child-invite")}>
+            <button type="button" className="dr-primary hy-press" onClick={() => navigate("/child-invite?role=child")}>
               {intl.formatMessage({ id: "reports.daily.connectChild" })}
             </button>
           </section>

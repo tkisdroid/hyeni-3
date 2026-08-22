@@ -20,6 +20,8 @@ const messages: Record<string, string> = {
   "core.error.api.parentRoleMismatch.formal": "이미 보호자 계정이에요. 공동 보호자 초대 링크로 연결해 주세요.",
   "core.error.api.parentRoleRequired.formal": "보호자 계정으로 로그인한 뒤 공동 보호자 연결을 다시 시도해 주세요.",
   "core.error.api.childRoleRequired.formal": "아이 기기 연결은 아이 모드에서 진행해 주세요.",
+  "core.error.api.coparentSlotOccupied.formal": "이미 공동 보호자 1명이 연결되어 있어요. 주 보호자가 기존 보호자 연결을 해제한 뒤 다시 시도해 주세요.",
+  "core.error.api.pairingConfirmationFailed.formal": "서버에서 역할과 가족 연결 완료를 확인하지 못했어요. 역할은 바꾸지 않았으니 다시 시도해 주세요.",
   "core.error.api.network.formal": "인터넷 연결을 확인한 뒤 다시 시도해 주세요.",
   "core.error.api.network.child": "인터넷 연결을 확인하고 다시 해 줘.",
   "core.error.api.client.formal": "요청을 처리하지 못했어요. 입력 내용을 확인해 주세요.",
@@ -112,6 +114,20 @@ test("역할이 다른 연결 시도는 올바른 초대 흐름으로 복구하�
   for (const [code, message] of Object.entries(expected)) {
     assert.equal(localizeApiError(new ApiError(code, 403), intl, "formal"), message, code);
   }
+});
+
+test("공동 보호자 자리가 찬 경우 기존 보호자 해제 방법을 안내한다", () => {
+  assert.equal(
+    localizeApiError(new ApiError("coparent_slot_occupied", 409), intl, "formal"),
+    messages["core.error.api.coparentSlotOccupied.formal"],
+  );
+});
+
+test("서버 멤버십 확인 실패는 성공으로 위장하지 않고 재시도를 안내한다", () => {
+  assert.equal(
+    localizeApiError(new ApiError("pairing_confirmation_failed", 409), intl, "formal"),
+    messages["core.error.api.pairingConfirmationFailed.formal"],
+  );
 });
 
 test("allowlist code만 구체화하고 알 수 없는 4xx·5xx는 역할별 문구로 닫는다", () => {

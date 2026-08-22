@@ -2,7 +2,8 @@
  * OAuth 딥링크 URL 파싱(순수) — 네이티브 의존 없이 테스트 가능하게 분리.
  *
  * Worker 콜백이 만드는 실제 형태(라이브 확인):
- *   https://hyeni-calendar.pages.dev/oauth/callback?provider=google&code=CODE&state=NONCE
+ *   https://hyeni-calendar.pages.dev/oauth/callback?provider=google&code=CODE&state=NONCE (Android)
+ *   com.hyeni.calendar.oauth://oauth/callback?provider=google&code=CODE&state=NONCE (iOS)
  *   https://hyeni-calendar.pages.dev/oauth/callback?provider=naver&code=CODE&state=NONCE
  *   https://hyeni-calendar.pages.dev/oauth/callback?provider=google&state=NONCE&error=oauth_cancelled
  *
@@ -11,6 +12,7 @@
 import { isOAuthProvider, type OAuthProvider } from "./oauthProvider.ts";
 
 export const OAUTH_CALLBACK_URL = "https://hyeni-calendar.pages.dev/oauth/callback";
+export const IOS_OAUTH_CALLBACK_URL = "com.hyeni.calendar.oauth://oauth/callback";
 
 export interface OAuthDeepLinkCallback {
   provider: OAuthProvider;
@@ -27,7 +29,10 @@ function readCallbackParams(url: string): URLSearchParams | null {
   if (!url) return null;
   try {
     const parsed = new URL(url);
-    if (`${parsed.origin}${parsed.pathname}` !== OAUTH_CALLBACK_URL) return null;
+    const callbackBase = parsed.protocol === "com.hyeni.calendar.oauth:"
+      ? `${parsed.protocol}//${parsed.host}${parsed.pathname}`
+      : `${parsed.origin}${parsed.pathname}`;
+    if (callbackBase !== OAUTH_CALLBACK_URL && callbackBase !== IOS_OAUTH_CALLBACK_URL) return null;
     const raw = parsed.hash ? parsed.hash.slice(1) : parsed.search.slice(1);
     return new URLSearchParams(raw);
   } catch {

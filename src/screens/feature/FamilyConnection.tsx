@@ -5,7 +5,7 @@ import { asset } from "@/lib/assets";
 import { DEFAULT_CHILD_AVATAR, parentAvatarPath } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
-import { useMyFamily, useUnpairChild } from "@/queries/useFamily";
+import { useMyFamily, useRemoveCoParent, useUnpairChild } from "@/queries/useFamily";
 import { useChildLocations } from "@/queries/useLocation";
 import { mapFamilyToView } from "@/transform/familyView";
 import { resolveDeviceLabel } from "@/transform/deviceLabel";
@@ -16,13 +16,15 @@ import { Loading } from "@/components/ui/Loading";
 import "./FamilyConnection.css";
 import { useIntl } from "react-intl";
 import { localizeApiError } from "@/i18n/apiError";
+import { useAuth } from "@/auth/AuthContext";
 
 // 자녀 사진은 인증 fetch로 만든 blob URL, 기본 아바타는 asset 경로.
 function avatarSrc(path: string): string {
   return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
 }
 
-interface UnpairTarget {
+interface DisconnectTarget {
+  kind: "child" | "coparent";
   memberId: string;
   userId: string;
   name: string;
@@ -38,6 +40,7 @@ export function FamilyConnection() {
   const intl = useIntl();
   const navigate = useNavigate();
   const { show } = useToast();
+  const { userId } = useAuth();
   const now = useMemo(() => new Date(), []);
 
   const familyQuery = useMyFamily();
@@ -51,8 +54,11 @@ export function FamilyConnection() {
     await Promise.all([familyQuery.refetch(), locationsQuery.refetch()]);
   };
   const unpair = useUnpairChild();
+  const removeCoParent = useRemoveCoParent();
 
-  const [confirm, setConfirm] = useState<UnpairTarget | null>(null);
+  const [confirm, setConfirm] = useState<DisconnectTarget | null>(null);
+  const disconnectMutation = confirm?.kind === "coparent" ? removeCoParent : unpair;
+  const disconnectPending = disconnectMutation.isPending;
   const confirmTitleId = useId();
   const confirmDescriptionId = useId();
   const confirmCancelRef = useRef<HTMLButtonElement>(null);
@@ -60,24 +66,24 @@ export function FamilyConnection() {
     open: confirm !== null,
     onClose: () => setConfirm(null),
     initialFocusRef: confirmCancelRef,
-    canClose: () => !unpair.isPending,
+    canClose: () => !disconnectPending,
   });
 
   const members = useMemo(() => family?.members ?? [], [family]);
-  const view = useMemo(() => mapFamilyToView(members, null), [members]);
+  const view = useMemo(() => mapFamilyToView(members, userId), [members, userId]);
 
   // 연결된 아이(user_id 존재) vs 대기 중(placeholder).
   const children = useMemo(() => members.filter((m) => m.role === "child"), [members]);
   const connected = useMemo(() => children.filter((c) => c.user_id), [children]);
   const pending = useMemo(() => children.filter((c) => !c.user_id), [children]);
 
-  // 공동 보호자 = 주 보호자 아닌 부모 멤버.
-  const coParents = useMemo(
+  // 어느 보호자로 로그인해도 자신이 아니라 함께 연결된 상대 보호자를 보여준다.
+  const otherGuardians = useMemo(
     () =>
       members.filter(
-        (m) => m.role === "parent" && m.user_id && m.user_id !== family?.primaryParentId,
+        (m) => m.role === "parent" && m.user_id && m.user_id !== userId,
       ),
-    [members, family],
+    [members, userId],
   );
 
   const isPrimary = family?.isPrimaryParent ?? false;
@@ -115,14 +121,23 @@ export function FamilyConnection() {
     return { label: fresh.label, tone: "warn" };
   };
 
-  const doUnpair = () => {
-    if (!confirm || unpair.isPending) return;
-    unpair.mutate(confirm.userId, {
+  const doDisconnect = () => {
+    if (!confirm || disconnectPending) return;
+    disconnectMutation.mutate(confirm.userId, {
       onSuccess: () => {
-        show(intl.formatMessage(
-          { id: "parent.familyConnection.unpaired" },
-          { childName: confirm.name },
-        ), "🔗");
+        show(
+          intl.formatMessage(
+            {
+              id: confirm.kind === "coparent"
+                ? "parent.familyConnection.removedCoParent"
+                : "parent.familyConnection.unpaired",
+            },
+            confirm.kind === "coparent"
+              ? { guardianName: confirm.name }
+              : { childName: confirm.name },
+          ),
+          "🔗",
+        );
         setConfirm(null);
       },
       onError: (e) => show(localizeApiError(e, intl, "formal"), "⚠️"),
@@ -256,36 +271,65 @@ export function FamilyConnection() {
                     </span>
                   </div>
                 ))}
-                <button type="button" className="fc-ghost hy-press" onClick={() => navigate("/child-invite")}>
+                <button type="button" className="fc-ghost hy-press" onClick={() => navigate("/child-invite?role=child")}>
                   {intl.formatMessage({ id: "parent.familyConnection.viewCode" })}
                 </button>
               </section>
             )}
 
-            {/* 공동 보호자 */}
+            {/* 함께 연결된 다른 보호자 */}
             <section className="fc-sec">
               <div className="fc-label">
-                {intl.formatMessage({ id: "parent.familyConnection.coParents" })}
+                {intl.formatMessage({ id: "parent.parentSettings.copy003" })}
               </div>
-              {coParents.length > 0 ? (
-                coParents.map((p) => (
-                  <div key={p.id} className="fc-device">
-                    <span className="fc-device__avatar" style={{ background: "var(--cream-soft, #FFF3D6)" }}>
-                      <img src={avatarSrc(parentAvatarPath(p.photo_url, p.gender))} alt="" />
-                    </span>
-                    <span className="fc-device__main">
-                      <span className="fc-device__name">{p.name || guardianFallback}</span>
-                      <span className="fc-device__sub">
-                        {intl.formatMessage({ id: "parent.familyConnection.coParentConnected" })}
+              {otherGuardians.length > 0 ? (
+                otherGuardians.map((p) => (
+                  <div key={p.id} className="fc-coparent">
+                    <div className="fc-device">
+                      <span className="fc-device__avatar" style={{ background: "var(--cream-soft, #FFF3D6)" }}>
+                        <img src={avatarSrc(parentAvatarPath(p.photo_url, p.gender))} alt="" />
                       </span>
-                    </span>
-                    <span className="fc-chip fc-chip--safe">
-                      <span className="fc-chip__dot" />
-                      {intl.formatMessage({ id: "parent.familyConnection.connectedStatus" })}
-                    </span>
+                      <span className="fc-device__main">
+                        <span className="fc-device__name">{p.name || guardianFallback}</span>
+                        <span className="fc-device__sub">
+                          {intl.formatMessage({
+                            id: p.user_id === family?.primaryParentId
+                              ? "parent.parentAccount.copy001"
+                              : "parent.familyConnection.coParentConnected",
+                          })}
+                        </span>
+                      </span>
+                      <span className="fc-chip fc-chip--safe">
+                        <span className="fc-chip__dot" />
+                        {intl.formatMessage({ id: "parent.familyConnection.connectedStatus" })}
+                      </span>
+                    </div>
+                    {isPrimary && p.user_id !== family?.primaryParentId && (
+                      <>
+                        <p className="fc-note hy-explain">
+                          {intl.formatMessage({ id: "parent.familyConnection.coParentReplacementHint" })}
+                        </p>
+                        <button
+                          type="button"
+                          className="fc-unpair fc-unpair--coparent hy-press"
+                          onClick={() => setConfirm({
+                            kind: "coparent",
+                            memberId: p.id,
+                            userId: p.user_id as string,
+                            name: p.name || guardianFallback,
+                          })}
+                        >
+                          <Link2Off size={18} strokeWidth={2.2} />
+                          {intl.formatMessage(
+                            { id: "parent.familyConnection.removeCoParentAction" },
+                            { guardianName: p.name || guardianFallback },
+                          )}
+                        </button>
+                      </>
+                    )}
                   </div>
                 ))
-              ) : (
+              ) : isPrimary ? (
                 <button type="button" className="fc-invite hy-press" onClick={() => navigate("/child-invite?role=parent")}>
                   <span className="fc-invite__icon">
                     <UserPlus size={20} strokeWidth={2.2} />
@@ -300,7 +344,7 @@ export function FamilyConnection() {
                   </span>
                   <ChevronRight size={20} strokeWidth={2.4} color="var(--fg-disabled)" />
                 </button>
-              )}
+              ) : null}
             </section>
 
             {/* 연결 해제 */}
@@ -316,7 +360,7 @@ export function FamilyConnection() {
                       type="button"
                       className="fc-unpair hy-press"
                       onClick={() =>
-                        setConfirm({ memberId: c.id, userId: c.user_id as string, name: c.name || childFallback })
+                        setConfirm({ kind: "child", memberId: c.id, userId: c.user_id as string, name: c.name || childFallback })
                       }
                     >
                       <Link2Off size={18} strokeWidth={2.2} />
@@ -352,19 +396,33 @@ export function FamilyConnection() {
             className="fc-modal__scrim"
             tabIndex={-1}
             aria-label={intl.formatMessage({ id: "parent.familyConnection.close" })}
-            onClick={() => !unpair.isPending && setConfirm(null)}
+            onClick={() => !disconnectPending && setConfirm(null)}
           />
           <div className="fc-modal__card">
             <div id={confirmTitleId} className="fc-modal__title">
               {intl.formatMessage(
-                { id: "parent.familyConnection.unpairConfirmTitle" },
-                { childName: confirm.name },
+                {
+                  id: confirm.kind === "coparent"
+                    ? "parent.familyConnection.removeCoParentConfirmTitle"
+                    : "parent.familyConnection.unpairConfirmTitle",
+                },
+                confirm.kind === "coparent"
+                  ? { guardianName: confirm.name }
+                  : { childName: confirm.name },
               )}
             </div>
             <div id={confirmDescriptionId} className="fc-modal__body">
-              {intl.formatMessage({ id: "parent.familyConnection.unpairDescription1" })}
+              {intl.formatMessage({
+                id: confirm.kind === "coparent"
+                  ? "parent.familyConnection.removeCoParentDescription1"
+                  : "parent.familyConnection.unpairDescription1",
+              })}
               {" "}
-              {intl.formatMessage({ id: "parent.familyConnection.unpairDescription2" })}
+              {intl.formatMessage({
+                id: confirm.kind === "coparent"
+                  ? "parent.familyConnection.removeCoParentDescription2"
+                  : "parent.familyConnection.unpairDescription2",
+              })}
             </div>
             <div className="fc-modal__actions">
               <button
@@ -372,7 +430,7 @@ export function FamilyConnection() {
                 type="button"
                 className="fc-modal__btn fc-modal__btn--ghost hy-press"
                 onClick={() => setConfirm(null)}
-                disabled={unpair.isPending}
+                disabled={disconnectMutation.isPending}
                 data-progress-owner="confirm-action"
               >
                 {intl.formatMessage({ id: "parent.familyConnection.cancel" })}
@@ -380,13 +438,17 @@ export function FamilyConnection() {
               <button
                 type="button"
                 className="fc-modal__btn fc-modal__btn--danger hy-press"
-                onClick={doUnpair}
-                disabled={unpair.isPending} aria-busy={unpair.isPending}
+                onClick={doDisconnect}
+                disabled={disconnectPending} aria-busy={disconnectPending}
               >
                 {intl.formatMessage({
-                  id: unpair.isPending
-                    ? "parent.familyConnection.unpairing"
-                    : "parent.familyConnection.unpair",
+                  id: confirm.kind === "coparent"
+                    ? disconnectPending
+                      ? "parent.familyConnection.removingCoParent"
+                      : "parent.familyConnection.removeCoParent"
+                    : disconnectPending
+                      ? "parent.familyConnection.unpairing"
+                      : "parent.familyConnection.unpair",
                 })}
               </button>
             </div>

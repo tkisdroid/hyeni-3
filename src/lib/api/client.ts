@@ -32,6 +32,7 @@ import {
   type PrivateObjectUrlLease,
 } from "./privateObjectUrlCache";
 import { validatePrivateObjectPath } from "@/transform/childPhotoPath";
+import { rememberSessionEndReason } from "@/auth/sessionEndReason";
 
 type FetchOptions = RequestInit;
 
@@ -52,9 +53,9 @@ interface RefreshResponse {
   user?: ApiUser;
 }
 
-// refresh 결과 3-way: ok(회전 성공) / rejected(refresh 토큰 자체가 무효 → 세션 clear) /
-// error(5xx·네트워크 등 일시 오류 → 세션 유지, 다음에 재시도). 일시 오류로 로그아웃되지 않게 구분.
-type RefreshResult = "ok" | "rejected" | "error";
+// refresh 결과 4-way: ok(회전 성공) / inactive(다른 설치 인계·가족 권한 철회) /
+// rejected(refresh 토큰 자체가 무효) / error(5xx·네트워크 등 일시 오류). 일시 오류로 로그아웃되지 않게 구분.
+type RefreshResult = "ok" | "inactive" | "rejected" | "error";
 
 // refresh 회전 single-flight — 동시 401 다발 시 회전이 병행 실행되면 두 번째가
 // 이미 폐기된 old 토큰으로 시도해 rejected → 세션이 지워진다(아이 기기 풀림 사고의 주범).
@@ -90,7 +91,15 @@ async function doRefreshAccess(): Promise<RefreshResult> {
     // 요청 중 명시적 로그아웃 또는 다른 계정 로그인이 일어나면, 늦은 응답으로
     // WebView·native 세션을 되살리거나 새 사용자를 덮지 않는다.
     if (getApiSessionInstanceId() !== refreshSessionNonce) return "error";
-    if (res.status === 401 || res.status === 403) return "rejected"; // refresh 토큰 만료/철회
+    if (res.status === 401 || res.status === 403) {
+      let code: string | null = null;
+      try {
+        code = apiErrorCodeFromResponseBody(await res.clone().json());
+      } catch {
+        /* non-json body */
+      }
+      return code === "device_session_inactive" ? "inactive" : "rejected";
+    }
     if (!res.ok) return "error"; // 5xx 등 일시 오류 — 세션 유지
     const data = (await res.json()) as RefreshResponse;
     const nextAccess = data.session?.access_token ?? getApiAccessToken();
@@ -106,6 +115,11 @@ async function doRefreshAccess(): Promise<RefreshResult> {
   } catch {
     return "error"; // 네트워크 오류 — 일시적, 세션 유지
   }
+}
+
+function endRejectedApiSession(result: Extract<RefreshResult, "inactive" | "rejected">): void {
+  if (result === "inactive") rememberSessionEndReason("device_session_inactive");
+  clearApiSession();
 }
 
 /**
@@ -136,10 +150,10 @@ export async function apiRequest<T = unknown>(
       }
       // refresh 자체가 성공했다면 세션은 유효하다. 개별 endpoint의 후속 401까지 전역
       // 로그아웃으로 확대하지 않고 ApiError로 표면화해 해당 요청만 실패시킨다.
-    } else if (result === "rejected") {
+    } else if (result === "inactive" || result === "rejected") {
       // refresh 토큰 자체가 만료/철회/부재 → 세션 clear(notifyTokens 로 AuthProvider 재동기화).
       // 만료 사용자가 authenticated 로 남아 401 도배 홈에 갇히는 것 방지. 가드가 /onboarding 으로.
-      clearApiSession();
+      endRejectedApiSession(result);
     }
     // result === "error"(5xx·네트워크 일시 오류) → 세션 유지(로그아웃 안 함). 아래에서 ApiError 표면화 → 재시도 여지.
   }
@@ -307,8 +321,8 @@ async function fetchPrivateObjectUrl(
       assertPrivateObjectRequestActive(controller.signal);
       if (refreshResult === "ok") {
         response = await doFetch(apiPath, options);
-      } else if (refreshResult === "rejected") {
-        clearApiSession();
+      } else if (refreshResult === "inactive" || refreshResult === "rejected") {
+        endRejectedApiSession(refreshResult);
       }
     }
     assertPrivateObjectRequestActive(controller.signal);

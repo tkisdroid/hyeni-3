@@ -108,5 +108,7 @@
   "core.time.remaining": "残り{duration}",
   "core.error.api.parentRoleMismatch.formal": "すでに保護者アカウントです。共同保護者用の招待リンクを使用してください。",
   "core.error.api.parentRoleRequired.formal": "保護者アカウントでログインしてから、共同保護者の接続を再度お試しください。",
-  "core.error.api.childRoleRequired.formal": "子どもの端末は子どもモードから接続してください。"
+  "core.error.api.childRoleRequired.formal": "子どもの端末は子どもモードから接続してください。",
+  "core.error.api.coparentSlotOccupied.formal": "共同保護者がすでに1人接続されています。主保護者が既存の保護者接続を解除してから、もう一度お試しください。",
+  "core.error.api.pairingConfirmationFailed.formal": "サーバーで役割と家族接続の完了を確認できませんでした。役割は変更していません。もう一度お試しください。"
 }

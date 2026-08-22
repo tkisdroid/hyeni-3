@@ -1,9 +1,10 @@
 import { pgTs } from "./time";
 
-export type OAuthClientKind = "native" | "web";
+export type OAuthClientKind = "native" | "ios" | "web";
 export type OAuthFlowMode = "login" | "link";
 
 const NATIVE_REDIRECT_TARGET = "https://hyeni-calendar.pages.dev/oauth/callback";
+const IOS_REDIRECT_TARGET = "com.hyeni.calendar.oauth://oauth/callback";
 const WEB_REDIRECT_ORIGINS = new Set([
   "https://hyenicalendar.com",
   "https://www.hyenicalendar.com",
@@ -53,6 +54,7 @@ export function resolveOAuthRedirectTarget(
   webOrigin?: string | null,
 ): string | null {
   if (clientKind === "native") return NATIVE_REDIRECT_TARGET;
+  if (clientKind === "ios") return IOS_REDIRECT_TARGET;
   const raw = String(webOrigin ?? "").trim();
   if (!WEB_REDIRECT_ORIGINS.has(raw)) return null;
   try {
@@ -70,7 +72,7 @@ export function parseOAuthPrepareBody(value: unknown): {
 } | null {
   if (!value || typeof value !== "object") return null;
   const body = value as { client?: unknown; webOrigin?: unknown };
-  if (body.client !== "native" && body.client !== "web") return null;
+  if (body.client !== "native" && body.client !== "ios" && body.client !== "web") return null;
   const webOrigin = typeof body.webOrigin === "string" ? body.webOrigin.trim() : null;
   if (!resolveOAuthRedirectTarget(body.client, webOrigin)) return null;
   return { clientKind: body.client, webOrigin };

@@ -606,7 +606,7 @@ export function RemoteAudio() {
         heading={intl.formatMessage({ id: "notifications.remoteAudio.emptyTitle" })}
         description={intl.formatMessage({ id: "notifications.remoteAudio.emptyDescription" })}
         onBack={() => navigate(-1)}
-        onRetry={() => navigate("/child-invite")}
+        onRetry={() => navigate("/child-invite?role=child")}
         retryLabel={intl.formatMessage({ id: "notifications.remoteAudio.connectChild" })}
       />
     );

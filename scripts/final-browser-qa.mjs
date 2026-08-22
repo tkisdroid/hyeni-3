@@ -36,9 +36,11 @@ export function extractDistEntryAssets(indexHtml) {
 
 const FAMILY_ID = "qa-family";
 const PARENT_ID = "qa-parent";
+const CO_PARENT_ID = "qa-co-parent";
 const CHILD_ID = "qa-child";
 const TEACHER_ID = "qa-teacher";
 const PARENT_MEMBER_ID = "qa-parent-member";
+const CO_PARENT_MEMBER_ID = "qa-co-parent-member";
 const CHILD_MEMBER_ID = "qa-child-member";
 /** 서버가 저장하는 비공개 객체 키 모양 — 그대로 <img src> 에 넣으면 안 되는 값이다. */
 const PARENT_PHOTO_KEY = `${FAMILY_ID}/uploads/${PARENT_ID}/qa-parent-profile.jpg`;
@@ -111,7 +113,7 @@ function safeAccessToken(role, familyId = FAMILY_ID) {
   return `${toBase64Url({ alg: "HS256", typ: "JWT" })}.${toBase64Url(payload)}.qa`;
 }
 
-function familyResponse(role) {
+function familyResponse(role, { coParentConnected = false, coParentViewer = false } = {}) {
   const myId = role === "child" ? CHILD_ID : role === "teacher" ? TEACHER_ID : PARENT_ID;
   return {
     familyId: FAMILY_ID,
@@ -120,9 +122,9 @@ function familyResponse(role) {
     myRole: role,
     myName: role === "child" ? "데모 자녀" : role === "teacher" ? "데모 선생님" : "데모 보호자",
     parentName: "데모 보호자",
-    primaryParentId: PARENT_ID,
-    isPrimaryParent: role === "parent",
-    isCoParent: false,
+    primaryParentId: coParentViewer ? CO_PARENT_ID : PARENT_ID,
+    isPrimaryParent: role === "parent" && !coParentViewer,
+    isCoParent: role === "parent" && coParentViewer,
     members: [
       {
         id: PARENT_MEMBER_ID,
@@ -134,6 +136,15 @@ function familyResponse(role) {
         photo_url: PARENT_PHOTO_KEY,
         gender: "dad",
       },
+      ...(coParentConnected || coParentViewer ? [{
+        id: CO_PARENT_MEMBER_ID,
+        user_id: CO_PARENT_ID,
+        role: "parent",
+        name: "연결된 보호자",
+        phone: null,
+        photo_url: null,
+        gender: "mom",
+      }] : []),
       {
         id: CHILD_MEMBER_ID,
         user_id: CHILD_ID,
@@ -362,6 +373,9 @@ export function mockApi(pathname, scenario, method = "GET", requestBody = null) 
       ? { error: "temporary_unavailable" }
       : { available: true };
   }
+  if (pathname === "/auth/refresh" && scenario.authCase === "device-inactive") {
+    return { error: "device_session_inactive" };
+  }
   if (pathname === "/auth/login-password" && scenario.authCase === "wrong-password") {
     return { error: "invalid_credentials" };
   }
@@ -406,9 +420,10 @@ export function mockApi(pathname, scenario, method = "GET", requestBody = null) 
     };
   }
   if (pathname === "/api/family/mine") {
+    if (scenario.authCase === "device-inactive") return { error: "device_session_inactive" };
     // no-family 시나리오는 204(null) 응답으로 온보딩 connect 단계를 연다.
     if (scenario.authCase === "no-family") return null;
-    return scenario.familyState === "none" ? null : familyResponse(role);
+    return scenario.familyState === "none" ? null : familyResponse(role, scenario);
   }
   if (pathname === "/api/family/join-as-parent" && method === "POST") {
     scenario.familyState = "joined";
@@ -1035,6 +1050,11 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
         const responseUrl = new URL(message.params.response.url);
         if (
           (message.params.response.status === 401 && responseUrl.pathname === "/auth/login-password")
+          || (
+            message.params.response.status === 401
+            && activeScenario.authCase === "device-inactive"
+            && ["/api/family/mine", "/auth/refresh"].includes(responseUrl.pathname)
+          )
           || (message.params.response.status === 503 && responseUrl.pathname === "/auth/check-login-id")
         ) {
           expectedAuthResponses.push(`${message.params.response.status} ${message.params.response.url}`);
@@ -1091,6 +1111,9 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
           const responseCode = url.pathname === "/api/family/mine"
             && activeScenario.authCase === "no-family"
             ? 204
+            : activeScenario.authCase === "device-inactive"
+              && ["/api/family/mine", "/auth/refresh"].includes(url.pathname)
+              ? 401
             : url.pathname === "/api/ai/voice-parse"
               && activeScenario.aiScheduleExhausted === true
               ? 429
@@ -1239,7 +1262,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       languageCurrent: japanLanguageCurrent,
     };
 
-    // 역할 중립 공용 QR과 as가 없던 구형 링크는 역할을 단정하지 않고 학부모·아이 선택을 받는다.
+    // as가 없던 구형 링크는 역할을 단정하지 않고 학부모·아이 선택을 받는다.
     await cdp.evaluate("localStorage.clear(); sessionStorage.clear(); true");
     const legacyInviteOnboarding = await navigate(
       { role: "public", tier: "free", catalogMode: "valid", overLimit: false },
@@ -1255,7 +1278,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     const legacyParentChoiceFacts = await cdp.evaluate('({ loginVisible: Boolean(document.querySelector(".ob-login")), pairingVisible: Boolean(document.querySelector(".ob-pairing")) })');
     if (
       !legacyInviteFacts.roleVisible
-      || !legacyInviteFacts.inviteContext?.includes("학부모인지 아이인지 선택")
+      || !legacyInviteFacts.inviteContext?.includes("다른 보호자로 연결하려면 반드시 학부모")
       || legacyInviteFacts.pairingVisible
       || legacyInviteFacts.hash.includes("pair=")
       || legacyAnonymousRequested
@@ -1465,6 +1488,92 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       initial: successfulLoginFacts,
       reload: successfulLoginReloadFacts,
       problems: { initial: successfulLoginProblems, reload: successfulLoginReloadProblems },
+    };
+
+    // 단일 활성 설치 회귀: 같은 계정을 PC에서 다시 인증해 기존 iPhone 설치가 비활성화된
+    // 상황을 재현한다. 가족 조회 401 → refresh 401 이후 세션만 지우고 역할 선택은 보존하며,
+    // 온보딩에는 사용자가 이해할 수 있는 자동 로그아웃 사유를 정확히 한 번 보여야 한다.
+    activeScenario = {
+      role: "parent",
+      tier: "free",
+      catalogMode: "valid",
+      overLimit: false,
+      authCase: "device-inactive",
+    };
+    consoleMessages = [];
+    networkFailures = [];
+    await cdp.send("Page.reload", { ignoreCache: true });
+    await wait(3_200);
+    const deviceTakeoverFacts = await cdp.evaluate(`(() => ({
+      hash: location.hash,
+      sessionAbsent: localStorage.getItem("hyeni-api-session-v1") === null,
+      roleSelectionPresent: Boolean(document.querySelector(".ob-role-card--parent"))
+        && Boolean(document.querySelector(".ob-role-card--child")),
+      noticeText: document.querySelector(".ob-session-end")?.textContent?.trim() ?? "",
+      reasonConsumed: localStorage.getItem("hyeni-session-end-reason-v1") === null,
+      parentHomePresent: Boolean(document.querySelector(".ph-page")),
+    }))()`);
+    const deviceTakeoverExpected401 = expectedAuthResponses.filter((value) => (
+      value.includes("401")
+      && (value.includes("/api/family/mine") || value.includes("/auth/refresh"))
+    ));
+    const deviceTakeoverProblems = [
+      ...uniqueStrings(consoleMessages).map((value) => `console:${value}`),
+      ...uniqueStrings(networkFailures).map((value) => `network:${value}`),
+    ];
+    if (
+      deviceTakeoverFacts.hash !== "#/onboarding"
+      || !deviceTakeoverFacts.sessionAbsent
+      || !deviceTakeoverFacts.roleSelectionPresent
+      || !deviceTakeoverFacts.noticeText.includes("다른 기기에서 다시 로그인")
+      || !deviceTakeoverFacts.reasonConsumed
+      || deviceTakeoverFacts.parentHomePresent
+      || !deviceTakeoverExpected401.some((value) => value.includes("/api/family/mine"))
+      || !deviceTakeoverExpected401.some((value) => value.includes("/auth/refresh"))
+      || deviceTakeoverProblems.length > 0
+    ) {
+      report.problems.push({
+        scope: "auth-device-takeover-logout-notice",
+        facts: deviceTakeoverFacts,
+        expected401: deviceTakeoverExpected401,
+        problems: deviceTakeoverProblems,
+      });
+    }
+    report.screenshots.push(await screenshot(cdp, freshOutputDir, "auth-device-takeover.png"));
+
+    consoleMessages = [];
+    networkFailures = [];
+    await cdp.send("Page.reload", { ignoreCache: true });
+    await wait(1_800);
+    const deviceTakeoverReloadFacts = await cdp.evaluate(`(() => ({
+      hash: location.hash,
+      sessionAbsent: localStorage.getItem("hyeni-api-session-v1") === null,
+      roleSelectionPresent: Boolean(document.querySelector(".ob-role-card--parent"))
+        && Boolean(document.querySelector(".ob-role-card--child")),
+      noticePresent: Boolean(document.querySelector(".ob-session-end")),
+    }))()`);
+    const deviceTakeoverReloadProblems = [
+      ...uniqueStrings(consoleMessages).map((value) => `console:${value}`),
+      ...uniqueStrings(networkFailures).map((value) => `network:${value}`),
+    ];
+    if (
+      deviceTakeoverReloadFacts.hash !== "#/onboarding"
+      || !deviceTakeoverReloadFacts.sessionAbsent
+      || !deviceTakeoverReloadFacts.roleSelectionPresent
+      || deviceTakeoverReloadFacts.noticePresent
+      || deviceTakeoverReloadProblems.length > 0
+    ) {
+      report.problems.push({
+        scope: "auth-device-takeover-logout-notice-once",
+        facts: deviceTakeoverReloadFacts,
+        problems: deviceTakeoverReloadProblems,
+      });
+    }
+    report.focused.deviceTakeover = {
+      initial: deviceTakeoverFacts,
+      reload: deviceTakeoverReloadFacts,
+      expected401: deviceTakeoverExpected401,
+      problems: { initial: deviceTakeoverProblems, reload: deviceTakeoverReloadProblems },
     };
     await cdp.evaluate("localStorage.clear(); sessionStorage.clear(); true");
     // 가족 없는 신규 부모 → connect 단계 → 페어링(pairing) 단계 UI 계약(2026-08-22 TK
@@ -1799,17 +1908,20 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     };
     report.screenshots.push(await screenshot(cdp, freshOutputDir, "auth-signup-id-check.png"));
 
-    // 아이관리의 공용 연결 QR은 Safari에서 아이 역할을 추정하지 않고 역할 선택으로 보낸다.
-    const familyRoleChoice = await navigate(
+    // 아이관리는 역할 선택 전 QR을 노출하지 않고, 아이 전용 링크에 as=child만 넣는다.
+    const familyRoleSpecificInvite = await navigate(
       { role: "parent", tier: "free", catalogMode: "valid", overLimit: false },
       "parent/family",
     );
-    const familyRoleChoiceEntryFacts = await cdp.evaluate(`(() => ({
+    const familyRoleSpecificEntryFacts = await cdp.evaluate(`(() => ({
       label: document.querySelector(".pf-paircode__label")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
-      hint: document.querySelector(".pf-paircode__hint")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
-      qrVisible: Boolean(document.querySelector('.pf-paircode__qr canvas[role="img"]')),
+      intro: document.querySelector(".pf-paircode__intro")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      genericQrVisible: Boolean(document.querySelector('.pf-paircode canvas[role="img"]')),
+      targetCount: document.querySelectorAll(".pf-paircode__target").length,
+      childTarget: document.querySelector(".pf-paircode__target--child")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      parentTarget: document.querySelector(".pf-paircode__target--parent")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
     }))()`);
-    await clickSelector(cdp, ".pf-paircode__qr");
+    await clickSelector(cdp, ".pf-paircode__target--child");
     await wait(500);
     await cdp.evaluate(`(() => {
       window.__qaSharedInvite = null;
@@ -1821,47 +1933,50 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     })()`);
     await clickSelector(cdp, ".ci-btn--share");
     await wait(200);
-    const familyRoleChoiceFacts = await cdp.evaluate(`(() => ({
+    const childInviteFacts = await cdp.evaluate(`(() => ({
       hash: location.hash,
       title: document.querySelector(".ci-title")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
-      headline: document.querySelector(".ci-headline")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
       lead: document.querySelector(".ci-lead")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
       qrVisible: Boolean(document.querySelector('.ci-qr-card canvas[role="img"]')),
       sharedText: window.__qaSharedInvite?.text ?? "",
     }))()`);
-    const roleChoiceSharedText = familyRoleChoiceFacts.sharedText ?? "";
+    const childInviteSharedText = childInviteFacts.sharedText ?? "";
     if (
-      familyRoleChoiceEntryFacts.label !== "가족 연결 코드 · QR"
-      || !familyRoleChoiceEntryFacts.hint?.includes("학부모 또는 아이를 먼저 선택")
-      || !familyRoleChoiceEntryFacts.qrVisible
-      || familyRoleChoiceFacts.hash !== "#/child-invite?role=choose"
-      || familyRoleChoiceFacts.title !== "가족 연결 코드 · QR"
-      || !familyRoleChoiceFacts.headline?.includes("QR을 읽는 사람이 역할을 선택")
-      || !familyRoleChoiceFacts.lead?.includes("학부모 또는 아이를 먼저 선택")
-      || !familyRoleChoiceFacts.qrVisible
-      || !roleChoiceSharedText.includes("pair=KID-QA123456")
-      || roleChoiceSharedText.includes("as=child")
-      || roleChoiceSharedText.includes("as=parent")
-      || rowProblems(familyRoleChoice).length > 0
+      familyRoleSpecificEntryFacts.label !== "누구를 연결할까요?"
+      || !familyRoleSpecificEntryFacts.intro?.includes("연결할 사람을 먼저 선택")
+      || familyRoleSpecificEntryFacts.genericQrVisible
+      || familyRoleSpecificEntryFacts.targetCount !== 2
+      || !familyRoleSpecificEntryFacts.childTarget?.includes("아이")
+      || !familyRoleSpecificEntryFacts.parentTarget?.includes("보호자")
+      || childInviteFacts.hash !== "#/child-invite?role=child"
+      || !childInviteFacts.title?.includes("아이 초대")
+      || !childInviteFacts.lead?.includes("아이 기기")
+      || !childInviteFacts.qrVisible
+      || !childInviteSharedText.includes("pair=KID-QA123456")
+      || !childInviteSharedText.includes("as=child")
+      || childInviteSharedText.includes("as=parent")
+      || rowProblems(familyRoleSpecificInvite).length > 0
     ) {
       report.problems.push({
-        scope: "family-management-role-choice-qr",
-        facts: { entry: familyRoleChoiceEntryFacts, invite: familyRoleChoiceFacts },
-        routeProblems: rowProblems(familyRoleChoice),
+        scope: "family-management-role-specific-invites",
+        facts: { entry: familyRoleSpecificEntryFacts, childInvite: childInviteFacts },
+        routeProblems: rowProblems(familyRoleSpecificInvite),
       });
     }
-    report.focused.familyManagementRoleChoiceQr = {
-      entry: familyRoleChoiceEntryFacts,
-      invite: familyRoleChoiceFacts,
-      routeState: familyRoleChoice.state,
+    report.focused.familyManagementRoleSpecificInvites = {
+      entry: familyRoleSpecificEntryFacts,
+      childInvite: childInviteFacts,
+      routeState: familyRoleSpecificInvite.state,
     };
-    report.screenshots.push(await screenshot(cdp, freshOutputDir, "family-role-choice-invite.png"));
+    report.screenshots.push(await screenshot(cdp, freshOutputDir, "family-child-role-invite.png"));
 
     // 가족 화면의 공동 보호자 CTA는 아이 초대와 다른 역할 링크·문구를 공유한다.
     const coParentInvite = await navigate(
       { role: "parent", tier: "free", catalogMode: "valid", overLimit: false },
-      "child-invite?role=parent",
+      "parent/family",
     );
+    await clickSelector(cdp, ".pf-paircode__target--parent");
+    await wait(500);
     await cdp.evaluate(`(() => {
       window.__qaSharedInvite = null;
       Object.defineProperty(navigator, "share", {
@@ -1873,6 +1988,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     await clickSelector(cdp, ".ci-btn--share");
     await wait(200);
     const coParentInviteFacts = await cdp.evaluate(`(() => ({
+      hash: location.hash,
       title: document.querySelector(".ci-title")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
       lead: document.querySelector(".ci-lead")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
       waiting: document.querySelector(".ci-wait")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
@@ -1882,7 +1998,8 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     }))()`);
     const sharedText = coParentInviteFacts.sharedText ?? "";
     if (
-      !coParentInviteFacts.title?.includes("공동 보호자")
+      coParentInviteFacts.hash !== "#/child-invite?role=parent"
+      || !coParentInviteFacts.title?.includes("공동 보호자")
       || !coParentInviteFacts.lead?.includes("초대받은 보호자")
       || !coParentInviteFacts.waiting?.includes("공동 보호자")
       || !coParentInviteFacts.qrVisible
@@ -1899,6 +2016,106 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     }
     report.focused.coParentInviteShare = coParentInviteFacts;
     report.screenshots.push(await screenshot(cdp, freshOutputDir, "co-parent-invite-share.png"));
+
+    // 공동 보호자 슬롯이 찬 가족은 새 QR을 숨기고 기존 보호자 관리로만 연결한다.
+    const occupiedCoParent = await navigate(
+      { role: "parent", tier: "free", catalogMode: "valid", overLimit: false, coParentConnected: true },
+      "parent/family",
+    );
+    const occupiedCoParentEntryFacts = await cdp.evaluate(`(() => ({
+      targetTitle: document.querySelector(".pf-paircode__target--parent .pf-paircode__target-title")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      targetDescription: document.querySelector(".pf-paircode__target--parent .pf-paircode__target-sub")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      genericQrVisible: Boolean(document.querySelector('.pf-paircode canvas[role="img"]')),
+    }))()`);
+    await clickSelector(cdp, ".pf-paircode__target--parent");
+    await wait(500);
+    const occupiedCoParentManagementFacts = await cdp.evaluate(`(() => ({
+      hash: location.hash,
+      guardianName: document.querySelector(".fc-coparent .fc-device__name")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      replacementHint: document.querySelector(".fc-coparent .fc-note")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      removeAction: document.querySelector(".fc-unpair--coparent")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      parentInviteVisible: Boolean(document.querySelector(".fc-invite")),
+    }))()`);
+    if (
+      occupiedCoParentEntryFacts.targetTitle !== "공동 보호자 연결됨"
+      || !occupiedCoParentEntryFacts.targetDescription?.includes("연결된 보호자님이 이미 연결")
+      || occupiedCoParentEntryFacts.genericQrVisible
+      || occupiedCoParentManagementFacts.hash !== "#/family-connection"
+      || occupiedCoParentManagementFacts.guardianName !== "연결된 보호자"
+      || !occupiedCoParentManagementFacts.replacementHint?.includes("기존 보호자 연결을 먼저 해제")
+      || !occupiedCoParentManagementFacts.removeAction?.includes("연결된 보호자 연결 해제")
+      || occupiedCoParentManagementFacts.parentInviteVisible
+      || rowProblems(occupiedCoParent).length > 0
+    ) {
+      report.problems.push({
+        scope: "occupied-co-parent-replacement-flow",
+        facts: { entry: occupiedCoParentEntryFacts, management: occupiedCoParentManagementFacts },
+        routeProblems: rowProblems(occupiedCoParent),
+      });
+    }
+    report.focused.occupiedCoParentReplacement = {
+      entry: occupiedCoParentEntryFacts,
+      management: occupiedCoParentManagementFacts,
+      routeState: occupiedCoParent.state,
+    };
+    report.screenshots.push(await screenshot(cdp, freshOutputDir, "family-existing-coparent-management.png"));
+
+    // 공동 보호자로 로그인해도 자신을 "다른 보호자"로 반복 표시하지 않고 대표 보호자와
+    // 같은 가족의 아이를 정확히 보여야 한다. 대표 보호자 해제 권한도 노출하지 않는다.
+    const coParentGuardianVisibility = await navigate(
+      {
+        role: "parent",
+        tier: "free",
+        catalogMode: "valid",
+        overLimit: false,
+        coParentConnected: true,
+        coParentViewer: true,
+      },
+      "parent/family",
+    );
+    const coParentFamilyFacts = await cdp.evaluate(`(() => ({
+      guardianRows: [...document.querySelectorAll(".pf-parent")].map((row) => row.textContent?.replace(/\\s+/g, " ").trim() ?? ""),
+      childNames: [...document.querySelectorAll(".pf-child__name")].map((node) => node.textContent?.trim() ?? ""),
+    }))()`);
+    await clickSelector(cdp, ".pf-conn");
+    await wait(500);
+    const coParentGuardianVisibilityFacts = await cdp.evaluate(`(() => ({
+      hash: location.hash,
+      otherGuardianName: document.querySelector(".fc-coparent .fc-device__name")?.textContent?.trim() ?? null,
+      otherGuardianRole: document.querySelector(".fc-coparent .fc-device__sub")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      currentGuardianRepeated: [...document.querySelectorAll(".fc-coparent .fc-device__name")]
+        .some((node) => node.textContent?.trim() === "데모 보호자"),
+      childNames: [...document.querySelectorAll(".fc-device .fc-device__name")].map((node) => node.textContent?.trim() ?? ""),
+      removeActionVisible: Boolean(document.querySelector(".fc-unpair--coparent")),
+      inviteVisible: Boolean(document.querySelector(".fc-invite")),
+    }))()`);
+    if (
+      coParentFamilyFacts.guardianRows.length !== 2
+      || !coParentFamilyFacts.guardianRows.some((row) => row.includes("데모 보호자") && row.includes("나"))
+      || !coParentFamilyFacts.guardianRows.some((row) => row.includes("연결된 보호자"))
+      || !coParentFamilyFacts.childNames.includes("데모 자녀")
+      || coParentFamilyFacts.childNames.includes("아이2")
+      || coParentGuardianVisibilityFacts.hash !== "#/family-connection"
+      || coParentGuardianVisibilityFacts.otherGuardianName !== "연결된 보호자"
+      || !coParentGuardianVisibilityFacts.otherGuardianRole?.includes("대표 보호자")
+      || coParentGuardianVisibilityFacts.currentGuardianRepeated
+      || !coParentGuardianVisibilityFacts.childNames.includes("데모 자녀")
+      || coParentGuardianVisibilityFacts.removeActionVisible
+      || coParentGuardianVisibilityFacts.inviteVisible
+      || rowProblems(coParentGuardianVisibility).length > 0
+    ) {
+      report.problems.push({
+        scope: "co-parent-sees-primary-guardian-and-children",
+        facts: { family: coParentFamilyFacts, connection: coParentGuardianVisibilityFacts },
+        routeProblems: rowProblems(coParentGuardianVisibility),
+      });
+    }
+    report.focused.coParentGuardianVisibility = {
+      family: coParentFamilyFacts,
+      connection: coParentGuardianVisibilityFacts,
+      routeState: coParentGuardianVisibility.state,
+    };
+    report.screenshots.push(await screenshot(cdp, freshOutputDir, "family-coparent-sees-primary-and-child.png"));
 
     for (const route of PARENT_BROWSER_QA_ROUTES) {
       const row = await navigate({ role: "parent", tier: "free", catalogMode: "valid", overLimit: route === "place-manager" }, route);

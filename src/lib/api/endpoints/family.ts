@@ -349,6 +349,18 @@ export async function unpairChild(familyId: string, childUserId: string): Promis
 }
 
 /**
+ * 기존 공동 보호자 연결 해제(주 보호자만). 계정은 삭제하지 않고 가족 멤버십만 비활성화하며,
+ * 서버가 해당 보호자의 세션·푸시·실시간 가족 접근을 함께 닫는다.
+ */
+export async function removeCoParent(familyId: string, parentUserId: string): Promise<void> {
+  if (!familyId || !parentUserId) throw new Error("가족·보호자 정보가 필요해요");
+  await apiPost("/api/family/co-parent/remove", {
+    family_id: familyId,
+    parent_user_id: parentUserId,
+  });
+}
+
+/**
  * 아이 프로필(이름 + 테마색 + 생일 + 전화) 저장 — 주 보호자만(서버 member/profile).
  * 서버가 role='child' 행만 갱신하고 color_hex 형식(#RRGGBB)을 검증하며, notifyPg 로
  * 가족 WS 실시간 반영(아이 기기 useMyFamily 자동 갱신)을 트리거한다.

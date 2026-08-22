@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useIntl } from "react-intl";
+import { ChevronLeft, ChevronRight, Copy, RefreshCw, Share2, Smartphone, UserPlus } from "lucide-react";
 import { localizeApiError } from "@/i18n/apiError";
-import { ChevronLeft, RefreshCw, Share2, Copy } from "lucide-react";
 import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useMyFamily, useRegeneratePairCode } from "@/queries/useFamily";
 import { QrCode } from "@/components/ui/QrCode";
-import { buildPairLink, buildPairRoleChoiceLink, type PairInviteRole } from "@/transform/pairLink";
+import { buildPairLink, type PairInviteRole } from "@/transform/pairLink";
 import type { FamilyMember } from "@/lib/api/endpoints/family";
 import {
   advanceChildInviteConnection,
@@ -17,7 +17,6 @@ import { useLocale } from "@/i18n/useLocale";
 import { formatCountdownDuration } from "@/i18n/format";
 import "./ChildInvite.css";
 
-/** 만료까지 남은 시간 표시 + 만료 여부. 무기한(expiresAt 없음)이면 null. */
 function useCountdown(
   expiresAt: Date | null,
   locale: Parameters<typeof formatCountdownDuration>[1],
@@ -33,31 +32,123 @@ function useCountdown(
   return formatCountdownDuration(left, locale);
 }
 
-/**
- * 가족 초대/연결 (와이어프레임 P-05 초대코드·QR).
- * 실 페어링 코드 + QR 표시 · 공유 · 복사 · 재발급 · 만료 타이머 ·
- * 역할별 새 구성원 연결 감지 폴링 → 연결되면 자동으로 가족 화면으로 안내.
- */
-export function ChildInvite() {
+function InviteRoleChoice() {
+  const intl = useIntl();
+  const navigate = useNavigate();
+  const familyQuery = useMyFamily();
+  const family = familyQuery.data;
+  const coParent = family?.members.find(
+    (member) =>
+      member.role === "parent"
+      && member.user_id
+      && member.user_id !== family.primaryParentId,
+  );
+  const canInviteCoParent = Boolean(family?.isPrimaryParent && !coParent);
+  const guardianName = coParent?.name || intl.formatMessage({ id: "parent.familyConnection.guardianFallback" });
+
+  return (
+    <div className="ci-screen">
+      <div className="ci-header">
+        <button
+          type="button"
+          className="ci-back hy-press"
+          aria-label={intl.formatMessage({ id: "parent.childInvite.back" })}
+          onClick={() => navigate(-1)}
+        >
+          <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
+        </button>
+        <span className="ci-title">
+          {intl.formatMessage({ id: "parent.parentFamily.connectionTargetTitle" })}
+        </span>
+      </div>
+
+      <div className="ci-content">
+        <div className="ci-headline">
+          {intl.formatMessage({ id: "parent.familyInvite.choice.headline" })}
+        </div>
+        <div className="ci-lead">
+          {intl.formatMessage({ id: "parent.parentFamily.connectionTargetDescription" })}
+        </div>
+
+        {familyQuery.isLoading ? (
+          <div className="ci-role-state" role="status">
+            {intl.formatMessage({ id: "parent.childInvite.loading" })}
+          </div>
+        ) : familyQuery.isError ? (
+          <div className="ci-role-state ci-role-state--error" role="alert">
+            <span>{intl.formatMessage({ id: "parent.childInvite.loadError" })}</span>
+            <button type="button" className="ci-regen hy-press" onClick={() => void familyQuery.refetch()}>
+              {intl.formatMessage({ id: "parent.childInvite.retry" })}
+            </button>
+          </div>
+        ) : (
+          <div className="ci-role-list">
+            <button
+              type="button"
+              className="ci-role-card hy-press"
+              onClick={() => navigate("/child-invite?role=child", { replace: true })}
+            >
+              <span className="ci-role-card__icon ci-role-card__icon--child">
+                <Smartphone size={24} strokeWidth={2.2} />
+              </span>
+              <span className="ci-role-card__main">
+                <span className="ci-role-card__title">
+                  {intl.formatMessage({ id: "parent.familyInvite.choice.childTitle" })}
+                </span>
+                <span className="ci-role-card__description">
+                  {intl.formatMessage({ id: "parent.familyInvite.choice.childDescription" })}
+                </span>
+              </span>
+              <ChevronRight size={20} strokeWidth={2.4} color="var(--fg-disabled)" />
+            </button>
+
+            <button
+              type="button"
+              className="ci-role-card hy-press"
+              onClick={() => navigate(canInviteCoParent ? "/child-invite?role=parent" : "/family-connection", { replace: true })}
+            >
+              <span className="ci-role-card__icon ci-role-card__icon--parent">
+                <UserPlus size={24} strokeWidth={2.2} />
+              </span>
+              <span className="ci-role-card__main">
+                <span className="ci-role-card__title">
+                  {intl.formatMessage({
+                    id: canInviteCoParent
+                      ? "parent.familyInvite.choice.parentTitle"
+                      : "parent.parentFamily.guardianSlotOccupied",
+                  })}
+                </span>
+                <span className="ci-role-card__description">
+                  {intl.formatMessage(
+                    {
+                      id: canInviteCoParent
+                        ? "parent.familyInvite.choice.parentDescription"
+                        : "parent.parentFamily.guardianSlotOccupiedDescription",
+                    },
+                    { guardianName },
+                  )}
+                </span>
+              </span>
+              <ChevronRight size={20} strokeWidth={2.4} color="var(--fg-disabled)" />
+            </button>
+          </div>
+        )}
+
+        <img className="ci-mascot" src={asset("mascot/family.webp")} alt="" />
+      </div>
+    </div>
+  );
+}
+
+function RoleSpecificInvite({ inviteRole }: { inviteRole: PairInviteRole }) {
   const { locale } = useLocale();
   const intl = useIntl();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { show } = useToast();
-  const requestedRole = searchParams.get("role");
-  const inviteRole: PairInviteRole | "choose" = requestedRole === "parent"
-    ? "parent"
-    : requestedRole === "choose"
-      ? "choose"
-      : "child";
   const parentInvite = inviteRole === "parent";
-  const roleChoiceInvite = inviteRole === "choose";
-  const connectedMessageId = roleChoiceInvite
-    ? "onboarding.toast.familyConnected"
-    : parentInvite
-      ? "parent.familyConnection.coParentConnected"
-      : "parent.childInvite.connected";
-  // 대기 화면이므로 6초 폴링으로 선택한 역할의 새 가족 구성원 연결을 감지한다.
+  const connectedMessageId = parentInvite
+    ? "parent.familyConnection.coParentConnected"
+    : "parent.childInvite.connected";
   const {
     data: family,
     isLoading,
@@ -67,35 +158,31 @@ export function ChildInvite() {
   } = useMyFamily({ pollMs: 6000 });
   const regen = useRegeneratePairCode();
 
-  const pairCode = family?.pairCode ?? "";
+  const coParent = family?.members.find(
+    (member) =>
+      member.role === "parent"
+      && member.user_id
+      && member.user_id !== family.primaryParentId,
+  );
+  const canInviteCoParent = Boolean(family?.isPrimaryParent && !coParent);
+  const parentInviteBlocked = Boolean(parentInvite && isSuccess && family && !canInviteCoParent);
+  const guardianName = coParent?.name || intl.formatMessage({ id: "parent.familyConnection.guardianFallback" });
+  const pairCode = parentInviteBlocked ? "" : family?.pairCode ?? "";
   const expiresAt = family?.pairCodeExpiresAt ?? null;
   const countdown = useCountdown(expiresAt, locale);
   const expired = countdown?.expired ?? false;
-
   const pairLink = useMemo(
-    () => (
-      pairCode
-        ? inviteRole === "choose"
-          ? buildPairRoleChoiceLink(pairCode)
-          : buildPairLink(pairCode, inviteRole)
-        : ""
-    ),
+    () => (pairCode ? buildPairLink(pairCode, inviteRole) : ""),
     [inviteRole, pairCode],
   );
 
-  // 연결 감지 — "연결된 자녀 uid 집합"에 baseline 에 없던 uid 가 나타나면 성공.
-  // 개수 비교는 supersede 페어링(기기 교체·무료 슬롯 대체: 서버가 옛 행을 제외해 N→N)을
-  // 영원히 못 잡으므로, 집합 변화(새 uid 등장)로 판정한다.
   const memberUids = useMemo(
     () =>
       (family?.members ?? [])
-        .filter((m: FamilyMember) => (
-          (roleChoiceInvite ? m.role === "child" || m.role === "parent" : m.role === inviteRole)
-          && !!m.user_id
-        ))
-        .map((m) => m.user_id as string)
+        .filter((member: FamilyMember) => member.role === inviteRole && !!member.user_id)
+        .map((member) => member.user_id as string)
         .sort(),
-    [family, inviteRole, roleChoiceInvite],
+    [family, inviteRole],
   );
   const connectionRef = useRef<ChildInviteConnectionState>({ baseline: null, notified: false });
   useEffect(() => {
@@ -107,27 +194,21 @@ export function ChildInvite() {
     connectionRef.current = result.state;
     if (result.newChildUid) {
       show(intl.formatMessage({ id: connectedMessageId }), "🔗");
-      const t = setTimeout(() => navigate("/parent/family"), 1200);
-      return () => clearTimeout(t);
+      const timer = setTimeout(() => navigate("/parent/family"), 1200);
+      return () => clearTimeout(timer);
     }
   }, [connectedMessageId, family, isError, isSuccess, memberUids, navigate, show]);
 
   const copyCode = () => {
     if (!pairCode) return;
-    const clip = navigator.clipboard;
-    if (!clip?.writeText) {
-      show(intl.formatMessage(
-        { id: "parent.childInvite.copyUnsupported" },
-        { pairCode },
-      ), "✏️");
+    const clipboard = navigator.clipboard;
+    if (!clipboard?.writeText) {
+      show(intl.formatMessage({ id: "parent.childInvite.copyUnsupported" }, { pairCode }), "✏️");
       return;
     }
-    clip.writeText(pairCode).then(
+    clipboard.writeText(pairCode).then(
       () => show(intl.formatMessage({ id: "parent.childInvite.copied" }), "📋"),
-      () => show(intl.formatMessage(
-        { id: "parent.childInvite.copyFailed" },
-        { pairCode },
-      ), "✏️"),
+      () => show(intl.formatMessage({ id: "parent.childInvite.copyFailed" }, { pairCode }), "✏️"),
     );
   };
 
@@ -137,39 +218,29 @@ export function ChildInvite() {
       { id: parentInvite ? "parent.familyInvite.parent.shareText" : "parent.childInvite.shareText" },
       { pairCode, pairLink },
     );
-    // Web Share API 우선(모바일 네이티브 공유 시트). 미지원 시 링크 복사로 대체.
     if (navigator.share) {
       try {
         await navigator.share({
           title: intl.formatMessage({
             id: parentInvite
               ? "parent.familyConnection.inviteCoParent"
-              : roleChoiceInvite
-                ? "parent.parentFamily.copy016"
-                : "parent.childInvite.shareTitle",
+              : "parent.childInvite.shareTitle",
           }),
           text,
         });
         return;
       } catch {
-        // 사용자가 공유 취소 → 조용히 종료(성공 단언 금지).
         return;
       }
     }
-    const clip = navigator.clipboard;
-    if (clip?.writeText) {
-      clip.writeText(text).then(
+    const clipboard = navigator.clipboard;
+    if (clipboard?.writeText) {
+      clipboard.writeText(text).then(
         () => show(intl.formatMessage({ id: "parent.childInvite.linkCopied" }), "🔗"),
-        () => show(intl.formatMessage(
-          { id: "parent.childInvite.shareFallback" },
-          { pairCode },
-        ), "✏️"),
+        () => show(intl.formatMessage({ id: "parent.childInvite.shareFallback" }, { pairCode }), "✏️"),
       );
     } else {
-      show(intl.formatMessage(
-        { id: "parent.childInvite.shareFallback" },
-        { pairCode },
-      ), "✏️");
+      show(intl.formatMessage({ id: "parent.childInvite.shareFallback" }, { pairCode }), "✏️");
     }
   };
 
@@ -178,7 +249,7 @@ export function ChildInvite() {
     connectionRef.current = { ...connectionRef.current, notified: false };
     regen.mutate(undefined, {
       onSuccess: () => show(intl.formatMessage({ id: "parent.childInvite.regenerated" }), "🔄"),
-      onError: (e) => show(localizeApiError(e, intl, "formal"), "⚠️"),
+      onError: (error) => show(localizeApiError(error, intl, "formal"), "⚠️"),
     });
   };
 
@@ -197,9 +268,7 @@ export function ChildInvite() {
           {intl.formatMessage({
             id: parentInvite
               ? "parent.familyConnection.inviteCoParent"
-              : roleChoiceInvite
-                ? "parent.parentFamily.copy016"
-                : "parent.childInvite.screenTitle",
+              : "parent.childInvite.screenTitle",
           })}
         </span>
       </div>
@@ -209,140 +278,150 @@ export function ChildInvite() {
           {intl.formatMessage({
             id: parentInvite
               ? "parent.familyConnection.inviteCoParent"
-              : roleChoiceInvite
-                ? "parent.familyInvite.choice.headline"
-                : "parent.childInvite.headline",
+              : "parent.childInvite.headline",
           })}
         </div>
         <div className="ci-lead">
-          {roleChoiceInvite ? (
-            intl.formatMessage({ id: "parent.parentFamily.copy022" })
-          ) : (
-            <>
-              {intl.formatMessage({
-                id: parentInvite ? "parent.familyInvite.parent.lead1" : "parent.childInvite.lead1",
-              })}
-              <br />
-              {intl.formatMessage({
-                id: parentInvite ? "parent.familyInvite.parent.lead2" : "parent.childInvite.lead2",
-              })}
-            </>
-          )}
+          {intl.formatMessage({
+            id: parentInvite ? "parent.familyInvite.parent.lead1" : "parent.childInvite.lead1",
+          })}
+          <br />
+          {intl.formatMessage({
+            id: parentInvite ? "parent.familyInvite.parent.lead2" : "parent.childInvite.lead2",
+          })}
         </div>
 
-        {/* QR 카드 */}
-        <div className="ci-qr-card">
-          {isLoading ? (
-            <div className="ci-qr-skeleton">
-              {intl.formatMessage({ id: "parent.childInvite.loading" })}
+        {parentInviteBlocked ? (
+          <div className="ci-occupied" role="alert">
+            <span className="ci-occupied__icon"><UserPlus size={28} strokeWidth={2.1} /></span>
+            <strong>{intl.formatMessage({ id: "parent.parentFamily.guardianSlotOccupied" })}</strong>
+            <p>
+              {intl.formatMessage(
+                { id: "parent.parentFamily.guardianSlotOccupiedDescription" },
+                { guardianName },
+              )}
+            </p>
+            <button type="button" className="ci-btn ci-btn--manage hy-press" onClick={() => navigate("/family-connection", { replace: true })}>
+              {intl.formatMessage({ id: "parent.parentFamily.manageGuardian" })}
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="ci-qr-card">
+              {isLoading ? (
+                <div className="ci-qr-skeleton">
+                  {intl.formatMessage({ id: "parent.childInvite.loading" })}
+                </div>
+              ) : isError ? (
+                <div className="ci-qr-skeleton ci-qr-skeleton--error" role="alert">
+                  <span>{intl.formatMessage({ id: "parent.childInvite.loadError" })}</span>
+                  <button type="button" className="ci-regen hy-press" onClick={() => void refetchFamily()}>
+                    {intl.formatMessage({ id: "parent.childInvite.retry" })}
+                  </button>
+                </div>
+              ) : pairLink && !expired ? (
+                <QrCode
+                  value={pairLink}
+                  size={212}
+                  label={intl.formatMessage({
+                    id: parentInvite
+                      ? "parent.familyConnection.viewCode"
+                      : "parent.childInvite.qrLabel",
+                  })}
+                />
+              ) : !pairCode ? (
+                <div className="ci-qr-skeleton" role="status">
+                  {intl.formatMessage({ id: "parent.childInvite.noCode" })}
+                </div>
+              ) : (
+                <div className="ci-qr-skeleton">
+                  {intl.formatMessage({ id: "parent.childInvite.expiredLine1" })}
+                  {"\n"}
+                  {intl.formatMessage({ id: "parent.childInvite.expiredLine2" })}
+                </div>
+              )}
             </div>
-          ) : isError ? (
-            <div className="ci-qr-skeleton ci-qr-skeleton--error" role="alert">
-              <span>{intl.formatMessage({ id: "parent.childInvite.loadError" })}</span>
-              <button type="button" className="ci-regen hy-press" onClick={() => void refetchFamily()}>
-                {intl.formatMessage({ id: "parent.childInvite.retry" })}
+
+            <div className="ci-code-row">
+              <span className={expired ? "ci-code ci-code--expired" : "ci-code"}>
+                {isLoading
+                  ? intl.formatMessage({ id: "parent.childInvite.loading" })
+                  : pairCode || intl.formatMessage({ id: "parent.childInvite.codeNone" })}
+              </span>
+              {countdown && (
+                <span className={expired ? "ci-timer ci-timer--expired" : "ci-timer"}>
+                  {expired
+                    ? intl.formatMessage({ id: "parent.childInvite.expiredStatus" })
+                    : intl.formatMessage({ id: "core.time.remaining" }, { duration: countdown.text })}
+                </span>
+              )}
+            </div>
+
+            <div className="ci-actions">
+              <button
+                type="button"
+                className="ci-btn ci-btn--copy hy-press"
+                onClick={copyCode}
+                disabled={!pairCode || expired}
+              >
+                <Copy size={16} strokeWidth={2.4} style={{ verticalAlign: "-3px", marginRight: 4 }} />
+                {intl.formatMessage({ id: "parent.childInvite.copyAction" })}
+              </button>
+              <button
+                type="button"
+                className="ci-btn ci-btn--share hy-press"
+                onClick={shareLink}
+                disabled={!pairCode || expired}
+              >
+                <Share2 size={16} strokeWidth={2.4} style={{ verticalAlign: "-3px", marginRight: 4 }} />
+                {intl.formatMessage({ id: "parent.childInvite.shareAction" })}
               </button>
             </div>
-          ) : pairLink && !expired ? (
-            <QrCode
-              value={pairLink}
-              size={212}
-              label={intl.formatMessage({
-                id: roleChoiceInvite
-                  ? "parent.parentFamily.copy018"
-                  : parentInvite
-                    ? "parent.familyConnection.viewCode"
-                    : "parent.childInvite.qrLabel",
+
+            <button
+              type="button"
+              className={expired ? "ci-regen ci-regen--primary hy-press" : "ci-regen hy-press"}
+              onClick={regenerate}
+              disabled={regen.isPending}
+              aria-busy={regen.isPending}
+            >
+              <RefreshCw size={15} strokeWidth={2.4} style={{ verticalAlign: "-2px", marginRight: 4 }} />
+              {intl.formatMessage({
+                id: regen.isPending
+                  ? "parent.childInvite.issuing"
+                  : expired
+                    ? "parent.childInvite.issueExpired"
+                    : "parent.childInvite.issue",
               })}
-            />
-          ) : !pairCode ? (
-            <div className="ci-qr-skeleton" role="status">
-              {intl.formatMessage({ id: "parent.childInvite.noCode" })}
+            </button>
+
+            <div className="ci-wait">
+              <span className="ci-wait__dot" />
+              {intl.formatMessage({
+                id: parentInvite
+                  ? "parent.familyInvite.parent.waiting"
+                  : "parent.childInvite.waiting",
+              })}
             </div>
-          ) : (
-            <div className="ci-qr-skeleton">
-              {intl.formatMessage({ id: "parent.childInvite.expiredLine1" })}
-              {"\n"}
-              {intl.formatMessage({ id: "parent.childInvite.expiredLine2" })}
-            </div>
-          )}
-        </div>
-
-        {/* 코드 + 만료 타이머 */}
-        <div className="ci-code-row">
-          <span className={expired ? "ci-code ci-code--expired" : "ci-code"}>
-            {isLoading
-              ? intl.formatMessage({ id: "parent.childInvite.loading" })
-              : pairCode || intl.formatMessage({ id: "parent.childInvite.codeNone" })}
-          </span>
-          {countdown && (
-            <span className={expired ? "ci-timer ci-timer--expired" : "ci-timer"}>
-              {expired
-                ? intl.formatMessage({ id: "parent.childInvite.expiredStatus" })
-                : intl.formatMessage(
-                    { id: "core.time.remaining" },
-                    { duration: countdown.text },
-                  )}
-            </span>
-          )}
-        </div>
-
-        {/* 액션 — 코드가 만료되면 복사·공유는 의미가 없으므로 잠그고, 재발급을 주 CTA 로 올린다. */}
-        <div className="ci-actions">
-          <button
-            type="button"
-            className="ci-btn ci-btn--copy hy-press"
-            onClick={copyCode}
-            disabled={!pairCode || expired}
-          >
-            <Copy size={16} strokeWidth={2.4} style={{ verticalAlign: "-3px", marginRight: 4 }} />
-            {intl.formatMessage({ id: "parent.childInvite.copyAction" })}
-          </button>
-          <button
-            type="button"
-            className="ci-btn ci-btn--share hy-press"
-            onClick={shareLink}
-            disabled={!pairCode || expired}
-          >
-            <Share2 size={16} strokeWidth={2.4} style={{ verticalAlign: "-3px", marginRight: 4 }} />
-            {intl.formatMessage({ id: "parent.childInvite.shareAction" })}
-          </button>
-        </div>
-
-        <button
-          type="button"
-          className={expired ? "ci-regen ci-regen--primary hy-press" : "ci-regen hy-press"}
-          onClick={regenerate}
-          disabled={regen.isPending} aria-busy={regen.isPending}
-        >
-          <RefreshCw size={15} strokeWidth={2.4} style={{ verticalAlign: "-2px", marginRight: 4 }} />
-          {intl.formatMessage({
-            id: regen.isPending
-              ? "parent.childInvite.issuing"
-              : expired
-                ? "parent.childInvite.issueExpired"
-                : "parent.childInvite.issue",
-          })}
-        </button>
-
-        {/* 연결 대기 상태 */}
-        <div className="ci-wait">
-          <span className="ci-wait__dot" />
-          {intl.formatMessage({
-            id: roleChoiceInvite
-              ? "parent.familyInvite.choice.waiting"
-              : parentInvite
-                ? "parent.familyInvite.parent.waiting"
-                : "parent.childInvite.waiting",
-          })}
-        </div>
+          </>
+        )}
 
         <img
           className="ci-mascot"
-          src={asset(parentInvite || roleChoiceInvite ? "mascot/family.webp" : "mascot/phone.webp")}
+          src={asset(parentInvite ? "mascot/family.webp" : "mascot/phone.webp")}
           alt=""
         />
       </div>
     </div>
   );
+}
+
+/** 역할 선택 뒤에만 아이 또는 공동 보호자 전용 QR을 발급한다. */
+export function ChildInvite() {
+  const [searchParams] = useSearchParams();
+  const requestedRole = searchParams.get("role");
+  const roleChoiceInvite = requestedRole !== "child" && requestedRole !== "parent";
+  if (roleChoiceInvite) return <InviteRoleChoice />;
+  const inviteRole: PairInviteRole = requestedRole;
+  return <RoleSpecificInvite inviteRole={inviteRole} />;
 }

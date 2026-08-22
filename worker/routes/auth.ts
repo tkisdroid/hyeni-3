@@ -77,6 +77,38 @@ async function isAnonymousUser(db: D1Database, uid: string): Promise<boolean> {
   return !!Number(row?.is_anonymous);
 }
 
+async function isRefreshFromInactiveDevice(
+  db: D1Database,
+  refreshToken: string,
+  presentedDeviceId: string | null,
+): Promise<boolean> {
+  if (!refreshToken || !presentedDeviceId) return false;
+  const row = await db
+    .prepare(
+      `SELECT rt.device_id AS token_device_id,
+              ads.device_id AS active_device_id,
+              ads.revoked_at AS active_revoked_at,
+              ads.expires_at AS active_expires_at
+         FROM refresh_tokens rt
+         JOIN account_device_sessions ads ON ads.user_id=rt.user_id
+        WHERE rt.token=?
+        LIMIT 1`,
+    )
+    .bind(refreshToken)
+    .first<{
+      token_device_id: string | null;
+      active_device_id: string;
+      active_revoked_at: string | null;
+      active_expires_at: string;
+    }>();
+  if (!row || (row.token_device_id && row.token_device_id !== presentedDeviceId)) return false;
+  return Boolean(
+    row.active_revoked_at
+    || row.active_expires_at <= new Date().toISOString()
+    || row.active_device_id !== presentedDeviceId,
+  );
+}
+
 // login_id → user_profiles.phone → users(phone 매칭, '+' 제거) → role/family
 async function resolveRole(
   db: D1Database,
@@ -340,12 +372,13 @@ auth.post("/refresh", async (c) => {
   const old = String(body?.refresh_token ?? "");
   if (!old) return c.json({ error: "invalid_token" }, 401);
 
+  const refreshDeviceId = normalizeDeviceId(body?.device_install_id);
   let rot: Awaited<ReturnType<typeof rotateRefreshToken>>;
   try {
     rot = await rotateRefreshToken(
       c.env.DB,
       old,
-      normalizeDeviceId(body?.device_install_id),
+      refreshDeviceId,
       { deviceLabel: body.device_label, devicePlatform: body.device_platform },
     );
   } catch (error) {
@@ -357,7 +390,12 @@ auth.post("/refresh", async (c) => {
     }
     throw error;
   }
-  if (!rot) return c.json({ error: "invalid_token" }, 401);
+  if (!rot) {
+    if (await isRefreshFromInactiveDevice(c.env.DB, old, refreshDeviceId)) {
+      return c.json({ error: "device_session_inactive" }, 401);
+    }
+    return c.json({ error: "invalid_token" }, 401);
+  }
 
   // 익명 세션도 갱신 가능해야 한다. 익명 user 는 family_members 가 없어 resolveRole 이
   // 'parent'로 오판하므로, is_anonymous 플래그로 role='anonymous'를 보존한다.

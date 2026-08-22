@@ -337,7 +337,7 @@ export async function initPush(params: InitPushParams): Promise<PushInitResult> 
   const platform = getPlatform();
   const noop: PushInitResult = { platform, permissionGranted: false, token: null, registered: false };
 
-  if (!isNativePlatform()) return noop; // 웹/iOS 사파리 = no-op
+  if (!isNativePlatform() || platform !== "android") return noop;
   if (!params.userId || !params.familyId) return noop; // 세션/가족 미확정 시 등록 금지
 
   const permit = await acquirePushRegistrationPermit();
@@ -389,7 +389,7 @@ export async function unregisterPushBeforeLogout(
     lastRegisteredRegistrationInstanceId = null;
     return;
   }
-  if (!isNativePlatform()) {
+  if (!isNativePlatform() || getPlatform() !== "android") {
     lastRegisteredToken = null;
     lastRegisteredRegistrationInstanceId = null;
     return;
@@ -428,5 +428,5 @@ export async function unregisterPushBeforeLogout(
 
 /** 이 기기에서 FCM 푸시 등록이 가능한지(네이티브 + 플러그인 존재). 웹=false. */
 export function isPushSupported(): boolean {
-  return isNativePlatform() && getNativePlugin(LOCATION_PLUGIN) !== null;
+  return isNativePlatform() && getPlatform() === "android" && getNativePlugin(LOCATION_PLUGIN) !== null;
 }

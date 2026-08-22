@@ -3,6 +3,41 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
+**가족 정합성·단일 설치·iOS 출시 준비(2026-08-23, 병합·배포 대기)**: 운영 D1을 읽기 전용으로
+교차 확인한 결과, `tkisdroid` 가족의 활성 정본은 대표 보호자 `tkisdroid`·아이 `혜니`·과거에 연결된 다른
+보호자 1명이었고, `mindlady`는 가입 계정은 존재하지만 활성 가족 멤버십이 없었다. 따라서 `mindlady` 연결 실패의
+직접 원인은 휴면 상태인 기존 보호자 멤버십이 공동 보호자 1명 슬롯을 계속 점유한 것이며, 화면의 `아이2`는 활성
+`family_members`에 존재하는 실제 아이가 아니라 과거 역할 없는 QR/온보딩이 만든 로컬 표시였다. 운영 가족·계정·세션·
+refresh 토큰은 변경하지 않았으며, 실제 복구 절차는 배포 뒤 대표 보호자가 가족 연결 관리에서 과거 보호자 연결을
+해제하고 `공동 보호자` 전용 QR로 `mindlady`를 초대하는 것이다.
+
+가족 조회는 이제 활성 멤버십만 반환하고, 공동 보호자 슬롯 점유는 stable `409 coparent_slot_occupied`로 구분한다.
+대표 보호자 전용 공동 보호자 해제 API는 멤버십을 비활성화하면서 해당 계정의 refresh·활성 설치 세션·FCM·Web Push·
+realtime 연결을 함께 폐기해 유령 접근을 남기지 않는다. QR은 아이/보호자 역할을 발급 시점부터 분리하고 역할 없는
+구형 QR은 인증·익명 아이 생성 전에 역할 선택으로 fail-closed한다. 연결 성공도 토큰 저장만으로 완료 처리하지 않고,
+새 세션의 `user_id`·role·family와 `/api/family/mine`의 활성 멤버가 모두 같은지 확인한 뒤에만 홈으로 보낸다.
+가족 화면과 연결 관리 화면은 로그인한 보호자 자신을 중복 표시하지 않으면서 다른 보호자 전원과 같은 활성 아이 목록을
+보여 주고, 공동 보호자는 대표 보호자를 해제하거나 새 보호자를 초대할 권한을 받지 않는다.
+
+계정별 활성 설치는 정확히 1대로 유지한다. PC에서 비밀번호/OAuth/페어링으로 다시 본인 인증하면 새 설치가 원자적으로
+인계받고, 이전 iPhone의 access·refresh·WebSocket·push endpoint는 사용할 수 없게 된다. 이전 기기는 다음 API/실시간
+재연결에서 세션을 자동 삭제하고 `다른 기기에서 다시 로그인했거나 가족 연결 권한이 변경됨` 안내를 한 번만 표시한다.
+Chrome 격리 QA에서 가족 조회 401→refresh 401→세션 제거→역할 화면·안내 표시, 새로고침 뒤 안내 재표시 없음까지 확인했다.
+
+iPhone 보호자 PWA/향후 Capacitor iOS 앱은 Worker API→FCM→아이 Android 경로를 사용하므로 위치·기기 상태·메시지·
+장소/알림 설정·소리 울리기·주변 소리 수신 등 부모 제어를 부모 기기의 Android 여부로 막지 않는다. iOS WebView의
+stable install id, 정확한 `capacitor://localhost` CORS, 공식 Capacitor Browser OAuth, iOS custom callback scheme,
+플러그인 availability, 권한·미디어 fallback을 정리했다. iOS 프로젝트에는 Browser Swift Package, privacy usage copy,
+브랜드 아이콘/스플래시와 1.4.0(11)을 반영했고 `npm run ios:sync` 한 번으로 build·sync·SPM 경로 정규화·패키징 검증이
+끝난다. 다만 macOS Xcode signing/App Store Connect 입력, APNs entitlement·실기기 push, StoreKit 실제 결제처럼 Apple
+자격과 네이티브 환경이 필요한 마지막 단계는 Windows에서 완료한 것으로 위장하지 않으며 `docs/ios-build.md`에 남겼다.
+
+최종 검증은 앱 `1,898/1,898`, Worker `1,268/1,268`, 앱·Worker typecheck, production build(2,285 modules·
+precache 473·중복 0), 실제 Chrome QA 부모 43+아이 14 화면 문제 0, 공동 보호자 양방향 명단·단일 설치 인계 집중 시나리오,
+PWA install/offline/update 문제 0, 격리 mobile WebKit PASS, `npm run ios:sync` 및 iOS 패키징 1.4.0(11), Android
+`testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL이다. 실사용 계정 로그인·로그아웃·역할 전환·재페어링,
+실기기 설치와 운영 D1 mutation은 수행하지 않았다.
+
 **아이관리 공용 QR의 보호자→아이 오등록 차단(2026-08-23, 운영 배포 완료)**: Safari에서 다른 보호자가
 `아이관리 > 가족 연결 코드 · QR`을 읽으면 `아이2`로 보이던 근본 원인은 공용 QR이
 `buildPairLink(pairCode)`의 과거 기본값을 통해 `as=child`를 붙여 발급되던 것이었다. Safari 카메라는 그 URL을
