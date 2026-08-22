@@ -3,6 +3,7 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
+**최신 배포 상태(2026-08-22 오전, 커밋 `f1def22` 가입 첫 화면 프리미엄 흐름)**: 언어 선택 트리거 알약·소셜 가입 설문 경로·휴대폰 가입 버튼 계층 통일·OTP 진행 트랙 등 온보딩 UX를 다듬은 커밋 `f1def22`를 Pages에 배포했다. Worker는 이전 version(`188d1103-e9b8-4ac2-9cc0-59419b1709fd`) 그대로며 health 200 `{"ok":true,"status":"ready"}`다. 고정 주소 `hyeni-calendar.pages.dev`의 index.html SHA-256 `947092a4a60a2c044ec04ef50d355375e700a856ff77a750331b33a5f8e20f9f`, sw.js `10a2d60ec6d36489565b88c99f614423ed0579a756c1c51a6dea5260bd4acb89`, entry `assets/index-CpGLA9HA.js`, CSS `assets/index-BU7CSNBK.css`, `/oauth/callback.html`, manifest까지 로컬 dist와 바이트 일치를 재확인했다. 실기기·계정·D1은 건드리지 않았다. 남은 후속은 A17/razr/S25 실기기 화면 관측과 Play 심사 전송(HOLD)이다.
 ---
 
 ## 0. 한 줄 요약
