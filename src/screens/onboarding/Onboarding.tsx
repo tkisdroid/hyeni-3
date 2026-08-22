@@ -342,6 +342,17 @@ export function Onboarding() {
       navigate(homePathForRole(current.role), { replace: true });
       return;
     }
+    // ★공동 보호자 보호: 부모 역할로 로그인한 세션이 QR/링크로 진입하면
+    //   아이 경로(익명 로그인→child 페어링)로 빠지지 않고 부모 페어링으로 연결한다.
+    //   (공동 보호자가 배우자에게 받은 페어링 링크를 클릭 → child로 등록되던 실사고.)
+    if (current.status === "authenticated" && current.role === "parent") {
+      clearPairParam();
+      setPairPrefill(code);
+      setRole("parent");
+      setPairMode("parent");
+      setStep("pairing");
+      return;
+    }
     clearPairParam();
     setPairPrefill(code);
     setBusy(true);

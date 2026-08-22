@@ -45,7 +45,9 @@ test("온보딩 네이버 버튼은 키가 있을 때만 렌더된다", () => {
     new URL("../locales/ko/onboarding.json", import.meta.url),
     "utf8",
   ));
-  assert.match(src, /\{hasNaverClientId && \([\s\S]{0,200}social\("naver"\)/);
+  // 2026-08-22 병합: socialProvidersForAccessCountry + naverAvailable 로 provider 판정.
+  assert.match(src, /socialProvidersForAccessCountry\(accessCountry,\s*\{[\s\S]{0,100}naverAvailable:\s*hasNaverClientId/);
+  assert.match(src, /socialProviders\.includes\("naver"\) && \([\s\S]{0,200}social\("naver"\)/);
   // 소셜 버튼은 탭에 따라 로그인/가입 라벨을 갈아끼운다 — 조건부 id 계약을 고정한다.
   assert.match(src, /signingUp \? "onboarding\.signup\.naver" : "onboarding\.login\.naver"/);
   assert.equal(koCatalog["onboarding.login.naver"], "네이버로 계속하기");

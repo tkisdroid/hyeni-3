@@ -1126,24 +1126,12 @@ family.post("/join", requireAuth, async (c) => {
     }
     await revokeInactiveSameNameChildSockets(c.env, familyId, userId, already.name);
   } else {
-    const mutation = await c.env.DB.batch([
-      c.env.DB.prepare(
-        `UPDATE family_members SET is_active=is_active
-          WHERE id=?
-            AND EXISTS(SELECT 1 FROM users WHERE id=?)
-            AND ${ACCOUNT_DELETION_ABSENT_ONE_USER}`,
-      ).bind(already.id, userId, userId, familyId),
-      c.env.DB.prepare(
-        `UPDATE users SET is_anonymous=0
-          WHERE id=? AND ${ACCOUNT_DELETION_ABSENT_ONE_USER}`,
-      ).bind(userId, userId, familyId),
-    ]);
-    if (
-      Number(mutation[0]?.meta?.changes ?? 0) !== 1
-      || Number(mutation[1]?.meta?.changes ?? 0) !== 1
-    ) {
-      return c.json({ error: "join_session_invalidated" }, 409);
-    }
+    // child 전용 엔드포인트 — parent·teacher 등 다른 역할이 이미 멤버면 거부.
+    // 보호자가 실수로 자녀 페어링 링크(/join)를 타면 join-as-parent 로 안내한다.
+    return c.json({
+      error: "이미 보호자로 등록된 계정이에요. 보호자 연결은 다른 경로로 진행해 주세요",
+      code: "already_parent_member",
+    }, 400);
   }
 
   // 각 membership mutation과 같은 D1 batch에서 is_anonymous=0을 확정한 뒤
