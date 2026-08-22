@@ -68,6 +68,16 @@ const ACTIVE_CHILD_MUTATION_LEASE_ABSENT = `NOT EXISTS (
    WHERE user_id=? AND expires_at>?
 )`;
 
+const ACTIVE_PARENT_MEMBERSHIP_ABSENT = `NOT EXISTS (
+  SELECT 1 FROM family_members
+   WHERE user_id=? AND role='parent' AND is_active=1
+)`;
+
+const ACTIVE_CHILD_MEMBERSHIP_ABSENT = `NOT EXISTS (
+  SELECT 1 FROM family_members
+   WHERE user_id=? AND role='child' AND is_active=1
+)`;
+
 const FAMILY_STORAGE_UPLOAD_JOURNAL_ABSENT = `NOT EXISTS (
   SELECT 1 FROM storage_invalid_upload_cleanup_jobs
    WHERE family_id=? AND committed_at IS NULL AND cleaned_at IS NULL
@@ -856,8 +866,19 @@ family.post("/join", requireAuth, async (c) => {
           `UPDATE family_members SET ${sets.join(", ")}
             WHERE id=?
               AND EXISTS(SELECT 1 FROM users WHERE id=?)
+              AND ${ACTIVE_PARENT_MEMBERSHIP_ABSENT}
+              AND ${ACTIVE_PARENT_MEMBERSHIP_ABSENT}
               AND ${ACCOUNT_DELETION_ABSENT_TWO_USERS}`,
-        ).bind(...binds, reusable.id, sessionUserId, userId, sessionUserId, familyId),
+        ).bind(
+          ...binds,
+          reusable.id,
+          sessionUserId,
+          userId,
+          sessionUserId,
+          userId,
+          sessionUserId,
+          familyId,
+        ),
         c.env.DB.prepare(
           `UPDATE users SET is_anonymous=0
             WHERE id=? AND ${ACCOUNT_DELETION_ABSENT_TWO_USERS}`,
@@ -921,6 +942,7 @@ family.post("/join", requireAuth, async (c) => {
                    WHERE family_id=? AND role='child' AND is_active=1 AND user_id IS NOT NULL
                 ) < ?
                 AND EXISTS(SELECT 1 FROM users WHERE id=?)
+                AND ${ACTIVE_PARENT_MEMBERSHIP_ABSENT}
                 AND ${ACCOUNT_DELETION_ABSENT_ONE_USER}`,
           ).bind(
             userId,
@@ -929,6 +951,7 @@ family.post("/join", requireAuth, async (c) => {
             familyId,
             familyId,
             cap,
+            userId,
             userId,
             userId,
             familyId,
@@ -960,6 +983,7 @@ family.post("/join", requireAuth, async (c) => {
             `INSERT INTO family_members (id, family_id, user_id, role, name, is_active, created_at)
              SELECT ?,?,?, 'child',?,1,?
               WHERE EXISTS(SELECT 1 FROM users WHERE id=?)
+                AND ${ACTIVE_PARENT_MEMBERSHIP_ABSENT}
                 AND ${ACCOUNT_DELETION_ABSENT_ONE_USER}
                 AND (
                   EXISTS(
@@ -979,6 +1003,7 @@ family.post("/join", requireAuth, async (c) => {
             userId,
             name,
             pgNow(),
+            userId,
             userId,
             userId,
             familyId,
@@ -1099,6 +1124,7 @@ family.post("/join", requireAuth, async (c) => {
               ) < ?
             )
             AND EXISTS(SELECT 1 FROM users WHERE id=?)
+            AND ${ACTIVE_PARENT_MEMBERSHIP_ABSENT}
             AND ${ACCOUNT_DELETION_ABSENT_ONE_USER}`,
       ).bind(
         already.id,
@@ -1110,6 +1136,7 @@ family.post("/join", requireAuth, async (c) => {
         familyId,
         userId,
         cap,
+        userId,
         userId,
         userId,
         familyId,
@@ -1353,8 +1380,9 @@ family.post("/join-as-parent", requireAuth, async (c) => {
                       AND other_parent.user_id IS NOT NULL
                       AND other_parent.user_id<>target_family.parent_id
                       AND other_parent.user_id<>?
-                 )
+                  )
             )
+            AND ${ACTIVE_CHILD_MEMBERSHIP_ABSENT}
             AND ${ACCOUNT_DELETION_ABSENT_ONE_USER}`,
       ).bind(
         parentName,
@@ -1363,6 +1391,7 @@ family.post("/join-as-parent", requireAuth, async (c) => {
         userId,
         userId,
         familyId,
+        userId,
         userId,
         userId,
         userId,
@@ -1412,6 +1441,7 @@ family.post("/join-as-parent", requireAuth, async (c) => {
             AND NOT EXISTS(
               SELECT 1 FROM family_members WHERE family_id=? AND user_id=?
             )
+            AND ${ACTIVE_CHILD_MEMBERSHIP_ABSENT}
             AND ${ACCOUNT_DELETION_ABSENT_ONE_USER}`,
       ).bind(
         crypto.randomUUID(),
@@ -1421,6 +1451,7 @@ family.post("/join-as-parent", requireAuth, async (c) => {
         pgNow(),
         userId,
         familyId,
+        userId,
         userId,
         userId,
         familyId,

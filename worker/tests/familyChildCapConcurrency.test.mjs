@@ -312,6 +312,30 @@ test("오래된 보호자 role 토큰이 남아도 활성 자녀 membership은 j
   );
 });
 
+test("같은 사용자의 child·stale parent 토큰이 동시에 가입해도 활성 역할은 하나만 커밋된다", async () => {
+  const { sqlite, db } = createDb();
+  addUser(sqlite, "dual-child-primary", false);
+  addUser(sqlite, "dual-parent-primary", false);
+  addUser(sqlite, "dual-role-user", false);
+  addFamily(sqlite, "dual-child-family", "dual-child-primary");
+  addFamily(sqlite, "dual-parent-family", "dual-parent-primary");
+  sqlite.prepare("UPDATE families SET pair_code='KID-DUAL-CHILD' WHERE id='dual-child-family'").run();
+  sqlite.prepare("UPDATE families SET pair_code='KID-DUAL-PARENT' WHERE id='dual-parent-family'").run();
+
+  const responses = await Promise.all([
+    joinRequestAs(db, "dual-role-user", "KID-DUAL-CHILD", "아이", "child", false),
+    joinAsParentRequest(db, "dual-role-user", "KID-DUAL-PARENT", "보호자", "parent"),
+  ]);
+
+  assert.deepEqual(responses.map((response) => response.status).sort(), [200, 409]);
+  assert.equal(sqlite.prepare(
+    "SELECT COUNT(*) AS count FROM family_members WHERE user_id='dual-role-user' AND is_active=1",
+  ).get().count, 1);
+  assert.equal(sqlite.prepare(
+    "SELECT COUNT(DISTINCT role) AS count FROM family_members WHERE user_id='dual-role-user' AND is_active=1",
+  ).get().count, 1);
+});
+
 test("Free 기존 가족의 동시 setup은 활성 자녀 placeholder를 1명만 만든다", async () => {
   const { sqlite, db } = createDb();
   addUser(sqlite, "parent-setup", false);

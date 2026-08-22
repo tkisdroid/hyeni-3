@@ -14,8 +14,12 @@
 아이로 자동 가입시키지 않고 역할 선택을 먼저 보여 주며, 공동 보호자 링크는 부모 인증→`join-as-parent`만 사용한다.
 로그인된 부모가 아이 링크를 열거나 아이/선생님 세션이 부모 링크를 열어도 역할을 재해석하지 않고 명확히 거부한다.
 Worker는 등록 부모·선생님의 `/join`, 익명·비부모의 `/join-as-parent`, 활성 아이 멤버십이 있는 stale 부모 세션의
-권한 상승을 각각 stable error로 차단한다. 가족 화면은 아이 초대와 공동 보호자 초대를 분리하고, 공동 보호자 초대는
-대표 부모이며 아직 공동 보호자가 없을 때만 노출한다. 검증은 앱 1,880/1,880·Worker 1,261/1,261·세션 가드 17/17,
+권한 상승을 각각 stable error로 차단한다. 사전 조회뿐 아니라 child/parent membership 조건부 mutation 안에도
+반대 활성 역할 `NOT EXISTS`를 넣어 stale child·parent JWT의 cross-route 동시 요청이 서로 다른 가족에 두 역할을
+커밋하는 TOCTOU를 원자 차단한다. 현재 탭의 session draft는 공유 local draft보다 우선하며, 다른 탭의 draft와
+다르더라도 어느 쪽도 지우지 않아 OAuth 복귀 탭의 초대·설문을 보존한다. 가족 화면은 아이 초대와 공동 보호자 초대를
+분리하고, 공동 보호자 초대는 대표 부모이며 아직 공동 보호자가 없을 때만 노출한다. 검증은 앱 1,881/1,881·
+Worker 1,262/1,262·가입/세션 집중 회귀 38/38·역할 경쟁 회귀 21/21,
 앱/Worker typecheck, production build(2,280 modules·precache 472·중복 0), 브라우저 QA 부모 43+아이 14 화면 문제 0,
 PWA install/offline/update 문제 0, Android `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL이다.
 실제 계정 로그인·로그아웃·역할 전환·재페어링, refresh 토큰, 실기기 설치, D1 데이터는 건드리지 않았다.

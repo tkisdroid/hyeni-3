@@ -3,6 +3,7 @@ import type { SignupMethod } from "./onboardingFlow.ts";
 
 const ONBOARDING_DRAFT_KEY = "hyeni-onboarding-draft-v1";
 const ONBOARDING_DRAFT_TTL_MS = 20 * 60 * 1000;
+let activeDraftRaw: string | null = null;
 
 export interface PendingPairInvite {
   code: string;
@@ -75,38 +76,76 @@ export function parseOnboardingDraft(raw: string | null, nowMs = Date.now()): On
   }
 }
 
-function browserStores(): Storage[] {
-  if (typeof window === "undefined") return [];
-  return [window.sessionStorage, window.localStorage];
+function browserStore(kind: "sessionStorage" | "localStorage"): Storage | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window[kind];
+  } catch {
+    return null;
+  }
+}
+
+function readStoredDraft(storage: Storage | null): string | null {
+  if (!storage) return null;
+  try {
+    return storage.getItem(ONBOARDING_DRAFT_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function removeStoredDraft(storage: Storage | null): void {
+  if (!storage) return;
+  try {
+    storage.removeItem(ONBOARDING_DRAFT_KEY);
+  } catch {
+    // 저장소 접근 불가
+  }
+}
+
+function writeStoredDraft(storage: Storage | null, serialized: string): void {
+  if (!storage) return;
+  try {
+    storage.setItem(ONBOARDING_DRAFT_KEY, serialized);
+  } catch {
+    // 저장소가 막혀도 다른 저장소와 현재 화면 흐름은 계속 사용한다.
+  }
 }
 
 export function clearOnboardingDraft(): void {
-  for (const storage of browserStores()) {
-    try {
-      storage.removeItem(ONBOARDING_DRAFT_KEY);
-    } catch {
-      // 저장소가 막혀도 다른 저장소와 현재 화면 흐름은 계속 사용한다.
-    }
+  const sessionStorage = browserStore("sessionStorage");
+  const localStorage = browserStore("localStorage");
+  const sessionRaw = readStoredDraft(sessionStorage);
+  const ownedRaw = activeDraftRaw ?? sessionRaw;
+  activeDraftRaw = null;
+  removeStoredDraft(sessionStorage);
+  if (ownedRaw && readStoredDraft(localStorage) === ownedRaw) {
+    removeStoredDraft(localStorage);
   }
 }
 
 export function readOnboardingDraft(): OnboardingDraft | null {
-  const drafts: OnboardingDraft[] = [];
-  for (const storage of browserStores()) {
-    try {
-      const parsed = parseOnboardingDraft(storage.getItem(ONBOARDING_DRAFT_KEY));
-      if (parsed) drafts.push(parsed);
-    } catch {
-      // 저장소 접근 불가
-    }
+  const nowMs = Date.now();
+  const sessionStorage = browserStore("sessionStorage");
+  const sessionRaw = readStoredDraft(sessionStorage);
+  const sessionDraft = parseOnboardingDraft(sessionRaw, nowMs);
+  if (sessionDraft && sessionRaw) {
+    activeDraftRaw = sessionRaw;
+    return sessionDraft;
   }
-  if (drafts.length === 0) return null;
-  const canonical = JSON.stringify(drafts[0]);
-  if (!drafts.every((draft) => JSON.stringify(draft) === canonical)) {
-    clearOnboardingDraft();
-    return null;
+  if (sessionRaw) removeStoredDraft(sessionStorage);
+
+  const localStorage = browserStore("localStorage");
+  const localRaw = readStoredDraft(localStorage);
+  const localDraft = parseOnboardingDraft(localRaw, nowMs);
+  if (localDraft && localRaw) {
+    activeDraftRaw = localRaw;
+    writeStoredDraft(sessionStorage, localRaw);
+    return localDraft;
   }
-  return drafts[0] ?? null;
+  if (localRaw) removeStoredDraft(localStorage);
+  activeDraftRaw = null;
+  return null;
 }
 
 export function persistOnboardingDraft(input: {
@@ -116,14 +155,8 @@ export function persistOnboardingDraft(input: {
 }): OnboardingDraft {
   const draft = createOnboardingDraft(input);
   const serialized = JSON.stringify(draft);
-  clearOnboardingDraft();
-  for (const storage of browserStores()) {
-    try {
-      storage.setItem(ONBOARDING_DRAFT_KEY, serialized);
-    } catch {
-      // OAuth 보안 context가 별도로 실패를 차단하므로 draft 저장 실패는 현재 화면 상태로 복구한다.
-    }
-  }
+  activeDraftRaw = serialized;
+  writeStoredDraft(browserStore("sessionStorage"), serialized);
+  writeStoredDraft(browserStore("localStorage"), serialized);
   return draft;
 }
-
