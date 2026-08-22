@@ -23,11 +23,11 @@ for (const [name, source] of [
 }
 
 test("가족 화면의 코드·QR·공동 보호자 초대는 둘째 아이 업셀과 분리된다", () => {
-  const inviteStart = parentFamily.indexOf("const inviteChild = () =>");
+  const inviteStart = parentFamily.indexOf("const inviteRoleChoice = () =>");
   const inviteEnd = parentFamily.indexOf("const addChild", inviteStart);
   assert.ok(inviteStart >= 0 && inviteEnd > inviteStart);
   const inviteBody = parentFamily.slice(inviteStart, inviteEnd);
-  assert.match(inviteBody, /navigate\("\/child-invite"\)/);
+  assert.match(inviteBody, /navigate\("\/child-invite\?role=choose"\)/);
   assert.match(inviteBody, /navigate\("\/child-invite\?role=parent"\)/);
   assert.doesNotMatch(inviteBody, /resolveChildAddGate|setUpsellOpen|\/subscription/);
 });

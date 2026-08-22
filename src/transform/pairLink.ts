@@ -2,8 +2,8 @@
  * 페어링 딥링크 조립·파싱.
  * QR 은 공개 웹앱 주소의 온보딩으로 향하는 딥링크를 인코딩한다.
  *   https://<web>/#/onboarding?pair=KID-XXXXXXXX&as=child|parent
- * 아이 기기가 카메라로 스캔하면 웹앱이 열리고, Onboarding 이 pair 파라미터를 읽어
- * 코드를 미리 채운 채 아이 연결 흐름으로 진입한다.
+ * 카메라로 스캔하면 웹앱이 열리고, Onboarding 이 pair와 as를 함께 읽어
+ * 역할 명시 링크는 해당 흐름으로, 공용 링크는 역할 선택으로 진입한다.
  */
 import { PUBLIC_WEB_BASE } from "@/config/env";
 
@@ -16,9 +16,18 @@ export interface PairInvite {
 }
 
 /** 페어링 코드 → QR 에 넣을 역할 명시 공개 딥링크. */
-export function buildPairLink(pairCode: string, role: PairInviteRole = "child"): string {
+export function buildPairLink(pairCode: string, role: PairInviteRole): string {
   const code = String(pairCode || "").trim().toUpperCase();
   return `${PUBLIC_WEB_BASE}/#/onboarding?pair=${encodeURIComponent(code)}&as=${role}`;
+}
+
+/**
+ * 아이관리의 공용 QR처럼 연결 대상이 정해지지 않은 진입점에 쓴다.
+ * 역할을 URL에서 추정하지 않아 Safari로 읽어도 온보딩에서 학부모/아이를 먼저 선택한다.
+ */
+export function buildPairRoleChoiceLink(pairCode: string): string {
+  const code = String(pairCode || "").trim().toUpperCase();
+  return `${PUBLIC_WEB_BASE}/#/onboarding?pair=${encodeURIComponent(code)}`;
 }
 
 export function parsePairInviteFromLocation(input: { search: string; hash: string }): PairInvite | null {

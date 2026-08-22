@@ -248,16 +248,16 @@ test("7일 체험 CTA는 localized CTA를 포함한 locale별 완전한 문장�
 
 test("QR·추천 크레딧·주변소리·준비물의 고위험 의미를 locale별 실제 문구로 보존한다", () => {
   const qr = {
-    ko: "아이 연결 QR 코드",
-    en: "Child connection QR code",
-    ja: "子ども連携QRコード",
-    "zh-CN": "孩子连接二维码",
-    "zh-TW": "孩子連結 QR 碼",
-    vi: "Mã QR kết nối trẻ",
-    th: "คิวอาร์โค้ดเชื่อมต่อเด็ก",
-    id: "Kode QR untuk menghubungkan anak",
-    ms: "Kod QR sambungan anak",
-    fil: "QR code para ikonekta ang bata",
+    ko: "가족 역할 선택 QR 코드",
+    en: "Family role-selection QR code",
+    ja: "家族の役割選択QRコード",
+    "zh-CN": "家庭角色选择二维码",
+    "zh-TW": "家庭角色選擇 QR 碼",
+    vi: "Mã QR chọn vai trò gia đình",
+    th: "คิวอาร์โค้ดเลือกบทบาทครอบครัว",
+    id: "Kode QR pemilihan peran keluarga",
+    ms: "Kod QR pilihan peranan keluarga",
+    fil: "QR code para sa pagpili ng role sa pamilya",
   };
   const supplies = {
     ko: "예) 실내화, 물통 (쉼표로 여러 개)",
@@ -274,7 +274,7 @@ test("QR·추천 크레딧·주변소리·준비물의 고위험 의미를 local
 
   for (const locale of allLocales) {
     const parent = readCatalog(locale, "parent");
-    assert.equal(parent["parent.parentFamily.copy018"], qr[locale], `${locale}: 아이 연결 QR`);
+    assert.equal(parent["parent.parentFamily.copy018"], qr[locale], `${locale}: 가족 역할 선택 QR`);
     assert.equal(parent["parent.eventForm.copy056"], supplies[locale], `${locale}: 준비물 예시`);
     if (locale !== "ko") {
       // 단계 설명(copy013)은 2026-08-17에 없어졌다 — 남은 지급 조건 문구로 같은 오인을 막는다.

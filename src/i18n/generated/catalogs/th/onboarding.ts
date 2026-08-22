@@ -38,7 +38,7 @@ const messages = {
   "onboarding.guardian.dad": "พ่อ",
   "onboarding.guardian.mom": "แม่",
   "onboarding.guardian.other": "ผู้ปกครอง",
-  "onboarding.invite.legacyChoice": "นี่คือลิงก์เชิญแบบเก่า โปรดเลือกว่าอุปกรณ์นี้เป็นของผู้ปกครองหรือเด็ก",
+  "onboarding.invite.legacyChoice": "เลือกว่าผู้เชื่อมต่อเป็นผู้ปกครองหรือเด็ก ระบบจะเชื่อมต่ออย่างปลอดภัยตามบทบาทที่เลือกเท่านั้น",
   "onboarding.invite.parent.authDescription": "เข้าสู่ระบบบัญชีเดิมหรือสร้างบัญชีผู้ปกครอง แล้วเข้าร่วมครอบครัว",
   "onboarding.invite.parent.title": "คุณได้รับเชิญให้เป็นผู้ปกครองร่วม",
   "onboarding.invite.roleMismatch": "บทบาทของบัญชีปัจจุบันไม่ตรงกับคำเชิญ โปรดเปิดใหม่ด้วยอุปกรณ์หรือบัญชีที่ตรงกัน",

@@ -38,7 +38,7 @@ const messages = {
   "onboarding.guardian.dad": "Ayah",
   "onboarding.guardian.mom": "mak",
   "onboarding.guardian.other": "Penjaga",
-  "onboarding.invite.legacyChoice": "Ini ialah pautan jemputan lama. Pilih sama ada peranti ini digunakan oleh penjaga atau anak.",
+  "onboarding.invite.legacyChoice": "Pilih sama ada yang disambungkan ialah ibu bapa atau anak. Kami hanya menyambung mengikut peranan yang dipilih.",
   "onboarding.invite.parent.authDescription": "Log masuk ke akaun sedia ada atau cipta akaun penjaga, kemudian sertai keluarga.",
   "onboarding.invite.parent.title": "Anda dijemput sebagai penjaga bersama",
   "onboarding.invite.roleMismatch": "Peranan akaun semasa tidak sepadan dengan jemputan. Buka semula menggunakan peranti atau akaun yang betul.",

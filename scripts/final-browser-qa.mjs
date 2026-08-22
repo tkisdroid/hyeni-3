@@ -1239,7 +1239,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       languageCurrent: japanLanguageCurrent,
     };
 
-    // as가 없던 구형 초대 링크는 역할을 단정하지 않고 보호자·아이 선택을 다시 받는다.
+    // 역할 중립 공용 QR과 as가 없던 구형 링크는 역할을 단정하지 않고 학부모·아이 선택을 받는다.
     await cdp.evaluate("localStorage.clear(); sessionStorage.clear(); true");
     const legacyInviteOnboarding = await navigate(
       { role: "public", tier: "free", catalogMode: "valid", overLimit: false },
@@ -1255,7 +1255,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     const legacyParentChoiceFacts = await cdp.evaluate('({ loginVisible: Boolean(document.querySelector(".ob-login")), pairingVisible: Boolean(document.querySelector(".ob-pairing")) })');
     if (
       !legacyInviteFacts.roleVisible
-      || !legacyInviteFacts.inviteContext?.includes("예전에 만든 초대 링크")
+      || !legacyInviteFacts.inviteContext?.includes("학부모인지 아이인지 선택")
       || legacyInviteFacts.pairingVisible
       || legacyInviteFacts.hash.includes("pair=")
       || legacyAnonymousRequested
@@ -1798,6 +1798,64 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       loginIdNetworkFailure: { ...loginIdNetworkFacts, expected503: loginIdExpected503 },
     };
     report.screenshots.push(await screenshot(cdp, freshOutputDir, "auth-signup-id-check.png"));
+
+    // 아이관리의 공용 연결 QR은 Safari에서 아이 역할을 추정하지 않고 역할 선택으로 보낸다.
+    const familyRoleChoice = await navigate(
+      { role: "parent", tier: "free", catalogMode: "valid", overLimit: false },
+      "parent/family",
+    );
+    const familyRoleChoiceEntryFacts = await cdp.evaluate(`(() => ({
+      label: document.querySelector(".pf-paircode__label")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      hint: document.querySelector(".pf-paircode__hint")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      qrVisible: Boolean(document.querySelector('.pf-paircode__qr canvas[role="img"]')),
+    }))()`);
+    await clickSelector(cdp, ".pf-paircode__qr");
+    await wait(500);
+    await cdp.evaluate(`(() => {
+      window.__qaSharedInvite = null;
+      Object.defineProperty(navigator, "share", {
+        configurable: true,
+        value: async (data) => { window.__qaSharedInvite = data; },
+      });
+      return true;
+    })()`);
+    await clickSelector(cdp, ".ci-btn--share");
+    await wait(200);
+    const familyRoleChoiceFacts = await cdp.evaluate(`(() => ({
+      hash: location.hash,
+      title: document.querySelector(".ci-title")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      headline: document.querySelector(".ci-headline")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      lead: document.querySelector(".ci-lead")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      qrVisible: Boolean(document.querySelector('.ci-qr-card canvas[role="img"]')),
+      sharedText: window.__qaSharedInvite?.text ?? "",
+    }))()`);
+    const roleChoiceSharedText = familyRoleChoiceFacts.sharedText ?? "";
+    if (
+      familyRoleChoiceEntryFacts.label !== "가족 연결 코드 · QR"
+      || !familyRoleChoiceEntryFacts.hint?.includes("학부모 또는 아이를 먼저 선택")
+      || !familyRoleChoiceEntryFacts.qrVisible
+      || familyRoleChoiceFacts.hash !== "#/child-invite?role=choose"
+      || familyRoleChoiceFacts.title !== "가족 연결 코드 · QR"
+      || !familyRoleChoiceFacts.headline?.includes("QR을 읽는 사람이 역할을 선택")
+      || !familyRoleChoiceFacts.lead?.includes("학부모 또는 아이를 먼저 선택")
+      || !familyRoleChoiceFacts.qrVisible
+      || !roleChoiceSharedText.includes("pair=KID-QA123456")
+      || roleChoiceSharedText.includes("as=child")
+      || roleChoiceSharedText.includes("as=parent")
+      || rowProblems(familyRoleChoice).length > 0
+    ) {
+      report.problems.push({
+        scope: "family-management-role-choice-qr",
+        facts: { entry: familyRoleChoiceEntryFacts, invite: familyRoleChoiceFacts },
+        routeProblems: rowProblems(familyRoleChoice),
+      });
+    }
+    report.focused.familyManagementRoleChoiceQr = {
+      entry: familyRoleChoiceEntryFacts,
+      invite: familyRoleChoiceFacts,
+      routeState: familyRoleChoice.state,
+    };
+    report.screenshots.push(await screenshot(cdp, freshOutputDir, "family-role-choice-invite.png"));
 
     // 가족 화면의 공동 보호자 CTA는 아이 초대와 다른 역할 링크·문구를 공유한다.
     const coParentInvite = await navigate(

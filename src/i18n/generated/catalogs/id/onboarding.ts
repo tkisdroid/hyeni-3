@@ -38,7 +38,7 @@ const messages = {
   "onboarding.guardian.dad": "Ayah",
   "onboarding.guardian.mom": "Mama",
   "onboarding.guardian.other": "Wali",
-  "onboarding.invite.legacyChoice": "Ini adalah tautan undangan lama. Pilih apakah perangkat ini digunakan wali atau anak.",
+  "onboarding.invite.legacyChoice": "Pilih apakah yang terhubung orang tua atau anak. Kami hanya akan menghubungkan sesuai peran yang dipilih.",
   "onboarding.invite.parent.authDescription": "Masuk ke akun yang ada atau buat akun wali, lalu bergabung dengan keluarga.",
   "onboarding.invite.parent.title": "Anda diundang sebagai wali bersama",
   "onboarding.invite.roleMismatch": "Peran akun saat ini tidak cocok dengan undangan. Buka kembali dengan perangkat atau akun yang sesuai.",

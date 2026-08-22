@@ -13776,21 +13776,21 @@
     "audience": "parent",
     "qualityTier": "B",
     "variables": {},
-    "description": "parent.parentFamily.copy016에 표시하는 사용자 안내 문구"
+    "description": "아이관리의 보호자·아이 공용 역할 선택 연결 코드와 QR 제목"
   },
   "parent.parentFamily.copy017": {
     "namespace": "parent",
     "audience": "parent",
     "qualityTier": "B",
     "variables": {},
-    "description": "parent.parentFamily.copy017에 표시하는 사용자 안내 문구"
+    "description": "역할 선택 공용 QR을 크게 여는 접근성 라벨"
   },
   "parent.parentFamily.copy018": {
     "namespace": "parent",
     "audience": "parent",
     "qualityTier": "B",
     "variables": {},
-    "description": "parent.parentFamily.copy018에 표시하는 사용자 안내 문구"
+    "description": "학부모·아이 역할 선택을 먼저 받는 공용 QR의 접근성 라벨"
   },
   "parent.parentFamily.copy019": {
     "namespace": "parent",
@@ -13818,7 +13818,7 @@
     "audience": "parent",
     "qualityTier": "B",
     "variables": {},
-    "description": "parent.parentFamily.copy022에 표시하는 사용자 안내 문구"
+    "description": "공용 QR을 읽은 기기에서 학부모·아이 역할을 먼저 선택해야 함을 안내"
   },
   "parent.parentFamily.copy023": {
     "namespace": "parent",
@@ -13832,7 +13832,7 @@
     "audience": "parent",
     "qualityTier": "B",
     "variables": {},
-    "description": "parent.parentFamily.copy024에 표시하는 사용자 안내 문구"
+    "description": "공동 보호자 전용 QR이 로그인·가입 뒤 보호자 역할로 연결됨을 안내"
   },
   "parent.parentHome.copy001": {
     "namespace": "parent",
@@ -23818,7 +23818,7 @@
     "audience": "parent",
     "qualityTier": "A",
     "variables": {},
-    "description": "역할 정보가 없는 기존 초대 링크에서 보호자·아이 역할 선택을 안내"
+    "description": "역할 중립 공용 QR과 역할 정보가 없는 기존 링크에서 학부모·아이 선택을 안내"
   },
   "onboarding.invite.parent.title": {
     "namespace": "onboarding",
@@ -23861,6 +23861,20 @@
     "qualityTier": "A",
     "variables": {},
     "description": "공동 보호자로 연결한 뒤 공유되는 권한 범위를 안내"
+  },
+  "parent.familyInvite.choice.headline": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "역할 중립 공용 QR을 읽는 사람이 학부모·아이 역할을 선택함을 안내"
+  },
+  "parent.familyInvite.choice.waiting": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "공용 QR을 읽은 기기의 역할 선택과 가족 연결을 기다리는 상태"
   },
   "parent.familyInvite.parent.lead1": {
     "namespace": "parent",

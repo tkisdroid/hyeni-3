@@ -38,7 +38,7 @@ const messages = {
   "onboarding.guardian.dad": "パパ",
   "onboarding.guardian.mom": "ママ",
   "onboarding.guardian.other": "保護者",
-  "onboarding.invite.legacyChoice": "以前の招待リンクです。この端末を使う人が保護者か子どもかを選んでください。",
+  "onboarding.invite.legacyChoice": "接続する人が保護者か子どもかを選んでください。選んだ役割でのみ安全に接続します。",
   "onboarding.invite.parent.authDescription": "既存のアカウントでログインするか保護者アカウントを作成してから、家族に参加します。",
   "onboarding.invite.parent.title": "共同保護者として招待されています",
   "onboarding.invite.roleMismatch": "現在のアカウントの役割と招待の役割が一致しません。対応する端末またはアカウントで開き直してください。",

@@ -171,7 +171,7 @@
   "onboarding.toast.existingSocialAccount": "已安全登入您現有的帳號。",
   "onboarding.invite.roleMismatch": "目前帳號角色與邀請角色不一致。請使用對應的裝置或帳號重新開啟。",
   "onboarding.invite.roleMismatchChild": "這個邀請是給監護人的，請讓監護人在自己的裝置上開啟。",
-  "onboarding.invite.legacyChoice": "這是舊版邀請連結。請選擇這台裝置由監護人還是孩子使用。",
+  "onboarding.invite.legacyChoice": "請選擇連接者是家長還是孩子。系統只會依所選角色安全連接。",
   "onboarding.invite.parent.title": "您已收到共同監護人邀請",
   "onboarding.invite.parent.authDescription": "請登入現有帳號或建立監護人帳號，然後加入家庭。",
   "onboarding.signup.socialPending": "正在開啟社群帳號註冊…",

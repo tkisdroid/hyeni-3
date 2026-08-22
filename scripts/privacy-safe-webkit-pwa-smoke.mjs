@@ -231,6 +231,7 @@ async function runtimeChecks(origin, requests, denyProxy) {
   await context.addInitScript(() => {
     const nativeFetch = window.fetch.bind(window);
     window.__hyWebkitAuthRequests = [];
+    window.__hyWebkitAnonymousRequests = 0;
     window.fetch = (input, init) => {
       const rawUrl = typeof input === "string" || input instanceof URL
         ? String(input)
@@ -240,6 +241,13 @@ async function runtimeChecks(origin, requests, denyProxy) {
         return Promise.resolve(new Response(JSON.stringify({ country: "KR" }), {
           status: 200,
           headers: { "content-type": "application/json; charset=utf-8", "cache-control": "private, no-store" },
+        }));
+      }
+      if (url.pathname === "/auth/anonymous") {
+        window.__hyWebkitAnonymousRequests += 1;
+        return Promise.resolve(new Response(JSON.stringify({ error: "unexpected_anonymous_login" }), {
+          status: 500,
+          headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
         }));
       }
       if (["/auth/login-password", "/auth/check-login-id"].includes(url.pathname)) {
@@ -313,7 +321,11 @@ async function runtimeChecks(origin, requests, denyProxy) {
       rolePaddingLeft: Number.parseFloat(getComputedStyle(document.querySelector(".ob-role")).paddingLeft),
       languageCurrent: document.querySelector(".hy-language__current")?.textContent?.replace(/\s+/g, " ").trim() ?? null,
       languageExpanded: document.querySelector(".hy-language__current")?.getAttribute("aria-expanded") ?? null,
-      languageOptionsVisible: Boolean(document.querySelector(".hy-language__options")),
+      languageOptionsVisible: (() => {
+        const collapse = document.querySelector(".hy-language__collapse");
+        return collapse?.getAttribute("aria-hidden") !== "true"
+          && getComputedStyle(collapse).visibility !== "hidden";
+      })(),
       scrollWidth: document.documentElement.scrollWidth,
       viewportHeight: globalThis.innerHeight,
       viewportWidth: globalThis.innerWidth,
@@ -337,6 +349,38 @@ async function runtimeChecks(origin, requests, denyProxy) {
     assert.equal(await page.locator(".hy-language__options .hy-language__option").count(), 9);
     assert.equal(await page.locator(".hy-language__current").getAttribute("aria-expanded"), "true");
     await page.locator(".hy-language__current").click();
+
+    // 아이관리 공용 QR을 iPhone Safari가 새 탭에서 직접 연 경우 역할을 아이로 단정하지 않는다.
+    const roleChoicePage = await context.newPage();
+    roleChoicePage.on("console", (message) => {
+      if (["error", "warning"].includes(message.type())) {
+        consoleProblems.push({ type: message.type(), text: message.text().slice(0, 500) });
+      }
+    });
+    roleChoicePage.on("pageerror", (error) => pageErrors.push(error.message.slice(0, 500)));
+    await roleChoicePage.goto(`${origin}/index.html#/onboarding?pair=KID-QA123456`, { waitUntil: "domcontentloaded" });
+    await roleChoicePage.locator(".ob-invite-context").waitFor({ state: "visible" });
+    const roleChoiceInvite = await roleChoicePage.evaluate(() => ({
+      anonymousRequested: (window.__hyWebkitAnonymousRequests ?? 0) > 0,
+      childVisible: Boolean(document.querySelector(".ob-role-card--child")),
+      hash: location.hash,
+      inviteContext: document.querySelector(".ob-invite-context")?.textContent?.replace(/\s+/g, " ").trim() ?? null,
+      pairingVisible: Boolean(document.querySelector(".ob-pairing")),
+      parentVisible: Boolean(document.querySelector(".ob-role-card--parent")),
+    }));
+    await roleChoicePage.close();
+    assert.equal(roleChoiceInvite.anonymousRequested, false, "공용 QR이 익명 아이 로그인을 시작했습니다");
+    assert.equal(roleChoiceInvite.parentVisible, true, "공용 QR에서 학부모 역할을 선택할 수 없습니다");
+    assert.equal(roleChoiceInvite.childVisible, true, "공용 QR에서 아이 역할을 선택할 수 없습니다");
+    assert.equal(roleChoiceInvite.pairingVisible, false, "공용 QR이 역할 선택 전에 아이 페어링을 열었습니다");
+    assert.ok(
+      roleChoiceInvite.inviteContext?.includes("학부모인지 아이인지 선택"),
+      `공용 QR 역할 안내가 불명확합니다: ${JSON.stringify(roleChoiceInvite)}`,
+    );
+    assert.equal(roleChoiceInvite.hash.includes("pair="), false, "처리한 공용 QR 파라미터가 Safari URL에 남았습니다");
+
+    await page.goto(`${origin}/index.html#/onboarding`, { waitUntil: "domcontentloaded" });
+    await page.locator(".ob-role-card--parent").waitFor({ state: "visible" });
 
     // iPhone급 WebKit 인증 진입점 — 실제 계정·SMS 없이 401 복구와 ID 중복확인을 검증한다.
     await page.getByRole("button", { name: /학부모/ }).click();
@@ -463,13 +507,17 @@ async function runtimeChecks(origin, requests, denyProxy) {
         controlled: Boolean(navigator.serviceWorker.controller),
         online: navigator.onLine,
         scrollWidth: document.documentElement.scrollWidth,
-        titleVisible: [...document.querySelectorAll(".ob-role-title")]
-          .some((element) => element.textContent?.trim() === "혜니캘린더"),
+        onboardingVisible: (() => {
+          const onboarding = document.querySelector(".ob-root");
+          if (!onboarding) return false;
+          const rect = onboarding.getBoundingClientRect();
+          return rect.width > 0 && rect.height > 0 && getComputedStyle(onboarding).visibility !== "hidden";
+        })(),
       };
     });
     assert.equal(offlineLayout.online, false);
     assert.equal(offlineLayout.controlled, true);
-    assert.equal(offlineLayout.titleVisible, true);
+    assert.equal(offlineLayout.onboardingVisible, true);
     assert.equal(offlineLayout.cachedShellStatus, 200);
     assert.equal(offlineLayout.cachedShellHasRoot, true);
     assert.ok(offlineLayout.scrollWidth <= offlineLayout.clientWidth, "오프라인 온보딩에 가로 overflow가 있습니다");
@@ -498,6 +546,7 @@ async function runtimeChecks(origin, requests, denyProxy) {
       pageErrors,
       playwrightPackagePath: playwrightPackagePath.replaceAll("\\", "/"),
       registration,
+      roleChoiceInvite,
       screenshotBytes: screenshot.length,
       screenshotSha256: sha256(screenshot),
     };

@@ -56,7 +56,7 @@ test("가족 연결과 위치 잠금 안내는 강제 줄바꿈 없이 폭에 �
   const koParent = JSON.parse(readFileSync(resolve(rootDir, "locales/ko/parent.json"), "utf8"));
 
   assert.ok(family.includes("parent.parentFamily.copy022"));
-  assert.match(koParent["parent.parentFamily.copy022"], /이 코드나 QR로 다시 연결해요\./);
+  assert.match(koParent["parent.parentFamily.copy022"], /학부모.*아이.*먼저 선택/);
   assert.doesNotMatch(location, /<br\s*\/?>/);
 });
 

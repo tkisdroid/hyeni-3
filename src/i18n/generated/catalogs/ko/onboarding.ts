@@ -38,7 +38,7 @@ const messages = {
   "onboarding.guardian.dad": "아빠",
   "onboarding.guardian.mom": "엄마",
   "onboarding.guardian.other": "보호자",
-  "onboarding.invite.legacyChoice": "예전에 만든 초대 링크예요. 이 기기를 사용할 사람이 보호자인지 아이인지 선택해 주세요.",
+  "onboarding.invite.legacyChoice": "연결할 사람이 학부모인지 아이인지 선택해 주세요. 선택한 역할로만 안전하게 연결해요.",
   "onboarding.invite.parent.authDescription": "기존 계정으로 로그인하거나 새 보호자 계정을 만든 뒤 가족에 연결해요.",
   "onboarding.invite.parent.title": "공동 보호자 초대를 받으셨어요",
   "onboarding.invite.roleMismatch": "현재 계정 역할과 초대 역할이 맞지 않아요. 맞는 기기나 계정에서 다시 열어 주세요.",

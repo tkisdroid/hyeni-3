@@ -17,7 +17,7 @@ import {
 } from "@/transform/premiumReturnIntent";
 import { QrCode } from "@/components/ui/QrCode";
 import { PremiumUpsell } from "@/components/PremiumUpsell";
-import { buildPairLink } from "@/transform/pairLink";
+import { buildPairRoleChoiceLink } from "@/transform/pairLink";
 import { useSafeBack } from "@/app/useSafeBack";
 import { Loading } from "@/components/ui/Loading";
 import "./ParentFamily.css";
@@ -70,9 +70,10 @@ export function ParentFamily() {
       ? intl.formatMessage({ id: "parent.parentFamily.copy002" })
       : lockMessageFor(FEATURES.MULTI_CHILD, intl);
 
-  // 연결 코드 + QR 딥링크(아이 재연결·선생님 학생추가 시 이 코드로 다시 연결).
+  // 아이관리의 공용 QR은 연결 역할을 추정하지 않는다. Safari 카메라로 바로 읽어도
+  // 온보딩에서 학부모/아이를 먼저 선택해야 다른 보호자가 자녀로 등록되지 않는다.
   const pairCode = family?.pairCode ?? "";
-  const pairLink = useMemo(() => (pairCode ? buildPairLink(pairCode) : ""), [pairCode]);
+  const pairLink = useMemo(() => (pairCode ? buildPairRoleChoiceLink(pairCode) : ""), [pairCode]);
   const canInviteCoParent = Boolean(
     family?.isPrimaryParent
     && !family.members.some(
@@ -83,8 +84,8 @@ export function ParentFamily() {
     ),
   );
 
-  const inviteChild = () => {
-    navigate("/child-invite");
+  const inviteRoleChoice = () => {
+    navigate("/child-invite?role=choose");
   };
   const inviteCoParent = () => {
     navigate("/child-invite?role=parent");
@@ -280,7 +281,7 @@ export function ParentFamily() {
                     type="button"
                     className="pf-paircode__qr hy-press"
                     aria-label={intl.formatMessage({ id: "parent.parentFamily.copy017" })}
-                    onClick={inviteChild}
+                    onClick={inviteRoleChoice}
                   >
                     {pairLink ? (
                       <QrCode value={pairLink} size={96} label={intl.formatMessage({ id: "parent.parentFamily.copy018" })} />
@@ -303,7 +304,7 @@ export function ParentFamily() {
                       <button
                         type="button"
                         className="pf-paircode__btn pf-paircode__btn--accent hy-press"
-                        onClick={inviteChild}
+                        onClick={inviteRoleChoice}
                       >
                         <QrIcon size={15} strokeWidth={2.2} />
                         {intl.formatMessage({ id: "parent.parentFamily.copy021" })}

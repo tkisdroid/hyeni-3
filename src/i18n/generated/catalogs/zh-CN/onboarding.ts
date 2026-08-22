@@ -38,7 +38,7 @@ const messages = {
   "onboarding.guardian.dad": "爸爸",
   "onboarding.guardian.mom": "妈妈",
   "onboarding.guardian.other": "监护人",
-  "onboarding.invite.legacyChoice": "这是旧版邀请链接。请选择这台设备由监护人还是孩子使用。",
+  "onboarding.invite.legacyChoice": "请选择连接者是家长还是孩子。系统只会按所选角色安全连接。",
   "onboarding.invite.parent.authDescription": "请登录现有账号或创建监护人账号，然后加入家庭。",
   "onboarding.invite.parent.title": "您已收到共同监护人邀请",
   "onboarding.invite.roleMismatch": "当前账号角色与邀请角色不一致。请使用对应的设备或账号重新打开。",

@@ -38,7 +38,7 @@ const messages = {
   "onboarding.guardian.dad": "Bố",
   "onboarding.guardian.mom": "Mẹ",
   "onboarding.guardian.other": "Người giám hộ",
-  "onboarding.invite.legacyChoice": "Đây là liên kết mời cũ. Hãy chọn thiết bị này dành cho người giám hộ hay trẻ.",
+  "onboarding.invite.legacyChoice": "Hãy chọn người kết nối là phụ huynh hay trẻ. Chúng tôi chỉ kết nối theo vai trò đã chọn.",
   "onboarding.invite.parent.authDescription": "Đăng nhập tài khoản hiện có hoặc tạo tài khoản người giám hộ, rồi tham gia gia đình.",
   "onboarding.invite.parent.title": "Bạn được mời làm người giám hộ chung",
   "onboarding.invite.roleMismatch": "Vai trò của tài khoản hiện tại không khớp với lời mời. Vui lòng mở lại bằng đúng thiết bị hoặc tài khoản.",

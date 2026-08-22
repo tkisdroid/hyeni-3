@@ -171,7 +171,7 @@
   "onboarding.toast.existingSocialAccount": "เข้าสู่ระบบบัญชีที่มีอยู่ของคุณอย่างปลอดภัยแล้ว",
   "onboarding.invite.roleMismatch": "บทบาทของบัญชีปัจจุบันไม่ตรงกับคำเชิญ โปรดเปิดใหม่ด้วยอุปกรณ์หรือบัญชีที่ตรงกัน",
   "onboarding.invite.roleMismatchChild": "คำเชิญนี้สำหรับผู้ปกครอง ให้ผู้ปกครองเปิดบนอุปกรณ์ของเขานะ",
-  "onboarding.invite.legacyChoice": "นี่คือลิงก์เชิญแบบเก่า โปรดเลือกว่าอุปกรณ์นี้เป็นของผู้ปกครองหรือเด็ก",
+  "onboarding.invite.legacyChoice": "เลือกว่าผู้เชื่อมต่อเป็นผู้ปกครองหรือเด็ก ระบบจะเชื่อมต่ออย่างปลอดภัยตามบทบาทที่เลือกเท่านั้น",
   "onboarding.invite.parent.title": "คุณได้รับเชิญให้เป็นผู้ปกครองร่วม",
   "onboarding.invite.parent.authDescription": "เข้าสู่ระบบบัญชีเดิมหรือสร้างบัญชีผู้ปกครอง แล้วเข้าร่วมครอบครัว",
   "onboarding.signup.socialPending": "กำลังเปิดการสมัครด้วยโซเชียล…",

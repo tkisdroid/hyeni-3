@@ -38,7 +38,7 @@ const messages = {
   "onboarding.guardian.dad": "Tatay",
   "onboarding.guardian.mom": "Nanay",
   "onboarding.guardian.other": "Tagapangalaga",
-  "onboarding.invite.legacyChoice": "Lumang invitation link ito. Piliin kung guardian o bata ang gagamit ng device na ito.",
+  "onboarding.invite.legacyChoice": "Piliin kung magulang o bata ang kokonekta. Sa napiling role lang namin ito ligtas na ikokonekta.",
   "onboarding.invite.parent.authDescription": "Mag-sign in sa dati mong account o gumawa ng guardian account, pagkatapos ay sumali sa pamilya.",
   "onboarding.invite.parent.title": "Inimbitahan ka bilang co-guardian",
   "onboarding.invite.roleMismatch": "Hindi tugma ang kasalukuyang role ng account sa imbitasyon. Buksan itong muli sa tamang device o account.",

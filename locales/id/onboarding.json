@@ -171,7 +171,7 @@
   "onboarding.toast.existingSocialAccount": "Anda berhasil masuk dengan aman ke akun yang sudah ada.",
   "onboarding.invite.roleMismatch": "Peran akun saat ini tidak cocok dengan undangan. Buka kembali dengan perangkat atau akun yang sesuai.",
   "onboarding.invite.roleMismatchChild": "Undangan ini untuk wali. Minta wali membukanya di perangkat mereka, ya.",
-  "onboarding.invite.legacyChoice": "Ini adalah tautan undangan lama. Pilih apakah perangkat ini digunakan wali atau anak.",
+  "onboarding.invite.legacyChoice": "Pilih apakah yang terhubung orang tua atau anak. Kami hanya akan menghubungkan sesuai peran yang dipilih.",
   "onboarding.invite.parent.title": "Anda diundang sebagai wali bersama",
   "onboarding.invite.parent.authDescription": "Masuk ke akun yang ada atau buat akun wali, lalu bergabung dengan keluarga.",
   "onboarding.signup.socialPending": "Membuka pendaftaran sosial…",

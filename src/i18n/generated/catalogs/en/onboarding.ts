@@ -38,7 +38,7 @@ const messages = {
   "onboarding.guardian.dad": "Dad",
   "onboarding.guardian.mom": "Mom",
   "onboarding.guardian.other": "Guardian",
-  "onboarding.invite.legacyChoice": "This is an older invitation link. Choose whether this device belongs to a guardian or a child.",
+  "onboarding.invite.legacyChoice": "Choose whether the person connecting is a parent or child. We'll connect only with the selected role.",
   "onboarding.invite.parent.authDescription": "Sign in to your existing account or create a guardian account, then join the family.",
   "onboarding.invite.parent.title": "You've been invited as a co-guardian",
   "onboarding.invite.roleMismatch": "This invitation does not match the current account role. Open it on the matching device or account.",

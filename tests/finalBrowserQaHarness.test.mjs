@@ -84,6 +84,9 @@ test("최종 브라우저 QA는 부모·아이 출시 화면과 핵심 전환 �
   assert.match(source, /qrFallbackFacts\.cameraRequests !== 1/);
   assert.match(source, /child-invite\?role=parent/);
   assert.match(source, /sharedText\.includes\("as=parent"\)/);
+  assert.match(source, /child-invite\?role=choose/);
+  assert.match(source, /scope: "family-management-role-choice-qr"/);
+  assert.match(source, /roleChoiceSharedText\.includes\("as=child"\)/);
   assert.match(source, /\.ob-pair-code-input/);
 });
 

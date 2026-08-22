@@ -171,7 +171,7 @@
   "onboarding.toast.existingSocialAccount": "Anda telah log masuk dengan selamat ke akaun sedia ada.",
   "onboarding.invite.roleMismatch": "Peranan akaun semasa tidak sepadan dengan jemputan. Buka semula menggunakan peranti atau akaun yang betul.",
   "onboarding.invite.roleMismatchChild": "Jemputan ini untuk penjaga. Minta penjaga membukanya pada peranti mereka.",
-  "onboarding.invite.legacyChoice": "Ini ialah pautan jemputan lama. Pilih sama ada peranti ini digunakan oleh penjaga atau anak.",
+  "onboarding.invite.legacyChoice": "Pilih sama ada yang disambungkan ialah ibu bapa atau anak. Kami hanya menyambung mengikut peranan yang dipilih.",
   "onboarding.invite.parent.title": "Anda dijemput sebagai penjaga bersama",
   "onboarding.invite.parent.authDescription": "Log masuk ke akaun sedia ada atau cipta akaun penjaga, kemudian sertai keluarga.",
   "onboarding.signup.socialPending": "Membuka pendaftaran sosial…",

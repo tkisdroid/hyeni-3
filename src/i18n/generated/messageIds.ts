@@ -1737,6 +1737,8 @@ export const messageIds = [
   "parent.familyConnection.unpaired",
   "parent.familyConnection.unpairing",
   "parent.familyConnection.viewCode",
+  "parent.familyInvite.choice.headline",
+  "parent.familyInvite.choice.waiting",
   "parent.familyInvite.parent.lead1",
   "parent.familyInvite.parent.lead2",
   "parent.familyInvite.parent.shareText",

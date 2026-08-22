@@ -7,7 +7,7 @@ import { asset } from "@/lib/assets";
 import { useToast } from "@/app/toast";
 import { useMyFamily, useRegeneratePairCode } from "@/queries/useFamily";
 import { QrCode } from "@/components/ui/QrCode";
-import { buildPairLink } from "@/transform/pairLink";
+import { buildPairLink, buildPairRoleChoiceLink, type PairInviteRole } from "@/transform/pairLink";
 import type { FamilyMember } from "@/lib/api/endpoints/family";
 import {
   advanceChildInviteConnection,
@@ -34,9 +34,9 @@ function useCountdown(
 }
 
 /**
- * 아이 초대/연결 (와이어프레임 P-05 초대코드·QR).
+ * 가족 초대/연결 (와이어프레임 P-05 초대코드·QR).
  * 실 페어링 코드 + QR 표시 · 공유 · 복사 · 재발급 · 만료 타이머 ·
- * 아이 연결 감지 폴링 → 연결되면 자동으로 가족 화면으로 안내.
+ * 역할별 새 구성원 연결 감지 폴링 → 연결되면 자동으로 가족 화면으로 안내.
  */
 export function ChildInvite() {
   const { locale } = useLocale();
@@ -44,12 +44,20 @@ export function ChildInvite() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { show } = useToast();
-  const inviteRole = searchParams.get("role") === "parent" ? "parent" : "child";
+  const requestedRole = searchParams.get("role");
+  const inviteRole: PairInviteRole | "choose" = requestedRole === "parent"
+    ? "parent"
+    : requestedRole === "choose"
+      ? "choose"
+      : "child";
   const parentInvite = inviteRole === "parent";
-  const connectedMessageId = parentInvite
-    ? "parent.familyConnection.coParentConnected"
-    : "parent.childInvite.connected";
-  // 대기 화면이므로 6초 폴링으로 아이 연결을 감지한다.
+  const roleChoiceInvite = inviteRole === "choose";
+  const connectedMessageId = roleChoiceInvite
+    ? "onboarding.toast.familyConnected"
+    : parentInvite
+      ? "parent.familyConnection.coParentConnected"
+      : "parent.childInvite.connected";
+  // 대기 화면이므로 6초 폴링으로 선택한 역할의 새 가족 구성원 연결을 감지한다.
   const {
     data: family,
     isLoading,
@@ -65,7 +73,13 @@ export function ChildInvite() {
   const expired = countdown?.expired ?? false;
 
   const pairLink = useMemo(
-    () => (pairCode ? buildPairLink(pairCode, inviteRole) : ""),
+    () => (
+      pairCode
+        ? inviteRole === "choose"
+          ? buildPairRoleChoiceLink(pairCode)
+          : buildPairLink(pairCode, inviteRole)
+        : ""
+    ),
     [inviteRole, pairCode],
   );
 
@@ -75,10 +89,13 @@ export function ChildInvite() {
   const memberUids = useMemo(
     () =>
       (family?.members ?? [])
-        .filter((m: FamilyMember) => m.role === inviteRole && !!m.user_id)
+        .filter((m: FamilyMember) => (
+          (roleChoiceInvite ? m.role === "child" || m.role === "parent" : m.role === inviteRole)
+          && !!m.user_id
+        ))
         .map((m) => m.user_id as string)
         .sort(),
-    [family, inviteRole],
+    [family, inviteRole, roleChoiceInvite],
   );
   const connectionRef = useRef<ChildInviteConnectionState>({ baseline: null, notified: false });
   useEffect(() => {
@@ -125,7 +142,11 @@ export function ChildInvite() {
       try {
         await navigator.share({
           title: intl.formatMessage({
-            id: parentInvite ? "parent.familyConnection.inviteCoParent" : "parent.childInvite.shareTitle",
+            id: parentInvite
+              ? "parent.familyConnection.inviteCoParent"
+              : roleChoiceInvite
+                ? "parent.parentFamily.copy016"
+                : "parent.childInvite.shareTitle",
           }),
           text,
         });
@@ -174,7 +195,11 @@ export function ChildInvite() {
         </button>
         <span className="ci-title">
           {intl.formatMessage({
-            id: parentInvite ? "parent.familyConnection.inviteCoParent" : "parent.childInvite.screenTitle",
+            id: parentInvite
+              ? "parent.familyConnection.inviteCoParent"
+              : roleChoiceInvite
+                ? "parent.parentFamily.copy016"
+                : "parent.childInvite.screenTitle",
           })}
         </span>
       </div>
@@ -182,17 +207,27 @@ export function ChildInvite() {
       <div className="ci-content">
         <div className="ci-headline">
           {intl.formatMessage({
-            id: parentInvite ? "parent.familyConnection.inviteCoParent" : "parent.childInvite.headline",
+            id: parentInvite
+              ? "parent.familyConnection.inviteCoParent"
+              : roleChoiceInvite
+                ? "parent.familyInvite.choice.headline"
+                : "parent.childInvite.headline",
           })}
         </div>
         <div className="ci-lead">
-          {intl.formatMessage({
-            id: parentInvite ? "parent.familyInvite.parent.lead1" : "parent.childInvite.lead1",
-          })}
-          <br />
-          {intl.formatMessage({
-            id: parentInvite ? "parent.familyInvite.parent.lead2" : "parent.childInvite.lead2",
-          })}
+          {roleChoiceInvite ? (
+            intl.formatMessage({ id: "parent.parentFamily.copy022" })
+          ) : (
+            <>
+              {intl.formatMessage({
+                id: parentInvite ? "parent.familyInvite.parent.lead1" : "parent.childInvite.lead1",
+              })}
+              <br />
+              {intl.formatMessage({
+                id: parentInvite ? "parent.familyInvite.parent.lead2" : "parent.childInvite.lead2",
+              })}
+            </>
+          )}
         </div>
 
         {/* QR 카드 */}
@@ -213,7 +248,11 @@ export function ChildInvite() {
               value={pairLink}
               size={212}
               label={intl.formatMessage({
-                id: parentInvite ? "parent.familyConnection.viewCode" : "parent.childInvite.qrLabel",
+                id: roleChoiceInvite
+                  ? "parent.parentFamily.copy018"
+                  : parentInvite
+                    ? "parent.familyConnection.viewCode"
+                    : "parent.childInvite.qrLabel",
               })}
             />
           ) : !pairCode ? (
@@ -290,13 +329,17 @@ export function ChildInvite() {
         <div className="ci-wait">
           <span className="ci-wait__dot" />
           {intl.formatMessage({
-            id: parentInvite ? "parent.familyInvite.parent.waiting" : "parent.childInvite.waiting",
+            id: roleChoiceInvite
+              ? "parent.familyInvite.choice.waiting"
+              : parentInvite
+                ? "parent.familyInvite.parent.waiting"
+                : "parent.childInvite.waiting",
           })}
         </div>
 
         <img
           className="ci-mascot"
-          src={asset(parentInvite ? "mascot/family.webp" : "mascot/phone.webp")}
+          src={asset(parentInvite || roleChoiceInvite ? "mascot/family.webp" : "mascot/phone.webp")}
           alt=""
         />
       </div>
