@@ -3,7 +3,7 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
-**가입·역할 매칭 전수 개선(2026-08-22, 운영 배포 전)**: 가입 첫 진입을 로그인/회원가입 탭으로 명시 분리하고,
+**가입·역할 매칭 전수 개선(2026-08-22, 운영 배포 완료)**: 가입 첫 진입을 로그인/회원가입 탭으로 명시 분리하고,
 역할 화면의 언어 설정을 하단 1곳으로 통합했다. 선택한 전화·Kakao·Google·Naver 가입 방식과 가입 설문은
 20분 만료·session/local 이중 draft로 새로고침/OAuth 왕복에도 이어지며, 설문은 고정 allowlist만 user metadata에
 신규 가입과 같은 트랜잭션으로 저장한다. 기존 OAuth 계정은 Worker의 `account_status=existing|linked`를 근거로만
@@ -23,6 +23,16 @@ Worker 1,262/1,262·가입/세션 집중 회귀 38/38·역할 경쟁 회귀 21/2
 앱/Worker typecheck, production build(2,280 modules·precache 472·중복 0), 브라우저 QA 부모 43+아이 14 화면 문제 0,
 PWA install/offline/update 문제 0, Android `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL이다.
 실제 계정 로그인·로그아웃·역할 전환·재페어링, refresh 토큰, 실기기 설치, D1 데이터는 건드리지 않았다.
+
+구현 커밋 `9247e2a`·리뷰 보완 커밋 `564a9da`를 `main`에 fast-forward하고 GitHub 원격까지 푸시했다.
+독립 재리뷰는 Critical/Important/Minor 0건으로 병합 가능 판정했다. Worker version은
+`c362cd5d-10b1-449a-9b14-851c56e50c10`, Pages 배포는 `https://6ee00be0.hyeni-calendar.pages.dev`다.
+Worker health 200 ready, `/api/access-region` 200 `{"country":"KR"}`·`Cache-Control:no-store, private`를 확인했다.
+배포별 주소·고정 `hyeni-calendar.pages.dev`의 index/callback과 세 주소(브랜드 `hyenicalendar.com` 포함)의
+entry `assets/index-Ck2cdZsh.js` SHA-256 `9f8f39dc6a1f643d3d562fc8ee0eb6106813568f5f9a32e72539009652f4417c`,
+CSS `assets/index-DMuUhfUk.css` SHA-256 `177583e46ce74cda70b47b5f3139d3d674abd5923f433b0e610a5279a41ce6f4`,
+Service Worker SHA-256 `aa9e60df57cddc5af3f993a133b2f3a26ebf1922fd6879ec34af139e84117e88`가 로컬과 일치한다.
+최신 debug APK SHA-256은 `64eb568e351fc535d0d8f50845e4e5fc1b9f7a46ad174efa91762c3c2e3f40d4`이며 기기에는 설치하지 않았다.
 
 **QA 커버리지(2026-08-22, 커밋 `3cd20dd`)**: final-browser-qa 에 가족 없는 신규 부모 시나리오(`authCase: "no-family"`)를 추가해 온보딩 connect→pairing 단계를 자동 검증한다. 로그인 mock 은 family_id 없는 세션(JWT 클레임에서도 family 제외)을 돌리고 `/api/family/mine` 은 204 null — JWT 토큰에 family_id 가 남아 있으면 세션 채택 후 redirect effect 가 곧바로 부모 홈으로 보내므로 토큰 클레임까지 제외해야 한다. PairingStep 계약: `.ob-qr` 버튼, `.ob-input--code`(인라인 스타일 없음), computed font-size 16px, placeholder `KID-XXXXXXXX`, `enterkeyhint=done`.
 **최신 배포 상태(2026-08-22 오후, 커밋 `57b3794` iPhone 가입 절차 QR·코드·확대 수정)**: TK iPhone 제보 4종 중 f1def22 에서 미해결이던 QR 촬영 실패(BarcodeDetector 없는 iOS WebKit → jsQR 폴백, 스캔 시 lazy 로드), 코드 입력 KID 사라짐(`KIDXXXXXXXX` 하이픈 없는 12자도 정규화, `tests/pairCodeNormalization.test.ts`), 화면 좌우 밀림/키보드(iOS 자동확대 — `.ob-input`을 `--type-body-lg` 16px 토큰으로)를 수정했다. 페어링 코드 입력란 인라인 스타일을 `.ob-input--code`로 CSS 이관하고 Enter 제출·spellcheck off 를 보강했다. 검증: 앱 1,844/1,844, typecheck, build(진입 JS 344,145B 동일, precache 472 중복 0), qa:browser 57화면 문제 0, qa:pwa-runtime 문제 0, iPhone WebKit 스모크 PASS, Android assembleDebug+lintDebug 통과. Pages 배포 `https://cd7c4095.hyeni-calendar.pages.dev`, 고정 URL index SHA-256 로컬=prod 일치(index/sw/entry/css/callback/jsQR/QrScanner 청크), 브랜드 도메인 200. Worker는 미배포(대상 아님). 실기기 화면 관측은 A17/razr 연결 후 후속.
