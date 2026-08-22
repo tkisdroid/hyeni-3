@@ -100,12 +100,15 @@ function todayKst() {
   return `${read("year")}-${read("month")}-${read("day")}`;
 }
 
-function safeAccessToken(role) {
+function safeAccessToken(role, { withoutFamily = false } = {}) {
   const userId = role === "child" ? CHILD_ID : role === "teacher" ? TEACHER_ID : PARENT_ID;
-  return `${toBase64Url({ alg: "HS256", typ: "JWT" })}.${toBase64Url({
+  const claims = {
     sub: userId,
     role,
-    family_id: FAMILY_ID,
+  };
+  if (!withoutFamily) claims.family_id = FAMILY_ID;
+  return `${toBase64Url({ alg: "HS256", typ: "JWT" })}.${toBase64Url({
+    ...claims,
     exp: Math.floor(Date.now() / 1000) + 3_600,
   })}.qa`;
 }
@@ -361,16 +364,18 @@ export function mockApi(pathname, scenario, method = "GET") {
   if (pathname === "/auth/login-password" && scenario.authCase === "wrong-password") {
     return { error: "invalid_credentials" };
   }
-  if (pathname === "/auth/login-password" && scenario.authCase === "success") {
-    const accessToken = safeAccessToken("parent");
+  if (pathname === "/auth/login-password" && (scenario.authCase === "success" || scenario.authCase === "no-family")) {
+    // no-family: 가족 없는 신규 부모 — family_id 없는 세션을 돌려 connect 단계로 유도한다.
+    const sessionFamilyId = scenario.authCase === "no-family" ? null : FAMILY_ID;
+    const accessToken = safeAccessToken("parent", { withoutFamily: scenario.authCase === "no-family" });
     return {
       user: {
         id: PARENT_ID,
         role: "parent",
-        family_id: FAMILY_ID,
+        family_id: sessionFamilyId,
         is_anonymous: false,
-        app_metadata: { role: "parent", family_id: FAMILY_ID },
-        user_metadata: { role: "parent", family_id: FAMILY_ID },
+        app_metadata: { role: "parent", family_id: sessionFamilyId },
+        user_metadata: { role: "parent", family_id: sessionFamilyId },
       },
       session: {
         access_token: accessToken,
@@ -380,7 +385,11 @@ export function mockApi(pathname, scenario, method = "GET") {
       },
     };
   }
-  if (pathname === "/api/family/mine") return familyResponse(role);
+  if (pathname === "/api/family/mine") {
+    // 가족 없는 신규 부모 시나리오 — 204 null 로 응답해 온보딩 connect 단계로 유도한다.
+    if (scenario.authCase === "no-family") return null;
+    return familyResponse(role);
+  }
   if (pathname === "/api/entitlement") return entitlementResponse(tier);
   if (pathname === "/api/billing/web/catalog") return webBillingCatalog(catalogMode);
   if (pathname === "/api/billing/web/ai-credits/catalog") return { configured: false, accepting: false };
@@ -958,9 +967,12 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
             return;
           }
           const payload = mockApi(url.pathname, activeScenario, request.method);
-          const responseCode = url.pathname === "/api/ai/voice-parse"
-            && activeScenario.aiScheduleExhausted === true
-            ? 429
+          const responseCode = url.pathname === "/api/family/mine"
+            && activeScenario.authCase === "no-family"
+            ? 204
+            : url.pathname === "/api/ai/voice-parse"
+              && activeScenario.aiScheduleExhausted === true
+              ? 429
             : url.pathname === "/auth/login-password" && activeScenario.authCase === "wrong-password"
               ? 401
               : url.pathname === "/auth/check-login-id" && activeScenario.authCase === "id-check-error"
@@ -970,7 +982,8 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
             requestId,
             responseCode,
             responseHeaders: [...cors, { name: "content-type", value: "application/json; charset=utf-8" }],
-            body: jsonBody(payload),
+            // 204 는 body 를 보낼 수 없다(HTTP 사양) — 가족 없음 시나리오가 이 분기다.
+            body: responseCode === 204 ? undefined : jsonBody(payload),
           });
         } catch {
           await cdp.send("Fetch.failRequest", { requestId, errorReason: "Failed" }).catch(() => undefined);
@@ -1171,6 +1184,68 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       initial: successfulLoginFacts,
       reload: successfulLoginReloadFacts,
       problems: { initial: successfulLoginProblems, reload: successfulLoginReloadProblems },
+    };
+    await cdp.evaluate("localStorage.clear()");
+    // 가족 없는 신규 부모 → connect 단계 → 페어링(pairing) 단계 UI 계약(2026-08-22 TK
+    // iPhone 제보 수정 회귀): 16px 입력(iOS 자동확대 차단), KID 코드 입력란 CSS 이관,
+    // QR 스캔 버튼 존재, Enter 제출 배선을 정적 QA로 고정한다.
+    await navigate(
+      { role: "public", tier: "free", catalogMode: "valid", overLimit: false, authCase: "no-family" },
+      "onboarding",
+    );
+    await clickSelector(cdp, ".ob-role-card--parent");
+    await wait(250);
+    activeScenario = { role: "parent", tier: "free", catalogMode: "valid", overLimit: false, authCase: "no-family" };
+    await setInputValue(cdp, "#hyeni-login-username", "qa-new-parent");
+    await setInputValue(cdp, "#hyeni-login-password", "correct-password");
+    await cdp.evaluate(`(() => {
+      const form = document.querySelector(".ob-login-form");
+      if (!(form instanceof HTMLFormElement)) return false;
+      form.requestSubmit();
+      return true;
+    })()`);
+    await wait(1_800);
+    const connectStepFacts = await cdp.evaluate(`(() => ({
+      hash: location.hash,
+      connectPresent: Boolean(document.querySelector(".ob-connect")),
+      newFamilyButton: [...document.querySelectorAll("button")].some((button) => button.textContent?.includes("새 가족")) || Boolean(document.querySelector(".ob-connect-list")),
+      joinButton: [...document.querySelectorAll("button")].filter((button) => button.offsetParent !== null).map((button) => button.textContent?.trim()).join("|"),
+    }))()`);
+    const entryClicked = await cdp.evaluate(`(() => {
+      const button = [...document.querySelectorAll("button")].find((node) => node.offsetParent !== null && node.textContent?.includes("합류"));
+      if (button instanceof HTMLElement) {
+        button.click();
+        return true;
+      }
+      return false;
+    })()`);
+    await wait(500);
+    const pairingStepFacts = await cdp.evaluate(`(() => ({
+      pairingPresent: Boolean(document.querySelector(".ob-pairing")),
+      qrButtonPresent: Boolean(document.querySelector(".ob-qr")),
+      codeInputClass: document.querySelector(".ob-input--code")?.className ?? null,
+      codeInputFontSize: document.querySelector(".ob-input--code") ? getComputedStyle(document.querySelector(".ob-input--code")).fontSize : null,
+      codePlaceholder: document.querySelector(".ob-input--code")?.getAttribute("placeholder") ?? null,
+      inlineStyleGone: !(document.querySelector(".ob-pairing input")?.hasAttribute("style")),
+      enterKeyHint: document.querySelector(".ob-input--code")?.getAttribute("enterkeyhint") ?? null,
+    }))()`);
+    if (
+      !connectStepFacts.connectPresent
+      || !pairingStepFacts.pairingPresent
+      || !pairingStepFacts.qrButtonPresent
+      || !String(pairingStepFacts.codeInputFontSize ?? "").startsWith("16px")
+      || pairingStepFacts.codePlaceholder !== "KID-XXXXXXXX"
+      || !pairingStepFacts.inlineStyleGone
+      || pairingStepFacts.enterKeyHint !== "done"
+    ) {
+      report.problems.push({
+        scope: "onboarding-pairing-step-contract",
+        facts: { connect: connectStepFacts, pairing: pairingStepFacts, entryClicked },
+      });
+    }
+    report.focused.onboardingPairing = {
+      connect: connectStepFacts,
+      pairing: pairingStepFacts,
     };
 
     const signupOnboarding = await navigate(
