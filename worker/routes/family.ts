@@ -799,6 +799,22 @@ family.post("/join", requireAuth, async (c) => {
     return c.json({ error: "연결 해제를 정리 중이에요. 잠시 후 다시 시도해 주세요" }, 409);
   }
 
+  // ★역할 검증: 이미 다른 가족에서 parent인 사용자는 child 전용 /join을 호출할 수 없다.
+  //   보호자가 실수로 자녀 페어링 링크를 타면 join-as-parent 로 안내한다.
+  const callerParentMember = await c.env.DB.prepare(
+    `SELECT 1 AS ok FROM family_members
+      WHERE user_id=? AND role='parent' AND is_active=1
+      LIMIT 1`,
+  )
+    .bind(userId)
+    .first<{ ok: number }>();
+  if (callerParentMember) {
+    return c.json({
+      error: "이미 보호자 계정이에요. 보호자 연결은 다른 경로로 진행해 주세요",
+      code: "parent_cannot_join_as_child",
+    }, 400);
+  }
+
   // Path A: 이미 멤버 → 멱등(자녀면 재활성 + 동명 다른 활성 supersede).
   const already = await c.env.DB.prepare(
     "SELECT id, role, name, is_active FROM family_members WHERE family_id=? AND user_id=? LIMIT 1",
@@ -1243,6 +1259,16 @@ family.post("/join-as-parent", requireAuth, async (c) => {
     return c.json({ error: "연결 해제를 정리 중이에요. 잠시 후 다시 시도해 주세요" }, 409);
   }
 
+  // ★익명 세션 차단: 익명 사용자는 join-as-parent로 보호자 등록 불가.
+  const account = await c.env.DB.prepare(
+    "SELECT is_anonymous FROM users WHERE id=? LIMIT 1",
+  )
+    .bind(userId)
+    .first<{ is_anonymous: number }>();
+  if (!account || Number(account.is_anonymous) !== 0) {
+    return c.json({ error: "anonymous_cannot_join_as_parent" }, 403);
+  }
+
   // 단일 보조 보호자 불변식 — primary/본인 아닌 parent 가 이미 있으면 거부.
   const existingCoparent = await c.env.DB.prepare(
     `SELECT user_id FROM family_members
@@ -1257,11 +1283,26 @@ family.post("/join-as-parent", requireAuth, async (c) => {
 
   // 기존 행 여부만 먼저 고르고, 실제 활성화/삽입은 같은 SQL 문 안에서 현재 활성
   // 보조 보호자가 없는지 다시 확인한다. 경쟁 요청의 뒤 문장은 0행으로 닫힌다.
+  // ★권한 상승 방지: parent 행만 찾는다 — child가 join-as-parent로 role 변경 불가.
   const member = await c.env.DB.prepare(
-    "SELECT id FROM family_members WHERE family_id=? AND user_id=? LIMIT 1",
+    "SELECT id FROM family_members WHERE family_id=? AND user_id=? AND role='parent' LIMIT 1",
   )
     .bind(familyId, userId)
     .first<{ id: string }>();
+  if (!member) {
+    // child·teacher 등 다른 역할로 이미 이 가족에 있으면 join-as-parent를 거부한다.
+    const otherRole = await c.env.DB.prepare(
+      "SELECT role FROM family_members WHERE family_id=? AND user_id=? LIMIT 1",
+    )
+      .bind(familyId, userId)
+      .first<{ role: string }>();
+    if (otherRole) {
+      return c.json({
+        error: `이미 ${otherRole.role === "child" ? "자녀" : "다른 역할"}로 등록된 계정이에요`,
+        code: "already_member_other_role",
+      }, 400);
+    }
+  }
   if (member) {
     const mutation = await c.env.DB.batch([
       c.env.DB.prepare(

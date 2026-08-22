@@ -387,15 +387,16 @@ export function Onboarding() {
   }, []);
 
   const back = () =>
-    setStep((s) =>
-      s === "survey"
+    setStep((s) => {
+      if (s === "pairing") setPairMode("child");
+      return s === "survey"
         ? "login"
         : s === "signup"
           ? "survey"
           : s === "pairing"
             ? "connect"
-            : "role",
-    );
+            : "role";
+    });
 
   // 부모 로그인/가입 후: 가족 있으면 홈, 없으면 가족연결 단계.
   const routeAfterParentLogin = async (transitionToken: OnboardingAuthTransitionToken) => {
@@ -427,6 +428,7 @@ export function Onboarding() {
       navigate(homePathForRole(state.role));
       return true;
     }
+    // ★방어: auth role이 없을 때만 child로 강제한다.
     setRole("child");
     setPairMode("child");
     setStep("pairing");
@@ -443,6 +445,13 @@ export function Onboarding() {
       const current = deriveAuthState();
       if (current.status === "authenticated" && current.familyId) {
         navigate(homePathForRole(current.role), { replace: true });
+        return;
+      }
+      // ★공동 보호자 보호: 부모 역할로 로그인했지만 가족이 없으면 익명 로그인으로
+      //   세션을 덮어쓰지 않고 parent 경로로 안내한다.
+      if (current.status === "authenticated" && current.role === "parent") {
+        setRole("parent");
+        setStep("connect");
         return;
       }
       const hint = await readChildDeviceIdentityHint();
@@ -1986,7 +1995,14 @@ function PairingStep({
     setBusy(true);
     let permissionTransitionStarted = false;
     try {
-      if (mode === "child") {
+      // ★방어: mode prop과 실제 auth role을 교차 검증한다.
+      //   mode="child"인데 세션이 parent면 joinFamilyAsParent로 폴백한다.
+      const authState = deriveAuthState();
+      const effectiveMode: "child" | "parent" =
+        authState.role === "parent" ? "parent"
+        : authState.role === "child" ? "child"
+        : mode;
+      if (effectiveMode === "child") {
         const nextHint = await readChildDeviceIdentityHint();
         onPermissionTransitionStart();
         permissionTransitionStarted = true;
