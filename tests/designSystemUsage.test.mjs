@@ -2148,9 +2148,13 @@ const semanticSurfaceManifestKeys = new Set(semanticSurfaceManifest.map(([path, 
 const nonSurfacePaintManifest = new Set([
   // 인증 탭·상태·폼 선택 컨트롤 — 독립 콘텐츠 판이 아니라 입력 흐름의 조작/피드백 면이다.
   ["src/screens/onboarding/Onboarding.css", ".ob-auth-intent"],
-  // 언어 피커 트리거 알약과 OTP 진행 칸 — 조작면·상태 표식이다.
+  // 언어 피커 트리거·토글 알약과 OTP 진행 칸 — 조작면·상태 표식이다.
   ["src/components/LanguageSelector.css", ".hy-language__trigger"],
+  ["src/components/LanguageSelector.css", ".hy-language__current"],
   ["src/screens/onboarding/Onboarding.css", ".ob-otp-cell"],
+  // 단계 헤더의 장식 오브젝트 타일과 페어링 안내 배경 — 판이 아니라 조명·표식이다.
+  ["src/screens/onboarding/Onboarding.css", ".ob-step-visual"],
+  ["src/screens/onboarding/Onboarding.css", ".ob-pair-recovery"],
   ["src/screens/onboarding/Onboarding.css", ".ob-auth-alert"],
   ["src/screens/onboarding/Onboarding.css", ".ob-inline-control__button"],
   ["src/screens/onboarding/Onboarding.css", ".ob-guardian-option"],

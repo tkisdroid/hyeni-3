@@ -50,7 +50,10 @@ test("언어 선택기는 catalog 접근성 이름과 현재 선택 radio 상태
   assert.match(selector, /core\.language\.formal\.description/);
   assert.match(selector, /core\.language\.child\.description/);
   assert.match(selector, /collapseOthers/);
-  assert.match(selector, /aria-expanded=\{expanded\}/);
+  // 2026-08-22 병합: 첫 화면 피커와 설정 행 토글이 같은 open 상태를 공유한다.
+  assert.match(selector, /aria-expanded=\{open\}/);
+  assert.match(selector, /hy-language--picker/);
+  assert.match(selector, /hy-language__trigger/);
   assert.match(selector, /localeEntries\.filter\(\(entry\) => entry\.code !== locale\)/);
 });
 
