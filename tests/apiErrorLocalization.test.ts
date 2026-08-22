@@ -17,6 +17,9 @@ const messages: Record<string, string> = {
   "core.error.api.phoneExists.formal": "이미 가입된 휴대폰 번호예요. 로그인해 주세요.",
   "core.error.api.otpExpired.formal": "인증번호가 만료됐어요. 새 인증번호를 받아 주세요.",
   "core.error.api.otpMismatch.formal": "인증번호가 맞지 않아요. 다시 확인해 주세요.",
+  "core.error.api.parentRoleMismatch.formal": "이미 보호자 계정이에요. 공동 보호자 초대 링크로 연결해 주세요.",
+  "core.error.api.parentRoleRequired.formal": "보호자 계정으로 로그인한 뒤 공동 보호자 연결을 다시 시도해 주세요.",
+  "core.error.api.childRoleRequired.formal": "아이 기기 연결은 아이 모드에서 진행해 주세요.",
   "core.error.api.network.formal": "인터넷 연결을 확인한 뒤 다시 시도해 주세요.",
   "core.error.api.network.child": "인터넷 연결을 확인하고 다시 해 줘.",
   "core.error.api.client.formal": "요청을 처리하지 못했어요. 입력 내용을 확인해 주세요.",
@@ -97,6 +100,18 @@ test("구버전 Worker의 활성 설치 409도 일반 오류가 아니라 복구
     localizeApiError(new ApiError("active_device_session_exists", 409), intl, "child"),
     messages["core.error.api.activeDeviceSession.child"],
   );
+});
+
+test("역할이 다른 연결 시도는 올바른 초대 흐름으로 복구하도록 안내한다", () => {
+  const expected = {
+    parent_cannot_join_as_child: messages["core.error.api.parentRoleMismatch.formal"],
+    role_cannot_join_as_parent: messages["core.error.api.parentRoleRequired.formal"],
+    role_cannot_join_as_child: messages["core.error.api.childRoleRequired.formal"],
+  } as const;
+
+  for (const [code, message] of Object.entries(expected)) {
+    assert.equal(localizeApiError(new ApiError(code, 403), intl, "formal"), message, code);
+  }
 });
 
 test("allowlist code만 구체화하고 알 수 없는 4xx·5xx는 역할별 문구로 닫는다", () => {

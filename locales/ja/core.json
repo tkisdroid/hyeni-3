@@ -105,5 +105,8 @@
   "core.state.loading": "読み込み中…",
   "core.state.loadingScreen": "画面を読み込んでいます…",
   "core.state.retrying": "もう一度確認しています…",
-  "core.time.remaining": "残り{duration}"
+  "core.time.remaining": "残り{duration}",
+  "core.error.api.parentRoleMismatch.formal": "すでに保護者アカウントです。共同保護者用の招待リンクを使用してください。",
+  "core.error.api.parentRoleRequired.formal": "保護者アカウントでログインしてから、共同保護者の接続を再度お試しください。",
+  "core.error.api.childRoleRequired.formal": "子どもの端末は子どもモードから接続してください。"
 }

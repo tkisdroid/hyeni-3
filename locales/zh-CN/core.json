@@ -105,5 +105,8 @@
   "core.state.loading": "加载中…",
   "core.state.loadingScreen": "正在加载画面…",
   "core.state.retrying": "正在重新检查…",
-  "core.time.remaining": "剩余 {duration}"
+  "core.time.remaining": "剩余 {duration}",
+  "core.error.api.parentRoleMismatch.formal": "这已经是监护人账号。请使用共同监护人邀请链接。",
+  "core.error.api.parentRoleRequired.formal": "请先登录监护人账号，再重新尝试连接共同监护人。",
+  "core.error.api.childRoleRequired.formal": "请从孩子模式连接孩子的设备。"
 }

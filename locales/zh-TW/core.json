@@ -105,5 +105,8 @@
   "core.state.loading": "載入中…",
   "core.state.loadingScreen": "正在載入畫面…",
   "core.state.retrying": "正在重新檢查…",
-  "core.time.remaining": "剩餘 {duration}"
+  "core.time.remaining": "剩餘 {duration}",
+  "core.error.api.parentRoleMismatch.formal": "這已經是監護人帳號。請使用共同監護人邀請連結。",
+  "core.error.api.parentRoleRequired.formal": "請先登入監護人帳號，再重新嘗試連接共同監護人。",
+  "core.error.api.childRoleRequired.formal": "請從孩子模式連接孩子的裝置。"
 }

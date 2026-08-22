@@ -286,7 +286,7 @@ export function FamilyConnection() {
                   </div>
                 ))
               ) : (
-                <button type="button" className="fc-invite hy-press" onClick={() => navigate("/child-invite")}>
+                <button type="button" className="fc-invite hy-press" onClick={() => navigate("/child-invite?role=parent")}>
                   <span className="fc-invite__icon">
                     <UserPlus size={20} strokeWidth={2.2} />
                   </span>

@@ -167,5 +167,15 @@
   "onboarding.validation.passwordMismatch": "การยืนยันรหัสผ่านไม่ตรงกัน",
   "onboarding.validation.passwordWeak": "กรุณากรอกรหัสผ่านอย่างน้อย 6 ตัวอักษร",
   "onboarding.validation.phoneInvalid": "กรุณากรอกหมายเลขโทรศัพท์ 11 หลักที่ขึ้นต้นด้วย 010",
-  "onboarding.validation.passwordRequired": "กรุณากรอกรหัสผ่านของคุณ"
+  "onboarding.validation.passwordRequired": "กรุณากรอกรหัสผ่านของคุณ",
+  "onboarding.toast.existingSocialAccount": "เข้าสู่ระบบบัญชีที่มีอยู่ของคุณอย่างปลอดภัยแล้ว",
+  "onboarding.invite.roleMismatch": "บทบาทของบัญชีปัจจุบันไม่ตรงกับคำเชิญ โปรดเปิดใหม่ด้วยอุปกรณ์หรือบัญชีที่ตรงกัน",
+  "onboarding.invite.roleMismatchChild": "คำเชิญนี้สำหรับผู้ปกครอง ให้ผู้ปกครองเปิดบนอุปกรณ์ของเขานะ",
+  "onboarding.invite.legacyChoice": "นี่คือลิงก์เชิญแบบเก่า โปรดเลือกว่าอุปกรณ์นี้เป็นของผู้ปกครองหรือเด็ก",
+  "onboarding.invite.parent.title": "คุณได้รับเชิญให้เป็นผู้ปกครองร่วม",
+  "onboarding.invite.parent.authDescription": "เข้าสู่ระบบบัญชีเดิมหรือสร้างบัญชีผู้ปกครอง แล้วเข้าร่วมครอบครัว",
+  "onboarding.signup.socialPending": "กำลังเปิดการสมัครด้วยโซเชียล…",
+  "onboarding.pairing.parent.title": "เข้าร่วมในฐานะผู้ปกครองร่วม",
+  "onboarding.pairing.parent.description": "ใช้คิวอาร์โค้ดหรือรหัสเชื่อมต่อจากผู้ปกครองที่เชิญคุณ",
+  "onboarding.pairing.parent.recovery": "หลังเข้าร่วม คุณสามารถจัดการปฏิทินครอบครัวและข้อมูลความปลอดภัยของเด็กร่วมกันด้วยสิทธิ์ผู้ปกครอง"
 }

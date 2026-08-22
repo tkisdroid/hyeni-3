@@ -1016,5 +1016,9 @@
   "parent.weekday.sun": "일",
   "parent.weekday.thu": "목",
   "parent.weekday.tue": "화",
-  "parent.weekday.wed": "수"
+  "parent.weekday.wed": "수",
+  "parent.familyInvite.parent.lead1": "초대받은 보호자가 이 QR을 스캔하거나",
+  "parent.familyInvite.parent.lead2": "공유한 링크에서 로그인해 주세요.",
+  "parent.familyInvite.parent.shareText": "혜니캘린더 공동 보호자 초대\n연결 코드: {pairCode}\n초대 링크: {pairLink}",
+  "parent.familyInvite.parent.waiting": "공동 보호자의 연결을 기다리고 있어요."
 }

@@ -153,7 +153,9 @@ test("진행 중 Web refresh는 logout 또는 새 로그인으로 nonce가 바�
 
 test("아이모드 시작은 복구 대기 후 세션을 다시 확인하고 익명 로그인 여부를 결정한다", () => {
   const source = read("src/screens/onboarding/Onboarding.tsx");
-  const pairEffect = source.slice(source.indexOf("const code = readPairParam();"), source.indexOf("const back ="));
+  const pairEffectStart = source.indexOf("const invite = readPairInvite()");
+  assert.ok(pairEffectStart >= 0, "pair 딥링크 effect 시작점을 찾을 수 없습니다");
+  const pairEffect = source.slice(pairEffectStart, source.indexOf("const back ="));
   const startChild = source.slice(source.indexOf("const startChildMode = async"), source.indexOf("return (", source.indexOf("const startChildMode = async")));
 
   for (const block of [pairEffect, startChild]) {

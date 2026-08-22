@@ -23,6 +23,7 @@ import {
   claimAnonymousSignupProtection,
   releaseAnonymousSignupProtectionClaims,
 } from "../lib/anonymousSignupProtection";
+import { attachOnboardingPreferences, parseOnboardingInterests } from "../lib/onboardingPreferences";
 
 const auth = new Hono<{ Bindings: Env; Variables: Vars }>();
 
@@ -530,6 +531,7 @@ auth.post("/signup/verify", async (c) => {
     name?: unknown;
     gender?: unknown;
     birthdate?: unknown;
+    onboardingInterests?: unknown;
     device_install_id?: unknown;
     device_label?: unknown;
     device_platform?: unknown;
@@ -555,6 +557,8 @@ auth.post("/signup/verify", async (c) => {
   const birthdate = /^\d{4}-\d{2}-\d{2}$/.test(String(body?.birthdate ?? ""))
     ? String(body.birthdate)
     : null;
+  const onboardingInterests = parseOnboardingInterests(body.onboardingInterests);
+  if (!onboardingInterests.ok) return c.json({ error: "invalid_onboarding_interests" }, 400);
 
   // 재시도 가능한 입력·설치·중복 오류는 일회용 OTP보다 먼저 판정한다.
   // 이 경계가 뒤에 있으면 올바른 OTP를 입력하고도 실패한 뒤 같은 번호로 다시 시도할 수 없다.
@@ -574,14 +578,14 @@ auth.post("/signup/verify", async (c) => {
   const phoneLocal = e164ToLocalKr(phone); // raw_user_meta_data.phone (클라 phoneStorage 미러)
   const encryptedPassword = await hashPassword(password); // 평문 저장 금지 — bcrypt 해시
   const nowTs = pgNow();
-  const meta = {
+  const meta = attachOnboardingPreferences({
     auth_provider: "phone",
     login_id: loginId,
     name,
     phone: phoneLocal,
     ...(gender ? { gender } : {}),
     ...(birthdate ? { birthdate } : {}),
-  };
+  }, onboardingInterests, nowTs);
 
   try {
     const inserted = await db.batch([
@@ -662,6 +666,7 @@ auth.post("/signup/verify", async (c) => {
   }
 
   return c.json({
+    account_status: "created",
     user: {
       id: userId,
       role: "parent",

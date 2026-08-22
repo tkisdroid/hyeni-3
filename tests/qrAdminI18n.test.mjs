@@ -30,9 +30,13 @@ test("관리자 prompt 본문과 서버 저장값은 raw 편집·저장 계약�
 
 test("QR와 관리자 화면의 권한·query·mutation·role 계약을 유지한다", () => {
   const capabilityCheck = qr.indexOf("if (!navigator.mediaDevices?.getUserMedia)");
+  const detectorPreparation = qr.indexOf("const Detector =");
+  const fallbackPreparation = qr.indexOf('await import("jsqr")');
   const permissionRequest = qr.indexOf("const permission = await ensureQrCameraPermission()");
 
   assert.ok(capabilityCheck >= 0 && capabilityCheck < permissionRequest, "스캔 미지원 기기에는 카메라 권한을 먼저 요청하지 않는다");
+  assert.ok(detectorPreparation >= 0 && detectorPreparation < permissionRequest, "기본 QR 엔진을 권한 요청 전에 준비한다");
+  assert.ok(fallbackPreparation >= 0 && fallbackPreparation < permissionRequest, "폴백 QR 엔진을 권한 요청 전에 준비한다");
   assert.match(qr, /ensureQrCameraPermission\(\)/);
   assert.match(qr, /openCameraPermissionSettings\(\)/);
   assert.match(qr, /permissionRecovery === "settings"/);

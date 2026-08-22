@@ -105,5 +105,8 @@
   "core.state.loading": "Loading…",
   "core.state.loadingScreen": "Loading this screen…",
   "core.state.retrying": "Checking again…",
-  "core.time.remaining": "{duration} remaining"
+  "core.time.remaining": "{duration} remaining",
+  "core.error.api.parentRoleMismatch.formal": "This is already a guardian account. Please use a co-guardian invitation link.",
+  "core.error.api.parentRoleRequired.formal": "Sign in with a guardian account, then try connecting as a co-guardian again.",
+  "core.error.api.childRoleRequired.formal": "Connect a child's device from Child mode."
 }

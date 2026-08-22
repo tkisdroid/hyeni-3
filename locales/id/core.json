@@ -105,5 +105,8 @@
   "core.state.loading": "Memuat…",
   "core.state.loadingScreen": "Memuat layar ini…",
   "core.state.retrying": "Memeriksa lagi…",
-  "core.time.remaining": "{duration} tersisa"
+  "core.time.remaining": "{duration} tersisa",
+  "core.error.api.parentRoleMismatch.formal": "Ini sudah merupakan akun wali. Gunakan tautan undangan wali bersama.",
+  "core.error.api.parentRoleRequired.formal": "Masuk dengan akun wali, lalu coba lagi menghubungkan sebagai wali bersama.",
+  "core.error.api.childRoleRequired.formal": "Hubungkan perangkat anak dari Mode Anak."
 }

@@ -32,6 +32,7 @@ import {
 } from "../lib/oauthState";
 import { invalidOAuthCallbackResponse, oauthCallbackResponse } from "../lib/oauthCallbackPage";
 import { writeOperationalLog } from "../lib/safeOperationalLog";
+import { attachOnboardingPreferences, parseOnboardingInterests } from "../lib/onboardingPreferences";
 
 // 추가 Secret(메인이 types.ts 로 승격).
 type NaverEnv = Env & {
@@ -108,6 +109,7 @@ naver.post("/naver", async (c) => {
     device_install_id?: unknown;
     device_label?: unknown;
     device_platform?: unknown;
+    onboardingInterests?: unknown;
   };
   try {
     body = await c.req.json();
@@ -122,6 +124,8 @@ naver.post("/naver", async (c) => {
   }
   const deviceId = normalizeDeviceId(body.device_install_id);
   if (!deviceId) return c.json({ error: "device_identity_required" }, 400);
+  const onboardingInterests = parseOnboardingInterests(body.onboardingInterests);
+  if (!onboardingInterests.ok) return c.json({ error: "invalid_onboarding_interests" }, 400);
 
   const claimed = await consumeOAuthTransaction(db, {
     provider: "naver",
@@ -185,9 +189,11 @@ naver.post("/naver", async (c) => {
     .first<{ user_id: string }>();
 
   let userId: string;
+  let accountStatus: "existing" | "linked" | "created";
   if (identity?.user_id) {
     // 기존 네이버 사용자 재로그인. 메타데이터 best-effort 최신화.
     userId = String(identity.user_id);
+    accountStatus = "existing";
     try {
       const existing = await db.prepare("SELECT raw_user_meta_data FROM users WHERE id=? LIMIT 1").bind(userId).first<{ raw_user_meta_data: string | null }>();
       let meta: Record<string, unknown> = {};
@@ -236,6 +242,7 @@ naver.post("/naver", async (c) => {
 
     if (decision.kind === "link") {
       userId = decision.userId;
+      accountStatus = "linked";
       try {
         const inserted = await insertAuthIdentityForCurrentUser(db, {
           id: crypto.randomUUID(),
@@ -252,10 +259,13 @@ naver.post("/naver", async (c) => {
       }
     } else {
       userId = crypto.randomUUID();
+      accountStatus = "created";
+      const createdAt = pgNow();
+      const signupMeta = attachOnboardingPreferences(meta, onboardingInterests, createdAt);
       try {
         await db.batch([
-          db.prepare("INSERT INTO users (id, email, is_anonymous, raw_user_meta_data, created_at) VALUES (?,?,0,?,?)").bind(userId, email, JSON.stringify(meta), pgNow()),
-          db.prepare("INSERT INTO auth_identities (id, user_id, provider, provider_id, identity_data, created_at) VALUES (?,?,?,?,?,?)").bind(crypto.randomUUID(), userId, "naver", naverId, identityData, pgNow()),
+          db.prepare("INSERT INTO users (id, email, is_anonymous, raw_user_meta_data, created_at) VALUES (?,?,0,?,?)").bind(userId, email, JSON.stringify(signupMeta), createdAt),
+          db.prepare("INSERT INTO auth_identities (id, user_id, provider, provider_id, identity_data, created_at) VALUES (?,?,?,?,?,?)").bind(crypto.randomUUID(), userId, "naver", naverId, identityData, createdAt),
         ]);
       } catch (e) {
         console.error("naver-auth: user create failed");
@@ -290,6 +300,7 @@ naver.post("/naver", async (c) => {
   }
 
   return c.json({
+    account_status: accountStatus,
     // 원본 호환 필드.
     email,
     name: displayName,

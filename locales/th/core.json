@@ -105,5 +105,8 @@
   "core.state.loading": "กำลังโหลด…",
   "core.state.loadingScreen": "กำลังโหลดหน้าจอนี้…",
   "core.state.retrying": "กำลังตรวจสอบอีกครั้ง…",
-  "core.time.remaining": "{duration} เหลืออยู่"
+  "core.time.remaining": "{duration} เหลืออยู่",
+  "core.error.api.parentRoleMismatch.formal": "บัญชีนี้เป็นบัญชีผู้ปกครองอยู่แล้ว โปรดใช้ลิงก์เชิญผู้ปกครองร่วม",
+  "core.error.api.parentRoleRequired.formal": "เข้าสู่ระบบด้วยบัญชีผู้ปกครอง แล้วลองเชื่อมต่อเป็นผู้ปกครองร่วมอีกครั้ง",
+  "core.error.api.childRoleRequired.formal": "เชื่อมต่ออุปกรณ์ของเด็กจากโหมดเด็ก"
 }

@@ -167,5 +167,15 @@
   "onboarding.validation.passwordMismatch": "Pengesahan kata laluan tidak sepadan.",
   "onboarding.validation.passwordWeak": "Masukkan kata laluan sekurang-kurangnya 6 aksara.",
   "onboarding.validation.phoneInvalid": "Masukkan nombor telefon 11 digit bermula dengan 010.",
-  "onboarding.validation.passwordRequired": "Sila masukkan kata laluan anda."
+  "onboarding.validation.passwordRequired": "Sila masukkan kata laluan anda.",
+  "onboarding.toast.existingSocialAccount": "Anda telah log masuk dengan selamat ke akaun sedia ada.",
+  "onboarding.invite.roleMismatch": "Peranan akaun semasa tidak sepadan dengan jemputan. Buka semula menggunakan peranti atau akaun yang betul.",
+  "onboarding.invite.roleMismatchChild": "Jemputan ini untuk penjaga. Minta penjaga membukanya pada peranti mereka.",
+  "onboarding.invite.legacyChoice": "Ini ialah pautan jemputan lama. Pilih sama ada peranti ini digunakan oleh penjaga atau anak.",
+  "onboarding.invite.parent.title": "Anda dijemput sebagai penjaga bersama",
+  "onboarding.invite.parent.authDescription": "Log masuk ke akaun sedia ada atau cipta akaun penjaga, kemudian sertai keluarga.",
+  "onboarding.signup.socialPending": "Membuka pendaftaran sosial…",
+  "onboarding.pairing.parent.title": "Sertai sebagai penjaga bersama",
+  "onboarding.pairing.parent.description": "Gunakan kod QR atau kod sambungan daripada penjaga yang menjemput anda.",
+  "onboarding.pairing.parent.recovery": "Selepas menyertai, anda boleh mengurus kalendar keluarga dan maklumat keselamatan anak bersama-sama dengan kebenaran penjaga."
 }

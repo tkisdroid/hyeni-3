@@ -30,6 +30,18 @@ const CODE_MESSAGES: Readonly<Record<string, Readonly<Record<ApiErrorTone, Messa
     formal: "core.error.api.expiredPairCode.formal",
     child: "core.error.api.expiredPairCode.child",
   },
+  parent_cannot_join_as_child: {
+    formal: "core.error.api.parentRoleMismatch.formal",
+    child: "core.error.api.parentRoleMismatch.formal",
+  },
+  role_cannot_join_as_parent: {
+    formal: "core.error.api.parentRoleRequired.formal",
+    child: "core.error.api.parentRoleRequired.formal",
+  },
+  role_cannot_join_as_child: {
+    formal: "core.error.api.childRoleRequired.formal",
+    child: "core.error.api.childRoleRequired.formal",
+  },
   invalid_phone: {
     formal: "core.error.api.invalidPhone.formal",
     child: "core.error.api.invalidPhone.child",

@@ -1016,5 +1016,9 @@
   "parent.weekday.sun": "Araw",
   "parent.weekday.thu": "leeg",
   "parent.weekday.tue": "galit",
-  "parent.weekday.wed": "numero"
+  "parent.weekday.wed": "numero",
+  "parent.familyInvite.parent.lead1": "Ipa-scan sa inimbitahang guardian ang QR code na ito",
+  "parent.familyInvite.parent.lead2": "o mag-sign in mula sa ibinahaging invitation link.",
+  "parent.familyInvite.parent.shareText": "Imbitasyon sa co-guardian ng Hyeni Calendar\nConnection code: {pairCode}\nInvitation link: {pairLink}",
+  "parent.familyInvite.parent.waiting": "Hinihintay na kumonekta ang co-guardian."
 }

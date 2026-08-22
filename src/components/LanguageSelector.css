@@ -106,11 +106,13 @@
 .hy-language__collapse {
   display: grid;
   grid-template-rows: 0fr;
+  visibility: hidden;
   transition: grid-template-rows var(--duration-screen) var(--easing-standard);
 }
 
 .hy-language[data-open="true"] .hy-language__collapse {
   grid-template-rows: 1fr;
+  visibility: visible;
 }
 
 .hy-language__panel {

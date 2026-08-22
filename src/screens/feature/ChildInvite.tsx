@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { useIntl } from "react-intl";
 import { localizeApiError } from "@/i18n/apiError";
 import { ChevronLeft, RefreshCw, Share2, Copy } from "lucide-react";
@@ -42,7 +42,13 @@ export function ChildInvite() {
   const { locale } = useLocale();
   const intl = useIntl();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { show } = useToast();
+  const inviteRole = searchParams.get("role") === "parent" ? "parent" : "child";
+  const parentInvite = inviteRole === "parent";
+  const connectedMessageId = parentInvite
+    ? "parent.familyConnection.coParentConnected"
+    : "parent.childInvite.connected";
   // 대기 화면이므로 6초 폴링으로 아이 연결을 감지한다.
   const {
     data: family,
@@ -58,30 +64,36 @@ export function ChildInvite() {
   const countdown = useCountdown(expiresAt, locale);
   const expired = countdown?.expired ?? false;
 
-  const pairLink = useMemo(() => (pairCode ? buildPairLink(pairCode) : ""), [pairCode]);
+  const pairLink = useMemo(
+    () => (pairCode ? buildPairLink(pairCode, inviteRole) : ""),
+    [inviteRole, pairCode],
+  );
 
   // 연결 감지 — "연결된 자녀 uid 집합"에 baseline 에 없던 uid 가 나타나면 성공.
   // 개수 비교는 supersede 페어링(기기 교체·무료 슬롯 대체: 서버가 옛 행을 제외해 N→N)을
   // 영원히 못 잡으므로, 집합 변화(새 uid 등장)로 판정한다.
-  const childUids = useMemo(
+  const memberUids = useMemo(
     () =>
       (family?.members ?? [])
-        .filter((m: FamilyMember) => m.role === "child" && !!m.user_id)
+        .filter((m: FamilyMember) => m.role === inviteRole && !!m.user_id)
         .map((m) => m.user_id as string)
         .sort(),
-    [family],
+    [family, inviteRole],
   );
   const connectionRef = useRef<ChildInviteConnectionState>({ baseline: null, notified: false });
   useEffect(() => {
+    connectionRef.current = { baseline: null, notified: false };
+  }, [inviteRole]);
+  useEffect(() => {
     const status = isSuccess && family ? "success" : isError ? "error" : "loading";
-    const result = advanceChildInviteConnection(connectionRef.current, { status, childUids });
+    const result = advanceChildInviteConnection(connectionRef.current, { status, childUids: memberUids });
     connectionRef.current = result.state;
     if (result.newChildUid) {
-      show(intl.formatMessage({ id: "parent.childInvite.connected" }), "🔗");
+      show(intl.formatMessage({ id: connectedMessageId }), "🔗");
       const t = setTimeout(() => navigate("/parent/family"), 1200);
       return () => clearTimeout(t);
     }
-  }, [childUids, family, isError, isSuccess, navigate, show]);
+  }, [connectedMessageId, family, isError, isSuccess, memberUids, navigate, show]);
 
   const copyCode = () => {
     if (!pairCode) return;
@@ -105,14 +117,16 @@ export function ChildInvite() {
   const shareLink = async () => {
     if (!pairCode) return;
     const text = intl.formatMessage(
-      { id: "parent.childInvite.shareText" },
+      { id: parentInvite ? "parent.familyInvite.parent.shareText" : "parent.childInvite.shareText" },
       { pairCode, pairLink },
     );
     // Web Share API 우선(모바일 네이티브 공유 시트). 미지원 시 링크 복사로 대체.
     if (navigator.share) {
       try {
         await navigator.share({
-          title: intl.formatMessage({ id: "parent.childInvite.shareTitle" }),
+          title: intl.formatMessage({
+            id: parentInvite ? "parent.familyConnection.inviteCoParent" : "parent.childInvite.shareTitle",
+          }),
           text,
         });
         return;
@@ -159,18 +173,26 @@ export function ChildInvite() {
           <ChevronLeft size={22} strokeWidth={2.2} color="#4A4145" />
         </button>
         <span className="ci-title">
-          {intl.formatMessage({ id: "parent.childInvite.screenTitle" })}
+          {intl.formatMessage({
+            id: parentInvite ? "parent.familyConnection.inviteCoParent" : "parent.childInvite.screenTitle",
+          })}
         </span>
       </div>
 
       <div className="ci-content">
         <div className="ci-headline">
-          {intl.formatMessage({ id: "parent.childInvite.headline" })}
+          {intl.formatMessage({
+            id: parentInvite ? "parent.familyConnection.inviteCoParent" : "parent.childInvite.headline",
+          })}
         </div>
         <div className="ci-lead">
-          {intl.formatMessage({ id: "parent.childInvite.lead1" })}
+          {intl.formatMessage({
+            id: parentInvite ? "parent.familyInvite.parent.lead1" : "parent.childInvite.lead1",
+          })}
           <br />
-          {intl.formatMessage({ id: "parent.childInvite.lead2" })}
+          {intl.formatMessage({
+            id: parentInvite ? "parent.familyInvite.parent.lead2" : "parent.childInvite.lead2",
+          })}
         </div>
 
         {/* QR 카드 */}
@@ -190,7 +212,9 @@ export function ChildInvite() {
             <QrCode
               value={pairLink}
               size={212}
-              label={intl.formatMessage({ id: "parent.childInvite.qrLabel" })}
+              label={intl.formatMessage({
+                id: parentInvite ? "parent.familyConnection.viewCode" : "parent.childInvite.qrLabel",
+              })}
             />
           ) : !pairCode ? (
             <div className="ci-qr-skeleton" role="status">
@@ -265,10 +289,16 @@ export function ChildInvite() {
         {/* 연결 대기 상태 */}
         <div className="ci-wait">
           <span className="ci-wait__dot" />
-          {intl.formatMessage({ id: "parent.childInvite.waiting" })}
+          {intl.formatMessage({
+            id: parentInvite ? "parent.familyInvite.parent.waiting" : "parent.childInvite.waiting",
+          })}
         </div>
 
-        <img className="ci-mascot" src={asset("mascot/phone.webp")} alt="" />
+        <img
+          className="ci-mascot"
+          src={asset(parentInvite ? "mascot/family.webp" : "mascot/phone.webp")}
+          alt=""
+        />
       </div>
     </div>
   );

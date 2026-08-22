@@ -52,6 +52,9 @@ test("언어 선택기는 catalog 접근성 이름과 현재 선택 radio 상태
   assert.match(selector, /collapseOthers/);
   // 2026-08-22 병합: 첫 화면 피커와 설정 행 토글이 같은 open 상태를 공유한다.
   assert.match(selector, /aria-expanded=\{open\}/);
+  assert.equal((selector.match(/aria-hidden=\{!open\}/g) ?? []).length, 2);
+  assert.equal((selector.match(/tabIndex=\{open \? 0 : -1\}/g) ?? []).length, 2);
+  assert.match(selector, /queueMicrotask\(\(\) => toggleRef\.current\?\.focus\(\)\)/);
   assert.match(selector, /hy-language--picker/);
   assert.match(selector, /hy-language__trigger/);
   assert.match(selector, /localeEntries\.filter\(\(entry\) => entry\.code !== locale\)/);
@@ -66,12 +69,23 @@ test("언어 선택기는 키보드 포커스와 44px 터치 영역, 확대 글�
   assert.match(css, /\.hy-language__option:focus-visible\s*\{/);
   assert.match(css, /\.hy-language__current\s*\{[^}]*min-height:\s*var\(--control-min-size\)/s);
   assert.match(css, /\.hy-language__toggle\s*\{[^}]*min-height:\s*var\(--control-min-size\)/s);
+  assert.match(css, /\.hy-language__collapse\s*\{[^}]*visibility:\s*hidden/s);
+  assert.match(css, /\.hy-language\[data-open="true"\] \.hy-language__collapse\s*\{[^}]*visibility:\s*visible/s);
 });
 
 test("onboarding과 부모 설정은 같은 공용 선택기를 역할에 맞는 어조로 사용한다", () => {
   const onboardingSource = read("src/screens/onboarding/Onboarding.tsx");
   assert.match(onboardingSource, /import \{ LanguageSelector \} from "@\/components\/LanguageSelector";/);
   assert.match(onboardingSource, /<LanguageSelector\s+tone="formal"\s+collapseOthers\s*\/>/);
+  const roleStep = onboardingSource.slice(
+    onboardingSource.indexOf("function RoleStep"),
+    onboardingSource.indexOf("function TeacherStep"),
+  );
+  assert.equal(
+    (roleStep.match(/<LanguageSelector\b/g) ?? []).length,
+    1,
+    "첫 역할 화면에는 언어 설정이 한 곳만 있어야 합니다",
+  );
 
   // 2026-08-17 TK 지시: 부모 설정에서는 계정 프로필 바로 아래 한 줄로 두고 그 줄을 펼쳐서 고른다.
   const settings = read("src/screens/parent/ParentSettings.tsx");
@@ -100,10 +114,20 @@ test("onboarding과 부모 설정은 같은 공용 선택기를 역할에 맞는
   assert.doesNotMatch(childSettings, /LanguageSelector/);
 
   const onboarding = read("src/screens/onboarding/Onboarding.tsx");
-  const roleStep = onboarding.slice(onboarding.indexOf("function RoleStep"));
+  const roleStepLayout = onboarding.slice(onboarding.indexOf("function RoleStep"));
   assert.ok(
-    roleStep.indexOf("ob-role-card--parent") < roleStep.indexOf('<LanguageSelector tone="formal" collapseOthers />')
-      && roleStep.indexOf('<LanguageSelector tone="formal" collapseOthers />') < roleStep.indexOf("ob-role-terms"),
+    roleStepLayout.indexOf("ob-role-card--parent") < roleStepLayout.indexOf('<LanguageSelector tone="formal" collapseOthers />')
+      && roleStepLayout.indexOf('<LanguageSelector tone="formal" collapseOthers />') < roleStepLayout.indexOf("ob-role-terms"),
     "온보딩 언어 선택은 역할 카드 아래·약관 위의 페이지 하단에 있어야 합니다",
+  );
+});
+
+test("모든 펼침형 언어 목록은 바깥 탭으로 닫히고 선택 즉시 접힌다", () => {
+  const selector = read("src/components/LanguageSelector.tsx");
+  assert.match(selector, /<fieldset\s+ref=\{rootRef\}/);
+  assert.equal(
+    (selector.match(/setOpen\(false\);\s*void setLocale\(entry\.code\)/g) ?? []).length,
+    2,
+    "첫 화면 피커와 하단 접힘 목록 모두 선택 직후 닫혀야 합니다",
   );
 });

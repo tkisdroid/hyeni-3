@@ -4,7 +4,6 @@ import { FormattedMessage, useIntl } from "react-intl";
 import { useNavigate } from "react-router";
 import { Camera, Check, ChevronLeft, ChevronRight, Link2 } from "lucide-react";
 import { asset } from "@/lib/assets";
-import { DEFAULT_CHILD_AVATAR } from "@/lib/avatar";
 import { useToast } from "@/app/toast";
 import { deriveAuthState, useAuth } from "@/auth/AuthContext";
 import { ChildLocationPermissionDialog } from "@/components/ChildLocationPermissionDialog";
@@ -59,7 +58,7 @@ import { normalizePairCodeInput } from "@/transform/pairCode";
 const QrScanner = lazy(() =>
   import("@/components/QrScanner").then((module_) => ({ default: module_.QrScanner })),
 );
-import { readPairParam, clearPairParam } from "@/transform/pairLink";
+import { readPairInvite, readPairParam, clearPairParam } from "@/transform/pairLink";
 import {
   REFERRAL_CODE_EVENT,
   clearReferralParam,
@@ -97,6 +96,19 @@ import { localizeApiError } from "@/i18n/apiError";
 import { useLocale } from "@/i18n/useLocale";
 import { isApiError } from "@/lib/api/errors";
 import { socialProvidersForAccessCountry } from "@/transform/accessCountry";
+import {
+  resolvePairInviteAction,
+  resolvePostAuthAction,
+  resolveSignupContinuation,
+  type SignupMethod,
+} from "@/transform/onboardingFlow";
+import {
+  clearOnboardingDraft,
+  persistOnboardingDraft,
+  readOnboardingDraft,
+  type PendingPairInvite,
+} from "@/transform/onboardingDraft";
+import type { OnboardingInterest } from "@/transform/onboardingPreferences";
 
 type Step = "role" | "teacherSetup" | "login" | "survey" | "signup" | "connect" | "pairing" | "perms";
 type AuthIntent = "login" | "signup";
@@ -118,7 +130,11 @@ const SURVEY_OPTIONS = [
   { id: "arrival", titleId: "onboarding.survey.arrival.title", subId: "onboarding.survey.arrival.description" },
   { id: "safety", titleId: "onboarding.survey.safety.title", subId: "onboarding.survey.safety.description" },
   { id: "ai", titleId: "onboarding.survey.ai.title", subId: "onboarding.survey.ai.description" },
-] as const;
+] as const satisfies readonly {
+  id: OnboardingInterest;
+  titleId: string;
+  subId: string;
+}[];
 
 /** 온보딩: 역할선택→로그인/가입→가족연결→페어링→권한. 실제 Worker 인증 배선. */
 export function Onboarding() {
@@ -137,28 +153,50 @@ export function Onboarding() {
     getOnboardingAuthCommitSnapshot,
     getOnboardingAuthCommitSnapshot,
   );
-  const [step, setStep] = useState<Step>("role");
-  const [authIntent, setAuthIntent] = useState<AuthIntent>("login");
+  const [initialDraft] = useState(() => readOnboardingDraft());
+  const [initialAuthState] = useState(() => deriveAuthState());
+  const [step, setStep] = useState<Step>(() =>
+    initialDraft?.signupMethod
+      ? "survey"
+      : initialDraft?.pairInvite?.role === "parent"
+        ? initialAuthState.status === "authenticated" && initialAuthState.role === "parent" && !initialAuthState.familyId
+          ? "pairing"
+          : "login"
+        : "role",
+  );
+  const [authIntent, setAuthIntent] = useState<AuthIntent>(() => initialDraft?.signupMethod ? "signup" : "login");
   const [authEntryError, setAuthEntryError] = useState<string | null>(null);
   const [role, setRole] = useState<"parent" | "child" | "teacher">("parent");
-  const [pairMode, setPairMode] = useState<"child" | "parent">("child");
+  const [pairMode, setPairMode] = useState<"child" | "parent">(() =>
+    initialDraft?.pairInvite?.role === "parent" ? "parent" : "child",
+  );
   const [busy, setBusy] = useState(false);
   const [childStarting, setChildStarting] = useState(false);
   const [childJoinHint, setChildJoinHint] = useState<JoinFamilyOptions | null>(null);
-  const [signupFlowStarted, setSignupFlowStarted] = useState(false);
-  const [surveyChoices, setSurveyChoices] = useState<string[]>([]);
+  const [signupFlowStarted, setSignupFlowStarted] = useState(() => Boolean(initialDraft?.signupMethod));
+  const [signupMethod, setSignupMethod] = useState<SignupMethod>(() => initialDraft?.signupMethod ?? { kind: "phone" });
+  const [surveyChoices, setSurveyChoices] = useState<OnboardingInterest[]>(() => initialDraft?.surveyChoices ?? []);
+  const [pendingPairInvite, setPendingPairInvite] = useState<PendingPairInvite | null>(() => initialDraft?.pairInvite ?? null);
   const permissionTransitionRef = useRef<OnboardingPermissionTransition | null>(null);
   // 전화 OTP 가입 시 입력한 이름 — 가입 직후 세션 user_metadata 가 비어 parentNameFromUser 가
   // "부모"로 깨지므로, 이 이름을 setupFamily(새 가족)의 parentName 으로 우선 사용한다.
   const [signupName, setSignupName] = useState<string | null>(null);
   // QR 딥링크(?pair=)로 진입 시 아이 코드 프리필.
-  const [pairPrefill, setPairPrefill] = useState<string | null>(null);
+  const [pairPrefill, setPairPrefill] = useState<string | null>(() => initialDraft?.pairInvite?.code ?? null);
   // 친구 초대 ref는 가족 생성 성공 전까지 유지해 로그인·가입 단계를 지나도 귀속한다.
   const [referralPrefill, setReferralPrefill] = useState<string | null>(() => readReferralParam());
   const [referralDraft, setReferralDraft] = useState(() => readReferralParam() ?? "");
   const oauthLoginPromiseRef = useRef<ReturnType<typeof finishOAuthLogin> | null>(null);
   const oauthExternalBusyRef = useRef(false);
   const [oauthExternalBusy, setOAuthExternalBusy] = useState(false);
+
+  const preservePendingInviteOnly = () => {
+    if (pendingPairInvite) {
+      persistOnboardingDraft({ pairInvite: pendingPairInvite, signupMethod: null, surveyChoices: [] });
+      return;
+    }
+    clearOnboardingDraft();
+  };
 
   const applyReferralDraft = (raw: string) => {
     setReferralDraft(raw);
@@ -214,11 +252,13 @@ export function Onboarding() {
   };
 
   const finishPermissionSetup = () => {
+    const currentRole = deriveAuthState().role;
     const destination = homePathForRole(
-      role === "parent" ? "parent" : role === "child" ? "child" : "teacher",
+      currentRole ?? (role === "parent" ? "parent" : role === "child" ? "child" : "teacher"),
     );
     const transition = permissionTransitionRef.current;
     permissionTransitionRef.current = null;
+    clearOnboardingDraft();
     navigate(destination);
     transition?.complete();
   };
@@ -233,6 +273,7 @@ export function Onboarding() {
   useEffect(() => {
     const cancellation = readOAuthCancellation();
     if (cancellation) {
+      const restored = readOnboardingDraft() ?? initialDraft;
       try {
         finishOAuthCancellation(cancellation);
         show(intl.formatMessage({ id: "onboarding.toast.socialCancelled" }), "ℹ️");
@@ -246,16 +287,31 @@ export function Onboarding() {
         clearOAuthCallbackUrl();
         setBusy(false);
         setRole("parent");
-        setStep("login");
+        if (restored?.signupMethod) {
+          setSignupMethod(restored.signupMethod);
+          setSurveyChoices(restored.surveyChoices);
+          setSignupFlowStarted(true);
+          setAuthIntent("signup");
+          setStep("survey");
+        } else {
+          setAuthIntent("login");
+          setStep("login");
+        }
       }
       return;
     }
     const cb = readOAuthCallback();
     if (!cb) return;
+    const callbackDraft = readOnboardingDraft() ?? initialDraft;
     setBusy(true);
     const transitionToken = beginOnboardingAuthTransition();
     const oauthLoginPromise = oauthLoginPromiseRef.current
-      ?? finishOAuthLogin(cb, { sessionAdoption: "deferred" });
+      ?? finishOAuthLogin(cb, {
+        sessionAdoption: "deferred",
+        onboardingInterests: callbackDraft?.signupMethod?.kind === "oauth"
+          ? callbackDraft.surveyChoices
+          : undefined,
+      });
     oauthLoginPromiseRef.current = oauthLoginPromise;
     oauthLoginPromise
       .then(async (result) => {
@@ -264,7 +320,13 @@ export function Onboarding() {
         clearOAuthExternalBusy();
         clearOAuthCallbackUrl();
         syncFromSession();
-        await routeAfterParentLogin(transitionToken);
+        if (
+          callbackDraft?.signupMethod?.kind === "oauth"
+          && (result.account_status === "existing" || result.account_status === "linked")
+        ) {
+          show(intl.formatMessage({ id: "onboarding.toast.existingSocialAccount" }), "ℹ️");
+        }
+        await routeAfterParentLogin(transitionToken, callbackDraft?.pairInvite ?? null);
       })
       .catch((e) => {
         const canApplySideEffects = isOnboardingAuthTransitionActive(transitionToken);
@@ -328,33 +390,92 @@ export function Onboarding() {
     };
   }, [oauthExternalBusy]);
 
-  // QR 딥링크(?pair=KID-XXXX)로 진입 → 익명 로그인 후 아이 페어링 단계로(코드 프리필).
-  // OAuth 콜백이 동시에 있으면 그쪽을 우선한다.
+  // QR 딥링크는 as 역할을 먼저 판정한다. 공동 보호자는 인증을 거치고,
+  // 아이 링크만 익명 아이 세션으로 진입한다. OAuth 콜백이 동시에 있으면 그쪽이 우선이다.
   useEffect(() => {
-    const code = readPairParam();
-    if (!code || readOAuthCallback()) return;
-    // ★세션 보호: 이미 가족에 연결된 세션이면 익명 로그인으로 덮어쓰지 않는다.
-    //   (부모가 아이 초대 QR 을 자기 폰으로 스캔 → 부모 세션이 익명으로 파괴되던 실사고.)
-    //   위 리다이렉트 effect 와 같은 커밋에서 실행되므로 여기서도 독립적으로 막아야 한다.
+    const invite = readPairInvite()
+      ?? (initialDraft?.signupMethod ? null : initialDraft?.pairInvite)
+      ?? null;
+    if (!invite || readOAuthCallback()) return;
+    clearPairParam();
     const current = deriveAuthState();
-    if (current.status === "authenticated" && current.familyId) {
-      clearPairParam();
+    const action = resolvePairInviteAction({
+      inviteRole: invite.role,
+      roleExplicit: invite.roleExplicit,
+      authStatus: current.status,
+      authRole: current.role,
+      familyId: current.familyId,
+    });
+
+    if (action === "role-home") {
+      clearOnboardingDraft();
       navigate(homePathForRole(current.role), { replace: true });
       return;
     }
-    // ★공동 보호자 보호: 부모 역할로 로그인한 세션이 QR/링크로 진입하면
-    //   아이 경로(익명 로그인→child 페어링)로 빠지지 않고 부모 페어링으로 연결한다.
-    //   (공동 보호자가 배우자에게 받은 페어링 링크를 클릭 → child로 등록되던 실사고.)
-    if (current.status === "authenticated" && current.role === "parent") {
-      clearPairParam();
-      setPairPrefill(code);
+
+    if (action === "choose-role") {
+      setPendingPairInvite(invite);
+      setPairPrefill(invite.code);
+      setPairMode("child");
+      persistOnboardingDraft({ pairInvite: invite, signupMethod: null, surveyChoices: [] });
+      setStep("role");
+      return;
+    }
+
+    if (action === "parent-auth") {
+      setPendingPairInvite(invite);
+      setPairPrefill(invite.code);
       setRole("parent");
       setPairMode("parent");
+      setAuthIntent("login");
+      setAuthEntryError(null);
+      persistOnboardingDraft({ pairInvite: invite, signupMethod: null, surveyChoices: [] });
+      setStep("login");
+      return;
+    }
+
+    if (action === "parent-pair") {
+      const parentInvite = { ...invite, role: "parent" as const };
+      setPendingPairInvite(parentInvite);
+      setPairPrefill(parentInvite.code);
+      setRole("parent");
+      setPairMode("parent");
+      persistOnboardingDraft({ pairInvite: parentInvite, signupMethod: null, surveyChoices: [] });
       setStep("pairing");
       return;
     }
-    clearPairParam();
-    setPairPrefill(code);
+
+    if (action === "role-mismatch") {
+      clearOnboardingDraft();
+      setPendingPairInvite(null);
+      setPairPrefill(null);
+      show(intl.formatMessage({
+        id: current.role === "child"
+          ? "onboarding.invite.roleMismatchChild"
+          : "onboarding.invite.roleMismatch",
+      }), "⚠️");
+      if (current.role === "parent") {
+        setRole("parent");
+        setStep("connect");
+      } else if (current.role === "child") {
+        setRole("child");
+        setPairMode("child");
+        setStep("pairing");
+      } else if (current.role === "teacher") {
+        navigate(homePathForRole("teacher"), { replace: true });
+      } else {
+        setStep("role");
+      }
+      return;
+    }
+
+    setPendingPairInvite(invite);
+    setPairPrefill(invite.code);
+    persistOnboardingDraft({ pairInvite: invite, signupMethod: null, surveyChoices: [] });
+    if (current.status === "authenticated") {
+      routeAfterChildSession();
+      return;
+    }
     setBusy(true);
     setChildStarting(true);
     readChildDeviceIdentityHint()
@@ -367,10 +488,9 @@ export function Onboarding() {
         // 복구 Promise를 기다리는 동안 NativeBootstrap 등 다른 경로가 세션을 살렸을 수 있다.
         // 익명 로그인을 만들기 직전에 다시 확인해 정상 child 세션을 덮어쓰지 않는다.
         const recovered = deriveAuthState();
-        if (recovered.status === "authenticated" && recovered.familyId) {
+        if (recovered.status === "authenticated") {
           syncFromSession();
-          routeAfterChildSession();
-          return;
+          if (routeAfterChildSession()) return;
         }
         await anonymousLogin();
         syncFromSession();
@@ -378,7 +498,7 @@ export function Onboarding() {
         setPairMode("child");
         setStep("pairing");
       })
-      .catch((e) => show(localizeApiError(e, intl, "formal"), "⚠️"))
+      .catch((e) => show(localizeApiError(e, intl, "child"), "⚠️"))
       .finally(() => {
         setBusy(false);
         setChildStarting(false);
@@ -399,39 +519,126 @@ export function Onboarding() {
     });
 
   // 부모 로그인/가입 후: 가족 있으면 홈, 없으면 가족연결 단계.
-  const routeAfterParentLogin = async (transitionToken: OnboardingAuthTransitionToken) => {
+  const routeAfterParentLogin = async (
+    transitionToken: OnboardingAuthTransitionToken,
+    inviteOverride: PendingPairInvite | null = pendingPairInvite,
+  ) => {
     if (!isOnboardingAuthTransitionActive(transitionToken)) return;
     syncFromSession();
     try {
+      const current = deriveAuthState();
+      if (current.status !== "authenticated" || !current.role) throw new Error("auth_state_invalid");
+      if (current.role !== "parent") {
+        const action = resolvePostAuthAction({
+          authRole: current.role,
+          familyExists: Boolean(current.familyId),
+          pendingParentInvite: inviteOverride?.role === "parent",
+        });
+        const completed = completeOnboardingAuthTransitionsThrough(transitionToken);
+        if (!completed) return;
+        if (inviteOverride?.role === "parent") {
+          show(intl.formatMessage({
+            id: current.role === "child"
+              ? "onboarding.invite.roleMismatchChild"
+              : "onboarding.invite.roleMismatch",
+          }), "⚠️");
+        }
+        clearOnboardingDraft();
+        setPendingPairInvite(null);
+        setBusy(false);
+        if (action === "child-pair") {
+          setRole("child");
+          setPairMode("child");
+          setStep("pairing");
+          return;
+        }
+        if (action === "teacher-setup") {
+          setRole("teacher");
+          setStep("teacherSetup");
+          return;
+        }
+        navigate(homePathForRole(current.role));
+        return;
+      }
       const fam = await getMyFamily();
       const completed = completeOnboardingAuthTransitionsThrough(transitionToken);
       if (!completed) return;
       setBusy(false);
-      if (fam === null) {
+      const action = resolvePostAuthAction({
+        authRole: current.role,
+        familyExists: fam !== null,
+        pendingParentInvite: inviteOverride?.role === "parent",
+      });
+      if (action === "parent-pair" && inviteOverride) {
+        const parentInvite = { ...inviteOverride, role: "parent" as const };
+        setPendingPairInvite(parentInvite);
+        setPairPrefill(parentInvite.code);
+        setRole("parent");
+        setPairMode("parent");
+        persistOnboardingDraft({ pairInvite: parentInvite, signupMethod: null, surveyChoices: [] });
+        setStep("pairing");
+        return;
+      }
+      clearOnboardingDraft();
+      setPendingPairInvite(null);
+      if (action === "parent-connect") {
         setStep("connect");
         return;
       }
       clearReferralParam();
-      navigate("/parent/home");
+      navigate(homePathForRole(current.role));
     } catch {
       throw new Error("family_lookup_failed");
     }
   };
 
+  const startSignupOAuth = async (provider: OAuthProvider) => {
+    if (busy) return;
+    setAuthEntryError(null);
+    persistOnboardingDraft({
+      pairInvite: pendingPairInvite,
+      signupMethod: { kind: "oauth", provider },
+      surveyChoices,
+    });
+    setBusy(true);
+    const transitionToken = beginOnboardingAuthTransition();
+    try {
+      await startWorkerOAuth(provider, "login", { onExternalOpen: markOAuthExternalBusy });
+    } catch (error) {
+      if (!isOnboardingAuthTransitionActive(transitionToken)) return;
+      clearOAuthExternalBusy();
+      const message = localizeApiError(error, intl, "formal");
+      setAuthEntryError(message);
+      show(message, "⚠️");
+      setBusy(false);
+      endOnboardingAuthTransition(transitionToken);
+    }
+  };
+
   const routeAfterChildSession = () => {
     const state = deriveAuthState();
-    if (state.role === "child" && state.familyId) {
-      navigate("/child/home");
+    if (state.status !== "authenticated") return false;
+    if (state.role === "child") {
+      setRole("child");
+      setPairMode("child");
+      if (state.familyId) navigate("/child/home");
+      else setStep("pairing");
       return true;
     }
-    if (state.role === "parent" || state.role === "teacher") {
-      navigate(homePathForRole(state.role));
+    if (state.role === "parent") {
+      setRole("parent");
+      if (state.familyId) navigate(homePathForRole("parent"));
+      else setStep("connect");
       return true;
     }
-    // ★방어: auth role이 없을 때만 child로 강제한다.
-    setRole("child");
-    setPairMode("child");
-    setStep("pairing");
+    if (state.role === "teacher") {
+      setRole("teacher");
+      if (state.familyId) navigate(homePathForRole("teacher"));
+      else setStep("teacherSetup");
+      return true;
+    }
+    // 역할이 손상된 인증 세션도 익명 세션으로 덮어쓰지 않는다.
+    setStep("role");
     return true;
   };
 
@@ -443,35 +650,23 @@ export function Onboarding() {
       // ★세션 보호: 이미 가족에 연결된 세션(부모/아이)이면 새 익명 세션을 만들지 않는다.
       //   역할 선택 화면이 잘못 노출돼도 기존 로그인이 파괴되지 않게 하는 최후 방어.
       const current = deriveAuthState();
-      if (current.status === "authenticated" && current.familyId) {
-        navigate(homePathForRole(current.role), { replace: true });
-        return;
-      }
-      // ★공동 보호자 보호: 부모 역할로 로그인했지만 가족이 없으면 익명 로그인으로
-      //   세션을 덮어쓰지 않고 parent 경로로 안내한다.
-      if (current.status === "authenticated" && current.role === "parent") {
-        setRole("parent");
-        setStep("connect");
-        return;
-      }
+      if (current.status === "authenticated" && routeAfterChildSession()) return;
       const hint = await readChildDeviceIdentityHint();
       setChildJoinHint(hint);
       if (await adoptNativeLocationSessionTokens()) {
         syncFromSession();
-        routeAfterChildSession();
-        return;
+        if (routeAfterChildSession()) return;
       }
       const recovered = deriveAuthState();
-      if (recovered.status === "authenticated" && recovered.familyId) {
+      if (recovered.status === "authenticated") {
         syncFromSession();
-        routeAfterChildSession();
-        return;
+        if (routeAfterChildSession()) return;
       }
       await anonymousLogin();
       syncFromSession();
       routeAfterChildSession();
     } catch (e) {
-      show(localizeApiError(e, intl, "formal"), "⚠️");
+      show(localizeApiError(e, intl, "child"), "⚠️");
     } finally {
       setBusy(false);
       setChildStarting(false);
@@ -484,11 +679,25 @@ export function Onboarding() {
         <RoleStep
           busy={busy || authCommitBoundaryActive}
           childStarting={childStarting}
+          legacyInvite={Boolean(pendingPairInvite && !pendingPairInvite.roleExplicit)}
           onParent={() => {
             if (authCommitBoundaryActive) return;
             cancelOnboardingAuthTransitions();
+            const legacyInvite = pendingPairInvite && !pendingPairInvite.roleExplicit
+              ? { ...pendingPairInvite, role: "parent" as const, roleExplicit: true }
+              : null;
+            if (legacyInvite) {
+              setPendingPairInvite(legacyInvite);
+              setPairPrefill(legacyInvite.code);
+              persistOnboardingDraft({ pairInvite: legacyInvite, signupMethod: null, surveyChoices: [] });
+            } else {
+              clearOnboardingDraft();
+              setPendingPairInvite(null);
+              setPairPrefill(null);
+            }
             setSignupFlowStarted(false);
             setSurveyChoices([]);
+            setSignupMethod({ kind: "phone" });
             setAuthIntent("login");
             setAuthEntryError(null);
             setRole("parent");
@@ -497,11 +706,26 @@ export function Onboarding() {
           onChild={() => {
             if (authCommitBoundaryActive) return;
             cancelOnboardingAuthTransitions();
+            const legacyInvite = pendingPairInvite && !pendingPairInvite.roleExplicit
+              ? { ...pendingPairInvite, role: "child" as const, roleExplicit: true }
+              : null;
+            if (legacyInvite) {
+              setPendingPairInvite(legacyInvite);
+              setPairPrefill(legacyInvite.code);
+              persistOnboardingDraft({ pairInvite: legacyInvite, signupMethod: null, surveyChoices: [] });
+            } else {
+              clearOnboardingDraft();
+              setPendingPairInvite(null);
+              setPairPrefill(null);
+            }
             void startChildMode();
           }}
           onTeacher={() => {
             if (authCommitBoundaryActive) return;
             cancelOnboardingAuthTransitions();
+            clearOnboardingDraft();
+            setPendingPairInvite(null);
+            setPairPrefill(null);
             setRole("teacher");
             setStep("teacherSetup");
           }}
@@ -514,6 +738,7 @@ export function Onboarding() {
         <LoginStep
           accessCountry={accessCountry}
           intent={authIntent}
+          parentInvite={pendingPairInvite?.role === "parent"}
           onIntentChange={(nextIntent) => {
             setAuthIntent(nextIntent);
             setAuthEntryError(null);
@@ -528,6 +753,11 @@ export function Onboarding() {
           onBack={() => {
             if (authCommitBoundaryActive) return;
             cancelOnboardingAuthTransitions();
+            if (pendingPairInvite) {
+              clearOnboardingDraft();
+              setPendingPairInvite(null);
+              setPairPrefill(null);
+            }
             back();
           }}
           onLoggedIn={async (transitionToken) => {
@@ -536,12 +766,14 @@ export function Onboarding() {
             setSurveyChoices([]);
             await routeAfterParentLogin(transitionToken);
           }}
-          onSignup={() => {
+          onSignup={(method) => {
             if (authCommitBoundaryActive) return;
             cancelOnboardingAuthTransitions();
+            setSignupMethod(method);
             setAuthIntent("signup");
             setAuthEntryError(null);
             setSignupFlowStarted(true);
+            persistOnboardingDraft({ pairInvite: pendingPairInvite, signupMethod: method, surveyChoices });
             setStep("survey");
           }}
           show={show}
@@ -550,18 +782,30 @@ export function Onboarding() {
       {step === "survey" && (
         <SurveyStep
           selected={surveyChoices}
+          busy={busy}
+          socialProvider={signupMethod.kind === "oauth" ? signupMethod.provider : null}
           onBack={() => {
             setSignupFlowStarted(false);
-            setSurveyChoices([]);
             setAuthIntent("signup");
+            preservePendingInviteOnly();
             setStep("login");
           }}
-          onToggle={(id) =>
-            setSurveyChoices((prev) =>
-              prev.includes(id) ? prev.filter((choice) => choice !== id) : [...prev, id],
-            )
-          }
-          onNext={() => setStep("signup")}
+          onToggle={(id) => {
+            const next = surveyChoices.includes(id)
+              ? surveyChoices.filter((choice) => choice !== id)
+              : [...surveyChoices, id];
+            setSurveyChoices(next);
+            persistOnboardingDraft({ pairInvite: pendingPairInvite, signupMethod, surveyChoices: next });
+          }}
+          onNext={() => {
+            const continuation = resolveSignupContinuation(signupMethod);
+            persistOnboardingDraft({ pairInvite: pendingPairInvite, signupMethod, surveyChoices });
+            if (continuation.kind === "phone-form") {
+              setStep("signup");
+              return;
+            }
+            void startSignupOAuth(continuation.provider);
+          }}
         />
       )}
       {step === "signup" && (
@@ -569,23 +813,35 @@ export function Onboarding() {
           busy={busy}
           setBusy={setBusy}
           referralDraft={referralDraft}
+          surveyChoices={surveyChoices}
           onReferralDraftChange={applyReferralDraft}
           onBack={back}
           onExistingAccountLogin={() => {
             setSignupFlowStarted(false);
+            setSignupMethod({ kind: "phone" });
             setAuthIntent("login");
             setAuthEntryError(null);
+            preservePendingInviteOnly();
             setStep("login");
           }}
           onUseSocialSignup={() => {
-            setSignupFlowStarted(false);
+            setSignupFlowStarted(true);
             setAuthIntent("signup");
             setAuthEntryError(null);
+            preservePendingInviteOnly();
             setStep("login");
           }}
           onDone={(name) => {
             setSignupName(name);
-            setStep("connect");
+            if (pendingPairInvite?.role === "parent") {
+              setRole("parent");
+              setPairMode("parent");
+              persistOnboardingDraft({ pairInvite: pendingPairInvite, signupMethod: null, surveyChoices: [] });
+              setStep("pairing");
+            } else {
+              clearOnboardingDraft();
+              setStep("connect");
+            }
           }}
           show={show}
         />
@@ -597,7 +853,12 @@ export function Onboarding() {
           referralCode={referralPrefill}
           referralDraft={referralDraft}
           onReferralDraftChange={applyReferralDraft}
-          onBack={() => setStep("role")}
+          onBack={() => {
+            clearOnboardingDraft();
+            setPendingPairInvite(null);
+            setPairPrefill(null);
+            setStep("role");
+          }}
           onNewFamily={async () => {
             if (busy) return;
             setBusy(true);
@@ -621,7 +882,6 @@ export function Onboarding() {
             setPairMode("parent");
             setStep("pairing");
           }}
-          onChildDevice={startChildMode}
         />
       )}
       {step === "pairing" && (
@@ -630,9 +890,24 @@ export function Onboarding() {
           busy={busy}
           initialCode={pairPrefill}
           childJoinHint={childJoinHint}
-          onBack={() => setStep(role === "child" ? "role" : "connect")}
+          onBack={() => {
+            if (pendingPairInvite) {
+              clearOnboardingDraft();
+              setPendingPairInvite(null);
+              setPairPrefill(null);
+            }
+            setPairMode("child");
+            setStep(role === "child" ? "role" : "connect");
+          }}
           onDone={() => setStep("perms")}
-          onPaired={syncFromSession}
+          onPaired={() => {
+            syncFromSession();
+            const current = deriveAuthState();
+            if (current.role) setRole(current.role);
+            clearOnboardingDraft();
+            setPendingPairInvite(null);
+            setPairPrefill(null);
+          }}
           onPermissionTransitionStart={beginPermissionTransition}
           onPermissionTransitionCancel={cancelPermissionTransition}
           show={show}
@@ -802,12 +1077,14 @@ function GoogleIcon() {
 function RoleStep({
   busy,
   childStarting,
+  legacyInvite,
   onParent,
   onChild,
   onTeacher,
 }: {
   busy: boolean;
   childStarting: boolean;
+  legacyInvite: boolean;
   onParent: () => void;
   onChild: () => void;
   onTeacher: () => void;
@@ -830,10 +1107,14 @@ function RoleStep({
         <div className="ob-role-sub">{intl.formatMessage({ id: "onboarding.role.subtitle" })}</div>
       </div>
 
-      <div className="ob-role-list">
-        <div className="ob-language-slot">
-          <LanguageSelector tone="formal" />
+      {legacyInvite && (
+        <div className="ob-invite-context" role="status">
+          <Link2 size={18} strokeWidth={2.3} aria-hidden="true" />
+          <span>{intl.formatMessage({ id: "onboarding.invite.legacyChoice" })}</span>
         </div>
+      )}
+
+      <div className="ob-role-list">
         <button
           type="button"
           className="ob-role-card ob-role-card--parent hy-press"
@@ -854,7 +1135,7 @@ function RoleStep({
             <span className="ob-role-name">{intl.formatMessage({ id: "onboarding.role.parent.title" })}</span>
             <span className="ob-role-desc">{intl.formatMessage({ id: "onboarding.role.parent.description" })}</span>
           </span>
-          <ChevronRight size={22} strokeWidth={2.4} color="#C9BFC4" />
+          <ChevronRight size={22} strokeWidth={2.4} />
         </button>
 
         <button
@@ -874,12 +1155,12 @@ function RoleStep({
             />
           </span>
           <span className="ob-role-main">
-            <span className="ob-role-name" style={{ color: "#7C4B8E" }}>{intl.formatMessage({ id: "onboarding.role.child.title" })}</span>
-            <span className="ob-role-desc" style={{ color: "#A67FB0" }}>
+            <span className="ob-role-name">{intl.formatMessage({ id: "onboarding.role.child.title" })}</span>
+            <span className="ob-role-desc">
               {intl.formatMessage({ id: childStarting ? "onboarding.role.child.starting" : "onboarding.role.child.description" })}
             </span>
           </span>
-          <ChevronRight size={22} strokeWidth={2.4} color="#C6A9CF" />
+          <ChevronRight size={22} strokeWidth={2.4} />
         </button>
 
         {TEACHER_MODE_ENABLED && (
@@ -900,10 +1181,10 @@ function RoleStep({
               />
             </span>
             <span className="ob-role-main">
-              <span className="ob-role-name" style={{ color: "#0F7A57" }}>{intl.formatMessage({ id: "onboarding.role.teacher.title" })}</span>
-              <span className="ob-role-desc" style={{ color: "#5FA98A" }}>{intl.formatMessage({ id: "onboarding.role.teacher.description" })}</span>
+              <span className="ob-role-name">{intl.formatMessage({ id: "onboarding.role.teacher.title" })}</span>
+              <span className="ob-role-desc">{intl.formatMessage({ id: "onboarding.role.teacher.description" })}</span>
             </span>
-            <ChevronRight size={22} strokeWidth={2.4} color="#9AD3BE" />
+            <ChevronRight size={22} strokeWidth={2.4} />
           </button>
         )}
       </div>
@@ -998,6 +1279,7 @@ function TeacherStep({ onBack, onSave, show }: { onBack: () => void; onSave: () 
 function LoginStep({
   accessCountry,
   intent,
+  parentInvite,
   onIntentChange,
   authError,
   onAuthError,
@@ -1013,6 +1295,7 @@ function LoginStep({
 }: {
   accessCountry: string;
   intent: AuthIntent;
+  parentInvite: boolean;
   onIntentChange: (intent: AuthIntent) => void;
   authError: string | null;
   onAuthError: (message: string | null) => void;
@@ -1023,7 +1306,7 @@ function LoginStep({
   onOAuthExternalEnd: () => void;
   onBack: () => void;
   onLoggedIn: (transitionToken: OnboardingAuthTransitionToken) => Promise<void>;
-  onSignup: () => void;
+  onSignup: (method: SignupMethod) => void;
   show: Show;
 }) {
   const intl = useIntl();
@@ -1052,10 +1335,10 @@ function LoginStep({
   // 설문(20%)을 거친 뒤 같은 provider 로 가입 흐름을 이어간다. 설문 답은
   // surveyChoices 가 유지되므로 휴대폰 가입과 같은 귀속 경로를 쓴다.
   const social = async (provider: OAuthProvider) => {
-    if (busy) return;
+    if (loginNavigationLocked) return;
     onAuthError(null);
     if (signingUp) {
-      onSignup();
+      onSignup({ kind: "oauth", provider });
       return;
     }
     setPendingAction(provider);
@@ -1120,6 +1403,15 @@ function LoginStep({
   return (
     <div className="ob-step ob-login">
       <BackButton onBack={onBack} disabled={loginNavigationLocked} />
+      {parentInvite && (
+        <div className="ob-invite-context" role="status">
+          <Link2 size={18} strokeWidth={2.3} aria-hidden="true" />
+          <span>
+            <strong>{intl.formatMessage({ id: "onboarding.invite.parent.title" })}</strong>
+            {intl.formatMessage({ id: "onboarding.invite.parent.authDescription" })}
+          </span>
+        </div>
+      )}
       <div className="ob-login-head ob-step-head">
         <div className="ob-step-visual">
           <img className="ob-login-mascot" src={asset("mascot/wave.webp")} alt="" loading="eager" decoding="async" />
@@ -1159,20 +1451,20 @@ function LoginStep({
 
       <div className="ob-login-social">
         {socialProviders.includes("kakao") && (
-          <button type="button" className="ob-social ob-social--kakao hy-press hy-busy-quiet" onClick={() => social("kakao")} disabled={busy} aria-busy={busy && pendingAction === "kakao"}>
+          <button type="button" className="ob-social ob-social--kakao hy-press hy-busy-quiet" onClick={() => social("kakao")} disabled={loginNavigationLocked} aria-busy={busy && pendingAction === "kakao"}>
             <KakaoIcon />
             <BusyLabel busy={busy && pendingAction === "kakao"} idle={intl.formatMessage({ id: signingUp ? "onboarding.signup.kakao" : "onboarding.login.kakao" })} pending={intl.formatMessage({ id: "onboarding.login.kakaoPending" })} />
           </button>
         )}
         {socialProviders.includes("google") && (
-          <button type="button" className="ob-social ob-social--google hy-press hy-busy-quiet" onClick={() => social("google")} disabled={busy} aria-busy={busy && pendingAction === "google"}>
+          <button type="button" className="ob-social ob-social--google hy-press hy-busy-quiet" onClick={() => social("google")} disabled={loginNavigationLocked} aria-busy={busy && pendingAction === "google"}>
             <GoogleIcon />
             <BusyLabel busy={busy && pendingAction === "google"} idle={intl.formatMessage({ id: signingUp ? "onboarding.signup.google" : "onboarding.login.google" })} pending={intl.formatMessage({ id: "onboarding.login.googlePending" })} />
           </button>
         )}
         {/* 한국 접속이면서 키가 있을 때만 네이버를 보여준다 — 키가 없어도 실패하는 버튼은 숨긴다. */}
         {socialProviders.includes("naver") && (
-          <button type="button" className="ob-social ob-social--naver hy-press hy-busy-quiet" onClick={() => social("naver")} disabled={busy} aria-busy={busy && pendingAction === "naver"}>
+          <button type="button" className="ob-social ob-social--naver hy-press hy-busy-quiet" onClick={() => social("naver")} disabled={loginNavigationLocked} aria-busy={busy && pendingAction === "naver"}>
             <NaverIcon />
             <BusyLabel busy={busy && pendingAction === "naver"} idle={intl.formatMessage({ id: signingUp ? "onboarding.signup.naver" : "onboarding.login.naver" })} pending={intl.formatMessage({ id: "onboarding.login.naverPending" })} />
           </button>
@@ -1196,7 +1488,7 @@ function LoginStep({
           <button
             type="button"
             className="ob-social ob-social--phone hy-press hy-busy-quiet"
-            onClick={onSignup}
+            onClick={() => onSignup({ kind: "phone" })}
             disabled={loginNavigationLocked}
             data-progress-owner="login-action"
           >
@@ -1306,19 +1598,23 @@ function LoginStep({
 
 function SurveyStep({
   selected,
+  busy,
+  socialProvider,
   onBack,
   onToggle,
   onNext,
 }: {
-  selected: string[];
+  selected: OnboardingInterest[];
+  busy: boolean;
+  socialProvider: OAuthProvider | null;
   onBack: () => void;
-  onToggle: (id: string) => void;
+  onToggle: (id: OnboardingInterest) => void;
   onNext: () => void;
 }) {
   const intl = useIntl();
   return (
     <div className="ob-step ob-survey">
-      <BackButton onBack={onBack} />
+      <BackButton onBack={onBack} disabled={busy} />
       <SignupProgress percent={20} label={intl.formatMessage({ id: "onboarding.progress.survey" })} />
       <div className="ob-survey-head ob-step-head">
         <div className="ob-step-visual">
@@ -1341,6 +1637,8 @@ function SurveyStep({
               type="button"
               className={`ob-survey-card hy-press${on ? " ob-survey-card--on" : ""}`}
               aria-pressed={on}
+              disabled={busy}
+              aria-busy={busy}
               onClick={() => onToggle(option.id)}
             >
               <span className="ob-survey-check" aria-hidden="true">
@@ -1355,10 +1653,20 @@ function SurveyStep({
         })}
       </div>
 
-      <button type="button" className="ob-cta ob-cta--accent hy-press" onClick={onNext}>
-        {selected.length > 0
-          ? intl.formatMessage({ id: "onboarding.action.next" })
-          : intl.formatMessage({ id: "onboarding.action.continueWithoutSelecting" })}
+      <button
+        type="button"
+        className="ob-cta ob-cta--accent hy-press hy-busy-quiet"
+        onClick={onNext}
+        disabled={busy}
+        aria-busy={busy && socialProvider !== null}
+      >
+        <BusyLabel
+          busy={busy && socialProvider !== null}
+          idle={selected.length > 0
+            ? intl.formatMessage({ id: "onboarding.action.next" })
+            : intl.formatMessage({ id: "onboarding.action.continueWithoutSelecting" })}
+          pending={intl.formatMessage({ id: "onboarding.signup.socialPending" })}
+        />
       </button>
     </div>
   );
@@ -1374,6 +1682,7 @@ function SignupStep({
   busy,
   setBusy,
   referralDraft,
+  surveyChoices,
   onReferralDraftChange,
   onBack,
   onExistingAccountLogin,
@@ -1384,6 +1693,7 @@ function SignupStep({
   busy: boolean;
   setBusy: (v: boolean) => void;
   referralDraft: string;
+  surveyChoices: OnboardingInterest[];
   onReferralDraftChange: (value: string) => void;
   onBack: () => void;
   onExistingAccountLogin: () => void;
@@ -1581,7 +1891,13 @@ function SignupStep({
       controller: signupActionControllerRef.current,
       token: requestToken,
       request: () => verifyPhoneSignupCode(
-        { phone: pending.phone, token: otp, profile: pending.profile, password: pending.password },
+        {
+          phone: pending.phone,
+          token: otp,
+          profile: pending.profile,
+          password: pending.password,
+          onboardingInterests: surveyChoices,
+        },
         { sessionAdoption: "deferred" },
       ),
       onSuccess: (result) => {
@@ -1836,7 +2152,6 @@ function ConnectStep({
   onBack,
   onNewFamily,
   onJoin,
-  onChildDevice,
 }: {
   busy: boolean;
   progressPercent?: number | null;
@@ -1846,10 +2161,9 @@ function ConnectStep({
   onBack: () => void;
   onNewFamily: () => void | Promise<void>;
   onJoin: () => void | Promise<void>;
-  onChildDevice: () => void | Promise<void>;
 }) {
   const intl = useIntl();
-  const [pendingAction, setPendingAction] = useState<"new-family" | "join" | "child-device" | null>(null);
+  const [pendingAction, setPendingAction] = useState<"new-family" | "join" | null>(null);
   const runAction = (
     action: Exclude<typeof pendingAction, null>,
     callback: () => void | Promise<void>,
@@ -1926,20 +2240,6 @@ function ConnectStep({
           <ChevronRight size={20} strokeWidth={2.4} color="#C9BFC4" />
         </button>
 
-        <button
-          type="button"
-          className="ob-connect-card ob-connect-card--child hy-press"
-          onClick={() => runAction("child-device", onChildDevice)}
-          disabled={busy}
-          aria-busy={pendingAction === "child-device"}
-        >
-          <img className="ob-connect-ic" src={asset(DEFAULT_CHILD_AVATAR)} alt="" />
-          <span className="ob-connect-main">
-            <span className="ob-connect-name" style={{ color: "#6D4E9C" }}>{intl.formatMessage({ id: "onboarding.connect.childDevice" })}</span>
-            <span className="ob-connect-desc" style={{ color: "#9B7FB8" }}>{intl.formatMessage({ id: "onboarding.connect.childDeviceDescription" })}</span>
-          </span>
-          <ChevronRight size={20} strokeWidth={2.4} color="#B79DE0" />
-        </button>
       </div>
     </div>
   );
@@ -1995,14 +2295,9 @@ function PairingStep({
     setBusy(true);
     let permissionTransitionStarted = false;
     try {
-      // ★방어: mode prop과 실제 auth role을 교차 검증한다.
-      //   mode="child"인데 세션이 parent면 joinFamilyAsParent로 폴백한다.
-      const authState = deriveAuthState();
-      const effectiveMode: "child" | "parent" =
-        authState.role === "parent" ? "parent"
-        : authState.role === "child" ? "child"
-        : mode;
-      if (effectiveMode === "child") {
+      // 화면에 명시된 초대 역할을 그대로 전송한다. 세션 역할이 다르면 Worker가
+      // stable role error로 거부해 다른 가족 역할로 조용히 등록되는 일을 막는다.
+      if (mode === "child") {
         const nextHint = await readChildDeviceIdentityHint();
         onPermissionTransitionStart();
         permissionTransitionStarted = true;
@@ -2017,7 +2312,7 @@ function PairingStep({
       onDone();
     } catch (e) {
       if (permissionTransitionStarted) onPermissionTransitionCancel();
-      const message = localizeApiError(e, intl, "formal");
+      const message = localizeApiError(e, intl, mode === "child" ? "child" : "formal");
       setPairingError(message);
       show(message, "⚠️");
     } finally {
@@ -2033,11 +2328,23 @@ function PairingStep({
           <img src={asset("ui/camera-3d.webp")} alt="" loading="eager" decoding="async" />
         </div>
         <div className="ob-step-copy">
-          <div className="ob-pair-title">{intl.formatMessage({ id: "onboarding.pairing.title" })}</div>
-          <div className="ob-pair-sub">{intl.formatMessage({ id: "onboarding.pairing.description" })}</div>
+          <div className="ob-pair-title">
+            {intl.formatMessage({
+              id: mode === "parent" ? "onboarding.pairing.parent.title" : "onboarding.pairing.title",
+            })}
+          </div>
+          <div className="ob-pair-sub">
+            {intl.formatMessage({
+              id: mode === "parent" ? "onboarding.pairing.parent.description" : "onboarding.pairing.description",
+            })}
+          </div>
         </div>
       </div>
-      <div className="ob-pair-recovery">{intl.formatMessage({ id: "onboarding.pairing.recovery" })}</div>
+      <div className="ob-pair-recovery">
+        {intl.formatMessage({
+          id: mode === "parent" ? "onboarding.pairing.parent.recovery" : "onboarding.pairing.recovery",
+        })}
+      </div>
 
       {/* 탭하면 실제 카메라 스캐너 오버레이(BarcodeDetector)가 열린다. */}
       <button

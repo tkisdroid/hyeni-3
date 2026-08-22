@@ -20,6 +20,11 @@
   letter-spacing: -0.02em;
   color: var(--fg-primary);
 }
+.pf-header__spacer {
+  width: var(--control-min-size);
+  height: var(--control-min-size);
+  flex: none;
+}
 .pf-invite-btn {
   width: 42px;
   height: 42px;

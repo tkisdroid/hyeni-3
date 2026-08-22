@@ -213,11 +213,6 @@
 
   color: var(--fg-muted);
 }
-.ob-language-slot {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: var(--spacing-12);
-}
 .ob-role-list {
   margin-top: 40px;
   display: flex;
@@ -225,26 +220,31 @@
   gap: 12px;
 }
 .ob-role-card {
+  --ob-role-title: var(--fg-primary);
+  --ob-role-description: var(--fg-muted);
+  --ob-role-chevron: var(--fg-disabled);
   text-align: left;
   display: flex;
   align-items: center;
   gap: 16px;
   padding: 20px;
   border-radius: var(--radius-16);
+  box-shadow: var(--shadow-soft);
   transition: transform 0.14s ease;
   --press: 0.98;
 }
-.ob-role-card--parent {
-  background: #fff;
-  box-shadow: var(--shadow-soft);
-}
 .ob-role-card--child {
-  background: linear-gradient(120deg, #fde7f1, #f1ecff);
-  box-shadow: var(--shadow-soft);
+  --ob-role-title: var(--lav-text);
+  --ob-role-description: color-mix(in srgb, var(--lav-text) 76%, var(--fg-muted));
+  --ob-role-chevron: var(--lav-300);
 }
 .ob-role-card--teacher {
-  background: linear-gradient(120deg, #e7f8f0, #e6f2fb);
-  box-shadow: var(--shadow-soft);
+  --ob-role-title: var(--mint-text);
+  --ob-role-description: color-mix(in srgb, var(--mint-text) 76%, var(--fg-muted));
+  --ob-role-chevron: var(--mint-line);
+}
+.ob-role-card > svg {
+  color: var(--ob-role-chevron);
 }
 .ob-role-ic {
   width: 58px;
@@ -258,11 +258,11 @@
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.66);
 }
 .ob-role-ic--parent {
-  background: #e6f2fb;
+  background: var(--blue-soft);
 }
 .ob-role-ic--child,
 .ob-role-ic--teacher {
-  background: #fff;
+  background: var(--bg-card);
 }
 .ob-role-img {
   display: block;
@@ -300,7 +300,7 @@
   line-height: var(--type-title-lg-line-height);
   font-weight: var(--type-title-lg-weight);
 
-  color: var(--fg-primary);
+  color: var(--ob-role-title);
 }
 .ob-role-desc {
   display: block;
@@ -309,7 +309,7 @@
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
 
-  color: var(--fg-muted);
+  color: var(--ob-role-description);
 }
 .ob-role-language {
   margin-top: auto;
@@ -420,6 +420,33 @@
 .ob-login-head {
   margin-top: 24px;
   text-align: center;
+}
+.ob-invite-context {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--hy-accent-cta) 24%, var(--line-soft));
+  border-radius: var(--radius-16);
+  background: color-mix(in srgb, var(--hy-accent-soft) 46%, var(--bg-card));
+  color: var(--fg-secondary);
+  font-size: var(--type-body-sm);
+  line-height: var(--type-body-sm-line-height);
+  font-weight: var(--type-body-sm-weight);
+  box-shadow: none;
+}
+.ob-invite-context svg {
+  flex: none;
+  color: var(--hy-accent-cta);
+}
+.ob-invite-context span {
+  display: grid;
+  gap: 4px;
+}
+.ob-invite-context strong {
+  color: var(--fg-primary);
+  font-weight: var(--type-body-lg-weight);
 }
 .ob-login-mascot {
   width: 96px;
@@ -906,20 +933,11 @@
   transition: transform 0.14s ease;
   --press: 0.98;
 }
-.ob-connect-card--child {
-  background: rgba(167, 139, 250, 0.1);
-  border: 1.5px dashed rgba(167, 139, 250, 0.45);
-  box-shadow: none;
-}
 .ob-connect-ic {
   width: 46px;
   height: 46px;
   object-fit: contain;
   flex: none;
-}
-.ob-connect-card--child .ob-connect-ic {
-  width: 44px;
-  height: 44px;
 }
 .ob-connect-main {
   flex: 1;
@@ -1248,12 +1266,6 @@
 .ob-survey-card--on {
   border-color: var(--hy-accent-cta);
   background: color-mix(in srgb, var(--hy-accent-soft) 72%, rgba(255, 255, 255, 0.86));
-}
-
-.ob-connect-card--child {
-  border: 1.5px dashed color-mix(in srgb, var(--hy-accent-cta) 42%, transparent);
-  background: color-mix(in srgb, var(--hy-accent-soft) 46%, rgba(255, 255, 255, 0.86));
-  box-shadow: none;
 }
 
 .ob-input,

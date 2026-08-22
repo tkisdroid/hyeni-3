@@ -20,8 +20,10 @@ test("RequireGuest 는 가족에 연결된 세션을 역할 홈으로 되돌린�
 test("pair 딥링크 핸들러는 인증 세션에서 anonymousLogin 을 호출하지 않는다", () => {
   const ob = read("src/screens/onboarding/Onboarding.tsx");
   // 딥링크 effect: deriveAuthState 로 조기 이탈하는 방어가 anonymousLogin 앞에 있어야 한다.
-  const effect = ob.slice(ob.indexOf("const code = readPairParam();"));
-  const guardAt = effect.indexOf("current.status === \"authenticated\" && current.familyId");
+  const effectStart = ob.indexOf("const invite = readPairInvite()");
+  assert.ok(effectStart >= 0, "pair 딥링크 effect 시작점을 찾을 수 없습니다");
+  const effect = ob.slice(effectStart, ob.indexOf("const back ="));
+  const guardAt = effect.indexOf("current.status === \"authenticated\"");
   const anonAt = effect.indexOf("anonymousLogin()");
   assert.ok(guardAt > -1, "딥링크 effect 에 인증 세션 가드가 없다");
   assert.ok(anonAt > -1, "딥링크 effect 에 anonymousLogin 호출이 없다");
@@ -31,7 +33,7 @@ test("pair 딥링크 핸들러는 인증 세션에서 anonymousLogin 을 호출�
 test("startChildMode 는 인증 세션에서 anonymousLogin 을 호출하지 않는다", () => {
   const ob = read("src/screens/onboarding/Onboarding.tsx");
   const fn = ob.slice(ob.indexOf("const startChildMode = async"));
-  const guardAt = fn.indexOf("current.status === \"authenticated\" && current.familyId");
+  const guardAt = fn.indexOf("current.status === \"authenticated\"");
   const anonAt = fn.indexOf("anonymousLogin()");
   assert.ok(guardAt > -1 && anonAt > -1 && guardAt < anonAt);
 });

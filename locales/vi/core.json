@@ -105,5 +105,8 @@
   "core.state.loading": "Đang tải…",
   "core.state.loadingScreen": "Đang tải màn hình này…",
   "core.state.retrying": "Đang kiểm tra lại…",
-  "core.time.remaining": "{duration} còn lại"
+  "core.time.remaining": "{duration} còn lại",
+  "core.error.api.parentRoleMismatch.formal": "Đây đã là tài khoản người giám hộ. Vui lòng dùng liên kết mời người giám hộ chung.",
+  "core.error.api.parentRoleRequired.formal": "Hãy đăng nhập bằng tài khoản người giám hộ rồi thử kết nối người giám hộ chung lại.",
+  "core.error.api.childRoleRequired.formal": "Hãy kết nối thiết bị của trẻ từ Chế độ trẻ em."
 }

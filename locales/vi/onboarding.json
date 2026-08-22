@@ -167,5 +167,15 @@
   "onboarding.validation.passwordMismatch": "Mật khẩu xác nhận không khớp.",
   "onboarding.validation.passwordWeak": "Vui lòng nhập mật khẩu có ít nhất 6 ký tự.",
   "onboarding.validation.phoneInvalid": "Vui lòng nhập số điện thoại 11 chữ số bắt đầu bằng 010.",
-  "onboarding.validation.passwordRequired": "Vui lòng nhập mật khẩu của bạn."
+  "onboarding.validation.passwordRequired": "Vui lòng nhập mật khẩu của bạn.",
+  "onboarding.toast.existingSocialAccount": "Bạn đã đăng nhập an toàn vào tài khoản hiện có.",
+  "onboarding.invite.roleMismatch": "Vai trò của tài khoản hiện tại không khớp với lời mời. Vui lòng mở lại bằng đúng thiết bị hoặc tài khoản.",
+  "onboarding.invite.roleMismatchChild": "Lời mời này dành cho người giám hộ. Hãy nhờ người giám hộ mở trên thiết bị của họ nhé.",
+  "onboarding.invite.legacyChoice": "Đây là liên kết mời cũ. Hãy chọn thiết bị này dành cho người giám hộ hay trẻ.",
+  "onboarding.invite.parent.title": "Bạn được mời làm người giám hộ chung",
+  "onboarding.invite.parent.authDescription": "Đăng nhập tài khoản hiện có hoặc tạo tài khoản người giám hộ, rồi tham gia gia đình.",
+  "onboarding.signup.socialPending": "Đang mở đăng ký bằng mạng xã hội…",
+  "onboarding.pairing.parent.title": "Tham gia với vai trò người giám hộ chung",
+  "onboarding.pairing.parent.description": "Hãy dùng mã QR hoặc mã kết nối từ người giám hộ đã mời bạn.",
+  "onboarding.pairing.parent.recovery": "Sau khi tham gia, bạn có thể cùng quản lý lịch gia đình và thông tin an toàn của trẻ với quyền người giám hộ."
 }

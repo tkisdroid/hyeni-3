@@ -58,6 +58,7 @@ export function LanguageSelector({
   const textClass = compact || collapseOthers ? " hy-language__text--quiet" : "";
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLFieldSetElement | null>(null);
+  const toggleRef = useRef<HTMLButtonElement | null>(null);
 
   // 피커는 임시 팝업이다 — 바깥 탭·Escape 로 닫고 포커스 함정은 두지 않는다.
   useEffect(() => {
@@ -72,7 +73,10 @@ export function LanguageSelector({
       }
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      setOpen(false);
+      queueMicrotask(() => toggleRef.current?.focus());
     };
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
@@ -89,7 +93,7 @@ export function LanguageSelector({
 
   return (
     <fieldset
-      ref={!compact && !collapseOthers ? rootRef : undefined}
+      ref={rootRef}
       className={[
         "hy-language",
         compact ? "hy-language--compact" : "",
@@ -107,7 +111,7 @@ export function LanguageSelector({
       <p id={descriptionId} className={`hy-language__description${textClass}`}>
         {intl.formatMessage({ id: copy.description })}
       </p>
-{compact ? (
+      {compact ? (
         /* 설정 행 안 — 행 제목이 이미 있으므로 칩 그리드만 남긴다. */
         <div className="hy-language__options">
           {localeEntries.map((entry) => (
@@ -128,6 +132,7 @@ export function LanguageSelector({
         <>
           {/* 설정 행 토글 — 현재 언어 알약을 누르면 나머지 언어 목록이 펼쳐진다. */}
           <button
+            ref={toggleRef}
             type="button"
             role="radio"
             aria-checked="true"
@@ -146,7 +151,12 @@ export function LanguageSelector({
               aria-hidden="true"
             />
           </button>
-          <div className="hy-language__collapse" id={optionsId} data-open={open ? "true" : "false"}>
+          <div
+            className="hy-language__collapse"
+            id={optionsId}
+            data-open={open ? "true" : "false"}
+            aria-hidden={!open}
+          >
             <div className="hy-language__panel">
               <div className="hy-language__options hy-language__options--list">
                 {visibleEntries.map((entry) => (
@@ -157,9 +167,11 @@ export function LanguageSelector({
                     aria-checked={locale === entry.code}
                     className="hy-language__option hy-press"
                     lang={entry.code}
+                    tabIndex={open ? 0 : -1}
                     onClick={() => {
                       setOpen(false);
                       void setLocale(entry.code);
+                      queueMicrotask(() => toggleRef.current?.focus());
                     }}
                   >
                     <span className="hy-language__option-name">{entry.nativeName}</span>
@@ -176,6 +188,7 @@ export function LanguageSelector({
         <>
           {/* 첫 화면 — 브랜드 중립어 "Language" 를 그대로 보여준다(번역하지 않는 고정 표기). */}
           <button
+            ref={toggleRef}
             type="button"
             className="hy-language__trigger hy-press"
             aria-expanded={open}
@@ -196,7 +209,7 @@ export function LanguageSelector({
           </button>
 
           {/* 접힘 애니메이션은 grid-template-rows 0fr→1fr — 높이를 px 로 몰아넣지 않는다. */}
-          <div className="hy-language__collapse" id={panelId}>
+          <div className="hy-language__collapse" id={panelId} aria-hidden={!open}>
             <div className="hy-language__panel">
               <div className="hy-language__options hy-language__options--list">
                 {localeEntries.map((entry) => (
@@ -207,7 +220,12 @@ export function LanguageSelector({
                     aria-checked={locale === entry.code}
                     className="hy-language__option hy-press"
                     lang={entry.code}
-                    onClick={() => void setLocale(entry.code)}
+                    tabIndex={open ? 0 : -1}
+                    onClick={() => {
+                      setOpen(false);
+                      void setLocale(entry.code);
+                      queueMicrotask(() => toggleRef.current?.focus());
+                    }}
                   >
                     <span className="hy-language__option-name">{entry.nativeName}</span>
                     <span className="hy-language__option-check" aria-hidden="true">

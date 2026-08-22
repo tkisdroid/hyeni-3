@@ -23791,5 +23791,127 @@
     "qualityTier": "A",
     "variables": {},
     "description": "SMS 설정·제공자 발송 실패 시 재전송과 소셜 가입 대안을 정중히 안내"
+  },
+  "onboarding.toast.existingSocialAccount": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "소셜 회원가입을 선택했지만 기존 계정이 확인되어 안전하게 로그인했음을 안내"
+  },
+  "onboarding.invite.roleMismatch": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "현재 계정과 초대 링크의 역할 불일치를 정중히 안내"
+  },
+  "onboarding.invite.roleMismatchChild": {
+    "namespace": "onboarding",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "아이 계정에서 보호자 초대를 열었을 때 아이 말투로 안내"
+  },
+  "onboarding.invite.legacyChoice": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "역할 정보가 없는 기존 초대 링크에서 보호자·아이 역할 선택을 안내"
+  },
+  "onboarding.invite.parent.title": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "공동 보호자 초대 인증 맥락의 제목"
+  },
+  "onboarding.invite.parent.authDescription": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "공동 보호자가 인증 후 가족에 연결되는 절차 안내"
+  },
+  "onboarding.signup.socialPending": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "설문 완료 뒤 소셜 가입 화면을 여는 진행 상태"
+  },
+  "onboarding.pairing.parent.title": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "공동 보호자 가족 연결 단계 제목"
+  },
+  "onboarding.pairing.parent.description": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "공동 보호자에게 QR 또는 연결 코드를 입력하도록 안내"
+  },
+  "onboarding.pairing.parent.recovery": {
+    "namespace": "onboarding",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "공동 보호자로 연결한 뒤 공유되는 권한 범위를 안내"
+  },
+  "parent.familyInvite.parent.lead1": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "공동 보호자 초대 QR 사용 안내 첫 문장"
+  },
+  "parent.familyInvite.parent.lead2": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "공동 보호자 초대 링크 로그인 안내 두 번째 문장"
+  },
+  "parent.familyInvite.parent.shareText": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {
+      "pairCode": "string",
+      "pairLink": "string"
+    },
+    "description": "공동 보호자에게 공유하는 역할 명시 연결 코드와 링크"
+  },
+  "parent.familyInvite.parent.waiting": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "공동 보호자 연결 완료를 폴링하는 대기 상태"
+  },
+  "core.error.api.parentRoleMismatch.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "보호자 계정이 아이용 연결 링크를 열었을 때 공동 보호자 초대로 복구하도록 안내"
+  },
+  "core.error.api.parentRoleRequired.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "공동 보호자 연결에는 보호자 계정 로그인이 필요함을 안내"
+  },
+  "core.error.api.childRoleRequired.formal": {
+    "namespace": "core",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "아이 기기 연결은 아이 모드에서 진행해야 함을 안내"
   }
 }

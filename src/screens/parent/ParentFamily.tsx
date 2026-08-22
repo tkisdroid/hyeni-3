@@ -73,9 +73,21 @@ export function ParentFamily() {
   // 연결 코드 + QR 딥링크(아이 재연결·선생님 학생추가 시 이 코드로 다시 연결).
   const pairCode = family?.pairCode ?? "";
   const pairLink = useMemo(() => (pairCode ? buildPairLink(pairCode) : ""), [pairCode]);
+  const canInviteCoParent = Boolean(
+    family?.isPrimaryParent
+    && !family.members.some(
+      (member) =>
+        member.role === "parent"
+        && member.user_id
+        && member.user_id !== family.primaryParentId,
+    ),
+  );
 
-  const invite = () => {
+  const inviteChild = () => {
     navigate("/child-invite");
+  };
+  const inviteCoParent = () => {
+    navigate("/child-invite?role=parent");
   };
   const addChild = () => {
     if (addDecision.status === "allowed") {
@@ -118,14 +130,18 @@ export function ParentFamily() {
           <ChevronLeft size={22} strokeWidth={2.2} />
         </button>
         <span className="pf-header__title">{intl.formatMessage({ id: "parent.parentFamily.copy005" })}</span>
-        <button
-          type="button"
-          className="pf-invite-btn hy-press"
-          aria-label={intl.formatMessage({ id: "parent.parentFamily.copy006" })}
-          onClick={invite}
-        >
-          <UserPlus size={21} strokeWidth={1.9} color="#4A4145" />
-        </button>
+        {canInviteCoParent ? (
+          <button
+            type="button"
+            className="pf-invite-btn hy-press"
+            aria-label={intl.formatMessage({ id: "parent.parentFamily.copy006" })}
+            onClick={inviteCoParent}
+          >
+            <UserPlus size={21} strokeWidth={1.9} color="#4A4145" />
+          </button>
+        ) : (
+          <span className="pf-header__spacer" aria-hidden="true" />
+        )}
       </header>
 
       <div className="hy-content">
@@ -264,7 +280,7 @@ export function ParentFamily() {
                     type="button"
                     className="pf-paircode__qr hy-press"
                     aria-label={intl.formatMessage({ id: "parent.parentFamily.copy017" })}
-                    onClick={invite}
+                    onClick={inviteChild}
                   >
                     {pairLink ? (
                       <QrCode value={pairLink} size={96} label={intl.formatMessage({ id: "parent.parentFamily.copy018" })} />
@@ -287,7 +303,7 @@ export function ParentFamily() {
                       <button
                         type="button"
                         className="pf-paircode__btn pf-paircode__btn--accent hy-press"
-                        onClick={invite}
+                        onClick={inviteChild}
                       >
                         <QrIcon size={15} strokeWidth={2.2} />
                         {intl.formatMessage({ id: "parent.parentFamily.copy021" })}
@@ -302,23 +318,25 @@ export function ParentFamily() {
             </section>
 
             {/* 공동 보호자 초대 */}
-            <button type="button" className="pf-invite-card hy-press" onClick={invite}>
-              <img
-                className="pf-invite-card__img"
-                src={asset("ui/friend-pair.webp")}
-                alt=""
-              />
-              <span className="pf-invite-card__main">
-                <span className="pf-invite-card__title">{intl.formatMessage({ id: "parent.parentFamily.copy023" })}</span>
-                <span className="pf-invite-card__sub">{intl.formatMessage({ id: "parent.parentFamily.copy024" })}</span>
-              </span>
-              <ChevronRight
-                className="pf-invite-card__chev"
-                size={20}
-                strokeWidth={2.4}
-                color="#B79DE0"
-              />
-            </button>
+            {canInviteCoParent && (
+              <button type="button" className="pf-invite-card hy-press" onClick={inviteCoParent}>
+                <img
+                  className="pf-invite-card__img"
+                  src={asset("ui/friend-pair.webp")}
+                  alt=""
+                />
+                <span className="pf-invite-card__main">
+                  <span className="pf-invite-card__title">{intl.formatMessage({ id: "parent.parentFamily.copy023" })}</span>
+                  <span className="pf-invite-card__sub">{intl.formatMessage({ id: "parent.parentFamily.copy024" })}</span>
+                </span>
+                <ChevronRight
+                  className="pf-invite-card__chev"
+                  size={20}
+                  strokeWidth={2.4}
+                  color="#B79DE0"
+                />
+              </button>
+            )}
           </>
         )}
       </div>

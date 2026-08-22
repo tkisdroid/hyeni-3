@@ -253,8 +253,77 @@ test("동일 transaction 병렬 교환은 정확히 하나만 provider fetch·�
     const success = first.status === 200 ? first : second;
     const json = await success.json();
     assert.equal(typeof json.session?.access_token, "string");
+    assert.equal(json.account_status, "existing");
   } finally {
     globalThis.fetch = originalFetch;
+  }
+});
+
+test("OAuth 신규 가입만 allowlist 설문을 저장하고 account_status를 반환한다", async () => {
+  const db = createDb();
+  const prepared = await start(db);
+  const callback = await appRequest(
+    db,
+    `/api/auth/oauth/google/callback?code=survey-code&state=${encodeURIComponent(prepared.body.state)}`,
+  );
+  assert.equal(callback.status, 200);
+
+  let fetchCalls = 0;
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (request) => {
+    fetchCalls += 1;
+    const url = String(request);
+    if (url.includes("oauth2.googleapis.com/token")) {
+      return Response.json({ access_token: "survey-provider-token" });
+    }
+    if (url.includes("openidconnect.googleapis.com/v1/userinfo")) {
+      return Response.json({
+        sub: "google-survey-new",
+        email: "survey-new@example.com",
+        email_verified: true,
+        name: "새 보호자",
+      });
+    }
+    throw new Error(`unexpected fetch: ${url}`);
+  };
+  const exchange = (onboardingInterests) => appRequest(db, "/api/auth/oauth/google", {
+    method: "POST",
+    body: JSON.stringify({
+      code: "survey-code",
+      state: prepared.body.state,
+      transactionSecret: prepared.body.transactionSecret,
+      device_install_id: "device-oauth-survey",
+      device_platform: "web",
+      onboardingInterests,
+    }),
+  });
+
+  try {
+    const invalid = await exchange(["location", "free-text"]);
+    assert.equal(invalid.status, 400);
+    assert.deepEqual(await invalid.json(), { error: "invalid_onboarding_interests" });
+    assert.equal(fetchCalls, 0, "잘못된 설문이 OAuth 단회 code를 소비하면 안 됩니다");
+
+    const valid = await exchange(["location", "schedule", "location"]);
+    assert.equal(valid.status, 200);
+    const payload = await valid.json();
+    assert.equal(payload.account_status, "created");
+    const row = db.sqlite.prepare("SELECT raw_user_meta_data FROM users WHERE id=?").get(payload.user_id);
+    const metadata = JSON.parse(row.raw_user_meta_data);
+    assert.deepEqual(metadata.onboarding_interests, ["location", "schedule"]);
+    assert.equal(typeof metadata.onboarding_completed_at, "string");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("카카오·구글·네이버 OAuth가 신규/기존/연결 계정 상태 계약을 함께 사용한다", () => {
+  const oauthSource = readFileSync(resolve(workerDir, "routes/oauth.ts"), "utf8");
+  const naverSource = readFileSync(resolve(workerDir, "routes/naver-auth.ts"), "utf8");
+  for (const source of [oauthSource, naverSource]) {
+    assert.match(source, /accountStatus: "existing" \| "linked" \| "created"/);
+    assert.match(source, /account_status: accountStatus/);
+    assert.match(source, /attachOnboardingPreferences/);
   }
 });
 

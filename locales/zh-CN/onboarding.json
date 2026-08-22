@@ -167,5 +167,15 @@
   "onboarding.validation.passwordMismatch": "两次输入的密码不一致。",
   "onboarding.validation.passwordWeak": "请输入至少6位密码。",
   "onboarding.validation.phoneInvalid": "请输入以010开头的11位手机号。",
-  "onboarding.validation.passwordRequired": "请输入您的密码。"
+  "onboarding.validation.passwordRequired": "请输入您的密码。",
+  "onboarding.toast.existingSocialAccount": "已安全登录您现有的账号。",
+  "onboarding.invite.roleMismatch": "当前账号角色与邀请角色不一致。请使用对应的设备或账号重新打开。",
+  "onboarding.invite.roleMismatchChild": "这个邀请是给监护人的，请让监护人在自己的设备上打开。",
+  "onboarding.invite.legacyChoice": "这是旧版邀请链接。请选择这台设备由监护人还是孩子使用。",
+  "onboarding.invite.parent.title": "您已收到共同监护人邀请",
+  "onboarding.invite.parent.authDescription": "请登录现有账号或创建监护人账号，然后加入家庭。",
+  "onboarding.signup.socialPending": "正在打开社交账号注册…",
+  "onboarding.pairing.parent.title": "以共同监护人身份加入家庭",
+  "onboarding.pairing.parent.description": "请使用邀请您的监护人提供的二维码或连接码。",
+  "onboarding.pairing.parent.recovery": "加入后，您可以用监护人权限共同管理家庭日程和孩子的安全信息。"
 }

@@ -92,11 +92,26 @@ test("가입 전 단계는 같은 헤더·밝은 표면을 쓰고 QR 실행 영�
   assert.doesNotMatch(onboarding, /ob-pair-code-input[^>]*style=\{/s);
 });
 
+test("역할 카드의 의미 색상은 인라인 값이 아니라 공용 디자인 토큰으로 관리한다", () => {
+  const onboarding = source("src/screens/onboarding/Onboarding.tsx");
+  const css = source("src/screens/onboarding/Onboarding.css");
+  const roleStep = onboarding.slice(
+    onboarding.indexOf("function RoleStep("),
+    onboarding.indexOf("function TeacherStep("),
+  );
+
+  assert.doesNotMatch(roleStep, /className="ob-role-(?:name|desc)"\s+style=/);
+  assert.doesNotMatch(roleStep, /<ChevronRight[^>]*\bcolor=/);
+  assert.match(css, /\.ob-role-card--child\s*\{[^}]*--ob-role-title:\s*var\(--lav-text\)/s);
+  assert.match(css, /\.ob-role-card--teacher\s*\{[^}]*--ob-role-title:\s*var\(--mint-text\)/s);
+  assert.match(css, /\.ob-role-card\s*>\s*svg\s*\{[^}]*color:\s*var\(--ob-role-chevron\)/s);
+});
+
 test("기존 가족 연결 실패는 화면 안에 남고 입력을 고치면 즉시 해제된다", () => {
   const onboarding = source("src/screens/onboarding/Onboarding.tsx");
 
   assert.match(onboarding, /const \[pairingError, setPairingError\] = useState<string \| null>\(null\)/);
   assert.match(onboarding, /className="ob-auth-alert" role="alert"/);
   assert.match(onboarding, /onChange=\{\(e\) => \{[\s\S]{0,160}setPairingError\(null\)/);
-  assert.match(onboarding, /const message = localizeApiError\(e, intl, "formal"\)[\s\S]{0,120}setPairingError\(message\)/);
+  assert.match(onboarding, /const message = localizeApiError\(e, intl, mode === "child" \? "child" : "formal"\)[\s\S]{0,120}setPairingError\(message\)/);
 });

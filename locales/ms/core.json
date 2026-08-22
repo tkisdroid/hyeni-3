@@ -105,5 +105,8 @@
   "core.state.loading": "Memuatkan…",
   "core.state.loadingScreen": "Memuatkan skrin ini…",
   "core.state.retrying": "Menyemak semula…",
-  "core.time.remaining": "{duration} yang tinggal"
+  "core.time.remaining": "{duration} yang tinggal",
+  "core.error.api.parentRoleMismatch.formal": "Ini sudah menjadi akaun penjaga. Gunakan pautan jemputan penjaga bersama.",
+  "core.error.api.parentRoleRequired.formal": "Log masuk dengan akaun penjaga, kemudian cuba sambungkan penjaga bersama sekali lagi.",
+  "core.error.api.childRoleRequired.formal": "Sambungkan peranti anak daripada Mod Anak."
 }

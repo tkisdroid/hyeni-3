@@ -74,7 +74,17 @@ test("최종 브라우저 QA는 부모·아이 출시 화면과 핵심 전환 �
   assert.match(source, /pathname === "\/api\/access-region"/);
   assert.match(source, /scope: "access-country-social-login"/);
   assert.match(source, /onboardingLanguageExpandedFacts\.optionCount !== 9/);
+  assert.match(source, /onboardingAntiSlopFacts\.languageOptionsCollapsed/);
   assert.match(source, /country: "JP"/);
+  assert.match(source, /onboarding\?pair=KID-QA123456",/);
+  assert.match(source, /scope: "legacy-pair-invite-role-choice"/);
+  assert.match(source, /onboarding\?pair=KID-QA123456&as=parent/);
+  assert.match(source, /onboarding-co-parent-invite\.png"\)\);[\s\S]*localStorage\.clear\(\); sessionStorage\.clear\(\)/);
+  assert.match(source, /scope: "co-parent-invite-onboarding"/);
+  assert.match(source, /qrFallbackFacts\.cameraRequests !== 1/);
+  assert.match(source, /child-invite\?role=parent/);
+  assert.match(source, /sharedText\.includes\("as=parent"\)/);
+  assert.match(source, /\.ob-pair-code-input/);
 });
 
 test("최종 브라우저 QA는 출시 품질 결함을 JSON과 스크린샷 증거로 남긴다", () => {

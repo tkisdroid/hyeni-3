@@ -167,5 +167,15 @@
   "onboarding.validation.passwordMismatch": "The password confirmation does not match.",
   "onboarding.validation.passwordWeak": "Please enter a password of at least 6 characters.",
   "onboarding.validation.phoneInvalid": "Please enter an 11-digit mobile number starting with 010.",
-  "onboarding.validation.passwordRequired": "Please enter your password."
+  "onboarding.validation.passwordRequired": "Please enter your password.",
+  "onboarding.toast.existingSocialAccount": "You were securely signed in to your existing account.",
+  "onboarding.invite.roleMismatch": "This invitation does not match the current account role. Open it on the matching device or account.",
+  "onboarding.invite.roleMismatchChild": "This invitation is for a guardian. Ask a guardian to open it on their device.",
+  "onboarding.invite.legacyChoice": "This is an older invitation link. Choose whether this device belongs to a guardian or a child.",
+  "onboarding.invite.parent.title": "You've been invited as a co-guardian",
+  "onboarding.invite.parent.authDescription": "Sign in to your existing account or create a guardian account, then join the family.",
+  "onboarding.signup.socialPending": "Opening social sign-up…",
+  "onboarding.pairing.parent.title": "Join as a co-guardian",
+  "onboarding.pairing.parent.description": "Use the QR code or connection code from the guardian who invited you.",
+  "onboarding.pairing.parent.recovery": "After joining, you can manage the same family calendar and child safety information as a guardian."
 }

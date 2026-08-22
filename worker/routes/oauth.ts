@@ -51,6 +51,7 @@ import {
   parseOAuthPrepareBody,
   type OAuthFlowMode,
 } from "../lib/oauthState";
+import { attachOnboardingPreferences, parseOnboardingInterests } from "../lib/onboardingPreferences";
 import { invalidOAuthCallbackResponse, oauthCallbackResponse } from "../lib/oauthCallbackPage";
 import { writeOperationalLog } from "../lib/safeOperationalLog";
 
@@ -541,6 +542,7 @@ oauth.post("/oauth/:provider", async (c) => {
     device_install_id?: unknown;
     device_label?: unknown;
     device_platform?: unknown;
+    onboardingInterests?: unknown;
   };
   try {
     body = await c.req.json();
@@ -555,6 +557,8 @@ oauth.post("/oauth/:provider", async (c) => {
   }
   const deviceId = normalizeDeviceId(body.device_install_id);
   if (!deviceId) return c.json({ error: "device_identity_required" }, 400);
+  const onboardingInterests = parseOnboardingInterests(body.onboardingInterests);
+  if (!onboardingInterests.ok) return c.json({ error: "invalid_onboarding_interests" }, 400);
   const claimed = await consumeOAuthTransaction(db, {
     provider,
     code,
@@ -579,9 +583,11 @@ oauth.post("/oauth/:provider", async (c) => {
     .first<{ user_id: string }>();
 
   let userId: string;
+  let accountStatus: "existing" | "linked" | "created";
   if (identity?.user_id) {
     // 기존 사용자(또는 merge-oauth 로 phone user 에 이전된 identity). 메타데이터 best-effort 최신화.
     userId = String(identity.user_id);
+    accountStatus = "existing";
     try {
       const existing = await db.prepare("SELECT raw_user_meta_data FROM users WHERE id=? LIMIT 1").bind(userId).first<{ raw_user_meta_data: string | null }>();
       let meta: Record<string, unknown> = {};
@@ -635,6 +641,7 @@ oauth.post("/oauth/:provider", async (c) => {
     if (decision.kind === "link") {
       // 기존 계정에 이 provider identity 를 붙인다(link). 가족·구독·아이 페어링이 그대로 유지된다.
       userId = decision.userId;
+      accountStatus = "linked";
       try {
         const inserted = await insertAuthIdentityForCurrentUser(db, {
           id: crypto.randomUUID(),
@@ -651,10 +658,13 @@ oauth.post("/oauth/:provider", async (c) => {
       }
     } else {
       userId = crypto.randomUUID();
+      accountStatus = "created";
+      const createdAt = pgNow();
+      const signupMeta = attachOnboardingPreferences(meta, onboardingInterests, createdAt);
       try {
         await db.batch([
-          db.prepare("INSERT INTO users (id, email, is_anonymous, raw_user_meta_data, created_at) VALUES (?,?,0,?,?)").bind(userId, email, JSON.stringify(meta), pgNow()),
-          identityRow.bind(crypto.randomUUID(), userId, provider, providerId, identityData, pgNow()),
+          db.prepare("INSERT INTO users (id, email, is_anonymous, raw_user_meta_data, created_at) VALUES (?,?,0,?,?)").bind(userId, email, JSON.stringify(signupMeta), createdAt),
+          identityRow.bind(crypto.randomUUID(), userId, provider, providerId, identityData, createdAt),
         ]);
       } catch (e) {
         writeOperationalLog("error", "oauth_user_create_failed", { provider });
@@ -694,6 +704,7 @@ oauth.post("/oauth/:provider", async (c) => {
   }
 
   return c.json({
+    account_status: accountStatus,
     // 원본 호환 필드.
     email,
     name: displayName,

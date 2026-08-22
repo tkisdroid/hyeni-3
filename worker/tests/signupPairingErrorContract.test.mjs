@@ -235,6 +235,47 @@ test("가입 전제조건 실패는 올바른 OTP를 소비하지 않아 같은 
   );
 });
 
+test("가입 설문은 고정 선택지만 계정 생성 batch의 메타데이터에 저장한다", async () => {
+  const { app, env, sqlite } = setup();
+  const phone = "+821033334444";
+  const token = "123456";
+  const codeHash = await hashOtp(phone, token, otpSecret);
+  sqlite.prepare(
+    "INSERT INTO phone_otp(phone,code_hash,expires_at,attempts,created_at) VALUES (?,?,?,0,?)",
+  ).run(phone, codeHash, "2099-01-01 00:00:00", "2026-08-22 00:00:00");
+
+  const body = {
+    phone: "01033334444",
+    token,
+    password: "signup-password",
+    loginId: "surveyparent",
+    name: "설문 보호자",
+    device_install_id: "survey-signup-device",
+    device_platform: "web",
+  };
+  const invalid = await post(app, env, "/auth/signup/verify", {
+    ...body,
+    onboardingInterests: ["location", "free-text"],
+  });
+  assert.equal(invalid.status, 400);
+  assert.deepEqual(await invalid.json(), { error: "invalid_onboarding_interests" });
+  assert.equal(
+    sqlite.prepare("SELECT COUNT(*) AS n FROM phone_otp WHERE phone=? AND code_hash=?").get(phone, codeHash).n,
+    1,
+    "잘못된 설문 payload가 올바른 OTP를 소비하면 안 됩니다",
+  );
+
+  const valid = await post(app, env, "/auth/signup/verify", {
+    ...body,
+    onboardingInterests: ["location", "schedule", "location"],
+  });
+  assert.equal(valid.status, 200);
+  const user = sqlite.prepare("SELECT raw_user_meta_data FROM users WHERE phone='821033334444'").get();
+  const metadata = JSON.parse(user.raw_user_meta_data);
+  assert.deepEqual(metadata.onboarding_interests, ["location", "schedule"]);
+  assert.equal(typeof metadata.onboarding_completed_at, "string");
+});
+
 test("OTP 검증 직후 재발급이 경합하면 계정 행을 만들지 않고 새 OTP를 보존한다", async () => {
   const { app, db, env, sqlite } = setup();
   const phone = "+821055551111";

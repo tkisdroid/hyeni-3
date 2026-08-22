@@ -170,13 +170,13 @@ async function setupRequest(db, parentId, familyId, childName) {
   }, environment(db));
 }
 
-async function joinRequest(db, childId, pairCode, name) {
+async function joinRequestAs(db, childId, pairCode, name, role, isAnonymous) {
   const app = new Hono();
   app.route("/api/family", familyRoutes);
   return app.request("http://test.local/api/family/join", {
     method: "POST",
     headers: {
-      authorization: await authorization(childId, "anonymous", null, true),
+      authorization: await authorization(childId, role, null, isAnonymous),
       "content-type": "application/json",
     },
     body: JSON.stringify({
@@ -189,13 +189,17 @@ async function joinRequest(db, childId, pairCode, name) {
   }, environment(db));
 }
 
-async function joinAsParentRequest(db, parentId, pairCode, name = "보조 보호자") {
+async function joinRequest(db, childId, pairCode, name) {
+  return joinRequestAs(db, childId, pairCode, name, "anonymous", true);
+}
+
+async function joinAsParentRequest(db, parentId, pairCode, name = "보조 보호자", role = "parent") {
   const app = new Hono();
   app.route("/api/family", familyRoutes);
   return app.request("http://test.local/api/family/join-as-parent", {
     method: "POST",
     headers: {
-      authorization: await authorization(parentId, "parent"),
+      authorization: await authorization(parentId, role),
       "content-type": "application/json",
     },
     body: JSON.stringify({
@@ -207,6 +211,106 @@ async function joinAsParentRequest(db, parentId, pairCode, name = "보조 보호
     }),
   }, environment(db));
 }
+
+test("가족이 아직 없는 등록 보호자 계정도 자녀 전용 join으로 역할을 바꿀 수 없다", async () => {
+  const { sqlite, db } = createDb({ concurrent: false });
+  addUser(sqlite, "primary-role-guard", false);
+  addUser(sqlite, "registered-parent-no-family", false);
+  addFamily(sqlite, "role-guard-family", "primary-role-guard", true);
+  sqlite.prepare("UPDATE families SET pair_code='KID-ROLE-GUARD' WHERE id='role-guard-family'").run();
+
+  const response = await joinRequestAs(
+    db,
+    "registered-parent-no-family",
+    "KID-ROLE-GUARD",
+    "보호자",
+    "parent",
+    false,
+  );
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).code, "parent_cannot_join_as_child");
+  assert.equal(
+    sqlite.prepare("SELECT COUNT(*) AS count FROM family_members WHERE user_id='registered-parent-no-family' AND role='child'").get().count,
+    0,
+  );
+});
+
+test("선생님 계정은 자녀 전용 join으로 가족 역할을 만들 수 없다", async () => {
+  const { sqlite, db } = createDb({ concurrent: false });
+  addUser(sqlite, "teacher-role-guard", false);
+  addUser(sqlite, "teacher-target-primary", false);
+  addFamily(sqlite, "teacher-target-family", "teacher-target-primary", true);
+  sqlite.prepare("UPDATE families SET pair_code='KID-TEACHER-GUARD' WHERE id='teacher-target-family'").run();
+
+  const response = await joinRequestAs(
+    db,
+    "teacher-role-guard",
+    "KID-TEACHER-GUARD",
+    "선생님",
+    "teacher",
+    false,
+  );
+  assert.equal(response.status, 403);
+  assert.equal((await response.json()).code, "role_cannot_join_as_child");
+  assert.equal(
+    sqlite.prepare("SELECT COUNT(*) AS count FROM family_members WHERE user_id='teacher-role-guard'").get().count,
+    0,
+  );
+});
+
+test("기존 자녀 계정은 다른 가족의 join-as-parent로 권한을 올릴 수 없다", async () => {
+  const { sqlite, db } = createDb({ concurrent: false });
+  addUser(sqlite, "source-primary", false);
+  addUser(sqlite, "target-primary", false);
+  addUser(sqlite, "existing-child-role", false);
+  addFamily(sqlite, "source-family", "source-primary");
+  addFamily(sqlite, "target-family", "target-primary");
+  sqlite.prepare(
+    "INSERT INTO family_members(id,family_id,user_id,role,name,is_active,created_at) VALUES ('existing-child-member','source-family','existing-child-role','child','아이',1,'2026-08-01')",
+  ).run();
+  sqlite.prepare("UPDATE families SET pair_code='KID-PARENT-GUARD' WHERE id='target-family'").run();
+
+  const response = await joinAsParentRequest(
+    db,
+    "existing-child-role",
+    "KID-PARENT-GUARD",
+    "아이",
+    "child",
+  );
+  assert.equal(response.status, 403);
+  assert.equal((await response.json()).code, "role_cannot_join_as_parent");
+  assert.equal(
+    sqlite.prepare("SELECT COUNT(*) AS count FROM family_members WHERE family_id='target-family' AND user_id='existing-child-role'").get().count,
+    0,
+  );
+});
+
+test("오래된 보호자 role 토큰이 남아도 활성 자녀 membership은 join-as-parent를 막는다", async () => {
+  const { sqlite, db } = createDb({ concurrent: false });
+  addUser(sqlite, "stale-source-primary", false);
+  addUser(sqlite, "stale-target-primary", false);
+  addUser(sqlite, "stale-role-child", false);
+  addFamily(sqlite, "stale-source-family", "stale-source-primary");
+  addFamily(sqlite, "stale-target-family", "stale-target-primary");
+  sqlite.prepare(
+    "INSERT INTO family_members(id,family_id,user_id,role,name,is_active,created_at) VALUES ('stale-child-member','stale-source-family','stale-role-child','child','아이',1,'2026-08-01')",
+  ).run();
+  sqlite.prepare("UPDATE families SET pair_code='KID-STALE-PARENT' WHERE id='stale-target-family'").run();
+
+  const response = await joinAsParentRequest(
+    db,
+    "stale-role-child",
+    "KID-STALE-PARENT",
+    "아이",
+    "parent",
+  );
+  assert.equal(response.status, 403);
+  assert.equal((await response.json()).code, "role_cannot_join_as_parent");
+  assert.equal(
+    sqlite.prepare("SELECT COUNT(*) AS count FROM family_members WHERE family_id='stale-target-family' AND user_id='stale-role-child'").get().count,
+    0,
+  );
+});
 
 test("Free 기존 가족의 동시 setup은 활성 자녀 placeholder를 1명만 만든다", async () => {
   const { sqlite, db } = createDb();

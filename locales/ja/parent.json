@@ -1016,5 +1016,9 @@
   "parent.weekday.sun": "仕事",
   "parent.weekday.thu": "首",
   "parent.weekday.tue": "怒る",
-  "parent.weekday.wed": "数"
+  "parent.weekday.wed": "数",
+  "parent.familyInvite.parent.lead1": "招待された保護者がこのQRコードを読み取るか",
+  "parent.familyInvite.parent.lead2": "共有された招待リンクからログインしてください。",
+  "parent.familyInvite.parent.shareText": "Hyeni Calendar 共同保護者の招待\n連携コード: {pairCode}\n招待リンク: {pairLink}",
+  "parent.familyInvite.parent.waiting": "共同保護者の接続を待っています。"
 }

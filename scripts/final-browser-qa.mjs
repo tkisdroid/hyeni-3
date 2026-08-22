@@ -1005,6 +1005,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     let activeScenario = { role: "parent", tier: "free", catalogMode: "valid", overLimit: false };
     let consoleMessages = [];
     let networkFailures = [];
+    let externalRequests = [];
     const expectedAuthResponses = [];
     let documentNonce = 0;
 
@@ -1053,6 +1054,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
             await cdp.send("Fetch.continueRequest", { requestId });
             return;
           }
+          externalRequests.push(`${request.method} ${url.pathname}`);
           const cors = [
             { name: "access-control-allow-origin", value: "*" },
             { name: "access-control-allow-headers", value: "*" },
@@ -1114,6 +1116,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       activeScenario = scenario;
       consoleMessages = [];
       networkFailures = [];
+      externalRequests = [];
       documentNonce += 1;
       await cdp.send("Page.navigate", { url: `${origin}/index.html?qaRole=${encodeURIComponent(scenario.role)}&qaRun=${documentNonce}#/${route}` });
       await wait(settleMs);
@@ -1125,6 +1128,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
         state,
         console: uniqueStrings(consoleMessages),
         network: uniqueStrings(networkFailures),
+        requests: uniqueStrings(externalRequests),
       };
     };
 
@@ -1154,7 +1158,12 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       subtitle: document.querySelector(".ob-role-sub")?.textContent?.trim() || "",
       languageCurrent: document.querySelector(".hy-language__current")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
       languageExpanded: document.querySelector(".hy-language__current")?.getAttribute("aria-expanded") ?? null,
-      languageOptionsVisible: Boolean(document.querySelector(".hy-language__options")),
+      languageOptionsCollapsed: (() => {
+        const collapse = document.querySelector(".hy-language__collapse");
+        return collapse?.getAttribute("aria-hidden") === "true"
+          && getComputedStyle(collapse).visibility === "hidden"
+          && !collapse.querySelector('.hy-language__option:not([tabindex="-1"])');
+      })(),
       languageAfterRoles: (document.querySelector(".ob-role-list")?.getBoundingClientRect().bottom ?? Infinity)
         <= (document.querySelector(".ob-role-language")?.getBoundingClientRect().top ?? -Infinity),
       languageBeforeTerms: (document.querySelector(".ob-role-language")?.getBoundingClientRect().bottom ?? Infinity)
@@ -1175,7 +1184,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       || onboardingAntiSlopFacts.subtitle !== "함께 보는 우리 가족 일정"
       || !onboardingAntiSlopFacts.languageCurrent?.includes("한국어")
       || onboardingAntiSlopFacts.languageExpanded !== "false"
-      || onboardingAntiSlopFacts.languageOptionsVisible
+      || !onboardingAntiSlopFacts.languageOptionsCollapsed
       || !onboardingAntiSlopFacts.languageAfterRoles
       || !onboardingAntiSlopFacts.languageBeforeTerms
       || onboardingLanguageExpandedFacts.expanded !== "true"
@@ -1196,32 +1205,120 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
 
     // 한국 외 접속은 국내 전용 OAuth를 숨기고 전 지역 공용 Google만 남긴다.
     // 저장한 사용자 선택이 없는 새 접속을 만들어 국가 기본 언어까지 함께 확인한다.
-    await cdp.evaluate(`localStorage.removeItem("hyeni-locale-v1"); true`);
+    await cdp.evaluate("localStorage.clear(); sessionStorage.clear(); true");
     await navigate(
       { role: "public", tier: "free", catalogMode: "valid", overLimit: false, country: "JP" },
       "onboarding",
+    );
+    const japanLanguageCurrent = await cdp.evaluate(
+      'document.querySelector(".hy-language__current")?.textContent?.replace(/\\s+/g, " ").trim() ?? null',
     );
     await clickSelector(cdp, ".ob-role-card--parent");
     await wait(350);
     const japanSocialFacts = await cdp.evaluate(`(() => ({
       locale: document.documentElement.lang,
-      languageCurrent: document.querySelector(".hy-language__current")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
       google: Boolean(document.querySelector(".ob-social--google")),
       kakao: Boolean(document.querySelector(".ob-social--kakao")),
       naver: Boolean(document.querySelector(".ob-social--naver")),
     }))()`);
     if (
       japanSocialFacts.locale !== "ja"
-      || !japanSocialFacts.languageCurrent?.includes("日本語")
+      || !japanLanguageCurrent?.includes("日本語")
       || !japanSocialFacts.google
       || japanSocialFacts.kakao
       || japanSocialFacts.naver
     ) {
-      report.problems.push({ scope: "access-country-social-login", facts: japanSocialFacts });
+      report.problems.push({
+        scope: "access-country-social-login",
+        facts: { ...japanSocialFacts, languageCurrent: japanLanguageCurrent },
+      });
     }
-    report.focused.accessCountrySocialLogin = { country: "JP", ...japanSocialFacts };
+    report.focused.accessCountrySocialLogin = {
+      country: "JP",
+      ...japanSocialFacts,
+      languageCurrent: japanLanguageCurrent,
+    };
 
-    await cdp.evaluate(`localStorage.removeItem("hyeni-locale-v1"); true`);
+    // as가 없던 구형 초대 링크는 역할을 단정하지 않고 보호자·아이 선택을 다시 받는다.
+    await cdp.evaluate("localStorage.clear(); sessionStorage.clear(); true");
+    const legacyInviteOnboarding = await navigate(
+      { role: "public", tier: "free", catalogMode: "valid", overLimit: false },
+      "onboarding?pair=KID-QA123456",
+      1_000,
+    );
+    const legacyInviteFacts = await cdp.evaluate('(() => ({ hash: location.hash, roleVisible: Boolean(document.querySelector(".ob-role")), inviteContext: document.querySelector(".ob-invite-context")?.textContent?.replace(/\\s+/g, " ").trim() ?? null, pairingVisible: Boolean(document.querySelector(".ob-pairing")) }))()');
+    const legacyAnonymousRequested = legacyInviteOnboarding.requests.some(
+      (request) => request === "POST /auth/anonymous",
+    );
+    await clickSelector(cdp, ".ob-role-card--parent");
+    await wait(300);
+    const legacyParentChoiceFacts = await cdp.evaluate('({ loginVisible: Boolean(document.querySelector(".ob-login")), pairingVisible: Boolean(document.querySelector(".ob-pairing")) })');
+    if (
+      !legacyInviteFacts.roleVisible
+      || !legacyInviteFacts.inviteContext?.includes("예전에 만든 초대 링크")
+      || legacyInviteFacts.pairingVisible
+      || legacyInviteFacts.hash.includes("pair=")
+      || legacyAnonymousRequested
+      || !legacyParentChoiceFacts.loginVisible
+      || legacyParentChoiceFacts.pairingVisible
+      || rowProblems(legacyInviteOnboarding).length > 0
+    ) {
+      report.problems.push({
+        scope: "legacy-pair-invite-role-choice",
+        facts: {
+          entry: legacyInviteFacts,
+          parentChoice: legacyParentChoiceFacts,
+          anonymousRequested: legacyAnonymousRequested,
+        },
+        requests: legacyInviteOnboarding.requests,
+        routeProblems: rowProblems(legacyInviteOnboarding),
+      });
+    }
+    report.focused.legacyPairInviteRoleChoice = {
+      entry: legacyInviteFacts,
+      parentChoice: legacyParentChoiceFacts,
+      anonymousRequested: legacyAnonymousRequested,
+      requests: legacyInviteOnboarding.requests,
+    };
+
+    // 공동 보호자 딥링크는 인증 화면을 열고, 아이용 익명 세션을 만들지 않는다.
+    await cdp.evaluate("localStorage.clear(); sessionStorage.clear(); true");
+    const coParentOnboarding = await navigate(
+      { role: "public", tier: "free", catalogMode: "valid", overLimit: false },
+      "onboarding?pair=KID-QA123456&as=parent",
+      1_200,
+    );
+    const coParentOnboardingFacts = await cdp.evaluate(`(() => ({
+      hash: location.hash,
+      loginVisible: Boolean(document.querySelector(".ob-login")),
+      pairingVisible: Boolean(document.querySelector(".ob-pairing")),
+      inviteContext: document.querySelector(".ob-invite-context")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+    }))()`);
+    const anonymousRequested = coParentOnboarding.requests.some((request) => request === "POST /auth/anonymous");
+    if (
+      !coParentOnboardingFacts.loginVisible
+      || coParentOnboardingFacts.pairingVisible
+      || !coParentOnboardingFacts.inviteContext?.includes("공동 보호자 초대")
+      || coParentOnboardingFacts.hash.includes("pair=")
+      || coParentOnboardingFacts.hash.includes("as=parent")
+      || anonymousRequested
+      || rowProblems(coParentOnboarding).length > 0
+    ) {
+      report.problems.push({
+        scope: "co-parent-invite-onboarding",
+        facts: { ...coParentOnboardingFacts, anonymousRequested },
+        requests: coParentOnboarding.requests,
+        routeProblems: rowProblems(coParentOnboarding),
+      });
+    }
+    report.focused.coParentInviteOnboarding = {
+      ...coParentOnboardingFacts,
+      anonymousRequested,
+      requests: coParentOnboarding.requests,
+    };
+    report.screenshots.push(await screenshot(cdp, freshOutputDir, "onboarding-co-parent-invite.png"));
+
+    await cdp.evaluate("localStorage.clear(); sessionStorage.clear(); true");
     await navigate(
       { role: "public", tier: "free", catalogMode: "valid", overLimit: false, country: "KR" },
       "onboarding",
@@ -1369,7 +1466,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       reload: successfulLoginReloadFacts,
       problems: { initial: successfulLoginProblems, reload: successfulLoginReloadProblems },
     };
-    await cdp.evaluate("localStorage.clear()");
+    await cdp.evaluate("localStorage.clear(); sessionStorage.clear(); true");
     // 가족 없는 신규 부모 → connect 단계 → 페어링(pairing) 단계 UI 계약(2026-08-22 TK
     // iPhone 제보 수정 회귀): 16px 입력(iOS 자동확대 차단), KID 코드 입력란 CSS 이관,
     // QR 스캔 버튼 존재, Enter 제출 배선을 정적 QA로 고정한다.
@@ -1407,11 +1504,11 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     const pairingStepFacts = await cdp.evaluate(`(() => ({
       pairingPresent: Boolean(document.querySelector(".ob-pairing")),
       qrButtonPresent: Boolean(document.querySelector(".ob-qr")),
-      codeInputClass: document.querySelector(".ob-input--code")?.className ?? null,
-      codeInputFontSize: document.querySelector(".ob-input--code") ? getComputedStyle(document.querySelector(".ob-input--code")).fontSize : null,
-      codePlaceholder: document.querySelector(".ob-input--code")?.getAttribute("placeholder") ?? null,
+      codeInputClass: document.querySelector(".ob-pair-code-input")?.className ?? null,
+      codeInputFontSize: document.querySelector(".ob-pair-code-input") ? getComputedStyle(document.querySelector(".ob-pair-code-input")).fontSize : null,
+      codePlaceholder: document.querySelector(".ob-pair-code-input")?.getAttribute("placeholder") ?? null,
       inlineStyleGone: !(document.querySelector(".ob-pairing input")?.hasAttribute("style")),
-      enterKeyHint: document.querySelector(".ob-input--code")?.getAttribute("enterkeyhint") ?? null,
+      enterKeyHint: document.querySelector(".ob-pair-code-input")?.getAttribute("enterkeyhint") ?? null,
     }))()`);
     if (
       !connectStepFacts.connectPresent
@@ -1572,7 +1669,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       || !qrFallbackFacts.overlayVisible
       || !qrFallbackFacts.manualVisible
       || qrFallbackFacts.settingsVisible
-      || qrFallbackFacts.cameraRequests !== 0
+      || qrFallbackFacts.cameraRequests !== 1
       || qrManualReturnFacts.overlayVisible
       || !qrManualReturnFacts.codeInputVisible
       || !invalidPairingFacts.alert?.includes("KID-XXXXXXXX")
@@ -1701,6 +1798,49 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       loginIdNetworkFailure: { ...loginIdNetworkFacts, expected503: loginIdExpected503 },
     };
     report.screenshots.push(await screenshot(cdp, freshOutputDir, "auth-signup-id-check.png"));
+
+    // 가족 화면의 공동 보호자 CTA는 아이 초대와 다른 역할 링크·문구를 공유한다.
+    const coParentInvite = await navigate(
+      { role: "parent", tier: "free", catalogMode: "valid", overLimit: false },
+      "child-invite?role=parent",
+    );
+    await cdp.evaluate(`(() => {
+      window.__qaSharedInvite = null;
+      Object.defineProperty(navigator, "share", {
+        configurable: true,
+        value: async (data) => { window.__qaSharedInvite = data; },
+      });
+      return true;
+    })()`);
+    await clickSelector(cdp, ".ci-btn--share");
+    await wait(200);
+    const coParentInviteFacts = await cdp.evaluate(`(() => ({
+      title: document.querySelector(".ci-title")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      lead: document.querySelector(".ci-lead")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      waiting: document.querySelector(".ci-wait")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      qrVisible: Boolean(document.querySelector('.ci-qr-card canvas[role="img"]')),
+      sharedTitle: window.__qaSharedInvite?.title ?? null,
+      sharedText: window.__qaSharedInvite?.text ?? "",
+    }))()`);
+    const sharedText = coParentInviteFacts.sharedText ?? "";
+    if (
+      !coParentInviteFacts.title?.includes("공동 보호자")
+      || !coParentInviteFacts.lead?.includes("초대받은 보호자")
+      || !coParentInviteFacts.waiting?.includes("공동 보호자")
+      || !coParentInviteFacts.qrVisible
+      || !coParentInviteFacts.sharedTitle?.includes("공동 보호자")
+      || !sharedText.includes("as=parent")
+      || sharedText.includes("as=child")
+      || rowProblems(coParentInvite).length > 0
+    ) {
+      report.problems.push({
+        scope: "co-parent-invite-share-role",
+        facts: coParentInviteFacts,
+        routeProblems: rowProblems(coParentInvite),
+      });
+    }
+    report.focused.coParentInviteShare = coParentInviteFacts;
+    report.screenshots.push(await screenshot(cdp, freshOutputDir, "co-parent-invite-share.png"));
 
     for (const route of PARENT_BROWSER_QA_ROUTES) {
       const row = await navigate({ role: "parent", tier: "free", catalogMode: "valid", overLimit: route === "place-manager" }, route);

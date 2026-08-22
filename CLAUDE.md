@@ -3,6 +3,23 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
+**가입·역할 매칭 전수 개선(2026-08-22, 운영 배포 전)**: 가입 첫 진입을 로그인/회원가입 탭으로 명시 분리하고,
+역할 화면의 언어 설정을 하단 1곳으로 통합했다. 선택한 전화·Kakao·Google·Naver 가입 방식과 가입 설문은
+20분 만료·session/local 이중 draft로 새로고침/OAuth 왕복에도 이어지며, 설문은 고정 allowlist만 user metadata에
+신규 가입과 같은 트랜잭션으로 저장한다. 기존 OAuth 계정은 Worker의 `account_status=existing|linked`를 근거로만
+기존 회원 안내를 하고 새 계정은 `created`로 구분한다. QR은 엔진 지원을 확인한 뒤 카메라 권한을 요청하고,
+언어 펼침 메뉴는 접힌 9개 항목을 키보드·스크린리더 탐색에서 제외하며 바깥 탭/Escape/선택 뒤 초점을 복원한다.
+
+초대 링크는 `as=child|parent` 역할을 명시하고 hash 쿼리를 outer search보다 우선한다. 역할 없는 구형 링크는
+아이로 자동 가입시키지 않고 역할 선택을 먼저 보여 주며, 공동 보호자 링크는 부모 인증→`join-as-parent`만 사용한다.
+로그인된 부모가 아이 링크를 열거나 아이/선생님 세션이 부모 링크를 열어도 역할을 재해석하지 않고 명확히 거부한다.
+Worker는 등록 부모·선생님의 `/join`, 익명·비부모의 `/join-as-parent`, 활성 아이 멤버십이 있는 stale 부모 세션의
+권한 상승을 각각 stable error로 차단한다. 가족 화면은 아이 초대와 공동 보호자 초대를 분리하고, 공동 보호자 초대는
+대표 부모이며 아직 공동 보호자가 없을 때만 노출한다. 검증은 앱 1,880/1,880·Worker 1,261/1,261·세션 가드 17/17,
+앱/Worker typecheck, production build(2,280 modules·precache 472·중복 0), 브라우저 QA 부모 43+아이 14 화면 문제 0,
+PWA install/offline/update 문제 0, Android `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL이다.
+실제 계정 로그인·로그아웃·역할 전환·재페어링, refresh 토큰, 실기기 설치, D1 데이터는 건드리지 않았다.
+
 **QA 커버리지(2026-08-22, 커밋 `3cd20dd`)**: final-browser-qa 에 가족 없는 신규 부모 시나리오(`authCase: "no-family"`)를 추가해 온보딩 connect→pairing 단계를 자동 검증한다. 로그인 mock 은 family_id 없는 세션(JWT 클레임에서도 family 제외)을 돌리고 `/api/family/mine` 은 204 null — JWT 토큰에 family_id 가 남아 있으면 세션 채택 후 redirect effect 가 곧바로 부모 홈으로 보내므로 토큰 클레임까지 제외해야 한다. PairingStep 계약: `.ob-qr` 버튼, `.ob-input--code`(인라인 스타일 없음), computed font-size 16px, placeholder `KID-XXXXXXXX`, `enterkeyhint=done`.
 **최신 배포 상태(2026-08-22 오후, 커밋 `57b3794` iPhone 가입 절차 QR·코드·확대 수정)**: TK iPhone 제보 4종 중 f1def22 에서 미해결이던 QR 촬영 실패(BarcodeDetector 없는 iOS WebKit → jsQR 폴백, 스캔 시 lazy 로드), 코드 입력 KID 사라짐(`KIDXXXXXXXX` 하이픈 없는 12자도 정규화, `tests/pairCodeNormalization.test.ts`), 화면 좌우 밀림/키보드(iOS 자동확대 — `.ob-input`을 `--type-body-lg` 16px 토큰으로)를 수정했다. 페어링 코드 입력란 인라인 스타일을 `.ob-input--code`로 CSS 이관하고 Enter 제출·spellcheck off 를 보강했다. 검증: 앱 1,844/1,844, typecheck, build(진입 JS 344,145B 동일, precache 472 중복 0), qa:browser 57화면 문제 0, qa:pwa-runtime 문제 0, iPhone WebKit 스모크 PASS, Android assembleDebug+lintDebug 통과. Pages 배포 `https://cd7c4095.hyeni-calendar.pages.dev`, 고정 URL index SHA-256 로컬=prod 일치(index/sw/entry/css/callback/jsQR/QrScanner 청크), 브랜드 도메인 200. Worker는 미배포(대상 아님). 실기기 화면 관측은 A17/razr 연결 후 후속.
 **최신 배포 상태(2026-08-22 오전, 커밋 `f1def22` 가입 첫 화면 프리미엄 흐름)**: 언어 선택 트리거 알약·소셜 가입 설문 경로·휴대폰 가입 버튼 계층 통일·OTP 진행 트랙 등 온보딩 UX를 다듬은 커밋 `f1def22`를 Pages에 배포했다. Worker는 이전 version(`188d1103-e9b8-4ac2-9cc0-59419b1709fd`) 그대로며 health 200 `{"ok":true,"status":"ready"}`다. 고정 주소 `hyeni-calendar.pages.dev`의 index.html SHA-256 `947092a4a60a2c044ec04ef50d355375e700a856ff77a750331b33a5f8e20f9f`, sw.js `10a2d60ec6d36489565b88c99f614423ed0579a756c1c51a6dea5260bd4acb89`, entry `assets/index-CpGLA9HA.js`, CSS `assets/index-BU7CSNBK.css`, `/oauth/callback.html`, manifest까지 로컬 dist와 바이트 일치를 재확인했다. 실기기·계정·D1은 건드리지 않았다. 남은 후속은 A17/razr/S25 실기기 화면 관측과 Play 심사 전송(HOLD)이다.

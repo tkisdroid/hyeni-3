@@ -166,6 +166,30 @@ export function QrScanner({
         return;
       }
 
+      try {
+        // 권한 팝업을 띄우기 전에 실제 디코딩 엔진부터 준비한다.
+        const Detector = (window as unknown as { BarcodeDetector?: BarcodeDetectorCtor }).BarcodeDetector;
+        if (typeof Detector === "function") {
+          setLoadingLabelId("shared.qrScanner.loading.scanner");
+          try {
+            detectorRef.current = new Detector({ formats: ["qr_code"] });
+          } catch {
+            detectorRef.current = null;
+          }
+        }
+        if (!detectorRef.current && !jsqrRef.current) {
+          setLoadingLabelId("shared.qrScanner.loading.scanner");
+          const module_ = await import("jsqr");
+          if (!active) return;
+          jsqrRef.current = module_.default;
+        }
+      } catch (error) {
+        console.error("QR 스캔 엔진 준비 실패:", error);
+        setErrorId("shared.qrScanner.openFailed");
+        setLoading(false);
+        return;
+      }
+
       const permission = await ensureQrCameraPermission();
       if (!active) return;
       if (!permission.granted) {
@@ -177,19 +201,6 @@ export function QrScanner({
       }
 
       try {
-        const Detector = (window as unknown as { BarcodeDetector?: BarcodeDetectorCtor }).BarcodeDetector;
-        if (typeof Detector === "function") {
-          setLoadingLabelId("shared.qrScanner.loading.scanner");
-          detectorRef.current = new Detector({ formats: ["qr_code"] });
-        } else {
-          // iOS Safari 등 BarcodeDetector 미탑재 환경 — jsQR 폴백을 준비한다.
-          setLoadingLabelId("shared.qrScanner.loading.scanner");
-          const module_ = await import("jsqr");
-          if (!active) return;
-          jsqrRef.current = module_.default;
-          detectorRef.current = null;
-        }
-
         setLoadingLabelId("shared.qrScanner.loading.camera");
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },

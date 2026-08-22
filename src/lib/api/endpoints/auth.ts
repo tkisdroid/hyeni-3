@@ -29,6 +29,7 @@ import {
   validateParentSignupForm,
   type ParentSignupInput,
 } from "@/transform/phone";
+import type { OnboardingInterest } from "@/transform/onboardingPreferences";
 
 export interface AuthSession {
   access_token: string;
@@ -39,6 +40,7 @@ export interface AuthSession {
 export interface AuthResult {
   user: ApiUser | null;
   session: AuthSession;
+  account_status?: "created" | "existing" | "linked";
 }
 
 const adoptAuthResultOnce = createIdempotentAuthResultAdopter<AuthResult>({
@@ -177,6 +179,7 @@ export async function verifyPhoneSignupCode(input: {
   token: string;
   profile: PendingSignup["profile"];
   password: string;
+  onboardingInterests?: OnboardingInterest[];
 }, options?: AuthResultAdoptionOptions): Promise<AuthResult> {
   const phoneAuth = normalizePhoneForAuth(input.phone);
   const token = String(input.token || "").replace(/\D/g, "");
@@ -194,6 +197,7 @@ export async function verifyPhoneSignupCode(input: {
       name: input.profile?.display_name,
       gender: input.profile?.gender,
       birthdate: input.profile?.birthdate,
+      onboardingInterests: input.onboardingInterests,
       ...(device ?? {}),
     });
   } catch (error) {
@@ -442,7 +446,9 @@ export async function finishOAuthLogin(input: {
   provider: OAuthProvider;
   code: string;
   state?: string;
-}, options?: AuthResultAdoptionOptions): Promise<AuthResult> {
+}, options?: AuthResultAdoptionOptions & {
+  onboardingInterests?: OnboardingInterest[];
+}): Promise<AuthResult> {
   if (!isOAuthProvider(input.provider)) {
     throw new ApiError("unsupported_provider", 400);
   }
@@ -467,6 +473,7 @@ export async function finishOAuthLogin(input: {
         code: input.code,
         state: context.state,
         transactionSecret: context.transactionSecret,
+        onboardingInterests: options?.onboardingInterests,
         ...(device ?? {}),
       }),
     },

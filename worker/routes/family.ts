@@ -799,6 +799,19 @@ family.post("/join", requireAuth, async (c) => {
     return c.json({ error: "연결 해제를 정리 중이에요. 잠시 후 다시 시도해 주세요" }, 409);
   }
 
+  if (user.role === "parent") {
+    return c.json({
+      error: "이미 보호자 계정이에요. 보호자 연결은 다른 경로로 진행해 주세요",
+      code: "parent_cannot_join_as_child",
+    }, 400);
+  }
+  if (user.role === "teacher") {
+    return c.json({
+      error: "현재 역할로는 아이 기기에 연결할 수 없어요",
+      code: "role_cannot_join_as_child",
+    }, 403);
+  }
+
   // ★역할 검증: 이미 다른 가족에서 parent인 사용자는 child 전용 /join을 호출할 수 없다.
   //   보호자가 실수로 자녀 페어링 링크를 타면 join-as-parent 로 안내한다.
   const callerParentMember = await c.env.DB.prepare(
@@ -1259,6 +1272,13 @@ family.post("/join-as-parent", requireAuth, async (c) => {
     return c.json({ error: "연결 해제를 정리 중이에요. 잠시 후 다시 시도해 주세요" }, 409);
   }
 
+  if (user.role !== "parent" || user.is_anonymous) {
+    return c.json({
+      error: "보호자 계정으로 로그인한 뒤 연결해 주세요",
+      code: "role_cannot_join_as_parent",
+    }, 403);
+  }
+
   // ★익명 세션 차단: 익명 사용자는 join-as-parent로 보호자 등록 불가.
   const account = await c.env.DB.prepare(
     "SELECT is_anonymous FROM users WHERE id=? LIMIT 1",
@@ -1267,6 +1287,20 @@ family.post("/join-as-parent", requireAuth, async (c) => {
     .first<{ is_anonymous: number }>();
   if (!account || Number(account.is_anonymous) !== 0) {
     return c.json({ error: "anonymous_cannot_join_as_parent" }, 403);
+  }
+
+  const callerChildMember = await c.env.DB.prepare(
+    `SELECT 1 AS ok FROM family_members
+      WHERE user_id=? AND role='child' AND is_active=1
+      LIMIT 1`,
+  )
+    .bind(userId)
+    .first<{ ok: number }>();
+  if (callerChildMember) {
+    return c.json({
+      error: "이미 자녀 계정으로 등록되어 있어 보호자 역할을 추가할 수 없어요",
+      code: "role_cannot_join_as_parent",
+    }, 403);
   }
 
   // 단일 보조 보호자 불변식 — primary/본인 아닌 parent 가 이미 있으면 거부.

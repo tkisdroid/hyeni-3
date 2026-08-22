@@ -486,6 +486,22 @@ async function connectCdp(cdpPort) {
 function instrumentationScript() {
   return `(() => {
     const prefix = ${JSON.stringify(QA_STATE_PREFIX)};
+    const nativeFetch = window.fetch.bind(window);
+    window.fetch = (input, init) => {
+      const rawUrl = typeof input === "string" || input instanceof URL ? String(input) : input.url;
+      const url = new URL(rawUrl, location.href);
+      const method = String(init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
+      if (method === "GET" && url.pathname === "/api/access-region") {
+        return Promise.resolve(new Response(JSON.stringify({ country: "KR" }), {
+          status: 200,
+          headers: {
+            "cache-control": "private, no-store",
+            "content-type": "application/json; charset=utf-8",
+          },
+        }));
+      }
+      return nativeFetch(input, init);
+    };
     let previous = null;
     try {
       previous = window.name.startsWith(prefix) ? JSON.parse(window.name.slice(prefix.length)) : null;

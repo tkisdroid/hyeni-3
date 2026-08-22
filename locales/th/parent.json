@@ -1016,5 +1016,9 @@
   "parent.weekday.sun": "วัน",
   "parent.weekday.thu": "คอ",
   "parent.weekday.tue": "โกรธ",
-  "parent.weekday.wed": "ตัวเลข"
+  "parent.weekday.wed": "ตัวเลข",
+  "parent.familyInvite.parent.lead1": "ให้ผู้ปกครองที่ได้รับเชิญสแกนคิวอาร์โค้ดนี้",
+  "parent.familyInvite.parent.lead2": "หรือเข้าสู่ระบบจากลิงก์เชิญที่แชร์ไว้",
+  "parent.familyInvite.parent.shareText": "คำเชิญผู้ปกครองร่วม Hyeni Calendar\nรหัสเชื่อมต่อ: {pairCode}\nลิงก์เชิญ: {pairLink}",
+  "parent.familyInvite.parent.waiting": "กำลังรอผู้ปกครองร่วมเชื่อมต่อ"
 }

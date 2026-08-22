@@ -1016,5 +1016,9 @@
   "parent.weekday.sun": "Ngày",
   "parent.weekday.thu": "cổ ",
   "parent.weekday.tue": "cơn thịnh nộ",
-  "parent.weekday.wed": "con số"
+  "parent.weekday.wed": "con số",
+  "parent.familyInvite.parent.lead1": "Hãy nhờ người giám hộ được mời quét mã QR này",
+  "parent.familyInvite.parent.lead2": "hoặc đăng nhập từ liên kết mời đã chia sẻ.",
+  "parent.familyInvite.parent.shareText": "Lời mời người giám hộ chung Hyeni Calendar\nMã kết nối: {pairCode}\nLiên kết mời: {pairLink}",
+  "parent.familyInvite.parent.waiting": "Đang chờ người giám hộ chung kết nối."
 }

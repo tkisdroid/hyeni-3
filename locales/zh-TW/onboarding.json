@@ -167,5 +167,15 @@
   "onboarding.validation.passwordMismatch": "兩次輸入的密碼不一致。",
   "onboarding.validation.passwordWeak": "請輸入至少6位密碼。",
   "onboarding.validation.phoneInvalid": "請輸入以010開頭的11位手機號碼。",
-  "onboarding.validation.passwordRequired": "請輸入您的密碼。"
+  "onboarding.validation.passwordRequired": "請輸入您的密碼。",
+  "onboarding.toast.existingSocialAccount": "已安全登入您現有的帳號。",
+  "onboarding.invite.roleMismatch": "目前帳號角色與邀請角色不一致。請使用對應的裝置或帳號重新開啟。",
+  "onboarding.invite.roleMismatchChild": "這個邀請是給監護人的，請讓監護人在自己的裝置上開啟。",
+  "onboarding.invite.legacyChoice": "這是舊版邀請連結。請選擇這台裝置由監護人還是孩子使用。",
+  "onboarding.invite.parent.title": "您已收到共同監護人邀請",
+  "onboarding.invite.parent.authDescription": "請登入現有帳號或建立監護人帳號，然後加入家庭。",
+  "onboarding.signup.socialPending": "正在開啟社群帳號註冊…",
+  "onboarding.pairing.parent.title": "以共同監護人身分加入家庭",
+  "onboarding.pairing.parent.description": "請使用邀請您的監護人提供的 QR Code 或連接碼。",
+  "onboarding.pairing.parent.recovery": "加入後，您可以用監護人權限共同管理家庭日程和孩子的安全資訊。"
 }

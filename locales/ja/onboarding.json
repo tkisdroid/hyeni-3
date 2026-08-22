@@ -167,5 +167,15 @@
   "onboarding.validation.passwordMismatch": "確認用パスワードが一致しません。",
   "onboarding.validation.passwordWeak": "パスワードは6文字以上で入力してください。",
   "onboarding.validation.phoneInvalid": "010から始まる11桁の携帯電話番号を入力してください。",
-  "onboarding.validation.passwordRequired": "パスワードを入力してください。"
+  "onboarding.validation.passwordRequired": "パスワードを入力してください。",
+  "onboarding.toast.existingSocialAccount": "登録済みのアカウントに安全にログインしました。",
+  "onboarding.invite.roleMismatch": "現在のアカウントの役割と招待の役割が一致しません。対応する端末またはアカウントで開き直してください。",
+  "onboarding.invite.roleMismatchChild": "このリンクは保護者用だよ。保護者の端末で開いてもらってね。",
+  "onboarding.invite.legacyChoice": "以前の招待リンクです。この端末を使う人が保護者か子どもかを選んでください。",
+  "onboarding.invite.parent.title": "共同保護者として招待されています",
+  "onboarding.invite.parent.authDescription": "既存のアカウントでログインするか保護者アカウントを作成してから、家族に参加します。",
+  "onboarding.signup.socialPending": "ソーシャル登録画面を開いています…",
+  "onboarding.pairing.parent.title": "共同保護者として家族に参加",
+  "onboarding.pairing.parent.description": "招待した保護者から受け取ったQRコードまたは連携コードを確認してください。",
+  "onboarding.pairing.parent.recovery": "参加後は、同じ家族の予定と子どもの安全情報を保護者権限で一緒に管理できます。"
 }

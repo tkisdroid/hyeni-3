@@ -154,6 +154,9 @@ test("PWA 런타임 QA는 localhost 외 통신과 사용자 브라우저 상태�
   assert.match(source, /\{ env: \{\}, shell: false, stdio: "ignore", windowsHide: true \}/);
   assert.match(source, /Fetch\.failRequest/);
   assert.match(source, /BlockedByClient/);
+  assert.match(source, /url\.pathname === "\/api\/access-region"/);
+  assert.match(source, /JSON\.stringify\(\{ country: "KR" \}\)/);
+  assert.match(source, /return nativeFetch\(input, init\)/);
   assert.match(source, /externalNetwork:\s*false/);
   // 앱 이름 등 한국어 정본 문구를 검사하므로 표시 언어를 고정한다.
   // 고정하지 않으면 Linux CI(en-US)에서 영어 화면을 한국어로 검사해 항상 실패한다(2026-08-19 실사고).
