@@ -94,7 +94,9 @@ import {
 } from "@/transform/asyncUiState";
 import "./Onboarding.css";
 import { localizeApiError } from "@/i18n/apiError";
+import { useLocale } from "@/i18n/useLocale";
 import { isApiError } from "@/lib/api/errors";
+import { socialProvidersForAccessCountry } from "@/transform/accessCountry";
 
 type Step = "role" | "teacherSetup" | "login" | "survey" | "signup" | "connect" | "pairing" | "perms";
 type AuthIntent = "login" | "signup";
@@ -122,6 +124,7 @@ const SURVEY_OPTIONS = [
 export function Onboarding() {
   const navigate = useNavigate();
   const intl = useIntl();
+  const { accessCountry } = useLocale();
   const { show } = useToast();
   const { syncFromSession, user, role: authRole, familyId: authFamilyId } = useAuth();
   const authTransitionActive = useSyncExternalStore(
@@ -489,6 +492,7 @@ export function Onboarding() {
       )}
       {step === "login" && (
         <LoginStep
+          accessCountry={accessCountry}
           intent={authIntent}
           onIntentChange={(nextIntent) => {
             setAuthIntent(nextIntent);
@@ -884,6 +888,10 @@ function RoleStep({
         )}
       </div>
 
+      <div className="ob-role-language">
+        <LanguageSelector tone="formal" collapseOthers />
+      </div>
+
       <div className="ob-role-terms">
         <FormattedMessage
           id="onboarding.role.legalConsent"
@@ -916,13 +924,15 @@ function TeacherStep({ onBack, onSave, show }: { onBack: () => void; onSave: () 
   return (
     <div className="ob-step ob-teacher">
       <BackButton onBack={onBack} />
-      <div className="ob-teacher-head">
-        <div className="ob-teacher-logo">
+      <div className="ob-teacher-head ob-step-head">
+        <div className="ob-step-visual ob-teacher-logo">
           <img src={asset("cat/study.webp")} alt="" />
         </div>
-        <div className="ob-h1">{intl.formatMessage({ id: "onboarding.teacher.title" })}</div>
-        <div className="ob-teacher-sub">
-          <FormattedMessage id="onboarding.teacher.subtitle" values={{ br: () => <br /> }} />
+        <div className="ob-step-copy">
+          <div className="ob-h1">{intl.formatMessage({ id: "onboarding.teacher.title" })}</div>
+          <div className="ob-teacher-sub">
+            <FormattedMessage id="onboarding.teacher.subtitle" values={{ br: () => <br /> }} />
+          </div>
         </div>
       </div>
 
@@ -966,6 +976,7 @@ function TeacherStep({ onBack, onSave, show }: { onBack: () => void; onSave: () 
 /* ── STEP: LOGIN ───────────────────────────────────────────────────────── */
 
 function LoginStep({
+  accessCountry,
   intent,
   onIntentChange,
   authError,
@@ -980,6 +991,7 @@ function LoginStep({
   onSignup,
   show,
 }: {
+  accessCountry: string;
   intent: AuthIntent;
   onIntentChange: (intent: AuthIntent) => void;
   authError: string | null;
@@ -1003,6 +1015,9 @@ function LoginStep({
   const passwordInputRef = useRef<HTMLInputElement>(null);
   const loginNavigationLocked = isLoginNavigationLocked({ busy, commitBoundaryActive });
   const signingUp = intent === "signup";
+  const socialProviders = socialProvidersForAccessCountry(accessCountry, {
+    naverAvailable: hasNaverClientId,
+  });
 
   const clearFieldError = (field: keyof LoginFormErrors) => {
     setErrors((current) => {
@@ -1085,13 +1100,17 @@ function LoginStep({
   return (
     <div className="ob-step ob-login">
       <BackButton onBack={onBack} disabled={loginNavigationLocked} />
-      <div className="ob-login-head">
-        <img className="ob-login-mascot" src={asset("mascot/wave.webp")} alt="" />
-        <div className="ob-h1">
-          {intl.formatMessage({ id: signingUp ? "onboarding.signup.title" : "onboarding.login.title" })}
+      <div className="ob-login-head ob-step-head">
+        <div className="ob-step-visual">
+          <img className="ob-login-mascot" src={asset("mascot/wave.webp")} alt="" loading="eager" decoding="async" />
         </div>
-        <div className="ob-sub">
-          {intl.formatMessage({ id: signingUp ? "onboarding.signup.subtitle" : "onboarding.login.subtitle" })}
+        <div className="ob-step-copy">
+          <div className="ob-h1">
+            {intl.formatMessage({ id: signingUp ? "onboarding.signup.title" : "onboarding.login.title" })}
+          </div>
+          <div className="ob-sub">
+            {intl.formatMessage({ id: signingUp ? "onboarding.signup.subtitle" : "onboarding.login.subtitle" })}
+          </div>
         </div>
       </div>
 
@@ -1119,16 +1138,20 @@ function LoginStep({
       </div>
 
       <div className="ob-login-social">
-        <button type="button" className="ob-social ob-social--kakao hy-press hy-busy-quiet" onClick={() => social("kakao")} disabled={busy} aria-busy={busy && pendingAction === "kakao"}>
-          <KakaoIcon />
-          <BusyLabel busy={busy && pendingAction === "kakao"} idle={intl.formatMessage({ id: signingUp ? "onboarding.signup.kakao" : "onboarding.login.kakao" })} pending={intl.formatMessage({ id: "onboarding.login.kakaoPending" })} />
-        </button>
-        <button type="button" className="ob-social ob-social--google hy-press hy-busy-quiet" onClick={() => social("google")} disabled={busy} aria-busy={busy && pendingAction === "google"}>
-          <GoogleIcon />
-          <BusyLabel busy={busy && pendingAction === "google"} idle={intl.formatMessage({ id: signingUp ? "onboarding.signup.google" : "onboarding.login.google" })} pending={intl.formatMessage({ id: "onboarding.login.googlePending" })} />
-        </button>
-        {/* 네이버 키가 없으면 버튼 자체를 숨긴다 — 누르면 실패하는 버튼을 보여주지 않는다. */}
-        {hasNaverClientId && (
+        {socialProviders.includes("kakao") && (
+          <button type="button" className="ob-social ob-social--kakao hy-press hy-busy-quiet" onClick={() => social("kakao")} disabled={busy} aria-busy={busy && pendingAction === "kakao"}>
+            <KakaoIcon />
+            <BusyLabel busy={busy && pendingAction === "kakao"} idle={intl.formatMessage({ id: signingUp ? "onboarding.signup.kakao" : "onboarding.login.kakao" })} pending={intl.formatMessage({ id: "onboarding.login.kakaoPending" })} />
+          </button>
+        )}
+        {socialProviders.includes("google") && (
+          <button type="button" className="ob-social ob-social--google hy-press hy-busy-quiet" onClick={() => social("google")} disabled={busy} aria-busy={busy && pendingAction === "google"}>
+            <GoogleIcon />
+            <BusyLabel busy={busy && pendingAction === "google"} idle={intl.formatMessage({ id: signingUp ? "onboarding.signup.google" : "onboarding.login.google" })} pending={intl.formatMessage({ id: "onboarding.login.googlePending" })} />
+          </button>
+        )}
+        {/* 한국 접속이면서 키가 있을 때만 네이버를 보여준다 — 키가 없어도 실패하는 버튼은 숨긴다. */}
+        {socialProviders.includes("naver") && (
           <button type="button" className="ob-social ob-social--naver hy-press hy-busy-quiet" onClick={() => social("naver")} disabled={busy} aria-busy={busy && pendingAction === "naver"}>
             <NaverIcon />
             <BusyLabel busy={busy && pendingAction === "naver"} idle={intl.formatMessage({ id: signingUp ? "onboarding.signup.naver" : "onboarding.login.naver" })} pending={intl.formatMessage({ id: "onboarding.login.naverPending" })} />
@@ -1277,10 +1300,15 @@ function SurveyStep({
     <div className="ob-step ob-survey">
       <BackButton onBack={onBack} />
       <SignupProgress percent={20} label={intl.formatMessage({ id: "onboarding.progress.survey" })} />
-      <div className="ob-survey-head">
-        <div className="ob-signup-title">{intl.formatMessage({ id: "onboarding.survey.title" })}</div>
-        <div className="ob-sub">
-          <FormattedMessage id="onboarding.survey.subtitle" values={{ br: () => <br /> }} />
+      <div className="ob-survey-head ob-step-head">
+        <div className="ob-step-visual">
+          <img src={asset("ui/calendar-heart.webp")} alt="" loading="eager" decoding="async" />
+        </div>
+        <div className="ob-step-copy">
+          <div className="ob-signup-title">{intl.formatMessage({ id: "onboarding.survey.title" })}</div>
+          <div className="ob-sub">
+            <FormattedMessage id="onboarding.survey.subtitle" values={{ br: () => <br /> }} />
+          </div>
         </div>
       </div>
 
@@ -1573,9 +1601,14 @@ function SignupStep({
       <div className="ob-step ob-signup">
         <BackButton onBack={() => setPhase("form")} disabled={busy} />
         <SignupProgress percent={60} label={intl.formatMessage({ id: "onboarding.progress.phone" })} />
-        <div className="ob-signup-head">
-          <div className="ob-signup-title">{intl.formatMessage({ id: "onboarding.signup.otpTitle" })}</div>
-          <div className="ob-sub">{intl.formatMessage({ id: "onboarding.signup.otpDescription" }, { phone: pending?.phoneStorage ?? "" })}</div>
+        <div className="ob-signup-head ob-step-head">
+          <div className="ob-step-visual">
+            <img src={asset("ui/phone-lavender.webp")} alt="" loading="eager" decoding="async" />
+          </div>
+          <div className="ob-step-copy">
+            <div className="ob-signup-title">{intl.formatMessage({ id: "onboarding.signup.otpTitle" })}</div>
+            <div className="ob-sub">{intl.formatMessage({ id: "onboarding.signup.otpDescription" }, { phone: pending?.phoneStorage ?? "" })}</div>
+          </div>
         </div>
         <form
           className="ob-signup-form"
@@ -1670,9 +1703,14 @@ function SignupStep({
     <div className="ob-step ob-signup">
       <BackButton onBack={onBack} disabled={busy} />
       <SignupProgress percent={40} label={intl.formatMessage({ id: "onboarding.progress.account" })} />
-      <div className="ob-signup-head">
-        <div className="ob-signup-title">{intl.formatMessage({ id: "onboarding.signup.title" })}</div>
-        <div className="ob-sub">{intl.formatMessage({ id: "onboarding.signup.subtitle" })}</div>
+      <div className="ob-signup-head ob-step-head">
+        <div className="ob-step-visual">
+          <img src={asset("ui/phone-lavender.webp")} alt="" loading="eager" decoding="async" />
+        </div>
+        <div className="ob-step-copy">
+          <div className="ob-signup-title">{intl.formatMessage({ id: "onboarding.signup.title" })}</div>
+          <div className="ob-sub">{intl.formatMessage({ id: "onboarding.signup.subtitle" })}</div>
+        </div>
       </div>
 
       <form
@@ -1805,10 +1843,14 @@ function ConnectStep({
     <div className="ob-step ob-connect">
       <BackButton onBack={onBack} />
       {progressPercent != null && <SignupProgress percent={progressPercent} label={intl.formatMessage({ id: "onboarding.progress.family" })} />}
-      <div className="ob-connect-head">
-        <img className="ob-connect-mascot" src={asset("mascot/family.webp")} alt="" />
-        <div className="ob-h1">{intl.formatMessage({ id: "onboarding.connect.title" })}</div>
-        <div className="ob-sub">{intl.formatMessage({ id: "onboarding.connect.subtitle" })}</div>
+      <div className="ob-connect-head ob-step-head">
+        <div className="ob-step-visual">
+          <img className="ob-connect-mascot" src={asset("mascot/family.webp")} alt="" loading="eager" decoding="async" />
+        </div>
+        <div className="ob-step-copy">
+          <div className="ob-h1">{intl.formatMessage({ id: "onboarding.connect.title" })}</div>
+          <div className="ob-sub">{intl.formatMessage({ id: "onboarding.connect.subtitle" })}</div>
+        </div>
       </div>
 
       <div className="ob-referral-notice" role="status">
@@ -1913,6 +1955,7 @@ function PairingStep({
   const intl = useIntl();
   const [raw, setRaw] = useState(initialCode ?? "");
   const [showScanner, setShowScanner] = useState(false);
+  const [pairingError, setPairingError] = useState<string | null>(null);
 
   // rawCode: 스캔 rawValue 또는 입력값. 딥링크 URL(#/onboarding?pair=KID-…)도
   // normalizePairCodeInput 의 KID- 직접매치로 코드가 추출된다.
@@ -1920,12 +1963,14 @@ function PairingStep({
     if (busy) return;
     const code = normalizePairCodeInput(rawCode ?? raw);
     if (!code) {
-      show(
-        intl.formatMessage({ id: rawCode != null ? "onboarding.pairing.invalidQr" : "onboarding.pairing.invalidCode" }),
-        "🔢",
-      );
+      const message = intl.formatMessage({
+        id: rawCode != null ? "onboarding.pairing.invalidQr" : "onboarding.pairing.invalidCode",
+      });
+      setPairingError(message);
+      show(message, "🔢");
       return;
     }
+    setPairingError(null);
     setRaw(code);
     setBusy(true);
     let permissionTransitionStarted = false;
@@ -1945,7 +1990,9 @@ function PairingStep({
       onDone();
     } catch (e) {
       if (permissionTransitionStarted) onPermissionTransitionCancel();
-      show(localizeApiError(e, intl, "formal"), "⚠️");
+      const message = localizeApiError(e, intl, "formal");
+      setPairingError(message);
+      show(message, "⚠️");
     } finally {
       setBusy(false);
     }
@@ -1953,12 +2000,17 @@ function PairingStep({
 
   return (
     <div className="ob-step ob-pairing">
-      <BackButton onBack={onBack} dark />
-      <div className="ob-pair-head">
-        <div className="ob-pair-title">{intl.formatMessage({ id: "onboarding.pairing.title" })}</div>
-        <div className="ob-pair-sub">{intl.formatMessage({ id: "onboarding.pairing.description" })}</div>
-        <div className="ob-pair-sub">{intl.formatMessage({ id: "onboarding.pairing.recovery" })}</div>
+      <BackButton onBack={onBack} />
+      <div className="ob-pair-head ob-step-head">
+        <div className="ob-step-visual">
+          <img src={asset("ui/camera-3d.webp")} alt="" loading="eager" decoding="async" />
+        </div>
+        <div className="ob-step-copy">
+          <div className="ob-pair-title">{intl.formatMessage({ id: "onboarding.pairing.title" })}</div>
+          <div className="ob-pair-sub">{intl.formatMessage({ id: "onboarding.pairing.description" })}</div>
+        </div>
       </div>
+      <div className="ob-pair-recovery">{intl.formatMessage({ id: "onboarding.pairing.recovery" })}</div>
 
       {/* 탭하면 실제 카메라 스캐너 오버레이(BarcodeDetector)가 열린다. */}
       <button
@@ -1980,7 +2032,7 @@ function PairingStep({
       <div className="ob-pair-hint">{intl.formatMessage({ id: "onboarding.pairing.manualHint" })}</div>
 
       <input
-        className="ob-input ob-input--code"
+        className="ob-input ob-pair-code-input"
         aria-label={intl.formatMessage({ id: "onboarding.pairing.codeLabel" })}
         placeholder="KID-XXXXXXXX"
         autoCapitalize="characters"
@@ -1989,7 +2041,10 @@ function PairingStep({
         spellCheck={false}
         enterKeyHint="done"
         value={raw}
-        onChange={(e) => setRaw(e.target.value)}
+        onChange={(e) => {
+          setRaw(e.target.value);
+          setPairingError(null);
+        }}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
             e.preventDefault();
@@ -1997,6 +2052,8 @@ function PairingStep({
           }
         }}
       />
+
+      {pairingError && <div className="ob-auth-alert" role="alert">{pairingError}</div>}
 
       <button
         type="button"
@@ -2057,10 +2114,14 @@ function PermsStep({
   return (
     <div className="ob-step ob-perms">
       {progressPercent != null && <SignupProgress percent={progressPercent} label={intl.formatMessage({ id: "onboarding.progress.permissions" })} />}
-      <div className="ob-perms-head">
-        <img className="ob-perms-mascot" src={asset("mascot/wave.webp")} alt="" />
-        <div className="ob-h1">{intl.formatMessage({ id: role === "child" ? "onboarding.permissions.title.child" : "onboarding.permissions.title.formal" })}</div>
-        <div className="ob-sub">{intl.formatMessage({ id: role === "child" ? "onboarding.permissions.subtitle.child" : "onboarding.permissions.subtitle.formal" })}</div>
+      <div className="ob-perms-head ob-step-head">
+        <div className="ob-step-visual">
+          <img className="ob-perms-mascot" src={asset("ui/shield-heart.webp")} alt="" loading="eager" decoding="async" />
+        </div>
+        <div className="ob-step-copy">
+          <div className="ob-h1">{intl.formatMessage({ id: role === "child" ? "onboarding.permissions.title.child" : "onboarding.permissions.title.formal" })}</div>
+          <div className="ob-sub">{intl.formatMessage({ id: role === "child" ? "onboarding.permissions.subtitle.child" : "onboarding.permissions.subtitle.formal" })}</div>
+        </div>
       </div>
 
       <div className="ob-perms-list">

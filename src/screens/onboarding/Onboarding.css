@@ -4,12 +4,21 @@
    (콘텐츠 높이로 붕괴 → 배경이 화면 절반에서 끊기는 버그). dvh 로 뷰포트에 직접 고정. */
 .ob-root {
   min-height: 100dvh;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* 스텝 공통 컨테이너 */
 .ob-step {
   min-height: 100dvh;
+  width: 100%;
+  max-width: 100%;
   box-sizing: border-box;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px calc(40px + env(safe-area-inset-bottom, 0px));
+  overflow-x: hidden;
+  background: transparent;
+  animation: hy-fadeup 0.32s cubic-bezier(0.2, 0, 0.2, 1) forwards;
 }
 
 /* 공통 타이틀 / 서브텍스트 */
@@ -162,12 +171,11 @@
 
 /* ── STEP: ROLE ────────────────────────────────────────────────────────── */
 .ob-role {
-  padding: 72px 24px calc(40px + env(safe-area-inset-bottom, 0px));
+  padding-top: calc(env(safe-area-inset-top, 0px) + 24px);
+  padding-right: 24px;
+  padding-left: 24px;
   display: flex;
   flex-direction: column;
-  background: radial-gradient(120% 60% at 50% 0%, #fce3ee 0%, rgba(252, 227, 238, 0) 60%),
-    linear-gradient(180deg, #fdf4f1, #f6f3fb);
-  animation: hy-rise 0.46s cubic-bezier(0.2, 0, 0.2, 1) forwards;
 }
 .ob-role-head {
   text-align: center;
@@ -303,9 +311,14 @@
 
   color: var(--fg-muted);
 }
-.ob-role-terms {
+.ob-role-language {
   margin-top: auto;
   padding-top: 24px;
+}
+
+.ob-role-terms {
+  margin-top: 8px;
+  padding-top: 0;
   text-align: center;
   font-size: var(--type-caption);
   line-height: var(--type-caption-line-height);
@@ -333,12 +346,6 @@
 }
 
 /* ── STEP: TEACHER SETUP ───────────────────────────────────────────────── */
-.ob-teacher {
-  padding: 64px 24px calc(40px + env(safe-area-inset-bottom, 0px));
-  background: radial-gradient(120% 50% at 50% 0%, #e3f6ec 0%, rgba(227, 246, 236, 0) 60%),
-    linear-gradient(180deg, #fdf4f1, #f4faf6);
-  animation: hy-slidein 0.4s ease forwards;
-}
 .ob-teacher-head {
   margin-top: 24px;
   text-align: center;
@@ -410,11 +417,6 @@
 }
 
 /* ── STEP: LOGIN ───────────────────────────────────────────────────────── */
-.ob-login {
-  padding: 64px 24px calc(40px + env(safe-area-inset-bottom, 0px));
-  background: linear-gradient(180deg, #fdf4f1, #f7f4f3);
-  animation: hy-slidein 0.4s ease forwards;
-}
 .ob-login-head {
   margin-top: 24px;
   text-align: center;
@@ -634,13 +636,6 @@
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
-/* 페어링 코드 입력 — KID-XXXXXXXX 중앙 정렬 대문자 강조(인라인 스타일을 CSS로 이관) */
-.ob-input--code {
-  text-align: center;
-  letter-spacing: 0.06em;
-  font-weight: var(--type-body-lg-weight);
-  text-transform: uppercase;
-}
 .ob-otp-track {
   position: absolute;
   inset-inline: 16px;
@@ -672,12 +667,6 @@
 }
 
 /* ── STEP: SIGNUP ──────────────────────────────────────────────────────── */
-.ob-survey {
-  padding: 64px 24px calc(40px + env(safe-area-inset-bottom, 0px));
-  background: radial-gradient(120% 50% at 50% 0%, var(--rose-soft) 0%, rgba(253, 231, 241, 0) 58%),
-    linear-gradient(180deg, var(--bg-app), var(--bg-page));
-  animation: hy-slidein 0.4s ease forwards;
-}
 .ob-survey-head {
   margin-top: 24px;
 }
@@ -749,11 +738,6 @@
   margin-top: 24px;
 }
 
-.ob-signup {
-  padding: 64px 24px calc(40px + env(safe-area-inset-bottom, 0px));
-  background: linear-gradient(180deg, #fdf4f1, #f7f4f3);
-  animation: hy-slidein 0.4s ease forwards;
-}
 .ob-signup-head {
   margin-top: 24px;
 }
@@ -852,12 +836,6 @@
 }
 
 /* ── STEP: CONNECT ─────────────────────────────────────────────────────── */
-.ob-connect {
-  padding: 64px 24px calc(40px + env(safe-area-inset-bottom, 0px));
-  background: radial-gradient(120% 50% at 50% 0%, #fce3ee 0%, rgba(252, 227, 238, 0) 55%),
-    linear-gradient(180deg, #fdf4f1, #f6f3fb);
-  animation: hy-slidein 0.4s ease forwards;
-}
 .ob-connect-head {
   margin-top: 20px;
   text-align: center;
@@ -966,11 +944,6 @@
 }
 
 /* ── STEP: PAIRING ─────────────────────────────────────────────────────── */
-.ob-pairing {
-  padding: 64px 24px calc(40px + env(safe-area-inset-bottom, 0px));
-  background: linear-gradient(180deg, #201a22, #14100f);
-  animation: hy-slidein 0.4s ease forwards;
-}
 .ob-pair-head {
   margin-top: 20px;
   text-align: center;
@@ -1125,12 +1098,6 @@
 }
 
 /* ── STEP: PERMS ───────────────────────────────────────────────────────── */
-.ob-perms {
-  padding: 64px 24px calc(40px + env(safe-area-inset-bottom, 0px));
-  background: radial-gradient(120% 50% at 50% 0%, #eee7ff 0%, rgba(238, 231, 255, 0) 55%),
-    linear-gradient(180deg, #fdf4f1, #f6f3fb);
-  animation: hy-slidein 0.4s ease forwards;
-}
 .ob-perms-head {
   text-align: center;
 }
@@ -1210,4 +1177,157 @@
 }
 .ob-back {
   min-width: var(--control-min-size);
+}
+
+/* ── 온보딩 공통 시각 언어 ────────────────────────────────────────────────
+   역할 선택 뒤의 모든 단계는 같은 상단 구조·표면·세로 전환을 쓴다.
+   화면별 색 바닥과 좌우 slide-in은 Safari의 화면 밀림처럼 보였기 때문에 제거한다. */
+.hy-app:not(.hy-adult) .ob-root {
+  background:
+    radial-gradient(90% 44% at 90% 0%, rgba(222, 211, 255, 0.66), transparent 70%),
+    radial-gradient(86% 42% at 0% 38%, rgba(205, 239, 233, 0.5), transparent 72%),
+    linear-gradient(180deg, #f5f3fa 0%, #f7f5f7 100%);
+}
+
+.ob-step-head {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+}
+
+.ob-step-visual {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--ph-object-fill, rgba(255, 255, 255, 0.86));
+  box-shadow: var(--ph-object-raise, var(--shadow-soft));
+}
+
+.ob-step-visual img {
+  display: block;
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  animation: none;
+}
+
+.ob-step-copy {
+  min-width: 0;
+}
+
+.ob-step-head :is(.ob-h1, .ob-signup-title, .ob-pair-title) {
+  margin-top: 0;
+  color: var(--fg-primary);
+  text-align: left;
+  text-wrap: balance;
+}
+
+.ob-step-head :is(.ob-sub, .ob-teacher-sub, .ob-pair-sub) {
+  margin-top: 4px;
+  color: var(--fg-muted);
+  text-align: left;
+  text-wrap: pretty;
+  word-break: keep-all;
+}
+
+:is(.ob-role-card, .ob-survey-card, .ob-connect-card, .ob-perm, .ob-referral-notice) {
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  background: var(--ph-glass-fill, rgba(255, 255, 255, 0.86));
+  box-shadow: var(--ph-panel-shadow, var(--shadow-soft));
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+}
+
+.ob-survey-card--on {
+  border-color: var(--hy-accent-cta);
+  background: color-mix(in srgb, var(--hy-accent-soft) 72%, rgba(255, 255, 255, 0.86));
+}
+
+.ob-connect-card--child {
+  border: 1.5px dashed color-mix(in srgb, var(--hy-accent-cta) 42%, transparent);
+  background: color-mix(in srgb, var(--hy-accent-soft) 46%, rgba(255, 255, 255, 0.86));
+  box-shadow: none;
+}
+
+.ob-input,
+.ob-datebtn {
+  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.ob-link {
+  min-height: var(--control-min-size);
+  padding-inline: 8px;
+}
+
+.ob-pair-head {
+  margin-top: 16px;
+}
+
+.ob-pair-recovery {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius-12);
+  background: rgba(255, 255, 255, 0.58);
+  color: var(--fg-secondary);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+  word-break: keep-all;
+}
+
+.ob-qr {
+  width: 100%;
+  max-width: none;
+  height: 184px;
+  margin-top: 20px;
+}
+
+.ob-pair-hint {
+  margin-top: 20px;
+  color: var(--fg-muted);
+}
+
+.ob-pair-code-input {
+  margin-top: 12px;
+  text-align: center;
+  letter-spacing: 0.08em;
+  font-weight: var(--type-body-lg-weight);
+  text-transform: uppercase;
+}
+
+.ob-pairing .ob-cta {
+  margin-top: 16px;
+}
+
+@media (max-width: 359px) {
+  .ob-step {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .ob-step-head {
+    grid-template-columns: 52px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .ob-step-visual {
+    width: 52px;
+    height: 52px;
+  }
+}
+
+/* Android 가로 화면에서도 폰 프레임은 만들지 않되 폼 자체는 읽기 좋은 폭에 둔다. */
+@media (min-width: 600px) {
+  .ob-step {
+    padding-right: max(16px, calc((100% - 520px) / 2));
+    padding-left: max(16px, calc((100% - 520px) / 2));
+  }
 }

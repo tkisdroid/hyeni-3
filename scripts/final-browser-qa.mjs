@@ -100,17 +100,15 @@ function todayKst() {
   return `${read("year")}-${read("month")}-${read("day")}`;
 }
 
-function safeAccessToken(role, { withoutFamily = false } = {}) {
+function safeAccessToken(role, familyId = FAMILY_ID) {
   const userId = role === "child" ? CHILD_ID : role === "teacher" ? TEACHER_ID : PARENT_ID;
-  const claims = {
+  const payload = {
     sub: userId,
     role,
-  };
-  if (!withoutFamily) claims.family_id = FAMILY_ID;
-  return `${toBase64Url({ alg: "HS256", typ: "JWT" })}.${toBase64Url({
-    ...claims,
     exp: Math.floor(Date.now() / 1000) + 3_600,
-  })}.qa`;
+  };
+  if (familyId) payload.family_id = familyId;
+  return `${toBase64Url({ alg: "HS256", typ: "JWT" })}.${toBase64Url(payload)}.qa`;
 }
 
 function familyResponse(role) {
@@ -348,7 +346,7 @@ function demoMemos() {
   ];
 }
 
-export function mockApi(pathname, scenario, method = "GET") {
+export function mockApi(pathname, scenario, method = "GET", requestBody = null) {
   const {
     role,
     tier,
@@ -356,6 +354,9 @@ export function mockApi(pathname, scenario, method = "GET") {
     overLimit = false,
     aiScheduleExhausted = false,
   } = scenario;
+  if (pathname === "/api/access-region") {
+    return { country: scenario.country ?? "KR" };
+  }
   if (pathname === "/auth/check-login-id") {
     return scenario.authCase === "id-check-error"
       ? { error: "temporary_unavailable" }
@@ -364,10 +365,9 @@ export function mockApi(pathname, scenario, method = "GET") {
   if (pathname === "/auth/login-password" && scenario.authCase === "wrong-password") {
     return { error: "invalid_credentials" };
   }
-  if (pathname === "/auth/login-password" && (scenario.authCase === "success" || scenario.authCase === "no-family")) {
-    // no-family: 가족 없는 신규 부모 — family_id 없는 세션을 돌려 connect 단계로 유도한다.
-    const sessionFamilyId = scenario.authCase === "no-family" ? null : FAMILY_ID;
-    const accessToken = safeAccessToken("parent", { withoutFamily: scenario.authCase === "no-family" });
+  if (pathname === "/auth/login-password" && scenario.authCase === "success") {
+    const sessionFamilyId = FAMILY_ID;
+    const accessToken = safeAccessToken("parent");
     return {
       user: {
         id: PARENT_ID,
@@ -385,10 +385,52 @@ export function mockApi(pathname, scenario, method = "GET") {
       },
     };
   }
+  // 가족 없는 부모 세션(no-family=신규, success-no-family=가족이 없어진 기존 계정) —
+  // family_id 없는 세션을 돌려 온보딩 connect 단계로 유도한다.
+  if (pathname === "/auth/login-password" && (scenario.authCase === "no-family" || scenario.authCase === "success-no-family")) {
+    return {
+      user: {
+        id: PARENT_ID,
+        role: "parent",
+        family_id: null,
+        is_anonymous: false,
+        app_metadata: { role: "parent" },
+        user_metadata: { role: "parent", name: "데모 보호자" },
+      },
+      session: {
+        access_token: safeAccessToken("parent", null),
+        refresh_token: "qa-refresh-not-valid",
+        token_type: "bearer",
+        expires_in: 3_600,
+      },
+    };
+  }
   if (pathname === "/api/family/mine") {
-    // 가족 없는 신규 부모 시나리오 — 204 null 로 응답해 온보딩 connect 단계로 유도한다.
+    // no-family 시나리오는 204(null) 응답으로 온보딩 connect 단계를 연다.
     if (scenario.authCase === "no-family") return null;
-    return familyResponse(role);
+    return scenario.familyState === "none" ? null : familyResponse(role);
+  }
+  if (pathname === "/api/family/join-as-parent" && method === "POST") {
+    scenario.familyState = "joined";
+    scenario.lastJoinAsParentBody = requestBody;
+    const accessToken = safeAccessToken("parent");
+    return {
+      family_id: FAMILY_ID,
+      user: {
+        id: PARENT_ID,
+        role: "parent",
+        family_id: FAMILY_ID,
+        is_anonymous: false,
+        app_metadata: { role: "parent", family_id: FAMILY_ID },
+        user_metadata: { role: "parent", family_id: FAMILY_ID, name: "데모 보호자" },
+      },
+      session: {
+        access_token: accessToken,
+        refresh_token: "qa-refresh-after-family-join",
+        token_type: "bearer",
+        expires_in: 3_600,
+      },
+    };
   }
   if (pathname === "/api/entitlement") return entitlementResponse(tier);
   if (pathname === "/api/billing/web/catalog") return webBillingCatalog(catalogMode);
@@ -786,14 +828,83 @@ async function clickSelector(cdp, selector) {
 async function setInputValue(cdp, selector, value) {
   const updated = await cdp.evaluate(`(() => {
     const input = document.querySelector(${JSON.stringify(selector)});
-    if (!(input instanceof HTMLInputElement)) return false;
+    if (!(input instanceof HTMLInputElement)) {
+      return {
+        ok: false,
+        tagName: input?.tagName ?? null,
+        hash: location.hash,
+        bodyClass: document.body.className,
+        stepClass: document.querySelector(".ob-step")?.className ?? null,
+        text: document.body.innerText.replace(/\\s+/g, " ").trim().slice(0, 240),
+      };
+    }
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
     setter?.call(input, ${JSON.stringify(value)});
     input.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: ${JSON.stringify(value)} }));
     input.dispatchEvent(new Event("change", { bubbles: true }));
+    return { ok: true };
+  })()`);
+  if (!updated?.ok) {
+    throw new Error(`값을 입력할 수 없는 요소입니다: ${selector} ${JSON.stringify(updated)}`);
+  }
+}
+
+async function inspectOnboardingAtViewport(cdp, viewport, native) {
+  await cdp.send("Emulation.setDeviceMetricsOverride", {
+    width: viewport.width,
+    height: viewport.height,
+    screenWidth: viewport.width,
+    screenHeight: viewport.height,
+    deviceScaleFactor: 2,
+    mobile: true,
+  });
+  await cdp.evaluate(`(() => {
+    if (${native ? "true" : "false"}) document.documentElement.setAttribute("data-hy-native", "");
+    else document.documentElement.removeAttribute("data-hy-native");
     return true;
   })()`);
-  if (!updated) throw new Error(`값을 입력할 수 없는 요소입니다: ${selector}`);
+  await wait(100);
+  return cdp.evaluate(`(() => {
+    const visible = (element) => {
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden";
+    };
+    const controls = [...document.querySelectorAll(".ob-step button")]
+      .filter(visible)
+      .map((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+          className: element.className,
+          left: Math.round(rect.left),
+          right: Math.round(rect.right),
+          height: Math.round(rect.height),
+        };
+      });
+    return {
+      viewport: { width: innerWidth, height: innerHeight },
+      native: document.documentElement.hasAttribute("data-hy-native"),
+      stepClass: document.querySelector(".ob-step")?.className ?? null,
+      overflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
+      htmlOverflowX: getComputedStyle(document.documentElement).overflowX,
+      bodyOverflowX: getComputedStyle(document.body).overflowX,
+      rootOverflowX: getComputedStyle(document.querySelector("#root")).overflowX,
+      outOfBounds: controls.filter((control) => control.left < -1 || control.right > innerWidth + 1),
+      smallButtons: controls.filter((control) => control.height < 44),
+    };
+  })()`);
+}
+
+async function restoreBrowserQaViewport(cdp) {
+  await cdp.send("Emulation.setDeviceMetricsOverride", {
+    ...BROWSER_QA_VIEWPORT,
+    screenWidth: BROWSER_QA_VIEWPORT.width,
+    screenHeight: BROWSER_QA_VIEWPORT.height,
+    deviceScaleFactor: 2,
+    mobile: true,
+  });
+  await cdp.evaluate('document.documentElement.removeAttribute("data-hy-native"); true');
+  await wait(100);
 }
 
 function uniqueStrings(values) {
@@ -966,7 +1077,15 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
             });
             return;
           }
-          const payload = mockApi(url.pathname, activeScenario, request.method);
+          let requestBody = null;
+          if (typeof request.postData === "string" && request.postData) {
+            try {
+              requestBody = JSON.parse(request.postData);
+            } catch {
+              requestBody = null;
+            }
+          }
+          const payload = mockApi(url.pathname, activeScenario, request.method, requestBody);
           const responseCode = url.pathname === "/api/family/mine"
             && activeScenario.authCase === "no-family"
             ? 204
@@ -1033,19 +1152,80 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     const onboardingAntiSlopFacts = await cdp.evaluate(`(() => ({
       badgePresent: Boolean(document.querySelector(".ob-role-badge")),
       subtitle: document.querySelector(".ob-role-sub")?.textContent?.trim() || "",
+      languageCurrent: document.querySelector(".hy-language__current")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      languageExpanded: document.querySelector(".hy-language__current")?.getAttribute("aria-expanded") ?? null,
+      languageOptionsVisible: Boolean(document.querySelector(".hy-language__options")),
+      languageAfterRoles: (document.querySelector(".ob-role-list")?.getBoundingClientRect().bottom ?? Infinity)
+        <= (document.querySelector(".ob-role-language")?.getBoundingClientRect().top ?? -Infinity),
+      languageBeforeTerms: (document.querySelector(".ob-role-language")?.getBoundingClientRect().bottom ?? Infinity)
+        <= (document.querySelector(".ob-role-terms")?.getBoundingClientRect().top ?? -Infinity),
     }))()`);
+    await clickSelector(cdp, ".hy-language__current");
+    await wait(100);
+    const onboardingLanguageExpandedFacts = await cdp.evaluate(`(() => ({
+      expanded: document.querySelector(".hy-language__current")?.getAttribute("aria-expanded") ?? null,
+      optionCount: document.querySelectorAll(".hy-language__options .hy-language__option").length,
+      currentRepeated: [...document.querySelectorAll(".hy-language__options .hy-language__option")]
+        .some((option) => option.textContent?.trim() === "한국어"),
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    }))()`);
+    await clickSelector(cdp, ".hy-language__current");
     if (
       onboardingAntiSlopFacts.badgePresent
       || onboardingAntiSlopFacts.subtitle !== "함께 보는 우리 가족 일정"
+      || !onboardingAntiSlopFacts.languageCurrent?.includes("한국어")
+      || onboardingAntiSlopFacts.languageExpanded !== "false"
+      || onboardingAntiSlopFacts.languageOptionsVisible
+      || !onboardingAntiSlopFacts.languageAfterRoles
+      || !onboardingAntiSlopFacts.languageBeforeTerms
+      || onboardingLanguageExpandedFacts.expanded !== "true"
+      || onboardingLanguageExpandedFacts.optionCount !== 9
+      || onboardingLanguageExpandedFacts.currentRepeated
+      || onboardingLanguageExpandedFacts.overflow > 0
       || rowProblems(onboarding).length > 0
     ) {
       report.problems.push({
         scope: "onboarding-decorative-badge",
-        facts: onboardingAntiSlopFacts,
+        facts: { ...onboardingAntiSlopFacts, expanded: onboardingLanguageExpandedFacts },
         routeProblems: rowProblems(onboarding),
       });
     }
-    report.focused.antiSlop = { onboarding: onboardingAntiSlopFacts };
+    report.focused.antiSlop = {
+      onboarding: { ...onboardingAntiSlopFacts, expanded: onboardingLanguageExpandedFacts },
+    };
+
+    // 한국 외 접속은 국내 전용 OAuth를 숨기고 전 지역 공용 Google만 남긴다.
+    // 저장한 사용자 선택이 없는 새 접속을 만들어 국가 기본 언어까지 함께 확인한다.
+    await cdp.evaluate(`localStorage.removeItem("hyeni-locale-v1"); true`);
+    await navigate(
+      { role: "public", tier: "free", catalogMode: "valid", overLimit: false, country: "JP" },
+      "onboarding",
+    );
+    await clickSelector(cdp, ".ob-role-card--parent");
+    await wait(350);
+    const japanSocialFacts = await cdp.evaluate(`(() => ({
+      locale: document.documentElement.lang,
+      languageCurrent: document.querySelector(".hy-language__current")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      google: Boolean(document.querySelector(".ob-social--google")),
+      kakao: Boolean(document.querySelector(".ob-social--kakao")),
+      naver: Boolean(document.querySelector(".ob-social--naver")),
+    }))()`);
+    if (
+      japanSocialFacts.locale !== "ja"
+      || !japanSocialFacts.languageCurrent?.includes("日本語")
+      || !japanSocialFacts.google
+      || japanSocialFacts.kakao
+      || japanSocialFacts.naver
+    ) {
+      report.problems.push({ scope: "access-country-social-login", facts: japanSocialFacts });
+    }
+    report.focused.accessCountrySocialLogin = { country: "JP", ...japanSocialFacts };
+
+    await cdp.evaluate(`localStorage.removeItem("hyeni-locale-v1"); true`);
+    await navigate(
+      { role: "public", tier: "free", catalogMode: "valid", overLimit: false, country: "KR" },
+      "onboarding",
+    );
 
     // 인증 진입점: 로그인/회원가입이 명확히 분리되고, 잘못된 비밀번호 뒤에도 입력·재시도 상태가 남는다.
     activeScenario.authCase = "wrong-password";
@@ -1053,6 +1233,8 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     await wait(350);
     const loginEntryFacts = await cdp.evaluate(`(() => ({
       title: document.querySelector(".ob-h1")?.textContent?.trim() ?? null,
+      paddingLeft: Math.round(Number.parseFloat(getComputedStyle(document.querySelector(".ob-login")).paddingLeft)),
+      paddingRight: Math.round(Number.parseFloat(getComputedStyle(document.querySelector(".ob-login")).paddingRight)),
       tabs: [...document.querySelectorAll('[role="tab"]')].map((tab) => ({
         text: tab.textContent?.trim() ?? "",
         selected: tab.getAttribute("aria-selected") === "true",
@@ -1086,6 +1268,8 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       ])
       || !loginEntryFacts.hasLoginForm
       || !loginEntryFacts.hasKakao
+      || loginEntryFacts.paddingLeft !== 16
+      || loginEntryFacts.paddingRight !== 16
       || !wrongPasswordFacts.alert?.includes("아이디 또는 비밀번호가 맞지 않아요")
       || wrongPasswordFacts.loginId !== "mindlady"
       || wrongPasswordFacts.password !== "incorrect-password"
@@ -1246,6 +1430,189 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     report.focused.onboardingPairing = {
       connect: connectStepFacts,
       pairing: pairingStepFacts,
+    };
+
+    // 가족이 없는 기존 부모 계정: 로그인 → 기존 가족 선택 → 코드 합류 → 새 세션 → 부모 홈.
+    // 운영 계정이나 실사용 페어링을 건드리지 않고, 요청 payload와 화면 전환을 함께 검증한다.
+    await navigate(
+      { role: "public", tier: "free", catalogMode: "valid", overLimit: false },
+      "onboarding",
+    );
+    await clickSelector(cdp, ".ob-role-card--parent");
+    await wait(250);
+    activeScenario = {
+      role: "parent",
+      tier: "free",
+      catalogMode: "valid",
+      overLimit: false,
+      authCase: "success-no-family",
+      familyState: "none",
+      lastJoinAsParentBody: null,
+    };
+    await setInputValue(cdp, "#hyeni-login-username", "qa-parent-without-family");
+    await setInputValue(cdp, "#hyeni-login-password", "correct-password");
+    await cdp.evaluate(`document.querySelector(".ob-login-form")?.requestSubmit(); true`);
+    await wait(1_200);
+    const existingFamilyConnectFacts = await cdp.evaluate(`(() => ({
+      connectVisible: Boolean(document.querySelector(".ob-connect")),
+      joinLabel: document.querySelector(".ob-connect-list .ob-connect-card:nth-child(2)")
+        ?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      joinDisabled: document.querySelector(".ob-connect-list .ob-connect-card:nth-child(2)")?.disabled ?? null,
+      hash: location.hash,
+    }))()`);
+    await clickSelector(cdp, ".ob-connect-list .ob-connect-card:nth-child(2)");
+    await wait(300);
+    const existingFamilyPairingFacts = await cdp.evaluate(`(() => ({
+      pairingVisible: Boolean(document.querySelector(".ob-pairing")),
+      codeInputVisible: Boolean(document.querySelector(".ob-pair-code-input")),
+      scanButtonHeight: Math.round(document.querySelector(".ob-qr")?.getBoundingClientRect().height ?? 0),
+      paddingLeft: Math.round(Number.parseFloat(getComputedStyle(document.querySelector(".ob-pairing")).paddingLeft)),
+      paddingRight: Math.round(Number.parseFloat(getComputedStyle(document.querySelector(".ob-pairing")).paddingRight)),
+      viewportOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    }))()`);
+    report.screenshots.push(await screenshot(cdp, freshOutputDir, "onboarding-existing-family-pairing.png"));
+
+    const androidPairingPortrait = await inspectOnboardingAtViewport(cdp, { width: 360, height: 800 }, true);
+    report.screenshots.push(await screenshot(cdp, freshOutputDir, "onboarding-pairing-android-portrait.png"));
+    const androidPairingLandscape = await inspectOnboardingAtViewport(cdp, { width: 720, height: 360 }, true);
+    report.screenshots.push(await screenshot(cdp, freshOutputDir, "onboarding-pairing-android-landscape.png"));
+    await restoreBrowserQaViewport(cdp);
+    const androidLayoutProblems = [androidPairingPortrait, androidPairingLandscape].filter((facts) => (
+      !facts.native
+      || facts.stepClass !== "ob-step ob-pairing"
+      || facts.overflow > 0
+      || facts.htmlOverflowX !== "hidden"
+      || facts.bodyOverflowX !== "hidden"
+      || facts.rootOverflowX !== "hidden"
+      || facts.outOfBounds.length > 0
+      || facts.smallButtons.length > 0
+    ));
+
+    await cdp.evaluate(`(() => {
+      window.__qaCameraRequests = 0;
+      if (navigator.mediaDevices) {
+        Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
+          configurable: true,
+          value: async () => {
+            window.__qaCameraRequests += 1;
+            throw new DOMException("격리 QA에서는 카메라를 열지 않습니다", "NotAllowedError");
+          },
+        });
+      }
+      Object.defineProperty(window, "BarcodeDetector", { configurable: true, value: undefined });
+      return true;
+    })()`);
+    await clickSelector(cdp, ".ob-qr");
+    await wait(350);
+    const qrFallbackFacts = await cdp.evaluate(`(() => ({
+      overlayVisible: Boolean(document.querySelector(".qrs-root")),
+      manualVisible: Boolean(document.querySelector(".qrs-manual")),
+      settingsVisible: Boolean(document.querySelector(".qrs-settings")),
+      cameraRequests: Number(window.__qaCameraRequests ?? 0),
+    }))()`);
+    await clickSelector(cdp, ".qrs-manual");
+    await wait(150);
+    const qrManualReturnFacts = await cdp.evaluate(`({
+      overlayVisible: Boolean(document.querySelector(".qrs-root")),
+      codeInputVisible: Boolean(document.querySelector(".ob-pair-code-input")),
+    })`);
+
+    await setInputValue(cdp, ".ob-pair-code-input", "잘못된 코드");
+    await clickSelector(cdp, ".ob-pairing .ob-cta");
+    await wait(150);
+    const invalidPairingFacts = await cdp.evaluate(`(() => ({
+      alert: document.querySelector(".ob-pairing .ob-auth-alert")?.textContent?.trim() ?? null,
+      inputValue: document.querySelector(".ob-pair-code-input")?.value ?? null,
+    }))()`);
+    await setInputValue(cdp, ".ob-pair-code-input", "KID-QA123456");
+    await wait(50);
+    const pairingErrorCleared = await cdp.evaluate('!document.querySelector(".ob-pairing .ob-auth-alert")');
+    await cdp.evaluate(`document.querySelector(".ob-pairing .ob-cta")?.click(); true`);
+    await wait(2_200);
+    const existingFamilyPermissionFacts = await cdp.evaluate(`(() => {
+      let familyId = null;
+      try {
+        const session = JSON.parse(localStorage.getItem("hyeni-api-session-v1") || "null");
+        familyId = session?.user?.app_metadata?.family_id ?? session?.user?.user_metadata?.family_id ?? null;
+      } catch {}
+      return {
+        familyId,
+        hash: location.hash,
+        pairingVisible: Boolean(document.querySelector(".ob-pairing")),
+        permissionVisible: Boolean(document.querySelector(".ob-perms")),
+      };
+    })()`);
+    await clickSelector(cdp, ".ob-perms .ob-cta");
+    await wait(2_200);
+    const existingFamilyJoinedFacts = await cdp.evaluate(`(() => {
+      let familyId = null;
+      try {
+        const session = JSON.parse(localStorage.getItem("hyeni-api-session-v1") || "null");
+        familyId = session?.user?.app_metadata?.family_id ?? session?.user?.user_metadata?.family_id ?? null;
+      } catch {}
+      return {
+        familyId,
+        hash: location.hash,
+        permissionVisible: Boolean(document.querySelector(".ob-perms")),
+        parentHomePresent: Boolean(document.querySelector(".ph-page")),
+      };
+    })()`);
+    const joinBody = activeScenario.lastJoinAsParentBody;
+    if (
+      !existingFamilyConnectFacts.connectVisible
+      || !existingFamilyConnectFacts.joinLabel?.includes("기존 가족")
+      || existingFamilyConnectFacts.joinDisabled !== false
+      || !existingFamilyPairingFacts.pairingVisible
+      || !existingFamilyPairingFacts.codeInputVisible
+      || existingFamilyPairingFacts.scanButtonHeight < 44
+      || existingFamilyPairingFacts.paddingLeft !== 16
+      || existingFamilyPairingFacts.paddingRight !== 16
+      || existingFamilyPairingFacts.viewportOverflow > 0
+      || androidLayoutProblems.length > 0
+      || !qrFallbackFacts.overlayVisible
+      || !qrFallbackFacts.manualVisible
+      || qrFallbackFacts.settingsVisible
+      || qrFallbackFacts.cameraRequests !== 0
+      || qrManualReturnFacts.overlayVisible
+      || !qrManualReturnFacts.codeInputVisible
+      || !invalidPairingFacts.alert?.includes("KID-XXXXXXXX")
+      || invalidPairingFacts.inputValue !== "잘못된 코드"
+      || !pairingErrorCleared
+      || joinBody?.pairCode !== "KID-QA123456"
+      || typeof joinBody?.device_install_id !== "string"
+      || !joinBody.device_install_id
+      || joinBody?.device_platform !== "web"
+      || existingFamilyPermissionFacts.familyId !== FAMILY_ID
+      || existingFamilyPermissionFacts.pairingVisible
+      || !existingFamilyPermissionFacts.permissionVisible
+      || existingFamilyJoinedFacts.hash !== "#/parent/home"
+      || existingFamilyJoinedFacts.familyId !== FAMILY_ID
+      || existingFamilyJoinedFacts.permissionVisible
+      || !existingFamilyJoinedFacts.parentHomePresent
+    ) {
+      report.problems.push({
+        scope: "existing-family-parent-pairing",
+        facts: {
+          connect: existingFamilyConnectFacts,
+          pairing: existingFamilyPairingFacts,
+          android: { portrait: androidPairingPortrait, landscape: androidPairingLandscape },
+          qrFallback: { open: qrFallbackFacts, returned: qrManualReturnFacts },
+          invalidPairing: { ...invalidPairingFacts, errorCleared: pairingErrorCleared },
+          permission: existingFamilyPermissionFacts,
+          joined: existingFamilyJoinedFacts,
+          joinBody,
+        },
+      });
+    }
+    report.focused.existingFamilyPairing = {
+      connect: existingFamilyConnectFacts,
+      pairing: existingFamilyPairingFacts,
+      android: { portrait: androidPairingPortrait, landscape: androidPairingLandscape },
+      qrFallback: { open: qrFallbackFacts, returned: qrManualReturnFacts },
+      invalidPairing: { ...invalidPairingFacts, errorCleared: pairingErrorCleared },
+      permission: existingFamilyPermissionFacts,
+      joined: existingFamilyJoinedFacts,
+      joinBody,
     };
 
     const signupOnboarding = await navigate(

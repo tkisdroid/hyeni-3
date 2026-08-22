@@ -14,6 +14,26 @@
 **1~10단계 전부 완료**(전 화면 실데이터·다자녀·AI 친구·알림 3종·릴리즈 게이트) — 실기기 3대 운용 중.
 **현 국면 = 실사용 안정화**: TK 가 실기기로 쓰며 제보하는 버그·개선을 즉시 수정·검증·배포.
 
+**2026-08-22 온보딩·접속 국가 정본**: 첫 역할 선택 화면의 언어 설정은 역할 카드 아래·약관 위 하단에 두고,
+저장된 선택이 없을 때만 공개 `GET /api/access-region`의 Cloudflare edge country를 기본값으로 사용한다. 현재 언어
+1개만 먼저 표시하고 나머지 9개는 펼쳐서 선택하며, 사용자가 직접 고른 언어는 늦게 도착한 국가 응답으로 덮지 않는다.
+이 공개 API는 인증·GPS·D1 없이 `request.cf.country`의 2글자 국가만 `private, no-store`로 반환하고 IP·세부 위치를
+저장하거나 로그에 남기지 않는다. 소셜 진입은 한국(`KR`)과 판별 불가(`ZZ`)에서 Kakao+Google(+설정 시 Naver), 그 밖의
+국가에서 Google만 표시한다. 첫 화면 좌우 여백은 24px, 이후 가입·로그인·페어링·권한 화면은 16px로 통일하고 iPhone
+safe-area 뒤 상단 16px, 전역 수평 overflow 차단, 세로 fade 전환을 적용했다. QR 스캔은 브라우저 기능 유무를 권한보다
+먼저 확인하고, Android 임시 거부는 재요청·영구 거부는 설정 이동 후 자동 재확인·모든 오류는 수동 코드 입력으로 복구한다.
+대상 회귀 34/34와 Worker 공개 API 2/2, 앱·Worker typecheck, production build(469 precache·중복 0)는 통과했다.
+사용자 요청으로 이후 브라우저 57화면 전수 검수와 전체 앱/Worker 테스트 재실행은 생략했으므로 그 범위를 완료로 간주하지 않는다.
+소스 커밋 `4be6089`를 `main`에 푸시하고 Worker version `29acfe86-974e-4bbc-b69d-f3c8b885a394`와 Pages
+`https://064d0ec0.hyeni-calendar.pages.dev`를 배포했다. Worker health 200 ready, 공개 지역 API 200
+`{"country":"KR"}`·`Cache-Control:no-store, private`를 확인했다. 배포별 주소·고정 Pages·`hyenicalendar.com`은 모두
+entry `assets/index-BLgtnG0U.js`(SHA-256 `7c6e6a89a18c0967cb0dde130e5f59bd88719281f2a06a5adeb4ad5c498af719`),
+CSS `assets/index-DMuUhfUk.css`, Service Worker가 로컬 `dist`와 바이트 일치하고 브랜드 OAuth callback도 200이다.
+Android는 최신 `dist`를 sync하고 `assembleDebug` 성공, APK SHA-256은
+`52cdf25abdc5c5c6827d5dc5650b56e6bfd30cb92f4009a8c0ee0520f3d346da`다. 재연결한 S25에
+`npm run android:install:debug -- R5CY521CFNZ`로 보존 설치했고 v1.4.0/versionCode 11·user 0 패키지 존재·
+DUAL_APP user 95 패키지 없음·`lastUpdateTime=2026-08-22 01:46:16`을 확인했다. 앱 실행·로그인·역할·페어링은 건드리지 않았다.
+
 **현재 배포 상태(2026-08-21 인증 진입점·브랜드 도메인/PWA 문서 신선도·Android 중복 아이콘 안정화)**: 브라우저 부모 모드의 로그인/회원가입을
 첫 화면의 명시적 탭으로 분리하고 전화 가입·카카오/구글 가입, 지속 오류 안내, 잘못된 비밀번호 뒤 입력 유지·비밀번호
 포커스·버튼 재활성화를 정리했다. ID 확인 실패를 중복으로 오인하지 않으며 `mindlady`는 production 공개 조회에서

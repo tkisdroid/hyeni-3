@@ -45,3 +45,16 @@ test("잘못 저장한 언어는 이후 지원 브라우저 언어를 가리지 
     navigatorLanguages: ["fr-FR"],
   }), "en");
 });
+
+test("저장한 선택이 없으면 접속 국가를 나타내는 시간대를 브라우저 언어보다 우선한다", () => {
+  assert.equal(resolveWebLocale({
+    storedLocale: null,
+    navigatorLanguages: ["en-US"],
+    timeZone: "Asia/Seoul",
+  }), "ko");
+  assert.equal(resolveWebLocale({
+    storedLocale: null,
+    navigatorLanguages: ["ko-KR"],
+    timeZone: "Asia/Tokyo",
+  }), "ja");
+});

@@ -71,6 +71,10 @@ test("최종 브라우저 QA는 부모·아이 출시 화면과 핵심 전환 �
   assert.match(source, /auth-successful-parent-home-transition/);
   assert.match(source, /url\.searchParams\.set\("qaRole", "preserve"\)/);
   assert.match(source, /successfulLoginReloadFacts/);
+  assert.match(source, /pathname === "\/api\/access-region"/);
+  assert.match(source, /scope: "access-country-social-login"/);
+  assert.match(source, /onboardingLanguageExpandedFacts\.optionCount !== 9/);
+  assert.match(source, /country: "JP"/);
 });
 
 test("최종 브라우저 QA는 출시 품질 결함을 JSON과 스크린샷 증거로 남긴다", () => {

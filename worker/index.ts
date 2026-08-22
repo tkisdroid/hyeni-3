@@ -112,6 +112,7 @@ import {
 import { cleanupLocationHistoryIngestDailyUsage } from "./lib/locationHistoryIngestQuota";
 import { isReleaseDatabaseReady } from "./lib/healthReadiness";
 import { logCronHeartbeat, logRequestOutcome } from "./lib/launchObservability";
+import { normalizeEdgeCountry } from "./lib/accessRegion";
 
 const app = new Hono<{ Bindings: Env; Variables: Vars }>();
 
@@ -162,6 +163,13 @@ app.get("/api/health", async (c) => {
       503,
     );
   }
+});
+
+// GPS·인증·D1 없이 Cloudflare 엣지가 이미 계산한 접속 국가만 공개한다.
+// IP 원문이나 세부 지역은 읽거나 저장하지 않고, 캐시에도 남기지 않는다.
+app.get("/api/access-region", (c) => {
+  c.header("Cache-Control", "private, no-store");
+  return c.json({ country: normalizeEdgeCountry(c.req.raw.cf?.country) });
 });
 
 // 공개 법적 고지(Play Console 필수 공개 URL). workers.dev 또는 커스텀 도메인(hyenicalendar.com)
