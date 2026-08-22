@@ -3,7 +3,7 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
-**가족 정합성·단일 설치·iOS 출시 준비(2026-08-23, 병합·배포 대기)**: 운영 D1을 읽기 전용으로
+**가족 정합성·단일 설치·iOS 출시 준비(2026-08-23, 운영 배포 완료)**: 운영 D1을 읽기 전용으로
 교차 확인한 결과, `tkisdroid` 가족의 활성 정본은 대표 보호자 `tkisdroid`·아이 `혜니`·과거에 연결된 다른
 보호자 1명이었고, `mindlady`는 가입 계정은 존재하지만 활성 가족 멤버십이 없었다. 따라서 `mindlady` 연결 실패의
 직접 원인은 휴면 상태인 기존 보호자 멤버십이 공동 보호자 1명 슬롯을 계속 점유한 것이며, 화면의 `아이2`는 활성
@@ -37,6 +37,21 @@ precache 473·중복 0), 실제 Chrome QA 부모 43+아이 14 화면 문제 0, �
 PWA install/offline/update 문제 0, 격리 mobile WebKit PASS, `npm run ios:sync` 및 iOS 패키징 1.4.0(11), Android
 `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL이다. 실사용 계정 로그인·로그아웃·역할 전환·재페어링,
 실기기 설치와 운영 D1 mutation은 수행하지 않았다.
+
+구현 커밋 `2056230`을 기능 브랜치와 `main`에 fast-forward하고 GitHub 원격까지 푸시했다. Worker version은
+`251a4db8-07c4-4cc0-a515-19b792cea37d`, Pages 배포는 `https://b2f75cf7.hyeni-calendar.pages.dev`다.
+Worker health는 200 `{"ok":true,"status":"ready"}`, iOS WebView preflight는 204와 정확한
+`Access-Control-Allow-Origin: capacitor://localhost`, 공동 보호자 해제 route 미인증 요청은 401을 확인했다.
+배포별 주소·고정 `hyeni-calendar.pages.dev`·브랜드 `hyenicalendar.com`은 모두 새 entry
+`assets/index-8goYseY1.js`를 참조하고 entry SHA-256
+`5b88613bb8a63131f64134f188099940fab36872983c5e9f2bdb0d73c5b5b645`, CSS
+`177583e46ce74cda70b47b5f3139d3d674abd5923f433b0e610a5279a41ce6f4`, Service Worker
+`37054c5e04e4d9cc19b52f6c1e37c15ff4646ea5f31b5d3023f7b127257a96b7`가 병합 `main`의 dist와 일치한다.
+Pages 두 주소의 OAuth callback SHA-256도 로컬과 같은
+`484d3812cbf9771e0803db607f064b3a5164e50eeb5d1cdb423e918f350238b8`이며, 브랜드 callback은 Cloudflare zone의
+HTML 삽입을 허용하되 200과 같은 새 entry 참조를 확인했다. 병합 커밋에서 iOS sync·verify와 Android
+unit·lint·assemble을 다시 실행했으며 최신 debug APK SHA-256은
+`88e2dea33d22138a020a10184d3e0e4e514e462a75776c63cbf00662642c6d7f`다. 기기에는 설치하지 않았다.
 
 **아이관리 공용 QR의 보호자→아이 오등록 차단(2026-08-23, 운영 배포 완료)**: Safari에서 다른 보호자가
 `아이관리 > 가족 연결 코드 · QR`을 읽으면 `아이2`로 보이던 근본 원인은 공용 QR이
