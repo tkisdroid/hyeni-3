@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { useNavigate } from "react-router";
@@ -54,6 +54,11 @@ import { hasNaverClientId } from "@/config/env";
 import { TEACHER_MODE_ENABLED } from "@/config/releaseFeatures";
 import type { OAuthProvider } from "@/transform/oauthProvider";
 import { normalizePairCodeInput } from "@/transform/pairCode";
+
+// QrScanner(+jsQR 폴백 디코더)는 스캔 버튼을 누른 시점에만 내려받는다.
+const QrScanner = lazy(() =>
+  import("@/components/QrScanner").then((module_) => ({ default: module_.QrScanner })),
+);
 import { readPairParam, clearPairParam } from "@/transform/pairLink";
 import {
   REFERRAL_CODE_EVENT,
@@ -64,7 +69,7 @@ import {
 } from "@/transform/referralLink";
 import { REFERRAL_REWARD_CREDITS_DISPLAY } from "@/transform/referralReward";
 import { resolveAuthenticatedOnboardingRedirect } from "@/transform/onboardingRedirect";
-import { QrScanner } from "@/components/QrScanner";
+
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { BusyLabel } from "@/components/ui/BusyLabel";
 import {
@@ -1975,14 +1980,22 @@ function PairingStep({
       <div className="ob-pair-hint">{intl.formatMessage({ id: "onboarding.pairing.manualHint" })}</div>
 
       <input
-        className="ob-input"
+        className="ob-input ob-input--code"
         aria-label={intl.formatMessage({ id: "onboarding.pairing.codeLabel" })}
         placeholder="KID-XXXXXXXX"
         autoCapitalize="characters"
         autoComplete="off"
+        autoCorrect="off"
+        spellCheck={false}
+        enterKeyHint="done"
         value={raw}
         onChange={(e) => setRaw(e.target.value)}
-        style={{ textAlign: "center", letterSpacing: 1, fontWeight: 700, textTransform: "uppercase" }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            void submit();
+          }
+        }}
       />
 
       <button
@@ -1996,13 +2009,15 @@ function PairingStep({
       </button>
 
       {showScanner && (
-        <QrScanner
-          onClose={() => setShowScanner(false)}
-          onDetected={async (rawValue) => {
-            setShowScanner(false);
-            await submit(rawValue);
-          }}
-        />
+        <Suspense fallback={<div className="qrs-root" role="status" />}>
+          <QrScanner
+            onClose={() => setShowScanner(false)}
+            onDetected={async (rawValue) => {
+              setShowScanner(false);
+              await submit(rawValue);
+            }}
+          />
+        </Suspense>
       )}
     </div>
   );

@@ -60,9 +60,11 @@
   border: 1.5px solid rgba(32, 26, 29, 0.1);
   background: #fff;
   padding: 0 16px;
-  font-size: var(--type-body);
-  line-height: var(--type-body-line-height);
-  font-weight: var(--type-body-weight);
+  /* iOS Safari는 font-size 16px 미만 입력란에 포커스 시 자동 확대(zoom)해 화면이
+     좌우로 밀리고 키보드 상태가 어긋난다(2026-08-22 TK iPhone 제보) — 16px 토큰으로 고정. */
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
 
   font-family: inherit;
   color: var(--fg-primary);
@@ -631,6 +633,13 @@
   text-indent: 0.14em;
   text-align: center;
   font-variant-numeric: tabular-nums;
+}
+/* 페어링 코드 입력 — KID-XXXXXXXX 중앙 정렬 대문자 강조(인라인 스타일을 CSS로 이관) */
+.ob-input--code {
+  text-align: center;
+  letter-spacing: 0.06em;
+  font-weight: var(--type-body-lg-weight);
+  text-transform: uppercase;
 }
 .ob-otp-track {
   position: absolute;

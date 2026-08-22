@@ -1,8 +1,11 @@
 /**
  * QR 카메라 스캐너 오버레이(hyeni-1 QrPairScanner 이관).
  * BarcodeDetector(Android WebView/Chrome 내장) + getUserMedia(후면 카메라).
+ * iOS Safari/WebKit에는 BarcodeDetector 가 없어 2026-08-22 TK iPhone 제보처럼
+ * "QR코드 촬영이 안 된다"는 문제가 있었다 — 감지되지 않으면 jsQR 폴백으로
+ * 비디오 프레임을 캔버스에 그려 직접 디코딩한다(iOS 포함 모든 브라우저 동작).
  * 권한 흐름: 네이티브 CameraPermissionPlugin > 브라우저 permissions > getUserMedia 오류.
- * 미지원 기기(BarcodeDetector 없음)는 정직하게 안내 → 코드 직접 입력으로 유도.
+ * 미지원 기기(카메라 자체 불가)는 정직하게 안내 → 코드 직접 입력으로 유도.
  * 아이 연결 단계는 페어링 안내 규칙에 맞춰 존댓말을 사용한다.
  */
 import { useEffect, useId, useRef, useState } from "react";
@@ -23,6 +26,11 @@ interface BarcodeDetectorLike {
 type BarcodeDetectorCtor = new (opts: { formats: string[] }) => BarcodeDetectorLike;
 
 const PERMISSION_MESSAGE_ID: MessageId = "shared.qrScanner.permissionRequired";
+
+// jsQR 폴백 프레임 처리 간격(ms) — requestAnimationFrame 매 프레임은 배터리를 낭비한다.
+const JSQR_INTERVAL_MS = 120;
+// 디코딩 다운스케일 목표 폭(px) — 원본 해상도는 CPU 비용만 늘리고 인식률은 비슷하다.
+const JSQR_TARGET_WIDTH = 480;
 
 function isPermissionDenied(err: unknown): boolean {
   const e = err as { name?: string; message?: string } | null;
@@ -49,6 +57,10 @@ export function QrScanner({
   const streamRef = useRef<MediaStream | null>(null);
   const frameRef = useRef(0);
   const detectorRef = useRef<BarcodeDetectorLike | null>(null);
+  // BarcodeDetector 없는 환경(iOS Safari 등)에서 쓰는 jsQR 폴백 상태.
+  const jsqrRef = useRef<typeof import("jsqr").default | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const lastJsqrAtRef = useRef(0);
   const handledRef = useRef(false);
   const [errorId, setErrorId] = useState<MessageId | null>(null);
   const [loading, setLoading] = useState(true);
@@ -81,16 +93,54 @@ export function QrScanner({
       }
     };
 
+    /** BarcodeDetector 없는 환경용 폴백 — 현재 프레임을 캔버스에 그려 jsQR 로 디코딩한다. */
+    const decodeFrameWithJsqr = (): string | null => {
+      const now = Date.now();
+      if (now - lastJsqrAtRef.current < JSQR_INTERVAL_MS) return null;
+      lastJsqrAtRef.current = now;
+
+      const video = videoRef.current;
+      const jsqr = jsqrRef.current;
+      if (!video || !jsqr || !video.videoWidth || !video.videoHeight) return null;
+
+      let canvas = canvasRef.current;
+      if (!canvas) {
+        canvas = document.createElement("canvas");
+        canvasRef.current = canvas;
+      }
+      const scale = Math.min(1, JSQR_TARGET_WIDTH / video.videoWidth);
+      const width = Math.max(1, Math.round(video.videoWidth * scale));
+      const height = Math.max(1, Math.round(video.videoHeight * scale));
+      if (canvas.width !== width) canvas.width = width;
+      if (canvas.height !== height) canvas.height = height;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      if (!ctx) return null;
+      ctx.drawImage(video, 0, 0, width, height);
+      const image = ctx.getImageData(0, 0, width, height);
+      const found = jsqr(image.data, width, height, { inversionAttempts: "dontInvert" });
+      return found?.data ?? null;
+    };
+
     const scanFrame = async () => {
-      if (!active || handledRef.current || !videoRef.current || !detectorRef.current) return;
+      if (!active || handledRef.current || !videoRef.current) return;
       try {
-        const codes = await detectorRef.current.detect(videoRef.current);
-        const rawValue = codes.find((c) => typeof c.rawValue === "string")?.rawValue;
-        if (rawValue) {
-          handledRef.current = true;
-          await onDetected(rawValue);
-          stopScanner();
-          return;
+        if (detectorRef.current) {
+          const codes = await detectorRef.current.detect(videoRef.current);
+          const rawValue = codes.find((c) => typeof c.rawValue === "string")?.rawValue;
+          if (rawValue) {
+            handledRef.current = true;
+            await onDetected(rawValue);
+            stopScanner();
+            return;
+          }
+        } else if (jsqrRef.current) {
+          const rawValue = decodeFrameWithJsqr();
+          if (rawValue) {
+            handledRef.current = true;
+            await onDetected(rawValue);
+            stopScanner();
+            return;
+          }
         }
       } catch {
         // 간헐적 detect 실패는 무시하고 다음 프레임
@@ -119,16 +169,21 @@ export function QrScanner({
         setLoading(false);
         return;
       }
-      const Detector = (window as unknown as { BarcodeDetector?: BarcodeDetectorCtor }).BarcodeDetector;
-      if (typeof Detector !== "function") {
-        setErrorId("shared.qrScanner.scannerUnavailable");
-        setLoading(false);
-        return;
-      }
 
       try {
-        setLoadingLabelId("shared.qrScanner.loading.scanner");
-        detectorRef.current = new Detector({ formats: ["qr_code"] });
+        const Detector = (window as unknown as { BarcodeDetector?: BarcodeDetectorCtor }).BarcodeDetector;
+        if (typeof Detector === "function") {
+          setLoadingLabelId("shared.qrScanner.loading.scanner");
+          detectorRef.current = new Detector({ formats: ["qr_code"] });
+        } else {
+          // iOS Safari 등 BarcodeDetector 미탑재 환경 — jsQR 폴백을 준비한다.
+          setLoadingLabelId("shared.qrScanner.loading.scanner");
+          const module_ = await import("jsqr");
+          if (!active) return;
+          jsqrRef.current = module_.default;
+          detectorRef.current = null;
+        }
+
         setLoadingLabelId("shared.qrScanner.loading.camera");
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
