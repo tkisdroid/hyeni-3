@@ -23,6 +23,12 @@ function avatarSrc(path: string): string {
   return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
 }
 
+/** 등록한 프로필 사진인지 — 프레임을 꽉 채워 표시하기 위한 판정. */
+function isUploadedAvatar(src: string | null | undefined): boolean {
+  const value = src?.trim() ?? "";
+  return value.startsWith("http") || value.startsWith("blob:");
+}
+
 interface DisconnectTarget {
   kind: "child" | "coparent";
   memberId: string;
@@ -228,7 +234,7 @@ export function FamilyConnection() {
                   const st = statusFor(c.user_id);
                   return (
                     <div key={c.id} className="fc-device">
-                      <span className="fc-device__avatar" style={{ background: soft }}>
+                      <span className="fc-device__avatar" data-photo={isUploadedAvatar(avatar) ? "true" : "false"} style={{ background: soft }}>
                         <img className="hy-network-avatar" src={avatarSrc(avatar)} alt="" loading="lazy" decoding="async" />
                       </span>
                       <span className="fc-device__main">
@@ -260,7 +266,7 @@ export function FamilyConnection() {
                 </div>
                 {pending.map((c) => (
                   <div key={c.id} className="fc-device fc-device--pending">
-                    <span className="fc-device__avatar fc-device__avatar--muted">
+                    <span className="fc-device__avatar fc-device__avatar--muted" data-photo={isUploadedAvatar(avatarFor(c.id).avatar) ? "true" : "false"}>
                       <img className="hy-network-avatar" src={avatarSrc(avatarFor(c.id).avatar)} alt="" loading="lazy" decoding="async" />
                     </span>
                     <span className="fc-device__main">
@@ -286,7 +292,7 @@ export function FamilyConnection() {
                 otherGuardians.map((p) => (
                   <div key={p.id} className="fc-coparent">
                     <div className="fc-device">
-                      <span className="fc-device__avatar" style={{ background: "var(--cream-soft, #FFF3D6)" }}>
+                      <span className="fc-device__avatar" data-photo={isUploadedAvatar(parentAvatarPath(p.photo_url, p.gender)) ? "true" : "false"} style={{ background: "var(--cream-soft, #FFF3D6)" }}>
                         <img src={avatarSrc(parentAvatarPath(p.photo_url, p.gender))} alt="" />
                       </span>
                       <span className="fc-device__main">

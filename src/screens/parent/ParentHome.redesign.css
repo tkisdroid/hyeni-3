@@ -477,6 +477,13 @@
   height: 44px;
 }
 
+/* 등록한 프로필 사진은 프레임을 여백 없이 꽉 채운다(TK 지시). */
+.ph-page .ph-child__avatar[data-photo="true"] img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .ph-page .ph-child__online {
   width: 13px;
   height: 13px;

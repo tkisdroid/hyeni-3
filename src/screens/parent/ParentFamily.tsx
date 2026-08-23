@@ -27,6 +27,12 @@ function avatarSrc(path: string): string {
   return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
 }
 
+/** 등록한 프로필 사진인지 — 프레임을 꽉 채워 표시하기 위한 판정. */
+function isUploadedAvatar(src: string | null | undefined): boolean {
+  const value = src?.trim() ?? "";
+  return value.startsWith("http") || value.startsWith("blob:");
+}
+
 export function ParentFamily() {
   const navigate = useNavigate();
   const goBack = useSafeBack("/parent/home");
@@ -147,7 +153,7 @@ export function ParentFamily() {
               <div className="pf-parents">
                 {view.parents.map((p) => (
                   <div key={p.id} className="pf-parent">
-                    <span className="pf-parent__avatar">
+                    <span className="pf-parent__avatar" data-photo={isUploadedAvatar(p.avatar) ? "true" : "false"}>
                       <img src={avatarSrc(p.avatar)} alt="" loading="lazy" decoding="async" />
                     </span>
                     <span className="pf-parent__main">
@@ -176,7 +182,7 @@ export function ParentFamily() {
                     className="pf-child hy-press"
                     onClick={() => navigate("/child-detail", { state: { childId: c.id } })}
                   >
-                    <span className="pf-child__avatar" style={{ background: c.soft }}>
+                    <span className="pf-child__avatar" data-photo={isUploadedAvatar(c.avatar) ? "true" : "false"} style={{ background: c.soft }}>
                       <img src={avatarSrc(c.avatar)} alt="" loading="lazy" decoding="async" />
                     </span>
                     <span className="pf-child__main">

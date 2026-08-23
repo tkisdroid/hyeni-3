@@ -29,6 +29,12 @@ function avatarSrc(path: string): string {
   return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
 }
 
+/** 등록한 프로필 사진인지 — 프레임을 꽉 채워 표시하기 위한 판정. */
+function isUploadedAvatar(src: string | null | undefined): boolean {
+  const value = src?.trim() ?? "";
+  return value.startsWith("http") || value.startsWith("blob:");
+}
+
 const ORDINAL_IDS: Record<number, string> = {
   1: "parent.ordinal.first",
   2: "parent.ordinal.second",
@@ -239,7 +245,7 @@ export function ChildDetail() {
       <div className="cd-content">
         {/* 프로필 히어로 */}
         <div className="cd-hero">
-          <span className="cd-hero__avatar" style={{ background: soft }}>
+          <span className="cd-hero__avatar" data-photo={isUploadedAvatar(avatar) ? "true" : "false"} style={{ background: soft }}>
             <img className="hy-network-avatar" src={avatarSrc(avatar)} alt="" loading="eager" decoding="async" />
           </span>
           <div className="cd-hero__main">
