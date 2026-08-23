@@ -917,6 +917,11 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   지연된 옛 등록·로그아웃이 현재 계정을 덮거나 해제하지 못하게 한다. 무효/중복/로그아웃 행은 삭제 대신
   `disabled_at/disabled_reason`으로 남기며 타 사용자 소유권 충돌은 409 fail-closed다. 회귀=Worker
   `tests/activeMembershipRouteAudit.test.mjs`·`tests/notificationEndpointOwnership.test.mjs`.
+- **부모의 직접 자녀 프로필 생성(2026-08-24 TK 승인)**: `POST /api/family/member/child`는 활성 대표 보호자만 자기 가족에
+  로그인 계정 없는 자녀 행을 만든다. 이름을 `아이`로 보정하지 않고 정규화된 실제 이름과 과거의 유효한
+  `YYYY-MM-DD` 생년월일을 필수로 받는다. Free 1명·Premium 2명 상한, 활성 대표 보호자 membership, 계정 삭제 scope 부재는
+  조건부 `INSERT ... SELECT` 한 문장에서 재검사해 마지막 슬롯 동시 요청도 한 건만 성공시킨다. 회귀=Worker
+  `tests/familyAddChild.test.mjs`·`tests/activeMembershipRouteAudit.test.mjs`.
 - **D1 정본 스키마·알림 migration(2026-07-14)**: `cloudflare/schema_d1.sql`은 auth부터 RTDN·OTP·위치 정확도·event series·
   콘텐츠 안전·원격청취 동의·endpoint ownership까지 fresh bootstrap에 필요한 현재 스키마를 포함한다. 빈 SQLite 실행과
   필수 컬럼·인덱스는 `worker/tests/canonicalSchemaBootstrap.test.mjs`로 고정한다. 운영 endpoint ownership migration은

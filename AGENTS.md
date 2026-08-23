@@ -331,6 +331,11 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   옛 아이는 다른 데이터에는 접근할 수 없고 기존 안전 동선을 끊지 않기 위해 `sos` 발사만 예외로 허용한다. FCM token과
   Web Push endpoint는 활성 행 1개만 허용하며 `registration_instance_id`가 같은 세션만 갱신·해제한다. 타 사용자·지연된
   옛 세션은 409로 닫고, 로그아웃/만료/무효 행은 삭제하지 않고 `disabled_at/disabled_reason`으로 비활성화한다.
+- **부모의 직접 자녀 프로필 생성(2026-08-24 TK 승인)**: `POST /api/family/member/child`는 활성 대표 보호자만 자기 가족에
+  로그인 계정 없는 자녀 행을 만들 수 있다. 이름을 `아이`로 보정하지 말고 비어 있지 않은 정규화 이름과 실제 과거
+  `YYYY-MM-DD` 생년월일을 요구한다. Free 1명·Premium 2명 상한, 활성 대표 보호자 membership, 계정 삭제 scope 부재를
+  조건부 `INSERT ... SELECT` 한 문장에서 다시 검사한다. 회귀=`worker/tests/familyAddChild.test.mjs`·
+  `worker/tests/activeMembershipRouteAudit.test.mjs`.
 - **D1 정본 스키마·알림 migration(2026-07-14)**: `cloudflare/schema_d1.sql`은 auth·위치 정확도·일정 series·RTDN·OTP·
   콘텐츠 안전·원격청취 동의·endpoint ownership을 포함한 fresh bootstrap 정본이며
   `worker/tests/canonicalSchemaBootstrap.test.mjs`로 빈 SQLite 실행과 필수 컬럼·인덱스를 검증한다. 운영 endpoint ownership은
