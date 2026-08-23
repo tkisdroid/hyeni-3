@@ -19,8 +19,10 @@
 10초 동안 제자리를 지키며 말풍선 0개·빠른 문구와 비겹침, 탭 후 AI 대화 진입, 콘솔 오류 0건을 확인했다.
 최종 검증은 전용 회귀 `55/55`, 앱 전체 `1,914/1,914`, typecheck, production build(2,287 modules·precache
 471·중복 0), Capacitor Android sync와 `assembleDebug`가 모두 통과했다. debug APK는 15,789,615 bytes,
-SHA-256 `8E3535E3898941CD46E5EFB2326F3DA1FD959E83A1E417F956E78A6525E45B4E`다. ADB 연결 기기가 없어 razr 보존 설치는
-수행하지 않았고 계정·역할·세션·페어링은 건드리지 않았다. Cloudflare OAuth를 복구한 뒤 Pages 배포
+SHA-256 `8E3535E3898941CD46E5EFB2326F3DA1FD959E83A1E417F956E78A6525E45B4E`다. razr(`ZY22H9VTQD`)에
+`npm run android:install:debug -- ZY22H9VTQD`로 기본 사용자(0) 보존 설치했고 `Success`, versionName 1.4.0/
+versionCode 12를 확인했다. `firstInstallTime=2026-08-17 01:03:15`는 유지되고 `lastUpdateTime`만 바뀌었으며
+MainActivity warm launch 430ms·top resumed를 확인했다. 계정·역할·세션·페어링은 변경하지 않았다. Cloudflare OAuth를 복구한 뒤 Pages 배포
 `https://69316cd5.hyeni-calendar.pages.dev`를 완료했다. 배포별 주소와 고정 `hyeni-calendar.pages.dev`는 모두
 새 entry `assets/index-rmDFITEA.js`(SHA-256 `AB176BE5B3EF28610DB297A2A0C02AD9AC0C2AAA4B405E0AA1C17D19535DC0E5`)를
 참조하고 `poses/welcome.webp` 21,620 bytes·SHA-256
