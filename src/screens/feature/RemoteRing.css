@@ -137,6 +137,11 @@
   animation: hy-bob 3s ease-in-out infinite;
 }
 
+/* 등록한 프로필 사진은 프레임을 여백 없이 꽉 채운다(TK 지시). */
+.rr-hero-img[data-photo="true"] {
+  object-fit: cover;
+}
+
 .rr-title {
   font-size: var(--type-title-lg);
   line-height: var(--type-title-lg-line-height);

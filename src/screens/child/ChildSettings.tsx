@@ -66,6 +66,12 @@ function avatarSrc(path: string): string {
   return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
 }
 
+/** 등록한 프로필 사진인지 — 프레임을 꽉 채워 표시하기 위한 판정. */
+function isUploadedAvatar(src: string | null | undefined): boolean {
+  const value = src?.trim() ?? "";
+  return value.startsWith("http") || value.startsWith("blob:");
+}
+
 // 부모에게 부탁할 수 있는 잠금 메뉴(요청형).
 const REQUEST_ITEMS: Array<{ menu: SettingRequestMenu; Icon: LucideIcon; titleId: string; subId: string }> = [
   { menu: "sound", Icon: Bell, titleId: "child.settings.request.sound", subId: "child.settings.request.parentManaged" },
@@ -269,7 +275,7 @@ export function ChildSettings() {
         )}
         {/* 히어로 */}
         <div className="ks-hero">
-          <span className="ks-hero__avatar">
+          <span className="ks-hero__avatar" data-photo={isUploadedAvatar(me?.photo_url) ? "true" : "false"}>
             <img
               className="hy-network-avatar"
               src={avatarSrc(childAvatarPath(me?.photo_url))}

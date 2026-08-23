@@ -77,6 +77,12 @@
   aspect-ratio: 1;
   object-fit: contain;
 }
+/* 등록한 프로필 사진은 프레임을 여백 없이 꽉 채운다(TK 지시). */
+.pf-parent__avatar[data-photo="true"] img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 .pf-parent__main {
   flex: 1;
   min-width: 0;
@@ -153,6 +159,11 @@
   height: 48px;
   aspect-ratio: 1;
   object-fit: contain;
+}
+.pf-child__avatar[data-photo="true"] img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .pf-child__main {
   flex: 1;

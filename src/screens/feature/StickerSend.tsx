@@ -37,6 +37,12 @@ function avatarSrc(path: string): string {
   return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
 }
 
+/** 등록한 프로필 사진인지 — 프레임을 꽉 채워 표시하기 위한 판정. */
+function isUploadedAvatar(src: string | null | undefined): boolean {
+  const value = src?.trim() ?? "";
+  return value.startsWith("http") || value.startsWith("blob:");
+}
+
 /** 부모: 상황별 칭찬 스티커 + 한마디를 골라 아이에게 전송(다자녀 시 대상 선택). */
 export function StickerSend() {
   const navigate = useNavigate();
@@ -214,7 +220,7 @@ export function StickerSend() {
                   data-active={c.user_id === targetChild?.user_id}
                   onClick={() => setSelectedUserId(c.user_id)}
                 >
-                  <span className="ss-child__avatar">
+                  <span className="ss-child__avatar" data-photo={isUploadedAvatar(c.photo_url) ? "true" : "false"}>
                     <img className="hy-network-avatar" src={avatarSrc(childAvatarPath(c.photo_url))} alt="" loading="lazy" decoding="async" />
                   </span>
                   <span className="ss-child__name">

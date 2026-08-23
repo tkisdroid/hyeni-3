@@ -62,6 +62,12 @@ function avatarSrc(path: string): string {
   return path.startsWith("http") || path.startsWith("blob:") ? path : asset(path);
 }
 
+/** 등록한 프로필 사진인지 — 프레임을 꽉 채워 표시하기 위한 판정. */
+function isUploadedAvatar(src: string | null | undefined): boolean {
+  const value = src?.trim() ?? "";
+  return value.startsWith("http") || value.startsWith("blob:");
+}
+
 const durationLabel = (sec: number, intl: IntlShape): string => sec >= 60
   ? intl.formatMessage({ id: "notifications.remoteRing.durationMinutes" }, { count: sec / 60 })
   : intl.formatMessage({ id: "notifications.remoteRing.durationSeconds" }, { count: sec });
@@ -333,6 +339,7 @@ export function RemoteRing() {
             <span className="rr-hero-ring2" />
             <img
               className="rr-hero-img hy-network-avatar"
+              data-photo={isUploadedAvatar(childAvatar) ? "true" : "false"}
               src={childAvatar}
               alt=""
               loading="eager"
