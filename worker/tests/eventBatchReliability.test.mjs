@@ -180,8 +180,20 @@ function requireEventBatchApi() {
 }
 
 const validationDeps = {
-  assertPrimaryParent: async (db, userId, familyId) => {
-    const row = await db.prepare("SELECT 1 AS ok FROM families WHERE id=? AND parent_id=? LIMIT 1")
+  assertFamilyParent: async (db, userId, familyId) => {
+    const row = await db.prepare(`
+      SELECT 1 AS ok FROM families f
+       WHERE f.id=?1
+         AND (
+           f.parent_id=?2
+           OR EXISTS (
+             SELECT 1 FROM family_members fm
+              WHERE fm.family_id=f.id AND fm.user_id=?2
+                AND fm.role='parent' AND fm.is_active=1
+           )
+         )
+       LIMIT 1
+    `)
       .bind(familyId, userId)
       .first();
     return !!row;
@@ -193,6 +205,45 @@ const validationDeps = {
     return premium ? null : 1;
   },
 };
+
+test("활성 공동 보호자는 가족 일정을 등록할 수 있다", async () => {
+  const { sqlite, db } = createDb();
+  sqlite.prepare("INSERT INTO family_members VALUES (?,?,?,?,?)")
+    .run("parent-coparent", "family-a", "coparent-a", "parent", 1);
+  const { validateEventBatch, buildEventBatchStatements } = requireEventBatchApi();
+
+  const validated = await validateEventBatch(db, "coparent-a", [saveInput("coparent-event", "family-a")], {
+    assertFamilyParent: async (targetDb, userId, familyId) => {
+      const row = await targetDb.prepare(`
+        SELECT 1 AS ok
+          FROM families f
+         WHERE f.id=?1
+           AND (
+             f.parent_id=?2
+             OR EXISTS (
+               SELECT 1 FROM family_members fm
+                WHERE fm.family_id=f.id AND fm.user_id=?2
+                  AND fm.role='parent' AND fm.is_active=1
+             )
+           )
+         LIMIT 1
+      `).bind(familyId, userId).first();
+      return !!row;
+    },
+    serviceLimitForFamily: async () => null,
+  });
+
+  assert.equal(validated.familyId, "family-a");
+  assert.equal(validated.newCount, 1);
+  await db.batch(buildEventBatchStatements(
+    db,
+    "coparent-a",
+    validated,
+    "2026-08-23 04:00:00.000+00",
+  ));
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM events WHERE id='coparent-event'").get().n, 1);
+  sqlite.close();
+});
 
 test("다른 가족이 이미 소유한 event id는 같은 id upsert로 탈취할 수 없다", async () => {
   const { sqlite, db } = createDb();

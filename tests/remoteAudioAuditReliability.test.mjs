@@ -13,7 +13,7 @@ test("원격청취는 감사 행을 먼저 확보하고 실패하면 명령을 �
   const auditIndex = remoteAudio.indexOf("const auditSession = await openRemoteListenSession");
   const commandIndex = remoteAudio.indexOf("res = await requestListen.mutateAsync");
   assert.ok(auditIndex >= 0 && commandIndex > auditIndex);
-  assert.match(remoteAudio, /if \(!auditSession\.id\)[\s\S]*id: "notifications\.remoteAudio\.toast"[\s\S]*state: "auditUnavailable"[\s\S]*return/);
+  assert.match(remoteAudio, /if \(!auditSession\.id\)[\s\S]*resolveRemoteListenAuditFailureState\(auditSession\)[\s\S]*return/);
   assert.match(remoteAudio, /stopThenCloseRef\.current\([\s\S]*"command_failed"/);
   assert.match(remoteAudio, /stopThenCloseRef\.current\([\s\S]*"no_target_device"/);
 });

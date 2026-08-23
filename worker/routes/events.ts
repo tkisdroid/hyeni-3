@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import { requireAuth } from "../middleware/auth";
 import { pgNow } from "../lib/time";
-import { assertFamilyAccess, assertPrimaryParent, serviceLimitForFamily } from "../db/authz";
+import { assertFamilyAccess, assertFamilyParent, serviceLimitForFamily } from "../db/authz";
 import { parseJson } from "../lib/serialize";
 import { notifyPg } from "../lib/realtime";
 import { chunkSqlVariables } from "../lib/sqlChunk";
@@ -82,7 +82,7 @@ async function validateEventBatch(
   inputs: unknown,
 ): Promise<ValidatedEventBatch> {
   return validateEventBatchCore(db, userId, inputs, {
-    assertPrimaryParent,
+    assertFamilyParent,
     serviceLimitForFamily: (targetDb, familyId) => serviceLimitForFamily(targetDb, familyId, "schedule"),
   });
 }
@@ -300,7 +300,7 @@ events.post("/simple", requireAuth, async (c) => {
   const id = String(row.id ?? "");
   const familyId = String(row.family_id ?? "");
   if (!id || !familyId) return c.json({ error: "bad_request" }, 400);
-  if (!(await assertPrimaryParent(c.env.DB, user.sub, familyId))) {
+  if (!(await assertFamilyParent(c.env.DB, user.sub, familyId))) {
     return c.json({ error: "forbidden" }, 403);
   }
   const duplicate = await c.env.DB
@@ -347,7 +347,7 @@ events.patch("/:id", requireAuth, async (c) => {
     .bind(id)
     .first<{ family_id: string; updated_at: string | null }>();
   if (!row) return c.json({ error: "not_found" }, 404);
-  if (!(await assertPrimaryParent(c.env.DB, user.sub, row.family_id))) {
+  if (!(await assertFamilyParent(c.env.DB, user.sub, row.family_id))) {
     return c.json({ error: "forbidden" }, 403);
   }
   const expectedUpdatedAt = fields.expectedUpdatedAt;
@@ -413,7 +413,7 @@ events.delete("/:id", requireAuth, async (c) => {
     .bind(id)
     .first<{ family_id: string; updated_at: string | null }>();
   if (!row) return c.json({ ok: true }); // 이미 없음 — 멱등
-  if (!(await assertPrimaryParent(c.env.DB, user.sub, row.family_id))) {
+  if (!(await assertFamilyParent(c.env.DB, user.sub, row.family_id))) {
     return c.json({ error: "forbidden" }, 403);
   }
 

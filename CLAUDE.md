@@ -3,6 +3,32 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
+**iPhone Safari 공동 보호자 일정·주변소리 권한 정합화(2026-08-23, 운영 배포 완료)**:
+활성 공동 보호자 계정으로 iPhone Safari 실사용 중 일정을 등록하면 Worker의 과거 주 보호자 전용 gate가
+`403 forbidden`을 반환했고, 매핑되지 않은 4xx가 `요청을 처리하지 못했어요. 입력 내용을 확인해 주세요.`로
+표시됐다. 같은 계정의 주변소리 시작은 의도된 주 보호자 전용 정책으로 `403 primary_parent_required`였지만,
+클라이언트가 감사 세션 생성 오류를 모두 삼켜 `청취 기록을 안전하게 남길 수 없어`라는 일시 장애처럼 안내했다.
+
+가족 일정 생성·수정·삭제는 이제 주 보호자와 활성 공동 보호자에게 모두 열고, 검증 전 gate뿐 아니라 검증→write 사이
+권한 변경을 막는 D1 atomic guard와 충돌 원인 재판정도 같은 `assertFamilyParent` 계약을 사용한다. 비활성 보호자·아이·
+타가족은 계속 거부한다. 주변소리는 민감 안전 기능이므로 주 보호자 전용 정책을 유지하며, 감사 세션의 제한된
+stable code/status를 보존해 공동 보호자에게 `주 보호자만 원격 청취를 시작할 수 있어요`를 정확히 표시한다.
+구독 필요·가족 설정 비활성·일시 감사 저장 실패도 각각 다른 기존 안내로 구분하고, 감사 행이 없으면 마이크 명령을
+보내지 않는 fail-closed 계약은 유지한다. 운영 D1은 두 계정의 주/공동 보호자·활성 멤버십·일정/아이 개수만 읽었고
+행·세션·refresh 토큰은 변경하지 않았다.
+
+TDD RED는 공동 보호자 판정 함수 부재, event batch의 주 보호자 전용 의존성, atomic guard rollback,
+청취 감사 오류 분류 부재를 각각 확인했다. 최종 검증은 집중 회귀 `21/21`, 앱 `1,904/1,904`, Worker
+`1,272/1,272`, 앱·Worker typecheck, production build(2,287 modules·precache 473·중복 0)다.
+Worker version은 `bb8ed080-4f9c-454c-8c62-b2b810e72941`, Pages 배포는
+`https://8eede2dc.hyeni-calendar.pages.dev`이며 `/api/health` 200 `{"ok":true,"status":"ready"}`와
+일정·청취 route 미인증 401을 확인했다. 배포별 주소·고정 `hyeni-calendar.pages.dev`·브랜드
+`hyenicalendar.com`은 모두 새 entry `assets/index-DnfJuiTg.js`를 참조하며 entry SHA-256
+`17cfe042dd029f530a0f25024b4fa07a174e93bf46f54565bcf559530f5fc4ad`, CSS
+`177583e46ce74cda70b47b5f3139d3d674abd5923f433b0e610a5279a41ce6f4`, Service Worker
+`ac4c26e597f62fdb0c6ab783ffab40dceb38b4e19424041eaa7c8c2c8b946b70`가 로컬과 일치하고 OAuth callback도
+200·같은 entry를 참조한다. 실사용 일정 행이나 청취 세션을 테스트로 생성하지 않았으며 iPhone 실제 재시도 확인만 남았다.
+
 **아이 AI 친구 채팅 간헐 전송 불가 안정화(2026-08-23, 운영 배포 완료)**: 아이가 AI 친구의
 답변을 기다리는 동안 입력창은 계속 활성 상태였는데, Enter 경로는 `sendChat.isPending`이면 실제 요청을 보내지 않고
 돌아오면서도 입력값을 무조건 비웠다. 또한 React/TanStack의 pending 렌더보다 빠른 연속 액션은 같은 tick에서 두 요청을

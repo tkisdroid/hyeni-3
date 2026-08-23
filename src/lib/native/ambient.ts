@@ -14,6 +14,7 @@
 import { API_BASE } from "@/config/env";
 import { apiGet, apiPost, apiPatch } from "@/lib/api/client";
 import { getApiAccessToken } from "@/lib/api/session";
+import { describeRemoteListenAuditFailure } from "@/transform/remoteListenAuditFailure";
 import { getNativePlugin } from "./plugins";
 
 /** 원격 청취 기본 제한 시간(초). 위급 시 1분 청취. (hyeni-1 remoteAudio.js) */
@@ -151,19 +152,21 @@ export interface RemoteListenSession {
   id: string | null;
   /** 세션 시작 epoch(ms). */
   startedAt: number;
+  errorCode: string | null;
+  status: number | null;
 }
 
 /**
  * 원격 청취 audit 행 생성 — 마이크 캡처보다 먼저 열어, 중간 크래시가 나도
  * started/never-ended 행이 남아 다음 부팅에서 정리할 수 있게 한다.
  * (hyeni-1 remoteAudioCapture.js RL-01)
- * familyId 없음/생성 실패 시 id=null 로 degrade(청취 흐름은 계속).
+ * familyId 없음/생성 실패 시 id=null과 제한된 오류 정보만 반환해 마이크 명령을 시작하지 않는다.
  */
 export async function openRemoteListenSession(
   params: OpenRemoteListenSessionParams,
 ): Promise<RemoteListenSession> {
   const startedAt = Date.now();
-  if (!params.familyId) return { id: null, startedAt };
+  if (!params.familyId) return { id: null, startedAt, errorCode: null, status: null };
   try {
     const row = await apiPost<{ id?: string | null }>("/api/remote-listen/sessions", {
       family_id: params.familyId,
@@ -171,10 +174,10 @@ export async function openRemoteListenSession(
       child_user_id: params.childUserId ?? null,
       started_at: new Date(startedAt).toISOString(),
     });
-    return { id: row?.id ?? null, startedAt };
+    return { id: row?.id ?? null, startedAt, errorCode: null, status: null };
   } catch (error) {
     console.error("[원격청취] 세션 audit 행 생성 실패:", error);
-    return { id: null, startedAt };
+    return { id: null, startedAt, ...describeRemoteListenAuditFailure(error) };
   }
 }
 

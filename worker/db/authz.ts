@@ -311,6 +311,36 @@ export async function assertPrimaryParent(
   return !!row;
 }
 
+// 가족의 일정처럼 공동 관리하는 쓰기는 주 보호자와 활성 공동 보호자에게 허용한다.
+// 가족 연결 해제·결제·원격청취처럼 주 보호자만 가능한 민감 작업은 assertPrimaryParent를 유지한다.
+export async function assertFamilyParent(
+  db: D1Database,
+  uid: string,
+  familyId: string,
+): Promise<boolean> {
+  if (!familyId || !uid) return false;
+  const row = await db
+    .prepare(
+      `SELECT 1 AS ok
+         FROM families f
+        WHERE f.id = ?1
+          AND (
+            f.parent_id = ?2
+            OR EXISTS (
+              SELECT 1 FROM family_members fm
+               WHERE fm.family_id = f.id
+                 AND fm.user_id = ?2
+                 AND fm.role = 'parent'
+                 AND fm.is_active = 1
+            )
+          )
+        LIMIT 1`,
+    )
+    .bind(familyId, uid)
+    .first<{ ok: number }>();
+  return !!row;
+}
+
 // is_parent_of_member PG 헬퍼 직역 — 호출자(uid)가 child_member_id 의 부모인지.
 // revoke/accept/reject teacher pairing 게이트.
 export async function isParentOfMember(

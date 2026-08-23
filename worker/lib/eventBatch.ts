@@ -42,7 +42,7 @@ export interface ValidatedEventBatch {
 }
 
 export interface EventBatchValidationDependencies {
-  assertPrimaryParent: (db: D1Database, userId: string, familyId: string) => Promise<boolean>;
+  assertFamilyParent: (db: D1Database, userId: string, familyId: string) => Promise<boolean>;
   serviceLimitForFamily: (db: D1Database, familyId: string) => Promise<number | null>;
 }
 
@@ -297,7 +297,7 @@ export async function validateEventBatch(
     badRequest("mixed_family_batch", "한 번의 요청에는 한 가족의 일정만 저장할 수 있어요.");
   }
   const familyId = normalized[0].familyId;
-  if (!(await dependencies.assertPrimaryParent(db, userId, familyId))) {
+  if (!(await dependencies.assertFamilyParent(db, userId, familyId))) {
     throw new EventBatchError(403, "forbidden", "일정을 저장할 권한이 없어요.");
   }
 
@@ -388,10 +388,21 @@ export function buildEventBatchStatements(
 ): D1PreparedStatement[] {
   const statements: D1PreparedStatement[] = [];
 
-  // 검증과 write 사이에 주 보호자 권한이 바뀌어도 이전 권한으로 저장하지 않는다.
+  // 검증과 write 사이에 부모 권한이 바뀌어도 이전 권한으로 저장하지 않는다.
   statements.push(atomicGuard(
     db,
-    "EXISTS(SELECT 1 FROM families WHERE id = ? AND parent_id = ?)",
+    `EXISTS(
+      SELECT 1 FROM families f
+       WHERE f.id = ?1
+         AND (
+           f.parent_id = ?2
+           OR EXISTS (
+             SELECT 1 FROM family_members fm
+              WHERE fm.family_id = f.id AND fm.user_id = ?2
+                AND fm.role = 'parent' AND fm.is_active = 1
+           )
+         )
+    )`,
     [batch.familyId, userId],
   ));
 
@@ -562,11 +573,23 @@ export async function detectEventBatchConflict(
   userId: string,
   batch: ValidatedEventBatch,
 ): Promise<EventBatchConflictKind> {
-  const owner = await db
-    .prepare("SELECT 1 AS ok FROM families WHERE id = ? AND parent_id = ? LIMIT 1")
+  const parent = await db
+    .prepare(
+      `SELECT 1 AS ok FROM families f
+        WHERE f.id = ?1
+          AND (
+            f.parent_id = ?2
+            OR EXISTS (
+              SELECT 1 FROM family_members fm
+               WHERE fm.family_id = f.id AND fm.user_id = ?2
+                 AND fm.role = 'parent' AND fm.is_active = 1
+            )
+          )
+        LIMIT 1`,
+    )
     .bind(batch.familyId, userId)
     .first<{ ok: number }>();
-  if (!owner) return "forbidden";
+  if (!parent) return "forbidden";
 
   const assignedChildIds = [...new Set(batch.inputs.flatMap((input) => input.childIds))];
   try {

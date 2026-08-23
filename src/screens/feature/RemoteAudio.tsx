@@ -24,6 +24,7 @@ import { useRemoteListenSessionStatus } from "@/queries/useRemoteAudit";
 import { openFamilySocket, type FamilySocket } from "@/realtime/familySocket";
 import { RemoteAudioPlayer } from "@/lib/remoteAudioPlayer";
 import { resolveRemoteListenSessionTiming } from "@/transform/remoteListenSessionTiming";
+import { resolveRemoteListenAuditFailureState } from "@/transform/remoteListenAuditFailure";
 import { ScreenQueryState } from "@/components/ui/ScreenQueryState";
 import { resolveQueryTruthState } from "@/transform/queryTruthState";
 import { canUse, FEATURES, TIERS } from "@/transform/tierPolicy";
@@ -392,7 +393,10 @@ export function RemoteAudio() {
         return;
       }
       if (!auditSession.id) {
-        show(intl.formatMessage({ id: "notifications.remoteAudio.toast" }, { state: "auditUnavailable" }), "🔒");
+        show(intl.formatMessage(
+          { id: "notifications.remoteAudio.toast" },
+          { state: resolveRemoteListenAuditFailureState(auditSession) },
+        ), "🔒");
         return;
       }
       const requestId = auditSession.id;
