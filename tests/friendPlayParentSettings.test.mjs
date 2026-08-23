@@ -19,6 +19,6 @@ test("부모 세션의 친구놀이 화면은 아이 요청 화면이 아니라 
 });
 
 test("부모 홈 친구놀이 바로가기는 놀이 요청 수락 화면이 아니라 부모 설정 화면으로 이동한다", () => {
-  assert.match(parentHomeSource, /"친구놀이": "\/friend-play"/);
-  assert.doesNotMatch(parentHomeSource, /"친구놀이": "\/playdate-accept"/);
+  assert.match(parentHomeSource, /sc3: "\/friend-play"/);
+  assert.doesNotMatch(parentHomeSource, /sc3: "\/playdate-accept"/);
 });

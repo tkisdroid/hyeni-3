@@ -709,6 +709,9 @@ export function MemoChat() {
         {explicitChildMissing && (
           <div className="mc-daysep">
             <span>{intl.formatMessage({ id: "shared.memoChat.copy034" })}</span>
+            <button type="button" className="hy-section-action hy-press" onClick={goBack}>
+              {intl.formatMessage({ id: "core.action.back" })}
+            </button>
           </div>
         )}
         {thread.isError && (

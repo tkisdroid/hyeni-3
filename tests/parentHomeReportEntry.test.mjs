@@ -28,7 +28,7 @@ test("부모 홈 바로가기는 스티커 대신 안심리포트 진입점을 �
   const source = readSource("src/screens/parent/ParentHome.tsx");
   const mock = readSource("src/data/mock.ts");
 
-  assert.match(source, /"안심리포트": "\/daily-report"/);
+  assert.match(source, /sc6: "\/daily-report"/);
   assert.match(mock, /label: "안심리포트"/);
   assert.match(mock, /icon: "ui\/shield-heart\.webp"/);
   assert.doesNotMatch(mock, /label: "스티커"/);

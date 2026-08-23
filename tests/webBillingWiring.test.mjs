@@ -34,6 +34,22 @@ test("PWA 7일 체험 문구는 서버 catalog이 true·7일을 동시에 확정
   assert.match(koBilling["billing.subscription.web.firstCharge"], /지금은 청구하지 않고, 정확히 7일 후/);
 });
 
+test("PWA 결제 상품 조회 실패는 화면 안에서 다시 시도할 수 있다", () => {
+  const screen = read("src/screens/feature/Subscription.tsx");
+  const css = read("src/screens/feature/Subscription.css");
+  assert.match(screen, /const retryWebCatalog = \(\) => setWebCatalogRetryNonce\(\(value\) => value \+ 1\)/);
+  assert.match(screen, /webCatalogRetryNonce/);
+  assert.match(
+    screen,
+    /webCatalogUnavailable[\s\S]*?onClick=\{retryWebCatalog\}[\s\S]*?core\.action\.retry/,
+  );
+  assert.match(screen, /sub-web-unavailable__retry hy-section-action hy-press/);
+  assert.match(
+    css,
+    /\.sub-screen \.sub-web-unavailable \.sub-web-unavailable__retry\s*\{[^}]*min-width: var\(--control-min-size\)/s,
+  );
+});
+
 test("웹 결제 복귀는 authKey를 주소에서 지운 뒤 pending 또는 서버 세션을 대조해 완료한다", () => {
   const screen = read("src/screens/feature/Subscription.tsx");
   const endpoint = read("src/lib/api/endpoints/webBilling.ts");
@@ -64,6 +80,14 @@ test("Android 채널은 Google Play 가격을 재조회·검증하고 웹 결제
   assert.match(screen, /freshProductDetails = await fetchSubscriptionProductDetails\(\)/);
   assert.match(screen, /hasExpectedLaunchSubscriptionPrice\(freshSelectedOffer\)/);
   assert.match(screen, /launchSubscriptionPurchase/);
+  assert.match(
+    screen,
+    /if \(!freshSelectedOffer\) \{\s*throw new BillingError\("product_unavailable"\);\s*\}/,
+  );
+  assert.match(
+    screen,
+    /if \(!hasExpectedLaunchSubscriptionPrice\(freshSelectedOffer\)\) \{\s*throw new BillingError\("product_unavailable"\);\s*\}/,
+  );
 });
 
 test("Toss 웹 구독은 기간말 해지 예약을 앱 안에서 처리하고 Play 구독과 관리 경로를 분리한다", () => {

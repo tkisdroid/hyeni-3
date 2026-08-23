@@ -266,14 +266,14 @@ function schedulePlaceHit(
 }
 
 const shortcutRoutes: Record<string, string> = {
-  "AI 일정": "/ai-schedule?tab=text",
-  "위치추적": "/parent/location?view=history",
-  "친구놀이": "/friend-play",
-  "장소관리": "/place-manager",
-  "주변소리": "/remote-audio",
-  "안심리포트": "/daily-report",
-  "아이 기기 찾기": "/remote-ring",
-  "알림": "/notifications",
+  sc1: "/ai-schedule?tab=text",
+  sc2: "/parent/location?view=history",
+  sc3: "/friend-play",
+  sc4: "/place-manager",
+  sc5: "/remote-audio",
+  sc6: "/daily-report",
+  sc7: "/remote-ring",
+  sc8: "/notifications",
 };
 
 const shortcutLabelIds: Readonly<Record<string, string>> = {
@@ -624,13 +624,14 @@ export function ParentHome() {
     trialDaysLeft: entitlement.view?.trialDaysLeft ?? null,
     periodEnd: entitlement.view?.periodEnd ?? null,
   });
-  const openShortcut = (label: string) => {
-    if (label === "아이 기기 찾기") {
+  const openShortcut = (id: string) => {
+    if (id === "sc7") {
       const destination = resolveParentHomeDeviceFinder(activeChild?.user_id);
       navigate(destination.to, { state: destination.state });
       return;
     }
-    navigate(shortcutRoutes[label]);
+    const destination = shortcutRoutes[id];
+    if (destination) navigate(destination);
   };
   const childNotifSettingsQuery = useChildNotifSettingsStatus(activeChild?.user_id);
   const activeHeroLocation = activeChild?.user_id
@@ -1177,10 +1178,36 @@ export function ParentHome() {
               </span>
             }
           />
-          {childCards.length === 0 ? (
+          {familyQuery.isLoading ? (
+            <div className="ph-inner-surface ph-child">
+              <Loading label={intl.formatMessage({ id: "parent.familyConnection.loading" })} />
+            </div>
+          ) : familyQuery.isError ? (
+            <div className="ph-inner-surface ph-child">
+              <div className="ph-child__foot" role="alert">
+                <span className="ph-child__next">
+                  {intl.formatMessage({ id: "parent.familyConnection.loadError" })}
+                </span>
+                <button
+                  type="button"
+                  className="hy-section-action ph-neu-control hy-press"
+                  onClick={() => void familyQuery.refetch()}
+                >
+                  {intl.formatMessage({ id: "parent.parentHome.copy017" })}
+                </button>
+              </div>
+            </div>
+          ) : childCards.length === 0 ? (
             <div className="ph-inner-surface ph-child">
               <div className="ph-child__foot">
                 <span className="ph-child__next">{intl.formatMessage({ id: "parent.parentHome.copy030" })}</span>
+                <button
+                  type="button"
+                  className="hy-section-action ph-neu-control hy-press"
+                  onClick={() => navigate("/child-invite?role=child")}
+                >
+                  {intl.formatMessage({ id: "shared.stickerSend.connectChild" })}
+                </button>
               </div>
             </div>
           ) : (
@@ -1518,14 +1545,14 @@ export function ParentHome() {
           <div className="ph-shortcuts">
             {shortcuts.map((s) => {
               // "알림" 바로가기 배지는 실제 미읽음 개수(99+ 상한). 그 외는 배지 없음.
-              const badge = s.label === "알림" ? unreadCount : 0;
+              const badge = s.id === "sc8" ? unreadCount : 0;
               return (
                 <button
                   key={s.id}
                   type="button"
                   className="ph-shortcut ph-neu-control hy-press"
-                  onPointerDown={s.label === "위치추적" ? () => void loadKakaoMaps().catch(() => undefined) : undefined}
-                  onClick={() => openShortcut(s.label)}
+                  onPointerDown={s.id === "sc2" ? () => void loadKakaoMaps().catch(() => undefined) : undefined}
+                  onClick={() => openShortcut(s.id)}
                 >
                   <span
                     className="ph-shortcut__icon"

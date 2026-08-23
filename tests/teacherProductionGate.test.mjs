@@ -5,7 +5,7 @@ import test from "node:test";
 const readSource = (path) =>
   readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
-test("v1.4.0 선생님 모드는 개발 빌드에서만 열리고 환경변수로 프로덕션 우회하지 않는다", () => {
+test("v1.4.1 선생님 모드는 개발 빌드에서만 열리고 환경변수로 프로덕션 우회하지 않는다", () => {
   const releaseFeatures = readSource("src/config/releaseFeatures.ts");
   assert.match(
     releaseFeatures,

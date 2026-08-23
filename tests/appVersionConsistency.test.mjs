@@ -15,10 +15,11 @@ const [packageJson, versionPolicy, vite, gradle, androidManifest, parentSettings
   readFile(new URL("../locales/ko/shared.json", import.meta.url), "utf8").then(JSON.parse),
 ]);
 
-test("웹과 Android 표시 버전은 package.json을 단일 정본으로 사용한다", () => {
-  assert.equal(packageJson.version, "1.4.0");
-  assert.equal(versionPolicy.minimumSupportedVersion, packageJson.version);
-  assert.equal(versionPolicy.latestVersion, packageJson.version);
+test("표시 버전은 package.json을 쓰고 원격 업데이트 정책은 Play 제공 버전을 넘지 않는다", () => {
+  assert.equal(packageJson.version, "1.4.1");
+  assert.equal(versionPolicy.minimumSupportedVersion, "1.4.0");
+  assert.equal(versionPolicy.latestVersion, "1.4.0");
+  assert.equal(versionPolicy.blockingUpdate, false);
   assert.match(vite, /__APP_VERSION__:\s*JSON\.stringify\(packageMetadata\.version\)/);
   assert.match(gradle, /hyeniPackageVersion = new JsonSlurper\(\)\.parse\(file\('\.\.\/\.\.\/package\.json'\)\)\.version/);
   assert.match(gradle, /versionName hyeniPackageVersion/);

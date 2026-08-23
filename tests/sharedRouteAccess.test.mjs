@@ -35,6 +35,38 @@ test("길찾기는 역할에 따라 아이 선택·홈 경로·존댓말과 반�
   assert.match(source, /navigate\(homePath\)/);
 });
 
+test("아이 길찾기는 기기 GPS를 서버 위치보다 먼저 쓰고 부모 기기 위치는 요청하지 않는다", () => {
+  const source = readSource("src/screens/feature/RouteView.tsx");
+
+  assert.match(source, /const \[deviceOrigin, setDeviceOrigin\] = useState<RoutePoint \| null>\(null\)/);
+  assert.match(source, /if \(!isChild\) return/);
+  assert.match(source, /typeof navigator === "undefined" \|\| !navigator\.geolocation/);
+  assert.match(source, /navigator\.geolocation\.getCurrentPosition/);
+  assert.match(source, /\[deviceOriginRetryNonce, isChild\]/);
+  assert.match(
+    source,
+    /const origin = isChild[\s\S]{0,160}deviceOriginStatus === "ready"[\s\S]{0,80}deviceOrigin[\s\S]{0,100}deviceOriginStatus === "error"[\s\S]{0,80}serverOrigin[\s\S]{0,80}: serverOrigin/,
+  );
+  assert.doesNotMatch(source, /deviceOrigin \?\? serverOrigin/);
+});
+
+test("공용 길찾기는 URL에 명시된 일정을 현재 아이 범위에서 정확히 선택한다", () => {
+  const source = readSource("src/screens/feature/RouteView.tsx");
+
+  assert.match(source, /useSearchParams/);
+  assert.match(source, /searchParams\.get\("event"\)/);
+  assert.match(source, /pickRouteEvent\(childEvents, requestedEventId/);
+});
+
+test("아이 GPS 실패는 영구 로딩 대신 재시도하고 실제 GPS 출발지는 오래된 서버 장소명으로 부르지 않는다", () => {
+  const source = readSource("src/screens/feature/RouteView.tsx");
+
+  assert.match(source, /deviceOriginStatus/);
+  assert.match(source, /setDeviceOriginRetryNonce/);
+  assert.match(source, /originUnavailable/);
+  assert.match(source, /deviceOrigin\s*\?\s*intl\.formatMessage\(\{ id: "shared\.routeView\.currentLocationFallback" \}\)/);
+});
+
 test("유효한 아이 member가 없으면 위치·일정 query 결과를 화면 계산에 사용하지 않는다", () => {
   const source = readSource("src/screens/feature/RouteView.tsx");
 
@@ -70,4 +102,17 @@ test("길찾기 목적지는 현재 child owner가 일치하는 값만 경로·�
     /resolveRouteDestination\(current, ownerChildMemberId, value\)/,
   );
   assert.doesNotMatch(source, /useState<DestPick \| null \| undefined>/);
+});
+
+test("길찾기 필수 조회 실패는 빈 상태나 영구 로딩으로 숨기지 않고 같은 쿼리를 모두 재시도한다", () => {
+  const source = readSource("src/screens/feature/RouteView.tsx");
+
+  for (const queryName of ["familyQuery", "locationsQuery", "placesQuery", "eventsQuery"]) {
+    assert.match(source, new RegExp(`const ${queryName} = use`));
+    assert.match(source, new RegExp(`${queryName}\\.isError`));
+    assert.match(source, new RegExp(`${queryName}\\.refetch\\(\\)`));
+  }
+  assert.match(source, /sourceQueriesLoading/);
+  assert.match(source, /sourceQueriesError/);
+  assert.match(source, /retrySourceQueries/);
 });

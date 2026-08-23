@@ -320,6 +320,15 @@
   line-height: var(--type-label-line-height);
   font-weight: var(--type-label-weight);
   word-break: keep-all;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-12);
+}
+
+.sub-screen .sub-web-unavailable .sub-web-unavailable__retry {
+  flex: none;
+  min-width: var(--control-min-size);
 }
 
 .sub-cancel {

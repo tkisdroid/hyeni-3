@@ -213,6 +213,9 @@ export function Subscription() {
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [webCatalog, setWebCatalog] = useState<WebBillingCatalog | null>(null);
   const [webCatalogUnavailable, setWebCatalogUnavailable] = useState(false);
+  const [webCatalogFetching, setWebCatalogFetching] = useState(false);
+  const [webCatalogRetryNonce, setWebCatalogRetryNonce] = useState(0);
+  const retryWebCatalog = () => setWebCatalogRetryNonce((value) => value + 1);
   const [billingRedirect] = useState(() => (
     typeof window === "undefined"
       ? { kind: "none" } as const
@@ -367,6 +370,7 @@ export function Subscription() {
     if (!isWebBillingChannel || premiumActive || !familyId) return;
     let cancelled = false;
     setWebCatalogUnavailable(false);
+    setWebCatalogFetching(true);
     void fetchWebBillingCatalog(familyId)
       .then((raw) => {
         const catalog = validateWebBillingCatalog(raw);
@@ -387,11 +391,14 @@ export function Subscription() {
           setWebCatalog(null);
           setWebCatalogUnavailable(true);
         }
+      })
+      .finally(() => {
+        if (!cancelled) setWebCatalogFetching(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [familyId, isWebBillingChannel, premiumActive]);
+  }, [familyId, isWebBillingChannel, premiumActive, webCatalogRetryNonce]);
 
   useEffect(() => {
     if (billingRedirect.kind === "none" || billingRedirectScrubbedRef.current) return;
@@ -659,10 +666,10 @@ export function Subscription() {
         allowTrial: playTrialEligible === true,
       });
       if (!freshSelectedOffer) {
-        throw new Error("play_subscription_offer_unavailable");
+        throw new BillingError("product_unavailable");
       }
       if (!hasExpectedLaunchSubscriptionPrice(freshSelectedOffer)) {
-        throw new Error("play_subscription_price_mismatch");
+        throw new BillingError("product_unavailable");
       }
       setProductDetails(freshProductDetails);
       const result = await launchSubscriptionPurchase({
@@ -1117,7 +1124,16 @@ export function Subscription() {
 
         {!premiumActive && isWebBillingChannel && webCatalogUnavailable && (
           <div className="sub-web-unavailable" role="status">
-            {intl.formatMessage({ id: "billing.subscription.web.catalogUnavailable" })}
+            <span>{intl.formatMessage({ id: "billing.subscription.web.catalogUnavailable" })}</span>
+            <button
+              type="button"
+              className="sub-web-unavailable__retry hy-section-action hy-press"
+              onClick={retryWebCatalog}
+              disabled={webCatalogFetching}
+              aria-busy={webCatalogFetching}
+            >
+              {intl.formatMessage({ id: "core.action.retry" })}
+            </button>
           </div>
         )}
 

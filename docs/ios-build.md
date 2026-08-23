@@ -1,12 +1,12 @@
 # iOS 빌드 가이드 — 혜니캘린더
 
-## 현재 상태 (2026-08-23)
+## 현재 상태 (2026-08-24)
 - `npx cap add ios` 완료 — `ios/App/App.xcodeproj` (Capacitor 8, SPM 기반)
 - `npx cap sync ios` 완료 — dist 웹 에셋 포함
 - Info.plist: 앱 이름(혜니캘린더) + 사진/카메라/위치(사용 중)/마이크 사용 설명 설정
 - iOS 플러그인: `@capacitor/app`, `@capacitor/browser` (Android 커스텀 플러그인은 iOS에서 정직한 웹 폴백)
 - App Store 아이콘·시작 화면은 혜니캘린더 PWA 브랜드 자산과 동일하게 구성
-- 버전 `1.4.0` / 빌드 `11`, Bundle Identifier `com.hyeni.calendar`
+- 버전 `1.4.1` / 빌드 `13`, Bundle Identifier `com.hyeni.calendar`
 
 ## 아키텍처 전제 (CLAUDE.md 확정 사항)
 - **iPhone = 보호자 전용, 조회·관리 중심.** 아이 기기는 Android 전용.

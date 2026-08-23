@@ -19,12 +19,12 @@ test("부모 홈 바로가기는 핵심 서비스 순서와 실제 라우트를 
     .filter((label) => ["AI 일정", "위치추적", "친구놀이", "장소관리", "주변소리", "안심리포트", "아이 기기 찾기", "알림"].includes(label));
 
   assert.deepEqual(labels, ["AI 일정", "위치추적", "친구놀이", "장소관리", "주변소리", "안심리포트", "아이 기기 찾기", "알림"]);
-  assert.match(home, /"AI 일정": "\/ai-schedule\?tab=text"/);
-  assert.match(home, /"위치추적": "\/parent\/location\?view=history"/);
-  assert.match(home, /"친구놀이": "\/friend-play"/);
-  assert.match(home, /"안심리포트": "\/daily-report"/);
-  assert.match(home, /"아이 기기 찾기": "\/remote-ring"/);
-  assert.match(home, /"알림": "\/notifications"/);
+  assert.match(home, /sc1: "\/ai-schedule\?tab=text"/);
+  assert.match(home, /sc2: "\/parent\/location\?view=history"/);
+  assert.match(home, /sc3: "\/friend-play"/);
+  assert.match(home, /sc6: "\/daily-report"/);
+  assert.match(home, /sc7: "\/remote-ring"/);
+  assert.match(home, /sc8: "\/notifications"/);
 });
 
 test("부모 메뉴 아이콘과 바로가기 색상은 토큰 기반으로 유지한다", () => {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { useIntl, type IntlShape } from "react-intl";
 import { ChevronLeft, Home, Map, MapPin, Navigation, RotateCw } from "lucide-react";
 import { useToast } from "@/app/toast";
@@ -21,7 +21,7 @@ import { straightDistanceM, type RoutePoint } from "@/lib/api/endpoints/route";
 import { filterEventsForChild } from "@/transform/eventScope";
 import {
   beginRouteDestinationScope,
-  pickNextEventWithPlace,
+  pickRouteEvent,
   resolveRouteDestination,
   selectRouteDestinationForChild,
   type OwnedRouteDestination,
@@ -86,15 +86,37 @@ export function RouteView() {
     [intl],
   );
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const requestedEventId = searchParams.get("event")?.trim() || null;
   const { show } = useToast();
   const { role, userId } = useAuth();
   const isChild = role === "child";
   const homePath = isChild ? "/child/home" : "/parent/home";
   const { activeChild, familyLoading } = useActiveChild();
-  const { data: family } = useMyFamily();
-  const { data: locations } = useChildLocations();
-  const { data: places } = useSavedPlaces();
-  const { data: events } = useEvents();
+  const familyQuery = useMyFamily();
+  const locationsQuery = useChildLocations();
+  const placesQuery = useSavedPlaces();
+  const eventsQuery = useEvents();
+  const family = familyQuery.data;
+  const locations = locationsQuery.data;
+  const places = placesQuery.data;
+  const events = eventsQuery.data;
+  const sourceQueriesLoading = familyQuery.isLoading
+    || locationsQuery.isLoading
+    || placesQuery.isLoading
+    || eventsQuery.isLoading;
+  const sourceQueriesError = familyQuery.isError
+    || locationsQuery.isError
+    || placesQuery.isError
+    || eventsQuery.isError;
+  const retrySourceQueries = async () => {
+    await Promise.all([
+      familyQuery.refetch(),
+      locationsQuery.refetch(),
+      placesQuery.refetch(),
+      eventsQuery.refetch(),
+    ]);
+  };
 
   const nowMs = useMemo(() => Date.now(), [events]);
 
@@ -110,11 +132,47 @@ export function RouteView() {
   const loc = childMember
     ? locations?.find((l) => l.user_id === childMember.user_id) ?? null
     : null;
-  const origin = useMemo<RoutePoint | null>(
+  const serverOrigin = useMemo<RoutePoint | null>(
     () => (loc ? { lat: loc.lat, lng: loc.lng } : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [loc?.lat, loc?.lng],
   );
+  const [deviceOrigin, setDeviceOrigin] = useState<RoutePoint | null>(null);
+  const [deviceOriginStatus, setDeviceOriginStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [deviceOriginRetryNonce, setDeviceOriginRetryNonce] = useState(0);
+  useEffect(() => {
+    if (!isChild) return;
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setDeviceOrigin(null);
+      setDeviceOriginStatus("error");
+      return;
+    }
+    let active = true;
+    setDeviceOriginStatus("loading");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        if (!active) return;
+        setDeviceOrigin({ lat: position.coords.latitude, lng: position.coords.longitude });
+        setDeviceOriginStatus("ready");
+      },
+      () => {
+        if (!active) return;
+        setDeviceOrigin(null);
+        setDeviceOriginStatus("error");
+      },
+      { enableHighAccuracy: true, timeout: 5_000, maximumAge: 60_000 },
+    );
+    return () => {
+      active = false;
+    };
+  }, [deviceOriginRetryNonce, isChild]);
+  const origin = isChild
+    ? deviceOriginStatus === "ready"
+      ? deviceOrigin
+      : deviceOriginStatus === "error"
+        ? serverOrigin
+        : null
+    : serverOrigin;
 
   // 도착 = 다음 일정 장소. 좌표가 없으면 ①저장장소 이름 매칭 ②Kakao 키워드/주소 검색으로 해석.
   // undefined = 해석 중(로딩), null = 안내할 곳 없음(정직한 빈 상태 — 직선 폴백 금지).
@@ -123,8 +181,8 @@ export function RouteView() {
     [events, childMember?.id],
   );
   const nextEvent = useMemo(
-    () => pickNextEventWithPlace(childEvents, nowMs, LEGACY_FAMILY_TIME_ZONE),
-    [childEvents, nowMs],
+    () => pickRouteEvent(childEvents, requestedEventId, nowMs, LEGACY_FAMILY_TIME_ZONE),
+    [childEvents, nowMs, requestedEventId],
   );
   const [destinationState, setDestinationState] = useState<OwnedRouteDestination<DestPick> | null>(null);
   const destination = selectRouteDestinationForChild(destinationState, childMember?.id ?? null);
@@ -259,7 +317,11 @@ export function RouteView() {
   );
 
   const locationLabel = useLocationLabels(loc ? [loc] : [], places);
-  const curPlace = loc ? locationLabel(loc) : intl.formatMessage({ id: "shared.routeView.currentLocationFallback" });
+  const curPlace = deviceOrigin
+    ? intl.formatMessage({ id: "shared.routeView.currentLocationFallback" })
+    : loc
+      ? locationLabel(loc)
+      : intl.formatMessage({ id: "shared.routeView.currentLocationFallback" });
   const title = destination
     ? intl.formatMessage({ id: "shared.routeView.directionsTitle" }, { destination: destination.name })
     : intl.formatMessage({ id: "shared.routeView.directionsTitleFallback" });
@@ -274,6 +336,14 @@ export function RouteView() {
     { id: "shared.routeView.locationPending" },
     { audience, childName },
   );
+  const locationUnavailableText = intl.formatMessage({ id: "shared.memo.copy.locationUnavailable.child" });
+  const sourceQueryErrorText = intl.formatMessage({
+    id: isChild ? "core.error.api.network.child" : "core.error.api.network.formal",
+  });
+  const originUnavailable = routeState === "no-origin"
+    && isChild
+    && deviceOriginStatus === "error"
+    && !serverOrigin;
   // 한국어 역할별 빈 상태 계약: 안내할 곳이 없어 / 안내할 곳이 없어요
   const emptyTitle =
     routeState === "no-child"
@@ -402,21 +472,49 @@ export function RouteView() {
       </div>
 
       <div className="rv-content">
-        {routeState === "no-child" || routeState === "no-dest" ? (
+        {sourceQueriesError ? (
+          <div className="rv-empty" role="alert">
+            <span className="rv-empty__icon">
+              <RotateCw size={34} strokeWidth={2} color="#23A876" />
+            </span>
+            <span className="rv-empty__title">{sourceQueryErrorText}</span>
+            <button
+              type="button"
+              className="rv-empty__home hy-press"
+              onClick={() => void retrySourceQueries()}
+            >
+              <RotateCw size={17} strokeWidth={2.4} color="#fff" />
+              {intl.formatMessage({ id: "core.action.retry" })}
+            </button>
+          </div>
+        ) : sourceQueriesLoading ? (
+          <div className="rv-map rv-map--placeholder" role="status">
+            <LoaderMark variant="location" />
+            <span className="rv-ph__msg">{intl.formatMessage({ id: "core.state.loadingScreen" })}</span>
+          </div>
+        ) : routeState === "no-child" || routeState === "no-dest" || originUnavailable ? (
           // 유효한 아이나 다음 일정 장소가 없으면 query 결과를 대신 보여주지 않는다.
           <div className="rv-empty">
             <span className="rv-empty__icon">
               <MapPin size={34} strokeWidth={2} color="#23A876" />
             </span>
-            <span className="rv-empty__title">{emptyTitle}</span>
-            <span className="rv-empty__sub">{emptyDescription}</span>
+            <span className="rv-empty__title">{originUnavailable ? locationUnavailableText : emptyTitle}</span>
+            {!originUnavailable && <span className="rv-empty__sub">{emptyDescription}</span>}
             <button
               type="button"
               className="rv-empty__home hy-press"
-              onClick={() => navigate(homePath)}
+              onClick={() => {
+                if (originUnavailable) {
+                  setDeviceOriginRetryNonce((value) => value + 1);
+                  return;
+                }
+                navigate(homePath);
+              }}
             >
-              <Home size={17} strokeWidth={2.4} color="#fff" />
-              {intl.formatMessage({ id: "shared.routeView.homeButton" })}
+              {originUnavailable
+                ? <RotateCw size={17} strokeWidth={2.4} color="#fff" />
+                : <Home size={17} strokeWidth={2.4} color="#fff" />}
+              {intl.formatMessage({ id: originUnavailable ? "core.action.retry" : "shared.routeView.homeButton" })}
             </button>
           </div>
         ) : (

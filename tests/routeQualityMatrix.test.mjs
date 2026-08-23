@@ -57,7 +57,6 @@ const routeQualityMatrix = [
   route("child/home", "ChildHome", "src/screens/child/ChildHome.tsx", "child", "all", "query", [
     queryStatesAt("src/screens/child/ChildHome.tsx", /homeLoading/, /homeError/, /adventure\.nodes\.length === 0/, /adventure\.nodes\.map/, /void retryHomeData\(\)/),
     queryStatesAt("src/screens/child/overlays/PlaydateSheet.tsx", /candidatesQuery\.isLoading/, /candidatesQuery\.isError/, /candidates\.length === 0/, /candidates\.map/, /void candidatesQuery\.refetch\(\)/),
-    queryStatesAt("src/screens/child/overlays/RouteSheet.tsx", /route\.isLoading/, /route\.isError/, /!destination/, /steps\.map/, /void route\.refetch\(\)/),
   ], "shell", "child-informal"),
   route("child/sticker", "StickerBook", "src/screens/child/StickerBook.tsx", "child", "all", "query", queryStates(/received\.isLoading/, /received\.isError/, /book\.gotCount === 0/, /book\.slots\.map/, /void received\.refetch\(\)/), "shell", "child-informal"),
   route("child/memo", "MemoChat", "src/screens/shared/MemoChat.tsx", "child", "all", "query", queryStates(/thread\.isLoading/, /thread\.isError/, /showEmpty/, /messages\.map/, /void thread\.refetch\(\)/), "safe", "role-aware"),
@@ -118,7 +117,7 @@ const routeQualityMatrix = [
   // 운영자 전용 숨은 라우트 — 메뉴 미노출, 서버도 화이트리스트 밖 계정에 404.
   route("admin/ai-prompt", "AdminAiPrompt", "src/screens/admin/AdminAiPrompt.tsx", "authenticated", "all", "hybrid", null, "screen", "parent-formal"),
   route("supplies", "Supplies", "src/screens/feature/Supplies.tsx", "parent-child", "all", "query", queryStates(/isLoading/, /isError/, /sec\.list\.length === 0/, /sec\.list\.map/, /void Promise\.all/), "screen", "role-aware"),
-  route("route", "RouteView", "src/screens/feature/RouteView.tsx", "parent-child", "all", "query", queryStates(/routeFetching/, /routeError/, /routeState === "no-child" \|\| routeState === "no-dest"/, /steps\.map/, /routeRefetch\(\)/), "screen", "role-aware"),
+  route("route", "RouteView", "src/screens/feature/RouteView.tsx", "parent-child", "all", "query", queryStates(/sourceQueriesLoading/, /sourceQueriesError/, /routeState === "no-child" \|\| routeState === "no-dest"/, /steps\.map/, /retrySourceQueries\(\)/), "screen", "role-aware"),
   route("app-update", "AppUpdate", "src/screens/feature/AppUpdate.tsx", "public", "all", "mutation", null, "none", "system"),
   route("perm-denied", "PermDenied", "src/screens/feature/PermDenied.tsx", "public", "all", "mutation", null, "none", "system"),
 ];

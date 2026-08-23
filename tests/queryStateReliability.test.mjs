@@ -163,3 +163,11 @@ test("가족 조회 오류는 MemoChat의 같은 family query 재시도 버튼�
   const mutation = screen.replace(/void refetchFamily\(\)/, "void thread.refetch()");
   assert.equal(hasErrorRetryBranch(mutation, "familyError", "refetchFamily"), false);
 });
+
+test("유효하지 않은 아이 대화 링크는 입력을 잠그는 데서 끝나지 않고 홈으로 복구시킨다", () => {
+  const screen = read("src/screens/shared/MemoChat.tsx");
+  assert.match(
+    screen,
+    /explicitChildMissing[\s\S]{0,320}onClick=\{goBack\}[\s\S]{0,180}core\.action\.back/,
+  );
+});

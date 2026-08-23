@@ -17,10 +17,11 @@ export function TabBar({ tabs, iconOnly = false }: { tabs: TabItem[]; iconOnly?:
 
   // 탭은 곧 누를 목적지다 — 한가할 때 미리 받아 두면 첫 진입에서 화면이 한 번 비지 않는다.
   const tabPathKey = tabs.map((tab) => tab.to).join("|");
+  const navigationLabel = tabs.map((tab) => tab.label).join(", ");
   useEffect(() => preloadRoutesWhenIdle(tabPathKey.split("|")), [tabPathKey]);
 
   return (
-    <nav className="hy-tabbar" aria-label="주 메뉴" data-icon-only={iconOnly ? "true" : undefined}>
+    <nav className="hy-tabbar" aria-label={navigationLabel} data-icon-only={iconOnly ? "true" : undefined}>
       <div className="hy-tabbar__inner">
         {tabs.map((t) => {
           const active = pathname === t.to || pathname.startsWith(t.to + "/");

@@ -17,6 +17,7 @@ const dock = read("src/app/ChildDock.tsx");
 const shell = read("src/app/AppShell.tsx");
 const stickerBook = read("src/screens/child/StickerBook.tsx");
 const routeSheet = read("src/screens/child/overlays/RouteSheet.tsx");
+const routeView = read("src/screens/feature/RouteView.tsx");
 const playdateSheet = read("src/screens/child/overlays/PlaydateSheet.tsx");
 const callSheet = read("src/screens/child/overlays/CallSheet.tsx");
 const daySheet = read("src/screens/child/overlays/DaySheet.tsx");
@@ -30,6 +31,12 @@ const aiChat = read("src/screens/child/AiFriendChat.tsx");
 test("지도 노드는 다음 일정이면 길찾기, 아니면 시간표를 연다", () => {
   assert.match(home, /node\.state === "next" \? openRoute\(\) : setDayOpen\(true\)/);
   assert.match(home, /adventure\.nodes\.map\(\(node\)/);
+});
+
+test("길찾기 진입점은 설명 시트를 거치지 않고 전체 지도로 바로 이동한다", () => {
+  assert.match(home, /const eventId = adventure\.next\?\.id/);
+  assert.match(home, /navigate\(eventId \? `\/route\?event=\$\{encodeURIComponent\(eventId\)\}` : "\/route"\)/);
+  assert.ok(!code(home).includes("<RouteSheet"), "길찾기 전에 설명 시트를 한 번 더 열면 안 된다");
 });
 
 test("혜니 말풍선·길찾기 버튼·왕관·시간표 칩이 각각의 화면을 연다", () => {
@@ -118,11 +125,11 @@ test("친구놀이는 실제 후보를 쓰고 거리·이름을 지어내지 않
 });
 
 test("길찾기는 실제 도보 경로를 쓰고, 없으면 정직하게 강등한다", () => {
-  assert.match(routeSheet, /useWalkingRoute\(open \? origin : null, open \? destination : null\)/);
-  assert.match(routeSheet, /!destination \?[\s\S]{0,200}장소가 아직 없어/);
-  assert.match(routeSheet, /!origin \?[\s\S]{0,200}어디 있는지 아직 몰라/);
-  assert.match(routeSheet, /onOpenMap/); // 전체 지도(RouteView)로 넘길 길이 있다
-  assert.ok(!/횡단보도에서.{0,20}초록불/.test(code(routeSheet)), "시안의 하드코딩 안내문 금지");
+  assert.match(routeView, /useWalkingRoute\(origin, destination\?\.point \?\? null\)/);
+  assert.match(routeView, /routeState === "no-dest"/);
+  assert.match(routeView, /routeState === "no-origin"/);
+  assert.match(routeView, /routeState === "error"/);
+  assert.ok(!/횡단보도에서.{0,20}초록불/.test(code(routeView)), "시안의 하드코딩 안내문 금지");
 });
 
 test("전화는 인앱 통화중 오버레이를 만들지 않고 실제로 건다", () => {

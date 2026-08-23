@@ -9,13 +9,12 @@ import { useRecentDateKeys } from "@/app/useRecentDateKeys";
 import { useAuth } from "@/auth/AuthContext";
 import { useMyFamily } from "@/queries/useFamily";
 import { useEvents, useDailySupplies, useUpsertDailySupply, useDeleteDailySupply } from "@/queries/useSchedule";
-import { useSavedPlaces, useChildLocations } from "@/queries/useLocation";
+import { useSavedPlaces } from "@/queries/useLocation";
 import { useStickerSummary, useReceivedStickers } from "@/queries/useStickers";
 import { useMemoThread, useSendMemo } from "@/queries/useMemo";
 import { useAiCreditPublicStatus, useAiFriendPublicSettings } from "@/queries/useAi";
 import { placePhoneCall } from "@/lib/native/phone";
 import type { DailySupply, CalendarEvent } from "@/lib/api/endpoints/schedule";
-import type { RoutePoint } from "@/lib/api/endpoints/route";
 import { groupEventsByDateKey, PAST_TAGS } from "@/transform/scheduleView";
 import { useLocale } from "@/i18n/useLocale";
 import { formatCalendarDay, formatRelativeMinutes, LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
@@ -46,12 +45,10 @@ import {
 import { Loading } from "@/components/ui/Loading";
 import {
   latestParentMemoText,
-  resolveChildDestination,
   unreadParentMemoCount,
 } from "@/transform/childHomeData";
 import { ChildTimetableList, type ChildTimetableRow } from "./ChildTimetable";
 import { DaySheet } from "./overlays/DaySheet";
-import { RouteSheet } from "./overlays/RouteSheet";
 import { PlaydateSheet } from "./overlays/PlaydateSheet";
 import { CallSheet, type CallTarget } from "./overlays/CallSheet";
 import { Celebrate } from "./overlays/Celebrate";
@@ -123,11 +120,9 @@ export function ChildHome() {
   const familyQuery = useMyFamily();
   const eventsQuery = useEvents();
   const placesQuery = useSavedPlaces();
-  const locationsQuery = useChildLocations();
   const family = familyQuery.data;
   const events = eventsQuery.data;
   const places = placesQuery.data;
-  const locations = locationsQuery.data;
   const { data: stickerSummary } = useStickerSummary();
   const receivedStickers = useReceivedStickers(userId);
   const aiFriend = useAiFriendPublicSettings(userId);
@@ -141,7 +136,6 @@ export function ChildHome() {
       familyQuery.refetch(),
       eventsQuery.refetch(),
       placesQuery.refetch(),
-      locationsQuery.refetch(),
     ]);
   };
 
@@ -184,7 +178,6 @@ export function ChildHome() {
   );
 
   const nextView = todayViews.find((v) => v.id === adventure.next?.id) ?? null;
-  const nextRaw = adventure.next ? (rawById.get(adventure.next.id) ?? null) : null;
   const minutesToNext =
     adventure.next?.startMinutes != null ? adventure.next.startMinutes - nowMinutes : null;
 
@@ -379,45 +372,12 @@ export function ChildHome() {
 
   // ── 오버레이 ─────────────────────────────────────────────────────────
   const [dayOpen, setDayOpen] = useState(false);
-  const [routeOpen, setRouteOpen] = useState(false);
   const [playdateOpen, setPlaydateOpen] = useState(false);
   const [callOpen, setCallOpen] = useState(false);
 
-  // 길찾기 출발점: 이 기기가 곧 아이의 위치다. 서버 위치(무료 가족은 빈 배열)보다 GPS 를 먼저 쓴다.
-  const serverOrigin = useMemo<RoutePoint | null>(() => {
-    const row = (locations ?? []).find((l) => l.user_id === userId);
-    return row ? { lat: row.lat, lng: row.lng } : null;
-  }, [locations, userId]);
-  const [gpsOrigin, setGpsOrigin] = useState<RoutePoint | null>(null);
-  useEffect(() => {
-    if (!routeOpen || gpsOrigin || typeof navigator === "undefined" || !navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-      (pos) => setGpsOrigin({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => {
-        /* 권한 거부/실패 → 서버 위치로 폴백. 가짜 좌표는 만들지 않는다. */
-      },
-      { enableHighAccuracy: true, timeout: 5000, maximumAge: 60_000 },
-    );
-  }, [routeOpen, gpsOrigin]);
-  const origin = gpsOrigin ?? serverOrigin;
-  const destination = useMemo(() => resolveChildDestination(nextRaw, places), [nextRaw, places]);
-
   const openRoute = () => {
-    if (!adventure.next) {
-      show(intl.formatMessage({ id: "child.home.routeDone" }), "🗺️");
-      return;
-    }
-    setRouteOpen(true);
-  };
-
-  const departNow = () => {
-    setRouteOpen(false);
-    if (myMember?.id) sendQuickStatus("departed", "route");
-    show(intl.formatMessage({ id: "child.home.departed" }), "🏃");
-  };
-  const arriveNow = () => {
-    setRouteOpen(false);
-    sendQuickStatus("arrived", "route");
+    const eventId = adventure.next?.id;
+    navigate(eventId ? `/route?event=${encodeURIComponent(eventId)}` : "/route");
   };
 
   const callTargets = useMemo<CallTarget[]>(() => {
@@ -938,22 +898,6 @@ export function ChildHome() {
           setDayOpen(false);
           navigate("/child/memo");
         }}
-      />
-
-      <RouteSheet
-        open={routeOpen}
-        onClose={() => setRouteOpen(false)}
-        destinationName={destination?.name ?? nextView?.title ?? intl.formatMessage({ id: "child.home.nextEvent" })}
-        icon={nextView?.icon ?? "ui/pin-heart.webp"}
-        origin={origin}
-        destination={destination?.point ?? null}
-        onDepart={departNow}
-        onArrive={arriveNow}
-        onOpenMap={() => {
-          setRouteOpen(false);
-          navigate("/route");
-        }}
-        sending={sendMemo.isPending}
       />
 
       <PlaydateSheet open={playdateOpen} onClose={() => setPlaydateOpen(false)} onError={(m) => show(m, "⚠️")} />

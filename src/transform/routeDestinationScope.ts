@@ -31,6 +31,23 @@ export function pickNextEventWithPlace(
   return upcoming[0]?.event ?? null;
 }
 
+/**
+ * 홈처럼 특정 일정을 눌러 들어온 경우에는 그 일정만 사용한다.
+ * 장소가 없거나 id가 유효하지 않아도 뒤의 다른 일정으로 바꾸지 않는다.
+ */
+export function pickRouteEvent(
+  events: CalendarEvent[] | undefined,
+  requestedEventId: string | null,
+  nowMs: number,
+  timeZone: string,
+): CalendarEvent | null {
+  const explicitId = requestedEventId?.trim();
+  if (explicitId) {
+    return (events ?? []).find((event) => event.id === explicitId) ?? null;
+  }
+  return pickNextEventWithPlace(events, nowMs, timeZone);
+}
+
 export function beginRouteDestinationScope<T>(
   ownerChildMemberId: string,
 ): OwnedRouteDestination<T> {
