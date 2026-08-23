@@ -509,16 +509,24 @@ test("history는 무료·reviewed의 현재 08시 기준 오늘과 프리미엄 
     .toISOString()
     .replace("T", " ")
     .replace("Z", "+00");
-  const insertInWindow = sqlite.prepare(
+  const premiumHistoryTimestamp = new Date(standardWindow.startMs - 60 * 60_000)
+    .toISOString()
+    .replace("T", " ")
+    .replace("Z", "+00");
+  const insertHistory = sqlite.prepare(
     `INSERT INTO location_history
        (user_id,family_id,lat,lng,recorded_at,is_estimated,accuracy_m)
      VALUES (?,?,?,?,?,0,?)`,
   );
-  insertInWindow.run("child-a", "family-reviewed", 37.501, 127.02, inWindowTimestamp, 5);
-  insertInWindow.run("free-child", "family-free", 37.201, 127.02, inWindowTimestamp, 5);
+  insertHistory.run("child-a", "family-reviewed", 37.501, 127.02, inWindowTimestamp, 5);
+  insertHistory.run("free-child", "family-free", 37.201, 127.02, inWindowTimestamp, 5);
+  sqlite.prepare("DELETE FROM location_history WHERE user_id=?").run("premium-child");
+  insertHistory.run("premium-child", "family-premium", 37.801, 127.02, premiumHistoryTimestamp, 4);
   const start = encodeURIComponent(new Date(standardWindow.startMs).toISOString());
   const end = encodeURIComponent(new Date(standardWindow.endMs).toISOString());
-  const path = `/history?family_id=family-premium&start=${start}&end=${end}`;
+  const premiumStart = encodeURIComponent(new Date(nowMs - 30 * 24 * 60 * 60_000).toISOString());
+  const premiumEnd = encodeURIComponent(new Date(nowMs).toISOString());
+  const path = `/history?family_id=family-premium&start=${premiumStart}&end=${premiumEnd}`;
   const premium = await request(db, path, {
     sub: "parent-premium",
     role: "parent",
