@@ -536,15 +536,25 @@
   color: #fff;
   box-shadow: 0 10px 24px -10px rgba(0, 132, 60, 0.55);
 }
-/* 휴대폰 가입도 소셜 버튼과 같은 보조 48px 계층 — 높이가 다른 버튼 섞임을 없앤다. */
-.ob-social--phone {
-  background: var(--bg-card);
-  color: var(--fg-primary);
-  border: 1.5px solid rgba(32, 26, 29, 0.1);
-  box-shadow: 0 6px 16px rgba(32, 26, 29, 0.05);
-}
-.ob-social--phone svg:last-child {
-  color: var(--fg-placeholder);
+.ob-phone-signup {
+  width: 100%;
+  height: var(--control-height-primary);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px;
+  border: 1px solid var(--rose-200);
+  border-radius: 16px;
+  background: var(--rose-soft);
+  color: var(--rose-text);
+  box-shadow: 0 10px 22px -14px color-mix(in srgb, var(--rose-600) 48%, transparent);
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+  text-align: center;
+  transition: transform 0.14s ease;
+  --press: 0.98;
 }
 .ob-divider {
   display: flex;

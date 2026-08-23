@@ -6,6 +6,7 @@ const source = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "u
 
 const authClient = source("src/lib/api/endpoints/auth.ts");
 const onboarding = source("src/screens/onboarding/Onboarding.tsx");
+const onboardingCss = source("src/screens/onboarding/Onboarding.css");
 const authWorker = source("worker/routes/auth.ts");
 const phoneOtp = source("worker/lib/phoneOtp.ts");
 const migration = source("worker/db/auth-entry-uniqueness.sql");
@@ -49,6 +50,24 @@ test("회원가입과 로그인은 첫 화면에서 별도 탭과 명시적 전�
   assert.match(onboarding, /aria-selected=\{signingUp\}/);
   assert.match(onboarding, /id: "onboarding\.signup\.withPhone"/);
   assert.match(onboarding, /id: "onboarding\.login\.haveAccount"/);
+});
+
+test("휴대폰 번호 가입은 아이콘·보라색 없이 로즈 텍스트 CTA로 표시된다", () => {
+  const buttonStart = onboarding.indexOf('className="ob-phone-signup');
+  const buttonEnd = onboarding.indexOf("</button>", buttonStart);
+  const button = onboarding.slice(buttonStart, buttonEnd);
+  const styleStart = onboardingCss.indexOf(".ob-phone-signup {");
+  const styleEnd = onboardingCss.indexOf("}", styleStart);
+  const style = onboardingCss.slice(styleStart, styleEnd);
+
+  assert.ok(buttonStart >= 0 && buttonEnd > buttonStart);
+  assert.match(button, /id: "onboarding\.signup\.withPhone"/);
+  assert.doesNotMatch(button, /<\w+/);
+  assert.match(style, /height: var\(--control-height-primary\)/);
+  assert.match(style, /background: var\(--rose-soft\)/);
+  assert.match(style, /color: var\(--rose-text\)/);
+  assert.doesNotMatch(style, /lav|purple|cta-grad-lavender/i);
+  assert.doesNotMatch(onboardingCss, /\.ob-social--phone/);
 });
 
 test("가입 OTP는 설치·중복 검사를 통과한 뒤 user 생성과 같은 batch에서만 소비된다", () => {

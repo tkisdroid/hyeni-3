@@ -74,6 +74,10 @@ test("최종 브라우저 QA는 부모·아이 출시 화면과 핵심 전환 �
   assert.match(source, /authCase: "device-inactive"/);
   assert.match(source, /deviceTakeoverFacts/);
   assert.match(source, /scope: "auth-device-takeover-logout-notice"/);
+  assert.match(source, /phoneSignupButtonFacts/);
+  assert.match(source, /rgb\(253, 231, 241\)/);
+  assert.match(source, /rgb\(169, 68, 117\)/);
+  assert.match(source, /auth-signup-entry\.png/);
   assert.match(source, /onboarding\.session\.deviceInactive|다른 기기에서 다시 로그인/);
   assert.match(source, /pathname === "\/api\/access-region"/);
   assert.match(source, /scope: "access-country-social-login"/);

@@ -1501,13 +1501,12 @@ function LoginStep({
         <>
           <button
             type="button"
-            className="ob-social ob-social--phone hy-press hy-busy-quiet"
+            className="ob-phone-signup hy-press hy-busy-quiet"
             onClick={() => onSignup({ kind: "phone" })}
             disabled={loginNavigationLocked}
             data-progress-owner="login-action"
           >
             {intl.formatMessage({ id: "onboarding.signup.withPhone" })}
-            <ChevronRight size={20} strokeWidth={2.4} aria-hidden="true" />
           </button>
           <div className="ob-login-foot">
             {intl.formatMessage({ id: "onboarding.login.haveAccount" })}{" "}

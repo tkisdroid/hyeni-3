@@ -1834,12 +1834,34 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       return true;
     })()`);
     await wait(250);
+    const phoneSignupButtonFacts = await cdp.evaluate(`(() => {
+      const button = [...document.querySelectorAll("button")]
+        .find((node) => node.textContent?.trim() === "휴대폰 번호로 가입하기");
+      if (!(button instanceof HTMLElement)) return { exists: false };
+      const style = getComputedStyle(button);
+      return {
+        exists: true,
+        text: button.textContent?.trim() ?? null,
+        childElementCount: button.childElementCount,
+        display: style.display,
+        alignItems: style.alignItems,
+        justifyContent: style.justifyContent,
+        height: Math.round(button.getBoundingClientRect().height),
+        backgroundColor: style.backgroundColor,
+        backgroundImage: style.backgroundImage,
+        color: style.color,
+        borderColor: style.borderColor,
+        borderRadius: style.borderRadius,
+      };
+    })()`);
     const signupEntryFacts = await cdp.evaluate(`(() => ({
       title: document.querySelector(".ob-h1")?.textContent?.trim() ?? null,
       selectedTab: document.querySelector('[role="tab"][aria-selected="true"]')?.textContent?.trim() ?? null,
       phoneButton: [...document.querySelectorAll("button")].some((button) => button.textContent?.trim() === "휴대폰 번호로 가입하기"),
       loginFormAbsent: !document.querySelector(".ob-login-form"),
     }))()`);
+    signupEntryFacts.phoneSignupButton = phoneSignupButtonFacts;
+    report.screenshots.push(await screenshot(cdp, freshOutputDir, "auth-signup-entry.png"));
     await cdp.evaluate(`(() => {
       const button = [...document.querySelectorAll("button")].find((node) => node.textContent?.trim() === "휴대폰 번호로 가입하기");
       if (!(button instanceof HTMLElement)) return false;
@@ -1878,6 +1900,18 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       || signupEntryFacts.selectedTab !== "회원가입"
       || !signupEntryFacts.phoneButton
       || !signupEntryFacts.loginFormAbsent
+      || !phoneSignupButtonFacts.exists
+      || phoneSignupButtonFacts.text !== "휴대폰 번호로 가입하기"
+      || phoneSignupButtonFacts.childElementCount !== 0
+      || phoneSignupButtonFacts.display !== "flex"
+      || phoneSignupButtonFacts.alignItems !== "center"
+      || phoneSignupButtonFacts.justifyContent !== "center"
+      || phoneSignupButtonFacts.height !== 52
+      || phoneSignupButtonFacts.backgroundColor !== "rgb(253, 231, 241)"
+      || phoneSignupButtonFacts.backgroundImage !== "none"
+      || phoneSignupButtonFacts.color !== "rgb(169, 68, 117)"
+      || phoneSignupButtonFacts.borderColor !== "rgb(255, 208, 221)"
+      || phoneSignupButtonFacts.borderRadius !== "16px"
       || loginIdAvailableFacts.value !== "mindlady"
       || !loginIdAvailableFacts.available?.includes("사용할 수 있는 아이디예요")
       || loginIdAvailableFacts.fieldError !== null

@@ -2350,6 +2350,7 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/teacher/TeacherReleaseGate.css", ".trg-danger"],
   ["src/components/QrScanner.css", ".qrs-settings"],
   ["src/screens/onboarding/Onboarding.css", ".ob-back"],
+  ["src/screens/onboarding/Onboarding.css", ".ob-phone-signup"],
   ["src/screens/onboarding/Onboarding.css", ".ob-loginbtn"],
   ["src/screens/onboarding/Onboarding.css", ".ob-datebtn"],
   ["src/components/ChildLocationPermissionDialog.css", ".clp-primary"],
