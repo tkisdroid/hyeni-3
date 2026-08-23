@@ -3,6 +3,27 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
+**역할별 복구 동선 안정화·v1.4.1/code 13 Pages 배포(2026-08-24)**:
+아이 홈의 다음 일정 지도 노드·혜니 말풍선·`길찾기 출발!`은 중간 설명 시트를 없애고 명시 일정 id와 함께
+`/route` 전체 지도로 바로 이동한다. RouteView는 그 일정을 다른 장소 있는 일정으로 바꾸지 않으며, 아이 기기 GPS를
+먼저 기다리고 GPS 실패가 확정된 뒤에만 서버의 마지막 본인 위치로 강등한다. GPS와 가족·위치·저장 장소·일정 원본
+조회 실패는 빈 데이터로 위장하지 않고 화면 안에서 다시 시도할 수 있다. 웹 구독 카탈로그 재시도와 Play 상품 불가
+분류, 잘못된 아이 메모 링크의 뒤로가기, 가족 조회 성공 뒤 아이 0명인 부모 홈의 연결 행동, id 기반 부모 바로가기,
+현재 언어로 만든 하단 탭 접근성 이름도 함께 보강했다. Worker·D1 계약은 변경하지 않았다.
+
+앱 버전은 1.4.1, Android/iOS build number는 13이다. 최종 검증은 앱 `1,932/1,932`, Worker `1,274/1,274`,
+앱·Worker typecheck, production build(2,287 modules·precache 471·중복 0), 부모 43화면·아이 14화면 브라우저 QA
+문제 0건, PWA install·offline·안전 업데이트 문제 0건, Android `testDebugUnitTest lintDebug assembleDebug` 통과다.
+debug APK는 15,918,791 bytes, SHA-256 `1DAA50F54D024AF03237199178F6F9CC9E560899EA1D17271FE5046E1799C193`다. 허용 실기기는 0대가 연결돼 설치를
+생략했으며 계정·역할·세션·페어링을 건드리지 않았다.
+
+설계 `cf34bb4`와 구현 `15bd55c`를 `origin/main`에 push했고 Pages는
+`https://cedb940e.hyeni-calendar.pages.dev`에 배포했다. 배포별 주소·고정 `hyeni-calendar.pages.dev`·브랜드
+`hyenicalendar.com`은 모두 `assets/index-BB1O90IU.js` 347,849 bytes와 SHA-256
+`CE8E049D7B8329FF3B08E130AB1C51922A61CAD236E2E4A65D774053DB821383`으로 일치한다. Play에서 1.4.1 제공 가능
+readback 전에는 없는 업데이트를 안내하지 않도록 `app-version.json`의 latest/minimum을 1.4.0으로 유지한다.
+서명 AAB와 Play Console 제출은 사용자 비밀번호 입력과 별도 실제 증거 전까지 미완료다.
+
 **아이 AI 친구 `혜니` 통일·1/3 플로팅·한 줄 말풍선(2026-08-24, 운영 배포·razr 설치 완료)**:
 아이 메인 카드, AI 채팅 헤더, 입력창 placeholder/aria-label, 플로팅 버튼과 Worker 기본 persona를 모두 `혜니`로
 통일했다. 자동 기본값이었던 `통통이`·`꼬미`·`AI 친구`만 혜니로 승격하고 사용자가 직접 정한 이름(예: `별이`)은

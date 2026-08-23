@@ -38,7 +38,8 @@ Play Console에는 `docs/store/play-release-notes-v1.4.1.md`의 코드 블록 �
 - [ ] clean 최신 commit으로 승인 업로드 키 서명 AAB 생성
 - [ ] AAB의 인증서, `versionName 1.4.1`, `versionCode 13`, source SHA, non-debuggable, 16KB 정렬 확인
 - [ ] AAB SHA-256·크기·mtime과 검증 JSON을 같은 evidence 폴더에 보존
-- [ ] `main` 커밋을 `origin/main`에 푸시하고 Pages 새 배포 readback
+- [x] 설계 `cf34bb4`·구현 `15bd55c`를 `origin/main`에 푸시하고 Pages
+  `https://cedb940e.hyeni-calendar.pages.dev`와 고정·브랜드 도메인의 동일 entry/SHA readback
 - [ ] Play Console 업로드·심사 전송은 사용자 지시와 실제 readback 증거가 있을 때만 완료 처리
 
 ## 실기기 보호

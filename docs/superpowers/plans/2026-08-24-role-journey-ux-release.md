@@ -106,12 +106,12 @@
 
 ### Task 5: main 커밋·푸시와 Pages 배포
 
-- [ ] 사용자 untracked 파일이 stage되지 않았는지 확인한다.
-- [ ] 구현과 출시 문서를 한국어 커밋으로 `main`에 기록한다.
-- [ ] `origin/main`으로 push한다.
-- [ ] 저장소 `.env`가 없는 임시 디렉터리에서 새 `dist`를 Cloudflare Pages main으로 배포한다.
-- [ ] 배포 URL과 commit SHA를 기록하고 공개 페이지의 새 버전을 확인한다.
-- [ ] Play 1.4.1 제공 가능 readback 전에는 원격 update policy를 1.4.0으로 유지한다.
+- [x] 사용자 untracked 파일이 stage되지 않았는지 확인한다.
+- [x] 구현과 출시 문서를 한국어 커밋 `15bd55c`로 `main`에 기록한다.
+- [x] `origin/main`으로 push한다.
+- [x] 저장소 `.env`가 없는 임시 디렉터리에서 새 `dist`를 Cloudflare Pages main으로 배포한다.
+- [x] 배포 URL과 commit SHA를 기록하고 배포별·고정·브랜드 URL의 동일 entry/SHA를 확인한다.
+- [x] Play 1.4.1 제공 가능 readback 전에는 원격 update policy를 1.4.0으로 유지한다.
 
 ### Task 6: Google Play 업데이트 AAB 정리
 
