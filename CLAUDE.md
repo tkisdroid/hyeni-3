@@ -3,7 +3,7 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
-**휴대폰 번호 가입 CTA 텍스트 전용 디자인(2026-08-23, 배포 전)**: 가입 첫 화면의
+**휴대폰 번호 가입 CTA 텍스트 전용 디자인(2026-08-23, 운영 배포 완료)**: 가입 첫 화면의
 `휴대폰 번호로 가입하기`를 소셜 버튼 변형에서 독립 `ob-phone-signup` 액션으로 분리했다. 우측 화살표 아이콘을
 제거해 텍스트만 중앙 정렬하고, 보라색·라벤더 계열 대신 정본 `rose-soft` 배경·`rose-text` 문구·`rose-200`
 테두리를 사용한다. 공용 primary 높이 52px, 16px radius, 16px 본문 타입과 44px 이상 조작 면을 유지하며
@@ -13,6 +13,18 @@ Safari의 기본 button 정렬에 기대지 않도록 flex 중앙 정렬을 직�
 배경 `rgb(253, 231, 241)`, 글자 `rgb(169, 68, 117)`, 높이 52px, 중앙 정렬·배경 이미지 없음·16px radius를
 검사하고 `auth-signup-entry.png`를 남긴다. 앱 테스트 `1,899/1,899`, typecheck, production build
 (2,285 modules·precache 473·중복 0), 실제 Chrome QA 부모 43+아이 14 화면 문제 0을 확인했다.
+
+구현 커밋 `b2ed143`을 기능 브랜치와 `main`에 fast-forward하고 GitHub 원격까지 push했다. Pages 배포는
+`https://e3dbc83c.hyeni-calendar.pages.dev`이며 Worker 변경·배포는 없다. 배포별 주소·고정
+`hyeni-calendar.pages.dev`·브랜드 `hyenicalendar.com`은 모두 새 entry `assets/index-BTE06QFD.js`와
+CSS `assets/index-DMuUhfUk.css`를 참조한다. 세 주소의 entry SHA-256
+`903d945a285f32e9c701ef52c55fde08e781f2cf805c16cd11fd1dd386ee7874`, CSS
+`177583e46ce74cda70b47b5f3139d3d674abd5923f433b0e610a5279a41ce6f4`, Service Worker
+`837ff6d8b8103615343065d22c7fe2ec69adf9aa99acf9859dd860ca7f98b932`가 병합 `main` dist와 일치한다.
+Pages 두 주소의 OAuth callback SHA-256도 로컬과 같은
+`858df0324ba327a5a141c4e9e59eda15b2725415be9ee1adc42c833856f597d2`이고, 브랜드 callback은 Cloudflare
+HTML 삽입으로 바이트가 달라도 200·`no-store`와 같은 새 entry 참조를 확인했다. 완전 신규 Playwright 세션으로
+브랜드 가입 화면을 다시 열어 CTA 358×52px·자식 요소 0개·정본 로즈 색·수평 overflow 0을 재확인했다.
 
 **가족 정합성·단일 설치·iOS 출시 준비(2026-08-23, 운영 배포 완료)**: 운영 D1을 읽기 전용으로
 교차 확인한 결과, `tkisdroid` 가족의 활성 정본은 대표 보호자 `tkisdroid`·아이 `혜니`·과거에 연결된 다른
