@@ -115,8 +115,8 @@
 
 ### Task 6: Google Play 업데이트 AAB 정리
 
-- [ ] clean worktree와 push된 최신 commit SHA를 확인한다.
-- [ ] 사용자 입력 서명 환경으로 fresh release AAB를 만든다.
-- [ ] 서명 인증서, versionName/code, 내장 commit SHA, SHA-256, mtime을 검증한다.
-- [ ] `artifacts/release-evidence/play-upload-v1.4.1-vc13-<sha>/`에 AAB와 증거를 모은다.
-- [ ] Play Console 최종 제출은 사용자의 별도 명시가 없으면 수행하지 않는다.
+- [x] clean 앱 소스 worktree와 push된 commit `dd73ba5`를 확인한다.
+- [x] 사용자가 비밀번호를 직접 입력한 서명 환경으로 fresh release AAB를 만든다.
+- [x] 서명 인증서, versionName/code, 내장 commit SHA, SHA-256, mtime, 권한·web assets·16KB를 검증한다.
+- [x] `artifacts/release-evidence/play-upload-v1.4.1-vc13-dd73ba5/`에 AAB와 증거를 모은다.
+- [x] 별도 업로드 지시가 없으므로 Play Console 최종 제출은 수행하지 않는다.

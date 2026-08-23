@@ -11,7 +11,7 @@
 분류, 잘못된 아이 메모 링크의 뒤로가기, 가족 조회 성공 뒤 아이 0명인 부모 홈의 연결 행동, id 기반 부모 바로가기,
 현재 언어로 만든 하단 탭 접근성 이름도 함께 보강했다. Worker·D1 계약은 변경하지 않았다.
 
-앱 버전은 1.4.1, Android/iOS build number는 13이다. 최종 검증은 앱 `1,932/1,932`, Worker `1,274/1,274`,
+앱 버전은 1.4.1, Android/iOS build number는 13이다. 최종 검증은 앱 `1,935/1,935`, Worker `1,274/1,274`,
 앱·Worker typecheck, production build(2,287 modules·precache 471·중복 0), 부모 43화면·아이 14화면 브라우저 QA
 문제 0건, PWA install·offline·안전 업데이트 문제 0건, Android `testDebugUnitTest lintDebug assembleDebug` 통과다.
 debug APK는 15,918,791 bytes, SHA-256 `1DAA50F54D024AF03237199178F6F9CC9E560899EA1D17271FE5046E1799C193`다. 허용 실기기는 0대가 연결돼 설치를
@@ -22,7 +22,15 @@ debug APK는 15,918,791 bytes, SHA-256 `1DAA50F54D024AF03237199178F6F9CC9E560899
 `hyenicalendar.com`은 모두 `assets/index-BB1O90IU.js` 347,849 bytes와 SHA-256
 `CE8E049D7B8329FF3B08E130AB1C51922A61CAD236E2E4A65D774053DB821383`으로 일치한다. Play에서 1.4.1 제공 가능
 readback 전에는 없는 업데이트를 안내하지 않도록 `app-version.json`의 latest/minimum을 1.4.0으로 유지한다.
-서명 AAB와 Play Console 제출은 사용자 비밀번호 입력과 별도 실제 증거 전까지 미완료다.
+사용자가 UTF-8 PowerShell 7 창에서 서명 비밀번호를 직접 입력했고 자격 값은 저장·출력하지 않았다. clean 앱 소스
+`dd73ba5a08ca4c5f82343aa8392e545bf7ed9214`에서 만든 서명 AAB는
+`artifacts/release-evidence/play-upload-v1.4.1-vc13-dd73ba5/hyeni-calendar-v1.4.1-vc13-dd73ba5.aab`,
+13,012,261 bytes, SHA-256 `240f1ad672a562ac9f2aa6ce603e524f0d0e481a20771e0298e2318c98ef6c78`,
+mtime `2026-08-23T22:07:35.620Z`다. manifest 1.4.1/code 13·non-debuggable·내장 source commit, 승인 업로드
+인증서, 정확한 권한 정책, dist/내장 web assets, bundle/universal APK와 4개 ELF의 16KB 조건이 모두 GREEN이다.
+Play 제공 전 `1.4.0 ≤ 1.4.0 ≤ 1.4.1` 단계 정책을 허용하되 미래·역순·5구간 이상 버전은 거부하도록 출시 도구를
+`906c401`에서 보강했다. Play Console 업로드·심사 전송은 수행하지 않았고, 1.4.1 제공 가능 readback 전까지
+`app-version.json`은 계속 1.4.0이다.
 
 **아이 AI 친구 `혜니` 통일·1/3 플로팅·한 줄 말풍선(2026-08-24, 운영 배포·razr 설치 완료)**:
 아이 메인 카드, AI 채팅 헤더, 입력창 placeholder/aria-label, 플로팅 버튼과 Worker 기본 persona를 모두 `혜니`로

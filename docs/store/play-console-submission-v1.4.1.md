@@ -6,7 +6,7 @@
 
 버전: `versionName 1.4.1` / `versionCode 13`
 
-현재 판정: **업데이트 산출물 준비 중**
+현재 판정: **업데이트 산출물 준비 완료 · Play Console 미업로드**
 
 이 문서는 v1.4.1 업데이트 준비 상태의 정본이다. 기존 프로덕션 v1.4.0/code 12의 제출·readback 증거는
 `docs/store/play-console-submission-v1.4.0.md`에 역사 기록으로 보존한다. 이번 문서의 체크 항목은 실제 증거가
@@ -31,16 +31,35 @@ Play Console에는 `docs/store/play-release-notes-v1.4.1.md`의 코드 블록 �
 
 ## 완료 조건
 
-- [x] 앱 전체 테스트 `1,932/1,932`, TypeScript, production build 통과
+- [x] 앱 전체 테스트 `1,935/1,935`, TypeScript, production build 통과
 - [x] Worker 전체 테스트 `1,274/1,274`와 typecheck 통과(Worker 무변경 확인용)
 - [x] 브라우저 부모 43화면·아이 14화면과 PWA 설치/오프라인/업데이트 QA 문제 0건
 - [x] Android unit test, lint, `assembleDebug` 통과
-- [ ] clean 최신 commit으로 승인 업로드 키 서명 AAB 생성
-- [ ] AAB의 인증서, `versionName 1.4.1`, `versionCode 13`, source SHA, non-debuggable, 16KB 정렬 확인
-- [ ] AAB SHA-256·크기·mtime과 검증 JSON을 같은 evidence 폴더에 보존
+- [x] clean 앱 소스 commit `dd73ba5a08ca4c5f82343aa8392e545bf7ed9214`에서 승인 업로드 키 서명 AAB 생성
+- [x] AAB의 인증서, `versionName 1.4.1`, `versionCode 13`, source SHA, non-debuggable, 권한·web assets,
+  bundle/universal APK와 4개 ELF의 16KB 정렬 확인
+- [x] `artifacts/release-evidence/play-upload-v1.4.1-vc13-dd73ba5/`에 AAB·검증 JSON·검증 로그·해시·안내문 보존
 - [x] 설계 `cf34bb4`·구현 `15bd55c`를 `origin/main`에 푸시하고 Pages
   `https://cedb940e.hyeni-calendar.pages.dev`와 고정·브랜드 도메인의 동일 entry/SHA readback
 - [ ] Play Console 업로드·심사 전송은 사용자 지시와 실제 readback 증거가 있을 때만 완료 처리
+
+## 업데이트 AAB
+
+Google Play Console에는 아래 AAB 파일 하나만 업로드한다. JSON·TXT는 로컬 검증 증빙이며 Play에 올리지 않는다.
+
+- 파일: `artifacts/release-evidence/play-upload-v1.4.1-vc13-dd73ba5/hyeni-calendar-v1.4.1-vc13-dd73ba5.aab`
+- 크기: 13,012,261 bytes
+- SHA-256: `240f1ad672a562ac9f2aa6ce603e524f0d0e481a20771e0298e2318c98ef6c78`
+- mtime: `2026-08-23T22:07:35.620Z` (`2026-08-24 07:07:35 KST`)
+- 앱 소스: `dd73ba5a08ca4c5f82343aa8392e545bf7ed9214`
+- 검증 도구: `906c401`
+- 업로드 인증서 SHA-1: `AD3AFC42C7B0D594932E72D916C3C4B1D48193A0`
+- 업로드 인증서 SHA-256: `32F729E8CC1DF82D94EACD0D264439FCD7102B15FCDC269660254A87F25A81DB`
+- 기계 증빙: `android-release-aab-evidence-20260824-072915-dd73ba5.json`
+- 검증 로그: `android-release-aab-verification-20260824-072915-dd73ba5.txt`
+
+Play에서 1.4.1이 기존 설치 사용자에게 제공 가능한 상태임을 readback하기 전에는
+`public/app-version.json`의 minimum/latest를 1.4.0으로 유지한다. 업로드·심사 전송과 이 원격 정책 전환은 별도 단계다.
 
 ## 실기기 보호
 

@@ -37,7 +37,7 @@ test("설치 앱과 PWA는 정식 이름을 계속 사용한다", () => {
   assert.match(html, new RegExp(`<title>${appName.replace("&", "&amp;")}</title>`));
 });
 
-test("1.4.1 Play 문서는 실제 안정화 변경과 미제출 상태를 정확히 기록한다", () => {
+test("1.4.1 Play 문서는 실제 안정화 변경과 검증된 AAB·미업로드 상태를 정확히 기록한다", () => {
   const listing = read("docs/store/play-listing.md");
   const releaseNotes = read("docs/store/play-release-notes-v1.4.1.md");
   const submission = read("docs/store/play-console-submission-v1.4.1.md");
@@ -49,7 +49,10 @@ test("1.4.1 Play 문서는 실제 안정화 변경과 미제출 상태를 정확
   assert.match(releaseNotes, /결제 상품/);
   assert.match(submission, /versionName 1\.4\.1/);
   assert.match(submission, /versionCode 13/);
-  assert.match(submission, /업데이트 산출물 준비 중/);
+  assert.match(submission, /업데이트 산출물 준비 완료 · Play Console 미업로드/);
+  assert.match(submission, /hyeni-calendar-v1\.4\.1-vc13-dd73ba5\.aab/);
+  assert.match(submission, /240f1ad672a562ac9f2aa6ce603e524f0d0e481a20771e0298e2318c98ef6c78/);
+  assert.match(submission, /4개 ELF의 16KB 정렬 확인/);
   assert.doesNotMatch(submission, /프로덕션 제출·API readback 완료/);
 });
 
