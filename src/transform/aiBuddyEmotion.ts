@@ -35,9 +35,8 @@ export function isAiBuddyEmotion(value: unknown): value is AiBuddyEmotion {
 }
 
 /**
- * 감정 채팅 버튼 20종(2026-08-18 TK 지시). 원본은 512px 불투명 PNG 였고
- * `scripts/import-ai-buddy-chat-emotions.mjs` 가 256px webp 로 들여온다.
- * 배경(무지개 그라디언트)이 그림에 포함돼 있어 둥근 버튼 면으로 쓴다 — 알파가 없다.
+ * 표정·행동의 의미 이름. 대화·배회 로직은 이 이름을 쓰고, 실제 그림은 아래 18개 3D 포즈로
+ * 연결한다. 의미와 파일을 분리하면 비슷한 상황이 한 포즈를 함께 써도 행동 판정을 건드리지 않는다.
  */
 export const AI_BUDDY_CHAT_FACES = [
   "happy", "wink", "joy", "excited", "love", "curious", "thinking", "idea", "talking", "sleepy",
@@ -45,6 +44,38 @@ export const AI_BUDDY_CHAT_FACES = [
 ] as const;
 
 export type AiBuddyChatFace = (typeof AI_BUDDY_CHAT_FACES)[number];
+
+/** TK가 제공한 한 캐릭터의 투명 3D 포즈 18종. */
+export const AI_BUDDY_POSES = [
+  "welcome", "polite", "heart-hug", "jump", "crown", "thinking", "tablet", "idea", "headphones",
+  "explore", "rush", "peek", "sleep", "heart-send", "expecting", "worried", "thumbs-up", "rocket",
+] as const;
+
+export type AiBuddyPose = (typeof AI_BUDDY_POSES)[number];
+
+/** 의미 얼굴 → 실제 3D 포즈. 18개 원본이 모두 적어도 한 상황에서 쓰이도록 한다. */
+const FACE_POSE: Record<AiBuddyChatFace, AiBuddyPose> = {
+  happy: "thumbs-up",
+  wink: "crown",
+  joy: "jump",
+  excited: "rush",
+  love: "heart-send",
+  curious: "thinking",
+  thinking: "tablet",
+  idea: "idea",
+  talking: "polite",
+  sleepy: "sleep",
+  sad: "worried",
+  worried: "heart-hug",
+  shy: "peek",
+  celebrate: "crown",
+  greeting: "welcome",
+  music: "headphones",
+  explore: "explore",
+  typing: "tablet",
+  waiting: "expecting",
+  quick: "rocket",
+};
 
 /**
  * 의미(감정) → 그림. 판정은 그대로 두고 얼굴만 새 그림으로 바꾼다.
@@ -78,11 +109,21 @@ export const AI_BUDDY_TAP_FACE: AiBuddyChatFace = "quick";
 /** 대화 화면 타이핑 표시용 얼굴. */
 export const AI_BUDDY_TYPING_FACE: AiBuddyChatFace = "typing";
 
-/** 표정 webp 경로(asset() 접두 전). */
+/** 의미 얼굴에 대응하는 실제 3D 포즈. */
+export function aiBuddyPoseForFace(face: AiBuddyChatFace): AiBuddyPose {
+  return FACE_POSE[face];
+}
+
+/** 감정 이름과 겹치는 face도 그대로 해석하는 대화·배회용 자산 경로. */
+export function aiBuddyChatFaceAsset(face: AiBuddyChatFace): string {
+  return `ai-buddy/poses/${aiBuddyPoseForFace(face)}.webp`;
+}
+
+/** 투명 3D 포즈 WebP 경로(asset() 접두 전). */
 export function aiBuddyFaceAsset(emotion: AiBuddyEmotion | AiBuddyChatFace): string {
   const face = (EMOTION_FACE as Record<string, AiBuddyChatFace | undefined>)[emotion]
     ?? (emotion as AiBuddyChatFace);
-  return `ai-buddy/chat/${face}.webp`;
+  return aiBuddyChatFaceAsset(face);
 }
 
 /** 감정에 대응하는 그림 이름(테스트·프리로드가 참조). */

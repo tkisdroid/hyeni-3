@@ -6,8 +6,44 @@
  * 계산을 컴포넌트에서 분리해 두면 드래그 없이도 경계 조건을 테스트할 수 있다.
  */
 
-/** 버튼 지름. 조작 영역 최소 44px 규칙을 넉넉히 넘긴다. */
-export const AI_BUDDY_FAB_SIZE = 64;
+export type AiBuddyFabMode = "home" | "compact";
+
+/** 홈에서는 캐릭터의 전신과 행동이 읽히고, 다른 화면에서는 콘텐츠를 덜 가리는 크기다. */
+export const AI_BUDDY_FAB_HOME_SIZE = 88;
+export const AI_BUDDY_FAB_COMPACT_SIZE = 68;
+
+/** 기존 위치 계산의 기본값은 홈 크기다. */
+export const AI_BUDDY_FAB_SIZE = AI_BUDDY_FAB_HOME_SIZE;
+
+export interface AiBuddyFabPresentation {
+  mode: AiBuddyFabMode;
+  size: number;
+  canWander: boolean;
+  canPrompt: boolean;
+  /** 하단 입력창·빠른 문구처럼 화면별 조작 영역과 겹치지 않게 띄우는 추가 여백. */
+  bottomClearance: number;
+}
+
+const HOME_PRESENTATION: AiBuddyFabPresentation = {
+  mode: "home",
+  size: AI_BUDDY_FAB_HOME_SIZE,
+  canWander: true,
+  canPrompt: true,
+  bottomClearance: 0,
+};
+
+const COMPACT_PRESENTATION: AiBuddyFabPresentation = {
+  mode: "compact",
+  size: AI_BUDDY_FAB_COMPACT_SIZE,
+  canWander: false,
+  canPrompt: false,
+  bottomClearance: 96,
+};
+
+/** 아이 홈만 적극적으로 다가가고, 나머지 화면에서는 조용히 곁을 지킨다. */
+export function aiBuddyFabPresentation(pathname: string): AiBuddyFabPresentation {
+  return pathname === "/child/home" ? HOME_PRESENTATION : COMPACT_PRESENTATION;
+}
 
 /** 프레임 가장자리와의 최소 간격(4px 리듬). */
 export const AI_BUDDY_FAB_EDGE_GAP = 12;
@@ -28,6 +64,8 @@ export interface AiBuddyFabFrame {
   topInset: number;
   /** 하단 독·탭바가 가리는 높이. */
   bottomInset: number;
+  /** 현재 화면 모드의 실제 캐릭터 조작 영역. */
+  fabSize?: number;
 }
 
 /** 기본 위치 = 오른쪽 아래(엄지가 닿는 자리, 독 바로 위). */
@@ -66,13 +104,16 @@ export interface AiBuddyFabTrack {
 
 /** 버튼 좌상단이 놓일 수 있는 사각형. 프레임이 아주 작으면 폭·높이가 0 이 된다. */
 export function aiBuddyFabTrack(frame: AiBuddyFabFrame): AiBuddyFabTrack {
+  const fabSize = typeof frame.fabSize === "number" && Number.isFinite(frame.fabSize) && frame.fabSize > 0
+    ? frame.fabSize
+    : AI_BUDDY_FAB_SIZE;
   const left = AI_BUDDY_FAB_EDGE_GAP;
   const top = Math.max(0, frame.topInset) + AI_BUDDY_FAB_EDGE_GAP;
-  const width = Math.max(0, frame.width - AI_BUDDY_FAB_SIZE - AI_BUDDY_FAB_EDGE_GAP * 2);
+  const width = Math.max(0, frame.width - fabSize - AI_BUDDY_FAB_EDGE_GAP * 2);
   const height = Math.max(
     0,
     frame.height - Math.max(0, frame.topInset) - Math.max(0, frame.bottomInset)
-      - AI_BUDDY_FAB_SIZE - AI_BUDDY_FAB_EDGE_GAP * 2,
+      - fabSize - AI_BUDDY_FAB_EDGE_GAP * 2,
   );
   return { left, top, width, height };
 }

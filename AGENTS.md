@@ -574,16 +574,20 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
 - 미도착 알림은 SOS 전면화면 전환 대상이 아니다: `transform/urgentAlert.ts` 가 단일 출처이며 `sos`/`emergency` 만
   부모 화면을 가로챈다. `not_arrived` 는 FCM 전체화면과 알림 목록으로 전달한다(오래된 위치면 severity=warning 로 강등됨).
 
-- ★아이모드 AI 친구 = 표정 있는 플로팅 버디 + 도구 에이전트(2026-08-17 TK 지시):
-  AI 진입점은 로봇/혜니 아이콘이 아니라 표정만 읽히는 소프트 3D 이모티콘 `public/assets/ai-buddy/chat/*.webp`
-  (**20종**, TK 지정 원본을 `scripts/import-ai-buddy-chat-emotions.mjs` 로 256px webp 변환).
-  ⚠️ 이 그림들은 알파가 없어(무지개 배경 포함) 배경을 지우지 말고 `--radius-20` + `object-fit: cover` 로 둥근
-  버튼 면으로 쓴다. blink 그림이 없어 깜빡임은 `wink` 로 대신한다. 옛 9종과 생성 스크립트는 소비자가 없어
-  삭제했으니 되살리지 않는다. 표정 판정 정본은 `src/transform/aiBuddyEmotion.ts`
-  하나이고 플로팅 버튼·아이 홈 타일·대화 헤더·타이핑 표시가 같은 얼굴을 쓴다. 아이가 속상하면 같이 슬퍼하지 않고 다독이며
+- ★아이모드 AI 친구 = 살아 있는 3D 캐릭터 + 도구 에이전트(2026-08-24 TK 지시):
+  AI 진입점은 네모난 로봇 버튼이 아니라 TK 원본 1024px 투명 PNG 18종을 변환한
+  `public/assets/ai-buddy/poses/*.webp`다. `scripts/import-ai-buddy-chat-emotions.mjs`가 여백을 trim한 뒤
+  288px contain+16px 투명 여백의 320px WebP로 만들며, 배경·둥근 사각형을 다시 씌우지 않고
+  `object-fit:contain`+알파 `drop-shadow`로 휴대폰 위에 선 전신 실루엣을 살린다. 20개 의미 face→18개 실제 pose
+  매핑과 판정 정본은 `src/transform/aiBuddyEmotion.ts` 하나다. 입력 타입이 chat face임을 아는 소비자는
+  `aiBuddyChatFaceAsset`을 써야 한다(`excited`가 emotion/face 양쪽에 있어 범용 함수는 emotion을 우선한다).
+  플로팅 버튼·아이 홈 타일·대화 헤더·타이핑·음성 화면이 같은 캐릭터를 쓴다. 아이가 속상하면 같이 슬퍼하지 않고 다독이며
   (caring), 확인 대기 중에는 해낸 표정(excited)을 짓지 않는다. 플로팅 버튼(`src/app/AiBuddyFab.tsx`)은
   ChildShell·PushShell 에서 아이 세션에만 뜨고, 위치를 px 가 아니라 이동 가능 영역 비율로 가족+아이 키에 저장한다
-  (`src/transform/aiBuddyFabPosition.ts`). 진입 번들 예산 때문에 lazy+Suspense 로 붙여야 build 가 통과한다.
+  (`src/transform/aiBuddyFabPosition.ts`). **아이 홈만 88px 활동형**으로 배회·말풍선·커짐/전체화면 부르기를 허용하고,
+  나머지 아이 화면은 **68px 조용한 친구**로 제자리에 숨쉬기만 하며 배회·선제 말풍선·부르기를 금지한다.
+  작은 모드는 하단 입력/빠른 문구를 가리지 않도록 기존 shell inset에 96px를 더 비운다. 진입 번들 예산 때문에
+  lazy+Suspense 로 붙여야 build 가 통과한다.
   표정 상태는 라우터 위 `AiBuddyMoodProvider` 한 곳에서 들고 있어야 화면을 옮겨도 기분이 이어진다.
   서버 도구에 아이 본인 설정 3종(`updateNotificationSettings`·`updateAiFriendName`·`changeAppTheme`)을 더했고
   셋 다 LLM 없이 답해 하루 대화 횟수를 깎지 않는다. **일정 삭제는 보호자 전용**이라 planner 는
@@ -602,11 +606,12 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   필요하고 부모의 SOS·소리 울리기가 조용해질 수 있어 넣지 않았다(새 권한 0개). 전화·문자는 부모 연락 허용을 따른다.
   대기 중 배회·말 걸기(2026-08-18 TK 지시): 경로 정본은 `src/transform/aiBuddyWander.ts`(순수·시드 결정적)로
   9초마다 한 걸음, 좌우 가장자리에만 서고 세로 8~92% 띠 안에서 최대 0.34비율, 세 걸음마다 반대쪽으로 건너간다.
-  이동 얼굴은 explore, 도착 얼굴은 explore 를 뺀 9종에서 뽑고(같으면 계속 걷는 것처럼 보인다) 세 걸음마다
+  이동 얼굴은 `excited`→`rush`(달리기 pose), 도착 얼굴은 이동 얼굴을 뺀 대기 동작에서 뽑고 세 걸음마다
   반말 한 마디를 2.6초 띄운다(`pointer-events:none`·`aria-hidden`·바깥쪽 가장자리 정렬). 배회 자리는 저장하지
   않으며 드래그 직후 20초·드래그 중·실제 대화 감정·`document.hidden`·움직임 줄이기에서 멈춘다.
   ⚠️ 배회 interval effect 의 의존성에 `emotion` 을 넣으면 도착 표정·말풍선 타이머가 취소된다(`emotionRef` 사용).
-  회귀=`tests/aiBuddyFab.test.ts`·`tests/eventCompanionPrompt.test.ts`·Worker
+  자산·모드 회귀=`tests/aiBuddyCharacterAssets.test.mjs`·`tests/aiBuddyCharacterBehavior.test.ts`·
+  `tests/aiBuddyFab.test.ts`; 일정/Worker 회귀=`tests/eventCompanionPrompt.test.ts`·Worker
   `tests/aiChildSettingsAgent.test.mjs`·`tests/aiChildMemoryDepth.test.mjs`.
 - ★**AI 친구 음성 turn 자동 답변(2026-08-18 TK 승인)**: 마이크가 만든 `source="voice"`의 정상 reply는 가족+아이 읽어주기 설정이 꺼져 있어도 그 turn만 자동 TTS한다. `composer`·`suggestion:*`·`confirm`은 기존 영구 설정을 따르고, 빈·오류·한도 응답은 읽지 않는다. 새 마이크 시작·토글 off·화면 이탈은 STT/TTS를 즉시 중단하며 초기화 중이던 오래된 native callback도 재생을 되살리지 않는다. 사용자 음성 원본은 Worker·OpenAI에 보내지 않고 인식 텍스트만 기존 안전·크레딧·저장 경로로 보낸다. 단 OS·브라우저·선택된 STT/TTS 제공자는 음성 또는 합성할 답변 텍스트를 외부 처리할 수 있으므로 “항상 기기 안에서만 처리”라고 고지하지 않는다. TTS는 추가 API·크레딧·권한 없이 fail-soft이며 10개 locale 태그를 전달한다. 회귀=`tests/childVoiceChat.test.ts`·`tests/nativeTtsCdpProbeSafety.test.mjs`·Android `SpeechLocalePolicyTest`/`SpeechPlaybackGenerationTest`·`worker/tests/legalCopy.test.mjs`·`tests/playReleaseDocumentation.test.mjs`.
 - ★**꾹 누르면 바로 말하기 + 버튼이 그걸 알려 준다(2026-08-19 TK 지시)**: 플로팅 AI 친구 버튼을

@@ -833,10 +833,12 @@
   height: 46px;
   object-fit: contain;
 }
-/* AI 친구 얼굴 그림은 배경이 포함돼 있어 둥글게 오려 쓴다(다른 타일 아이콘은 투명 배경 유지). */
+/* 플로팅 친구와 같은 투명 3D 캐릭터를 써서 네모난 아이콘이 하나 더 생기지 않게 한다. */
 .kd-tile--ai img {
-  border-radius: var(--radius-16);
-  object-fit: cover;
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  filter: drop-shadow(0 5px 4px rgba(66, 38, 48, 0.18));
 }
 .kd-tile__title {
   display: -webkit-box;

@@ -56,15 +56,14 @@ export function nextAiBuddyWanderRatio(
   };
 }
 
-/** 자리를 옮기는 동안의 얼굴(두리번거림). */
-export const AI_BUDDY_WANDER_MOVING_FACE: AiBuddyChatFace = "explore";
+/** 자리를 옮기는 동안은 실제 달리는 3D 포즈를 써서 위치 변화가 순간 이동처럼 보이지 않게 한다. */
+export const AI_BUDDY_WANDER_MOVING_FACE: AiBuddyChatFace = "excited";
 
 /**
- * 도착해서 짓는 얼굴 후보. 이동 중 얼굴은 빼야 "멈춰 서서 말을 거는" 것으로 읽힌다
- * (실측: 도착 얼굴이 explore 로 뽑히면 9초 동안 계속 걸어가는 것처럼 보였다).
+ * 도착해서 짓는 얼굴 후보. 대기 포즈 목록에는 이동 중 달리는 얼굴(excited)을 넣지 않아
+ * "멈춰 서서 말을 거는" 순간이 분명하게 바뀐다.
  */
-const ARRIVAL_FACES: readonly AiBuddyChatFace[] = AI_BUDDY_IDLE_MOTIONS
-  .filter((face) => face !== AI_BUDDY_WANDER_MOVING_FACE);
+const ARRIVAL_FACES: readonly AiBuddyChatFace[] = AI_BUDDY_IDLE_MOTIONS;
 
 /**
  * 그 걸음에서 지을 표정. 자리를 옮기는 동안은 두리번거리고,
@@ -83,11 +82,12 @@ export const AI_BUDDY_WANDER_LINE_MS = 2_600;
 
 /**
  * 도착해서 아이에게 건네는 한 마디(반말). 표정과 뜻이 맞아야 친구로 읽힌다.
- * 이동 중(explore)·입력 표시(typing)·탭 반응(quick)에는 말을 걸지 않는다.
+ * 이동 중(excited)·입력 표시(typing)·탭 반응(quick)에는 말을 걸지 않는다.
  */
 const WANDER_LINE: Partial<Record<AiBuddyChatFace, string>> = {
   greeting: "안녕!",
   curious: "뭐 해?",
+  explore: "같이 찾아볼까?",
   music: "노래 듣는 중~",
   idea: "생각났어!",
   love: "보고 싶었어",

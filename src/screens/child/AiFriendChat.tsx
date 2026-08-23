@@ -61,6 +61,7 @@ import {
   AI_BUDDY_LISTENING_FACE,
   AI_BUDDY_SPEAKING_FACE,
   AI_BUDDY_TYPING_FACE,
+  aiBuddyChatFaceAsset,
   aiBuddyEmotionLabel,
   aiBuddyFaceAsset,
 } from "@/transform/aiBuddyEmotion";
@@ -213,7 +214,7 @@ export function AiFriendChat() {
   // (동물 프로필을 쓰면 "토끼와 대화하는 느낌"이 되어 친구가 둘처럼 보였다.)
   const friendFaceSrc = asset(aiBuddyFaceAsset(emotion));
   // 답을 쓰는 동안에는 "입력중" 얼굴로 지금 무엇을 하는지 보여 준다.
-  const friendTypingFaceSrc = asset(aiBuddyFaceAsset(AI_BUDDY_TYPING_FACE));
+  const friendTypingFaceSrc = asset(aiBuddyChatFaceAsset(AI_BUDDY_TYPING_FACE));
 
   // 오늘 일정·준비물(내 것) — AI 가 먼저 물어보는 선제 인사와 제안칩의 컨텍스트(로컬 생성 · 크레딧 0).
   const { data: events } = useEvents();
@@ -941,7 +942,7 @@ export function AiFriendChat() {
         >
           <img
             className="afc-voice__face"
-            src={asset(aiBuddyFaceAsset(listening ? AI_BUDDY_LISTENING_FACE : AI_BUDDY_SPEAKING_FACE))}
+            src={asset(aiBuddyChatFaceAsset(listening ? AI_BUDDY_LISTENING_FACE : AI_BUDDY_SPEAKING_FACE))}
             alt=""
             width={AI_BUDDY_HANDOFF_FACE_PX}
             height={AI_BUDDY_HANDOFF_FACE_PX}

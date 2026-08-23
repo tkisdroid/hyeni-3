@@ -3,8 +3,8 @@
 
 .abf {
   position: absolute;
-  width: 64px;
-  height: 64px;
+  width: 88px;
+  height: 88px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -15,7 +15,14 @@
   /* 대기 중 스스로 옮겨 다니므로 이동은 천천히 미끄러진다(2026-08-18). */
   transition:
     left 1.4s var(--easing-standard),
-    top 1.4s var(--easing-standard);
+    top 1.4s var(--easing-standard),
+    width 0.28s var(--easing-standard),
+    height 0.28s var(--easing-standard);
+}
+
+.abf--compact {
+  width: 68px;
+  height: 68px;
 }
 
 /* 드래그 중에는 손가락을 그대로 따라와야 하므로 위치 보간을 끈다. */
@@ -29,19 +36,53 @@
   position: absolute;
   inset: 0;
   display: block;
+  transform-origin: 50% 82%;
+  animation: abf-breathe 3.8s ease-in-out infinite;
   transition: transform var(--duration-fast) var(--easing-standard);
 }
 .abf:active .abf__stack {
+  animation: none;
   transform: scale(0.92);
 }
 
-/* 후광(흰 원)은 두지 않는다 — 얼굴 그림이 이미 자기 배경을 갖고 있어 흰 판처럼 보였다(2026-08-18 TK 제보).
-   떠 있는 느낌은 얼굴 자체의 그림자로만 만든다. */
+/* 네모난 버튼 면 없이 투명 실루엣 자체를 띄운다. 두 겹의 알파 그림자가 화면에 닿는 깊이를 만든다. */
 .abf__face {
   position: absolute;
   inset: 0;
   display: block;
-  animation: abf-bob 3.4s var(--easing-standard) infinite;
+  transform-origin: 50% 88%;
+  filter:
+    drop-shadow(0 10px 8px rgba(66, 38, 48, 0.22))
+    drop-shadow(0 2px 2px rgba(66, 38, 48, 0.18));
+  animation: abf-alive-home 4.8s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* 상세 화면에서는 위치 이동·말풍선 대신 아주 작은 호흡만 남긴다. */
+.abf--compact .abf__face {
+  animation: abf-alive-compact 6.8s ease-in-out infinite;
+  filter:
+    drop-shadow(0 7px 6px rgba(66, 38, 48, 0.18))
+    drop-shadow(0 1px 1px rgba(66, 38, 48, 0.14));
+}
+
+.abf--compact .abf__stack {
+  animation-duration: 5.6s;
+}
+
+/* 포즈의 뜻과 움직임이 맞아야 사진 교체가 아니라 행동처럼 읽힌다. */
+.abf--home .abf__face--excited {
+  animation: abf-run 0.52s ease-in-out infinite;
+}
+.abf--home .abf__face--music {
+  animation: abf-sway 2.8s ease-in-out infinite;
+}
+.abf--home .abf__face--sleepy {
+  animation: abf-doze 5.6s ease-in-out infinite;
+}
+.abf--home .abf__face--thinking,
+.abf--home .abf__face--typing {
+  animation: abf-focus 3.4s ease-in-out infinite;
 }
 
 .abf[data-dragging="true"] .abf__face {
@@ -52,6 +93,10 @@
 /* 표정이 바뀐 순간 한 번 통통 튀어 변화를 알린다. */
 .abf[data-pop="true"] .abf__face {
   animation: abf-pop 0.46s var(--easing-cheer) 1;
+}
+
+.abf--compact[data-pop="true"] .abf__face {
+  animation: abf-pop-compact 0.4s var(--easing-cheer) 1;
 }
 
 /* 스스로 아이를 부를 때 — 커졌다가 다시 작아진다(2026-08-19 TK 지시).
@@ -72,10 +117,7 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  /* 원본 그림에 알파가 없어 배경(무지개)이 그대로 버튼 면이 된다 — 둥글게 오려 쓴다. */
-  border-radius: var(--radius-20);
-  box-shadow: var(--shadow-floating);
-  object-fit: cover;
+  object-fit: contain;
   opacity: 0;
   transition: opacity var(--duration-fast) var(--easing-standard);
 }
@@ -166,7 +208,6 @@
   padding: 0;
   border: 0;
   background: transparent;
-  border-radius: var(--radius-24);
   animation: abf-stage-in 0.52s var(--easing-cheer) 1;
 
   --press: 0.94;
@@ -175,9 +216,10 @@
 .abf-stage__face img {
   width: 100%;
   height: 100%;
-  border-radius: var(--radius-24);
-  box-shadow: var(--shadow-modal);
-  object-fit: cover;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 18px 14px rgba(50, 26, 36, 0.3))
+    drop-shadow(0 3px 3px rgba(50, 26, 36, 0.2));
 }
 
 .abf-stage__bubble {
@@ -229,8 +271,7 @@
 }
 
 .abf[data-launching="true"] .abf__stack img {
-  border-radius: var(--radius-24);
-  box-shadow: var(--shadow-modal);
+  object-fit: contain;
 }
 
 .abf-launch-scrim {
@@ -254,14 +295,41 @@
   }
 }
 
-@keyframes abf-bob {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
+@keyframes abf-alive-home {
+  0%, 100% { transform: translate3d(0, 1px, 0) rotate(-0.8deg); }
+  24% { transform: translate3d(0, -3px, 0) rotate(0.7deg); }
+  52% { transform: translate3d(0, -6px, 0) rotate(1.2deg); }
+  76% { transform: translate3d(0, -2px, 0) rotate(-0.5deg); }
+}
+
+@keyframes abf-alive-compact {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-0.25deg); }
+  50% { transform: translate3d(0, -2px, 0) rotate(0.25deg); }
+}
+
+@keyframes abf-breathe {
+  0%, 100% { transform: scale(0.99, 1.01); }
+  50% { transform: scale(1.015, 0.995); }
+}
+
+@keyframes abf-run {
+  0%, 100% { transform: translate3d(0, 1px, 0) rotate(-1deg); }
+  50% { transform: translate3d(0, -5px, 0) rotate(1deg); }
+}
+
+@keyframes abf-sway {
+  0%, 100% { transform: translate3d(-1px, 0, 0) rotate(-2deg); }
+  50% { transform: translate3d(1px, -4px, 0) rotate(2deg); }
+}
+
+@keyframes abf-doze {
+  0%, 100% { transform: translate3d(0, 1px, 0) rotate(-1deg) scale(0.99); }
+  50% { transform: translate3d(0, -1px, 0) rotate(0.5deg) scale(1.015); }
+}
+
+@keyframes abf-focus {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-0.6deg); }
+  50% { transform: translate3d(0, -3px, 0) rotate(0.8deg); }
 }
 
 @keyframes abf-pop {
@@ -277,6 +345,11 @@
   100% {
     transform: scale(1);
   }
+}
+
+@keyframes abf-pop-compact {
+  0%, 100% { transform: scale(1); }
+  48% { transform: translateY(-2px) scale(1.06); }
 }
 
 /* 커졌다가 한 번 흔들고 다시 작아진다 — "나 여기 있어"가 한눈에 읽히게. */
@@ -337,6 +410,7 @@
 /* 움직임을 줄이도록 설정한 기기에서는 떠다니지 않고 조용히 대기한다. */
 @media (prefers-reduced-motion: reduce) {
   .abf__face,
+  .abf__stack,
   .abf[data-pop="true"] .abf__face,
   .abf[data-attention="grow"] .abf__face {
     animation: none;

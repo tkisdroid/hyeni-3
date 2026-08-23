@@ -3,6 +3,27 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
+**아이모드 살아 있는 3D AI 친구 교체(2026-08-24)**: TK가 준 1024px 투명 PNG 18종을
+`scripts/import-ai-buddy-chat-emotions.mjs`로 trim→288px contain+16px 투명 여백의 320px WebP로 변환해
+`public/assets/ai-buddy/poses/`에 넣고, 네모난 무지개 배경 로봇 20종을 제거했다. 20개 의미 face는
+`src/transform/aiBuddyEmotion.ts`에서 18개 pose를 모두 상황별로 사용하며, 투명 전신 실루엣·알파 drop-shadow로
+홈 타일·플로팅 버튼·대화 헤더/말풍선·타이핑·음성 화면의 캐릭터를 통일했다. 영상/GPT 재생성은 원본의 캐릭터
+일관성과 상황 반응성을 낮추므로 쓰지 않았다.
+
+아이 홈은 88px 활동형으로 idle 배회·표정/행동 전환·말풍선·부르기를 유지하고, 다른 아이 화면은 68px 조용한
+동행 모드로 제자리 숨쉬기만 하며 배회·선제 말풍선·전체화면 부르기를 금지한다. 작은 모드는 shell 하단 inset에
+96px를 더해 메모의 빠른 문구/입력창과 겹치지 않는다. 기존 탭·드래그·550ms 길게 눌러 음성·화면 전환 계약은
+그대로 보존했다. 회귀는 `tests/aiBuddyCharacterAssets.test.mjs`(18개·320px·alpha·크기 예산),
+`tests/aiBuddyCharacterBehavior.test.ts`(전 pose 매핑·88/68 모드·하단 여백·달리기 pose),
+`tests/aiBuddyFab.test.ts`가 보호한다. 390×844 브라우저에서 홈 10초 동안 위치/표정이 실제 변경되고, 메모 화면은
+10초 동안 제자리를 지키며 말풍선 0개·빠른 문구와 비겹침, 탭 후 AI 대화 진입, 콘솔 오류 0건을 확인했다.
+최종 검증은 전용 회귀 `55/55`, 앱 전체 `1,914/1,914`, typecheck, production build(2,287 modules·precache
+471·중복 0), Capacitor Android sync와 `assembleDebug`가 모두 통과했다. debug APK는 15,789,615 bytes,
+SHA-256 `8E3535E3898941CD46E5EFB2326F3DA1FD959E83A1E417F956E78A6525E45B4E`다. ADB 연결 기기가 없어 razr 보존 설치는
+수행하지 않았고 계정·역할·세션·페어링은 건드리지 않았다. Pages 배포는 `.env` 없는 임시 디렉터리에서 시도했으나
+현재 wrangler OAuth가 없고 non-interactive 환경에 Pages API token도 없어 인증 전에 종료됐다. Workers/D1 전용
+`.env` token을 잘못 재사용하지 않았으며 Worker·D1은 변경하지 않았다.
+
 **Google Play v1.4.0/versionCode 12 프로덕션 제출 완료(2026-08-23)**:
 앱 정식 이름을 `혜니캘린더 - 우리아이 일정&안전 한번에`로 바꾸고 Android 적응형 전경은 10%, 레거시·
 Play 아이콘은 7% 확대했다. 스토어 등록정보는 아빠가 자기 아이를 위해 만들었다는 제작 배경, 가족 일정·준비물·
@@ -595,35 +616,39 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   아이 설정 화면의 "위치·안전" 토글 3개(일반 위치·등록 장소·친구놀이)는 전부 부모 알림에만 적용되므로
   아이 role 에서는 토글을 숨기고 사실만 안내한다(빈 약속 금지). 회귀=`tests/childEverydayMovementAlerts.test.mjs`·
   Worker `tests/childSafetyNotifications.test.mjs`.
-- ★**아이모드 AI 친구 = 표정 있는 플로팅 버디 + 도구 에이전트(2026-08-17 TK 지시)**:
-  **①얼굴** — AI 진입점은 로봇/혜니 아이콘이 아니라 **표정만 읽히는 소프트 3D 이모티콘**
-  `public/assets/ai-buddy/chat/*.webp`(**20종**, TK 지정 원본을 `scripts/import-ai-buddy-chat-emotions.mjs` 로
-  512px PNG→256px webp 변환 · 한글 파일명↔slug 표가 그 스크립트의 `EMOTION_FILE_SLUGS`).
-  ⚠️ 이 그림들은 **알파가 없다**(무지개 배경이 그림에 포함) — 배경을 지우려 하지 말고
-  `border-radius: var(--radius-20)` + `object-fit: cover` 로 **둥근 버튼 면**으로 쓴다.
-  의미(감정 8종)→그림 매핑은 `EMOTION_FACE` 한 곳이고 판정 정본은 `src/transform/aiBuddyEmotion.ts` 하나다.
-  blink 그림이 없어 눈 깜빡임은 `wink`(`AI_BUDDY_BLINK_FACE`)로 대신한다. 이전 9종
-  (`public/assets/ai-buddy/*.webp`)과 생성 스크립트는 소비자가 없어 삭제했다 — 되살리지 말 것.
-  플로팅 버튼·아이 홈 타일·대화 헤더·타이핑 표시가 **같은 표정 세트**를 쓴다.
+- ★**아이모드 AI 친구 = 살아 있는 3D 캐릭터 + 도구 에이전트(2026-08-24 TK 지시)**:
+  **①캐릭터** — AI 진입점은 네모난 로봇 버튼이 아니라 TK 지정 1024px 투명 PNG 18종을 변환한
+  `public/assets/ai-buddy/poses/*.webp`다. `scripts/import-ai-buddy-chat-emotions.mjs`의 파일명↔slug 표가 정본이며,
+  원본 여백을 trim한 뒤 288px contain+16px 투명 여백의 320px WebP로 만든다. **알파 전신 실루엣**에
+  `object-fit:contain`+`drop-shadow`를 써야 휴대폰 위에 실제로 선 입체감이 산다. 배경·border-radius 사각 면을
+  다시 씌우거나 삭제한 `public/assets/ai-buddy/chat/*.webp` 로봇 세트를 되살리지 말 것.
+  20개 의미 face→18개 실제 pose 매핑과 감정 판정 정본은 `src/transform/aiBuddyEmotion.ts` 하나다.
+  `excited`는 emotion과 chat face 양쪽에 있으므로 chat face를 이미 아는 소비자는 `aiBuddyChatFaceAsset`을 사용한다.
+  범용 `aiBuddyFaceAsset`은 기존 호환을 위해 emotion을 먼저 판정한다. 플로팅 버튼·아이 홈 타일·대화 헤더·
+  말풍선·타이핑·음성 화면이 **같은 캐릭터 세트**를 쓴다.
   규칙: 답 대기=thinking · 안전 신호(medium/high)=caring(어떤 즐거운 단어보다 우선) · **아이가 속상하면 같이
   슬퍼하지 않고 caring** · `ok:true && !confirmationRequired` 일 때만 excited(확인 대기 중에 해낸 표정 금지) ·
   도구 실패=sad · 22~05시 대기=sleepy. 화면 문구는 `aiBuddyStatusLine`(반말 한 줄), `aiBuddyEmotionLabel`은 aria 전용.
-  **②플로팅 버튼** — `src/app/AiBuddyFab.tsx` 를 `ChildShell`(bottomInset 112)·`PushShell`(20)에 둬 아이 화면
-  어디서나 대기한다. 위치는 px 가 아니라 **이동 가능 영역 비율**(`src/transform/aiBuddyFabPosition.ts`)로
+  **②플로팅 친구** — `src/app/AiBuddyFab.tsx` 를 `ChildShell`(bottomInset 112)·`PushShell`(20)에 둬 아이 화면
+  어디서나 대기한다. **정확히 `/child/home`만 88px 활동형**으로 배회·말풍선·커짐/전체화면 부르기를 허용한다.
+  다른 아이 화면은 **68px 동행형**으로 제자리 숨쉬기/시선 동작만 하고 배회·선제 말풍선·부르기를 전부 금지한다.
+  동행형은 화면별 하단 입력/빠른 문구를 가리지 않도록 shell bottomInset에 96px를 더한다. 위치는 px 가 아니라
+  **이동 가능 영역 비율**(`src/transform/aiBuddyFabPosition.ts`)로
   가족+아이 키에 저장해 회전·기기 변경에도 화면 밖으로 나가지 않고, 손을 떼면 가까운 좌우 가장자리에 붙는다.
   `role !== "child"` 와 AI 친구/SOS/온보딩 경로에서는 렌더하지 않는다(부모·선생님 화면에 뜨면 오작동).
   ⚠️ 진입 번들 예산 500KB 를 넘겨서 **lazy + Suspense 필수**(직접 import 하면 build 가 막힌다).
   표정은 `AiBuddyMoodProvider`(App, 라우터 **위**)가 들고 있어야 대화→홈 이동에도 기분이 이어진다.
   **②-b 대기 중 배회·말 걸기(2026-08-18 TK 지시)** — 아이가 아무 것도 안 해도 친구가 살아 있어야 한다.
-  경로 계산 정본은 `src/transform/aiBuddyWander.ts`(순수·시드 결정적): 9초마다 한 걸음, 좌우 가장자리(0/1)에만
-  서고 세로는 8~92% 띠 안에서 최대 0.34비율씩, 세 걸음마다 반대쪽으로 건너간다. 이동 중 얼굴은 `explore`,
-  도착 얼굴은 **explore 를 뺀** 대기 동작 9종에서 뽑는다 — 도착 얼굴이 이동 얼굴과 같으면 9초 동안 계속 걸어가는
+  경로 계산 정본은 `src/transform/aiBuddyWander.ts`(순수·시드 결정적): 홈에서 9초마다 한 걸음, 좌우 가장자리(0/1)에만
+  서고 세로는 8~92% 띠 안에서 최대 0.34비율씩, 세 걸음마다 반대쪽으로 건너간다. 이동 중 face는
+  `excited`→`rush`(달리기 pose), 도착 face는 **이동 face를 뺀** 대기 동작에서 뽑는다 — 같으면 9초 동안 계속 걸어가는
   것처럼 보인다(실측으로 잡은 결함). 세 걸음마다 도착 얼굴에 맞는 반말 한 마디를 2.6초 띄운다
   (`abf__bubble`, `pointer-events:none`·`aria-hidden`, 버튼 바깥쪽 가장자리 정렬로 화면 밖 이탈 방지).
   배회는 **임시 자리**라 저장하지 않고(아이가 직접 옮긴 자리가 정본), 드래그 직후 20초·드래그 중·실제 대화 감정
   표시 중·`document.hidden`·움직임 줄이기에서는 멈춘다(`canAiBuddyWander`). ⚠️ 배회 `setInterval` effect 의
   의존성에 `emotion` 을 넣지 말 것 — 감정이 바뀔 때 effect 가 재생성되며 도착 표정·말풍선 타이머가 취소된다
-  (`emotionRef` 로 읽는다). 회귀=`tests/aiBuddyFab.test.ts`.
+  (`emotionRef` 로 읽는다). 자산·표현 모드 회귀=`tests/aiBuddyCharacterAssets.test.mjs`·
+  `tests/aiBuddyCharacterBehavior.test.ts`·`tests/aiBuddyFab.test.ts`.
   **②-c 기기 동작은 열어 주기만 한다(2026-08-18 TK 지시)** — 아이가 "무음으로 해줘", "전화 걸어줘",
   "문자 보내줘", "와이파이 켜줘" 라고 하면 **앱이 대신 바꾸지 않는다**. 판정은
   `worker/shared/aiDeviceActionTools.js`(순수)이고 도구는 `openDeviceAction` 하나, target 화이트리스트는

@@ -64,22 +64,22 @@
   padding: 8px 0 4px;
 }
 .afs-preview__art {
-  width: 120px;
-  height: 120px;
+  width: 136px;
+  height: 136px;
   margin: 0 auto;
-  border-radius: 50%;
-  background: radial-gradient(circle at 50% 38%, #fff, var(--hy-accent-soft) 80%);
-  box-shadow: 0 14px 32px -14px color-mix(in srgb, var(--hy-accent-text) 48%, transparent);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
   animation: hy-float 5s ease-in-out infinite;
 }
 .afs-preview__art img {
-  width: 92px;
-  height: 92px;
-  border-radius: var(--radius-24);
-  object-fit: cover;
+  width: 128px;
+  height: 128px;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 14px 10px rgba(66, 38, 48, 0.24))
+    drop-shadow(0 2px 2px rgba(66, 38, 48, 0.16));
 }
 .afs-preview__name {
   margin-top: 12px;

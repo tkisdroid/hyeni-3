@@ -14,11 +14,14 @@ import {
   AI_BUDDY_CHAT_FACES,
   AI_BUDDY_EMOTIONS,
   AI_BUDDY_IDLE_MOTIONS,
+  AI_BUDDY_POSES,
   AI_BUDDY_TAP_FACE,
   AI_BUDDY_TYPING_FACE,
+  aiBuddyChatFaceAsset,
   aiBuddyEmotionLabel,
   aiBuddyFaceAsset,
   aiBuddyFaceFor,
+  aiBuddyPoseForFace,
   aiBuddyIdleEmotion,
   isAiBuddyEmotion,
   resolveAiBuddyEmotion,
@@ -31,6 +34,7 @@ import {
   AI_BUDDY_WANDER_VERTICAL_MIN,
   AI_BUDDY_WANDER_LINE_EVERY,
   AI_BUDDY_WANDER_LINE_MS,
+  AI_BUDDY_WANDER_MOVING_FACE,
   aiBuddyWanderFace,
   aiBuddyWanderLine,
   canAiBuddyWander,
@@ -141,12 +145,11 @@ test("밤에는 대기 얼굴이 졸린 표정이고, 시각을 모르면 지어
   assert.equal(resolveAiBuddyEmotion({ phase: "idle", hourOfDay: 23 }), "sleepy");
 });
 
-test("감정마다 감정 채팅 버튼 그림과 읽어 주는 설명이 있다", () => {
-  // 2026-08-18: 얼굴을 감정 채팅 버튼 20종으로 교체했다. 판정(감정)은 그대로 두고 그림만 바뀐다.
+test("감정마다 같은 3D 캐릭터 포즈와 읽어 주는 설명이 있다", () => {
   for (const emotion of AI_BUDDY_EMOTIONS) {
     const face = aiBuddyFaceFor(emotion);
     assert.ok(AI_BUDDY_CHAT_FACES.includes(face), `${emotion} 그림 매핑 누락`);
-    assert.equal(aiBuddyFaceAsset(emotion), `ai-buddy/chat/${face}.webp`);
+    assert.equal(aiBuddyFaceAsset(emotion), `ai-buddy/poses/${aiBuddyPoseForFace(face)}.webp`);
     assert.ok(aiBuddyEmotionLabel(emotion).length > 0, `${emotion} 설명 누락`);
     assert.equal(isAiBuddyEmotion(emotion), true);
   }
@@ -158,12 +161,17 @@ test("감정마다 감정 채팅 버튼 그림과 읽어 주는 설명이 있다
   assert.equal(aiBuddyFaceFor("idle"), "waiting");
 });
 
-test("20종 그림 파일이 실제로 있고 대기·탭·타이핑 얼굴이 그 안에 있다", () => {
+test("20개 상황 얼굴이 실제 3D 포즈 18종을 빠짐없이 공유한다", () => {
   assert.equal(AI_BUDDY_CHAT_FACES.length, 20);
+  assert.equal(AI_BUDDY_POSES.length, 18);
+  const usedPoses = new Set<string>();
   for (const face of AI_BUDDY_CHAT_FACES) {
-    const file = new URL(`../public/assets/ai-buddy/chat/${face}.webp`, import.meta.url);
+    const pose = aiBuddyPoseForFace(face);
+    usedPoses.add(pose);
+    const file = new URL(`../public/assets/${aiBuddyChatFaceAsset(face)}`, import.meta.url);
     assert.equal(existsSync(file), true, `${face}.webp 누락`);
   }
+  assert.deepEqual([...usedPoses].toSorted(), [...AI_BUDDY_POSES].toSorted());
   for (const face of [AI_BUDDY_BLINK_FACE, AI_BUDDY_TAP_FACE, AI_BUDDY_TYPING_FACE]) {
     assert.ok(AI_BUDDY_CHAT_FACES.includes(face), `${face} 는 20종 안에 있어야 한다`);
   }
@@ -200,13 +208,14 @@ test("대기 중 배회는 조금씩 움직이고 가장자리 띠를 벗어나�
   assert.equal(nextAiBuddyWanderRatio({ xRatio: 0, yRatio: 0.5 }, 2).xRatio, 1);
 });
 
-test("이동 중에는 두리번거리고 도착하면 말을 걸 듯한 얼굴을 짓는다", () => {
-  assert.equal(aiBuddyWanderFace(3, true), "explore");
+test("이동 중에는 달리고 도착하면 말을 걸 듯한 얼굴을 짓는다", () => {
+  assert.equal(aiBuddyWanderFace(3, true), AI_BUDDY_WANDER_MOVING_FACE);
+  assert.equal(AI_BUDDY_WANDER_MOVING_FACE, "excited");
   for (let step = 1; step <= 24; step += 1) {
     const face = aiBuddyWanderFace(step, false);
     assert.ok(AI_BUDDY_IDLE_MOTIONS.includes(face), `step ${step}: 대기 동작 밖 얼굴`);
     // 도착 얼굴이 이동 중 얼굴과 같으면 멈춘 걸 알 수 없다(실측: 계속 걸어가는 것처럼 보였다).
-    assert.notEqual(face, "explore", `step ${step}: 도착했는데 이동 중 얼굴이다`);
+    assert.notEqual(face, AI_BUDDY_WANDER_MOVING_FACE, `step ${step}: 도착했는데 계속 달린다`);
     assert.equal(typeof aiBuddyWanderLine(face), "string", `step ${step}: 도착 얼굴에 대사가 없다`);
   }
   assert.equal(aiBuddyWanderFace(5, false), aiBuddyWanderFace(5, false));
@@ -219,12 +228,11 @@ test("말은 몇 걸음에 한 번만 걸고, 이동 중에는 말풍선을 띄�
   assert.ok(AI_BUDDY_WANDER_LINE_EVERY >= 3, "매 걸음 말을 걸면 잔소리가 된다");
   assert.ok(AI_BUDDY_WANDER_LINE_MS >= 2_000 && AI_BUDDY_WANDER_LINE_MS <= 4_000);
 
-  // 이동 중 얼굴(explore)에는 대사가 없고, 도착 얼굴에는 반말 한 마디가 있다.
-  assert.equal(aiBuddyWanderLine("explore"), null);
+  // 이동 중 달리는 얼굴에는 대사가 없고, 도착 얼굴에는 반말 한 마디가 있다.
+  assert.equal(aiBuddyWanderLine(AI_BUDDY_WANDER_MOVING_FACE), null);
   assert.equal(aiBuddyWanderLine("typing"), null);
   for (const face of AI_BUDDY_IDLE_MOTIONS) {
     const line = aiBuddyWanderLine(face);
-    if (face === "explore") continue;
     assert.equal(typeof line, "string", `${face} 대사 누락`);
     assert.ok(line && line.length <= 10, `${face} 대사가 길다: ${line}`);
     assert.doesNotMatch(line ?? "", /(?:요|습니다|세요)$/, `${face} 대사가 존댓말이다`);
@@ -710,7 +718,7 @@ test("플로팅 버튼은 부모 설정과 AI 켜짐을 함께 확인하고 오�
   assert.match(fab, /friendSettings\.data\?\.buddy_attention_enabled !== false/);
   assert.match(fab, /aiEnabled = friendSettings\.data\?\.ai_enabled === true/);
   // AI 가 꺼진 가족에서는 말 걸 재료도 받지 않는다.
-  assert.match(fab, /useAiBuddyNudgeInput\(aiEnabled\)/);
+  assert.match(fab, /useAiBuddyNudgeInput\(aiEnabled && presentation\.canPrompt\)/);
   // 배회하며 건네는 말도 오늘 알아야 할 것이 있으면 그걸 먼저 말한다.
   assert.match(fab, /buildAiBuddyNudge\(nudgeInputRef\.current, step\)/);
   assert.match(fab, /nudge\.kind === "invite" \? aiBuddyWanderLine\(arrival\) : nudge\.line/);
