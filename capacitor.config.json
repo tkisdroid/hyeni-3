@@ -1,6 +1,6 @@
 {
   "appId": "com.hyeni.calendar",
-  "appName": "혜니캘린더",
+  "appName": "혜니캘린더 - 우리아이 일정&안전 한번에",
   "webDir": "dist",
   "loggingBehavior": "none",
   "server": {

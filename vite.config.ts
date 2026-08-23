@@ -37,7 +37,7 @@ export default defineConfig({
       registerType: "prompt",
       includeAssets: ["apple-touch-icon.png", "favicon-32x32.png", "assets/logo.webp"],
       manifest: {
-        name: "혜니캘린더",
+        name: "혜니캘린더 - 우리아이 일정&안전 한번에",
         short_name: "혜니캘린더",
         description: "가족 일정 공유 + 부모·자녀 위치/안전",
         lang: "ko",

@@ -65,5 +65,5 @@ test("iOS 동기화 명령은 버전·자산·Swift Package 경로를 패키징 
   assert.match(verifier, /MARKETING_VERSION/);
   assert.match(verifier, /CURRENT_PROJECT_VERSION/);
   assert.equal((project.match(/MARKETING_VERSION = 1\.4\.0;/g) ?? []).length, 2);
-  assert.equal((project.match(/CURRENT_PROJECT_VERSION = 11;/g) ?? []).length, 2);
+  assert.equal((project.match(/CURRENT_PROJECT_VERSION = 12;/g) ?? []).length, 2);
 });

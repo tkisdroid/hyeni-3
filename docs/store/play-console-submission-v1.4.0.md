@@ -1,12 +1,12 @@
 # Google Play Console 제출 패키지 — 혜니캘린더 v1.4.0
 
-기준일: 2026-08-19
+기준일: 2026-08-23
 
 패키지: `com.hyeni.calendar`
 
-버전: `versionName 1.4.0` / `versionCode 11`
+버전: `versionName 1.4.0` / `versionCode 12`
 
-현재 판정: **출시 후보 검증 중(HOLD)**
+현재 판정: **출시 후보 검증 및 자동 제출 진행 중**
 
 이 문서는 v1.4.0 제출 상태의 정본이다. v1.3.0 등록정보·그래픽 자산·정책 선언의 상세 이력은
 `docs/store/play-console-submission-v1.3.0.md`에 보존한다. 비밀번호, 심사 계정 자격 증명,
@@ -19,8 +19,8 @@ refresh·구매·서명 토큰은 저장소나 출시 증거에 기록하지 않
 - 전체 트랙에 업로드된 최대 `versionCode`는 6이다.
 - 프로덕션의 `혜니캘린더 1.3.0 (6)`은 전체 출시 상태로 **검토 중**이다.
 - 내부 테스트의 `1.3.0 (5)`는 내부 테스터에게 제공 중이다.
-- v1.4.0은 기존 심사를 임의로 취소하거나 교체하지 않는다. AAB 업로드와 심사 전송은 직전 화면의
-  대상 앱·트랙·파일을 다시 확인한 뒤 사용자의 실행 승인을 받는다.
+- v1.4.0은 기존 심사를 임의로 취소하지 않는다. 사용자가 2026-08-23 등록과 최종 제출까지 자동 진행하도록
+  명시 승인했으므로 대상 앱·프로덕션 트랙·AAB를 자동 검증한 뒤 제출한다.
 
 기존 프로덕션 AAB의 역사 증거는 10,539,140 bytes, SHA-256
 `6b31166c7b6e141ed451a81970ed78a4a934ea1ecd8cc31addd4024f9d0dbc45`다. 이 값은 v1.4.0
@@ -28,15 +28,15 @@ refresh·구매·서명 토큰은 저장소나 출시 증거에 기록하지 않
 
 ## 2. 새로운 기능
 
-Play 출시 노트 초안:
+Play 출시 노트 정본은 `docs/store/play-release-notes-v1.4.0.md`다.
 
 ```text
-아이의 하루를 더 다정하고 편리하게 챙길 수 있도록 개선했어요.
-· AI 친구에게 음성으로 말하면 답을 자동으로 읽어줘요.
-· 말하기 버튼을 길게 눌러 바로 질문할 수 있어요.
-· AI 친구가 아이의 습관과 챙길 물건을 기억해 대화를 이어가요.
-· 보호자가 아이의 하루 요약을 대시보드에서 확인할 수 있어요.
-· 친구 초대와 알림, 화면 사용 안정성을 함께 다듬었어요.
+아빠가 아이를 위해 만든 혜니캘린더를 더 안정적으로 다듬었어요.
+· 공동 보호자 일정 등록 오류 수정
+· iPhone Safari 일정 등록 안정화
+· AI 친구 메시지 전송 안정화
+· 주변 소리 청취 기록 오류 안내 개선
+· 앱 이름과 아이콘 새단장
 ```
 
 앱 문구와 등록정보에는 AI가 사람인 것처럼 오인시키는 표현을 쓰지 않는다. 음성 인식 입력과 Android
@@ -45,7 +45,7 @@ Play 출시 노트 초안:
 
 ## 3. 이번 후보의 변경 경계
 
-- 앱/PWA/Android: v1.4.0 및 `versionCode 11`로 올린다.
+- 앱/PWA/Android: v1.4.0 및 `versionCode 12`로 올린다.
 - Worker/D1: v1.4.0 버전 번호만을 위한 소스·스키마 변경은 없으므로 재배포하지 않는다.
 - Pages: 새 앱 번들과 `app-version.json`을 배포하되, 기존 설치에는 `blockingUpdate:false`의 권장 업데이트만
   표시한다. Play에서 v1.4.0을 실제로 받을 수 없는 동안에는 공개 배포 시점을 별도로 판단한다.
@@ -55,16 +55,16 @@ Play 출시 노트 초안:
 
 ## 4. 완료 조건
 
-- [ ] 앱 전체 테스트, TypeScript, production build 통과
-- [ ] Worker 전체 테스트와 typecheck 통과(무변경 확인용)
-- [ ] Android unit, lint, `assembleDebug` 통과
-- [ ] v1.4.0/code 11 debug APK를 S25(`R5CY521CFNZ`)에 `adb install -r`로 설치하고 버전 확인
+- [x] 앱 전체 1,908/1,908, TypeScript, production build 통과
+- [x] Worker 전체 1,272/1,272와 typecheck 통과(무변경 확인용)
+- [x] Android unit, lint, `assembleDebug` 통과
+- [ ] v1.4.0/code 12 debug APK를 필요 시 실기기에 `npm run android:install:debug -- <serial>`로 보존 설치하고 버전 확인
 - [ ] clean commit 기준 승인 업로드 키 서명 release AAB 생성
 - [ ] 인증서, source SHA, non-debuggable, manifest, 16KB 정렬, AAB SHA-256 증거 확인
 - [ ] 커밋을 `origin/main`에 푸시
 - [ ] Pages 배포 시 고정 URL·프로덕션 별칭과 로컬 dist의 index/asset hash 대조
-- [ ] Play 업로드 직전 대상 앱·트랙·AAB를 사용자와 확인
-- [ ] 최종 심사 전송은 별도 실행 승인을 받은 경우에만 수행
+- [ ] Play 업로드 직전 대상 앱·프로덕션 트랙·AAB를 자동 교차 확인
+- [x] 최종 심사 전송까지 사용자 실행 승인 확보(2026-08-23)
 
 ## 5. S25 설치 안전 기록
 

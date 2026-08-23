@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-15T09:06:03.675Z",
+  "generatedAt": "2026-08-23T09:44:19.504Z",
   "source": "local-production-ui-with-static-demo-data",
-  "sourceUiManifestSha256": "fcba8c0a3c533d49cb1c4456fc3594e6598f1e113a1bd03922686270c9787767",
-  "sourceIconSha256": "eb1206cb871e2071f7956d543aaaf50c8fb074d2686522415d9594631824f134",
+  "sourceUiManifestSha256": "7c768eda77cfef649845f77d63c1639b0c1b1abfce56342a41c3a6ece9b73fa5",
+  "sourceIconSha256": "d2c3f607c949562307efd517bb5273eed9ed012bf4a8cd1184325bdce17a46cc",
   "listingStyle": "flat-brand-header-with-full-bleed-actual-app-ui",
   "screenshots": [
     {
@@ -53,8 +53,8 @@
     {
       "file": "play-icon-512.png",
       "kind": "icon",
-      "bytes": 106504,
-      "sha256": "3f76eaf78ad9ccbef067140bb6bb9a57a818353a68a5faf11c1c640a4bbfc899"
+      "bytes": 118462,
+      "sha256": "b36b840603fa6870adbc6823d238a8513b1f3ce4e59b2c4a8f95c873d58570e8"
     },
     {
       "file": "play-feature-graphic-1024x500.png",
@@ -65,38 +65,38 @@
     {
       "file": "01-parent-home.png",
       "kind": "phoneScreenshot",
-      "bytes": 571566,
-      "sha256": "39d53dacaea44fb22de13dd08e5f31c396aef567cd6fe7d2d971c192859ffd6f"
+      "bytes": 572014,
+      "sha256": "1843715a94895269dbad6216514521aace1e52d2c28211daf8e55d17cf682f3f"
     },
     {
       "file": "02-family-calendar.png",
       "kind": "phoneScreenshot",
-      "bytes": 254541,
-      "sha256": "7d4ae5354d888d9dda708e0e39f37bbf5b3065bf08bd44bd9acfb47487fe9280"
+      "bytes": 255404,
+      "sha256": "901580da0865e5ca2de14908f0d234511c0abdb0278a68e3bb0d72284de2e054"
     },
     {
       "file": "03-family-conversation.png",
       "kind": "phoneScreenshot",
-      "bytes": 306638,
-      "sha256": "78c5ccb357f3970c4247a39b941501e8b92d748170fe707c2d5e0468a97f03e2"
+      "bytes": 306416,
+      "sha256": "a24c44e53ceba7cb5cc20664716e0bc44de4f1deeb732f9a1850209522936aee"
     },
     {
       "file": "04-daily-safety-report.png",
       "kind": "phoneScreenshot",
-      "bytes": 558693,
-      "sha256": "bf9c09b9295e706fc00976dec2934007aeccd654572c8ae53d425ecfe142109a"
+      "bytes": 562900,
+      "sha256": "ffd120ef7faceadbe7f68d45319f4ab456b3aa58d1e46410f1e4ebbc7720f4e3"
     },
     {
       "file": "05-weekly-family-report.png",
       "kind": "phoneScreenshot",
-      "bytes": 346474,
-      "sha256": "3673cc1f0ffbec7366b34cf5b4eda111b769f8f9537373225a31b13979d7e381"
+      "bytes": 346485,
+      "sha256": "cff8449d0b89f1a6e1ac9055410c3096fa28c76410e20e6dace529b0848aa97f"
     },
     {
       "file": "06-child-home-sos.png",
       "kind": "phoneScreenshot",
-      "bytes": 631692,
-      "sha256": "f3cdc14c790da02ebd209b644484e45e294ad2308d31bdf0618a890a171c5f5b"
+      "bytes": 655666,
+      "sha256": "f18fe24b1b0c2bbcedbce8fb12c40a559fc3d69808f39457d53921de8ec37a9a"
     }
   ]
 }

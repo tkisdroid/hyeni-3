@@ -102,7 +102,8 @@ test("스토어 문서와 제출 정본은 최종 자산 폴더와 비프로모�
   // "업로드한 파일마다 SHA-256을 대조했다"는 증거를 요구한다(2026-08-18 정리).
   assert.match(submission, /SHA-256/);
   assert.match(submission, /\b[0-9a-f]{64}\b/);
-  assert.match(listing, /가족 캘린더와 아이 위치를 한눈에/);
+  assert.match(listing, /아빠가 아이를 위해 만든 가족 일정·안전 앱/);
+  assert.match(listing, /기본 기능은 무료로 이용하세요/);
   assert.doesNotMatch(listing, /📅|📍|🆘|💬|🤖|🎧|👑|🔐/);
   assert.match(submission, /가격·할인·무료 프로모션을 넣지 않고/);
 });
