@@ -344,6 +344,59 @@ test("같은 자녀의 AI 비용 실행 lease는 한 요청만 획득하고 해�
   sqlite.close();
 });
 
+test("아이 대화는 짧은 선제 메시지 lease 경합이 끝나면 기다렸다가 실행한다", async () => {
+  const { sqlite, db } = createDb();
+  const proactive = await atomic.acquireAiCreditExecutionLease(db, {
+    familyId: "family-1",
+    childUserId: "child-1",
+  });
+  assert.equal(proactive.status, "acquired");
+
+  let waitCount = 0;
+  const interactive = await atomic.acquireInteractiveAiCreditExecutionLease(db, {
+    familyId: "family-1",
+    childUserId: "child-1",
+    retryAttempts: 3,
+    retryDelayMs: 0,
+    wait: async () => {
+      waitCount += 1;
+      if (waitCount === 1) {
+        assert.equal(await atomic.releaseAiCreditExecutionLease(db, proactive.lease), true);
+      }
+    },
+  });
+
+  assert.equal(interactive.status, "acquired");
+  assert.equal(waitCount, 1);
+  assert.equal(await atomic.releaseAiCreditExecutionLease(db, interactive.lease), true);
+  sqlite.close();
+});
+
+test("진행 중인 다른 대화 lease는 제한 횟수만 기다리고 busy로 끝낸다", async () => {
+  const { sqlite, db } = createDb();
+  const active = await atomic.acquireAiCreditExecutionLease(db, {
+    familyId: "family-1",
+    childUserId: "child-1",
+  });
+  assert.equal(active.status, "acquired");
+
+  let waitCount = 0;
+  const busy = await atomic.acquireInteractiveAiCreditExecutionLease(db, {
+    familyId: "family-1",
+    childUserId: "child-1",
+    retryAttempts: 3,
+    retryDelayMs: 0,
+    wait: async () => {
+      waitCount += 1;
+    },
+  });
+
+  assert.equal(busy.status, "busy");
+  assert.equal(waitCount, 2);
+  assert.equal(await atomic.releaseAiCreditExecutionLease(db, active.lease), true);
+  sqlite.close();
+});
+
 test("만료 lease를 회수해도 이전 요청의 늦은 해제가 새 lease를 삭제하지 않는다", async () => {
   const { sqlite, db } = createDb();
   const stale = await atomic.acquireAiCreditExecutionLease(db, {

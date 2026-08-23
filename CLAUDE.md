@@ -3,6 +3,36 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
+**아이 AI 친구 채팅 간헐 전송 불가 안정화(2026-08-23, 운영 배포 완료)**: 아이가 AI 친구의
+답변을 기다리는 동안 입력창은 계속 활성 상태였는데, Enter 경로는 `sendChat.isPending`이면 실제 요청을 보내지 않고
+돌아오면서도 입력값을 무조건 비웠다. 또한 React/TanStack의 pending 렌더보다 빠른 연속 액션은 같은 tick에서 두 요청을
+시작할 수 있었고, Android WebView의 fetch가 Worker에 닿지 못한 채 끝나지 않으면 화면 전체가 계속 pending으로 잠겼다.
+Worker에서도 선제 AI 메시지와 아이 대화가 같은 자녀별 실행 lease를 사용해, 짧은 선제 작업과 겹친 대화가 즉시
+`409 ai_request_in_progress`로 끝나는 창이 있었다.
+
+클라이언트는 렌더와 독립적인 동기식 turn gate를 두어 한 요청만 시작하고, 답변 대기 중 Enter를 눌러도 새 입력을
+지우지 않는다. 아이 대화 fetch는 45초 상한과 `AbortController`를 사용해 네트워크가 끝없이 멈춰도 다시 입력할 수 있게
+복구한다. Worker의 interactive lease 획득은 150ms 간격 최대 5회(총 대기 상한 600ms)만 재시도해 짧은 선제 작업과의
+경합은 흡수하되 다른 긴 대화와의 직렬화·크레딧 원자성은 유지한다. 운영 D1은 읽기 전용으로 확인했으며 활성 stale lease,
+오늘 사용량, 최근 실패 시점의 신규 user 메시지 저장이 모두 없었다. 계정·세션·refresh 토큰과 D1 데이터는 변경하지 않았다.
+
+회귀는 입력 보존·동기 gate·fetch timeout, 짧은 lease 해제 뒤 획득·지속 lease bounded busy를 추가했다. 최종 검증은
+앱 `1,902/1,902`, Worker `1,270/1,270`, 앱·Worker typecheck, production build(2,286 modules·precache 473·
+중복 0), Capacitor Android sync와 `assembleDebug` BUILD SUCCESSFUL이다. 최신 debug APK SHA-256은
+`71359208FBE636D0D5B3AE4D03CEDEDB67A61B7330A30A9819F853833ECC41CA`다. 전수 브라우저 QA는 앱 화면 오류가 아니라
+기존 온보딩 검사기의 탐색 경합(`document.body` null, 이후 `.qrs-manual` 미존재)으로 두 차례 중단돼 완료로 세지 않는다.
+
+Worker version은 `fba66dd6-7447-4ec3-b3fe-96f9879f09f2`, Pages 배포는
+`https://07994ba5.hyeni-calendar.pages.dev`다. Worker health 200 `{"ok":true,"status":"ready"}`와
+아이 채팅 route 미인증 401을 확인했다. 배포별 주소·고정 `hyeni-calendar.pages.dev`·브랜드
+`hyenicalendar.com`은 모두 새 entry `assets/index-k0J7hzRA.js`를 참조하며 entry SHA-256
+`338959d6f132a18f71ce85889e2f16a47534d5b356f39a88c43ff2e1de808576`, CSS
+`177583e46ce74cda70b47b5f3139d3d674abd5923f433b0e610a5279a41ce6f4`, Service Worker
+`de63d5105ca090384a97d68995b71b70d08529f42731b9fbff9af4213d1b3728`가 로컬과 일치하고 OAuth callback도
+200·같은 entry를 참조한다. razr(`ZY22H9VTQD`)는 ADB에 연결되지 않아 앱 설치·실기기 채팅은 수행하지 않았으며,
+로그인·로그아웃·역할 전환·재페어링도 건드리지 않았다. Worker 완화와 웹 PWA는 즉시 적용됐고 Android 클라이언트의
+입력 보존·timeout은 razr 재연결 뒤 `npm run android:install:debug -- ZY22H9VTQD` 보존 설치가 필요하다.
+
 **휴대폰 번호 가입 CTA 텍스트 전용 디자인(2026-08-23, 운영 배포 완료)**: 가입 첫 화면의
 `휴대폰 번호로 가입하기`를 소셜 버튼 변형에서 독립 `ob-phone-signup` 액션으로 분리했다. 우측 화살표 아이콘을
 제거해 텍스트만 중앙 정렬하고, 보라색·라벤더 계열 대신 정본 `rose-soft` 배경·`rose-text` 문구·`rose-200`

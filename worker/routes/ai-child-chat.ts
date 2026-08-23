@@ -30,7 +30,7 @@ import { openaiChatUrl, openaiLunaChatConfig, openaiSafetyIdentifier } from "../
 import { classifyOpenAiError, writeOpenAiLog } from "../lib/openaiLog";
 import { notifyPg } from "../lib/realtime";
 import {
-  acquireAiCreditExecutionLease,
+  acquireInteractiveAiCreditExecutionLease,
   AiCreditConsumptionUnavailableError,
   consumeAiCreditAtomic,
   releaseAiCreditExecutionLease,
@@ -499,7 +499,7 @@ chat.post("/child-chat", requireAuth, async (c) => {
 
   let executionLease: AiCreditExecutionLease;
   try {
-    const acquired = await acquireAiCreditExecutionLease(db, {
+    const acquired = await acquireInteractiveAiCreditExecutionLease(db, {
       familyId,
       childUserId: userId,
     });

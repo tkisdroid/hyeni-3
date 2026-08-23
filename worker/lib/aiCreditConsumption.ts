@@ -65,6 +65,14 @@ export type AiCreditExecutionLeaseResult =
   | { status: "acquired"; lease: AiCreditExecutionLease }
   | { status: "busy" };
 
+interface InteractiveAiCreditExecutionLeaseOptions {
+  familyId: string;
+  childUserId: string;
+  retryAttempts?: number;
+  retryDelayMs?: number;
+  wait?: (delayMs: number) => Promise<void>;
+}
+
 export class AiCreditConsumptionUnavailableError extends Error {
   readonly status = 503;
   readonly code = "ai_credit_consumption_unavailable";
@@ -164,6 +172,29 @@ export async function acquireAiCreditExecutionLease(
   } catch (error) {
     throw new AiCreditConsumptionUnavailableError(error);
   }
+}
+
+/** 짧은 선제 메시지 작업과 겹친 아이 대화만 잠깐 기다리고, 다른 긴 대화는 bounded busy로 끝낸다. */
+export async function acquireInteractiveAiCreditExecutionLease(
+  db: D1Database,
+  options: InteractiveAiCreditExecutionLeaseOptions,
+): Promise<AiCreditExecutionLeaseResult> {
+  const retryAttempts = Number.isFinite(options.retryAttempts)
+    ? Math.max(1, Math.min(10, Math.floor(options.retryAttempts as number)))
+    : 5;
+  const retryDelayMs = Number.isFinite(options.retryDelayMs)
+    ? Math.max(0, Math.min(1_000, Math.floor(options.retryDelayMs as number)))
+    : 150;
+  const wait = options.wait ?? ((delayMs: number) => new Promise<void>((resolve) => {
+    setTimeout(resolve, delayMs);
+  }));
+
+  for (let attempt = 0; attempt < retryAttempts; attempt += 1) {
+    const result = await acquireAiCreditExecutionLease(db, options);
+    if (result.status === "acquired" || attempt === retryAttempts - 1) return result;
+    await wait(retryDelayMs);
+  }
+  return { status: "busy" };
 }
 
 export async function releaseAiCreditExecutionLease(

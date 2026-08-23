@@ -83,6 +83,10 @@ import {
   readSelectedCharacter,
 } from "./AiFriendSetup";
 import { resolveAiFriendClientGreeting } from "@/transform/aiFriendDisplay";
+import {
+  createAiChatTurnGate,
+  prepareAiChatComposerTurn,
+} from "@/lib/aiChatReliability";
 import "@/styles/jua.css";
 import "./AiFriendChat.css";
 
@@ -280,6 +284,7 @@ export function AiFriendChat() {
   const chatError = messagesQuery.isError;
   const aiCreditStatus = useAiCreditPublicStatus(userId);
   const sendChat = useSendChildChat();
+  const turnGateRef = useRef(createAiChatTurnGate());
   const reportAiMessage = useReportAiMessage();
   // 공개 상태는 포함분·구매분·부모 상한을 합친 서버 정본이고, 전송 성공값도 같은 캐시에 반영된다.
   const [remaining, setRemaining] = useState<number | null>(null);
@@ -440,13 +445,11 @@ export function AiFriendChat() {
   );
 
   // 전송 = 사용자 액션(버튼·칩·Enter)에서만. 자동 실행 금지. 크레딧 소모 주의.
-  const send = (
-    raw: string,
+  const dispatchSend = (
+    text: string,
     source: AiChatTurnSource,
     confirmedTool?: ConfirmedAiTool,
   ) => {
-    const text = raw.trim();
-    if (!text || sendChat.isPending) return;
     // 사용자가 대화를 시작하면 로컬 상태가 정본 — 뒤늦게 도착한 서버 기록이 덮어쓰지 않게 시드 잠금.
     if (!seeded) setSeeded(true);
     const base = `${Date.now()}`;
@@ -515,14 +518,29 @@ export function AiFriendChat() {
           }]);
           reactTo({ phase: "reply", childText: text, toolResult: { ok: false } });
         },
-        onSettled: () => setPendingSendSource((current) => (current === source ? null : current)),
+        onSettled: () => {
+          turnGateRef.current.settle();
+          setPendingSendSource((current) => (current === source ? null : current));
+        },
       },
     );
   };
 
+  const send = (
+    raw: string,
+    source: AiChatTurnSource,
+    confirmedTool?: ConfirmedAiTool,
+  ): boolean => {
+    const text = turnGateRef.current.begin(raw);
+    if (!text) return false;
+    dispatchSend(text, source, confirmedTool);
+    return true;
+  };
+
   const handleSend = () => {
-    send(input, "composer");
-    setInput("");
+    const prepared = prepareAiChatComposerTurn(turnGateRef.current, input);
+    setInput(prepared.nextInput);
+    if (prepared.message) dispatchSend(prepared.message, "composer");
   };
 
   /**

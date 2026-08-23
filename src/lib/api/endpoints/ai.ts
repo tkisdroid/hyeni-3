@@ -11,6 +11,7 @@ import {
   normalizeAiCreditPublicStatusPayload,
   type AiCreditPublicStatus,
 } from "@/transform/aiCreditPublicStatus";
+import { runAiChatRequestWithTimeout } from "@/lib/aiChatReliability";
 
 export { normalizeAiCreditPublicStatusPayload };
 export type { AiCreditPublicStatus };
@@ -352,12 +353,15 @@ export async function sendChildChat(input: SendChildChatInput): Promise<ChildCha
   const message = String(input.message || "").trim();
   if (!message) throw new Error("메시지를 입력해 줘");
   const characterEmoji = typeof input.characterEmoji === "string" ? input.characterEmoji.trim() : "";
-  return apiPost<ChildChatReply>("/api/ai/child-chat", {
-    message,
-    usageDate: todayDateKST(),
-    ...(characterEmoji ? { characterEmoji } : {}),
-    ...(input.confirmedTool ? { confirmedTool: input.confirmedTool } : {}),
-  });
+  return runAiChatRequestWithTimeout(
+    (signal) => apiPost<ChildChatReply>("/api/ai/child-chat", {
+      message,
+      usageDate: todayDateKST(),
+      ...(characterEmoji ? { characterEmoji } : {}),
+      ...(input.confirmedTool ? { confirmedTool: input.confirmedTool } : {}),
+    }, { signal }),
+    45_000,
+  );
 }
 
 // ── AI 일정 파싱(voice-parse · 텍스트/음성/알림장 → 일정 후보) ──────────────
