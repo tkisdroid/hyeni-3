@@ -363,9 +363,7 @@ export function ChildHome() {
   // 포함분·구매분·부모 상한을 모두 반영한 Worker 정본만 숫자로 보여 준다.
   const aiRemaining = aiCreditStatus.data?.availableRemaining ?? null;
   const aiFriendSavedName = aiFriend.data?.ai_friend_name?.trim() ?? "";
-  const aiFriendDisplayName = aiFriendSavedName
-    ? resolveAiFriendDisplayName({ savedName: aiFriendSavedName, childName })
-    : null;
+  const aiFriendDisplayName = resolveAiFriendDisplayName({ savedName: aiFriendSavedName, childName });
   const openAiFriend = () => {
     if (!aiEnabled) {
       // i18n 이후에도 이 분기는 반드시 부모 설정 요청을 안내한다: 부모님이 켜 줘야 해.
@@ -811,9 +809,7 @@ export function ChildHome() {
               <img src={asset(aiBuddyFaceAsset(aiTileEmotion))} alt="" />
               <span>
                 <span className="kd-tile__title">
-                  {aiFriendDisplayName
-                    ? intl.formatMessage({ id: "child.home.meetAiNamed" }, { name: aiFriendDisplayName })
-                    : intl.formatMessage({ id: "child.home.meetAi" })}
+                  {intl.formatMessage({ id: "child.home.meetAiNamed" }, { name: aiFriendDisplayName })}
                 </span>
                 <span className="kd-tile__sub">
                   {!aiEnabled

@@ -32,11 +32,11 @@ export interface FriendPersona {
   animal: string;
 }
 
-// 2026-08-17 TK 지시: 친구는 꼬미 하나만 남긴다.
+// 2026-08-24 TK 지시: 친구는 혜니 하나만 남긴다.
 // 아이가 고를 동물이 여럿이면 "누구와 이야기하는지"가 흐려지고, 얼굴은 이미 표정 이모티콘이
 // 담당한다(한 얼굴 원칙). 서버 PERSONAS 에는 나머지가 남아 있어도 클라가 🦊 만 보내므로 안전하다.
 export const AI_FRIEND_PERSONAS: FriendPersona[] = [
-  { key: "fox", emoji: "🦊", name: "꼬미", species: "여우", tone: "깜찍하고 귀여운", greeting: "헤헤, 나는 꼬미야! 같이 얘기하자, 응?", animal: "fox" },
+  { key: "fox", emoji: "🦊", name: "혜니", species: "여우", tone: "깜찍하고 귀여운", greeting: "헤헤, 나는 혜니야! 같이 얘기하자, 응?", animal: "fox" },
 ];
 
 export const DEFAULT_CHARACTER = "🦊";
@@ -238,7 +238,7 @@ export function AiFriendSetup() {
           </div>
         </div>
 
-        {/* 캐릭터 고르기는 없앴다(2026-08-17 TK 지시) — 친구는 꼬미 하나다. */}
+        {/* 캐릭터 고르기는 없앴다(2026-08-24 TK 지시) — 친구는 혜니 하나다. */}
 
         {/* 이름 짓기 */}
         <div className="afs-label">{intl.formatMessage({ id: "child.aiSetup.nameFriend" })}</div>

@@ -38,8 +38,8 @@ const userFacingPropertyNames = new Set([
 
 const literalAllowlist = [
   ...[
-    // 2026-08-17 TK 지시로 친구는 꼬미(여우) 하나만 남았다 — 나머지 동물 원문은 화면에서 사라졌다.
-    ["property:species", "여우"], ["property:tone", "깜찍하고 귀여운"], ["property:greeting", "헤헤, 나는 꼬미야! 같이 얘기하자, 응?"],
+    // 2026-08-24 TK 지시로 친구는 혜니(여우) 하나만 남았다 — 나머지 동물 원문은 화면에서 사라졌다.
+    ["property:species", "여우"], ["property:tone", "깜찍하고 귀여운"], ["property:greeting", "헤헤, 나는 혜니야! 같이 얘기하자, 응?"],
   ].map(([context, value]) => ({
     path: "src/screens/child/AiFriendSetup.tsx",
     context,

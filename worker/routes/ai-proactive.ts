@@ -670,7 +670,7 @@ async function processCandidate(
       .bind(
         pushId,
         familyId,
-        String(parentSettings.ai_friend_name || "AI 친구"),
+        String(parentSettings.ai_friend_name || "혜니"),
         message,
         JSON.stringify(data),
         JSON.stringify(deliveryStatus),

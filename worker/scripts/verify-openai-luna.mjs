@@ -47,7 +47,7 @@ if (!apiKey) {
   }
   const childSafetyParentNotified = true;
   const childSystemPrompt = buildChildSystemPrompt({
-    persona: { name: "통통이", species: "토끼", tone: "다정하고 차분한 말투" },
+    persona: { name: "혜니", species: "토끼", tone: "다정하고 차분한 말투" },
     childProfile: { name: "하늘", birthday: "2018-04-03", grade: "초등학생" },
     parentSettings: { forbiddenTopics: ["위험한 행동"], allowScheduleActions: true },
     safetyHit: childSafetyPlan.safety.riskLevel !== "none",

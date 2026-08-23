@@ -251,6 +251,11 @@ aiData.patch("/settings/friend", requireAuth, async (c) => {
       return c.json({ error: "family_entitlement_unavailable" }, 503);
     }
   }
+  // 운영 DB의 과거 column default에 기대지 않는다. 부모가 토글부터 저장해도 신규 친구 이름은 혜니다.
+  if (!insertColsFromPatch.includes("ai_friend_name")) {
+    insertColsFromPatch.push("ai_friend_name");
+    insertValuesFromPatch.push("혜니");
+  }
   const insertCols = ["id", "family_id", "child_user_id", ...insertColsFromPatch, "updated_by", "created_at", "updated_at"];
   const placeholders = insertCols.map(() => "?").join(",");
   const updateAssignments = [
@@ -289,7 +294,7 @@ aiData.post("/settings/friend-name", requireAuth, async (c) => {
   if (!(await childMemberId(db, familyId, uid))) return c.json({ error: "not_allowed" }, 403);
 
   const trimmed = String(body.name ?? "").trim();
-  const finalName = trimmed ? trimmed.slice(0, 30) : "AI 친구";
+  const finalName = trimmed ? trimmed.slice(0, 30) : "혜니";
   const now = pgNow();
   let dailyLimit: number;
   try {

@@ -7,11 +7,12 @@ import { createIntl, createIntlCache } from "react-intl";
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const locales = ["ko", "en", "ja", "zh-CN", "zh-TW", "vi", "th", "id", "ms", "fil"];
-// 2026-08-17 TK 지시: 친구는 꼬미(fox) 하나만 남긴다. 카탈로그에는 나머지 문구가 남아 있어도
+// 2026-08-24 TK 지시: 친구는 혜니(fox) 하나만 남긴다. 카탈로그에는 나머지 문구가 남아 있어도
 // 화면이 노출하는 persona 는 이것뿐이다.
 const personaKeys = ["fox"];
 const catalogPersonaKeys = ["rabbit", "cat", "fox", "dog", "bear", "panda"];
 const helperPath = resolve(rootDir, "src/transform/aiFriendDisplay.ts");
+const friendNameHelperPath = resolve(rootDir, "src/transform/aiFriendName.ts");
 const routeHelperPath = resolve(rootDir, "src/transform/routeExternalUrl.ts");
 
 function source(path) {
@@ -29,7 +30,8 @@ test("AI 친구 표시 필드는 안정적인 persona key와 카탈로그 ID를 
   for (const key of personaKeys) assert.match(setup, new RegExp(`key: ["']${key}["']`), key);
   assert.match(setup, /species:\s*["']여우["']/);
   assert.match(setup, /tone:\s*["']깜찍하고 귀여운["']/);
-  assert.match(setup, /greeting:\s*["']헤헤, 나는 꼬미야! 같이 얘기하자, 응\?["']/);
+  assert.match(setup, /name:\s*["']혜니["']/);
+  assert.match(setup, /greeting:\s*["']헤헤, 나는 혜니야! 같이 얘기하자, 응\?["']/);
   // 고르기 UI 를 없앴으므로 다른 동물이 화면에 남아 있으면 안 된다.
   for (const removed of ["rabbit", "cat", "dog", "bear", "panda"]) {
     assert.doesNotMatch(setup, new RegExp(`key: ["']${removed}["']`), removed);
@@ -40,7 +42,27 @@ test("AI 친구 표시 필드는 안정적인 persona key와 카탈로그 ID를 
   assert.doesNotMatch(chat, /`[^`]*\$\{(?:pendingSupply\.label|nextEvent\.(?:title|time))\}/);
 });
 
+test("기본 친구 이름과 과거 통통이·꼬미 설정은 혜니로 이어지고 직접 지은 이름은 보존한다", async () => {
+  const { DEFAULT_AI_FRIEND_NAME, resolveAiFriendDisplayName } = await import(pathToFileURL(friendNameHelperPath));
+  assert.equal(DEFAULT_AI_FRIEND_NAME, "혜니");
+  assert.equal(resolveAiFriendDisplayName({ savedName: "통통이" }), "혜니");
+  assert.equal(resolveAiFriendDisplayName({ savedName: "꼬미" }), "혜니");
+  assert.equal(resolveAiFriendDisplayName({ savedName: " 별이 " }), "별이");
+});
+
 test("10개 locale은 AI persona 표시 문구와 클라이언트 인사 ICU 변수를 완전하게 제공한다", () => {
+  const expectedFoxNames = {
+    ko: "혜니",
+    en: "Hyeni",
+    ja: "ヘニ",
+    "zh-CN": "惠妮",
+    "zh-TW": "惠妮",
+    vi: "Hyeni",
+    th: "ฮเยนี",
+    id: "Hyeni",
+    ms: "Hyeni",
+    fil: "Hyeni",
+  };
   for (const locale of locales) {
     const catalog = childCatalog(locale);
     // 카탈로그는 전부 유지한다 — 서버 PERSONAS 가 남아 있어 과거 값이 들어와도 표시할 수 있어야 한다.
@@ -58,6 +80,15 @@ test("10개 locale은 AI persona 표시 문구와 클라이언트 인사 ICU 변
     assert.match(catalog["child.aiChat.greeting.event"] ?? "", /\{intro\}/);
     assert.match(catalog["child.aiChat.greeting.event"] ?? "", /\{eventTime\}/);
     assert.match(catalog["child.aiChat.greeting.event"] ?? "", /\{eventTitle\}/);
+    for (const key of ["rabbit", "fox"]) {
+      const greeting = catalog[`child.aiPersona.${key}.greeting`] ?? "";
+      assert.match(greeting, new RegExp(expectedFoxNames[locale]), `${locale}:${key}: 혜니 이름`);
+      assert.doesNotMatch(
+        greeting,
+        /통통이|꼬미|Tongtongi|Kkomi|トントン|コミ|通通|小米|ตงตง|กโกมี/,
+        `${locale}:${key}: 과거 기본 이름`,
+      );
+    }
   }
 });
 

@@ -93,6 +93,12 @@ import {
   normalizeAiBuddyFabRatio,
   snapAiBuddyFabRatio,
 } from "../src/transform/aiBuddyFabPosition.ts";
+import {
+  AI_BUDDY_HOME_CHAT_HINT_LINE,
+  aiBuddyHomeChatHintLine,
+  resolveAiBuddyFabBubbleLine,
+  resolveAiBuddyFabTarget,
+} from "../src/transform/aiBuddyFabPrompt.ts";
 
 const FRAME = { width: 390, height: 844, topInset: 64, bottomInset: 112 };
 
@@ -372,9 +378,127 @@ test("배회 타이머는 감정이 바뀌어도 다시 만들지 않고 말풍�
   );
   assert.match(fab, /setTapped\(true\);\n    setWanderLine\(null\)/);
   // 말풍선은 얼굴을 가리지 않는 안내라 조작을 가로채지 않고 스크린리더에 중복 낭독되지 않는다.
-  assert.match(fab, /className=\{voiceHint \? "abf__bubble abf__bubble--hint" : "abf__bubble"\}/);
+  assert.match(fab, /className=\{guidanceBubble \? "abf__bubble abf__bubble--hint" : "abf__bubble"\}/);
   assert.match(fab, /aria-hidden="true"/);
   assert.match(read("src/app/AiBuddyFab.css"), /\.abf__bubble \{[^}]*pointer-events: none/);
+});
+
+test("아이 홈은 화면 폭 약 1/3의 실제 렌더 크기로 위치를 계산한다", () => {
+  const fab = read("src/app/AiBuddyFab.tsx");
+  const css = read("src/app/AiBuddyFab.css");
+  assert.match(css, /\.abf \{[^}]*width: clamp\(112px, 33\.333vw, 144px\)/);
+  assert.match(css, /\.abf \{[^}]*height: clamp\(112px, 33\.333vw, 144px\)/);
+  assert.match(fab, /fabSize: hostRef\.current\?\.offsetWidth \?\? presentation\.size/);
+  assert.match(css, /\.abf--compact \{[^}]*width: 68px;[^}]*height: 68px/);
+});
+
+test("홈 친구는 아무 말이 없을 때 눌러 대화할 수 있다고 알려 준다", () => {
+  assert.equal(AI_BUDDY_HOME_CHAT_HINT_LINE, "혜니를 눌러서 이야기해 봐!");
+  assert.equal(aiBuddyHomeChatHintLine("별이"), "별이를 눌러서 이야기해 봐!");
+  assert.ok(AI_BUDDY_HOME_CHAT_HINT_LINE.length <= 16, "한눈에 읽을 수 있는 말풍선이어야 한다");
+  assert.doesNotMatch(AI_BUDDY_HOME_CHAT_HINT_LINE, /(?:요|습니다|세요)[!.]?$/, "아이 모드는 반말이다");
+
+  assert.equal(resolveAiBuddyFabBubbleLine({
+    canPrompt: true,
+    voiceHint: false,
+    attentionStage: null,
+    attentionLine: null,
+    wanderLine: null,
+    friendName: "별이",
+  }), "별이를 눌러서 이야기해 봐!");
+  assert.equal(resolveAiBuddyFabBubbleLine({
+    canPrompt: true,
+    voiceHint: false,
+    attentionStage: null,
+    attentionLine: null,
+    wanderLine: null,
+    friendName: "혜니",
+  }), AI_BUDDY_HOME_CHAT_HINT_LINE);
+  assert.equal(resolveAiBuddyFabBubbleLine({
+    canPrompt: false,
+    voiceHint: false,
+    attentionStage: null,
+    attentionLine: null,
+    wanderLine: null,
+  }), null, "작은 동행 모드에서는 홈 안내를 띄우지 않는다");
+
+  const fab = read("src/app/AiBuddyFab.tsx");
+  assert.match(fab, /const friendName = resolveAiFriendDisplayName\(/);
+  assert.match(fab, /const label = `\$\{friendName\}와 이야기하기/);
+  assert.match(fab, /title=\{friendName\}/);
+});
+
+test("혜니의 모든 말풍선은 모바일에서 줄바꿈·말줄임 없이 한 줄로 보인다", () => {
+  const css = read("src/app/AiBuddyFab.css");
+  const fab = read("src/app/AiBuddyFab.tsx");
+  const floatingBubble = css.match(/\.abf__bubble \{([^}]*)\}/)?.[1] ?? "";
+  const hintBubble = css.match(/\.abf__bubble--hint \{([^}]*)\}/)?.[1] ?? "";
+  const stageBubble = css.match(/\.abf-stage__bubble \{([^}]*)\}/)?.[1] ?? "";
+  const stageLine = css.match(/\.abf-stage__line \{([^}]*)\}/)?.[1] ?? "";
+
+  assert.match(floatingBubble, /width:\s*max-content/);
+  assert.match(floatingBubble, /white-space:\s*nowrap/);
+  assert.doesNotMatch(floatingBubble, /text-overflow:\s*ellipsis/);
+  assert.match(hintBubble, /white-space:\s*nowrap/);
+  assert.doesNotMatch(hintBubble, /white-space:\s*normal|overflow-wrap:\s*anywhere/);
+  assert.match(stageBubble, /white-space:\s*nowrap/);
+  assert.match(stageLine, /white-space:\s*nowrap/);
+  assert.match(fab, /<p className="abf-stage__line">\{attention\.nudge\.line\}<\/p>/);
+  assert.doesNotMatch(fab, /className="abf-stage__hint"/);
+});
+
+test("탭 안내는 음성 안내·상황 알림·배회 대사를 가로채지 않는다", () => {
+  assert.equal(resolveAiBuddyFabBubbleLine({
+    canPrompt: true,
+    voiceHint: true,
+    attentionStage: null,
+    attentionLine: null,
+    wanderLine: "같이 놀자!",
+  }), AI_BUDDY_VOICE_HINT_LINE);
+  assert.equal(resolveAiBuddyFabBubbleLine({
+    canPrompt: true,
+    voiceHint: false,
+    attentionStage: "grow",
+    attentionLine: "준비물 챙겼어?",
+    wanderLine: "같이 놀자!",
+  }), "준비물 챙겼어?");
+  assert.equal(resolveAiBuddyFabBubbleLine({
+    canPrompt: true,
+    voiceHint: false,
+    attentionStage: null,
+    attentionLine: null,
+    wanderLine: "같이 놀자!",
+  }), "같이 놀자!");
+});
+
+test("설정을 확인한 뒤에만 탭을 대화나 친구 만들기로 연결한다", () => {
+  assert.equal(resolveAiBuddyFabTarget({ settings: undefined, loading: true, error: false }), null);
+  assert.equal(resolveAiBuddyFabTarget({ settings: undefined, loading: false, error: true }), null);
+  assert.equal(resolveAiBuddyFabTarget({
+    settings: { ai_enabled: true, ai_friend_name: "별이" },
+    loading: false,
+    error: true,
+  }), "/child/ai-friend", "background refetch 실패가 이미 확인한 설정을 무효화하면 안 된다");
+  assert.equal(resolveAiBuddyFabTarget({ settings: { ai_enabled: false }, loading: false, error: false }), null);
+  assert.equal(resolveAiBuddyFabTarget({ settings: null, loading: false, error: false }), "/child/ai-friend-setup");
+  assert.equal(resolveAiBuddyFabTarget({
+    settings: { ai_enabled: true, ai_friend_name: "혜니" },
+    loading: false,
+    error: false,
+  }), "/child/ai-friend");
+
+  const fab = read("src/app/AiBuddyFab.tsx");
+  assert.match(fab, /const chatTarget = resolveAiBuddyFabTarget\(\{/);
+  assert.match(fab, /if \(!chatTarget\) \{[\s\S]{0,420}return;/);
+  assert.match(fab, /canPrompt: presentation\.canPrompt && chatTarget !== null/);
+  assert.match(fab, /friendSettings\.data\?\.ai_enabled === false[\s\S]{0,180}child\.home\.aiDisabled/);
+  assert.match(fab, /friendSettings\.isError[\s\S]{0,220}child\.aiSetup\.loadError\.title/);
+});
+
+test("1/3 크기 친구의 살짝 커지기 동작은 가장자리 여백 안에서 끝난다", () => {
+  const css = read("src/app/AiBuddyFab.css");
+  assert.doesNotMatch(css, /@keyframes abf-attention[\s\S]{0,520}scale\(1\.55\)/);
+  assert.match(css, /@keyframes abf-attention[\s\S]{0,520}scale\(1\.14\)/);
 });
 
 test("움직임 최소화 설정에서는 떠다니지도 깜빡이지도 않는다", () => {
@@ -442,7 +566,8 @@ test("꾹 누르면 마이크가 켜진 대화창이 열리고 손을 떼도 또
   assert.match(fab, /if \(longPressFiredRef\.current\) \{[\s\S]{0,200}return;/);
   assert.match(fab, /const state = \{ startVoice: configured && startVoice, buddyLaunch: true \}/);
   // 이름을 안 정한 아이는 여전히 친구 만들기로 간다(빈 대화창을 열지 않는다).
-  assert.match(fab, /configured \? "\/child\/ai-friend" : "\/child\/ai-friend-setup"/);
+  assert.match(fab, /const configured = chatTarget === "\/child\/ai-friend"/);
+  assert.match(fab, /navigate\(chatTarget, \{ state \}\)/);
   // 써 본 아이에게는 다시 알리지 않는다.
   assert.match(fab, /markAiBuddyVoiceHintUsed\(voiceHintStateRef\.current\)/);
   // 버튼 라벨이 이 조작을 알려 준다(스크린리더도 알 수 있게).

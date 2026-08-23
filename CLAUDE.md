@@ -3,6 +3,34 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
+**아이 AI 친구 `혜니` 통일·1/3 플로팅·한 줄 말풍선(2026-08-24, 운영 배포·razr 설치 완료)**:
+아이 메인 카드, AI 채팅 헤더, 입력창 placeholder/aria-label, 플로팅 버튼과 Worker 기본 persona를 모두 `혜니`로
+통일했다. 자동 기본값이었던 `통통이`·`꼬미`·`AI 친구`만 혜니로 승격하고 사용자가 직접 정한 이름(예: `별이`)은
+보존한다. 멱등 migration `worker/db/ai-buddy-name-hyeni.sql`을 운영 D1에 적용해 정확히 2행을 갱신했고, 재조회에서
+구 기본값 0행·혜니 7행을 확인했다. `AI친구 설정을 불러오지 못했어`의 직접 원인이던 운영 D1의
+`buddy_attention_enabled` 누락도 schema 적용 및 컬럼 존재를 확인했으며, 캐시가 있는 background refetch 실패는
+정상 화면을 지우지 않고 최초 설정 조회 실패 탭은 재시도 안내를 표시하도록 fail-safe 처리했다.
+
+아이 홈 플로팅 혜니는 `clamp(112px, 33.333vw, 144px)`로 화면 폭 약 1/3을 차지하고, 실제 렌더 폭을 기준으로
+드래그 경계를 계산한다. idle 호흡·깜빡임·배회와 상황별 18종 3D pose는 유지하며, 기본 안내는
+`혜니를 눌러서 이야기해 봐!`다. 일반·기능 안내·화면 중앙 등장 말풍선 모두 `white-space: nowrap`과 짧은 한 문장으로
+통일해 줄바꿈·말줄임 없이 한 줄로 보인다. razr 411px viewport 실측은 캐릭터 137.14px, 말풍선
+136.06×31.57px·text row 1·viewport 안쪽이었다. DOM 실측에서 메인 `혜니 만나러 가기`, 채팅 제목 `혜니`,
+placeholder `혜니에게 말해 봐…`, aria-label `혜니에게 메시지`, 설정/채팅 load error 없음까지 확인했고 CDP 캡처로
+한 줄 말풍선과 SOS 비겹침을 시각 확인했다.
+
+최종 검증은 집중 회귀 `56/56`, 앱 전체 `1,922/1,922`, Worker `1,274/1,274`, 앱·Worker typecheck,
+production build(2,288 modules·precache 471·중복 0), Android `testDebugUnitTest lintDebug assembleDebug`가 모두
+통과했다. Worker version은 `f6260e08-ebcd-4bc9-a09a-aba11610cfa7`, Pages 최종 배포는
+`https://07a34436.hyeni-calendar.pages.dev`다. 배포별 주소·고정 `hyeni-calendar.pages.dev`·브랜드
+`hyenicalendar.com`은 모두 `assets/index-k1Ymd8xp.js` 348,399 bytes와 SHA-256
+`4AB1B86BF8DC4876ECA3B3F3977BC0198628F73F750269D9B1089645FFB3E57E`가 로컬과 일치한다. 최종 debug APK는
+15,919,665 bytes·SHA-256 `4CCE68CC8A297D50CB5F1A173FA75B3DC5BDB0D865B78285A8E4848A126FC451`이며,
+razr(`ZY22H9VTQD`) 기본 사용자(0)에 보존 설치했다. versionName 1.4.0/versionCode 12,
+`firstInstallTime=2026-08-17 01:03:15` 유지와 아이 local/server role·family 일치를 확인했으며 로그아웃·역할 전환·
+재페어링·refresh token 조작은 하지 않았다. core 화면은 runtime/console 오류 0이고 길찾기 외부 Kakao API 502 한 건만
+별도로 관찰됐다.
+
 **아이모드 살아 있는 3D AI 친구 교체(2026-08-24)**: TK가 준 1024px 투명 PNG 18종을
 `scripts/import-ai-buddy-chat-emotions.mjs`로 trim→288px contain+16px 투명 여백의 320px WebP로 변환해
 `public/assets/ai-buddy/poses/`에 넣고, 네모난 무지개 배경 로봇 20종을 제거했다. 20개 의미 face는

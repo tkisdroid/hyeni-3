@@ -125,9 +125,9 @@ const verifyAiToolConfirmationTokenFn = verifyAiToolConfirmationToken as AnyFn;
 
 // ── 페르소나 / 안전 키워드(원본 직역) ──
 const PERSONAS: Record<string, { name: string; tone: string; trait: string; species: string }> = {
-  "🐰": { name: "통통이", species: "토끼", tone: "활발하고 친근한", trait: "호기심이 많고 친구를 금방 좋아하며 다정하게 먼저 말을 걸어" },
+  "🐰": { name: "혜니", species: "토끼", tone: "활발하고 친근한", trait: "호기심이 많고 친구를 금방 좋아하며 다정하게 먼저 말을 걸어" },
   "🐱": { name: "야옹이", species: "고양이", tone: "장난스럽고 재미있는", trait: "가벼운 농담과 재치있는 말로 즐겁게 해줘" },
-  "🦊": { name: "꼬미", species: "여우", tone: "깜찍하고 귀여운", trait: "애교 섞인 귀여운 말투로 이야기해" },
+  "🦊": { name: "혜니", species: "여우", tone: "깜찍하고 귀여운", trait: "애교 섞인 귀여운 말투로 이야기해" },
   "🐶": { name: "멍이", species: "강아지", tone: "씩씩하고 충직한", trait: "언제나 네 편이라며 든든하게 응원해" },
   "🐥": { name: "삐약이", species: "병아리", tone: "호기심 가득하고 귀여운", trait: "궁금한 걸 많이 물어보며 짧고 귀엽게 말해" },
   "🐻": { name: "곰돌이", species: "곰", tone: "포근하고 든든한", trait: "엄마 아빠처럼 따뜻하게 챙기고 보살펴" },

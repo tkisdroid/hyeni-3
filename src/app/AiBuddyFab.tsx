@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
+import { useIntl } from "react-intl";
 import { useAuth } from "@/auth/AuthContext";
+import { useToast } from "@/app/toast";
 import { asset } from "@/lib/assets";
 import { useAiFriendPublicSettings } from "@/queries/useAi";
 import { useAiBuddyNudgeInput } from "@/queries/useAiBuddyNudge";
@@ -49,7 +51,6 @@ import {
   shouldShowAiBuddyVoiceHint,
   writeAiBuddyVoiceHintState,
   AI_BUDDY_VOICE_HINT_DELAY_MS,
-  AI_BUDDY_VOICE_HINT_LINE,
   AI_BUDDY_VOICE_HINT_MS,
   AI_BUDDY_VOICE_LONG_PRESS_MS,
   EMPTY_AI_BUDDY_VOICE_HINT_STATE,
@@ -70,6 +71,12 @@ import {
 } from "@/transform/aiBuddyAttention";
 import { aiBuddyLaunchDelayMs, AI_BUDDY_HANDOFF_FACE_PX } from "@/transform/aiBuddyLaunch";
 import { buildAiBuddyNudge, type AiBuddyNudge } from "@/transform/aiBuddyNudge";
+import { resolveAiFriendDisplayName } from "@/transform/aiFriendName";
+import {
+  aiBuddyHomeChatHintLine,
+  resolveAiBuddyFabBubbleLine,
+  resolveAiBuddyFabTarget,
+} from "@/transform/aiBuddyFabPrompt";
 import "./AiBuddyFab.css";
 
 /** 상단 상태바·화면 헤더가 가리는 높이. 이 아래로만 버튼을 놓는다. */
@@ -146,9 +153,17 @@ interface AiBuddyFabButtonProps extends AiBuddyFabProps {
 
 function AiBuddyFabButton({ bottomInset, presentation }: AiBuddyFabButtonProps) {
   const navigate = useNavigate();
+  const intl = useIntl();
+  const { show } = useToast();
   const { familyId, userId } = useAuth();
   const { emotion } = useAiBuddyMood();
   const friendSettings = useAiFriendPublicSettings(userId);
+  const chatTarget = resolveAiBuddyFabTarget({
+    settings: friendSettings.data,
+    loading: friendSettings.isLoading,
+    error: friendSettings.isError,
+  });
+  const friendName = resolveAiFriendDisplayName({ savedName: friendSettings.data?.ai_friend_name });
   // AI 친구가 꺼진 가족에서는 말 걸 재료도 받지 않는다(열 수 없는 대화를 위한 통신은 낭비다).
   const aiEnabled = friendSettings.data?.ai_enabled === true;
   // 부모가 명시적으로 끄면 부르지 않는다. 설정을 아직 못 읽었으면 조용히 있는다.
@@ -230,7 +245,8 @@ function AiBuddyFabButton({ bottomInset, presentation }: AiBuddyFabButtonProps) 
       height: parent?.clientHeight ?? window.innerHeight,
       topInset: TOP_INSET,
       bottomInset: bottomInset + presentation.bottomClearance,
-      fabSize: presentation.size,
+      // 홈 크기는 화면 폭에 반응하는 CSS clamp다. 실제 렌더 폭을 써야 드래그 경계가 정확하다.
+      fabSize: hostRef.current?.offsetWidth ?? presentation.size,
     };
   }, [bottomInset, presentation.bottomClearance, presentation.size]);
 
@@ -401,7 +417,7 @@ function AiBuddyFabButton({ bottomInset, presentation }: AiBuddyFabButtonProps) 
    * 한 번 써 본 아이·이미 여러 번 들은 아이에게는 띄우지 않는다(판정은 transform 정본).
    */
   useEffect(() => {
-    if (!presentation.canPrompt) {
+    if (!presentation.canPrompt || chatTarget === null) {
       setVoiceHint(false);
       return;
     }
@@ -422,7 +438,7 @@ function AiBuddyFabButton({ bottomInset, presentation }: AiBuddyFabButtonProps) 
       clearTimeout(showTimer);
       if (hideTimer) clearTimeout(hideTimer);
     };
-  }, [presentation.canPrompt, voiceHintKey]);
+  }, [chatTarget, presentation.canPrompt, voiceHintKey]);
 
   // 화면을 떠나면 대기 중인 꾹 누르기·전환 타이머도 함께 정리한다.
   useEffect(() => () => {
@@ -437,14 +453,24 @@ function AiBuddyFabButton({ bottomInset, presentation }: AiBuddyFabButtonProps) 
    */
   const openChat = (startVoice = false) => {
     if (launchingRef.current) return;
+    if (friendSettings.data?.ai_enabled === false) {
+      show(intl.formatMessage({ id: "child.home.aiDisabled" }));
+      return;
+    }
+    if (!chatTarget) {
+      if (friendSettings.isError) {
+        show(intl.formatMessage({ id: "child.aiSetup.loadError.title" }));
+        if (!friendSettings.isFetching) void friendSettings.refetch();
+      }
+      return;
+    }
     // 이름을 아직 안 정했으면 대화창 대신 친구 만들기부터. 빈 대화창을 열지 않는다.
-    const configured = !!friendSettings.data?.ai_friend_name;
-    const target = configured ? "/child/ai-friend" : "/child/ai-friend-setup";
+    const configured = chatTarget === "/child/ai-friend";
     // 길게 누른 건 "말로 하고 싶다"는 뜻이다 — 대화창이 뜨자마자 마이크를 켠다.
     const state = { startVoice: configured && startVoice, buddyLaunch: true };
     const delay = aiBuddyLaunchDelayMs(prefersReducedMotion());
     if (delay <= 0) {
-      navigate(target, { state });
+      navigate(chatTarget, { state });
       return;
     }
     setAttention(null);
@@ -462,7 +488,7 @@ function AiBuddyFabButton({ bottomInset, presentation }: AiBuddyFabButtonProps) 
     if (launchTimerRef.current) clearTimeout(launchTimerRef.current);
     launchTimerRef.current = setTimeout(() => {
       launchTimerRef.current = null;
-      navigate(target, { state });
+      navigate(chatTarget, { state });
     }, delay);
   };
 
@@ -606,15 +632,17 @@ function AiBuddyFabButton({ bottomInset, presentation }: AiBuddyFabButtonProps) 
           : blinking && !dragging
             ? AI_BUDDY_BLINK_FACE
             : aiBuddyFaceFor(emotion);
-  // 안내는 혼자 놀며 건네는 말보다 먼저다 — 아이가 아직 모르는 기능을 알려 주는 중이다.
-  const bubbleLine = presentation.canPrompt
-    ? voiceHint
-      ? AI_BUDDY_VOICE_HINT_LINE
-      : attention?.stage === "grow"
-        ? attention.nudge.line
-        : wanderLine
-    : null;
-  const label = `AI 친구와 이야기하기 · ${aiBuddyEmotionLabel(emotion)} · 길게 누르면 바로 말하기`;
+  // 안내와 지금 알아야 할 말을 먼저 보여 주고, 조용할 때는 탭해서 대화하는 법을 늘 알려 준다.
+  const bubbleLine = resolveAiBuddyFabBubbleLine({
+    canPrompt: presentation.canPrompt && chatTarget !== null,
+    voiceHint,
+    attentionStage: attention?.stage ?? null,
+    attentionLine: attention?.nudge.line ?? null,
+    wanderLine,
+    friendName,
+  });
+  const guidanceBubble = voiceHint || bubbleLine === aiBuddyHomeChatHintLine(friendName);
+  const label = `${friendName}와 이야기하기 · ${aiBuddyEmotionLabel(emotion)} · 길게 누르면 바로 말하기`;
 
   return (
     <>
@@ -651,8 +679,7 @@ function AiBuddyFabButton({ bottomInset, presentation }: AiBuddyFabButtonProps) 
               />
             </button>
             <div className="abf-stage__bubble">
-              <p className="abf-stage__line">{attention.nudge.fullLine}</p>
-              <p className="abf-stage__hint">꾹 누르면 나랑 바로 말할 수 있어</p>
+              <p className="abf-stage__line">{attention.nudge.line}</p>
             </div>
           </div>
         </div>
@@ -672,7 +699,7 @@ function AiBuddyFabButton({ bottomInset, presentation }: AiBuddyFabButtonProps) 
         data-launching={launching ? "true" : "false"}
         data-edge={liveRatio.xRatio >= 0.5 ? "right" : "left"}
         aria-label={label}
-        title="AI 친구"
+        title={friendName}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
@@ -681,7 +708,7 @@ function AiBuddyFabButton({ bottomInset, presentation }: AiBuddyFabButtonProps) 
         {/* 말풍선은 버튼 라벨에 이미 담긴 안내라 스크린리더에는 중복으로 읽히지 않게 둔다. */}
         {bubbleLine ? (
           <span
-            className={voiceHint ? "abf__bubble abf__bubble--hint" : "abf__bubble"}
+            className={guidanceBubble ? "abf__bubble abf__bubble--hint" : "abf__bubble"}
             aria-hidden="true"
           >
             {bubbleLine}

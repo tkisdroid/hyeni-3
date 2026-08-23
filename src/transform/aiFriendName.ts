@@ -1,4 +1,7 @@
-export const DEFAULT_AI_FRIEND_NAME = "통통이";
+export const DEFAULT_AI_FRIEND_NAME = "혜니";
+
+/** 단일 캐릭터 이름 변경 전 자동 저장됐던 기본값. 직접 지은 다른 이름은 건드리지 않는다. */
+const LEGACY_DEFAULT_AI_FRIEND_NAMES = new Set(["통통이", "꼬미"]);
 
 function cleanName(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -15,6 +18,11 @@ export function resolveAiFriendDisplayName(input: {
 }): string {
   const savedName = cleanName(input.savedName);
   const childName = cleanName(input.childName);
-  if (savedName && savedName !== childName && savedName !== "AI 친구") return savedName;
+  if (
+    savedName
+    && savedName !== childName
+    && savedName !== "AI 친구"
+    && !LEGACY_DEFAULT_AI_FRIEND_NAMES.has(savedName)
+  ) return savedName;
   return cleanName(input.fallbackName) || DEFAULT_AI_FRIEND_NAME;
 }

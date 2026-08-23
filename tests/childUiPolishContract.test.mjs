@@ -116,21 +116,31 @@ test("아이 주요 CTA는 원시 이모지 대신 같은 크기 체계의 Lucid
 
 test("아이 홈의 AI 친구 진입점은 채팅 화면과 같은 저장 이름을 표시한다", () => {
   const home = readSource("src/screens/child/ChildHome.tsx");
+  const chat = readSource("src/screens/child/AiFriendChat.tsx");
   const koChild = JSON.parse(readSource("locales/ko/child.json"));
 
   assert.match(home, /import \{ resolveAiFriendDisplayName \} from "@\/transform\/aiFriendName"/);
-  assert.match(home, /const aiFriendDisplayName = aiFriendSavedName[\s\S]{0,180}resolveAiFriendDisplayName/);
   assert.match(
     home,
-    /aiFriendDisplayName[\s\S]{0,180}child\.home\.meetAiNamed[\s\S]{0,120}name: aiFriendDisplayName[\s\S]{0,180}child\.home\.meetAi/,
+    /const aiFriendDisplayName = resolveAiFriendDisplayName\(\{ savedName: aiFriendSavedName, childName \}\)/,
+  );
+  assert.doesNotMatch(home, /const aiFriendDisplayName = aiFriendSavedName\s*\?/);
+  assert.match(
+    home,
+    /child\.home\.meetAiNamed[\s\S]{0,120}name: aiFriendDisplayName/,
+  );
+  assert.doesNotMatch(home, /child\.home\.meetAi"/);
+  assert.match(chat, /<div className="afc-head-name">\{friendName\}<\/div>/);
+  assert.match(
+    chat,
+    /aria-label=\{intl\.formatMessage\(\{ id: "child\.aiChat\.messageAria" \}, \{ name: friendName \}\)\}[\s\S]{0,140}placeholder=\{intl\.formatMessage\(\{ id: "child\.aiChat\.placeholder" \}, \{ name: friendName \}\)\}/,
   );
   assert.equal(koChild["child.home.meetAiNamed"], "{name} 만나러 가기");
-  assert.equal(koChild["child.home.meetAi"], "AI 친구 만나기");
+  assert.equal(koChild["child.aiChat.placeholder"], "{name}에게 말해 봐…");
   // AI 친구 얼굴은 플로팅 버튼·대화 화면과 같은 표정 에셋 하나로 통일한다(2026-08-17).
   // 로봇 아이콘은 표정이 없어 "지금 기분"을 보여 줄 수 없었다.
   assert.ok(home.includes("aiBuddyFaceAsset(aiTileEmotion)"));
   assert.doesNotMatch(home, /ui\/ai-robot\.webp/);
-  assert.doesNotMatch(home, /혜니랑 말하기/);
 });
 
 test("공유 mutation을 쓰는 형제 버튼은 요청을 시작한 컨트롤에만 busy를 표시한다", () => {

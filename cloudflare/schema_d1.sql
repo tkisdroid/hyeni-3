@@ -253,7 +253,7 @@ CREATE TABLE "ai_parent_settings" (
   "family_id" TEXT NOT NULL,
   "child_user_id" TEXT NOT NULL,
   "ai_enabled" INTEGER DEFAULT 0 NOT NULL,
-  "ai_friend_name" TEXT DEFAULT 'AI 친구' NOT NULL,
+  "ai_friend_name" TEXT DEFAULT '혜니' NOT NULL,
   "parent_instructions" TEXT DEFAULT '' NOT NULL,
   "forbidden_topics" TEXT DEFAULT '[]' NOT NULL,
   "forbidden_phrases" TEXT DEFAULT '[]' NOT NULL,
