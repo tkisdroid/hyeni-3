@@ -20,9 +20,12 @@
 최종 검증은 전용 회귀 `55/55`, 앱 전체 `1,914/1,914`, typecheck, production build(2,287 modules·precache
 471·중복 0), Capacitor Android sync와 `assembleDebug`가 모두 통과했다. debug APK는 15,789,615 bytes,
 SHA-256 `8E3535E3898941CD46E5EFB2326F3DA1FD959E83A1E417F956E78A6525E45B4E`다. ADB 연결 기기가 없어 razr 보존 설치는
-수행하지 않았고 계정·역할·세션·페어링은 건드리지 않았다. Pages 배포는 `.env` 없는 임시 디렉터리에서 시도했으나
-현재 wrangler OAuth가 없고 non-interactive 환경에 Pages API token도 없어 인증 전에 종료됐다. Workers/D1 전용
-`.env` token을 잘못 재사용하지 않았으며 Worker·D1은 변경하지 않았다.
+수행하지 않았고 계정·역할·세션·페어링은 건드리지 않았다. Cloudflare OAuth를 복구한 뒤 Pages 배포
+`https://69316cd5.hyeni-calendar.pages.dev`를 완료했다. 배포별 주소와 고정 `hyeni-calendar.pages.dev`는 모두
+새 entry `assets/index-rmDFITEA.js`(SHA-256 `AB176BE5B3EF28610DB297A2A0C02AD9AC0C2AAA4B405E0AA1C17D19535DC0E5`)를
+참조하고 `poses/welcome.webp` 21,620 bytes·SHA-256
+`7797AD85961602E7FC87CFF2ABAD01FED9B32E522A1494CAF69602ED770A1A0E`가 로컬과 일치한다. Workers/D1 전용
+`.env` token은 사용하지 않았으며 Worker·D1은 변경하지 않았다.
 
 **Google Play v1.4.0/versionCode 12 프로덕션 제출 완료(2026-08-23)**:
 앱 정식 이름을 `혜니캘린더 - 우리아이 일정&안전 한번에`로 바꾸고 Android 적응형 전경은 10%, 레거시·
