@@ -52,3 +52,12 @@ test("친구놀이·결제·AI·네이티브 RPC는 비활성 child/parent를 �
   assert.match(proactive, /family_id=\? AND user_id=\? AND is_active=1 LIMIT 1/);
   assert.equal((rpc.match(/role = 'child' AND is_active = 1 LIMIT 1/g) ?? []).length >= 2, true);
 });
+
+test("직접 자녀 생성 route는 활성 대표 보호자·삭제 scope·원자적 자녀 상한을 함께 검사한다", async () => {
+  const family = await source("routes/family.ts");
+  assert.match(family, /family\.post\("\/member\/child", requireAuth/);
+  assert.match(family, /assertPrimaryParent\(c\.env\.DB, userId, familyId\)/);
+  assert.match(family, /role='parent' AND is_active=1/);
+  assert.match(family, /accountDeletionMutationState/);
+  assert.match(family, /INSERT INTO family_members[\s\S]*SELECT COUNT\(\*\)[\s\S]*role='child' AND is_active=1/);
+});

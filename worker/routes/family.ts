@@ -311,6 +311,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+const CHILD_CREATE_FIELDS = new Set(["family_id", "name", "birthdate", "color_hex"]);
+
+function normalizePastBirthdate(value: unknown, today = new Date().toISOString().slice(0, 10)): string | null {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const year = Number(value.slice(0, 4));
+  if (year < 1900 || value >= today) return null;
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) return null;
+  return value;
+}
+
 function uuidLike(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
@@ -1772,6 +1783,161 @@ family.patch("/member/device", requireAuth, async (c) => {
 
   await notifyPg(c.env, familyId, "family_members", "UPDATE", { family_id: familyId, user_id: userId }, null);
   return c.json({ ok: true });
+});
+
+// ── POST /member/child — 활성 대표 보호자가 로그인 계정 없는 자녀 프로필을 직접 생성 ─
+// 대표 보호자·활성 parent membership·계정 삭제 scope·요금제별 활성 자녀 상한을 INSERT 안에서
+// 다시 검사한다. 따라서 마지막 한 자리에 동시 요청이 들어와도 정확히 한 행만 생성된다.
+family.post("/member/child", requireAuth, async (c) => {
+  const userId = c.get("user").sub;
+  let body: Record<string, unknown>;
+  try {
+    const parsed = await c.req.json<unknown>();
+    if (!isRecord(parsed) || Object.keys(parsed).some((key) => !CHILD_CREATE_FIELDS.has(key))) {
+      return c.json({ error: "invalid_child_payload" }, 400);
+    }
+    body = parsed;
+  } catch {
+    return c.json({ error: "invalid_child_payload" }, 400);
+  }
+
+  const familyId = cleanText(body.family_id);
+  const name = normalizeMemberDisplayName(body.name);
+  const birthdate = normalizePastBirthdate(body.birthdate);
+  let colorHex: string | null = null;
+  if ("color_hex" in body) {
+    if (typeof body.color_hex !== "string" || !/^#[0-9A-Fa-f]{6}$/.test(body.color_hex.trim())) {
+      return c.json({ error: "invalid_child_payload" }, 400);
+    }
+    colorHex = body.color_hex.trim().toUpperCase();
+  }
+  if (!familyId || familyId.length > 128 || !name || !birthdate) {
+    return c.json({ error: "invalid_child_payload" }, 400);
+  }
+
+  if (!(await assertPrimaryParent(c.env.DB, userId, familyId))) {
+    return c.json({ error: "forbidden", code: "primary_parent_required" }, 403);
+  }
+  const activePrimaryMembership = await c.env.DB.prepare(
+    "SELECT 1 AS ok FROM family_members WHERE family_id=? AND user_id=? AND role='parent' AND is_active=1 LIMIT 1",
+  ).bind(familyId, userId).first<{ ok: number }>();
+  if (!activePrimaryMembership) {
+    return c.json({ error: "forbidden", code: "primary_parent_required" }, 403);
+  }
+
+  const initialDeletionState = await accountDeletionMutationState(c.env.DB, {
+    userIds: [userId],
+    familyIds: [familyId],
+  });
+  if (initialDeletionState === "blocked") {
+    return c.json({ error: "account_deletion_in_progress" }, 409);
+  }
+  if (initialDeletionState === "unavailable") {
+    return c.json({ error: "account_deletion_guard_unavailable" }, 503);
+  }
+
+  let cap: number;
+  try {
+    cap = await childCapForFamily(c.env.DB, familyId);
+  } catch {
+    console.error("[family/member/child] entitlement lookup failed");
+    return c.json({ error: "family_child_create_retryable" }, 503);
+  }
+
+  const memberId = crypto.randomUUID();
+  const createdAt = pgNow();
+  let changes = 0;
+  try {
+    const result = await c.env.DB.prepare(
+      `INSERT INTO family_members
+         (id,family_id,user_id,role,name,birthdate,color_hex,photo_url,child_order,is_active,created_at)
+       SELECT ?,?,NULL,'child',?,?,?,NULL,
+              COALESCE((SELECT MAX(child_order) FROM family_members WHERE family_id=? AND role='child'),0)+1,
+              1,?
+        WHERE EXISTS (
+                SELECT 1 FROM families WHERE id=? AND parent_id=?
+              )
+          AND EXISTS (
+                SELECT 1 FROM family_members
+                 WHERE family_id=? AND user_id=? AND role='parent' AND is_active=1
+              )
+          AND (SELECT COUNT(*) FROM family_members
+                WHERE family_id=? AND role='child' AND is_active=1) < ?
+          AND ${ACCOUNT_DELETION_ABSENT_ONE_USER}`,
+    ).bind(
+      memberId,
+      familyId,
+      name,
+      birthdate,
+      colorHex,
+      familyId,
+      createdAt,
+      familyId,
+      userId,
+      familyId,
+      userId,
+      familyId,
+      cap,
+      userId,
+      familyId,
+    ).run();
+    changes = Number(result.meta?.changes ?? 0);
+  } catch {
+    const state = await accountDeletionMutationState(c.env.DB, {
+      userIds: [userId],
+      familyIds: [familyId],
+    });
+    if (state === "blocked") return c.json({ error: "account_deletion_in_progress" }, 409);
+    console.error("[family/member/child] atomic insert failed");
+    return c.json({ error: "family_child_create_retryable" }, 503);
+  }
+
+  if (changes !== 1) {
+    const state = await accountDeletionMutationState(c.env.DB, {
+      userIds: [userId],
+      familyIds: [familyId],
+    });
+    if (state === "blocked") return c.json({ error: "account_deletion_in_progress" }, 409);
+    if (state === "unavailable") return c.json({ error: "account_deletion_guard_unavailable" }, 503);
+
+    const stillPrimary = await assertPrimaryParent(c.env.DB, userId, familyId);
+    const stillActive = stillPrimary
+      ? await c.env.DB.prepare(
+          "SELECT 1 AS ok FROM family_members WHERE family_id=? AND user_id=? AND role='parent' AND is_active=1 LIMIT 1",
+        ).bind(familyId, userId).first<{ ok: number }>()
+      : null;
+    if (!stillPrimary || !stillActive) {
+      return c.json({ error: "forbidden", code: "primary_parent_required" }, 403);
+    }
+
+    try {
+      const currentCap = await childCapForFamily(c.env.DB, familyId);
+      if (await activeChildCount(c.env.DB, familyId) >= currentCap) {
+        return c.json(childLimitPayload(currentCap), 403);
+      }
+    } catch {
+      console.error("[family/member/child] post-insert state lookup failed");
+    }
+    return c.json({ error: "family_child_create_retryable" }, 503);
+  }
+
+  const member = {
+    id: memberId,
+    role: "child" as const,
+    name,
+    birthdate,
+    color_hex: colorHex,
+    photo_url: null,
+    is_active: true,
+  };
+  await notifyPg(c.env, familyId, "family_members", "INSERT", {
+    ...member,
+    family_id: familyId,
+    user_id: null,
+    child_order: null,
+    created_at: createdAt,
+  }, null);
+  return c.json({ member });
 });
 
 // ── POST /member/rename — rename_family_member_by_id (primary parent, any row) ─
