@@ -159,6 +159,13 @@ test("Play 업로드 폴더는 AAB를 명시하고 ZIP·debug 업로드를 금�
   assert.match(source, /play-upload-v/);
 });
 
+test("릴리즈 해시는 PowerShell 모듈 자동 로드에 의존하지 않는다", () => {
+  assert.match(source, /function Get-Sha256Hex/);
+  assert.match(source, /System\.Security\.Cryptography\.SHA256.*Create/);
+  assert.match(source, /System\.IO\.File.*OpenRead/);
+  assert.doesNotMatch(source, /Get-FileHash/);
+});
+
 test("서명 환경변수는 성공과 실패 모두 finally에서 제거한다", () => {
   assert.match(source, /finally \{[\s\S]*Clear-SigningEnvironment[\s\S]*Clear-ReleaseEvidenceEnvironment/);
 });

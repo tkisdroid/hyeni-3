@@ -112,6 +112,19 @@ function Write-Utf8TextState {
     [System.IO.File]::WriteAllText($Path, $Text, $encoding)
 }
 
+function Get-Sha256Hex {
+    param([Parameter(Mandatory)][string]$Path)
+
+    $stream = [System.IO.File]::OpenRead($Path)
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        return ([System.BitConverter]::ToString($sha256.ComputeHash($stream)) -replace '-', '').ToLowerInvariant()
+    } finally {
+        $sha256.Dispose()
+        $stream.Dispose()
+    }
+}
+
 function Remove-ForbiddenSigningProperties {
     param([Parameter(Mandatory)]$OriginalState)
 
@@ -345,7 +358,7 @@ function Ensure-Bundletool {
         New-Item -ItemType Directory -Force -Path (Split-Path -Parent $bundletoolPath) | Out-Null
         Invoke-WebRequest -Uri $bundletoolUrl -OutFile $bundletoolPath
     }
-    $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $bundletoolPath).Hash.ToLowerInvariant()
+    $actual = Get-Sha256Hex -Path $bundletoolPath
     if ($actual -ne $bundletoolSha256) {
         throw "bundletool SHA-256이 승인값과 다릅니다: $actual"
     }
@@ -356,7 +369,7 @@ function Archive-ExistingReleaseAab {
         return $null
     }
 
-    $sha = (Get-FileHash -Algorithm SHA256 -LiteralPath $releaseAab).Hash.ToLowerInvariant()
+    $sha = Get-Sha256Hex -Path $releaseAab
     $archiveRoot = Join-Path $evidenceRoot 'historical-release-aab'
     Assert-PathWithin -Path $archiveRoot -Root $evidenceRoot -Label '기존 AAB 보관'
     New-Item -ItemType Directory -Force -Path $archiveRoot | Out-Null
@@ -662,8 +675,8 @@ try {
     New-Item -ItemType Directory -Path $uploadRoot | Out-Null
     $uploadAab = Join-Path $uploadRoot "hyeni-calendar-v$($package.version)-vc$versionCode-$shortSha.aab"
     Copy-Item -LiteralPath $releaseAab -Destination $uploadAab
-    $aabSha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $uploadAab).Hash.ToLowerInvariant()
-    $evidenceSha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $evidencePath).Hash.ToLowerInvariant()
+    $aabSha256 = Get-Sha256Hex -Path $uploadAab
+    $evidenceSha256 = Get-Sha256Hex -Path $evidencePath
     Copy-Item -LiteralPath $evidencePath -Destination (Join-Path $uploadRoot ([System.IO.Path]::GetFileName($evidencePath)))
     $utf8 = [System.Text.UTF8Encoding]::new($false)
     [System.IO.File]::WriteAllText(
