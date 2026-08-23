@@ -6,9 +6,9 @@
 
 버전: `versionName 1.4.1` / `versionCode 13`
 
-현재 판정: **업데이트 산출물 준비 완료 · Play Console 미업로드**
+현재 판정: **프로덕션 전체 출시 심사 전송·API readback 완료**
 
-이 문서는 v1.4.1 업데이트 준비 상태의 정본이다. 기존 프로덕션 v1.4.0/code 12의 제출·readback 증거는
+이 문서는 v1.4.1 업데이트 제출 상태의 정본이다. 기존 프로덕션 v1.4.0/code 12의 제출·readback 증거는
 `docs/store/play-console-submission-v1.4.0.md`에 역사 기록으로 보존한다. 이번 문서의 체크 항목은 실제 증거가
 생긴 뒤에만 완료로 바꾸며, 비밀번호·심사 계정 자격 증명·refresh·구매·서명 토큰은 기록하지 않는다.
 
@@ -41,7 +41,34 @@ Play Console에는 `docs/store/play-release-notes-v1.4.1.md`의 코드 블록 �
 - [x] `artifacts/release-evidence/play-upload-v1.4.1-vc13-dd73ba5/`에 AAB·검증 JSON·검증 로그·해시·안내문 보존
 - [x] 설계 `cf34bb4`·구현 `15bd55c`를 `origin/main`에 푸시하고 Pages
   `https://cedb940e.hyeni-calendar.pages.dev`와 고정·브랜드 도메인의 동일 entry/SHA readback
-- [ ] Play Console 업로드·심사 전송은 사용자 지시와 실제 readback 증거가 있을 때만 완료 처리
+- [x] Android Publisher API 업로드·validate·commit 후 프로덕션 code 13 `IN_REVIEW`, 출시 노트,
+  기존 앱 소개·이미지 동일성 readback
+
+## Play 제출 실측
+
+2026-08-24 07:50 KST 제출 직전 새 edit와 release lifecycle을 읽었다. 프로덕션은 v1.4.0/code 12가
+`RELEASE_LIFECYCLE_STATE_IN_REVIEW`, 기존 공개 v1.3.0/code 6이 `RELEASE_LIFECYCLE_STATE_PUBLISHED`였고,
+전체 bundle 최대 versionCode는 12였다. 이 상태에서만 사용자가 승인한 대체 제출로 판정했다.
+
+07:51 KST 승인 AAB 하나를 업로드하고 production release를 `혜니캘린더 1.4.1 (13)` / `completed`로
+설정했다. edit readback과 `edits.validate` 성공 후 commit에
+`changesNotSentForReview=false`와 `changesInReviewBehavior=CANCEL_IN_REVIEW_AND_SUBMIT`을 명시해 기존
+v1.4.0 심사를 v1.4.1로 대체 전송했다. 07:52 KST fresh lifecycle readback 결과는 code 13
+`RELEASE_LIFECYCLE_STATE_IN_REVIEW`, code 6 `RELEASE_LIFECYCLE_STATE_PUBLISHED`였고 code 12는 심사
+목록에서 빠졌다.
+
+- Play 업로드 응답: versionCode 13 / SHA-1 `127ff059b196895c00647591758cb9e30d8b2167` /
+  SHA-256 `240f1ad672a562ac9f2aa6ce603e524f0d0e481a20771e0298e2318c98ef6c78`
+- 기존 앱 소개: `ko-KR` listing 전후 SHA-256
+  `d0c0824da0c55530dbd681af08765e69d8b34aa6f04d24aec074558f3c4b9dc9`로 동일
+- 기존 이미지: icon·feature graphic·phone screenshots 10개 전후 SHA-256
+  `651ef7874b929ad9062517a7a5c1605a98da8b9d04107b02f3aab4f85bdfede1`로 동일
+- 등록정보·상세·이미지 write API는 호출하지 않아 기존 앱 이름·짧은 설명·전체 설명과 스토어 자산을 유지했다.
+- 로컬 증거: `artifacts/release-evidence/play-submit-v1.4.1-vc13-20260824/preflight.json`,
+  `submission.json`, `post-commit-inspect.json`
+
+`completed`는 심사 승인 뒤 전체 사용자에게 출시하려는 트랙 의도이고, 현재 lifecycle은 아직 `IN_REVIEW`다.
+따라서 실제 스토어 제공 완료로 기록하지 않으며 `PUBLISHED` 후속 readback 전까지 원격 업데이트 정책은 1.4.0을 유지한다.
 
 ## 업데이트 AAB
 

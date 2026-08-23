@@ -29,8 +29,14 @@ readback 전에는 없는 업데이트를 안내하지 않도록 `app-version.js
 mtime `2026-08-23T22:07:35.620Z`다. manifest 1.4.1/code 13·non-debuggable·내장 source commit, 승인 업로드
 인증서, 정확한 권한 정책, dist/내장 web assets, bundle/universal APK와 4개 ELF의 16KB 조건이 모두 GREEN이다.
 Play 제공 전 `1.4.0 ≤ 1.4.0 ≤ 1.4.1` 단계 정책을 허용하되 미래·역순·5구간 이상 버전은 거부하도록 출시 도구를
-`906c401`에서 보강했다. Play Console 업로드·심사 전송은 수행하지 않았고, 1.4.1 제공 가능 readback 전까지
-`app-version.json`은 계속 1.4.0이다.
+`906c401`에서 보강했다. 2026-08-24 07:51 KST Android Publisher API로 동일 AAB를 production
+`혜니캘린더 1.4.1 (13)` / `completed`에 업로드하고 validate 뒤 심사 전송했다. 제출 직전 code 12는
+`IN_REVIEW`, code 6은 `PUBLISHED`였으며 `CANCEL_IN_REVIEW_AND_SUBMIT`을 명시해 v1.4.0 심사를 대체했다.
+07:52 KST fresh readback에서 code 13 `IN_REVIEW`, code 6 `PUBLISHED`, code 12 제거를 확인했다. 기존 `ko-KR`
+앱 소개 해시 `d0c0824d...b9dc9`와 icon·feature graphic·phone screenshots 10개 해시
+`651ef787...fede1`은 제출 전후 동일하고 등록정보·이미지 write API는 호출하지 않았다. 아직 code 13이
+`PUBLISHED`는 아니므로 제공 가능 readback 전까지 `app-version.json`은 계속 1.4.0이다. 상세 증거는
+`docs/store/play-console-submission-v1.4.1.md`가 정본이다.
 
 **아이 AI 친구 `혜니` 통일·1/3 플로팅·한 줄 말풍선(2026-08-24, 운영 배포·razr 설치 완료)**:
 아이 메인 카드, AI 채팅 헤더, 입력창 placeholder/aria-label, 플로팅 버튼과 Worker 기본 persona를 모두 `혜니`로

@@ -119,4 +119,5 @@
 - [x] 사용자가 비밀번호를 직접 입력한 서명 환경으로 fresh release AAB를 만든다.
 - [x] 서명 인증서, versionName/code, 내장 commit SHA, SHA-256, mtime, 권한·web assets·16KB를 검증한다.
 - [x] `artifacts/release-evidence/play-upload-v1.4.1-vc13-dd73ba5/`에 AAB와 증거를 모은다.
-- [x] 별도 업로드 지시가 없으므로 Play Console 최종 제출은 수행하지 않는다.
+- [x] 후속 사용자 지시에 따라 code 12 `IN_REVIEW`를 확인하고 code 13 production `completed`로 대체 제출한다.
+- [x] 최종 lifecycle code 13 `IN_REVIEW`와 기존 앱 소개·이미지 해시 동일성을 fresh API readback한다.
