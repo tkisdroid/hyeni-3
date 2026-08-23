@@ -14,6 +14,7 @@ import {
   fileEvidence,
   hashDirectory,
   hashFile,
+  isReleaseVersionPolicySafe,
   normalizeCommit,
   normalizeSha256,
   readAppReleaseMetadata,
@@ -1528,11 +1529,7 @@ export function buildReleaseRecord({
   if (!metadata.applicationId || !metadata.versionCode || !metadata.packageVersion) {
     blockers.push("package/public/Gradle 출시 버전 정본이 완전하지 않습니다.");
   }
-  if (
-    metadata.packageVersion !== metadata.minimumSupportedVersion
-    || metadata.packageVersion !== metadata.latestVersion
-    || !metadata.gradleUsesPackageVersion
-  ) {
+  if (!isReleaseVersionPolicySafe(metadata) || !metadata.gradleUsesPackageVersion) {
     blockers.push("package/public/Gradle versionName 정책이 일치하지 않습니다.");
   }
   if (!external.releaseAabSourceCommit) {

@@ -16,6 +16,7 @@ import { pathToFileURL } from "node:url";
 import {
   hashDirectory,
   hashFile,
+  isReleaseVersionPolicySafe,
   normalizeCommit,
   normalizeSha256,
   readAppReleaseMetadata,
@@ -461,11 +462,8 @@ export function buildAabEvidence({
   if (!metadata.gradleUsesPackageVersion) {
     throw new Error("Android versionName이 package.json을 정본으로 사용하지 않습니다.");
   }
-  if (
-    metadata.packageVersion !== metadata.latestVersion
-    || metadata.packageVersion !== metadata.minimumSupportedVersion
-  ) {
-    throw new Error("package.json과 app-version.json 버전 정책이 일치하지 않습니다.");
+  if (!isReleaseVersionPolicySafe(metadata)) {
+    throw new Error("app-version.json 정책이 package.json보다 앞서거나 버전 순서가 올바르지 않습니다.");
   }
   const sourceDistRoot = resolve(appRoot, "dist");
   assertNoCapacitorGeneratedFileCollisions(sourceDistRoot);

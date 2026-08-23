@@ -4,6 +4,7 @@ import { pathToFileURL } from "node:url";
 import {
   hashDirectory,
   hashFile,
+  isReleaseVersionPolicySafe,
   normalizeCommit,
   readAppReleaseMetadata,
   readGitState,
@@ -32,11 +33,8 @@ export function buildPagesProvenance({
   }
 
   const metadata = readAppReleaseMetadata(appRoot);
-  if (!metadata.packageVersion || metadata.packageVersion !== metadata.latestVersion) {
-    throw new Error("package.json과 app-version.json latestVersion이 일치하지 않습니다.");
-  }
-  if (metadata.minimumSupportedVersion !== metadata.packageVersion) {
-    throw new Error("app-version.json minimumSupportedVersion이 package.json과 일치하지 않습니다.");
+  if (!isReleaseVersionPolicySafe(metadata)) {
+    throw new Error("app-version.json 정책이 package.json보다 앞서거나 버전 순서가 올바르지 않습니다.");
   }
   if (!metadata.gradleUsesPackageVersion) {
     throw new Error("Android versionName이 package.json을 정본으로 사용하지 않습니다.");

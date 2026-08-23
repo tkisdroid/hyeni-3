@@ -27,6 +27,39 @@ export function normalizeCommit(value) {
     : null;
 }
 
+function parseReleaseVersion(value) {
+  if (typeof value !== "string" || !/^\d+(?:\.\d+){0,3}$/.test(value)) return null;
+  const parts = value.split(".").map(Number);
+  return parts.every((part) => Number.isSafeInteger(part) && part >= 0) ? parts : null;
+}
+
+function compareReleaseVersions(left, right) {
+  const leftParts = parseReleaseVersion(left);
+  const rightParts = parseReleaseVersion(right);
+  if (!leftParts || !rightParts) return null;
+  const length = Math.max(leftParts.length, rightParts.length);
+  for (let index = 0; index < length; index += 1) {
+    const leftPart = leftParts[index] ?? 0;
+    const rightPart = rightParts[index] ?? 0;
+    if (leftPart < rightPart) return -1;
+    if (leftPart > rightPart) return 1;
+  }
+  return 0;
+}
+
+export function isReleaseVersionPolicySafe({
+  packageVersion,
+  minimumSupportedVersion,
+  latestVersion,
+} = {}) {
+  const minimumToLatest = compareReleaseVersions(minimumSupportedVersion, latestVersion);
+  const latestToPackage = compareReleaseVersions(latestVersion, packageVersion);
+  return minimumToLatest !== null
+    && latestToPackage !== null
+    && minimumToLatest <= 0
+    && latestToPackage <= 0;
+}
+
 export function hashFile(path) {
   return sha256(readFileSync(path));
 }
