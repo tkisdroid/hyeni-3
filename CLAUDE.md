@@ -3,6 +3,30 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
+**Google Play v1.4.0/versionCode 12 프로덕션 제출 완료(2026-08-23)**:
+앱 정식 이름을 `혜니캘린더 - 우리아이 일정&안전 한번에`로 바꾸고 Android 적응형 전경은 10%, 레거시·
+Play 아이콘은 7% 확대했다. 스토어 등록정보는 아빠가 자기 아이를 위해 만들었다는 제작 배경, 가족 일정·준비물·
+대화·SOS와 기본 안전 기능의 무료 범위, 실시간 위치·AI·리포트 등 서버 비용이 큰 고급 기능을 구독으로 안정적으로
+운영하는 이유를 함께 명시했다. Android `versionCode 12`, iOS `CURRENT_PROJECT_VERSION 12`, PWA/Capacitor 이름을
+동기화했고 `tests/playReleaseV140Metadata.test.mjs`로 버전·이름·문구·아이콘 점유율을 회귀 보호한다.
+
+최종 검증은 앱 `1,908/1,908`, Worker `1,272/1,272`, 앱·Worker typecheck, production build, Android unit·lint·
+`assembleDebug` 전부 통과다. 서명 스크립트의 Windows Terminal 모듈 자동 로드 편차를 .NET SHA-256 구현으로 제거하고
+회귀 `15/15`를 추가했다. clean source commit `b6e3e84abd126670766b025730af8e5274c6679f`에서 승인 업로드 키로 만든
+AAB는 `artifacts/release-evidence/play-upload-v1.4.0-vc12-b6e3e84/hyeni-calendar-v1.4.0-vc12-b6e3e84.aab`,
+12,697,989 bytes, SHA-256 `60d6da74593ef7ba384e009a0bb80c55c2488db1983e80c79f35fc5d8af8dbdf`다.
+manifest 1.4.0/code 12·non-debuggable·source commit 일치, jarsigner 승인 인증서 일치, web assets 일치,
+bundle/universal APK/ELF 16KB 조건이 모두 GREEN이다.
+
+Android Publisher API 실측에서 기존 최대 code는 6, 프로덕션 1.3.0(6)은 completed였다. 공식 편집 validate 뒤 AAB,
+한국어 이름·짧은/자세한 설명, 확대 아이콘, 한국어 출시 노트를 프로덕션 `completed` 전체 출시로 commit했다. 새 편집
+readback은 `혜니캘린더 1.4.0 (12)`·versionCode 12·AAB SHA·등록정보·아이콘 SHA
+`b36b840603fa6870adbc6823d238a8513b1f3ce4e59b2c4a8f95c873d58570e8`가 모두 일치한다. Google 심사·스토어 전파
+완료 시각은 Play가 결정하므로 실제 사용자 노출은 Console 상태로 후속 확인한다. Pages는
+`https://ba35ac2e.hyeni-calendar.pages.dev`에 배포했고 고정 Pages URL도 새 제목·entry `assets/index-Dv5q4xDb.js`
+(SHA-256 `f617fcd6607bc4ce291d93ef8de91530334ff47fd7f4a2b1e6e3a8e29c7c0911`)와 1.4.0 권장 업데이트를 반환한다.
+실기기 설치·로그인·로그아웃·역할 전환·재페어링은 수행하지 않아 기존 세션을 건드리지 않았다.
+
 **iPhone Safari 공동 보호자 일정·주변소리 권한 정합화(2026-08-23, 운영 배포 완료)**:
 활성 공동 보호자 계정으로 iPhone Safari 실사용 중 일정을 등록하면 Worker의 과거 주 보호자 전용 gate가
 `403 forbidden`을 반환했고, 매핑되지 않은 4xx가 `요청을 처리하지 못했어요. 입력 내용을 확인해 주세요.`로
