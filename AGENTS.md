@@ -32,7 +32,7 @@ npm run build      # 완료 기준 = exit 0
 #   자동 로드해 OAuth 를 덮어쓴다 → .env 가 없는 디렉터리에서 실행할 것.
 #   (cd <임시디렉터리> && npx wrangler pages deploy C:/Users/TK/Desktop/hyeni-3/dist \n#      --project-name=hyeni-calendar --branch=main --commit-dirty=true)
 # Worker(백엔드, 이 저장소 worker/): npm run typecheck:worker && npm run test:worker && npm run deploy:worker
-#   worker 테스트는 Vite 를 쓰지 않는다(Node 24 네이티브 TS + tsModuleResolve 훅) — 1,159개 약 3초.
+#   worker 테스트는 Vite 를 쓰지 않는다(Node 24 네이티브 TS + tsModuleResolve 훅) — 1,298개 약 3초.
 # 앱 테스트: npm test (node --test tests/*.test.*)
 #   ⚠️ node --test 는 실패가 있어도 exit 0 을 줄 수 있다 — `ℹ fail N` 요약 줄로 판정할 것.
 #   src/** 를 로드하는 테스트도 Vite 를 쓰지 않는다: tests/helpers/appModuleResolve.mjs 를 정적 import
@@ -597,6 +597,13 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   서버 도구에 아이 본인 설정 3종(`updateNotificationSettings`·`updateAiFriendName`·`changeAppTheme`)을 더했고
   셋 다 LLM 없이 답해 하루 대화 횟수를 깎지 않는다. **일정 삭제는 보호자 전용**이라 planner 는
   `schedule_delete_parent_only` 로 닫고 route 는 확인 토큰이 와도 403 이다. 부모 소관 알림 설정도 정직하게 거절한다.
+  **아이 AI 일정 생성 정본(2026-08-24)**: 날짜 표현이 없으면 KST 오늘로 등록하되, 해석하지 못한 날짜 지시어가 있으면
+  오늘로 추정하지 않고 되묻는다. 후속 정보는 exact 되묻기와 DB `created_at` 기준 10분 TTL 안에서만 합치고,
+  동률 행은 `rowid DESC` 조회 후 reverse해 실제 user→assistant 순서를 보존한다. 취소·새 도구 intent·인사/주제 전환은
+  제목보다 우선한다. `events`+`events_children`은 `persistAiChildSchedule` D1 batch로 원자 저장하며 생성·확인 수정 뒤
+  `notifyPg(..., "events", "INSERT|UPDATE", ...)`로 활성 가족 기기의 일정 query를 갱신한다. 회귀는
+  `worker/tests/aiChildSettingsAgent.test.mjs`·`aiChildChatContext.test.mjs`·`aiChildSchedulePersistence.test.mjs`·
+  `realtimeAudienceIsolation.test.mjs`가 보호한다.
   한 얼굴 원칙: 대화 말풍선 옆·타이핑·설정 미리보기까지 같은 이모티콘을 쓰고 동물은 얼굴이 아니라 성격 카드다.
   헤더 상태 문구는 짧은 반말 + nowrap 말줄임(전엔 "이야기 할 준비됐/어"로 끊겼다).
   일정 성격별 제안은 `src/transform/eventCompanionPrompt.ts` 와 `worker/shared/aiEventContext.js` 가 같은 키워드
