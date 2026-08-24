@@ -35,6 +35,7 @@ import {
   AI_BUDDY_WANDER_LINE_EVERY,
   AI_BUDDY_WANDER_LINE_MS,
   AI_BUDDY_WANDER_MOVING_FACE,
+  AI_BUDDY_WANDER_TRAVEL_MS,
   aiBuddyWanderFace,
   aiBuddyWanderLine,
   canAiBuddyWander,
@@ -212,6 +213,13 @@ test("대기 중 배회는 조금씩 움직이고 가장자리 띠를 벗어나�
   // 세 걸음마다 반대쪽으로 건너간다.
   assert.equal(nextAiBuddyWanderRatio({ xRatio: 1, yRatio: 0.5 }, 2).xRatio, 0);
   assert.equal(nextAiBuddyWanderRatio({ xRatio: 0, yRatio: 0.5 }, 2).xRatio, 1);
+});
+
+test("배회 한 걸음은 급하게 튀지 않고 짧은 도약 안에 끝난다", () => {
+  assert.ok(
+    AI_BUDDY_WANDER_TRAVEL_MS >= 1_200 && AI_BUDDY_WANDER_TRAVEL_MS <= 1_800,
+    "급하게 튀거나 너무 오래 화면을 가로지르면 안 된다",
+  );
 });
 
 test("이동 중에는 달리고 도착하면 말을 걸 듯한 얼굴을 짓는다", () => {

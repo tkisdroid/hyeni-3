@@ -24,6 +24,7 @@ import {
 import {
   AI_BUDDY_WANDER_LINE_MS,
   AI_BUDDY_WANDER_STEP_MS,
+  AI_BUDDY_WANDER_TRAVEL_MS,
   aiBuddyWanderFace,
   aiBuddyWanderLine,
   canAiBuddyWander,
@@ -330,7 +331,7 @@ function AiBuddyFabButton({ bottomInset, presentation }: AiBuddyFabButtonProps) 
         setWanderLine(line);
         if (lineTimerRef.current) clearTimeout(lineTimerRef.current);
         lineTimerRef.current = setTimeout(() => setWanderLine(null), AI_BUDDY_WANDER_LINE_MS);
-      }, 1_500);
+      }, AI_BUDDY_WANDER_TRAVEL_MS);
     }, AI_BUDDY_WANDER_STEP_MS);
     return () => {
       clearInterval(timer);
@@ -730,6 +731,7 @@ function AiBuddyFabButton({ bottomInset, presentation }: AiBuddyFabButtonProps) 
             ))}
           </span>
         </span>
+        <span className="abf__ground-shadow" aria-hidden="true" />
       </button>
     </>
   );

@@ -15,8 +15,8 @@
   -webkit-tap-highlight-color: transparent;
   /* 대기 중 스스로 옮겨 다니므로 이동은 천천히 미끄러진다(2026-08-18). */
   transition:
-    left 1.4s var(--easing-standard),
-    top 1.4s var(--easing-standard),
+    left 1.5s var(--easing-standard),
+    top 1.5s var(--easing-standard),
     width 0.28s var(--easing-standard),
     height 0.28s var(--easing-standard);
 }
@@ -30,6 +30,30 @@
 .abf[data-dragging="true"] {
   cursor: grabbing;
   transition: none;
+}
+
+/* 발밑 그림자는 화면에 닿는 지점을 남기고, 점프할 때 작아져 높이를 눈으로 느끼게 한다. */
+.abf__ground-shadow {
+  display: none;
+  position: absolute;
+  right: 20%;
+  bottom: 4%;
+  left: 20%;
+  height: 16px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(66, 38, 48, 0.24) 0%,
+    rgba(66, 38, 48, 0.12) 42%,
+    rgba(66, 38, 48, 0) 74%
+  );
+  opacity: 0.3;
+  pointer-events: none;
+  transform: scaleX(0.92);
+  z-index: 0;
+}
+
+.abf--home .abf__ground-shadow {
+  display: block;
 }
 
 /* 눌린 걸 알리는 축소 — bob 애니메이션과 transform 이 겹치지 않도록 안쪽 stack 에 준다. */
@@ -57,6 +81,7 @@
     drop-shadow(0 2px 2px rgba(66, 38, 48, 0.18));
   animation: abf-alive-home 4.8s ease-in-out infinite;
   will-change: transform;
+  z-index: 1;
 }
 
 /* 상세 화면에서는 위치 이동·말풍선 대신 아주 작은 호흡만 남긴다. */
@@ -73,7 +98,11 @@
 
 /* 포즈의 뜻과 움직임이 맞아야 사진 교체가 아니라 행동처럼 읽힌다. */
 .abf--home .abf__face--excited {
-  animation: abf-run 0.52s ease-in-out infinite;
+  animation: abf-run 1.5s var(--easing-standard) 1 both;
+}
+
+.abf--home .abf__face--excited + .abf__ground-shadow {
+  animation: abf-run-shadow 1.5s var(--easing-standard) 1 both;
 }
 .abf--home .abf__face--music {
   animation: abf-sway 2.8s ease-in-out infinite;
@@ -147,6 +176,7 @@
   text-overflow: clip;
   pointer-events: none; /* 말풍선이 아니라 얼굴을 눌러 대화를 연다. */
   animation: abf-say 0.28s var(--easing-cheer) 1;
+  z-index: 2;
 }
 
 /* 기능 안내도 한 호흡에 읽도록 한 줄을 유지한다. 문구 자체를 짧게 제한해 화면 안에 온전히 둔다. */
@@ -309,8 +339,55 @@
 }
 
 @keyframes abf-run {
-  0%, 100% { transform: translate3d(0, 1px, 0) rotate(-1deg); }
-  50% { transform: translate3d(0, -5px, 0) rotate(1deg); }
+  0% {
+    transform: perspective(480px) translate3d(0, 1px, 0) scale3d(1.02, 0.98, 1);
+  }
+  17%, 50% {
+    transform:
+      perspective(480px)
+      translate3d(0, -10px, 14px)
+      rotateX(-2deg)
+      rotateY(-6deg)
+      rotateZ(2deg)
+      scale3d(0.98, 1.04, 1);
+  }
+  33%, 66% {
+    transform: perspective(480px) translate3d(0, 2px, 0) scale3d(1.05, 0.95, 1);
+  }
+  81% {
+    transform:
+      perspective(480px)
+      translate3d(0, -5px, 8px)
+      rotateX(-1deg)
+      rotateY(-3deg)
+      rotateZ(1deg)
+      scale3d(0.99, 1.025, 1);
+  }
+  93% {
+    transform: perspective(480px) translate3d(0, 2px, 0) scale3d(1.045, 0.955, 1);
+  }
+  100% {
+    transform: perspective(480px) translate3d(0, 0, 0) scale3d(1, 1, 1);
+  }
+}
+
+@keyframes abf-run-shadow {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scaleX(0.92);
+  }
+  17%, 50% {
+    opacity: 0.15;
+    transform: scaleX(0.64);
+  }
+  33%, 66%, 93% {
+    opacity: 0.36;
+    transform: scaleX(1.04);
+  }
+  81% {
+    opacity: 0.2;
+    transform: scaleX(0.74);
+  }
 }
 
 @keyframes abf-sway {
@@ -407,6 +484,7 @@
 @media (prefers-reduced-motion: reduce) {
   .abf__face,
   .abf__stack,
+  .abf__ground-shadow,
   .abf[data-pop="true"] .abf__face,
   .abf[data-attention="grow"] .abf__face {
     animation: none;

@@ -16,6 +16,8 @@ import type { AiBuddyFabRatio } from "./aiBuddyFabPosition.ts";
 
 /** 한 걸음 간격(ms) — 너무 짧으면 산만하고 길면 멈춰 있는 것처럼 보인다. */
 export const AI_BUDDY_WANDER_STEP_MS = 9_000;
+/** 한 걸음이 화면에서 이어지는 시간(ms). 위치 이동과 달리기·착지 연출이 함께 끝난다. */
+export const AI_BUDDY_WANDER_TRAVEL_MS = 1_500;
 /** 아이가 직접 옮긴 뒤 이 시간 동안은 그 자리에 그대로 있는다. */
 export const AI_BUDDY_WANDER_PAUSE_AFTER_DRAG_MS = 20_000;
 /** 한 걸음의 최대 이동량(비율). */
