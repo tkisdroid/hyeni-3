@@ -93,6 +93,233 @@ test("일정 등록은 그대로 아이가 할 수 있다", () => {
   assert.equal(result.shouldUseTool, true);
 });
 
+test("날짜를 생략한 아이 일정 등록은 오늘 일정으로 바로 실행한다", () => {
+  const result = plan("오후3시 피아노 일정 추가");
+  assert.equal(result.detectedIntent, "schedule_create");
+  assert.equal(result.toolName, "createSchedule");
+  assert.equal(result.shouldUseTool, true);
+  assert.deepEqual(result.missingArgs, []);
+  assert.deepEqual(result.toolArgs, {
+    title: "피아노",
+    date: REFERENCE_DATE,
+    startTime: "15:00",
+    endTime: null,
+  });
+});
+
+test("아직 해석하지 못하는 날짜 표현을 오늘로 오인해 저장하지 않는다", () => {
+  for (const message of [
+    "다음 주 금요일 오후 3시 피아노 일정 추가",
+    "8월 26일 오후 3시 피아노 일정 추가",
+    "매주 월요일 오후 3시 피아노 일정 추가",
+    "2주 뒤 오후 3시 피아노 일정 추가",
+    "사흘 뒤 오후 3시 피아노 일정 추가",
+    "한 달 뒤 오후 3시 피아노 일정 추가",
+    "두 주 뒤 오후 3시 피아노 일정 추가",
+    "보름 뒤 오후 3시 피아노 일정 추가",
+    "한 달 반 뒤 오후 3시 피아노 일정 추가",
+    "반년 후 오후 3시 피아노 일정 추가",
+    "두세 달 뒤 오후 3시 피아노 일정 추가",
+    "열한 달 뒤 오후 3시 피아노 일정 추가",
+  ]) {
+    const result = plan(message);
+    assert.equal(result.detectedIntent, "schedule_create");
+    assert.equal(result.shouldUseTool, false, message);
+    assert.equal(result.toolArgs.date, null, message);
+    assert.equal(result.toolArgs.title, "피아노", message);
+    assert.ok(result.missingArgs.includes("date"), message);
+  }
+});
+
+test("후속 답변의 해석하지 못한 날짜도 오늘로 덮어쓰지 않는다", () => {
+  const result = plan("다음 주 금요일 오후 3시 피아노", {
+    recentMessages: [
+      { role: "user", content: "일정 추가" },
+      { role: "assistant", content: "몇 시에 추가할까?" },
+    ],
+  });
+
+  assert.equal(result.detectedIntent, "schedule_create");
+  assert.equal(result.shouldUseTool, false);
+  assert.equal(result.toolArgs.date, null);
+  assert.equal(result.toolArgs.title, null);
+  assert.ok(result.missingArgs.includes("date"));
+});
+
+test("시간 후속 답변의 말버릇이 기존 일정 제목을 덮지 않는다", () => {
+  for (const message of ["오후 3시쯤", "지금 3시야"]) {
+    const result = plan(message, {
+      recentMessages: [
+        { role: "user", content: "내일 피아노 일정 추가" },
+        { role: "assistant", content: "몇 시에 추가할까?" },
+      ],
+    });
+
+    assert.equal(result.shouldUseTool, true, message);
+    assert.equal(result.toolArgs.title, "피아노", message);
+    assert.equal(result.toolArgs.startTime, "15:00", message);
+    assert.equal(result.toolArgs.date, "2026-08-18", message);
+  }
+
+  const titleStillMissing = plan("지금 3시야", {
+    recentMessages: [
+      { role: "user", content: "내일 오후 2시 일정 추가" },
+      { role: "assistant", content: "어떤 일정인지 알려줘." },
+    ],
+  });
+  assert.equal(titleStillMissing.shouldUseTool, false);
+  assert.equal(titleStillMissing.toolArgs.title, null);
+  assert.equal(titleStillMissing.toolArgs.startTime, "15:00");
+  assert.ok(titleStillMissing.missingArgs.includes("title"));
+});
+
+test("일정 등록을 되묻는 중 취소하면 새 일정을 만들지 않는다", () => {
+  for (const message of [
+    "취소",
+    "아냐 됐어",
+    "그만할래",
+    "그냥 안 할래",
+    "취소할래",
+    "추가 안 할래",
+    "하지 마",
+    "그만하자",
+    "됐어 고마워",
+  ]) {
+    const result = plan(message, {
+      recentMessages: [
+        { role: "user", content: "내일 오후 3시 일정 추가" },
+        { role: "assistant", content: "어떤 일정인지 알려줘." },
+      ],
+    });
+
+    assert.equal(result.detectedIntent, "schedule_create_cancelled", message);
+    assert.equal(result.shouldUseTool, false, message);
+    assert.equal(result.toolName, null, message);
+    assert.equal(buildAgentPlanChildReply(result), "알겠어. 일정 추가는 그만할게.", message);
+    assert.equal(shouldChargeForAiTurn(result), false, message);
+  }
+});
+
+test("일정 정보가 여러 개 빠져도 아이의 연속 답변을 합쳐 등록한다", () => {
+  const first = plan("일정 추가");
+  assert.equal(first.shouldUseTool, false);
+  assert.deepEqual(first.missingArgs, ["startTime", "title"]);
+  assert.equal(buildAgentPlanChildReply(first), "몇 시에 추가할까?");
+
+  const secondMessages = [
+    { role: "user", content: "일정 추가" },
+    { role: "assistant", content: "몇 시에 추가할까?" },
+  ];
+  const second = plan("오후 3시", { recentMessages: secondMessages });
+  assert.equal(second.detectedIntent, "schedule_create");
+  assert.equal(second.shouldUseTool, false);
+  assert.deepEqual(second.missingArgs, ["title"]);
+  assert.equal(buildAgentPlanChildReply(second), "어떤 일정인지 알려줘.");
+
+  const completed = plan("피아노", {
+    recentMessages: [
+      ...secondMessages,
+      { role: "user", content: "오후 3시" },
+      { role: "assistant", content: "어떤 일정인지 알려줘." },
+    ],
+  });
+  assert.equal(completed.detectedIntent, "schedule_create");
+  assert.equal(completed.shouldUseTool, true);
+  assert.deepEqual(completed.toolArgs, {
+    title: "피아노",
+    date: REFERENCE_DATE,
+    startTime: "15:00",
+    endTime: null,
+  });
+});
+
+test("연속 답변 중간에 말한 날짜를 마지막 제목 답변까지 유지한다", () => {
+  const result = plan("피아노", {
+    recentMessages: [
+      { role: "user", content: "일정 추가" },
+      { role: "assistant", content: "몇 시에 추가할까?" },
+      { role: "user", content: "내일 오후 3시" },
+      { role: "assistant", content: "어떤 일정인지 알려줘." },
+    ],
+  });
+
+  assert.equal(result.detectedIntent, "schedule_create");
+  assert.equal(result.shouldUseTool, true);
+  assert.deepEqual(result.toolArgs, {
+    title: "피아노",
+    date: "2026-08-18",
+    startTime: "15:00",
+    endTime: null,
+  });
+});
+
+test("일반 대화의 '어떤 일정' 질문은 과거 일정 등록을 되살리지 않는다", () => {
+  const result = plan("좋아", {
+    recentMessages: [
+      { role: "user", content: "내일 오후 3시 피아노 일정 추가" },
+      { role: "assistant", content: "피아노 일정을 추가했어." },
+      { role: "user", content: "내일 일정이 걱정돼" },
+      { role: "assistant", content: "어떤 일정이 제일 힘들 것 같아?" },
+    ],
+  });
+
+  assert.equal(result.detectedIntent, "general_chat");
+  assert.equal(result.toolName, null);
+  assert.equal(result.shouldUseTool, false);
+});
+
+test("일정 제목을 묻는 중에도 아이의 명확한 새 의도를 가로채지 않는다", () => {
+  const history = [
+    { role: "user", content: "내일 오후 3시 일정 추가" },
+    { role: "assistant", content: "어떤 일정인지 알려줘." },
+  ];
+  const cases = [
+    ["엄마한테 전화해줘", "call_parent", "callParent"],
+    ["내일 일정 알려줘", "schedule_query", "getScheduleByDate"],
+    ["알람 설정 열어줘", "device_action", "openDeviceAction"],
+    ["안녕", "general_chat", null],
+    ["다른 얘기하자", "general_chat", null],
+  ];
+
+  for (const [message, detectedIntent, toolName] of cases) {
+    const result = plan(message, { recentMessages: history });
+    assert.equal(result.detectedIntent, detectedIntent, message);
+    assert.equal(result.toolName, toolName, message);
+    assert.notEqual(result.detectedIntent, "schedule_create", message);
+  }
+});
+
+test("10분이 지난 일정 되묻기는 다음 대화를 일정 제목으로 삼지 않는다", () => {
+  const result = plan("피아노", {
+    referenceTime: "2026-08-17T12:10:01.000Z",
+    recentMessages: [
+      { role: "user", content: "내일 오후 3시 일정 추가", createdAt: "2026-08-17T12:00:00.000Z" },
+      { role: "assistant", content: "어떤 일정인지 알려줘.", createdAt: "2026-08-17T12:00:00.000Z" },
+    ],
+  });
+
+  assert.equal(result.detectedIntent, "general_chat");
+  assert.equal(result.shouldUseTool, false);
+  assert.equal(result.toolName, null);
+});
+
+test("배포 전 날짜 질문을 받은 대화도 오늘 답변으로 복구한다", () => {
+  const result = plan("오늘", {
+    recentMessages: [
+      { role: "user", content: "오후3시 피아노 일정 추가" },
+      { role: "assistant", content: "언제 일정인지 알려줘." },
+    ],
+  });
+  assert.equal(result.detectedIntent, "schedule_create");
+  assert.equal(result.shouldUseTool, true);
+  assert.deepEqual(result.toolArgs, {
+    title: "피아노",
+    date: REFERENCE_DATE,
+    startTime: "15:00",
+    endTime: null,
+  });
+});
+
 test("부모에게 전해 달라는 부탁은 설정 분기가 가로채지 않는다", () => {
   const message = plan("엄마한테 알림 좀 켜달라고 전해줘");
   assert.equal(message.detectedIntent, "message_parent");
@@ -203,9 +430,17 @@ test("아이 세션의 일정 삭제 실행 경로는 서버에 남아 있지 �
   // deleteSchedule 도구를 계획·실행하는 분기가 더는 없다.
   assert.doesNotMatch(route, /toolName === "deleteSchedule"\s*\)\s*\{\s*\n\s*if \(!allowScheduleActions/);
   assert.doesNotMatch(route, /toolName: "deleteSchedule"/);
-  // events 링크 해제(아이만 빼기)도 사라져야 한다. 남은 DELETE 는 일정 등록 실패 롤백뿐이다.
+  // events 링크 해제(아이만 빼기)도 사라져야 한다. 일정 등록은 원자 저장 경계를 써서
+  // 링크 실패 뒤 수동 DELETE 롤백에도 기대지 않는다.
   assert.doesNotMatch(route, /DELETE FROM events_children WHERE event_id=\? AND child_id=\?/);
-  const eventDeletes = route.match(/DELETE FROM events\b/g) ?? [];
-  assert.equal(eventDeletes.length, 1, "일정 등록 실패 롤백 외의 events 삭제가 남아 있다");
-  assert.match(route, /schedule child link rollback failed/);
+  assert.doesNotMatch(route, /DELETE FROM events\b/);
+  assert.match(route, /persistAiChildSchedule/);
+});
+
+test("확인된 AI 일정 수정도 저장 직후 가족 기기에 실시간 발행한다", () => {
+  const route = readFileSync(new URL("../routes/ai-child-chat.ts", import.meta.url), "utf8");
+  assert.match(
+    route,
+    /UPDATE events[\s\S]{0,900}notifyPg\(c\.env,\s*familyId,\s*"events",\s*"UPDATE"/,
+  );
 });

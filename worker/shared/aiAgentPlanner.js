@@ -214,6 +214,41 @@ function extractDate(text, referenceDate) {
     return null;
 }
 
+const KOREAN_DURATION_COUNT_SOURCE = "(?:\\d+|[한두세네댓다섯여섯일곱여덟아홉열스물서른마흔쉰예순일흔여든아흔십백]+)";
+const RELATIVE_DURATION_UNIT_SOURCE = `(?:${KOREAN_DURATION_COUNT_SOURCE}\\s*(?:주일|개월|일|주|달|년)|반\\s*년|하루|이틀|사흘|나흘|닷새|엿새|일주일|며칠|보름)`;
+const UNSUPPORTED_RELATIVE_DATE_SOURCE = `(?:(?:${RELATIVE_DURATION_UNIT_SOURCE}\\s*)+(?:반\\s*)?(?:뒤|후|전)|(?:^|\\s)(?:뒤|후|전)(?=\\s|[,.!?。]|$))`;
+
+function hasUnresolvedScheduleDateReference(text) {
+    return /(그저께|그제|어제|글피|그글피|이번\s*(주|달)|다음\s*(주|달)|다다음\s*(주|달)|주말|나중|언젠가)/.test(text)
+        || new RegExp(UNSUPPORTED_RELATIVE_DATE_SOURCE).test(text)
+        || /(?:월|화|수|목|금|토|일)요일/.test(text)
+        || /(?:매일|매주|매달|매년|마다)/.test(text)
+        || /\d{1,4}\s*년\s*\d{1,2}\s*월(?:\s*\d{1,2}\s*일)?/.test(text)
+        || /\d{1,2}\s*월(?:\s*\d{1,2}\s*일)?/.test(text)
+        || /\d{1,2}\s*[./-]\s*\d{1,2}/.test(text)
+        || /\d{1,2}\s*일(?=\s|에|날|$)/.test(text);
+}
+
+function extractScheduleCreateDate(text, referenceDate) {
+    const explicitDate = extractDate(text, referenceDate);
+    if (explicitDate) return explicitDate;
+    if (hasUnresolvedScheduleDateReference(text)) return null;
+    return todayKey(referenceDate);
+}
+
+function stripScheduleDateReferences(text) {
+    return String(text || "")
+        .replace(/\d{1,4}\s*년\s*\d{1,2}\s*월(?:\s*\d{1,2}\s*일)?/g, " ")
+        .replace(/\d{1,2}\s*월(?:\s*\d{1,2}\s*일)?/g, " ")
+        .replace(/\d{1,2}\s*[./-]\s*\d{1,2}/g, " ")
+        .replace(new RegExp(UNSUPPORTED_RELATIVE_DATE_SOURCE, "g"), " ")
+        .replace(/(?:이번|다음|다다음)\s*(?:주|달)/g, " ")
+        .replace(/(?:월|화|수|목|금|토|일)요일/g, " ")
+        .replace(/그저께|그제|어제|오늘|내일|모레|글피|그글피|주말|나중|언젠가/g, " ")
+        .replace(/매일|매주|매달|매년|마다/g, " ")
+        .replace(/\d{1,2}\s*일(?=\s|에|날|$)/g, " ");
+}
+
 function isNaturalScheduleQuery(text) {
     if (!/오늘|내일|모레/.test(text)) return false;
     return /뭐\s*있|뭐가\s*있|해야\s*할\s*(거|것|일)|할\s*(거|것|일)\s*있|챙길\s*(거|것)\s*있|준비할\s*(거|것)\s*있|준비물\s*(뭐|알려|있)/.test(text);
@@ -256,7 +291,7 @@ function isTimeOnlyFollowup(text) {
     if (!extractTime(text)) return false;
     const rest = String(text || "")
         .replace(/(오전|오후)?\s*\d{1,2}\s*시(?:\s*\d{1,2}\s*분?)?/g, " ")
-        .replace(/부터|까지|쯤|에|으로|로|~|-/g, " ")
+        .replace(/지금|현재|이제|부터|까지|쯤|정도|경|이에요|예요|이야|이요|야|요|에|으로|로|~|-/g, " ")
         .replace(/[.!?。]/g, " ")
         .replace(/\s+/g, " ")
         .trim();
@@ -268,8 +303,7 @@ function removeStandaloneParticles(text) {
 }
 
 function extractScheduleTitle(text) {
-    const normalized = text
-        .replace(/오늘|내일|모레/g, " ")
+    const normalized = stripScheduleDateReferences(text)
         .replace(/(오전|오후)?\s*\d{1,2}\s*시(?:\s*\d{1,2}\s*분?)?/g, " ")
         .replace(/부터|까지|~|-/g, " ")
         .replace(/일정|스케줄|추가|등록|저장|해줘|해\s*줘|해|좀/gi, " ");
@@ -344,51 +378,128 @@ function normalizeRecentMessages(recentMessages) {
         .map((message) => ({
             role: message?.role === "assistant" ? "assistant" : "user",
             content: normalizeText(message?.content),
+            createdAt: message?.createdAt ?? message?.created_at ?? null,
         }))
         .filter((message) => message.content);
 }
 
-function findPendingScheduleCreate(recentMessages, { referenceDate, parentSettings }) {
-    const messages = normalizeRecentMessages(recentMessages);
-    for (let index = messages.length - 1; index >= 1; index -= 1) {
-        const assistant = messages[index];
-        if (assistant.role !== "assistant" || !/몇\s*시/.test(assistant.content)) continue;
+const SCHEDULE_CREATE_PENDING_TTL_MS = 10 * 60 * 1000;
 
-        for (let previousIndex = index - 1; previousIndex >= 0; previousIndex -= 1) {
-            const previous = messages[previousIndex];
-            if (previous.role !== "user") continue;
-            const previousPlan = planChildAgentAction(previous.content, {
-                referenceDate,
-                parentSettings,
-                recentMessages: [],
-            });
-            const missingArgs = Array.isArray(previousPlan.missingArgs) ? previousPlan.missingArgs : [];
-            if (
-                previousPlan.detectedIntent === "schedule_create"
-                && previousPlan.toolName === "createSchedule"
-                && missingArgs.length > 0
-            ) {
-                return previousPlan;
+function conversationTimestampMs(value) {
+    if (value instanceof Date) return Number.isFinite(value.getTime()) ? value.getTime() : null;
+    const raw = typeof value === "string" ? value.trim() : "";
+    if (!raw) return null;
+    const normalized = raw.includes("T")
+        ? raw
+        : raw.replace(" ", "T").replace(/\+00$/, "Z");
+    const timestamp = Date.parse(normalized);
+    return Number.isFinite(timestamp) ? timestamp : null;
+}
+
+function isFreshScheduleCreatePrompt(message, referenceTime) {
+    // 단위 테스트·구버전 호출처럼 시각을 주지 않은 문맥은 기존 호환을 유지한다.
+    // 운영 DB 문맥은 createdAt이 항상 있으므로 파싱 실패도 pending으로 추정하지 않는다.
+    if (message?.createdAt == null) return true;
+    const promptAt = conversationTimestampMs(message.createdAt);
+    const now = conversationTimestampMs(referenceTime) ?? Date.now();
+    if (promptAt == null) return false;
+    const age = now - promptAt;
+    return age >= -60_000 && age <= SCHEDULE_CREATE_PENDING_TTL_MS;
+}
+
+function scheduleCreatePromptMissingArg(message) {
+    const text = normalizeText(message?.content);
+    if (message?.role !== "assistant") return null;
+    if (/^몇\s*시에?\s*추가할까[.!?。]?$/.test(text)) return "startTime";
+    if (/^언제\s*일정인지\s*알려줘[.!?。]?$/.test(text)) return "date";
+    if (/^어떤\s*일정인지\s*알려줘[.!?。]?$/.test(text)) return "title";
+    return null;
+}
+
+function mergeScheduleCreateReply(toolArgs, replyText, referenceDate, requestedArg) {
+    const merged = { ...(toolArgs || {}) };
+    const explicitDate = extractDate(replyText, referenceDate);
+    if (explicitDate) merged.date = explicitDate;
+    else if (hasUnresolvedScheduleDateReference(replyText)) merged.date = null;
+
+    const startTime = extractTime(replyText);
+    const endTime = extractEndTime(replyText);
+    if (startTime) merged.startTime = startTime;
+    if (endTime) merged.endTime = endTime;
+    // 날짜·시각은 구조가 명확하므로 어느 답변에서든 반영하되, 제목은 혜니가 제목을
+    // 물은 turn에서만 받는다. 그래야 "오후 3시쯤"의 '쯤'이 제목을 덮지 않는다.
+    if (requestedArg === "title" && !isTimeOnlyFollowup(replyText)) {
+        const title = extractScheduleTitle(replyText);
+        if (title) merged.title = title;
+    }
+    return merged;
+}
+
+function isScheduleCreateCancellation(text) {
+    const compact = normalizeText(text)
+        .replace(/[.!?。]/g, "")
+        .replace(/\s+/g, "");
+    if (/취소|그만/.test(compact)) return true;
+    if (/^(?:그냥)?(?:추가)?(?:안할래|안할게|안해|안할거야|하지마|하지말아줘)$/.test(compact)) return true;
+    if (/^(?:아냐|아니|아니야)(?:(?:됐어|됐어요|괜찮아)(?:고마워)?|고마워)?$/.test(compact)) return true;
+    return /^(?:그냥)?됐(?:어|어요)(?:고마워|괜찮아)?$/.test(compact);
+}
+
+function scheduleCreateMissingArgs(toolArgs = {}) {
+    const missingArgs = [];
+    if (!toolArgs.date) missingArgs.push("date");
+    if (!toolArgs.startTime) missingArgs.push("startTime");
+    if (!toolArgs.title) missingArgs.push("title");
+    return missingArgs;
+}
+
+function findPendingScheduleCreate(recentMessages, { referenceDate, referenceTime, parentSettings }) {
+    const messages = normalizeRecentMessages(recentMessages);
+    const lastPrompt = messages[messages.length - 1];
+    const pendingMissingArg = scheduleCreatePromptMissingArg(lastPrompt);
+    if (!pendingMissingArg || !isFreshScheduleCreatePrompt(lastPrompt, referenceTime)) return null;
+
+    const replies = [];
+    for (let index = messages.length - 2; index >= 0;) {
+        const userMessage = messages[index];
+        if (userMessage.role !== "user") return null;
+        const previousPlan = planChildAgentAction(userMessage.content, {
+            referenceDate,
+            referenceTime,
+            parentSettings,
+            recentMessages: [],
+        });
+        if (
+            previousPlan.detectedIntent === "schedule_create"
+            && previousPlan.toolName === "createSchedule"
+        ) {
+            let toolArgs = { ...(previousPlan.toolArgs || {}) };
+            for (const reply of replies) {
+                toolArgs = mergeScheduleCreateReply(toolArgs, reply.content, referenceDate, reply.requestedArg);
             }
-            break;
+            const missingArgs = scheduleCreateMissingArgs(toolArgs);
+            return {
+                ...previousPlan,
+                toolArgs,
+                missingArgs,
+                shouldUseTool: missingArgs.length === 0,
+                pendingMissingArg,
+            };
         }
+
+        const previousPromptIndex = index - 1;
+        const previousPrompt = messages[previousPromptIndex];
+        const requestedArg = scheduleCreatePromptMissingArg(previousPrompt);
+        if (!requestedArg || !isFreshScheduleCreatePrompt(previousPrompt, referenceTime)) return null;
+        replies.unshift({ content: userMessage.content, requestedArg });
+        index = previousPromptIndex - 1;
     }
     return null;
 }
 
-function findRecentScheduleCreateTime(recentMessages) {
-    const messages = normalizeRecentMessages(recentMessages);
-    for (let index = messages.length - 1; index >= 0; index -= 1) {
-        const message = messages[index];
-        if (message.role !== "user") continue;
-        const startTime = extractTime(message.content);
-        if (!startTime) continue;
-        return {
-            startTime,
-            endTime: extractEndTime(message.content),
-        };
-    }
-    return { startTime: null, endTime: null };
+function isExplicitConversationShift(text) {
+    return /^(?:안녕|하이|헬로|hello)(?:\s|[!?.。]|$)/i.test(text)
+        || /다른\s*(?:얘기|이야기)|주제\s*(?:바꾸|전환)|일정\s*말고/.test(text);
 }
 
 function findRecentScheduleUpdateChanges(recentMessages) {
@@ -506,7 +617,12 @@ function findPendingParentMessage(recentMessages, { referenceDate, parentSetting
     return null;
 }
 
-export function planChildAgentAction(message, { referenceDate = new Date(), parentSettings = {}, recentMessages = [] } = {}) {
+export function planChildAgentAction(message, {
+    referenceDate = new Date(),
+    referenceTime = new Date(),
+    parentSettings = {},
+    recentMessages = [],
+} = {}) {
     const text = normalizeText(message);
     const safety = detectSafety(text);
 
@@ -554,31 +670,41 @@ export function planChildAgentAction(message, { referenceDate = new Date(), pare
     const allowScheduleActions = readParentToolSetting(parentSettings, "allowScheduleActions", "allow_schedule_actions", true);
     const allowContactActions = readParentToolSetting(parentSettings, "allowContactActions", "allow_contact_actions", true);
 
-    const pendingScheduleCreate = findPendingScheduleCreate(recentMessages, { referenceDate, parentSettings });
+    const pendingScheduleCreate = findPendingScheduleCreate(recentMessages, { referenceDate, referenceTime, parentSettings });
     if (pendingScheduleCreate && text) {
+        if (isScheduleCreateCancellation(text)) {
+            return basePlan({ detectedIntent: "schedule_create_cancelled", safety });
+        }
+        const standalonePlan = planChildAgentAction(text, {
+            referenceDate,
+            referenceTime,
+            parentSettings,
+            recentMessages: [],
+        });
+        if (standalonePlan.detectedIntent !== "general_chat" || isExplicitConversationShift(text)) {
+            return standalonePlan;
+        }
         if (!allowScheduleActions) return parentToolDisabled("schedule", safety);
         if (!isAllowedParentTopic(text, parentSettings, ["일정", "스케줄", "루틴", "준비물", "숙제", "학교생활", "학원", "운동"])) {
             return parentAllowedTopicRestriction(parentSettings, safety);
         }
-        const recentScheduleTime = findRecentScheduleCreateTime(recentMessages);
-        const date = extractDate(text, referenceDate) || pendingScheduleCreate.toolArgs?.date || null;
-        const startTime = extractTime(text) || pendingScheduleCreate.toolArgs?.startTime || recentScheduleTime.startTime || null;
-        const endTime = extractEndTime(text) || pendingScheduleCreate.toolArgs?.endTime || recentScheduleTime.endTime || null;
-        const title = extractScheduleTitle(text) || pendingScheduleCreate.toolArgs?.title || null;
-        const missingArgs = [];
-        if (!date) missingArgs.push("date");
-        if (!startTime) missingArgs.push("startTime");
-        if (!title) missingArgs.push("title");
+        const toolArgs = mergeScheduleCreateReply(
+            pendingScheduleCreate.toolArgs,
+            text,
+            referenceDate,
+            pendingScheduleCreate.pendingMissingArg,
+        );
+        const missingArgs = scheduleCreateMissingArgs(toolArgs);
 
         return basePlan({
             detectedIntent: "schedule_create",
             shouldUseTool: missingArgs.length === 0,
             toolName: "createSchedule",
             toolArgs: {
-                title,
-                date,
-                startTime,
-                endTime,
+                title: toolArgs.title || null,
+                date: toolArgs.date || null,
+                startTime: toolArgs.startTime || null,
+                endTime: toolArgs.endTime || null,
             },
             missingArgs,
             safety,
@@ -868,7 +994,9 @@ export function planChildAgentAction(message, { referenceDate = new Date(), pare
         if (!isAllowedParentTopic(text, parentSettings, ["일정", "스케줄", "루틴", "준비물", "숙제", "학교생활", "학원", "운동"])) {
             return parentAllowedTopicRestriction(parentSettings, safety);
         }
-        const date = extractDate(text, referenceDate);
+        // 날짜 표현 자체가 없을 때만 오늘을 기본값으로 쓴다. 해석하지 못한 날짜 표현이
+        // 있으면 오늘로 오인해 저장하지 않고 날짜를 다시 묻는다.
+        const date = extractScheduleCreateDate(text, referenceDate);
         const startTime = extractTime(text);
         const endTime = extractEndTime(text);
         const title = extractScheduleTitle(text);

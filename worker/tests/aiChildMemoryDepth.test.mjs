@@ -13,6 +13,7 @@ import { createLongTermMemoryPatch } from "../shared/aiMemoryPolicy.js";
 import { buildChildSystemPrompt } from "../shared/aiChildContext.js";
 
 const route = readFileSync(new URL("../routes/ai-child-chat.ts", import.meta.url), "utf8");
+const contextLoader = readFileSync(new URL("../lib/aiChildChatContext.ts", import.meta.url), "utf8");
 
 test("고정 목록 밖의 관심사도 문장 구조로 기억한다", () => {
   const patch = createLongTermMemoryPatch("나 레고 진짜 좋아해");
@@ -62,7 +63,9 @@ test("반복해서 들은 이야기는 확신이 올라가되 확정되지는 �
 });
 
 test("대화 맥락 창과 기억 조회량이 다시 좁아지지 않는다", () => {
-  assert.match(route, /ai_chat_messages[\s\S]{0,200}LIMIT 14/);
+  assert.match(route, /loadAiChildChatContextWindow\(db, familyId, userId\)/);
+  assert.match(contextLoader, /limit\s*=\s*14/);
+  assert.match(contextLoader, /ai_chat_messages[\s\S]{0,260}rowid DESC[\s\S]{0,80}LIMIT \?/);
   assert.match(route, /ai_memory_summaries[\s\S]{0,160}LIMIT 5/);
   assert.match(route, /ai_long_term_memories[\s\S]{0,200}confidence DESC[\s\S]{0,60}LIMIT 30/);
 });

@@ -250,6 +250,36 @@ test("audience resolver는 child_locations를 부모와 해당 활성 child에�
   sqlite.close();
 });
 
+test("audience resolver는 일정 생성·수정을 활성 가족 전원에게 최소 payload로 보낸다", async () => {
+  assert.equal(typeof realtimeAudience.buildRealtimePgEnvelope, "function");
+  const { sqlite, db } = createAudienceDb();
+
+  for (const eventType of ["INSERT", "UPDATE"]) {
+    const envelope = await realtimeAudience.buildRealtimePgEnvelope(db, {
+      familyId: "family-1",
+      table: "events",
+      eventType,
+      newRow: {
+        id: "event-1",
+        family_id: "family-1",
+        title: "피아노",
+        memo: "노출하면 안 되는 일정 원문",
+      },
+      oldRow: eventType === "UPDATE"
+        ? { id: "event-1", family_id: "family-1", title: "피아노" }
+        : null,
+    });
+
+    assert.deepEqual(envelope.targetUserIds.sort(), ["child-1", "child-2", "owner-1", "parent-1"]);
+    assert.deepEqual(envelope.new, { id: "event-1", family_id: "family-1" });
+    assert.deepEqual(
+      envelope.old,
+      eventType === "UPDATE" ? { id: "event-1", family_id: "family-1" } : null,
+    );
+  }
+  sqlite.close();
+});
+
 test("audience resolver는 memo thread를 부모와 해당 thread child에게만 보낸다", async () => {
   assert.equal(typeof realtimeAudience.buildRealtimePgEnvelope, "function");
   const { sqlite, db } = createAudienceDb();

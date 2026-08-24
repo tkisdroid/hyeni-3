@@ -92,6 +92,10 @@ function failureReply(result = {}) {
 export function buildAgentPlanChildReply(plan = {}) {
     const intent = String(plan.detectedIntent || "");
 
+    if (intent === "schedule_create_cancelled") {
+        return "알겠어. 일정 추가는 그만할게.";
+    }
+
     if (intent === "parent_tool_disabled") {
         const toolFamily = String(plan.toolArgs?.toolFamily || "");
         if (toolFamily === "contact") return "지금은 연락 기능이 꺼져 있어. 부모님 설정이 필요해.";

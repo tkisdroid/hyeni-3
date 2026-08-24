@@ -29,6 +29,11 @@ import { parseJson, pgArray, toBool, toPgArray } from "../lib/serialize";
 import { openaiChatUrl, openaiLunaChatConfig, openaiSafetyIdentifier } from "../lib/openai";
 import { classifyOpenAiError, writeOpenAiLog } from "../lib/openaiLog";
 import { notifyPg } from "../lib/realtime";
+import { loadAiChildChatContextWindow } from "../lib/aiChildChatContext";
+import {
+  AiChildSchedulePersistenceError,
+  persistAiChildSchedule,
+} from "../lib/aiChildSchedulePersistence";
 import {
   acquireInteractiveAiCreditExecutionLease,
   AiCreditConsumptionUnavailableError,
@@ -473,7 +478,8 @@ chat.post("/child-chat", requireAuth, async (c) => {
   if (!message) return c.json({ error: "empty_message" }, 400);
   if (message.length > 500) return c.json({ error: "message_too_long" }, 400);
 
-  const { contextDate, quotaDate } = resolveAiChatDates(body.usageDate);
+  const requestNow = new Date();
+  const { contextDate, quotaDate } = resolveAiChatDates(body.usageDate, requestNow);
 
   // ── 멤버 조회(자녀 본인 게이트) ──
   let member: Record<string, any> | null = null;
@@ -651,6 +657,7 @@ chat.post("/child-chat", requireAuth, async (c) => {
     if (!isSingleChildMutableEvent(eventRow, childMemberId)) return c.json({ error: "schedule_update_not_allowed" }, 403);
     if (!isValidScheduleChangeTimeRange(eventRow, safeChanges)) return c.json({ error: "invalid_schedule_time_range" }, 400);
 
+    const updatedAt = pgNow();
     try {
       const sets: string[] = [];
       const binds: unknown[] = [];
@@ -659,15 +666,22 @@ chat.post("/child-chat", requireAuth, async (c) => {
         binds.push(v);
       }
       sets.push("updated_at=?");
-      binds.push(pgNow());
+      binds.push(updatedAt);
       binds.push(familyId, scheduleId);
-      await db.prepare(`UPDATE events SET ${sets.join(", ")} WHERE family_id=? AND id=?`).bind(...binds).run();
+      const updated = await db.prepare(`UPDATE events SET ${sets.join(", ")} WHERE family_id=? AND id=?`).bind(...binds).run();
+      if (Number(updated.meta?.changes ?? 0) !== 1) throw new Error("schedule_update_not_applied");
     } catch (e) {
       console.error("[ai-child-chat] schedule update failed");
       return c.json({ error: "schedule_update_failed" }, 500);
     }
 
-    const eventForClient = eventRowToToolEvent({ ...eventRow, ...updatePatch });
+    const updatedEventRow = { ...eventRow, ...updatePatch, updated_at: updatedAt };
+    try {
+      await notifyPg(c.env, familyId, "events", "UPDATE", updatedEventRow, eventRow);
+    } catch {
+      console.error("[ai-child-chat] schedule update realtime notify failed");
+    }
+    const eventForClient = eventRowToToolEvent(updatedEventRow);
     const title = String(eventForClient.title || body.confirmedTool.title || "일정");
     const timeText = formatScheduleChangeTimeText(safeChanges, eventForClient);
     const reply = `${title} 일정을${timeText} 바꿨어.`;
@@ -820,18 +834,11 @@ chat.post("/child-chat", requireAuth, async (c) => {
   // ── 최근 대화(컨텍스트 윈도) ──
   // 6턴은 "아까 한 말"을 자주 잊어 아이가 같은 설명을 되풀이해야 했다.
   // 14턴이면 한 번의 대화 주제가 통째로 들어가면서 프롬프트 비용은 완만하게만 늘어난다.
-  const recentRes = await db
-    .prepare(
-      "SELECT role, content FROM ai_chat_messages WHERE family_id=? AND child_user_id=? AND role != 'system' ORDER BY substr(created_at,1,19) DESC LIMIT 14",
-    )
-    .bind(familyId, userId)
-    .all<{ role: string; content: string }>();
-  const contextWindow = (recentRes.results ?? [])
-    .reverse()
-    .map((m) => ({ role: (m.role === "assistant" ? "assistant" : "user") as "assistant" | "user", content: m.content as string }));
+  const contextWindow = await loadAiChildChatContextWindow(db, familyId, userId);
 
   const agentPlan = planChildAgentActionFn(message, {
     referenceDate: contextDate,
+    referenceTime: requestNow,
     parentSettings: parentSettingsRow || {},
     recentMessages: contextWindow,
   });
@@ -1096,57 +1103,22 @@ chat.post("/child-chat", requireAuth, async (c) => {
           startTime: agentPlan.toolArgs.startTime,
           endTime: agentPlan.toolArgs.endTime,
         });
-        let insertOk = false;
-        try {
-          await db
-            .prepare(
-              "INSERT INTO events (id, family_id, date_key, title, time, category, emoji, color, bg, memo, location, notif_override, end_time, is_family_event, created_by, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            )
-            .bind(
-              eventRow.id,
-              eventRow.family_id,
-              eventRow.date_key,
-              eventRow.title,
-              eventRow.time,
-              eventRow.category,
-              eventRow.emoji,
-              eventRow.color,
-              eventRow.bg,
-              eventRow.memo ?? "",
-              eventRow.location != null ? JSON.stringify(eventRow.location) : null,
-              eventRow.notif_override != null ? JSON.stringify(eventRow.notif_override) : null,
-              eventRow.end_time || null,
-              b(eventRow.is_family_event),
-              eventRow.created_by,
-              pgNow(),
-              pgNow(),
-            )
-            .run();
-          insertOk = true;
-        } catch (e) {
-          console.error("[ai-child-chat] schedule create failed");
-          toolResult = { ok: false, error: "schedule_create_failed" };
-        }
-        if (insertOk) {
-          try {
-            await db
-              .prepare("INSERT INTO events_children (event_id, child_id) VALUES (?, ?)")
-              .bind(eventRow.id, childMemberId)
-              .run();
-            toolResult = { ok: true, toolName: "createSchedule", event: eventRowToToolEvent(eventRow) };
-          } catch (e) {
-            console.error("[ai-child-chat] schedule child link failed");
-            try {
-              await db.prepare("DELETE FROM events WHERE family_id=? AND id=?").bind(familyId, eventRow.id).run();
-            } catch (rollbackErr) {
-              console.error("[ai-child-chat] schedule child link rollback failed");
-            }
-            toolResult = { ok: false, error: "schedule_link_failed" };
-          }
-        }
+        const savedEvent = await persistAiChildSchedule(
+          db,
+          {
+            eventRow,
+            childMemberId,
+            timestamp: pgNow(),
+          },
+          (row) => notifyPg(c.env, familyId, "events", "INSERT", row, null),
+        );
+        toolResult = { ok: true, toolName: "createSchedule", event: eventRowToToolEvent(savedEvent) };
       } catch (e) {
         console.error("[ai-child-chat] schedule create exception");
-        toolResult = { ok: false, error: "schedule_create_failed" };
+        toolResult = {
+          ok: false,
+          error: e instanceof AiChildSchedulePersistenceError ? e.code : "schedule_create_failed",
+        };
       }
     }
   }

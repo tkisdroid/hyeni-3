@@ -25,6 +25,7 @@ const REFUSAL_ONLY_INTENTS = new Set([
     "external_contact_rejected",
     "parent_tool_disabled",
     "schedule_delete_parent_only",
+    "schedule_create_cancelled",
     "notification_settings_parent_only",
 ]);
 
