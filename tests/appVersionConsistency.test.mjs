@@ -16,7 +16,7 @@ const [packageJson, versionPolicy, vite, gradle, androidManifest, parentSettings
 ]);
 
 test("표시 버전은 package.json을 쓰고 원격 업데이트 정책은 Play 제공 버전을 넘지 않는다", () => {
-  assert.equal(packageJson.version, "1.4.1");
+  assert.equal(packageJson.version, "1.4.2");
   assert.equal(versionPolicy.minimumSupportedVersion, "1.4.0");
   assert.equal(versionPolicy.latestVersion, "1.4.0");
   assert.equal(versionPolicy.blockingUpdate, false);
