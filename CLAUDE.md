@@ -27,6 +27,17 @@ readback은 `혜니캘린더 1.4.0 (12)`·versionCode 12·AAB SHA·등록정보�
 (SHA-256 `f617fcd6607bc4ce291d93ef8de91530334ff47fd7f4a2b1e6e3a8e29c7c0911`)와 1.4.0 권장 업데이트를 반환한다.
 실기기 설치·로그인·로그아웃·역할 전환·재페어링은 수행하지 않아 기존 세션을 건드리지 않았다.
 
+**앱 소셜 로그인 브라우저 낙하 방어(2026-08-24)**: 앱에서 소셜 로그인 시 시스템 브라우저가 열리고 로그인은
+끝났는데 앱이 다시 로그인 화면인 제보의 1차 원인은 App Link 검증 실패 등으로 콜백
+`https://hyeni-calendar.pages.dev/oauth/callback?code…` 이 앱 대신 브라우저 SPA에 떨어지는 것이다. 그 상태로
+온보딩이 `finishOAuthLogin`을 호출하면 이 저장소에 state·transactionSecret이 없어 교환이 불가능하다. 이제
+`hasLocalOAuthContext()`(읽기 전용 peek)로 웹에서 낙하 콜백을 감지하면 네트워크를 때리지 않고 URL을 정리한 뒤
+"브라우저에서는 로그인을 마칠 수 없어요. 혜니캘린더 앱에서 소셜 로그인을 다시 시도해 주세요." 안내로 닫는다 — 서버
+트랜잭션은 소비되지 않아 앱에서 같은 코드 재사용이 가능하다. 아울러 Android 콜드 스타트에서 Capacitor 브리지가 늦게
+떠서 `device_install_id` 없이 교환·refresh가 나가는 경합은 `resolveAndroidDeviceInstallId`가 0/150/400ms 재시도로
+흡수하고, 실패해도 null fail-closed를 유지한다. 회귀=`tests/authEntryReliability.test.mjs`(9케이스).
+⚠️ 근본 해결은 설치된 Play 빌드에서 `adb -s <serial> shell pm verify-app-links --re-verify com.hyeni.calendar` →
+`pm get-app-links`가 `hyeni-calendar.pages.dev: verified`를 반환하게 하는 것(출시 체크리스트 미완료 항목)이다.
 **iPhone Safari 공동 보호자 일정·주변소리 권한 정합화(2026-08-23, 운영 배포 완료)**:
 활성 공동 보호자 계정으로 iPhone Safari 실사용 중 일정을 등록하면 Worker의 과거 주 보호자 전용 gate가
 `403 forbidden`을 반환했고, 매핑되지 않은 4xx가 `요청을 처리하지 못했어요. 입력 내용을 확인해 주세요.`로
