@@ -1221,6 +1221,7 @@ export const messageIds = [
   "onboarding.login.submit",
   "onboarding.login.subtitle",
   "onboarding.login.title",
+  "onboarding.oauth.returnToApp",
   "onboarding.pairing.codeLabel",
   "onboarding.pairing.connecting",
   "onboarding.pairing.description",

@@ -64,6 +64,7 @@ const messages = {
   "onboarding.login.submit": "로그인",
   "onboarding.login.subtitle": "계정으로 우리 가족과 이어집니다",
   "onboarding.login.title": "다시 만나 반가워요",
+  "onboarding.oauth.returnToApp": "브라우저에서는 로그인을 마칠 수 없어요. 혜니캘린더 앱에서 소셜 로그인을 다시 시도해 주세요.",
   "onboarding.pairing.codeLabel": "아이 연결 코드",
   "onboarding.pairing.connecting": "연결 중…",
   "onboarding.pairing.description": "부모 앱의 가족 > 연결 코드에서 QR 코드와 연결 코드를 볼 수 있어요.",

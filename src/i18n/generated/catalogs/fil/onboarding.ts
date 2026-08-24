@@ -64,6 +64,7 @@ const messages = {
   "onboarding.login.submit": "Mag-log in",
   "onboarding.login.subtitle": "Mag-sign in para kumonekta muli sa iyong pamilya",
   "onboarding.login.title": "Welcome back",
+  "onboarding.oauth.returnToApp": "Hindi matatapos ang pag-login sa browser. Pakisubukang muli ang social login sa Hyeni Calendar app.",
   "onboarding.pairing.codeLabel": "Connection code ng bata",
   "onboarding.pairing.connecting": "Kumokonekta…",
   "onboarding.pairing.description": "Makikita ang QR code at connection code sa Pamilya > Connection code sa app ng magulang.",

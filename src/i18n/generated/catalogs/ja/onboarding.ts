@@ -64,6 +64,7 @@ const messages = {
   "onboarding.login.submit": "ログイン",
   "onboarding.login.subtitle": "アカウントにログインして家族とつながります",
   "onboarding.login.title": "おかえりなさい",
+  "onboarding.oauth.returnToApp": "ブラウザではログインを完了できません。Hyeni Calendarアプリでもう一度ソーシャルログインしてください。",
   "onboarding.pairing.codeLabel": "お子さまの接続コード",
   "onboarding.pairing.connecting": "接続中…",
   "onboarding.pairing.description": "保護者アプリの「家族」>「接続コード」で、QRコードと接続コードを確認できます。",

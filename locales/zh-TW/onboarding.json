@@ -178,5 +178,6 @@
   "onboarding.signup.socialPending": "正在開啟社群帳號註冊…",
   "onboarding.pairing.parent.title": "以共同監護人身分加入家庭",
   "onboarding.pairing.parent.description": "請使用邀請您的監護人提供的 QR Code 或連接碼。",
-  "onboarding.pairing.parent.recovery": "加入後，您可以用監護人權限共同管理家庭日程和孩子的安全資訊。"
+  "onboarding.pairing.parent.recovery": "加入後，您可以用監護人權限共同管理家庭日程和孩子的安全資訊。",
+  "onboarding.oauth.returnToApp": "無法在瀏覽器中完成登入。請在 Hyeni Calendar 應用程式中重新嘗試社群登入。"
 }

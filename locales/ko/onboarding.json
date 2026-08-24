@@ -178,5 +178,6 @@
   "onboarding.signup.socialPending": "소셜 가입 화면을 여는 중…",
   "onboarding.pairing.parent.title": "공동 보호자로 가족에 연결",
   "onboarding.pairing.parent.description": "초대한 보호자에게 받은 QR 또는 연결 코드를 확인해 주세요.",
-  "onboarding.pairing.parent.recovery": "연결 후에는 같은 가족 일정과 아이 안전 정보를 보호자 권한으로 함께 관리해요."
+  "onboarding.pairing.parent.recovery": "연결 후에는 같은 가족 일정과 아이 안전 정보를 보호자 권한으로 함께 관리해요.",
+  "onboarding.oauth.returnToApp": "브라우저에서는 로그인을 마칠 수 없어요. 혜니캘린더 앱에서 소셜 로그인을 다시 시도해 주세요."
 }

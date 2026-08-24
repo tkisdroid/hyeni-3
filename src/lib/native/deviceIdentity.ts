@@ -71,8 +71,7 @@ export async function getAuthDeviceInstallId(): Promise<string | null> {
   }
   let resolved: string | null = null;
   if (isNativePlatform() && getPlatform() === "android") {
-    const native = await readNativePushContext();
-    resolved = clean(native?.deviceInstallId);
+    resolved = await resolveAndroidDeviceInstallId();
     if (!resolved) return null; // Android 서비스 id 확보 전엔 다른 id로 체인을 스탬핑하지 않는다.
   } else {
     resolved = getOrCreateDeviceInstallId();
@@ -96,6 +95,21 @@ export async function getAuthDeviceDescriptor(): Promise<AuthDeviceDescriptor | 
     device_label: detectDeviceLabel(),
     device_platform: platform === "android" || platform === "ios" ? platform : "web",
   };
+}
+
+/**
+ * 콜드 스타트 직후 Capacitor 브리지가 아직 뜨기 전에 getPushContext 가 실패하면
+ * device_install_id 없이 로그인·refresh가 나가 서버가 거부한다(device_identity_required).
+ * 짧게 몇 번 재시도해 브리지 기동 경합을 흡수한다(실패는 여전히 null로 fail-closed).
+ */
+async function resolveAndroidDeviceInstallId(): Promise<string | null> {
+  for (const delayMs of [0, 150, 400] as const) {
+    if (delayMs > 0) await new Promise((resolve) => setTimeout(resolve, delayMs));
+    const native = await readNativePushContext();
+    const id = clean(native?.deviceInstallId);
+    if (id) return id;
+  }
+  return null;
 }
 
 async function readNativePushContext(): Promise<NativePushContext | null> {

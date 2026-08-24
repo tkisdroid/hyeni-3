@@ -64,6 +64,7 @@ const messages = {
   "onboarding.login.submit": "Log masuk",
   "onboarding.login.subtitle": "Log masuk untuk berhubung semula dengan keluarga anda",
   "onboarding.login.title": "Selamat kembali",
+  "onboarding.oauth.returnToApp": "Log masuk tidak dapat disiapkan dalam pelayar. Sila cuba log masuk sosial semula dalam aplikasi Hyeni Calendar.",
   "onboarding.pairing.codeLabel": "Kod sambungan anak",
   "onboarding.pairing.connecting": "Menyambung…",
   "onboarding.pairing.description": "Kod QR dan kod sambungan boleh dilihat di Keluarga > Kod sambungan dalam aplikasi ibu bapa.",

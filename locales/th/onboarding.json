@@ -178,5 +178,6 @@
   "onboarding.signup.socialPending": "กำลังเปิดการสมัครด้วยโซเชียล…",
   "onboarding.pairing.parent.title": "เข้าร่วมในฐานะผู้ปกครองร่วม",
   "onboarding.pairing.parent.description": "ใช้คิวอาร์โค้ดหรือรหัสเชื่อมต่อจากผู้ปกครองที่เชิญคุณ",
-  "onboarding.pairing.parent.recovery": "หลังเข้าร่วม คุณสามารถจัดการปฏิทินครอบครัวและข้อมูลความปลอดภัยของเด็กร่วมกันด้วยสิทธิ์ผู้ปกครอง"
+  "onboarding.pairing.parent.recovery": "หลังเข้าร่วม คุณสามารถจัดการปฏิทินครอบครัวและข้อมูลความปลอดภัยของเด็กร่วมกันด้วยสิทธิ์ผู้ปกครอง",
+  "onboarding.oauth.returnToApp": "ไม่สามารถล็อกอินให้เสร็จในเบราว์เซอร์ได้ โปรดลองล็อกอินผ่านโซเชียลอีกครั้งในแอป Hyeni Calendar"
 }

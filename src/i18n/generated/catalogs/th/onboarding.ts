@@ -64,6 +64,7 @@ const messages = {
   "onboarding.login.submit": "เข้าสู่ระบบ",
   "onboarding.login.subtitle": "ลงชื่อเข้าใช้เพื่อเชื่อมต่อกับครอบครัวของคุณอีกครั้ง",
   "onboarding.login.title": "ยินดีต้อนรับกลับ",
+  "onboarding.oauth.returnToApp": "ไม่สามารถล็อกอินให้เสร็จในเบราว์เซอร์ได้ โปรดลองล็อกอินผ่านโซเชียลอีกครั้งในแอป Hyeni Calendar",
   "onboarding.pairing.codeLabel": "รหัสเชื่อมต่อของเด็ก",
   "onboarding.pairing.connecting": "กำลังเชื่อมต่อ...",
   "onboarding.pairing.description": "ดูคิวอาร์โค้ดและรหัสเชื่อมต่อได้ที่ ครอบครัว > รหัสเชื่อมต่อ ในแอปของผู้ปกครอง",

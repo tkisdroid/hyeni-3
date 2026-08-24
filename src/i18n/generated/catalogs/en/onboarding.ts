@@ -64,6 +64,7 @@ const messages = {
   "onboarding.login.submit": "Log in",
   "onboarding.login.subtitle": "Sign in to reconnect with your family",
   "onboarding.login.title": "Welcome back",
+  "onboarding.oauth.returnToApp": "Login cannot be completed in the browser. Please try social sign-in again in the Hyeni Calendar app.",
   "onboarding.pairing.codeLabel": "Child connection code",
   "onboarding.pairing.connecting": "Connecting…",
   "onboarding.pairing.description": "You can see the QR code and connection code in Family > Connection Code in the parent app.",
