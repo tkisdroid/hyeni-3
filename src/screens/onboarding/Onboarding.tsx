@@ -39,6 +39,7 @@ import {
   readOAuthCancellation,
   readOAuthCallback,
   clearOAuthCallbackUrl,
+  hasLocalOAuthContext,
   type PendingSignup,
 } from "@/lib/api/endpoints/auth";
 import {
@@ -55,6 +56,7 @@ import type { OAuthProvider } from "@/transform/oauthProvider";
 import { normalizePairCodeInput } from "@/transform/pairCode";
 import { isPairingMembershipConfirmed } from "@/transform/pairingConfirmation";
 import { consumeSessionEndReason } from "@/auth/sessionEndReason";
+import { isNativePlatform } from "@/lib/native/plugins";
 
 // QrScanner(+jsQR 폴백 디코더)는 스캔 버튼을 누른 시점에만 내려받는다.
 const QrScanner = lazy(() =>
@@ -307,6 +309,15 @@ export function Onboarding() {
     }
     const cb = readOAuthCallback();
     if (!cb) return;
+    // 네이티브 OAuth transaction의 콜백이 App Link 검증 실패 등으로 브라우저에 떨어진 경우다.
+    // 이 브라우저에는 state·transactionSecret이 없어 교환이 불가능하므로, 죽은 코드로
+    // 네트워크를 때리는 대신 앱에서 다시 시도하라고 정직하게 안내한다(코드는 서버가 소비 안 함).
+    if (!isNativePlatform() && !hasLocalOAuthContext()) {
+      clearOAuthCallbackUrl();
+      setAuthEntryError(intl.formatMessage({ id: "onboarding.oauth.returnToApp" }));
+      show(intl.formatMessage({ id: "onboarding.oauth.returnToApp" }), "⚠️");
+      return;
+    }
     const callbackDraft = readOnboardingDraft() ?? initialDraft;
     setBusy(true);
     const transitionToken = beginOnboardingAuthTransition();

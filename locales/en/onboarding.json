@@ -178,5 +178,6 @@
   "onboarding.signup.socialPending": "Opening social sign-up…",
   "onboarding.pairing.parent.title": "Join as a co-guardian",
   "onboarding.pairing.parent.description": "Use the QR code or connection code from the guardian who invited you.",
-  "onboarding.pairing.parent.recovery": "After joining, you can manage the same family calendar and child safety information as a guardian."
+  "onboarding.pairing.parent.recovery": "After joining, you can manage the same family calendar and child safety information as a guardian.",
+  "onboarding.oauth.returnToApp": "Login cannot be completed in the browser. Please try social sign-in again in the Hyeni Calendar app."
 }

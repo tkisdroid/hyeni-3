@@ -340,6 +340,16 @@ export function peekOAuthFlowMode(): OAuthFlowMode {
   return readOAuthContext()?.mode ?? "login";
 }
 
+/**
+ * 이 브라우저/앱 저장소에 아직 소비하지 않은 OAuth transaction이 있는지(읽기 전용).
+ * 네이티브에서 시작한 transaction의 콜백이 App Link 검증 실패로 브라우저에 떨어진 경우를
+ * 판별하는 데 쓴다 — 이때는 로컬 context가 없어 교환이 불가능하므로 네트워크 대신
+ * "앱에서 다시 시도" 안내로 끝내야 한다.
+ */
+export function hasLocalOAuthContext(): boolean {
+  return readOAuthContext() !== null;
+}
+
 function readOAuthProviderHint(): string | null {
   return readOAuthContext()?.provider ?? null;
 }

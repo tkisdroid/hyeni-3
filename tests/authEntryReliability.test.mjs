@@ -99,3 +99,33 @@ test("전화 OTP 발송과 계정 식별자는 UNIQUE 인덱스로 동시 요청
     assert.match(migration, new RegExp(`CREATE UNIQUE INDEX IF NOT EXISTS ${index}`));
   }
 });
+
+test("앱이 아닌 브라우저에 떨어진 네이티브 OAuth 콜백은 교환 대신 앱 복귀 안내로 닫는다", () => {
+  // 로컬 context가 없는 웹에서 code를 네트워크로 보내지 않는다 — 서버 트랜잭션은 소비되지 않고
+  // 사용자는 앱에서 다시 시도하게 안내된다.
+  const guardAt = onboarding.indexOf("if (!isNativePlatform() && !hasLocalOAuthContext())");
+  assert.ok(guardAt > -1, "브라우저 낙하 콜백 가드가 없습니다");
+  const cbAt = onboarding.indexOf("const cb = readOAuthCallback();");
+  assert.ok(cbAt > -1 && guardAt > cbAt, "콜백 감지 직후 가드가 있어야 합니다");
+  const guardBlock = onboarding.slice(guardAt, onboarding.indexOf("}", guardAt));
+  assert.match(guardBlock, /id: "onboarding\.oauth\.returnToApp"/);
+  assert.match(guardBlock, /clearOAuthCallbackUrl\(\)/);
+  assert.doesNotMatch(guardBlock, /finishOAuthLogin/);
+  // 가드가 finishOAuthLogin 호출보다 앞서야 한다.
+  const exchangeAt = onboarding.indexOf("finishOAuthLogin(cb");
+  assert.ok(exchangeAt > guardAt);
+  // auth.ts 는 소비하지 않는 읽기 전용 peek 을 노출한다.
+  assert.match(authClient, /export function hasLocalOAuthContext\(\): boolean \{[\s\S]{0,80}readOAuthContext\(\) !== null/);
+});
+
+test("Android 기기 식별자는 콜드 스타트 브리지 경합을 짧게 재시도해 흡수한다", () => {
+  const identity = source("src/lib/native/deviceIdentity.ts");
+  assert.match(identity, /async function resolveAndroidDeviceInstallId\(\): Promise<string \| null> \{/);
+  const fnStart = identity.indexOf("async function resolveAndroidDeviceInstallId");
+  const fnEnd = identity.indexOf("async function readNativePushContext", fnStart);
+  assert.ok(fnStart > -1 && fnEnd > fnStart, "helper 함수 경계를 찾지 못했습니다");
+  const fn = identity.slice(fnStart, fnEnd);
+  // 루프로 재시도하며, 실패해도 null로 끝나는 fail-closed를 유지한다.
+  assert.match(fn, /for \(const delayMs of \[0, 150, 400\] as const\) \{[\s\S]{0,200}readNativePushContext\(\)[\s\S]{0,120}if \(id\) return id;/s);
+  assert.match(fn, /return null;/, "실패는 여전히 fail-closed여야 합니다");
+});
