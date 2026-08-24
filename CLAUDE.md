@@ -3,6 +3,29 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
+**아이 홈 혜니 짧은 입체 도약·razr 보존 설치·Pages 배포(2026-08-25)**:
+TK의 최종 지시대로 실시간 3D 모델·영상 파이프라인으로 확장하지 않고 기존 투명 WebP 18종 캐릭터를 그대로
+발전시켰다. 아이 홈에서 혜니가 자리를 옮길 때만 기존 `excited` 포즈가 1.5초 동안 perspective 깊이, 세 번의 작은
+도약, squash/stretch와 부드러운 착지를 보이고, 발밑 타원 그림자가 높이에 맞춰 작아졌다가 접지 때 퍼진다. 기존
+좌표 배회·드래그·탭/길게 누르기·상황별 표정·말풍선·SOS 비겹침 계약은 유지하고 `prefers-reduced-motion`에서는
+캐릭터와 그림자 애니메이션을 모두 끈다. GLB·Three.js·Blender·신규 생성 이미지는 추가하지 않았다.
+
+소스 커밋 `48641fd`에서 앱 전체 `1,938/1,938`, typecheck, production build(2,287 modules·precache 471·중복 0),
+부모 43화면·아이 14화면 브라우저 QA 문제 0건, Android `testDebugUnitTest lintDebug assembleDebug`가 통과했다.
+debug APK는 15,790,700 bytes, SHA-256
+`29B778AC9025EDAF51E0AFF4BD4EB4D8D9EE3308FAF4C0E3DEB951430DDBEED4`다. razr(`ZY22H9VTQD`) 기본 사용자(0)에
+`npm run android:install:debug -- ZY22H9VTQD`로 보존 설치해 `Success`를 확인했다. versionName 1.4.1/versionCode 13,
+`firstInstallTime=2026-08-17 01:03:15`는 유지되고 `lastUpdateTime=2026-08-25 08:08:02`만 갱신됐으며 MainActivity는
+501ms warm launch했다. 로그아웃·역할 전환·재페어링·refresh token 조작은 하지 않았다.
+
+Pages 최종 배포는 `https://33cd6834.hyeni-calendar.pages.dev`다. 배포별 주소·고정
+`hyeni-calendar.pages.dev`·브랜드 `hyenicalendar.com`은 모두 entry `assets/index-BQUXfsWP.js` 348,020 bytes,
+SHA-256 `6CAEE21B80F7BA291697612F0353AAE4C31FDD3DD0E832D52C265387588F7F6D`와 혜니 CSS
+`assets/AiBuddyFab-DJMgTUN4.css` 7,625 bytes, SHA-256
+`1D2A9863EEE10154AFD623991D0EA15113E203EEBC48041B684E7DE7B5653C75`가 로컬과 일치한다. 세 주소의 물리
+`/oauth/callback`도 200·같은 entry를 반환하고 CSP가 유지된다. Pages 배포는 저장소 밖 임시 디렉터리의 OAuth 인증으로
+진행해 `.env`의 Workers/D1 token을 사용하지 않았으며 Worker·D1·Play 스토어는 변경하지 않았다.
+
 **아이 AI 음성 일정 저장·실시간 반영 안정화(2026-08-24, 운영 Worker 배포 완료)**:
 실기기 제보 `오후3시 피아노 일정 추가`는 날짜가 없다는 이유로 planner가 `date=null`과 되묻기를 만들고,
 그 뒤 `오늘`이라고 답해도 과거 질문을 복원하지 못해 `events`가 저장되지 않는 것이 직접 원인이었다. 이제 날짜 표현
