@@ -251,5 +251,21 @@
   "billing.trialLock.trialActive": "立即免费试用",
   "billing.trialLock.trialEnds": "体验结束于{date}",
   "billing.trialLock.trialRemaining": "免费试用·{remaining}",
-  "billing.trialLock.unlockDescription": "开通进阶版后，您可以使用实时位置、30 天移动记录和 AI 详细功能。"
+  "billing.trialLock.unlockDescription": "开通进阶版后，您可以使用实时位置、30 天移动记录和 AI 详细功能。",
+  "billing.web.failure.canceled": "已取消支付信息登记。",
+  "billing.web.failure.methodUnsupported": "当前支付方式无法登记自动付款。",
+  "billing.web.failure.cardRejected": "请确认卡片信息后重试。",
+  "billing.web.failure.registration": "未能完成支付信息登记，请重试。",
+  "billing.web.request.checkoutsPaused": "暂时停止受理新的订阅付款。您仍可查看或取消现有订阅。",
+  "billing.web.request.notReady": "网页支付尚未就绪，请稍后再确认。",
+  "billing.web.request.sessionExpired": "支付验证已超时，需要重新开始。",
+  "billing.web.request.trialStateChanged": "免费试用资格已变更。请先重新确认套餐条件，再进行付款。",
+  "billing.web.request.alreadyPremium": "您已在使用高级版。",
+  "billing.web.request.declined": "未能完成卡片授权，请确认卡片状态。",
+  "billing.web.request.reconciling": "正在确认支付结果，请再次查看同一笔订单。",
+  "billing.web.request.storeConflictRefund": "本次付款与其他商店的订阅重叠，因此未计入高级版。需要确认退款。",
+  "billing.web.request.authorizationRequired": "请重新开始登记支付信息。",
+  "billing.web.request.notActive": "未找到有效的网页订阅。",
+  "billing.web.request.cancellationFailed": "未能完成取消订阅的预约，请稍后重试。",
+  "billing.web.request.fallback": "未能完成网页支付，请稍后重试。"
 }

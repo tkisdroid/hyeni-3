@@ -914,8 +914,8 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   정본이다. 요약: 한글 문자를 세지 않고 **AST 로 보이는 자리**(JSX text·문구 attribute 20종·toast/dialog/validation
   sink·`document.title`)를 특정한 뒤 그 값이 message API 를 거쳤는지 **모듈 경계를 넘어** 추적한다.
   실측 결과 64건 → 오탐 정밀화(`&&` 우변만, 객체 shape 속성 단위) 52건 → ChildDock·AiBuddyFab 이관 49건 →
-  위치 권한 다이얼로그 28×2 이관 **23건**(`exempt` 7 + `pending-migration` 23).
-  **`pending-migration` 은 면제가 아니라 남은 결함 목록**이며 지금 남은 덩이는 `webBilling`(결제 실패 안내 17개)·
+  위치 권한 다이얼로그 28×2 이관 23건 → 웹 결제 실패 안내 16개 이관 **19건**(`exempt` 7 + `pending-migration` 19).
+  **`pending-migration` 은 면제가 아니라 남은 결함 목록**이며 지금 남은 덩이는
   `parentHomeSubscriptionCard`(14개)·`aiBuddyEmotion`(표정 설명 8개)·`stickerBook`·`memoView`·`deviceLabel`이다.
   ⚠️ 스캐너는 hook 결과에서 온 값(`attention.nudge.line` 등)은 추적하지 못한다 — 알려진 false negative 다.
   ⚠️ **이관 전에 `locales/` 에서 같은 문구를 먼저 찾아라.** 위치 권한 고지는 이전 task 가 21개 id 를 10개 언어까지

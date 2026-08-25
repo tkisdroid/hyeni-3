@@ -251,7 +251,23 @@ const messages = {
   "billing.trialLock.trialActive": "Percubaan percuma sekarang",
   "billing.trialLock.trialEnds": "Pengalaman berakhir pada {date}",
   "billing.trialLock.trialRemaining": "Percubaan Percuma · {remaining}",
-  "billing.trialLock.unlockDescription": "Jika anda memulakan premium, anda boleh menggunakan lokasi masa nyata, sejarah pergerakan 30 hari dan fungsi terperinci AI."
+  "billing.trialLock.unlockDescription": "Jika anda memulakan premium, anda boleh menggunakan lokasi masa nyata, sejarah pergerakan 30 hari dan fungsi terperinci AI.",
+  "billing.web.failure.canceled": "Persediaan pembayaran dibatalkan.",
+  "billing.web.failure.cardRejected": "Sila semak maklumat kad anda dan cuba lagi.",
+  "billing.web.failure.methodUnsupported": "Pembayaran automatik tidak boleh disediakan dengan kaedah pembayaran ini.",
+  "billing.web.failure.registration": "Kami belum dapat menyelesaikan persediaan pembayaran. Sila cuba lagi.",
+  "billing.web.request.alreadyPremium": "Anda sudah menggunakan Premium.",
+  "billing.web.request.authorizationRequired": "Sila mulakan semula persediaan pembayaran.",
+  "billing.web.request.cancellationFailed": "Kami belum dapat menjadualkan pembatalan. Sila cuba lagi sebentar lagi.",
+  "billing.web.request.checkoutsPaused": "Pembayaran langganan baharu dihentikan sementara. Anda masih boleh menyemak atau membatalkan langganan sedia ada.",
+  "billing.web.request.declined": "Kad tidak dapat disahkan. Sila semak status kad anda.",
+  "billing.web.request.fallback": "Kami belum dapat menyelesaikan pembayaran web. Sila cuba lagi sebentar lagi.",
+  "billing.web.request.notActive": "Kami tidak menemui langganan web yang aktif.",
+  "billing.web.request.notReady": "Pembayaran web belum bersedia. Sila semak semula sebentar lagi.",
+  "billing.web.request.reconciling": "Kami masih mengesahkan keputusan pembayaran. Sila semak semula pesanan yang sama.",
+  "billing.web.request.sessionExpired": "Pengesahan pembayaran telah tamat tempoh, jadi perlu dimulakan semula.",
+  "billing.web.request.storeConflictRefund": "Pembayaran ini tidak digunakan untuk Premium kerana bertindih dengan langganan dari gedung lain. Bayaran balik perlu disahkan.",
+  "billing.web.request.trialStateChanged": "Kelayakan percubaan percuma telah berubah. Sila semak semula terma pelan sebelum membayar."
 } as const;
 
 export default messages;

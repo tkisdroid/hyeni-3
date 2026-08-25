@@ -251,5 +251,21 @@
   "billing.trialLock.trialActive": "無料体験中",
   "billing.trialLock.trialEnds": "{date}で体験が終わります。",
   "billing.trialLock.trialRemaining": "無料体験・{remaining}",
-  "billing.trialLock.unlockDescription": "プレミアムを始めるとリアルタイム位置・30日移動記録・AI詳細機能が使えます。"
+  "billing.trialLock.unlockDescription": "プレミアムを始めるとリアルタイム位置・30日移動記録・AI詳細機能が使えます。",
+  "billing.web.failure.canceled": "お支払い情報の登録をキャンセルしました。",
+  "billing.web.failure.methodUnsupported": "この支払い方法では自動引き落としを登録できません。",
+  "billing.web.failure.cardRejected": "カード情報をご確認のうえ、もう一度お試しください。",
+  "billing.web.failure.registration": "お支払い情報の登録を完了できませんでした。もう一度お試しください。",
+  "billing.web.request.checkoutsPaused": "新しい定期購入のお支払いを一時停止しています。既存のお支払い確認と解約は引き続きご利用いただけます。",
+  "billing.web.request.notReady": "ウェブ決済はまだ準備中です。しばらくしてからもう一度ご確認ください。",
+  "billing.web.request.sessionExpired": "お支払い認証の有効時間が過ぎたため、最初からやり直す必要があります。",
+  "billing.web.request.trialStateChanged": "無料体験の対象状況が変わりました。お支払いの前にプラン条件をもう一度ご確認ください。",
+  "billing.web.request.alreadyPremium": "すでにプレミアムをご利用中です。",
+  "billing.web.request.declined": "カードの承認を完了できませんでした。カードの状態をご確認ください。",
+  "billing.web.request.reconciling": "お支払い結果を確認しています。同じ注文をもう一度ご確認ください。",
+  "billing.web.request.storeConflictRefund": "他ストアの定期購入と重複したため、今回のお支払いはプレミアムに反映していません。返金の確認が必要です。",
+  "billing.web.request.authorizationRequired": "お支払い情報の登録をもう一度始めてください。",
+  "billing.web.request.notActive": "有効なウェブ定期購入を確認できませんでした。",
+  "billing.web.request.cancellationFailed": "解約の予約を完了できませんでした。しばらくしてからもう一度お試しください。",
+  "billing.web.request.fallback": "ウェブ決済を完了できませんでした。しばらくしてからもう一度お試しください。"
 }

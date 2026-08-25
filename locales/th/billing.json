@@ -251,5 +251,21 @@
   "billing.trialLock.trialActive": "ทดลองใช้ฟรีทันที",
   "billing.trialLock.trialEnds": "ประสบการณ์สิ้นสุดที่ {date}",
   "billing.trialLock.trialRemaining": "ทดลองใช้ฟรี · {remaining}",
-  "billing.trialLock.unlockDescription": "หากคุณเริ่มต้นแบบพรีเมียม คุณสามารถใช้ตำแหน่งแบบเรียลไทม์ ประวัติการเคลื่อนไหว 30 วัน และฟังก์ชันโดยละเอียดของ AI ได้"
+  "billing.trialLock.unlockDescription": "หากคุณเริ่มต้นแบบพรีเมียม คุณสามารถใช้ตำแหน่งแบบเรียลไทม์ ประวัติการเคลื่อนไหว 30 วัน และฟังก์ชันโดยละเอียดของ AI ได้",
+  "billing.web.failure.canceled": "ยกเลิกการลงทะเบียนข้อมูลการชำระเงินแล้ว",
+  "billing.web.failure.methodUnsupported": "ไม่สามารถตั้งค่าการชำระเงินอัตโนมัติด้วยวิธีชำระเงินนี้",
+  "billing.web.failure.cardRejected": "กรุณาตรวจสอบข้อมูลบัตรแล้วลองอีกครั้ง",
+  "billing.web.failure.registration": "ลงทะเบียนข้อมูลการชำระเงินไม่สำเร็จ กรุณาลองอีกครั้ง",
+  "billing.web.request.checkoutsPaused": "หยุดรับการชำระเงินสำหรับการสมัครใหม่ชั่วคราว คุณยังตรวจสอบหรือยกเลิกการสมัครที่มีอยู่ได้",
+  "billing.web.request.notReady": "การชำระเงินบนเว็บยังไม่พร้อม กรุณาตรวจสอบอีกครั้งในภายหลัง",
+  "billing.web.request.sessionExpired": "การยืนยันการชำระเงินหมดเวลาแล้ว จึงต้องเริ่มใหม่",
+  "billing.web.request.trialStateChanged": "สิทธิ์ทดลองใช้ฟรีเปลี่ยนแปลงแล้ว กรุณาตรวจสอบเงื่อนไขแพ็กเกจอีกครั้งก่อนชำระเงิน",
+  "billing.web.request.alreadyPremium": "คุณใช้พรีเมียมอยู่แล้ว",
+  "billing.web.request.declined": "อนุมัติบัตรไม่สำเร็จ กรุณาตรวจสอบสถานะบัตรของคุณ",
+  "billing.web.request.reconciling": "กำลังตรวจสอบผลการชำระเงิน กรุณาตรวจสอบคำสั่งซื้อเดิมอีกครั้ง",
+  "billing.web.request.storeConflictRefund": "การชำระเงินนี้ไม่ได้นำไปใช้กับพรีเมียมเพราะซ้ำกับการสมัครจากสโตร์อื่น ต้องยืนยันการคืนเงิน",
+  "billing.web.request.authorizationRequired": "กรุณาเริ่มการลงทะเบียนข้อมูลการชำระเงินใหม่",
+  "billing.web.request.notActive": "ไม่พบการสมัครผ่านเว็บที่ใช้งานอยู่",
+  "billing.web.request.cancellationFailed": "ตั้งกำหนดการยกเลิกไม่สำเร็จ กรุณาลองอีกครั้งในภายหลัง",
+  "billing.web.request.fallback": "ชำระเงินบนเว็บไม่สำเร็จ กรุณาลองอีกครั้งในภายหลัง"
 }

@@ -251,5 +251,21 @@
   "billing.trialLock.trialActive": "무료 체험 중",
   "billing.trialLock.trialEnds": "{date}에 체험이 끝나요",
   "billing.trialLock.trialRemaining": "무료 체험 · {remaining}",
-  "billing.trialLock.unlockDescription": "프리미엄을 시작하면 실시간 위치·30일 이동 기록·AI 상세 기능을 쓸 수 있어요."
+  "billing.trialLock.unlockDescription": "프리미엄을 시작하면 실시간 위치·30일 이동 기록·AI 상세 기능을 쓸 수 있어요.",
+  "billing.web.failure.canceled": "결제 정보 등록을 취소했어요.",
+  "billing.web.failure.methodUnsupported": "현재 결제수단으로 자동결제를 등록할 수 없어요.",
+  "billing.web.failure.cardRejected": "카드 정보를 확인한 뒤 다시 시도해 주세요.",
+  "billing.web.failure.registration": "결제 정보 등록을 완료하지 못했어요. 다시 시도해 주세요.",
+  "billing.web.request.checkoutsPaused": "새 구독 결제를 잠시 중단했어요. 기존 결제 확인과 해지는 계속 이용할 수 있어요.",
+  "billing.web.request.notReady": "웹 결제가 아직 준비되지 않았어요. 잠시 후 다시 확인해 주세요.",
+  "billing.web.request.sessionExpired": "결제 인증 시간이 지나 다시 시작해야 해요.",
+  "billing.web.request.trialStateChanged": "무료 체험 가능 상태가 바뀌어요. 결제하지 않고 상품 조건을 다시 확인해 주세요.",
+  "billing.web.request.alreadyPremium": "이미 프리미엄을 이용 중이에요.",
+  "billing.web.request.declined": "카드 승인을 완료하지 못했어요. 카드 상태를 확인해 주세요.",
+  "billing.web.request.reconciling": "결제 결과를 확인하고 있어요. 같은 주문을 다시 확인해 주세요.",
+  "billing.web.request.storeConflictRefund": "다른 스토어 구독과 겹쳐 이번 결제를 프리미엄에 반영하지 않았어요. 환불 확인이 필요해요.",
+  "billing.web.request.authorizationRequired": "결제 정보 등록을 다시 시작해 주세요.",
+  "billing.web.request.notActive": "활성 웹 구독을 확인하지 못했어요.",
+  "billing.web.request.cancellationFailed": "구독 해지 예약을 완료하지 못했어요. 잠시 후 다시 시도해 주세요.",
+  "billing.web.request.fallback": "웹 결제를 완료하지 못했어요. 잠시 후 다시 시도해 주세요."
 }

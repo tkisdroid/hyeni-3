@@ -350,7 +350,7 @@ export function Subscription() {
         provider: TOSS_FUNNEL_PROVIDER,
         error_code: failure.error_code,
       });
-      show(webBillingRequestFailureMessage(error), "👑");
+      show(webBillingRequestFailureMessage(error, intl), "👑");
     } finally {
       webCompletionInFlightRef.current = false;
       setBusy(false);
@@ -431,7 +431,7 @@ export function Subscription() {
       });
       show(
         billingRedirect.kind === "fail"
-          ? webBillingFailureMessage(billingRedirect.code)
+          ? webBillingFailureMessage(billingRedirect.code, intl)
           : intl.formatMessage({ id: "billing.subscription.purchase.redirectInvalid" }),
         "👑",
       );
@@ -706,7 +706,7 @@ export function Subscription() {
       }
       show(
         isWebBillingChannel
-          ? webBillingRequestFailureMessage(error)
+          ? webBillingRequestFailureMessage(error, intl)
           : resolveNativeBillingFailureMessage(error, intl),
         "👑",
       );
@@ -747,7 +747,7 @@ export function Subscription() {
       setCancelConfirmOpen(false);
       show(intl.formatMessage({ id: "billing.subscription.purchase.cancelScheduled" }), "👑");
     } catch (error) {
-      show(webBillingRequestFailureMessage(error), "👑");
+      show(webBillingRequestFailureMessage(error, intl), "👑");
     } finally {
       setBusy(false);
     }

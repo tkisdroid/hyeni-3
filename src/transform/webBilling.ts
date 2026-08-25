@@ -1,4 +1,6 @@
+import type { IntlShape } from "react-intl";
 import { isApiError } from "../lib/api/errors.ts";
+import type { MessageId } from "../i18n/generated/messageIds.ts";
 
 export type WebBillingPlan = "month" | "year";
 
@@ -267,65 +269,49 @@ export function readPendingWebBilling(
   }
 }
 
-export function webBillingFailureMessage(code: string): string {
-  if (code === "PAY_PROCESS_CANCELED" || code === "PAY_PROCESS_ABORTED") {
-    return "결제 정보 등록을 취소했어요.";
-  }
-  if (code === "NOT_SUPPORTED_METHOD") {
-    return "현재 결제수단으로 자동결제를 등록할 수 없어요.";
-  }
-  if (code === "REJECT_CARD_COMPANY" || code.startsWith("INVALID_CARD_")) {
-    return "카드 정보를 확인한 뒤 다시 시도해 주세요.";
-  }
-  return "결제 정보 등록을 완료하지 못했어요. 다시 시도해 주세요.";
+/**
+ * redirect 실패 코드 → 문구 id. 결제사 원문 message 는 읽지 않고 고정 코드만 해석한다.
+ * 문구는 locale catalog 가 정본이므로 여기에는 id 만 둔다.
+ */
+export function webBillingFailureMessage(code: string, intl: IntlShape): string {
+  const id = code === "PAY_PROCESS_CANCELED" || code === "PAY_PROCESS_ABORTED"
+    ? "billing.web.failure.canceled"
+    : code === "NOT_SUPPORTED_METHOD"
+      ? "billing.web.failure.methodUnsupported"
+      : code === "REJECT_CARD_COMPANY" || code.startsWith("INVALID_CARD_")
+        ? "billing.web.failure.cardRejected"
+        : "billing.web.failure.registration";
+  return intl.formatMessage({ id: id as MessageId });
 }
 
-export function webBillingRequestFailureMessage(error: unknown): string {
+/** 서버 오류 코드 → 문구 id. 결제·대사·해지 상태를 숨기지 않는 안내만 고른다. */
+const REQUEST_FAILURE_IDS: Readonly<Record<string, string>> = {
+  web_subscription_new_checkouts_paused: "billing.web.request.checkoutsPaused",
+  web_billing_not_configured: "billing.web.request.notReady",
+  web_billing_contract_required: "billing.web.request.notReady",
+  web_billing_unavailable: "billing.web.request.notReady",
+  web_billing_session_expired: "billing.web.request.sessionExpired",
+  web_billing_session_not_found: "billing.web.request.sessionExpired",
+  web_billing_trial_state_changed: "billing.web.request.trialStateChanged",
+  web_billing_already_active: "billing.web.request.alreadyPremium",
+  subscription_already_active: "billing.web.request.alreadyPremium",
+  web_billing_payment_declined: "billing.web.request.declined",
+  web_billing_charge_failed: "billing.web.request.declined",
+  web_billing_reconciliation_pending: "billing.web.request.reconciling",
+  web_billing_processing: "billing.web.request.reconciling",
+  billing_provider_reconciliation_pending: "billing.web.request.reconciling",
+  billing_provider_conflict_refund_required: "billing.web.request.storeConflictRefund",
+  web_billing_authorization_required: "billing.web.request.authorizationRequired",
+  web_subscription_not_active: "billing.web.request.notActive",
+  web_billing_cancellation_unavailable: "billing.web.request.cancellationFailed",
+};
+
+export function webBillingRequestFailureMessage(error: unknown, intl: IntlShape): string {
   const code = isApiError(error)
     ? error.code ?? ""
     : error instanceof Error && LOCAL_WEB_BILLING_FAILURE_CODES.has(error.message)
       ? error.message
       : "";
-  if (code === "web_subscription_new_checkouts_paused") {
-    return "새 구독 결제를 잠시 중단했어요. 기존 결제 확인과 해지는 계속 이용할 수 있어요.";
-  }
-  if (
-    code === "web_billing_not_configured"
-    || code === "web_billing_contract_required"
-    || code === "web_billing_unavailable"
-  ) {
-    return "웹 결제가 아직 준비되지 않았어요. 잠시 후 다시 확인해 주세요.";
-  }
-  if (code === "web_billing_session_expired" || code === "web_billing_session_not_found") {
-    return "결제 인증 시간이 지나 다시 시작해야 해요.";
-  }
-  if (code === "web_billing_trial_state_changed") {
-    return "무료 체험 가능 상태가 바뀌어요. 결제하지 않고 상품 조건을 다시 확인해 주세요.";
-  }
-  if (code === "web_billing_already_active" || code === "subscription_already_active") {
-    return "이미 프리미엄을 이용 중이에요.";
-  }
-  if (code === "web_billing_payment_declined" || code === "web_billing_charge_failed") {
-    return "카드 승인을 완료하지 못했어요. 카드 상태를 확인해 주세요.";
-  }
-  if (
-    code === "web_billing_reconciliation_pending"
-    || code === "web_billing_processing"
-    || code === "billing_provider_reconciliation_pending"
-  ) {
-    return "결제 결과를 확인하고 있어요. 같은 주문을 다시 확인해 주세요.";
-  }
-  if (code === "billing_provider_conflict_refund_required") {
-    return "다른 스토어 구독과 겹쳐 이번 결제를 프리미엄에 반영하지 않았어요. 환불 확인이 필요해요.";
-  }
-  if (code === "web_billing_authorization_required") {
-    return "결제 정보 등록을 다시 시작해 주세요.";
-  }
-  if (code === "web_subscription_not_active") {
-    return "활성 웹 구독을 확인하지 못했어요.";
-  }
-  if (code === "web_billing_cancellation_unavailable") {
-    return "구독 해지 예약을 완료하지 못했어요. 잠시 후 다시 시도해 주세요.";
-  }
-  return "웹 결제를 완료하지 못했어요. 잠시 후 다시 시도해 주세요.";
+  const id = REQUEST_FAILURE_IDS[code] ?? "billing.web.request.fallback";
+  return intl.formatMessage({ id: id as MessageId });
 }

@@ -251,7 +251,23 @@ const messages = {
   "billing.trialLock.trialActive": "Libreng pagsubok ngayon",
   "billing.trialLock.trialEnds": "Nagtatapos ang karanasan sa {date}",
   "billing.trialLock.trialRemaining": "Libreng Pagsubok · {remaining}",
-  "billing.trialLock.unlockDescription": "Kung sisimulan mo ang premium, maaari mong gamitin ang real-time na lokasyon, 30-araw na kasaysayan ng paggalaw, at mga detalyadong function ng AI."
+  "billing.trialLock.unlockDescription": "Kung sisimulan mo ang premium, maaari mong gamitin ang real-time na lokasyon, 30-araw na kasaysayan ng paggalaw, at mga detalyadong function ng AI.",
+  "billing.web.failure.canceled": "Kinansela ang pag-set up ng pagbabayad.",
+  "billing.web.failure.cardRejected": "Mangyaring suriin ang detalye ng iyong card at subukan muli.",
+  "billing.web.failure.methodUnsupported": "Hindi maaaring i-set up ang awtomatikong pagbabayad sa paraan ng pagbabayad na ito.",
+  "billing.web.failure.registration": "Hindi namin natapos ang pag-set up ng pagbabayad. Mangyaring subukan muli.",
+  "billing.web.request.alreadyPremium": "Nasa Premium ka na.",
+  "billing.web.request.authorizationRequired": "Mangyaring simulan muli ang pag-set up ng pagbabayad.",
+  "billing.web.request.cancellationFailed": "Hindi namin naisagawa ang pag-schedule ng pagkansela. Mangyaring subukan muli mamaya.",
+  "billing.web.request.checkoutsPaused": "Pansamantalang nakahinto ang bayad para sa bagong subscription. Maaari mo pa ring suriin o kanselahin ang kasalukuyang subscription.",
+  "billing.web.request.declined": "Hindi na-awtorisa ang card. Mangyaring suriin ang status ng iyong card.",
+  "billing.web.request.fallback": "Hindi namin nakumpleto ang pagbabayad sa web. Mangyaring subukan muli mamaya.",
+  "billing.web.request.notActive": "Wala kaming nakitang aktibong web subscription.",
+  "billing.web.request.notReady": "Hindi pa handa ang pagbabayad sa web. Mangyaring suriin muli mamaya.",
+  "billing.web.request.reconciling": "Kinukumpirma pa namin ang resulta ng pagbabayad. Mangyaring suriin muli ang parehong order.",
+  "billing.web.request.sessionExpired": "Nag-expire ang awtorisasyon ng pagbabayad, kaya kailangang magsimula muli.",
+  "billing.web.request.storeConflictRefund": "Hindi inilapat sa Premium ang bayad na ito dahil nag-overlap ito sa subscription mula sa ibang store. Kailangang kumpirmahin ang refund.",
+  "billing.web.request.trialStateChanged": "Nagbago ang pagiging kwalipikado sa libreng trial. Mangyaring suriin muli ang mga tuntunin ng plano bago magbayad."
 } as const;
 
 export default messages;

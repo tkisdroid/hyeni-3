@@ -251,5 +251,21 @@
   "billing.trialLock.trialActive": "Dùng thử miễn phí ngay bây giờ",
   "billing.trialLock.trialEnds": "Trải nghiệm kết thúc lúc {date}",
   "billing.trialLock.trialRemaining": "Dùng thử miễn phí · {remaining}",
-  "billing.trialLock.unlockDescription": "Nếu bắt đầu trả phí, bạn có thể sử dụng vị trí theo thời gian thực, lịch sử chuyển động trong 30 ngày và các chức năng chi tiết AI."
+  "billing.trialLock.unlockDescription": "Nếu bắt đầu trả phí, bạn có thể sử dụng vị trí theo thời gian thực, lịch sử chuyển động trong 30 ngày và các chức năng chi tiết AI.",
+  "billing.web.failure.canceled": "Đã hủy việc đăng ký thông tin thanh toán.",
+  "billing.web.failure.methodUnsupported": "Không thể thiết lập thanh toán tự động với phương thức thanh toán này.",
+  "billing.web.failure.cardRejected": "Vui lòng kiểm tra thông tin thẻ và thử lại.",
+  "billing.web.failure.registration": "Chúng tôi chưa thể hoàn tất thiết lập thanh toán. Vui lòng thử lại.",
+  "billing.web.request.checkoutsPaused": "Thanh toán đăng ký mới đang tạm dừng. Bạn vẫn có thể kiểm tra hoặc hủy đăng ký hiện tại.",
+  "billing.web.request.notReady": "Thanh toán trên web chưa sẵn sàng. Vui lòng kiểm tra lại sau ít phút.",
+  "billing.web.request.sessionExpired": "Phiên xác thực thanh toán đã hết hạn nên cần bắt đầu lại.",
+  "billing.web.request.trialStateChanged": "Điều kiện dùng thử miễn phí đã thay đổi. Vui lòng xem lại điều khoản gói trước khi thanh toán.",
+  "billing.web.request.alreadyPremium": "Bạn đang dùng Premium.",
+  "billing.web.request.declined": "Không thể xác nhận thẻ. Vui lòng kiểm tra trạng thái thẻ của bạn.",
+  "billing.web.request.reconciling": "Chúng tôi vẫn đang xác nhận kết quả thanh toán. Vui lòng kiểm tra lại cùng đơn hàng đó.",
+  "billing.web.request.storeConflictRefund": "Khoản thanh toán này không được áp dụng cho Premium vì trùng với một đăng ký từ cửa hàng khác. Cần xác nhận hoàn tiền.",
+  "billing.web.request.authorizationRequired": "Vui lòng bắt đầu lại việc thiết lập thanh toán.",
+  "billing.web.request.notActive": "Chúng tôi không tìm thấy đăng ký web đang hoạt động.",
+  "billing.web.request.cancellationFailed": "Chúng tôi chưa thể đặt lệnh hủy. Vui lòng thử lại sau ít phút.",
+  "billing.web.request.fallback": "Chúng tôi chưa thể hoàn tất thanh toán trên web. Vui lòng thử lại sau ít phút."
 }

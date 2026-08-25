@@ -251,7 +251,23 @@ const messages = {
   "billing.trialLock.trialActive": "Free trial now",
   "billing.trialLock.trialEnds": "The experience ends at {date}",
   "billing.trialLock.trialRemaining": "Free Trial · {remaining}",
-  "billing.trialLock.unlockDescription": "If you start premium, you can use real-time location, 30-day movement history, and AI detailed functions."
+  "billing.trialLock.unlockDescription": "If you start premium, you can use real-time location, 30-day movement history, and AI detailed functions.",
+  "billing.web.failure.canceled": "Payment setup was canceled.",
+  "billing.web.failure.cardRejected": "Please check your card details and try again.",
+  "billing.web.failure.methodUnsupported": "Recurring payments can’t be set up with this payment method.",
+  "billing.web.failure.registration": "We couldn’t finish setting up your payment. Please try again.",
+  "billing.web.request.alreadyPremium": "You’re already on Premium.",
+  "billing.web.request.authorizationRequired": "Please start the payment setup again.",
+  "billing.web.request.cancellationFailed": "We couldn’t schedule the cancellation. Please try again in a moment.",
+  "billing.web.request.checkoutsPaused": "New subscription payments are paused for now. You can still check or cancel an existing subscription.",
+  "billing.web.request.declined": "The card couldn’t be authorized. Please check your card status.",
+  "billing.web.request.fallback": "We couldn’t complete the web payment. Please try again in a moment.",
+  "billing.web.request.notActive": "We couldn’t find an active web subscription.",
+  "billing.web.request.notReady": "Web payments aren’t ready yet. Please check again in a moment.",
+  "billing.web.request.reconciling": "We’re still confirming the payment result. Please check the same order again.",
+  "billing.web.request.sessionExpired": "The payment authorization expired, so it needs to start over.",
+  "billing.web.request.storeConflictRefund": "This payment wasn’t applied to Premium because it overlaps a subscription from another store. A refund needs to be confirmed.",
+  "billing.web.request.trialStateChanged": "Free trial eligibility changed. Please review the plan terms again before paying."
 } as const;
 
 export default messages;

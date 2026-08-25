@@ -115,15 +115,6 @@
     "plan": "docs/superpowers/plans/2026-08-15-global-i18n-web.md"
   },
   {
-    "path": "src/screens/feature/Subscription.tsx",
-    "pattern": "webBilling(?:Request)?FailureMessage\\(",
-    "occurrences": 4,
-    "status": "pending-migration",
-    "reason": "webBilling 결제 실패 안내 17개가 intl 없이 원문 한국어를 돌려준다(resolveNativeBillingFailureMessage 는 이미 intl 을 받는다)",
-    "migrateTo": "billing.web.failure.*",
-    "plan": "docs/superpowers/plans/2026-08-15-global-i18n-web.md"
-  },
-  {
     "path": "src/screens/parent/ChildDetail.tsx",
     "pattern": "deviceLabel \\?\\?",
     "occurrences": 1,

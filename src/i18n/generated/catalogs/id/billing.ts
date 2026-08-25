@@ -251,7 +251,23 @@ const messages = {
   "billing.trialLock.trialActive": "Uji coba gratis sekarang",
   "billing.trialLock.trialEnds": "Pengalaman berakhir di {date}",
   "billing.trialLock.trialRemaining": "Uji Coba Gratis · {remaining}",
-  "billing.trialLock.unlockDescription": "Jika Anda memulai premium, Anda dapat menggunakan lokasi real-time, riwayat pergerakan 30 hari, dan fungsi detail AI."
+  "billing.trialLock.unlockDescription": "Jika Anda memulai premium, Anda dapat menggunakan lokasi real-time, riwayat pergerakan 30 hari, dan fungsi detail AI.",
+  "billing.web.failure.canceled": "Penyiapan pembayaran dibatalkan.",
+  "billing.web.failure.cardRejected": "Silakan periksa detail kartu Anda lalu coba lagi.",
+  "billing.web.failure.methodUnsupported": "Pembayaran otomatis tidak dapat disiapkan dengan metode pembayaran ini.",
+  "billing.web.failure.registration": "Kami belum dapat menyelesaikan penyiapan pembayaran. Silakan coba lagi.",
+  "billing.web.request.alreadyPremium": "Anda sudah menggunakan Premium.",
+  "billing.web.request.authorizationRequired": "Silakan mulai lagi penyiapan pembayaran.",
+  "billing.web.request.cancellationFailed": "Kami belum dapat menjadwalkan pembatalan. Silakan coba lagi beberapa saat lagi.",
+  "billing.web.request.checkoutsPaused": "Pembayaran langganan baru dihentikan sementara. Anda tetap dapat memeriksa atau membatalkan langganan yang ada.",
+  "billing.web.request.declined": "Kartu tidak dapat diotorisasi. Silakan periksa status kartu Anda.",
+  "billing.web.request.fallback": "Kami belum dapat menyelesaikan pembayaran web. Silakan coba lagi beberapa saat lagi.",
+  "billing.web.request.notActive": "Kami tidak menemukan langganan web yang aktif.",
+  "billing.web.request.notReady": "Pembayaran web belum siap. Silakan periksa kembali beberapa saat lagi.",
+  "billing.web.request.reconciling": "Kami masih mengonfirmasi hasil pembayaran. Silakan periksa kembali pesanan yang sama.",
+  "billing.web.request.sessionExpired": "Otorisasi pembayaran telah kedaluwarsa sehingga perlu dimulai ulang.",
+  "billing.web.request.storeConflictRefund": "Pembayaran ini tidak diterapkan ke Premium karena tumpang tindih dengan langganan dari toko lain. Pengembalian dana perlu dikonfirmasi.",
+  "billing.web.request.trialStateChanged": "Kelayakan uji coba gratis berubah. Silakan tinjau kembali ketentuan paket sebelum membayar."
 } as const;
 
 export default messages;

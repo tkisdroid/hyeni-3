@@ -24385,5 +24385,117 @@
     "qualityTier": "A",
     "variables": {},
     "description": "설정에서 돌아와 상태를 확인하는 동안 표시하는 진행 문구 (보호자 존댓말)"
+  },
+  "billing.web.failure.canceled": {
+    "namespace": "billing",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "웹 결제 redirect 가 사용자 취소로 끝났을 때의 안내"
+  },
+  "billing.web.failure.methodUnsupported": {
+    "namespace": "billing",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "현재 결제수단으로 자동결제를 등록할 수 없다는 안내"
+  },
+  "billing.web.failure.cardRejected": {
+    "namespace": "billing",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "카드사 거절·카드 정보 오류로 등록이 실패했을 때의 안내"
+  },
+  "billing.web.failure.registration": {
+    "namespace": "billing",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "웹 결제 정보 등록이 원인 미상으로 끝나지 않았을 때의 기본 안내"
+  },
+  "billing.web.request.checkoutsPaused": {
+    "namespace": "billing",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "신규 웹 구독 결제를 일시 중단했지만 기존 확인·해지는 계속 가능하다는 안내"
+  },
+  "billing.web.request.notReady": {
+    "namespace": "billing",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "웹 결제가 아직 준비되지 않았을 때(미설정·계약 필요·이용 불가)의 안내"
+  },
+  "billing.web.request.sessionExpired": {
+    "namespace": "billing",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "결제 인증 세션이 만료돼 처음부터 다시 시작해야 한다는 안내"
+  },
+  "billing.web.request.trialStateChanged": {
+    "namespace": "billing",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "무료 체험 가능 상태가 바뀌어 결제 전에 상품 조건을 다시 확인해야 한다는 안내"
+  },
+  "billing.web.request.alreadyPremium": {
+    "namespace": "billing",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "이미 프리미엄 구독이 활성이라 새 결제가 필요 없다는 안내"
+  },
+  "billing.web.request.declined": {
+    "namespace": "billing",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "카드 승인이 거절돼 카드 상태를 확인해야 한다는 안내"
+  },
+  "billing.web.request.reconciling": {
+    "namespace": "billing",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "결제 결과를 서버가 대사 중이라 같은 주문을 다시 확인해야 한다는 안내"
+  },
+  "billing.web.request.storeConflictRefund": {
+    "namespace": "billing",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "다른 스토어 구독과 겹쳐 프리미엄에 반영하지 않았고 환불 확인이 필요하다는 안내"
+  },
+  "billing.web.request.authorizationRequired": {
+    "namespace": "billing",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "결제 정보 등록을 처음부터 다시 시작해야 한다는 안내"
+  },
+  "billing.web.request.notActive": {
+    "namespace": "billing",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "활성 웹 구독을 찾지 못했다는 안내"
+  },
+  "billing.web.request.cancellationFailed": {
+    "namespace": "billing",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "구독 해지 예약을 완료하지 못했다는 안내"
+  },
+  "billing.web.request.fallback": {
+    "namespace": "billing",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "웹 결제 요청이 원인 미상으로 실패했을 때의 기본 안내"
   }
 }

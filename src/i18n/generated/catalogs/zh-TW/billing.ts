@@ -251,7 +251,23 @@ const messages = {
   "billing.trialLock.trialActive": "立即免費試用",
   "billing.trialLock.trialEnds": "體驗結束於{date}",
   "billing.trialLock.trialRemaining": "免費試用·{remaining}",
-  "billing.trialLock.unlockDescription": "開通進階版後，您可以使用即時位置、30 天移動記錄和 AI 詳細功能。"
+  "billing.trialLock.unlockDescription": "開通進階版後，您可以使用即時位置、30 天移動記錄和 AI 詳細功能。",
+  "billing.web.failure.canceled": "已取消付款資訊登錄。",
+  "billing.web.failure.cardRejected": "請確認卡片資訊後重試。",
+  "billing.web.failure.methodUnsupported": "目前的付款方式無法登錄自動付款。",
+  "billing.web.failure.registration": "未能完成付款資訊登錄，請重試。",
+  "billing.web.request.alreadyPremium": "您已在使用進階版。",
+  "billing.web.request.authorizationRequired": "請重新開始登錄付款資訊。",
+  "billing.web.request.cancellationFailed": "未能完成取消訂閱的預約，請稍後重試。",
+  "billing.web.request.checkoutsPaused": "暫時停止受理新的訂閱付款。您仍可查看或取消現有訂閱。",
+  "billing.web.request.declined": "未能完成卡片授權，請確認卡片狀態。",
+  "billing.web.request.fallback": "未能完成網頁付款，請稍後重試。",
+  "billing.web.request.notActive": "找不到有效的網頁訂閱。",
+  "billing.web.request.notReady": "網頁付款尚未就緒，請稍後再確認。",
+  "billing.web.request.reconciling": "正在確認付款結果，請再次查看同一筆訂單。",
+  "billing.web.request.sessionExpired": "付款驗證已逾時，需要重新開始。",
+  "billing.web.request.storeConflictRefund": "本次付款與其他商店的訂閱重疊，因此未計入進階版。需要確認退款。",
+  "billing.web.request.trialStateChanged": "免費試用資格已變更。請先重新確認方案條件，再進行付款。"
 } as const;
 
 export default messages;
