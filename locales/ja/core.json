@@ -117,5 +117,7 @@
   "core.childDock.tab.memo": "トーク",
   "core.childDock.sos": "たすけて",
   "core.aiBuddy.stage.dismiss": "閉じる",
-  "core.brand.description": "家族の予定と持ち物、子どもの位置と安全通知をひとつに"
+  "core.brand.description": "家族の予定と持ち物、子どもの位置と安全通知をひとつに",
+  "core.aiBuddy.fab.label": "{name}と話す · {emotion} · 長押しでそのまま話せる",
+  "core.aiBuddy.stage.faceLabel": "{line} · タップして話す · 長押しでそのまま話せる"
 }

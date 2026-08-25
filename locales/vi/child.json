@@ -393,5 +393,13 @@
   "child.stickerDetail.label": "Nhãn dán {label}",
   "child.timetable.done": "Đã đến rồi",
   "child.timetable.empty": "Hôm nay bạn không có lịch nào 🎈",
-  "child.timetable.next": "Tiếp theo đó!"
+  "child.timetable.next": "Tiếp theo đó!",
+  "child.aiBuddy.emotion.idle": "Vẻ mặt đang chờ",
+  "child.aiBuddy.emotion.happy": "Vẻ mặt tươi cười",
+  "child.aiBuddy.emotion.excited": "Vẻ mặt phấn khích",
+  "child.aiBuddy.emotion.thinking": "Vẻ mặt đang suy nghĩ",
+  "child.aiBuddy.emotion.caring": "Vẻ mặt lo lắng, an ủi",
+  "child.aiBuddy.emotion.sad": "Vẻ mặt xin lỗi",
+  "child.aiBuddy.emotion.sleepy": "Vẻ mặt buồn ngủ",
+  "child.aiBuddy.emotion.cheer": "Vẻ mặt cổ vũ"
 }

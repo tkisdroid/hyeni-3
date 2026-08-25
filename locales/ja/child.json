@@ -393,5 +393,13 @@
   "child.stickerDetail.label": "{label}ステッカー",
   "child.timetable.done": "行ってきたよ",
   "child.timetable.empty": "今日は予定がないよ 🎈",
-  "child.timetable.next": "次だよ！"
+  "child.timetable.next": "次だよ！",
+  "child.aiBuddy.emotion.idle": "待っている顔",
+  "child.aiBuddy.emotion.happy": "笑っている顔",
+  "child.aiBuddy.emotion.excited": "わくわくした顔",
+  "child.aiBuddy.emotion.thinking": "考えている顔",
+  "child.aiBuddy.emotion.caring": "心配して励ます顔",
+  "child.aiBuddy.emotion.sad": "ごめんねという顔",
+  "child.aiBuddy.emotion.sleepy": "眠そうな顔",
+  "child.aiBuddy.emotion.cheer": "応援している顔"
 }

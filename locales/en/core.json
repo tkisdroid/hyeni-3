@@ -117,5 +117,7 @@
   "core.childDock.tab.memo": "Chat",
   "core.childDock.sos": "Get help",
   "core.aiBuddy.stage.dismiss": "Close",
-  "core.brand.description": "Family schedules, supplies, child location and safety alerts in one place"
+  "core.brand.description": "Family schedules, supplies, child location and safety alerts in one place",
+  "core.aiBuddy.fab.label": "Talk with {name} · {emotion} · press and hold to speak",
+  "core.aiBuddy.stage.faceLabel": "{line} · tap to talk · press and hold to speak"
 }

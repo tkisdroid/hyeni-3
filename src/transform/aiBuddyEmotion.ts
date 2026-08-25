@@ -1,3 +1,6 @@
+import type { IntlShape } from "react-intl";
+import type { MessageId } from "../i18n/generated/messageIds.ts";
+
 /**
  * 아이모드 AI 친구의 표정 정본.
  *
@@ -131,20 +134,22 @@ export function aiBuddyFaceFor(emotion: AiBuddyEmotion): AiBuddyChatFace {
   return EMOTION_FACE[emotion];
 }
 
-/** 스크린리더용 표정 설명 — 얼굴만으로는 전달되지 않는다. */
-const EMOTION_LABEL: Record<AiBuddyEmotion, string> = {
-  idle: "기다리는 표정",
-  happy: "웃는 표정",
-  excited: "신난 표정",
-  thinking: "생각하는 표정",
-  caring: "걱정하며 다독이는 표정",
-  sad: "미안해하는 표정",
-  sleepy: "졸린 표정",
-  cheer: "응원하는 표정",
+/**
+ * 스크린리더용 표정 설명 — 얼굴만으로는 전달되지 않는다.
+ * 문구는 locale catalog 가 정본이므로 여기에는 id 만 둔다.
+ */
+const EMOTION_LABEL_ID: Record<AiBuddyEmotion, MessageId> = {  idle: "child.aiBuddy.emotion.idle" as MessageId,
+  happy: "child.aiBuddy.emotion.happy" as MessageId,
+  excited: "child.aiBuddy.emotion.excited" as MessageId,
+  thinking: "child.aiBuddy.emotion.thinking" as MessageId,
+  caring: "child.aiBuddy.emotion.caring" as MessageId,
+  sad: "child.aiBuddy.emotion.sad" as MessageId,
+  sleepy: "child.aiBuddy.emotion.sleepy" as MessageId,
+  cheer: "child.aiBuddy.emotion.cheer" as MessageId,
 };
 
-export function aiBuddyEmotionLabel(emotion: AiBuddyEmotion): string {
-  return EMOTION_LABEL[emotion];
+export function aiBuddyEmotionLabel(emotion: AiBuddyEmotion, intl: IntlShape): string {
+  return intl.formatMessage({ id: EMOTION_LABEL_ID[emotion] });
 }
 
 /**

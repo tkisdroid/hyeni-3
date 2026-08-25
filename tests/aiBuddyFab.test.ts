@@ -7,6 +7,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { createIntl, createIntlCache, type IntlShape } from "react-intl";
+
+// 표정 설명은 locale catalog 가 정본이므로 한국어 카탈로그로 intl 을 만들어 검증한다.
+const koChildIntl = createIntl({
+  locale: "ko",
+  messages: JSON.parse(
+    readFileSync(new URL("../locales/ko/child.json", import.meta.url), "utf8"),
+  ) as Record<string, string>,
+}, createIntlCache()) as IntlShape;
 
 import { existsSync } from "node:fs";
 import {
@@ -157,7 +166,7 @@ test("감정마다 같은 3D 캐릭터 포즈와 읽어 주는 설명이 있다"
     const face = aiBuddyFaceFor(emotion);
     assert.ok(AI_BUDDY_CHAT_FACES.includes(face), `${emotion} 그림 매핑 누락`);
     assert.equal(aiBuddyFaceAsset(emotion), `ai-buddy/poses/${aiBuddyPoseForFace(face)}.webp`);
-    assert.ok(aiBuddyEmotionLabel(emotion).length > 0, `${emotion} 설명 누락`);
+    assert.ok(aiBuddyEmotionLabel(emotion, koChildIntl).length > 0, `${emotion} 설명 누락`);
     assert.equal(isAiBuddyEmotion(emotion), true);
   }
   assert.equal(isAiBuddyEmotion("blink"), false);
@@ -432,7 +441,10 @@ test("홈 친구는 아무 말이 없을 때 눌러 대화할 수 있다고 알�
 
   const fab = read("src/app/AiBuddyFab.tsx");
   assert.match(fab, /const friendName = resolveAiFriendDisplayName\(/);
-  assert.match(fab, /const label = `\$\{friendName\}와 이야기하기/);
+  // 라벨 문구는 catalog 가 정본이고 컴포넌트는 id 와 값만 넘긴다.
+  assert.match(fab, /core\.aiBuddy\.fab\.label/);
+  assert.match(fab, /\{ name: friendName, emotion: aiBuddyEmotionLabel\(emotion, intl\) \}/);
+  assert.doesNotMatch(fab, /const label = `/);
   assert.match(fab, /title=\{friendName\}/);
 });
 
@@ -579,7 +591,12 @@ test("꾹 누르면 마이크가 켜진 대화창이 열리고 손을 떼도 또
   // 써 본 아이에게는 다시 알리지 않는다.
   assert.match(fab, /markAiBuddyVoiceHintUsed\(voiceHintStateRef\.current\)/);
   // 버튼 라벨이 이 조작을 알려 준다(스크린리더도 알 수 있게).
-  assert.match(fab, /길게 누르면 바로 말하기/);
+  assert.match(fab, /core\.aiBuddy\.fab\.label/);
+  const koCore = JSON.parse(
+    readFileSync(new URL("../locales/ko/core.json", import.meta.url), "utf8"),
+  ) as Record<string, string>;
+  assert.match(koCore["core.aiBuddy.fab.label"], /길게 누르면 바로 말하기/);
+  assert.match(koCore["core.aiBuddy.stage.faceLabel"], /길게 누르면 바로 말하기/);
 });
 
 test("대화 화면은 꾹 눌러 들어왔을 때만 마이크를 켜고 히스토리를 지운다", () => {

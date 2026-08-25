@@ -117,5 +117,7 @@
   "core.childDock.tab.memo": "แชท",
   "core.childDock.sos": "ขอความช่วยเหลือ",
   "core.aiBuddy.stage.dismiss": "ปิด",
-  "core.brand.description": "ตารางครอบครัว ของที่ต้องเตรียม ตำแหน่งและการแจ้งเตือนความปลอดภัยของลูกในที่เดียว"
+  "core.brand.description": "ตารางครอบครัว ของที่ต้องเตรียม ตำแหน่งและการแจ้งเตือนความปลอดภัยของลูกในที่เดียว",
+  "core.aiBuddy.fab.label": "คุยกับ{name} · {emotion} · กดค้างเพื่อพูด",
+  "core.aiBuddy.stage.faceLabel": "{line} · แตะเพื่อคุย · กดค้างเพื่อพูด"
 }

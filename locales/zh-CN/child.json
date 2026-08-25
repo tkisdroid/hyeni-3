@@ -393,5 +393,13 @@
   "child.stickerDetail.label": "{label}贴纸",
   "child.timetable.done": "去过了",
   "child.timetable.empty": "今天没有安排 🎈",
-  "child.timetable.next": "接下来就是这个！"
+  "child.timetable.next": "接下来就是这个！",
+  "child.aiBuddy.emotion.idle": "等待的表情",
+  "child.aiBuddy.emotion.happy": "微笑的表情",
+  "child.aiBuddy.emotion.excited": "兴奋的表情",
+  "child.aiBuddy.emotion.thinking": "思考的表情",
+  "child.aiBuddy.emotion.caring": "关心安慰的表情",
+  "child.aiBuddy.emotion.sad": "抱歉的表情",
+  "child.aiBuddy.emotion.sleepy": "困倦的表情",
+  "child.aiBuddy.emotion.cheer": "加油鼓劲的表情"
 }

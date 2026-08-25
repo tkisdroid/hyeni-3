@@ -117,5 +117,7 @@
   "core.childDock.tab.memo": "Chat",
   "core.childDock.sos": "Tumawag ng tulong",
   "core.aiBuddy.stage.dismiss": "Isara",
-  "core.brand.description": "Sched ng pamilya, gamit, lokasyon ng anak at safety alert sa isang lugar"
+  "core.brand.description": "Sched ng pamilya, gamit, lokasyon ng anak at safety alert sa isang lugar",
+  "core.aiBuddy.fab.label": "Makipag-usap kay {name} · {emotion} · pindutin at hawakan para magsalita",
+  "core.aiBuddy.stage.faceLabel": "{line} · i-tap para mag-usap · pindutin at hawakan para magsalita"
 }

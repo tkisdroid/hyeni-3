@@ -117,5 +117,7 @@
   "core.childDock.tab.memo": "대화",
   "core.childDock.sos": "도움 요청",
   "core.aiBuddy.stage.dismiss": "닫기",
-  "core.brand.description": "가족 일정과 준비물, 자녀 위치와 안전 알림을 한곳에서"
+  "core.brand.description": "가족 일정과 준비물, 자녀 위치와 안전 알림을 한곳에서",
+  "core.aiBuddy.fab.label": "{name}와 이야기하기 · {emotion} · 길게 누르면 바로 말하기",
+  "core.aiBuddy.stage.faceLabel": "{line} · 눌러서 이야기하기 · 길게 누르면 바로 말하기"
 }

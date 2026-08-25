@@ -1041,5 +1041,22 @@
   "parent.familyConnection.removeCoParentDescription2": "Akaun tidak dipadam dan boleh dijemput semula kemudian.",
   "parent.familyConnection.removeCoParent": "Putuskan penjaga",
   "parent.familyConnection.removingCoParent": "Memutuskan…",
-  "parent.familyConnection.removedCoParent": "Penjaga “{guardianName}” telah diputuskan."
+  "parent.familyConnection.removedCoParent": "Penjaga “{guardianName}” telah diputuskan.",
+  "parent.home.subscriptionCard.pending.title": "Maklumat langganan",
+  "parent.home.subscriptionCard.pending.descriptionError": "Kami tidak dapat menyemak status pelan anda",
+  "parent.home.subscriptionCard.pending.descriptionLoading": "Menyemak status pelan anda",
+  "parent.home.subscriptionCard.pending.metaError": "Anda boleh menyemak semula pada skrin langganan",
+  "parent.home.subscriptionCard.pending.metaLoading": "Kami akan menunjukkan maklumat tepat setelah disahkan",
+  "parent.home.subscriptionCard.pending.action": "Semak",
+  "parent.home.subscriptionCard.benefits.title": "Manfaat Premium",
+  "parent.home.subscriptionCard.benefits.description": "Lihat lokasi masa nyata dan ciri keluarga yang lebih lapang",
+  "parent.home.subscriptionCard.benefits.meta": "Kini pelan Percuma",
+  "parent.home.subscriptionCard.benefits.action": "Lihat manfaat",
+  "parent.home.subscriptionCard.manage.title": "Urus langganan",
+  "parent.home.subscriptionCard.manage.description": "Langganan Premium",
+  "parent.home.subscriptionCard.manage.action": "Urus",
+  "parent.home.subscriptionCard.meta.trialEndsToday": "Percubaan percuma tamat hari ini",
+  "parent.home.subscriptionCard.meta.trialDaysLeft": "Percubaan percuma tinggal {days} hari",
+  "parent.home.subscriptionCard.meta.until": "Aktif hingga {date}",
+  "parent.home.subscriptionCard.meta.active": "Premium aktif"
 }

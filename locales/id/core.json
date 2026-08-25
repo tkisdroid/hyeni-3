@@ -117,5 +117,7 @@
   "core.childDock.tab.memo": "Obrolan",
   "core.childDock.sos": "Minta bantuan",
   "core.aiBuddy.stage.dismiss": "Tutup",
-  "core.brand.description": "Jadwal keluarga, perlengkapan, lokasi anak, dan peringatan keselamatan dalam satu tempat"
+  "core.brand.description": "Jadwal keluarga, perlengkapan, lokasi anak, dan peringatan keselamatan dalam satu tempat",
+  "core.aiBuddy.fab.label": "Ngobrol dengan {name} · {emotion} · tekan dan tahan untuk bicara",
+  "core.aiBuddy.stage.faceLabel": "{line} · ketuk untuk ngobrol · tekan dan tahan untuk bicara"
 }

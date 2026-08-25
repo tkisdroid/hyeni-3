@@ -117,5 +117,7 @@
   "core.childDock.tab.memo": "Bualan",
   "core.childDock.sos": "Minta bantuan",
   "core.aiBuddy.stage.dismiss": "Tutup",
-  "core.brand.description": "Jadual keluarga, barang keperluan, lokasi anak dan makluman keselamatan di satu tempat"
+  "core.brand.description": "Jadual keluarga, barang keperluan, lokasi anak dan makluman keselamatan di satu tempat",
+  "core.aiBuddy.fab.label": "Berbual dengan {name} · {emotion} · tekan dan tahan untuk bercakap",
+  "core.aiBuddy.stage.faceLabel": "{line} · ketik untuk berbual · tekan dan tahan untuk bercakap"
 }

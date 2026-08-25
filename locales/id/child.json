@@ -393,5 +393,13 @@
   "child.stickerDetail.label": "Stiker {label}",
   "child.timetable.done": "Sudah didatangi",
   "child.timetable.empty": "Hari ini tidak ada jadwal 🎈",
-  "child.timetable.next": "Ini berikutnya!"
+  "child.timetable.next": "Ini berikutnya!",
+  "child.aiBuddy.emotion.idle": "Wajah menunggu",
+  "child.aiBuddy.emotion.happy": "Wajah tersenyum",
+  "child.aiBuddy.emotion.excited": "Wajah bersemangat",
+  "child.aiBuddy.emotion.thinking": "Wajah berpikir",
+  "child.aiBuddy.emotion.caring": "Wajah peduli dan menenangkan",
+  "child.aiBuddy.emotion.sad": "Wajah minta maaf",
+  "child.aiBuddy.emotion.sleepy": "Wajah mengantuk",
+  "child.aiBuddy.emotion.cheer": "Wajah menyemangati"
 }

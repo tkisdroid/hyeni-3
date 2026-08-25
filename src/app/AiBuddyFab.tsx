@@ -643,7 +643,10 @@ function AiBuddyFabButton({ bottomInset, presentation }: AiBuddyFabButtonProps) 
     friendName,
   });
   const guidanceBubble = voiceHint || bubbleLine === aiBuddyHomeChatHintLine(friendName);
-  const label = `${friendName}와 이야기하기 · ${aiBuddyEmotionLabel(emotion)} · 길게 누르면 바로 말하기`;
+  const label = intl.formatMessage(
+    { id: "core.aiBuddy.fab.label" },
+    { name: friendName, emotion: aiBuddyEmotionLabel(emotion, intl) },
+  );
 
   return (
     <>
@@ -662,7 +665,10 @@ function AiBuddyFabButton({ bottomInset, presentation }: AiBuddyFabButtonProps) 
             <button
               type="button"
               className="abf-stage__face hy-press"
-              aria-label={`${attention.nudge.fullLine} · 눌러서 이야기하기 · 길게 누르면 바로 말하기`}
+              aria-label={intl.formatMessage(
+                { id: "core.aiBuddy.stage.faceLabel" },
+                { line: attention.nudge.fullLine },
+              )}
               onPointerDown={stagePress.onPointerDown}
               onPointerMove={stagePress.onPointerMove}
               onPointerUp={stagePress.onPointerUp}

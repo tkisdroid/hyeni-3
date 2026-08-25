@@ -1,6 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { createIntl, createIntlCache, type IntlShape } from "react-intl";
 import { resolveParentHomeSubscriptionCard } from "../src/transform/parentHomeSubscriptionCard.ts";
+
+// 카드 문구는 locale catalog 가 정본이므로 한국어 카탈로그로 intl 을 만들어 검증한다.
+const koParent = JSON.parse(
+  readFileSync(new URL("../locales/ko/parent.json", import.meta.url), "utf8"),
+) as Record<string, string>;
+const koIntl = createIntl({ locale: "ko", messages: koParent }, createIntlCache()) as IntlShape;
 
 test("무료 가족은 프리미엄 혜택을 확인하는 카드로 안내한다", () => {
   assert.deepEqual(resolveParentHomeSubscriptionCard({
@@ -11,7 +19,7 @@ test("무료 가족은 프리미엄 혜택을 확인하는 카드로 안내한�
     isTrial: false,
     trialDaysLeft: null,
     periodEnd: null,
-  }), {
+  }, koIntl, "ko"), {
     title: "구독 시 혜택",
     description: "실시간 위치와 더 넉넉한 가족 기능을 확인해 보세요",
     meta: "현재 무료 플랜",
@@ -29,7 +37,7 @@ test("프리미엄 가족은 구독 상품과 이용 종료일을 관리 카드�
     isTrial: false,
     trialDaysLeft: null,
     periodEnd: new Date("2026-09-30T15:00:00.000Z"),
-  }), {
+  }, koIntl, "ko"), {
     title: "구독 관리",
     description: "프리미엄 월간 구독",
     meta: "2026년 10월 1일까지 이용",
@@ -47,7 +55,7 @@ test("무료 체험 중인 가족은 남은 일수를 우선 표시한다", () =
     isTrial: true,
     trialDaysLeft: 3,
     periodEnd: new Date("2026-09-30T15:00:00.000Z"),
-  }), {
+  }, koIntl, "ko"), {
     title: "구독 관리",
     description: "프리미엄 무료 체험",
     meta: "무료 체험 3일 남음",
@@ -65,7 +73,7 @@ test("엔타이틀먼트 미확정과 오류는 무료 플랜으로 강등하지
     isTrial: false,
     trialDaysLeft: null,
     periodEnd: null,
-  });
+  }, koIntl, "ko");
   const failed = resolveParentHomeSubscriptionCard({
     ready: false,
     isError: true,
@@ -74,7 +82,7 @@ test("엔타이틀먼트 미확정과 오류는 무료 플랜으로 강등하지
     isTrial: false,
     trialDaysLeft: null,
     periodEnd: null,
-  });
+  }, koIntl, "ko");
 
   assert.deepEqual(loading, {
     title: "구독 정보",
@@ -103,7 +111,7 @@ test("캐시된 프리미엄 정본이 있으면 재조회 오류에도 관리 �
     isTrial: false,
     trialDaysLeft: null,
     periodEnd: null,
-  });
+  }, koIntl, "ko");
 
   assert.equal(view.title, "구독 관리");
   assert.equal(view.meta, "프리미엄 이용 중");

@@ -799,12 +799,16 @@ npm run typecheck
 > `src/i18n/messages.ts`·`useMessage.ts` 삭제 · `descriptions.json` 고아 키 제거와 재발 방지 게이트 ·
 > `tests/userFacingLiteralScan.test.mjs`(9) · `tests/pwaLocaleMetadata.test.mjs`(11).
 >
-> **미완료(다음 작업 단위)**: allowlist 의 `pending-migration` 19건 = catalog 밖에 남은 실제 사용자 문구.
+> **미완료(다음 작업 단위)**: allowlist 의 `pending-migration` 12건 = catalog 밖에 남은 실제 사용자 문구.
 > 이 항목들은 면제가 아니라 결함 기록이며, 각 항목의 `migrateTo` 로 이관하면 항목을 지워야 한다
-> (남겨 두면 `stale_allowlist` 로 실패한다). 남은 덩이는 `parentHomeSubscriptionCard`(14)·`aiBuddyEmotion`(8)·
-> `stickerBook`·`memoView`·`deviceLabel`·`PROVIDER_LABEL`·`eventSupplies`·`childHomeData`·
-> AI 친구 말풍선(voiceHint/wander/nudge)이고, 순수 transform 의 시그니처 변경(`intl` 주입)과 해당 회귀 테스트
-> 갱신이 함께 필요하다.
+> (남겨 두면 `stale_allowlist` 로 실패한다). 남은 덩이는 AI 친구 말풍선(voiceHint/wander/nudge)·
+> `stickerBook`·`memoView`·`deviceLabel`·`PROVIDER_LABEL`·`eventSupplies`·`childHomeData`다.
+>
+> **2026-08-25 추가 완료(3)**: 부모 홈 구독 카드 17개(`parent.home.subscriptionCard.*`)·AI 친구 표정 설명
+> 8개(`child.aiBuddy.emotion.*`)·플로팅/전체화면 스크린리더 이름 2개(`core.aiBuddy.{fab.label,stage.faceLabel}`).
+> 구독 카드의 `Intl.DateTimeFormat("ko-KR")` 하드코딩은 `formatDateTime(..., dateStyle:"long")` 으로 바꿔
+> 언어를 따르게 했고, 시간대는 가족 time zone 이관 전이라 `LEGACY_FAMILY_TIME_ZONE` 을 유지했다.
+> `actionLabel` 의 한국어 union 타입은 `string` 으로 풀었다(문구는 catalog, 색·형태는 `tone` 이 정한다).
 >
 > **2026-08-25 추가 완료(2)**: 웹 결제 실패 안내 16개를 `billing.web.{failure,request}.*` 로 이관했다.
 > `webBillingFailureMessage(code, intl)`·`webBillingRequestFailureMessage(error, intl)` 이 코드→id 표만 들고

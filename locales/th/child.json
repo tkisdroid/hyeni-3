@@ -393,5 +393,13 @@
   "child.stickerDetail.label": "สติกเกอร์ {label}",
   "child.timetable.done": "ไปมาแล้ว",
   "child.timetable.empty": "วันนี้ไม่มีตารางนะ 🎈",
-  "child.timetable.next": "ต่อไปอันนี้นะ!"
+  "child.timetable.next": "ต่อไปอันนี้นะ!",
+  "child.aiBuddy.emotion.idle": "หน้ารอ",
+  "child.aiBuddy.emotion.happy": "หน้ายิ้ม",
+  "child.aiBuddy.emotion.excited": "หน้าตื่นเต้น",
+  "child.aiBuddy.emotion.thinking": "หน้ากำลังคิด",
+  "child.aiBuddy.emotion.caring": "หน้าห่วงใยและปลอบโยน",
+  "child.aiBuddy.emotion.sad": "หน้าขอโทษ",
+  "child.aiBuddy.emotion.sleepy": "หน้าง่วง",
+  "child.aiBuddy.emotion.cheer": "หน้าเชียร์"
 }

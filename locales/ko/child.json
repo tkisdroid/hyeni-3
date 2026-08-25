@@ -393,5 +393,13 @@
   "child.stickerDetail.label": "{label} 스티커",
   "child.timetable.done": "다녀왔어",
   "child.timetable.empty": "오늘은 일정이 없어 🎈",
-  "child.timetable.next": "다음이야!"
+  "child.timetable.next": "다음이야!",
+  "child.aiBuddy.emotion.idle": "기다리는 표정",
+  "child.aiBuddy.emotion.happy": "웃는 표정",
+  "child.aiBuddy.emotion.excited": "신난 표정",
+  "child.aiBuddy.emotion.thinking": "생각하는 표정",
+  "child.aiBuddy.emotion.caring": "걱정하며 다독이는 표정",
+  "child.aiBuddy.emotion.sad": "미안해하는 표정",
+  "child.aiBuddy.emotion.sleepy": "졸린 표정",
+  "child.aiBuddy.emotion.cheer": "응원하는 표정"
 }

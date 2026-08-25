@@ -393,5 +393,13 @@
   "child.stickerDetail.label": "{label} sticker",
   "child.timetable.done": "Been there",
   "child.timetable.empty": "You don't have anything scheduled today 🎈",
-  "child.timetable.next": "Up next!"
+  "child.timetable.next": "Up next!",
+  "child.aiBuddy.emotion.idle": "Waiting face",
+  "child.aiBuddy.emotion.happy": "Smiling face",
+  "child.aiBuddy.emotion.excited": "Excited face",
+  "child.aiBuddy.emotion.thinking": "Thinking face",
+  "child.aiBuddy.emotion.caring": "Concerned, comforting face",
+  "child.aiBuddy.emotion.sad": "Sorry face",
+  "child.aiBuddy.emotion.sleepy": "Sleepy face",
+  "child.aiBuddy.emotion.cheer": "Cheering face"
 }

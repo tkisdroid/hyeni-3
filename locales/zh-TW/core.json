@@ -117,5 +117,7 @@
   "core.childDock.tab.memo": "對話",
   "core.childDock.sos": "求助",
   "core.aiBuddy.stage.dismiss": "關閉",
-  "core.brand.description": "家庭行程、物品準備、孩子位置與安全提醒一次搞定"
+  "core.brand.description": "家庭行程、物品準備、孩子位置與安全提醒一次搞定",
+  "core.aiBuddy.fab.label": "和{name}聊天 · {emotion} · 長按即可說話",
+  "core.aiBuddy.stage.faceLabel": "{line} · 點按開始聊天 · 長按即可說話"
 }

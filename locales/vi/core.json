@@ -117,5 +117,7 @@
   "core.childDock.tab.memo": "Trò chuyện",
   "core.childDock.sos": "Cần giúp",
   "core.aiBuddy.stage.dismiss": "Đóng",
-  "core.brand.description": "Lịch gia đình, đồ cần mang, vị trí và cảnh báo an toàn của con ở cùng một nơi"
+  "core.brand.description": "Lịch gia đình, đồ cần mang, vị trí và cảnh báo an toàn của con ở cùng một nơi",
+  "core.aiBuddy.fab.label": "Nói chuyện với {name} · {emotion} · nhấn giữ để nói",
+  "core.aiBuddy.stage.faceLabel": "{line} · nhấn để trò chuyện · nhấn giữ để nói"
 }

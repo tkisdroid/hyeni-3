@@ -44,38 +44,11 @@
 
   {
     "path": "src/app/AiBuddyFab.tsx",
-    "pattern": "attention\\.nudge\\.fullLine",
-    "occurrences": 1,
-    "status": "pending-migration",
-    "reason": "화면을 채운 AI 친구 얼굴 버튼의 스크린리더 이름이 원문 한국어 template 이다",
-    "migrateTo": "core.aiBuddy.stage.faceLabel",
-    "plan": "docs/superpowers/plans/2026-08-15-global-i18n-web.md"
-  },
-  {
-    "path": "src/app/AiBuddyFab.tsx",
-    "pattern": "aria-label=\\{label\\}",
-    "occurrences": 1,
-    "status": "pending-migration",
-    "reason": "플로팅 버튼 스크린리더 이름이 원문 한국어 template(친구 이름 · 표정 · 길게 누르기 안내)이다",
-    "migrateTo": "core.aiBuddy.fab.label",
-    "plan": "docs/superpowers/plans/2026-08-15-global-i18n-web.md"
-  },
-  {
-    "path": "src/app/AiBuddyFab.tsx",
     "pattern": "^\\{bubbleLine\\}$",
     "occurrences": 1,
     "status": "pending-migration",
     "reason": "말풍선 정본(aiBuddyVoiceHint·aiBuddyFabPrompt·aiBuddyWander·aiBuddyNudge)이 모두 원문 한국어다",
     "migrateTo": "child.aiBuddy.bubble.*",
-    "plan": "docs/superpowers/plans/2026-08-15-global-i18n-web.md"
-  },
-  {
-    "path": "src/screens/child/AiFriendChat.tsx",
-    "pattern": "alt=\\{aiBuddyEmotionLabel\\(emotion\\)\\}",
-    "occurrences": 1,
-    "status": "pending-migration",
-    "reason": "aiBuddyEmotion.EMOTION_LABEL 8개 스크린리더 표정 설명이 원문 한국어다",
-    "migrateTo": "child.aiBuddy.emotion.*",
     "plan": "docs/superpowers/plans/2026-08-15-global-i18n-web.md"
   },
   {
@@ -121,15 +94,6 @@
     "status": "pending-migration",
     "reason": "deviceLabel.formatModel 의 한국어 제조사 접두어와 같은 결함이다",
     "migrateTo": "shared.device.manufacturer.samsung",
-    "plan": "docs/superpowers/plans/2026-08-15-global-i18n-web.md"
-  },
-  {
-    "path": "src/screens/parent/ParentHome.tsx",
-    "pattern": "subscriptionCard\\.",
-    "occurrences": 4,
-    "status": "pending-migration",
-    "reason": "parentHomeSubscriptionCard 가 제목·설명·메타·행동 라벨 14개를 원문 한국어로 만들고 ko-KR 고정 날짜 포맷을 쓴다",
-    "migrateTo": "parent.home.subscriptionCard.*",
     "plan": "docs/superpowers/plans/2026-08-15-global-i18n-web.md"
   },
   {

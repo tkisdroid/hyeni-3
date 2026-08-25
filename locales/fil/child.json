@@ -393,5 +393,13 @@
   "child.stickerDetail.label": "Sticker na {label}",
   "child.timetable.done": "Napuntahan na",
   "child.timetable.empty": "Wala kang iskedyul ngayong araw 🎈",
-  "child.timetable.next": "Ito ang susunod!"
+  "child.timetable.next": "Ito ang susunod!",
+  "child.aiBuddy.emotion.idle": "Mukhang naghihintay",
+  "child.aiBuddy.emotion.happy": "Mukhang nakangiti",
+  "child.aiBuddy.emotion.excited": "Mukhang excited",
+  "child.aiBuddy.emotion.thinking": "Mukhang nag-iisip",
+  "child.aiBuddy.emotion.caring": "Mukhang nag-aalala at nakakapanatag",
+  "child.aiBuddy.emotion.sad": "Mukhang nagsosorry",
+  "child.aiBuddy.emotion.sleepy": "Mukhang inaantok",
+  "child.aiBuddy.emotion.cheer": "Mukhang nagche-cheer"
 }

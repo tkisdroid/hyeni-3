@@ -623,7 +623,7 @@ export function ParentHome() {
     isTrial: entitlement.view?.isTrial ?? false,
     trialDaysLeft: entitlement.view?.trialDaysLeft ?? null,
     periodEnd: entitlement.view?.periodEnd ?? null,
-  });
+  }, intl, locale);
   const openShortcut = (id: string) => {
     if (id === "sc7") {
       const destination = resolveParentHomeDeviceFinder(activeChild?.user_id);

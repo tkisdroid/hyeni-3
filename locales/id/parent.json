@@ -1041,5 +1041,22 @@
   "parent.familyConnection.removeCoParentDescription2": "Akun tidak dihapus dan dapat diundang kembali nanti.",
   "parent.familyConnection.removeCoParent": "Putuskan wali",
   "parent.familyConnection.removingCoParent": "Memutuskan…",
-  "parent.familyConnection.removedCoParent": "Wali “{guardianName}” telah diputuskan."
+  "parent.familyConnection.removedCoParent": "Wali “{guardianName}” telah diputuskan.",
+  "parent.home.subscriptionCard.pending.title": "Info langganan",
+  "parent.home.subscriptionCard.pending.descriptionError": "Kami tidak dapat memeriksa status paket Anda",
+  "parent.home.subscriptionCard.pending.descriptionLoading": "Memeriksa status paket Anda",
+  "parent.home.subscriptionCard.pending.metaError": "Anda dapat memeriksa kembali di layar langganan",
+  "parent.home.subscriptionCard.pending.metaLoading": "Kami akan menampilkan detail yang tepat setelah dikonfirmasi",
+  "parent.home.subscriptionCard.pending.action": "Periksa",
+  "parent.home.subscriptionCard.benefits.title": "Manfaat Premium",
+  "parent.home.subscriptionCard.benefits.description": "Lihat lokasi langsung dan fitur keluarga yang lebih lega",
+  "parent.home.subscriptionCard.benefits.meta": "Saat ini paket Gratis",
+  "parent.home.subscriptionCard.benefits.action": "Lihat manfaat",
+  "parent.home.subscriptionCard.manage.title": "Kelola langganan",
+  "parent.home.subscriptionCard.manage.description": "Langganan Premium",
+  "parent.home.subscriptionCard.manage.action": "Kelola",
+  "parent.home.subscriptionCard.meta.trialEndsToday": "Uji coba gratis berakhir hari ini",
+  "parent.home.subscriptionCard.meta.trialDaysLeft": "Uji coba gratis tersisa {days} hari",
+  "parent.home.subscriptionCard.meta.until": "Aktif hingga {date}",
+  "parent.home.subscriptionCard.meta.active": "Premium aktif"
 }

@@ -393,5 +393,13 @@
   "child.stickerDetail.label": "Pelekat {label}",
   "child.timetable.done": "Sudah pergi",
   "child.timetable.empty": "Tiada jadual hari ini 🎈",
-  "child.timetable.next": "Ini yang seterusnya!"
+  "child.timetable.next": "Ini yang seterusnya!",
+  "child.aiBuddy.emotion.idle": "Muka menunggu",
+  "child.aiBuddy.emotion.happy": "Muka tersenyum",
+  "child.aiBuddy.emotion.excited": "Muka teruja",
+  "child.aiBuddy.emotion.thinking": "Muka berfikir",
+  "child.aiBuddy.emotion.caring": "Muka prihatin dan menenangkan",
+  "child.aiBuddy.emotion.sad": "Muka meminta maaf",
+  "child.aiBuddy.emotion.sleepy": "Muka mengantuk",
+  "child.aiBuddy.emotion.cheer": "Muka menyemangat"
 }

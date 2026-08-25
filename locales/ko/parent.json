@@ -1041,5 +1041,22 @@
   "parent.familyConnection.removeCoParentDescription2": "계정은 삭제되지 않으며, 다시 초대하면 연결할 수 있어요.",
   "parent.familyConnection.removeCoParent": "보호자 연결 해제",
   "parent.familyConnection.removingCoParent": "해제하는 중…",
-  "parent.familyConnection.removedCoParent": "‘{guardianName}’ 보호자 연결을 해제했어요."
+  "parent.familyConnection.removedCoParent": "‘{guardianName}’ 보호자 연결을 해제했어요.",
+  "parent.home.subscriptionCard.pending.title": "구독 정보",
+  "parent.home.subscriptionCard.pending.descriptionError": "이용 상태를 확인하지 못했어요",
+  "parent.home.subscriptionCard.pending.descriptionLoading": "이용 상태를 확인하고 있어요",
+  "parent.home.subscriptionCard.pending.metaError": "구독 화면에서 다시 확인할 수 있어요",
+  "parent.home.subscriptionCard.pending.metaLoading": "확인 후 정확한 정보를 보여드릴게요",
+  "parent.home.subscriptionCard.pending.action": "확인하기",
+  "parent.home.subscriptionCard.benefits.title": "구독 시 혜택",
+  "parent.home.subscriptionCard.benefits.description": "실시간 위치와 더 넉넉한 가족 기능을 확인해 보세요",
+  "parent.home.subscriptionCard.benefits.meta": "현재 무료 플랜",
+  "parent.home.subscriptionCard.benefits.action": "혜택 보기",
+  "parent.home.subscriptionCard.manage.title": "구독 관리",
+  "parent.home.subscriptionCard.manage.description": "프리미엄 구독",
+  "parent.home.subscriptionCard.manage.action": "관리하기",
+  "parent.home.subscriptionCard.meta.trialEndsToday": "무료 체험이 오늘 종료돼요",
+  "parent.home.subscriptionCard.meta.trialDaysLeft": "무료 체험 {days}일 남음",
+  "parent.home.subscriptionCard.meta.until": "{date}까지 이용",
+  "parent.home.subscriptionCard.meta.active": "프리미엄 이용 중"
 }

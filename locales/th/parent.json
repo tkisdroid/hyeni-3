@@ -1041,5 +1041,22 @@
   "parent.familyConnection.removeCoParentDescription2": "บัญชีจะไม่ถูกลบและสามารถเชิญใหม่ภายหลังได้",
   "parent.familyConnection.removeCoParent": "ยกเลิกการเชื่อมต่อผู้ปกครอง",
   "parent.familyConnection.removingCoParent": "กำลังยกเลิก…",
-  "parent.familyConnection.removedCoParent": "ยกเลิกการเชื่อมต่อผู้ปกครอง “{guardianName}” แล้ว"
+  "parent.familyConnection.removedCoParent": "ยกเลิกการเชื่อมต่อผู้ปกครอง “{guardianName}” แล้ว",
+  "parent.home.subscriptionCard.pending.title": "ข้อมูลการสมัคร",
+  "parent.home.subscriptionCard.pending.descriptionError": "ตรวจสอบสถานะแพ็กเกจของคุณไม่สำเร็จ",
+  "parent.home.subscriptionCard.pending.descriptionLoading": "กำลังตรวจสอบสถานะแพ็กเกจของคุณ",
+  "parent.home.subscriptionCard.pending.metaError": "คุณตรวจสอบอีกครั้งได้ที่หน้าการสมัคร",
+  "parent.home.subscriptionCard.pending.metaLoading": "จะแสดงข้อมูลที่ถูกต้องหลังตรวจสอบเสร็จ",
+  "parent.home.subscriptionCard.pending.action": "ตรวจสอบ",
+  "parent.home.subscriptionCard.benefits.title": "สิทธิประโยชน์พรีเมียม",
+  "parent.home.subscriptionCard.benefits.description": "ดูตำแหน่งแบบเรียลไทม์และฟีเจอร์ครอบครัวที่มากขึ้น",
+  "parent.home.subscriptionCard.benefits.meta": "ปัจจุบันใช้แพ็กเกจฟรี",
+  "parent.home.subscriptionCard.benefits.action": "ดูสิทธิประโยชน์",
+  "parent.home.subscriptionCard.manage.title": "จัดการการสมัคร",
+  "parent.home.subscriptionCard.manage.description": "การสมัครพรีเมียม",
+  "parent.home.subscriptionCard.manage.action": "จัดการ",
+  "parent.home.subscriptionCard.meta.trialEndsToday": "ทดลองใช้ฟรีสิ้นสุดวันนี้",
+  "parent.home.subscriptionCard.meta.trialDaysLeft": "ทดลองใช้ฟรีเหลือ {days} วัน",
+  "parent.home.subscriptionCard.meta.until": "ใช้ได้ถึง {date}",
+  "parent.home.subscriptionCard.meta.active": "พรีเมียมกำลังใช้งาน"
 }

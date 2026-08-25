@@ -24497,5 +24497,203 @@
     "qualityTier": "A",
     "variables": {},
     "description": "웹 결제 요청이 원인 미상으로 실패했을 때의 기본 안내"
+  },
+  "parent.home.subscriptionCard.pending.title": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "엔타이틀먼트 미확정 상태의 구독 카드 제목(Free 로 추정하지 않는다)"
+  },
+  "parent.home.subscriptionCard.pending.descriptionError": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "엔타이틀먼트 조회 실패 시의 구독 카드 설명"
+  },
+  "parent.home.subscriptionCard.pending.descriptionLoading": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "엔타이틀먼트 조회 중인 구독 카드 설명"
+  },
+  "parent.home.subscriptionCard.pending.metaError": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "조회 실패 시 구독 화면에서 다시 확인할 수 있다는 보조 문구"
+  },
+  "parent.home.subscriptionCard.pending.metaLoading": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "조회 완료 뒤 정확한 정보를 보여준다는 보조 문구"
+  },
+  "parent.home.subscriptionCard.pending.action": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "미확정 상태 구독 카드의 행동 라벨"
+  },
+  "parent.home.subscriptionCard.benefits.title": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "Free 가족에게 보여 주는 구독 혜택 카드 제목"
+  },
+  "parent.home.subscriptionCard.benefits.description": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "실시간 위치와 확장된 가족 기능을 안내하는 혜택 카드 설명"
+  },
+  "parent.home.subscriptionCard.benefits.meta": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "현재 무료 플랜임을 알리는 보조 문구"
+  },
+  "parent.home.subscriptionCard.benefits.action": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "Free 가족의 구독 카드 행동 라벨"
+  },
+  "parent.home.subscriptionCard.manage.title": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "프리미엄 가족의 구독 관리 카드 제목"
+  },
+  "parent.home.subscriptionCard.manage.description": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "서버 plan 라벨이 없을 때 쓰는 프리미엄 구독 기본 설명"
+  },
+  "parent.home.subscriptionCard.manage.action": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "프리미엄 가족의 구독 카드 행동 라벨"
+  },
+  "parent.home.subscriptionCard.meta.trialEndsToday": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "무료 체험이 오늘 끝난다는 보조 문구"
+  },
+  "parent.home.subscriptionCard.meta.trialDaysLeft": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {
+      "days": "남은 무료 체험 일수(정수)"
+    },
+    "description": "무료 체험 남은 일수 보조 문구"
+  },
+  "parent.home.subscriptionCard.meta.until": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {
+      "date": "이용 종료일(현지 형식으로 이미 포맷된 문자열)"
+    },
+    "description": "구독 이용 종료일 보조 문구(해지해도 종료일까지 유지)"
+  },
+  "parent.home.subscriptionCard.meta.active": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "종료일을 모를 때 쓰는 프리미엄 이용 중 보조 문구"
+  },
+  "child.aiBuddy.emotion.idle": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "AI 친구 얼굴의 대기 표정 대체 텍스트(스크린리더 전용)"
+  },
+  "child.aiBuddy.emotion.happy": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "AI 친구 얼굴의 웃는 표정 대체 텍스트"
+  },
+  "child.aiBuddy.emotion.excited": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "AI 친구 얼굴의 신난 표정 대체 텍스트"
+  },
+  "child.aiBuddy.emotion.thinking": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "AI 친구 얼굴의 생각하는 표정 대체 텍스트"
+  },
+  "child.aiBuddy.emotion.caring": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "AI 친구 얼굴의 걱정하며 다독이는 표정 대체 텍스트(아이가 속상할 때)"
+  },
+  "child.aiBuddy.emotion.sad": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "AI 친구 얼굴의 미안해하는 표정 대체 텍스트"
+  },
+  "child.aiBuddy.emotion.sleepy": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "AI 친구 얼굴의 졸린 표정 대체 텍스트"
+  },
+  "child.aiBuddy.emotion.cheer": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "AI 친구 얼굴의 응원하는 표정 대체 텍스트"
+  },
+  "core.aiBuddy.fab.label": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "name": "아이가 정한 AI 친구 이름",
+      "emotion": "현재 표정 설명"
+    },
+    "description": "플로팅 AI 친구 버튼의 스크린리더 이름(친구 이름 · 표정 · 길게 누르기 안내)"
+  },
+  "core.aiBuddy.stage.faceLabel": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "line": "AI 친구가 먼저 건네는 한 마디"
+    },
+    "description": "AI 친구가 화면을 채워 부를 때 얼굴 버튼의 스크린리더 이름(먼저 건네는 말 + 조작 안내)"
   }
 }

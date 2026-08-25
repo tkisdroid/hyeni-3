@@ -754,7 +754,7 @@ export function AiFriendChat() {
           <ChevronLeft size={22} strokeWidth={2.2} color="var(--hy-accent-text)" />
         </button>
         <div className="afc-avatar" data-emotion={emotion}>
-          <img src={friendFaceSrc} alt={aiBuddyEmotionLabel(emotion)} />
+          <img src={friendFaceSrc} alt={aiBuddyEmotionLabel(emotion, intl)} />
         </div>
         {/* 이름만 둔다. 아래 상태 한 줄과 가짜 온라인 점은 장식이라 좁은 헤더에서 잘리기만 했다
             (2026-08-17 TK 제보 "얘기…"). 표정은 아바타가 이미 말해 준다. */}

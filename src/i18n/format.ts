@@ -25,7 +25,7 @@ export function formatDateTime(
   options: {
     locale: SupportedLocale;
     timeZone: string;
-    dateStyle?: "short" | "medium";
+    dateStyle?: "short" | "medium" | "long";
     timeStyle?: "short" | "medium";
   },
 ): string {
