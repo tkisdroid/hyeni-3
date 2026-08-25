@@ -3,6 +3,41 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
+**아이 홈 혜니 입체 도약·v1.4.2/code 14 Play 심사 제출 완료(2026-08-25)**:
+기존 투명 WebP 18종과 표정·대화·일정 안내를 유지하면서 아이 홈에서 혜니가 자리를 옮길 때만 1.5초 perspective
+도약, squash/stretch, 부드러운 착지와 높이에 따라 변하는 발밑 그림자를 추가했다. GLB·Three.js·Blender·신규 생성
+이미지는 넣지 않았고 드래그·탭/길게 누르기·SOS 비겹침·`prefers-reduced-motion` 계약을 유지했다. 앱 버전은 1.4.2,
+Android/iOS build number는 14이며 source commit은 `01a29f655ce3ed214736191a2b140b5dd06ef545`다.
+
+앱 전체 `1,938/1,938`, Worker 전체 `1,298/1,298`, 앱·Worker typecheck, production build(2,287 modules·
+precache 471·중복 0), Android `testDebugUnitTest lintDebug assembleDebug`가 통과했다. 신규 D1 migration은 없어
+운영 DB에 SQL을 적용하지 않았고 읽기 query에서 schema object 337개·`changes=0`·`changed_db=false`·
+`rows_written=0`을 확인했다. Worker는 version `712b272d-9244-4b88-a69d-203304769881`로 재배포해 트래픽 100%,
+health 200과 보호 API 무인증 401을 확인했다.
+
+Pages 최종 배포는 `https://df801cb5.hyeni-calendar.pages.dev`다. 배포별 주소·고정 Pages·브랜드 도메인은 모두
+entry `assets/index-B0BfJjDD.js` 348,020 bytes·SHA-256
+`FD7A57B853F483EFA5E798CFE1E6FB10C56E3782F673B50F38CF78E62A0B3016`과 혜니 CSS
+`assets/AiBuddyFab-DJMgTUN4.css` 7,625 bytes·SHA-256
+`1D2A9863EEE10154AFD623991D0EA15113E203EEBC48041B684E7DE7B5653C75`가 로컬과 일치하고, 세 주소의
+`/oauth/callback` 200·동일 entry와 CSP도 유지된다. razr(`ZY22H9VTQD`) 사용자 0에 보존 설치해 1.4.2/code 14,
+`firstInstallTime=2026-08-17 01:03:15` 유지와 `lastUpdateTime=2026-08-25 08:29:48` 갱신을 확인했다. 이후 기기
+연결이 끊겨 CDP 역할 재확인은 생략했으며 로그아웃·역할 전환·재페어링·refresh token 조작은 하지 않았다.
+
+사용자가 전면 PowerShell 창에서 서명 비밀번호를 직접 입력했고 자격 값은 저장·출력하지 않았다. 승인 upload key로
+만든 AAB는 `artifacts/release-evidence/play-submit-v1.4.2-vc14-20260825/hyeni-calendar-v1.4.2-vc14-01a29f6.aab`,
+13,013,338 bytes, SHA-256 `8d2388eb38e29640a6f05dec1db6a6db86fc32c71b756a1edcb1301ca08b2607`다.
+manifest 1.4.2/code 14·non-debuggable·source commit, 승인 인증서, 권한 정책, dist/내장 web assets,
+bundle/universal APK와 4개 ELF의 16KiB 조건이 모두 GREEN이다.
+
+2026-08-25 09:54 KST Android Publisher API로 AAB를 production `혜니캘린더 1.4.2 (14)` / `completed`에
+업로드·validate하고 `CANCEL_IN_REVIEW_AND_SUBMIT`으로 code 13 심사를 대체했다. 첫 readback은 Play 전파 중 code 14
+`NOT_SENT_FOR_REVIEW`와 code 13 `IN_REVIEW`가 잠시 함께 보였지만 추가 write 없이 09:55:21 KST fresh readback에서
+code 14 `IN_REVIEW`, code 13 제거, code 6 `PUBLISHED`를 확인했다. `ko-KR` listing hash
+`d0c0824d...b9dc9`와 icon·feature graphic·phone screenshots 10개 hash `651ef787...fede1`은 제출 전후 같고
+등록정보·이미지 write API는 호출하지 않았다. code 14가 `PUBLISHED`되기 전까지 `public/app-version.json`은 계속
+minimum/latest 1.4.0이다. 상세 정본은 `docs/store/play-console-submission-v1.4.2.md`다.
+
 **아이 홈 혜니 짧은 입체 도약·razr 보존 설치·Pages 배포(2026-08-25)**:
 TK의 최종 지시대로 실시간 3D 모델·영상 파이프라인으로 확장하지 않고 기존 투명 WebP 18종 캐릭터를 그대로
 발전시켰다. 아이 홈에서 혜니가 자리를 옮길 때만 기존 `excited` 포즈가 1.5초 동안 perspective 깊이, 세 번의 작은

@@ -37,7 +37,7 @@ test("설치 앱과 PWA는 정식 이름을 계속 사용한다", () => {
   assert.match(html, new RegExp(`<title>${appName.replace("&", "&amp;")}</title>`));
 });
 
-test("1.4.2 Play 문서는 혜니 도약과 심사 대체 경계를 정확히 기록한다", () => {
+test("1.4.2 Play 문서는 혜니 도약과 code 14 심사 제출 증거를 정확히 기록한다", () => {
   const listing = read("docs/store/play-listing.md");
   const releaseNotes = read("docs/store/play-release-notes-v1.4.2.md");
   const submission = read("docs/store/play-console-submission-v1.4.2.md");
@@ -50,7 +50,15 @@ test("1.4.2 Play 문서는 혜니 도약과 심사 대체 경계를 정확히 �
   assert.match(releaseNotes, /SOS 동선은 그대로 유지/);
   assert.match(submission, /versionName 1\.4\.2/);
   assert.match(submission, /versionCode 14/);
-  assert.match(submission, /code 13[^\n]*RELEASE_LIFECYCLE_STATE_IN_REVIEW/);
+  assert.match(submission, /현재 판정: \*\*Play production code 14 심사 제출 완료\*\*/);
+  assert.match(submission, /hyeni-calendar-v1\.4\.2-vc14-01a29f6\.aab/);
+  assert.match(submission, /13,013,338 bytes/);
+  assert.match(submission, /8d2388eb38e29640a6f05dec1db6a6db86fc32c71b756a1edcb1301ca08b2607/);
+  assert.match(submission, /code 14[^\n]*RELEASE_LIFECYCLE_STATE_IN_REVIEW/);
+  assert.match(submission, /code 13[^\n]*제거/);
+  assert.match(submission, /code 6[^\n]*RELEASE_LIFECYCLE_STATE_PUBLISHED/);
+  assert.match(submission, /d0c0824da0c55530dbd681af08765e69d8b34aa6f04d24aec074558f3c4b9dc9/);
+  assert.match(submission, /651ef7874b929ad9062517a7a5c1605a98da8b9d04107b02f3aab4f85bdfede1/);
   assert.match(submission, /D1[^\n]*migration[^\n]*실행하지 않는다/);
   assert.match(submission, /public\/app-version\.json[^\n]*1\.4\.0/);
 });
