@@ -1,3 +1,7 @@
+import type { IntlShape } from "react-intl";
+import type { MessageId } from "../i18n/generated/messageIds.ts";
+import { withDefaultIntl } from "../i18n/defaultIntl.ts";
+
 /**
  * 스티커북 — 칭찬 스티커 12칸 도감.
  *
@@ -151,25 +155,40 @@ export function stickerWhenLabel(
   nowMs: number,
   locale: SupportedLocale,
   timeZone: string,
+  providedIntl?: IntlShape,
 ): string {
+  const intl = withDefaultIntl(providedIntl);
   if (earnedAtMs == null) return "";
   const days = Math.max(0, calendarDayDifferenceInTimeZone(
     new Date(earnedAtMs),
     new Date(nowMs),
     timeZone,
   ));
-  if (days <= 0) return "오늘 받았어";
-  if (days === 1) return "어제 받았어";
-  if (days < 7) return `${formatRelativeTime(-days, "day", locale)}에 받았어`;
-  if (days < 14) return "지난주에 받았어";
-  return `${formatRelativeTime(-Math.floor(days / 7), "week", locale)}에 받았어`;
+  if (days <= 0) return intl.formatMessage({ id: "child.sticker.detail.receivedToday" as MessageId });
+  if (days === 1) return intl.formatMessage({ id: "child.sticker.detail.receivedYesterday" as MessageId });
+  if (days < 7) {
+    return intl.formatMessage(
+      { id: "child.sticker.detail.receivedRelative" as MessageId },
+      { when: formatRelativeTime(-days, "day", locale) },
+    );
+  }
+  if (days < 14) return intl.formatMessage({ id: "child.sticker.detail.receivedLastWeek" as MessageId });
+  return intl.formatMessage(
+    { id: "child.sticker.detail.receivedRelative" as MessageId },
+    { when: formatRelativeTime(-Math.floor(days / 7), "week", locale) },
+  );
 }
 
 /** 스티커 종류 → 확실히 아는 사실만. 보낸 사람 이름·메시지는 서버에 없으므로 지어내지 않는다. */
-export function stickerOriginText(type: string | null): string {
-  if (type === "early" || type === "on_time") return "일찍 도착해서 받은 스티커야 ⏰";
-  if (type === "praise") return "부모님이 보내준 칭찬이야 💝";
-  return "칭찬으로 받은 스티커야 ✨";
+export function stickerOriginText(type: string | null, providedIntl?: IntlShape): string {
+  const intl = withDefaultIntl(providedIntl);
+  if (type === "early" || type === "on_time") {
+    return intl.formatMessage({ id: "child.sticker.detail.originEarly" as MessageId });
+  }
+  if (type === "praise") {
+    return intl.formatMessage({ id: "child.sticker.detail.originPraise" as MessageId });
+  }
+  return intl.formatMessage({ id: "child.sticker.detail.originDefault" as MessageId });
 }
 
 const SEEN_KEY = "hyeni-sticker-seen-v1";

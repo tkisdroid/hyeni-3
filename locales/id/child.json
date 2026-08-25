@@ -401,5 +401,14 @@
   "child.aiBuddy.emotion.caring": "Wajah peduli dan menenangkan",
   "child.aiBuddy.emotion.sad": "Wajah minta maaf",
   "child.aiBuddy.emotion.sleepy": "Wajah mengantuk",
-  "child.aiBuddy.emotion.cheer": "Wajah menyemangati"
+  "child.aiBuddy.emotion.cheer": "Wajah menyemangati",
+  "child.sticker.detail.receivedToday": "Dapat hari ini",
+  "child.sticker.detail.receivedYesterday": "Dapat kemarin",
+  "child.sticker.detail.receivedRelative": "Dapat {when}",
+  "child.sticker.detail.receivedLastWeek": "Dapat pekan lalu",
+  "child.sticker.detail.originEarly": "Stiker ini karena kamu tiba lebih awal ⏰",
+  "child.sticker.detail.originPraise": "Ini pujian dari orang tuamu 💝",
+  "child.sticker.detail.originDefault": "Stiker ini kamu dapat sebagai pujian ✨",
+  "child.home.parentNote.photo": "Mengirim foto",
+  "child.home.parentNote.location": "Mengirim lokasi"
 }

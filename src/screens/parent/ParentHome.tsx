@@ -870,7 +870,7 @@ export function ParentHome() {
           deviceLabel: kid.device_label,
           manufacturer: kid.device_health?.manufacturer,
           model: kid.device_health?.model,
-        }),
+        }, intl),
         place: kidLoc ? eventPlace ?? locationLabel(kidLoc) : kidLocationCopy.badge,
         fresh: kidLocationCopy.detail,
         scheduleLabel: next?.tag === "진행 중" ? intl.formatMessage({ id: "parent.parentHome.copy005" }) : intl.formatMessage({ id: "parent.parentHome.copy006" }),

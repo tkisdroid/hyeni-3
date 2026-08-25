@@ -1,3 +1,6 @@
+import type { IntlShape } from "react-intl";
+import type { MessageId } from "../i18n/generated/messageIds.ts";
+import { withDefaultIntl } from "../i18n/defaultIntl.ts";
 /**
  * 아이 홈에서 쓰는 작은 순수 계산들 — AI 남은 횟수, 길찾기 목적지, 안읽은 부모 메시지 수.
  * 컴포넌트에서 분리해 테스트로 고정한다(가짜 수치가 끼어들 자리를 없앤다).
@@ -91,15 +94,21 @@ export function unreadParentMemoCount(
 export function latestParentMemoText(
   replies: readonly MemoReplyLike[] | undefined,
   maxLength = 22,
+  providedIntl?: IntlShape,
 ): string | null {
+  const intl = withDefaultIntl(providedIntl);
   if (!replies?.length) return null;
   for (let i = replies.length - 1; i >= 0; i -= 1) {
     const r = replies[i];
     const text = (r.content ?? "").trim();
     if (r.user_role !== "parent" || !text) continue;
     // 사진·위치 마커는 미리보기에서 사람이 읽을 말로 바꾼다.
-    if (/^\[\[img:/.test(text)) return "사진을 보냈어";
-    if (/^\[\[loc:/.test(text)) return "위치를 보냈어";
+    if (/^\[\[img:/.test(text)) {
+      return intl.formatMessage({ id: "child.home.parentNote.photo" as MessageId });
+    }
+    if (/^\[\[loc:/.test(text)) {
+      return intl.formatMessage({ id: "child.home.parentNote.location" as MessageId });
+    }
     return text.length > maxLength ? `${text.slice(0, maxLength)}…` : text;
   }
   return null;

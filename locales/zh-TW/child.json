@@ -401,5 +401,14 @@
   "child.aiBuddy.emotion.caring": "關心安慰的表情",
   "child.aiBuddy.emotion.sad": "抱歉的表情",
   "child.aiBuddy.emotion.sleepy": "睏倦的表情",
-  "child.aiBuddy.emotion.cheer": "加油鼓勵的表情"
+  "child.aiBuddy.emotion.cheer": "加油鼓勵的表情",
+  "child.sticker.detail.receivedToday": "今天拿到的",
+  "child.sticker.detail.receivedYesterday": "昨天拿到的",
+  "child.sticker.detail.receivedRelative": "{when}拿到的",
+  "child.sticker.detail.receivedLastWeek": "上週拿到的",
+  "child.sticker.detail.originEarly": "這是因為早到而獲得的貼紙 ⏰",
+  "child.sticker.detail.originPraise": "這是爸爸媽媽送來的表揚 💝",
+  "child.sticker.detail.originDefault": "這是作為表揚獲得的貼紙 ✨",
+  "child.home.parentNote.photo": "傳來了照片",
+  "child.home.parentNote.location": "傳來了位置"
 }

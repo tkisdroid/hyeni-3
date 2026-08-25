@@ -1058,5 +1058,8 @@
   "parent.home.subscriptionCard.meta.trialEndsToday": "Matatapos ngayon ang libreng trial",
   "parent.home.subscriptionCard.meta.trialDaysLeft": "{days, plural, one {# araw na lang ang libreng trial} other {# araw na lang ang libreng trial}}",
   "parent.home.subscriptionCard.meta.until": "Aktibo hanggang {date}",
-  "parent.home.subscriptionCard.meta.active": "Aktibo ang Premium"
+  "parent.home.subscriptionCard.meta.active": "Aktibo ang Premium",
+  "parent.socialLinks.provider.kakao": "Kakao",
+  "parent.socialLinks.provider.naver": "Naver",
+  "parent.socialLinks.provider.google": "Google"
 }

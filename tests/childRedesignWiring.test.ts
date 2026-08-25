@@ -148,7 +148,7 @@ test("스티커북은 12칸 도감 + NEW 배지이고, 상세는 서버가 아�
   assert.match(stickerBook, /slot\.isNew && <span className="sb-slot__new">NEW<\/span>/);
   assert.match(stickerBook, /부모님 칭찬을 받으면 열려/); // 잠금 탭 → 토스트
   assert.match(stickerBook, /writeSeenSticker/); // 열어보면 NEW 해제
-  assert.match(stickerDetail, /stickerOriginText\(slot\.latestType\)/);
+  assert.match(stickerDetail, /stickerOriginText\(slot\.latestType, intl\)/);
   assert.ok(!code(stickerDetail).includes("엄마가"), "보낸 사람 이름은 서버에 없다 — 지어내지 않는다");
 });
 

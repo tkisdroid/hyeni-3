@@ -281,7 +281,7 @@ export function ChildHome() {
     if (upsert.isPending) return;
     const itemCount = kind === "hw" ? homeworkItemCount : prepItemCount;
     if (itemCount >= MAX_SUPPLY_ITEMS_PER_KIND) {
-      show(dailySupplyLimitMessage(kind, true), "🎒");
+      show(dailySupplyLimitMessage(kind, true, intl), "🎒");
       return;
     }
     setPendingSupplyAdd(kind);
@@ -296,7 +296,7 @@ export function ChildHome() {
       {
         onError: (error) => show(
           isDailySupplyLimitError(error)
-            ? dailySupplyLimitMessage(kind, true)
+            ? dailySupplyLimitMessage(kind, true, intl)
             : intl.formatMessage({ id: "child.home.supply.addFailed" }),
           isDailySupplyLimitError(error) ? "🎒" : "⚠️",
         ),
@@ -338,7 +338,7 @@ export function ChildHome() {
   const memoThread = useMemoThread(memoDateKeys, myMember?.id ?? null);
   const sendMemo = useSendMemo();
   const [pendingQuickStatus, setPendingQuickStatus] = useState<QuickStatusActionId | null>(null);
-  const parentNote = latestParentMemoText(memoThread.data);
+  const parentNote = latestParentMemoText(memoThread.data, undefined, intl);
   const unreadCount = unreadParentMemoCount(memoThread.data, userId);
 
   const sendQuickStatus = (actionId: QuickStatusActionId, source: "quick-grid" | "route" = "quick-grid") => {

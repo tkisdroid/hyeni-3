@@ -800,5 +800,14 @@
   "shared.locationPermission.action.checking.child": "권한 확인 중…",
   "shared.locationPermission.action.checking.formal": "권한 확인 중…",
   "shared.locationPermission.action.opening.child": "설정 확인 중…",
-  "shared.locationPermission.action.opening.formal": "설정 확인 중…"
+  "shared.locationPermission.action.opening.formal": "설정 확인 중…",
+  "shared.memo.day.today": "오늘 · {weekday}",
+  "shared.memo.day.yesterday": "어제 · {weekday}",
+  "shared.memo.content.photo": "📷 사진",
+  "shared.memo.content.sharedLocation": "공유한 위치",
+  "shared.device.manufacturer.samsung": "삼성 {model}",
+  "shared.supply.limit.prep.child": "준비물은 하루 {max}개까지 등록할 수 있어",
+  "shared.supply.limit.prep.formal": "준비물은 하루 {max}개까지 등록할 수 있어요",
+  "shared.supply.limit.hw.child": "숙제는 하루 {max}개까지 등록할 수 있어",
+  "shared.supply.limit.hw.formal": "숙제는 하루 {max}개까지 등록할 수 있어요"
 }

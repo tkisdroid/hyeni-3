@@ -90,7 +90,7 @@ export function mapFamilyToView(members: FamilyMember[], currentUserId: string |
       deviceLabel: m.device_label,
       manufacturer: m.device_health?.manufacturer,
       model: m.device_health?.model,
-    }),
+    }, intl),
     userId: m.user_id || null,
   }));
 

@@ -800,5 +800,14 @@
   "shared.locationPermission.action.checking.child": "Sinusuri ang mga pahintulot...",
   "shared.locationPermission.action.checking.formal": "Sinusuri ang mga pahintulot…",
   "shared.locationPermission.action.opening.child": "Sinusuri ang mga setting...",
-  "shared.locationPermission.action.opening.formal": "Sinusuri ang mga setting…"
+  "shared.locationPermission.action.opening.formal": "Sinusuri ang mga setting…",
+  "shared.memo.day.today": "Ngayon · {weekday}",
+  "shared.memo.day.yesterday": "Kahapon · {weekday}",
+  "shared.memo.content.photo": "📷 Larawan",
+  "shared.memo.content.sharedLocation": "Ibinahaging lokasyon",
+  "shared.device.manufacturer.samsung": "Samsung {model}",
+  "shared.supply.limit.prep.child": "Hanggang {max} gamit lang kada araw",
+  "shared.supply.limit.prep.formal": "Maaari kang magdagdag ng hanggang {max} gamit kada araw",
+  "shared.supply.limit.hw.child": "Hanggang {max} homework lang kada araw",
+  "shared.supply.limit.hw.formal": "Maaari kang magdagdag ng hanggang {max} homework kada araw"
 }

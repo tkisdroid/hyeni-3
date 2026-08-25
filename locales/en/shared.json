@@ -800,5 +800,14 @@
   "shared.locationPermission.action.checking.child": "Checking permissions…",
   "shared.locationPermission.action.checking.formal": "Checking permissions…",
   "shared.locationPermission.action.opening.child": "Checking settings…",
-  "shared.locationPermission.action.opening.formal": "Checking settings…"
+  "shared.locationPermission.action.opening.formal": "Checking settings…",
+  "shared.memo.day.today": "Today · {weekday}",
+  "shared.memo.day.yesterday": "Yesterday · {weekday}",
+  "shared.memo.content.photo": "📷 Photo",
+  "shared.memo.content.sharedLocation": "Shared location",
+  "shared.device.manufacturer.samsung": "Samsung {model}",
+  "shared.supply.limit.prep.child": "You can add up to {max} supplies a day",
+  "shared.supply.limit.prep.formal": "You can add up to {max} supplies per day",
+  "shared.supply.limit.hw.child": "You can add up to {max} homework items a day",
+  "shared.supply.limit.hw.formal": "You can add up to {max} homework items per day"
 }

@@ -800,5 +800,14 @@
   "shared.locationPermission.action.checking.child": "Menyemak kebenaran…",
   "shared.locationPermission.action.checking.formal": "Menyemak kebenaran…",
   "shared.locationPermission.action.opening.child": "Menyemak tetapan…",
-  "shared.locationPermission.action.opening.formal": "Menyemak tetapan…"
+  "shared.locationPermission.action.opening.formal": "Menyemak tetapan…",
+  "shared.memo.day.today": "Hari ini · {weekday}",
+  "shared.memo.day.yesterday": "Semalam · {weekday}",
+  "shared.memo.content.photo": "📷 Foto",
+  "shared.memo.content.sharedLocation": "Lokasi yang dikongsi",
+  "shared.device.manufacturer.samsung": "Samsung {model}",
+  "shared.supply.limit.prep.child": "Sehari boleh tambah maksimum {max} barang",
+  "shared.supply.limit.prep.formal": "Anda boleh menambah maksimum {max} barang sehari",
+  "shared.supply.limit.hw.child": "Sehari boleh tambah maksimum {max} kerja rumah",
+  "shared.supply.limit.hw.formal": "Anda boleh menambah maksimum {max} kerja rumah sehari"
 }

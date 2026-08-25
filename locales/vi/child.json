@@ -401,5 +401,14 @@
   "child.aiBuddy.emotion.caring": "Vẻ mặt lo lắng, an ủi",
   "child.aiBuddy.emotion.sad": "Vẻ mặt xin lỗi",
   "child.aiBuddy.emotion.sleepy": "Vẻ mặt buồn ngủ",
-  "child.aiBuddy.emotion.cheer": "Vẻ mặt cổ vũ"
+  "child.aiBuddy.emotion.cheer": "Vẻ mặt cổ vũ",
+  "child.sticker.detail.receivedToday": "Nhận hôm nay",
+  "child.sticker.detail.receivedYesterday": "Nhận hôm qua",
+  "child.sticker.detail.receivedRelative": "Nhận {when}",
+  "child.sticker.detail.receivedLastWeek": "Nhận tuần trước",
+  "child.sticker.detail.originEarly": "Nhãn dán này vì bạn đến sớm ⏰",
+  "child.sticker.detail.originPraise": "Đây là lời khen từ bố mẹ 💝",
+  "child.sticker.detail.originDefault": "Nhãn dán này là lời khen ✨",
+  "child.home.parentNote.photo": "Đã gửi một ảnh",
+  "child.home.parentNote.location": "Đã gửi một vị trí"
 }

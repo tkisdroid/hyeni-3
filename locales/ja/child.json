@@ -401,5 +401,14 @@
   "child.aiBuddy.emotion.caring": "心配して励ます顔",
   "child.aiBuddy.emotion.sad": "ごめんねという顔",
   "child.aiBuddy.emotion.sleepy": "眠そうな顔",
-  "child.aiBuddy.emotion.cheer": "応援している顔"
+  "child.aiBuddy.emotion.cheer": "応援している顔",
+  "child.sticker.detail.receivedToday": "今日もらったよ",
+  "child.sticker.detail.receivedYesterday": "きのうもらったよ",
+  "child.sticker.detail.receivedRelative": "{when}にもらったよ",
+  "child.sticker.detail.receivedLastWeek": "先週もらったよ",
+  "child.sticker.detail.originEarly": "早く着いたからもらえたシールだよ ⏰",
+  "child.sticker.detail.originPraise": "保護者からのほめほめだよ 💝",
+  "child.sticker.detail.originDefault": "ほめられてもらえたシールだよ ✨",
+  "child.home.parentNote.photo": "写真を送ってくれたよ",
+  "child.home.parentNote.location": "位置を送ってくれたよ"
 }

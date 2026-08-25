@@ -401,5 +401,14 @@
   "child.aiBuddy.emotion.caring": "Mukhang nag-aalala at nakakapanatag",
   "child.aiBuddy.emotion.sad": "Mukhang nagsosorry",
   "child.aiBuddy.emotion.sleepy": "Mukhang inaantok",
-  "child.aiBuddy.emotion.cheer": "Mukhang nagche-cheer"
+  "child.aiBuddy.emotion.cheer": "Mukhang nagche-cheer",
+  "child.sticker.detail.receivedToday": "Nakuha ngayon",
+  "child.sticker.detail.receivedYesterday": "Nakuha kahapon",
+  "child.sticker.detail.receivedRelative": "Nakuha {when}",
+  "child.sticker.detail.receivedLastWeek": "Nakuha noong nakaraang linggo",
+  "child.sticker.detail.originEarly": "Nakuha mo ito dahil mabilis kang nakarating ⏰",
+  "child.sticker.detail.originPraise": "Papuri ito mula sa magulang mo 💝",
+  "child.sticker.detail.originDefault": "Nakuha mo ang sticker na ito bilang papuri ✨",
+  "child.home.parentNote.photo": "Nagpadala ng larawan",
+  "child.home.parentNote.location": "Nagpadala ng lokasyon"
 }

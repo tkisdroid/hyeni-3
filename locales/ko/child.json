@@ -401,5 +401,14 @@
   "child.aiBuddy.emotion.caring": "걱정하며 다독이는 표정",
   "child.aiBuddy.emotion.sad": "미안해하는 표정",
   "child.aiBuddy.emotion.sleepy": "졸린 표정",
-  "child.aiBuddy.emotion.cheer": "응원하는 표정"
+  "child.aiBuddy.emotion.cheer": "응원하는 표정",
+  "child.sticker.detail.receivedToday": "오늘 받았어",
+  "child.sticker.detail.receivedYesterday": "어제 받았어",
+  "child.sticker.detail.receivedRelative": "{when}에 받았어",
+  "child.sticker.detail.receivedLastWeek": "지난주에 받았어",
+  "child.sticker.detail.originEarly": "일찍 도착해서 받은 스티커야 ⏰",
+  "child.sticker.detail.originPraise": "부모님이 보내준 칭찬이야 💝",
+  "child.sticker.detail.originDefault": "칭찬으로 받은 스티커야 ✨",
+  "child.home.parentNote.photo": "사진을 보냈어",
+  "child.home.parentNote.location": "위치를 보냈어"
 }

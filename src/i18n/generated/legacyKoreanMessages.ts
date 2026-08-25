@@ -1,10 +1,19 @@
 const messages = {
+  "child.home.parentNote.location": "위치를 보냈어",
+  "child.home.parentNote.photo": "사진을 보냈어",
   "child.playdate.notice.dangerZone": "지금 있는 곳에선 친구를 찾을 수 없어.",
   "child.playdate.notice.disabled": "지금은 친구놀이가 꺼져 있어. 부모님한테 켜 달라고 하자!",
   "child.playdate.notice.empty": "근처에 놀 수 있는 친구가 아직 없어. 조금 있다 다시 볼까?",
   "child.playdate.notice.forbidden": "지금은 친구를 찾을 수 없어.",
   "child.playdate.notice.loadFailed": "친구 목록을 불러오지 못했어. 다시 해 볼래?",
   "child.playdate.notice.noLocation": "아직 네 위치를 못 찾았어. 잠깐 있다가 다시 해 볼까?",
+  "child.sticker.detail.originDefault": "칭찬으로 받은 스티커야 ✨",
+  "child.sticker.detail.originEarly": "일찍 도착해서 받은 스티커야 ⏰",
+  "child.sticker.detail.originPraise": "부모님이 보내준 칭찬이야 💝",
+  "child.sticker.detail.receivedLastWeek": "지난주에 받았어",
+  "child.sticker.detail.receivedRelative": "{when}에 받았어",
+  "child.sticker.detail.receivedToday": "오늘 받았어",
+  "child.sticker.detail.receivedYesterday": "어제 받았어",
   "notifications.fallback.title": "알림",
   "notifications.group.earlier": "이전",
   "notifications.group.today": "오늘",
@@ -216,6 +225,9 @@ const messages = {
   "shared.adventure.now": "지금 {title} 갈 시간이야! 🏃",
   "shared.adventure.soon.final": "{relativeTime} {title}이야!\n나랑 같이 가자 🎒",
   "shared.adventure.soon.vowel": "{relativeTime} {title}야!\n나랑 같이 가자 🎒",
+  "shared.device.manufacturer.samsung": "삼성 {model}",
+  "shared.memo.content.photo": "📷 사진",
+  "shared.memo.content.sharedLocation": "공유한 위치",
   "shared.memo.copy.empty.child": "아직 나눈 대화가 없어. 먼저 인사해 볼까? 💌",
   "shared.memo.copy.empty.formal": "아직 나눈 대화가 없어요. 먼저 인사를 건네 보세요 💌",
   "shared.memo.copy.emptyDraft.child": "메시지를 써 줘",
@@ -238,6 +250,8 @@ const messages = {
   "shared.memo.copy.noConversation.formal": "새 대화를 시작해요",
   "shared.memo.copy.sendFailed.child": "보내지 못했어. 잠시 후 다시 해 줘",
   "shared.memo.copy.sendFailed.formal": "메시지 전송에 실패했어요",
+  "shared.memo.day.today": "오늘 · {weekday}",
+  "shared.memo.day.yesterday": "어제 · {weekday}",
   "shared.memo.quick.child.1": "언제 와?",
   "shared.memo.quick.child.2": "숙제 다 했어",
   "shared.memo.quick.child.3": "지금 가고 있어",
@@ -247,7 +261,11 @@ const messages = {
   "shared.memo.quick.parent.2": "숙제는 했어?",
   "shared.memo.quick.parent.3": "몇 시에 끝나?",
   "shared.memo.quick.parent.4": "조심히 와 💛",
-  "shared.memo.quick.parent.5": "간식 챙겼어?"
+  "shared.memo.quick.parent.5": "간식 챙겼어?",
+  "shared.supply.limit.hw.child": "숙제는 하루 {max}개까지 등록할 수 있어",
+  "shared.supply.limit.hw.formal": "숙제는 하루 {max}개까지 등록할 수 있어요",
+  "shared.supply.limit.prep.child": "준비물은 하루 {max}개까지 등록할 수 있어",
+  "shared.supply.limit.prep.formal": "준비물은 하루 {max}개까지 등록할 수 있어요"
 } as const;
 
 export default messages;

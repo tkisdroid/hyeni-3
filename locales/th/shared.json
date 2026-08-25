@@ -800,5 +800,14 @@
   "shared.locationPermission.action.checking.child": "กำลังตรวจสอบสิทธิ์...",
   "shared.locationPermission.action.checking.formal": "กำลังตรวจสอบสิทธิ์…",
   "shared.locationPermission.action.opening.child": "กำลังตรวจสอบการตั้งค่า...",
-  "shared.locationPermission.action.opening.formal": "กำลังตรวจสอบการตั้งค่า…"
+  "shared.locationPermission.action.opening.formal": "กำลังตรวจสอบการตั้งค่า…",
+  "shared.memo.day.today": "วันนี้ · {weekday}",
+  "shared.memo.day.yesterday": "เมื่อวาน · {weekday}",
+  "shared.memo.content.photo": "📷 รูปภาพ",
+  "shared.memo.content.sharedLocation": "ตำแหน่งที่แชร์",
+  "shared.device.manufacturer.samsung": "Samsung {model}",
+  "shared.supply.limit.prep.child": "เพิ่มของที่ต้องเตรียมได้วันละไม่เกิน {max} อย่าง",
+  "shared.supply.limit.prep.formal": "เพิ่มของที่ต้องเตรียมได้วันละไม่เกิน {max} รายการ",
+  "shared.supply.limit.hw.child": "เพิ่มการบ้านได้วันละไม่เกิน {max} อย่าง",
+  "shared.supply.limit.hw.formal": "เพิ่มการบ้านได้วันละไม่เกิน {max} รายการ"
 }

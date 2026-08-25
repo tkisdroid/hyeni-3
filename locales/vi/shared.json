@@ -800,5 +800,14 @@
   "shared.locationPermission.action.checking.child": "Đang kiểm tra quyền…",
   "shared.locationPermission.action.checking.formal": "Đang kiểm tra quyền…",
   "shared.locationPermission.action.opening.child": "Đang kiểm tra cài đặt…",
-  "shared.locationPermission.action.opening.formal": "Đang kiểm tra cài đặt…"
+  "shared.locationPermission.action.opening.formal": "Đang kiểm tra cài đặt…",
+  "shared.memo.day.today": "Hôm nay · {weekday}",
+  "shared.memo.day.yesterday": "Hôm qua · {weekday}",
+  "shared.memo.content.photo": "📷 Ảnh",
+  "shared.memo.content.sharedLocation": "Vị trí đã chia sẻ",
+  "shared.device.manufacturer.samsung": "Samsung {model}",
+  "shared.supply.limit.prep.child": "Mỗi ngày thêm được tối đa {max} món đồ",
+  "shared.supply.limit.prep.formal": "Mỗi ngày có thể thêm tối đa {max} món đồ",
+  "shared.supply.limit.hw.child": "Mỗi ngày thêm được tối đa {max} bài tập",
+  "shared.supply.limit.hw.formal": "Mỗi ngày có thể thêm tối đa {max} bài tập"
 }

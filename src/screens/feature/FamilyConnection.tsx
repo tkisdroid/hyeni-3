@@ -245,7 +245,7 @@ export function FamilyConnection() {
                             deviceLabel: c.device_label,
                             manufacturer: c.device_health?.manufacturer,
                             model: c.device_health?.model,
-                          }) || intl.formatMessage({ id: "parent.familyConnection.deviceFallback" })}
+                          }, intl) || intl.formatMessage({ id: "parent.familyConnection.deviceFallback" })}
                         </span>
                       </span>
                       <span className={`fc-chip fc-chip--${st.tone}`}>

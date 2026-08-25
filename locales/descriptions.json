@@ -24902,5 +24902,168 @@
       "title": "일정 제목"
     },
     "description": "시각을 모를 때 다음 일정만 알려 주는 짧은 한 마디"
+  },
+  "child.sticker.detail.receivedToday": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "스티커를 오늘 받았다는 표현"
+  },
+  "child.sticker.detail.receivedYesterday": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "스티커를 어제 받았다는 표현"
+  },
+  "child.sticker.detail.receivedRelative": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "when": "상대 시간 표현(예: 3일 전)"
+    },
+    "description": "스티커를 며칠·몇 주 전에 받았다는 상대 표현"
+  },
+  "child.sticker.detail.receivedLastWeek": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "스티커를 지난주에 받았다는 표현"
+  },
+  "child.sticker.detail.originEarly": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "일찍 도착해서 받은 스티커라는 설명(서버에 보낸 사람·메시지가 없어 아는 사실만 말한다)"
+  },
+  "child.sticker.detail.originPraise": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "부모가 보낸 칭찬 스티커라는 설명"
+  },
+  "child.sticker.detail.originDefault": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "종류를 모를 때 쓰는 스티커 설명(지어내지 않는다)"
+  },
+  "child.home.parentNote.photo": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "부모가 사진만 보냈을 때의 홈 타일 미리보기"
+  },
+  "child.home.parentNote.location": {
+    "namespace": "child",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "부모가 위치만 보냈을 때의 홈 타일 미리보기"
+  },
+  "shared.memo.day.today": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {
+      "weekday": "요일 이름"
+    },
+    "description": "대화 날짜 구분선의 오늘 표기"
+  },
+  "shared.memo.day.yesterday": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {
+      "weekday": "요일 이름"
+    },
+    "description": "대화 날짜 구분선의 어제 표기"
+  },
+  "shared.memo.content.photo": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "사진 메시지의 목록 표기"
+  },
+  "shared.memo.content.sharedLocation": {
+    "namespace": "shared",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "주소가 없는 위치 공유 메시지의 표기"
+  },
+  "shared.device.manufacturer.samsung": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "model": "기기 모델 번호"
+    },
+    "description": "SM- 모델 번호 앞에 붙이는 삼성 제조사 표기"
+  },
+  "shared.supply.limit.prep.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "max": "하루 상한 개수"
+    },
+    "description": "하루에 등록할 수 있는 준비물 개수 상한(아이 반말)"
+  },
+  "shared.supply.limit.prep.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "max": "하루 상한 개수"
+    },
+    "description": "하루에 등록할 수 있는 준비물 개수 상한(보호자 존댓말)"
+  },
+  "shared.supply.limit.hw.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "max": "하루 상한 개수"
+    },
+    "description": "하루에 등록할 수 있는 숙제 개수 상한(아이 반말)"
+  },
+  "shared.supply.limit.hw.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "max": "하루 상한 개수"
+    },
+    "description": "하루에 등록할 수 있는 숙제 개수 상한(보호자 존댓말)"
+  },
+  "parent.socialLinks.provider.kakao": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "카카오 계정 제공자 표기"
+  },
+  "parent.socialLinks.provider.naver": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "네이버 계정 제공자 표기"
+  },
+  "parent.socialLinks.provider.google": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "Google 계정 제공자 표기"
   }
 }

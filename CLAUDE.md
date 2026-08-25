@@ -915,15 +915,25 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   sink·`document.title`)를 특정한 뒤 그 값이 message API 를 거쳤는지 **모듈 경계를 넘어** 추적한다.
   실측 결과 64건 → 오탐 정밀화(`&&` 우변만, 객체 shape 속성 단위) 52건 → ChildDock·AiBuddyFab 이관 49건 →
   위치 권한 다이얼로그 28×2 이관 23건 → 웹 결제 실패 안내 16개 이관 19건 →
-  구독 카드 17개·표정 설명 8개·FAB 라벨 2개 이관 12건 → AI 친구 말풍선 26개 이관 **11건**
-  (`exempt` 7 + `pending-migration` 11).
-  **`pending-migration` 은 면제가 아니라 남은 결함 목록**이며 지금 남은 덩이는 `stickerBook`·`memoView`·
-  `deviceLabel`·`PROVIDER_LABEL`·`eventSupplies`·`childHomeData`다.
+  구독 카드 17개·표정 설명 8개·FAB 라벨 2개 이관 12건 → AI 친구 말풍선 26개 이관 11건 →
+  스티커·메모 날짜·기기명·소셜 제공자·준비물 상한·부모 메시지 미리보기 21개 이관 **0건**
+  (`exempt` 6 + `pending-migration` **0**).
   ⚠️ **스캐너가 못 보는 잔여 결함이 하나 있다**: `aiBuddyNudge.nextEventNudge` 의 `fullLine` 꼬리말이
   `eventCompanionAsk`(한국어)에서 오고, 그 값은 hook 을 거쳐 흐르므로 taint 추적 밖이다. allowlist 에 남기면
   stale 로 실패해 계획 문서에 기록했다. `eventCompanionPrompt`(152)·`childBelongings`(59)는 **한국어 제목
   키워드 매칭이 본체**여서 문구 이관으로 풀리지 않고, `worker/shared/aiEventContext.js` 동기화 계약도 있어
   locale 별 키워드 설계를 정하는 별도 계획 결정이 먼저다.
+- ★**transform 에 `intl` 을 넘길 때는 `withDefaultIntl` 계약을 따른다(2026-08-25)**: `scripts/i18n/default-intl-usage.mjs`
+  가 `intl` 을 전달받는 모듈이 `src/i18n/defaultIntl.ts` 를 import 하는지 확인하고, 아니면
+  `unsupported_format_message` 로 막는다. 그래서 시그니처는 **마지막 인자에 `providedIntl?: IntlShape`** 를 두고
+  본문 첫 줄에서 `const intl = withDefaultIntl(providedIntl)` 로 받는다(기존 호출부·테스트가 그대로 통과하고,
+  intl 이 없으면 한국어 기본으로 정직하게 강등된다). ⚠️ 선택 인자를 **중간에 끼우면** `(replies, 10)` 같은 기존
+  호출이 10 을 intl 로 받는다 — 반드시 맨 뒤다. ⚠️ message id 는 **정적**이어야 한다: 템플릿(`` `a.${k}` ``)이나
+  element access(`IDS[k][t]`)로 조립하면 `unclassified_dynamic_id` 로 막히므로 조건 분기로 id 를 직접 쓴다.
+  ⚠️ 이 계약에 새로 들어오면 `node scripts/i18n/build-catalogs.mjs` 로 `legacyKoreanMessages` 를 재생성하고
+  `tests/defaultIntlFallback.test.mjs` 의 id 수·importer 수 기대값을 함께 갱신해야 한다.
+  ⚠️ 브랜드명(Google·Kakao·Naver·Samsung)처럼 의도적으로 영어와 같은 값은
+  `scripts/i18n/audit-task8-locales.mjs` 의 `identicalEnglishAllowlist` 에 근거와 함께 등록한다.
   ⚠️ 스캐너는 hook 결과에서 온 값(`attention.nudge.line` 등)은 추적하지 못한다 — 알려진 false negative 다.
   ⚠️ **이관 전에 `locales/` 에서 같은 문구를 먼저 찾아라.** 위치 권한 고지는 이전 task 가 21개 id 를 10개 언어까지
   번역해 두고 컴포넌트를 재배선하지 않아 화면은 계속 한국어였다(`validate-catalogs` 는 미사용 id 를 못 잡는다).

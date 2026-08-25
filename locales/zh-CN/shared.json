@@ -800,5 +800,14 @@
   "shared.locationPermission.action.checking.child": "正在检查权限…",
   "shared.locationPermission.action.checking.formal": "正在检查权限…",
   "shared.locationPermission.action.opening.child": "正在检查设置…",
-  "shared.locationPermission.action.opening.formal": "正在检查设置…"
+  "shared.locationPermission.action.opening.formal": "正在检查设置…",
+  "shared.memo.day.today": "今天 · {weekday}",
+  "shared.memo.day.yesterday": "昨天 · {weekday}",
+  "shared.memo.content.photo": "📷 照片",
+  "shared.memo.content.sharedLocation": "共享的位置",
+  "shared.device.manufacturer.samsung": "三星 {model}",
+  "shared.supply.limit.prep.child": "每天最多可以登记 {max} 件物品",
+  "shared.supply.limit.prep.formal": "每天最多可登记 {max} 件物品",
+  "shared.supply.limit.hw.child": "每天最多可以登记 {max} 项作业",
+  "shared.supply.limit.hw.formal": "每天最多可登记 {max} 项作业"
 }

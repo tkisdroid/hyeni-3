@@ -31,12 +31,12 @@ export function StickerDetail({ slot, nowMs, onClose }: StickerDetailProps) {
       <img className="ks-modal__img" src={asset(slot.img)} alt={slot.label} />
       <div className="ks-modal__label">{slot.label}</div>
       <div className="ks-modal__meta">
-        {stickerWhenLabel(slot.latestAt, nowMs, locale, LEGACY_FAMILY_TIME_ZONE)}
+        {stickerWhenLabel(slot.latestAt, nowMs, locale, LEGACY_FAMILY_TIME_ZONE, intl)}
         {slot.count > 1
           ? intl.formatMessage({ id: "child.stickerDetail.count" }, { count: slot.count })
           : ""}
       </div>
-      <div className="ks-modal__msg">{stickerOriginText(slot.latestType)}</div>
+      <div className="ks-modal__msg">{stickerOriginText(slot.latestType, intl)}</div>
       <button type="button" className="ks-cta hy-press" onClick={onClose}>
         {intl.formatMessage({ id: "child.stickerDetail.confirm" })}
       </button>

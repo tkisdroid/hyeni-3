@@ -26,10 +26,21 @@ import { OAUTH_LINK_EVENT } from "@/lib/native/oauthDeepLink";
 import { isNativePlatform } from "@/lib/native/plugins";
 import type { OAuthProvider } from "@/transform/oauthProvider";
 import "./SocialLinks.css";
-import { useIntl } from "react-intl";
+import { useIntl, type IntlShape } from "react-intl";
+import type { MessageId } from "@/i18n/generated/messageIds";
 import { localizeApiError } from "@/i18n/apiError";
 
-const PROVIDER_LABEL: Record<string, string> = { kakao: "카카오", google: "Google", naver: "네이버" };
+/** 제공자 이름은 locale catalog 가 정본이다(다른 언어에서 카카오·네이버가 한국어로 남지 않게). */
+const PROVIDER_LABEL_ID: Record<string, string> = {
+  kakao: "parent.socialLinks.provider.kakao",
+  google: "parent.socialLinks.provider.google",
+  naver: "parent.socialLinks.provider.naver",
+};
+
+function providerLabel(intl: IntlShape, provider: string | null | undefined): string | null {
+  const id = PROVIDER_LABEL_ID[String(provider ?? "")];
+  return id ? intl.formatMessage({ id: id as MessageId }) : null;
+}
 
 interface LinkEventDetail {
   provider?: string;
@@ -69,7 +80,8 @@ export function SocialLinks() {
         show(intl.formatMessage({ id: "core.error.api.unknown.formal" }));
         return;
       }
-      const label = PROVIDER_LABEL[detail.provider ?? ""] ?? intl.formatMessage({ id: "parent.socialLinks.copy001" });
+      const label = providerLabel(intl, detail.provider)
+        ?? intl.formatMessage({ id: "parent.socialLinks.copy001" });
       show(intl.formatMessage(
         { id: detail.already ? "parent.social.alreadyLinked" : "parent.social.linked" },
         { provider: label },
@@ -107,7 +119,7 @@ export function SocialLinks() {
       await unlinkOAuthAccount({ provider: link.provider, providerId: link.providerId });
       show(intl.formatMessage(
         { id: "parent.social.unlinked" },
-        { provider: PROVIDER_LABEL[link.provider] ?? intl.formatMessage({ id: "parent.socialLinks.copy001" }) },
+        { provider: providerLabel(intl, link.provider) ?? intl.formatMessage({ id: "parent.socialLinks.copy001" }) },
       ));
       await qc.invalidateQueries({ queryKey: qk.oauthLinks });
     } catch (error) {
@@ -153,7 +165,7 @@ export function SocialLinks() {
               <div className="pa-row">
                 <span className="sl-acct">
                   <Link2 size={15} strokeWidth={2.2} color="var(--fg-faint)" />
-                  <span className="sl-acct__name">{PROVIDER_LABEL[link.provider] ?? link.provider}</span>
+                  <span className="sl-acct__name">{providerLabel(intl, link.provider) ?? link.provider}</span>
                   <span className="sl-acct__email">{link.email || intl.formatMessage({ id: "parent.socialLinks.copy007" })}</span>
                 </span>
                 <button
@@ -181,7 +193,7 @@ export function SocialLinks() {
                 onClick={() => startLink(provider)}
               >
                 <span className="pa-row__k">
-                  {PROVIDER_LABEL[provider]} {intl.formatMessage({ id: "parent.socialLinks.copy011" })} {hasAny ? intl.formatMessage({ id: "parent.eventForm.copy058" }) : intl.formatMessage({ id: "parent.socialLinks.copy012" })}
+                  {providerLabel(intl, provider)} {intl.formatMessage({ id: "parent.socialLinks.copy011" })} {hasAny ? intl.formatMessage({ id: "parent.eventForm.copy058" }) : intl.formatMessage({ id: "parent.socialLinks.copy012" })}
                 </span>
                 <span className="pa-row__hint">
                   {!native ? intl.formatMessage({ id: "parent.socialLinks.copy013" }) : busy === provider ? intl.formatMessage({ id: "parent.socialLinks.copy014" }) : hasAny ? intl.formatMessage({ id: "parent.socialLinks.copy015" }) : intl.formatMessage({ id: "parent.socialLinks.copy016" })}

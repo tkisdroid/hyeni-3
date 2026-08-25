@@ -6,6 +6,7 @@
  * AI 친구가 꺼져 있는 가족에서는 아예 조회하지 않는다 — 열 수 없는 대화를 위한 통신은 낭비다.
  */
 import { useMemo } from "react";
+import { useIntl } from "react-intl";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/auth/AuthContext";
 import { qk } from "./keys";
@@ -33,6 +34,7 @@ const MEMO_DAYS = 2;
 export function useAiBuddyNudgeInput(enabled: boolean): AiBuddyNudgeInput {
   const { familyId, userId, status } = useAuth();
   const { locale } = useLocale();
+  const intl = useIntl();
   const { data: family } = useMyFamily();
   const myMemberId = userId
     ? family?.members.find((m) => m.role === "child" && m.user_id === userId)?.id ?? null
@@ -77,7 +79,7 @@ export function useAiBuddyNudgeInput(enabled: boolean): AiBuddyNudgeInput {
       .map((s) => s.label);
     return {
       unreadParentMessages: unreadParentMemoCount(memos, userId),
-      parentMessagePreview: latestParentMemoText(memos),
+      parentMessagePreview: latestParentMemoText(memos, undefined, intl),
       nextEventTitle: nextEvent?.title ?? null,
       nextEventTime: nextEvent?.time ?? null,
       pendingSupplies,

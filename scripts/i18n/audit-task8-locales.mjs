@@ -16,6 +16,30 @@ const ALL_NON_KOREAN_NON_ENGLISH = ["ja", "zh-CN", "zh-TW", "vi", "th", "id", "m
 export const identicalEnglishAllowlist = Object.freeze([
   ...exactAllowances(
     ALL_NON_KOREAN_NON_ENGLISH,
+    "parent.socialLinks.provider.google",
+    "Google",
+    "Google 보호 상표는 번역하지 않습니다.",
+  ),
+  ...exactAllowances(
+    ALL_NON_KOREAN_NON_ENGLISH,
+    "parent.socialLinks.provider.kakao",
+    "Kakao",
+    "Kakao 로그인 제공자의 공식 라틴 표기입니다(한국어만 카카오).",
+  ),
+  ...exactAllowances(
+    ALL_NON_KOREAN_NON_ENGLISH,
+    "parent.socialLinks.provider.naver",
+    "Naver",
+    "Naver 로그인 제공자의 공식 라틴 표기입니다(한국어만 네이버).",
+  ),
+  ...exactAllowances(
+    ["ja", "vi", "th", "id", "ms", "fil"],
+    "shared.device.manufacturer.samsung",
+    "Samsung {model}",
+    "Samsung 제조사 표기는 해당 locale 에서 라틴 상표를 그대로 씁니다(한국어 삼성·중국어 三星만 현지 표기).",
+  ),
+  ...exactAllowances(
+    ALL_NON_KOREAN_NON_ENGLISH,
     "billing.subscription.provider.googlePlay",
     "Google Play",
     "Google Play 보호 상표는 번역하지 않습니다.",

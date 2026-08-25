@@ -1058,5 +1058,8 @@
   "parent.home.subscriptionCard.meta.trialEndsToday": "無料体験は本日終了します",
   "parent.home.subscriptionCard.meta.trialDaysLeft": "無料体験は残り{days}日",
   "parent.home.subscriptionCard.meta.until": "{date}まで利用できます",
-  "parent.home.subscriptionCard.meta.active": "プレミアムをご利用中"
+  "parent.home.subscriptionCard.meta.active": "プレミアムをご利用中",
+  "parent.socialLinks.provider.kakao": "Kakao",
+  "parent.socialLinks.provider.naver": "Naver",
+  "parent.socialLinks.provider.google": "Google"
 }

@@ -1058,5 +1058,8 @@
   "parent.home.subscriptionCard.meta.trialEndsToday": "免费试用今天结束",
   "parent.home.subscriptionCard.meta.trialDaysLeft": "免费试用还剩 {days} 天",
   "parent.home.subscriptionCard.meta.until": "可使用至 {date}",
-  "parent.home.subscriptionCard.meta.active": "高级版使用中"
+  "parent.home.subscriptionCard.meta.active": "高级版使用中",
+  "parent.socialLinks.provider.kakao": "Kakao",
+  "parent.socialLinks.provider.naver": "Naver",
+  "parent.socialLinks.provider.google": "Google"
 }

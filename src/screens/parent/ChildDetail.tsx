@@ -207,7 +207,7 @@ export function ChildDetail() {
     deviceLabel: rawChild.device_label,
     manufacturer: rawChild.device_health?.manufacturer,
     model: rawChild.device_health?.model,
-  });
+  }, intl);
   const isPrimary = familyQuery.data?.isPrimaryParent ?? false;
   const childUserId = rawChild.user_id || null;
 

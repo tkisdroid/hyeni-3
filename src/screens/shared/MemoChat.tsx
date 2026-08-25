@@ -328,9 +328,9 @@ export function MemoChat() {
   const replies = useMemo(() => thread.data ?? [], [thread.data]);
   // 빈 content(빈 문자열/공백뿐)는 빈 흰 말풍선이 되므로 스레드에서 제외한다.
   const messages = useMemo(
-    () => mapRepliesToThread(replies, userId, locale, LEGACY_FAMILY_TIME_ZONE)
+    () => mapRepliesToThread(replies, userId, locale, LEGACY_FAMILY_TIME_ZONE, intl)
       .filter((m) => m.text.trim().length > 0),
-    [locale, replies, userId],
+    [intl, locale, replies, userId],
   );
 
   // 내가 보낸 메시지 중 나 외 가족 구성원이 하나라도 읽은 것 → "읽음" 표기.
@@ -754,7 +754,7 @@ export function MemoChat() {
             <Fragment key={m.id}>
               {newDay && (
                 <div className="mc-daysep">
-                  <span>{formatMemoDayLabel(m.dayStamp, new Date(), locale, LEGACY_FAMILY_TIME_ZONE)}</span>
+                  <span>{formatMemoDayLabel(m.dayStamp, new Date(), locale, LEGACY_FAMILY_TIME_ZONE, intl)}</span>
                 </div>
               )}
               <div className={`mc-msg ${m.mine ? "mc-msg--mine" : "mc-msg--peer"}`}>

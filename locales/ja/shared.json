@@ -800,5 +800,14 @@
   "shared.locationPermission.action.checking.child": "権限確認中…",
   "shared.locationPermission.action.checking.formal": "権限を確認中…",
   "shared.locationPermission.action.opening.child": "設定確認中…",
-  "shared.locationPermission.action.opening.formal": "設定を確認中…"
+  "shared.locationPermission.action.opening.formal": "設定を確認中…",
+  "shared.memo.day.today": "今日 · {weekday}",
+  "shared.memo.day.yesterday": "昨日 · {weekday}",
+  "shared.memo.content.photo": "📷 写真",
+  "shared.memo.content.sharedLocation": "共有した位置",
+  "shared.device.manufacturer.samsung": "Samsung {model}",
+  "shared.supply.limit.prep.child": "持ち物は1日{max}個まで登録できるよ",
+  "shared.supply.limit.prep.formal": "持ち物は1日{max}個まで登録できます",
+  "shared.supply.limit.hw.child": "宿題は1日{max}個まで登録できるよ",
+  "shared.supply.limit.hw.formal": "宿題は1日{max}個まで登録できます"
 }

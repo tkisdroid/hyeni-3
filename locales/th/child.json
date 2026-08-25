@@ -401,5 +401,14 @@
   "child.aiBuddy.emotion.caring": "หน้าห่วงใยและปลอบโยน",
   "child.aiBuddy.emotion.sad": "หน้าขอโทษ",
   "child.aiBuddy.emotion.sleepy": "หน้าง่วง",
-  "child.aiBuddy.emotion.cheer": "หน้าเชียร์"
+  "child.aiBuddy.emotion.cheer": "หน้าเชียร์",
+  "child.sticker.detail.receivedToday": "ได้มาวันนี้",
+  "child.sticker.detail.receivedYesterday": "ได้มาเมื่อวาน",
+  "child.sticker.detail.receivedRelative": "ได้มา{when}",
+  "child.sticker.detail.receivedLastWeek": "ได้มาสัปดาห์ที่แล้ว",
+  "child.sticker.detail.originEarly": "สติกเกอร์นี้ได้เพราะมาถึงเร็ว ⏰",
+  "child.sticker.detail.originPraise": "นี่คือคำชมจากพ่อแม่ 💝",
+  "child.sticker.detail.originDefault": "สติกเกอร์นี้ได้จากคำชม ✨",
+  "child.home.parentNote.photo": "ส่งรูปมา",
+  "child.home.parentNote.location": "ส่งตำแหน่งมา"
 }

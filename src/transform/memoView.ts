@@ -1,3 +1,6 @@
+import type { IntlShape } from "react-intl";
+import type { MessageId } from "../i18n/generated/messageIds.ts";
+import { withDefaultIntl } from "../i18n/defaultIntl.ts";
 /**
  * memo_replies → 대화 화면(MemoChat) 뷰모델 매핑(순수).
  * 도메인 데이터(content/시각/보낸이)는 실값, "내 메모 여부"는 currentUserId 로 판별.
@@ -32,16 +35,27 @@ const IMG_RE = /^\[\[img:([^\]]+)\]\]$/;
 const LOC_RE = /^\[\[loc:(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)\|([^\]]*)\]\]$/;
 
 /** content → 리치 메시지 필드. 마커가 아니면 text 그대로. */
-export function parseRichContent(content: string): Pick<ThreadMsg, "kind" | "text" | "imagePath" | "location"> {
+export function parseRichContent(
+  content: string,
+  providedIntl?: IntlShape,
+): Pick<ThreadMsg, "kind" | "text" | "imagePath" | "location"> {
+  const intl = withDefaultIntl(providedIntl);
   const raw = (content ?? "").trim();
   const img = raw.match(IMG_RE);
-  if (img) return { kind: "image", text: "📷 사진", imagePath: img[1] };
+  if (img) {
+    return {
+      kind: "image",
+      text: intl.formatMessage({ id: "shared.memo.content.photo" as MessageId }),
+      imagePath: img[1],
+    };
+  }
   const loc = raw.match(LOC_RE);
   if (loc) {
     const lat = Number(loc[1]);
     const lng = Number(loc[2]);
     if (Number.isFinite(lat) && Number.isFinite(lng)) {
-      return { kind: "location", text: loc[3] || "공유한 위치", location: { lat, lng, address: loc[3] || "" } };
+      const fallback = intl.formatMessage({ id: "shared.memo.content.sharedLocation" as MessageId });
+      return { kind: "location", text: loc[3] || fallback, location: { lat, lng, address: loc[3] || "" } };
     }
   }
   return { kind: "text", text: raw };
@@ -70,7 +84,9 @@ export function formatMemoDayLabel(
   now: Date,
   locale: SupportedLocale,
   timeZone: string,
+  providedIntl?: IntlShape,
 ): string {
+  const intl = withDefaultIntl(providedIntl);
   if (!dayStamp) return "";
   const [y, m, d] = dayStamp.split("-").map(Number);
   if (!y || !m || !d) return "";
@@ -81,8 +97,12 @@ export function formatMemoDayLabel(
   const dateUtc = Date.UTC(y, m - 1, d);
   const diffDays = Math.round((todayUtc - dateUtc) / 86_400_000);
   const weekday = formatWeekday(date, { locale, timeZone: "UTC", width: "long" });
-  if (diffDays === 0) return `오늘 · ${weekday}`;
-  if (diffDays === 1) return `어제 · ${weekday}`;
+  if (diffDays === 0) {
+    return intl.formatMessage({ id: "shared.memo.day.today" as MessageId }, { weekday });
+  }
+  if (diffDays === 1) {
+    return intl.formatMessage({ id: "shared.memo.day.yesterday" as MessageId }, { weekday });
+  }
   return formatCalendarDay(date, { locale, timeZone: "UTC", weekday: "long" });
 }
 
@@ -114,10 +134,12 @@ export function mapRepliesToThread(
   currentUserId: string | null,
   locale: SupportedLocale,
   timeZone: string,
+  providedIntl?: IntlShape,
 ): ThreadMsg[] {
+  const intl = withDefaultIntl(providedIntl);
   return [...replies].sort(compareReplies).map((r) => {
     const mine = !!currentUserId && r.user_id === currentUserId;
-    const rich = parseRichContent(r.content ?? "");
+    const rich = parseRichContent(r.content ?? "", intl);
     return {
       id: r.id,
       mine,

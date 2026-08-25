@@ -1,3 +1,5 @@
+import type { IntlShape } from "react-intl";
+import { withDefaultIntl } from "../i18n/defaultIntl.ts";
 /**
  * 일정 등록 준비물 → 가방 챙기기(daily_supplies) 병합 규칙 (순수 함수).
  *
@@ -15,9 +17,25 @@ export const MAX_SUPPLY_ITEMS_PER_KIND = 8;
 export const MAX_SUPPLY_LABEL_LEN = 20;
 export const DAILY_SUPPLY_LIMIT_ERROR = "daily_supply_limit_exceeded";
 
-export function dailySupplyLimitMessage(kind: "prep" | "hw", isChild: boolean): string {
-  const subject = kind === "hw" ? "숙제는" : "준비물은";
-  return `${subject} 하루 ${MAX_SUPPLY_ITEMS_PER_KIND}개까지 등록할 수 있어${isChild ? "" : "요"}`;
+/**
+ * 하루 상한 안내. id 는 조건 분기로 **정적**으로 쓴다 — 템플릿·element access 로 조립하면
+ * 생성물 감사(`default-intl-usage`)가 어떤 id 가 쓰이는지 알 수 없어 거부한다.
+ */
+export function dailySupplyLimitMessage(
+  kind: "prep" | "hw",
+  isChild: boolean,
+  providedIntl?: IntlShape,
+): string {
+  const intl = withDefaultIntl(providedIntl);
+  const values = { max: MAX_SUPPLY_ITEMS_PER_KIND };
+  if (kind === "hw") {
+    return isChild
+      ? intl.formatMessage({ id: "shared.supply.limit.hw.child" }, values)
+      : intl.formatMessage({ id: "shared.supply.limit.hw.formal" }, values);
+  }
+  return isChild
+    ? intl.formatMessage({ id: "shared.supply.limit.prep.child" }, values)
+    : intl.formatMessage({ id: "shared.supply.limit.prep.formal" }, values);
 }
 
 export function isDailySupplyLimitError(error: unknown): boolean {

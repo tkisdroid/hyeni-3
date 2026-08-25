@@ -799,9 +799,7 @@ npm run typecheck
 > `src/i18n/messages.ts`·`useMessage.ts` 삭제 · `descriptions.json` 고아 키 제거와 재발 방지 게이트 ·
 > `tests/userFacingLiteralScan.test.mjs`(9) · `tests/pwaLocaleMetadata.test.mjs`(11).
 >
-> **미완료(다음 작업 단위)**: allowlist 의 `pending-migration` 11건 = 스캐너가 지목한 잔여 문구
-> (`stickerBook`·`memoView`·`deviceLabel`·`PROVIDER_LABEL`·`eventSupplies`·`childHomeData`).
-> 이 항목들은 면제가 아니라 결함 기록이며 `migrateTo` 로 이관하면 항목을 지워야 한다.
+> **잔여**: 스캐너 기준 `pending-migration` 0건. 아래 `eventCompanionPrompt` 항목만 남는다(스캐너 밖).
 >
 > **2026-08-25 추가 완료(4)**: AI 친구 말풍선 26개를 `core.aiBuddy.{wander,voiceHint,homeHint,nudge}.*` 로
 > 이관했다(`core` 네임스페이스인 이유: `AiBuddyFab` 은 ChildShell 과 PushShell 양쪽에서 뜨고 PushShell 라우트
@@ -809,6 +807,20 @@ npm run typecheck
 > `buildAiBuddyNudge`·`aiBuddyHomeChatHintLine`·`resolveAiBuddyFabBubbleLine` 이 `intl` 을 받는다.
 > `AI_BUDDY_VOICE_HINT_LINE` 은 `AI_BUDDY_VOICE_HINT_ID` 로, `AI_BUDDY_INVITE_NUDGE` 는
 > `aiBuddyInviteNudge(intl)` 로 바뀌었다.
+>
+> **2026-08-25 추가 완료(5)**: 남은 6개 그룹 21개 id 를 이관해 **스캐너 기준 `pending-migration` 0건**이 됐다 —
+> 스티커 상세(`child.sticker.detail.*`), 대화 날짜 구분선·사진/위치 마커(`shared.memo.*`),
+> 기기 제조사 접두어(`shared.device.manufacturer.samsung`), 소셜 제공자 이름(`parent.socialLinks.provider.*`),
+> 준비물·숙제 하루 상한(`shared.supply.limit.*`), 부모 메시지 미리보기(`child.home.parentNote.*`).
+> allowlist 에는 `exempt` 6건(사용자 데이터·고유명·기계 계약)만 남는다.
+>
+> 이 과정에서 저장소 계약 하나를 확인했다: `intl` 을 전달받는 transform 은 `src/i18n/defaultIntl.ts` 를
+> import 해야 하고(`scripts/i18n/default-intl-usage.mjs` 감사), 시그니처는 마지막 인자에 `providedIntl?: IntlShape`
+> 를 두고 `withDefaultIntl` 로 받는다. message id 는 정적이어야 하며 템플릿·element access 조립은
+> `unclassified_dynamic_id` 로 막힌다. 이 계약에 새로 들어오면 `legacyKoreanMessages` 재생성과
+> `tests/defaultIntlFallback.test.mjs` 기대값 갱신이 함께 필요하다.
+>
+> **미완료(스캐너 밖)**: 아래 `eventCompanionPrompt` 항목이 유일한 잔여 문구 결함이다.
 >
 > ⚠️ **남은 실제 결함(스캐너가 보지 못한다)**: `aiBuddyNudge.nextEventNudge` 의 `fullLine` 꼬리말이
 > `eventCompanionAsk` 에서 오고 그 값은 아직 한국어다. 이 값은 hook(`useAiBuddyNudge`) 을 거쳐

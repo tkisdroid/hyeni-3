@@ -92,7 +92,7 @@ test("아이별 하루 한 종류 8개 상한은 병합과 준비물·숙제 인
     "숙제는 하루 8개까지 등록할 수 있어",
   );
   assert.match(childHome, /itemCount >= MAX_SUPPLY_ITEMS_PER_KIND/);
-  assert.match(childHome, /dailySupplyLimitMessage\(kind, true\)/);
+  assert.match(childHome, /dailySupplyLimitMessage\(kind, true, intl\)/);
   assert.match(childHome, /prepItemCount >= MAX_SUPPLY_ITEMS_PER_KIND/);
   assert.match(childHome, /homeworkItemCount >= MAX_SUPPLY_ITEMS_PER_KIND/);
 });

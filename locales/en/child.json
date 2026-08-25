@@ -401,5 +401,14 @@
   "child.aiBuddy.emotion.caring": "Concerned, comforting face",
   "child.aiBuddy.emotion.sad": "Sorry face",
   "child.aiBuddy.emotion.sleepy": "Sleepy face",
-  "child.aiBuddy.emotion.cheer": "Cheering face"
+  "child.aiBuddy.emotion.cheer": "Cheering face",
+  "child.sticker.detail.receivedToday": "Got it today",
+  "child.sticker.detail.receivedYesterday": "Got it yesterday",
+  "child.sticker.detail.receivedRelative": "Got it {when}",
+  "child.sticker.detail.receivedLastWeek": "Got it last week",
+  "child.sticker.detail.originEarly": "You got this for arriving early ⏰",
+  "child.sticker.detail.originPraise": "This is praise from your parent 💝",
+  "child.sticker.detail.originDefault": "You got this sticker as praise ✨",
+  "child.home.parentNote.photo": "Sent a photo",
+  "child.home.parentNote.location": "Sent a location"
 }

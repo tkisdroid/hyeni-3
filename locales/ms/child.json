@@ -401,5 +401,14 @@
   "child.aiBuddy.emotion.caring": "Muka prihatin dan menenangkan",
   "child.aiBuddy.emotion.sad": "Muka meminta maaf",
   "child.aiBuddy.emotion.sleepy": "Muka mengantuk",
-  "child.aiBuddy.emotion.cheer": "Muka menyemangat"
+  "child.aiBuddy.emotion.cheer": "Muka menyemangat",
+  "child.sticker.detail.receivedToday": "Dapat hari ini",
+  "child.sticker.detail.receivedYesterday": "Dapat semalam",
+  "child.sticker.detail.receivedRelative": "Dapat {when}",
+  "child.sticker.detail.receivedLastWeek": "Dapat minggu lepas",
+  "child.sticker.detail.originEarly": "Pelekat ini kerana kamu tiba awal ⏰",
+  "child.sticker.detail.originPraise": "Ini pujian daripada ibu bapa kamu 💝",
+  "child.sticker.detail.originDefault": "Pelekat ini kamu dapat sebagai pujian ✨",
+  "child.home.parentNote.photo": "Hantar foto",
+  "child.home.parentNote.location": "Hantar lokasi"
 }
