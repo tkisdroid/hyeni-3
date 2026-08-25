@@ -14,6 +14,8 @@
  */
 import type { AiBuddyChatFace } from "./aiBuddyEmotion.ts";
 import { eventCompanionAsk } from "./eventCompanionPrompt.ts";
+import type { IntlShape } from "react-intl";
+import type { MessageId } from "../i18n/generated/messageIds.ts";
 
 export type AiBuddyNudgeKind = "parentMessage" | "nextEvent" | "supplies" | "invite";
 
@@ -49,12 +51,14 @@ export const EMPTY_AI_BUDDY_NUDGE_INPUT: AiBuddyNudgeInput = {
 };
 
 /** 아이를 부르기만 하는 기본 한 마디 — 할 말이 없어도 친구는 여기 있다. */
-export const AI_BUDDY_INVITE_NUDGE: AiBuddyNudge = {
-  kind: "invite",
-  line: "나랑 얘기할래?",
-  fullLine: "꾹 누르면 나랑 바로 말할 수 있어!",
-  face: "talking",
-};
+export function aiBuddyInviteNudge(intl: IntlShape): AiBuddyNudge {
+  return {
+    kind: "invite",
+    line: intl.formatMessage({ id: "core.aiBuddy.nudge.invite.line" as MessageId }),
+    fullLine: intl.formatMessage({ id: "core.aiBuddy.nudge.invite.full" as MessageId }),
+    face: "talking",
+  };
+}
 
 function clean(value: unknown, maxLength: number): string | null {
   if (typeof value !== "string") return null;
@@ -64,7 +68,7 @@ function clean(value: unknown, maxLength: number): string | null {
 }
 
 /** "15:00" → "3시" / "15:30" → "3시 반". 형식을 모르면 null(시각을 지어내지 않는다). */
-export function aiBuddyNudgeTimeLabel(time: unknown): string | null {
+export function aiBuddyNudgeTimeLabel(time: unknown, intl: IntlShape): string | null {
   if (typeof time !== "string") return null;
   const match = /^(\d{1,2}):(\d{2})/.exec(time.trim());
   if (!match) return null;
@@ -72,39 +76,53 @@ export function aiBuddyNudgeTimeLabel(time: unknown): string | null {
   const minute = Number(match[2]);
   if (!Number.isInteger(hour24) || hour24 < 0 || hour24 > 23) return null;
   if (!Number.isInteger(minute) || minute < 0 || minute > 59) return null;
-  const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
-  if (minute === 0) return `${hour12}시`;
-  if (minute === 30) return `${hour12}시 반`;
-  return `${hour12}시 ${minute}분`;
+  const hour = hour24 % 12 === 0 ? 12 : hour24 % 12;
+  if (minute === 0) return intl.formatMessage({ id: "core.aiBuddy.nudge.time.hour" as MessageId }, { hour });
+  if (minute === 30) {
+    return intl.formatMessage({ id: "core.aiBuddy.nudge.time.halfHour" as MessageId }, { hour });
+  }
+  return intl.formatMessage(
+    { id: "core.aiBuddy.nudge.time.minute" as MessageId },
+    { hour, minute: String(minute).padStart(2, "0") },
+  );
 }
 
-function parentMessageNudge(input: AiBuddyNudgeInput): AiBuddyNudge | null {
+function parentMessageNudge(input: AiBuddyNudgeInput, intl: IntlShape): AiBuddyNudge | null {
   if (input.unreadParentMessages <= 0) return null;
   const preview = clean(input.parentMessagePreview, 24);
   return {
     kind: "parentMessage",
-    line: "부모님 메시지 왔어!",
+    line: intl.formatMessage({ id: "core.aiBuddy.nudge.parentMessage.line" as MessageId }),
     // 미리보기가 없으면 있는 척하지 않고 확인해 보자고만 한다.
-    fullLine: preview ? `부모님이 "${preview}" 라고 했어` : "부모님이 메시지를 보냈어. 같이 볼까?",
+    fullLine: preview
+      ? intl.formatMessage(
+        { id: "core.aiBuddy.nudge.parentMessage.fullWithPreview" as MessageId },
+        { preview },
+      )
+      : intl.formatMessage({ id: "core.aiBuddy.nudge.parentMessage.full" as MessageId }),
     face: "talking",
   };
 }
 
-function nextEventNudge(input: AiBuddyNudgeInput): AiBuddyNudge | null {
+function nextEventNudge(input: AiBuddyNudgeInput, intl: IntlShape): AiBuddyNudge | null {
   const title = clean(input.nextEventTitle, 12);
   if (!title) return null;
-  const when = aiBuddyNudgeTimeLabel(input.nextEventTime);
+  const when = aiBuddyNudgeTimeLabel(input.nextEventTime, intl);
   // 일정 성격에 맞는 한 마디는 인사말과 같은 표에서 고른다(친구가 화면마다 다른 말을 하지 않게).
+  // ⚠️ 이 tail 은 아직 한국어다 — `eventCompanionPrompt` 의 키워드 매칭이 한국어 제목 전용이라
+  // 문구만 옮길 수 없다(allowlist 의 pending-migration 항목이 이 결함을 기록한다).
   const tail = eventCompanionAsk(input.nextEventTitle);
   return {
     kind: "nextEvent",
-    line: when ? `${when}에 ${title}!` : `이따 ${title} 있어!`,
+    line: when
+      ? intl.formatMessage({ id: "core.aiBuddy.nudge.nextEvent.line" as MessageId }, { when, title })
+      : intl.formatMessage({ id: "core.aiBuddy.nudge.nextEvent.lineSoon" as MessageId }, { title }),
     fullLine: when ? `${when}에 ${title} 있어. ${tail}` : `오늘 ${title} 있어. ${tail}`,
     face: "idea",
   };
 }
 
-function suppliesNudge(input: AiBuddyNudgeInput): AiBuddyNudge | null {
+function suppliesNudge(input: AiBuddyNudgeInput, intl: IntlShape): AiBuddyNudge | null {
   const items = input.pendingSupplies
     .map((label) => clean(label, 10))
     .filter((label): label is string => label !== null)
@@ -112,10 +130,21 @@ function suppliesNudge(input: AiBuddyNudgeInput): AiBuddyNudge | null {
   if (!items.length) return null;
   return {
     kind: "supplies",
-    line: `${items[0]} 챙겼어?`,
+    line: intl.formatMessage({ id: "core.aiBuddy.nudge.supplies.line" as MessageId }, { item: items[0] }),
     fullLine: items.length > 1
-      ? `가방에 ${items.join("랑 ")} 넣었어?`
-      : `가방에 ${items[0]} 넣었어?`,
+      ? intl.formatMessage(
+        { id: "core.aiBuddy.nudge.supplies.fullTwo" as MessageId },
+        {
+          items: intl.formatMessage(
+            { id: "core.aiBuddy.nudge.supplies.join" as MessageId },
+            { first: items[0], second: items[1] },
+          ),
+        },
+      )
+      : intl.formatMessage(
+        { id: "core.aiBuddy.nudge.supplies.fullOne" as MessageId },
+        { item: items[0] },
+      ),
     face: "curious",
   };
 }
@@ -124,15 +153,18 @@ function suppliesNudge(input: AiBuddyNudgeInput): AiBuddyNudge | null {
  * 지금 건넬 수 있는 말 전부(우선순위 순).
  * 부모 메시지 → 다음 일정 → 준비물 → 그냥 부르기.
  */
-export function aiBuddyNudgeCandidates(input: AiBuddyNudgeInput): readonly AiBuddyNudge[] {
+export function aiBuddyNudgeCandidates(
+  input: AiBuddyNudgeInput,
+  intl: IntlShape,
+): readonly AiBuddyNudge[] {
   const out: AiBuddyNudge[] = [];
-  const parent = parentMessageNudge(input);
+  const parent = parentMessageNudge(input, intl);
   if (parent) out.push(parent);
-  const event = nextEventNudge(input);
+  const event = nextEventNudge(input, intl);
   if (event) out.push(event);
-  const supplies = suppliesNudge(input);
+  const supplies = suppliesNudge(input, intl);
   if (supplies) out.push(supplies);
-  out.push(AI_BUDDY_INVITE_NUDGE);
+  out.push(aiBuddyInviteNudge(intl));
   return out;
 }
 
@@ -141,8 +173,12 @@ export function aiBuddyNudgeCandidates(input: AiBuddyNudgeInput): readonly AiBud
  * 부모 메시지가 있으면 무조건 그것부터(놓치면 안 되는 유일한 항목).
  * 그 외에는 `rotation` 으로 돌아가며 말해 같은 말만 반복하지 않는다.
  */
-export function buildAiBuddyNudge(input: AiBuddyNudgeInput, rotation: number): AiBuddyNudge {
-  const candidates = aiBuddyNudgeCandidates(input);
+export function buildAiBuddyNudge(
+  input: AiBuddyNudgeInput,
+  rotation: number,
+  intl: IntlShape,
+): AiBuddyNudge {
+  const candidates = aiBuddyNudgeCandidates(input, intl);
   if (candidates[0].kind === "parentMessage") return candidates[0];
   const turn = Number.isFinite(rotation) ? Math.max(0, Math.floor(rotation)) : 0;
   return candidates[turn % candidates.length];

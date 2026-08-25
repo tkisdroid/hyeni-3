@@ -46,7 +46,7 @@ import {
   AI_BUDDY_WANDER_MOVING_FACE,
   AI_BUDDY_WANDER_TRAVEL_MS,
   aiBuddyWanderFace,
-  aiBuddyWanderLine,
+  aiBuddyWanderLine as aiBuddyWanderLineIntl,
   canAiBuddyWander,
   nextAiBuddyWanderRatio,
   shouldShowAiBuddyWanderLine,
@@ -57,7 +57,7 @@ import {
   markAiBuddyVoiceHintUsed,
   normalizeAiBuddyVoiceHintState,
   shouldShowAiBuddyVoiceHint,
-  AI_BUDDY_VOICE_HINT_LINE,
+  AI_BUDDY_VOICE_HINT_ID,
   AI_BUDDY_VOICE_HINT_MAX_SHOWN,
   AI_BUDDY_VOICE_HINT_MIN_GAP_MS,
   AI_BUDDY_VOICE_LONG_PRESS_MS,
@@ -79,10 +79,10 @@ import {
   EMPTY_AI_BUDDY_ATTENTION_STATE,
 } from "../src/transform/aiBuddyAttention.ts";
 import {
-  aiBuddyNudgeCandidates,
-  aiBuddyNudgeTimeLabel,
-  buildAiBuddyNudge,
-  AI_BUDDY_INVITE_NUDGE,
+  aiBuddyNudgeCandidates as aiBuddyNudgeCandidatesIntl,
+  aiBuddyNudgeTimeLabel as aiBuddyNudgeTimeLabelIntl,
+  buildAiBuddyNudge as buildAiBuddyNudgeIntl,
+  aiBuddyInviteNudge,
   EMPTY_AI_BUDDY_NUDGE_INPUT,
 } from "../src/transform/aiBuddyNudge.ts";
 import {
@@ -104,11 +104,35 @@ import {
   snapAiBuddyFabRatio,
 } from "../src/transform/aiBuddyFabPosition.ts";
 import {
-  AI_BUDDY_HOME_CHAT_HINT_LINE,
-  aiBuddyHomeChatHintLine,
-  resolveAiBuddyFabBubbleLine,
+  aiBuddyHomeChatHintLine as aiBuddyHomeChatHintLineIntl,
+  resolveAiBuddyFabBubbleLine as resolveAiBuddyFabBubbleLineIntl,
   resolveAiBuddyFabTarget,
 } from "../src/transform/aiBuddyFabPrompt.ts";
+
+const koCoreIntl = createIntl({
+  locale: "ko",
+  messages: JSON.parse(
+    readFileSync(new URL("../locales/ko/core.json", import.meta.url), "utf8"),
+  ) as Record<string, string>,
+}, createIntlCache()) as IntlShape;
+
+const aiBuddyWanderLine = (face: Parameters<typeof aiBuddyWanderLineIntl>[0]) =>
+  aiBuddyWanderLineIntl(face, koCoreIntl);
+const aiBuddyNudgeCandidates = (input: Parameters<typeof aiBuddyNudgeCandidatesIntl>[0]) =>
+  aiBuddyNudgeCandidatesIntl(input, koCoreIntl);
+const aiBuddyNudgeTimeLabel = (time: unknown) => aiBuddyNudgeTimeLabelIntl(time, koCoreIntl);
+const buildAiBuddyNudge = (
+  input: Parameters<typeof buildAiBuddyNudgeIntl>[0],
+  rotation: number,
+) => buildAiBuddyNudgeIntl(input, rotation, koCoreIntl);
+const aiBuddyHomeChatHintLine = (name?: string | null) =>
+  aiBuddyHomeChatHintLineIntl(koCoreIntl, name);
+const resolveAiBuddyFabBubbleLine = (
+  input: Parameters<typeof resolveAiBuddyFabBubbleLineIntl>[0],
+) => resolveAiBuddyFabBubbleLineIntl(input, koCoreIntl);
+const AI_BUDDY_VOICE_HINT_LINE = koCoreIntl.formatMessage({ id: AI_BUDDY_VOICE_HINT_ID });
+const AI_BUDDY_HOME_CHAT_HINT_LINE = aiBuddyHomeChatHintLine();
+const AI_BUDDY_INVITE_NUDGE = aiBuddyInviteNudge(koCoreIntl);
 
 const FRAME = { width: 390, height: 844, topInset: 64, bottomInset: 112 };
 
@@ -870,8 +894,8 @@ test("플로팅 버튼은 부모 설정과 AI 켜짐을 함께 확인하고 오�
   // AI 가 꺼진 가족에서는 말 걸 재료도 받지 않는다.
   assert.match(fab, /useAiBuddyNudgeInput\(aiEnabled && presentation\.canPrompt\)/);
   // 배회하며 건네는 말도 오늘 알아야 할 것이 있으면 그걸 먼저 말한다.
-  assert.match(fab, /buildAiBuddyNudge\(nudgeInputRef\.current, step\)/);
-  assert.match(fab, /nudge\.kind === "invite" \? aiBuddyWanderLine\(arrival\) : nudge\.line/);
+  assert.match(fab, /buildAiBuddyNudge\(nudgeInputRef\.current, step, intl\)/);
+  assert.match(fab, /nudge\.kind === "invite" \? aiBuddyWanderLine\(arrival, intl\) : nudge\.line/);
   // 부르는 중에는 배회하지 않는다(커진 얼굴이 걸어 다니면 어지럽다).
   assert.match(fab, /if \(attentionRef\.current \|\| launchingRef\.current\) return;/);
 });

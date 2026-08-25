@@ -25,8 +25,11 @@ export const AI_BUDDY_VOICE_HINT_MAX_SHOWN = 3;
 /** 같은 안내를 다시 하기까지의 최소 간격(하루). */
 export const AI_BUDDY_VOICE_HINT_MIN_GAP_MS = 20 * 60 * 60 * 1_000;
 
-/** 아이에게 보여 주는 한 마디(반말). 무엇을 하면 무엇이 되는지 한 문장으로만 말한다. */
-export const AI_BUDDY_VOICE_HINT_LINE = "꾹 누르면 바로 말할 수 있어!";
+/**
+ * 아이에게 보여 주는 한 마디(반말). 무엇을 하면 무엇이 되는지 한 문장으로만 말한다.
+ * 문구는 locale catalog 가 정본이므로 여기에는 id 만 둔다.
+ */
+export const AI_BUDDY_VOICE_HINT_ID = "core.aiBuddy.voiceHint.line";
 
 export interface AiBuddyVoiceHintState {
   /** 지금까지 알려 준 횟수. */

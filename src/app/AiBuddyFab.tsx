@@ -324,8 +324,8 @@ function AiBuddyFabButton({ bottomInset, presentation }: AiBuddyFabButtonProps) 
           return;
         }
         // 오늘 알아야 할 게 있으면 그것부터 말한다(빈말보다 쓸모가 먼저다).
-        const nudge = buildAiBuddyNudge(nudgeInputRef.current, step);
-        const line = nudge.kind === "invite" ? aiBuddyWanderLine(arrival) : nudge.line;
+        const nudge = buildAiBuddyNudge(nudgeInputRef.current, step, intl);
+        const line = nudge.kind === "invite" ? aiBuddyWanderLine(arrival, intl) : nudge.line;
         setWanderFace(nudge.kind === "invite" ? arrival : nudge.face);
         if (!line) return;
         setWanderLine(line);
@@ -377,7 +377,7 @@ function AiBuddyFabButton({ bottomInset, presentation }: AiBuddyFabButtonProps) 
       };
       if (!shouldPlayAiBuddyAttention(gate)) return;
       const stage = aiBuddyAttentionStage(attentionStateRef.current.totalShown);
-      const nudge = buildAiBuddyNudge(nudgeInputRef.current, attentionStateRef.current.totalShown);
+      const nudge = buildAiBuddyNudge(nudgeInputRef.current, attentionStateRef.current.totalShown, intl);
       const next = markAiBuddyAttentionShown(attentionStateRef.current, now);
       attentionStateRef.current = next;
       writeAiBuddyAttentionState(attentionKey, next);
@@ -641,8 +641,8 @@ function AiBuddyFabButton({ bottomInset, presentation }: AiBuddyFabButtonProps) 
     attentionLine: attention?.nudge.line ?? null,
     wanderLine,
     friendName,
-  });
-  const guidanceBubble = voiceHint || bubbleLine === aiBuddyHomeChatHintLine(friendName);
+  }, intl);
+  const guidanceBubble = voiceHint || bubbleLine === aiBuddyHomeChatHintLine(intl, friendName);
   const label = intl.formatMessage(
     { id: "core.aiBuddy.fab.label" },
     { name: friendName, emotion: aiBuddyEmotionLabel(emotion, intl) },

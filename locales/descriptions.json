@@ -24695,5 +24695,212 @@
       "line": "AI 친구가 먼저 건네는 한 마디"
     },
     "description": "AI 친구가 화면을 채워 부를 때 얼굴 버튼의 스크린리더 이름(먼저 건네는 말 + 조작 안내)"
+  },
+  "core.aiBuddy.wander.greeting": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "배회 중 인사 표정에서 건네는 한 마디"
+  },
+  "core.aiBuddy.wander.curious": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "배회 중 궁금한 표정에서 건네는 한 마디"
+  },
+  "core.aiBuddy.wander.explore": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "배회 중 탐색 표정에서 건네는 한 마디"
+  },
+  "core.aiBuddy.wander.music": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "배회 중 음악 표정에서 건네는 한 마디"
+  },
+  "core.aiBuddy.wander.idea": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "배회 중 아이디어 표정에서 건네는 한 마디"
+  },
+  "core.aiBuddy.wander.love": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "배회 중 애정 표정에서 건네는 한 마디"
+  },
+  "core.aiBuddy.wander.shy": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "배회 중 부끄러운 표정에서 건네는 한 마디"
+  },
+  "core.aiBuddy.wander.wink": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "배회 중 윙크 표정에서 건네는 한 마디"
+  },
+  "core.aiBuddy.wander.waiting": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "배회 중 대기 표정에서 건네는 한 마디"
+  },
+  "core.aiBuddy.wander.talking": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "배회 중 말하는 표정에서 건네는 한 마디"
+  },
+  "core.aiBuddy.voiceHint.line": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "플로팅 버튼을 꾹 누르면 바로 말할 수 있다고 알려 주는 안내 말풍선"
+  },
+  "core.aiBuddy.homeHint.tap": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "name": "아이가 정한 AI 친구 이름"
+    },
+    "description": "아이 홈에서 친구가 조용히 기다릴 때 보여 주는 탭 안내"
+  },
+  "core.aiBuddy.nudge.invite.line": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "할 말이 없을 때 아이를 부르는 짧은 한 마디"
+  },
+  "core.aiBuddy.nudge.invite.full": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "화면을 채워 부를 때의 초대 문장"
+  },
+  "core.aiBuddy.nudge.parentMessage.line": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "안 읽은 부모 메시지가 있을 때의 짧은 한 마디"
+  },
+  "core.aiBuddy.nudge.parentMessage.fullWithPreview": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "preview": "부모 메시지 미리보기(최대 24자)"
+    },
+    "description": "부모 메시지 미리보기를 인용해 알려 주는 문장"
+  },
+  "core.aiBuddy.nudge.parentMessage.full": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "미리보기가 없을 때 메시지를 함께 보자고만 하는 문장(있는 척하지 않는다)"
+  },
+  "core.aiBuddy.nudge.supplies.line": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "item": "준비물 이름"
+    },
+    "description": "아직 못 챙긴 준비물 하나를 짧게 확인하는 한 마디"
+  },
+  "core.aiBuddy.nudge.supplies.fullOne": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "item": "준비물 이름"
+    },
+    "description": "준비물 하나를 가방에 넣었는지 묻는 문장"
+  },
+  "core.aiBuddy.nudge.supplies.fullTwo": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "items": "준비물 두 개를 이은 문구"
+    },
+    "description": "준비물 두 개를 가방에 넣었는지 묻는 문장"
+  },
+  "core.aiBuddy.nudge.supplies.join": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "first": "첫 준비물",
+      "second": "둘째 준비물"
+    },
+    "description": "준비물 두 개를 잇는 접속 표현(가방 질문에서만 쓴다)"
+  },
+  "core.aiBuddy.nudge.time.hour": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "hour": "12시간제 시(1~12)"
+    },
+    "description": "정시 시각 표기(말풍선 전용, 지어내지 않고 아는 시각만)"
+  },
+  "core.aiBuddy.nudge.time.halfHour": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "hour": "12시간제 시(1~12)"
+    },
+    "description": "30분 시각 표기"
+  },
+  "core.aiBuddy.nudge.time.minute": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "hour": "12시간제 시(1~12)",
+      "minute": "분(0~59)"
+    },
+    "description": "분 단위 시각 표기"
+  },
+  "core.aiBuddy.nudge.nextEvent.line": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "when": "시각 표기",
+      "title": "일정 제목"
+    },
+    "description": "다음 일정을 시각과 함께 알려 주는 짧은 한 마디"
+  },
+  "core.aiBuddy.nudge.nextEvent.lineSoon": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {
+      "title": "일정 제목"
+    },
+    "description": "시각을 모를 때 다음 일정만 알려 주는 짧은 한 마디"
   }
 }

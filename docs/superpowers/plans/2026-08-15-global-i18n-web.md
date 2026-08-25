@@ -799,10 +799,28 @@ npm run typecheck
 > `src/i18n/messages.ts`·`useMessage.ts` 삭제 · `descriptions.json` 고아 키 제거와 재발 방지 게이트 ·
 > `tests/userFacingLiteralScan.test.mjs`(9) · `tests/pwaLocaleMetadata.test.mjs`(11).
 >
-> **미완료(다음 작업 단위)**: allowlist 의 `pending-migration` 12건 = catalog 밖에 남은 실제 사용자 문구.
-> 이 항목들은 면제가 아니라 결함 기록이며, 각 항목의 `migrateTo` 로 이관하면 항목을 지워야 한다
-> (남겨 두면 `stale_allowlist` 로 실패한다). 남은 덩이는 AI 친구 말풍선(voiceHint/wander/nudge)·
-> `stickerBook`·`memoView`·`deviceLabel`·`PROVIDER_LABEL`·`eventSupplies`·`childHomeData`다.
+> **미완료(다음 작업 단위)**: allowlist 의 `pending-migration` 11건 = 스캐너가 지목한 잔여 문구
+> (`stickerBook`·`memoView`·`deviceLabel`·`PROVIDER_LABEL`·`eventSupplies`·`childHomeData`).
+> 이 항목들은 면제가 아니라 결함 기록이며 `migrateTo` 로 이관하면 항목을 지워야 한다.
+>
+> **2026-08-25 추가 완료(4)**: AI 친구 말풍선 26개를 `core.aiBuddy.{wander,voiceHint,homeHint,nudge}.*` 로
+> 이관했다(`core` 네임스페이스인 이유: `AiBuddyFab` 은 ChildShell 과 PushShell 양쪽에서 뜨고 PushShell 라우트
+> 그룹에는 `child` 가 없다). `aiBuddyWanderLine`·`aiBuddyNudgeTimeLabel`·`aiBuddyNudgeCandidates`·
+> `buildAiBuddyNudge`·`aiBuddyHomeChatHintLine`·`resolveAiBuddyFabBubbleLine` 이 `intl` 을 받는다.
+> `AI_BUDDY_VOICE_HINT_LINE` 은 `AI_BUDDY_VOICE_HINT_ID` 로, `AI_BUDDY_INVITE_NUDGE` 는
+> `aiBuddyInviteNudge(intl)` 로 바뀌었다.
+>
+> ⚠️ **남은 실제 결함(스캐너가 보지 못한다)**: `aiBuddyNudge.nextEventNudge` 의 `fullLine` 꼬리말이
+> `eventCompanionAsk` 에서 오고 그 값은 아직 한국어다. 이 값은 hook(`useAiBuddyNudge`) 을 거쳐
+> `attention.nudge.fullLine` 으로 흐르므로 literal 스캐너의 taint 추적 밖이고, allowlist 에 남기면
+> `stale_allowlist` 로 실패한다 — 그래서 여기 문서에 기록한다.
+>
+> **계획 결정이 먼저 필요한 항목**: `src/transform/eventCompanionPrompt.ts`(문구 152개)와
+> `src/transform/childBelongings.ts`(59개)는 **한국어 제목 키워드 매칭이 본체**다. 일정 제목이 베트남어면
+> 표가 아무것도 맞히지 못하므로 "문구 이관"으로 해결되지 않는다. 게다가
+> `worker/shared/aiEventContext.js` 와 키워드 동기화 계약(`tests/eventCompanionPrompt.test.ts`)이 있어
+> 클라이언트만 바꿀 수도 없다. locale 별 키워드 표를 둘지, LLM 에 맡길지, 이 기능을 한국어 locale 에만
+> 노출할지를 정하는 별도 계획 항목이 필요하다.
 >
 > **2026-08-25 추가 완료(3)**: 부모 홈 구독 카드 17개(`parent.home.subscriptionCard.*`)·AI 친구 표정 설명
 > 8개(`child.aiBuddy.emotion.*`)·플로팅/전체화면 스크린리더 이름 2개(`core.aiBuddy.{fab.label,stage.faceLabel}`).

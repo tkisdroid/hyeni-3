@@ -915,9 +915,15 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   sink·`document.title`)를 특정한 뒤 그 값이 message API 를 거쳤는지 **모듈 경계를 넘어** 추적한다.
   실측 결과 64건 → 오탐 정밀화(`&&` 우변만, 객체 shape 속성 단위) 52건 → ChildDock·AiBuddyFab 이관 49건 →
   위치 권한 다이얼로그 28×2 이관 23건 → 웹 결제 실패 안내 16개 이관 19건 →
-  구독 카드 17개·표정 설명 8개·FAB 라벨 2개 이관 **12건**(`exempt` 7 + `pending-migration` 12).
-  **`pending-migration` 은 면제가 아니라 남은 결함 목록**이며 지금 남은 덩이는 AI 친구 말풍선
-  (voiceHint/wander/nudge)·`stickerBook`·`memoView`·`deviceLabel`·`PROVIDER_LABEL`·`eventSupplies`·`childHomeData`다.
+  구독 카드 17개·표정 설명 8개·FAB 라벨 2개 이관 12건 → AI 친구 말풍선 26개 이관 **11건**
+  (`exempt` 7 + `pending-migration` 11).
+  **`pending-migration` 은 면제가 아니라 남은 결함 목록**이며 지금 남은 덩이는 `stickerBook`·`memoView`·
+  `deviceLabel`·`PROVIDER_LABEL`·`eventSupplies`·`childHomeData`다.
+  ⚠️ **스캐너가 못 보는 잔여 결함이 하나 있다**: `aiBuddyNudge.nextEventNudge` 의 `fullLine` 꼬리말이
+  `eventCompanionAsk`(한국어)에서 오고, 그 값은 hook 을 거쳐 흐르므로 taint 추적 밖이다. allowlist 에 남기면
+  stale 로 실패해 계획 문서에 기록했다. `eventCompanionPrompt`(152)·`childBelongings`(59)는 **한국어 제목
+  키워드 매칭이 본체**여서 문구 이관으로 풀리지 않고, `worker/shared/aiEventContext.js` 동기화 계약도 있어
+  locale 별 키워드 설계를 정하는 별도 계획 결정이 먼저다.
   ⚠️ 스캐너는 hook 결과에서 온 값(`attention.nudge.line` 등)은 추적하지 못한다 — 알려진 false negative 다.
   ⚠️ **이관 전에 `locales/` 에서 같은 문구를 먼저 찾아라.** 위치 권한 고지는 이전 task 가 21개 id 를 10개 언어까지
   번역해 두고 컴포넌트를 재배선하지 않아 화면은 계속 한국어였다(`validate-catalogs` 는 미사용 id 를 못 잡는다).

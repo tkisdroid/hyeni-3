@@ -1,13 +1,13 @@
-import { AI_BUDDY_VOICE_HINT_LINE } from "./aiBuddyVoiceHint.ts";
+import type { IntlShape } from "react-intl";
+import type { MessageId } from "../i18n/generated/messageIds.ts";
+import { AI_BUDDY_VOICE_HINT_ID } from "./aiBuddyVoiceHint.ts";
 import { DEFAULT_AI_FRIEND_NAME } from "./aiFriendName.ts";
 
 /** 아이 홈에서 친구가 조용히 기다릴 때 보여 주는 기본 탭 안내(아이 모드 반말). */
-export function aiBuddyHomeChatHintLine(friendName?: string | null): string {
+export function aiBuddyHomeChatHintLine(intl: IntlShape, friendName?: string | null): string {
   const name = friendName?.trim() || DEFAULT_AI_FRIEND_NAME;
-  return `${name}를 눌러서 이야기해 봐!`;
+  return intl.formatMessage({ id: "core.aiBuddy.homeHint.tap" as MessageId }, { name });
 }
-
-export const AI_BUDDY_HOME_CHAT_HINT_LINE = aiBuddyHomeChatHintLine(DEFAULT_AI_FRIEND_NAME);
 
 export interface AiBuddyFabBubbleInput {
   canPrompt: boolean;
@@ -40,9 +40,12 @@ export function resolveAiBuddyFabTarget(input: {
  * 홈 말풍선 우선순위 정본.
  * 기능 안내와 지금 알아야 할 상황을 먼저 말하고, 아무 말도 없을 때만 탭 안내를 보여 준다.
  */
-export function resolveAiBuddyFabBubbleLine(input: AiBuddyFabBubbleInput): string | null {
+export function resolveAiBuddyFabBubbleLine(
+  input: AiBuddyFabBubbleInput,
+  intl: IntlShape,
+): string | null {
   if (!input.canPrompt) return null;
-  if (input.voiceHint) return AI_BUDDY_VOICE_HINT_LINE;
+  if (input.voiceHint) return intl.formatMessage({ id: AI_BUDDY_VOICE_HINT_ID as MessageId });
   if (input.attentionStage === "grow" && input.attentionLine) return input.attentionLine;
-  return input.wanderLine ?? aiBuddyHomeChatHintLine(input.friendName);
+  return input.wanderLine ?? aiBuddyHomeChatHintLine(intl, input.friendName);
 }

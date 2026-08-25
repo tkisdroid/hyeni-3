@@ -43,15 +43,6 @@
   },
 
   {
-    "path": "src/app/AiBuddyFab.tsx",
-    "pattern": "^\\{bubbleLine\\}$",
-    "occurrences": 1,
-    "status": "pending-migration",
-    "reason": "말풍선 정본(aiBuddyVoiceHint·aiBuddyFabPrompt·aiBuddyWander·aiBuddyNudge)이 모두 원문 한국어다",
-    "migrateTo": "child.aiBuddy.bubble.*",
-    "plan": "docs/superpowers/plans/2026-08-15-global-i18n-web.md"
-  },
-  {
     "path": "src/screens/child/ChildHome.tsx",
     "pattern": "dailySupplyLimitMessage",
     "occurrences": 2,

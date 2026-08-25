@@ -13,6 +13,8 @@ import {
   type AiBuddyChatFace,
 } from "./aiBuddyEmotion.ts";
 import type { AiBuddyFabRatio } from "./aiBuddyFabPosition.ts";
+import type { IntlShape } from "react-intl";
+import type { MessageId } from "../i18n/generated/messageIds.ts";
 
 /** 한 걸음 간격(ms) — 너무 짧으면 산만하고 길면 멈춰 있는 것처럼 보인다. */
 export const AI_BUDDY_WANDER_STEP_MS = 9_000;
@@ -85,23 +87,25 @@ export const AI_BUDDY_WANDER_LINE_MS = 2_600;
 /**
  * 도착해서 아이에게 건네는 한 마디(반말). 표정과 뜻이 맞아야 친구로 읽힌다.
  * 이동 중(excited)·입력 표시(typing)·탭 반응(quick)에는 말을 걸지 않는다.
+ * 문구는 locale catalog 가 정본이므로 여기에는 id 만 둔다.
  */
-const WANDER_LINE: Partial<Record<AiBuddyChatFace, string>> = {
-  greeting: "안녕!",
-  curious: "뭐 해?",
-  explore: "같이 찾아볼까?",
-  music: "노래 듣는 중~",
-  idea: "생각났어!",
-  love: "보고 싶었어",
-  shy: "히히",
-  wink: "나 여기 있어",
-  waiting: "얘기하자!",
-  talking: "할 말 있어!",
+const WANDER_LINE_ID: Partial<Record<AiBuddyChatFace, MessageId>> = {
+  greeting: "core.aiBuddy.wander.greeting" as MessageId,
+  curious: "core.aiBuddy.wander.curious" as MessageId,
+  explore: "core.aiBuddy.wander.explore" as MessageId,
+  music: "core.aiBuddy.wander.music" as MessageId,
+  idea: "core.aiBuddy.wander.idea" as MessageId,
+  love: "core.aiBuddy.wander.love" as MessageId,
+  shy: "core.aiBuddy.wander.shy" as MessageId,
+  wink: "core.aiBuddy.wander.wink" as MessageId,
+  waiting: "core.aiBuddy.wander.waiting" as MessageId,
+  talking: "core.aiBuddy.wander.talking" as MessageId,
 };
 
 /** 그 표정에서 건넬 한 마디. 말을 걸지 않는 표정이면 null. */
-export function aiBuddyWanderLine(face: AiBuddyChatFace): string | null {
-  return WANDER_LINE[face] ?? null;
+export function aiBuddyWanderLine(face: AiBuddyChatFace, intl: IntlShape): string | null {
+  const id = WANDER_LINE_ID[face];
+  return id ? intl.formatMessage({ id }) : null;
 }
 
 /** 이 걸음에서 말풍선을 띄울지. 세 걸음마다 한 번만 말을 건다. */
