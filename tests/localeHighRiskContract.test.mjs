@@ -25,7 +25,11 @@ test("브랜드·pair placeholder·login ID·보호자 코드의 핵심 의미�
     assert.match(combined, /Hyeni/, `${locale}: Hyeni 브랜드 누락`);
     assert.equal(core["core.brand.name"], "Hyeni Calendar", `${locale}: 브랜드 이름`);
     assert.equal(core["core.brand.nameRich"], "Hyeni <strong>Calendar</strong>", `${locale}: rich 브랜드 이름`);
-    assert.match(onboarding["onboarding.locationDisclosure.collection"], /Hyeni Calendar/, `${locale}: 위치 고지 브랜드`);
+    assert.match(
+      readCatalog(locale, "shared")["shared.locationPermission.disclosure.collection.formal"],
+      /Hyeni Calendar/,
+      `${locale}: 위치 고지 브랜드`,
+    );
     assert.doesNotMatch(combined, /鬣狗|父代码|父代碼|身份证件|身分證件|mã gốc|Nama belakang/, `${locale}: 금지 오역`);
     assert.match(onboarding["onboarding.pairing.invalidCode"], /KID-XXXXXXXX/, `${locale}: 연결 코드 예시`);
     assert.equal((onboarding["onboarding.pairing.invalidCode"].match(/X/g) ?? []).length, 8, `${locale}: X 8개`);
@@ -46,7 +50,6 @@ test("아이용 위치·오류 문구는 locale별 formal 호칭을 섞지 않�
   const childContext = (id) => id.endsWith(".child")
     || id.includes(".child.")
     || id.endsWith(".childDescription")
-    || /^onboarding\.(?:backgroundPermission|locationDisclosure|permissionDenied)\./.test(id)
     || /^onboarding\.permissions\.(?:background|location|notifications)\.childDescription$/.test(id)
     || /^onboarding\.permissions\.(?:subtitle|title)\.child$/.test(id)
     || /^onboarding\.role\.child\./.test(id);
@@ -100,9 +103,11 @@ test("비한국어 core·onboarding·shared는 native 검수 완료로 올리지
 
 test("중국어 아이 권한 문구는 존칭을 쓰지 않고 Indonesian 보호자는 사람 역할로 표현한다", () => {
   for (const locale of ["zh-CN", "zh-TW"]) {
-    const onboarding = readCatalog(locale, "onboarding");
-    for (const [id, value] of Object.entries(onboarding)) {
-      if (/backgroundPermission|locationDisclosure|permissionDenied|permissions\.(?:background|location|notifications)\.child|permissions\.(?:subtitle|title)\.child/.test(id)) {
+    // 위치 권한 고지는 shared 로 옮겼으므로 두 namespace 를 함께 본다.
+    const catalog = { ...readCatalog(locale, "onboarding"), ...readCatalog(locale, "shared") };
+    for (const [id, value] of Object.entries(catalog)) {
+      if (/^shared\.locationPermission\..*\.child$/.test(id)
+        || /permissions\.(?:background|location|notifications)\.child|permissions\.(?:subtitle|title)\.child/.test(id)) {
         assert.doesNotMatch(value, /您/, `${locale}:${id}`);
       }
     }

@@ -799,11 +799,18 @@ npm run typecheck
 > `src/i18n/messages.ts`·`useMessage.ts` 삭제 · `descriptions.json` 고아 키 제거와 재발 방지 게이트 ·
 > `tests/userFacingLiteralScan.test.mjs`(9) · `tests/pwaLocaleMetadata.test.mjs`(11).
 >
-> **미완료(다음 작업 단위)**: allowlist 의 `pending-migration` 42건 = catalog 밖에 남은 실제 사용자 문구.
+> **미완료(다음 작업 단위)**: allowlist 의 `pending-migration` 23건 = catalog 밖에 남은 실제 사용자 문구.
 > 이 항목들은 면제가 아니라 결함 기록이며, 각 항목의 `migrateTo` 로 이관하면 항목을 지워야 한다
-> (남겨 두면 `stale_allowlist` 로 실패한다). 규모는 신규 message id 약 140개 × 10 locale 이고
-> 가장 큰 덩이는 `ChildLocationPermissionDialog`(백그라운드 위치 prominent disclosure, 28×2 문구)다.
-> 이관에는 순수 transform 의 시그니처 변경(`intl` 주입)과 해당 회귀 테스트 갱신이 함께 필요하다.
+> (남겨 두면 `stale_allowlist` 로 실패한다). 남은 덩이는 `webBilling`(결제 실패 안내 17)·
+> `parentHomeSubscriptionCard`(14)·`aiBuddyEmotion`(8)·`stickerBook`·`memoView`·`deviceLabel`·`PROVIDER_LABEL`·
+> `eventSupplies`·`childHomeData`·AI 친구 말풍선(voiceHint/wander/nudge)이고, 순수 transform 의 시그니처 변경
+> (`intl` 주입)과 해당 회귀 테스트 갱신이 함께 필요하다.
+>
+> **2026-08-25 추가 완료**: 위치 권한 prominent disclosure 다이얼로그 28개 슬롯 × 2톤 = 56개 id 를
+> `shared.locationPermission.*` 로 이관했다. 아이 톤 21개는 이전 task 가 만들어 두고 재배선하지 않은 죽은
+> `onboarding.locationDisclosure/backgroundPermission/permissionDenied.*` 번역을 재사용했고, 원본 21개 id 는
+> 정본이 둘로 갈리지 않게 제거했다(카탈로그 210항목·description 21). 회귀는
+> `tests/backgroundLocationDisclosure.test.mjs` 가 10개 언어 번역 실재·브랜드 표기·한국어 잔존 0을 함께 검증한다.
 
 **Files:**
 - Create: `src/i18n/documentMetadata.ts`

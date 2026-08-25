@@ -8273,41 +8273,6 @@
     "variables": {},
     "description": "onboarding.action.next에 표시하는 사용자 안내 문구"
   },
-  "onboarding.backgroundPermission.description": {
-    "namespace": "onboarding",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "아이 Android에서 ‘항상 허용’을 선택해야 앱 종료 뒤에도 도착·출발·위험구역 알림이 이어진다는 결과 안내"
-  },
-  "onboarding.backgroundPermission.eyebrow": {
-    "namespace": "onboarding",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "onboarding.backgroundPermission.eyebrow에 표시하는 사용자 안내 문구"
-  },
-  "onboarding.backgroundPermission.openSettings": {
-    "namespace": "onboarding",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "onboarding.backgroundPermission.openSettings에 표시하는 사용자 안내 문구"
-  },
-  "onboarding.backgroundPermission.optional": {
-    "namespace": "onboarding",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "권한을 거부해도 앱 사용은 가능하고 아이 설정에서 나중에 다시 켤 수 있다는 반말 안내"
-  },
-  "onboarding.backgroundPermission.title": {
-    "namespace": "onboarding",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "아이에게 Android 백그라운드 위치 권한의 ‘항상 허용’ 선택을 요청하는 반말 제목"
-  },
   "onboarding.connect.childDevice": {
     "namespace": "onboarding",
     "audience": "child",
@@ -8520,48 +8485,6 @@
     "variables": {},
     "description": "onboarding.guardian.other에 표시하는 사용자 안내 문구"
   },
-  "onboarding.locationDisclosure.collection": {
-    "namespace": "onboarding",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "앱 미사용·종료 중에도 아이 위치를 수집해 연결된 보호자에게 공유한다는 필수 고지"
-  },
-  "onboarding.locationDisclosure.continue": {
-    "namespace": "onboarding",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "onboarding.locationDisclosure.continue에 표시하는 사용자 안내 문구"
-  },
-  "onboarding.locationDisclosure.control": {
-    "namespace": "onboarding",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "위치 수집 중 Android 지속 알림이 보이고 기기 설정에서 언제든 권한을 끌 수 있다는 통제권 고지"
-  },
-  "onboarding.locationDisclosure.eyebrow": {
-    "namespace": "onboarding",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "onboarding.locationDisclosure.eyebrow에 표시하는 사용자 안내 문구"
-  },
-  "onboarding.locationDisclosure.purpose": {
-    "namespace": "onboarding",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "실시간 위치·오늘 경로·장소 출입·미도착·위험구역 알림에 위치를 사용한다는 목적 고지"
-  },
-  "onboarding.locationDisclosure.title": {
-    "namespace": "onboarding",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "onboarding.locationDisclosure.title에 표시하는 사용자 안내 문구"
-  },
   "onboarding.login.deviceTransferNote": {
     "namespace": "onboarding",
     "audience": "parent",
@@ -8744,62 +8667,6 @@
     "variables": {},
     "description": "onboarding.pairing.title에 표시하는 사용자 안내 문구"
   },
-  "onboarding.permissionDenied.androidOnly": {
-    "namespace": "onboarding",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "onboarding.permissionDenied.androidOnly에 표시하는 사용자 안내 문구"
-  },
-  "onboarding.permissionDenied.canContinue": {
-    "namespace": "onboarding",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "권한을 거부해도 앱을 계속 쓰고 아이 설정에서 나중에 다시 설정할 수 있다는 반말 안내"
-  },
-  "onboarding.permissionDenied.consequence": {
-    "namespace": "onboarding",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "위치 권한 없이 시작하면 보호자에게 현재 위치와 도착·출발 알림이 전달되지 않는다는 안전 결과 안내"
-  },
-  "onboarding.permissionDenied.continueWithout": {
-    "namespace": "onboarding",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "onboarding.permissionDenied.continueWithout에 표시하는 사용자 안내 문구"
-  },
-  "onboarding.permissionDenied.eyebrow": {
-    "namespace": "onboarding",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "onboarding.permissionDenied.eyebrow에 표시하는 사용자 안내 문구"
-  },
-  "onboarding.permissionDenied.retry": {
-    "namespace": "onboarding",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "onboarding.permissionDenied.retry에 표시하는 사용자 안내 문구"
-  },
-  "onboarding.permissionDenied.title": {
-    "namespace": "onboarding",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "onboarding.permissionDenied.title에 표시하는 사용자 안내 문구"
-  },
-  "onboarding.permissionDenied.unsupported": {
-    "namespace": "onboarding",
-    "audience": "child",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "onboarding.permissionDenied.unsupported에 표시하는 사용자 안내 문구"
-  },
   "onboarding.permissions.background.childDescription": {
     "namespace": "onboarding",
     "audience": "child",
@@ -8813,20 +8680,6 @@
     "qualityTier": "B",
     "variables": {},
     "description": "onboarding.permissions.background.title에 표시하는 사용자 안내 문구"
-  },
-  "onboarding.permissions.checking": {
-    "namespace": "onboarding",
-    "audience": "parent",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "onboarding.permissions.checking에 표시하는 사용자 안내 문구"
-  },
-  "onboarding.permissions.checkingSettings": {
-    "namespace": "onboarding",
-    "audience": "parent",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "onboarding.permissions.checkingSettings에 표시하는 사용자 안내 문구"
   },
   "onboarding.permissions.location.childDescription": {
     "namespace": "onboarding",
@@ -21589,6 +21442,8 @@
   "shared.stickerSend.receivedBookTitle": {
     "namespace": "shared",
     "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
     "description": "부모가 페어링된 아이의 현재 스티커북을 확인하는 섹션 제목"
   },
   "shared.stickerSend.screenTitle": {
@@ -24134,9 +23989,401 @@
   },
   "core.brand.description": {
     "namespace": "core",
-    "audience": "formal",
+    "audience": "shared",
     "qualityTier": "A",
     "variables": {},
     "description": "PWA manifest description 과 문서 meta description 에 함께 쓰는 앱 한 줄 소개"
+  },
+  "shared.locationPermission.disclosure.eyebrow.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "백그라운드 위치 고지 1단계의 작은 머리말 (아이 모드 반말)"
+  },
+  "shared.locationPermission.disclosure.eyebrow.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "백그라운드 위치 고지 1단계의 작은 머리말 (보호자 존댓말)"
+  },
+  "shared.locationPermission.disclosure.title.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "백그라운드 위치 고지 1단계 제목(Play 정책 prominent disclosure) (아이 모드 반말)"
+  },
+  "shared.locationPermission.disclosure.title.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "백그라운드 위치 고지 1단계 제목(Play 정책 prominent disclosure) (보호자 존댓말)"
+  },
+  "shared.locationPermission.disclosure.collection.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "앱을 닫아도 위치를 수집해 보호자에게 공유한다는 수집 고지 (아이 모드 반말)"
+  },
+  "shared.locationPermission.disclosure.collection.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "앱을 닫아도 위치를 수집해 보호자에게 공유한다는 수집 고지 (보호자 존댓말)"
+  },
+  "shared.locationPermission.disclosure.purpose.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "수집한 위치를 어디에 쓰는지 밝히는 목적 고지 (아이 모드 반말)"
+  },
+  "shared.locationPermission.disclosure.purpose.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "수집한 위치를 어디에 쓰는지 밝히는 목적 고지 (보호자 존댓말)"
+  },
+  "shared.locationPermission.disclosure.control.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "수집 중 지속 알림 표시와 권한을 끄는 방법 고지 (아이 모드 반말)"
+  },
+  "shared.locationPermission.disclosure.control.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "수집 중 지속 알림 표시와 권한을 끄는 방법 고지 (보호자 존댓말)"
+  },
+  "shared.locationPermission.background.eyebrow.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "‘항상 허용’ 요청 단계의 작은 머리말 (아이 모드 반말)"
+  },
+  "shared.locationPermission.background.eyebrow.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "‘항상 허용’ 요청 단계의 작은 머리말 (보호자 존댓말)"
+  },
+  "shared.locationPermission.background.title.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "Android 백그라운드 위치 권한의 ‘항상 허용’ 선택 요청 제목 (아이 모드 반말)"
+  },
+  "shared.locationPermission.background.title.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "Android 백그라운드 위치 권한의 ‘항상 허용’ 선택 요청 제목 (보호자 존댓말)"
+  },
+  "shared.locationPermission.background.description.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "‘항상 허용’을 선택해야 도착·출발·위험구역 알림이 이어진다는 결과 안내 (아이 모드 반말)"
+  },
+  "shared.locationPermission.background.description.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "‘항상 허용’을 선택해야 도착·출발·위험구역 알림이 이어진다는 결과 안내 (보호자 존댓말)"
+  },
+  "shared.locationPermission.background.optional.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "허용하지 않아도 앱을 쓸 수 있고 나중에 다시 켤 수 있다는 안내 (아이 모드 반말)"
+  },
+  "shared.locationPermission.background.optional.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "허용하지 않아도 앱을 쓸 수 있고 나중에 다시 켤 수 있다는 안내 (보호자 존댓말)"
+  },
+  "shared.locationPermission.usage.eyebrow.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "사용 정보 접근 요청 단계의 작은 머리말 (아이 모드 반말)"
+  },
+  "shared.locationPermission.usage.eyebrow.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "사용 정보 접근 요청 단계의 작은 머리말 (보호자 존댓말)"
+  },
+  "shared.locationPermission.usage.title.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "Android 사용 정보 접근(PACKAGE_USAGE_STATS) 켜기 요청 제목 (아이 모드 반말)"
+  },
+  "shared.locationPermission.usage.title.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "Android 사용 정보 접근(PACKAGE_USAGE_STATS) 켜기 요청 제목 (보호자 존댓말)"
+  },
+  "shared.locationPermission.usage.reason.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "많이 쓴 앱·화면 사용 시간을 보려면 사용 정보 접근이 필요하다는 이유 (아이 모드 반말)"
+  },
+  "shared.locationPermission.usage.reason.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "많이 쓴 앱·화면 사용 시간을 보려면 사용 정보 접근이 필요하다는 이유 (보호자 존댓말)"
+  },
+  "shared.locationPermission.usage.optional.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "설정에서 앱을 찾아 켠 뒤 돌아오라는 안내와 켜지 않아도 된다는 고지 (아이 모드 반말)"
+  },
+  "shared.locationPermission.usage.optional.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "설정에서 앱을 찾아 켠 뒤 돌아오라는 안내와 켜지 않아도 된다는 고지 (보호자 존댓말)"
+  },
+  "shared.locationPermission.usage.open.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "Android 사용 정보 접근 설정을 여는 버튼 (아이 모드 반말)"
+  },
+  "shared.locationPermission.usage.open.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "Android 사용 정보 접근 설정을 여는 버튼 (보호자 존댓말)"
+  },
+  "shared.locationPermission.usage.done.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "설정에서 켜고 돌아와 실제 상태를 다시 확인하는 버튼 (아이 모드 반말)"
+  },
+  "shared.locationPermission.usage.done.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "설정에서 켜고 돌아와 실제 상태를 다시 확인하는 버튼 (보호자 존댓말)"
+  },
+  "shared.locationPermission.denied.eyebrow.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "권한이 꺼져 있을 때의 작은 머리말 (아이 모드 반말)"
+  },
+  "shared.locationPermission.denied.eyebrow.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "권한이 꺼져 있을 때의 작은 머리말 (보호자 존댓말)"
+  },
+  "shared.locationPermission.denied.title.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "위치 권한이 아직 꺼져 있다는 제목 (아이 모드 반말)"
+  },
+  "shared.locationPermission.denied.title.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "위치 권한이 아직 꺼져 있다는 제목 (보호자 존댓말)"
+  },
+  "shared.locationPermission.denied.consequence.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "권한 없이 시작하면 위치·도착·출발 알림이 전달되지 않는다는 안내 (아이 모드 반말)"
+  },
+  "shared.locationPermission.denied.consequence.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "권한 없이 시작하면 위치·도착·출발 알림이 전달되지 않는다는 안내 (보호자 존댓말)"
+  },
+  "shared.locationPermission.denied.followup.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "앱은 계속 쓸 수 있고 나중에 다시 설정할 수 있다는 안내 (아이 모드 반말)"
+  },
+  "shared.locationPermission.denied.followup.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "앱은 계속 쓸 수 있고 나중에 다시 설정할 수 있다는 안내 (보호자 존댓말)"
+  },
+  "shared.locationPermission.unsupported.title.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "이 기기(비 Android)에서는 지원하지 않는다는 제목 (아이 모드 반말)"
+  },
+  "shared.locationPermission.unsupported.title.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "이 기기(비 Android)에서는 지원하지 않는다는 제목 (보호자 존댓말)"
+  },
+  "shared.locationPermission.unsupported.body.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "백그라운드 위치 공유가 Android 앱에서만 가능하다는 안내 (아이 모드 반말)"
+  },
+  "shared.locationPermission.unsupported.body.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "백그라운드 위치 공유가 Android 앱에서만 가능하다는 안내 (보호자 존댓말)"
+  },
+  "shared.locationPermission.action.later.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "권한 요청을 미루고 다이얼로그를 닫는 보조 버튼 (아이 모드 반말)"
+  },
+  "shared.locationPermission.action.later.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "권한 요청을 미루고 다이얼로그를 닫는 보조 버튼 (보호자 존댓말)"
+  },
+  "shared.locationPermission.action.continue.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "위치 고지에 동의하고 권한 요청으로 넘어가는 주 버튼 (아이 모드 반말)"
+  },
+  "shared.locationPermission.action.continue.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "위치 고지에 동의하고 권한 요청으로 넘어가는 주 버튼 (보호자 존댓말)"
+  },
+  "shared.locationPermission.action.openSettings.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "‘항상 허용’ 권한 화면을 여는 주 버튼 (아이 모드 반말)"
+  },
+  "shared.locationPermission.action.openSettings.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "‘항상 허용’ 권한 화면을 여는 주 버튼 (보호자 존댓말)"
+  },
+  "shared.locationPermission.action.withoutPermission.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "권한 없이 앱을 계속 쓰는 보조 버튼 (아이 모드 반말)"
+  },
+  "shared.locationPermission.action.withoutPermission.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "권한 없이 앱을 계속 쓰는 보조 버튼 (보호자 존댓말)"
+  },
+  "shared.locationPermission.action.retry.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "권한 설정을 다시 시도하는 주 버튼 (아이 모드 반말)"
+  },
+  "shared.locationPermission.action.retry.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "권한 설정을 다시 시도하는 주 버튼 (보호자 존댓말)"
+  },
+  "shared.locationPermission.action.checking.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "권한 상태를 확인하는 동안 버튼에 표시하는 진행 문구 (아이 모드 반말)"
+  },
+  "shared.locationPermission.action.checking.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "권한 상태를 확인하는 동안 버튼에 표시하는 진행 문구 (보호자 존댓말)"
+  },
+  "shared.locationPermission.action.opening.child": {
+    "namespace": "shared",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "설정에서 돌아와 상태를 확인하는 동안 표시하는 진행 문구 (아이 모드 반말)"
+  },
+  "shared.locationPermission.action.opening.formal": {
+    "namespace": "shared",
+    "audience": "parent",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "설정에서 돌아와 상태를 확인하는 동안 표시하는 진행 문구 (보호자 존댓말)"
   }
 }

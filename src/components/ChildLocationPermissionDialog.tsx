@@ -1,5 +1,7 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useIntl } from "react-intl";
 import { useDialogFocusLifecycle } from "@/components/useDialogFocusLifecycle";
+import type { MessageId } from "@/i18n/generated/messageIds";
 import {
   openUsageAccessSettings,
   readUsageAccessState,
@@ -15,6 +17,49 @@ import "./ChildLocationPermissionDialog.css";
 
 type CopyMode = "formal" | "child";
 
+/**
+ * 문구는 locale catalog 가 정본이고, 여기에는 **id 만** 둔다.
+ * 톤(존댓말/반말)은 `copyMode` 가 고르는 id 접미사로만 갈린다 — 다른 언어도 같은 방식으로
+ * parent/child 문맥을 분리한다. 원문을 다시 여기에 적으면 그 언어에서만 한국어가 새어 나온다.
+ */
+const COPY_KEYS = [
+  "disclosure.eyebrow",
+  "disclosure.title",
+  "disclosure.collection",
+  "disclosure.purpose",
+  "disclosure.control",
+  "background.eyebrow",
+  "background.title",
+  "background.description",
+  "background.optional",
+  "usage.eyebrow",
+  "usage.title",
+  "usage.reason",
+  "usage.optional",
+  "usage.open",
+  "usage.done",
+  "denied.eyebrow",
+  "denied.title",
+  "denied.consequence",
+  "denied.followup",
+  "unsupported.title",
+  "unsupported.body",
+  "action.later",
+  "action.continue",
+  "action.openSettings",
+  "action.withoutPermission",
+  "action.retry",
+  "action.checking",
+  "action.opening",
+] as const;
+
+type CopyKey = (typeof COPY_KEYS)[number];
+
+function messageId(key: CopyKey, copyMode: CopyMode): MessageId {
+  return `shared.locationPermission.${key}.${copyMode === "child" ? "child" : "formal"}` as MessageId;
+}
+
+
 interface ChildLocationPermissionDialogProps {
   open: boolean;
   copyMode: CopyMode;
@@ -29,80 +74,6 @@ interface ChildLocationPermissionDialogProps {
   usagePromptStorageKey?: string;
 }
 
-const FORMAL_COPY = {
-  disclosureEyebrow: "아이 위치 공유 안내",
-  disclosureTitle: "백그라운드 위치를 사용해요",
-  disclosureBody: [
-    "혜니캘린더는 아이가 앱을 닫거나 사용하지 않을 때도 위치를 수집해 연결된 보호자에게 공유합니다.",
-    "위치는 실시간 위치·오늘 경로와 집·학교·학원 도착·출발, 일정 미도착, 위험구역 알림에 사용됩니다.",
-    "위치 수집 중에는 Android의 지속 알림이 표시되며, 아이 기기의 위치 설정에서 언제든지 권한을 끌 수 있습니다.",
-  ],
-  backgroundEyebrow: "마지막 위치 설정",
-  backgroundTitle: "위치를 ‘항상 허용’으로 선택해 주세요",
-  backgroundBody: [
-    "다음 Android 위치 권한 화면에서 ‘항상 허용’을 선택해야 앱을 닫은 뒤에도 도착·출발과 위험구역 알림이 이어집니다.",
-    "허용하지 않아도 앱은 사용할 수 있으며, 아이 설정에서 나중에 다시 켤 수 있습니다.",
-  ],
-  deniedEyebrow: "위치 권한이 필요해요",
-  deniedTitle: "아직 위치 권한이 꺼져 있어요",
-  unsupportedTitle: "이 기기에서는 지원하지 않아요",
-  deniedBody: "권한 없이 시작하면 보호자에게 현재 위치와 도착·출발 알림이 전달되지 않습니다.",
-  unsupportedBody: "아이의 백그라운드 위치 공유는 Android 앱에서 사용할 수 있습니다.",
-  deniedFollowup: "앱은 계속 사용할 수 있고, 아이 설정에서 언제든지 다시 설정할 수 있습니다.",
-  usageEyebrow: "기기 정보 공유",
-  usageTitle: "사용 정보 접근을 켜 주세요",
-  usageBody: [
-    "보호자가 오늘 많이 쓴 앱과 화면 사용 시간을 보려면 Android의 사용 정보 접근이 필요합니다.",
-    "다음 화면에서 혜니캘린더를 찾아 켠 뒤 돌아와 주세요. 켜지 않아도 앱은 사용할 수 있습니다.",
-  ],
-  usageOpen: "사용 정보 접근 열기",
-  usageDone: "켰어요",
-  later: "나중에",
-  continue: "동의하고 계속",
-  openSettings: "‘항상 허용’ 설정 열기",
-  withoutPermission: "권한 없이 시작",
-  retry: "다시 설정",
-  checking: "권한 확인 중…",
-  opening: "설정 확인 중…",
-} as const;
-
-const CHILD_COPY = {
-  disclosureEyebrow: "내 위치 공유 안내",
-  disclosureTitle: "백그라운드 위치를 사용해",
-  disclosureBody: [
-    "혜니캘린더는 네가 앱을 닫거나 사용하지 않을 때도 위치를 수집해서 연결된 보호자에게 보내.",
-    "위치는 실시간 위치·오늘 경로와 집·학교·학원 도착·출발, 일정 미도착, 위험구역 알림에 사용돼.",
-    "위치를 보내는 동안에는 Android 알림이 계속 보여. 내 위치 설정에서 언제든지 권한을 끌 수 있어.",
-  ],
-  backgroundEyebrow: "마지막 위치 설정",
-  backgroundTitle: "위치를 ‘항상 허용’으로 골라 줘",
-  backgroundBody: [
-    "다음 Android 위치 권한 화면에서 ‘항상 허용’을 골라야 앱을 닫은 뒤에도 도착·출발과 위험구역 알림을 보낼 수 있어.",
-    "허용하지 않아도 앱은 쓸 수 있고, 내 위치에서 나중에 다시 켤 수 있어.",
-  ],
-  deniedEyebrow: "위치 권한이 필요해",
-  deniedTitle: "아직 위치 권한이 꺼져 있어",
-  unsupportedTitle: "이 기기에서는 지원하지 않아",
-  deniedBody: "권한 없이 시작하면 엄마·아빠에게 지금 위치와 도착·출발 알림을 보낼 수 없어.",
-  unsupportedBody: "백그라운드 위치 공유는 Android 앱에서 쓸 수 있어.",
-  deniedFollowup: "앱은 계속 쓸 수 있고, 내 위치에서 언제든지 다시 설정할 수 있어.",
-  usageEyebrow: "기기 정보 공유",
-  usageTitle: "사용 정보 접근을 켜 줘",
-  usageBody: [
-    "엄마·아빠가 오늘 많이 쓴 앱과 화면 사용 시간을 보려면 Android의 사용 정보 접근이 필요해.",
-    "다음 화면에서 혜니캘린더를 찾아 켜고 돌아와 줘. 안 켜도 앱은 쓸 수 있어.",
-  ],
-  usageOpen: "사용 정보 접근 열기",
-  usageDone: "켰어",
-  later: "나중에",
-  continue: "동의하고 계속",
-  openSettings: "‘항상 허용’ 설정 열기",
-  withoutPermission: "권한 없이 계속",
-  retry: "다시 설정",
-  checking: "권한 확인 중…",
-  opening: "설정 확인 중…",
-} as const;
-
 export function ChildLocationPermissionDialog({
   open,
   copyMode,
@@ -111,7 +82,12 @@ export function ChildLocationPermissionDialog({
   initialStage = "disclosure",
   usagePromptStorageKey,
 }: ChildLocationPermissionDialogProps) {
-  const copy = copyMode === "child" ? CHILD_COPY : FORMAL_COPY;
+  const intl = useIntl();
+  const copy = useMemo(() => {
+    const resolved = {} as Record<CopyKey, string>;
+    for (const key of COPY_KEYS) resolved[key] = intl.formatMessage({ id: messageId(key, copyMode) });
+    return resolved;
+  }, [copyMode, intl]);
   const [stage, setStage] = useState<LocationPermissionStage>("closed");
   const [permissionBusy, setPermissionBusy] = useState(false);
   const [locationUnsupported, setLocationUnsupported] = useState(false);
@@ -246,17 +222,19 @@ export function ChildLocationPermissionDialog({
       >
         {stage === "disclosure" && (
           <>
-            <span className="clp-dialog__eyebrow">{copy.disclosureEyebrow}</span>
-            <h2 ref={stageTitleRef} id={titleId} tabIndex={-1}>{copy.disclosureTitle}</h2>
+            <span className="clp-dialog__eyebrow">{copy["disclosure.eyebrow"]}</span>
+            <h2 ref={stageTitleRef} id={titleId} tabIndex={-1}>{copy["disclosure.title"]}</h2>
             <div id={descriptionId} className="clp-dialog__copy">
-              {copy.disclosureBody.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+              <p>{copy["disclosure.collection"]}</p>
+              <p>{copy["disclosure.purpose"]}</p>
+              <p>{copy["disclosure.control"]}</p>
             </div>
             <div className="clp-dialog__actions">
               <button ref={secondaryRef} type="button" className="clp-secondary hy-press" onClick={dismiss} disabled={permissionBusy} data-progress-owner="permission-request">
-                {copy.later}
+                {copy["action.later"]}
               </button>
               <button type="button" className="clp-primary hy-press" onClick={() => void requestForeground()} disabled={permissionBusy} aria-busy={permissionBusy}>
-                {permissionBusy ? copy.checking : copy.continue}
+                {permissionBusy ? copy["action.checking"] : copy["action.continue"]}
               </button>
             </div>
           </>
@@ -264,17 +242,18 @@ export function ChildLocationPermissionDialog({
 
         {stage === "backgroundEducation" && (
           <>
-            <span className="clp-dialog__eyebrow">{copy.backgroundEyebrow}</span>
-            <h2 ref={stageTitleRef} id={titleId} tabIndex={-1}>{copy.backgroundTitle}</h2>
+            <span className="clp-dialog__eyebrow">{copy["background.eyebrow"]}</span>
+            <h2 ref={stageTitleRef} id={titleId} tabIndex={-1}>{copy["background.title"]}</h2>
             <div id={descriptionId} className="clp-dialog__copy">
-              {copy.backgroundBody.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+              <p>{copy["background.description"]}</p>
+              <p>{copy["background.optional"]}</p>
             </div>
             <div className="clp-dialog__actions">
               <button ref={secondaryRef} type="button" className="clp-secondary hy-press" onClick={dismiss} disabled={permissionBusy} data-progress-owner="permission-request">
-                {copy.later}
+                {copy["action.later"]}
               </button>
               <button type="button" className="clp-primary hy-press" onClick={() => void requestBackground()} disabled={permissionBusy} aria-busy={permissionBusy}>
-                {permissionBusy ? copy.opening : copy.openSettings}
+                {permissionBusy ? copy["action.opening"] : copy["action.openSettings"]}
               </button>
             </div>
           </>
@@ -282,20 +261,21 @@ export function ChildLocationPermissionDialog({
 
         {stage === "usageAccess" && (
           <>
-            <span className="clp-dialog__eyebrow">{copy.usageEyebrow}</span>
-            <h2 ref={stageTitleRef} id={titleId} tabIndex={-1}>{copy.usageTitle}</h2>
+            <span className="clp-dialog__eyebrow">{copy["usage.eyebrow"]}</span>
+            <h2 ref={stageTitleRef} id={titleId} tabIndex={-1}>{copy["usage.title"]}</h2>
             <div id={descriptionId} className="clp-dialog__copy">
-              {copy.usageBody.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+              <p>{copy["usage.reason"]}</p>
+              <p>{copy["usage.optional"]}</p>
             </div>
             <div className="clp-dialog__actions">
               <button ref={secondaryRef} type="button" className="clp-secondary hy-press" onClick={dismiss} disabled={permissionBusy} data-progress-owner="permission-request">
-                {copy.later}
+                {copy["action.later"]}
               </button>
               <button type="button" className="clp-secondary hy-press" onClick={() => void openUsageAccess()} disabled={permissionBusy} aria-busy={permissionBusy}>
-                {permissionBusy ? copy.opening : copy.usageOpen}
+                {permissionBusy ? copy["action.opening"] : copy["usage.open"]}
               </button>
               <button type="button" className="clp-primary hy-press" onClick={() => void confirmUsageAccess()} disabled={permissionBusy} aria-busy={permissionBusy}>
-                {permissionBusy ? copy.checking : copy.usageDone}
+                {permissionBusy ? copy["action.checking"] : copy["usage.done"]}
               </button>
             </div>
           </>
@@ -303,21 +283,21 @@ export function ChildLocationPermissionDialog({
 
         {(stage === "foregroundDenied" || stage === "backgroundDenied") && (
           <>
-            <span className="clp-dialog__eyebrow">{copy.deniedEyebrow}</span>
+            <span className="clp-dialog__eyebrow">{copy["denied.eyebrow"]}</span>
             <h2 ref={stageTitleRef} id={titleId} tabIndex={-1}>
-              {locationUnsupported ? copy.unsupportedTitle : copy.deniedTitle}
+              {locationUnsupported ? copy["unsupported.title"] : copy["denied.title"]}
             </h2>
             <div id={descriptionId} className="clp-dialog__copy">
-              <p>{locationUnsupported ? copy.unsupportedBody : copy.deniedBody}</p>
-              <p>{copy.deniedFollowup}</p>
+              <p>{locationUnsupported ? copy["unsupported.body"] : copy["denied.consequence"]}</p>
+              <p>{copy["denied.followup"]}</p>
             </div>
             <div className="clp-dialog__actions">
               <button ref={secondaryRef} type="button" className="clp-secondary hy-press" onClick={dismiss} disabled={permissionBusy} data-progress-owner="permission-request">
-                {copy.withoutPermission}
+                {copy["action.withoutPermission"]}
               </button>
               {!locationUnsupported && (
                 <button type="button" className="clp-primary hy-press" onClick={retry} disabled={permissionBusy} aria-busy={permissionBusy}>
-                  {copy.retry}
+                  {copy["action.retry"]}
                 </button>
               )}
             </div>

@@ -1048,6 +1048,19 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   이관을 마치면 항목을 지워야 한다. 현재 `pending-migration` 항목이 곧 미이관 결함 목록이다.
   회귀=`tests/userFacingLiteralScan.test.mjs`(저장소 위반 0 + fixture 행위검증을 함께 본다 — 위반 0만 검사하면
   스캐너가 아무것도 못 잡는 상태로 퇴행해도 초록으로 보인다).
+- ★**문구 이관은 "키 표만 남기기"다(2026-08-25, 위치 권한 고지 실측)**: 공용 컴포넌트에서 원문 표
+  (`FORMAL_COPY`/`CHILD_COPY`)를 지우고 **키 목록 + `copyMode` 로 고르는 id 접미사**만 남긴다
+  (`shared.locationPermission.<key>.{child|formal}`). 톤은 접미사로만 갈리고 컴포넌트는 문구를 모른다.
+  ⚠️ **namespace 는 그 컴포넌트를 쓰는 모든 라우트 그룹에 로드돼 있어야 한다.** 위치 권한 다이얼로그는
+  onboarding(`copyMode="formal"`)·아이 홈·아이 위치(`copyMode="child"`) 세 곳에서 쓰이므로 `shared` 가
+  유일한 정답이다 — `onboarding` 에 두면 아이 화면에서 원시 id 가 보인다(`CHILD_NAMESPACES=core,child,shared`).
+  ⚠️ **죽은 중복 id 함정**: 이관 전에 `locales/` 에서 같은 문구를 먼저 찾아라. 위치 권한 고지는 이전 task 가
+  `onboarding.locationDisclosure/backgroundPermission/permissionDenied.*` 21개 id 를 10개 언어까지 번역해 두고
+  컴포넌트를 재배선하지 않아, 화면은 계속 원문 한국어였고 catalog 에는 아무도 읽지 않는 번역이 남아 있었다.
+  `validate-catalogs` 는 **미사용 id 를 잡지 못한다** — literal 게이트가 실제 결함을 지목한 뒤에야 드러났다.
+  재사용하면 번역 품질을 그대로 얻고, 옮긴 뒤에는 원래 id 를 지워 정본이 둘로 갈리지 않게 한다.
+  ⚠️ 지금 화면에 보이는 한국어와 재사용 id 의 ko 값이 다르면 **화면 쪽을 정본으로 삼는다**(사용자에게 보이는
+  문구를 조용히 바꾸지 않는다). 실제로 3곳이 달랐다(`내 위치 공유 안내`·`골라 줘`·`권한 없이 계속`).
 - ★**다국어 PWA manifest·문서 metadata(2026-08-25)**: `npm run i18n:manifests` 가 `locales/manifest.json` +
   `core.brand.name`/`core.brand.description` 으로 `public/manifests/manifest.<locale>.webmanifest` 10개를 만든다
   (`--check` 로 stale 검사). 설치된 앱 이름·설명은 `<html lang>` 이 아니라 manifest 가 정한다.

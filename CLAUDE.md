@@ -914,10 +914,13 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   정본이다. 요약: 한글 문자를 세지 않고 **AST 로 보이는 자리**(JSX text·문구 attribute 20종·toast/dialog/validation
   sink·`document.title`)를 특정한 뒤 그 값이 message API 를 거쳤는지 **모듈 경계를 넘어** 추적한다.
   실측 결과 64건 → 오탐 정밀화(`&&` 우변만, 객체 shape 속성 단위) 52건 → ChildDock·AiBuddyFab 이관 49건 →
-  `exempt` 7건 + `pending-migration` 42건. **`pending-migration` 42건은 면제가 아니라 남은 결함 목록**이며
-  가장 큰 덩이는 `ChildLocationPermissionDialog`(백그라운드 위치 prominent disclosure, FORMAL/CHILD 28×2 문구)와
-  `webBilling`(결제 실패 안내 17개)·`parentHomeSubscriptionCard`(14개)·`aiBuddyEmotion`(표정 설명 8개)이다.
+  위치 권한 다이얼로그 28×2 이관 **23건**(`exempt` 7 + `pending-migration` 23).
+  **`pending-migration` 은 면제가 아니라 남은 결함 목록**이며 지금 남은 덩이는 `webBilling`(결제 실패 안내 17개)·
+  `parentHomeSubscriptionCard`(14개)·`aiBuddyEmotion`(표정 설명 8개)·`stickerBook`·`memoView`·`deviceLabel`이다.
   ⚠️ 스캐너는 hook 결과에서 온 값(`attention.nudge.line` 등)은 추적하지 못한다 — 알려진 false negative 다.
+  ⚠️ **이관 전에 `locales/` 에서 같은 문구를 먼저 찾아라.** 위치 권한 고지는 이전 task 가 21개 id 를 10개 언어까지
+  번역해 두고 컴포넌트를 재배선하지 않아 화면은 계속 한국어였다(`validate-catalogs` 는 미사용 id 를 못 잡는다).
+  재사용해 번역 품질을 그대로 얻고 원래 id 는 지웠다(카탈로그 210항목·description 21개 제거). 상세는 AGENTS.md.
 - ★**다국어 PWA manifest·문서 metadata(2026-08-25, Task 9)**: `npm run i18n:manifests` → `public/manifests/` 10개.
   함정 3개는 AGENTS.md 가 정본이다(① 경로는 manifest URL 기준이라 `../` ② 아이콘 URL 10개 동일 ③
   `singleLocaleManifestLinkPlugin` 에 `enforce:"post"` 필수). 런타임은 `src/i18n/documentMetadata.ts`
