@@ -11,6 +11,7 @@ import {
 import { sanitizeNotificationRoute } from "./transform/notificationRoute";
 import { mergeShownPushIds, shownPushLedgerKey } from "./transform/webPushShownLedger";
 import { isPushExpired } from "./transform/pushExpiry";
+import { isSupportedLocale, localizedBrandName, type SupportedLocale } from "./i18n/locale";
 
 declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: Array<{ url: string; revision?: string | null }>;
@@ -34,6 +35,11 @@ const CONTEXT_DB = "hyeni-push-context-v1";
 const CONTEXT_STORE = "session";
 const CONTEXT_KEY = "current";
 const SHOWN_PUSH_IDS_KEY = "shown-push-ids";
+/**
+ * 기기 언어. **계정·세션 정보를 담지 않는다** — 지원 locale 코드 문자열 하나뿐이다.
+ * 서버가 title 을 보내지 않은 web push 의 브랜드 폴백을 사용자 언어로 표시하기 위해 둔다.
+ */
+const LOCALE_KEY = "locale";
 
 const ALLOWED_ROUTES = {
   parent: new Set([
@@ -117,8 +123,32 @@ async function readPushContext(): Promise<PushContext | null> {
   return candidate as PushContext;
 }
 
-async function recordShownPushId(pushId: string, context: PushContext): Promise<void> {
-  const ledgerKey = shownPushLedgerKey(context.familyId, context.userId, pushId);
+/** 지원 locale 코드만 저장한다. 그 밖의 값은 무시해 저장소를 임의 문자열 통로로 쓰지 못하게 한다. */
+async function writeServiceWorkerLocale(locale: SupportedLocale): Promise<void> {
+  const db = await openContextDb();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(CONTEXT_STORE, "readwrite");
+    tx.objectStore(CONTEXT_STORE).put(locale, LOCALE_KEY);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error ?? new Error("locale write failed"));
+    tx.onabort = () => reject(tx.error ?? new Error("locale write aborted"));
+  });
+  db.close();
+}
+
+async function readServiceWorkerLocale(): Promise<SupportedLocale | null> {
+  const db = await openContextDb();
+  const value = await new Promise<unknown>((resolve, reject) => {
+    const tx = db.transaction(CONTEXT_STORE, "readonly");
+    const request = tx.objectStore(CONTEXT_STORE).get(LOCALE_KEY);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error ?? new Error("locale read failed"));
+  });
+  db.close();
+  return typeof value === "string" && isSupportedLocale(value) ? value : null;
+}
+
+async function recordShownPushId(pushId: string, context: PushContext): Promise<void> {  const ledgerKey = shownPushLedgerKey(context.familyId, context.userId, pushId);
   if (!ledgerKey) return;
   const db = await openContextDb();
   try {
@@ -157,6 +187,21 @@ self.addEventListener("message", (event) => {
     && (event.data as { type?: unknown }).type === "SKIP_WAITING"
   ) {
     event.waitUntil(self.skipWaiting());
+    return;
+  }
+  // 언어 전환 알림. locale 코드 하나만 받고 ack 도 locale 전용으로 되돌린다.
+  if (
+    event.data
+    && typeof event.data === "object"
+    && (event.data as { type?: unknown }).type === "HYENI_LOCALE"
+  ) {
+    const raw = (event.data as { locale?: unknown }).locale;
+    if (typeof raw !== "string" || !isSupportedLocale(raw)) return;
+    const replyPort = event.ports[0];
+    event.waitUntil(writeServiceWorkerLocale(raw).then(
+      () => replyPort?.postMessage({ type: "HYENI_LOCALE_ACK", ok: true }),
+      () => replyPort?.postMessage({ type: "HYENI_LOCALE_ACK", ok: false }),
+    ));
     return;
   }
   const context = messageContext(event.data);
@@ -210,7 +255,8 @@ self.addEventListener("push", (event) => {
 
     const route = routeForRole(data.route, context.role);
     const pushId = stringValue(data.pushId) || crypto.randomUUID();
-    const title = stringValue(payload.title) || "혜니캘린더";
+    const title = stringValue(payload.title)
+      || localizedBrandName(await readServiceWorkerLocale().catch(() => null) ?? "ko");
     const body = stringValue(payload.body);
     const familyId = context.familyId;
     const targetUserId = context.userId;

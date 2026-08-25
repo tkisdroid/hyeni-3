@@ -110,5 +110,12 @@
   "core.error.api.parentRoleRequired.formal": "Hãy đăng nhập bằng tài khoản người giám hộ rồi thử kết nối người giám hộ chung lại.",
   "core.error.api.childRoleRequired.formal": "Hãy kết nối thiết bị của trẻ từ Chế độ trẻ em.",
   "core.error.api.coparentSlotOccupied.formal": "Đã có một người giám hộ chung được kết nối. Hãy nhờ người giám hộ chính ngắt kết nối người hiện tại rồi thử lại.",
-  "core.error.api.pairingConfirmationFailed.formal": "Máy chủ chưa xác nhận được vai trò và kết nối gia đình. Vai trò của bạn chưa thay đổi; vui lòng thử lại."
+  "core.error.api.pairingConfirmationFailed.formal": "Máy chủ chưa xác nhận được vai trò và kết nối gia đình. Vai trò của bạn chưa thay đổi; vui lòng thử lại.",
+  "core.childDock.nav": "Menu của bé",
+  "core.childDock.tab.home": "Trang chủ",
+  "core.childDock.tab.sticker": "Nhãn dán",
+  "core.childDock.tab.memo": "Trò chuyện",
+  "core.childDock.sos": "Cần giúp",
+  "core.aiBuddy.stage.dismiss": "Đóng",
+  "core.brand.description": "Lịch gia đình, đồ cần mang, vị trí và cảnh báo an toàn của con ở cùng một nơi"
 }

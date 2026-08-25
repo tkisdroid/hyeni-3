@@ -200,6 +200,44 @@ export async function syncWebPushSessionContext(
   return generation === contextSyncGeneration && stored;
 }
 
+/**
+ * 기기 언어를 Service Worker 에 알린다. 서버가 title 을 주지 않은 web push 의 브랜드
+ * 폴백이 사용자 언어로 표시되게 하는 것이 목적이고, **계정·세션 값은 보내지 않는다**.
+ * 실패해도 알림 표시를 막지 않는다(폴백은 기존 한국어 브랜드로 강등된다).
+ */
+export async function syncWebPushLocale(locale: string): Promise<boolean> {
+  if (!isSupported()) return false;
+  const registration = await getRegistration(false);
+  if (!registration) return false;
+  const worker = navigator.serviceWorker.controller
+    ?? registration.active
+    ?? registration.waiting
+    ?? registration.installing;
+  if (!worker) return false;
+  return new Promise<boolean>((resolve) => {
+    const channel = new MessageChannel();
+    let settled = false;
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
+      channel.port1.close();
+      resolve(ok);
+    };
+    const timer = window.setTimeout(() => finish(false), 3_000);
+    channel.port1.onmessage = (event: MessageEvent<unknown>) => {
+      const ack = event.data as { type?: unknown; ok?: unknown } | null;
+      finish(ack?.type === "HYENI_LOCALE_ACK" && ack.ok === true);
+    };
+    channel.port1.start();
+    try {
+      worker.postMessage({ type: "HYENI_LOCALE", locale }, [channel.port2]);
+    } catch {
+      finish(false);
+    }
+  });
+}
+
 async function loadVapidConfig(signal?: AbortSignal): Promise<VapidConfig> {
   return apiRequest<VapidConfig>("/api/push-subscriptions/vapid-public-key", { signal });
 }

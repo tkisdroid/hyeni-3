@@ -232,6 +232,22 @@ export async function validateCatalogs({ rootDir = defaultRootDir(), namespaces 
     }
   }
 
+  // namespace 값 자체가 어긋난 항목(예: 스크립트 오류 문자열이 키로 새어 들어온 경우)은
+  // 위 namespace 대조에 걸리지 않아 조용히 남는다. 정본 id 집합과 직접 대조해 잡는다.
+  const allSourceIds = new Set();
+  for (const namespace of namespaces) {
+    const sourceCatalog = catalogs.get(`${sourceLocale}:${namespace}`);
+    for (const id of Object.keys(sourceCatalog ?? {})) allSourceIds.add(id);
+  }
+  if (allSourceIds.size > 0) {
+    for (const [id, entry] of Object.entries(descriptions)) {
+      if (!namespaces.includes(entry?.namespace)) {
+        errors.push(`description_invalid_namespace:${id}`);
+      }
+      if (!allSourceIds.has(id)) errors.push(`description_orphan_id:${id}`);
+    }
+  }
+
   return createResult(errors, {
     catalogs,
     descriptions,

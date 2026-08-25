@@ -1030,6 +1030,42 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   없으면 `missing_description:<id>` 로 생성이 **실패**한다) ③`node scripts/i18n/build-catalogs.mjs` ④`npm run build`.
   ⚠️ 이 함정은 테스트로 안 잡힌다 — locale JSON 만 보는 테스트는 통과하고, 화면에서만 id 가 보인다.
   브라우저 하니스로 실제 문구를 눈으로 확인하는 게 유일한 확인 방법이다.
+- ★**사용자 노출 literal 게이트(2026-08-25)**: `npm run i18n:scan`(=`scripts/i18n/scan-user-facing-literals.mjs`).
+  한글 문자를 세지 않고 **AST 로 사용자에게 보이는 자리**를 먼저 특정한다 — JSX text, 문구 attribute
+  (`aria-label`/`title`/`placeholder`/`alt`/`label`/`description`… 20종), toast·dialog·validation sink
+  (`show`/`toast`/`alert`/`confirm`/`setError`… 와 `toast*.show` 류), `document.title`. 그 자리에 도달하는 값이
+  message API(`formatMessage`·`localizeApiError`·`format*`)를 거쳤는지 본다. 값 흐름은 **모듈을 건넌다**
+  (`aiBuddyVoiceHint` → `aiBuddyFabPrompt` → `AiBuddyFab` 3파일을 관통해 잡는다).
+  ⚠️ `cond && <JSX>` 의 값은 **우변뿐**이다 — 좌변까지 보면 조건 이름 하나 때문에 큰 JSX 블록이 통째로 오탐된다.
+  ⚠️ 속성 접근은 객체 shape 를 찾아 **그 속성만** 판정한다. `cond ? build() : null` 의 `null` 분기는
+  "모양 미상"이 아니라 "기여하는 모양 없음"으로 처리해야 한다(미상으로 두면 같은 객체의 다른 라벨 때문에
+  `sheetView.title` 같은 사용자 데이터가 오탐된다).
+  ⚠️ 라틴 문자열은 **토큰 전부가 기계 식별자면** 문구가 아니다(`kdock__tab hy-press`). 문자열 전체로만 검사하면
+  공백 때문에 "두 단어 문장"으로 오판한다.
+  allowlist(`scripts/i18n/user-facing-literal-allowlist.json`)는 두 상태를 구분한다 —
+  `exempt`(번역 대상 아님, `data|protocol|brand|bootstrap|accessibility|admin|legal|dev|universal:` 접두어 강제)와
+  `pending-migration`(**면제가 아니다**, 면제 접두어 금지 + `plan`·`migrateTo` 강제). 쓰이지 않는 항목은 실패하므로
+  이관을 마치면 항목을 지워야 한다. 현재 `pending-migration` 항목이 곧 미이관 결함 목록이다.
+  회귀=`tests/userFacingLiteralScan.test.mjs`(저장소 위반 0 + fixture 행위검증을 함께 본다 — 위반 0만 검사하면
+  스캐너가 아무것도 못 잡는 상태로 퇴행해도 초록으로 보인다).
+- ★**다국어 PWA manifest·문서 metadata(2026-08-25)**: `npm run i18n:manifests` 가 `locales/manifest.json` +
+  `core.brand.name`/`core.brand.description` 으로 `public/manifests/manifest.<locale>.webmanifest` 10개를 만든다
+  (`--check` 로 stale 검사). 설치된 앱 이름·설명은 `<html lang>` 이 아니라 manifest 가 정한다.
+  ⚠️ 경로는 **manifest URL 기준 상대 경로**다 — manifest 가 `/manifests/` 안이므로 `start_url`·`scope`·아이콘이
+  `../` 여야 한다(`./` 로 두면 설치된 앱의 시작 URL 이 `/manifests/` 가 된다). `base:"./"`(Capacitor `file://`)
+  때문에 절대 경로는 쓸 수 없다. ⚠️ 아이콘 URL 은 10개 manifest 가 **동일**해야 Workbox precache 에 같은 자원이
+  다른 revision 으로 겹치지 않는다. ⚠️ VitePWA 는 자기 단일 언어 manifest 링크를 index.html 에 주입하므로
+  `vite.config.ts` 의 `singleLocaleManifestLinkPlugin` 이 그것을 지우고 `#hyeni-manifest` 하나만 남긴다 —
+  **이 플러그인에 `enforce:"post"` 가 없으면 주입 전 HTML 을 보고 조용히 통과한다**(실제로 겪은 결함).
+  생성된 `manifest.webmanifest` 파일 자체는 지우지 않는다(`scripts/lib/pwaPrecacheManifest.mjs` 계약이 전제).
+  런타임 갱신 정본은 `src/i18n/documentMetadata.ts` `applyDocumentLocale`(lang·dir·title·
+  `apple-mobile-web-app-title`·`#hyeni-description`·`#hyeni-manifest`). core catalog 이 없으면 설명을 지어내지 않는다.
+  Service Worker 는 `HYENI_LOCALE` 메시지로 **locale 코드만** 받아(계정·세션 값 금지) title 없는 web push 의
+  브랜드 폴백을 사용자 언어로 만든다. 회귀=`tests/pwaLocaleMetadata.test.mjs`.
+- ★**descriptions.json 고아 키 게이트(2026-08-25)**: `validate-catalogs.mjs` 의 기존 대조는 `entry.namespace` 가
+  실제 namespace 와 같을 때만 돌아 **namespace 값 자체가 어긋난 항목**(스크립트 오류 문자열이 키로 새어 들어온
+  `"Error: child.…"` 1건)을 놓쳤다. 이제 `description_invalid_namespace`/`description_orphan_id` 로 잡는다.
+  통합 실행은 `npm run i18n:verify`(catalog 검증+생성물 최신+manifest stale+literal 게이트+오류 표면).
 - ★**표는 열 폭을 먼저 고정한다(2026-08-17 TK 제보 "플랜 비교 줄바꿈이 난잡함")**: 항목 이름에 `white-space: nowrap`
   을 주면 표가 화면보다 넓어지고, 남은 폭에 밀린 값 칸이 한국어 글자 중간에서 끊긴다. `table-layout: fixed` +
   열 폭(44%/28%/28%) + `word-break: keep-all`·`overflow-wrap: anywhere`·`text-wrap: pretty` 로 어절 단위로만 접는다.

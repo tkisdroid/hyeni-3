@@ -110,5 +110,12 @@
   "core.error.api.parentRoleRequired.formal": "Sign in with a guardian account, then try connecting as a co-guardian again.",
   "core.error.api.childRoleRequired.formal": "Connect a child's device from Child mode.",
   "core.error.api.coparentSlotOccupied.formal": "A co-guardian is already connected. Ask the primary guardian to disconnect the existing guardian, then try again.",
-  "core.error.api.pairingConfirmationFailed.formal": "We could not confirm the role and family connection on the server. Your role was not changed; please try again."
+  "core.error.api.pairingConfirmationFailed.formal": "We could not confirm the role and family connection on the server. Your role was not changed; please try again.",
+  "core.childDock.nav": "Kid menu",
+  "core.childDock.tab.home": "Home",
+  "core.childDock.tab.sticker": "Stickers",
+  "core.childDock.tab.memo": "Chat",
+  "core.childDock.sos": "Get help",
+  "core.aiBuddy.stage.dismiss": "Close",
+  "core.brand.description": "Family schedules, supplies, child location and safety alerts in one place"
 }

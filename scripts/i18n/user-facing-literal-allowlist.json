@@ -1,0 +1,171 @@
+[
+  {
+    "path": "src/app/AiBuddyFab.tsx",
+    "pattern": "title=\\{friendName\\}",
+    "occurrences": 1,
+    "status": "exempt",
+    "reason": "data: 아이가 직접 정한 AI 친구 이름이며 사용자 이름은 번역 대상이 아니다"
+  },
+  {
+    "path": "src/screens/child/AiFriendChat.tsx",
+    "pattern": "^\\{friendName\\}$",
+    "occurrences": 1,
+    "status": "exempt",
+    "reason": "data: 아이가 직접 정한 AI 친구 이름"
+  },
+  {
+    "path": "src/screens/child/AiFriendSetup.tsx",
+    "pattern": "^\\{effectiveName\\}$",
+    "occurrences": 1,
+    "status": "exempt",
+    "reason": "data: 아이 입력·서버 저장 이름의 미리보기"
+  },
+  {
+    "path": "src/screens/child/AiFriendSetup.tsx",
+    "pattern": "placeholder=\\{persona\\.name\\}",
+    "occurrences": 1,
+    "status": "exempt",
+    "reason": "brand: 혜니 캐릭터 고유명이며 아이가 바꿀 수 있는 기본값이다"
+  },
+  {
+    "path": "src/components/LanguageSelector.tsx",
+    "pattern": "^Language$",
+    "occurrences": 1,
+    "status": "exempt",
+    "reason": "universal: 언어 선택기는 현재 언어를 모르는 사용자도 찾을 수 있어야 하므로 고정 영어 라벨과 자칭명을 함께 보여 준다"
+  },
+  {
+    "path": "src/screens/onboarding/Onboarding.tsx",
+    "pattern": "placeholder=\"KID-XXXXXXXX\"",
+    "occurrences": 1,
+    "status": "exempt",
+    "reason": "protocol: 페어링 코드의 서버 형식 자체이며 번역하면 입력 형식을 오해시킨다"
+  },
+
+  {
+    "path": "src/app/AiBuddyFab.tsx",
+    "pattern": "attention\\.nudge\\.fullLine",
+    "occurrences": 1,
+    "status": "pending-migration",
+    "reason": "화면을 채운 AI 친구 얼굴 버튼의 스크린리더 이름이 원문 한국어 template 이다",
+    "migrateTo": "core.aiBuddy.stage.faceLabel",
+    "plan": "docs/superpowers/plans/2026-08-15-global-i18n-web.md"
+  },
+  {
+    "path": "src/app/AiBuddyFab.tsx",
+    "pattern": "aria-label=\\{label\\}",
+    "occurrences": 1,
+    "status": "pending-migration",
+    "reason": "플로팅 버튼 스크린리더 이름이 원문 한국어 template(친구 이름 · 표정 · 길게 누르기 안내)이다",
+    "migrateTo": "core.aiBuddy.fab.label",
+    "plan": "docs/superpowers/plans/2026-08-15-global-i18n-web.md"
+  },
+  {
+    "path": "src/app/AiBuddyFab.tsx",
+    "pattern": "^\\{bubbleLine\\}$",
+    "occurrences": 1,
+    "status": "pending-migration",
+    "reason": "말풍선 정본(aiBuddyVoiceHint·aiBuddyFabPrompt·aiBuddyWander·aiBuddyNudge)이 모두 원문 한국어다",
+    "migrateTo": "child.aiBuddy.bubble.*",
+    "plan": "docs/superpowers/plans/2026-08-15-global-i18n-web.md"
+  },
+  {
+    "path": "src/components/ChildLocationPermissionDialog.tsx",
+    "pattern": "copy\\.",
+    "occurrences": 19,
+    "status": "pending-migration",
+    "reason": "백그라운드 위치 prominent disclosure 다이얼로그의 FORMAL_COPY·CHILD_COPY 28×2 문구가 미이관이다(Play 정책 고지 화면)",
+    "migrateTo": "onboarding.locationPermission.*",
+    "plan": "docs/superpowers/plans/2026-08-15-global-i18n-web.md"
+  },
+  {
+    "path": "src/screens/child/AiFriendChat.tsx",
+    "pattern": "alt=\\{aiBuddyEmotionLabel\\(emotion\\)\\}",
+    "occurrences": 1,
+    "status": "pending-migration",
+    "reason": "aiBuddyEmotion.EMOTION_LABEL 8개 스크린리더 표정 설명이 원문 한국어다",
+    "migrateTo": "child.aiBuddy.emotion.*",
+    "plan": "docs/superpowers/plans/2026-08-15-global-i18n-web.md"
+  },
+  {
+    "path": "src/screens/child/ChildHome.tsx",
+    "pattern": "dailySupplyLimitMessage",
+    "occurrences": 2,
+    "status": "pending-migration",
+    "reason": "eventSupplies.dailySupplyLimitMessage 가 존댓말·반말 문구를 원문으로 조립한다",
+    "migrateTo": "shared.supply.limit.child|shared.supply.limit.formal",
+    "plan": "docs/superpowers/plans/2026-08-15-global-i18n-web.md"
+  },
+  {
+    "path": "src/screens/child/ChildHome.tsx",
+    "pattern": "parentNote \\?\\?",
+    "occurrences": 2,
+    "status": "pending-migration",
+    "reason": "childHomeData.latestParentMemoText 의 사진·위치 마커 대체 문구가 원문 한국어다",
+    "migrateTo": "child.home.parentNote.photo|child.home.parentNote.location",
+    "plan": "docs/superpowers/plans/2026-08-15-global-i18n-web.md"
+  },
+  {
+    "path": "src/screens/child/overlays/StickerDetail.tsx",
+    "pattern": "sticker(?:WhenLabel|OriginText)\\(",
+    "occurrences": 2,
+    "status": "pending-migration",
+    "reason": "stickerBook 의 받은 시각·획득 사유 문구가 원문 한국어다",
+    "migrateTo": "child.sticker.detail.*",
+    "plan": "docs/superpowers/plans/2026-08-15-global-i18n-web.md"
+  },
+  {
+    "path": "src/screens/feature/FamilyConnection.tsx",
+    "pattern": "resolveDeviceLabel\\(",
+    "occurrences": 1,
+    "status": "pending-migration",
+    "reason": "deviceLabel.formatModel 이 SM- 모델에 한국어 제조사 접두어를 붙인다",
+    "migrateTo": "shared.device.manufacturer.samsung",
+    "plan": "docs/superpowers/plans/2026-08-15-global-i18n-web.md"
+  },
+  {
+    "path": "src/screens/feature/Subscription.tsx",
+    "pattern": "webBilling(?:Request)?FailureMessage\\(",
+    "occurrences": 4,
+    "status": "pending-migration",
+    "reason": "webBilling 결제 실패 안내 17개가 intl 없이 원문 한국어를 돌려준다(resolveNativeBillingFailureMessage 는 이미 intl 을 받는다)",
+    "migrateTo": "billing.web.failure.*",
+    "plan": "docs/superpowers/plans/2026-08-15-global-i18n-web.md"
+  },
+  {
+    "path": "src/screens/parent/ChildDetail.tsx",
+    "pattern": "deviceLabel \\?\\?",
+    "occurrences": 1,
+    "status": "pending-migration",
+    "reason": "deviceLabel.formatModel 의 한국어 제조사 접두어와 같은 결함이다",
+    "migrateTo": "shared.device.manufacturer.samsung",
+    "plan": "docs/superpowers/plans/2026-08-15-global-i18n-web.md"
+  },
+  {
+    "path": "src/screens/parent/ParentHome.tsx",
+    "pattern": "subscriptionCard\\.",
+    "occurrences": 4,
+    "status": "pending-migration",
+    "reason": "parentHomeSubscriptionCard 가 제목·설명·메타·행동 라벨 14개를 원문 한국어로 만들고 ko-KR 고정 날짜 포맷을 쓴다",
+    "migrateTo": "parent.home.subscriptionCard.*",
+    "plan": "docs/superpowers/plans/2026-08-15-global-i18n-web.md"
+  },
+  {
+    "path": "src/screens/parent/SocialLinks.tsx",
+    "pattern": "PROVIDER_LABEL\\[",
+    "occurrences": 2,
+    "status": "pending-migration",
+    "reason": "PROVIDER_LABEL 이 카카오·네이버를 한국어 표기로 고정해 다른 locale 에서도 한국어로 보인다",
+    "migrateTo": "parent.socialLinks.provider.*",
+    "plan": "docs/superpowers/plans/2026-08-15-global-i18n-web.md"
+  },
+  {
+    "path": "src/screens/shared/MemoChat.tsx",
+    "pattern": "formatMemoDayLabel\\(",
+    "occurrences": 1,
+    "status": "pending-migration",
+    "reason": "memoView.formatMemoDayLabel 의 상대 날짜 문구가 원문 한국어다",
+    "migrateTo": "shared.memo.dayLabel.*",
+    "plan": "docs/superpowers/plans/2026-08-15-global-i18n-web.md"
+  }
+]

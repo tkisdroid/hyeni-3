@@ -110,5 +110,12 @@
   "core.error.api.parentRoleRequired.formal": "Masuk dengan akun wali, lalu coba lagi menghubungkan sebagai wali bersama.",
   "core.error.api.childRoleRequired.formal": "Hubungkan perangkat anak dari Mode Anak.",
   "core.error.api.coparentSlotOccupied.formal": "Sudah ada satu wali bersama yang terhubung. Minta wali utama memutuskan wali yang ada, lalu coba lagi.",
-  "core.error.api.pairingConfirmationFailed.formal": "Server belum dapat mengonfirmasi peran dan koneksi keluarga. Peran Anda tidak diubah; silakan coba lagi."
+  "core.error.api.pairingConfirmationFailed.formal": "Server belum dapat mengonfirmasi peran dan koneksi keluarga. Peran Anda tidak diubah; silakan coba lagi.",
+  "core.childDock.nav": "Menu anak",
+  "core.childDock.tab.home": "Beranda",
+  "core.childDock.tab.sticker": "Stiker",
+  "core.childDock.tab.memo": "Obrolan",
+  "core.childDock.sos": "Minta bantuan",
+  "core.aiBuddy.stage.dismiss": "Tutup",
+  "core.brand.description": "Jadwal keluarga, perlengkapan, lokasi anak, dan peringatan keselamatan dalam satu tempat"
 }

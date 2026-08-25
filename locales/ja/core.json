@@ -110,5 +110,12 @@
   "core.error.api.parentRoleRequired.formal": "保護者アカウントでログインしてから、共同保護者の接続を再度お試しください。",
   "core.error.api.childRoleRequired.formal": "子どもの端末は子どもモードから接続してください。",
   "core.error.api.coparentSlotOccupied.formal": "共同保護者がすでに1人接続されています。主保護者が既存の保護者接続を解除してから、もう一度お試しください。",
-  "core.error.api.pairingConfirmationFailed.formal": "サーバーで役割と家族接続の完了を確認できませんでした。役割は変更していません。もう一度お試しください。"
+  "core.error.api.pairingConfirmationFailed.formal": "サーバーで役割と家族接続の完了を確認できませんでした。役割は変更していません。もう一度お試しください。",
+  "core.childDock.nav": "こどもメニュー",
+  "core.childDock.tab.home": "ホーム",
+  "core.childDock.tab.sticker": "シール",
+  "core.childDock.tab.memo": "トーク",
+  "core.childDock.sos": "たすけて",
+  "core.aiBuddy.stage.dismiss": "閉じる",
+  "core.brand.description": "家族の予定と持ち物、子どもの位置と安全通知をひとつに"
 }

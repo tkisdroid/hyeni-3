@@ -10,7 +10,12 @@ const read = (path) => readFileSync(resolve(root, path), "utf8");
 test("문서 viewport는 화면 확대를 막지 않고 검색 설명을 제공한다", () => {
   const html = read("index.html");
   assert.doesNotMatch(html, /maximum-scale|user-scalable\s*=\s*no/i);
-  assert.match(html, /<meta name="description" content="[^"]+"\s*\/>/);
+  // 설명 meta 는 locale 전환 때 내용이 바뀌므로 고정 id 를 함께 요구한다
+  // (id 가 없으면 applyDocumentLocale 이 대상을 못 찾아 한국어 설명이 남는다).
+  const description = html.match(/<meta[^>]*name="description"[^>]*>/g) ?? [];
+  assert.equal(description.length, 1, JSON.stringify(description));
+  assert.match(description[0], /id="hyeni-description"/);
+  assert.match(description[0], /content="[^"]+"/);
 });
 
 test("각 앱 셸은 하나의 main 랜드마크를 제공하고 화면 내부 main 중첩을 만들지 않는다", () => {

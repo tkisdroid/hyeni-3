@@ -654,7 +654,7 @@ function AiBuddyFabButton({ bottomInset, presentation }: AiBuddyFabButtonProps) 
           <button
             type="button"
             className="abf-stage__scrim"
-            aria-label="닫기"
+            aria-label={intl.formatMessage({ id: "core.aiBuddy.stage.dismiss" })}
             tabIndex={-1}
             onClick={dismissAttention}
           />

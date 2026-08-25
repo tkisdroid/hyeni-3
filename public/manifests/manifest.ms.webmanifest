@@ -1,0 +1,33 @@
+{
+  "name": "Hyeni Calendar",
+  "short_name": "Hyeni Calendar",
+  "description": "Jadual keluarga, barang keperluan, lokasi anak dan makluman keselamatan di satu tempat",
+  "lang": "ms",
+  "dir": "ltr",
+  "start_url": "../",
+  "scope": "../",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FBF7F4",
+  "theme_color": "#F76BA6",
+  "icons": [
+    {
+      "src": "../pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

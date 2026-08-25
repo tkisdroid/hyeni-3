@@ -908,6 +908,23 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   없으면 `missing_description:<id>` 로 생성이 **실패**한다) ③`node scripts/i18n/build-catalogs.mjs` ④`npm run build`.
   ⚠️ 이 함정은 테스트로 안 잡힌다 — locale JSON 만 보는 테스트는 통과하고, 화면에서만 id 가 보인다.
   브라우저 하니스로 실제 문구를 눈으로 확인하는 게 유일한 확인 방법이다.
+  ⚠️ locale JSON·`descriptions.json` 은 **정렬돼 있지 않다**(생성 당시 삽입 순서). 새 키를 넣을 때 재정렬하면
+  diff 가 파일 전체로 번져 검토가 불가능해진다 — 원래 순서를 보존하고 뒤에 append 할 것.
+- ★**사용자 노출 literal 게이트(2026-08-25, Task 9)**: `npm run i18n:scan`. 원리·함정은 AGENTS.md 의 같은 항목이
+  정본이다. 요약: 한글 문자를 세지 않고 **AST 로 보이는 자리**(JSX text·문구 attribute 20종·toast/dialog/validation
+  sink·`document.title`)를 특정한 뒤 그 값이 message API 를 거쳤는지 **모듈 경계를 넘어** 추적한다.
+  실측 결과 64건 → 오탐 정밀화(`&&` 우변만, 객체 shape 속성 단위) 52건 → ChildDock·AiBuddyFab 이관 49건 →
+  `exempt` 7건 + `pending-migration` 42건. **`pending-migration` 42건은 면제가 아니라 남은 결함 목록**이며
+  가장 큰 덩이는 `ChildLocationPermissionDialog`(백그라운드 위치 prominent disclosure, FORMAL/CHILD 28×2 문구)와
+  `webBilling`(결제 실패 안내 17개)·`parentHomeSubscriptionCard`(14개)·`aiBuddyEmotion`(표정 설명 8개)이다.
+  ⚠️ 스캐너는 hook 결과에서 온 값(`attention.nudge.line` 등)은 추적하지 못한다 — 알려진 false negative 다.
+- ★**다국어 PWA manifest·문서 metadata(2026-08-25, Task 9)**: `npm run i18n:manifests` → `public/manifests/` 10개.
+  함정 3개는 AGENTS.md 가 정본이다(① 경로는 manifest URL 기준이라 `../` ② 아이콘 URL 10개 동일 ③
+  `singleLocaleManifestLinkPlugin` 에 `enforce:"post"` 필수). 런타임은 `src/i18n/documentMetadata.ts`
+  `applyDocumentLocale` 한 곳이고 `LocaleProvider` 가 위임한다. Service Worker 는 `HYENI_LOCALE` 로 locale 코드만
+  받아 title 없는 web push 브랜드 폴백을 사용자 언어로 만든다(계정·세션 값 금지).
+  검증 실측: 진입 번들 349,038/500,000B, 초기 CSS 44,996/48,000B, PWA precache 471 URL 중복 0,
+  앱 테스트 1,956개 중 1,955 통과(유일 실패=`androidMergedManifestSecurity`, JAVA_HOME 미설정 환경 사유).
 - ★**AI 친구는 아이를 알아 가는 친구다(2026-08-19 TK 지시)**: 대화는 관계를 쌓는 데 쓰여야 한다.
   정본은 `worker/shared/aiChildHabits.js` 하나다.
   ①**습관 기억** — 아이가 지나가듯 말한 습관("집에 오면 내일 일정 정리해")을 `extractChildHabitMemory` 가 뽑아

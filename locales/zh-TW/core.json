@@ -110,5 +110,12 @@
   "core.error.api.parentRoleRequired.formal": "請先登入監護人帳號，再重新嘗試連接共同監護人。",
   "core.error.api.childRoleRequired.formal": "請從孩子模式連接孩子的裝置。",
   "core.error.api.coparentSlotOccupied.formal": "已有一名共同監護人連接。請由主要監護人先解除現有監護人的連接，然後重試。",
-  "core.error.api.pairingConfirmationFailed.formal": "伺服器未能確認角色和家庭連接已完成。您的角色沒有變更，請重試。"
+  "core.error.api.pairingConfirmationFailed.formal": "伺服器未能確認角色和家庭連接已完成。您的角色沒有變更，請重試。",
+  "core.childDock.nav": "孩子選單",
+  "core.childDock.tab.home": "首頁",
+  "core.childDock.tab.sticker": "貼紙",
+  "core.childDock.tab.memo": "對話",
+  "core.childDock.sos": "求助",
+  "core.aiBuddy.stage.dismiss": "關閉",
+  "core.brand.description": "家庭行程、物品準備、孩子位置與安全提醒一次搞定"
 }

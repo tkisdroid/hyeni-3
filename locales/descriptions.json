@@ -1,11 +1,4 @@
 {
-  "Error: child.aiChat.confirm.callParent.action": {
-    "namespace": "Error: child",
-    "audience": "parent",
-    "qualityTier": "B",
-    "variables": {},
-    "description": "Error: child 다국어 문구: action"
-  },
   "billing.aiCredit.creditUse": {
     "namespace": "billing",
     "audience": "parent",
@@ -24016,7 +24009,9 @@
     "namespace": "parent",
     "audience": "parent",
     "qualityTier": "A",
-    "variables": { "guardianName": "현재 연결된 공동 보호자 이름" },
+    "variables": {
+      "guardianName": "현재 연결된 공동 보호자 이름"
+    },
     "description": "새 보호자 초대 전 기존 보호자 해제가 필요함을 안내"
   },
   "parent.parentFamily.manageGuardian": {
@@ -24037,14 +24032,18 @@
     "namespace": "parent",
     "audience": "parent",
     "qualityTier": "A",
-    "variables": { "guardianName": "해제할 공동 보호자 이름" },
+    "variables": {
+      "guardianName": "해제할 공동 보호자 이름"
+    },
     "description": "공동 보호자 연결 해제 버튼"
   },
   "parent.familyConnection.removeCoParentConfirmTitle": {
     "namespace": "parent",
     "audience": "parent",
     "qualityTier": "A",
-    "variables": { "guardianName": "해제할 공동 보호자 이름" },
+    "variables": {
+      "guardianName": "해제할 공동 보호자 이름"
+    },
     "description": "공동 보호자 연결 해제 확인 제목"
   },
   "parent.familyConnection.removeCoParentDescription1": {
@@ -24079,7 +24078,9 @@
     "namespace": "parent",
     "audience": "parent",
     "qualityTier": "A",
-    "variables": { "guardianName": "해제한 공동 보호자 이름" },
+    "variables": {
+      "guardianName": "해제한 공동 보호자 이름"
+    },
     "description": "공동 보호자 연결 해제 완료 안내"
   },
   "onboarding.oauth.returnToApp": {
@@ -24088,5 +24089,54 @@
     "qualityTier": "B",
     "variables": {},
     "description": "앱이 아닌 브라우저에서 소셜 로그인 콜백이 끝났을 때 앱에서 다시 시도하라고 안내하는 문구"
+  },
+  "core.childDock.nav": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 모드 하단 독 nav 의 스크린리더 이름"
+  },
+  "core.childDock.tab.home": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 하단 독 홈 탭 라벨"
+  },
+  "core.childDock.tab.sticker": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 하단 독 스티커북 탭 라벨"
+  },
+  "core.childDock.tab.memo": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아이 하단 독 부모 대화 탭 라벨"
+  },
+  "core.childDock.sos": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "아이 하단 독 SOS 버튼의 스크린리더 이름. 실제 발사는 SOS 화면 3초 홀드다"
+  },
+  "core.aiBuddy.stage.dismiss": {
+    "namespace": "core",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "AI 친구가 화면을 채워 부를 때 바깥 스크림의 닫기 이름"
+  },
+  "core.brand.description": {
+    "namespace": "core",
+    "audience": "formal",
+    "qualityTier": "A",
+    "variables": {},
+    "description": "PWA manifest description 과 문서 meta description 에 함께 쓰는 앱 한 줄 소개"
   }
 }

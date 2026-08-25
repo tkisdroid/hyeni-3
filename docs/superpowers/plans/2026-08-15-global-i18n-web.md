@@ -788,6 +788,23 @@ npm run typecheck
 
 ### Task 9: PWA metadata·manifest와 literal scanner
 
+> **진행 상태(2026-08-25)** — 게이트·metadata·위생 작업은 완료, 문구 이관은 잔여.
+>
+> 완료: `scripts/i18n/scan-user-facing-literals.mjs`(AST 위치 기반 sink + 모듈 간 taint) ·
+> `scripts/i18n/user-facing-literal-allowlist.json`(`exempt` 7 / `pending-migration` 42) ·
+> `scripts/i18n/generate-pwa-manifests.mjs` + `public/manifests/*.webmanifest` 10개 ·
+> `src/i18n/documentMetadata.ts` · `index.html`(`#hyeni-manifest`·`#hyeni-description`) ·
+> `vite.config.ts`(단일 manifest 링크 보장) · `src/sw.ts`(`HYENI_LOCALE` locale 전용 채널) ·
+> `package.json`(`i18n:scan`/`i18n:manifests`/`i18n:verify`) ·
+> `src/i18n/messages.ts`·`useMessage.ts` 삭제 · `descriptions.json` 고아 키 제거와 재발 방지 게이트 ·
+> `tests/userFacingLiteralScan.test.mjs`(9) · `tests/pwaLocaleMetadata.test.mjs`(11).
+>
+> **미완료(다음 작업 단위)**: allowlist 의 `pending-migration` 42건 = catalog 밖에 남은 실제 사용자 문구.
+> 이 항목들은 면제가 아니라 결함 기록이며, 각 항목의 `migrateTo` 로 이관하면 항목을 지워야 한다
+> (남겨 두면 `stale_allowlist` 로 실패한다). 규모는 신규 message id 약 140개 × 10 locale 이고
+> 가장 큰 덩이는 `ChildLocationPermissionDialog`(백그라운드 위치 prominent disclosure, 28×2 문구)다.
+> 이관에는 순수 transform 의 시그니처 변경(`intl` 주입)과 해당 회귀 테스트 갱신이 함께 필요하다.
+
 **Files:**
 - Create: `src/i18n/documentMetadata.ts`
 - Create: `scripts/i18n/generate-pwa-manifests.mjs`

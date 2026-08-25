@@ -6,6 +6,7 @@
  */
 import { useEffect } from "react";
 import { NavLink, useNavigate } from "react-router";
+import { useIntl } from "react-intl";
 import { asset } from "@/lib/assets";
 import { preloadRoute, preloadRoutesWhenIdle } from "./routePreload";
 import { useAuth } from "@/auth/AuthContext";
@@ -17,13 +18,14 @@ import { LEGACY_FAMILY_TIME_ZONE } from "@/i18n/format";
 import "./ChildDock.css";
 
 const TABS = [
-  { to: "/child/home", label: "홈", icon: "ui/place-home.webp" },
-  { to: "/child/sticker", label: "스티커", icon: "ui/menu-sticker.webp" },
-  { to: "/child/memo", label: "대화", icon: "ui/chat-heart.webp" },
+  { to: "/child/home", labelId: "core.childDock.tab.home", icon: "ui/place-home.webp" },
+  { to: "/child/sticker", labelId: "core.childDock.tab.sticker", icon: "ui/menu-sticker.webp" },
+  { to: "/child/memo", labelId: "core.childDock.tab.memo", icon: "ui/chat-heart.webp" },
 ] as const;
 
 export function ChildDock() {
   const navigate = useNavigate();
+  const intl = useIntl();
   const { userId } = useAuth();
   const { data: family } = useMyFamily();
   const myMember = family?.members.find((m) => m.role === "child" && m.user_id === userId) ?? null;
@@ -35,14 +37,14 @@ export function ChildDock() {
   useEffect(() => preloadRoutesWhenIdle([...TABS.map((tab) => tab.to), "/child/sos"]), []);
 
   return (
-    <nav className="kdock" aria-label="아이 메뉴">
+    <nav className="kdock" aria-label={intl.formatMessage({ id: "core.childDock.nav" })}>
       <div className="kdock__bar">
         {TABS.map((tab) => (
           <NavLink
             key={tab.to}
             to={tab.to}
             className="kdock__tab hy-press"
-            aria-label={tab.label}
+            aria-label={intl.formatMessage({ id: tab.labelId })}
             onPointerDown={() => preloadRoute(tab.to)}
           >
             {tab.to === "/child/memo" && unread > 0 && <span className="kdock__badge">{unread}</span>}
@@ -53,7 +55,7 @@ export function ChildDock() {
       <button
         type="button"
         className="kdock__sos hy-press"
-        aria-label="도움 요청"
+        aria-label={intl.formatMessage({ id: "core.childDock.sos" })}
         onPointerDown={() => preloadRoute("/child/sos")}
         onClick={() => navigate("/child/sos")}
       >

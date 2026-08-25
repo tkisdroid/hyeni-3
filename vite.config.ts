@@ -16,6 +16,37 @@ function comparePrecacheEntries(left: { url: string }, right: { url: string }): 
   return left.url < right.url ? -1 : 1;
 }
 
+/**
+ * VitePWA 는 자기 단일 언어 manifest 링크를 index.html 에 주입한다. 그대로 두면
+ * `#hyeni-manifest`(10개 locale manifest) 와 두 개가 되어 브라우저가 문서 순서상 앞선
+ * 것만 쓰고, 언어 전환이 설치 이름에 반영되지 않는다. 링크는 하나만 남긴다.
+ *
+ * 생성된 `manifest.webmanifest` 자체는 지우지 않는다 — Workbox precache 목록
+ * (`scripts/lib/pwaPrecacheManifest.mjs`) 계약이 그 URL 을 전제한다.
+ */
+function singleLocaleManifestLinkPlugin() {
+  const injectedLink = /\s*<link\s+rel="manifest"\s+href="\.\/manifest\.webmanifest">/g;
+  return {
+    name: "hyeni-single-locale-manifest-link",
+    // VitePWA build 플러그인이 `enforce: "post"` 라 같은 단계에 두고 배열 뒤에 놓아야
+    // 그 주입 결과를 볼 수 있다. 이 값을 지우면 검사가 주입 전 HTML 을 보고 조용히 통과한다.
+    enforce: "post" as const,
+    transformIndexHtml: {
+      order: "post" as const,
+      handler(html: string) {
+        const cleaned = html.replace(injectedLink, "");
+        const links = cleaned.match(/<link[^>]*rel="manifest"[^>]*>/g) ?? [];
+        if (links.length !== 1 || !links[0].includes('id="hyeni-manifest"')) {
+          throw new Error(
+            `manifest 링크가 정확히 1개(#hyeni-manifest)여야 합니다. 현재: ${JSON.stringify(links)}`,
+          );
+        }
+        return cleaned;
+      },
+    },
+  };
+}
+
 // 상대 경로 base('./') → Capacitor(file://)와 PWA 모두에서 자원이 정상 로드됩니다.
 export default defineConfig({
   base: "./",
@@ -95,6 +126,7 @@ export default defineConfig({
       devOptions: { enabled: false },
     }),
     initialChunkProvenancePlugin({ rootDir }),
+    singleLocaleManifestLinkPlugin(),
   ],
   server: { port: 5173, host: true },
   build: {

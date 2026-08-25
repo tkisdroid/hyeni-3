@@ -110,5 +110,12 @@
   "core.error.api.parentRoleRequired.formal": "Log masuk dengan akaun penjaga, kemudian cuba sambungkan penjaga bersama sekali lagi.",
   "core.error.api.childRoleRequired.formal": "Sambungkan peranti anak daripada Mod Anak.",
   "core.error.api.coparentSlotOccupied.formal": "Seorang penjaga bersama sudah disambungkan. Minta penjaga utama memutuskan penjaga sedia ada, kemudian cuba lagi.",
-  "core.error.api.pairingConfirmationFailed.formal": "Pelayan belum dapat mengesahkan peranan dan sambungan keluarga. Peranan anda tidak diubah; sila cuba lagi."
+  "core.error.api.pairingConfirmationFailed.formal": "Pelayan belum dapat mengesahkan peranan dan sambungan keluarga. Peranan anda tidak diubah; sila cuba lagi.",
+  "core.childDock.nav": "Menu anak",
+  "core.childDock.tab.home": "Utama",
+  "core.childDock.tab.sticker": "Pelekat",
+  "core.childDock.tab.memo": "Bualan",
+  "core.childDock.sos": "Minta bantuan",
+  "core.aiBuddy.stage.dismiss": "Tutup",
+  "core.brand.description": "Jadual keluarga, barang keperluan, lokasi anak dan makluman keselamatan di satu tempat"
 }

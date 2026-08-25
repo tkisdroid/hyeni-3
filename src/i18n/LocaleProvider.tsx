@@ -22,9 +22,12 @@ import type {
 import {
   isSupportedLocale,
   localeDirection,
-  localizedBrandName,
   type SupportedLocale,
 } from "./locale";
+import {
+  applyDocumentLocale,
+  resolveLocaleMetadata,
+} from "./documentMetadata";
 import {
   LOCALE_STORAGE_KEY,
   resolveWebLocale,
@@ -35,6 +38,7 @@ import {
   localeBootstrapCopy,
 } from "./bootstrapCopy";
 import { fetchAccessCountry } from "@/lib/api/endpoints/accessRegion";
+import { syncWebPushLocale } from "@/lib/webPush";
 import {
   accessCountryFromClientHints,
   localeForAccessCountry,
@@ -106,13 +110,7 @@ function updateInitialDocument(
   locale: SupportedLocale,
   coreMessages: CatalogMessages,
 ): void {
-  if (typeof document === "undefined") return;
-  const brand = coreMessages["core.brand.name"] ?? localizedBrandName(locale);
-  document.documentElement.lang = locale;
-  document.documentElement.dir = localeDirection(locale);
-  document.title = brand;
-  document.querySelector('meta[name="apple-mobile-web-app-title"]')
-    ?.setAttribute("content", brand);
+  applyDocumentLocale(locale, resolveLocaleMetadata(locale, coreMessages));
 }
 
 function createBrowserCoordinator(): {
@@ -152,6 +150,12 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     void coordinator.setLocale(coordinator.getSnapshot().locale).catch(() => undefined);
     return unsubscribe;
   }, [coordinator]);
+
+  // 웹 push 브랜드 폴백을 사용자 언어로 맞춘다(계정 정보 없이 locale 만 보낸다).
+  // 실패는 무시한다 — 알림은 기존 폴백으로 정상 표시된다.
+  useEffect(() => {
+    void syncWebPushLocale(runtime.locale).catch(() => undefined);
+  }, [runtime.locale]);
 
   useEffect(() => {
     let active = true;
