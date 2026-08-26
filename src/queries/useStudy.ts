@@ -13,6 +13,7 @@ import {
   type StudyRange,
 } from "@/lib/api/endpoints/study";
 import type { StudyMutationRequest } from "@/lib/api/studyMutationRequest";
+import type { StudyClaimContext } from "@/transform/studyClaimContext";
 import { qk } from "./keys";
 
 function exactStudyInvalidations(
@@ -107,10 +108,11 @@ export function useCreateStudyAttachChallenge() {
 export function useClaimStudyProfile() {
   const invalidate = useInvalidateExactStudyChild();
   return useMutation({
-    mutationFn: (input: Readonly<{ request: StudyMutationRequest; claimToken: string }>) =>
-      input.request.run(({ memberId, requestId }) =>
-        claimStudyProfile(memberId, input.claimToken, requestId)),
+    mutationFn: (input: Readonly<{ request: StudyMutationRequest; claim: StudyClaimContext }>) =>
+      input.claim.consume((claimToken) => input.request.run(({ memberId, requestId }) =>
+        claimStudyProfile(memberId, claimToken, requestId))),
     onSuccess: (_result, input) => invalidate(input.request.memberId),
+    retry: false,
   });
 }
 

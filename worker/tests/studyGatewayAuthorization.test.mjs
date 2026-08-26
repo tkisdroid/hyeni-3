@@ -104,7 +104,7 @@ function createStudyBinding() {
       return {
         apiVersion: "2026-08-24",
         purpose: "attach_child_device",
-        qrUrl: "https://study.hyenicalendar.com/math/pair#token",
+        qrUrl: `https://study.hyenicalendar.com/math/connect#${"a".repeat(43)}`,
         expiresAt: "2026-08-27T02:00:00.000Z",
       };
     },
@@ -231,6 +231,10 @@ test("활성 공동 보호자는 읽고 대표 보호자만 연결 상태를 변
   const requestId = "22222222-2222-4222-8222-222222222222";
   assert.equal((await h.request("POST", "/api/study/children/child-a/attach-challenges", "guardian", {
     headers: { "Idempotency-Key": requestId },
+  })).status, 403);
+  assert.equal((await h.request("POST", "/api/study/children/child-a/claim", "guardian", {
+    headers: { "Idempotency-Key": requestId, "Content-Type": "application/json" },
+    body: JSON.stringify({ claimToken: "a".repeat(43) }),
   })).status, 403);
   assert.equal((await h.request(
     "DELETE",

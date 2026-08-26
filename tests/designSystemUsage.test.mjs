@@ -2107,6 +2107,8 @@ const semanticSurfaceManifest = [
     ["src/screens/feature/StudyManagement.css", "study-management__state", "glass-card"],
     ["src/screens/feature/StudyManagement.css", "study-report", "glass-card"],
     ["src/screens/feature/StudyManagement.css", "study-devices", "glass-card"],
+    ["src/screens/feature/StudyManagement.css", "study-pairing", "glass-card"],
+    ["src/screens/feature/StudyManagement.css", "study-claim", "glass-card"],
     ["src/screens/parent/ParentHome.redesign.css", "ph-study-card", "glass-panel"],
 ];
 
@@ -2197,6 +2199,11 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/feature/StudyManagement.css", ".study-devices__revoke"],
   ["src/screens/feature/StudyManagement.css", ".study-devices__cancel"],
   ["src/screens/feature/StudyManagement.css", ".study-devices__confirm-button"],
+  ["src/screens/feature/StudyManagement.css", ".study-pairing__issue"],
+  ["src/screens/feature/StudyManagement.css", ".study-claim__primary"],
+  ["src/screens/feature/StudyManagement.css", ".study-claim__secondary"],
+  ["src/screens/feature/StudyManagement.css", ".study-claim__child"],
+  ["src/screens/feature/StudyManagement.css", ".study-claim__child[aria-checked=\"true\"]"],
   ["src/screens/parent/ParentHome.css", ".ph-study-card__icon"],
   // 히어로 캐러셀의 좌우 화살표와 위치 점 — 콘텐츠 판이 아니라 슬라이드 조작면·현재 위치 표식이다.
   ["src/screens/parent/ParentHome.redesign.css", ".ph-hero-carousel__arrow"],

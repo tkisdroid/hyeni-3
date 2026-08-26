@@ -8,6 +8,7 @@ import { useToast } from "@/app/toast";
 import { deriveAuthState, useAuth } from "@/auth/AuthContext";
 import { ChildLocationPermissionDialog } from "@/components/ChildLocationPermissionDialog";
 import { usageAccessPromptStorageKey } from "@/transform/usageAccessPrompt";
+import { clearPendingStudyClaim } from "@/transform/studyClaimContext";
 import { homePathForRole } from "@/auth/guards";
 import {
   beginOnboardingAuthTransition,
@@ -280,6 +281,7 @@ export function Onboarding() {
   useEffect(() => {
     const cancellation = readOAuthCancellation();
     if (cancellation) {
+      try { clearPendingStudyClaim(window.sessionStorage); } catch { /* 저장소 접근 불가 */ }
       const restored = readOnboardingDraft() ?? initialDraft;
       try {
         finishOAuthCancellation(cancellation);
@@ -313,6 +315,7 @@ export function Onboarding() {
     // 이 브라우저에는 state·transactionSecret이 없어 교환이 불가능하므로, 죽은 코드로
     // 네트워크를 때리는 대신 앱에서 다시 시도하라고 정직하게 안내한다(코드는 서버가 소비 안 함).
     if (!isNativePlatform() && !hasLocalOAuthContext()) {
+      try { clearPendingStudyClaim(window.sessionStorage); } catch { /* 저장소 접근 불가 */ }
       clearOAuthCallbackUrl();
       setAuthEntryError(intl.formatMessage({ id: "onboarding.oauth.returnToApp" }));
       show(intl.formatMessage({ id: "onboarding.oauth.returnToApp" }), "⚠️");
@@ -350,6 +353,7 @@ export function Onboarding() {
         // toast·step·busy 같은 UI 상태는 아래 active token만 변경한다.
         clearOAuthCallbackUrl();
         if (!canApplySideEffects) return;
+        try { clearPendingStudyClaim(window.sessionStorage); } catch { /* 저장소 접근 불가 */ }
         clearOAuthExternalBusy();
         const message = localizeApiError(e, intl, "formal");
         setAuthEntryError(message);

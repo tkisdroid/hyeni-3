@@ -98,6 +98,7 @@ const routes = [
   route("subscription", "Subscription", "parent"),
   route("trial-lock", "TrialLock", "parent"),
   route("study-management", "StudyManagement", "parent"),
+  route("study-management/claim", "StudyManagement", "parent"),
   route("notifications", "Notifications", "parent"),
   route("remote-audio", "RemoteAudio", "parent"),
   route("place-manager", "PlaceManager", "parent"),
@@ -156,8 +157,8 @@ test("60개 지연 화면의 component·module·named export 정본을 AST로 �
   assert.deepEqual(parseAppRouteContract(app).lazyScreens, lazyScreens);
 });
 
-test("61개 경로의 component·guard·출시 조건 정본을 AST로 고정한다", () => {
-  assert.equal(routes.length, 61);
+test("62개 경로의 component·guard·출시 조건 정본을 AST로 고정한다", () => {
+  assert.equal(routes.length, 62);
   assert.deepEqual(parseAppRouteContract(app).routes, routes);
   assert.doesNotThrow(() => assertAppRouteContract(app, expected));
 });

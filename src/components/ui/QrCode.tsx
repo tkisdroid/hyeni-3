@@ -13,6 +13,10 @@ interface QrCodeProps {
   light?: string;
   /** 스크린리더 라벨. */
   label?: string;
+  /** 특정 기능이 locale catalog를 쓰지 않을 때의 생성 실패 문구. */
+  fallbackText?: string;
+  /** 특정 기능이 locale catalog를 쓰지 않을 때의 생성 실패 접근성 라벨. */
+  failedLabel?: string;
 }
 
 /**
@@ -20,7 +24,15 @@ interface QrCodeProps {
  * qrcode 브라우저 빌드의 toCanvas 사용 — fs 의존 없음, 오프라인 동작.
  * 생성 실패 시 조용히 빈 상태 유지(상위에서 코드 텍스트로 대체 안내).
  */
-export function QrCode({ value, size = 220, dark = "#2A2327", light = "#FFFFFF", label }: QrCodeProps) {
+export function QrCode({
+  value,
+  size = 220,
+  dark = "#2A2327",
+  light = "#FFFFFF",
+  label,
+  fallbackText,
+  failedLabel,
+}: QrCodeProps) {
   const intl = useIntl();
   const accessibleLabel = label ?? intl.formatMessage({ id: "shared.qr.label" });
   const ref = useRef<HTMLCanvasElement>(null);
@@ -48,7 +60,7 @@ export function QrCode({ value, size = 220, dark = "#2A2327", light = "#FFFFFF",
     return (
       <div
         role="img"
-        aria-label={intl.formatMessage({ id: "shared.qr.failedLabel" }, { label: accessibleLabel })}
+        aria-label={failedLabel ?? intl.formatMessage({ id: "shared.qr.failedLabel" }, { label: accessibleLabel })}
         style={{
           width: size,
           height: size,
@@ -62,7 +74,7 @@ export function QrCode({ value, size = 220, dark = "#2A2327", light = "#FFFFFF",
           borderRadius: 12,
         }}
       >
-        {intl.formatMessage({ id: "shared.qr.enterManually" })}
+        {fallbackText ?? intl.formatMessage({ id: "shared.qr.enterManually" })}
       </div>
     );
   }

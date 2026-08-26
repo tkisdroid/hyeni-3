@@ -3,6 +3,7 @@
  * claim 기반: role/familyId/isAnonymous 로 다음 단계를 정한다.
  */
 import type { AuthState, AuthRole } from "./AuthContext";
+import { pendingStudyClaimDestination } from "@/transform/studyClaimContext";
 
 /** 미인증 → 온보딩으로. */
 export function needsOnboarding(state: AuthState): boolean {
@@ -26,6 +27,18 @@ export function needsFamilySetup(state: AuthState): boolean {
 
 /** role 별 홈 경로. */
 export function homePathForRole(role: AuthRole | null): string {
+  if (typeof window !== "undefined") {
+    try {
+      const pendingClaim = pendingStudyClaimDestination(
+        role,
+        window.sessionStorage,
+        { now: () => Date.now() },
+      );
+      if (pendingClaim) return pendingClaim;
+    } catch {
+      // sessionStorage 접근이 막혀도 기존 역할 홈 라우팅은 유지한다.
+    }
+  }
   if (role === "child") return "/child/home";
   if (role === "teacher") return "/teacher/home";
   return "/parent/home";

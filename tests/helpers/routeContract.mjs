@@ -251,7 +251,7 @@ function duplicateValues(values) {
 export function assertAppRouteContract(source, expected) {
   const parsed = parseAppRouteContract(source);
   assert.equal(parsed.lazyScreens.length, 60, "지연 화면은 정확히 60개여야 합니다.");
-  assert.equal(parsed.routes.length, 61, "지연 라우트는 정확히 61개여야 합니다.");
+  assert.equal(parsed.routes.length, 62, "지연 라우트는 정확히 62개여야 합니다.");
   assert.deepEqual(parsed.staticScreenImports, [], "Splash 외 화면의 정적 import를 허용하지 않습니다.");
   assert.deepEqual(parsed.lazyScreens, expected.lazyScreens, "지연 화면 모듈·named export 정본이 다릅니다.");
   assert.deepEqual(parsed.routes, expected.routes, "라우트 path·화면·guard 정본이 다릅니다.");
@@ -271,15 +271,18 @@ export function assertAppRouteContract(source, expected) {
     routeCounts.set(component, (routeCounts.get(component) ?? 0) + 1);
   }
   for (const { component } of parsed.lazyScreens) {
+    const expectedRouteCount = component === "MemoChat" || component === "StudyManagement" ? 2 : 1;
     assert.equal(
       routeCounts.get(component),
-      component === "MemoChat" ? 2 : 1,
+      expectedRouteCount,
       `${component} 라우트 사용 횟수가 정본과 다릅니다.`,
     );
   }
   assert.deepEqual(
-    [...routeCounts].filter(([component, count]) => count > 1 && component !== "MemoChat"),
+    [...routeCounts].filter(([component, count]) => (
+      count > 1 && component !== "MemoChat" && component !== "StudyManagement"
+    )),
     [],
-    "MemoChat 외 화면의 라우트 중복 사용을 허용하지 않습니다.",
+    "MemoChat·StudyManagement 외 화면의 라우트 중복 사용을 허용하지 않습니다.",
   );
 }

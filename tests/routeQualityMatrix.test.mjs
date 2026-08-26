@@ -35,7 +35,7 @@ const route = (
   dialog = "none",
 ) => ({ path, screen, source, guard, availability, kind, states, back, tone, dialog });
 
-// App.tsx에서 실제 렌더되는 61개 사용자 화면의 출시 품질 계약이다.
+// App.tsx에서 실제 렌더되는 62개 사용자 화면의 출시 품질 계약이다.
 // 같은 MemoChat 소스를 쓰더라도 부모/아이 라우트는 guard·말투 계약이 달라 별도 행으로 둔다.
 const routeQualityMatrix = [
   route("parent/home", "ParentHome", "src/screens/parent/ParentHome.tsx", "parent", "all", "query", [
@@ -71,7 +71,8 @@ const routeQualityMatrix = [
   route("parent/family", "ParentFamily", "src/screens/parent/ParentFamily.tsx", "parent", "all", "query", queryStates(/isLoading/, /isError/, /view\.children\.length === 0/, /view\.children\.map/, /void refetchFamily\(\)/), "safe", "parent-formal"),
   route("subscription", "Subscription", "src/screens/feature/Subscription.tsx", "parent", "all", "hybrid", queryStates(/subscriptionQueryState === "loading"/, /subscriptionQueryState === "error"/, /subscriptionDataEmpty/, /BENEFITS\.map/, /void retrySubscription\(\)/), "screen", "parent-formal"),
   route("trial-lock", "TrialLock", "src/screens/feature/TrialLock.tsx", "parent", "all", "static", null, "screen", "parent-formal"),
-  route("study-management", "StudyManagement", "src/screens/feature/StudyManagement.tsx", "parent", "all", "query", queryStates(/studyManagementLoading/, /studyManagementError/, /view\.kind === "no-active-children"/, /<StudyReportPanel/, /void retryStudyManagement\(\)/), "screen", "parent-formal"),
+  route("study-management", "StudyManagement", "src/screens/feature/StudyManagement.tsx", "parent", "all", "query", queryStates(/studyManagementLoading/, /studyManagementError/, /activeStudyChildren\.length === 0/, /<StudyReportPanel/, /void retryStudyManagement\(\)/), "screen", "parent-formal"),
+  route("study-management/claim", "StudyManagement", "src/screens/feature/StudyManagement.tsx", "parent", "all", "query", queryStates(/studyManagementLoading/, /studyManagementError/, /activeStudyChildren\.length === 0/, /<StudyClaimGate/, /void retryStudyManagement\(\)/), "screen", "parent-formal"),
   route("notifications", "Notifications", "src/screens/feature/Notifications.tsx", "parent", "all", "query", queryStates(/isLoading/, /isError/, /groups\.length === 0/, /groups\.map/, /refetch\(\)/), "safe", "parent-formal"),
   route("remote-audio", "RemoteAudio", "src/screens/feature/RemoteAudio.tsx", "parent", "all", "hybrid", queryStates(/remoteAudioQueryState === "loading"/, /remoteAudioQueryState === "error"/, /childMembers\.length === 0/, /className="ra-start hy-press"/, /void retryRemoteAudio\(\)/), "screen", "parent-formal"),
   route("place-manager", "PlaceManager", "src/screens/feature/PlaceManager.tsx", "parent", "all", "query", queryStates(/placesLoading/, /placesError/, /places\.length === 0/, /places\.map/, /void retryPlaces\(\)/), "screen", "parent-formal"),
@@ -640,11 +641,11 @@ function extractAppRoutes() {
   return routes;
 }
 
-test("라우트 품질 매트릭스는 App.tsx의 61개 실제 화면·가드·출시 범위를 정확히 대조한다", () => {
-  assert.equal(routeQualityMatrix.length, 61);
-  assert.equal(new Set(routeQualityMatrix.map((item) => item.path)).size, 61, "매트릭스 path 중복");
-  assert.equal(new Set(routeQualityMatrix.map((item) => item.source)).size, 60, "MemoChat 외 화면 소스 중복 또는 누락");
-  assert.equal(routeQualityMatrix.filter((item) => item.kind === "query").length, 33);
+test("라우트 품질 매트릭스는 App.tsx의 62개 실제 화면·가드·출시 범위를 정확히 대조한다", () => {
+  assert.equal(routeQualityMatrix.length, 62);
+  assert.equal(new Set(routeQualityMatrix.map((item) => item.path)).size, 62, "매트릭스 path 중복");
+  assert.equal(new Set(routeQualityMatrix.map((item) => item.source)).size, 60, "MemoChat·StudyManagement 외 화면 소스 중복 또는 누락");
+  assert.equal(routeQualityMatrix.filter((item) => item.kind === "query").length, 34);
   assert.equal(routeQualityMatrix.filter((item) => item.kind === "hybrid").length, 22);
   assert.equal(routeQualityMatrix.filter((item) => item.kind === "mutation").length, 5);
   assert.equal(routeQualityMatrix.filter((item) => item.kind === "static").length, 1);
@@ -653,7 +654,7 @@ test("라우트 품질 매트릭스는 App.tsx의 61개 실제 화면·가드·�
   }
 
   const actual = extractAppRoutes();
-  assert.equal(actual.length, 61, "App.tsx 사용자 화면 수가 바뀌면 매트릭스도 함께 갱신해야 합니다");
+  assert.equal(actual.length, 62, "App.tsx 사용자 화면 수가 바뀌면 매트릭스도 함께 갱신해야 합니다");
 
   const signature = (item) => [item.path, item.screen, item.source, item.guard, item.availability].join("|");
   const expectedSignatures = routeQualityMatrix.map(signature).sort();
@@ -688,8 +689,8 @@ test("중첩 렌더 컴포넌트의 read query도 화면 상태 계약에서 빠
 
 test("query 화면은 loading/error/empty/success와 실제 retry UI 계약을 모두 가진다", () => {
   const queryRows = routeQualityMatrix.filter((item) => item.kind === "query");
-  assert.equal(queryRows.length, 33);
-  assert.equal(new Set(queryRows.map((item) => item.source)).size, 32, "MemoChat만 부모·아이 라우트에서 공유됩니다");
+  assert.equal(queryRows.length, 34);
+  assert.equal(new Set(queryRows.map((item) => item.source)).size, 32, "MemoChat과 StudyManagement만 역할이 같은 세부 라우트에서 공유됩니다");
 
   const failures = [];
   for (const item of queryRows) {

@@ -43,6 +43,7 @@ import {
 } from "@/transform/oauthCodeOnce";
 import { deriveAuthState } from "@/auth/AuthContext";
 import { homePathForRole } from "@/auth/guards";
+import { clearPendingStudyClaim } from "@/transform/studyClaimContext";
 
 type DeepLinkCallback = OAuthDeepLinkCallback;
 
@@ -113,6 +114,9 @@ async function exchange(cb: DeepLinkCallback, onResult?: OAuthResultHandler): Pr
     onResult?.({ ok: true, provider: cb.provider, mode });
     return true;
   } catch (error) {
+    if (mode === "login" && typeof window !== "undefined") {
+      try { clearPendingStudyClaim(window.sessionStorage); } catch { /* 저장소 접근 불가 */ }
+    }
     console.error("네이티브 OAuth 콜백 처리 실패:", error);
     onResult?.({ ok: false, provider: cb.provider, mode, errorCode: "oauth_exchange_failed" });
     if (mode === "link" && typeof window !== "undefined") {
@@ -132,6 +136,9 @@ async function cancel(
   let mode = peekOAuthFlowMode();
   try {
     mode = finishOAuthCancellation(cb);
+    if (mode === "login" && typeof window !== "undefined") {
+      try { clearPendingStudyClaim(window.sessionStorage); } catch { /* 저장소 접근 불가 */ }
+    }
     onResult?.({ ok: false, provider: cb.provider, mode, errorCode: "oauth_cancelled" });
     if (mode === "link" && typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent(OAUTH_LINK_EVENT, {

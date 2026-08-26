@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, RefreshCw } from "lucide-react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { useActiveChild } from "@/app/activeChild";
 import { StudyChildTabs } from "@/components/study/StudyChildTabs";
+import { StudyClaimGate } from "@/components/study/StudyClaimGate";
 import { StudyDevicesPanel } from "@/components/study/StudyDevicesPanel";
+import { StudyPairingPanel } from "@/components/study/StudyPairingPanel";
 import { StudyReportPanel } from "@/components/study/StudyReportPanel";
 import { STUDY_COPY_KO } from "@/components/study/studyCopy.ko";
 import { useMyFamily } from "@/queries/useFamily";
@@ -17,6 +19,8 @@ import "./StudyManagement.css";
 
 export function StudyManagement() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const claimMode = location.pathname === "/study-management/claim";
   const { activeChild } = useActiveChild();
   const familyQuery = useMyFamily();
   const statusQuery = useStudyStatus();
@@ -44,10 +48,10 @@ export function StudyManagement() {
   const reportQuery = useStudyReport(
     selectedStudyMember ?? "",
     "7d",
-    selectedStudyChild?.linked ? featureState : undefined,
+    !claimMode && selectedStudyChild?.linked ? featureState : undefined,
   );
-  const devicesQuery = useStudyDevices(selectedStudyMember ?? "", featureState);
-  const detailLoading = featureState === "ready" && Boolean(selectedStudyMember) && (
+  const devicesQuery = useStudyDevices(selectedStudyMember ?? "", claimMode ? undefined : featureState);
+  const detailLoading = !claimMode && featureState === "ready" && Boolean(selectedStudyMember) && (
     devicesQuery.isLoading || (selectedStudyChild?.linked === true && reportQuery.isLoading)
   );
   const studyManagementLoading = familyQuery.isLoading
@@ -58,8 +62,8 @@ export function StudyManagement() {
     || statusQuery.isError
     || featureState === "unavailable"
     || childrenQuery.isError
-    || devicesQuery.isError
-    || (selectedStudyChild?.linked === true && reportQuery.isError);
+    || (!claimMode && devicesQuery.isError)
+    || (!claimMode && selectedStudyChild?.linked === true && reportQuery.isError);
   const canManageLinks = devicesQuery.data?.permissions.canManageLinks
     ?? reportQuery.data?.permissions.canManageLinks
     ?? selectedStudyChild?.canManageLinks
@@ -110,7 +114,7 @@ export function StudyManagement() {
           </div>
         </section>
 
-        {activeStudyChildren.length > 0 && (
+        {!claimMode && activeStudyChildren.length > 0 && (
           <StudyChildTabs
             children={activeStudyChildren}
             selectedMemberId={selectedStudyMember}
@@ -118,12 +122,12 @@ export function StudyManagement() {
           />
         )}
 
-        {view.kind === "loading" ? (
+        {studyManagementLoading ? (
           <section className="study-management__state" aria-live="polite">
             <span className="study-management__spinner" aria-hidden="true" />
             <p>{STUDY_COPY_KO.screen.loading}</p>
           </section>
-        ) : view.kind === "service-unavailable" ? (
+        ) : studyManagementError ? (
           <section className="study-management__state" role="alert">
             <h2>{STUDY_COPY_KO.screen.unavailableTitle}</h2>
             <p>{STUDY_COPY_KO.screen.unavailableDescription}</p>
@@ -132,38 +136,64 @@ export function StudyManagement() {
               {STUDY_COPY_KO.screen.retry}
             </button>
           </section>
-        ) : view.kind === "service-disabled" ? (
+        ) : featureState === "disabled" ? (
           <section className="study-management__state">
             <h2>{STUDY_COPY_KO.screen.disabledTitle}</h2>
             <p>{STUDY_COPY_KO.screen.disabledDescription}</p>
           </section>
-        ) : view.kind === "no-active-children" ? (
+        ) : activeStudyChildren.length === 0 ? (
           <section className="study-management__state">
             <h2>{STUDY_COPY_KO.screen.emptyTitle}</h2>
             <p>{STUDY_COPY_KO.screen.emptyDescription}</p>
           </section>
+        ) : claimMode ? (
+          <StudyClaimGate children={activeStudyChildren} studyChildren={studyChildren} />
         ) : view.kind === "select-child" ? (
           <section className="study-management__state">
             <h2>{STUDY_COPY_KO.tabs.chooseTitle}</h2>
             <p>{STUDY_COPY_KO.tabs.chooseDescription}</p>
           </section>
         ) : view.kind === "unlinked" ? (
-          <section className="study-management__state">
-            <span className="study-management__child-avatar" aria-hidden="true">
-              {view.child.displayName.trim().slice(0, 1) || "아"}
-            </span>
-            <h2>{view.child.displayName}</h2>
-            <p>{STUDY_COPY_KO.screen.unlinkedDescription}</p>
-          </section>
-        ) : (
+          <>
+            <section className="study-management__state">
+              <span className="study-management__child-avatar" aria-hidden="true">
+                {view.child.displayName.trim().slice(0, 1) || "아"}
+              </span>
+              <h2>{view.child.displayName}</h2>
+              <p>{STUDY_COPY_KO.screen.unlinkedDescription}</p>
+            </section>
+            <StudyPairingPanel
+              key={view.child.memberId}
+              memberId={view.child.memberId}
+              childName={view.child.displayName}
+              canManageLinks={view.canManageLinks}
+            />
+          </>
+        ) : view.kind === "linked" ? (
           <>
             <StudyReportPanel child={view.child} report={view.report} />
             <StudyDevicesPanel
+              key={view.child.memberId}
               memberId={view.child.memberId}
               devices={view.devices}
               canManageLinks={view.canManageLinks}
             />
+            <StudyPairingPanel
+              key={`pairing:${view.child.memberId}`}
+              memberId={view.child.memberId}
+              childName={view.child.displayName}
+              canManageLinks={view.canManageLinks}
+            />
           </>
+        ) : (
+          <section className="study-management__state" role="alert">
+            <h2>{STUDY_COPY_KO.screen.unavailableTitle}</h2>
+            <p>{STUDY_COPY_KO.screen.unavailableDescription}</p>
+            <button type="button" className="study-management__retry hy-press" onClick={() => void retryStudyManagement()}>
+              <RefreshCw size={17} aria-hidden="true" />
+              {STUDY_COPY_KO.screen.retry}
+            </button>
+          </section>
         )}
       </div>
     </main>

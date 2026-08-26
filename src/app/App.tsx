@@ -26,6 +26,25 @@ import { AppVersionGate } from "./AppVersionGate";
 import { usePwaUpdateCriticalSection } from "@/lib/usePwaUpdateCriticalSection";
 import { LocaleBoundary } from "@/i18n/LocaleBoundary";
 import type { MessageNamespace } from "@/i18n/generated/messageIds";
+import { captureStudyClaim, STUDY_CLAIM_KEY, STUDY_CLAIM_ROUTE } from "@/transform/studyClaimContext";
+
+function captureStudyClaimBeforeRouter(): void {
+  if (typeof window === "undefined" || !window.location.hash.startsWith("#/study-management/claim?token=")) return;
+  try {
+    captureStudyClaim(
+      window.location.hash,
+      { replace: (hash) => window.history.replaceState(null, "", hash) },
+      window.sessionStorage,
+      { now: () => Date.now() },
+    );
+  } catch {
+    window.history.replaceState(null, "", STUDY_CLAIM_ROUTE);
+    try { window.sessionStorage.removeItem(STUDY_CLAIM_KEY); } catch { /* 저장소 접근 불가 */ }
+  }
+}
+
+// HashRouter와 인증 guard가 URL을 읽기 전에 raw claim token을 제거한다.
+captureStudyClaimBeforeRouter();
 
 // Provider·shell·오류 경계는 즉시 로드하고 사용자 화면만 route 단위로 분리한다.
 const ParentHome = lazyScreen(() => import("@/screens/parent/ParentHome"), "ParentHome");
@@ -103,6 +122,7 @@ for (const [path, screen] of [
   ["/parent/memo", MemoChat],
   ["/parent/settings", ParentSettings],
   ["/study-management", StudyManagement],
+  ["/study-management/claim", StudyManagement],
   ["/child/home", ChildHome],
   ["/child/sticker", StickerBook],
   ["/child/memo", MemoChat],
@@ -158,6 +178,8 @@ const PWA_DRAFT_PROTECTED_ROUTES = new Set([
   "/event-form",
   "/danger-zone-form",
   "/pairing-wizard",
+  "/study-management",
+  "/study-management/claim",
   "/location-settings",
   "/remote-ring",
   "/child/sos",
@@ -264,6 +286,7 @@ const router = createHashRouter([
           { path: "subscription", element: routeElement(<Subscription />, BILLING_NAMESPACES) },
           { path: "trial-lock", element: routeElement(<TrialLock />, BILLING_NAMESPACES) },
           { path: "study-management", element: routeElement(<StudyManagement />, PARENT_NAMESPACES) },
+          { path: "study-management/claim", element: routeElement(<StudyManagement />, PARENT_NAMESPACES) },
           { path: "notifications", element: routeElement(<Notifications />, PARENT_NOTIFICATION_NAMESPACES) },
           { path: "remote-audio", element: routeElement(<RemoteAudio />, PARENT_NOTIFICATION_NAMESPACES) },
           { path: "place-manager", element: routeElement(<PlaceManager />, PARENT_NOTIFICATION_NAMESPACES) },
