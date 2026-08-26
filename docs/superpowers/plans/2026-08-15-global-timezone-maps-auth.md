@@ -2,8 +2,10 @@
 
 > **실행 중지 안내(2026-08-26):** 이 계획의 Mapbox 관련 단계는 실행하지 않는다. 사용자가
 > `KR=Kakao`, 승인된 비중국 국가=`Google Maps`, `CN/ZZ=미지원`으로 변경을 확정했다.
-> 지도 구현은 `docs/superpowers/specs/2026-08-26-global-google-maps-location-design.md` 검토 승인 후 작성할
-> 새 Google Maps 구현 계획을 따른다. 국가·시간대·인증의 비지도 계약은 새 계획에서 재사용한다.
+> 지도 구현은 `docs/superpowers/plans/2026-08-26-global-locale-google-maps.md`를 따른다.
+> 새 지도 계획은 공급자 선택용 가족 국가만 구현하며 가족 시간대/DST, provider ID 저장, 친구놀이 schema는
+> 포함하지 않는다. 이 문서의 시간대·인증 비지도 단계도 별도 정리·승인 없이는 실행하지 않고 non-KR 출시의
+> 선행 `HOLD` gate로만 취급한다.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

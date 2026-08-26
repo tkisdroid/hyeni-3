@@ -3,12 +3,22 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
-**글로벌 지도 공급자 설계 확정(2026-08-26, 구현 전)**:
+**글로벌 locale·Google 지도 구현 계획 확정(2026-08-26, 구현 전)**:
 TK가 `KR=Kakao`, 승인된 비중국 국가=`Google Maps`, `CN/ZZ=미지원`을 확정했다. 해외 웹 PWA는 Maps
 JavaScript API, Capacitor Android는 공식 `@capacitor/google-maps`의 네이티브 Maps SDK를 사용하고,
 Places·Geocoding·Routes는 인증·가족 국가·권한·quota를 다시 확인하는 Worker 공통 API로 제한한다. 기존
 Mapbox 설계·계획의 지도 부분은 실행하지 않는다. 정본은
-`docs/superpowers/specs/2026-08-26-global-google-maps-location-design.md`다.
+`docs/superpowers/specs/2026-08-26-global-google-maps-location-design.md`, 실행 정본은
+`docs/superpowers/plans/2026-08-26-global-locale-google-maps.md`다. TK가 재확인한 범위대로 비지도 기능은
+기존 locale 번역·formatter·레이아웃 검증만 수행하고, 공급자 교체는 지도 렌더링·장소 검색·역지오코딩·도보 경로·
+외부 지도 링크에만 적용한다. GPS 수집·가족 위치 공유·SOS·지오펜스 알고리즘은 변경 대상이 아니다.
+이번 실행에서는 가족 시간대/DST, Google Place ID/provider metadata 장기 저장, 친구놀이 snapshot/v2 schema를
+추가하지 않는다. Google 검색 결과는 임시 preview로만 쓰고 저장에는 기존 schema의 사용자 입력 별칭과 사용자가
+별도로 확정한 핀 좌표만 전달한다. 시간대/DST는 non-KR 출시 전 별도 `HOLD` gate다.
+
+2026-08-26 계획 작성 직전 `npm run i18n:verify`는 10개 catalog·PWA manifest·Android locale·사용자 노출 literal
+잔여 0건으로 통과했다. 따라서 locale runtime이나 기존 번역을 다시 구축하지 않고 새 지도 오류/경고 문구와 실제
+화면 품질 검증만 추가한다.
 
 Google Cloud 결제 프로젝트·웹/Android 키·Worker 서비스 계정은 아직 없다. 따라서 코드·migration·자동 테스트는
 키 미설정 fail-closed로 만들 수 있지만, 실API 국가 matrix·배포·글로벌 국가 활성화는 자격 발급 뒤까지 HOLD다.

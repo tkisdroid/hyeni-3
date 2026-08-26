@@ -1,7 +1,7 @@
 # 혜니캘린더 글로벌 Google 지도·위치 설계
 
 - 작성일: 2026-08-26
-- 상태: 대화 설계 승인, 문서 검토 대기
+- 상태: 대화 설계 승인, 구현 계획 작성 완료
 - 대상: PWA, Capacitor Android, Cloudflare Worker, D1
 - 확정 정책: `KR → Kakao`, 승인된 비중국 국가 → Google Maps, `CN/ZZ → 미지원`
 - 자격 상태: Google Maps Platform 결제 프로젝트·API 키·서비스 계정 미발급
@@ -10,6 +10,14 @@
 > `docs/superpowers/plans/2026-08-15-global-timezone-maps-auth.md`의 **지도 공급자 부분만** 대체한다.
 > 두 문서의 Mapbox 구현 지시는 실행하지 않는다. 국가·시간대·해외 로그인에 관한 나머지 계약은 유지하며,
 > 특히 비한국 국가 활성화 전에 기존 시간대 계획을 먼저 완료해야 한다.
+> 구현 순서와 TDD 단위의 정본은
+> `docs/superpowers/plans/2026-08-26-global-locale-google-maps.md`다. 비지도 기능은 기존 locale 번역 체계를
+> 유지하고, 공급자 변경은 지도 렌더링·검색·역지오코딩·경로·외부 링크에만 적용한다.
+>
+> **2026-08-26 최종 범위 재확인:** 이번 실행에서는 가족 시간대/DST, Google Place ID 장기 저장·refresh,
+> 장소 provider metadata, 친구놀이 snapshot/v2 table을 구현하지 않는다. 검색·주소·경로의 Google 데이터는
+> 해당 요청과 화면에서만 임시 사용하고, 저장이 필요하면 기존 schema에 사용자가 직접 입력한 별칭과 별도로
+> 확정한 핀 좌표만 기록한다. 시간대/DST는 non-KR 출시의 별도 선행 gate이며 이 문서의 구현 범위가 아니다.
 
 ## 배경과 문제
 
@@ -45,14 +53,14 @@
 
 ### 가족 국가
 
-- `families.country_code`와 `families.time_zone`을 서버 정본으로 추가한다.
-- 기존 가족은 정확히 `KR`과 `Asia/Seoul`로 유지한다.
-- 신규 가족은 가입 과정에서 지원 국가를 명시 선택한다. 기기의 검증된 IANA 시간대를 초기 선택값으로 보여주고
-  사용자가 확인하거나 바꾼 뒤 저장한다. 기기 값이 없거나 서버 검증에 실패하면 시간대를 직접 선택해야 한다.
+- 지도 공급자 선택에 필요한 `families.country_code`만 서버 정본으로 추가한다.
+- 기존 가족은 정확히 `KR`로 유지한다.
+- 신규 가족은 가입 과정에서 지원 국가를 명시 선택한다. edge country는 초기 제안값일 뿐이며 사용자가 확인한
+  값만 저장한다. locale이나 GPS 좌표를 가족 국가로 대신 사용하지 않는다.
 - 가입 전 `GET /api/access-region` 결과는 제안값일 뿐이다. 로그인·가족 생성 후에는 지도 공급자 결정에 쓰지 않는다.
 - 가족 국가 변경은 주 보호자만 할 수 있고, 기존 UTC 시각·`date_key`·장소 좌표를 재작성하지 않는다.
-- 국가 변경 뒤 현재 map policy와 다른 기존 provider ref는 좌표·사용자 별칭 표시만 허용한다. 다른 공급자의
-  Place Details·refresh·외부 링크에 사용하지 않고, 사용자가 현재 공급자에서 장소를 다시 선택할 때만 새 ref를 저장한다.
+- 가족 시간대와 DST 보정은 이 변경에 포함하지 않는다. 별도 시간대 계획의 검증 증거가 없으면 non-KR 출시는
+  계속 `HOLD`다.
 
 ### 공급자 정책
 
@@ -70,10 +78,9 @@ type MapPolicy =
 - 그 밖의 ISO 국가 중 운영 allowlist에 활성화된 국가만 Google이다.
 - 제품 목표는 중국을 제외한 국가를 순차 지원하는 것이지만, 실제 스토어 국가는 지도 타일·Geocoding·Walking
   coverage와 실기기 검증을 통과한 순서대로 활성화한다.
-- 비한국 allowlist는 기존 글로벌 시간대 계획의 `family_day`, 수신자 quiet hours, 위치 이력 오전 8시 경계,
+- 비한국 allowlist는 별도 글로벌 시간대 계획의 `family_day`, 수신자 quiet hours, 위치 이력 오전 8시 경계,
   위치 보존·quota, 일정·도착 겹침과 cron의 DST 회귀가 모두 완료되기 전까지 비활성 상태로 둔다. 지도만 통과했다고
-  비한국 국가를 열지 않는다. 기존 `date_key`의 0-index 월·비패딩 인코딩은 유지하되 신규 가족의 날짜 의미는
-  가족 현지 시간대이며 기존 한국 가족은 계속 `Asia/Seoul`이다.
+  비한국 국가를 열지 않는다. 기존 `date_key` 인코딩과 모든 시간 판정은 이번 작업에서 변경하지 않는다.
 - 공급자 정책은 클라이언트와 Worker가 같은 table-driven fixture를 공유해 드리프트를 막는다.
 - 가족 국가를 벗어난 여행·국경 횡단 경로의 자동 공급자 전환은 1차 범위에 넣지 않는다.
 
@@ -320,124 +327,24 @@ cron은 대상 가족의 `country_code`를 D1에서 읽는다. 국가나 자격�
 현재 자격이 없으므로 설정 예시에는 빈 변수 이름만 추가한다. 가짜 키·다른 Google OAuth 자격·기존 Play 서비스
 계정을 재사용하지 않는다.
 
-## 장소 데이터와 migration
+## 저장 경계와 기존 데이터 보존
 
-### 보존 불변식
-
-- `saved_places.id`, `academies.id`, `public_places.id`와 이를 가리키는 `public_place_id`는 바꾸지 않는다.
-- 기존 `kakao_place_id`를 삭제·rename·덮어쓰기하지 않는다.
-- 기존 위치 JSON, 이벤트 좌표, 위험구역 좌표, 위치 이력은 재투영하거나 반올림하지 않는다.
-- 지오펜스의 20m 중복 장소 정규화, saved place 우선, dwell·leave timer, 10분 presence dedupe 결과를 유지한다.
-
-### additive 필드
-
-`saved_places`, `academies`, `public_places`에 다음 pair를 추가한다.
-
-```text
-provider                     TEXT NULL  -- kakao | google
-provider_place_id            TEXT NULL
-provider_place_id_checked_at TEXT NULL
-provider_ref_status          TEXT NULL  -- active | stale | invalid
-```
-
-- `provider`와 `provider_place_id`는 둘 다 null이거나 둘 다 non-null이어야 하고, provider는
-  `kakao|google`, trimmed ID 길이는 1~255자로 제한한다. checked/status는 provider pair가 있을 때만 쓸 수 있다.
-- 신규 설치용 canonical schema에는 table-level `CHECK`를 둔다. 기존 D1은 테이블 재구축 없이 additive column과
-  non-unique `(provider, provider_place_id)` index만 추가하고, write validator·배포 readiness query로 같은 불변식을
-  강제한다. 공급자 ID는 가족별 별칭·핀과 연결되므로 전역 UNIQUE로 만들지 않는다.
-- 기존 행은 legacy Kakao read view로만 해석하고 사용자가 명시 재저장하기 전 원본을 수정하지 않는다.
-- 신규 write의 provider는 가족의 canonical map policy와 일치해야 한다.
-- Google `provider_place_id`만 공급자 데이터로 장기 보존한다.
-- Google Place ID는 사용할 때 `provider_place_id_checked_at`이 12개월보다 오래됐으면 refresh한다. upstream
-  `NOT_FOUND`는 `provider_ref_status=invalid`로 표시하고 사용자의 별칭·직접 핀은 삭제하지 않으며 재선택을 요청한다.
-  무차별 background refresh는 하지 않는다.
-
-### 사용자 장소와 Google content 분리
-
-- 장기 저장 장소명은 사용자가 직접 입력한 가족 별칭이다. Google 결과명·주소를 미리 채우고 단순 확인만 받아
-  복사하는 것은 허용하지 않는다.
-- 장기 저장 좌표는 기기 GPS 또는 검색 결과 저장과 분리된 지도 단계에서 사용자가 직접 탭하거나 이동한 핀 좌표다.
-  좌표마다 `point_source=device_gps|user_pin`, 라벨마다 `label_source=user` provenance를 남긴다.
-- Google 검색·Geocoding 응답의 원문 JSON, formatted address 구성요소, viewport, 사진·리뷰, route polyline·steps·
-  duration·distance를 D1에 저장하지 않는다.
-- Google 장소·주소를 장기 저장하는 것으로 해석될 여지가 있는 UI와 데이터 흐름은 운영 출시 전에 약관·법률 검토를
-  통과해야 한다.
-
-### 일정·메모 호환 형식
-
-- 기존 `events.location` JSON은 byte-level migration이나 일괄 rewrite를 하지 않는다. 새 write는 기존 reader가
-  `lat`·`lng`·`address`를 계속 읽을 수 있는 provider-neutral v2 object를 쓴다. `address` 호환 필드에는 Google
-  formatted address가 아니라 사용자가 직접 입력한 label만 넣고 다음 metadata를 추가한다.
-
-```json
-{
-  "schema_version": 2,
-  "lat": 37.0,
-  "lng": 127.0,
-  "address": "사용자가 입력한 별칭",
-  "provider": "google",
-  "provider_place_id": "ChIJ...",
-  "provider_place_id_checked_at": "2026-08-26T00:00:00Z",
-  "provider_ref_status": "active",
-  "point_source": "user_pin",
-  "label_source": "user"
-}
-```
-
-- provider pair와 refresh metadata는 nullable이다. v2 reader는 legacy `kakao_place_id`와 v2 provider pair를 모두
-  읽고, legacy JSON을 새 형식으로 자동 저장하지 않는다. 이벤트의 Google Place ID에도 같은 12개월 on-use refresh와
-  invalid 표시를 적용하되 event의 사용자 label·pin을 삭제하지 않는다.
-- 기존 메모의 `[[loc:lat,lng|주소]]` content는 byte-for-byte read-only로 보존하고 재지오코딩·재번역·rewrite하지
-  않는다. 새 메모도 같은 marker 문법을 쓰되 좌표는 device GPS 또는 직접 핀, 라벨은 locale catalog의 일반
-  "공유한 위치" 또는 사용자가 직접 입력한 값만 넣는다. Google 이름·주소를 marker에 복사하지 않는다.
-
-### `public_places.kakao_place_id` 과적재 해소
-
-현재 `current:<lat4>:<lng4>` 값은 Kakao Place ID가 아니라 친구놀이용 현재좌표 snapshot이다.
-
-- migration preflight에서 synthetic `current:*`, 실제 Kakao ID, null, orphan 참조를 각각 집계한다.
-- synthetic row에는 새 provider pair를 만들지 않는다.
-- 기존 `public_places.id`와 invite/session 참조는 그대로 둔다.
-- 신규 현재좌표 snapshot은 전역 provider 장소로 upsert하지 않고 새 `friend_playdate_place_snapshots`에 저장한다.
-- 기존 synthetic global row의 파괴적 삭제는 이번 범위에 포함하지 않는다.
-
-`friend_playdate_place_snapshots`는 다음 최소 계약을 갖는다.
-
-```text
-id, owner_family_id, owner_child_id, lat, lng, captured_at, expires_at,
-state(candidate | invited | active | closed), invite_id NULL, session_id NULL,
-created_at, updated_at
-```
-
-- 후보 조회가 requester의 최신 좌표 snapshot을 만들며 candidate TTL은 기존 초대 TTL과 같은 15분이다. candidate는
-  owner family와 해당 owner child만 읽을 수 있고 provider ID·Google content를 포함하지 않는다.
-- 초대 생성 batch가 만료되지 않은 owner snapshot을 `invited`로 바꾸고 invite와 결합한다. 그 순간부터 초대의
-  requester·receiver 가족만 invite 권한을 통해 읽을 수 있다. 초대 수락은 같은 snapshot을 active session에
-  결합하며, 거절·만료는 closed로 바꾸고 정밀 좌표를 즉시 지운다.
-- active snapshot은 기존 playdate session이 끝날 때까지 양 가족만 읽는다. session 종료 batch는 snapshot을 closed로
-  바꾸고 `lat/lng`를 즉시 삭제한다. cron은 만료 candidate/invited와 live session이 없는 orphan active를 지우며,
-  감사·session metadata에는 정밀 좌표를 남기지 않는다.
-- 기존 `friend_playdate_invites.public_place_id`와 `friend_playdate_sessions.public_place_id`는 `NOT NULL`이므로
-  테이블 재구축이나 가짜 `public_places` 행으로 우회하지 않는다. 신규 write 전용
-  `friend_playdate_invites_v2(place_snapshot_id NOT NULL, ...)`와
-  `friend_playdate_sessions_v2(place_snapshot_id NOT NULL, ...)`를 additive로 만들고, 기존 테이블은 read-only로 둔다.
-- Worker repository는 legacy와 v2를 합치는 logical repository를 사용한다. API·WebSocket topic 이름은 유지하고 v2
-  payload에는 `place_snapshot_id`를 추가한다. 구버전 앱 호환 응답에서는 같은 opaque snapshot ID를 deprecated
-  `public_place_id` alias로도 반환하며, 새 Worker는 요청의 두 필드 중 하나를 snapshot ID로 해석해 권한·상태를 다시
-  검증한다. 이 alias를 `public_places`에서 조회하거나 provider Place ID로 사용하지 않는다.
-- 초대 생성 D1 batch는 snapshot이 `candidate`, owner family/child 일치, 15분 TTL 내, 좌표가 같은 최신 requester
-  측정 행과 정확히 일치하고 양 가족·아이·위험구역·receiver freshness·중복 초대 조건이 여전히 유효할 때만
-  `candidate→invited` conditional update와 v2 invite insert를 함께 확정한다. 하나라도 0행이면 전체를 실패시킨다.
-- 수락 batch는 pending invite·TTL·양쪽 활성 membership·snapshot `invited`와 invite binding을 재검증하고
-  v2 session insert, invite accepted, snapshot `active`+session binding을 함께 확정한다. 거절·만료·수동/자동 종료도
-  invite/session 상태 변경과 snapshot 좌표 삭제를 한 batch로 처리한다.
-- 기존 `public_place_id` invite/session은 read-only dual-read하며 auto-end·pending/history·push·account deletion도
-  logical repository 양쪽을 빠짐없이 처리한다. 구버전 global `current:*` row를 복사·삭제하지 않는다.
-- 서로 다른 국가의 두 가족이 같은 snapshot을 볼 때 각자의 가족 map policy로 같은 좌표를 렌더한다. provider ID를
-  공유하지 않는다. CN/미지원 가족은 좌표·측정시각만 있는 미지원 UI를 보며 외부 SDK를 호출하지 않는다.
-- 계정·가족 삭제는 관련 invite를 닫고 active session을 무효화한 뒤 snapshot 정밀 좌표를 삭제하고, 다음으로
-  family quota/provider ref를 정리한 뒤 가족을 삭제한다. 공유 active snapshot은 session 무효화 전에 홀로 삭제하지
-  않으며 이 전체 순서와 상대 가족 잔존 행을 account deletion 회귀로 고정한다.
+- `saved_places.id`, `academies.id`, `public_places.id`, `public_place_id`, 기존 `kakao_place_id`, 친구놀이 invite/session
+  schema와 기존 위치 bytes를 그대로 유지한다. provider field, provider Place ID, refresh metadata, v2 장소 JSON,
+  친구놀이 snapshot table을 추가하지 않는다.
+- Google Autocomplete의 Place ID·표시명·주소·좌표는 5분 검색 session과 1회 Details 선택 화면에서만 임시 사용한다.
+  D1 업무 table, `edge_cache`, 브라우저 저장소, 분석 이벤트, 운영 로그에 장기 저장하지 않는다.
+- 검색 결과 선택은 지도 중심을 이동시키는 preview다. 기존 장소·위험구역·일정에 저장하려면 사용자가 검색 결과와
+  분리된 단계에서 핀을 직접 탭하거나 드래그해 좌표를 확정하고, 저장할 별칭도 직접 입력해야 한다. 이 두 값만 기존
+  provider-neutral 저장 필드에 전달한다.
+- 기존 `events.location` JSON은 일괄 rewrite하거나 새 schema로 변환하지 않는다. 새 write도 현재 reader가 지원하는
+  `lat`·`lng`·사용자 입력 label 형식을 유지하고 Google Place ID·formatted address를 추가하지 않는다.
+- 기존 메모 `[[loc:lat,lng|주소]]`는 byte-for-byte 보존한다. 새 메모는 기기 GPS 또는 사용자가 확정한 핀과 locale의
+  일반 “공유한 위치”/직접 입력 label만 사용하며 Google 이름·주소·Place ID를 marker에 복사하지 않는다.
+- `public_places.kakao_place_id`의 `current:*` 값과 친구놀이 참조는 이번 지도 공급자 전환에서 읽기·쓰기 의미를
+  변경하지 않는다. 별도 정규화가 필요하면 독립 설계와 migration 승인을 받아 진행한다.
+- 기존 위치 JSON, 이벤트·위험구역 좌표와 위치 이력은 재투영·반올림하지 않는다. 지오펜스의 20m 중복 장소 정규화,
+  saved place 우선, dwell·leave timer와 10분 presence dedupe 결과를 유지한다.
 
 ## 개인정보·로그·캐시
 
@@ -445,10 +352,9 @@ created_at, updated_at
 - 구조화 운영 로그는 allowlist event name, provider, 내부 오류 코드, HTTP status, latency bucket만 허용한다.
 - raw URL과 query string을 로그에 남기지 않는다.
 - Google 검색·Geocoding·Routes 응답은 D1 `edge_cache`에 저장하지 않는다.
-- 기존 Kakao `edge_cache`의 평문 좌표 key와 문서·실제 TTL 불일치는 별도 migration에서 HMAC key와 정확한 보존
-  정책으로 교정한다. 구현 전 production read-only preflight로 table 존재 여부, 실제 TTL, `current:*`·좌표 노출
-  범위를 확인한다. 교정 전 캐시를 Google 경로가 재사용하지 않으며 Kakao cache miss는 기능 실패로 취급하지 않는다.
-- 가족 삭제 시 새 family-scoped quota·snapshot·provider ref 정리 경로를 포함한다.
+- 기존 Kakao `edge_cache` 정리는 이번 범위에 포함하지 않는다. Google 경로는 이를 읽거나 쓰지 않으며 Kakao cache
+  miss는 기능 실패로 취급하지 않는다.
+- 가족 삭제 시 이 작업에서 추가한 autocomplete digest와 family-scoped 지도 quota 행을 정리한다.
 - 개인정보처리방침과 데이터 안전 문서에는 Kakao와 Google에 전달되는 데이터 종류·목적·보존 여부·외부 링크를
   실제 코드와 동일하게 반영한다.
 
@@ -515,15 +421,10 @@ type MapErrorCode =
   raw token 비노출과 최소 field mask.
 - Google 응답·좌표·주소·식별자가 로그와 D1 cache에 없음.
 - concurrent quota 초과가 원자적으로 429.
-- migration 전후 기존 ID·참조 수·좌표와 geofence/dedupe 결과 동일.
-- `current:*` synthetic row와 실제 Kakao ID가 새 provider ref에서 섞이지 않음.
-- canonical CHECK와 legacy route/readiness validator가 provider pair·길이·status를 동일하게 거부하고, non-unique
-  provider index가 기존 행을 손상하지 않음.
-- Place ID 12개월 on-use refresh, `NOT_FOUND→invalid`, 사용자 별칭·직접 핀 보존.
-- 가족 국가 변경 뒤 policy와 다른 provider ref는 upstream refresh/Details/외부 링크 0회이며 사용자 pin·label만 표시.
-- legacy `events.location`과 `[[loc:...]]` byte 보존, v2 user provenance, Google 주소·좌표 복사 금지.
-- playdate snapshot candidate 15분→invite→active→closed 전이, 두 가족 권한, 거절·만료·session 종료 좌표 삭제,
-  v2 shadow table 원자 batch, deprecated alias, legacy `public_place_id` dual-read와 account deletion 순서.
+- country migration 전후 기존 장소·친구놀이 ID·참조 수·좌표와 geofence/dedupe 결과 동일.
+- Place ID·Google 주소·검색어·polyline이 기존 장소/event/memo/친구놀이 schema에 저장되지 않음.
+- legacy `events.location`과 `[[loc:...]]` byte 보존, 사용자 별칭·직접 확정 pin만 기존 저장 경계로 전달됨.
+- `current:*` synthetic row와 친구놀이 invite/session의 read/write 결과가 전환 전후 동일함.
 - 역사 위치의 정확한 `recordedAt`, 최신 경로 origin 5분 freshness, raw 좌표 7자리·저quota·비보존.
 - cron이 공통 resolver를 사용하고 국가 미확정에서도 안전 상태머신은 계속 진행.
 - non-KR allowlist는 family-local 오전 8시·retention·quota·일정/도착 cron·quiet hours의 DST matrix가 통과하기
@@ -569,20 +470,19 @@ Google 자격 발급 뒤에만 실제 API QA를 수행한다.
 
 ## 적용 순서
 
-1. production read-only preflight로 country/timezone column, `edge_cache`, `current:*`, provider ref, orphan 수를 기록한다.
-2. 기존 글로벌 시간대 계획의 family-local/DST 작업과 회귀를 완료하고 기존 가족 `KR/Asia/Seoul` 불변을 검증한다.
-3. D1에 `families.country_code/time_zone`, additive place provider, playdate snapshot, quota schema를 먼저 적용한다.
-   기존 행은 `NOT NULL DEFAULT KR/Asia-Seoul`로 보존하고 신규 family route는 검증된 값을 명시 write한다. Worker를
-   schema보다 먼저 배포하지 않는다.
-4. provider pair·snapshot·country/timezone readiness query를 통과한 뒤 공통 Worker map API, 권한, quota, OAuth
-   경계를 배포하되 non-KR allowlist는 계속 닫아 둔다.
-5. `FamilyMap`과 Kakao adapter를 먼저 연결해 한국 회귀를 고정한다.
-6. Google web/native adapter를 키 미설정 fail-closed 상태로 구현한다.
-7. 모든 지도 소비 화면과 i18n 문구를 공급자 중립 경계로 이관한다.
-8. 앱·Worker·Android 전체 자동 검증을 통과한다.
+1. production read-only preflight로 기존 가족 수, 장소·친구놀이 ID/참조 수와 현재 schema를 기록한다.
+2. D1에 `families.country_code`와 지도 요청 session/quota schema만 additive로 적용한다. 기존 가족은 `KR`로 보존하고
+   Worker를 schema보다 먼저 배포하지 않는다.
+3. country·지도 요청 제어 readiness를 통과한 뒤 공통 Worker map API, 권한, quota, OAuth 경계를 배포하되 non-KR
+   allowlist는 계속 닫아 둔다.
+4. `FamilyMap`과 Kakao adapter를 먼저 연결해 한국 회귀를 고정한다.
+5. Google web/native adapter를 키 미설정 fail-closed 상태로 구현한다.
+6. 모든 지도 소비 화면과 새 지도 i18n 문구를 공급자 중립 경계로 이관한다.
+7. 앱·Worker·Android 전체 자동 검증을 통과한다.
+8. 별도 글로벌 시간대/DST 계획의 완료 증거를 확인한다. 이 단계가 끝나지 않으면 non-KR 출시는 `HOLD`다.
 9. 사용자가 Google Cloud 자격과 제한을 준비한다.
-10. 별도 테스트 가족으로 실API 국가·locale·시간대 matrix와 비용·정책 gate를 통과한다.
-11. readiness 재확인 후 Pages/Android를 배포하고 통과한 국가만 allowlist와 스토어 국가에 활성화한다.
+10. 별도 테스트 가족으로 실API 국가·locale matrix와 비용·정책 gate를 통과한다.
+11. readiness 재확인 후 승인된 순서로 배포하고 통과한 국가만 allowlist와 스토어 국가에 활성화한다.
 
 ## 완료 정의
 
@@ -593,9 +493,9 @@ Google 자격 발급 뒤에만 실제 API QA를 수행한다.
 - 한국 회귀와 기존 위치·SOS·지오펜스 불변식이 통과한다.
 - 승인 해외 국가의 웹·Android 실지도·검색·역지오코딩·도보경로가 통과한다.
 - `CN/ZZ/disabled`에서 외부 지도 호출이 없다.
-- 기존 장소·친구놀이 참조와 위치 기록이 보존된다.
-- non-KR 가족의 날짜·오전 8시 위치 이력·retention·quota·일정/도착 cron·quiet hours가 가족 시간대와 DST로
-  검증된다.
+- 기존 장소·이벤트·메모·친구놀이 schema/참조와 위치 기록이 보존되고 Google provider metadata가 추가되지 않는다.
+- 별도 gate에서 non-KR 가족의 날짜·오전 8시 위치 이력·retention·quota·일정/도착 cron·quiet hours가 가족 시간대와
+  DST로 검증된다. 이 문서는 해당 로직을 변경하지 않는다.
 - API 키 제한, OAuth, quota, 비용 경보, 로그·캐시 최소수집, 법적 고지가 검증된다.
 - 10개 locale 문구와 접근성, 지도 장애 폴백이 검증된다.
 - Google 자격이 없거나 실API 국가 matrix가 하나라도 실패하면 글로벌 출시는 계속 HOLD다.
