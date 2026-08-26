@@ -592,6 +592,18 @@
   flex-direction: column;
   gap: 8px;
 }
+@keyframes hy-login-autofill-detected {
+  from { opacity: 0.999; }
+  to { opacity: 1; }
+}
+.ob-login-form .ob-input:autofill {
+  animation-name: hy-login-autofill-detected;
+  animation-duration: 1ms;
+}
+.ob-login-form .ob-input:-webkit-autofill {
+  animation-name: hy-login-autofill-detected;
+  animation-duration: 1ms;
+}
 .ob-login-field {
   display: flex;
   flex-direction: column;

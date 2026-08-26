@@ -85,7 +85,7 @@ test("RequireGuest와 온보딩 자체 리다이렉트는 명시적 인증 전�
 });
 
 test("ID 로그인과 OAuth callback은 gate 시작 뒤 deferred 응답만 요청한다", () => {
-  const loginStart = onboarding.indexOf("const loginIdPw = async () => {");
+  const loginStart = onboarding.indexOf("const loginIdPw = async (");
   const loginEnd = onboarding.indexOf("return (", loginStart);
   const login = onboarding.slice(loginStart, loginEnd);
   const loginBegin = login.indexOf("const transitionToken = beginOnboardingAuthTransition()");
@@ -143,7 +143,7 @@ test("부모 로그인에서 back·signup·인증 시작 실패로 이탈하면 
   assert.match(onboarding, /onSignup=\{\(method\) => \{[\s\S]{0,200}cancelOnboardingAuthTransitions\(\)/);
   assert.match(
     onboarding,
-    /catch \(e\) \{\s*if \(!isOnboardingAuthTransitionActive\(transitionToken\)\) return;[\s\S]{0,240}const message = localizeApiError\(e, intl, "formal"\);[\s\S]{0,180}show\(message, "⚠️"\)[\s\S]{0,180}setBusy\(false\);[\s\S]{0,120}endOnboardingAuthTransition\(transitionToken\)/,
+    /catch \(e\) \{\s*loginActionGateRef\.current\.end\(\);\s*if \(!isOnboardingAuthTransitionActive\(transitionToken\)\) return;[\s\S]{0,240}const message = localizeApiError\(e, intl, "formal"\);[\s\S]{0,180}show\(message, "⚠️"\)[\s\S]{0,180}setBusy\(false\);[\s\S]{0,120}endOnboardingAuthTransition\(transitionToken\)/,
   );
 });
 
@@ -161,7 +161,7 @@ test("stale OAuth·ID continuation은 채택하지 않고 StrictMode cleanup은 
   const callbackStart = onboarding.indexOf("const cb = readOAuthCallback();");
   const callbackEnd = onboarding.indexOf("// eslint-disable-next-line", callbackStart);
   const callback = onboarding.slice(callbackStart, callbackEnd);
-  const loginStart = onboarding.indexOf("const loginIdPw = async () => {");
+  const loginStart = onboarding.indexOf("const loginIdPw = async (");
   const loginEnd = onboarding.indexOf("return (", loginStart);
   const login = onboarding.slice(loginStart, loginEnd);
 
@@ -179,7 +179,7 @@ test("stale OAuth·ID continuation은 채택하지 않고 StrictMode cleanup은 
     /const oauthLoginPromise = oauthLoginPromiseRef\.current\s*\?\? finishOAuthLogin\(cb, \{[\s\S]{0,320}sessionAdoption: "deferred",[\s\S]{0,320}onboardingInterests:[\s\S]{0,320}\}\);\s*oauthLoginPromiseRef\.current = oauthLoginPromise;\s*oauthLoginPromise\s*\.then/,
   );
   assert.match(login, /catch \(e\) \{\s*if \(!isOnboardingAuthTransitionActive\(transitionToken\)\) return;/);
-  assert.match(login, /finally \{\s*if \(isOnboardingAuthTransitionActive\(transitionToken\)\) \{/);
+  assert.match(login, /finally \{\s*loginActionGateRef\.current\.end\(\);\s*if \(isOnboardingAuthTransitionActive\(transitionToken\)\) \{/);
   assert.match(
     login,
     /const result = await signInWithLoginId\([\s\S]*sessionAdoption: "deferred"[\s\S]*commitOnboardingAuthResult\(transitionToken, result, adoptAuthResult\)[\s\S]*if \(commitResult === "stale"\) return;[\s\S]*await onLoggedIn\(transitionToken\)/,

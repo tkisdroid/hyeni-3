@@ -1420,15 +1420,35 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       overLimit: false,
       authCase: "success",
     };
-    await setInputValue(cdp, "#hyeni-login-username", "qa-parent");
-    await setInputValue(cdp, "#hyeni-login-password", "correct-password");
+    // 저장된 ID·비밀번호가 브라우저 자동완성으로 함께 들어온 상황을 재현한다.
+    // 버튼·requestSubmit 없이 autofill animation만 전달해 실제 React wiring을 검증한다.
     await cdp.evaluate(`(() => {
-      const form = document.querySelector(".ob-login-form");
-      if (!(form instanceof HTMLFormElement)) return false;
-      form.requestSubmit();
+      const username = document.querySelector("#hyeni-login-username");
+      const password = document.querySelector("#hyeni-login-password");
+      if (!(username instanceof HTMLInputElement) || !(password instanceof HTMLInputElement)) return false;
+      const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+      if (!valueSetter) return false;
+      valueSetter.call(username, "qa-parent");
+      valueSetter.call(password, "correct-password");
+      const nativeMatches = Element.prototype.matches;
+      for (const input of [username, password]) {
+        Object.defineProperty(input, "matches", {
+          configurable: true,
+          value(selector) {
+            return selector === ":autofill" || selector === ":-webkit-autofill"
+              ? true
+              : nativeMatches.call(this, selector);
+          },
+        });
+        input.dispatchEvent(new AnimationEvent("animationstart", {
+          bubbles: true,
+          animationName: "hy-login-autofill-detected",
+        }));
+      }
       return true;
     })()`);
     await wait(2_200);
+    const successfulLoginPasswordRequests = externalRequests.filter((request) => request === "POST /auth/login-password").length;
     const successfulLoginFacts = await cdp.evaluate(`(() => ({
       hash: location.hash,
       sessionPresent: localStorage.getItem("hyeni-api-session-v1") !== null,
@@ -1469,6 +1489,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       || successfulLoginFacts.splashPresent
       || !successfulLoginFacts.parentHomePresent
       || successfulLoginFacts.loginFormPresent
+      || successfulLoginPasswordRequests !== 1
       || successfulLoginProblems.length > 0
       || successfulLoginReloadFacts.hash !== "#/parent/home"
       || !successfulLoginReloadFacts.sessionPresent
@@ -1480,13 +1501,14 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     ) {
       report.problems.push({
         scope: "auth-successful-parent-home-transition",
-        facts: { initial: successfulLoginFacts, reload: successfulLoginReloadFacts },
+        facts: { initial: successfulLoginFacts, reload: successfulLoginReloadFacts, loginPasswordRequests: successfulLoginPasswordRequests },
         problems: { initial: successfulLoginProblems, reload: successfulLoginReloadProblems },
       });
     }
     report.focused.successfulLogin = {
       initial: successfulLoginFacts,
       reload: successfulLoginReloadFacts,
+      loginPasswordRequests: successfulLoginPasswordRequests,
       problems: { initial: successfulLoginProblems, reload: successfulLoginReloadProblems },
     };
 
