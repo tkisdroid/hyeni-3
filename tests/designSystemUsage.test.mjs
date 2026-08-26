@@ -2105,7 +2105,8 @@ const semanticSurfaceManifest = [
     ["src/screens/feature/RemoteRing.css", "rr-query-state", "card"],
     ["src/screens/feature/StudyManagement.css", "study-management__intro", "glass-card"],
     ["src/screens/feature/StudyManagement.css", "study-management__state", "glass-card"],
-    ["src/screens/feature/StudyManagement.css", "study-management__child", "glass-card"],
+    ["src/screens/feature/StudyManagement.css", "study-report", "glass-card"],
+    ["src/screens/feature/StudyManagement.css", "study-devices", "glass-card"],
     ["src/screens/parent/ParentHome.redesign.css", "ph-study-card", "glass-panel"],
 ];
 
@@ -2188,6 +2189,14 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/feature/StudyManagement.css", ".study-management__retry"],
   ["src/screens/feature/StudyManagement.css", ".study-management__symbol"],
   ["src/screens/feature/StudyManagement.css", ".study-management__child-avatar"],
+  ["src/screens/feature/StudyManagement.css", ".study-child-tabs__tab[data-selected=\"true\"]"],
+  ["src/screens/feature/StudyManagement.css", ".study-child-tabs__avatar"],
+  ["src/screens/feature/StudyManagement.css", ".study-report__range"],
+  ["src/screens/feature/StudyManagement.css", ".study-devices__heading > span"],
+  ["src/screens/feature/StudyManagement.css", ".study-report__metrics div"],
+  ["src/screens/feature/StudyManagement.css", ".study-devices__revoke"],
+  ["src/screens/feature/StudyManagement.css", ".study-devices__cancel"],
+  ["src/screens/feature/StudyManagement.css", ".study-devices__confirm-button"],
   ["src/screens/parent/ParentHome.css", ".ph-study-card__icon"],
   // 히어로 캐러셀의 좌우 화살표와 위치 점 — 콘텐츠 판이 아니라 슬라이드 조작면·현재 위치 표식이다.
   ["src/screens/parent/ParentHome.redesign.css", ".ph-hero-carousel__arrow"],

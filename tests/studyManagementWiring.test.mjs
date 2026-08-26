@@ -38,3 +38,19 @@ test("부모 홈 full-width Study 카드는 기존 8개 바로가기 앞에 있�
   assert.match(css, /\.ph-study-card[\s\S]*?min-height:\s*var\(--control-min-size\)/);
   assert.doesNotMatch(css.match(/\.ph-study-card[\s\S]*?\}/)?.[0] ?? "", /gradient|#[0-9a-f]{3,8}/i);
 });
+
+test("학습관리 상세는 exact member report와 서버 권한 기반 기기 관리를 쓴다", () => {
+  const sources = [
+    "src/screens/feature/StudyManagement.tsx",
+    "src/components/study/StudyChildTabs.tsx",
+    "src/components/study/StudyReportPanel.tsx",
+    "src/components/study/StudyDevicesPanel.tsx",
+  ].map(read).join("\n");
+
+  assert.match(sources, /useStudyReport\(\s*selectedStudyMember/);
+  assert.match(sources, /useStudyDevices\(selectedStudyMember/);
+  assert.match(sources, /canManageLinks/);
+  assert.match(sources, /createStudyMutationRequest\(memberId\)/);
+  assert.doesNotMatch(sources, /children\s*\[\s*0\s*\]/);
+  assert.doesNotMatch(sources, /<input[^>]+(?:grade|학년)|startMission|recommendation|submit/i);
+});
