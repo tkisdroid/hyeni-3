@@ -1,1 +1,12 @@
-{}
+{
+  "android.appName": "Hyeni カレンダー - 家族の安全",
+  "android.appTitle": "Hyeni カレンダー - 家族の安全",
+  "android.pushDefaultTitle": "Hyeni カレンダー",
+  "android.forceRing.title": "緊急シグナル",
+  "android.forceRing.messageLabel": "保護者からのメッセージ",
+  "android.forceRing.acknowledge": "✓ 確認しました",
+  "android.forceRing.footer": "※ 保護者からの緊急シグナルのため、マナーモードを解除しました",
+  "android.forceRing.countdown": "アラーム自動終了まで %1$d 秒",
+  "android.pushAlert.close": "閉じる",
+  "android.pushAlert.openApp": "アプリを開く"
+}

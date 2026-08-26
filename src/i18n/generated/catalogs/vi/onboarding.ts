@@ -53,7 +53,7 @@ const messages = {
   "onboarding.login.submit": "Đăng nhập",
   "onboarding.login.subtitle": "Đăng nhập để kết nối lại với gia đình bạn",
   "onboarding.login.title": "Chào mừng bạn trở lại",
-  "onboarding.oauth.returnToApp": "Không thể hoàn tất đăng nhập trên trình duyệt. Vui lòng thử đăng nhập mạng xã hội lại trong ứng dụng Hyeni Calendar.",
+  "onboarding.oauth.returnToApp": "Không thể hoàn tất đăng nhập trên trình duyệt. Vui lòng thử đăng nhập mạng xã hội lại trong ứng dụng Lịch Hyeni.",
   "onboarding.pairing.codeLabel": "Mã liên kết của trẻ",
   "onboarding.pairing.connecting": "Đang kết nối…",
   "onboarding.pairing.description": "Bạn có thể xem mã QR và mã liên kết trong mục Gia đình > Mã liên kết trên ứng dụng của phụ huynh.",

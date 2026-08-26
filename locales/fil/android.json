@@ -1,1 +1,12 @@
-{}
+{
+  "android.appName": "Kalendaryo Hyeni: Pamilya",
+  "android.appTitle": "Kalendaryo Hyeni: Pamilya",
+  "android.pushDefaultTitle": "Kalendaryo Hyeni",
+  "android.forceRing.title": "Urgent na senyas",
+  "android.forceRing.messageLabel": "Mensahe mula sa magulang",
+  "android.forceRing.acknowledge": "✓ Nakita ko",
+  "android.forceRing.footer": "※ Urgent na senyas ito mula sa magulang, kaya nilaktawan ang silent mode",
+  "android.forceRing.countdown": "%1$d segundo bago tumigil ang alarm",
+  "android.pushAlert.close": "Isara",
+  "android.pushAlert.openApp": "Buksan ang app"
+}

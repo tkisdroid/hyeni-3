@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "listingLocale": "vi",
+  "appLocale": "vi",
+  "sourceLocale": "ko-KR",
+  "appName": "Lịch Hyeni - An toàn gia đình",
+  "shortDescription": "Lịch và an toàn gia đình, bố làm cho con. Tính năng cơ bản miễn phí.",
+  "fullDescription": null,
+  "translationStatus": {
+    "appName": "translated",
+    "shortDescription": "translated",
+    "fullDescription": "pending"
+  },
+  "reviewStatus": "draft",
+  "reviewEvidence": null,
+  "claims": [
+    "free_baseline",
+    "family_calendar",
+    "ai_schedule",
+    "parent_child_location",
+    "arrival_alert",
+    "sos",
+    "memo",
+    "ai_friend",
+    "ai_schedule",
+    "premium",
+    "remote_audio",
+    "monitoring_transparency"
+  ]
+}

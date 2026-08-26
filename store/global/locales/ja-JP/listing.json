@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "listingLocale": "ja-JP",
+  "appLocale": "ja",
+  "sourceLocale": "ko-KR",
+  "appName": "Hyeni カレンダー - 家族の安全",
+  "shortDescription": "父親が自分の子どものために作った家族の予定・安全アプリ。基本機能は無料です。",
+  "fullDescription": null,
+  "translationStatus": {
+    "appName": "translated",
+    "shortDescription": "translated",
+    "fullDescription": "pending"
+  },
+  "reviewStatus": "draft",
+  "reviewEvidence": null,
+  "claims": [
+    "free_baseline",
+    "family_calendar",
+    "ai_schedule",
+    "parent_child_location",
+    "arrival_alert",
+    "sos",
+    "memo",
+    "ai_friend",
+    "ai_schedule",
+    "premium",
+    "remote_audio",
+    "monitoring_transparency"
+  ]
+}

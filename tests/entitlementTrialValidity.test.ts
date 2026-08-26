@@ -19,7 +19,7 @@ test("결제 체험은 미래 trial_ends_at 증거가 있을 때만 프리미엄
     assert.equal(invalid.isPremium, false);
     assert.equal(invalid.isTrial, false);
     assert.equal(invalid.status, "expired");
-    assert.equal(invalid.planLabel, "무료 플랜");
+    assert.equal(invalid.planLabelId, "billing.subscription.plan.free");
   }
 });
 
@@ -43,7 +43,7 @@ test("active와 grace는 미래 current_period_end 증거가 있을 때만 프�
       });
       assert.equal(stale.isPremium, false);
       assert.equal(stale.status, "expired");
-      assert.equal(stale.planLabel, "무료 플랜");
+      assert.equal(stale.planLabelId, "billing.subscription.plan.free");
     }
   }
 });

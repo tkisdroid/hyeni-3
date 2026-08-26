@@ -93,9 +93,13 @@ test("파생 문구도 잠금 화면·월간 구독·말줄임표 표기를 유�
   assert.match(koParent["parent.device.notification.fullScreenDisabledDetail"], /잠금 화면/);
   assert.match(koParent["parent.device.notification.fullScreenDisabledDetail"], /화면 상단 팝업/);
 
+  // 플랜 라벨은 소스 문자열이 아니라 catalog 계약으로 지킨다(2026-08-25 planLabelId 이관).
   const entitlement = read("src/transform/entitlement.ts");
-  assert.match(entitlement, /프리미엄 월간 구독/);
-  assert.doesNotMatch(entitlement, /프리미엄 월구독/);
+  assert.match(entitlement, /billing\.subscription\.plan\.monthly/);
+  assert.doesNotMatch(entitlement, /프리미엄 월/);
+  const koBilling = JSON.parse(read("locales/ko/billing.json"));
+  assert.equal(koBilling["billing.subscription.plan.monthly"], "프리미엄 월간 구독");
+  assert.equal(koBilling["billing.subscription.plan.annual"], "프리미엄 연간 구독");
 
   const memo = read("src/transform/memoChatCopy.ts");
   const koShared = JSON.parse(read("locales/ko/shared.json"));

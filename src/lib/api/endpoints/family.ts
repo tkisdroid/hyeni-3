@@ -4,6 +4,7 @@
  * join/join-as-parent 는 서버가 세션을 재발급하므로 applyApiSession + setApiUser 필수.
  */
 import { apiGet, apiPost, apiPatch } from "../client";
+import { ApiError } from "../errors";
 import {
   applyApiSession,
   getApiSessionInstanceId,
@@ -527,4 +528,30 @@ export async function sendAiCreditRequest(input: {
   const duplicate = typeof res === "object" && res !== null
     && (res as Record<string, unknown>).duplicate === true;
   return { duplicate };
+}
+
+/**
+ * 부모 홈 히어로 캐러셀 표시 개수(운영자 전역 설정).
+ * 실패하면 화면이 기본값으로 렌더하므로 호출부가 오류를 삼키지 않고 그대로 던진다.
+ */
+export interface ParentHomeHeroCarouselControls {
+  freeVisibleCount: number;
+  premiumVisibleCount: number;
+  autoPlayMs: number;
+}
+
+export async function fetchParentHomeHeroCarousel(): Promise<ParentHomeHeroCarouselControls> {
+  const raw = await apiGet<unknown>("/api/family/hero-carousel");
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+    throw new ApiError("invalid_hero_carousel_response", 502);
+  }
+  const record = raw as Record<string, unknown>;
+  const count = (value: unknown) => (typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : null);
+  const free = count(record.freeVisibleCount);
+  const premium = count(record.premiumVisibleCount);
+  const autoPlayMs = count(record.autoPlayMs);
+  if (free === null || premium === null || autoPlayMs === null) {
+    throw new ApiError("invalid_hero_carousel_response", 502);
+  }
+  return { freeVisibleCount: free, premiumVisibleCount: premium, autoPlayMs };
 }

@@ -1,1 +1,12 @@
-{}
+{
+  "android.appName": "Kalender Hyeni: Keluarga Aman",
+  "android.appTitle": "Kalender Hyeni: Keluarga Aman",
+  "android.pushDefaultTitle": "Kalender Hyeni",
+  "android.forceRing.title": "Sinyal darurat",
+  "android.forceRing.messageLabel": "Pesan dari orang tua",
+  "android.forceRing.acknowledge": "✓ Sudah dilihat",
+  "android.forceRing.footer": "※ Ini sinyal darurat dari orang tua, jadi mode senyap dilewati",
+  "android.forceRing.countdown": "%1$d detik sebelum alarm berhenti",
+  "android.pushAlert.close": "Tutup",
+  "android.pushAlert.openApp": "Buka aplikasi"
+}

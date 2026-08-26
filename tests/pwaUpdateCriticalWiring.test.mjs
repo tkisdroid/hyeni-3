@@ -25,7 +25,11 @@ test("PWA 업데이트는 미저장 운영·계정·알림 편집과 저장 요�
   const account = source("src/screens/parent/ParentAccount.tsx");
   const notifications = source("src/screens/feature/NotificationSettings.tsx");
 
-  assert.match(admin, /dirty \|\| commerceDirty \|\| savePrompt\.isPending \|\| saveCommerceControls\.isPending/);
+  // 히어로 표시 개수도 저장 전 편집이라 새 SW 적용으로 날려서는 안 된다.
+  assert.match(
+    admin,
+    /dirty \|\| commerceDirty \|\| heroDirty \|\| savePrompt\.isPending \|\| saveCommerceControls\.isPending \|\| saveHero\.isPending/,
+  );
   assert.match(
     account,
     /dirty[\s\S]*updateProfile\.isPending[\s\S]*changePassword\.isPending[\s\S]*deleteAccount\.isPending[\s\S]*logoutBusy/,

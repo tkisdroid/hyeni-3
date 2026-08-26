@@ -19,8 +19,20 @@ import {
   inspectCommerceRuntimeControls,
   writeCommerceRuntimeControls,
 } from "../lib/commerceRuntimeControls.ts";
+import {
+  MAX_HERO_SLIDES,
+  inspectParentHomeHeroControls,
+  parseParentHomeHeroControls,
+  writeParentHomeHeroControls,
+} from "../lib/parentHomeHeroControls.ts";
 
 export const admin = new Hono<{ Bindings: Env; Variables: Vars }>();
+
+// 운영 설정 응답은 캐시하지 않는다 — 관리자가 옛 값을 현재 설정으로 오인하면 안 된다.
+admin.use("*", async (c, next) => {
+  await next();
+  c.header("Cache-Control", "no-store");
+});
 
 /**
  * GET /api/admin/me — 현재 로그인 계정이 운영자인지.
@@ -111,6 +123,41 @@ admin.put("/commerce-controls", requireAuth, async (c) => {
     return c.json(controls);
   } catch {
     console.error("[admin] commerce controls save failed");
+    return c.json({ error: "save_failed" }, 503);
+  }
+});
+
+/**
+ * 부모 홈 히어로 캐러셀 운영 설정.
+ *
+ * 구독/비구독에 각각 몇 장을 보여줄지와 자동 전환 간격을 한 행으로 저장한다.
+ * 광고 성격 슬라이드는 구독 가족에게 보여주지 않는다는 판정은 클라이언트 정본
+ * (`src/transform/parentHomeHeroCarousel.ts`)이 담당하고, 여기서는 개수만 다룬다.
+ */
+admin.get("/hero-carousel", requireAuth, async (c) => {
+  const user = c.get("user");
+  if (!isAdminUserId(c.env, user.sub)) return c.json({ error: "not_found" }, 404);
+  try {
+    const state = await inspectParentHomeHeroControls(c.env.DB);
+    return c.json({ ...state.controls, configured: state.configured, maxSlides: MAX_HERO_SLIDES });
+  } catch {
+    console.error("[admin] hero carousel read failed");
+    return c.json({ error: "hero_carousel_unavailable" }, 503);
+  }
+});
+
+admin.put("/hero-carousel", requireAuth, async (c) => {
+  const user = c.get("user");
+  if (!isAdminUserId(c.env, user.sub)) return c.json({ error: "not_found" }, 404);
+  const body = await c.req.json<Record<string, unknown>>().catch(() => null);
+  // 요청 본문을 믿지 않고 서버에서 범위를 다시 검사한다. 절반만 맞는 설정은 저장하지 않는다.
+  const controls = parseParentHomeHeroControls(body);
+  if (!controls) return c.json({ error: "invalid_hero_controls", maxSlides: MAX_HERO_SLIDES }, 400);
+  try {
+    const saved = await writeParentHomeHeroControls(c.env.DB, controls, user.sub);
+    return c.json({ ...saved, configured: true, maxSlides: MAX_HERO_SLIDES });
+  } catch {
+    console.error("[admin] hero carousel save failed");
     return c.json({ error: "save_failed" }, 503);
   }
 });

@@ -23,6 +23,19 @@ import {
 
 const rootDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 const LOCALES = ["ko", "en", "ja", "zh-CN", "zh-TW", "vi", "th", "id", "ms", "fil"];
+/** 2026-08-25 TK 승인 A안 브랜드 정본 — 고유명 Hyeni 유지 + 일반명사 현지화. */
+const A_PLAN_BRANDS = {
+  ko: "혜니캘린더",
+  en: "Hyeni Calendar",
+  ja: "Hyeni カレンダー",
+  "zh-CN": "Hyeni 日历",
+  "zh-TW": "Hyeni 日曆",
+  vi: "Lịch Hyeni",
+  th: "ปฏิทิน Hyeni",
+  id: "Kalender Hyeni",
+  ms: "Kalendar Hyeni",
+  fil: "Kalendaryo Hyeni",
+};
 
 async function readManifest(locale) {
   return JSON.parse(
@@ -46,14 +59,14 @@ test("디스크의 manifest 는 locale catalog 로 다시 생성한 결과와 �
   }
 });
 
-test("브랜드는 한국어만 혜니캘린더이고 나머지 9개는 Hyeni Calendar 다", async () => {
+test("브랜드는 locale 별 A안 정본 표기를 쓴다", async () => {
   const ko = await readManifest("ko");
   assert.equal(ko.name, "혜니캘린더");
   assert.equal(ko.short_name, "혜니캘린더");
   for (const locale of LOCALES.filter((code) => code !== "ko")) {
     const manifest = await readManifest(locale);
-    assert.equal(manifest.name, "Hyeni Calendar", locale);
-    assert.equal(manifest.short_name, "Hyeni Calendar", locale);
+    assert.equal(manifest.name, A_PLAN_BRANDS[locale], locale);
+    assert.equal(manifest.short_name, A_PLAN_BRANDS[locale], locale);
   }
 });
 
@@ -126,14 +139,14 @@ test("applyDocumentLocale 은 lang·dir·title·설명·manifest href 를 함께
       },
     };
     const resolved = metadata.resolveLocaleMetadata(locale, {
-      "core.brand.name": locale === "ko" ? "혜니캘린더" : "Hyeni Calendar",
+      "core.brand.name": A_PLAN_BRANDS[locale],
       "core.brand.description": `설명-${locale}`,
     });
     metadata.applyDocumentLocale(locale, resolved, target);
 
     assert.equal(target.documentElement.lang, locale);
     assert.equal(target.documentElement.dir, "ltr");
-    assert.equal(target.title, locale === "ko" ? "혜니캘린더" : "Hyeni Calendar");
+    assert.equal(target.title, A_PLAN_BRANDS[locale]);
     assert.equal(attributes.get("#hyeni-description:content"), `설명-${locale}`);
     assert.equal(
       attributes.get("#hyeni-manifest:href"),
@@ -159,7 +172,7 @@ test("catalog 가 없으면 설명을 지어내지 않고 브랜드만 적용한
   const resolved = metadata.resolveLocaleMetadata("ja");
   assert.equal(resolved.description, "");
   metadata.applyDocumentLocale("ja", resolved, target);
-  assert.equal(target.title, "Hyeni Calendar");
+  assert.equal(target.title, A_PLAN_BRANDS.ja);
   assert.equal(attributes.has("#hyeni-description:content"), false);
   assert.equal(attributes.get("#hyeni-manifest:href"), "./manifests/manifest.ja.webmanifest");
 });

@@ -1,1 +1,12 @@
-{}
+{
+  "android.appName": "ปฏิทิน Hyeni - ครอบครัวปลอดภัย",
+  "android.appTitle": "ปฏิทิน Hyeni - ครอบครัวปลอดภัย",
+  "android.pushDefaultTitle": "ปฏิทิน Hyeni",
+  "android.forceRing.title": "สัญญาณฉุกเฉิน",
+  "android.forceRing.messageLabel": "ข้อความจากผู้ปกครอง",
+  "android.forceRing.acknowledge": "✓ รับทราบ",
+  "android.forceRing.footer": "※ นี่คือสัญญาณฉุกเฉินจากผู้ปกครอง จึงข้ามโหมดปิดเสียง",
+  "android.forceRing.countdown": "อีก %1$d วินาทีเสียงจะหยุดเอง",
+  "android.pushAlert.close": "ปิด",
+  "android.pushAlert.openApp": "เปิดแอป"
+}

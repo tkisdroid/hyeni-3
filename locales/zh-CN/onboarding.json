@@ -158,5 +158,5 @@
   "onboarding.pairing.parent.title": "以共同监护人身份加入家庭",
   "onboarding.pairing.parent.description": "请使用邀请您的监护人提供的二维码或连接码。",
   "onboarding.pairing.parent.recovery": "加入后，您可以用监护人权限共同管理家庭日程和孩子的安全信息。",
-  "onboarding.oauth.returnToApp": "无法在浏览器中完成登录。请在 Hyeni Calendar 应用中重新尝试社交登录。"
+  "onboarding.oauth.returnToApp": "无法在浏览器中完成登录。请在 Hyeni 日历 应用中重新尝试社交登录。"
 }

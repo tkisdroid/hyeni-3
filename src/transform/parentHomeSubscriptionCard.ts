@@ -9,7 +9,8 @@ export interface ParentHomeSubscriptionCardInput {
   ready: boolean;
   isError: boolean;
   isPremium: boolean;
-  planLabel: string | null;
+  /** 플랜 라벨 message id. 문구가 아니라 id 를 받아 여기서 번역한다(locale 추종). */
+  planLabelId: MessageId | null;
   isTrial: boolean;
   trialDaysLeft: number | null;
   periodEnd: Date | null;
@@ -90,7 +91,9 @@ export function resolveParentHomeSubscriptionCard(
 
   return {
     title: message(intl, "manage.title"),
-    description: input.planLabel?.trim() || message(intl, "manage.description"),
+    description: input.planLabelId
+      ? intl.formatMessage({ id: input.planLabelId })
+      : message(intl, "manage.description"),
     meta: premiumMeta(input, intl, locale),
     tone: "manage",
     actionLabel: message(intl, "manage.action"),

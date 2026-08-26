@@ -184,7 +184,7 @@
   "billing.subscription.fine.webManage": "Anda boleh membatalkan langganan web anda pada bila-bila masa dari skrin ini.",
   "billing.subscription.google.pending": "Lihat di Google Play",
   "billing.subscription.hero.description": "Semak hari anak anda dengan lebih ketenangan fikiran dengan lokasi masa nyata dan ringkasan AI.",
-  "billing.subscription.hero.title": "Hyeni Calendar Premium",
+  "billing.subscription.hero.title": "Kalendar Hyeni Premium",
   "billing.subscription.plan.annual": "Langganan Tahunan Premium",
   "billing.subscription.plan.annualRibbon": "rancangan tahunan",
   "billing.subscription.plan.googleManage": "Langganan Google Play · Batalkan pada bila-bila masa",
@@ -267,5 +267,8 @@
   "billing.web.request.authorizationRequired": "Sila mulakan semula persediaan pembayaran.",
   "billing.web.request.notActive": "Kami tidak menemui langganan web yang aktif.",
   "billing.web.request.cancellationFailed": "Kami belum dapat menjadualkan pembatalan. Sila cuba lagi sebentar lagi.",
-  "billing.web.request.fallback": "Kami belum dapat menyelesaikan pembayaran web. Sila cuba lagi sebentar lagi."
+  "billing.web.request.fallback": "Kami belum dapat menyelesaikan pembayaran web. Sila cuba lagi sebentar lagi.",
+  "billing.subscription.plan.free": "Pelan percuma",
+  "billing.subscription.plan.trial": "Percubaan percuma Premium",
+  "billing.subscription.plan.premium": "Langganan Premium"
 }

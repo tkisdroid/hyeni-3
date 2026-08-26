@@ -553,6 +553,15 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   Premium은 `구독 관리`, 미확정·오류는 `구독 정보`로 표시해 Free로 추정하지 않는다. 부모 설정 메뉴는 emoji 칩 대신
   lucide/image 아이콘 + `data-tone` 토큰 색상만 사용한다. 페어링 위저드는 `/api/family/mine`과 엔타이틀먼트가
   모두 확정되기 전 2명 선택과 코드 생성을 막고, 코드 생성 직전에도 현재 티어의 아이 수 상한을 다시 검사한다.
+- ★**부모 홈 히어로 캐러셀(2026-08-26)**: 판정 정본은 `src/transform/parentHomeHeroCarousel.ts` 하나이고 서버
+  (`worker/lib/parentHomeHeroControls.ts`)는 같은 범위를 재검사만 한다. **첫 장은 항상 `today`**, **`ad` 종류만
+  구독 가족에게서 숨기고** `promo`(자사 소식)는 티어 무관, **엔타이틀먼트 미확정은 무료로 강등하지 않는다(R9 —
+  today 한 장)**. 표시 개수·자동 전환은 `app_global_settings.parent_home_hero_carousel_v1` 한 행이라 스키마 변경이
+  없고, API 는 관리자 `GET|PUT /api/admin/hero-carousel`(비운영자 404·`no-store`)과 소비자
+  `GET /api/family/hero-carousel`(활성 부모만·실패는 기본값)이다. ⚠️ `ad` 를 켜려면 Play 「광고 포함」 선언과
+  스토어 설명 문구를 함께 고쳐야 한다. ⚠️ 스크롤 지시는 클릭 핸들러가 아니라 **커밋 뒤 rAF effect 한 곳**에서만
+  한다(같은 프레임 재스냅이 smooth 스크롤을 되돌려 A17 에서 화살표가 먹지 않았다). 가로 스크롤은 트랙 안에서만
+  일어나야 한다(문서 가로 스크롤은 CDP 스모크 실패). 자세한 계약은 CLAUDE.md 의 같은 항목이 정본이다.
 - ★**부모 홈 글래스모피즘(2026-08-19, wiki)**: 색은 페이지 배경(`.ph-page::before`)에만 두고
   카드(`.ph-glass`)는 반투명 `--bg-card` + `backdrop-filter` + 밝은 흰 획이다.
   섹션 안 그라데이션·어두운 안쪽 선(뉴모피즘)은 쓰지 않는다. AI·구독·친구 초대가 같은 면이다.
@@ -1091,6 +1100,18 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   만료돼 `wrangler pages deploy` 가 "Not logged in" 으로 끝난다(비대화형이라 `wrangler login` 불가).
   `worker/.env` 의 토큰에는 Pages 권한이 있으므로 **저장소 밖 디렉터리**에서 그 토큰을 주입해 실행한다
   (저장소 안에서는 루트 `.env` 의 D1 전용 토큰이 자동 로드돼 실패한다).
+  ★**자격이 만료되면 `--env-file` 로 `.env` 자동 로드를 끈다(2026-08-26 실측)**: 이날 `worker/.env` 의 토큰이
+  만료돼 `npm run deploy:worker` 가 `Authentication error 10000` 이었다. 반면 OAuth 자격
+  (`C:UsersTK.wranglerconfigdefault.toml`, tkisdroid@gmail.com)은 살아 있고 `workers (write)` 와
+  `pages (write)` 를 모두 갖는다. wrangler 4 는 `.env` 를 자동 로드해 OAuth 를 덮어쓰므로, **빈 파일을**
+  **`--env-file` 로 넘겨** 그 자동 로드를 대체하면 저장소 안에서도 OAuth 로 배포된다
+  (`cd worker && npx wrangler deploy --env-file <빈 파일>`). Pages 는 기존대로 저장소 밖 디렉터리에서
+  `npx wrangler pages deploy <절대 dist 경로> --project-name=hyeni-calendar --branch=main --commit-dirty=true`.
+  토큰 값은 출력·복사하지 않으며, 만료된 `worker/.env` 토큰 교체는 TK 몫이다.
+  ★**배포 검증에서 entry 청크를 glob 으로 고르지 말 것(2026-08-26 실측)**: `dist/assets/index-*.js` 는 여러 개다
+  (그날 진입 청크는 351,286바이트인데 `head -1` 이 집은 것은 413바이트짜리 다른 청크였다). 진입 청크는 반드시
+  `dist/index.html` 이 실제로 참조하는 파일명으로 고른다 — 아니면 "로컬=프로덕션 일치"가 참인데도 엉뚱한
+  파일을 대조하게 된다.
   ★**배포 전 migration 선행 확인(런북)**: `worker/db/*.sql` 이 만드는 테이블·인덱스·`ADD COLUMN` 을 프로덕션
   `sqlite_master`·`pragma_table_info` 와 대조한다. D1 은 `UNION ALL` 항 수 제한이 있어(5개 이상 실패) 테이블별로
   나눠 조회하고, `--json` 실패 응답은 `[` 로 시작하지 않으니 stderr 를 버리면 "컬럼 누락" 오진이 난다.

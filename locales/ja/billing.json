@@ -184,7 +184,7 @@
   "billing.subscription.fine.webManage": "Webサブスクリプションはこの画面でいつでも終了することができます。",
   "billing.subscription.google.pending": "Google Playで確認",
   "billing.subscription.hero.description": "リアルタイムの場所とAIの要約で、子供の一日をより安心して確認してください",
-  "billing.subscription.hero.title": "Hyeni Calendar Premium",
+  "billing.subscription.hero.title": "Hyeni カレンダー Premium",
   "billing.subscription.plan.annual": "プレミアム年間サブスクリプション",
   "billing.subscription.plan.annualRibbon": "年間プラン",
   "billing.subscription.plan.googleManage": "Google Playの定期購入・いつでも解約可能",
@@ -267,5 +267,8 @@
   "billing.web.request.authorizationRequired": "お支払い情報の登録をもう一度始めてください。",
   "billing.web.request.notActive": "有効なウェブ定期購入を確認できませんでした。",
   "billing.web.request.cancellationFailed": "解約の予約を完了できませんでした。しばらくしてからもう一度お試しください。",
-  "billing.web.request.fallback": "ウェブ決済を完了できませんでした。しばらくしてからもう一度お試しください。"
+  "billing.web.request.fallback": "ウェブ決済を完了できませんでした。しばらくしてからもう一度お試しください。",
+  "billing.subscription.plan.free": "無料プラン",
+  "billing.subscription.plan.trial": "Premium無料体験",
+  "billing.subscription.plan.premium": "Premiumサブスクリプション"
 }

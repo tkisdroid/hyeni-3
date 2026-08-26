@@ -1,5 +1,5 @@
 import { useIntl, type IntlShape } from "react-intl";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   KeyboardEvent as ReactKeyboardEvent,
   MouseEvent as ReactMouseEvent,
@@ -64,6 +64,10 @@ import {
   parentHomeSectionOrderStorageKey,
   type ParentHomeSectionId,
 } from "@/transform/parentHomeSectionOrder";
+import { openExternal } from "@/lib/native/browser";
+import { ParentHomeHeroCarousel } from "@/components/ParentHomeHeroCarousel";
+import { useParentHomeHeroCarousel } from "@/queries/useParentHomeHero";
+import { resolveParentHomeHeroSlides } from "@/transform/parentHomeHeroCarousel";
 import "./ParentHome.css";
 import "./ParentHome.redesign.css";
 
@@ -615,11 +619,24 @@ export function ParentHome() {
       for (const timer of timers) window.clearTimeout(timer);
     };
   }, [activeChild?.user_id, familyId]);
+  // 히어로 캐러셀: 표시 개수는 운영자 전역 설정, 광고 숨김은 구독 여부로 정한다.
+  // ⚠️ entitlement.ready 가 false 면 무료 개수로 강등하지 않는다(R9) — resolve 함수가 오늘 한 장만 돌려준다.
+  const { controls: heroControls } = useParentHomeHeroCarousel();
+  const heroSlides = useMemo(() => resolveParentHomeHeroSlides({
+    controls: heroControls,
+    entitlementReady: entitlement.ready,
+    isPremium: entitlement.isPremium,
+  }), [heroControls, entitlement.ready, entitlement.isPremium]);
+  const openHeroLink = useCallback((url: string) => {
+    // 외부 링크는 앱 안에서 열지 않는다(네이티브는 기본 브라우저, 웹은 새 탭).
+    void openExternal(url);
+  }, []);
+
   const subscriptionCard = resolveParentHomeSubscriptionCard({
     ready: entitlement.ready,
     isError: entitlement.isError,
     isPremium: entitlement.isPremium,
-    planLabel: entitlement.view?.planLabel ?? null,
+    planLabelId: entitlement.view?.planLabelId ?? null,
     isTrial: entitlement.view?.isTrial ?? false,
     trialDaysLeft: entitlement.view?.trialDaysLeft ?? null,
     periodEnd: entitlement.view?.periodEnd ?? null,
@@ -1002,7 +1019,8 @@ export function ParentHome() {
       />
 
       <div className="hy-content">
-        {/* 히어로: 오늘 */}
+        {/* 히어로: 오늘 + 소식 캐러셀. 첫 장은 항상 오늘이고 광고 성격 슬라이드는 구독 가족에게 감춘다. */}
+        <ParentHomeHeroCarousel slides={heroSlides} controls={heroControls} onOpenExternal={openHeroLink}>
         <button type="button" className="ph-hero" onClick={() => navigate("/parent/calendar")}>
           <span className="ph-hero__sheen" />
           <span className="ph-hero__mascot">
@@ -1038,6 +1056,7 @@ export function ParentHome() {
             )}
           </div>
         </button>
+        </ParentHomeHeroCarousel>
 
         {locationScopeError && (
           <div className="ph-location-error" role="alert" aria-live="assertive">

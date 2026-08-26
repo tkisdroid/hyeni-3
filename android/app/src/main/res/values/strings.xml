@@ -2,8 +2,8 @@
 <resources>
     <string name="app_name">혜니캘린더 - 우리아이 일정&amp;안전 한번에</string>
     <string name="title_activity_main">혜니캘린더 - 우리아이 일정&amp;안전 한번에</string>
-    <string name="package_name">com.hyeni.calendar</string>
-    <string name="custom_url_scheme">com.hyeni.calendar</string>
+    <string name="package_name" translatable="false">com.hyeni.calendar</string>
+    <string name="custom_url_scheme" translatable="false">com.hyeni.calendar</string>
     <string name="push_alert_default_title">혜니캘린더</string>
     <string name="force_ring_icon" translatable="false">🚨</string>
     <string name="force_ring_title">응급 신호</string>

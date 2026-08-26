@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- 생성물: scripts/i18n/generate-android-locales.mjs (정본 locales/th/android.json). 직접 고치지 않는다. -->
+<resources>
+    <string name="app_name">ปฏิทิน Hyeni - ครอบครัวปลอดภัย</string>
+    <string name="title_activity_main">ปฏิทิน Hyeni - ครอบครัวปลอดภัย</string>
+    <string name="push_alert_default_title">ปฏิทิน Hyeni</string>
+    <string name="force_ring_title">สัญญาณฉุกเฉิน</string>
+    <string name="force_ring_message_label">ข้อความจากผู้ปกครอง</string>
+    <string name="force_ring_acknowledge">✓ รับทราบ</string>
+    <string name="force_ring_footer">※ นี่คือสัญญาณฉุกเฉินจากผู้ปกครอง จึงข้ามโหมดปิดเสียง</string>
+    <string name="force_ring_countdown">อีก %1$d วินาทีเสียงจะหยุดเอง</string>
+    <string name="push_alert_close">ปิด</string>
+    <string name="push_alert_open_app">เปิดแอป</string>
+</resources>

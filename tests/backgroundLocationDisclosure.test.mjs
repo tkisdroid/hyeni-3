@@ -7,6 +7,12 @@ const dialogSource = await readFile(new URL("../src/components/ChildLocationPerm
 const childLocationSource = await readFile(new URL("../src/screens/child/ChildLocationStatus.tsx", import.meta.url), "utf8");
 const koShared = JSON.parse(await readFile(new URL("../locales/ko/shared.json", import.meta.url), "utf8"));
 const LOCALES = ["ko", "en", "ja", "zh-CN", "zh-TW", "vi", "th", "id", "ms", "fil"];
+/** 브랜드 정본은 locales/manifest.json 이다(2026-08-25 A안: locale 별 표기). */
+const brandByLocale = Object.fromEntries(
+  JSON.parse(await readFile(new URL("../locales/manifest.json", import.meta.url), "utf8"))
+    .locales.map(({ code, brandName }) => [code, brandName]),
+);
+const localizedBrandName = (locale) => brandByLocale[locale];
 const sharedCatalogs = Object.fromEntries(await Promise.all(LOCALES.map(async (locale) => [
   locale,
   JSON.parse(await readFile(new URL(`../locales/${locale}/shared.json`, import.meta.url), "utf8")),
@@ -49,7 +55,10 @@ test("prominent disclosure 3문장은 10개 언어 모두 실제로 번역돼 �
       // 수집 고지는 어느 언어에서도 브랜드를 밝혀야 한다(누가 수집하는지).
       if (key === "disclosure.collection") {
         for (const locale of LOCALES.filter((code) => code !== "ko")) {
-          assert.match(sharedCatalogs[locale][disclosureId(key, tone)], /Hyeni Calendar/, `${locale}:${tone} 브랜드`);
+          assert.ok(
+            sharedCatalogs[locale][disclosureId(key, tone)].includes(localizedBrandName(locale)),
+            `${locale}:${tone} 브랜드`,
+          );
         }
       }
     }

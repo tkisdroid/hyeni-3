@@ -1,1 +1,12 @@
-{}
+{
+  "android.appName": "Lịch Hyeni - An toàn gia đình",
+  "android.appTitle": "Lịch Hyeni - An toàn gia đình",
+  "android.pushDefaultTitle": "Lịch Hyeni",
+  "android.forceRing.title": "Tín hiệu khẩn",
+  "android.forceRing.messageLabel": "Tin nhắn từ phụ huynh",
+  "android.forceRing.acknowledge": "✓ Đã xem",
+  "android.forceRing.footer": "※ Đây là tín hiệu khẩn từ phụ huynh nên đã bỏ qua chế độ im lặng",
+  "android.forceRing.countdown": "Còn %1$d giây trước khi báo thức tự tắt",
+  "android.pushAlert.close": "Đóng",
+  "android.pushAlert.openApp": "Mở ứng dụng"
+}

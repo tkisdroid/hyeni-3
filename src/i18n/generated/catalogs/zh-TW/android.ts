@@ -1,3 +1,14 @@
-const messages = {} as const;
+const messages = {
+  "android.appName": "Hyeni 日曆 - 家庭行程與安全",
+  "android.appTitle": "Hyeni 日曆 - 家庭行程與安全",
+  "android.forceRing.acknowledge": "✓ 我知道了",
+  "android.forceRing.countdown": "鈴聲將在 %1$d 秒後自動停止",
+  "android.forceRing.footer": "※ 這是家長發送的緊急訊號，因此已略過靜音模式",
+  "android.forceRing.messageLabel": "家長留言",
+  "android.forceRing.title": "緊急訊號",
+  "android.pushAlert.close": "關閉",
+  "android.pushAlert.openApp": "開啟應用程式",
+  "android.pushDefaultTitle": "Hyeni 日曆"
+} as const;
 
 export default messages;

@@ -89,4 +89,7 @@ export const qk = {
   adminStatus: ["admin", "me"] as const,
   adminAiPrompt: ["admin", "aiPrompt"] as const,
   adminCommerceControls: ["admin", "commerceControls"] as const,
+  adminHeroCarousel: ["admin", "heroCarousel"] as const,
+  /** 부모 홈 히어로 캐러셀 표시 개수(운영자 전역 설정). 가족별이 아니라 전역이라 키에 id 가 없다. */
+  parentHomeHeroCarousel: ["parentHome", "heroCarousel"] as const,
 } as const;

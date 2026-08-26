@@ -53,7 +53,7 @@ const messages = {
   "onboarding.login.submit": "Masuk",
   "onboarding.login.subtitle": "Masuk untuk terhubung kembali dengan keluarga Anda",
   "onboarding.login.title": "Selamat datang kembali",
-  "onboarding.oauth.returnToApp": "Login tidak dapat diselesaikan di browser. Silakan coba login sosial lagi di aplikasi Hyeni Calendar.",
+  "onboarding.oauth.returnToApp": "Login tidak dapat diselesaikan di browser. Silakan coba login sosial lagi di aplikasi Kalender Hyeni.",
   "onboarding.pairing.codeLabel": "Kode koneksi anak",
   "onboarding.pairing.connecting": "Menghubungkan…",
   "onboarding.pairing.description": "Kode QR dan kode koneksi tersedia di Keluarga > Kode koneksi pada aplikasi orang tua.",

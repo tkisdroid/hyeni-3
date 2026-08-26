@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- 생성물: scripts/i18n/generate-android-locales.mjs (정본 locales/id/android.json). 직접 고치지 않는다. -->
+<resources>
+    <string name="app_name">Kalender Hyeni: Keluarga Aman</string>
+    <string name="title_activity_main">Kalender Hyeni: Keluarga Aman</string>
+    <string name="push_alert_default_title">Kalender Hyeni</string>
+    <string name="force_ring_title">Sinyal darurat</string>
+    <string name="force_ring_message_label">Pesan dari orang tua</string>
+    <string name="force_ring_acknowledge">✓ Sudah dilihat</string>
+    <string name="force_ring_footer">※ Ini sinyal darurat dari orang tua, jadi mode senyap dilewati</string>
+    <string name="force_ring_countdown">%1$d detik sebelum alarm berhenti</string>
+    <string name="push_alert_close">Tutup</string>
+    <string name="push_alert_open_app">Buka aplikasi</string>
+</resources>

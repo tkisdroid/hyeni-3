@@ -54,7 +54,7 @@ const messages = {
   "reports.daily.noLocationInfo": "Walang impormasyon sa lokasyon",
   "reports.daily.noLocationToday": "Wala pang mga tala ng lokasyon para sa araw na ito.",
   "reports.daily.noMemoToday": "Walang palitan ng mensahe ngayon.",
-  "reports.daily.noOtherApps": "Hindi gumamit ang bata ng ibang app maliban sa Hyeni Calendar ngayong araw.",
+  "reports.daily.noOtherApps": "Hindi gumamit ang bata ng ibang app maliban sa Kalendaryo Hyeni ngayong araw.",
   "reports.daily.noRemainingSchedule": "Wala nang schedule",
   "reports.daily.noScheduleToday": "Walang iskedyul ang bata ngayong araw.",
   "reports.daily.noSuppliesToday": "Walang kailangang ihanda ang bata ngayong araw.",

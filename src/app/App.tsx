@@ -118,6 +118,9 @@ for (const [path, screen] of [
 
 const ONBOARDING_NAMESPACES = ["core", "onboarding", "shared"] as const;
 const PARENT_NAMESPACES = ["core", "parent", "shared"] as const;
+// 부모 홈 구독 카드는 `entitlement.planLabelId`(billing namespace)를 번역해 표시한다.
+// billing 을 빼면 콜드 스타트에서 카드 설명이 원시 message id 로 보인다(2026-08-25 A17 실측).
+const PARENT_HOME_NAMESPACES = ["core", "parent", "billing", "shared"] as const;
 const CHILD_NAMESPACES = ["core", "child", "shared"] as const;
 // 결제 화면도 parent 를 함께 싣는다 — 티어 라벨·잠금 안내(transform/tierPolicy, premiumUpsell)가
 // `parent.tier.*`·`parent.upsell.*` 를 쓰므로, 없으면 플랜 비교 열 제목이 "parent.tier.free" 원문 id로 보인다
@@ -194,7 +197,7 @@ const router = createHashRouter([
       {
         element: <ParentShell />,
         children: [
-          { path: "parent/home", element: routeElement(<ParentHome />, PARENT_NAMESPACES) },
+          { path: "parent/home", element: routeElement(<ParentHome />, PARENT_HOME_NAMESPACES) },
           { path: "parent/calendar", element: routeElement(<ParentCalendar />, PARENT_NAMESPACES) },
           { path: "parent/location", element: routeElement(<ParentLocation />, PARENT_LOCATION_NAMESPACES) },
           { path: "parent/memo", element: routeElement(<MemoChat />, PARENT_NAMESPACES) },

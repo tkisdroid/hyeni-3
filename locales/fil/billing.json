@@ -184,7 +184,7 @@
   "billing.subscription.fine.webManage": "Maaari mong kanselahin ang iyong subscription sa web anumang oras mula sa screen na ito.",
   "billing.subscription.google.pending": "Tingnan ito sa Google Play",
   "billing.subscription.hero.description": "Suriin ang araw ng iyong anak nang may higit na kapayapaan ng isip gamit ang real-time na lokasyon at buod ng AI.",
-  "billing.subscription.hero.title": "Hyeni Calendar Premium",
+  "billing.subscription.hero.title": "Kalendaryo Hyeni Premium",
   "billing.subscription.plan.annual": "Premium Taunang Subskripsyon",
   "billing.subscription.plan.annualRibbon": "taunang plano",
   "billing.subscription.plan.googleManage": "Suskrisyon sa Google Play · Kanselahin anumang oras",
@@ -267,5 +267,8 @@
   "billing.web.request.authorizationRequired": "Mangyaring simulan muli ang pag-set up ng pagbabayad.",
   "billing.web.request.notActive": "Wala kaming nakitang aktibong web subscription.",
   "billing.web.request.cancellationFailed": "Hindi namin naisagawa ang pag-schedule ng pagkansela. Mangyaring subukan muli mamaya.",
-  "billing.web.request.fallback": "Hindi namin nakumpleto ang pagbabayad sa web. Mangyaring subukan muli mamaya."
+  "billing.web.request.fallback": "Hindi namin nakumpleto ang pagbabayad sa web. Mangyaring subukan muli mamaya.",
+  "billing.subscription.plan.free": "Libreng plan",
+  "billing.subscription.plan.trial": "Libreng trial ng Premium",
+  "billing.subscription.plan.premium": "Subskripsyon ng Premium"
 }

@@ -1,1 +1,12 @@
-{}
+{
+  "android.appName": "Hyeni Calendar: Family Safety",
+  "android.appTitle": "Hyeni Calendar: Family Safety",
+  "android.pushDefaultTitle": "Hyeni Calendar",
+  "android.forceRing.title": "Urgent alert",
+  "android.forceRing.messageLabel": "Message from your guardian",
+  "android.forceRing.acknowledge": "✓ Got it",
+  "android.forceRing.footer": "※ This came as an urgent alert from your guardian, so silent mode was bypassed",
+  "android.forceRing.countdown": "%1$d sec until the alarm stops",
+  "android.pushAlert.close": "Close",
+  "android.pushAlert.openApp": "Open app"
+}

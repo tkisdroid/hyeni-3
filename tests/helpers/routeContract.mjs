@@ -73,6 +73,8 @@ function guardFromElement(element) {
 const ROUTE_NAMESPACE_IDENTIFIERS = new Set([
   "ONBOARDING_NAMESPACES",
   "PARENT_NAMESPACES",
+  // 부모 홈은 구독 카드의 플랜 라벨(billing)을 함께 싣는다(2026-08-25 A17 실측).
+  "PARENT_HOME_NAMESPACES",
   "CHILD_NAMESPACES",
   "BILLING_NAMESPACES",
   "REPORT_NAMESPACES",

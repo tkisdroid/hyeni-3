@@ -3,6 +3,39 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
+**부모 홈 히어로 캐러셀·브랜드 locale 현지화 배포 완료(2026-08-26)**:
+부모 홈 히어로를 「오늘」 한 장에서 좌우로 넘기고 자동 전환되는 캐러셀로 넓혔다. **첫 장은 항상 `today`** 이고
+뒤에 자사 소식 슬라이드(`hyenistudy.com`·`@hyeniworld`)가 붙는다. 광고 성격 `ad` 종류만 구독 가족에게서 숨기고
+`promo` 는 티어와 무관하게 보이며, 엔타이틀먼트가 확정되지 않았으면 무료로 강등하지 않고 today 한 장만 둔다(R9).
+표시 개수·자동 전환 간격은 운영자 전역 설정 `app_global_settings.parent_home_hero_carousel_v1` 한 행이라 **D1
+스키마 변경이 없다**(기본 free 3·premium 2·6000ms, 상한 6장·3~30초, `0`=자동 전환 끔). 같은 커밋에 브랜드 locale
+현지화(A안)·Android locale 리소스·로그인 방식/플랜 라벨의 문구 이관이 함께 들어 있다.
+
+⚠️ 클릭 핸들러에서 곧바로 `scrollTo` 하면 같은 프레임의 재렌더·`scroll-snap` 재스냅이 smooth 스크롤을 되돌려
+**A17 실기기에서 화살표가 먹지 않았다**. 지금은 `goTo` 가 인덱스만 바꾸고 커밋 뒤 `requestAnimationFrame`
+effect 한 곳에서만 `track.scrollTo` 를 지시한다. 콜드 스타트에는 `offsetLeft` 가 0 이라 `트랙 폭 × 인덱스` 로
+대체하고, 손가락 스크롤과 싸우지 않게 8px 여유를 둔다. 가로 스크롤은 트랙 안에서만 일어난다.
+
+최종 검증은 앱 `1,991/1,991`, Worker `1,304/1,304`, 앱·Worker typecheck, production build(진입
+`assets/index-CddDoYPh.js` 351,286/500,000바이트·초기 CSS 44,996/48,000·precache 472·중복 0)가 통과했다.
+A17(`RFKL40DP73J`) 부모 세션에 debug APK 를 보존 설치해 화살표 이동·소식 슬라이드 렌더·가로 overflow 0 을
+CDP 와 프레임버퍼 캡처(`artifacts/a17-parent-hero-carousel.png`·`a17-parent-hero-promo.png`)로 확인했다.
+
+운영 Worker 는 version `e7d3f97d-0465-4fac-9f6f-5adb0dc09391` 로 재배포했고 `/api/health` 200
+`{"ok":true,"status":"ready"}`, 신규 `GET /api/family/hero-carousel`·`GET|PUT /api/admin/hero-carousel` 무인증 401,
+관리자 응답 `Cache-Control: no-store` 를 확인했다. D1 migration 은 없어 운영 DB 에 SQL 을 적용하지 않았다.
+Pages 최종 배포는 `https://f92088d0.hyeni-calendar.pages.dev` 다. 배포별 주소·고정 `hyeni-calendar.pages.dev`·
+브랜드 `hyenicalendar.com` 세 곳 모두 entry SHA-256
+`5294B5584FF75243665F599A740711958F6BE905AF0E24F3575F55B2CB0E65AF`, CSS `assets/index-DMuUhfUk.css` SHA-256
+`177583E46CE74CDA70B47B5F3139D3D674ABD5923F433B0E610A5279A41CE6F4`, Service Worker SHA-256
+`E52B64C834F7917529EBEF4253C5F0F6733E0858631E7592F9AAA6EF92D27AAF` 가 로컬 `dist` 와 일치하고 `/oauth/callback`
+도 세 곳 200 이다.
+
+⚠️ **배포 자격이 바뀌었다** — `worker/.env` 의 `CLOUDFLARE_API_TOKEN` 이 만료돼 `npm run deploy:worker` 가
+`Authentication error 10000` 이다. 대신 OAuth 자격이 살아 있고 `workers`·`pages` 권한을 모두 가지므로 빈 파일을
+`--env-file` 로 넘겨 `.env` 자동 로드를 대체해 배포했다. 만료 토큰 교체는 TK 몫이다. Play 스토어·실사용 계정·
+세션·페어링·refresh token 은 건드리지 않았다.
+
 **아이 홈 혜니 입체 도약·v1.4.2/code 14 Play 심사 제출 완료(2026-08-25)**:
 기존 투명 WebP 18종과 표정·대화·일정 안내를 유지하면서 아이 홈에서 혜니가 자리를 옮길 때만 1.5초 perspective
 도약, squash/stretch, 부드러운 착지와 높이에 따라 변하는 발밑 그림자를 추가했다. GLB·Three.js·Blender·신규 생성
@@ -1509,6 +1542,31 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
     인계 권한이 아니므로** 비활성 설치에서는 기존 체인을 건드리지 않고 401로 닫는다. 정상 logout은 현재 설치의
     refresh 체인과 claim을 함께 놓는다. migration=`worker/db/account-device-sessions.sql`, 회귀=
     `worker/tests/accountDeviceSession.test.mjs`.
+- ★**부모 홈 히어로 캐러셀 정본(2026-08-26)**: 히어로는 원래 「오늘」 한 장이었고, 이제 좌우로 넘기고 자동
+  전환되는 캐러셀이다. 판정 정본은 `src/transform/parentHomeHeroCarousel.ts` 의 `resolveParentHomeHeroSlides`
+  하나이고 서버(`worker/lib/parentHomeHeroControls.ts`)는 같은 범위를 다시 검사만 한다.
+  · **첫 장은 항상 `today`** — 오늘 일정 수와 아이 위치가 부모가 앱을 여는 이유라 홍보가 그 자리를 밀어내지
+    않는다. 표시 개수가 0 이어도 today 는 남는다.
+  · **`ad` 종류만 구독 가족에게서 숨긴다.** 광고 제거가 구독의 값어치이기 때문이다. `promo`
+    (`hyenistudy.com`·`@hyeniworld` 유튜브)는 광고가 아니라 소식이므로 티어와 무관하게 보인다.
+  · ⚠️ **`ad` 를 실제로 켜려면 Play Console 「광고 포함」 선언과 스토어 설명의 「광고를 표시하지 않으며」 문구를
+    함께 고쳐야 한다**(Google 은 자사 앱 크로스 프로모션도 광고로 본다). 그래서 기본 슬라이드에 `ad` 가 없다.
+  · ⚠️ **엔타이틀먼트 미확정(`ready === false`)에서 무료 개수로 강등하지 않는다(R9)** — 조회 실패로 프리미엄
+    가족에게 홍보가 뜨면 안 되므로 미확정에서는 today 한 장만 둔다.
+  · 표시 개수·자동 전환 간격은 **운영자 전역 설정**이다. `app_global_settings` 의
+    `parent_home_hero_carousel_v1` 한 행 JSON(기본 free 3·premium 2·6000ms, 상한 6장·3~30초, `0`=자동 전환 끔)이라
+    **스키마 변경이 없다**. API 는 관리자 `GET|PUT /api/admin/hero-carousel`(운영자가 아니면 404·응답 `no-store`)과
+    소비자 `GET /api/family/hero-carousel`(활성 부모만, 조회 실패는 기본값 강등)이다.
+  · ⚠️ **스크롤 지시는 커밋 뒤 effect 한 곳에서만 한다** — 클릭 핸들러에서 바로 `scrollTo` 하면 같은 프레임의
+    재렌더·재스냅이 smooth 스크롤을 되돌려 **A17 실기기에서 화살표가 먹지 않았다**. `goTo` 는 인덱스만 바꾸고
+    `requestAnimationFrame` effect 가 `track.scrollTo` 를 한 번만 호출한다. 콜드 스타트에는 `offsetLeft` 가 0 이라
+    `트랙 폭 × 인덱스` 로 대체하고, 손가락 스크롤과 싸우지 않게 8px 여유를 둔다.
+  · 가로 스크롤은 **트랙 안에서만** 일어난다(껍데기 `overflow:hidden`, 트랙 `overscroll-behavior-x:contain`) —
+    부모 홈 CDP 스모크가 문서 가로 스크롤을 실패로 보기 때문이다. 화살표·점은 44px 터치 영역과 `hy-press` 를 갖고,
+    점은 상한 6장에서 잘리지 않도록 `flex-wrap:wrap` 이다. 슬라이드가 한 장이면 껍데기·컨트롤을 렌더하지 않는다.
+  · 외부 링크는 앱 안에서 열지 않고(`openExternal`) `ExternalLink` 아이콘과 문구로 외부임을 함께 알린다.
+  회귀=`tests/parentHomeHeroCarousel.test.ts`·`tests/parentHomeHeroCarouselLayout.test.mjs`·
+  `worker/tests/parentHomeHeroControls.test.mjs`.
 - ★**부모 홈 정보 구획·알림 분리·로그인 자동완성(2026-08-20 TK 실사용 지시)**:
   · 오늘의 일정·AI 일정추가·아이 현황·안전지표·준비물/숙제·아이와 대화하기·바로가기는 모두
     `.ph-section-shell.ph-glass` 한 장 안에 제목과 내용을 묶는다. 내부 실데이터 면은 `.ph-inner-surface`의
@@ -1996,6 +2054,15 @@ razr 실제 기기명 `motorola razr 40 ultra` 표시를 확인했다. S25는 �
   `Authentication error 10000` 이다. 배포 권한 토큰은 `worker/.env` 의 `CLOUDFLARE_API_TOKEN` 이고
   같은 파일의 `CLOUDFLARE_ACCOUNT_ID` 와 함께 따옴표를 벗겨 프로세스 env 로 주입한다.
   두 파일 모두 gitignore 되며 값을 출력·커밋하지 않는다. 배포는 `npm run deploy:worker`(= `cd worker && wrangler deploy`).
+  ★**2026-08-26 실측 — 그 `worker/.env` 토큰이 만료됐다.** `npm run deploy:worker` 는 다시
+  `Authentication error 10000` 이고, 대신 OAuth 자격(`C:UsersTK.wranglerconfigdefault.toml`,
+  tkisdroid@gmail.com)이 살아 있으며 `workers (write)`·`pages (write)` 를 모두 갖는다. wrangler 4 는 `.env` 를
+  자동 로드해 OAuth 를 덮어쓰므로 **빈 파일을 `--env-file` 로 넘겨** 그 자동 로드를 대체한다:
+  `cd worker && npx wrangler deploy --env-file <빈 파일>`. Pages 는 기존대로 저장소 밖 디렉터리에서 실행한다.
+  만료 토큰 교체는 TK 몫이며 토큰 값은 출력·복사하지 않는다.
+  ★**배포 검증에서 entry 청크를 glob 으로 고르지 말 것(2026-08-26)**: `dist/assets/index-*.js` 는 여러 개라
+  `head -1` 이 413바이트짜리 다른 청크를 집는다(그날 진입 청크는 351,286바이트). 진입 청크는 반드시
+  `dist/index.html` 이 참조하는 파일명으로 고른다.
 - **현재 기기 역할(2026-08-19 최신 사용자 지시)**: A17(RFKL40DP73J)은 부모, razr(ZY22H9VTQD)는 아이,
   S25(R5CY521CFNZ, SM-S937N)는 **역할 미고정 상시 검증기**다. 세 기기 모두 `adb install -r` 설치와 역할별
   읽기 전용 실행 검증을 수행하고, 앱 데이터·계정·페어링·세션을 보존하며 실제 계정 로그아웃·역할 전환·재페어링·

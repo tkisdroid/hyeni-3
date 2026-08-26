@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- 생성물: scripts/i18n/generate-android-locales.mjs (정본 locales/ja/android.json). 직접 고치지 않는다. -->
+<resources>
+    <string name="app_name">Hyeni カレンダー - 家族の安全</string>
+    <string name="title_activity_main">Hyeni カレンダー - 家族の安全</string>
+    <string name="push_alert_default_title">Hyeni カレンダー</string>
+    <string name="force_ring_title">緊急シグナル</string>
+    <string name="force_ring_message_label">保護者からのメッセージ</string>
+    <string name="force_ring_acknowledge">✓ 確認しました</string>
+    <string name="force_ring_footer">※ 保護者からの緊急シグナルのため、マナーモードを解除しました</string>
+    <string name="force_ring_countdown">アラーム自動終了まで %1$d 秒</string>
+    <string name="push_alert_close">閉じる</string>
+    <string name="push_alert_open_app">アプリを開く</string>
+</resources>

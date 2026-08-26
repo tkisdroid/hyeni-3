@@ -243,6 +243,50 @@
 .aap-commerce-save[aria-busy="true"] {
   opacity: 1;
 }
+/* 히어로 캐러셀 표시 개수 — 숫자 입력 3개. 좁은 화면에서 가로로 넘치지 않게 1열로 접는다. */
+.aap-hero-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+.aap-hero-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+}
+.aap-hero-field__label {
+  color: var(--fg-primary);
+  font-size: var(--type-label);
+  line-height: var(--type-label-line-height);
+  font-weight: var(--type-label-weight);
+}
+.aap-hero-field small {
+  color: var(--fg-muted);
+  font-size: var(--type-caption);
+  line-height: var(--type-caption-line-height);
+  font-weight: var(--type-caption-weight);
+}
+.aap-hero-input {
+  min-height: var(--control-min-size);
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: var(--fg-primary);
+  font-size: var(--type-body-lg);
+  line-height: var(--type-body-lg-line-height);
+  font-weight: var(--type-body-lg-weight);
+}
+.aap-hero-input:focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+.aap-hero-input:disabled {
+  opacity: 0.55;
+}
+
 .aap-feedback {
   margin: 0;
   padding: 10px 12px;

@@ -184,7 +184,7 @@
   "billing.subscription.fine.webManage": "您可以随时从此屏幕取消网络订阅。",
   "billing.subscription.google.pending": "在 Google Play 上查看",
   "billing.subscription.hero.description": "通过实时位置和人工智能摘要，更安心地查看孩子的一天。",
-  "billing.subscription.hero.title": "Hyeni Calendar Premium",
+  "billing.subscription.hero.title": "Hyeni 日历 Premium",
   "billing.subscription.plan.annual": "进阶版年度订阅",
   "billing.subscription.plan.annualRibbon": "年度计划",
   "billing.subscription.plan.googleManage": "Google Play 订阅 · 随时取消",
@@ -267,5 +267,8 @@
   "billing.web.request.authorizationRequired": "请重新开始登记支付信息。",
   "billing.web.request.notActive": "未找到有效的网页订阅。",
   "billing.web.request.cancellationFailed": "未能完成取消订阅的预约，请稍后重试。",
-  "billing.web.request.fallback": "未能完成网页支付，请稍后重试。"
+  "billing.web.request.fallback": "未能完成网页支付，请稍后重试。",
+  "billing.subscription.plan.free": "免费方案",
+  "billing.subscription.plan.trial": "Premium 免费试用",
+  "billing.subscription.plan.premium": "Premium 订阅"
 }

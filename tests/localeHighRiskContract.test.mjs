@@ -23,11 +23,17 @@ test("브랜드·pair placeholder·login ID·보호자 코드의 핵심 의미�
     const core = readCatalog(locale, "core");
     const combined = JSON.stringify({ core, onboarding });
     assert.match(combined, /Hyeni/, `${locale}: Hyeni 브랜드 누락`);
-    assert.equal(core["core.brand.name"], "Hyeni Calendar", `${locale}: 브랜드 이름`);
-    assert.equal(core["core.brand.nameRich"], "Hyeni <strong>Calendar</strong>", `${locale}: rich 브랜드 이름`);
-    assert.match(
-      readCatalog(locale, "shared")["shared.locationPermission.disclosure.collection.formal"],
-      /Hyeni Calendar/,
+    assert.equal(core["core.brand.name"], localizedBrandName(locale), `${locale}: 브랜드 이름`);
+    // rich 표기는 일반명사 부분만 강조한다 — 태그를 벗기면 정본 브랜드와 같아야 한다.
+    assert.equal(
+      core["core.brand.nameRich"].replaceAll(/<\/?strong>/g, ""),
+      localizedBrandName(locale),
+      `${locale}: rich 브랜드 이름`,
+    );
+    // 위치 고지는 어느 언어에서도 그 언어의 브랜드로 수집 주체를 밝혀야 한다.
+    assert.ok(
+      readCatalog(locale, "shared")["shared.locationPermission.disclosure.collection.formal"]
+        .includes(localizedBrandName(locale)),
       `${locale}: 위치 고지 브랜드`,
     );
     assert.doesNotMatch(combined, /鬣狗|父代码|父代碼|身份证件|身分證件|mã gốc|Nama belakang/, `${locale}: 금지 오역`);
@@ -225,7 +231,7 @@ test("비한국어 referral과 위치 서비스 문구는 공통 브랜드 정�
   ];
   for (const locale of foreignLocales) {
     const brand = localizedBrandName(locale);
-    assert.equal(brand, "Hyeni Calendar", `${locale}: 공통 브랜드 정본`);
+    assert.ok(brand.includes("Hyeni"), `${locale}: 공통 브랜드 정본에 고유명 Hyeni 유지`);
     const parent = readCatalog(locale, "parent");
     for (const id of brandMessageIds) {
       assert.match(parent[id], new RegExp(brand), `${locale}:${id}`);

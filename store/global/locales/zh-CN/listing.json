@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "listingLocale": "zh-CN",
+  "appLocale": "zh-CN",
+  "sourceLocale": "ko-KR",
+  "appName": "Hyeni 日历 - 家庭日程与安全",
+  "shortDescription": "一位父亲为自己孩子打造的家庭日程与安全应用。基本功能免费使用。",
+  "fullDescription": null,
+  "translationStatus": {
+    "appName": "translated",
+    "shortDescription": "translated",
+    "fullDescription": "pending"
+  },
+  "reviewStatus": "draft",
+  "reviewEvidence": null,
+  "claims": [
+    "free_baseline",
+    "family_calendar",
+    "ai_schedule",
+    "parent_child_location",
+    "arrival_alert",
+    "sos",
+    "memo",
+    "ai_friend",
+    "ai_schedule",
+    "premium",
+    "remote_audio",
+    "monitoring_transparency"
+  ]
+}

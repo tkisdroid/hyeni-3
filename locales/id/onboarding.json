@@ -158,5 +158,5 @@
   "onboarding.pairing.parent.title": "Bergabung sebagai wali bersama",
   "onboarding.pairing.parent.description": "Gunakan kode QR atau kode koneksi dari wali yang mengundang Anda.",
   "onboarding.pairing.parent.recovery": "Setelah bergabung, Anda dapat mengelola kalender keluarga dan informasi keselamatan anak bersama-sama dengan izin wali.",
-  "onboarding.oauth.returnToApp": "Login tidak dapat diselesaikan di browser. Silakan coba login sosial lagi di aplikasi Hyeni Calendar."
+  "onboarding.oauth.returnToApp": "Login tidak dapat diselesaikan di browser. Silakan coba login sosial lagi di aplikasi Kalender Hyeni."
 }

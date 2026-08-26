@@ -184,7 +184,7 @@
   "billing.subscription.fine.webManage": "คุณสามารถยกเลิกการสมัครสมาชิกเว็บของคุณได้ตลอดเวลาจากหน้าจอนี้",
   "billing.subscription.google.pending": "ตรวจสอบออกบน Google Play",
   "billing.subscription.hero.description": "ตรวจสอบวันของบุตรหลานของคุณด้วยความอุ่นใจมากขึ้นด้วยตำแหน่งแบบเรียลไทม์และสรุป AI",
-  "billing.subscription.hero.title": "Hyeni Calendar Premium",
+  "billing.subscription.hero.title": "ปฏิทิน Hyeni Premium",
   "billing.subscription.plan.annual": "การสมัครสมาชิกรายปีแบบพรีเมียม",
   "billing.subscription.plan.annualRibbon": "แผนประจำปี",
   "billing.subscription.plan.googleManage": "สมัครสมาชิก Google Play · ยกเลิกได้ตลอดเวลา",
@@ -267,5 +267,8 @@
   "billing.web.request.authorizationRequired": "กรุณาเริ่มการลงทะเบียนข้อมูลการชำระเงินใหม่",
   "billing.web.request.notActive": "ไม่พบการสมัครผ่านเว็บที่ใช้งานอยู่",
   "billing.web.request.cancellationFailed": "ตั้งกำหนดการยกเลิกไม่สำเร็จ กรุณาลองอีกครั้งในภายหลัง",
-  "billing.web.request.fallback": "ชำระเงินบนเว็บไม่สำเร็จ กรุณาลองอีกครั้งในภายหลัง"
+  "billing.web.request.fallback": "ชำระเงินบนเว็บไม่สำเร็จ กรุณาลองอีกครั้งในภายหลัง",
+  "billing.subscription.plan.free": "แพ็กเกจฟรี",
+  "billing.subscription.plan.trial": "ทดลองใช้ Premium ฟรี",
+  "billing.subscription.plan.premium": "การสมัคร Premium"
 }

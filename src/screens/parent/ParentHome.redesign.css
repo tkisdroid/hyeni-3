@@ -1037,3 +1037,122 @@
 .ph-page::before {
   content: none;
 }
+
+
+/* ── 히어로 캐러셀 ──────────────────────────────────────────────────────────
+   좌우로 넘기고 자동 전환되는 히어로. 슬라이드는 "오늘"(첫 장) + 소식이다.
+
+   ⚠️ 가로 overflow 는 **트랙 안에서만** 만든다. `html/body/#root` 는 건드리지 않는다
+   (부모 홈 CDP 스모크가 `documentElement.scrollWidth - clientWidth > 1` 이면 라우트를 실패시킨다).
+   그래서 `.ph-hero-carousel` 은 `overflow:hidden`, 트랙은 `overflow-x:auto` + `min-width:0` 이다. */
+.ph-hero-carousel {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ph-hero-carousel__track {
+  display: flex;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+.ph-hero-carousel__track::-webkit-scrollbar { display: none; }
+
+.ph-hero-carousel__slide {
+  flex: 0 0 100%;
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+/* 소식 슬라이드는 오늘 히어로와 같은 유리 표면을 쓴다(장식 배지·파스텔 CTA 없음). */
+.ph-page .ph-hero--promo {
+  display: block;
+  text-align: left;
+}
+
+.ph-hero-carousel__controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.ph-hero-carousel__arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ph-glass-fill-clear);
+  color: var(--ph-ink-3);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
+  box-shadow: var(--ph-panel-shadow);
+}
+
+/* 슬라이드 상한(6장)에서도 44px 점이 잘리지 않게 줄바꿈한다 — 캐러셀은 overflow:hidden 이라 넘치면 사라진다. */
+.ph-hero-carousel__dots {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* 점은 눌러서 이동하는 실제 버튼이라 44px 터치 영역을 유지하고 표시만 작게 그린다. */
+.ph-hero-carousel__dot {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.ph-hero-carousel__dot::after {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--ph-ink-3);
+  opacity: 0.32;
+  transition: opacity 0.16s ease, width 0.16s ease;
+}
+
+.ph-hero-carousel__dot[data-active="true"]::after {
+  width: 18px;
+  opacity: 1;
+  background: var(--ph-link);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .ph-hero-carousel__arrow { background: var(--bg-card); }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .ph-hero-carousel__arrow {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--bg-card);
+  }
+}
+
+/* 움직임 줄이기에서는 스냅 애니메이션도 끈다(자동 전환은 JS 가 이미 멈춘다). */
+@media (prefers-reduced-motion: reduce) {
+  .ph-hero-carousel__track { scroll-behavior: auto; }
+  .ph-hero-carousel__dot::after { transition: none; }
+}

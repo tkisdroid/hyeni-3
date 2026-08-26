@@ -3,6 +3,7 @@ import test from "node:test";
 
 import { localeBootstrapCopy } from "../src/i18n/bootstrapCopy.ts";
 import * as bootstrapModule from "../src/i18n/bootstrapCopy.ts";
+import { localizedBrandName } from "../src/i18n/locale.ts";
 
 const expected = {
   ko: ["언어 정보를 불러오지 못했어요", "연결을 확인한 뒤 다시 시도해 주세요.", "다시 시도"],
@@ -37,7 +38,7 @@ test("core catalog 실패 전에도 10개 locale의 document lang·dir·안전 t
     (apply as (locale: string, target: typeof documentLike) => void)(locale, documentLike);
     assert.equal(documentLike.documentElement.lang, locale, locale);
     assert.equal(documentLike.documentElement.dir, "ltr", locale);
-    assert.equal(documentLike.title, locale === "ko" ? "혜니캘린더" : "Hyeni Calendar", locale);
+    assert.equal(documentLike.title, localizedBrandName(locale), locale);
     assert.equal(meta.content, documentLike.title, locale);
   }
 });

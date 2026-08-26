@@ -267,5 +267,8 @@
   "billing.web.request.authorizationRequired": "결제 정보 등록을 다시 시작해 주세요.",
   "billing.web.request.notActive": "활성 웹 구독을 확인하지 못했어요.",
   "billing.web.request.cancellationFailed": "구독 해지 예약을 완료하지 못했어요. 잠시 후 다시 시도해 주세요.",
-  "billing.web.request.fallback": "웹 결제를 완료하지 못했어요. 잠시 후 다시 시도해 주세요."
+  "billing.web.request.fallback": "웹 결제를 완료하지 못했어요. 잠시 후 다시 시도해 주세요.",
+  "billing.subscription.plan.free": "무료 플랜",
+  "billing.subscription.plan.trial": "프리미엄 무료 체험",
+  "billing.subscription.plan.premium": "프리미엄 구독"
 }

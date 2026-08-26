@@ -18354,6 +18354,174 @@
     "variables": {},
     "description": "운영자 AI·결제 제어 다국어 문구: toast.promptSaved"
   },
+  "shared.adminAiPrompt.hero.title": {
+    "namespace": "shared",
+    "audience": "admin",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "운영자 히어로 설정 섹션 제목"
+  },
+  "shared.adminAiPrompt.hero.description": {
+    "namespace": "shared",
+    "audience": "admin",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "운영자 히어로 설정 섹션 설명"
+  },
+  "shared.adminAiPrompt.hero.badge.default": {
+    "namespace": "shared",
+    "audience": "admin",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "저장된 값이 없어 기본값을 쓰는 중임을 알리는 배지"
+  },
+  "shared.adminAiPrompt.hero.badge.saved": {
+    "namespace": "shared",
+    "audience": "admin",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "현재 값이 서버에 저장돼 있음을 알리는 배지"
+  },
+  "shared.adminAiPrompt.hero.badge.unsaved": {
+    "namespace": "shared",
+    "audience": "admin",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "아직 저장하지 않은 변경이 있음을 알리는 배지"
+  },
+  "shared.adminAiPrompt.hero.note.heading": {
+    "namespace": "shared",
+    "audience": "admin",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "첫 카드가 항상 오늘 요약임을 알리는 안내 제목"
+  },
+  "shared.adminAiPrompt.hero.note.description": {
+    "namespace": "shared",
+    "audience": "admin",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "개수 0 에서도 오늘 요약이 남고 구독 가족에게 광고를 숨긴다는 안내"
+  },
+  "shared.adminAiPrompt.hero.loading": {
+    "namespace": "shared",
+    "audience": "admin",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "히어로 설정 조회 중 상태 문구"
+  },
+  "shared.adminAiPrompt.hero.error.storage": {
+    "namespace": "shared",
+    "audience": "admin",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "히어로 설정 저장소 503 오류 안내"
+  },
+  "shared.adminAiPrompt.hero.error.general": {
+    "namespace": "shared",
+    "audience": "admin",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "히어로 설정 조회 실패 안내"
+  },
+  "shared.adminAiPrompt.hero.unconfigured": {
+    "namespace": "shared",
+    "audience": "admin",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "저장된 값이 없어 기본값을 쓰는 중임을 알리는 안내"
+  },
+  "shared.adminAiPrompt.hero.free.label": {
+    "namespace": "shared",
+    "audience": "admin",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "비구독 가족에게 보일 카드 수 입력 라벨"
+  },
+  "shared.adminAiPrompt.hero.free.hint": {
+    "namespace": "shared",
+    "audience": "admin",
+    "qualityTier": "B",
+    "variables": {
+      "max": "허용 최대 카드 수"
+    },
+    "description": "비구독 카드 수 입력 도움말"
+  },
+  "shared.adminAiPrompt.hero.premium.label": {
+    "namespace": "shared",
+    "audience": "admin",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "구독 가족에게 보일 카드 수 입력 라벨"
+  },
+  "shared.adminAiPrompt.hero.premium.hint": {
+    "namespace": "shared",
+    "audience": "admin",
+    "qualityTier": "B",
+    "variables": {
+      "max": "허용 최대 카드 수"
+    },
+    "description": "구독 카드 수 입력 도움말"
+  },
+  "shared.adminAiPrompt.hero.autoPlay.label": {
+    "namespace": "shared",
+    "audience": "admin",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "자동 전환 간격(초) 입력 라벨"
+  },
+  "shared.adminAiPrompt.hero.autoPlay.hint": {
+    "namespace": "shared",
+    "audience": "admin",
+    "qualityTier": "B",
+    "variables": {
+      "min": "허용 최소 초",
+      "max": "허용 최대 초"
+    },
+    "description": "자동 전환 간격 입력 도움말"
+  },
+  "shared.adminAiPrompt.hero.invalid": {
+    "namespace": "shared",
+    "audience": "admin",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "입력값이 허용 범위를 벗어나 저장할 수 없음을 알리는 문구"
+  },
+  "shared.adminAiPrompt.hero.save.action": {
+    "namespace": "shared",
+    "audience": "admin",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "히어로 설정 저장 버튼"
+  },
+  "shared.adminAiPrompt.hero.save.pending": {
+    "namespace": "shared",
+    "audience": "admin",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "히어로 설정 저장 진행 중 버튼"
+  },
+  "shared.adminAiPrompt.hero.save.saved": {
+    "namespace": "shared",
+    "audience": "admin",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "변경이 없어 저장할 것이 없는 상태의 버튼"
+  },
+  "shared.adminAiPrompt.hero.toast.saved": {
+    "namespace": "shared",
+    "audience": "admin",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "히어로 설정 저장 성공 토스트"
+  },
+  "shared.adminAiPrompt.hero.toast.saveFailed": {
+    "namespace": "shared",
+    "audience": "admin",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "히어로 설정 저장 실패 토스트"
+  },
   "shared.adventure.complete": {
     "namespace": "shared",
     "audience": "shared",
@@ -25065,5 +25233,220 @@
     "qualityTier": "B",
     "variables": {},
     "description": "Google 계정 제공자 표기"
+  },
+  "parent.account.provider.kakao": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "계정 화면의 로그인 수단 표기: 카카오"
+  },
+  "parent.account.provider.google": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "계정 화면의 로그인 수단 표기: 구글"
+  },
+  "parent.account.provider.naver": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "계정 화면의 로그인 수단 표기: 네이버"
+  },
+  "parent.account.provider.phone": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "계정 화면의 로그인 수단 표기: 전화번호"
+  },
+  "parent.account.provider.anonymous": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "계정 화면의 로그인 수단 표기: 게스트(익명 가입)"
+  },
+  "parent.account.provider.id": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "계정 화면의 로그인 수단 표기: ID·비밀번호 계정(기타 폴백)"
+  },
+  "billing.subscription.plan.free": {
+    "namespace": "billing",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "구독·체험 다국어 문구: subscription.plan.free"
+  },
+  "billing.subscription.plan.trial": {
+    "namespace": "billing",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "구독·체험 다국어 문구: subscription.plan.trial"
+  },
+  "billing.subscription.plan.premium": {
+    "namespace": "billing",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "구독·체험 다국어 문구: subscription.plan.premium"
+  },
+  "android.appName": {
+    "namespace": "android",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "런처·Play 스토어에 보이는 앱 이름(브랜드 + 짧은 부제). Play 제한 30자."
+  },
+  "android.appTitle": {
+    "namespace": "android",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "메인 Activity 제목(런처 이름과 동일하게 유지)"
+  },
+  "android.pushDefaultTitle": {
+    "namespace": "android",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "제목 없는 푸시에 쓰는 기본 알림 제목(브랜드만)"
+  },
+  "android.forceRing.title": {
+    "namespace": "android",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "소리 울리기 전체화면 제목(아이 기기)"
+  },
+  "android.forceRing.messageLabel": {
+    "namespace": "android",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "소리 울리기 전체화면의 보호자 메시지 라벨"
+  },
+  "android.forceRing.acknowledge": {
+    "namespace": "android",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "소리 울리기 전체화면 확인 버튼"
+  },
+  "android.forceRing.footer": {
+    "namespace": "android",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "무음모드를 우회한 이유를 알리는 안내(숨기지 않는다)"
+  },
+  "android.forceRing.countdown": {
+    "namespace": "android",
+    "audience": "child",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "알람 자동 종료까지 남은 초(%1$d 서식 인자를 반드시 유지)"
+  },
+  "android.pushAlert.close": {
+    "namespace": "android",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "푸시 안내 화면 닫기 버튼"
+  },
+  "android.pushAlert.openApp": {
+    "namespace": "android",
+    "audience": "shared",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "푸시 안내 화면 앱 열기 버튼"
+  },
+  "parent.home.heroCarousel.label": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "히어로 캐러셀 영역의 접근성 이름"
+  },
+  "parent.home.heroCarousel.previous": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "캐러셀 이전 슬라이드 버튼의 접근성 이름"
+  },
+  "parent.home.heroCarousel.next": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "캐러셀 다음 슬라이드 버튼의 접근성 이름"
+  },
+  "parent.home.heroCarousel.goToSlide": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "position": "1부터 시작하는 슬라이드 번호"
+    },
+    "description": "캐러셀 점 표시 버튼의 접근성 이름"
+  },
+  "parent.home.heroCarousel.slidePosition": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {
+      "position": "현재 슬라이드 번호",
+      "total": "전체 슬라이드 수"
+    },
+    "description": "슬라이드 위치 안내(보조기술용)"
+  },
+  "parent.home.heroSlide.study.eyebrow": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "히어로 소식 슬라이드(혜니스터디) 위 라벨"
+  },
+  "parent.home.heroSlide.study.title": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "히어로 소식 슬라이드(혜니스터디) 제목"
+  },
+  "parent.home.heroSlide.study.body": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "히어로 소식 슬라이드(혜니스터디) 설명 — 외부 링크로 이동함을 밝힌다"
+  },
+  "parent.home.heroSlide.world.eyebrow": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "히어로 소식 슬라이드(혜니월드 유튜브) 위 라벨"
+  },
+  "parent.home.heroSlide.world.title": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "히어로 소식 슬라이드(혜니월드 유튜브) 제목"
+  },
+  "parent.home.heroSlide.world.body": {
+    "namespace": "parent",
+    "audience": "parent",
+    "qualityTier": "B",
+    "variables": {},
+    "description": "히어로 소식 슬라이드(혜니월드 유튜브) 설명 — 외부 링크로 이동함을 밝힌다"
   }
 }

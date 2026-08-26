@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- 생성물: scripts/i18n/generate-android-locales.mjs (정본 locales/vi/android.json). 직접 고치지 않는다. -->
+<resources>
+    <string name="app_name">Lịch Hyeni - An toàn gia đình</string>
+    <string name="title_activity_main">Lịch Hyeni - An toàn gia đình</string>
+    <string name="push_alert_default_title">Lịch Hyeni</string>
+    <string name="force_ring_title">Tín hiệu khẩn</string>
+    <string name="force_ring_message_label">Tin nhắn từ phụ huynh</string>
+    <string name="force_ring_acknowledge">✓ Đã xem</string>
+    <string name="force_ring_footer">※ Đây là tín hiệu khẩn từ phụ huynh nên đã bỏ qua chế độ im lặng</string>
+    <string name="force_ring_countdown">Còn %1$d giây trước khi báo thức tự tắt</string>
+    <string name="push_alert_close">Đóng</string>
+    <string name="push_alert_open_app">Mở ứng dụng</string>
+</resources>

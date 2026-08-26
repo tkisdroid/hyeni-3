@@ -52,7 +52,7 @@ test("effective free는 미래 active raw 행도 프리미엄으로 되살리지
   assert.equal(resolution.contract, "effective");
   assert.equal(resolution.effectiveTier, "free");
   assert.equal(resolution.view?.isPremium, false);
-  assert.equal(resolution.view?.planLabel, "무료 플랜");
+  assert.equal(resolution.view?.planLabelId, "billing.subscription.plan.free");
 });
 
 test("grandfather는 상업 티어 free를 바꾸지 않고 기존 reviewed 한도만 보존한다", () => {

@@ -1061,5 +1061,22 @@
   "parent.home.subscriptionCard.meta.active": "프리미엄 이용 중",
   "parent.socialLinks.provider.kakao": "카카오",
   "parent.socialLinks.provider.naver": "네이버",
-  "parent.socialLinks.provider.google": "Google"
+  "parent.socialLinks.provider.google": "Google",
+  "parent.account.provider.kakao": "카카오 계정",
+  "parent.account.provider.google": "구글 계정",
+  "parent.account.provider.naver": "네이버 계정",
+  "parent.account.provider.phone": "전화번호 계정",
+  "parent.account.provider.anonymous": "게스트",
+  "parent.account.provider.id": "ID 계정",
+  "parent.home.heroCarousel.label": "오늘과 소식",
+  "parent.home.heroCarousel.previous": "이전 소식",
+  "parent.home.heroCarousel.next": "다음 소식",
+  "parent.home.heroCarousel.goToSlide": "{position}번째로 이동",
+  "parent.home.heroCarousel.slidePosition": "{total}개 중 {position}번째",
+  "parent.home.heroSlide.study.eyebrow": "혜니스터디",
+  "parent.home.heroSlide.study.title": "아이 공부 습관도\n같이 만들어요",
+  "parent.home.heroSlide.study.body": "새 창에서 살펴보기",
+  "parent.home.heroSlide.world.eyebrow": "혜니월드",
+  "parent.home.heroSlide.world.title": "혜니 영상으로\n아이와 쉬어가요",
+  "parent.home.heroSlide.world.body": "유튜브에서 보기"
 }

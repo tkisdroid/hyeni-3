@@ -53,7 +53,7 @@ const messages = {
   "onboarding.login.submit": "登入",
   "onboarding.login.subtitle": "登入以與家人重新聯繫",
   "onboarding.login.title": "歡迎回來",
-  "onboarding.oauth.returnToApp": "無法在瀏覽器中完成登入。請在 Hyeni Calendar 應用程式中重新嘗試社群登入。",
+  "onboarding.oauth.returnToApp": "無法在瀏覽器中完成登入。請在 Hyeni 日曆 應用程式中重新嘗試社群登入。",
   "onboarding.pairing.codeLabel": "孩子連結碼",
   "onboarding.pairing.connecting": "正在連線…",
   "onboarding.pairing.description": "可在家長端的「家庭」>「連結碼」中查看 QR 圖碼和連結碼。",

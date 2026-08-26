@@ -4,6 +4,7 @@
  * 프로필 수정(useUpdateProfile)·가족 조회(useMyFamily)는 queries/useFamily 를 그대로 재사용한다.
  */
 import { useMemo } from "react";
+import { useIntl } from "react-intl";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { QueryObserverResult } from "@tanstack/react-query";
 import { qk } from "./keys";
@@ -12,6 +13,7 @@ import {
   withResolvedMemberPhotos,
 } from "./memberPhotos";
 import { useAuth } from "@/auth/AuthContext";
+import type { MessageId } from "@/i18n/generated/messageIds";
 import type { FamilyMember } from "@/lib/api/endpoints/family";
 import {
   getMyAccount,
@@ -21,21 +23,26 @@ import {
   type AccountInfo,
 } from "@/lib/api/endpoints/account";
 
-/** 로그인 사용자 provider(로그인 방식) → 한글 라벨. */
-export function providerLabel(provider: string | null | undefined): string {
+/**
+ * 로그인 사용자 provider(로그인 방식) → message id.
+ *
+ * ⚠️ 문구를 직접 반환하지 않는다 — 이 라벨은 계정·설정·선생님 설정 화면에 그대로 보이므로
+ * locale 을 따라야 한다(2026-08-25 실기기에서 en 화면에 "ID 계정"이 노출된 결함 수정).
+ */
+export function providerLabelId(provider: string | null | undefined): MessageId {
   switch (provider) {
     case "kakao":
-      return "카카오 계정";
+      return "parent.account.provider.kakao" as MessageId;
     case "google":
-      return "구글 계정";
+      return "parent.account.provider.google" as MessageId;
     case "naver":
-      return "네이버 계정";
+      return "parent.account.provider.naver" as MessageId;
     case "phone":
-      return "전화번호 계정";
+      return "parent.account.provider.phone" as MessageId;
     case "anonymous":
-      return "게스트";
+      return "parent.account.provider.anonymous" as MessageId;
     default:
-      return "ID 계정";
+      return "parent.account.provider.id" as MessageId;
   }
 }
 
@@ -43,7 +50,7 @@ export interface UseAccountResult {
   account: AccountInfo | null;
   /** members 에서 user_id 로 매칭한 "나" 멤버(이름/전화/이모지 등 caller 본인 행). */
   me: FamilyMember | null;
-  /** 로그인 방식(provider) 한글 라벨. */
+  /** 로그인 방식(provider) 라벨 — 현재 locale 로 번역된 값. */
   providerLabel: string;
   isLoading: boolean;
   isError: boolean;
@@ -54,6 +61,7 @@ export interface UseAccountResult {
 /** 현재 사용자의 계정 정보(/api/family/mine 파생). */
 export function useAccount(): UseAccountResult {
   const { familyId, userId, status, user } = useAuth();
+  const intl = useIntl();
   const query = useQuery({
     queryKey: qk.account(familyId),
     queryFn: getMyAccount,
@@ -74,7 +82,7 @@ export function useAccount(): UseAccountResult {
   return {
     account,
     me,
-    providerLabel: providerLabel(provider),
+    providerLabel: intl.formatMessage({ id: providerLabelId(provider) }),
     isLoading: query.isLoading,
     isError: query.isError,
     isFetching: query.isFetching,

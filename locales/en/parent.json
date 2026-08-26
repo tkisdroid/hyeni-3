@@ -1061,5 +1061,22 @@
   "parent.home.subscriptionCard.meta.active": "Premium is active",
   "parent.socialLinks.provider.kakao": "Kakao",
   "parent.socialLinks.provider.naver": "Naver",
-  "parent.socialLinks.provider.google": "Google"
+  "parent.socialLinks.provider.google": "Google",
+  "parent.account.provider.kakao": "Kakao account",
+  "parent.account.provider.google": "Google account",
+  "parent.account.provider.naver": "Naver account",
+  "parent.account.provider.phone": "Phone number account",
+  "parent.account.provider.anonymous": "Guest",
+  "parent.account.provider.id": "ID account",
+  "parent.home.heroCarousel.label": "Today and news",
+  "parent.home.heroCarousel.previous": "Previous slide",
+  "parent.home.heroCarousel.next": "Next slide",
+  "parent.home.heroCarousel.goToSlide": "Go to slide {position}",
+  "parent.home.heroCarousel.slidePosition": "{position} of {total}",
+  "parent.home.heroSlide.study.eyebrow": "Hyeni Study",
+  "parent.home.heroSlide.study.title": "Build study habits\ntogether too",
+  "parent.home.heroSlide.study.body": "Open in a new window",
+  "parent.home.heroSlide.world.eyebrow": "Hyeni World",
+  "parent.home.heroSlide.world.title": "Take a break with\nHyeni videos",
+  "parent.home.heroSlide.world.body": "Watch on YouTube"
 }

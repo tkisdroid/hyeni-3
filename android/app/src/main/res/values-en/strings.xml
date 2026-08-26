@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- 생성물: scripts/i18n/generate-android-locales.mjs (정본 locales/en/android.json). 직접 고치지 않는다. -->
+<resources>
+    <string name="app_name">Hyeni Calendar: Family Safety</string>
+    <string name="title_activity_main">Hyeni Calendar: Family Safety</string>
+    <string name="push_alert_default_title">Hyeni Calendar</string>
+    <string name="force_ring_title">Urgent alert</string>
+    <string name="force_ring_message_label">Message from your guardian</string>
+    <string name="force_ring_acknowledge">✓ Got it</string>
+    <string name="force_ring_footer">※ This came as an urgent alert from your guardian, so silent mode was bypassed</string>
+    <string name="force_ring_countdown">%1$d sec until the alarm stops</string>
+    <string name="push_alert_close">Close</string>
+    <string name="push_alert_open_app">Open app</string>
+</resources>

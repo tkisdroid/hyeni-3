@@ -169,7 +169,7 @@ test("namespace가 있는 routeElement의 첫 JSX 인자에서 화면을 읽는�
 
 test("단일 인자 routeElement도 같은 라우트 정본으로 읽는다", () => {
   const singleArgumentRoute = app.replace(
-    'routeElement(<ParentHome />, PARENT_NAMESPACES)',
+    'routeElement(<ParentHome />, PARENT_HOME_NAMESPACES)',
     "routeElement(<ParentHome />)",
   );
   assert.notEqual(singleArgumentRoute, app, "단일 인자 fixture가 원본을 바꿔야 합니다.");
@@ -182,21 +182,21 @@ test("단일 인자 routeElement도 같은 라우트 정본으로 읽는다", ()
 test("routeElement의 지원 계약 밖 인자 형태를 거부한다", () => {
   assert.throws(
     () => parseAppRouteContract(app.replace(
-      'routeElement(<ParentHome />, PARENT_NAMESPACES)',
+      'routeElement(<ParentHome />, PARENT_HOME_NAMESPACES)',
       "routeElement()",
     )),
     /routeElement.*인자/,
   );
   assert.throws(
     () => parseAppRouteContract(app.replace(
-      'routeElement(<ParentHome />, PARENT_NAMESPACES)',
-      "routeElement(<ParentHome />, PARENT_NAMESPACES, SHARED_NAMESPACES)",
+      'routeElement(<ParentHome />, PARENT_HOME_NAMESPACES)',
+      "routeElement(<ParentHome />, PARENT_HOME_NAMESPACES, SHARED_NAMESPACES)",
     )),
     /routeElement.*인자/,
   );
 
   const wrongNamespace = app.replace(
-    'routeElement(<ParentHome />, PARENT_NAMESPACES)',
+    'routeElement(<ParentHome />, PARENT_HOME_NAMESPACES)',
     "routeElement(<ParentHome />, NOT_A_NAMESPACE)",
   );
   assert.notEqual(wrongNamespace, app, "잘못된 namespace fixture가 원본을 바꿔야 합니다.");
@@ -206,7 +206,7 @@ test("routeElement의 지원 계약 밖 인자 형태를 거부한다", () => {
   );
 
   const inlineNamespace = app.replace(
-    'routeElement(<ParentHome />, PARENT_NAMESPACES)',
+    'routeElement(<ParentHome />, PARENT_HOME_NAMESPACES)',
     'routeElement(<ParentHome />, ["core", "parent"])',
   );
   assert.notEqual(inlineNamespace, app, "직접 배열 namespace fixture가 원본을 바꿔야 합니다.");
@@ -240,7 +240,7 @@ test("지연 화면의 module 및 named export 오배선을 각각 검출한다"
 test("라우트 삭제를 검출한다", () => {
   assertMutationRejected(
     (source) => source.replace(
-      '{ path: "parent/home", element: routeElement(<ParentHome />, PARENT_NAMESPACES) },',
+      '{ path: "parent/home", element: routeElement(<ParentHome />, PARENT_HOME_NAMESPACES) },',
       "",
     ),
     "라우트 삭제를 허용하면 안 됩니다.",

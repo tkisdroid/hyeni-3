@@ -47,7 +47,11 @@ test("모든 페이지 뒤로가기는 공용 투명 버튼 규칙에 연결된�
         )?.getText(sourceFile) ?? "";
 
         // 달력의 왼쪽 화살표는 페이지 복귀가 아니라 이전 달 이동이다.
-        if (!className.includes("pc-navbtn") && !/(?:[\w-]+-back|hy-backbtn)/.test(className)) {
+        // 히어로 캐러셀의 왼쪽 화살표도 같은 이유로 제외한다 — 이전 슬라이드로 넘기는 조작이고,
+        // 공용 뒤로가기 규칙(투명·무배경 44px)을 입히면 캐러셀 조작면이 보이지 않게 된다.
+        const isSliderArrow = className.includes("pc-navbtn")
+          || className.includes("ph-hero-carousel__arrow");
+        if (!isSliderArrow && !/(?:[\w-]+-back|hy-backbtn)/.test(className)) {
           const line = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
           misses.push(`${relative(repoRoot, path).replaceAll("\\", "/")}:${line}`);
         }

@@ -2180,6 +2180,9 @@ const nonSurfacePaintManifest = new Set([
   // 모든 화면이 공유하는 뒤로가기는 독립 카드가 아니라 투명한 44px 아이콘 조작면이다.
   ["src/styles/components.css", ".hy-app button.hy-press[class*=\"-back\"]"],
   ["src/styles/components.css", ".hy-app button.hy-backbtn"],
+  // 히어로 캐러셀의 좌우 화살표와 위치 점 — 콘텐츠 판이 아니라 슬라이드 조작면·현재 위치 표식이다.
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-hero-carousel__arrow"],
+  ["src/screens/parent/ParentHome.redesign.css", ".ph-hero-carousel__dot::after"],
   ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-location-chip::before"],
   ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-safety__status::before"],
   ["src/screens/parent/ParentHome.redesign.css", ".ph-page .ph-sched-icon"],

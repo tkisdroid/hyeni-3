@@ -267,5 +267,8 @@
   "billing.web.request.authorizationRequired": "Please start the payment setup again.",
   "billing.web.request.notActive": "We couldn’t find an active web subscription.",
   "billing.web.request.cancellationFailed": "We couldn’t schedule the cancellation. Please try again in a moment.",
-  "billing.web.request.fallback": "We couldn’t complete the web payment. Please try again in a moment."
+  "billing.web.request.fallback": "We couldn’t complete the web payment. Please try again in a moment.",
+  "billing.subscription.plan.free": "Free plan",
+  "billing.subscription.plan.trial": "Premium free trial",
+  "billing.subscription.plan.premium": "Premium subscription"
 }

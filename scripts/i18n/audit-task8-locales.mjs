@@ -40,15 +40,21 @@ export const identicalEnglishAllowlist = Object.freeze([
   ),
   ...exactAllowances(
     ALL_NON_KOREAN_NON_ENGLISH,
-    "billing.subscription.provider.googlePlay",
-    "Google Play",
-    "Google Play 보호 상표는 번역하지 않습니다.",
+    "parent.home.heroSlide.study.eyebrow",
+    "Hyeni Study",
+    "히어로 소식 슬라이드가 여는 사이드 프로젝트(hyenistudy.com)의 워드마크입니다. 다른 서비스의 이름을 임의로 현지화하지 않습니다.",
   ),
   ...exactAllowances(
     ALL_NON_KOREAN_NON_ENGLISH,
-    "billing.subscription.hero.title",
-    "Hyeni Calendar Premium",
-    "manifest 정본 브랜드와 Premium 등급명 조합입니다.",
+    "parent.home.heroSlide.world.eyebrow",
+    "Hyeni World",
+    "히어로 소식 슬라이드가 여는 유튜브 채널(@hyeniworld)의 워드마크입니다. 다른 서비스의 이름을 임의로 현지화하지 않습니다.",
+  ),
+  ...exactAllowances(
+    ALL_NON_KOREAN_NON_ENGLISH,
+    "billing.subscription.provider.googlePlay",
+    "Google Play",
+    "Google Play 보호 상표는 번역하지 않습니다.",
   ),
   ...exactAllowances(
     ALL_NON_KOREAN_NON_ENGLISH,
@@ -80,12 +86,8 @@ export const identicalEnglishAllowlist = Object.freeze([
     "SOS",
     "국제 긴급 신호 SOS 표기를 유지합니다.",
   ),
-  ...exactAllowances(
-    ALL_NON_KOREAN_NON_ENGLISH,
-    "shared.teacherReleaseGate.eyebrow",
-    "Hyeni Calendar v{version}",
-    "manifest 정본 브랜드와 버전 변수만 표시합니다.",
-  ),
+  // `shared.teacherReleaseGate.eyebrow` 는 A안 이후 locale 마다 브랜드가 달라 영어 동일값이 아니다.
+  // 브랜드 포함 여부는 `brand_missing`·`brand_foreign` 검사가 담당한다.
 ]);
 
 const highRiskExactMessages = [
@@ -102,10 +104,10 @@ const highRiskExactMessages = [
     id: "reports.daily.noOtherApps",
     values: {
       ko: "혜니캘린더 외에 오늘 쓴 앱이 없어요.", en: "Your child didn't use any apps other than Hyeni Calendar today.",
-      ja: "今日はお子さまが Hyeni Calendar 以外のアプリを使った記録はありません。", "zh-CN": "孩子今天没有使用 Hyeni Calendar 以外的应用。",
-      "zh-TW": "孩子今天沒有使用 Hyeni Calendar 以外的應用程式。", vi: "Hôm nay bé không dùng ứng dụng nào ngoài Hyeni Calendar.",
-      th: "วันนี้เด็กไม่ได้ใช้แอปอื่นนอกจาก Hyeni Calendar", id: "Hari ini anak tidak menggunakan aplikasi lain selain Hyeni Calendar.",
-      ms: "Hari ini anak tidak menggunakan aplikasi lain selain Hyeni Calendar.", fil: "Hindi gumamit ang bata ng ibang app maliban sa Hyeni Calendar ngayong araw.",
+      ja: "今日はお子さまが Hyeni カレンダー 以外のアプリを使った記録はありません。", "zh-CN": "孩子今天没有使用 Hyeni 日历 以外的应用。",
+      "zh-TW": "孩子今天沒有使用 Hyeni 日曆 以外的應用程式。", vi: "Hôm nay bé không dùng ứng dụng nào ngoài Lịch Hyeni.",
+      th: "วันนี้เด็กไม่ได้ใช้แอปอื่นนอกจาก ปฏิทิน Hyeni", id: "Hari ini anak tidak menggunakan aplikasi lain selain Kalender Hyeni.",
+      ms: "Hari ini anak tidak menggunakan aplikasi lain selain Kalendar Hyeni.", fil: "Hindi gumamit ang bata ng ibang app maliban sa Kalendaryo Hyeni ngayong araw.",
     },
   },
   {
@@ -179,7 +181,23 @@ const simplifiedPhrases = new Map([
   ["信息", "資訊"],
 ]);
 
-const invalidBrandVariant = /(?:ヘニー?カレンダー|Hyeni(?:日历|日曆|カレンダー)|(?:Lịch|Kalender|Kalendar|Kalendaryong)\s+Hyeni|\bHyeni Premium\b)/u;
+/**
+ * 승인되지 않은 브랜드 표기만 차단한다(2026-08-25 TK 승인 A안).
+ *
+ * A안 = 고유명 `Hyeni` 를 유지하고 "캘린더"에 해당하는 일반명사만 현지어로 쓴다.
+ * 따라서 `Hyeni カレンダー`·`Hyeni 日历`·`Lịch Hyeni`·`Kalender Hyeni` 같은 정본 표기는 정상이다.
+ *
+ * ⚠️ 캐릭터 이름 "혜니"의 음역(`ヘニ`·`惠妮`)은 **브랜드가 아니라 AI 친구 이름**이라 이미 각 locale 에
+ * 승인돼 있다(`child.aiPersona.*.greeting`·`child.home.hyeniAlt`). 여기서 음역을 막으면 캐릭터가 깨진다.
+ * `Hyeni Premium` 도 `Kalendaryo Hyeni Premium` 처럼 정본 조합의 부분 문자열이므로 막을 수 없다.
+ *
+ * 그래서 A안 강제는 아래 세 검사가 담당한다.
+ *  - `brand_title`  : `billing.subscription.hero.title` === `${brandName} Premium`
+ *  - `brand_missing`: ko 에 브랜드가 든 id 는 해당 locale 브랜드를 반드시 포함
+ *  - `brand_foreign`: 자기 것이 아닌 다른 locale 브랜드 혼입 금지
+ * 이 정규식은 그 셋으로 잡히지 않는 **철자 오류**만 남긴다.
+ */
+const invalidBrandVariant = /(?:Kalendaryong\s+Hyeni|Hyeni\s+Calender|Hyeni\s+Kalender)/u;
 
 function readCatalog(rootDir, locale, namespace) {
   return JSON.parse(readFileSync(join(rootDir, "locales", locale, `${namespace}.json`), "utf8"));
@@ -314,6 +332,12 @@ export function auditTask8Locales(
   for (const namespace of ALL_NAMESPACES) {
     const korean = readCatalog(rootDir, "ko", namespace);
     for (const { code: locale, brandName } of nonKoreanLocales) {
+      // A안에서는 locale 마다 브랜드 표기가 다르므로, 자기 것이 아닌 다른 locale 브랜드가 섞이면 위반이다.
+      // (예: 일본어 문구에 영어 `Hyeni Calendar` 가 남아 있는 경우)
+      const foreignBrands = manifest.locales
+        .filter(({ code }) => code !== locale && code !== "ko")
+        .map(({ brandName: other }) => other)
+        .filter((other) => typeof other === "string" && other.length > 0 && !brandName.includes(other));
       const catalog = readCatalog(rootDir, locale, namespace);
       for (const id of Object.keys(catalog)) {
         const value = readMessage(catalog, locale, namespace, id, messageOverrides);
@@ -323,6 +347,10 @@ export function auditTask8Locales(
         if (invalidBrandVariant.test(value)) violations.push(`brand_variant:${locale}:${id}:${value}`);
         if (korean[id]?.includes("혜니캘린더") && !value.includes(brandName)) {
           violations.push(`brand_missing:${locale}:${id}:${brandName}`);
+        }
+        if (typeof value === "string") {
+          const foreign = foreignBrands.find((other) => value.includes(other));
+          if (foreign) violations.push(`brand_foreign:${locale}:${id}:${foreign}`);
         }
       }
     }

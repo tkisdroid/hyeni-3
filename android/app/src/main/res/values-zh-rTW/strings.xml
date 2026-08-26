@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- 생성물: scripts/i18n/generate-android-locales.mjs (정본 locales/zh-TW/android.json). 직접 고치지 않는다. -->
+<resources>
+    <string name="app_name">Hyeni 日曆 - 家庭行程與安全</string>
+    <string name="title_activity_main">Hyeni 日曆 - 家庭行程與安全</string>
+    <string name="push_alert_default_title">Hyeni 日曆</string>
+    <string name="force_ring_title">緊急訊號</string>
+    <string name="force_ring_message_label">家長留言</string>
+    <string name="force_ring_acknowledge">✓ 我知道了</string>
+    <string name="force_ring_footer">※ 這是家長發送的緊急訊號，因此已略過靜音模式</string>
+    <string name="force_ring_countdown">鈴聲將在 %1$d 秒後自動停止</string>
+    <string name="push_alert_close">關閉</string>
+    <string name="push_alert_open_app">開啟應用程式</string>
+</resources>

@@ -1059,7 +1059,7 @@ export function AiCredit() {
         {aiEnabled && (
           <div className="ac-limit-wrap">
           <div className="ac-auto" style={{ marginTop: -4 }}>
-            <span className="ac-auto__icon"><img src={asset("ui/clock.webp")} alt="" /></span>
+            <span className="ac-auto__icon"><img src={asset("ui/clock-3d.webp")} alt="" /></span>
             <span className="ac-auto__main">
               <span className="ac-auto__title">{intl.formatMessage({ id: "billing.aiCredit.settings.dailyLimitTitle" })}</span>
               <span className="ac-auto__sub">{intl.formatMessage({ id: "billing.aiCredit.settings.dailyLimitDescription" })}</span>

@@ -5,17 +5,24 @@ import { createIntl, createIntlCache, type IntlShape } from "react-intl";
 import { resolveParentHomeSubscriptionCard } from "../src/transform/parentHomeSubscriptionCard.ts";
 
 // 카드 문구는 locale catalog 가 정본이므로 한국어 카탈로그로 intl 을 만들어 검증한다.
+// 플랜 라벨은 billing namespace 의 message id 로 들어오므로 두 카탈로그를 함께 싣는다.
 const koParent = JSON.parse(
   readFileSync(new URL("../locales/ko/parent.json", import.meta.url), "utf8"),
 ) as Record<string, string>;
-const koIntl = createIntl({ locale: "ko", messages: koParent }, createIntlCache()) as IntlShape;
+const koBilling = JSON.parse(
+  readFileSync(new URL("../locales/ko/billing.json", import.meta.url), "utf8"),
+) as Record<string, string>;
+const koIntl = createIntl(
+  { locale: "ko", messages: { ...koParent, ...koBilling } },
+  createIntlCache(),
+) as IntlShape;
 
 test("무료 가족은 프리미엄 혜택을 확인하는 카드로 안내한다", () => {
   assert.deepEqual(resolveParentHomeSubscriptionCard({
     ready: true,
     isError: false,
     isPremium: false,
-    planLabel: "무료 플랜",
+    planLabelId: "billing.subscription.plan.free" as const,
     isTrial: false,
     trialDaysLeft: null,
     periodEnd: null,
@@ -33,7 +40,7 @@ test("프리미엄 가족은 구독 상품과 이용 종료일을 관리 카드�
     ready: true,
     isError: false,
     isPremium: true,
-    planLabel: "프리미엄 월간 구독",
+    planLabelId: "billing.subscription.plan.monthly" as const,
     isTrial: false,
     trialDaysLeft: null,
     periodEnd: new Date("2026-09-30T15:00:00.000Z"),
@@ -51,7 +58,7 @@ test("무료 체험 중인 가족은 남은 일수를 우선 표시한다", () =
     ready: true,
     isError: false,
     isPremium: true,
-    planLabel: "프리미엄 무료 체험",
+    planLabelId: "billing.subscription.plan.trial" as const,
     isTrial: true,
     trialDaysLeft: 3,
     periodEnd: new Date("2026-09-30T15:00:00.000Z"),
@@ -69,7 +76,7 @@ test("엔타이틀먼트 미확정과 오류는 무료 플랜으로 강등하지
     ready: false,
     isError: false,
     isPremium: false,
-    planLabel: null,
+    planLabelId: null,
     isTrial: false,
     trialDaysLeft: null,
     periodEnd: null,
@@ -78,7 +85,7 @@ test("엔타이틀먼트 미확정과 오류는 무료 플랜으로 강등하지
     ready: false,
     isError: true,
     isPremium: false,
-    planLabel: null,
+    planLabelId: null,
     isTrial: false,
     trialDaysLeft: null,
     periodEnd: null,
@@ -107,7 +114,7 @@ test("캐시된 프리미엄 정본이 있으면 재조회 오류에도 관리 �
     ready: true,
     isError: true,
     isPremium: true,
-    planLabel: "프리미엄 구독",
+    planLabelId: "billing.subscription.plan.premium" as const,
     isTrial: false,
     trialDaysLeft: null,
     periodEnd: null,

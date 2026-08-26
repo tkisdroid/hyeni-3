@@ -9,6 +9,7 @@
  * ⚠️ 이 함수는 "성공 응답"만 다룬다. 조회 실패(isError)로 인한 free 강등 금지(R9)는
  *    상위 훅(useEntitlement)의 ready 플래그가 책임진다. 여기서는 절대 예외를 삼키지 않는다.
  */
+import type { MessageId } from "@/i18n/generated/messageIds";
 import type {
   EntitlementResponse,
   EffectiveEntitlementRow,
@@ -35,8 +36,8 @@ export interface EntitlementView {
   isPremium: boolean;
   isTrial: boolean;
   status: string; // "active" | "trial" | "grace" | "expired" | "free" ...
-  tierLabel: string; // "프리미엄" | "무료"
-  planLabel: string; // "프리미엄 연간 구독" | "프리미엄 무료 체험" | "무료 플랜" ...
+  tierLabelId: MessageId; // `parent.tier.premium` | `parent.tier.free`
+  planLabelId: MessageId; // `billing.subscription.plan.*` — 화면에서 번역해 표시한다
   productId: string | null;
   basePlanId: string | null;
   provider: string | null;
@@ -74,18 +75,23 @@ function computeTrialDaysLeft(trialEndsAt: Date | null): number | null {
   return Math.ceil(diff / 86_400_000);
 }
 
-function planLabelFor(
+/**
+ * 플랜 라벨 message id. 문구를 직접 만들지 않는다 —
+ * 이 값은 부모 홈 구독 카드에 그대로 보이므로 locale 을 따라야 한다
+ * (2026-08-25 실기기에서 en 화면에 "프리미엄 연간 구독"이 노출된 결함 수정).
+ */
+function planLabelIdFor(
   isPremium: boolean,
   isTrial: boolean,
   productId: string | null,
   basePlanId: string | null,
-): string {
-  if (!isPremium) return "무료 플랜";
-  if (isTrial) return "프리미엄 무료 체험";
+): MessageId {
+  if (!isPremium) return "billing.subscription.plan.free" as MessageId;
+  if (isTrial) return "billing.subscription.plan.trial" as MessageId;
   const pid = `${productId || ""} ${basePlanId || ""}`.toLowerCase();
-  if (pid.includes("year") || pid.includes("annual")) return "프리미엄 연간 구독";
-  if (pid.includes("month")) return "프리미엄 월간 구독";
-  return "프리미엄 구독";
+  if (pid.includes("year") || pid.includes("annual")) return "billing.subscription.plan.annual" as MessageId;
+  if (pid.includes("month")) return "billing.subscription.plan.monthly" as MessageId;
+  return "billing.subscription.plan.premium" as MessageId;
 }
 
 function buildView(input: {
@@ -102,8 +108,8 @@ function buildView(input: {
     isPremium: input.isPremium,
     isTrial,
     status: input.status,
-    tierLabel: input.isPremium ? "프리미엄" : "무료",
-    planLabel: planLabelFor(input.isPremium, isTrial, input.productId, input.basePlanId),
+    tierLabelId: (input.isPremium ? "parent.tier.premium" : "parent.tier.free") as MessageId,
+    planLabelId: planLabelIdFor(input.isPremium, isTrial, input.productId, input.basePlanId),
     productId: input.productId,
     basePlanId: input.basePlanId,
     provider: input.provider,

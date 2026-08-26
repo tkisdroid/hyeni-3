@@ -54,7 +54,7 @@ const messages = {
   "reports.daily.noLocationInfo": "Tiada maklumat lokasi",
   "reports.daily.noLocationToday": "Tiada rekod lokasi untuk hari ini lagi.",
   "reports.daily.noMemoToday": "Tiada mesej yang ditukar hari ini.",
-  "reports.daily.noOtherApps": "Hari ini anak tidak menggunakan aplikasi lain selain Hyeni Calendar.",
+  "reports.daily.noOtherApps": "Hari ini anak tidak menggunakan aplikasi lain selain Kalendar Hyeni.",
   "reports.daily.noRemainingSchedule": "Tiada jadual lagi",
   "reports.daily.noScheduleToday": "Anak tiada jadual hari ini.",
   "reports.daily.noSuppliesToday": "Tiada barang yang perlu disediakan untuk anak hari ini.",

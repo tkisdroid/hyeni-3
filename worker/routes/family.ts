@@ -34,6 +34,7 @@ import {
   type AccountMemberReference,
 } from "../lib/accountDeletion";
 import { processFamilyUnpairCleanup } from "../lib/unpairCleanup";
+import { readParentHomeHeroControls } from "../lib/parentHomeHeroControls.ts";
 import { accountDeletionMutationState } from "../lib/accountDeletionClaims";
 import { recordFamilyLifecycleEvent } from "../lib/familyLifecycleFunnel";
 import {
@@ -2332,6 +2333,30 @@ family.post("/unpair", requireAuth, async (c) => {
   await notifyPg(c.env, familyId, "family_members", "DELETE", null, { family_id: familyId, user_id: childUserId });
   const cleanup = await processFamilyUnpairCleanup(c.env, familyId, childUserId);
   return c.json({ ok: true, cleanup_pending: cleanup.status === "pending" });
+});
+
+/**
+ * GET /api/family/hero-carousel — 부모 홈 히어로 캐러셀 표시 개수(운영자 전역 설정).
+ *
+ * 개수만 돌려준다. **구독 여부 판정은 클라이언트 `useEntitlement` 가 한다** —
+ * 그 hook 이 조회 실패에서 무료로 강등하지 않는 규칙(R9)을 이미 담고 있어서,
+ * 서버가 여기서 티어를 단정하면 그 보호가 두 곳으로 갈린다.
+ * 활성 부모만 읽는다(아이 화면에는 히어로가 없다).
+ */
+family.get("/hero-carousel", requireAuth, async (c) => {
+  const user = c.get("user");
+  const canonicalFamily = await resolveCanonicalFamilyMembership(c.env.DB, user.sub, user.family_id ?? null);
+  if (!canonicalFamily) return c.json({ error: "forbidden" }, 403);
+  const membership = await c.env.DB.prepare(
+    `SELECT role FROM family_members
+      WHERE family_id=? AND user_id=? AND is_active=1 AND role='parent' LIMIT 1`,
+  ).bind(canonicalFamily.familyId, user.sub).first<{ role: string }>();
+  if (!membership) return c.json({ error: "forbidden" }, 403);
+
+  // 조회 실패는 기본값으로 강등한다 — 히어로는 안전 기능이 아니라 표시 영역이다.
+  const controls = await readParentHomeHeroControls(c.env.DB);
+  c.header("Cache-Control", "private, no-store");
+  return c.json(controls);
 });
 
 export default family;

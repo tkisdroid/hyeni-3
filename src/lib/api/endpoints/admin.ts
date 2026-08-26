@@ -86,3 +86,69 @@ export async function saveAdminCommerceControls(
   const response = await apiPut<unknown>("/api/admin/commerce-controls", controls);
   return parseAdminCommerceControlValuesResponse(response);
 }
+
+
+/**
+ * 부모 홈 히어로 캐러셀 표시 개수(운영자 전역).
+ * 광고 성격 슬라이드를 구독 가족에게 숨기는 판정은 `transform/parentHomeHeroCarousel` 이 하고,
+ * 여기서는 개수·자동 전환 간격만 다룬다.
+ */
+export interface AdminHeroCarouselValues {
+  freeVisibleCount: number;
+  premiumVisibleCount: number;
+  /** 0 이면 자동 전환하지 않는다. */
+  autoPlayMs: number;
+}
+
+export interface AdminHeroCarousel extends AdminHeroCarouselValues {
+  configured: boolean;
+  maxSlides: number;
+}
+
+function isCountValue(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
+export function parseAdminHeroCarouselValuesResponse(value: unknown): AdminHeroCarouselValues {
+  const record = asRecord(value);
+  if (
+    record === null
+    || !isCountValue(record.freeVisibleCount)
+    || !isCountValue(record.premiumVisibleCount)
+    || !isCountValue(record.autoPlayMs)
+  ) {
+    // 확인되지 않은 값을 현재 설정처럼 보여주지 않는다.
+    throw new ApiError("invalid_admin_hero_carousel_response", 502);
+  }
+  return {
+    freeVisibleCount: record.freeVisibleCount,
+    premiumVisibleCount: record.premiumVisibleCount,
+    autoPlayMs: record.autoPlayMs,
+  };
+}
+
+export function parseAdminHeroCarouselResponse(value: unknown): AdminHeroCarousel {
+  const record = asRecord(value);
+  if (
+    record === null
+    || typeof record.configured !== "boolean"
+    || !isCountValue(record.maxSlides)
+  ) {
+    throw new ApiError("invalid_admin_hero_carousel_response", 502);
+  }
+  return {
+    ...parseAdminHeroCarouselValuesResponse(record),
+    configured: record.configured,
+    maxSlides: record.maxSlides,
+  };
+}
+
+export async function fetchAdminHeroCarousel(): Promise<AdminHeroCarousel> {
+  return parseAdminHeroCarouselResponse(await apiGet<unknown>("/api/admin/hero-carousel"));
+}
+
+export async function saveAdminHeroCarousel(
+  controls: AdminHeroCarouselValues,
+): Promise<AdminHeroCarousel> {
+  return parseAdminHeroCarouselResponse(await apiPut<unknown>("/api/admin/hero-carousel", controls));
+}

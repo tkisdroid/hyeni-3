@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "listingLocale": "en-US",
+  "appLocale": "en",
+  "sourceLocale": "ko-KR",
+  "appName": "Hyeni Calendar: Family Safety",
+  "shortDescription": "Family calendar and safety, built by a dad for his child. Core features free.",
+  "fullDescription": null,
+  "translationStatus": {
+    "appName": "translated",
+    "shortDescription": "translated",
+    "fullDescription": "pending"
+  },
+  "reviewStatus": "draft",
+  "reviewEvidence": null,
+  "claims": [
+    "free_baseline",
+    "family_calendar",
+    "ai_schedule",
+    "parent_child_location",
+    "arrival_alert",
+    "sos",
+    "memo",
+    "ai_friend",
+    "ai_schedule",
+    "premium",
+    "remote_audio",
+    "monitoring_transparency"
+  ]
+}

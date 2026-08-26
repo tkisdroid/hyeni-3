@@ -184,7 +184,7 @@
   "billing.subscription.fine.webManage": "Bạn có thể hủy đăng ký web của mình bất kỳ lúc nào từ màn hình này.",
   "billing.subscription.google.pending": "Hãy kiểm tra nó trên Google Play",
   "billing.subscription.hero.description": "Kiểm tra ngày của con bạn một cách an tâm hơn với vị trí thời gian thực và tóm tắt AI.",
-  "billing.subscription.hero.title": "Hyeni Calendar Premium",
+  "billing.subscription.hero.title": "Lịch Hyeni Premium",
   "billing.subscription.plan.annual": "Đăng ký trả phí hàng năm",
   "billing.subscription.plan.annualRibbon": "kế hoạch hàng năm",
   "billing.subscription.plan.googleManage": "Đăng ký Google Play · Hủy bất kỳ lúc nào",
@@ -267,5 +267,8 @@
   "billing.web.request.authorizationRequired": "Vui lòng bắt đầu lại việc thiết lập thanh toán.",
   "billing.web.request.notActive": "Chúng tôi không tìm thấy đăng ký web đang hoạt động.",
   "billing.web.request.cancellationFailed": "Chúng tôi chưa thể đặt lệnh hủy. Vui lòng thử lại sau ít phút.",
-  "billing.web.request.fallback": "Chúng tôi chưa thể hoàn tất thanh toán trên web. Vui lòng thử lại sau ít phút."
+  "billing.web.request.fallback": "Chúng tôi chưa thể hoàn tất thanh toán trên web. Vui lòng thử lại sau ít phút.",
+  "billing.subscription.plan.free": "Gói miễn phí",
+  "billing.subscription.plan.trial": "Dùng thử Premium miễn phí",
+  "billing.subscription.plan.premium": "Đăng ký Premium"
 }

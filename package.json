@@ -15,7 +15,7 @@
     "i18n:build": "node scripts/i18n/build-catalogs.mjs",
     "i18n:manifests": "node scripts/i18n/generate-pwa-manifests.mjs",
     "i18n:scan": "node scripts/i18n/scan-user-facing-literals.mjs",
-    "i18n:verify": "node scripts/i18n/validate-catalogs.mjs --check-generated && node scripts/i18n/generate-pwa-manifests.mjs --check && node scripts/i18n/scan-user-facing-literals.mjs && node scripts/i18n/scan-client-error-surfaces.mjs",
+    "i18n:verify": "node scripts/i18n/validate-catalogs.mjs --check-generated && node scripts/i18n/generate-pwa-manifests.mjs --check && node scripts/i18n/generate-android-locales.mjs --check && node scripts/i18n/scan-user-facing-literals.mjs && node scripts/i18n/scan-client-error-surfaces.mjs",
     "test:worker": "node --test worker/tests/*.test.mjs",
     "typecheck:worker": "tsc -p worker --noEmit",
     "deploy:worker": "cd worker && wrangler deploy",
@@ -34,7 +34,10 @@
     "release:record": "node scripts/create-release-record.mjs",
     "release:play-store-assets": "node scripts/create-play-store-final-assets.mjs",
     "preview": "vite preview",
-    "typecheck": "tsc -b --noEmit"
+    "typecheck": "tsc -b --noEmit",
+    "i18n:android": "node scripts/i18n/generate-android-locales.mjs",
+    "store:listing": "node scripts/store/build-global-listing.mjs",
+    "store:listing:check": "node scripts/store/build-global-listing.mjs --check"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.0",
