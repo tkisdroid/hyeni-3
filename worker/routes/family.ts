@@ -34,6 +34,10 @@ import {
   type AccountMemberReference,
 } from "../lib/accountDeletion";
 import { processFamilyUnpairCleanup } from "../lib/unpairCleanup";
+import {
+  studyCleanupSourceIdForChild,
+  studyLinkCleanupReceiptStmtsForUnpairJob,
+} from "../lib/studyLinkCleanup";
 import { readParentHomeHeroControls } from "../lib/parentHomeHeroControls.ts";
 import { accountDeletionMutationState } from "../lib/accountDeletionClaims";
 import { recordFamilyLifecycleEvent } from "../lib/familyLifecycleFunnel";
@@ -2229,6 +2233,14 @@ family.post("/unpair", requireAuth, async (c) => {
     const placeholders = memberIds.map(() => "?").join(",");
     const now = pgNow();
     const leaseNow = new Date().toISOString();
+    const studyCleanupSourceId = studyCleanupSourceIdForChild(familyId, childUserId);
+    const studyReceiptStmts = studyLinkCleanupReceiptStmtsForUnpairJob(c.env.DB, {
+      sourceKind: "child_deactivate",
+      sourceId: studyCleanupSourceId,
+      reason: "calendar_child_unpaired",
+      targets: memberIds.map((memberId) => ({ familyId, memberId })),
+      now: new Date(leaseNow),
+    }, familyId, childUserId);
     // 권한 차단 tombstone과 cleanup journal은 한 D1 batch에서 함께 확정한다.
     // 이 batch가 실패하면 R2를 건드리지 않아 active 사용자의 데이터가 보존된다.
     const results = await c.env.DB.batch([
@@ -2277,6 +2289,7 @@ family.post("/unpair", requireAuth, async (c) => {
         leaseNow,
         familyId,
       ),
+      ...studyReceiptStmts,
       c.env.DB.prepare(
         `UPDATE fcm_tokens SET disabled_at=?, disabled_reason='family_member_removed'
           WHERE family_id=? AND user_id=? AND disabled_at IS NULL

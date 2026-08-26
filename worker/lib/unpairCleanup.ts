@@ -4,6 +4,12 @@ import {
   buildMemberReferenceDeleteStmts,
   deleteAccountPhotoObjects,
 } from "./accountDeletion";
+import {
+  allStudyReceiptsCompleted,
+  enqueueStudyLinkCleanupReceipts,
+  processStudyLinkCleanupsForSource,
+  studyCleanupSourceIdForChild,
+} from "./studyLinkCleanup";
 
 const SAFE_ID = /^[A-Za-z0-9_-]{1,128}$/;
 
@@ -68,7 +74,7 @@ async function markCleanupFailure(
  * R2가 먼저 성공하고 D1 finalize가 실패해도 job/tombstone이 남아 재진입할 수 있다.
  */
 export async function processFamilyUnpairCleanup(
-  env: Pick<Env, "DB" | "PHOTOS">,
+  env: Pick<Env, "DB" | "PHOTOS" | "STUDY_SERVICE">,
   familyId: string,
   childUserId: string,
 ): Promise<UnpairCleanupResult> {
@@ -108,6 +114,28 @@ export async function processFamilyUnpairCleanup(
   if (Number(active?.count ?? 0) > 0) {
     await markCleanupFailure(env.DB, familyId, childUserId, "member_reactivated");
     return { status: "pending", error: "member_reactivated" };
+  }
+
+  const studySourceId = studyCleanupSourceIdForChild(familyId, childUserId);
+  try {
+    await enqueueStudyLinkCleanupReceipts(env.DB, {
+      sourceKind: "child_deactivate",
+      sourceId: studySourceId,
+      reason: "calendar_child_unpaired",
+      targets: memberIds.map((memberId) => ({ familyId, memberId })),
+    });
+    await processStudyLinkCleanupsForSource(
+      env,
+      "child_deactivate",
+      studySourceId,
+    );
+    if (!await allStudyReceiptsCompleted(env.DB, "child_deactivate", studySourceId)) {
+      await markCleanupFailure(env.DB, familyId, childUserId, "study_cleanup_pending");
+      return { status: "pending", error: "study_cleanup_pending" };
+    }
+  } catch {
+    await markCleanupFailure(env.DB, familyId, childUserId, "study_cleanup_unavailable");
+    return { status: "pending", error: "study_cleanup_unavailable" };
   }
 
   let referenceDeletes: D1PreparedStatement[];
@@ -165,7 +193,7 @@ export async function processFamilyUnpairCleanup(
 
 /** cron용 제한 배치. 한 job 실패가 다른 job의 재시도를 막지 않는다. */
 export async function processPendingFamilyUnpairCleanups(
-  env: Pick<Env, "DB" | "PHOTOS">,
+  env: Pick<Env, "DB" | "PHOTOS" | "STUDY_SERVICE">,
   limit = 20,
 ): Promise<{ processed: number; pending: number }> {
   const safeLimit = Math.max(1, Math.min(100, Math.floor(limit)));

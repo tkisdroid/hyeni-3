@@ -625,6 +625,11 @@ function journalNonce(sqlite, objectKey) {
 const { privateKey, publicKey } = await generateKeyPair("ES256", { extractable: true });
 const jwtPrivateKey = JSON.stringify(await exportJWK(privateKey));
 const jwtPublicKey = JSON.stringify(await exportJWK(publicKey));
+const studyService = {
+  async deactivateCalendarChildLink(_familyId, _memberId, _reason, requestId) {
+    return { apiVersion: "2026-08-24", requestId, status: "completed" };
+  },
+};
 
 async function authorization(sub, role, familyId = null) {
   const token = await new SignJWT({ role, family_id: familyId, is_anonymous: false })
@@ -654,6 +659,7 @@ async function request(db, photos, path, actor, init = {}) {
     {
       DB: db,
       PHOTOS: photos,
+      STUDY_SERVICE: studyService,
       JWT_PRIVATE_KEY: jwtPrivateKey,
       JWT_PUBLIC_KEY: jwtPublicKey,
       FAMILY_ROOM: {

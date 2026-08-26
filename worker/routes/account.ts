@@ -40,6 +40,10 @@ import {
   releaseManagedChildAccountDeletionClaim,
 } from "../lib/accountDeletionClaims";
 import { revokeWebBillingBeforeAccountDeletion } from "../lib/webBillingService";
+import {
+  allStudyReceiptsCompleted,
+  processStudyLinkCleanupsForSource,
+} from "../lib/studyLinkCleanup";
 
 export { deleteUserNotificationStateStmts } from "../lib/accountNotificationCleanup";
 
@@ -162,6 +166,24 @@ account.post("/delete", requireAuth, async (c) => {
   } catch (error) {
     await markAccountDeletionFailure(db, deletionClaim.jobId, "web_billing_key_revoke_failed");
     console.error("[account-delete] web billing key revoke failed");
+    return c.json({ error: "account_deletion_retryable" }, 503);
+  }
+
+  // Calendar 행/R2를 지우기 전에 Study의 링크·기기 비활성화 영수증을 확정한다.
+  // 학습 이력은 삭제하지 않으며, upstream 실패 시 원본 삭제 claim을 보존해 재시도한다.
+  try {
+    await processStudyLinkCleanupsForSource(
+      c.env,
+      "account_delete",
+      deletionClaim.jobId,
+    );
+    if (!await allStudyReceiptsCompleted(db, "account_delete", deletionClaim.jobId)) {
+      await markAccountDeletionFailure(db, deletionClaim.jobId, "study_cleanup_pending");
+      return c.json({ error: "account_deletion_retryable" }, 503);
+    }
+  } catch {
+    await markAccountDeletionFailure(db, deletionClaim.jobId, "study_cleanup_unavailable");
+    console.error("[account-delete] Study cleanup unavailable");
     return c.json({ error: "account_deletion_retryable" }, 503);
   }
 

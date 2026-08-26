@@ -1,3 +1,9 @@
+import {
+  enqueueStudyLinkCleanupReceipts,
+  studyLinkCleanupReceiptStmtForAccountOwner,
+  type StudyCleanupTarget,
+} from "./studyLinkCleanup";
+
 const SAFE_ID = /^[A-Za-z0-9_-]{1,128}$/;
 
 export type AccountDeletionMode = "family" | "self";
@@ -56,6 +62,42 @@ async function readClaim(db: D1Database, job: JobRow): Promise<AccountDeletionCl
   };
 }
 
+async function listAccountStudyTargets(
+  db: D1Database,
+  ownerUserId: string,
+): Promise<StudyCleanupTarget[]> {
+  const { results } = await db.prepare(
+    `SELECT fm.family_id, fm.id AS member_id
+       FROM family_members fm
+      WHERE fm.role='child'
+        AND (
+          fm.user_id=?
+          OR EXISTS(
+            SELECT 1 FROM families f
+             WHERE f.id=fm.family_id AND f.parent_id=?
+          )
+        )
+      ORDER BY fm.family_id, fm.id`,
+  ).bind(ownerUserId, ownerUserId).all<{ family_id: string; member_id: string }>();
+  return (results ?? []).map((row) => ({
+    familyId: String(row.family_id),
+    memberId: String(row.member_id),
+  }));
+}
+
+async function ensureExistingAccountStudyReceipts(
+  db: D1Database,
+  job: JobRow,
+): Promise<void> {
+  if (job.status === "completed") return;
+  await enqueueStudyLinkCleanupReceipts(db, {
+    sourceKind: "account_delete",
+    sourceId: job.id,
+    reason: "calendar_account_deleted",
+    targets: await listAccountStudyTargets(db, job.owner_user_id),
+  });
+}
+
 export async function beginAccountDeletionClaim(
   db: D1Database,
   input: { ownerUserId: string },
@@ -68,7 +110,10 @@ export async function beginAccountDeletionClaim(
       .prepare("SELECT id,owner_user_id,mode,status FROM account_deletion_jobs WHERE owner_user_id=? LIMIT 1")
       .bind(ownerUserId)
       .first<JobRow>();
-    if (existing) return { status: "claimed", claim: await readClaim(db, existing) };
+    if (existing) {
+      await ensureExistingAccountStudyReceipts(db, existing);
+      return { status: "claimed", claim: await readClaim(db, existing) };
+    }
 
     const jobId = crypto.randomUUID();
     const now = new Date().toISOString();
@@ -138,6 +183,11 @@ export async function beginAccountDeletionClaim(
           WHERE f.parent_id=?
             AND EXISTS(SELECT 1 FROM account_deletion_jobs WHERE id=?)`,
       ).bind(jobId, now, ownerUserId, jobId),
+      studyLinkCleanupReceiptStmtForAccountOwner(db, {
+        jobId,
+        ownerUserId,
+        now: new Date(now),
+      }),
     ];
     const results = await db.batch(statements);
     if (Number(results[0]?.meta?.changes ?? 0) !== 1) {
@@ -145,9 +195,9 @@ export async function beginAccountDeletionClaim(
         .prepare("SELECT id,owner_user_id,mode,status FROM account_deletion_jobs WHERE owner_user_id=? LIMIT 1")
         .bind(ownerUserId)
         .first<JobRow>();
-      return raced
-        ? { status: "claimed", claim: await readClaim(db, raced) }
-        : { status: "conflict" };
+      if (!raced) return { status: "conflict" };
+      await ensureExistingAccountStudyReceipts(db, raced);
+      return { status: "claimed", claim: await readClaim(db, raced) };
     }
     if (Number(results[1]?.meta?.changes ?? 0) !== 1) {
       return { status: "unavailable" };
@@ -166,7 +216,10 @@ export async function beginAccountDeletionClaim(
         .prepare("SELECT id,owner_user_id,mode,status FROM account_deletion_jobs WHERE owner_user_id=? LIMIT 1")
         .bind(ownerUserId)
         .first<JobRow>();
-      if (existing) return { status: "claimed", claim: await readClaim(db, existing) };
+      if (existing) {
+        await ensureExistingAccountStudyReceipts(db, existing);
+        return { status: "claimed", claim: await readClaim(db, existing) };
+      }
     } catch {
       // migration 누락과 D1 장애는 쓰기 경계를 열지 않는다.
     }

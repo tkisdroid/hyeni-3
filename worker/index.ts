@@ -88,6 +88,7 @@ import restShim from "./routes/rest-shim";
 import { cleanupStorageUploadDailyUsage } from "./lib/storageUploadQuota";
 import { cleanupAnonymousSignupProtection } from "./lib/anonymousSignupProtection";
 import { processPendingFamilyUnpairCleanups } from "./lib/unpairCleanup";
+import { processPendingStudyLinkCleanups } from "./lib/studyLinkCleanup";
 import { processPendingStorageInvalidUploadCleanups } from "./lib/storageInvalidUploadCleanup";
 import { cleanupExpiredAccountMutationLeases } from "./lib/accountMutationLease";
 import { cleanupCompletedAccountDeletionClaims } from "./lib/accountDeletionClaims";
@@ -564,6 +565,7 @@ const CRON: Record<string, CronHandler[]> = {
     { name: "memo-notification-outbox", run: processMemoNotificationOutbox },
     { name: "force-ring-reminder", run: runForceRingReminder },
     { name: "remote-listen-expiry", run: runRemoteListenExpiry },
+    { name: "study-link-cleanup", run: processPendingStudyLinkCleanups },
     { name: "family-unpair-cleanup", run: processPendingFamilyUnpairCleanups },
     { name: "storage-invalid-upload-cleanup", run: processPendingStorageInvalidUploadCleanups },
   ],

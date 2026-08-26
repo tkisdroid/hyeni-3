@@ -275,6 +275,11 @@ function addTeacherGraph(sqlite, suffix, userId, familyId, childMemberId) {
 const { privateKey, publicKey } = await generateKeyPair("ES256", { extractable: true });
 const jwtPrivateKey = JSON.stringify(await exportJWK(privateKey));
 const jwtPublicKey = JSON.stringify(await exportJWK(publicKey));
+const studyService = {
+  async deactivateCalendarChildLink(_familyId, _memberId, _reason, requestId) {
+    return { apiVersion: "2026-08-24", requestId, status: "completed" };
+  },
+};
 
 async function authHeader(sub, role, familyId = null) {
   const token = await new SignJWT({ role, family_id: familyId, is_anonymous: false })
@@ -286,7 +291,7 @@ async function authHeader(sub, role, familyId = null) {
   return `Bearer ${token}`;
 }
 
-async function deleteAccount(db, photos, actor) {
+async function deleteAccount(db, photos, actor, binding = studyService) {
   const app = new Hono();
   app.route("/api/account", accountRoutes);
   return app.request(
@@ -295,6 +300,7 @@ async function deleteAccount(db, photos, actor) {
     {
       DB: db,
       PHOTOS: photos,
+      STUDY_SERVICE: binding,
       JWT_PRIVATE_KEY: jwtPrivateKey,
       JWT_PUBLIC_KEY: jwtPublicKey,
       FAMILY_ROOM: {
@@ -305,7 +311,7 @@ async function deleteAccount(db, photos, actor) {
   );
 }
 
-async function unpairChild(db, photos, parentId, familyId, childUserId) {
+async function unpairChild(db, photos, parentId, familyId, childUserId, binding = studyService) {
   const app = new Hono();
   app.route("/api/family", familyRoutes);
   return app.request(
@@ -321,6 +327,7 @@ async function unpairChild(db, photos, parentId, familyId, childUserId) {
     {
       DB: db,
       PHOTOS: photos,
+      STUDY_SERVICE: binding,
       JWT_PRIVATE_KEY: jwtPrivateKey,
       JWT_PUBLIC_KEY: jwtPublicKey,
       FAMILY_ROOM: {
@@ -841,6 +848,93 @@ test("과거 refresh family snapshot이 한 페이지를 넘어도 모든 본인
   });
   assert.equal(response.status, 200, await response.clone().text());
   assert.deepEqual([...photos.keys], ["unrelated-family/uploads/child-history/must-stay.jpg"]);
+});
+
+test("계정 삭제는 Study 실패 시 Calendar를 보존하고 같은 receipt ID로 재시도한다", async () => {
+  const { sqlite, db } = createDb();
+  for (const id of ["parent-study", "child-study"]) addUser(sqlite, id);
+  addFamily(sqlite, "family-study", "parent-study", [["member-study", "child-study"]]);
+  const photos = new PhotosBucket(["family-study/photo.jpg"]);
+  const failedRequestIds = [];
+  const failed = await deleteAccount(db, photos, {
+    sub: "parent-study", role: "parent", familyId: "family-study",
+  }, {
+    async deactivateCalendarChildLink(_familyId, _memberId, _reason, requestId) {
+      failedRequestIds.push(requestId);
+      throw new Error("temporary upstream detail");
+    },
+  });
+  assert.equal(failed.status, 503);
+  assert.equal(count(sqlite, "families", "id='family-study'"), 1);
+  assert.equal(count(sqlite, "family_members", "id='member-study'"), 1);
+  assert.equal(count(sqlite, "account_deletion_jobs", "owner_user_id='parent-study'"), 1);
+  assert.equal(count(sqlite, "study_link_cleanup_receipts", "status='pending'"), 1);
+  assert.equal(
+    sqlite.prepare("SELECT last_error_code FROM study_link_cleanup_receipts").get().last_error_code,
+    "study_unavailable",
+  );
+
+  sqlite.prepare(
+    "UPDATE study_link_cleanup_receipts SET next_attempt_at='2000-01-01T00:00:00.000Z'",
+  ).run();
+  const successRequestIds = [];
+  const retried = await deleteAccount(db, photos, {
+    sub: "parent-study", role: "parent", familyId: "family-study",
+  }, {
+    async deactivateCalendarChildLink(_familyId, _memberId, _reason, requestId) {
+      successRequestIds.push(requestId);
+      return { apiVersion: "2026-08-24", requestId, status: "completed" };
+    },
+  });
+  assert.equal(retried.status, 200, await retried.text());
+  assert.deepEqual(successRequestIds, failedRequestIds);
+  assert.equal(count(sqlite, "families", "id='family-study'"), 0);
+});
+
+test("아이 연결 해제는 Study 실패 시 inactive job을 보존하고 같은 receipt ID로 재시도한다", async () => {
+  const { sqlite, db } = createDb();
+  for (const id of ["parent-study", "child-study"]) addUser(sqlite, id);
+  addFamily(sqlite, "family-study", "parent-study", [["member-study", "child-study"]]);
+  const failedRequestIds = [];
+  const failed = await unpairChild(
+    db,
+    new PhotosBucket(),
+    "parent-study",
+    "family-study",
+    "child-study",
+    {
+      async deactivateCalendarChildLink(_familyId, _memberId, _reason, requestId) {
+        failedRequestIds.push(requestId);
+        throw new Error("temporary upstream detail");
+      },
+    },
+  );
+  assert.equal(failed.status, 200, await failed.clone().text());
+  assert.deepEqual(await failed.json(), { ok: true, cleanup_pending: true });
+  assert.equal(count(sqlite, "family_members", "id='member-study' AND is_active=0"), 1);
+  assert.equal(count(sqlite, "family_unpair_cleanup_jobs", "child_user_id='child-study'"), 1);
+
+  sqlite.prepare(
+    "UPDATE study_link_cleanup_receipts SET next_attempt_at='2000-01-01T00:00:00.000Z'",
+  ).run();
+  const successRequestIds = [];
+  const retried = await unpairChild(
+    db,
+    new PhotosBucket(),
+    "parent-study",
+    "family-study",
+    "child-study",
+    {
+      async deactivateCalendarChildLink(_familyId, _memberId, _reason, requestId) {
+        successRequestIds.push(requestId);
+        return { apiVersion: "2026-08-24", requestId, status: "completed" };
+      },
+    },
+  );
+  assert.equal(retried.status, 200, await retried.clone().text());
+  assert.deepEqual(await retried.json(), { ok: true, cleanup_pending: false });
+  assert.deepEqual(successRequestIds, failedRequestIds);
+  assert.equal(count(sqlite, "family_members", "id='member-study'"), 0);
 });
 
 test("아이 연결 해제는 멤버 행 삭제 전에 업로더 prefix와 해당 스레드를 정리하고 남은 가족 참조는 보존한다", async () => {
