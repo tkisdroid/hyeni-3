@@ -5,6 +5,7 @@
 import { pgNow } from "./time.ts";
 
 export const AI_CHILD_OPERATOR_PROMPT_KEY = "ai_child_operator_prompt";
+export const STUDY_MANAGEMENT_ENABLED_KEY = "study_management_enabled";
 
 /** 운영자 지침 최대 길이 — 시스템 프롬프트 전체를 압도하지 않도록 제한한다. */
 export const OPERATOR_PROMPT_MAX_LENGTH = 4000;

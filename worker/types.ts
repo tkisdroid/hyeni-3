@@ -1,4 +1,5 @@
 export type { CalendarProfileServiceContract } from "./contracts/studyRpc";
+import type { StudyServiceEntrypoint } from "./contracts/studyRpc";
 
 // Worker 환경 바인딩 타입. 마일스톤 진행에 따라 KV/R2 추가.
 export interface Env {
@@ -22,6 +23,10 @@ export interface Env {
   // P1-storage — child-photos(Supabase Storage private bucket) 대체 R2 버킷.
   // routes/storage.ts 가 토큰+가족 격리 게이트로 업로드/조회를 중계한다.
   PHOTOS: R2Bucket;
+  // 혜니스터디 named RPC. 공개 UI는 app_global_settings의 dark flag가 켜진 뒤에만 노출한다.
+  STUDY_SERVICE?: StudyServiceEntrypoint;
+  // Calendar 사용자 ID를 Study 감사용 가명으로 바꾸는 전용 HMAC secret.
+  STUDY_ACTOR_REF_SECRET?: string;
   // M4 Edge Functions → Worker Secrets (wrangler secret / .dev.vars)
   KAKAO_REST_KEY?: string; // kakao-proxy 도보 길찾기
   RESEND_API_KEY?: string; // feedback-email 발송

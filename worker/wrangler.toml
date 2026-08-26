@@ -38,6 +38,12 @@ bucket_name = "child-photos"
 # preview_bucket_name 제거(R2 점검 I-5): prod 와 동일 버킷이면 `wrangler dev --remote` preview 가
 # prod 객체를 직접 read/write 할 위험. 로컬 dev(--local)는 R2 를 시뮬레이션하므로 불필요.
 
+# Calendar → Study는 named RPC만 사용하며 Study D1·learner secret을 공유하지 않는다.
+[[services]]
+binding = "STUDY_SERVICE"
+service = "hyeni-study"
+entrypoint = "CalendarStudyService"
+
 # M3 Realtime — FamilyRoom Durable Object (idFromName(familyId), WebSocket Hibernation).
 # write 라우트가 변경을 /notify 로 통지 → DO 가 구독 클라에 broadcast (postgres_changes 대체).
 [[durable_objects.bindings]]
