@@ -44,6 +44,7 @@ const TeacherSettings = lazyScreen(() => import("@/screens/teacher/TeacherSettin
 const TeacherReleaseGate = lazyScreen(() => import("@/screens/teacher/TeacherReleaseGate"), "TeacherReleaseGate");
 const Onboarding = lazyScreen(() => import("@/screens/onboarding/Onboarding"), "Onboarding");
 const Subscription = lazyScreen(() => import("@/screens/feature/Subscription"), "Subscription");
+const StudyManagement = lazyScreen(() => import("@/screens/feature/StudyManagement"), "StudyManagement");
 const Notifications = lazyScreen(() => import("@/screens/feature/Notifications"), "Notifications");
 const RemoteAudio = lazyScreen(() => import("@/screens/feature/RemoteAudio"), "RemoteAudio");
 const PlaceManager = lazyScreen(() => import("@/screens/feature/PlaceManager"), "PlaceManager");
@@ -101,6 +102,7 @@ for (const [path, screen] of [
   ["/parent/location", ParentLocation],
   ["/parent/memo", MemoChat],
   ["/parent/settings", ParentSettings],
+  ["/study-management", StudyManagement],
   ["/child/home", ChildHome],
   ["/child/sticker", StickerBook],
   ["/child/memo", MemoChat],
@@ -261,6 +263,7 @@ const router = createHashRouter([
           { path: "parent/family", element: routeElement(<ParentFamily />, PARENT_NAMESPACES) },
           { path: "subscription", element: routeElement(<Subscription />, BILLING_NAMESPACES) },
           { path: "trial-lock", element: routeElement(<TrialLock />, BILLING_NAMESPACES) },
+          { path: "study-management", element: routeElement(<StudyManagement />, PARENT_NAMESPACES) },
           { path: "notifications", element: routeElement(<Notifications />, PARENT_NOTIFICATION_NAMESPACES) },
           { path: "remote-audio", element: routeElement(<RemoteAudio />, PARENT_NOTIFICATION_NAMESPACES) },
           { path: "place-manager", element: routeElement(<PlaceManager />, PARENT_NOTIFICATION_NAMESPACES) },

@@ -250,8 +250,8 @@ function duplicateValues(values) {
 
 export function assertAppRouteContract(source, expected) {
   const parsed = parseAppRouteContract(source);
-  assert.equal(parsed.lazyScreens.length, 59, "지연 화면은 정확히 59개여야 합니다.");
-  assert.equal(parsed.routes.length, 60, "지연 라우트는 정확히 60개여야 합니다.");
+  assert.equal(parsed.lazyScreens.length, 60, "지연 화면은 정확히 60개여야 합니다.");
+  assert.equal(parsed.routes.length, 61, "지연 라우트는 정확히 61개여야 합니다.");
   assert.deepEqual(parsed.staticScreenImports, [], "Splash 외 화면의 정적 import를 허용하지 않습니다.");
   assert.deepEqual(parsed.lazyScreens, expected.lazyScreens, "지연 화면 모듈·named export 정본이 다릅니다.");
   assert.deepEqual(parsed.routes, expected.routes, "라우트 path·화면·guard 정본이 다릅니다.");

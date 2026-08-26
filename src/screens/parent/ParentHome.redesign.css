@@ -810,6 +810,16 @@
 }
 
 /* ── ④ 바로가기: 작게, 그리고 서로 떨어뜨린다 ──────────────────────────── */
+.ph-page .ph-study-card,
+.ph-page .ph-study-card.ph-glass {
+  width: 100%;
+  min-height: var(--control-min-size);
+  border: 0;
+  border-radius: var(--radius-20);
+  background: var(--ph-object-fill);
+  box-shadow: var(--ph-panel-shadow);
+}
+
 .ph-page .ph-shortcuts {
   gap: 16px 8px;
 }

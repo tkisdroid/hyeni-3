@@ -68,6 +68,8 @@ import { openExternal } from "@/lib/native/browser";
 import { ParentHomeHeroCarousel } from "@/components/ParentHomeHeroCarousel";
 import { useParentHomeHeroCarousel } from "@/queries/useParentHomeHero";
 import { resolveParentHomeHeroSlides } from "@/transform/parentHomeHeroCarousel";
+import { useStudyChildren, useStudyOverview, useStudyStatus } from "@/queries/useStudy";
+import { STUDY_COPY_KO, studyCardStatusKo } from "@/components/study/studyCopy.ko";
 import "./ParentHome.css";
 import "./ParentHome.redesign.css";
 
@@ -597,6 +599,26 @@ export function ParentHome() {
 
   // 활성 아이(전역 스위치) — 홈 카드 탭으로만 전환. 안전지표·오늘일정·준비물이 이 아이 기준.
   const { activeChild, setActiveChildId } = useActiveChild();
+  const studyStatusQuery = useStudyStatus();
+  const reportedStudyFeatureState = studyStatusQuery.isError
+    ? "unavailable"
+    : studyStatusQuery.data?.state;
+  const studyChildrenQuery = useStudyChildren(reportedStudyFeatureState);
+  const studyOverviewQuery = useStudyOverview(activeChild?.id ?? "", reportedStudyFeatureState);
+  const studyFeatureState = studyChildrenQuery.isError || studyOverviewQuery.isError
+    ? "unavailable"
+    : reportedStudyFeatureState;
+  const activeStudyChild = activeChild
+    ? (studyChildrenQuery.data?.children ?? []).find((child) => child.memberId === activeChild.id)
+    : undefined;
+  const studyCardStatusLabel = studyCardStatusKo({
+    featureState: studyFeatureState,
+    loading: studyStatusQuery.isLoading
+      || (studyFeatureState === "ready" && (studyChildrenQuery.isLoading || studyOverviewQuery.isLoading)),
+    linked: studyOverviewQuery.data?.overview?.linked ?? activeStudyChild?.linked ?? false,
+    todayProblemCount: studyOverviewQuery.data?.overview?.todayProblemCount ?? 0,
+    completedToday: studyOverviewQuery.data?.overview?.completedToday ?? false,
+  });
   const statusRequestedKeyRef = useRef("");
   useEffect(() => {
     const childUserId = activeChild?.user_id?.trim() ?? "";
@@ -1561,6 +1583,20 @@ export function ParentHome() {
           <SectionHeader
             title={intl.formatMessage({ id: "parent.parentHome.copy060" })}
           />
+          {studyFeatureState !== "disabled" && (
+            <button
+              type="button"
+              className="ph-study-card ph-glass hy-press"
+              onClick={() => navigate("/study-management")}
+            >
+              <span className="ph-study-card__icon" aria-hidden="true">÷</span>
+              <span className="ph-study-card__copy">
+                <strong>{STUDY_COPY_KO.card.title}</strong>
+                <small>{STUDY_COPY_KO.card.description}</small>
+              </span>
+              <span className="ph-study-card__status">{studyCardStatusLabel}</span>
+            </button>
+          )}
           <div className="ph-shortcuts">
             {shortcuts.map((s) => {
               // "알림" 바로가기 배지는 실제 미읽음 개수(99+ 상한). 그 외는 배지 없음.

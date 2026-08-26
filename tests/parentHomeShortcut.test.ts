@@ -5,6 +5,7 @@ import { shortcuts } from "../src/data/mock.ts";
 import { resolveParentHomeDeviceFinder } from "../src/transform/parentHomeShortcut.ts";
 
 test("부모 홈 바로가기는 구독 대신 아이 기기 찾기를 4×2 그리드에 둔다", () => {
+  assert.equal(shortcuts.length, 8);
   assert.deepEqual(shortcuts.map((shortcut) => shortcut.label), [
     "AI 일정",
     "위치추적",
@@ -15,6 +16,13 @@ test("부모 홈 바로가기는 구독 대신 아이 기기 찾기를 4×2 그�
     "아이 기기 찾기",
     "알림",
   ]);
+});
+
+test("학습관리 카드는 8개 바로가기와 하단 탭을 늘리지 않는다", () => {
+  const home = readFileSync(new URL("../src/screens/parent/ParentHome.tsx", import.meta.url), "utf8");
+  assert.equal(shortcuts.length, 8);
+  assert.ok(home.indexOf("ph-study-card") < home.indexOf('className="ph-shortcuts"'));
+  assert.match(home, /navigate\("\/study-management"\)/);
 });
 
 test("바로가기에 표시되는 이름은 실제 이동 대상과 같아야 한다", () => {

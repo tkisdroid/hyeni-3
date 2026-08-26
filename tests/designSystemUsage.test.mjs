@@ -2103,6 +2103,10 @@ const semanticSurfaceManifest = [
     // 입력창 위에 떠서 "아직 실행하지 않은 부탁"을 확인받는 카드.
     ["src/screens/child/AiFriendChat.css", "afc-confirm", "floating"],
     ["src/screens/feature/RemoteRing.css", "rr-query-state", "card"],
+    ["src/screens/feature/StudyManagement.css", "study-management__intro", "glass-card"],
+    ["src/screens/feature/StudyManagement.css", "study-management__state", "glass-card"],
+    ["src/screens/feature/StudyManagement.css", "study-management__child", "glass-card"],
+    ["src/screens/parent/ParentHome.redesign.css", "ph-study-card", "glass-panel"],
 ];
 
 function surfaceManifestKey(path, selector) {
@@ -2180,6 +2184,11 @@ const nonSurfacePaintManifest = new Set([
   // 모든 화면이 공유하는 뒤로가기는 독립 카드가 아니라 투명한 44px 아이콘 조작면이다.
   ["src/styles/components.css", ".hy-app button.hy-press[class*=\"-back\"]"],
   ["src/styles/components.css", ".hy-app button.hy-backbtn"],
+  ["src/screens/feature/StudyManagement.css", ".study-management__back"],
+  ["src/screens/feature/StudyManagement.css", ".study-management__retry"],
+  ["src/screens/feature/StudyManagement.css", ".study-management__symbol"],
+  ["src/screens/feature/StudyManagement.css", ".study-management__child-avatar"],
+  ["src/screens/parent/ParentHome.css", ".ph-study-card__icon"],
   // 히어로 캐러셀의 좌우 화살표와 위치 점 — 콘텐츠 판이 아니라 슬라이드 조작면·현재 위치 표식이다.
   ["src/screens/parent/ParentHome.redesign.css", ".ph-hero-carousel__arrow"],
   ["src/screens/parent/ParentHome.redesign.css", ".ph-hero-carousel__dot::after"],
