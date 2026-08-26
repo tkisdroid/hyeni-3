@@ -80,7 +80,17 @@ import {
   PRIVACY_POLICY_URL,
   TERMS_OF_SERVICE_URL,
 } from "@/lib/api/endpoints/account";
-import { validateLoginForm, type LoginFormErrors } from "@/transform/loginForm";
+import {
+  validateLoginForm,
+  type LoginFormErrors,
+  type LoginFormInput,
+} from "@/transform/loginForm";
+import {
+  createLoginActionGate,
+  isAutofilledLoginInput,
+  LOGIN_AUTOFILL_ANIMATION_NAME,
+  resolveLoginAutofillSubmission,
+} from "@/transform/loginAutofill";
 import {
   isValidLoginId,
   normalizeLoginId,
@@ -679,6 +689,12 @@ export function Onboarding() {
       //   역할 선택 화면이 잘못 노출돼도 기존 로그인이 파괴되지 않게 하는 최후 방어.
       const current = deriveAuthState();
       if (current.status === "authenticated" && routeAfterChildSession()) return;
+      // 기기 컨텍스트·네이티브 세션 복구·익명 로그인은 네트워크/브리지 상태에 따라
+      // 지연될 수 있다. 카드 탭은 그 준비를 기다리지 않고 아이 연결 화면에 즉시 반영한다.
+      // busy는 유지해 익명 세션이 확정되기 전 코드 제출만 막는다.
+      setRole("child");
+      setPairMode("child");
+      setStep("pairing");
       const hint = await readChildDeviceIdentityHint();
       setChildJoinHint(hint);
       if (await adoptNativeLocationSessionTokens()) {
@@ -694,6 +710,8 @@ export function Onboarding() {
       syncFromSession();
       routeAfterChildSession();
     } catch (e) {
+      const failedState = deriveAuthState();
+      if (failedState.status !== "authenticated") setStep("role");
       show(localizeApiError(e, intl, "child"), "⚠️");
     } finally {
       setBusy(false);
@@ -1352,6 +1370,9 @@ function LoginStep({
   const [pendingAction, setPendingAction] = useState<"id" | OAuthProvider | null>(null);
   const loginIdInputRef = useRef<HTMLInputElement>(null);
   const passwordInputRef = useRef<HTMLInputElement>(null);
+  const autofillAttemptedRef = useRef(false);
+  const loginActionGateRef = useRef(createLoginActionGate());
+  const autofillFrameRef = useRef<number | null>(null);
   const loginNavigationLocked = isLoginNavigationLocked({ busy, commitBoundaryActive });
   const signingUp = intent === "signup";
   const socialProviders = socialProvidersForAccessCountry(accessCountry, {
@@ -1377,12 +1398,14 @@ function LoginStep({
       onSignup({ kind: "oauth", provider });
       return;
     }
+    if (!loginActionGateRef.current.tryBegin()) return;
     setPendingAction(provider);
     setBusy(true);
     const transitionToken = beginOnboardingAuthTransition();
     try {
       await startWorkerOAuth(provider, "login", { onExternalOpen: onOAuthExternalOpen });
     } catch (e) {
+      loginActionGateRef.current.end();
       if (!isOnboardingAuthTransitionActive(transitionToken)) return;
       onOAuthExternalEnd();
       const message = localizeApiError(e, intl, "formal");
@@ -1395,16 +1418,18 @@ function LoginStep({
     }
   };
 
-  const loginIdPw = async () => {
-    if (busy) return;
+  const loginIdPw = async (credentials: LoginFormInput = { loginId, password }) => {
+    if (busy || !loginActionGateRef.current.tryBegin()) return;
     onAuthError(null);
-    const validationErrors = validateLoginForm({ loginId, password });
+    const validationErrors = validateLoginForm(credentials);
     setErrors(validationErrors);
     if (validationErrors.loginId) {
+      loginActionGateRef.current.end();
       loginIdInputRef.current?.focus();
       return;
     }
     if (validationErrors.password) {
+      loginActionGateRef.current.end();
       passwordInputRef.current?.focus();
       return;
     }
@@ -1413,7 +1438,7 @@ function LoginStep({
     const transitionToken = beginOnboardingAuthTransition();
     try {
       const result = await signInWithLoginId(
-        { loginId, password },
+        credentials,
         { sessionAdoption: "deferred" },
       );
       const commitResult = commitOnboardingAuthResult(transitionToken, result, adoptAuthResult);
@@ -1428,6 +1453,7 @@ function LoginStep({
         passwordInputRef.current?.focus();
       }
     } finally {
+      loginActionGateRef.current.end();
       if (isOnboardingAuthTransitionActive(transitionToken)) {
         setPendingAction(null);
         setBusy(false);
@@ -1435,6 +1461,40 @@ function LoginStep({
       }
     }
   };
+
+  const scheduleAutofillLogin = (animationName: string) => {
+    if (animationName !== LOGIN_AUTOFILL_ANIMATION_NAME) return;
+    if (autofillFrameRef.current !== null) cancelAnimationFrame(autofillFrameRef.current);
+    autofillFrameRef.current = requestAnimationFrame(() => {
+      autofillFrameRef.current = null;
+      const loginIdInput = loginIdInputRef.current;
+      const passwordInput = passwordInputRef.current;
+      if (!loginIdInput || !passwordInput) return;
+      if (loginActionGateRef.current.active()) return;
+
+      const candidate = resolveLoginAutofillSubmission({
+        loginId: loginIdInput.value,
+        password: passwordInput.value,
+        loginIdAutofilled: isAutofilledLoginInput(loginIdInput),
+        passwordAutofilled: isAutofilledLoginInput(passwordInput),
+        busy: busy || loginActionGateRef.current.active(),
+        autofillAttempted: autofillAttemptedRef.current,
+      });
+      if (!candidate) return;
+
+      autofillAttemptedRef.current = true;
+      setLoginId(candidate.loginId);
+      setPassword(candidate.password);
+      void loginIdPw(candidate);
+    });
+  };
+
+  useEffect(() => {
+    if (!busy) loginActionGateRef.current.end();
+    return () => {
+      if (autofillFrameRef.current !== null) cancelAnimationFrame(autofillFrameRef.current);
+    };
+  }, [busy]);
 
   return (
     <div className="ob-step ob-login">
@@ -1566,6 +1626,7 @@ function LoginStep({
                 spellCheck={false}
                 enterKeyHint="next"
                 value={loginId}
+                onAnimationStart={(event) => scheduleAutofillLogin(event.animationName)}
                 onChange={(e) => {
                   setLoginId(e.target.value);
                   clearFieldError("loginId");
@@ -1592,6 +1653,7 @@ function LoginStep({
                 autoComplete="current-password"
                 enterKeyHint="go"
                 value={password}
+                onAnimationStart={(event) => scheduleAutofillLogin(event.animationName)}
                 onChange={(e) => {
                   setPassword(e.target.value);
                   clearFieldError("password");
@@ -2380,7 +2442,7 @@ function PairingStep({
 
   return (
     <div className="ob-step ob-pairing">
-      <BackButton onBack={onBack} />
+      <BackButton onBack={onBack} disabled={busy} />
       <div className="ob-pair-head ob-step-head">
         <div className="ob-step-visual">
           <img src={asset("ui/camera-3d.webp")} alt="" loading="eager" decoding="async" />

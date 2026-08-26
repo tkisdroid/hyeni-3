@@ -33,7 +33,7 @@ test("로그인 오류는 각 입력과 연결되고 첫 오류 필드로 초점
 });
 
 test("유효하지 않은 로그인은 busy 전환과 API 호출 전에 종료한다", () => {
-  const start = onboarding.indexOf("const loginIdPw = async () => {");
+  const start = onboarding.indexOf("const loginIdPw = async (");
   const end = onboarding.indexOf("return (", start);
   assert.ok(start >= 0 && end > start, "ID 로그인 핸들러가 필요합니다");
   const handler = onboarding.slice(start, end);
@@ -201,6 +201,18 @@ test("visibility·pageshow는 외부 OAuth가 실제 열린 경우에만 busy를
   const nativeOpen = oauthStart.indexOf("openExternal(startUrl)");
   const webOpen = oauthStart.indexOf("window.location.assign(startUrl)");
   assert.ok(callback >= 0 && nativeOpen > callback && webOpen > callback, "외부 열기 직전에 owner를 표시해야 합니다");
+});
+
+test("수동·자동완성·소셜 로그인은 렌더보다 빠른 중복 실행을 같은 동기 gate로 막는다", () => {
+  const start = onboarding.indexOf("function LoginStep(");
+  const end = onboarding.indexOf("/* ── STEP: SIGNUP", start);
+  const login = onboarding.slice(start, end);
+
+  assert.match(login, /createLoginActionGate\(\)/);
+  assert.match(login, /const social = async[\s\S]{0,900}loginActionGateRef\.current\.tryBegin\(\)/);
+  assert.match(login, /const loginIdPw = async[\s\S]{0,500}loginActionGateRef\.current\.tryBegin\(\)/);
+  assert.match(login, /scheduleAutofillLogin[\s\S]{0,900}loginActionGateRef\.current\.active\(\)/);
+  assert.match(login, /if \(!busy\) loginActionGateRef\.current\.end\(\)/);
 });
 
 test("전역 키보드 초점과 로딩 문구는 눈으로 구분할 수 있다", () => {

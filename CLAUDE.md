@@ -3,6 +3,26 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
+**ID·비밀번호 자동완성 즉시 로그인·소셜 인증 회귀 검증(2026-08-27, 구현 완료·배포 전)**:
+로그인 화면에서 브라우저/Android WebView 비밀번호 관리자가 ID와 비밀번호를 모두 자동완성하면 로그인 버튼을 누르지
+않아도 즉시 로그인한다. 표준 `:autofill`과 WebKit `:-webkit-autofill`을 각각 감지하고 controlled input state보다
+실제 DOM 값을 우선 읽어 autofill 반영 지연을 피한다. 수동 입력·붙여넣기·한쪽만 자동완성·진행 중 인증은 자동 제출하지
+않으며, 자동 로그인은 화면당 한 번만 시도한다. 실패하면 기존 ID·비밀번호를 보존하고 비밀번호 칸으로 초점을 돌리되
+자동 재시도하지 않아 잠금·무한 요청을 만들지 않는다. 비교를 위해 평문 비밀번호를 별도 ref나 저장소에 보관하지 않는다.
+
+React `busy` 렌더보다 빠른 autofill RAF·수동 Enter/버튼·소셜 탭 경합은 `createLoginActionGate()`의 동기식 단일 gate로
+막는다. 카카오·Google·네이버는 사용자 탭 한 번으로 시작하는 기존 동선을 유지하고, 한국/판별 불가의 국내 provider와
+해외 Google 우선 정책, Worker 생성 state/transaction secret, 단회 교환·취소·App Link 계약을 변경하지 않았다.
+격리 브라우저 QA의 성공 로그인 시나리오도 `requestSubmit()` 대신 autofill animation을 주입하고
+`POST /auth/login-password` 정확히 1회를 요구하도록 바꿨다.
+
+TDD RED에서 자동완성 판정·1회 latch·브라우저 selector 폴백·수동/소셜 공유 gate 부재를 확인했다. 최종 집중 회귀
+39/39, 관련 온보딩 안정성 34/34, 앱 전체 1,997/1,997, Worker 전체 1,304/1,304, OAuth 앱 34/34·Worker 32/32,
+앱·Worker typecheck, production build(2,292 modules·precache 472·중복 0·entry 351,260/500,000바이트), Android
+`testDebugUnitTest lintDebug assembleDebug`가 통과했다. 현재 환경에는 인앱 Browser 인스턴스와 로컬
+Chrome/Playwright Chromium, 연결된 ADB 기기가 없어 실제 비밀번호 관리자 autofill·실 OAuth 동의·실기기 이벤트 전달은
+미검증으로 남겼다. 운영 계정·세션·refresh token·Worker·D1은 건드리지 않았고 Pages/Worker/스토어에 배포하지 않았다.
+
 **글로벌 locale·Google 지도 구현 계획 확정(2026-08-26, 구현 전)**:
 TK가 `KR=Kakao`, 승인된 비중국 국가=`Google Maps`, `CN/ZZ=미지원`을 확정했다. 해외 웹 PWA는 Maps
 JavaScript API, Capacitor Android는 공식 `@capacitor/google-maps`의 네이티브 Maps SDK를 사용하고,
@@ -470,6 +490,9 @@ Service Worker SHA-256 `aa9e60df57cddc5af3f993a133b2f3a26ebf1922fd6879ec34af139e
 국가에서 Google만 표시한다. 첫 화면 좌우 여백은 24px, 이후 가입·로그인·페어링·권한 화면은 16px로 통일하고 iPhone
 safe-area 뒤 상단 16px, 전역 수평 overflow 차단, 세로 fade 전환을 적용했다. QR 스캔은 브라우저 기능 유무를 권한보다
 먼저 확인하고, Android 임시 거부는 재요청·영구 거부는 설정 이동 후 자동 재확인·모든 오류는 수동 코드 입력으로 복구한다.
+`아이로 시작`은 기존 인증 세션 보호 가드를 먼저 통과한 뒤 기기 컨텍스트·네이티브 세션 복구·익명 로그인을 기다리지 않고
+아이 연결 화면을 즉시 열며, 준비 중에는 코드 제출·뒤로가기를 막는다. 준비 실패는 역할 화면으로 돌아가 재시도시킨다.
+회귀=`tests/onboardingChildStartResponsiveness.test.mjs`.
 대상 회귀 34/34와 Worker 공개 API 2/2, 앱·Worker typecheck, production build(469 precache·중복 0)는 통과했다.
 사용자 요청으로 이후 브라우저 57화면 전수 검수와 전체 앱/Worker 테스트 재실행은 생략했으므로 그 범위를 완료로 간주하지 않는다.
 소스 커밋 `4be6089`를 `main`에 푸시하고 Worker version `29acfe86-974e-4bbc-b69d-f3c8b885a394`와 Pages
