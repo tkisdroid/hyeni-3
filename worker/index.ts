@@ -404,6 +404,7 @@ app.onError((err, c) => {
 // Durable Object 클래스는 엔트리포인트에서 export 해야 wrangler 가 바인딩한다.
 export { FamilyRoom } from "./realtime/FamilyRoom";
 export { TeacherRoom } from "./realtime/TeacherRoom";
+export { CalendarProfileService } from "./entrypoints/CalendarProfileService";
 
 // M4-B/M5 cron — pg_cron → Cloudflare Cron Triggers. 같은 표현식에 여러 작업이 있을 수 있다.
 type CronHandler = {

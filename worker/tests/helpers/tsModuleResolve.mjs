@@ -17,9 +17,13 @@ import { registerHooks } from "node:module";
 // 확장자를 이미 가진 specifier는 건드리지 않는다(.js import 74건은 실제 .js 파일이다).
 const HAS_EXTENSION = /\.[cm]?[jt]sx?$/;
 const CANDIDATE_SUFFIXES = [".ts", ".js", "/index.ts", "/index.js"];
+const CLOUDFLARE_WORKERS_SHIM = new URL("./cloudflareWorkersShim.mjs", import.meta.url).href;
 
 registerHooks({
   resolve(specifier, context, nextResolve) {
+    if (specifier === "cloudflare:workers") {
+      return { url: CLOUDFLARE_WORKERS_SHIM, shortCircuit: true };
+    }
     if (
       (specifier.startsWith("./") || specifier.startsWith("../"))
       && !HAS_EXTENSION.test(specifier)

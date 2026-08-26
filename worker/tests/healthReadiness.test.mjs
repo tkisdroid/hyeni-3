@@ -8,8 +8,12 @@ import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const workerDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const cloudflareWorkersShim = new URL("./helpers/cloudflareWorkersShim.mjs", import.meta.url).href;
 const resolutionHook = registerHooks({
   resolve(specifier, context, nextResolve) {
+    if (specifier === "cloudflare:workers") {
+      return { url: cloudflareWorkersShim, shortCircuit: true };
+    }
     if (specifier.startsWith(".") && !extname(specifier)) {
       const base = new URL(specifier, context.parentURL);
       for (const extension of [".ts", ".js"]) {

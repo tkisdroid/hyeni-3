@@ -1,3 +1,5 @@
+export type { CalendarProfileServiceContract } from "./contracts/studyRpc";
+
 // Worker 환경 바인딩 타입. 마일스톤 진행에 따라 KV/R2 추가.
 export interface Env {
   DB: D1Database;
