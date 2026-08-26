@@ -23,7 +23,9 @@ test("최종 브라우저 QA는 production dist를 390x844 격리 프로필에�
 });
 
 test("최종 브라우저 QA는 부모·아이 출시 화면과 핵심 전환 계약을 빠짐없이 고정한다", () => {
-  assert.equal(PARENT_BROWSER_QA_ROUTES.length, 43);
+  assert.equal(PARENT_BROWSER_QA_ROUTES.length, 45);
+  assert.ok(PARENT_BROWSER_QA_ROUTES.includes("study-management"));
+  assert.ok(PARENT_BROWSER_QA_ROUTES.includes("study-management/claim"));
   assert.ok(PARENT_BROWSER_QA_ROUTES.includes("child-digest"), "아이 하루 대시보드도 QA 대상이다");
   // 문구 검사는 한국어 정본 기준이다. 표시 언어를 고정하지 않으면 Linux CI(en-US)에서
   // 영어 화면을 한국어로 검사하게 되어 12건이 항상 실패한다(2026-08-19 실사고).
@@ -104,6 +106,8 @@ test("최종 브라우저 QA는 부모·아이 출시 화면과 핵심 전환 �
   assert.match(source, /scope: "co-parent-sees-primary-guardian-and-children"/);
   assert.match(source, /family-existing-coparent-management\.png/);
   assert.match(source, /\.ob-pair-code-input/);
+  assert.match(source, /scope: "study-management-linked-mutations"/);
+  assert.match(source, /scope: "study-claim-url-erased-one-shot"/);
 });
 
 test("최종 브라우저 QA는 출시 품질 결함을 JSON과 스크린샷 증거로 남긴다", () => {

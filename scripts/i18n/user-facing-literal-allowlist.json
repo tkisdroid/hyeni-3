@@ -40,5 +40,54 @@
     "occurrences": 1,
     "status": "exempt",
     "reason": "protocol: 페어링 코드의 서버 형식 자체이며 번역하면 입력 형식을 오해시킨다"
+  },
+  {
+    "path": "src/components/study/StudyChildTabs.tsx",
+    "pattern": ".+",
+    "occurrences": 1,
+    "status": "exempt",
+    "reason": "study: 혜니스터디 사용자 화면은 한국어 전용 문구 모듈을 정본으로 사용한다"
+  },
+  {
+    "path": "src/components/study/StudyClaimGate.tsx",
+    "pattern": ".+",
+    "occurrences": 14,
+    "status": "exempt",
+    "reason": "study: 혜니스터디 사용자 화면은 한국어 전용 문구 모듈을 정본으로 사용한다"
+  },
+  {
+    "path": "src/components/study/StudyDevicesPanel.tsx",
+    "pattern": ".+",
+    "occurrences": 14,
+    "status": "exempt",
+    "reason": "study: 혜니스터디 사용자 화면은 한국어 전용 문구 모듈을 정본으로 사용한다"
+  },
+  {
+    "path": "src/components/study/StudyPairingPanel.tsx",
+    "pattern": ".+",
+    "occurrences": 10,
+    "status": "exempt",
+    "reason": "study: 혜니스터디 사용자 화면은 한국어 전용 문구 모듈을 정본으로 사용한다"
+  },
+  {
+    "path": "src/components/study/StudyReportPanel.tsx",
+    "pattern": ".+",
+    "occurrences": 18,
+    "status": "exempt",
+    "reason": "study: 혜니스터디 사용자 화면은 한국어 전용 문구 모듈을 정본으로 사용한다"
+  },
+  {
+    "path": "src/screens/feature/StudyManagement.tsx",
+    "pattern": ".+",
+    "occurrences": 19,
+    "status": "exempt",
+    "reason": "study: 혜니스터디 사용자 화면은 한국어 전용 문구 모듈을 정본으로 사용한다"
+  },
+  {
+    "path": "src/screens/parent/ParentHome.tsx",
+    "pattern": "STUDY_COPY_KO|studyCardStatusLabel",
+    "occurrences": 3,
+    "status": "exempt",
+    "reason": "study: 혜니스터디 사용자 화면은 한국어 전용 문구 모듈을 정본으로 사용한다"
   }
 ]

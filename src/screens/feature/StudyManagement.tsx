@@ -96,7 +96,7 @@ export function StudyManagement() {
       <header className="study-management__header">
         <button
           type="button"
-          className="study-management__back hy-press"
+          className="study-management__back hy-backbtn hy-press"
           aria-label={STUDY_COPY_KO.screen.back}
           onClick={() => navigate(-1)}
         >
@@ -157,7 +157,7 @@ export function StudyManagement() {
           <>
             <section className="study-management__state">
               <span className="study-management__child-avatar" aria-hidden="true">
-                {view.child.displayName.trim().slice(0, 1) || "아"}
+                {view.child.displayName.trim().slice(0, 1) || STUDY_COPY_KO.common.childFallbackInitial}
               </span>
               <h2>{view.child.displayName}</h2>
               <p>{STUDY_COPY_KO.screen.unlinkedDescription}</p>

@@ -16,6 +16,7 @@ type ClaimState =
   | Readonly<{ kind: "ready" }>
   | Readonly<{ kind: "success"; result: StudyClaimResponse["result"] }>
   | Readonly<{ kind: "expired" }>
+  | Readonly<{ kind: "reused" }>
   | Readonly<{ kind: "primary-only" }>
   | Readonly<{ kind: "failed" }>;
 
@@ -48,7 +49,7 @@ export function StudyClaimGate({
   const claimProfile = useClaimStudyProfile();
   const [targetMemberId, setTargetMemberId] = useState<string | null>(null);
   const [claimState, setClaimState] = useState<ClaimState>(() => (
-    claimAvailable() ? { kind: "ready" } : { kind: "expired" }
+    claimAvailable() ? { kind: "ready" } : { kind: "reused" }
   ));
 
   useEffect(() => {
@@ -85,8 +86,10 @@ export function StudyClaimGate({
       setClaimState({ kind: "success", result: result.result });
     } catch (error) {
       clearStoredClaim();
-      if (error instanceof Error && /study_claim_(?:expired|already_consumed|invalid)/.test(error.message)) {
+      if (error instanceof Error && error.message === "study_claim_expired") {
         setClaimState({ kind: "expired" });
+      } else if (error instanceof Error && error.message === "study_claim_already_consumed") {
+        setClaimState({ kind: "reused" });
       } else if (isApiError(error) && error.status === 403) {
         setClaimState({ kind: "primary-only" });
       } else {
@@ -115,6 +118,8 @@ export function StudyClaimGate({
       ? STUDY_COPY_KO.claim.primaryOnly
       : claimState.kind === "expired"
         ? STUDY_COPY_KO.claim.expired
+        : claimState.kind === "reused"
+          ? STUDY_COPY_KO.claim.reused
         : STUDY_COPY_KO.claim.failed;
     return (
       <section className="study-claim" role="alert">
@@ -163,6 +168,7 @@ export function StudyClaimGate({
           type="button"
           className="study-claim__primary hy-press"
           disabled={!selectedStudyChild || claimProfile.isPending}
+          aria-busy={claimProfile.isPending}
           onClick={() => void consumeClaim()}
         >
           {claimProfile.isPending ? STUDY_COPY_KO.claim.connecting : STUDY_COPY_KO.claim.connect}

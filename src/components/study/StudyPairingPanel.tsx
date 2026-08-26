@@ -17,10 +17,12 @@ export function StudyPairingPanel({
   const createChallenge = useCreateStudyAttachChallenge();
   const [visibleQrUrl, setVisibleQrUrl] = useState<string | null>(null);
   const [challengeError, setChallengeError] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
 
   const issueChallenge = async () => {
     setVisibleQrUrl(null);
     setChallengeError(false);
+    setCopyState("idle");
     createChallenge.reset();
     try {
       const response = await createChallenge.mutateAsync(createStudyMutationRequest(memberId));
@@ -29,6 +31,16 @@ export function StudyPairingPanel({
     } catch {
       setVisibleQrUrl(null);
       setChallengeError(true);
+    }
+  };
+
+  const copyChallenge = async () => {
+    if (!visibleQrUrl) return;
+    try {
+      await navigator.clipboard.writeText(visibleQrUrl);
+      setCopyState("copied");
+    } catch {
+      setCopyState("failed");
     }
   };
 
@@ -49,6 +61,7 @@ export function StudyPairingPanel({
             type="button"
             className="study-pairing__issue hy-press"
             disabled={createChallenge.isPending}
+            aria-busy={createChallenge.isPending}
             onClick={() => void issueChallenge()}
           >
             {createChallenge.isPending ? STUDY_COPY_KO.pairing.issuing : STUDY_COPY_KO.pairing.issue}
@@ -63,6 +76,14 @@ export function StudyPairingPanel({
               />
               <strong>{STUDY_COPY_KO.pairing.expires}</strong>
               <p>{STUDY_COPY_KO.pairing.scanDescription}</p>
+              <button type="button" className="study-pairing__copy hy-press" onClick={() => void copyChallenge()}>
+                {STUDY_COPY_KO.pairing.copy}
+              </button>
+              {copyState !== "idle" && (
+                <p role="status">
+                  {copyState === "copied" ? STUDY_COPY_KO.pairing.copied : STUDY_COPY_KO.pairing.copyFailed}
+                </p>
+              )}
             </div>
           )}
         </>

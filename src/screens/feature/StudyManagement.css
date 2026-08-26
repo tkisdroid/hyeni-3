@@ -432,6 +432,7 @@
 }
 
 .study-pairing__issue,
+.study-pairing__copy,
 .study-claim__primary,
 .study-claim__secondary,
 .study-claim__child {
@@ -449,6 +450,11 @@
   margin-top: var(--spacing-16);
   background: var(--lav-soft);
   color: var(--lav-text);
+}
+
+.study-pairing__copy {
+  background: var(--bg-card);
+  color: var(--fg-primary);
 }
 
 .study-pairing__qr {

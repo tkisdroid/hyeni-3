@@ -2200,6 +2200,7 @@ const nonSurfacePaintManifest = new Set([
   ["src/screens/feature/StudyManagement.css", ".study-devices__cancel"],
   ["src/screens/feature/StudyManagement.css", ".study-devices__confirm-button"],
   ["src/screens/feature/StudyManagement.css", ".study-pairing__issue"],
+  ["src/screens/feature/StudyManagement.css", ".study-pairing__copy"],
   ["src/screens/feature/StudyManagement.css", ".study-claim__primary"],
   ["src/screens/feature/StudyManagement.css", ".study-claim__secondary"],
   ["src/screens/feature/StudyManagement.css", ".study-claim__child"],

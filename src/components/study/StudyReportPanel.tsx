@@ -14,7 +14,7 @@ function formatStudyDate(value: string | null): string {
 }
 
 function formatAccuracy(value: number | null): string {
-  return value === null ? "—" : `${Math.round(value)}%`;
+  return value === null ? STUDY_COPY_KO.common.unavailableValue : `${Math.round(value)}%`;
 }
 
 export function StudyReportPanel({
@@ -26,7 +26,11 @@ export function StudyReportPanel({
       <div className="study-report__heading">
         <div>
           <h2 id="study-report-title">{STUDY_COPY_KO.report.title}</h2>
-          <p>{child.displayName} · {report.grade ? `${report.grade}학년` : STUDY_COPY_KO.report.gradeUnset}</p>
+          <p>
+            {child.displayName} · {report.grade
+              ? `${report.grade}${STUDY_COPY_KO.report.gradeSuffix}`
+              : STUDY_COPY_KO.report.gradeUnset}
+          </p>
         </div>
         <span className="study-report__range">{STUDY_COPY_KO.report.range7d}</span>
       </div>

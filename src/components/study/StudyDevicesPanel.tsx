@@ -81,6 +81,7 @@ export function StudyDevicesPanel({
                       type="button"
                       className="study-devices__confirm-button hy-press"
                       disabled={revokeDevice.isPending}
+                      aria-busy={revokeDevice.isPending}
                       onClick={() => void confirmRevoke(device.deviceSessionId)}
                     >
                       {revokeDevice.isPending ? STUDY_COPY_KO.devices.revoking : STUDY_COPY_KO.devices.confirm}

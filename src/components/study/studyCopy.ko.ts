@@ -1,7 +1,12 @@
 export const STUDY_COPY_KO = {
+  common: {
+    childFallbackName: "아이",
+    childFallbackInitial: "아",
+    unavailableValue: "—",
+  },
   card: {
     title: "혜니스터디 학습관리",
-    description: "아이의 수학 학습 현황과 연결 기기를 확인해요",
+    description: "아이의 오늘 공부와 진도를 확인해요",
     checking: "확인 중",
     unavailable: "일시적으로 확인 불가",
     connect: "아이와 연결하기",
@@ -34,6 +39,7 @@ export const STUDY_COPY_KO = {
     title: "최근 학습 리포트",
     range7d: "최근 7일",
     gradeUnset: "학년 미설정",
+    gradeSuffix: "학년",
     todayProblems: "오늘 푼 문제",
     accuracy: "정답률",
     reviewDue: "복습할 문제",
@@ -71,6 +77,9 @@ export const STUDY_COPY_KO = {
     qrFailedLabel: "학습 기기 연결 QR 생성 실패",
     expires: "10분 동안 한 번만 사용할 수 있어요",
     scanDescription: "연결할 기기에서 혜니스터디를 열고 이 QR을 스캔해 주세요.",
+    copy: "연결 링크 복사",
+    copied: "연결 링크를 복사했어요.",
+    copyFailed: "연결 링크를 복사하지 못했어요.",
     failed: "연결 QR을 만들지 못했어요. 잠시 후 다시 시도해 주세요.",
   },
   claim: {
@@ -88,7 +97,8 @@ export const STUDY_COPY_KO = {
     problemUnit: "개",
     viewReport: "학습 리포트 보기",
     unavailableTitle: "학습기록을 연결할 수 없어요",
-    expired: "연결 링크가 만료되었거나 이미 사용되었어요.",
+    expired: "연결 링크가 만료되었어요. 혜니스터디에서 새 링크를 만들어 주세요.",
+    reused: "이미 사용한 연결 링크예요. 혜니스터디에서 새 링크를 만들어 주세요.",
     primaryOnly: "기존 학습기록 연결은 주 보호자만 할 수 있어요.",
     failed: "학습기록을 연결하지 못했어요. 새 링크로 다시 시도해 주세요.",
     back: "학습관리로 돌아가기",

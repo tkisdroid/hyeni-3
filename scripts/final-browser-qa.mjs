@@ -15,6 +15,7 @@ import { createServer } from "node:net";
 import { homedir, tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { chromium } from "@playwright/test";
 import {
   prepareFreshQaOutputDir,
   resolveQaOutputDir,
@@ -42,6 +43,10 @@ const TEACHER_ID = "qa-teacher";
 const PARENT_MEMBER_ID = "qa-parent-member";
 const CO_PARENT_MEMBER_ID = "qa-co-parent-member";
 const CHILD_MEMBER_ID = "qa-child-member";
+const SECOND_CHILD_ID = "qa-child-2";
+const SECOND_CHILD_MEMBER_ID = "qa-child-member-2";
+const INACTIVE_GHOST_MEMBER_ID = "qa-child-ghost";
+const STUDY_QA_TOKEN = "study-qa-token-abcdefghijklmnopqrstuvwxyz012345";
 /** 서버가 저장하는 비공개 객체 키 모양 — 그대로 <img src> 에 넣으면 안 되는 값이다. */
 const PARENT_PHOTO_KEY = `${FAMILY_ID}/uploads/${PARENT_ID}/qa-parent-profile.jpg`;
 /** 1×1 PNG — 사진이 실제로 디코딩되는지(naturalWidth>0) 확인하기 위한 최소 바이트. */
@@ -66,7 +71,7 @@ const SCHOOL = Object.freeze({ lat: 37.2925, lng: 127.1191 });
 
 export const PARENT_BROWSER_QA_ROUTES = Object.freeze([
   "parent/home", "parent/calendar", "parent/location", "parent/memo", "parent/settings",
-  "parent/family", "subscription", "trial-lock", "notifications", "remote-audio",
+  "parent/family", "subscription", "trial-lock", "study-management", "study-management/claim", "notifications", "remote-audio",
   "place-manager", "friend-play", "ai-schedule", "ai-credit", "phone-setup",
   "sticker-send", "profile-edit", "place-form", "child-invite", "event-form",
   "danger-zone-form", "location-status", "child-detail", "pairing-wizard",
@@ -113,7 +118,11 @@ function safeAccessToken(role, familyId = FAMILY_ID) {
   return `${toBase64Url({ alg: "HS256", typ: "JWT" })}.${toBase64Url(payload)}.qa`;
 }
 
-function familyResponse(role, { coParentConnected = false, coParentViewer = false } = {}) {
+function familyResponse(role, {
+  coParentConnected = false,
+  coParentViewer = false,
+  studyFamilyMode = "one",
+} = {}) {
   const myId = role === "child" ? CHILD_ID : role === "teacher" ? TEACHER_ID : PARENT_ID;
   return {
     familyId: FAMILY_ID,
@@ -145,7 +154,7 @@ function familyResponse(role, { coParentConnected = false, coParentViewer = fals
         photo_url: null,
         gender: "mom",
       }] : []),
-      {
+      ...(studyFamilyMode === "empty" ? [] : [{
         id: CHILD_MEMBER_ID,
         user_id: CHILD_ID,
         role: "child",
@@ -179,9 +188,83 @@ function familyResponse(role, { coParentConnected = false, coParentViewer = fals
           backgroundRestricted: false,
           updatedAt: new Date().toISOString(),
         },
-      },
+      }]),
+      ...(studyFamilyMode === "many" ? [
+        {
+          id: SECOND_CHILD_MEMBER_ID,
+          user_id: SECOND_CHILD_ID,
+          role: "child",
+          name: "데모 둘째",
+          phone: null,
+          photo_url: null,
+          child_order: 2,
+          color_hex: "#8B6BEC",
+          birthdate: "2017-05-04",
+          gender: "female",
+          is_active: true,
+        },
+        {
+          id: INACTIVE_GHOST_MEMBER_ID,
+          user_id: "qa-child-old",
+          role: "child",
+          name: "비활성 아이",
+          phone: null,
+          photo_url: null,
+          child_order: 3,
+          is_active: false,
+        },
+      ] : []),
     ],
     user: { id: myId },
+  };
+}
+
+function studyChildrenFixture(scenario) {
+  if (scenario.studyFamilyMode === "empty") return [];
+  const linked = scenario.studyMode !== "unlinked";
+  const canManageLinks = !scenario.coParentViewer;
+  const children = [{
+    memberId: CHILD_MEMBER_ID,
+    displayName: "데모 자녀",
+    photoAvailable: false,
+    linked,
+    grade: linked ? 4 : null,
+    canManageLinks,
+  }];
+  if (scenario.studyFamilyMode === "many") {
+    children.push({
+      memberId: SECOND_CHILD_MEMBER_ID,
+      displayName: "데모 둘째",
+      photoAvailable: false,
+      linked: true,
+      grade: 5,
+      canManageLinks,
+    });
+  }
+  return children;
+}
+
+function studyReportFixture(memberId, scenario) {
+  const child = studyChildrenFixture(scenario).find((entry) => entry.memberId === memberId);
+  const linked = child?.linked === true;
+  return {
+    apiVersion: "2026-08-24",
+    memberId,
+    linked,
+    grade: linked ? child.grade : null,
+    range: "7d",
+    todayProblemCount: memberId === SECOND_CHILD_MEMBER_ID ? 5 : 8,
+    completedToday: true,
+    lastStudiedAt: "2026-08-27T01:00:00.000Z",
+    accuracy: memberId === SECOND_CHILD_MEMBER_ID ? 82 : 75,
+    conceptMastery: linked ? [{ conceptId: "fraction", label: "분수", mastery: 80 }] : [],
+    reviewDueCount: linked ? 1 : 0,
+    recentSessions: linked ? [{
+      sessionId: `qa-study-session-${memberId}`,
+      startedAt: "2026-08-27T00:30:00.000Z",
+      problemCount: memberId === SECOND_CHILD_MEMBER_ID ? 5 : 8,
+      accuracy: memberId === SECOND_CHILD_MEMBER_ID ? 82 : 75,
+    }] : [],
   };
 }
 
@@ -447,6 +530,101 @@ export function mockApi(pathname, scenario, method = "GET", requestBody = null) 
       },
     };
   }
+  if (pathname === "/api/study/status") {
+    if (scenario.studyMode === "disabled") return { state: "disabled" };
+    if (scenario.studyMode === "unavailable") {
+      return { error: "study_unavailable", code: "study_unavailable" };
+    }
+    return { state: "ready" };
+  }
+  if (pathname === "/api/study/children") {
+    return { children: studyChildrenFixture(scenario) };
+  }
+  const studyOverviewMatch = pathname.match(/^\/api\/study\/children\/([^/]+)\/overview$/);
+  if (studyOverviewMatch) {
+    const memberId = decodeURIComponent(studyOverviewMatch[1]);
+    const child = studyChildrenFixture(scenario).find((entry) => entry.memberId === memberId);
+    return {
+      child: child
+        ? { memberId: child.memberId, displayName: child.displayName, photoAvailable: child.photoAvailable }
+        : { memberId, displayName: "아이", photoAvailable: false },
+      overview: child ? {
+        memberId,
+        linked: child.linked,
+        grade: child.grade,
+        todayProblemCount: child.linked ? (memberId === SECOND_CHILD_MEMBER_ID ? 5 : 8) : 0,
+        completedToday: child.linked,
+        lastStudiedAt: child.linked ? "2026-08-27T01:00:00.000Z" : null,
+      } : null,
+      permissions: { canManageLinks: !scenario.coParentViewer },
+    };
+  }
+  const studyReportMatch = pathname.match(/^\/api\/study\/children\/([^/]+)\/report$/);
+  if (studyReportMatch) {
+    const memberId = decodeURIComponent(studyReportMatch[1]);
+    const child = studyChildrenFixture(scenario).find((entry) => entry.memberId === memberId);
+    return {
+      child: child
+        ? { memberId: child.memberId, displayName: child.displayName, photoAvailable: child.photoAvailable }
+        : { memberId, displayName: "아이", photoAvailable: false },
+      report: studyReportFixture(memberId, scenario),
+      permissions: { canManageLinks: !scenario.coParentViewer },
+    };
+  }
+  const studyDevicesMatch = pathname.match(/^\/api\/study\/children\/([^/]+)\/devices$/);
+  if (studyDevicesMatch && method === "GET") {
+    return {
+      devices: [{
+        deviceSessionId: "qa-study-device-session",
+        sessionKind: "paired",
+        createdAt: "2026-08-20T01:00:00.000Z",
+        lastUsedAt: "2026-08-27T01:00:00.000Z",
+      }],
+      permissions: { canManageLinks: !scenario.coParentViewer },
+    };
+  }
+  const studyAttachMatch = pathname.match(/^\/api\/study\/children\/([^/]+)\/attach-challenges$/);
+  if (studyAttachMatch && method === "POST") {
+    scenario.studyMutationCalls ??= [];
+    scenario.studyMutationCalls.push({ method, pathname, hasClaimToken: false });
+    return {
+      challenge: {
+        apiVersion: "2026-08-24",
+        purpose: "attach_child_device",
+        qrUrl: "https://study.hyenicalendar.com/math/connect#qa-attach-token-abcdefghijklmnopqrstuvwxyz012345",
+        expiresAt: new Date(Date.now() + 600_000).toISOString(),
+      },
+      permissions: { canManageLinks: !scenario.coParentViewer },
+    };
+  }
+  const studyClaimMatch = pathname.match(/^\/api\/study\/children\/([^/]+)\/claim$/);
+  if (studyClaimMatch && method === "POST") {
+    scenario.studyMutationCalls ??= [];
+    scenario.studyMutationCalls.push({ method, pathname, hasClaimToken: Boolean(requestBody?.claimToken) });
+    return {
+      result: {
+        apiVersion: "2026-08-24",
+        requestId: "qa-study-claim-request",
+        status: "merged",
+        learnerState: "ready",
+        preservedAttemptCount: 37,
+      },
+      permissions: { canManageLinks: !scenario.coParentViewer },
+    };
+  }
+  const studyRevokeMatch = pathname.match(/^\/api\/study\/children\/([^/]+)\/devices\/([^/]+)$/);
+  if (studyRevokeMatch && method === "DELETE") {
+    scenario.studyMutationCalls ??= [];
+    scenario.studyMutationCalls.push({ method, pathname, hasClaimToken: false });
+    return {
+      receipt: {
+        apiVersion: "2026-08-24",
+        requestId: "qa-study-revoke-request",
+        status: "completed",
+      },
+      permissions: { canManageLinks: !scenario.coParentViewer },
+    };
+  }
   if (pathname === "/api/entitlement") return entitlementResponse(tier);
   if (pathname === "/api/billing/web/catalog") return webBillingCatalog(catalogMode);
   if (pathname === "/api/billing/web/ai-credits/catalog") return { configured: false, accepting: false };
@@ -550,6 +728,7 @@ export function mockApi(pathname, scenario, method = "GET", requestBody = null) 
 function chromePath() {
   const localAppData = process.env.LOCALAPPDATA ?? resolve(homedir(), "AppData/Local");
   const candidates = [
+    chromium.executablePath(),
     resolve(localAppData, "ms-playwright/chromium-1228/chrome-win/chrome.exe"),
     resolve(localAppData, "ms-playwright/chromium-1223/chrome-win/chrome.exe"),
     "C:/Program Files/Google/Chrome/Application/chrome.exe",
@@ -1056,6 +1235,11 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
             && ["/api/family/mine", "/auth/refresh"].includes(responseUrl.pathname)
           )
           || (message.params.response.status === 503 && responseUrl.pathname === "/auth/check-login-id")
+          || (
+            message.params.response.status === 503
+            && activeScenario.studyMode === "unavailable"
+            && responseUrl.pathname.startsWith("/api/study/")
+          )
         ) {
           expectedAuthResponses.push(`${message.params.response.status} ${message.params.response.url}`);
           return;
@@ -1119,7 +1303,9 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
               ? 429
             : url.pathname === "/auth/login-password" && activeScenario.authCase === "wrong-password"
               ? 401
-              : url.pathname === "/auth/check-login-id" && activeScenario.authCase === "id-check-error"
+            : url.pathname === "/auth/check-login-id" && activeScenario.authCase === "id-check-error"
+              ? 503
+              : activeScenario.studyMode === "unavailable" && url.pathname.startsWith("/api/study/")
                 ? 503
                 : 200;
           await cdp.send("Fetch.fulfillRequest", {
@@ -1709,7 +1895,7 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
       return true;
     })()`);
     await clickSelector(cdp, ".ob-qr");
-    await wait(350);
+    await wait(700);
     const qrFallbackFacts = await cdp.evaluate(`(() => ({
       overlayVisible: Boolean(document.querySelector(".qrs-root")),
       manualVisible: Boolean(document.querySelector(".qrs-manual")),
@@ -2313,6 +2499,254 @@ export async function runFinalBrowserQa({ outputDir = resolveBrowserQaOutputDir(
     })()`);
     await wait(250);
     report.screenshots.push(await screenshot(cdp, freshOutputDir, "parent-home-shortcuts-premium.png"));
+
+    const inspectStudyHomeCard = () => cdp.evaluate(`(() => {
+      const card = document.querySelector(".ph-study-card");
+      const shortcuts = document.querySelector(".ph-shortcuts");
+      const cardRect = card?.getBoundingClientRect();
+      const shortcutRect = shortcuts?.getBoundingClientRect();
+      return {
+        title: card?.querySelector(".ph-study-card__copy strong")?.textContent?.trim() ?? null,
+        description: card?.querySelector(".ph-study-card__copy small")?.textContent?.trim() ?? null,
+        status: card?.querySelector(".ph-study-card__status")?.textContent?.trim() ?? null,
+        shortcutCount: document.querySelectorAll(".ph-shortcut").length,
+        beforeShortcuts: Boolean(cardRect && shortcutRect && cardRect.bottom <= shortcutRect.top),
+        fullWidth: Boolean(cardRect && shortcutRect && Math.abs(cardRect.width - shortcutRect.width) <= 2),
+      };
+    })()`);
+
+    const linkedStudyHome = await navigate(
+      { role: "parent", tier: "free", catalogMode: "valid", overLimit: false, studyMode: "linked" },
+      "parent/home",
+    );
+    const linkedStudyHomeFacts = await inspectStudyHomeCard();
+    if (
+      linkedStudyHomeFacts.title !== "혜니스터디 학습관리"
+      || linkedStudyHomeFacts.description !== "아이의 오늘 공부와 진도를 확인해요"
+      || linkedStudyHomeFacts.status !== "8문제 풀었어요"
+      || linkedStudyHomeFacts.shortcutCount !== 8
+      || !linkedStudyHomeFacts.beforeShortcuts
+      || !linkedStudyHomeFacts.fullWidth
+      || rowProblems(linkedStudyHome).length > 0
+    ) {
+      report.problems.push({ scope: "study-home-linked", facts: linkedStudyHomeFacts, routeProblems: rowProblems(linkedStudyHome) });
+    }
+
+    const unlinkedStudyHome = await navigate(
+      { role: "parent", tier: "free", catalogMode: "valid", overLimit: false, studyMode: "unlinked" },
+      "parent/home",
+    );
+    const unlinkedStudyHomeFacts = await inspectStudyHomeCard();
+    if (unlinkedStudyHomeFacts.status !== "아이와 연결하기" || rowProblems(unlinkedStudyHome).length > 0) {
+      report.problems.push({ scope: "study-home-unlinked", facts: unlinkedStudyHomeFacts, routeProblems: rowProblems(unlinkedStudyHome) });
+    }
+
+    const unavailableStudyHome = await navigate(
+      { role: "parent", tier: "free", catalogMode: "valid", overLimit: false, studyMode: "unavailable" },
+      "parent/home",
+      9_000,
+    );
+    const unavailableStudyHomeFacts = await inspectStudyHomeCard();
+    if (unavailableStudyHomeFacts.status !== "일시적으로 확인 불가" || rowProblems(unavailableStudyHome).length > 0) {
+      report.problems.push({ scope: "study-home-unavailable", facts: unavailableStudyHomeFacts, routeProblems: rowProblems(unavailableStudyHome) });
+    }
+
+    const linkedStudyScenario = {
+      role: "parent",
+      tier: "free",
+      catalogMode: "valid",
+      overLimit: false,
+      studyMode: "linked",
+      studyMutationCalls: [],
+    };
+    const linkedStudyManagement = await navigate(linkedStudyScenario, "study-management");
+    const linkedStudyManagementFacts = await cdp.evaluate(`(() => ({
+      heading: document.querySelector(".study-management__header h1")?.textContent?.trim() ?? null,
+      report: document.querySelector(".study-report")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+      gradeInputs: document.querySelectorAll('.study-report input, .study-report select').length,
+      revokeVisible: Boolean(document.querySelector(".study-devices__revoke")),
+      pairingVisible: Boolean(document.querySelector(".study-pairing__issue")),
+    }))()`);
+    await clickSelector(cdp, ".study-pairing__issue");
+    await wait(500);
+    const studyPairingFacts = await cdp.evaluate(`(() => ({
+      qrVisible: Boolean(document.querySelector('.study-pairing__qr canvas[role="img"]')),
+      rawUrlInDom: document.body.innerText.includes("study.hyenicalendar.com/math/connect"),
+      copyVisible: Boolean(document.querySelector(".study-pairing__copy")),
+    }))()`);
+    await clickSelector(cdp, ".study-devices__revoke");
+    await wait(100);
+    await clickSelector(cdp, ".study-devices__confirm-button");
+    await wait(500);
+    const linkedStudyMutationFacts = {
+      calls: linkedStudyScenario.studyMutationCalls,
+      attachCalled: linkedStudyScenario.studyMutationCalls.some((call) => call.method === "POST" && call.pathname.endsWith("/attach-challenges")),
+      revokeCalled: linkedStudyScenario.studyMutationCalls.some((call) => call.method === "DELETE" && call.pathname.includes("/devices/")),
+    };
+    if (
+      linkedStudyManagementFacts.heading !== "학습관리"
+      || !linkedStudyManagementFacts.report?.includes("4학년")
+      || !linkedStudyManagementFacts.report?.includes("8문제")
+      || !linkedStudyManagementFacts.report?.includes("75%")
+      || !linkedStudyManagementFacts.report?.includes("분수")
+      || linkedStudyManagementFacts.gradeInputs !== 0
+      || !linkedStudyManagementFacts.revokeVisible
+      || !linkedStudyManagementFacts.pairingVisible
+      || !studyPairingFacts.qrVisible
+      || studyPairingFacts.rawUrlInDom
+      || !studyPairingFacts.copyVisible
+      || !linkedStudyMutationFacts.attachCalled
+      || !linkedStudyMutationFacts.revokeCalled
+      || rowProblems(linkedStudyManagement).length > 0
+    ) {
+      report.problems.push({
+        scope: "study-management-linked-mutations",
+        facts: { screen: linkedStudyManagementFacts, pairing: studyPairingFacts, mutations: linkedStudyMutationFacts },
+        routeProblems: rowProblems(linkedStudyManagement),
+      });
+    }
+    report.screenshots.push(await screenshot(cdp, freshOutputDir, "study-management-linked.png"));
+
+    const manyStudyManagement = await navigate(
+      { role: "parent", tier: "free", catalogMode: "valid", overLimit: false, studyMode: "linked", studyFamilyMode: "many" },
+      "study-management",
+    );
+    const manyStudyInitialFacts = await cdp.evaluate(`(() => ({
+      tabs: [...document.querySelectorAll(".study-child-tabs__tab")]
+        .map((node) => node.querySelector(":scope > span:last-child")?.textContent?.trim() ?? ""),
+      body: document.body.innerText.replace(/\\s+/g, " ").trim(),
+    }))()`);
+    await cdp.evaluate(`(() => {
+      const tab = [...document.querySelectorAll(".study-child-tabs__tab")]
+        .find((node) => node.textContent?.includes("데모 둘째"));
+      if (!(tab instanceof HTMLButtonElement)) return false;
+      tab.click();
+      return true;
+    })()`);
+    await wait(700);
+    const manyStudySecondFacts = await cdp.evaluate(`(() => ({
+      selected: document.querySelector('.study-child-tabs__tab[data-selected="true"] > span:last-child')?.textContent?.trim() ?? null,
+      report: document.querySelector(".study-report")?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+    }))()`);
+    if (
+      JSON.stringify(manyStudyInitialFacts.tabs) !== JSON.stringify(["데모 자녀", "데모 둘째"])
+      || manyStudyInitialFacts.body.includes("비활성 아이")
+      || manyStudySecondFacts.selected !== "데모 둘째"
+      || !manyStudySecondFacts.report?.includes("5학년")
+      || !manyStudySecondFacts.report?.includes("5문제")
+      || rowProblems(manyStudyManagement).length > 0
+    ) {
+      report.problems.push({ scope: "study-management-many-active-children", facts: { initial: manyStudyInitialFacts, second: manyStudySecondFacts }, routeProblems: rowProblems(manyStudyManagement) });
+    }
+
+    const emptyStudyManagement = await navigate(
+      { role: "parent", tier: "free", catalogMode: "valid", overLimit: false, studyMode: "linked", studyFamilyMode: "empty" },
+      "study-management",
+    );
+    const emptyStudyFacts = await cdp.evaluate(`(() => ({
+      text: document.body.innerText.replace(/\\s+/g, " ").trim(),
+      reportVisible: Boolean(document.querySelector(".study-report")),
+      metricCount: document.querySelectorAll(".study-report__metrics dd").length,
+    }))()`);
+    if (!emptyStudyFacts.text.includes("연결된 아이가 없어요") || emptyStudyFacts.reportVisible || emptyStudyFacts.metricCount !== 0 || rowProblems(emptyStudyManagement).length > 0) {
+      report.problems.push({ scope: "study-management-honest-empty", facts: emptyStudyFacts, routeProblems: rowProblems(emptyStudyManagement) });
+    }
+
+    const guardianStudyManagement = await navigate(
+      { role: "parent", tier: "free", catalogMode: "valid", overLimit: false, studyMode: "linked", coParentConnected: true, coParentViewer: true },
+      "study-management",
+    );
+    const guardianStudyFacts = await cdp.evaluate(`(() => ({
+      reportVisible: Boolean(document.querySelector(".study-report")),
+      revokeVisible: Boolean(document.querySelector(".study-devices__revoke")),
+      pairingVisible: Boolean(document.querySelector(".study-pairing__issue")),
+      notices: [...document.querySelectorAll(".study-devices__notice, .study-pairing__notice")].map((node) => node.textContent?.trim() ?? ""),
+    }))()`);
+    if (
+      !guardianStudyFacts.reportVisible
+      || guardianStudyFacts.revokeVisible
+      || guardianStudyFacts.pairingVisible
+      || !guardianStudyFacts.notices.some((text) => text.includes("주 보호자만"))
+      || rowProblems(guardianStudyManagement).length > 0
+    ) {
+      report.problems.push({ scope: "study-management-guardian-read-only", facts: guardianStudyFacts, routeProblems: rowProblems(guardianStudyManagement) });
+    }
+
+    const claimStudyScenario = {
+      role: "parent",
+      tier: "free",
+      catalogMode: "valid",
+      overLimit: false,
+      studyMode: "linked",
+      studyFamilyMode: "many",
+      studyMutationCalls: [],
+    };
+    const claimStudyManagement = await navigate(
+      claimStudyScenario,
+      `study-management/claim?token=${STUDY_QA_TOKEN}`,
+    );
+    const claimStudyInitialFacts = await cdp.evaluate(`(() => ({
+      hash: location.hash,
+      tokenInBody: document.body.innerText.includes(${JSON.stringify(STUDY_QA_TOKEN)}),
+      stored: sessionStorage.getItem("hyeni-study-claim-v1") !== null,
+      children: [...document.querySelectorAll(".study-claim__child")].map((node) => node.textContent?.trim() ?? ""),
+      connectDisabled: Boolean(document.querySelector(".study-claim__primary")?.disabled),
+    }))()`);
+    await cdp.evaluate(`(() => {
+      const target = [...document.querySelectorAll(".study-claim__child")]
+        .find((node) => node.textContent?.includes("데모 둘째"));
+      if (!(target instanceof HTMLButtonElement)) return false;
+      target.click();
+      return true;
+    })()`);
+    await wait(100);
+    await clickSelector(cdp, ".study-claim__primary");
+    await wait(700);
+    const claimStudyFinalFacts = await cdp.evaluate(`(() => ({
+      hash: location.hash,
+      success: document.querySelector(".study-claim")?.textContent?.includes("학습기록을 연결했어요") ?? false,
+      preserved: document.querySelector(".study-claim")?.textContent?.includes("37개") ?? false,
+      storageCleared: sessionStorage.getItem("hyeni-study-claim-v1") === null,
+      tokenInBody: document.body.innerText.includes(${JSON.stringify(STUDY_QA_TOKEN)}),
+    }))()`);
+    const claimMutation = claimStudyScenario.studyMutationCalls.find((call) => call.pathname.endsWith("/claim"));
+    const claimTokenLeaked = [
+      ...consoleMessages,
+      ...networkFailures,
+      ...externalRequests,
+      JSON.stringify(claimStudyScenario.studyMutationCalls),
+    ].some((value) => value.includes(STUDY_QA_TOKEN));
+    if (
+      claimStudyInitialFacts.hash !== "#/study-management/claim"
+      || claimStudyInitialFacts.tokenInBody
+      || !claimStudyInitialFacts.stored
+      || JSON.stringify(claimStudyInitialFacts.children) !== JSON.stringify(["데모 자녀", "데모 둘째"])
+      || !claimStudyInitialFacts.connectDisabled
+      || claimStudyFinalFacts.hash !== "#/study-management/claim"
+      || !claimStudyFinalFacts.success
+      || !claimStudyFinalFacts.preserved
+      || !claimStudyFinalFacts.storageCleared
+      || claimStudyFinalFacts.tokenInBody
+      || !claimMutation?.hasClaimToken
+      || claimTokenLeaked
+      || rowProblems(claimStudyManagement).length > 0
+    ) {
+      report.problems.push({
+        scope: "study-claim-url-erased-one-shot",
+        facts: { initial: claimStudyInitialFacts, final: claimStudyFinalFacts, mutation: claimMutation, tokenLeaked: claimTokenLeaked },
+        routeProblems: rowProblems(claimStudyManagement),
+      });
+    }
+    await cdp.evaluate('sessionStorage.removeItem("hyeni-study-claim-v1"); true');
+    report.focused.studyManagement = {
+      home: { linked: linkedStudyHomeFacts, unlinked: unlinkedStudyHomeFacts, unavailable: unavailableStudyHomeFacts },
+      linked: { ...linkedStudyManagementFacts, pairing: studyPairingFacts, mutations: linkedStudyMutationFacts },
+      many: { initial: manyStudyInitialFacts, second: manyStudySecondFacts },
+      empty: emptyStudyFacts,
+      guardian: guardianStudyFacts,
+      claim: { initial: claimStudyInitialFacts, final: claimStudyFinalFacts, mutation: claimMutation, tokenLeaked: claimTokenLeaked },
+    };
+    report.screenshots.push(await screenshot(cdp, freshOutputDir, "study-claim-success.png"));
 
     const locationHistory = await navigate(
       { role: "parent", tier: "premium", catalogMode: "valid", overLimit: false },

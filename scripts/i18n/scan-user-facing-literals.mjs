@@ -23,7 +23,7 @@ import { dirname, join, relative } from "node:path";
 import ts from "typescript";
 
 /** allowlist 사유는 분류 접두어를 강제한다 — "왜 번역 대상이 아닌가"가 사유여야 한다. */
-const ALLOWLIST_REASONS = /^(?:data|protocol|brand|bootstrap|accessibility|admin|legal|dev|universal):/;
+const ALLOWLIST_REASONS = /^(?:data|protocol|brand|bootstrap|accessibility|admin|legal|dev|universal|study):/;
 
 /**
  * `exempt` = 번역 대상이 아니다(사용자 데이터·고유명·기계 계약).

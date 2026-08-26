@@ -19,7 +19,7 @@ import {
   scanUserFacingLiterals,
 } from "../scripts/i18n/scan-user-facing-literals.mjs";
 
-const ALLOWED_REASON_PREFIX = /^(?:data|protocol|brand|bootstrap|accessibility|admin|legal|dev|universal):/;
+const ALLOWED_REASON_PREFIX = /^(?:data|protocol|brand|bootstrap|accessibility|admin|legal|dev|universal|study):/;
 
 async function withFixture(files, run) {
   const root = await mkdtemp(join(tmpdir(), "hyeni-literal-scan-"));

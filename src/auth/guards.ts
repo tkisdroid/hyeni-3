@@ -3,7 +3,7 @@
  * claim 기반: role/familyId/isAnonymous 로 다음 단계를 정한다.
  */
 import type { AuthState, AuthRole } from "./AuthContext";
-import { pendingStudyClaimDestination } from "@/transform/studyClaimContext";
+import { pendingStudyClaimDestination } from "../transform/studyClaimContext.ts";
 
 /** 미인증 → 온보딩으로. */
 export function needsOnboarding(state: AuthState): boolean {
