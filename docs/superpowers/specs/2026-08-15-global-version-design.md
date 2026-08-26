@@ -1,5 +1,9 @@
 # 혜니캘린더 글로벌 버전 설계
 
+> **지도 공급자 변경(2026-08-26):** 이 문서의 해외 Mapbox 결정과 지도 관련 세부 계약은
+> `docs/superpowers/specs/2026-08-26-global-google-maps-location-design.md`가 대체한다.
+> 현재 정본은 `KR=Kakao`, 승인된 비중국 국가=`Google Maps`, `CN/ZZ=미지원`이다.
+
 - 작성일: 2026-08-15
 - 상태: 사용자 승인 완료, 구현 전 설계 정본
 - 대상: PWA 단일 코드베이스와 Capacitor Android 앱, Cloudflare Worker, Google Play 제출 자료
@@ -40,7 +44,7 @@
 | PWA 신규 결제 | Paddle, 공급자 승인과 도메인 심사 완료를 전제로 함 |
 | 기존 웹 결제 | Toss 기존 구독의 갱신·해지·환불 보존, 신규 판매는 Paddle 전환 뒤 중단 |
 | 한국 지도 | Kakao 유지 |
-| 해외 지도 | Mapbox |
+| 해외 지도 | Google Maps (`2026-08-26` 지도 전용 설계가 정본) |
 | 기존 가족 시간대·국가 | `Asia/Seoul`, `KR` 유지 |
 | 신규 가족 시간대 | 생성 부모 기기의 검증된 IANA 시간대 |
 | 공식 1차 QA 국가 | 한국, 일본, 대만, 홍콩, 싱가포르, 베트남, 태국, 인도네시아, 말레이시아, 필리핀 |

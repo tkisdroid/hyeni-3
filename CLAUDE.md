@@ -3,6 +3,20 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
+**글로벌 지도 공급자 설계 확정(2026-08-26, 구현 전)**:
+TK가 `KR=Kakao`, 승인된 비중국 국가=`Google Maps`, `CN/ZZ=미지원`을 확정했다. 해외 웹 PWA는 Maps
+JavaScript API, Capacitor Android는 공식 `@capacitor/google-maps`의 네이티브 Maps SDK를 사용하고,
+Places·Geocoding·Routes는 인증·가족 국가·권한·quota를 다시 확인하는 Worker 공통 API로 제한한다. 기존
+Mapbox 설계·계획의 지도 부분은 실행하지 않는다. 정본은
+`docs/superpowers/specs/2026-08-26-global-google-maps-location-design.md`다.
+
+Google Cloud 결제 프로젝트·웹/Android 키·Worker 서비스 계정은 아직 없다. 따라서 코드·migration·자동 테스트는
+키 미설정 fail-closed로 만들 수 있지만, 실API 국가 matrix·배포·글로벌 국가 활성화는 자격 발급 뒤까지 HOLD다.
+Android 공식 plugin `8.0.1`은 JS `apiKey`가 아니라 Manifest metadata를 정본으로 읽으므로 별도 key bridge를 만들지
+않는다. 또한 family-local 오전 8시 경계·retention·quota·일정/도착 cron·quiet hours의 DST 시간대 작업이 끝나기
+전에는 지도 구현 여부와 무관하게 비한국 allowlist를 열지 않는다.
+실사용 A17·razr·S25의 역할·세션·페어링·가족 국가는 이 검증을 위해 바꾸지 않는다.
+
 **부모 홈 히어로 캐러셀·브랜드 locale 현지화 배포 완료(2026-08-26)**:
 부모 홈 히어로를 「오늘」 한 장에서 좌우로 넘기고 자동 전환되는 캐러셀로 넓혔다. **첫 장은 항상 `today`** 이고
 뒤에 자사 소식 슬라이드(`hyenistudy.com`·`@hyeniworld`)가 붙는다. 광고 성격 `ad` 종류만 구독 가족에게서 숨기고

@@ -1,5 +1,10 @@
 # Global Timezone Maps Auth Implementation Plan
 
+> **실행 중지 안내(2026-08-26):** 이 계획의 Mapbox 관련 단계는 실행하지 않는다. 사용자가
+> `KR=Kakao`, 승인된 비중국 국가=`Google Maps`, `CN/ZZ=미지원`으로 변경을 확정했다.
+> 지도 구현은 `docs/superpowers/specs/2026-08-26-global-google-maps-location-design.md` 검토 승인 후 작성할
+> 새 Google Maps 구현 계획을 따른다. 국가·시간대·인증의 비지도 계약은 새 계획에서 재사용한다.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 신규 가족의 국가·IANA 시간대를 명시적으로 저장하고 가족 현지 시간 기준 기능을 정확하게 계산하며, 한국 Kakao/해외 Mapbox 지도와 국가별 로그인 가용성을 기존 가족·장소·페어링 계약을 깨지 않고 제공한다.

@@ -30,7 +30,7 @@
 | `eventCompanionPrompt` 꼬리말 | TK 결정 대기 (아래 3택) |
 | 스토어 스크린샷 locale별 생성 | 미착수 |
 | Worker 알림·법적 페이지·AI 답변 언어 | 미착수 |
-| 국가·시간대·지도(Mapbox)·해외 로그인 | 미착수 |
+| 국가·시간대·지도(Google Maps)·해외 로그인 | 설계 승인, 구현 미착수·Google 자격 미발급 |
 | Paddle 글로벌 결제 | 미착수 |
 | 번역 원어민 검수 | 미착수 (`locales/review-status.json` 90/90 `draft`) |
 
@@ -321,8 +321,11 @@ Push-Location android; .\gradlew.bat test lint assembleDebug; Pop-Location
 - 사용자 행에 `country_code` + IANA `time_zone` 추가. **기존 사용자는 migration 후 정확히 `KR`/`Asia/Seoul` 유지.**
   **locale·IP·전화번호로 시간대를 추정하지 않는다**(신규는 사용자가 명시 선택).
 - 초기 QA 국가 = `KR JP TW HK SG VN TH ID MY PH` (**중국 본토 `CN` 제외**).
-- 지도 = `KR→kakao`, 그 외 QA 국가 `mapbox`. 런타임 오류로 다른 provider·다른 장소 ID로 자동 전환 금지.
-  Mapbox secret token은 Worker, public token은 origin 제한.
+- 지도 = `KR→Kakao`, 승인된 비중국 국가 `Google Maps`, `CN/ZZ→미지원`. 런타임 오류로 다른 provider·다른
+  장소 ID로 자동 전환하지 않는다. 웹은 origin 제한 키, Android는 package+SHA-1 제한 키, Worker는 지도 전용
+  서비스 계정 OAuth를 분리한다. 정본=`docs/superpowers/specs/2026-08-26-global-google-maps-location-design.md`.
+- 비한국 국가는 지도만으로 활성화하지 않는다. 가족 현지 오전 8시 위치 이력, retention·quota, 일정/도착 cron,
+  quiet hours와 DST matrix가 모두 통과할 때까지 allowlist를 닫는다.
 - 로그인 = **Google은 전 지역**, 전화 OTP·Kakao·Naver는 **`KR`만**. 아이 페어링 동선은 동일.
 - 보존 불변식: UTC timestamp, 0-index 비패딩 `date_key`, quiet hours `[start,end)`, 위치 티어, 10분 dedupe.
 
@@ -391,7 +394,7 @@ Push-Location android; .\gradlew.bat test lint assembleDebug; Pop-Location
 ### 외부 승인이 없으면 `GO`로 쓸 수 없는 것
 
 - Paddle seller/category/domain live 승인과 price allowlist
-- Mapbox public/server token 제한 설정과 비용 예산
+- Google Maps web/Android 키·Worker 서비스 계정 제한 설정, API별 quota cap과 비용 예산
 - A/B 등급 번역 원어민 검수, A 등급 법률 검수
 - 사업자 법정 이름·주소·전화번호·지원 이메일, 일본 특정상거래법 검증
 - Play Console 국가·상품·listing 운영자 확인
