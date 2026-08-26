@@ -12,6 +12,16 @@ export const qk = {
   oauthLinks: ["oauth-links"] as const,
   account: (familyId?: string | null) => ["account", familyId ?? "me"] as const,
 
+  // 혜니스터디 — 가족과 명시적 Calendar member ID를 함께 넣어 다자녀 캐시를 격리한다.
+  studyStatus: (familyId: string) => ["study", familyId, "status"] as const,
+  studyChildren: (familyId: string) => ["study", familyId, "children"] as const,
+  studyOverview: (familyId: string, memberId: string) =>
+    ["study", familyId, memberId, "overview"] as const,
+  studyReport: (familyId: string, memberId: string, range: "7d" | "30d" | "term") =>
+    ["study", familyId, memberId, "report", range] as const,
+  studyDevices: (familyId: string, memberId: string) =>
+    ["study", familyId, memberId, "devices"] as const,
+
   // 일정
   events: (familyId: string) => ["events", familyId] as const,
   event: (eventId: string) => ["event", eventId] as const,
