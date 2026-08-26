@@ -93,7 +93,9 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   하단에서 현재 언어 1개만 표시하고 나머지 9개를 펼친다. 한국(`KR`)·판별 불가(`ZZ`)는 Kakao+Google(+설정 시 Naver),
   다른 국가는 Google만 표시한다. 첫 화면 좌우 24px, 이후 온보딩은 좌우 16px·safe-area 뒤 상단 16px이며 수평 overflow와
   좌우 slide 전환을 금지한다. QR 스캔은 엔진 지원 확인 뒤 권한을 요청하고, 임시 거부=재요청·Android 영구 거부=설정 이동
-  후 복귀 자동 재확인·모든 오류=수동 코드 입력으로 복구한다.
+  후 복귀 자동 재확인·모든 오류=수동 코드 입력으로 복구한다. `아이로 시작`은 기존 인증 세션 보호 가드를 먼저 통과한 뒤
+  기기 컨텍스트·네이티브 세션 복구·익명 로그인을 기다리지 않고 아이 연결 화면을 즉시 열며, 준비 중에는 코드 제출만 막는다.
+  준비 중 뒤로가기는 잠그고 준비 실패는 역할 화면으로 돌아가 재시도시킨다. 회귀=`tests/onboardingChildStartResponsiveness.test.mjs`.
 - **부모 iPhone·아이 Android 정본 토폴로지(2026-07-31)**: 최종 기능 검증의 기본 조합은
   **부모=iPhone 홈 화면 PWA, 아이=Android 네이티브 앱**이다. 위치 즉시 요청·기기 상태·소리 울리기·주변 소리·
   메시지·장소/알림 설정은 부모 기기의 Capacitor 여부로 막지 않고 Worker API→FCM→아이 Android 경로를 사용한다.

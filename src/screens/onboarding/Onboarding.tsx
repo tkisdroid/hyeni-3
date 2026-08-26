@@ -667,6 +667,12 @@ export function Onboarding() {
       //   역할 선택 화면이 잘못 노출돼도 기존 로그인이 파괴되지 않게 하는 최후 방어.
       const current = deriveAuthState();
       if (current.status === "authenticated" && routeAfterChildSession()) return;
+      // 기기 컨텍스트·네이티브 세션 복구·익명 로그인은 네트워크/브리지 상태에 따라
+      // 지연될 수 있다. 카드 탭은 그 준비를 기다리지 않고 아이 연결 화면에 즉시 반영한다.
+      // busy는 유지해 익명 세션이 확정되기 전 코드 제출만 막는다.
+      setRole("child");
+      setPairMode("child");
+      setStep("pairing");
       const hint = await readChildDeviceIdentityHint();
       setChildJoinHint(hint);
       if (await adoptNativeLocationSessionTokens()) {
@@ -682,6 +688,8 @@ export function Onboarding() {
       syncFromSession();
       routeAfterChildSession();
     } catch (e) {
+      const failedState = deriveAuthState();
+      if (failedState.status !== "authenticated") setStep("role");
       show(localizeApiError(e, intl, "child"), "⚠️");
     } finally {
       setBusy(false);
@@ -2368,7 +2376,7 @@ function PairingStep({
 
   return (
     <div className="ob-step ob-pairing">
-      <BackButton onBack={onBack} />
+      <BackButton onBack={onBack} disabled={busy} />
       <div className="ob-pair-head ob-step-head">
         <div className="ob-step-visual">
           <img src={asset("ui/camera-3d.webp")} alt="" loading="eager" decoding="async" />

@@ -470,6 +470,9 @@ Service Worker SHA-256 `aa9e60df57cddc5af3f993a133b2f3a26ebf1922fd6879ec34af139e
 국가에서 Google만 표시한다. 첫 화면 좌우 여백은 24px, 이후 가입·로그인·페어링·권한 화면은 16px로 통일하고 iPhone
 safe-area 뒤 상단 16px, 전역 수평 overflow 차단, 세로 fade 전환을 적용했다. QR 스캔은 브라우저 기능 유무를 권한보다
 먼저 확인하고, Android 임시 거부는 재요청·영구 거부는 설정 이동 후 자동 재확인·모든 오류는 수동 코드 입력으로 복구한다.
+`아이로 시작`은 기존 인증 세션 보호 가드를 먼저 통과한 뒤 기기 컨텍스트·네이티브 세션 복구·익명 로그인을 기다리지 않고
+아이 연결 화면을 즉시 열며, 준비 중에는 코드 제출·뒤로가기를 막는다. 준비 실패는 역할 화면으로 돌아가 재시도시킨다.
+회귀=`tests/onboardingChildStartResponsiveness.test.mjs`.
 대상 회귀 34/34와 Worker 공개 API 2/2, 앱·Worker typecheck, production build(469 precache·중복 0)는 통과했다.
 사용자 요청으로 이후 브라우저 57화면 전수 검수와 전체 앱/Worker 테스트 재실행은 생략했으므로 그 범위를 완료로 간주하지 않는다.
 소스 커밋 `4be6089`를 `main`에 푸시하고 Worker version `29acfe86-974e-4bbc-b69d-f3c8b885a394`와 Pages
