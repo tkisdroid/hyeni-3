@@ -21,7 +21,7 @@ test("1.4.4 정책 수정 빌드는 Android와 iOS 빌드 번호를 16으로 맞
   assert.equal((iosProject.match(/MARKETING_VERSION = 1\.4\.4;/g) ?? []).length, 2);
 });
 
-test("1.4.4 Play 문서는 제한된 microphone FGS 부팅 경로 제거와 미완료 출시 단계를 구분한다", () => {
+test("1.4.4 Play 문서는 제한된 microphone FGS 부팅 경로 제거와 서명 완료·Play 미제출을 구분한다", () => {
   const releaseNotes = read("docs/store/play-release-notes-v1.4.4.md");
   const submission = read("docs/store/play-console-submission-v1.4.4.md");
 
@@ -30,5 +30,11 @@ test("1.4.4 Play 문서는 제한된 microphone FGS 부팅 경로 제거와 미�
   assert.match(submission, /BOOT_COMPLETED/);
   assert.match(submission, /AmbientListenService/);
   assert.match(submission, /versionCode 16/);
-  assert.match(submission, /서명 AAB·Play 교체 전/);
+  assert.match(submission, /서명 AAB 생성·검증 완료, Play 교체 전/);
+  assert.match(submission, /eda3907d96e0046804c2d39eb4c2c310f4b1dfeb/);
+  assert.match(submission, /45e66db8d6a60cae1a9a4c33105f285c85886d92b4aea588425d0010a5343a91/);
+  assert.match(submission, /target SDK 36/);
+  assert.match(submission, /viewport-fit=cover/);
+  assert.match(submission, /Capacitor 8\.4\.1 `SystemBars`/);
+  assert.match(submission, /제스처·3버튼 내비게이션/);
 });

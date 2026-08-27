@@ -3,7 +3,7 @@
 이 파일은 매 세션 자동 로드됩니다. **새 세션은 이 문서로 현재 상태·다음 할 일을 파악하고 이어서 작업하세요.**
 모든 응답·주석은 한국어. 기술 용어·코드 식별자는 원문 유지.
 
-**Android 15 BOOT_COMPLETED 제한 microphone FGS 수정·v1.4.4/code 16 준비(2026-08-27)**:
+**Android 15 BOOT_COMPLETED 제한 microphone FGS 수정·v1.4.4/code 16 서명 완료(2026-08-27)**:
 Play Console이 `BOOT_COMPLETED` 뒤 제한된 foreground service 유형을 시작하는 경로로
 `AmbientListenService.onStartCommand`를 지목했다. `BootReceiver`가 직접 시작한 것은 허용 유형인 location
 `LocationService`였지만, 부팅으로 복구된 서비스가 pending `remote_listen_stop`을 처리할 때 중지용
@@ -22,9 +22,17 @@ v1.4.3/code 15는 2026-08-27 03:10 KST에 이미 production 심사 제출되어 
 production build(2,292 modules·precache 472·중복 0), Android unit 185/185·`lintDebug`·`assembleDebug`가 통과했다.
 debug APK는 15,847,334 bytes, SHA-256
 `7E5D8BE645632C29C74AD9C1989E668CD42925FECE344CCBAA5FF04772C1304E`이고 manifest는 1.4.4/code 16이다.
-서명 AAB 생성·Play code 16 교체 제출·fresh lifecycle readback은 아직 완료 전이며 정본은
-`docs/store/play-console-submission-v1.4.4.md`다. Worker·D1·Pages·
+사용자가 UTF-8 PowerShell 7 창에서 비밀번호를 직접 입력했고 값은 읽거나 저장·출력하지 않았다. clean source
+`eda3907d96e0046804c2d39eb4c2c310f4b1dfeb`에서 만든 서명 AAB는
+`artifacts/release-evidence/play-upload-v1.4.4-vc16-eda3907/hyeni-calendar-v1.4.4-vc16-eda3907.aab`,
+13,060,516 bytes, SHA-256 `45e66db8d6a60cae1a9a4c33105f285c85886d92b4aea588425d0010a5343a91`이다.
+manifest/source/certificate/web assets/16KiB 검증은 모두 GREEN이다. Play code 16 교체 제출·fresh lifecycle readback은
+아직 완료 전이며 정본은 `docs/store/play-console-submission-v1.4.4.md`다. Worker·D1·Pages·
 운영 계정·역할·페어링·세션·refresh token은 변경하지 않았다.
+Play의 edge-to-edge 권고는 차단 오류가 아니다. 이 AAB는 target SDK 36으로 Android 15+ edge-to-edge가 이미 강제되고,
+`viewport-fit=cover`·Capacitor 8.4.1 `SystemBars`·화면별 상하단 safe-area 처리가 있다. 구형 Android 동작까지 바꾸는
+`EdgeToEdge.enable()`을 경고 제거만 위해 추가하지 않는다. Android 15/16의 세로·가로·cutout·키보드·제스처/3버튼
+내비게이션 실기기 확인은 연결 기기가 없어 미완료다.
 
 **ID·비밀번호 자동완성 즉시 로그인·소셜 인증 회귀 검증(2026-08-27, 구현 완료·배포 전)**:
 로그인 화면에서 브라우저/Android WebView 비밀번호 관리자가 ID와 비밀번호를 모두 자동완성하면 로그인 버튼을 누르지
