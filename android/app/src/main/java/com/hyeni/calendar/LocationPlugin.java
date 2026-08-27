@@ -637,10 +637,7 @@ public class LocationPlugin extends Plugin {
     public void clearPushContext(PluginCall call) {
         SharedPreferences prefs = getContext()
             .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        AmbientListenService.stopForRetiringSession(
-            getContext(),
-            prefs.getString("sessionNonce", "")
-        );
+        AmbientListenService.stopForRetiringSession(prefs.getString("sessionNonce", ""));
         SessionTokenStore.clear(prefs, "");
         Log.i(TAG, "Push context cleared");
         call.resolve(new JSObject().put("status", "cleared"));

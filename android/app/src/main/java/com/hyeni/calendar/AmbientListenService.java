@@ -6,7 +6,6 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -73,10 +72,8 @@ public class AmbientListenService extends Service {
     public static final String EXTRA_SESSION_NONCE = "sessionNonce";
     public static final String EXTRA_CAPTURE_EXPIRES_AT_MS = "captureExpiresAtMs";
     private static final String EVENT_DUPLICATE_START = "duplicate_start";
-    private static final Object SESSION_LOCK = new Object();
-    private static String activeRequestId = "";
-    private static String activeTargetUserId = "";
-    private static String activeSessionNonce = "";
+    private static final RemoteListenActiveSession<AmbientListenService> ACTIVE_SESSION =
+        new RemoteListenActiveSession<>();
 
     private static final int SAMPLE_RATE = 16_000;
     private static final int CHUNK_MS = 1_000;
@@ -148,10 +145,7 @@ public class AmbientListenService extends Service {
             String stopRequestId = clean(intent.getStringExtra(EXTRA_REQUEST_ID));
             String stopTargetUserId = clean(intent.getStringExtra(EXTRA_TARGET_USER_ID));
             String stopSessionNonce = clean(intent.getStringExtra(EXTRA_SESSION_NONCE));
-            if (matchesActiveSession(stopRequestId, stopTargetUserId, stopSessionNonce)) {
-                stopCapture("stop_requested");
-                stopSelf();
-            } else {
+            if (!stopActiveSession(stopRequestId, stopTargetUserId, stopSessionNonce)) {
                 Log.w(TAG, "Ignoring remote listen stop for a different session");
             }
             return START_NOT_STICKY;
@@ -160,18 +154,17 @@ public class AmbientListenService extends Service {
         String incomingRequestId = clean(
             intent != null ? intent.getStringExtra(EXTRA_REQUEST_ID) : ""
         );
-        synchronized (SESSION_LOCK) {
-            if (!activeRequestId.isEmpty()) {
-                Log.i(TAG, EVENT_DUPLICATE_START + " ignored for requestId=" + incomingRequestId);
-                if (!activeRequestId.equals(incomingRequestId)) {
-                    RemoteListenRequestStore.markFinished(
-                        this,
-                        incomingRequestId,
-                        "capture_already_active"
-                    );
-                }
-                return START_NOT_STICKY;
+        String currentActiveRequestId = ACTIVE_SESSION.activeRequestId();
+        if (!currentActiveRequestId.isEmpty()) {
+            Log.i(TAG, EVENT_DUPLICATE_START + " ignored for requestId=" + incomingRequestId);
+            if (!currentActiveRequestId.equals(incomingRequestId)) {
+                RemoteListenRequestStore.markFinished(
+                    this,
+                    incomingRequestId,
+                    "capture_already_active"
+                );
             }
+            return START_NOT_STICKY;
         }
 
         configure(intent);
@@ -308,13 +301,7 @@ public class AmbientListenService extends Service {
     }
 
     private boolean reserveActiveSession() {
-        synchronized (SESSION_LOCK) {
-            if (!activeRequestId.isEmpty()) return false;
-            activeRequestId = requestId;
-            activeTargetUserId = targetUserId;
-            activeSessionNonce = sessionNonce;
-            return true;
-        }
+        return ACTIVE_SESSION.reserve(this, requestId, targetUserId, sessionNonce);
     }
 
     private void startCapture() {
@@ -443,63 +430,46 @@ public class AmbientListenService extends Service {
     }
 
     private void clearActiveRequest() {
-        synchronized (SESSION_LOCK) {
-            if (!notBlank(requestId) || requestId.equals(activeRequestId)) {
-                activeRequestId = "";
-                activeTargetUserId = "";
-                activeSessionNonce = "";
-            }
-        }
+        ACTIVE_SESSION.clear(this, requestId);
     }
 
-    static boolean matchesActiveSession(
+    static boolean hasActiveSession() {
+        return ACTIVE_SESSION.hasActive();
+    }
+
+    static boolean stopActiveSession(
             String stopRequestId,
             String stopTargetUserId,
             String stopSessionNonce
     ) {
-        synchronized (SESSION_LOCK) {
-            return RemoteListenRequestPolicy.matchesStop(
-                activeRequestId,
-                stopRequestId,
-                activeTargetUserId,
-                stopTargetUserId,
-                activeSessionNonce,
-                stopSessionNonce
-            );
-        }
+        return dispatchStop(ACTIVE_SESSION.requestStopIfMatches(
+            stopRequestId,
+            stopTargetUserId,
+            stopSessionNonce
+        ));
     }
 
-    static boolean hasActiveSession() {
-        synchronized (SESSION_LOCK) {
-            return !activeRequestId.isEmpty();
-        }
+    static void stopForRetiringSession(String retiringSessionNonce) {
+        dispatchStop(ACTIVE_SESSION.requestStopForSession(retiringSessionNonce));
     }
 
-    static void stopForRetiringSession(Context context, String retiringSessionNonce) {
-        if (context == null) return;
-        String request;
-        String target;
-        String nonce;
-        synchronized (SESSION_LOCK) {
-            nonce = clean(retiringSessionNonce);
-            if (activeRequestId.isEmpty()
-                    || nonce.isEmpty()
-                    || !nonce.equals(activeSessionNonce)) {
-                return;
-            }
-            request = activeRequestId;
-            target = activeTargetUserId;
-        }
-        Intent stopIntent = new Intent(context, AmbientListenService.class);
-        stopIntent.setAction(ACTION_STOP);
-        stopIntent.putExtra(EXTRA_REQUEST_ID, request);
-        stopIntent.putExtra(EXTRA_TARGET_USER_ID, target);
-        stopIntent.putExtra(EXTRA_SESSION_NONCE, nonce);
-        try {
-            context.startService(stopIntent);
-        } catch (RuntimeException error) {
-            Log.w(TAG, "Retiring session remote listen stop dispatch failed", error);
-        }
+    private static boolean dispatchStop(
+            RemoteListenActiveSession.StopRequest<AmbientListenService> stop
+    ) {
+        if (stop == null) return false;
+        if (!stop.shouldDispatch()) return true;
+        AmbientListenService service = stop.owner();
+        boolean posted = service.mainHandler.post(() -> service.finishRequestedStop(stop));
+        if (!posted) ACTIVE_SESSION.cancelStop(stop);
+        return posted;
+    }
+
+    private void finishRequestedStop(
+            RemoteListenActiveSession.StopRequest<AmbientListenService> stop
+    ) {
+        if (!ACTIVE_SESSION.isCurrent(stop)) return;
+        stopCapture("stop_requested");
+        stopSelf();
     }
 
     private void rejectStart(String reason) {

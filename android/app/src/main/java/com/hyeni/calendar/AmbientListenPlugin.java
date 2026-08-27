@@ -1,7 +1,6 @@
 package com.hyeni.calendar;
 
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 
 import com.getcapacitor.JSObject;
@@ -31,23 +30,11 @@ public class AmbientListenPlugin extends Plugin {
             Context.MODE_PRIVATE
         );
         String sessionNonce = clean(prefs.getString("sessionNonce", ""));
-        if (!AmbientListenService.matchesActiveSession(
-                requestId,
-                targetUserId,
-                sessionNonce)) {
+        if (!AmbientListenService.stopActiveSession(requestId, targetUserId, sessionNonce)) {
             call.reject("remote_listen_stop_session_mismatch");
             return;
         }
-        Intent intent = new Intent(getContext(), AmbientListenService.class);
-        intent.setAction(AmbientListenService.ACTION_STOP);
-        intent.putExtra(AmbientListenService.EXTRA_REQUEST_ID, requestId);
-        intent.putExtra(AmbientListenService.EXTRA_TARGET_USER_ID, targetUserId);
-        intent.putExtra(AmbientListenService.EXTRA_SESSION_NONCE, sessionNonce);
-        ServiceStopDispatch.Outcome outcome = ServiceStopDispatch.deliver(
-            () -> getContext().startService(intent),
-            () -> getContext().stopService(intent)
-        );
-        call.resolve(new JSObject().put("status", outcome.status()));
+        call.resolve(new JSObject().put("status", "stopped"));
     }
 
     private String clean(String value) {

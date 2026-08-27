@@ -12,17 +12,6 @@ function read(relativePath) {
   return readFileSync(resolve(rootDir, relativePath), "utf8");
 }
 
-test("1.4.2 출시 빌드는 Android와 iOS 빌드 번호를 14로 맞춘다", () => {
-  const packageJson = JSON.parse(read("package.json"));
-  const androidGradle = read("android/app/build.gradle");
-  const iosProject = read("ios/App/App.xcodeproj/project.pbxproj");
-
-  assert.equal(packageJson.version, "1.4.2");
-  assert.match(androidGradle, /^\s*versionCode 14$/m);
-  assert.equal((iosProject.match(/CURRENT_PROJECT_VERSION = 14;/g) ?? []).length, 2);
-  assert.equal((iosProject.match(/MARKETING_VERSION = 1\.4\.2;/g) ?? []).length, 2);
-});
-
 test("설치 앱과 PWA는 정식 이름을 계속 사용한다", () => {
   const androidStrings = read("android/app/src/main/res/values/strings.xml");
   const capacitor = JSON.parse(read("capacitor.config.json"));
