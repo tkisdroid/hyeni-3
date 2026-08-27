@@ -2960,27 +2960,15 @@ public class LocationService extends Service {
         if (isBlank(requestId)
                 || isBlank(targetUserId)
                 || !targetUserId.equals(userId)
-                || !AmbientListenService.matchesActiveSession(
+                || !AmbientListenService.stopActiveSession(
                     requestId,
                     targetUserId,
                     sessionNonce)) {
             Log.w(TAG, "Remote listen pending stop skipped: session mismatch");
             return false;
         }
-
-        Intent intent = new Intent(this, AmbientListenService.class);
-        intent.setAction(AmbientListenService.ACTION_STOP);
-        intent.putExtra(AmbientListenService.EXTRA_REQUEST_ID, requestId);
-        intent.putExtra(AmbientListenService.EXTRA_TARGET_USER_ID, targetUserId);
-        intent.putExtra(AmbientListenService.EXTRA_SESSION_NONCE, sessionNonce);
-        try {
-            startService(intent);
-            Log.i(TAG, "Remote listen native stop requested from pending requestId=" + requestId);
-            return true;
-        } catch (RuntimeException error) {
-            Log.w(TAG, "Remote listen pending stop dispatch failed", error);
-            return false;
-        }
+        Log.i(TAG, "Remote listen active capture stop requested from pending requestId=" + requestId);
+        return true;
     }
 
     private boolean shouldHandleLocationRefreshFromPending(@Nullable JSONObject data) {

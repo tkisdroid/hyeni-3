@@ -38,6 +38,17 @@ test("pending 수신부도 공용 안내 경로만 호출하고 직접 캡처·A
   assert.doesNotMatch(service, /remoteListenSendOptions\(/);
 });
 
+test("부팅으로 복구된 위치 서비스는 microphone FGS를 다시 시작하지 않고 활성 캡처만 직접 중지한다", () => {
+  const service = read("android/app/src/main/java/com/hyeni/calendar/LocationService.java");
+  const stopBody = service.slice(
+    service.indexOf("private boolean stopAmbientListenFromPending("),
+    service.indexOf("private boolean shouldHandleLocationRefreshFromPending("),
+  );
+
+  assert.match(stopBody, /AmbientListenService\.stopActiveSession\(/);
+  assert.doesNotMatch(stopBody, /new Intent\([^\n]*AmbientListenService|startForegroundService\(|startService\(/);
+});
+
 test("위급 주변소리 알림은 잠금화면까지 닿는 전체화면 인텐트를 쓰되 CALL·무음·DND 우회는 쓰지 않는다", () => {
   const notification = read("android/app/src/main/java/com/hyeni/calendar/RemoteListenNotification.java");
   const helper = read("android/app/src/main/java/com/hyeni/calendar/NotificationHelper.java");
@@ -109,13 +120,14 @@ test("위급 주변소리 화면은 아이 탭 없이 즉시 연결하되 청취
 
 test("캡처 서비스는 승인 증표를 1회 소비하고 1분 뒤 종료하며 알림 중지 액션을 제공한다", () => {
   const service = read("android/app/src/main/java/com/hyeni/calendar/AmbientListenService.java");
+  const activeSession = read("android/app/src/main/java/com/hyeni/calendar/RemoteListenActiveSession.java");
   const plugin = read("android/app/src/main/java/com/hyeni/calendar/AmbientListenPlugin.java");
   const locationPlugin = read("android/app/src/main/java/com/hyeni/calendar/LocationPlugin.java");
 
   assert.match(service, /RemoteListenRequestStore\.consumeAcceptance/);
   assert.match(service, /EXTRA_CONSENT_TOKEN/);
   assert.match(service, /RemoteListenRequestPolicy\.normalizeDurationSec/);
-  assert.match(service, /RemoteListenRequestPolicy\.matchesStop/);
+  assert.match(activeSession, /RemoteListenRequestPolicy\.matchesStop/);
   assert.match(service, /주변 소리를 보호자에게 공유 중/);
   assert.match(service, /addAction\(/);
   assert.doesNotMatch(service, /START_REDELIVER_INTENT/);

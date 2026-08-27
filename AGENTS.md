@@ -232,6 +232,14 @@ API base: `https://hyeni-calendar-api.tkisdroid.workers.dev` · 배포 웹: http
   입력하며 에이전트가 자격 파일을 읽어 자동 서명하지 않는다.
   릴리즈 스크립트는 worktree의 `android/local.properties`를 전제로 하지 않고 Android SDK를 먼저 탐색해
   `ANDROID_SDK_ROOT`·`ANDROID_HOME`을 설정한 뒤 build·Capacitor sync·Gradle release를 실행한다.
+- **Android 15 부팅 FGS 정본(2026-08-27)**: `BootReceiver`는 위치 공유 복구를 위해 `LocationService`만 시작하며,
+  부팅으로 복구된 코드 경로에서 `foregroundServiceType="microphone"`인 `AmbientListenService`를 시작하면 안 된다.
+  특히 pending `remote_listen_stop`처럼 중지 목적이라도 `startService(Intent(AmbientListenService))`를 호출하면 Play가
+  `BOOT_COMPLETED → AmbientListenService.onStartCommand` 제한 경로로 판정한다. pending·FCM·plugin·세션 종료의 중지는
+  `RemoteListenActiveSession`에서 정확한 request/target/session으로 현재 실행 중인 인스턴스만 claim해 main handler로
+  직접 전달하고, 캡처가 없으면 새 서비스를 만들지 않는다. microphone FGS 시작은 서버 승인 증표를 소비한
+  `RemoteListenActivity`의 사용자 가시 경로로만 유지한다. 위치 부팅 복구 자체를 제거하지 않는다.
+  회귀=`tests/remoteListenConsentSafety.test.mjs`·Android `RemoteListenActiveSessionTest`.
 - **현재 Play 출시 후보(2026-08-15)**: 실제 제출 후보는 v1.3.0/**versionCode 6**이다. 위치 권한 안내가 인증 전환에
   가려지지 않도록 gate를 유지하고, 권한이 없는 아이의 위치 화면에서도 같은 prominent disclosure를 거쳐 Android 전경→
   백그라운드 권한을 요청한다. 위치 FGS 지속 알림은 장식 문구 대신 `위치 공유 중`과 실제 공유 대상을 표시한다.
