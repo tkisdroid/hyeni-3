@@ -8,3 +8,12 @@ CREATE TABLE IF NOT EXISTS app_global_settings (
   updated_by TEXT,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Study는 명시적으로 열기 전까지 어떤 가족에게도 노출하지 않는다.
+-- rollout 대상은 raw family ID가 아닌 domain-separated HMAC familyRef만 저장한다.
+INSERT OR IGNORE INTO app_global_settings (key, value)
+VALUES
+  ('study_management_enabled', 'false'),
+  ('study_learner_enabled', 'false'),
+  ('study_rollout_basis_points', '0'),
+  ('study_rollout_canary_refs', '[]');

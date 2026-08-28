@@ -83,6 +83,7 @@ import notifSettingsRoutes from "./routes/notif-settings";
 import locationPrefsRoutes from "./routes/location-prefs";
 import pushSubscriptionsRoutes from "./routes/push-subscriptions";
 import reviewRewardsRoutes from "./routes/review-rewards";
+import studyRoutes from "./routes/study";
 import restShim from "./routes/rest-shim";
 import { cleanupStorageUploadDailyUsage } from "./lib/storageUploadQuota";
 import { cleanupAnonymousSignupProtection } from "./lib/anonymousSignupProtection";
@@ -387,6 +388,8 @@ app.route("/api/location-prefs", locationPrefsRoutes);
 app.route("/api/push-subscriptions", pushSubscriptionsRoutes);
 // 기존 스토어 방문 혜택(family_review_rewards) read 호환 — 신규 claim은 410 종료
 app.route("/api/review-rewards", reviewRewardsRoutes);
+// Calendar 인증·market·rollout을 모두 통과한 가족만 Study readiness를 확인한다.
+app.route("/api/study", studyRoutes);
 // 네이티브 PostgREST/Realtime 호환 shim (/rest/v1/rpc·table, /functions/v1 별칭, /realtime/v1/api/broadcast)
 app.route("/", restShim);
 
