@@ -3,6 +3,7 @@ import { resolveCanonicalFamilyMembership } from "../db/authz";
 import { changeLearningGrade, LearningGradeUnavailableError } from "../lib/learningGrade";
 import { requireAuth } from "../middleware/auth";
 import { isStudyFeatureEnabled } from "../lib/studyFeatureState";
+export { STUDY_ROUTE_AUTHORIZATION_OPERATIONS } from "../lib/studyRpcAuthorization";
 import type { Env, Vars } from "../types";
 
 export const study = new Hono<{ Bindings: Env; Variables: Vars }>();
