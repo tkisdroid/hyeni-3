@@ -465,6 +465,7 @@ for (const row of [
   { first16Bits: 7, basisPoints: 1, expected: false },
   { first16Bits: 65_528, basisPoints: 9_999, expected: true },
   { first16Bits: 65_529, basisPoints: 9_999, expected: true },
+  { first16Bits: 65_530, basisPoints: 9_999, expected: false },
   { first16Bits: 65_535, basisPoints: 9_999, expected: false },
   { first16Bits: 65_535, basisPoints: 10_000, expected: true },
 ]) {
