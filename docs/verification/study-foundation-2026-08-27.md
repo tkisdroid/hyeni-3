@@ -42,7 +42,7 @@
 ## Fix round 1 — generated/manual 2계층 재검증
 
 - `npx wrangler types worker/worker-configuration.d.ts --config worker/wrangler.toml --check`: 통과. 생성 타입은 최신이다.
-- `node --test worker/tests/studyGeneratedBindings.test.mjs`: 1/1 통과. Calendar config의 named service/entrypoint와 generated `Service` 표기, extra Study binding·Study secret binding 부재를 확인했다.
+- `node --test worker/tests/studyGeneratedBindings.test.mjs`: 2/2 통과. Calendar config의 named service/entrypoint와 generated `Service` 표기, `__BaseEnv_Env`의 정확한 `STUDY_*` allowlist(`STUDY_SERVICE`만), extra Study binding·Study secret binding 부재를 확인했다.
 - `npm run typecheck`, `npm run typecheck:worker`: 모두 통과. 후자는 `studyGeneratedBindings.typecheck.ts`와 기존 RPC compile-time contract를 포함한다.
 - `npm test`: 2,036/2,036 통과, `fail 0`. `npm run test:worker`: 1,423/1,423 통과, `fail 0`.
 - `npm run build`, `npm run verify:route-bundle`: 통과. 초기 자체 JS 365,952/500,000 bytes, 초기 CSS 44,996/48,000 bytes, precache 472개 URL·중복 없음이다.

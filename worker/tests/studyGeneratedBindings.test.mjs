@@ -5,9 +5,26 @@ import test from "node:test";
 const generated = readFileSync(new URL("../worker-configuration.d.ts", import.meta.url), "utf8");
 const wrangler = readFileSync(new URL("../wrangler.toml", import.meta.url), "utf8");
 
+function generatedStudyBindingNames(source) {
+  const baseEnvStart = source.indexOf("interface __BaseEnv_Env {");
+  const baseEnvEnd = source.indexOf("\n}", baseEnvStart);
+  if (baseEnvStart < 0 || baseEnvEnd < 0) throw new Error("generated __BaseEnv_Env을 찾을 수 없습니다.");
+
+  return [...source.slice(baseEnvStart, baseEnvEnd).matchAll(/^\s*(STUDY_[A-Z0-9_]+):/gm)].map((match) => match[1]);
+}
+
 test("Calendar Wrangler 생성 타입은 named Study service만 generic Service로 기록한다", () => {
   assert.match(wrangler, /\[\[services\]\][\s\S]*binding = "STUDY_SERVICE"[\s\S]*service = "hyeni-study"[\s\S]*entrypoint = "CalendarStudyService"/);
   assert.match(generated, /^\s*STUDY_SERVICE: Service \/\* entrypoint CalendarStudyService from hyeni-study \*\/;$/m);
   assert.doesNotMatch(generated, /\bCalendarStudyServiceBinding\b/);
   assert.doesNotMatch(generated, /\bSTUDY_[A-Z0-9_]*SECRET\b/);
+});
+
+test("generated Env는 STUDY_SERVICE 외 Study binding을 허용하지 않는다", () => {
+  assert.deepEqual(generatedStudyBindingNames(generated), ["STUDY_SERVICE"]);
+
+  for (const binding of ["STUDY_DB", "STUDY_JWT", "STUDY_ACCOUNT_DEVICE_SESSIONS"]) {
+    const probe = generated.replace("\tSTUDY_SERVICE:", `\t${binding}: D1Database;\n\tSTUDY_SERVICE:`);
+    assert.throws(() => assert.deepEqual(generatedStudyBindingNames(probe), ["STUDY_SERVICE"]));
+  }
 });
