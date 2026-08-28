@@ -23,8 +23,9 @@
 
 ## 타입 경계
 
-- 생성된 `worker/worker-configuration.d.ts`의 Study 관련 Service Binding은 `STUDY_SERVICE: Service` 하나이며 entrypoint는 `CalendarStudyService`로 한정된다. Study D1, Calendar JWT, account-device-session 또는 광범위한 Study binding은 생성 타입에 없다.
-- `worker/types.ts`는 `STUDY_SERVICE`를 좁은 `CalendarStudyServiceBinding`으로, `STUDY_RPC_HMAC_SECRET`를 문자열 secret 타입으로 선언한다.
+- Wrangler 4.118의 단일 Calendar config 생성물은 `STUDY_SERVICE: Service`와 `CalendarStudyService` entrypoint 주석만 제공한다. 이는 remote named service 존재·entrypoint를 확인하는 generic Cloudflare type이며, 좁은 RPC interface도 HMAC secret type도 생성하지 않는다.
+- 이는 도구 한계다. remote callee의 narrow RPC 자동 생성은 별도 callee config 경로가 필요해 이 Calendar worktree에 연결하지 않았고, `[secrets].required`는 local dev/deploy secret 검증 동작을 바꾸므로 추가하지 않았다.
+- 따라서 acceptance는 두 계층으로 분리한다. 1계층은 `npx wrangler types ... --check`와 `worker/tests/studyGeneratedBindings.test.mjs`로 generated d.ts freshness, 정확한 named entrypoint, extra Study binding·Study secret binding 부재를 확인한다. 2계층은 `worker/types.ts`와 `worker/tests/studyGeneratedBindings.typecheck.ts`로 `STUDY_SERVICE: CalendarStudyServiceBinding`, `STUDY_RPC_HMAC_SECRET: string`, 기존 `studyRpcContract.typecheck.ts`의 RPC method surface를 컴파일 시 강제한다.
 - 생성 타입, 이 문서와 검증 출력에 secret 값은 없으며, token·nonce·기기 설치 ID·자녀 생년 정보도 기록하지 않았다.
 
 ## 보호 경계 회귀 근거
@@ -38,6 +39,15 @@
 - Task 2 migration은 expand-only이지만 `ALTER TABLE ADD COLUMN`에 재실행 방지가 없다. 기존 preview/test DB는 `request_row_version` 존재를 먼저 확인하고, 부재할 때만 별도 forward `ALTER`을 정확히 한 번 적용해야 한다. 이 작업에서는 production D1을 적용하지 않았다.
 - Calendar 쪽의 고정 HMAC fixture와 독립 검산은 완료됐지만, Study Worker가 같은 fixture를 독립 verifier에서 소비하는 양 Worker preview parity는 backend acceptance 후속 게이트다. 실제 Study D1/DO, dedicated secret, service binding preview 배포도 이 문서의 로컬 범위 밖이다.
 
+## Fix round 1 — generated/manual 2계층 재검증
+
+- `npx wrangler types worker/worker-configuration.d.ts --config worker/wrangler.toml --check`: 통과. 생성 타입은 최신이다.
+- `node --test worker/tests/studyGeneratedBindings.test.mjs`: 1/1 통과. Calendar config의 named service/entrypoint와 generated `Service` 표기, extra Study binding·Study secret binding 부재를 확인했다.
+- `npm run typecheck`, `npm run typecheck:worker`: 모두 통과. 후자는 `studyGeneratedBindings.typecheck.ts`와 기존 RPC compile-time contract를 포함한다.
+- `npm test`: 2,036/2,036 통과, `fail 0`. `npm run test:worker`: 1,423/1,423 통과, `fail 0`.
+- `npm run build`, `npm run verify:route-bundle`: 통과. 초기 자체 JS 365,952/500,000 bytes, 초기 CSS 44,996/48,000 bytes, precache 472개 URL·중복 없음이다.
+- 회귀 assertion은 generic `Service`로의 일시 mutation에서 실패하고 원복 후 통과했다. generated d.ts는 수동 patch하지 않았고 production/secret/deploy 구성도 변경하지 않았다.
+
 ## 결론
 
-로컬 foundation acceptance gate는 위 기준 커밋에서 통과했다. 이는 배포·production migration·실기기·Play 출시 가능 판정이 아니라, Calendar 쪽 타입·단위/Worker 회귀·production build·초기 route bundle의 로컬 증거다.
+로컬 foundation acceptance gate는 위 기준 커밋에서 위의 2계층 타입 acceptance로 통과했다. generated d.ts 자체가 narrow RPC 또는 HMAC secret type을 제공한다는 뜻은 아니다. 이는 배포·production migration·실기기·Play 출시 가능 판정이 아니라, Calendar 쪽 타입·단위/Worker 회귀·production build·초기 route bundle의 로컬 증거다.
