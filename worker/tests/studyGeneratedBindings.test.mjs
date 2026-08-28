@@ -7,18 +7,51 @@ const generated = readFileSync(new URL("../worker-configuration.d.ts", import.me
 const wrangler = readFileSync(new URL("../wrangler.toml", import.meta.url), "utf8");
 
 function generatedStudyBindingNames(source) {
-  const sourceFile = ts.createSourceFile("worker-configuration.d.ts", source, ts.ScriptTarget.Latest, false, ts.ScriptKind.TS);
-  const interfaces = sourceFile.statements.filter(
-    (statement) => ts.isInterfaceDeclaration(statement) && statement.name.text === "__BaseEnv_Env",
+  const fileName = "worker-configuration.d.ts";
+  const options = { noLib: true, noResolve: true, target: ts.ScriptTarget.Latest };
+  const host = ts.createCompilerHost(options);
+  host.getSourceFile = (requestedFileName, languageVersion) => (
+    requestedFileName === fileName
+      ? ts.createSourceFile(fileName, source, languageVersion, true, ts.ScriptKind.TS)
+      : undefined
   );
-  if (interfaces.length !== 1) throw new Error("generated __BaseEnv_Env은 정확히 하나여야 합니다.");
+  host.fileExists = (requestedFileName) => requestedFileName === fileName;
+  host.readFile = (requestedFileName) => (requestedFileName === fileName ? source : undefined);
 
-  return interfaces[0].members.flatMap((member) => {
-    if (!ts.isPropertySignature(member)) return [];
-    if (!member.name || (!ts.isIdentifier(member.name) && !ts.isStringLiteral(member.name))) {
-      throw new Error("generated __BaseEnv_Env에 지원하지 않는 property 이름이 있습니다.");
+  const program = ts.createProgram({ rootNames: [fileName], options, host });
+  const sourceFile = program.getSourceFile(fileName);
+  if (!sourceFile) throw new Error("generated source file을 찾을 수 없습니다.");
+  if (sourceFile.parseDiagnostics.length > 0) {
+    throw new Error(`generated source parse diagnostic: ${sourceFile.parseDiagnostics.map((diagnostic) => `TS${diagnostic.code}`).join(", ")}`);
+  }
+
+  const checker = program.getTypeChecker();
+  const symbols = checker.getSymbolsInScope(sourceFile, ts.SymbolFlags.Type).filter(
+    (symbol) => symbol.getName() === "__BaseEnv_Env",
+  );
+  if (symbols.length !== 1) throw new Error("generated __BaseEnv_Env 전역 symbol은 정확히 하나여야 합니다.");
+
+  const envSymbol = symbols[0];
+  const declarations = envSymbol.getDeclarations() ?? [];
+  if (declarations.length !== 1 || !ts.isInterfaceDeclaration(declarations[0])) {
+    throw new Error("generated __BaseEnv_Env은 merge 없는 단일 InterfaceDeclaration이어야 합니다.");
+  }
+  for (const clause of declarations[0].heritageClauses ?? []) {
+    if (clause.token !== ts.SyntaxKind.ExtendsKeyword || clause.types.some((type) => !checker.getSymbolAtLocation(type.expression))) {
+      throw new Error("generated __BaseEnv_Env에 지원하지 않는 heritage가 있습니다.");
     }
-    return member.name.text.startsWith("STUDY_") ? [member.name.text] : [];
+  }
+
+  return checker.getPropertiesOfType(checker.getDeclaredTypeOfSymbol(envSymbol)).flatMap((property) => {
+    const propertyDeclarations = property.getDeclarations() ?? [];
+    if (propertyDeclarations.length === 0 || propertyDeclarations.some((declaration) => (
+      !ts.isPropertySignature(declaration)
+      || !declaration.name
+      || (!ts.isIdentifier(declaration.name) && !ts.isStringLiteral(declaration.name))
+    ))) {
+      throw new Error("generated __BaseEnv_Env에 지원하지 않는 effective property가 있습니다.");
+    }
+    return property.getName().startsWith("STUDY_") ? [property.getName()] : [];
   });
 }
 
@@ -95,4 +128,25 @@ test("generated Env allowlist parser는 interface 부재·중복·computed prope
   assert.throws(() => generatedStudyBindingNames("interface DifferentEnv {}"));
   assert.throws(() => generatedStudyBindingNames(duplicateInterfaceProbe));
   assert.throws(() => generatedStudyBindingNames(computedNameProbe));
+});
+
+test("generated Env allowlist parser는 TypeScript parse diagnostic을 fail-closed한다", () => {
+  const incompleteExpressionProbe = `${generated}\nconst incomplete = ;`;
+  const unterminatedTemplateProbe = `${generated}\nconst unterminated = ${"`"}`;
+
+  assert.throws(() => generatedStudyBindingNames(incompleteExpressionProbe), /TS1109/);
+  assert.throws(() => generatedStudyBindingNames(unterminatedTemplateProbe), /TS1160/);
+});
+
+test("generated Env allowlist parser는 상속 바인딩을 검사하고 class·namespace merge를 fail-closed한다", () => {
+  const inheritedBindingProbe = [
+    "interface HiddenStudyBindings { STUDY_DB: D1Database; }",
+    generated.replace("interface __BaseEnv_Env {", "interface __BaseEnv_Env extends HiddenStudyBindings {"),
+  ].join("\n");
+  const classMergeProbe = `${generated}\ndeclare class __BaseEnv_Env { STUDY_DB: D1Database; }`;
+  const namespaceMergeProbe = `${generated}\ndeclare namespace __BaseEnv_Env { const STUDY_DB: D1Database; }`;
+
+  assert.deepEqual(generatedStudyBindingNames(inheritedBindingProbe).sort(), ["STUDY_DB", "STUDY_SERVICE"]);
+  assert.throws(() => generatedStudyBindingNames(classMergeProbe));
+  assert.throws(() => generatedStudyBindingNames(namespaceMergeProbe));
 });

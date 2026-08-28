@@ -63,6 +63,12 @@
 - 회귀 fixture는 block/line comment와 single/double/template string 안의 가짜 `__BaseEnv_Env` marker를 무시한다. multiline comment·escape·nested type도 binding으로 오인하지 않으며, 같은 줄 실제 `STUDY_SERVICE`와 `STUDY_DB`는 둘 다 추출한다.
 - fresh: `npx wrangler types worker/worker-configuration.d.ts --config worker/wrangler.toml --check`, focused 5/5, `npm run typecheck:worker`, `npm run test:worker` 1,427/1,427 (`fail 0`)를 실행했다. generated d.ts, production D1, secret, deploy 구성, Play, 실기기, 계정·기기 세션은 변경하지 않았다.
 
+## Fix round 5 — Program/TypeChecker effective binding 검증
+
+- generated source는 `Program`으로 파싱하며 `sourceFile.parseDiagnostics`가 하나라도 있으면 fail-closed한다. TS1109 incomplete expression 및 TS1160 unterminated template fixture를 직접 재현한다.
+- `TypeChecker`에서 전역 `__BaseEnv_Env` symbol을 정확히 하나만 찾고, merge 없는 단일 `InterfaceDeclaration`만 허용한다. resolver가 확인한 `extends`의 effective property는 `getDeclaredTypeOfSymbol`·`getPropertiesOfType`으로 수집하므로 `HiddenStudyBindings`의 `STUDY_DB`도 검출한다. class/namespace/duplicate interface merge와 computed property는 fail-closed다.
+- fresh: `npx wrangler types worker/worker-configuration.d.ts --config worker/wrangler.toml --check`, focused 7/7, `npm run typecheck:worker`, `npm run test:worker` 1,429/1,429 (`fail 0`)를 실행했다. generated d.ts, production D1, secret, deploy 구성, Play, 실기기, 계정·기기 세션은 변경하지 않았다.
+
 ## 결론
 
 로컬 foundation acceptance gate는 위 기준 커밋에서 위의 2계층 타입 acceptance로 통과했다. generated d.ts 자체가 narrow RPC 또는 HMAC secret type을 제공한다는 뜻은 아니다. 이는 배포·production migration·실기기·Play 출시 가능 판정이 아니라, Calendar 쪽 타입·단위/Worker 회귀·production build·초기 route bundle의 로컬 증거다.
